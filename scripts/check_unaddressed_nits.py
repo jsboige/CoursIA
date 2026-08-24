@@ -206,7 +206,14 @@ LIFT_MARKERS = (
 # effet quand la construction est conditionnelle.
 CONDITIONAL_LIFT = re.compile(
     r"(et je merge|puis je merge|ensuite je merge"
-    r"|je merge (?:dès|des|une fois|quand|après|apres|si\b))", re.I)
+    r"|je merge (?:dès|des|une fois|quand|après|apres|si\b)"
+    # #12319 — miroir exact des constructions « je merge » pour « je leve » :
+    # « corrige X et je leve » est l'enonce de la condition, pas une levee
+    # acquise. Le commentaire de LIFT_MARKERS le revendiquait deja ; le regex
+    # ne couvrait que « je merge » — mesure par le test de regression
+    # test_12319_levee_conditionnelle_ne_leve_pas_nit_commentaire.
+    r"|et je l[èe]ve|puis je l[èe]ve|ensuite je l[èe]ve"
+    r"|je l[èe]ve (?:dès|des|une fois|quand|après|apres|si\b))", re.I)
 
 # #12074 — marqueurs de levee EXPLICITE par son auteur : quand l'un d'eux
 # PRECEDE le match CONDITIONAL_LIFT, la construction n'est pas une condition —
@@ -800,19 +807,6 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
     # ou reponse — n'eteint pas une reserve posee par un autre).
     pr_author = (pr_data.get("author") or {}).get("login", "")
 
-    # Seuls les commentaires capables de LEVER comptent (cf can_lift) : un
-    # commentaire de bot CI ou un tag de protocole nu n'a jamais repondu a rien.
-    # On porte l'AUTEUR de chaque evenement de levee : la borne #11145 en a
-    # besoin (auteur seul = les temps plats de #11222 ne suffisaient pas).
-    # Le body est porte pour la trappe OVERRIDE de `_lift_eligible` (#11639) :
-    # elle doit voir le marqueur `[OVERRIDE] lane …` de la levee, pas
-    # seulement son auteur.
-    lift_events = [
-        (ts(c["createdAt"]), (c.get("author") or {}).get("login", ""),
-         c.get("body", "") or "")
-        for c in (pr_data.get("comments") or []) if can_lift(c)
-    ]
-
     # Fenetre 05-29..06-04 (#1958) : la RE-REVIEW APPROVED. Le reviewer qui
     # revient approuver apres sa demande de changements A dit que la reserve
     # est levee — le state GitHub natif porte plus de sens que le body (une
@@ -828,8 +822,6 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
         and (r.get("author") or {}).get("login", "") not in BOT_LOGINS
     ]
     approved_rereviews = [x for x in approved_rereviews if x[0] is not None]
-    lift_events += approved_rereviews
-    lift_events = [x for x in lift_events if x[0] is not None]
 
     def _lift_eligible(lift_author: str, nit_author: str,
                        lift_body: str = "") -> bool:
@@ -849,6 +841,14 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
     # conditionnel) dans un commentaire qui peut lever reste une levee pour
     # l'etat de review — c'est la reponse ecrite que B.0 exige. On garde
     # l'auteur pour la branche dedicated ci-dessous.
+    # #12319 : explicit_lifts est desormais LE regime des nits portes par un
+    # COMMENTAIRE ou une review COMMENTED aussi — l'ancienne branche elif
+    # consultait lift_events (tout commentaire can_lift), et la borne d'auteur
+    # #11145 est vacue sur ce depot : Hermès poste sous jsboige (self-review
+    # cap) et la lane pousse sous jsboige, donc nit_author == pr_author ==
+    # "jsboige" sur presque chaque PR — n'importe quel commentaire posterieur
+    # de la lane eteignait la reserve de son propre reviewer. B.0 : ce qui
+    # leve une remarque est une PHRASE, pas un commentaire de protocole.
     explicit_lifts = [
         (ts(c["createdAt"]), (c.get("author") or {}).get("login", ""),
          c.get("body", ""))
@@ -922,11 +922,23 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
             )
             if lifted:
                 continue
-        elif any(
-            when < t < cutoff and _lift_eligible(lift_author, login, lift_body)
-            for (t, lift_author, lift_body) in lift_events
-        ):
-            continue  # reponse de l'auteur du nit ou de l'auteur de la PR
+        # #12319 : meme regime pour un nit porte par un commentaire ou une
+        # review COMMENTED (dont chaque reserve Hermes, self-review cap).
+        # Avant : n'importe quel commentaire posterieur de la lane levait
+        # (nit_author == pr_author == "jsboige" flotte-wide rendait la borne
+        # #11145 vacue — un [READY-FOR-MERGE SELF attestation] qui ne nomme
+        # pas la reserve l'eteignait). Apres : une PHRASE de levee
+        # (LIFT_MARKER, borne d'auteur #11145 preservee via _lift_eligible)
+        # OU une re-review APPROVED de l'auteur de la reserve (etat natif
+        # GitHub, phrase de levee au sens fort).
+        elif (any(
+                  when < t < cutoff and _lift_eligible(lift_author, login, lift_body)
+                  for (t, lift_author, lift_body) in explicit_lifts
+              ) or any(
+                  when < t < cutoff and author == login
+                  for (t, author, _) in approved_rereviews
+              )):
+            continue
         # Un commit poussé après le nit ne le lève PAS à lui seul : sur #10761,
         # le « traitement » était un rebase à 19:41 qui n'adressait aucun des
         # deux nits de 11:07. Le push est reporté comme contexte, pas comme levée
