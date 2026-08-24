@@ -157,17 +157,33 @@ def batch_thermal_check(
     return thermal_check(max_temp, cool_sleep, verbose)
 
 
-def setup_amp() -> Tuple[bool, torch.amp.GradScaler]:
+def setup_amp(
+    device: Optional[torch.device | str] = None,
+) -> Tuple[bool, torch.amp.GradScaler]:
     """
     Configure AMP (Mixed Precision) pour reduire VRAM et chaleur GPU.
+
+    AMP est arme pour le **device demande**, pas pour la machine : un run
+    explicitement demande en CPU n'arme jamais AMP, meme si CUDA est visible
+    (#12662). Sans argument, comportement historique conserve (disponibilite
+    globale CUDA) pour les appelants qui resolvent leur device eux-memes.
+
+    Parameters
+    ----------
+    device : torch.device | str | None
+        Device du run. None = disponibilite globale CUDA (legacy).
 
     Returns
     -------
     tuple (use_amp, grad_scaler)
-        use_amp : bool - True si AMP est actif (GPU disponible)
+        use_amp : bool - True si AMP est actif (device CUDA et CUDA disponible)
         grad_scaler : torch.amp.GradScaler - Scaler pour le gradient scaling
     """
-    use_amp = torch.cuda.is_available()
+    if device is None:
+        use_amp = torch.cuda.is_available()
+    else:
+        dev = torch.device(device)
+        use_amp = dev.type == "cuda" and torch.cuda.is_available()
     grad_scaler = torch.amp.GradScaler('cuda', enabled=use_amp)
     return use_amp, grad_scaler
 
