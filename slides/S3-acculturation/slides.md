@@ -459,6 +459,8 @@ layout: default
 </div>
 
 
+<div class="dense-list">
+
 **Jeux vs Exploration**
 
 - Arbre de jeu
@@ -474,18 +476,14 @@ layout: default
   - Stochastiques, information imparfaite
   - Libratus (poker), Starcraft 2
 
-
-**Arbre Minimax**
-
-- Actions joueurs Max et Min + utilité terminale
-
 **Techniques**
 
+- Actions joueurs Max et Min + utilité terminale
 - Minimax, Alpha-Beta
 - Avec arrêt + évaluation heuristique
-- Techniques probabilistes
-- Expectiminimax
-- Méthodes de Monte-Carlo
+- Techniques probabilistes (Expectiminimax, Monte-Carlo)
+
+</div>
 
 <img src="./images/img_031.png" class="absolute top-[110px] right-[20px] w-[350px] max-h-[300px] object-contain" alt="Arbre minimax du morpion : niveaux MAX(X) et MIN(O), utilités -1/0/+1" />
 
@@ -537,10 +535,10 @@ layout: default
 - Structure des valeurs
   - Symétrie (rupture de)
 
-<div class="img-grid-2x2">
-<img src="./images/img_035.png" class="w-[150px] max-w-full max-h-[300px] object-contain" alt="Schéma de sémantique : énoncés reliés par « a pour conséquence » et « causent » aux aspects du monde réel" />
-<img src="./images/img_036.png" class="w-[150px] max-w-full max-h-[300px] object-contain" alt="Illustration Winograd : ordinateur échangeant phrases et conclusions avec un humain et un robot" />
-<img src="./images/img_037.png" class="w-[150px] max-w-full max-h-[300px] object-contain" alt="Grammaire de la logique propositionnelle : Énoncé, ÉnoncéAtomique, priorité des opérateurs ¬, ∧, ∨, ⇒, ⇔" />
+<div class="flex gap-2">
+<img src="./images/img_035.png" class="w-[120px] max-w-full max-h-[140px] object-contain" alt="Schéma de sémantique : énoncés reliés par « a pour conséquence » et « causent » aux aspects du monde réel" />
+<img src="./images/img_036.png" class="w-[120px] max-w-full max-h-[140px] object-contain" alt="Illustration Winograd : ordinateur échangeant phrases et conclusions avec un humain et un robot" />
+<img src="./images/img_037.png" class="w-[120px] max-w-full max-h-[140px] object-contain" alt="Grammaire de la logique propositionnelle : Énoncé, ÉnoncéAtomique, priorité des opérateurs ¬, ∧, ∨, ⇒, ⇔" />
 
 </div>
 
@@ -1437,6 +1435,7 @@ layout: two-cols
 
 <div class="img-grid-2x2 absolute top-[130px] right-[20px] w-[400px]">
 <img src="./images/img_094.png" class="max-h-[300px] max-w-full object-contain" alt="Opération de convolution : volume d'entrée 7x7x3 et noyau 3x3x3 glissant sur la matrice" />
+<img src="./images/img_095.png" class="max-h-[300px] max-w-full object-contain" alt="Architecture CNN historique : couches « Simple cells » (convolutions multiples) et « Complex cells » (sous-échantillonnage par pooling)" />
 <img src="./images/img_096.png" class="max-h-[300px] max-w-full object-contain" alt="Transfert learning : photo de voiture, extracteur de caractéristiques, caractéristiques de haut niveau, classifieur entraînable" />
 <img src="./images/img_097.png" class="max-h-[300px] max-w-full object-contain" alt="RNN déroulé : cellule A récurrente, entrées x0 à xt, sorties h0 à ht" />
 </div>

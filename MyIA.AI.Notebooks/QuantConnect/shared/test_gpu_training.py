@@ -174,12 +174,42 @@ def test_batch_thermal_check_delegates_on_multiple(monkeypatch):
 # --------------------------------------------------------------------------
 
 
-def test_setup_amp_returns_disabled_scaler_on_cpu():
-    # On CPU, use_amp must be False; GradScaler constructed disabled.
-    use_amp, scaler = gt.setup_amp()
+def test_setup_amp_returns_disabled_scaler_on_cpu(monkeypatch):
+    # AMP suit le device DEMANDE, pas la visibilite CUDA de la machine :
+    # CUDA visible + run CPU => jamais arme, deterministe sur machine GPU (#12662).
+    monkeypatch.setattr(gt.torch.cuda, "is_available", lambda: True)
+    use_amp, scaler = gt.setup_amp(torch.device("cpu"))
     assert use_amp is False
     assert scaler is not None
     assert scaler.is_enabled() is False
+
+
+def test_setup_amp_arms_for_cuda_device_when_cuda_available(monkeypatch):
+    monkeypatch.setattr(gt.torch.cuda, "is_available", lambda: True)
+    use_amp, scaler = gt.setup_amp(torch.device("cuda"))
+    assert use_amp is True
+    assert scaler.is_enabled() is True
+
+
+def test_setup_amp_never_arms_when_cuda_absent(monkeypatch):
+    # Device cuda demande mais CUDA reellement absent : desarme, pas de crash.
+    monkeypatch.setattr(gt.torch.cuda, "is_available", lambda: False)
+    use_amp, scaler = gt.setup_amp(torch.device("cuda"))
+    assert use_amp is False
+    assert scaler.is_enabled() is False
+
+
+def test_setup_amp_legacy_no_arg_follows_global_cuda(monkeypatch):
+    # Sans argument : comportement historique (disponibilite globale),
+    # les 12 scripts d'entrainement appellent setup_amp() a nu.
+    monkeypatch.setattr(gt.torch.cuda, "is_available", lambda: False)
+    use_amp, scaler = gt.setup_amp()
+    assert use_amp is False
+    assert scaler.is_enabled() is False
+    monkeypatch.setattr(gt.torch.cuda, "is_available", lambda: True)
+    use_amp, scaler = gt.setup_amp()
+    assert use_amp is True
+    assert scaler.is_enabled() is True
 
 
 # --------------------------------------------------------------------------
