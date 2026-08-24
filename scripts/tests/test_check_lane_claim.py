@@ -892,6 +892,90 @@ def test_stale_threshold_unparseable_not_treated_stale(capsys):
     assert rc == 2
 
 
+def test_stale_claims_null_when_detection_disabled(capsys):
+    # #12751 -- detection OFF (no --stale-threshold): `stale_claims` must be
+    # `null` (not measured), NOT `[]` (measured, nothing stale). Previously
+    # both rendered `[]`, so the fleet ran with detection off and a 415h
+    # claim still read as "alive".
+    p = payload(comment(
+        "[CLAIMED] lane myia-po-2025:CoursIA -- very old orphan",
+        "2026-08-01T00:00:00Z",
+    ))
+    rc = clc._run_check(p, "myia-po-2024:CoursIA", now=NOW)
+    captured = capsys.readouterr()
+    # The summary JSON (indent=2) is followed on stdout by a human-readable
+    # verdict line when the call is CLEAR/PATH_SCOPED (the post-summary
+    # `if others:` block). `raw_decode` parses only the first JSON value and
+    # ignores the trailing prose -- `json.loads` would fail on "Extra data".
+    out = json.JSONDecoder().raw_decode(captured.out)[0]
+    assert out["stale_claims"] is None
+    assert out["stale_detection"] == "disabled"
+    assert "STALE_DETECTION disabled" in captured.err
+
+
+def test_stale_claims_empty_when_detection_enabled_clean(capsys):
+    # Detection ON, no claim old enough -> `stale_claims` is `[]` (measured,
+    # clean) and `stale_detection` is "active" -- the disambiguated state vs
+    # `null`/`"disabled"` (not measured).
+    p = payload(comment(
+        "[CLAIMED] lane myia-po-2025:CoursIA -- fresh",
+        "2026-08-07T10:00:00Z",
+    ))
+    rc = clc._run_check(p, "myia-po-2024:CoursIA",
+                        stale_threshold=24.0, now=NOW)
+    captured = capsys.readouterr()
+    # The summary JSON (indent=2) is followed on stdout by a human-readable
+    # verdict line when the call is CLEAR/PATH_SCOPED (the post-summary
+    # `if others:` block). `raw_decode` parses only the first JSON value and
+    # ignores the trailing prose -- `json.loads` would fail on "Extra data".
+    out = json.JSONDecoder().raw_decode(captured.out)[0]
+    assert out["stale_claims"] == []
+    assert out["stale_detection"] == "active"
+
+
+def test_default_48_flags_17day_claim_stale(capsys):
+    # #12751 acceptance: at the default 48h threshold, a 17-day-old OTHER-lane
+    # claim is flagged STALE and removed from blocking_lanes (the zombie-lock
+    # fix -- a 415h claim was read as "alive" because `stale_claims` was `[]`).
+    p = payload(comment(
+        "[CLAIMED] lane myia-po-2025:CoursIA -- 17 days old",
+        "2026-07-21T00:00:00Z",   # ~396h before NOW
+    ))
+    rc = clc._run_check(p, "myia-po-2024:CoursIA",
+                        stale_threshold=48.0, now=NOW)
+    captured = capsys.readouterr()
+    # The summary JSON (indent=2) is followed on stdout by a human-readable
+    # verdict line when the call is CLEAR/PATH_SCOPED (the post-summary
+    # `if others:` block). `raw_decode` parses only the first JSON value and
+    # ignores the trailing prose -- `json.loads` would fail on "Extra data".
+    out = json.JSONDecoder().raw_decode(captured.out)[0]
+    assert out["stale_claims"] == ["myia-po-2025:CoursIA"]
+    assert out["blocking_lanes"] == []
+    assert out["stale_detection"] == "active"
+    assert "STALE_CLAIM myia-po-2025:CoursIA" in captured.err
+    assert rc == 0
+
+
+def test_default_48_does_not_flag_2h_claim(capsys):
+    # #12751 acceptance: a fresh (2h) claim is NOT stale at the default 48h
+    # (positive polarity -- only genuinely-old claims age out).
+    p = payload(comment(
+        "[CLAIMED] lane myia-po-2025:CoursIA -- fresh 2h",
+        "2026-08-07T10:00:00Z",   # 2h before NOW
+    ))
+    clc._run_check(p, "myia-po-2024:CoursIA",
+                   stale_threshold=48.0, now=NOW)
+    captured = capsys.readouterr()
+    # The summary JSON (indent=2) is followed on stdout by a human-readable
+    # verdict line when the call is CLEAR/PATH_SCOPED (the post-summary
+    # `if others:` block). `raw_decode` parses only the first JSON value and
+    # ignores the trailing prose -- `json.loads` would fail on "Extra data".
+    out = json.JSONDecoder().raw_decode(captured.out)[0]
+    assert out["stale_claims"] == []
+    assert out["stale_detection"] == "active"
+    assert "STALE_CLAIM" not in captured.err
+
+
 # --- --paths mode (#9959) ----------------------------------------------------
 #
 # Replays the R3D 2026-08-08 incident: two lanes of the SAME machine collide
