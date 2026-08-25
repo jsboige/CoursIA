@@ -346,14 +346,13 @@ non porté ici : `alexanderPolynomial` est une fonction du diagramme
 désigné, comme `mutateWindow` au §1. -/
 noncomputable def alexanderPolynomialAux (d : KnotDiagram) : AlexanderPoly :=
   let arcs := arcPartition d
-  let n := d.crossings.length
-  if n = 0 then 1
-  else if arcs.length = n then
-    let M : Matrix (Fin n) (Fin n) (Polynomial ℤ) := Matrix.of fun i j =>
-      alexanderEntry ((d.crossings[i.1]?).getD ⟨1, 1, 1, 1⟩) ((arcs[j.1]?).getD [])
-    (M.submatrix (fun i : Fin (n - 1) => Fin.mk (i.1 + 1) (by omega))
-                 (fun j : Fin (n - 1) => Fin.mk j.1 (by omega))).det
-  else 0
+  match d.crossings, arcs with
+  | [], _ => 1
+  | _ :: rest, arcs' =>
+      if arcs'.length = rest.length + 1 then
+        (Matrix.of fun (i j : Fin rest.length) =>
+          alexanderEntry ((rest[i.1]?).getD ⟨1, 1, 1, 1⟩) ((arcs'[j.1]?).getD [])).det
+      else 0
 
 /-- Polynôme d'Alexander du nœud, lu sur son diagramme désigné.
 Référence : Alexander (1928), Topological invariants of knots and links.
@@ -375,21 +374,39 @@ que les contrôles de `AreMutants`, §1) :
 - NÉGATIF (`alexander_unknot`, prouvé) : le nœud trivial, sans croisement,
   donne la valeur classique Δ = 1 — et toute valeur non triviale d'un nœud
   à croisements le distingue du nœud trivial.
-- POSITIF (trèfle, NON porté — sous-grain suivant) : calcul à la main sur
-  le code PD de `trefoilDiagram` (arcs {4,5}, {1,6}, {2,3} ; mineur
-  désigné [[−1, 1−t], [t, −1]] après les conventions ci-dessus), le
-  déterminant vaut exactement t² − t + 1, la valeur classique. La preuve
-  formelle exige l'évaluation du déterminant 2×2 de Mathlib à travers les
-  jonctions `Fin`/`submatrix` — tactiques à borner dans une tranche
-  ultérieure. NOTE : le contrôle est calculé et vérifié à la main ici,
-  consigné pour ne pas disparaître.
+- POSITIF (`alexander_trefoil`, prouvé) : le trèfle retrouve exactement la
+  valeur classique Δ(t) = t² − t + 1 sous la normalisation désignée
+  (mineur [[−1, 1−t], [t, −1]]).
 -/
 
 /-- Contrôle négatif : le nœud trivial a un polynôme d'Alexander trivial
 (matrice vide, déterminant 1). -/
 theorem alexander_unknot : alexanderPolynomial unknot = 1 := by
   simp (config := { decide := true })
-    [alexanderPolynomial, alexanderPolynomialAux, unknot]
+    [alexanderPolynomial, alexanderPolynomialAux, unknot, unknotDiagram]
+
+/-- Déterminant 2×2 générique (cas particulier de l'expansion de Laplace :
+Mathlib v4.32.1 ne fournit plus `Matrix.det_two`). -/
+theorem det_two_aux (M : Matrix (Fin 2) (Fin 2) (Polynomial ℤ)) :
+    M.det = M 0 0 * M 1 1 - M 0 1 * M 1 0 := by
+  rw [Matrix.det_succ_column_zero]
+  simp [Matrix.det_unique, Fin.sum_univ_two]
+  ring
+
+/-- Contrôle positif : le trèfle retrouve la valeur classique t² − t + 1
+sous la normalisation désignée (mineur sans première ligne ni dernière
+colonne). -/
+theorem alexander_trefoil :
+    alexanderPolynomial trefoil = Polynomial.X ^ 2 - Polynomial.X + 1 := by
+  have hp : arcPartition trefoilDiagram = [[4, 5], [1, 6], [2, 3]] := by
+    decide
+  simp only [alexanderPolynomial, alexanderPolynomialAux, trefoil, hp]
+  simp only [trefoilDiagram]
+  simp (config := { decide := true })
+  rw [det_two_aux]
+  simp only [Matrix.of_apply]
+  simp (config := { decide := true }) [alexanderEntry]
+  ring
 
 theorem conway_trivial_alexander :
     alexanderPolynomial conwayKnot = 1 := by

@@ -352,14 +352,13 @@ here: `alexanderPolynomial` is a function of the designated diagram, like
 `mutateWindow` in §1. -/
 noncomputable def alexanderPolynomialAux (d : KnotDiagram) : AlexanderPoly :=
   let arcs := arcPartition d
-  let n := d.crossings.length
-  if n = 0 then 1
-  else if arcs.length = n then
-    let M : Matrix (Fin n) (Fin n) (Polynomial ℤ) := Matrix.of fun i j =>
-      alexanderEntry ((d.crossings[i.1]?).getD ⟨1, 1, 1, 1⟩) ((arcs[j.1]?).getD [])
-    (M.submatrix (fun i : Fin (n - 1) => Fin.mk (i.1 + 1) (by omega))
-                 (fun j : Fin (n - 1) => Fin.mk j.1 (by omega))).det
-  else 0
+  match d.crossings, arcs with
+  | [], _ => 1
+  | _ :: rest, arcs' =>
+      if arcs'.length = rest.length + 1 then
+        (Matrix.of fun (i j : Fin rest.length) =>
+          alexanderEntry ((rest[i.1]?).getD ⟨1, 1, 1, 1⟩) ((arcs'[j.1]?).getD [])).det
+      else 0
 
 /-- Alexander polynomial of the knot, read off its designated diagram.
 Reference: Alexander (1928), Topological invariants of knots and links.
@@ -382,21 +381,39 @@ discipline as the `AreMutants` controls, §1):
 - NEGATIVE (`alexander_unknot`, proved): the unknot, being crossingless,
   yields the classical Δ = 1 — and any nontrivial value at a crossed knot
   distinguishes it from the unknot.
-- POSITIVE (trefoil, NOT carried — next sub-grain): hand computation on
-  the PD code of `trefoilDiagram` (arcs {4,5}, {1,6}, {2,3}; designated
-  minor [[−1, 1−t], [t, −1]] under the conventions above), the
-  determinant equals exactly t² − t + 1, the classical value. The formal
-  proof requires evaluating Mathlib's 2×2 determinant through the
-  `Fin`/`submatrix` junctions — tactics to be bounded in a later tranche.
-  NOTE: the control is computed and hand-verified here, recorded so it
-  does not disappear.
+- POSITIVE (`alexander_trefoil`, proved): the trefoil recovers exactly
+  the classical value Δ(t) = t² − t + 1 under the designated
+  normalization (minor [[−1, 1−t], [t, −1]]).
 -/
 
 /-- Negative control: the unknot has trivial Alexander polynomial
 (empty matrix, determinant 1). -/
 theorem alexander_unknot : alexanderPolynomial unknot = 1 := by
   simp (config := { decide := true })
-    [alexanderPolynomial, alexanderPolynomialAux, unknot]
+    [alexanderPolynomial, alexanderPolynomialAux, unknot, unknotDiagram]
+
+/-- Generic 2×2 determinant (special case of the Laplace expansion:
+Mathlib v4.32.1 no longer provides `Matrix.det_two`). -/
+theorem det_two_aux (M : Matrix (Fin 2) (Fin 2) (Polynomial ℤ)) :
+    M.det = M 0 0 * M 1 1 - M 0 1 * M 1 0 := by
+  rw [Matrix.det_succ_column_zero]
+  simp [Matrix.det_unique, Fin.sum_univ_two]
+  ring
+
+/-- Positive control: the trefoil recovers the classical value t² − t + 1
+under the designated normalization (minor without first row nor last
+column). -/
+theorem alexander_trefoil :
+    alexanderPolynomial trefoil = Polynomial.X ^ 2 - Polynomial.X + 1 := by
+  have hp : arcPartition trefoilDiagram = [[4, 5], [1, 6], [2, 3]] := by
+    decide
+  simp only [alexanderPolynomial, alexanderPolynomialAux, trefoil, hp]
+  simp only [trefoilDiagram]
+  simp (config := { decide := true })
+  rw [det_two_aux]
+  simp only [Matrix.of_apply]
+  simp (config := { decide := true }) [alexanderEntry]
+  ring
 
 theorem conway_trivial_alexander :
     alexanderPolynomial conwayKnot = 1 := by
