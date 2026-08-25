@@ -1,0 +1,393 @@
+#!/usr/bin/env python3
+"""Enforce the isolation policy for future self-hosted Actions jobs (#12704).
+
+The repository is public. A self-hosted job that can receive a fork payload can
+execute untrusted code next to the cluster's credentials. This scanner therefore
+fails closed: every self-hosted job must belong to an explicitly allowed
+workflow, use the exact dedicated label set, and avoid runner groups (unavailable
+for this personal-account repository). Every pull_request job must also carry
+the exact same-repository guard. Dynamic ``runs-on`` expressions are rejected
+because their target cannot be proved statically.
+
+Exit codes:
+  0  policy satisfied (including the explicit baseline of zero self-hosted jobs)
+  1  policy violation
+  2  broken instrument or unreadable workflow
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import re
+import sys
+from dataclasses import asdict, dataclass
+from pathlib import Path
+from typing import Any
+
+EXIT_OK = 0
+EXIT_VIOLATION = 1
+EXIT_BROKEN = 2
+
+REQUIRED_LABELS = {
+    "self-hosted",
+    "coursia-ephemeral",
+    "coursia-fast-guards",
+}
+SELF_HOSTED_WORKFLOW_ALLOWLIST = {"pr-gate-stale-sweep.yml"}
+GITHUB_HOSTED_LABELS = {
+    "ubuntu-latest",
+    "ubuntu-24.04",
+    "ubuntu-22.04",
+    "ubuntu-20.04",
+    "ubuntu-slim",
+    "windows-latest",
+    "windows-2025",
+    "windows-2022",
+    "windows-2019",
+    "macos-latest",
+    "macos-26",
+    "macos-15",
+    "macos-14",
+    "macos-13",
+}
+LOCAL_REUSABLE_PREFIX = "./.github/workflows/"
+SAME_REPO_REUSABLE_PATTERN = re.compile(
+    r"^jsboige/CoursIA/\.github/workflows/[^/@]+@main$"
+)
+SAME_REPO_GUARD = (
+    "github.event.pull_request.head.repo.full_name == github.repository"
+)
+DEFAULT_WORKFLOWS_DIR = Path(__file__).resolve().parents[2] / ".github" / "workflows"
+
+
+@dataclass(frozen=True)
+class Violation:
+    workflow: str
+    job: str
+    code: str
+    message: str
+
+
+@dataclass(frozen=True)
+class ScanResult:
+    workflows_scanned: int
+    jobs_scanned: int
+    self_hosted_jobs: int
+    violations: list[Violation]
+    broken: list[str]
+
+
+def _load_yaml():
+    try:
+        import yaml
+    except ImportError:
+        return None
+    return yaml
+
+
+def _parse_workflow(text: str, yaml: Any) -> dict[str, Any] | None:
+    """Parse Actions YAML while preserving the top-level ``on`` key."""
+    lines: list[str] = []
+    for line in text.splitlines():
+        if line.startswith("on:") and (
+            len(line) == 3 or line[3] in (" ", "[", "\t")
+        ):
+            lines.append('"on":' + line[3:])
+        else:
+            lines.append(line)
+    try:
+        data = yaml.safe_load("\n".join(lines))
+    except yaml.YAMLError:
+        return None
+    return data if isinstance(data, dict) else None
+
+
+def _triggers(data: dict[str, Any]) -> set[str]:
+    value = data.get("on", data.get(True))
+    if isinstance(value, dict):
+        return {str(item) for item in value}
+    if isinstance(value, list):
+        return {str(item) for item in value}
+    if isinstance(value, str):
+        return {value}
+    return set()
+
+
+def _contains_expression(value: Any) -> bool:
+    if isinstance(value, str):
+        return "${{" in value
+    if isinstance(value, list):
+        return any(_contains_expression(item) for item in value)
+    if isinstance(value, dict):
+        return any(
+            _contains_expression(key) or _contains_expression(item)
+            for key, item in value.items()
+        )
+    return False
+
+
+def _is_github_hosted_label(label: str) -> bool:
+    return label.lower() in GITHUB_HOSTED_LABELS
+
+
+def _runner_selection(
+    runs_on: Any,
+) -> tuple[bool, str | None, set[str], str | None]:
+    """Return (is_self_hosted, group, labels, error) for a static selection.
+
+    Any explicit runner group is self-hosted. A scalar/list label is considered
+    GitHub-hosted only when every value names a documented hosted-image family;
+    custom labels route to self-hosted runners even when the implicit
+    ``self-hosted`` label is omitted from the workflow.
+    """
+    if isinstance(runs_on, str):
+        labels = {runs_on.lower()}
+        return not _is_github_hosted_label(runs_on), None, labels, None
+    if isinstance(runs_on, list):
+        if not runs_on or not all(isinstance(item, str) for item in runs_on):
+            return False, None, set(), "runs-on list must contain labels"
+        labels = {item.lower() for item in runs_on}
+        is_self_hosted = any(not _is_github_hosted_label(item) for item in labels)
+        return is_self_hosted, None, labels, None
+    if isinstance(runs_on, dict):
+        group = runs_on.get("group")
+        raw_labels = runs_on.get("labels", [])
+        if group is None and "labels" not in runs_on:
+            return False, None, set(), "runs-on mapping needs group or labels"
+        if group is not None and not isinstance(group, str):
+            return False, None, set(), "runner group must be a string"
+        if isinstance(raw_labels, str):
+            labels = {raw_labels.lower()}
+        elif isinstance(raw_labels, list) and raw_labels and all(
+            isinstance(item, str) for item in raw_labels
+        ):
+            labels = {item.lower() for item in raw_labels}
+        elif raw_labels == [] and group is not None:
+            labels = set()
+        else:
+            return False, None, set(), "runner labels must be a string or list"
+        is_self_hosted = group is not None or any(
+            not _is_github_hosted_label(item) for item in labels
+        )
+        return is_self_hosted, group, labels, None
+    return False, None, set(), "runs-on has an unsupported type"
+
+
+def _normalise_condition(value: Any) -> str:
+    if not isinstance(value, str):
+        return ""
+    condition = value.strip()
+    if condition.startswith("${{") and condition.endswith("}}"):
+        condition = condition[3:-2].strip()
+    return " ".join(condition.split())
+
+
+def scan_workflows(workflows_dir: Path = DEFAULT_WORKFLOWS_DIR) -> ScanResult:
+    yaml = _load_yaml()
+    if yaml is None:
+        return ScanResult(0, 0, 0, [], ["PyYAML is unavailable"])
+
+    paths = sorted([*workflows_dir.glob("*.yml"), *workflows_dir.glob("*.yaml")])
+    if not paths:
+        return ScanResult(0, 0, 0, [], [f"no workflows in {workflows_dir}"])
+
+    violations: list[Violation] = []
+    broken: list[str] = []
+    jobs_scanned = 0
+    self_hosted_jobs = 0
+
+    for path in paths:
+        try:
+            text = path.read_text(encoding="utf-8")
+        except OSError as exc:
+            broken.append(f"{path.name}: cannot read: {exc}")
+            continue
+        data = _parse_workflow(text, yaml)
+        if data is None:
+            broken.append(f"{path.name}: invalid workflow YAML")
+            continue
+
+        if "on" not in data and True not in data:
+            broken.append(f"{path.name}: missing on trigger")
+            continue
+        triggers = _triggers(data)
+        if not triggers:
+            broken.append(f"{path.name}: on trigger is empty or unsupported")
+            continue
+
+        if "jobs" not in data:
+            broken.append(f"{path.name}: missing jobs")
+            continue
+        jobs = data["jobs"]
+        if not isinstance(jobs, dict) or not jobs:
+            broken.append(f"{path.name}: jobs is not a non-empty mapping")
+            continue
+
+        for job_name, job in jobs.items():
+            if not isinstance(job, dict):
+                broken.append(f"{path.name}:{job_name}: job is not a mapping")
+                continue
+            jobs_scanned += 1
+
+            if "uses" in job:
+                reusable = str(job["uses"])
+                is_local = reusable.startswith(LOCAL_REUSABLE_PREFIX)
+                is_auditable_same_repo = bool(
+                    SAME_REPO_REUSABLE_PATTERN.fullmatch(reusable)
+                )
+                if not is_local and not is_auditable_same_repo:
+                    violations.append(Violation(
+                        path.name,
+                        str(job_name),
+                        "REMOTE_REUSABLE_WORKFLOW",
+                        "reusable workflow must be local or pin jsboige/CoursIA "
+                        "to main",
+                    ))
+                continue
+
+            runs_on = job.get("runs-on")
+            if runs_on is None:
+                broken.append(f"{path.name}:{job_name}: missing runs-on")
+                continue
+
+            if _contains_expression(runs_on):
+                violations.append(Violation(
+                    path.name,
+                    str(job_name),
+                    "DYNAMIC_RUNS_ON",
+                    "runs-on contains an expression and cannot be audited statically",
+                ))
+                continue
+
+            is_self_hosted, group, labels, selection_error = _runner_selection(runs_on)
+            if selection_error is not None:
+                broken.append(f"{path.name}:{job_name}: {selection_error}")
+                continue
+            if not is_self_hosted:
+                continue
+            self_hosted_jobs += 1
+
+            if "pull_request_target" in triggers:
+                violations.append(Violation(
+                    path.name,
+                    str(job_name),
+                    "PULL_REQUEST_TARGET",
+                    "pull_request_target must never reach a self-hosted runner",
+                ))
+            if "workflow_run" in triggers:
+                violations.append(Violation(
+                    path.name,
+                    str(job_name),
+                    "WORKFLOW_RUN",
+                    "workflow_run artifacts must never reach a self-hosted runner",
+                ))
+            if "workflow_call" in triggers:
+                violations.append(Violation(
+                    path.name,
+                    str(job_name),
+                    "REUSABLE_SELF_HOSTED",
+                    "self-hosted jobs must not hide inside reusable workflows",
+                ))
+
+            if path.name not in SELF_HOSTED_WORKFLOW_ALLOWLIST:
+                violations.append(Violation(
+                    path.name,
+                    str(job_name),
+                    "WORKFLOW_NOT_ALLOWED",
+                    "self-hosted runners are restricted to explicitly allowed workflows",
+                ))
+
+            if group is not None:
+                violations.append(Violation(
+                    path.name,
+                    str(job_name),
+                    "RUNNER_GROUP_UNAVAILABLE",
+                    "runner groups are unavailable for this personal-account repository",
+                ))
+
+            missing = sorted(REQUIRED_LABELS - labels)
+            unexpected = sorted(labels - REQUIRED_LABELS)
+            if missing or unexpected:
+                detail = []
+                if missing:
+                    detail.append(f"missing: {', '.join(missing)}")
+                if unexpected:
+                    detail.append(f"unexpected: {', '.join(unexpected)}")
+                violations.append(Violation(
+                    path.name,
+                    str(job_name),
+                    "RUNNER_LABELS",
+                    "dedicated labels must match exactly (" + "; ".join(detail) + ")",
+                ))
+
+            if "pull_request" in triggers:
+                condition = _normalise_condition(job.get("if"))
+                if condition != SAME_REPO_GUARD:
+                    violations.append(Violation(
+                        path.name,
+                        str(job_name),
+                        "SAME_REPO_GUARD",
+                        "pull_request self-hosted job must use the exact same-repo job guard",
+                    ))
+
+    return ScanResult(len(paths), jobs_scanned, self_hosted_jobs, violations, broken)
+
+
+def _payload(result: ScanResult) -> dict[str, Any]:
+    return {
+        "ok": not result.violations and not result.broken,
+        "workflows_scanned": result.workflows_scanned,
+        "jobs_scanned": result.jobs_scanned,
+        "self_hosted_jobs": result.self_hosted_jobs,
+        "violations": [asdict(item) for item in result.violations],
+        "broken": result.broken,
+    }
+
+
+def _print_text(result: ScanResult) -> None:
+    print(
+        "[self-hosted-policy] "
+        f"workflows={result.workflows_scanned} jobs={result.jobs_scanned} "
+        f"self_hosted={result.self_hosted_jobs}"
+    )
+    for item in result.violations:
+        print(
+            f"  VIOLATION {item.code}: {item.workflow}:{item.job}: "
+            f"{item.message}"
+        )
+    for item in result.broken:
+        print(f"  BROKEN: {item}")
+    if not result.violations and not result.broken:
+        if result.self_hosted_jobs == 0:
+            print("[self-hosted-policy] OK -- explicit baseline: 0 self-hosted jobs.")
+        else:
+            print("[self-hosted-policy] OK -- all self-hosted jobs satisfy isolation policy.")
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--check", action="store_true", help="print a text verdict")
+    parser.add_argument("--json", action="store_true", help="print a JSON verdict")
+    parser.add_argument(
+        "--workflows-dir",
+        type=Path,
+        default=DEFAULT_WORKFLOWS_DIR,
+        help="workflow directory (used by tests and offline audits)",
+    )
+    args = parser.parse_args(argv)
+
+    result = scan_workflows(args.workflows_dir)
+    if args.json:
+        print(json.dumps(_payload(result), indent=2, ensure_ascii=False))
+    else:
+        _print_text(result)
+
+    if result.broken:
+        return EXIT_BROKEN
+    if result.violations:
+        return EXIT_VIOLATION
+    return EXIT_OK
+
+
+if __name__ == "__main__":
+    sys.exit(main())
