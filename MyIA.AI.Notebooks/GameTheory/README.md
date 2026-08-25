@@ -67,7 +67,7 @@ La Phase 2 enrichit le modèle avec le temps et l'incertitude. Les notebooks 7-9
 
 ### Phase 3 : Frontières — algorithmes, coopération, mécanismes (Notebooks 13-17 + sous-série SocialChoice + side tracks b/c, ~10h30)
 
-La Phase 3 couvre les sujets avancés et les applications. Le notebook 13 (CFR) introduit Counterfactual Regret Minimization et ses variantes (MCCFR, Deep CFR), au cœur du poker AI moderne. Le notebook 14 (Differential Games) explore les jeux continus (Stackelberg, boucle ouverte/fermée). Les notebooks 15-15b-15c couvrent la théorie coopérative : valeur de Shapley (avec axiomes formels en Lean), Core, Bondareva-Shapley. Le notebook 16 et la sous-série [SocialChoice/](SocialChoice/) constituent le bloc le plus riche : design de mécanismes (révélation, VCG), choix social (Arrow, Sen en Lean), et encodage SAT/Z3 des impossibilités. Le notebook 17 (Multi-Agent RL) relie la théorie des jeux à l'apprentissage par renforcement (NFSP, PSRO, AlphaZero). Les trois figures suivantes échantillonnent cette phase : l'apprentissage d'un équilibre en information imparfaite (CFR), la stabilité coopérative (Core et Shapley), et la convergence d'agents en auto-apprentissage.
+La Phase 3 couvre les sujets avancés et les applications. Le notebook 13 (CFR) introduit Counterfactual Regret Minimization et ses variantes (MCCFR, Deep CFR), au cœur du poker AI moderne. Le notebook 14 (Differential Games) explore les jeux continus (Stackelberg, boucle ouverte/fermée). Les notebooks 15-15b-15c couvrent la théorie coopérative : valeur de Shapley (avec axiomes formels en Lean), Core, Bondareva-Shapley. Le notebook 16 et la sous-série [SocialChoice/](SocialChoice/) constituent le bloc le plus riche : design de mécanismes (révélation, VCG), choix social (Arrow, Sen en Lean), et encodage SAT/Z3 des impossibilités. Le notebook 17 (Multi-Agent RL) relie la théorie des jeux à l'apprentissage par renforcement (NFSP, PSRO, AlphaZero). Le companion **17b** (Asymmetric-Information, EPIC #12844) traite l'information asymétrique dans sa forme actuarielle : les quatre modèles fondateurs d'Akerlof (point fixe de participation, marché des citrons), Spence (signal coûteux), Rothschild-Stiglitz (screening assurantiel) et Wilson/Miyazaki (règle anticipative bornée). Les trois figures suivantes échantillonnent cette phase : l'apprentissage d'un équilibre en information imparfaite (CFR), la stabilité coopérative (Core et Shapley), et la convergence d'agents en auto-apprentissage.
 
 ![CFR sur le poker de Kuhn : à gauche la valeur du jeu converge vers le Nash −0,0556 en 10 000 itérations, à droite les probabilités de mise par carte (J/Q/K) rejoignent le Nash théorique (étoiles).](assets/readme/gt13-cfr.png)
 
@@ -158,6 +158,17 @@ Si vous préférez les cas d'usage aux fondements théoriques :
 3. **13** (CFR) : poker AI, regret minimization
 4. **16** (MechanismDesign) : enchères VCG, allocation de ressources, et le piège de la non-monotonie du revenu (Conitzer-Sandholm)
 5. **SC-03** (Voting) : Condorcet, Borda, modèles électoraux
+
+#### Parcours information asymétrique et assurance (~4h30)
+
+Si vous venez d'un métier de l'assurance, de la banque ou de la régulation et cherchez comment la théorie des jeux modélise le fait qu'un agent en sait plus que l'autre — le client sur son risque, l'emprunteur sur sa solvabilité, le vendeur sur sa qualité :
+
+1. **11** (BayesianGames) : types privés, croyances, équilibre bayésien — la fondation de l'information incomplète (~55 min)
+2. **12** (ReputationGames) : signaling, cheap talk — le geste du signal coûteux et de l'engagement (~50 min)
+3. **16** (MechanismDesign) : principe de révélation, VCG — la conception d'un contrat sous contrainte d'incitation (~65 min)
+4. **17b** (Asymmetric-Information) : les quatre modèles fondateurs — **Akerlof** (contre-sélection, marché des citrons), **Spence** (signal coûteux), **Rothschild-Stiglitz** (screening assurantiel), **Wilson/Miyazaki** (règle anticipative bornée) (~1h30)
+
+Ce parcours se lit sans imposer les phases 1-3 complètes : le notebook 11 introduit seul la notion de type privé, et 17b s'appuie principalement sur cette intuition bayésienne. À l'issue, vous saurez reconnaître et classifier un problème de tarification en information asymétrique — et pourquoi un marché peut s'effondrer en « marché des citrons ».
 
 #### Parcours informatique théorique (~5h)
 
@@ -273,6 +284,7 @@ flowchart TD
 | SC-04 (C#) | [SocialChoice/04-Computational-Aggregation-SAT-Z3-Csharp](SocialChoice/04-Computational-Aggregation-SAT-Z3-Csharp.ipynb) | .NET (C#) | Twin C# du SC-04 : **solveur SAT DPLL from-scratch** (BCL .NET 9, 0 NuGet), Arrow encodé en CNF → preuve UNSAT (See #4956) | 60 min |
 | 17 | [GameTheory-17-MultiAgent-RL](GameTheory-17-MultiAgent-RL.ipynb) | Python | NFSP, PSRO, AlphaZero intro | 55 min |
 | 17 (C#) | [GameTheory-17-MultiAgent-RL-Csharp](GameTheory-17-MultiAgent-RL-Csharp.ipynb) | .NET (C#) | Twin C# du 17 : **Self-Play naif (cycle R-P-S)**, **Fictitious Play** (BR vs frequence empirique, convergence Robinson 1951), **exploitabilite**, **NFSP table-based** (Q-values + memoire, caveat convergence G.1), **PSRO** (population + meta-Nash) from-scratch, BCL .NET 9, **courbes d'exploitabilite SVG inline** (Self-Play naif oscille, FP -> 0 Robinson 1951, NFSP chute puis plafonne) via `SvgChartHelper.Overlay` zero-CDN [#6855] (See #4956) | 50 min |
+| 17b | [GameTheory-17b-Asymmetric-Information](GameTheory-17b-Asymmetric-Information.ipynb) | Python | Information asymétrique : **Akerlof** (point fixe de participation à prix unique, marché des citrons), **Spence** (signal coûteux), **Rothschild-Stiglitz** (screening assurantiel), **Wilson/Miyazaki** (règle anticipative bornée) — 9 exercices, EPIC #12844 | 1h30 |
 
 ### Partie 4 : Strate 7 — extensions du vocabulaire stratégique (notebooks 18+)
 
@@ -290,10 +302,11 @@ La vague « strate 7 » étend la série au-delà du fil historique : chaque not
 | 25 | [GameTheory-25-Loi-II-Translateur-Life](GameTheory-25-Loi-II-Translateur-Life.ipynb) | Python | Loi II : synthèse d'un translateur Life et certificat d'impossibilité lorsque la traduction échoue | 45 min |
 | 26 | [GameTheory-26-Ensembles-Limites-Poincare-Bendixson](GameTheory-26-Ensembles-Limites-Poincare-Bendixson.ipynb) | Python | Ensembles limites : Poincaré-Bendixson en dimension 2 — les trois issues (point fixe, orbite périodique, cycle hétéroclinique) exécutées sur Prisonnier / Matching Pennies / RPS et classées par un détecteur mécanique (module compagnon + 16 tests), le mur $w = l$ de la famille RPS vérifié par linéarisation $(l-w)/6$ et relié aux chambres/murs du 3b, l'échec du théorème au-delà du plan comme conclusion (Czechowski-Piliouras 2021) | 45 min |
 | 27 | [GameTheory-27-Munkres-Assignment](GameTheory-27-Munkres-Assignment.ipynb) | Python | Kuhn-Munkres en hommage à James Munkres († 2026) : l'affectation optimale from scratch en arithmétique entière exacte (arbre hongrois BFS, resserrement dual), confrontée à SciPy (50/50 instances identiques) et certifiée par le triple test LP (faisabilité duale, gap nul, arêtes d'égalité), le pont Shapley-Shubik (cœur = polytope dual, 254 coalitions testées, 0 violations), et le contraste Gale-Shapley (stabilité qui se paie +3 sur instance divergente seedée) | 45 min |
+| 28 | [GameTheory-28-Humour-Banc](GameTheory-28-Humour-Banc.ipynb) | Python | Banc de calibration : humour, forme partagée vs stimulus — matrice de confusion du partage de forme (2 axes : rire, ...) | 45 min |
 
 Les six extensions `3a` à `3f` figurent dans la Partie 1, au voisinage du notebook GT-3 qu'elles prolongent. Elles couvrent respectivement les chemins de swaps, les chambres et murs, le joueur LLM, le plan de déformation, les méta-actions tarifées et le parcours complet.
 
-**Durée totale des tableaux** : ~62h45 en parcourant chaque ligne une fois, jumeaux C# et sous-série SocialChoice compris. Un parcours Python sans jumeaux C# ni side tracks Lean est sensiblement plus court.
+**Durée totale des tableaux** : ~65h en parcourant chaque ligne une fois, jumeaux C# et sous-série SocialChoice compris. Un parcours Python sans jumeaux C# ni side tracks Lean est sensiblement plus court.
 
 ## Concepts clés
 
@@ -311,6 +324,7 @@ Les six extensions `3a` à `3f` figurent dans la Partie 1, au voisinage du noteb
 | **Processus de Moran** | Dynamique stochastique d'évolution en population FINIE (Axelrod) — fixation d'une stratégie par dérive génétique, distincte du replicator déterministe mean-field |
 | **Stochastic finite-population fixation** | À population finie, le bruit d'échantillonnage peut fixer des stratégies sous-optimales (Defector 28 % sur 25 graines Moran, alors qu'il est dominé en round-robin) |
 | **Méta-action tarifée (strate 7)** | Réécrire ses propres préférences déclarées au prix d'échelons de rang — l'action de changer les règles a un coût, un seuil de migration et ses propres équilibres (GT-3c) |
+| **Information asymétrique** | Le preneur d'assurance connaît son risque mieux que l'assureur (type privé) — les 4 modèles fondateurs en GT-17b : Akerlof (contre-sélection, citrons), Spence (signal coûteux), Rothschild-Stiglitz (screening assurantiel), Wilson/Miyazaki (règle anticipative) |
 
 ## Ce que chaque notebook apporte
 
@@ -348,6 +362,7 @@ Chaque notebook introduit un concept ou un modèle spécifique. Le tableau ci-de
 | 16 | MechanismDesign | Principe de révélation, VCG (incl. non-monotonie du revenu), matching, enchères |
 | 16b | Automated-Mechanism-Design | Synthèse d'un mécanisme sous contraintes et vérification de ses propriétés |
 | 17 | MultiAgent-RL | NFSP, PSRO, AlphaZero intro, lien vers RL |
+| 17b | Asymmetric-Information | Les 4 modèles fondateurs de l'information asymétrique : Akerlof (marché des citrons), Spence (signal coûteux), Rothschild-Stiglitz (screening assurantiel), Wilson/Miyazaki (règle anticipative) |
 | 18 | Open-Games-et-Lentilles | Représentation locale et rétroaction sur le contexte global |
 | 19 | Abstraction-a-Dette | Dette d'abstraction rendue mesurable plutôt que laissée implicite |
 | 20 | Commitment-Stackelberg | La performativité sans mystère : l'engagement contraignant transforme la meilleure réponse d'autrui (seuil de crédibilité s\* mesuré) |
@@ -358,6 +373,7 @@ Chaque notebook introduit un concept ou un modèle spécifique. Le tableau ci-de
 | 25 | Loi-II-Translateur-Life | Translateur Life synthétisé et impossibilité certifiée lorsque la traduction échoue |
 | 26 | Ensembles-Limites-Poincare-Bendixson | Points fixes, orbites et cycles hétérocliniques classés mécaniquement en dimension 2 |
 | 27 | Munkres-Assignment | Affectation Kuhn-Munkres certifiée par faisabilité duale et gap nul |
+| 28 | Humour-Banc | Banc de calibration : matrice de confusion du partage de forme (rire vs stimulus) |
 
 ### Side tracks Lean 4 (formalisation)
 
@@ -398,6 +414,7 @@ La théorie des jeux n'est pas qu'un objet académique : ses résultats structur
 - **Systèmes de vote et gouvernance** (sous-série SocialChoice) — le théorème d'Arrow et les méthodes de Condorcet/Borda éclairent le choix d'un mode de scrutin, du vote citoyen aux DAO blockchain (cf. cross-series SmartContracts).
 - **Coopération et évolution** (notebook 6) — le tournoi d'Axelrod, les dynamiques de replication (replicator mean-field déterministe) **et le processus de Moran stochastique (population FINIE)** modélisent l'émergence de la coopération en biologie, en relations internationales et dans les protocoles de réseaux pair-à-pair. La fixation observée dans une population Moran réelle diverge souvent de l'optimum mean-field (Defector bat TitForTat 28 % vs 12 % sur 25 graines, [#7594](https://github.com/jsboige/CoursIA/pull/7594)).
 - **Régulation et dissuasion** (notebooks 10-12) — l'induction arrière, les jeux de réputation et le signaling formalisent la crédibilité des menaces, des banques centrales (politique monétaire) à la stratégie concurrentielle.
+- **Assurance, banque et information asymétrique** (notebook 17b) — le screening de Rothschild-Stiglitz, le signal coûteux de Spence et le point fixe de participation d'Akerlof formalisent la tarification quand l'assuré connaît son risque mieux que l'assureur : comment fixer un contrat discriminant, pourquoi la concurrence peut détruire un équilibre séparateur, et comment un marché s'effondre en « marché des citrons » (la non-tarification à l'équilibre de Rothschild-Stiglitz).
 
 ### Pont vers les Preuves Formelles (Lean 4) — différenciant CoursIA
 
@@ -699,6 +716,7 @@ Chaque notebook adopte la même trame pédagogique — introduction motivée, pl
 | SC-03 | Voting-Methods | ~43 | 3 | **COMPLET** |
 | SC-04 | Computational-Aggregation-SAT-Z3 | ~66 | 2 | **COMPLET** |
 | 17 | MultiAgent-RL | ~35 | 3 | **COMPLET** |
+| 17b | Asymmetric-Information | 26 | 9 | **NOUVEAU** (EPIC #12844) |
 | 18 | Open-Games-et-Lentilles | 16 | 3 | **NOUVEAU** (strate 7) |
 | 19 | Abstraction-a-Dette | 10 | 3 | **NOUVEAU** (strate 7) |
 | 20 | Commitment-Stackelberg | ~18 | 3 | **NOUVEAU** (strate 7) |
@@ -709,6 +727,7 @@ Chaque notebook adopte la même trame pédagogique — introduction motivée, pl
 | 25 | Loi-II-Translateur-Life | 22 | 3 | **NOUVEAU** (strate 7) |
 | 26 | Ensembles-Limites-Poincare-Bendixson | 27 | 3 | **NOUVEAU** (strate 7) |
 | 27 | Munkres-Assignment | 28 | 3 | **NOUVEAU** (strate 7) |
+| 28 | Humour-Banc | 18 | 0 | **NOUVEAU** (strate 7) |
 
 **Jumeaux C#** : le tableau ci-dessus liste les notebooks Python/Lean de référence. Chaque notebook du fil principal (GT-2 à GT-17, plus 4c/6c/8c/15c et SC-01/SC-03/SC-04) dispose en outre d'un **jumeau C#** (`*-Csharp.ipynb`, 23 jumeaux distincts — 24 fichiers `.ipynb` en comptant la tranche `Part2` du GT-2) livré par le marathon parité #4956 — algorithmes from-scratch en BCL .NET 9, voir la section « Parité .NET » en tête de fichier.
 
