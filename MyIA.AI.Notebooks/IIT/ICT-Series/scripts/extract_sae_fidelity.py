@@ -113,6 +113,11 @@ def main() -> None:
     check_sae_model_match(sae["W_enc"].shape[1], d_model, args.sae_repo, args.model)
     if sae["W_dec"] is None:
         sys.exit(f"ERREUR: {args.sae_repo} n'expose pas W_dec -- reconstruction impossible.")
+    # Layout heterogene : les checkpoints W32K (1.7B et 2B, verifies firsthand)
+    # stockent W_dec [d_model, d_sae]. Normalisation vers [d_sae, d_model],
+    # non ambigue car d_model != d_sae sur toutes les releases visees.
+    if sae["W_dec"].shape[0] == d_model:
+        sae["W_dec"] = sae["W_dec"].t().contiguous()
 
     # k : lu depuis le config.json du depot SAE (top-k officiel de la release),
     # garde assert_sae_topk_compatible contre une --k explicite divergente.
@@ -160,8 +165,7 @@ def main() -> None:
             h = captured["h"]                                    # [T, d] f32
             ids, vals = sae_encode_topk(h, sae, k=k)             # convention demo
             # Reconstruction sparse-exacte : somme des k contributions decodeur.
-            # Le checkpoint stocke W_dec [d_model, d_sae] -> colonnes d'indices.
-            w_cols = sae["W_dec"].t()[ids.to(torch.long)]        # [T, k, d]
+            w_cols = sae["W_dec"][ids.to(torch.long)]            # [T, k, d]
             recon = torch.einsum("tk,tkd->td", vals.to(torch.float32), w_cols)
             h_parts.append(h.numpy())
             r_parts.append(recon.numpy())
