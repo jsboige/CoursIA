@@ -1,0 +1,80 @@
+/* 06-apprentissage — tenir dans le cadre 980x552.
+ *
+ * Mesuré au rendu headless (scan_slidev_composition, deck servi par
+ * `slidev dev`, 119 slides parcourues) : ~29 slides portaient des
+ * éléments hors canvas, de 1 à 1156 px. Trois familles : listes
+ * denses à sections H2 empilées (la majorité), grilles d'images
+ * empilées sans budget de hauteur (slide « Mécanisme d'attention » :
+ * 6 images, +1156 px), et diagrammes bayésiens multi-exemples en
+ * puces + paragraphes (« Heuristic search » / « Exploiting
+ * decomposability », +258/+415 px).
+ *
+ * Le correctif suit le pattern #11536 (S3) et #12822 (deck 02) :
+ * compression typographique verticale + utilitaire .dense-list. Les
+ * cas structurels sont traités dans slides.md (splits / grilles),
+ * pas ici. Aucun contenu n'est retiré.
+ */
+
+/* 1. Titres : récupérer l'espace vertical des marges. */
+.slidev-layout h1 {
+  margin-bottom: 0.35em;
+}
+.slidev-layout h2 {
+  margin-top: 0.45em;
+  margin-bottom: 0.2em;
+}
+
+/* 2. Listes : interligne resserré. */
+.slidev-layout li {
+  line-height: 1.3;
+  margin: 0.1em 0;
+}
+
+/* 3. Paragraphes des slides à exemples empilés. */
+.slidev-layout p {
+  margin: 0.35em 0;
+}
+
+/* 4. Utilitaire densité maximale : <div class="dense-list">. */
+.slidev-layout .dense-list ul,
+.slidev-layout .dense-list ol {
+  font-size: 0.82em;
+  line-height: 1.22;
+}
+.slidev-layout .dense-list li {
+  margin: 0.02em 0;
+}
+.slidev-layout .dense-list h2 {
+  margin-top: 0.3em;
+}
+.slidev-layout .dense-list p {
+  margin: 0.2em 0;
+  font-size: 0.85em;
+  line-height: 1.2;
+}
+
+/* 5. Grilles d'images (pattern S3 §4) : compressibles. */
+.slidev-layout .img-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: flex-start;
+  justify-content: center;
+}
+.slidev-layout .img-grid img {
+  flex: 0 1 auto;
+  min-height: 0;
+  width: 46%;
+  max-height: 118px;
+  object-fit: contain;
+}
+
+/* 6. Variante ultra-dense pour la slide « Généralisation et
+ *    surapprentissage » (longues lignes qui se replient deux fois). */
+.slidev-layout .dense-list.xl-dense ul {
+  font-size: 0.72em;
+  line-height: 1.12;
+}
+.slidev-layout .dense-list.xl-dense li {
+  margin: 0;
+}
