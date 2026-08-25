@@ -438,6 +438,37 @@ def test_untagged_blocked_prs_are_counted_but_never_attributed(monkeypatch):
     assert [u["number"] for u in out["unattributed_blocked"]] == [9]
 
 
+def test_unattributed_blocked_is_printed_on_the_draw_path(monkeypatch, capsys):
+    """#12738 : une lane a `red == []` mais `unattributed_blocked != []`
+    doit voir les numeros dans la sortie humaine du TIRAGE, pas seulement
+    quand elle est refassee. Sans ce cas, le test ne distingue pas le
+    correctif de l'etat actuel (paragraphe confine a `print_red_refusal`).
+    """
+    red_state = _state(checks=[("PR gate", "FAILURE", True)])
+    # age 2 h : sous le seuil red_hours=24, donc `red=[]` ; pas de tag -> `unattributed_blocked`.
+    _patch_backlog(monkeypatch, [
+        _pr(9, None, 2),
+    ], {9: red_state})
+    backlog = pig.red_backlog("myia-po-2026:CoursIA", 24, count_threshold=99)
+    assert backlog["red"] == [], f"Lane doit avoir red vide (age 2h < 24h), got: {backlog['red']}"
+    assert [u["number"] for u in backlog["unattributed_blocked"]] == [9]
+
+    pig.print_unattributed_blocked(backlog)
+    captured = capsys.readouterr().out
+    assert "Portee :" in captured, f"Le paragraphe doit sortir sur le chemin du tirage, got: {captured!r}"
+    assert "#9" in captured, f"Le numero #9 doit etre visible, got: {captured!r}"
+    assert "`Grain:`" in captured, "Mention Grain: obligatoire"
+
+
+def test_unattributed_blocked_stays_silent_when_empty(capsys):
+    """Aucun output si `unattributed_blocked` est vide : ne pas polluer
+    les tirages sans rouge sans tag."""
+    pig.print_unattributed_blocked({"unattributed_blocked": []})
+    pig.print_unattributed_blocked({})
+    captured = capsys.readouterr().out
+    assert captured == "", f"Aucun output attendu quand vide, got: {captured!r}"
+
+
 def test_network_failure_does_not_block_the_draw(monkeypatch):
     """Un garde indisponible ne doit pas immobiliser une lane saine."""
     def boom():
