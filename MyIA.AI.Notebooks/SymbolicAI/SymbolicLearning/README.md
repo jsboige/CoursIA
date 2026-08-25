@@ -52,7 +52,7 @@ Cette série montre que les deux approches ne s'opposent pas — elles se **comp
 | Notebooks | 21 (12 Python canoniques + 8 jumeaux C# marathon parité #4956 + 1 compagnon Lean natif) |
 | Exercices (table de pioche) | 49 |
 | Kernel | Python 3 + .NET Interactive (jumeaux C#) + lean4-wsl (compagnon Lean) |
-| Durée estimée | ~1130 min (~18 h 50, Python ~12 h 00 + jumeaux C# ~6 h 50) |
+| Durée estimée | ~1130 min (~18 h 50 : Python 11 h 20 + compagnon Lean 40 min + jumeaux C# 6 h 50) |
 | Prérequis | Python 3.10+ (standard library + sklearn pour SL-3/SL-4, rdflib pour SL-8, difflogic+torch pour SL-12, clé OpenRouter optionnelle pour SL-9/SL-11) + .NET Interactive 1.4+ pour les 8 jumeaux C# + kernel lean4-wsl (lake `learning_theory_lean`) pour SL-1b |
 
 ## Parcours d'apprentissage
@@ -512,7 +512,7 @@ breakdown: SymbolicLearning=20
 maturity: BETA=18, ALPHA=2
 ```
 
-**Table 6 phases × 4 colonnes** (cohérence CATALOG-STATUS `SymbolicLearning=20`, maturité BETA=18 + ALPHA=2, soit 18 jumeaux Python+C# stabilisés + 2 jumeaux C# en stabilisation) :
+**Table 6 phases × 4 colonnes** (cohérence CATALOG-STATUS `SymbolicLearning=20`, maturité BETA=18 + ALPHA=2, soit 18 jumeaux Python+C# stabilisés + 2 jumeaux C# en stabilisation). Ce décompte de **20** couvre les notebooks **inscrits au catalogue** ; le 21e — SL-1b, compagnon Lean natif — n'entre dans aucune phase (il prouve, en parallèle de la phase 1, les garanties d'échantillonnage que SL-1 implémente), et son inscription comme sa maturité reviennent au cron catalogue. Le « 21 notebooks » de l'en-tête compte donc 20 inscrits + 1 compagnon, jamais deux totaux pour le même ensemble :
 
 | Phase | Notebooks | Maturité | Contenu clé |
 |-------|-----------|----------|-------------|
@@ -522,7 +522,7 @@ maturity: BETA=18, ALPHA=2
 | **Phase 4 — Moteurs ILP modernes** | 2 (SL-6 + jumeau C#) | BETA=2 | Quatre moteurs réels face à face sur `ancestor/2` : Aleph (entailment inverse), Metagol (MIL, invent. prédicats), Popper (LFF, v4.4.0 épinglé), ∂ILP Lernd (différentiable, env conda `lernd-dilp` GPL-3.0 importé). Jumeau C# : FOIL relationnel from-scratch + récursion + benchmark profondeur 5-20 |
 | **Phase 5 — Neuro-symbolique** | 4 (SL-7, SL-8, SL-9 + jumeau C# SL-8) | BETA=3, ALPHA=1 | T-norms différentiables, LTN, DeepProbLog ; rdflib + AMIE rule mining + complétion KG + ASP clingo ; boucle LLM-symbolique d'extraction et vérification (Gemini 3.5 Flash optionnel via OpenRouter). Jumeau C# : KG familial dotNetRDF 3.4.1 + AMIE from-scratch + PCA + complétion 5→14 + saturation (ALPHA en stabilisation) |
 | **Phase 6 — Actif + capstone** | 4 (SL-10, SL-11, SL-12 + jumeau C# SL-10) | BETA=3, ALPHA=1 | L* d'Angluin (table d'observation, requêtes MQ/EQ, Myhill-Nerode, bornes PAC) ; capstone pipeline neuro-symbolique 6 étages avec LLM réel + provenance ; réseaux de portes logiques différentiables (difflogic, Petersen NeurIPS 2022). Jumeau C# : DFA + ObservationTable + contre-exemples + oracle bruité + agrégation d'evidence (ALPHA en stabilisation) |
-| **Total** | **20** | **BETA=18, ALPHA=2** | Python 3.10+ stdlib + .NET Interactive 1.4+ (sauf SL-3 sklearn+rdflib, SL-4/SL-6 SWI-Prolog+Popper kernel Linux/WSL, SL-7 rdflib, SL-9/SL-11 OpenRouter optionnel) |
+| **Total** | **20** (+ SL-1b compagnon hors phases) | **BETA=18, ALPHA=2** | Python 3.10+ stdlib + .NET Interactive 1.4+ (sauf SL-3 sklearn+rdflib, SL-4/SL-6 SWI-Prolog+Popper kernel Linux/WSL, SL-7 rdflib, SL-9/SL-11 OpenRouter optionnel) ; SL-1b : kernel lean4-wsl (lake `learning_theory_lean`) |
 
 **Note explicite maturité 18 BETA + 2 ALPHA** : la série SymbolicLearning compte 21 notebooks au catalogue (12 Python + 8 jumeaux C# marathon parité #4956 + le compagnon Lean natif SL-1b, dont la maturité sera fixée à l'inscription catalogue). La maturité n'est plus 100 % PRODUCTION comme avant le marathon parité : les 12 notebooks Python historiques sont PRODUCTION-equivalent (AIMA chapitre 19, implémentations de référence stables vendored dans `reference/aima_knowledge.py`) ; les 8 jumeaux C# livrés en marathon #4956 (SL-1, SL-2, SL-3, SL-4, SL-5, SL-6, SL-8, SL-10) sont **BETA** par défaut, sauf SL-8-C# (KG mining : verdict SOTA du twin Python note clingo ASP=INTRINSIC en .NET) et SL-10-C# (L* forward sum-product + agrégation bayésienne : algorithme le plus récent, vérifications de bornes encore en cours) qui restent **ALPHA** au catalogue. Les notebooks s'exécutent localement avec Python 3.10+ stdlib pour SL-1/2/5/7/10, `scikit-learn`+`numpy` pour SL-3, `rdflib`+`clingo` pour SL-8, et `SWI-Prolog >= 9.1.12`+`janus_swi`+`popper-ilp==4.4.0` pour SL-4/SL-6 via kernel Linux/WSL ; les 8 jumeaux C# s'exécutent sur .NET Interactive 1.4+ (`Microsoft.dotnet-interactive`).
 
