@@ -77,7 +77,12 @@ def test_branch_state_json_lists_no_duplicates(capsys):
     assert payload["ok"] is True, payload
     assert payload["duplicates"] == [], payload
     assert payload["total_jobs"] >= 7
-    assert payload["total_workflows"] >= 70
+    # Floor pinned at 59 - margin: #12821 (tranche 1/2 #12817) moved 16 heavy
+    # advisories out of the pull_request trigger into the nightly schedule,
+    # dropping PR-triggered workflows from ~75 to 59. The floor's purpose is
+    # to catch an instrument that stops reading files (collapses to 0), not
+    # to freeze the corpus size.
+    assert payload["total_workflows"] >= 50
 
 
 def test_branch_state_no_legacy_ratchet_dupes():
