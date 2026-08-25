@@ -14,11 +14,10 @@
 
 ## Performance Summary
 
-### Robuste (Sharpe > 0.5) — 19 stratégies
+### Robuste (Sharpe > 0.5) — 18 stratégies
 
 | Projet | Sharpe | CAGR | MaxDD | Période | Niveau |
 |--------|--------|------|-------|---------|--------|
-| [BTC-ML](BTC-ML/) | **1.647** | 38.1% | 48.8% | 2020-2026 | Intermédiaire |
 | [Framework_Composite_TrendWeather](Framework_Composite_TrendWeather/) | **1.155** | 27.4% | 27.7% | 2015-2026 | Avancé |
 | [CSharp-BTC-EMA-Cross](CSharp-BTC-EMA-Cross/) | **1.094** | 36.2% | 40.7% | 2017-2026 | Débutant |
 | [EMA-Cross-Stocks](EMA-Cross-Stocks/) | **0.872** | 25.7% | 35.7% | 2015-2026 | Débutant |
