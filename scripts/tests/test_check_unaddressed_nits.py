@@ -771,13 +771,13 @@ def test_cr_cas3_commentaire_tiers_hors_sujet_ne_leve_pas():
     assert run_cr([bystander])["blocked"] is True
 
 
-def test_cr_cas4_phrase_de_levee_leve():
-    """La reponse ecrite que B.0 exige : l'auteur de la PR repond AVEC un
-    marqueur de levee (« sont adresses ») — l'etat se leve."""
+def test_cr_cas4_phrase_auteur_pr_ne_leve_pas_la_review_tierce():
+    """#12836 : l'auteur de la PR documente le fix, mais ne confirme pas a la
+    place du reviewer tiers que sa CHANGES_REQUESTED est levee."""
     fix = {"author": {"login": "jsboige"}, "createdAt": at(12),
            "body": "Les 2 points sont adresses : cellule 19 remplacee par "
                    "strip_lean_comments, commit abc123."}
-    assert run_cr([fix])["blocked"] is False
+    assert run_cr([fix])["blocked"] is True
 
 
 def test_cr_cas5_rereview_approved_meme_auteur_leve():
@@ -826,12 +826,12 @@ def test_nit_commentaire_garde_le_regime_general():
     assert run([USER_NIT, reply])["blocked"] is False
 
 
-# --- #11145 : la borne d'auteur. Une levee ne compte que si elle vient de
-# l'auteur de la reserve OU de l'auteur de la PR (mesure #11494 sur 850 PRs :
-# SELF 22/37 = 59,5 % + PR_AUTHOR 6/37 = 16,2 % = flux sain preserve ;
-# BYSTANDER 9/37 = 24,3 % = la classe #10761 que l'organe bloque — une
-# approbation ou une reponse d'un tiers n'eteint pas une reserve posee par un
-# autre). Echappement B.0 : issue de suivi nommee.
+# --- #11145 / #12836 : la borne d'auteur. Une levee ne compte que si elle
+# vient de l'auteur de la reserve. #12798 a prouve que PR_AUTHOR n'est pas un
+# tiers de confirmation : l'auteur avait declare la reserve Hermes levee alors
+# que le notebook committe restait un stub sans sortie vLLM. Une reponse de
+# PR_AUTHOR documente le traitement mais ne remplace pas la re-review du tiers.
+# Echappement borne : override coordinateur nomme (tests #11639 ci-dessous).
 
 HERMES_NIT = {
     "author": {"login": "clusterManager-Myia"}, "createdAt": at(10),
@@ -929,14 +929,55 @@ def test_auteur_du_nit_leve_son_nit():
     assert run([HERMES_NIT, reply])["blocked"] is False
 
 
-def test_auteur_pr_repond_a_son_reviewer_leve():
-    """PR_AUTHOR (16,2 %) : le worker (auteur de la PR) repond au reviewer
-    AVEC une phrase de levee — le flux sain que la borne preserve
-    (#12319 : la phrase est desormais exigee, l'auteur seul ne suffit plus)."""
+def test_auteur_pr_ne_leve_pas_la_reserve_d_un_tiers():
+    """#12798 : PR_AUTHOR peut documenter le fix, pas confirmer a la place du
+    reviewer tiers que sa reserve est levee. La reserve reste bloquante jusqu'a
+    une re-review/levee de son auteur ou un override coordinateur nomme."""
     reply = {"author": {"login": "jsboige"}, "createdAt": at(12),
              "body": "Les 2 cellules d'interp sont ajoutees, commit abc — "
                      "les points sont adresses."}
-    assert run([HERMES_NIT, reply])["blocked"] is False
+    assert run([HERMES_NIT, reply])["blocked"] is True
+
+
+def test_auteur_pr_puis_levee_du_reviewer_tiers_leve():
+    """Controle positif obligatoire #12836 : le durcissement ne rend pas toute
+    reserve indelebile. PR_AUTHOR repond, puis le reviewer tiers confirme la
+    levee : le gate devient vert."""
+    reply = {"author": {"login": "jsboige"}, "createdAt": at(12),
+             "body": "Les 2 cellules d'interp sont ajoutees, commit abc — "
+                     "les points sont adresses."}
+    reviewer_lift = {
+        "author": {"login": "clusterManager-Myia"},
+        "createdAt": at(13),
+        "body": "Levee de ma reserve apres verification du commit abc.",
+    }
+    assert run([HERMES_NIT, reply, reviewer_lift])["blocked"] is False
+
+
+def test_deux_reserves_du_meme_auteur_ne_s_auto_levent_pas():
+    """#12798 live : deux commentaires COMMENT_WITH_CONCERNS du meme auteur a
+    quelques secondes d'intervalle restent deux emissions, pas une levee. Le
+    second narre une levee anterieure qu'il REFUTE : le verdict formel vivant
+    doit l'emporter sur ce LIFT_MARKER narratif."""
+    first = {
+        "author": {"login": "jsboigeEpita"}, "createdAt": at(10),
+        "body": "[Hermes] COMMENT_WITH_CONCERNS — sortie vLLM absente.",
+    }
+    second = {
+        "author": {"login": "jsboigeEpita"}, "createdAt": at(11),
+        "body": (
+            "[Hermes] COMMENT_WITH_CONCERNS — revalidation apres la levee "
+            "annoncee : cassette toujours non prouvee."
+        ),
+    }
+    data = {
+        "number": 12798, "title": "t", "author": {"login": "jsboige"},
+        "comments": [first, second], "reviews": [],
+        "commits": [{"committedDate": at(19)}],
+    }
+    result = mod.analyse(data, [], MERGED)
+    assert result["blocked"] is True
+    assert len(result["blocking"]) == 2
 
 
 def test_bystander_explicit_lift_ne_leve_pas_changes_requested():
