@@ -129,7 +129,7 @@ example : ¬ crossSubsidyTenable
     Trois théorèmes modestes :
     (1) anticipatory_empty (trivial) ;
     (2) singleton_not_anticipatory_with_profitable_deviation (directional,
-        sorry borné — voir commentaire interne) ;
+        preuve close — voir commentaire interne) ;
     (3) example cross-subsidy decided.
     Wilson/MWS « anticipatory always exists » et MWS « unique » sont des
     théorèmes qui demandent des hypothèses supplémentaires substantielles

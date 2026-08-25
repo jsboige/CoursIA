@@ -40,7 +40,7 @@ not a mere empty import.
 ```bash
 cd MyIA.AI.Notebooks/GameTheory/asymmetric_information_lean
 lake build                                       # 28/28 jobs SUCCESS
-python scripts/lean/count_code_sorry.py --json   # distinct_code_sorry=3 (bounded)
+python scripts/lean/count_code_sorry.py --json   # distinct_code_sorry=0 (zero sorry)
 python scripts/lean/check_i18n_siblings.py --all # 0 drift / 0 orphan
 ```
 

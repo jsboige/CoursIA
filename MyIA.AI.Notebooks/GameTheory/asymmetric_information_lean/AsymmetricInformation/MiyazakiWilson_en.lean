@@ -134,7 +134,7 @@ example : ¬ crossSubsidyTenable
     Three modest theorems:
     (1) anticipatory_empty (trivial);
     (2) singleton_not_anticipatory_with_profitable_deviation (directional,
-        bounded sorry — see internal comment);
+        closed proof — see internal comment);
     (3) cross-subsidy decided example.
     Wilson/MWS "anticipatory always exists" and MWS "unique" are
     theorems that require substantial additional hypotheses
