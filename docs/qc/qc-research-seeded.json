@@ -63,8 +63,8 @@
   "18987": {
    "url": "https://www.quantconnect.com/research/18987/portfolio-construction-using-topological-data-analysis/",
    "lastmod": "2025-07-31T07:08:43+00:00",
-   "seeded_at": null,
-   "issue": null
+   "seeded_at": "2026-08-25",
+   "issue": 12879
   },
   "18811": {
    "url": "https://www.quantconnect.com/research/18811/optimizing-a-gold-spy-portfolio-using-hidden-markov-models-for-market-downtime/",
