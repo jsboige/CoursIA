@@ -188,6 +188,34 @@ def test_baseline_check_exits_zero_on_main():
     )
 
 
+def test_check_without_baseline_defaults_to_canonical_rc0():
+    """#12585 : ``--check`` SANS ``--baseline`` doit comparer au baseline
+    canonique du depot (celui que la CI passe), pas a un ensemble vide.
+    Avant le fix, l'invocation desarmee rendait un FAIL fantome sur un main
+    vert -- toutes les violations acceptees ressortaient « new ». Le test
+    existant passait le chemin explicitement, donc ne pouvait pas voir ce
+    defaut. Exige en outre la ligne d'identite qui nomme la reference."""
+    import subprocess
+    proc = subprocess.run(
+        [
+            sys.executable, str(TOOL),
+            "MyIA.AI.Notebooks",
+            "--check",
+        ],
+        capture_output=True,
+        text=True,
+        cwd=REPO_ROOT,
+    )
+    assert proc.returncode == 0, (
+        f"bare --check exited {proc.returncode}\n"
+        f"stdout: {proc.stdout[:500]}\nstderr: {proc.stderr[:500]}"
+    )
+    assert "baseline:" in proc.stdout and "entries)" in proc.stdout, (
+        "l'identite de la reference doit etre affichee "
+        f"(baseline: <path> (<n> entries)); stdout: {proc.stdout[:300]}"
+    )
+
+
 if __name__ == "__main__":
     import pytest
     sys.exit(pytest.main([__file__, "-v"]))
