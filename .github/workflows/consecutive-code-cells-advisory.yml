@@ -1,0 +1,162 @@
+name: Consecutive Code Cells Advisory
+
+# The missing ORGAN for the consecutive-code-cells convention (#12797).
+# The user's observation (2026-08-24) -- in a pedagogical notebook, two code
+# cells that follow each other (no markdown cell in between) are "almost
+# always an opportunity to propose an intermediate markdown cell, and
+# otherwise a reason to merge." This detector measures the run length on a
+# PR, exactly as pedagogy-density-advisory.yml did for the
+# `chars / code cell` floor (#10479) and as exercises-advisory.yml did for
+# the `>= 3 exercises` convention (#8814): a notebook with a run of >= 2
+# becomes VISIBLE on the PR that touches it.
+#
+# ADVISORY, never blocking (issue #12797 acceptance, decision user
+# 2026-08-24): the job ALWAYS exits 0. The actionable payload is the
+# `consecutive-code-cells` LABEL, NEVER the green conclusion of the job
+# (green by construction -- the same trap that let a non-conforming PR
+# through in #8797).
+#
+# Per-PR scope (acceptance): runs the detector ONLY on the *.ipynb modified
+# by the PR, not a repo-wide scan on every push. The corpus/kind
+# classification (out-of-corpus artifacts, setup) is CONSUMED through
+# detect_consecutive_code_cells.py FROM count_exercises.py -- never
+# re-implemented here, so the label and the canonical tool cannot diverge.
+#
+# Hors scope (student-pr-reviews.md): forks (student PRs) are skipped -- a
+# benevolent review applies, no internal content criterion runs against them.
+#
+# Promoting to a blocking gate is a separate decision, to revisit only once
+# the residual is at 0 and stable (issue #12797 acceptance).
+
+on:
+  schedule:
+    # Nocturnal sweep -- post-merge main verification.
+    # Tranche 1 #12817 : sortir les advisory lourds de pull_request
+    # (clone 2.22 Go par run). Stratification user 2026-08-23 :
+    # "les jobs lourds devraient être payés une fois par fournée".
+    - cron: '47 03 * * *'
+  workflow_dispatch: {}
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: consecutive-code-cells-advisory-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  consecutive-code-cells-advisory:
+    name: "Consecutive code cells >= 2 advisory (label, non-blocking)"
+    runs-on: ubuntu-latest
+    # Same-repo PRs only (agents/staff). Fork PRs are student submissions
+    # under student-pr-reviews.md -- benevolent review, no content gate.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v4
+        with:
+          # Need base..head history for `git diff` of changed notebooks.
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Advisory check on modified notebooks
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Without a git context GH_REPO, `gh pr edit` / `gh label create`
+          # cannot infer the target repo and fail silently (variation-tag-guard
+          # documented this trap firsthand after #8765).
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+          LABEL_DETECTED: consecutive-code-cells
+          LABEL_UNMEASURED: consecutive-code-cells-unmeasured
+        run: |
+          set -uo pipefail
+
+          # Added/modified *.ipynb in the PR (deletions excluded -- a deleted
+          # notebook has nothing to measure).
+          # 3-point diff (#10403): merge-base...HEAD -- strictly this PR's apport.
+          git diff --name-only --diff-filter=d "$BASE...$HEAD" -- '*.ipynb' \
+            | grep -v $'\r$' > changed_ipynb.txt || true
+          COUNT=$(wc -l < changed_ipynb.txt | tr -d ' ')
+          echo "Modified *.ipynb in this PR: $COUNT"
+
+          # Helper: ensure a label exists (idempotent), then add/remove it.
+          ensure_label() {
+            gh label create "$1" --description "$2" --color "$3" --force 2>/dev/null || true
+          }
+          set_label() { gh pr edit "$PR_NUMBER" --add-label "$1" || true; }
+          unset_label() { gh pr edit "$PR_NUMBER" --remove-label "$1" 2>/dev/null || true; }
+
+          if [ "$COUNT" -eq 0 ]; then
+            echo "No modified notebooks to check."
+            unset_label "$LABEL_DETECTED"; unset_label "$LABEL_UNMEASURED"
+            exit 0
+          fi
+
+          # Advisory: ALWAYS exit 0. The job never fails; the actionable signal
+          # is the pair of LABELS decided from the JSON payload below.
+          python scripts/notebook_tools/detect_consecutive_code_cells.py --stdin --json \
+            < changed_ipynb.txt > payload.json
+          cat payload.json
+
+          DET=$(python -c "import json; print(json.load(open('payload.json'))['summary']['detected'])")
+          UNM=$(python -c "import json; print(json.load(open('payload.json'))['summary']['unmeasured'])")
+          echo "Detected notebooks: $DET"
+          echo "Unmeasured (parse errors / no code cell): $UNM"
+
+          # Issue #8819 applied to consecutive code cells: TWO distinct labels.
+          # "Could not measure" and "measured, run detected" call for different
+          # reactions, so they never collapse into one. Each label is raised
+          # when its count > 0 and cleared otherwise (a stale label from an
+          # earlier push must not stick).
+          ensure_label "$LABEL_DETECTED" \
+            "A modified notebook contains a run of >= 2 consecutive code cells (#12797)" "D93F0B"
+          ensure_label "$LABEL_UNMEASURED" \
+            "A modified notebook could not be measured -- NOT verified (#8819)" "BFD4F2"
+
+          # The #8819 guard: if detect_consecutive_code_cells.py died (truncated
+          # JSON, ImportError, OOM), payload.json is unreadable, the two
+          # python -c above fail, and DET/UNM are not integers. With only
+          # `set -uo pipefail` (no -e), each `[ "" -gt 0 ]` below exits rc=2
+          # -- which falls into the else branch, UNSETS both labels, and
+          # asserts verified conformity on a measurement that never happened.
+          # NOT measured => NOT verified: pose the unmeasured label and a loud
+          # ::error::, never a green claim.
+          if ! [ "${DET:-}" -eq "${DET:-}" ] 2>/dev/null \
+             || ! [ "${UNM:-}" -eq "${UNM:-}" ] 2>/dev/null; then
+            echo "::error::consecutive-code-cells payload illisible (detect_consecutive_code_cells.py produced no usable JSON) -- the gate measured NOTHING; conformity neither claimed nor denied."
+            set_label "$LABEL_UNMEASURED"
+            exit 0
+          fi
+
+          if [ "$DET" -gt 0 ]; then
+            echo "::notice::$DET modified notebook(s) contain a run of >= 2 consecutive code cells (#12797). See the '$LABEL_DETECTED' label."
+            set_label "$LABEL_DETECTED"
+          else
+            unset_label "$LABEL_DETECTED"
+          fi
+
+          if [ "$UNM" -gt 0 ]; then
+            echo "::warning::$UNM modified notebook(s) could not be measured -- NOT verified by the consecutive-code-cells advisory (#8819). See the '$LABEL_UNMEASURED' label."
+            set_label "$LABEL_UNMEASURED"
+          else
+            unset_label "$LABEL_UNMEASURED"
+          fi
+
+          # The closing line asserts ONLY what was measured (issue #8819). The
+          # job never claims "all conform" while unmeasured > 0.
+          if [ "$UNM" -gt 0 ]; then
+            echo "RESULT: $UNM notebook(s) NOT measured -- conformity neither claimed nor denied."
+          elif [ "$DET" -gt 0 ]; then
+            echo "RESULT: $DET notebook(s) with a run of >= 2 consecutive code cells -- labelled."
+          else
+            echo "RESULT: all in-corpus modified notebooks pass the consecutive-code-cells check (verified)."
+          fi
+          exit 0
