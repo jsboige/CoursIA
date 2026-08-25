@@ -415,6 +415,17 @@ theorem alexander_trefoil :
   simp (config := { decide := true }) [alexanderEntry]
   ring
 
+/-- Discrimination corollary: the Alexander polynomial distinguishes the
+trefoil from the unknot — first non-triviality of the development,
+obtained by combining the two controls above (this is the property that
+sells the invariant: a value that is not constant across knot classes). -/
+theorem trefoil_ne_unknot_alexander :
+    alexanderPolynomial trefoil ≠ alexanderPolynomial unknot := by
+  rw [alexander_trefoil, alexander_unknot]
+  intro h
+  have h2 := congrArg (fun p : Polynomial ℤ => p.coeff 2) h
+  simp [Polynomial.coeff_X] at h2
+
 theorem conway_trivial_alexander :
     alexanderPolynomial conwayKnot = 1 := by
   exact sorry

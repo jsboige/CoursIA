@@ -408,6 +408,17 @@ theorem alexander_trefoil :
   simp (config := { decide := true }) [alexanderEntry]
   ring
 
+/-- Corollaire de discrimination : le polynôme d'Alexander distingue le
+trèfle du nœud trivial — première non-trivialité du développement, obtenue
+en combinant les deux contrôles ci-dessus (c'est la propriété qui vend
+l'invariant : une valeur non constante sur les classes de nœuds). -/
+theorem trefoil_ne_unknot_alexander :
+    alexanderPolynomial trefoil ≠ alexanderPolynomial unknot := by
+  rw [alexander_trefoil, alexander_unknot]
+  intro h
+  have h2 := congrArg (fun p : Polynomial ℤ => p.coeff 2) h
+  simp [Polynomial.coeff_X] at h2
+
 theorem conway_trivial_alexander :
     alexanderPolynomial conwayKnot = 1 := by
   exact sorry
