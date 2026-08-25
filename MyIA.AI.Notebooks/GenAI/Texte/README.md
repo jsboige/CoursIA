@@ -21,6 +21,7 @@ La maîtrise des LLMs constitue la pierre angulaire de toute expertise en Géné
 - **Production enterprise** : gestion de sessions, retry, batch processing
 - **Déploiement local** : vLLM, quantification, optimisation des coûts
 - **Test-time scaling (ICR)** : routeur agentique, mémoire persistante, Tree-of-Thoughts sur CSP, courbes de scaling, raisonnement natif, plugins Semantic Kernel (notebooks 13 à 18, arc approfondi au-delà de NB-12)
+- **Sous le capot** : mécanique d'inférence — KV-cache from scratch, TTFT/ITL mesurés sur le vLLM self-hosted (23) ; évaluation des sorties générées, BLEU/ROUGE/perplexité/juge LLM (22)
 
 ## Contenu détaillé
 
@@ -54,6 +55,7 @@ La maîtrise des LLMs constitue la pierre angulaire de toute expertise en Géné
 | 9 | `9_Production_Patterns.ipynb` | Conversations API, background mode, retry, batch processing | 70 min |
 | 9b | `09b_Prompt_Security_RedTeam.ipynb` | Versant **adversarial** du 9 : taxonomie de l'injection (directe / indirecte RAG / jailbreak / exfiltration), 3 attaques mesurées sur le routeur DeepSeek self-hosted (≥1 réussie avant défense), défenses testées + tableau attaque × défense, suite de tests rejouable (propriété « PWNED jamais délivré »), 3 exercices stubs C.1 | 70 min |
 | 10 | `10_LocalLlama.ipynb` | vLLM, Qwen3.5-35B-A3B, ZwZ-8B, multi-endpoints, benchmarking | 60 min |
+| 10c | `10c_Long_Context_Strategies.ipynb` | Stratégies pour contextes longs : budget de tokens, biais de position, map-reduce, prefix caching | 50 min |
 | 11 | `11_Quantization.ipynb` | AWQ, GPTQ, llmcompressor, modèles vision, déploiement vLLM | 60 min |
 | 12 | `12_Test_Time_Scaling.ipynb` | Best-of-N, Tree-of-Thoughts (BFS/DFS), Reflexion, routeur adaptatif (cf ICR) | 60 min |
 
@@ -64,6 +66,7 @@ Le notebook 12 introduit en Python pur les quatre moteurs d'inférence au moment
 | # | Notebook | Description | Durée |
 |---|----------|-------------|-------|
 | 13 | `13_Agentic_Orchestration.ipynb` | Routeur agentique : function calling (pont NB-04) pour laisser un LLM choisir le moteur par sous-tâche (mode "Agentic" d'ICR) | 60 min |
+| 13b | `13b_Agent_Evaluation.ipynb` | Frère *sides-first* du 13 : mesurer ce que valent les agents — taux de succès sur une suite de tâches, coût par trajectoire, ablation, sûreté | 60 min |
 | 14 | `14_Persistent_Memory.ipynb` | Mémoire vectorielle persistante (baseline BoW + cosine, pont NB-05 RAG) qui rétrocède les leçons aux runs suivants (agent "Memory" d'ICR) | 55 min |
 | 15 | `15_Tree_of_Thoughts_Search.ipynb` | Tree-of-Thoughts sur cryptarithmes (SEND+MORE=MONEY) : recherche DFS colonne par colonne avec propagation de retenue (pont séries Search/Sudoku) | 60 min |
 | 16 | `16_Scaling_Test_Time_Compute.ipynb` | Courbes de scaling Snell 2024 : estimateur pass@k, BoN vs Reflexion, frontière compute-optimale selon la difficulté | 65 min |
@@ -108,6 +111,15 @@ Le fil rouge est volontairement discriminant : enseigner au modèle un **format 
 | 21 | `21_LoRA_FineTuning.ipynb` | **QLoRA** (NF4 4-bit + double quant, bf16) sur Qwen2.5-0.5B-Instruct : fil rouge = format balisé `[T]/[D]/[E]` que le base échoue à produire ; adaptateurs LoRA via `peft` + `bitsandbytes` + `trl` + `datasets`, GPU CUDA requis (pont PostTraining / #10247) | 75 min |
 | 22 | `22_TensorSharp_DotNet_Inference.ipynb` | Pilote diagnostique .NET : TensorSharp CUDA charge Gemma 4 E4B et répond en OpenAI-compatible, mais le contrôle qualitatif détecte une répétition de `<pad>` (`RECOVERABLE-LOCAL`, adoption différée) | 55 min |
 
+### Tier 7 : Sous le capot — mécanique d'inférence et évaluation (Avancé)
+
+Les tiers précédents utilisent, déploient et adaptent le LLM **tel quel**. Ce tier ouvre la cage avec deux regards complémentaires : **mesurer les sorties** (22 — métriques d'évaluation classiques et juge LLM) et **comprendre la mécanique interne** de l'inférence (23 — pourquoi la génération ralentit, ce que le KV-cache achète et ce qu'il coûte). Le 23 relie les deux mondes : un mini-GPT écrit from scratch en PyTorch CPU exhibe le mur du recalcul, le cache qui le lève et son exactitude numérique ; puis le vLLM self-hosted du dépôt est interrogé en streaming pour relier TTFT (préfill) et inter-token latency (décodage caché) aux mécaniques démontrées.
+
+| # | Notebook | Description | Durée |
+|---|----------|-------------|-------|
+| 22 | `22_Evaluating_Generated_Text.ipynb` | Évaluer les sorties générées : BLEU, ROUGE, perplexité et juge LLM — la boucle qualité que les notebooks d'application appellent sans la démontrer | 55 min |
+| 23 | `23_Inference_Mechanics.ipynb` | **KV-cache from scratch** (mini-GPT PyTorch CPU : naïf vs caché, exactitude argmax 24/24, décodage seul stable, formule mémoire collant au mesuré) puis **mesuré sur le vLLM du dépôt** en streaming (TTFT croissant vs ITL plate ; verdict `RECOVERABLE-MACHINE` si service éteint, aucune valeur de substitution) ; ouverture décodage spéculatif, 3 exercices | 60 min |
+
 ## Prérequis
 
 ### Configuration API
@@ -142,6 +154,7 @@ Le fil rouge est volontairement discriminant : enseigner au modèle un **format 
 │                                                                 │
 │  10_LocalLlama (indépendant, prérequis: 1)                     │
 │        └──────► 11_Quantization (prérequis: 10)                │
+│        └──────► 23_Inference_Mechanics (prérequis: 10)         │
 │                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -199,7 +212,9 @@ Le fil rouge de cette série est la progression de l'interaction basique avec un
 
 5. **Tier 5** (test-time scaling approfondi) : partant de [12_Test_Time_Scaling](12_Test_Time_Scaling.ipynb) (les quatre moteurs en Python pur), l'arc NB-13..18 décompose chaque facette de l'inférence au moment du test — orchestration agentique via function calling ([13](13_Agentic_Orchestration.ipynb)), mémoire persistante par similarité ([14](14_Persistent_Memory.ipynb)), Tree-of-Thoughts sur des problèmes de recherche ([15](15_Tree_of_Thoughts_Search.ipynb)), courbes de scaling de Snell ([16](16_Scaling_Test_Time_Compute.ipynb)), raisonnement natif vs scaling hand-rolled ([17](17_Native_Reasoning_vs_Scaling.ipynb)), puis intégration Semantic Kernel ([18](18_Semantic_Kernel_Plugins.ipynb)).
 
-Le schéma ci-dessous résume comment les cinq tiers s'enchaînent pour maîtriser les LLMs : du prompt one-shot (tier 1) aux patterns de production puis à l'arc test-time scaling approfondi (tiers 4-5), en passant par les sorties structurées (tier 2) et l'augmentation RAG/code interpreter (tier 3).
+6. **Tiers 6-7** (adaptation et sous le capot) : [21_LoRA_FineTuning](21_LoRA_FineTuning.ipynb) adapte le modèle lui-même (QLoRA), [22_TensorSharp_DotNet_Inference](22_TensorSharp_DotNet_Inference.ipynb) sonde l'inférence .NET, et le tier 7 ouvre la cage : [22_Evaluating_Generated_Text](22_Evaluating_Generated_Text.ipynb) mesure la qualité des sorties, [23_Inference_Mechanics](23_Inference_Mechanics.ipynb) démontre la mécanique interne (KV-cache, TTFT/ITL sur le vLLM du dépôt).
+
+Le schéma ci-dessous résume comment les sept tiers s'enchaînent pour maîtriser les LLMs : du prompt one-shot (tier 1) aux patterns de production puis à l'arc test-time scaling approfondi (tiers 4-5), en passant par les sorties structurées (tier 2), l'augmentation RAG/code interpreter (tier 3), l'adaptation LoRA (tier 6) et la mécanique d'inférence sous le capot (tier 7).
 
 ```mermaid
 flowchart TD
@@ -226,7 +241,13 @@ flowchart TD
         E2["15-17 : ToT, Scaling, Native"]
         E3["18 : Plugins Semantic Kernel"]
     end
-    T1 --> T2 --> T3 --> T4 --> T5
+    subgraph T6["Tier 6 · Fine-tuning"]
+        F1["21 : LoRA/QLoRA · 22 : TensorSharp .NET"]
+    end
+    subgraph T7["Tier 7 · Mécanique & évaluation"]
+        G1["22 : Évaluation des sorties · 23 : Mécanique d'inférence"]
+    end
+    T1 --> T2 --> T3 --> T4 --> T5 --> T6 --> T7
 ```
 
 ## FAQ
