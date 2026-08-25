@@ -71,6 +71,7 @@ from ict.sae_traces import (  # noqa: E402  (necessairement apres sys.path)
     check_sae_model_match,
     resolve_capture_layer,
     trace_filename,
+    w_dec_needs_transpose,
 )
 
 # ---------------------------------------------------------------------------
@@ -459,7 +460,9 @@ def load_sae(sae_repo: str, layer: int, device: torch.device):
     """Telecharge et charge le checkpoint SAE de la couche demandee.
 
     Convention Qwen-Scope (app.py officiel) : dict avec W_enc [d_sae, d_model],
-    b_enc [d_sae] (+ W_dec/b_dec pour la reconstruction/le clamp)."""
+    b_enc [d_sae] (+ W_dec/b_dec pour la reconstruction/le clamp). W_dec est
+    normalise vers [d_sae, d_model] : les checkpoints W32K (1.7B et 2B,
+    verifies firsthand #12940) le stockent en [d_model, d_sae]."""
     from huggingface_hub import hf_hub_download
     path = hf_hub_download(sae_repo, f"layer{layer}.sae.pt")
     sae = torch.load(path, map_location="cpu", weights_only=True)
@@ -470,6 +473,11 @@ def load_sae(sae_repo: str, layer: int, device: torch.device):
     w_dec = sae.get("W_dec")
     if w_dec is not None:
         w_dec = w_dec.to(torch.float32)
+        if w_dec_needs_transpose(tuple(w_dec.shape), w_enc.shape[1]):
+            print(f"[sae] W_dec {tuple(w_dec.shape)} = [d_model, d_sae] detecte "
+                  f"-> normalise {tuple(w_dec.t().shape)} = [d_sae, d_model] "
+                  "(clamp Gate 24 : l'indexation par feature exige ce layout)")
+            w_dec = w_dec.t().contiguous()
     return {"W_enc": w_enc, "b_enc": b_enc, "W_dec": w_dec, "path": path}
 
 
