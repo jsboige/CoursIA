@@ -277,6 +277,80 @@ def fixation(traj: np.ndarray, tol: float = 1e-3) -> np.ndarray:
 
 
 # --------------------------------------------------------------------------- #
+#  Selection-mutation : l'equation replicator-mutator (issue #12673)          #
+# --------------------------------------------------------------------------- #
+
+def mutation_matrix(n_strategies: int, mu: float) -> np.ndarray:
+    """Matrice de mutation uniforme Q (colonnes stochastiques).
+
+    Avec probabilite 1-mu la strategie i est transmise telle quelle, avec
+    probabilite mu elle mute vers j uniformement (y compris i) :
+
+        Q[i, j] = (1 - mu) * delta_ij + mu / n.
+    """
+    if not 0.0 <= mu <= 1.0:
+        raise ValueError(f"mu doit etre dans [0, 1], recu {mu}")
+    n = int(n_strategies)
+    Q = np.full((n, n), mu / n)
+    np.fill_diagonal(Q, (1.0 - mu) + mu / n)
+    return Q
+
+
+def replicator_mutator_trajectory(
+    A: np.ndarray,
+    x0: np.ndarray,
+    n_steps: int = 400,
+    mu: float = 0.03,
+) -> np.ndarray:
+    """Trajectoire de l'equation replicator-mutator discrete (Burger 1989 ;
+    Hofbauer & Sigmund, _Evolutionary Games and Population Dynamics_, ch. 7 --
+    la forme discrete de l'equation quasispecies d'Eigen) :
+
+        x(t+1) = Q @ ( x(t) ⊙ f(t) ) / <f>(t),   f(t) = A x(t).
+
+    La selection (replicateur) favorise les strategies performantes, la
+    mutation (Q) reinjecte en permanence de la diversite : la population ne
+    gele jamais sur une ESS, elle decrit une **trajectoire** dans le simplexe.
+    C'est la dynamique demandee par #12673 : le substrat Axelrod d'ICT-15d
+    etait un instantane sature (b1 = 0, 3654 triangles) parce que le
+    replicateur pur converge ; mu > 0 empeche cette convergence.
+
+    ``mu = 0`` reduit exactement a ``replicator_trajectory`` (Q = identite).
+    """
+    Q = mutation_matrix(x0.size if hasattr(x0, "size") else len(x0), mu)
+    x = np.asarray(x0, dtype=float).copy()
+    x = x / x.sum()
+    traj = np.empty((n_steps + 1, x.size))
+    traj[0] = x
+    for t in range(n_steps):
+        f = A @ x
+        avg = float(np.dot(f, x))
+        if avg < 1e-12:
+            break
+        x = Q @ (x * f) / avg
+        x = np.clip(x, 0.0, None)
+        s = x.sum()
+        if s > 1e-12:
+            x = x / s
+        traj[t + 1] = x
+    return traj
+
+
+def strategy_entropy(traj: np.ndarray) -> np.ndarray:
+    """Entropie de Shannon (base 2) de la composition a chaque generation.
+
+    H(t) = -sum_i x_i(t) log2 x_i(t). Mesure la diversite de la population :
+    H = 0 = monomorphe (instantane gele), H = log2(n) = uniforme. C'est la
+    grandeur qui montre que la selection-mutation maintient le nuage vivant
+    alors que le replicateur pur l'effondre vers un sommet du simplexe.
+    """
+    X = np.clip(np.asarray(traj, dtype=float), 0.0, None)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        H = -np.where(X > 0, X * np.log2(X), 0.0)
+    return H.sum(axis=1)
+
+
+# --------------------------------------------------------------------------- #
 #  Gate 2 : seuil de grim trigger vs prediction analytique                     #
 # --------------------------------------------------------------------------- #
 
