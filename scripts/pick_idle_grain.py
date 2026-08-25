@@ -813,6 +813,29 @@ def print_nits_gap(backlog: dict) -> None:
     print()
 
 
+def print_unattributed_blocked(backlog: dict) -> None:
+    """Dire ce que le garde NE couvre PAS : les PRs bloquees sans tag lisible.
+
+    Ces PRs ne sont imputables a aucune lane (deviner la lane serait pire), donc
+    elles ne bloquent personne -- mais les taire donne a croire que le garde
+    couvre tout l'ouvert. Il ne le couvre pas, et le tag manquant est lui-meme
+    le defaut a corriger (le coordinateur peut les reprendre via `skill
+    coordinate` phase 3.5). Cf #12738 : avant le fix, ce paragraphe vivait
+    dans `print_red_refusal` et n'apparaissait que sur le chemin du refus, pas
+    sur le chemin du tirage -- verdict non cable a sa preuve sur le chemin
+    ou il sert.
+    """
+    if not backlog.get("unattributed_blocked"):
+        return
+    numbers = ", ".join(f"#{u['number']}" for u in backlog["unattributed_blocked"])
+    print(f"Portee : {len(backlog['unattributed_blocked'])} autre(s) PR(s) "
+          f"bloquee(s) ({numbers})")
+    print("n'ont pas de tag")
+    print("`Grain:` lisible et ne sont donc imputables a aucune lane -- ce garde ne")
+    print("les voit pas. Leur tag manquant est lui-meme le defaut a corriger.")
+    print()
+
+
 def print_red_refusal(lane: str, backlog: dict, threshold_hours: float) -> None:
     red = backlog["red"]
     triggers = backlog.get("triggers") or []
@@ -854,13 +877,7 @@ def print_red_refusal(lane: str, backlog: dict, threshold_hours: float) -> None:
     print("     remarque. `python scripts/check_unaddressed_nits.py <N>` detaille")
     print("     chaque point non leve, son auteur et sa surface.")
     print()
-    if backlog.get("unattributed_blocked"):
-        numbers = ", ".join(f"#{u['number']}" for u in backlog["unattributed_blocked"])
-        print(f"Portee : {len(backlog['unattributed_blocked'])} autre(s) PR(s) bloquee(s) ({numbers})")
-        print("n'ont pas de tag")
-        print("`Grain:` lisible et ne sont donc imputables a aucune lane -- ce garde ne")
-        print("les voit pas. Leur tag manquant est lui-meme le defaut a corriger.")
-        print()
+    print_unattributed_blocked(backlog)
     print("Si un rouge n'est PAS reparable par cette lane (garde casse sur main,")
     print("dependance d'une autre PR), l'ECRIRE en commentaire sur la PR concernee,")
     print("puis relancer avec --ignore-red. L'echappatoire se justifie par ecrit,")
@@ -980,6 +997,7 @@ def main() -> int:
             if tail:
                 print(f"{'':>10} {'':>8} {'':>5} {'':>6} {'':>4}  -> {tail}")
     print()
+    print_unattributed_blocked(backlog)
     if visits_err:
         print(f"!! affluence NON MESUREE ({visits_err}) : la colonne `vus` affiche")
         print("   `n/m` et le tirage n'a PAS amorti les sujets deja frequentes.")

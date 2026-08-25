@@ -2689,6 +2689,63 @@ def test_run_check_partially_dead_scope_stays_scoped(capsys):
     assert '"blocking_lanes": []' in capsys.readouterr().out
 
 
+# --- #12740 -- dead-scope aggregate in the JSON --------------------------------
+#
+# #10958 surfaces `empty_scope` under the ACTIVE claim and `caller_empty_scope`
+# for the caller's own scope. GAP measured on #12620: a `[CLAIMED] -- paths:
+# scripts/notebook_tools/check_code_in_markdown.py` (the real file is
+# detect_code_in_markdown_cells.py) was released without ever being read --
+# the stderr WARN goes to a channel the CI gate / picker / lane scripts do not
+# consume, and once the claim closes its dead glob vanishes from the JSON
+# altogether. `dead_scope_globs` aggregates the dead globs lane-keyed across
+# EVERY claim event (open, override, close) so a sweep can grep ONE key.
+
+def test_run_check_dead_scope_surfaces_even_when_released(capsys):
+    """The specific #12740 shape: a dead-glob claim that has been RELEASED.
+    It is not active (`active_claims: {}`), it does not block (`blocking_lanes:
+    []`), and the stderr WARN does not fire on a close marker -- the typo is
+    invisible to a JSON consumer. `dead_scope_globs` must still name it."""
+    p = payload(
+        comment(
+            "[CLAIMED] lane myia-po-2023:CoursIA -- "
+            "paths: scripts/notebook_tools/check_code_in_markdown.py",
+            "2026-08-23T22:45:32Z",
+        ),
+        comment(
+            "[RELEASED] lane myia-po-2023:CoursIA -- "
+            "paths: scripts/notebook_tools/check_code_in_markdown.py",
+            "2026-08-24T00:10:00Z",
+        ),
+    )
+    rc = clc._run_check(p, "myia-po-2025:CoursIA")
+    # Released -> no active claim, no blocker, CLEAR.
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert '"active_claims": {}' in out  # the silent look #12740 names
+    assert '"blocking_lanes": []' in out
+    # The dead glob still surfaces, lane-keyed, even though the claim closed.
+    assert '"dead_scope_globs"' in out
+    assert "myia-po-2023:CoursIA" in out
+    assert "scripts/notebook_tools/check_code_in_markdown.py" in out
+
+
+def test_run_check_dead_scope_aggregate_empty_for_live_scope(capsys):
+    """Positive control: a scope whose globs all match a tracked file yields
+    `dead_scope_globs: {}` AND still blocks another lane. Without this, a
+    guard that reported a dead glob for every live scope would be
+    indistinguishable from one that works -- the aggregate must stay silent on
+    a well-formed scope (and the block must survive)."""
+    p = payload(
+        comment("[CLAIMED] lane myia-po-2024:CoursIA-2 -- "
+                "paths: scripts/check_lane_claim.py",
+                "2026-08-12T11:00:00Z"),
+    )
+    rc = clc._run_check(p, "myia-po-2025:CoursIA")
+    assert rc == 2  # #12322 NOT_SCOPED -- caller gave no --paths, cannot prove disjointness
+    out = capsys.readouterr().out
+    assert '"dead_scope_globs": {}' in out
+
+
 # --- #10597 bonus -- SCOPE_ZERO_COVERAGE warning ------------------------------
 #
 # When the caller's own claim carries a SCOPE that matches zero tracked
