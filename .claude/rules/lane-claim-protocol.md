@@ -44,6 +44,8 @@ La clause `paths:` est parsee par `_extract_paths_clause` dans `scripts/check_la
 
 **Référence organe** : `scripts/check_lane_claim.py:_extract_paths_clause` + `scripts/tests/test_check_lane_claim.py::test_paths_clause_*`. **Référence diagnostic** : issue **#12052** (parenthèse + prose), #10958 (annotation tiret), #10597 (accolades), #11064 (`--paths`).
 
+**Déviation sémantique — un glob bien formé qui ne matche aucun fichier suivi (#12740)** : la garantie fail-CLOSED de la ligne 28 tient pour les déviations **syntaxiques**. Elle ne tient pas pour la déviation **sémantique** — un glob syntaxiquement correct mais qui nomme un chemin inexistant (ex. `paths: scripts/notebook_tools/check_code_in_markdown.py` alors que le fichier réel est `detect_code_in_markdown_cells.py`, incident #12620 : deux lanes ont livré le même fichier réel). Politique choisie (option **b**, signaler sans re-bloquer) : on NE rouvre PAS le fail-open #10958 — un claim actif dont tout le scope est mort reste porté epic-wide (un claim cassé n'est pas permissif) — mais `check_lane_claim.py` ajoute un champ JSON `dead_scope_globs` (lane-keyed, agrégé sur TOUS les événements de claim, y compris relâchés) pour que le typo soit visible à un sweep JSON, et non seulement sur le stderr que le gate/le picker ne consomment pas. Le cas légitime du fichier pas encore créé (grain Lean, nouveau notebook) reste couvert sans geler la lane : la cible s'écrit avec un métacaractère de répertoire (`scripts/notebook_tools/*markdown*`).
+
 ## Tie-break — l'issue l'emporte, l'override s'ecrit (#10223)
 
 Les deux collisions du 2026-08-09 (#10169 puis #10161) ont revele deux
