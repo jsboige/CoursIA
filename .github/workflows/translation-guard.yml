@@ -43,26 +43,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Tranche 1 clone partiel (#11860, pilote #11843/#12016, grain #12383) :
-      # ce garde tire sur CHAQUE pull_request sans filtre paths: et clone en
-      # fetch-depth: 0. Son travail est :
-      #   - `git diff origin/main...HEAD -- 'translations/**' '*_<lang>.ipynb'`
-      #   - `git cat-file -e origin/<base>:$f` (sur le base, graphe d'objets)
-      #   - `python3 scripts/ci/translation_override_required.py --pr-number N`
-      # Le graphe de commits reste complet (fetch-depth: 0 + filter: blob:none
-      # garde le graphe d'objets accessible pour `git cat-file -e` meme si
-      # l'arbre de travail est sparse). L'arbre materialise :
-      # `translations/` + `MyIA.AI.Notebooks/` (chemin du diff) +
-      # `scripts/ci/` (override resolver).
-      - name: Checkout base (sparse, garde-partial)
+      - name: Checkout base
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          filter: blob:none
-          sparse-checkout: |
-            translations
-            MyIA.AI.Notebooks
-            scripts
 
       - name: Check for translation-owned file changes
         id: check
