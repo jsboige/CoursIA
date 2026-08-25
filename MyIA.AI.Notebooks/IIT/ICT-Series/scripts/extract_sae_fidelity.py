@@ -118,7 +118,9 @@ def main() -> None:
     sae_cfg = json.loads(
         Path(hf_hub_download(args.sae_repo, "config.json")).read_text(encoding="utf-8")
     )
-    k_release = int(sae_cfg.get("top_k", 50))
+    # Les releases Qwen-Scope exposent le top-k sous la cle "k" (le fallback 50
+    # ne serait correct que pour les releases L0_50 -- L0_100 serait faux).
+    k_release = int(sae_cfg.get("top_k") or sae_cfg.get("k") or 50)
     k = args.k if args.k is not None else k_release
     assert_sae_topk_compatible(k_release, k)
     print(f"[sae] k={k} (release {args.sae_repo.rsplit('-', 1)[-1]})")
