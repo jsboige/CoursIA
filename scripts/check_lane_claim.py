@@ -1812,6 +1812,17 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
     # caller can see WHY a scope they thought is alive is being treated
     # as empty.
     caller_empty_scope = _empty_scope_in(my_scope, tracked) if tracked is not None else []
+    # #12862 -- split the dead-scope verdict by CAUSE. A dead glob that is
+    # SYNTACTICALLY VALID (survives `_unparseable_scope_in`: has a `/` or an
+    # fnmatch metacharacter, braces closed) names files that do not exist
+    # YET -- the expected state of a CREATION tranche (a notebook or lake to
+    # be built). A dead glob that the parser flags as prose/fragment is a
+    # typo and keeps the #12345 fail-CLOSED. Only the syntactically-valid
+    # subset is eligible for the creation relaxation below.
+    parse_residue = _unparseable_scope_in(my_scope)
+    creation_scope_globs = ([g for g in caller_empty_scope
+                             if g not in parse_residue]
+                            if tracked is not None else [])
 
     # Override-scope filter (#10342): an `[OVERRIDE]` with a `paths:` clause
     # only locks lanes whose intended files intersect the scope. Without
@@ -1879,7 +1890,17 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
         # #12345 -- every glob in `my_scope` is dead: the caller declared a
         # scope they believe is alive, but it matches zero tracked files.
         # Cannot prove disjointness -> same verdict as the no-scope case.
-        query_scope = "EPIC_WIDE_NO_PATHS_DECLARED"
+        # #12862 -- UNLESS every dead glob is syntactically valid: then the
+        # deadness is the EXPECTED state of a creation tranche, not a typo.
+        # Such a scope stays `PATH_SCOPED`: it clears at exit 0 when no lane
+        # blocks (the #12844 partition shape) and takes the normal BLOCKED
+        # exit 1 when one does (the relaxation never opens a disputed
+        # scope -- disjointness from a not-yet-existing tree is unprovable,
+        # so any other active claim keeps blocking).
+        if len(creation_scope_globs) == len(caller_empty_scope):
+            query_scope = "PATH_SCOPED"
+        else:
+            query_scope = "EPIC_WIDE_NO_PATHS_DECLARED"
     else:
         query_scope = "PATH_SCOPED"
 
@@ -2040,6 +2061,11 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
         # the dead globs cover the whole scope, otherwise the live globs
         # continue to carry the disjointness test.
         "caller_empty_scope": caller_empty_scope,
+        # #12862 -- the syntactically-valid subset of `caller_empty_scope`
+        # (dead globs that are not parse residue). Non-empty with an empty
+        # `blocking_lanes` and `query_scope == PATH_SCOPED` = a creation
+        # scope, expected to stay dead until the tranche lands.
+        "creation_scope_globs": creation_scope_globs,
         # #12740 -- lane-keyed dead-glob map, aggregated over EVERY claim
         # event (not just active claims). Empty (`{}`) when no glob of any
         # claim matches zero tracked files, or when the tracked walk was
@@ -2065,11 +2091,18 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
     # `exit 2` via the verdict block below.
     if caller_empty_scope:
         dead = ", ".join(repr(g) for g in caller_empty_scope)
+        creation_note = (
+            " Those are syntactically valid -- read as a CREATION scope "
+            "(#12862): the paths are expected not to exist yet. The verdict "
+            "below clears if no lane blocks."
+            if creation_scope_globs else
+            " Reissue with valid paths to lift this hint."
+        )
         print(
             f"SCOPE_DEAD_GLOB: your declared scope contains globs that "
             f"match zero tracked files in this repo: {dead}. The live "
-            f"globs (if any) continue to carry disjointness; reissue with "
-            f"valid paths to lift this hint.",
+            f"globs (if any) continue to carry disjointness."
+            + creation_note,
             file=sys.stderr,
         )
 
@@ -2225,6 +2258,16 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
         parts.append(f"{len(stale_others)} stale claim(s) bypassed")
     note = f" ({'; '.join(parts)})" if parts else ""
     print(f"\nCLEAR: no other lane claims #{payload.get('number')}{note}.")
+    # #12862 -- the acceptance asks that one invocation surface BOTH the
+    # dead-glob count AND the blocker set, so a CLEAR on a creation scope
+    # can never be misread as a CLEAR on a live scope.
+    if creation_scope_globs:
+        print(
+            f"  scope de creation : {len(creation_scope_globs)} glob(s) sans "
+            f"correspondance sur les fichiers trackes, aucune lane bloquante "
+            f"(blocking_lanes: []). Les chemins vises n'existent pas encore -- "
+            f"etat attendu pour une tranche de creation (#12862)."
+        )
     return 0
 
 

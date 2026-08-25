@@ -565,10 +565,12 @@ def test_check_query_scope_path_scoped_when_caller_already_owns_scoped_claim(cap
     at exit 1 -- the caller is, in effect, scoped through their own active
     claim, so the unscoped-caller hint does not apply.
 
-    # #12345 -- the caller's own claim scopes to `Sudoku-9.ipynb`, which does
-    # NOT exist as a tracked file. Post-#12345, the scope-vivacity classifier
-    # sees `caller_empty_scope == my_scope` and routes to
-    # `EPIC_WIDE_NO_PATHS_DECLARED` at exit 2 (a broken scope is a non-scope).
+    # #12862 -- the caller's own claim scopes to `Sudoku-9.ipynb`, which does
+    # NOT exist as a tracked file, but the glob is SYNTACTICALLY VALID (it
+    # carries a `/`): this is a creation scope, not a typo. The other lane's
+    # epic-wide claim still blocks (disjointness from a not-yet-existing tree
+    # is unprovable), so the verdict is BLOCKED at exit 1 -- the relaxation
+    # never opens a disputed scope.
     """
     p = payload(
         comment(
@@ -583,14 +585,12 @@ def test_check_query_scope_path_scoped_when_caller_already_owns_scoped_claim(cap
     )
     rc = clc._run_check(p, "myia-po-2024:CoursIA")
     out = capsys.readouterr().out
-    # #12345 -- the caller's own scope (`Sudoku-9.ipynb`) is dead, so the
-    # classifier sees an entirely-dead scope and routes to
-    # `EPIC_WIDE_NO_PATHS_DECLARED` at exit 2. The other lane's epic-wide
-    # claim still blocks the caller; the verdict is `NOT_SCOPED` (exit 2),
-    # not `BLOCKED` (exit 1), because the broken scope proves nothing about
-    # disjointness.
-    assert rc == 2  # NOT_SCOPED -- caller's own scope is dead (#12345)
-    assert '"query_scope": "EPIC_WIDE_NO_PATHS_DECLARED"' in out
+    # #12862 -- the dead-but-valid scope classifies as a CREATION scope
+    # (`PATH_SCOPED`, not `EPIC_WIDE_NO_PATHS_DECLARED`): the other lane's
+    # epic-wide claim still blocks, so the verdict is BLOCKED at exit 1 --
+    # relaxation only reclassifies, it never lifts a real blocker.
+    assert rc == 1  # BLOCKED -- creation scope, but another lane claims (#12862)
+    assert '"query_scope": "PATH_SCOPED"' in out
     # Verify the caller's own scoped claim is in the active_claims dict.
     assert '"myia-po-2024:CoursIA"' in out
 
@@ -1617,14 +1617,13 @@ def test_check_override_paths_blocks_other_lane_on_matching_path(capsys):
         "myia-po-2025:CoursIA-2",
         my_paths=["MyIA.AI.Notebooks/SymbolicAI/Lean/Foo.lean"],
     )
-    # #12345 -- the caller's scope `Foo.lean` does NOT exist in this test
-    # repo (and the override claim's `SymbolicAI/Lean/**` glob is also
-    # dead). Post-#12345, an entirely-dead caller scope routes to
-    # `EPIC_WIDE_NO_PATHS_DECLARED` at exit 2 (fail-CLOSED -- a broken
-    # scope is a non-scope, NOT a permissive one).
-    assert rc == 2  # NOT_SCOPED -- caller's scope is dead (#12345)
+    # #12862 -- the caller's dead glob is syntactically VALID (`/` in the
+    # path), so the scope classifies as CREATION, not typo: PATH_SCOPED.
+    # The override lane still blocks (disjointness from a not-yet-existing
+    # tree is unprovable) -> BLOCKED at exit 1. The relaxation reclassifies
+    # the verdict; it never lifts a real blocker.
+    assert rc == 1  # BLOCKED -- creation scope, override still claims (#12862)
     captured = capsys.readouterr()
-    assert "NOT_SCOPED" in captured.err
     assert "myia-po-2024:CoursIA" in captured.out
 
 
@@ -1895,7 +1894,7 @@ def test_check_claimed_one_scoped_one_plain_blocks(capsys):
                 "2026-08-11T04:05:00Z"),
     )
     rc = clc._run_check(p, "A:CoursIA")
-    assert rc == 2  # NOT_SCOPED -- caller's scope is dead (#12345)
+    assert rc == 1  # BLOCKED -- creation scope (valid dead glob), plain claim still blocks (#12862)
     assert "B:CoursIA-2" in capsys.readouterr().err
 
 
@@ -2665,11 +2664,13 @@ def test_run_check_my_dead_scope_keeps_others(capsys):
                 "2026-08-11T04:05:00Z"),
     )
     rc = clc._run_check(p, "A:CoursIA")
-    # #12345 -- caller's own scope is entirely dead (`nowhere/typo.py` is not
-    # tracked). The verdict is NOT_SCOPED (exit 2), not BLOCKED (exit 1):
-    # a broken scope is a non-scope, NOT a real conflict against B.
-    assert rc == 2  # NOT_SCOPED -- caller's scope is dead (#12345)
-    assert "NOT_SCOPED" in capsys.readouterr().err
+    # #12862 -- the dead glob `nowhere/typo.py` is syntactically valid ->
+    # creation scope -> PATH_SCOPED. B is STILL kept (the guard the test
+    # name pins: a scope locking nothing proves no disjointness) -> BLOCKED
+    # at exit 1. What changed vs #12345 is the verdict label, not the lock.
+    assert rc == 1  # BLOCKED -- B kept; creation scope reclassified (#12862)
+    out = capsys.readouterr().out
+    assert "B:CoursIA-2" in out
 
 
 def test_run_check_partially_dead_scope_stays_scoped(capsys):
@@ -2806,13 +2807,18 @@ def test_run_check_emits_scope_zero_coverage_warning(capsys):
         ),
     )
     rc = clc._run_check(p, "myia-po-2024:CoursIA-2")  # own lane, scope dead
-    # #12345 -- fail-CLOSED: broken scope is not a permissive scope.
-    assert rc == 2  # NOT_SCOPED -- caller's own scope is dead (#12345)
+    # #12862 -- the dead glob carries an fnmatch meta (`*`), so it is
+    # syntactically valid -> creation scope -> CLEAR at exit 0 (own claim
+    # only, no other lane). The two witnesses still fire so the declaring
+    # lane SEES the deadness; the relaxation only converts the refusal into
+    # an authorisation when nothing blocks.
+    assert rc == 0  # CLEAR -- creation scope, no blocker (#12862)
     captured = capsys.readouterr()
     # Both warnings fire: the legacy SCOPE_ZERO_COVERAGE (declaring-side
-    # hint) and the new SCOPE_DEAD_GLOB (caller-side witness list).
+    # hint) and the SCOPE_DEAD_GLOB (caller-side witness list).
     assert "SCOPE_ZERO_COVERAGE" in captured.err
     assert "SCOPE_DEAD_GLOB" in captured.err
+    assert "scope de creation" in captured.out
     # The scope itself is named verbatim so the lane can reissue.
     assert "definitely-not-a-real-glob-*.zxyq" in captured.err
     # And the JSON summary carries the dead-glob witness on the caller side.
@@ -3234,18 +3240,19 @@ def test_check_caller_scope_all_globsmdead_routes_to_not_scoped(capsys, monkeypa
         my_paths=["dead1/glob.ipynb", "dead2/other.ipynb"],
     )
     captured = capsys.readouterr()
-    # #12345 -- entirely-dead scope -> NOT_SCOPED (exit 2), not BLOCKED (exit 1).
-    # The blocker `x/**` would have been a true conflict if the caller's
-    # scope had been live; the broken scope prevents the disjointness test.
-    assert rc == 2
+    # #12862 -- both dead globs are syntactically valid (`/`) -> creation
+    # scope -> PATH_SCOPED. The blocker `x/**` stays (cannot prove
+    # disjointness from a tree that does not exist yet) -> BLOCKED exit 1.
+    # The SCOPE_DEAD_GLOB WARN still names both globs verbatim, and the JSON
+    # still carries the caller-side witness + the creation subset.
+    assert rc == 1
     assert "SCOPE_DEAD_GLOB" in captured.err
-    # Both dead globs named verbatim so the caller can reissue.
     assert "dead1/glob.ipynb" in captured.err
     assert "dead2/other.ipynb" in captured.err
-    # And the JSON summary carries the dead-glob witness on the caller side.
     assert '"caller_empty_scope": [' in captured.out
     assert "dead1/glob.ipynb" in captured.out
     assert "dead2/other.ipynb" in captured.out
+    assert '"creation_scope_globs": [' in captured.out
 
 
 def test_check_caller_scope_partially_dead_warns_but_keeps_live(capsys, monkeypatch):
@@ -3373,16 +3380,20 @@ def test_check_caller_scope_fail_closed_when_no_blockers(capsys, monkeypatch):
     p = payload(comment(body, "2026-08-15T00:00:00Z"), number=11064, title="t")
     rc = clc._run_check(p, "B:CoursIA")  # own lane, no other claims
     captured = capsys.readouterr()
-    # #12345 -- fail-CLOSED. Broken scope is not a permissive scope.
-    assert rc == 2  # NOT_SCOPED, NOT CLEAR
-    assert "NOT_SCOPED" in captured.err
-    # The dedicated message names the dead glob.
-    assert "dead/nowhere.ipynb" in captured.err
-    # And it explicitly explains that this is NOT a permissive CLEAR.
-    assert "broken scope" in captured.err or "fail-CLOSED" in captured.err
-    # The JSON shows the dead-glob witness list.
+    # #12862 -- the dead glob `dead/nowhere.ipynb` is syntactically valid
+    # -> CREATION scope -> CLEAR at exit 0 (nothing blocks). This test WAS
+    # the #12345 acceptance (5); #12862 narrows the fail-CLOSED to the
+    # typo subset (see test_broken_scope_typo_still_fails_closed): a valid
+    # glob naming not-yet-existing files is the EXPECTED state of a
+    # creation tranche, and refusing it invited the empty-file workaround.
+    # The CLEAR names the creation scope explicitly -- never read as a
+    # live-scope clear.
+    assert rc == 0  # CLEAR -- creation scope, no blocker (#12862)
+    assert "scope de creation" in captured.out
+    assert "dead/nowhere.ipynb" in captured.err  # SCOPE_DEAD_GLOB WARN
     assert '"caller_empty_scope": [' in captured.out
     assert "dead/nowhere.ipynb" in captured.out
+    assert '"creation_scope_globs": [' in captured.out
 
 
 def test_claim_paths_roundtrip_reads_back_scoped(monkeypatch):
@@ -3410,7 +3421,7 @@ def test_claim_paths_roundtrip_reads_back_scoped(monkeypatch):
     # genuine-intersection case is now pinned separately in
     # `test_claim_paths_roundtrip_reads_back_scoped_intersect_live_glob`
     # below with a glob that IS in the mock (`z/deep/f.ipynb`).
-    assert clc._run_check(pl, "B:CoursIA", my_paths=["x/sub/f.ipynb"]) == 2  # dead scope -> NOT_SCOPED
+    assert clc._run_check(pl, "B:CoursIA", my_paths=["x/sub/f.ipynb"]) == 1  # creation scope, intersecting claim still blocks (#12862)
     # The unscoped-caller leg: previously `== 1` (false-positive real conflict).
     # #12322 lifts this to `== 2` (NOT_SCOPED) -- the verdict is honest about
     # the missing scope binding instead of pretending to be a hard block.
@@ -3452,11 +3463,15 @@ def test_claim_refuses_when_blocked(monkeypatch, tmp_path):
     #     dead in this repo (the glob matches zero tracked files). The
     #     refusal is the same (do not post), but the actionable next step
     #     is re-run with a valid `--paths` glob, not wait-for-release.
-    # #12345 -- the test's caller `--paths x/sub/f.ipynb` is dead in the real
-    # repo (no `x/` tree). Post-#12345 the refusal is `exit 2` (NOT_SCOPED).
+    # #12862 -- the caller's `--paths x/sub/f.ipynb` is dead but VALID ->
+    # creation scope -> PATH_SCOPED. The blocker is kept FRESH here (the
+    # #12345-era fixture dated it 2026-08-15, which the 48h stale filter
+    # bypasses -- under the creation relaxation that fixture would clear
+    # and post, defeating the test's stated intent). Fresh blocker +
+    # unprovable disjointness -> BLOCKED at exit 1, no post.
     blocker = comment(
         "[CLAIMED] lane A:CoursIA -- tranche x -- paths: x/**",
-        "2026-08-15T00:00:00Z",
+        "2026-08-25T10:00:00Z",
     )
     json_path = _write_payload(
         payload(blocker, number=11064, title="t"), tmp_path)
@@ -3465,10 +3480,9 @@ def test_claim_refuses_when_blocked(monkeypatch, tmp_path):
                         lambda issue, body: posted.append((issue, body)))
     rc = clc.main(["--lane", "B:CoursIA", "--paths", "x/sub/f.ipynb",
                    "--claim", "tranche x", "11064", "--from-json", json_path])
-    # #12345 -- the caller's glob is dead -> NOT_SCOPED (exit 2), NOT
-    # BLOCKED (exit 1). The refusal channel (no post) is what the test
-    # actually pins; the exit code is the diagnostic.
-    assert rc == 2  # NOT_SCOPED -- caller's --paths is dead (#12345)
+    # #12862 -- creation scope + live blocker -> BLOCKED (exit 1). The
+    # refusal channel (no post) is what the test actually pins.
+    assert rc == 1  # BLOCKED -- creation scope, fresh claim still blocks (#12862)
     assert posted == []
 
 
@@ -4948,3 +4962,79 @@ def test_run_check_disjoint_joker_caller_clear(capsys):
         f"disjoint joker scopes must not block each other (#10419): got rc={rc}"
     )
 
+
+
+# --- #12862 : creation scope vs broken scope -------------------------------
+
+def test_creation_scope_valid_glob_clears_when_unblocked(capsys):
+    """#12862 acceptance 1 (positive): a syntactically-valid glob matching
+    zero tracked files + no blocking lane -> CLEAR at exit 0, with an
+    explicit creation-scope line naming the dead-glob count AND the empty
+    blocker set in the same invocation (acceptance 4)."""
+    p = payload()  # no other lane has claimed anything
+    rc = clc._run_check(
+        p,
+        "myia-po-2026:CoursIA",
+        my_paths=["MyIA.AI.Notebooks/GameTheory/asymmetric_information_lean/**"],
+    )
+    captured = capsys.readouterr()
+    assert rc == 0
+    assert "CLEAR" in captured.out
+    assert "scope de creation" in captured.out
+    assert "1 glob(s) sans correspondance" in captured.out
+    assert "blocking_lanes: []" in captured.out
+    assert '"query_scope": "PATH_SCOPED"' in captured.out
+    assert '"creation_scope_globs"' in captured.out
+
+
+def test_creation_scope_valid_glob_still_blocked_by_claiming_lane(capsys):
+    """#12862 acceptance 2 (the control that counts): the same valid creation
+    scope BUT another lane holds an active claim -> BLOCKED at exit 1. The
+    relaxation reclassifies the verdict; it must never open a disputed
+    scope."""
+    p = payload(
+        comment("[CLAIMED] lane myia-po-2024:CoursIA -- working here",
+                "2026-08-25T10:00:00Z"),
+    )
+    rc = clc._run_check(
+        p,
+        "myia-po-2026:CoursIA",
+        my_paths=["MyIA.AI.Notebooks/GameTheory/asymmetric_information_lean/**"],
+    )
+    captured = capsys.readouterr()
+    assert rc == 1  # BLOCKED
+    assert "BLOCKED" in captured.err or "myia-po-2024:CoursIA" in captured.out
+    assert '"query_scope": "PATH_SCOPED"' in captured.out
+
+
+def test_broken_scope_typo_still_fails_closed(capsys):
+    """#12862 acceptance 3 (non-regression): an INVALID glob (bare prose
+    without `/` or metacharacter, and an unclosed brace) stays the #12345
+    fail-CLOSED `NOT_SCOPED` at exit 2 -- the typo was, is, and remains a
+    broken scope, not a creation."""
+    p = payload()  # unblocked -- the exit 2 comes from the scope, not a lane
+    rc = clc._run_check(
+        p,
+        "myia-po-2026:CoursIA",
+        my_paths=["prose-without-separator", "MyIA/{unclosed/**"],
+    )
+    captured = capsys.readouterr()
+    assert rc == 2  # NOT_SCOPED -- invalid globs (#12345 preserved)
+    assert "NOT_SCOPED" in captured.err
+    assert '"query_scope": "EPIC_WIDE_NO_PATHS_DECLARED"' in captured.out
+
+
+def test_creation_scope_json_exposes_dead_count_and_blockers(capsys):
+    """#12862 acceptance 4 (machine leg): the JSON of a creation-scope CLEAR
+    carries BOTH `creation_scope_globs` (the count) and the blocker state --
+    a reader cannot see one without the other."""
+    p = payload()
+    rc = clc._run_check(
+        p,
+        "myia-po-2026:CoursIA",
+        my_paths=["Search/discrepancy_lean/NewModule.lean"],
+    )
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert '"creation_scope_globs": [' in out
+    assert '"blocked": false' in out
