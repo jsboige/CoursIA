@@ -302,6 +302,93 @@ theorem expect_rademacherSum_sq_of_isColoring {n : ℕ} (c : Fin n → ℤ)
   simp only [h]
   simp
 
+/-! ## Boute p1b — moteurs du 4e moment
+
+Le développement de `E[Z^4]` classe chaque quadruplet d'indices `(i,j,k,l)`
+par son motif d'egalites : les termes non nuls sont exactement les
+« apparies » (chaque coordonnee apparaissant un nombre pair de fois). Les
+trois moteurs ci-dessous evaluent chaque motif ; l'assemblage (classification
+complète et comptage) viendra par-dessus. -/
+
+/-- Le signe est involutif pour la multiplication : `s * s = 1` (le signe
+de Rademacher est `+-1`). Brique d'effondrement des paires. -/
+theorem boolSign_mul_self (b : Bool) : boolSign b * boolSign b = 1 := by
+  cases b <;> norm_num [boolSign]
+
+/-- **Moteur deux paires** : `E[(a i * s_i)^2 * (a k * s_k)^2] = (a i)^2 (a k)^2`
+— un quadruplet entièrement apparié `(i,i,k,k)` est CONSTANT au point près
+(les deux `s^2` s'effondrent en 1), son espérance est sa valeur. -/
+theorem expect_quad_two_pairs {n : ℕ} (a : Fin n → ℝ) (i k : Fin n) :
+    sampleExpect fairCoin (fun S : Fin n → Bool ↦
+      (a i * boolSign (S i)) * (a i * boolSign (S i)) *
+      (a k * boolSign (S k)) * (a k * boolSign (S k))) =
+      a i * a i * (a k * a k) := by
+  have hc : ∀ S : Fin n → Bool, ∀ q : Fin n,
+      (a q * boolSign (S q)) * (a q * boolSign (S q)) = a q * a q :=
+    fun S q => by rw [mul_mul_mul_comm, boolSign_mul_self, mul_one]
+  have hfun : ∀ S : Fin n → Bool,
+      (a i * boolSign (S i)) * (a i * boolSign (S i)) *
+      (a k * boolSign (S k)) * (a k * boolSign (S k)) =
+        a i * a i * (a k * a k) := by
+    intro S
+    rw [hc S i, mul_assoc, hc S k]
+  rw [funext hfun, PacLearning.sampleExpect_const]
+
+/-- **Moteur paire + deux distinctes** : `E[(a i * s_i)^2 * (a k * s_k) *
+(a l * s_l)] = 0` quand `k != l` — la paire s'effondre en `(a i)^2`, reste un
+produit de deux coordonnées distinctes à espérances nulles. Fonctionne même
+si `k` ou `l` égale `i` (la factorisation ne demande que `k != l`). -/
+theorem expect_quad_pair_and_two {n : ℕ} (a : Fin n → ℝ) (i k l : Fin n)
+    (hkl : k ≠ l) :
+    sampleExpect fairCoin (fun S : Fin n → Bool ↦
+      (a i * boolSign (S i)) * (a i * boolSign (S i)) *
+      (a k * boolSign (S k)) * (a l * boolSign (S l))) = 0 := by
+  have hc : ∀ S : Fin n → Bool,
+      (a i * boolSign (S i)) * (a i * boolSign (S i)) = a i * a i :=
+    fun S => by rw [mul_mul_mul_comm, boolSign_mul_self, mul_one]
+  have hfun : ∀ S : Fin n → Bool,
+      (a i * boolSign (S i)) * (a i * boolSign (S i)) *
+      (a k * boolSign (S k)) * (a l * boolSign (S l)) =
+        (a i * a i) * ((a k * boolSign (S k)) * (a l * boolSign (S l))) := by
+    intro S
+    rw [hc S, mul_assoc]
+  rw [funext hfun, PacLearning.sampleExpect_smul,
+    sampleExpect_coord_mul_coord fairCoin
+      (fun x => a k * boolSign x) (fun x => a l * boolSign x) hkl,
+    expect_mul_boolSign_eq_zero, expect_mul_boolSign_eq_zero,
+    mul_zero, mul_zero]
+
+/-- **Moteur quatre distinctes** : `E[(a i * s_i) * (a j * s_j) *
+(a k * s_k) * (a l * s_l)] = 0` quand les quatre indices sont deux à deux
+distincts — le produit est exactement un produit sur l'ensemble
+`{i,j,k,l}`, chaque facteur ayant une espérance nulle. -/
+theorem expect_quad_four_distinct {n : ℕ} (a : Fin n → ℝ) (i j k l : Fin n)
+    (hij : i ≠ j) (hik : i ≠ k) (hil : i ≠ l) (hjk : j ≠ k) (hjl : j ≠ l)
+    (hkl : k ≠ l) :
+    sampleExpect fairCoin (fun S : Fin n → Bool ↦
+      (a i * boolSign (S i)) * (a j * boolSign (S j)) *
+      (a k * boolSign (S k)) * (a l * boolSign (S l))) = 0 := by
+  have hset : (fun S : Fin n → Bool =>
+      (a i * boolSign (S i)) * (a j * boolSign (S j)) *
+      (a k * boolSign (S k)) * (a l * boolSign (S l))) =
+      (fun S : Fin n → Bool => ∏ q ∈ ({i, j, k, l} : Finset (Fin n)),
+        (a q * boolSign (S q))) := by
+    funext S
+    rw [Finset.prod_insert (by simp [hij, hik, hil]),
+        Finset.prod_insert (by simp [hjk, hjl]),
+        Finset.prod_insert (by simp [hkl]),
+        Finset.prod_singleton]
+    ring
+  have hstep : sampleExpect fairCoin
+      (fun S : Fin n → Bool => ∏ q ∈ ({i, j, k, l} : Finset (Fin n)),
+        a q * boolSign (S q)) =
+      ∏ q ∈ ({i, j, k, l} : Finset (Fin n)),
+        expect fairCoin (fun x => a q * boolSign x) :=
+    sampleExpect_prod_over_finset fairCoin _ (fun q x => a q * boolSign x)
+  rw [hset, hstep]
+  exact Finset.prod_eq_zero (Finset.mem_insert_self i _)
+    (expect_mul_boolSign_eq_zero (a i))
+
 end Moments
 
 end Discrepancy
