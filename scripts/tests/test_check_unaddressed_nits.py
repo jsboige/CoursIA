@@ -1729,3 +1729,71 @@ def test_12315_lowercase_quoted_content_not_covered_piste2():
     # -- un redacteur futur qui elargirait la regex devrait mettre a
     # jour CE test pour basculer en piste 2 (verbe de levee).
     assert verdict in ("BOT-CONCERN", None)
+
+
+def test_12335_v20_changerequested_redevient_live():
+    """Issue #12335 : `v2.0 CHANGES_REQUESTED` etait neutralisee par le citer
+    chiffre `0` de #12311 (endswith « 0 » + `.` non-alphanum → match). Le fix
+    teste l'EGALITE stricte apres strip typographie markdown : le token
+    resultant `v2.0` n'est pas le compteur `0`, donc live. La forme
+    « Migration vers la v2.0 » redevient un reserve BOT-CONCERN vivante."""
+    body = (
+        "Migration vers la v2.0 CHANGES_REQUESTED du bot. "
+        "Voir la release note annexee pour le detail."
+    )
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+def test_12335_section_40_changerequested_redevient_live():
+    """Issue #12335 : `4.0 CHANGES_REQUESTED` (reference a une section 4.0).
+    Meme mecanique que v2.0 : token `4.0` ≠ compteur `0`, donc live."""
+    body = (
+        "Cf section 4.0 CHANGES_REQUESTED emis par Hermes. "
+        "Justification : csp7 manque un cas limite."
+    )
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+def test_12335_etape_p0_changerequested_redevient_live():
+    """Issue #12335 : `P-0 CHANGES_REQUESTED` (reference a une etape P-0).
+    Token `P-0` ≠ compteur `0`, donc live."""
+    body = (
+        "Etape P-0 CHANGES_REQUESTED du reviewer. "
+        "Bloquant tant que la precondition n'est pas resolue."
+    )
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+def test_12335_priorite_0_changerequested_redevient_live():
+    """Issue #12335 : `(0) CHANGES_REQUESTED` (reference textuelle).
+    Apres extraction du dernier mot `(0)`, strip typographie markdown ne
+    touche pas la parenthese, donc le token `(0)` ≠ compteur `0` (egalite
+    stricte) → live. C'est le controle positif critique : sans la parente
+    dans le strip, le cas serait degenere en en match du citer chiffre."""
+    body = (
+        "Priorite (0) CHANGES_REQUESTED encore ouvert. "
+        "Aucune autre priorite sur la liste."
+    )
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+def test_12335_run_id_changerequested_reste_live():
+    """Issue #12335 controle negatif (run #12300) : le `0` preced d'un
+    alphanum (`#12300`) coupait deja le endswith, donc reste live sous
+    l'ancien ET le nouveau code. Le fix ne regresse pas ce cas."""
+    body = (
+        "Sur le run #12300 CHANGES_REQUESTED reste vivant. "
+        "Pas de LIFT depuis le precedent passage."
+    )
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+def test_12335_date_changerequested_reste_live():
+    """Issue #12335 controle negatif (date 2026-08-20) : le `0` final est
+    preced d'un alphanum (`2026-08-2`) → endswith coupe. Reste live sous
+    l'ancien ET le nouveau code."""
+    body = (
+        "Depuis 2026-08-20 CHANGES_REQUESTED non leve. "
+        "L'agent n'a pas repondu depuis."
+    )
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
