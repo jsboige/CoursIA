@@ -225,6 +225,49 @@ def test_only_standalone_still_flags():
     assert extract_perimeter_assertions(line) == [line]
 
 
+def test_negated_marker_is_not_exclusivity():
+    """"pas seulement" / "not only" assert universality, not a restriction.
+
+    Measured on #12547: the body line "Le gate attend donc **tous** les
+    checks non-advisory, **pas seulement** les requis." was flagged
+    (criterion #11268-2, unnamed workflow) and blocked the PR -- the prose
+    widens the set (semantics of `classify`), it does not declare a
+    perimeter. Same failure shape as the read-only compound (#11654):
+    marker present, force absent. A "pas" further up the sentence still
+    negates nothing downstream (control on the last form).
+    """
+    cpp = __import__("check_pr_perimeter")
+    # Four negated forms -- each must be skipped.
+    for line in (
+        "le gate attend tous les checks non-advisory, pas seulement les requis",
+        "non seulement le workflow, mais aussi le script de scan",
+        "le lake ne touche pas uniquement le module basic",
+        "not only the workflow file, but also its test",
+    ):
+        assert not cpp._has_exclusivity(line), line
+    # Distant negator does not neutralize a later bare marker.
+    assert cpp._has_exclusivity(
+        "pas de regression attendue, uniquement le workflow est touche")
+    # End-to-end on the founding line: no perimeter assertion extracted.
+    body = ("Le périmètre attendu couvre **tous** les checks non-advisory, "
+            "**pas seulement** les requis.")
+    assert extract_perimeter_assertions(body) == []
+
+
+def test_bare_markers_still_flag_after_negation_fix():
+    """Control positive side, one per marker, bare form -- the negation skip
+    must not disarm any arm of the detector (#12564 correctif, 5/5)."""
+    cpp = __import__("check_pr_perimeter")
+    for line in (
+        "uniquement le fichier du workflow est touche",
+        "seulement le workflow est modifie",
+        "aucune autre modification",
+        "only the workflow file changed",
+        "no other file is touched",
+    ):
+        assert cpp._has_exclusivity(line), line
+
+
 def test_extract_skips_markdown_table_rows():
     """A markdown table row is a report structure, not a live assertion.
 

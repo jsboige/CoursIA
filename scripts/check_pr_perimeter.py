@@ -137,15 +137,46 @@ _ONLY_STANDALONE = re.compile(r"(?<![-\w])only\b", re.IGNORECASE)
 _SUBSTRING_MARKERS = ("uniquement", "seulement", "aucune autre",
                       "nothing else", "no other")
 
+# A negator immediately before a marker flips its force: "pas seulement les
+# requis" / "not only X but also Y" assert UNIVERSALITY (the set is wider
+# than the named one) -- the exact opposite of a perimeter restriction.
+# Measured on #12547: the body line "Le gate attend donc tous les checks
+# non-advisory, pas seulement les requis." was read as an exclusivity
+# assertion (criterion #11268-2) and blocked the PR, while the prose merely
+# described `classify` semantics. Same failure shape as the read-only
+# compound (#11654): marker present, force absent. The negator must sit
+# directly before the marker (optionally doubled, "non pas uniquement");
+# a "pas" further up the sentence negates nothing downstream. A negated
+# occurrence is skipped, but any non-negated occurrence still flags.
+_NEGATOR_BEFORE_MARKER = re.compile(
+    r"\b(?:pas|non|ni|not|never|jamais)\s+(?:pas\s+)?$",
+    re.IGNORECASE,
+)
+
+
+def _marker_is_negated(low: str, start: int) -> bool:
+    """True when a negator immediately precedes the marker at `start`."""
+    return bool(_NEGATOR_BEFORE_MARKER.search(low, 0, start))
+
 
 def _has_exclusivity(low: str) -> bool:
     """Exclusivity check shared by extraction and assertion checking.
 
     `low` is the lowercased line. French/phrase markers are substring-matched;
-    "only" requires word boundaries AND no hyphen/word char before it.
+    "only" requires word boundaries AND no hyphen/word char before it. A
+    marker directly preceded by a negator ("pas seulement", "not only") is
+    skipped -- it widens the set, it does not restrict it (#12564).
     """
-    return (any(m in low for m in _SUBSTRING_MARKERS)
-            or bool(_ONLY_STANDALONE.search(low)))
+    for m in _SUBSTRING_MARKERS:
+        start = low.find(m)
+        while start != -1:
+            if not _marker_is_negated(low, start):
+                return True
+            start = low.find(m, start + len(m))
+    for mo in _ONLY_STANDALONE.finditer(low):
+        if not _marker_is_negated(low, mo.start()):
+            return True
+    return False
 
 
 @dataclass
