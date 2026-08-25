@@ -34,16 +34,15 @@ Ce qui leve un nit — et ce qui ne le leve PAS
   - une **reponse ecrite** capable de repondre (cf `can_lift` : ni bot de CI,
     ni tag de protocole nu) ;
   - pour un thread inline : `isResolved: true` ou `isOutdated: true` ;
-  - **de la bonne personne** (borne d'auteur #11145) : l'auteur de la reserve,
-    ou l'auteur de la PR qui repond a son reviewer. Une reponse ou une
-    approbation d'un tiers (ni l'un ni l'autre) n'eteint pas la reserve —
-    c'est la classe #10761 que l'organe existe pour bloquer (mesure #11494 :
-    24,3 % des levees etaient BYSTANDER). L'echappement B.0 (issue de suivi
-    nommee) reste le chemin quand la reserve exige l'arbitrage d'un tiers —
-    et depuis #11639, l'arbitrage ECRIT du coordinateur porte une trappe
-    nommee : `[OVERRIDE] lane <machine:workspace>` + phrase de levee (meme
+  - **de la bonne personne** (borne d'auteur #11145, durcie #12836) : l'auteur
+    de la reserve. L'auteur de la PR ne peut pas lever lui-meme une reserve
+    posee par un tiers — sa phrase documente une reponse, mais seule une
+    re-review/levee du tiers confirme qu'il la tient pour traitee. Une reponse
+    ou une approbation d'un autre tiers n'eteint pas davantage la reserve.
+    L'echappement B.0 reste l'arbitrage ECRIT du coordinateur, par la trappe
+    nommee `[OVERRIDE] lane <machine:workspace>` + phrase de levee (meme
     convention ecrite que les claims #10223). Pas une ouverture generale :
-    la borne tient pour tout autre tiers, et un override POST-marge ne peut
+    la borne tient pour tout autre tiers, et un override POST-merge ne peut
     pas avoir eteint une reserve avant la decision de merge.
 
 Ne levent RIEN :
@@ -206,7 +205,14 @@ LIFT_MARKERS = (
 # effet quand la construction est conditionnelle.
 CONDITIONAL_LIFT = re.compile(
     r"(et je merge|puis je merge|ensuite je merge"
-    r"|je merge (?:dès|des|une fois|quand|après|apres|si\b))", re.I)
+    r"|je merge (?:dès|des|une fois|quand|après|apres|si\b)"
+    # #12319 — miroir exact des constructions « je merge » pour « je leve » :
+    # « corrige X et je leve » est l'enonce de la condition, pas une levee
+    # acquise. Le commentaire de LIFT_MARKERS le revendiquait deja ; le regex
+    # ne couvrait que « je merge » — mesure par le test de regression
+    # test_12319_levee_conditionnelle_ne_leve_pas_nit_commentaire.
+    r"|et je l[èe]ve|puis je l[èe]ve|ensuite je l[èe]ve"
+    r"|je l[èe]ve (?:dès|des|une fois|quand|après|apres|si\b))", re.I)
 
 # #12074 — marqueurs de levee EXPLICITE par son auteur : quand l'un d'eux
 # PRECEDE le match CONDITIONAL_LIFT, la construction n'est pas une condition —
@@ -570,6 +576,34 @@ def has_marker(body: str, markers: tuple[str, ...]) -> bool:
     return any(_unaccent(m) in normalised for m in markers)
 
 
+def _formal_concern_precedes_lift(body: str) -> bool:
+    """Un verdict Hermes formel precede-t-il la narration de sa levee ?
+
+    #12798 contient ``COMMENT_WITH_CONCERNS`` en tete de revalidation puis
+    raconte plus bas qu'une ancienne reserve avait ete « levee ». Ce mot ne
+    retracte pas le verdict vivant qui le precede. A l'inverse, « je leve ma
+    CHANGES_REQUESTED » est une levee explicite historique : le marqueur nomme
+    vient APRES le verbe et doit rester admissible.
+    """
+    stripped = _strip_mentioned_verdicts(_strip_quoted(body))
+    normalised = _unaccent(stripped)
+    concern_positions = [
+        normalised.find(_unaccent(marker))
+        for marker in ("COMMENT_WITH_CONCERNS", "REQUEST_CHANGES", "NEEDS_CHANGES")
+    ]
+    concern_positions = [position for position in concern_positions if position >= 0]
+    lift_positions = [
+        normalised.find(_unaccent(marker))
+        for marker in LIFT_MARKERS
+    ]
+    lift_positions = [position for position in lift_positions if position >= 0]
+    return (
+        bool(concern_positions)
+        and bool(lift_positions)
+        and min(concern_positions) < min(lift_positions)
+    )
+
+
 def _excerpt(body: str) -> str:
     """Tete + queue : le verdict d'un reviewer vit en QUEUE de body.
 
@@ -604,6 +638,30 @@ def _is_cited(window: str) -> bool:
     w = w.lower()
     for c in CITERS:
         c = c.rstrip("'’")
+        # Compteur numerique (« 0 » dans CITERS, grain #12311) — cas reel
+        # `**0 REQUEST_CHANGES** » (#11916) : on veut que `**0` (markdown
+        # bold) matche, mais pas `v2.0`, `4.0`, `P-0`, `(0)`. La regle est :
+        # extraire le DERNIER mot du window, strip typographie markdown
+        # (`*`, `_`, backtick) des deux cotes, puis tester que le token
+        # resultant est EXACTEMENT ce compteur. Sans le strip de debut,
+        # `**0` ne matche pas (le `*` final est deja degage mais le `*`
+        # initial ne l'est pas) ; sans l'egalite stricte, `v2.0` matche
+        # (endswith « 0 » + caractere precedent non-alphanum `.`). Cf
+        # issue #12335 (defaut latent — portee mesuree : 0/120 PR corpus,
+        # mais 4 formes ordinaires atteignables).
+        if c.isdigit():
+            if not w:
+                continue
+            parts = w.rsplit(None, 1)
+            tail = parts[-1]
+            token = tail
+            while token and token[0] in "*_`":
+                token = token[1:]
+            while token and token[-1] in "*_`":
+                token = token[:-1]
+            if token == c:
+                return True
+            continue
         if w == c or (w.endswith(c) and not w[-len(c) - 1].isalnum()):
             return True
     # Fenetre 05-29..06-04 (#11044) — le mot d'ATTRIBUTION entre le citer et
@@ -619,6 +677,11 @@ def _is_cited(window: str) -> bool:
     if head:
         for c in CITERS:
             c = c.rstrip("'’")
+            if c.isdigit():
+                # Pas de propagation au mot d'attribution — un compteur nu
+                # comme « 0 » n'a pas de raison d'etre precede d'un nom
+                # d'agent. Si le cas se presente, le citer fait foi tel quel.
+                continue
             if head == c or (head.endswith(c) and not head[-len(c) - 1].isalnum()):
                 return True
     return False
@@ -717,7 +780,13 @@ def classify(author: str, body: str) -> str | None:
     # table de distribution d'ai-01 reste exacte.
     if (has_marker(body, LIFT_MARKERS)
             and not _lift_cancelled(_strip_quoted(body))
-            and not has_live_marker(_strip_quoted(body), SEVERITY_GLYPHS)):
+            and not has_live_marker(_strip_quoted(body), SEVERITY_GLYPHS)
+            # #12836 / #12798 : une revalidation COMMENT_WITH_CONCERNS peut
+            # narrer la levee anterieure qu'elle REFUTE. Seul un verdict Hermes
+            # formel place AVANT le mot de levee garde la reserve vivante ; les
+            # levees explicites historiques (« je leve ma CHANGES_REQUESTED »)
+            # restent admissibles parce que leur ordre est inverse.
+            and not _formal_concern_precedes_lift(body)):
         return None  # annonce de levee / de merge : resolution, pas reserve
     # (construction conditionnelle « et je merge » : voir _lift_cancelled —
     # l'annonce conditionnee n'est pas une levee, SAUF levee explicite d'auteur
@@ -793,25 +862,13 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
     commits = [c for c in commits if c]
     last_commit = max(commits) if commits else None
 
-    # #11145 — borne d'auteur : seules les levees de l'auteur de la reserve OU
-    # de l'auteur de la PR comptent. Mesure #11494 (850 PRs) : SELF 22/37
-    # (59,5 %) + PR_AUTHOR 6/37 (16,2 %) = flux sain preserve ; BYSTANDER 9/37
-    # (24,3 %) = la classe #10761 que l'organe bloque (un tiers — approbation
-    # ou reponse — n'eteint pas une reserve posee par un autre).
-    pr_author = (pr_data.get("author") or {}).get("login", "")
-
-    # Seuls les commentaires capables de LEVER comptent (cf can_lift) : un
-    # commentaire de bot CI ou un tag de protocole nu n'a jamais repondu a rien.
-    # On porte l'AUTEUR de chaque evenement de levee : la borne #11145 en a
-    # besoin (auteur seul = les temps plats de #11222 ne suffisaient pas).
-    # Le body est porte pour la trappe OVERRIDE de `_lift_eligible` (#11639) :
-    # elle doit voir le marqueur `[OVERRIDE] lane …` de la levee, pas
-    # seulement son auteur.
-    lift_events = [
-        (ts(c["createdAt"]), (c.get("author") or {}).get("login", ""),
-         c.get("body", "") or "")
-        for c in (pr_data.get("comments") or []) if can_lift(c)
-    ]
+    # #11145 — borne d'auteur, durcie par #12836 : seule une levee de l'auteur
+    # de la reserve compte. #12798 a montre pourquoi PR_AUTHOR n'est pas une
+    # confirmation : l'auteur de la PR avait declare la reserve Hermes levee,
+    # l'organe etait vert, mais le livrable committe restait un stub sans sortie
+    # vLLM. Une reponse de PR_AUTHOR documente le traitement ; elle ne remplace
+    # pas la re-review du tiers. L'arbitrage coordinateur nomme [OVERRIDE]
+    # ci-dessous reste le seul echappement tiers.
 
     # Fenetre 05-29..06-04 (#1958) : la RE-REVIEW APPROVED. Le reviewer qui
     # revient approuver apres sa demande de changements A dit que la reserve
@@ -828,12 +885,10 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
         and (r.get("author") or {}).get("login", "") not in BOT_LOGINS
     ]
     approved_rereviews = [x for x in approved_rereviews if x[0] is not None]
-    lift_events += approved_rereviews
-    lift_events = [x for x in lift_events if x[0] is not None]
 
     def _lift_eligible(lift_author: str, nit_author: str,
                        lift_body: str = "") -> bool:
-        if lift_author in (nit_author, pr_author):
+        if lift_author == nit_author:
             return True
         # #11639 : l'override NOMME du coordinateur — l'arbitre tiers de B.0.
         # La restriction d'auteur reste la regle pour tout le monde (elle
@@ -849,6 +904,14 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
     # conditionnel) dans un commentaire qui peut lever reste une levee pour
     # l'etat de review — c'est la reponse ecrite que B.0 exige. On garde
     # l'auteur pour la branche dedicated ci-dessous.
+    # #12319 : explicit_lifts est desormais LE regime des nits portes par un
+    # COMMENTAIRE ou une review COMMENTED aussi — l'ancienne branche elif
+    # consultait lift_events (tout commentaire can_lift), et la borne d'auteur
+    # #11145 est vacue sur ce depot : Hermès poste sous jsboige (self-review
+    # cap) et la lane pousse sous jsboige, donc nit_author == pr_author ==
+    # "jsboige" sur presque chaque PR — n'importe quel commentaire posterieur
+    # de la lane eteignait la reserve de son propre reviewer. B.0 : ce qui
+    # leve une remarque est une PHRASE, pas un commentaire de protocole.
     explicit_lifts = [
         (ts(c["createdAt"]), (c.get("author") or {}).get("login", ""),
          c.get("body", ""))
@@ -856,6 +919,10 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
         if can_lift(c)
         and has_marker(c.get("body", ""), LIFT_MARKERS)
         and not _lift_cancelled(_strip_quoted(c.get("body", "")))
+        # #12836 / #12798 : une reserve qui narre une ancienne levee reste
+        # une reserve, pas un evenement de levee du signal precedent.
+        and classify((c.get("author") or {}).get("login", ""),
+                     c.get("body", "")) is None
     ]
     explicit_lifts = [x for x in explicit_lifts if x[0] is not None]
 
@@ -922,11 +989,23 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
             )
             if lifted:
                 continue
-        elif any(
-            when < t < cutoff and _lift_eligible(lift_author, login, lift_body)
-            for (t, lift_author, lift_body) in lift_events
-        ):
-            continue  # reponse de l'auteur du nit ou de l'auteur de la PR
+        # #12319 : meme regime pour un nit porte par un commentaire ou une
+        # review COMMENTED (dont chaque reserve Hermes, self-review cap).
+        # Avant : n'importe quel commentaire posterieur de la lane levait
+        # (nit_author == pr_author == "jsboige" flotte-wide rendait la borne
+        # #11145 vacue — un [READY-FOR-MERGE SELF attestation] qui ne nomme
+        # pas la reserve l'eteignait). Apres : une PHRASE de levee
+        # (LIFT_MARKER, borne d'auteur #11145 preservee via _lift_eligible)
+        # OU une re-review APPROVED de l'auteur de la reserve (etat natif
+        # GitHub, phrase de levee au sens fort).
+        elif (any(
+                  when < t < cutoff and _lift_eligible(lift_author, login, lift_body)
+                  for (t, lift_author, lift_body) in explicit_lifts
+              ) or any(
+                  when < t < cutoff and author == login
+                  for (t, author, _) in approved_rereviews
+              )):
+            continue
         # Un commit poussé après le nit ne le lève PAS à lui seul : sur #10761,
         # le « traitement » était un rebase à 19:41 qui n'adressait aucun des
         # deux nits de 11:07. Le push est reporté comme contexte, pas comme levée
