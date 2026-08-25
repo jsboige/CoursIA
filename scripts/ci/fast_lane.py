@@ -235,9 +235,19 @@ def emit_check_run(repo: str, head_sha: str, name: str, conclusion: str,
         print(f"[fast-lane] check-run publie : {name} -> {conclusion}")
 
 
-def conclusion_for(guard: Guard, rc: int) -> str:
+def conclusion_for(guard: Guard, rc: int, shadow: bool = False) -> str:
     if rc == 0:
         return "success"
+    if shadow:
+        # La phase ombre se declare observationnelle : elle ne doit donc pas
+        # pouvoir bloquer une PR. Or `pr_gate` ne traite en advisory que les
+        # check-runs dont le NOM contient `advisory` -- le prefixe ombre n'en
+        # contient pas, donc un `failure` ombre entrait dans `bad` et rendait
+        # le gate REQUIS rouge. Mesure du 2026-08-25 : 2 PR ouvertes (#12791,
+        # #12820) avaient pour SEUL rouge un check ombre, sur 125 PR portant
+        # un check ombre. Le verdict reste visible dans le titre et le resume
+        # du check-run ; seule sa capacite a bloquer est retiree.
+        return "neutral"
     return "failure" if guard.blocking else "neutral"
 
 
@@ -344,11 +354,27 @@ def main(argv: list[str] | None = None) -> int:
             clean, dirt = tree_is_clean(swap)
             if not clean:
                 # Arret net : les verdicts suivants porteraient sur un arbre
-                # dont on ne sait plus ce qu'il contient.
-                raise SystemExit(
-                    "[fast-lane] l'arbre n'est PAS revenu a son etat apres la "
-                    f"bascule -- aucun verdict ne sera publie.\n{dirt}"
-                )
+                # dont on ne sait plus ce qu'il contient. On ne publie RIEN,
+                # dans les DEUX modes -- c'est la partie fail-closed, et
+                # elle ne bouge pas.
+                msg = ("[fast-lane] l'arbre n'est PAS revenu a son etat "
+                       "apres la bascule -- aucun verdict ne sera publie."
+                       "\n" + dirt)
+                if args.shadow:
+                    # ... mais en OMBRE le job ne doit pas rougir pour
+                    # autant. Le check du job s'appelle `Fast lane (ombre)
+                    # -- N gardes, 1 checkout` : il ne contient pas
+                    # `advisory`, donc `pr_gate` le compte comme un defaut
+                    # et BLOQUE la PR. Une panne de la voie ombre bloque
+                    # alors une PR saine -- exactement ce que la phase
+                    # pilote promet de ne pas faire. Mesure du 2026-08-25 :
+                    # #12820 etait retenue par ce chemin (run 32774643069)
+                    # sans porter aucun defaut propre.
+                    print(msg, file=sys.stderr)
+                    print("[fast-lane] mode ombre : panne interne signalee,"
+                          " job non bloquant (exit 0).", file=sys.stderr)
+                    return 0
+                raise SystemExit(msg)
             print("[fast-lane] phase 2 : arbre restaure et verifie")
 
     # -- phase 3 : comparaisons delta ---------------------------------------
@@ -368,11 +394,11 @@ def main(argv: list[str] | None = None) -> int:
     blocking_failed = False
     for guard in selected:
         rc, log = results.get(guard.name, (0, "(aucune sortie)"))
-        conclusion = conclusion_for(guard, rc)
+        conclusion = conclusion_for(guard, rc, shadow=args.shadow)
         if rc == 0:
             title = "OK"
         elif guard.blocking:
-            title = "echec"
+            title = "echec (ombre : non bloquant)" if args.shadow else "echec"
         else:
             title = "signale (advisory)"
         name = (SHADOW_PREFIX + guard.name) if args.shadow else guard.name
