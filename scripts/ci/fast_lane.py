@@ -235,9 +235,19 @@ def emit_check_run(repo: str, head_sha: str, name: str, conclusion: str,
         print(f"[fast-lane] check-run publie : {name} -> {conclusion}")
 
 
-def conclusion_for(guard: Guard, rc: int) -> str:
+def conclusion_for(guard: Guard, rc: int, shadow: bool = False) -> str:
     if rc == 0:
         return "success"
+    if shadow:
+        # La phase ombre se declare observationnelle : elle ne doit donc pas
+        # pouvoir bloquer une PR. Or `pr_gate` ne traite en advisory que les
+        # check-runs dont le NOM contient `advisory` -- le prefixe ombre n'en
+        # contient pas, donc un `failure` ombre entrait dans `bad` et rendait
+        # le gate REQUIS rouge. Mesure du 2026-08-25 : 2 PR ouvertes (#12791,
+        # #12820) avaient pour SEUL rouge un check ombre, sur 125 PR portant
+        # un check ombre. Le verdict reste visible dans le titre et le resume
+        # du check-run ; seule sa capacite a bloquer est retiree.
+        return "neutral"
     return "failure" if guard.blocking else "neutral"
 
 
@@ -368,11 +378,11 @@ def main(argv: list[str] | None = None) -> int:
     blocking_failed = False
     for guard in selected:
         rc, log = results.get(guard.name, (0, "(aucune sortie)"))
-        conclusion = conclusion_for(guard, rc)
+        conclusion = conclusion_for(guard, rc, shadow=args.shadow)
         if rc == 0:
             title = "OK"
         elif guard.blocking:
-            title = "echec"
+            title = "echec (ombre : non bloquant)" if args.shadow else "echec"
         else:
             title = "signale (advisory)"
         name = (SHADOW_PREFIX + guard.name) if args.shadow else guard.name

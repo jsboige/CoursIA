@@ -108,6 +108,39 @@ def test_success_is_success_for_both_kinds():
         assert fast_lane.conclusion_for(guard, 0) == "success"
 
 
+def test_shadow_failure_cannot_block_the_required_pr_gate():
+    """Le check ombre ne doit pas pouvoir bloquer le gate REQUIS.
+
+    `pr_gate` ne traite en advisory que les check-runs dont le NOM contient
+    `advisory` ; le prefixe ombre n'en contient pas. Un `failure` publie en
+    mode ombre entrait donc dans `bad` et rendait rouge un gate requis, alors
+    que le job, lui, rendait 0. Mesure du 2026-08-25 : 2 PR ouvertes (#12791,
+    #12820) n'avaient pour seul rouge qu'un check ombre.
+
+    Le test verifie les DEUX polarites. Sans le controle positif, un patch qui
+    neutraliserait aussi le mode reel desarmerait le gate et passerait ici
+    pour un correctif.
+    """
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    import pr_gate
+
+    guard = Guard(name="g", argv=["true"], source="s", blocking=True)
+
+    # le nom ombre n'est pas advisory : c'est bien la conclusion qui portait
+    # le defaut, pas seulement le libelle.
+    assert not pr_gate.is_advisory(fast_lane.SHADOW_PREFIX + guard.name)
+
+    ombre = fast_lane.conclusion_for(guard, 1, shadow=True)
+    reel = fast_lane.conclusion_for(guard, 1, shadow=False)
+
+    assert ombre in pr_gate.CONCLUSION_OK, (
+        "un echec en mode ombre ne doit plus bloquer le gate requis")
+    assert reel not in pr_gate.CONCLUSION_OK, (
+        "CONTROLE POSITIF : hors ombre, un garde bloquant doit toujours "
+        "rougir -- sinon le correctif a desarme le gate")
+    assert fast_lane.conclusion_for(guard, 0, shadow=True) == "success"
+
+
 # ---------------------------------------------------------------------------
 # 3. Coherence du registre avec les workflows d'origine
 # ---------------------------------------------------------------------------
@@ -157,11 +190,26 @@ def test_advisory_flags_match_the_source_workflows():
     assert by_name["banner-guard"].blocking is True
     assert by_name["pip-leak-guard"].blocking is True
     assert by_name["perimeter-review-guard"].blocking is True
-    # 4 gardes ajoutees (extension 5 -> 9) -- bloquer par defaut
+    # 5 gardes ajoutees (extension 5 -> 10) -- bloquer par defaut
     assert by_name["bare-cross-dir-load-gate"].blocking is True
     assert by_name["notebook-navlink-check"].blocking is True
     assert by_name["notebook-interp-positioning-guard"].blocking is True
     assert by_name["markdown-rendering-guard"].blocking is True
+    assert by_name["self-hosted-runner-policy"].blocking is True
+
+
+def test_self_hosted_policy_guard_is_wired_fail_closed():
+    guard = {item.name: item for item in PILOT}["self-hosted-runner-policy"]
+    assert guard.source == "fast-lane-shadow.yml"
+    assert guard.argv == [
+        "python",
+        "scripts/ci/check_self_hosted_runner_policy.py",
+        "--check",
+    ]
+    assert ".github/workflows/*.yml" in guard.paths
+    assert ".github/workflows/*.yaml" in guard.paths
+    assert "scripts/ci/check_self_hosted_runner_policy.py" in guard.paths
+    assert "scripts/ci/fast_lane_registry.py" in guard.paths
 
 
 def test_iterates_paths_guards_carry_the_placeholder():
