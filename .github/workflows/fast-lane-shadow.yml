@@ -47,7 +47,7 @@ concurrency:
 
 jobs:
   fast-lane:
-    name: "Fast lane (ombre) -- 9 gardes, 1 checkout"
+    name: "Fast lane (ombre) -- 10 gardes, 1 checkout"
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
