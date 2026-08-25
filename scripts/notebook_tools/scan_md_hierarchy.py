@@ -262,6 +262,59 @@ def _repo_root():
     return pathlib.Path.cwd()
 
 
+def _git_renames(base, repo_root):
+    """Return {old_path: new_path} for renames detected by `git diff -M BASE..HEAD`.
+
+    Used to merge baseline entries whose path no longer exists (zero-pad renames,
+    namespace reorgs, etc.) into the path the scanner sees today. Without this
+    step, a rename produces a phantom `+1/-1` delta in the drift report (the
+    issue #12735 founding defect: `GameTheory-04b` zero-pad rename showed as
+    `+1 HINT-AS-HEADING 04b / -1 HINT-AS-HEADING 4b` on every PR).
+
+    Empty dict when not in a git checkout, or when `base` is not resolvable.
+    """
+    import subprocess
+    try:
+        # `git diff -M --name-status BASE..HEAD -- '*.ipynb'` lists renames as
+        # `R100\told_path\tnew_path`. We restrict to *.ipynb to avoid noise from
+        # docs/scripts renames the scanner does not track.
+        out = subprocess.run(
+            ['git', 'diff', '-M', '--name-status', f'{base}..HEAD', '--', '*.ipynb'],
+            capture_output=True, text=True, timeout=30, cwd=str(repo_root),
+        )
+        if out.returncode != 0:
+            return {}
+    except Exception:
+        return {}
+    renames = {}
+    for line in out.stdout.splitlines():
+        parts = line.split('\t')
+        if len(parts) == 3 and parts[0].startswith('R'):
+            old, new = parts[1], parts[2]
+            renames[old] = new
+    return renames
+
+
+def _merge_baseline_renames(baseline, renames):
+    """Return baseline + renames merged.
+
+    For each (old_path, new_path) in `renames`, if `old_path` is in the
+    baseline, move its entry to `new_path` (summing counts if `new_path`
+    already had an entry — rare but possible on a partial rebrand).
+    """
+    if not renames:
+        return dict(baseline)
+    out = dict(baseline)
+    for old, new in renames.items():
+        if old in out:
+            kinds = out.pop(old)
+            existing = out.get(new, {})
+            for k, v in kinds.items():
+                existing[k] = existing.get(k, 0) + v
+            out[new] = existing
+    return out
+
+
 def notebook_key(nb_path, repo_root=None):
     """Cle stable d'un notebook dans la baseline : posix RELATIVE au repo root.
 
@@ -373,6 +426,13 @@ def main(argv=None):
                         help='drift mode: report per-notebook deltas vs the '
                              'baseline; exit 2 on any increase, 0 on pure '
                              'burndown, 1 on broken input (#11831)')
+    parser.add_argument('--renames-from', metavar='BASE',
+                        help='git ref to detect renames against (drift mode). '
+                             'Entries in the baseline whose path was renamed '
+                             'between BASE and HEAD are merged into the new '
+                             'path before diffing, so a rename does not '
+                             'produce a phantom +1/-1 drift (#12735). '
+                             'Empty / not a git ref = no rename merge.')
     parser.add_argument('--update-baseline', action='store_true',
                         help='(re)seed the baseline from the current scan '
                              'instead of diffing -- SAME commit as any scanner '
@@ -410,16 +470,57 @@ def main(argv=None):
             print(f'ERROR: unreadable baseline {baseline_path}: {e}',
                   file=sys.stderr)
             return 1
+        # Rename merge (#12735) — a zero-pad rename (`4b` -> `04b`) leaves the
+        # baseline key pointing at the OLD path; without merging, the diff
+        # renders a phantom `+1/-1` per rename on EVERY PR. The detector stays
+        # unchanged on detection (no false negative), only the diff step
+        # applies the rename. This is the same shape as #12064's --baseline
+        # default for code-in-markdown: the organ must measure THIS PR, not the
+        # repo.
+        if args.renames_from:
+            renames = _git_renames(args.renames_from, _repo_root())
+            if renames:
+                baseline = _merge_baseline_renames(baseline, renames)
         regressions, improvements = diff_against_baseline(counts, baseline)
+        # Net per file: a `+1/-9` on the same path is an -8 NET improvement,
+        # not a `+1` regression. Grouping by file before printing so the
+        # reader sees one line per (path, kind) with the net delta.
+        # (#12735 acceptance #1: verdict varies from PR to PR.)
+        from collections import defaultdict
+        net_per_file = defaultdict(lambda: defaultdict(int))
         for path, kind, delta in regressions:
-            print(f'  +{delta} {kind}  {path}')
+            net_per_file[path][kind] += delta
         for path, kind, delta in improvements:
-            print(f'  {delta} {kind}  {path}  (burndown)')
+            net_per_file[path][kind] += delta  # delta < 0
+        for path in sorted(net_per_file):
+            for kind in sorted(net_per_file[path]):
+                d = net_per_file[path][kind]
+                if d > 0:
+                    print(f'  +{d} {kind}  {path}')
+                elif d < 0:
+                    print(f'  {d} {kind}  {path}  (burndown)')
+        net_regressions = sum(max(0, sum(v.values()))
+                              for v in net_per_file.values())
+        net_improvements = -sum(min(0, sum(v.values()))
+                                 for v in net_per_file.values())
+        # Baseline date (#12735 acceptance #4): without a date, an output
+        # looks like a current measurement when the baseline may be months
+        # stale. Display what was measured against.
+        try:
+            baseline_date = pathlib.Path(baseline_path).stat().st_mtime
+            baseline_date_str = (
+                __import__('datetime').date
+                .fromtimestamp(baseline_date).isoformat()
+            )
+        except OSError:
+            baseline_date_str = '?'
         # Last stdout line, same contract as census mode (CI reads tail -1).
-        print(f'\n=== drift: +{sum(d for _, _, d in regressions)} '
-              f'across {len({p for p, _, _ in regressions})} notebook(s), '
-              f'{sum(-d for _, _, d in improvements)} burned down ===')
-        return 2 if regressions else 0
+        print(f'\n=== drift (baseline {baseline_date_str}): '
+              f'+{net_regressions} across '
+              f'{sum(1 for v in net_per_file.values() if max(v.values()) > 0)} '
+              f'notebook(s), {net_improvements} burned down ===')
+        # Fail only on NET regressions, not on phantom rename deltas.
+        return 2 if net_regressions else 0
 
     total = 0
     flagged = 0

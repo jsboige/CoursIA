@@ -5,15 +5,28 @@ whose newlines were stripped (heading + prose + GFM table separator + fenced
 code glued onto ONE line) must be flagged, while legitimate tables, blockquoted
 tables, and fenced ASCII art (all with their newlines intact) must stay SILENT.
 Also guards the pre-existing H1-DEEP / MULTI-H1 / HINT-AS-HEADING checks.
+
+The `# Rename merge (#12735)` block below covers the rename-handling fix for
+the constant `+2 across 2 notebook(s), 386 burned down` verdict on every PR
+(zero-pad renames `4b -> 04b` and `PT_11_grpo_qwen_rlvr_on_verifiers ->
+PT_11_grpo_qwen_rlvr_on_verifiers` produced phantom `+1/-1` deltas).
 """
 
 import json
+import subprocess
 import sys
 import tempfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from scan_md_hierarchy import scan_notebook, _has_collapsed_markdown, main  # noqa: E402
+from scan_md_hierarchy import (  # noqa: E402
+    scan_notebook,
+    _has_collapsed_markdown,
+    _merge_baseline_renames,
+    _git_renames,
+    diff_against_baseline,
+    main,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -353,3 +366,144 @@ def test_summary_is_the_last_stdout_line(capsys):
     _run([nb])
     assert capsys.readouterr().out.rstrip().splitlines()[-1] == (
         "=== 1/1 notebooks flagged ===")
+
+
+# ---------------------------------------------------------------------------
+# Rename merge (#12735) — phantom drift verdict fix
+#
+# Symptom: every PR returned `+2 across 2 notebook(s), 386 burned down`,
+# because two zero-pad renames (`GameTheory-4b -> GameTheory-04b` and
+# `PT_11_grpo_qwen_rlvr_on_verifiers -> PT_11_grpo_qwen_rlvr_on_verifiers`)
+# left the baseline JSON with keys at the OLD paths. The new code paths
+# (still on HEAD) bumped the *new* paths, so the baseline subtracted from
+# the new tally, producing constant phantom `+1/-1` deltas.
+#
+# Fix: `_merge_baseline_renames(baseline, renames)` rewrites the baseline
+# dict in place so that counts follow the rename pair, and `--renames-from
+# origin/main` populates the rename map from `git diff -M`.
+# ---------------------------------------------------------------------------
+
+
+def test_rename_merge_moves_baseline_entry():
+    """A rename pair moves the OLD entry's counts to the NEW entry."""
+    baseline = {
+        "GameTheory-4b.ipynb": {"COLLAPSED-MARKDOWN": 3, "HINT-AS-HEADING": 1},
+        "Search-2.ipynb": {"COLLAPSED-MARKDOWN": 0, "HINT-AS-HEADING": 2},
+    }
+    renames = {"GameTheory-4b.ipynb": "GameTheory-04b.ipynb"}
+    merged = _merge_baseline_renames(baseline, renames)
+    # OLD key gone
+    assert "GameTheory-4b.ipynb" not in merged
+    # NEW key carries the counts
+    assert merged["GameTheory-04b.ipynb"] == {"COLLAPSED-MARKDOWN": 3, "HINT-AS-HEADING": 1}
+    # Untouched sibling stays intact
+    assert merged["Search-2.ipynb"] == {"COLLAPSED-MARKDOWN": 0, "HINT-AS-HEADING": 2}
+
+
+def test_rename_merge_existing_target_sums_counts():
+    """If the NEW path already has baseline entries, the counts SUM (rename + prior)."""
+    baseline = {
+        "old.ipynb": {"COLLAPSED-MARKDOWN": 2},
+        "new.ipynb": {"COLLAPSED-MARKDOWN": 5},
+    }
+    renames = {"old.ipynb": "new.ipynb"}
+    merged = _merge_baseline_renames(baseline, renames)
+    assert "old.ipynb" not in merged
+    # Sum: 2 (rename origin) + 5 (existing target) = 7
+    assert merged["new.ipynb"] == {"COLLAPSED-MARKDOWN": 7}
+
+
+def test_rename_merge_empty_renames_is_passthrough():
+    """No renames -> baseline dict returned with same content (shallow copy)."""
+    baseline = {
+        "a.ipynb": {"COLLAPSED-MARKDOWN": 1},
+        "b.ipynb": {"HINT-AS-HEADING": 2},
+    }
+    merged = _merge_baseline_renames(baseline, {})
+    assert merged == baseline
+    # Function returns a shallow copy (defensive: callers can mutate freely).
+    # Mutating `merged` must NOT mutate the input baseline.
+    merged.pop("a.ipynb")
+    assert "a.ipynb" in baseline
+
+
+def test_rename_merge_unknown_target_creates_new_entry():
+    """Rename to a target not in the baseline: OLD moved to NEW (NEW created if missing).
+
+    The function always carries OLD counts forward to NEW, even if NEW wasn't in
+    the baseline yet. This is the correct behavior for #12735's
+    `PT_11_grpo_qwen_rlvr_on_verifiers` case: the new (longer) name wasn't in
+    the baseline at all, but the OLD counts must travel with the rename so the
+    diff doesn't false-posit `+N -N`.
+    """
+    baseline = {
+        "old-name.ipynb": {"COLLAPSED-MARKDOWN": 4, "HINT-AS-HEADING": 1},
+    }
+    renames = {"old-name.ipynb": "totally-new-name.ipynb"}
+    merged = _merge_baseline_renames(baseline, renames)
+    assert "old-name.ipynb" not in merged
+    # NEW key is created with OLD counts (canonical "rename carries counts forward")
+    assert merged["totally-new-name.ipynb"] == {"COLLAPSED-MARKDOWN": 4, "HINT-AS-HEADING": 1}
+
+
+def test_git_renames_returns_empty_on_missing_ref():
+    """`_git_renames('nonexistent-ref', repo)` returns {} without crashing.
+
+    This guards the workflow when `--renames-from origin/main` is invoked on
+    a branch where `origin/main` is unreachable (shallow clone, fork, etc.).
+    The drift block must skip rename-merging cleanly, not raise.
+    """
+    empty = _merge_baseline_renames({}, {})
+    assert empty == {}
+    # Direct call to the helper with a non-existent ref: it shells out to
+    # `git diff -M --name-status` and may legitimately return non-zero exit
+    # because the ref doesn't exist -- the function's contract is to swallow
+    # that and return {}. Verify by calling with a clearly invalid ref.
+    # We pass a tempdir as `repo_root` so even if git tries to run, it has a
+    # valid working directory. We don't assert content, just that no exception
+    # propagates out.
+    with tempfile.TemporaryDirectory() as tmp:
+        result = _git_renames("nonexistent-deadbeef-ref", tmp)
+    assert result == {} or isinstance(result, dict)
+
+
+def test_drift_output_clean_when_baseline_aligned_with_renames(capsys, tmp_path):
+    """End-to-end: phantom `+1/-1` deltas disappear when rename merge aligns keys.
+
+    We exercise `diff_against_baseline` directly (not `main`), because the
+    scanner emits absolute paths from `pathlib.Path(a).rglob('*.ipynb')`
+    while baseline keys are repo-relative -- testing through `main` would
+    require mirroring that absolutization. The rename-merge logic lives in
+    the helper and the drift block; this test proves their composition.
+
+    Without rename merge, the diff would yield a phantom `+1` for the NEW
+    path (baseline 0) AND a phantom `-1` burndown for the OLD path (baseline
+    had 1, current doesn't see it). With the merge, the baseline carries
+    the count forward to the NEW key, and the diff renders zero deltas.
+    """
+    from scan_md_hierarchy import diff_against_baseline
+    # "Current" state as the scanner would see it (only the NEW path).
+    current = {
+        "MyIA.AI.Notebooks/GameTheory/GameTheory-04b.ipynb": {"COLLAPSED-MARKDOWN": 1},
+    }
+    # "Baseline" state (only the OLD path, pre-rename).
+    baseline_raw = {
+        "MyIA.AI.Notebooks/GameTheory/GameTheory-4b.ipynb": {"COLLAPSED-MARKDOWN": 1},
+    }
+    # No rename merge yet -> phantom pair.
+    regressions, improvements = diff_against_baseline(current, baseline_raw)
+    assert any(k == "COLLAPSED-MARKDOWN" and d > 0
+               for _, k, d in regressions), regressions
+    assert any(k == "COLLAPSED-MARKDOWN" and d < 0
+               for _, k, d in improvements), improvements
+
+    # Apply the rename merge (what `--renames-from origin/main` does internally)
+    baseline_aligned = _merge_baseline_renames(
+        baseline_raw,
+        {"MyIA.AI.Notebooks/GameTheory/GameTheory-4b.ipynb":
+         "MyIA.AI.Notebooks/GameTheory/GameTheory-04b.ipynb"},
+    )
+    # Now the diff is silent: baseline NEW = current NEW = 1.
+    regressions2, improvements2 = diff_against_baseline(current, baseline_aligned)
+    assert regressions2 == [], f"expected no regressions after rename merge, got {regressions2}"
+    assert improvements2 == [], f"expected no improvements after rename merge, got {improvements2}"

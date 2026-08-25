@@ -39,8 +39,14 @@ jobs:
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           set +e
+          # --renames-from origin/main (#12735): rewires the baseline so that a
+          # rename pair (e.g. `GameTheory-4b -> GameTheory-04b`) does NOT render
+          # a phantom `+1 -1` on every PR. Without it, zero-pad renames and
+          # namespace reorgs produced a constant `+2 across 2 notebook(s), 386
+          # burned down` verdict.
           python scripts/notebook_tools/scan_md_hierarchy.py MyIA.AI.Notebooks/ \
-            --baseline --diff > drift_report.txt 2> drift_err.txt
+            --baseline --diff --renames-from origin/main \
+            > drift_report.txt 2> drift_err.txt
           rc=$?
           set -e
           if [ "$rc" -eq 2 ]; then
