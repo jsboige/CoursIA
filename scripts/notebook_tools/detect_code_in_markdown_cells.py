@@ -140,6 +140,13 @@ def _finding_hash(f: dict[str, Any]) -> str:
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:16]
 
 
+# #12585 : le seul baseline du depot, celui que la CI passe explicitement.
+# Un --check desarme (aucun baseline charge) rend un FAIL fantome sur un main
+# vert -- toutes les violations acceptees ressortent « new ». Le default aligne
+# l'invocation locale sur l'invocation CI.
+DEFAULT_BASELINE = Path(__file__).resolve().parent / "code_in_markdown_cells_baseline.json"
+
+
 def load_baseline(path: Path) -> set[str]:
     if not path or not path.exists():
         return set()
@@ -450,7 +457,15 @@ def main(argv=None) -> int:
         print(f"baseline written: {len(hashes)} violations -> {args.baseline}")
         return 0
 
-    baseline = load_baseline(args.baseline) if args.baseline else set()
+    # #12585 : --check/--report/--json sans --baseline comparent au baseline
+    # canonique, pas a un ensemble vide. --update-baseline exige toujours son
+    # chemin explicitement (garde ci-dessus). L'identite de la reference est
+    # affichee : un baseline vide et un baseline plein ne doivent plus rendre
+    # la meme forme de verdict.
+    baseline_path = args.baseline if args.baseline else DEFAULT_BASELINE
+    baseline = load_baseline(baseline_path)
+    if not args.update_baseline:
+        print(f"baseline: {baseline_path} ({len(baseline)} entries)")
     new_findings = [f for f in findings
                     if _finding_hash(f) not in baseline] if baseline else findings
 
