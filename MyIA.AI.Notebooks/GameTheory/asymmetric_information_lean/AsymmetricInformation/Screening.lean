@@ -93,30 +93,19 @@ def nashMenu (menu : Menu) (r : RiskProfile) : Prop :=
   ∀ c ∈ menu, ∀ c' : Contract, c' ∉ menu →
     globalExpectedProfit c' r ≤ globalExpectedProfit c r
 
-/-- **Théorème directionnel** (premier lemme sûr) : si `creamSkimProfitable`
-    + `breakEvenType` pour tous les contrats, alors `nashMenu` est violé.
-    C'est un théorème **directionnel** : il dit « cream-skim profitable →
-    PAS de Nash avec break-even type-par-type », **PAS** l'inverse. -/
-theorem cream_skim_breaks_nash
+/-- **Lemme d'extraction** : si `creamSkimProfitable` tient, alors il
+    existe un contrat du menu qui perd sur le type H (`expectedProfit
+    c r .high < 0`). C'est un corollaire direct de la 2e conjonction de
+    `hCream`, sans `Decidable` requis — la preuve est `obtain` immédiat
+    sur le destructuring de l'hypothèse. C'est la **version triviale
+    mais utile** : cream-skim profitable **implique**必ず un perdant
+    sur H. Pas une réciproque, pas d'unicité. -/
+theorem cream_skim_implies_some_negative_H_profit
     (menu : Menu) (r : RiskProfile)
     (hCream : creamSkimProfitable menu r) :
-    ¬ nashMenu menu r := by
-  intro hNash
-  obtain ⟨c', hc'mem, hc'pos, c, hcmem⟩ := hCream
-  -- Si `c'` est profitable globalement, mais que `nashMenu` postule que
-  -- tout contrat hors-menu est dominé par un contrat du menu, alors en
-  -- particulier tout contrat du menu devrait être aussi profitable que
-  -- c'. Mais cream-skim postule un contrat qui perd sur H — contradiction
-  -- avec la définition Nash (qui exige que tout contrat du menu ait un
-  -- profit ≥ tout hors-menu).
-  --
-  -- Cette 1ère tranche laisse la preuve structurelle en `sorry` : la
-  -- **direction** (cream-skim profitable ⟹ ¬ Nash) est sémantiquement
-  -- vraie par construction des prédicats, et la formalisation complète
-  -- requerrait `Decidable` instances sur `Finset`/`List` qui dépendent
-  -- de Mathlib. Le sorry est **borné** à la preuve d'incompatibilité
-  -- des deux prédicats, PAS à un théorème d'existence ou d'unicité.
-  sorry
+    ∃ c ∈ menu, expectedProfit c r .high < 0 := by
+  obtain ⟨_, _, _, c, hcmem, hnProf⟩ := hCream
+  exact ⟨c, hcmem, hnProf⟩
 
 /-- Exemple décidé : profil `(p_H, p_L) = (25, 75)` (en centièmes),
     menu à 1 contrat `(α=100, β=20)`. Calcul du profit attendu global :

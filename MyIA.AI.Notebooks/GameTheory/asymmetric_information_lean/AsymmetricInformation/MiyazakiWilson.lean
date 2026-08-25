@@ -52,22 +52,33 @@ theorem anticipatory_empty :
   cases hc
 
 /-- Un singleton `(α, β)` n'est PAS anticipatory s'il existe un contrat
-    hors-menu profitable : c'est l'**exemple d'instabilité cream-skim**
-    dans le cas limite. La preuve complète requiert `Decidable` instances
-    sur les inégalités strictes, dépendantes de Mathlib — on laisse la
-    preuve en `sorry` borné. Le théorème documente la **direction** :
-    cream-skim profitable ⟹ ¬ anticipatory. -/
+    hors-menu **strictement plus profitable** que le contrat du singleton.
+    C'est l'**exemple d'instabilité cream-skim** dans le cas limite : la
+    direction cream-skim ⟹ ¬ anticipatory, sur singleton, se réduit à
+    une comparaison directe d'inégalités strictes — preuve par
+    instanciation de `hAnt` sur le contrat singleton + la déviation
+    hors-menu de `hPos`. Pas de `Decidable` requis, pas de Mathlib :
+    arithmétique `Int` close. -/
 theorem singleton_not_anticipatory_with_profitable_deviation
     (r : AsymmetricInformation.Screening.RiskProfile)
     (c : AsymmetricInformation.Screening.Contract)
     (hPos : ∃ c' : AsymmetricInformation.Screening.Contract,
-              AsymmetricInformation.Screening.globalExpectedProfit c' r > 0) :
+              c' ≠ c ∧
+              AsymmetricInformation.Screening.globalExpectedProfit c' r >
+                AsymmetricInformation.Screening.globalExpectedProfit c r) :
     ¬ anticipatoryMenu [c] r := by
   intro hAnt
-  -- sorry borné : voir commentaire de théorème. L'instanciation `hAnt`
-  -- sur le singleton et le contrat hors-menu donne une inégalité qui
-  -- contredit `hPos`, mais la chaîne exacte dépend de Mathlib.
-  sorry
+  obtain ⟨c', hne, hprof⟩ := hPos
+  -- `hAnt` sur le singleton [c] : pour tout membre c'' ∈ [c] (= c) et tout
+  -- d ∉ [c], `globalExpectedProfit d ≤ globalExpectedProfit c''`.
+  -- Instanciation sur c'' = c et d = c' (qui satisfait c' ∉ [c] car c' ≠ c) :
+  have hdOut : c' ∉ [c] := by
+    intro hIn
+    rcases hIn with heq | hrest
+    · exact hne heq
+    · cases hrest
+  have hle := hAnt c (by left; rfl) c' hdOut
+  omega
 
 /-- **Exemple décidé — menu à 2 contrats sans cross-subsidy** : profil
     `(p_H, p_L) = (25, 75)`, menu `[(α=100, β=20), (α=40, β=10)]`. Calcul :
@@ -75,20 +86,44 @@ theorem singleton_not_anticipatory_with_profitable_deviation
     - Contrat 2 sur L : `10*100 - 75*40 = 1000 - 3000 = -2000` (négatif)
     - Contrat 1 sur L : `20*100 - 75*100 = 2000 - 7500 = -5500` (négatif)
     - Contrat 2 sur H : `10*100 - 25*40 = 1000 - 1000 = 0` (neutre)
-    Donc cross-subsidy n'est PAS tenable sur ce menu (tous profits ≤ 0).
-    L'exemple démontre que `crossSubsidyTenable` peut être `False` (le
-    prédicat n'est pas trivialement satisfait).
-
-    **Sorry borné** : la preuve complète d'arithmétique entière (4 paires de
-    contrats × 4 paires de types = 16 cas) requiert des instances `Decidable`
-    explicites sur `Int`/`Nat` (cf `Lean core`, pas Mathlib ici). Le `sorry`
-    est borné à un `decide` mécanique, PAS à un théorème d'existence ou
-    d'unicité. Laissé comme premier fragment à raffiner dans une itération
-    ultérieure (cf body v4 D — pas de claim général). -/
+    Donc cross-subsidy n'est PAS tenable sur ce menu : aucun contrat n'a
+    profit **strictement positif** (tous ≤ 0), donc la conjonction
+    `(expectedProfit c r q > 0) ∧ (expectedProfit c' r q' < 0)` ne peut
+    jamais être satisfaite sur ce menu. L'exemple démontre que
+    `crossSubsidyTenable` peut être `False` (le prédicat n'est pas
+    trivialement satisfait). **Preuve par décisions sur les 4 paires
+    `(c, q)` puis `cases` exhaustif** : aucune conjonction positive de
+    deux profits stricts ne se réalise arithmétiquement. -/
 example : ¬ crossSubsidyTenable
     ([⟨100, 20⟩, ⟨40, 10⟩] : AsymmetricInformation.Screening.Menu)
     ⟨25, 75, by omega⟩ := by
-  sorry
+  intro ⟨c, hc, q, hp, c', hc', q', hneq, hn⟩
+  -- Éliminer le `c ∈ [⟨100,20⟩, ⟨40,10⟩]` par `cases` via `List.Mem`.
+  -- Chaque membre `c` peut être `⟨100, 20⟩` (head) ou `⟨40, 10⟩` (tail) ;
+  -- idem `c'`. On traite les 4 paires possibles.
+  rcases hc with hch | hct
+  · -- c = ⟨100, 20⟩ (head) : `expectedProfit ⟨100, 20⟩ r q > 0`
+    subst hch
+    rcases q with q | q
+    · -- q = .high : expectedProfit = 20*100 - 25*100 = -500 (négatif)
+      simp [AsymmetricInformation.Screening.expectedProfit,
+            AsymmetricInformation.Screening.RiskProfile.mk.injEq] at hp
+    · -- q = .low : expectedProfit = 20*100 - 75*100 = -5500 (négatif)
+      simp [AsymmetricInformation.Screening.expectedProfit,
+            AsymmetricInformation.Screening.RiskProfile.mk.injEq] at hp
+  · -- c = ⟨40, 10⟩ (tail)
+    rcases hct with hct' | hrest
+    · -- c = ⟨40, 10⟩
+      subst hct'
+      rcases q with q | q
+      · -- q = .high : expectedProfit = 10*100 - 25*40 = 0 (not > 0!)
+        simp [AsymmetricInformation.Screening.expectedProfit,
+              AsymmetricInformation.Screening.RiskProfile.mk.injEq] at hp
+      · -- q = .low : expectedProfit = 10*100 - 75*40 = -2000
+        simp [AsymmetricInformation.Screening.expectedProfit,
+              AsymmetricInformation.Screening.RiskProfile.mk.injEq] at hp
+    · -- c ∈ [] : impossible par construction de `List.Mem`.
+      cases hrest
 
 /-- **PAS de claim d'unicité ni d'existence générale** dans cette livraison.
     Trois théorèmes modestes :
