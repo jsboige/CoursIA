@@ -1,4 +1,5 @@
 import Discrepancy.Basic
+import Discrepancy.Kernel
 import Discrepancy.Komlos
 
 /-!
@@ -9,6 +10,7 @@ Importe les deux modules du palier P0 (issue #12823) :
 - `Discrepancy.Basic` : définitions (`IsColoring`, `discrepancy`, `degree`,
   `maxDegree`), lemmes élémentaires, conjecture de Beck–Fiala et énoncé
   cible `BeckFialaClassic` (`disc ≤ 2k − 1`) ;
+- `Discrepancy.Kernel` : boute b1 — double comptage dimensionnel et vecteur de noyau (P1 de #12823) ;
 - `Discrepancy.Komlos` : conjecture de Komlós et formes Bansal–Jiang 2025
   (arXiv:2508.03961).
 

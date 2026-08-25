@@ -27,7 +27,7 @@ Beck-Fiala and Komlós Bounds Beyond Banaszczyk* (arXiv:2508.03961, 2025).
 | P0 | `KomlosConjecture` (`O(1)`, colonnes unitaires) | conjecture ouverte | **Prop nommée** (P0) | ce PR |
 | P0 | `BansalJiangLargeDegree` (BF vrai dès `k ≥ log² n`) | théorème papier 2025 | **Prop nommée** (P0) ; P3 | ce PR |
 | P0 | `KomlosBansalJiangWeak` (colonnes unitaires, `C·log² n`) | forme affaiblie concrète du papier | **Prop nommée** (P0) ; P3 | ce PR |
-| b1 | Noyau d'algèbre linéaire dimensionnelle : une ligne à ≤ k−1 flottants n'impose plus rien (rang/pivot) | brique P1 | **OPEN** | — |
+| b1 | Double comptage dimensionnel `card_dangerous_lt_card_floating` (lignes à `>k` flottants ⇒ \|D\| < \|X\|) + direction de noyau `exists_dangerous_kernel_vec` (Q^X → Q^D non injective) | brique P1 | **PROUVÉ** (b1) | branche `lean/b1-discrepancy-kernel` (gated P0 #12839) |
 | b2 | Invariant de coloration partielle : les lignes « figées » restent ≤ 2k−1 | brique P1 | **OPEN** | — |
 | b3 | Lemme de progrès : à chaque phase, ≥ 1 flottant se fige | brique P1 | **OPEN** | — |
 | b4 | Terminaison + assemblage → `theorem beck_fiala_classic` | brique P1 | **OPEN** | — |
