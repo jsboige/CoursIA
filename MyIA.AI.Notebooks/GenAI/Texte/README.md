@@ -105,6 +105,7 @@ Le fil rouge est volontairement discriminant : enseigner au modèle un **format 
 | # | Notebook | Description | Durée |
 |---|----------|-------------|-------|
 | 21 | `21_LoRA_FineTuning.ipynb` | **QLoRA** (NF4 4-bit + double quant, bf16) sur Qwen2.5-0.5B-Instruct : fil rouge = format balisé `[T]/[D]/[E]` que le base échoue à produire ; adaptateurs LoRA via `peft` + `bitsandbytes` + `trl` + `datasets`, GPU CUDA requis (pont PostTraining / #10247) | 75 min |
+| 22 | `22_TensorSharp_DotNet_Inference.ipynb` | Pilote diagnostique .NET : TensorSharp CUDA charge Gemma 4 E4B et répond en OpenAI-compatible, mais le contrôle qualitatif détecte une répétition de `<pad>` (`RECOVERABLE-LOCAL`, adoption différée) | 55 min |
 
 ## Prérequis
 
