@@ -389,6 +389,65 @@ theorem expect_quad_four_distinct {n : ℕ} (a : Fin n → ℝ) (i j k l : Fin n
   exact Finset.prod_eq_zero (Finset.mem_insert_self i _)
     (expect_mul_boolSign_eq_zero (a i))
 
+/-! ### Assemblage du 4e moment
+
+Décomposition du carré : `Z^2 = diag + crossSum` (diagonale constante +
+somme croisée sur les paires ordonnées d'indices distincts), puis
+annulation de l'espérance de la partie croisée. -/
+
+/-- **Somme croisée** : paires ordonnées `(p, q)` d'indices distincts du
+développement du carré. -/
+def crossSum {n : ℕ} (a : Fin n → ℝ) (S : Fin n → Bool) : ℝ :=
+  ∑ p : Fin n × Fin n,
+    if p.1 ≠ p.2 then (a p.1 * boolSign (S p.1)) * (a p.2 * boolSign (S p.2)) else 0
+
+/-- **Décomposition du carré** : `Z(S)^2 = diag + crossSum` — le carré de la
+somme se décompose en la somme des carrés des coefficients (diagonale,
+CONSTANTE en `S` : les signes s'effondrent) et la somme croisée sur les
+paires ordonnées distinctes. -/
+theorem rademacher_sq_split {n : ℕ} (a : Fin n → ℝ) (S : Fin n → Bool) :
+    (∑ i, a i * boolSign (S i)) ^ 2 = ∑ i, a i * a i + crossSum a S := by
+  have hdiag : (∑ i : Fin n, a i * a i) =
+      ∑ p : Fin n × Fin n, if p.1 = p.2 then a p.1 * a p.2 else 0 := by
+    rw [Fintype.sum_prod_type]
+    apply Finset.sum_congr rfl
+    intro i _
+    simp only [Prod.fst, Prod.snd]
+    rw [Finset.sum_ite_eq (Finset.univ : Finset (Fin n)) i (fun j => a i * a j)]
+    simp
+  have hprod : (∑ i : Fin n, ∑ j : Fin n, a i * boolSign (S i) * (a j * boolSign (S j))) =
+      ∑ p : Fin n × Fin n, (a p.1 * boolSign (S p.1)) * (a p.2 * boolSign (S p.2)) :=
+    (Fintype.sum_prod_type
+      (fun q : Fin n × Fin n => (a q.1 * boolSign (S q.1)) * (a q.2 * boolSign (S q.2)))).symm
+  rw [sq, Finset.sum_mul_sum, hprod, hdiag]
+  simp only [crossSum]
+  rw [← Finset.sum_add_distrib]
+  apply Finset.sum_congr rfl
+  intro p _
+  by_cases h : p.1 = p.2
+  · simp only [if_pos h, if_neg (show ¬(p.1 ≠ p.2) by simp [h]), add_zero]
+    rw [← h, mul_mul_mul_comm, boolSign_mul_self (S p.1), mul_one]
+  · simp only [if_neg h, if_pos h, zero_add]
+
+/-- **Espérance nulle de la partie croisée** : chaque terme de `crossSum`
+est un produit de deux coordonnées distinctes à espérances nulles. -/
+theorem expect_crossSum_eq_zero {n : ℕ} (a : Fin n → ℝ) :
+    sampleExpect fairCoin (crossSum a) = 0 := by
+  rw [show crossSum a = (fun S : Fin n → Bool => ∑ p : Fin n × Fin n,
+      if p.1 ≠ p.2 then (a p.1 * boolSign (S p.1)) * (a p.2 * boolSign (S p.2)) else 0) from rfl]
+  rw [PacLearning.sampleExpect_sum]
+  have h : ∀ p : Fin n × Fin n, sampleExpect fairCoin
+      (fun S : Fin n → Bool =>
+        if p.1 ≠ p.2 then (a p.1 * boolSign (S p.1)) * (a p.2 * boolSign (S p.2)) else 0) = 0 := by
+    intro p
+    by_cases hp : p.1 ≠ p.2
+    · simp only [if_pos hp]
+      rw [sampleExpect_coord_mul_coord fairCoin
+        (fun x => a p.1 * boolSign x) (fun x => a p.2 * boolSign x) hp,
+        expect_mul_boolSign_eq_zero, expect_mul_boolSign_eq_zero, mul_zero]
+    · simp only [if_neg hp, PacLearning.sampleExpect_const]
+  simp only [h, Finset.sum_const_zero]
+
 end Moments
 
 end Discrepancy
