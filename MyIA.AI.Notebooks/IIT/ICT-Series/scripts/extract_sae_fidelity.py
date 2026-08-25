@@ -20,7 +20,8 @@ Pour chaque jeu de prompts et pour le corpus aggrege :
   :mod:`ict.sae_calibration` (numpy-only, teste unitairement) -- aucun calcul
   duplique dans ce script.
 
-Sortie ``traces/calib_fidelity_<slug>_layer{L}of{N}.npz`` (sans pickle) :
+Sortie ``traces/calib_fidelity_<slug>_layer{L}of{N}.npz`` (``N`` = nombre total
+de couches, convention des artefacts ICT-21, sans pickle) :
 
 * ``counts_total`` [d_sae] int64 et ``counts_<set>`` -- activites par feature ;
 * ``l0_vals_<set>`` [T, k] float16 -- valeurs top-k (distribution L0) ;
@@ -209,7 +210,7 @@ def main() -> None:
     report["layer_frac"] = depth["layer_frac"]
 
     out = Path(args.out_dir) / (
-        f"calib_fidelity_{model_slug(args.model)}_layer{layer}of{n_layers - 1}.npz"
+        f"calib_fidelity_{model_slug(args.model)}_layer{layer}of{n_layers}.npz"
     )
     np.savez_compressed(
         out,
