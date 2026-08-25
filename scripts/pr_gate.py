@@ -3,12 +3,34 @@
 
 ## Why this exists
 
-`main` has NO required status check. Measured firsthand 2026-08-07:
+`main` REQUIRES exactly one status check, and it is this one. Measured
+firsthand 2026-08-25 (as `jsboige` -- the read returns 404 under `myia-ai-01`,
+which is a question, not an absence):
 
-    gh api repos/jsboige/CoursIA/branches/main/protection   -> no required_status_checks
+    gh api repos/jsboige/CoursIA/branches/main/protection
+        required_status_checks.contexts -> ["PR gate"]   strict -> false
+        enforce_admins                  -> false
     gh api repos/jsboige/CoursIA/rulesets                   -> []
 
-So a PR whose CI is red reports `UNSTABLE` (mergeable), never `BLOCKED`. The
+The paragraph below describes the state BEFORE this check was wired, and is
+kept because it is the reason the design is what it is. It is no longer a
+description of `main`: since #9819 landed, a PR whose `PR gate` is red reports
+`BLOCKED`, not `UNSTABLE`.
+
+Two consequences the wiring makes load-bearing, both measured under a deep
+queue on 2026-08-25:
+
+  - `PR gate` being required means that when it cannot render a verdict --
+    queued behind ~2450 runs, or timed out at its 12-minute bound -- NOTHING
+    merges, including PRs whose every other check is green. That is a
+    deadlock, not slowness.
+  - `enforce_admins: false` is the release valve: an admin can `gh pr merge
+    --admin` when the verdict is unobtainable. It is the only one.
+
+## The state this check was built for (2026-08-07)
+
+At the time, a PR whose CI was red reported `UNSTABLE` (mergeable), never
+`BLOCKED`. The
 only thing standing between a red build and `main` is a human reading
 `gh pr checks` at ~180 merges/day. On 2026-08-07 that failed: #9762 was merged
 with `ci / Lean CI (grothendieck_lean) -> fail` AND a body that declared its own
