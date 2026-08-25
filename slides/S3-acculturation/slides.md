@@ -256,6 +256,86 @@ layout: section
 
 
 ---
+
+
+# Décider seul, décider face à quelqu'un
+
+<div class="grid grid-cols-2 gap-8 mt-3">
+
+<div>
+
+### Théorie de la **décision**
+
+L'incertitude vient de la **nature**. Elle ne vous veut rien.
+
+- On maximise une **utilité espérée**
+- L'objet cherché est un **optimum**
+- Outils : probabilités, utilité, arbres de décision, processus markoviens
+- Chez vous : prime pure, chargement de sécurité, aversion au risque
+
+</div>
+
+<div>
+
+### Théorie des **jeux**
+
+L'incertitude vient d'un **autre décideur**, qui optimise aussi — parfois contre vous.
+
+- On cherche un **équilibre**, pas un optimum
+- L'objet cherché est l'**équilibre de Nash**
+- Outils : matrices de gains, minimax, information asymétrique, conception de mécanismes
+- Chez vous : antisélection, aléa moral, signal, dépistage
+
+</div>
+
+</div>
+
+<div class="mt-8 text-slate-600 border-l-2 border-rose-800/40 pl-5 leading-relaxed">
+
+**Le même livre fonde les deux** — von Neumann &amp; Morgenstern, 1944. La théorie des jeux *dérive* de la décision, mais elle en change l'objet : dès que l'autre choisit aussi, l'optimum s'évanouit et seul l'équilibre subsiste.
+
+</div>
+
+
+---
+
+
+# Ce que la théorie des jeux ajoute — et ce qu'elle a donné à l'IA
+
+<div class="grid grid-cols-[1.05fr_1fr] gap-7 mt-2">
+
+<div>
+
+### Des objets que la décision seule ne produit pas
+
+- **Antisélection** — celui qui se sait mauvais risque s'assure en premier *(Akerlof, 1970)*
+- **Aléa moral** — être couvert change le comportement de l'assuré
+- **Signal et dépistage** — le contrat est construit pour *faire révéler* l'information cachée *(Spence 1973 ; Rothschild &amp; Stiglitz 1976, sur le marché de l'assurance)*
+- **Jeux bayésiens** — décider quand on ignore le type de l'autre *(Harsanyi)*
+
+</div>
+
+<div>
+
+### En intelligence artificielle
+
+- **Minimax et élagage alpha-bêta** : le socle des programmes de jeu depuis les années 1950
+- **Jeu contre soi-même** : le programme s'entraîne sans professeur en s'affrontant *(AlphaGo, AlphaZero)*
+- **Apprentissage par renforcement multi-agent** : plusieurs agents apprennent en s'influençant
+- **Enchères et conception de mécanismes** : ce qui régit la publicité en ligne
+
+</div>
+
+</div>
+
+<div class="mt-8 text-slate-600 border-l-2 border-rose-800/40 pl-5 leading-relaxed">
+
+**Vos contrats sont déjà des mécanismes de jeu.** Franchise, bonus-malus, coassurance ne sont pas des paramètres tarifaires : ce sont des dispositifs d'incitation. La théorie des jeux est la discipline qui les conçoit.
+
+</div>
+
+
+---
 layout: section
 ---
 
@@ -674,8 +754,6 @@ layout: default
 </div>
 </div>
 ---
-layout: two-cols
----
 
 
 
@@ -686,6 +764,8 @@ layout: two-cols
 <div class="bg-slate-800 text-white px-4 py-2 text-base font-bold text-center">Qu'est-ce qu'un argument ?</div>
 </div>
 
+<div class="grid grid-cols-2 gap-5 -mt-2">
+<div>
 
 **Code de conduite**
 
@@ -699,9 +779,8 @@ layout: two-cols
   - Suspension du jugement
   - Résolution
 
-
-::right::
-
+</div>
+<div>
 
 **Qu'est-ce qu'un argument?**
 
@@ -720,16 +799,16 @@ layout: two-cols
   - Légal  loi, jurisprudence etc.
   - Esthétique  critère
 
-
-
----
-layout: two-cols
+</div>
+</div>
 ---
 
 
 
 # Analyse rhétorique
 
+<div class="grid grid-cols-2 gap-5 -mt-2">
+<div>
 
 **Un bon argument**
 
@@ -746,9 +825,8 @@ layout: two-cols
 - Renforcer un argument
   - Balayer ces 5 critères
 
-
-::right::
-
+</div>
+<div>
 
 **Un argument fallacieux**
 
@@ -764,8 +842,8 @@ layout: two-cols
 
 </div>
 
-
-
+</div>
+</div>
 ---
 
 
@@ -946,13 +1024,13 @@ layout: section
 </div>
 
 ---
-layout: two-cols
----
 
 
 
 # Réseaux bayésiens dynamiques
 
+<div class="grid grid-cols-2 gap-5 -mt-2">
+<div>
 
 **Chaînes de Markov**
 
@@ -970,9 +1048,8 @@ layout: two-cols
 <img src="./images/img_057.png" class="w-[150px] max-w-full max-h-[300px] object-contain" alt="Réseau bayésien météo : soleil, nuages, pluie reliés par probabilités conditionnelles" />
 </div>
 
-
-::right::
-
+</div>
+<div>
 
 **Applications**
 
@@ -991,7 +1068,8 @@ layout: two-cols
 
 </div>
 
-
+</div>
+</div>
 ---
 
 
@@ -1435,6 +1513,7 @@ layout: two-cols
 
 <div class="img-grid-2x2 absolute top-[130px] right-[20px] w-[400px]">
 <img src="./images/img_094.png" class="max-h-[300px] max-w-full object-contain" alt="Opération de convolution : volume d'entrée 7x7x3 et noyau 3x3x3 glissant sur la matrice" />
+<img src="./images/img_095.png" class="max-h-[300px] max-w-full object-contain" alt="Architecture CNN historique : couches « Simple cells » (convolutions multiples) et « Complex cells » (sous-échantillonnage par pooling)" />
 <img src="./images/img_096.png" class="max-h-[300px] max-w-full object-contain" alt="Transfert learning : photo de voiture, extracteur de caractéristiques, caractéristiques de haut niveau, classifieur entraînable" />
 <img src="./images/img_097.png" class="max-h-[300px] max-w-full object-contain" alt="RNN déroulé : cellule A récurrente, entrées x0 à xt, sorties h0 à ht" />
 </div>
@@ -2281,10 +2360,88 @@ problèmes, et ils se résolvent avec les mêmes objets.
 | Une **file de travail** par poste, jamais vide | Plan de charge |
 | Un **jeton de réservation** posé sur la tâche | « Qui fait quoi » — anti-doublon |
 | Une **revue obligatoire** avant intégration | Contrôle, double signature |
-| Des **règles écrites** (27) plutôt que des consignes orales | Procédures |
+| Des **règles écrites** (26) plutôt que des consignes orales | Procédures |
 
 Aucun de ces objets n'a été conçu pour l'IA : ce sont ceux d'une direction
 des opérations, transposés tels quels.
+
+---
+
+# L'organisation, à l'échelle
+
+<div class="grid grid-cols-[1fr_1.1fr] gap-6 mt-2">
+
+<div>
+
+```mermaid
+%%{init: {"flowchart": {"nodeSpacing": 12, "rankSpacing": 26, "curve": "linear"}, "themeVariables": {"fontSize": "12px"}}}%%
+graph TD
+    H["Direction — 1 personne"] --> C["Coordinateur — 1 agent"]
+    C --> M1["Machine A<br/>2 postes"]
+    C --> M2["Machine B<br/>2 postes"]
+    C --> M3["Machines C-E<br/>6 postes"]
+    M1 --> S["21 profils spécialistes<br/>appelés à la demande"]
+    M2 --> S
+    M3 --> S
+```
+
+</div>
+
+<div>
+
+| Niveau | Effectif | Disponibilité |
+|---|---|---|
+| Direction, arbitrage | **1 personne** | 1-2 h / jour |
+| Coordination | **1 agent** | continue |
+| Production | **10 postes** | continue |
+| Spécialistes | **21 profils** | à la demande |
+
+<div class="text-sm text-slate-600 mt-5">
+<b>5 machines</b>, 2 périmètres de travail chacune :
+un poste = une machine × un périmètre.
+</div>
+
+</div>
+
+</div>
+
+<div class="text-sm text-slate-600 border-l-2 border-rose-800/40 pl-4 mt-3">
+Le chiffre à retenir n'est pas « 10 postes » : c'est le <b>rapport</b>. Une personne, une
+à deux heures par jour d'arbitrage, tient une structure qui produit en continu. Ce n'est
+pas un remplacement d'ETP — c'est un <b>changement de ce que fait l'ETP</b> : elle ne
+produit plus, elle décide et elle relit.
+</div>
+
+---
+
+# Quel agent, quel outil, pour quelle tâche
+
+Un **seul** outil d'agent — *Claude Code*, celui déjà cité plus haut — décliné en **profils**.
+Ce qui les distingue n'est pas le modèle : c'est le **jeu d'outils** que chacun reçoit.
+
+<div class="text-sm mt-3">
+
+| Profil | Les outils qu'il reçoit | Sa tâche |
+|---|---|---|
+| Exploration | lecture et recherche, **pas d'écriture** | Retrouver où vit une notion, sans rien modifier |
+| Rédaction pédagogique | édition de *notebooks* | Écrire cours et exercices |
+| Exécution | noyau Jupyter, Papermill | Faire tourner le cours et **capturer les sorties réelles** |
+| Preuve formelle | Lean 4 / Lake | Vérifier un théorème, mesurer la dette de preuve |
+| Entraînement | GPU, PyTorch, validation *walk-forward* | Entraîner et **falsifier** un modèle |
+| Marchés | API QuantConnect | Lancer un *backtest*, relever Sharpe / drawdown |
+| Génération d'images | ComfyUI + modèles auto-hébergés | Produire les illustrations du cours |
+| Relecture visuelle | rendu de planches + vision | Vérifier qu'une planche ne déborde pas |
+| Contrôle | tests, *build* — et le droit de **refuser** | Refuser ce qui ne passe pas |
+
+</div>
+
+<div class="text-sm text-slate-600 border-l-2 border-rose-800/40 pl-4 mt-2">
+Un agent n'est pas « une IA » : c'est un <b>périmètre écrit</b> plus un <b>jeu d'outils
+restreint</b>. Celui qui explore n'a pas le droit d'écrire ; celui qui exécute n'a pas le
+droit de fusionner. La séparation des pouvoirs y fait le même travail que dans une
+organisation — et elle est <b>plus facile à tenir</b>, parce qu'elle est déclarée dans un
+fichier plutôt que rappelée en réunion.
+</div>
 
 
 ---
@@ -2453,6 +2610,82 @@ d'entreprise offrent ce filet — c'est le premier critère de choix d'un pilote
   jamais dans le code, les prompts ou les sorties
 
 > Un outil puissant appelle une utilisation **responsable**
+
+
+---
+
+
+# Ce qui est un vrai risque — et ce qui n'en est pas un
+
+<div class="grid grid-cols-2 gap-7 mt-3">
+
+<div>
+
+### Surestimé
+
+- **Le remplacement.** Le goulot n'est pas la production, c'est la **relecture** — écrire dix fois plus réclame plus de relecteurs, pas moins.
+- **L'autonomie du modèle.** Ni intention, ni mémoire entre deux appels. Le risque n'est pas qu'il décide : c'est qu'on le **laisse** décider sans vérifier.
+- **L'hallucination comme fatalité.** Risque d'ingénierie, mesurable — atténué par le périmètre fermé, la source citée, la vérification.
+
+</div>
+
+<div>
+
+### Sous-estimé
+
+- **La fuite ordinaire.** Pas l'attaque : la pièce de dossier collée dans un service public gratuit. Premier risque réel, et **déjà là**.
+- **La dépendance non arbitrée.** Un processus qui ne sait plus fonctionner sans le modèle — sans que personne l'ait décidé.
+- **Le biais qui se durcit.** Appris sur l'historique, il reproduit la sélection passée. En souscription : discrimination indirecte, **opposable**.
+- **L'absence de trace.** L'AI Act demande de documenter ; ce qui n'est pas tracé dès le pilote ne se reconstitue pas.
+
+</div>
+
+</div>
+
+<div class="mt-6 text-slate-600 border-l-2 border-rose-800/40 pl-5 leading-relaxed">
+
+Le partage utile n'est pas « risqué / pas risqué » : c'est **rattrapable / irrattrapable**.
+
+</div>
+
+
+---
+
+
+# Où la valeur se trouve — et où elle ne se trouve pas encore
+
+<div class="grid grid-cols-2 gap-7 mt-3">
+
+<div>
+
+### Mûr aujourd'hui
+*l'erreur se voit, et se corrige*
+
+- **Lire et structurer un document** : constat, pièce, conditions générales
+- **Chercher dans un corpus fermé**, réponse rattachée à sa source
+- **Pré-rédiger sous contrôle** : courrier, compte rendu, synthèse de dossier
+- **Assister l'analyse** : code, données, exploration d'un portefeuille
+
+</div>
+
+<div>
+
+### Pas encore
+*l'erreur est silencieuse*
+
+- **La décision autonome** sur un dossier
+- **Le chiffre non vérifié.** Un modèle de langage ne calcule pas : il complète. Tarification et provisionnement passent par un **outil de calcul** qu'on appelle — jamais par le modèle lui-même.
+- **Le jugement en zone grise**, là où la règle ne tranche pas et où c'est précisément le métier qui tranche
+
+</div>
+
+</div>
+
+<div class="mt-8 text-slate-600 border-l-2 border-rose-800/40 pl-5 leading-relaxed">
+
+**L'IA ne remplace pas le métier : elle réorganise le travail autour de lui.** Une nuance, et elle compte devant des actuaires — elle n'automatise pas le **calcul**, elle automatise ce qui l'entoure.
+
+</div>
 
 
 ---

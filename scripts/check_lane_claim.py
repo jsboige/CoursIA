@@ -112,8 +112,16 @@ from grain_tag import extract_lane
 # bold pair opener, then whitespace, then the bracket. A `[` NOT immediately at
 # a decorator position (e.g. `- Prose with [CLAIMED] mid-line`) still does not
 # match -- the mid-prose non-regression property is preserved.
+# #12711 -- the decor class was ASCII-pure, so a leading non-ASCII decoration
+# (`→` U+2192, `➡` U+27A1, `➜` U+279C, `»` U+00BB, `•` U+2022, `–` U+2013,
+# `—` U+2014) voided the marker to BOTH regexes: the claim was never read (no
+# block) and the bare-marker lint never flagged it (no WARN). Measured on
+# #12465: `→DELIVERED #12465 ...` posted by po-2026 went unread, po-2027 then
+# got CLEAR and delivered the same notebook 15 h later (#12512 / #12638).
+# `_DECOR` is the shared, broadened decoration class for all four regexes.
+_DECOR = r"(?:[#>*+\-→➡➜»•–—]{1,6}[ \t]*)*"
 _MARKER_RE = re.compile(
-    r"(?m)^[ \t]*(?:[#>*+-]{1,6}[ \t]*)*(?:\*\*|__)?[ \t]*\[\s*(CLAIMED|RELEASED|CANCELLED|ABANDONED|DONE|OVERRIDE|DELIVERED)\s*\]",
+    r"(?m)^[ \t]*" + _DECOR + r"(?:\*\*|__)?[ \t]*\[\s*(CLAIMED|RELEASED|CANCELLED|ABANDONED|DONE|OVERRIDE|DELIVERED)\s*\]",
     re.IGNORECASE,
 )
 # #11239 -- malformed-marker lint. A claim line written WITHOUT the brackets
@@ -128,7 +136,7 @@ _MARKER_RE = re.compile(
 # widening -- a malformed line must surface as a warning, never as a claim
 # event. The motif tail is on the same line only (no `[\s\S]` cross-line).
 _MALFORMED_MARKER_RE = re.compile(
-    r"(?m)^[ \t]*(?:[#>*+-]{1,6}[ \t]*)*(?:\*\*|__)?[ \t]*"
+    r"(?m)^[ \t]*" + _DECOR + r"(?:\*\*|__)?[ \t]*"
     r"(CLAIMED|RELEASED|CANCELLED|ABANDONED|DONE|OVERRIDE|DELIVERED)\b"
     r"[^\n]*(?:lane\s+\S+:\S+|#\d+)",
     re.IGNORECASE,
@@ -234,7 +242,7 @@ _OVERRIDE = {"OVERRIDE"}
 # indistinguishable from a closing decorator by suffix alone. Trailing `*` in
 # fnmatch matches empty, so a captured `glob**` still matches `glob`.
 _PATHS_CLAUSE_RE = re.compile(
-    r"(?im)^[ \t]*(?:[#>*+-]{1,6}[ \t]*)*(?:\*\*|__)?[ \t]*\[\s*(?:CLAIMED|RELEASED|OVERRIDE)\s*\][^\n]*?paths\s*:\s*([^\n]+?)\s*$"
+    r"(?im)^[ \t]*" + _DECOR + r"(?:\*\*|__)?[ \t]*\[\s*(?:CLAIMED|RELEASED|OVERRIDE)\s*\][^\n]*?paths\s*:\s*([^\n]+?)\s*$"
 )
 # #12320 -- `[DELIVERED] lane <m:w> -- PR #N`. The PR reference is OPTIONAL on
 # a DELIVERED marker (a DELIVERED without a PR is functionally equivalent to a
@@ -280,7 +288,7 @@ _PAREN_ANNOTATION_RE = re.compile(r" \(")
 # claim is NOT re-classified (see #12072: re-reading an off-marker prose line
 # as the machine clause would make the scope depend on an heuristic).
 _OFF_MARKER_SCOPE_RE = re.compile(
-    r"(?im)^[ \t]*(?:[#>*+-]{1,6}[ \t]*)*(?:\*\*|__)?[ \t]*paths?\s*:\s*([^\n]+?)\s*$"
+    r"(?im)^[ \t]*" + _DECOR + r"(?:\*\*|__)?[ \t]*paths?\s*:\s*([^\n]+?)\s*$"
 )
 
 
@@ -1748,6 +1756,40 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
         for ev in events:
             if ev.get("paths"):
                 ev["empty_scope"] = _empty_scope_in(ev["paths"], tracked)
+    # #12740 -- dead-scope aggregate, lane-keyed, over ALL claim events.
+    #
+    # The #10881/#10958 witnesses surface a dead glob to a consumer that
+    # reads them, but only for the ACTIVE claims (`active_claims.<lane>
+    # .empty_scope`) and for the CALLER's own scope (`caller_empty_scope`).
+    # A claim whose `paths:` glob is a typo and is then RELEASED/CLOSED leaves
+    # the typo invisible to a JSON sweep -- the stderr WARN in
+    # `_lint_claim_events` is the only channel, and it goes to STDERR, which
+    # the CI gate, `pick_idle_grain` and the lane scripts do not consume.
+    # That is exactly the fail-open #12740 names: a `[CLAIMED] -- paths:
+    # scripts/notebook_tools/check_code_in_markdown.py` (real file:
+    # detect_code_in_markdown_cells.py) claimed #12620, yet both lanes
+    # worked the same real file -- the dead glob never surfaced in the JSON.
+    #
+    # Policy (chosen, #12740): SIGNAL, not re-block. We do NOT re-open the
+    # #10958 fail-open: an ACTIVE claim whose entire scope is dead is STILL
+    # lifted to epic-wide (a broken claim is not a permissive claim, and
+    # lifting it back to scoped would re-create the #9764-style false CLEAR).
+    # We ADD the signal -- a lane-keyed map of dead globs across every claim
+    # event (open, override AND close) -- so a sweep can grep ONE key and a
+    # released-claim typo still surfaces. A coordinator wanting full (a)
+    # fail-CLOSED for the legitimate new-file case can address the semantic
+    # deviation separately; the mechanism here is the visibility half.
+    dead_scope_globs: dict[str, list[str]] = {}
+    if tracked is not None:
+        for ev in events:
+            lane = ev.lane
+            dead = ev.get("empty_scope") or []
+            if not lane or not dead:
+                continue
+            bucket = dead_scope_globs.setdefault(lane, [])
+            for g in dead:
+                if g not in bucket:
+                    bucket.append(g)
     active, unattributed = compute_active_claims(events, pr_states=pr_states)
     others = {ln: ev for ln, ev in active.items() if ln != my_lane}
     mine = active.get(my_lane)
@@ -1794,6 +1836,13 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
             if age is not None and age >= stale_threshold:
                 stale_others[ln] = ev
         others = {ln: ev for ln, ev in others.items() if ln not in stale_others}
+    else:
+        # #12751 -- a zero of absence-of-measurement must not re-read as a
+        # zero of absence-of-claim. Say the detection is OFF on stderr (the
+        # JSON `stale_detection` field is set to "disabled" alongside).
+        print("STALE_DETECTION disabled -- claims are NOT age-filtered "
+              "(--no-stale or threshold None). Old claims still block.",
+              file=sys.stderr)
 
     # #12327 -- lint qualifier runs AFTER the reducer: the epic-wide marker
     # lint can no longer say `il bloque toutes les autres lanes` for a
@@ -1863,7 +1912,15 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
         "my_lane": my_lane,
         "my_active_claim": bool(mine),
         "blocking_lanes": sorted(others),
-        "stale_claims": sorted(stale_others),
+        "stale_claims": sorted(stale_others) if stale_threshold is not None else None,
+        # #12751 -- l'etat de la detection est nomme explicitement. "active" :
+        # un seuil est pose, les claims plus vieux sont age-filtered (le
+        # comportement par defaut, 48h). "disabled" : --no-stale / threshold
+        # None -- rien n'est mesure du tout, un claim zombie de 415 h bloquerait
+        # indefiniment. `stale_claims` vaut `null` quand disabled -- un zero
+        # d'ABSENCE de mesure ne doit pas se relire comme un zero d'absence de
+        # claim (avant, les deux rendaient `[]`).
+        "stale_detection": "active" if stale_threshold is not None else "disabled",
         # #12156 -- umbrella classifier (`is_umbrella`) and the pathology it
         # describes (`epic_wide_on_umbrella`). Both default False: on a
         # unit-issue the umbrella flag stays False; on a CLEAR umbrella the
@@ -1983,6 +2040,16 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
         # the dead globs cover the whole scope, otherwise the live globs
         # continue to carry the disjointness test.
         "caller_empty_scope": caller_empty_scope,
+        # #12740 -- lane-keyed dead-glob map, aggregated over EVERY claim
+        # event (not just active claims). Empty (`{}`) when no glob of any
+        # claim matches zero tracked files, or when the tracked walk was
+        # impossible (`tracked is None` -> cannot prove deadness). Unlike the
+        # per-active-claim `empty_scope` (which disappears when a claim is
+        # released) and the stderr WARN (unread by the CI gate / picker /
+        # lane scripts), this key survives a release so a typo'd scope is
+        # always visible to a JSON sweep. Non-blocking by design -- it only
+        # reports; it does not change the verdict.
+        "dead_scope_globs": dead_scope_globs,
     }
     print(json.dumps(summary, ensure_ascii=False, indent=2))
 
@@ -2092,6 +2159,47 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
             f"`[CLAIMED] paths: ...`, or wait for release.",
             file=sys.stderr,
         )
+        # #12905 -- name the dead-scope lock. A blocker whose declared scope
+        # is ENTIRELY dead (every glob matches zero tracked files) was lifted
+        # to epic-wide by the #10958 fail-safe: it locks the WHOLE issue for
+        # every lane, including callers whose live scope is provably disjoint
+        # (#12905's reproduction on #12844: lane A live on the GT-17b
+        # notebook, blocked by lane B reserving asymmetric_information_lean/**
+        # before the path exists). The fail-closed verdict stays -- a dead
+        # scope must not DE-unlock -- but the blocking text now NAMES the
+        # mechanism: `WARN: glob sans correspondance` alone reads as "stale
+        # worktree", not as "this claim locks the whole umbrella". Same shape
+        # as the LOCKED (v2) sub-message below: explainer only, no exit-code
+        # change.
+        dead_scope_blockers = [
+            ev for ev in others.values()
+            if ev.get("paths") and _claim_scope_effectively_epic_wide(ev)
+        ]
+        if dead_scope_blockers:
+            lines = []
+            for ev in dead_scope_blockers:
+                dead = ", ".join(
+                    repr(g) for g in (ev.get("empty_scope") or ev.get("paths") or [])
+                )
+                ln = ev.get("lane") or "?"
+                lines.append(
+                    f"  - lane {ln} -- declared scope matches zero tracked "
+                    f"files ({dead})"
+                )
+            print(
+                f"\nDEAD-SCOPE LOCK (#12905): the blocker(s) above hold a "
+                f"`paths:` scope that matches NO tracked file yet. By the "
+                f"#10958 fail-safe such a claim is treated as EPIC-WIDE and "
+                f"locks the whole issue #{payload.get('number')} for every "
+                f"lane -- including yours, even when your scope is provably "
+                f"disjoint (the nominal case of a lane reserving a path it "
+                f"is about to create). The lock lifts when the blocking lane "
+                f"re-issues its claim once the path exists, posts "
+                f"`[RELEASED]`, or a coordinator writes an "
+                f"`[OVERRIDE] lane <m:w>` comment (cf #10223).\n"
+                + "\n".join(lines),
+                file=sys.stderr,
+            )
         # #12386 -- v2 LOCKED verdict. When the blocker is a `[DELIVERED]`
         # whose PR reached main (`locked: True`), a plain re-claim is NOT a
         # path forward -- the issue is resolved. We surface a tailored message
@@ -2515,12 +2623,19 @@ def main(argv: list[str] | None = None) -> int:
                    help="your lane, e.g. myia-po-2024:CoursIA")
     p.add_argument("--from-json", metavar="FILE",
                    help="read `gh issue view` JSON from FILE (offline/test mode)")
-    p.add_argument("--stale-threshold", type=float, metavar="HOURS", default=None,
+    p.add_argument("--stale-threshold", type=float, metavar="HOURS", default=48.0,
                    help="treat OTHER lanes' claims older than HOURS as stale: "
                         "warn and do not block (age from server createdAt, never "
                         "the body). The new claimant must still post its own "
-                        "[CLAIMED] -- this is not a silent bypass. Without the "
-                        "flag every active claim blocks (current behaviour).")
+                        "[CLAIMED] -- this is not a silent bypass. Default 48 "
+                        "(#12751): the canonical invocation now MEASURES. "
+                        "`--no-stale` restores the legacy behaviour (every active "
+                        "claim blocks).")
+    p.add_argument("--no-stale", action="store_true", default=False,
+                   help="#12751: disable staleness detection entirely (legacy "
+                        "behaviour: every active claim blocks, nothing is "
+                        "age-filtered). The detected state is reported as "
+                        "`stale_detection: \"disabled\"`.")
     p.add_argument("--paths", metavar="PATH", nargs="+", default=None,
                    help="path-mode (#9959): one or more file paths/globs. "
                         "Exits 2 if any OPEN PR of a different lane (or with "
@@ -2551,6 +2666,11 @@ def main(argv: list[str] | None = None) -> int:
                         "blocked (#11064). Coordinator arbitration only -- "
                         "the reading side still honours [OVERRIDE] markers.")
     args = p.parse_args(argv)
+    # #12751 -- default is 48 (measuring). `--no-stale`/threshold=None restores
+    # the legacy behaviour (every claim blocks, nothing age-filtered); the
+    # disabled state is reported honestly as `stale_detection: "disabled"`.
+    if args.no_stale:
+        args.stale_threshold = None
 
     # #10881 -- `nargs='+'` on --paths swallows a TRAILING positional issue
     # number (`--lane X --paths a b 10678` puts "10678" into the paths list,

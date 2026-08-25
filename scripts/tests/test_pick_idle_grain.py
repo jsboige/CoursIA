@@ -5,6 +5,14 @@ fondateur (2026-08-21) : #12014 tiree en urne grain a 16:47Z alors que
 #12077, mergee a 16:19Z, avait deja livre 3 de ses 4 items -- le label
 ``candidate-delivered`` (workflow schedule: quotidien, dernier run 05:49Z)
 n'en savait rien. Le replay ci-dessous rejoue cet etat exact.
+
+Second angle mort, ferme le 2026-08-24 (#12504, rapporte par
+myia-po-2023:CoursIA) : ne regarder que les PRs MERGEES laissait passer
+les issues couvertes par une PR encore OUVERTE, qui ne portent aucune
+trace -- ni label, ni body a jour, ni fusion a trouver. #12504 est
+sortie en tete d'urne (p=2.0) alors que #12519 la couvrait ; la lane qui
+l'a prise a pose un claim void. Une PR ouverte prime une fusion recente :
+la fusion dit "c'est peut-etre fait", l'ouverte dit "quelqu'un y est".
 """
 
 import json
@@ -43,7 +51,7 @@ def test_founding_case_12014_surfaces_12077(monkeypatch):
     """
     calls = []
     _patch_gh(monkeypatch, [[
-        {"number": 12077, "mergedAt": "2026-08-21T16:19:17Z"},
+        {"number": 12077, "state": "MERGED", "mergedAt": "2026-08-21T16:19:17Z"},
     ]], calls)
     notes = pig.recent_delivery([_pick()])
     assert 12014 in notes
@@ -64,7 +72,9 @@ def test_query_shape_bounded_one_per_candidate(monkeypatch):
     pig.recent_delivery([_pick(n=1), _pick(n=2)])
     assert len(calls) == 2
     for cmd, n in zip(calls, (1, 2)):
-        assert "--state" in cmd and "merged" in cmd
+        # --state all depuis #12504 : ouvertes ET mergees dans la MEME
+        # requete, donc l'invariant "une par candidat" tient toujours.
+        assert "--state" in cmd and "all" in cmd
         assert "--limit" in cmd and "20" in cmd
         assert "--search" in cmd
         assert cmd[cmd.index("--search") + 1] == f"{n} in:title,body"
@@ -75,7 +85,7 @@ def test_merge_older_than_update_not_annotated(monkeypatch):
     digeree par le body -- pas d'annotation, sinon le signal noie."""
     calls = []
     _patch_gh(monkeypatch, [[
-        {"number": 12077, "mergedAt": "2026-08-21T04:00:00Z"},
+        {"number": 12077, "state": "MERGED", "mergedAt": "2026-08-21T04:00:00Z"},
     ]], calls)
     notes = pig.recent_delivery([_pick(updated_at="2026-08-21T05:13:00Z")])
     assert notes == {}
@@ -92,7 +102,7 @@ def test_candidate_stays_drawable(monkeypatch):
     la fonction rend des notes, les picks passes ne sont ni filtres ni mutés."""
     calls = []
     _patch_gh(monkeypatch, [[
-        {"number": 12077, "mergedAt": "2026-08-21T16:19:17Z"},
+        {"number": 12077, "state": "MERGED", "mergedAt": "2026-08-21T16:19:17Z"},
     ]], calls)
     picks = [_pick()]
     snapshot = dict(picks[0])
@@ -106,8 +116,8 @@ def test_multiple_prs_latest_named_with_count(monkeypatch):
     note, le compte evite de lire 'la livraison' comme l'unique."""
     calls = []
     _patch_gh(monkeypatch, [[
-        {"number": 12077, "mergedAt": "2026-08-21T16:19:17Z"},
-        {"number": 12065, "mergedAt": "2026-08-20T10:00:00Z"},
+        {"number": 12077, "state": "MERGED", "mergedAt": "2026-08-21T16:19:17Z"},
+        {"number": 12065, "state": "MERGED", "mergedAt": "2026-08-20T10:00:00Z"},
     ]], calls)
     notes = pig.recent_delivery([_pick()])
     assert "#12077" in notes[12014]
@@ -124,6 +134,90 @@ def test_gh_failure_annotated_best_effort(monkeypatch):
     notes = pig.recent_delivery([_pick()])
     assert "indisponible" in notes[12014]
     assert "TimeoutExpired" in notes[12014]
+
+
+# --- PR OUVERTE couvrante (#12504, rapporte 2026-08-24) --------------------
+#
+# Le detecteur precedent se validait sur ses faux negatifs cote FUSION. Il en
+# gardait un cote OUVERTURE, plus couteux : une fusion fait perdre du temps de
+# lecture, une PR ouverte fait perdre un claim. Chaque test nomme le defaut
+# qu'il empeche de revenir.
+
+
+def test_founding_case_12504_open_pr_surfaces_12519(monkeypatch):
+    """Controle positif : #12504 tiree en tete d'urne le 2026-08-24 alors que
+    #12519 (OUVERTE, po-2026) la couvrait -- claim void de la lane suivante."""
+    calls = []
+    _patch_gh(monkeypatch, [[
+        {"number": 12519, "state": "OPEN", "isDraft": False, "mergedAt": None},
+    ]], calls)
+    notes = pig.recent_delivery([_pick(n=12504)])
+    assert 12504 in notes
+    assert notes[12504].startswith("TRAVAIL EN COURS")
+    assert "#12519" in notes[12504]
+    assert "VOID" in notes[12504]
+
+
+def test_open_pr_annotated_even_when_issue_freshly_updated(monkeypatch):
+    """Une PR ouverte est courante par construction : contrairement a une
+    fusion, elle n'est PAS comparee a ``updated_at``. Une issue touchee il y a
+    une minute peut tres bien etre en cours de traitement par une autre lane."""
+    calls = []
+    _patch_gh(monkeypatch, [[
+        {"number": 12519, "state": "OPEN", "isDraft": False, "mergedAt": None},
+    ]], calls)
+    notes = pig.recent_delivery([_pick(n=12504, updated_at="2099-01-01T00:00:00Z")])
+    assert 12504 in notes and notes[12504].startswith("TRAVAIL EN COURS")
+
+
+def test_open_pr_takes_priority_over_recent_merge(monkeypatch):
+    """Les deux signaux coexistent souvent (une tranche livree, une en cours).
+    L'ouverte gagne : elle dit ou est le risque de collision maintenant."""
+    calls = []
+    _patch_gh(monkeypatch, [[
+        {"number": 12077, "state": "MERGED", "isDraft": False,
+         "mergedAt": "2026-08-21T16:19:17Z"},
+        {"number": 12519, "state": "OPEN", "isDraft": False, "mergedAt": None},
+    ]], calls)
+    notes = pig.recent_delivery([_pick()])
+    assert notes[12014].startswith("TRAVAIL EN COURS")
+    assert "#12519" in notes[12014]
+
+
+def test_closed_unmerged_pr_is_not_a_signal(monkeypatch):
+    """Sur-accusation a empecher : une PR fermee SANS fusion n'atteste de rien
+    (abandon, doublon dispose). La compter en 'travail en cours' enverrait la
+    lane chercher une collision inexistante."""
+    calls = []
+    _patch_gh(monkeypatch, [[
+        {"number": 12638, "state": "CLOSED", "isDraft": False, "mergedAt": None},
+    ]], calls)
+    assert pig.recent_delivery([_pick()]) == {}
+
+
+def test_draft_open_pr_marked_as_such(monkeypatch):
+    """Une draft compte (quelqu'un y est) mais se lit differemment d'une PR
+    prete : le marqueur doit le dire plutot que de laisser deviner."""
+    calls = []
+    _patch_gh(monkeypatch, [[
+        {"number": 12519, "state": "OPEN", "isDraft": True, "mergedAt": None},
+    ]], calls)
+    notes = pig.recent_delivery([_pick()])
+    assert "[draft]" in notes[12014]
+
+
+def test_several_open_prs_named_with_count(monkeypatch):
+    """Plusieurs lanes deja dessus : le compte evite de lire 'la PR' comme
+    l'unique, et la plus basse est nommee (la premiere arrivee)."""
+    calls = []
+    _patch_gh(monkeypatch, [[
+        {"number": 12640, "state": "OPEN", "isDraft": False, "mergedAt": None},
+        {"number": 12519, "state": "OPEN", "isDraft": False, "mergedAt": None},
+    ]], calls)
+    notes = pig.recent_delivery([_pick()])
+    assert "#12519" in notes[12014]
+    assert "#12640" in notes[12014]
+    assert "+1 autre(s)" in notes[12014]
 
 
 # --- garde "reparer son rouge d'abord" (mandat user 2026-08-22) ------------
@@ -342,6 +436,37 @@ def test_untagged_blocked_prs_are_counted_but_never_attributed(monkeypatch):
     out = pig.red_backlog("myia-po-2026:CoursIA", 24, count_threshold=99)
     assert [r["number"] for r in out["red"]] == [1]
     assert [u["number"] for u in out["unattributed_blocked"]] == [9]
+
+
+def test_unattributed_blocked_is_printed_on_the_draw_path(monkeypatch, capsys):
+    """#12738 : une lane a `red == []` mais `unattributed_blocked != []`
+    doit voir les numeros dans la sortie humaine du TIRAGE, pas seulement
+    quand elle est refassee. Sans ce cas, le test ne distingue pas le
+    correctif de l'etat actuel (paragraphe confine a `print_red_refusal`).
+    """
+    red_state = _state(checks=[("PR gate", "FAILURE", True)])
+    # age 2 h : sous le seuil red_hours=24, donc `red=[]` ; pas de tag -> `unattributed_blocked`.
+    _patch_backlog(monkeypatch, [
+        _pr(9, None, 2),
+    ], {9: red_state})
+    backlog = pig.red_backlog("myia-po-2026:CoursIA", 24, count_threshold=99)
+    assert backlog["red"] == [], f"Lane doit avoir red vide (age 2h < 24h), got: {backlog['red']}"
+    assert [u["number"] for u in backlog["unattributed_blocked"]] == [9]
+
+    pig.print_unattributed_blocked(backlog)
+    captured = capsys.readouterr().out
+    assert "Portee :" in captured, f"Le paragraphe doit sortir sur le chemin du tirage, got: {captured!r}"
+    assert "#9" in captured, f"Le numero #9 doit etre visible, got: {captured!r}"
+    assert "`Grain:`" in captured, "Mention Grain: obligatoire"
+
+
+def test_unattributed_blocked_stays_silent_when_empty(capsys):
+    """Aucun output si `unattributed_blocked` est vide : ne pas polluer
+    les tirages sans rouge sans tag."""
+    pig.print_unattributed_blocked({"unattributed_blocked": []})
+    pig.print_unattributed_blocked({})
+    captured = capsys.readouterr().out
+    assert captured == "", f"Aucun output attendu quand vide, got: {captured!r}"
 
 
 def test_network_failure_does_not_block_the_draw(monkeypatch):
