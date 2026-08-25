@@ -174,28 +174,37 @@ theorem cream_skim_implies_some_negative_H_profit
   obtain ⟨_, _, _, c, hcmem, hnH, hnL⟩ := hCream
   exact ⟨c, hcmem, hnH, hnL⟩
 
-/-- Decided example: profile `(p_H, p_L) = (25, 75)` (in hundredths),
-    1-contract menu `(α=100, β=20)`. Global profit calculation:
-    - on H: `20*100 - 25*100 = -500`
-    - on L: `20*100 - 75*100 = -5500`
-    - global (sum): `-500 + -5500 = -6000`, so global profit < 0.
-    Conclusion: the in-menu component is satisfied (the contract `c =
-    ⟨100, 20⟩` loses on H, and by symmetry of the calculation above also
-    loses on L). The off-menu component `c' ∉ menu` with
-    `globalExpectedProfit c' r > 0` **is not decidable trivially**: a
-    counter-example `c' = ⟨200, 100⟩` would give
-    `globalExpectedProfit = 17000 > 0`. The new definition of
-    `creamSkimProfitable` (closed, required by po-2025 c.481) includes
-    the conjunction off-menu profitable + in-menu losing on H +
-    symmetric bound, and **is not decidable by a closed example** like
-    the old predicate. This is the price of directional closure: the
-    off-menu counter-example escapes local decidability.
+/-- **Positive economic example** — `creamSkimProfitable` holds for an
+    off-menu profitable contract `c'` + an in-menu contract `c = ⟨100, 20⟩`
+    losing on both types. Profile `(p_H, p_L) = (25, 75)` (in hundredths,
+    constraint `25 < 75`), 1-contract menu `[(100, 20)]`.
 
-    **`True` stub**: the old decidable example `¬ creamSkimProfitable
-    [⟨100, 20⟩]` is replaced by a stub — decidability was deliberately
-    abandoned in favor of closing the directional lemma. See
-    `cream_skim_implies_some_negative_H_profit` for the preserved
-    extraction bridge. -/
-example : True := trivial
+    Calculations:
+    - off-menu `c' = ⟨100, 100⟩`: `globalExpectedProfit = (100*100 - 25*100) +
+      (100*100 - 75*100) = 7500 + 2500 = 10000 > 0` ✓;
+    - in-menu `c = ⟨100, 20⟩`: `expectedProfit .high = 20*100 - 25*100 = -500 < 0`
+      ✓; `expectedProfit .low = 20*100 - 75*100 = -5500 ≤ 0` ✓.
+
+    The `refine` witness reconstructs the **7 fields** consumed by `obtain` in
+    `cream_skim_breaks_nash` (c.481): `c' = ⟨100, 100⟩`, `¬ elem [⟨100, 20⟩] ⟨100, 100⟩`,
+    `globalExpectedProfit c' r > 0`, `c = ⟨100, 20⟩`, `elem [⟨100, 20⟩] c`,
+    `expectedProfit c r .high < 0`, `expectedProfit c r .low ≤ 0`. No `sorry`.
+
+    This witness **replaces** the stub `True := trivial` initially shipped c.481
+    (anti-regression: claiming "concrete examples are impossible" was a
+    work-around, not an impossibility — po-2025 revalidation via
+    `msg-20260825T023545-f9zbms` + `msg-20260825T023538-mstkj0`, compiled
+    firsthand `lake env lean ProbeCream.lean` rc=0). -/
+example : creamSkimProfitable [⟨100, 20⟩] ⟨25, 75, by omega⟩ := by
+  refine ⟨⟨100, 100⟩, ?_, ?_, ⟨100, 20⟩, ?_, ?_, ?_⟩
+  · change ¬ elem [⟨100, 20⟩] ⟨100, 100⟩
+    intro h
+    rcases h with h | h
+    · cases h
+    · exact h.elim
+  · decide
+  · exact Or.inl rfl
+  · decide
+  · decide
 
 end AsymmetricInformation.Screening
