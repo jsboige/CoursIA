@@ -448,6 +448,36 @@ theorem expect_crossSum_eq_zero {n : ℕ} (a : Fin n → ℝ) :
     · simp only [if_neg hp, PacLearning.sampleExpect_const]
   simp only [h, Finset.sum_const_zero]
 
+/-! ### Moteurs de multiplicité (préparation assemblage-2)
+
+L'espérance d'un produit de coordonnées à multiplicités entières se
+factorise en un produit de `if Even (m r) then (a r) ^ m r else 0` :
+une multiplicité impaire tue le terme. -/
+
+/-- Moment d'une coordonnée à puissance arbitraire : la parité de `m`
+décide. -/
+theorem expect_coord_pow (c : ℝ) (m : ℕ) :
+    expect fairCoin (fun b : Bool => (c * boolSign b) ^ m) =
+      if Even m then c ^ m else 0 := by
+  have h : (fun b : Bool => (c * boolSign b) ^ m) =
+      fun b : Bool => c ^ m * (boolSign b) ^ m := by
+    funext b
+    exact mul_pow _ _ _
+  rw [h, expect_mul_boolSign_pow]
+
+/-- **Moteur de multiplicité** : produit de coordonnées `x r ^ m r`
+sur un `Finset` d'indices — chaque indice de multiplicité impaire
+contribue un facteur nul. -/
+theorem expect_prod_coord_mult {n : ℕ} (u : Finset (Fin n)) (m : Fin n → ℕ)
+    (a : Fin n → ℝ) :
+    sampleExpect fairCoin (fun S : Fin n → Bool =>
+      ∏ r ∈ u, (a r * boolSign (S r)) ^ m r) =
+      ∏ r ∈ u, if Even (m r) then (a r) ^ m r else 0 := by
+  rw [sampleExpect_prod_over_finset fairCoin u (fun r x => (a r * boolSign x) ^ m r)]
+  apply Finset.prod_congr rfl
+  intro r _
+  exact expect_coord_pow (a r) (m r)
+
 end Moments
 
 end Discrepancy
