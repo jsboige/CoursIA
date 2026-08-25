@@ -24,8 +24,8 @@ from pathlib import Path
 import torch
 
 MODELS = {
-    "Qwen/Qwen3-1.7B-Base": [7, 14],   # 28 couches : frac 0.25 / 0.5
-    "Qwen/Qwen3-5-2B-Base": [6, 12],   # 24 couches : frac 0.25 / 0.5
+    "Qwen/Qwen3-1.7B-Base": [7, 14],     # 28 couches : frac 0.25 / 0.5
+    "Qwen/Qwen3.5-2B-Base": [6, 12],     # 24 couches : frac 0.25 / 0.5
 }
 FITS_DIR = Path("C:/dev/jlens_fits")
 
