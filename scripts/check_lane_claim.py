@@ -1769,6 +1769,40 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
         for ev in events:
             if ev.get("paths"):
                 ev["empty_scope"] = _empty_scope_in(ev["paths"], tracked)
+    # #12740 -- dead-scope aggregate, lane-keyed, over ALL claim events.
+    #
+    # The #10881/#10958 witnesses surface a dead glob to a consumer that
+    # reads them, but only for the ACTIVE claims (`active_claims.<lane>
+    # .empty_scope`) and for the CALLER's own scope (`caller_empty_scope`).
+    # A claim whose `paths:` glob is a typo and is then RELEASED/CLOSED leaves
+    # the typo invisible to a JSON sweep -- the stderr WARN in
+    # `_lint_claim_events` is the only channel, and it goes to STDERR, which
+    # the CI gate, `pick_idle_grain` and the lane scripts do not consume.
+    # That is exactly the fail-open #12740 names: a `[CLAIMED] -- paths:
+    # scripts/notebook_tools/check_code_in_markdown.py` (real file:
+    # detect_code_in_markdown_cells.py) claimed #12620, yet both lanes
+    # worked the same real file -- the dead glob never surfaced in the JSON.
+    #
+    # Policy (chosen, #12740): SIGNAL, not re-block. We do NOT re-open the
+    # #10958 fail-open: an ACTIVE claim whose entire scope is dead is STILL
+    # lifted to epic-wide (a broken claim is not a permissive claim, and
+    # lifting it back to scoped would re-create the #9764-style false CLEAR).
+    # We ADD the signal -- a lane-keyed map of dead globs across every claim
+    # event (open, override AND close) -- so a sweep can grep ONE key and a
+    # released-claim typo still surfaces. A coordinator wanting full (a)
+    # fail-CLOSED for the legitimate new-file case can address the semantic
+    # deviation separately; the mechanism here is the visibility half.
+    dead_scope_globs: dict[str, list[str]] = {}
+    if tracked is not None:
+        for ev in events:
+            lane = ev.lane
+            dead = ev.get("empty_scope") or []
+            if not lane or not dead:
+                continue
+            bucket = dead_scope_globs.setdefault(lane, [])
+            for g in dead:
+                if g not in bucket:
+                    bucket.append(g)
     active, unattributed = compute_active_claims(events, pr_states=pr_states)
     others = {ln: ev for ln, ev in active.items() if ln != my_lane}
     mine = active.get(my_lane)
@@ -2019,6 +2053,16 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
         # the dead globs cover the whole scope, otherwise the live globs
         # continue to carry the disjointness test.
         "caller_empty_scope": caller_empty_scope,
+        # #12740 -- lane-keyed dead-glob map, aggregated over EVERY claim
+        # event (not just active claims). Empty (`{}`) when no glob of any
+        # claim matches zero tracked files, or when the tracked walk was
+        # impossible (`tracked is None` -> cannot prove deadness). Unlike the
+        # per-active-claim `empty_scope` (which disappears when a claim is
+        # released) and the stderr WARN (unread by the CI gate / picker /
+        # lane scripts), this key survives a release so a typo'd scope is
+        # always visible to a JSON sweep. Non-blocking by design -- it only
+        # reports; it does not change the verdict.
+        "dead_scope_globs": dead_scope_globs,
     }
     print(json.dumps(summary, ensure_ascii=False, indent=2))
 
