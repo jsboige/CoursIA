@@ -55,10 +55,24 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout (full history)
+      # Tranche 2/2 de #12383 (tranche 1/2 = #12810 sur translation-guard) :
+      # ce garde tire sur CHAQUE pull_request sans filtre paths: et clone en
+      # fetch-depth: 0. Son travail est :
+      #   - `git diff origin/main...HEAD -- 'MyIA.AI.Notebooks/**/*.ipynb'`
+      #   - `python scripts/notebook_tools/regression_scan.py --guard --base ... --head ...`
+      # Le graphe de commits reste complet (fetch-depth: 0 + filter: blob:none
+      # garde le graphe d'objets accessible pour le diff 3-dot). L'arbre
+      # materialise : `MyIA.AI.Notebooks/` (chemin du diff) +
+      # `scripts/notebook_tools/` (le scan et ses imports diagnose_broken /
+      # forensic_scan).
+      - name: Checkout (sparse, garde-partial)
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          filter: blob:none
+          sparse-checkout: |
+            MyIA.AI.Notebooks
+            scripts/notebook_tools
 
       - name: Set up Python
         uses: actions/setup-python@v5
