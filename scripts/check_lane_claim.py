@@ -1906,6 +1906,19 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
     else:
         epic_wide_on_umbrella = False
 
+    # #12905 -- the OTHER-lane consequence of #12740's semantic deviation: a
+    # blocker whose declared scope is entirely dead is lifted to epic-wide
+    # and intersects EVERY caller scope, disjoint ones included (measured on
+    # #12844: lane A alive and disjoint, blocked by lane B's not-yet-created
+    # lake). Lane-keyed witness of the dead globs so a JSON sweep can count
+    # umbrella issues stuck in the pattern; the BLOCKED verdict below names
+    # the consequence and the escapes for the human reader.
+    dead_scope_blockers = {
+        ln: sorted(ev.get("empty_scope") or [])
+        for ln, ev in others.items()
+        if ev.get("paths") and _claim_scope_effectively_epic_wide(ev)
+    }
+
     summary = {
         "issue": payload.get("number"),
         "title": payload.get("title"),
@@ -2050,6 +2063,12 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
         # always visible to a JSON sweep. Non-blocking by design -- it only
         # reports; it does not change the verdict.
         "dead_scope_globs": dead_scope_globs,
+        # #12905 -- blockers lifted to epic-wide by an entirely-dead scope.
+        # Distinct from `dead_scope_globs` (which aggregates EVERY claim
+        # event, released ones included, without changing the verdict):
+        # these are the blockers actively holding THIS call's BLOCKED, the
+        # ones the verdict annotation names.
+        "dead_scope_blockers": dead_scope_blockers,
     }
     print(json.dumps(summary, ensure_ascii=False, indent=2))
 
@@ -2189,6 +2208,34 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
                 f"lane) can also close the issue R5 (`Closes #N` in the next "
                 f"PR body, or `gh issue close --reason COMPLETED`).\n"
                 + "\n".join(lines),
+                file=sys.stderr,
+            )
+        # #12905 -- name the epic-wide lift when a blocker's scope is
+        # entirely dead. The measured trap on #12844: a reader of
+        # `WARN: glob sans correspondance` thinks "my worktree is stale"
+        # while the actual consequence is "this claim locks the whole
+        # umbrella, disjoint scopes included" -- three indices existed in
+        # the JSON, none linked to the consequence. The annotation names
+        # it and the three escapes. Exit code stays 1 (the block is real:
+        # fail-CLOSED #12345 v2 is deliberate); only the message gains the
+        # actionable next step.
+        if dead_scope_blockers:
+            dead_lines = [
+                f"  - lane {ln} -- dead globs: "
+                + ", ".join(repr(g) for g in globs)
+                for ln, globs in sorted(dead_scope_blockers.items())
+            ]
+            print(
+                f"\nDEAD_SCOPE_BLOCKER: the blocking claim above declares a "
+                f"scope that matches zero tracked files in this worktree -- "
+                f"it is lifted to EPIC-WIDE and holds this issue for every "
+                f"scope, disjoint ones included (#12905).\n"
+                + "\n".join(dead_lines)
+                + "\nEscapes: (a) re-run from an up-to-date worktree "
+                "(git fetch, fresh checkout) to rule out staleness; "
+                "(b) ask the claiming lane to `[RELEASED]` and reserve in "
+                "prose until the target path exists; (c) coordinator "
+                "`[OVERRIDE] lane <machine:workspace>` on this issue.",
                 file=sys.stderr,
             )
         return 1

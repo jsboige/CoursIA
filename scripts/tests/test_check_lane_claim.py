@@ -616,6 +616,71 @@ def test_check_query_scope_clears_when_no_blockers_and_caller_is_unscoped(capsys
     assert '"blocked": false' in out
 
 
+# --- #12905 -- dead-scope blocker: name the epic-wide lift --------------------
+#
+# Mesure fondatrice #12844 (2026-08-25) : lane A scopée vivante et DISJOINTE,
+# bloquée par le claim de la lane B dont le scope est entièrement mort (lake
+# pas encore créé). Le fail-CLOSED #12345 v2 est délibéré et PRESERVÉ (exit 1,
+# le bloc est réel) ; ce qui manquait était le LIEN entre trois indices JSON
+# épars (`query_scope`, `epic_wide_on_umbrella`, WARN stderr) et la
+# conséquence pratique. Le verdict BLOCKED nomme désormais la levée epic-wide
+# du bloqueur à scope mort + les trois échappatoires, et le JSON expose le
+# témoin `dead_scope_blockers` pour un sweep.
+
+def test_check_12905_dead_scope_blocker_names_epic_wide_consequence(capsys):
+    """Le fondateur : bloqueur à scope entièrement mort (lake inexistant) →
+    levé epic-wide → bloque un caller scopé vivant et disjoint. Le verdict
+    reste exit 1 (fail-CLOSED préservé) mais NOMME la cause et les
+    échappatoires ; le témoin JSON est exposé."""
+    p = payload(
+        comment(
+            "[CLAIMED] lane myia-po-2025:CoursIA -- "
+            "paths: MyIA.AI.Notebooks/GameTheory/asymmetric_information_lean/**",
+            "2026-08-25T04:00:00Z",
+        ),
+    )
+    rc = clc._run_check(
+        p, "myia-po-2024:CoursIA",
+        my_paths=["scripts/check_lane_claim.py"],
+    )
+    captured = capsys.readouterr()
+    # Le bloc est réel (fail-CLOSED #12345 v2 délibéré) : exit 1 inchangé.
+    assert rc == 1
+    assert "DEAD_SCOPE_BLOCKER" in captured.err
+    assert "EPIC-WIDE" in captured.err
+    assert "disjoint ones included" in captured.err
+    # Les trois échappatoires sont nommées.
+    assert "`[RELEASED]`" in captured.err
+    assert "[OVERRIDE]" in captured.err
+    assert "up-to-date worktree" in captured.err
+    # Témoin JSON : la lane bloqueuse + ses globs morts.
+    assert '"dead_scope_blockers"' in captured.out
+    assert "asymmetric_information_lean" in captured.out
+    assert '"myia-po-2025:CoursIA"' in captured.out
+
+
+def test_check_12905_live_scope_blocker_carries_no_dead_annotation(capsys):
+    """Controle négatif : un bloqueur au scope VIVANT (fichier réellement
+    suivi, intersectant le caller) produit un BLOCKED normal -- pas
+    d'annotation DEAD_SCOPE_BLOCKER, témoin JSON vide."""
+    p = payload(
+        comment(
+            "[CLAIMED] lane myia-po-2025:CoursIA -- "
+            "paths: scripts/check_lane_claim.py",
+            "2026-08-25T04:00:00Z",
+        ),
+    )
+    rc = clc._run_check(
+        p, "myia-po-2024:CoursIA",
+        my_paths=["scripts/check_lane_claim.py"],
+    )
+    captured = capsys.readouterr()
+    assert rc == 1  # vrai conflit : scopes identiques
+    assert "BLOCKED" in captured.err
+    assert "DEAD_SCOPE_BLOCKER" not in captured.err
+    assert '"dead_scope_blockers": {}' in captured.out
+
+
 def test_check_path_scoped_blocks_against_real_intersecting_scope(capsys):
     """The decisive positive control -- a SCOPED caller whose scope
     intersects the blocker's scope reads as `BLOCKED` at `exit 1` (NOT
