@@ -1,0 +1,64 @@
+/* 02-resolution-problemes — tenir dans le cadre 980x552.
+ *
+ * Mesuré au rendu headless (scan_slidev_composition, deck servi par
+ * `slidev dev`, 84 slides parcourues via window.__slidev__.nav) :
+ * 16 slides portaient des éléments hors canvas (bbox dépassant le bas
+ * de page), de 1 à 34 éléments — concentrées sur des slides texte
+ * pleine largeur à sections H2 empilées (Résumés, CSPs, jeux), une
+ * table comparative 6 colonnes (slide « Résumé Exploration non
+ * informée ») et un bloc de pseudo-code LRTA* de 16 lignes
+ * (slide « Exploration en ligne »).
+ *
+ * Le correctif ne retire aucun contenu et ne retouche aucune image :
+ * il resserre la typographie verticale des éléments qui empilent —
+ * marges de titres, interligne des listes, hauteur de ligne des
+ * tables et du code — et offre une classe .dense-list pour les slides
+ * les plus chargées. Les 68 slides saines ne débordent pas davantage
+ * après compression (contrôle re-mesuré post-fix, cf PR).
+ */
+
+/* 1. Titres : récupérer l'espace vertical que leurs marges consomment. */
+.slidev-layout h1 {
+  margin-bottom: 0.35em;
+}
+.slidev-layout h2 {
+  margin-top: 0.45em;
+  margin-bottom: 0.2em;
+}
+
+/* 2. Listes : interligne resserré, marges entre items réduites. */
+.slidev-layout li {
+  line-height: 1.3;
+  margin: 0.1em 0;
+}
+
+/* 3. Tables : police compacte et cellules sans sur-padding
+ *    (slide « Résumé Exploration non informée », 6 colonnes). */
+.slidev-layout table {
+  font-size: 0.78em;
+}
+.slidev-layout th,
+.slidev-layout td {
+  padding: 0.15em 0.4em;
+}
+
+/* 4. Blocs de code : pseudo-code LRTA* (16 lignes) doit tenir sous
+ *    ses six sections H2 — taille réduite sans scrolling. */
+.slidev-layout pre {
+  font-size: 0.68em;
+  line-height: 1.25;
+}
+
+/* 5. Utilitaire densité maximale pour les slides les plus chargées :
+ *    envelopper la liste dans <div class="dense-list">…</div>. */
+.slidev-layout .dense-list ul,
+.slidev-layout .dense-list ol {
+  font-size: 0.82em;
+  line-height: 1.22;
+}
+.slidev-layout .dense-list li {
+  margin: 0.02em 0;
+}
+.slidev-layout .dense-list h2 {
+  margin-top: 0.3em;
+}
