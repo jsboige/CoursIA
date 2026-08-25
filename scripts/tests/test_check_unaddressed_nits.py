@@ -97,8 +97,12 @@ def test_le_bruit_ne_leve_pas_un_nit(noise):
 
 
 def test_vraie_reponse_humaine_leve():
+    """#12319 : la vraie reponse qui LEVE porte une phrase de levee (B.0 :
+    ce qui leve une remarque est une phrase) — une reponse substantive sans
+    marqueur ne leve plus (cf test_12319_reponse_nue_ne_leve_plus)."""
     reply = {"author": {"login": "jsboige"}, "createdAt": at(12),
-             "body": "Bien vu, l'attribution est corrigee en cellule 0 et 2."}
+             "body": "Bien vu, l'attribution est corrigee en cellule 0 et 2 — "
+                     "les 2 nits sont adresses."}
     assert run([USER_NIT, reply])["blocked"] is False
 
 
@@ -813,11 +817,12 @@ def test_cr_levee_conditionnelle_ne_leve_pas():
 
 
 def test_nit_commentaire_garde_le_regime_general():
-    """Non-regression : le durcissement ne touche QUE l'etat de review. Un nit
-    porte par un COMMENTAIRE reste leve par une reponse humaine (regime
-    general, limite NLP de can_lift)."""
+    """#12319 : le regime general d'un nit porte par un COMMENTAIRE est
+    aligne sur celui de l'etat de review — il faut une PHRASE de levee
+    (LIFT_MARKER) ou une re-review APPROVED de l'auteur. Une reponse humaine
+    PORTANT la phrase leve toujours (regime general, limite NLP de can_lift)."""
     reply = {"author": {"login": "jsboige"}, "createdAt": at(12),
-             "body": "Bien vu, corrige."}
+             "body": "Bien vu, corrige — les 2 nits sont levées."}
     assert run([USER_NIT, reply])["blocked"] is False
 
 
@@ -842,6 +847,64 @@ def test_bystander_commentaire_ne_leve_pas_un_nit():
     assert run([USER_NIT, bystander])["blocked"] is True
 
 
+# --- #12319 : la collision d'identite flotte-wide. Hermès poste sous jsboige
+# (self-review cap) et chaque lane pousse sous jsboige, donc
+# nit_author == pr_author == "jsboige" sur presque chaque PR du depot : la
+# borne d'auteur #11145 ne borne plus rien, et l'ancienne branche elif
+# (tout commentaire can_lift leve) laissait une lane eteindre la reserve de
+# son propre reviewer en postant une attestation de protocole. Le regime est
+# desormais : PHRASE de levee (LIFT_MARKER, borne d'auteur preservee) OU
+# re-review APPROVED de l'auteur de la reserve.
+
+def test_12319_reponse_nue_ne_leve_plus():
+    """Le defaut fondateur : USER_NIT (auteur jsboige) sur une PR d'auteur
+    jsboige — une reponse posterieure de jsboige SANS phrase de levee
+    n'eteint plus la reserve (avant : levait via lift_events)."""
+    reply = {"author": {"login": "jsboige"}, "createdAt": at(12),
+             "body": "Bien vu, l'attribution est corrigee en cellule 0 et 2."}
+    assert run([USER_NIT, reply])["blocked"] is True
+
+
+def test_12319_attestation_self_ne_leve_pas():
+    """Le litteral de l'issue : une lane eteint la reserve de son reviewer en
+    postant un [READY-FOR-MERGE SELF attestation] qui ne la mentionne pas."""
+    attestation = {"author": {"login": "jsboige"}, "createdAt": at(12),
+                   "body": "[READY-FOR-MERGE SELF attestation] checks verts, "
+                           "body complet, preuve d'execution dans le body."}
+    assert run([USER_NIT, attestation])["blocked"] is True
+
+
+def test_12319_reponse_nue_sur_reserve_hermes_ne_leve_plus():
+    """Meme regime pour la reserve Hermes (review COMMENTED, src non-CR) :
+    la lane pousse une reponse sans phrase de levee — reste bloquante."""
+    reply = {"author": {"login": "jsboige"}, "createdAt": at(12),
+             "body": "Les 2 cellules d'interp sont ajoutees, commit abc."}
+    assert run([HERMES_NIT, reply])["blocked"] is True
+
+
+def test_12319_rereview_approved_de_l_auteur_leve_nit_commentaire():
+    """L'etat natif garde son role de phrase de levee au sens fort : Hermes
+    (auteur de la reserve) revient APPROVED — la reserve s'eteint, meme sans
+    marqueur textuel."""
+    data = {
+        "number": 0, "title": "t", "author": {"login": "jsboige"},
+        "comments": [HERMES_NIT],
+        "reviews": [{"author": {"login": "clusterManager-Myia"},
+                     "state": "APPROVED", "submittedAt": at(15),
+                     "body": ""}],
+        "commits": [{"committedDate": at(19)}],
+    }
+    assert mod.analyse(data, [], MERGED)["blocked"] is False
+
+
+def test_12319_levee_conditionnelle_ne_leve_pas_nit_commentaire():
+    """#11201 preserve sur le nouveau chemin : « corrige X et je leve » est
+    l'enonce de la condition, pas une levee acquise."""
+    cond = {"author": {"login": "jsboige"}, "createdAt": at(12),
+            "body": "Corrige la cellule 19 et je leve ma reserve."}
+    assert run([USER_NIT, cond])["blocked"] is True
+
+
 def test_bystander_approved_ne_leve_pas_un_nit():
     """La classe mesuree #11494 (4 cas Hermes) : un APPROVED d'un reviewer
     tiers n'eteint pas une reserve posee par un autre."""
@@ -857,18 +920,22 @@ def test_bystander_approved_ne_leve_pas_un_nit():
 
 
 def test_auteur_du_nit_leve_son_nit():
-    """SELF (59,5 %) : l'auteur de la reserve revient repondre — le nit se
-    leve par le regime general borne (auteur == auteur du nit)."""
+    """SELF (59,5 %) : l'auteur de la reserve revient repondre AVEC une
+    phrase de levee — le nit se leve par le regime general borne
+    (auteur == auteur du nit, #12319 : phrase exigee)."""
     reply = {"author": {"login": "clusterManager-Myia"}, "createdAt": at(12),
-             "body": "Les 2 cellules d'interp sont ajoutees, commit abc."}
+             "body": "Les 2 cellules d'interp sont ajoutees, commit abc — "
+                     "reserve levee."}
     assert run([HERMES_NIT, reply])["blocked"] is False
 
 
 def test_auteur_pr_repond_a_son_reviewer_leve():
-    """PR_AUTHOR (16,2 %) : le worker (auteur de la PR) repond au reviewer —
-    le flux sain que la borne preserve."""
+    """PR_AUTHOR (16,2 %) : le worker (auteur de la PR) repond au reviewer
+    AVEC une phrase de levee — le flux sain que la borne preserve
+    (#12319 : la phrase est desormais exigee, l'auteur seul ne suffit plus)."""
     reply = {"author": {"login": "jsboige"}, "createdAt": at(12),
-             "body": "Les 2 cellules d'interp sont ajoutees, commit abc."}
+             "body": "Les 2 cellules d'interp sont ajoutees, commit abc — "
+                     "les points sont adresses."}
     assert run([HERMES_NIT, reply])["blocked"] is False
 
 
