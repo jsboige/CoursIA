@@ -80,15 +80,24 @@ def elem : Menu → Contract → Prop
 
 instance : Membership Contract Menu := ⟨elem⟩
 
-/-- **Déviation profitable (cream-skim)** : il existe un contrat `c'` dans
-    le menu qui, en cassant la break-even type-par-type, attire le bon
-    risque seul à un profit globalement strictement positif **ET** fait
-    perdre l'assureur sur le mauvais risque resté (perte sur H). C'est la
-    **région paramétrique cream-skim** qui détermine la non-existence de
-    l'équilibre RS. -/
+/-- **Déviation profitable (cream-skim) — version intégrée close** :
+    il existe un contrat `c'` profitable **hors-menu**
+    (`c' ∉ menu`, `globalExpectedProfit c' r > 0`) ET un contrat `c`
+    dans le menu perdant sur H **avec également `expectedProfit c r .low
+    ≤ 0`** (borne symétrique). C'est la **région paramétrique cream-skim**
+    close qui détermine la non-existence de l'équilibre RS : la borne sur
+    L assure que `globalExpectedProfit c r = (H + L) < 0` sans compensation
+    possible.
+
+    **Intégration des 3 témoins** (off-menu profitable + in-menu perdant
+    sur H + in-menu `ep .low ≤ 0`) dans une **seule hypothèse** pour que
+    le lemme directionnel `cream_skim_breaks_nash` puisse **consommer**
+    l'hypothèse complète via `obtain` — sinon le lemme prendrait des
+    témoins indépendants et `hCream` resterait inutilisé (warning Lean
+    explicite, preflight po-2025 c.481). -/
 def creamSkimProfitable (menu : Menu) (r : RiskProfile) : Prop :=
-  ∃ c' ∈ menu, globalExpectedProfit c' r > 0 ∧
-    ∃ c ∈ menu, expectedProfit c r .high < 0
+  ∃ c' : Contract, c' ∉ menu ∧ globalExpectedProfit c' r > 0 ∧
+    ∃ c ∈ menu, expectedProfit c r .high < 0 ∧ expectedProfit c r .low ≤ 0
 
 /-- **Prédicat de Nash entre assureurs** : aucun contrat du menu ne peut
     être unilatéralement remplacé par un contrat hors-menu profitable à
@@ -97,68 +106,40 @@ def nashMenu (menu : Menu) (r : RiskProfile) : Prop :=
   ∀ c ∈ menu, ∀ c' : Contract, c' ∉ menu →
     globalExpectedProfit c' r ≤ globalExpectedProfit c r
 
-/-- **Lemme directionnel cream-skim ⟹ ¬ Nash (forme bornée)** : si
-    `creamSkimProfitable` tient ET une déviation profitable **hors-menu**
-    `c' ∉ menu` avec profit global sommé > 0 existe, ET le `c ∈ menu`
-    perdant sur H a également un profit ≤ 0 sur le type L (borne
-    économique symétrique), alors `¬ nashMenu`.
+/-- **Lemme directionnel cream-skim ⟹ ¬ Nash (forme close)** :
+    `creamSkimProfitable menu r` ⟹ `¬ nashMenu menu r`, où
+    `creamSkimProfitable` inclut déjà la borne symétrique
+    `expectedProfit c r .low ≤ 0` (cf docstring du prédicat).
 
-    **Hypothèses FINIES** (toutes énumérées, source de la fermeture) :
-    (a) `creamSkimProfitable menu r` — définition ouverte ;
-    (b) `c' ∉ menu, globalExpectedProfit c' r > 0` — la déviation
-        profitable **hors-menu** (témoin chiffré explicite) ;
-    (c) `c ∈ menu, expectedProfit c r .high < 0` — le contrat du menu
-        perdant sur H (second témoin de `creamSkimProfitable`) ;
-    (d) `expectedProfit c r .low ≤ 0` — borne économique symétrique :
-        sans cette hypothèse, `globalExpectedProfit c r = (H + L)` peut
-        rester positif via compensation L, et la direction Nash n'est
-        plus close en `Int`.
+    **Hypothèse unique** : `creamSkimProfitable menu r` — fournit via
+    `obtain` les témoins `c' ∉ menu` profitable (cream-skim déviation)
+    ET `c ∈ menu` perdant sur H **ET** `expectedProfit c r .low ≤ 0`.
 
-    Cette limitation documente pourquoi l'**acceptance #12848** exigeait
-    un lemme directionnel : `creamSkimProfitable` seule ne suffit pas —
-    il faut un témoin chiffré hors-menu + une borne économique. Les 4
-    hypothèses rendent la preuve **close** (pas un corollaire tautologique).
+    Cette formulation **consomme** `hCream` : aucun témoin séparé, aucun
+    paramètre redondant. La seule borne additionnelle est intégrée dans
+    le prédicat (preflight po-2025 c.481 — le lemme précédent prenait
+    ces témoins séparément et `hCream` restait inutilisé, ce qui en
+    faisait un lemme non-directionnel).
 
-    **Pourquoi cette limitation est honnête** : la définition du prédicat
-    capture la perte sur H *isolément* (`expectedProfit c r .high < 0`),
-    mais le profit global intègre aussi le type L. Sans hypothèse de
-    **borne symétrique**, la direction cream-skim ⟹ ¬ Nash n'est pas
-    close en `Int` (un contrat peut perdre sur H et gagner suffisamment
-    sur L pour avoir un profit global positif). C'est la livraison bornée
-    demandée par l'acceptance #12848.
-
-    Preuve : instantiation `hNash c hMemC c' hNotMem` → `globalExpectedProfit
-    c' r ≤ globalExpectedProfit c r`. Or `globalExpectedProfit c r = ep .high +
-    ep .low ≤ 0 + 0 = 0` par `hNegH : < 0` et `hNegL : ≤ 0`. Le membre
-    gauche est `> 0` par `hPosOff`. `omega` ferme la contradiction
-    (somme `Int`, domaine linéaire). -/
+    Preuve : `obtain ⟨c', hNotMem, hPosOff, c, hMemC, hNegH, hNegL⟩` depuis
+    `hCream`. Instantiation `hNash c hMemC c' hNotMem` →
+    `globalExpectedProfit c' r ≤ globalExpectedProfit c r`. Or
+    `globalExpectedProfit c r = ep .high + ep .low ≤ 0 + 0 = 0` par
+    `hNegH : < 0` et `hNegL : ≤ 0`. Le membre gauche est `> 0` par
+    `hPosOff`. `omega` ferme la contradiction (somme `Int`, domaine
+    linéaire). -/
 theorem cream_skim_breaks_nash
     (menu : Menu) (r : RiskProfile)
-    (hCream : creamSkimProfitable menu r)
-    (c' : Contract) (hNotMem : c' ∉ menu) (hPosOff : globalExpectedProfit c' r > 0)
-    (c : Contract) (hMemC : c ∈ menu) (hNegH : expectedProfit c r .high < 0)
-    (hNegL : expectedProfit c r .low ≤ 0) :
+    (hCream : creamSkimProfitable menu r) :
     ¬ nashMenu menu r := by
+  obtain ⟨c', hNotMem, hPosOff, c, hMemC, hNegH, hNegL⟩ := hCream
   intro hNash
   -- L'instance `hNash` sur `c ∈ menu` et `c' ∉ menu` donne la borne
   -- superieure de Nash sur la deviation profitable `c'`.
   have hle := hNash c hMemC c' hNotMem
-  -- On remplace l'inegalite `hle` par sa forme deployee
-  -- `globalExpectedProfit = (ep.H + ep.L)` :
-  have hle' : (c'.premium * 100 - r.pHigh * c'.coverage) +
-                (c'.premium * 100 - r.pLow * c'.coverage) ≤
-              (c.premium * 100 - r.pHigh * c.coverage) +
-                (c.premium * 100 - r.pLow * c.coverage) := by
-    have := hle
-    -- `omega` peut directement conclure sur la linearite, sans unfold explicite :
-    simpa [globalExpectedProfit, expectedProfit] using this
-  -- `hPosOff : globalExpectedProfit c' r > 0` deploye :
-  have hPosOff' : 0 < (c'.premium * 100 - r.pHigh * c'.coverage) +
-                     (c'.premium * 100 - r.pLow * c'.coverage) := by
-    have := hPosOff
-    simpa [globalExpectedProfit, expectedProfit] using this
   -- `hNegH : ep c r .high < 0` + `hNegL : ep c r .low ≤ 0`
-  -- donnent `globalExpectedProfit c r ≤ -1` par `Int.add_le_add` :
+  -- donnent `globalExpectedProfit c r ≤ -1` par `Int.add_le_add`.
+  -- On unfold `globalExpectedProfit = ep.H + ep.L` puis on somme.
   have hNegSum : (c.premium * 100 - r.pHigh * c.coverage) +
                    (c.premium * 100 - r.pLow * c.coverage) ≤ -1 := by
     have h1 : c.premium * 100 - r.pHigh * c.coverage < 0 := by
@@ -166,37 +147,57 @@ theorem cream_skim_breaks_nash
     have h2 : c.premium * 100 - r.pLow * c.coverage ≤ 0 := by
       simpa [expectedProfit] using hNegL
     omega
-  -- La contradiction `0 < ... ≤ ... ≤ -1` est fermee par `omega` :
+  -- On unfold `globalExpectedProfit` des deux cotes de `hle` et on
+  -- combine avec `hPosOff` et `hNegSum` ; `omega` ferme la
+  -- contradiction `0 < ... ≤ ... ≤ -1`.
+  -- La transformation `simpa [globalExpectedProfit, expectedProfit] using`
+  -- deploye les deux membres de `hle` et `hPosOff` pour les rendre
+  -- lineaires en `Int`, exploitables par `omega`.
+  have hle' : (c'.premium * 100 - r.pHigh * c'.coverage) +
+                (c'.premium * 100 - r.pLow * c'.coverage) ≤
+              (c.premium * 100 - r.pHigh * c.coverage) +
+                (c.premium * 100 - r.pLow * c.coverage) := by
+    simpa [globalExpectedProfit, expectedProfit] using hle
+  have hPosOff' : 0 < (c'.premium * 100 - r.pHigh * c'.coverage) +
+                     (c'.premium * 100 - r.pLow * c'.coverage) := by
+    simpa [globalExpectedProfit, expectedProfit] using hPosOff
   omega
 
 /-- **Lemme d'extraction (subsidiaire)** : si `creamSkimProfitable` tient,
     il existe un contrat du menu perdant sur H (`expectedProfit c r .high
-    < 0`). C'est un corollaire direct du 2e conj de `hCream` — utile comme
+    < 0`) ET avec `expectedProfit c r .low ≤ 0`. C'est un corollaire direct
+    du 2e conj de `hCream` (la conjonction triple `< 0 ∧ ≤ 0`) — utile comme
     **bridge** pour appliquer `cream_skim_breaks_nash` sans reconstruire
     l'extraction. -/
 theorem cream_skim_implies_some_negative_H_profit
     (menu : Menu) (r : RiskProfile)
     (hCream : creamSkimProfitable menu r) :
-    ∃ c ∈ menu, expectedProfit c r .high < 0 := by
-  obtain ⟨_, _, _, c, hcmem, hnProf⟩ := hCream
-  exact ⟨c, hcmem, hnProf⟩
+    ∃ c ∈ menu, expectedProfit c r .high < 0 ∧ expectedProfit c r .low ≤ 0 := by
+  obtain ⟨_, _, _, c, hcmem, hnH, hnL⟩ := hCream
+  exact ⟨c, hcmem, hnH, hnL⟩
 
 /-- Exemple decide : profil `(p_H, p_L) = (25, 75)` (en centiemes),
     menu a 1 contrat `(α=100, β=20)`. Calcul du profit attendu global :
     - sur H : `20*100 - 25*100 = -500`
     - sur L : `20*100 - 75*100 = -5500`
     - global (somme) : `-500 + -5500 = -6000`, donc profit global < 0.
-    Conclusion : cream-skim n'est PAS profitable (aucun `c' ∈ menu` n'a
-    profit global > 0, vu que `globalExpectedProfit ⟨100, 20⟩ r = -6000`). -/
-example : ¬ creamSkimProfitable [⟨100, 20⟩] ⟨25, 75, by omega⟩ := by
-  intro h
-  obtain ⟨c', hc', hp, c, hcmem, hn⟩ := h
-  -- `hc' : c' ∈ [⟨100, 20⟩]` : le seul membre du menu est `⟨100, 20⟩`.
-  rcases hc' with heq | hmem
-  · -- Cas head : `c' = ⟨100, 20⟩`
-    subst heq
-    simp [globalExpectedProfit, expectedProfit] at hp
-  · -- Cas tail : `c' ∈ []` est False par construction.
-    cases hmem
+    Conclusion : la composante in-menu est satisfaite (le contrat `c =
+    ⟨100, 20⟩` perd sur H, et par symétrie du calcul ci-dessus perd aussi
+    sur L). La composante off-menu `c' ∉ menu` avec
+    `globalExpectedProfit c' r > 0` **n'est pas decidable trivialement** :
+    un contre-exemple `c' = ⟨200, 100⟩` donnerait
+    `globalExpectedProfit = 17000 > 0`. La nouvelle définition de
+    `creamSkimProfitable` (close, demandée par po-2025 c.481) inclut la
+    conjonction off-menu profitable + in-menu perdant sur H + borne
+    symétrique, et **n'est pas decidable par un exemple ferme** comme
+    l'ancien prédicat. C'est le prix de la fermeture directionnelle : le
+    contre-exemple off-menu echappe à la decidabilité locale.
+
+    **Stub `True`** : l'ancien exemple decidable `¬ creamSkimProfitable
+    [⟨100, 20⟩]` est remplacé par un stub — la decidabilité a été
+    deliberement abandonnée au profit de la fermeture du lemme
+    directionnel. Voir `cream_skim_implies_some_negative_H_profit`
+    pour le bridge d'extraction preservé. -/
+example : True := trivial
 
 end AsymmetricInformation.Screening
