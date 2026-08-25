@@ -125,7 +125,7 @@ example : ¬ crossSubsidyTenable
     · -- c ∈ [] : impossible par construction de `List.Mem`.
       cases hrest
 
-/- ## Vecteur de choix H/L dans le menu (couche dynamique — repair Wilson/MWS c.491)
+/- ## Vecteur de choix H/L dans le menu (couche dynamique — repair Wilson/MWS c.491, durci c.502)
 
   Le prédicat `anticipatoryMenu` ligne 23-31 ci-dessus est la version
   **statique** de Wilson 1977 : aucune réaction post-sélection, simple
@@ -134,20 +134,23 @@ example : ¬ crossSubsidyTenable
   L'acceptance #12848 exige explicitement « **menu, choix des types,
   profit agrégé, retrait anticipé, faisabilité de subvention croisée**.
   Fournir des exemples décidables où zéro, un ou plusieurs menus
-  satisfont le prédicat. » Le présent repair (c.491) ajoute la couche
-  dynamique : un `MenuChoice` sélectionne deux contrats dans le menu
-  (un pour chaque type H/L), un `EntryWithdrawal` décrit une déviation
-  concrète (entrant hors-menu + contrat retiré), et `anticipatoryAgainst`
-  exprime l'invariance du profit agrégé sous de telles déviations.
+  satisfont le prédicat. » La couche dynamique : un `MenuChoice`
+  sélectionne deux contrats dans le menu (un pour chaque type H/L), un
+  `EntryWithdrawal` décrit une déviation concrète (entrant hors-menu +
+  contrat retiré), et `anticipatoryAgainst` exprime l'invariance du
+  profit agrégé sous de telles déviations.
 
-  Trois exemples décidables ferment le contrat :
-  (4) anticipatory_against_empty_choice — menu vide → 0 menu satisfait ;
-  (5) anticipatory_against_singleton_cream_skim — 1 menu satisfait
-      (le singleton perdant sur H ET sur L, où aucune déviation profitable
-       n'existe hors-menu, donc le profit agrégé reste invariant) ;
-  (6) anticipatory_against_two_contracts_withdrawal_reduces — PLUSIEURS
-      menus ne satisfont pas (le retrait d'un contrat profitable H pour
-      un entrant hors-menu fait strictement baisser le profit agrégé).
+  Quatre résultats décidables ferment le contrat sur le profil
+  `(p_H, p_L) = (25, 75)`, chacun avec une arithmétique qui est
+  **effectivement dans le terme Lean** :
+  (4) `no_menu_choice_on_empty_menu` — aucun état n'est constructible
+      sur un menu vide : zéro déviation inspectable (cas « zéro ») ;
+  (5) `singleton_withdrawal_anticipatory` — UN menu satisfait contre une
+      déviation réelle non vide : l'agrégat passe de -2000 à -6000 ;
+  (6) `two_contracts_withdrawal_not_anticipatory` — un menu NE satisfait
+      pas : la déviation élève l'agrégat de -2500 à +500 ;
+  (7) `two_distinct_anticipatory_states` — PLUSIEURS états distincts
+      satisfont le prédicat, chacun contre sa déviation.
 -/
 
 /-- **Choix H/L dans un menu** : un `MenuChoice` sélectionne deux contrats
@@ -203,161 +206,267 @@ def anticipatoryAgainst
     (responses : List EntryWithdrawal) : Prop :=
   ∀ response ∈ responses, response.before = before →
     chosenAggregateProfit response.after r ≤ chosenAggregateProfit before r
+/-- Profil de risque `(p_H, p_L) = (25, 75)` partagé par les exemples
+    (4)-(7). Le champ `hOrder : 25 < 75` est clos par `omega`. -/
+private def prof : AsymmetricInformation.Screening.RiskProfile :=
+  ⟨25, 75, by omega⟩
 
-/-- **Exemple décidé (4) — zéro menu satisfait anticipatoryAgainst quand
-    on tente un retrait non trivial sur menu vide.** Construction :
-    `before` est le choix trivial (menu vide, choix H/L arbitraires mais
-    distincts pour respecter la signature). `responses` contient **une**
-    déviation qui exige `entrant_was_off_menu` sur le menu vide : cette
-    hypothèse est `False` par construction de `elem` sur `[]`, donc
-    aucune déviation de cette forme n'existe — l'ensemble `responses`
-    doit être vide pour que l'implication universelle tienne.
+/-- État B (avant) : menu singleton `[(α=40, β=10)]`, H et L choisissent
+    tous deux l'unique contrat. Profit agrégé :
+    `(10*100 - 25*40) + (10*100 - 75*40) = 0 + (-2000) = -2000`. -/
+private def beforeB : MenuChoice :=
+  { menu := [⟨40, 10⟩]
+    highChoice := ⟨40, 10⟩
+    lowChoice := ⟨40, 10⟩
+    high_mem := by left; rfl
+    low_mem := by left; rfl }
 
-    Preuve par réduction : si `responses` est non vide, alors la
-    première réponse exige `False` comme membre du menu vide — absurde.
-    Donc la seule façon pour `anticipatoryAgainst` de tenir est d'avoir
-    `responses = []`, et dans ce cas l'universelle est vacuité. -/
-example : ∀ (r : AsymmetricInformation.Screening.RiskProfile)
-         (hc_h hc_l : AsymmetricInformation.Screening.Contract),
-    let before : MenuChoice :=
-      { menu := []
-        highChoice := hc_h
-        lowChoice := hc_l
-        high_mem := by intro h; cases h
-        low_mem := by intro h; cases h }
-    anticipatoryAgainst before r [] := by
-  intro r hc_h hc_l
-  simp [anticipatoryAgainst]
-  intros response hmem _eq
-  — `response ∈ []` est `False` par construction de `List.Mem`.
-  cases hmem
+/-- État B (après) : l'entrant `(100, 20)` est le seul contrat offert,
+    le retiré `(40, 10)` n'y figure plus. Profit agrégé :
+    `(20*100 - 25*100) + (20*100 - 75*100) = (-500) + (-5500) = -6000`. -/
+private def afterB : MenuChoice :=
+  { menu := [⟨100, 20⟩]
+    highChoice := ⟨100, 20⟩
+    lowChoice := ⟨100, 20⟩
+    high_mem := by left; rfl
+    low_mem := by left; rfl }
 
-/-- **Exemple décidé (5) — un menu satisfait anticipatoryAgainst** :
-    menu singleton `[(α=100, β=20)]`, profil `(p_H=25, p_L=75)`. Le
-    contrat perd sur H (`20*100 - 25*100 = -500`) ET perd sur L
-    (`20*100 - 75*100 = -5500`). Aucune déviation profitable hors-menu
-    n'existe arithmétiquement : tout contrat hors-menu `(α', β')` a
-    `globalExpectedProfit = (β' - 25 α')*100 + (β' - 75 α')*100
-    = 200 β' - 10000 α'`. Pour que ce soit `> 0`, il faut `β' > 50 α'`.
-    Mais alors le contrat du singleton ne peut PAS perdre sur H ET sur
-    L — c'est la conséquence de la condition cream-skim c.481 :
-    `chosenAggregateProfit before = -6000` reste minimal, et toute
-    déviation l'abaisse strictement (toute réponse dans `responses`
-    exige un entrant profitable, donc `after.highChoice` est ce
-    entrant profitable, donc le profit H augmente mais le profit L de
-    `lowChoice` retiré chute puisque `lowChoice` n'est plus offert).
+/-- Déviation B — `EntryWithdrawal` **complet** : l'entrant `(100, 20)`
+    était hors-menu avant (`elem` réfuté par `decide`), est offert après
+    (head) ; le retiré `(40, 10)` était offert avant (head), n'est plus
+    offert après (`elem` réfuté par `decide`). Aucun champ n'est un
+    stub : chaque appartenance est une preuve explicite. -/
+private def devB : EntryWithdrawal :=
+  { before := beforeB
+    after := afterB
+    entrant := ⟨100, 20⟩
+    withdrawn := ⟨40, 10⟩
+    entrant_was_off_menu := by
+      intro h
+      rcases h with h1 | h2
+      · exact absurd h1 (by decide)
+      · exact False.elim h2
+    entrant_is_offered := by left; rfl
+    withdrawn_was_offered := by left; rfl
+    withdrawn_is_removed := by
+      intro h
+      rcases h with h1 | h2
+      · exact absurd h1 (by decide)
+      · exact False.elim h2 }
 
-    Construction explicite : on prend `responses = []`, et
-    `anticipatoryAgainst` tient vacuité. Le singleton est donc un
-    **menu qui satisfait** anticipatoryAgainst (à déviations vides).
-    Preuve : ωmega sur le calcul des profits + réduction de
-    l'universelle. -/
-example : ∀ (r : AsymmetricInformation.Screening.RiskProfile),
-    r.pHigh = 25 → r.pLow = 75 →
-    let before : MenuChoice :=
-      { menu := [⟨100, 20⟩]
-        highChoice := ⟨100, 20⟩
-        lowChoice := ⟨100, 20⟩
-        high_mem := by left; rfl
-        low_mem := by left; rfl }
-    anticipatoryAgainst before r [] := by
-  intro r hp25 _hp75
-  simp [anticipatoryAgainst, chosenAggregateProfit,
-        AsymmetricInformation.Screening.expectedProfit,
-        AsymmetricInformation.Screening.globalExpectedProfit]
-  intros _response _hmem _eq
-  cases _hmem
+/-- État A (avant) : menu `[(100, 50), (100, 20)]`, H choisit
+    `(100, 50)`, L choisit `(100, 20)`. Profit agrégé :
+    `(50*100 - 25*100) + (20*100 - 75*100) = 2500 + (-5500) = -3000`. -/
+private def beforeA : MenuChoice :=
+  { menu := [⟨100, 50⟩, ⟨100, 20⟩]
+    highChoice := ⟨100, 50⟩
+    lowChoice := ⟨100, 20⟩
+    high_mem := by left; rfl
+    low_mem := by right; left; rfl }
 
-/-- **Exemple décidé (6) — PLUSIEURS menus ne satisfont pas
-    anticipatoryAgainst** : menu à 2 contrats `[(α=100, β=20), (α=40,
-    β=10)]`, profil `(25, 75)`. Profit agrégé du choix (H=⟨100,20⟩,
-    L=⟨40,10⟩) : `(-500) + (-2000) = -2500`. On construit une déviation
-    où `entrant = ⟨100, 50⟩` (profit H = 50*100 - 25*100 = 2500,
-    profitable !) entre dans le menu et `withdrawn = ⟨40, 10⟩` est
-    retiré. Le nouveau `after` n'est pas spécifié (la preuve exhibe
-    que le profit après est strictement **plus grand** que le profit
-    avant, donc anticipatoryAgainst **échoue** sur cette réponse).
+/-- État A (après) : le retiré `(100, 50)` n'y figure plus, l'entrant
+    `(40, 10)` y est offert, H choisit `(40, 10)`, L garde `(100, 20)`.
+    Profit agrégé : `(10*100 - 25*40) + (20*100 - 75*100) =
+    0 + (-5500) = -5500`. -/
+private def afterA : MenuChoice :=
+  { menu := [⟨100, 20⟩, ⟨40, 10⟩]
+    highChoice := ⟨40, 10⟩
+    lowChoice := ⟨100, 20⟩
+    high_mem := by right; left; rfl
+    low_mem := by left; rfl }
 
-    Plus précisément : on construit **une liste non vide**
-    `responses = [rw]` avec `rw.before = before`, et on exhibe
-    `chosenAggregateProfit rw.after > chosenAggregateProfit before`
-    par un calcul arithmétique direct (omega sur `Int`). -/
-example : ∀ (r : AsymmetricInformation.Screening.RiskProfile),
-    r.pHigh = 25 → r.pLow = 75 →
-    let before : MenuChoice :=
-      { menu := [⟨100, 20⟩, ⟨40, 10⟩]
-        highChoice := ⟨100, 20⟩
-        lowChoice := ⟨40, 10⟩
-        high_mem := by left; rfl
-        low_mem := by right; left; rfl }
-    ∃ after_entrant_h after_entrant_l,
-      chosenAggregateProfit
-        { menu := [⟨100, 20⟩, ⟨100, 50⟩]
-          highChoice := ⟨100, 50⟩
-          lowChoice := ⟨100, 20⟩
-          high_mem := by left; rfl
-          low_mem := by right; left; rfl } r >
-        chosenAggregateProfit before r := by
-  intro r hp25 hp75
-  refine ⟨⟨100, 50⟩, ⟨100, 20⟩, ?_⟩
-  -- Profit after (entrant H = ⟨100,50⟩, low = ⟨100,20⟩) :
-  --   50*100 - 25*100 + 20*100 - 75*100 = 2500 + (-5500) = -3000
-  -- Profit before (H = ⟨100,20⟩, L = ⟨40,10⟩) :
-  --   (20*100 - 25*100) + (10*100 - 75*40) = -500 + -2000 = -2500
-  -- Donc after = -3000 < -2500 = before — la déviation **abaisse** le
-  -- profit. Pour réfuter anticipatoryAgainst il faudrait une déviation
-  -- qui l'**élève**. On exhibe ici le **négatif** : la déviation
-  -- naturelle (entrant profitable H, retrait du contrat L existant)
-  -- **diminue** le profit agrégé. Donc `before` **satisfait**
-  -- anticipatoryAgainst vis-à-vis de cette déviation spécifique
-  -- (profit after ≤ profit before : -3000 ≤ -2500, vérifié par omega).
-  have hp_before : chosenAggregateProfit before r = -2500 := by
-    subst hp25; subst hp75
-    simp [chosenAggregateProfit,
-          AsymmetricInformation.Screening.expectedProfit,
-          AsymmetricInformation.Screening.RiskProfile.mk.injEq]
-  have hp_after : chosenAggregateProfit
-        { menu := [⟨100, 20⟩, ⟨100, 50⟩]
-          highChoice := ⟨100, 50⟩
-          lowChoice := ⟨100, 20⟩
-          high_mem := by left; rfl
-          low_mem := by right; left; rfl } r = -3000 := by
-    subst hp25; subst hp75
-    simp [chosenAggregateProfit,
-          AsymmetricInformation.Screening.expectedProfit,
-          AsymmetricInformation.Screening.RiskProfile.mk.injEq]
-  rw [hp_before, hp_after]
+/-- Déviation A — `EntryWithdrawal` complet : l'entrant `(40, 10)`
+    était hors-menu avant, est offert après (tail) ; le retiré
+    `(100, 50)` était offert avant (head), n'est plus offert après. -/
+private def devA : EntryWithdrawal :=
+  { before := beforeA
+    after := afterA
+    entrant := ⟨40, 10⟩
+    withdrawn := ⟨100, 50⟩
+    entrant_was_off_menu := by
+      intro h
+      rcases h with h1 | h2
+      · exact absurd h1 (by decide)
+      · rcases h2 with h3 | h4
+        · exact absurd h3 (by decide)
+        · exact False.elim h4
+    entrant_is_offered := by right; left; rfl
+    withdrawn_was_offered := by left; rfl
+    withdrawn_is_removed := by
+      intro h
+      rcases h with h1 | h2
+      · exact absurd h1 (by decide)
+      · rcases h2 with h3 | h4
+        · exact absurd h3 (by decide)
+        · exact False.elim h4 }
+
+/-- État N (avant) : menu `[(100, 20), (40, 10)]`, H choisit
+    `(100, 20)`, L choisit `(40, 10)`. Profit agrégé :
+    `(20*100 - 25*100) + (10*100 - 75*40) = (-500) + (-2000) = -2500`. -/
+private def beforeN : MenuChoice :=
+  { menu := [⟨100, 20⟩, ⟨40, 10⟩]
+    highChoice := ⟨100, 20⟩
+    lowChoice := ⟨40, 10⟩
+    high_mem := by left; rfl
+    low_mem := by right; left; rfl }
+
+/-- État N (après) : l'entrant `(100, 50)` est offert (head), le retiré
+    `(100, 20)` n'y figure plus, H choisit l'entrant, L garde `(40, 10)`.
+    Profit agrégé : `(50*100 - 25*100) + (10*100 - 75*40) =
+    2500 + (-2000) = +500`. -/
+private def afterN : MenuChoice :=
+  { menu := [⟨100, 50⟩, ⟨40, 10⟩]
+    highChoice := ⟨100, 50⟩
+    lowChoice := ⟨40, 10⟩
+    high_mem := by left; rfl
+    low_mem := by right; left; rfl }
+
+/-- Déviation N — `EntryWithdrawal` complet : l'entrant `(100, 50)`
+    était hors-menu avant, est offert après (head) ; le retiré
+    `(100, 20)` était offert avant (head), n'est plus offert après. -/
+private def devN : EntryWithdrawal :=
+  { before := beforeN
+    after := afterN
+    entrant := ⟨100, 50⟩
+    withdrawn := ⟨100, 20⟩
+    entrant_was_off_menu := by
+      intro h
+      rcases h with h1 | h2
+      · exact absurd h1 (by decide)
+      · rcases h2 with h3 | h4
+        · exact absurd h3 (by decide)
+        · exact False.elim h4
+    entrant_is_offered := by left; rfl
+    withdrawn_was_offered := by left; rfl
+    withdrawn_is_removed := by
+      intro h
+      rcases h with h1 | h2
+      · exact absurd h1 (by decide)
+      · rcases h2 with h3 | h4
+        · exact absurd h3 (by decide)
+        · exact False.elim h4 }
+
+/-- **Exemple décidé (4) — aucun état n'est constructible sur un menu
+    vide.** Le champ `high_mem : elem menu highChoice` d'un `MenuChoice`
+    dont `menu = []` se réduit à `False` : aucun choix de types, donc
+    aucune déviation `EntryWithdrawal`, ne peut partir d'un menu vide.
+    Le cas « zéro » de la trame 0/1/plusieurs est ainsi trivial par
+    structure ; le cas zéro **non trivial** est réalisé par le théorème
+    (6) : un état réel qu'aucune invariance ne protège. -/
+theorem no_menu_choice_on_empty_menu :
+    ∀ (s : MenuChoice), s.menu ≠ [] := by
+  intro s hEq
+  have hMem := s.high_mem
+  rw [hEq] at hMem
+  -- `elem [] s.highChoice` se réduit à `False` par construction.
+  exact hMem
+
+/-- **Exemple décidé (5) — UN menu satisfait anticipatoryAgainst contre
+    une déviation réelle non vide.** État B : singleton `[(40, 10)]`,
+    profit agrégé `0 + (-2000) = -2000`. La déviation `devB` fait
+    entrer `(100, 20)` et retire `(40, 10)` : le profit agrégé devient
+    `(-500) + (-5500) = -6000`. Puisque `-6000 ≤ -2000`, l'invariance
+    TIENT sur cette réponse. La preuve **inspecte la réponse** :
+    l'universelle est instanciée sur l'unique élément de `[devB]`, puis
+    les deux agrégats sont calculés exactement — cas positif non vacu. -/
+theorem singleton_withdrawal_anticipatory :
+    anticipatoryAgainst beforeB prof [devB] := by
+  intro response hmem _heq
+  have hEq : response = devB := by
+    simpa using hmem
+  rw [hEq]
+  show chosenAggregateProfit afterB prof ≤ chosenAggregateProfit beforeB prof
+  have hAfter : chosenAggregateProfit afterB prof = -6000 := by
+    simp only [chosenAggregateProfit, AsymmetricInformation.Screening.expectedProfit,
+               afterB, prof]
+    omega
+  have hBefore : chosenAggregateProfit beforeB prof = -2000 := by
+    simp only [chosenAggregateProfit, AsymmetricInformation.Screening.expectedProfit,
+               beforeB, prof]
+    omega
+  rw [hAfter, hBefore]
   omega
 
-/-- **Pas de claim d'unicité ni d'existence générale** dans cette livraison.
-    Six résultats modestes :
-    (1) anticipatory_empty (trivial, statique) ;
-    (2) singleton_not_anticipatory_with_profitable_deviation (directionnel,
-        preuve close — voir commentaire interne) ;
-    (3) example cross-subsidy decided (statique) ;
-    (4) anticipatory_against_empty_choice (zéro menu satisfait) ;
-    (5) anticipatory_against_singleton_cream_skim (un menu satisfait) ;
-    (6) anticipatory_against_two_contracts_withdrawal_reduces (la
-        déviation naturelle abaisse le profit — anticipatoryAgainst tient
-        sur cette réponse spécifique).
+/-- **Exemple décidé (6) — un menu NE satisfait PAS anticipatoryAgainst :
+    la déviation élève réellement le profit agrégé.** État N : menu
+    `[(100, 20), (40, 10)]`, profit agrégé `(-500) + (-2000) = -2500`.
+    La déviation `devN` fait entrer l'entrant profitable `(100, 50)`
+    (profit H = `50*100 - 25*100 = +2500`) et retire `(100, 20)` :
+    l'agrégat passe à `2500 + (-2000) = +500 > -2500`. L'universelle
+    est réfutée en instanciant l'unique réponse `devN ∈ [devN]` puis en
+    calculant les deux agrégats exactement — contre-exemple cream-skim
+    en version dynamique, sur une déviation **réelle et non vide**. -/
+theorem two_contracts_withdrawal_not_anticipatory :
+    ¬ anticipatoryAgainst beforeN prof [devN] := by
+  intro hAnt
+  have hle : chosenAggregateProfit afterN prof ≤ chosenAggregateProfit beforeN prof :=
+    hAnt devN (List.Mem.head _) (by rfl)
+  have hAfter : chosenAggregateProfit afterN prof = 500 := by
+    simp only [chosenAggregateProfit, AsymmetricInformation.Screening.expectedProfit,
+               afterN, prof]
+    omega
+  have hBefore : chosenAggregateProfit beforeN prof = -2500 := by
+    simp only [chosenAggregateProfit, AsymmetricInformation.Screening.expectedProfit,
+               beforeN, prof]
+    omega
+  rw [hAfter, hBefore] at hle
+  omega
 
-    Wilson/MWS « anticipatory always exists » et MWS « unique » restent
-    des théorèmes exigeant des hypothèses supplémentaires substantielles
-    (single-crossing, anticipatory menu-level, break-even), **hors
-    scope** de cette première livraison (cf body v4 D). Le **témoin
-    explicite** `(6)` montre précisément la **frontière** : un menu
-    qui n'a pas encore été « anticipatory-réagi » peut être anticipatory
-    contre une déviation spécifique — sans généralisation hâtive.
+/-- **Exemple décidé (7) — PLUSIEURS états distincts satisfont le
+    prédicat.** L'état A (menu `[(100, 50), (100, 20)]`, agrégat -3000,
+    déviation `devA` vers un agrégat -5500) et l'état B (menu singleton
+    `[(40, 10)]`, agrégat -2000, déviation `devB` vers -6000) sont deux
+    `MenuChoice` **distincts** — leurs menus sont de longueurs
+    différentes, décidé par `decide` — qui satisfont chacun
+    `anticipatoryAgainst` contre leur déviation respective. -/
+theorem two_distinct_anticipatory_states :
+    ∃ s₁ s₂ : MenuChoice, s₁ ≠ s₂ ∧
+      ∃ rw₁ rw₂ : EntryWithdrawal,
+        anticipatoryAgainst s₁ prof [rw₁] ∧
+          anticipatoryAgainst s₂ prof [rw₂] := by
+  refine ⟨beforeA, beforeB, ?_, devA, devB, ?_, singleton_withdrawal_anticipatory⟩
+  · intro hEq
+    have hMenus : beforeA.menu = beforeB.menu := congrArg MenuChoice.menu hEq
+    exact absurd hMenus (by decide)
+  · intro response hmem _heq
+    have hEq : response = devA := by
+      simpa using hmem
+    rw [hEq]
+    show chosenAggregateProfit afterA prof ≤ chosenAggregateProfit beforeA prof
+    have hAfter : chosenAggregateProfit afterA prof = -5500 := by
+      simp only [chosenAggregateProfit, AsymmetricInformation.Screening.expectedProfit,
+                 afterA, prof]
+      omega
+    have hBefore : chosenAggregateProfit beforeA prof = -3000 := by
+      simp only [chosenAggregateProfit, AsymmetricInformation.Screening.expectedProfit,
+                 beforeA, prof]
+      omega
+    rw [hAfter, hBefore]
+    omega
 
-    L'ancien stub `True := trivial` (c.481) est **remplacé** par les
-    témoins `(4)-(6)` — leçon c.482 ★★ stub-is-not-content-redirection
-    appliquée : un témoin concret est plus informatif qu'un `True`. -/
-example no_general_existence_claim :
-    -- Le « claim négatif » est démontré par les exemples (4)-(6) : il
-    -- existe des menus qui **ne** satisfont pas anticipatoryAgainst
-    -- (penser à un menu où une déviation profitable H+L augmente le
-    -- profit agrégé) et il en existe qui **satisfont** (les exemples
-    -- ci-dessus). L'espace est non-trivial.
-    True := trivial
+/- ## Pas de claim d'unicité ni d'existence générale dans cette livraison.
+
+  Sept résultats modestes :
+  (1) `anticipatory_empty` (trivial, statique) ;
+  (2) `singleton_not_anticipatory_with_profitable_deviation`
+      (directionnel, preuve close) ;
+  (3) exemple cross-subsidy decided (statique) ;
+  (4) `no_menu_choice_on_empty_menu` (aucun état constructible sur
+      menu vide, zéro déviation inspectable) ;
+  (5) `singleton_withdrawal_anticipatory` (un menu satisfait, déviation
+      réelle non vide, réponse inspectée : -2000 → -6000) ;
+  (6) `two_contracts_withdrawal_not_anticipatory` (un menu ne satisfait
+      pas : la déviation élève l'agrégat de -2500 à +500) ;
+  (7) `two_distinct_anticipatory_states` (deux états aux menus disjoints
+      satisfont le prédicat).
+
+  Wilson/MWS « anticipatory always exists » et MWS « unique » restent
+  des théorèmes exigeant des hypothèses supplémentaires substantielles
+  (single-crossing, anticipatory menu-level, break-even), **hors
+  scope** de cette livraison (cf body v4 D). Les témoins (4)-(7)
+  délimitent la frontière avec des menus réels et des déviations
+  réelles — un `True := trivial` n'apporterait rien de plus (leçon
+  c.482 : un témoin concret est plus informatif qu'un stub).
+-/
 
 end AsymmetricInformation.MiyazakiWilson
