@@ -55,10 +55,24 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout (full history)
+      # Tranche 1 clone partiel (#11860, pilote #11843/#12016, grain #12383) :
+      # ce garde tire sur CHAQUE pull_request sans filtre paths: et clone en
+      # fetch-depth: 0. Or son travail entier est :
+      #   - `git diff origin/main...HEAD -- 'MyIA.AI.Notebooks/**/*.ipynb'`
+      #   - `python scripts/notebook_tools/regression_scan.py --base ... --head ...`
+      # Le graphe de commits doit rester complet (fetch-depth: 0) pour le
+      # diff 3-dot, mais l'arbre de travail ne materialise que ce qui est
+      # utile : `MyIA.AI.Notebooks/` (chemin du diff) + `scripts/` (le scan).
+      # `filter: blob:none` rend les blobs paresseux (~1 Gio de blobs
+      # historiques non materialises sur ~2 Gio transferes).
+      - name: Checkout (sparse, garde-partial)
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          filter: blob:none
+          sparse-checkout: |
+            MyIA.AI.Notebooks
+            scripts
 
       - name: Set up Python
         uses: actions/setup-python@v5
