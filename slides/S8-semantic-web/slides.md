@@ -185,6 +185,7 @@ layout: section
 
 # SW-4 — SPARQL : Le SQL du Web Sémantique
 
+<div class="dense-list">
 ## Types de requêtes SPARQL
 
 | Requête | Usage |
@@ -215,10 +216,13 @@ foreach (var result in results)
 
 > **Notebooks** : `SW-4-CSharp-SPARQL.ipynb` — 45 min | `SW-4b-Python-SPARQL.ipynb` — 30 min
 
+</div>
+
 ---
 
 # SW-5 — Linked Data : DBpedia et Wikidata
 
+<div class="dense-list">
 ## Les 5 etoiles du Linked Data (Berners-Lee, 2010)
 
 | Etoiles | Critere |
@@ -249,6 +253,8 @@ SELECT ?scientist ?birth WHERE {
 - Wikidata SPARQL endpoint : `https://query.wikidata.org/sparql`
 
 > **Notebooks** : `SW-5-CSharp-LinkedData.ipynb` — 50 min | `SW-5b-Python-LinkedData.ipynb` — 35 min
+
+</div>
 
 ---
 layout: section
@@ -293,6 +299,7 @@ Console.WriteLine($"Apres inference : {dataGraph.Triples.Count} triplets");
 
 # SW-7 — OWL 2 : Ontologies et Logiques de Description
 
+<div class="dense-list">
 ## OWL 2 : au-dela de RDFS
 
 | Feature | RDFS | OWL 2 |
@@ -307,10 +314,8 @@ Console.WriteLine($"Apres inference : {dataGraph.Triples.Count} triplets");
 
 ```csharp
 using VDS.RDF.Ontology;
-
 var ontology = new OntologyGraph();
 ontology.LoadFromFile("foaf.owl");
-
 // Explorer la hierarchie
 var person = ontology.CreateOntologyClass(
     new Uri("http://xmlns.com/foaf/0.1/Person"));
@@ -324,6 +329,8 @@ foreach (var sub in person.DirectSubClasses)
 
 > **Notebooks** : `SW-7-CSharp-OWL.ipynb` — 55 min | `SW-7b-Python-OWL.ipynb` — 45 min
 
+</div>
+
 ---
 layout: section
 ---
@@ -334,6 +341,7 @@ layout: section
 
 # SW-8 — SHACL : Validation des Données RDF
 
+<div class="dense-list">
 ## SHACL vs OWL : deux philosophies
 
 | | OWL | SHACL |
@@ -366,10 +374,13 @@ print(results[2])  # rapport Turtle
 
 > **Notebook** : `SW-8-Python-SHACL.ipynb` — 40 min
 
+</div>
+
 ---
 
 # SW-9 — JSON-LD : Le Web Sémantique rencontre JSON
 
+<div class="dense-list">
 ## JSON-LD : bridge entre JSON et Linked Data
 
 ```python
@@ -403,10 +414,13 @@ compacted = jsonld.compact(doc, {"foaf": "http://xmlns.com/foaf/0.1/"})
 
 > **Notebook** : `SW-9-Python-JSONLD.ipynb` — 40 min
 
+</div>
+
 ---
 
 # SW-10 — RDF 1.2 (RDF-Star) : Assertions sur des Assertions
 
+<div class="dense-list">
 ## Le problème de la reification classique
 
 **But** : annoter un triplet (confiance, source, date...)
@@ -439,6 +453,8 @@ g.parse(data=turtle_star, format="turtle")
 
 > **Notebook** : `SW-10-Python-RDFStar.ipynb` — 45 min
 
+</div>
+
 ---
 layout: section
 ---
@@ -449,6 +465,7 @@ layout: section
 
 # SW-11 — Knowledge Graphs : Construction et Exploration
 
+<div class="dense-list">
 ## Qu'est-ce qu'un Knowledge Graph ?
 
 Un **graphe de connaissances** = graphe RDF a grande echelle, oriente metier
@@ -480,10 +497,13 @@ results = g.query("SELECT ?p WHERE { <http://mykg.../Turing> ?rel ?p }")
 
 > **Notebook** : `SW-11-Python-KnowledgeGraphs.ipynb` — 55 min
 
+</div>
+
 ---
 
 # SW-12 — GraphRAG : Graphes et LLMs
 
+<div class="dense-list">
 ## RAG classique vs GraphRAG
 
 | | RAG classique | GraphRAG |
@@ -498,7 +518,6 @@ results = g.query("SELECT ?p WHERE { <http://mykg.../Turing> ?rel ?p }")
 ```python
 from rdflib import Graph
 from openai import OpenAI
-
 # 1. Extraire des triplets depuis un texte (LLM)
 def extract_triples(text: str) -> list[tuple]:
     response = client.chat.completions.create(
@@ -506,21 +525,22 @@ def extract_triples(text: str) -> list[tuple]:
         messages=[{"role": "user",
                    "content": f"Extrais des triplets (sujet, predicat, objet) du texte : {text}"}])
     return parse_triples(response.choices[0].message.content)
-
 # 2. Stocker dans un graphe RDF
 kg = Graph()
 for s, p, o in extract_triples(document):
     kg.add((URIRef(s), URIRef(p), Literal(o)))
-
 # 3. Retrieval par SPARQL + reponse par LLM
 ```
 
 > **Notebook** : `SW-12-Python-GraphRAG.ipynb` — 50 min
 
+</div>
+
 ---
 
 # SW-13 — Comparaison des Raisonneurs OWL
 
+<div class="dense-list">
 ## Raisonneurs OWL : panorama
 
 | Raisonneur | Langage | Points forts |
@@ -536,15 +556,11 @@ for s, p, o in extract_triples(document):
 ```python
 import owlrl
 from rdflib import Graph
-
 g = Graph()
 g.parse("pizza.owl")
-
 # Appliquer la cloture RDFS + OWL RL
 owlrl.DeductiveClosure(owlrl.OWLRL_Semantics).expand(g)
-
 print(f"Triplets apres inference : {len(g)}")
-
 # Verifier la coherence
 # (avec HermiT via JPype/TweetyProject)
 from org.semanticweb.owlapi.apibinding import OWLManager
@@ -553,6 +569,8 @@ ontology = manager.loadOntologyFromOntologyDocument(File("pizza.owl"))
 ```
 
 > **Notebook** : `SW-13-Python-Reasoners.ipynb` — 45 min
+
+</div>
 
 ---
 layout: section

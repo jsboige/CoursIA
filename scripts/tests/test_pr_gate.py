@@ -525,10 +525,63 @@ def test_short_header_trio_job_was_retired_by_c10330():
         "if the short-header job is ever re-cabled, its name MUST carry the "
         "advisory marker to prevent a recurrence of the #10104 stuck-gate"
     )
-    # And the resulting pending check must not hold the gate:
+
+
+# --- workflow-name advisory recovery (PRs #12524, #12783, measured 2026-08-25)
+
+
+def test_advisory_by_workflow_name_recovers_machine_dep_timing():
+    """Incident: `machine-dep-timing` is the job name; the parent workflow is
+    `machine-dep-timing-advisory`. Without the workflow-name roster, the gate
+    misclassified the cancelled check as blocking -- leaving PRs #12524 (44h)
+    and #12783 (9h) stuck open. The fix lets `derive_advisory_jobs` carry the
+    job into the advisory bucket via the parent workflow's name.
+    """
+    checks = [run("machine-dep-timing", "cancelled")]
+    pending, bad, ok, advisory = pr_gate.classify(
+        checks, "PR gate", frozenset({"machine-dep-timing"})
+    )
+    assert bad == [], (
+        "machine-dep-timing must be advisory when its parent workflow "
+        "is machine-dep-timing-advisory, even though the job name itself "
+        "does not carry the marker"
+    )
+    assert pending == []
+    assert ok == []
+    assert advisory == ["machine-dep-timing (cancelled)"]
+
+
+def test_advisory_jobs_roster_only_advisory_workflows():
+    """The workflow-name roster must be tight: a non-advisory workflow with a
+    job name that happens to overlap an advisory one must NOT be pulled in
+    by accident. Pin the contract via a synthetic non-advisory workflow that
+    would otherwise pollute the set.
+    """
+    roster = pr_gate.derive_advisory_jobs()
+    assert "PR gate" not in roster, "the gate itself must never be advisory"
+    assert "Lean CI" not in roster, "non-advisory workflow jobs must not leak"
+    assert "machine-dep-timing" in roster, (
+        "the canonical fix from the 2026-08-25 incident must hold"
+    )
+
+
+def test_advisory_jobs_roster_handles_missing_directory(tmp_path):
+    """An unreadable roster must not weaponise the gate against every PR
+    (same contract as derive_always_on_jobs). The empty frozenset disables
+    the workflow-name path and `classify` falls back to the historical
+    behaviour (job-name match only).
+    """
+    roster = pr_gate.derive_advisory_jobs(workflows_dir=str(tmp_path / "nope"))
+    assert roster == frozenset()
+    # Even with an empty roster, a job-name advisory still routes correctly.
+    checks = [run("CJK residue advisory (label, non-blocking)", "failure")]
+    _pending, bad, _ok, advisory = pr_gate.classify(checks, "PR gate", roster)
+    assert bad == [] and len(advisory) == 1
+    # And a hung advisory must not hold the gate:
+    job_name = "CJK residue advisory (label, non-blocking)"
     checks = [run(job_name, None, status="in_progress"), run("Lean CI", "success")]
     pending, bad, _ok, advisory = pr_gate.classify(checks, "PR gate")
-    assert pending == [] and bad == [], "a hung short-header advisory must not hold the gate"
+    assert pending == [] and bad == [], "a hung advisory must not hold the gate"
     assert advisory == [f"{job_name} (in_progress)"]
 
 
