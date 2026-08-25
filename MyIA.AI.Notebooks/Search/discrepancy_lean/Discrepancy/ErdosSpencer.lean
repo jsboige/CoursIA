@@ -204,6 +204,90 @@ theorem expect_rademacherSum_sq {n : ℕ} (c : Fin n → ℤ) :
       expect_mul_boolSign_sq]
   simp only [hinner]
 
+/-- **Factorisation sur un ensemble d'indices** : l'espérance d'un produit de
+fonctions une-coordonnée indexé par un `Finset` de coordonnées se factorise
+en le produit des espérances — l'indépendance sous la loi produit `D^n`.
+Généralise à la fois `sampleExpect_coord_mul_coord` (deux coordonnées
+distinguées) et le `PacLearning.sampleExpect_prod_coord` du kernel (toutes
+les coordonnées, même fonction). C'est la brique maîtresse des moments
+d'ordre supérieur (boute p1b) : tout moment mixte `E[∏_q g q (S q)]` se
+réduit à un produit d'espérances une-coin. -/
+theorem sampleExpect_prod_over_finset {X : Type*} [Fintype X] (D : Distribution X)
+    {n : ℕ} (s : Finset (Fin n)) (g : Fin n → X → ℝ) :
+    sampleExpect D (fun S : Fin n → X ↦ ∏ p ∈ s, g p (S p)) =
+      ∏ p ∈ s, expect D (g p) := by
+  dsimp only [PacLearning.sampleExpect, PacLearning.sampleWeight]
+  let G : Fin n → X → ℝ :=
+    fun k x ↦ D.weight x * (if k ∈ s then g k x else 1)
+  have hprod : ∀ S : Fin n → X, ∏ k, G k (S k) =
+      (∏ k, D.weight (S k)) * ∏ p ∈ s, g p (S p) := by
+    intro S
+    have h1 : ∀ k : Fin n, G k (S k) = D.weight (S k) *
+        (if k ∈ s then g k (S k) else 1) := fun _ => rfl
+    rw [Finset.prod_congr rfl (fun k _ => h1 k), Finset.prod_mul_distrib,
+      ← Finset.prod_subset (Finset.subset_univ s) (fun k _ hk => if_neg hk)]
+    congr 1
+    apply Finset.prod_congr rfl
+    intro p hp
+    exact if_pos hp
+  simp only [← hprod]
+  rw [← Fintype.prod_sum (κ := fun _ : Fin n => X) G]
+  have hsum : ∀ k : Fin n, ∑ x, G k x =
+      if k ∈ s then expect D (g k) else 1 := by
+    intro k
+    by_cases hk : k ∈ s
+    · simp [G, hk, expect]
+    · simp [G, hk, D.sum_one]
+  simp only [hsum]
+  have hfin : ∏ k : Fin n, (if k ∈ s then expect D (g k) else 1) =
+      ∏ p ∈ s, expect D (g p) :=
+    (Finset.prod_subset (Finset.subset_univ s) (fun k _ hk => if_neg hk)).symm.trans
+      (Finset.prod_congr rfl (fun p hp => if_pos hp))
+  rw [hfin]
+
+/-- **Parité des moments du signe** : `(boolSign b)^k = 1` quand `k` est
+pair (le signe est ±1). -/
+theorem boolSign_pow_eq_one (b : Bool) {k : ℕ} (hk : Even k) :
+    (boolSign b) ^ k = 1 := by
+  obtain ⟨m, hm⟩ := hk
+  rw [hm, ← Nat.two_mul m, pow_mul]
+  norm_num [boolSign]
+
+/-- **Parité des moments du signe** : `(boolSign b)^k = boolSign b` quand
+`k` est impair. -/
+theorem boolSign_pow_eq_self (b : Bool) {k : ℕ} (hk : Odd k) :
+    (boolSign b) ^ k = boolSign b := by
+  obtain ⟨m, hm⟩ := hk
+  rw [hm, pow_add, pow_one, boolSign_pow_eq_one b ⟨m, by omega⟩, one_mul]
+
+/-- **Moment de la pièce par parité** : `E[a * sign^k] = a` si `k` pair,
+`0` si `k` impair. C'est le discriminateur qui annule tous les termes
+croisés impairs des moments d'ordre supérieur. -/
+theorem expect_mul_boolSign_pow (a : ℝ) (k : ℕ) :
+    expect fairCoin (fun b => a * (boolSign b) ^ k) =
+      if Even k then a else 0 := by
+  rcases Nat.even_or_odd k with hk | hk
+  · have hb : ∀ b : Bool, (boolSign b) ^ k = 1 := fun b => boolSign_pow_eq_one b hk
+    simp only [hb, mul_one, if_pos hk]
+    show ∑ b : Bool, fairCoin.weight b * a = a
+    rw [← Finset.sum_mul, fairCoin.sum_one, one_mul]
+  · obtain ⟨m, hm⟩ := hk
+    have hb : ∀ b : Bool, (boolSign b) ^ k = boolSign b :=
+      fun b => boolSign_pow_eq_self b ⟨m, hm⟩
+    simp only [hb]
+    rw [if_neg (by rintro ⟨c, hc⟩; omega)]
+    exact expect_mul_boolSign_eq_zero a
+
+/-- **Annulation d'un moment mixte** : si une coordonnée `p ∈ s` porte une
+fonction d'espérance nulle (typiquement une puissance impaire du signe),
+le moment mixte entier `E[∏_{q ∈ s} g q (S q)]` est nul. Application directe
+de la factorisation `sampleExpect_prod_over_finset`. -/
+theorem expect_prod_eq_zero_of_mem {X : Type*} [Fintype X] (D : Distribution X)
+    {n : ℕ} (s : Finset (Fin n)) (g : Fin n → X → ℝ) {p : Fin n} (hp : p ∈ s)
+    (hp0 : expect D (g p) = 0) :
+    sampleExpect D (fun S : Fin n → X ↦ ∏ q ∈ s, g q (S q)) = 0 := by
+  rw [sampleExpect_prod_over_finset D s g, Finset.prod_eq_zero hp hp0]
+
 /-- **Corollaire coloration** : pour une vraie coloration `±1`, le second
 moment vaut exactement `n` — la variance de la marche aléatoire colorée est
 le nombre d'éléments, quelle que soit la coloration. C'est
