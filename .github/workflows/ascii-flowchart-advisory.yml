@@ -39,15 +39,13 @@ name: ASCII-flowchart detector (advisory)
 # any `${{ }}` expression on purpose.
 
 on:
-  pull_request:
-    branches: [ main ]
-    paths:
-      - 'MyIA.AI.Notebooks/**/*.ipynb'
-      - 'scripts/notebook_tools/detect_ascii_flowchart.py'
-      - 'scripts/notebook_tools/tests/test_detect_ascii_flowchart.py'
-      - '.github/workflows/ascii-flowchart-advisory.yml'
-  workflow_dispatch:
-
+  schedule:
+    # Nocturnal sweep -- post-merge main verification.
+    # Tranche 1 #12817 : sortir les advisory lourds de pull_request
+    # (clone 2.22 Go par run). Stratification user 2026-08-23 :
+    # "les jobs lourds devraient être payés une fois par fournée".
+    - cron: '07 03 * * *'
+  workflow_dispatch: {}
 permissions:
   contents: read
   pull-requests: write

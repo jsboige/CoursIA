@@ -84,7 +84,7 @@ class Guard:
 NOTEBOOK_GLOBS = ["**/*.ipynb"]
 
 # ---------------------------------------------------------------------------
-# Lot pilote (#11835). Neuf gardes choisis pour couvrir les formes que le
+# Lot pilote (#11835). Dix gardes choisis pour couvrir les formes que le
 # moteur doit savoir traiter, et non pour leur nombre :
 #
 #   - banner-guard        : bloquant, scan global, sans base
@@ -98,6 +98,7 @@ NOTEBOOK_GLOBS = ["**/*.ipynb"]
 #   - notebook-navlink-check   : bloquant, scan global
 #   - notebook-interp-positioning-guard : bloquant, scan global baselined
 #   - markdown-rendering-guard : bloquant, scan global baselined
+#   - self-hosted-runner-policy : bloquant, scan statique des workflows
 #
 # Un lot homogene aurait valide le moteur sur un seul cas de figure -- et un
 # lot entierement vert serait indiscernable d'un moteur debranche.
@@ -215,6 +216,20 @@ PILOT: list[Guard] = [
               "--check",
               "--baseline",
               "scripts/notebook_tools/markdown_rendering_baseline.json"],
+        blocking=True,
+    ),
+    Guard(
+        name="self-hosted-runner-policy",
+        source="fast-lane-shadow.yml",
+        paths=[
+            ".github/workflows/*.yml",
+            ".github/workflows/*.yaml",
+            "scripts/ci/check_self_hosted_runner_policy.py",
+            "scripts/tests/test_check_self_hosted_runner_policy.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        argv=["python", "scripts/ci/check_self_hosted_runner_policy.py",
+              "--check"],
         blocking=True,
     ),
 ]
