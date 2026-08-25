@@ -578,6 +578,91 @@ theorem expect_quad_unpaired_zero {n : ℕ} (a : Fin n → ℝ) (i j k l : Fin n
           exact expect_quad_pair_and_two a l i k hik
         · exact expect_quad_four_distinct a i j k l hij hik hil hjk hjl hkl
 
+/-- **Somme interne du produit croisé** : pour une paire ordonnée `p`
+hors diagonale, la somme sur `q` des espérances des termes
+`F p * F q` vaut exactement `2 (a p.1)^2 (a p.2)^2` — les deux seuls
+contributeurs sont `q = p` et `q = transposé p` ; tout le reste
+s'éteint par multiplicité impaire. Sur la diagonale (`p.1 = p.2`), la
+somme est nulle. -/
+theorem sum_expect_cross_pair {n : ℕ} (a : Fin n → ℝ) (p : Fin n × Fin n) :
+    ∑ q : Fin n × Fin n, sampleExpect fairCoin (fun S : Fin n → Bool =>
+      (if p.1 ≠ p.2 then (a p.1 * boolSign (S p.1)) * (a p.2 * boolSign (S p.2)) else 0) *
+      (if q.1 ≠ q.2 then (a q.1 * boolSign (S q.1)) * (a q.2 * boolSign (S q.2)) else 0)) =
+      if p.1 ≠ p.2 then 2 * (a p.1 * a p.1 * (a p.2 * a p.2)) else 0 := by
+  by_cases hp : p.1 ≠ p.2
+  · have hval : (fun q : Fin n × Fin n => sampleExpect fairCoin
+        (fun S : Fin n → Bool =>
+          (if p.1 ≠ p.2 then (a p.1 * boolSign (S p.1)) * (a p.2 * boolSign (S p.2)) else 0) *
+          (if q.1 ≠ q.2 then (a q.1 * boolSign (S q.1)) * (a q.2 * boolSign (S q.2)) else 0))) =
+        (fun q : Fin n × Fin n =>
+          if q = (p.1, p.2) ∨ q = (p.2, p.1) then a p.1 * a p.1 * (a p.2 * a p.2) else 0) := by
+      funext q
+      by_cases hqq : q = (p.1, p.2) ∨ q = (p.2, p.1)
+      · rcases hqq with hq | hq
+        · rw [hq]
+          simp only [Prod.fst, Prod.snd, if_pos hp]
+          have hperm : (fun S : Fin n → Bool =>
+              (a p.1 * boolSign (S p.1)) * (a p.2 * boolSign (S p.2)) *
+              ((a p.1 * boolSign (S p.1)) * (a p.2 * boolSign (S p.2)))) =
+              (fun S : Fin n → Bool =>
+              (a p.1 * boolSign (S p.1)) * (a p.2 * boolSign (S p.2)) *
+              (a p.1 * boolSign (S p.1)) * (a p.2 * boolSign (S p.2))) :=
+            funext fun S => by ring
+          rw [hperm, if_pos (by simp)]
+          exact expect_quad_paired a p.1 p.2
+        · rw [hq]
+          simp only [Prod.fst, Prod.snd, if_pos hp, if_pos (Ne.symm hp)]
+          have hperm : (fun S : Fin n → Bool =>
+              (a p.1 * boolSign (S p.1)) * (a p.2 * boolSign (S p.2)) *
+              ((a p.2 * boolSign (S p.2)) * (a p.1 * boolSign (S p.1)))) =
+              (fun S : Fin n → Bool =>
+              (a p.1 * boolSign (S p.1)) * (a p.2 * boolSign (S p.2)) *
+              (a p.2 * boolSign (S p.2)) * (a p.1 * boolSign (S p.1))) :=
+            funext fun S => by ring
+          rw [hperm, if_pos (by simp)]
+          exact expect_quad_paired_swap a p.1 p.2
+      · rw [if_neg hqq]
+        have hx : q ≠ (p.1, p.2) := fun h => hqq (Or.inl h)
+        have hy : q ≠ (p.2, p.1) := fun h => hqq (Or.inr h)
+        have h1 : ¬(p.1 = q.1 ∧ p.2 = q.2) :=
+          fun h => hx (by rw [h.1, h.2, Prod.eta])
+        have h2 : ¬(p.1 = q.2 ∧ p.2 = q.1) :=
+          fun h => hy (by rw [h.2, h.1, Prod.eta])
+        by_cases hq : q.1 ≠ q.2
+        · simp only [if_pos hp, if_pos hq]
+          have hperm : (fun S : Fin n → Bool =>
+              (a p.1 * boolSign (S p.1)) * (a p.2 * boolSign (S p.2)) *
+              ((a q.1 * boolSign (S q.1)) * (a q.2 * boolSign (S q.2)))) =
+              (fun S : Fin n → Bool =>
+              (a p.1 * boolSign (S p.1)) * (a p.2 * boolSign (S p.2)) *
+              (a q.1 * boolSign (S q.1)) * (a q.2 * boolSign (S q.2))) :=
+            funext fun S => by ring
+          rw [hperm]
+          exact expect_quad_unpaired_zero a p.1 p.2 q.1 q.2 hp hq h1 h2
+        · simp only [if_neg hq, mul_zero, PacLearning.sampleExpect_const]
+    have hxy : (p.1, p.2) ≠ (p.2, p.1) := fun h => hp (congrArg Prod.fst h)
+    have hsplit : ∀ q : Fin n × Fin n,
+        (if q = (p.1, p.2) ∨ q = (p.2, p.1) then a p.1 * a p.1 * (a p.2 * a p.2) else 0) =
+        ((if q = (p.1, p.2) then a p.1 * a p.1 * (a p.2 * a p.2) else 0) +
+         (if q = (p.2, p.1) then a p.1 * a p.1 * (a p.2 * a p.2) else 0)) := by
+      intro q
+      by_cases h1 : q = (p.1, p.2)
+      · rw [h1, if_pos (Or.inl rfl), if_pos rfl, if_neg hxy, add_zero]
+      · by_cases h2 : q = (p.2, p.1)
+        · rw [h2, if_pos (Or.inr rfl), if_neg (Ne.symm hxy), if_pos rfl,
+            zero_add]
+        · rw [if_neg (fun hor => hor.elim h1 h2), if_neg h1, if_neg h2]
+          ring
+    rw [hval, if_pos hp]
+    simp only [hsplit]
+    rw [Finset.sum_add_distrib, Finset.sum_ite_eq', Finset.sum_ite_eq']
+    simp only [Finset.mem_univ, if_true]
+    ring
+  · rw [if_neg hp]
+    apply Finset.sum_eq_zero
+    intro q _
+    simp only [if_neg hp, zero_mul, PacLearning.sampleExpect_const]
+
 end Moments
 
 end Discrepancy
