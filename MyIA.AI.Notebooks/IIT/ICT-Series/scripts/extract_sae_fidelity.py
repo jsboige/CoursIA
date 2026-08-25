@@ -10,7 +10,9 @@ Pour chaque jeu de prompts et pour le corpus aggrege :
 
 * capture du ``resid_post`` a ``--layer-frac`` (profondeur relative appariee,
   convention cross-echelle de la serie) ;
-* encodage top-k officiel (demo Qwen-Scope) puis decodage ``acts @ W_dec`` :
+* encodage top-k officiel (demo Qwen-Scope) puis decodage ``acts @ W_dec``
+  (le checkpoint stocke ``W_dec`` en [d_model, d_sae] : mathematiquement
+  ``acts @ W_dec.T``, prises en colonnes) :
   la reconstruction est produite par le pipeline pour que la metrique mesure
   ce que l'aval consomme reellement ;
 * metriques : MSE par element, FVU corpus, L0 mesure, compte d'activations
@@ -142,7 +144,7 @@ def main() -> None:
     per_set: dict[str, dict] = {}
 
     for set_name, prompts in PROMPT_SETS.items():
-        h_parts, v_parts, ids_parts = [], [], []
+        h_parts, r_parts, v_parts, ids_parts = [], [], [], []
         for text in prompts:
             enc = tokenizer(text, return_tensors="pt").to(device)
             captured: dict[str, torch.Tensor] = {}
@@ -157,16 +159,16 @@ def main() -> None:
             handle.remove()
             h = captured["h"]                                    # [T, d] f32
             ids, vals = sae_encode_topk(h, sae, k=k)             # convention demo
-            # Reconstruction sparse-exacte : somme des k contributions W_dec.
-            recon = vals.to(torch.float32) @ sae["W_dec"][ids.to(torch.long)]
+            # Reconstruction sparse-exacte : somme des k contributions decodeur.
+            # Le checkpoint stocke W_dec [d_model, d_sae] -> colonnes d'indices.
+            w_cols = sae["W_dec"].t()[ids.to(torch.long)]        # [T, k, d]
+            recon = torch.einsum("tk,tkd->td", vals.to(torch.float32), w_cols)
             h_parts.append(h.numpy())
+            r_parts.append(recon.numpy())
             v_parts.append(vals.to(torch.float16).numpy())
             ids_parts.append(ids.numpy())
         h_set = np.concatenate(h_parts)                          # [T_set, d]
-        r_set = np.concatenate([
-            (v.astype(np.float32) @ sae["W_dec"].numpy()[i.astype(np.int64)])
-            for v, i in zip(v_parts, ids_parts)
-        ])
+        r_set = np.concatenate(r_parts)
         v_set = np.concatenate(v_parts).astype(np.float32)       # [T_set, k]
         # Counts alignes sur la semantique de ict.sae_calibration : une feature
         # est "active" sur un token si sa valeur relu est NON NULLE (un slot
