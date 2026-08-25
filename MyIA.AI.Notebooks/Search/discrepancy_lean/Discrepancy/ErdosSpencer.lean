@@ -478,6 +478,106 @@ theorem expect_prod_coord_mult {n : ℕ} (u : Finset (Fin n)) (m : Fin n → ℕ
   intro r _
   exact expect_coord_pow (a r) (m r)
 
+/-! ### Classification des quadruplets (assemblage-3)
+
+Un produit de quatre coordonnées `x i * x j * x k * x l` (avec
+`x t = a t * boolSign (S t)`) a une espérance non nulle seulement si
+les indices se répartissent en deux paires — sinon un indice garde une
+multiplicité impaire et sa coordonnée centrée tue le terme. Ces lemmes
+sont l'interface de classification du développement de `Z^4`. -/
+
+/-- **Quadruplet apparié (forme directe)** : `E[x i * x j * x i * x j]`
+vaut `(a i)^2 * (a j)^2` — les deux signes de chaque indice se
+dupliquent et s'effondrent. -/
+theorem expect_quad_paired {n : ℕ} (a : Fin n → ℝ) (i j : Fin n) :
+    sampleExpect fairCoin (fun S : Fin n → Bool =>
+      (a i * boolSign (S i)) * (a j * boolSign (S j)) *
+      (a i * boolSign (S i)) * (a j * boolSign (S j))) =
+      a i * a i * (a j * a j) := by
+  have hperm : (fun S : Fin n → Bool =>
+      (a i * boolSign (S i)) * (a j * boolSign (S j)) *
+      (a i * boolSign (S i)) * (a j * boolSign (S j))) =
+      (fun S : Fin n → Bool =>
+      (a i * boolSign (S i)) * (a i * boolSign (S i)) *
+      (a j * boolSign (S j)) * (a j * boolSign (S j))) :=
+    funext fun S => by ring
+  rw [hperm]
+  exact expect_quad_two_pairs a i j
+
+/-- **Quadruplet apparié (forme croisée)** : `E[x i * x j * x j * x i]`
+vaut aussi `(a i)^2 * (a j)^2`. -/
+theorem expect_quad_paired_swap {n : ℕ} (a : Fin n → ℝ) (i j : Fin n) :
+    sampleExpect fairCoin (fun S : Fin n → Bool =>
+      (a i * boolSign (S i)) * (a j * boolSign (S j)) *
+      (a j * boolSign (S j)) * (a i * boolSign (S i))) =
+      a i * a i * (a j * a j) := by
+  have hperm : (fun S : Fin n → Bool =>
+      (a i * boolSign (S i)) * (a j * boolSign (S j)) *
+      (a j * boolSign (S j)) * (a i * boolSign (S i))) =
+      (fun S : Fin n → Bool =>
+      (a i * boolSign (S i)) * (a i * boolSign (S i)) *
+      (a j * boolSign (S j)) * (a j * boolSign (S j))) :=
+    funext fun S => by ring
+  rw [hperm]
+  exact expect_quad_two_pairs a i j
+
+/-- **Quadruplet non apparié** : si `i ≠ j`, `k ≠ l` et que `{k, l}` ne
+recollent pas `{i, j}` (ni directement ni croisé), l'espérance est
+nulle. -/
+theorem expect_quad_unpaired_zero {n : ℕ} (a : Fin n → ℝ) (i j k l : Fin n)
+    (hij : i ≠ j) (hkl : k ≠ l)
+    (h1 : ¬(i = k ∧ j = l)) (h2 : ¬(i = l ∧ j = k)) :
+    sampleExpect fairCoin (fun S : Fin n → Bool =>
+      (a i * boolSign (S i)) * (a j * boolSign (S j)) *
+      (a k * boolSign (S k)) * (a l * boolSign (S l))) = 0 := by
+  by_cases hik : i = k
+  · rw [hik]
+    have hjl : ¬(j = l) := fun hl => h1 ⟨hik, hl⟩
+    have hperm : (fun S : Fin n → Bool =>
+        (a k * boolSign (S k)) * (a j * boolSign (S j)) *
+        (a k * boolSign (S k)) * (a l * boolSign (S l))) =
+        (fun S : Fin n → Bool =>
+        (a k * boolSign (S k)) * (a k * boolSign (S k)) *
+        (a j * boolSign (S j)) * (a l * boolSign (S l))) :=
+      funext fun S => by ring
+    rw [hperm]
+    exact expect_quad_pair_and_two a k j l hjl
+  · by_cases hil : i = l
+    · rw [hil]
+      have hjk : ¬(j = k) := fun hj => h2 ⟨hil, hj⟩
+      have hperm : (fun S : Fin n → Bool =>
+          (a l * boolSign (S l)) * (a j * boolSign (S j)) *
+          (a k * boolSign (S k)) * (a l * boolSign (S l))) =
+          (fun S : Fin n → Bool =>
+          (a l * boolSign (S l)) * (a l * boolSign (S l)) *
+          (a j * boolSign (S j)) * (a k * boolSign (S k))) :=
+        funext fun S => by ring
+      rw [hperm]
+      exact expect_quad_pair_and_two a l j k hjk
+    · by_cases hjk : j = k
+      · rw [hjk]
+        have hperm : (fun S : Fin n → Bool =>
+            (a i * boolSign (S i)) * (a k * boolSign (S k)) *
+            (a k * boolSign (S k)) * (a l * boolSign (S l))) =
+            (fun S : Fin n → Bool =>
+            (a k * boolSign (S k)) * (a k * boolSign (S k)) *
+            (a i * boolSign (S i)) * (a l * boolSign (S l))) :=
+          funext fun S => by ring
+        rw [hperm]
+        exact expect_quad_pair_and_two a k i l hil
+      · by_cases hjl : j = l
+        · rw [hjl]
+          have hperm : (fun S : Fin n → Bool =>
+              (a i * boolSign (S i)) * (a l * boolSign (S l)) *
+              (a k * boolSign (S k)) * (a l * boolSign (S l))) =
+              (fun S : Fin n → Bool =>
+              (a l * boolSign (S l)) * (a l * boolSign (S l)) *
+              (a i * boolSign (S i)) * (a k * boolSign (S k))) :=
+            funext fun S => by ring
+          rw [hperm]
+          exact expect_quad_pair_and_two a l i k hik
+        · exact expect_quad_four_distinct a i j k l hij hik hil hjk hjl hkl
+
 end Moments
 
 end Discrepancy
