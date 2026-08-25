@@ -3540,6 +3540,107 @@ def test_check_caller_scope_fail_closed_when_no_blockers(capsys, monkeypatch):
     assert "dead/nowhere.ipynb" in captured.out
 
 
+# --- #12905: the dead-scope BLOCKER is named as an epic-wide lock ------------
+# Reproduction of the live case (#12844, 2026-08-25): a lane reserves a path
+# it is about to create (`paths: <chemin inexistant>/**`). The #10958
+# fail-safe lifts the entirely-dead claim to epic-wide -- it then blocks
+# every OTHER lane on the umbrella, including callers whose live scope is
+# provably disjoint. The verdict stays fail-CLOSED (a dead scope must not
+# DE-unlock); what #12905 adds is the CONSEQUENCE in the blocking text:
+# `WARN: glob sans correspondance` alone reads as "stale worktree", not as
+# "this claim locks the whole umbrella".
+
+def test_12905_dead_scope_blocker_names_epic_wide_lock(capsys, monkeypatch):
+    """The exact #12905 shape: caller LIVE + disjoint, blocker ENTIRELY dead.
+    Verdict BLOCKED at exit 1 (fail-closed unchanged) + a dedicated
+    `DEAD-SCOPE LOCK` stderr message naming the blocking lane, its dead
+    globs verbatim, and the epic-wide mechanism."""
+    monkeypatch.setattr(clc, "_git_tracked_files",
+                        lambda: ["MyIA.AI.Notebooks/GameTheory/GameTheory-17b.ipynb"])
+    blocker = comment(
+        "[CLAIMED] lane B:CoursIA -- lake asym -- paths: "
+        "MyIA.AI.Notebooks/GameTheory/asymmetric_information_lean/**",
+        "2026-08-25T09:00:00Z",
+    )
+    p = payload(blocker, number=12844, title="[EPIC] umbrella")
+    rc = clc._run_check(
+        p, "A:CoursIA",
+        my_paths=["MyIA.AI.Notebooks/GameTheory/GameTheory-17b.ipynb"],
+    )
+    captured = capsys.readouterr()
+    # Fail-closed verdict UNCHANGED: the dead-scope blocker still blocks a
+    # provably-disjoint live caller (it was lifted to epic-wide).
+    assert rc == 1
+    assert "BLOCKED: another lane holds an active claim" in captured.err
+    # The new explainer fires and names the mechanism + the dead glob.
+    assert "DEAD-SCOPE LOCK" in captured.err
+    assert "EPIC-WIDE" in captured.err
+    assert "B:CoursIA" in captured.err
+    assert "asymmetric_information_lean" in captured.err
+    # The escape paths are named (re-issue / RELEASED / coordinator OVERRIDE).
+    assert "[RELEASED]" in captured.err
+    assert "[OVERRIDE] lane" in captured.err
+
+
+def test_12905_live_scope_blocker_gets_no_dead_scope_lock_message(capsys, monkeypatch):
+    """Selectivity pin (positive control): a blocker whose scope is LIVE
+    produces the plain BLOCKED message with NO `DEAD-SCOPE LOCK` explainer --
+    without this pin, an always-on explainer would be indistinguishable from
+    the targeted one."""
+    monkeypatch.setattr(clc, "_git_tracked_files",
+                        lambda: ["x/a.ipynb", "y/01.ipynb"])
+    blocker = comment(
+        "[CLAIMED] lane A:CoursIA -- tranche x -- paths: x/**",
+        "2026-08-15T00:00:00Z",
+    )
+    p = payload(blocker, number=11064, title="t")
+    rc = clc._run_check(p, "B:CoursIA", my_paths=["x/a.ipynb"])
+    captured = capsys.readouterr()
+    assert rc == 1
+    assert "BLOCKED: another lane holds an active claim" in captured.err
+    assert "DEAD-SCOPE LOCK" not in captured.err
+
+
+def test_12905_partially_dead_blocker_gets_no_dead_scope_lock_message(capsys, monkeypatch):
+    """Asymmetry pin (mirror of the #11098 reducer asymmetry): a blocker
+    whose scope is PARTIALLY dead (at least one live glob) stays SCOPED --
+    the epic-wide lift only fires when the WHOLE scope is dead. A partial
+    block is a genuine scope intersection, not a reservation lock."""
+    monkeypatch.setattr(clc, "_git_tracked_files",
+                        lambda: ["x/a.ipynb"])
+    blocker = comment(
+        "[CLAIMED] lane A:CoursIA -- tranche x -- paths: x/**, dead/**",
+        "2026-08-15T00:00:00Z",
+    )
+    p = payload(blocker, number=11064, title="t")
+    rc = clc._run_check(p, "B:CoursIA", my_paths=["x/a.ipynb"])
+    captured = capsys.readouterr()
+    assert rc == 1
+    assert "BLOCKED: another lane holds an active claim" in captured.err
+    assert "DEAD-SCOPE LOCK" not in captured.err
+
+
+def test_12905_no_tracked_walk_no_dead_scope_lock_message(capsys, monkeypatch):
+    """Degradation pin: outside a git repo (`tracked=None`) no `empty_scope`
+    witness exists, `_claim_scope_effectively_epic_wide` degrades to False
+    and the explainer stays silent. To still reach the BLOCKED branch under
+    degradation, the caller's scope must INTERSECT the declared one (a
+    disjoint scope would drop the blocker entirely, pre-#10958 semantics):
+    the conflict is then genuine on its face and the plain BLOCKED message
+    is emitted without the dead-scope explainer."""
+    monkeypatch.setattr(clc, "_git_tracked_files", lambda repo_root=None: None)
+    blocker = comment(
+        "[CLAIMED] lane A:CoursIA -- reserve -- paths: newdir/**",
+        "2026-08-25T09:00:00Z",
+    )
+    p = payload(blocker, number=12844, title="t")
+    rc = clc._run_check(p, "B:CoursIA", my_paths=["newdir/f.ipynb"])
+    captured = capsys.readouterr()
+    assert rc == 1
+    assert "BLOCKED" in captured.err
+    assert "DEAD-SCOPE LOCK" not in captured.err
+
+
 def test_claim_paths_roundtrip_reads_back_scoped(monkeypatch):
     # #11064 acceptance (4): a claim posted with --paths is read back by the
     # check as SCOPED -- a disjoint lane stays free (exit 0), an intersecting
