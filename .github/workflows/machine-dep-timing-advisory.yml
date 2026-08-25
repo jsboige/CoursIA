@@ -43,6 +43,7 @@ concurrency:
 
 jobs:
     machine-dep-timing:
+        name: machine-dep-timing (advisory)
         runs-on: ubuntu-latest
         permissions:
             pull-requests: write

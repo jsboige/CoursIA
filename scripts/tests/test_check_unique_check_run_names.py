@@ -77,10 +77,11 @@ def test_branch_state_json_lists_no_duplicates(capsys):
     assert payload["ok"] is True, payload
     assert payload["duplicates"] == [], payload
     assert payload["total_jobs"] >= 7
-    # Threshold lowered 70 → 50 to reflect the post-#12817 tranche 1/2
-    # drainage (16 advisory workflows basculés en schedule nocturne).
-    # Measured c.1331p482 on main: total_workflows=59.
-    # Buffer of ~9 leaves de la marge pour 2-3 future adoptions/deprecations.
+    # Floor pinned at 59 - margin: #12821 (tranche 1/2 #12817) moved 16 heavy
+    # advisories out of the pull_request trigger into the nightly schedule,
+    # dropping PR-triggered workflows from ~75 to 59. The floor's purpose is
+    # to catch an instrument that stops reading files (collapses to 0), not
+    # to freeze the corpus size.
     assert payload["total_workflows"] >= 50
 
 
