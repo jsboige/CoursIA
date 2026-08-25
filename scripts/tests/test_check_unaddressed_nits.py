@@ -1905,3 +1905,77 @@ def test_12335_date_changerequested_reste_live():
         "L'agent n'a pas repondu depuis."
     )
     assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+# ---------------------------------------------------------------------------
+# #12871 — 6e instance use-vs-mention : la reference pointable des levees
+# doit aussi matcher NUE (`leve par le commit <sha>`) en plus de la forme
+# parenthesee. Les 3 formulations de l'issue (FP1/FP2/FP3) sont classeees
+# BOT-CONCERN a tort ; le fix Position A+ (prose interne apres verdict en
+# parenthese), Position C+ (ref nue apres verbe de levee) et Position E
+# (verdict en tete, verbe de levee + ref dans la meme phrase) les neutralise.
+# Les 3 contre-exemples (CE1/CE2/CE3) restent BOT-CONCERN : pas de ref
+# pointable, pas de verbe de levee, ou emission formelle.
+# ---------------------------------------------------------------------------
+
+
+def test_12871_fp1_parenhese_avec_prose_interne_ne_flagge_pas():
+    """#12871 FP1 — `(COMMENT_WITH_CONCERNS, porte sur...)` : prose interne a
+    la parenthese du verdict (Position A+). Avant : classifie BOT-CONCERN.
+    Apres : classify() rend None (mention, pas emission)."""
+    body = (
+        "Reponse au point de review Hermes (COMMENT_WITH_CONCERNS, porte sur "
+        "la conclusion cell 17 point 3 + objectif cell 0 point 3) - traite "
+        "en code par le commit 05d16623f49."
+    )
+    assert mod.classify("myia-po-2027", body) is None
+
+
+def test_12871_fp2_ref_nue_apres_verbe_leve_ne_flagge_pas():
+    """#12871 FP2 — `COMMENT_WITH_CONCERNS leve par le commit <sha>` : verbe
+    de levee precede, ref pointable NUE dans la meme phrase (Position C+).
+    Avant : classifie BOT-CONCERN. Apres : classify() rend None."""
+    body = (
+        "Reponse au Hermes: COMMENT_WITH_CONCERNS leve par le commit "
+        "05d16623f49."
+    )
+    assert mod.classify("myia-po-2027", body) is None
+
+
+def test_12871_fp3_review_verdict_leve_dans_meme_phrase_ne_flagge_pas():
+    """#12871 FP3 — `La review COMMENT_WITH_CONCERNS de Hermes est traitee par
+    le commit <sha>` : verdict en tete de phrase apres `review/La`, verbe
+    de levee + ref pointable dans la meme phrase (Position E).
+    Avant : classifie BOT-CONCERN. Apres : classify() rend None."""
+    body = (
+        "La review COMMENT_WITH_CONCERNS de Hermes est traitee par le "
+        "commit 05d16623f49."
+    )
+    assert mod.classify("myia-po-2027", body) is None
+
+
+def test_12871_ce1_review_verdict_sans_ref_reste_live():
+    """#12871 CE1 — controle negatif : `Cette review CHANGES_REQUESTED reste
+    bloquante` (pas de ref pointable, pas de verbe de levee). DOIT RESTER
+    BOT-CONCERN. Sans quoi le fix debranche le gate et rouvre le failure
+    mode fondateur de B.0 (#10761)."""
+    body = "Cette review CHANGES_REQUESTED reste bloquante."
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+def test_12871_ce2_verdict_leve_sans_ref_reste_live():
+    """#12871 CE2 — controle negatif : `CHANGES_REQUESTED leve sans reference.`
+    Verbe de levee SANS ref pointable dans la suite immediate. DOIT RESTER
+    BOT-CONCERN (le discriminant C+ exige la ref)."""
+    body = "CHANGES_REQUESTED leve sans reference."
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+def test_12871_ce3_emission_formelle_reste_live():
+    """#12871 CE3 — controle negatif : `Verdict : COMMENT_WITH_CONCERNS` —
+    emission formelle Hermes (state-prefix). DOIT RESTER BOT-CONCERN (les
+    positions A-E ne touchent pas le canal d'emission, cf commentaire
+    `_MENTION_VERDICT_HEADING` ligne 327)."""
+    body = "Verdict : COMMENT_WITH_CONCERNS"
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
