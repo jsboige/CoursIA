@@ -709,7 +709,7 @@ layout: section
 
 # Paysage de l'espace des états
 
-<img src="./images/img_025.png" style="display:block; margin:12px auto; max-height:55vh;" alt="Paysage espace des états" />
+<img src="./images/img_025.png" style="display:block; margin:8px auto; max-height:38vh;" alt="Paysage espace des états" />
 
 ## Problèmes d'optimisation
 
@@ -833,6 +833,8 @@ layout: section
 
 <img src="./images/img_033.gif" style="position:absolute; top:130px; right:20px; width:280px;" alt="Trajectoires optimiseurs SGD" />
 
+<div class="dense-list">
+
 ## États définis par des variables réelles
 
 ## Problèmes de discontinuites
@@ -859,6 +861,8 @@ layout: section
 - Programmation linéaire
   - <- inegalites formant ensemble convexe (pas de trous)
   - Très etudie -> complexité polynomiale
+
+</div>
 
 ---
 layout: section
@@ -916,6 +920,8 @@ layout: section
 
 # Exploration en ligne
 
+<div class="dense-list">
+
 ## Entrelacement calcul et action
 
 - Problèmes de découverte
@@ -933,6 +939,20 @@ layout: section
 - DFS, Escalade avec reprise aléatoire
 - Mémoire → estimation H de l'heuristique h
   - LRTA\* (learning real time A\*)
+
+## Apprentissage
+
+- De la "carte" (États)
+- Du coût d'étape
+- Des règles (transitions)
+
+</div>
+
+<img src="./images/img_036.png" style="position:absolute; top:60px; right:20px; max-height:40vh;" alt="LRTA* exploration en ligne" />
+
+---
+
+# LRTA\* — agent d'exploration en ligne
 
 ## Code
 
@@ -952,17 +972,17 @@ fonction LRTA*-Agent(s') retourne une action
   retourner a
 ```
 
-## Apprentissage
+## Lecture
 
-- De la "carte" (États)
-- Du coût d'étape
-- Des règles (transitions)
-
-<img src="./images/img_036.png" style="position:absolute; top:60px; right:20px; max-height:40vh;" alt="LRTA* exploration en ligne" />
+- `H` converge vers le coût réel : chaque visite met l'estimation à jour
+- `résultat[s, a]` mémorise la transition observée — la « carte » se construit en explorant
+- Compromis temps de calcul / déplacement : une action par percept
 
 ---
 
 # Résumé Exploration Informée
+
+<div class="dense-list">
 
 ## Heuristiques
 
@@ -985,6 +1005,8 @@ fonction LRTA*-Agent(s') retourne une action
 - Espaces continus -> gradients, programmation linéaire
 - Actions Non déterministe -> Arbres Et-Ou
 - Observations partielles -> prévisions, exploration en ligne
+
+</div>
 
 ---
 layout: section
@@ -1060,6 +1082,8 @@ Minimax(s) = { Utilite(s) si Test-Terminal(s)
 
 <img src="./images/img_039.png" style="position:absolute; top:120px; right:20px; width:380px;" alt="Pseudocode Minimax: DECISION-MINIMAX, VALEUR-MAX, VALEUR-MIN" />
 
+<div class="dense-list">
+
 ## Faire "remonter" les valeurs Minimax
 
 ## Propriétés
@@ -1082,11 +1106,15 @@ Minimax(s) = { Utilite(s) si Test-Terminal(s)
 - Vecteurs Utilité
 - Souvent, alliances naturelles
 
+</div>
+
 ---
 
 # Élagage Alpha-Bêta
 
 <img src="./images/img_040.png" style="position:absolute; top:120px; right:20px; width:380px;" alt="Élagage Alpha-Bêta" />
+
+<div class="dense-list">
 
 ## Idee : Diminuer le nombre d'états à examiner
 
@@ -1113,11 +1141,15 @@ Minimax(s) = { Utilite(s) si Test-Terminal(s)
 
 - Ex: raisonnement oriente buts ou autres types d'IA
 
+</div>
+
 ---
 
 # Décisions imparfaites
 
 <img src="./images/img_042.png" style="position:absolute; top:130px; right:20px; width:360px;" alt="Formule ExpectiMinimax" />
+
+<div class="dense-list">
 
 ## Approche
 
@@ -1140,6 +1172,8 @@ Minimax(s) = { Utilite(s) si Test-Terminal(s)
 - Alpha Beta Iteratif pour respecter une limité de temps (+ ordre des coups)
 - Problème des situation instables au cutoff (prise au prochain tour)
   - Solution = recherche de stabilite ("quiescence", ex: pas de prise)
+
+</div>
 
 ---
 
@@ -1168,6 +1202,8 @@ Minimax(s) = { Utilite(s) si Test-Terminal(s)
 
 # Exploration d'arbre de Monte-Carlo (MCTS)
 
+<div class="dense-list">
+
 ## Principe -- simulations statistiques
 
 Pas d'heuristique d'évaluation : **remplacée par des rollouts** (simulations aléatoires jusqu'a fin de partie).
@@ -1192,6 +1228,8 @@ $$
 ## Applications
 
 Go, Échecs (AlphaZero), planification en jeux partiellement observables.
+
+</div>
 
 ---
 
@@ -1393,6 +1431,10 @@ layout: section
   - **Cohérence d'arc dirigée (DAC):** tri topologique puis<br>DAC en $O(nd^2)$
   - Assignation sans retour arrière
 
+---
+
+# CSPs: Approximations et symétries
+
 ## Approximations de l'arbre
 
 - **Coupe-cycle (cutset):** choix d'un ensemble coupe-cycle
@@ -1408,6 +1450,8 @@ layout: section
 ---
 
 # CSPs: Exploration locale
+
+<div class="dense-list">
 
 ## Algorithmes très efficaces
 
@@ -1431,6 +1475,8 @@ layout: section
 
 - **Large Neighborhood Search (LNS):** relâchement partiel + réparation par CP
 - Combinaison recherche locale stochastique + propagation de contraintes
+
+</div>
 
 ---
 
@@ -1489,6 +1535,8 @@ layout: section
 
 # Types de contraintes
 
+<div class="dense-list">
+
 ## Unaires
 
 - Contraintes à 1 variable (Ex: SA != vert)
@@ -1513,6 +1561,8 @@ layout: section
   - Contraintes de préférences
     - CSP -> contraintes absolues
     - -> Problèmes à optimisation de contraintes (COP)
+
+</div>
 
 ---
 

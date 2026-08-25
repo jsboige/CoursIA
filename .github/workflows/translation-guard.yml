@@ -43,10 +43,33 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout base
+      # Tranche 1 de #12690 : ce workflow n'interroge QUE le graphe de commits
+      # et des NOMS de chemins (`git diff --name-only`, `git cat-file -e` pour
+      # verifier l'existence d'un blob sans le lire, `git fetch origin main`).
+      # Aucun blob historique n'est materialise -- `filter: blob:none` laisse
+      # le graphe complet disponible et rend les blobs paresseux (jamais
+      # transferes, jamais refetches). `sparse-checkout` limite le working
+      # tree materialise aux seuls chemins requis : `scripts/ci/` (le helper
+      # d'override) et `.github/` (le commentaire HTML invisible du bot). Le
+      # clone plein transferait ~1,82 Gio (cf en-tete stale-base-warning.yml
+      # pour la mesure de reference) ; ce checkout transfere <10 Mo.
+      # Pourquoi c'est safe ici :
+      #   * `git diff --name-only BASE...HEAD -- <paths>` : graphe only.
+      #   * `git cat-file -e "BASE:$f"`             : existence check, pas
+      #                                                lecture de contenu.
+      #   * `python3 scripts/ci/translation_override_required.py` : helper
+      #                                                sous scripts/ci/,
+      #                                                materialise par le
+      #                                                sparse-checkout.
+      # See #11843 (pattern), #12690 (goulot narrow structurel).
+      - name: "Checkout base (sparse-checkout + filter: blob:none, tranche 1 issue 12690)"
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          filter: blob:none
+          sparse-checkout: |
+            .github
+            scripts/ci
 
       - name: Check for translation-owned file changes
         id: check

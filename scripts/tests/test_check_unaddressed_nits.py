@@ -97,8 +97,12 @@ def test_le_bruit_ne_leve_pas_un_nit(noise):
 
 
 def test_vraie_reponse_humaine_leve():
+    """#12319 : la vraie reponse qui LEVE porte une phrase de levee (B.0 :
+    ce qui leve une remarque est une phrase) — une reponse substantive sans
+    marqueur ne leve plus (cf test_12319_reponse_nue_ne_leve_plus)."""
     reply = {"author": {"login": "jsboige"}, "createdAt": at(12),
-             "body": "Bien vu, l'attribution est corrigee en cellule 0 et 2."}
+             "body": "Bien vu, l'attribution est corrigee en cellule 0 et 2 — "
+                     "les 2 nits sont adresses."}
     assert run([USER_NIT, reply])["blocked"] is False
 
 
@@ -767,13 +771,13 @@ def test_cr_cas3_commentaire_tiers_hors_sujet_ne_leve_pas():
     assert run_cr([bystander])["blocked"] is True
 
 
-def test_cr_cas4_phrase_de_levee_leve():
-    """La reponse ecrite que B.0 exige : l'auteur de la PR repond AVEC un
-    marqueur de levee (« sont adresses ») — l'etat se leve."""
+def test_cr_cas4_phrase_auteur_pr_ne_leve_pas_la_review_tierce():
+    """#12836 : l'auteur de la PR documente le fix, mais ne confirme pas a la
+    place du reviewer tiers que sa CHANGES_REQUESTED est levee."""
     fix = {"author": {"login": "jsboige"}, "createdAt": at(12),
            "body": "Les 2 points sont adresses : cellule 19 remplacee par "
                    "strip_lean_comments, commit abc123."}
-    assert run_cr([fix])["blocked"] is False
+    assert run_cr([fix])["blocked"] is True
 
 
 def test_cr_cas5_rereview_approved_meme_auteur_leve():
@@ -813,20 +817,21 @@ def test_cr_levee_conditionnelle_ne_leve_pas():
 
 
 def test_nit_commentaire_garde_le_regime_general():
-    """Non-regression : le durcissement ne touche QUE l'etat de review. Un nit
-    porte par un COMMENTAIRE reste leve par une reponse humaine (regime
-    general, limite NLP de can_lift)."""
+    """#12319 : le regime general d'un nit porte par un COMMENTAIRE est
+    aligne sur celui de l'etat de review — il faut une PHRASE de levee
+    (LIFT_MARKER) ou une re-review APPROVED de l'auteur. Une reponse humaine
+    PORTANT la phrase leve toujours (regime general, limite NLP de can_lift)."""
     reply = {"author": {"login": "jsboige"}, "createdAt": at(12),
-             "body": "Bien vu, corrige."}
+             "body": "Bien vu, corrige — les 2 nits sont levées."}
     assert run([USER_NIT, reply])["blocked"] is False
 
 
-# --- #11145 : la borne d'auteur. Une levee ne compte que si elle vient de
-# l'auteur de la reserve OU de l'auteur de la PR (mesure #11494 sur 850 PRs :
-# SELF 22/37 = 59,5 % + PR_AUTHOR 6/37 = 16,2 % = flux sain preserve ;
-# BYSTANDER 9/37 = 24,3 % = la classe #10761 que l'organe bloque — une
-# approbation ou une reponse d'un tiers n'eteint pas une reserve posee par un
-# autre). Echappement B.0 : issue de suivi nommee.
+# --- #11145 / #12836 : la borne d'auteur. Une levee ne compte que si elle
+# vient de l'auteur de la reserve. #12798 a prouve que PR_AUTHOR n'est pas un
+# tiers de confirmation : l'auteur avait declare la reserve Hermes levee alors
+# que le notebook committe restait un stub sans sortie vLLM. Une reponse de
+# PR_AUTHOR documente le traitement mais ne remplace pas la re-review du tiers.
+# Echappement borne : override coordinateur nomme (tests #11639 ci-dessous).
 
 HERMES_NIT = {
     "author": {"login": "clusterManager-Myia"}, "createdAt": at(10),
@@ -840,6 +845,64 @@ def test_bystander_commentaire_ne_leve_pas_un_nit():
     bystander = {"author": {"login": "myia-ai-01"}, "createdAt": at(12),
                  "body": "Releve de mon cote, plus de conflit."}
     assert run([USER_NIT, bystander])["blocked"] is True
+
+
+# --- #12319 : la collision d'identite flotte-wide. Hermès poste sous jsboige
+# (self-review cap) et chaque lane pousse sous jsboige, donc
+# nit_author == pr_author == "jsboige" sur presque chaque PR du depot : la
+# borne d'auteur #11145 ne borne plus rien, et l'ancienne branche elif
+# (tout commentaire can_lift leve) laissait une lane eteindre la reserve de
+# son propre reviewer en postant une attestation de protocole. Le regime est
+# desormais : PHRASE de levee (LIFT_MARKER, borne d'auteur preservee) OU
+# re-review APPROVED de l'auteur de la reserve.
+
+def test_12319_reponse_nue_ne_leve_plus():
+    """Le defaut fondateur : USER_NIT (auteur jsboige) sur une PR d'auteur
+    jsboige — une reponse posterieure de jsboige SANS phrase de levee
+    n'eteint plus la reserve (avant : levait via lift_events)."""
+    reply = {"author": {"login": "jsboige"}, "createdAt": at(12),
+             "body": "Bien vu, l'attribution est corrigee en cellule 0 et 2."}
+    assert run([USER_NIT, reply])["blocked"] is True
+
+
+def test_12319_attestation_self_ne_leve_pas():
+    """Le litteral de l'issue : une lane eteint la reserve de son reviewer en
+    postant un [READY-FOR-MERGE SELF attestation] qui ne la mentionne pas."""
+    attestation = {"author": {"login": "jsboige"}, "createdAt": at(12),
+                   "body": "[READY-FOR-MERGE SELF attestation] checks verts, "
+                           "body complet, preuve d'execution dans le body."}
+    assert run([USER_NIT, attestation])["blocked"] is True
+
+
+def test_12319_reponse_nue_sur_reserve_hermes_ne_leve_plus():
+    """Meme regime pour la reserve Hermes (review COMMENTED, src non-CR) :
+    la lane pousse une reponse sans phrase de levee — reste bloquante."""
+    reply = {"author": {"login": "jsboige"}, "createdAt": at(12),
+             "body": "Les 2 cellules d'interp sont ajoutees, commit abc."}
+    assert run([HERMES_NIT, reply])["blocked"] is True
+
+
+def test_12319_rereview_approved_de_l_auteur_leve_nit_commentaire():
+    """L'etat natif garde son role de phrase de levee au sens fort : Hermes
+    (auteur de la reserve) revient APPROVED — la reserve s'eteint, meme sans
+    marqueur textuel."""
+    data = {
+        "number": 0, "title": "t", "author": {"login": "jsboige"},
+        "comments": [HERMES_NIT],
+        "reviews": [{"author": {"login": "clusterManager-Myia"},
+                     "state": "APPROVED", "submittedAt": at(15),
+                     "body": ""}],
+        "commits": [{"committedDate": at(19)}],
+    }
+    assert mod.analyse(data, [], MERGED)["blocked"] is False
+
+
+def test_12319_levee_conditionnelle_ne_leve_pas_nit_commentaire():
+    """#11201 preserve sur le nouveau chemin : « corrige X et je leve » est
+    l'enonce de la condition, pas une levee acquise."""
+    cond = {"author": {"login": "jsboige"}, "createdAt": at(12),
+            "body": "Corrige la cellule 19 et je leve ma reserve."}
+    assert run([USER_NIT, cond])["blocked"] is True
 
 
 def test_bystander_approved_ne_leve_pas_un_nit():
@@ -857,19 +920,64 @@ def test_bystander_approved_ne_leve_pas_un_nit():
 
 
 def test_auteur_du_nit_leve_son_nit():
-    """SELF (59,5 %) : l'auteur de la reserve revient repondre — le nit se
-    leve par le regime general borne (auteur == auteur du nit)."""
+    """SELF (59,5 %) : l'auteur de la reserve revient repondre AVEC une
+    phrase de levee — le nit se leve par le regime general borne
+    (auteur == auteur du nit, #12319 : phrase exigee)."""
     reply = {"author": {"login": "clusterManager-Myia"}, "createdAt": at(12),
-             "body": "Les 2 cellules d'interp sont ajoutees, commit abc."}
+             "body": "Les 2 cellules d'interp sont ajoutees, commit abc — "
+                     "reserve levee."}
     assert run([HERMES_NIT, reply])["blocked"] is False
 
 
-def test_auteur_pr_repond_a_son_reviewer_leve():
-    """PR_AUTHOR (16,2 %) : le worker (auteur de la PR) repond au reviewer —
-    le flux sain que la borne preserve."""
+def test_auteur_pr_ne_leve_pas_la_reserve_d_un_tiers():
+    """#12798 : PR_AUTHOR peut documenter le fix, pas confirmer a la place du
+    reviewer tiers que sa reserve est levee. La reserve reste bloquante jusqu'a
+    une re-review/levee de son auteur ou un override coordinateur nomme."""
     reply = {"author": {"login": "jsboige"}, "createdAt": at(12),
-             "body": "Les 2 cellules d'interp sont ajoutees, commit abc."}
-    assert run([HERMES_NIT, reply])["blocked"] is False
+             "body": "Les 2 cellules d'interp sont ajoutees, commit abc — "
+                     "les points sont adresses."}
+    assert run([HERMES_NIT, reply])["blocked"] is True
+
+
+def test_auteur_pr_puis_levee_du_reviewer_tiers_leve():
+    """Controle positif obligatoire #12836 : le durcissement ne rend pas toute
+    reserve indelebile. PR_AUTHOR repond, puis le reviewer tiers confirme la
+    levee : le gate devient vert."""
+    reply = {"author": {"login": "jsboige"}, "createdAt": at(12),
+             "body": "Les 2 cellules d'interp sont ajoutees, commit abc — "
+                     "les points sont adresses."}
+    reviewer_lift = {
+        "author": {"login": "clusterManager-Myia"},
+        "createdAt": at(13),
+        "body": "Levee de ma reserve apres verification du commit abc.",
+    }
+    assert run([HERMES_NIT, reply, reviewer_lift])["blocked"] is False
+
+
+def test_deux_reserves_du_meme_auteur_ne_s_auto_levent_pas():
+    """#12798 live : deux commentaires COMMENT_WITH_CONCERNS du meme auteur a
+    quelques secondes d'intervalle restent deux emissions, pas une levee. Le
+    second narre une levee anterieure qu'il REFUTE : le verdict formel vivant
+    doit l'emporter sur ce LIFT_MARKER narratif."""
+    first = {
+        "author": {"login": "jsboigeEpita"}, "createdAt": at(10),
+        "body": "[Hermes] COMMENT_WITH_CONCERNS — sortie vLLM absente.",
+    }
+    second = {
+        "author": {"login": "jsboigeEpita"}, "createdAt": at(11),
+        "body": (
+            "[Hermes] COMMENT_WITH_CONCERNS — revalidation apres la levee "
+            "annoncee : cassette toujours non prouvee."
+        ),
+    }
+    data = {
+        "number": 12798, "title": "t", "author": {"login": "jsboige"},
+        "comments": [first, second], "reviews": [],
+        "commits": [{"committedDate": at(19)}],
+    }
+    result = mod.analyse(data, [], MERGED)
+    assert result["blocked"] is True
+    assert len(result["blocking"]) == 2
 
 
 def test_bystander_explicit_lift_ne_leve_pas_changes_requested():
@@ -1729,3 +1837,71 @@ def test_12315_lowercase_quoted_content_not_covered_piste2():
     # -- un redacteur futur qui elargirait la regex devrait mettre a
     # jour CE test pour basculer en piste 2 (verbe de levee).
     assert verdict in ("BOT-CONCERN", None)
+
+
+def test_12335_v20_changerequested_redevient_live():
+    """Issue #12335 : `v2.0 CHANGES_REQUESTED` etait neutralisee par le citer
+    chiffre `0` de #12311 (endswith « 0 » + `.` non-alphanum → match). Le fix
+    teste l'EGALITE stricte apres strip typographie markdown : le token
+    resultant `v2.0` n'est pas le compteur `0`, donc live. La forme
+    « Migration vers la v2.0 » redevient un reserve BOT-CONCERN vivante."""
+    body = (
+        "Migration vers la v2.0 CHANGES_REQUESTED du bot. "
+        "Voir la release note annexee pour le detail."
+    )
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+def test_12335_section_40_changerequested_redevient_live():
+    """Issue #12335 : `4.0 CHANGES_REQUESTED` (reference a une section 4.0).
+    Meme mecanique que v2.0 : token `4.0` ≠ compteur `0`, donc live."""
+    body = (
+        "Cf section 4.0 CHANGES_REQUESTED emis par Hermes. "
+        "Justification : csp7 manque un cas limite."
+    )
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+def test_12335_etape_p0_changerequested_redevient_live():
+    """Issue #12335 : `P-0 CHANGES_REQUESTED` (reference a une etape P-0).
+    Token `P-0` ≠ compteur `0`, donc live."""
+    body = (
+        "Etape P-0 CHANGES_REQUESTED du reviewer. "
+        "Bloquant tant que la precondition n'est pas resolue."
+    )
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+def test_12335_priorite_0_changerequested_redevient_live():
+    """Issue #12335 : `(0) CHANGES_REQUESTED` (reference textuelle).
+    Apres extraction du dernier mot `(0)`, strip typographie markdown ne
+    touche pas la parenthese, donc le token `(0)` ≠ compteur `0` (egalite
+    stricte) → live. C'est le controle positif critique : sans la parente
+    dans le strip, le cas serait degenere en en match du citer chiffre."""
+    body = (
+        "Priorite (0) CHANGES_REQUESTED encore ouvert. "
+        "Aucune autre priorite sur la liste."
+    )
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+def test_12335_run_id_changerequested_reste_live():
+    """Issue #12335 controle negatif (run #12300) : le `0` preced d'un
+    alphanum (`#12300`) coupait deja le endswith, donc reste live sous
+    l'ancien ET le nouveau code. Le fix ne regresse pas ce cas."""
+    body = (
+        "Sur le run #12300 CHANGES_REQUESTED reste vivant. "
+        "Pas de LIFT depuis le precedent passage."
+    )
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+def test_12335_date_changerequested_reste_live():
+    """Issue #12335 controle negatif (date 2026-08-20) : le `0` final est
+    preced d'un alphanum (`2026-08-2`) → endswith coupe. Reste live sous
+    l'ancien ET le nouveau code."""
+    body = (
+        "Depuis 2026-08-20 CHANGES_REQUESTED non leve. "
+        "L'agent n'a pas repondu depuis."
+    )
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"

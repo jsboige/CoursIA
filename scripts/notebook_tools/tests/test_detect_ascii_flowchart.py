@@ -70,6 +70,15 @@ class TestLineSignals:
         assert not _line_has_connector("| text |")
         assert not _line_has_connector("regular markdown")
 
+    def test_connector_multi_col_vertical(self):
+        # #12324 residuel : connecteurs verticaux multi-colonnes (GT-17 c15)
+        assert _line_has_connector("         v                         v")
+        assert _line_has_connector("         |                         v")
+        assert _line_has_connector("   v   v   v")
+        # Pipes seuls = paroi de cadre decoratif vide (Lean-7 c31), PAS un flux
+        assert not _line_has_connector("|                               |")
+        assert not _line_has_connector("     |          |          |")
+
     def test_table_separator_excluded(self):
         # Tables Markdown (scan_md_table_syntax.py scope)
         assert _is_markdown_table_separator("| --- | --- |")
@@ -127,6 +136,27 @@ Architecture NFSP (Neural Fictitious Self-Play)
               (experience replay buffer)
 """
 
+# Extraction EXACTE des 12 premieres lignes du diagramme de la vraie cellule
+# c15 de GameTheory-17-MultiAgent-RL.ipynb (#12324 residuel) : boites empilees
+# reliees par des connecteurs verticaux MULTI-COLONNES (`|  ...  |`, `v  ...  v`)
+# -- aucune fleche `--->`. La fixture GT_17_NFSP_HORIZONTAL ci-dessus est une
+# reconstitution avec fleches horizontales : elle passait sur main alors que la
+# vraie cellule restait miss (connecteurs multi-colonnes invisibles).
+GT_17_NFSP_C15_REAL = """
++-------------------+     +-------------------+
+|   RL Network      |     |   SL Network      |
+|   (Best Response) |     |   (Avg Strategy)  |
++--------+----------+     +--------+----------+
+         |                         |
+         v                         v
+    Q(s, a)                    pi(a|s)
+         |                         |
+         +------------+------------+
+                      |
+                      v
+              epsilon-greedy:
+"""
+
 QC_PY_13_FRAMEWORK_HORIZONTAL = """
 Les 5 composants du framework QC
 
@@ -176,6 +206,20 @@ class TestFlowchartFound:
         # At least one block must include the LLM box
         b = blocks[0]
         assert b["boxes"] >= 2
+
+    def test_gt17_nfsp_c15_real(self):
+        """La VRAIE cellule c15 de GameTheory-17 (#12324 residuel) : boites
+        empilees reliees par des connecteurs verticaux multi-colonnes
+        (`|  ...  |` / `v  ...  v`), aucune fleche `--->`. Invisible sur main
+        (connecteurs=0 -> aucune branche du discriminant) malgre le commentaire
+        c.474 qui citait ce cas comme couvert.
+        """
+        blocks = _find_flowchart_blocks(GT_17_NFSP_C15_REAL)
+        assert len(blocks) >= 1, (
+            "GT-17 c15 reel toujours invisible (connecteurs multi-colonnes)"
+        )
+        assert blocks[0]["boxes_inline"] >= 2  # rangee de 2 boites en ligne 1
+        assert blocks[0]["connectors"] >= 1
 
     def test_gt17_nfsp_horizontal(self):
         """GameTheory-17 c15 (NFSP architecture) — disposition HORIZONTALE
@@ -448,8 +492,25 @@ class TestUnreadableNotebookSkipped:
 # Tous les nouveaux fichiers sont des vrais positifs ou borderline pedagogique
 # (cadres Unicode de comparaison, diagrammes LEAN, pipeline Infer.NET) -- le
 # discriminant les a TOUS verifies un par un avant ce pin.
-CORPUS_BASELINE_TOTAL = 23
-CORPUS_BASELINE_FILES_WITH = 18
+# Re-mesure 2026-08-24 sur le MERGE-REF (origin/main d2be9dae87 + ce fix) :
+# 32 findings / 24 files. Le pin initial a la livraison (37/29) avait ete
+# mesure sur une base stale et sur-compte de 5 (le fix ajoute reellement
+# +5 blocs, pas +10) -- le merge-ref fait foi (cf. pin anti-regression du
+# corpus entier : mesurer sur le merge-ref, jamais sur un main local stale).
+# Le fix multi-colonnes (#12324 residuel) attrape GT-17 c15 NFSP, SK-05
+# VectorStores, Lab8-ADK pipeline, Infer-13 capacites, Infer-15 arbre DBCM,
+# QC-Py-14 c39, QC-Py-17 c7, QC-Py-22 c23, QC-Py-24 c39 (vrais diagrammes) ;
+# les parois vides de cadre type Lean-7 c31 restent exclues par l'exigence
+# d'un caractere de direction.
+#   PR #12637 : 29 findings / 21 files, re-mesure 2026-08-24 sur le merge-ref
+#                  reconstruit (origin/main 0f4b5835fa + conversion Mermaid) :
+#                  la conversion des 3 flowcharts DecInfer-1 / DecInfer-7 /
+#                  DecPyMC-6 retire exactement 1 finding par fichier (aucun
+#                  des 3 n'etait dans les +9 du fix multi-colonnes). Le 20/15
+#                  de la branche originale etait mesure sur un main
+#                  pre-#12729 (23/18) : obsolete au moment du rebase.
+CORPUS_BASELINE_TOTAL = 29
+CORPUS_BASELINE_FILES_WITH = 21
 
 
 class TestCorpusBaseline:

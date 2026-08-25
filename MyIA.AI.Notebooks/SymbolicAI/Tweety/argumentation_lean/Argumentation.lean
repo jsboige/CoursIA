@@ -78,6 +78,11 @@ Knaster–Tarski).
   counterpart.
 - Issue #4046 (Lean roadmap #4038), Argumentum Epic #2137.
 
+Ce fichier racine porte `ArgLattice` — l'`abbrev` du treillis complet
+`(Set α, ⊆)`, socle de Knaster–Tarski sur lequel opère la fonction
+caractéristique — et sert d'umbrella : `import Argumentation` amène
+tout le lake.
+
 Convention i18n (EPIC #4980, décision user 2026-07-04) : ce fichier root
 aggregator est bilingue inline (FR canonique d'abord, EN en miroir).
 Les modules substantiels (`Argumentation.Basic`, `Argumentation.Characteristic`,
@@ -85,8 +90,6 @@ Les modules substantiels (`Argumentation.Basic`, `Argumentation.Characteristic`,
 -/
 
 namespace Argumentation
-
-variable {α : Type*} (af : AF α)
 
 /-- Le treillis complet `(Set α, ⊆)` sur lequel opère la fonction
 caractéristique. -/
