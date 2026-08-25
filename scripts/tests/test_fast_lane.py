@@ -140,6 +140,84 @@ def test_shadow_failure_cannot_block_the_required_pr_gate():
         "rougir -- sinon le correctif a desarme le gate")
     assert fast_lane.conclusion_for(guard, 0, shadow=True) == "success"
 
+# ---------------------------------------------------------------------------
+# 2bis. Panne interne de la voie ombre -- ne publie rien, ne bloque pas
+# ---------------------------------------------------------------------------
+
+def _arm_unrestorable_tree(monkeypatch, published):
+    """Amene `main()` jusqu'a l'arbre non restaure, sans depot reel.
+
+    On neutralise ce qui precede (fichiers changes, execution des gardes,
+    appels git) et on force `tree_is_clean` a repondre faux -- la situation
+    exacte du run 32774643069 sur #12820.
+    """
+    delta = [g for g in fast_lane.PILOT if g.delta_argv]
+    assert delta, ("le registre ne porte plus aucun garde delta : ce test "
+                   "n'exerce plus rien, le corriger plutot que le supprimer")
+    cible = delta[0]
+
+    monkeypatch.setattr(fast_lane, "changed_files", lambda _ref: ["x.ipynb"])
+    monkeypatch.setattr(fast_lane, "guard_applies", lambda g, c: True)
+    monkeypatch.setattr(fast_lane, "run_argv", lambda argv, ctx: (0, "{}"))
+    monkeypatch.setattr(fast_lane, "run_iter",
+                        lambda argv, paths, ctx: (0, "{}"))
+    monkeypatch.setattr(fast_lane, "git",
+                        lambda *a: subprocess.CompletedProcess(a, 0, "", ""))
+    monkeypatch.setattr(fast_lane, "stale_added_paths", lambda _p: [])
+    monkeypatch.setattr(fast_lane, "tree_is_clean",
+                        lambda _paths: (False, "  M scripts/fantome.py"))
+    monkeypatch.setattr(fast_lane, "emit_check_run",
+                        lambda *a, **k: published.append(a))
+    return cible
+
+
+def test_shadow_internal_failure_publishes_nothing_and_does_not_block(
+        monkeypatch, tmp_path):
+    """Une panne de la voie ombre ne doit pas retenir une PR saine.
+
+    Le check du job s'appelle `Fast lane (ombre) -- N gardes, 1 checkout` : il
+    ne contient pas `advisory`, donc `pr_gate` le compte comme un defaut. Un
+    job rouge ici BLOQUE la PR, alors que la phase se declare observationnelle.
+    Mesure du 2026-08-25 : #12820 etait retenue par ce seul chemin.
+
+    Les deux moities comptent :
+      - ne publie RIEN (le fail-closed est preserve : les verdicts porteraient
+        sur un arbre inconnu) ;
+      - rend 0 (l'ombre ne juge pas).
+    Un test qui ne verifierait que le code de retour laisserait passer un
+    correctif qui publierait des verdicts faux en silence.
+    """
+    monkeypatch.setenv("RUNNER_TEMP", str(tmp_path))
+    published = []
+    _arm_unrestorable_tree(monkeypatch, published)
+
+    rc = fast_lane.main(["--base-ref", "main", "--base-sha", "dead" * 10,
+                         "--head-sha", "beef" * 10, "--pr-number", "12820",
+                         "--repo", "jsboige/CoursIA"])
+
+    assert rc == 0, "en ombre, une panne interne ne doit pas rougir le job"
+    assert published == [], (
+        "aucun verdict ne doit etre publie sur un arbre non restaure -- "
+        "le fail-closed prime sur le deblocage")
+
+
+def test_non_shadow_internal_failure_still_stops_hard(monkeypatch, tmp_path):
+    """CONTROLE POSITIF : hors ombre, la panne doit toujours arreter net.
+
+    Sans lui, un correctif qui rendrait 0 dans les DEUX modes desarmerait la
+    voie rapide le jour de sa bascule, et passerait pour un deblocage.
+    """
+    monkeypatch.setenv("RUNNER_TEMP", str(tmp_path))
+    published = []
+    _arm_unrestorable_tree(monkeypatch, published)
+
+    with pytest.raises(SystemExit) as exc:
+        fast_lane.main(["--base-ref", "main", "--base-sha", "dead" * 10,
+                        "--head-sha", "beef" * 10, "--pr-number", "12820",
+                        "--repo", "jsboige/CoursIA", "--no-shadow"])
+    assert "PAS revenu" in str(exc.value)
+    assert published == []
+
 
 # ---------------------------------------------------------------------------
 # 3. Coherence du registre avec les workflows d'origine
