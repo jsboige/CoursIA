@@ -34,16 +34,15 @@ Ce qui leve un nit — et ce qui ne le leve PAS
   - une **reponse ecrite** capable de repondre (cf `can_lift` : ni bot de CI,
     ni tag de protocole nu) ;
   - pour un thread inline : `isResolved: true` ou `isOutdated: true` ;
-  - **de la bonne personne** (borne d'auteur #11145) : l'auteur de la reserve,
-    ou l'auteur de la PR qui repond a son reviewer. Une reponse ou une
-    approbation d'un tiers (ni l'un ni l'autre) n'eteint pas la reserve —
-    c'est la classe #10761 que l'organe existe pour bloquer (mesure #11494 :
-    24,3 % des levees etaient BYSTANDER). L'echappement B.0 (issue de suivi
-    nommee) reste le chemin quand la reserve exige l'arbitrage d'un tiers —
-    et depuis #11639, l'arbitrage ECRIT du coordinateur porte une trappe
-    nommee : `[OVERRIDE] lane <machine:workspace>` + phrase de levee (meme
+  - **de la bonne personne** (borne d'auteur #11145, durcie #12836) : l'auteur
+    de la reserve. L'auteur de la PR ne peut pas lever lui-meme une reserve
+    posee par un tiers — sa phrase documente une reponse, mais seule une
+    re-review/levee du tiers confirme qu'il la tient pour traitee. Une reponse
+    ou une approbation d'un autre tiers n'eteint pas davantage la reserve.
+    L'echappement B.0 reste l'arbitrage ECRIT du coordinateur, par la trappe
+    nommee `[OVERRIDE] lane <machine:workspace>` + phrase de levee (meme
     convention ecrite que les claims #10223). Pas une ouverture generale :
-    la borne tient pour tout autre tiers, et un override POST-marge ne peut
+    la borne tient pour tout autre tiers, et un override POST-merge ne peut
     pas avoir eteint une reserve avant la decision de merge.
 
 Ne levent RIEN :
@@ -577,6 +576,34 @@ def has_marker(body: str, markers: tuple[str, ...]) -> bool:
     return any(_unaccent(m) in normalised for m in markers)
 
 
+def _formal_concern_precedes_lift(body: str) -> bool:
+    """Un verdict Hermes formel precede-t-il la narration de sa levee ?
+
+    #12798 contient ``COMMENT_WITH_CONCERNS`` en tete de revalidation puis
+    raconte plus bas qu'une ancienne reserve avait ete « levee ». Ce mot ne
+    retracte pas le verdict vivant qui le precede. A l'inverse, « je leve ma
+    CHANGES_REQUESTED » est une levee explicite historique : le marqueur nomme
+    vient APRES le verbe et doit rester admissible.
+    """
+    stripped = _strip_mentioned_verdicts(_strip_quoted(body))
+    normalised = _unaccent(stripped)
+    concern_positions = [
+        normalised.find(_unaccent(marker))
+        for marker in ("COMMENT_WITH_CONCERNS", "REQUEST_CHANGES", "NEEDS_CHANGES")
+    ]
+    concern_positions = [position for position in concern_positions if position >= 0]
+    lift_positions = [
+        normalised.find(_unaccent(marker))
+        for marker in LIFT_MARKERS
+    ]
+    lift_positions = [position for position in lift_positions if position >= 0]
+    return (
+        bool(concern_positions)
+        and bool(lift_positions)
+        and min(concern_positions) < min(lift_positions)
+    )
+
+
 def _excerpt(body: str) -> str:
     """Tete + queue : le verdict d'un reviewer vit en QUEUE de body.
 
@@ -753,7 +780,13 @@ def classify(author: str, body: str) -> str | None:
     # table de distribution d'ai-01 reste exacte.
     if (has_marker(body, LIFT_MARKERS)
             and not _lift_cancelled(_strip_quoted(body))
-            and not has_live_marker(_strip_quoted(body), SEVERITY_GLYPHS)):
+            and not has_live_marker(_strip_quoted(body), SEVERITY_GLYPHS)
+            # #12836 / #12798 : une revalidation COMMENT_WITH_CONCERNS peut
+            # narrer la levee anterieure qu'elle REFUTE. Seul un verdict Hermes
+            # formel place AVANT le mot de levee garde la reserve vivante ; les
+            # levees explicites historiques (« je leve ma CHANGES_REQUESTED »)
+            # restent admissibles parce que leur ordre est inverse.
+            and not _formal_concern_precedes_lift(body)):
         return None  # annonce de levee / de merge : resolution, pas reserve
     # (construction conditionnelle « et je merge » : voir _lift_cancelled —
     # l'annonce conditionnee n'est pas une levee, SAUF levee explicite d'auteur
@@ -829,12 +862,13 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
     commits = [c for c in commits if c]
     last_commit = max(commits) if commits else None
 
-    # #11145 — borne d'auteur : seules les levees de l'auteur de la reserve OU
-    # de l'auteur de la PR comptent. Mesure #11494 (850 PRs) : SELF 22/37
-    # (59,5 %) + PR_AUTHOR 6/37 (16,2 %) = flux sain preserve ; BYSTANDER 9/37
-    # (24,3 %) = la classe #10761 que l'organe bloque (un tiers — approbation
-    # ou reponse — n'eteint pas une reserve posee par un autre).
-    pr_author = (pr_data.get("author") or {}).get("login", "")
+    # #11145 — borne d'auteur, durcie par #12836 : seule une levee de l'auteur
+    # de la reserve compte. #12798 a montre pourquoi PR_AUTHOR n'est pas une
+    # confirmation : l'auteur de la PR avait declare la reserve Hermes levee,
+    # l'organe etait vert, mais le livrable committe restait un stub sans sortie
+    # vLLM. Une reponse de PR_AUTHOR documente le traitement ; elle ne remplace
+    # pas la re-review du tiers. L'arbitrage coordinateur nomme [OVERRIDE]
+    # ci-dessous reste le seul echappement tiers.
 
     # Fenetre 05-29..06-04 (#1958) : la RE-REVIEW APPROVED. Le reviewer qui
     # revient approuver apres sa demande de changements A dit que la reserve
@@ -854,7 +888,7 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
 
     def _lift_eligible(lift_author: str, nit_author: str,
                        lift_body: str = "") -> bool:
-        if lift_author in (nit_author, pr_author):
+        if lift_author == nit_author:
             return True
         # #11639 : l'override NOMME du coordinateur — l'arbitre tiers de B.0.
         # La restriction d'auteur reste la regle pour tout le monde (elle
@@ -885,6 +919,10 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
         if can_lift(c)
         and has_marker(c.get("body", ""), LIFT_MARKERS)
         and not _lift_cancelled(_strip_quoted(c.get("body", "")))
+        # #12836 / #12798 : une reserve qui narre une ancienne levee reste
+        # une reserve, pas un evenement de levee du signal precedent.
+        and classify((c.get("author") or {}).get("login", ""),
+                     c.get("body", "")) is None
     ]
     explicit_lifts = [x for x in explicit_lifts if x[0] is not None]
 
