@@ -84,6 +84,62 @@ instance poolingTenable.decidable (m : TwoQualityMarket) (π : Prior) :
     Decidable (poolingTenable m π) :=
   inferInstanceAs (Decidable (m.cHigh * 100 ≤ ↑π.piNum * m.vHigh + (100 - ↑π.piNum) * m.vLow))
 
+/- ## Seuil de pooling (repair #12848 c.503)
+
+  La condition brute `cHigh * 100 ≤ π * vHigh + (100 - π) * vLow` se
+  réarrange linéairement en un **produit croisé** caractérisant le seuil
+  en π — arithmétique entière close, sans division :
+
+    poolingTenable m π  ↔  poolingThresholdNum m ≤ π * (vHigh - vLow)
+
+  Sous `vHigh > vLow` (portée par `TwoQualityMarket.hValue`), le membre
+  de droite croît avec π : tout prior au-dessus d'un prior tenable
+  reste tenable (`poolingTenable_mono`).
+-/
+
+/-- Numérateur du seuil de pooling : `100 * (cHigh - vLow)`. Le seuil
+    explicite est `π_min = poolingThresholdNum m / (vHigh - vLow)` ; la
+    forme produit-croisé de l'équivalence ci-dessous évite la division
+    entière (arrondis) tout en caractérisant exactement le même
+    prédicat. -/
+def poolingThresholdNum (m : TwoQualityMarket) : Int :=
+  100 * (m.cHigh - m.vLow)
+
+/-- **Équivalence seuil (produit croisé)** : le pooling est tenable si
+    et seulement si le numérateur du seuil est couvert par
+    `π * (vHigh - vLow)`. Preuve : distributivité de `π` et de `100`
+    sur les soustractions (`Int.mul_sub`, `Int.sub_mul`), puis `omega`
+    sur les atomes linéaires. -/
+theorem poolingTenable_iff_cross (m : TwoQualityMarket) (π : Prior) :
+    poolingTenable m π ↔
+      poolingThresholdNum m ≤ (π.piNum : Int) * (m.vHigh - m.vLow) := by
+  have key : (π.piNum : Int) * (m.vHigh - m.vLow)
+      = π.piNum * m.vHigh - π.piNum * m.vLow := Int.mul_sub _ _ _
+  have key2 : (100 - (π.piNum : Int)) * m.vLow
+      = 100 * m.vLow - π.piNum * m.vLow := Int.sub_mul _ _ _
+  constructor <;> intro h
+  · simp only [poolingTenable, poolingThresholdNum] at h ⊢
+    omega
+  · simp only [poolingTenable, poolingThresholdNum] at h ⊢
+    omega
+
+/-- **Monotonie du seuil** : sous `vHigh > vLow`, si un prior π est
+    tenable, tout prior plus élevé l'est aussi — le seuil est un
+    plancher, pas une fenêtre. -/
+theorem poolingTenable_mono (m : TwoQualityMarket) (π π' : Prior)
+    (hπ : π.piNum ≤ π'.piNum) (h : poolingTenable m π) :
+    poolingTenable m π' := by
+  have hv : m.vLow < m.vHigh := m.hValue
+  have key : ((π'.piNum : Int) - π.piNum) * (m.vHigh - m.vLow)
+      = π'.piNum * (m.vHigh - m.vLow) - π.piNum * (m.vHigh - m.vLow) :=
+    Int.sub_mul _ _ _
+  have hnn : 0 ≤ ((π'.piNum : Int) - π.piNum) * (m.vHigh - m.vLow) :=
+    Int.mul_nonneg (by omega) (by omega)
+  apply (poolingTenable_iff_cross m π').mpr
+  have h' := (poolingTenable_iff_cross m π).mp h
+  simp only [poolingThresholdNum] at h' ⊢
+  omega
+
 /-- **Caractérisation lemons-only locale** : il existe un prix P ∈ [c_L, c_H)
     tel que `buyerAccepts m π P` tienne, **et** tel que seul L est offert
     (`offered m P = [Quality.low]`). -/
@@ -119,5 +175,21 @@ example : poolingTenable ⟨0, 2, 0, 4, by omega, by omega⟩ ⟨50, by decide�
 /-- (d) `(c_L, c_H, v_L, v_H) = (0, 5, 0, 4)`, `π = 50%` : pooling NOT tenable. -/
 example : ¬ poolingTenable ⟨0, 5, 0, 4, by omega, by omega⟩ ⟨50, by decide⟩ := by
   decide
+
+/-- (e) **Seuil exact** sur `(c_L, c_H, v_L, v_H) = (0, 30, 0, 40)` :
+    l'équivalence produit-croisé donne `100*(30-0) = 3000 ≤ π * 40`,
+    i.e. `π_min = 75`. π = 74 est sous le seuil (pooling non tenable). -/
+example : ¬ poolingTenable ⟨0, 30, 0, 40, by omega, by omega⟩ ⟨74, by decide⟩ := by
+  decide
+
+/-- (f) π = 75 satisfait le pooling **exactement au seuil** :
+    `30*100 = 3000 = 75*40 + 25*0`. -/
+example : poolingTenable ⟨0, 30, 0, 40, by omega, by omega⟩ ⟨75, by decide⟩ := by
+  decide
+
+/-- (g) π = 100 reste tenable — par la borne inférieure `poolingTenable_mono`,
+    pas par ré-arbitrage : tout π ≥ 75 l'est aussi. -/
+example : poolingTenable ⟨0, 30, 0, 40, by omega, by omega⟩ ⟨100, by decide⟩ :=
+  poolingTenable_mono _ ⟨75, by decide⟩ ⟨100, by decide⟩ (by decide) (by decide)
 
 end AsymmetricInformation.Lemons

@@ -18,8 +18,11 @@
 
   Bornes strictes (audit c.475 catégorie #1+#5) :
   - PAS d'énoncé `∃` pour l'intervalle sans hypothèses FINIES listées ;
-  - Riley least-cost separator illustré sur une **instance finie explicite**
-    (pas un théorème général) ;
+  - bornes algébriques de l'intervalle séparateur **dérivées** de
+    IC_H/IC_L (`separator_icHigh_bound`, `separator_icLow_bound`) et
+    Riley least-cost `sHigh = 3` prouvé **minimal** par la borne
+    inférieure — sur une instance finie explicite, sans théorème
+    général d'unicité ;
   - Pas de single-crossing universel — chaque lemme liste ses hypothèses.
 -/
 
@@ -78,8 +81,90 @@ structure Separator (p : Productivity) where
 def separatorWage (p : Productivity) (sep : Separator p) (q : WorkerType) : Int :=
   competitiveWage p q
 
-/-- **Exemples décidés** : sur l'instance `(y_H, y_L) = (10, 4)` et coût
-    spécifié, `(s_L, s_H) = (0, 6)` est un séparateur valide :
+/- ## Bornes algébriques de l'intervalle séparateur (repair #12848 c.503)
+
+  IC_L et IC_H ne sont pas seulement vérifiées sur des témoins : elles
+  **bornent** l'intervalle des séparateurs possibles. Pour l'encodage
+  de coût fixé `c_H(s) = s`, `c_L(s) = 2s` (`signalCost` ci-dessus),
+  IC_H donne `sHigh ≤ (yHigh - yLow) + sLow` et IC_L donne
+  `2 * sHigh ≥ (yHigh - yLow) + 2 * sLow`. Sur l'instance
+  `(yLow, yHigh) = (4, 10)` avec `sLow = 0`, l'intervalle est
+  exactement `[3, 6]` — et le séparateur **least-cost** de Riley est
+  l'extrémité inférieure `sHigh = 3`.
+-/
+
+/-- **Borne supérieure (IC_H)** : le type H ne doit pas préférer le
+    signal de L. Avec `c_H(s) = s`, `yHigh - sHigh ≥ yLow - sLow` se
+    réarrange en `sHigh ≤ (yHigh - yLow) + sLow`. -/
+theorem separator_icHigh_bound (p : Productivity) (sep : Separator p) :
+    (sep.sHigh : Int) ≤ p.yHigh - p.yLow + (sep.sLow : Int) := by
+  have hic := sep.icHigh
+  simp only [signalCost] at hic
+  omega
+
+/-- **Borne inférieure (IC_L)** : le type L ne doit pas vouloir imiter
+    H. Avec `c_L(s) = 2s`, `yLow - 2*sLow ≥ yHigh - 2*sHigh` se
+    réarrange en `2*sHigh ≥ (yHigh - yLow) + 2*sLow`. -/
+theorem separator_icLow_bound (p : Productivity) (sep : Separator p) :
+    2 * (sep.sHigh : Int) ≥ p.yHigh - p.yLow + 2 * (sep.sLow : Int) := by
+  have hic := sep.icLow
+  simp only [signalCost] at hic
+  omega
+
+/-- **Intervalle séparateur dérivé sur l'instance** `(yLow, yHigh) =
+    (4, 10)` avec `sLow = 0` : tout séparateur satisfait
+    `3 ≤ sHigh ≤ 6`. Les deux bornes viennent des lemmes généraux
+    ci-dessus — aucun témoin n'est supposé. -/
+theorem separator_interval_instance (p : Productivity)
+    (hEq : p.yLow = 4 ∧ p.yHigh = 10)
+    (sep : Separator p) (h : sep.sLow = 0) :
+    3 ≤ sep.sHigh ∧ (sep.sHigh : Int) ≤ 6 := by
+  obtain ⟨hyl, hyh⟩ := hEq
+  have hUp := separator_icHigh_bound p sep
+  have hLow := separator_icLow_bound p sep
+  rw [h] at hLow
+  constructor <;> omega
+
+/-- **Minimalité de Riley** : tout séparateur de l'instance avec
+    `sLow = 0` a `sHigh ≥ 3` — conséquence directe de la borne
+    inférieure IC_L, pas d'un échantillonnage de cas. -/
+theorem riley_sHigh_minimal (p : Productivity)
+    (hEq : p.yLow = 4 ∧ p.yHigh = 10)
+    (sep : Separator p) (h : sep.sLow = 0) : 3 ≤ sep.sHigh := by
+  obtain ⟨hyl, hyh⟩ := hEq
+  have hLow := separator_icLow_bound p sep
+  rw [h] at hLow
+  omega
+
+/-- **Contre-témoin décidé** : `sHigh = 2` (avec `sLow = 0`) viole
+    IC_L — `4 ≥ 10 - 2*2 = 6` est faux arithmétiquement. La
+    réfutation passe par la minimalité ci-dessus, pas par un
+    ré-échantillonnage. -/
+example : ¬ ∃ sep : Separator ⟨4, 10, by omega⟩, sep.sLow = 0 ∧ sep.sHigh = 2 := by
+  intro h
+  obtain ⟨sep, hsLow, hsHigh⟩ := h
+  have hmin := riley_sHigh_minimal ⟨4, 10, by omega⟩ ⟨rfl, rfl⟩ sep hsLow
+  rw [hsHigh] at hmin
+  omega
+
+/-- **Riley least-cost — témoin décidé** : `(s_L, s_H) = (0, 3)` est
+    l'extrémité INFÉRIEURE de l'intervalle `[3, 6]`, donc le signal
+    séparateur de **plus faible coût** sur l'instance :
+
+    - IC_H : `10 - 3 ≥ 4 - 0` ⟹ `7 ≥ 4` ✓
+    - IC_L : `4 - 0 ≥ 10 - 6` ⟹ `4 ≥ 4` ✓ (**égalité** — c'est la
+      frontière exactement, d'où la minimalité)
+    - IR_H : `10 - 3 ≥ 0` ⟹ `7 ≥ 0` ✓ (u_bar_H = 0)
+    - IR_L : `4 - 0 ≥ 0` ⟹ `4 ≥ 0` ✓ (u_bar_L = 0) -/
+example : ∃ sep : Separator ⟨4, 10, by omega⟩,
+    sep.sLow = 0 ∧ sep.sHigh = 3 ∧ sep.reserveLow ≤ 0 ∧ sep.reserveHigh ≤ 0 := by
+  refine ⟨⟨0, 3, by omega, 0, 0, by decide, by decide, by decide, by decide⟩, rfl, rfl, by decide, by decide⟩
+
+/-- **Exemple décidé — extrémité HAUTE de l'intervalle** : sur
+    l'instance `(y_H, y_L) = (10, 4)` et coût spécifié, `(s_L, s_H) =
+    (0, 6)` est un séparateur valide, mais c'est le signal de plus
+    HAUT coût de `[3, 6]` — pas le least-cost de Riley (qui est
+    `sHigh = 3` ci-dessus) :
 
     - IC_H : `10 - 6 ≥ 4 - 0` ⟹ `4 ≥ 4` ✓
     - IC_L : `4 - 0 ≥ 10 - 12` ⟹ `4 ≥ -2` ✓

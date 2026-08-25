@@ -87,6 +87,62 @@ instance poolingTenable.decidable (m : TwoQualityMarket) (π : Prior) :
     Decidable (poolingTenable m π) :=
   inferInstanceAs (Decidable (m.cHigh * 100 ≤ ↑π.piNum * m.vHigh + (100 - ↑π.piNum) * m.vLow))
 
+/- ## Pooling threshold (repair #12848 c.503)
+
+  The raw condition `cHigh * 100 ≤ π * vHigh + (100 - π) * vLow`
+  rearranges linearly into a **cross-product** characterizing the
+  threshold in π — closed integer arithmetic, no division:
+
+    poolingTenable m π  ↔  poolingThresholdNum m ≤ π * (vHigh - vLow)
+
+  Under `vHigh > vLow` (carried by `TwoQualityMarket.hValue`), the
+  right-hand side grows with π: any prior above a tenable prior
+  remains tenable (`poolingTenable_mono`).
+-/
+
+/-- Pooling-threshold numerator: `100 * (cHigh - vLow)`. The explicit
+    threshold is `π_min = poolingThresholdNum m / (vHigh - vLow)`; the
+    cross-product form of the equivalence below avoids integer
+    division (rounding) while characterizing exactly the same
+    predicate. -/
+def poolingThresholdNum (m : TwoQualityMarket) : Int :=
+  100 * (m.cHigh - m.vLow)
+
+/-- **Threshold equivalence (cross-product)**: pooling is tenable if
+    and only if the threshold numerator is covered by
+    `π * (vHigh - vLow)`. Proof: distributivity of `π` and `100` over
+    subtractions (`Int.mul_sub`, `Int.sub_mul`), then `omega` on the
+    linear atoms. -/
+theorem poolingTenable_iff_cross (m : TwoQualityMarket) (π : Prior) :
+    poolingTenable m π ↔
+      poolingThresholdNum m ≤ (π.piNum : Int) * (m.vHigh - m.vLow) := by
+  have key : (π.piNum : Int) * (m.vHigh - m.vLow)
+      = π.piNum * m.vHigh - π.piNum * m.vLow := Int.mul_sub _ _ _
+  have key2 : (100 - (π.piNum : Int)) * m.vLow
+      = 100 * m.vLow - π.piNum * m.vLow := Int.sub_mul _ _ _
+  constructor <;> intro h
+  · simp only [poolingTenable, poolingThresholdNum] at h ⊢
+    omega
+  · simp only [poolingTenable, poolingThresholdNum] at h ⊢
+    omega
+
+/-- **Threshold monotonicity**: under `vHigh > vLow`, if a prior π is
+    tenable then any higher prior is too — the threshold is a floor,
+    not a window. -/
+theorem poolingTenable_mono (m : TwoQualityMarket) (π π' : Prior)
+    (hπ : π.piNum ≤ π'.piNum) (h : poolingTenable m π) :
+    poolingTenable m π' := by
+  have hv : m.vLow < m.vHigh := m.hValue
+  have key : ((π'.piNum : Int) - π.piNum) * (m.vHigh - m.vLow)
+      = π'.piNum * (m.vHigh - m.vLow) - π.piNum * (m.vHigh - m.vLow) :=
+    Int.sub_mul _ _ _
+  have hnn : 0 ≤ ((π'.piNum : Int) - π.piNum) * (m.vHigh - m.vLow) :=
+    Int.mul_nonneg (by omega) (by omega)
+  apply (poolingTenable_iff_cross m π').mpr
+  have h' := (poolingTenable_iff_cross m π).mp h
+  simp only [poolingThresholdNum] at h' ⊢
+  omega
+
 /-- **Local lemons-only characterization**: there exists a price
     P ∈ [c_L, c_H) such that `buyerAccepts m π P` holds **and** only L
     is offered (`offered m P = [Quality.low]`). -/
@@ -122,5 +178,22 @@ example : poolingTenable ⟨0, 2, 0, 4, by omega, by omega⟩ ⟨50, by decide�
 /-- (d) `(c_L, c_H, v_L, v_H) = (0, 5, 0, 4)`, `π = 50%`: pooling NOT tenable. -/
 example : ¬ poolingTenable ⟨0, 5, 0, 4, by omega, by omega⟩ ⟨50, by decide⟩ := by
   decide
+
+/-- (e) **Exact threshold** on `(c_L, c_H, v_L, v_H) = (0, 30, 0, 40)`:
+    the cross-product equivalence gives `100*(30-0) = 3000 ≤ π * 40`,
+    i.e. `π_min = 75`. π = 74 is below the threshold (pooling not
+    tenable). -/
+example : ¬ poolingTenable ⟨0, 30, 0, 40, by omega, by omega⟩ ⟨74, by decide⟩ := by
+  decide
+
+/-- (f) π = 75 satisfies pooling **exactly at the threshold**:
+    `30*100 = 3000 = 75*40 + 25*0`. -/
+example : poolingTenable ⟨0, 30, 0, 40, by omega, by omega⟩ ⟨75, by decide⟩ := by
+  decide
+
+/-- (g) π = 100 remains tenable — via the `poolingTenable_mono` floor,
+    not by re-arbitration: any π ≥ 75 is too. -/
+example : poolingTenable ⟨0, 30, 0, 40, by omega, by omega⟩ ⟨100, by decide⟩ :=
+  poolingTenable_mono _ ⟨75, by decide⟩ ⟨100, by decide⟩ (by decide) (by decide)
 
 end AsymmetricInformation.Lemons

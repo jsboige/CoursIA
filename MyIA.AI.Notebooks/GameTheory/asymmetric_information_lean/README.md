@@ -8,7 +8,7 @@ notebook `CoursIA`.
 
 | Modèle | Module | Référence |
 |---|---|---|
-| Lemons (marché des voitures d'occasion) | `AsymmetricInformation.Lemons` | Akerlof (1970) *QJE* 83(3):488-500 |
+| Lemons (marché des voitures d'occasion) | `AsymmetricInformation.Lemons` | Akerlof (1970) *QJE* 84(3):488-500 |
 | Signaling (signal d'éducation) | `AsymmetricInformation.Signaling` | Spence (1973) *QJE* 87(3):355-374 |
 | Screening (sélection adverses, concurrence entre assureurs) | `AsymmetricInformation.Screening` | Rothschild-Stiglitz (1976) *QJE* 90(4):629-649 |
 | Anticipatory / cross-subsidy | `AsymmetricInformation.MiyazakiWilson` | Wilson 1977 *JET* 16:167-207, Miyazaki 1977 *Bell J.* 8(2):394-418, Spence 1978 |
@@ -58,7 +58,7 @@ sauf docstrings). Voir `README.en.md` pour la version anglaise.
 
 ## Sources canoniques (audit c.475)
 
-- Akerlof (1970) *QJE* 83(3):488-500 — *The Market for Lemons*
+- Akerlof (1970) *QJE* 84(3):488-500 — *The Market for Lemons*
 - Spence (1973) *QJE* 87(3):355-374 — *Job Market Signaling*
 - Rothschild-Stiglitz (1976) *QJE* 90(4):629-649 — *Equilibrium in Competitive Insurance Markets*
 - Riley (1979) *Econometrica* 47(2):331-359 — *Informational Equilibrium*
