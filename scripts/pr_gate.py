@@ -148,9 +148,32 @@ DEFAULT_SELF_NAME = "PR gate"
 ADVISORY_MARKER = "advisory"
 
 
-def is_advisory(name: str) -> bool:
-    """True when the check declares itself non-blocking by name (rule 6)."""
-    return ADVISORY_MARKER in (name or "").lower()
+def is_advisory(name: str, workflow_name: str = "") -> bool:
+    """True when the check declares itself non-blocking by name (rule 6).
+
+    Two signals, both case-insensitive substring matches against the
+    ADVISORY_MARKER:
+
+    - the *job* name (`name`) -- the conventional path; ~30 of the
+      repository's advisory workflows carry ``advisory`` in the job name;
+    - the *workflow* name (`workflow_name`) -- catches the three workflows
+      whose workflow name carries the marker but whose job name does not
+      (measured 2026-08-25: ``Bash Syntax Advisory`` / ``syntax-check``,
+      ``machine-dep-timing-advisory`` / ``machine-dep-timing``,
+      ``Translation parity gate (advisory)`` / ``parity``). Without this
+      second path, the gate misclassifies these as blocking on every PR
+      -- PRs #12524 and #12783 were stuck open 44h/9h on this defect
+      before the fix.
+
+    The REST check-runs API does not surface ``workflow_name``; the script
+    therefore derives it from the on-disk workflow YAMLs (see
+    ``derive_advisory_jobs``). The fallback to ``name`` alone is preserved
+    so unit tests that pass only ``name`` keep working.
+    """
+    low = (name or "").lower()
+    if ADVISORY_MARKER in low:
+        return True
+    return ADVISORY_MARKER in (workflow_name or "").lower()
 
 
 # Where the always-on workflow jobs are derived from (rule 8 canary). Resolved
@@ -220,6 +243,42 @@ def derive_always_on_jobs(
                 continue  # never let the gate canary itself
             jobs.add(jname)
 
+    return frozenset(jobs)
+
+
+def derive_advisory_jobs(workflows_dir: str = DEFAULT_WORKFLOWS_DIR) -> frozenset[str]:
+    """Job names produced by workflows whose workflow-level ``name:`` carries
+    the ADVISORY_MARKER (case-insensitive). Scans every workflow in the
+    directory regardless of trigger or ``paths:`` filter, so a path-filtered
+    advisory (rare but legal -- e.g. ``machine-dep-timing-advisory`` only
+    runs on notebook-touched PRs) is still picked up.
+
+    Used by ``is_advisory`` to recover the three workflows whose *job* name
+    does not carry the marker even though the *workflow* does (the case
+    measured on 2026-08-25 that left PRs #12524 and #12783 BLOCKED on the
+    PR gate 44h/9h).
+
+    Same robustness contract as ``derive_always_on_jobs``: an unreadable
+    state returns an empty set rather than weaponising the gate against
+    every PR.
+    """
+    if yaml is None:
+        return frozenset()
+    root = Path(workflows_dir)
+    if not root.is_dir():
+        return frozenset()
+    jobs: set[str] = set()
+    for yml in sorted(root.glob("*.yml")):
+        try:
+            data = yaml.safe_load(yml.read_text(encoding="utf-8"))
+        except (OSError, yaml.YAMLError):
+            continue
+        if not isinstance(data, dict):
+            continue
+        wf_name = (data.get("name") or "").lower()
+        if ADVISORY_MARKER not in wf_name:
+            continue
+        jobs.update(_workflow_job_names(data))
     return frozenset(jobs)
 
 
@@ -351,7 +410,9 @@ def dedupe_latest(checks: Sequence[dict]) -> list[dict]:
 
 
 def classify(
-    checks: Sequence[dict], self_name: str = DEFAULT_SELF_NAME
+    checks: Sequence[dict],
+    self_name: str = DEFAULT_SELF_NAME,
+    advisory_jobs: frozenset[str] = frozenset(),
 ) -> tuple[list[str], list[str], list[str], list[str]]:
     """Split settled checks into (pending, bad, ok, advisory) name lists.
 
@@ -363,6 +424,13 @@ def classify(
     what they actually reported -- and never reach `pending` or `bad`. They are
     kept separate rather than merged into `ok` so a caller can print "advisory
     X failed" instead of silently rewriting a failure into a pass.
+
+    `advisory_jobs` is the roster of job names whose parent workflow carries
+    the advisory marker but the job itself does not (e.g.
+    ``machine-dep-timing`` -> ``machine-dep-timing-advisory``); the gate would
+    otherwise misclassify them as blocking on every PR. Derived from the
+    on-disk workflow YAMLs via ``derive_advisory_jobs``; tests that do not care
+    pass the empty frozenset, which is the historical behaviour.
 
     Treatment of an IN_PROGRESS / QUEUED check (issue #10435, acceptance 2) --
     a *required* check still in flight is treated exactly like an advisory in
@@ -390,7 +458,15 @@ def classify(
         status = (check.get("status") or "").lower()
         conclusion = (check.get("conclusion") or "").lower()
 
-        if is_advisory(name):
+        # `is_advisory` consults the job name (conventional path) AND, when the
+        # job name alone does not match, the workflow-name roster (recover the
+        # three workflows whose job name does not carry the marker even though
+        # the workflow does). Both signals are substring checks against the
+        # ADVISORY_MARKER -- case-insensitive.
+        workflow_label = ""
+        if name in advisory_jobs:
+            workflow_label = "advisory"
+        if is_advisory(name, workflow_label) or workflow_label:
             if conclusion not in CONCLUSION_OK:
                 state = conclusion or status or "no verdict"
                 advisory.append(f"{name} ({state})")
@@ -608,6 +684,7 @@ def wait_and_decide(
     poll_sec: float,
     settle_polls: int,
     always_on_jobs: "frozenset[str] | None" = None,
+    advisory_jobs: "frozenset[str] | None" = None,
     sleep=time.sleep,
     fetch=fetch_checks,
     now=time.monotonic,
@@ -622,15 +699,21 @@ def wait_and_decide(
     it (the gate then behaves exactly as before this rule). Only consulted at
     settle time, so a freshly-opened PR keeps the `settle_polls` grace period for
     Actions to create its check-runs.
+
+    `advisory_jobs` is the roster of jobs whose parent workflow is advisory but
+    whose own name does not carry the marker. Empty frozenset (default) disables
+    the workflow-name side of `is_advisory` -- the historical behaviour, kept
+    for tests that do not care.
     """
     deadline = now() + timeout_min * 60.0
     quiet_streak = 0
     pending: list[str] = []
     bad: list[str] = []
+    adv_jobs = advisory_jobs or frozenset()
 
     while True:
         checks = fetch(repo, sha)
-        pending, bad, ok, advisory = classify(checks, self_name)
+        pending, bad, ok, advisory = classify(checks, self_name, adv_jobs)
 
         if bad:
             # Fail fast: a failure cannot be undone by waiting longer.
@@ -666,7 +749,7 @@ def wait_and_decide(
             # verdict in itself (same shape as `select()` with a deadline).
             final_checks = fetch(repo, sha)
             final_pending, final_bad, final_ok, final_advisory = classify(
-                final_checks, self_name
+                final_checks, self_name, adv_jobs
             )
             if not final_pending and not final_bad:
                 # Everything settled in the gap: treat as a clean settle.
@@ -792,6 +875,13 @@ def main(argv: Iterable[str] | None = None) -> int:
                 flush=True,
             )
 
+    # Roster of jobs whose parent workflow is advisory but whose own name does
+    # not carry the marker (e.g. ``machine-dep-timing`` from
+    # ``machine-dep-timing-advisory``). Without this, the gate misroutes them
+    # into ``bad`` on every PR -- the failure mode that left #12524 and #12783
+    # blocked 44h/9h before the fix landed.
+    advisory_jobs = derive_advisory_jobs(args.workflows_dir)
+
     try:
         code, message = wait_and_decide(
             args.repo,
@@ -801,6 +891,7 @@ def main(argv: Iterable[str] | None = None) -> int:
             args.poll_sec,
             args.settle_polls,
             always_on_jobs,
+            advisory_jobs,
         )
     except GateError as exc:
         # Rule 1: an unreadable state is a failure, never a pass.

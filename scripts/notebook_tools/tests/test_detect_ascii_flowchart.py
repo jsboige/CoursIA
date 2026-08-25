@@ -502,8 +502,15 @@ class TestUnreadableNotebookSkipped:
 # QC-Py-14 c39, QC-Py-17 c7, QC-Py-22 c23, QC-Py-24 c39 (vrais diagrammes) ;
 # les parois vides de cadre type Lean-7 c31 restent exclues par l'exigence
 # d'un caractere de direction.
-CORPUS_BASELINE_TOTAL = 32
-CORPUS_BASELINE_FILES_WITH = 24
+#   PR #12637 : 29 findings / 21 files, re-mesure 2026-08-24 sur le merge-ref
+#                  reconstruit (origin/main 0f4b5835fa + conversion Mermaid) :
+#                  la conversion des 3 flowcharts DecInfer-1 / DecInfer-7 /
+#                  DecPyMC-6 retire exactement 1 finding par fichier (aucun
+#                  des 3 n'etait dans les +9 du fix multi-colonnes). Le 20/15
+#                  de la branche originale etait mesure sur un main
+#                  pre-#12729 (23/18) : obsolete au moment du rebase.
+CORPUS_BASELINE_TOTAL = 29
+CORPUS_BASELINE_FILES_WITH = 21
 
 
 class TestCorpusBaseline:
