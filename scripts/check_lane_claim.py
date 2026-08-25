@@ -1631,6 +1631,94 @@ def _find_malformed_markers(payload: dict) -> list[dict]:
     return found
 
 
+# #12624 -- suspected-typo marker lint. Incident #12329: a worker posted
+# `[CLAGED] lane myia-po-2024:CoursIA-2 -- paths: ...` -- a bracket token at
+# edit distance 1 from CLAIMED, line-anchored, with a full claim tail. Neither
+# regex above can see it: `_MARKER_RE` requires an EXACT keyword inside the
+# brackets, `_MALFORMED_MARKER_RE` requires the keyword BARE (no bracket). The
+# lock was never read (0 events, 0 malformed), the lane kept working, and the
+# repair comment was itself written in a third unreadable form
+# (`[RELEASED claim-malformed] ... [CLAIMED] ...`). This lint closes the
+# visibility gap for both NON-canonical shapes, WARN-only like #11239: never
+# an event, never a verdict change, never auto-corrected -- it tells the
+# writer their marker was not read. Two variants, both line-anchored on the
+# same `_DECOR` tolerance as the real regexes:
+#   (a) TYPO: bracket token of length >= 5 at edit distance <= 2 from a long
+#       keyword (all keywords of length >= 7; DONE is excluded -- a 4-letter
+#       word within distance 2 of DONE, e.g. `[NOTE]`/`[CODE]`, is ordinary
+#       prose, that class is pure noise).
+#   (b) ANNOTATED: bracket content = exact keyword + trailing annotation
+#       (`[RELEASED claim-malformed]`): a deliberate marker the organ
+#       deliberately does NOT widen to read (#10881 arbitration reads the
+#       LAST canonical line, not annotations).
+_MARKER_KEYWORDS = (
+    "CLAIMED", "RELEASED", "CANCELLED", "ABANDONED", "DONE", "OVERRIDE", "DELIVERED",
+)
+_TYPO_KEYWORDS = tuple(kw for kw in _MARKER_KEYWORDS if len(kw) >= 7)
+_SUSPECT_BRACKET_RE = re.compile(
+    r"(?m)^[ \t]*" + _DECOR + r"(?:\*\*|__)?[ \t]*\[([^\]\n]{1,160})\]",
+)
+
+
+def _edit_distance_le(a: str, b: str, cap: int = 2) -> bool:
+    """Levenshtein distance(a, b) <= cap, early-exit once exceeded (#12624)."""
+    if abs(len(a) - len(b)) > cap:
+        return False
+    prev = list(range(len(b) + 1))
+    for i, ca in enumerate(a, 1):
+        cur = [i]
+        best = i
+        for j, cb in enumerate(b, 1):
+            v = min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (0 if ca == cb else 1))
+            cur.append(v)
+            if v < best:
+                best = v
+        if best > cap:
+            return False
+        prev = cur
+    return prev[-1] <= cap
+
+
+def _find_suspected_typo_markers(payload: dict) -> list[dict]:
+    """Near-miss bracket tokens that look like markers but are never read (#12624).
+
+    WARN-only companion of `_find_malformed_markers`, for the OTHER half of
+    the same silence: that lint catches keyword-without-brackets, this one
+    catches bracket-without-exact-keyword (typo or annotation). Fenced blocks
+    are masked for the same reason -- a quoted near-miss in an arbitration
+    comment is a citation, not a claim attempt.
+    """
+    found: list[dict] = []
+    for c in payload.get("comments", []):
+        body = c.get("body") or ""
+        author = (c.get("author") or {}).get("login")
+        for m in _SUSPECT_BRACKET_RE.finditer(_mask_fenced_blocks(body)):
+            content = m.group(1).strip()
+            upper = content.upper()
+            entry = None
+            if upper in _MARKER_KEYWORDS:
+                continue  # exact keyword: the real regex already reads it
+            words = upper.split()
+            if len(words) > 1 and words[0] in _MARKER_KEYWORDS:
+                entry = {"kind": "annotated", "keyword": words[0]}
+            elif len(upper) >= 5:
+                for kw in _TYPO_KEYWORDS:
+                    if _edit_distance_le(upper, kw):
+                        entry = {"kind": "typo", "keyword": kw}
+                        break
+            if entry is None:
+                continue
+            line = _line_for_match(body, m)
+            found.append({
+                **entry,
+                "token": f"[{content}]",
+                "line": line if len(line) <= 160 else line[:160] + "…",
+                "author": author,
+                "url": c.get("url"),
+            })
+    return found
+
+
 def _warn_bare_integer_paths(paths: list[str]) -> list[str]:
     """Return the `--paths` entries that are bare integers (#10881 trap).
 
@@ -1746,6 +1834,24 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
             f'WARN: marqueur sans crochets "{mm["marker"]}"{who} -- la forme '
             f'attendue est "[{mm["marker"]}]" ; sans crochets, l\'organe ne '
             f"le lit pas (unattributed_markers reste 0). {mm['line']}",
+            file=sys.stderr,
+        )
+    # #12624 -- near-miss bracket tokens: typo (`[CLAGED]`) or annotated
+    # (`[RELEASED claim-malformed]`). WARN-only, same contract as the
+    # bare-marker lint above -- never an event, never a verdict change.
+    suspected = _find_suspected_typo_markers(payload)
+    for sm in suspected:
+        who = f" by @{sm['author']}" if sm["author"] else ""
+        if sm["kind"] == "typo":
+            hint = f"presque \"[{sm['keyword']}]\" (distance d'edition <= 2)"
+        else:
+            hint = (
+                f'"[{sm["keyword"]}]" suivi d\'une annotation -- l\'organe ne lit '
+                f"que le mot-clef seul entre crochets"
+            )
+        print(
+            f'WARN: marqueur suspect "{sm["token"]}"{who} -- {hint} ; '
+            f"aucun evenement de claim n'est produit par cette ligne. {sm['line']}",
             file=sys.stderr,
         )
     # #10958 -- attach the dead-glob witness to every scoped event (own and
@@ -2020,6 +2126,12 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
         # the lock that never registered.
         "malformed_markers": len(malformed),
         "malformed_marker_lines": [m["line"] for m in malformed],
+        # #12624 -- near-miss bracket tokens (typo `[CLAGED]`, annotated
+        # `[RELEASED claim-malformed]`): invisible to BOTH regexes -- no event,
+        # no malformed lint -- yet the writer believes the lock is posted
+        # (incident #12329). WARN-only signal, never a verdict input.
+        "suspected_typo_markers": len(suspected),
+        "suspected_typo_marker_lines": [s["line"] for s in suspected],
         "blocked": bool(others),
         # #12322 -- query_scope is the read-mode classifier for THIS call.
         # `EPIC_WIDE_NO_PATHS_DECLARED` means the caller did not pass `--paths`

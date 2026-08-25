@@ -68,6 +68,14 @@ desormais : `.github/workflows/lane-claim-guard.yml` (`check-lane-claim-required
    precisement le geste que cette clause rend inutile : le gate
    `check-lane-claim-required` reste rouge tant que l'override n'est pas ecrit.
 
+## Formes illisibles — quasi-marqueurs et composites (#12624)
+
+Incident fondateur **#12329** : un `[CLAGED] lane … -- paths: …` (distance d'édition 1 de CLAIMED) a produit **zéro événement et zéro lint** — invisible à la fois à `_MARKER_RE` (mot-cléf exact exigé) et à `_MALFORMED_MARKER_RE` (#11239, mot-cléf SANS crochets exigé). La lane croyait son verrou posé. Le commentaire de réparation était lui-même écrit dans une troisième forme illisible (`[RELEASED claim-malformed]` annoté + `[CLAIMED]` en milieu de ligne) : **rien n'a jamais été lu**.
+
+10. **Le compose CANONIQUE reste valide.** Un commentaire portant plusieurs marqueurs — un par ligne, mot-cléf seul entre crochets (`[RELEASED] lane X` puis `[CLAIMED] lane X -- paths: …`) — est la forme d'arbitrage documentée de #10881 : le réducteur la réduit correctement (dernier marqueur actif). Ne pas la refuser.
+11. **Le geste de réparation d'un marqueur raté = un NOUVEAU commentaire canonique.** Pas un crochet annoté (`[RELEASED claim-malformed]`), pas un re-claim en milieu de ligne après de la prose : la regex ne lit que le mot-cléf **seul entre crochets, en tête de ligne** (décoration `#>*+-…` tolérée). Si le marqueur raté a pu passer pour un claim, le premier commentaire de réparation commence par `[RELEASED] lane <machine:workspace>` sur sa propre ligne, puis le `[CLAIMED]` canonique.
+12. **`suspected_typo_markers` signale, ne corrige jamais** (#12624). `check_lane_claim.py` WARN sur stderr + clé JSON `suspected_typo_markers` : crochet en tête de ligne dont le contenu est (a) un quasi-mot-cléf (distance d'édition ≤ 2, mots-cléfs de longueur ≥ 7 — `[CLAGED]`, `[CANCELED]`, `[RELEASE]`) ou (b) un mot-cléf exact suivi d'une annotation (`[RELEASED claim-malformed]`). WARN-only : jamais un événement, jamais un verdict — la lane voit que son verrou n'a pas été enregistré.
+
 ## Ce que cette regle ne fait pas
 
 Elle ne sanctionne aucune lane : dans l'incident fondateur, les deux workers avaient passe leurs gardes correctement — le **signal** etait defaillant, pas leur discipline. Lever un claim = commentaire explicite (`[RELEASED]` ou livraison de la PR) ; un claim d'une lane morte > 48 h sans commit ni PR se re-arbitre par le coordinateur, pas par auto-service.
@@ -77,4 +85,4 @@ Elle ne sanctionne aucune lane : dans l'incident fondateur, les deux workers ava
 - [proactive-coordination.md](proactive-coordination.md) — L898 collision guard (complementaire : PRs deja poussees) ; regle 5 pool global
 - [coordinator-discipline.md](coordinator-discipline.md) — R3 lanes independantes, R5 steer qui ATTEINT
 - [variation-protocol.md](variation-protocol.md) — le tag `Grain:`/`lane` que `check_lane_claim.py` sait extraire (#9485 single-reader)
-- Issue #9774 (diagnostic + mandat) · PR #9775 (organe) · Issue #10223 (gate bloquant `lane-claim-guard.yml` + marqueur `[OVERRIDE]`)
+- Issue #9774 (diagnostic + mandat) · PR #9775 (organe) · Issue #10223 (gate bloquant `lane-claim-guard.yml` + marqueur `[OVERRIDE]`) · Issue #12624 (quasi-marqueurs `suspected_typo_markers`)

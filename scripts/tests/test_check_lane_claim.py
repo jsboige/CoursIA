@@ -3731,6 +3731,139 @@ def test_malformed_marker_lint_still_fires_unfenced():
     assert len(found) == 1 and found[0]["marker"] == "CLAIMED"
 
 
+# --- #12624: suspected-typo marker lint ---------------------------------------
+# Incident #12329 : `[CLAGED] lane ... -- paths: ...` -- crochet + distance
+# d'edition 1 de CLAIMED. Invisible aux DEUX regexes (`_MARKER_RE` exige le
+# mot-clef exact, `_MALFORMED_MARKER_RE` l'exige SANS crochets) : 0 evenement,
+# 0 lint, la lane croit son verrou pose. Le commentaire de reparation etait
+# lui-meme ecrit dans une troisieme forme illisible (`[RELEASED claim-malformed]`
+# + `[CLAIMED] en milieu de ligne). WARN-only, jamais corrige automatiquement.
+
+
+def test_typo_marker_incident_line_surfaces(capsys):
+    # La forme verbatim du commentaire d'incident #12329 (16:03:42Z).
+    p = payload(comment(
+        "[CLAGED] lane myia-po-2024:CoursIA-2 -- grain DEEP/lean, "
+        "prev: DEEP/lean c.1331p384 PR #12337 -- paths: "
+        "MyIA.AI.Notebooks/GameTheory/social_choice_lean/**",
+        "2026-08-09T16:03:42Z", author="myia-po-2024"))
+    rc = clc._run_check(p, "myia-po-2026:CoursIA")
+    captured = capsys.readouterr()
+    assert rc == 0                          # WARN-only, never blocks
+    assert '"suspected_typo_markers": 1' in captured.out
+    assert 'WARN: marqueur suspect "[CLAGED]"' in captured.err
+    assert "CLAIMED" in captured.err        # le mot-clef vise est nomme
+    # Le silence d'origine est documente par le meme payload : l'evenement
+    # ne s'est JAMAIS produit.
+    evs = clc._parse_claim_events(p["comments"][0])
+    assert evs == [], "le quasi-marqueur ne doit toujours pas produire d'evenement"
+
+
+def test_annotated_bracket_marker_surfaces(capsys):
+    # La forme verbatim du commentaire de REPARATION #12329 (16:03:47Z) : le
+    # mot-clef exact suivi d'une annotation dans le crochet -- ni la regex
+    # d'evenement ni le re-claim en milieu de ligne ne sont lus.
+    p = payload(comment(
+        "[RELEASED claim-malformed] ignore le marqueur precedent qui "
+        "contenait [CLAGED] (typo). Re-claim ici : [CLAIMED] lane "
+        "myia-po-2024:CoursIA-2 -- paths: "
+        "MyIA.AI.Notebooks/GameTheory/social_choice_lean/**",
+        "2026-08-09T16:03:47Z", author="myia-po-2024"))
+    rc = clc._run_check(p, "myia-po-2026:CoursIA")
+    captured = capsys.readouterr()
+    assert rc == 0
+    # Le crochet annote en tete de ligne est signale...
+    assert '"suspected_typo_markers": 1' in captured.out
+    assert 'WARN: marqueur suspect "[RELEASED claim-malformed]"' in captured.err
+    # ...et le commentaire reste muet cote evenements (la reparation n'a
+    # JAMAIS enregistre de re-claim : les deux marqueurs sont hors-forme).
+    evs = clc._parse_claim_events(p["comments"][0])
+    assert evs == []
+
+
+def test_canonical_composite_is_not_suspected_and_produces_events(capsys):
+    # Arbitrage #12624 : le compose CANONIQUE (un marqueur par ligne, mot-clef
+    # seul entre crochets) reste la forme d'arbitrage documentee (#10881) -- il
+    # reduit correctement (dernier marqueur actif) et ne doit PAS etre signale.
+    body = (
+        "[RELEASED] lane myia-po-2024:CoursIA-2\n"
+        "[CLAIMED] lane myia-po-2024:CoursIA-2 -- paths: "
+        "MyIA.AI.Notebooks/GameTheory/social_choice_lean/**"
+    )
+    p = payload(comment(body, "2026-08-09T16:03:47Z", author="myia-po-2024"))
+    rc = clc._run_check(p, "myia-po-2026:CoursIA")
+    captured = capsys.readouterr()
+    assert rc != 0                          # le claim scoped d'AUTRUI bloque (comportement attendu)
+    assert '"suspected_typo_markers": 0' in captured.out
+    evs = clc._parse_claim_events(p["comments"][0])
+    assert [(e.marker, e.lane) for e in evs] == [
+        ("RELEASED", "myia-po-2024:CoursIA-2"),
+        ("CLAIMED", "myia-po-2024:CoursIA-2"),
+    ]
+
+
+def test_prose_brackets_are_not_suspected(capsys):
+    # `[NOTE]`/`[CODE]` : distance d'edition > 2 de tout mot-clef long (DONE
+    # est exclu du set typo -- un mot de 4 lettres a distance 2 de DONE est de
+    # la prose ordinaire, une classe de bruit pur).
+    body = "[NOTE] precision pour la review\n[CODE] bloc exemple"
+    p = payload(comment(body, "2026-08-09T16:00:00Z"))
+    rc = clc._run_check(p, "myia-po-2026:CoursIA")
+    captured = capsys.readouterr()
+    assert rc == 0
+    assert '"suspected_typo_markers": 0' in captured.out
+    assert "marqueur suspect" not in captured.err
+
+
+def test_exact_marker_and_fenced_near_miss_not_suspected(capsys):
+    # (a) un marqueur exact reste un vrai marqueur (deja lu, pas un suspect) ;
+    # (b) un quasi-marqueur CITE dans un fence est une citation, pas une
+    # tentative de claim -- meme contrat que #11239/#10881.
+    body = (
+        "[CLAIMED] lane myia-po-2026:CoursIA\n"
+        "```\n"
+        "[CLAGED] lane myia-po-2024:CoursIA-2 -- paths: a/**\n"
+        "```\n"
+    )
+    p = payload(comment(body, "2026-08-09T16:00:00Z"))
+    rc = clc._run_check(p, "myia-po-2026:CoursIA")
+    captured = capsys.readouterr()
+    assert rc == 0
+    assert '"suspected_typo_markers": 0' in captured.out
+    assert "marqueur suspect" not in captured.err
+
+
+def test_edit_distance_units():
+    for a, b, want in [
+        ("CLAGED", "CLAIMED", True),    # l'incident
+        ("CALIMED", "CLAIMED", True),   # transposition de lettres
+        ("CANCELED", "CANCELLED", True),# orthographe americaine, 1 L
+        ("OVERRID", "OVERRIDE", True),
+        ("RELEASE", "RELEASED", True),
+        ("DELIVER", "DELIVERED", True),
+        ("CLAIM", "CLAIMED", True),     # 2 deletions
+        ("BLOCK", "CLAIMED", False),
+        ("REVIEW", "RELEASED", False),
+        ("CONTENT", "CLAIMED", False),
+    ]:
+        got = clc._edit_distance_le(a, b)
+        assert got == want, (a, b, got, want)
+
+
+def test_typo_lint_reports_author_and_verbatim_line(capsys):
+    p = payload(comment(
+        "[CALIMED] lane myia-po-2025:CoursIA -- grain doc",
+        "2026-08-09T16:00:00Z", author="myia-po-2025",
+        url="https://api.github.com/repos/jsboige/CoursIA/issues/comments/1"))
+    found = clc._find_suspected_typo_markers(p)
+    assert len(found) == 1
+    assert found[0]["kind"] == "typo"
+    assert found[0]["keyword"] == "CLAIMED"
+    assert found[0]["author"] == "myia-po-2025"
+    assert "[CALIMED]" in found[0]["line"]
+    assert found[0]["url"].endswith("/comments/1")
+
+
 def test_fence_mask_preserves_offsets_for_verbatim_line_extraction():
     # Le masque doit conserver la longueur caractere pour caractere : les
     # offsets des matches sont relus sur le corps ORIGINAL par
