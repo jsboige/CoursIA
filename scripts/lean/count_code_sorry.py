@@ -228,17 +228,23 @@ def _is_en_mirror(path: Path) -> bool:
 
 
 def discover_lakes(root: Path) -> list[Path]:
-    """Return own lake roots (dirs containing a ``lakefile.lean``), sorted.
+    """Return own lake roots (dirs containing a lakefile), sorted.
+
+    A lakefile is ``lakefile.lean`` OR ``lakefile.toml`` (#13137): anchoring
+    only on the .lean variant silently dropped toml-configured lakes with an
+    arbitrary name (lean_game_defs, lean_game_defs_ext) from the global
+    denominator. A root carrying both anchors is deduplicated below.
 
     Falls back to ``*_lean`` directories without a lakefile (legacy lakes whose
     lakefile was removed when absorbed, e.g. absorbed into game_theory_lean).
     """
     lakes: list[Path] = []
-    for lakefile in root.rglob("lakefile.lean"):
-        lake_root = lakefile.parent
-        if _is_excluded(lake_root):
-            continue
-        lakes.append(lake_root)
+    for anchor in ("lakefile.lean", "lakefile.toml"):
+        for lakefile in root.rglob(anchor):
+            lake_root = lakefile.parent
+            if _is_excluded(lake_root):
+                continue
+            lakes.append(lake_root)
     # Legacy absorbed lakes: directories named *_lean without a lakefile but
     # containing own .lean files. Surfaced so dead-path references stay visible.
     for candidate in root.rglob("*_lean"):
