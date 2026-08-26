@@ -36,6 +36,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          filter: blob:none
 
       - name: Python setup
         uses: actions/setup-python@v5
