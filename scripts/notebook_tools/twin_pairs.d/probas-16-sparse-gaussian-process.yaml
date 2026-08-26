@@ -42,7 +42,7 @@
       reason: "#13044 : le bras scalable PyMC est desormais EXECUTE (section 6, pm.gp.HSGP
         m=[10,10]/[20,20] a N=200 puis m=[20,20] a N=1200, NUTS + conditional + PPC, temps
         et OOS mesures) -- le notebook n'executait auparavant que le GP dense Latent. Cote
-        C# inchange (SparseGP basis set, deja execute). Rebaseline python_sha uniquement.
+        C# inchange (SparseGP basis set, deja execute). Rebaseline python_sha uniquement."
   known_differences:
   - 'Socle pedagogique commun : GP scalable REELLEMENT EXECUTE des deux cotes, par deux familles
     d''approximation : C# Infer.NET = points induits (SparseGP basis set, 4 inducteurs vs full, section 7) ;
