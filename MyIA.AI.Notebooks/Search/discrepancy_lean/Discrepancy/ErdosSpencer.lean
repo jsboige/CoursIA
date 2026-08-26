@@ -1095,4 +1095,174 @@ theorem prob_tail_ge_of_isColoring {n : ℕ} (c : Fin n → ℤ) (hc : IsColorin
 
 end Moments
 
+/-!
+## Boute p2 - familles de tirages independants
+
+L'etape familles aleatoires d'Erdos-Spencer : m tirages independants
+de n pieces forment l'espace Fin m -> Fin n -> Bool. L'esperance s'y
+calcule en reutilisant le kernel PacLearning au-dessus de la distribution
+produit coinDist (le poids d'un n-echantillon, vu comme une
+Distribution (Fin n -> Bool) a part entiere). Le lemme cle est
+l'independance des blocs (Fubini discret, via Fintype.prod_sum) :
+E[prod_k f k (F k)] = prod_k E[f k]. Combinee a la minoration de queue
+d'un tirage isole (prob_tail_ge_of_isColoring), elle donne : une famille
+de m tirages contient un tirage de grande somme avec probabilite
+>= 1 - (11/12)^m - l'ingredient familles du second passage
+probabiliste (p3 : union bound sur les 2^n colorations).
+-/
+
+section Families
+
+open PacLearning
+
+/-- **Distribution produit** : un n-echantillon de pieces equitables,
+vu comme une Distribution (Fin n -> Bool) a part entiere (poids =
+sampleWeight fairCoin). Emboiter sampleExpect coinDist au-dessus
+modelise une famille de m tirages independants - l'espace des
+familles aleatoires d'Erdos-Spencer. -/
+noncomputable def coinDist {n : ℕ} : Distribution (Fin n → Bool) where
+  weight := sampleWeight fairCoin
+  nonneg := sampleWeight_nonneg (D := fairCoin)
+  sum_one := sampleWeight_sum_one (D := fairCoin) n
+
+/-- **Esperance sur les familles** : m tirages independants de n
+pieces (loi produit coinDist^m). -/
+noncomputable def familyExpect {m n : ℕ} (g : (Fin m → Fin n → Bool) → ℝ) : ℝ :=
+  sampleExpect coinDist g
+
+/-- **Independance des blocs (Fubini discret)** : l'esperance, sur les
+familles, d'un produit de fonctions dependant chacune d'un seul tirage
+F k se factorise en le produit des esperances. C'est ce lemme qui rend
+les m tirages independants ; il decoule de la distributivite
+produit/somme (Fintype.prod_sum) appliquee aux poids produits. -/
+theorem familyExpect_prod_blocks {m n : ℕ} (f : Fin m → (Fin n → Bool) → ℝ) :
+    familyExpect (fun F => ∏ k, f k (F k)) =
+      ∏ k, sampleExpect fairCoin (f k) := by
+  show ∑ F : Fin m → Fin n → Bool,
+      (∏ k, sampleWeight fairCoin (F k)) * ∏ k, f k (F k) = _
+  calc ∑ F : Fin m → Fin n → Bool,
+        (∏ k, sampleWeight fairCoin (F k)) * ∏ k, f k (F k)
+      = ∑ F : Fin m → Fin n → Bool,
+          ∏ k, sampleWeight fairCoin (F k) * f k (F k) :=
+        Finset.sum_congr rfl fun F _ => Finset.prod_mul_distrib.symm
+    _ = ∏ k : Fin m, ∑ S : Fin n → Bool, sampleWeight fairCoin S * f k S :=
+        (Fintype.prod_sum fun (k : Fin m) (S : Fin n → Bool) =>
+          sampleWeight fairCoin S * f k S).symm
+    _ = ∏ k, sampleExpect fairCoin (f k) := by
+        simp only [PacLearning.sampleExpect]
+
+/-- **Additivite** de l'esperance sur les familles (complement kernel,
+meme preuve que sampleExpect_add). -/
+theorem familyExpect_add {m n : ℕ} (g h : (Fin m → Fin n → Bool) → ℝ) :
+    familyExpect (fun F => g F + h F) = familyExpect g + familyExpect h := by
+  simp only [familyExpect, PacLearning.sampleExpect, mul_add,
+    Finset.sum_add_distrib]
+
+/-- **Normalisation** : l'esperance famille de la constante 1 vaut 1
+(la masse totale des familles vaut 1). -/
+theorem familyExpect_one {m n : ℕ} :
+    familyExpect (fun _ : Fin m → Fin n → Bool => (1 : ℝ)) = 1 := by
+  simp only [familyExpect, PacLearning.sampleExpect, mul_one]
+  exact sampleWeight_sum_one (D := coinDist) m
+
+/-- **Probabilite d'un evenement sur les familles** (cadre R-weight,
+meme convention que probEvt). -/
+noncomputable def familyProb {m n : ℕ} (P : (Fin m → Fin n → Bool) → Prop)
+    [DecidablePred P] : ℝ :=
+  familyExpect (fun F => if P F then 1 else 0)
+
+/-- **Loi du complementaire sur les familles** : toute famille est soit
+dans l'evenement, soit dans son complementaire (les indicatrices se
+completent en 1). -/
+theorem familyProb_compl {m n : ℕ} (P : (Fin m → Fin n → Bool) → Prop)
+    [DecidablePred P] :
+    familyProb P + familyProb (fun F => ¬ P F) = 1 := by
+  have hfun : (fun F : Fin m → Fin n → Bool =>
+        (if P F then (1 : ℝ) else 0) + (if ¬ P F then (1 : ℝ) else 0)) =
+      (fun _ : Fin m → Fin n → Bool => (1 : ℝ)) := by
+    funext F
+    by_cases hF : P F
+    · simp only [if_pos hF, if_neg (fun h : ¬ P F => h hF), add_zero]
+    · simp only [if_neg hF, if_pos hF, zero_add]
+  show familyExpect (fun F => if P F then (1 : ℝ) else 0) +
+      familyExpect (fun F => if ¬ P F then (1 : ℝ) else 0) = 1
+  rw [← familyExpect_add, hfun]
+  exact familyExpect_one
+
+/-- **Minoration de queue pour les familles** : si un tirage isole
+atteint Z_S^2 >= n/2 avec probabilite >= 1/12 (boute p1b-PZ-2), alors
+une famille de m tirages independants en contient au moins un avec
+probabilite >= 1 - (11/12)^m. Preuve : la probabilite du complementaire
+(aucun tirage n'atteint le seuil) est l'esperance d'un produit
+d'indicatrices, qui se factorise par independance des blocs en
+(11/12)^m. -/
+theorem family_tail_ge {m n : ℕ} (c : Fin n → ℤ) (hc : IsColoring c) (hn : 1 ≤ n) :
+    1 - (11 / 12 : ℝ) ^ m ≤
+      familyProb (fun F => ∃ k : Fin m, (n : ℝ) / 2 ≤
+        rademacherSum c (F k) * rademacherSum c (F k)) := by
+  classical
+  set A : (Fin n → Bool) → Prop :=
+    fun S => (n : ℝ) / 2 ≤ rademacherSum c S * rademacherSum c S with hA
+  have hptail : (1 : ℝ) / 12 ≤ probEvt A := prob_tail_ge_of_isColoring c hc hn
+  -- Facteur : E[1_Ac] = 1 - P[A] <= 11/12 (scission de la constante 1)
+  have hfactor : sampleExpect fairCoin (fun S => if A S then (0 : ℝ) else 1)
+      ≤ 11 / 12 := by
+    have hsplit1 := sampleExpect_split_indicator (fun _ : Fin n → Bool => (1 : ℝ)) A
+    have hL : sampleExpect fairCoin (fun _ : Fin n → Bool => (1 : ℝ)) = 1 := by
+      rw [PacLearning.sampleExpect_const]
+    have hAind : sampleExpect fairCoin (fun S => if A S then (1 : ℝ) else 0)
+        = probEvt A := rfl
+    have hG : sampleExpect fairCoin (fun S => if ¬ A S then (1 : ℝ) else 0) =
+        sampleExpect fairCoin (fun S => if A S then (0 : ℝ) else 1) := by
+      congr 1
+      funext S
+      by_cases hS : A S
+      · simp only [if_neg (fun h : ¬ A S => h hS), if_pos hS]
+      · simp only [if_pos hS, if_neg hS]
+    rw [hL, hAind, hG] at hsplit1
+    linarith
+  have hgnn : 0 ≤ sampleExpect fairCoin (fun S => if A S then (0 : ℝ) else 1) := by
+    apply PacLearning.sampleExpect_nonneg
+    intro S
+    by_cases hS : A S
+    · simp only [if_pos hS, le_refl]
+    · simp only [if_neg hS]
+      norm_num
+  -- Complementaire : P[aucun tirage] = E[prod_k 1_Ac(F k)] = prod E[1_Ac] <= (11/12)^m
+  have hfun : (fun F : Fin m → Fin n → Bool => if ¬ ∃ k : Fin m, A (F k) then (1 : ℝ) else 0) =
+      (fun F => ∏ k, (if A (F k) then (0 : ℝ) else 1)) := by
+    funext F
+    by_cases hE : ∃ k : Fin m, A (F k)
+    · rw [if_neg (fun h : ¬ ∃ k : Fin m, A (F k) => h hE)]
+      obtain ⟨k₀, hk₀⟩ := hE
+      refine Eq.symm (Finset.prod_eq_zero (Finset.mem_univ k₀) ?_)
+      rw [if_pos hk₀]
+    · rw [if_pos hE]
+      exact (calc ∏ k, (if A (F k) then (0 : ℝ) else 1) = ∏ k : Fin m, (1 : ℝ) :=
+          Finset.prod_congr rfl fun k _ =>
+            if_neg fun hk : A (F k) => hE ⟨k, hk⟩
+        _ = 1 := Finset.prod_const_one).symm
+  have hblocks : familyExpect (fun F => ∏ k, (if A (F k) then (0 : ℝ) else 1)) =
+      ∏ k, sampleExpect fairCoin (fun S => if A S then (0 : ℝ) else 1) :=
+    familyExpect_prod_blocks fun _ : Fin m => fun S => if A S then (0 : ℝ) else 1
+  have hcompl : familyExpect (fun F => if ¬ ∃ k : Fin m, A (F k) then (1 : ℝ) else 0)
+      ≤ (11 / 12 : ℝ) ^ m := by
+    rw [hfun, hblocks]
+    calc ∏ k : Fin m, sampleExpect fairCoin (fun S => if A S then (0 : ℝ) else 1)
+        ≤ ∏ k : Fin m, (11 / 12 : ℝ) :=
+          Finset.prod_le_prod (fun k _ => hgnn) fun k _ => hfactor
+      _ = (11 / 12 : ℝ) ^ m := by
+          rw [Finset.prod_const, Finset.card_univ, Fintype.card_fin]
+  have hlaw : familyExpect (fun F => if ∃ k : Fin m, A (F k) then (1 : ℝ) else 0) +
+      familyExpect (fun F => if ¬ ∃ k : Fin m, A (F k) then (1 : ℝ) else 0) = 1 :=
+    familyProb_compl (fun F => ∃ k : Fin m, A (F k))
+  have hgoal : 1 - (11 / 12 : ℝ) ^ m ≤
+      familyProb (fun F => ∃ k : Fin m, A (F k)) := by
+    show 1 - (11 / 12 : ℝ) ^ m ≤
+      familyExpect (fun F => if ∃ k : Fin m, A (F k) then (1 : ℝ) else 0)
+    linarith
+  exact hgoal
+
+end Families
+
 end Discrepancy
