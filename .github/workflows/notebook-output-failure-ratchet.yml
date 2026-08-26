@@ -18,13 +18,13 @@ name: Notebook Output Failure Ratchet
 # already carrying such text on main (measured 2026-08-19) never enter the
 # diff, so the gate is green on main from day one. A notebook ADDED by the
 # branch has no baseline and is reported advisory, never gated.
+
+# ABSORBE PAR LA VOIE RAPIDE sur `pull_request` (#12567, tranche 2) : le
+# verdict PR est rendu par `fast-lane-shadow.yml` (check-run nomme
+# `Output-failure ratchet (base vs PR)`, meme nom que ce job). Ce fichier
+# garde `workflow_dispatch`. Les `paths:` d'origine vivent dans
+# `scripts/ci/fast_lane_registry.py` (TRANCHE2).
 on:
-  pull_request:
-    branches: [main]
-    paths:
-      - '**.ipynb'
-      - 'scripts/notebook_tools/check_output_failure_text.py'
-      - '.github/workflows/notebook-output-failure-ratchet.yml'
   workflow_dispatch:
     inputs:
       base_ref:
@@ -47,6 +47,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          filter: blob:none
 
       - name: Set up Python
         uses: actions/setup-python@v5

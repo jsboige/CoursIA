@@ -85,8 +85,11 @@ Le quatrième notebook pose la question d'avant toute analyse de recollement : q
 ### Environnement Python
 
 ```bash
-# Automated setup (creates conda env + registers kernel)
+# Setup automatise (cree l'env conda + enregistre le kernel)
+# Windows (PowerShell) :
 powershell -File scripts/setup_pyphi_env.ps1
+# macOS/Linux :
+bash scripts/setup_pyphi_env.sh
 
 # Manual setup (Python 3.9 required for PyPhi 1.2.0)
 conda create --name pyphi python=3.9 -y
@@ -313,7 +316,8 @@ IIT/
 │   └── README.md               # Documentation de la série ICT
 ├── requirements.txt            # Dépendances Python (partagées IIT + ICT)
 ├── scripts/
-│   ├── setup_pyphi_env.ps1     # Setup conda env + kernel (partagé IIT + ICT)
+│   ├── setup_pyphi_env.ps1     # Setup conda env + kernel — Windows (partagé IIT + ICT)
+│   ├── setup_pyphi_env.sh      # Setup conda env + kernel — macOS/Linux (jumeau)
 │   └── build_notebook.py       # Script de construction notebook 2
 └── README.md                   # Cette documentation
 ```
