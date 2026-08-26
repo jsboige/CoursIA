@@ -69,7 +69,7 @@ def git_ls_tree_tracked(relpath: str, repo_root: pathlib.Path) -> bool:
             ["git", "ls-tree", "HEAD", "--", relpath],
             cwd=str(repo_root),
             capture_output=True,
-            text=True,
+            text=True, encoding="utf-8", errors="replace",
             check=False,
         )
     except FileNotFoundError:
@@ -84,7 +84,7 @@ def git_check_ignore(relpath: str, repo_root: pathlib.Path) -> bool:
             ["git", "check-ignore", relpath],
             cwd=str(repo_root),
             capture_output=True,
-            text=True,
+            text=True, encoding="utf-8", errors="replace",
             check=False,
         )
     except FileNotFoundError:
