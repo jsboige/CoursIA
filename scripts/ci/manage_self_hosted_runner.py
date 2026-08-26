@@ -338,11 +338,23 @@ def _minimal_env(extra: Mapping[str, str] | None = None) -> dict[str, str]:
 
 
 def _run_powershell(script: str, env: Mapping[str, str], run: CommandRunner) -> None:
-    completed = run(
-        ["pwsh", "-NoLogo", "-NoProfile", "-NonInteractive", "-Command", "-"],
-        input=script, capture_output=True, text=True, encoding="utf-8",
-        env=_minimal_env(env), check=False,
-    )
+    # Delivery via temp file + -File, never `-Command -` over stdin: pwsh
+    # silently stops executing a stdin command block at a PowerShell
+    # here-string (@'...'@) and still exits 0, which turned every apply
+    # script below into a silent no-op reported as success.
+    with tempfile.NamedTemporaryFile(
+        "w", suffix=".ps1", delete=False, encoding="utf-8"
+    ) as handle:
+        handle.write(script)
+        script_path = handle.name
+    try:
+        completed = run(
+            ["pwsh", "-NoLogo", "-NoProfile", "-NonInteractive", "-File", script_path],
+            capture_output=True, text=True, encoding="utf-8",
+            env=_minimal_env(env), check=False,
+        )
+    finally:
+        Path(script_path).unlink(missing_ok=True)
     if completed.returncode != 0:
         detail = (completed.stderr or completed.stdout or "PowerShell failed").strip()
         raise Refused(detail.replace(os.environ.get(ACCOUNT_PASSWORD_ENV, "\0"), "[REDACTED]"))
