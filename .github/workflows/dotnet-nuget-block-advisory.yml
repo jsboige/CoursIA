@@ -59,6 +59,7 @@ jobs:
         with:
           # Need base..head history for `git diff` of changed notebooks.
           fetch-depth: 0
+          filter: blob:none
 
       - name: Set up Python
         uses: actions/setup-python@v5
