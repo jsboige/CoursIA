@@ -280,7 +280,7 @@ def swMech (rr rc : T) (tr tc : T) : ℕ := sw (mech rr rc) tr tc
     révélation (rapporter a' est strictement dominant), M₁ choisit toujours o1. -/
 def M1 : T → T → O := fun _ _ => .o1
 
-/-! ### Caractéristique 1 : a' est strictement dominant ; M₁ est truthful -/
+/-! ### Dominance stricte du rapport a' ; M₁ est truthful (principe de révélation) -/
 
 /-- Rapporter a' est strictement dominant pour l'agent row, quel que soit son
     vrai type, le rapport de l'autre, et pour les deux mécanismes (mech et M₁) —

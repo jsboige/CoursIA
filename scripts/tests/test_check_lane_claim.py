@@ -5126,4 +5126,203 @@ def test_12811_git_ls_files_utf8_paths():
     assert any('test' in ln for ln in lines)
 
 
-from pathlib import Path
+# --- CLAIMED-AMEND recognised as replacing-open (#13022) ----------------------
+# Measured on #11703: po-2027's `[CLAIMED-AMEND] ... -- paths: <8 globs>` (union
+# of two scopes, 2026-08-25T22:36Z) was a no-op for `_MARKER_RE` -- the organ
+# kept crediting the earlier `[CLAIMED]` and the amendment existed only for
+# human eyes, forcing a canonical re-[CLAIMED] as workaround. The chosen
+# semantics (option A of the issue): CLAIMED-AMEND is an OPEN action, so in the
+# walk-order reducer it REPLACES the lane's previous claim -- the amend line
+# must carry the FULL corrected scope (union), exactly like the workaround it
+# supersedes.
+
+def test_parse_claimed_amend_open_with_single_line_paths_clause():
+    # The exact #11703 workaround-replacement shape: marker, lane, and the
+    # complete union scope on ONE line (`paths:` clause is single-line by
+    # design, #12072 documents the off-marker alternative as signal-only).
+    ev = clc.parse_claim_event(comment(
+        "[CLAIMED-AMEND] lane myia-po-2027:CoursIA-2 -- paths: "
+        "MyIA.AI.Notebooks/ML/learning_theory_lean/**, "
+        "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1b-*.ipynb",
+        "2026-08-25T23:28:41Z",
+    ))
+    assert ev is not None
+    assert ev.marker == "CLAIMED-AMEND"
+    assert ev.is_open is True
+    assert ev.lane == "myia-po-2027:CoursIA-2"
+    assert ev.paths is not None
+    assert len(ev.paths) == 2
+    assert ev.paths[0] == "MyIA.AI.Notebooks/ML/learning_theory_lean/**"
+
+
+def test_amend_mono_scope_replaces_previous_scope():
+    # Acceptance: amendement mono-scope. A later CLAIMED-AMEND with a single
+    # new path REPLACES the lane's earlier scope in the active state.
+    events = [
+        clc.parse_claim_event(comment(
+            "[CLAIMED] lane A:CoursIA -- paths: notebooks/old/**",
+            "2026-08-25T05:56:00Z")),
+        clc.parse_claim_event(comment(
+            "[CLAIMED-AMEND] lane A:CoursIA -- paths: notebooks/new/**",
+            "2026-08-25T06:08:00Z")),
+    ]
+    active, _ = clc.compute_active_claims(events)
+    assert set(active) == {"A:CoursIA"}
+    assert active["A:CoursIA"].paths == ["notebooks/new/**"]
+
+
+def test_amend_union_of_two_scopes():
+    # Acceptance: union de deux scopes de la meme lane. The amend line carries
+    # the union -- the resulting active scope covers BOTH globs (this is the
+    # preflight-#13012 shape that motivated the issue).
+    events = [
+        clc.parse_claim_event(comment(
+            "[CLAIMED] lane A:CoursIA -- paths: notebooks/a/**",
+            "2026-08-25T05:56:00Z")),
+        clc.parse_claim_event(comment(
+            "[CLAIMED-AMEND] lane A:CoursIA -- paths: notebooks/a/**, notebooks/b/**",
+            "2026-08-25T22:36:00Z")),
+    ]
+    active, _ = clc.compute_active_claims(events)
+    assert active["A:CoursIA"].paths == ["notebooks/a/**", "notebooks/b/**"]
+
+
+def test_amend_exposes_amended_scope_in_active_claims():
+    # Acceptance: the LAST active event must expose the amended scope (marker
+    # + paths) in the active_claims mapping the check consumes.
+    events = [
+        clc.parse_claim_event(comment(
+            "[CLAIMED] lane B:CoursIA-2 -- paths: notebooks/first/**",
+            "2026-08-25T01:08:00Z")),
+        clc.parse_claim_event(comment(
+            "[CLAIMED-AMEND] lane B:CoursIA-2 -- paths: notebooks/first/**, notebooks/second/**",
+            "2026-08-25T05:56:00Z")),
+    ]
+    active, _ = clc.compute_active_claims(events)
+    ev = active["B:CoursIA-2"]
+    assert ev.marker == "CLAIMED-AMEND"
+    assert ev.is_open is True
+    assert ev.paths == ["notebooks/first/**", "notebooks/second/**"]
+
+
+def test_amend_without_paths_replaces_with_epic_wide():
+    # Documented fail-CLOSED semantics: an amend that names no scope replaces
+    # the previous scoped claim with EPIC-WIDE (an amendment that names no
+    # scope is not permissive).
+    events = [
+        clc.parse_claim_event(comment(
+            "[CLAIMED] lane A:CoursIA -- paths: notebooks/narrow/**",
+            "2026-08-25T05:56:00Z")),
+        clc.parse_claim_event(comment(
+            "[CLAIMED-AMEND] lane A:CoursIA -- correction du scope, cf. prose",
+            "2026-08-25T22:36:00Z")),
+    ]
+    active, _ = clc.compute_active_claims(events)
+    assert active["A:CoursIA"].paths is None
+
+
+def test_amend_blocks_other_lane_on_intersecting_amended_scope(capsys):
+    # End-to-end differential: the caller's path is DISJOINT from the original
+    # scope (rc 0 pre-amend) but INTERSECTS the amended scope (rc 1 post-amend)
+    # -- the mechanical lock now follows the lane's declared intention, which
+    # was the whole point of #13022.
+    original = comment(
+        "[CLAIMED] lane myia-po-2027:CoursIA-2 -- paths: scripts/notebook_tools/**",
+        "2026-08-25T05:56:40Z",
+    )
+    amended = comment(
+        "[CLAIMED-AMEND] lane myia-po-2027:CoursIA-2 -- paths: scripts/notebook_tools/**, scripts/tests/*.py",
+        "2026-08-25T22:36:02Z",
+    )
+    caller_path = "scripts/tests/test_check_lane_claim.py"
+    rc_pre = clc._run_check(
+        payload(original), "myia-po-2023:CoursIA-2", my_paths=[caller_path]
+    )
+    assert rc_pre == 0, f"pre-amend scopes are disjoint, expected CLEAR, got rc={rc_pre}"
+    rc_post = clc._run_check(
+        payload(original, amended), "myia-po-2023:CoursIA-2", my_paths=[caller_path]
+    )
+    err = capsys.readouterr().err
+    assert rc_post == 1, (
+        f"caller intersecting the AMENDED scope must be blocked, got rc={rc_post}"
+    )
+    assert "BLOCKED: another lane holds an active claim" in err
+
+
+def test_bare_claimed_amend_bracketless_flagged_as_malformed(capsys):
+    # The #11239 lint covers the new marker too: a bracketless
+    # `CLAIMED-AMEND #N ...` line must surface as a WARN, never silently pass.
+    p = payload(comment(
+        "CLAIMED-AMEND #11703 -- lane myia-po-2027:CoursIA-2 union preflight",
+        "2026-08-25T23:00:00Z",
+    ))
+    clc._run_check(p, "myia-po-2023:CoursIA-2")
+    out = capsys.readouterr().out
+    assert "malformed" in out.lower()
+
+
+# --- repeated --paths preserve union semantics (#13057) ----------------------
+# argparse's default `store` action retained only the LAST `--paths` occurrence.
+# A real overlap therefore disappeared when the caller added any disjoint path:
+# `--paths P_in_claim` blocked, but `--paths P_in_claim --paths P_outside`
+# reached the reducer as `[P_outside]` and falsely cleared. These tests exercise
+# `main(argv)` rather than `_filter_by_claim_scope`, whose `any` semantics were
+# already correct.
+
+_CLAIMED_GUARD_PATH = "scripts/check_lane_claim.py"
+_OUTSIDE_GUARD_PATH = "scripts/check_unaddressed_nits.py"
+
+
+def _write_mixed_paths_payload(tmp_path):
+    return _write_payload(
+        payload(comment(
+            "[CLAIMED] lane myia-po-2024:CoursIA-2 -- paths: "
+            f"{_CLAIMED_GUARD_PATH}",
+            "2026-08-26T02:00:00Z",
+        ), number=13057),
+        tmp_path,
+    )
+
+
+def test_main_single_paths_occurrence_intersecting_blocks(tmp_path, capsys):
+    source = _write_mixed_paths_payload(tmp_path)
+    rc = clc.main([
+        "13057", "--lane", "myia-po-2025:CoursIA-2", "--from-json", source,
+        "--no-stale", "--paths", _CLAIMED_GUARD_PATH,
+    ])
+    captured = capsys.readouterr()
+    summary = json.loads(captured.out.split("\n\nBLOCKED", 1)[0])
+    assert rc == 1
+    assert summary["blocking_lanes"] == ["myia-po-2024:CoursIA-2"]
+    assert summary["blocked"] is True
+
+
+def test_main_repeated_paths_mixed_intersection_still_blocks(tmp_path, capsys):
+    source = _write_mixed_paths_payload(tmp_path)
+    rc = clc.main([
+        "13057", "--lane", "myia-po-2025:CoursIA-2", "--from-json", source,
+        "--no-stale", "--paths", _CLAIMED_GUARD_PATH,
+        "--paths", _OUTSIDE_GUARD_PATH,
+    ])
+    captured = capsys.readouterr()
+    assert rc == 1, (
+        "adding a disjoint --paths occurrence must not erase the intersecting "
+        f"one; stdout was:\n{captured.out}"
+    )
+    summary = json.loads(captured.out.split("\n\nBLOCKED", 1)[0])
+    assert summary["blocking_lanes"] == ["myia-po-2024:CoursIA-2"]
+    assert summary["blocked"] is True
+
+
+def test_main_repeated_paths_genuinely_disjoint_clear(tmp_path, capsys):
+    source = _write_mixed_paths_payload(tmp_path)
+    rc = clc.main([
+        "13057", "--lane", "myia-po-2025:CoursIA-2", "--from-json", source,
+        "--no-stale", "--paths", _OUTSIDE_GUARD_PATH,
+        "--paths", "scripts/variation_light_cap.py",
+    ])
+    captured = capsys.readouterr()
+    summary = json.loads(captured.out.split("\n\nCLEAR", 1)[0])
+    assert rc == 0
+    assert summary["blocking_lanes"] == []
+    assert summary["blocked"] is False
