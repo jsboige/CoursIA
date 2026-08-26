@@ -5049,3 +5049,86 @@ def test_run_check_disjoint_joker_caller_clear(capsys):
         f"disjoint joker scopes must not block each other (#10419): got rc={rc}"
     )
 
+
+
+# --- CLI argparse: repeated --paths must ACCUMULATE (not overwrite) -----------
+# #13057 -- `nargs='+'` WITHOUT `action='append'` made a second `--paths`
+# occurrence OVERWRITE the first. `--paths A --paths B` silently dropped A;
+# when A was the path INSIDE the other lane's claim scope and B was outside,
+# `my_scope` shrank to B, `_scopes_intersect` read disjoint, and the guard
+# returned CLEAR/exit 0 on a REAL collision (fail-OPEN). These tests drive the
+# real `main` (argparse layer, `--from-json` hermetic) -- the layer the bug
+# lived in and that the direct `_run_check` seam bypasses.
+
+_CLAIM_SCOPE_13057 = "scripts/check_lane_claim.py"
+_IN_SCOPE_13057 = "scripts/check_lane_claim.py"
+_OUT_SCOPE_13057 = "scripts/tests/test_fast_lane.py"
+
+
+def _scoped_claim_fixture(tmp_path, number=12735):
+    """Payload where myia-po-2024 scopes `_CLAIM_SCOPE_13057` (single path)."""
+    p = payload(
+        comment(
+            "[CLAIMED] lane myia-po-2024:CoursIA-2 -- substance -- paths: "
+            + _CLAIM_SCOPE_13057,
+            "2026-08-25T04:00:00Z",
+        ),
+        number=number,
+    )
+    fx = tmp_path / "issue.json"
+    fx.write_text(json.dumps(p), encoding="utf-8")
+    return str(fx)
+
+
+def test_main_two_paths_occurrences_in_then_out_blocks(capsys, tmp_path):
+    """The exact #13057 repro: `--paths <in-scope> --paths <out-scope>` must
+    BLOCK (exit 1). Pre-fix the second occurrence overwrote the first, the
+    in-scope path vanished, and the guard returned CLEAR on a real collision."""
+    fx = _scoped_claim_fixture(tmp_path)
+    rc = clc.main([
+        "12735", "--lane", "myia-ai-01:CoursIA", "--from-json", fx,
+        "--paths", _IN_SCOPE_13057, "--paths", _OUT_SCOPE_13057,
+    ])
+    captured = capsys.readouterr()
+    assert rc == 1, (
+        "at-least-one-path intersects -> BLOCKED; got rc=%d "
+        "(second --paths overwrote the first)" % rc
+    )
+    assert "myia-po-2024:CoursIA-2" in captured.out  # blocking_lanes names it
+
+
+def test_main_two_paths_occurrences_single_in_scope_still_blocks(capsys, tmp_path):
+    """Control leg: the single-occurrence form (already working) must keep
+    blocking -- the fix must not regress the parser for one `--paths`."""
+    fx = _scoped_claim_fixture(tmp_path)
+    rc = clc.main([
+        "12735", "--lane", "myia-ai-01:CoursIA", "--from-json", fx,
+        "--paths", _IN_SCOPE_13057,
+    ])
+    assert rc == 1, f"single in-scope path -> BLOCKED; got rc={rc}"
+
+
+def test_main_two_paths_occurrences_disjoint_clears(capsys, tmp_path):
+    """Acceptance #3: a REAL disjointness (neither occurrence intersects the
+    claim) must still CLEAR (exit 0) -- accumulation must not over-block."""
+    fx = _scoped_claim_fixture(tmp_path)
+    rc = clc.main([
+        "12735", "--lane", "myia-ai-01:CoursIA", "--from-json", fx,
+        "--paths", _OUT_SCOPE_13057, "--paths", "scripts/notebook_tools/notebook_tools.py",
+    ])
+    captured = capsys.readouterr()
+    assert rc == 0, f"truly disjoint paths -> CLEAR; got rc={rc}"
+    assert "CLEAR" in captured.out
+
+
+def test_main_three_paths_first_in_scope_blocks(capsys, tmp_path):
+    """Union semantics scale to 3 occurrences: the in-scope path buried in the
+    middle must still survive to `my_scope`."""
+    fx = _scoped_claim_fixture(tmp_path)
+    rc = clc.main([
+        "12735", "--lane", "myia-ai-01:CoursIA", "--from-json", fx,
+        "--paths", _OUT_SCOPE_13057,
+        "--paths", _IN_SCOPE_13057,
+        "--paths", "docs/reference/procedures-recurrentes.md",
+    ])
+    assert rc == 1, f"middle in-scope occurrence -> BLOCKED; got rc={rc}"

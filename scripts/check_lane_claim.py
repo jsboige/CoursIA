@@ -2636,8 +2636,11 @@ def main(argv: list[str] | None = None) -> int:
                         "behaviour: every active claim blocks, nothing is "
                         "age-filtered). The detected state is reported as "
                         "`stale_detection: \"disabled\"`.")
-    p.add_argument("--paths", metavar="PATH", nargs="+", default=None,
-                   help="path-mode (#9959): one or more file paths/globs. "
+    p.add_argument("--paths", metavar="PATH", nargs="+", action="append",
+                   default=None,
+                   help="path-mode (#9959): one or more file paths/globs; "
+                        "repeatable (#13057) -- occurrences ACCUMULATE, the "
+                        "first is never lost. "
                         "Exits 2 if any OPEN PR of a different lane (or with "
                         "an unreadable lane tag) has files[] intersecting. "
                         "Exits 0 if no collision, 1 on usage/`gh` failure. "
@@ -2666,6 +2669,14 @@ def main(argv: list[str] | None = None) -> int:
                         "blocked (#11064). Coordinator arbitration only -- "
                         "the reading side still honours [OVERRIDE] markers.")
     args = p.parse_args(argv)
+    # #13057 -- with `action="append"` each `--paths` occurrence is its own
+    # list; flatten so every downstream consumer keeps getting the single flat
+    # list they already expect. Fixes the silent fail-OPEN where a second
+    # `--paths` occurrence OVERWROTE the first (nargs='+' without append),
+    # dropping the scoped path and turning a real intersection into a disjoint
+    # read -> CLEAR.
+    if args.paths is not None:
+        args.paths = [p for occurrence in args.paths for p in occurrence]
     # #12751 -- default is 48 (measuring). `--no-stale`/threshold=None restores
     # the legacy behaviour (every claim blocks, nothing age-filtered); the
     # disabled state is reported honestly as `stale_detection: "disabled"`.
