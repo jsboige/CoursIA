@@ -33,7 +33,10 @@ REQUIRED_LABELS = {
     "coursia-ephemeral",
     "coursia-fast-guards",
 }
-SELF_HOSTED_WORKFLOW_ALLOWLIST = {"pr-gate-stale-sweep.yml"}
+SELF_HOSTED_WORKFLOW_ALLOWLIST = {
+    "pr-gate-stale-sweep.yml",
+    "windows-self-hosted-tests.yml",
+}
 GITHUB_HOSTED_LABELS = {
     "ubuntu-latest",
     "ubuntu-24.04",

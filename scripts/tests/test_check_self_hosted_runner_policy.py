@@ -21,14 +21,34 @@ def codes(result: policy.ScanResult) -> set[str]:
     return {item.code for item in result.violations}
 
 
-def test_current_repository_has_explicit_zero_self_hosted_baseline(capsys):
+def test_current_repository_self_hosted_jobs_are_explicitly_allowlisted(capsys):
+    # Baseline: every self-hosted job in the repo must be in
+    # SELF_HOSTED_WORKFLOW_ALLOWLIST and carry the exact dedicated label set.
+    # Before #13126 merged, that meant 0 self-hosted jobs. After #13126, the
+    # Windows-confinement dispatch-only runner is the single allowlisted job
+    # (see #12704 / #13126 / #13135). Adding a self-hosted job without
+    # extending the allowlist is what this assertion is built to catch.
     result = policy.scan_workflows()
     assert result.broken == []
     assert result.violations == []
-    assert result.self_hosted_jobs == 0
+    assert result.self_hosted_jobs == 1
     assert result.workflows_scanned > 0
     assert policy.main(["--check"]) == policy.EXIT_OK
-    assert "explicit baseline: 0 self-hosted jobs" in capsys.readouterr().out
+    assert "all self-hosted jobs satisfy isolation policy" in capsys.readouterr().out
+
+    # Every allowlisted workflow must contribute at least one self-hosted job
+    # to the count (otherwise the allowlist entry is dead weight).
+    workflows_dir = policy.DEFAULT_WORKFLOWS_DIR
+    counted_workflows = sorted(
+        path.name
+        for path in workflows_dir.glob("*.y*ml")
+        if "self-hosted" in path.read_text(encoding="utf-8")
+    )
+    allowlisted = set(policy.SELF_HOSTED_WORKFLOW_ALLOWLIST)
+    assert allowlisted <= set(counted_workflows), (
+        f"allowlist has stale entries (no self-hosted job found): "
+        f"{sorted(allowlisted - set(counted_workflows))}"
+    )
 
 
 def test_safe_pull_request_job_is_accepted(tmp_path):
