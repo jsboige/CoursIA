@@ -1,0 +1,30 @@
+name = "AsymmetricInformation"
+defaultTargets = ["AsymmetricInformation"]
+
+# Convention i18n EPIC #4980 (ratifiée user 04/07, pattern #6585 cf
+# lean_game_defs_ext/lakefile.toml) : `globs` (et non `roots`) pour que
+# `lake build` auto-découvre le sibling `_en` racine (miroir EN, module
+# `AsymmetricInformation_en`). Sans globs, le sibling racine EN
+# (`AsymmetricInformation_en.lean`, namespace distinct, hors
+# `AsymmetricInformation/`) n'est PAS type-checké par la CI (orphan-trap,
+# faux-green — cf conway #6678). `AsymmetricInformation.*` couvre les
+# modules imbriqués, `AsymmetricInformation_en` couvre le root aggregator
+# EN doc-only.
+#
+# IMPORTANT : le `name` du lake ET le `defaultTargets` doivent refléter le
+# **library name** (ici `AsymmetricInformation`, pas `asymmetric_information`).
+# Le library name est ce que `lake build` résout par défaut. Cf upstream
+# `lean_game_defs_ext/lakefile.toml` : `name = "lean_game_defs_ext"` mais
+# `defaultTargets = ["Bayesian"]` (le library name canonique).
+[[lean_lib]]
+name = "AsymmetricInformation"
+globs = ["AsymmetricInformation.*", "AsymmetricInformation_en"]
+
+# Pont vers le lake amont `lean_game_defs_ext` (chemin voisin). Body v4
+# #12848 (audit canonique po-2025 c.475) : ce path dep est NON négociable ;
+# les noms `LeanGameDefsExt.Bayesian` et `BayesianGame` n'existent pas et
+# sont INTERDITS dans ce scope — seuls `import Bayesian` (root aggregator
+# FR) et `import Bayesian.BNE` (bridge ciblé) sont autorisés.
+[[require]]
+name = "lean_game_defs_ext"
+path = "../lean_game_defs_ext"
