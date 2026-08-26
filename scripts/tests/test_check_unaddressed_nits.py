@@ -2089,3 +2089,117 @@ def test_13083_blocage_reel_conditionnel_a_un_override_reste_block():
     body = ("**BLOCAGE MERGE (ai-01)** — pas de merge tant que [OVERRIDE] lane "
             "n'est pas pose par le coordinateur.")
     assert mod.classify("myia-ai-01", body) == "BLOCK"
+
+# --- #13083 (2e instance) : symetrie mention/emission de l'etage lift.
+# ai-01 a mesure sur #12896 que ses DEUX commentaires de reserve (5422307622,
+# 5422312669) etaient classes None par le gate : les mentions nominales
+# (« une formule de levee conditionnelle », « une levee reelle ») et la
+# derivation flechee (« -> je merge ») eteignaient une reserve vivante, alors
+# que la mention d'une reserve ne l'emets pas (#11636 symetrique). Corps
+# EXACTS, exiges tels quels par ai-01 : « Un correctif teste sur une prose
+# reecrite pour lui plaire ne mesure rien. »
+
+FIXTURE_12896_A_BODY = (
+    "**CHANGES_REQUESTED (ai-01) — gate de sign-off, pas un desaccord sur le fond.**\n"
+    "\n"
+    "Le constat porte par cette PR est juste et je ne le conteste pas : #11900 a bien montre qu'un body d'EPIC survit a sa propre resolution, et qu'un picker delaisse remonte alors un blocage qui n'existe plus. C'est exactement la lecon [[stale-body-is-the-mechanism-of-neglect]], et elle merite d'etre consignee.\n"
+    "\n"
+    "Ce qui bloque est **la forme du support**, et il ne m'appartient pas de la lever :\n"
+    "\n"
+    "1. **CLAUDE.md §A** : « Aucun agent ne s'auto-autorise a promouvoir une regle : tout ajout a `.claude/rules/` passe par une **PR + sign-off user**. » Ce sign-off n'existe pas sur cette PR — les deux seules interventions sont un advisory `github-actions` et une self-review Hermes. Je ne peux pas me le donner a moi-meme : ce serait precisement le geste que la clause interdit.\n"
+    "\n"
+    "2. **Absence de frontmatter `paths:` = cout permanent.** Le body l'assume explicitement (« auto-chargee dans toutes les sessions »). Consequence mecanique : ce fichier entre dans le contexte de **chaque** session de **chaque** lane, pour toujours. `harness-hygiene.md` pose le tri a trois tiers — regle durable au harnais, detail en `docs/`, etat de cycle au dashboard — et rappelle que le harnais doit **referencer**, pas detailler. Une regle nee d'un incident unique (#11900) commence sa vie du cote « detail » de ce tri.\n"
+    "\n"
+    "**Trois issues me semblent possibles, et le choix revient au user, pas a moi** :\n"
+    "\n"
+    "- **(a)** sign-off user tel quel -> je merge sans autre reserve ;\n"
+    "- **(b)** le contenu descend en `docs/reference/`, et le harnais gagne **une ligne** de pointeur — meme substance, cout de contexte quasi nul ;\n"
+    "- **(c)** le contenu fusionne dans [`verify-before-claiming.md`](.claude/rules/verify-before-claiming.md), deja auto-chargee et deja porteuse de la regle « ne pas propager un claim non verifie » — dont ceci est un cas d'application plutot qu'un principe nouveau.\n"
+    "\n"
+    "Ma recommandation est **(c)**, parce qu'elle ajoute zero fichier auto-charge et range la lecon la ou un lecteur la cherchera. Mais c'est un arbitrage editorial du user.\n"
+    "\n"
+    "Je porte la question a l'arbitrage user dans mon rapport de cycle. **Reserve levable avant merge** par un sign-off user explicite, ou par la bascule vers (b) ou (c).\n"
+    "\n"
+)
+
+FIXTURE_12896_B_BODY = (
+    "**CHANGES_REQUESTED (ai-01) — re-formulation. Le commentaire precedent portait la reserve, mais desarmait le gate.**\n"
+    "\n"
+    "Mesure faite a l'instant : apres mon commentaire de reserve, `check_unaddressed_nits.py 12896` rendait `OK / aucun nit non leve`. La cause est dans **ma** prose — l'option (a) que j'enumerais se terminait par une formule de levee conditionnelle, que l'organe classe comme une levee reelle (meme famille que #12074). Une reserve qui enumere ses conditions de levee **se leve elle-meme**. Je retire donc toute formule de ce type ici.\n"
+    "\n"
+    "Deuxieme instance versee sur **#13083**, qui documentait deja qu'un blocage coordinateur echoue faute de marqueur structure.\n"
+    "\n"
+    "## La reserve, sans conditionnel\n"
+    "\n"
+    "Cette PR ajoute **un fichier auto-charge** a `.claude/rules/` (aucun frontmatter `paths:`, le body l'assume). Deux points, aucun ne portant sur le fond :\n"
+    "\n"
+    "1. **CLAUDE.md §A exige un sign-off user pour tout ajout a `.claude/rules/`.** Il est absent : les seules interventions sont un advisory `github-actions` et une self-review Hermes. Je ne peux pas me l'accorder — c'est exactement le geste que la clause interdit.\n"
+    "\n"
+    "2. **Le cout est permanent et paye par toutes les lanes.** Un fichier auto-charge entre dans le contexte de chaque session. `harness-hygiene.md` veut le harnais **succinct et referencant** ; une regle nee d'un incident unique commence du cote « detail » de ce tri.\n"
+    "\n"
+    "Le constat de fond est juste : #11900 a montre qu'un body d'EPIC survit a sa propre resolution. Il merite d'etre consigne — la question est **ou**.\n"
+    "\n"
+    "## Ce que j'ai porte a l'arbitrage user\n"
+    "\n"
+    "Trois supports possibles, decision editoriale qui ne m'appartient pas : le fichier auto-charge tel quel ; une descente en `docs/reference/` avec une ligne de pointeur au harnais ; ou une fusion dans `verify-before-claiming.md`, deja auto-chargee et deja porteuse du principe dont ceci est un cas d'application. Ma recommandation va au troisieme.\n"
+    "\n"
+    "Reserve a traiter **avant merge**, par le user.\n"
+    "\n"
+)
+
+def test_13083_controle_a_5422307622_est_bot_concern():
+    """#12896 c.5422307622 verbatim : CHANGES_REQUESTED formel + « Reserve
+    levable avant merge » + l'option « (a) sign-off user tel quel -> je merge
+    sans autre reserve ». Trois pieges pour l'ancien gate brut : le verdict en
+    tete (couvert par _formal_concern_precedes_lift), la derivation flechee
+    (couverte par _arrow_precedes), « levable » n'est pas un marqueur. Attendu
+    BOT-CONCERN — exigence ecrite d'ai-01 sur #13083."""
+    assert mod.classify("myia-ai-01", FIXTURE_12896_A_BODY) == "BOT-CONCERN"
+
+
+def test_13083_controle_b_5422312669_est_bot_concern():
+    """#12896 c.5422312669 verbatim : la re-formulation OUVERTE de la meme
+    reserve, expurgee de formules conditionnelles par ai-01 lui-meme — et
+    pourtant invisible au gate : « une formule de levee conditionnelle »,
+    « une levee reelle », « ses conditions de levee » (mentions nominales,
+    `_strip_nominal_lifts`) et « se leve elle-meme » (narration). Attendu
+    BOT-CONCERN — exigence ecrite d'ai-01 sur #13083."""
+    assert mod.classify("myia-ai-01", FIXTURE_12896_B_BODY) == "BOT-CONCERN"
+
+
+def test_13083_mention_genitive_neteint_pas_une_reserve():
+    """« conditions de levee », « formule de levee » : le genitif NOMME le
+    concept, il ne l'emets pas. Une reserve vivante qui s'accompagne d'une
+    mention genitive reste BOT-CONCERN."""
+    body = ("Reserve a traiter avant merge : l'option proposee se termine "
+            "par une formule de levee conditionnelle, ce n'est pas une levee.")
+    assert mod.classify("myia-ai-01", body) == "BOT-CONCERN"
+
+
+def test_13083_mention_article_indefini_neteint_pas_une_reserve():
+    """« une levee reelle » (article indefini + nom, c.5422312669 verbatim) :
+    classification metalinguistique, pas une emission. La reserve vit."""
+    body = ("Reserve a traiter avant merge : le gate traite a tort ceci "
+            "comme une levee reelle.")
+    assert mod.classify("myia-ai-01", body) == "BOT-CONCERN"
+
+
+def test_13083_fleche_derivation_neteint_pas_une_reserve():
+    """« sign-off user tel quel -> je merge » : la fleche fait du merge la
+    CONSEQUENCE d'une precondition non satisfaite — une derivation n'est pas
+    une annonce (regle fleche de `_is_cited`, reprise ISO dans
+    `_has_lift_announce`). La reserve vit."""
+    body = ("Reserve avant merge : la clause exige un sign-off. "
+            "(a) sign-off user tel quel -> je merge sans autre reserve.")
+    assert mod.classify("myia-ai-01", body) == "BOT-CONCERN"
+
+
+def test_13083_annonce_reelle_survit_aux_mentions():
+    """Garde-fou inverse : une mention nominale dans la phrase precedente ne
+    doit pas tuer l'annonce REELLE qui suit (« n'est pas une levee. Levee de
+    ma reserve ») — c'est le piege du `_is_cited` importe entier (fenetre
+    trans-sentence), qui cassait 4 tests du corpus."""
+    body = ("Ce n'est pas une levee de facade. Levee de ma reserve : le "
+            "point 2 est corrige proprement.")
+    assert mod.classify("myia-ai-01", body) is None
+

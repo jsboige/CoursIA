@@ -450,6 +450,21 @@ def _strip_mentioned_verdicts(body: str) -> str:
             lambda m: m.group(0).replace(m.group(1), " " * len(m.group(1))), body)
     return body
 
+
+# #13083 (2e instance) — mention nominale au generique : « une formule de
+# levee conditionnelle », « ses conditions de levee », « une levee reelle »
+# (#12896 c.5422312669, verbatim). Un determiner DEVANT le mot (genitif « de »,
+# article indefini « une ») en fait un nom : la prose NOMME le concept de
+# levee (metalinguistique), elle ne l'emets pas. Distinct des annonces
+# « Levée de <x> » (EXPLICIT_LIFT_MARKERS) ou le « de » suit le mot —
+# l'annonce reste une emission. Remplacement iso-longueur, meme discipline
+# de offsets que `_strip_mentioned_verdicts`.
+_NOMINAL_LIFT_RE = re.compile(r"\b(?:de|une)\s+(lev[ée]e)\b", re.IGNORECASE)
+
+
+def _strip_nominal_lifts(body: str) -> str:
+    return _NOMINAL_LIFT_RE.sub(lambda m: " " * len(m.group(0)), body)
+
 # NOTE — proposition ecartee (triage 07-15..07-31, retiree au rebase 2026-08-16).
 # Un `NO_CONCERN_TAIL_MARKERS` dechargeant tout body dont les 300 derniers chars
 # portent « ne bloque pas » / « Safe to merge » a ete propose puis RETIRE : il
@@ -593,6 +608,40 @@ def _unaccent(text: str) -> str:
 def has_marker(body: str, markers: tuple[str, ...]) -> bool:
     normalised = _unaccent(body)
     return any(_unaccent(m) in normalised for m in markers)
+
+
+# #13083 (2e instance) — occurrence de levee suivie d'aucune fleche de
+# derivation. « -> je merge » / « X => Merged » : la fleche en fait la
+# CONSEQUENCE conditionnelle d'une precondition (« sign-off user tel quel ->
+# je merge sans autre reserve », #12896 c.5422307622 verbatim) — une
+# derivation n'est pas une annonce, elle ne leve rien tant que la
+# precondition n'est pas satisfaite. C'est la regle fleche de `_is_cited`,
+# reprise ISO sans le reste de la fenetre de citation : importer cette
+# derniere dans l'etage lift cassait des annonces reelles trans-sentence
+# (« n'est pas une levee. **Mergée.** » — le « pas » de la phrase
+# precedente tuait le Mergé de la suivante, 4 tests du corpus).
+_ARROW_DERIVATIONS = ("->", "=>", "→")
+
+
+def _arrow_precedes(normalised: str, index: int) -> bool:
+    j = index
+    while j > 0 and normalised[j - 1].isspace():
+        j -= 1
+    return normalised[:j].endswith(_ARROW_DERIVATIONS)
+
+
+def _has_lift_announce(surface: str) -> bool:
+    """Au moins un marqueur de levee dont AUCUNE occurrence n'est une
+    derivation conditionnelle (fleche devant)."""
+    normalised = _unaccent(surface)
+    for marker in LIFT_MARKERS:
+        m = _unaccent(marker)
+        start = 0
+        while (i := normalised.find(m, start)) != -1:
+            if not _arrow_precedes(normalised, i):
+                return True
+            start = i + 1
+    return False
 
 
 def _formal_concern_precedes_lift(body: str) -> bool:
@@ -869,7 +918,23 @@ def classify(author: str, body: str) -> str | None:
     # reste muet — la sous-accusation coute un merge, la sur-accusation coute
     # une relecture. Aucun body sans glyphe ne change de classement : la
     # table de distribution d'ai-01 reste exacte.
-    if (has_marker(body, LIFT_MARKERS)
+    # #13083 (2e instance) — SYMETRIE de l'etage lift : le concern est evalue
+    # mention-aware (`_strip_mentioned_verdicts`), le lift etait un substring
+    # brut sur le body ENTIER. Consequence mesuree (#12896) : « une formule de
+    # levee conditionnelle », « une levee reelle », « ses conditions de levee »
+    # (mentions nominales — la prose NOMME le concept, elle ne l'emets pas)
+    # eteignaient une reserve vivante — nommer une resolution valait la
+    # prononcer, alors que nommer une reserve ne vaut pas l'emettre (#11636
+    # symetrique). Le gate garde la semantique substring de `has_marker` :
+    # importer `_is_cited` ENTIER ici casse des annonces reelles par fenetre
+    # trans-sentence (« n'est pas une levee. **Mergée.** » — le « pas » de la
+    # phrase precedente filtre le Mergé de la suivante, 4 tests du corpus).
+    # Seule la regle FLECHE de `_is_cited` est reprise : « -> je merge » est
+    # une derivation conditionnelle (si sign-off alors merge, #12896
+    # c.5422307622), syntaxiquement prouvee par la fleche.
+    lift_surface = _strip_nominal_lifts(
+        _strip_mentioned_verdicts(_strip_quoted(body)))
+    if (_has_lift_announce(lift_surface)
             and not _lift_cancelled(_strip_quoted(body))
             and not has_live_marker(_strip_quoted(body), SEVERITY_GLYPHS)
             # #12836 / #12798 : une revalidation COMMENT_WITH_CONCERNS peut
@@ -895,9 +960,8 @@ def classify(author: str, body: str) -> str | None:
         return None  # verdict structurel positif rendu : il decide, la prose ne compte plus
     # #11636 : la recherche porte le body nettoye de ses verdicts MENTIONNES —
     # un rapport de correction qui nomme le verdict qu'il corrige n'emet pas
-    # de reserve. Uniquement pour CONCERN_MARKERS : LIFT_MARKERS et
-    # VERDICT_POSITIVE gardent le body brut (surface minimale du fix — le
-    # controle positif deux formes vit dans les tests, cote a cote).
+    # de reserve. Uniquement pour CONCERN_MARKERS et l'etage lift (symetrie
+    # #13083 ci-dessus) : VERDICT_POSITIVE garde le body brut.
     live_concern = has_live_marker(_strip_mentioned_verdicts(_strip_quoted(body)), CONCERN_MARKERS)
     if not live_concern and _HUMAN_VERDICT_RE.search(body):
         return None  # verdict humain positif (APPROVE / APPROVED / LGTM) SANS reserve vivante : equivalent state:APPROVED
