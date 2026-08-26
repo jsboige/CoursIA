@@ -151,17 +151,19 @@ sub-modules are Parts 20, 22, and 23 of the table.
 | 56 | `Grothendieck/CoversZariskiArrow.lean` | `CoversZariskiArrow_en.lean` | Arrow form of the **Zariski topology** (first named concrete topology of the series): `covers_iff_zariski` + geometric characterization by open covers `covers_iff_exists_cover` (Phase 5 of #2159, standalone on main) | 233 |
 | 57 | `Grothendieck/CoversAtomicArrow.lean` | `CoversAtomicArrow_en.lean` | Arrow form of the **atomic topology** (`GrothendieckTopology.atomic`, right Ore condition): pointwise bridge `atomic_covering` (the missing analogue of `dense_covering`), `covers_iff_atomic` (central), `covers_atomic_of_mem`, stability `covers_atomic_precomp`, collapses `covers_atomic_id`/`covers_atomic_top` (Phase 5 of #2159) | 159 |
 | 58 | `Grothendieck/Classifier.lean` | `Classifier_en.lean` | **The subobject classifier**: Ω = the presheaf of sieves (`Functor.sieves`), `truth`/`χ`, `Presheaf.classifier`, J-closed sieves (`Sheaf.Ω`), `HasSubobjectClassifier` instances for presheaves + sheaves; 4 own theorems (`truth_picks_top`, `chi_app_mem_iff`, `chi_app_downward_closed`, `chi_app_eq_top_of_app`) (Part 58 of #2159) | 202 |
+| 59 | `Grothendieck/LawvereTierney.lean` | `LawvereTierney_en.lean` | **The Lawvere–Tierney topology**: the closure operator on Ω (`LawvereTierney`), 3 laws (extensivity, idempotence, meet preservation) + naturality under pullback; discrete (`j S = S`) and indiscrete (`j S = ⊤`) topologies, `j_top`/`j_monotone`/`closure_isClosed`, closed sieves of the indiscrete (Part 59 of #2159) | 241 |
+| 61 | `Grothendieck/SitesComparison.lean` | `SitesComparison_en.lean` | **Continuous functors and the comparison lemma**: the presheaf→sheaf bridge (`sheafPushforwardContinuous`), functoriality (identity, composition — the sheaf-level mirror of `pullback_pullback`), and the induced adjunction on sheaf categories `adjunction_sheafPushforwardContinuous` (**SGA 4 III.1.6**) — adjunctions descend to sheaves without explicit sheafification (Part 61 of #2159) | 158 |
 
 *The `Lines` column counts the **FR file alone**; the `_en` sibling adds
 roughly as much again.*
 
 ## Build & status
 
-- **Toolchain**: `leanprover/lean4:v4.32.0`
-- **Build**: `lake build` (WSL required). The default target (`globs := #[`Grothendieck.*]` in `lakefile.lean`) compiles **all** FR and `_en` modules. Last verified build: 2026-08-18, "Build completed successfully" (47 leaves at that date); the structure has since grown to 55 leaves + 55 `_en` siblings + 1 umbrella (Parts 54, 55a-c, 58 — Phase 5 and the classifier of #2159). `ExceptionalDirect` was imported c.2026-08-15 (#11286 closed).
+- **Toolchain**: `leanprover/lean4:v4.32.1`
+- **Build**: `lake build` (WSL required). The default target (`globs := #[`Grothendieck.*]` in `lakefile.lean`) compiles **all** FR and `_en` modules. Last verified build: 2026-08-18, "Build completed successfully" (47 leaves at that date); the structure has since grown to 58 leaves + 58 `_en` siblings + 1 umbrella (Parts 55a-c, 58, 59 + Part 61 continuous functors/comparison lemma of #2159; `SheafCohomology/` subfolder included). `ExceptionalDirect` was imported c.2026-08-15 (#11286 closed).
 - **Proofs**: **0 `sorry`, 0 axiom added** — every module is complete at creation. (A naive `grep sorry` matches prose mentions in the bilingual docstrings, notably two in `ExceptionalDirect.lean`; CI counts in `real` mode — after comment stripping — and reads 0.)
 - **Dependencies**: Mathlib 4 (via `lakefile.lean`)
-- **i18n** (EPIC #4980, Option A convention ratified 2026-07-04): complete bilingual coverage — **56 FR files** (1 umbrella + 55 canonical leaves) and **55 `_en.lean` siblings**, integral 1:1 ratio, 55/55 (the historical `PullbackFunctor.lean` gap is closed: `PullbackFunctor_en.lean` is present on disk; the earlier prose saying it was missing was stale — found by the Part 56 §E audit, c.2026-08-18). `_en` namespaces anti-collision, non-docstring content byte-identical, CI-detectable. The umbrella is bilingual inline *by design* (FR canonical first, EN mirrored in the same file). **[`README.md`](./README.md)** is the FR canonical sibling of this file. Out-of-scope: `.lake/packages/`, vendored libs.
+- **i18n** (EPIC #4980, Option A convention ratified 2026-07-04): complete bilingual coverage — **59 FR files** (1 umbrella + 58 canonical leaves) and **58 `_en.lean` siblings**, integral 1:1 ratio, 58/58 (the historical `PullbackFunctor.lean` gap is closed: `PullbackFunctor_en.lean` is present on disk; the earlier prose saying it was missing was stale — found by the Part 56 §E audit, c.2026-08-18). `_en` namespaces anti-collision, non-docstring content byte-identical, CI-detectable. The umbrella is bilingual inline *by design* (FR canonical first, EN mirrored in the same file). **[`README.md`](./README.md)** is the FR canonical sibling of this file. Out-of-scope: `.lake/packages/`, vendored libs.
 
 *Coherence note*: the earlier note about a "46/46 discordance + `PullbackFunctor` gap" is obsolete — `PullbackFunctor_en.lean` is present on disk (verified c.2026-08-18) and the FR/`_en` ratio is 1:1. The lakefile `globs` auto-discovers all leaves; the i18n CI checks the target 1:1 ratio.
 
@@ -180,7 +182,7 @@ The language toured here — Grothendieck topologies, sites, sheaves, and scheme
 ## See also
 
 - Epic #1646 (Grothendieck tribute) — Issue #2159 (formalization depth: Phase 1 shipped, Phase 2 = #10357, Phase 5 = Parts 35-44)
-- EPIC #4980 — Lean i18n convention (Option A sibling pair; 55 `_en` pairs in this lake)
+- EPIC #4980 — Lean i18n convention (Option A sibling pair; 58 `_en` pairs in this lake)
 - Epic #1453 (prover harness calibration) — Issue #8960 (reconciling the two `Part` numberings)
 - [#11286](https://github.com/jsboige/CoursIA/issues/11286) — pending umbrella import of `ExceptionalDirect`
 - Conway tribute workspace (`../conway_lean/`) — Lean notebook series (`../README.md`)

@@ -79,6 +79,7 @@ jobs:
         with:
           # Need base..head history for `git diff` of changed slides.
           fetch-depth: 0
+          filter: blob:none
 
       # Runs BEFORE the Node setup, deliberately: the two defects it catches are
       # invisible to `slidev build`, so this step must survive an install failure.
