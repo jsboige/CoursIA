@@ -65,6 +65,7 @@ Exit codes: 0 ok / 1 blocked (other lane holds active issue claim) /
 from __future__ import annotations
 
 import argparse
+import fnmatch
 import json
 import os
 import re
@@ -781,6 +782,86 @@ def _empty_scope_in(parts: list[str] | None,
     if not parts or tracked is None:
         return []
     return [p for p in parts if not _glob_matches_tracked(p, tracked)]
+
+
+# --- #13129 dead-scope suggestions (advisory, never blocks) ------------------
+# The #12740 `dead_scope_globs` aggregate lands in a JSON field that neither
+# the CI gate, `pick_idle_grain.py` nor the lane scripts consume -- nobody
+# reads it, and the class keeps re-producing duplications (#12620, #13056:
+# ~1100 lines of notebook written twice). The fix is NOT to re-block (that
+# would reopen the #10958 fail-open); it is to make the signal READABLE at
+# the moment the declaring lane can still correct it, with a correction
+# HINT when the typo is mechanically recoverable. Measured 2026-08-26 over
+# the 120 most-recently-active issues (issue #13129): 7 real typos on 176
+# globs, in three motifs -- (A) intermediate directory omitted, (B) globs
+# separated by a SPACE instead of a comma (the parser only splits on the
+# comma, so both paths fuse into ONE glob matching nothing -- silent and
+# total), (C) wrong parent under `scripts/`. The hint covers 5 of 7.
+
+#: Above this many tracked paths sharing the dead glob's basename, the
+#: basename is too common (README.md, MANIFEST.md, __init__.py) to point
+#: anywhere -- no suggestion (measured FP guard, #13129 acceptance 2).
+_DEAD_SCOPE_MAX_BASENAME_HITS = 5
+
+_FRAGMENT_EXT_RE = re.compile(r"\.[A-Za-z][A-Za-z0-9]{0,7}$")
+
+
+def _dead_scope_hint(glob: str,
+                     tracked: list[str] | None,
+                     max_basename_hits: int = _DEAD_SCOPE_MAX_BASENAME_HITS,
+                     ) -> str | None:
+    """Correction hint for a dead `paths:` glob (#13129). Advisory only.
+
+    Three motifs, checked in order (a space-fused glob is exclusive -- its
+    trailing fragment's basename often EXISTS, which would emit a misleading
+    partial "did you mean"):
+
+    - motif B: the glob contains a space AND >=2 space-separated fragments
+      look like paths (a `/` or a file extension) -> "virgule manquante".
+      The `paths:` parser splits on the comma only, so `--paths a b` in a
+      claim marker declares ONE glob matching nothing.
+    - motif A/C: the glob has a `/`, is plausible (`_glob_implausible`
+      filters prose), and its BASENAME matches 1..max tracked paths
+      elsewhere in the tree -> "did you mean <real paths> ?" (a missing or
+      wrong intermediate directory). 0 hit = FUTUR (file to create,
+      legitimate -- no hint); more than `max_basename_hits` = the basename
+      is everywhere (README.md) -- no hint either.
+    - anything else (PROSE fragments without `/`, wildcards matching
+      thousands) -> None: silence is the selectivity contract.
+
+    Returns None when `tracked` is None (no git walk -> cannot prove
+    deadness, let alone proximity).
+    """
+    if not glob or tracked is None:
+        return None
+    # motif B -- space separator where a comma belongs.
+    if " " in glob:
+        fragments = glob.split()
+        pathlike = [
+            f for f in fragments
+            if "/" in f or _FRAGMENT_EXT_RE.search(f)
+        ]
+        if len(pathlike) >= 2:
+            return (
+                f"virgule manquante ? {len(pathlike)} fragments chemin-like "
+                f"separes par des ESPACES -- le parseur de paths ne decoupe "
+                f"que sur la virgule, ces chemins ont fusionne en UN seul "
+                f"glob mort (motif B, #13129)"
+            )
+        return None
+    # motif A/C -- basename proximity. Require a `/` (the #13129 PROSE class
+    # is fragments without one) and a plausible glob (prose already caught).
+    if "/" not in glob or _glob_implausible(glob):
+        return None
+    base = glob.rsplit("/", 1)[-1]
+    hits = sorted({
+        p for p in tracked
+        if fnmatch.fnmatchcase(p.rsplit("/", 1)[-1], base)
+    })
+    if not hits or len(hits) > max_basename_hits:
+        return None
+    shown = ", ".join(hits[:3]) + (", ..." if len(hits) > 3 else "")
+    return f"did you mean {shown} ? ({len(hits)} candidat(s) meme basename)"
 
 
 def _claim_scope_effectively_epic_wide(ev: ClaimEvent) -> bool:
@@ -1826,6 +1907,21 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
             for g in dead:
                 if g not in bucket:
                     bucket.append(g)
+    # #13129 -- actionable subset of `dead_scope_globs`: the globs whose typo
+    # is mechanically recoverable get a correction HINT (missing comma /
+    # did-you-mean), keyed by lane, printed on STDOUT (not only the JSON
+    # field) so the declaring lane reads it at the call site. Advisory by
+    # construction: this list NEVER feeds a verdict -- the #12740 policy
+    # "signal, not re-block" is preserved verbatim.
+    dead_scope_suggestions: dict[str, list[dict[str, str]]] = {}
+    if tracked is not None:
+        for lane, globs in dead_scope_globs.items():
+            for g in globs:
+                hint = _dead_scope_hint(g, tracked)
+                if hint:
+                    dead_scope_suggestions.setdefault(lane, []).append(
+                        {"glob": g, "hint": hint}
+                    )
     active, unattributed = compute_active_claims(events, pr_states=pr_states)
     others = {ln: ev for ln, ev in active.items() if ln != my_lane}
     mine = active.get(my_lane)
@@ -2086,8 +2182,27 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
         # always visible to a JSON sweep. Non-blocking by design -- it only
         # reports; it does not change the verdict.
         "dead_scope_globs": dead_scope_globs,
+        # #13129 -- the READABLE half of that signal: dead globs whose typo
+        # is mechanically recoverable (missing comma, basename living
+        # elsewhere) carry a correction hint. Consumed by the CI gate
+        # (lane-claim-guard, via lane_claim_required.warnings) and printed
+        # on stdout below. Advisory only -- never changes the verdict.
+        "dead_scope_suggestions": dead_scope_suggestions,
     }
     print(json.dumps(summary, ensure_ascii=False, indent=2))
+
+    # #13129 -- STDOUT surfacing of the correction hints (the JSON field
+    # alone was the #13129 finding: nobody reads a field no consumer
+    # greps). Human-readable, one line per lane/glob, right above the
+    # verdict -- the declaring lane sees it at the call site, before the
+    # claim hardens into a collision.
+    if dead_scope_suggestions:
+        for lane in sorted(dead_scope_suggestions):
+            for item in dead_scope_suggestions[lane]:
+                print(
+                    f"DEAD_SCOPE_HINT (lane {lane}): {item['glob']} -- "
+                    f"{item['hint']} (#13129, advisory)"
+                )
 
     # #12345 -- SCOPE_DEAD_GLOB warning. When the caller declared a scope
     # whose globs include at least one dead glob, surface the witness list

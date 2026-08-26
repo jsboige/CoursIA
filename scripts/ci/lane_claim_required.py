@@ -284,6 +284,14 @@ def check(
             "warnings": warnings,
         }
 
+    # #13129 -- dead-scope hints, once for all closing issues. The hints ride
+    # `warnings` -> the gate's `::warning::` loop, i.e. the ONLY place the
+    # declaring lane is guaranteed to look while it can still correct the
+    # claim (its own PR). Advisory by construction: `warnings` never feeds
+    # the exit code. Best-effort walk (`tracked is None` outside a repo /
+    # on a git failure -> silently no hints, never a red).
+    tracked = clc._git_tracked_files()
+
     for num in confirmed_nums:
         payload = issue_fetcher(num)
         if payload is None:
@@ -294,6 +302,18 @@ def check(
             )
             continue
         events = clc._sort_events(payload)
+        if tracked is not None:
+            for ev in events:
+                dead = clc._empty_scope_in(ev.get("paths"), tracked)
+                if not ev.lane or not dead:
+                    continue
+                for g in dead:
+                    hint = clc._dead_scope_hint(g, tracked)
+                    if hint:
+                        warnings.append(
+                            f"#{num}: dead scope (lane {ev.lane}): {g} -- "
+                            f"{hint} (#13129, advisory)"
+                        )
         active, _unattrib = clc.compute_active_claims(events)
         others = {ln: ev for ln, ev in active.items() if ln != pr_lane}
 

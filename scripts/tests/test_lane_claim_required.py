@@ -473,3 +473,66 @@ def test_10323_cli_pr_closing_refs_arg_parsed(tmp_path):
     assert v["guard_pass"] is True  # GitHub closes nothing -> no block
     assert v["closing_issues"] == []
     assert any("IGNORED_BY_GITHUB" in w for w in v["warnings"])
+
+
+# --- #13129 dead-scope hints ride `warnings` (advisory, never blocks) --------
+
+def test_dead_scope_hint_surfaces_as_warning_without_changing_verdict(
+    monkeypatch,
+):
+    # A closing issue carries another lane's claim with the motif-A typo
+    # (missing intermediate directory). The gate must (1) still BLOCK it
+    # (#10223 semantics -- the #10958 epic-wide lift is untouched) and
+    # (2) carry the correction hint in `warnings`, which the YAML renders
+    # as ::warning:: job annotations. The hint NEVER flips a verdict.
+    real = (
+        "MyIA.AI.Notebooks/GenAI/Video/04-Applications/"
+        "04-2-Creative-Video-Workflows.ipynb"
+    )
+    monkeypatch.setattr(clc, "_git_tracked_files", lambda: [real])
+    body = pr_body("myia-po-2026:CoursIA", "Closes #10169")
+    fetch = fetcher_from({10169: issue_payload(
+        comment(
+            "[CLAIMED] lane myia-po-2025:CoursIA-2 -- x -- paths: "
+            "MyIA.AI.Notebooks/GenAI/Video/04-2-Creative-Video-Workflows.ipynb",
+            "2026-08-09T11:41:43Z",
+        ),
+    )})
+    v = lcr.check(body, fetch, now=NOW)
+    assert v["guard_pass"] is False  # verdict unchanged: still blocks
+    assert v["blocking_lane"] == "myia-po-2025:CoursIA-2"
+    dead = [w for w in v["warnings"] if "dead scope" in w]
+    assert len(dead) == 1
+    assert "did you mean" in dead[0]
+    assert real in dead[0]
+    assert "#13129, advisory" in dead[0]
+
+
+def test_live_scope_claim_produces_no_dead_scope_warning(monkeypatch):
+    # Both-ways control: a claim whose paths are all live emits NO dead-scope
+    # warning -- the advisory channel stays silent on healthy claims.
+    live = ["scripts/check_lane_claim.py", "scripts/ci/lane_claim_required.py"]
+    monkeypatch.setattr(clc, "_git_tracked_files", lambda: live)
+    body = pr_body("myia-po-2026:CoursIA", "Closes #10169")
+    fetch = fetcher_from({10169: issue_payload(
+        comment(
+            "[CLAIMED] lane myia-po-2025:CoursIA-2 -- x -- paths: "
+            + ", ".join(live),
+            "2026-08-09T11:41:43Z",
+        ),
+    )})
+    v = lcr.check(body, fetch, now=NOW)
+    assert not [w for w in v["warnings"] if "dead scope" in w]
+
+
+def test_no_git_walk_no_dead_scope_warning_never_crashes(monkeypatch):
+    # Outside a repo the walk returns None: no hints, no crash, verdict intact.
+    monkeypatch.setattr(clc, "_git_tracked_files", lambda: None)
+    body = pr_body("myia-po-2026:CoursIA", "Closes #10169")
+    fetch = fetcher_from({10169: issue_payload(
+        comment("[CLAIMED] lane myia-po-2025:CoursIA-2 -- x -- paths: a/b.py",
+                "2026-08-09T11:41:43Z"),
+    )})
+    v = lcr.check(body, fetch, now=NOW)
+    assert v["guard_pass"] is False
+    assert not [w for w in v["warnings"] if "dead scope" in w]

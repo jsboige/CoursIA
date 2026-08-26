@@ -5294,3 +5294,151 @@ def test_gh_calls_pin_utf8_regression_12811(monkeypatch):
     assert issue_payload["title"].endswith(bad_char)
     prs = clc._gh_open_prs_with_files()
     assert prs[0]["title"].endswith(bad_char)
+
+
+# --- #13129 dead-scope suggestions (advisory, never blocks) ------------------
+
+_REAL_VIDEO = (
+    "MyIA.AI.Notebooks/GenAI/Video/04-Applications/"
+    "04-2-Creative-Video-Workflows.ipynb"
+)
+
+
+def test_dead_scope_hint_motif_a_missing_directory():
+    # Acceptance typo verbatim: the intermediate directory is omitted.
+    tracked = [_REAL_VIDEO, "README.md"]
+    hint = clc._dead_scope_hint(
+        "MyIA.AI.Notebooks/GenAI/Video/04-2-Creative-Video-Workflows.ipynb",
+        tracked,
+    )
+    assert hint is not None
+    assert "did you mean" in hint
+    assert _REAL_VIDEO in hint
+
+
+def test_dead_scope_hint_motif_a_wildcard_basename():
+    # The acceptance's wildcard form: basename pattern matches the real file.
+    tracked = [_REAL_VIDEO]
+    hint = clc._dead_scope_hint(
+        "MyIA.AI.Notebooks/GenAI/Video/04-2-*.ipynb", tracked
+    )
+    assert hint is not None and "did you mean" in hint
+    assert _REAL_VIDEO in hint
+
+
+def test_dead_scope_hint_motif_b_missing_comma():
+    # Two paths fused by a space: the parser splits on the comma only.
+    hint = clc._dead_scope_hint(
+        "scripts/ci/manage_self_hosted_runner.py "
+        "scripts/tests/test_manage_self_hosted_runner.py",
+        ["scripts/ci/manage_self_hosted_runner.py"],
+    )
+    assert hint is not None
+    assert "virgule manquante" in hint
+
+
+def test_dead_scope_hint_motif_b_exclusive_over_basename():
+    # The trailing fragment's basename EXISTS -- without the exclusivity the
+    # hint would be a misleading partial "did you mean". Motif B wins.
+    real = "scripts/tests/test_a.py"
+    hint = clc._dead_scope_hint(f"scripts/a.py {real}", [real])
+    assert hint is not None
+    assert "virgule manquante" in hint
+    assert "did you mean" not in hint
+
+
+def test_dead_scope_hint_motif_c_wrong_parent():
+    tracked = [
+        "scripts/notebook_tools/audit_workflow_path_filters.py",
+        "README.md",
+    ]
+    hint = clc._dead_scope_hint(
+        "scripts/audit_workflow_path_filters.py", tracked
+    )
+    assert hint is not None and "did you mean" in hint
+    assert tracked[0] in hint
+
+
+def test_dead_scope_hint_basename_cap_no_suggestion():
+    # README.md lives everywhere: >max occurrences -> silence (acceptance 2).
+    tracked = [f"dir{i}/README.md" for i in range(6)]
+    assert clc._dead_scope_hint("foo/bar/README.md", tracked) is None
+    # ...but a rare basename (2 hits) still suggests.
+    two = ["a/rare.py", "b/rare.py"]
+    hint = clc._dead_scope_hint("wrong/rare.py", two)
+    assert hint is not None and "2 candidat(s)" in hint
+
+
+def test_dead_scope_hint_futur_and_prose_silent():
+    # FUTUR: basename matches nothing (file to create) -> silence.
+    assert clc._dead_scope_hint("a/b/c-new-file.py", ["a/x.py"]) is None
+    # PROSE: no "/" and no space separator -> silence.
+    assert clc._dead_scope_hint("tranche A)", ["a/x.py"]) is None
+    # Wide wildcard matching >max basenames -> silence.
+    many = [f"d{i}/m.py" for i in range(7)]
+    assert clc._dead_scope_hint("docs/*.py", many) is None
+    # tracked None (no git walk) -> silence.
+    assert clc._dead_scope_hint("a/b.py", None) is None
+
+
+def test_run_check_dead_scope_suggestions_json_stdout_verdict_unchanged(
+    capsys, monkeypatch,
+):
+    # Integration: another lane's claim carries the motif-A typo; the walk is
+    # injected hermetic. Asserts the #13129 triple: (1) the JSON carries
+    # dead_scope_suggestions, (2) STDOUT carries the DEAD_SCOPE_HINT line,
+    # (3) the verdict is UNCHANGED -- a dead scope still lifts to epic-wide
+    # and blocks (the #12740 "signal, not re-block" policy, preserved).
+    monkeypatch.setattr(clc, "_git_tracked_files",
+                        lambda: [_REAL_VIDEO, "scripts/check_lane_claim.py"])
+    p = payload(comment(
+        "[CLAIMED] lane myia-po-2025:CoursIA-2 -- x -- paths: "
+        "MyIA.AI.Notebooks/GenAI/Video/04-2-Creative-Video-Workflows.ipynb",
+        "2026-08-20T10:00:00Z",
+    ))
+    rc = clc._run_check(p, "myia-po-2026:CoursIA",
+                        my_paths=["scripts/check_lane_claim.py"])
+    out = capsys.readouterr().out
+    assert "DEAD_SCOPE_HINT (lane myia-po-2025:CoursIA-2)" in out
+    assert "did you mean" in out
+    # The JSON summary is the first json.dumps block on stdout.
+    start = out.index("{\n")
+    end = out.index("\n}", start) + 2
+    summary = json.loads(out[start:end])
+    sug = summary["dead_scope_suggestions"]
+    assert sug["myia-po-2025:CoursIA-2"][0]["glob"] == (
+        "MyIA.AI.Notebooks/GenAI/Video/04-2-Creative-Video-Workflows.ipynb"
+    )
+    assert "did you mean" in sug["myia-po-2025:CoursIA-2"][0]["hint"]
+    # Policy preserved: the epic-wide lift still BLOCKS a scoped caller
+    # (rc 1) -- #12740 "signal, not re-block" means the SUGGESTION rides
+    # along, it never replaces the blocker.
+    assert rc == 1
+    assert summary["blocked"] is True
+
+
+def test_run_check_live_scope_no_suggestion(capsys, monkeypatch):
+    # Both-ways control (acceptance 1): LIVE globs produce ZERO suggestions.
+    # Counted over a battery, not asserted on one.
+    live = [
+        "scripts/check_lane_claim.py",
+        "scripts/tests/test_check_lane_claim.py",
+        "scripts/ci/lane_claim_required.py",
+        "MyIA.AI.Notebooks/Probas/Infer/Infer-15-Recommenders.ipynb",
+        "README.md",
+        "docs/qc/quantconnect.md",
+    ]
+    monkeypatch.setattr(clc, "_git_tracked_files", lambda: live)
+    p = payload(comment(
+        "[CLAIMED] lane myia-po-2026:CoursIA -- x -- paths: "
+        + ", ".join(live),
+        "2026-08-20T10:00:00Z",
+    ))
+    clc._run_check(p, "myia-po-2024:CoursIA-2")
+    out = capsys.readouterr().out
+    start = out.index("{\n")
+    end = out.index("\n}", start) + 2
+    summary = json.loads(out[start:end])
+    assert summary["dead_scope_globs"] == {}
+    assert summary["dead_scope_suggestions"] == {}
+    assert "DEAD_SCOPE_HINT" not in out
