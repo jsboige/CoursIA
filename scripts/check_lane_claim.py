@@ -2159,6 +2159,47 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
             f"`[CLAIMED] paths: ...`, or wait for release.",
             file=sys.stderr,
         )
+        # #12905 -- name the dead-scope lock. A blocker whose declared scope
+        # is ENTIRELY dead (every glob matches zero tracked files) was lifted
+        # to epic-wide by the #10958 fail-safe: it locks the WHOLE issue for
+        # every lane, including callers whose live scope is provably disjoint
+        # (#12905's reproduction on #12844: lane A live on the GT-17b
+        # notebook, blocked by lane B reserving asymmetric_information_lean/**
+        # before the path exists). The fail-closed verdict stays -- a dead
+        # scope must not DE-unlock -- but the blocking text now NAMES the
+        # mechanism: `WARN: glob sans correspondance` alone reads as "stale
+        # worktree", not as "this claim locks the whole umbrella". Same shape
+        # as the LOCKED (v2) sub-message below: explainer only, no exit-code
+        # change.
+        dead_scope_blockers = [
+            ev for ev in others.values()
+            if ev.get("paths") and _claim_scope_effectively_epic_wide(ev)
+        ]
+        if dead_scope_blockers:
+            lines = []
+            for ev in dead_scope_blockers:
+                dead = ", ".join(
+                    repr(g) for g in (ev.get("empty_scope") or ev.get("paths") or [])
+                )
+                ln = ev.get("lane") or "?"
+                lines.append(
+                    f"  - lane {ln} -- declared scope matches zero tracked "
+                    f"files ({dead})"
+                )
+            print(
+                f"\nDEAD-SCOPE LOCK (#12905): the blocker(s) above hold a "
+                f"`paths:` scope that matches NO tracked file yet. By the "
+                f"#10958 fail-safe such a claim is treated as EPIC-WIDE and "
+                f"locks the whole issue #{payload.get('number')} for every "
+                f"lane -- including yours, even when your scope is provably "
+                f"disjoint (the nominal case of a lane reserving a path it "
+                f"is about to create). The lock lifts when the blocking lane "
+                f"re-issues its claim once the path exists, posts "
+                f"`[RELEASED]`, or a coordinator writes an "
+                f"`[OVERRIDE] lane <m:w>` comment (cf #10223).\n"
+                + "\n".join(lines),
+                file=sys.stderr,
+            )
         # #12386 -- v2 LOCKED verdict. When the blocker is a `[DELIVERED]`
         # whose PR reached main (`locked: True`), a plain re-claim is NOT a
         # path forward -- the issue is resolved. We surface a tailored message
