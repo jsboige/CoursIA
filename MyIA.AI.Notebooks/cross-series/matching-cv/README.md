@@ -62,6 +62,16 @@ Tous les scripts principaux sont situés dans le dossier `/scripts`. Ils sont fo
         ./scripts/run_e2e_tests.sh
         ```
 
+-   **Mettre à jour les dépendances du venv :**
+    -   *Windows :*
+        ```powershell
+        ./scripts/update_venv.ps1
+        ```
+    -   *macOS/Linux :*
+        ```bash
+        ./scripts/update_venv.sh
+        ```
+
 ## Fonctionnalités
 
 -   **Interface Web Simple :** Une application Flask légère pour lancer les comparaisons.
