@@ -51,7 +51,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          filter: blob:none
 
       - name: Fetch ALL remote heads
         # actions/checkout@v4 only fetches the default branch. The scan diffs
