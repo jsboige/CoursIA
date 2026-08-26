@@ -786,6 +786,157 @@ theorem expect_rademacherSum_fourth_moment_of_isColoring {n : ℕ} (c : Fin n �
   simp
   ring
 
+/-! ### Paley–Zygmund discret (boute p1b-PZ)
+
+Dans le cadre ℝ-weight du kernel, la probabilité d'un événement est
+l'espérance de son indicatrice. La clé est une forme faible de
+Cauchy–Schwarz : `E[f·g] ≤ √(E[f²·g]) · √(E[g])` pour `g` indicatrice
+(positive), démontrée à la main sur les poids — puis l'argument
+Paley–Zygmund une étape : `E[Z²] ≤ √(E[Z⁴]·P) + seuil`. -/
+
+/-- **Probabilité d'un événement (cadre ℝ-weight)** : espérance de
+l'indicatrice `if P S then 1 else 0` sous la loi produit fairCoin. -/
+noncomputable def probEvt {n : ℕ} (P : (Fin n → Bool) → Prop)
+    [DecidablePred P] : ℝ :=
+  sampleExpect fairCoin (fun S => if P S then 1 else 0)
+
+/-- **Séparation événement/complément** : l'espérance d'une fonction
+est la somme de sa restriction à un événement et de sa restriction au
+complémentaire. -/
+theorem sampleExpect_split_indicator {n : ℕ} (f : (Fin n → Bool) → ℝ)
+    (P : (Fin n → Bool) → Prop) [DecidablePred P] :
+    sampleExpect fairCoin f =
+      sampleExpect fairCoin (fun S => if P S then f S else 0) +
+      sampleExpect fairCoin (fun S => if ¬P S then f S else 0) := by
+  have h : (fun S : Fin n → Bool => f S) =
+      (fun S : Fin n → Bool =>
+        (if P S then f S else 0) + (if ¬P S then f S else 0)) := by
+    funext S
+    by_cases hS : P S
+    · rw [if_pos hS, if_neg (fun h => h hS), add_zero]
+    · rw [if_neg hS, if_pos hS, zero_add]
+  show sampleExpect fairCoin (fun S : Fin n → Bool => f S) = _
+  rw [h, sampleExpect_add]
+
+/-- **Cauchy–Schwarz pondéré (π-type fini)** : pour des poids `w`
+non négatifs, `(∑ w u v)² ≤ (∑ w u²)(∑ w v²)`. Preuve par discriminant :
+le trinôme `t ↦ ∑ w (u − t v)²` est positif partout ; en `t = B/C`
+(avec `C = ∑ w v² > 0`), il vaut `A − B²/C ≥ 0`. -/
+theorem weighted_cauchy {ι : Type*} [Fintype ι] (w u v : ι → ℝ)
+    (hw : ∀ i, 0 ≤ w i) :
+    (∑ i, w i * u i * v i) ^ 2 ≤
+      (∑ i, w i * u i * u i) * (∑ i, w i * v i * v i) := by
+  set A := ∑ i, w i * u i * u i with hA
+  set B := ∑ i, w i * u i * v i with hB
+  set C := ∑ i, w i * v i * v i with hC
+  have hCnn : 0 ≤ C := by
+    apply Finset.sum_nonneg
+    intro i _
+    nlinarith [mul_self_nonneg (v i), hw i]
+  rcases eq_or_lt_of_le hCnn with h0 | hpos
+  · -- h0 : 0 = C : tous les termes s'annulent, donc B = 0
+    have hC0 : C = 0 := h0.symm
+    have hsum0 : ∑ i, w i * v i * v i = 0 := by
+      rw [← hC]
+      exact hC0
+    have htermnn : ∀ i, ∀ _ : i ∈ Finset.univ, 0 ≤ w i * v i * v i :=
+      fun i _ => by nlinarith [mul_self_nonneg (v i), hw i]
+    have hterms : ∀ i, w i * v i * v i = 0 :=
+      fun i => Finset.sum_eq_zero_iff_of_nonneg htermnn |>.mp hsum0 i (Finset.mem_univ i)
+    have hB0 : B = 0 := by
+      rw [hB]
+      apply Finset.sum_eq_zero
+      intro i _
+      have hsq : (w i * v i) * (w i * v i) = 0 := by
+        rw [show (w i * v i) * (w i * v i) = w i * (w i * v i * v i) from by ring,
+          hterms i, mul_zero]
+      have hwv : w i * v i = 0 := mul_self_eq_zero.mp hsq
+      rw [show w i * u i * v i = u i * (w i * v i) from by ring, hwv, mul_zero]
+    rw [hB0, hC0]
+    simp
+  · -- 0 < C : discriminant en t = B / C
+    have hCne : C ≠ 0 := ne_of_gt hpos
+    set t := B / C with ht
+    have hquad : 0 ≤ ∑ i, w i * (u i - t * v i) * (u i - t * v i) := by
+      apply Finset.sum_nonneg
+      intro i _
+      nlinarith [mul_self_nonneg (u i - t * v i), hw i]
+    have hterm : ∀ i, w i * (u i - t * v i) * (u i - t * v i) =
+        w i * u i * u i - 2 * t * (w i * u i * v i) + t * t * (w i * v i * v i) :=
+      fun i => by ring
+    have hsplit : ∑ i, w i * (u i - t * v i) * (u i - t * v i) =
+        (A - 2 * t * B) + t * t * C := by
+      have hc : ∑ i, w i * (u i - t * v i) * (u i - t * v i) =
+          ∑ i, (w i * u i * u i - 2 * t * (w i * u i * v i) + t * t * (w i * v i * v i)) :=
+        Finset.sum_congr rfl (fun i _ => hterm i)
+      rw [hc]
+      simp only [Finset.sum_add_distrib, Finset.sum_sub_distrib]
+      rw [← Finset.mul_sum, ← Finset.mul_sum, ← hB, ← hC]
+    rw [hsplit] at hquad
+    have hq2 : (A - 2 * t * B) + t * t * C = A - B * B / C := by
+      rw [ht]
+      field_simp
+      ring
+    rw [hq2] at hquad
+    have hdiv : B * B / C ≤ A := by linarith
+    rw [div_le_iff₀ hpos] at hdiv
+    rw [pow_two]
+    exact hdiv
+
+/-- **Forme faible de Cauchy–Schwarz (événement)** :
+`(E[f·1_B])² ≤ E[f²·1_B] · P[B]` — conséquence directe du Cauchy–
+Schwarz pondéré appliqué aux fonctions `u = f·1_B` et `v = 1_B` (le
+produit `u·v = u` et le carré `u² = f²·1_B`). -/
+theorem expect_sq_le_mul_prob {n : ℕ} (f : (Fin n → Bool) → ℝ)
+    (B : (Fin n → Bool) → Prop) [DecidablePred B] :
+    (sampleExpect fairCoin (fun S => if B S then f S else 0)) ^ 2 ≤
+      sampleExpect fairCoin (fun S => if B S then f S * f S else 0) *
+      probEvt B := by
+  classical
+  set u : (Fin n → Bool) → ℝ := fun S => if B S then f S else 0 with hu
+  set v : (Fin n → Bool) → ℝ := fun S => if B S then (1 : ℝ) else 0 with hv
+  have huv : ∀ S, u S * v S = u S := by
+    intro S
+    by_cases hS : B S
+    · simp only [hu, hv, if_pos hS, mul_one]
+    · simp only [hu, hv, if_neg hS, if_neg hS, mul_zero]
+  have huu : ∀ S, u S * u S = if B S then f S * f S else 0 := by
+    intro S
+    by_cases hS : B S
+    · simp only [hu, if_pos hS, if_pos hS, mul_one, mul_mul_mul_comm]
+    · simp only [hu, if_neg hS, if_neg hS, mul_zero]
+  have hvv : ∀ S, v S * v S = v S := by
+    intro S
+    by_cases hS : B S
+    · simp only [hv, if_pos hS, if_pos hS, mul_one]
+    · simp only [hv, if_neg hS, if_neg hS, mul_zero]
+  set w : (Fin n → Bool) → ℝ := PacLearning.sampleWeight fairCoin with hwdef
+  have hkey := weighted_cauchy w u v (fun S => PacLearning.sampleWeight_nonneg (D := fairCoin) S)
+  -- Conversion des trois sommes pondérées vers espérances/probabilité
+  have hc1 : ∀ S, w S * u S = w S * u S * v S := by
+    intro S
+    rw [mul_assoc, huv S]
+  have hc2 : ∀ S, w S * u S * u S = w S * (if B S then f S * f S else 0) := by
+    intro S
+    rw [show w S * u S * u S = w S * (u S * u S) from by ring, huu S]
+  have hc3 : ∀ S, w S * v S * v S = w S * v S := by
+    intro S
+    rw [show w S * v S * v S = w S * (v S * v S) from by ring, hvv S]
+  have hu' : sampleExpect fairCoin u =
+      ∑ S, w S * u S * v S := by
+    rw [Finset.sum_congr rfl (fun S _ => (hc1 S).symm)]
+    rfl
+  have hf2' : sampleExpect fairCoin (fun S => if B S then f S * f S else 0) =
+      ∑ S, w S * u S * u S := by
+    rw [Finset.sum_congr rfl (fun S _ => hc2 S)]
+    rfl
+  have hv' : probEvt B = ∑ S, w S * v S * v S := by
+    rw [Finset.sum_congr rfl (fun S _ => hc3 S)]
+    simp only [probEvt, PacLearning.sampleExpect, hv, hwdef]
+  show (sampleExpect fairCoin u) ^ 2 ≤ _ * probEvt B
+  rw [hu', hf2', hv']
+  exact hkey
+
 end Moments
 
 end Discrepancy
