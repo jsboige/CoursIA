@@ -5184,3 +5184,70 @@ def test_bare_claimed_amend_bracketless_flagged_as_malformed(capsys):
     clc._run_check(p, "myia-po-2023:CoursIA-2")
     out = capsys.readouterr().out
     assert "malformed" in out.lower()
+
+
+# --- repeated --paths preserve union semantics (#13057) ----------------------
+# argparse's default `store` action retained only the LAST `--paths` occurrence.
+# A real overlap therefore disappeared when the caller added any disjoint path:
+# `--paths P_in_claim` blocked, but `--paths P_in_claim --paths P_outside`
+# reached the reducer as `[P_outside]` and falsely cleared. These tests exercise
+# `main(argv)` rather than `_filter_by_claim_scope`, whose `any` semantics were
+# already correct.
+
+_CLAIMED_GUARD_PATH = "scripts/check_lane_claim.py"
+_OUTSIDE_GUARD_PATH = "scripts/check_unaddressed_nits.py"
+
+
+def _write_mixed_paths_payload(tmp_path):
+    return _write_payload(
+        payload(comment(
+            "[CLAIMED] lane myia-po-2024:CoursIA-2 -- paths: "
+            f"{_CLAIMED_GUARD_PATH}",
+            "2026-08-26T02:00:00Z",
+        ), number=13057),
+        tmp_path,
+    )
+
+
+def test_main_single_paths_occurrence_intersecting_blocks(tmp_path, capsys):
+    source = _write_mixed_paths_payload(tmp_path)
+    rc = clc.main([
+        "13057", "--lane", "myia-po-2025:CoursIA-2", "--from-json", source,
+        "--no-stale", "--paths", _CLAIMED_GUARD_PATH,
+    ])
+    captured = capsys.readouterr()
+    summary = json.loads(captured.out.split("\n\nBLOCKED", 1)[0])
+    assert rc == 1
+    assert summary["blocking_lanes"] == ["myia-po-2024:CoursIA-2"]
+    assert summary["blocked"] is True
+
+
+def test_main_repeated_paths_mixed_intersection_still_blocks(tmp_path, capsys):
+    source = _write_mixed_paths_payload(tmp_path)
+    rc = clc.main([
+        "13057", "--lane", "myia-po-2025:CoursIA-2", "--from-json", source,
+        "--no-stale", "--paths", _CLAIMED_GUARD_PATH,
+        "--paths", _OUTSIDE_GUARD_PATH,
+    ])
+    captured = capsys.readouterr()
+    assert rc == 1, (
+        "adding a disjoint --paths occurrence must not erase the intersecting "
+        f"one; stdout was:\n{captured.out}"
+    )
+    summary = json.loads(captured.out.split("\n\nBLOCKED", 1)[0])
+    assert summary["blocking_lanes"] == ["myia-po-2024:CoursIA-2"]
+    assert summary["blocked"] is True
+
+
+def test_main_repeated_paths_genuinely_disjoint_clear(tmp_path, capsys):
+    source = _write_mixed_paths_payload(tmp_path)
+    rc = clc.main([
+        "13057", "--lane", "myia-po-2025:CoursIA-2", "--from-json", source,
+        "--no-stale", "--paths", _OUTSIDE_GUARD_PATH,
+        "--paths", "scripts/variation_light_cap.py",
+    ])
+    captured = capsys.readouterr()
+    summary = json.loads(captured.out.split("\n\nCLEAR", 1)[0])
+    assert rc == 0
+    assert summary["blocking_lanes"] == []
+    assert summary["blocked"] is False

@@ -2660,8 +2660,15 @@ def main(argv: list[str] | None = None) -> int:
                         "behaviour: every active claim blocks, nothing is "
                         "age-filtered). The detected state is reported as "
                         "`stale_detection: \"disabled\"`.")
-    p.add_argument("--paths", metavar="PATH", nargs="+", default=None,
+    # #13057 -- repeated `--paths` occurrences form one union. argparse's
+    # default `store` action kept only the LAST occurrence, so adding a disjoint
+    # path could erase an earlier intersecting path and turn BLOCKED into CLEAR.
+    # `extend` keeps a flat list across both accepted CLI forms:
+    # `--paths a b` and `--paths a --paths b`.
+    p.add_argument("--paths", metavar="PATH", nargs="+", action="extend",
+                   default=None,
                    help="path-mode (#9959): one or more file paths/globs. "
+                        "Repeated --paths occurrences are combined (#13057). "
                         "Exits 2 if any OPEN PR of a different lane (or with "
                         "an unreadable lane tag) has files[] intersecting. "
                         "Exits 0 if no collision, 1 on usage/`gh` failure. "
