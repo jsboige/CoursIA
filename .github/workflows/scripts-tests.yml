@@ -124,6 +124,7 @@ jobs:
           # would false-fail. Consistent with the other git-aware gates
           # (catalog-cron/catalog-drift/cell-order-gate/exercise-leak-ci).
           fetch-depth: 0
+          filter: blob:none
 
       - uses: actions/setup-python@v5
         with:
