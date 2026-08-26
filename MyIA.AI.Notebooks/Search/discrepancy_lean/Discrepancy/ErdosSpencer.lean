@@ -937,6 +937,182 @@ theorem expect_sq_le_mul_prob {n : ℕ} (f : (Fin n → Bool) → ℝ)
   rw [hu', hf2', hv']
   exact hkey
 
+/-- **Monotonie de l'espérance (une étape)** : si `f ≤ g` pointwise,
+alors `E[f] ≤ E[g]` sous des poids non négatifs. -/
+theorem sampleExpect_le_of_forall_le {n : ℕ} (f g : (Fin n → Bool) → ℝ)
+    (hfg : ∀ S, f S ≤ g S) :
+    sampleExpect fairCoin f ≤ sampleExpect fairCoin g := by
+  have h : ∀ S : Fin n → Bool,
+      PacLearning.sampleWeight fairCoin S * g S -
+      PacLearning.sampleWeight fairCoin S * f S ≥ 0 := by
+    intro S
+    nlinarith [PacLearning.sampleWeight_nonneg (D := fairCoin) S, hfg S]
+  have hsum : ∑ S, (PacLearning.sampleWeight fairCoin S * g S -
+      PacLearning.sampleWeight fairCoin S * f S) ≥ 0 := Finset.sum_nonneg
+    (fun S _ => h S)
+  have hsum' : ∑ S, PacLearning.sampleWeight fairCoin S * g S -
+      ∑ S, PacLearning.sampleWeight fairCoin S * f S ≥ 0 := by
+    rw [← Finset.sum_sub_distrib]
+    simpa only [PacLearning.sampleExpect] using hsum
+  simp only [PacLearning.sampleExpect] at *
+  linarith
+
+/-- **Corollaire coloration — minoration de queue (Paley–Zygmund)** :
+pour une coloration `±1` et `n ≥ 1`, la probabilité que `Z² ≥ n/2`
+vaut au moins `1/12`. Dérivation : `E[Z²] = n` se scinde en
+`E[Z²·1_A] + E[Z²·1_Ac]` ; sur `A^c`, `Z² < n/2` ; Cauchy–Schwarz
+`(E[Z²·1_A])² ≤ E[Z⁴]·P[A]` avec `E[Z⁴] = 3n²−2n ≤ 3n²` donne
+`(n/2)² ≤ 3n²·P[A]`, soit `P[A] ≥ 1/12`. -/
+theorem prob_tail_ge_of_isColoring {n : ℕ} (c : Fin n → ℤ) (hc : IsColoring c)
+    (hn : 1 ≤ n) :
+    probEvt (fun S => (n : ℝ) / 2 ≤ rademacherSum c S * rademacherSum c S) ≥ 1 / 12 := by
+  classical
+  set A : (Fin n → Bool) → Prop :=
+    fun S => (n : ℝ) / 2 ≤ rademacherSum c S * rademacherSum c S with hA
+  set Z : (Fin n → Bool) → ℝ := rademacherSum c with hZ
+  -- Étape 1 : E[Z^2] = n (moments p1a)
+  have hE2 : sampleExpect fairCoin (fun S => Z S * Z S) = (n : ℝ) := by
+    have h := expect_rademacherSum_sq_of_isColoring c hc
+    have hconv : (fun S : Fin n → Bool => rademacherSum c S ^ 2) =
+        (fun S : Fin n → Bool => rademacherSum c S * rademacherSum c S) := by
+      funext S
+      rw [pow_two]
+    rw [hconv] at h
+    exact h
+  -- Étape 2 : scindage E[Z^2] = E[Z^2·1_A] + E[Z^2·1_Ac]
+  have hsplit := sampleExpect_split_indicator (fun S => Z S * Z S) A
+  -- Étape 3 : sur A^c, Z^2 < n/2, donc E[Z^2·1_Ac] ≤ n/2 (poids total 1)
+  have hAc_le : sampleExpect fairCoin (fun S => if ¬A S then Z S * Z S else 0)
+      ≤ (n : ℝ) / 2 := by
+    have hbound : sampleExpect fairCoin (fun S => if ¬A S then Z S * Z S else 0) ≤
+        sampleExpect fairCoin (fun S => if ¬A S then (n : ℝ) / 2 else 0) := by
+      apply sampleExpect_le_of_forall_le
+      intro S
+      by_cases hS : ¬A S
+      · show (if ¬A S then rademacherSum c S * rademacherSum c S else 0) ≤
+            if ¬A S then (n : ℝ) / 2 else 0
+        rw [if_pos hS, if_pos hS]
+        exact le_of_lt (lt_of_not_ge hS)
+      · show (if ¬A S then Z S * Z S else 0) ≤ if ¬A S then (n : ℝ) / 2 else 0
+        rw [if_neg hS, if_neg hS]
+    have hconst : sampleExpect fairCoin (fun S => if ¬A S then (n : ℝ) / 2 else 0)
+        = ((n : ℝ) / 2) * probEvt (fun S => ¬A S) := by
+      rw [show ((n : ℝ) / 2) * probEvt (fun S => ¬A S) =
+          sampleExpect fairCoin (fun S => (n : ℝ) / 2 *
+            (if ¬A S then (1 : ℝ) else 0)) from by
+        rw [PacLearning.sampleExpect_smul]
+        rfl]
+      apply congrArg
+      funext S
+      by_cases hS : ¬A S
+      · simp only [if_pos hS, mul_one]
+      · simp only [if_neg hS, mul_zero]
+    refine le_trans hbound ?_
+    rw [hconst]
+    have hp : probEvt (fun S => ¬A S) ≤ 1 := by
+      have hle : sampleExpect fairCoin (fun S => if ¬A S then (1 : ℝ) else 0) ≤
+          sampleExpect fairCoin (fun S : Fin n → Bool => (1 : ℝ)) := by
+        apply sampleExpect_le_of_forall_le
+        intro S
+        show (if ¬A S then (1 : ℝ) else 0) ≤ 1
+        by_cases hS : ¬A S
+        · rw [if_pos hS]
+        · rw [if_neg hS]
+          exact zero_le_one
+      have hone : sampleExpect fairCoin (fun S : Fin n → Bool => (1 : ℝ)) = 1 := by
+        simp only [PacLearning.sampleExpect, mul_one]
+        exact PacLearning.sampleWeight_sum_one (D := fairCoin) n
+      exact hle.trans (le_of_eq hone)
+    nlinarith [hp]
+  -- Étape 4 : donc E[Z^2·1_A] ≥ n/2
+  have hEA_ge : (n : ℝ) / 2 ≤ sampleExpect fairCoin (fun S => if A S then Z S * Z S else 0) := by
+    linarith [hsplit, hE2, hAc_le]
+  -- Étape 5 : Cauchy (E[Z^2·1_A])^2 <= E[Z^4]·P[A], E[Z^4] = 3n^2-2n <= 3n^2
+  have hcauchy := expect_sq_le_mul_prob Z A
+  have hE4 : sampleExpect fairCoin (fun S => Z S * Z S * (Z S * Z S)) =
+      3 * (n : ℝ) ^ 2 - 2 * (n : ℝ) := by
+    have h := expect_rademacherSum_fourth_moment_of_isColoring c hc
+    have hconv : (fun S : Fin n → Bool => rademacherSum c S ^ 4) =
+        (fun S : Fin n → Bool => rademacherSum c S * rademacherSum c S *
+          (rademacherSum c S * rademacherSum c S)) := by
+      funext S
+      ring
+    rw [hconv] at h
+    exact h
+  -- Final : (n/2)^2 <= E[Z^4]·P[A] <= 3n^2·P[A]  =>  P[A] >= 1/12
+  have hcauchy2 : (sampleExpect fairCoin (fun S => if A S then Z S else 0)) ^ 2 ≤
+      sampleExpect fairCoin (fun S => if A S then Z S * Z S else 0) * probEvt A :=
+    hcauchy
+  have hmono : sampleExpect fairCoin (fun S => if A S then Z S * Z S * (Z S * Z S) else 0) ≤
+      sampleExpect fairCoin (fun S => Z S * Z S * (Z S * Z S)) := by
+    apply sampleExpect_le_of_forall_le
+    intro S
+    by_cases hS : A S
+    · simp only [if_pos hS, le_refl]
+    · simp only [if_neg hS]
+      have hZ2 : 0 ≤ Z S * Z S := mul_self_nonneg _
+      nlinarith [hZ2]
+  -- hcauchy adapté à f := Z² : (E[Z²·1_A])² ≤ E[Z⁴·1_A]·P[A]
+  have hcauchy2 := expect_sq_le_mul_prob (fun S => Z S * Z S) A
+  -- E[Z⁴·1_A] ≤ E[Z⁴] (mono, hmono ci-dessus)
+  -- (E[Z²·1_A])² = (≥ n/2)² = n²/4 ≤ 3n²·P[A]  (E[Z⁴] ≤ 3n² car 3n²-2n ≤ 3n²)
+  have hE4bound : sampleExpect fairCoin (fun S => Z S * Z S * (Z S * Z S)) ≤
+      3 * (n : ℝ) ^ 2 := by
+    rw [hE4]
+    have hnR : (0 : ℝ) ≤ (n : ℝ) := Nat.cast_nonneg n
+    have hbound : 3 * (n : ℝ) ^ 2 - 2 * (n : ℝ) ≤ 3 * (n : ℝ) ^ 2 := by
+      nlinarith [hnR]
+    exact hbound
+  have hP0 : 0 ≤ probEvt A := by
+    have hle : sampleExpect fairCoin (fun S : Fin n → Bool => (0 : ℝ)) ≤
+        sampleExpect fairCoin (fun S => if A S then (1 : ℝ) else 0) :=
+      sampleExpect_le_of_forall_le _ _ (fun S => by
+        by_cases hS : A S
+        · simp only [if_pos hS, zero_le_one]
+        · simp only [if_neg hS, le_refl])
+    have h0 : sampleExpect fairCoin (fun S : Fin n → Bool => (0 : ℝ)) = 0 := by
+      rw [PacLearning.sampleExpect_const]
+    rw [h0] at hle
+    rw [show probEvt A = sampleExpect fairCoin (fun S => if A S then (1 : ℝ) else 0) from rfl]
+    exact hle
+  have hkey : (sampleExpect fairCoin (fun S => if A S then Z S * Z S else 0)) ^ 2 ≤
+      3 * (n : ℝ) ^ 2 * probEvt A := by
+    have h1 := hcauchy2
+    have h2' : sampleExpect fairCoin (fun S => if A S then Z S * Z S * (Z S * Z S) else 0) ≤
+        3 * (n : ℝ) ^ 2 := hmono.trans hE4bound
+    nlinarith [h1, h2', hP0]
+  -- n/2 ≤ E[Z²·1_A] → n²/4 ≤ (E[Z²·1_A])² ≤ 3n²·P[A] → P ≥ 1/12
+  have hn0 : (0 : ℝ) < (n : ℝ) := by exact_mod_cast hn
+  have hEA0 : 0 ≤ sampleExpect fairCoin (fun S => if A S then Z S * Z S else 0) := by
+    have hle : sampleExpect fairCoin (fun S : Fin n → Bool => (0 : ℝ)) ≤
+        sampleExpect fairCoin (fun S => if A S then Z S * Z S else 0) := by
+      apply sampleExpect_le_of_forall_le
+      intro S
+      show (0 : ℝ) ≤ if A S then Z S * Z S else 0
+      by_cases hS : A S
+      · simp only [if_pos hS]
+        exact mul_self_nonneg _
+      · simp only [if_neg hS, le_refl]
+    have h0 : sampleExpect fairCoin (fun S : Fin n → Bool => (0 : ℝ)) = 0 := by
+      rw [PacLearning.sampleExpect_const]
+    rw [h0] at hle
+    exact hle
+  have hsqge : ((n : ℝ) / 2) ^ 2 ≤
+      (sampleExpect fairCoin (fun S => if A S then Z S * Z S else 0)) ^ 2 := by
+    nlinarith [hEA_ge, hEA0]
+  have hfinal : ((n : ℝ) / 2) ^ 2 ≤ 3 * (n : ℝ) ^ 2 * probEvt A :=
+    hsqge.trans hkey
+  have hn2pos : (0 : ℝ) < (n : ℝ) ^ 2 := by
+    nlinarith [hn0]
+  have hdiv : (1 : ℝ) / 12 ≤ probEvt A := by
+    have hexp : ((n : ℝ) / 2) ^ 2 = (n : ℝ) ^ 2 / 4 := by
+      rw [div_pow]
+      norm_num
+    rw [hexp, div_le_iff₀ (by norm_num : (0 : ℝ) < 4)] at hfinal
+    -- hfinal : n^2 ≤ 3 n^2 P * 4 = 12 n^2 P ; n^2 > 0 → P ≥ 1/12
+    nlinarith [hfinal, hn2pos]
+  exact hdiv
+
 end Moments
 
 end Discrepancy
