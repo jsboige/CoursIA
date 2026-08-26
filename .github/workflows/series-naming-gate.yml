@@ -13,13 +13,13 @@ name: series-naming-gate
 # elle a une convention arretee -- une regle imposee a une serie qui n'a pas
 # tranche fabrique du rouge sans defaut.
 
+# ABSORBE PAR LA VOIE RAPIDE sur `pull_request` (#12567, tranche 1) : le
+# verdict PR est rendu par `fast-lane-shadow.yml` (check-run nomme
+# `zero-pad guard (GameTheory serie)`, meme nom que ce job). Ce fichier
+# garde `push` (couverture post-merge) et `workflow_dispatch`. Les `paths:`
+# d'origine vivent dans `scripts/ci/fast_lane_registry.py` (TRANCHE1).
+
 on:
-  pull_request:
-    branches: [ main ]
-    paths:
-      - 'MyIA.AI.Notebooks/GameTheory/**'
-      - 'scripts/notebook_tools/check_series_zero_pad.py'
-      - '.github/workflows/series-naming-gate.yml'
   push:
     branches: [ main ]
     paths:
