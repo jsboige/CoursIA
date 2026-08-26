@@ -22,13 +22,15 @@ La Déclaration alerte symétriquement sur cinq menaces : arguments plausibles m
 
 CoursIA partage ce diagnostic, avec une précision issue de son expérience : **la validité technique et la valeur pédagogique sont deux axes distincts**. Un notebook peut s’exécuter de bout en bout et mal expliquer son objet. Une preuve Lean peut être acceptée par le noyau et rester opaque, mal attribuée ou dépendante d’axiomes non discutés. À l’inverse, un récit limpide ne compense jamais un résultat non reproduit.
 
-Cette distinction motive l’[Epic de digestion et canonicalisation](https://github.com/jsboige/CoursIA/issues/13105), inspiré de la chaîne proposée par Terry Tao dans *Mathematics in the Age of AI* : génération, vérification, exposition, publication, puis digestion dans un corpus humainement cohérent.
+Cette distinction motive l’[Epic de digestion et exposition des preuves du corpus CoursIA](https://github.com/jsboige/CoursIA/issues/13105), inspiré de la chaîne proposée par Terry Tao dans *Mathematics in the Age of AI* : génération, vérification, exposition, publication, puis digestion dans un corpus humainement cohérent.
+
+Cet Epic est une discipline **interne** avant d’être une politique d’acquisition : il s’applique d’abord aux lakes, preuves et notebooks que CoursIA possède déjà, puis aux futurs résultats produits dans le dépôt. Il ne transforme ni Leiden ni Palomar en mandat d’étendre indéfiniment le périmètre scientifique de CoursIA. Les résultats externes ne sont considérés qu’au compte-gouttes, lorsqu’un besoin pédagogique préexistant les appelle.
 
 ## Principes, pratiques, preuves et engagements
 
 | Principe de Leiden | Pratique CoursIA actuelle | Preuve consultable | Lacune reconnue | Engagement |
 |---|---|---|---|---|
-| La preuve vise certitude **et** compréhension | Les notebooks combinent exécution, narration, exemples et exercices ; les preuves Lean sont relues au-delà du simple build | [Règles de validation H.1–H.7](reference/regles-validation-detail.md), [discipline de review Lean](../.claude/rules/pr-review-discipline.md), série [Lean](../MyIA.AI.Notebooks/SymbolicAI/Lean/README.md) | Un build vert ne mesure ni la lisibilité ni la digestion | Appliquer la grille de l’Epic #13105 aux résultats qui dépassent la capacité d’exposition actuelle |
+| La preuve vise certitude **et** compréhension | Les notebooks combinent exécution, narration, exemples et exercices ; les preuves Lean sont relues au-delà du simple build | [Règles de validation H.1–H.7](reference/regles-validation-detail.md), [discipline de review Lean](../.claude/rules/pr-review-discipline.md), série [Lean](../MyIA.AI.Notebooks/SymbolicAI/Lean/README.md) | Un build vert ne mesure ni la lisibilité ni la digestion | Appliquer d’abord la grille de l’Epic #13105 aux résultats existants de CoursIA où l’écart d’exposition est vérifié, puis aux futurs résultats majeurs au fil de leur création |
 | Attribution et responsabilité humaines | Les sources, auteurs et artefacts amont doivent être nommés ; une attribution douteuse bloque une conclusion | [Verify Before Claiming](../.claude/rules/verify-before-claiming.md), [registre d’attribution MBML](reference/mbml-source-attribution.md), [anti-régression](../.claude/rules/anti-regression.md) | La provenance n’est pas encore uniforme dans tous les notebooks historiques | Traiter chaque lacune actionnable par une issue dédiée, avec source primaire et correction vérifiable |
 | Transparence et vérification indépendante | Outputs réels committés, exécution end-to-end, comptage des axiomes et validation après modification | [Règles notebooks](../CLAUDE.md#c-notebooks-3-règles-user-2026-04-26), [couverture proof-integrity](reference/lean-axiom-coverage.md), [PARCOURS](PARCOURS.md) | La couverture `proof-integrity` n’atteint pas encore tous les lakes | Étendre la couverture sans présenter les lakes non câblés comme déjà certifiés |
 | Standards partagés d’évaluation | Les axes éditorial, reproductibilité et revue scientifique sont séparés ; les reviews substantielles sont enregistrées | [PARCOURS](PARCOURS.md), [registre de revues éditoriales](notebook-metadata/editorial-review-registry.md), [carte de revue](notebook-metadata/EDITORIAL_REVIEW_CARD.md) | Les registres restent partiels et la qualité pédagogique garde une part de jugement humain | Nommer la portée de chaque review et refuser l’auto-promotion par métrique unique |
@@ -53,7 +55,7 @@ Cette précision reste incomplète : la [carte de couverture](reference/lean-axi
 
 Lean-19 Sendov, Lean-20 Analysis I et Lean-21 PFR illustrent trois formes de digestion : exposer un grand résultat, étudier un workflow de formalisation et relier une méthode entropique à un lake réel. Ces notebooks sont des points de départ, pas des certificats de canonicalisation définitive.
 
-L’[inventaire Palomar](https://github.com/jsboige/CoursIA/issues/13107) rend cette prudence opérationnelle. Au snapshot du 26 août 2026, le registre comptait 68 résultats actifs et 76 versions. Un seul résultat, Sendov, avait un chevauchement direct avec une digestion CoursIA existante. La plupart des autres reçoivent `VEILLE` ou `AUCUNE ACTION` : être vérifié dans Palomar ne suffit pas à justifier un import, un notebook ou une place dans le curriculum.
+L’[inventaire de veille Palomar](https://github.com/jsboige/CoursIA/issues/13107) rend cette prudence opérationnelle. Au snapshot du 26 août 2026, le registre comptait 68 résultats actifs et 76 versions. Un seul résultat, Sendov, avait un chevauchement direct avec une digestion CoursIA existante. La plupart des autres reçoivent `VEILLE` ou `AUCUNE ACTION` : être vérifié dans Palomar ne suffit pas à justifier un import, un notebook ou une place dans le curriculum. Cet inventaire n’est pas un backlog ; il ne devient actionnable qu’en réponse à un besoin déjà formulé par un parcours CoursIA.
 
 ### 4. Revue humaine
 
@@ -124,7 +126,7 @@ Une exposition finale doit être lisible. Mais supprimer tous les essais ratés,
 5. **Outputs authentiques.** Corriger la cause puis ré-exécuter ; ne jamais hand-éditer une sortie pour la rendre plus propre ou conforme au récit.
 6. **Revue nommée.** Documenter qui a relu quoi, avec quelle portée ; éviter que « reviewed » devienne un label sans contenu.
 7. **Résultats négatifs conservés.** Garder les non-reproductions, réfutations et plafonds lorsqu’ils changent la décision scientifique.
-8. **Digestion avant accumulation.** Pour les résultats formels ou IA à fort débit, investir dans l’exposition, la littérature, les exercices et le raccord au curriculum.
+8. **Digestion interne avant accumulation ou ingestion.** Améliorer d’abord l’exposition des résultats déjà produits par CoursIA et intégrer cette exigence au travail futur ; n’ajouter un résultat externe qu’en réponse à un besoin pédagogique préexistant, jamais pour remplir un quota d’imports.
 9. **Autonomie mesurée.** Favoriser les outils ouverts et locaux sans masquer les dépendances restantes.
 10. **Coûts visibles.** Documenter les coûts de calcul, d’accès et d’énergie lorsqu’ils conditionnent la reproductibilité ou l’équité d’accès.
 
@@ -133,6 +135,8 @@ Une exposition finale doit être lisible. Mais supprimer tous les essais ratés,
 - Un build Lean ne certifie ni la nouveauté, ni l’importance, ni la pédagogie d’un résultat.
 - Une exécution Papermill ne certifie pas que l’expérience est non triviale ou que son interprétation est correcte.
 - Une entrée Palomar ne valide pas un lake entier et n’impose pas son import.
+- L’inventaire Palomar ne donne pas à CoursIA une mission générale d’ingestion des mathématiques formalisées.
+- L’Epic de digestion n’impose ni audit uniforme de chaque lemme, ni rapport séparé pour chaque preuve, ni backfill immédiat de tout le corpus.
 - Un modèle local ne rend pas l’infrastructure indépendante de toute industrie.
 - Un dépôt public ne résout pas les barrières de matériel, de licence ou d’énergie.
 - Une grille de review ne remplace pas le jugement mathématique et pédagogique.
