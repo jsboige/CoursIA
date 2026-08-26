@@ -49,8 +49,8 @@ lake build
 
 Le geste technique du papier — *découpler* des évolutions qui conspiraient —
 est un motif récurrent du dépôt : reparamétrisation non centrée
-[PyMC-12](../Probas/PyMC/PyMC-12-Modeles-Hierarchiques.ipynb), découplage de
-Hoeffding ([`PacLearning/Hoeffding.lean`](../ML/learning_theory_lean/PacLearning/Hoeffding.lean),
+[PyMC-12](../../Probas/PyMC/PyMC-12-Modeles-Hierarchiques.ipynb), découplage de
+Hoeffding ([`PacLearning/Hoeffding.lean`](../../ML/learning_theory_lean/PacLearning/Hoeffding.lean),
 réutilisé en P2 pour Erdős–Spencer), double-Q du RL, Fox-decoupling de
 `knot_lean`. Ce lake en est le cinquième volume, porté à la certitude
 formelle ; le grounding complet (ICT, « mesures naïves = signaux fantômes »)
