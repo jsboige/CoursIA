@@ -70,7 +70,12 @@ Avant **tout** `gh pr merge`, énumérer les **trois** surfaces et vérifier que
 
 1. une **réponse écrite** sur la PR qui nomme la remarque (traitée en code — en citant le commit — traitée en argument, ou refusée en le disant) ;
 2. un **thread inline résolu** (`isResolved: true`) ;
-3. une **issue de suivi nommée dans le commentaire de merge** (reportée sciemment).
+3. une **issue de suivi ouverte et nommée AVANT le merge** (reportée sciemment) — le commentaire de merge peut la rappeler, il ne peut pas la créer.
+
+**Une levée porte un AUTEUR et une HEURE — sans les deux, ce n'est pas une levée.**
+
+- **Qui** : une phrase écrite par **l'auteur de la PR** ne lève pas une réserve posée par **un tiers**. Se lever soi-même une réserve d'autrui n'est pas y répondre, c'est la déclarer répondue. (#12798 : `[Hermes] COMMENT_WITH_CONCERNS` éteint par une phrase de l'auteur ; livrable réel = stub `Cle presente False` sous un body annonçant SOTA-OK.)
+- **Quand** : tout ce qui lève doit exister **avant** `gh pr merge`. Un commentaire de merge est un compte-rendu, **jamais une porte**. (#12347 : `CHANGES_REQUESTED` 17:03:20Z → merge 21:23:56Z → levée **21:24:28Z, 32 s après le merge**, et annotée comme telle par son auteur. Aucune ignorance en cause : rien ne contraignait l'ordre.)
 
 **Un commit poussé après la remarque ne la lève PAS à lui seul.** Sur #10761 le « traitement » était un rebase à 19:41 qui n'adressait aucun des deux nits de 11:07 — un push muet est indiscernable d'un push qui répond. Ce qui lève une remarque est **une phrase**, pas un SHA.
 
@@ -82,6 +87,8 @@ L'écoulement du temps n'est **pas** une levée. `mergeStateStatus: CLEAN` n'est
 python scripts/check_unaddressed_nits.py <PR>        # exit 1 = ne pas merger
 python scripts/check_unaddressed_nits.py --audit --limit 400
 ```
+
+**`exit 0` répond « aucune phrase de levée ne manque » — et rien d'autre.** Il ne dit ni **qui** l'a écrite, ni **avant ou après le merge**, ni si la **substance** est traitée. Ces trois-là se lisent à la main, et la troisième exige d'**ouvrir les corps de review** : un `state: COMMENTED` de `jsboige` est un verdict Hermes dont le sens vit dans le préfixe du body. Prendre le vert de l'organe pour une dispense de lecture est le manquement que cette section existe pour empêcher.
 
 **Incident fondateur — PR #10761** : mergée malgré 2 nits user vieux de 17 h et une review Hermes `COMMENT_WITH_CONCERNS`, parce que `mergeStateStatus: CLEAN` et `reviews[].state: COMMENTED` étaient tous deux verts. L'attribution fautive (Sendov → Tao) est corrigée depuis (`e1ad7868a`, #11065). La **classe** de défaut reste vivante (#11110, #11127) : « la référence est fausse » ≠ « l'attribution est fausse ». Récit complet : [pr-review-context.md](docs/reference/pr-review-context.md).
 
