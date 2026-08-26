@@ -151,6 +151,7 @@ jobs:
         with:
           ref: main
           fetch-depth: 0
+          filter: blob:none
           persist-credentials: true
 
       # Prepare the long-lived branch from origin/main. The bot NEVER touches
