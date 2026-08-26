@@ -14,6 +14,16 @@ from pathlib import Path
 
 import pytest
 
+# The runner-manager is a Windows-confinement tool (#12704: isolated Windows
+# runners, Windows accounts, NTFS ACLs). The tests below that exercise apply
+# paths assume a Windows host: USERPROFILE/APPDATA probes, os.name == "nt"
+# Path() flavor (a monkeypatched os.name cannot make pathlib instantiate
+# WindowsPath on Linux). Linux CI runs the platform-neutral surface only;
+# the Windows-hosted surface runs on the Windows runners the tool manages.
+requires_windows = pytest.mark.skipif(
+    os.name != "nt", reason="Windows-confinement surface (see #12704)"
+)
+
 MODULE_PATH = Path(__file__).parents[1] / "ci" / "manage_self_hosted_runner.py"
 SPEC = importlib.util.spec_from_file_location("manage_self_hosted_runner", MODULE_PATH)
 mod = importlib.util.module_from_spec(SPEC)
@@ -102,6 +112,37 @@ def PureWindows(path: Path) -> str:
     return "C:\\" + "\\".join(path.parts[-3:])
 
 
+def test_run_powershell_delivers_scripts_via_file_not_stdin():
+    # Regression (measured on pwsh 7.5, 2026-08-25): `-Command -` fed over
+    # stdin silently stops executing at a PowerShell here-string (@'...'@)
+    # and still exits 0, turning every apply script embedding one into a
+    # no-op reported as success. Scripts must be delivered via -File.
+    seen = {}
+
+    def run(argv, **kwargs):
+        seen["argv"] = list(argv)
+        seen["env"] = kwargs["env"]
+        seen["script"] = Path(argv[-1]).read_text(encoding="utf-8")
+        assert "input" not in kwargs
+        return completed(argv)
+
+    script = "$c = ConvertFrom-Json @'\n{\"a\": 1}\n'@\nWrite-Output $c.a\n"
+    mod._run_powershell(script, {"MARKER": "x"}, run=run)
+    assert seen["argv"][1:5] == ["-NoLogo", "-NoProfile", "-NonInteractive", "-File"]
+    assert seen["script"] == script
+    assert seen["env"]["MARKER"] == "x"
+    assert not Path(seen["argv"][-1]).exists()
+
+
+@requires_windows
+def test_generated_apply_scripts_embed_here_strings():
+    # If these scripts ever stop embedding here-strings the regression test
+    # above loses its teeth: anchor the property the delivery bug broke.
+    target = profile(Path("unused"))
+    for generator in (mod._account_acl_script, mod._teardown_identity_script):
+        assert "@'" in generator(target)
+
+
 def test_manager_has_no_duplicate_top_level_definitions():
     tree = ast.parse(MODULE_PATH.read_text(encoding="utf-8"))
     names = [
@@ -117,6 +158,7 @@ def test_manager_has_no_duplicate_top_level_definitions():
     assert duplicates == {}
 
 
+@requires_windows
 def test_committed_profiles_are_valid_and_distributed_across_pushers():
     payload = json.loads(mod.PROFILE_PATH.read_text(encoding="utf-8"))
     assert set(payload["profiles"]) == {
@@ -248,6 +290,7 @@ def completed(argv=None, **kwargs):
     return subprocess.CompletedProcess(argv or [], 0, "", "")
 
 
+@requires_windows
 def test_install_refuses_bad_checksum_before_extraction(tmp_path, monkeypatch):
     data = make_runner_archive()
     target = profile(tmp_path / "runner", digest="0" * 64)
@@ -268,6 +311,7 @@ def test_install_refuses_bad_checksum_before_extraction(tmp_path, monkeypatch):
     assert not target.root.exists()
 
 
+@requires_windows
 def test_install_extracts_atomically_and_never_logs_password(tmp_path, monkeypatch):
     data = make_runner_archive()
     target = profile(tmp_path / "runner", digest=hashlib.sha256(data).hexdigest())
@@ -282,7 +326,7 @@ def test_install_extracts_atomically_and_never_logs_password(tmp_path, monkeypat
     def run(*args, **kwargs):
         calls.append((args, kwargs))
         assert password not in " ".join(args[0])
-        assert password not in kwargs["input"]
+        assert password not in Path(args[0][-1]).read_text(encoding="utf-8")
         assert kwargs["env"][mod.ACCOUNT_PASSWORD_ENV] == password if len(calls) == 1 else True
         return completed(args[0])
 
@@ -361,6 +405,7 @@ def test_register_redacts_secrets_from_failure(tmp_path, monkeypatch):
     assert str(caught.value).count("[REDACTED]") == 2
 
 
+@requires_windows
 def test_probe_requires_three_denials_and_one_write(tmp_path, monkeypatch):
     target = profile(tmp_path / "runner")
     write_installed(target)
@@ -380,6 +425,7 @@ def test_probe_requires_three_denials_and_one_write(tmp_path, monkeypatch):
     assert not (target.root / ".isolation-probe.json").exists()
 
 
+@requires_windows
 def test_probe_rejects_missing_or_ambiguous_results(tmp_path, monkeypatch):
     target = profile(tmp_path / "runner")
     write_installed(target)
@@ -398,6 +444,7 @@ def test_probe_rejects_missing_or_ambiguous_results(tmp_path, monkeypatch):
         mod.apply_verify(target, run=run)
 
 
+@requires_windows
 def test_acl_scripts_use_sids_and_check_native_exit_codes(tmp_path, monkeypatch):
     target = profile(tmp_path / "runner")
     monkeypatch.setenv("USERPROFILE", str(tmp_path / "user"))
@@ -439,6 +486,7 @@ def test_teardown_requires_removal_token_for_registered_runner(tmp_path, monkeyp
     assert target.root.exists()
 
 
+@requires_windows
 def test_teardown_unregisters_without_secret_argv_and_archives_logs(tmp_path, monkeypatch):
     target = profile(tmp_path / "runner")
     write_installed(target, registered=True)
@@ -449,8 +497,10 @@ def test_teardown_unregisters_without_secret_argv_and_archives_logs(tmp_path, mo
     calls = []
 
     def run(argv, **kwargs):
-        calls.append((argv, kwargs))
+        script = Path(argv[-1]).read_text(encoding="utf-8") if argv[0] == "pwsh" else ""
+        calls.append((argv, kwargs, script))
         assert token not in " ".join(argv)
+        assert token not in calls[-1][2]
         return completed(argv)
 
     mod.apply_teardown(target, run=run)
@@ -459,8 +509,8 @@ def test_teardown_unregisters_without_secret_argv_and_archives_logs(tmp_path, mo
     assert calls[0][0][1:] == ["remove", "--unattended"]
     assert calls[0][1]["env"]["ACTIONS_RUNNER_INPUT_TOKEN"] == token
     assert calls[1][0][0] == "pwsh"
-    assert "Get-CimInstance Win32_Service" in calls[1][1].get("input", "")
-    assert "Remove-LocalUser" in calls[2][1].get("input", "")
+    assert "Get-CimInstance Win32_Service" in calls[1][2]
+    assert "Remove-LocalUser" in calls[2][2]
 
 
 def test_teardown_refuses_if_archived_log_contains_supplied_secret(tmp_path, monkeypatch):
@@ -487,6 +537,7 @@ def test_apply_noop_does_not_call_mutator(tmp_path, capsys, monkeypatch):
     assert result["applied"] is False
 
 
+@requires_windows
 def test_dry_run_cli_is_deterministic_and_does_not_mutate(tmp_path, capsys):
     registry = tmp_path / "profiles.json"
     root = PureWindows(tmp_path / "runner")
