@@ -51,6 +51,17 @@ from fast_lane_registry import PILOT, TRANCHE1, Guard  # noqa: E402
      "scripts/notebook_tools/strip_probe_banner.py", True),
     ("scripts/notebook_tools/other.py",
      "scripts/notebook_tools/strip_probe_banner.py", False),
+    # segment `**/` MEDIAN : chez GitHub il matche aussi zero repertoire --
+    # `MyIA.AI.Notebooks/GradeBook.ipynb` vit exactement ce cas, et la
+    # tranche 1 (exercise-leak) porte ce pattern : sans la variante repliee,
+    # un notebook a la racine du sous-dossier echappait au garde absorbe
+    # alors que le workflow d'origine le couvrait.
+    ("MyIA.AI.Notebooks/x.ipynb",
+     "MyIA.AI.Notebooks/**/*.ipynb", True),
+    ("MyIA.AI.Notebooks/x/y.ipynb",
+     "MyIA.AI.Notebooks/**/*.ipynb", True),
+    ("scripts/x.ipynb",
+     "MyIA.AI.Notebooks/**/*.ipynb", False),
 ])
 def test_path_matches(path, pattern, expected):
     assert fast_lane.path_matches(path, pattern) is expected
@@ -160,7 +171,7 @@ def _arm_unrestorable_tree(monkeypatch, published):
     monkeypatch.setattr(fast_lane, "guard_applies", lambda g, c: True)
     monkeypatch.setattr(fast_lane, "run_argv", lambda argv, ctx: (0, "{}"))
     monkeypatch.setattr(fast_lane, "run_iter",
-                        lambda argv, paths, ctx: (0, "{}"))
+                        lambda argv, paths, ctx, warn_rc=(): (0, "{}"))
     monkeypatch.setattr(fast_lane, "git",
                         lambda *a: subprocess.CompletedProcess(a, 0, "", ""))
     monkeypatch.setattr(fast_lane, "stale_added_paths", lambda _p: [])
@@ -567,12 +578,14 @@ def _drive_mixed_emission(monkeypatch, pilot_rc, tranche_rc):
                     blocking=True, paths=["**/*.ipynb"], absorbed=True)
     monkeypatch.setattr(fl, "PILOT", [pilot])
     monkeypatch.setattr(fl, "TRANCHE1", [tranche])
+    monkeypatch.setattr(fl, "TRANCHE2", [])
     monkeypatch.setattr(fl, "changed_files", lambda _ref: ["x.ipynb"])
     monkeypatch.setattr(
         fl, "run_argv",
         lambda argv, ctx: (tranche_rc if argv == ["cmd-tranche"]
                            else pilot_rc, "sortie"))
-    monkeypatch.setattr(fl, "run_iter", lambda a, p, c: (0, ""))
+    monkeypatch.setattr(fl, "run_iter",
+                        lambda a, p, c, warn_rc=(): (0, ""))
     monkeypatch.setattr(
         fl, "git",
         lambda *a: subprocess.CompletedProcess(a, 0, "sha", ""))
@@ -616,3 +629,118 @@ def test_mixed_emission_pilot_stays_shadowed_and_non_blocking(monkeypatch):
                 "le pilote en echec doit rester neutralise")
     assert rc == 0, (
         "un echec purement ombre ne doit pas rougir le job")
+
+
+# ---------------------------------------------------------------------------
+# 6. Tranche 2 d'absorption (#12567) -- ratchet autonome + warn_rc + skip
+# ---------------------------------------------------------------------------
+
+def test_tranche2_guards_are_absorbed_and_declare_their_warn_rc():
+    """Meme contrat que la tranche 1, plus une clause : les detecteurs de la
+    serie figure/texte rendent rc=2 sur fichier illisible, traité en warning
+    par leur workflow d'origine -- le garde absorbe doit le declarer sous
+    peine d'etre plus strict que ce qu'il remplace."""
+    from fast_lane_registry import TRANCHE2
+    assert len(TRANCHE2) == 3, (
+        "la tranche 2 documente trois formes moteur ; si le nombre change, "
+        "le commentaire du registre et ce test suivent")
+    for guard in TRANCHE2:
+        assert guard.absorbed, f"{guard.name} doit porter absorbed=True"
+    warners = {g.name for g in TRANCHE2 if g.warn_rc}
+    assert warners == {
+        "No fabricated text output in changed notebooks",
+        "No degenerate figure in changed notebooks",
+    }, ("seuls les detecteurs figure/texte portent un warn_rc ; le ratchet "
+        "est binaire et ne doit pas en declarer")
+
+
+def test_absorbed_workflows_of_tranche2_no_longer_trigger_on_pull_request():
+    import re as _re
+    from fast_lane_registry import TRANCHE2
+    for guard in TRANCHE2:
+        wf = WORKFLOWS / guard.source
+        assert wf.is_file(), f"{guard.source} absent du depot"
+        txt = wf.read_text(encoding="utf-8")
+        assert not _re.search(r"^\s+pull_request:", txt, _re.M), (
+            f"{guard.source} declenche encore sur pull_request alors que "
+            f"{guard.name} est absorbe : double execution + zero run sauve")
+
+
+def test_warn_rc_is_success_everywhere(monkeypatch):
+    """Un rc=2 declare en warn_rc doit etre un SUCCES coherant sur les TROIS
+    surfaces : conclusion du check-run, titre, et rouge du job -- sinon le
+    verdict dit success pendant que le job rougit."""
+    guard = Guard(name="warneur", argv=["cmd-w"], source="s",
+                  blocking=True, absorbed=True,
+                  warn_rc=(2,), paths=["**/*.ipynb"])
+    assert fast_lane.conclusion_for(guard, 2) == "success"
+    assert fast_lane.conclusion_for(guard, 1) == "failure"
+    assert fast_lane.conclusion_for(guard, 0) == "success"
+
+    import fast_lane as fl
+    monkeypatch.setattr(fl, "PILOT", [])
+    monkeypatch.setattr(fl, "TRANCHE1", [guard])
+    monkeypatch.setattr(fl, "TRANCHE2", [])
+    monkeypatch.setattr(fl, "changed_files", lambda _ref: ["x.ipynb"])
+    monkeypatch.setattr(fl, "run_argv", lambda argv, ctx: (2, "illisible"))
+    monkeypatch.setattr(
+        fl, "git",
+        lambda *a: subprocess.CompletedProcess(a, 0, "sha", ""))
+    published = []
+    monkeypatch.setattr(fl, "emit_check_run",
+                        lambda *a, **k: published.append(a))
+    rc = fl.main(["--shadow", "--base-sha", "abc"])
+    assert rc == 0, "un rc warn ne doit pas rougir le job"
+    assert published[0][3] == "success"
+    assert "OK" in published[0][4], published[0][4]
+
+
+def test_iter_paths_skips_files_deleted_by_the_pr(monkeypatch):
+    """Fidelite au `[ -f \"$nb\" ] || continue` des workflows d'origine : un
+    notebook SUPPRIME par la PR ne doit jamais atteindre le detecteur -- sinon
+    son code \"illisible\" (rc=2) deviendrait un verdict sur un fichier que
+    l'original n'examinait pas."""
+    import fast_lane as fl
+    from fast_lane_registry import TRANCHE2
+    seen_paths: list[list[str]] = []
+    real_iter = fl.run_iter
+
+    def spy_iter(argv, paths, ctx, warn_rc=()):
+        seen_paths.append(list(paths))
+        return real_iter(argv, paths, ctx, warn_rc=warn_rc)
+
+    fig = next(g for g in TRANCHE2
+               if g.name.startswith("No degenerate figure"))
+    monkeypatch.setattr(fl, "PILOT", [])
+    monkeypatch.setattr(fl, "TRANCHE1", [])
+    monkeypatch.setattr(fl, "TRANCHE2", [fig])
+
+    # Un notebook REEL (pour le cas here) + un chemin absent (gone) : le
+    # filtre doit garder le premier et ecarter le second.
+    import os as _os
+    real_nb = None
+    for root, dirs, files in _os.walk(fl.REPO_ROOT / "MyIA.AI.Notebooks"):
+        for f in files:
+            if f.endswith(".ipynb"):
+                real_nb = _os.path.relpath(
+                    _os.path.join(root, f), fl.REPO_ROOT).replace(_os.sep, "/")
+                break
+        if real_nb:
+            break
+        dirs[:] = dirs[:3]  # profondeur bornee : le premier trouve suffit
+    assert real_nb, "l'arbre de test ne porte aucun notebook"
+
+    gone = "MyIA.AI.Notebooks/B/gone.ipynb"
+    monkeypatch.setattr(fl, "changed_files", lambda _ref: [real_nb, gone])
+    monkeypatch.setattr(fl, "run_iter", spy_iter)
+    monkeypatch.setattr(
+        fl, "git",
+        lambda *a: subprocess.CompletedProcess(a, 0, "sha", ""))
+    monkeypatch.setattr(fl, "emit_check_run", lambda *a, **k: None)
+    fl.main(["--shadow", "--base-sha", "abc"])
+
+    examined = seen_paths[0] if seen_paths else []
+    assert real_nb in examined, (
+        f"le notebook existant {real_nb} doit etre examine")
+    assert gone not in examined, (
+        "un fichier supprime par la PR ne doit pas atteindre le detecteur")

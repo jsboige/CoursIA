@@ -80,6 +80,15 @@ class Guard:
     swap_paths: list[str] = field(default_factory=list)
     iterates_paths: bool = False  # voir `run_iter` dans fast_lane.py
     absorbed: bool = False  # tranche d'absorption #12567 : nom canonique + conclusion reelle, meme en lane ombre
+    # Codes de retour traites comme SUCCES au-dela de 0. Les detecteurs de
+    # la serie figure/texte rendent rc=1 sur defaut et rc=2 sur fichier
+    # INTROUVABLE (mesure firsthand : un JSON corrompu rend rc=0 avec une
+    # NOTE "unreadable"). Leur workflow d'origine ne voit jamais ce cas --
+    # il saute les fichiers supprimes (`[ -f "$nb" ] || continue`) -- et le
+    # moteur reproduit ce skip ; `warn_rc` est la seconde defense si un
+    # chemin echappe au filtre (checkout partiel). Sans lui, la lane serait
+    # PLUS stricte que le workflow qu'elle absorbe.
+    warn_rc: tuple[int, ...] = ()
 
 
 NOTEBOOK_GLOBS = ["**/*.ipynb"]
@@ -311,5 +320,86 @@ TRANCHE1: list[Guard] = [
         blocking=True,
         needs_base=True,
         absorbed=True,
+    ),
+]
+
+
+# ---------------------------------------------------------------------------
+# TRANCHE 2 d'absorption (#12567) -- meme contrat que la tranche 1 (nom
+# canonique, conclusion reelle, workflow d'origine retire de pull_request),
+# trois formes moteur nouvelles par rapport a la tranche 1 :
+#
+#   - ratchet AUTONOME : le script fait lui-meme son diff base...HEAD, la lane
+#     ne fournit que {base_ref}. Le self-test du detecteur est enchaine par
+#     `&&` comme les deux steps du workflow d'origine (bash -c acceptable :
+#     le seul token substitue est un litteral de ref, aucun chemin du diff).
+#   - iter_paths + warn_rc : boucle par notebook change, rc=1 defaut / rc=2
+#     introuvable (skip dans l'original, donc warn_rc=(2,) en defense
+#     seconde, cf docstring du champ).
+#   - iter_paths + dependance Pillow : deja installee par le job lane.
+#
+# Fidelite aux boucles d'origine : les fichiers SUPPRIMES par la PR sont
+# sautes (`[ -f "$nb" ] || continue` dans l'original) -- le moteur filtre
+# les arg_paths inexistants.
+# ---------------------------------------------------------------------------
+TRANCHE2: list[Guard] = [
+    # Forme 1 : ratchet autonome binaire (exit 0/1), self-test enchaine.
+    # Source : notebook-output-failure-ratchet.yml (job `ratchet`).
+    Guard(
+        name="Output-failure ratchet (base vs PR)",
+        source="notebook-output-failure-ratchet.yml",
+        paths=[
+            "**.ipynb",
+            "scripts/notebook_tools/check_output_failure_text.py",
+            ".github/workflows/notebook-output-failure-ratchet.yml",
+        ],
+        argv=[
+            "bash", "-c",
+            "python scripts/notebook_tools/check_output_failure_text.py"
+            " --self-test"
+            " && python scripts/notebook_tools/check_output_failure_text.py"
+            " {base_ref}",
+        ],
+        blocking=True,
+        needs_base=True,
+        absorbed=True,
+    ),
+    # Forme 2 : iter par notebook change, rc=1 defaut / rc=2 illisible.
+    # Source : fabricated-output-gate.yml (job `fabricated-output`).
+    Guard(
+        name="No fabricated text output in changed notebooks",
+        source="fabricated-output-gate.yml",
+        paths=[
+            "MyIA.AI.Notebooks/**/*.ipynb",
+            "scripts/notebook_tools/detect_fabricated_outputs.py",
+            ".github/workflows/fabricated-output-gate.yml",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/detect_fabricated_outputs.py",
+            "--check", "{changed_paths}",
+        ],
+        blocking=True,
+        iterates_paths=True,
+        absorbed=True,
+        warn_rc=(2,),
+    ),
+    # Forme 3 : iter par notebook change + Pillow (deja dans le job lane).
+    # Source : degenerate-figure-gate.yml (job `degenerate-figure`).
+    Guard(
+        name="No degenerate figure in changed notebooks",
+        source="degenerate-figure-gate.yml",
+        paths=[
+            "MyIA.AI.Notebooks/**/*.ipynb",
+            "scripts/notebook_tools/detect_blank_figures.py",
+            ".github/workflows/degenerate-figure-gate.yml",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/detect_blank_figures.py",
+            "--check", "{changed_paths}",
+        ],
+        blocking=True,
+        iterates_paths=True,
+        absorbed=True,
+        warn_rc=(2,),
     ),
 ]

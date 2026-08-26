@@ -36,6 +36,11 @@ name: Fast lane (ombre)
 # en echec rougit la PR), et leurs workflows dedis ne se declenchent plus
 # sur `pull_request`. Les gardes du pilote restent en ombre prefixee et
 # neutralisee jusqu'a la conclusion de la comparaison.
+#
+# TRANCHE 2 (#12567) : trois gardes de plus (output-failure ratchet,
+# fabricated-text, degenerate-figure), memes regles -- nom canonique,
+# conclusion reelle, workflow d'origine retire de `pull_request`. Le
+# compteur du job suit le registre : 16 gardes, toujours 1 checkout.
 
 on:
   pull_request:
@@ -54,7 +59,7 @@ concurrency:
 
 jobs:
   fast-lane:
-    name: "Fast lane (ombre) -- 13 gardes, 1 checkout"
+    name: "Fast lane (ombre) -- 16 gardes, 1 checkout"
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
