@@ -45,7 +45,6 @@
     m=[15,15] et m=[25,25], section 6 ajoutee 2026-08-26 #13043 : dense baseline N=200 chronometree 69s vs HSGP 4-7s,
     log-loss OOS equivalente 0.113-0.114, ecart de frontiere 0.006). MarginalSparse (inducing points PyMC) non retenu :
     likelihood Normal uniquement, incompatible classification Bernoulli (documente dans le notebook).'
-  - 'Socle pedagogique commun : gaussiens parcimonieux (Sparse GP, points induits) modelise dans les deux stacks.'
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
     Message Passing, modele compile en code d''inference) ; Python PyMC = echantillonnage MCMC (NUTS/HMC par defaut) + ADVI
     (variationnel) sur backend PyTensor. Memes concepts, paradigmes d''inference differents.'
