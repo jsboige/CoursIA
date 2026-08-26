@@ -2637,7 +2637,10 @@ def main(argv: list[str] | None = None) -> int:
                         "age-filtered). The detected state is reported as "
                         "`stale_detection: \"disabled\"`.")
     p.add_argument("--paths", metavar="PATH", nargs="+", default=None,
+                   action="append",
                    help="path-mode (#9959): one or more file paths/globs. "
+                        "The flag may be repeated; every occurrence "
+                        "accumulates into the scope (#13057). "
                         "Exits 2 if any OPEN PR of a different lane (or with "
                         "an unreadable lane tag) has files[] intersecting. "
                         "Exits 0 if no collision, 1 on usage/`gh` failure. "
@@ -2666,6 +2669,17 @@ def main(argv: list[str] | None = None) -> int:
                         "blocked (#11064). Coordinator arbitration only -- "
                         "the reading side still honours [OVERRIDE] markers.")
     args = p.parse_args(argv)
+    # #13057 -- with plain nargs="+" a REPEATED --paths flag silently
+    # overrides the previous occurrences (argparse keeps only the last
+    # list), so `--paths P_in --paths P_out` scoped the check on [P_out]
+    # alone and rendered CLEAR against a claim intersecting P_in -- a
+    # fail-OPEN at the CLI surface while the verdict logic was correct.
+    # action="append" (declared above) yields a list of per-occurrence
+    # lists; flatten it back into a single flat list so every downstream
+    # consumer (path mode, bare-integer lint, --claim rendering, the
+    # issue check's my_paths) sees one accumulated scope.
+    if args.paths is not None:
+        args.paths = [entry for group in args.paths for entry in group]
     # #12751 -- default is 48 (measuring). `--no-stale`/threshold=None restores
     # the legacy behaviour (every claim blocks, nothing age-filtered); the
     # disabled state is reported honestly as `stale_detection: "disabled"`.

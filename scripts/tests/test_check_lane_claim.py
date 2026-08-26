@@ -5049,3 +5049,84 @@ def test_run_check_disjoint_joker_caller_clear(capsys):
         f"disjoint joker scopes must not block each other (#10419): got rc={rc}"
     )
 
+
+
+# --- #13057: repeated --paths flags accumulate (CLI surface fail-OPEN) -------
+
+_P13057_IN = "scripts/notebook_tools/scan_md_hierarchy.py"
+_P13057_IN2 = "scripts/notebook_tools/md_hierarchy_baseline.json"
+_P13057_OUT = ".github/workflows/scan-md-hierarchy-drift.yml"
+
+
+def _payload_13057():
+    """The #12735 shape: one active path-scoped claim by another lane."""
+    return payload(
+        comment(
+            f"[CLAIMED] lane myia-po-2024:CoursIA-2 -- paths: "
+            f"{_P13057_IN}, {_P13057_IN2}",
+            "2026-08-25T04:00:23Z",
+        ),
+    )
+
+
+def _patch_13057_env(monkeypatch):
+    monkeypatch.setattr(clc, "_gh_issue_comments", lambda issue: _payload_13057())
+    monkeypatch.setattr(
+        clc, "_git_tracked_files",
+        lambda repo_root=None: [_P13057_IN, _P13057_IN2, _P13057_OUT],
+    )
+
+
+def test_main_repeated_paths_flags_accumulate(monkeypatch, capsys):
+    """The exact #13057 repro: `--paths P_dans --paths P_hors` used to
+    override (plain nargs="+" keeps only the last list), scoping the check
+    on [P_hors] alone -> CLEAR against a claim intersecting P_dans.
+    Acceptance 1: at least one intersecting path => BLOCKED, whatever the
+    number of out-of-scope paths passed alongside."""
+    _patch_13057_env(monkeypatch)
+    rc = clc.main(["12735", "--lane", "myia-ai-01:CoursIA", "--no-stale",
+                   "--paths", _P13057_IN, "--paths", _P13057_OUT])
+    assert rc == 1, (
+        f"repeated --paths must accumulate: the intersecting "
+        f"{_P13057_IN} was silently dropped pre-fix (#13057 fail-OPEN), "
+        f"got rc={rc}"
+    )
+    assert "BLOCKED" in capsys.readouterr().err
+
+
+def test_main_single_paths_in_claim_still_blocks(monkeypatch, capsys):
+    """Control from the issue: [P_dans] alone -> BLOCKED (was already
+    correct; pins the polarity against a future inversion of the fix)."""
+    _patch_13057_env(monkeypatch)
+    rc = clc.main(["12735", "--lane", "myia-ai-01:CoursIA", "--no-stale",
+                   "--paths", _P13057_IN])
+    assert rc == 1
+    assert "BLOCKED" in capsys.readouterr().err
+
+
+def test_main_repeated_paths_disjoint_still_clears(monkeypatch, capsys):
+    """Acceptance 3: real disjointness stays CLEAR -- the fix accumulates
+    scopes, it must not over-block. Both occurrences out of the claim's
+    scope."""
+    _patch_13057_env(monkeypatch)
+    rc = clc.main(["12735", "--lane", "myia-ai-01:CoursIA", "--no-stale",
+                   "--paths", _P13057_OUT, "--paths", "scripts/other.py"])
+    assert rc == 0
+    assert "CLEAR" in capsys.readouterr().out
+
+
+def test_main_repeated_paths_flat_list_reaches_check(monkeypatch):
+    """The flattened scope must reach the issue check as ONE flat list
+    (my_paths), not the nested [[a], [b]] shape action=append produces."""
+    seen = {}
+
+    def fake_run_check(payload_, my_lane, **kw):
+        seen.update(kw)
+        return 1
+
+    monkeypatch.setattr(clc, "_run_check", fake_run_check)
+    clc.main(["12735", "--lane", "x:y", "--no-stale",
+              "--paths", "a.py", "b.py", "--paths", "c.py"])
+    assert seen["my_paths"] == ["a.py", "b.py", "c.py"], (
+        f"flattened my_paths expected, got {seen['my_paths']!r}"
+    )
