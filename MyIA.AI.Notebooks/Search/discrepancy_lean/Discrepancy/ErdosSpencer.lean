@@ -733,6 +733,59 @@ theorem expect_crossSum_sq {n : ℕ} (a : Fin n → ℝ) :
   simp only [hmul]
   rw [← Finset.mul_sum, hoff]
 
+/-- **Additivité** : `E[f + g] = E[f] + E[g]` — complément local au kernel
+(via la définition et `Finset.sum_add_distrib`), nécessaire pour
+l'assemblage du 4ᵉ moment. -/
+theorem sampleExpect_add {n : ℕ} (f g : (Fin n → Bool) → ℝ) :
+    sampleExpect fairCoin (fun S : Fin n → Bool => f S + g S) =
+      sampleExpect fairCoin f + sampleExpect fairCoin g := by
+  simp only [PacLearning.sampleExpect, mul_add, Finset.sum_add_distrib]
+
+/-- **Quatrième moment de la somme de Rademacher** : `E[Z^4] =
+3(S2^2) - 2 S4` avec `S2 = ∑ (a i)^2`, `S4 = ∑ (a i)^4`. Assemblage :
+`Z^4 = (diag + C)^2` (décomposition du carré), additivité,
+`E[diag^2] = diag^2` (constante), termes croisés nuls (`E[C] = 0`),
+et `E[C^2] = 2(S2^2 - S4)` (boute assemblage-5). -/
+theorem expect_rademacher_fourth_moment {n : ℕ} (a : Fin n → ℝ) :
+    sampleExpect fairCoin (fun S : Fin n → Bool =>
+      (∑ i, a i * boolSign (S i)) ^ 4) =
+      3 * ((∑ i, a i * a i) * (∑ i, a i * a i)) - 2 * ∑ i, a i * a i * (a i * a i) := by
+  have hsplit : (fun S : Fin n → Bool => (∑ i, a i * boolSign (S i)) ^ 4) =
+      (fun S : Fin n → Bool =>
+        (∑ i, a i * a i) * (∑ i, a i * a i) +
+        ((∑ i, a i * a i) * crossSum a S +
+        (crossSum a S * (∑ i, a i * a i) + crossSum a S * crossSum a S))) := by
+    funext S
+    have h4 : (∑ i, a i * boolSign (S i)) ^ 4 =
+        ((∑ i, a i * boolSign (S i)) ^ 2) ^ 2 := by ring
+    rw [h4, rademacher_sq_split a S]
+    ring
+  rw [hsplit, sampleExpect_add, sampleExpect_add, sampleExpect_add]
+  rw [PacLearning.sampleExpect_const]
+  rw [PacLearning.sampleExpect_smul, expect_crossSum_eq_zero, mul_zero]
+  have hcomm : (fun S : Fin n → Bool => crossSum a S * (∑ i, a i * a i)) =
+      (fun S : Fin n → Bool => (∑ i, a i * a i) * crossSum a S) :=
+    funext fun S => mul_comm _ _
+  rw [hcomm, PacLearning.sampleExpect_smul, expect_crossSum_eq_zero, mul_zero]
+  rw [expect_crossSum_sq]
+  ring
+
+/-- **Corollaire coloration — le 4ᵉ moment exact** : pour une coloration
+`±1`, `E[Z^4] = 3n² − 2n`, uniforme en `c`. C'est la borne de Paley–
+Zygmund : `3n² − 2n ≤ 3n²` pour `n ≥ 1`. -/
+theorem expect_rademacherSum_fourth_moment_of_isColoring {n : ℕ} (c : Fin n → ℤ)
+    (hc : IsColoring c) :
+    sampleExpect fairCoin (fun S => (rademacherSum c S) ^ 4) = 3 * (n : ℝ) ^ 2 - 2 * (n : ℝ) := by
+  rw [show rademacherSum c = (fun S : Fin n → Bool =>
+      ∑ i, (c i : ℝ) * boolSign (S i)) from rfl,
+    expect_rademacher_fourth_moment]
+  have h2 : ∀ i : Fin n, ((c i : ℝ) * (c i : ℝ)) = 1 := by
+    intro i
+    rcases hc i with h | h <;> simp [h]
+  simp only [h2]
+  simp
+  ring
+
 end Moments
 
 end Discrepancy
