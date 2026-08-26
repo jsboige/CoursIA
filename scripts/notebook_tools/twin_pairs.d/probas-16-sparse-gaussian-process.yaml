@@ -33,7 +33,18 @@
       csharp_sha: 3ba21c169e6c85cfbd5185acb5444d3a57d5cbcf
       content_python_sha: 983a0833c9b9bc93277790e1af261dda2f6046236b8e9816ab670bb5da1a23fc
       content_csharp_sha: c06adb667122f19581de02736f25c0a67ea4c39ab6c9138614847edd6f11b586
+    - date: "2026-08-26"
+      by: myia-po-2023:CoursIA-2
+      python_sha: 01097482ca6708f8408112f15d780b6fa39836f6
+      csharp_sha: 3ba21c169e6c85cfbd5185acb5444d3a57d5cbcf
+      content_python_sha: 6901a4e7aba17700f69043e59095e3302d28b312f756ae530aa885916d8505ac
+      content_csharp_sha: c06adb667122f19581de02736f25c0a67ea4c39ab6c9138614847edd6f11b586
   known_differences:
+  - 'Socle pedagogique commun : gaussiens parcimonieux (Sparse GP) EXECUTES dans les deux stacks — C# Infer.NET
+    via SparseGP (basis set, 4 inducteurs vs base complete) ; Python PyMC via pm.gp.HSGP (approximation spectrale,
+    m=[15,15] et m=[25,25], section 6 ajoutee 2026-08-26 #13043 : dense baseline N=200 chronometree 69s vs HSGP 4-7s,
+    log-loss OOS equivalente 0.113-0.114, ecart de frontiere 0.006). MarginalSparse (inducing points PyMC) non retenu :
+    likelihood Normal uniquement, incompatible classification Bernoulli (documente dans le notebook).'
   - 'Socle pedagogique commun : gaussiens parcimonieux (Sparse GP, points induits) modelise dans les deux stacks.'
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
     Message Passing, modele compile en code d''inference) ; Python PyMC = echantillonnage MCMC (NUTS/HMC par defaut) + ADVI
