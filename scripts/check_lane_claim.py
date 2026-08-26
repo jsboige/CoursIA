@@ -121,9 +121,20 @@ from grain_tag import extract_lane
 # `_DECOR` is the shared, broadened decoration class for all four regexes.
 _DECOR = r"(?:[#>*+\-→➡➜»•–—]{1,6}[ \t]*)*"
 _MARKER_RE = re.compile(
-    r"(?m)^[ \t]*" + _DECOR + r"(?:\*\*|__)?[ \t]*\[\s*(CLAIMED|RELEASED|CANCELLED|ABANDONED|DONE|OVERRIDE|DELIVERED)\s*\]",
+    r"(?m)^[ \t]*" + _DECOR + r"(?:\*\*|__)?[ \t]*\[\s*(CLAIMED-AMEND|CLAIMED|RELEASED|CANCELLED|ABANDONED|DONE|OVERRIDE|DELIVERED)\s*\]",
     re.IGNORECASE,
 )
+# #13022 -- CLAIMED-AMEND is listed FIRST (longest first): the alternation
+# would still backtrack to it after a bare `CLAIMED` fails at `\]`, but the
+# explicit order keeps the intent readable. Measured on #11703: po-2027's
+# `[CLAIMED-AMEND] ... -- paths: <8 globs>` (union of two scopes) was a no-op
+# for this regex -- the organ kept crediting the earlier epic-wide-unmatched
+# `[CLAIMED]` and the amendment existed only for human eyes. The fix makes
+# CLAIMED-AMEND an OPEN action (see `_OPEN`): in the walk-order reducer, a
+# later open event REPLACES the lane's earlier claim, so the amend comment
+# carries the FULL corrected scope (union semantics -- same discipline as the
+# pre-fix workaround of re-posting a canonical `[CLAIMED]` with the complete
+# path list).
 # #11239 -- malformed-marker lint. A claim line written WITHOUT the brackets
 # (`CLAIMED #11222 -- ...`) is invisible to `_MARKER_RE` above: the organ
 # reports `unattributed_markers: 0` and answers CLEAR to every other lane,
@@ -137,7 +148,7 @@ _MARKER_RE = re.compile(
 # event. The motif tail is on the same line only (no `[\s\S]` cross-line).
 _MALFORMED_MARKER_RE = re.compile(
     r"(?m)^[ \t]*" + _DECOR + r"(?:\*\*|__)?[ \t]*"
-    r"(CLAIMED|RELEASED|CANCELLED|ABANDONED|DONE|OVERRIDE|DELIVERED)\b"
+    r"(CLAIMED-AMEND|CLAIMED|RELEASED|CANCELLED|ABANDONED|DONE|OVERRIDE|DELIVERED)\b"
     r"[^\n]*(?:lane\s+\S+:\S+|#\d+)",
     re.IGNORECASE,
 )
@@ -206,7 +217,16 @@ def _mask_fenced_blocks(body: str) -> str:
     return "".join(out)
 
 
-_OPEN = {"CLAIMED"}
+# #13022 -- `[CLAIMED-AMEND]` is an OPEN action. Semantics (the one chosen for
+# the fix): the amend comment REPLACES the lane's previous claim scope -- the
+# walk-order reducer already does this for any later open event
+# (`state[ev.lane] = ev`), so mapping CLAIMED-AMEND to "open" gives
+# replace-previous-scope for free. The amend line must therefore carry the
+# FULL corrected scope (a `paths:` union), exactly like the canonical
+# re-[CLAIMED] workaround it supersedes. An amend WITHOUT a paths clause
+# replaces the previous scope with EPIC-WIDE (legacy unscoped semantics) --
+# deliberate, fail-CLOSED: an amendment that names no scope is not permissive.
+_OPEN = {"CLAIMED", "CLAIMED-AMEND"}
 _CLOSE = {"RELEASED", "CANCELLED", "ABANDONED", "DONE", "DELIVERED"}
 # `[OVERRIDE] lane <machine:workspace>` (#10223): coordinator adjudication --
 # GRANTS the claim to the named lane and CLOSES every other lane's claim in one
@@ -232,7 +252,9 @@ _OVERRIDE = {"OVERRIDE"}
 # beneficiary is unattributed, per existing semantics). Capture groups:
 # 1 = comma-separated path list (already stripped of surrounding spaces).
 # Recognised on [CLAIMED], [RELEASED] (attached; the reducer treats release as
-# a full lane-close, so the scope is informational there), and [OVERRIDE].
+# a full lane-close, so the scope is informational there), [OVERRIDE], and
+# [CLAIMED-AMEND] (#13022: the clause is the whole point of an amend -- it
+# names the corrected/union scope that replaces the lane's previous claim).
 # Same leading-decoration tolerance as `_MARKER_RE` (#10906). In practice the
 # reducer feeds this regex the `_line_for_match` output (which starts at the
 # `[`), so the legacy `^[ \t]*\[` anchor already worked -- the prefix group is
@@ -242,7 +264,7 @@ _OVERRIDE = {"OVERRIDE"}
 # indistinguishable from a closing decorator by suffix alone. Trailing `*` in
 # fnmatch matches empty, so a captured `glob**` still matches `glob`.
 _PATHS_CLAUSE_RE = re.compile(
-    r"(?im)^[ \t]*" + _DECOR + r"(?:\*\*|__)?[ \t]*\[\s*(?:CLAIMED|RELEASED|OVERRIDE)\s*\][^\n]*?paths\s*:\s*([^\n]+?)\s*$"
+    r"(?im)^[ \t]*" + _DECOR + r"(?:\*\*|__)?[ \t]*\[\s*(?:CLAIMED-AMEND|CLAIMED|RELEASED|OVERRIDE)\s*\][^\n]*?paths\s*:\s*([^\n]+?)\s*$"
 )
 # #12320 -- `[DELIVERED] lane <m:w> -- PR #N`. The PR reference is OPTIONAL on
 # a DELIVERED marker (a DELIVERED without a PR is functionally equivalent to a
@@ -632,10 +654,12 @@ def _expand_brace_groups(pattern: str) -> list[str]:
 def _extract_paths_clause(text: str | None) -> list[str] | None:
     """Parse the optional `paths: <comma-list>` clause from a marker line.
 
-    Recognised on [CLAIMED], [RELEASED], and [OVERRIDE] marker lines (#10342
-    introduced the clause for [OVERRIDE]; #10419 extended it to [CLAIMED] and
-    [RELEASED] so disjoint scoped claims no longer false-block each other on a
-    multi-instance issue). Returns the trimmed path list, or None when the
+    Recognised on [CLAIMED], [RELEASED], [OVERRIDE], and [CLAIMED-AMEND]
+    marker lines (#10342 introduced the clause for [OVERRIDE]; #10419
+    extended it to [CLAIMED] and [RELEASED] so disjoint scoped claims no
+    longer false-block each other on a multi-instance issue; #13022 added
+    [CLAIMED-AMEND], where the clause names the replacement scope). Returns
+    the trimmed path list, or None when the
     clause is absent -- the marker is then EPIC-WIDE (legacy semantics: an
     unscoped [CLAIMED] blocks every other lane, an unscoped [OVERRIDE] closes
     every other lane). Brace groups are expanded to sibling globs so that
@@ -2636,8 +2660,15 @@ def main(argv: list[str] | None = None) -> int:
                         "behaviour: every active claim blocks, nothing is "
                         "age-filtered). The detected state is reported as "
                         "`stale_detection: \"disabled\"`.")
-    p.add_argument("--paths", metavar="PATH", nargs="+", default=None,
+    # #13057 -- repeated `--paths` occurrences form one union. argparse's
+    # default `store` action kept only the LAST occurrence, so adding a disjoint
+    # path could erase an earlier intersecting path and turn BLOCKED into CLEAR.
+    # `extend` keeps a flat list across both accepted CLI forms:
+    # `--paths a b` and `--paths a --paths b`.
+    p.add_argument("--paths", metavar="PATH", nargs="+", action="extend",
+                   default=None,
                    help="path-mode (#9959): one or more file paths/globs. "
+                        "Repeated --paths occurrences are combined (#13057). "
                         "Exits 2 if any OPEN PR of a different lane (or with "
                         "an unreadable lane tag) has files[] intersecting. "
                         "Exits 0 if no collision, 1 on usage/`gh` failure. "
