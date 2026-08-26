@@ -663,6 +663,76 @@ theorem sum_expect_cross_pair {n : ℕ} (a : Fin n → ℝ) (p : Fin n × Fin n)
     intro q _
     simp only [if_neg hp, zero_mul, PacLearning.sampleExpect_const]
 
+/-- **Deuxième moment de la somme croisée** : `E[C^2] = 2(S2^2 - S4)` où
+`S2 = ∑ (a i)^2` et `S4 = ∑ (a i)^4`. Chaque paire `p` contribue
+exactement deux fois sa valeur `(a p.1)^2 (a p.2)^2` (elle-même et sa
+transposée, boute assemblage-4) ; la somme totale des `c p` vaut
+`S2^2` (produit de sommes) et la diagonale `S4`. -/
+theorem expect_crossSum_sq {n : ℕ} (a : Fin n → ℝ) :
+    sampleExpect fairCoin (fun S : Fin n → Bool => crossSum a S * crossSum a S) =
+      2 * ((∑ i, a i * a i) * (∑ i, a i * a i) - ∑ i, a i * a i * (a i * a i)) := by
+  have hstep : (fun S : Fin n → Bool => crossSum a S * crossSum a S) =
+      (fun S : Fin n → Bool =>
+        ∑ p : Fin n × Fin n,
+          ∑ q : Fin n × Fin n,
+            (if p.1 ≠ p.2 then (a p.1 * boolSign (S p.1)) * (a p.2 * boolSign (S p.2)) else 0) *
+            (if q.1 ≠ q.2 then (a q.1 * boolSign (S q.1)) * (a q.2 * boolSign (S q.2)) else 0)) := by
+    funext S
+    simp only [crossSum, Finset.sum_mul_sum]
+  have hinner : ∀ p : Fin n × Fin n,
+      sampleExpect fairCoin (fun S : Fin n → Bool =>
+        ∑ q : Fin n × Fin n,
+          (if p.1 ≠ p.2 then (a p.1 * boolSign (S p.1)) * (a p.2 * boolSign (S p.2)) else 0) *
+          (if q.1 ≠ q.2 then (a q.1 * boolSign (S q.1)) * (a q.2 * boolSign (S q.2)) else 0)) =
+      if p.1 ≠ p.2 then 2 * (a p.1 * a p.1 * (a p.2 * a p.2)) else 0 := by
+    intro p
+    rw [PacLearning.sampleExpect_sum]
+    exact sum_expect_cross_pair a p
+  have htotal : (∑ i : Fin n, a i * a i) * (∑ i : Fin n, a i * a i) =
+      ∑ p : Fin n × Fin n, a p.1 * a p.1 * (a p.2 * a p.2) := by
+    rw [Finset.sum_mul_sum]
+    exact (Fintype.sum_prod_type (fun p : Fin n × Fin n =>
+      a p.1 * a p.1 * (a p.2 * a p.2))).symm
+  have hdiag4 : (∑ i : Fin n, a i * a i * (a i * a i)) =
+      ∑ p : Fin n × Fin n, if p.1 = p.2 then a p.1 * a p.1 * (a p.2 * a p.2) else 0 := by
+    rw [Fintype.sum_prod_type]
+    apply Finset.sum_congr rfl
+    intro i _
+    simp only [Prod.fst, Prod.snd]
+    rw [Finset.sum_ite_eq (Finset.univ : Finset (Fin n)) i (fun j => a i * a i * (a j * a j))]
+    simp
+  have hsplit : ∀ p : Fin n × Fin n,
+      a p.1 * a p.1 * (a p.2 * a p.2) =
+      (if p.1 ≠ p.2 then a p.1 * a p.1 * (a p.2 * a p.2) else 0) +
+      (if p.1 = p.2 then a p.1 * a p.1 * (a p.2 * a p.2) else 0) := by
+    intro p
+    by_cases h : p.1 = p.2
+    · rw [if_neg (show ¬(p.1 ≠ p.2) by simp [h]), if_pos h, zero_add]
+    · rw [if_pos h, if_neg h, add_zero]
+  have hoff : ∑ p : Fin n × Fin n,
+      (if p.1 ≠ p.2 then a p.1 * a p.1 * (a p.2 * a p.2) else 0) =
+      (∑ i : Fin n, a i * a i) * (∑ i : Fin n, a i * a i) -
+      ∑ i : Fin n, a i * a i * (a i * a i) := by
+    rw [htotal]
+    have h1 : ∑ p : Fin n × Fin n, a p.1 * a p.1 * (a p.2 * a p.2) =
+        ∑ p : Fin n × Fin n,
+          ((if p.1 ≠ p.2 then a p.1 * a p.1 * (a p.2 * a p.2) else 0) +
+           (if p.1 = p.2 then a p.1 * a p.1 * (a p.2 * a p.2) else 0)) :=
+      Finset.sum_congr rfl (fun p _ => hsplit p)
+    rw [h1, Finset.sum_add_distrib, ← hdiag4]
+    linarith
+  have hmul : ∀ p : Fin n × Fin n,
+      (if p.1 ≠ p.2 then 2 * (a p.1 * a p.1 * (a p.2 * a p.2)) else 0) =
+      2 * (if p.1 ≠ p.2 then a p.1 * a p.1 * (a p.2 * a p.2) else 0) := by
+    intro p
+    by_cases h : p.1 ≠ p.2
+    · rw [if_pos h, if_pos h]
+    · rw [if_neg h, if_neg h, mul_zero]
+  rw [hstep, PacLearning.sampleExpect_sum]
+  simp only [hinner]
+  simp only [hmul]
+  rw [← Finset.mul_sum, hoff]
+
 end Moments
 
 end Discrepancy
