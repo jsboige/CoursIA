@@ -637,9 +637,10 @@ def test_mixed_emission_pilot_stays_shadowed_and_non_blocking(monkeypatch):
 
 def test_tranche2_guards_are_absorbed_and_declare_their_warn_rc():
     """Meme contrat que la tranche 1, plus une clause : les detecteurs de la
-    serie figure/texte rendent rc=2 sur fichier illisible, traité en warning
-    par leur workflow d'origine -- le garde absorbe doit le declarer sous
-    peine d'etre plus strict que ce qu'il remplace."""
+    serie figure/texte rendent rc=2 sur fichier introuvable, saute par leur
+    workflow d'origine -- le garde absorbe doit le declarer sous peine
+    d'etre plus strict que ce qu'il remplace. Le ratchet, lui, porte un
+    pre-contrôle self-test."""
     from fast_lane_registry import TRANCHE2
     assert len(TRANCHE2) == 3, (
         "la tranche 2 documente trois formes moteur ; si le nombre change, "
@@ -652,6 +653,64 @@ def test_tranche2_guards_are_absorbed_and_declare_their_warn_rc():
         "No degenerate figure in changed notebooks",
     }, ("seuls les detecteurs figure/texte portent un warn_rc ; le ratchet "
         "est binaire et ne doit pas en declarer")
+    ratchet = next(g for g in TRANCHE2 if g.pre_argv)
+    assert "--self-test" in " ".join(ratchet.pre_argv)
+
+
+def test_pre_argv_failure_short_circuits_the_guard(monkeypatch):
+    """Un self-test en echec est LE verdict du garde : le scan ne tourne pas
+    (un detecteur debranche ne doit pas rendre vert par son silence), le
+    check-run porte l'echec, et le job rougit -- garde absorbe bloquant."""
+    import fast_lane as fl
+    guard = Guard(name="ratchet-test", argv=["cmd-scan"],
+                  pre_argv=["cmd-selftest"], source="s",
+                  blocking=True, absorbed=True, paths=["**/*.ipynb"])
+    calls = []
+    monkeypatch.setattr(fl, "PILOT", [])
+    monkeypatch.setattr(fl, "TRANCHE1", [guard])
+    monkeypatch.setattr(fl, "TRANCHE2", [])
+    monkeypatch.setattr(fl, "changed_files", lambda _ref: ["x.ipynb"])
+
+    def fake_run_argv(argv, ctx):
+        calls.append(list(argv))
+        return (3, "witness non matche") if argv == ["cmd-selftest"] else (0, "")
+    monkeypatch.setattr(fl, "run_argv", fake_run_argv)
+    monkeypatch.setattr(
+        fl, "git",
+        lambda *a: subprocess.CompletedProcess(a, 0, "sha", ""))
+    published = []
+    monkeypatch.setattr(fl, "emit_check_run",
+                        lambda *a, **k: published.append(a))
+    rc = fl.main(["--shadow", "--base-sha", "abc"])
+    assert ["cmd-selftest"] in calls, "le pre-contrôle doit etre execute"
+    assert ["cmd-scan"] not in calls, (
+        "un self-test en echec doit court-circuiter le scan")
+    assert rc == 1, "l'echec du pre-contrôle d'un absorbe bloquant rougit"
+    assert published[0][3] == "failure"
+
+
+def test_pre_argv_success_chains_into_the_scan(monkeypatch):
+    import fast_lane as fl
+    guard = Guard(name="ratchet-ok", argv=["cmd-scan"],
+                  pre_argv=["cmd-selftest"], source="s",
+                  blocking=True, absorbed=True, paths=["**/*.ipynb"])
+    calls = []
+    monkeypatch.setattr(fl, "PILOT", [])
+    monkeypatch.setattr(fl, "TRANCHE1", [guard])
+    monkeypatch.setattr(fl, "TRANCHE2", [])
+    monkeypatch.setattr(fl, "changed_files", lambda _ref: ["x.ipynb"])
+
+    def fake_run_argv(argv, ctx):
+        calls.append(list(argv))
+        return (0, "SELF-TEST OK")
+    monkeypatch.setattr(fl, "run_argv", fake_run_argv)
+    monkeypatch.setattr(
+        fl, "git",
+        lambda *a: subprocess.CompletedProcess(a, 0, "sha", ""))
+    monkeypatch.setattr(fl, "emit_check_run", lambda *a, **k: None)
+    rc = fl.main(["--shadow", "--base-sha", "abc"])
+    assert ["cmd-selftest"] in calls and ["cmd-scan"] in calls
+    assert rc == 0
 
 
 def test_absorbed_workflows_of_tranche2_no_longer_trigger_on_pull_request():

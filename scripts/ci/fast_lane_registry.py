@@ -89,6 +89,15 @@ class Guard:
     # chemin echappe au filtre (checkout partiel). Sans lui, la lane serait
     # PLUS stricte que le workflow qu'elle absorbe.
     warn_rc: tuple[int, ...] = ()
+    # Commande de PRE-CONTROLE executee avant `argv` (phase 1). Un rc non
+    # nul devient le verdict du garde et `argv` n'est PAS execute. Cas
+    # d'usage : le self-test du ratchet output-failure, qui dans son
+    # workflow d'origine etait un step distinct AVANT le scan -- un
+    # detecteur qui ne peut pas prouver qu'il tire est indiscernable d'un
+    # detecteur debranche (lecon #11685/#12817). Pas de `bash -c ... &&` :
+    # le shell n'est pas resolu pareil selon l'hote (127 mesuré en local
+    # Windows) et le registre interdit la seconde couche de quoting.
+    pre_argv: list[str] = field(default_factory=list)
 
 
 NOTEBOOK_GLOBS = ["**/*.ipynb"]
@@ -330,9 +339,9 @@ TRANCHE1: list[Guard] = [
 # trois formes moteur nouvelles par rapport a la tranche 1 :
 #
 #   - ratchet AUTONOME : le script fait lui-meme son diff base...HEAD, la lane
-#     ne fournit que {base_ref}. Le self-test du detecteur est enchaine par
-#     `&&` comme les deux steps du workflow d'origine (bash -c acceptable :
-#     le seul token substitue est un litteral de ref, aucun chemin du diff).
+#     ne fournit que {base_ref}. Son self-test est un PRE-CONTROLE (`pre_argv`)
+#     qui gate le garde comme le step distinct du workflow d'origine -- sans
+#     shell, resolu identiquement sur tout hote.
 #   - iter_paths + warn_rc : boucle par notebook change, rc=1 defaut / rc=2
 #     introuvable (skip dans l'original, donc warn_rc=(2,) en defense
 #     seconde, cf docstring du champ).
@@ -343,7 +352,8 @@ TRANCHE1: list[Guard] = [
 # les arg_paths inexistants.
 # ---------------------------------------------------------------------------
 TRANCHE2: list[Guard] = [
-    # Forme 1 : ratchet autonome binaire (exit 0/1), self-test enchaine.
+    # Forme 1 : ratchet autonome binaire (exit 0/1), PRE-CONTROLE self-test
+    # (les deux steps du workflow d'origine, sans shell).
     # Source : notebook-output-failure-ratchet.yml (job `ratchet`).
     Guard(
         name="Output-failure ratchet (base vs PR)",
@@ -353,12 +363,13 @@ TRANCHE2: list[Guard] = [
             "scripts/notebook_tools/check_output_failure_text.py",
             ".github/workflows/notebook-output-failure-ratchet.yml",
         ],
+        pre_argv=[
+            "python", "scripts/notebook_tools/check_output_failure_text.py",
+            "--self-test",
+        ],
         argv=[
-            "bash", "-c",
-            "python scripts/notebook_tools/check_output_failure_text.py"
-            " --self-test"
-            " && python scripts/notebook_tools/check_output_failure_text.py"
-            " {base_ref}",
+            "python", "scripts/notebook_tools/check_output_failure_text.py",
+            "{base_ref}",
         ],
         blocking=True,
         needs_base=True,

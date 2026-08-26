@@ -319,6 +319,16 @@ def main(argv: list[str] | None = None) -> int:
 
     # -- phase 1 : HEAD, aucun garde ne mute l'arbre -------------------------
     for guard in selected:
+        if guard.pre_argv:
+            # Pre-controle (self-test du detecteur, #11685) : un rc non nul
+            # EST le verdict du garde et le scan n'est pas execute -- un
+            # detecteur qui ne prouve pas qu'il tire ne doit pas rendre vert.
+            rc, log = run_argv(guard.pre_argv, ctx)
+            if rc != 0:
+                results[guard.name] = (rc, log)
+                print(f"[fast-lane] pre-contrôle {guard.name} : exit {rc} "
+                      "-- garde non execute")
+                continue
         if guard.iterates_paths:
             # Fidelite aux boucles d'origine : les workflows iteratifs
             # sautent les fichiers SUPPRIMES par la PR (`[ -f "$nb" ] ||
