@@ -937,26 +937,6 @@ theorem expect_sq_le_mul_prob {n : ℕ} (f : (Fin n → Bool) → ℝ)
   rw [hu', hf2', hv']
   exact hkey
 
-/-- **Monotonie de l'espérance (une étape)** : si `f ≤ g` pointwise,
-alors `E[f] ≤ E[g]` sous des poids non négatifs. -/
-theorem sampleExpect_le_of_forall_le {n : ℕ} (f g : (Fin n → Bool) → ℝ)
-    (hfg : ∀ S, f S ≤ g S) :
-    sampleExpect fairCoin f ≤ sampleExpect fairCoin g := by
-  have h : ∀ S : Fin n → Bool,
-      PacLearning.sampleWeight fairCoin S * g S -
-      PacLearning.sampleWeight fairCoin S * f S ≥ 0 := by
-    intro S
-    nlinarith [PacLearning.sampleWeight_nonneg (D := fairCoin) S, hfg S]
-  have hsum : ∑ S, (PacLearning.sampleWeight fairCoin S * g S -
-      PacLearning.sampleWeight fairCoin S * f S) ≥ 0 := Finset.sum_nonneg
-    (fun S _ => h S)
-  have hsum' : ∑ S, PacLearning.sampleWeight fairCoin S * g S -
-      ∑ S, PacLearning.sampleWeight fairCoin S * f S ≥ 0 := by
-    rw [← Finset.sum_sub_distrib]
-    simpa only [PacLearning.sampleExpect] using hsum
-  simp only [PacLearning.sampleExpect] at *
-  linarith
-
 /-- **Corollaire coloration — minoration de queue (Paley–Zygmund)** :
 pour une coloration `±1` et `n ≥ 1`, la probabilité que `Z² ≥ n/2`
 vaut au moins `1/12`. Dérivation : `E[Z²] = n` se scinde en
@@ -986,7 +966,7 @@ theorem prob_tail_ge_of_isColoring {n : ℕ} (c : Fin n → ℤ) (hc : IsColorin
       ≤ (n : ℝ) / 2 := by
     have hbound : sampleExpect fairCoin (fun S => if ¬A S then Z S * Z S else 0) ≤
         sampleExpect fairCoin (fun S => if ¬A S then (n : ℝ) / 2 else 0) := by
-      apply sampleExpect_le_of_forall_le
+      apply PacLearning.sampleExpect_mono
       intro S
       by_cases hS : ¬A S
       · show (if ¬A S then rademacherSum c S * rademacherSum c S else 0) ≤
@@ -1012,7 +992,7 @@ theorem prob_tail_ge_of_isColoring {n : ℕ} (c : Fin n → ℤ) (hc : IsColorin
     have hp : probEvt (fun S => ¬A S) ≤ 1 := by
       have hle : sampleExpect fairCoin (fun S => if ¬A S then (1 : ℝ) else 0) ≤
           sampleExpect fairCoin (fun S : Fin n → Bool => (1 : ℝ)) := by
-        apply sampleExpect_le_of_forall_le
+        apply PacLearning.sampleExpect_mono
         intro S
         show (if ¬A S then (1 : ℝ) else 0) ≤ 1
         by_cases hS : ¬A S
@@ -1045,7 +1025,7 @@ theorem prob_tail_ge_of_isColoring {n : ℕ} (c : Fin n → ℤ) (hc : IsColorin
     hcauchy
   have hmono : sampleExpect fairCoin (fun S => if A S then Z S * Z S * (Z S * Z S) else 0) ≤
       sampleExpect fairCoin (fun S => Z S * Z S * (Z S * Z S)) := by
-    apply sampleExpect_le_of_forall_le
+    apply PacLearning.sampleExpect_mono
     intro S
     by_cases hS : A S
     · simp only [if_pos hS, le_refl]
@@ -1066,7 +1046,7 @@ theorem prob_tail_ge_of_isColoring {n : ℕ} (c : Fin n → ℤ) (hc : IsColorin
   have hP0 : 0 ≤ probEvt A := by
     have hle : sampleExpect fairCoin (fun S : Fin n → Bool => (0 : ℝ)) ≤
         sampleExpect fairCoin (fun S => if A S then (1 : ℝ) else 0) :=
-      sampleExpect_le_of_forall_le _ _ (fun S => by
+      PacLearning.sampleExpect_mono (fun S => by
         by_cases hS : A S
         · simp only [if_pos hS, zero_le_one]
         · simp only [if_neg hS, le_refl])
@@ -1086,7 +1066,7 @@ theorem prob_tail_ge_of_isColoring {n : ℕ} (c : Fin n → ℤ) (hc : IsColorin
   have hEA0 : 0 ≤ sampleExpect fairCoin (fun S => if A S then Z S * Z S else 0) := by
     have hle : sampleExpect fairCoin (fun S : Fin n → Bool => (0 : ℝ)) ≤
         sampleExpect fairCoin (fun S => if A S then Z S * Z S else 0) := by
-      apply sampleExpect_le_of_forall_le
+      apply PacLearning.sampleExpect_mono
       intro S
       show (0 : ℝ) ≤ if A S then Z S * Z S else 0
       by_cases hS : A S
