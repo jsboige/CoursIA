@@ -320,9 +320,111 @@ def discrimination_verdict(
     }
 
 
+# ---------------------------------------------------------------------------
+# Certification Cech par entrelacement (issue #12672)
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class CechCertification:
+    """Classes H^1 de la filtration Vietoris-Rips triees par la fenetre facteur 2.
+
+    Entrelacement (valable dans tout espace metrique) :
+
+        Cech_eps  <=  VR_{2 eps}  <=  Cech_{2 eps}
+
+    Un simplexe Cech a eps a ses distances deux a deux <= 2 eps ; reciproquement
+    un simplexe VR de diametre 2 eps a tous ses points dans la boule de rayon
+    2 eps centree sur n'importe lequel de ses sommets. Une classe H^1 nee a
+    ``birth`` et morte a ``death >= 2 * birth`` traverse donc une fenetre de
+    facteur 2 : par l'entrelacement elle temoigne d'une classe Cech
+    authentique (**certifiee**). Une classe morte avant ``2 * birth`` peut
+    n'etre qu'un artefact de l'approximation Rips (**Rips-seule**).
+
+    Sur un nuage de points fini, la filtration Rips se termine en simplexe
+    complet contractile : toute classe H^1 est finie, le tri est exhaustif.
+    """
+
+    substrat: str
+    n_classes: int
+    n_certified: int
+    n_rips_only: int
+    max_certified_persistence: float
+    intervals: tuple  # ((birth, death, certified), ...)
+
+    def to_dict(self) -> Dict[str, object]:
+        return {
+            "substrat": self.substrat,
+            "n_classes": self.n_classes,
+            "n_certified": self.n_certified,
+            "n_rips_only": self.n_rips_only,
+            "max_certified_persistence": self.max_certified_persistence,
+        }
+
+
+def cech_certification(
+    sections: Dict[str, Sequence[float]],
+    substrat_name: str,
+) -> CechCertification:
+    """Certifie les classes H^1 de la filtration Vietoris-Rips par l'entrelacement.
+
+    Meme normalisation (z-score par proxy) et meme filtration Rips complete
+    que :func:`nerve_b1` ; la difference est que les paires (birth, death)
+    sont exposees individuellement pour le tri par la fenetre facteur 2.
+    """
+    points = np.column_stack(
+        [np.asarray(sections[p], dtype=float) for p in sections]
+    )
+    means = points.mean(axis=0, keepdims=True)
+    stds = points.std(axis=0, keepdims=True)
+    stds = np.where(stds > 1e-12, stds, 1.0)
+    points_norm = (points - means) / stds
+
+    dmat = _pairwise_distance(points_norm)
+    triu = dmat[np.triu_indices(dmat.shape[0], k=1)]
+    rips_full = RipsComplex(distance_matrix=dmat, max_edge_length=float(np.max(triu)))
+    st_full = rips_full.create_simplex_tree(max_dimension=2)
+    st_full.compute_persistence()
+    h1 = st_full.persistence_intervals_in_dimension(1)
+    finite = h1[np.isfinite(h1).all(axis=1)] if h1.size else np.zeros((0, 2))
+
+    intervals = []
+    n_certified = 0
+    max_cert = 0.0
+    for birth, death in finite:
+        certified = bool(death >= 2.0 * birth)
+        if certified:
+            n_certified += 1
+            max_cert = max(max_cert, float(death - birth))
+        intervals.append((float(birth), float(death), certified))
+
+    n_classes = int(finite.shape[0])
+    return CechCertification(
+        substrat=substrat_name,
+        n_classes=n_classes,
+        n_certified=n_certified,
+        n_rips_only=n_classes - n_certified,
+        max_certified_persistence=float(max_cert),
+        intervals=tuple(intervals),
+    )
+
+
+def cech_certification_substrats(
+    substrats_sections: Dict[str, Dict[str, Sequence[float]]],
+) -> Dict[str, CechCertification]:
+    """Applique cech_certification sur plusieurs substrats."""
+    return {
+        name: cech_certification(sections, name)
+        for name, sections in substrats_sections.items()
+    }
+
+
 __all__ = [
     "NerveB1Result",
     "nerve_b1",
     "nerve_b1_substrats",
     "discrimination_verdict",
+    "CechCertification",
+    "cech_certification",
+    "cech_certification_substrats",
 ]
