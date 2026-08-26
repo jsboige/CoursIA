@@ -24,8 +24,12 @@ La preuve cible réutilise le kernel `PacLearning.Hoeffding` du lake frère
 3. **Union bound sur les colorations** (boute `p3`) : `2^n · p^m < 1` pour
    `m` assez grand — il existe une réalisation dont toute coloration laisse
    au moins un ensemble à somme `≥ √k/2`.
-4. **Contrôle du degré** (boute `p4`) : élagage/conditionnement du tirage
-   pour `maxDegree ≤ k` en régime `k ≤ n / C`.
+4. **Contrôle du degré** (boute `p4`) : chaque tirage `j` contribue la
+   PAIRE `(drawSet, bloc \ drawSet)` des coordonnées vraies / fausses
+   d'un bloc de `t = k / 12` points — la paire désamorce le déséquilibre
+   `∑ c` par triangulaire, et le degré de tout point est au plus le
+   nombre de paires `12 t ≤ k`. Constante explicite obtenue : `√k / 14` ;
+   la version optimiste `√k / 2` reste une `Prop` ouverte.
 
 Tant que la preuve n'est pas assemblée, l'énoncé vit comme `Prop` nommée
 (convention du lake : conjecture = `def ... : Prop`, zéro `sorry`).
@@ -43,6 +47,14 @@ def ErdosSpencerLB : Prop :=
     ∃ F : Finset (Finset (Fin n)),
       maxDegree F ≤ k ∧
         ∀ c : Fin n → ℤ, IsColoring c → Nat.sqrt k ≤ 2 * discrepancy F c
+
+/-!
+**Statut (08-26)** : cette forme « constante 1/2 » est OUVERTE — la
+méthode des moments (Paley–Zygmund, hit 1/12) force `m ≥ 12 t` tirages
+pour vaincre les `2^t` colorations alors que le degré exige `m ≤ k` :
+le quotient est structurellement borné. La version PROUVÉE à constante
+explicite est `erdos_spencer_lb_explicit` (`√k / 14`).
+-/
 
 /-! ## Boute p1a — moments de la somme de Rademacher colorée
 
@@ -1476,5 +1488,340 @@ theorem exists_family_beats_all_colorings {n : ℕ} (hn : 1 ≤ n) :
   exact hF ⟨c, hmem c hc, hno⟩
 
 end UnionBound
+
+/-!
+## Boute p4 - controle du degre et assemblage
+
+La derniere etape : convertir la famille probabiliste de `12 t` tirages
+(boute p3) en famille de DEGRE <= k. Deux mecanismes :
+
+1. **Desequilibre** : la somme de Rademacher `Z = 2x - s` (x = somme de
+   l'ensemble des coordonnees vraies, s = somme du bloc) n'est pas une
+   somme d'ensemble. En incluant la PAIRE `(drawSet, bloc \ drawSet)`
+   de chaque tirage, la triangulaire `|Z| = |x + (x - s)| <= |x| + |x - s|`
+   rend les deux membres controlables par la discrepance, chacun etant
+   la somme coloree d'un ensemble de la famille.
+2. **Degre** : `drawSet` et son complementaire relatif au bloc etant
+   DISJOINTS, chaque paire contient un point donne au plus une fois :
+   le degre de tout point est majore par le nombre de tirages (injection
+   vers `Fin m` par choix classique et disjointness).
+
+Constante finale : `disc >= |Z| / 2 >= sqrt(t/8)` avec `k <= 23 t`
+(reste de la division par 12 absorbe), d'ou `Nat.sqrt k <= 14 * disc`.
+Pour `k < 12` : singletons (degre 1, discrepance 1, `sqrt k <= 4`).
+-/
+
+section DegreeControl
+
+open PacLearning
+
+/-- **Identite Rademacher / sommes d'ensembles** : la somme de Rademacher
+coloree est deux fois la somme sur les coordonnees vraies moins la somme
+totale - le pont entre l'alea signe des boutes p1-p3 et les sommes
+d'ensembles de la definition `discrepancy`. -/
+theorem rademacherSum_eq_two_sub {t : ℕ} (c : Fin t → ℤ) (σ : Fin t → Bool) :
+    rademacherSum c σ =
+      2 * ((Finset.univ.filter (fun q => σ q = true)).sum fun q => (c q : ℝ)) -
+        (Finset.univ.sum fun q => (c q : ℝ)) := by
+  classical
+  have hsplit : (Finset.univ.filter (fun q => σ q = true)).sum
+        (fun q => (c q : ℝ)) +
+      (Finset.univ.filter (fun q => ¬ (σ q = true))).sum (fun q => (c q : ℝ)) =
+      (Finset.univ.sum fun q => (c q : ℝ)) :=
+    Finset.sum_filter_add_sum_filter_not (Finset.univ : Finset (Fin t))
+      (fun q => σ q = true) (fun q => (c q : ℝ))
+  have hlhs : rademacherSum c σ =
+      (Finset.univ.filter (fun q => σ q = true)).sum (fun q => (c q : ℝ)) -
+      (Finset.univ.filter (fun q => ¬ (σ q = true))).sum (fun q => (c q : ℝ)) := by
+    rw [rademacherSum,
+      ← Finset.sum_filter_add_sum_filter_not (Finset.univ : Finset (Fin t))
+        (fun q => σ q = true)
+        (fun q => (c q : ℝ) * boolSign (σ q))]
+    have h1 : (Finset.univ.filter (fun q => σ q = true)).sum
+        (fun q => (c q : ℝ) * boolSign (σ q)) =
+        (Finset.univ.filter (fun q => σ q = true)).sum (fun q => (c q : ℝ)) := by
+      refine Finset.sum_congr rfl fun q hq => ?_
+      rw [Finset.mem_filter] at hq
+      simp only [boolSign, if_pos hq.2, mul_one]
+    have h2m : ∀ q ∈ (Finset.univ.filter (fun q => ¬ (σ q = true)) :
+        Finset (Fin t)), (c q : ℝ) * boolSign (σ q) = -((c q : ℝ)) := by
+      intro q hq
+      rw [Finset.mem_filter] at hq
+      simp only [boolSign, if_neg hq.2, mul_neg_one]
+    have h2 : (Finset.univ.filter (fun q => ¬ (σ q = true))).sum
+        (fun q => (c q : ℝ) * boolSign (σ q)) =
+        -((Finset.univ.filter (fun q => ¬ (σ q = true))).sum
+          (fun q => (c q : ℝ))) := by
+      rw [Finset.sum_congr rfl h2m, Finset.sum_neg_distrib]
+    rw [h1, h2]
+    ring
+  linarith [hsplit, hlhs]
+
+/-- **Le bloc** : image des `t` premiers points dans `Fin n`
+(injection `Fin.castLEEmb`). -/
+def blockOf {t n : ℕ} (htn : t ≤ n) : Finset (Fin n) :=
+  Finset.univ.map (Fin.castLEEmb htn)
+
+/-- **L'ensemble d'un tirage** : coordonnees vraies du tirage `sigma`,
+transportees dans `Fin n`. -/
+def drawSet {t n : ℕ} (htn : t ≤ n) (σ : Fin t → Bool) : Finset (Fin n) :=
+  (Finset.univ.filter (fun q => σ q = true)).map (Fin.castLEEmb htn)
+
+/-- **La famille appariee** : pour chaque tirage, la paire de l'ensemble
+des coordonnees vraies et de son complementaire relatif au bloc. La
+disjointness de chaque paire borne le degre par le nombre de tirages. -/
+def pairFamily {t n m : ℕ} (htn : t ≤ n) (G : Fin m → Fin t → Bool) :
+    Finset (Finset (Fin n)) :=
+  (Finset.univ.image fun j => drawSet htn (G j)) ∪
+    (Finset.univ.image fun j => blockOf htn \ drawSet htn (G j))
+
+theorem blockOf_sum {t n : ℕ} (htn : t ≤ n) (C : Fin n → ℤ) :
+    (blockOf htn).sum C = (Finset.univ : Finset (Fin t)).sum
+      (fun q => C ((Fin.castLEEmb htn) q)) := by
+  rw [blockOf, Finset.sum_map]
+
+theorem drawSet_sum {t n : ℕ} (htn : t ≤ n) (σ : Fin t → Bool) (C : Fin n → ℤ) :
+    (drawSet htn σ).sum C = (Finset.univ.filter (fun q => σ q = true)).sum
+      (fun q => C ((Fin.castLEEmb htn) q)) := by
+  rw [drawSet, Finset.sum_map]
+
+theorem drawSet_subset {t n : ℕ} (htn : t ≤ n) (σ : Fin t → Bool) :
+    drawSet htn σ ⊆ blockOf htn := by
+  rw [drawSet, blockOf]
+  exact Finset.map_subset_map.mpr
+    (Finset.filter_subset (fun q => σ q = true) (Finset.univ : Finset (Fin t)))
+
+theorem drawSet_mem {t n m : ℕ} (htn : t ≤ n) (G : Fin m → Fin t → Bool)
+    (j : Fin m) : drawSet htn (G j) ∈ pairFamily htn G :=
+  Finset.mem_union_left _ (Finset.mem_image.mpr ⟨j, Finset.mem_univ _, rfl⟩)
+
+theorem compDraw_mem {t n m : ℕ} (htn : t ≤ n) (G : Fin m → Fin t → Bool)
+    (j : Fin m) : blockOf htn \ drawSet htn (G j) ∈ pairFamily htn G :=
+  Finset.mem_union_right _ (Finset.mem_image.mpr ⟨j, Finset.mem_univ _, rfl⟩)
+
+/-- **Degre de la famille appariee** : chaque paire etant disjointe, un
+point donne n'apparait au plus qu'une fois par tirage - le degre est
+majore par le nombre de tirages. -/
+theorem degree_pairFamily_le {t n m : ℕ} (htn : t ≤ n) (G : Fin m → Fin t → Bool)
+    (i : Fin n) : degree (pairFamily htn G) i ≤ m := by
+  classical
+  have hpred : ∀ S ∈ (pairFamily htn G).filter (fun S => i ∈ S),
+      ∃ j : Fin m, S = drawSet htn (G j) ∨
+        S = blockOf htn \ drawSet htn (G j) := by
+    intro S hS
+    obtain ⟨hS, -⟩ := Finset.mem_filter.mp hS
+    rw [pairFamily] at hS
+    rcases Finset.mem_union.mp hS with h | h
+    · obtain ⟨j, -, hj⟩ := Finset.mem_image.mp h
+      exact ⟨j, Or.inl hj.symm⟩
+    · obtain ⟨j, -, hj⟩ := Finset.mem_image.mp h
+      exact ⟨j, Or.inr hj.symm⟩
+  have hcard : ((pairFamily htn G).filter (fun S => i ∈ S)).card ≤ m := by
+    have hle : ((pairFamily htn G).filter (fun S => i ∈ S)).card ≤
+        (Finset.range m).card := by
+      refine Finset.card_le_card_of_injOn
+        (fun S => if h : ∃ j : Fin m, S = drawSet htn (G j) ∨
+            S = blockOf htn \ drawSet htn (G j) then
+              ((Classical.choose h : Fin m) : ℕ) else 0)
+        (fun S hS =>
+          have hx := hpred S hS
+          Finset.mem_range.mpr
+            (by simp only [dif_pos hx]; exact (Classical.choose hx).isLt))
+        ?_
+      intro S hS S' hS' hEq
+      have hx := hpred S hS
+      have hx' := hpred S' hS'
+      simp only [dif_pos hx, dif_pos hx'] at hEq
+      have hjj : Classical.choose hx = Classical.choose hx' :=
+        Fin.val_injective hEq
+      have hiS := (Finset.mem_filter.mp hS).2
+      have hiS' := (Finset.mem_filter.mp hS').2
+      rcases Classical.choose_spec hx with hS1 | hS1 <;>
+        rcases Classical.choose_spec hx' with hS2 | hS2
+      · rw [hS1, hS2, hjj]
+      · rw [hS1] at hiS
+        rw [← hjj] at hS2
+        rw [hS2] at hiS'
+        exact absurd hiS (Finset.mem_sdiff.mp hiS').2
+      · rw [← hjj] at hS2
+        rw [hS2] at hiS'
+        rw [hS1] at hiS
+        exact absurd hiS' (Finset.mem_sdiff.mp hiS).2
+      · rw [hS1, hS2, hjj]
+    calc ((pairFamily htn G).filter (fun S => i ∈ S)).card ≤ (Finset.range m).card := hle
+      _ = m := Finset.card_range m
+  exact hcard
+
+open PacLearning in
+/-- **Borne inferieure d'Erdos-Spencer (constante explicite)** : pour
+`1 ≤ k ≤ n` il existe une famille de parties de `Fin n`, de degre
+maximal au plus `k`, dont aucune coloration ±1 n'abaisse la discrepance
+sous `sqrt(k) / 14` - la contrepartie asymptotique de Beck-Fiala (la
+borne `O(sqrt k)` est serree), a constante explicite. -/
+theorem erdos_spencer_lb_explicit : ∀ (n k : ℕ), 1 ≤ k → k ≤ n →
+    ∃ F : Finset (Finset (Fin n)),
+      maxDegree F ≤ k ∧
+        ∀ C : Fin n → ℤ, IsColoring C → Nat.sqrt k ≤ 14 * discrepancy F C := by
+  intro n k hk hkn
+  rcases lt_or_ge k 12 with hsmall | hbig
+  · -- Petit k (k < 12) : singletons - degre 1, discrepance 1
+    refine ⟨(Finset.univ : Finset (Fin k)).image
+      (fun q => ({Fin.castLE hkn q} : Finset (Fin n))), ?_, ?_⟩
+    · refine Finset.sup_le fun i _ => ?_
+      have h1 : degree ((Finset.univ : Finset (Fin k)).image
+          (fun q => ({Fin.castLE hkn q} : Finset (Fin n)))) i ≤ 1 := by
+        show (((Finset.univ : Finset (Fin k)).image
+          (fun q => ({Fin.castLE hkn q} : Finset (Fin n)))).filter
+          (fun S => i ∈ S)).card ≤ 1
+        refine (Finset.card_le_one).mpr ?_
+        intro a ha b hb
+        obtain ⟨ha1, hia⟩ := Finset.mem_filter.mp ha
+        obtain ⟨qa, -, hqa⟩ := Finset.mem_image.mp ha1
+        obtain ⟨hb1, hib⟩ := Finset.mem_filter.mp hb
+        obtain ⟨qb, -, hqb⟩ := Finset.mem_image.mp hb1
+        rw [← hqa] at hia
+        rw [← hqb] at hib
+        have hia' : i = Fin.castLE hkn qa := Finset.mem_singleton.mp hia
+        have hib' : i = Fin.castLE hkn qb := Finset.mem_singleton.mp hib
+        rw [← hqa, ← hqb, ← hia', ← hib']
+      omega
+    · intro C hC
+      obtain ⟨z⟩ : Nonempty (Fin k) := ⟨⟨0, by omega⟩⟩
+      have h1 : 1 ≤ discrepancy ((Finset.univ : Finset (Fin k)).image
+          (fun q => ({Fin.castLE hkn q} : Finset (Fin n)))) C := by
+        refine Finset.le_sup_of_le
+          (Finset.mem_image.mpr ⟨{Fin.castLE hkn z},
+            Finset.mem_image.mpr ⟨z, Finset.mem_univ _, rfl⟩, rfl⟩) ?_
+        show 1 ≤ (({Fin.castLE hkn z} : Finset (Fin n)).sum C).natAbs
+        rw [Finset.sum_singleton]
+        rcases hC (Fin.castLE hkn z) with h | h <;> simp [h]
+      have h4 : Nat.sqrt k ≤ 4 := by
+        have h5 : Nat.sqrt k < 5 := (Nat.sqrt_lt (n := 5)).mpr (by omega)
+        omega
+      omega
+  · -- Gros k : bloc de k / 12 points, famille probabiliste de 12 * (k / 12) tirages
+    obtain ⟨G, hG⟩ := exists_family_beats_all_colorings (n := k / 12) (by omega)
+    have htn : k / 12 ≤ n := by omega
+    refine ⟨pairFamily htn G, ?_, ?_⟩
+    · have hdeg : maxDegree (pairFamily htn G) ≤ 12 * (k / 12) :=
+        Finset.sup_le fun i _ => degree_pairFamily_le htn G i
+      omega
+    · intro C hC
+      have hcc : IsColoring (fun q => C ((Fin.castLEEmb htn) q)) :=
+        fun q => hC ((Fin.castLEEmb htn) q)
+      obtain ⟨j, hj⟩ := hG _ hcc
+      have hx : (drawSet htn (G j)).sum C =
+          (Finset.univ.filter (fun q => G j q = true)).sum
+            (fun q => C ((Fin.castLEEmb htn) q)) :=
+        drawSet_sum htn (G j) C
+      have hs : (blockOf htn).sum C =
+          (Finset.univ : Finset (Fin (k / 12))).sum
+            (fun q => C ((Fin.castLEEmb htn) q)) :=
+        blockOf_sum htn C
+      have hcomp : (blockOf htn \ drawSet htn (G j)).sum C =
+          (blockOf htn).sum C - (drawSet htn (G j)).sum C := by
+        have h := Finset.sum_sdiff (drawSet_subset htn (G j)) (f := C)
+        linarith
+      have hc1 : (Finset.univ.filter (fun q => G j q = true)).sum
+          (fun q => ((C ((Fin.castLEEmb htn) q) : ℤ) : ℝ)) =
+          ((Finset.univ.filter (fun q => G j q = true)).sum
+            (fun q => C ((Fin.castLEEmb htn) q)) : ℤ) :=
+        (Int.cast_sum _ _).symm
+      have hc2 : (Finset.univ.sum
+          (fun q => ((C ((Fin.castLEEmb htn) q) : ℤ) : ℝ))) =
+          ((Finset.univ.sum (fun q => C ((Fin.castLEEmb htn) q)) : ℤ)) :=
+        (Int.cast_sum _ _).symm
+      have hZeq : rademacherSum (fun q => C ((Fin.castLEEmb htn) q)) (G j) =
+          2 * (((drawSet htn (G j)).sum C : ℤ) : ℝ) -
+            (((blockOf htn).sum C : ℤ) : ℝ) := by
+        rw [rademacherSum_eq_two_sub, hc1, hc2, ← hx, ← hs]
+      set d := discrepancy (pairFamily htn G) C with hd
+      have hmem1 : ((drawSet htn (G j)).sum C).natAbs ∈
+          (pairFamily htn G).image (fun S => (S.sum C).natAbs) :=
+        Finset.mem_image.mpr ⟨drawSet htn (G j), drawSet_mem htn G j, rfl⟩
+      have hmem2 : ((blockOf htn \ drawSet htn (G j)).sum C).natAbs ∈
+          (pairFamily htn G).image (fun S => (S.sum C).natAbs) :=
+        Finset.mem_image.mpr ⟨blockOf htn \ drawSet htn (G j),
+          compDraw_mem htn G j, rfl⟩
+      have hdx : ((drawSet htn (G j)).sum C).natAbs ≤ d :=
+        Finset.le_sup_of_le hmem1 (le_refl _)
+      have hds : ((blockOf htn).sum C - (drawSet htn (G j)).sum C).natAbs ≤ d := by
+        have hh : ((blockOf htn \ drawSet htn (G j)).sum C).natAbs ≤ d :=
+          Finset.le_sup_of_le hmem2 (le_refl _)
+        rw [hcomp] at hh
+        exact hh
+      have hxz : |(((drawSet htn (G j)).sum C : ℤ) : ℝ)| ≤ (d : ℝ) := by
+        have h1 : |(((drawSet htn (G j)).sum C : ℤ) : ℝ)|
+            = ((((drawSet htn (G j)).sum C).natAbs : ℕ) : ℝ) := by norm_num
+        rw [h1]
+        exact_mod_cast hdx
+      have hyz : |((((drawSet htn (G j)).sum C : ℤ) : ℝ) -
+          (((blockOf htn).sum C : ℤ) : ℝ))| ≤ (d : ℝ) := by
+        have hA : (((drawSet htn (G j)).sum C : ℤ) : ℝ) -
+            (((blockOf htn).sum C : ℤ) : ℝ) =
+            ((((drawSet htn (G j)).sum C - (blockOf htn).sum C : ℤ) : ℝ)) := by
+          push_cast
+          ring
+        rw [hA]
+        have hflip : ((((drawSet htn (G j)).sum C - (blockOf htn).sum C : ℤ) : ℝ)) =
+            -((((blockOf htn).sum C - (drawSet htn (G j)).sum C : ℤ) : ℝ)) := by
+          push_cast
+          ring
+        rw [hflip, abs_neg]
+        have h1 : |((((blockOf htn).sum C - (drawSet htn (G j)).sum C : ℤ) : ℝ))|
+            = ((((blockOf htn).sum C - (drawSet htn (G j)).sum C).natAbs : ℕ) : ℝ) := by
+          norm_num
+        rw [h1]
+        exact_mod_cast hds
+      have htri : |rademacherSum (fun q => C ((Fin.castLEEmb htn) q)) (G j)| ≤
+          (d : ℝ) + (d : ℝ) := by
+        rw [hZeq]
+        have hsplit2 : (2 * (((drawSet htn (G j)).sum C : ℤ) : ℝ) -
+            (((blockOf htn).sum C : ℤ) : ℝ)) =
+            ((((drawSet htn (G j)).sum C : ℤ) : ℝ)) +
+              ((((drawSet htn (G j)).sum C : ℤ) : ℝ) -
+                (((blockOf htn).sum C : ℤ) : ℝ)) := by
+          ring
+        rw [hsplit2]
+        calc |((((drawSet htn (G j)).sum C : ℤ) : ℝ)) +
+              ((((drawSet htn (G j)).sum C : ℤ) : ℝ) -
+                (((blockOf htn).sum C : ℤ) : ℝ))|
+            ≤ |((((drawSet htn (G j)).sum C : ℤ) : ℝ))| +
+                |(((((drawSet htn (G j)).sum C : ℤ) : ℝ)) -
+                  (((blockOf htn).sum C : ℤ) : ℝ))| := abs_add_le _ _
+          _ ≤ (d : ℝ) + (d : ℝ) := add_le_add hxz hyz
+      have habs : (0 : ℝ) ≤
+          |rademacherSum (fun q => C ((Fin.castLEEmb htn) q)) (G j)| :=
+        abs_nonneg _
+      rw [← abs_mul_abs_self] at hj
+      have hZZ : |rademacherSum (fun q => C ((Fin.castLEEmb htn) q)) (G j)| *
+          |rademacherSum (fun q => C ((Fin.castLEEmb htn) q)) (G j)| ≤
+          ((d : ℝ) + (d : ℝ)) * ((d : ℝ) + (d : ℝ)) :=
+        mul_le_mul htri htri (by positivity) (by positivity)
+      have h8 : ((k / 12 : ℕ) : ℝ) ≤ 8 * (d : ℝ) * (d : ℝ) := by
+        calc ((k / 12 : ℕ) : ℝ) = 2 * (((k / 12 : ℕ) : ℝ) / 2) := by ring
+          _ ≤ 2 * (|rademacherSum (fun q => C ((Fin.castLEEmb htn) q)) (G j)| *
+              |rademacherSum (fun q => C ((Fin.castLEEmb htn) q)) (G j)|) :=
+              mul_le_mul_of_nonneg_left hj (by norm_num)
+          _ ≤ 2 * (((d : ℝ) + (d : ℝ)) * ((d : ℝ) + (d : ℝ))) :=
+              mul_le_mul_of_nonneg_left hZZ (by norm_num)
+          _ = 8 * (d : ℝ) * (d : ℝ) := by ring
+      have h8n : k / 12 ≤ 8 * d * d := by exact_mod_cast h8
+      have hk23 : k ≤ 23 * (k / 12) := by omega
+      have hgoal : k < (14 * d + 1) * (14 * d + 1) := by
+        have hexp : (14 * d + 1) * (14 * d + 1) = 196 * (d * d) + 28 * d + 1 := by
+          ring
+        rw [hexp]
+        have h184 : 23 * (k / 12) ≤ 184 * (d * d) := by
+          calc 23 * (k / 12) ≤ 23 * (8 * d * d) :=
+              Nat.mul_le_mul_left (k := 23) h8n
+            _ = 184 * (d * d) := by ring
+        have hdd : 0 ≤ d * d := Nat.zero_le _
+        linarith [hk23, h184, hdd]
+      have hs5 : Nat.sqrt k < 14 * d + 1 :=
+        (Nat.sqrt_lt (n := 14 * d + 1)).mpr hgoal
+      omega
+
+end DegreeControl
 
 end Discrepancy
