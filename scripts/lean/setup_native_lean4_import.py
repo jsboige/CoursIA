@@ -50,6 +50,7 @@ REPL_TOOLCHAIN_TAGS = {
     "v4.31.0-rc1": "repl-4.31.0-rc1",
     "v4.32.0": "repl-4.32.0",
     "v4.32.1": "repl-4.32.1",
+    "v4.33.1": "repl-4.33.1",
     "v4.34.0-rc1": "repl-4.34.0-rc1",
 }
 # Durable fork of utensil/lean4_jupyter baking the direct-launch patch directly into
@@ -97,6 +98,7 @@ REPL_PY_PATCH = '''    @staticmethod
                    'v4.31.0-rc1': 'repl-4.31.0-rc1',
                    'v4.32.0': 'repl-4.32.0',
                    'v4.32.1': 'repl-4.32.1',
+                   'v4.33.1': 'repl-4.33.1',
                    'v4.34.0-rc1': 'repl-4.34.0-rc1'}
         try:
             tc_file = os.path.join(lake_root, 'lean-toolchain')
