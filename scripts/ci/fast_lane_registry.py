@@ -79,6 +79,7 @@ class Guard:
     delta_argv: list[str] = field(default_factory=list)
     swap_paths: list[str] = field(default_factory=list)
     iterates_paths: bool = False  # voir `run_iter` dans fast_lane.py
+    absorbed: bool = False  # tranche d'absorption #12567 : nom canonique + conclusion reelle, meme en lane ombre
 
 
 NOTEBOOK_GLOBS = ["**/*.ipynb"]
@@ -231,5 +232,84 @@ PILOT: list[Guard] = [
         argv=["python", "scripts/ci/check_self_hosted_runner_policy.py",
               "--check"],
         blocking=True,
+    ),
+]
+
+
+# ---------------------------------------------------------------------------
+# TRANCHE 1 d'absorption (#12567) -- le basculement, second geste announce
+# par la phase pilote : ces gardes passent DIRECTEMENT en mode canonique
+# (nom exact du check-run d'origine, conclusion reelle qui peut rougir), et
+# leurs workflows dedis perdent le declenchement `pull_request` dans la meme
+# PR -- le fichier source reste pour push/dispatch.
+#
+# `absorbed=True` est ce qui distingue la tranche du pilote : le moteur
+# emet le nom SANS prefixe ombre et la conclusion NON neutralisee, meme quand
+# le reste de la lane tourne en ombre. Le check-run portant le nom original,
+# le rollup de la PR est identique a ce que produisait le workflow dedie.
+#
+# Contrainte de design tranchee par ai-01 (DM 2026-08-26T05:04Z) : chaque
+# garde absorbe CONSERVE son nom de check-run, et `PR gate` -- seul check
+# requis -- reste non filtre.
+#
+# Choix de la tranche : trois formes moteur distinctes (scan global simple,
+# scan globs serie, delta base-vs-head), aucun besoin d'ecriture PR, aucune
+# dependance au-dela de python stdlib -- le pip install pyyaml/Pillow du job
+# couvre deja tout ce que ces trois gardes demandent.
+# ---------------------------------------------------------------------------
+TRANCHE1: list[Guard] = [
+    # Forme 1 : scan global simple, sans base. Source : docs-link-check.yml
+    # (job `check-links`). Le nom du garde est le nom du JOB, pas celui du
+    # workflow -- c'est lui que le rollup affichait.
+    Guard(
+        name="check-links",
+        source="docs-link-check.yml",
+        paths=[
+            "CLAUDE.md", "index.md", "PARCOURS.md",
+            ".claude/rules/**", "docs/**", "**/README.md",
+            "scripts/check_docs_links.py",
+        ],
+        argv=["python", "scripts/check_docs_links.py", "--check"],
+        blocking=True,
+        absorbed=True,
+    ),
+    # Forme 2 : scan globs, bloque sur convention zero-pad GameTheory
+    # (#11840/#12586). Source : series-naming-gate.yml (job affiche
+    # `zero-pad guard (GameTheory serie)`).
+    Guard(
+        name="zero-pad guard (GameTheory serie)",
+        source="series-naming-gate.yml",
+        paths=[
+            "MyIA.AI.Notebooks/GameTheory/**",
+            "scripts/notebook_tools/check_series_zero_pad.py",
+            ".github/workflows/series-naming-gate.yml",
+        ],
+        argv=["python", "scripts/notebook_tools/check_series_zero_pad.py"],
+        blocking=True,
+        absorbed=True,
+    ),
+    # Forme 3 : delta base-vs-head -- meme motif que pip-leak-guard pilote :
+    # scan HEAD capture, bascule MyIA.AI.Notebooks vers la base, scan BASE,
+    # restauration verifyee, puis delta. Source : exercise-leak-ci.yml (job
+    # `Exercice-solution HIGH delta guard (#8053)`). Rouge seulement sur les
+    # NOUVEAUX leaks HIGH -- les herites sont tolere's (#8053).
+    Guard(
+        name="Exercice-solution HIGH delta guard (#8053)",
+        source="exercise-leak-ci.yml",
+        paths=[
+            "MyIA.AI.Notebooks/**/*.ipynb",
+            "scripts/notebook_tools/detect_solution_leaks.py",
+            "scripts/notebook_tools/exercise_leak_delta.py",
+            ".github/workflows/exercise-leak-ci.yml",
+        ],
+        argv=["python", "scripts/notebook_tools/detect_solution_leaks.py",
+              "--scan-all"],
+        delta_argv=["python",
+                    "scripts/notebook_tools/exercise_leak_delta.py",
+                    "{base_json}", "{head_json}"],
+        swap_paths=["MyIA.AI.Notebooks"],
+        blocking=True,
+        needs_base=True,
+        absorbed=True,
     ),
 ]

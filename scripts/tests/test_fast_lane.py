@@ -30,7 +30,7 @@ CI_DIR = Path(__file__).resolve().parents[1] / "ci"
 sys.path.insert(0, str(CI_DIR))
 
 import fast_lane  # noqa: E402
-from fast_lane_registry import PILOT, Guard  # noqa: E402
+from fast_lane_registry import PILOT, TRANCHE1, Guard  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
@@ -520,3 +520,99 @@ def test_bascule_rename_safe_sur_mini_depot(tmp_path):
     assert (tmp_path / "dir" / "new-name.txt").exists()
     assert not (tmp_path / "dir" / "old-name.txt").exists()
     assert clean is True, dirt
+
+
+# ---------------------------------------------------------------------------
+# 5. Tranche 1 d'absorption (#12567) -- mode mixte ombre/canonique
+# ---------------------------------------------------------------------------
+
+def test_tranche1_guards_are_absorbed_and_pilot_is_not():
+    """Le flag `absorbed` est le contrat de la tranche : un garde absorbe
+    rend son verdict sous son nom canonique (donc rougissant), un garde du
+    pilote reste en observation. Si les deux lots se melangent, soit le
+    pilote bloque sans preuve de comparaison, soit la tranche absorbee est
+    neutralisee et son garde d'origine parti sans remplacement."""
+    assert TRANCHE1, "la tranche 1 est vide : ce test n'exerce plus rien"
+    for guard in TRANCHE1:
+        assert guard.absorbed, f"{guard.name} doit porter absorbed=True"
+    for guard in PILOT:
+        assert not guard.absorbed, (
+            f"{guard.name} est un garde PILOT : il reste en ombre jusqu'a "
+            "la conclusion de la comparaison")
+
+
+def test_absorbed_workflows_no_longer_trigger_on_pull_request():
+    """Chaque garde absorbe voit son workflow d'origine retire du
+    declenchement `pull_request` -- sinon le garde tourne deux fois (une
+    fois canonique par la voie rapide, une fois par son workflow) et la
+    mutualisation ne sauuche aucun run. Verification textuelle ancre'e :
+    `pull_request:` en debut d'indentation sous `on:`."""
+    import re as _re
+    for guard in TRANCHE1:
+        wf = WORKFLOWS / guard.source
+        assert wf.is_file(), f"{guard.source} absent du depot"
+        txt = wf.read_text(encoding="utf-8")
+        assert not _re.search(r"^\s+pull_request:", txt, _re.M), (
+            f"{guard.source} declenche encore sur pull_request alors que "
+            f"{guard.name} est absorbe : double execution + zero run sauve")
+
+
+def _drive_mixed_emission(monkeypatch, pilot_rc, tranche_rc):
+    """Fait tourner main() en mode ombre avec un garde pilote et un garde
+    absorbe, tous deux en echec, et capture les check-runs publies."""
+    import fast_lane as fl
+    pilot = Guard(name="pilote-bloquant", argv=["cmd-pilote"], source="s",
+                  blocking=True)
+    tranche = Guard(name="canonique-bloquant", argv=["cmd-tranche"], source="s",
+                    blocking=True, paths=["**/*.ipynb"], absorbed=True)
+    monkeypatch.setattr(fl, "PILOT", [pilot])
+    monkeypatch.setattr(fl, "TRANCHE1", [tranche])
+    monkeypatch.setattr(fl, "changed_files", lambda _ref: ["x.ipynb"])
+    monkeypatch.setattr(
+        fl, "run_argv",
+        lambda argv, ctx: (tranche_rc if argv == ["cmd-tranche"]
+                           else pilot_rc, "sortie"))
+    monkeypatch.setattr(fl, "run_iter", lambda a, p, c: (0, ""))
+    monkeypatch.setattr(
+        fl, "git",
+        lambda *a: subprocess.CompletedProcess(a, 0, "sha", ""))
+    published = []
+    monkeypatch.setattr(fl, "emit_check_run",
+                        lambda *a, **k: published.append(a))
+    rc = fl.main(["--shadow", "--base-sha", "abc"])
+    return rc, published
+
+
+def test_mixed_emission_absorbed_is_canonical_and_blocking(monkeypatch):
+    """Le coeur du basculement #12567 : dans une lane qui tourne en ombre,
+    un garde absorbe en echec rend (a) son nom SANS prefixe ombre, (b) une
+    conclusion `failure` non neutralisee, (c) fait rougir le job -- sinon la
+    voie rapide publierait des verdicts que personne ne peut voir."""
+    rc, published = _drive_mixed_emission(monkeypatch, pilot_rc=1,
+                                          tranche_rc=1)
+    by_name = {args[2]: args for args in published}
+    assert "canonique-bloquant" in by_name, (
+        "le garde absorbe doit porter son nom exact, sans prefixe ombre")
+    assert by_name["canonique-bloquant"][3] == "failure", (
+        "un bloquant absorbe en echec doit rendre failure, pas neutral")
+    assert rc == 1, (
+        "l'echec d'un garde absorbe doit faire rougir le job de la voie "
+        "rapide -- sinon le verdict existe mais rien ne bloque")
+
+
+def test_mixed_emission_pilot_stays_shadowed_and_non_blocking(monkeypatch):
+    """Contraste : dans la MEME lane, le garde pilote en echec reste prefixe,
+    neutralise, et ne fait pas rougir le job -- la comparaison ombre n'est
+    pas conclue et ne doit pas se mettre a bloquer par effet de bord."""
+    rc, published = _drive_mixed_emission(monkeypatch, pilot_rc=1,
+                                          tranche_rc=0)
+    names = {args[2] for args in published}
+    ombre = [n for n in names if n.startswith(fast_lane.SHADOW_PREFIX)]
+    assert any("pilote-bloquant" in n for n in ombre), (
+        "le garde pilote doit rester sous prefixe ombre")
+    for args in published:
+        if "pilote-bloquant" in args[2]:
+            assert args[3] == "neutral", (
+                "le pilote en echec doit rester neutralise")
+    assert rc == 0, (
+        "un echec purement ombre ne doit pas rougir le job")

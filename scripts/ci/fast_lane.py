@@ -39,7 +39,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from fast_lane_registry import PILOT, Guard  # noqa: E402
+from fast_lane_registry import PILOT, TRANCHE1, Guard  # noqa: E402
 
 SHADOW_PREFIX = "fast-lane (ombre): "
 GUARD_TIMEOUT_S = 600
@@ -281,7 +281,8 @@ def main(argv: list[str] | None = None) -> int:
     print(f"[fast-lane] {len(changed)} fichier(s) modifie(s) "
           f"contre {args.base_ref}")
 
-    guards = [g for g in PILOT if not args.only or g.name == args.only]
+    guards = [g for g in PILOT + TRANCHE1
+              if not args.only or g.name == args.only]
     selected = [g for g in guards if guard_applies(g, changed)]
     for guard in guards:
         if guard not in selected:
@@ -390,25 +391,33 @@ def main(argv: list[str] | None = None) -> int:
         print(f"[fast-lane] phase 3 {guard.name} : exit {rc}")
 
     # -- emission ------------------------------------------------------------
+    # Mode MIXTE (#12567, tranche 1 d'absorption) : un garde `absorbed` rend
+    # son verdict SOUS SON NOM CANONIQUE avec une conclusion REELLE meme quand
+    # la lane tourne en ombre -- c'est le basculement annonce par le pilote,
+    # applique garde par garde. Les gardes du pilote conservent le prefixe
+    # ombre et la neutralisation jusqu'a la conclusion de la comparaison.
     head_sha = args.head_sha or git("rev-parse", "HEAD").stdout.strip()
     blocking_failed = False
     for guard in selected:
         rc, log = results.get(guard.name, (0, "(aucune sortie)"))
-        conclusion = conclusion_for(guard, rc, shadow=args.shadow)
+        effective_shadow = args.shadow and not guard.absorbed
+        conclusion = conclusion_for(guard, rc, shadow=effective_shadow)
         if rc == 0:
             title = "OK"
         elif guard.blocking:
-            title = "echec (ombre : non bloquant)" if args.shadow else "echec"
+            title = ("echec (ombre : non bloquant)" if effective_shadow
+                     else "echec")
         else:
             title = "signale (advisory)"
-        name = (SHADOW_PREFIX + guard.name) if args.shadow else guard.name
+        name = ((SHADOW_PREFIX + guard.name) if effective_shadow
+                else guard.name)
         emit_check_run(
             args.repo, head_sha, name, conclusion,
             f"{guard.name} -- {title}",
             f"Source : `{guard.source}`\n\n```\n{log}\n```",
             args.dry_run,
         )
-        if guard.blocking and rc != 0:
+        if guard.blocking and rc != 0 and not effective_shadow:
             blocking_failed = True
 
     verdict = ("au moins un bloquant en echec" if blocking_failed
@@ -416,8 +425,11 @@ def main(argv: list[str] | None = None) -> int:
     print(f"[fast-lane] {len(selected)} garde(s) evalue(s), {verdict}")
 
     # En mode ombre le job ne rougit jamais : il observe, il ne juge pas
-    # encore. Les verdicts vivent dans les check-runs.
-    if args.shadow:
+    # encore. Les verdicts vivent dans les check-runs. En mode MIXTE
+    # (#12567), `blocking_failed` ne compte deja que les gardes reels
+    # (absorbes, ou lane --no-shadow) : si l'un d'eux echoue, le job DOIT
+    # rougir, meme si le reste de la lane observe.
+    if args.shadow and not blocking_failed:
         return 0
     return 1 if blocking_failed else 0
 

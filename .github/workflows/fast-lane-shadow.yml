@@ -29,6 +29,13 @@ name: Fast lane (ombre)
 # unitaires + reprise des noms canoniques) est un SECOND geste, separe et
 # reversible. Un lot temoin entierement vert serait indiscernable d'un moteur
 # debranche : la comparaison doit inclure au moins une PR rouge par garde.
+#
+# TRANCHE 1 D'ABSORPTION (#12567) : depuis le 2026-08-26 la lane tourne en
+# mode MIXTE -- les gardes `absorbed` du registre (TRANCHE1) rendent leur
+# verdict sous leur NOM CANONIQUE avec une conclusion REELLE (un bloquant
+# en echec rougit la PR), et leurs workflows dedis ne se declenchent plus
+# sur `pull_request`. Les gardes du pilote restent en ombre prefixee et
+# neutralisee jusqu'a la conclusion de la comparaison.
 
 on:
   pull_request:
@@ -47,7 +54,7 @@ concurrency:
 
 jobs:
   fast-lane:
-    name: "Fast lane (ombre) -- 10 gardes, 1 checkout"
+    name: "Fast lane (ombre) -- 13 gardes, 1 checkout"
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
