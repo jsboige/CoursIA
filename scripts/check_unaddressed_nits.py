@@ -757,6 +757,22 @@ def _block_emitted(body: str) -> bool:
     par BLOCAGE sans forme de levee reste un signal : sur-blocquer est le bon
     defaut d'un gate de merge, le sous-blocage est la dechirure que #13083
     ferme.
+
+    Reparation preflight ADJOINT (po-2025, 2026-08-26) : un override NATUREL
+    qui nomme le blocage qu'il leve (« [OVERRIDE] lane x — Blocage leve par
+    override ») etait reclasse BLOCK avant l'etage de levee — mesure : le post
+    d'arbitrage devenait lui-meme un signal BLOCK (et etait exclu
+    d'explicit_lifts par classify != None), la prose meme qui arbitrait
+    re-bloquait le gate. Deux bornes, toutes deux scopees a la forme verdict
+    en tete (b) ; le marqueur structurel (a) reste absolu — un arbitre qui
+    veut re-bloquer le pose delibereement :
+
+      A. un post d'ARBITRAGE (`[OVERRIDE]` pose en tete du corps) n'emet
+         jamais — l'override est l'etage superieur du protocole (#11639) ;
+      B. « BLOCAGE leve / levee / lifted ... » : l'occurrence immédiatement
+         suivie d'un participe de levée est le COMPLÉMENT d'une levée
+         (mention #11636), pas une émission — miroir post-fenêtre de
+         `_is_cited`.
     """
     stripped = _strip_quoted(body)
     normalised = _unaccent(stripped)
@@ -764,12 +780,23 @@ def _block_emitted(body: str) -> bool:
         return True
     head = normalised[:60]
     uhead = head.upper()
+    if head.lstrip(" \t*_").upper().startswith("[OVERRIDE]"):
+        return False
     for marker in ("BLOCAGE", "BLOCK"):
         pos = 0
         while (i := uhead.find(marker, pos)) != -1:
             before = head[i - 1] if i > 0 else ""
             after = head[i + len(marker)] if i + len(marker) < len(head) else ""
             if before.isalnum() or before == "_" or before == "[" or after.isalnum() or after == "_":
+                pos = i + len(marker)
+                continue
+            tail = head[i + len(marker):i + len(marker) + 10].lstrip(" \t:;,.)('\"-—*")
+            word = ""
+            for ch in tail:
+                if not ch.isalpha():
+                    break
+                word += ch
+            if word.lower() in ("leve", "levee", "lifted"):
                 pos = i + len(marker)
                 continue
             if not _is_cited(normalised[max(0, i - 30):i]):

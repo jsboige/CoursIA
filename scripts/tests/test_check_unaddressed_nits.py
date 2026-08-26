@@ -2044,3 +2044,48 @@ def test_13083_blocage_dans_un_verdict_mention_ne_declenche_pas():
     body = ("APPROVE — le BLOCAGE leve par le commit 06956bd0a, chemin corrige. "
             "**Mergée.**")
     assert mod.classify("myia-ai-01", body) is None
+
+
+def test_13083_override_naturel_nommant_le_blocage_ne_rebloque_pas():
+    """#13083 correctif preflight ADJOINT (po-2025, 2026-08-26), borne A : un
+    override NATUREL « [OVERRIDE] lane x — Blocage leve par override » etait
+    reclasse BLOCK avant l'etage de levee — mesure pre-fix : classify='BLOCK',
+    le post d'arbitrage devenait lui-meme un signal bloquant. L'arbitrage est
+    l'etage superieur du protocole (#11639) : pose en tete, il n'emet jamais."""
+    body = ("[OVERRIDE] lane myia-ai-01:CoursIA — Blocage leve par override, "
+            "chemin corrige.")
+    assert mod._block_emitted(body) is False
+    assert mod.classify("myia-ai-01", body) is None
+
+
+def test_13083_mention_blocage_leve_en_tete_ne_pose_pas():
+    """#13083 correctif preflight ADJOINT, borne B : « Blocage leve par
+    override » SANS marqueur [OVERRIDE] — l'occurrence est le COMPLEMENT d'une
+    levee (mention #11636), pas une emission. Miroir post-fenetre de _is_cited
+    (qui ne regarde que les 30 chars AVANT l'occurrence)."""
+    assert mod.classify("myia-ai-01",
+                        "Blocage leve par override : chemin corrige.") is None
+    assert mod.classify("myia-ai-01", "Blocage levee.") is None
+    assert mod.classify("myia-ai-01",
+                        "BLOCK lifted by override, path fixed.") is None
+
+
+def test_13083_override_naturel_seul_ne_bloque_pas_la_pr():
+    """#13083 correctif preflight ADJOINT, niveau organe : sur une PR SANS
+    blocage prealable, l'override naturel d'un coordinateur (arbitrage d'un
+    nit ordinaire) ne doit pas BLOQUER la PR. Mesure pre-fix : blocked=True sur
+    le seul post d'arbitrage — le coordinateur bloquait la PR en la debloquant."""
+    override = {"author": {"login": "myia-ai-01"}, "createdAt": at(12),
+                "body": "[OVERRIDE] lane myia-ai-01:CoursIA — Blocage leve "
+                        "par override, chemin corrige."}
+    assert run([override])["blocked"] is False
+
+
+def test_13083_blocage_reel_conditionnel_a_un_override_reste_block():
+    """#13083 garde-fou du correctif preflight : un VRAI blocage dont la prose
+    nomme l'override ATTENDU (« tant que [OVERRIDE] lane n'est pas pose »)
+    reste un blocage — la borne A ne desarme que le post qui COMMENCE par
+    l'arbitrage, jamais celui qui commence par le verdict BLOCAGE."""
+    body = ("**BLOCAGE MERGE (ai-01)** — pas de merge tant que [OVERRIDE] lane "
+            "n'est pas pose par le coordinateur.")
+    assert mod.classify("myia-ai-01", body) == "BLOCK"
