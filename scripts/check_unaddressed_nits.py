@@ -127,11 +127,14 @@ OVERRIDE_LANE = re.compile(r"\[OVERRIDE\]\s+lane\s+\S+")
 
 # #13083 — le symetrique de #11639 : un coordinateur BLOQUE aussi, et l'organe
 # ne le modelisait pas. Même contrainte de pose stricte que le durcissement de
-# la citation (#13030) : le marqueur est POSE — ancre debut de ligne, hors
-# backticks ni liste a puces — il n'est jamais POSE par une citation en milieu
-# de phrase. La prose descriptive peut suivre sur la meme ligne. Alias anglais
-# `[BLOCK] lane` pour les reviews ecrites en anglais.
-BLOCAGE_LANE = re.compile(r"(?m)^[\s*_#]*\[(?:BLOCAGE|BLOCK)\]\s+lane\s+\S+")
+# la citation (#13030) : le marqueur est POSE — ancre debut de ligne (seule
+# indentation toleree), hors backticks, hors puces markdown (`* `, `- `), hors
+# blockquote (`>`), il n'est jamais POSE par une citation en milieu de phrase.
+# La forme verdict-gras (`**BLOCAGE ...**` en tete de corps) est couverte par
+# _block_emitted (2e branche), pas par ce pattern. La prose descriptive peut
+# suivre sur la meme ligne. Alias anglais `[BLOCK] lane` pour les reviews
+# ecrites en anglais.
+BLOCAGE_LANE = re.compile(r"(?m)^\s*\[(?:BLOCAGE|BLOCK)\]\s+lane\s+\S+")
 
 # Marqueurs de reserve d'un reviewer bot (le verdict est dans le body, pas l'etat).
 # #12311 — `REQUEST_CHANGES` (verbe, e.g. « [Hermes] Review — REQUEST_CHANGES »)
@@ -766,7 +769,7 @@ def _block_emitted(body: str) -> bool:
         while (i := uhead.find(marker, pos)) != -1:
             before = head[i - 1] if i > 0 else ""
             after = head[i + len(marker)] if i + len(marker) < len(head) else ""
-            if before.isalnum() or before == "_" or after.isalnum() or after == "_":
+            if before.isalnum() or before == "_" or before == "[" or after.isalnum() or after == "_":
                 pos = i + len(marker)
                 continue
             if not _is_cited(normalised[max(0, i - 30):i]):

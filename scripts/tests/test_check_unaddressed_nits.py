@@ -2008,6 +2008,16 @@ def test_13083_marqueur_cite_ne_pose_pas():
     assert mod.classify("myia-ai-01", body) is None
 
 
+def test_13083_puce_etoile_ne_pose_pas():
+    """#13083 garde-fou (comment Hermes, PR #13093) : `* [BLOCAGE] lane x` en
+    liste a puces markdown ne POSE pas — l'etoile de deco n'est PAS dans
+    l'ancrage `^\\s*` (seule l'indentation est toleree). La forme verdict-gras
+    `**BLOCAGE ...**` reste couverte par la 2e branche de _block_emitted."""
+    body = ("* [BLOCAGE] lane myia-po-2023:CoursIA-2 — liste a puces, "
+            "documentation du mecanisme, pas un blocage.")
+    assert mod.classify("myia-ai-01", body) is None
+
+
 def test_13083_negation_immediate_ne_declenche_pas():
     """#13083 garde-fou : « Pas de blocage de ma part » ne pose rien — le citer
     « pas de » neutralise l'occurrence (meme hygiene `_is_cited` que les
