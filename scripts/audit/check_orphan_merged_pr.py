@@ -104,7 +104,7 @@ def commit_exists(repo: Path, commit: str) -> bool:
     proc = subprocess.run(
         ["git", "-C", str(repo), "cat-file", "-e", f"{commit}^{{commit}}"],
         capture_output=True,
-        text=True,
+        text=True, encoding="utf-8", errors="replace",
     )
     return proc.returncode == 0
 
@@ -114,7 +114,7 @@ def is_ancestor(repo: Path, commit: str, base_ref: str) -> bool:
     proc = subprocess.run(
         ["git", "-C", str(repo), "merge-base", "--is-ancestor", commit, base_ref],
         capture_output=True,
-        text=True,
+        text=True, encoding="utf-8", errors="replace",
     )
     if proc.returncode == 0:
         return True
@@ -137,7 +137,7 @@ def content_missing_from_base(
     proc = subprocess.run(
         ["git", "-C", str(repo), "diff", "--quiet", base_ref, merge_commit, "--", *paths],
         capture_output=True,
-        text=True,
+        text=True, encoding="utf-8", errors="replace",
     )
     if proc.returncode == 0:
         return False  # identique -> le contenu est deja dans la base
