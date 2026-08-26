@@ -535,7 +535,7 @@ def _gh_api(path: str) -> object:
         completed = subprocess.run(
             ["gh", "api", path],
             capture_output=True,
-            text=True,
+            text=True, encoding="utf-8", errors="replace",
             check=False,
         )
     except FileNotFoundError as exc:  # pragma: no cover - environment problem
@@ -566,7 +566,7 @@ def _gh_api_post(path: str, fields: dict[str, str]) -> dict:
         completed = subprocess.run(
             cmd,
             capture_output=True,
-            text=True,
+            text=True, encoding="utf-8", errors="replace",
             check=False,
         )
     except FileNotFoundError as exc:  # pragma: no cover - environment problem

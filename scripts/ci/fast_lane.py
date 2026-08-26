@@ -84,7 +84,7 @@ def guard_applies(guard: Guard, changed: list[str]) -> bool:
 def changed_files(base_ref: str) -> list[str]:
     out = subprocess.run(
         ["git", "diff", "--name-only", f"{base_ref}...HEAD"],
-        cwd=REPO_ROOT, capture_output=True, text=True,
+        cwd=REPO_ROOT, capture_output=True, text=True, encoding="utf-8", errors="replace",
     )
     if out.returncode != 0:
         raise SystemExit(
@@ -122,7 +122,7 @@ def run_argv(argv: list[str], ctx: dict[str, str]) -> tuple[int, str]:
     started = time.time()
     try:
         proc = subprocess.run(cmd, cwd=REPO_ROOT, capture_output=True,
-                              text=True, timeout=GUARD_TIMEOUT_S)
+                              text=True, encoding="utf-8", errors="replace", timeout=GUARD_TIMEOUT_S)
     except subprocess.TimeoutExpired:
         joined = " ".join(cmd)
         return 124, f"[fast-lane] delai depasse ({GUARD_TIMEOUT_S}s) : {joined}"
@@ -185,7 +185,7 @@ def payload_of(log: str) -> str:
 
 def git(*args: str) -> subprocess.CompletedProcess:
     return subprocess.run(["git", *args], cwd=REPO_ROOT,
-                          capture_output=True, text=True)
+                          capture_output=True, text=True, encoding="utf-8", errors="replace")
 
 
 def tree_is_clean(paths: list[str]) -> tuple[bool, str]:
@@ -238,7 +238,7 @@ def emit_check_run(repo: str, head_sha: str, name: str, conclusion: str,
         return
     proc = subprocess.run(
         ["gh", "api", "-X", "POST", f"repos/{repo}/check-runs", "--input", "-"],
-        input=json.dumps(payload), capture_output=True, text=True,
+        input=json.dumps(payload), capture_output=True, text=True, encoding="utf-8", errors="replace",
     )
     if proc.returncode != 0:
         # Ne pas faire echouer le job entier : un verdict non publie doit

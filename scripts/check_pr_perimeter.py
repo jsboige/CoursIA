@@ -1080,7 +1080,7 @@ def _run_gh(args: list[str]) -> str:
     if not gh:
         print("gh introuvable", file=sys.stderr)
         sys.exit(2)
-    proc = subprocess.run([gh, *args], capture_output=True, text=True)
+    proc = subprocess.run([gh, *args], capture_output=True, text=True, encoding="utf-8", errors="replace")
     if proc.returncode != 0:
         print(f"gh error: {proc.stderr.strip()[:400]}", file=sys.stderr)
         sys.exit(2)
