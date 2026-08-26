@@ -32,6 +32,7 @@ caught before the workflow advisory is shipped.
 """
 import json
 import sys
+import warnings
 from pathlib import Path
 
 import nbformat
@@ -509,8 +510,13 @@ class TestUnreadableNotebookSkipped:
 #                  des 3 n'etait dans les +9 du fix multi-colonnes). Le 20/15
 #                  de la branche originale etait mesure sur un main
 #                  pre-#12729 (23/18) : obsolete au moment du rebase.
-CORPUS_BASELINE_TOTAL = 29
-CORPUS_BASELINE_FILES_WITH = 21
+#   c.13099 : 15 findings / 15 files, re-mesure firsthand 2026-08-26 sur
+#                 main 0ceb30e7b. Le detecteur est INCHANGE depuis le pin
+#                 de #12637 (0 commit sur detect_ascii_flowchart.py entre
+#                 2a40b3b0b et HEAD) : la baisse 29 -> 15 mesure la
+#                 conversion de 20 notebooks, pas une perte de detection.
+CORPUS_BASELINE_TOTAL = 15
+CORPUS_BASELINE_FILES_WITH = 15
 
 
 class TestCorpusBaseline:
@@ -519,8 +525,8 @@ class TestCorpusBaseline:
         scripts/notebook_tools/detect_ascii_flowchart.py MyIA.AI.Notebooks/
         --json` and assert the totals match the baseline.
 
-        Skipped by default to keep the test fast. Run with:
-            pytest -k test_corpus_baseline_pinned --runslow
+        Le plancher est un CLIQUET : il ne doit jamais remonter. Le
+        resserrer apres une tranche de conversion (mesure firsthand).
         """
         import subprocess
         repo_root = Path(__file__).resolve().parents[3]
@@ -535,12 +541,28 @@ class TestCorpusBaseline:
         if proc.returncode != 0:
             pytest.skip(f"scan returned {proc.returncode}")
         result = json.loads(proc.stdout)
-        assert result["total_findings"] == CORPUS_BASELINE_TOTAL, (
-            f"Corpus baseline drift: expected {CORPUS_BASELINE_TOTAL}, "
-            f"got {result['total_findings']}. Re-measure firsthand, then "
-            f"update CORPUS_BASELINE_TOTAL."
+        total = result["total_findings"]
+        files_with = result["files_with_findings"]
+        # Cliquet, pas egalite. Une HAUSSE est la regression que ce garde
+        # existe pour attraper : un diagramme ASCII neuf entre dans le corpus.
+        # Une BAISSE est le rollout #11962 qui fait son travail. La faire
+        # rougir a mis `main` au rouge du 2026-08-25T12:35Z au 26/08 alors que
+        # 20 notebooks avaient ete convertis : le test accusait le succes, et
+        # bloquait au passage toutes les PR derriere le `PR gate`.
+        assert total <= CORPUS_BASELINE_TOTAL, (
+            f"Regression ASCII-flowchart : {total} findings > plancher "
+            f"{CORPUS_BASELINE_TOTAL}. Un flowchart ASCII a ete introduit ou "
+            f"reintroduit -- le convertir, ne PAS relever le plancher."
         )
-        assert result["files_with_findings"] == CORPUS_BASELINE_FILES_WITH, (
-            f"Files-with-findings drift: expected {CORPUS_BASELINE_FILES_WITH}, "
-            f"got {result['files_with_findings']}."
+        assert files_with <= CORPUS_BASELINE_FILES_WITH, (
+            f"Regression ASCII-flowchart : {files_with} fichiers > plancher "
+            f"{CORPUS_BASELINE_FILES_WITH}."
         )
+        if total < CORPUS_BASELINE_TOTAL or files_with < CORPUS_BASELINE_FILES_WITH:
+            warnings.warn(
+                f"Plancher ASCII-flowchart desserre : mesure {total}/{files_with} "
+                f"sous le plancher {CORPUS_BASELINE_TOTAL}/"
+                f"{CORPUS_BASELINE_FILES_WITH}. Resserrer CORPUS_BASELINE_* a la "
+                "mesure courante pour que le cliquet garde ses dents.",
+                stacklevel=2,
+            )
