@@ -1265,4 +1265,216 @@ theorem family_tail_ge {m n : ℕ} (c : Fin n → ℤ) (hc : IsColoring c) (hn :
 
 end Families
 
+/-!
+## Boute p3 - union bound sur les colorations
+
+Le second passage probabiliste d'Erdos-Spencer : une famille aleatoire
+de m tirages doit COUVRIR toutes les 2^n colorations simultanement.
+Pour chaque coloration fixee, la famille la rate avec probabilite
+<= (11/12)^m (boute p2) ; l'union bound donne
+P[une coloration echappe] <= 2^n (11/12)^m. Pour m = 12 n,
+(11/12)^12 < 1/2 donc 2^n (11/12)^(12n) < 1 : avec probabilite
+strictement positive la famille bat TOUTES les colorations, et une
+esperance d'indicatrice strictement positive force l'existence d'un
+temoin - le passage probabiliste existential.
+
+Remarque structurelle : `Fin n -> Z` n'est PAS un Fintype (Z infini),
+les colorations sont donc denombrees comme IMAGE des `2^n` booleens
+par `colorOf` (b mappe a la coloration i |-> if b i then 1 else -1).
+-/
+
+section UnionBound
+
+open PacLearning
+
+/-- **Encodage d'un booleen en coloration** : chaque vecteur booleen
+donne une coloration ±1 ; tout l'espace des colorations est l'image
+de `Fin n -> Bool` (de cardinal 2^n) par cette application. -/
+def colorOf {n : ℕ} (b : Fin n → Bool) : Fin n → ℤ :=
+  fun i => if b i then (1 : ℤ) else -1
+
+open Classical in
+/-- **Union bound ponctuel** : l'indicatrice d'une union existentielle
+finie est majoree par la somme des indicatrices (point par point). -/
+theorem indicator_bUnion_le_sum {ια α : Type*} [DecidableEq ια] (s : Finset ια)
+    (P : ια → α → Prop) [∀ j, DecidablePred (P j)] (x : α) :
+    (if ∃ j ∈ s, P j x then (1 : ℝ) else 0) ≤
+      ∑ j ∈ s, (if P j x then (1 : ℝ) else 0) := by
+  classical
+  induction s using Finset.induction_on with
+  | empty =>
+      rw [Finset.sum_empty]
+      by_cases h : ∃ j ∈ (∅ : Finset ια), P j x
+      · exact absurd h (by rintro ⟨j, hj, _⟩; simp at hj)
+      · rw [if_neg h]
+  | @insert j t hj IH =>
+      rw [Finset.sum_insert hj]
+      by_cases hP : P j x
+      · rw [if_pos ⟨j, Finset.mem_insert_self _ _, hP⟩, if_pos hP]
+        exact le_add_of_nonneg_right
+          (Finset.sum_nonneg fun _ _ => by positivity)
+      · have hEx : (∃ j' ∈ insert j t, P j' x) ↔ ∃ j' ∈ t, P j' x := by
+          constructor
+          · rintro ⟨j', hj', hPj'⟩
+            by_cases hjj : j' = j
+            · subst hjj; exact absurd hPj' hP
+            · exact ⟨j', (Finset.mem_insert.mp hj').resolve_left hjj, hPj'⟩
+          · rintro ⟨j', hj', hPj'⟩
+            exact ⟨j', Finset.mem_insert_of_mem hj', hPj'⟩
+        simp only [hEx]
+        rw [if_neg hP, zero_add]
+        exact IH
+
+/-- **Linearite en un Finset** : l'esperance famille d'une somme indexee
+par un Finset (pas seulement un type) est la somme des esperances -
+meme preuve que le kernel `sampleExpect_sum` (`mul_sum` + `sum_comm`). -/
+theorem familyExpect_sum_finset {m n : ℕ} {ι : Type*} (s : Finset ι)
+    (f : ι → (Fin m → Fin n → Bool) → ℝ) :
+    familyExpect (fun F => ∑ j ∈ s, f j F) = ∑ j ∈ s, familyExpect (f j) := by
+  simp only [familyExpect, PacLearning.sampleExpect, Finset.mul_sum]
+  exact Finset.sum_comm
+
+open Classical in
+/-- **Union bound en probabilite** : la probabilite (sur les familles)
+qu'il EXISTE une coloration de `s` satisfaisant `B` est majoree par la
+somme des probabilites individuelles. -/
+theorem familyProb_union_le {m n : ℕ} (s : Finset (Fin n → ℤ))
+    (B : (Fin n → ℤ) → (Fin m → Fin n → Bool) → Prop) [∀ c, DecidablePred (B c)] :
+    familyProb (fun F => ∃ c ∈ s, B c F) ≤ ∑ c ∈ s, familyProb (B c) := by
+  have h1 : familyExpect (fun F => if ∃ c ∈ s, B c F then (1 : ℝ) else 0) ≤
+      familyExpect (fun F => ∑ c ∈ s, (if B c F then (1 : ℝ) else 0)) :=
+    PacLearning.sampleExpect_mono (D := coinDist) (g' := fun F =>
+      ∑ c ∈ s, (if B c F then (1 : ℝ) else 0))
+      (fun F => indicator_bUnion_le_sum s B F)
+  rw [familyExpect_sum_finset s (fun c F => if B c F then (1 : ℝ) else 0)] at h1
+  exact h1
+
+/-- **Cardinal des colorations** : l'image des booleens par `colorOf`
+(qui contient toutes les colorations) a un cardinal <= `2^n`. -/
+theorem card_colorings_le (n : ℕ) :
+    ((Finset.univ : Finset (Fin n → Bool)).image colorOf).card ≤ 2 ^ n := by
+  calc ((Finset.univ : Finset (Fin n → Bool)).image colorOf).card
+      ≤ (Finset.univ : Finset (Fin n → Bool)).card :=
+        Finset.card_image_le
+    _ = 2 ^ n := by simp
+
+/-- **Le temoin existentiel** : une probabilite strictement positive
+force l'existence d'un point ou l'evenement tient. -/
+theorem exists_of_familyProb_pos {m n : ℕ} (P : (Fin m → Fin n → Bool) → Prop)
+    [DecidablePred P] (hP : 0 < familyProb P) : ∃ F, P F := by
+  by_contra h
+  push_neg at h
+  have hz : familyProb P = 0 := by
+    show ∑ F : Fin m → Fin n → Bool,
+        PacLearning.sampleWeight coinDist F * (if P F then (1 : ℝ) else 0) = 0
+    exact Finset.sum_eq_zero fun F _ => by
+      rw [if_neg (h F), mul_zero]
+  linarith
+
+open Classical in
+/-- **Une famille de 12n tirages bat toutes les colorations** : pour
+`n ≥ 1`, il existe une famille `F` de `12n` tirages telle que CHAQUE
+coloration `c` est atteinte par un tirage de `F`
+(`Z_{c,F k}² ≥ n/2`). C'est le passage probabiliste existential :
+le complementaire (une coloration echappe) a une probabilite
+`≤ 2^n (11/12)^{12n} < 1` par union bound sur les `≤ 2^n` colorations. -/
+theorem exists_family_beats_all_colorings {n : ℕ} (hn : 1 ≤ n) :
+    ∃ F : Fin (12 * n) → Fin n → Bool,
+      ∀ c : Fin n → ℤ, IsColoring c →
+        ∃ k : Fin (12 * n), (n : ℝ) / 2 ≤
+          rademacherSum c (F k) * rademacherSum c (F k) := by
+  set m := 12 * n with hm
+  set s : Finset (Fin n → ℤ) :=
+    (Finset.univ : Finset (Fin n → Bool)).image colorOf with hs
+  -- Toute coloration est dans l'image ; tout element de l'image est
+  -- une coloration.
+  have hmem : ∀ c : Fin n → ℤ, IsColoring c → c ∈ s := by
+    intro c hc
+    refine Finset.mem_image.mpr ⟨fun i => decide (c i = 1), Finset.mem_univ _, ?_⟩
+    funext i
+    rcases hc i with h | h <;> simp [colorOf, h]
+  have hcoloring : ∀ c ∈ s, IsColoring c := by
+    intro c hc
+    obtain ⟨b, -, hb⟩ := Finset.mem_image.mp hc
+    subst hb
+    intro i
+    rcases hbi : b i with _ | _ <;> simp [colorOf, hbi]
+  -- (1) une coloration fixee echappe avec probabilite <= (11/12)^m
+  have hmiss : ∀ c ∈ s,
+      familyProb (fun F => ¬ ∃ k : Fin m, (n : ℝ) / 2 ≤
+        rademacherSum c (F k) * rademacherSum c (F k)) ≤ (11 / 12 : ℝ) ^ m := by
+    intro c hc
+    have hhit : 1 - (11 / 12 : ℝ) ^ m ≤ familyProb
+        (fun F => ∃ k : Fin m, (n : ℝ) / 2 ≤
+          rademacherSum c (F k) * rademacherSum c (F k)) :=
+      family_tail_ge (m := m) c (hcoloring c hc) hn
+    have hlaw : familyProb
+        (fun F => ∃ k : Fin m, (n : ℝ) / 2 ≤
+          rademacherSum c (F k) * rademacherSum c (F k)) +
+        familyProb (fun F => ¬ ∃ k : Fin m, (n : ℝ) / 2 ≤
+          rademacherSum c (F k) * rademacherSum c (F k)) = 1 :=
+      familyProb_compl (fun F => ∃ k : Fin m, (n : ℝ) / 2 ≤
+        rademacherSum c (F k) * rademacherSum c (F k))
+    linarith
+  -- (2) union bound + numerie : P[une coloration echappe] < 1
+  have hmissall : familyProb (fun F => ∃ c ∈ s, ¬ ∃ k : Fin m, (n : ℝ) / 2 ≤
+      rademacherSum c (F k) * rademacherSum c (F k)) < 1 := by
+    have hkey : ((11 : ℝ) / 12) ^ 12 < 1 / 2 := by norm_num
+    have hy : (2 : ℝ) * ((11 / 12 : ℝ) ^ 12) < 1 := by linarith
+    have hy0 : (0 : ℝ) ≤ 2 * ((11 / 12 : ℝ) ^ 12) := by positivity
+    -- numerie : (2 * (11/12)^12)^n < 1 par induction (base < 1, >= 0)
+    have hpn : ∀ t : ℕ, 0 < t →
+        (2 * ((11 / 12 : ℝ) ^ 12)) ^ t < 1 := by
+      intro t
+      induction t with
+      | zero => simp
+      | succ t IH =>
+          intro _
+          rcases Nat.eq_zero_or_pos t with ht | ht
+          · subst ht
+            simpa using hy
+          · rw [pow_succ']
+            have hx1 : (2 * ((11 / 12 : ℝ) ^ 12)) ^ t ≤ 1 := le_of_lt (IH ht)
+            have h2 := mul_le_mul_of_nonneg_left hx1 hy0
+            linarith
+    have hpow : ((11 / 12 : ℝ) ^ 12) ^ n = (11 / 12 : ℝ) ^ m := by
+      rw [hm]
+      exact (pow_mul _ 12 n).symm
+    have hfin : (2 : ℝ) ^ n * (11 / 12 : ℝ) ^ m < 1 := by
+      rw [← hpow, ← mul_pow]
+      exact hpn n (by omega)
+    have hcardR : (↑s.card : ℝ) ≤ (2 : ℝ) ^ n := by
+      exact_mod_cast card_colorings_le n
+    have hX : (0 : ℝ) ≤ (11 / 12 : ℝ) ^ m := by positivity
+    calc familyProb (fun F => ∃ c ∈ s, ¬ ∃ k : Fin m, (n : ℝ) / 2 ≤
+          rademacherSum c (F k) * rademacherSum c (F k))
+        ≤ ∑ c ∈ s, familyProb (fun F => ¬ ∃ k : Fin m, (n : ℝ) / 2 ≤
+            rademacherSum c (F k) * rademacherSum c (F k)) :=
+          familyProb_union_le (m := m) s
+            (fun c F => ¬ ∃ k : Fin m, (n : ℝ) / 2 ≤
+              rademacherSum c (F k) * rademacherSum c (F k))
+      _ ≤ ∑ c ∈ s, (11 / 12 : ℝ) ^ m :=
+          Finset.sum_le_sum fun c hc => hmiss c hc
+      _ = ↑s.card * (11 / 12 : ℝ) ^ m := by
+          rw [Finset.sum_const, nsmul_eq_mul]
+      _ ≤ (2 : ℝ) ^ n * (11 / 12 : ℝ) ^ m :=
+          mul_le_mul_of_nonneg_right hcardR hX
+      _ < 1 := hfin
+  -- (3) le bon evenement a une probabilite > 0, donc un temoin existe
+  have hgoodpos : 0 < familyProb (fun F => ¬ ∃ c ∈ s, ¬ ∃ k : Fin m, (n : ℝ) / 2 ≤
+      rademacherSum c (F k) * rademacherSum c (F k)) := by
+    have hlaw : familyProb (fun F => ∃ c ∈ s, ¬ ∃ k : Fin m, (n : ℝ) / 2 ≤
+        rademacherSum c (F k) * rademacherSum c (F k)) +
+        familyProb (fun F => ¬ ∃ c ∈ s, ¬ ∃ k : Fin m, (n : ℝ) / 2 ≤
+          rademacherSum c (F k) * rademacherSum c (F k)) = 1 :=
+      familyProb_compl (fun F => ∃ c ∈ s, ¬ ∃ k : Fin m, (n : ℝ) / 2 ≤
+        rademacherSum c (F k) * rademacherSum c (F k))
+    linarith
+  obtain ⟨F, hF⟩ := exists_of_familyProb_pos (m := m) _ hgoodpos
+  refine ⟨F, fun c hc => ?_⟩
+  by_contra hno
+  exact hF ⟨c, hmem c hc, hno⟩
+
+end UnionBound
+
 end Discrepancy
