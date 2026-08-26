@@ -910,7 +910,12 @@ def _gh_issue_comments(issue: str) -> dict:
             # inventory.
             "--json", "number,title,labels,comments",
         ],
+        # #12811 -- gh emits UTF-8; text=True alone decodes with the Windows
+        # locale (cp1252), which raises UnicodeDecodeError on issue bodies
+        # carrying bytes at cp1252-undefined positions (0x81/0x8D/0x8F/0x90/
+        # 0x9D -- common in the UTF-8 of ICT symbols) and kills the guard.
         capture_output=True, text=True, shell=False,
+        encoding="utf-8", errors="replace",
     )
     if proc.returncode != 0:
         raise RuntimeError(
@@ -1001,6 +1006,7 @@ def _fetch_pr_state(pr_ref: int) -> tuple[str | None, str | None]:
                 "--json", "state,merged",
             ],
             capture_output=True, text=True, shell=False,
+            encoding="utf-8", errors="replace",  # #12811
         )
     except Exception as exc:  # pragma: no cover -- defensive
         result = (None, f"gh exec failed: {exc}")
@@ -1099,6 +1105,7 @@ def _post_comment(issue: str, body: str) -> None:
     proc = subprocess.run(
         ["gh", "issue", "comment", str(issue), "--body-file", path],
         capture_output=True, text=True, shell=False,
+        encoding="utf-8", errors="replace",  # #12811
     )
     Path(path).unlink(missing_ok=True)
     if proc.returncode != 0:
@@ -1126,7 +1133,10 @@ def _gh_open_prs_with_files() -> list[dict]:
             "--json", "number,title,headRefName,body,files",
             "--limit", "200",
         ],
+        # #12811 -- 200 PR bodies in one payload: a single non-cp1252 byte
+        # anywhere kills the whole --paths mode on Windows.
         capture_output=True, text=True, shell=False,
+        encoding="utf-8", errors="replace",
     )
     if proc.returncode != 0:
         raise RuntimeError(
@@ -1322,6 +1332,7 @@ def _scope_zero_coverage_warning(
         proc = subprocess.run(
             ["git", "-C", repo_root, "ls-files"],
             capture_output=True, text=True, timeout=10,
+            encoding="utf-8", errors="replace",  # #12811
         )
     except (OSError, subprocess.TimeoutExpired):
         return None
@@ -1378,6 +1389,7 @@ def _git_tracked_files(repo_root: str | None = None) -> list[str] | None:
         proc = subprocess.run(
             ["git", "-C", repo_root, "ls-files"],
             capture_output=True, text=True, timeout=10,
+            encoding="utf-8", errors="replace",  # #12811
         )
     except (OSError, subprocess.TimeoutExpired):
         return None
