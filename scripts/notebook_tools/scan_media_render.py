@@ -207,7 +207,7 @@ def _resolve_sidecar(path: str, nb_file: Path, repo: Path) -> str | None:
                 ["git", "ls-files", "--error-unmatch", "--", rel],
                 cwd=repo,
                 capture_output=True,
-                text=True,
+                text=True, encoding="utf-8", errors="replace",
                 timeout=15,
             )
         except (subprocess.SubprocessError, OSError):
