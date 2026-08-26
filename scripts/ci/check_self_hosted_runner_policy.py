@@ -33,6 +33,30 @@ REQUIRED_LABELS = {
     "coursia-ephemeral",
     "coursia-fast-guards",
 }
+
+# Allowlist of workflows that may declare self-hosted runner jobs.
+#
+# Entries here are intentional, not exhaustive: each workflow is named
+# alongside the reason it is granted the privilege. The scanner asserts
+# in ``scripts/tests/test_check_self_hosted_runner_policy.py`` that the
+# allowlist does not contain stale entries (i.e. entries whose workflow
+# declares no self-hosted job at the moment of the assertion).
+#
+# - ``pr-gate-stale-sweep.yml`` (preventive, #12704 era) : originally the
+#   vehicle for routing re-aggregations toward self-hosted runners when
+#   runner starvation forced the gate to fail with
+#   ``timed out waiting for: ...``. The workflow currently runs its only
+#   job on ``ubuntu-latest``; the allowlist entry is kept so a future
+#   change that re-introduces a self-hosted job in this workflow does not
+#   red-flag the whole CI on the WORKFLOW_NOT_ALLOWED check. If the entry
+#   is ever removed, the next self-hosted job added here must re-add it
+#   first (otherwise the scanner will block the PR on the gate).
+#
+# - ``windows-self-hosted-tests.yml`` (active, #13126/#13148) : the only
+#   active self-hosted job in the repository today — runs the 9 Windows
+#   confinement tests that cannot run on the hosted Linux runner pool
+#   (cf. #12704). Workflow is dispatch-only; runner is ephemeral and
+#   cycles through unenroll/re-enroll between dispatches.
 SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     "pr-gate-stale-sweep.yml",
     "windows-self-hosted-tests.yml",
