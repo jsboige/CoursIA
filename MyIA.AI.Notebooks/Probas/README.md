@@ -349,7 +349,7 @@ Port Python des modèles Infer.NET, utilisant l'échantillonnage MCMC (NUTS) au 
 | 4 | [PyMC-4-Bayesian-Networks](PyMC/PyMC-4-Bayesian-Networks.ipynb) | Réseaux bayésiens, CPTs |
 | 5 | [PyMC-7-Skills-IRT](PyMC/PyMC-7-Skills-IRT.ipynb) | Item Response Theory, modèles de compétences |
 | 6 | [PyMC-8-TrueSkill](PyMC/PyMC-8-TrueSkill.ipynb) | Classement, TrueSkill |
-| 7 | [PyMC-9-Classification](PyMC/PyMC-9-Classification.ipynb) | Classification bayésienne |
+| 7 | [PyMC-9-Classification](PyMC/PyMC-9-Classification.ipynb) | Classification bayésienne, calibration mesurée |
 | 8 | [PyMC-10-Model-Selection](PyMC/PyMC-10-Model-Selection.ipynb) | Sélection de modèles, Bayes Factors |
 | 9 | [PyMC-11-Topic-Models](PyMC/PyMC-11-Topic-Models.ipynb) | LDA, Dirichlet priors |
 | 10 | [PyMC-13-Crowdsourcing](PyMC/PyMC-13-Crowdsourcing.ipynb) | Agrégation de labels, workers, communautés |
