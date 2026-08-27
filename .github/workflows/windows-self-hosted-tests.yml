@@ -33,10 +33,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
+      # #13217 : pas de actions/setup-python ici — il deroule un setup.ps1
+      # que l'ExecutionPolicy du compte service runner refuse (UnauthorizedAccess)
+      # et telecharge un interpreteur ~50 s que la machine a deja. Le Python du
+      # PATH du compte service est utilise tel quel ; pip install pytest est
+      # idempotent (no-op si deja present).
       - name: Install test dependencies
         run: python -m pip install pytest
 
