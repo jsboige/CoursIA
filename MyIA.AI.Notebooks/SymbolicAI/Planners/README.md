@@ -35,7 +35,7 @@ flowchart TD
     P1["<b>Phase 1 · Fondations</b><br/>triptyque État-Action-But, modèle STRIPS, langage PDDL"]
     P2["<b>Phase 2 · Classique</b><br/>recherche dans l'espace d'états : Fast Downward, heuristiques A* / h(FF) / LM-cut"]
     P3["<b>Phase 3 · Avancée</b><br/>au-delà de l'explosion d'états : CP-SAT (OR-Tools), temporel, HTN"]
-    P4["<b>Phase 4 · Neuro-symbolique</b><br/>frontière IA symbolique ↔ apprentissage : LLM planning, Learning to Plan"]
+    P4["<b>Phase 4 · Neuro-symbolique</b><br/>frontière IA symbolique ↔ apprentissage : LLM planning, Learning to Plan, LLM réducteur d'espace"]
     P1 -->|"modéliser un problème"| P2
     P2 -->|"l'explosion d'états bloque"| P3
     P3 -->|"doter le symbolique d'apprentissage"| P4
@@ -69,9 +69,9 @@ La planification classique épuise ses limites dès que les problèmes deviennen
 
 <p align="center"><a href="03-Advanced/Planners-8-Temporal.ipynb"><img src="assets/readme/planners8-temporal.png" width="560" alt="Planification temporelle : chronologie d'actions avec durées et contraintes de scheduling sur un réseau temporel."></a></p>
 
-### Phase 4 : Neuro-Symbolique (Notebooks 10-12, ~3h)
+### Phase 4 : Neuro-Symbolique (Notebooks 10, 11, 12, 14 ; ~3h)
 
-La dernière partie explore la frontière entre IA symbolique et apprentissage profond. Le notebook 10 (LLM-Planning) montre comment les Large Language Models peuvent générer des plans à partir de descriptions en langage naturel, le prompting pour la planification, et le plan repair. Le notebook 11 (Unified-Planning) détaille l'interface unifiée `unified-planning` : connexion à plusieurs solveurs en quelques lignes, comparaison croisée des performances, portabilité du modèle PDDL entre moteurs, **et le saut qualitatif satisfaction → optimisation** via `MinimizeActionCosts` (un moteur *optimal* comme `fast-downward-opt` certifie le plan de coût minimal là où un moteur *satisficing* comme `fast-downward` s'arrête au premier plan trouvé — voir [la section dédiée ci-dessous](#au-delà-de-la-satisfaction--optimisation-pddl-cout-minimal-planners-11)). Le notebook 12 (LOOP) introduit le paradigme **Learning to Plan** : architecture LOOP (state encoder, policy network, value network), encodage PDDL en tenseurs (one-hot, GNN), entraînement par imitation et renforcement, résultats sur benchmarks IPC (85.8% coverage), et comparaison avec KRCL. Ce notebook conclut la série avec les tendances futures : foundation models, meta-learning, inverse reinforcement learning.
+La dernière partie explore la frontière entre IA symbolique et apprentissage profond. Le notebook 10 (LLM-Planning) montre comment les Large Language Models peuvent générer des plans à partir de descriptions en langage naturel, le prompting pour la planification, et le plan repair. Le notebook 11 (Unified-Planning) détaille l'interface unifiée `unified-planning` : connexion à plusieurs solveurs en quelques lignes, comparaison croisée des performances, portabilité du modèle PDDL entre moteurs, **et le saut qualitatif satisfaction → optimisation** via `MinimizeActionCosts` (un moteur *optimal* comme `fast-downward-opt` certifie le plan de coût minimal là où un moteur *satisficing* comme `fast-downward` s'arrête au premier plan trouvé — voir [la section dédiée ci-dessous](#au-delà-de-la-satisfaction--optimisation-pddl-cout-minimal-planners-11)). Le notebook 12 (LOOP) introduit le paradigme **Learning to Plan** : architecture LOOP (state encoder, policy network, value network), encodage PDDL en tenseurs (one-hot, GNN), entraînement par imitation et renforcement, résultats sur benchmarks IPC (85.8% coverage), et comparaison avec KRCL. Le notebook 14 (LLM-Space-Reducer) teste la **position inverse** : le LLM non plus solveur mais réducteur d'espace de recherche (position du moteur [aicpp](https://github.com/Julien-Livet/aicpp)) — mini-DSL de primitives typées sur grilles ARC, trois bras mesurés (exhaustif borné, LLM-direct, LLM-réducteur), la correction restant toujours au solveur déterministe. C'est lui qui conclut la série sur les tendances : foundation models, meta-learning, inverse reinforcement learning.
 
 ### Au-delà de la satisfaction : optimisation PDDL (coût minimal, Planners-11)
 
@@ -116,10 +116,10 @@ Pour les applications de planification par contraintes et temporelles :
 1. `0-Setup` → `1-Introduction` → `2-PDDL-Basics`
 2. `7-OR-Tools` → `8-Temporal` → `9-HTN`
 
-#### Parcours neuro-symbolique (5h, recherche)
+#### Parcours neuro-symbolique (~6h, recherche)
 Pour les approches combinées apprentissage profond + symbolique :
 1. `0-Setup` → `1-Introduction` → `4-Fast-Downward`
-2. `10-LLM-Planning` → `11-Unified-Planning` → `12-LOOP`
+2. `10-LLM-Planning` → `11-Unified-Planning` → `12-LOOP` → `14-LLM-Space-Reducer`
 
 ## Quel parcours choisir ?
 
@@ -142,6 +142,7 @@ Pour les approches combinées apprentissage profond + symbolique :
 | Optimisation de scheduling | **Planners-7-OR-Tools** |
 | Planification hiérarchique | **Planners-9-HTN** (SHOP2, decomposition) |
 | Frontière LLM + IA | **Planners-10-LLM-Planning** |
+| LLM qui réduit l'espace de recherche | **Planners-14-LLM-Space-Reducer** |
 | Approche neuro-symbolique avancée | **Planners-12-LOOP** (85.8% IPC coverage) |
 | Comparer tous les solveurs (satisfaction) | **Planners-11-Unified-Planning** |
 | Comparer satisfaction **vs** optimisation (`MinimizeActionCosts`) | **Planners-11-Unified-Planning** ([#7592](https://github.com/jsboige/CoursIA/pull/7592)) |
@@ -196,7 +197,8 @@ SymbolicAI/Planners/
 ├── 04-NeuroSymbolic/
 │   ├── Planners-10-LLM-Planning.ipynb   # LLM + Planning
 │   ├── Planners-11-Unified-Planning.ipynb # Interface unifiée
-│   └── Planners-12-LOOP.ipynb           # Learning to Plan
+│   ├── Planners-12-LOOP.ipynb           # Learning to Plan
+│   └── Planners-14-LLM-Space-Reducer.ipynb # LLM reducteur d'espace (position aicpp)
 ├── planning_lean/                        # Projet Lake Lean 4 (preuve formelle 0-sorry de l'admissibilité de la relaxation h+ <= h*, cf Planners-5b)
 │   ├── README.md                          # Documentation du lake (FR)
 │   ├── Planning.en.md                     # Companion EN (i18n tranche 8, #5013)
@@ -232,6 +234,7 @@ Chaque notebook introduit un concept ou modèle spécifique. Le tableau ci-desso
 | 10 | LLM-Planning | Planification avec LLMs, prompting, plan repair, limites et avantages |
 | 11 | Unified-Planning | Interface multi-solveurs, comparaison croisée, portabilité du modèle — + optimisation `MinimizeActionCosts` (optimal bat satisficing de 7 unités) [#7592] |
 | 12 | LOOP | Learning to Plan : state encoder, policy network, value network, 85.8% IPC coverage |
+| 14 | LLM-Space-Reducer | Le LLM comme réducteur d'espace de recherche (position aicpp) : mini-DSL ARC, trois bras mesurés (exhaustif borné, LLM-direct, LLM-réducteur) |
 
 ---
 
@@ -284,6 +287,7 @@ Chaque notebook introduit un concept ou modèle spécifique. Le tableau ci-desso
 | 10 | [Planners-10-LLM-Planning](04-NeuroSymbolic/Planners-10-LLM-Planning.ipynb) | Python | LLMs pour la planification, prompting, plan repair | 50 min |
 | 11 | [Planners-11-Unified-Planning](04-NeuroSymbolic/Planners-11-Unified-Planning.ipynb) | Python | Interface unifiée, multi-solveurs, comparaisons | 40 min |
 | 12 | [Planners-12-LOOP](04-NeuroSymbolic/Planners-12-LOOP.ipynb) | Python | Learning to Plan, modèles neuronaux pour heuristiques | 45 min |
+| 14 | [Planners-14-LLM-Space-Reducer](04-NeuroSymbolic/Planners-14-LLM-Space-Reducer.ipynb) | Python | Le LLM comme réducteur d'espace de recherche : mini-DSL ARC, trois bras mesurés (exhaustif borné, LLM-direct, LLM-réducteur, position aicpp) | 40 min |
 
 ---
 
@@ -307,8 +311,8 @@ Chaque notebook introduit un concept ou modèle spécifique. Le tableau ci-desso
 
 ### Pour les notebooks avancés
 
-- **Bases en machine learning** (notebooks 10-12) : réseaux de neurones, loss, backpropagation
-- **API OpenAI/Anthropic** (notebook 10) : prompts LLM, génération de texte
+- **Bases en machine learning** (notebooks 10, 12) : réseaux de neurones, loss, backpropagation
+- **API OpenAI/Anthropic/OpenRouter** (notebooks 10, 14) : prompts LLM, génération de texte
 - **Connaissance de PDDL** (notebooks 8-9) : domaines, problèmes, types
 
 ### Pour les notebooks pratiques
@@ -734,7 +738,7 @@ La planification automatique est le versant **décisionnel** de l'IA — là où
 - **Les fondations classiques** (notebooks 1-4) : le triptyque État-Action-But, STRIPS, les heuristiques de recherche (A*, h-max, LM-cut). Vous avez vu qu'un plan n'est pas une prédiction — c'est une *séquence d'actions* justifiée par une structure de coût.
 - **Les standards et solveurs** (notebooks 5-7) : PDDL comme langage commun, Fast Downward, OR-Tools CP-SAT, le passage du « plan à la main » au « plan par solveur industriel ».
 - **La composition et la hiérarchie** (notebooks 8-9) : planification temporelle, réseaux de tâches hiérarchiques (HTN/SHOP2) — comment découper un but complexe en sous-but réutilisables.
-- **La synthèse neuro-symbolique** (notebooks 10-12) : plan repair par LLM, l'API unified-planning, et surtout *Learning to Plan* (notebook 12) — le point où l'apprentissage rencontre la planification, clôture naturelle de la série vers les foundation models.
+- **La synthèse neuro-symbolique** (notebooks 10, 11, 12, 14) : plan repair par LLM, l'API unified-planning, *Learning to Plan* (notebook 12) — le point où l'apprentissage rencontre la planification — et la position inverse (notebook 14) : le LLM réducteur d'espace de recherche, la correction restant au solveur déterministe, clôture de la série vers les foundation models.
 
 ### Prochaines étapes
 
@@ -760,8 +764,8 @@ Le décompte exact ci-dessous est synchronisé avec le bloc `<!-- CATALOG-STATUS
 | **01-Foundation** | 3 | PRODUCTION=3, BETA=0 | Triptyque État-Action-But, modèle STRIPS, syntaxe PDDL, explosion combinatoire $O(2^n)$ |
 | **02-Classical** | 5 | PRODUCTION=3, BETA=2 | Fast Downward (translator→preprocessor→search), heuristiques admissibles ($h^{add}$, $h^{max}$, $h^{FF}$, LM-cut), domaines IPC (Blocks World, Logistics, Gripper, Satellite), companion Lean `5b-Lean-Relaxation`, différentiel d'atteignabilité (`13-Differentiel-Atteignabilite`, strate 7) |
 | **03-Advanced** | 3 | PRODUCTION=3, BETA=0 | CP-SAT (OR-Tools), planification temporelle PDDL 2.1 (durées, parallélisme), HTN/SHOP2 (décomposition hiérarchique, HDDL) |
-| **04-NeuroSymbolic** | 3 | PRODUCTION=3, BETA=0 | LLM-Planning (génération plans depuis langage naturel, plan repair), `unified-planning` (portabilité cross-solveur), LOOP — *Learning to Plan* (state encoder + policy + value nets, 85.8% IPC coverage) |
-| **Total** | **15** | **PRODUCTION=13, BETA=2** | Python 3.9+, kernel Python 3, solveurs : Fast Downward (Docker) + OR-Tools 9.8+ + unified-planning 1.1+ |
+| **04-NeuroSymbolic** | 4 | PRODUCTION=4, BETA=0 | LLM-Planning (génération plans depuis langage naturel, plan repair), `unified-planning` (portabilité cross-solveur), LOOP — *Learning to Plan* (state encoder + policy + value nets, 85.8% IPC coverage), LLM-Space-Reducer (LLM réducteur d'espace, position aicpp, trois bras mesurés) |
+| **Total** | **16** | **PRODUCTION=14, BETA=2** | Python 3.9+, kernel Python 3, solveurs : Fast Downward (Docker) + OR-Tools 9.8+ + unified-planning 1.1+ |
 
 > **Note sur la maturité.** Les notebooks `BETA=2` correspondent à `Planners-5b-Lean-Relaxation.ipynb` (companion natif du lake `planning_lean/` : la **preuve formelle 0-sorry** de l'admissibilité $h^{+} \leq h^{*}$ y est certifiée par `lake build`) et à `Planners-13-Differentiel-Atteignabilite.ipynb` (nouveau, strate 7). Le statut `BETA` reflète la phase de relecture pédagogique (intégration au parcours d'apprentissage) plutôt qu'un défaut technique. Le déploiement industriel est validé.
 

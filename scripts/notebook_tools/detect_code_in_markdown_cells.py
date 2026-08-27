@@ -465,7 +465,9 @@ def main(argv=None) -> int:
     baseline_path = args.baseline if args.baseline else DEFAULT_BASELINE
     baseline = load_baseline(baseline_path)
     if not args.update_baseline:
-        print(f"baseline: {baseline_path} ({len(baseline)} entries)")
+        # #12858 : la ligne d'identite part sur stderr -- stdout doit rester
+        # pur en mode --json (consommateurs : jq, scripts CI en pipe, etc.).
+        print(f"baseline: {baseline_path} ({len(baseline)} entries)", file=sys.stderr)
     new_findings = [f for f in findings
                     if _finding_hash(f) not in baseline] if baseline else findings
 
