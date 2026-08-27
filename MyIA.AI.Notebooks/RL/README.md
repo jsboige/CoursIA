@@ -64,7 +64,7 @@ Les sous-séries [`rlpt_*`](.) et [GenAI/PostTraining](../GenAI/PostTraining/REA
 | « Comment GRPO est câblé *intérieurement* (group rollouts, avantage intra-groupe, no critic) ? » | [`rlpt_2`](rlpt_2_grpo_minimal.html) | GRPO Qwen3.5-0.8B local **sans `trl` complet** — la boucle d'entraînement est écrite à la main, on voit chaque rollout, chaque reward. |
 | « Le reward hacking est-il un attracteur spontané sur petit modèle ? Comment l'inoculer ? » | [`rlpt_3`](rlpt_3_reward_hacking.html) | Cas clinique minimal : 3 voies pour tenter de déclencher le hack, inoculation comme variable expérimentale, verdict reproductible (seed fixée). |
 | « DPO offline vs GRPO online à budget égal — qui gagne ? » | [`rlpt_4`](rlpt_4_dpo_vs_ppo.html) | Comparaison à budget 40 steps, préférences auto-fabriquées, verdict multi-seed {42,0,1,7} honnête Diebold-Mariano, dispersion inter-seed documentée. |
-| « GRPO + RLVR sur un vrai LLM, avec `trl` + reward vérifiable + détecteurs Goodhart en ligne ? » | [PT-11a](../GenAI/PostTraining/PT_11_grpo_qwen35_rlvr.ipynb), [PT-11b](../GenAI/PostTraining/PT_11_grpo_qwen_rlvr_on_verifiers.ipynb) | La chaîne *SOTA 2024-2025* appliquée : `trl.GRPOTrainer` + Qwen3.5-0.8B QLoRA 4-bit + Z3/SymPy vérificateur + `rewardspy.watch_trl` en ligne. |
+| « GRPO + RLVR sur un vrai LLM, avec `trl` + reward vérifiable + détecteurs Goodhart en ligne ? » | [PT-11a](../GenAI/PostTraining/PT_11_grpo_qwen35_rlvr.ipynb), [PT-11b](../GenAI/PostTraining/PT_11_grpo_qwen_rlvr_on_verifiers.html) | La chaîne *SOTA 2024-2025* appliquée : `trl.GRPOTrainer` + Qwen3.5-0.8B QLoRA 4-bit + Z3/SymPy vérificateur + `rewardspy.watch_trl` en ligne. |
 | « Quels sont les 6 détecteurs statistiques du reward hacking ? » | [PT-07](../GenAI/PostTraining/PT_07_rewardspy_reward_hacking.ipynb) | Le catalogue `rewardspy.detectors` (Component Dominance, Length Drift, etc.). Outil — `rlpt_3` est le cas d'usage. |
 | « InoculationRL complet, panel persona × reward hackable, la réplique poids du capstone ? » | [#5105 ICT-25](https://github.com/jsboige/CoursIA/issues/5105) | Capstone final, **distinct** de `rlpt_3` (qui en est la version compacte). |
 
@@ -573,9 +573,9 @@ Plusieurs notebooks de cette série annoncent un « pont RLHF » (notebook 9 sur
 
 | Concept RL (cette série) | Réalisation côté LLM (GenAI) |
 |--------------------------|------------------------------|
-| Behavior Cloning = imitation ([rl_9](rl_9_offline_rl.html)) | SFT — [PostTraining PT-02](../GenAI/PostTraining/PT_02_sft_baseline.ipynb), [FineTuning FT-03](../GenAI/FineTuning/FT-03-Supervised-FineTuning-SFT.ipynb) |
-| Contrainte de support BCQ = pénalité KL ([rl_9](rl_9_offline_rl.html)) | KL vers le modèle de référence dans PPO-RLHF / DPO — [PT-03](../GenAI/PostTraining/PT_03_dpo_direct_preference.ipynb) |
-| Reward shaping = guider via le signal ([rl_10](rl_10_reward_shaping.html)) | Reward model appris à partir de préférences — [FineTuning FT-04](../GenAI/FineTuning/FT-04-RLHF-DPO.ipynb) |
+| Behavior Cloning = imitation ([rl_9](rl_9_offline_rl.html)) | SFT — [PostTraining PT-02](../GenAI/PostTraining/PT_02_sft_baseline.ipynb), [FineTuning FT-03](../GenAI/FineTuning/FT-03-Supervised-FineTuning-SFT.html) |
+| Contrainte de support BCQ = pénalité KL ([rl_9](rl_9_offline_rl.html)) | KL vers le modèle de référence dans PPO-RLHF / DPO — [PT-03](../GenAI/PostTraining/PT_03_dpo_direct_preference.html) |
+| Reward shaping = guider via le signal ([rl_10](rl_10_reward_shaping.html)) | Reward model appris à partir de préférences — [FineTuning FT-04](../GenAI/FineTuning/FT-04-RLHF-DPO.html) |
 | Biais du shaping naïf = reward hacking ([rl_10](rl_10_reward_shaping.html)) | Goodhart / overoptimisation du reward model — [PT-07](../GenAI/PostTraining/PT_07_rewardspy_reward_hacking.ipynb) |
 | Policy gradient / PPO ([rl_6c](rl_6c_ppo_from_scratch.html)) | PPO-RLHF et son successeur GRPO — [PT-04](../GenAI/PostTraining/PT_04_grpo_deepseek_r1.ipynb) |
 | MDP, value/Q ([rl_5](rl_5_mdp_dp_qlearning.html)) | Socle policy/value réutilisé par tout post-training — [GenAI/PostTraining](../GenAI/PostTraining/README.md) |

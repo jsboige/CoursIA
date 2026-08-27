@@ -19,7 +19,7 @@ Les Parties 1-2 enseignent à *choisir* une métaheuristique face à un problèm
 - **Pédagogique.** Reconstruire WOA ou EO à partir de primitives (`Match`, `Container`, `Scoped`, contrôle-flux géométrique) force à comprendre *pourquoi* chaque étape existe — là où importer `mealpy` ou `scipy` masque le mécanisme derrière un appel de fonction. C'est le même réflexe qu'écrire un A* à la main avant d'utiliser `networkx`.
 - **Ingénierie.** La composition ouvre des configurations qu'aucune bibliothèque monolithique n'offre directement : sous-populations spécialisées (Eukaryote), migration entre îles (Islands), métaheuristiques hybrides assemblées par grammaire fluente. Ces patterns existent dans la littérature mais sont rares dans les libs grand public.
 
-L'enseignement transversal rejoint celui des Parties 1-2 : aucune métaheuristique ne domine partout (cf [Search-11](../Part1-Foundations/Search-11-Metaheuristics.ipynb)), et la bonne réponse à un problème d'optimisation est rarement « l'algorithme X » mais plutôt « la bonne composition de primitives pour ce paysage de fitness ».
+L'enseignement transversal rejoint celui des Parties 1-2 : aucune métaheuristique ne domine partout (cf [Search-11](../Part1-Foundations/Search-11-Metaheuristics.html)), et la bonne réponse à un problème d'optimisation est rarement « l'algorithme X » mais plutôt « la bonne composition de primitives pour ce paysage de fitness ».
 
 ## Positionnement : MetaGeneticSharp dans le paysage
 
@@ -339,7 +339,7 @@ Le véritable enseignement rejoint celui des Parties 1-2 : aucune métaheuristiq
 ### Prochaines étapes
 
 - **Le code source de la bibliothèque** : le [fork jsboige/MetaGeneticSharp](https://github.com/jsboige/MetaGeneticSharp) — code source, tests unitaires, et feuille de route ([ROADMAP.md](https://github.com/jsboige/MetaGeneticSharp/blob/main/ROADMAP.md)) — prolonge cette partie vers une vraie bibliothèque industrialisable. Les notebooks ne sont que la vitrine pédagogique des briques qui y vivent.
-- **Retour aux fondamentaux Python** : après avoir reconstruit WOA et EO à la main, reprendre [Search-11-Metaheuristics](../Part1-Foundations/Search-11-Metaheuristics.ipynb) (PSO, ABC, SA, BRO via `mealpy`) — l'appel de fonction y apparaît alors comme un *raccourci* au-dessus des mécanismes qu'on vient de reconstruire, et l'on mesure ce que la composition déclarative apporte.
+- **Retour aux fondamentaux Python** : après avoir reconstruit WOA et EO à la main, reprendre [Search-11-Metaheuristics](../Part1-Foundations/Search-11-Metaheuristics.html) (PSO, ABC, SA, BRO via `mealpy`) — l'appel de fonction y apparaît alors comme un *raccourci* au-dessus des mécanismes qu'on vient de reconstruire, et l'on mesure ce que la composition déclarative apporte.
 - **Le pont vers l'ingénierie** : les patterns de composition (sous-populations spécialisées, migration, hybrides assemblés par grammaire fluente) existent dans la littérature mais sont rares dans les libs grand public — cette partie est le socle pour les implémenter en production sur un runtime .NET typé.
 - **La série dans son ensemble** : le [sommaire Search](../README.md) cartographie les quatre parties — celle-ci est le side track C# .NET qui démontre que les concepts Python (Search-5 génétique, Search-11 métaheuristiques) se retrouvent, solidement typés et composables, dans un vrai moteur.
 
@@ -351,5 +351,5 @@ Les métaheuristiques composables proposent un changement de regard sur l'optimi
 
 - [Fork jsboige/MetaGeneticSharp](https://github.com/jsboige/MetaGeneticSharp) — code source, tests, ROADMAP
 - [GeneticSharp PR #87](https://github.com/giacomelli/GeneticSharp/pull/87) — origine du projet (couche métaheuristiques 2020-2022)
-- [Search-11-Metaheuristics](../Part1-Foundations/Search-11-Metaheuristics.ipynb) — introduction Python (PSO, ABC, SA, BRO) et benchmarks comparatifs
+- [Search-11-Metaheuristics](../Part1-Foundations/Search-11-Metaheuristics.html) — introduction Python (PSO, ABC, SA, BRO) et benchmarks comparatifs
 - [Série Search](../README.md) — vue d'ensemble
