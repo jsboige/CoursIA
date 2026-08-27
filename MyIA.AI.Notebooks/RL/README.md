@@ -38,7 +38,7 @@ Le RL se comprend mieux en voyant l'agent apprendre. Six visualisations suivent 
 | 5 | [rl_5_mdp_dp_qlearning](rl_5_mdp_dp_qlearning.html) | MDP, Value/Policy Iteration, Q-Learning tabulaire | 45-50 min |
 | 6 | [rl_6_dqn_policy_gradient](rl_6_dqn_policy_gradient.ipynb) | DQN depuis zéro, REINFORCE | 50-55 min |
 | 6b | [rl_6b_actor_critic](rl_6b_actor_critic.html) | Actor-Critic (A2C) depuis zéro, advantage, entropy bonus | 45-50 min |
-| 6c | [rl_6c_ppo_from_scratch](rl_6c_ppo_from_scratch.html) | PPO depuis zéro, clipped surrogate, GAE, comparaison A2C vs PPO | 45-50 min |
+| 6c | [rl_6c_ppo_from_scratch](rl_6c_ppo_from_scratch.html) | PPO depuis zéro, échantillonnage d'importance (ratios par epoch, ESS), clipped surrogate, GAE, comparaison A2C vs PPO | 45-50 min |
 | 6d | [rl_6d_sac_from_scratch](rl_6d_sac_from_scratch.html) | SAC depuis zéro, maximum entropy RL, twin Q-networks, auto-température | 45-50 min |
 | 6e | [rl_6e_grpo_from_scratch](rl_6e_grpo_from_scratch.html) | GRPO depuis zéro (DeepSeek-R1), avantage relatif intra-groupe (sans critic), clip PPO + KL vs référence, portefeuille synthétique multi-seed | 45-50 min |
 | 7 | [rl_7_multi_agent_rl](rl_7_multi_agent_rl.ipynb) | Multi-Agent RL, PettingZoo, IQL | 45-50 min |

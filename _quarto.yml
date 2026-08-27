@@ -765,6 +765,7 @@ project:
     - "MyIA.AI.Notebooks/Search/Applications/Hybrid/App-18-HyperparameterTuning.ipynb"
     - "MyIA.AI.Notebooks/Search/Applications/Hybrid/App-18b-HyperparameterTuning-CSharp.ipynb"
     - "MyIA.AI.Notebooks/Search/Applications/Hybrid/App-18b-HyperparameterTuning-Python.ipynb"
+    - "MyIA.AI.Notebooks/Search/Applications/Hybrid/App-22-AlgorithmSelection-Python.ipynb"
     - "MyIA.AI.Notebooks/Search/Applications/Hybrid/App-9-EdgeDetection.ipynb"
     - "MyIA.AI.Notebooks/Search/Applications/Hybrid/App-9b-EdgeDetection-CSharp.ipynb"
     - "MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour.ipynb"

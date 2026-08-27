@@ -173,6 +173,7 @@ def test_cli_body_file_pass_exit_zero():
             capture_output=True,
             text=True,
             check=False,
+            encoding="utf-8", errors="replace",
         )
         assert proc.returncode == 0, f"expected exit 0, got {proc.returncode}; stderr={proc.stderr!r}"
         verdict = json.loads(proc.stdout)
@@ -192,6 +193,7 @@ def test_cli_body_file_fail_exit_one():
             capture_output=True,
             text=True,
             check=False,
+            encoding="utf-8", errors="replace",
         )
         assert proc.returncode == 1, f"expected exit 1, got {proc.returncode}; stderr={proc.stderr!r}"
         verdict = json.loads(proc.stdout)
@@ -209,6 +211,7 @@ def test_cli_stdin_blocks_when_tag_missing():
         capture_output=True,
         text=True,
         check=False,
+        encoding="utf-8", errors="replace",
     )
     assert proc.returncode == 1
     verdict = json.loads(proc.stdout)
@@ -225,6 +228,7 @@ def test_cli_missing_body_file_exits_two():
         capture_output=True,
         text=True,
         check=False,
+        encoding="utf-8", errors="replace",
     )
     assert proc.returncode == 2
     assert proc.stdout == "", f"stdout should be empty on caller error, got {proc.stdout!r}"
