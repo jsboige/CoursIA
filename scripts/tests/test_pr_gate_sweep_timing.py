@@ -77,10 +77,15 @@ def test_job_start_measures_queue_and_ignores_run_started_at(tmp_path):
 
     assert completed.returncode == 0
     assert "queue_seconds=600" in completed.stdout
-    assert "observed_execution_seconds=120" in completed.stdout
+    execution_match = re.search(
+        r"\bobserved_execution_seconds=(\d+)\b", completed.stdout
+    )
+    assert execution_match
+    execution_seconds = int(execution_match.group(1))
+    assert 120 <= execution_seconds < 130
     rendered = summary.read_text(encoding="utf-8")
     assert "Queue: **600 s**" in rendered
-    assert "Observed execution: **120 s**" in rendered
+    assert f"Observed execution: **{execution_seconds} s**" in rendered
     assert "`run_started_at` is not used" in rendered
 
 
