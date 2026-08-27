@@ -327,7 +327,6 @@ def replace_render_block(yml_text: str, new_block_lines: list[str]) -> str:
 # brute » documentee -- nonverifies par cette garde.
 _IPYNB_LINK_RE = re.compile(r"\]\(([^)#\s]+\.ipynb)\)")
 _HTML_LINK_RE = re.compile(r"\]\(([^)#\s]+\.html)\)")
-_HTML_LINK_RE = re.compile(r"\]\(([^)#\s]+\.html)\)")
 
 
 def _normalise_readme_target(base: Path, href: str) -> str:
