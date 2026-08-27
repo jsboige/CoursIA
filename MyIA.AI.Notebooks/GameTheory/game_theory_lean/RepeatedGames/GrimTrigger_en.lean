@@ -15,20 +15,21 @@ import RepeatedGames.Discounting_en
   Note méthodologique : traduction manuelle du FR canonique (pas de source
   EN historique pré-Option A à recover, fichier FR-first depuis origin).
 
-  Central result of repeated game theory: the *grim trigger* strategy
-  (cooperate as long as the foe cooperates, defect forever as soon as
-  the foe defects once) sustains cooperation as a subgame-perfect
-  Nash equilibrium of the infinitely repeated Prisoner's Dilemma **if
-  and only if** the discount factor `δ` exceeds the critical threshold
-  `(T − R) / (T − P)`.
+  This module formalizes two building blocks of grim trigger in the
+  infinitely repeated Prisoner's Dilemma:
 
-  The proof rests on the **one-shot deviation principle**: for a stationary
-  strategy like grim trigger, checking all possible deviations reduces to
-  checking one-shot deviations.
+  1. the irreversible transition to punishment after the first defection;
+  2. the algebraic equivalence between no gain from a one-shot deviation and
+     the threshold `δ ≥ (T − R) / (T − P)`.
+
+  The second building block is the incentive condition used by the classical
+  one-shot deviation argument. By itself, it is not a formalization of a
+  subgame-perfect Nash equilibrium: that requires semantics for histories
+  and strategy profiles.
 
   **Companion notebook**: `GameTheory-6c` (repeated games) derives this
-  threshold by hand. The present module gives the formal proof. Bridge
-  `ICT-13` (#4879): the numerical verification of threshold δ is a gate.
+  threshold by hand. Bridge `ICT-13` (#4879): the numerical verification of
+  threshold δ is a gate.
 -/
 
 namespace RepeatedGames_en
@@ -38,33 +39,54 @@ open PDAction
 
 /-! ## Grim trigger strategy -/
 
-/-- A grim trigger strategy: cooperate in the first period, then copy
-the foe's previous move (cooperate if they cooperated, defect forever
-as soon as they defect once). -/
+/-- Grim-trigger transition. `prevSelf` encodes the current state:
+`defect` means that punishment has already started. That state is absorbing;
+otherwise, the foe's first defection triggers punishment. -/
 def grimNext (prevSelf prevFoe : PDAction) : PDAction :=
-  match prevFoe with
-  | cooperate => cooperate
-  | defect    => defect
+  match prevSelf, prevFoe with
+  | defect, _ => defect
+  | cooperate, cooperate => cooperate
+  | cooperate, defect => defect
 
-/-! ## Flagship theorem (scaffold — proof in tranche 2) -/
+@[simp]
+theorem grimNext_cooperate_cooperate :
+    grimNext cooperate cooperate = cooperate := rfl
 
-/-- **Grim trigger sustains cooperation iff `δ ≥ (T − R) / (T − P)`.**
+@[simp]
+theorem grimNext_cooperate_defect :
+    grimNext cooperate defect = defect := rfl
 
-A unilateral one-shot deviation is not profitable (i.e. grim trigger is
-stable) exactly when the discount factor is large enough that the loss of
-future cooperation (`R → P` in all post-deviation periods) outweighs the
-immediate gain (`R → T` in the deviation period).
+@[simp]
+theorem grimNext_defect_cooperate :
+    grimNext defect cooperate = defect := rfl
 
-By `coop_ge_deviate_iff`, this result reduces to an explicit threshold
-on `δ`.
+@[simp]
+theorem grimNext_defect_defect :
+    grimNext defect defect = defect := rfl
 
-TODO tranche 2: assemble the proof via the one-shot deviation principle
-(`coop_ge_deviate_iff` + `geom_sum` + `defect_strictly_dominates`). -/
+/-- Once punishment has been triggered, it remains active regardless of the
+foe's next move. -/
+theorem grimPunishment_absorbing (prevFoe : PDAction) :
+    grimNext defect prevFoe = defect := by
+  cases prevFoe <;> rfl
+
+/-! ## One-shot deviation incentive condition -/
+
+/-- **Cooperation dominates a one-shot deviation iff
+`δ ≥ (T − R) / (T − P)`.**
+
+This equivalence compares the two discounted streams associated with the
+cooperative path and a deviation followed by grim punishment. It establishes
+the algebraic incentive condition used by the one-shot deviation principle;
+it does not yet quantify over the histories or strategy profiles required by
+a formal SPNE statement.
+
+By `coop_ge_deviate_iff`, this result reduces to the explicit threshold on
+`δ`. -/
 theorem grim_trigger_sustains_iff (g : PrisonersDilemma) {δ : ℝ}
     (h0 : 0 ≤ δ) (h1 : δ < 1) :
     (coopValue g.R δ ≥ deviateValue g.T g.P δ) ↔
       δ ≥ (g.T - g.R) / (g.T - g.P) := by
-  -- By reduction to the threshold (pure real algebra).
   exact coop_ge_deviate_iff g h0 h1
 
 end RepeatedGames_en
