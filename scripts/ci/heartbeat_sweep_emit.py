@@ -48,6 +48,14 @@ The ``--json`` form emits ``{"workflow": "...", "age_s": int|None,
 "stale": bool, "stale_after_s": int, "reason": "ok"|"no_success"|"error"}``
 for programmatic consumers (e.g. an ai-01 dashboard appender that wants a
 structured payload before formatting).
+
+## Testability
+
+Both ``last_success_age_s`` and ``main`` expose a ``run`` parameter --
+dependency-injected so tests can exercise the OK / no_success / stale /
+json paths without authenticating ``gh`` in a subprocess. The smoke test
+that DOES run the real binary (``test_main_subprocess_smoke_real_cli_with_no_gh``)
+is bounded to ``--help`` so it never depends on ``gh`` auth being live.
 """
 from __future__ import annotations
 
@@ -93,7 +101,7 @@ def last_success_age_s(workflow: str, run=None) -> int | None:
                 - datetime.fromisoformat(created)).total_seconds())
 
 
-def main(argv: list[str] | None = None) -> int:
+def main(argv: list[str] | None = None, run=None) -> int:
     p = argparse.ArgumentParser(description=__doc__.split("\n", 1)[0])
     p.add_argument("--workflow", default=DEFAULT_WORKFLOW,
                    help=f"sweep workflow file (default {DEFAULT_WORKFLOW})")
@@ -112,7 +120,7 @@ def main(argv: list[str] | None = None) -> int:
 
     threshold_s = args.stale_after_minutes * 60
     try:
-        age_s = last_success_age_s(args.workflow)
+        age_s = last_success_age_s(args.workflow, run=run)
     except OSError as e:
         # gh missing / not authenticated / transient.
         if args.json:
