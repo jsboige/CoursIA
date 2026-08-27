@@ -54,32 +54,19 @@ name: perimeter-review-guard
 # properties at once (#11648, point 2).
 
 on:
+  # #13246 : the #13193 paths-filter is REMOVED (measured, decision rule
+  # pre-registered on the issue): over the last 100 merged PRs, 44 carried
+  # perimeter assertions on files matching NONE of the filter patterns --
+  # the guard skipped exactly the assertions it exists to confront. The
+  # guard is metadata-dependent (PR body + reviews vs `gh pr view
+  # --json files`), so a diff-derived filter disarms it on every
+  # non-workflow PR.
   pull_request:
     branches: [ main ]
     types: [ opened, synchronize, edited, reopened ]
-    # #12773 tranche 1a + amend. #13193 Hermes : paths-filter pour limiter les
-    # declenchements aux PR touchant la surface reelle du garde. Le script
-    # interroge l'API `gh pr view` uniquement (pas de lecture d'arbre), mais
-    # le filtre DOIT inclure les autres workflows CI : sans le glob
-    # `.github/workflows/**`, le garde ne tournerait plus que sur lui-meme
-    # (cf. incident fondateur #11268 : un workflow qui modifie le
-    # sorry-baseline passait inapercu parce que la porte se fermait sur la
-    # fonction du garde).
-    paths:
-      - '.github/workflows/perimeter-review-guard.yml'
-      - '.github/workflows/**'
-      - 'scripts/check_pr_perimeter.py'
-      - 'scripts/tests/test_check_pr_perimeter.py'
   pull_request_review:
     branches: [ main ]
     types: [ submitted, edited ]
-    # Meme filtre cote review : un commentaire de revue qui corrige le body doit
-    # aussi re-tourner le check, sur toute PR touchant la surface surveillee.
-    paths:
-      - '.github/workflows/perimeter-review-guard.yml'
-      - '.github/workflows/**'
-      - 'scripts/check_pr_perimeter.py'
-      - 'scripts/tests/test_check_pr_perimeter.py'
 
 permissions:
   contents: read
