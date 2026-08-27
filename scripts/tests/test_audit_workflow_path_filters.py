@@ -325,6 +325,7 @@ on:
         capture_output=True,
         text=True,
         check=False,
+        encoding="utf-8", errors="replace",
     )
     assert result.returncode == 0, f"stderr: {result.stderr}"
     assert (audit_dir / "latest.json").exists()
@@ -345,6 +346,7 @@ def test_main_handles_missing_workflows_dir(tmp_path: Path) -> None:
         capture_output=True,
         text=True,
         check=False,
+        encoding="utf-8", errors="replace",
     )
     assert result.returncode == 1
     assert "not found" in result.stderr.lower()

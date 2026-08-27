@@ -71,7 +71,9 @@ is its measuring instrument.
 3) tie the tour back to the original algebraic geometry, with the bridge
 theorem `zariski_topology_eq`. On the library side, the Mathlib map (Part 4,
 a `#check` index) states honestly what exists and what is missing, and
-`Calibration.lean` (Part 5) feeds the prover harness (Epic #1453).
+`Calibration.lean` (Part 5) reuses the prover harness calibration taxonomy
+(Epic #1453, P1-P4) without being consumed by it: the harness's live targets
+live in `calibration_lean/` (HARNESS class, boundary arbitrated in #13212).
 
 **The categorical foundations** (Parts 24-32). Yoneda, adjunctions, monads,
 comma categories, (co)limits, equivalences, Kan extensions, monoidal
@@ -100,7 +102,7 @@ sub-modules are Parts 20, 22, and 23 of the table.
 | 2 | `Grothendieck/SchemesTour.lean` | `SchemesTour_en.lean` | Scheme type, Spec functor, Γ, `homeoOfIso`, fully-faithful | 196 |
 | 3 | `Grothendieck/ZariskiSite.lean` | `ZariskiSite_en.lean` | Zariski pretopology, `zariskiTopology_eq` bridge theorem, subcanonical | 139 |
 | 4 | `Grothendieck/MathlibMap.lean` | `MathlibMap_en.lean` | `#check` index of Grothendieck-related Mathlib definitions | 124 |
-| 5 | `Grothendieck/Calibration.lean` | `Calibration_en.lean` | 4 micro-proof targets for the prover harness (Epic #1453) | 95 |
+| 5 | `Grothendieck/Calibration.lean` | `Calibration_en.lean` | 4 micro-proof targets in the spirit of the prover harness (Epic #1453, not consumed by it — cf `calibration_lean/`, boundary #13212) | 95 |
 | 6 | `Grothendieck/SieveLattice.lean` | `SieveLattice_en.lean` | Sieve pullback identities (7): `pullback_id`, `pullback_pullback`, `pullback_bot`, `pullback_monotone`, `pullback_union` (#7895), `pullback_ofObjects`, `mem_iff_pullback_eq_top` | 253 |
 | 7 | `Grothendieck/SheafBasics.lean` | `SheafBasics_en.lean` | Sheaf/separated presheaf basics, sheaf transfer along J₁ ≤ J₂ | 231 |
 | 8 | `Grothendieck/SieveOps.lean` | `SieveOps_en.lean` | Topology ordering, covering closure, sieve composition | 208 |
