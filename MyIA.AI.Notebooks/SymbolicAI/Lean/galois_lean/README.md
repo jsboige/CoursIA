@@ -16,15 +16,15 @@ Deux énoncés, soigneusement distingués dans le notebook :
 ## Ce que ce lake contient
 
 - **`Galois/M23Lean4Web.lean`** (8115 lignes) : version single-file Lean4Web de la preuve M₂₃, *vendored* depuis l'amont [`KitaKen1/finite-simple-groups-lean`](https://github.com/KitaKen1/finite-simple-groups-lean) (Apache-2.0). Démontre `Sporadic.card_M23 : Nat.card M23 = 10200960` et `Sporadic.simple_M23 : IsSimpleGroup M23` par une **chaîne de stabilisateurs à certificats** (Schreier–Sims matérialisé) — pas `native_decide`, pas `sorry`. La simplicité passe par le stabilisateur de point (M₂₂ embarqué) + un certificat de conjugaison excluant le cas régulier d'ordre 23.
-- **`Galois.lean`** : agrégateur racine (`import Galois.M23Lean4Web`) — permet au `lean_lib Galois` *bare* (sans `globs`) de builder toute la preuve via la closure d'imports de la racine, sur le pattern conway_lean. Le forme `globs := #[`Galois.*]` déclenche un quirk de trace *job-computation* de lake v4.31.0-rc1 (« some modules have bad imports ») sur ce lac à module unique, alors que tous les modules compilent — la forme bare + agrégateur racine l'évite.
+- **`Galois.lean`** : agrégateur racine (`import Galois.M23Lean4Web`) — permet au `lean_lib Galois` *bare* (sans `globs`) de builder toute la preuve via la closure d'imports de la racine, sur le pattern conway_lean. Le forme `globs := #[`Galois.*]` déclenche un quirk de trace *job-computation* de lake v4.32.1 (« some modules have bad imports ») sur ce lac à module unique, alors que tous les modules compilent — la forme bare + agrégateur racine l'évite.
 
 ## État
 
-- **Toolchain** : `leanprover/lean4:v4.31.0-rc1`
-- **Mathlib** : rev `d568c8c` (v4.31.0-rc1)
+- **Toolchain** : `leanprover/lean4:v4.32.1`
+- **Mathlib** : rev v4.32.1 (résolu depuis `lake-manifest.json`)
 - **Sorry** : **0** (mode `real`, comptage Lean-aware) — 0 `sorry` tactique, 0 `native_decide`, 0 `axiom` déclaré
 - **Axiomes** : `#print axioms Sporadic.card_M23` / `simple_M23` → `{propext, Classical.choice, Quot.sound}` = whitelist §B
-- **Build** : `lake build Galois` SUCCESS exit 0 — cible lib clean via agrégateur racine (1324 jobs ; feasibility gate c.1039 : M23Lean4Web compilé en 241s sous le pin v4.31.0-rc1)
+- **Build** : `lake build Galois` SUCCESS exit 0 — cible lib clean via agrégateur racine (le pattern bare + agrégateur racine contourne le quirk de trace `job-computation` de lake v4.32.1 sur ce lac à module unique ; tous les modules compilent)
 - **Dépendances** : Mathlib 4 uniquement (8 imports `Mathlib.GroupTheory.*`)
 
 ## Pourquoi réutiliser l'amont plutôt que réécrire
