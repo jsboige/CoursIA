@@ -143,6 +143,7 @@ def get_changed_notebooks(base: str, paths: list[str] | None = None) -> list[Pat
         mb = subprocess.run(
             ["git", "merge-base", base, "HEAD"],
             capture_output=True, text=True, check=True,
+            encoding="utf-8", errors="replace",
             cwd=str(REPO_ROOT),
         ).stdout.strip()
         if mb:
@@ -154,6 +155,7 @@ def get_changed_notebooks(base: str, paths: list[str] | None = None) -> list[Pat
         result = subprocess.run(
             ["git", "diff", "--name-only", "--diff-filter=ACM", anchor],
             capture_output=True, text=True, check=True,
+            encoding="utf-8", errors="replace",
             cwd=str(REPO_ROOT),
         )
     except subprocess.CalledProcessError as e:
