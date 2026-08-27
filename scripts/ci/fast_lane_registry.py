@@ -89,6 +89,13 @@ class Guard:
     # chemin echappe au filtre (checkout partiel). Sans lui, la lane serait
     # PLUS stricte que le workflow qu'elle absorbe.
     warn_rc: tuple[int, ...] = ()
+    # Anti-auto-desarmement AGREGE (clause #8655/#8656) : si CHAQUE fichier
+    # examine rend un rc de `warn_rc`, le garde n'a RIEN analyse et ne peut
+    # pas certifier -- on fail loud (rc=1) au lieu de produire un quitus
+    # aveugle. Sans ce flag, `warn_rc` lisserait la panne en succes. Reserved
+    # a `iterates_paths` ; par defaut desarme (un garde sans clause d'origine
+    # ne devient jamais plus strict).
+    fail_on_all_warn: bool = False
     # Commande de PRE-CONTROLE executee avant `argv` (phase 1). Un rc non
     # nul devient le verdict du garde et `argv` n'est PAS execute. Cas
     # d'usage : le self-test du ratchet output-failure, qui dans son
@@ -412,5 +419,131 @@ TRANCHE2: list[Guard] = [
         iterates_paths=True,
         absorbed=True,
         warn_rc=(2,),
+    ),
+]
+
+
+# ---------------------------------------------------------------------------
+# TRANCHE 4 d'absorption (#12396) -- meme contrat que les tranches 1/2 (nom
+# canonique, conclusion reelle, workflow source retire de pull_request),
+# avec la nouveaute demandee par l'issue : un CONTROLE POSITIF d'identite
+# byte-a-byte (scripts/ci/check_absorbed_check_run_identity.py + tests) qui
+# cimente `guard.name` == nom de check-run rendu par le workflow source --
+# la contrainte #12175 que les tranches 1/2/3 n'ont jamais verifiee.
+#
+# Forme moteur : iter_paths + warn_rc, IDENTIQUE a la forme 3 de la tranche 2
+# (degenerate-figure) -- pour le gate markdown en plus : `needs_base` (son
+# argv porte `--base {base_ref}`) et le nouveau flag `fail_on_all_warn`.
+#
+# Contenu de la tranche :
+#   - le NOYAU du grain #12396 : md-content-loss-gate.yml (le gate markdown
+#     "petite taille" a verdict check-run qui tournait encore dedie). Sa
+#     clause anti-auto-desarmement AGREGEE (#8655/#8656 : "tous les
+#     notebooks lus sont illisibles -> exit 1") est portee par le flag
+#     `fail_on_all_warn` -- sans lui, `warn_rc` lisserait la panne en succes
+#     et absorber muterait la propriete.
+#   - les 4 gates SVG de la serie #6959/#6971/#7008 (#12384) : derniers
+#     petits gates d'ABSENCE a verdict check-run en workflow dedie, meme
+#     squelette (boucle par notebook change, rc=1 defaut / rc=2 illisible,
+#     aucun besoin d'ecriture PR).
+#
+# Exclusion documentee (cf #13097 pour la tranche 3) :
+#   - markdown-claims-output-advisory.yml / scan-md-hierarchy-drift.yml :
+#     verdict = COMMENTAIRE PR, pas check-run -> exigent `pull-requests:
+#     write`, refuse par le registre.
+# ---------------------------------------------------------------------------
+TRANCHE4: list[Guard] = [
+    Guard(
+        name="No SVG broken-geometry (negative-dim) defect in changed notebooks",
+        source="svg-broken-geometry-gate.yml",
+        paths=[
+            "MyIA.AI.Notebooks/**/*.ipynb",
+            "scripts/notebook_tools/detect_svg_broken_geometry.py",
+            ".github/workflows/svg-broken-geometry-gate.yml",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/detect_svg_broken_geometry.py",
+            "{changed_paths}", "--check",
+        ],
+        blocking=True,
+        iterates_paths=True,
+        absorbed=True,
+        warn_rc=(2,),
+    ),
+    Guard(
+        name="No SVG decimal-comma defect in changed notebooks",
+        source="svg-decimal-comma-gate.yml",
+        paths=[
+            "MyIA.AI.Notebooks/**/*.ipynb",
+            "scripts/notebook_tools/detect_svg_decimal_commas.py",
+            ".github/workflows/svg-decimal-comma-gate.yml",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/detect_svg_decimal_commas.py",
+            "{changed_paths}", "--check",
+        ],
+        blocking=True,
+        iterates_paths=True,
+        absorbed=True,
+        warn_rc=(2,),
+    ),
+    Guard(
+        name="No SVG empty-display defect in changed notebooks",
+        source="svg-empty-display-gate.yml",
+        paths=[
+            "MyIA.AI.Notebooks/**/*.ipynb",
+            "scripts/notebook_tools/detect_svg_empty_display.py",
+            ".github/workflows/svg-empty-display-gate.yml",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/detect_svg_empty_display.py",
+            "{changed_paths}", "--check",
+        ],
+        blocking=True,
+        iterates_paths=True,
+        absorbed=True,
+        warn_rc=(2,),
+    ),
+    Guard(
+        name="No offscreen-flat SVG in changed notebooks",
+        source="svg-offscreen-flat-gate.yml",
+        paths=[
+            "MyIA.AI.Notebooks/**/*.ipynb",
+            "scripts/notebook_tools/detect_svg_offscreen_flat.py",
+            ".github/workflows/svg-offscreen-flat-gate.yml",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/detect_svg_offscreen_flat.py",
+            "--check", "{changed_paths}",
+        ],
+        blocking=True,
+        iterates_paths=True,
+        absorbed=True,
+        warn_rc=(2,),
+    ),
+    # Noyau du grain #12396 : le gate MARKDOWN a verdict check-run. Compare
+    # chaque notebook change a sa base git (--base {base_ref}) ; rc=1 perte de
+    # contenu, rc=2 illisible. Anti-auto-desarmement AGREGE portee par
+    # `fail_on_all_warn` (cf commentaire du champ et clause #8655/#8656 du
+    # workflow d'origine) : un detecteur casse ou une ref git manquante ne
+    # doit pas produire un quitus vert par silence.
+    Guard(
+        name="No markdown content loss in changed notebooks",
+        source="md-content-loss-gate.yml",
+        paths=[
+            "MyIA.AI.Notebooks/**/*.ipynb",
+            "scripts/notebook_tools/detect_md_content_loss.py",
+            ".github/workflows/md-content-loss-gate.yml",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/detect_md_content_loss.py",
+            "--base", "{base_ref}", "--check", "{changed_paths}",
+        ],
+        blocking=True,
+        needs_base=True,
+        iterates_paths=True,
+        absorbed=True,
+        warn_rc=(2,),
+        fail_on_all_warn=True,
     ),
 ]

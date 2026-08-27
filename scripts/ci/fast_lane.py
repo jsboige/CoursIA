@@ -39,7 +39,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from fast_lane_registry import PILOT, TRANCHE1, TRANCHE2, Guard  # noqa: E402
+from fast_lane_registry import PILOT, TRANCHE1, TRANCHE2, TRANCHE4, Guard  # noqa: E402
 
 SHADOW_PREFIX = "fast-lane (ombre): "
 GUARD_TIMEOUT_S = 600
@@ -153,7 +153,8 @@ def expand_paths_token(argv: list[str], paths: list[str]) -> list[str]:
 
 def run_iter(argv_template: list[str], paths: list[str],
              ctx: dict[str, str],
-             warn_rc: tuple[int, ...] = ()) -> tuple[int, str]:
+             warn_rc: tuple[int, ...] = (),
+             fail_on_all_warn: bool = False) -> tuple[int, str]:
     """Execute un garde Pattern 1 (boucle par chemin) en aggregeant un rc
     = max(rc_par_iteration) et une log concatenee. Si `paths` est vide,
     rend un rc=0 no-op (log explicite) -- un CI sans chemin est un vert
@@ -161,19 +162,33 @@ def run_iter(argv_template: list[str], paths: list[str],
     comptent comme succes : les detecteurs de la serie figure/texte rendent
     rc=2 sur fichier illisible, et leur workflow d'origine l'affiche en
     warning -- l'agreger en echec rendrait la lane plus stricte que ce
-    qu'elle absorbe."""
+    qu'elle absorbe.
+
+    `fail_on_all_warn` rend l'anti-auto-desarmement AGREGE des workflows qui
+    le portent (md-content-loss-gate, clause #8655/#8656) : si CHAQUE fichier
+    examine a rendu un rc de `warn_rc`, le garde n'a RIEN analyse et rend 1
+    (fail loud) au lieu d'un quitus vert -- un detecteur casse ne doit pas
+    produire la bonne conclusion par silence."""
     if not paths:
         return 0, "[fast-lane] iterates_paths vide : aucun fichier a examiner"
     rc_agg = 0
+    warned = 0
     chunks: list[str] = []
     for path in paths:
         local_ctx = dict(ctx, changed_paths=path)
         rc, log = run_argv(argv_template, local_ctx)
         if rc in warn_rc:
             rc = 0
+            warned += 1
         chunks.append(f"--- {path} ---\n{log}")
         if rc > rc_agg:
             rc_agg = rc
+    if fail_on_all_warn and warned > 0 and warned == len(paths):
+        return 1, (
+            "[fast-lane] TOUS les fichiers examines etaient illisibles "
+            f"(rc {warn_rc}) : le garde n'a rien analyse et ne peut pas "
+            "certifier -- fail loud (anti-auto-desarmement, #8655/#8656)\n\n"
+            + "\n\n".join(chunks))
     return rc_agg, "\n\n".join(chunks)
 
 
@@ -297,7 +312,7 @@ def main(argv: list[str] | None = None) -> int:
     print(f"[fast-lane] {len(changed)} fichier(s) modifie(s) "
           f"contre {args.base_ref}")
 
-    guards = [g for g in PILOT + TRANCHE1 + TRANCHE2
+    guards = [g for g in PILOT + TRANCHE1 + TRANCHE2 + TRANCHE4
               if not args.only or g.name == args.only]
     selected = [g for g in guards if guard_applies(g, changed)]
     for guard in guards:
@@ -340,7 +355,8 @@ def main(argv: list[str] | None = None) -> int:
                                 if path_matches(f, p)
                                 and (REPO_ROOT / f).is_file()})
             rc, log = run_iter(guard.argv, arg_paths, ctx,
-                               warn_rc=guard.warn_rc)
+                               warn_rc=guard.warn_rc,
+                               fail_on_all_warn=guard.fail_on_all_warn)
             results[guard.name] = (rc, log)
             print(f"[fast-lane] phase 1 {guard.name} (iter sur {len(arg_paths)} "
                   f"fichier(s)) : exit {rc}")
