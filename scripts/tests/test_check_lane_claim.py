@@ -12,6 +12,7 @@ Run: python -m pytest scripts/tests/test_check_lane_claim.py
 """
 import fnmatch
 import json
+import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -345,6 +346,48 @@ def test_decorated_paths_clause_scopes_claim():
     assert ev.paths[0] == "notebooks/a.ipynb"
     assert fnmatch.fnmatch("notebooks/b.ipynb", ev.paths[1])
     assert fnmatch.fnmatch("notebooks/b.ipynb", "notebooks/b.ipynb**")  # invariant
+
+
+# --- non-ASCII leading decoration (#12711) -----------------------------------
+# A leading `→` (U+2192) / `➡` / `»` / `•` / `–` / `—` is an agent decoration,
+# not an ASCII decorator. The ASCII-pure decor class voided such a marker to
+# BOTH regexes on #12465 (po-2026's `→DELIVERED` went unread; po-2027 got CLEAR
+# and delivered the same notebook 15 h later). Broadening `_DECOR` re-reads the
+# marker and re-arms the malformed lint for the bracketless form.
+
+def test_parse_marker_non_ascii_arrow_decorated():
+    ev = clc.parse_claim_event(comment(
+        "→[CLAIMED] lane myia-po-2027:CoursIA-2 -- arrow prefix",
+        "2026-08-23T18:21:01Z",
+    ))
+    assert ev is not None
+    assert ev.is_open is True
+    assert ev.marker == "CLAIMED"
+    assert ev.lane == "myia-po-2027:CoursIA-2"
+
+
+def test_parse_non_ascii_decorated_delivered_closes():
+    # The exact #12465 shape, bracketed: an arrow-prefixed DELIVERED with a
+    # lane must register as a close (this is what po-2026's line should have
+    # done before po-2027 delivered the same notebook).
+    ev = clc.parse_claim_event(comment(
+        "→[DELIVERED] lane myia-po-2026:CoursIA -- PR #12512 paths: .../Search-3-Informed.ipynb",
+        "2026-08-23T03:36:33Z",
+    ))
+    assert ev is not None
+    assert ev.marker == "DELIVERED"
+    assert ev.is_open is False
+    assert ev.lane == "myia-po-2026:CoursIA"
+
+
+def test_parse_non_ascii_decoration_mid_prose_still_ignored():
+    # A `→` followed by prose, then a mid-line `[CLAIMED]`, must NOT become an
+    # event (the bracket is not at a decorator position). Non-regression pinned.
+    ev = clc.parse_claim_event(comment(
+        "→ Cette PR reprend un [CLAIMED] discute plus tot",
+        "2026-08-23T09:00:00Z",
+    ))
+    assert ev is None
 
 
 def test_check_no_paths_claim_in_prose_returns_exit_2_not_scoped(capsys):
@@ -690,6 +733,20 @@ def test_decorated_bare_marker_flagged(capsys):
     assert '"malformed_markers": 1' in captured.out
 
 
+def test_malformed_marker_non_ascii_decorated_surfaces(capsys):
+    # #12711 -- a `→`-prefixed BARE marker (no brackets) was invisible to the
+    # #11239 lint too: the writer believed their lock was posted yet the organ
+    # answered CLEAR. Broadening `_DECOR` re-arms the WARN.
+    p = payload(comment(
+        "→CLAIMED lane myia-po-2026:CoursIA -- working here",
+        "2026-08-23T03:36:33Z"))
+    rc = clc._run_check(p, "myia-po-2024:CoursIA")
+    captured = capsys.readouterr()
+    assert rc == 0                          # WARN-only, never blocks
+    assert '"malformed_markers": 1' in captured.out
+    assert 'WARN: marqueur sans crochets "CLAIMED"' in captured.err
+
+
 def test_malformed_close_marker_flagged(capsys):
     # Close markers are linted too: a bracketless `RELEASED` never registers
     # as a release, so the claim stays locked for other lanes.
@@ -834,6 +891,90 @@ def test_stale_threshold_unparseable_not_treated_stale(capsys):
     rc = clc._run_check(p, "myia-po-2024:CoursIA",
                         stale_threshold=24.0, now=NOW)
     assert rc == 2
+
+
+def test_stale_claims_null_when_detection_disabled(capsys):
+    # #12751 -- detection OFF (no --stale-threshold): `stale_claims` must be
+    # `null` (not measured), NOT `[]` (measured, nothing stale). Previously
+    # both rendered `[]`, so the fleet ran with detection off and a 415h
+    # claim still read as "alive".
+    p = payload(comment(
+        "[CLAIMED] lane myia-po-2025:CoursIA -- very old orphan",
+        "2026-08-01T00:00:00Z",
+    ))
+    rc = clc._run_check(p, "myia-po-2024:CoursIA", now=NOW)
+    captured = capsys.readouterr()
+    # The summary JSON (indent=2) is followed on stdout by a human-readable
+    # verdict line when the call is CLEAR/PATH_SCOPED (the post-summary
+    # `if others:` block). `raw_decode` parses only the first JSON value and
+    # ignores the trailing prose -- `json.loads` would fail on "Extra data".
+    out = json.JSONDecoder().raw_decode(captured.out)[0]
+    assert out["stale_claims"] is None
+    assert out["stale_detection"] == "disabled"
+    assert "STALE_DETECTION disabled" in captured.err
+
+
+def test_stale_claims_empty_when_detection_enabled_clean(capsys):
+    # Detection ON, no claim old enough -> `stale_claims` is `[]` (measured,
+    # clean) and `stale_detection` is "active" -- the disambiguated state vs
+    # `null`/`"disabled"` (not measured).
+    p = payload(comment(
+        "[CLAIMED] lane myia-po-2025:CoursIA -- fresh",
+        "2026-08-07T10:00:00Z",
+    ))
+    rc = clc._run_check(p, "myia-po-2024:CoursIA",
+                        stale_threshold=24.0, now=NOW)
+    captured = capsys.readouterr()
+    # The summary JSON (indent=2) is followed on stdout by a human-readable
+    # verdict line when the call is CLEAR/PATH_SCOPED (the post-summary
+    # `if others:` block). `raw_decode` parses only the first JSON value and
+    # ignores the trailing prose -- `json.loads` would fail on "Extra data".
+    out = json.JSONDecoder().raw_decode(captured.out)[0]
+    assert out["stale_claims"] == []
+    assert out["stale_detection"] == "active"
+
+
+def test_default_48_flags_17day_claim_stale(capsys):
+    # #12751 acceptance: at the default 48h threshold, a 17-day-old OTHER-lane
+    # claim is flagged STALE and removed from blocking_lanes (the zombie-lock
+    # fix -- a 415h claim was read as "alive" because `stale_claims` was `[]`).
+    p = payload(comment(
+        "[CLAIMED] lane myia-po-2025:CoursIA -- 17 days old",
+        "2026-07-21T00:00:00Z",   # ~396h before NOW
+    ))
+    rc = clc._run_check(p, "myia-po-2024:CoursIA",
+                        stale_threshold=48.0, now=NOW)
+    captured = capsys.readouterr()
+    # The summary JSON (indent=2) is followed on stdout by a human-readable
+    # verdict line when the call is CLEAR/PATH_SCOPED (the post-summary
+    # `if others:` block). `raw_decode` parses only the first JSON value and
+    # ignores the trailing prose -- `json.loads` would fail on "Extra data".
+    out = json.JSONDecoder().raw_decode(captured.out)[0]
+    assert out["stale_claims"] == ["myia-po-2025:CoursIA"]
+    assert out["blocking_lanes"] == []
+    assert out["stale_detection"] == "active"
+    assert "STALE_CLAIM myia-po-2025:CoursIA" in captured.err
+    assert rc == 0
+
+
+def test_default_48_does_not_flag_2h_claim(capsys):
+    # #12751 acceptance: a fresh (2h) claim is NOT stale at the default 48h
+    # (positive polarity -- only genuinely-old claims age out).
+    p = payload(comment(
+        "[CLAIMED] lane myia-po-2025:CoursIA -- fresh 2h",
+        "2026-08-07T10:00:00Z",   # 2h before NOW
+    ))
+    clc._run_check(p, "myia-po-2024:CoursIA",
+                   stale_threshold=48.0, now=NOW)
+    captured = capsys.readouterr()
+    # The summary JSON (indent=2) is followed on stdout by a human-readable
+    # verdict line when the call is CLEAR/PATH_SCOPED (the post-summary
+    # `if others:` block). `raw_decode` parses only the first JSON value and
+    # ignores the trailing prose -- `json.loads` would fail on "Extra data".
+    out = json.JSONDecoder().raw_decode(captured.out)[0]
+    assert out["stale_claims"] == []
+    assert out["stale_detection"] == "active"
+    assert "STALE_CLAIM" not in captured.err
 
 
 # --- --paths mode (#9959) ----------------------------------------------------
@@ -2549,6 +2690,63 @@ def test_run_check_partially_dead_scope_stays_scoped(capsys):
     assert '"blocking_lanes": []' in capsys.readouterr().out
 
 
+# --- #12740 -- dead-scope aggregate in the JSON --------------------------------
+#
+# #10958 surfaces `empty_scope` under the ACTIVE claim and `caller_empty_scope`
+# for the caller's own scope. GAP measured on #12620: a `[CLAIMED] -- paths:
+# scripts/notebook_tools/check_code_in_markdown.py` (the real file is
+# detect_code_in_markdown_cells.py) was released without ever being read --
+# the stderr WARN goes to a channel the CI gate / picker / lane scripts do not
+# consume, and once the claim closes its dead glob vanishes from the JSON
+# altogether. `dead_scope_globs` aggregates the dead globs lane-keyed across
+# EVERY claim event (open, override, close) so a sweep can grep ONE key.
+
+def test_run_check_dead_scope_surfaces_even_when_released(capsys):
+    """The specific #12740 shape: a dead-glob claim that has been RELEASED.
+    It is not active (`active_claims: {}`), it does not block (`blocking_lanes:
+    []`), and the stderr WARN does not fire on a close marker -- the typo is
+    invisible to a JSON consumer. `dead_scope_globs` must still name it."""
+    p = payload(
+        comment(
+            "[CLAIMED] lane myia-po-2023:CoursIA -- "
+            "paths: scripts/notebook_tools/check_code_in_markdown.py",
+            "2026-08-23T22:45:32Z",
+        ),
+        comment(
+            "[RELEASED] lane myia-po-2023:CoursIA -- "
+            "paths: scripts/notebook_tools/check_code_in_markdown.py",
+            "2026-08-24T00:10:00Z",
+        ),
+    )
+    rc = clc._run_check(p, "myia-po-2025:CoursIA")
+    # Released -> no active claim, no blocker, CLEAR.
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert '"active_claims": {}' in out  # the silent look #12740 names
+    assert '"blocking_lanes": []' in out
+    # The dead glob still surfaces, lane-keyed, even though the claim closed.
+    assert '"dead_scope_globs"' in out
+    assert "myia-po-2023:CoursIA" in out
+    assert "scripts/notebook_tools/check_code_in_markdown.py" in out
+
+
+def test_run_check_dead_scope_aggregate_empty_for_live_scope(capsys):
+    """Positive control: a scope whose globs all match a tracked file yields
+    `dead_scope_globs: {}` AND still blocks another lane. Without this, a
+    guard that reported a dead glob for every live scope would be
+    indistinguishable from one that works -- the aggregate must stay silent on
+    a well-formed scope (and the block must survive)."""
+    p = payload(
+        comment("[CLAIMED] lane myia-po-2024:CoursIA-2 -- "
+                "paths: scripts/check_lane_claim.py",
+                "2026-08-12T11:00:00Z"),
+    )
+    rc = clc._run_check(p, "myia-po-2025:CoursIA")
+    assert rc == 2  # #12322 NOT_SCOPED -- caller gave no --paths, cannot prove disjointness
+    out = capsys.readouterr().out
+    assert '"dead_scope_globs": {}' in out
+
+
 # --- #10597 bonus -- SCOPE_ZERO_COVERAGE warning ------------------------------
 #
 # When the caller's own claim carries a SCOPE that matches zero tracked
@@ -3186,6 +3384,107 @@ def test_check_caller_scope_fail_closed_when_no_blockers(capsys, monkeypatch):
     # The JSON shows the dead-glob witness list.
     assert '"caller_empty_scope": [' in captured.out
     assert "dead/nowhere.ipynb" in captured.out
+
+
+# --- #12905: the dead-scope BLOCKER is named as an epic-wide lock ------------
+# Reproduction of the live case (#12844, 2026-08-25): a lane reserves a path
+# it is about to create (`paths: <chemin inexistant>/**`). The #10958
+# fail-safe lifts the entirely-dead claim to epic-wide -- it then blocks
+# every OTHER lane on the umbrella, including callers whose live scope is
+# provably disjoint. The verdict stays fail-CLOSED (a dead scope must not
+# DE-unlock); what #12905 adds is the CONSEQUENCE in the blocking text:
+# `WARN: glob sans correspondance` alone reads as "stale worktree", not as
+# "this claim locks the whole umbrella".
+
+def test_12905_dead_scope_blocker_names_epic_wide_lock(capsys, monkeypatch):
+    """The exact #12905 shape: caller LIVE + disjoint, blocker ENTIRELY dead.
+    Verdict BLOCKED at exit 1 (fail-closed unchanged) + a dedicated
+    `DEAD-SCOPE LOCK` stderr message naming the blocking lane, its dead
+    globs verbatim, and the epic-wide mechanism."""
+    monkeypatch.setattr(clc, "_git_tracked_files",
+                        lambda: ["MyIA.AI.Notebooks/GameTheory/GameTheory-17b.ipynb"])
+    blocker = comment(
+        "[CLAIMED] lane B:CoursIA -- lake asym -- paths: "
+        "MyIA.AI.Notebooks/GameTheory/asymmetric_information_lean/**",
+        "2026-08-25T09:00:00Z",
+    )
+    p = payload(blocker, number=12844, title="[EPIC] umbrella")
+    rc = clc._run_check(
+        p, "A:CoursIA",
+        my_paths=["MyIA.AI.Notebooks/GameTheory/GameTheory-17b.ipynb"],
+    )
+    captured = capsys.readouterr()
+    # Fail-closed verdict UNCHANGED: the dead-scope blocker still blocks a
+    # provably-disjoint live caller (it was lifted to epic-wide).
+    assert rc == 1
+    assert "BLOCKED: another lane holds an active claim" in captured.err
+    # The new explainer fires and names the mechanism + the dead glob.
+    assert "DEAD-SCOPE LOCK" in captured.err
+    assert "EPIC-WIDE" in captured.err
+    assert "B:CoursIA" in captured.err
+    assert "asymmetric_information_lean" in captured.err
+    # The escape paths are named (re-issue / RELEASED / coordinator OVERRIDE).
+    assert "[RELEASED]" in captured.err
+    assert "[OVERRIDE] lane" in captured.err
+
+
+def test_12905_live_scope_blocker_gets_no_dead_scope_lock_message(capsys, monkeypatch):
+    """Selectivity pin (positive control): a blocker whose scope is LIVE
+    produces the plain BLOCKED message with NO `DEAD-SCOPE LOCK` explainer --
+    without this pin, an always-on explainer would be indistinguishable from
+    the targeted one."""
+    monkeypatch.setattr(clc, "_git_tracked_files",
+                        lambda: ["x/a.ipynb", "y/01.ipynb"])
+    blocker = comment(
+        "[CLAIMED] lane A:CoursIA -- tranche x -- paths: x/**",
+        "2026-08-15T00:00:00Z",
+    )
+    p = payload(blocker, number=11064, title="t")
+    rc = clc._run_check(p, "B:CoursIA", my_paths=["x/a.ipynb"])
+    captured = capsys.readouterr()
+    assert rc == 1
+    assert "BLOCKED: another lane holds an active claim" in captured.err
+    assert "DEAD-SCOPE LOCK" not in captured.err
+
+
+def test_12905_partially_dead_blocker_gets_no_dead_scope_lock_message(capsys, monkeypatch):
+    """Asymmetry pin (mirror of the #11098 reducer asymmetry): a blocker
+    whose scope is PARTIALLY dead (at least one live glob) stays SCOPED --
+    the epic-wide lift only fires when the WHOLE scope is dead. A partial
+    block is a genuine scope intersection, not a reservation lock."""
+    monkeypatch.setattr(clc, "_git_tracked_files",
+                        lambda: ["x/a.ipynb"])
+    blocker = comment(
+        "[CLAIMED] lane A:CoursIA -- tranche x -- paths: x/**, dead/**",
+        "2026-08-15T00:00:00Z",
+    )
+    p = payload(blocker, number=11064, title="t")
+    rc = clc._run_check(p, "B:CoursIA", my_paths=["x/a.ipynb"])
+    captured = capsys.readouterr()
+    assert rc == 1
+    assert "BLOCKED: another lane holds an active claim" in captured.err
+    assert "DEAD-SCOPE LOCK" not in captured.err
+
+
+def test_12905_no_tracked_walk_no_dead_scope_lock_message(capsys, monkeypatch):
+    """Degradation pin: outside a git repo (`tracked=None`) no `empty_scope`
+    witness exists, `_claim_scope_effectively_epic_wide` degrades to False
+    and the explainer stays silent. To still reach the BLOCKED branch under
+    degradation, the caller's scope must INTERSECT the declared one (a
+    disjoint scope would drop the blocker entirely, pre-#10958 semantics):
+    the conflict is then genuine on its face and the plain BLOCKED message
+    is emitted without the dead-scope explainer."""
+    monkeypatch.setattr(clc, "_git_tracked_files", lambda repo_root=None: None)
+    blocker = comment(
+        "[CLAIMED] lane A:CoursIA -- reserve -- paths: newdir/**",
+        "2026-08-25T09:00:00Z",
+    )
+    p = payload(blocker, number=12844, title="t")
+    rc = clc._run_check(p, "B:CoursIA", my_paths=["newdir/f.ipynb"])
+    captured = capsys.readouterr()
+    assert rc == 1
+    assert "BLOCKED" in captured.err
+    assert "DEAD-SCOPE LOCK" not in captured.err
 
 
 def test_claim_paths_roundtrip_reads_back_scoped(monkeypatch):
@@ -4751,3 +5050,247 @@ def test_run_check_disjoint_joker_caller_clear(capsys):
         f"disjoint joker scopes must not block each other (#10419): got rc={rc}"
     )
 
+
+# --- CLAIMED-AMEND recognised as replacing-open (#13022) ----------------------
+# Measured on #11703: po-2027's `[CLAIMED-AMEND] ... -- paths: <8 globs>` (union
+# of two scopes, 2026-08-25T22:36Z) was a no-op for `_MARKER_RE` -- the organ
+# kept crediting the earlier `[CLAIMED]` and the amendment existed only for
+# human eyes, forcing a canonical re-[CLAIMED] as workaround. The chosen
+# semantics (option A of the issue): CLAIMED-AMEND is an OPEN action, so in the
+# walk-order reducer it REPLACES the lane's previous claim -- the amend line
+# must carry the FULL corrected scope (union), exactly like the workaround it
+# supersedes.
+
+def test_parse_claimed_amend_open_with_single_line_paths_clause():
+    # The exact #11703 workaround-replacement shape: marker, lane, and the
+    # complete union scope on ONE line (`paths:` clause is single-line by
+    # design, #12072 documents the off-marker alternative as signal-only).
+    ev = clc.parse_claim_event(comment(
+        "[CLAIMED-AMEND] lane myia-po-2027:CoursIA-2 -- paths: "
+        "MyIA.AI.Notebooks/ML/learning_theory_lean/**, "
+        "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1b-*.ipynb",
+        "2026-08-25T23:28:41Z",
+    ))
+    assert ev is not None
+    assert ev.marker == "CLAIMED-AMEND"
+    assert ev.is_open is True
+    assert ev.lane == "myia-po-2027:CoursIA-2"
+    assert ev.paths is not None
+    assert len(ev.paths) == 2
+    assert ev.paths[0] == "MyIA.AI.Notebooks/ML/learning_theory_lean/**"
+
+
+def test_amend_mono_scope_replaces_previous_scope():
+    # Acceptance: amendement mono-scope. A later CLAIMED-AMEND with a single
+    # new path REPLACES the lane's earlier scope in the active state.
+    events = [
+        clc.parse_claim_event(comment(
+            "[CLAIMED] lane A:CoursIA -- paths: notebooks/old/**",
+            "2026-08-25T05:56:00Z")),
+        clc.parse_claim_event(comment(
+            "[CLAIMED-AMEND] lane A:CoursIA -- paths: notebooks/new/**",
+            "2026-08-25T06:08:00Z")),
+    ]
+    active, _ = clc.compute_active_claims(events)
+    assert set(active) == {"A:CoursIA"}
+    assert active["A:CoursIA"].paths == ["notebooks/new/**"]
+
+
+def test_amend_union_of_two_scopes():
+    # Acceptance: union de deux scopes de la meme lane. The amend line carries
+    # the union -- the resulting active scope covers BOTH globs (this is the
+    # preflight-#13012 shape that motivated the issue).
+    events = [
+        clc.parse_claim_event(comment(
+            "[CLAIMED] lane A:CoursIA -- paths: notebooks/a/**",
+            "2026-08-25T05:56:00Z")),
+        clc.parse_claim_event(comment(
+            "[CLAIMED-AMEND] lane A:CoursIA -- paths: notebooks/a/**, notebooks/b/**",
+            "2026-08-25T22:36:00Z")),
+    ]
+    active, _ = clc.compute_active_claims(events)
+    assert active["A:CoursIA"].paths == ["notebooks/a/**", "notebooks/b/**"]
+
+
+def test_amend_exposes_amended_scope_in_active_claims():
+    # Acceptance: the LAST active event must expose the amended scope (marker
+    # + paths) in the active_claims mapping the check consumes.
+    events = [
+        clc.parse_claim_event(comment(
+            "[CLAIMED] lane B:CoursIA-2 -- paths: notebooks/first/**",
+            "2026-08-25T01:08:00Z")),
+        clc.parse_claim_event(comment(
+            "[CLAIMED-AMEND] lane B:CoursIA-2 -- paths: notebooks/first/**, notebooks/second/**",
+            "2026-08-25T05:56:00Z")),
+    ]
+    active, _ = clc.compute_active_claims(events)
+    ev = active["B:CoursIA-2"]
+    assert ev.marker == "CLAIMED-AMEND"
+    assert ev.is_open is True
+    assert ev.paths == ["notebooks/first/**", "notebooks/second/**"]
+
+
+def test_amend_without_paths_replaces_with_epic_wide():
+    # Documented fail-CLOSED semantics: an amend that names no scope replaces
+    # the previous scoped claim with EPIC-WIDE (an amendment that names no
+    # scope is not permissive).
+    events = [
+        clc.parse_claim_event(comment(
+            "[CLAIMED] lane A:CoursIA -- paths: notebooks/narrow/**",
+            "2026-08-25T05:56:00Z")),
+        clc.parse_claim_event(comment(
+            "[CLAIMED-AMEND] lane A:CoursIA -- correction du scope, cf. prose",
+            "2026-08-25T22:36:00Z")),
+    ]
+    active, _ = clc.compute_active_claims(events)
+    assert active["A:CoursIA"].paths is None
+
+
+def test_amend_blocks_other_lane_on_intersecting_amended_scope(capsys):
+    # End-to-end differential: the caller's path is DISJOINT from the original
+    # scope (rc 0 pre-amend) but INTERSECTS the amended scope (rc 1 post-amend)
+    # -- the mechanical lock now follows the lane's declared intention, which
+    # was the whole point of #13022.
+    original = comment(
+        "[CLAIMED] lane myia-po-2027:CoursIA-2 -- paths: scripts/notebook_tools/**",
+        "2026-08-25T05:56:40Z",
+    )
+    amended = comment(
+        "[CLAIMED-AMEND] lane myia-po-2027:CoursIA-2 -- paths: scripts/notebook_tools/**, scripts/tests/*.py",
+        "2026-08-25T22:36:02Z",
+    )
+    caller_path = "scripts/tests/test_check_lane_claim.py"
+    rc_pre = clc._run_check(
+        payload(original), "myia-po-2023:CoursIA-2", my_paths=[caller_path]
+    )
+    assert rc_pre == 0, f"pre-amend scopes are disjoint, expected CLEAR, got rc={rc_pre}"
+    rc_post = clc._run_check(
+        payload(original, amended), "myia-po-2023:CoursIA-2", my_paths=[caller_path]
+    )
+    err = capsys.readouterr().err
+    assert rc_post == 1, (
+        f"caller intersecting the AMENDED scope must be blocked, got rc={rc_post}"
+    )
+    assert "BLOCKED: another lane holds an active claim" in err
+
+
+def test_bare_claimed_amend_bracketless_flagged_as_malformed(capsys):
+    # The #11239 lint covers the new marker too: a bracketless
+    # `CLAIMED-AMEND #N ...` line must surface as a WARN, never silently pass.
+    p = payload(comment(
+        "CLAIMED-AMEND #11703 -- lane myia-po-2027:CoursIA-2 union preflight",
+        "2026-08-25T23:00:00Z",
+    ))
+    clc._run_check(p, "myia-po-2023:CoursIA-2")
+    out = capsys.readouterr().out
+    assert "malformed" in out.lower()
+
+
+# --- repeated --paths preserve union semantics (#13057) ----------------------
+# argparse's default `store` action retained only the LAST `--paths` occurrence.
+# A real overlap therefore disappeared when the caller added any disjoint path:
+# `--paths P_in_claim` blocked, but `--paths P_in_claim --paths P_outside`
+# reached the reducer as `[P_outside]` and falsely cleared. These tests exercise
+# `main(argv)` rather than `_filter_by_claim_scope`, whose `any` semantics were
+# already correct.
+
+_CLAIMED_GUARD_PATH = "scripts/check_lane_claim.py"
+_OUTSIDE_GUARD_PATH = "scripts/check_unaddressed_nits.py"
+
+
+def _write_mixed_paths_payload(tmp_path):
+    return _write_payload(
+        payload(comment(
+            "[CLAIMED] lane myia-po-2024:CoursIA-2 -- paths: "
+            f"{_CLAIMED_GUARD_PATH}",
+            "2026-08-26T02:00:00Z",
+        ), number=13057),
+        tmp_path,
+    )
+
+
+def test_main_single_paths_occurrence_intersecting_blocks(tmp_path, capsys):
+    source = _write_mixed_paths_payload(tmp_path)
+    rc = clc.main([
+        "13057", "--lane", "myia-po-2025:CoursIA-2", "--from-json", source,
+        "--no-stale", "--paths", _CLAIMED_GUARD_PATH,
+    ])
+    captured = capsys.readouterr()
+    summary = json.loads(captured.out.split("\n\nBLOCKED", 1)[0])
+    assert rc == 1
+    assert summary["blocking_lanes"] == ["myia-po-2024:CoursIA-2"]
+    assert summary["blocked"] is True
+
+
+def test_main_repeated_paths_mixed_intersection_still_blocks(tmp_path, capsys):
+    source = _write_mixed_paths_payload(tmp_path)
+    rc = clc.main([
+        "13057", "--lane", "myia-po-2025:CoursIA-2", "--from-json", source,
+        "--no-stale", "--paths", _CLAIMED_GUARD_PATH,
+        "--paths", _OUTSIDE_GUARD_PATH,
+    ])
+    captured = capsys.readouterr()
+    assert rc == 1, (
+        "adding a disjoint --paths occurrence must not erase the intersecting "
+        f"one; stdout was:\n{captured.out}"
+    )
+    summary = json.loads(captured.out.split("\n\nBLOCKED", 1)[0])
+    assert summary["blocking_lanes"] == ["myia-po-2024:CoursIA-2"]
+    assert summary["blocked"] is True
+
+
+def test_main_repeated_paths_genuinely_disjoint_clear(tmp_path, capsys):
+    source = _write_mixed_paths_payload(tmp_path)
+    rc = clc.main([
+        "13057", "--lane", "myia-po-2025:CoursIA-2", "--from-json", source,
+        "--no-stale", "--paths", _OUTSIDE_GUARD_PATH,
+        "--paths", "scripts/variation_light_cap.py",
+    ])
+    captured = capsys.readouterr()
+    summary = json.loads(captured.out.split("\n\nCLEAR", 1)[0])
+    assert rc == 0
+    assert summary["blocking_lanes"] == []
+    assert summary["blocked"] is False
+
+
+# --- #12811 : gh/git émettent de l'UTF-8, l'encodage doit être épinglé --------
+
+
+def test_gh_calls_pin_utf8_regression_12811(monkeypatch):
+    """#12811 -- sans `encoding=` épinglé, `text=True` décode avec le locale de
+    l'OS. Sous Windows c'est cp1252, dont les positions non définies
+    (0x81/0x8D/0x8F/0x90/0x9D) lèvent UnicodeDecodeError sur la prose ICT
+    ordinaire (reproduit en direct sur l'issue #5635, Python 3.13 : erreur de
+    décodage dans le reader thread -> proc.stdout None -> json.loads(None)
+    TypeError, garde morte). Le faux ci-dessous décode en cp1252 chaque fois
+    que le site d'appel N'épingle PAS d'encodage -- simulation déterministe du
+    défaut Windows, indépendante du locale de la machine qui exécute les
+    tests."""
+    bad_char = "͏"  # COMBINING GRAPHEME JOINER : UTF-8 = CD 8F
+    # ensure_ascii=False : gh émet le JSON avec les caractères non-ASCII en
+    # clair (pas d'échappement \uXXXX) -- c'est ce qui met les octets bruts
+    # dans le flux et déclenche le décodage cp1252.
+    issue_raw = json.dumps({
+        "number": 5635,
+        "title": "t " + bad_char,
+        "labels": [],
+        "comments": [],
+    }, ensure_ascii=False).encode("utf-8")
+    prlist_raw = json.dumps([
+        {"number": 1, "title": "x " + bad_char, "headRefName": "b",
+         "body": "", "files": []},
+    ], ensure_ascii=False).encode("utf-8")
+    # garde-fou du fixture : le byte qui tue cp1252 est bien dans les payloads
+    assert b"\x8f" in issue_raw and b"\x8f" in prlist_raw
+
+    def fake_run(cmd, **kwargs):
+        raw = prlist_raw if "list" in cmd else issue_raw
+        enc = kwargs.get("encoding") or "cp1252"  # défaut Windows, simulé
+        decoded = raw.decode(enc, kwargs.get("errors") or "strict")
+        return subprocess.CompletedProcess(cmd, 0, stdout=decoded, stderr="")
+
+    monkeypatch.setattr(clc.subprocess, "run", fake_run)
+    issue_payload = clc._gh_issue_comments("5635")
+    assert issue_payload["title"].endswith(bad_char)
+    prs = clc._gh_open_prs_with_files()
+    assert prs[0]["title"].endswith(bad_char)

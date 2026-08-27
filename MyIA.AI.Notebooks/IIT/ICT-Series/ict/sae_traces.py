@@ -80,6 +80,16 @@ def load_traces(path: str | Path) -> dict:
         missing = {"ids", "vals"} - set(entry)
         if missing:
             raise ValueError(f"trace {set_name}__{idx} incomplete : manque {missing}")
+        n_bad = int((~np.isfinite(entry["vals"])).sum())
+        if n_bad:
+            # Defaut BOS-inf du run 8B (#12388) : une trace portant des vals
+            # non-finies contamine les panneaux differentiels. Le producteur
+            # (extract_sae_traces.py corrige) exclut ces positions a la
+            # capture — une trace qui en porte est ANTERIEURE au correctif.
+            raise ValueError(
+                f"trace {set_name}__{idx} : {n_bad} vals non-finies — trace "
+                f"pre-correctif (#12388), regenerer via extract_sae_traces.py "
+                f"a jour (il exclut les positions non-finies a la capture)")
     return {"meta": meta, "prompts": prompts}
 
 

@@ -39,7 +39,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from fast_lane_registry import PILOT, Guard  # noqa: E402
+from fast_lane_registry import PILOT, TRANCHE1, TRANCHE2, Guard  # noqa: E402
 
 SHADOW_PREFIX = "fast-lane (ombre): "
 GUARD_TIMEOUT_S = 600
@@ -53,18 +53,25 @@ OUTPUT_LIMIT = 60000  # marge sous la limite de 65535 de l'API Checks
 def path_matches(path: str, pattern: str) -> bool:
     """Semantique des `paths:` GitHub, pour le sous-ensemble qu'on utilise.
 
-    Le piege est le prefixe `**/` : chez GitHub il matche AUSSI la racine
-    (`**/*.ipynb` couvre `a.ipynb`), alors que `fnmatch` exige le separateur
-    et repondrait False. Un motif qui rate ne leve pas d'erreur -- il rend un
-    ensemble de gardes plus petit, donc un CI plus vert et plus rapide : le
-    faux negatif exact que ce depot a deja paye ailleurs. D'ou le test dedie
-    sur ce cas precis.
+    Le piege est le segment `**/` : chez GitHub il matche ZERO ou plus
+    repertoire(s), alors que `fnmatch` traite `**` comme un simple `*` et
+    exige le separateur. Deux cas concrets du registre : le prefixe racine
+    (`**/*.ipynb` couvre `a.ipynb`) et le segment median
+    (`MyIA.AI.Notebooks/**/*.ipynb` couvre `MyIA.AI.Notebooks/x.ipynb` --
+    GradeBook.ipynb vit exactement la). Un motif qui rate ne leve pas
+    d'erreur -- il rend un ensemble de gardes plus petit, donc un CI plus
+    vert et plus rapide : le faux negatif exact que ce depot a deja paye
+    ailleurs. D'ou le test dedie sur ces cas precis.
     """
     path = path.replace(os.sep, "/")
     if fnmatch.fnmatch(path, pattern):
         return True
     if pattern.startswith("**/"):
-        return fnmatch.fnmatch(path, pattern[3:])
+        if fnmatch.fnmatch(path, pattern[3:]):
+            return True
+    if "/**/" in pattern:
+        if fnmatch.fnmatch(path, pattern.replace("/**/", "/")):
+            return True
     return False
 
 
@@ -145,11 +152,16 @@ def expand_paths_token(argv: list[str], paths: list[str]) -> list[str]:
 
 
 def run_iter(argv_template: list[str], paths: list[str],
-             ctx: dict[str, str]) -> tuple[int, str]:
+             ctx: dict[str, str],
+             warn_rc: tuple[int, ...] = ()) -> tuple[int, str]:
     """Execute un garde Pattern 1 (boucle par chemin) en aggregeant un rc
     = max(rc_par_iteration) et une log concatenee. Si `paths` est vide,
     rend un rc=0 no-op (log explicite) -- un CI sans chemin est un vert
-    silencieux, pas un garde qui a travaille."""
+    silencieux, pas un garde qui a travaille. Les rc listes dans `warn_rc`
+    comptent comme succes : les detecteurs de la serie figure/texte rendent
+    rc=2 sur fichier illisible, et leur workflow d'origine l'affiche en
+    warning -- l'agreger en echec rendrait la lane plus stricte que ce
+    qu'elle absorbe."""
     if not paths:
         return 0, "[fast-lane] iterates_paths vide : aucun fichier a examiner"
     rc_agg = 0
@@ -157,6 +169,8 @@ def run_iter(argv_template: list[str], paths: list[str],
     for path in paths:
         local_ctx = dict(ctx, changed_paths=path)
         rc, log = run_argv(argv_template, local_ctx)
+        if rc in warn_rc:
+            rc = 0
         chunks.append(f"--- {path} ---\n{log}")
         if rc > rc_agg:
             rc_agg = rc
@@ -235,9 +249,21 @@ def emit_check_run(repo: str, head_sha: str, name: str, conclusion: str,
         print(f"[fast-lane] check-run publie : {name} -> {conclusion}")
 
 
-def conclusion_for(guard: Guard, rc: int) -> str:
+def conclusion_for(guard: Guard, rc: int, shadow: bool = False) -> str:
+    if rc in guard.warn_rc:
+        rc = 0
     if rc == 0:
         return "success"
+    if shadow:
+        # La phase ombre se declare observationnelle : elle ne doit donc pas
+        # pouvoir bloquer une PR. Or `pr_gate` ne traite en advisory que les
+        # check-runs dont le NOM contient `advisory` -- le prefixe ombre n'en
+        # contient pas, donc un `failure` ombre entrait dans `bad` et rendait
+        # le gate REQUIS rouge. Mesure du 2026-08-25 : 2 PR ouvertes (#12791,
+        # #12820) avaient pour SEUL rouge un check ombre, sur 125 PR portant
+        # un check ombre. Le verdict reste visible dans le titre et le resume
+        # du check-run ; seule sa capacite a bloquer est retiree.
+        return "neutral"
     return "failure" if guard.blocking else "neutral"
 
 
@@ -271,7 +297,8 @@ def main(argv: list[str] | None = None) -> int:
     print(f"[fast-lane] {len(changed)} fichier(s) modifie(s) "
           f"contre {args.base_ref}")
 
-    guards = [g for g in PILOT if not args.only or g.name == args.only]
+    guards = [g for g in PILOT + TRANCHE1 + TRANCHE2
+              if not args.only or g.name == args.only]
     selected = [g for g in guards if guard_applies(g, changed)]
     for guard in guards:
         if guard not in selected:
@@ -292,11 +319,28 @@ def main(argv: list[str] | None = None) -> int:
 
     # -- phase 1 : HEAD, aucun garde ne mute l'arbre -------------------------
     for guard in selected:
+        if guard.pre_argv:
+            # Pre-controle (self-test du detecteur, #11685) : un rc non nul
+            # EST le verdict du garde et le scan n'est pas execute -- un
+            # detecteur qui ne prouve pas qu'il tire ne doit pas rendre vert.
+            rc, log = run_argv(guard.pre_argv, ctx)
+            if rc != 0:
+                results[guard.name] = (rc, log)
+                print(f"[fast-lane] pre-contrôle {guard.name} : exit {rc} "
+                      "-- garde non execute")
+                continue
         if guard.iterates_paths:
+            # Fidelite aux boucles d'origine : les workflows iteratifs
+            # sautent les fichiers SUPPRIMES par la PR (`[ -f "$nb" ] ||
+            # continue`). Un chemin absent passe au detecteur rendrait son
+            # code "illisible" (rc=2), qui sans ce filtre deviendrait un
+            # faux verdict sur un fichier que l'original n'examinait pas.
             arg_paths = sorted({f for f in changed
                                 for p in guard.paths
-                                if path_matches(f, p)})
-            rc, log = run_iter(guard.argv, arg_paths, ctx)
+                                if path_matches(f, p)
+                                and (REPO_ROOT / f).is_file()})
+            rc, log = run_iter(guard.argv, arg_paths, ctx,
+                               warn_rc=guard.warn_rc)
             results[guard.name] = (rc, log)
             print(f"[fast-lane] phase 1 {guard.name} (iter sur {len(arg_paths)} "
                   f"fichier(s)) : exit {rc}")
@@ -344,11 +388,27 @@ def main(argv: list[str] | None = None) -> int:
             clean, dirt = tree_is_clean(swap)
             if not clean:
                 # Arret net : les verdicts suivants porteraient sur un arbre
-                # dont on ne sait plus ce qu'il contient.
-                raise SystemExit(
-                    "[fast-lane] l'arbre n'est PAS revenu a son etat apres la "
-                    f"bascule -- aucun verdict ne sera publie.\n{dirt}"
-                )
+                # dont on ne sait plus ce qu'il contient. On ne publie RIEN,
+                # dans les DEUX modes -- c'est la partie fail-closed, et
+                # elle ne bouge pas.
+                msg = ("[fast-lane] l'arbre n'est PAS revenu a son etat "
+                       "apres la bascule -- aucun verdict ne sera publie."
+                       "\n" + dirt)
+                if args.shadow:
+                    # ... mais en OMBRE le job ne doit pas rougir pour
+                    # autant. Le check du job s'appelle `Fast lane (ombre)
+                    # -- N gardes, 1 checkout` : il ne contient pas
+                    # `advisory`, donc `pr_gate` le compte comme un defaut
+                    # et BLOQUE la PR. Une panne de la voie ombre bloque
+                    # alors une PR saine -- exactement ce que la phase
+                    # pilote promet de ne pas faire. Mesure du 2026-08-25 :
+                    # #12820 etait retenue par ce chemin (run 32774643069)
+                    # sans porter aucun defaut propre.
+                    print(msg, file=sys.stderr)
+                    print("[fast-lane] mode ombre : panne interne signalee,"
+                          " job non bloquant (exit 0).", file=sys.stderr)
+                    return 0
+                raise SystemExit(msg)
             print("[fast-lane] phase 2 : arbre restaure et verifie")
 
     # -- phase 3 : comparaisons delta ---------------------------------------
@@ -364,25 +424,35 @@ def main(argv: list[str] | None = None) -> int:
         print(f"[fast-lane] phase 3 {guard.name} : exit {rc}")
 
     # -- emission ------------------------------------------------------------
+    # Mode MIXTE (#12567, tranche 1 d'absorption) : un garde `absorbed` rend
+    # son verdict SOUS SON NOM CANONIQUE avec une conclusion REELLE meme quand
+    # la lane tourne en ombre -- c'est le basculement annonce par le pilote,
+    # applique garde par garde. Les gardes du pilote conservent le prefixe
+    # ombre et la neutralisation jusqu'a la conclusion de la comparaison.
     head_sha = args.head_sha or git("rev-parse", "HEAD").stdout.strip()
     blocking_failed = False
     for guard in selected:
         rc, log = results.get(guard.name, (0, "(aucune sortie)"))
-        conclusion = conclusion_for(guard, rc)
+        if rc in guard.warn_rc:
+            rc = 0  # meme mapping que conclusion_for : un seul verdict
+        effective_shadow = args.shadow and not guard.absorbed
+        conclusion = conclusion_for(guard, rc, shadow=effective_shadow)
         if rc == 0:
             title = "OK"
         elif guard.blocking:
-            title = "echec"
+            title = ("echec (ombre : non bloquant)" if effective_shadow
+                     else "echec")
         else:
             title = "signale (advisory)"
-        name = (SHADOW_PREFIX + guard.name) if args.shadow else guard.name
+        name = ((SHADOW_PREFIX + guard.name) if effective_shadow
+                else guard.name)
         emit_check_run(
             args.repo, head_sha, name, conclusion,
             f"{guard.name} -- {title}",
             f"Source : `{guard.source}`\n\n```\n{log}\n```",
             args.dry_run,
         )
-        if guard.blocking and rc != 0:
+        if guard.blocking and rc != 0 and not effective_shadow:
             blocking_failed = True
 
     verdict = ("au moins un bloquant en echec" if blocking_failed
@@ -390,8 +460,11 @@ def main(argv: list[str] | None = None) -> int:
     print(f"[fast-lane] {len(selected)} garde(s) evalue(s), {verdict}")
 
     # En mode ombre le job ne rougit jamais : il observe, il ne juge pas
-    # encore. Les verdicts vivent dans les check-runs.
-    if args.shadow:
+    # encore. Les verdicts vivent dans les check-runs. En mode MIXTE
+    # (#12567), `blocking_failed` ne compte deja que les gardes reels
+    # (absorbes, ou lane --no-shadow) : si l'un d'eux echoue, le job DOIT
+    # rougir, meme si le reste de la lane observe.
+    if args.shadow and not blocking_failed:
         return 0
     return 1 if blocking_failed else 0
 

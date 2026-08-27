@@ -8,7 +8,6 @@ Ce module présente des cas d'usage concrets et des workflows de production pour
 
 **Fil rouge audiobook (Epic #1028)** : [04-6](04-6-Audiobook-Pipeline.ipynb) a [04-12](04-12-Compilation-Audio.ipynb) forment un pipeline agentique 5-pass complet : benchmark des voix, analyse littéraire, casting vocal, annotation prosodique, génération TTS et compilation finale. [04-13](04-13-Audiobook-FishAudio-S2Pro.ipynb) étend le pipeline avec FishAudio S2-Pro, 29 tags prosodiques officiels et validation WER.
 
-**Hommage Munkres — musique et mathématiques** : [04-14](04-14-VoiceLeading-Affectation.ipynb) formule le voice leading chorale comme problème d'affectation linéaire, résolu par `scipy.optimize.linear_sum_assignment` (algorithme de Kuhn-Munkres) : démo mesurée greedy contre optimal, visualisation des trajectoires sur la ligne des quintes, et post-traitement voice leading d'une progression générée. Entièrement offline.
 
 ## Vue d'ensemble
 
@@ -50,7 +49,7 @@ Pipeline complet de 7 notebooks pour générer un audiobook à partir d'un texte
 
 | # | Notebook | Contenu | Service | VRAM |
 |---|----------|---------|---------|------|
-| 14 | [04-14-VoiceLeading-Affectation](04-14-VoiceLeading-Affectation.ipynb) | Voice leading minimal par affectation (Kuhn-Munkres via scipy), greedy vs optimal, ligne des quintes | Aucun (offline) | 0 |
+| 14 | [04-14-VoiceLeading-Rendu-GenAI](04-14-VoiceLeading-Rendu-GenAI.ipynb) | Rendu audio intelligent du voice leading App-21 : baseline téléphone vs MusicGen-melody (3 styles H1), spectrogrammes mesurés | MusicGen-melody (GPU local) | ~6 GB |
 
 **Flux du pipeline audiobook** :
 
@@ -94,7 +93,7 @@ Audio brut -> STT -> Correction -> Enhance -> TTS -> Podcast final
 ### Musique
 
 ```text
-Texte -> MusicGen -> Édition MIDI -> Voice leading optimal (04-14) -> Post-production -> Export
+Texte -> MusicGen -> Édition MIDI -> Voice leading optimal ([App-21 Search](../../../Search/Applications/CSP/App-21-VoiceLeading.ipynb)) -> Rendu audio intelligent ([04-14](04-14-VoiceLeading-Rendu-GenAI.ipynb)) -> Post-production -> Export
 ```
 
 ### Audiobook Agentique (Epic #1028)

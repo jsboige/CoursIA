@@ -16,15 +16,13 @@ name: Outputs text fragmentation (advisory)
 # Fondateur : c.354 PR #11664 (Section 2bis XTTS-Voice-Cloning).
 
 on:
-  pull_request:
-    branches: [ main ]
-    paths:
-      - 'MyIA.AI.Notebooks/**/*.ipynb'
-      - 'scripts/notebook_tools/check_outputs_text_fragmentation.py'
-      - 'scripts/notebook_tools/tests/test_check_outputs_text_fragmentation.py'
-      - '.github/workflows/outputs-text-fragmentation-advisory.yml'
-  workflow_dispatch:
-
+  schedule:
+    # Nocturnal sweep -- post-merge main verification.
+    # Tranche 1 #12817 : sortir les advisory lourds de pull_request
+    # (clone 2.22 Go par run). Stratification user 2026-08-23 :
+    # "les jobs lourds devraient être payés une fois par fournée".
+    - cron: '16 03 * * *'
+  workflow_dispatch: {}
 permissions:
   contents: read
   pull-requests: write
@@ -44,6 +42,7 @@ jobs:
           # completes (sinon le diff est vide et l'advisory short-circuit en
           # "no .ipynb changed" sur toute PR ; cf. finding NanoClaw #11668).
           fetch-depth: 0
+          filter: blob:none
 
       - uses: actions/setup-python@v5
         with:

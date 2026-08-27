@@ -30,18 +30,20 @@ name: machine-dep-timing-advisory
 # regex canonique) + exercises-advisory.yml (le modele advisory label-only).
 
 on:
-    pull_request:
-        paths:
-            - 'MyIA.AI.Notebooks/**/*.ipynb'
-            - 'scripts/notebook_tools/check_machine_dep_timing.py'
-            - 'scripts/notebook_tools/tests/test_check_machine_dep_timing.py'
-
+    schedule:
+      # Nocturnal sweep -- post-merge main verification.
+      # Tranche 1 #12817 : sortir les advisory lourds de pull_request
+      # (clone 2.22 Go par run). Stratification user 2026-08-23 :
+      # "les jobs lourds devraient être payés une fois par fournée".
+      - cron: '14 03 * * *'
+    workflow_dispatch: {}
 concurrency:
   group: machine-dep-timing-advisory-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
     machine-dep-timing:
+        name: machine-dep-timing (advisory)
         runs-on: ubuntu-latest
         permissions:
             pull-requests: write
@@ -50,6 +52,7 @@ jobs:
               uses: actions/checkout@v4
               with:
                   fetch-depth: 0
+                  filter: blob:none
 
             - name: Set up Python
               uses: actions/setup-python@v5

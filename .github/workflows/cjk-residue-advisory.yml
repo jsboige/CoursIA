@@ -26,23 +26,13 @@ name: CJK Residue Advisory
 # content criterion runs against student submissions.
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened]
-    branches: [main]
-    paths:
-      # Leak-bearing content -- run whenever any prose/code/notebook changes.
-      - '**/*.ipynb'
-      - '**/*.md'
-      - '**/*.py'
-      - '**/*.cs'
-      # Self-cover (#8822): so this job re-runs on its own modification and can
-      # clean up its label. Without this, a leak-fix commit that touches only
-      # this workflow/script would leave the label stuck.
-      - '.github/workflows/cjk-residue-advisory.yml'
-      - 'scripts/notebook_tools/detect_cjk_residue.py'
-      - 'scripts/notebook_tools/tests/test_detect_cjk_residue.py'
-  workflow_dispatch:
-
+  schedule:
+    # Nocturnal sweep -- post-merge main verification.
+    # Tranche 1 #12817 : sortir les advisory lourds de pull_request
+    # (clone 2.22 Go par run). Stratification user 2026-08-23 :
+    # "les jobs lourds devraient être payés une fois par fournée".
+    - cron: '09 03 * * *'
+  workflow_dispatch: {}
 permissions:
   contents: read
   pull-requests: write
@@ -68,6 +58,7 @@ jobs:
           # the merge-base and the diff would fail instead of scoping to this
           # PR's own apport.
           fetch-depth: 0
+          filter: blob:none
 
       - name: Set up Python
         uses: actions/setup-python@v5

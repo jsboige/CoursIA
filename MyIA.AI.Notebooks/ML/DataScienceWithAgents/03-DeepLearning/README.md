@@ -24,13 +24,14 @@ séries (RL, PostTraining, ML-Training-Pipeline). L'entraînement final du 2.9 e
 
 | Notebook | Sujet | Concept-phare | Validation |
 |----------|-------|---------------|------------|
+| [3.0-Theorie-Information](3.0-Theorie-Information.ipynb) | Entropie, cross-entropy et KL construites from scratch sur un texte français, puis MSE vs cross-entropy sur un classifieur (le piège du gradient saturé), température (softmax) et pont vers DPO/GRPO | **La loss qui fait apprendre** : pourquoi la cross-entropy (et pas la MSE) est la bonne loss d'un classifieur, et la KL comme mesure de décalage entre deux distributions de modèle | entropie du français ~4,4 bits (redondance ~10-15 %, borne ≤ log₂K vérifiée) ; identité H(p,q)=H(p)+D_KL vérifiée, KL>0 sur tout le balayage (Gibbs) ; init saturée et fausse : la CE s'échappe (0,88) quand la MSE reste bloquée (0,39), gradient CE/MSE ~51× ; log 0 maîtrisé par lissage ε ; KL minimale en T=1 |
+| [3.1-Retropropagation](3.1-Retropropagation.ipynb) | Le MLP et la rétropropagation à la main (NumPy pur, sans autograd) | **Le gradient vérifié** : différence finie vs analytique, parité exacte avec PyTorch | écart 1,3e-11 (seuil 1e-6) ; loss initiale, premier pas et trajectoire 3000 iters identiques à 1,1e-16 près ; init nulle = gradient nul (0,500 figé) |
+| [3.2-Optimisateurs](3.2-Optimisateurs.ipynb) | Momentum, Adagrad, RMSProp, Adam et schedules, écrits en NumPy pur puis validés pas à pas contre `torch.optim` | **La parité exacte** : les 5 mises à jour sont celles de torch | GD/momentum/Adam à 1,11e-16, Adagrad bit-à-bit (0,00e+00), RMSProp à 2,22e-16 (float64, 1 pas) ; Beale : 5 trajectoires superposées (facteur 200 entre lr utilisables) ; MLP du 3.1 : 5 optimisateurs × 3 graines (RMSProp 0,059 < Adam 0,061 < … < GD 0,070) ; schedules : coût en full-batch déterministe, gain sous le plancher de bruit en mini-batch |
 | [3.5-Phenomenes-de-Generalisation](3.5-Phenomenes-de-Generalisation.ipynb) | Grokking et double descente reproduits en NumPy pur (MLP à embeddings + Adam à la main), confrontés à la borne PAC du 2.8 | **Le phénomène sans la boîte noire** : mémorisation → transition abrupte, et le W de la double descente | garde gradient ≤ 1e-6 (embeddings inclus) ; grok mesuré : train saturé ~500 pas, test 100 % des dizaines de milliers de pas plus tard (wd = 1) ; contre-témoin wd = 0 ; double descente : pic au seuil M ≈ n (×5 le creux), asymptote moderne sous le creux classique, 20 graines |
 
 ## Feuille de route
 
-La suite est planifiée (issues ouvertes) : rétropropagation à la main puis optimisteurs,
-socle de la série (#12407) ; théorie de l'information appliquée — entropie, KL,
-cross-entropy (#12420) ; régularisation — dropout, weight decay, early stopping (#12409) ;
+La suite est planifiée (issues ouvertes) : régularisation — dropout, weight decay, early stopping (#12409) ;
 attention et transformer jusqu'à un mini-GPT entraîné in notebook (#12410). Le fil
 directeur ne change pas : chaque mécanisme écrit à la main, vérifié contre torch, puis
 consommé via l'API officielle.
