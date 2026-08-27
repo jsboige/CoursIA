@@ -105,8 +105,9 @@ def test_drift_count_is_consistent():
     finally:
         drifted_csv.unlink(missing_ok=True)
     drift = report["drift"]
+    # Le drift falsifie (2 lignes markdown avec text_fr+text_en) doit etre detecte
     assert drift["src_drift_total"] > 0
-    # src_drift_in_csv <= src_drift_total (toutes les cellules sont dans le CSV test)
+    # src_drift_in_csv <= src_drift_total (toutes les cellules du CSV test sont dans le total)
     assert drift["src_drift_in_csv"] <= drift["src_drift_total"]
     # Les 2 lignes falsifiees ont text_fr ET text_en remplis : chacune ajoute
     # +1 a src_drift_in_csv ET +1 a drift_with_filled_text_en (pivot #10287 --

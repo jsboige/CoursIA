@@ -1,7 +1,7 @@
 - name: "GameTheory-6 EvolutionTrust"
   family: GameTheory/.NET-Parity
-  python: MyIA.AI.Notebooks/GameTheory/GameTheory-6-EvolutionTrust.ipynb
-  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-6-EvolutionTrust-Csharp.ipynb
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-06-EvolutionTrust.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-06-EvolutionTrust-Csharp.ipynb
   parity_level: semantic
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Bascule verdict (registre #10382, 2026-08-16, lane myia-po-2024:CoursIA-2) : le pont axelrod PythonNet (cell[29], execution_count=13, `#r nuget pythonnet 3.0.5`, axe 5 #10459) est installe et execute dans le notebook commite -- le reason precedent concluait deja SOTA-OK pour ce role sous un label reste RECOVERABLE-LOCAL : label aligne sur la conclusion. parity_level semantic preserve (gel #11200)."
@@ -34,6 +34,18 @@
       csharp_sha: 5c5aeff5bff301e7b14099fbd7bd4008ee264f29
       content_python_sha: eccc57ad4442f22d1265df4a1350df0e8cbeba2414bb232daab4d3ec5085723b
       content_csharp_sha: aeb8e7b1bdbb792a3c4dc50ba91a7e10c183093d39a00f6c978d86e71a47ec8e
+    - date: "2026-08-23"
+      by: myia-po-2025:CoursIA-2
+      python_sha: 9d2e5e99757937fb18248ceb789f608333661e2f
+      csharp_sha: f58d5709ca2358d71380ccf96a576d12e6340dd2
+      content_python_sha: 5715311d1d0aed5895dfd0b3de5c5d8917c0031b8f9c7c079301e03f3d429b72
+      content_csharp_sha: a0e80bc948a551a106508863cab3588882bcc96cdb980369c5ff005f4c115b02
+    - date: "2026-08-23"
+      by: myia-po-2025:CoursIA-2
+      python_sha: f330b4d038bf312f8ad5c6f98d923dda45b0d162
+      csharp_sha: f58d5709ca2358d71380ccf96a576d12e6340dd2
+      content_python_sha: 5dcde663bc2227b9d7a784c806f95761a6f3284a363bcf892a4a3f98b41fedab
+      content_csharp_sha: a0e80bc948a551a106508863cab3588882bcc96cdb980369c5ff005f4c115b02
   known_differences:
     - "Socle pedagogique commun : Dilemme du Prisonnier Itere (IPD), tournoi d'Axelrod, strategies classiques (TitForTat, Pavlov, Generous TitForTat), dynamique evolutive (processus de Moran), emergence de la cooperation."
     - "Idiomes framework : Python = `numpy` + `matplotlib` + `matplotlib.animation` (viz dynamique du tournoi round-robin + courbes de Moran). C# = pur `System.*` (Collections.Generic, Linq) + moteur IPD from-scratch (T=5/R=3/P=1/S=0 convention Axelrod) ; 0 NuGet tiers."

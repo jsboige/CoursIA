@@ -95,10 +95,14 @@ open AlgebraicGeometry CategoryTheory
 Les concepts fondamentaux de Grothendieck qui ne sont PAS encore dans Mathlib :
   - Cohomologie étale (site étale, cohomologie l-adique)
   - Motifs (motifs purs, catégorie DM de Voevodsky)
-  - Six opérations (formalisme complet de Grothendieck) — Mathlib fournit
-    l'instance de base `f^* ⊣ f_*` sur les faisceaux de modules
-    (`AlgebraicGeometry.Modules.Sheaf`, indexée par `DirectImage.lean`) ;
-    `f_!` / `f^!` et le formalisme complet restent absents
+  - Six opérations (formalisme complet de Grothendieck) — Mathlib ne fournit
+    que l'instance de base `f^* ⊣ f_*` sur les faisceaux de modules
+    (`AlgebraicGeometry.Modules.Sheaf`, indexée par `DirectImage.lean`). Le
+    formalisme complet reste hors de Mathlib ; au niveau préfaisceau, cette lake
+    a livré le triple `f_! ⊣ f^* ⊣ f_*` (Parties 34-35,
+    `ExceptionalDirect.lean` / `ExceptionalTriple.lean`), et `f^!` s'y effondre
+    sur `f^*` (`exceptionalInverse_collapses_to_pullback`) — il n'existe qu'avec
+    la dualité de Verdier.
   - Grothendieck-Riemann-Roch
   - Dualité de Grothendieck
   - Cohomologie cristalline

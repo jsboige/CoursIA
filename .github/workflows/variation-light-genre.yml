@@ -32,6 +32,19 @@ on:
   pull_request:
     types: [opened, edited, synchronize, reopened]
     branches: [main]
+    # #12773 tranche 1c : paths-filter pour limiter les declenchements aux PR
+    # touchant la surface reelle du garde. Le script (variation_light_cap.py)
+    # partage `scripts/grain_tag.py` avec variation-tag-guard.yml -- les deux
+    # surfaces incluent donc ce module pour eviter qu'un edit de grain_tag.py
+    # ne declenche un seul des deux. Surface minimale = workflow + script
+    # partage + test.
+    paths:
+      - '.github/workflows/variation-light-genre.yml'
+      - '.github/workflows/variation-tag-guard.yml'
+      - 'scripts/variation_light_cap.py'
+      - 'scripts/grain_tag.py'
+      - 'scripts/tests/test_variation_light_cap.py'
+      - 'scripts/tests/test_grain_tag.py'
   workflow_dispatch:
 
 permissions:

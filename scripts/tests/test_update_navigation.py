@@ -1,6 +1,8 @@
 """Tests for scripts/update_navigation.py — GameTheory navigation link updater."""
 
 import json
+import os
+import re
 import sys
 from pathlib import Path
 
@@ -10,8 +12,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from update_navigation import (
     STRUCTURE,
     SIDE_TRACKS,
+    _pad_track,
     create_main_navigation,
     create_side_track_navigation,
+    get_gametheory_dir,
     get_notebook_filename,
     get_side_track_filename,
     update_internal_references,
@@ -24,13 +28,13 @@ from update_navigation import (
 
 class TestFilenames:
     def test_main_filename(self):
-        assert get_notebook_filename(1, "Setup") == "GameTheory-1-Setup.ipynb"
+        assert get_notebook_filename(1, "Setup") == "GameTheory-01-Setup.ipynb"
 
     def test_side_track_filename(self):
         assert get_side_track_filename("2b") == "GameTheory-2b.ipynb"
 
     def test_complex_name(self):
-        assert get_notebook_filename(4, "NashEquilibrium") == "GameTheory-4-NashEquilibrium.ipynb"
+        assert get_notebook_filename(4, "NashEquilibrium") == "GameTheory-04-NashEquilibrium.ipynb"
 
 
 # ---------------------------------------------------------------------------
@@ -96,14 +100,14 @@ class TestUpdateReferences:
         f = tmp_path / "test.txt"
         f.write_text("See GameTheory-8-BackwardInduction and GameTheory-17-Lean-Definitions", encoding="utf-8")
         mapping = {
-            "GameTheory-8-BackwardInduction": "GameTheory-9-BackwardInduction",
-            "GameTheory-17-Lean-Definitions": "GameTheory-2b-Lean-Definitions",
+            "GameTheory-8-BackwardInduction": "GameTheory-09-BackwardInduction",
+            "GameTheory-17-Lean-Definitions": "GameTheory-02b-Lean-Definitions",
         }
         result = update_internal_references(str(f), mapping)
         assert result is True
         content = f.read_text(encoding="utf-8")
-        assert "GameTheory-9-BackwardInduction" in content
-        assert "GameTheory-2b-Lean-Definitions" in content
+        assert "GameTheory-09-BackwardInduction" in content
+        assert "GameTheory-02b-Lean-Definitions" in content
         assert "GameTheory-8-BackwardInduction" not in content
 
     def test_no_changes_needed(self, tmp_path):
@@ -138,3 +142,34 @@ class TestStructureConsistency:
     def test_structure_has_17_entries(self):
         assert len(STRUCTURE) == 17
         assert set(STRUCTURE.keys()) == set(range(1, 18))
+
+
+# ---------------------------------------------------------------------------
+# Regressions #12549 : nested-link, base_dir, zero-pad side tracks
+# ---------------------------------------------------------------------------
+
+class TestRegressions12549:
+    def test_side_track_parent_href_is_filename_not_nested_link(self):
+        """Defaut 1 : l'URL du lien parent doit etre un nom de fichier, pas un lien markdown."""
+        nav = create_side_track_navigation("8b")
+        assert "(GameTheory-08-CombinatorialGames.ipynb)" in nav
+        # l'ancre ne doit PAS contenir de '[' dans son URL (lien imbrique)
+        assert "]([" not in nav
+
+    def test_gametheory_dir_resolves_to_notebooks(self):
+        """Defaut 2 : get_gametheory_dir() doit pointer sur MyIA.AI.Notebooks/GameTheory,
+        pas sur scripts/."""
+        d = get_gametheory_dir()
+        norm = os.path.normpath(d)
+        assert norm.endswith(os.path.join('MyIA.AI.Notebooks', 'GameTheory'))
+        assert os.path.isdir(norm), f"{norm} n'existe pas"
+
+    def test_side_track_loop_filenames_are_padded(self):
+        """Manifestation 3 : les noms construits pour la boucle side-tracks doivent
+        porter le zero-pad (#12241)."""
+        for track_id in SIDE_TRACKS:
+            for num, (name, tracks) in STRUCTURE.items():
+                for t in tracks:
+                    if t.startswith(track_id):
+                        filename = f"GameTheory-{_pad_track(t)}.ipynb"
+                        assert re.match(r'GameTheory-\d{2}', filename), filename

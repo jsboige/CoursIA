@@ -63,11 +63,41 @@ jobs:
         id: run
         run: |
           set +e
-          python scripts/check_markdown_claims_output.py \
-            $(git ls-files 'MyIA.AI.Notebooks/**/*.ipynb') \
-            --json > /tmp/claims-output.json
+          # c.415 (#11873): the previous workflow scanned the entire corpus
+          # via `git ls-files '*.ipynb'` -- 1037 notebooks -- and posted a
+          # warning on EVERY PR regardless of whether the PR touched any
+          # notebook. Reviewers ignored the signal (rouge-permanent = organe
+          # eteint, cf. defect 1 in #11873). We now scan ONLY the diff:
+          # notebooks CHANGED between merge-base origin/main HEAD (the
+          # PR's actual surface), so the comment names what the PR
+          # actually touched.
+          #
+          # Frozen-inheritance stance (#11754 sibling pattern): if
+          # merge-base is unreachable (shallow fetch), ABSTAIN explicitly
+          # rather than fall back to origin/main, which would make
+          # "rien regarde" and "rien trouve" indistinguishable.
+          BASE=$(git merge-base origin/main HEAD 2>/dev/null)
+          if [ -z "$BASE" ]; then
+            echo "exit=abstain" >> "$GITHUB_OUTPUT"
+            echo "::warning::markdown-claims-output: merge-base origin/main HEAD introuvable -- detector abstains (shallow fetch or unanchored branch)." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          CHANGED=$(git diff --name-only --diff-filter=MR -M50% "$BASE" HEAD -- '*.ipynb' | head -50)
+          if [ -z "$CHANGED" ]; then
+            echo "exit=0" >> "$GITHUB_OUTPUT"
+            echo "::notice::markdown-claims-output: aucun notebook modifie entre $BASE et HEAD -- rien a scanner." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          # xargs chunk to dodge ARG_MAX on large diffs (> ~100 notebooks)
+          printf '%s\n' "$CHANGED" | xargs -n 30 python scripts/check_markdown_claims_output.py \
+            --json > /tmp/claims-output.json 2> /tmp/claims-output.err
           rc=$?
           echo "exit=$rc" >> "$GITHUB_OUTPUT"
+          if [ $rc -ne 0 ] && [ $rc -ne 1 ]; then
+            echo "::warning::markdown-claims-output: detector exit code $rc (not 0/1) -- voir /tmp/claims-output.err." >> "$GITHUB_STEP_SUMMARY"
+            cat /tmp/claims-output.err >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
           set -e
 
       - name: Post advisory comment
@@ -76,7 +106,8 @@ jobs:
         with:
           header: markdown-claims-output-advisory
           message: |
-            ${{ steps.run.outputs.exit == 0 && '✅ No fabricated prose detected.' || '⚠️ Potential fabricated prose (markdown cites numbers absent from previous code output). Review against source — these are advisory, NOT a merge gate.' }}
+            ${{ steps.run.outputs.exit == '0' && '✅ No fabricated prose detected (in the notebooks this PR changed).' || steps.run.outputs.exit == 'abstain' && '⚠️ Detector abstained (merge-base introuvable, shallow fetch or unanchored branch).' || '⚠️ Potential fabricated prose in the notebooks this PR changed (markdown cites numbers absent from previous code output). Review against source — these are advisory, NOT a merge gate.' }}
 
+            c.415 (#11873): scope = notebooks CHANGED in this PR, not the whole corpus.
             See `python scripts/check_markdown_claims_output.py --help` for re-running locally.
             Detector rationale: c.290 / c.331 / PR #11435 pathologie.

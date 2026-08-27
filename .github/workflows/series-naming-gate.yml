@@ -1,0 +1,58 @@
+name: series-naming-gate
+
+# Garde de convention zero-pad de la serie GameTheory (#11840, #12586).
+#
+# La tranche 1 (#12241) a zero-pade 30 notebooks ; six side-tracks au chiffre
+# unique sont arrives sur main ENTRE sa review et son merge -- un invariant
+# verifie a l'instant t n'est pas une propriete du livrable. Ce garde rend la
+# tranche 3 impossible : il rougit des qu'un GameTheory-<chiffre unique>
+# apparait, cote PR comme cote push.
+#
+# Portee : la serie GameTheory SEULEMENT (la seule zero-padee a ce jour, scope
+# fige par #12586). Ne pas l'etendre a une autre serie sans avoir mesure si
+# elle a une convention arretee -- une regle imposee a une serie qui n'a pas
+# tranche fabrique du rouge sans defaut.
+
+# ABSORBE PAR LA VOIE RAPIDE sur `pull_request` (#12567, tranche 1) : le
+# verdict PR est rendu par `fast-lane-shadow.yml` (check-run nomme
+# `zero-pad guard (GameTheory serie)`, meme nom que ce job). Ce fichier
+# garde `push` (couverture post-merge) et `workflow_dispatch`. Les `paths:`
+# d'origine vivent dans `scripts/ci/fast_lane_registry.py` (TRANCHE1).
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'MyIA.AI.Notebooks/GameTheory/**'
+      - 'scripts/notebook_tools/check_series_zero_pad.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: series-naming-gate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  zero-pad-scan:
+    name: "zero-pad guard (GameTheory serie)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: "Fail si un GameTheory-<chiffre unique> apparait"
+        run: |
+          if ! python scripts/notebook_tools/check_series_zero_pad.py; then
+            echo ""
+            echo "::error::Un fichier GameTheory-<chiffre unique> est apparu dans la serie."
+            echo "Convention #11840 : numero a DEUX chiffres (GameTheory-03a, -08d, -26 valides ; -3a, -8d non)."
+            echo "Renommer (git mv) vers la forme zero-padee, puis mettre a jour README + navlinks -- cf #12241 (tranche 1) et #12586 (tranche 2)."
+            exit 1
+          fi

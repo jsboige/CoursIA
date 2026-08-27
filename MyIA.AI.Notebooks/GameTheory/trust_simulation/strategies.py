@@ -21,7 +21,7 @@ from abc import ABC, abstractmethod
 from typing import List, Literal, Optional
 import random
 
-# Action types (consistent with GameTheory-6-EvolutionTrust.ipynb)
+# Action types (consistent with GameTheory-06-EvolutionTrust.ipynb)
 Action = Literal["C", "D"]  # Cooperate or Defect
 
 # Constants for compatibility with notebook 6

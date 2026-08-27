@@ -1,7 +1,7 @@
 - name: "GameTheory-7 ExtensiveForm"
   family: GameTheory/.NET-Parity
-  python: MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm.ipynb
-  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm-Csharp.ipynb
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-07-ExtensiveForm.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-07-ExtensiveForm-Csharp.ipynb
   parity_level: semantic
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Pont pyspiel execute (bascule registre #10382, 2026-08-16, lane myia-po-2024:CoursIA-2) : cellule pont `#r nuget pythonnet 3.0.5` (cell[28], execution_count=11) invoque CPython -> pyspiel (axe 5 #10459). Verdict RECOVERABLE-LOCAL -> SOTA-OK : pont execute dans le notebook commite, verdict non rebasculé. parity_level semantic preserve (gel #11200)."
@@ -47,6 +47,12 @@
       csharp_sha: 283b71425b2c5d6b7e4f2937935f9e7ecba3613f
       content_python_sha: 8a9f706352a7b1b8dec1f1271d1f7f7d5c3d6659b9ee576f836702c9c23c73da
       content_csharp_sha: 9b22f5f0c8c7b44eb415487cc61f681e5d6f95d304ae345c4b082213dbc9489b
+    - date: "2026-08-23"
+      by: myia-po-2025:CoursIA-2
+      python_sha: 89993b34a83aecdca3b7432a832cc0a1007dab2c
+      csharp_sha: e4a2e397e1e29a7625d93896844729ff25a6e406
+      content_python_sha: 9b1db49474729cd82f63529e390e71b2b650555dccbe223baa4312eb69fa4387
+      content_csharp_sha: 7e3166a5e6264c2569a1b7666bbc1ad5269a8cbe6ea9296336916d5a372cc139
   known_differences:
     - "Socle pedagogique commun : jeux sous forme extensive (arbre de jeu sequentiel avec noeuds de decision/terminal/chance + infosets), backward induction (induction en arriere) pour calculer les SPE (Subgame Perfect Equilibria), exemple canonique du jeu d'entree sur le marche (entrant vs incumbente)."
     - "Idiomes framework : Python = `@dataclass` + `networkx` (graphe arborescent + rendu matplotlib des arbres de jeu) + implementation manuelle de `backward_induction` + `ConvertToNormal` (reduction extensive-vers-normal) + section 6 OpenSpiel (`pyspiel.load_game('kuhn_poker')`, simulation + exploration d'arbre). C# = sections 1-7 en **BCL .NET pur 0 NuGet** (modele `GameNode` decision/terminal/chance + `ExtensiveFormGame` from-scratch) + **rendu ASCII de l'arbre** (pas de viz graphique, fidele a la contrainte 0-NuGet de la serie) + **annexe pont PythonNet** vers pyspiel (la section 6 conceptuelle rendue effective, reclassification RECOVERABLE-LOCAL)."

@@ -104,6 +104,15 @@ _RE_CONNECTOR_VLINE = re.compile(r"\|\s*(v|\^| Extraction| Construction| Indexat
 _RE_CONNECTOR_VERTICAL = re.compile(r"^\s*\|\s*$")  # ligne de bare verticale isolee
 # Lignes courtes avec un seul caractere de connexion (`v`, `^`, `|`, `>`)
 _RE_CONNECTOR_BARE = re.compile(r"^\s*[v^|>]\s*$")
+# Connecteurs verticaux MULTI-COLONNES (#12324 residuel) : ligne composee
+# uniquement de >= 2 fleches isolees separees par des espaces (`v  ...  v`,
+# `|  ...  v` -- GT-17 NFSP c15). Les regex mono-caractere ci-dessus exigent
+# un seul `|`/`v`, donc un flowchart horizontal dont les connexions sont
+# verticales multi-colonnes rendait connectors=0 -> miss. Le lookahead exige
+# au moins un caractere de DIRECTION (v/^/>) : une ligne de pipes seuls
+# (`|     |`, parois vides d'un cadre decoratif -- Lean-7 c31) reste bare,
+# pas un vrai flux de fleches.
+_RE_CONNECTOR_MULTI_COL = re.compile(r"^\s*(?=.*[v^>])(?:[v^|>]\s*){2,}$")
 
 # Label de transition (mot sans symbole, en colonne isolee)
 _RE_LABEL_LINE = re.compile(r"^\s{2,}([A-Z][a-zA-Z]{3,}( [a-z]+){0,3})\s*$")
@@ -141,6 +150,8 @@ def _line_has_connector(line: str) -> bool:
     if _RE_CONNECTOR_ARROW.search(line):
         return True
     if _RE_CONNECTOR_VLINE.search(line):
+        return True
+    if _RE_CONNECTOR_MULTI_COL.match(line):
         return True
     return False
 

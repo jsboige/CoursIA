@@ -80,6 +80,42 @@ def test_differential_features_finds_planted_not_ubiquitous(synthetic_npz):
     assert stack.var(axis=0)[2] < 1e-6
 
 
+def test_differential_features_inf_excluded_never_ranked_head(synthetic_npz):
+    """Controle negatif fondateur (#12560) : reproduit le defaut des traces 8B
+    (un +inf sur UN seul token d'un seul prompt) et verifie que la colonne
+    polluee n'est PAS classee — avant le garde, argsort()[::-1] promouvait le
+    score inf/NaN en TETE du top-k, corrompant overlap_diff64 d'un facteur 3,3."""
+    tr = st.load_traces(synthetic_npz)
+    e = tr["prompts"][("setA", 0)]
+    e["ids"][0, 2] = 999                      # feature jamais plantee
+    e["vals"][0, 2] = np.inf                  # un seul token pollue
+    with pytest.warns(RuntimeWarning, match="non fini"):
+        top64 = st.differential_features(tr, k=64).tolist()
+    assert 999 not in top64                   # jamais classe, ni en tete ni ailleurs
+    assert top64.index(7) < 2 and top64.index(13) < 2   # les plantees restent en tete
+    assert len(top64) == 64                   # assez de colonnes finies -> k respecte
+
+
+def test_differential_features_truncated_when_all_polluted():
+    """Cas borne : si TOUTES les colonnes discriminantes candidates sont non
+    finies, la sortie est tronquee (jamais remplie d'indices pollues)."""
+    rng = np.random.default_rng(1)
+    traces = {"meta": {"d_sae": 8}, "prompts": {}}
+    for set_name in ("setA", "setB"):
+        for i in range(2):
+            ids = np.tile(np.arange(8), (3, 1))
+            vals = rng.uniform(0.1, 0.5, size=(3, 8)).astype(np.float32)
+            if set_name == "setA":
+                vals[:] = np.where(np.arange(8) % 2 == 0, np.inf, vals)
+            traces["prompts"][(set_name, i)] = {"ids": ids, "vals": vals}
+    with pytest.warns(RuntimeWarning):
+        feats = st.differential_features(traces, k=4)
+    # colonnes paires -> score inf (moyenne inf en setA) : exclues ; seules les
+    # impaires restent, la sortie ne depasse pas leur nombre.
+    assert set(feats.tolist()) <= {1, 3, 5, 7}
+    assert np.isfinite(np.stack(list(st.mean_activation_by_set(traces).values())).var(axis=0)[feats]).all()
+
+
 def test_densify_exact(synthetic_npz):
     tr = st.load_traces(synthetic_npz)
     e = tr["prompts"][("setB", 1)]

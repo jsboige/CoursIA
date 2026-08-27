@@ -170,8 +170,8 @@ Les notebooks d'application GA (EdgeDetection, Portfolio — variants PyGAD Pyth
 | App-8 | MiniZinc | Modélisation déclarative : syntaxe MiniZinc, contraintes globales |
 | App-9 | EdgeDetection | Détection de bords par GA : PyGAD, filtres de convolution |
 | App-10 | Portfolio | Frontière de Pareto : optimisation multi-objectif de portefeuille |
-| App-11 | Picross | Nonogrammes : speedup 27Mx CP-SAT vs naïve |
-| App-12 | ConnectFour | Puissance 4 : 8 algorithmes IA (Minimax, MCTS, DQN-RL) |
+| App-11 | Picross | Nonogrammes : speedup 2.78e+24x CP-SAT vs naïve (Etoile 15x15) |
+| App-12 | ConnectFour | Puissance 4 : 5 IA au tournoi (Random, Glouton, Minimax α-β d=4/d=6, MCTS) + framework AIMA |
 | App-13 | TSP | Voyageur de commerce : SA, GA, ACO, OR-Tools routing |
 | App-14 | ConnectFour-Adversarial | Benchmark adversarial : Minimax vs Alpha-Beta vs MCTS |
 | App-15 | SportsScheduling | Calendrier sportif : contraintes TV, équité, déplacements |
@@ -258,7 +258,7 @@ Problèmes du monde réel adaptés de projets étudiants. Chaque application est
 
 | # | Notebook | Durée | Contenu | Source |
 |---|----------|-------|---------|--------|
-| 1 | [App-12-ConnectFour](Applications/Search/App-12-ConnectFour.ipynb) | ~50 min | Puissance 4 : 8 algorithmes IA (Minimax, MCTS, DQN-RL) | Projet étudiant |
+| 1 | [App-12-ConnectFour](Applications/Search/App-12-ConnectFour.ipynb) | ~50 min | Puissance 4 : 5 IA au tournoi (Random, Glouton, Minimax α-β d=4/d=6, MCTS) + framework AIMA | Projet étudiant |
 | 1b | [App-12-ConnectFour-CSharp](Applications/Search/App-12-ConnectFour-CSharp.ipynb) | ~45 min | **Jumeau C#** — Minimax + Alpha-Beta + MCTS (UCB1) + glouton + iterative deepening from-scratch, heuristique de fenêtres + tournoi round-robin, parité #4956 | Jumeau .NET |
 | 2 | [App-14-ConnectFour-Adversarial](Applications/Search/App-14-ConnectFour-Adversarial.ipynb) | ~45 min | Benchmark adversarial : Minimax, Alpha-Beta, MCTS | Projet étudiant |
 | 2b | [App-14-ConnectFour-Adversarial-CSharp](Applications/Search/App-14-ConnectFour-Adversarial-CSharp.ipynb) | ~40 min | **Jumeau C#** — Minimax + Alpha-Beta (élagage) + MCTS (UCB1) from-scratch, benchmark nœuds + tournoi round-robin, parité #4956 | Jumeau .NET |
@@ -301,6 +301,7 @@ Les autres jumeaux C# de la sous-série CSP (N-Queens, GraphColoring, NurseSched
 | 9 | [App-18-HyperparameterTuning](Applications/Hybrid/App-18-HyperparameterTuning.ipynb) | ~40 min | Optimisation ML : Bayésienne, GA, PSO, Optuna | Nouveau |
 | 10 | [App-18b-HyperparameterTuning-CSharp](Applications/Hybrid/App-18b-HyperparameterTuning-CSharp.ipynb) | ~35 min | **Jumeau C#** — tuning GA/PSO from-scratch .NET, parité #4956 | Jumeau .NET |
 | 11 | [App-18b-HyperparameterTuning-Python](Applications/Hybrid/App-18b-HyperparameterTuning-Python.ipynb) | ~35 min | **Jumeau Python from-scratch** — GP+EI, GA, PSO numpy + pont Optuna, parité #4956 | Jumeau Python |
+| 12 | [App-22-AlgorithmSelection-Python](Applications/Hybrid/App-22-AlgorithmSelection-Python.ipynb) | ~45 min | Sélection empirique d'algorithmes : 3 jeux, 13 familles conceptuelles / 14 étiquettes mesurées, non-commensurabilité + Pareto + choix sous préférences — hommage PR IS #42 (Théodore Deguest) | Projet étudiant (IS PR #42) |
 
 ---
 
@@ -527,7 +528,8 @@ Search/
 │       ├── App-17b-VRP-Logistics-Python.ipynb      # Twin Python du b — VRP métaheuristiques from-scratch (numpy) + vérification OR-Tools
 │       ├── App-18-HyperparameterTuning.ipynb
 │       ├── App-18b-HyperparameterTuning-CSharp.ipynb
-│       └── App-18b-HyperparameterTuning-Python.ipynb
+│       ├── App-18b-HyperparameterTuning-Python.ipynb
+│       └── App-22-AlgorithmSelection-Python.ipynb  # Sélection empirique : 3 jeux, 13 familles / 14 étiquettes, Pareto + préférences (PR IS #42)
 │
 ├── MetaGeneticSharp/                      # Sous-module : metaheuristiques composables sur GeneticSharp (jsboige/MetaGeneticSharp)
 ├── Part4-Metaheuristics/                  # Partie 4 (side track C# .NET 9) : README + 22 notebooks MGS-1..19 (+ trilogie MGS-7b/7c/7d projection N-D) (moteur, composition, composés, benchmarks, TSP, projection N-D des paysages, paysages, biais central, synergie d'îles, alignement d'axes, paysages dé-biaisés, synergie conditionnelle, analyse de paysage FDC, sélection d'algorithme No-Free-Lunch, contrôle de paramètres, banc CEC consolidé, démontage du recuit) ; consomment le sous-module

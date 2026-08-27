@@ -1,0 +1,85 @@
+{
+  "schema_version": 1,
+  "profiles": {
+    "myia-po-2023-fast-guards": {
+      "hostname": "myia-po-2023",
+      "repository": "jsboige/CoursIA",
+      "runner_name": "myia-po-2023-fast-guards",
+      "account": ".\\coursia-runner",
+      "root": "C:\\CoursIA-Runners\\fast-guards",
+      "work": "C:\\CoursIA-Runners\\fast-guards\\_work",
+      "log_root": "C:\\CoursIA-Runner-Logs",
+      "labels": ["self-hosted", "coursia-ephemeral", "coursia-fast-guards"],
+      "runner": {
+        "version": "2.336.0",
+        "url": "https://github.com/actions/runner/releases/download/v2.336.0/actions-runner-win-x64-2.336.0.zip",
+        "sha256": "d59123a43003e357b0805b5d0f611d0bd2f65ab67d51bd070dd4e7a0f685c162"
+      },
+      "sensitive_paths": [
+        {"deny": "{repo_root}\\.secrets", "probe": "{repo_root}\\.secrets\\master.env"},
+        {"deny": "{user_profile}\\.ssh", "probe": "{user_profile}\\.ssh"},
+        {"deny": "{appdata}\\GitHub CLI\\hosts.yml", "probe": "{appdata}\\GitHub CLI\\hosts.yml"}
+      ]
+    },
+    "myia-po-2024-fast-guards": {
+      "hostname": "myia-po-2024",
+      "repository": "jsboige/CoursIA",
+      "runner_name": "myia-po-2024-fast-guards",
+      "account": ".\\coursia-runner",
+      "root": "C:\\CoursIA-Runners\\fast-guards",
+      "work": "C:\\CoursIA-Runners\\fast-guards\\_work",
+      "log_root": "C:\\CoursIA-Runner-Logs",
+      "labels": ["self-hosted", "coursia-ephemeral", "coursia-fast-guards"],
+      "runner": {
+        "version": "2.336.0",
+        "url": "https://github.com/actions/runner/releases/download/v2.336.0/actions-runner-win-x64-2.336.0.zip",
+        "sha256": "d59123a43003e357b0805b5d0f611d0bd2f65ab67d51bd070dd4e7a0f685c162"
+      },
+      "sensitive_paths": [
+        {"deny": "{repo_root}\\.secrets", "probe": "{repo_root}\\.secrets\\master.env"},
+        {"deny": "{user_profile}\\.ssh", "probe": "{user_profile}\\.ssh"},
+        {"deny": "{appdata}\\GitHub CLI\\hosts.yml", "probe": "{appdata}\\GitHub CLI\\hosts.yml"}
+      ]
+    },
+    "myia-po-2025-fast-guards": {
+      "hostname": "myia-po-2025",
+      "repository": "jsboige/CoursIA",
+      "runner_name": "myia-po-2025-fast-guards",
+      "account": ".\\coursia-runner",
+      "root": "C:\\CoursIA-Runners\\fast-guards",
+      "work": "C:\\CoursIA-Runners\\fast-guards\\_work",
+      "log_root": "C:\\CoursIA-Runner-Logs",
+      "labels": ["self-hosted", "coursia-ephemeral", "coursia-fast-guards"],
+      "runner": {
+        "version": "2.336.0",
+        "url": "https://github.com/actions/runner/releases/download/v2.336.0/actions-runner-win-x64-2.336.0.zip",
+        "sha256": "d59123a43003e357b0805b5d0f611d0bd2f65ab67d51bd070dd4e7a0f685c162"
+      },
+      "sensitive_paths": [
+        {"deny": "{repo_root}\\.secrets", "probe": "{repo_root}\\.secrets\\master.env"},
+        {"deny": "{user_profile}\\.ssh", "probe": "{user_profile}\\.ssh"},
+        {"deny": "{appdata}\\GitHub CLI\\hosts.yml", "probe": "{appdata}\\GitHub CLI\\hosts.yml"}
+      ]
+    },
+    "myia-po-2026-fast-guards": {
+      "hostname": "myia-po-2026",
+      "repository": "jsboige/CoursIA",
+      "runner_name": "myia-po-2026-fast-guards",
+      "account": ".\\coursia-runner",
+      "root": "C:\\CoursIA-Runners\\fast-guards",
+      "work": "C:\\CoursIA-Runners\\fast-guards\\_work",
+      "log_root": "C:\\CoursIA-Runner-Logs",
+      "labels": ["self-hosted", "coursia-ephemeral", "coursia-fast-guards"],
+      "runner": {
+        "version": "2.336.0",
+        "url": "https://github.com/actions/runner/releases/download/v2.336.0/actions-runner-win-x64-2.336.0.zip",
+        "sha256": "d59123a43003e357b0805b5d0f611d0bd2f65ab67d51bd070dd4e7a0f685c162"
+      },
+      "sensitive_paths": [
+        {"deny": "{repo_root}\\.secrets", "probe": "{repo_root}\\.secrets\\master.env"},
+        {"deny": "{user_profile}\\.ssh", "probe": "{user_profile}\\.ssh"},
+        {"deny": "{appdata}\\GitHub CLI\\hosts.yml", "probe": "{appdata}\\GitHub CLI\\hosts.yml"}
+      ]
+    }
+  }
+}
