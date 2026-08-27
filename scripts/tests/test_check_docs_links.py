@@ -248,6 +248,28 @@ class TestCheckLink:
         source = tmp_path / "source.md"
         assert check_link("my file.md", source, root=tmp_path) is True
 
+    def test_quarto_rendered_notebook_html(self, tmp_path):
+        notebooks = tmp_path / "notebooks"
+        notebooks.mkdir()
+        (notebooks / "lesson.ipynb").write_text("{}\n")
+        (tmp_path / "_quarto.yml").write_text(
+            'project:\n  render:\n    - "notebooks/lesson.ipynb"\n'
+        )
+        source = notebooks / "README.md"
+
+        assert check_link("lesson.html", source, root=tmp_path) is True
+
+    def test_unlisted_notebook_html_is_broken(self, tmp_path):
+        notebooks = tmp_path / "notebooks"
+        notebooks.mkdir()
+        (notebooks / "excluded.ipynb").write_text("{}\n")
+        (tmp_path / "_quarto.yml").write_text(
+            'project:\n  render:\n    - "notebooks/other.ipynb"\n'
+        )
+        source = notebooks / "README.md"
+
+        assert check_link("excluded.html", source, root=tmp_path) is False
+
 
 class TestBrokenLinkDetection:
     """Integration test: detects a deliberately injected broken link."""
