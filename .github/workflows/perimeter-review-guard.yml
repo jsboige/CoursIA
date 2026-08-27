@@ -57,9 +57,23 @@ on:
   pull_request:
     branches: [ main ]
     types: [ opened, synchronize, edited, reopened ]
+    # #12773 tranche 1a : paths-filter pour limiter les declenchements aux PR
+    # touchant la surface reelle du garde. Le script interroge l'API `gh pr view`
+    # uniquement -- aucune lecture d'arbre -- donc la surface est minimale :
+    # le workflow, le script de verite, et son test.
+    paths:
+      - '.github/workflows/perimeter-review-guard.yml'
+      - 'scripts/check_pr_perimeter.py'
+      - 'scripts/tests/test_check_pr_perimeter.py'
   pull_request_review:
     branches: [ main ]
     types: [ submitted, edited ]
+    # Meme filtre cote review : un commentaire de revue qui corrige le body doit
+    # aussi re-tourner le check, mais uniquement quand la surface est touchee.
+    paths:
+      - '.github/workflows/perimeter-review-guard.yml'
+      - 'scripts/check_pr_perimeter.py'
+      - 'scripts/tests/test_check_pr_perimeter.py'
 
 permissions:
   contents: read

@@ -18,6 +18,14 @@ name: Base-not-main advisory
 on:
   pull_request:
     types: [opened, reopened, synchronize, edited, ready_for_review]
+    # #12773 tranche 1a : paths-filter pour limiter les declenchements aux PR
+    # touchant la surface reelle du garde (le script + le test + le workflow).
+    # Le workflow depend uniquement de l'API `gh pr` (cf scripts/base_not_main.py)
+    # et n'a aucun consommateur de l'arbre : c'est un signal PR-level uniquement.
+    paths:
+      - '.github/workflows/base-not-main-advisory.yml'
+      - 'scripts/base_not_main.py'
+      - 'scripts/tests/test_base_not_main.py'
 
 permissions:
   pull-requests: write
