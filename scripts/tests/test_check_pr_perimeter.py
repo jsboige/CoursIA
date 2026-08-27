@@ -1902,7 +1902,8 @@ def test_founding_incident_11227_criteria_met_on_main():
     ):
         pytest.skip("GitHub Actions runner without GH_TOKEN")
     auth_probe = subprocess.run(
-        ["gh", "auth", "status"], capture_output=True, text=True
+        ["gh", "auth", "status"], capture_output=True, text=True,
+        encoding="utf-8", errors="replace",
     )
     if auth_probe.returncode != 0:
         pytest.skip("gh CLI present but unauthenticated")
@@ -1917,6 +1918,7 @@ def test_founding_incident_11227_criteria_met_on_main():
         capture_output=True,
         text=True,
         timeout=120,
+        encoding="utf-8", errors="replace",
     )
     output = proc.stdout + proc.stderr
     # The tool surfaces the FAIL either in stdout (normal) or via a
