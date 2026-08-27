@@ -143,8 +143,64 @@ def test_regex_unit_directly() -> None:
 
 
 # --------------------------------------------------------------------------- #
-# _en mirror distinct-count
+# discover_lakes() -- lakefile.toml anchor (cf #13137)
 # --------------------------------------------------------------------------- #
+
+def test_discover_lakes_picks_lakefile_toml(tmp_path: Path) -> None:
+    """A lake anchored only by ``lakefile.toml`` (no ``lakefile.lean``) is
+    discovered by the new pass (cf #13137, ``lean_game_defs`` was missed)."""
+    from count_code_sorry import discover_lakes
+    lake = tmp_path / "lean_game_defs"
+    lake.mkdir()
+    (lake / "lakefile.toml").write_text("")
+    (lake / "Foo.lean").write_text("theorem foo : True := by trivial\n")
+    found = discover_lakes(tmp_path)
+    assert any(p.samefile(lake) for p in found), (
+        f"expected {lake} in {found}"
+    )
+
+
+def test_discover_lakes_toml_lake_with_arbitrary_name(tmp_path: Path) -> None:
+    """The TOML pass must NOT require a ``_lean`` suffix: the real failure
+    mode is exactly that ``lean_game_defs`` / ``lean_game_defs_ext`` lack it."""
+    from count_code_sorry import discover_lakes
+    lake = tmp_path / "anything_at_all"
+    lake.mkdir()
+    (lake / "lakefile.toml").write_text("")
+    (lake / "Foo.lean").write_text("theorem foo : True := by trivial\n")
+    found = discover_lakes(tmp_path)
+    assert any(p.samefile(lake) for p in found)
+
+
+def test_discover_lakes_toml_dedup_with_lean_anchor(tmp_path: Path) -> None:
+    """A lake that has BOTH anchors (``lakefile.lean`` + ``lakefile.toml``)
+    must surface exactly once."""
+    from count_code_sorry import discover_lakes
+    lake = tmp_path / "dual_lean"
+    lake.mkdir()
+    (lake / "lakefile.lean").write_text("")
+    (lake / "lakefile.toml").write_text("")
+    found = discover_lakes(tmp_path)
+    n = sum(1 for p in found if p.samefile(lake))
+    assert n == 1, f"expected 1 entry, got {n}: {found}"
+
+
+def test_discover_lakes_excludes_dot_lake_packages(tmp_path: Path) -> None:
+    """``.lake/packages/`` (Mathlib vendored) must NEVER be discovered, even
+    if it carries a lakefile. Matches i18n #4980 out-of-scope list."""
+    from count_code_sorry import discover_lakes
+    vendored = tmp_path / ".lake" / "packages" / "mathlib"
+    vendored.mkdir(parents=True)
+    (vendored / "lakefile.toml").write_text("")
+    own = tmp_path / "real_lean"
+    own.mkdir()
+    (own / "lakefile.toml").write_text("")
+    found = discover_lakes(tmp_path)
+    assert any(p.samefile(own) for p in found)
+    assert not any(".lake" in p.parts for p in found), (
+        f"vendored leak: {found}"
+    )
+
 
 def test_en_mirrors_excluded_from_distinct(tmp_path: Path) -> None:
     lake = tmp_path / "fake_lean"

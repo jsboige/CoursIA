@@ -228,17 +228,30 @@ def _is_en_mirror(path: Path) -> bool:
 
 
 def discover_lakes(root: Path) -> list[Path]:
-    """Return own lake roots (dirs containing a ``lakefile.lean``), sorted.
+    """Return own lake roots, sorted.
 
-    Falls back to ``*_lean`` directories without a lakefile (legacy lakes whose
-    lakefile was removed when absorbed, e.g. absorbed into game_theory_lean).
+    Three passes, all honouring ``EXCLUDE_DIR_PARTS``:
+
+    1. ``lakefile.lean`` -- the canonical Lake v3+ anchor (Lean 4 default).
+    2. ``lakefile.toml`` -- Lake v4+ anchor adopted by ``game_theory_lean`` and
+       its absorbed sibling ``lean_game_defs`` / ``lean_game_defs_ext`` (cf
+       #13137, where these TOML roots were silently skipped because their
+       directory name does not end in ``_lean``). Deduped against pass 1.
+    3. ``*_lean`` directories without a lakefile (legacy absorbed lakes whose
+       lakefile was removed, e.g. absorbed into game_theory_lean). Surfaced so
+       dead-path references stay visible.
     """
     lakes: list[Path] = []
-    for lakefile in root.rglob("lakefile.lean"):
-        lake_root = lakefile.parent
-        if _is_excluded(lake_root):
-            continue
-        lakes.append(lake_root)
+    for anchor in ("lakefile.lean", "lakefile.toml"):
+        for lakefile in root.rglob(anchor):
+            lake_root = lakefile.parent
+            if _is_excluded(lake_root):
+                continue
+            if lake_root in lakes:
+                continue
+            if any(lake_root.samefile(l) for l in lakes):
+                continue
+            lakes.append(lake_root)
     # Legacy absorbed lakes: directories named *_lean without a lakefile but
     # containing own .lean files. Surfaced so dead-path references stay visible.
     for candidate in root.rglob("*_lean"):
