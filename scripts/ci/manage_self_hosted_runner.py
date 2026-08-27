@@ -599,7 +599,16 @@ $c = ConvertFrom-Json @'
 '@
 $results = @()
 foreach ($path in $c.sensitive) {{
-  try {{ Get-Content -LiteralPath $path -TotalCount 1 -ErrorAction Stop | Out-Null; $status = 'READABLE' }}
+  try {{
+    $item = Get-Item -LiteralPath $path -Force -ErrorAction Stop
+    if ($item.PSIsContainer) {{
+      # Directory probe: enumeration of the directory itself must be denied.
+      $null = @(Get-ChildItem -LiteralPath $path -Force -ErrorAction Stop)
+    }} else {{
+      Get-Content -LiteralPath $path -TotalCount 1 -ErrorAction Stop | Out-Null
+    }}
+    $status = 'READABLE'
+  }}
   catch [System.UnauthorizedAccessException] {{ $status = 'ACCESS_DENIED' }}
   catch {{ $status = 'OTHER_ERROR' }}
   $results += $status

@@ -51,7 +51,7 @@ def profile(root: Path, *, digest: str = "a" * 64) -> mod.Profile:
         archive_sha256=digest,
         sensitive_templates=(
             (r"{repo_root}\.secrets", r"{repo_root}\.secrets\master.env"),
-            (r"{user_profile}\.ssh", r"{user_profile}\.ssh\jsboige_key"),
+            (r"{user_profile}\.ssh", r"{user_profile}\.ssh"),
             (r"{appdata}\GitHub CLI\hosts.yml", r"{appdata}\GitHub CLI\hosts.yml"),
         ),
     )
