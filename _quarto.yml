@@ -15,7 +15,7 @@ project:
     # (regeneree par scripts/regen_quarto_render.py) car Quarto 1.7
     # n'etend pas le glob **/README.md sur les sous-repertoires.
     # Archives et libs vendored EXCLUES (history interne, non pedagogique).
-    # 438 READMEs (racine + arborescence, hors archives).
+    # 440 READMEs (racine + arborescence, hors archives).
     - "README.md"
     - "docker-configurations/docs/README.md"
     - "docker-configurations/notebook-runner/README.md"
@@ -51,6 +51,7 @@ project:
     - "MyIA.AI.Notebooks/cross-series/README.md"
     - "MyIA.AI.Notebooks/FallacyDetection/README.md"
     - "MyIA.AI.Notebooks/GameTheory/assignment_lean/README.md"
+    - "MyIA.AI.Notebooks/GameTheory/asymmetric_information_lean/README.md"
     - "MyIA.AI.Notebooks/GameTheory/conway_cgt_lean/README.md"
     - "MyIA.AI.Notebooks/GameTheory/game_theory_lean/README.md"
     - "MyIA.AI.Notebooks/GameTheory/lean_game_defs/README.md"
@@ -85,6 +86,7 @@ project:
     - "MyIA.AI.Notebooks/GenAI/Image/examples/README.md"
     - "MyIA.AI.Notebooks/GenAI/Image/README.md"
     - "MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/AI-Engine-WordPress/00-Tour-Plateforme/README.md"
+    - "MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/AI-Engine-WordPress/05-Playwright-AI-Engine/README.md"
     - "MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/AI-Engine-WordPress/instance-jetable/README.md"
     - "MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/AI-Engine-WordPress/README.md"
     - "MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/Open-WebUI/00-Tour-Plateforme/assets/README.md"
@@ -457,7 +459,7 @@ project:
     # Notebooks rendus en HTML (EPIC #10921, pilote Search #10923).
     # Liste explicite — globs non etendus en Quarto 1.7.
     # Execution desactivee + echo: true au niveau racine (_quarto.yml).
-    # 506 notebooks (sous-arbres: MyIA.AI.Notebooks/CaseStudies/, MyIA.AI.Notebooks/FallacyDetection/, MyIA.AI.Notebooks/GameTheory/, MyIA.AI.Notebooks/GenAI/Aspire/, MyIA.AI.Notebooks/GenAI/Audio/, MyIA.AI.Notebooks/GenAI/CaseStudies/, MyIA.AI.Notebooks/GenAI/FineTuning/, MyIA.AI.Notebooks/GenAI/Image/, MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/, MyIA.AI.Notebooks/GenAI/PostTraining/, MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/, MyIA.AI.Notebooks/GenAI/SemanticKernel/, MyIA.AI.Notebooks/GenAI/Texte/, MyIA.AI.Notebooks/GenAI/Vibe-Coding/, MyIA.AI.Notebooks/GenAI/Video/, MyIA.AI.Notebooks/IIT/, MyIA.AI.Notebooks/ML/, MyIA.AI.Notebooks/Probas/, MyIA.AI.Notebooks/RL/, MyIA.AI.Notebooks/Search/, MyIA.AI.Notebooks/Sudoku/, MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/, MyIA.AI.Notebooks/SymbolicAI/Lean/, MyIA.AI.Notebooks/SymbolicAI/Planners/, MyIA.AI.Notebooks/SymbolicAI/SMT/, MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/, MyIA.AI.Notebooks/SymbolicAI/SmartContracts/, MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/, MyIA.AI.Notebooks/SymbolicAI/Tweety/, MyIA.AI.Notebooks/cross-series/).
+    # 520 notebooks (sous-arbres: MyIA.AI.Notebooks/CaseStudies/, MyIA.AI.Notebooks/FallacyDetection/, MyIA.AI.Notebooks/GameTheory/, MyIA.AI.Notebooks/GenAI/Aspire/, MyIA.AI.Notebooks/GenAI/Audio/, MyIA.AI.Notebooks/GenAI/CaseStudies/, MyIA.AI.Notebooks/GenAI/FineTuning/, MyIA.AI.Notebooks/GenAI/Image/, MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/, MyIA.AI.Notebooks/GenAI/PostTraining/, MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/, MyIA.AI.Notebooks/GenAI/SemanticKernel/, MyIA.AI.Notebooks/GenAI/Texte/, MyIA.AI.Notebooks/GenAI/Vibe-Coding/, MyIA.AI.Notebooks/GenAI/Video/, MyIA.AI.Notebooks/IIT/, MyIA.AI.Notebooks/ML/, MyIA.AI.Notebooks/Probas/, MyIA.AI.Notebooks/RL/, MyIA.AI.Notebooks/Search/, MyIA.AI.Notebooks/Sudoku/, MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/, MyIA.AI.Notebooks/SymbolicAI/Lean/, MyIA.AI.Notebooks/SymbolicAI/Planners/, MyIA.AI.Notebooks/SymbolicAI/SMT/, MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/, MyIA.AI.Notebooks/SymbolicAI/SmartContracts/, MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/, MyIA.AI.Notebooks/SymbolicAI/Tweety/, MyIA.AI.Notebooks/cross-series/).
     - "MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb"
     - "MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb"
     - "MyIA.AI.Notebooks/cross-series/socle-metadata-driven/Socle-MetadataDriven-Csharp.ipynb"
@@ -489,7 +491,10 @@ project:
     - "MyIA.AI.Notebooks/GameTheory/GameTheory-15d-Mobius-Coalitions.ipynb"
     - "MyIA.AI.Notebooks/GameTheory/GameTheory-16-MechanismDesign.ipynb"
     - "MyIA.AI.Notebooks/GameTheory/GameTheory-16b-Automated-Mechanism-Design.ipynb"
+    - "MyIA.AI.Notebooks/GameTheory/GameTheory-16c-Extraction-de-Revenu-DSIC-IR.ipynb"
     - "MyIA.AI.Notebooks/GameTheory/GameTheory-17b-Asymmetric-Information.ipynb"
+    - "MyIA.AI.Notebooks/GameTheory/GameTheory-17c-Lean-Lemons-Certificat.ipynb"
+    - "MyIA.AI.Notebooks/GameTheory/GameTheory-18b-Casser-la-Composition.ipynb"
     - "MyIA.AI.Notebooks/GameTheory/GameTheory-19-Abstraction-a-Dette.ipynb"
     - "MyIA.AI.Notebooks/GameTheory/GameTheory-20-Commitment-Stackelberg.ipynb"
     - "MyIA.AI.Notebooks/GameTheory/GameTheory-21-Deux-Especes-de-Fleches.ipynb"
@@ -543,6 +548,7 @@ project:
     - "MyIA.AI.Notebooks/GenAI/Image/examples/history-geography.ipynb"
     - "MyIA.AI.Notebooks/GenAI/Image/examples/literature-visual.ipynb"
     - "MyIA.AI.Notebooks/GenAI/Image/examples/science-diagrams.ipynb"
+    - "MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/AI-Engine-WordPress/05-Playwright-AI-Engine/00-Parcours-QA-AI-Engine.ipynb"
     - "MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/AI-Engine-WordPress/administrer-les-formulaires-par-l-api.ipynb"
     - "MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/AI-Engine-WordPress/auditer-la-conformite-visuelle.ipynb"
     - "MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/AI-Engine-WordPress/auditer-un-formulaire-conditionnel.ipynb"
@@ -568,6 +574,7 @@ project:
     - "MyIA.AI.Notebooks/GenAI/PostTraining/PT_09_rloo_from_scratch_toy_env.ipynb"
     - "MyIA.AI.Notebooks/GenAI/PostTraining/PT_10_gae_from_scratch_toy_env.ipynb"
     - "MyIA.AI.Notebooks/GenAI/PostTraining/PT_11_grpo_qwen_rlvr_on_verifiers.ipynb"
+    - "MyIA.AI.Notebooks/GenAI/PostTraining/PT_11c_grpo_qwen17_rlvr.ipynb"
     - "MyIA.AI.Notebooks/GenAI/PostTraining/PT_12_multistep_delayed_credit.ipynb"
     - "MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/01-Hands-On-Grounding.ipynb"
     - "MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/02-Retrieval-Avance.ipynb"
@@ -667,6 +674,7 @@ project:
     - "MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.2-Descente-de-gradient.ipynb"
     - "MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.3-Regression-lineaire-logistique.ipynb"
     - "MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.3b-Naive-Bayes-Generatif.ipynb"
+    - "MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.3c-Regression-Grande-Dimension.ipynb"
     - "MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.4-Arbres-Forets-Ensembles.ipynb"
     - "MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.5-Biais-Variance-CV-ROC.ipynb"
     - "MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.5b-Calibration-Probabilites.ipynb"
@@ -674,10 +682,13 @@ project:
     - "MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.7-Modeles-Non-Parametriques.ipynb"
     - "MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.8-Theorie-PAC.ipynb"
     - "MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.8b-Theorie-PAC-Lean.ipynb"
+    - "MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.8d-Lean-Novikoff-Convergence.ipynb"
     - "MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.9-Grokking-Generalisation.ipynb"
+    - "MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-DeepLearning/3.0-Theorie-Information.ipynb"
     - "MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-DeepLearning/3.1-Retropropagation-From-Scratch.ipynb"
     - "MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-DeepLearning/3.1-Retropropagation.ipynb"
     - "MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-DeepLearning/3.2-Optimisateurs.ipynb"
+    - "MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-DeepLearning/3.3-Regularisation.ipynb"
     - "MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-DeepLearning/3.5-Phenomenes-de-Generalisation.ipynb"
     - "MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2-Document-Agents/Labs/Lab2-RFP-Analysis/Lab2-RFP-Analysis.ipynb"
     - "MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb"
@@ -713,6 +724,7 @@ project:
     - "MyIA.AI.Notebooks/Probas/DecisionTheory/PyMC/DecPyMC-9-Prime-Pure-Chargement.ipynb"
     - "MyIA.AI.Notebooks/Probas/DoWhy-1-Estimand-et-Intervention.ipynb"
     - "MyIA.AI.Notebooks/Probas/Infer/Infer-12-Modeles-Hierarchiques.ipynb"
+    - "MyIA.AI.Notebooks/Probas/Infer/Infer-15-Recommenders.ipynb"
     - "MyIA.AI.Notebooks/Probas/Infer/Infer-17-Kalman-Filter.ipynb"
     - "MyIA.AI.Notebooks/Probas/Infer/Infer-20-Quotients-et-Fibres.ipynb"
     - "MyIA.AI.Notebooks/Probas/PyMC/PyMC-1-Setup.ipynb"
@@ -778,6 +790,7 @@ project:
     - "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata.ipynb"
     - "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics.ipynb"
     - "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX.ipynb"
+    - "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-17-SpuriousMinima.ipynb"
     - "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb"
     - "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-4-LocalSearch.ipynb"
     - "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-5-GeneticAlgorithms-Csharp.ipynb"
@@ -889,6 +902,8 @@ project:
     - "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-5b-Lean-Relaxation.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-6-Domains-Csharp.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-7-OR-Tools-Csharp.ipynb"
+    - "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-12-LOOP.ipynb"
+    - "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-14-LLM-Space-Reducer.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-1-CSharp-Setup.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-Python-RDFStar.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-CSharp-KnowledgeGraphs.ipynb"
