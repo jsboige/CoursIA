@@ -5,7 +5,7 @@ ne resout pas la structure specifique au modele ; son top-64 differentiel
 serait domine par les directions generiques a forte variance qu'il capte
 quand meme, partagees avec le controle -> recouvrement eleve. Si, en degradant
 le SAE du point le PLUS FIDELE (2B-Qwen3.5 W32K, FVU 0.5678 d'apres #12938)
-jusqu'a la FVU du point le MOINS FIDELE (1.7B-Qwen3 W32K, FVU 0.6958), le
+jusqu'a la FVU du point le MOINS FIDELE (1.7B-Qwen3 W32K, FVU 0.6855), le
 recouvrement MONTE vers celui du point mal reconstruit (55/64), le mecanisme
 est demontre a l'INTERIEUR d'un seul point -- sans confusion de generation ni
 probleme de n=4.
@@ -39,7 +39,7 @@ Sortie ``traces/calib_degradation_<slug>_layer{L}of{N}.npz`` (sans pickle) :
 l'encodage SAE reste CPU float32 comme dans toute la serie.
 
 Usage (carte locale, venv GPU) :
-    python extract_sae_degradation.py --target-fvu 0.6958
+    python extract_sae_degradation.py --target-fvu 0.6855
 """
 from __future__ import annotations
 
@@ -93,7 +93,7 @@ def parse_args() -> argparse.Namespace:
                         "meme convention que les traces committees)")
     p.add_argument("--mask-seed", type=int, default=42,
                    help="graine de la permutation des features du dictionnaire")
-    p.add_argument("--target-fvu", type=float, default=0.6958,
+    p.add_argument("--target-fvu", type=float, default=0.6855,
                    help="FVU a egaliser (defaut : celle du point le moins fidele, "
                         "1.7B-Qwen3 W32K d'apres #12938)")
     p.add_argument("--fracs", type=float, nargs="+", default=list(DEFAULT_FRACS),
