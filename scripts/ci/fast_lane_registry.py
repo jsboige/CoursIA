@@ -79,6 +79,25 @@ class Guard:
     delta_argv: list[str] = field(default_factory=list)
     swap_paths: list[str] = field(default_factory=list)
     iterates_paths: bool = False  # voir `run_iter` dans fast_lane.py
+    absorbed: bool = False  # tranche d'absorption #12567 : nom canonique + conclusion reelle, meme en lane ombre
+    # Codes de retour traites comme SUCCES au-dela de 0. Les detecteurs de
+    # la serie figure/texte rendent rc=1 sur defaut et rc=2 sur fichier
+    # INTROUVABLE (mesure firsthand : un JSON corrompu rend rc=0 avec une
+    # NOTE "unreadable"). Leur workflow d'origine ne voit jamais ce cas --
+    # il saute les fichiers supprimes (`[ -f "$nb" ] || continue`) -- et le
+    # moteur reproduit ce skip ; `warn_rc` est la seconde defense si un
+    # chemin echappe au filtre (checkout partiel). Sans lui, la lane serait
+    # PLUS stricte que le workflow qu'elle absorbe.
+    warn_rc: tuple[int, ...] = ()
+    # Commande de PRE-CONTROLE executee avant `argv` (phase 1). Un rc non
+    # nul devient le verdict du garde et `argv` n'est PAS execute. Cas
+    # d'usage : le self-test du ratchet output-failure, qui dans son
+    # workflow d'origine etait un step distinct AVANT le scan -- un
+    # detecteur qui ne peut pas prouver qu'il tire est indiscernable d'un
+    # detecteur debranche (lecon #11685/#12817). Pas de `bash -c ... &&` :
+    # le shell n'est pas resolu pareil selon l'hote (127 mesuré en local
+    # Windows) et le registre interdit la seconde couche de quoting.
+    pre_argv: list[str] = field(default_factory=list)
 
 
 NOTEBOOK_GLOBS = ["**/*.ipynb"]
@@ -231,5 +250,167 @@ PILOT: list[Guard] = [
         argv=["python", "scripts/ci/check_self_hosted_runner_policy.py",
               "--check"],
         blocking=True,
+    ),
+]
+
+
+# ---------------------------------------------------------------------------
+# TRANCHE 1 d'absorption (#12567) -- le basculement, second geste announce
+# par la phase pilote : ces gardes passent DIRECTEMENT en mode canonique
+# (nom exact du check-run d'origine, conclusion reelle qui peut rougir), et
+# leurs workflows dedis perdent le declenchement `pull_request` dans la meme
+# PR -- le fichier source reste pour push/dispatch.
+#
+# `absorbed=True` est ce qui distingue la tranche du pilote : le moteur
+# emet le nom SANS prefixe ombre et la conclusion NON neutralisee, meme quand
+# le reste de la lane tourne en ombre. Le check-run portant le nom original,
+# le rollup de la PR est identique a ce que produisait le workflow dedie.
+#
+# Contrainte de design tranchee par ai-01 (DM 2026-08-26T05:04Z) : chaque
+# garde absorbe CONSERVE son nom de check-run, et `PR gate` -- seul check
+# requis -- reste non filtre.
+#
+# Choix de la tranche : trois formes moteur distinctes (scan global simple,
+# scan globs serie, delta base-vs-head), aucun besoin d'ecriture PR, aucune
+# dependance au-dela de python stdlib -- le pip install pyyaml/Pillow du job
+# couvre deja tout ce que ces trois gardes demandent.
+# ---------------------------------------------------------------------------
+TRANCHE1: list[Guard] = [
+    # Forme 1 : scan global simple, sans base. Source : docs-link-check.yml
+    # (job `check-links`). Le nom du garde est le nom du JOB, pas celui du
+    # workflow -- c'est lui que le rollup affichait.
+    Guard(
+        name="check-links",
+        source="docs-link-check.yml",
+        paths=[
+            "CLAUDE.md", "index.md", "PARCOURS.md",
+            ".claude/rules/**", "docs/**", "**/README.md",
+            "scripts/check_docs_links.py",
+        ],
+        argv=["python", "scripts/check_docs_links.py", "--check"],
+        blocking=True,
+        absorbed=True,
+    ),
+    # Forme 2 : scan globs, bloque sur convention zero-pad GameTheory
+    # (#11840/#12586). Source : series-naming-gate.yml (job affiche
+    # `zero-pad guard (GameTheory serie)`).
+    Guard(
+        name="zero-pad guard (GameTheory serie)",
+        source="series-naming-gate.yml",
+        paths=[
+            "MyIA.AI.Notebooks/GameTheory/**",
+            "scripts/notebook_tools/check_series_zero_pad.py",
+            ".github/workflows/series-naming-gate.yml",
+        ],
+        argv=["python", "scripts/notebook_tools/check_series_zero_pad.py"],
+        blocking=True,
+        absorbed=True,
+    ),
+    # Forme 3 : delta base-vs-head -- meme motif que pip-leak-guard pilote :
+    # scan HEAD capture, bascule MyIA.AI.Notebooks vers la base, scan BASE,
+    # restauration verifyee, puis delta. Source : exercise-leak-ci.yml (job
+    # `Exercice-solution HIGH delta guard (#8053)`). Rouge seulement sur les
+    # NOUVEAUX leaks HIGH -- les herites sont tolere's (#8053).
+    Guard(
+        name="Exercice-solution HIGH delta guard (#8053)",
+        source="exercise-leak-ci.yml",
+        paths=[
+            "MyIA.AI.Notebooks/**/*.ipynb",
+            "scripts/notebook_tools/detect_solution_leaks.py",
+            "scripts/notebook_tools/exercise_leak_delta.py",
+            ".github/workflows/exercise-leak-ci.yml",
+        ],
+        argv=["python", "scripts/notebook_tools/detect_solution_leaks.py",
+              "--scan-all"],
+        delta_argv=["python",
+                    "scripts/notebook_tools/exercise_leak_delta.py",
+                    "{base_json}", "{head_json}"],
+        swap_paths=["MyIA.AI.Notebooks"],
+        blocking=True,
+        needs_base=True,
+        absorbed=True,
+    ),
+]
+
+
+# ---------------------------------------------------------------------------
+# TRANCHE 2 d'absorption (#12567) -- meme contrat que la tranche 1 (nom
+# canonique, conclusion reelle, workflow d'origine retire de pull_request),
+# trois formes moteur nouvelles par rapport a la tranche 1 :
+#
+#   - ratchet AUTONOME : le script fait lui-meme son diff base...HEAD, la lane
+#     ne fournit que {base_ref}. Son self-test est un PRE-CONTROLE (`pre_argv`)
+#     qui gate le garde comme le step distinct du workflow d'origine -- sans
+#     shell, resolu identiquement sur tout hote.
+#   - iter_paths + warn_rc : boucle par notebook change, rc=1 defaut / rc=2
+#     introuvable (skip dans l'original, donc warn_rc=(2,) en defense
+#     seconde, cf docstring du champ).
+#   - iter_paths + dependance Pillow : deja installee par le job lane.
+#
+# Fidelite aux boucles d'origine : les fichiers SUPPRIMES par la PR sont
+# sautes (`[ -f "$nb" ] || continue` dans l'original) -- le moteur filtre
+# les arg_paths inexistants.
+# ---------------------------------------------------------------------------
+TRANCHE2: list[Guard] = [
+    # Forme 1 : ratchet autonome binaire (exit 0/1), PRE-CONTROLE self-test
+    # (les deux steps du workflow d'origine, sans shell).
+    # Source : notebook-output-failure-ratchet.yml (job `ratchet`).
+    Guard(
+        name="Output-failure ratchet (base vs PR)",
+        source="notebook-output-failure-ratchet.yml",
+        paths=[
+            "**.ipynb",
+            "scripts/notebook_tools/check_output_failure_text.py",
+            ".github/workflows/notebook-output-failure-ratchet.yml",
+        ],
+        pre_argv=[
+            "python", "scripts/notebook_tools/check_output_failure_text.py",
+            "--self-test",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/check_output_failure_text.py",
+            "{base_ref}",
+        ],
+        blocking=True,
+        needs_base=True,
+        absorbed=True,
+    ),
+    # Forme 2 : iter par notebook change, rc=1 defaut / rc=2 illisible.
+    # Source : fabricated-output-gate.yml (job `fabricated-output`).
+    Guard(
+        name="No fabricated text output in changed notebooks",
+        source="fabricated-output-gate.yml",
+        paths=[
+            "MyIA.AI.Notebooks/**/*.ipynb",
+            "scripts/notebook_tools/detect_fabricated_outputs.py",
+            ".github/workflows/fabricated-output-gate.yml",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/detect_fabricated_outputs.py",
+            "--check", "{changed_paths}",
+        ],
+        blocking=True,
+        iterates_paths=True,
+        absorbed=True,
+        warn_rc=(2,),
+    ),
+    # Forme 3 : iter par notebook change + Pillow (deja dans le job lane).
+    # Source : degenerate-figure-gate.yml (job `degenerate-figure`).
+    Guard(
+        name="No degenerate figure in changed notebooks",
+        source="degenerate-figure-gate.yml",
+        paths=[
+            "MyIA.AI.Notebooks/**/*.ipynb",
+            "scripts/notebook_tools/detect_blank_figures.py",
+            ".github/workflows/degenerate-figure-gate.yml",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/detect_blank_figures.py",
+            "--check", "{changed_paths}",
+        ],
+        blocking=True,
+        iterates_paths=True,
+        absorbed=True,
+        warn_rc=(2,),
     ),
 ]
