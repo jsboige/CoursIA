@@ -21,6 +21,16 @@ Ce répertoire contient les scripts de configuration et de test pour la série d
 .\setup_environment.ps1 -SkipPapermill  # Si vous n'avez pas besoin de papermill
 ```
 
+### macOS / Linux (Bash)
+
+```bash
+# Exécuter le script de configuration (jumeau du .ps1)
+bash setup_environment.sh
+
+# Ou avec des options
+bash setup_environment.sh --skip-papermill  # Si vous n'avez pas besoin de papermill
+```
+
 ### Installation manuelle
 
 1. **Installer l'outil .NET Interactive :**
@@ -98,7 +108,8 @@ python test_notebooks.py -t 1200  # 20 minutes
 
 | Fichier | Description |
 |------|-------------|
-| `setup_environment.ps1` | Script de configuration PowerShell |
+| `setup_environment.ps1` | Script de configuration PowerShell (Windows) |
+| `setup_environment.sh` | Script de configuration Bash (macOS/Linux, jumeau du .ps1) |
 | `test_notebooks.py` | Lanceur de tests Python |
 | `requirements.txt` | Dépendances Python |
 | `README.md` | Ce fichier |

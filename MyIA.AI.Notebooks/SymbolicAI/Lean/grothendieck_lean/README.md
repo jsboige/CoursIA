@@ -73,7 +73,10 @@ Mayer-Vietoris et Čech — en est l'instrument de mesure.
 (Parties 2, 3) relient la visite à la géométrie algébrique d'origine, avec le
 théorème-pont `zariski_topology_eq`. Côté bibliothèque, la carte Mathlib
 (Partie 4, index `#check`) dit honnêtement ce qui existe et ce qui manque, et
-`Calibration.lean` (Partie 5) alimente le harnais du prouveur (Epic #1453).
+`Calibration.lean` (Partie 5) reprend la taxonomie d'étalonnage du harnais
+prouveur (Epic #1453, P1-P4) sans être consommée par lui : les cibles
+effectives du harnais vivent dans `calibration_lean/` (classe HARNESS,
+frontière arbitrée #13212).
 
 **Les fondations catégorielles** (Parties 24-32). Yoneda, adjonctions,
 monades, catégories comma, (co)limites, équivalences, extensions de Kan,
@@ -103,7 +106,7 @@ La formalisation couvre **55 modules leaf** + **1 umbrella** `Grothendieck.lean`
 | 2 | `Grothendieck/SchemesTour.lean` | `SchemesTour_en.lean` | Type des schémas, foncteur Spec, Γ, `homeoOfIso`, pleinement fidèle | 196 |
 | 3 | `Grothendieck/ZariskiSite.lean` | `ZariskiSite_en.lean` | Prétopologie de Zariski, théorème-pont `zariskiTopology_eq`, sous-canonique | 139 |
 | 4 | `Grothendieck/MathlibMap.lean` | `MathlibMap_en.lean` | Index `#check` des définitions Mathlib liées à Grothendieck | 124 |
-| 5 | `Grothendieck/Calibration.lean` | `Calibration_en.lean` | 4 cibles de micro-preuve pour le harnais du prouveur (Epic #1453) | 95 |
+| 5 | `Grothendieck/Calibration.lean` | `Calibration_en.lean` | 4 cibles de micro-preuve dans l'esprit du harnais prouveur (Epic #1453, non consommées par lui — cf `calibration_lean/`, frontière #13212) | 95 |
 | 6 | `Grothendieck/SieveLattice.lean` | `SieveLattice_en.lean` | Identités de pullback de cribles (7) : `pullback_id`, `pullback_pullback`, `pullback_bot`, `pullback_monotone`, `pullback_union` (#7895), `pullback_ofObjects`, `mem_iff_pullback_eq_top` | 253 |
 | 7 | `Grothendieck/SheafBasics.lean` | `SheafBasics_en.lean` | Bases faisceau/préfaisceau séparé, transfert de faisceau le long de J₁ ≤ J₂ | 231 |
 | 8 | `Grothendieck/SieveOps.lean` | `SieveOps_en.lean` | Ordre sur les topologies, clôture de recouvrement, composition de cribles | 208 |

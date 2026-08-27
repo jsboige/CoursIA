@@ -58,6 +58,7 @@ jobs:
           # ferait echouer merge-base silencieusement sur les branches >50
           # commits de retard comme #11646 / #11642).
           fetch-depth: 0
+          filter: blob:none
 
       - uses: actions/setup-python@v5
         with:
