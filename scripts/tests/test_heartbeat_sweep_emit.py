@@ -205,6 +205,44 @@ def test_main_stale_after_zero_returns_exit_2_usage_error():
     assert "must be > 0" in err
 
 
+def test_main_gh_unavailable_returns_exit_1_with_alarm_on_stdout():
+    """Hermes c.642 review #2 on PR #13221 : the alarm sentinel for the
+    ``OSError`` path (gh missing / not authenticated / transient) MUST be
+    on stdout, not stderr -- otherwise a dashboard that pipes stdout
+    (``python heartbeat_sweep_emit.py | dashboard-poll``) misses the
+    form-2 alarm when gh is unavailable. stderr is reserved for the verbose
+    trace (``-debug`` sentinel) for human debugging."""
+    def fake_run_raises(_workflow: str) -> list[dict]:
+        raise OSError("gh: not authenticated")
+
+    rc, out, err = _capture_main([], run=fake_run_raises)
+    assert rc == 1, f"expected exit 1 (alarm), got {rc}; stdout={out!r}"
+    assert "gh unavailable" in out, (
+        "alarm sentinel must be in stdout so dashboard appenders see it "
+        "even when gh itself is unavailable (Hermes c.642 vigilance)"
+    )
+    assert "[sweep-heartbeat]" in out
+    # The verbose debug trace stays on stderr for human inspection.
+    assert "sweep-heartbeat-debug" in err
+    assert "gh unavailable" in err
+
+
+def test_main_gh_unavailable_json_emits_error_payload():
+    """Hermes c.642 : --json mode for the OSError path is unchanged
+    (JSON on stdout is the structured contract), but verify the error
+    payload is well-formed for dashboard consumers."""
+    def fake_run_raises(_workflow: str) -> list[dict]:
+        raise OSError("gh: connection refused")
+
+    rc, out, _err = _capture_main(["--json"], run=fake_run_raises)
+    assert rc == 1
+    parsed = json.loads(out.strip())
+    assert parsed["reason"] == "error"
+    assert parsed["stale"] is True
+    assert parsed["age_s"] is None
+    assert "connection refused" in parsed["error"]
+
+
 def test_main_subprocess_smoke_real_cli_with_no_gh():
     """Sanity smoke: launch the real binary in a subprocess. If ``gh`` is
     not authenticated the exit code will be 1 with NO_SUCCESS or error --

@@ -128,7 +128,14 @@ def main(argv: list[str] | None = None, run=None) -> int:
                               "stale": True, "stale_after_s": threshold_s,
                               "reason": "error", "error": str(e)}))
         else:
-            print(f"[sweep-heartbeat] gh unavailable: {e}", file=sys.stderr)
+            # Sentinel contract (Hermes c.642 review #2 on PR #13221):
+            # the alarm sentinel MUST go to stdout so a dashboard that pipes
+            # stdout (`python heartbeat_sweep_emit.py | dashboard-poll`)
+            # does not miss the form-2 alarm when gh is unavailable. stderr
+            # keeps the verbose trace for human debugging.
+            print(f"[sweep-heartbeat] gh unavailable: {e}")
+            print(f"[sweep-heartbeat-debug] gh unavailable (full trace): {e}",
+                  file=sys.stderr)
         return 1
 
     if age_s is None:
