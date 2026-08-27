@@ -294,7 +294,7 @@ def swMech (rr rc : T) (tr tc : T) : ℕ := sw (mech rr rc) tr tc
     principle (reporting a' is strictly dominant), M₁ always picks o1. -/
 def M1 : T → T → O := fun _ _ => .o1
 
-/-! ### Characteristic 1: reporting a' is strictly dominant; M₁ is truthful -/
+/-! ### Strict dominance of reporting a'; M₁ is truthful (revelation principle) -/
 
 /-- Reporting a' is strictly dominant for the row agent, whatever its true
     type, the other agent's report, and for both mechanisms (mech and M₁) —
