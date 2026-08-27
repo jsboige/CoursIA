@@ -1119,6 +1119,7 @@ layout: section
 
 <div class="grid grid-cols-2 gap-5 -mt-2">
 <div>
+
 **Environnement multi-agents**
 
 - Analyse stratégique
@@ -1166,6 +1167,7 @@ layout: section
 
 <div class="grid grid-cols-2 gap-5 -mt-2">
 <div>
+
 **Jeux simultanés**
 
 - Matrice de gains
@@ -1207,6 +1209,7 @@ layout: section
 
 <div class="grid grid-cols-2 gap-5 -mt-2">
 <div>
+
 **Algorithmes**
 
 - Espaces infinis
@@ -1255,6 +1258,7 @@ layout: section
 
 <div class="grid grid-cols-2 gap-5 -mt-2">
 <div>
+
 **Concepts**
 
 - Théorie des jeux inverse
@@ -1298,6 +1302,7 @@ layout: section
 
 <div class="grid grid-cols-2 gap-5 -mt-2">
 <div>
+
 **Théorie du choix social**
 
 - Théorie de la négociation
@@ -1371,6 +1376,7 @@ layout: section
 
 <div class="grid grid-cols-2 gap-5 -mt-2">
 <div>
+
 **Enjeux**
 
 - Environnements inconnus
@@ -1408,6 +1414,7 @@ layout: section
 
 <div class="grid grid-cols-2 gap-5 -mt-2">
 <div>
+
 **Composants d'apprentissage**
 
 - Type d'apprentissage
@@ -1741,6 +1748,7 @@ layout: section
 
 <div class="grid grid-cols-2 gap-5 -mt-2">
 <div>
+
 - N-grams
   - Modèles de Markov
   - Traitements
@@ -1786,6 +1794,7 @@ layout: section
 
 <div class="grid grid-cols-2 gap-5 -mt-2">
 <div>
+
 **Caractéristiques**
 
 - Communication
@@ -1880,6 +1889,7 @@ layout: section
 
 <div class="grid grid-cols-2 gap-5 -mt-2">
 <div>
+
 **Processus de création**
 
 - Définition des objectifs

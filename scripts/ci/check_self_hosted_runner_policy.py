@@ -33,7 +33,15 @@ REQUIRED_LABELS = {
     "coursia-ephemeral",
     "coursia-fast-guards",
 }
-SELF_HOSTED_WORKFLOW_ALLOWLIST = {"pr-gate-stale-sweep.yml"}
+# Owner-approved additions must cite the lane that owns the runner deployment:
+# - pr-gate-stale-sweep.yml: schedule-mutualized re-aggregation (pre-existing).
+# - windows-self-hosted-tests.yml: workflow_dispatch-ONLY vehicle for the 9
+#   @requires_windows confinement tests (#13063 skip surface), zero fan-out
+#   (#13097), executed on an --ephemeral runner (#12704, po-2024, #13135).
+SELF_HOSTED_WORKFLOW_ALLOWLIST = {
+    "pr-gate-stale-sweep.yml",
+    "windows-self-hosted-tests.yml",
+}
 GITHUB_HOSTED_LABELS = {
     "ubuntu-latest",
     "ubuntu-24.04",
