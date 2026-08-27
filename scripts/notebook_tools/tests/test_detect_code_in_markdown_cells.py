@@ -194,7 +194,8 @@ def test_check_without_baseline_defaults_to_canonical_rc0():
     Avant le fix, l'invocation desarmee rendait un FAIL fantome sur un main
     vert -- toutes les violations acceptees ressortaient « new ». Le test
     existant passait le chemin explicitement, donc ne pouvait pas voir ce
-    defaut. Exige en outre la ligne d'identite qui nomme la reference."""
+    defaut. Exige en outre la ligne d'identite qui nomme la reference.
+    #12858 : la ligne d'identite part sur stderr (stdout reste pur)."""
     import subprocess
     proc = subprocess.run(
         [
@@ -210,9 +211,39 @@ def test_check_without_baseline_defaults_to_canonical_rc0():
         f"bare --check exited {proc.returncode}\n"
         f"stdout: {proc.stdout[:500]}\nstderr: {proc.stderr[:500]}"
     )
-    assert "baseline:" in proc.stdout and "entries)" in proc.stdout, (
-        "l'identite de la reference doit etre affichee "
-        f"(baseline: <path> (<n> entries)); stdout: {proc.stdout[:300]}"
+    assert "baseline:" in proc.stderr and "entries)" in proc.stderr, (
+        "l'identite de la reference doit etre affichee sur stderr "
+        f"(baseline: <path> (<n> entries)); stderr: {proc.stderr[:300]}"
+    )
+
+
+def test_json_mode_stdout_is_pure_json_baseline_on_stderr():
+    """#12858 : en mode ``--json``, stdout doit etre du JSON pur
+    (consommable par ``jq`` ou tout parser), tandis que la ligne d'identite
+    baseline va sur stderr. Avant ce fix, stdout etait pollue par la ligne
+    ``baseline: <path> (<n> entries)`` qui cassait le parse JSON."""
+    import subprocess
+    import json
+    proc = subprocess.run(
+        [
+            sys.executable, str(TOOL),
+            "MyIA.AI.Notebooks",
+            "--json",
+        ],
+        capture_output=True,
+        text=True,
+        cwd=REPO_ROOT,
+    )
+    # stdout doit etre du JSON valide de bout en bout (pas de ligne parasite)
+    assert proc.stdout, "stdout vide en mode --json"
+    parsed = json.loads(proc.stdout)  # leve json.JSONDecodeError si pollue
+    assert isinstance(parsed, dict), "le JSON doit etre un objet racine"
+    for key in ("total", "new", "baseline_size", "findings"):
+        assert key in parsed, f"cle {key!r} manquante dans le JSON: {parsed.keys()}"
+    # la ligne d'identite reste sur stderr (operateur humain)
+    assert "baseline:" in proc.stderr and "entries)" in proc.stderr, (
+        "l'identite de la reference doit etre affichee sur stderr ; "
+        f"stderr: {proc.stderr[:300]}"
     )
 
 

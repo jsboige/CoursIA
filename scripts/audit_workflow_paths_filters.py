@@ -101,6 +101,7 @@ def list_required_checks_via_api(repo_root: Path) -> set[str] | None:
             capture_output=True,
             text=True,
             timeout=15,
+            encoding="utf-8", errors="replace",
         )
     except (FileNotFoundError, subprocess.TimeoutExpired):
         return None

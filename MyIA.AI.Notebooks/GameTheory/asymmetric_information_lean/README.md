@@ -17,6 +17,18 @@ notebook `CoursIA`.
 **Première livraison** : portée bornée, conforme à l'audit canonique c.475
 (cadrage corrigé par po-2025 avant livraison, voir Epic **#12844**).
 
+## Exposition (notebooks consommateurs)
+
+- **`GameTheory-17c-Lean-Lemons-Certificat.ipynb`** (companion natif, kernel
+  `lean4-wsl`) : importe `AsymmetricInformation.Lemons` et exécute le
+  certificat en direct — `poolingTenable_iff_cross` (seuil exact),
+  `poolingTenable_mono` (plancher), `#print axioms`, balayage du prior
+  (falaise à π = 75 % sur le marché-seuil) et spirale de prix des trois
+  régimes (#13200).
+- **`GameTheory-17b-Asymmetric-Information.ipynb`** (Python) : les quatre
+  modèles en simulation — point fixe de participation, signal coûteux,
+  screening, règle anticipative.
+
 ## Bornes explicites
 
 - **Pas** de théorème d'existence/uniformité général pour l'équilibre
