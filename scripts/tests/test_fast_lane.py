@@ -865,6 +865,36 @@ def test_absorbed_workflows_of_tranche4_no_longer_trigger_on_pull_request():
             f"{guard.name} est absorbe : double execution + zero run sauve")
 
 
+def test_tranche4_iterate_paths_restricted_to_asset_glob():
+    """Regression #13220 : les gardes TRANCHE4 portent, comme le workflow
+    d'origine, le detecteur + le workflow dans `paths` (le declencheur, pour
+    que la garde reparte quand ils changent) -- mais leur boucle interne
+    itere UNIQUEMENT le glob d'actifs. Si `iteration` tombait sur `paths`
+    en entier, un `.yml`/`.py` change serait passe au detecteur de
+    notebooks -> rc=2 -> faux echec sur une PR qui ne touche AUCUN notebook
+    (incident : la PR qui ajoute la tranche echouait sur ses propres gardes).
+    `iterate_paths` doit donc restreindre a l'actif et exclure tout
+    non-notebook present dans `paths`."""
+    from fast_lane_registry import TRANCHE4
+    ASSET = "MyIA.AI.Notebooks/**/*.ipynb"
+    for guard in TRANCHE4:
+        assert guard.iterate_paths, (
+            f"{guard.name} doit restreindre l'iteration a l'actif"
+            " (`iterate_paths`) -- sinon une PR workflow/detecteur seule "
+            "echoue a tort (incident #13220)")
+        assert guard.iterate_paths == [ASSET], (
+            f"{guard.name} doit iterer UNIQUEMENT {ASSET}, got "
+            f"{guard.iterate_paths}")
+        extras = set(guard.paths) - set(guard.iterate_paths)
+        assert extras, (
+            f"{guard.name} : sans declencheur distinct de l'iteration, "
+            "le detecteur/workflow ne serait jamais dans `paths` et la garde "
+            "ne repartirait pas quand ils changent")
+        assert all("*" in e or e.endswith((".py", ".yml")) for e in extras), (
+            f"{guard.name} : les entrees de `paths` hors iteration devraient "
+            f"etre detecteur/workflow, got {extras}")
+
+
 def test_absorbed_names_are_byte_identical_to_source_job_names():
     """Le livrable propre de #12396 : le controle positif que les tranches
     1/2 n'ont jamais eu. `guard.name` doit etre byte-identique au nom de

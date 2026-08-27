@@ -96,6 +96,18 @@ class Guard:
     # a `iterates_paths` ; par defaut desarme (un garde sans clause d'origine
     # ne devient jamais plus strict).
     fail_on_all_warn: bool = False
+    # Globs EXCLUSIFS d'iteration quand `iterates_paths=True` : seuls les
+    # fichiers qui matchent sont passes au detecteur. Distinct de `paths` (le
+    # declencheur via `guard_applies`), parce que le workflow d'origine SEPARE
+    # les deux : `on.pull_request.paths` inclut le detecteur + le workflow
+    # (pour que la garde reparte quand ils changent), mais sa boucle interne
+    # itere UNIQUEMENT le glob d'actifs (`MyIA.AI.Notebooks/**/*.ipynb`).
+    # Mettre le detecteur/workflow dans le meme sac que l'iter-set ferait
+    # passer un `.yml`/`.py` au detecteur de notebooks -> rc=2 -> faux echec
+    # (incident #13220 : la PR qui ajoute la garde echouait dessus). Vide =
+    # fallback sur `paths` (comportement pre-change pour les gardes sans
+    # distinction trigger/iter).
+    iterate_paths: list[str] = field(default_factory=list)
     # Commande de PRE-CONTROLE executee avant `argv` (phase 1). Un rc non
     # nul devient le verdict du garde et `argv` n'est PAS execute. Cas
     # d'usage : le self-test du ratchet output-failure, qui dans son
@@ -461,6 +473,7 @@ TRANCHE4: list[Guard] = [
             "scripts/notebook_tools/detect_svg_broken_geometry.py",
             ".github/workflows/svg-broken-geometry-gate.yml",
         ],
+        iterate_paths=["MyIA.AI.Notebooks/**/*.ipynb"],
         argv=[
             "python", "scripts/notebook_tools/detect_svg_broken_geometry.py",
             "{changed_paths}", "--check",
@@ -478,6 +491,7 @@ TRANCHE4: list[Guard] = [
             "scripts/notebook_tools/detect_svg_decimal_commas.py",
             ".github/workflows/svg-decimal-comma-gate.yml",
         ],
+        iterate_paths=["MyIA.AI.Notebooks/**/*.ipynb"],
         argv=[
             "python", "scripts/notebook_tools/detect_svg_decimal_commas.py",
             "{changed_paths}", "--check",
@@ -495,6 +509,7 @@ TRANCHE4: list[Guard] = [
             "scripts/notebook_tools/detect_svg_empty_display.py",
             ".github/workflows/svg-empty-display-gate.yml",
         ],
+        iterate_paths=["MyIA.AI.Notebooks/**/*.ipynb"],
         argv=[
             "python", "scripts/notebook_tools/detect_svg_empty_display.py",
             "{changed_paths}", "--check",
@@ -512,6 +527,7 @@ TRANCHE4: list[Guard] = [
             "scripts/notebook_tools/detect_svg_offscreen_flat.py",
             ".github/workflows/svg-offscreen-flat-gate.yml",
         ],
+        iterate_paths=["MyIA.AI.Notebooks/**/*.ipynb"],
         argv=[
             "python", "scripts/notebook_tools/detect_svg_offscreen_flat.py",
             "--check", "{changed_paths}",
@@ -535,6 +551,7 @@ TRANCHE4: list[Guard] = [
             "scripts/notebook_tools/detect_md_content_loss.py",
             ".github/workflows/md-content-loss-gate.yml",
         ],
+        iterate_paths=["MyIA.AI.Notebooks/**/*.ipynb"],
         argv=[
             "python", "scripts/notebook_tools/detect_md_content_loss.py",
             "--base", "{base_ref}", "--check", "{changed_paths}",

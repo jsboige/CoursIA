@@ -350,8 +350,14 @@ def main(argv: list[str] | None = None) -> int:
             # continue`). Un chemin absent passe au detecteur rendrait son
             # code "illisible" (rc=2), qui sans ce filtre deviendrait un
             # faux verdict sur un fichier que l'original n'examinait pas.
+            # `iterate_paths` (si renseigne) restreint l'ITERATION au glob
+            # d'actifs, distinct du declencheur `paths` -- sans lui, le
+            # detecteur/workflow present dans `paths` serait passe au
+            # detecteur de notebooks -> rc=2 -> faux echec (incident
+            # #13220 : la PR qui ajoute la garde echouait dessus).
+            iter_patterns = guard.iterate_paths or guard.paths
             arg_paths = sorted({f for f in changed
-                                for p in guard.paths
+                                for p in iter_patterns
                                 if path_matches(f, p)
                                 and (REPO_ROOT / f).is_file()})
             rc, log = run_iter(guard.argv, arg_paths, ctx,
