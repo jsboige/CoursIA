@@ -323,6 +323,28 @@ class TestReadmeLinkTargets:
             base, "./rl_1_intro_cartpole.ipynb"
         ) == "MyIA.AI.Notebooks/RL/rl_1_intro_cartpole.ipynb"
 
+    def test_flags_html_when_source_not_rendered(self, monkeypatch, tmp_path):
+        readme = tmp_path / "MyIA.AI.Notebooks" / "Search" / "README.md"
+        source = readme.parent / "Excluded.ipynb"
+        readme.parent.mkdir(parents=True)
+        readme.write_text("[Excluded](Excluded.html)\n", encoding="utf-8")
+        source.write_text("{}\n", encoding="utf-8")
+        monkeypatch.setattr(rqr, "REPO_ROOT", tmp_path)
+        monkeypatch.setattr(
+            rqr,
+            "git_tracked_readmes",
+            lambda: ["MyIA.AI.Notebooks/Search/README.md"],
+        )
+        monkeypatch.setattr(rqr, "git_tracked_notebooks", lambda: [])
+
+        assert rqr.readme_link_violations() == [
+            (
+                "MyIA.AI.Notebooks/Search/README.md",
+                "DEAD_RENDER",
+                "Excluded.html",
+            )
+        ]
+
 
 # ---------------------------------------------------------------------------
 # argparse — --check flag

@@ -326,6 +326,8 @@ def replace_render_block(yml_text: str, new_block_lines: list[str]) -> str:
 # sous-arbres rendus (ex. QuantConnect/) forment la population « source
 # brute » documentee -- nonverifies par cette garde.
 _IPYNB_LINK_RE = re.compile(r"\]\(([^)#\s]+\.ipynb)\)")
+_HTML_LINK_RE = re.compile(r"\]\(([^)#\s]+\.html)\)")
+_HTML_LINK_RE = re.compile(r"\]\(([^)#\s]+\.html)\)")
 
 
 def _normalise_readme_target(base: Path, href: str) -> str:
@@ -341,6 +343,8 @@ def readme_link_violations() -> list[tuple[str, str, str]]:
                      link the .html sibling instead (the raw .ipynb 404s on
                      Pages -- the #13025 defect).
       BROKEN      -- the .ipynb target does not exist on disk (dead link).
+      DEAD_RENDER -- a .html link names an existing notebook excluded from the
+                     render list, so the rendered page will not exist.
     UNRENDERED targets (file exists but excluded from the render list by the
     #11451 `---` guard or by an exclude marker) are NOT violations: they are
     the documented raw-source population (reported by --check-readme-links as
@@ -363,6 +367,14 @@ def readme_link_violations() -> list[tuple[str, str, str]]:
             elif not (REPO_ROOT / norm).exists():
                 out.append((rel_readme, "BROKEN", href))
             # else: UNRENDERED -- raw-source population, not a violation
+        for m in _HTML_LINK_RE.finditer(text):
+            href = m.group(1)
+            if href.startswith(("http://", "https://", "#", "mailto:")):
+                continue
+            source_href = href.removesuffix(".html") + ".ipynb"
+            source = _normalise_readme_target(base, source_href)
+            if (REPO_ROOT / source).exists() and source not in rendered:
+                out.append((rel_readme, "DEAD_RENDER", href))
     return out
 
 
@@ -398,8 +410,9 @@ def main() -> int:
                     help="exit 1 if _quarto.yml render list is stale")
     ap.add_argument("--check-readme-links", action="store_true",
                     help="exit 1 if a rendered-subtree README links a raw "
-                         ".ipynb whose render exists (STALE_LINK) or a "
-                         "missing file (BROKEN) -- regle #13025")
+                         ".ipynb whose render exists (STALE_LINK), a missing "
+                         "source (BROKEN), or a .html page whose notebook is "
+                         "not rendered (DEAD_RENDER) -- regle #13025")
     args = ap.parse_args()
 
     if args.check_readme_links:
