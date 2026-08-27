@@ -27,7 +27,7 @@ concurrency:
 jobs:
   windows-confinement-tests:
     name: Scripts Tests (Windows runner)
-    runs-on: [self-hosted, coursia-fast-guards]
+    runs-on: [self-hosted, coursia-ephemeral, coursia-fast-guards]
     timeout-minutes: 15
 
     steps:
