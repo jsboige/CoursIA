@@ -2202,4 +2202,3 @@ def test_13083_annonce_reelle_survit_aux_mentions():
     body = ("Ce n'est pas une levee de facade. Levee de ma reserve : le "
             "point 2 est corrige proprement.")
     assert mod.classify("myia-ai-01", body) is None
-
