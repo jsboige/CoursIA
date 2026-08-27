@@ -560,9 +560,51 @@ def test_advisory_jobs_roster_only_advisory_workflows():
     roster = pr_gate.derive_advisory_jobs()
     assert "PR gate" not in roster, "the gate itself must never be advisory"
     assert "Lean CI" not in roster, "non-advisory workflow jobs must not leak"
-    assert "machine-dep-timing" in roster, (
-        "the canonical fix from the 2026-08-25 incident must hold"
+    assert roster, "an empty roster would silently disable the workflow-name path"
+    # `machine-dep-timing` is the workflow the 2026-08-25 incident was about,
+    # so it must stay covered -- but NOT under a pinned spelling. #12860
+    # (a81c5842c) gave its job an explicit `name: machine-dep-timing
+    # (advisory)`, which fixed the incident AT THE SOURCE: the marker now
+    # lives in the job name, so `is_advisory` catches it by substring and the
+    # roster is merely a second line of defence. Pinning the bare job key
+    # asserted the SYMPTOM (a nameless job recovered via the roster), so
+    # repairing the cause read as a regression and turned `main` red for 3
+    # consecutive runs (2026-08-25T12:35Z, 2026-08-26T00:26Z, 05:02Z).
+    # Assert coverage; let the spelling drift.
+    assert any(j.startswith("machine-dep-timing") for j in roster), (
+        "the workflow behind the 2026-08-25 incident must stay covered"
     )
+
+
+ADVISORY_WORKFLOW_FIXTURE = "name: synthetic (advisory)\non:\n  pull_request:\njobs:\n  nameless-job:\n    runs-on: ubuntu-latest\n    steps:\n      - run: 'true'\n"
+
+BLOCKING_WORKFLOW_FIXTURE = "name: synthetic blocking\non:\n  pull_request:\njobs:\n  nameless-job-blocking:\n    runs-on: ubuntu-latest\n    steps:\n      - run: 'true'\n"
+
+
+def test_advisory_jobs_roster_recovers_a_nameless_job(tmp_path):
+    """The contract the 2026-08-25 incident actually exposed: a job whose
+    WORKFLOW name carries the marker but whose JOB name does not must still
+    be routed as advisory. Held on a synthetic fixture rather than on a live
+    workflow, so that repairing a real workflow's job name -- which is the
+    better fix, and what #12860 did -- can never read as a regression again.
+    """
+    (tmp_path / "synthetic-advisory.yml").write_text(
+        ADVISORY_WORKFLOW_FIXTURE, encoding="utf-8"
+    )
+    (tmp_path / "synthetic-blocking.yml").write_text(
+        BLOCKING_WORKFLOW_FIXTURE, encoding="utf-8"
+    )
+    roster = pr_gate.derive_advisory_jobs(workflows_dir=str(tmp_path))
+    assert "nameless-job" in roster, (
+        "a job with no `name:` must be recovered by its key"
+    )
+    assert "nameless-job-blocking" not in roster, (
+        "a non-advisory workflow must not leak its jobs into the roster"
+    )
+    # And the routing the roster exists to enable:
+    checks = [run("nameless-job", "failure")]
+    _pending, bad, _ok, advisory = pr_gate.classify(checks, "PR gate", roster)
+    assert bad == [] and len(advisory) == 1
 
 
 def test_advisory_jobs_roster_handles_missing_directory(tmp_path):
