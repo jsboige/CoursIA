@@ -470,7 +470,11 @@ def load_sae(sae_repo: str, layer: int, device: torch.device):
     w_dec = sae.get("W_dec")
     if w_dec is not None:
         w_dec = w_dec.to(torch.float32)
-    return {"W_enc": w_enc, "b_enc": b_enc, "W_dec": w_dec, "path": path}
+    b_dec = sae.get("b_dec")
+    if b_dec is not None:
+        b_dec = b_dec.to(torch.float32)              # [d_model]
+    return {"W_enc": w_enc, "b_enc": b_enc, "W_dec": w_dec, "b_dec": b_dec,
+            "path": path}
 
 
 def sae_encode_topk(hidden: torch.Tensor, sae: dict, k: int = 50):

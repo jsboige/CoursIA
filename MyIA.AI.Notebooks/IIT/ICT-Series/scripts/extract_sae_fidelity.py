@@ -74,13 +74,20 @@ def parse_args() -> argparse.Namespace:
     depth = p.add_mutually_exclusive_group()
     depth.add_argument("--layer", type=int, default=None,
                        help="couche resid_post absolue")
-    depth.add_argument("--layer-frac", type=float, default=0.5,
-                       help="profondeur relative appariee (defaut 0.5, convention #8236)")
+    depth.add_argument("--layer-frac", type=float, default=None,
+                       help="profondeur relative appariee (defaut 0.5 si ni --layer "
+                            "ni --layer-frac, convention #8236)")
     p.add_argument("--model", default=DEFAULT_MODEL)
     p.add_argument("--sae-repo", default=DEFAULT_SAE_REPO)
     p.add_argument("--out-dir", default=str(Path(__file__).resolve().parent.parent / "traces"))
     p.add_argument("--k", type=int, default=None,
                    help="top-k d'encodage (defaut : lu du config.json du depot SAE)")
+    p.add_argument("--max-gpu-gib", type=float, default=None,
+                   help="si defini : charger le modele en device_map=auto avec ce "
+                        "budget GPU GiB (le surplus de couches en RAM CPU, bf16 "
+                        "intact -- aucune quantification). Pour mesurer sur une "
+                        "carte plus petite que le modele (ex. 8B/9B sur 16 Gio) ; "
+                        "la metrique est inchangee, seul le placement bouge.")
     return p.parse_args()
 
 
@@ -90,6 +97,8 @@ def model_slug(model: str) -> str:
 
 def main() -> None:
     args = parse_args()
+    if args.layer is None and args.layer_frac is None:
+        args.layer_frac = 0.5
     t0 = time.time()
     torch.manual_seed(42)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -134,9 +143,19 @@ def main() -> None:
     print(f"[sae] k={k} (release {args.sae_repo.rsplit('-', 1)[-1]})")
 
     print(f"[load] modele {args.model} (bf16) ...")
-    model = AutoModelForCausalLM.from_pretrained(
-        args.model, torch_dtype=torch.bfloat16, device_map=device
-    )
+    if args.max_gpu_gib is not None:
+        # Placement mixte GPU/CPU : les couches qui ne tiennent pas dans le
+        # budget residient en RAM CPU. Le bf16 est preserve colonne par
+        # colonne (aucune quantification -> assert_bf16_readout reste vrai),
+        # le hook ramene le residual ou qu'il soit calcule.
+        model = AutoModelForCausalLM.from_pretrained(
+            args.model, torch_dtype=torch.bfloat16, device_map="auto",
+            max_memory={0: f"{args.max_gpu_gib}GiB", "cpu": "64GiB"},
+        )
+    else:
+        model = AutoModelForCausalLM.from_pretrained(
+            args.model, torch_dtype=torch.bfloat16, device_map=device
+        )
     model.eval()
     tokenizer = AutoTokenizer.from_pretrained(args.model)
     blocks = model.model.layers
@@ -165,9 +184,15 @@ def main() -> None:
             handle.remove()
             h = captured["h"]                                    # [T, d] f32
             ids, vals = sae_encode_topk(h, sae, k=k)             # convention demo
-            # Reconstruction sparse-exacte : somme des k contributions decodeur.
+            # Reconstruction sparse-exacte : somme des k contributions decodeur
+            # + b_dec (decode officiel topk_sae Qwen-Scope). b_dec [d_model] est
+            # du meme ordre que le signal sur les modeles a residual de faible
+            # variance (9B hybride couche 16 : FVU 1.72 sans / 0.35 avec) --
+            # l'omettre n'etait pas neutre.
             w_cols = sae["W_dec"][ids.to(torch.long)]            # [T, k, d]
             recon = torch.einsum("tk,tkd->td", vals.to(torch.float32), w_cols)
+            if sae.get("b_dec") is not None:
+                recon = recon + sae["b_dec"].to(torch.float32)
             h_parts.append(h.numpy())
             r_parts.append(recon.numpy())
             v_parts.append(vals.to(torch.float16).numpy())
