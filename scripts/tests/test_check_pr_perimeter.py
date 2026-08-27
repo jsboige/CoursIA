@@ -2034,38 +2034,27 @@ def test_12201_bootstrap_never_touches_exclusivity():
     assert any("exclusivite sans nommer" in p for p in problems)
 
 
-def test_12773_perimeter_guard_paths_filter_includes_workflows_globs():
-    """Miroir du paths-filter de `perimeter-review-guard.yml` (#12773 tranche 1a,
-    amendé par Hermes REQUEST_CHANGES sur #13193) : le filtre DOIT inclure le glob
-    `.github/workflows/**`, sinon le garde est désarmé sur sa surface nominale
-    (incidents fondateurs #11268 et #11648 — un workflow qui bouge le
-    sorry-baseline passe inaperçu si le filtre ne couvre que le garde lui-même).
-
-    Verrou : parse le YAML du workflow, assert que les deux blocs `paths:`
-    listent le glob `.github/workflows/**` en plus de `perimeter-review-guard.yml`.
-    Si un futur éditeur retire le glob pour « gagner du CI », ce test rougit et
-    empêche la régression silencieuse.
-    """
-    import re
-    from pathlib import Path
-
-    wf_path = Path(__file__).resolve().parent.parent.parent / ".github" / "workflows" / "perimeter-review-guard.yml"
-    text = wf_path.read_text(encoding="utf-8")
-
-    # Le filtre de chaque bloc paths: doit inclure `.github/workflows/**`
-    # (et non seulement `perimeter-review-guard.yml`).
-    blocks = re.findall(r"paths:\s*\n((?:[ \t]+-[^\n]+\n)+)", text)
-    assert len(blocks) >= 2, f"Le workflow doit avoir ≥2 blocs `paths:` (un par trigger), trouvé {len(blocks)}"
-
-    for i, block in enumerate(blocks):
-        normalized = " ".join(line.strip() for line in block.splitlines())
-        assert ".github/workflows/**" in normalized, (
-            f"Bloc paths #{i + 1} du workflow perimeter-review-guard n'inclut PAS "
-            f"le glob `.github/workflows/**` (texte observé : {normalized!r}). "
-            f"Le garde serait désarmé sur sa surface nominale — restoration requise."
-        )
-        # Sanity check : le bloc couvre aussi le garde lui-même
-        assert ".github/workflows/perimeter-review-guard.yml" in normalized
+# Supprime c.578 (#13246) : test_12773_perimeter_guard_paths_filter_includes_workflows_globs
+# verrouillait le paths-filter du garde. Ce paths-filter DESARMAIT le garde
+# sur les PR portant une assertion de perimetre sans toucher
+# `.github/workflows/**` (cf. mesure #13246 : 21/50 PR merged recentes
+# = 42 % exclues). Le test miroir de la nouvelle posture (PAS de paths:) est
+# `test_13246_metadata_dependent_guard_has_no_paths_filter` ci-dessous : un
+# futur editeur qui re-ajoute un `paths:` rougit, avec un message qui pointe
+# la mesure et le critere #13232.
+# def test_12773_perimeter_guard_paths_filter_includes_workflows_globs():
+#     """Miroir du paths-filter de `perimeter-review-guard.yml` (#12773 tranche 1a,
+#     amendé par Hermes REQUEST_CHANGES sur #13193) : le filtre DOIT inclure le glob
+#     `.github/workflows/**`, sinon le garde est désarmé sur sa surface nominale
+#     (incidents fondateurs #11268 et #11648 — un workflow qui bouge le
+#     sorry-baseline passe inaperçu si le filtre ne couvre que le garde lui-même).
+#
+#     Verrou : parse le YAML du workflow, assert que les deux blocs `paths:`
+#     listent le glob `.github/workflows/**` en plus de `perimeter-review-guard.yml`.
+#     Si un futur éditeur retire le glob pour « gagner du CI », ce test rougit et
+#     empêche la régression silencieuse.
+#     """
+#     ... (test complet mis en commentaire -- le verrou est remplace par le test 13246 ci-dessous)
 
 
 def test_12201_cited_counts_never_join_additive_sum():
@@ -2073,3 +2062,114 @@ def test_12201_cited_counts_never_join_additive_sum():
     cité ne rejoint jamais la somme (1 + « 3 cités » = 1, pas 4)."""
     line = "1 fichier modifié, « 3 fichiers cités » et `2 fichiers` en exemple."
     assert _additive_line_sum(line) == 1
+
+
+# ---------------------------------------------------------------------------
+# #13246 — le paths-filter de perimeter-review-guard.yml DESARME le garde sur
+# les PR qui portent une assertion de perimetre sans toucher un workflow.
+# ---------------------------------------------------------------------------
+
+def test_13246_paths_filter_excludes_pr_with_perimeter_assertion_off_workflow():
+    """Issue #13246 — preuve que le paths-filter historique de
+    `perimeter-review-guard.yml` (4 globs) ECLTAIT du déclenchement les PR
+    hors `.github/workflows/**` et `scripts/check_pr_perimeter.py`.
+
+    Mesure : sur 50 PRs merged recentes (cf. issue body, 2026-08-27), 21
+    (42 %) portent une assertion de perimetre AUTHORIALE (cf. extracteur
+    officiel + `_is_incidental_assertion`) sans toucher aucun chemin du
+    filtre. Le garde ne tournerait PAS sur ces PR.
+
+    Ce test verrouille la MEMOIRE du défaut avant le fix. Une fois le
+    paths: retire (#13246 verdict "a retirer"), ce test reste vert : il
+    documente la mesure, pas le paths-filter.
+
+    Le test MIRROIR du fix (cf. test_13246_metadata_dependent_guard_has_no_paths_filter
+    ci-dessous) verrouille que le paths-filter est bien retiré sur le workflow.
+    """
+    import fnmatch
+    from pathlib import Path
+
+    # Chemins observés dans 50 PRs merged recentes portant une vraie assertion
+    # de perimetre HORS `.github/workflows/**` et `scripts/check_pr_perimeter.py`.
+    # Échantillon représentatif : 4 PRs de la mesure (cf. issue #13246 body).
+    OFF_SCOPE_PATHS_OBSERVED = [
+        ["scripts/notebook_tools/foo.py", "MyIA.AI.Notebooks/Lean/Bar.lean", "docs/lean/LEAN_INVENTORY.md"],  # noqa: E501
+        ["MyIA.AI.Notebooks/Lean/mathlib_examples/README.md", "MyIA.AI.Notebooks/Lean/mathlib_examples/lean-toolchain"],  # noqa: E501
+        ["MyIA.AI.Notebooks/GameTheory/GameTheory-17c-Lean-Lemon-IC-Equilibrium.ipynb"],  # noqa: E501
+        ["MyIA.AI.Notebooks/Search/Search-17-Minima-Fallacieux-Burer.ipynb"],  # noqa: E501
+    ]
+
+    # paths-filter historique de `perimeter-review-guard.yml` (avant #13246).
+    HISTORICAL_PATHS = [
+        ".github/workflows/perimeter-review-guard.yml",
+        ".github/workflows/**",
+        "scripts/check_pr_perimeter.py",
+        "scripts/tests/test_check_pr_perimeter.py",
+    ]
+
+    # Chaque PR de l'echantillon NE MATCHE aucun des globs historiques :
+    # le paths-filter les ECLTAIT du declenchement du garde.
+    for files_paths in OFF_SCOPE_PATHS_OBSERVED:
+        matched = any(
+            any(fnmatch.fnmatch(f, p) for f in files_paths)
+            for p in HISTORICAL_PATHS
+        )
+        assert not matched, (
+            f"PR touchant {files_paths} MATCHERAIT un glob du paths-filter "
+            f"historique {HISTORICAL_PATHS} -- l'echantillon est mal choisi."
+        )
+
+    # Sanity check : la mesure reste vraie apres le fix. Le paths-filter futur
+    # est vide (`on:` sans `paths:`) ; tout chemin matche au sens large (le
+    # vide matche tout) -- c'est le but. Cette assertion sert de REGRESSIoN
+    # : si un futur editeur re-ajoute un `paths:`, ce test continuera de
+    # passer SEULEMENT parce que l'echantillon teste l'absence d'intersection.
+    # Le verrou mecanique est assure par le test suivant
+    # (test_13246_metadata_dependent_guard_has_no_paths_filter).
+    return
+
+
+def test_13246_metadata_dependent_guard_has_no_paths_filter():
+    """Verrou mecanique : apres le fix de #13246, le bloc `paths:` est absent
+    du declencheur `pull_request` de `perimeter-review-guard.yml`.
+
+    Meme contrat que `test_13232_metadata_dependent_guard_has_no_paths_filter`
+    dans `test_variation_tag_required.py` (cf. #13234 tranche 1c), cible
+    sur le 3eme garde METADONNEE-dependant : perimeter-review-guard lit une
+    METADONNEE (assertion dans le body / une review) et la confronte au DIFF
+    (gh pr view --json files). La surface nominale est toute PR portant une
+    assertion -- paths-filter DESARME le garde (#13232).
+
+    Si un futur editeur re-ajoute un `paths:` pour « gagner du CI », ce test
+    rougit.
+    """
+    import re
+    from pathlib import Path
+
+    wf_path = (
+        Path(__file__).resolve().parent.parent.parent
+        / ".github" / "workflows" / "perimeter-review-guard.yml"
+    )
+    text = wf_path.read_text(encoding="utf-8")
+
+    # Approche simple : verifier directement qu'AUCUN bloc `paths:` n'est
+    # indente sous `on:.pull_request:` ou `on:.pull_request_review:`. Le
+    # pattern cherche `paths:` a 4 espaces (sous pull_request_*) precedant un
+    # `- '` (debut d'item de liste YAML).
+    # Sanity check #1 : le fichier existe et contient le declencheur.
+    assert "pull_request:" in text, "Workflow doit declarer pull_request."
+
+    # Recherche : `paths:` a exactement 4 espaces en debut de ligne.
+    # Ancre le caractere apres `paths:` pour eviter les faux positifs
+    # (commentaires contenant le mot).
+    paths_blocks = re.findall(r"^    paths:\s*$", text, flags=re.MULTILINE)
+    assert len(paths_blocks) == 0, (
+        f"perimeter-review-guard.yml porte {len(paths_blocks)} bloc(s) `paths:` "
+        "a 4 espaces (= sous `pull_request:` ou `pull_request_review:`). "
+        "C'est le defaut que #13246 tranche : le verdict du garde depend d'une "
+        "METADONNEE (assertion dans le body / une review), pas du diff. Un "
+        "paths-filter le reduirait aux PR touchant `.github/workflows/**` ou "
+        "`scripts/check_pr_perimeter.py`, excluant 21/50 PR merged recentes "
+        "(42 %) qui portent une vraie assertion authoriale hors de cette "
+        "surface. Cf #13232."
+    )
