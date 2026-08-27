@@ -15,8 +15,8 @@ en un seul package multi-`lean_lib` aligné sur le modèle éprouvé de
 ## Statut
 
 - **Type** : Projet Lake multi-module (multi `lean_lib`, racine agrégée)
-- **Toolchain** : `leanprover/lean4:v4.31.0-rc1` (cf `lean-toolchain`)
-- **Mathlib** : `v4.31.0-rc1` (cf `lake-manifest.json`)
+- **Toolchain** : `leanprover/lean4:v4.32.1` (cf `lean-toolchain`)
+- **Mathlib** : `v4.32.1` (cf `lake-manifest.json`)
 - **Compte de `sorry`** : 2 (1 dans `RepeatedGames/Folk.lean` + son
   sibling `_en` ; théorème **STRETCH** `folk_theorem_discounted` — Folk
   theorem en jeux répétés actualisés, preuve Fudenberg-Maskin 1986 sur
@@ -69,7 +69,7 @@ package «game_theory_lean» where
     ⟨`autoImplicit, true⟩
   ]
   require mathlib from git
-    "https://github.com/leanprover-community/mathlib4.git" @ "v4.31.0-rc1"
+    "https://github.com/leanprover-community/mathlib4.git" @ "v4.32.1"
 
   @[default_target]
   lean_lib StableMarriage where
@@ -257,7 +257,7 @@ pour éviter de retélécharger `~3 GB` à chaque incrément.
 |--------|--------|-------------------------|
 | [`conway_cgt_lean/`](../conway_cgt_lean/) | Lake séparé (vihdzp/combinatorial-games) | Théorie des jeux combinatoires (PGame, surréels, nimbers) — Mathlib-only via `SetTheory.PGame` |
 | [`social_choice_lean/`](../social_choice_lean/) | **Absorbé** (PR #6058 mergée) | Contenu (Arrow / Sen / Voting, FR + EN) déplacé sous `game_theory_lean/SocialChoice/` ; dossier conservé comme tombstone |
-| [`social_choice_lean_peters/`](../social_choice_lean_peters/) | Lake séparé (pinné commit `d679d950` Peters) | Gibbard-Satterthwaite, Duggan-Schwartz — divergence de rev attendra la convergence v4.31.0-rc1 |
+| [`social_choice_lean_peters/`](../social_choice_lean_peters/) | Lake séparé (pinné commit `94a4c650` Peters) | Gibbard-Satterthwaite, Duggan-Schwartz — divergence de rev ; convergence Mathlib v4.32.1 acquise (#12134) |
 | `cooperative_games_lean/` | **Supprimé** (rm #6587, absorbé dans `game_theory_lean/CooperativeGames/`) | contenu (Basic / ConeKernel / Shapley, FR + EN) préservé byte-identique sous `CooperativeGames/` |
 | `stable_marriage_lean/` | **Supprimé** (c.305 finalisation + PR #5971 doublon) | — |
 | [`lean_game_defs/`](../lean_game_defs/) | Couche introductive (pas un Lake) | 6 fichiers `.lean` de **référence** pour copier-coller dans les notebooks d'enseignement ; 0 sorries, Mathlib-free |
@@ -314,7 +314,7 @@ imports Mathlib.
 `social_choice_lean/` absorbé sous `SocialChoice/` via PR #6058,
 `repeated_games_lean/` absorbé sous `RepeatedGames/` (c.371) ; l'absorption
 restante (`social_choice_lean_peters/`) reste une **PR dédiée** trackée
-séparément et pinnée sur la convergence v4.31.0-rc1 de Mathlib.
+séparément et pinnée sur la convergence v4.32.1 de Mathlib (acquise, #12134).
 
 ### Ce qu'il couvre
 
@@ -341,7 +341,7 @@ sans couplage d'imports Mathlib).
 
 - **Déjà absorbé** : `social_choice_lean/` → `SocialChoice/` (PR #6058,
   mergée). **Modules restant à absorber** : `social_choice_lean_peters/`
-  (convergence Mathlib v4.31.0-rc1 attendue), `repeated_games_lean/`,
+  (convergence Mathlib v4.32.1 acquise #12134, blocage levé), `repeated_games_lean/`,
   `minimax_lean/` — chacun fait l'objet d'une **PR dédiée** suivant le
   même protocole anti-régression 4 étapes que les PRs c.299–c.308.
 - **Couche introductive** : [`lean_game_defs/`](../lean_game_defs/) pour
