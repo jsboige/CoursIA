@@ -173,6 +173,27 @@ def test_committed_profiles_are_valid_and_distributed_across_pushers():
         assert loaded.archive_sha256 == "d59123a43003e357b0805b5d0f611d0bd2f65ab67d51bd070dd4e7a0f685c162"
 
 
+def test_profile_accepts_runner_own_checkout_under_work(tmp_path, monkeypatch):
+    # #13238 : sur le runner lui-meme, le checkout vit sous <root>/_work —
+    # l'invariant "root hors du repository" ne doit pas le refuser.
+    registry = tmp_path / "profiles.json"
+    root = r"C:\CoursIA-Test\runner"
+    write_registry(registry, root)
+    monkeypatch.setattr(mod, "REPO_ROOT", Path(root) / "_work" / "CoursIA")
+    loaded = mod.load_profile("test", registry)
+    assert loaded.name == "test"
+
+
+def test_profile_refuses_repository_inside_runner_root_outside_work(tmp_path, monkeypatch):
+    # Repo sous la racine runner mais HORS de la zone work : toujours refuse.
+    registry = tmp_path / "profiles.json"
+    root = r"C:\CoursIA-Test\runner"
+    write_registry(registry, root)
+    monkeypatch.setattr(mod, "REPO_ROOT", Path(root) / "repo")
+    with pytest.raises(mod.Refused, match="outside the repository"):
+        mod.load_profile("test", registry)
+
+
 def test_profile_rejects_unknown_keys(tmp_path):
     registry = tmp_path / "profiles.json"
     root = r"C:\CoursIA-Test\runner"
