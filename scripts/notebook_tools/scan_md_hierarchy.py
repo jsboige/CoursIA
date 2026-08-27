@@ -264,7 +264,8 @@ def _repo_root():
     import subprocess
     try:
         out = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                             capture_output=True, text=True, timeout=10)
+                             capture_output=True, text=True, timeout=10,
+                             encoding='utf-8', errors='replace')
         if out.returncode == 0:
             return pathlib.Path(out.stdout.strip())
     except Exception:
