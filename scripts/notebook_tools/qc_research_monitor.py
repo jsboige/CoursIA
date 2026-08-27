@@ -128,7 +128,7 @@ def create_issue(article: dict, dry_run: bool) -> int | None:
             "--body", issue_body(article),
             "--label", LABEL,
         ],
-        capture_output=True, text=True,
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
     )
     if proc.returncode != 0:
         print(f"[WARN] echec gh issue create pour {article['id']}: {proc.stderr.strip()}", file=sys.stderr)

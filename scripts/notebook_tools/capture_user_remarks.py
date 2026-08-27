@@ -190,7 +190,7 @@ def create_issue(issue: dict, label: str) -> tuple[bool, str]:
         proc = subprocess.run(
             ["gh", "issue", "create", "--title", issue["title"],
              "--body-file", path, "--label", label],
-            capture_output=True, text=True, timeout=60,
+            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60,
         )
         ok = proc.returncode == 0
         return (ok, (proc.stdout + proc.stderr).strip())

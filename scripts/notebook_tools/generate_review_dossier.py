@@ -69,7 +69,7 @@ def _last_commit(path: Path) -> tuple[str, str, str]:
     try:
         out = subprocess.run(
             ["git", "log", "-1", "--format=%ad|%an|%h", "--date=short", "--", str(path)],
-            capture_output=True, text=True, cwd=REPO_ROOT, check=True,
+            capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=REPO_ROOT, check=True,
         ).stdout.strip()
         date, author, sha = out.split("|")[:3]
         return date, author, sha
