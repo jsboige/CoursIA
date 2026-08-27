@@ -30,7 +30,9 @@ CI_DIR = Path(__file__).resolve().parents[1] / "ci"
 sys.path.insert(0, str(CI_DIR))
 
 import fast_lane  # noqa: E402
-from fast_lane_registry import PILOT, TRANCHE1, Guard  # noqa: E402
+from fast_lane_registry import (  # noqa: E402
+    PILOT, TRANCHE1, TRANCHE2, TRANCHE3, Guard,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -803,3 +805,61 @@ def test_iter_paths_skips_files_deleted_by_the_pr(monkeypatch):
         f"le notebook existant {real_nb} doit etre examine")
     assert gone not in examined, (
         "un fichier supprime par la PR ne doit pas atteindre le detecteur")
+
+
+# ---------------------------------------------------------------------------
+# 9. TRANCHE 3 (#13097 remede A) : absorption de regression-guard
+# ---------------------------------------------------------------------------
+
+def test_tranche3_registry_integrity():
+    """Le garde absorbe doit reproduire le contrat du workflow d'origine :
+    nom canonique du check-run, advisory jamais bloquant, iteration par
+    notebook change, rc=2 (import casse) mappe comme l'original."""
+    assert len(TRANCHE3) == 1
+    guard = TRANCHE3[0]
+    assert guard.name == "No notebook health regression"
+    assert guard.source == "regression-guard.yml"
+    assert guard.absorbed is True
+    # ADVISORY (user 2026-06-20) : le workflow d'origine sort TOUJOURS 0 --
+    # le caractere report-only doit survivre a l'absorption.
+    assert guard.blocking is False
+    assert guard.iterates_paths is True
+    assert "{changed_paths}" in guard.argv
+    assert guard.warn_rc == (2,)
+    assert guard.needs_base is True
+
+
+def test_absorbed_guards_sources_never_fire_on_pull_request():
+    """Contrat d'absorption (TRANCHE1/2/3) : un garde absorbe rend son
+    verdict dans la lane ; si son workflow source se declenchait encore sur
+    `pull_request`, la PR recevrait DEUX check-runs du meme nom (le job
+    d'origine + la lane) et toute divergence entre les deux deviendrait un
+    faux signal. Le fichier source doit garder `workflow_dispatch` (maintien
+    manuel) mais plus jamais `pull_request`."""
+    import re as _re
+    workflows = Path(__file__).resolve().parents[2] / ".github" / "workflows"
+    for guard in TRANCHE1 + TRANCHE2 + TRANCHE3:
+        wf = workflows / guard.source
+        assert wf.is_file(), f"{guard.source} absent du depot"
+        content = wf.read_text(encoding="utf-8")
+        assert "pull_request:" not in content, (
+            f"{guard.source} porte encore un declencheur pull_request alors "
+            f"que {guard.name} est absorbe (double verdict)"
+        )
+        assert "workflow_dispatch" in content, (
+            f"{guard.source} doit garder workflow_dispatch (maintien manuel)"
+        )
+
+
+def test_tranche3_scan_paths_cover_the_scanner_itself():
+    """Une edition DU SCANNER (regression_scan.py ou ses siblings) doit
+    re-declencher le garde -- sinon un scanner casse ne serait plus jamais
+    re-examine sur les PR qui le reparent."""
+    guard = TRANCHE3[0]
+    for needle in (
+        "scripts/notebook_tools/regression_scan.py",
+        "scripts/notebook_tools/regression_allowlist.json",
+        "scripts/notebook_tools/diagnose_broken.py",
+        "scripts/notebook_tools/forensic_scan.py",
+    ):
+        assert needle in guard.paths, f"{needle} absent des paths du garde"

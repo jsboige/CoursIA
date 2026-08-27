@@ -41,6 +41,13 @@ name: Fast lane (ombre)
 # fabricated-text, degenerate-figure), memes regles -- nom canonique,
 # conclusion reelle, workflow d'origine retire de `pull_request`. Le
 # compteur du job suit le registre : 16 gardes, toujours 1 checkout.
+#
+# TRANCHE 3 (#13097, remede A -- famine CI) : regression-guard absorbe.
+# Premier garde de la vague « metadata guards » sans filtre paths: qui
+# pesait ~50 % du volume pull_request ; le seul dont le verdict est une
+# invocation python proche sans ecriture PR (les 8 autres exigent des
+# write-perms lane ou une extension moteur -- voir registre TRANCHE3).
+# Compteur : 17 gardes, toujours 1 checkout.
 
 on:
   pull_request:
@@ -59,7 +66,7 @@ concurrency:
 
 jobs:
   fast-lane:
-    name: "Fast lane (ombre) -- 16 gardes, 1 checkout"
+    name: "Fast lane (ombre) -- 17 gardes, 1 checkout"
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
