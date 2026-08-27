@@ -3,7 +3,7 @@
 Scaffolding pour la formalisation de résultats de théorie des nœuds en Lean 4,
 avec sorry stratégiques commentés (références papier + prérequis Mathlib).
 
-Epic #2874 (Phase 5 en cours). Toolchain `v4.32.0`.
+Epic #2874 (Phase 5 en cours). Toolchain `v4.32.1` (migration post-#11325, cf #11256).
 
 ## État des sorries (vérifié 2026-08-17 contre `origin/main`, **14 réels**)
 
