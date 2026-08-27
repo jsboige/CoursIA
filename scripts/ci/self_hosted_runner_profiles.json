@@ -17,7 +17,7 @@
       },
       "sensitive_paths": [
         {"deny": "{repo_root}\\.secrets", "probe": "{repo_root}\\.secrets\\master.env"},
-        {"deny": "{user_profile}\\.ssh", "probe": "{user_profile}\\.ssh\\jsboige_key"},
+        {"deny": "{user_profile}\\.ssh", "probe": "{user_profile}\\.ssh"},
         {"deny": "{appdata}\\GitHub CLI\\hosts.yml", "probe": "{appdata}\\GitHub CLI\\hosts.yml"}
       ]
     },
@@ -37,7 +37,7 @@
       },
       "sensitive_paths": [
         {"deny": "{repo_root}\\.secrets", "probe": "{repo_root}\\.secrets\\master.env"},
-        {"deny": "{user_profile}\\.ssh", "probe": "{user_profile}\\.ssh\\jsboige_key"},
+        {"deny": "{user_profile}\\.ssh", "probe": "{user_profile}\\.ssh"},
         {"deny": "{appdata}\\GitHub CLI\\hosts.yml", "probe": "{appdata}\\GitHub CLI\\hosts.yml"}
       ]
     },
@@ -57,7 +57,7 @@
       },
       "sensitive_paths": [
         {"deny": "{repo_root}\\.secrets", "probe": "{repo_root}\\.secrets\\master.env"},
-        {"deny": "{user_profile}\\.ssh", "probe": "{user_profile}\\.ssh\\jsboige_key"},
+        {"deny": "{user_profile}\\.ssh", "probe": "{user_profile}\\.ssh"},
         {"deny": "{appdata}\\GitHub CLI\\hosts.yml", "probe": "{appdata}\\GitHub CLI\\hosts.yml"}
       ]
     },
@@ -77,7 +77,7 @@
       },
       "sensitive_paths": [
         {"deny": "{repo_root}\\.secrets", "probe": "{repo_root}\\.secrets\\master.env"},
-        {"deny": "{user_profile}\\.ssh", "probe": "{user_profile}\\.ssh\\jsboige_key"},
+        {"deny": "{user_profile}\\.ssh", "probe": "{user_profile}\\.ssh"},
         {"deny": "{appdata}\\GitHub CLI\\hosts.yml", "probe": "{appdata}\\GitHub CLI\\hosts.yml"}
       ]
     }
