@@ -43,3 +43,5 @@ papermill>=2.4
 # Optional: OpenSpiel (Search-7 MCTS/AlphaGo-style) — pas de wheel pip Windows.
 # Installer via WSL/Linux : pip install open_spiel  (cf README, section Search-7)
 # open_spiel>=1.4
+# Convex optimization (Search-17 : relaxation SDP / Burer-Monteiro)
+cvxpy>=1.5                 # Solveur conique (CLARABEL/SCS) pour la reference SDP
