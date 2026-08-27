@@ -58,3 +58,32 @@
   font-size: 0.86em;
   line-height: 1.35;
 }
+
+/* 6. Colonnes de grille `gap-5` (conversions two-cols -> grid, tranches 1-10).
+ *    La migration a cassé le contrat des règles 2-4 : le layout par défaut est
+ *    un bloc, donc `flex`/`max-height` des <img> y est inerte, et la rangée de
+ *    grille grandit avec son contenu. Les <img> en pied de colonne ressortent
+ *    alors du canvas (mesuré avec scan_slidev_composition.py le 2026-08-26 :
+ *    6 slides HORS_CANVAS, débordements de +4 à +124 px — dont la slide 50,
+ *    +124 px). On rétablit l'intention d'origine — « les images cèdent
+ *    l'espace au texte » — : layout par défaut borné + flex, grid borné à la
+ *    place restante, cellule flex dont l'image est compressible. */
+.slidev-layout.default {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  max-height: 100%;
+}
+
+.slidev-layout .grid.grid-cols-2.gap-5 {
+  flex: 1 1 auto;
+  min-height: 0;
+  grid-template-rows: 1fr;
+}
+
+.slidev-layout .grid.grid-cols-2.gap-5 > div {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
