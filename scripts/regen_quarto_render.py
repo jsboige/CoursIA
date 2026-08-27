@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import posixpath
 import re
 import subprocess
 import sys
@@ -327,6 +328,11 @@ def replace_render_block(yml_text: str, new_block_lines: list[str]) -> str:
 _IPYNB_LINK_RE = re.compile(r"\]\(([^)#\s]+\.ipynb)\)")
 
 
+def _normalise_readme_target(base: Path, href: str) -> str:
+    """Return a repository-relative POSIX path with ``..`` resolved."""
+    return posixpath.normpath((base / href).as_posix())
+
+
 def readme_link_violations() -> list[tuple[str, str, str]]:
     """Return [(readme, class, detail)] for render-list-vs-README drift.
 
@@ -351,8 +357,7 @@ def readme_link_violations() -> list[tuple[str, str, str]]:
             href = m.group(1)
             if href.startswith(("http://", "https://", "#", "mailto:")):
                 continue  # absolute/anchor links are out of scope
-            target = (base / href).as_posix()
-            norm = re.sub(r"^\./", "", target)
+            norm = _normalise_readme_target(base, href)
             if norm in rendered:
                 out.append((rel_readme, "STALE_LINK", href))
             elif not (REPO_ROOT / norm).exists():
@@ -374,7 +379,7 @@ def report_readme_links() -> int:
             href = m.group(1)
             if href.startswith(("http://", "https://", "#", "mailto:")):
                 continue  # absolute/anchor links are out of scope
-            norm = re.sub(r"^\./", "", (base / href).as_posix())
+            norm = _normalise_readme_target(base, href)
             if norm not in rendered and (REPO_ROOT / norm).exists():
                 unrendered += 1
     violations = readme_link_violations()

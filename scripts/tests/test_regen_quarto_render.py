@@ -303,6 +303,28 @@ class TestLandingPages:
 
 
 # ---------------------------------------------------------------------------
+# README-link target normalisation
+# ---------------------------------------------------------------------------
+
+class TestReadmeLinkTargets:
+    def test_resolves_parent_segments(self):
+        base = Path("MyIA.AI.Notebooks/Search/Part2-CSP")
+        href = "../Part1-Foundations/Search-1-StateSpace.ipynb"
+
+        assert rqr._normalise_readme_target(base, href) == (
+            "MyIA.AI.Notebooks/Search/Part1-Foundations/"
+            "Search-1-StateSpace.ipynb"
+        )
+
+    def test_removes_current_directory_segments(self):
+        base = Path("MyIA.AI.Notebooks/RL")
+
+        assert rqr._normalise_readme_target(
+            base, "./rl_1_intro_cartpole.ipynb"
+        ) == "MyIA.AI.Notebooks/RL/rl_1_intro_cartpole.ipynb"
+
+
+# ---------------------------------------------------------------------------
 # argparse — --check flag
 # ---------------------------------------------------------------------------
 
