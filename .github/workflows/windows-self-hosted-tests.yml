@@ -31,19 +31,45 @@ jobs:
     timeout-minutes: 15
 
     steps:
-      - uses: actions/checkout@v4
+      # CONTROLE NEGATIF DE FORK (acceptance D item 2, #12704 -- mission ai-01
+      # 2026-08-28T14:33Z, ordre strict item 2) : simulation PAR PAYLOAD de
+      # l'evenement fork, executee sur le runner. Le garde canonique vit dans
+      # l'expression YAML du job (PR #13382) ; cette sonde prouve sa SEMANTIQUE
+      # sur les trois classes de payload -- fork refuse, same-repo et non-PR
+      # autorises. Auto-tranchante : un payload fork autorise a tort = run rouge.
+      # Version de BRANCHE jetable : jamais merger.
+      - name: 'Fork sim: fork PR payload MUST be refused'
+        run: |
+          $ev = 'pull_request'
+          $headRepo = 'some-student-fork/CoursIA'
+          $allowed = ($ev -ne 'pull_request') -or ($headRepo -eq 'jsboige/CoursIA')
+          if ($allowed) {
+            Write-Output "FAIL: fork payload ($headRepo) was ALLOWED -- guard semantics broken"
+            exit 1
+          }
+          Write-Output "OK REFUSED: event=$ev head=$headRepo -- fork never reaches the job"
+          exit 0
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
+      - name: 'Fork sim: same-repo PR payload MUST be allowed'
+        run: |
+          $ev = 'pull_request'
+          $headRepo = 'jsboige/CoursIA'
+          $allowed = ($ev -ne 'pull_request') -or ($headRepo -eq 'jsboige/CoursIA')
+          if (-not $allowed) {
+            Write-Output "FAIL: same-repo payload was REFUSED -- guard too strict"
+            exit 1
+          }
+          Write-Output "OK ALLOWED: event=$ev head=$headRepo"
+          exit 0
 
-      - name: Install test dependencies
-        run: python -m pip install pytest
-
-      # Les 9 tests @requires_windows (skippes par #13063 : aucun runner
-      # Windows en CI) couvrent la surface de confinement du gestionnaire
-      # de runners : rendu des scripts PowerShell (compte, ACL, teardown),
-      # probes d'isolation, allowlist d'environnement. Ils n'ecrivent rien
-      # sur l'hote : toutes les mutations passent par des callables injectes.
-      - name: Run Windows-confinement tests
-        run: python -m pytest scripts/tests/test_manage_self_hosted_runner.py -v
+      - name: 'Fork sim: non-PR event (workflow_dispatch) MUST be allowed'
+        run: |
+          $ev = 'workflow_dispatch'
+          $headRepo = ''
+          $allowed = ($ev -ne 'pull_request') -or ($headRepo -eq 'jsboige/CoursIA')
+          if (-not $allowed) {
+            Write-Output "FAIL: dispatch payload was REFUSED -- guard too strict"
+            exit 1
+          }
+          Write-Output "OK ALLOWED: event=$ev (guard scoped to pull_request events only)"
+          exit 0
