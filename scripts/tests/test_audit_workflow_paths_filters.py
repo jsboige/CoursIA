@@ -26,6 +26,7 @@ def run(args: list[str]) -> subprocess.CompletedProcess:
         capture_output=True,
         text=True,
         timeout=30,
+        encoding="utf-8", errors="replace",
     )
 
 
@@ -36,8 +37,12 @@ def test_inventory_size():
     assert data["workflows_total"] >= 80, (
         f"expected >=80 workflows, got {data['workflows_total']}"
     )
-    assert data["workflows_pull_request"] >= 70, (
-        f"expected >=70 pull_request workflows, got {data['workflows_pull_request']}"
+    # #13384 : la fusion des 5 gardes always-on en l'umbrella always-on-guards.yml
+    # a rendu leurs workflows sources dormants (workflow_dispatch seul) —
+    # 74 -> 69 workflows a trigger pull_request. Plancher recalibre de 70 a 65
+    # (marge 4, identique a la marge d'origine), cf precedent absorption fast-lane.
+    assert data["workflows_pull_request"] >= 65, (
+        f"expected >=65 pull_request workflows, got {data['workflows_pull_request']}"
     )
 
 

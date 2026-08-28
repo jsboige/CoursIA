@@ -82,11 +82,13 @@ def _commit(repo: Path, message: str, files: dict | None = None,
 
 def _pr(number: int, head: str, base: str = "feature/base",
         merged_at: str = "2026-08-14T16:41:39Z", merge_commit: str = "",
-        files: list | None = None, title: str = "T") -> dict:
+        files: list | None = None, title: str = "T",
+        rest_files: list | None = None, body: str = "") -> dict:
     return {"number": number, "headRefName": head, "baseRefName": base,
             "mergedAt": merged_at,
             "mergeCommit": {"oid": merge_commit} if merge_commit else None,
-            "files": [{"path": p} for p in (files or [])], "title": title}
+            "files": [{"path": p} for p in (files or [])], "title": title,
+            "rest_files": rest_files, "body": body}
 
 
 # --------------------------------------------------------------------------- #
@@ -117,14 +119,19 @@ def test_is_ancestor_true_for_self_and_lineage(tmp_path):
 
 
 def test_content_missing_true_when_absent_false_when_identical(tmp_path):
+    """Classifieur (#12723) : absent -> lost ; present (meme contenu evolue)
+    -> present, jamais lost. L'identite n'entre plus en ligne de compte."""
     mod = _load()
     repo = _git_repo(tmp_path)
     _g(repo, "checkout", "-q", "-b", "base")
     mc = _commit(repo, "pr lands", {"site/rendered.html": "html"}, date="2026-08-14T16:41:39+00:00")
-    assert mod.content_missing_from_base(repo, "main", mc, ["site/rendered.html"]) is True
+    cls = mod.classify_delivered_paths(repo, "main", ["site/rendered.html"])
+    assert cls["lost"] == ["site/rendered.html"]
     _g(repo, "checkout", "-q", "main")
-    _commit(repo, "re-landed", {"site/rendered.html": "html"}, date="2026-08-14T17:00:00+00:00")
-    assert mod.content_missing_from_base(repo, "main", mc, ["site/rendered.html"]) is False
+    _commit(repo, "re-landed then evolved", {"site/rendered.html": "html-v2-evolved"},
+            date="2026-08-14T17:00:00+00:00")
+    cls = mod.classify_delivered_paths(repo, "main", ["site/rendered.html"])
+    assert cls["lost"] == [] and cls["present"] == 1
 
 
 # --------------------------------------------------------------------------- #
@@ -278,7 +285,224 @@ def test_clean_when_content_relanded(tmp_path):
              files=["site/rendered.html"])
     res = mod.analyse_pr(repo, pr, "main", "")
     assert res["status"] == "clean"
-    assert "re-landed" in res["reason"]
+    assert "re-atterris" in res["reason"]
+
+
+def test_filter3_present_but_evolved_is_clean(tmp_path):
+    """#12723, formes FP #11931/#11638 (FAIL-BEFORE) : les chemins livres
+    EXISTENT sur main (re-atterris puis EVOLUES par des commits ulterieurs).
+    L'ancien filtre 3 comparait l'IDENTITE de tout le lot -> diff non-quiet ->
+    orphelin a tort (ce sont les FP labellises en prod). #12723 exige
+    l'EXISTENCE par chemin ('comparer les chemins, pas les SHA') : present,
+    meme evolue, n'est pas une perte."""
+    mod = _load()
+    repo = _git_repo(tmp_path)
+    _g(repo, "checkout", "-q", "-b", "feature/base")
+    _commit(repo, "base leg work", {"_quarto.yml": "cfg"})
+    _g(repo, "checkout", "-q", "-b", "feature/site")
+    mc = _commit(repo, "PR work", {"site/rendered.html": "v1"})
+    _g(repo, "checkout", "-q", "main")
+    _commit(repo, "squash of base leg", {"_quarto.yml": "cfg"})
+    _commit(repo, "cherry-pick of PR content", {"site/rendered.html": "v1"})
+    _commit(repo, "later evolution of the same file", {"site/rendered.html": "v2-evolved"})
+    pr = _pr(11931, "feature/site", base="feature/base", merge_commit=mc,
+             files=["site/rendered.html"])
+    res = mod.analyse_pr(repo, pr, "main", "")
+    assert res["status"] == "clean"
+
+
+def test_renamed_path_is_not_a_loss(tmp_path):
+    """#12723 : chemin livre absent de main mais dont le BASENAME vit ailleurs
+    sur main (deplacement de serie, meme nom autre dossier) -> statut renamed,
+    PAS orphan — 'un garde qui sur-accuse est desarme apres deux faux positifs'.
+    Scope honnete : le matching est basename EXACT ; un zero-pad qui change le
+    basename lui-meme (4b -> 04b) est hors portee (le fuzzy matcher sur-accuserait
+    plus qu'il ne sauverait)."""
+    mod = _load()
+    repo = _git_repo(tmp_path)
+    _g(repo, "checkout", "-q", "-b", "feature/base")
+    _commit(repo, "base leg work", {"_quarto.yml": "cfg"})
+    _g(repo, "checkout", "-q", "-b", "feature/site")
+    mc = _commit(repo, "PR work", {"Search/MGS-26-EquilibriumOptimizer.ipynb": "nb"})
+    _g(repo, "checkout", "-q", "main")
+    _commit(repo, "squash base leg", {"_quarto.yml": "cfg"})
+    _commit(repo, "moved to another series dir", {"Metaheuristiques/MGS-26-EquilibriumOptimizer.ipynb": "nb"})
+    pr = _pr(11931, "feature/site", base="feature/base", merge_commit=mc,
+             files=["Search/MGS-26-EquilibriumOptimizer.ipynb"])
+    res = mod.analyse_pr(repo, pr, "main", "")
+    assert res["status"] == "renamed"
+    assert res["renamed"] == {"Search/MGS-26-EquilibriumOptimizer.ipynb":
+                              ["Metaheuristiques/MGS-26-EquilibriumOptimizer.ipynb"]}
+
+
+def test_normalize_rest_uses_filename_not_path():
+    """Regression live-run (#12723) : l'API REST pulls/{n}/files rend le champ
+    ``filename``, pas ``path``. Ne lire que ``path`` faisait disparaitre tous
+    les fichiers -> toute PR rendue 'clean' (#12423 rendu propre alors que son
+    notebook est absent de main)."""
+    mod = _load()
+    out = mod.normalize_pr_files([
+        {"sha": "d", "filename": "Search/MGS-26.ipynb", "status": "added"},
+        {"path": "Graphql/form.ipynb"},   # GraphQL : pas de statut
+        "bare/string.ipynb",
+        {"sha": "x", "filename": "README.old.md", "status": "removed"},
+    ])
+    assert out == [
+        {"path": "Search/MGS-26.ipynb", "status": "added"},
+        {"path": "Graphql/form.ipynb", "status": "modified"},
+        {"path": "bare/string.ipynb", "status": "modified"},
+        {"path": "README.old.md", "status": "removed"},  # filtre en aval
+    ]
+
+
+def test_removed_files_are_not_required_on_main(tmp_path):
+    """Une PR qui RETIRE un fichier (statut REST removed) ne doit pas exiger sa
+    presence sur main : l'absence EST la livraison."""
+    mod = _load()
+    repo = _git_repo(tmp_path)
+    _g(repo, "checkout", "-q", "-b", "feature/base")
+    _commit(repo, "base leg work", {"_quarto.yml": "cfg"})
+    _g(repo, "checkout", "-q", "-b", "feature/site")
+    mc = _commit(repo, "PR removes legacy", {"README.old.md": ""})
+    _g(repo, "checkout", "-q", "main")
+    _commit(repo, "squash base leg", {"_quarto.yml": "cfg"})
+    pr = _pr(12000, "feature/site", base="feature/base", merge_commit=mc,
+             rest_files=[{"path": "README.old.md", "status": "removed"}])
+    res = mod.analyse_pr(repo, pr, "main", "")
+    assert res["status"] == "clean"
+
+
+def test_orphan_records_only_lost_paths(tmp_path):
+    """#12423 : le finding porte les chemins PERDUS (absents, non renommes),
+    pas l'ensemble des fichiers de la PR."""
+    mod = _load()
+    repo = _git_repo(tmp_path)
+    _g(repo, "checkout", "-q", "-b", "feature/base")
+    _commit(repo, "base leg work", {"_quarto.yml": "cfg"})
+    _g(repo, "checkout", "-q", "-b", "feature/site")
+    mc = _commit(repo, "PR work", {"Search/MGS-26-EquilibriumOptimizer.ipynb": "nb",
+                                   "Search/README.md": "r"})
+    _g(repo, "checkout", "-q", "main")
+    _commit(repo, "squash base leg", {"_quarto.yml": "cfg"})
+    _commit(repo, "readme re-landed elsewhere", {"Search/README.md": "r"})
+    pr = _pr(12423, "feature/site", base="feature/base", merge_commit=mc,
+             files=["Search/MGS-26-EquilibriumOptimizer.ipynb", "Search/README.md"])
+    res = mod.analyse_pr(repo, pr, "main", "")
+    assert res["status"] == "orphan"
+    assert res["paths"] == ["Search/MGS-26-EquilibriumOptimizer.ipynb"]
+
+
+def test_parse_issue_refs_closes_and_see():
+    mod = _load()
+    refs = mod.parse_issue_refs("## Summary\n\nCloses #12408\n\nSee #12373 epic. Refs #99.")
+    assert refs["closes"] == [12408]
+    assert refs["see"] == [12373, 99]
+    assert mod.issue_signal_targets(refs) == [12408]
+    # repli : See quand aucune Closes
+    assert mod.issue_signal_targets({"closes": [], "see": [12373]}) == [12373]
+
+
+def _fake_gh_subprocess(calls: list):
+    """subprocess.run factice : git -> REEL (le mini-repo local hermetique doit
+    rester analyse par les vrais is_ancestor/ls-tree), gh/git-remote -> capture.
+
+    Un fake global (returncode 0 partout) ferait passer is_ancestor pour vrai
+    (merge-base --is-ancestor rend 0) et rendrait TOUT statut clean — le test
+    ne testerait plus rien."""
+    real_run = subprocess.run
+
+    def run(cmd, **kw):
+        if cmd and cmd[0] == "git" and "ls-remote" not in cmd:
+            return real_run(cmd, **kw)
+        calls.append(list(cmd))
+        return type("P", (), {"returncode": 0, "stdout": "[]", "stderr": ""})()
+    return run
+
+
+def test_issue_comment_names_the_target_issue_not_the_pr():
+    """Le commentaire depose sur l'issue cite l'ISSUE (Closes #12418), pas le
+    numero de PR — 'porte Closes #12423' serait un mensonge lisible."""
+    mod = _load()
+    r = {"number": 12423, "title": "T", "base": "feature/x",
+         "paths": ["Search/MGS-26.ipynb"],
+         "issue_refs": {"closes": [12418], "see": [12300]}}
+    body = mod.build_issue_comment(r, 12418)
+    assert "Closes #12418" in body
+    assert "Closes #12423" not in body
+    body2 = mod.build_issue_comment(r, 12300)
+    assert "See #12300" in body2 and "See #12423" not in body2
+
+
+def test_comment_upsert_uses_numeric_rest_id(monkeypatch, tmp_path):
+    """Regression #12723 (diag) : l'upsert doit PATCHer par id NUMERIQUE REST.
+    Lister via gh pr view --json comments (ids GraphQL IC_...) et PATCHer par
+    URL REST = 404 silencieux — le bug qui a gelee le registre
+    orphan-branch-scan 9 jours ('report updated' imprime, jamais atterri)."""
+    mod = _load()
+    repo = _git_repo(tmp_path)
+    _g(repo, "checkout", "-q", "-b", "feature/base")
+    _commit(repo, "base leg work", {"_quarto.yml": "cfg"})
+    _g(repo, "checkout", "-q", "-b", "feature/site")
+    mc = _commit(repo, "PR work", {"site/rendered.html": "html"})
+    _g(repo, "checkout", "-q", "main")
+    _commit(repo, "squash base leg", {"_quarto.yml": "cfg"})
+    pr = _pr(12423, "feature/site", base="feature/base", merge_commit=mc,
+             files=["site/rendered.html"])
+
+    calls: list[list[str]] = []
+    monkeypatch.setattr(mod, "_gh_json", lambda args: (
+        [{"id": 5300849238, "body": mod.MARKER_START + " old"}]
+        if args[:1] == ["api"] and "/comments" in args[1] else None))
+    monkeypatch.setattr(mod.subprocess, "run", _fake_gh_subprocess(calls))
+    r = mod.analyse_pr(repo, pr, "main", "")
+    assert r["status"] == "orphan"
+    mod.apply_findings("jsboige/CoursIA", [r], [], dry_run=False)
+    patches = [c for c in calls if "PATCH" in c]
+    assert patches, "le PATCH numerique doit etre emis"
+    url_args = [a for a in patches[0] if "issues/comments/" in a]
+    assert url_args, f"URL REST attendue dans le PATCH: {patches[0]}"
+    cid = url_args[0].split("?")[0].rstrip("/").rsplit("/", 1)[-1]
+    assert cid.isdigit(), f"l'id du PATCH doit etre numerique (REST), pas un node-id: {cid}"
+
+
+def test_unlabel_repaired_labeled_pr(monkeypatch, tmp_path):
+    """#12723 : une PR labellisee devenue propre (contenu re-atterri puis
+    evolue — le cas #11931/#11638) est DE-LABELLISEE avec note de resolution :
+    le label signifie 'toujours absent', pas 'absent un jour'."""
+    mod = _load()
+    repo = _git_repo(tmp_path)
+    _g(repo, "checkout", "-q", "-b", "feature/base")
+    _commit(repo, "base leg work", {"_quarto.yml": "cfg"})
+    _g(repo, "checkout", "-q", "-b", "feature/site")
+    mc = _commit(repo, "PR work", {"CSP/CSP-5-Optimization.ipynb": "v1"})
+    _g(repo, "checkout", "-q", "main")
+    _commit(repo, "squash base leg", {"_quarto.yml": "cfg"})
+    _commit(repo, "relanded", {"CSP/CSP-5-Optimization.ipynb": "v1"})
+    _commit(repo, "evolved", {"CSP/CSP-5-Optimization.ipynb": "v9"})
+
+    fake_pr = {"number": 11931, "baseRefName": "feature/base",
+               "headRefName": "feature/site", "mergedAt": "2026-08-15T10:00:00Z",
+               "mergeCommit": {"oid": mc}, "files": [{"path": "CSP/CSP-5-Optimization.ipynb"}],
+               "title": "T", "body": "See #11891"}
+
+    def fake_gh(args):
+        if args[:2] == ["pr", "view"]:
+            return fake_pr
+        if args[:1] == ["api"]:
+            return []  # pas de commentaire marker existant -> post
+        return None
+
+    monkeypatch.setattr(mod, "labeled_merged_prs", lambda repo_slug: [11931])
+    monkeypatch.setattr(mod, "_gh_json", fake_gh)
+    edits: list[list[str]] = []
+    monkeypatch.setattr(mod.subprocess, "run", _fake_gh_subprocess(edits))
+    mod.unlabel_repaired("jsboige/CoursIA", repo, "main",
+                         orphan_numbers=set(), dry_run=False)
+    removed = [c for c in edits if "--remove-label" in c and "11931" in c]
+    assert removed, "le label doit etre retire de la PR redevue propre"
+    # la de-labellisation vient du filtre 3 REEL (contenu re-atterri sur main),
+    # pas d'un subprocess factice qui ferait tout passer pour clean
+    assert mod.analyse_pr(repo, fake_pr, "main", "")["status"] == "clean"
 
 
 # --------------------------------------------------------------------------- #

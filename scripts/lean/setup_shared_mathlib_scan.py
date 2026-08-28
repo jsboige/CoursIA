@@ -36,7 +36,7 @@ def main() -> int:
     out = subprocess.run(
         ["git", "-C", repo_root, "ls-files", "--cached", "--others",
          "--exclude-standard", "--", "*lake-manifest.json"],
-        capture_output=True, text=True, check=False,
+        capture_output=True, text=True, encoding="utf-8", errors="replace", check=False,
     )
     if out.returncode != 0:
         print(f"WARN: git ls-files failed: {out.stderr[:200]}", file=sys.stderr)

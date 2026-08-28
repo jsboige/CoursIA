@@ -272,7 +272,7 @@ BATCH_MODE=false
 - `whisper-api`, `musicgen-api`, `demucs-api`, `qwen-asr-api` — use `shared/lazy_model.py` with `IDLE_TIMEOUT=300`
 
 **External idle monitor sidecars:**
-- `comfyui-qwen`, `comfyui-video` — `comfyui_idle_monitor.py` (calls `/free` to unload models)
+- `comfyui-qwen`, `comfyui-video` — `comfyui_idle_monitor.py` (calls `/free` to unload models). Fail-safe tri-state : si l'état du serveur est indéterminable (API injoignable / auth échouée), le check est **sauté** — jamais de `/free` à l'aveugle ; et la queue est relue à l'instant du tir (un prompt démarré entre la mesure et le `/free` l'annule). Avant ce garde-fou, un token stale post-restart déclenchait `/free` en boucle toutes les ~67 s, y compris pendant une génération active → crash serveur (exit 0, reboot 7-8 min, incident 2026-08-25).
 - `vllm-zimage`, `tts-fishaudio` — `service_idle_monitor.py` (stops container)
 - `sd-forge-main` — `service_idle_monitor.py` with HTTP Basic Auth (Caddy reverse proxy)
 
