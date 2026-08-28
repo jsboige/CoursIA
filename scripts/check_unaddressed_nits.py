@@ -662,11 +662,10 @@ def _formal_concern_precedes_lift(body: str) -> bool:
         for marker in ("COMMENT_WITH_CONCERNS", "REQUEST_CHANGES", "NEEDS_CHANGES")
     ]
     concern_positions = [position for position in concern_positions if position >= 0]
-    lift_positions = [
-        normalised.find(_unaccent(marker))
-        for marker in LIFT_MARKERS
-    ]
-    lift_positions = [position for position in lift_positions if position >= 0]
+    # #12908 : les occurrences NARRÉES de levée (« après la levée annoncée »)
+    # ne sont pas des gestes — la garde compare le verdict vivant aux levées
+    # VIVES uniquement.
+    lift_positions = _live_lift_positions(normalised)
     return (
         bool(concern_positions)
         and bool(lift_positions)
@@ -755,6 +754,69 @@ def _is_cited(window: str) -> bool:
             if head == c or (head.endswith(c) and not head[-len(c) - 1].isalnum()):
                 return True
     return False
+
+
+# #12908 — miroir LIFT-side de CITERS : un mot qui fait de l'occurrence
+# suivante un NOM de levee, pas sa PERFORMANCE. « obtenir une levée
+# explicite » (PREFLIGHT jsboigeEpita 2026-08-25T04:45:30Z sur #12798)
+# demande la levee, il ne l'accorde pas ; « la levée annoncée » la narre.
+# Le discriminant est le déterminant/quantificateur immédiatement devant :
+# une émission performative s'ouvre sur un verbe (« Je lève », « est
+# levée », « Levée de ») ou un acronyme nu (LGTM), jamais sur « une ».
+LIFT_NARRATION_CITERS = (
+    "un", "une", "le", "la", "les", "des", "du", "de",
+    "mon", "ma", "ton", "ta", "sa", "son", "ses",
+    "leur", "leurs", "notre", "votre",
+    "ce", "cet", "cette", "ces", "chaque", "aucun", "aucune",
+    "apres", "avant", "sans", "obtenir", "exige", "exiger",
+    "the", "a", "an",
+)
+
+
+def _lift_is_narrated(window: str) -> bool:
+    """La fenetre avant l'occurrence se termine-t-elle sur un déterminant ?
+
+    Même garde de frontière que `_is_cited` : le caractère précédant le mot
+    doit être non-alphanumérique, sinon « aucune » matcherait « une ».
+    """
+    w = window
+    while w and not w[-1].isalnum():
+        w = w[:-1]
+    w = w.lower()
+    for c in LIFT_NARRATION_CITERS:
+        if w == c or (w.endswith(c) and not w[-len(c) - 1].isalnum()):
+            return True
+    return False
+
+
+def _live_lift_positions(normalised: str) -> list[int]:
+    """Positions des occurrences de LIFT_MARKERS NON narrées.
+
+    `has_marker` traite le body comme un sac de mots ; #12798/#12908 a
+    mesuré le coût de ce sac côté LIFT : le PREFLIGHT qui EXIGE « une
+    levée explicite » était enregistré comme événement de levée, et
+    éteignait les réserves antérieures de son propre auteur (faux OK).
+    """
+    out: list[int] = []
+    for marker in LIFT_MARKERS:
+        m = _unaccent(marker)
+        start = 0
+        while (i := normalised.find(m, start)) != -1:
+            if not _lift_is_narrated(normalised[max(0, i - 30):i]):
+                out.append(i)
+            start = i + 1
+    return out
+
+
+def has_live_lift(body: str) -> bool:
+    """LIFT_MARKER présent avec au moins une occurrence NON narrée.
+
+    Miroir exact de `has_live_marker` côté levée : la classe use-vs-mention
+    (#11636 → #12944 côté verdicts) s'appliquait aux réserves, pas aux
+    levées — la symétrie ferme la dernière porte par laquelle un commentaire
+    neutre passait pour un geste de levée.
+    """
+    return bool(_live_lift_positions(_unaccent(body)))
 
 
 def has_live_marker(body: str, markers: tuple[str, ...]) -> bool:
@@ -895,7 +957,10 @@ def can_lift(comment: dict) -> bool:
     body = (comment.get("body") or "").lstrip()
     if not body:
         return False
-    if body.startswith(AGENT_PREFIXES) and not has_marker(body, LIFT_MARKERS):
+    # #12908 : la phrase exigée est une levée VIVE — un tag de protocole
+    # qui narre « une levée explicite » (exigence, pas geste) ne peut
+    # toujours pas lever.
+    if body.startswith(AGENT_PREFIXES) and not has_live_lift(body):
         return False
     return True
 
@@ -920,7 +985,7 @@ def classify(author: str, body: str) -> str | None:
     # reste muet — la sous-accusation coute un merge, la sur-accusation coute
     # une relecture. Aucun body sans glyphe ne change de classement : la
     # table de distribution d'ai-01 reste exacte.
-    if (has_marker(body, LIFT_MARKERS)
+    if (has_live_lift(body)
             and not _lift_cancelled(_strip_quoted(body))
             and not has_live_marker(_strip_quoted(body), SEVERITY_GLYPHS)
             # #12836 / #12798 : une revalidation COMMENT_WITH_CONCERNS peut
@@ -1073,7 +1138,9 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
          c.get("body", ""))
         for c in (pr_data.get("comments") or [])
         if can_lift(c)
-        and has_marker(c.get("body", ""), LIFT_MARKERS)
+        # #12908 : levée VIVE exigée — le PREFLIGHT de #12798 qui demandait
+        # « une levée explicite » était compté comme levée par le sac de mots.
+        and has_live_lift(c.get("body", ""))
         and not _lift_cancelled(_strip_quoted(c.get("body", "")))
         # #12836 / #12798 : une reserve qui narre une ancienne levee reste
         # une reserve, pas un evenement de levee du signal precedent.

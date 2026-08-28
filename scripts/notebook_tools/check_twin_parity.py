@@ -277,7 +277,7 @@ def scan_coverage(repo_root: Path, pairs: list) -> dict:
     """
     r = subprocess.run(
         ["git", "ls-files", "--", "*.ipynb"],
-        cwd=repo_root, capture_output=True, text=True,
+        cwd=repo_root, capture_output=True, text=True, encoding="utf-8", errors="replace",
     )
     if r.returncode != 0:
         raise SystemExit("Erreur : `git ls-files` a echoue (depot inaccessible ?).")
@@ -319,7 +319,7 @@ def _git_blob_sha(repo_root: Path, rel_path: str, git_ref: str = "HEAD") -> str 
     """
     r = subprocess.run(
         ["git", "ls-tree", git_ref, "--", rel_path],
-        capture_output=True, text=True, cwd=str(repo_root),
+        capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=str(repo_root),
     )
     if r.returncode != 0 or not r.stdout.strip():
         return None
@@ -359,7 +359,7 @@ def _blob_ancestor_in(repo_root: Path, blob_sha: str, ref: str = "HEAD") -> bool
         return False
     r = subprocess.run(
         ["git", "rev-list", "--objects", ref],
-        capture_output=True, text=True, cwd=str(repo_root),
+        capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=str(repo_root),
     )
     if r.returncode != 0:
         return False
@@ -431,7 +431,7 @@ def _load_registry_at_ref(repo_root: Path, git_ref: str, reg_path: Path) -> list
     # (1) Le ref porte-t-il le REPERTOIRE file-per-entry ?
     r_ls = subprocess.run(
         ["git", "ls-tree", "-r", "--name-only", git_ref, "--", f"{reg_rel}/"],
-        capture_output=True, text=True, cwd=str(repo_root),
+        capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=str(repo_root),
     )
     entries: list = []
     if r_ls.returncode == 0 and r_ls.stdout.strip():
@@ -471,7 +471,7 @@ def _load_registry_at_ref(repo_root: Path, git_ref: str, reg_path: Path) -> list
 def _repo_root() -> Path:
     r = subprocess.run(
         ["git", "rev-parse", "--show-toplevel"],
-        capture_output=True, text=True,
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
     )
     if r.returncode != 0:
         raise SystemExit("Erreur : pas un depot git (impossible de trouver la racine).")
@@ -1253,7 +1253,7 @@ def main(argv=None) -> int:
             for state_file, label in (("MERGE_HEAD", "merge"), ("REBASE_HEAD", "rebase")):
                 r = subprocess.run(
                     ["git", "rev-parse", "-q", "--verify", state_file],
-                    capture_output=True, text=True, cwd=str(repo_root_for_state),
+                    capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=str(repo_root_for_state),
                 )
                 if r.returncode == 0:
                     p.error(f"--update pendant un {label} non committe : HEAD ne contient pas "

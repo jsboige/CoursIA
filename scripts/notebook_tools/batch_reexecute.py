@@ -125,7 +125,7 @@ def execute_notebook(nb_path: Path, kernel: str, timeout: int) -> dict:
         result = subprocess.run(
             cmd,
             capture_output=True,
-            text=True,
+            text=True, encoding="utf-8", errors="replace",
             timeout=timeout + 60,  # extra buffer for papermill + kernel startup
             cwd=str(REPO_ROOT),
         )
