@@ -70,6 +70,12 @@ Un controle `bottom > canvasHeight` est necessaire et **tres insuffisant** : il 
 
 **Directive user (2026-08-20) : sur une composition, le plancher mecanisable n'est jamais le critere d'acceptation.** Un `slidev build` EXIT=0 prouve que le deck *construit*, rien de son rendu. L'acceptation reste un jugement visuel, porte par une lane qui **voit** (cf [`cluster-agents.md` §Capacite vision](cluster-agents.md)). Une estimation arithmetique de hauteur de contenu ne remplace pas non plus le regard : mesuree une fois a **224 px** d'ecart avec le rendu reel.
 
+## Images en pied de colonne d'une grille convertie — contrat de compression
+
+La migration `two-cols` -> `grid grid-cols-2` (campagne **#10950**, tranches 1-10) met certaines images illustratives **en flux dans la cellule**, sous le texte de colonne (ex. `img_070`, `img_125/126`). Le layout `default` etant **block**, `flex`/`max-height` y est inerte : la rangee de grille grandit avec son contenu et l'image de pied **sort du canvas** (mesure `scan_slidev_composition.py`, 2026-08-26 : 6 slides HORS_CANVAS, +4 a +124 px sur [S3-acculturation](../../slides/S3-acculturation/slides.md)).
+
+**Contrat** porte par [`slides/S3-acculturation/style.css`](../../slides/S3-acculturation/style.css) (regle 6) : layout `default` = flex borné (héritage du contrat `two-cols` d'origine — « les images cedent l'espace au texte »), grille `gap-5` = `grid-template-rows: 1fr`, cellule = flex vertical `min-height:0` → toute `<img>`. `flex: 0 1 auto` compressible. **Ne pas retirer ce bloc pour ajuster une slide** : reparer la slide, pas la contrainte. Sur un deck qui n'a pas ce bloc, une `<img>` nue en pied de cellule sans `.img-grid*` ni `absolute` est un debordement en attente.
+
 ## Fond du theme
 
 `.slidev-layout` porte `background-color` ; sans hauteur, la boite est dimensionnee par son contenu et **toute slide courte laisse une bande blanche** en bas du canvas (mesure : pale s'arretant a 436 px et 393 px sur deux slides d'un canvas de 552). Corrige par `min-height: 100%` + `box-sizing: border-box` — le padding `28px 40px` etant deja sur cette boite. C'est **du theme**, donc les 19 decks en heritent : ne pas le recorriger deck par deck.
