@@ -339,6 +339,7 @@ def test_cli_body_file_pass_exit_zero(tmp_path):
         [sys.executable, "scripts/ci/lane_claim_required.py",
          "--body-file", str(body_file)],
         capture_output=True, text=True, check=False,
+        encoding="utf-8", errors="replace",
     )
     assert proc.returncode == 0, f"expected 0, got {proc.returncode}: {proc.stderr!r}"
     v = json.loads(proc.stdout)
@@ -352,6 +353,7 @@ def test_cli_lane_unreadable_exit_zero(tmp_path):
         [sys.executable, "scripts/ci/lane_claim_required.py",
          "--body-file", str(body_file)],
         capture_output=True, text=True, check=False,
+        encoding="utf-8", errors="replace",
     )
     assert proc.returncode == 0
     v = json.loads(proc.stdout)
@@ -363,6 +365,7 @@ def test_cli_missing_body_file_exit_two(tmp_path):
         [sys.executable, "scripts/ci/lane_claim_required.py",
          "--body-file", str(tmp_path / "nonexistent.md")],
         capture_output=True, text=True, check=False,
+        encoding="utf-8", errors="replace",
     )
     assert proc.returncode == 2
 
@@ -468,6 +471,7 @@ def test_10323_cli_pr_closing_refs_arg_parsed(tmp_path):
         [sys.executable, "scripts/ci/lane_claim_required.py",
          "--body-file", str(body_file), "--pr-closing-refs", ""],
         capture_output=True, text=True, check=False,
+        encoding="utf-8", errors="replace",
     )
     v = json.loads(proc.stdout)
     assert v["guard_pass"] is True  # GitHub closes nothing -> no block

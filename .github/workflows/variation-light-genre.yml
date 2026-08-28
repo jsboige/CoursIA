@@ -32,6 +32,14 @@ on:
   pull_request:
     types: [opened, edited, synchronize, reopened]
     branches: [main]
+    # PAS de `paths:` ici -- #13232. Le verdict de ce garde depend du BODY de
+    # la PR (tag `Grain:`), pas de son diff : sa surface nominale est donc
+    # *toutes* les PR. Un paths-filter le reduirait aux PR qui modifient le
+    # garde lui-meme, c'est-a-dire a presque aucune (tranche 1c d'#12773,
+    # 71a36ae8b, revertee ici). Le critere d'#12773 s'enonce ainsi : filtrer
+    # par chemins un garde DIFF-dependant (regression-guard, translation-guard)
+    # est correct ; filtrer un garde METADONNEE-dependant le desarme. Reduire
+    # le fan-out passe ici par `types:` ou `concurrency`, jamais par `paths:`.
   workflow_dispatch:
 
 permissions:

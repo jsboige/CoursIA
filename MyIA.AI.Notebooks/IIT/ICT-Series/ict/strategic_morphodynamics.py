@@ -270,6 +270,47 @@ def replicator_trajectory(
     return traj
 
 
+def replicator_mutation_trajectory(
+    A: np.ndarray,
+    x0: np.ndarray,
+    n_steps: int = 1000,
+    mutation_rate: float = 0.05,
+) -> np.ndarray:
+    """Trajectoire de la dynamique replicateur-MUTATION discrete :
+
+        x_i(t+1) = (1 - mu) * x_i(t) * f_i(t) / <f>(t) + mu / n,   f_i = (A x)_i.
+
+    ``mu`` = taux de mutation uniforme (fraction de la population remplacee a chaque
+    generation par des mutants uniformement repartis). Contrairement au replicateur
+    pur (qui converge vers une ESS et fige le nuage sur un point), la mutation
+    maintient le polymorphisme : aucune frequence ne s'annule, la trajectoire balaie
+    le simplex au lieu de s'ecraser sur un attracteur. Le nuage soumis au discriminant
+    topologique est alors une trajectoire, pas un instantane — c'est le levier qui
+    donne du relief (b1 > 0 possible) au substrat Axelrod d'ICT-15d.
+
+    ``x0`` = vecteur de frequences (somme 1) sur les strategies. Renvoie la
+    trajectoire ``(n_steps+1, n_strategies)``. Avec ``mutation_rate=0`` elle se
+    reduit au replicateur pur."""
+    x = np.asarray(x0, dtype=float).copy()
+    x = x / x.sum()
+    n = x.size
+    mu = float(mutation_rate)
+    traj = np.empty((n_steps + 1, n))
+    traj[0] = x
+    for t in range(n_steps):
+        f = A @ x
+        avg = float(np.dot(f, x))
+        if avg < 1e-12:
+            break
+        sel = x * f / avg
+        x = (1.0 - mu) * sel + mu / n
+        s = x.sum()
+        if s > 1e-12:
+            x = x / s
+        traj[t + 1] = x
+    return traj
+
+
 def fixation(traj: np.ndarray, tol: float = 1e-3) -> np.ndarray:
     """Vecteur de frequence final de la trajectoire (derniere ligne). Une
     strategie a « envahi » si sa frequence finale > 1 - tol."""

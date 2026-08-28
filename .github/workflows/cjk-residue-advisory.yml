@@ -58,6 +58,7 @@ jobs:
           # the merge-base and the diff would fail instead of scoping to this
           # PR's own apport.
           fetch-depth: 0
+          filter: blob:none
 
       - name: Set up Python
         uses: actions/setup-python@v5

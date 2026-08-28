@@ -73,7 +73,10 @@ Mayer-Vietoris et Čech — en est l'instrument de mesure.
 (Parties 2, 3) relient la visite à la géométrie algébrique d'origine, avec le
 théorème-pont `zariski_topology_eq`. Côté bibliothèque, la carte Mathlib
 (Partie 4, index `#check`) dit honnêtement ce qui existe et ce qui manque, et
-`Calibration.lean` (Partie 5) alimente le harnais du prouveur (Epic #1453).
+`Calibration.lean` (Partie 5) reprend la taxonomie d'étalonnage du harnais
+prouveur (Epic #1453, P1-P4) sans être consommée par lui : les cibles
+effectives du harnais vivent dans `calibration_lean/` (classe HARNESS,
+frontière arbitrée #13212).
 
 **Les fondations catégorielles** (Parties 24-32). Yoneda, adjonctions,
 monades, catégories comma, (co)limites, équivalences, extensions de Kan,
@@ -103,7 +106,7 @@ La formalisation couvre **55 modules leaf** + **1 umbrella** `Grothendieck.lean`
 | 2 | `Grothendieck/SchemesTour.lean` | `SchemesTour_en.lean` | Type des schémas, foncteur Spec, Γ, `homeoOfIso`, pleinement fidèle | 196 |
 | 3 | `Grothendieck/ZariskiSite.lean` | `ZariskiSite_en.lean` | Prétopologie de Zariski, théorème-pont `zariskiTopology_eq`, sous-canonique | 139 |
 | 4 | `Grothendieck/MathlibMap.lean` | `MathlibMap_en.lean` | Index `#check` des définitions Mathlib liées à Grothendieck | 124 |
-| 5 | `Grothendieck/Calibration.lean` | `Calibration_en.lean` | 4 cibles de micro-preuve pour le harnais du prouveur (Epic #1453) | 95 |
+| 5 | `Grothendieck/Calibration.lean` | `Calibration_en.lean` | 4 cibles de micro-preuve dans l'esprit du harnais prouveur (Epic #1453, non consommées par lui — cf `calibration_lean/`, frontière #13212) | 95 |
 | 6 | `Grothendieck/SieveLattice.lean` | `SieveLattice_en.lean` | Identités de pullback de cribles (7) : `pullback_id`, `pullback_pullback`, `pullback_bot`, `pullback_monotone`, `pullback_union` (#7895), `pullback_ofObjects`, `mem_iff_pullback_eq_top` | 253 |
 | 7 | `Grothendieck/SheafBasics.lean` | `SheafBasics_en.lean` | Bases faisceau/préfaisceau séparé, transfert de faisceau le long de J₁ ≤ J₂ | 231 |
 | 8 | `Grothendieck/SieveOps.lean` | `SieveOps_en.lean` | Ordre sur les topologies, clôture de recouvrement, composition de cribles | 208 |
@@ -155,19 +158,20 @@ La formalisation couvre **55 modules leaf** + **1 umbrella** `Grothendieck.lean`
 | 57 | `Grothendieck/CoversAtomicArrow.lean` | `CoversAtomicArrow_en.lean` | Forme flèche de la **topologie atomique** (`GrothendieckTopology.atomic`, condition d'Ore à droite) : pont ponctuel `atomic_covering` (analogue manquant de `dense_covering`), `covers_iff_atomic` (central), `covers_atomic_of_mem`, stabilité `covers_atomic_precomp`, retombées `covers_atomic_id`/`covers_atomic_top` (Phase 5 de #2159) | 159 |
 | 58 | `Grothendieck/Classifier.lean` | `Classifier_en.lean` | **Le classifieur de sous-objets** : Ω = le préfaisceau des cribles (`Functor.sieves`), `truth`/`χ`, `Presheaf.classifier`, cribles J-clos (`Sheaf.Ω`), instances `HasSubobjectClassifier` préfaisceaux + faisceaux ; 4 théorèmes propres (`truth_picks_top`, `chi_app_mem_iff`, `chi_app_downward_closed`, `chi_app_eq_top_of_app`) (Partie 58 de #2159) | 202 |
 | 59 | `Grothendieck/LawvereTierney.lean` | `LawvereTierney_en.lean` | **La topologie de Lawvere–Tierney** : l'opérateur de clôture sur Ω (`LawvereTierney`), 3 lois (extensivité, idempotence, préservation des meets) + naturalité au pullback ; topologies discrète (`j S = S`) et indiscrete (`j S = ⊤`), `j_top`/`j_monotone`/`closure_isClosed`, cribles clos de l'indiscrete (Partie 59 de #2159) | 241 |
+| 61 | `Grothendieck/SitesComparison.lean` | `SitesComparison_en.lean` | **Foncteurs continus et lemme de comparaison** : le pont préfaisceau→faisceau (`sheafPushforwardContinuous`), fonctorialité (identité, composition — miroir faisceau de `pullback_pullback`), et l'adjonction induite sur les catégories de faisceaux `adjunction_sheafPushforwardContinuous` (**SGA 4 III.1.6**) — les adjonctions descendent aux faisceaux sans sheafification explicite (Partie 61 de #2159) | 158 |
 
 *La colonne `Lignes` compte le **fichier FR seul** ; le sibling `_en` ajoute
 approximativement autant.*
 
 ## Build & état
 
-- **Toolchain** : `leanprover/lean4:v4.32.0`
-- **Build** : `lake build` (WSL requis). La cible défaut (`globs := #[`Grothendieck.*]` du `lakefile.lean`) compile **tous** les modules FR et `_en`. Dernier build vérifié : 2026-08-23, « Build completed successfully » (47 leaf à cette date) ; la structure a depuis grandi à 56 leaf + 56 siblings `_en` + 1 umbrella (Parties 54, 55a-c, 58, 59 — Phase 5, classifieur et topologie de Lawvere–Tierney de #2159).
+- **Toolchain** : `leanprover/lean4:v4.32.1`
+- **Build** : `lake build` (WSL requis). La cible défaut (`globs := #[`Grothendieck.*]` du `lakefile.lean`) compile **tous** les modules FR et `_en`. Dernier build vérifié : 2026-08-23, « Build completed successfully » (47 leaf à cette date) ; la structure a depuis grandi à 58 leaf + 58 siblings `_en` + 1 umbrella (Parties 55a-c, 58, 59 + Partie 61 foncteurs continus/lemme de comparaison de #2159 ; sous-dossier `SheafCohomology/` inclus).
 - **Preuves** : **0 `sorry`, 0 axiome ajouté** — tous les modules sont complets à la création. (Un `grep sorry` naïf matche des mentions en prose dans les docstrings bilingues, notamment deux dans `ExceptionalDirect.lean` ; la CI compte en mode `real` — après strip des commentaires — et vaut 0.)
 - **Dépendances** : Mathlib 4 (via `lakefile.lean`)
-- **i18n** (EPIC #4980, convention Option A ratifiée 2026-07-04) : couverture bilingue complète — **57 fichiers FR** (1 umbrella + 56 leaf canoniques) et **56 siblings `_en.lean`**, ratio 1:1 intégral (le gap historique `PullbackFunctor.lean` sans `_en` est comblé : `PullbackFunctor_en.lean` présent sur disque ; c.2026-08-18, l'audit §E de la Partie 56 l'a constaté — la prose antérieure le disant manquant était périmée). Namespaces `_en` anti-collision, contenu non-docstring byte-identique, vérifiable par CI. L'umbrella est bilingue inline *by design* (FR canonique d'abord, EN en miroir dans le même fichier). **[`README.en.md`](./README.en.md)** est le miroir EN du présent fichier. Hors-scope : `.lake/packages/`, libs vendored.
+- **i18n** (EPIC #4980, convention Option A ratifiée 2026-07-04) : couverture bilingue complète — **59 fichiers FR** (1 umbrella + 58 leaf canoniques) et **58 siblings `_en.lean`**, ratio 1:1 intégral (le gap historique `PullbackFunctor.lean` sans `_en` est comblé : `PullbackFunctor_en.lean` présent sur disque ; c.2026-08-18, l'audit §E de la Partie 56 l'a constaté — la prose antérieure le disant manquant était périmée). Namespaces `_en` anti-collision, contenu non-docstring byte-identique, vérifiable par CI. L'umbrella est bilingue inline *by design* (FR canonique d'abord, EN en miroir dans le même fichier). **[`README.en.md`](./README.en.md)** est le miroir EN du présent fichier. Hors-scope : `.lake/packages/`, libs vendored.
 
-*Note de cohérence* : couverture 1:1 intégrale — 56 leaf FR canoniques et 56 siblings `_en` (le gap `PullbackFunctor` sans `_en`, nommé dans une version antérieure de cette note, est comblé sur disque). Le `globs` du lakefile auto-découvre tous les modules présents, FR comme `_en`.
+*Note de cohérence* : couverture 1:1 intégrale — 58 leaf FR canoniques et 58 siblings `_en` (le gap `PullbackFunctor` sans `_en`, nommé dans une version antérieure de cette note, est comblé sur disque). Le `globs` du lakefile auto-découvre tous les modules présents, FR comme `_en`.
 
 ## Références
 
