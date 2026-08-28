@@ -96,7 +96,7 @@ def execute_python_notebook(notebook_path: Path, timeout: int = 600):
          str(notebook_path),
          '--kernel', 'python3'],
         capture_output=True,
-        text=True,
+        text=True, encoding="utf-8", errors="replace",
         timeout=timeout
     )
 

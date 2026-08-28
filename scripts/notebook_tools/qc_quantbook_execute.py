@@ -77,7 +77,7 @@ def workspace_root(project_dir: Path) -> Path:
 def get_container_for_project(project_name: str) -> str | None:
     out = subprocess.run(
         ["docker", "ps", "--filter", "name=lean_cli", "--format", "{{.Names}}"],
-        capture_output=True, text=True, check=True,
+        capture_output=True, text=True, encoding="utf-8", errors="replace", check=True,
     )
     candidates = [n for n in out.stdout.splitlines() if n.strip()]
     return candidates[0] if candidates else None
@@ -254,7 +254,7 @@ def run(
     res = subprocess.run(
         [lean, "research", str(project_rel), "--detach", "--no-open",
          "--no-update", "--port", str(port)],
-        cwd=str(ws), env=env, capture_output=True, text=True,
+        cwd=str(ws), env=env, capture_output=True, text=True, encoding="utf-8", errors="replace",
     )
     print(res.stdout, file=sys.stderr)
     if res.returncode != 0:
@@ -276,7 +276,7 @@ def run(
             f"--ExecutePreprocessor.timeout={timeout} {notebook_name}",
         ]
         print(f"[recipe] exec nbconvert (timeout={timeout}s per cell)...", file=sys.stderr)
-        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout * 4)
+        proc = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=timeout * 4)
         sys.stderr.write(proc.stderr[-4000:] if proc.stderr else "")
         sys.stdout.write(proc.stdout)
         return proc.returncode
