@@ -21,6 +21,7 @@ from check_pr_perimeter import (  # noqa: E402
     check_assertion,
     extract_baseline_moves,
     extract_perimeter_assertions,
+    extract_perimeter_assertions_with_context,
     format_report,
     is_downgradable_mismatch,
     select_candidates,
@@ -28,6 +29,8 @@ from check_pr_perimeter import (  # noqa: E402
     _check_unterminated_fence,
     _count_is_incidental,
     _fence_line_indices,
+    _is_incidental_assertion,
+    _paragraph_prefix,
 )
 
 # The exact shape of the founding incident (#11227).
@@ -2111,3 +2114,158 @@ def test_12201_cited_counts_never_join_additive_sum():
     cité ne rejoint jamais la somme (1 + « 3 cités » = 1, pas 4)."""
     line = "1 fichier modifié, « 3 fichiers cités » et `2 fichiers` en exemple."
     assert _additive_line_sum(line) == 1
+
+
+# ---------------------------------------------------------------------------
+# #13335 — wrap-invariance de l'exemption par antécédent de mesure
+# ---------------------------------------------------------------------------
+
+# Paragraphes fondateurs : l'antécédent (« le scan rendait 54 ») est sur la
+# ligne AU-DESSUS de la ligne de compte. Avant #13335, la fenêtre de recherche
+# de MEASUREMENT_ANTECEDENT était limitée à `line[:m.end()]` → le verdict
+# dépendait de la position de la touche Entrée, pas du contenu.
+WRAPPED_13218 = (
+    "Un scan recursif rendait **54**\n"
+    "/ en accusant 5 fichiers d'`analysis/` que nul moteur de rendu ne consomme."
+)
+ONELINE_13218 = (
+    "Un scan recursif rendait **54** / en accusant 5 fichiers "
+    "d'`analysis/` que nul moteur de rendu ne consomme."
+)
+
+# Contrôles de l'issue : aucun antécédent de mesure nulle part → bloquants,
+# wrap ou non-wrap.
+CONTROL_C_WRAPPED = (
+    "Cette PR couvre un perimetre fige et exigeant\n"
+    "touchant 2 fichiers twins uniquement, aucune autre modification."
+)
+CONTROL_D_ONELINE = "Cette PR touche 3 fichiers."
+
+
+def _classify(body_text: str) -> list:
+    """Extrait les lignes candidates du body avec leur contexte paragraphe."""
+    pairs = extract_perimeter_assertions_with_context(body_text)
+    return [(line, _is_incidental_assertion(line, ctx)) for line, ctx in pairs]
+
+
+def test_13335_wrapped_and_unwrapped_same_verdict():
+    """Le même contenu wrappe et non-wrappe rend le même verdict (#13335)."""
+    wrapped_lines = _classify(WRAPPED_13218)
+    oneline_lines = _classify(ONELINE_13218)
+    assert wrapped_lines, "la ligne de compte wrapped doit être candidate"
+    assert len(wrapped_lines) == len(oneline_lines) == 1
+    # Wrap : l'antécédent vit sur la ligne précédente du même paragraphe.
+    assert wrapped_lines[0][1] is True, (
+        f"wrapped doit être incidental (antécédent sur la ligne au-dessus) : {wrapped_lines}"
+    )
+    # Non-wrap : antécédent et compte sur la même ligne — verdict identique.
+    assert oneline_lines[0][1] is True
+    # Les deux verdicts concordent : le placement du saut de ligne est neutre.
+    assert wrapped_lines[0][1] == oneline_lines[0][1]
+
+
+def test_13335_three_distinct_antecedents_wrap_invariant():
+    """Au moins 3 antécédents distincts de MEASUREMENT_ANTECEDENT (scan,
+    corpus, registre) : chacun rend wrap-invariance + incidental."""
+    cases = [
+        # (antecedent_line, count_line) — l'antécédent précède le compte,
+        # séparés par un simple retour à la ligne (soft-wrap).
+        (
+            "Un scan recursif rendait **54**",
+            "en accusant 5 fichiers d'`analysis/` que nul moteur ne consomme.",
+        ),
+        (
+            "Le corpus des notebooks pesait deja **107**",
+            "dont 12 fichiers d'exclusion automatique cites au passage.",
+        ),
+        (
+            "Le registre arxiv amont listait **8**",
+            "soit au total 6 fichiers entres manuellement ici.",
+        ),
+    ]
+    for ante_line, count_line in cases:
+        wrapped = f"{ante_line}\n{count_line}"
+        oneline = f"{ante_line} {count_line}"
+        w = _classify(wrapped)
+        o = _classify(oneline)
+        assert w and o, f"aucune candidate pour {ante_line!r}"
+        assert w[0][1] is True, f"wrapped doit être incidental pour {ante_line!r} : {w}"
+        assert o[0][1] is True, f"oneline doit être incidental pour {ante_line!r} : {o}"
+        assert w[0][1] == o[0][1]
+
+
+def test_13335_blank_line_cuts_the_window():
+    """Une ligne vide entre l'antécédent et le compte COUPE la fenêtre :
+    l'exemption est perdue (le compte ouvre un nouveau paragraphe)."""
+    body = (
+        "Un scan recursif rendait **54**\n"
+        "\n"
+        "en accusant 5 fichiers d'`analysis/` que nul moteur ne consomme."
+    )
+    verdicts = _classify(body)
+    assert verdicts, "la ligne de compte reste candidate (le compte est présent)"
+    line, incidental = verdicts[0]
+    assert incidental is False, (
+        f"la ligne vide doit couper la fenêtre → non-incidental : {verdicts}"
+    )
+    # Le préfixe paragraphe est vide : la fenêtre ne traverse pas la frontière.
+    lines = body.splitlines()
+    count_idx = 2
+    assert _paragraph_prefix(body, count_idx) == ""
+
+
+def test_13335_controls_C_and_D_stay_blocking():
+    """Contrôles C et D de l'issue : sans antécédent de mesure dans le
+    paragraphe (même multi-lignes), la ligne reste BLOQUANTE."""
+    for text in (CONTROL_C_WRAPPED, CONTROL_D_ONELINE):
+        verdicts = _classify(text)
+        assert verdicts, f"aucune candidate dans {text!r}"
+        line, incidental = verdicts[0]
+        assert incidental is False, (
+            f"contrôle sans antécédent doit rester bloquant : {text!r} → {verdicts}"
+        )
+
+
+def test_13335_fence_delimiter_cuts_the_window():
+    """Un délimiteur de fence (``` ou ~~~) ferme aussi la fenêtre : le
+    contenu d'un bloc de code n'est pas la prose qui annonce la mesure."""
+    body = (
+        "Un scan recursif rendait **54**\n"
+        "```\n"
+        "en accusant 5 fichiers d'`analysis/` que nul moteur ne consomme.\n"
+        "```"
+    )
+    # La ligne dans la fence n'est pas candidate du tout (skip de fence).
+    verdicts = _classify(body)
+    assert verdicts == []
+
+
+def test_13335_candidate_blocking_property_uses_context():
+    """End-to-end sur le paragraphe fondateur #13218 : via select_candidates,
+    la ligne de compte wrapped n'est plus bloquante (contexte paragraphe)."""
+    body = (
+        "Contexte amont de la review.\n"
+        "\n"
+        "Un scan recursif rendait **54**\n"
+        "/ en accusant 5 fichiers d'`analysis/` que nul moteur de rendu ne consomme.\n"
+        "\n"
+        "Rien d'autre a signaler."
+    )
+    items = [{"kind": "review", "author": "reviewer", "source": "body", "body": body}]
+    candidates, _orphan = select_candidates(items)
+    count_candidates = [c for c in candidates if "5 fichiers" in c.text]
+    assert count_candidates, f"la ligne de compte doit être candidate : {[c.text for c in candidates]}"
+    c = count_candidates[0]
+    assert c.context, "le contexte paragraphe doit être attaché au Candidate"
+    assert c.blocking is False, (
+        f"le compte wrapped avec antécédent amont ne doit plus être bloquant : {c.text!r}"
+    )
+
+
+def test_13335_public_extract_delegates_with_context():
+    """extract_perimeter_assertions (API publique) et la variante avec
+    contexte rendent les mêmes lignes dans le même ordre."""
+    body = WRAPPED_13218 + "\n\n" + CONTROL_D_ONELINE
+    plain = extract_perimeter_assertions(body)
+    with_ctx = extract_perimeter_assertions_with_context(body)
+    assert plain == [line for line, _ in with_ctx]
