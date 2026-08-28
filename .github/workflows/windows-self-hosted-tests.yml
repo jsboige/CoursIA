@@ -31,19 +31,16 @@ jobs:
     timeout-minutes: 15
 
     steps:
-      - uses: actions/checkout@v4
+      # POSITIVE CONTROL (mission ai-01 2026-08-28) : cette version de BRANCHE
+      # echoue volontairement (exit 42) apres avoir affiche l'identite du
+      # runner, pour prouver que le routage vers myia-po-2024-fast-guards
+      # execute reellement les jobs qu'on lui route. L'echec EST le livrable.
+      # Cette branche n'est JAMAIS mergee ; la version main reste intacte.
+      - name: Runner identity (proof of execution host)
+        run: |
+          Write-Output "runner.name=${{ runner.name }}"
+          Write-Output "runner.os=${{ runner.os }}"
+          Write-Output "runner.arch=${{ runner.arch }}"
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install test dependencies
-        run: python -m pip install pytest
-
-      # Les 9 tests @requires_windows (skippes par #13063 : aucun runner
-      # Windows en CI) couvrent la surface de confinement du gestionnaire
-      # de runners : rendu des scripts PowerShell (compte, ACL, teardown),
-      # probes d'isolation, allowlist d'environnement. Ils n'ecrivent rien
-      # sur l'hote : toutes les mutations passent par des callables injectes.
-      - name: Run Windows-confinement tests
-        run: python -m pytest scripts/tests/test_manage_self_hosted_runner.py -v
+      - name: Intentional failure (the control itself)
+        run: exit 42
