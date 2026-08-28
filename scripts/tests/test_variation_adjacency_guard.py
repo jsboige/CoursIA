@@ -356,6 +356,103 @@ def test_parse_override_malformed_reasons_distinct():
     assert "n'est pas un genre" in r_shape["malformed"]
 
 
+# --- A prose MENTION must not revoke a valid earlier override (#13261) -------
+#
+# #13234, run 33111721678: the gate went red 62 s after a coordinator review
+# comment that merely QUOTED the marker between backticks to explain a
+# check_unaddressed_nits false positive. parse_override scanned the thread
+# newest-first and RETURNED on the malformed branch, so the later mention
+# masked the valid override posted 3h49 earlier. Two fixes, tested here
+# together and separately: (a) the malformed verdict becomes a FALLBACK --
+# the scan continues and only concludes "malformed" when no well-formed
+# marker exists; (b) code spans/blocks are stripped before matching, so
+# discussing the marker in backticks arms nothing.
+
+_OVERRIDE_13261_OK = ("[G-VAR-3 OVERRIDE] lane myia-po-2026:CoursIA -- "
+                      "next: lean")
+_MENTION_BACKTICK = ("Le faux positif de check_unaddressed_nits : ce n'est "
+                     "pas un `[G-VAR-3 OVERRIDE]` manquant, la lane est "
+                     "conforme.")
+_MENTION_PLAIN = ("Pour rappel le marqueur [G-VAR-3 OVERRIDE] exige un "
+                  "remplacant nomme apres la mention next, sur la meme "
+                  "ligne que le marqueur.")
+
+
+def test_13261_case_C_backtick_mention_after_override_keeps_it():
+    # Route (b): the quoted marker is stripped, the mention comment carries
+    # no marker at all, the valid override below it survives.
+    ov = vag.parse_override([
+        {"author": "myia-ai-01", "body": _OVERRIDE_13261_OK},
+        {"author": "myia-ai-01", "body": _MENTION_BACKTICK},
+    ])
+    assert ov is not None and "malformed" not in ov
+    assert ov["next_genre"] == "lean"
+
+
+def test_13261_case_C_plain_mention_after_override_keeps_it():
+    # Route (a): a plain-text marker (no backticks, no next:) IS read as
+    # malformed -- but only as fallback: the scan continues to the older
+    # comment and finds the valid override.
+    ov = vag.parse_override([
+        {"author": "myia-ai-01", "body": _OVERRIDE_13261_OK},
+        {"author": "myia-ai-01", "body": _MENTION_PLAIN},
+    ])
+    assert ov is not None and "malformed" not in ov
+    assert ov["next_genre"] == "lean"
+
+
+def test_13261_case_D_controls_stay_held():
+    # NEGATIVE CONTROL, same invocation: D must stay rejected in BOTH forms.
+    # A fix that would let prose grant an override would be worse than the
+    # defect (auto-exemption by simply talking about the marker).
+    ov_plain = vag.parse_override([{"author": "myia-ai-01",
+                                    "body": _MENTION_PLAIN}])
+    assert ov_plain is not None and "malformed" in ov_plain
+    # backticked mention alone: stripped to nothing -> "absent", the
+    # nothing-granted-nothing-rejected contract of fix (b).
+    ov_code = vag.parse_override([{"author": "myia-ai-01",
+                                   "body": _MENTION_BACKTICK}])
+    assert ov_code is None
+
+
+def test_13261_case_B_third_party_comment_after_override_keeps_it():
+    # Control B of the issue matrix, unchanged by the fix.
+    ov = vag.parse_override([
+        {"author": "myia-ai-01", "body": _OVERRIDE_13261_OK},
+        {"author": "myia-po-2025", "body": _MENTION_PLAIN},
+    ])
+    assert ov is not None and ov["next_genre"] == "lean"
+
+
+def test_13261_marker_in_fenced_block_grants_and_rejects_nothing():
+    # Fix (b), fenced form: a marker fully inside a code block is
+    # discussion -- neither an override nor a malformed rejection.
+    ov = vag.parse_override([
+        {"author": "myia-ai-01",
+         "body": "```\n[G-VAR-3 OVERRIDE] lane x:y -- next: lean\n```"}])
+    assert ov is None
+    # and it must not MASK a real override posted later in the thread either
+    ov2 = vag.parse_override([
+        {"author": "myia-ai-01", "body": _OVERRIDE_13261_OK},
+        {"author": "myia-ai-01",
+         "body": "exemple : ```[G-VAR-3 OVERRIDE] next: qc```"},
+    ])
+    assert ov2 is not None and "malformed" not in ov2
+    assert ov2["next_genre"] == "lean"
+
+
+def test_13261_malformed_fallback_is_the_MOST_RECENT_rejection():
+    # When no valid override exists, the fallback keeps the pre-fix
+    # newest-first semantics: the MOST RECENT coordinator rejection is the
+    # announced one (its reason is the actionable one).
+    ov = vag.parse_override([
+        {"author": "jsboige", "body": "[G-VAR-3 OVERRIDE] lane x:y"},
+        {"author": "jsboige", "body": "[G-VAR-3 OVERRIDE] next: 7days"},
+    ])
+    assert ov is not None and "malformed" in ov
+    assert "n'est pas un genre" in ov["malformed"]  # the newer, not "manquant"
+
+
 # --- merged-sequence predecessor (#12095) ----------------------------------
 #
 # G-VAR-3 adjacency is a property of the MERGED sequence, which moves while a
