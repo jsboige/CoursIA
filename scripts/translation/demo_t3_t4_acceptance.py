@@ -50,7 +50,7 @@ def _check_drift(csv_path: Path) -> list[dict]:
         ["python", "scripts/translation/check_translation_sync.py", str(csv_path), "--check"],
         cwd=REPO_ROOT,
         capture_output=True,
-        text=True,
+        text=True, encoding="utf-8", errors="replace",
     )
     m = re.search(r"(\{.*\})", proc.stdout, re.DOTALL)
     if not m:
@@ -82,7 +82,7 @@ def _t3_plan(csv_path: Path, lang: str = "en", max_cells: int = 100) -> tuple[in
         cwd=REPO_ROOT,
         env=env,
         capture_output=True,
-        text=True,
+        text=True, encoding="utf-8", errors="replace",
     )
     plan_match = re.search(r"\[plan\] (\d+) traductions", proc.stderr)
     plan_count = int(plan_match.group(1)) if plan_match else -1
@@ -107,7 +107,7 @@ def _t4_render_dry(csv_path: Path, notebook: str, lang: str = "en") -> dict:
         ],
         cwd=REPO_ROOT,
         capture_output=True,
-        text=True,
+        text=True, encoding="utf-8", errors="replace",
     )
     out = proc.stdout
     stats = {}

@@ -162,3 +162,21 @@ repos:
         pass_filenames: true
         files: '\.ipynb$'
         stages: [pre-commit]
+
+      - id: check-subprocess-encoding
+        name: Refuse NEW text=True without encoding= (subprocess, cp1252 crash)
+        description: |
+          Ratchet gate (#13140, generalising the #12813/#12811 fix): a staged
+          .py file must not contain a subprocess call setting text=True (or
+          universal_newlines=True) without encoding= in the same call. On a
+          cp1252 host that raises UnicodeDecodeError on UTF-8 payloads — the
+          exact class that killed the lane-claim guard in production (#12811).
+          Retroactively-clean-by-design: only files the commit touches are
+          scanned, so the gate is green on main while the historical sweep
+          lands tranche by tranche. No CI workflow counterpart on purpose:
+          #13097 CI famine — the check runs at commit time, zero queue slots.
+        entry: python scripts/check_subprocess_encoding.py
+        language: system
+        pass_filenames: true
+        files: '\.py$'
+        stages: [pre-commit]

@@ -34,7 +34,7 @@ def _run_marco(cnf_text: str, *extra):
     try:
         proc = subprocess.run(
             [sys.executable, MARCO, cnf.name, *extra],
-            capture_output=True, text=True, timeout=TIMEOUT_S,
+            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=TIMEOUT_S,
         )
         return proc.returncode, proc.stdout
     finally:
