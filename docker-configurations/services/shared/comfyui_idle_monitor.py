@@ -32,6 +32,13 @@ except ImportError:
 
 logger = logging.getLogger("comfyui-idle-monitor")
 
+# Sentinel d'etat INDETERMINABLE du serveur (API injoignable / auth echouee),
+# distinct de None (= determine : aucune activite, queue ET historique verses
+# et vides). Confondre les deux faisait deviner un serveur "inactif"
+# pendant qu'il generait : /free tire a l'aveugle, crash serveur exit 0,
+# reboot 7-8 min (incident 2026-08-25, 3 restarts en ~30 min).
+UNKNOWN = object()
+
 
 class ComfyUIIdleMonitor:
     """
@@ -147,11 +154,19 @@ class ComfyUIIdleMonitor:
             headers["Authorization"] = f"Bearer {self.auth_token}"
         return headers
 
-    def get_running_prompts(self) -> list:
-        """Get list of currently running prompt IDs."""
+    def get_running_prompts(self):
+        """Get list of currently running prompt IDs.
+
+        Tri-state: UNKNOWN (API injoignable / auth echouee -- etat
+        INDETERMINABLE), [] (queue verifiee vide), liste non vide (occupations
+        en cours). Ne jamais confondre UNKNOWN avec [] : l'ancien `return []`
+        sur echec faisait deviner au caller un serveur "inactif" alors qu'il
+        etait en pleine generation (incident 2026-08-25 : /free tire a
+        l'aveugle, 3 crashes serveur).
+        """
         if not self._ensure_authenticated():
-            logger.warning("Not authenticated, skipping queue check")
-            return []
+            logger.warning("Not authenticated, queue state indeterminate")
+            return UNKNOWN
 
         try:
             resp = self.session.get(
@@ -168,13 +183,17 @@ class ComfyUIIdleMonitor:
             # If 401, reset logged_in state to force re-auth next time
             if hasattr(e, 'response') and e.response.status_code == 401:
                 self._logged_in = False
-            return []
+            return UNKNOWN
 
-    def get_recent_history(self, max_items: int = 10) -> dict:
-        """Get recent prompt execution history."""
+    def get_recent_history(self, max_items: int = 10):
+        """Get recent prompt execution history.
+
+        Tri-state : UNKNOWN (echec de la requete) vs {} (historique verifie
+        vide, ex. boot frais) -- cf get_running_prompts.
+        """
         if not self._ensure_authenticated():
-            logger.warning("Not authenticated, skipping history check")
-            return {}
+            logger.warning("Not authenticated, history state indeterminate")
+            return UNKNOWN
 
         try:
             resp = self.session.get(
@@ -188,23 +207,34 @@ class ComfyUIIdleMonitor:
             logger.warning(f"Failed to get history: {e}")
             if hasattr(e, 'response') and e.response.status_code == 401:
                 self._logged_in = False
-            return {}
+            return UNKNOWN
 
-    def get_last_activity_time(self) -> Optional[float]:
+    def get_last_activity_time(self):
         """
         Get timestamp of last activity from ComfyUI.
 
-        Returns the most recent prompt execution time, or None if unable to determine.
+        Tri-state :
+          - float   : instant de la derniere activite (maintenant si une
+                      generation tourne, sinon le end_time le plus recent) ;
+          - None    : determine SANS activite (queue verifiee vide + historique
+                      verifie vide -- boot frais) ;
+          - UNKNOWN : etat serveur INDETERMINABLE (API injoignable / auth
+                      echouee). Le caller doit SKIPPER le check, jamais
+                      deviner un idle (incident 2026-08-25).
         """
         try:
             # Check if something is running right now
             running = self.get_running_prompts()
+            if running is UNKNOWN:
+                return UNKNOWN
             if running:
                 logger.debug(f"Found {len(running)} running prompts")
                 return time.time()  # Active right now
 
             # Check recent history for last execution
             history = self.get_recent_history(max_items=5)
+            if history is UNKNOWN:
+                return UNKNOWN
             if not history:
                 return None
 
@@ -275,6 +305,19 @@ class ComfyUIIdleMonitor:
         # to prevent re-unloading on stale history timestamps.
         if self._monitor_start_time:
             last_real_activity = self.get_last_activity_time()
+            if last_real_activity is UNKNOWN:
+                # Etat serveur indeterminable : NE PAS deviner l'idle depuis
+                # le start du monitor. L'ancien fallback tirait /free toutes
+                # les CHECK_INTERVAL secondes des que l'API devenait
+                # injoignable (auth stale post-restart, serveur sature en
+                # generation), y compris DANS un serveur occupe -> crash
+                # (exit 0, reboot 7-8 min). Fail-safe : on skippe.
+                logger.warning(
+                    "Server state indeterminate (API unreachable or auth "
+                    "failed) -- skipping idle check (fail-safe, no blind /free)"
+                )
+                self._error_count += 1
+                return False
             # Use the most recent of: last real activity, or last unload time
             if last_real_activity is not None:
                 last_activity = max(last_real_activity, self._monitor_start_time)
@@ -282,6 +325,13 @@ class ComfyUIIdleMonitor:
                 last_activity = self._monitor_start_time
         else:
             last_activity = self.get_last_activity_time()
+            if last_activity is UNKNOWN:
+                logger.warning(
+                    "Server state indeterminate (API unreachable or auth "
+                    "failed) -- skipping idle check (fail-safe, no blind /free)"
+                )
+                self._error_count += 1
+                return False
 
         if last_activity is None:
             logger.debug("No activity recorded and no start time, skipping check")
@@ -294,6 +344,22 @@ class ComfyUIIdleMonitor:
         logger.info(f"Idle: {idle_time:.0f}s / {self.idle_timeout}s ({source}, {self.comfyui_url})")
 
         if idle_time >= self.idle_timeout:
+            # Derniere ligne de defense avant /free : re-verifier la queue a
+            # l'instant present. Une generation peut avoir demarre entre la
+            # lecture d'historique et maintenant ; et /free dans un serveur
+            # en train d'executer/charger un modele le fait crasher.
+            running = self.get_running_prompts()
+            if running is UNKNOWN:
+                logger.warning(
+                    "Aborting /free: queue state indeterminate at fire time"
+                )
+                self._error_count += 1
+                return False
+            if running:
+                logger.info(
+                    f"Aborting /free: {len(running)} prompt(s) running at fire time"
+                )
+                return False
             logger.info(f"Idle timeout reached ({idle_time:.0f}s >= {self.idle_timeout}s)")
             unloaded = self.unload_models()
             if unloaded:

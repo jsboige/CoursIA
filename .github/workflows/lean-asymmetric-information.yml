@@ -1,0 +1,92 @@
+name: Lean Asymmetric Information CI
+
+# CI for asymmetric_information_lean (GameTheory/asymmetric_information_lean).
+# Information asymmetry formalization (signaling, screening, lemons,
+# Miyazaki-Wilson, Bayesian link to lean_game_defs_ext). Closes #13139.
+# Rule lean-merge-discipline: lake build SUCCESS local OBLIGATOIRE avant merge.
+#
+# Caller of the shared lean-build.yml + lean-axiom.yml reusable workflows
+# (same pattern as lean-knot.yml / lean-game-defs-ext.yml).
+#
+# Sorry profile: baseline 0, mode `real`. The lake's prose legitimately says
+# "sorry" (Screening.lean:193 "Pas de `sorry`" in a docstring) so the raw
+# counter would flip on comment edits; `real` strips Lean comments and counts
+# exactly compiled-tactic sorries (firsthand measured with the CI-exact awk:
+# 0 across all 11 non-_en modules, 2026-08-26).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'MyIA.AI.Notebooks/GameTheory/asymmetric_information_lean/**.lean'
+      - 'MyIA.AI.Notebooks/GameTheory/asymmetric_information_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/GameTheory/asymmetric_information_lean/lean-toolchain'
+      # A manifest bump swaps dependencies under the proofs -- it MUST trigger
+      # the build/axiom gates (cf lean-conway-cgt.yml, same class as #8712).
+      - 'MyIA.AI.Notebooks/GameTheory/asymmetric_information_lean/lake-manifest.json'
+      # PATH DEPENDENCY: lakefile.toml [[require]] lean_game_defs_ext with
+      # path = "../lean_game_defs_ext" (non-négociable per its own comment,
+      # body v4 #12848). A change to the SIBLING lake's sources or config
+      # alters the proofs compiled here -- this is the repo's first lake with
+      # a cross-lake path dep, so the gate must watch the dependency's
+      # proof-capable surface too, or it is a gate blind to half its inputs.
+      - 'MyIA.AI.Notebooks/GameTheory/lean_game_defs_ext/**.lean'
+      - 'MyIA.AI.Notebooks/GameTheory/lean_game_defs_ext/lakefile.toml'
+      - 'MyIA.AI.Notebooks/GameTheory/lean_game_defs_ext/lakefile.lean'
+      - 'MyIA.AI.Notebooks/GameTheory/lean_game_defs_ext/lean-toolchain'
+      # A change to the gate must run the gate (cf #8712: without these lines
+      # the workflows defining this CI are the only files it never checks).
+      - '.github/workflows/lean-asymmetric-information.yml'
+      - '.github/workflows/lean-axiom.yml'
+      - '.github/workflows/lean-build.yml'
+      # The axiom step is a Python program over agent_tests/lean_server.py;
+      # those sources ARE gate inputs (cf lean-knot.yml, #8722/#8725).
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/lean_utils.py'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'MyIA.AI.Notebooks/GameTheory/asymmetric_information_lean/**.lean'
+      - 'MyIA.AI.Notebooks/GameTheory/asymmetric_information_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/GameTheory/asymmetric_information_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/GameTheory/asymmetric_information_lean/lake-manifest.json'
+      - 'MyIA.AI.Notebooks/GameTheory/lean_game_defs_ext/**.lean'
+      - 'MyIA.AI.Notebooks/GameTheory/lean_game_defs_ext/lakefile.toml'
+      - 'MyIA.AI.Notebooks/GameTheory/lean_game_defs_ext/lakefile.lean'
+      - 'MyIA.AI.Notebooks/GameTheory/lean_game_defs_ext/lean-toolchain'
+      - '.github/workflows/lean-asymmetric-information.yml'
+      - '.github/workflows/lean-axiom.yml'
+      - '.github/workflows/lean-build.yml'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/lean_utils.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lean-asymmetric-information-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  ci:
+    uses: jsboige/CoursIA/.github/workflows/lean-build.yml@main
+    with:
+      project-path: MyIA.AI.Notebooks/GameTheory/asymmetric_information_lean
+      display-name: asymmetric_information_lean
+      sorry-baseline: "0"
+      sorry-filter-mode: real
+
+  # Level 3 proof-integrity gate (criterion B.3 of pr-review-discipline).
+  # The lake has a cross-lake path dep; target-modules "*" derives the module
+  # list at runtime from the compiled surface (issue #10889), so the gate
+  # cannot drift when modules are added. fail-on-sorry: true is coherent with
+  # sorry-baseline "0" above: no acknowledged sorries exist.
+  proof-integrity:
+    uses: jsboige/CoursIA/.github/workflows/lean-axiom.yml@main
+    with:
+      project-path: MyIA.AI.Notebooks/GameTheory/asymmetric_information_lean
+      display-name: asymmetric_information_lean
+      target-modules: "*"
+      allow-axioms: ""
+      fail-on-sorry: true

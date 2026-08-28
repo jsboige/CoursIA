@@ -13,7 +13,7 @@ La théorie des jeux est le langage mathématique de la stratégie. Elle modéli
 
 Cette série vous forme sur deux axes complémentaires. Le premier est **pratique** : simuler des jeux avec Nashpy et OpenSpiel, calculer des équilibres de Nash, organiser des tournois itératifs (dilemme du prisonnier, Axelrod), et explorer les algorithmes modernes (CFR, Deep CFR). Le second est **formel** : prouver des résultats en Lean 4 — existence de Nash (Brouwer/Kakutani), théorème d'Arrow, valeur de Shapley. À la fin, vous maîtriserez aussi bien la théorie des jeux coopératifs (Shapley, Core) que non-coopératifs (Nash, SPE), et vous saurez formaliser ces résultats dans un assistant de preuve.
 
-**À qui s'adresse cette série** : étudiants en économie, informatique et mathématiques appliquées. Le fil Python s'exécute nativement avec Nashpy, NumPy, SciPy et Z3 ; seuls GT-13 et GT-17 demandent l'environnement WSL OpenSpiel. Les side tracks Lean (`2b`, `4b`, `5b`, `8b`, `8d`, `11b`, `15b`, `17c`) utilisent le kernel Lean 4 sous WSL ; les side tracks `c` restent des notebooks Python natifs. Aucun prérequis en théorie des jeux : les concepts sont introduits progressivement depuis les matrices de gains. Une familiarité avec l'algèbre linéaire et les probabilités de base est utile.
+**À qui s'adresse cette série** : étudiants en économie, informatique et mathématiques appliquées. Le fil Python s'exécute nativement avec Nashpy, NumPy, SciPy et Z3 ; seuls GT-13 et GT-17 demandent l'environnement WSL OpenSpiel. Les side tracks Lean (`2b`, `4b`, `5b`, `8b`, `8d`, `11b`, `15b`, `17c`, `27b`) utilisent le kernel Lean 4 sous WSL ; les side tracks `c` restent des notebooks Python natifs. Aucun prérequis en théorie des jeux : les concepts sont introduits progressivement depuis les matrices de gains. Une familiarité avec l'algèbre linéaire et les probabilités de base est utile.
 
 ## Pourquoi cette série
 
@@ -196,7 +196,7 @@ flowchart TD
         P3["<b>Phase 3</b><br/>Notebooks 13-17<br/>frontières : CFR, mécanismes, RL"]
         P1 --> P2 --> P3
     end
-    LEAN["<b>Fil transversal Lean (b)</b><br/>2b · 4b · 5b · 8b · 8d · 11b · 15b · 17c<br/>preuve formelle des grands théorèmes"]
+    LEAN["<b>Fil transversal Lean (b)</b><br/>2b · 4b · 5b · 8b · 8d · 11b · 15b · 17c · 27b<br/>preuve formelle des grands théorèmes"]
     PYC["<b>Fil transversal Python (c)</b><br/>4c · 6c · 8c · 15c<br/>variantes &amp; visualisations"]
     SC["<b>Sous-série SocialChoice</b><br/>SC-01 → SC-04<br/>Arrow · Sen · vote · SAT/Z3"]
     FIL -.->|"formalise"| LEAN
@@ -304,11 +304,12 @@ La vague « strate 7 » étend la série au-delà du fil historique : chaque not
 | 25 | [GameTheory-25-Loi-II-Translateur-Life](GameTheory-25-Loi-II-Translateur-Life.ipynb) | Python | Loi II : synthèse d'un translateur Life et certificat d'impossibilité lorsque la traduction échoue | 45 min |
 | 26 | [GameTheory-26-Ensembles-Limites-Poincare-Bendixson](GameTheory-26-Ensembles-Limites-Poincare-Bendixson.ipynb) | Python | Ensembles limites : Poincaré-Bendixson en dimension 2 — les trois issues (point fixe, orbite périodique, cycle hétéroclinique) exécutées sur Prisonnier / Matching Pennies / RPS et classées par un détecteur mécanique (module compagnon + 16 tests), le mur $w = l$ de la famille RPS vérifié par linéarisation $(l-w)/6$ et relié aux chambres/murs du 3b, l'échec du théorème au-delà du plan comme conclusion (Czechowski-Piliouras 2021) | 45 min |
 | 27 | [GameTheory-27-Munkres-Assignment](GameTheory-27-Munkres-Assignment.ipynb) | Python | Kuhn-Munkres en hommage à James Munkres († 2026) : l'affectation optimale from scratch en arithmétique entière exacte (arbre hongrois BFS, resserrement dual), confrontée à SciPy (50/50 instances identiques) et certifiée par le triple test LP (faisabilité duale, gap nul, arêtes d'égalité), le pont Shapley-Shubik (cœur = polytope dual, 254 coalitions testées, 0 violations), et le contraste Gale-Shapley (stabilité qui se paie +3 sur instance divergente seedée) | 45 min |
+| 27b | [GameTheory-27b-Lean-Assignment-Native](GameTheory-27b-Lean-Assignment-Native.ipynb) | Lean 4 (WSL) | Compagnon natif du lake `assignment_lean` (kernel `lean4-wsl`) : les dix déclarations du lake exécutées et vérifiées — dualité faible, arêtes d'égalité, certificat à gap nul, invariant de sortie, resserrement hongrois — et le fil rouge 3×3 de GT-27 clos par une preuve noyau complète (`optimal_C3`, zéro énumération factorielle, triple standard seul) | 40 min |
 | 28 | [GameTheory-28-Humour-Banc](GameTheory-28-Humour-Banc.ipynb) | Python | Banc de calibration : humour, forme partagée vs stimulus — matrice de confusion du partage de forme (2 axes : rire, recadrage) | 45 min |
 
 Les six extensions `3a` à `3f` figurent dans la Partie 1, au voisinage du notebook GT-3 qu'elles prolongent. Elles couvrent respectivement les chemins de swaps, les chambres et murs, le joueur LLM, le plan de déformation, les méta-actions tarifées et le parcours complet.
 
-**Durée totale des tableaux** : ~65h en parcourant chaque ligne une fois, jumeaux C# et sous-série SocialChoice compris. Un parcours Python sans jumeaux C# ni side tracks Lean est sensiblement plus court.
+**Durée totale des tableaux** : ~65h40 en parcourant chaque ligne une fois, jumeaux C# et sous-série SocialChoice compris. Un parcours Python sans jumeaux C# ni side tracks Lean est sensiblement plus court.
 
 ## Concepts clés
 
@@ -423,7 +424,7 @@ La théorie des jeux n'est pas qu'un objet académique : ses résultats structur
 
 ### Pont vers les Preuves Formelles (Lean 4) — différenciant CoursIA
 
-GameTheory occupe une place à part dans la couche Lean : c'est la famille qui aligne le plus directement simulation numérique et preuve formelle. Le Niveau 3 promet de « prouver ce qu'on a calculé » ; cette série tient la promesse par **sept lakes game-théoriques en propre** — dont les six phares cartographiés ci-dessous, plus `lean_game_defs` (types partagés) et le lake de référence externe `social_choice_lean_peters` (toolchains détaillées dans [LEAN_INVENTORY.md](LEAN_INVENTORY.md) — harmonisation Mathlib en cours, cf #4362 —, branchés sur les notebooks qui les enseignent ou les utilisent). Cartographie inter-familles :
+GameTheory occupe une place à part dans la couche Lean : c'est la famille qui aligne le plus directement simulation numérique et preuve formelle. Le Niveau 3 promet de « prouver ce qu'on a calculé » ; cette série tient la promesse par **sept lakes game-théoriques en propre** — dont les phares cartographiés ci-dessous, plus `lean_game_defs` (types partagés) — et le lake de référence externe `social_choice_lean_peters` (toolchains détaillées dans [LEAN_INVENTORY.md](LEAN_INVENTORY.md), réconcilié 2026-08-26 ; harmonisation Mathlib #4362 ; branchés sur les notebooks qui les enseignent ou les utilisent). Cartographie inter-familles :
 
 | Famille | Lake phare | Théorème | Branchement notebook |
 | --- | --- | --- | --- |
@@ -434,6 +435,7 @@ GameTheory occupe une place à part dans la couche Lean : c'est la famille qui a
 | **GameTheory** (matching) | `game_theory_lean` (StableMarriage) | Gale-Shapley : existence + optimalité côté proposant | Notebooks 16-2 (matching, Gale-Shapley) |
 | **GameTheory** (jeux répétés) | `game_theory_lean` (RepeatedGames — home canonique post-#6146, l'ancien lake `repeated_games_lean/` est coquille archive) | Stratégie grim-trigger **certifiée 0 sorry** (cf #4880) ; stretch restant : théorème Folk complet (`Folk.lean`, 1 sorry assumé) | Notebooks 6c (dérivation à la main) + 6b (compagnon lake, visibilité #11703) |
 | **GameTheory** (jeux combinatoires) | `conway_cgt_lean` | Visite guidée (`#check`) de la théorie des jeux combinatoires (Conway CGT) | Notebooks 8/8b/8d (CombinatorialGames, Sprague-Grundy, compagnon natif 8d) |
+| **GameTheory** (affectation) | `assignment_lean` (#12598) | Dualité faible + certificat d'optimalité à gap nul + resserrement hongrois préservant la réalisabilité duale (0 sorry) | Notebooks 27 (implémentation Python/scipy) + 27b (compagnon natif, visibilité #11703) |
 | **GameTheory** (information asymétrique) | `asymmetric_information_lean` | Akerlof (lemons : seuil de pooling exact + monotonie), Spence (signaling), Rothschild-Stiglitz (screening), Wilson-Miyazaki — 0 sorry, gates CI | GameTheory-17c (companion natif) + 17b (simulation Python) |
 | **Search** (cross-famille) | `search_lean` (cf. `#4048`) | Consistance + heuristique admissible = optimalité | Search-13 (A*), branchement par preuve de correction |
 | **QuantConnect** (cross-famille) | `kelly_lean` (cf. `#4052`) | Kelly `g(f) ≤ g(f*)` + unicité | QC-Py-10 Risk Management, branchement par fraction risquée |
@@ -454,7 +456,7 @@ flowchart LR
         L3["lean_game_defs_ext<br/>Vickrey"]
         L4["game_theory_lean/CooperativeGames<br/>0 sorry #3954"]
         L5["game_theory_lean<br/>StableMarriage (Gale-Shapley)"]
-        L6["repeated_games_lean<br/>grim_trigger"]
+        L6["game_theory_lean/RepeatedGames<br/>grim_trigger"]
     end
     N1 -. "impossibilité prouvée" .-> L1
     N2 -. "existence point fixe" .-> L2
@@ -472,7 +474,7 @@ flowchart LR
 
 Le pipeline complet relie les **notebooks** (qui motivent — Lemke-Howson, Axelrod, Folk Theorem, Gale-Shapley via `game_theory_lean`) aux **lakes** (qui prouvent — Arrow résolu 0 sorry, Bondareva-Shapley résolu 0 sorry #3954, von Neumann/Sion, Vickrey, Gale-Shapley existence et optimalité côté proposant, grim-trigger). Sans la couche Lean, ces résultats seraient des théorèmes réputés « standard » mais jamais démontrés ; avec elle, la justification est **formellement garantie** — pas seulement admise. La spécificité GameTheory : la simulation (Lemke-Howson numérique, OpenSpiel CFR, Axelrod tournois) précède la preuve, mais les deux faces du même raisonnement sont également outillées.
 
-> **Consolidation des lakes (EPIC #4365)** : les anciens lakes standalone `cooperative_games_lean/` (**Supprimé**, rm #6587 — contenu Basic/ConeKernel/Shapley préservé byte-identique sous `game_theory_lean/CooperativeGames/`) et `stable_marriage_lean/` (**Supprimé**, PR #5971 — contenu absorbé sous `game_theory_lean/StableMarriage/`) ne sont plus des projets Lake indépendants. Les sept lakes en propre actuels : `conway_cgt_lean`, `game_theory_lean` (multi-module, absorbant CooperativeGames + StableMarriage + SocialChoice), `lean_game_defs`, `lean_game_defs_ext`, `minimax_lean`, `repeated_games_lean`, `social_choice_lean_peters` (référence externe DominikPeters, toolchain v4.27.0-rc1). Note : l'ancien `social_choice_lean/` (contenu absorbé sous `game_theory_lean/SocialChoice/` post-EPIC #4365 PR #6058) subsiste comme archive lakefile neutralisé — `lean_lib` désactivé, `lake build` non fonctionnel. Statut détaillé par lake : cf [LEAN_INVENTORY.md](LEAN_INVENTORY.md).
+> **Consolidation des lakes (EPIC #4365)** : les anciens lakes standalone `cooperative_games_lean/` (**Supprimé**, rm #6587 — contenu Basic/ConeKernel/Shapley préservé byte-identique sous `game_theory_lean/CooperativeGames/`), `stable_marriage_lean/` (**Supprimé**, PR #5971 — absorbé sous `game_theory_lean/StableMarriage/`), `social_choice_lean/` (absorbé #6058 — tombstone docs seulement, coquille lake **retirée**) et `repeated_games_lean/` (absorbé #6146 — coquille archive conservée, `lean_lib` neutralisée) ne sont plus des projets Lake indépendants. Les sept lakes en propre actuels : `game_theory_lean` (multi-module : CooperativeGames + StableMarriage + SocialChoice + RepeatedGames + Swaps), `lean_game_defs`, `lean_game_defs_ext`, `minimax_lean`, `assignment_lean`, `asymmetric_information_lean`, `conway_cgt_lean` — plus le lake de référence externe `social_choice_lean_peters` (DominikPeters, toolchain v4.32.1, Peters `94a4c650` / Mathlib `520045ab`). Statut détaillé par lake : cf [LEAN_INVENTORY.md](LEAN_INVENTORY.md).
 
 Pour aller plus loin : [EPIC #4038](https://github.com/jsboige/CoursIA/issues/4038) (Roadmap Lean — un théorème-phare par série), [hub QuantConnect ↔ `kelly_lean`](../QuantConnect/README.md) (PR #5047), [hub central P0 ↔ Lean inter-familles](../README.md) (PR #5049), [hub SymbolicAI Lean](../SymbolicAI/Lean/README.md).
 
@@ -508,7 +510,7 @@ cd D:\CoursIA\MyIA.AI.Notebooks\GameTheory\scripts
 .\setup_wsl_kernel.ps1
 ```
 
-### Notebooks Lean 4 (2b, 4b, 5b, 8b, 8d, 11b, 15b, 17c)
+### Notebooks Lean 4 (2b, 4b, 5b, 8b, 8d, 11b, 15b, 17c, 27b)
 
 Ces notebooks nécessitent le kernel `Lean 4 (WSL)` :
 
@@ -552,7 +554,7 @@ jupyter notebook GameTheory-01-Setup.ipynb
 # 3. Puis GameTheory-02 (formes normales, matrices de gains)
 ```
 
-Pour les notebooks Lean (2b, 4b, 5b, 8b, 8d, 11b, 15b, 17c) : installer le kernel `Lean 4 (WSL)` via `scripts/setup_wsl_lean4.sh`.
+Pour les notebooks Lean (2b, 4b, 5b, 8b, 8d, 11b, 15b, 17c, 27b) : installer le kernel `Lean 4 (WSL)` via `scripts/setup_wsl_lean4.sh`.
 Pour GT-13/17 (OpenSpiel) : installer le kernel `GameTheory WSL` via `scripts/setup_wsl_openspiel.sh`. Les autres notebooks Python, y compris les extensions 3a-3f, 13b, 15d, 16b et 18-27, utilisent l'environnement Python natif.
 
 ---
@@ -561,7 +563,7 @@ Pour GT-13/17 (OpenSpiel) : installer le kernel `GameTheory WSL` via `scripts/se
 
 ### J'ai un Windows, est-ce que je peux suivre toute la série ?
 
-Oui. Tous les notebooks Python tournent nativement sur Windows (Nashpy, NumPy, SciPy, Matplotlib, Z3), à l'exception de GT-13 (CFR/OpenSpiel) et GT-17 (Multi-Agent RL), qui nécessitent WSL car OpenSpiel ne compile pas nativement sous Windows. Les side tracks Lean (2b, 4b, 5b, 8b, 8d, 11b, 15b, 17c) nécessitent aussi WSL pour le kernel `lean4-wsl`. Les side tracks `c` et les extensions 3a-3f, 13b, 15d, 16b et 18-27 restent du Python natif. Les scripts d'installation sont dans `scripts/` (voir section Installation).
+Oui. Tous les notebooks Python tournent nativement sur Windows (Nashpy, NumPy, SciPy, Matplotlib, Z3), à l'exception de GT-13 (CFR/OpenSpiel) et GT-17 (Multi-Agent RL), qui nécessitent WSL car OpenSpiel ne compile pas nativement sous Windows. Les side tracks Lean (2b, 4b, 5b, 8b, 8d, 11b, 15b, 17c, 27b) nécessitent aussi WSL pour le kernel `lean4-wsl`. Les side tracks `c` et les extensions 3a-3f, 13b, 15d, 16b et 18-27 restent du Python natif. Les scripts d'installation sont dans `scripts/` (voir section Installation).
 
 ### Quel est le pré-requis mathématique minimum ?
 
@@ -858,6 +860,7 @@ GameTheory/
 ├── GameTheory-25-Loi-II-Translateur-Life.ipynb
 ├── GameTheory-26-Ensembles-Limites-Poincare-Bendixson.ipynb
 ├── GameTheory-27-Munkres-Assignment.ipynb
+├── GameTheory-27b-Lean-Assignment-Native.ipynb   # Compagnon natif lean4-wsl du lake assignment_lean — certificat optimal_C3 prouvé noyau, visibilité #11703
 ├── SocialChoice/                                   # Sous-série Choix Social (7 notebooks : 4 pères Python/Lean + 3 twins C#, parité #4956)
 │   ├── 01-Arrow-Impossibility-Theorem.ipynb
 │   ├── 01-Arrow-Impossibility-Theorem-Csharp.ipynb
@@ -884,12 +887,14 @@ GameTheory/
 │   ├── strategies.py              # Tit-for-tat, hawks, doves, etc.
 │   ├── tournament.py              # Tournoi Axelrod
 │   └── visualization.py           # Animations populations
-├── conway_cgt_lean/               # Projet Lake jeux combinatoires (Conway CGT, toolchain v4.31.0-rc1)
+├── conway_cgt_lean/               # Projet Lake jeux combinatoires — visite de vihdzp/combinatorial-games (toolchain v4.31.0-rc2)
 ├── minimax_lean/                  # Projet Lake minimax (Sion, cf #4054)
-├── repeated_games_lean/           # Projet Lake jeux répétés (grim trigger, cf #4880)
-├── social_choice_lean/            # Archive — choix social absorbé dans game_theory_lean/SocialChoice/ (EPIC #4365, lean_lib neutralisée)
-├── social_choice_lean_peters/     # Projet Lake référence DominikPeters (0 sorry, toolchain v4.27.0-rc1)
-├── game_theory_lean/              # Projet Lake multi-module (4 modules : CooperativeGames, RepeatedGames, SocialChoice, StableMarriage — dont CooperativeGames + StableMarriage absorbés via EPIC #4365)
+├── assignment_lean/               # Projet Lake affectation — dualité + optimalité Kuhn-Munkres (#12598)
+├── asymmetric_information_lean/   # Projet Lake asymétrie d'information — Akerlof/Spence/RS/MWS (Epic #12844)
+├── repeated_games_lean/           # Coquille archive — jeux répétés absorbés dans game_theory_lean/RepeatedGames/ (#6146)
+├── social_choice_lean/            # Tombstone docs — choix social absorbé dans game_theory_lean/SocialChoice/ (#6058)
+├── social_choice_lean_peters/     # Projet Lake référence DominikPeters (0 sorry, toolchain v4.32.1, Peters 94a4c650)
+├── game_theory_lean/              # Projet Lake multi-module (5 modules : CooperativeGames, RepeatedGames, SocialChoice, StableMarriage, Swaps — EPIC #4365)
 ├── lean_game_defs/                # Projet Lake : types Lean partagés (lakefile.toml)
 ├── lean_game_defs_ext/            # Projet Lake : types étendus (Vickrey 0 sorry, Bayesian — lakefile.toml)
 ├── scripts/                       # Scripts d'installation (WSL Lean, OpenSpiel)
@@ -945,10 +950,10 @@ Le marqueur `CATALOG-STATUS` en tête de fichier **fait foi pour les comptes et 
 
 | Sous-série | Composition | Paradigmes dominants |
 |------------|-----------|----------------------|
-| Racine | Fil principal GT-1 à GT-17 en **binômes Python ⇄ C#** (marathon #4956), side tracks `b` Lean (2b, 4b, 5b, 8b, 8d, 11b, 15b, 17c), approfondissements `c`, extensions 3a-3f et strate 7 GT-18 à GT-27 | Nashpy/OpenSpiel/Z3 (Python), BCL from-scratch (C#), Lean 4 (side tracks `b`) |
+| Racine | Fil principal GT-1 à GT-17 en **binômes Python ⇄ C#** (marathon #4956), side tracks `b` Lean (2b, 4b, 5b, 8b, 8d, 11b, 15b, 17c, 27b), approfondissements `c`, extensions 3a-3f et strate 7 GT-18 à GT-27 | Nashpy/OpenSpiel/Z3 (Python), BCL from-scratch (C#), Lean 4 (side tracks `b`) |
 | Sous-série [SocialChoice/](SocialChoice/) | SC-01 à SC-04, dont SC-01 (Arrow) et SC-03 (Voting) en binômes Python ⇄ C# | Lean 4 (Arrow, Sen) + SAT/Z3 (UNSAT) + simulation Condorcet/Borda |
 
-Les side tracks Lean (2b, 4b, 5b, 8b, 8d, 11b, 15b, 17c) prouvent les grands théorèmes (Nash via Brouwer/Kakutani, minimax via Sion, Vickrey, PGame/Sprague-Grundy, axiomes Shapley) avec **0 `sorry` sur les théorèmes majeurs** (cf [LEAN_INVENTORY.md](LEAN_INVENTORY.md) ; harmonisation Mathlib en cours, #4362). Les `student/` éventuels portent des stubs conformes (règle C.1 — `pass` / `return None` / `print("Exercice à compléter")` / jamais `raise NotImplementedError`) et restent exécutables end-to-end. Dépendances Python : voir `MyIA.AI.Notebooks/requirements.txt` à la racine (nashpy, networkx, numpy, matplotlib, z3-solver).
+Les side tracks Lean (2b, 4b, 5b, 8b, 8d, 11b, 15b, 17c, 27b) prouvent les grands théorèmes (Nash via Brouwer/Kakutani, minimax via Sion, Vickrey, PGame/Sprague-Grundy, axiomes Shapley) avec **0 `sorry` sur les théorèmes majeurs** (cf [LEAN_INVENTORY.md](LEAN_INVENTORY.md) ; harmonisation Mathlib en cours, #4362). Les `student/` éventuels portent des stubs conformes (règle C.1 — `pass` / `return None` / `print("Exercice à compléter")` / jamais `raise NotImplementedError`) et restent exécutables end-to-end. Dépendances Python : voir `MyIA.AI.Notebooks/requirements.txt` à la racine (nashpy, networkx, numpy, matplotlib, z3-solver).
 
 ## Écosystème MCP et parenté cross-lane
 
@@ -977,6 +982,8 @@ Cette série mobilise plusieurs couches de l'écosystème MCP du cluster, et ent
 Voir la licence du repository principal.
 
 ---
+
+*Version 1.4.2 — Août 2026 (2026-08-26) — réconciliation inventaire Lean #13138 : toolchains effectives (peters v4.32.1 / Peters 94a4c650, conway v4.31.0-rc2), statuts tombstone `repeated_games_lean` (#6146) et `social_choice_lean` (#6058), ajout des lakes `assignment_lean` (#12598) et `asymmetric_information_lean` (Epic #12844), `game_theory_lean` passé à 5 modules (+Swaps #12222).*
 
 *Version 1.4.1 — Juillet 2026 (2026-07-16) — reconciliation EPIC #4365 : retrait des références aux lakes supprimés `cooperative_games_lean` (rm #6587) et `stable_marriage_lean` (PR #5971), absorbés dans `game_theory_lean` ; comptes lakes mis à jour (7 en propre + peters).*
 
