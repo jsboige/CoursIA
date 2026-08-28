@@ -1044,7 +1044,10 @@ def test_12908_preflight_exigeant_une_levee_n_est_pas_un_geste():
     }
     result = mod.analyse(data, [], MERGED)
     assert result["blocked"] is True
-    assert len(result["blocking"]) == 2
+    # #12925 (port #12908 emission) : la revalidation maintenante elle-meme
+    # (emission **BLOCKED**) est un signal de plus — 3, pas 2. L'intent du
+    # test (le preflight n'est pas un geste de levee) est preserve.
+    assert len(result["blocking"]) == 3
 
 
 def test_12908_levee_explicite_non_contradictoire_reste_reconnue():
@@ -2295,3 +2298,86 @@ def test_12944_residu_negation_du_compose_documente():
     CE test est celui a mettre a jour."""
     body = "Mon concern n'est pas encore traité et fermé, le registre reste fabriqué."
     assert mod.has_marker(body, mod.LIFT_MARKERS) is True  # residu assume
+
+
+
+# PR **BLOCKED** », « réserve uniquement B.0/process ») tout en narrant le
+# vocabulaire de levée (« une levée explicite sur le head final ») était
+# absorbée par le LIFT_MARKER de sa propre narration : la reserve vivante
+# redevenait invisible, rc=0, exactement le defaut que B.0 traque. Le verdict
+# B.0 émis (**BLOCKED** en gras, sortie organe « BLOCKED  PR ») est désormais
+# un concern positionnel — et le mot NU « BLOCKED » reste hors du filet (tag
+# de protocole, négation « n'est plus BLOCKED »).
+
+NIT_EPITA_12908 = {
+    "author": {"login": "jsboigeEpita"}, "createdAt": at(10),
+    "body": "[Hermes] COMMENT_WITH_CONCERNS — sortie vLLM absente du head.",
+}
+
+REVALIDATION_BLOQUANTE_12908 = {
+    "author": {"login": "jsboigeEpita"}, "createdAt": at(11),
+    "body": (
+        "[Hermes] PREFLIGHT COMMENTED — head `7aaf6eab92`\n\n"
+        "Le durcissement B.0 (142/142 tests) classe encore cette PR "
+        "**BLOCKED** : le checker retourne `1` avec quatre réserves tierces "
+        "actives. Seule une phrase explicite de cet auteur après vérification, "
+        "ou un `[OVERRIDE]` coordinateur, les lève selon la sémantique "
+        "corrigée.\n\nSéquençage : obtenir de `jsboigeEpita` une levée "
+        "explicite sur le head final.\n\nAucune demande de modification du "
+        "notebook : substance revalidée ; réserve uniquement B.0/process."
+    ),
+}
+
+
+def test_12908_revalidation_maintenant_le_blocage_ne_leve_pas():
+    """Le cas live (commentaire 2026-08-25T04:45:30Z de #12798, adapté) : la
+    réserve d'origine ET la revalidation maintenante restent toutes deux des
+    signaux — la narration de levée n'éteint rien."""
+    result = run([NIT_EPITA_12908, REVALIDATION_BLOQUANTE_12908])
+    assert result["blocked"] is True
+    assert len(result["blocking"]) == 2
+
+
+def test_12908_levee_explicite_sans_blocage_maintenu_reste_levee():
+    """Contrôle positif : le durcissement ne rend pas la réserve indélébile —
+    une levée explicite non contradictoire du même auteur lève toujours."""
+    lift = {"author": {"login": "jsboigeEpita"}, "createdAt": at(12),
+            "body": "Levée de ma réserve : commit abc vérifié, cassette rejouée."}
+    assert run([NIT_EPITA_12908, lift])["blocked"] is False
+
+
+def test_12908_levee_puis_blocked_narre_au_passe_reste_levee():
+    """La position décide (miroir de `_formal_concern_precedes_lift`) : une
+    levée suivie d'un **BLOCKED** narré comme état passé reste une levée."""
+    lift_narre = {"author": {"login": "jsboigeEpita"}, "createdAt": at(12),
+                  "body": "Je lève ma réserve après rejeu — le gate n'affiche "
+                          "plus **BLOCKED**."}
+    assert run([NIT_EPITA_12908, lift_narre])["blocked"] is False
+
+
+def test_12908_tag_protocol_blocked_n_est_pas_une_reserve():
+    """Le mot NU ne matche pas : un tag de protocole lane « [BLOCKED] » sans
+    forme d'émission n'est pas une réserve tierce."""
+    tag = {"author": {"login": "myia-po-2023"}, "createdAt": at(12),
+           "body": "[BLOCKED] lane myia-po-2023:CoursIA-2 — drainage file CI, "
+                   "pas de geste local possible."}
+    assert run([tag])["blocked"] is False
+
+
+def test_12908_negation_bare_word_n_est_pas_une_reserve():
+    """« n'est plus BLOCKED » (mot nu, sans gras) : la négation d'un état
+    passé n'émet pas de réserve."""
+    passe = {"author": {"login": "myia-po-2023"}, "createdAt": at(12),
+             "body": "Reprise du cycle : le gate n'est plus BLOCKED depuis le "
+                     "drainage, les checks tournent."}
+    assert run([passe])["blocked"] is False
+
+
+def test_12908_sortie_organe_pastee_est_une_emission():
+    """La sortie de l'organe collée hors fence (« BLOCKED  PR #N — ») est une
+    émission de blocage : le commentaire qui la rapporte maintient une
+    réserve vivante."""
+    paste = {"author": {"login": "clusterManager-Myia"}, "createdAt": at(11),
+             "body": "Contre-verification au head frais :\n"
+                     "BLOCKED  PR #42 — 3 nit(s) non leve(s)"}
+    assert run([paste])["blocked"] is True
