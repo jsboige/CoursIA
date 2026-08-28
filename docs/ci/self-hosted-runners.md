@@ -135,9 +135,27 @@ Le mode à blanc vérifie manifeste, version, labels et état. `verify --apply`,
 
 Les logs conservés restent locaux et hors du dépôt. Le contrôle distant « zéro runner enregistré » et la preuve d'un job réel appartiennent à la tranche d'activation, car ils nécessitent l'API GitHub.
 
-## Limite des runners éphémères
+## Limite des runners éphémères — et le contrôleur de ré-enregistrement
 
-Un runner `--ephemeral` traite au plus un job puis doit être ré-enregistré. Le gestionnaire prépare une invocation unique ; il ne crée ni boucle permanente, ni broker de tokens. Le choix entre configuration JIT, contrôleur de ré-enregistrement ou preuve one-shot est une décision séparée avant activation durable. Un runner persistant n'est pas un raccourci acceptable.
+Un runner `--ephemeral` traite au plus un job puis doit être ré-enregistré : chaque job consomme l'inscription. Le gestionnaire prépare une invocation unique ; il ne crée ni boucle permanente, ni broker de tokens. **La décision est prise** (ai-01, DM 2026-08-28T14:33Z) : un contrôleur de ré-enregistrement supervise l'invocation unique — pas de JIT (il exigerait le broker de tokens que cette page refuse), pas de one-shot (ce n'est pas de la capacité). L'éphémère est préservé : chaque job garde une inscription fraîche, donc un token négocié à chaud à chaque cycle. Un runner persistant n'est pas un raccourci acceptable.
+
+Le contrôleur est `scripts/ci/runner_controller.py` :
+
+| Commande | Effet |
+|---|---|
+| `status` | État distant + plan, aucun effet de bord. |
+| `ensure --apply` | **Idempotent** : runner online → no-op ; absent → token frais via `gh` + `register` + `verify` du gestionnaire. Sans `--apply`, imprime le plan JSON. |
+| `deregister --apply` | Arrêt propre : `config.cmd remove` avec token de retrait. L'installation demeure ; l'état redevient « préparé, pas activé ». |
+| `task-install --apply` | Enregistre la tâche planifiée `CoursIA-Runner-Controller` (tick 60 s, limite d'exécution 10 min, `IgnoreNew`) qui déclenche `ensure --apply`. **C'est le bouton** — exige une session élevée. |
+| `task-remove --apply` | Retire la tâche (retour arrière du bouton). Second passage sur une tâche absente = succès explicite. |
+
+Le tick ne fait quasiment rien quand le runner est online (une lecture d'API) : autant de passages que de minutes, un seul état stable. L'action de la tâche lit le mot de passe du compte dédié dans le fichier machine local conventionnel (`<racine-parent>\secrets\runner_pwd.txt`, jamais dans le dépôt), négocie tout le reste à chaud et journalise dans `<racine-parent>\logs\controller.log`. Le token d'enregistrement ne transite jamais par argv, commit, PR, commentaire ou dashboard, et est retiré de l'environnement après chaque cycle.
+
+**Geste d'activation** (ai-01 ou user, session élevée) : `python scripts/ci/runner_controller.py task-install --profile <profil> --apply`, puis observer `logs\controller.log` et `gh api repos/jsboige/CoursIA/actions/runners`.
+
+**Geste de retour arrière** : `task-remove --apply` (la machine cesse de ré-enregistrer), puis laisser le job courant consommer l'inscription — ou `deregister --apply` pour l'arrêt immédiat. Le teardown complet du gestionnaire (compte, ACL, arborescence) reste disponible en dernier recours.
+
+**Asymétrie d'API observée** (2026-08-28, po-2024, mesurée firsthand) : `POST /actions/runners/registration-token` répond 201 sous l'OAuth `gh` (`repo` scope), mais `POST /actions/runners/removal-token` répond **404** — même auth, même session, runner online. `deregister --apply` échoue donc proprement (fail-closed) tant que cette asymétrie n'est pas élucidée. Voies de rechange documentées pour la session d'activation : `DELETE /actions/runners/{id}` côté API, ou retrait via l'UI. À vérifier en session élevée avant de compter sur le chemin nominal.
 
 ## Provisionnement Python du tool-cache (option a2)
 
@@ -187,7 +205,8 @@ La préparation complète reste découpée :
 2. **Isolation statique** — scanner fail-closed, allowlist et labels dépôt.
 3. **Cycle de vie local** — gestionnaire, profils, probes et teardown décrits ci-dessus.
 4. **Commutation** — un seul point de bascule et garde `github.event.pull_request.head.repo.full_name == github.repository`; aucun `pull_request_target` auto-hébergé.
-5. **Preuve contrôlée** — autorisation explicite, une exécution légère réussie, contrôle négatif fork/payload, puis teardown et preuve que l'état initial est restauré.
+5. **Preuve contrôlée** — autorisation explicite, une exécution légère réussie, contrôle négatif fork/payload (livré : garde #13387, simulation run 33185586681), puis teardown et preuve que l'état initial est restauré.
+6. **Capacité** — le contrôleur ci-dessus ; son test de bout en bout (tâche posée → tick → job consommé → ré-enregistrement observé → tâche retirée) exige une session élevée : c'est la checklist de la session d'activation, le bouton appartient au coordinateur ou au user.
 
 État au 2026-08-28 : les tranches 1-3 sont livrées ; la tranche 4 est active sur po-2024 (jobs réels consommés par le pool `coursia-fast-guards`, ex. runs 33092567324 et 33093119578) ; la preuve contrôlée complète (5) et l'extension du pool aux autres machines restent à faire. Chaque extension machine exige le provisionnement Python de la section dédiée avant le premier job.
 
@@ -198,4 +217,4 @@ La préparation complète reste découpée :
 | `myia-po-2025-fast-guards` | en préparation (pas de runner installé) |
 | `myia-po-2026-fast-guards` | en préparation (pas de runner installé ; profil vérifié dans le registre) |
 
-Le réglage GitHub « Require approval for all outside collaborators » complète la garde YAML ; il ne la remplace jamais. L'activation finale reste un geste explicite du user ou du coordinateur, après validation des tranches précédentes.
+Le réglage GitHub « Require approval for all outside collaborators » complète la garde YAML ; il ne la remplace jamais (non exposé par l'API `/actions/permissions` — capture à faire côté admin, UI Settings → Actions). L'activation finale reste un geste explicite du user ou du coordinateur, après validation des tranches précédentes.
