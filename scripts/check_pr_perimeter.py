@@ -138,14 +138,47 @@ _SUBSTRING_MARKERS = ("uniquement", "seulement", "aucune autre",
                       "nothing else", "no other")
 
 
+# A marker under NEGATION asserts the opposite of exclusivity. "pas seulement
+# les requis" / "not only the required ones" claims UNIVERSALITY -- it widens
+# the set, it does not restrict it. A plain substring match reads the marker
+# and fires criterion #11268-2 on prose that says the reverse. Measured on
+# #12547: the body line "Le gate attend tous les checks non-advisory, pas
+# seulement les requis" -- an explicit universality claim about CI semantics,
+# nothing to do with the PR perimeter -- was flagged as an exclusivity
+# assertion and turned the required PR gate red. Same failure shape as the
+# "read-only" compound (#11654) above: the marker is present, its force is
+# not. Negators are matched as whole words immediately before the marker
+# (optionally through "pas" in "non pas uniquement").
+_NEGATORS = ("pas", "non", "ni", "not", "never", "jamais")
+_NEG_PREFIX = re.compile(
+    r"(?:" + "|".join(_NEGATORS) + r")(?:\s+(?:pas|plus))?\s+$",
+    re.IGNORECASE,
+)
+
+
+def _marker_is_negated(low: str, start: int) -> bool:
+    """True when the marker at `start` is preceded by a negator word."""
+    return bool(_NEG_PREFIX.search(low[:start]))
+
+
 def _has_exclusivity(low: str) -> bool:
     """Exclusivity check shared by extraction and assertion checking.
 
     `low` is the lowercased line. French/phrase markers are substring-matched;
-    "only" requires word boundaries AND no hyphen/word char before it.
+    "only" requires word boundaries AND no hyphen/word char before it. A
+    marker carrying a negator ("pas seulement", "not only") is skipped: it
+    asserts universality, which is the opposite of a perimeter restriction.
     """
-    return (any(m in low for m in _SUBSTRING_MARKERS)
-            or bool(_ONLY_STANDALONE.search(low)))
+    for m in _SUBSTRING_MARKERS:
+        pos = low.find(m)
+        while pos != -1:
+            if not _marker_is_negated(low, pos):
+                return True
+            pos = low.find(m, pos + 1)
+    for hit in _ONLY_STANDALONE.finditer(low):
+        if not _marker_is_negated(low, hit.start()):
+            return True
+    return False
 
 
 @dataclass
@@ -1080,7 +1113,7 @@ def _run_gh(args: list[str]) -> str:
     if not gh:
         print("gh introuvable", file=sys.stderr)
         sys.exit(2)
-    proc = subprocess.run([gh, *args], capture_output=True, text=True)
+    proc = subprocess.run([gh, *args], capture_output=True, text=True, encoding="utf-8", errors="replace")
     if proc.returncode != 0:
         print(f"gh error: {proc.stderr.strip()[:400]}", file=sys.stderr)
         sys.exit(2)

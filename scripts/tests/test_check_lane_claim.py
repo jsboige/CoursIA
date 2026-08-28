@@ -774,6 +774,161 @@ def test_valid_bracketed_line_with_midline_bare_word_not_double_counted(capsys):
     assert 'WARN: marqueur sans crochets' not in captured.err
 
 
+# --- #12624: quasi-marker + single-line composite lints -----------------------
+# The 2026-08-22 #12329 incident, both defects: (1) a bracketed `[CLAGED]`
+# (edit-distance-2 typo of CLAIMED) was invisible to BOTH the event parser
+# and the #11239 bare lint -- the lane believed its lock was posted; (2) the
+# repair comment put a lift AND a re-claim on ONE line, of which only the
+# head token is line-anchored, so the re-claim was silently swallowed and a
+# second lane delivered the same four files nine hours later (#12343/#12433).
+# Both lints are WARN-only: they restore the signal, never the verdict.
+
+INCIDENT_TYPO_LINE = (
+    "[CLAGED] lane myia-po-2024:CoursIA-2 -- grain DEEP/lean, prev: DEEP/lean "
+    "c.1331p384 PR #12337 -- paths: MyIA.AI.Notebooks/GameTheory/game_theory_lean/"
+    "SocialChoice/MechanismDesign.lean"
+)
+INCIDENT_REPAIR_LINE = (
+    "[RELEASED claim-malformed] ignore le marqueur precedent qui contenait "
+    "[CLAGED] (typo). Re-claim ici : [CLAIMED] lane myia-po-2024:CoursIA-2 "
+    "-- paths: MyIA.AI.Notebooks/GameTheory/game_theory_lean/SocialChoice/"
+    "MechanismDesign.lean"
+)
+
+
+def test_quasi_typo_incident_line_surfaces(capsys):
+    # Defaut 1: the verbatim incident line. `[CLAGED]` is distance 2 from
+    # CLAIMED and carries the claim motif -> 1 suspected typo marker.
+    p = payload(comment(INCIDENT_TYPO_LINE, "2026-08-22T16:03:42Z", author="jsboige"))
+    rc = clc._run_check(p, "myia-po-2023:CoursIA-2")
+    captured = capsys.readouterr()
+    assert rc == 0                          # WARN-only, never blocks
+    assert '"suspected_typo_markers": 1' in captured.out
+    assert "WARN: quasi-marqueur" in captured.err
+    assert "CLAGED" in captured.err and "CLAIMED" in captured.err
+
+
+def test_quasi_suffix_marker_surfaces(capsys):
+    # Defaut 2 head shape: `[RELEASED claim-malformed]` -- the keyword is
+    # right but the bracket carries a suffix, so `_MARKER_RE` rejects it and
+    # the gesture enacts nothing.
+    p = payload(comment(INCIDENT_REPAIR_LINE, "2026-08-22T16:03:47Z", author="jsboige"))
+    rc = clc._run_check(p, "myia-po-2023:CoursIA-2")
+    captured = capsys.readouterr()
+    assert rc == 0
+    assert '"suspected_typo_markers": 1' in captured.out
+    assert "suffixe dans les crochets" in captured.err
+
+
+def test_incident_repair_line_flags_swallowed_reclaim(capsys):
+    # Defaut 2: the mid-line `[CLAIMED]` of the repair line is NOT an event
+    # (#10228 mid-prose protection) -- the composite lint must name it so the
+    # writer learns the re-claim never registered.
+    p = payload(comment(INCIDENT_REPAIR_LINE, "2026-08-22T16:03:47Z", author="jsboige"))
+    rc = clc._run_check(p, "myia-po-2023:CoursIA-2")
+    captured = capsys.readouterr()
+    assert rc == 0
+    assert '"composite_single_line_markers": 1' in captured.out
+    assert "marqueur compose sur une seule ligne" in captured.err
+    assert "CLAIMED" in captured.err
+
+
+def test_incident_repair_line_enacts_no_claim(capsys):
+    # End-to-end acceptance: the repair comment as a whole must leave the
+    # repairing lane WITHOUT an active claim (that is the measured damage --
+    # only the signal fixes it now), and must not block anyone either.
+    p = payload(comment(INCIDENT_REPAIR_LINE, "2026-08-22T16:03:47Z", author="jsboige"))
+    rc = clc._run_check(p, "myia-po-2024:CoursIA-2")
+    captured = capsys.readouterr()
+    assert rc == 0                          # CLEAR: no claim was registered
+    assert '"my_active_claim": false' in captured.out
+
+
+def test_real_marker_not_quasi(capsys):
+    # Selectivity: a canonical `[CLAIMED] lane X -- paths: ...` is a real
+    # marker (no suffix in brackets) -- 0 suspected, 0 composite.
+    p = payload(comment(
+        "[CLAIMED] lane myia-po-2026:CoursIA -- paths: MyIA.AI.Notebooks/Search/**",
+        "2026-08-24T09:00:00Z"))
+    rc = clc._run_check(p, "myia-po-2026:CoursIA")
+    captured = capsys.readouterr()
+    assert rc == 0
+    assert '"suspected_typo_markers": 0' in captured.out
+    assert '"composite_single_line_markers": 0' in captured.out
+    assert "WARN: quasi-marqueur" not in captured.err
+
+
+def test_quasi_requires_claim_motif(capsys):
+    # Selectivity (#11239 gate): a bracketed almost-word on a line with NO
+    # claim motif (`lane X` / `#N` / `paths:`) is prose, not a gesture.
+    p = payload(comment(
+        "Le cladage des especes [CLADGED] reste ouvert dans la taxonomie.",
+        "2026-08-24T09:00:00Z"))
+    rc = clc._run_check(p, "myia-po-2024:CoursIA")
+    captured = capsys.readouterr()
+    assert rc == 0
+    assert '"suspected_typo_markers": 0' in captured.out
+
+
+def test_quasi_far_word_not_flagged(capsys):
+    # Selectivity: a bracketed word far from every keyword (even with a lane
+    # motif on the line) is not a marker attempt -- `[Arbitrage ...]` is the
+    # real shape of an arbitration headline on #12329.
+    p = payload(comment(
+        "[Arbitrage #12329 -- lane myia-po-2024:CoursIA] Verdict : doublon cross-lane.",
+        "2026-08-24T03:18:28Z", author="jsboige"))
+    rc = clc._run_check(p, "myia-po-2024:CoursIA")
+    captured = capsys.readouterr()
+    assert rc == 0
+    assert '"suspected_typo_markers": 0' in captured.out
+
+
+def test_quasi_fenced_citation_not_flagged(capsys):
+    # A quasi marker quoted in a fenced block is a citation, not a gesture
+    # (same masking rationale as `_parse_claim_events`).
+    p = payload(comment(
+        "```\n[CLAGED] lane myia-po-2024:CoursIA-2 -- paths: a/**\n```\n"
+        "(citation du marqueur casse, cf. arbitrage)",
+        "2026-08-24T09:00:00Z"))
+    rc = clc._run_check(p, "myia-po-2024:CoursIA")
+    captured = capsys.readouterr()
+    assert rc == 0
+    assert '"suspected_typo_markers": 0' in captured.out
+    assert '"composite_single_line_markers": 0' in captured.out
+
+
+def test_template_prose_line_not_composite(capsys):
+    # The claim template's own prose line ("Release with `[RELEASED]` when
+    # your PR lands.") has NO line-anchored head marker -- it must never be
+    # flagged as a composite.
+    p = payload(comment(
+        "[CLAIMED] lane myia-po-2026:CoursIA -- paths: MyIA.AI.Notebooks/Search/**\n\n"
+        "(check_lane_claim #9774 -- server-stamped UTC; body timestamps are NOT "
+        "authoritative. Release with `[RELEASED]` when your PR lands.)",
+        "2026-08-24T09:00:00Z"))
+    rc = clc._run_check(p, "myia-po-2026:CoursIA")
+    captured = capsys.readouterr()
+    assert rc == 0
+    assert '"composite_single_line_markers": 0' in captured.out
+    assert "marqueur compose" not in captured.err
+
+
+def test_multiline_composite_last_marker_wins(capsys):
+    # The WRITTEN tie-break (#12624): several markers ACROSS LINES are legal,
+    # walk order applies -- last line-anchored marker wins. A claim then a
+    # release on the NEXT line reduces to released, and NO composite flag
+    # fires (the shape is unambiguous, only single-line swallows a marker).
+    p = payload(comment(
+        "[CLAIMED] lane myia-po-2026:CoursIA -- paths: a/**\n"
+        "[RELEASED] lane myia-po-2026:CoursIA -- erreur de cible",
+        "2026-08-24T09:00:00Z"))
+    rc = clc._run_check(p, "myia-po-2026:CoursIA")
+    captured = capsys.readouterr()
+    assert rc == 0
+    assert '"my_active_claim": false' in captured.out
+    assert '"composite_single_line_markers": 0' in captured.out
+
+
 # --- --stale-threshold (#9812) ----------------------------------------------
 # A claim older than the threshold (age from server createdAt, never the body)
 # is treated as STALE: it no longer blocks, but a STALE_CLAIM warning is printed
@@ -2341,6 +2496,32 @@ def test_parse_claim_event_unparseable_scope_empty_when_clean():
         "scripts/search-9-*.yaml",
     ]
     assert ev.unparseable_scope == []
+
+
+def test_parse_claim_event_lane_residue_reported_not_blocking():
+    """#12719 -- a marker writing a bare date after the lane parses to the
+    BARE lane (no phantom `myia-po-2023:CoursIA 2026-08-23`), and the residue
+    is witnessed in `lane_scope_residue`. Founder marker of the 5-auto-blocage
+    night (issue #12485 form)."""
+    line = ("[CLAIMED] #12485 — myia-po-2023:CoursIA 2026-08-23 — "
+            "Medical-Chatbot : amorcage batch")
+    ev = clc.parse_claim_event(comment(line, "2026-08-23T04:00:00Z"))
+    assert ev is not None
+    # The lane is the BARE token -- the declaring lane is no longer blocked
+    # against its own claim.
+    assert ev.lane == "myia-po-2023:CoursIA"
+    # And the malformed form is REPORTED, not silently reinterpreted.
+    assert ev.lane_scope_residue == ["bare-date:2026-08-23"]
+
+
+def test_parse_claim_event_lane_residue_empty_when_clean():
+    """#12719 regression -- a well-formed marker yields an empty
+    `lane_scope_residue`. The witness must not fire on clean claims."""
+    line = "[CLAIMED] lane myia-po-2023:CoursIA -- paths: scripts/foo.py"
+    ev = clc.parse_claim_event(comment(line, "2026-08-23T04:00:00Z"))
+    assert ev is not None
+    assert ev.lane == "myia-po-2023:CoursIA"
+    assert ev.lane_scope_residue == []
 
 
 def test_filter_by_claim_scope_lifts_unparseable_to_epic_wide():
