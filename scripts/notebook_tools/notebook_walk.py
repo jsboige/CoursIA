@@ -63,7 +63,7 @@ def _git_repo_root(start: Path) -> Path | None:
     try:
         result = subprocess.run(
             ["git", "rev-parse", "--show-toplevel"],
-            cwd=str(start.resolve()), capture_output=True, text=True, timeout=15,
+            cwd=str(start.resolve()), capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=15,
         )
     except (FileNotFoundError, OSError):
         return None

@@ -35,8 +35,10 @@ import Grothendieck.CoversZariskiArrow_en
 import Grothendieck.DenseTopology
 import Grothendieck.DirectImage
 import Grothendieck.ExceptionalDirect
+import Grothendieck.ExceptionalTriple
 import Grothendieck.Equivalences
 import Grothendieck.KanExtensions
+import Grothendieck.LawvereTierney
 import Grothendieck.LeftExact
 import Grothendieck.Limits
 import Grothendieck.MathlibMap
@@ -62,6 +64,8 @@ import Grothendieck.SitePoints
 import Grothendieck.SitesComparison
 import Grothendieck.SitesComparison_en
 import Grothendieck.Subcanonical
+import Grothendieck.TopologyDictionary
+import Grothendieck.TopologyDictionary_en
 import Grothendieck.TopologyLattice
 import Grothendieck.YonedaLemma
 import Grothendieck.ZariskiSite

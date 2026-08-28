@@ -29,10 +29,15 @@ name: Lane Claim Guard
 # le reseau), YAML reduit a la plomberie, suffixe `-required` sur le nom du job
 # pour que `is_advisory()` de scripts/pr_gate.py ne le neutralise pas.
 
+# DORMANT depuis #13384 : les DEUX jobs (required + advisory) sont absorbes
+# (run blocks portes verbatim) par always-on-guards.yml -- un seul workflow,
+# un seul checkout, un seul slot de runner par PR (37 % de la file CI etait
+# les cinq gardes always-on pour ~3 min de travail reel, mesure #13384). Les
+# jobs restent ICI en copie de reference pour la tracabilite. NE PAS
+# reinscrire pull_request ici sans retirer les organes lane-claim
+# d'always-on-guards.
+
 on:
-  pull_request:
-    types: [opened, edited, synchronize, reopened]
-    branches: [main]
   workflow_dispatch:
 
 permissions:
