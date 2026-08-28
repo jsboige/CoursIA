@@ -707,3 +707,95 @@ def test_the_gap_warning_speaks_only_when_the_surface_was_unread(capsys):
     said = capsys.readouterr().out
     assert "n'ont PAS pu etre lus" in said
     assert "check_unaddressed_nits.py" in said
+
+
+# #12830 : tests pour le 3e etat file-saturation (BLOCKED + MERGEABLE + rollup
+# PENDING > N h). Diagnostic fondateur po-2023 c.508 (PR #12640, 28h, MERGEABLE,
+# 0 fail, rollup PENDING).
+
+
+def _state_with_rollup(rollup_state, checks):
+    """Variante de _state qui injecte statusCheckRollup.state.
+
+    _state() historique ne pose pas rollup.state ; c'est exactement le champ
+    que #12830 ajoute au fragment GraphQL. Les tests du file-saturation
+    ne peuvent pas exister sans cette matiere premiere.
+    """
+    return {
+        "mergeable": "MERGEABLE",
+        "commits": {"nodes": [{"commit": {"statusCheckRollup": {
+            "state": rollup_state,
+            "contexts": {"nodes": [
+                {"name": n, "conclusion": c, "state": c, "isRequired": req}
+                for (n, c, req) in checks
+            ]},
+        }}}]},
+        "reviews": {"nodes": []},
+    }
+
+
+def test_file_saturation_merges_pending_required_check_old_age():
+    """#12830 acceptance #1+#3+#4 : file-saturation detecte si
+    mergeable=MERGEABLE + rollup.state=PENDING + 1+ required check
+    non-FAIL + age > seuil.
+    """
+    s = _state_with_rollup("PENDING", [
+        ("PR gate", "IN_PROGRESS", True),
+        ("Scripts Tests", "SUCCESS", False),
+    ])
+    assert pig.file_saturation_cause(s, 30.0, 24.0) is not None
+
+
+def test_file_saturation_ignores_conflicting_pr():
+    """#12830 acceptance #4 (negatif) : conflit git = blocking_causes classique,
+    pas file-saturation. Cumuler les deux sur une meme PR serait double cause.
+    """
+    s = _state_with_rollup("PENDING", [
+        ("PR gate", "IN_PROGRESS", True),
+    ])
+    s["mergeable"] = "CONFLICTING"
+    assert pig.file_saturation_cause(s, 30.0, 24.0) is None
+
+
+def test_file_saturation_ignores_successful_rollup():
+    """#12830 acceptance #4 (negatif) : rollup SUCCESS = verdict final, pas
+    une saturation. La PR est verte au niveau rollup, la lane n'a rien a
+    faire cote CI.
+    """
+    s = _state_with_rollup("SUCCESS", [
+        ("PR gate", "SUCCESS", True),
+    ])
+    assert pig.file_saturation_cause(s, 30.0, 24.0) is None
+
+
+def test_file_saturation_does_not_double_substance_red():
+    """#12830 acceptance #5 : si un check requis est FAIL, c'est un rouge
+    substance que blocking_causes prend deja. file_saturation_cause doit
+    rendre None pour eviter le double-comptage.
+    """
+    s = _state_with_rollup("FAILURE", [
+        ("PR gate", "FAILURE", True),
+    ])
+    assert pig.file_saturation_cause(s, 30.0, 24.0) is None
+
+
+def test_file_saturation_respects_threshold():
+    """#12830 acceptance parametree : --saturation-hours distinct du seuil
+    substance. Une PR de 5h ne doit pas matcher si seuil=24 ; doit matcher
+    si seuil=4. La separation des deux causes (substance vs infra) tient.
+    """
+    s = _state_with_rollup("PENDING", [
+        ("PR gate", "IN_PROGRESS", True),
+    ])
+    assert pig.file_saturation_cause(s, 5.0, 24.0) is None
+    assert pig.file_saturation_cause(s, 5.0, 4.0) is not None
+
+
+def test_file_saturation_requires_at_least_one_required_check():
+    """#12830 acceptance #4 (negatif) : PR sans check requis = pas de CI
+    structure, juste l'absence de CI. file-saturation ne s'applique pas.
+    """
+    s = _state_with_rollup("PENDING", [
+        ("advisory opt", "NEUTRAL", False),
+    ])
+    assert pig.file_saturation_cause(s, 30.0, 24.0) is None

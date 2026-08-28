@@ -8,15 +8,14 @@
 
   ## Headline theorem
 
-  `grim_trigger_sustains_iff`: the grim-trigger strategy sustains
-  cooperation iff the discount factor satisfies δ ≥ (T−R)/(T−P).
+  `grim_trigger_sustains_iff`: cooperation yields at least as much value as a
+  one-shot deviation followed by grim punishment iff the discount factor
+  satisfies δ ≥ (T−R)/(T−P).
 
-  This inequality characterizes the threshold below which a player prefers
-  to deviate (gain T today then endure P forever) rather than cooperate
-  perpetually (R forever). The mechanism is the one-shot deviation
-  principle (Lemke–Tarski): no deviation over two periods or more beats
-  the deviation in a single period, so looking at the one-shot trade-off
-  is sufficient.
+  This equivalence formalizes grim trigger's algebraic incentive condition.
+  The module also proves that the punishment state is absorbing. It does not
+  yet formalize the histories and strategy profiles required for a
+  subgame-perfect Nash equilibrium.
 
   ## Structure
 
@@ -25,9 +24,9 @@
   - `RepeatedGames.Discounting_en` — discount factor, geometric sums for
     the R, T + δ·P discounted flows. Threshold rewrite lemma (prover BG
     target).
-  - `RepeatedGames.GrimTrigger_en` — grim strategy (cooperate → if deviation
-    detected, eternal defection), headline theorem `grim_trigger_sustains_iff`,
-    NE corollary. These two sorries are the prover BG primary targets.
+  - `RepeatedGames.GrimTrigger_en` — grim transition (punishment is absorbing)
+    and the discounted-stream incentive condition `grim_trigger_sustains_iff`.
+    Complete strategy/SPNE semantics remain outside this module.
   - `RepeatedGames.Folk_en` (STRETCH) — discounted Folk theorem (Fudenberg–
     Maskin 1986), `sorry` accepted within the companion's stretch scope.
 
