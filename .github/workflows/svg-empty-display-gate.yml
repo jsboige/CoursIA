@@ -1,5 +1,13 @@
 name: SVG empty-display gate
 
+# ABSORBE PAR LA VOIE RAPIDE (#12396, tranche 4) : sur `pull_request`, ce
+# garde est desormais rendu par `fast-lane-shadow.yml` (check-run nomme
+# `No SVG empty-display defect in changed notebooks`, meme nom que ce job,
+# meme verdict -- rc=1 defaut / rc=2 illisible --, un seul checkout pour
+# toute la lane). Ce fichier garde `workflow_dispatch` pour le re-run manuel
+# sur `main` apres une panne CI (#9858). Les `paths:` et l'argv d'origine
+# vivent dans `scripts/ci/fast_lane_registry.py` (TRANCHE4).
+
 # Purpose
 # -------
 # Per-PR gate for .NET Interactive cells that `display()` an SVG chart but
@@ -97,12 +105,6 @@ name: SVG empty-display gate
 # rollout #6927 (SVG inline fleet-wide), canon ai-01 `svg-6927-canon.md`.
 
 on:
-  pull_request:
-    branches: [ main ]
-    paths:
-      - 'MyIA.AI.Notebooks/**/*.ipynb'
-      - 'scripts/notebook_tools/detect_svg_empty_display.py'
-      - '.github/workflows/svg-empty-display-gate.yml'
   workflow_dispatch:
 
 permissions:

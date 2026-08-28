@@ -362,6 +362,51 @@ Some text after.
         # Single box is not enough — we require >= 2 boxes
         assert blocks == []
 
+    @pytest.mark.parametrize(
+        "src",
+        [
+            """
+┌────────┬───────────┬─────────────────────────────────┐
+│ Signe  │ Exponent  │ Mantissa                        │
+│ 1 bit  │ 8 bits    │ 23 bits                         │
+└────────┴───────────┴─────────────────────────────────┘
+""",
+            """
++-------------------+----------------------+---------------------+
+| Aspect            | Planification Class. | Planification HTN   |
++-------------------+----------------------+---------------------+
+| Objectif          | Etat but             | Tâche a accomplir   |
+| Recherche         | Etats                | Decompositions      |
++-------------------+----------------------+---------------------+
+""",
+            """
++----------+--------+--------------------+--------+---------------------+----------+
+| Version  | Nb In  | Inputs             | Nb Out | Outputs             | Locktime |
+| 4 bytes  | varint | (prev_tx + script) | varint | (amount + script)   | 4 bytes  |
++----------+--------+--------------------+--------+---------------------+----------+
+""",
+        ],
+        ids=["unicode-field-layout", "ascii-comparison", "ascii-record-layout"],
+    )
+    def test_bordered_ascii_tables_excluded(self, src):
+        """Les trois faux positifs corpus #11962 sont des tables encadrées."""
+        assert _find_flowchart_blocks(src) == []
+
+    def test_table_followed_by_flowchart_keeps_flowchart(self):
+        """Neutraliser une table ne doit pas masquer le diagramme suivant."""
+        src = """
++------+------+
+| A    | B    |
++------+------+
+
++--------+      +--------+
+| Input  | ---> | Output |
++--------+      +--------+
+"""
+        blocks = _find_flowchart_blocks(src)
+        assert len(blocks) == 1
+        assert "Input" in blocks[0]["verbatim"]
+
     def test_mermaid_fence_already_converted(self):
         """A cell already in ```mermaid ... ``` is NOT an ASCII flowchart
         (it's the canonical Mermaid rendering). The detector scans
@@ -410,7 +455,7 @@ class TestScanNotebook:
     def test_scan_sw12_founder(self, tmp_path):
         """The founder case is detected via the notebook entry-point.
 
-        c.474 patch d'une ligne (issue #12324) : le retrait de l'ancre `\s*$`
+        c.474 patch d'une ligne (issue #12324) : le retrait de l'ancre `\\s*$`
         du `_RE_BOX_ASCII` permet de detecter le bloc horizontal `+--+ +--+ +--+`
         (boites cote a cote) en plus du bloc vertical traditionnel. Le founder
         SW-12 contient les deux dispositions, donc on attend >= 2 findings
@@ -515,8 +560,12 @@ class TestUnreadableNotebookSkipped:
 #                 de #12637 (0 commit sur detect_ascii_flowchart.py entre
 #                 2a40b3b0b et HEAD) : la baisse 29 -> 15 mesure la
 #                 conversion de 20 notebooks, pas une perte de detection.
-CORPUS_BASELINE_TOTAL = 15
-CORPUS_BASELINE_FILES_WITH = 15
+#   #11962 finalisation : 12 findings / 12 files, re-mesure 2026-08-27 sur
+#                 origin/main 080d55256 + filtre des tables encadrees. La
+#                 baisse 15 -> 12 correspond exactement aux trois faux
+#                 positifs firsthand Lean-11 / Planners-9 / SC-20.
+CORPUS_BASELINE_TOTAL = 12
+CORPUS_BASELINE_FILES_WITH = 12
 
 
 class TestCorpusBaseline:

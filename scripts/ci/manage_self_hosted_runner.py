@@ -158,7 +158,11 @@ def _validate_profile(name: str, raw: Any) -> Profile:
     log_root = _canonical_absolute(raw["log_root"], "log_root")
     if not _is_within(work, root):
         raise Refused(f"profile {name!r} work directory must be below its runner root")
-    if _is_within(root, REPO_ROOT) or _is_within(REPO_ROOT, root):
+    if _is_within(root, REPO_ROOT):
+        raise Refused(f"profile {name!r} runner root must be outside the repository")
+    # Le checkout du runner lui-meme vit par construction sous <root>/_work :
+    # la clause REPO_ROOT-sous-root ne doit refuser que HORS de la zone work (#13238).
+    if _is_within(REPO_ROOT, root) and not _is_within(REPO_ROOT, work):
         raise Refused(f"profile {name!r} runner root must be outside the repository")
     sensitive = raw["sensitive_paths"]
     if (

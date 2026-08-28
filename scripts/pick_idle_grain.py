@@ -539,7 +539,9 @@ _PR_STATE_FRAGMENT = """
   p%(n)d: pullRequest(number:%(n)d) {
     number mergeable
     reviews(last:40) { nodes { state submittedAt author { login } } }
-    commits(last:1) { nodes { commit { statusCheckRollup { contexts(first:100) { nodes {
+    commits(last:1) { nodes { commit { statusCheckRollup {
+      state   # #12830 : SUCCESS/FAILURE/PENDING/NEUTRAL au niveau rollup, pour le 3e etat file-saturation
+      contexts(first:100) { nodes {
       ... on CheckRun      { name    conclusion completedAt startedAt isRequired(pullRequestNumber:%(n)d) }
       ... on StatusContext { context state       createdAt              isRequired(pullRequestNumber:%(n)d) }
     } } } } } }
@@ -662,6 +664,55 @@ def blocking_causes(state: dict) -> list[str]:
     return causes
 
 
+def file_saturation_cause(state: dict, age_hours: float, threshold_hours: float) -> str | None:
+    """#12830 : detecte le 3e etat -- PR non-mergeable non par rouge substance,
+    non par attente-coordinateur (BLOCKED+MERGEABLE+zero-fail, cf #12108),
+    mais par **saturation file** : tous les checks requis PENDING depuis
+    longtemps sans qu'aucun n'ait demarre. Cause = "faux-rouge" : la lane ne
+    peut pas la reparer (c'est l'infra CI), geste = commenter la PR (cause)
+    + --ignore-red ou re-run via api, pas un push muet qui ne leve rien.
+
+    Critere (tous requis) :
+      1. mergeable=MERGEABLE (pas de conflit git)
+      2. statusCheckRollup.state EXPLICITEMENT "PENDING" (pas None : les
+         fixtures de test sans rollup.state ne sont pas des saturations
+         file, juste des PRs sans rollup tracke)
+      3. >=1 check requis existe (sans ca, c'est juste un PR sans CI)
+      4. Aucun check requis en FAIL (sinon c'est un rouge substance classique)
+      5. age >= saturation_hours (defaut 24 h, configurable --saturation-hours)
+
+    Retourne la cause formulee, ou None.
+    """
+    if age_hours < threshold_hours:
+        return None
+    if state.get("mergeable") != "MERGEABLE":
+        return None  # conflit git = rouge classique, pas file-saturation
+    commits = state.get("commits", {}).get("nodes") or []
+    rollup = (commits[0]["commit"].get("statusCheckRollup") if commits else None) or {}
+    rollup_state = (rollup.get("state") or "").upper()
+    # Distinction explicite : "champ absent" (None, fixtures legacy) ne doit
+    # PAS etre lu comme PENDING, sinon les tests historiques et les fixtures
+    # in-memory cassent. PENDING reel = la chaine "PENDING" du rollup GitHub.
+    if rollup_state != "PENDING":
+        return None
+    required_checks = []
+    for ctx in drop_superseded((rollup.get("contexts", {}) or {}).get("nodes") or []):
+        if ctx.get("isRequired"):
+            verdict = (ctx.get("conclusion") or ctx.get("state") or "").upper()
+            if verdict in CHECK_FAILED:
+                # Rouge substance detecte, blocking_causes le prendra ; on ne
+                # double pas la cause.
+                return None
+            required_checks.append(ctx.get("name") or ctx.get("context") or "?")
+    if not required_checks:
+        # Aucun check requis : pas un "faux-rouge CI sature", juste pas de CI.
+        return None
+    n = len(required_checks)
+    return (f"file-saturation : {n} check(s) requis en PENDING depuis "
+            f">{threshold_hours:.0f}h (cause infra, pas substance ; "
+            f"geste = commenter la PR + --ignore-red ou re-run)")
+
+
 def unaddressed_review_points(numbers: list[int]) -> dict[int, int]:
     """Points de review non leves, par PR. Delegue a l'organe du merge-gate B.0.
 
@@ -702,14 +753,20 @@ def unaddressed_review_points(numbers: list[int]) -> dict[int, int]:
 
 
 def red_backlog(lane: str, threshold_hours: float,
-                count_threshold: int = RED_COUNT_DEFAULT) -> dict:
-    """PRs de la lane reellement bloquees, avec TROIS declencheurs de refus.
+                count_threshold: int = RED_COUNT_DEFAULT,
+                saturation_hours: float | None = None) -> dict:
+    """PRs de la lane reellement bloquees, avec QUATRE declencheurs de refus.
 
     `aged` : au moins une rouge ouverte depuis plus de `threshold_hours` --
     la queue longue, celle qui pourrit. `count` : au moins `count_threshold`
     rouges simultanees quel que soit leur age -- le tas, que le seul critere
     d'age ne voyait pas (51/58 invisibles, mesure du 2026-08-23). `nits` : au
     moins un point de review non leve, quel que soit l'age et le nombre.
+    `saturation` (#12830) : au moins une PR file-saturated (MERGEABLE mais
+    rollup PENDING depuis >saturation_hours, sans rouge substance) -- le
+    3e etat qu'on ratait (cf #12108 fondateur : BLOCKED+MERGEABLE+zero-fail
+    volontairement ignore pour ne pas piéger la lane sur l'attente-coordinateur,
+    mais cette exclusion avalait aussi les file-saturations infra-side).
 
     Le troisieme n'est pas un ajout de perimetre : il PRESERVE une semantique
     qui existait avant. Le filtre d'age s'appliquait en amont, donc une PR
@@ -730,11 +787,14 @@ def red_backlog(lane: str, threshold_hours: float,
     try:
         prs = fetch_open_prs()
     except Exception as exc:  # noqa: BLE001 - le garde ne doit jamais bloquer sur une panne reseau
+        sat_threshold = saturation_hours if saturation_hours is not None else threshold_hours
         return {"unavailable": f"{type(exc).__name__}", "red": [],
                 "triggers": [], "unattributed_blocked": [],
-                "nits_unavailable": None}
+                "nits_unavailable": None,
+                "saturation_hours": sat_threshold}
 
     mine, others = [], []
+    sat_threshold = saturation_hours if saturation_hours is not None else threshold_hours
     for pr in prs:
         if pr.get("isDraft"):
             continue
@@ -762,6 +822,13 @@ def red_backlog(lane: str, threshold_hours: float,
             # peut etre verte et sans conflit et rester non mergeable (B.0).
             causes.insert(0, f"{n_nits} point(s) de review non leve(s) -> repondre, "
                              f"corriger en citant le commit, ou ouvrir une issue de suivi nommee")
+        # #12830 : 3e etat file-saturation (cf docstring file_saturation_cause).
+        # Seuil par defaut = threshold_hours (meme qu'aged) pour ne pas creer
+        # un nouveau param a retenir ; surchargeable via --saturation-hours.
+        sat_threshold = saturation_hours if saturation_hours is not None else threshold_hours
+        sat_cause = file_saturation_cause(state, _hours_since(pr["createdAt"]), sat_threshold)
+        if sat_cause:
+            causes.append(sat_cause)
         if causes:
             red.append({"number": pr["number"], "title": pr["title"],
                         "age_hours": round(_hours_since(pr["createdAt"])),
@@ -778,6 +845,11 @@ def red_backlog(lane: str, threshold_hours: float,
         triggers.append("aged")
     if len(red) >= count_threshold:
         triggers.append("count")
+    # #12830 : declencheur saturation, distinct de count/aged/nits pour qu'une
+    # PR file-saturated isolee (pas de rouge substance, pas de point review)
+    # puisse declencher le refus quand meme.
+    if any("file-saturation" in c for r in red for c in r["causes"]):
+        triggers.append("saturation")
 
     untagged = [pr for pr in others if parse_grain_tag(pr.get("body") or "") is None]
     untagged_states = fetch_pr_states([pr["number"] for pr in untagged]) if untagged else {}
@@ -791,6 +863,7 @@ def red_backlog(lane: str, threshold_hours: float,
     # reprendre (cf skill coordinate, phase 3.5), et un compte ne se traite pas.
     return {"red": red, "aged": aged, "triggers": triggers,
             "red_hours": threshold_hours, "red_count_threshold": count_threshold,
+            "saturation_hours": sat_threshold,
             "unattributed_blocked": unattributed,
             "nits_unavailable": nits_unavailable}
 
@@ -907,6 +980,11 @@ def main() -> int:
     ap.add_argument("--red-count", type=int, default=RED_COUNT_DEFAULT,
                     help=f"nombre de rouges simultanees qui refuse le tirage "
                          f"quel que soit leur age (defaut {RED_COUNT_DEFAULT})")
+    ap.add_argument("--saturation-hours", type=float, default=None,
+                    help="#12830 : seuil du declencheur file-saturation (defaut "
+                         f"= --red-hours, soit {RED_HOURS_DEFAULT} h). Separe de "
+                         "--red-hours pour ne pas confondre les deux causes "
+                         "(rouge substance vs file-saturated infra-side).")
     ap.add_argument("--ignore-red", action="store_true",
                     help="passer outre le garde -- exige une justification ECRITE sur la PR concernee")
     ap.add_argument("--json", action="store_true", help="sortie machine")
@@ -914,7 +992,8 @@ def main() -> int:
 
     # Garde "reparer son rouge d'abord" : AVANT le tirage, sinon le grain neuf
     # est deja sous les yeux quand le refus arrive, et c'est lui qui gagne.
-    backlog = red_backlog(args.lane, args.red_hours, args.red_count)
+    backlog = red_backlog(args.lane, args.red_hours, args.red_count,
+                            saturation_hours=args.saturation_hours)
     if backlog.get("triggers") and not args.ignore_red:
         if args.json:
             print(json.dumps({"lane": args.lane, "refus": "rouge-a-reparer",
