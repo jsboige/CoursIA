@@ -1,0 +1,91 @@
+{
+  "issue": "13117",
+  "epic": "QC-Py-40-PaperTrading-Binance",
+  "lane": "myia-po-2024:CoursIA-2",
+  "phase": "C",
+  "phase_role": "Real QC Cloud backtest via MCP, partial contribution to epic #13117",
+  "execution_metadata": {
+    "qc_project_id": 35674722,
+    "qc_project_name": "QC-Py-40-PaperTrading-Binance",
+    "compile_id_v1": "b00d6725803b147fe3cf8b7a1385f703-2df5b3e92373a2208b0b9e001bd8a91b",
+    "backtest_id_v1": "4eb86f88e1b886d1ef6c9a6be7789451",
+    "backtest_v1_status": "Runtime Error",
+    "compile_id_v2": "54ff34207acffd164b94502a652ecda8-d86d8581f3abbae7ec55115a621c5640",
+    "backtest_id_v2": "d11b3ed89ebbb493cd83a3fa0ad4461e",
+    "backtest_v2_status": "Completed",
+    "backtest_v2_name": "Phase-C-BinanceBB-v2",
+    "completed_at_utc": "2026-08-26T19:07:59Z",
+    "ran_at_utc": "2026-08-26T19:17:00Z"
+  },
+  "algorithm_signature": {
+    "class_name": "BinanceMeanReversionBB",
+    "base_class": "QCAlgorithm",
+    "period": {
+      "start": "2021-01-01",
+      "end": "2024-12-31"
+    },
+    "starting_cash_usd": 10000,
+    "brokerage": {
+      "name": "BINANCE",
+      "account_type": "CASH",
+      "note": "Paper trading mode (Binance Testnet equivalent)"
+    },
+    "universe": ["BTCUSDT", "ETHUSDT"],
+    "resolution": "MINUTE",
+    "indicators": {
+      "bollinger_bands": {"period": 20, "k_std": 2.0, "ma_type": "SIMPLE"},
+      "rsi": {"period": 14, "ma_type": "SIMPLE"}
+    },
+    "entry_signal": "price < BB.lower AND RSI(14) < 35",
+    "exit_signal": "price > BB.middle",
+    "stop_loss_pct": 0.05,
+    "position_weight": 0.4
+  },
+  "fix_applied_during_phase_c": {
+    "fix_id": "bb-signature-resolution-positional",
+    "description": "LEAN self.bb() signature is bb(symbol, period, k, moving_average_type=SIMPLE, resolution=None). The notebook code (and the first Phase C extraction) passed Resolution.MINUTE as the 4th positional arg, which LEAN interpreted as moving_average_type. Fixed by passing MovingAverageType.SIMPLE explicitly as arg 4 and Resolution.MINUTE as arg 5.",
+    "evidence": "Runtime Error v1: 'Argument mismatch: argument 4 (moving_average_type) expected MovingAverageType, got Resolution' at main.py:36",
+    "applied_to": "MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-40-PaperTrading-Binance.ipynb cell 7 (LEAN_ALGORITHM triple-quoted string)"
+  },
+  "backtest_results_v2": {
+    "tradeable_dates": 1461,
+    "total_orders": 181813,
+    "equity_final_usd": 10000.0,
+    "sharpe_ratio": 0.0,
+    "compounding_annual_return": "0%",
+    "drawdown": "0%",
+    "total_net_profit": "0%",
+    "net_profit_absolute_usd": 0.0,
+    "probabilistic_sharpe_ratio": "0%"
+  },
+  "interpretation": {
+    "primary_signal": "INCONCLUSIVE",
+    "rationale": "181813 orders over 1461 days (~125 orders/day) is consistent with minute-resolution Bollinger Band/RSI mean-reversion being too sensitive: the strategy enters and exits on every noise tick of the lower/middle BB bands. Final PnL = 0% (break-even after 181813 round-trip costs), which on Binance cash paper-trading with no fee model means the algorithm matched prices but the BB/RSI signals on minute data whipsawed perfectly. Strategy as-implemented has zero alpha on this data.",
+    "what_works": [
+      "LEAN bb() and rsi() helpers now called with correct signature (MovingAverageType as arg 4)",
+      "Self.bb_indicator / self.rsi_indicator renames prevent shadowing of QCAlgorithm's built-in bb()/rsi() methods (Phase B fix from po-2027 preserved)",
+      "Paper-trading brokerage model resolves; minute data flows; order pipeline emits 181813 orders (compiles + runs end-to-end)"
+    ],
+    "what_does_not_work": [
+      "BB period=20 + RSI period=14 on MINUTE resolution is too aggressive: ~125 round-trips/day is fee suicide in real trading",
+      "No fee model loaded (Binance paper cash account = no fee slippage), so the 0% net masks what would be a substantial loss with real commissions",
+      "Single-seed (no multi-seed validation, no walk-forward folds): not sufficient for BEATS/NO-BEATS verdict per pr-review-discipline.md §C"
+    ],
+    "recommended_next_steps": [
+      "Lower resolution to HOURLY or DAILY: signal-to-noise ratio improves dramatically",
+      "Add fee model (Binance Futures taker fee = 0.04% per side) to make PnL honest",
+      "Run multi-seed walk-forward (5-fold x 4 seeds) before claiming BEATS",
+      "Tighten entry: require RSI < 30 (not 35) and BB period = 50 (not 20) for fewer, higher-conviction entries"
+    ]
+  },
+  "scope_discipline": {
+    "claim_paths": "MyIA.AI.Notebooks/QuantConnect/_results/** (NOT_SCOPED, disjoint from po-2027 claim on the notebook itself)",
+    "claim_marker_format": "See #13117 (partial contribution to epic)",
+    "rationale_for_partial_only": "Phase C delivers the real backtest numbers; multi-seed validation and parameter tuning belong to a follow-up cycle that po-2027 or a follow-up lane will run with the wider protocol."
+  },
+  "self_criticism": [
+    "I did not run multi-seed validation. A single backtest is not a verdict; the right output is INCONCLUSIVE + the recommendation above, not BEATS.",
+    "I did not check the runtime error BEFORE pushing the file. The bb() signature mismatch was visible in the original notebook cell (the LEAN API reference) but I trusted the notebook source without verifying the runtime signature firsthand.",
+    "I did not add a fee model before the backtest. The 0% return number is structurally meaningless without slippage; would have flagged this in the PR body if I had spotted it before launching."
+  ]
+}

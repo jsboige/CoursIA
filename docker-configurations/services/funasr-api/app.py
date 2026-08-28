@@ -162,7 +162,7 @@ def _convert_audio_to_wav(input_path: str) -> str:
     result = subprocess.run(
         ["ffmpeg", "-y", "-i", input_path, "-ar", "16000", "-ac", "1",
          "-f", "wav", output_path],
-        capture_output=True, text=True
+        capture_output=True, text=True, encoding="utf-8", errors="replace"
     )
     if result.returncode != 0:
         logger.warning(f"ffmpeg conversion warning: {result.stderr}")
@@ -184,7 +184,7 @@ async def health_check():
             import subprocess
             result = subprocess.run(
                 ["nvidia-smi", "--query-gpu=name,memory.used", "--format=csv,noheader,nounits"],
-                capture_output=True, text=True
+                capture_output=True, text=True, encoding="utf-8", errors="replace"
             )
             if result.returncode == 0:
                 parts = result.stdout.strip().split("\n")[0].split(",")

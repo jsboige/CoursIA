@@ -1,5 +1,13 @@
 name: SVG broken-geometry gate
 
+# ABSORBE PAR LA VOIE RAPIDE (#12396, tranche 4) : sur `pull_request`, ce
+# garde est desormais rendu par `fast-lane-shadow.yml` (check-run nomme
+# `No SVG broken-geometry (negative-dim) defect in changed notebooks`, meme
+# nom que ce job, meme verdict -- rc=1 defaut / rc=2 illisible --, un seul
+# checkout pour toute la lane). Ce fichier garde `workflow_dispatch` pour le
+# re-run manuel sur `main` apres une panne CI (#9858). Les `paths:` et
+# l'argv d'origine vivent dans `scripts/ci/fast_lane_registry.py` (TRANCHE4).
+
 # Purpose
 # -------
 # Per-PR gate for inline SVG outputs whose GEOMETRY is broken: any element with
@@ -47,12 +55,6 @@ name: SVG broken-geometry gate
 # svg-6927-canon (detectors necessary-but-not-sufficient).
 
 on:
-  pull_request:
-    branches: [ main ]
-    paths:
-      - 'MyIA.AI.Notebooks/**/*.ipynb'
-      - 'scripts/notebook_tools/detect_svg_broken_geometry.py'
-      - '.github/workflows/svg-broken-geometry-gate.yml'
   workflow_dispatch:
 
 permissions:

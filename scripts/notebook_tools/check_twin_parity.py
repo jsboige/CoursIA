@@ -277,7 +277,7 @@ def scan_coverage(repo_root: Path, pairs: list) -> dict:
     """
     r = subprocess.run(
         ["git", "ls-files", "--", "*.ipynb"],
-        cwd=repo_root, capture_output=True, text=True,
+        cwd=repo_root, capture_output=True, text=True, encoding="utf-8", errors="replace",
     )
     if r.returncode != 0:
         raise SystemExit("Erreur : `git ls-files` a echoue (depot inaccessible ?).")
@@ -319,7 +319,7 @@ def _git_blob_sha(repo_root: Path, rel_path: str, git_ref: str = "HEAD") -> str 
     """
     r = subprocess.run(
         ["git", "ls-tree", git_ref, "--", rel_path],
-        capture_output=True, text=True, cwd=str(repo_root),
+        capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=str(repo_root),
     )
     if r.returncode != 0 or not r.stdout.strip():
         return None
@@ -359,7 +359,7 @@ def _blob_ancestor_in(repo_root: Path, blob_sha: str, ref: str = "HEAD") -> bool
         return False
     r = subprocess.run(
         ["git", "rev-list", "--objects", ref],
-        capture_output=True, text=True, cwd=str(repo_root),
+        capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=str(repo_root),
     )
     if r.returncode != 0:
         return False
@@ -431,7 +431,7 @@ def _load_registry_at_ref(repo_root: Path, git_ref: str, reg_path: Path) -> list
     # (1) Le ref porte-t-il le REPERTOIRE file-per-entry ?
     r_ls = subprocess.run(
         ["git", "ls-tree", "-r", "--name-only", git_ref, "--", f"{reg_rel}/"],
-        capture_output=True, text=True, cwd=str(repo_root),
+        capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=str(repo_root),
     )
     entries: list = []
     if r_ls.returncode == 0 and r_ls.stdout.strip():
@@ -471,7 +471,7 @@ def _load_registry_at_ref(repo_root: Path, git_ref: str, reg_path: Path) -> list
 def _repo_root() -> Path:
     r = subprocess.run(
         ["git", "rev-parse", "--show-toplevel"],
-        capture_output=True, text=True,
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
     )
     if r.returncode != 0:
         raise SystemExit("Erreur : pas un depot git (impossible de trouver la racine).")
@@ -896,6 +896,30 @@ def _shas_match(record: dict, new_entry: dict) -> bool:
     return str(rec_py) == str(new_py) and str(rec_cs) == str(new_cs)
 
 
+def _attestation_identical(record: dict, new_entry: dict) -> bool:
+    """True ssi une nouvelle entree serait STRICTEMENT identique a `record`.
+
+    Difference avec `_shas_match` (no-op, content-only) : on exige EN PLUS que
+    les git blob SHAs soient egaux. C'est la discrimination du cas orphelin par
+    squash (#11919 / #13100) : `update_pair` a deja tranche is_noop=False quand
+    le recorded blob n'est pas ancre de HEAD, puis recalcule une entree dont le
+    content_sha est PRESERVE (le squash a re-hashe le blob sans toucher au
+    contenu). Si la couche d'ecriture re-verifiait un `_shas_match` content-only,
+    elle REFUSERait cet ecrit legitime et `surgical_rebaseline` renvoyait
+    touched=0 -> message trompeur « aucun bloc d'audit reconnu » sur un bloc
+    2/4/6 parfaitement canonique. Seule une attestation identique au sens strict
+    (content ET blobs) est un faux audit a rejeter sans --force.
+    """
+    if not _shas_match(record, new_entry):
+        return False
+    for key in ("python_sha", "csharp_sha"):
+        rec_val = record.get(key)
+        new_val = new_entry.get(key)
+        if rec_val is not None and new_val is not None and rec_val != new_val:
+            return False
+    return True
+
+
 def _legacy_body_as_list_item(body_lines):
     """Convertit un body legacy (mapping plat indent 4) en 1er item de `audits:`.
 
@@ -970,7 +994,7 @@ def _transform_audit_block(form: str, block: list[str], new_entry: dict, force: 
     body = block[1:]
     if form == "audits":
         latest = _parse_latest_audit_entry(body)
-        if _shas_match(latest, new_entry) and not force:
+        if _attestation_identical(latest, new_entry) and not force:
             return block, False
         # force=True OU SHAs differents : APPEND une nouvelle entree
         # (avec --force c'est le faux audit designe par ai-01 -- averti sur stderr).
@@ -1229,7 +1253,7 @@ def main(argv=None) -> int:
             for state_file, label in (("MERGE_HEAD", "merge"), ("REBASE_HEAD", "rebase")):
                 r = subprocess.run(
                     ["git", "rev-parse", "-q", "--verify", state_file],
-                    capture_output=True, text=True, cwd=str(repo_root_for_state),
+                    capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=str(repo_root_for_state),
                 )
                 if r.returncode == 0:
                     p.error(f"--update pendant un {label} non committe : HEAD ne contient pas "

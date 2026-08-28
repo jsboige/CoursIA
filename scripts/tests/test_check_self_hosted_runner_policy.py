@@ -21,14 +21,22 @@ def codes(result: policy.ScanResult) -> set[str]:
     return {item.code for item in result.violations}
 
 
-def test_current_repository_has_explicit_zero_self_hosted_baseline(capsys):
+def test_current_repository_self_hosted_jobs_satisfy_isolation_policy(capsys):
+    # The baseline is POLICY COMPLIANCE (0 violation), not a count of zero
+    # self-hosted jobs: allowlisted workflows (#13135) may legitimately run
+    # self-hosted jobs, and asserting the count would make the next legitimate
+    # runner workflow redden the same way.
     result = policy.scan_workflows()
     assert result.broken == []
     assert result.violations == []
-    assert result.self_hosted_jobs == 0
     assert result.workflows_scanned > 0
     assert policy.main(["--check"]) == policy.EXIT_OK
-    assert "explicit baseline: 0 self-hosted jobs" in capsys.readouterr().out
+    out = capsys.readouterr().out
+    assert "[self-hosted-policy] OK" in out
+    if result.self_hosted_jobs == 0:
+        assert "explicit baseline: 0 self-hosted jobs" in out
+    else:
+        assert "all self-hosted jobs satisfy isolation policy" in out
 
 
 def test_safe_pull_request_job_is_accepted(tmp_path):
