@@ -50,20 +50,28 @@ Lean, et ce module est le terrain d'entraînement minimal pour l'acquérir.
 
 ## Notes
 
-- Compagnon du notebook `Lean-6-Mathlib-Essentials.ipynb`
+- **Rôle assumé : smoke-test / environnement de validation** — ce lake vérifie
+  que la toolchain et Mathlib résolvent les quatre automatiseurs du quotidien.
+  Aucun notebook n'importe le module `MathLibExamples` : les notebooks de la
+  série importent Mathlib directement ; `Lean-28-Munkres-Tribute.ipynb` utilise
+  ce lake comme **environnement d'exécution** du kernel `lean4-wsl` (résolution
+  des olean Mathlib), sans consommer son contenu.
 - Partie de la série pédagogique SymbolicAI/Lean
 
 ## Conclusion
 
 Un **module de référence** minimal de schémas d'utilisation basique de Mathlib
-(`MathLibExamples/Basic.lean`, 0 `sorry`, `lake build MathLibExamples` SUCCESS),
-servant de compagnon côté Lean au notebook `Lean-6-Mathlib-Essentials.ipynb`.
+(`MathLibExamples/Basic.lean`, 0 `sorry`, `lake build MathLibExamples` SUCCESS) :
+un **smoke-test** de l'installation Mathlib — et l'environnement d'exécution
+Mathlib du kernel `lean4-wsl` pour Lean-28 — pas un compagnon module-à-notebook.
 Il est volontairement minimal : un point de départ pour les étudiants, pas un
 aperçu exhaustif.
 
 ### Où aller ensuite
 
-- **Notebook** : `Lean-6-Mathlib-Essentials.ipynb` — le compagnon pédagogique.
+- **Prise en main Mathlib côté notebook** : `Lean-6-Mathlib-Essentials.ipynb`
+  (tactiques exercées sur Mathlib importé directement) et
+  `Lean-28-Munkres-Tribute.ipynb` (cours 18.901 de Munkres, exécuté sur ce lake).
 - **Projets Lean plus complets** : [`calibration_lean/`](../calibration_lean/),
   [`conway_lean/`](../conway_lean/), [`sensitivity_lean/`](../sensitivity_lean/)
   — projets Lean de production bâtis sur Mathlib.

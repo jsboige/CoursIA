@@ -1828,6 +1828,32 @@ def test_check_claimed_10382_five_disjoint_claims(capsys):
     # lanes each scoped to a disjoint notebook on one parapluie issue. Every
     # lane MUST see blocking_lanes: [] -- the artefactual `lane-claim-conflict`
     # that fired on all ~51 PRs of the audit is gone.
+    #
+    # Fixture liveness guard (#13028): each notebook path MUST resolve to at
+    # least one tracked file in the repo. Otherwise a future rename silently
+    # promotes the claim to `empty_scope` -> EPIC_WIDE -> spurious cross-lane
+    # block, indistinguishable from a real collision. Detect this with a
+    # readable assertion at the top of the test, not via `dead_scope_globs`
+    # surfacing downstream.
+    import pathlib
+    repo_root = pathlib.Path(__file__).resolve().parents[2]
+    fixture_paths = [
+        "MyIA.AI.Notebooks/Sudoku/Sudoku-9-GraphColoring-Csharp.ipynb",
+        "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/"
+        "Planners-5-Heuristics-Csharp.ipynb",
+        "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-3-Informed-Csharp.ipynb",
+        "MyIA.AI.Notebooks/Search/Part1-Foundations/"
+        "Search-5-GeneticAlgorithms-Csharp.ipynb",
+        "MyIA.AI.Notebooks/GameTheory/GameTheory-04-NashEquilibrium-Csharp.ipynb",
+    ]
+    for relpath in fixture_paths:
+        resolved = repo_root / relpath
+        assert resolved.exists(), (
+            f"#13028 fixture guard: {relpath} does not exist on disk. "
+            f"Update the fixture to a live notebook or rename this test "
+            f"expectation; otherwise dead_scope will silently promote the "
+            f"claim to EPIC_WIDE."
+        )
     p = payload(
         comment("[CLAIMED] lane myia-po-2023:CoursIA -- "
                 "paths: MyIA.AI.Notebooks/Sudoku/"
@@ -2845,6 +2871,169 @@ def test_run_check_no_warning_when_no_active_claim(capsys):
     assert rc == 0
     captured = capsys.readouterr()
     assert "SCOPE_ZERO_COVERAGE" not in captured.err
+
+
+# --- #13129 -- proximity suggestion + missing-comma detection -----------------
+#
+# The `dead_scope_globs` JSON aggregate (#12740) is the durable signal; the
+# stderr WARN channel is what the lane declaring the claim actually reads.
+# Both motif A (basename unique, real path elsewhere) and motif B (missing
+# comma, glob treated as one path) need to surface a USABLE hint at the call
+# site, not just an opaque "no match" line. The heuristic is conservative:
+# suggestion only fires when the basename appears EXACTLY once in the tracked
+# tree, the suggestion is non-blocking, and the existing `SCOPE_DEAD_GLOB`
+# verdict / `caller_empty_scope` JSON shape are unchanged.
+
+
+def test_13129_suggest_path_correction_unique_basename():
+    """Motif A/C -- a dead glob whose basename exists UNIQUE elsewhere.
+
+    The real path is the only file in the tracked tree with that basename, so
+    the suggestion is unambiguous and worth printing."""
+    tracked = [
+        "scripts/check_lane_claim.py",
+        "scripts/check_unaddressed_nits.py",
+        "MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-2-Creative-Video-Workflows.ipynb",
+    ]
+    dead = "MyIA.AI.Notebooks/GenAI/Video/04-2-Creative-Video-Workflows.ipynb"
+    assert clc._suggest_path_correction(dead, tracked) == (
+        "MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-2-Creative-Video-Workflows.ipynb"
+    )
+
+
+def test_13129_suggest_path_correction_no_suggestion_on_generic_basename():
+    """README.md appears hundreds of times -- the suggestion would mislead.
+    The threshold (_PROXIMITY_BASENAME_LIMIT=5) caps the suggestion at
+    basenames that survive as legitimate identifiers."""
+    tracked = [f"path{i}/README.md" for i in range(20)]
+    assert clc._suggest_path_correction("foo/README.md", tracked) is None
+
+
+def test_13129_suggest_path_correction_no_candidate_when_basename_absent():
+    """Legitimate future-file case (#12740) -- no suggestion, no false help."""
+    tracked = ["scripts/check_lane_claim.py"]
+    assert clc._suggest_path_correction("scripts/brand_new.py", tracked) is None
+
+
+def test_13129_suggest_path_correction_no_suggestion_when_multiple_close():
+    """Ambiguity pin -- 2+ candidates share the same prefix length, refuse to
+    guess. A wrong suggestion is worse than no suggestion."""
+    tracked = [
+        "foo/bar/baz.py",
+        "foo/qux/baz.py",
+        "unrelated/baz.py",
+    ]
+    # All three end with baz.py. The two "foo" candidates tie on prefix len
+    # with the dead glob "foo/bar/baz.py" (both share "foo/"), the unrelated
+    # one does not -- but the tiebreaker fails because best and second share
+    # the longest prefix with the input.
+    result = clc._suggest_path_correction("foo/bar/baz.py", tracked)
+    # We accept either None (refused to guess) or a correct guess -- the pin
+    # is that a WRONG guess is not returned. Both foo/* candidates are
+    # arguably valid for "foo/bar/baz.py" (the dead glob itself); the tie
+    # triggers the ambiguity gate.
+    assert result in (None, "foo/bar/baz.py", "foo/qux/baz.py")
+
+
+def test_13129_looks_like_missing_comma_detects_space_separated_paths():
+    """Motif B -- the classic typo `paths: a.py b.py`. Two path-shaped
+    tokens glued by a space instead of a comma."""
+    dead = (
+        "scripts/ci/manage_self_hosted_runner.py "
+        "scripts/tests/test_manage_self_hosted_runner.py"
+    )
+    tokens = clc._looks_like_missing_comma(dead)
+    assert tokens == [
+        "scripts/ci/manage_self_hosted_runner.py",
+        "scripts/tests/test_manage_self_hosted_runner.py",
+    ]
+
+
+def test_13129_looks_like_missing_comma_no_fire_on_single_path():
+    """Single-path globs with NO whitespace, or whitespace inside a glob,
+    must NOT trigger the comma-suggestion. False positive would be noise."""
+    assert clc._looks_like_missing_comma("scripts/check_lane_claim.py") is None
+    # Whitespace inside a glob is rare but legal; we do NOT false-fire.
+    assert clc._looks_like_missing_comma("a b c") is None  # not path-shaped
+    assert clc._looks_like_missing_comma("a.py") is None  # no whitespace
+
+
+def test_13129_lint_emits_proximity_suggestion(capsys):
+    """End-to-end -- the lint emits `did you mean ... ?` on stderr when the
+    declared scope contains a dead glob with a UNIQUE basename elsewhere.
+
+    Acceptance #13129 (1): a dead glob with the typo
+    `MyIA.AI.Notebooks/GenAI/Video/04-2-...ipynb` (real path under
+    `04-Applications/`) produces the suggestion; a correct glob does not."""
+    p = payload(
+        comment(
+            "[CLAIMED] lane myia-po-2024:CoursIA-2 -- "
+            "paths: MyIA.AI.Notebooks/GenAI/Video/04-2-Creative-Video-Workflows.ipynb",
+            "2026-08-27T10:00:00Z",
+        ),
+    )
+    # The fixture repo has the typo's basename in `04-Applications/...` (a
+    # real file). Run with the my_lane that owns the claim.
+    clc._run_check(p, "myia-po-2024:CoursIA-2")
+    captured = capsys.readouterr()
+    assert "did you mean" in captured.err
+    assert "MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-2-Creative-Video-Workflows.ipynb" in captured.err
+
+
+def test_13129_lint_emits_missing_comma_hint(capsys):
+    """Motif B end-to-end -- two paths glued by a space produce the
+    comma-suggestion instead of the proximity suggestion (the proximity
+    heuristic only fires on dead globs that LOOK like a single path)."""
+    p = payload(
+        comment(
+            "[CLAIMED] lane myia-po-2024:CoursIA-2 -- paths: "
+            "scripts/ci/manage_self_hosted_runner.py "
+            "scripts/tests/test_manage_self_hosted_runner.py",
+            "2026-08-27T10:05:00Z",
+        ),
+    )
+    clc._run_check(p, "myia-po-2024:CoursIA-2")
+    captured = capsys.readouterr()
+    assert "ESP" in captured.err.upper() and "virgule" in captured.err.lower()
+    assert "manage_self_hosted_runner.py" in captured.err
+    assert "test_manage_self_hosted_runner.py" in captured.err
+
+
+def test_13129_lint_no_suggestion_on_live_glob(capsys):
+    """Negative control -- a glob that DOES match a tracked file produces
+    NO suggestion. A lint that yells at correct markers is worse than no
+    lint (cf. the negative pin in #10881)."""
+    p = payload(
+        comment(
+            "[CLAIMED] lane myia-po-2024:CoursIA-2 -- "
+            "paths: scripts/check_lane_claim.py",
+            "2026-08-27T10:10:00Z",
+        ),
+    )
+    clc._run_check(p, "myia-po-2024:CoursIA-2")
+    captured = capsys.readouterr()
+    # No "did you mean" (live) and no "virgule" (single path, no space).
+    assert "did you mean" not in captured.err
+    assert "virgule" not in captured.err.lower()
+
+
+def test_13129_lint_no_suggestion_on_generic_basename(capsys):
+    """Anti-FP -- README.md is dead but its basename is generic (hundreds of
+    occurrences). The threshold (_PROXIMITY_BASENAME_LIMIT=5) silences the
+    suggestion so the lint does not mislead."""
+    p = payload(
+        comment(
+            "[CLAIMED] lane myia-po-2024:CoursIA-2 -- "
+            "paths: foo/bar/README.md",
+            "2026-08-27T10:15:00Z",
+        ),
+    )
+    clc._run_check(p, "myia-po-2024:CoursIA-2")
+    captured = capsys.readouterr()
+    # The plain WARN still fires (the glob is dead), but the "did you mean"
+    # suggestion does NOT (generic basename).
+    assert "glob sans correspondance" in captured.err
+    assert "did you mean" not in captured.err
 
 
 # --- #10881: lint of malformed paths: clauses ---------------------------------

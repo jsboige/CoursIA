@@ -8,15 +8,14 @@
 
   ## Théorème-phare
 
-  `grim_trigger_sustains_iff` : la stratégie grim-trigger soutient la
-  coopération ssi le facteur d'actualisation vérifie δ ≥ (T−R)/(T−P).
+  `grim_trigger_sustains_iff` : la coopération procure au moins autant de
+  valeur qu'une déviation en un coup suivie de la punition grim ssi le facteur
+  d'actualisation vérifie δ ≥ (T−R)/(T−P).
 
-  Cette inégalité caractérise le seuil en-dessous duquel un joueur préfère
-  dévier (gagner T aujourd'hui puis endurer P forever) plutôt que coopérer
-  perpétuellement (R forever). Le mécanisme est le one-shot deviation
-  principle (Lemke–Tarski) : aucune déviation sur deux périodes ou plus
-  ne bat la déviation en une seule période, donc regarder uniquement le
-  trade-off one-shot suffit.
+  Cette équivalence formalise la condition d'incitation algébrique du grim
+  trigger. Le module prouve aussi que son état de punition est absorbant. Il
+  ne formalise pas encore les historiques et profils de stratégies requis
+  pour conclure à un équilibre de Nash parfait en sous-jeux.
 
   ## Structure
 
@@ -25,9 +24,9 @@
   - `RepeatedGames.Discounting` — factor d'actualisation, sommes géométriques
     pour les flux R, T + δ·P actualisés. Lemme de réécriture du seuil
     (cible prover BG).
-  - `RepeatedGames.GrimTrigger` — stratégie grim (coopère → si déviation
-    détectée, défaut éternel), théorème-phare `grim_trigger_sustains_iff`,
-    corollaire NE. Ces deux sorries sont les cibles primaires du prover BG.
+  - `RepeatedGames.GrimTrigger` — transition grim (la punition est absorbante)
+    et condition d'incitation `grim_trigger_sustains_iff` sur les deux flux
+    actualisés. Une sémantique complète des stratégies/SPNE reste hors module.
   - `RepeatedGames.Folk` (STRETCH) — théorème de Folk actualisé (Fudenberg–
     Maskin 1986), `sorry` accepté dans le scope stretch du companion.
 
