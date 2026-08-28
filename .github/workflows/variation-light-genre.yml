@@ -28,18 +28,14 @@ name: Variation Light Genre Signals
 # la meme source de verite (variation_light_cap.py) et ajoute les 4
 # signaux GENRE que le cap TIER ne sait pas voir.
 
+# DORMANT depuis #13384 : le job check-light-genre-signals est absorbe (run
+# block porte verbatim) par always-on-guards.yml -- un seul workflow, un
+# seul checkout, un seul slot de runner par PR (37 % de la file CI etait les
+# cinq gardes always-on pour ~3 min de travail reel, mesure #13384). Le job
+# reste ICI en copie de reference pour la tracabilite. NE PAS reinscrire
+# pull_request ici sans retirer l'organe GENRE-signals d'always-on-guards.
+
 on:
-  pull_request:
-    types: [opened, edited, synchronize, reopened]
-    branches: [main]
-    # PAS de `paths:` ici -- #13232. Le verdict de ce garde depend du BODY de
-    # la PR (tag `Grain:`), pas de son diff : sa surface nominale est donc
-    # *toutes* les PR. Un paths-filter le reduirait aux PR qui modifient le
-    # garde lui-meme, c'est-a-dire a presque aucune (tranche 1c d'#12773,
-    # 71a36ae8b, revertee ici). Le critere d'#12773 s'enonce ainsi : filtrer
-    # par chemins un garde DIFF-dependant (regression-guard, translation-guard)
-    # est correct ; filtrer un garde METADONNEE-dependant le desarme. Reduire
-    # le fan-out passe ici par `types:` ou `concurrency`, jamais par `paths:`.
   workflow_dispatch:
 
 permissions:
