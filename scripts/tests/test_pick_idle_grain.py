@@ -516,6 +516,172 @@ def test_repeated_identical_failures_are_named_once():
     assert pig.blocking_causes(state) == ["check requis en echec : PR gate"]
 
 
+# --- file_saturation : 4ᵉ declencheur (issue #12830, c.508-L2) -------------
+#
+# Le defaut fondateur : la lane po-2023 (puis po-2027) tirait dans un pool
+# virtuellement vide parce que `mergeStateStatus: BLOCKED + MERGEABLE +
+# checks tous PENDING depuis > N h` n'etait PAS un declencheur de refus.
+# Le 3ᵉ etat etait mecaniquement non-different d'un `BLOCKED + MERGEABLE
+# + checks SUCCESS` (attente coordinateur), qu'on veut deliberement laisser
+# passer. La discrimination tient en 3 proprietes : AUCUN check n'a demarre
+# (statut dans {PENDING, QUEUED}), la PR est MERGEABLE, et elle est ouverte
+# depuis plus de `saturation_hours`. Mesure ai-01 du 2026-08-26T04:52Z :
+# 1000 runs en file, 14 concurrents, attente observee 4 h 25.
+
+
+def _state_with_started_at(*, checks=(), mergeable="MERGEABLE", reviews=()):
+    """Comme `_state` mais chaque check porte `startedAt` ET `conclusion`/`state`.
+
+    Le format GraphQL reel de `statusCheckRollup.contexts` inclut `startedAt`
+    pour les `CheckRun` et `state` (PAS `conclusion`) pour les `StatusContext`
+    encore en attente. Le discriminateur file_saturation lit `conclusion` puis
+    `state` -- d'ou les helpers ci-dessous qui couvrent les deux formes.
+    """
+    return {
+        "number": 1, "mergeable": mergeable,
+        "reviews": {"nodes": [
+            {"state": s, "submittedAt": "2026-08-20T00:00:00Z", "author": {"login": a}}
+            for s, a in reviews
+        ]},
+        "commits": {"nodes": [{"commit": {"statusCheckRollup": {"contexts": {"nodes": [
+            {"name": t[0], "conclusion": t[1], "state": t[1],
+             "isRequired": t[2], "startedAt": "2026-08-25T00:00:00Z"}
+            for t in checks
+        ]}}}}]},
+    }
+
+
+def test_file_saturation_detected_when_all_checks_pending():
+    """Cas fondateur (c.508-L2 sur #12640) : tous les checks en PENDING depuis
+    > N h, MERGEABLE, pas de conflit, pas de CHANGES_REQUESTED -- c'est
+    exactement la file qui n'a pas bouge, pas un rouge substance.
+
+    Discrimination exigee : un seul FAIL vivant masquerait la file-saturation,
+    parce que la lane peut le reparer et la file draine naturellement.
+    """
+    state = _state_with_started_at(checks=[
+        ("PR gate", "PENDING", True),
+        ("Scripts Tests (CPU)", "PENDING", True),
+        ("Notebook Validation", "PENDING", False),
+    ])
+    causes = pig.blocking_causes(state, age_hours=28, saturation_hours=24)
+    assert any("file_saturation" in c for c in causes)
+    # La cause doit nommer le geste -- la lane peut commenter, pas rerun seule.
+    assert any("commenter la PR" in c for c in causes)
+
+
+def test_file_saturation_not_detected_when_a_check_is_success():
+    """Faux-positif a eviter : un SUCCESS + des PENDING n'est PAS de la
+    file-saturation. La PR a au moins un verdict defini ; elle est en cours
+    de merge, pas en attente de derainage de file.
+    """
+    state = _state_with_started_at(checks=[
+        ("PR gate", "PENDING", True),
+        ("Scripts Tests (CPU)", "SUCCESS", True),
+    ])
+    assert pig.blocking_causes(state, age_hours=28, saturation_hours=24) == []
+
+
+def test_file_saturation_not_detected_when_a_check_fails():
+    """Faux-positif a eviter : un FAIL substance prime sur la file-saturation.
+
+    La lane peut reparer la substance ; la file draine naturellement apres
+    re-push. Le discriminateur `not causes` dans `blocking_causes` protege
+    exactement ce cas (les causes FAIL sont ajoutees avant la detection
+    file_saturation).
+    """
+    state = _state_with_started_at(checks=[
+        ("PR gate", "FAILURE", True),
+        ("Scripts Tests (CPU)", "PENDING", True),
+    ])
+    causes = pig.blocking_causes(state, age_hours=28, saturation_hours=24)
+    # Le FAIL gagne : file_saturation ne s'y ajoute pas, sinon la cause serait
+    # `conflitante` et le geste suggere (commenter + ignore-red) perdrait
+    # l'option reparation.
+    assert any("check requis en echec" in c for c in causes)
+    assert not any("file_saturation" in c for c in causes)
+
+
+def test_file_saturation_not_detected_below_saturation_threshold():
+    """L'age seul ne suffit pas : une PR jeune avec tous checks PENDING est
+    dans la queue normale du depot, pas en saturation.
+
+    Cf le mandat du 2026-08-24 sur le retrait du filtre d'age amont : c'est
+    ici un garde-fou qui empeche la sur-accusation (mesure : 52/55 PRs le
+    2026-08-22 pour la definition naive). Le seuil minimum est le meme que
+    pour `aged` (`threshold_hours`), ce qui garde la coherence.
+    """
+    state = _state_with_started_at(checks=[
+        ("PR gate", "PENDING", True),
+        ("Scripts Tests (CPU)", "PENDING", True),
+    ])
+    # age < saturation : rien.
+    assert pig.blocking_causes(state, age_hours=2, saturation_hours=24) == []
+    # age == saturation : strictement au-dessus (>=) declenche.
+    causes = pig.blocking_causes(state, age_hours=24, saturation_hours=24)
+    assert any("file_saturation" in c for c in causes)
+
+
+def test_file_saturation_not_detected_when_not_mergeable():
+    """CONFLICTING prime sur la file-saturation : la lane peut rebaser, ce
+    n'est plus un rouge de file.
+
+    Le discriminateur exige `mergeable == MERGEABLE`. Une PR en conflit
+    attend un rebase, pas un drainage CI.
+    """
+    state = _state_with_started_at(
+        checks=[("PR gate", "PENDING", True)],
+        mergeable="CONFLICTING",
+    )
+    causes = pig.blocking_causes(state, age_hours=28, saturation_hours=24)
+    assert "conflits avec main -> rebaser" in causes
+    assert not any("file_saturation" in c for c in causes)
+
+
+def test_file_saturation_trigger_in_red_backlog(monkeypatch):
+    """Le 4ᵉ declencheur remonte dans `triggers` quand au moins une PR de la
+    lane est file-saturee et a l'age du seuil.
+
+    Ce test est l'integration : `red_backlog` doit appeler `blocking_causes`
+    avec `age_hours` et `saturation_hours` derives du seuil, et ajouter
+    `"file_saturation"` aux triggers. C'est ce qui rend le narrow
+    diagnostique enfin visible a la lane.
+    """
+    red = _state_with_started_at(checks=[
+        ("PR gate", "PENDING", True),
+        ("Scripts Tests (CPU)", "PENDING", True),
+    ])
+    _patch_backlog(monkeypatch, [
+        _pr(1, "myia-po-2026:CoursIA", 28),
+        _pr(2, "myia-po-2026:CoursIA", 2),
+    ], {1: red, 2: red})
+    out = pig.red_backlog("myia-po-2026:CoursIA", 24, count_threshold=10)
+    # La PR #1 est file-saturee (28 h > 24 h, tous PENDING, MERGEABLE).
+    # La PR #2 ne l'est pas (2 h < 24 h).
+    assert "file_saturation" in out["triggers"]
+    assert any(any("file_saturation" in c for c in r["causes"])
+               for r in out["red"] if r["number"] == 1)
+    # Et l'ordre respecte la docstring : file_saturation precede `aged`
+    # dans la liste des triggers (les deux sont vrais ici, file_saturation
+    # doit apparaitre AVANT `aged`).
+    assert out["triggers"].index("file_saturation") < out["triggers"].index("aged")
+
+
+def test_file_saturation_signature_backward_compatible():
+    """Le defaut `age_hours=None, saturation_hours=None` preserve les appels
+    existants : un PR avec tous checks PENDING et sans ces parametres ne
+    declenche PAS file_saturation. C'est ce qui permet aux 12 tests
+    historiques de `blocking_causes` de rester verts sans modification.
+    """
+    state = _state_with_started_at(checks=[
+        ("PR gate", "PENDING", True),
+        ("Scripts Tests (CPU)", "PENDING", True),
+    ])
+    # Meme PR que test_file_saturation_detected_when_all_checks_pending,
+    # mais sans age_hours : la cause ne doit PAS apparaitre.
+    assert pig.blocking_causes(state) == []
+
+
 # --- affluence flotte : cited_issues / fetch_visits / amortissement --------
 #
 # Le defaut que ces tests auraient attrape (2026-08-23, avant merge) : la
