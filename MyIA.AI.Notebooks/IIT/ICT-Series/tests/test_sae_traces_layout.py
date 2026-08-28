@@ -13,13 +13,25 @@ soustraites au lieu des directions decodees des features visees).
 
 ``normalize_w_dec`` (meme correctif que ``extract_sae_fidelity.py``, PR
 #12938) ramene W_dec en [d_sae, d_model] : l'indexation par feature designe
-les directions decodees quel que soit le layout de la release. torch est
-autorise dans CE fichier de tests (precedent : test_lens_agreement.py) ; la
-bibliotheque ``ict/`` reste numpy-only.
+les directions decodees quel que soit le layout de la release. Ces
+regressions manipulent des tenseurs torch ET importent le module sous test
+(``extract_sae_traces`` importe torch au module-level : script d'extraction
+GPU) ; le runner CI ubuntu est sans torch, ou la simple COLLECTE plantait
+(ModuleNotFoundError, PANNE D'INFRA). ``importorskip`` en tete de module :
+collecte reussie partout (module skippe proprement sans torch, convention
+serie cf ``test_lens_agreement.py`` numpy-only en collection), regressions
+completes sur toute machine a torch.
 """
 
 import os
 import sys
+
+import pytest
+
+pytest.importorskip(
+    "torch",
+    reason="regressions torch (normalize_w_dec sur tenseurs) : collectees partout, executes seulement ou torch est installe",
+)
 
 import torch
 
