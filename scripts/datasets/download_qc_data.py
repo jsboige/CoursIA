@@ -37,7 +37,7 @@ DEFAULT_OUTPUT = Path(__file__).resolve().parent.parent.parent / "MyIA.AI.Notebo
 
 def _check_lean_cli():
     try:
-        result = subprocess.run(["lean", "--version"], capture_output=True, text=True, timeout=10)
+        result = subprocess.run(["lean", "--version"], capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=10)
         if result.returncode != 0:
             raise FileNotFoundError
     except (FileNotFoundError, subprocess.TimeoutExpired):
@@ -71,7 +71,7 @@ def download_lean_cli(
     print(f"Downloading QC data: {symbol} ({security_type}/{resolution}) [{start} -> {end}]")
     print(f"  Command: {' '.join(cmd)}")
 
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+    result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=300)
     if result.returncode != 0:
         print(f"ERROR: {result.stderr}", file=sys.stderr)
         sys.exit(1)
