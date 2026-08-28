@@ -64,6 +64,12 @@
       csharp_sha: d465d4c9c186893032969564dc6cdbe675d1a050
       content_python_sha: 0b4beabc96fb3b3411cfd15c8ac27c31773e974420b2f57734c9d9202f43f812
       content_csharp_sha: 01e5645cc9f961328cdd8b4f145378847b26dfac812d2d99323a8ced083d67be
+    - date: "2026-08-28"
+      by: myia-po-2026:CoursIA
+      python_sha: d6f0bbd99e8818650dd0de46188992867e475a15
+      csharp_sha: d465d4c9c186893032969564dc6cdbe675d1a050
+      content_python_sha: 0088f1f81d7da2b8348c9776765df56268c318c93ba7291df3f3e2ef6effdf0f
+      content_csharp_sha: 01e5645cc9f961328cdd8b4f145378847b26dfac812d2d99323a8ced083d67be
   known_differences:
     - "Socle pedagogique commun : Dilemme du Prisonnier Itere (IPD), tournoi d'Axelrod, strategies classiques (TitForTat, Pavlov, Generous TitForTat), dynamique evolutive (processus de Moran), emergence de la cooperation."
     - "Idiomes framework : Python = `numpy` + `matplotlib` + `matplotlib.animation` (viz dynamique du tournoi round-robin + courbes de Moran). C# = pur `System.*` (Collections.Generic, Linq) + moteur IPD from-scratch (T=5/R=3/P=1/S=0 convention Axelrod) ; 0 NuGet tiers."
