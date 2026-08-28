@@ -127,7 +127,7 @@ def apply_deregister(profile: Profile, run: CommandRunner) -> dict:
         (profile.root / name).exists() for name in RUNNER_PRIVATE_FILES
     ):
         return {"action": "noop", "reason": "runner already absent"}
-    token = _fetch_token(profile, "removal-token", run)
+    token = _fetch_token(profile, "remove-token", run)
     completed = run(
         [str(profile.config_cmd), "remove", "--unattended"], cwd=profile.root,
         capture_output=True, text=True, encoding="utf-8",
@@ -263,7 +263,7 @@ def main(argv: list[str] | None = None) -> int:
                 else:
                     plan["result"] = {"action": "noop", "reason": "runner already online"}
         elif args.command == "deregister":
-            plan = {"planned_actions": ["fetch-removal-token", "config-remove"]}
+            plan = {"planned_actions": ["fetch-remove-token", "config-remove"]}
             if args.apply:
                 plan["result"] = apply_deregister(profile, subprocess.run)
         print(json.dumps(plan, indent=2, sort_keys=True, ensure_ascii=False))

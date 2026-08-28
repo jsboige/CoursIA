@@ -155,7 +155,7 @@ Le tick ne fait quasiment rien quand le runner est online (une lecture d'API) : 
 
 **Geste de retour arrière** : `task-remove --apply` (la machine cesse de ré-enregistrer), puis laisser le job courant consommer l'inscription — ou `deregister --apply` pour l'arrêt immédiat. Le teardown complet du gestionnaire (compte, ACL, arborescence) reste disponible en dernier recours.
 
-**Asymétrie d'API observée** (2026-08-28, po-2024, mesurée firsthand) : `POST /actions/runners/registration-token` répond 201 sous l'OAuth `gh` (`repo` scope), mais `POST /actions/runners/removal-token` répond **404** — même auth, même session, runner online. `deregister --apply` échoue donc proprement (fail-closed) tant que cette asymétrie n'est pas élucidée. Voies de rechange documentées pour la session d'activation : `DELETE /actions/runners/{id}` côté API, ou retrait via l'UI. À vérifier en session élevée avant de compter sur le chemin nominal.
+**Nom de route (2026-08-28, mesuré firsthand sous `myia-ai-01`)** : la route de retrait est `POST /actions/runners/remove-token`, **pas** `removal-token`. Les trois mesures sous une même identité non-admin lèvent l'ambiguïté : `registration-token` → **403**, `remove-token` → **403** (la route existe, seul le droit manque), `removal-token` → **404** (la route n'existe pas). Il n'y a donc **aucune asymétrie d'API** entre l'enregistrement et le retrait — le 404 initialement observé venait du nom de route erroné, corrigé ici. L'élévation reste requise pour l'appel réel (201 sous identité admin, cf. `registration-token` mesuré par po-2024) : `deregister --apply` échoue fail-closed sous identité non-admin, ce qui est le comportement voulu.
 
 ## Provisionnement Python du tool-cache (option a2)
 

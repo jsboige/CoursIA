@@ -126,7 +126,7 @@ def test_deregister_noop_when_absent_everywhere(prof):
     fake = FakeRun(runners=[])
     result = ctl.apply_deregister(prof, fake)
     assert result["action"] == "noop"
-    assert not argv_of(fake, "removal-token")
+    assert not argv_of(fake, "remove-token")
 
 
 def test_task_xml_deterministic_and_pinned(prof):
