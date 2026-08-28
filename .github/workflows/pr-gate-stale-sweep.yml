@@ -263,8 +263,33 @@ jobs:
               print(f'{p["number"]} {p["sha"]} {str(p.get("fork", False)).lower()}')
           PY
 
+          # OLDEST FIRST, and the cap is the whole reason it matters.
+          #
+          # `GET /pulls` defaults to `sort=created&direction=desc`, and nothing
+          # downstream re-orders, so `candidates.txt` arrived NEWEST-first and
+          # MAX_POSTS took the newest 8. That is backwards for a capped queue:
+          # a young PR still receives `synchronize` / `reopened` events, and
+          # pr-gate.yml re-runs on each of them, so it has a second repair
+          # path. A quiet old PR emits no more events -- this sweep is its
+          # ONLY one. Newest-first therefore spends the cap on the population
+          # that needs it least and starves the one that has nothing else.
+          #
+          # Measured 2026-08-28T12:33Z (run 33169455408): 16 candidates, cap 8,
+          # served 13355 13347 13343 13332 13320 13286 13195 13191 -- eight
+          # consecutive descending numbers, i.e. exactly the newest eight. At
+          # 14:24Z the five left behind (12390 12534 12791 12995 13091) were
+          # still BLOCKED on stale gates dating from 07:42Z-10:35Z: 4 to 7
+          # hours, on PRs carrying no red constituent at all. The queue makes
+          # the effective cadence ~3 h (sweeps at 01:47, 04:53, 07:44, 12:02),
+          # so "the next sweep takes the next batch" holds only while arrivals
+          # stay under the cap; above it the tail is never reached.
+          #
+          # PR numbers are monotonic in creation time, so a numeric sort IS
+          # the age order -- no extra API call.
+          sort -n -o /tmp/candidates.txt /tmp/candidates.txt
+
           COUNT=$(wc -l < /tmp/candidates.txt | tr -d ' ')
-          echo "[stale-sweep] PRs whose only red is a stale \`PR gate\`: $COUNT"
+          echo "[stale-sweep] PRs whose only red is a stale \`PR gate\`: $COUNT (oldest first)"
           if [ "$COUNT" = "0" ]; then
             echo "[stale-sweep] nothing to do"
             exit 0
@@ -274,7 +299,7 @@ jobs:
           while read -r NUM SHA FORK; do
             [ -z "${NUM:-}" ] && continue
             if [ "$n" -ge "$MAX_POSTS" ]; then
-              echo "[stale-sweep] cap $MAX_POSTS reached -- remaining candidates wait for the next sweep"
+              echo "[stale-sweep] cap $MAX_POSTS reached -- $((COUNT - n)) newer candidate(s) wait for the next sweep"
               break
             fi
             # Re-run the ORIGINAL run rather than POSTing a fresh verdict.

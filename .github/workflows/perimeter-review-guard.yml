@@ -53,49 +53,19 @@ name: perimeter-review-guard
 # "fix" a future false-positive by narrowing the detection -- that loses both
 # properties at once (#11648, point 2).
 
+# DORMANT depuis #13384 : le job perimeter est absorbe (run block porte
+# verbatim, declencheurs pull_request + pull_request_review repris) par
+# always-on-guards.yml -- un seul workflow, un seul checkout, un seul slot
+# de runner par PR (37 % de la file CI etait les cinq gardes always-on pour
+# ~3 min de travail reel, mesure #13384). Le job reste ICI en copie de
+# reference pour la tracabilite (et l'identite du registre fast-lane, qui
+# lit ce fichier comme source du garde pilot). NE PAS reinscrire
+# pull_request/pull_request_review ici sans retirer l'organe perimeter
+# d'always-on-guards -- les deux surfaces executeraient le meme verdict en
+# double.
+
 on:
-  pull_request:
-    branches: [ main ]
-    types: [ opened, synchronize, edited, reopened ]
-    # #12773 tranche 1a + amend. #13193 Hermes : paths-filter pour limiter les
-    # declenchements aux PR touchant la surface reelle du garde. Le script
-    # interroge l'API `gh pr view` uniquement (pas de lecture d'arbre), mais
-    # le filtre DOIT inclure les autres workflows CI : sans le glob
-    # `.github/workflows/**`, le garde ne tournerait plus que sur lui-meme
-    # (cf. incident fondateur #11268 : un workflow qui modifie le
-    # sorry-baseline passait inapercu parce que la porte se fermait sur la
-    # fonction du garde).
-    paths:
-      - '.github/workflows/perimeter-review-guard.yml'
-      - '.github/workflows/**'
-      - 'scripts/check_pr_perimeter.py'
-      - 'scripts/tests/test_check_pr_perimeter.py'
-  pull_request_review:
-    branches: [ main ]
-    types: [ submitted, edited ]
-    # Meme filtre cote review : un commentaire de revue qui corrige le body doit
-    # aussi re-tourner le check, sur toute PR touchant la surface surveillee.
-    paths:
-      - '.github/workflows/perimeter-review-guard.yml'
-      - '.github/workflows/**'
-      - 'scripts/check_pr_perimeter.py'
-      - 'scripts/tests/test_check_pr_perimeter.py'
-
-permissions:
-  contents: read
-  pull-requests: read
-
-# The concurrency group carries github.event_name: the two triggers fire on
-# the SAME (PR, head SHA) pair, and a shared group with cancel-in-progress
-# lets a review-event run CANCEL a still-QUEUED pull_request run (measured on
-# #11649: pull_request run queued 14:26Z under the CI queue backlog, review
-# run started 14:57Z in the same group, the queued run died CANCELLED and
-# left a cancelled check-run on the head SHA). With event_name in the key,
-# pushes supersede pushes and reviews supersede reviews, but the two
-# triggers never cancel each other.
-concurrency:
-  group: perimeter-review-guard-${{ github.event_name }}-${{ github.event.pull_request.number }}-${{ github.event.pull_request.head.sha }}
-  cancel-in-progress: true
+  workflow_dispatch:
 
 jobs:
   perimeter:

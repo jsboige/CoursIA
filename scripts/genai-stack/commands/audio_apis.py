@@ -51,7 +51,7 @@ def get_container_status(container_name: str) -> str:
     """Retourne le statut d'un container Docker."""
     result = subprocess.run(
         ["docker", "inspect", container_name, "--format", "{{.State.Status}}"],
-        capture_output=True, text=True
+        capture_output=True, text=True, encoding="utf-8", errors="replace"
     )
     if result.returncode != 0:
         return "not_found"
@@ -163,7 +163,7 @@ def stop_service(service_name: str) -> bool:
     result = subprocess.run(
         ["docker-compose", "down"],
         cwd=str(compose_dir),
-        capture_output=True, text=True
+        capture_output=True, text=True, encoding="utf-8", errors="replace"
     )
 
     if result.returncode == 0:
@@ -198,7 +198,7 @@ def start_service(service_name: str, wait_health: bool = True) -> bool:
     result = subprocess.run(
         ["docker-compose", "up", "-d"],
         cwd=str(compose_dir),
-        capture_output=True, text=True
+        capture_output=True, text=True, encoding="utf-8", errors="replace"
     )
 
     if result.returncode != 0:
@@ -265,7 +265,7 @@ def switch_to_service(service_name: str) -> bool:
     import subprocess
     result = subprocess.run(
         ["nvidia-smi", "--query-gpu=index,name,memory.used,memory.free", "--format=csv,noheader"],
-        capture_output=True, text=True
+        capture_output=True, text=True, encoding="utf-8", errors="replace"
     )
     if result.returncode == 0:
         for line in result.stdout.strip().split("\n"):
@@ -539,7 +539,7 @@ def build_service(service_name: str) -> bool:
         ["docker-compose", "build", "--no-cache"],
         cwd=str(compose_dir),
         capture_output=False,  # Afficher la sortie en direct
-        text=True
+        text=True, encoding="utf-8", errors="replace"
     )
 
     if result.returncode == 0:
