@@ -285,7 +285,7 @@ layout: default
 
 <div class="img-stack">
 
-<img src="./images/img_009.png" alt="Tables de verite pour NON, ET, OU, IMPLIQUE, EQUIVAUT : colonnes p, q, op1, op2 avec resultats booleens 0/1" />
+<img src="./images/img_009.png" alt="Tables de verite pour NON, ET, OU, IMPLIQUE, EQUIVAUT : colonnes p, q, op1, op2 avec résultats booléens 0/1" />
 
 </div>
 
@@ -722,7 +722,7 @@ layout: default
 
 <div class="img-stack absolute" style="top: 60px; right: 30px; width: 380px;">
 
-<img src="./images/img_012.png" alt="Regles de satisfaction FOL : Tautologie, Contradiction, Satisfaisable avec exemples" />
+<img src="./images/img_012.png" alt="Règles de satisfaction FOL : Tautologie, Contradiction, Satisfaisable avec exemples" />
 
 </div>
 
@@ -1880,7 +1880,7 @@ layout: default
 
 <img src="./images/img_029.png" alt="Graphe de planification 3D : visualisation d'un plan dans l'espace des etats avec couches d'actions connectees" style="margin-bottom: 8px;" />
 
-<img src="./images/img_037.png" alt="Tableau International Planning Competition 1998-2008 : systemes vainqueurs (GAMER, LAMA, SATPLAN, FAST, LPG, FF, IPP, TLPLAN)" />
+<img src="./images/img_037.png" alt="Tableau International Planning Competition 1998-2008 : systèmes vainqueurs (GAMER, LAMA, SATPLAN, FAST, LPG, FF, IPP, TLPLAN)" />
 
 </div>
 
@@ -1915,7 +1915,7 @@ layout: default
 
 <div class="img-stack absolute" style="top: 60px; left: 30px; width: 380px;">
 
-<img src="./images/img_038.png" alt="Hierarchie d'ontologie : classes, sous-classes, instances et relations semantiques" />
+<img src="./images/img_038.png" alt="Hiérarchie d'ontologie : classes, sous-classes, instances et relations sémantiques" />
 
 </div>
 
@@ -1952,11 +1952,11 @@ layout: default
 
 <div class="img-stack absolute" style="top: 60px; right: 30px; width: 320px;">
 
-<img src="./images/img_039.png" alt="Pile du Web semantique : URI, XML, RDF, RDFS, OWL, SPARQL, Inference" style="margin-bottom: 8px;" />
+<img src="./images/img_039.png" alt="Pile du Web sémantique : URI, XML, RDF, RDFS, OWL, SPARQL, Inference" style="margin-bottom: 8px;" />
 
 <img src="./images/img_040.png" alt="RDF Triple : sujet, predicat, objet avec exemple (Tim knows Jane)" style="margin-bottom: 8px;" />
 
-<img src="./images/img_043.png" alt="LOD cloud : nuage des donnees liees interconnectees" />
+<img src="./images/img_043.png" alt="LOD cloud : nuage des données liees interconnectees" />
 
 </div>
 

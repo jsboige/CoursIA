@@ -75,7 +75,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 # Shared lane reader (#9485) -- see scripts/grain_tag.py.
-from grain_tag import extract_lane
+from grain_tag import extract_lane, lane_marker_residues
 
 # --- markers -----------------------------------------------------------------
 
@@ -121,9 +121,20 @@ from grain_tag import extract_lane
 # `_DECOR` is the shared, broadened decoration class for all four regexes.
 _DECOR = r"(?:[#>*+\-→➡➜»•–—]{1,6}[ \t]*)*"
 _MARKER_RE = re.compile(
-    r"(?m)^[ \t]*" + _DECOR + r"(?:\*\*|__)?[ \t]*\[\s*(CLAIMED|RELEASED|CANCELLED|ABANDONED|DONE|OVERRIDE|DELIVERED)\s*\]",
+    r"(?m)^[ \t]*" + _DECOR + r"(?:\*\*|__)?[ \t]*\[\s*(CLAIMED-AMEND|CLAIMED|RELEASED|CANCELLED|ABANDONED|DONE|OVERRIDE|DELIVERED)\s*\]",
     re.IGNORECASE,
 )
+# #13022 -- CLAIMED-AMEND is listed FIRST (longest first): the alternation
+# would still backtrack to it after a bare `CLAIMED` fails at `\]`, but the
+# explicit order keeps the intent readable. Measured on #11703: po-2027's
+# `[CLAIMED-AMEND] ... -- paths: <8 globs>` (union of two scopes) was a no-op
+# for this regex -- the organ kept crediting the earlier epic-wide-unmatched
+# `[CLAIMED]` and the amendment existed only for human eyes. The fix makes
+# CLAIMED-AMEND an OPEN action (see `_OPEN`): in the walk-order reducer, a
+# later open event REPLACES the lane's earlier claim, so the amend comment
+# carries the FULL corrected scope (union semantics -- same discipline as the
+# pre-fix workaround of re-posting a canonical `[CLAIMED]` with the complete
+# path list).
 # #11239 -- malformed-marker lint. A claim line written WITHOUT the brackets
 # (`CLAIMED #11222 -- ...`) is invisible to `_MARKER_RE` above: the organ
 # reports `unattributed_markers: 0` and answers CLEAR to every other lane,
@@ -137,7 +148,7 @@ _MARKER_RE = re.compile(
 # event. The motif tail is on the same line only (no `[\s\S]` cross-line).
 _MALFORMED_MARKER_RE = re.compile(
     r"(?m)^[ \t]*" + _DECOR + r"(?:\*\*|__)?[ \t]*"
-    r"(CLAIMED|RELEASED|CANCELLED|ABANDONED|DONE|OVERRIDE|DELIVERED)\b"
+    r"(CLAIMED-AMEND|CLAIMED|RELEASED|CANCELLED|ABANDONED|DONE|OVERRIDE|DELIVERED)\b"
     r"[^\n]*(?:lane\s+\S+:\S+|#\d+)",
     re.IGNORECASE,
 )
@@ -206,7 +217,16 @@ def _mask_fenced_blocks(body: str) -> str:
     return "".join(out)
 
 
-_OPEN = {"CLAIMED"}
+# #13022 -- `[CLAIMED-AMEND]` is an OPEN action. Semantics (the one chosen for
+# the fix): the amend comment REPLACES the lane's previous claim scope -- the
+# walk-order reducer already does this for any later open event
+# (`state[ev.lane] = ev`), so mapping CLAIMED-AMEND to "open" gives
+# replace-previous-scope for free. The amend line must therefore carry the
+# FULL corrected scope (a `paths:` union), exactly like the canonical
+# re-[CLAIMED] workaround it supersedes. An amend WITHOUT a paths clause
+# replaces the previous scope with EPIC-WIDE (legacy unscoped semantics) --
+# deliberate, fail-CLOSED: an amendment that names no scope is not permissive.
+_OPEN = {"CLAIMED", "CLAIMED-AMEND"}
 _CLOSE = {"RELEASED", "CANCELLED", "ABANDONED", "DONE", "DELIVERED"}
 # `[OVERRIDE] lane <machine:workspace>` (#10223): coordinator adjudication --
 # GRANTS the claim to the named lane and CLOSES every other lane's claim in one
@@ -232,7 +252,9 @@ _OVERRIDE = {"OVERRIDE"}
 # beneficiary is unattributed, per existing semantics). Capture groups:
 # 1 = comma-separated path list (already stripped of surrounding spaces).
 # Recognised on [CLAIMED], [RELEASED] (attached; the reducer treats release as
-# a full lane-close, so the scope is informational there), and [OVERRIDE].
+# a full lane-close, so the scope is informational there), [OVERRIDE], and
+# [CLAIMED-AMEND] (#13022: the clause is the whole point of an amend -- it
+# names the corrected/union scope that replaces the lane's previous claim).
 # Same leading-decoration tolerance as `_MARKER_RE` (#10906). In practice the
 # reducer feeds this regex the `_line_for_match` output (which starts at the
 # `[`), so the legacy `^[ \t]*\[` anchor already worked -- the prefix group is
@@ -242,7 +264,7 @@ _OVERRIDE = {"OVERRIDE"}
 # indistinguishable from a closing decorator by suffix alone. Trailing `*` in
 # fnmatch matches empty, so a captured `glob**` still matches `glob`.
 _PATHS_CLAUSE_RE = re.compile(
-    r"(?im)^[ \t]*" + _DECOR + r"(?:\*\*|__)?[ \t]*\[\s*(?:CLAIMED|RELEASED|OVERRIDE)\s*\][^\n]*?paths\s*:\s*([^\n]+?)\s*$"
+    r"(?im)^[ \t]*" + _DECOR + r"(?:\*\*|__)?[ \t]*\[\s*(?:CLAIMED-AMEND|CLAIMED|RELEASED|OVERRIDE)\s*\][^\n]*?paths\s*:\s*([^\n]+?)\s*$"
 )
 # #12320 -- `[DELIVERED] lane <m:w> -- PR #N`. The PR reference is OPTIONAL on
 # a DELIVERED marker (a DELIVERED without a PR is functionally equivalent to a
@@ -412,6 +434,19 @@ class ClaimEvent(dict):
         return self.get("unparseable_scope") or []
 
     @property
+    def lane_scope_residue(self) -> list[str]:
+        """Malformed-lane residues on the marker line (#12719).
+
+        A bare date after the token (`myia-po-2023:CoursIA 2026-08-23`) or a
+        trailing sentence period (`myia-po-2023:CoursIA.`). The lane regex
+        fix makes both parse to the bare lane, so the claim is NOT blocked
+        anymore; this witness lists the residue so the declaring lane can SEE
+        its marker was malformed instead of the organ silently reinterpreting
+        it. Report-only -- a malformed marker that parses is functional.
+        """
+        return self.get("lane_scope_residue") or []
+
+    @property
     def empty_scope(self) -> list[str]:
         """Subset of `paths` matching ZERO tracked files in the repo (#10958).
 
@@ -523,8 +558,12 @@ def _parse_claim_events(comment: dict) -> list[ClaimEvent]:
         lane = extract_lane(line, marker_line=line)
         if lane is None:
             lane = extract_lane(body, marker_line=line)
+        # #12719 -- malformed-lane witness (bare date / trailing period).
+        # Report-only: the claim is attributed to the bare lane either way.
+        lane_residue = lane_marker_residues(line)
         events.append(ClaimEvent(
             lane=lane,
+            lane_scope_residue=lane_residue,
             action=action,
             marker=marker,
             created_at=created_at,
@@ -632,10 +671,12 @@ def _expand_brace_groups(pattern: str) -> list[str]:
 def _extract_paths_clause(text: str | None) -> list[str] | None:
     """Parse the optional `paths: <comma-list>` clause from a marker line.
 
-    Recognised on [CLAIMED], [RELEASED], and [OVERRIDE] marker lines (#10342
-    introduced the clause for [OVERRIDE]; #10419 extended it to [CLAIMED] and
-    [RELEASED] so disjoint scoped claims no longer false-block each other on a
-    multi-instance issue). Returns the trimmed path list, or None when the
+    Recognised on [CLAIMED], [RELEASED], [OVERRIDE], and [CLAIMED-AMEND]
+    marker lines (#10342 introduced the clause for [OVERRIDE]; #10419
+    extended it to [CLAIMED] and [RELEASED] so disjoint scoped claims no
+    longer false-block each other on a multi-instance issue; #13022 added
+    [CLAIMED-AMEND], where the clause names the replacement scope). Returns
+    the trimmed path list, or None when the
     clause is absent -- the marker is then EPIC-WIDE (legacy semantics: an
     unscoped [CLAIMED] blocks every other lane, an unscoped [OVERRIDE] closes
     every other lane). Brace groups are expanded to sibling globs so that
@@ -886,7 +927,12 @@ def _gh_issue_comments(issue: str) -> dict:
             # inventory.
             "--json", "number,title,labels,comments",
         ],
+        # #12811 -- gh emits UTF-8; text=True alone decodes with the Windows
+        # locale (cp1252), which raises UnicodeDecodeError on issue bodies
+        # carrying bytes at cp1252-undefined positions (0x81/0x8D/0x8F/0x90/
+        # 0x9D -- common in the UTF-8 of ICT symbols) and kills the guard.
         capture_output=True, text=True, shell=False,
+        encoding="utf-8", errors="replace",
     )
     if proc.returncode != 0:
         raise RuntimeError(
@@ -977,6 +1023,7 @@ def _fetch_pr_state(pr_ref: int) -> tuple[str | None, str | None]:
                 "--json", "state,merged",
             ],
             capture_output=True, text=True, shell=False,
+            encoding="utf-8", errors="replace",  # #12811
         )
     except Exception as exc:  # pragma: no cover -- defensive
         result = (None, f"gh exec failed: {exc}")
@@ -1075,6 +1122,7 @@ def _post_comment(issue: str, body: str) -> None:
     proc = subprocess.run(
         ["gh", "issue", "comment", str(issue), "--body-file", path],
         capture_output=True, text=True, shell=False,
+        encoding="utf-8", errors="replace",  # #12811
     )
     Path(path).unlink(missing_ok=True)
     if proc.returncode != 0:
@@ -1102,7 +1150,10 @@ def _gh_open_prs_with_files() -> list[dict]:
             "--json", "number,title,headRefName,body,files",
             "--limit", "200",
         ],
+        # #12811 -- 200 PR bodies in one payload: a single non-cp1252 byte
+        # anywhere kills the whole --paths mode on Windows.
         capture_output=True, text=True, shell=False,
+        encoding="utf-8", errors="replace",
     )
     if proc.returncode != 0:
         raise RuntimeError(
@@ -1298,6 +1349,7 @@ def _scope_zero_coverage_warning(
         proc = subprocess.run(
             ["git", "-C", repo_root, "ls-files"],
             capture_output=True, text=True, timeout=10,
+            encoding="utf-8", errors="replace",  # #12811
         )
     except (OSError, subprocess.TimeoutExpired):
         return None
@@ -1354,6 +1406,7 @@ def _git_tracked_files(repo_root: str | None = None) -> list[str] | None:
         proc = subprocess.run(
             ["git", "-C", repo_root, "ls-files"],
             capture_output=True, text=True, timeout=10,
+            encoding="utf-8", errors="replace",  # #12811
         )
     except (OSError, subprocess.TimeoutExpired):
         return None
@@ -1369,6 +1422,91 @@ def _glob_matches_tracked(glob: str, tracked: list[str]) -> bool:
         if _path_matches(path, [glob]):
             return True
     return False
+
+
+# #13129 -- proximity suggestion for dead globs. When a declared glob matches
+# ZERO tracked files AND the glob's basename exists UNIQUE elsewhere in the
+# tracked tree, suggest the real path so the writer can fix the typo at the
+# call site. The threshold prevents the false-positive on README.md /
+# MANIFEST.md / __init__.py (basenames that legitimately appear hundreds of
+# times). Returns None when the suggestion would be ambiguous or noise-prone.
+_PROXIMITY_BASENAME_LIMIT = 5  # > N occurrences => basename is too generic.
+
+
+def _suggest_path_correction(glob: str, tracked: list[str]) -> str | None:
+    """Best-effort 'did you mean ... ?' suggestion for a dead glob (#13129).
+
+    The glob's BASENAME must appear EXACTLY once in the tracked tree for a
+    suggestion to be returned. Multiple matches = ambiguous (the writer must
+    pick by intent, not by basename). Zero matches = no candidate (a brand
+    new file -- the legitimate future case the warn was never meant to
+    block, see #12740).
+
+    The threshold (_PROXIMITY_BASENAME_LIMIT = 5) caps the suggestion at
+    basenames that survive as legitimate identifiers: README.md, MANIFEST.md
+    and __init__.py each have hundreds of occurrences across the repo and
+    would mislead more often than they would help. A basename that appears
+    between 1 and 5 times IS likely a typo (the writer meant one specific
+    file and the regex did not pick the right one).
+    """
+    if not glob or "/" not in glob:
+        return None
+    basename = glob.rsplit("/", 1)[-1]
+    if not basename or basename.startswith(".") and len(basename) <= 2:
+        return None
+    matches = [t for t in tracked if t.endswith("/" + basename)]
+    if not matches or len(matches) > _PROXIMITY_BASENAME_LIMIT:
+        return None
+    if len(matches) == 1:
+        return matches[0]
+    # 2..5 matches: pick the one sharing the LONGEST prefix with the dead glob
+    # (directory proximity beats basename uniqueness). Return it only when the
+    # picked candidate is strictly closer than the runner-up.
+    matches.sort(key=lambda t: -len(_common_prefix(glob, t)))
+    best, second = matches[0], matches[1] if len(matches) > 1 else ""
+    if _common_prefix(best, glob) > _common_prefix(second, glob):
+        return best
+    return None
+
+
+def _common_prefix(a: str, b: str) -> str:
+    n = 0
+    for x, y in zip(a, b):
+        if x != y:
+            break
+        n += 1
+    return a[:n]
+
+
+# #13129 motif B -- detect missing-comma in a glob. The mistake pattern is
+# `paths: a.py b.py` where the writer forgot the comma; the parser treats
+# the whole thing as ONE glob that matches nothing. We flag when a glob
+# contains a SPACE and at least two SPACE-separated tokens each LOOK like a
+# path (contain a `/` OR end with a tracked-file extension).
+_PATHLIKE_TOKEN_RE = re.compile(r"[^\s/]+(?:/[^\s/]+)+|\S+\.(?:py|yml|yaml|md|ipynb|lean|ps1|sh|json|cs|cpp|hpp|go|rs|ts|tsx|js|jsx|txt|csv)")
+
+
+def _looks_like_missing_comma(glob: str) -> list[str] | None:
+    """Return the SPACE-separated tokens if the glob looks like a missing-comma typo (#13129 motif B).
+
+    Heuristic: the glob has whitespace AND `>=2` tokens each look path-shaped
+    (slashed OR ending in a tracked-file extension). Returns None when the
+    heuristic does not fire -- the glob is a single path with possible
+    whitespace, not a typo. Conservative: a single path-shaped token does
+    NOT trigger the suggestion (a space inside a filename is rare but
+    legal; the cost of a false positive is a confusing suggestion, the cost
+    of a false negative is silent dead-glob, which is the existing bug we
+    are not making worse).
+    """
+    if not glob or " " not in glob:
+        return None
+    tokens = glob.split()
+    if len(tokens) < 2:
+        return None
+    pathlike = [t for t in tokens if _PATHLIKE_TOKEN_RE.match(t)]
+    if len(pathlike) < 2:
+        return None
+    return pathlike
 
 
 _INFERRED_PATH_PATTERNS = (
@@ -1575,6 +1713,29 @@ def _lint_claim_events(
                     f"(lane {ev.lane or '?'})",
                     file=sys.stderr,
                 )
+                # #13129 motif B -- missing comma between paths. Fires when
+                # the glob contains whitespace AND >=2 tokens each look path-
+                # shaped. The classic typo is `paths: a.py b.py` which the
+                # parser treats as a single glob that matches nothing.
+                pathlike_tokens = _looks_like_missing_comma(g)
+                if pathlike_tokens:
+                    candidates = ", ".join(repr(t) for t in pathlike_tokens)
+                    print(
+                        f'WARN: glob ressemble a plusieurs chemins separes '
+                        f"par ESPACE au lieu d'une virgule : {candidates}. "
+                        f"Le parser n'a vu qu'un seul glob (motif B, #13129).",
+                        file=sys.stderr,
+                    )
+                # #13129 motif A/C -- proximity suggestion. When the basename
+                # of the dead glob exists UNIQUE elsewhere in the tree,
+                # suggest the real path. Best-effort, non-blocking.
+                elif (suggestion := _suggest_path_correction(g, tracked)) is not None:
+                    print(
+                        f"WARN: glob sans correspondance : \"{g}\" -- "
+                        f"did you mean {suggestion!r} ? (basename unique, "
+                        f"#13129 motif A/C)",
+                        file=sys.stderr,
+                    )
 
 
 def _event_is_active_for(legacy: ClaimEvent, active: ClaimEvent) -> bool:
@@ -2071,6 +2232,11 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
                 # scope is fully parseable) or non-empty (the claim carries
                 # patterns fnmatch cannot match).
                 "unparseable_scope": ev.get("unparseable_scope") or [],
+                # #12719 -- malformed-lane witness (bare date after the
+                # token, trailing sentence period). The claim still parses to
+                # the bare lane; the residue is surfaced so the declaring
+                # lane sees its marker was malformed (report, not block).
+                "lane_scope_residue": ev.get("lane_scope_residue") or [],
                 # #10958 -- the dead-glob witness: globs of this claim that
                 # match zero tracked files. Empty when every glob locks
                 # something (or the walk was impossible). Non-empty means the
@@ -2748,8 +2914,15 @@ def main(argv: list[str] | None = None) -> int:
                         "behaviour: every active claim blocks, nothing is "
                         "age-filtered). The detected state is reported as "
                         "`stale_detection: \"disabled\"`.")
-    p.add_argument("--paths", metavar="PATH", nargs="+", default=None,
+    # #13057 -- repeated `--paths` occurrences form one union. argparse's
+    # default `store` action kept only the LAST occurrence, so adding a disjoint
+    # path could erase an earlier intersecting path and turn BLOCKED into CLEAR.
+    # `extend` keeps a flat list across both accepted CLI forms:
+    # `--paths a b` and `--paths a --paths b`.
+    p.add_argument("--paths", metavar="PATH", nargs="+", action="extend",
+                   default=None,
                    help="path-mode (#9959): one or more file paths/globs. "
+                        "Repeated --paths occurrences are combined (#13057). "
                         "Exits 2 if any OPEN PR of a different lane (or with "
                         "an unreadable lane tag) has files[] intersecting. "
                         "Exits 0 if no collision, 1 on usage/`gh` failure. "
