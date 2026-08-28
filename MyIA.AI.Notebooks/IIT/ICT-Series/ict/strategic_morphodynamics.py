@@ -281,7 +281,11 @@ def replicator_mutation_trajectory(
         x_i(t+1) = (1 - mu) * x_i(t) * f_i(t) / <f>(t) + mu / n,   f_i = (A x)_i.
 
     ``mu`` = taux de mutation uniforme (fraction de la population remplacee a chaque
-    generation par des mutants uniformement repartis). Contrairement au replicateur
+    generation par des mutants uniformement repartis). NB : le terme ``mu/n`` est
+    ajoute AVANT la renormalisation du simplex, donc le plancher effectif d'une
+    strategie contre-selectionnee n'est pas exactement ``mu/n`` (interaction
+    selection x normalisation) — p. ex. mu = 0,02, n = 6 : ``mu/n`` = 0,0033 mais
+    ``alld`` se stabilise vers ~0,0145 dans ICT-13. Contrairement au replicateur
     pur (qui converge vers une ESS et fige le nuage sur un point), la mutation
     maintient le polymorphisme : aucune frequence ne s'annule, la trajectoire balaie
     le simplex au lieu de s'ecraser sur un attracteur. Le nuage soumis au discriminant
