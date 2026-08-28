@@ -30,8 +30,8 @@ L'angle pédagogique est d'expliquer la **math du loss** avant le code pour chaq
 | PT-01 | `PT_01_intro_post_training.ipynb` | Vue d'ensemble historique : SFT → RLHF → DPO → GRPO → RLVR | Théorique (markdown + figures) | N/A | — |
 | PT-02 | `PT_02_sft_baseline.ipynb` | Supervised Fine-Tuning baseline | `trl.SFTTrainer` + QLoRA 4-bit | Qwen3.5-0.8B | See #10289 |
 | PT-03 | `PT_03_dpo_direct_preference.ipynb` | Direct Preference Optimization (Rafailov 2023) | `trl.DPOTrainer` | Qwen3.5-0.8B (QLoRA 4-bit) | #5078 |
-| PT-04 | `PT_04_grpo_deepseek_r1.ipynb` | Group Relative Policy Optimization (livrable clé) | `trl.GRPOTrainer` + QLoRA 4-bit | Qwen3.5-0.8B | See #10289 |
-| PT-05 | `PT_05_rlvr_verifiable_rewards.ipynb` | RL with Verifiable Rewards (math/code) | `trl.GRPOTrainer` + verifier SymPy | Qwen3.5-0.8B (QLoRA 4-bit) | #10487, #10504 (orig. #1771) |
+| PT-04 | `PT_04_grpo_deepseek_r1.ipynb` | Group Relative Policy Optimization (livrable clé) — correctness reward (normalisation $/milliers/unités, crédit partiel) + harness d'éval 4 métriques | `trl.GRPOTrainer` + QLoRA 4-bit | Qwen3.5-0.8B | See #10289, #12438 |
+| PT-05 | `PT_05_rlvr_verifiable_rewards.ipynb` | RL with Verifiable Rewards (math/code) — vérifieur robuste (tolérance abs/rel, crédit partiel) + harness accuracy/format_rate/think_length/backtrack_rate | `trl.GRPOTrainer` + verifier SymPy | Qwen3.5-0.8B (QLoRA 4-bit) | #10487, #10504, #12438 (orig. #1771) |
 | PT-06 | `PT_06_eval_comparative.ipynb` | Évaluation comparative SFT vs DPO vs GRPO vs RLVR | Tableaux, chart, framework décision | tous | #1772, #10819 |
 | PT-07 | `PT_07_rewardspy_reward_hacking.ipynb` | Détecter le reward hacking (Goodhart) — observabilité reward | `rewardspy.watch`/`audit` (offline, sans GPU) | N/A (offline) | #4538 |
 | PT-08 | `PT_08_grpo_from_scratch_toy_env.ipynb` | GRPO **from scratch** (toy env CPU) — mécanique du group-relative advantage, écart PPO↔GRPO, comparaison « avec vs sans critic » | `torch` from-scratch (no `trl`) | MLP jouet (CPU, ~1.5k params) | See #1454 |

@@ -37,3 +37,24 @@ public static class Producer
     public static async Task ProduceAsync(ChannelWriter<string> writer, string prompt)
         => await writer.WriteAsync(prompt);
 }
+
+// Second terrain fautif (AGENTGUARD002) : le meme agent, une autre vitesse.
+// "Lancer et oublier" un traitement en ecrivant async void -- la signature
+// ressemble a une async Task, mais la methode n'est pas attendable et ses
+// exceptions ne sont observees par personne. Un diagnostic AGENTGUARD002
+// attendu au build (et aucun ici n'est un handler d'evenement : pas de
+// signature (object, EventArgs)).
+public static class AgentFireAndForget
+{
+    public static void Demarrer()
+    {
+        SurveillerCanalAsync();            // "rendu la main" -- silencieusement
+    }
+
+    // Genere par agent "pour simplifier" : async void hors handler.
+    public static async void SurveillerCanalAsync()
+    {
+        await Task.Delay(200);             // simule une boucle de surveillance
+        // Si l'appel LLM leve ici, personne ne l'observe : process mort.
+    }
+}
