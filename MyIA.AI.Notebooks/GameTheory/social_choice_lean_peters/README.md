@@ -6,10 +6,10 @@ de Peters.
 
 ## Statut
 
-- **Toolchain** : `leanprover/lean4:v4.27.0-rc1` (pinnée sur la version de Peters)
+- **Toolchain** : `leanprover/lean4:v4.32.1` (alignée sur le parc, pin effectif du `lean-toolchain`)
 - **Compte de sorry** : 0 sorry en production
 - **Build** : `lake build` — SUCCESS
-- **Dépendances** : Mathlib4, `DominikPeters/SocialChoiceLean`
+- **Dépendances** : Mathlib4 (`520045ab`), `DominikPeters/SocialChoiceLean` (`94a4c650`) — revs effectives du `lake-manifest.json`
 
 ## Modules
 
@@ -33,44 +33,47 @@ Complémentaire, sans doublon. `social_choice_lean` utilise un `PrefOrder` perso
 ## Notes
 
 - Backend Lake pour un notebook compagnon de tour (prévu, pas encore créé)
-- Le dépôt de Peters est pinné au commit `355075e3e35f940a2ade0cbfb5be27b4a53c6776` pour la reproductibilité
+- Le dépôt de Peters est référencé au commit `94a4c650b6a3ef14df801a613c3b46169dbd754d` (rev du `lake-manifest.json`) pour la reproductibilité
 - Peters utilise `LinearOrder` (strict, Mathlib) ; nous utilisons `PrefOrder` (réflexif, total, transitif)
 
 ## Statut EPIC #4365 (anti-proliferation GT 6→2)
 
 Ce lake est **explicitement hors du périmètre d'absorption** dans
 [`game_theory_lean/`](../game_theory_lean/) au titre de l'EPIC #4365 Phase 4
-(regrouper les lakes cohesifs post-convergence), pour deux raisons cumulatives :
+(regrouper les lakes cohesifs post-convergence). L'historique du statut :
 
-1. **Verrouillage amont (`INTRINSIC`)** : ce lake **importe** le dépôt
+1. **Verrouillage amont (`INTRINSIC`, levé depuis)** : au moment de la
+   décision (c.576, 2026-07-17), le dépôt externe
    [`DominikPeters/SocialChoiceLean`](https://github.com/DominikPeters/SocialChoiceLean)
-   pinné au commit `355075e3e35f940a2ade0cbfb5be27b4a53c6776` (rev effectif
-   dans `lake-manifest.json`), qui dépend d'un Mathlib de la famille
-   `v4.27.0-rc1`. Le port de cet amont vers `v4.31.0-rc1` (cible post-#4364)
-   n'est **pas** sous notre contrôle — c'est un projet externe (MIT, Dominik
-   Peters) et le port est potentiellement lourd (4 révisions d'écart, multiples
-   ruptures d'API). **Verdict `INTRINSIC`** au sens de
-   [`sota-not-workaround.md`](../../../.claude/rules/sota-not-workaround.md)
-   : pas de chemin SOTA réel pour absorber sans casser la dépendance.
+   était pinné à `355075e3` sur la famille `v4.27.0-rc1`, et son port vers la
+   cible post-#4364 n'était pas sous notre contrôle — verdict `INTRINSIC` au
+   sens de [`sota-not-workaround.md`](../../../.claude/rules/sota-not-workaround.md).
+   **Ce verrou a été levé par l'amont lui-même** : depuis le 2026-08-21
+   (#12134, commit `d8ec0b08ba`), le pin effectif est Peters `94a4c650` /
+   Mathlib `520045ab` sur `lean-toolchain` `v4.32.1` — la famille du reste
+   du parc. La convergence #4364 s'applique désormais ici aussi ; peters
+   n'est plus résidu v4.27.
 
-2. **Cadre sémantique distinct** : ce lake expose un `LinearOrder` strict
-   (Mathlib) qui **n'est pas** compatible avec l'API `PrefOrder` réflexif-total-
-   transitive utilisée par `game_theory_lean/SocialChoice/`. Une fusion forcerait
-   soit (a) un double-port linéaire/préf-ordre, soit (b) une ré-écriture des
-   preuves de Peters — au-delà du budget « PR atomique R3 ».
+2. **Cadre sémantique distinct (toujours actif)** : ce lake expose un
+   `LinearOrder` strict (Mathlib) qui **n'est pas** compatible avec l'API
+   `PrefOrder` réflexif-total-transitive utilisée par
+   `game_theory_lean/SocialChoice/`. Une fusion forcerait soit (a) un
+   double-port linéaire/préf-ordre, soit (b) une ré-écriture des preuves de
+   Peters. **C'est le motif d'autonomie qui demeure** après la convergence de
+   toolchain : ce lake est un *port externe* (les preuves sont celles de
+   Peters) quand `game_theory_lean/` porte nos preuves.
 
 **Conséquence** : `social_choice_lean_peters/` reste un **lake autonome
 auto-suffisant** avec son propre `lake build`, son propre `lean-toolchain`
-`v4.27.0-rc1`, et son propre CI. La convergence #4364 Phase 3 (10 lakes rc2
-bumps vers `d568c8c0` / `v4.31.0-rc1`, complétée 2026-07-03 par un autre
-worker) **ne s'applique pas** ici — peters est le seul résidu v4.27 du parc.
+`v4.32.1` (convergé), et son propre CI. L'autonomie n'est plus motivée par un
+verrou de version — elle est motivée par la nature du projet : une visite de
+référence d'une bibliothèque externe, dans son propre cadre sémantique.
 
-Statut vérifié firsthand (c.576, 2026-07-17) : `lake-manifest.json`
-pinné sur le commit Peters `355075e3e35f940a2ade0cbfb5be27b4a53c6776` (rev),
-Mathlib rev `8cb9319191fd34b6f23d7ffea58a4f8fb674cefd`, `lean-toolchain` =
-`v4.27.0-rc1`, `PetersTour.lean` 234 lignes, 0 sorry (grep vérifié),
-build SUCCESS — **le statu quo est intentionnel et documenté**, pas un
-oubli.
+Statut vérifié firsthand (2026-08-26) : `lake-manifest.json` Peters rev
+`94a4c650b6a3ef14df801a613c3b46169dbd754d`, Mathlib rev
+`520045ab14e26149ee970e2e617ca04b09bde5d6`, `lean-toolchain` = `v4.32.1`,
+`PetersTour.lean` + `PetersTour_en.lean` (i18n #4980), 0 sorry — **le statu
+quo est intentionnel et documenté**, pas un oubli.
 
 Voir aussi : [`#4365`](https://github.com/jsboige/CoursIA/issues/4365) (cible
 de regroupement GT 6→2), [`#4364`](https://github.com/jsboige/CoursIA/issues/4364)
@@ -81,8 +84,8 @@ de regroupement GT 6→2), [`#4364`](https://github.com/jsboige/CoursIA/issues/4
 
 Ce projet est une **visite de référence** de
 [`DominikPeters/SocialChoiceLean`](https://github.com/DominikPeters/SocialChoiceLean),
-importée comme dépendance Lake (pinnée au commit `355075e3e35f940a2ade0cbfb5be27b4a53c6776`, toolchain
-`v4.27.0-rc1`) et exhibée via des `#check` dans `PetersTour.lean` — **0 `sorry`**,
+importée comme dépendance Lake (pinnée au commit `94a4c650b6a3ef14df801a613c3b46169dbd754d`, toolchain
+`v4.32.1`) et exhibée via des `#check` dans `PetersTour.lean` — **0 `sorry`**,
 `lake build` SUCCESS. Ce n'est **pas** une formalisation originale : il présente
 les résultats de Peters, l'implémentation de référence actuelle de la théorie du
 choix social en Lean 4.
