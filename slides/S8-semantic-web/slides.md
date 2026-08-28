@@ -186,6 +186,7 @@ layout: section
 # SW-4 — SPARQL : Le SQL du Web Sémantique
 
 <div class="dense-list">
+
 ## Types de requêtes SPARQL
 
 | Requête | Usage |
@@ -223,6 +224,7 @@ foreach (var result in results)
 # SW-5 — Linked Data : DBpedia et Wikidata
 
 <div class="dense-list">
+
 ## Les 5 etoiles du Linked Data (Berners-Lee, 2010)
 
 | Etoiles | Critere |
@@ -300,6 +302,7 @@ Console.WriteLine($"Apres inference : {dataGraph.Triples.Count} triplets");
 # SW-7 — OWL 2 : Ontologies et Logiques de Description
 
 <div class="dense-list">
+
 ## OWL 2 : au-dela de RDFS
 
 | Feature | RDFS | OWL 2 |
@@ -342,6 +345,7 @@ layout: section
 # SW-8 — SHACL : Validation des Données RDF
 
 <div class="dense-list">
+
 ## SHACL vs OWL : deux philosophies
 
 | | OWL | SHACL |
@@ -381,6 +385,7 @@ print(results[2])  # rapport Turtle
 # SW-9 — JSON-LD : Le Web Sémantique rencontre JSON
 
 <div class="dense-list">
+
 ## JSON-LD : bridge entre JSON et Linked Data
 
 ```python
@@ -421,6 +426,7 @@ compacted = jsonld.compact(doc, {"foaf": "http://xmlns.com/foaf/0.1/"})
 # SW-10 — RDF 1.2 (RDF-Star) : Assertions sur des Assertions
 
 <div class="dense-list">
+
 ## Le problème de la reification classique
 
 **But** : annoter un triplet (confiance, source, date...)
@@ -466,6 +472,7 @@ layout: section
 # SW-11 — Knowledge Graphs : Construction et Exploration
 
 <div class="dense-list">
+
 ## Qu'est-ce qu'un Knowledge Graph ?
 
 Un **graphe de connaissances** = graphe RDF a grande echelle, oriente metier
@@ -504,6 +511,7 @@ results = g.query("SELECT ?p WHERE { <http://mykg.../Turing> ?rel ?p }")
 # SW-12 — GraphRAG : Graphes et LLMs
 
 <div class="dense-list">
+
 ## RAG classique vs GraphRAG
 
 | | RAG classique | GraphRAG |
@@ -541,6 +549,7 @@ for s, p, o in extract_triples(document):
 # SW-13 — Comparaison des Raisonneurs OWL
 
 <div class="dense-list">
+
 ## Raisonneurs OWL : panorama
 
 | Raisonneur | Langage | Points forts |
