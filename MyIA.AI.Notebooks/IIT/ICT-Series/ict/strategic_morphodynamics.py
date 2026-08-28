@@ -19,6 +19,7 @@ commitee. numpy CPU pur, gel GPU respecte.
 
 from __future__ import annotations
 
+import inspect
 from typing import Callable, Dict, List, Optional, Tuple
 
 import numpy as np
@@ -112,22 +113,47 @@ def random_strategy(p_coop: float = 0.5):
     return _rand
 
 
-# Une strategie a etat (gtft, random) a besoin d'un generateur par match ;
-# on les construit via une factory qui injecte le rng.
+# Une strategie aleatoire (gtft, random) tire au hasard : le protocole etendu
+# (#13322) lui donne un 3e parametre nomme ``rng``, rempli par play_match avec
+# le generateur DU MATCH. Les strategies d'arite 2 restent deterministes.
 STRATEGY_NAMES = ["allc", "alld", "tft", "gtft", "pavlov", "grim"]
 
 
+def _accepts_rng(s: Strategy) -> bool:
+    """True si la strategie declare un 3e parametre nomme ``rng`` (protocole
+    etendu #13322) : play_match lui passera alors le generateur du match."""
+    try:
+        params = list(inspect.signature(s).parameters.values())
+    except (TypeError, ValueError):
+        return False
+    return (
+        len(params) >= 3
+        and params[2].name == "rng"
+        and params[2].kind in (
+            inspect.Parameter.POSITIONAL_OR_KEYWORD,
+            inspect.Parameter.KEYWORD_ONLY,
+        )
+    )
+
+
 def make_strategies(rng: Optional[np.random.Generator] = None) -> Dict[str, Strategy]:
-    """Construit le dictionnaire des strategies. Celles aleatoires (gtft, random)
-    partagent le ``rng`` fourni (reproductible)."""
+    """Construit le dictionnaire des strategies.
+
+    Le ``rng`` fourni n'est qu'un **fallback** pour les appels directs
+    ``strat["gtft"](own, opp)`` hors tournoi. Dans un tournoi
+    (:func:`play_match` et ses enveloppes), les tirages de gtft proviennent du
+    generateur passe AU TOURNOI : le resultat d'un tournoi ne depend que de ses
+    arguments, jamais de l'usage anterieur du dict (#13322 — les strategies ne
+    portent plus d'etat observable via les tournois)."""
     st = {"rng": rng or np.random.default_rng(0)}
 
-    def _gtft(own, opp):
+    def _gtft(own, opp, rng=None):
         if len(opp) == 0:
             return C
         if opp[-1] == C:
             return C
-        return C if st["rng"].random() < 1 / 3 else D
+        r = rng if rng is not None else st["rng"]
+        return C if r.random() < 1 / 3 else D
 
     return {
         "allc": allc,
@@ -156,15 +182,23 @@ def play_match(
     d'implementation : erreur, tremblement). Renvoie le gain moyen par coup de
     chacun (gain cumul / n_rounds).
 
+    Toutes les decisions aleatoires du match — bruit d'implementation ET tirages
+    des strategies aleatoires (protocole etendu : 3e parametre ``rng``) —
+    proviennent du meme ``rng`` : deux matches aux memes arguments rendent des
+    gains identiques, quel que soit l'usage anterieur des strategies (#13322).
+
     Le bruit n'est pas cosmetique : il discrimine TFT (effondrement par echo) de
     GTFT/Pavlov (résistent) — c'est le gate 3 du regime-dependance."""
     if rng is None:
         rng = np.random.default_rng(0)
+    s1_rng = _accepts_rng(s1)
+    s2_rng = _accepts_rng(s2)
     own1, own2 = [], []
     g1 = g2 = 0.0
     for _ in range(n_rounds):
-        a = int(s1(np.array(own1), np.array(own2)))
-        b = int(s2(np.array(own2), np.array(own1)))
+        h1, h2 = np.array(own1), np.array(own2)
+        a = int(s1(h1, h2, rng) if s1_rng else s1(h1, h2))
+        b = int(s2(h2, h1, rng) if s2_rng else s2(h2, h1))
         if noise > 0.0:
             if rng.random() < noise:
                 a = 1 - a
@@ -201,7 +235,8 @@ def round_robin(
     for i, ni in enumerate(names):
         for j, nj in enumerate(names):
             for _ in range(n_reps):
-                # reconstruire l'etat interne aleatoire a chaque match (gtft/random)
+                # les tirages aleatoires de chaque match proviennent du rng du
+                # tournoi (protocole #13322) : pas d'etat interne persistant
                 s_i = strategies[ni]
                 s_j = strategies[nj]
                 g_i, g_j = play_match(s_i, s_j, n_rounds=n_rounds, noise=noise, rng=rng)
