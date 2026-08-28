@@ -276,28 +276,22 @@ question sans image ne produit aucune couleur.
 
 ## Sections
 
-### 1. [Vue d'ensemble](02-Comparatif/comparatif-owui-vs-ai-engine.md)
+### 1. [Vue d'ensemble](01-Architecture/README.md#vue-densemble)
 
-AI-Engine en deux pages : ce que c'est, qui l'utilise, pourquoi on en
-parle à côté d'Open WebUI. Statistiques publiques (100K+ installations
-actives, 4.9/5 étoiles, version 3.7.0 août 2026, license GPL).
+Ce que c'est, qui l'utilise, pourquoi on en parle à côté d'Open
+WebUI — regroupé dans
+[`01-Architecture/`](01-Architecture/README.md#vue-densemble).
 
-### 2. [Fonctionnalités GenAI cœur](02-Comparatif/comparatif-owui-vs-ai-engine.md#fonctionnalités-cœur)
+### 2. [Fonctionnalités GenAI cœur](01-Architecture/README.md#fonctionnalités-genai-cœur)
 
-Chatbots, Workspace (plein écran dans wp-admin), Copilot pour l'éditeur
-WordPress, AI Forms (text/image/audio/file avec logique conditionnelle),
-génération d'image et de vision. Comparaison avec les surfaces
-équivalentes d'Open WebUI (chat, canaux, prompts).
+Chatbots, Workspace, Copilot, AI Forms, génération d'image —
+regroupé dans
+[`01-Architecture/`](01-Architecture/README.md#fonctionnalités-genai-cœur).
 
-### 3. [Multi-provider et self-hosting](02-Comparatif/comparatif-owui-vs-ai-engine.md#multi-provider-et-self-hosting)
+### 3. [Multi-provider et self-hosting](01-Architecture/README.md#multi-provider-et-self-hosting)
 
-AI-Engine supporte **neuf providers distants** (OpenAI, Anthropic,
-Google, Mistral, xAI/Grok, Perplexity, OpenRouter, Replicate, Azure)
-plus un connecteur **Custom OpenAI-compatible** pour les moteurs
-auto-hébergés (Ollama, LM Studio, vLLM, llama.cpp, LocalAI). Côté
-Open WebUI, c'est la même philosophie avec OpenAI-compatible + Ollama
-natif ; la différence est qu'AI-Engine ne fournit pas son propre
-moteur local — il s'appuie sur l'écosystème WordPress existant.
+Neuf providers distants + connecteur auto-hébergé — regroupé dans
+[`01-Architecture/`](01-Architecture/README.md#multi-provider-et-self-hosting).
 
 ### 4. [RAG et embeddings](02-Comparatif/comparatif-owui-vs-ai-engine.md#rag-et-embeddings)
 
