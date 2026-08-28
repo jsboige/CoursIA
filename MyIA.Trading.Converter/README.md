@@ -59,6 +59,41 @@ il charge `ConverterConfig.json` et exécute la pipeline verbatim. Voir
 [`exemples/ConverterConfig.daily.json`](exemples/ConverterConfig.daily.json)
 pour une config typique.
 
+## API publique
+
+### Types de données
+
+| Type | Champs | Usage |
+|------|--------|-------|
+| `Trade` | `UnixTime`, `Price`, `Amount` | Tick haute fréquence — format natif attendu par `TradeConverter` upstream |
+| `Tickbar` | Open, High, Low, Close, Volume (6 props) | Barre OHLCV — acceptée par l'overload générique `SaveTradingData<T>` |
+| `TradingDataType` | enum `Trades` / `Tickbars` | Discriminant du type sérialisé |
+
+### Points d'entrée `TradeConverter`
+
+| Méthode | Signature courte | Rôle |
+|---------|------------------|------|
+| `Process` | instance, `Action<string> logger` | Pipeline legacy complet depuis `ConverterConfig.json` (mode CLI sans argument) |
+| `LoadTrades` | static → `List<Trade>` | Charge un fichier de trades selon `SerializationConfig` |
+| `SaveTrades` | instance | Sérialise + compresse des `Trade` (format interne Lean) |
+| `SaveTradingData<T>` | static | Overload générique — utilisé par la démo avec `Tickbar` (OHLCV direct) |
+| `LoadFile<T>` / `SaveFile<T>` | static | Round-trip unitaire d'un objet selon la config |
+
+### Sérétialiseurs (`SerializationConfig`)
+
+La config (`Culture`, `IncludeHeader`, `DateTimeFormat`, `DateAsMillisecondsFromEpoch`) sélectionne un moteur par famille — code verbatim upstream :
+
+| Famille | Helper | Moteurs |
+|---------|--------|---------|
+| Binaire | `BinarySerializationHelper` | `Apex`, `MessagePack`, `ZeroFormatter` |
+| JSON | `JsonSerializationHelper` | `Utf8`, `JsonNet`, `SystemText`, `SimdJsonSharp` |
+| CSV | `CsvSerializationHelper` | `TinyCsv`, `FileHelpers`, `FlatFiles`, `CsvHelpers` |
+| Compression | `CompressionHelper` | `SharpCompress` (managed pur, défaut de la démo), `SevenZipSharp` (natif `7z-x64.dll`) |
+
+### Stack d'origine (mesuré, critère (a) du déblocage #7357)
+
+L'origine est le **fork public `MyIntelligenceAgency/Lean`** (branche `MyIABacktesting_integration`, sha `612dddf9`), pas Aricie directement : le `.csproj` de ce module ne porte **aucune** référence Aricie/Accord (mesuré — les 6 DLL Aricie PKP et `Accord.MachineLearning` sont les dépendances d'**E2** `MyIA.Trading.Backtester`, pas d'E1). La stack de sérialisation ci-dessus est l'état verbatim du fork, adaptée en PackageReference .NET 9.0 (cf « Diff vs upstream »).
+
 ## Limites & dette technique honnête
 
 | Limite | Cause | Solution future |

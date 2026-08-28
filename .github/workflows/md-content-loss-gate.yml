@@ -1,5 +1,14 @@
 name: Markdown content-loss gate
 
+# ABSORBE PAR LA VOIE RAPIDE (#12396, tranche 4) : sur `pull_request`, ce
+# garde est desormais rendu par `fast-lane-shadow.yml` (check-run nomme
+# `No markdown content loss in changed notebooks`, meme nom que ce job, meme
+# verdict -- rc=1 defaut / rc=2 illisible, anti-auto-desarmement AGREGE
+# porte par le flag `fail_on_all_warn` du moteur --, un seul checkout pour
+# toute la lane). Ce fichier garde `workflow_dispatch` pour le re-run manuel
+# sur `main` apres une panne CI (#9858). Les `paths:` et l'argv d'origine
+# vivent dans `scripts/ci/fast_lane_registry.py` (TRANCHE4).
+
 # Purpose
 # -------
 # Per-PR gate that catches markdown CONTENT LOSS a cellule tronquee : une PR
@@ -34,12 +43,6 @@ name: Markdown content-loss gate
 # detecteur base-vs-head).
 
 on:
-  pull_request:
-    branches: [ main ]
-    paths:
-      - 'MyIA.AI.Notebooks/**/*.ipynb'
-      - 'scripts/notebook_tools/detect_md_content_loss.py'
-      - '.github/workflows/md-content-loss-gate.yml'
   workflow_dispatch:
 
 permissions:
@@ -59,6 +62,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          filter: blob:none
 
       - name: Set up Python
         uses: actions/setup-python@v5

@@ -341,7 +341,7 @@ def main(argv=None) -> int:
     try:
         rel = subprocess.run(
             ["git", "ls-files", "--full-name", "--", str(nb_path)],
-            capture_output=True, text=True, check=True,
+            capture_output=True, text=True, encoding="utf-8", errors="replace", check=True,
         ).stdout.strip()
     except subprocess.CalledProcessError:
         rel = ""

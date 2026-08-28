@@ -106,10 +106,16 @@ def test_write_then_load_baseline_roundtrip(tmp_path):
     bl = _seed_baseline(tmp_path, root)
     loaded = smh.load_baseline(bl)
     assert loaded == smh.compute_counts([str(root)])
-    # determinisme : deux ecritures = bytes identiques
+    # determinisme : deux ecritures avec la MÊME date PINNEE = bytes identiques
+    # (une auto-timestamp rendrait deux writes non-reproductibles)
+    smh.write_baseline(bl, smh.compute_counts([str(root)]),
+                       generated_at="2026-08-24T00:00:00Z")
     first = bl.read_bytes()
-    smh.write_baseline(bl, smh.compute_counts([str(root)]))
+    smh.write_baseline(bl, smh.compute_counts([str(root)]),
+                       generated_at="2026-08-24T00:00:00Z")
     assert bl.read_bytes() == first
+    # la date est bien dans la sortie (acceptance #12735)
+    assert smh.baseline_generated_at(bl) == "2026-08-24T00:00:00Z"
 
 
 def test_load_baseline_rejects_foreign_format(tmp_path):
@@ -214,3 +220,96 @@ def test_update_baseline_then_diff_is_green(tmp_path, capsys):
     assert rc == 0
     assert "baseline updated" in capsys.readouterr().out
     assert _diff(root, bl) == 0
+
+
+# --- 4. #12735 : veredict sur le NET intra-notebook, pas sur le +kind ---------
+
+def test_within_notebook_migration_is_net_NOT_a_regression(tmp_path, capsys):
+    """Cas PT_11 (#12735) : le meme notebook  migre d'une classe a l'autre
+    (+1 HINT, -1 IN-LIST). Le verdict est le NET (0 ici), pas le '+1 HINT'.
+    Un +1/-1 sur le meme fichier = burndown potentiel, jamais une regression."""
+    root = _corpus(tmp_path)
+    bl = _seed_baseline(tmp_path, root)  # flagged.ipynb : {HINT:1, IN-LIST:1}
+    _mutate(root, "flagged.ipynb", ["# Titre", "# Indice", "## Astuce"])
+    rc = _diff(root, bl)
+    assert rc == 0  # net 0 -> pas de regression a attribuer
+    out = capsys.readouterr().out
+    assert "(mixed, net 0)" in out
+    assert "+1 HINT-AS-HEADING" in out  # le delta kind EST informe
+
+
+def test_within_notebook_burndown_not_a_regression(tmp_path, capsys):
+    """PT_11 (net -8) : le notebook GUERIT (IN-LIST tombe) mais garde un hint.
+    Net negatif = burndown, exit 0. JAMAIS de '+1 nouveau defaut'."""
+    root = _corpus(tmp_path)
+    bl = _seed_baseline(tmp_path, root)
+    _mutate(root, "flagged.ipynb", ["# Titre", "# Indice"])  # drop l'IN-LIST
+    rc = _diff(root, bl)
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert "(burndown)" in out
+    assert "-1 HEADING-IN-LIST" in out
+    assert "+1" not in out.split("\n")[0]  # la ligne verdict n'est pas une augmentation
+
+
+# --- 5. #12735 : attribution PR-scopee (--name-status) ------------------------
+
+def _ns(tmp_path, *lines):
+    p = tmp_path / "ns.txt"
+    p.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return str(p)
+
+
+def test_pr_scope_ignores_regression_outside_pr(tmp_path, capsys):
+    """La CI scanne le CORPUS entier, pas le diff de la PR (#11831 invariant casse
+    par #12735). Avec --name-status, un notebook qui a empiré mais N'EST PAS dans
+    la PR ne doit PAS etre impute a cette PR."""
+    root = _corpus(tmp_path)
+    bl = _seed_baseline(tmp_path, root)
+    _mutate(root, "flagged.ipynb", WORSE)  # +2, mais hors diff PR
+    ns = _ns(tmp_path, f"M\t{_key(root, 'clean.ipynb')}")  # PR ne touche que clean
+    assert smh.main([str(root), "--baseline", str(bl), "--diff", "--name-status", ns]) == 0
+    out = capsys.readouterr().out
+    assert "flagged.ipynb" not in out
+
+
+def test_pr_scope_flags_regression_inside_pr(tmp_path, capsys):
+    """Controle positif : une PR qui TOUCHE un notebook et y introduit des defauts
+    est detectee, nommee, exit 2 (le garde redevient parlant)."""
+    root = _corpus(tmp_path)
+    bl = _seed_baseline(tmp_path, root)
+    _mutate(root, "flagged.ipynb", WORSE)  # +2, dans la PR
+    ns = _ns(tmp_path, f"M\t{_key(root, 'flagged.ipynb')}")
+    assert smh.main([str(root), "--baseline", str(bl), "--diff", "--name-status", ns]) == 2
+    out = capsys.readouterr().out
+    assert "flagged.ipynb" in out
+    assert "+2" in out
+
+
+def test_rename_resolution_no_phantom(tmp_path, capsys):
+    """Zero-pad phantom (#12735) : baseline '4b.ipynb', PR renomme en '04b.ipynb'
+    (git -M -> R100 old new). Le renommage resout l'entree baseline -> delta 0,
+    pas de '+1' fantome."""
+    root = _corpus(tmp_path)
+    _mutate(root, "old.ipynb", ["# Titre", "# Indice"])  # {HINT:1}
+    bl = _seed_baseline(tmp_path, root)
+    old_key = _key(root, "old.ipynb")
+    _mutate(root, "new.ipynb", ["# Titre", "# Indice"])  # meme contenu, 1 HINT
+    new_key = _key(root, "new.ipynb")
+    (root / "old.ipynb").unlink()
+    ns = _ns(tmp_path, f"R100\t{old_key}\t{new_key}")
+    assert smh.main([str(root), "--baseline", str(bl), "--diff", "--name-status", ns]) == 0
+    out = capsys.readouterr().out
+    assert "drift: +0" in out
+    assert "+1" not in out
+
+
+# --- 6. #12735 : baseline datee dans le rapport -------------------------------
+
+def test_baseline_date_in_report(tmp_path, capsys):
+    root = _corpus(tmp_path)
+    bl = _seed_baseline(tmp_path, root)  # date "now"
+    smh.write_baseline(bl, smh.compute_counts([str(root)]), generated_at="2026-08-24T00:00:00Z")
+    _diff(root, bl)
+    out = capsys.readouterr().out
+    assert "generated 2026-08-24T00:00:00Z" in out

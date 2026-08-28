@@ -61,6 +61,20 @@ La détection de la régression du 2026-05-27 (kernel.json pointant vers l'ancie
 
 Test : `python scripts/lean/tests/test_lean_kernel_check.py` (4 cas : ancien bash → error, wrapper v5 → ok, inconnu / absent → warning).
 
+### Wrapper-sync : la copie déployée est une cible de sync, le repo est canonique (#13180)
+
+`~/.lean4-kernel-wrapper.py` (déployé WSL) n'est **écrit par aucun script du dépôt** — les deux copies peuvent diverger silencieusement (mesuré 2026-08-26 : déployé c.126 stale vs repo c.127 avec détection `lakefile.toml`). Le check canonique couvre désormais aussi le **contenu** : `lean_kernel_check.py` compare octet-à-octet le déployé (via `\\wsl$\Ubuntu\...`) contre la copie repo (`inspect_wrapper_content_drift`, statut `warning` advisory — un hotfix machine-local reste légal, la garde rend la dérive VISIBLE sans bloquer).
+
+Re-sync après un fix du wrapper dans le repo :
+
+```powershell
+# backup de la copie déployée puis copie repo -> WSL (byte-identique, chmod +x)
+wsl -d Ubuntu -- bash -c "cp ~/.lean4-kernel-wrapper.py ~/.lean4-kernel-wrapper.py.bak"
+cat MyIA.AI.Notebooks/SymbolicAI/Lean/scripts/lean4-kernel-wrapper.py | wsl -d Ubuntu -- bash -c "cat > ~/.lean4-kernel-wrapper.py && chmod +x ~/.lean4-kernel-wrapper.py"
+python scripts/lean/lean_kernel_check.py   # doit rendre "wrapper déployé = repo canonique"
+# puis boot-test (règle F) : notebook 3 cellules via nbclient kernel lean4-wsl
+```
+
 ### Architecture du kernel `lean4-wsl`
 
 ```

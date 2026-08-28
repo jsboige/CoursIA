@@ -1,6 +1,7 @@
 import Coherence.Basic
 import Coherence.DutchBook
 import Coherence.Probability
+import Coherence.Premium
 
 /-!
 # Decision Theory — Dutch Book / coherence (de Finetti)
@@ -25,6 +26,13 @@ sure loss. Coherence therefore *forces* the probability axioms.
   probabilistic weights (`priceFromWeights_coherent_on`), via the expectation
   argument `E_p[gain] = 0` (`sum_weights_mul_ind` → `expected_ticket_gain_zero` →
   `expected_ieGain_zero` → contradiction on a charged state, `exists_pos_weight`).
+- `Coherence.Premium` (T6 EPIC #12904): the **actuarial reading** — premium schedule
+  (`PremiumSchedule`), insurer's net result (`InsurerNet`), tariff arbitrage
+  (`TariffArbitrage`). Three 0-`sorry` theorems: incoherent schedule ⟹ sure insurer
+  loss (`incoherent_premium_sure_insurer_loss`), additivity on disjoint risks — the
+  segmentation rule `π(A∪B) = π A + π B` (`coherent_premium_disjoint_additive`),
+  and unarbitrageable pure premium (`pure_premium_tariff_unarbitrageable`), via the
+  counter symmetry `coherent_on_iff_no_sure_profit`.
 
 ## Status
 - Proved without `sorry`: the constructive direction (inclusion–exclusion
