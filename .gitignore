@@ -974,5 +974,11 @@ MyIA.AI.Notebooks/SymbolicAI/Tweety/dotnet-build/.dialogues-build/
 MyIA.AI.Notebooks/**/Model_[0-9]*.gv
 MyIA.AI.Notebooks/**/Model_[0-9]*.svg
 
+# SW-12 GraphRAG cache demo (PR #12990) : Exemple guide 2 ecrit cache/graph_extracted.ttl
+# a chaque exec du notebook pour demontrer le pattern cache miss/hit (x494 speedup).
+# Le notebook est committe avec outputs ; les fichiers sur disque sont regenerables et
+# n'apparaissent pas dans git ls-files avant cette PR. Meme logique que Model_*.gv/svg.
+MyIA.AI.Notebooks/**/cache/
+
 # WSL admin credentials (po-2027 onboarding)
 .secrets/wsl_credentials

@@ -303,6 +303,14 @@ def get_current_outputs(notebook: str, repo: str) -> str:
 
 _NUMBER_RE = re.compile(r"[-+]?\d*\.?\d+(?:[eE][-+]?\d+)?")
 
+# Nombres a virgule decimale francaise ("15,33") : les sorties .NET Interactive
+# en culture FR (Infer/DecInfer, ML/) les deposent dans text/html. La virgule
+# decimale n'a PAS d'espace apres elle -- le separateur de liste FR en a un.
+_FR_NUMBER_RE = re.compile(
+    r"[-+]?\d+,\d+(?=[^\d]|$)|[-+]?\d*\.?\d+(?:[eE][-+]?\d+)?"
+)
+_HTML_TAG_RE = re.compile(r"<[^>]+>")
+
 
 def _extract_numbers_from_text(text: str) -> list[float]:
     """Extrait tous les nombres d'une chaine. Filtre les valeurs triviales."""
@@ -310,6 +318,29 @@ def _extract_numbers_from_text(text: str) -> list[float]:
     for m in _NUMBER_RE.finditer(text):
         try:
             v = float(m.group(0))
+        except ValueError:
+            continue
+        if abs(v) < MIN_NUMBER_VALUE or abs(v) > MAX_NUMBER_VALUE:
+            continue
+        nums.append(v)
+    return nums
+
+
+def _extract_numbers_from_html(html: str) -> list[float]:
+    """Extrait les nombres d'un fragment HTML, virgule decimale FR incluse.
+
+    Les sorties text/html des notebooks .NET (culture FR) deposent les valeurs
+    mesurees sous forme "Gaussian(15,33, 1,32)" : la virgule COLLEE entre deux
+    groupes de chiffres est decimale, celle suivie d'un espace est un separateur
+    de liste. L'alternative FR est essayee en premier pour ne pas couper
+    "15,33" en deux entiers.
+    """
+    text = _HTML_TAG_RE.sub(" ", html)
+    nums: list[float] = []
+    for m in _FR_NUMBER_RE.finditer(text):
+        raw = m.group(0)
+        try:
+            v = float(raw.replace(",", ".") if "," in raw else raw)
         except ValueError:
             continue
         if abs(v) < MIN_NUMBER_VALUE or abs(v) > MAX_NUMBER_VALUE:
@@ -358,6 +389,14 @@ def extract_output_numbers(notebook_json: str) -> tuple[int, list[float]]:
                 t = out["data"].get("text/plain")
                 if isinstance(t, (str, list)):
                     _extract_from(t)
+                # data['text/html'] : canal des sorties riches .NET Interactive
+                # (tables rendues, valeurs formatees culture FR). Moitie
+                # text/html du finding instrument 2026-08-19 (#9790).
+                h = out["data"].get("text/html")
+                if isinstance(h, (str, list)):
+                    for item in ([h] if isinstance(h, str) else h):
+                        if isinstance(item, str):
+                            nums.extend(_extract_numbers_from_html(item))
     return len(code_cells), nums
 
 
