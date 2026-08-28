@@ -63,3 +63,14 @@
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
     Message Passing, modele compile en code d''inference) ; Python PyMC = echantillonnage MCMC (NUTS/HMC par defaut) + ADVI
     (variationnel) sur backend PyTensor. Memes concepts, paradigmes d''inference differents.'
+  - '2026-08-28 (drift unilateral myia-po-2026:CoursIA-2, PR #13283) : correction derive prose cellule 18 cote Python seul
+    (markdown d''interpretation de l''echantillonnage GMM, post-re-execution #12778) — les sorties az.summary reellement
+    committees par le notebook ont 439 divergences / R-hat max 1.030 / ESS bulk min 250 sur mu_components, et la prose
+    annonce 86 / 1.020 / 284 (avec jugements "leger" / "limite" / "suffisant"). PR #13283 corrige les 3 valeurs + 3
+    jugements re-tires (label switching MARQUE plus "leger", non-identifiabilite MARQUEE plus "leger", ESS LIMITE
+    plus "suffisant"). Jumeau C# (Infer-2) inchange : il n''a pas ete touche par #12778 (Infer.NET = moteur EP/VMP
+    deterministe, pas de stochasticite NUTS/ArviZ). Mouvement unilateral legitime (parity_level native-both, moteurs
+    distincts : drift documente ne touche que la sortie d''un moteur, et le markdown qui la decrit dans la stack
+    concernee). Aucun strip outille en attente (probe banner 0, papermill 0, machine paths 0). B.0 OK : body PR #13283
+    documente diagnostic derive C.4 categorie c (moteur upstream) + verdict CAUSE_FIXED. Refs: Fixes #13277,
+    See #12778 #12476 #13275.'
