@@ -14,7 +14,8 @@ hors `_en` ; bascule #11688 — historiquement `standalone-tactic` ; les mention
 | Lake | Toolchain | sorry (production) | Modules | Notebook câblé | Classe | Suivi |
 |------|-----------|--------------------:|--------:|---------------:|--------|-------|
 | `search_lean` | v4.32.1 | 0 | 5 | 1¹ | PEDA/REF | #4048, #4038, #3801 |
-| **Total** | — | **0** | **5** | **1** | — | — |
+| `discrepancy_lean` | v4.32.1 | 0 | 3 | 0² | PEDA/REF | #12823 |
+| **Total** | — | **0** | **8** | **1** | — | — |
 
 ¹ Notebook câblé : **Lean-18-Search-AStar-Optimality.ipynb**
 (`SymbolicAI/Lean/`). Companion conceptuel = la série **Search** (CSP/Foundations,
@@ -22,6 +23,10 @@ A* vs BFS sur terrain pondéré — convention sibling-lake). Répond aussi au p
 [#3801](https://github.com/jsboige/CoursIA/issues/3801) : démontrer le moteur A* sur un
 problème non-trivial (heuristique discriminante), pas un graphe à coût uniforme où A*
 dégénère en BFS.
+
+² Notebook compagnon prévu : `Search-15-CombinatorialDiscrepancy` (livrable A de
+[#12823](https://github.com/jsboige/CoursIA/issues/12823)) — Beck–Fiala 2k−1 implémenté +
+CP-SAT en oracle exact. Pas encore câblé.
 
 ---
 
@@ -63,6 +68,33 @@ La **correction sous admissibilité et consistance** est prouvée 0 sorry. Ce qu
   invariant opérationnel) — différée.
 
 Axiomes `[propext, Classical.choice, Quot.sound]` (Mathlib standard, **pas de `sorryAx`**).
+
+### discrepancy_lean — PEDAGOGIQUE / REFERENCE
+
+**Objectif** : formalisation de la **discrépance combinatoire** (issue #12823,
+distillation Bansal–Jiang 2025, arXiv:2508.03961) : colorations `±1` de
+systèmes d'ensembles de degré `≤ k`, bornes de la pire somme colorée.
+Première formalisation du sujet (dépôt + Mathlib : 0 hit, vérifié 2026-08-24).
+Désambiguïsation : sans rapport avec la Limited Discrepancy Search de Search-13.
+
+- **Toolchain** : v4.32.1 · **Dépendance** : Mathlib4 (`520045ab`)
+- **lib** : `Discrepancy` (`globs := #[.submodules \`Discrepancy, \`Discrepancy]`)
+- **Modules** : `Discrepancy/Basic.lean`, `Discrepancy/Komlos.lean` + umbrella
+  `Discrepancy.lean`
+- **sorry (production)** : **0** (conjectures = `def ... : Prop` nommées,
+  jamais de théorème tronqué).
+
+#### Prouvé (P0) vs ouvert
+
+- **Prouvé** (P0) : 3 lemmes-limites — `discrepancy_empty`,
+  `discrepancy_singleton_empty`, `degree_le_card`.
+- **Énoncés posés, preuves à venir** (registre
+  [`FORMAL_STATUS.md`](discrepancy_lean/FORMAL_STATUS.md)) : cible
+  `BeckFialaClassic` (`disc ≤ 2k − 1`, boutes `b1..b4`), `BeckFialaConjecture`
+  (`O(√k)`, ouverte), `KomlosConjecture` (`O(1)`, ouverte),
+  `BansalJiangLargeDegree` + `KomlosBansalJiangWeak` (P3 non engagé : SDP et
+  concentration matricielle absents de Mathlib). P2 = borne inférieure
+  Erdős–Spencer en réutilisant le kernel `PacLearning/Hoeffding.lean`.
 
 ## Notes transverses
 
