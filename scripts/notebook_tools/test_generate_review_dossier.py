@@ -133,5 +133,37 @@ class MachinePathScan(unittest.TestCase):
         self.assertEqual(grd._scan_machine_paths(self._nb("data/inputs.csv")), [])
 
 
+class ForensicRow(unittest.TestCase):
+    """Regression pilote #11259 (QC-Py-02) : la branche PASS ne doit JAMAIS
+    ecrire "exec_count + outputs coherents" pour un notebook non execute
+    tolere (ADVISORY_NON_EXEC / PII_NO_OUTPUT) — une signature editoriale
+    ne se lit pas pareil sur les deux."""
+
+    def test_advisory_non_exec_ne_dit_pas_cohérents(self):
+        _label, verdict, mesure, _prov = grd._forensic_row(
+            {"total_code": 8, "errors": [], "forensic_verdict": "ADVISORY_NON_EXEC"})
+        self.assertEqual(verdict, "PASS")
+        self.assertIn("NON exécutées", mesure)
+        self.assertNotIn("cohérents", mesure)
+
+    def test_pii_no_output_nomme_sa_raison(self):
+        _label, verdict, mesure, _prov = grd._forensic_row(
+            {"total_code": 3, "errors": [], "forensic_verdict": "PII_NO_OUTPUT"})
+        self.assertEqual(verdict, "PASS")
+        self.assertIn("À DESSEIN", mesure)
+
+    def test_exec_proved_dit_cohérents(self):
+        _label, verdict, mesure, _prov = grd._forensic_row(
+            {"total_code": 19, "errors": [], "forensic_verdict": "EXEC_PROVED"})
+        self.assertEqual(verdict, "PASS")
+        self.assertIn("cohérents (EXEC_PROVED)", mesure)
+
+    def test_errors_warn(self):
+        _label, verdict, mesure, _prov = grd._forensic_row(
+            {"total_code": 5, "errors": ["cell 2: has error output"]})
+        self.assertEqual(verdict, "WARN")
+        self.assertIn("1 anomalie(s)", mesure)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
