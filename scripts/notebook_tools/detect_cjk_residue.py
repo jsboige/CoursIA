@@ -336,7 +336,7 @@ def _submodule_paths(root: Path) -> set[str]:
     try:
         result = subprocess.run(
             ["git", "submodule", "status"],
-            cwd=str(root), capture_output=True, text=True, timeout=30,
+            cwd=str(root), capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=30,
         )
     except (FileNotFoundError, OSError):
         return set()

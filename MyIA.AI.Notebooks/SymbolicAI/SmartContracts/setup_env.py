@@ -120,7 +120,7 @@ def check_tool(name: str) -> tuple:
     try:
         result = subprocess.run(
             [name, "--version"],
-            capture_output=True, text=True, timeout=10
+            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=10
         )
         if result.returncode == 0:
             return True, result.stdout.strip().split('\n')[0]
@@ -155,7 +155,7 @@ def check_wsl_available() -> tuple:
     try:
         result = subprocess.run(
             ["wsl", "-d", "Ubuntu", "--", "whoami"],
-            capture_output=True, text=True, timeout=10
+            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=10
         )
         if result.returncode == 0:
             username = result.stdout.strip()
@@ -171,7 +171,7 @@ def check_wsl_foundry() -> tuple:
         result = subprocess.run(
             ["wsl", "-d", "Ubuntu", "--cd", "~", "--", "bash", "-c",
              "$HOME/.foundry/bin/forge --version 2>/dev/null || echo MISSING"],
-            capture_output=True, text=True, timeout=10
+            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=10
         )
         output = result.stdout.strip()
         if "MISSING" not in output and result.returncode == 0:
@@ -187,7 +187,7 @@ def check_wsl_venv() -> bool:
         result = subprocess.run(
             ["wsl", "-d", "Ubuntu", "--cd", "~", "--", "bash", "-c",
              "test -f $HOME/.smartcontracts-venv/bin/python3 && echo OK || echo MISSING"],
-            capture_output=True, text=True, timeout=10
+            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=10
         )
         return "OK" in result.stdout
     except (FileNotFoundError, subprocess.TimeoutExpired):
@@ -373,7 +373,7 @@ def pip_install(packages: list, label: str = ""):
         print(f"\n  Installing {label}...")
     cmd = [sys.executable, "-m", "pip", "install", "--quiet"] + packages
     print(f"  > {' '.join(cmd)}")
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
+    result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=600)
     if result.returncode != 0:
         # Show only error lines, not warnings
         errors = [l for l in result.stderr.split('\n')
@@ -449,7 +449,7 @@ def create_venv(venv_path: Path):
         return True
     print(f"  Creating virtual env: {venv_path}")
     result = subprocess.run([sys.executable, "-m", "venv", str(venv_path)],
-                            capture_output=True, text=True)
+                            capture_output=True, text=True, encoding="utf-8", errors="replace")
     if result.returncode != 0:
         print(f"  ERROR: {result.stderr}")
         return False
