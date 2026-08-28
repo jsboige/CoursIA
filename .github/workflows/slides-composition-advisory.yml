@@ -32,16 +32,13 @@ name: Slides Composition Advisory
 # l'objet git 6cabc826b, hors d'un checkout shallow CI.
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened]
-    branches: [main]
-    paths:
-      - 'slides/**'
-      # self-cover : la PR qui câble ce workflow ne touche pas slides/, et un
-      # revert ultérieur ne doit pas laisser le gate muet (#8822)
-      - '.github/workflows/slides-composition-advisory.yml'
-  workflow_dispatch:
-
+  schedule:
+    # Nocturnal sweep -- post-merge main verification.
+    # Tranche 1 #12817 : sortir les advisory lourds de pull_request
+    # (clone 2.22 Go par run). Stratification user 2026-08-23 :
+    # "les jobs lourds devraient être payés une fois par fournée".
+    - cron: '21 03 * * *'
+  workflow_dispatch: {}
 permissions:
   contents: read
 
@@ -53,9 +50,6 @@ jobs:
   slides-composition-advisory:
     name: "Slidev composition advisory (#11923, non-blocking)"
     runs-on: ubuntu-latest
-    # Same-repo PRs only : les forks étudiants suivent la review bienveillante
-    # (student-pr-reviews.md), pas de content gate.
-    if: github.event.pull_request.head.repo.full_name == github.repository
 
     steps:
       - name: Checkout (blobless, sparse slides)
@@ -103,8 +97,9 @@ jobs:
 
       - name: Measure composition of impacted decks (advisory)
         env:
-          BASE: ${{ github.event.pull_request.base.sha }}
-          HEAD: ${{ github.event.pull_request.head.sha }}
+          # '' under schedule/dispatch (no PR context) -> nocturne window below.
+          BASE: ${{ github.event.pull_request.base.sha || '' }}
+          HEAD: ${{ github.event.pull_request.head.sha || '' }}
         run: |
           set -uo pipefail
           # #12173 — neutralize errexit ajoutée par le shell wrapper GitHub
@@ -116,6 +111,19 @@ jobs:
           # annotations de #12151 viennent documenter. L'erreur n'est pas
           # supprimée : on l'annote explicitement, on en fait META_FAIL.
           set +e
+
+          # ---- Nocturne window (#12817 tranche 2) ----
+          # Under schedule/dispatch there is no PR: BASE is empty. Resolve the
+          # last 24 h of main so the sweep measures the decks impacted by the
+          # day's merged apport. Sans ce bloc, le diff ""..."" rendait CHANGED
+          # vide -> "Aucun deck impacté" vert chaque nuit (organe éteint).
+          if [ -z "${BASE:-}" ]; then
+            BASE=$(git rev-list -1 --before="24 hours ago" HEAD)
+            [ -n "$BASE" ] || BASE=$(git rev-list --max-parents=0 HEAD | tail -1)
+            HEAD=$(git rev-parse HEAD)
+            echo "Nocturne window: $(git rev-parse --short "$BASE")..$(git rev-parse --short "$HEAD") (24 h of main)"
+          fi
+
           echo "## Slides composition (advisory #11923)" >> "$GITHUB_STEP_SUMMARY"
           echo "Plancher mécanique — ne remplace pas le QA visuel humain." >> "$GITHUB_STEP_SUMMARY"
 

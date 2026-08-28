@@ -24,6 +24,7 @@ from check_pr_perimeter import (  # noqa: E402
     format_report,
     is_downgradable_mismatch,
     select_candidates,
+    _additive_line_sum,
     _check_unterminated_fence,
     _count_is_incidental,
     _fence_line_indices,
@@ -1901,7 +1902,8 @@ def test_founding_incident_11227_criteria_met_on_main():
     ):
         pytest.skip("GitHub Actions runner without GH_TOKEN")
     auth_probe = subprocess.run(
-        ["gh", "auth", "status"], capture_output=True, text=True
+        ["gh", "auth", "status"], capture_output=True, text=True,
+        encoding="utf-8", errors="replace",
     )
     if auth_probe.returncode != 0:
         pytest.skip("gh CLI present but unauthenticated")
@@ -1916,6 +1918,7 @@ def test_founding_incident_11227_criteria_met_on_main():
         capture_output=True,
         text=True,
         timeout=120,
+        encoding="utf-8", errors="replace",
     )
     output = proc.stdout + proc.stderr
     # The tool surfaces the FAIL either in stdout (normal) or via a
@@ -1932,3 +1935,141 @@ def test_founding_incident_11227_criteria_met_on_main():
         f"end-to-end scan of #11227 produced no founder signature; "
         f"exit={proc.returncode}, output[:500]={output[:500]!r}"
     )
+
+
+# --- #12201 : citations, intervalles, bootstrap --------------------------------
+#
+# Fondateurs : le garde échouait sur le body de SA PROPRE PR de correctif
+# (#12201) — « l'assertion prétend 70, la liste en compte 2 » — parce que
+# check_assertion lisait le premier compte non nul SANS les masques de
+# citation : les lignes qui QUOTENT les formes réparées (contrôles FN,
+# « lake 70 fichiers », `Périmètre : 3 fichiers`) devenaient le claim.
+# Et #12273 : « 12 fichiers `70.png`-`81.png` » — une plage d'exports PNG
+# rendus, pas une énumération de périmètre. Trois masques, un axe : discours
+# RAPPORTÉ vs claim AUTORIAL (distinct des exemptions #11712/#11985, qui
+# restent confrontées — règle 1 de #11985 intouchée, test dédié ci-dessous).
+
+GUARD_FILES_2 = [
+    {"path": "scripts/check_pr_perimeter.py"},
+    {"path": "scripts/tests/test_check_pr_perimeter.py"},
+]
+
+
+def test_12201_l7_verbatim_cited_forms_are_not_the_claim():
+    """Lignes verbatim du body #12201 : la citation « `lake 70 fichiers` » et
+    les contrôles FN cités ne sont pas le claim — le vrai compte l'est."""
+    body = (
+        "Le garde lisait « `lake 70 fichiers` » dans #12181 comme une "
+        "assertion de périmètre.\n"
+        "- **7a** : `lake 70 fichiers`, `corpus 3 fichiers`. Contrôle FN : "
+        "« scan du corpus : 3 fichiers touchés ».\n"
+        "- **Détection inchangée** : `Périmètre : 3 fichiers` reste "
+        "confrontable.\n"
+        "Périmètre : 2 fichiers modifiés.\n"
+    )
+    assert check_assertion(GUARD_FILES_2, body) == []
+
+
+def test_12201_body_of_cited_counts_only_stays_unverifiable():
+    """Contrôle FN : un body fait UNIQUEMENT de comptes cités ne passe pas en
+    silence — il tombe sur le terminal 'non verifiable' (FAIL honnête), pas
+    sur un silence. (Fichiers NON-garde : le bootstrap ne s'applique pas.)"""
+    body = "Le fondateur disait « lake 70 fichiers » et `Périmètre : 3 fichiers`."
+    problems = check_assertion([{"path": "a.py"}, {"path": "b.py"}], body)
+    assert len(problems) == 1
+    assert problems[0].startswith("assertion sans compte")
+
+
+def test_12273_range_form_is_not_the_claim():
+    """Ligne fondatrice #12273 (verbatim de la section Méthode d'origine) :
+    le compte suivi d'un intervalle compact `70.png`-`81.png` désigne des
+    exports rendus ; le vrai périmètre déclaré plus bas l'emporte."""
+    body = (
+        "**Méthode** : `slidev export --per-slide --range 70-81` produit "
+        "12 fichiers `70.png`-`81.png`, un par slide de 70 à 81.\n"
+        "**Périmètre de la PR** : 1 fichier ajouté.\n"
+    )
+    files = [{"path": "slides/S3-acculturation/qa/axe1-generative-phase-verdict.md"}]
+    assert check_assertion(files, body) == []
+
+
+def test_12201_fn_real_enumeration_still_confronted():
+    """Contrôle FN : le format revue « N fichiers : a, b, c » (virgules, pas
+    d'intervalle) reste LE claim — un mauvais compte y échoue toujours."""
+    files = [{"path": "a.py"}, {"path": "b.py"}]
+    problems = check_assertion(files, "3 fichiers : `a.py`, `b.py`")
+    assert len(problems) == 1
+    assert problems[0].startswith("l'assertion pretend 3")
+
+
+def test_12201_fn_unmatched_delimiter_masks_nothing():
+    """Contrôle FN : un délimiteur non fermé ne masque rien — « 2 fichiers
+    sans guillemet fermant reste un claim confronté (échoue sur 3 files)."""
+    files = [{"path": "a.py"}, {"path": "b.py"}, {"path": "c.py"}]
+    problems = check_assertion(files, "Résumé : « 2 fichiers modifiés")
+    assert len(problems) == 1
+    assert problems[0].startswith("l'assertion pretend 2")
+
+
+def test_12201_guard_self_bootstrap_skips_count_confrontation():
+    """Bootstrap : le body d'une PR qui modifie le garde est un corpus
+    diagnostique — aucun compte n'y est confronté (le fondateur même :
+    des dizaines de comptes d'exemple, tous légitimes)."""
+    body = (
+        "Le garde lisait lake 70 fichiers et `Périmètre : 3 fichiers` reste "
+        "confrontable ; 12 fichiers `70.png`-`81.png` fondateur #12273."
+    )
+    assert check_assertion(GUARD_FILES_2, body) == []
+
+
+def test_12201_bootstrap_never_touches_exclusivity():
+    """Contrôle FN : le bootstrap n'excuse PAS l'exclusivité — une PR garde
+    qui touche un workflow doit toujours le nommer (#11268-2)."""
+    files = [
+        {"path": "scripts/check_pr_perimeter.py"},
+        {"path": ".github/workflows/perimeter-review-guard.yml"},
+    ]
+    body = "Uniquement le garde est touché, rien d'autre."
+    problems = check_assertion(files, body)
+    assert any("exclusivite sans nommer" in p for p in problems)
+
+
+def test_12773_perimeter_guard_paths_filter_includes_workflows_globs():
+    """Miroir du paths-filter de `perimeter-review-guard.yml` (#12773 tranche 1a,
+    amendé par Hermes REQUEST_CHANGES sur #13193) : le filtre DOIT inclure le glob
+    `.github/workflows/**`, sinon le garde est désarmé sur sa surface nominale
+    (incidents fondateurs #11268 et #11648 — un workflow qui bouge le
+    sorry-baseline passe inaperçu si le filtre ne couvre que le garde lui-même).
+
+    Verrou : parse le YAML du workflow, assert que les deux blocs `paths:`
+    listent le glob `.github/workflows/**` en plus de `perimeter-review-guard.yml`.
+    Si un futur éditeur retire le glob pour « gagner du CI », ce test rougit et
+    empêche la régression silencieuse.
+    """
+    import re
+    from pathlib import Path
+
+    wf_path = Path(__file__).resolve().parent.parent.parent / ".github" / "workflows" / "perimeter-review-guard.yml"
+    text = wf_path.read_text(encoding="utf-8")
+
+    # Le filtre de chaque bloc paths: doit inclure `.github/workflows/**`
+    # (et non seulement `perimeter-review-guard.yml`).
+    blocks = re.findall(r"paths:\s*\n((?:[ \t]+-[^\n]+\n)+)", text)
+    assert len(blocks) >= 2, f"Le workflow doit avoir ≥2 blocs `paths:` (un par trigger), trouvé {len(blocks)}"
+
+    for i, block in enumerate(blocks):
+        normalized = " ".join(line.strip() for line in block.splitlines())
+        assert ".github/workflows/**" in normalized, (
+            f"Bloc paths #{i + 1} du workflow perimeter-review-guard n'inclut PAS "
+            f"le glob `.github/workflows/**` (texte observé : {normalized!r}). "
+            f"Le garde serait désarmé sur sa surface nominale — restoration requise."
+        )
+        # Sanity check : le bloc couvre aussi le garde lui-même
+        assert ".github/workflows/perimeter-review-guard.yml" in normalized
+
+
+def test_12201_cited_counts_never_join_additive_sum():
+    """La somme additive lit le body comme la sélection du claim : un terme
+    cité ne rejoint jamais la somme (1 + « 3 cités » = 1, pas 4)."""
+    line = "1 fichier modifié, « 3 fichiers cités » et `2 fichiers` en exemple."
+    assert _additive_line_sum(line) == 1

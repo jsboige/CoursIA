@@ -37,7 +37,7 @@ L'hommage à John Conway passe par le Game of Life comme modèle de calcul ([Lea
 
 ### Théorie des nœuds
 
-La série dédiée (companion `knot_lean`, Epic #2874) développe trois vues complémentaires : les nœuds les plus simples classés par nombre de croisements ([Lean-17a](Lean-17-Knots-a-Conway-and-Proofs.ipynb)), le couple de mutants Conway (11n34) / Kinoshita-Terasaka (11n42) dont Lisa Piccirillo prouva que seul le second borne un disque lisse (slice), puis le polynôme d'Alexander — trivial (= 1) pour ce couple, et donc incapable à lui seul de distinguer leur sliceness ([Lean-17b](Lean-17-Knots-b-Invariants-Companion.ipynb)).
+La série dédiée (companion `knot_lean`, Epic #2874) développe trois vues complémentaires : les nœuds les plus simples classés par nombre de croisements ([Lean-17a](Lean-17-Knots-a-Conway-and-Proofs.ipynb)), le couple de mutants Conway (11n34) / Kinoshita-Terasaka (11n42) dont Lisa Piccirillo prouva que seul le second borne un disque lisse (slice), puis le polynôme d'Alexander — trivial (= 1) pour ce couple, et donc incapable à lui seul de distinguer leur sliceness ([Lean-17b](Lean-17b-Knots-Invariants-Companion.ipynb)).
 
 <p align="center">
   <a href="Lean-17-Knots-a-Conway-and-Proofs.ipynb"><img src="assets/readme/lean-knot-conway.png" width="420" alt="Les trois premiers nœuds par nombre de croisements : nœud trivial (unknot), trèfle (3₁) et nœud de huit (4₁)."></a>
@@ -48,7 +48,7 @@ La série dédiée (companion `knot_lean`, Epic #2874) développe trois vues com
 </p>
 
 <p align="center">
-  <a href="Lean-17-Knots-b-Invariants-Companion.ipynb"><img src="assets/readme/lean-knot-invariants.png" width="420" alt="Polynômes d'Alexander Δ(t) du trèfle, du nœud de huit et du couple Conway/Kinoshita-Terasaka (Δ(t) = 1, trivial comme l'unknot)."></a>
+  <a href="Lean-17b-Knots-Invariants-Companion.ipynb"><img src="assets/readme/lean-knot-invariants.png" width="420" alt="Polynômes d'Alexander Δ(t) du trèfle, du nœud de huit et du couple Conway/Kinoshita-Terasaka (Δ(t) = 1, trivial comme l'unknot)."></a>
 </p>
 
 ## Navigation
@@ -122,7 +122,7 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 | # | Notebook | Contenu | Durée |
 |---|----------|---------|-------|
 | 17a | [Lean-17-Knots-a-Conway-and-Proofs](Lean-17-Knots-a-Conway-and-Proofs.ipynb) | Conway, les nœuds et la preuve de Piccirillo : le noeud de Conway (11n34), slice-genre et nombre de dénouement, contexte de la preuve (Piccirillo 2020, le noeud de Conway n'est pas slice) - hommage narratif, Epic #2874 | 40 min |
-| 17b | [Lean-17-Knots-b-Invariants-Companion](Lean-17-Knots-b-Invariants-Companion.ipynb) | Invariants de nœuds : PD-codes, mouvements de Reidemeister, tricolorabilité de Fox, diagrammes bien formés - companion `knot_lean` (Epic #2874, transfer forward #3000 sorry-free + backward #3124 partiel) | 60 min |
+| 17b | [Lean-17b-Knots-Invariants-Companion](Lean-17b-Knots-Invariants-Companion.ipynb) | Invariants de nœuds : PD-codes, mouvements de Reidemeister, tricolorabilité de Fox, diagrammes bien formés - companion `knot_lean` (Epic #2874, transfer forward #3000 sorry-free + backward #3124 partiel) | 60 min |
 | 17c | [Lean-17c-Knots-Companion-Formel](Lean-17c-Knots-Companion-Formel.ipynb) | Companion formel du lake `knot_lean` en kernel python3 (kernel lean4-wsl gelé #11874) : les modules que Lean-17 ne cite pas (Basic, Invariant, Reidemeister) interrogés par leurs déclarations réelles, murs nommés R2/R3, sorries réels (14) vs prose, miroir i18n byte-identique attesté par l'instrument canonique - Epic #2874 / #11703 | 40 min |
 
 ### Partie 6 : Recherche pondérée et optimalité (A*)
@@ -145,8 +145,10 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 | 24b | [Lean-24b-Lean-ERC20-Native-Companion](Lean-24b-Lean-ERC20-Native-Companion.ipynb) | Compagnon **natif** (kernel `lean4-wsl`) du lake `erc20_lean` : les 17 déclarations **résolues par le kernel** (`#check`), l'invariant et les transitions `mint`/`burn`/`transfer` **évalués** sur un état concret (`by decide`), `#print axioms` natif sur les 5 théorèmes phares, la pyramide op → trace `Reachable` → invariant type-checkée avec ses gardes (#11721) | 30 min |
 | 26 | [Lean-26-Calibration-Native-Companion](Lean-26-Calibration-Native-Companion.ipynb) | Compagnon **natif** (kernel `lean4-wsl`) du lake `calibration_lean` : les cibles de calibration du prouveur multi-agents (Epic #1453, P1-P5) importées et exécutées — chaque définition/théorème interrogé par `#check`/`#eval`/`#print axioms`, sorties du compilateur Lean | 35 min |
 | 27 | [Lean-27-Coherence-et-Temoin](Lean-27-Coherence-et-Temoin.ipynb) | Cohérence de de Finetti et témoin (Dutch book) : miroir Python **exact** (`fractions.Fraction`) du lake `decision_theory_lean` — un livret (+1,+1,−1,−1) encaisse l'écart d'inclusion-exclusion uniformément dans les 4 états, balayage borné exhaustif (390 625 combinaisons) qui certifie l'absence de livre sur le système réparé, stabilité affine vNM mesurée (0 divergence pour 3u+2 contre 124 pour u² sur les 2145 paires de 66 loteries du simplexe) | 40 min |
+| 28 | [Lean-28-Munkres-Tribute](Lean-28-Munkres-Tribute.ipynb) | Hommage à James R. Munkres (1930-2026), le cours 18.901 dans Mathlib en kernel **natif** `lean4-wsl`, exécuté sur le lake `mathlib_examples` (environnement d'exécution Mathlib, cf. [`mathlib_examples/`](mathlib_examples/)) : les cinq chapitres du manuel *Topology* — axiomes (`IsOpen`), adhérence/intérieur (`nhds`, dualités §17 ex. 6), continuité (`continuous_def` = Munkres §18.1), T2/compacité, connexité — chaque notion interrogée par `#check`/`example`/`#print axioms` (0 axiome), 3 exercices `sorry` | 30 min |
+| 29 | [Lean-29-EdgeColoring-Tutte-Companion](Lean-29-EdgeColoring-Tutte-Companion.ipynb) | Compagnon **natif** (kernel `lean4-wsl`) du notebook [App-22](../../Search/Applications/CSP/App-22-EdgeColoring-Tutte.ipynb) (théorème apex arXiv 2608.22870, #13031) : définitions `IsCubic`/`Edge3Colorable`/`IsApexRelativeTo` posées sur `SimpleGraph` (absentes de Mathlib, vérifié), Petersen = Kneser KG(5,2) via `SimpleGraph.mk'` — 10 sommets, 15 arêtes, cubique prouvés par `decide`, backtracking `#eval` qui certifie l'absence de toute 3-coloration d'arêtes (`0`) avec contrôle positif K4 (`6`), ancrage `SimpleGraph.tutte` | 35 min |
 
-**Durée totale** : ~29h
+**Durée totale** : ~29h35min
 
 ## Acquis d'apprentissage
 
@@ -396,7 +398,7 @@ Lean/
 ├── Lean-14b-Finiteness-Lean-Companion.ipynb # Lean kernel - companion natif du lake finiteness_lean (7 déclarations citées)
 ├── Lean-16f-Conway-Free-Will-Theorem.ipynb # Python kernel - hommage Conway (théorème du libre arbitre, adossé à FreeWillTheorem.lean)
 ├── Lean-17-Knots-a-Conway-and-Proofs.ipynb # Python kernel - Conway, les nœuds et la preuve de Piccirillo (noeud de Conway)
-├── Lean-17-Knots-b-Invariants-Companion.ipynb # Python kernel - invariants de nœuds (PD-codes, Reidemeister, Fox tricolorability), compagnon knot_lean
+├── Lean-17b-Knots-Invariants-Companion.ipynb # Python kernel - invariants de nœuds (PD-codes, Reidemeister, Fox tricolorability), compagnon knot_lean
 ├── Lean-17c-Knots-Companion-Formel.ipynb # Python kernel - companion formel knot_lean (modules non cités par 17b, murs R2/R3, miroir i18n)
 ├── Lean-18-Search-AStar-Optimality.ipynb # Python kernel - optimalité de A* sous heuristique admissible (companion search_lean, 0 sorry)
 ├── Lean-19-Sendov-Complex-Analysis.ipynb # Python kernel - conjecture de Sendov (preuve Mazur 2026, digestion et formalisation Tao)
@@ -409,6 +411,8 @@ Lean/
 ├── Lean-24b-Lean-ERC20-Native-Companion.ipynb # Lean4 (WSL) kernel - ERC-20 natif (17 déclarations résolues par le kernel)
 ├── Lean-26-Calibration-Native-Companion.ipynb # Lean4 (WSL) kernel - calibration_lean natif (cibles prover P1-P5, #print axioms)
 ├── Lean-27-Coherence-et-Temoin.ipynb # Python kernel - cohérence de de Finetti (Dutch book, miroir exact de decision_theory_lean)
+├── Lean-28-Munkres-Tribute.ipynb # Lean4 (WSL) kernel - hommage Munkres, cours 18.901 dans Mathlib (mathlib_examples, #check/#print axioms natifs)
+├── Lean-29-EdgeColoring-Tutte-Companion.ipynb # Lean4 (WSL) kernel - coloration d'arêtes & Tutte (définitions SimpleGraph, Petersen exécutable, decide/eval)
 ├── _run_lean_snippet.sh            # Helper WSL : run Lean snippet avec cache Mathlib
 ├── lean_runner.py                  # Module Python multi-backend
 ├── README.md
