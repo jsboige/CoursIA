@@ -1,5 +1,13 @@
 name: SVG offscreen-flat gate
 
+# ABSORBE PAR LA VOIE RAPIDE (#12396, tranche 4) : sur `pull_request`, ce
+# garde est desormais rendu par `fast-lane-shadow.yml` (check-run nomme
+# `No offscreen-flat SVG in changed notebooks`, meme nom que ce job,
+# meme verdict -- rc=1 defaut / rc=2 illisible --, un seul checkout pour
+# toute la lane). Ce fichier garde `workflow_dispatch` pour le re-run manuel
+# sur `main` apres une panne CI (#9858). Les `paths:` et l'argv d'origine
+# vivent dans `scripts/ci/fast_lane_registry.py` (TRANCHE4).
+
 # Purpose
 # -------
 # Per-PR gate for the §5b residual of the SVG render-suite: a FLAT inline `<svg>`
@@ -38,12 +46,6 @@ name: SVG offscreen-flat gate
 # rollout), PR #7007 (founding logY layout/projection-mismatch incident).
 
 on:
-  pull_request:
-    branches: [ main ]
-    paths:
-      - 'MyIA.AI.Notebooks/**/*.ipynb'
-      - 'scripts/notebook_tools/detect_svg_offscreen_flat.py'
-      - '.github/workflows/svg-offscreen-flat-gate.yml'
   workflow_dispatch:
 
 permissions:

@@ -21,6 +21,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from count_code_sorry import (  # noqa: E402
     _VACUOUS_RE,
+    discover_lakes,
     main,
     scan_file,
     strip_lean_comments,
@@ -188,6 +189,80 @@ def test_cli_strict_exit_zero_when_only_markers(tmp_path: Path) -> None:
     repo = _make_demo_lake(tmp_path, "theorem foo_prerequisites : True := by trivial\n")
     rc = main(["--repo", str(repo), "--strict"])
     assert rc == 0, "markers are assumed-legit -> strict does not fire"
+
+
+# --------------------------------------------------------------------------- #
+# discover_lakes -- both lakefile.lean and lakefile.toml (#13137)
+# --------------------------------------------------------------------------- #
+
+def _make_lake_with_anchor(tmp_path: Path, name: str, anchor: str) -> Path:
+    """Create a fake lake directory `name` containing only `anchor` and a stub .lean file."""
+    lake = tmp_path / name
+    lake.mkdir(parents=True, exist_ok=True)
+    (lake / anchor).write_text("", encoding="utf-8")
+    (lake / "Stub.lean").write_text("theorem stub : True := by trivial\n", encoding="utf-8")
+    return lake
+
+
+def test_discover_lakefile_lean(tmp_path: Path) -> None:
+    """A `_lean`-suffixed lake with lakefile.lean is found."""
+    lake = _make_lake_with_anchor(tmp_path, "foo_lean", "lakefile.lean")
+    lakes = discover_lakes(tmp_path)
+    assert lake.resolve() in [l.resolve() for l in lakes]
+
+
+def test_discover_lakefile_toml(tmp_path: Path) -> None:
+    """A lake with an arbitrary name and lakefile.toml is found (#13137 regression)."""
+    lake = _make_lake_with_anchor(tmp_path, "lean_game_defs", "lakefile.toml")
+    lakes = discover_lakes(tmp_path)
+    assert lake.resolve() in [l.resolve() for l in lakes], (
+        "lakefile.toml-only lakes were missed by discover_lakes (issue #13137)"
+    )
+
+
+def test_discover_lakefile_toml_no_underscore_suffix(tmp_path: Path) -> None:
+    """Real-world regression: lean_game_defs and lean_game_defs_ext don't end in _lean."""
+    a = _make_lake_with_anchor(tmp_path, "lean_game_defs", "lakefile.toml")
+    b = _make_lake_with_anchor(tmp_path, "lean_game_defs_ext", "lakefile.toml")
+    lakes = discover_lakes(tmp_path)
+    resolved = {l.resolve() for l in lakes}
+    assert a.resolve() in resolved
+    assert b.resolve() in resolved
+
+
+def test_discover_dedup_both_anchors(tmp_path: Path) -> None:
+    """A lake with both lakefile.lean and lakefile.toml is reported once."""
+    lake = tmp_path / "dual_anchor_lean"
+    lake.mkdir()
+    (lake / "lakefile.lean").write_text("", encoding="utf-8")
+    (lake / "lakefile.toml").write_text("", encoding="utf-8")
+    (lake / "Dual.lean").write_text("theorem dual : True := by trivial\n", encoding="utf-8")
+    lakes = discover_lakes(tmp_path)
+    matches = [l for l in lakes if l.resolve() == lake.resolve()]
+    assert len(matches) == 1, (
+        f"dual-anchor lake reported {len(matches)} times, want exactly 1"
+    )
+
+
+def test_discover_excludes_dot_lake_and_fixtures(tmp_path: Path) -> None:
+    """Excluded paths (.lake/, _peters/, reference_docs/, foundry-lib/) are skipped."""
+    for excluded in (".lake", "_peters", "reference_docs", "foundry-lib"):
+        lake = tmp_path / excluded / "stowaway_lean"
+        lake.mkdir(parents=True)
+        (lake / "lakefile.toml").write_text("", encoding="utf-8")
+        (lake / "Stowaway.lean").write_text("theorem x : True := by trivial\n", encoding="utf-8")
+    lakes = discover_lakes(tmp_path)
+    assert lakes == [], "excluded directories must not surface as lakes"
+
+
+def test_discover_legacy_lean_no_anchor(tmp_path: Path) -> None:
+    """Legacy absorbed lakes (named *_lean without a lakefile but containing .lean files) still surface."""
+    lake = tmp_path / "absorbed_lean"
+    lake.mkdir()
+    (lake / "absorbed.lean").write_text("theorem absorbed : True := by trivial\n", encoding="utf-8")
+    lakes = discover_lakes(tmp_path)
+    resolved = {l.resolve() for l in lakes}
+    assert lake.resolve() in resolved
 
 
 if __name__ == "__main__":
