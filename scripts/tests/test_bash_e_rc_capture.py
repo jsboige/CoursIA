@@ -58,6 +58,7 @@ def _run_bash_e(script: str) -> subprocess.CompletedProcess:
         [BASH, "-e", "-c", script],
         capture_output=True,
         text=True,
+        encoding="utf-8", errors="replace",
     )
 
 
