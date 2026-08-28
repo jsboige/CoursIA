@@ -139,6 +139,49 @@ Les logs conservés restent locaux et hors du dépôt. Le contrôle distant « z
 
 Un runner `--ephemeral` traite au plus un job puis doit être ré-enregistré. Le gestionnaire prépare une invocation unique ; il ne crée ni boucle permanente, ni broker de tokens. Le choix entre configuration JIT, contrôleur de ré-enregistrement ou preuve one-shot est une décision séparée avant activation durable. Un runner persistant n'est pas un raccourci acceptable.
 
+## Amorcer le cache d'outils, et pourquoi le fichier témoin porte tout
+
+Le compte de service dédié n'a **aucun Python accessible**. Ce n'est pas une supposition :
+le run `33087876304` (branche `fix/13217`, 2026-08-27T16:00Z) échoue en deux secondes sur
+`The term 'python' is not recognized`. Les interpréteurs de la flotte sont des installations
+*per-user* sous `AppData/Local/Programs/Python`, donc hors du `PATH` système **et** hors des
+ACL du compte de service, que l'installation retire de l'héritage.
+
+C'est la raison pour laquelle `actions/setup-python` est **conservé** dans
+`windows-self-hosted-tests.yml`, et pour laquelle la PR qui le retirait au profit du Python
+machine (#13233) est fermée : elle suppose un `PATH` que le compte de service n'a pas.
+
+L'amorçage se fait donc côté machine, en peuplant le cache d'outils du runner :
+
+```
+<workdir>/_work/_tool/Python/3.11.9/x64/        arbre Python complet
+<workdir>/_work/_tool/Python/3.11.9/x64.complete   fichier témoin
+```
+
+**Le fichier témoin n'est pas une formalité : sans lui, l'amorçage est détruit par le premier
+job.** `tc.find()` ne consulte que le témoin. S'il manque, l'arbre peuplé juste à côté est
+invisible : `setup-python` annonce `Version 3.11 was not found in the local cache`, télécharge
+l'archive, et son `install.ps1` trouve alors le répertoire existant, **le supprime**, puis y
+copie ce que l'archive contient réellement — l'installeur, pas un arbre, car les paquets
+`actions/python-versions` embarquent un exécutable. Il tente enfin de le jouer sous le compte
+de service et échoue en `0x80070005`. Un cache amorcé sans témoin est donc *pire* qu'un cache
+absent : il est effacé, et l'erreur qui en résulte ne nomme jamais la cause.
+
+Avec le témoin, le job touche le cache immédiatement : aucun `setup.ps1` exécuté, aucun
+téléchargement, et la dépendance à l'`ExecutionPolicy` du compte de service disparaît — c'est
+elle qui bloquait la lane (`UnauthorizedAccess` sur `setup.ps1`, #13217).
+
+Mesures d'acceptation sur po-2024, variante déployée :
+
+| Run | Branche | Résultat |
+|---|---|---|
+| `33092567324` | `main` | `setup-python` succès, 39 passés / 1 échec — l'échec est l'invariant #13238, côté dépôt |
+| `33093119578` | branche de correction | **42 passés**, conclusion `success` |
+
+L'amorçage est à refaire sur **chaque** machine qui porte un runner : il vit dans le workdir,
+que le teardown retire. Un runner ré-enregistré sur une machine non amorcée retombe dans la
+séquence destructrice ci-dessus.
+
 ## Tranches suivantes, non activées
 
 La préparation complète reste découpée :
