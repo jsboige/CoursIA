@@ -45,6 +45,19 @@ alone: a naive detector that flags it over-accuses badly. Measured on
 the refined form reports 0 -- every one of the 7 was harmless inline prose. Under
 the refined rule, the 10 genuine regressions of PR #13096 stand out cleanly.
 
+Two shapes are reported: a lone **opening** tag (`<div ...>`) and a lone
+**closing** tag (`</div>`). CommonMark HTML block type 6 opens on both, and
+the closing half was missing from the first version of this script -- caught
+by review on #13218 and confirmed at the engine. One real occurrence survives
+on main after the opening-tag burn-down of #13242: `slides/01-introduction`
+L597, where `</div>` swallows three bullets.
+
+What stays out of scope, deliberately: a tag with trailing content on its
+line (`<div>du texte`, `</div> et du texte`). markdown-it swallows those too,
+but the rule enforced here is a tag ALONE on its line -- narrow enough to
+explain in one sentence to an author. The tests name both forms so the gap
+is on the record rather than implicit.
+
 Usage
 -----
     python scripts/notebook_tools/scan_slides_html_block_markdown.py
@@ -64,10 +77,22 @@ import re
 import sys
 from pathlib import Path
 
-# An opening HTML tag alone on its line is what starts a block. Restricting to a
-# lone tag (rather than any line containing '<') keeps the rule narrow and
+# An HTML tag alone on its line is what starts a block. Restricting to a lone
+# tag (rather than any line containing '<') keeps the rule narrow and
 # explainable: it is exactly the shape that swallows the NEXT line.
-_OPENING_TAG = re.compile(r"^\s*<(?P<tag>[a-zA-Z][a-zA-Z0-9-]*)\b[^>]*>\s*$")
+#
+# The `/?` is load-bearing and was added after the detector shipped: CommonMark
+# HTML block type 6 opens on a CLOSING tag too, so a lone `</div>` swallows the
+# markdown that follows it exactly as `<div>` does. Verified at the engine
+# Slidev uses (markdown-it), against main:
+#
+#     md.render("</div>\n- Behaviourism\n")  ->  unchanged, the bullet
+#     comes back as literal text (no <li> in the output).
+#
+# Missing this form left the ratchet blind to a class it exists to catch
+# (found by review on #13218). One real occurrence on main: 01-introduction
+# L597, where three bullets are swallowed on a course slide.
+_OPENING_TAG = re.compile(r"^\s*</?(?P<tag>[a-zA-Z][a-zA-Z0-9-]*)\b[^>]*>\s*$")
 
 # Block-level markdown only -- see the module docstring for why inline is excluded.
 _BLOCK_MARKDOWN = re.compile(
@@ -84,6 +109,16 @@ _BLOCK_MARKDOWN = re.compile(
 # A self-closing or immediately-closed tag does not open a block that spans lines.
 _SELF_CONTAINED = re.compile(r"/>\s*$|</[a-zA-Z][a-zA-Z0-9-]*>\s*$")
 
+# ...but a line that is NOTHING BUT a closing tag is not self-contained: it
+# opens a block (see _OPENING_TAG above). Without this exception the `/?`
+# widening would be inert, since _SELF_CONTAINED matches any line ending in
+# `</tag>` -- `</div>` alone included. The two edits only work as a pair.
+#
+# Negative control that bounds the exception: `<span>x</span>` stays excluded,
+# because _OPENING_TAG never matches it (trailing text after the first `>`
+# breaks the end anchor). Asserted in the tests.
+_BARE_CLOSING_TAG = re.compile(r"^\s*</[a-zA-Z][a-zA-Z0-9-]*>\s*$")
+
 _DEFAULT_ROOT = "slides"
 
 
@@ -97,7 +132,9 @@ def scan_text(text: str):
     hits = []
     for index, line in enumerate(lines):
         match = _OPENING_TAG.match(line)
-        if not match or _SELF_CONTAINED.search(line):
+        if not match:
+            continue
+        if _SELF_CONTAINED.search(line) and not _BARE_CLOSING_TAG.match(line):
             continue
         if index + 1 >= len(lines):
             continue
@@ -195,7 +232,7 @@ def main(argv=None):
                 print("  L%-6d %s" % (hit["line"], hit["text"]))
         print("\ntotal: %d line(s) of block markdown swallowed by an HTML block" % total)
         if total:
-            print("fix: insert a blank line after the opening tag preceding each line above")
+            print("fix: insert a blank line after the lone HTML tag preceding each line above")
 
     return 1 if total else 0
 
