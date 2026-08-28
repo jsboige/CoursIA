@@ -1,8 +1,8 @@
 # Search - Applications
 
-C'est ici que la série Search se confronte au réel. Les 48 notebooks d'application, pour la plupart adaptés de projets étudiants, prennent les algorithmes des Parties 1 et 2 et les mettent face à des problèmes qui ne se laissent pas faire : planifier les gardes d'un service hospitalier, ordonnancer un atelier, construire un calendrier sportif équitable, router une flotte de véhicules. Trois catégories les organisent — **Search pur** (jeux combinatoires), **CSP** (satisfaction de contraintes) et **Hybride** (combinaisons de solveurs, modèles exacts et métaheuristiques) — et la plupart sont autonomes, avec des pointeurs vers les prérequis pertinents. À cela s'ajoutent les **jumeaux C#** (App-1b, App-2b, App-3b, App-4b, App-5b, App-6-Csharp, App-7b, App-8-Csharp, App-9b, App-10b, App-11b, App-12b, App-13b, App-14-CSharp, App-15b, App-16-CSharp, App-17b, App-18b, App-19-CSharp, App-20b) qui déroulent les mêmes algorithmes *from-scratch* en .NET, en complément des versions Python qui invoquent des solveurs industriels.
+C'est ici que la série Search se confronte au réel. Les 49 notebooks d'application, pour la plupart adaptés de projets étudiants, prennent les algorithmes des Parties 1 et 2 et les mettent face à des problèmes qui ne se laissent pas faire : planifier les gardes d'un service hospitalier, ordonnancer un atelier, construire un calendrier sportif équitable, router une flotte de véhicules. Trois catégories les organisent — **Search pur** (jeux combinatoires), **CSP** (satisfaction de contraintes) et **Hybride** (combinaisons de solveurs, modèles exacts et métaheuristiques) — et la plupart sont autonomes, avec des pointeurs vers les prérequis pertinents. À cela s'ajoutent les **jumeaux C#** (App-1b, App-2b, App-3b, App-4b, App-5b, App-6-Csharp, App-7b, App-8-Csharp, App-9b, App-10b, App-11b, App-12b, App-13b, App-14-CSharp, App-15b, App-16-CSharp, App-17b, App-18b, App-19-CSharp, App-20b) qui déroulent les mêmes algorithmes *from-scratch* en .NET, en complément des versions Python qui invoquent des solveurs industriels.
 
-Sous-série de **48 notebooks** | **~24h20** | Python 3.10+ (`ortools`, `python-sat`, `deap`, `mealpy`, `minizinc`, `optuna`) ; .NET 9 (`dotnet-interactive`) pour les jumeaux C#
+Sous-série de **49 notebooks** | **~25h20** | Python 3.10+ (`ortools`, `python-sat`, `deap`, `mealpy`, `minizinc`, `optuna`) ; .NET 9 (`dotnet-interactive`) pour les jumeaux C#
 
 ## Pourquoi cette sous-série
 
@@ -32,7 +32,7 @@ Un algorithme compris sur un exemple jouet n'est pas encore un algorithme maîtr
 Applications/
 ├── Search/     # Applications purement Search (4 notebooks : 2 Python + 2 twins C#)
 ├── CSP/        # Applications CSP (29 notebooks : 15 Python + 14 twins C#)
-└── Hybrid/     # Méthodes hybrides / métaheuristiques (15 notebooks : 10 Python + 5 twins C#)
+└── Hybrid/     # Méthodes hybrides / métaheuristiques (16 notebooks : 11 Python + 5 twins C#)
 ```
 
 ```mermaid
@@ -42,7 +42,7 @@ flowchart LR
     P4["<b>Partie 4 — Métaheuristiques</b><br/>SA, GA, ACO, recuit"]
     S["<b>Applications Search</b> (2)<br/>ConnectFour : Minimax,<br/>MCTS, DQN-RL"]
     C["<b>Applications CSP</b> (13)<br/>N-Queens, GraphColoring,<br/>Nurse/JobShop, Minesweeper,<br/>Wordle, Picross, WFC,<br/>Sudoku..."]
-    H["<b>Applications Hybrides</b> (8)<br/>EdgeDetection, Portfolio,<br/>TSP, VRP, Hyperparameter,<br/>AlgorithmSelection, PRESENT/SAT,<br/>enchères WDP/VCG"]
+    H["<b>Applications Hybrides</b> (9)<br/>EdgeDetection, Portfolio,<br/>TSP, VRP, Hyperparameter,<br/>AlgorithmSelection, PRESENT/SAT,<br/>audit MAPF, enchères WDP/VCG"]
     P1 --> S
     P2 --> C
     P4 --> H
@@ -149,7 +149,8 @@ Quand l'espace est trop vaste ou l'objectif trop irrégulier pour les méthodes 
 | 7c | [App-18b-HyperparameterTuning-Python](Hybrid/App-18b-HyperparameterTuning-Python.ipynb) | ~45 min | Twin Python from-scratch : Grid/Random, GP-EI, GA, PSO et vérification Optuna | Jumeau Python |
 | 8 | [App-22-AlgorithmSelection-Python](Hybrid/App-22-AlgorithmSelection-Python.ipynb) | ~45 min | Sélection empirique d'algorithmes : 3 jeux (Sudoku, Puissance 4, Wordle), 13 familles conceptuelles / 14 étiquettes mesurées, non-commensurabilité des métriques + frontières de Pareto + choix sous préférences — hommage PR IS #42 (Théodore Deguest) | Projet étudiant (IS PR #42) |
 | 9 | [App-23-PRESENT-Differential-Cryptanalysis-SAT](Hybrid/App-23-PRESENT-Differential-Cryptanalysis-SAT.ipynb) | ~55 min | PRESENT : DDT, compression d'implicants, CNF pondérée, frontière SAT/UNSAT du meilleur trail et limites de certification — distillation PrCon F2 (Théodore Deguest) | Projet étudiant (PrCon PR #49) |
-| 10 | [App-25-CombinatorialAuctions-WDP-VCG](Hybrid/App-25-CombinatorialAuctions-WDP-VCG.ipynb) | ~60 min | Enchères combinatoires : WDP exact CP-SAT vs force brute, langage XOR, budget global, paiements VCG et audit de leurs garanties, contre-exemple de manipulation sous budget matérialisé, forensics `PRICE_SCALE` sur 18 instances CATS — distillation PrCon J2 (Majerczyk, Chartouni, Wangon-Zekou) | Projet étudiant (PrCon PR #26) |
+| 10 | [App-24-MAPF-Guarantee-Audit](Hybrid/App-24-MAPF-Guarantee-Audit.ipynb) | ~60 min | MAPF : validateur indépendant, oracle CP-SAT time-expanded, réfutation OD-A*, arrêt CBS au but, audit des garanties ECBS — distillation PrCon G3 (Matteo Atkinson, Paul Witkowski) | Projet étudiant (PrCon PRs #33/#36/#42) |
+| 11 | [App-25-CombinatorialAuctions-WDP-VCG](Hybrid/App-25-CombinatorialAuctions-WDP-VCG.ipynb) | ~60 min | Enchères combinatoires : WDP exact CP-SAT vs force brute, langage XOR, budget global, paiements VCG et audit de leurs garanties, contre-exemple de manipulation sous budget matérialisé, forensics `PRICE_SCALE` sur 18 instances CATS — distillation PrCon J2 (Majerczyk, Chartouni, Wangon-Zekou) | Projet étudiant (PrCon PR #26) |
 
 ---
 
@@ -216,6 +217,7 @@ Quand l'espace est trop vaste ou l'objectif trop irrégulier pour les méthodes 
 | App-18b HyperparameterTuning (Python) | Search-4, Search-5 | numpy, scipy, optuna |
 | App-22 AlgorithmSelection-Python | MGS-16 (Rice / No Free Lunch) | pandas, numpy, matplotlib |
 | App-23 PRESENT Differential Cryptanalysis | SAT, CNF, bit-vectors | python-sat, numpy, matplotlib |
+| App-24 MAPF Guarantee Audit | Search-3 (A*), CSP-3/CSP-4, heuristiques admissibles | ortools, pandas, matplotlib |
 | App-25 CombinatorialAuctions-WDP-VCG | CSP-3 (CP-SAT), CSP-5 (optimisation), GameTheory-16 (VCG) | ortools, pandas, matplotlib |
 
 ---
@@ -227,6 +229,8 @@ La plupart des notebooks d'application sont adaptés de projets étudiants réal
 Le [App-22-AlgorithmSelection-Python](Hybrid/App-22-AlgorithmSelection-Python.ipynb) est un cas particulier : il **distille** un projet étudiant — **Théodore Deguest**, *« Benchmark cross-paradigme de solveurs de jeux »*, PR [IS #42](https://github.com/jsboigeEpita/2026-Epita-Intelligence-Symbolique/pull/42) — sans en recopier le code. Les solveurs restent dans le dépôt source ; seules les données de résultats sont réutilisées (licence MIT, attribution conservée), et l'analyse est nouvelle et porte la marque CoursIA.
 
 Le [App-23-PRESENT-Differential-Cryptanalysis-SAT](Hybrid/App-23-PRESENT-Differential-Cryptanalysis-SAT.ipynb) distille le projet PrCon F2 de **Théodore Deguest**, *« Cryptanalyse différentielle de PRESENT via SAT »*, PR [PrCon #49](https://github.com/jsboigeEpita/2026-Epita-Programmation-par-Contraintes/pull/49). Le notebook reconstruit l'expérience de façon autonome, reproduit la DDT et les frontières SAT/UNSAT, corrige le seuil documentaire à R=15/W=66 et distingue explicitement trail, cluster et niveau de preuve.
+
+Le [App-24-MAPF-Guarantee-Audit](Hybrid/App-24-MAPF-Guarantee-Audit.ipynb) distille le projet PrCon G3 de **Matteo Atkinson** et **Paul Witkowski**, *« Coordination de drones par Multi-Agent Path Finding »*, PRs [PrCon #33](https://github.com/jsboigeEpita/2026-Epita-Programmation-par-Contraintes/pull/33), [#36](https://github.com/jsboigeEpita/2026-Epita-Programmation-par-Contraintes/pull/36) et [#42](https://github.com/jsboigeEpita/2026-Epita-Programmation-par-Contraintes/pull/42). Un rerun frais alimente un validateur et un oracle CP-SAT indépendants ; le notebook distingue trajectoire valide, optimum observé et garantie réellement établie, avec provenance détaillée dans [`Hybrid/data/app24-mapf-audit/SOURCE.md`](Hybrid/data/app24-mapf-audit/SOURCE.md).
 
 Le [App-25-CombinatorialAuctions-WDP-VCG](Hybrid/App-25-CombinatorialAuctions-WDP-VCG.ipynb) distille le projet PrCon J2 de **Lucas Majerczyk**, **Nabil Chartouni** et **Wilfrid Wangon-Zekou**, *« Enchères combinatoires et Winner Determination »*, PR [PrCon #26](https://github.com/jsboigeEpita/2026-Epita-Programmation-par-Contraintes/pull/26). Le notebook ré-écrit le solveur WDP (CP-SAT, prix entiers milli-unités bout-en-bout) sans importer le package `wdp/` des étudiants ; il re-résout les 18 instances CATS, **matérialise en exécutable** le contre-exemple de manipulation sous budget documenté mais jamais testé dans la source, et audite honnêtement l'écart `PRICE_SCALE` entre les outputs committés et le code au commit source. Données et provenance : [`data/app25-wdp-vcg-audit`](Hybrid/data/app25-wdp-vcg-audit/).
 
