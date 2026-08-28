@@ -12,6 +12,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from qc_research_monitor import (  # noqa: E402
     TEMPLATE_PATH,
+    find_existing_issue,
     issue_body,
     load_state,
     parse_articles,
@@ -20,6 +21,18 @@ from qc_research_monitor import (  # noqa: E402
 
 # Racine du repo : scripts/notebook_tools/tests/ -> 3 niveaux au-dessus.
 REPO_ROOT = Path(__file__).resolve().parents[3]
+
+# Fixture dediee aux tests de dedup : contient l'article 21195 (semi rejouable
+# du run 32690576863 le 2026-08-24) + une entree forum + la racine /research/,
+# qui doivent etre filtres comme non-articles.
+SITEMAP_DEDUP_FIXTURE = """<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://www.quantconnect.com/research/21195/bitcoin-regime-signal-for-growth-equities/</loc><lastmod>2026-08-22</lastmod></url>
+  <url><loc>https://www.quantconnect.com/research/21160/momentum-in-capital-gain-stocks/</loc><lastmod>2026-08-15</lastmod></url>
+  <url><loc>https://www.quantconnect.com/forum/list/discussions/</loc></url>
+  <url><loc>https://www.quantconnect.com/research/</loc></url>
+</urlset>
+"""
 
 SITEMAP_FIXTURE = """<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
@@ -141,3 +154,56 @@ def test_issue_body_fails_loud_when_template_missing(tmp_path, monkeypatch):
         assert "template introuvable" in str(e)
     else:
         raise AssertionError("issue_body doit lever FileNotFoundError")
+
+
+# --- Dedup anti re-semis (reprise #11698, incident run 32690576863) ---
+# L'etat JSON commitE restait a 144 IDs alors que l'article 21195 avait deja
+# ete seme en #12748 : la verite terrain est l'issue existante (suffixe "(#<id>)"
+# deterministe dans le titre), pas le JSON d'etat non commitE.
+
+def test_parse_articles_filters_non_research_and_sorts_desc():
+    articles = parse_articles(SITEMAP_DEDUP_FIXTURE)
+    # les entrees forum/list et la racine /research/ ne sont pas des articles
+    assert [a["id"] for a in articles] == [21195, 21160]
+    assert articles[0]["slug"] == "bitcoin-regime-signal-for-growth-equities"
+    assert articles[0]["lastmod"] == "2026-08-22"
+
+
+def test_find_existing_issue_replays_run_32690576863():
+    # Scenario exact du 2026-08-24 : l'article 21195 seme en #12748 (CLOSED,
+    # verdict IGNORE par po-2024) alors que l'etat JSON commite est reste a
+    # 144 IDs. La dedup doit rapprocher 21195 -> 12748 et empecher le re-semis.
+    known = [
+        {"number": 11698,
+         "title": "[EPIC] Moissonnage quantconnect.com/research/ — distillation intelligente vs duplication"},
+        {"number": 12748,
+         "title": "[QC-research] Bitcoin regime signal for growth equities (#21195)"},
+        {"number": 12034,
+         "title": "[QC-research] Momentum in capital gain stocks (#21160)"},
+    ]
+    articles = parse_articles(SITEMAP_DEDUP_FIXTURE)
+    dedup = find_existing_issue(articles, known)
+    assert dedup == {21195: 12748, 21160: 12034}
+
+
+def test_find_existing_issue_ignores_titles_without_article_suffix():
+    # L'EPIC et l'issue technique du cron ne portent pas le suffixe "(#<id>)"
+    # et ne doivent pas etre prises pour des semis d'articles.
+    known = [
+        {"number": 11698, "title": "[EPIC] Moissonnage quantconnect.com/research/ — (doublon de (#4000) ?"},
+        {"number": 12035, "title": "[QC-research] Livrer le cron qc-research-monitor (scan hebdo)"},
+    ]
+    dedup = find_existing_issue(parse_articles(SITEMAP_DEDUP_FIXTURE), known)
+    assert dedup == {}
+
+
+def test_find_existing_issue_empty_known():
+    assert find_existing_issue(parse_articles(SITEMAP_DEDUP_FIXTURE), []) == {}
+
+
+def test_find_existing_issue_trailing_space_in_title():
+    # gh --json title peut rendre un titre avec espace final selon la source
+    known = [{"number": 12748,
+              "title": "[QC-research] Bitcoin regime signal for growth equities (#21195) "}]
+    dedup = find_existing_issue(parse_articles(SITEMAP_DEDUP_FIXTURE), known)
+    assert dedup == {21195: 12748}
