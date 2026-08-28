@@ -36,6 +36,9 @@
 import Knots.Basic_en
 import Knots.Invariant_en
 
+import Mathlib.Algebra.Polynomial.Basic
+import Mathlib.LinearAlgebra.Matrix.Determinant.Basic
+
 open Knots_en
 
 namespace Knots_en
@@ -288,24 +291,140 @@ This is why sliceness was so hard to determine — the Alexander
 polynomial cannot distinguish them from the unknot.
 -/
 
-/-- Alexander polynomial (definition placeholder).
+/-! ### Alexander matrix from the PD code (Dehn presentation, 1928)
 
-The Alexander polynomial Δ_K(t) is a knot invariant taking values in ℤ[t, t⁻¹].
-Phase 4 target: proper definition via Seifert matrix or Burau representation.
-For now, represented as an opaque function returning a placeholder type.
-Reference: Alexander (1928), Topological invariants of knots and links.
+Retained combinatorial translation — same method as for mutation (§1):
+Alexander's construction reads **directly off the PD code**, with no Seifert
+surface and no Burau representation. The **arcs** of the diagram are the
+classes of edge labels for the relation "e2 ~ e4 at each crossing" (the
+over-strand runs through the crossing: its two half-edges belong to the same
+arc; the under-strand is cut there). At each crossing, the Alexander
+relation (Fox derivative of the Wirtinger relation, crossing treated with
+the positive convention) gives the row: `+t` on the incoming under-arc,
+`−1` on the outgoing under-arc, `1−t` on the over-arc — every row sums
+to zero.
+
+The classical theorem (Alexander 1928) guarantees that for a knot, every
+(n−1)×(n−1) minor of the n×n matrix equals Δ(t) up to a unit ±t^k. The
+retained **designated normalization** fixes a concrete representative per
+diagram: the minor without the first row and without the last column.
 -/
--- TODO Phase 4: import Mathlib.Algebra.Polynomial and use Polynomial ℤ
--- Opaque placeholder for Phase 1 scaffolding.
-abbrev AlexanderPoly := Nat  -- placeholder; Phase 4 replaces with Polynomial ℤ
 
-def alexanderPolynomial (k : Knot) : AlexanderPoly := sorry
-  -- Definition: via Seifert matrix, or alternatively via Burau representation
-  -- Reference: Alexander (1928), Topological invariants of knots and links
-  -- Mathlib prerequisites:
-  --   1. Polynomial ℤ (exists in Mathlib)
-  --   2. Seifert surfaces and Seifert matrices (not in Mathlib)
-  --   3. Burau representation of braid groups (not in Mathlib)
+/-- Merges the classes containing x and y of a label partition. -/
+def mergePair (P : List (List Nat)) (x y : Nat) : List (List Nat) :=
+  let keep := P.filter (fun C => !C.contains x && !C.contains y)
+  let hit := P.filter (fun C => C.contains x || C.contains y)
+  keep ++ [hit.flatten.eraseDups]
+
+/-- The arcs of a diagram: partition of the edge labels by the closure of
+the over-passage pairs (e2 ~ e4 at each crossing). -/
+def arcPartition (d : KnotDiagram) : List (List Nat) :=
+  let singles := (List.range d.numEdges).map (fun i => [i + 1])
+  let pairs := d.crossings.map (fun c => (c.e2, c.e4))
+  pairs.foldl (fun P p => mergePair P p.1 p.2) singles
+
+/-- Alexander matrix entry: row of crossing `c`, column of arc `C`.
+Positive convention (Fox of the Wirtinger relation): `+t` (incoming
+under-arc), `−1` (outgoing under-arc), `1−t` (over-arc) — every row sums
+to zero, the condition guaranteeing that two (n−1)×(n−1) minors differ by
+a unit ±t^k. The PD code does not encode crossing chirality, and the two
+conventions differ by a unit factor — the present one is designated. -/
+noncomputable def alexanderEntry (c : PDCrossing) (C : List Nat) : Polynomial ℤ :=
+  (if C.contains c.e1 then Polynomial.X else 0)
+    + (if C.contains c.e3 then -(1 : Polynomial ℤ) else 0)
+    + (if C.contains c.e2 || C.contains c.e4 then 1 - Polynomial.X else 0)
+
+/-- Type of Alexander polynomial values: ℤ[t]. -/
+abbrev AlexanderPoly := Polynomial ℤ
+
+/-- Alexander polynomial of a diagram: determinant of the designated minor
+(without the first row, without the last column) of the Alexander matrix.
+The classical polynomial is only defined up to a unit ±t^k; the designated
+normalization fixes the representative below.
+
+Designated cases: crossingless diagram → `1` (empty determinant, the
+classical value for the unknot); arc partition of cardinal ≠ number of
+crossings → `0` (degenerate diagram; for a well-formed knot diagram, arcs
+and crossings are equinumerous — theorem not yet carried in this file).
+
+Invariance under Reidemeister moves is a separate theorem, not carried
+here: `alexanderPolynomial` is a function of the designated diagram, like
+`mutateWindow` in §1. -/
+noncomputable def alexanderPolynomialAux (d : KnotDiagram) : AlexanderPoly :=
+  let arcs := arcPartition d
+  match d.crossings, arcs with
+  | [], _ => 1
+  | _ :: rest, arcs' =>
+      if arcs'.length = rest.length + 1 then
+        (Matrix.of fun (i j : Fin rest.length) =>
+          alexanderEntry ((rest[i.1]?).getD ⟨1, 1, 1, 1⟩) ((arcs'[j.1]?).getD [])).det
+      else 0
+
+/-- Alexander polynomial of the knot, read off its designated diagram.
+Reference: Alexander (1928), Topological invariants of knots and links.
+
+NOTE (normalization vs consumers): the theorems `conway_trivial_alexander`
+and `KT_trivial_alexander` below carry the classical statement `Δ = 1`.
+Under the designated normalization, the minor of the 11n34/11n42 diagram
+may equal `±t^k` (a unit times 1): if the computation confirms it,
+adjusting these statements to the designated normalization is a future
+tranche arbitration — the proofs remain `sorry` and the statements are not
+modified here. -/
+noncomputable def alexanderPolynomial (k : Knot) : AlexanderPoly := alexanderPolynomialAux k.diagram
+
+/-! #### Controls: the definition discriminates
+
+A definition catching neither the unknot nor the trefoil would be a
+disguised `True` and removing the `sorry` would be cosmetic (same
+discipline as the `AreMutants` controls, §1):
+
+- NEGATIVE (`alexander_unknot`, proved): the unknot, being crossingless,
+  yields the classical Δ = 1 — and any nontrivial value at a crossed knot
+  distinguishes it from the unknot.
+- POSITIVE (`alexander_trefoil`, proved): the trefoil recovers exactly
+  the classical value Δ(t) = t² − t + 1 under the designated
+  normalization (minor [[−1, 1−t], [t, −1]]).
+-/
+
+/-- Negative control: the unknot has trivial Alexander polynomial
+(empty matrix, determinant 1). -/
+theorem alexander_unknot : alexanderPolynomial unknot = 1 := by
+  simp (config := { decide := true })
+    [alexanderPolynomial, alexanderPolynomialAux, unknot, unknotDiagram]
+
+/-- Generic 2×2 determinant (special case of the Laplace expansion:
+Mathlib v4.32.1 no longer provides `Matrix.det_two`). -/
+theorem det_two_aux (M : Matrix (Fin 2) (Fin 2) (Polynomial ℤ)) :
+    M.det = M 0 0 * M 1 1 - M 0 1 * M 1 0 := by
+  rw [Matrix.det_succ_column_zero]
+  simp [Matrix.det_unique, Fin.sum_univ_two]
+  ring
+
+/-- Positive control: the trefoil recovers the classical value t² − t + 1
+under the designated normalization (minor without first row nor last
+column). -/
+theorem alexander_trefoil :
+    alexanderPolynomial trefoil = Polynomial.X ^ 2 - Polynomial.X + 1 := by
+  have hp : arcPartition trefoilDiagram = [[4, 5], [1, 6], [2, 3]] := by
+    decide
+  simp only [alexanderPolynomial, alexanderPolynomialAux, trefoil, hp]
+  simp only [trefoilDiagram]
+  simp (config := { decide := true })
+  rw [det_two_aux]
+  simp only [Matrix.of_apply]
+  simp (config := { decide := true }) [alexanderEntry]
+  ring
+
+/-- Discrimination corollary: the Alexander polynomial distinguishes the
+trefoil from the unknot — first non-triviality of the development,
+obtained by combining the two controls above (this is the property that
+sells the invariant: a value that is not constant across knot classes). -/
+theorem trefoil_ne_unknot_alexander :
+    alexanderPolynomial trefoil ≠ alexanderPolynomial unknot := by
+  rw [alexander_trefoil, alexander_unknot]
+  intro h
+  have h2 := congrArg (fun p : Polynomial ℤ => p.coeff 2) h
+  simp [Polynomial.coeff_X] at h2
 
 theorem conway_trivial_alexander :
     alexanderPolynomial conwayKnot = 1 := by

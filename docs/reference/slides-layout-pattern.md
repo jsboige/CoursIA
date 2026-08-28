@@ -50,6 +50,8 @@ Le remede n'est donc pas d'abandonner la grille : c'est une ligne vide.
 
 **Les lignes vides apres chaque `<div>` ouvrant et avant chaque `</div>` fermant ne sont pas cosmetiques — elles sont le mecanisme.** Les retirer casse le rendu.
 
+**La regle vaut pour TOUT bloc HTML, pas seulement les grilles de colonnes.** Un wrapper d'animation `<div v-click="N">`, une classe de densite `<div class="dense-list">`, n'importe quelle ouverture seule sur sa ligne : si la ligne suivante porte une syntaxe markdown de bloc (`**gras**`, liste a tirets, heading `##`, tableau `|`, citation `>`, liste ordonnee), sans ligne vide elle est **avalee dans le HTML brut** et rend en litteral — asterisques comprises, hierarchie de liste aplatie en prose a tirets (#13216 : 49 blocs ainsi avals sur main, dont une liste a trois niveaux effondree). Le defaut est invisible aux gates de composition (le texte litteral reste dans le canvas) : il ne se voit qu'en rendu. Contrairement, la prose HTML inline apres un `<div class="text-sm...">` qui ne porte AUCUNE syntaxe markdown rend correctement sans ligne vide — ne pas sur-corriger.
+
 Contre-exemple deja present dans le depot avant que le diagnostic « impossible » soit pose : [`slides/S3-acculturation/deck-executif.md:39-41`](../../slides/S3-acculturation/deck-executif.md#L39-L41) — un `grid grid-cols-3` qui construit, et qui porte la ligne vide.
 
 ## Geometrie du canvas — 980 x 552, et le facteur d'echelle

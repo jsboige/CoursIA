@@ -1407,6 +1407,91 @@ def _glob_matches_tracked(glob: str, tracked: list[str]) -> bool:
     return False
 
 
+# #13129 -- proximity suggestion for dead globs. When a declared glob matches
+# ZERO tracked files AND the glob's basename exists UNIQUE elsewhere in the
+# tracked tree, suggest the real path so the writer can fix the typo at the
+# call site. The threshold prevents the false-positive on README.md /
+# MANIFEST.md / __init__.py (basenames that legitimately appear hundreds of
+# times). Returns None when the suggestion would be ambiguous or noise-prone.
+_PROXIMITY_BASENAME_LIMIT = 5  # > N occurrences => basename is too generic.
+
+
+def _suggest_path_correction(glob: str, tracked: list[str]) -> str | None:
+    """Best-effort 'did you mean ... ?' suggestion for a dead glob (#13129).
+
+    The glob's BASENAME must appear EXACTLY once in the tracked tree for a
+    suggestion to be returned. Multiple matches = ambiguous (the writer must
+    pick by intent, not by basename). Zero matches = no candidate (a brand
+    new file -- the legitimate future case the warn was never meant to
+    block, see #12740).
+
+    The threshold (_PROXIMITY_BASENAME_LIMIT = 5) caps the suggestion at
+    basenames that survive as legitimate identifiers: README.md, MANIFEST.md
+    and __init__.py each have hundreds of occurrences across the repo and
+    would mislead more often than they would help. A basename that appears
+    between 1 and 5 times IS likely a typo (the writer meant one specific
+    file and the regex did not pick the right one).
+    """
+    if not glob or "/" not in glob:
+        return None
+    basename = glob.rsplit("/", 1)[-1]
+    if not basename or basename.startswith(".") and len(basename) <= 2:
+        return None
+    matches = [t for t in tracked if t.endswith("/" + basename)]
+    if not matches or len(matches) > _PROXIMITY_BASENAME_LIMIT:
+        return None
+    if len(matches) == 1:
+        return matches[0]
+    # 2..5 matches: pick the one sharing the LONGEST prefix with the dead glob
+    # (directory proximity beats basename uniqueness). Return it only when the
+    # picked candidate is strictly closer than the runner-up.
+    matches.sort(key=lambda t: -len(_common_prefix(glob, t)))
+    best, second = matches[0], matches[1] if len(matches) > 1 else ""
+    if _common_prefix(best, glob) > _common_prefix(second, glob):
+        return best
+    return None
+
+
+def _common_prefix(a: str, b: str) -> str:
+    n = 0
+    for x, y in zip(a, b):
+        if x != y:
+            break
+        n += 1
+    return a[:n]
+
+
+# #13129 motif B -- detect missing-comma in a glob. The mistake pattern is
+# `paths: a.py b.py` where the writer forgot the comma; the parser treats
+# the whole thing as ONE glob that matches nothing. We flag when a glob
+# contains a SPACE and at least two SPACE-separated tokens each LOOK like a
+# path (contain a `/` OR end with a tracked-file extension).
+_PATHLIKE_TOKEN_RE = re.compile(r"[^\s/]+(?:/[^\s/]+)+|\S+\.(?:py|yml|yaml|md|ipynb|lean|ps1|sh|json|cs|cpp|hpp|go|rs|ts|tsx|js|jsx|txt|csv)")
+
+
+def _looks_like_missing_comma(glob: str) -> list[str] | None:
+    """Return the SPACE-separated tokens if the glob looks like a missing-comma typo (#13129 motif B).
+
+    Heuristic: the glob has whitespace AND `>=2` tokens each look path-shaped
+    (slashed OR ending in a tracked-file extension). Returns None when the
+    heuristic does not fire -- the glob is a single path with possible
+    whitespace, not a typo. Conservative: a single path-shaped token does
+    NOT trigger the suggestion (a space inside a filename is rare but
+    legal; the cost of a false positive is a confusing suggestion, the cost
+    of a false negative is silent dead-glob, which is the existing bug we
+    are not making worse).
+    """
+    if not glob or " " not in glob:
+        return None
+    tokens = glob.split()
+    if len(tokens) < 2:
+        return None
+    pathlike = [t for t in tokens if _PATHLIKE_TOKEN_RE.match(t)]
+    if len(pathlike) < 2:
+        return None
+    return pathlike
+
+
 _INFERRED_PATH_PATTERNS = (
     # French/English label keywords fleet uses to advertise intent in prose.
     # The patterns match the LABEL token followed by a colon and the path; the
@@ -1611,6 +1696,29 @@ def _lint_claim_events(
                     f"(lane {ev.lane or '?'})",
                     file=sys.stderr,
                 )
+                # #13129 motif B -- missing comma between paths. Fires when
+                # the glob contains whitespace AND >=2 tokens each look path-
+                # shaped. The classic typo is `paths: a.py b.py` which the
+                # parser treats as a single glob that matches nothing.
+                pathlike_tokens = _looks_like_missing_comma(g)
+                if pathlike_tokens:
+                    candidates = ", ".join(repr(t) for t in pathlike_tokens)
+                    print(
+                        f'WARN: glob ressemble a plusieurs chemins separes '
+                        f"par ESPACE au lieu d'une virgule : {candidates}. "
+                        f"Le parser n'a vu qu'un seul glob (motif B, #13129).",
+                        file=sys.stderr,
+                    )
+                # #13129 motif A/C -- proximity suggestion. When the basename
+                # of the dead glob exists UNIQUE elsewhere in the tree,
+                # suggest the real path. Best-effort, non-blocking.
+                elif (suggestion := _suggest_path_correction(g, tracked)) is not None:
+                    print(
+                        f"WARN: glob sans correspondance : \"{g}\" -- "
+                        f"did you mean {suggestion!r} ? (basename unique, "
+                        f"#13129 motif A/C)",
+                        file=sys.stderr,
+                    )
 
 
 def _event_is_active_for(legacy: ClaimEvent, active: ClaimEvent) -> bool:
