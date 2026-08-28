@@ -63,13 +63,90 @@ Avant toute bascule, relever au minimum :
 
 Le détail par workflow sépare la capacité réellement consommée de l'auto-contention. En particulier, le `PR gate` peut occuper un runner pendant qu'il sonde des checks eux-mêmes en file : dimensionner sur la demande brute financerait ce temps d'attente au lieu de le corriger.
 
+## Topologie retenue
+
+`jsboige/CoursIA` appartient à un compte GitHub personnel. Les groupes de runners personnalisés sont réservés aux organisations et ne constituent donc pas une barrière disponible ici. La frontière activable repose sur deux contrôles complémentaires :
+
+1. une allowlist statique de workflows ;
+2. les labels exacts `self-hosted`, `coursia-ephemeral`, `coursia-fast-guards`.
+
+La capacité est distribuée sur les machines des workers `myia-po-2023` à `myia-po-2026`, pas centralisée sur ai-01. Il n'existe pas d'affinité entre auteur du push et machine d'exécution : GitHub choisit un runner disponible portant les labels. Chaque machine utilise le même compte Windows local dédié et un profil distinct. ai-01 reste hors du pool initial afin de préserver ses charges de coordination, vLLM et entraînement.
+
+Un runner ne doit jamais utiliser un label GitHub-hosted (`ubuntu-latest`, `windows-latest`, etc.) : cela contournerait la classification statique. Il ne doit pas non plus hériter du compte interactif du worker.
+
+## Gestionnaire Windows, à blanc par défaut
+
+Le registre `scripts/ci/self_hosted_runner_profiles.json` épingle pour chaque worker : dépôt, identité locale, chemins possédés, labels, version, URL officielle et SHA-256 du runner. Il ne contient aucun secret.
+
+```powershell
+python scripts/ci/manage_self_hosted_runner.py install `
+  --profile myia-po-2025-fast-guards
+python scripts/ci/manage_self_hosted_runner.py register `
+  --profile myia-po-2025-fast-guards
+python scripts/ci/manage_self_hosted_runner.py verify `
+  --profile myia-po-2025-fast-guards
+python scripts/ci/manage_self_hosted_runner.py teardown `
+  --profile myia-po-2025-fast-guards
+```
+
+Sans `--apply`, ces commandes observent l'état local et impriment un plan JSON déterministe. Elles ne téléchargent rien, ne créent aucun compte, n'écrivent aucun fichier, ne contactent pas GitHub et ne modifient aucun service. Codes retour : `0` plan/état valide, `1` précondition de sécurité refusée, `2` profil ou état illisible.
+
+### Installation ultérieure
+
+`install --apply` est réservé à une session d'activation autorisée et élevée. Il exige `COURSIA_RUNNER_ACCOUNT_PASSWORD` dans l'environnement, puis :
+
+- télécharge uniquement l'archive Windows x64 officielle épinglée ;
+- compare son SHA-256 au pin committé avant extraction ;
+- refuse les chemins absolus, traversals, symlinks et flux alternatifs NTFS dans le ZIP ;
+- extrait dans un staging puis renomme atomiquement ;
+- crée un compte local standard dédié et refuse tout compte préexistant/non possédé ;
+- retire l'héritage ACL du répertoire runner ;
+- ajoute des refus de lecture explicites sur tout le répertoire `.secrets/`, SSH et `GitHub CLI/hosts.yml` ;
+- écrit un manifeste local qui borne les ressources que le teardown peut retirer.
+
+Un hash faux, un chemin sensible absent, un compte administrateur ou un état partiel fait échouer l'installation. Aucun fallback vers `LocalSystem`, `NetworkService` ou le compte interactif n'est admis.
+
+### Bouton d'enregistrement — ne pas presser pendant la préparation
+
+`register --apply` est le geste d'activation. Il exige :
+
+- une installation conforme ;
+- `GITHUB_RUNNER_REGISTRATION_TOKEN` ;
+- `COURSIA_RUNNER_ACCOUNT_PASSWORD`.
+
+Le gestionnaire transmet les secrets via les entrées upstream `ACTIONS_RUNNER_INPUT_*` du runner, et jamais via `--token` ou `--windowslogonpassword` dans la ligne de commande. L'environnement enfant est construit depuis une allowlist et n'hérite ni de `GH_TOKEN`, ni de `GITHUB_TOKEN`, ni du profil interactif. L'invocation fixe `--unattended --ephemeral --replace --runasservice` et les trois labels exacts.
+
+Le token d'enregistrement ne transite jamais par un commit, une PR, un commentaire GitHub ou un dashboard. Le canal éventuel est un DM RooSync privé avec autodestruction adaptée. La commande `register --apply` ne doit être exécutée qu'après un geste explicite du user ou du coordinateur.
+
+### Vérification de l'isolation
+
+Le mode à blanc vérifie manifeste, version, labels et état. `verify --apply`, lors de l'activation contrôlée, exécute sous le compte runner un probe réel qui exige quatre résultats :
+
+1. lecture d'un fichier de contrôle placé dans `.secrets/` refusée ;
+2. lecture SSH refusée ;
+3. lecture de la configuration/keyring `gh` interactive refusée ;
+4. écriture puis suppression dans le workdir réussie.
+
+`whoami` ne suffit pas. Un fichier absent ou une erreur ambiguë n'est jamais assimilé à un refus d'accès réussi. Le probe et son résultat temporaire sont supprimés dans tous les cas.
+
+### Teardown symétrique
+
+`teardown --apply` n'agit que si le manifeste prouve la propriété du chemin et du compte. Pour un runner enregistré, il exige `GITHUB_RUNNER_REMOVAL_TOKEN`, transmis lui aussi par l'environnement upstream. Il arrête et désinstalle le service, désenregistre le runner, copie `_diag` hors workdir, refuse de continuer si un secret fourni apparaît dans les logs, retire les ressources possédées, les ACE et le compte dédié. Un second passage sur un état absent est un succès explicite sans action.
+
+Les logs conservés restent locaux et hors du dépôt. Le contrôle distant « zéro runner enregistré » et la preuve d'un job réel appartiennent à la tranche d'activation, car ils nécessitent l'API GitHub.
+
+## Limite des runners éphémères
+
+Un runner `--ephemeral` traite au plus un job puis doit être ré-enregistré. Le gestionnaire prépare une invocation unique ; il ne crée ni boucle permanente, ni broker de tokens. Le choix entre configuration JIT, contrôleur de ré-enregistrement ou preuve one-shot est une décision séparée avant activation durable. Un runner persistant n'est pas un raccourci acceptable.
+
 ## Tranches suivantes, non activées
 
 La préparation complète reste découpée :
 
 1. **Mesure** — instrument de cette page.
-2. **Isolation** — compte OS dédié sans accès à `.secrets/`, SSH ou keyring `gh`; runner éphémère et runner group restreint; scripts d'enrôlement et de teardown idempotents avec `--dry-run`.
-3. **Commutation** — un seul point de bascule et garde `github.event.pull_request.head.repo.full_name == github.repository`; aucun `pull_request_target` auto-hébergé.
-4. **Preuve contrôlée** — une exécution légère réussie, un contrôle négatif fork/payload, puis teardown et preuve que l'état initial est restauré.
+2. **Isolation statique** — scanner fail-closed, allowlist et labels dépôt.
+3. **Cycle de vie local** — gestionnaire, profils, probes et teardown décrits ci-dessus.
+4. **Commutation** — un seul point de bascule et garde `github.event.pull_request.head.repo.full_name == github.repository`; aucun `pull_request_target` auto-hébergé.
+5. **Preuve contrôlée** — autorisation explicite, une exécution légère réussie, contrôle négatif fork/payload, puis teardown et preuve que l'état initial est restauré.
 
-Le token d'enregistrement ne doit jamais apparaître dans un commit, une PR, un commentaire GitHub ou un dashboard. L'activation finale reste un geste explicite du user ou du coordinateur, après validation des tranches précédentes.
+Le réglage GitHub « Require approval for all outside collaborators » complète la garde YAML ; il ne la remplace jamais. L'activation finale reste un geste explicite du user ou du coordinateur, après validation des tranches précédentes.
