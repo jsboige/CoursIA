@@ -49,6 +49,7 @@ def _check_ignore(repo: Path, target_path: str) -> tuple[bool, str]:
         capture_output=True,
         text=True,
         check=False,
+        encoding="utf-8", errors="replace",
     )
     if result.returncode == 0:
         return True, result.stdout.strip()

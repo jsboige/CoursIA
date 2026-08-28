@@ -163,10 +163,19 @@ _GRAIN_FULL_RE = re.compile(
 # match by construction: none of their opening characters is in the
 # continuation class -- the same bounds `_extract_paths_clause` already uses
 # in check_lane_claim.py.
+#
+# #12719 -- the continuation class admits `[A-Z0-9]`, therefore a DIGIT,
+# therefore a bare date: `myia-po-2023:CoursIA 2026-08-23` parsed as the lane
+# `myia-po-2023:CoursIA 2026-08-23` (a lane that exists nowhere), and
+# `check_lane_claim` then blocked the declaring lane on its OWN claim -- five
+# times in one night. A full ISO timestamp (`2026-08-23T00:52Z`) was already
+# rejected by the `(?![:@])` guard; only the BARE date passes. The negative
+# lookahead below refuses the bare-date form as a continuation while keeping
+# every legitimate one (a workspace word never starts `NNNN-NN-NN`).
 _LANE_RE = re.compile(
     r"lane\s*:?\s+"
     r"([A-Za-z0-9._-]+:[A-Za-z0-9._-]+"
-    r"(?:[ \t]+(?-i:[A-Z0-9])[A-Za-z0-9._-]*(?![A-Za-z0-9._-])(?![:@])){0,3})",
+    r"(?:[ \t]+(?!\d{4}-\d{2}-\d{2})(?-i:[A-Z0-9])[A-Za-z0-9._-]*(?![A-Za-z0-9._-])(?![:@])){0,3})",
     re.IGNORECASE,
 )
 
@@ -190,9 +199,14 @@ _LANE_RE = re.compile(
 # half of a duplicated mechanism and not grepping for the other is the
 # recurring shape of this class of bug (#12145). No IGNORECASE on this one,
 # so `[A-Z0-9]` already means upper case.
+#
+# #12719 -- same bare-date guard as `_LANE_RE` above: the five real-world
+# malformed markers of the founder night carried NO `lane` keyword, so it is
+# THIS regex that swallowed `2026-08-23` into the lane token. The sibling
+# moves with the fix.
 _LANE_FALLBACK_RE = re.compile(
     r"\b(myia-[A-Za-z0-9._-]+:[A-Za-z][A-Za-z0-9._-]*"
-    r"(?:[ \t]+[A-Z0-9][A-Za-z0-9._-]*(?![A-Za-z0-9._-])(?![:@])){0,3})"
+    r"(?:[ \t]+(?!\d{4}-\d{2}-\d{2})[A-Z0-9][A-Za-z0-9._-]*(?![A-Za-z0-9._-])(?![:@])){0,3})"
 )
 
 # `prev` (case-insensitive), optional colon, whitespace, then the SAME
@@ -402,7 +416,7 @@ def parse_grain_tag(body: str | None) -> dict | None:
     return {
         "tier": m.group(1).upper(),
         "genre": m.group(2).lower(),
-        "lane": lane_m.group(1) if lane_m else None,
+        "lane": lane_m.group(1).rstrip(".") if lane_m else None,
     }
 
 
@@ -427,21 +441,67 @@ def extract_lane(body: str | None, marker_line: str | None = None) -> str | None
 
     Returns the `machine:workspace` string, or None when no lane token is
     found.
+
+    #12719 -- a trailing sentence period is NOT part of the lane. The token
+    class admits `.` (hostnames need it), so `lane myia-po-2023:CoursIA.`
+    (the founder Grain tag of PR #12530) parsed as `myia-po-2023:CoursIA.` --
+    a lane that matches nothing. No cluster lane ends in a period, so the
+    residue is stripped here; `lane_marker_residues` reports it so the organ
+    can surface the malformed form instead of silently reinterpreting it.
     """
     if not body:
         return None
     flat = _strip_title_hashes(body.translate(_NOISE))
     m = _LANE_RE.search(flat)
     if m:
-        return m.group(1)
+        return m.group(1).rstrip(".")
     # Fallback for claim comments that omit the literal `lane` keyword (#10395
     # Variante 1). Restricted to the marker line by the caller -- see docstring.
     if marker_line is not None:
         flat_line = _strip_title_hashes(marker_line.translate(_NOISE))
         m2 = _LANE_FALLBACK_RE.search(flat_line)
         if m2:
-            return m2.group(1)
+            return m2.group(1).rstrip(".")
     return None
+
+
+# #12719 -- what the lane regexes REFUSED to swallow but the marker still
+# carries: a bare date right after the token (`myia-po-2023:CoursIA
+# 2026-08-23 -- ...`, five founder markers), or a trailing sentence period
+# (`myia-po-2023:CoursIA.`). The regex fix makes both forms parse to the bare
+# lane; this witness lists them so the organ can REPORT the malformed form
+# (acceptance #4: "un marqueur presque-juste qui le DIT ne coute rien").
+# Modelled on `_unparseable_scope_in` (check_lane_claim.py #12052): a pure
+# witness function the claim-event builder calls on the marker line.
+_LANE_RESIDUE_BARE_DATE_RE = re.compile(r"^\s+(\d{4}-\d{2}-\d{2})(?![0-9-])")
+
+
+def lane_marker_residues(marker_line: str | None) -> list[str]:
+    """Audit witness (#12719): malformed-lane residues on a marker line.
+
+    Returns a list of human-readable residue descriptions -- empty when the
+    line carries a clean lane token (or no lane token at all, which other
+    organs already flag as `variation-tag-lane-missing`). Entries:
+      * `"bare-date:2026-08-23"` -- a bare date immediately after the lane
+        token, which the continuation guard refused and the declaring lane
+        did not intend as part of the lane;
+      * `"trailing-period:<token>"` -- the token ended in a sentence period
+        that `extract_lane` strips before comparing.
+    """
+    if not marker_line:
+        return []
+    flat = _strip_title_hashes(marker_line.translate(_NOISE))
+    residues: list[str] = []
+    m = _LANE_FALLBACK_RE.search(flat) or _LANE_RE.search(flat)
+    if not m:
+        return []
+    token = m.group(1)
+    if token.endswith("."):
+        residues.append("trailing-period:" + token)
+    dm = _LANE_RESIDUE_BARE_DATE_RE.match(flat[m.end(1):])
+    if dm:
+        residues.append("bare-date:" + dm.group(1))
+    return residues
 
 
 # --- short-header trio (#9861) ----------------------------------------------

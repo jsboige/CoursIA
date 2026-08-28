@@ -24,7 +24,7 @@ La formation couvre deux stacks complémentaires :
 
 | Statistique | Valeur |
 |-------------|--------|
-| Notebooks | 32 (7 LangChain + 10 ADK + 2 fondations Python + 11 fondations ML + 2 deep learning) |
+| Notebooks | 33 (7 LangChain + 10 ADK + 2 fondations Python + 12 fondations ML + 2 deep learning) |
 | Kernel | Python 3.11+ |
 | Durée totale | ~7 jours |
 
@@ -80,18 +80,21 @@ DataScienceWithAgents/
 │       ├── 1.2-NumPy.ipynb
 │       └── 1.3-Pandas.ipynb
 │
-├── 02-ML-Cours/                # Fondations ML canoniques (11 notebooks)
+├── 02-ML-Cours/                # Fondations ML canoniques (12 notebooks)
 │   ├── 2.1-Workflow-ML.ipynb
 │   ├── 2.2-Descente-de-gradient.ipynb
 │   ├── 2.3-Regression-lineaire-logistique.ipynb
 │   ├── 2.4-Arbres-Forets-Ensembles.ipynb
 │   ├── 2.5-Biais-Variance-CV-ROC.ipynb
+│   ├── 2.5b-Calibration-Probabilites.ipynb
 │   ├── 2.6-Clustering-KMeans-PCA.ipynb
 │   ├── 2.7-Modeles-Non-Parametriques.ipynb
 │   ├── 2.8-Theorie-PAC.ipynb
 │   ├── 2.8b-Theorie-PAC-Lean.ipynb
 │   ├── 2.8c-Borne-Temoin-Concentration.ipynb
-│   └── 2.9-Grokking-Generalisation.ipynb
+│   ├── 2.9-Grokking-Generalisation.ipynb
+│   ├── 2.10-Optimisation-Hyperparametres.ipynb
+│   └── 2.13-Analyse-Erreurs.ipynb
 │
 ├── 03-DeepLearning/            # Deep learning from scratch (2 notebooks)
 │   ├── 3.1-Retropropagation.ipynb
@@ -118,7 +121,7 @@ DataScienceWithAgents/
 
 ## Fondations ML (02-ML-Cours)
 
-Le socle machine learning canonique avec scikit-learn, posé à la main entre les fondations NumPy/Pandas et les labs agentic — là où scikit-learn n'apparaissait jusqu'ici que comme une séquence magique non expliquée. Onze notebooks (workflow, descente de gradient, régression linéaire/logistique, arbres et ensembles, biais-variance/CV/ROC, clustering/ACP, SVM à noyau/k-NN, théorie PAC/dimension VC, ses deux compagnons formel et concentration, et un épilogue 2.9 grokking), chacun rendant visible un concept-phare et ancrant les articles fondateurs.
+Le socle machine learning canonique avec scikit-learn, posé à la main entre les fondations NumPy/Pandas et les labs agentic — là où scikit-learn n'apparaissait jusqu'ici que comme une séquence magique non expliquée. Douze notebooks (workflow, descente de gradient, régression linéaire/logistique, arbres et ensembles, biais-variance/CV/ROC, calibration des probabilités, clustering/ACP, SVM à noyau/k-NN, théorie PAC/dimension VC, ses deux compagnons formel et concentration, un épilogue 2.9 grokking, puis deux chapitres de praticien — optimisation d'hyperparamètres et analyse d'erreurs), chacun rendant visible un concept-phare et ancrant les articles fondateurs.
 
 | Notebook | Sujet | Concept-phare |
 |----------|-------|---------------|
@@ -127,12 +130,15 @@ Le socle machine learning canonique avec scikit-learn, posé à la main entre le
 | [2.3-Regression-lineaire-logistique](02-ML-Cours/2.3-Regression-lineaire-logistique.ipynb) | OLS vs MLE | droite vs sigmoïde |
 | [2.4-Arbres-Forets-Ensembles](02-ML-Cours/2.4-Arbres-Forets-Ensembles.ipynb) | DecisionTree, RandomForest, GradientBoosting | réduction de variance |
 | [2.5-Biais-Variance-CV-ROC](02-ML-Cours/2.5-Biais-Variance-CV-ROC.ipynb) | biais-variance, validation croisée, ROC/AUC | coût du seuil de décision |
+| [2.5b-Calibration-Probabilites](02-ML-Cours/2.5b-Calibration-Probabilites.ipynb) | calibration des probabilités : reliability diagram, ECE | pourquoi 0.87 n'est pas 87 % de chances |
 | [2.6-Clustering-KMeans-PCA](02-ML-Cours/2.6-Clustering-KMeans-PCA.ipynb) | non supervisé : KMeans + ACP | structure retrouvée sans étiquettes |
 | [2.7-Modeles-Non-Parametriques](02-ML-Cours/2.7-Modeles-Non-Parametriques.ipynb) | SVM à noyau et k plus proches voisins | kernel trick (linéaire vs RBF) |
 | [2.8-Theorie-PAC](02-ML-Cours/2.8-Theorie-PAC.ipynb) | théorie PAC : sample complexity, dimension VC | la borne PAC prédit l'empirique |
-| [2.8b-Theorie-PAC-Lean](02-ML-Cours/2.8b-Theorie-PAC-Lean.ipynb) | *Compagnon Lean* — la même borne, démontrée plutôt que mesurée | ce que 2.8 constate, le lake le prouve |
+| [2.8b-Theorie-PAC-Lean](02-ML-Cours/2.8b-Theorie-PAC-Lean.ipynb) | *Compagnon Lean* (kernel `lean4-wsl`) — la même borne PAC, démontrée | ce que 2.8 constate, le lake le prouve |
 | [2.8c-Borne-Temoin-Concentration](02-ML-Cours/2.8c-Borne-Temoin-Concentration.ipynb) | *Compagnon concentration* — la borne par témoin extrémal | le triptyque borne + témoin + concentration |
 | [2.9-Grokking-Generalisation](02-ML-Cours/2.9-Grokking-Generalisation.ipynb) | *Épilogue* — grokking : la généralisation qui arrive en retard (premier réseau de neurones) | **L'horloge cachée** : embeddings rangés en cercle après le grok (ACP + Fourier) |
+| [2.10-Optimisation-Hyperparametres](02-ML-Cours/2.10-Optimisation-Hyperparametres.ipynb) | méthodologie du réglage : grille, hasard, bayésien (TPE) — et quand s'arrêter | le critère d'arrêt économise la moitié des essais |
+| [2.13-Analyse-Erreurs](02-ML-Cours/2.13-Analyse-Erreurs.ipynb) | le geste du praticien : diagnostiquer un modèle entraîné (tranches, worst-k) | la poche invisible : 67.6% d'erreur sous un score global correct |
 
 Documentation complète : [02-ML-Cours/README.md](02-ML-Cours/README.md)
 
