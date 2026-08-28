@@ -36,6 +36,21 @@ def _load():
     return mod
 
 
+def _isolate(mod, tmp_path, monkeypatch, asset_paths):
+    """Redirect every module path constant to tmp_path (hermetic tests).
+
+    ASSET_PATHS is what audit()/regen() actually iterate and write — patching
+    only the legacy ASSET_PATH alias left regen() overwriting the two REAL
+    repo webp assets with the mocked render. REPO_ROOT is repointed to cut
+    _load_env's parent/sibling fallback, which otherwise resolves the main
+    tree's .env from any worktree (breaking the SystemExit / key-absence
+    tests on dev machines).
+    """
+    monkeypatch.setattr(mod, "REPO_ROOT", tmp_path)
+    monkeypatch.setattr(mod, "ASSET_PATHS", list(asset_paths))
+    monkeypatch.setattr(mod, "ASSET_PATH", asset_paths[0])
+
+
 # --------------------------------------------------------------------------- #
 # _ascii_title — the Stop & Repair non-ASCII filter (c.916 / PR #8636)
 # --------------------------------------------------------------------------- #
@@ -82,6 +97,7 @@ def test_ascii_title_module_constant_is_ascii_after_filter():
 # --------------------------------------------------------------------------- #
 def test_load_env_parses_key_value(tmp_path, monkeypatch):
     mod = _load()
+    monkeypatch.setattr(mod, "REPO_ROOT", tmp_path)
     env = tmp_path / ".env"
     env.write_text(
         "# a comment\n"
@@ -101,6 +117,7 @@ def test_load_env_parses_key_value(tmp_path, monkeypatch):
 
 def test_load_env_exits_when_missing(tmp_path, monkeypatch):
     mod = _load()
+    _isolate(mod, tmp_path, monkeypatch, [tmp_path / "never-touched.webp"])
     monkeypatch.setattr(mod, "ENV_PATH", tmp_path / "absent.env")
     with pytest.raises(SystemExit) as exc:
         mod._load_env()
@@ -120,7 +137,7 @@ def _png_bytes(size_px=64):
 
 def test_audit_returns_1_when_asset_absent(tmp_path, monkeypatch):
     mod = _load()
-    monkeypatch.setattr(mod, "ASSET_PATH", tmp_path / "missing.webp")
+    _isolate(mod, tmp_path, monkeypatch, [tmp_path / "missing.webp"])
     assert mod.audit() == 1
 
 
@@ -128,7 +145,7 @@ def test_audit_returns_2_when_asset_too_small(tmp_path, monkeypatch):
     mod = _load()
     small = tmp_path / "tiny.webp"
     small.write_bytes(b"x" * 500)  # < 10_000 threshold
-    monkeypatch.setattr(mod, "ASSET_PATH", small)
+    _isolate(mod, tmp_path, monkeypatch, [small])
     assert mod.audit() == 2
 
 
@@ -136,7 +153,7 @@ def test_audit_returns_0_when_asset_present_and_large(tmp_path, monkeypatch):
     mod = _load()
     big = tmp_path / "ok.webp"
     big.write_bytes(b"x" * 20_000)  # >= 10_000
-    monkeypatch.setattr(mod, "ASSET_PATH", big)
+    _isolate(mod, tmp_path, monkeypatch, [big])
     assert mod.audit() == 0
 
 
@@ -220,7 +237,7 @@ def test_main_audit_flag_routes_to_audit(tmp_path, monkeypatch):
     mod = _load()
     big = tmp_path / "ok.webp"
     big.write_bytes(b"x" * 20_000)
-    monkeypatch.setattr(mod, "ASSET_PATH", big)
+    _isolate(mod, tmp_path, monkeypatch, [big])
     monkeypatch.setattr(sys, "argv", ["regen_img1_dalle3.py", "--audit"])
     assert mod.main() == 0
 
@@ -231,7 +248,7 @@ def test_main_check_flag_routes_to_check(tmp_path, monkeypatch):
     big.write_bytes(b"x" * 20_000)
     env = tmp_path / ".env"
     env.write_text("OPENAI_API_KEY=sk-test\n", encoding="utf-8")
-    monkeypatch.setattr(mod, "ASSET_PATH", big)
+    _isolate(mod, tmp_path, monkeypatch, [big])
     monkeypatch.setattr(mod, "ENV_PATH", env)
     monkeypatch.setattr(sys, "argv", ["regen_img1_dalle3.py", "--check"])
     # deps PIL + matplotlib present (Rule F), key present, asset large -> 0
@@ -256,6 +273,7 @@ def test_regen_returns_3_when_key_missing(tmp_path, monkeypatch):
     mod = _load()
     env = tmp_path / ".env"
     env.write_text("OPENAI_API_KEY=\n", encoding="utf-8")  # empty key
+    _isolate(mod, tmp_path, monkeypatch, [tmp_path / "out.webp"])
     monkeypatch.setattr(mod, "ENV_PATH", env)
     assert mod.regen() == 3
 
@@ -264,20 +282,24 @@ def test_regen_returns_3_when_placeholder(tmp_path, monkeypatch):
     mod = _load()
     env = tmp_path / ".env"
     env.write_text("OPENAI_API_KEY=<placeholder>\n", encoding="utf-8")
+    _isolate(mod, tmp_path, monkeypatch, [tmp_path / "out.webp"])
     monkeypatch.setattr(mod, "ENV_PATH", env)
     assert mod.regen() == 3
 
 
 def test_regen_calls_api_and_writes_asset(tmp_path, monkeypatch):
     """End-to-end regen with the API + render mocked: key present -> API ->
-    burn -> asset written -> 0."""
+    burn -> both targets written byte-identical (doctrine #5780) -> 0."""
     mod = _load()
     env = tmp_path / ".env"
     env.write_text("OPENAI_API_KEY=sk-test\n", encoding="utf-8")
-    out_asset = tmp_path / "img1-dalle3.webp"
+    out_a = tmp_path / "sub1" / "img1-dalle3.webp"
+    out_b = tmp_path / "sub2" / "dalle3-cover.webp"
+    _isolate(mod, tmp_path, monkeypatch, [out_a, out_b])
     monkeypatch.setattr(mod, "ENV_PATH", env)
-    monkeypatch.setattr(mod, "ASSET_PATH", out_asset)
     monkeypatch.setattr(mod, "_call_openai_image", lambda key, prompt: _png_bytes(120))
     rc = mod.regen()
     assert rc == 0
-    assert out_asset.exists() and out_asset.stat().st_size > 0
+    assert out_a.exists() and out_a.stat().st_size > 0
+    assert out_b.exists()  # doctrine #5780: BOTH targets written
+    assert out_a.read_bytes() == out_b.read_bytes()  # byte-identical

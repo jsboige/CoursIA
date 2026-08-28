@@ -216,6 +216,38 @@ jobs:
             --body-file /tmp/pr_body.txt "${PR_CREFS_ARG[@]}" \
             > /tmp/verdict.json 2>/tmp/verdict.err || true
 
+          # #13129 -- surface dead-scope globs as GitHub annotations so the
+          # author sees them at the call site (the stderr WARN goes to the
+          # job log; `::warning::` lands on the PR Files tab). The advisory
+          # job runs `check_lane_claim.py` on the PR body with the PR's
+          # declared Grain: lane as `my_lane`, captures `caller_empty_scope`
+          # (mirror of the SCOPE_DEAD_GLOB stderr WARN) and emits one
+          # annotation per dead glob. Non-blocking on purpose: this is a
+          # usability hint, not a gate -- a missing path can be a typo
+          # (motif A/C of #13129) or a legitimate future file (#12740).
+          # `|| true` keeps the job vert when the verdict is unparseable
+          # (legacy/fork paths); the advisory label below is still applied.
+          # #13129 -- surface dead-scope globs as GitHub annotations. The
+          # author sees the suggestion at the call site (the stderr WARN
+          # goes to the job log; `::warning::` lands on the PR Files tab).
+          # The annotation format `::warning file=...,title=...::msg` shows
+          # in the PR Checks panel -- the lane sees it where they can
+          # still correct the typo before pushing again. Delegated to
+          # `emit_dead_scope_warnings.py` because the loop spans a line
+          # and the GitHub Actions bash shell does not accept a multi-line
+          # `python3 -c "..."` literal in a YAML scalar. The helper reads
+          # the body file, calls `check_lane_claim.py`, and prints one
+          # annotation per dead glob -- non-blocking, fail-CLOSED via
+          # `|| true` so an unparseable verdict does not red the job.
+          PYTHONPATH=scripts python3 scripts/ci/emit_dead_scope_warnings.py \
+            --body-file /tmp/pr_body.txt \
+            > /tmp/lc_annotations.txt 2>/dev/null || true
+          if [ -s /tmp/lc_annotations.txt ]; then
+            while IFS= read -r line; do
+              [ -n "$line" ] && echo "$line"
+            done < /tmp/lc_annotations.txt
+          fi
+
           # Creation idempotente du seul label survivant. `lane-claim-conflict`
           # a ete RETIRE en #10395 Variante 3 (2026-08-11) : trois mesures
           # (#10370, #10353 et le trio OR-Tools) ont montre qu'il etait pose

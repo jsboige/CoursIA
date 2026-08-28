@@ -1108,6 +1108,58 @@ def test_coord_override_leve_aussi_le_state_changes_requested():
     assert mod.analyse(data, [], MERGED)["blocked"] is False
 
 
+# --- #13030 : OVERRIDE POSE vs CITE -------------------------------------------
+# L'incident #12872 : le rapport de la lane qui DOCUMENTAIT l'option
+# « (b) `[OVERRIDE] lane x` par ai-01 » a eteint deux reserves BOT-CONCERN
+# jamais levees -- la regex ancre-less matchait dans le backtick, le gate
+# passait rc=0 sans que rien ne le signale. Un override fantome SOUS-bloque
+# (inverse exact du [CLAIMED] fantome qui sur-bloque). Le marqueur doit
+# desormais etre POSE en tete de ligne, hors backticks.
+
+def test_override_pose_canonique_leve():
+    """Controle positif : le marqueur seul en tete de ligne POSE l'override."""
+    lift = {"author": {"login": "myia-ai-01"},
+            "createdAt": "2026-08-18T13:06:34Z",
+            "body": "[OVERRIDE] lane myia-po-2026:CoursIA\n"
+                    "Levée de la réserve Hermes du 2026-08-17, points "
+                    "reportés sur #11058."}
+    assert run_coord([lift])["blocked"] is False
+
+
+def test_override_cite_dans_backtick_ne_leve_pas():
+    """Le cas EXACT de #12872 : une option documentee entre backticks dans
+    une puce ne pose PAS l'override -- le rapport qui explique que la
+    decision revient a ai-01 ne doit pas l'exercer."""
+    cited = {"author": {"login": "jsboige"},
+             "createdAt": "2026-08-25T17:38:05Z",
+             "body": "Options :\n"
+                     "- **(a)** attendre la re-review ;\n"
+                     "- **(b)** `[OVERRIDE] lane myia-po-2024:CoursIA-2` "
+                     "par ai-01 (commentaire sur cette PR) ;\n"
+                     "La lane ne peut pas lever ces 2 nits elle-meme."}
+    assert run_coord([cited])["blocked"] is True
+
+
+def test_override_cite_milieu_de_phrase_ne_leve_pas():
+    """« Le marqueur [OVERRIDE] lane x sert a ... » = documentation, pas acte."""
+    doc = {"author": {"login": "jsboige"},
+           "createdAt": "2026-08-26T00:00:00Z",
+           "body": "Le marqueur [OVERRIDE] lane x sert a arbitrer une "
+                   "reserve ; il doit etre pose en tete de ligne."}
+    assert run_coord([doc])["blocked"] is True
+
+
+def test_override_pose_apres_decor_leve():
+    """Non-regression #10906 (famille _DECOR de check_lane_claim) : un
+    override dans un blockquote / puce / heading reste POSE -- la tolerance
+    de decoration ne doit pas voider les formes legitimes de la flotte."""
+    quoted = {"author": {"login": "myia-ai-01"},
+              "createdAt": "2026-08-18T13:06:34Z",
+              "body": "> [OVERRIDE] lane myia-po-2026:CoursIA\n"
+                      "> Levée de la réserve Hermes, reportée sur #11058."}
+    assert run_coord([quoted])["blocked"] is False
+
+
 # --- #11677 : check_unaddressed_nits classe une review APPROVED en BOT-CONCERN
 # L'etat natif GitHub n'etait pas cable pour les reviews APPROVED (la branche
 # CHANGES_REQUESTED etait la seule symetrique documentee). 4 changes minimaux :
