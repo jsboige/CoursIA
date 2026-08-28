@@ -72,10 +72,24 @@ jobs:
       - name: Run sweep
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # `inputs.*` n'existe que sur la jambe workflow_dispatch. Sur la jambe
+          # `schedule:` il s'expanse en CHAINE VIDE, et `--threshold ""` fait
+          # sortir argparse en erreur (`invalid int value: ''`, exit 2) AVANT
+          # tout balayage. Mesure du 2026-08-28 : 0 succes sur les 60 derniers
+          # runs -- l'organe livre pour #11232 n'a jamais balaye une seule PR,
+          # et #11232 a ete fermee dessus le 2026-08-18.
+          #
+          # On lit les inputs par env et on OMET le drapeau quand il est vide,
+          # pour retomber sur le defaut du script (THRESHOLD_DEFAULT=300).
+          IN_THRESHOLD: ${{ inputs.threshold }}
+          IN_DRY_RUN: ${{ inputs.dry_run }}
         run: |
-          DRY=""
-          if [ "${{ inputs.dry_run }}" = "true" ]; then DRY="--dry-run"; fi
-          python scripts/review_coverage.py \
-            $DRY \
-            --threshold "${{ inputs.threshold }}" \
-            --label "large-pr-no-review"
+          set -eo pipefail
+          ARGS=()
+          if [ "${IN_DRY_RUN:-}" = "true" ]; then ARGS+=(--dry-run); fi
+          if [ -n "${IN_THRESHOLD:-}" ]; then ARGS+=(--threshold "$IN_THRESHOLD"); fi
+          # Controle positif : prouver que le script PARSE ses arguments avant
+          # de croire un balayage vert. `--help` sort 0 ; un arg casse sort 2.
+          python scripts/review_coverage.py --help >/dev/null
+          echo "argparse OK -- args: ${ARGS[*]:-(aucun, defauts du script)}"
+          python scripts/review_coverage.py "${ARGS[@]}" --label "large-pr-no-review"
