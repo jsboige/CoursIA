@@ -156,7 +156,7 @@ Un seed sans stamp échoue en détruisant le seed. Sans fichier `x64.complete`, 
 
 1. Installer Python 3.11.9 **per-user** (python.org, hors UAC) sur le compte interactif du worker.
 2. Peupler le tool-cache par `robocopy` vers `<work>\_tool\Python\3.11.9\x64\` sous le compte `.\coursia-runner` (2820 fichiers) — si le compte interactif peut écrire sous `_work\_tool` (ACL par profil), le robocopy direct suffit ; sinon l'exécuter as `coursia-runner`.
-3. Écrire le stamp vide `<work>\_tool\Python\3.11.9\x64\x64.complete`.
+3. Écrire le stamp vide `<work>\_tool\Python\3.11.9\x64.complete` — **frère** du répertoire `x64\`, jamais dedans. `@actions/tool-cache` compose `<cache>/<tool>/<version>/<arch>` puis teste ce **même** chemin suffixé de `.complete` : `find()` évalue `fs.existsSync(cachePath) && fs.existsSync(cachePath + '.complete')`, et `_completeToolPath()` écrit `markerPath = folderPath + '.complete'`. Un marqueur placé *dans* `x64\` n'est donc jamais lu — `tc.find()` répond « not found », et le seed est détruit au premier job par le `io.rmRF(folderPath)` de `_createToolPath()`.
 4. Vérifier sous le compte service : `python --version` → `3.11.9` et `pip --version` → 24.0 (le témoin `TOOL_PYOK 3.11.9` des runs de preuve).
 
 Le tool-cache et le stamp persistent sous `_work` entre jobs éphémères : les ré-enregistrements suivants gardent le cache hit.
