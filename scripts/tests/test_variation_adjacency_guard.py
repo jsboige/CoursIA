@@ -453,6 +453,80 @@ def test_13261_malformed_fallback_is_the_MOST_RECENT_rejection():
     assert "n'est pas un genre" in ov["malformed"]  # the newer, not "manquant"
 
 
+# --- The stripper must follow GitHub's RENDERING of code (#13273) -----------
+#
+# Found in review of #13263 (which fixed #13261): two deviations of opposite
+# polarity, same root -- what the stripper calls "code" is not what GitHub
+# renders as code.
+#
+#   sous-match (fail-closed): OVERRIDE_EXPECTED_FORM DISPLAYS the marker
+#   between backticks, so a coordinator recopying the recommended form posts
+#   a span-wrapped marker that stripping erased -> silent None. Remedy taken:
+#   option 2 of the issue -- a span whose ENTIRE content is a well-formed
+#   override is UNWRAPPED, not erased (this also future-proofs copy-paste
+#   from any doc that puts the marker in code).
+#
+#   sur-match (fail-open): an UNCLOSED fence matched only up to the next ```
+#   (or never), so a marker after a dangling ``` stayed live text while
+#   GitHub renders it as code. Remedy: an unclosed fence extends to the end
+#   of the body.
+
+_SPAN_FULL_MARKER = ("`[G-VAR-3 OVERRIDE] lane myia-ai-01:CoursIA -- "
+                     "next: qc`")
+
+
+def test_13273_case_B_help_text_recopy_unwraps_full_marker_span():
+    # The exact entry the tool recommends, posted the way it displays it:
+    # the span's ENTIRE content is a well-formed override -> unwrapped and
+    # read as a live decision.
+    ov = vag.parse_override([
+        {"author": "myia-ai-01", "body": _SPAN_FULL_MARKER}])
+    assert ov is not None and "malformed" not in ov
+    assert ov["next_genre"] == "qc"
+
+
+def test_13273_partial_or_trailing_span_stays_inert():
+    # Only a span whose content is the marker AND NOTHING ELSE is unwrapped.
+    # Marker without next: (partial) and marker with trailing words inside
+    # the span both render as code on GitHub and stay inert.
+    ov_partial = vag.parse_override([
+        {"author": "myia-ai-01",
+         "body": "`[G-VAR-3 OVERRIDE] lane x:y`"}])
+    assert ov_partial is None
+    ov_trailing = vag.parse_override([
+        {"author": "myia-ai-01",
+         "body": "`[G-VAR-3 OVERRIDE] lane x:y -- next: lean voici pourquoi`"}])
+    assert ov_trailing is None
+
+
+def test_13273_marker_in_unclosed_fence_grants_nothing():
+    # Positive control from the issue: a fence never closed swallows the
+    # marker -- GitHub renders it as code, so it grants nothing.
+    body = ("voici la forme:\n```\n"
+            "[G-VAR-3 OVERRIDE] lane myia-ai-01:CoursIA -- next: lean\n")
+    ov = vag.parse_override([{"author": "myia-ai-01", "body": body}])
+    assert ov is None
+
+
+def test_13273_span_full_marker_inside_unclosed_fence_grants_nothing():
+    # The unwrap must not resurrect a span sitting INSIDE an unclosed fence:
+    # the fence pass runs first and erases to end of body.
+    body = "exemple :\n```\n" + _SPAN_FULL_MARKER + "\n"
+    ov = vag.parse_override([{"author": "myia-ai-01", "body": body}])
+    assert ov is None
+
+
+def test_13273_unwrapped_marker_is_a_full_fledged_newest_decision():
+    # An unwrapped marker is not merely tolerated: newest-first, it beats an
+    # older nude override -- the span-recopy is the coordinator's LAST word.
+    ov = vag.parse_override([
+        {"author": "myia-ai-01", "body": _OVERRIDE_13261_OK},
+        {"author": "myia-ai-01", "body": _SPAN_FULL_MARKER},
+    ])
+    assert ov is not None and "malformed" not in ov
+    assert ov["next_genre"] == "qc"
+
+
 # --- merged-sequence predecessor (#12095) ----------------------------------
 #
 # G-VAR-3 adjacency is a property of the MERGED sequence, which moves while a

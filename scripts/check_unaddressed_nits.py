@@ -123,7 +123,26 @@ AGENT_PREFIXES = (
 # temporelles restent entieres : un override POST-merge ne peut pas avoir
 # eteint une reserve avant la decision de merge (borne #10761).
 COORDINATOR_LOGINS = {"myia-ai-01", "jsboige"}
-OVERRIDE_LANE = re.compile(r"\[OVERRIDE\]\s+lane\s+\S+")
+# #13030 -- le marqueur doit etre POSE, pas CITE. L'ancien pattern sans
+# ancre matchait n'importe quelle mention dans le corps : le commentaire de
+# la lane #12872 qui DOCUMENTAIT l'option « (b) `[OVERRIDE] lane x` par
+# ai-01 » a eteint deux reserves BOT-CONCERN jamais levees (regex matchee
+# dans le backtick, nom de lane capture avec le backtick parasite), et le
+# gate est passe rc=0 sans que rien ne le signale. Un override fantome
+# SOUS-bloque : la porte s'ouvre silencieusement -- inverse exact du
+# [CLAIMED] fantome qui sur-bloque. Trois proprietes :
+#   1. ancrage ^ (re.M) : le marqueur doit ouvrir la ligne (un tiret de
+#      liste ou une phrase qui le precede = citation) ;
+#   2. rejet de la forme encadree de backticks -- la citation canonique ;
+#   3. lane capturee sans backtick parasite ( `\S+` avalait `CoursIA-2`` `).
+# Decoration de debut de ligne toleree (même famille que _DECOR de
+# check_lane_claim #10906 : `>`, `#`, `-` ne doivent pas voider un vrai
+# override) -- mais le backtick AVANT le crochet reste une citation, seul
+# le decor ASCII #>*+- l'est.
+_OVERRIDE_LANE = re.compile(
+    r"(?m)^[#>*+\-\s]*\[\s*OVERRIDE\s*\]\s+lane\s+([^\s`]+)",
+)
+OVERRIDE_LANE = _OVERRIDE_LANE
 
 # #13083 — le symetrique de #11639 : un coordinateur BLOQUE aussi, et l'organe
 # ne le modelisait pas. Même contrainte de pose stricte que le durcissement de
@@ -997,8 +1016,12 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
         # s'ajoute. Un OVERRIDE sans phrase de levee n'entre meme pas ici :
         # can_lift l'a ecarte (tag de protocole nu), et explicit_lifts exige
         # un LIFT_MARKER.
+        # #13030 -- search sur le corps ENTIER retire : une citation du
+        # marqueur (documentation, dispatch, post-mortem, DM recopie)
+        # posait l'override. Seule la forme POSEE en tete de ligne compte.
+        m = OVERRIDE_LANE.search(lift_body or "")
         return (lift_author in COORDINATOR_LOGINS
-                and bool(OVERRIDE_LANE.search(lift_body or "")))
+                and m is not None)
 
     # Fenetre 2026-08-16 (#11222) : les temps plats ne suffisent pas pour un
     # CHANGES_REQUESTED. Une PHRASE explicite de levee (LIFT_MARKER non

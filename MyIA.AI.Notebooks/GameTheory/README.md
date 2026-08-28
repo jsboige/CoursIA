@@ -424,7 +424,7 @@ La théorie des jeux n'est pas qu'un objet académique : ses résultats structur
 
 ### Pont vers les Preuves Formelles (Lean 4) — différenciant CoursIA
 
-GameTheory occupe une place à part dans la couche Lean : c'est la famille qui aligne le plus directement simulation numérique et preuve formelle. Le Niveau 3 promet de « prouver ce qu'on a calculé » ; cette série tient la promesse par **sept lakes game-théoriques en propre** — dont les six phares cartographiés ci-dessous, plus `lean_game_defs` (types partagés) et le lake de référence externe `social_choice_lean_peters` (toolchains détaillées dans [LEAN_INVENTORY.md](LEAN_INVENTORY.md) — harmonisation Mathlib en cours, cf #4362 —, branchés sur les notebooks qui les enseignent ou les utilisent). Cartographie inter-familles :
+GameTheory occupe une place à part dans la couche Lean : c'est la famille qui aligne le plus directement simulation numérique et preuve formelle. Le Niveau 3 promet de « prouver ce qu'on a calculé » ; cette série tient la promesse par **sept lakes game-théoriques en propre** — dont les phares cartographiés ci-dessous, plus `lean_game_defs` (types partagés) — et le lake de référence externe `social_choice_lean_peters` (toolchains détaillées dans [LEAN_INVENTORY.md](LEAN_INVENTORY.md), réconcilié 2026-08-26 ; harmonisation Mathlib #4362 ; branchés sur les notebooks qui les enseignent ou les utilisent). Cartographie inter-familles :
 
 | Famille | Lake phare | Théorème | Branchement notebook |
 | --- | --- | --- | --- |
@@ -456,7 +456,7 @@ flowchart LR
         L3["lean_game_defs_ext<br/>Vickrey"]
         L4["game_theory_lean/CooperativeGames<br/>0 sorry #3954"]
         L5["game_theory_lean<br/>StableMarriage (Gale-Shapley)"]
-        L6["repeated_games_lean<br/>grim_trigger"]
+        L6["game_theory_lean/RepeatedGames<br/>grim_trigger"]
     end
     N1 -. "impossibilité prouvée" .-> L1
     N2 -. "existence point fixe" .-> L2
@@ -474,7 +474,7 @@ flowchart LR
 
 Le pipeline complet relie les **notebooks** (qui motivent — Lemke-Howson, Axelrod, Folk Theorem, Gale-Shapley via `game_theory_lean`) aux **lakes** (qui prouvent — Arrow résolu 0 sorry, Bondareva-Shapley résolu 0 sorry #3954, von Neumann/Sion, Vickrey, Gale-Shapley existence et optimalité côté proposant, grim-trigger). Sans la couche Lean, ces résultats seraient des théorèmes réputés « standard » mais jamais démontrés ; avec elle, la justification est **formellement garantie** — pas seulement admise. La spécificité GameTheory : la simulation (Lemke-Howson numérique, OpenSpiel CFR, Axelrod tournois) précède la preuve, mais les deux faces du même raisonnement sont également outillées.
 
-> **Consolidation des lakes (EPIC #4365)** : les anciens lakes standalone `cooperative_games_lean/` (**Supprimé**, rm #6587 — contenu Basic/ConeKernel/Shapley préservé byte-identique sous `game_theory_lean/CooperativeGames/`) et `stable_marriage_lean/` (**Supprimé**, PR #5971 — contenu absorbé sous `game_theory_lean/StableMarriage/`) ne sont plus des projets Lake indépendants. Les sept lakes en propre actuels : `conway_cgt_lean`, `game_theory_lean` (multi-module, absorbant CooperativeGames + StableMarriage + SocialChoice), `lean_game_defs`, `lean_game_defs_ext`, `minimax_lean`, `repeated_games_lean`, `social_choice_lean_peters` (référence externe DominikPeters, toolchain v4.27.0-rc1). Note : l'ancien `social_choice_lean/` (contenu absorbé sous `game_theory_lean/SocialChoice/` post-EPIC #4365 PR #6058) subsiste comme archive lakefile neutralisé — `lean_lib` désactivé, `lake build` non fonctionnel. Statut détaillé par lake : cf [LEAN_INVENTORY.md](LEAN_INVENTORY.md).
+> **Consolidation des lakes (EPIC #4365)** : les anciens lakes standalone `cooperative_games_lean/` (**Supprimé**, rm #6587 — contenu Basic/ConeKernel/Shapley préservé byte-identique sous `game_theory_lean/CooperativeGames/`), `stable_marriage_lean/` (**Supprimé**, PR #5971 — absorbé sous `game_theory_lean/StableMarriage/`), `social_choice_lean/` (absorbé #6058 — tombstone docs seulement, coquille lake **retirée**) et `repeated_games_lean/` (absorbé #6146 — coquille archive conservée, `lean_lib` neutralisée) ne sont plus des projets Lake indépendants. Les sept lakes en propre actuels : `game_theory_lean` (multi-module : CooperativeGames + StableMarriage + SocialChoice + RepeatedGames + Swaps), `lean_game_defs`, `lean_game_defs_ext`, `minimax_lean`, `assignment_lean`, `asymmetric_information_lean`, `conway_cgt_lean` — plus le lake de référence externe `social_choice_lean_peters` (DominikPeters, toolchain v4.32.1, Peters `94a4c650` / Mathlib `520045ab`). Statut détaillé par lake : cf [LEAN_INVENTORY.md](LEAN_INVENTORY.md).
 
 Pour aller plus loin : [EPIC #4038](https://github.com/jsboige/CoursIA/issues/4038) (Roadmap Lean — un théorème-phare par série), [hub QuantConnect ↔ `kelly_lean`](../QuantConnect/README.md) (PR #5047), [hub central P0 ↔ Lean inter-familles](../README.md) (PR #5049), [hub SymbolicAI Lean](../SymbolicAI/Lean/README.md).
 
@@ -887,12 +887,14 @@ GameTheory/
 │   ├── strategies.py              # Tit-for-tat, hawks, doves, etc.
 │   ├── tournament.py              # Tournoi Axelrod
 │   └── visualization.py           # Animations populations
-├── conway_cgt_lean/               # Projet Lake jeux combinatoires (Conway CGT, toolchain v4.31.0-rc1)
+├── conway_cgt_lean/               # Projet Lake jeux combinatoires — visite de vihdzp/combinatorial-games (toolchain v4.31.0-rc2)
 ├── minimax_lean/                  # Projet Lake minimax (Sion, cf #4054)
-├── repeated_games_lean/           # Projet Lake jeux répétés (grim trigger, cf #4880)
-├── social_choice_lean/            # Archive — choix social absorbé dans game_theory_lean/SocialChoice/ (EPIC #4365, lean_lib neutralisée)
-├── social_choice_lean_peters/     # Projet Lake référence DominikPeters (0 sorry, toolchain v4.27.0-rc1)
-├── game_theory_lean/              # Projet Lake multi-module (4 modules : CooperativeGames, RepeatedGames, SocialChoice, StableMarriage — dont CooperativeGames + StableMarriage absorbés via EPIC #4365)
+├── assignment_lean/               # Projet Lake affectation — dualité + optimalité Kuhn-Munkres (#12598)
+├── asymmetric_information_lean/   # Projet Lake asymétrie d'information — Akerlof/Spence/RS/MWS (Epic #12844)
+├── repeated_games_lean/           # Coquille archive — jeux répétés absorbés dans game_theory_lean/RepeatedGames/ (#6146)
+├── social_choice_lean/            # Tombstone docs — choix social absorbé dans game_theory_lean/SocialChoice/ (#6058)
+├── social_choice_lean_peters/     # Projet Lake référence DominikPeters (0 sorry, toolchain v4.32.1, Peters 94a4c650)
+├── game_theory_lean/              # Projet Lake multi-module (5 modules : CooperativeGames, RepeatedGames, SocialChoice, StableMarriage, Swaps — EPIC #4365)
 ├── lean_game_defs/                # Projet Lake : types Lean partagés (lakefile.toml)
 ├── lean_game_defs_ext/            # Projet Lake : types étendus (Vickrey 0 sorry, Bayesian — lakefile.toml)
 ├── scripts/                       # Scripts d'installation (WSL Lean, OpenSpiel)
@@ -980,6 +982,8 @@ Cette série mobilise plusieurs couches de l'écosystème MCP du cluster, et ent
 Voir la licence du repository principal.
 
 ---
+
+*Version 1.4.2 — Août 2026 (2026-08-26) — réconciliation inventaire Lean #13138 : toolchains effectives (peters v4.32.1 / Peters 94a4c650, conway v4.31.0-rc2), statuts tombstone `repeated_games_lean` (#6146) et `social_choice_lean` (#6058), ajout des lakes `assignment_lean` (#12598) et `asymmetric_information_lean` (Epic #12844), `game_theory_lean` passé à 5 modules (+Swaps #12222).*
 
 *Version 1.4.1 — Juillet 2026 (2026-07-16) — reconciliation EPIC #4365 : retrait des références aux lakes supprimés `cooperative_games_lean` (rm #6587) et `stable_marriage_lean` (PR #5971), absorbés dans `game_theory_lean` ; comptes lakes mis à jour (7 en propre + peters).*
 
