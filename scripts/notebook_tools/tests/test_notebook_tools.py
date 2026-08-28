@@ -1122,7 +1122,7 @@ class TestFormatMarkdownTable:
             path="test", name="Sudoku-03-Test", total_cells=10, estimated_duration=15,
         )
         result = _format_markdown_table([skeleton], Path("test"))
-        assert "| 3 |" in result
+        assert "| 03 |" in result
 
     def test_fallback_number_when_no_match(self):
         """Notebook without -N- pattern should use index."""

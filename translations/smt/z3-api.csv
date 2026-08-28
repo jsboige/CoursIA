@@ -764,7 +764,7 @@ A la fin de ce notebook, vous saurez :
 
 ---
 
-Le [notebook précédent](Z3-Python-01-Introduction.ipynb) a introduit le solveur Z3. Ici, nous l'appliquons a un problème NP-complet emblematique : le **Sudoku**. L'approche contraste avec la serie [Sudoku par backtracking](../../../Sudoku/Sudoku-01-Backtracking-Python.ipynb) : au lieu de programmer l'algorithme de recherche, nous **enonc ons les règles** et laissons le solveur deduire la solution.",,,,,,,,c8cbb71990ce3c67,,,,,,,,
+Le [notebook précédent](Z3-Python-01-Introduction.ipynb) a introduit le solveur Z3. Ici, nous l'appliquons a un problème NP-complet emblematique : le **Sudoku**. L'approche contraste avec la serie [Sudoku par backtracking](../../../Sudoku/Sudoku-1-Backtracking-Python.ipynb) : au lieu de programmer l'algorithme de recherche, nous **enonc ons les règles** et laissons le solveur deduire la solution.",,,,,,,,c8cbb71990ce3c67,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-02-Sudoku.ipynb,nb02-imports,code,fr,58f1658c49fcc56e,"# Imports
 from z3 import *
 import matplotlib.pyplot as plt
@@ -880,7 +880,7 @@ MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-02-Sudoku.ipynb,nb02-model-int
 3. Le même code resout n'importe quel puzzle, du facile a l'expert : seules les données changent.",,,,,,,,14157bcdca9059ee,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-02-Sudoku.ipynb,nb02-viz-intro,markdown,fr,13a254995f48f516,"## 3. Visualisation : donne en noir, resolu en bleu
 
-Pour distinguer les indices fournis par l'enonce des valeurs deduites par le solveur, nous reprenons le style de visualisation de la [serie Sudoku par backtracking](../../../Sudoku/Sudoku-01-Backtracking-Python.ipynb). Les valeurs **initiales** s'affichent en noir, les valeurs **ajoutees** par Z3 en bleu.",,,,,,,,13a254995f48f516,,,,,,,,
+Pour distinguer les indices fournis par l'enonce des valeurs deduites par le solveur, nous reprenons le style de visualisation de la [serie Sudoku par backtracking](../../../Sudoku/Sudoku-1-Backtracking-Python.ipynb). Les valeurs **initiales** s'affichent en noir, les valeurs **ajoutees** par Z3 en bleu.",,,,,,,,13a254995f48f516,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-02-Sudoku.ipynb,nb02-viz-code,code,fr,d54e9e9c9bae7944,"def plot_sudoku(grid: List[List[int]], title: str = ""Sudoku"",
                 initial: Optional[List[List[int]]] = None):
     """"""Affiche une grille 9x9 avec matplotlib.
