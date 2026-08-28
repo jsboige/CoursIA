@@ -191,4 +191,11 @@ La préparation complète reste découpée :
 
 État au 2026-08-28 : les tranches 1-3 sont livrées ; la tranche 4 est active sur po-2024 (jobs réels consommés par le pool `coursia-fast-guards`, ex. runs 33092567324 et 33093119578) ; la preuve contrôlée complète (5) et l'extension du pool aux autres machines restent à faire. Chaque extension machine exige le provisionnement Python de la section dédiée avant le premier job.
 
+| Profil du registre | État au 2026-08-28 |
+|---|---|
+| `myia-po-2023-fast-guards` | en préparation (pas de runner installé) |
+| `myia-po-2024-fast-guards` | **actif** — tool-cache seedé (a2), ré-enregistrement sans UAC, jobs réels consommés |
+| `myia-po-2025-fast-guards` | en préparation (pas de runner installé) |
+| `myia-po-2026-fast-guards` | en préparation (pas de runner installé ; profil vérifié dans le registre) |
+
 Le réglage GitHub « Require approval for all outside collaborators » complète la garde YAML ; il ne la remplace jamais. L'activation finale reste un geste explicite du user ou du coordinateur, après validation des tranches précédentes.
