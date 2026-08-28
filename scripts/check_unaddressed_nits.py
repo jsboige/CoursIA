@@ -229,6 +229,24 @@ LIFT_MARKERS = (
     # backquotee ; celle-ci lui echappe, et le marqueur de concern se
     # trouve alors *a l'interieur* de la phrase qui le leve.
     "lève la", "leve la", "Lève la", "Leve la",
+    # #12944 : le close-the-loop Hermes (« Mon concern ... est traité et
+    # fermé », PR #12941 fondateur, review 5020777166). Forme PASSIVE de
+    # levee, verbes de FERMETURE uniquement (clos / fermé / résolu) plus
+    # les composes « traité et fermé » qui couvrent le gras markdown
+    # separant l'auxiliaire du participe (« est **traité et fermé** »).
+    # La suggestion « est traité » nue de l'issue a ete REJETTEE sur
+    # contre-exemple mesure : le body pinned #11639 « le point 3 est
+    # traité en argument » (override NU qui ne doit rien lever) matcherait
+    # — « traité » narratif se promene (« traité dans la section 4 »),
+    # les verbes de fermeture s'engagent. Residu assume : une negation
+    # INTERNE au compose (« pas encore traité et fermé ») le matcherait
+    # (limite NLP documentee dans can_lift, pinne par
+    # test_12944_residu_negation_du_compose_documente).
+    "est clos", "sont clos", "sont closes",
+    "est fermé", "sont fermés", "sont fermées",
+    "est résolu", "sont résolus", "sont résolues",
+    "traité et fermé", "traitée et fermée",
+    "traité et clos", "traitée et close",
 )
 
 # Un LIFT en construction CONDITIONNELLE (« corrige X et je merge », « je merge
@@ -446,15 +464,29 @@ _MENTION_VERDICT_LIFTED = re.compile(
 # emission revendique sans pointer. Pas de reference pointable = pas de
 # match = le verdict reste emis. Frontiere elargie a `*` : le mot est
 # souvent en gras (« La **revue** CHANGES_REQUESTED »).
+#
+# #12944 — extension de position : la reference pointable HORS parentheses.
+# Cas fondateur #12941 (review Hermes close-the-loop 5020777166) : « sur ma
+# review REQUEST_CHANGES de #12900 (`ffe18961`) » — le numero de la PR/review
+# source suit directement le verdict, sans parenthese. La forme d'origine ne
+# voyait que la ref entre parentheses immediates, le verdict restait emis et
+# `_formal_concern_precedes_lift` annulait meme la levee passive qui suivait.
+# Meme discriminant que #11984 (le ref pointable designe l'evenement passe
+# rapporte ; une emission ne pointe pas), position differente seulement.
 _MENTION_VERDICT_REVIEW = re.compile(
     r"(?i)(?:^|[\s,;:(*])"  # frontiere (inclut * pour **revue**)
     r"(?:le|la|les|du|mon|ma|ce|cet|cette|ces|the|my)?\s*"
     r"(?:revue|review)(?![:.])"
     r"[^():\n.]{0,60}?(?-i:([A-Z][A-Z_]{3,}))(?![A-Za-z0-9_])"
+    r"(?:"
+    # Forme d'origine : ref pointable entre parentheses immediates.
     r"[^():\n.]{0,12}?"
     r"\([^()\n]{0,80}?"
     r"(?:[a-f0-9]{7,}|#\d+|\d{4}-\d{2}-\d{2}|\d{1,2}:\d{2}(?::\d{2})?Z?)"
-    r"[^()\n]{0,40}\)")
+    r"[^()\n]{0,40}\)"
+    # #12944 : ref pointable inline — « review VERDICT de #N ».
+    r"|\s+(?:de\s+|sur\s+|dans\s+)?(?:la\s+|le\s+)?(?:PR\s+)?#\d+"
+    r")")
 
 
 def _strip_mentioned_verdicts(body: str) -> str:

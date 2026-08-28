@@ -2141,3 +2141,79 @@ def test_13083_blocage_reel_conditionnel_a_un_override_reste_block():
     body = ("**BLOCAGE MERGE (ai-01)** — pas de merge tant que [OVERRIDE] lane "
             "n'est pas pose par le coordinateur.")
     assert mod.classify("myia-ai-01", body) == "BLOCK"
+# --- #12944 : le close-the-loop Hermes. « Mon concern ... est traité et
+# fermé » (PR #12941 fondateur, review 5020777166) : la levee PASSIVE
+# n'etait couverte par aucun LIFT_MARKER, et le verdict mentionne (« ma
+# review REQUEST_CHANGES de #12900 », ref HORS parentheses) echappait aux
+# motifs de mention — l'acquittement etait classe BOT-CONCERN et bloquait
+# le merge. Meme classe que c.504 : un acquittement qui contient des
+# marqueurs formels est mal classe.
+
+def test_12944_levee_passive_est_un_lift_marker():
+    """La forme passive « est traité et fermé » (gras markdown compris, le
+    compose couvre la coupure auxiliaire/participe) et les verbes de
+    fermeture (clos / ferme / resolu) sont des LIFT_MARKERS. « est traité »
+    NU est REJETTE : le body pinned #11639 « le point 3 est traité en
+    argument » est une narration, pas une levee (l'override nu ne leve
+    rien)."""
+    assert mod.has_marker(
+        "Mon concern est **traité et fermé** : registre régénéré.",
+        mod.LIFT_MARKERS)
+    assert mod.has_marker("le point est clos, rien ne bloque", mod.LIFT_MARKERS)
+    assert mod.has_marker("le fil est fermé après vérification", mod.LIFT_MARKERS)
+    assert not mod.has_marker("le point 3 est traité en argument", mod.LIFT_MARKERS)
+    assert not mod.has_marker("Le point 2 n'est pas traité.", mod.LIFT_MARKERS)
+
+
+def test_12944_close_the_loop_leve_la_review_precedente():
+    """End-to-end : la review REQUEST_CHANGES posee par Hermes (self-bot
+    jsboige), puis son close-the-loop (« est traité et fermé », verdict
+    mentionne avec ref inline) par le meme auteur — le gate passe : le
+    close-the-loop est un explicit_lift borne (#11145, meme auteur)."""
+    review = {
+        "author": {"login": "jsboige"},
+        "state": "COMMENTED", "submittedAt": at(10),
+        "body": "[Hermes] — REQUEST_CHANGES : le registre de citations est fabriqué.",
+    }
+    loop = {"author": {"login": "jsboige"}, "createdAt": at(12),
+            "body": "close-the-loop sur ma review REQUEST_CHANGES de #12900 : "
+                    "Mon concern est **traité et fermé**, registre régénéré "
+                    "(commit ffe18961)."}
+    data = {
+        "number": 0, "title": "t", "author": {"login": "myia-po-2026"},
+        "comments": [loop], "reviews": [review],
+        "commits": [{"committedDate": at(13)}],
+    }
+    assert mod.analyse(data, [], MERGED)["blocked"] is False
+
+
+def test_12944_close_the_loop_seul_nest_plus_un_nit():
+    """Le cas mesure sur #12941 : le close-the-loop ETAIT lui-meme l'unique
+    signal bloque (classify BOT-CONCERN sur son propre body). Il doit
+    desormais rendre None — verdict mentionne + levee passive."""
+    body = ("**[Hermes]** — close-the-loop sur ma review REQUEST_CHANGES de "
+            "#12900 (`ffe18961`). Mon concern est **traité et fermé** : "
+            "registre régénéré depuis les diffs réels.")
+    assert mod.classify("jsboige", body) is None
+
+
+def test_12944_revalidation_formelle_avant_levee_reste_bot_concern():
+    """Garde #12798/#12836 intacts : un verdict formel EMIS en tete puis une
+    narration de levee passive en aval reste BOT-CONCERN — le close-the-loop
+    ne debranche pas la revalidation qui REFUTE une levee annoncee."""
+    body = ("[Hermes] COMMENT_WITH_CONCERNS — revalidation : le concern "
+            "précédent est traité et fermé, mais la cassette reste non "
+            "prouvée.")
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+def test_12944_residu_negation_du_compose_documente():
+    """Residu ASSUME (limite NLP, cf can_lift) : une negation INTERNE au
+    compose (« pas encore traité et fermé ») contient le marqueur
+    « traité et fermé » et se leverait a tort. Pin par ecrit : le
+    discriminant exigerait une fenetre de negation cote LIFT, machinery
+    qui n'existe pas (CITERS ne s'applique qu'aux CONCERN_MARKERS via
+    `_is_cited`). Un redacteur futur qui veut fermer ce residu saura que
+    CE test est celui a mettre a jour."""
+    body = "Mon concern n'est pas encore traité et fermé, le registre reste fabriqué."
+    assert mod.has_marker(body, mod.LIFT_MARKERS) is True  # residu assume
