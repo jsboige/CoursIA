@@ -103,9 +103,9 @@ namespace QuantConnect.Algorithm.CSharp
 
         // === Universe selection (#11698 QC500 retest) ===
         // Baseline (default): OEF constituents (S&P 100), byte-identical behavior.
-        // Opt-in "QC500": Universe.QC500 — in current LEAN this is the SPY constituents
-        // universe (~500 US large caps, reconstituted monthly, inherits the algorithm
-        // UniverseSettings, here Resolution.Daily). A wider pool where non-dividend
+        // Opt-in "QC500": Universe.QC500 — LEAN selects the 500 most liquid US
+        // equities by dollar volume, reconstituted monthly, and inherits the algorithm
+        // UniverseSettings (here Resolution.Daily). A wider pool where non-dividend
         // payers ("capital-gain stocks") are properly represented — closer to the
         // 1000-most-liquid terrain the Cannon & Lynch (2025) claim was measured on.
         [Parameter("universe")]
@@ -159,8 +159,8 @@ namespace QuantConnect.Algorithm.CSharp
             bool useQc500 = _universeName.Trim().Equals("QC500", StringComparison.OrdinalIgnoreCase);
             if (useQc500)
             {
-                // #11698: QC500 universe (SPY constituents, ~500 US large caps, monthly
-                // reconstitution) — same settings, wider candidate pool than OEF (S&P 100).
+                // #11698: QC500 universe (500 most liquid US equities by dollar volume,
+                // monthly reconstitution) — same settings, wider pool than OEF (S&P 100).
                 AddUniverse(Universe.QC500);
             }
             else

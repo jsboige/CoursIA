@@ -93,8 +93,9 @@ un univers élargi » — est désormais tranchée : **toujours NO BEATS, et l'�
 
 **Implémentation** : le sélecteur d'univers devient un paramètre QC (`[Parameter("universe")]`,
 défaut `OEF` = baseline inchangée). La valeur `QC500` opt-in branche `Universe.QC500` — dans
-LEAN actuel, l'univers des constituants SPY (~500 grandes caps US, reconstitué chaque mois,
-hérite des `UniverseSettings` du projet, ici résolution Daily). Le filtre capital-gain devient
+LEAN actuel, cet univers sélectionne chaque mois les 500 actions US les plus liquides par
+dollar-volume et hérite des `UniverseSettings` du projet, ici résolution Daily. Il ne reproduit
+pas la liste des constituants du S&P 500. Le filtre capital-gain devient
 lui aussi un paramètre (`filter-dividend-payers`), si bien que **les quatre bras proviennent de
 backtests paramétrés d'une seule et même compilation** — chaque run loge sa configuration
 active en `Debug` dans `Initialize`, preuve firsthand de l'arm exécuté.
@@ -107,8 +108,8 @@ régime SPY > SMA200 + top-20 hebdo + sizing ATR 1 %) :
 |--------------------|---------------------|--------|---------|--------|--------|
 | OEF (S&P 100)      | OFF (baseline)      | 0.445  | 14.825 % | 42.4 % | 981    |
 | OEF (S&P 100)      | ON                  | 0.258  | 7.903 %  | 24.7 % | 458    |
-| QC500 (S&P 500)    | OFF                 | 0.459  | 16.682 % | 58.8 % | 1 638  |
-| QC500 (S&P 500)    | ON                  | 0.011  | 1.097 %  | 52.3 % | 882    |
+| QC500 (top-500 dollar-volume LEAN) | OFF        | 0.459  | 16.682 % | 58.8 % | 1 638  |
+| QC500 (top-500 dollar-volume LEAN) | ON         | 0.011  | 1.097 %  | 52.3 % | 882    |
 
 *Comptes d'ordres relevés via l'API QC (`totalOrders`) ; valeurs non nulles, cohérentes avec
 les profits nets respectifs (+401,4 %, +142,8 %, +504,6 % et +13,6 %). Le filtre divise le
@@ -129,8 +130,9 @@ nombre d'ordres par 2,1 sur OEF et par 1,9 sur QC500.*
 **Lecture épistémique** (la leçon pédagogique centrale du grain) : le claim de Cannon & Lynch
 (2025, *Review of Finance* 29(4) — source primaire citée en tête de la section #12034) est
 mesuré sur SON protocole : momentum 12-1 mensuel canonique, breakpoints NYSE, 1 000 plus
-liquides. Deux terrains distincts du nôtre — S&P 100 et S&P 500 en slope journalier 90 j à
-seuil 10 % — ne reproduisent pas ce résultat. **Transférer le filtre sans transférer le
+liquides. Deux terrains distincts du nôtre — OEF (S&P 100) et QC500 (top-500 US par
+dollar-volume) en slope journalier 90 j à seuil 10 % — ne reproduisent pas ce résultat.
+**Transférer le filtre sans transférer le
 protocole ne reproduit pas le claim** : un facteur de sélection comportemental est indexé à la
 définition du momentum qui l'a produit. Le pattern paramétré reste au catalogue (4 bras
 reproductibles depuis un seul build), la baseline OEF reste le défaut du dépôt.
