@@ -1,0 +1,34 @@
+name: Runner Positive Control
+
+# POSITIVE CONTROL (one-shot, deliberately broken) — mission ai-01 2026-08-28.
+# Prouve qu'un job route vers le runner myia-po-2024-fast-guards s'y EXECUTE
+# reellement : un vert sur un runner qui ne prend rien est indiscernable d'un
+# vert sur un organe eteint (cf #13370 : review-coverage-advisory 0 succes sur
+# 60 runs passe inapercu). Ce workflow echoue VOLONTAIREMENT (exit 42) apres
+# avoir affiche l'identite du runner. L'echec EST le livrable : ne jamais
+# merger cette branche.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: runner-positive-control
+  cancel-in-progress: true
+
+jobs:
+  positive-control:
+    name: Deliberate failure (exit 42)
+    runs-on: [self-hosted, coursia-ephemeral, coursia-fast-guards]
+    timeout-minutes: 5
+    steps:
+      - name: Runner identity (proof of execution host)
+        run: |
+          Write-Output "runner.name=${{ runner.name }}"
+          Write-Output "runner.os=${{ runner.os }}"
+          Write-Output "runner.arch=${{ runner.arch }}"
+
+      - name: Intentional failure (the control itself)
+        run: exit 42
