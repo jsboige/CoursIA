@@ -17,6 +17,18 @@ game theory, in the continuation of the **GT-17** (Game Theory) of the
 **First delivery**: bounded scope, conforming to the canonical audit
 c.475 (framing corrected by po-2025 before delivery, see Epic **#12844**).
 
+## Exposition (consumer notebooks)
+
+- **`GameTheory-17c-Lean-Lemons-Certificat.ipynb`** (native companion,
+  `lean4-wsl` kernel): imports `AsymmetricInformation.Lemons` and runs the
+  certificate live — `poolingTenable_iff_cross` (exact threshold),
+  `poolingTenable_mono` (floor), `#print axioms`, prior sweep (cliff at
+  pi = 75% on the threshold market) and the price spiral of the three
+  regimes (#13200).
+- **`GameTheory-17b-Asymmetric-Information.ipynb`** (Python): all four
+  models in simulation — participation fixed point, costly signaling,
+  screening, anticipatory rule.
+
 ## Explicit bounds
 
 - **No** general existence/uniqueness theorem for the anticipatory
