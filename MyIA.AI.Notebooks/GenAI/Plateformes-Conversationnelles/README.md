@@ -18,9 +18,10 @@ Les plateformes conversationnelles ne se réduisent pas à Open WebUI. Selon le
 terrain — un serveur auto-hébergé, un site WordPress existant, une boutique
 WooCommerce — l'interface GenAI la plus adaptée diffère. Cette catégorie
 présente **deux plateformes** comme **sœurs**, chacune détaillée dans son propre
-dossier ; le [`comparatif-owui-vs-ai-engine.md`](comparatif-owui-vs-ai-engine.md)
-vit **au niveau catégorie** parce qu'un comparatif ne doit pas être rangé à
-l'intérieur de l'un des deux objets qu'il compare.
+dossier ; le [`comparatif-owui-vs-ai-engine.md`](AI-Engine-WordPress/02-Comparatif/comparatif-owui-vs-ai-engine.md)
+vit dans la section [`02-Comparatif/`](AI-Engine-WordPress/02-Comparatif/) du
+dossier AI-Engine (réorganisation #12127) ; il compare les deux plateformes
+et reste accessible depuis chaque côté.
 
 ## Les deux plateformes
 
@@ -54,7 +55,7 @@ terrain d'observation (sans contenu privé reproduit).
 
 ## Comparatif
 
-Le tableau structuré [`comparatif-owui-vs-ai-engine.md`](comparatif-owui-vs-ai-engine.md)
+Le tableau structuré [`comparatif-owui-vs-ai-engine.md`](AI-Engine-WordPress/02-Comparatif/comparatif-owui-vs-ai-engine.md)
 synthétise les différences fonctionnelles (chat, RAG, multi-provider, MCP,
 extensions). Il ne **classe pas** un produit au-dessus de l'autre — OWUI et
 AI-Engine ciblent des usages différents et cohabitent souvent — mais aide à
