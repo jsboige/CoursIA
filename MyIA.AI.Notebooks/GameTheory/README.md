@@ -265,6 +265,7 @@ flowchart TD
 | 13 | [GameTheory-13-ImperfectInfo-CFR](GameTheory-13-ImperfectInfo-CFR.ipynb) | Python | CFR vanilla, MCCFR, Deep CFR | 70 min |
 | 13 (C#) | [GameTheory-13-ImperfectInfo-CFR-Csharp](GameTheory-13-ImperfectInfo-CFR-Csharp.ipynb) | .NET (C#) | Twin C# du 13 : CFR/CFR+ regret-matching from-scratch sur Kuhn Poker (récursion contrefactuelle, reach probabilities) (See #4956) | 60 min |
 | 13b | [GameTheory-13b-Safe-Subgame-Solving](GameTheory-13b-Safe-Subgame-Solving.ipynb) | Python | Safe subgame solving : le mauvais recollement produit un témoin adversarial explicite | 45 min |
+| 13c | [GameTheory-13c-Safe-Subgame-Solving-Csharp](GameTheory-13c-Safe-Subgame-Solving-Csharp.ipynb) | .NET (C#) | Twin C# du 13b : reproduction, audit des poids de chemin (double comptage 'pp'/'bp'), énumération corrigée, best-response énumérée — la loi survit, les EV absolus non (See #12208) | 40 min |
 | 14 | [GameTheory-14-DifferentialGames](GameTheory-14-DifferentialGames.ipynb) | Python | Boucle ouverte/fermée, Stackelberg | 60 min |
 | 14 (C#) | [GameTheory-14-DifferentialGames-Csharp](GameTheory-14-DifferentialGames-Csharp.ipynb) | .NET (C#) | Twin C# du 14 : **RK4 from-scratch** (remplace scipy.solve_ivp), **Riccati couplée backward** pour LQ feedback, Cournot/Stackelberg closed-form, poursuite-evasion (Isaacs) modelisée en RK4 (See #4956) | 60 min |
 | 15 | [GameTheory-15-CooperativeGames](GameTheory-15-CooperativeGames.ipynb) | Python | Shapley, Core, Bondareva-Shapley | 65 min |
@@ -822,6 +823,7 @@ GameTheory/
 ├── GameTheory-13-ImperfectInfo-CFR.ipynb
 ├── GameTheory-13-ImperfectInfo-CFR-Csharp.ipynb    # Jumeau C# — CFR/CFR+ regret-matching from-scratch (marathon #4956)
 ├── GameTheory-13b-Safe-Subgame-Solving.ipynb       # Recollement sûr et témoin adversarial
+├── GameTheory-13c-Safe-Subgame-Solving-Csharp.ipynb # Twin C# du 13b — reproduction + audit + BR énumérée (maturation #12208)
 ├── GameTheory-14-DifferentialGames.ipynb
 ├── GameTheory-14-DifferentialGames-Csharp.ipynb    # Jumeau C# — jeux différentiels : RK4 + Riccati from-scratch, pursuit-evasion (marathon #4956)
 ├── GameTheory-15-CooperativeGames.ipynb
