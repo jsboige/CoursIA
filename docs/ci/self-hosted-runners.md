@@ -156,7 +156,7 @@ Un seed sans stamp échoue en détruisant le seed. Sans fichier `x64.complete`, 
 
 1. Installer Python 3.11.9 **per-user** (python.org, hors UAC) sur le compte interactif du worker.
 2. Peupler le tool-cache par `robocopy` vers `<work>\_tool\Python\3.11.9\x64\` sous le compte `.\coursia-runner` (2820 fichiers) — si le compte interactif peut écrire sous `_work\_tool` (ACL par profil), le robocopy direct suffit ; sinon l'exécuter as `coursia-runner`.
-3. Écrire le stamp vide `<work>\_tool\Python\3.11.9\x64\x64.complete`.
+3. Écrire le stamp vide `<work>\_tool\Python\3.11.9\x64.complete` (frère du répertoire d'architecture — convention `actions/tool-cache` : `_completeToolPath` place `${folderPath}.complete` à côté de `folderPath`, pas à l'intérieur ; la procédure v1 (étape 3) écrivait par erreur `<x64>\x64.complete`, coquille détectée par ai-01 en review #13298 et corrigée ici).
 4. Vérifier sous le compte service : `python --version` → `3.11.9` et `pip --version` → 24.0 (le témoin `TOOL_PYOK 3.11.9` des runs de preuve).
 
 Le tool-cache et le stamp persistent sous `_work` entre jobs éphémères : les ré-enregistrements suivants gardent le cache hit.
@@ -190,5 +190,12 @@ La préparation complète reste découpée :
 5. **Preuve contrôlée** — autorisation explicite, une exécution légère réussie, contrôle négatif fork/payload, puis teardown et preuve que l'état initial est restauré.
 
 État au 2026-08-28 : les tranches 1-3 sont livrées ; la tranche 4 est active sur po-2024 (jobs réels consommés par le pool `coursia-fast-guards`, ex. runs 33092567324 et 33093119578) ; la preuve contrôlée complète (5) et l'extension du pool aux autres machines restent à faire. Chaque extension machine exige le provisionnement Python de la section dédiée avant le premier job.
+
+| Profil du registre | État au 2026-08-28 |
+|---|---|
+| `myia-po-2023-fast-guards` | en préparation (pas de runner installé) |
+| `myia-po-2024-fast-guards` | **actif** — tool-cache seedé (a2), ré-enregistrement sans UAC, jobs réels consommés |
+| `myia-po-2025-fast-guards` | en préparation (pas de runner installé) |
+| `myia-po-2026-fast-guards` | en préparation (pas de runner installé ; profil vérifié dans le registre) |
 
 Le réglage GitHub « Require approval for all outside collaborators » complète la garde YAML ; il ne la remplace jamais. L'activation finale reste un geste explicite du user ou du coordinateur, après validation des tranches précédentes.
