@@ -230,6 +230,13 @@ _LIST_ITEM_RE = re.compile(r"^\s{0,3}(?:[-*+]|\d{1,9}[.)])\s+")
 # `setext_oversized` false positives (CSP cryptarithmes, Sudoku grids, Mermaid-ish
 # boxes). See PR follow-up to #8392 (same precision vein, different FP family).
 _FENCE_RE = re.compile(r"^\s{0,3}(`{3,}|~{3,})")
+# blockquote prefix (up to 3 nestings, optional space after '>'): a fence can
+# live INSIDE a blockquote (`> ```bash` ... `> ````) and its content still
+# renders verbatim -- CommonMark keeps the fenced block within the quote.
+# _FENCE_RE alone is blind to the prefix, so `_inside_fence_lines` strips it
+# before matching (Search-10-SymbolicAutomata c23: `> # Windows` bash comments
+# inside a blockquoted fence were flagged heading_in_list, a scanner FP).
+_BQ_PREFIX_RE = re.compile(r"^\s{0,3}(?:>\s?){1,3}")
 _YAML_KV_RE = re.compile(r"^\s*[A-Za-z_][\w .\-]*:\s?(\S.*)?$")
 # exercise-hint keywords, word-boundary. Deliberately NOT "note"/"remarque"
 # (those are legitimate section headings, not the oversized-hint defect).
@@ -433,6 +440,35 @@ def _selfcheck() -> int:
         for f in failed:
             print(f"  !! {f}", file=sys.stderr)
         return 1
+    # fence fixtures (#11947 residual): validates the fence oracle itself on its
+    # false negatives. A detection pattern validates on what it must NOT flag:
+    # here, bash comments (`> # Windows`) inside a BLOCKQUOTED fenced block were
+    # the last heading_in_list corpus FP (Search-10-SymbolicAutomata c23) -- the
+    # prefix-blind _FENCE_RE let them reach the prose rules.
+    fence_fixtures: list[tuple[str, list[str], set[int]]] = [
+        # (name, lines, expected inside-set)
+        ("blockquote fence: bash comments are verbatim",
+         ["> ```bash", "> # Windows", "> choco install graphviz", "> ```"],
+         {1, 2}),
+        ("plain fence: content verbatim",
+         ["```bash", "# Windows", "choco install graphviz", "```"],
+         {1, 2}),
+        ("blockquote prose OUTSIDE any fence stays scannable",
+         ["> # Windows", "text"],
+         set()),
+        ("tilde fence inside blockquote",
+         ["> ~~~", "> # note", "> ~~~"],
+         {1}),
+    ]
+    for name, flines, expected in fence_fixtures:
+        got = _inside_fence_lines(flines)
+        if got != expected:
+            failed.append(f"{name}: inside={sorted(got)}, expected={sorted(expected)}")
+    if failed:
+        print("selfcheck FAIL:", file=sys.stderr)
+        for f in failed:
+            print(f"  !! {f}", file=sys.stderr)
+        return 1
     print("selfcheck OK: yaml_block_open_no_close fires on both observed forms "
           "(FallacyDetection/02 + SL-8), silent on bare divider / complete "
           "frontmatter / prose")
@@ -582,13 +618,16 @@ def _inside_fence_lines(lines) -> set[int]:
     setext underline. Backtick and tilde fences are independent: a tilde line never
     closes a backtick block (and vice-versa). An unclosed fence leaves every subsequent
     line inside (defensive: prefer a false-negative on setext over a false-positive).
+    Fence markers may carry a blockquote prefix (``> ```bash``): the prefix is
+    stripped before matching, so blockquoted fences bound their verbatim content
+    exactly like plain ones.
     """
     inside: set[int] = set()
     in_fence = False
     fence_char = None
     fence_len = 0
     for i, ln in enumerate(lines):
-        m = _FENCE_RE.match(ln)
+        m = _FENCE_RE.match(_BQ_PREFIX_RE.sub("", ln, count=1))
         if m:
             marker = m.group(1)
             ch, ln_len = marker[0], len(marker)
