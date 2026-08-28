@@ -17,7 +17,8 @@ def main():
             cwd="docker-configurations/services/comfyui-qwen",
             capture_output=True,
             text=True,
-            timeout=60
+            timeout=60,
+            encoding="utf-8", errors="replace",
         )
         
         print(f"📋 Sortie docker-compose: {result.returncode}")
@@ -37,7 +38,8 @@ def main():
             result = subprocess.run(
                 ["docker", "ps", "--filter", "name=comfyui-qwen", "--format", "{{.Names}} {{.Status}}"],
                 capture_output=True,
-                text=True
+                text=True,
+                encoding="utf-8", errors="replace",
             )
             
             if "comfyui-qwen" in result.stdout and "Up" in result.stdout:
@@ -48,7 +50,8 @@ def main():
                 logs_result = subprocess.run(
                     ["docker", "logs", "--tail", "20", "comfyui-qwen"],
                     capture_output=True,
-                    text=True
+                    text=True,
+                    encoding="utf-8", errors="replace",
                 )
                 
                 if logs_result.returncode == 0:

@@ -299,7 +299,7 @@ def check_environment() -> EnvironmentCheck:
             result = subprocess.run(
                 ["elan", "--version"],
                 capture_output=True,
-                text=True,
+                text=True, encoding="utf-8", errors="replace",
                 timeout=10
             )
             if result.returncode == 0:
@@ -317,7 +317,7 @@ def check_environment() -> EnvironmentCheck:
             result = subprocess.run(
                 ["lean", "--version"],
                 capture_output=True,
-                text=True,
+                text=True, encoding="utf-8", errors="replace",
                 timeout=10
             )
             if result.returncode == 0:
@@ -332,7 +332,7 @@ def check_environment() -> EnvironmentCheck:
         result = subprocess.run(
             [sys.executable, "-c", "import lean4_jupyter; print('OK')"],
             capture_output=True,
-            text=True,
+            text=True, encoding="utf-8", errors="replace",
             timeout=10
         )
         env.lean4_jupyter_installed = result.returncode == 0 and "OK" in result.stdout
@@ -347,7 +347,7 @@ def check_environment() -> EnvironmentCheck:
         result = subprocess.run(
             ["jupyter", "kernelspec", "list", "--json"],
             capture_output=True,
-            text=True,
+            text=True, encoding="utf-8", errors="replace",
             timeout=10
         )
         if result.returncode == 0:
@@ -498,7 +498,7 @@ def execute_notebook_with_papermill(notebook_path: Path, timeout: int = 300) -> 
                 "--kernel", kernel
             ],
             capture_output=True,
-            text=True,
+            text=True, encoding="utf-8", errors="replace",
             timeout=timeout,
             cwd=str(notebook_path.parent)
         )

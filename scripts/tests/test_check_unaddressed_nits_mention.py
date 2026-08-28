@@ -312,3 +312,66 @@ def test_11984_forme_11628_non_regie_par_le_nouveau_motif():
     assert m is None, body
     # Le strip global neutralise toujours (via #11636).
     assert "CHANGES_REQUESTED" not in mod._strip_mentioned_verdicts(body)
+
+
+# ---------------------------------------------------------------------------
+# #12944 — extension de la position D : reference pointable HORS parentheses.
+# Instance fondatrice : #12941, review Hermes close-the-loop 5020777166 —
+# « sur ma review REQUEST_CHANGES de #12900 (`ffe18961`) » : le numero de la
+# PR source suit le verdict SANS parenthese. Le verdict mentionne restait
+# emis, et `_formal_concern_precedes_lift` annulait de surcroit la levee
+# passive qui suivait (« est **traité et fermé** », nouveaux LIFT_MARKERS).
+# Meme discriminant que #11984 : le ref pointable designe l'evenement passe
+# rapporte ; sans ref, le verdict reste emis.
+# ---------------------------------------------------------------------------
+
+FOUNDER_12941_BODY = (
+    "**[Hermes]** — close-the-loop sur ma review REQUEST_CHANGES de #12900 "
+    "(`ffe18961`). Mon concern (registre de 18 entrées dont 16 notebooks "
+    "inexistants + test-théâtre) est **traité et fermé** :\n\n"
+    "1. **Registre régénéré depuis les diffs réels** : les 8 entrées "
+    "proviennent de l'extraction mécanique, pas de mémoire.\n\n"
+    "Verdict : le fix répond à la cause racine plutôt qu'à la dérive.\n"
+    "*(contrainte token : COMMENT only — auteur `jsboige`)*\n"
+)
+
+
+def test_12944_fondateur_close_the_loop_nest_plus_un_nit():
+    """Corps (raccourci, structure exacte) de la review 5020777166 de #12941 :
+    le verdict mentionne (« ma review REQUEST_CHANGES de #12900 ») est
+    neutralise, la levee passive (« est **traité et fermé** ») est reconnue —
+    classify rend None au lieu de BOT-CONCERN. AVANT le fix, ce close-the-loop
+    etait l'unique item bloquant du gate sur #12941."""
+    assert mod.classify("jsboige", FOUNDER_12941_BODY) is None
+
+
+def test_12944_ref_hors_parentheses_neutralise_le_verdict():
+    """Unite sur le motif : « review VERDICT de #N » (ref inline, sans
+    parenthese) neutralise le verdict via _strip_mentioned_verdicts."""
+    body = "close-the-loop sur ma review REQUEST_CHANGES de #12900 (`ffe18961`)."
+    assert "REQUEST_CHANGES" not in mod._strip_mentioned_verdicts(body)
+
+
+def test_12944_ref_inline_variante_sans_preposition():
+    """« the review REQUEST_CHANGES #12900 » — la preposition « de » est
+    optionnelle, le # pointable suffit (forme anglaise)."""
+    body = "the review REQUEST_CHANGES #12900 was mine, and it is now addressed."
+    assert "REQUEST_CHANGES" not in mod._strip_mentioned_verdicts(body)
+
+
+def test_12944_ref_inline_sans_numero_reste_vivant():
+    """Controle negatif du discriminant : nominal + verdict SANS ref pointable
+    reste une emission — « Ma review REQUEST_CHANGES tient toujours. »
+    (miroir exact du contre-exemple #11984 « Cette review CHANGES_REQUESTED
+    reste bloquante »)."""
+    body = "Ma review REQUEST_CHANGES tient toujours."
+    assert mod.classify("hermes-bot", body) == "BOT-CONCERN"
+
+
+def test_12944_verdict_emis_titre_hermes_sans_ref_inline_reste_vivant():
+    """Non-regression #12311 : l'emission Hermes en titre (« Review —
+    REQUEST_CHANGES (commentaire, self-review cap) ») ne porte NI ref entre
+    parentheses NI #N inline apres le verdict — l'extension ne l'avale pas."""
+    body = ("**[Hermes] Review — REQUEST_CHANGES (commentaire, self-review cap)**\n\n"
+            "Issue-first check : la methode diverge sur le point central.")
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"

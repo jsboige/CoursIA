@@ -129,7 +129,7 @@ def check_c3(nb_path: Path) -> list[dict]:
     try:
         diff = subprocess.run(
             ["git", "diff", "HEAD", "--", str(rel)],
-            capture_output=True, text=True, cwd=str(REPO_ROOT),
+            capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=str(REPO_ROOT),
             timeout=10,
         )
     except (subprocess.TimeoutExpired, FileNotFoundError):
@@ -285,7 +285,7 @@ def changed_notebooks(base_ref: str, head_ref: str) -> list[str]:
     try:
         diff = subprocess.run(
             ["git", "diff", "--name-only", f"{base_ref}...{head_ref}"],
-            capture_output=True, text=True, cwd=str(REPO_ROOT), timeout=30,
+            capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=str(REPO_ROOT), timeout=30,
         )
     except (subprocess.TimeoutExpired, FileNotFoundError):
         return []

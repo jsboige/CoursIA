@@ -107,7 +107,7 @@ def gh_label_fetcher(pr_number: int) -> list[str]:
                 "--json", "labels",
                 "--jq", "[.labels[].name]",
             ],
-            capture_output=True, text=True, timeout=20,
+            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=20,
         )
     except (OSError, subprocess.SubprocessError):
         return []
@@ -137,7 +137,7 @@ def gh_comment_fetcher(pr_number: int) -> list[dict]:
                 "gh", "api", f"repos/{repo}/issues/{pr_number}/comments",
                 "--jq", "[.[] | {author: .user.login, body: .body, createdAt: .created_at}]",
             ],
-            capture_output=True, text=True, timeout=30,
+            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=30,
         )
     except (OSError, subprocess.SubprocessError):
         return []
