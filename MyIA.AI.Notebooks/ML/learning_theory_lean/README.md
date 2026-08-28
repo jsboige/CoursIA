@@ -139,7 +139,7 @@ des docstrings « 0-sorry »). Chaque fichier FR possède un **sibling anglais**
 | `PacLearning/Hoeffding.lean` | 0 | Concentration de Hoeffding-for-Bernoulli (brique 2c/3). |
 | `PacLearning/UnionBound.lean` | 0 | Probabilité d'échantillon + union bound (inégalités de Boole). |
 | `PacLearning/UniformConcentration.lean` | 0 | Concentration uniforme sur une classe finie. |
-| `PacLearning/PacFiniteBound.lean` | 0 | **Borne de complexité d'échantillon** (flagship PAC) : `m ≥ (1/ε)(ln|H| + ln(1/δ))`. |
+| `PacLearning/PacFiniteBound.lean` | 0 | **Borne de complexité d'échantillon** (flagship PAC) : `m ≥ (1/ε)(ln\|H\| + ln(1/δ))`. |
 | `PacLearning/Agnostic.lean` | 0 | **Borne de généralisation PAC agnostic** (flagship itération 2). |
 | `PacLearning/ERM.lean` | 0 | Argument ERM (Empirical Risk Minimization) — brique agnostic 6/6. |
 | `PacLearning.lean` | 0 | Imports parapluie + doc de statut. |
@@ -171,7 +171,7 @@ lake build PacLearning   # cadre PAC (modèle + propriétés élémentaires)
 # Dépend de Mathlib4 — le premier build est lourd, les builds suivants utilisent le cache
 ```
 
-## Notebook compagnon
+## Notebooks compagnons
 
 Le lake est le **livrable formel** (convention des lakes frères : `lake build`
 SUCCESS = preuve d'exécution). Il vient en pendant prouvé des notebooks de la
@@ -179,8 +179,18 @@ série **ML** : [`ML.Net/`](../ML.Net/) (classification linéaire, entraînement
 évaluation de classifieurs en C#/.NET), dont le perceptron est l'ancêtre
 historique de la classification linéaire. La formalisation Lean démontre *pourquoi*
 le perceptron converge — la garantie algorithmique que la pratique ML.NET met en
-œuvre. Le module `PacLearning` a son pendant empirique dans le notebook companion
-`02-ML-Cours/2.8-Theorie-PAC` (issue #4294).
+œuvre.
+
+Exposition par la moitié :
+
+- **Moitié `Perceptron`** — [`02-ML-Cours/2.8d-Lean-Novikoff-Convergence.ipynb`](../DataScienceWithAgents/02-ML-Cours/2.8d-Lean-Novikoff-Convergence.ipynb) (companion natif, kernel `lean4-wsl`) : la borne de Novikoff, ses deux lemmes de croissance et le témoin de saturation `#check`és et exécutés en direct depuis le lake, avec la dynamique rejouée sur des entiers (issue #13199). [`2.8c`](../DataScienceWithAgents/02-ML-Cours/2.8c-Borne-Temoin-Concentration.ipynb) en simule le témoin en Python.
+- **Moitié `PacLearning`** — [`02-ML-Cours/2.8b-Theorie-PAC-Lean.ipynb`](../DataScienceWithAgents/02-ML-Cours/2.8b-Theorie-PAC-Lean.ipynb) (companion natif, kernel `lean4-wsl`) : Hoeffding, borne de l'union, ERM, complexité d'échantillon, déclaration par déclaration ; le pendant empirique en est [`2.8-Theorie-PAC`](../DataScienceWithAgents/02-ML-Cours/2.8-Theorie-PAC.ipynb) (issue #4294).
+
+**Compagnons kernel Lean (`lean4-wsl`)** — le lake exécuté déclaration par
+déclaration dans un notebook :
+
+- [`02-ML-Cours/2.8b-Theorie-PAC-Lean.ipynb`](../DataScienceWithAgents/02-ML-Cours/2.8b-Theorie-PAC-Lean.ipynb) — côté série ML : modèle, échantillon, concentration uniforme (EPIC #11703) ;
+- [`SymbolicAI/SymbolicLearning/SL-1b-LogicalLearning-Lean-Native.ipynb`](../../SymbolicAI/SymbolicLearning/SL-1b-LogicalLearning-Lean-Native.ipynb) — côté série SymbolicAI : chaîne complète des bornes (Valiant classe finie, agnostique, Hoeffding-Chernoff) et branche perceptron (Novikoff + serrage), avec 3 exercices de preuve (See #11703).
 
 ## Référence
 

@@ -40,6 +40,7 @@ print('PATCHED:', safe_ssl.is_patched())
         capture_output=True,
         text=True,
         env={**os.environ, "CONDA_DEFAULT_ENV": "mcp-jupyter-py310"},
+        encoding="utf-8", errors="replace",
     )
     return result
 
@@ -100,6 +101,7 @@ print('PATCHED:', safe_ssl.is_patched())
         [sys.executable, "-c", code],
         capture_output=True,
         text=True,
+        encoding="utf-8", errors="replace",
     )
     assert "PATCHED: False" in result.stdout, (
         f"avec SAFE_SSL_BOOTSTRAP_DISABLED=1, is_patched() devrait etre False. "

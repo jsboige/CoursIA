@@ -28,7 +28,7 @@ WooCommerce — sert de **terrain d'observation** concret. Aucune donnée
 de ce site n'est reproduite ici : ce dossier ne transmet que des
 structures et des comptages, sans contenu, sans nom, et sans capture
 d'écran (voir la note de méthode du
-[parcours détaillé](livresagites-parcours.md#note-de-méthode--pourquoi-il-ny-a-aucune-capture)).
+[parcours détaillé](04-Cas-Usage-livresagites/livresagites-parcours.md#note-de-méthode--pourquoi-il-ny-a-aucune-capture)).
 
 ---
 
@@ -56,9 +56,9 @@ Chaque section suit le même rythme :
    Open WebUI.
 4. **Référence livresagités** — un cas d'usage réel, sans PII.
 
-Un fichier complémentaire [`comparatif-owui-vs-ai-engine.md`](../comparatif-owui-vs-ai-engine.md)
+Un fichier complémentaire [`comparatif-owui-vs-ai-engine.md`](02-Comparatif/comparatif-owui-vs-ai-engine.md)
 synthétise les différences fonctionnelles en tableau ; un fichier
-[`livresagites-parcours.md`](livresagites-parcours.md) détaille le cas
+[`livresagites-parcours.md`](04-Cas-Usage-livresagites/livresagites-parcours.md) détaille le cas
 d'usage livresagités bout-en-bout (sans contenu privé).
 
 Un notebook exécutable [`eval-choisir-son-modele.ipynb`](eval-choisir-son-modele.ipynb)
@@ -276,20 +276,20 @@ question sans image ne produit aucune couleur.
 
 ## Sections
 
-### 1. [Vue d'ensemble](../comparatif-owui-vs-ai-engine.md)
+### 1. [Vue d'ensemble](02-Comparatif/comparatif-owui-vs-ai-engine.md)
 
 AI-Engine en deux pages : ce que c'est, qui l'utilise, pourquoi on en
 parle à côté d'Open WebUI. Statistiques publiques (100K+ installations
 actives, 4.9/5 étoiles, version 3.7.0 août 2026, license GPL).
 
-### 2. [Fonctionnalités GenAI cœur](../comparatif-owui-vs-ai-engine.md#fonctionnalités-cœur)
+### 2. [Fonctionnalités GenAI cœur](02-Comparatif/comparatif-owui-vs-ai-engine.md#fonctionnalités-cœur)
 
 Chatbots, Workspace (plein écran dans wp-admin), Copilot pour l'éditeur
 WordPress, AI Forms (text/image/audio/file avec logique conditionnelle),
 génération d'image et de vision. Comparaison avec les surfaces
 équivalentes d'Open WebUI (chat, canaux, prompts).
 
-### 3. [Multi-provider et self-hosting](../comparatif-owui-vs-ai-engine.md#multi-provider-et-self-hosting)
+### 3. [Multi-provider et self-hosting](02-Comparatif/comparatif-owui-vs-ai-engine.md#multi-provider-et-self-hosting)
 
 AI-Engine supporte **neuf providers distants** (OpenAI, Anthropic,
 Google, Mistral, xAI/Grok, Perplexity, OpenRouter, Replicate, Azure)
@@ -299,7 +299,7 @@ Open WebUI, c'est la même philosophie avec OpenAI-compatible + Ollama
 natif ; la différence est qu'AI-Engine ne fournit pas son propre
 moteur local — il s'appuie sur l'écosystème WordPress existant.
 
-### 4. [RAG et embeddings](../comparatif-owui-vs-ai-engine.md#rag-et-embeddings)
+### 4. [RAG et embeddings](02-Comparatif/comparatif-owui-vs-ai-engine.md#rag-et-embeddings)
 
 Cinq vector stores supportés (Chroma, Qdrant, Pinecone, OpenAI Vector
 Store, **Internal WordPress DB**). PDF import avec chunking
@@ -308,7 +308,7 @@ trois modes de recherche (Simple, Context-Aware, Smart).
 Comparaison avec la pile RAG native d'Open WebUI (Knowledge,
 documents, hybrid search).
 
-### 5. [MCP server natif](../comparatif-owui-vs-ai-engine.md#mcp-server-natif)
+### 5. [MCP server natif](02-Comparatif/comparatif-owui-vs-ai-engine.md#mcp-server-natif)
 
 AI-Engine transforme WordPress en **serveur MCP** : des outils
 permission-aware (post, comment, media, theme, plugin, WooCommerce,
@@ -319,7 +319,7 @@ externes. C'est l'une de ses spécificités les plus marquantes côté
 intégration agentique — un terrain de comparaison avec les **Tools /
 MCP** d'Open WebUI.
 
-### 6. [Cas d'usage livresagités](livresagites-parcours.md)
+### 6. [Cas d'usage livresagités](04-Cas-Usage-livresagites/livresagites-parcours.md)
 
 Le projet WordPress **livresagités** sert de **terrain d'observation
 réel** : une maison d'édition, et non un blog — dépôt de manuscrits,
@@ -334,7 +334,7 @@ la base*.
 
 Aucun contenu du site n'est reproduit, et le dossier ne contient
 aucune capture d'écran : la
-[note de méthode](livresagites-parcours.md#note-de-méthode--pourquoi-il-ny-a-aucune-capture)
+[note de méthode](04-Cas-Usage-livresagites/livresagites-parcours.md#note-de-méthode--pourquoi-il-ny-a-aucune-capture)
 explique pourquoi une capture de `wp-admin` n'est pas assainissable.
 
 ---
@@ -350,7 +350,7 @@ Comme pour le dossier Open-WebUI voisin :
   contexte — compte connecté, domaines, extensions installées —
   indépendamment de la page affichée, et une capture retouchée n'est
   pas vérifiable par le lecteur. La
-  [note de méthode](livresagites-parcours.md#note-de-méthode--pourquoi-il-ny-a-aucune-capture)
+  [note de méthode](04-Cas-Usage-livresagites/livresagites-parcours.md#note-de-méthode--pourquoi-il-ny-a-aucune-capture)
   détaille l'arbitrage et ce qu'illustrer proprement supposerait.
 - **Aucun contenu privé livresagités** : le cas d'usage est décrit à
   un niveau architectural (structures, comptages, familles d'outils),
@@ -380,9 +380,9 @@ attendues.
 - [QA Playwright-AI-Engine](05-Playwright-AI-Engine/README.md) — ce que
   l'API ne voit pas : l'interface d'administration défait des écritures
   REST, et pas toujours
-- [`comparatif-owui-vs-ai-engine.md`](../comparatif-owui-vs-ai-engine.md)
+- [`comparatif-owui-vs-ai-engine.md`](02-Comparatif/comparatif-owui-vs-ai-engine.md)
   — tableau structuré
-- [`livresagites-parcours.md`](livresagites-parcours.md) — cas
+- [`livresagites-parcours.md`](04-Cas-Usage-livresagites/livresagites-parcours.md) — cas
   d'usage concret
 - [`eval-choisir-son-modele.ipynb`](eval-choisir-son-modele.ipynb) —
   banc d'évaluation reproductible, cinq propriétés discriminantes

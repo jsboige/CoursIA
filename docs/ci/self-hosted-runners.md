@@ -1,6 +1,6 @@
 # Préparation des runners GitHub Actions auto-hébergés
 
-Cette page décrit les mesures et les garde-fous du chantier #12704. **Aucun runner n'est enregistré ni activé par cette première tranche.** Le dépôt `jsboige/CoursIA` est public : une PR de fork peut contenir du code non fiable. Toute future exécution auto-hébergée devra donc être réservée aux branches du dépôt lui-même, avec une garde YAML explicite en plus des réglages GitHub.
+Cette page décrit les mesures et les garde-fous du chantier #12704. **État au 2026-08-28 : activation partielle sur po-2024** (runner `fast-guards` live, tool-cache seedé — cf section Provisionnement ; ré-enregistrement sans UAC opérationnel), les autres profils du registre restant en préparation. Le dépôt `jsboige/CoursIA` est public : une PR de fork peut contenir du code non fiable. Toute exécution auto-hébergée reste réservée aux branches du dépôt lui-même, avec une garde YAML explicite en plus des réglages GitHub.
 
 ## Mesurer avant de dimensionner
 
@@ -139,7 +139,47 @@ Les logs conservés restent locaux et hors du dépôt. Le contrôle distant « z
 
 Un runner `--ephemeral` traite au plus un job puis doit être ré-enregistré. Le gestionnaire prépare une invocation unique ; il ne crée ni boucle permanente, ni broker de tokens. Le choix entre configuration JIT, contrôleur de ré-enregistrement ou preuve one-shot est une décision séparée avant activation durable. Un runner persistant n'est pas un raccourci acceptable.
 
-## Tranches suivantes, non activées
+## Provisionnement Python du tool-cache (option a2)
+
+`windows-self-hosted-tests.yml` conserve `actions/setup-python`. Les deux alternatives ont été écartées sur preuve (arbitrage #13217, 2026-08-27) :
+
+- **Python machine sans `setup-python`** (PR #13233, fermée) : le compte dédié `.\coursia-runner` n'a aucun `python` dans son PATH — les installations per-user de `C:\Users\<worker>\AppData\Local\Programs\Python` sont hors PATH système et hors ACL du compte service. Mesuré au run 33087876304 : « The term 'python' is not recognized » (`Install test dependencies`, 2 s).
+- **Install all-users + PATH** (option a1) : fonctionnelle mais exige une passe UAC ; non retenue tant que l'alternative sans UAC existe.
+
+Sur un runner éphémère sans provisionnement, le premier `setup-python` télécharge l'interpréteur et son `setup.ps1` est bloqué par l'ExecutionPolicy du compte service (défaut fondateur de #13217). La voie retenue, déployée et mesurée sur po-2024 : **seeder le tool-cache du runner avec un Python épinglé et son stamp de complétude**, pour que `setup-python` trouve l'interpréteur en cache local et n'exécute jamais `setup.ps1` — zéro téléchargement, zéro script d'installation.
+
+### Le stamp est la pièce critique
+
+Un seed sans stamp échoue en détruisant le seed. Sans fichier `x64.complete`, `tc.find()` répond « was not found in the local cache » ; `setup-python` télécharge, et son `setup.ps1` **trouve le dossier seedé, le supprime, puis copie uniquement l'installeur** — l'archive `actions/python-versions` embarque un exécutable, pas un arbre — et échoue en l'exécutant sous le compte service (`0x80070005`, reproduit hors job). Avec le stamp : cache hit immédiat.
+
+### Procédure (mesurée sur po-2024)
+
+1. Installer Python 3.11.9 **per-user** (python.org, hors UAC) sur le compte interactif du worker.
+2. Peupler le tool-cache par `robocopy` vers `<work>\_tool\Python\3.11.9\x64\` sous le compte `.\coursia-runner` (2820 fichiers) — si le compte interactif peut écrire sous `_work\_tool` (ACL par profil), le robocopy direct suffit ; sinon l'exécuter as `coursia-runner`.
+3. Écrire le stamp vide `<work>\_tool\Python\3.11.9\x64.complete` — **frère** du répertoire `x64\`, jamais dedans. `@actions/tool-cache` compose `<cache>/<tool>/<version>/<arch>` puis teste ce **même** chemin suffixé de `.complete` : `find()` évalue `fs.existsSync(cachePath) && fs.existsSync(cachePath + '.complete')`, et `_completeToolPath()` écrit `markerPath = folderPath + '.complete'`. Un marqueur placé *dans* `x64\` n'est donc jamais lu — `tc.find()` répond « not found », et le seed est détruit au premier job par le `io.rmRF(folderPath)` de `_createToolPath()`.
+4. Vérifier sous le compte service : `python --version` → `3.11.9` et `pip --version` → 24.0 (le témoin `TOOL_PYOK 3.11.9` des runs de preuve).
+
+Le tool-cache et le stamp persistent sous `_work` entre jobs éphémères : les ré-enregistrements suivants gardent le cache hit.
+
+### Preuves mesurées (po-2024, 2026-08-27)
+
+- run 33092567324 (main, 16:19Z) : `setup-python` **success** (cache hit), pip success, pytest 39 passed / 1 failed — l'échec résiduel était le bug d'invariant #13238, sans rapport avec le provisionnement ;
+- run 33093119578 (branche, 16:25Z) : **42 passed**, conclusion success ;
+- run de contrôle sans stamp : `0x80070005`, le dossier seedé détruit par `setup.ps1` (mécanisme ci-dessus).
+
+### Ré-enregistrement sans UAC (chaîne po-2024)
+
+Chaque `workflow_dispatch` consomme l'enregistrement éphémère (un job, un runner) : la chaîne de ré-enregistrement doit donc tourner sans intervention élevée. Mise au point sur po-2024 (2026-08-27) :
+
+- **tâche planifiée `CoursIA-Runner-Activate`** : exécute périodiquement le `register --apply` du gestionnaire (les secrets d'enregistrement restent transmis par l'environnement upstream, jamais en ligne de commande) ;
+- **listener interactif lancé sous le compte dédié** : le service runner démarre dans la session du compte `.\coursia-runner`, sans élévation ;
+- résultat mesuré : dispatch 16:00Z pris par un runner ré-enregistré automatiquement — « la machinery vit » sans passe UAC par cycle.
+
+Le stamp `_work\_tool` (section précédente) persiste à travers ces cycles : le cache hit survit aux ré-enregistrements.
+
+Diagnostic complet et arbitrage : #13217. Chantier runners : #12704.
+
+## Tranches suivantes, activation partielle
 
 La préparation complète reste découpée :
 
@@ -148,5 +188,14 @@ La préparation complète reste découpée :
 3. **Cycle de vie local** — gestionnaire, profils, probes et teardown décrits ci-dessus.
 4. **Commutation** — un seul point de bascule et garde `github.event.pull_request.head.repo.full_name == github.repository`; aucun `pull_request_target` auto-hébergé.
 5. **Preuve contrôlée** — autorisation explicite, une exécution légère réussie, contrôle négatif fork/payload, puis teardown et preuve que l'état initial est restauré.
+
+État au 2026-08-28 : les tranches 1-3 sont livrées ; la tranche 4 est active sur po-2024 (jobs réels consommés par le pool `coursia-fast-guards`, ex. runs 33092567324 et 33093119578) ; la preuve contrôlée complète (5) et l'extension du pool aux autres machines restent à faire. Chaque extension machine exige le provisionnement Python de la section dédiée avant le premier job.
+
+| Profil du registre | État au 2026-08-28 |
+|---|---|
+| `myia-po-2023-fast-guards` | en préparation (pas de runner installé) |
+| `myia-po-2024-fast-guards` | **actif** — tool-cache seedé (a2), ré-enregistrement sans UAC, jobs réels consommés |
+| `myia-po-2025-fast-guards` | en préparation (pas de runner installé) |
+| `myia-po-2026-fast-guards` | en préparation (pas de runner installé ; profil vérifié dans le registre) |
 
 Le réglage GitHub « Require approval for all outside collaborators » complète la garde YAML ; il ne la remplace jamais. L'activation finale reste un geste explicite du user ou du coordinateur, après validation des tranches précédentes.
