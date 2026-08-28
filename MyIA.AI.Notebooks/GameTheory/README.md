@@ -510,11 +510,7 @@ cd D:\CoursIA\MyIA.AI.Notebooks\GameTheory\scripts
 .\setup_wsl_kernel.ps1
 ```
 
-<<<<<<< HEAD
-### Notebooks Lean 4 (2b, 4b, 5b, 8b, 8d, 11b, 15b, 27b)
-=======
-### Notebooks Lean 4 (2b, 4b, 5b, 8b, 8d, 11b, 15b, 17c)
->>>>>>> origin/main
+### Notebooks Lean 4 (2b, 4b, 5b, 8b, 8d, 11b, 15b, 17c, 27b)
 
 Ces notebooks nécessitent le kernel `Lean 4 (WSL)` :
 
@@ -558,11 +554,7 @@ jupyter notebook GameTheory-01-Setup.ipynb
 # 3. Puis GameTheory-02 (formes normales, matrices de gains)
 ```
 
-<<<<<<< HEAD
-Pour les notebooks Lean (2b, 4b, 5b, 8b, 8d, 11b, 15b, 27b) : installer le kernel `Lean 4 (WSL)` via `scripts/setup_wsl_lean4.sh`.
-=======
-Pour les notebooks Lean (2b, 4b, 5b, 8b, 8d, 11b, 15b, 17c) : installer le kernel `Lean 4 (WSL)` via `scripts/setup_wsl_lean4.sh`.
->>>>>>> origin/main
+Pour les notebooks Lean (2b, 4b, 5b, 8b, 8d, 11b, 15b, 17c, 27b) : installer le kernel `Lean 4 (WSL)` via `scripts/setup_wsl_lean4.sh`.
 Pour GT-13/17 (OpenSpiel) : installer le kernel `GameTheory WSL` via `scripts/setup_wsl_openspiel.sh`. Les autres notebooks Python, y compris les extensions 3a-3f, 13b, 15d, 16b et 18-27, utilisent l'environnement Python natif.
 
 ---
@@ -571,11 +563,7 @@ Pour GT-13/17 (OpenSpiel) : installer le kernel `GameTheory WSL` via `scripts/se
 
 ### J'ai un Windows, est-ce que je peux suivre toute la série ?
 
-<<<<<<< HEAD
-Oui. Tous les notebooks Python tournent nativement sur Windows (Nashpy, NumPy, SciPy, Matplotlib, Z3), à l'exception de GT-13 (CFR/OpenSpiel) et GT-17 (Multi-Agent RL), qui nécessitent WSL car OpenSpiel ne compile pas nativement sous Windows. Les side tracks Lean (2b, 4b, 5b, 8b, 8d, 11b, 15b, 27b) nécessitent aussi WSL pour le kernel `lean4-wsl`. Les side tracks `c` et les extensions 3a-3f, 13b, 15d, 16b et 18-27 restent du Python natif. Les scripts d'installation sont dans `scripts/` (voir section Installation).
-=======
-Oui. Tous les notebooks Python tournent nativement sur Windows (Nashpy, NumPy, SciPy, Matplotlib, Z3), à l'exception de GT-13 (CFR/OpenSpiel) et GT-17 (Multi-Agent RL), qui nécessitent WSL car OpenSpiel ne compile pas nativement sous Windows. Les side tracks Lean (2b, 4b, 5b, 8b, 8d, 11b, 15b, 17c) nécessitent aussi WSL pour le kernel `lean4-wsl`. Les side tracks `c` et les extensions 3a-3f, 13b, 15d, 16b et 18-27 restent du Python natif. Les scripts d'installation sont dans `scripts/` (voir section Installation).
->>>>>>> origin/main
+Oui. Tous les notebooks Python tournent nativement sur Windows (Nashpy, NumPy, SciPy, Matplotlib, Z3), à l'exception de GT-13 (CFR/OpenSpiel) et GT-17 (Multi-Agent RL), qui nécessitent WSL car OpenSpiel ne compile pas nativement sous Windows. Les side tracks Lean (2b, 4b, 5b, 8b, 8d, 11b, 15b, 17c, 27b) nécessitent aussi WSL pour le kernel `lean4-wsl`. Les side tracks `c` et les extensions 3a-3f, 13b, 15d, 16b et 18-27 restent du Python natif. Les scripts d'installation sont dans `scripts/` (voir section Installation).
 
 ### Quel est le pré-requis mathématique minimum ?
 
@@ -960,17 +948,10 @@ Le marqueur `CATALOG-STATUS` en tête de fichier **fait foi pour les comptes et 
 
 | Sous-série | Composition | Paradigmes dominants |
 |------------|-----------|----------------------|
-<<<<<<< HEAD
-| Racine | Fil principal GT-1 à GT-17 en **binômes Python ⇄ C#** (marathon #4956), side tracks `b` Lean (2b, 4b, 5b, 8b, 8d, 11b, 15b, 27b), approfondissements `c`, extensions 3a-3f et strate 7 GT-18 à GT-27 | Nashpy/OpenSpiel/Z3 (Python), BCL from-scratch (C#), Lean 4 (side tracks `b`) |
+| Racine | Fil principal GT-1 à GT-17 en **binômes Python ⇄ C#** (marathon #4956), side tracks `b` Lean (2b, 4b, 5b, 8b, 8d, 11b, 15b, 17c, 27b), approfondissements `c`, extensions 3a-3f et strate 7 GT-18 à GT-27 | Nashpy/OpenSpiel/Z3 (Python), BCL from-scratch (C#), Lean 4 (side tracks `b`) |
 | Sous-série [SocialChoice/](SocialChoice/) | SC-01 à SC-04, dont SC-01 (Arrow) et SC-03 (Voting) en binômes Python ⇄ C# | Lean 4 (Arrow, Sen) + SAT/Z3 (UNSAT) + simulation Condorcet/Borda |
 
-Les side tracks Lean (2b, 4b, 5b, 8b, 8d, 11b, 15b, 27b) prouvent les grands théorèmes (Nash via Brouwer/Kakutani, minimax via Sion, Vickrey, PGame/Sprague-Grundy, axiomes Shapley) avec **0 `sorry` sur les théorèmes majeurs** (cf [LEAN_INVENTORY.md](LEAN_INVENTORY.md) ; harmonisation Mathlib en cours, #4362). Les `student/` éventuels portent des stubs conformes (règle C.1 — `pass` / `return None` / `print("Exercice à compléter")` / jamais `raise NotImplementedError`) et restent exécutables end-to-end. Dépendances Python : voir `MyIA.AI.Notebooks/requirements.txt` à la racine (nashpy, networkx, numpy, matplotlib, z3-solver).
-=======
-| Racine | Fil principal GT-1 à GT-17 en **binômes Python ⇄ C#** (marathon #4956), side tracks `b` Lean (2b, 4b, 5b, 8b, 8d, 11b, 15b, 17c), approfondissements `c`, extensions 3a-3f et strate 7 GT-18 à GT-27 | Nashpy/OpenSpiel/Z3 (Python), BCL from-scratch (C#), Lean 4 (side tracks `b`) |
-| Sous-série [SocialChoice/](SocialChoice/) | SC-01 à SC-04, dont SC-01 (Arrow) et SC-03 (Voting) en binômes Python ⇄ C# | Lean 4 (Arrow, Sen) + SAT/Z3 (UNSAT) + simulation Condorcet/Borda |
-
-Les side tracks Lean (2b, 4b, 5b, 8b, 8d, 11b, 15b, 17c) prouvent les grands théorèmes (Nash via Brouwer/Kakutani, minimax via Sion, Vickrey, PGame/Sprague-Grundy, axiomes Shapley) avec **0 `sorry` sur les théorèmes majeurs** (cf [LEAN_INVENTORY.md](LEAN_INVENTORY.md) ; harmonisation Mathlib en cours, #4362). Les `student/` éventuels portent des stubs conformes (règle C.1 — `pass` / `return None` / `print("Exercice à compléter")` / jamais `raise NotImplementedError`) et restent exécutables end-to-end. Dépendances Python : voir `MyIA.AI.Notebooks/requirements.txt` à la racine (nashpy, networkx, numpy, matplotlib, z3-solver).
->>>>>>> origin/main
+Les side tracks Lean (2b, 4b, 5b, 8b, 8d, 11b, 15b, 17c, 27b) prouvent les grands théorèmes (Nash via Brouwer/Kakutani, minimax via Sion, Vickrey, PGame/Sprague-Grundy, axiomes Shapley) avec **0 `sorry` sur les théorèmes majeurs** (cf [LEAN_INVENTORY.md](LEAN_INVENTORY.md) ; harmonisation Mathlib en cours, #4362). Les `student/` éventuels portent des stubs conformes (règle C.1 — `pass` / `return None` / `print("Exercice à compléter")` / jamais `raise NotImplementedError`) et restent exécutables end-to-end. Dépendances Python : voir `MyIA.AI.Notebooks/requirements.txt` à la racine (nashpy, networkx, numpy, matplotlib, z3-solver).
 
 ## Écosystème MCP et parenté cross-lane
 
