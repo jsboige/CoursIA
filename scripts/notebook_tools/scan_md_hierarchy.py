@@ -350,6 +350,56 @@ def _resolve_against(p, root):
     return q if q.is_absolute() else (root / q)
 
 
+def reference_counts_from(items):
+    """{key: {kind: count}} from explicit (key, materialized-file) pairs.
+
+    ``--reference-base`` (#13315): the reference "before this PR" is the
+    BASE-OF-FUSION tree itself, re-scanned -- not the stored baseline (which
+    main re-seeds and can drift under a stale PR base). Keys are EXPLICIT (the
+    pre-rename path for a renamed notebook), never derived from the
+    materialization path, so ``diff_against_baseline`` resolves them through
+    ``renames`` exactly like a stored-baseline entry.
+    """
+    out: dict[str, dict[str, int]] = {}
+    for key, path in items:
+        kinds: dict[str, int] = {}
+        for f in scan_notebook(pathlib.Path(path)):
+            kinds[f['kind']] = kinds.get(f['kind'], 0) + 1
+        if kinds:
+            out[key] = kinds
+    return out
+
+
+def materialize_reference_base(base_sha, heads, renames, repo_root=None):
+    """[(old-or-current key, tmp file)] -- `git show base:<path>` per changed nb.
+
+    For a rename NEW->OLD the blob is read at (and keyed by) the OLD path: same
+    content, old key -- a pure rename nets to 0 through the existing renames
+    resolution (#13315 criterion 3). A notebook absent at the base tree (added
+    by the PR) yields no entry: all its findings are new, which is the correct
+    attribution. Unreadable blob -> skipped entry (treated as added).
+    """
+    import subprocess
+    import tempfile
+    root = pathlib.Path(repo_root) if repo_root is not None else _repo_root()
+    tmp = pathlib.Path(tempfile.mkdtemp(prefix='md_hierarchy_ref_'))
+    items = []
+    for new_path in sorted(heads):
+        ref_path = renames.get(new_path, new_path)
+        dest = tmp / ref_path.replace('/', '__')
+        try:
+            proc = subprocess.run(
+                ['git', '-C', str(root), 'show', f'{base_sha}:{ref_path}'],
+                capture_output=True, timeout=30)
+        except OSError:
+            continue
+        if proc.returncode != 0 or not dest.parent.exists():
+            continue
+        dest.write_bytes(proc.stdout)
+        items.append((ref_path, dest))
+    return items
+
+
 def diff_against_baseline(current, baseline, renames=None, only=None):
     """(regressions, improvements, stable) -- per-notebook NET deltas.
 
@@ -476,6 +526,13 @@ def main(argv=None):
                              '"new defect of this PR"), and a legit rename is '
                              'resolved to its pre-rename baseline path so it '
                              'does not count +1/-1 as two notebooks')
+    parser.add_argument('--reference-base', default=None, metavar='SHA',
+                        help='reference tree (#13315): re-scan the BASE-OF-FUSION '
+                             'versions of the changed notebooks (git show SHA:path) '
+                             'instead of the stored baseline. Kills the stale-base '
+                             'poison: the "before" is the exact tree the PR merges '
+                             'into, so drift is always imputable to the diff. '
+                             'Requires --name-status')
     args = parser.parse_args(argv)
 
     try:
@@ -485,6 +542,9 @@ def main(argv=None):
 
     if args.baseline is not None and not (args.diff or args.update_baseline):
         parser.error('--baseline requires --diff or --update-baseline')
+    if args.reference_base and not args.name_status:
+        parser.error('--reference-base requires --name-status (the reference is '
+                     'scoped to the notebooks the diff changed)')
     drift = args.diff or args.update_baseline
 
     if drift:
@@ -532,18 +592,35 @@ def main(argv=None):
                       'was scanned, this is NOT an all-clear.', file=sys.stderr)
                 return 1
             counts = compute_counts(args.paths)
-        try:
-            baseline = load_baseline(baseline_path)
-        except (OSError, ValueError, json.JSONDecodeError) as e:
-            print(f'ERROR: unreadable baseline {baseline_path}: {e}',
-                  file=sys.stderr)
-            return 1
+        if args.reference_base:
+            # Reference = the exact tree this PR merges into, re-scanned
+            # (#13315): the stored baseline can predate a rebase, and drift
+            # measured against it is not imputable to THIS diff.
+            try:
+                ref_items = materialize_reference_base(
+                    args.reference_base, ipynb_heads, renames)
+            except OSError as e:
+                print(f'ERROR: unreadable reference base '
+                      f'{args.reference_base}: {e}', file=sys.stderr)
+                return 1
+            baseline = reference_counts_from(ref_items)
+            print(f'reference: merge base {args.reference_base} re-scanned '
+                  f'({len(ref_items)} of {len(ipynb_heads)} changed '
+                  f'notebook(s) existed at base; others are additions; '
+                  f'{len(baseline)} had findings at base)')
+        else:
+            try:
+                baseline = load_baseline(baseline_path)
+            except (OSError, ValueError, json.JSONDecodeError) as e:
+                print(f'ERROR: unreadable baseline {baseline_path}: {e}',
+                      file=sys.stderr)
+                return 1
+            # Baseline used as the reference "before this PR": date it so the
+            # report cannot be read as a live state (#12735).
+            print(f'baseline: {baseline_path} '
+                  f'(generated {baseline_generated_at(baseline_path) or "unknown"})')
         regressions, improvements, stable = diff_against_baseline(
             counts, baseline, renames=renames, only=only_set)
-        # Baseline used as the reference "before this PR": date it so the report
-        # cannot be read as a live state (#12735).
-        print(f'baseline: {baseline_path} '
-              f'(generated {baseline_generated_at(baseline_path) or "unknown"})')
         for e in regressions:
             print(f'  +{e["net"]}  {e["path"]}')
             for kind, delta in e['kinds']:
