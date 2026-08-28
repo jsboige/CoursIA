@@ -375,6 +375,11 @@ attendues.
   LLM » centré
 - [QA Playwright-OWUI](../Open-WebUI/Playwright-OWUI/README.md) — pendant «
   assurance qualité » de bout en bout
+- [Tour de la plateforme](00-Tour-Plateforme/README.md) — l'interface
+  d'AI-Engine en douze écrans commentés, captures sur instance jetable
+- [QA Playwright-AI-Engine](05-Playwright-AI-Engine/README.md) — ce que
+  l'API ne voit pas : l'interface d'administration défait des écritures
+  REST, et pas toujours
 - [`comparatif-owui-vs-ai-engine.md`](../comparatif-owui-vs-ai-engine.md)
   — tableau structuré
 - [`livresagites-parcours.md`](livresagites-parcours.md) — cas
