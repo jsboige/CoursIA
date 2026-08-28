@@ -91,7 +91,7 @@ def gh_resolver(number: int) -> NumberKind:
         # we catch as "missing".
         out = subprocess.run(
             ["gh", "api", f"repos/{repo}/issues/{number}", "--jq", ".pull_request"],
-            capture_output=True, text=True, timeout=20,
+            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=20,
         )
     except (OSError, subprocess.SubprocessError):
         return "error"

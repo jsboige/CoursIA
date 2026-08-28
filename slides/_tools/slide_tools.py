@@ -220,7 +220,7 @@ def render_marp(deck_path: str, scale: int = 2) -> list:
     print(f"Rendering Marp: {deck_path.name}")
     try:
         result = subprocess.run(
-            cmd, capture_output=True, text=True, timeout=120,
+            cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=120,
             cwd=str(SLIDES_ROOT),
         )
         if result.returncode != 0:

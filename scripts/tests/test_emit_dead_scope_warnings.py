@@ -144,16 +144,36 @@ def test_lane_claim_guard_workflow_yaml_remains_valid():
     """Regression pin -- the YAML literal must parse cleanly after the
     helper is wired in. The c.579 first attempt broke the YAML by putting
     a multi-line `python3 -c "..."` in a YAML scalar; the helper extraction
-    avoids that trap. Pin stays green for the foreseeable future."""
+    avoids that trap. Pin stays green for the foreseeable future.
+
+    #13384 : la surface live est le step advisory lane-claim
+    d'always-on-guards.yml (fusion des cinq gardes always-on) ;
+    lane-claim-guard.yml est dormant mais reste verifie -- sa copie de
+    reference ne doit pas diverger.
+    """
     import yaml  # type: ignore
 
-    wf = ROOT / ".github" / "workflows" / "lane-claim-guard.yml"
-    data = yaml.safe_load(wf.read_text(encoding="utf-8"))
-    assert "jobs" in data
-    assert "check-lane-claim-advisory" in data["jobs"]
-    # The advisory job's `run:` block must mention the helper by path.
-    advisory_run = "\n".join(
-        step.get("run", "") for step in
-        data["jobs"]["check-lane-claim-advisory"]["steps"]
-    )
-    assert "emit_dead_scope_warnings.py" in advisory_run
+    for wf_name in ("always-on-guards.yml", "lane-claim-guard.yml"):
+        wf = ROOT / ".github" / "workflows" / wf_name
+        data = yaml.safe_load(wf.read_text(encoding="utf-8"))
+        assert "jobs" in data, wf_name
+        if wf_name == "lane-claim-guard.yml":
+            assert "check-lane-claim-advisory" in data["jobs"]
+            # The advisory job's `run:` block must mention the helper by path.
+            advisory_run = "\n".join(
+                step.get("run", "") for step in
+                data["jobs"]["check-lane-claim-advisory"]["steps"]
+            )
+            assert "emit_dead_scope_warnings.py" in advisory_run
+        else:
+            # L'umbrella porte le run block porte verbatim : le helper doit
+            # y figurer dans le step advisory lane-claim.
+            umbrella_run = "\n".join(
+                step.get("run", "") for job in data["jobs"].values()
+                for step in job.get("steps", [])
+            )
+            assert "emit_dead_scope_warnings.py" in umbrella_run, (
+                "always-on-guards.yml ne mentionne plus "
+                "emit_dead_scope_warnings.py : le wiring #13129 des globs "
+                "morts a ete perdu dans la fusion #13384"
+            )

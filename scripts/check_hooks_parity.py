@@ -162,7 +162,7 @@ def _pre_commit_launchable() -> list[str] | None:
     if precommit:
         try:
             subprocess.run(
-                [precommit, "--version"], capture_output=True, text=True,
+                [precommit, "--version"], capture_output=True, text=True, encoding="utf-8", errors="replace",
                 check=False, timeout=10,
             )
             return [precommit]
@@ -171,7 +171,7 @@ def _pre_commit_launchable() -> list[str] | None:
     try:
         proc = subprocess.run(
             [sys.executable, "-m", "pre_commit", "--version"],
-            capture_output=True, text=True, check=False, timeout=10,
+            capture_output=True, text=True, encoding="utf-8", errors="replace", check=False, timeout=10,
         )
         if proc.returncode == 0:
             return [sys.executable, "-m", "pre_commit"]
@@ -185,7 +185,7 @@ def _validate_config(launch: list[str]) -> tuple[bool, str]:
     try:
         proc = subprocess.run(
             [*launch, "validate-config", str(CONFIG_PATH)],
-            capture_output=True, text=True, check=False,
+            capture_output=True, text=True, encoding="utf-8", errors="replace", check=False,
         )
     except FileNotFoundError:
         return False, "pre-commit not launchable from subprocess"

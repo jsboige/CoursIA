@@ -44,7 +44,7 @@ class PlannerHandler(BaseHTTPRequestHandler):
                 try:
                     result = subprocess.run(
                         ["python3", FD_SCRIPT, domain_file, problem_file, "--search", search],
-                        capture_output=True, text=True, timeout=300,
+                        capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=300,
                         cwd="/opt/fast-downward",
                     )
                     self._json_response({
