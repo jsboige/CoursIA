@@ -561,6 +561,7 @@ class TestMavenUrlRegexNotPathBypass:
                  "--report-format", "json",
                  "--report-path", str(out_json)],
                 capture_output=True, text=True,
+                encoding="utf-8", errors="replace",
             )
             assert out_json.is_file(), (
                 f"gitleaks did not produce a JSON report: stderr={proc.stderr!r}"
@@ -660,6 +661,7 @@ class TestPathsAllowlistBypass:
         proc = subprocess.run(
             [gitleaks_bin, "version"],
             capture_output=True, text=True, timeout=15,
+            encoding="utf-8", errors="replace",
         )
         actual = proc.stdout.strip().splitlines()[-1] if proc.stdout else ""
         assert EXPECTED_GITLEAKS_VERSION in actual, (
@@ -715,6 +717,7 @@ class TestPathsAllowlistBypass:
                 "--report-path", str(tmp_path / "out.json"),
             ],
             capture_output=True, text=True, timeout=30,
+            encoding="utf-8", errors="replace",
         )
         assert proc.returncode == 0, (
             f"gitleaks invocation failed (exit {proc.returncode}): "

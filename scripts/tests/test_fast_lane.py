@@ -504,6 +504,7 @@ def test_bascule_rename_safe_sur_mini_depot(tmp_path):
     doit restaurer l'arbre exact de HEAD."""
     def g(*args):
         return subprocess.run(["git", *args], cwd=tmp_path,
+                              encoding="utf-8", errors="replace",
                               capture_output=True, text=True)
     g("init", "-q", ".")
     g("config", "user.email", "t@example.com")
