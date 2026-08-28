@@ -630,13 +630,36 @@ def main() -> None:
                 model(**enc)
             hidden = capture.hidden                      # [T, d_model] fp32 CPU
             ids, vals = sae_encode_topk(hidden, sae, k=k)
+            toks = tokenizer.convert_ids_to_tokens(enc["input_ids"][0].tolist())
+            # Positions non-finies : un token (mesure : le BOS du 8B-Qwen3) peut
+            # porter un residu dont TOUT le top-k est inf/nan. Une telle ligne
+            # contamine les stats L0 et les panneaux differentiels en aval
+            # (#12388 : 46/64 filtre-a-la-main vs 14/64 contamine). On l'exclut
+            # a la capture, alignee sur ids/vals/tokens — la trace produite est
+            # propre par construction, quelle que soit la machine.
+            finite = torch.isfinite(vals).all(dim=-1)    # [T]
+            n_bad = int((~finite).sum())
+            if n_bad:
+                bad_pos = (~finite).nonzero().flatten().tolist()
+                if n_bad > 0.05 * vals.shape[0]:
+                    sys.exit(f"ERREUR: {set_name}__{i} : {n_bad}/{vals.shape[0]} "
+                             f"positions top-k non-finies (> 5%) — chargement de "
+                             f"poids probablement casse, pas un token isole. "
+                             f"Positions : {bad_pos[:10]}")
+                bad_toks = [toks[j] for j in bad_pos if j < len(toks)]
+                print(f"[warn] {set_name}__{i} : {n_bad} position(s) top-k "
+                      f"non-fini(es) EXCLUE(S) de la trace : pos {bad_pos[:5]} "
+                      f"tokens {bad_toks[:5]}")
+                hidden = hidden[finite]
+                ids = ids[finite]
+                vals = vals[finite]
+                toks = [t for t, f in zip(toks, finite.tolist()) if f]
             l0 = (vals > 0).sum(dim=-1).float()
             l0_all.append(l0)
             tok_total += hidden.shape[0]
             key = f"{set_name}__{i}"
             arrays[f"{key}__topk_ids"] = ids.numpy()
             arrays[f"{key}__topk_vals"] = vals.to(torch.float16).numpy()
-            toks = tokenizer.convert_ids_to_tokens(enc["input_ids"][0].tolist())
             # dtype unicode fixe (pas object) : le .npz committe se recharge sans
             # allow_pickle=True cote notebooks GPU-free.
             arrays[f"{key}__tokens"] = np.array(toks, dtype=str)

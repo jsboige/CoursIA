@@ -64,6 +64,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          filter: blob:none
           # Sur cron on lit l'etat courant de main. Les PR-checking workflows
           # utilisent le PR merge ref ; ici on n'a PAS de PR, juste l'arbre.
           ref: main

@@ -131,7 +131,7 @@ def code_cell_first_comment_labels_example(source: str) -> bool:
 # a code cell whose nearest header is a methodological commentary section
 # (NOT an Exercice and NOT an Exemple guide) is a data table / worked
 # derivation attached to the surrounding narrative, NOT an exercise
-# solution leak. Closes the Lean-17-Knots-b-Invariants-Companion cell 14
+# solution leak. Closes the Lean-17b-Knots-Invariants-Companion cell 14
 # FP class (c.875 sub-grain of EPIC #8053): a slice-genus data table
 # sitting under ``### Interprétation`` between the exercise header and
 # the next exercise sub-section. Cf exercise-example-labeling.md
@@ -855,7 +855,7 @@ def scan_notebook(path: str) -> list[dict]:
             # / ``### Analyse`` / ``### Discussion`` / ...), the code cell is a
             # data table or worked derivation attached to the surrounding
             # narrative, NOT an exercise solution leak. Closes the
-            # Lean-17-Knots-b-Invariants-Companion cell 14 FP class (c.875
+            # Lean-17b-Knots-Invariants-Companion cell 14 FP class (c.875
             # sub-grain of EPIC #8053): a slice-genus data table sitting
             # under ``### Interprétation`` between the exercise header and
             # the next exercise sub-section. Recall-safe: a real exercise

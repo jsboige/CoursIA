@@ -42,7 +42,7 @@ concurrency:
 
 jobs:
   syntax-check:
-    name: bash -n every scripts .sh
+    name: bash -n every scripts .sh (advisory)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

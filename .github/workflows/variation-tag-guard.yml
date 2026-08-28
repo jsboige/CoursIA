@@ -43,6 +43,14 @@ on:
   pull_request:
     types: [opened, edited, synchronize, reopened]
     branches: [main]
+    # PAS de `paths:` ici -- #13232. Le verdict de ce garde depend du BODY de
+    # la PR (tag `Grain:`), pas de son diff : sa surface nominale est donc
+    # *toutes* les PR. Un paths-filter le reduirait aux PR qui modifient le
+    # garde lui-meme, c'est-a-dire a presque aucune (tranche 1c d'#12773,
+    # 71a36ae8b, revertee ici). Le critere d'#12773 s'enonce ainsi : filtrer
+    # par chemins un garde DIFF-dependant (regression-guard, translation-guard)
+    # est correct ; filtrer un garde METADONNEE-dependant le desarme. Reduire
+    # le fan-out passe ici par `types:` ou `concurrency`, jamais par `paths:`.
   # #11718 : le marqueur [G-VAR-3 OVERRIDE] vit en COMMENTAIRE de PR, mais
   # issue_comment etait absent -- poster le marqueur ne relancait rien. Un run
   # issue_comment checkout la branche par defaut (main), donc execute le gate
@@ -855,10 +863,16 @@ jobs:
           # `notebook-python`). Same data source as the G-VAR-2 job above
           # (`gh pr list --state merged`); no `merged:$TODAY` search here --
           # the predecessor may sit on any past day, the script sorts by
-          # mergedAt itself. A fetch failure degrades to the declared `prev:`
-          # (the flag stays absent), never to a crash or a silent pass.
-          gh pr list --state merged --limit 100 \
-            --json number,body,mergedAt \
+          # mergedAt itself. But a raw `--limit 100` is CREATION-capped: with
+          # ~100 merges/day it covers roughly one day of creations, so a
+          # low-activity lane's grain merged a few days ago falls out of the
+          # batch and the guard would silently fall back to the frozen `prev:`
+          # (#12636). Fetch through `fetch_merged_prs_since.py`, which pages the
+          # `merged:>=` window (merge-time, not creation) so any lane merged
+          # since the cutoff is captured. A fetch failure degrades to the
+          # declared `prev:` (the flag stays absent), never to a crash or a
+          # silent pass.
+          python3 scripts/ci/fetch_merged_prs_since.py --days 21 \
             > /tmp/merged_prs.json 2>/dev/null || rm -f /tmp/merged_prs.json
 
           MERGED_ARG=""
@@ -1038,9 +1052,10 @@ jobs:
           fi
 
           # Merged PRs for the lane's REAL predecessor (#12095) -- same
-          # plumbing as the pull_request job above.
-          gh pr list --state merged --limit 100 \
-            --json number,body,mergedAt \
+          # plumbing as the pull_request job above. `--limit 100` is
+          # creation-capped and misses a lane's grain merged a few days ago
+          # (#12636): page the merge-time window instead.
+          python3 scripts/ci/fetch_merged_prs_since.py --days 21 \
             > /tmp/merged_prs.json 2>/dev/null || rm -f /tmp/merged_prs.json
           MERGED_ARG=""
           if [ -s /tmp/merged_prs.json ]; then

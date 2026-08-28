@@ -75,7 +75,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 # Shared lane reader (#9485) -- see scripts/grain_tag.py.
-from grain_tag import extract_lane
+from grain_tag import extract_lane, lane_marker_residues
 
 # --- markers -----------------------------------------------------------------
 
@@ -112,10 +112,29 @@ from grain_tag import extract_lane
 # bold pair opener, then whitespace, then the bracket. A `[` NOT immediately at
 # a decorator position (e.g. `- Prose with [CLAIMED] mid-line`) still does not
 # match -- the mid-prose non-regression property is preserved.
+# #12711 -- the decor class was ASCII-pure, so a leading non-ASCII decoration
+# (`→` U+2192, `➡` U+27A1, `➜` U+279C, `»` U+00BB, `•` U+2022, `–` U+2013,
+# `—` U+2014) voided the marker to BOTH regexes: the claim was never read (no
+# block) and the bare-marker lint never flagged it (no WARN). Measured on
+# #12465: `→DELIVERED #12465 ...` posted by po-2026 went unread, po-2027 then
+# got CLEAR and delivered the same notebook 15 h later (#12512 / #12638).
+# `_DECOR` is the shared, broadened decoration class for all four regexes.
+_DECOR = r"(?:[#>*+\-→➡➜»•–—]{1,6}[ \t]*)*"
 _MARKER_RE = re.compile(
-    r"(?m)^[ \t]*(?:[#>*+-]{1,6}[ \t]*)*(?:\*\*|__)?[ \t]*\[\s*(CLAIMED|RELEASED|CANCELLED|ABANDONED|DONE|OVERRIDE|DELIVERED)\s*\]",
+    r"(?m)^[ \t]*" + _DECOR + r"(?:\*\*|__)?[ \t]*\[\s*(CLAIMED-AMEND|CLAIMED|RELEASED|CANCELLED|ABANDONED|DONE|OVERRIDE|DELIVERED)\s*\]",
     re.IGNORECASE,
 )
+# #13022 -- CLAIMED-AMEND is listed FIRST (longest first): the alternation
+# would still backtrack to it after a bare `CLAIMED` fails at `\]`, but the
+# explicit order keeps the intent readable. Measured on #11703: po-2027's
+# `[CLAIMED-AMEND] ... -- paths: <8 globs>` (union of two scopes) was a no-op
+# for this regex -- the organ kept crediting the earlier epic-wide-unmatched
+# `[CLAIMED]` and the amendment existed only for human eyes. The fix makes
+# CLAIMED-AMEND an OPEN action (see `_OPEN`): in the walk-order reducer, a
+# later open event REPLACES the lane's earlier claim, so the amend comment
+# carries the FULL corrected scope (union semantics -- same discipline as the
+# pre-fix workaround of re-posting a canonical `[CLAIMED]` with the complete
+# path list).
 # #11239 -- malformed-marker lint. A claim line written WITHOUT the brackets
 # (`CLAIMED #11222 -- ...`) is invisible to `_MARKER_RE` above: the organ
 # reports `unattributed_markers: 0` and answers CLEAR to every other lane,
@@ -128,8 +147,8 @@ _MARKER_RE = re.compile(
 # widening -- a malformed line must surface as a warning, never as a claim
 # event. The motif tail is on the same line only (no `[\s\S]` cross-line).
 _MALFORMED_MARKER_RE = re.compile(
-    r"(?m)^[ \t]*(?:[#>*+-]{1,6}[ \t]*)*(?:\*\*|__)?[ \t]*"
-    r"(CLAIMED|RELEASED|CANCELLED|ABANDONED|DONE|OVERRIDE|DELIVERED)\b"
+    r"(?m)^[ \t]*" + _DECOR + r"(?:\*\*|__)?[ \t]*"
+    r"(CLAIMED-AMEND|CLAIMED|RELEASED|CANCELLED|ABANDONED|DONE|OVERRIDE|DELIVERED)\b"
     r"[^\n]*(?:lane\s+\S+:\S+|#\d+)",
     re.IGNORECASE,
 )
@@ -198,7 +217,16 @@ def _mask_fenced_blocks(body: str) -> str:
     return "".join(out)
 
 
-_OPEN = {"CLAIMED"}
+# #13022 -- `[CLAIMED-AMEND]` is an OPEN action. Semantics (the one chosen for
+# the fix): the amend comment REPLACES the lane's previous claim scope -- the
+# walk-order reducer already does this for any later open event
+# (`state[ev.lane] = ev`), so mapping CLAIMED-AMEND to "open" gives
+# replace-previous-scope for free. The amend line must therefore carry the
+# FULL corrected scope (a `paths:` union), exactly like the canonical
+# re-[CLAIMED] workaround it supersedes. An amend WITHOUT a paths clause
+# replaces the previous scope with EPIC-WIDE (legacy unscoped semantics) --
+# deliberate, fail-CLOSED: an amendment that names no scope is not permissive.
+_OPEN = {"CLAIMED", "CLAIMED-AMEND"}
 _CLOSE = {"RELEASED", "CANCELLED", "ABANDONED", "DONE", "DELIVERED"}
 # `[OVERRIDE] lane <machine:workspace>` (#10223): coordinator adjudication --
 # GRANTS the claim to the named lane and CLOSES every other lane's claim in one
@@ -224,7 +252,9 @@ _OVERRIDE = {"OVERRIDE"}
 # beneficiary is unattributed, per existing semantics). Capture groups:
 # 1 = comma-separated path list (already stripped of surrounding spaces).
 # Recognised on [CLAIMED], [RELEASED] (attached; the reducer treats release as
-# a full lane-close, so the scope is informational there), and [OVERRIDE].
+# a full lane-close, so the scope is informational there), [OVERRIDE], and
+# [CLAIMED-AMEND] (#13022: the clause is the whole point of an amend -- it
+# names the corrected/union scope that replaces the lane's previous claim).
 # Same leading-decoration tolerance as `_MARKER_RE` (#10906). In practice the
 # reducer feeds this regex the `_line_for_match` output (which starts at the
 # `[`), so the legacy `^[ \t]*\[` anchor already worked -- the prefix group is
@@ -234,7 +264,7 @@ _OVERRIDE = {"OVERRIDE"}
 # indistinguishable from a closing decorator by suffix alone. Trailing `*` in
 # fnmatch matches empty, so a captured `glob**` still matches `glob`.
 _PATHS_CLAUSE_RE = re.compile(
-    r"(?im)^[ \t]*(?:[#>*+-]{1,6}[ \t]*)*(?:\*\*|__)?[ \t]*\[\s*(?:CLAIMED|RELEASED|OVERRIDE)\s*\][^\n]*?paths\s*:\s*([^\n]+?)\s*$"
+    r"(?im)^[ \t]*" + _DECOR + r"(?:\*\*|__)?[ \t]*\[\s*(?:CLAIMED-AMEND|CLAIMED|RELEASED|OVERRIDE)\s*\][^\n]*?paths\s*:\s*([^\n]+?)\s*$"
 )
 # #12320 -- `[DELIVERED] lane <m:w> -- PR #N`. The PR reference is OPTIONAL on
 # a DELIVERED marker (a DELIVERED without a PR is functionally equivalent to a
@@ -280,7 +310,7 @@ _PAREN_ANNOTATION_RE = re.compile(r" \(")
 # claim is NOT re-classified (see #12072: re-reading an off-marker prose line
 # as the machine clause would make the scope depend on an heuristic).
 _OFF_MARKER_SCOPE_RE = re.compile(
-    r"(?im)^[ \t]*(?:[#>*+-]{1,6}[ \t]*)*(?:\*\*|__)?[ \t]*paths?\s*:\s*([^\n]+?)\s*$"
+    r"(?im)^[ \t]*" + _DECOR + r"(?:\*\*|__)?[ \t]*paths?\s*:\s*([^\n]+?)\s*$"
 )
 
 
@@ -404,6 +434,19 @@ class ClaimEvent(dict):
         return self.get("unparseable_scope") or []
 
     @property
+    def lane_scope_residue(self) -> list[str]:
+        """Malformed-lane residues on the marker line (#12719).
+
+        A bare date after the token (`myia-po-2023:CoursIA 2026-08-23`) or a
+        trailing sentence period (`myia-po-2023:CoursIA.`). The lane regex
+        fix makes both parse to the bare lane, so the claim is NOT blocked
+        anymore; this witness lists the residue so the declaring lane can SEE
+        its marker was malformed instead of the organ silently reinterpreting
+        it. Report-only -- a malformed marker that parses is functional.
+        """
+        return self.get("lane_scope_residue") or []
+
+    @property
     def empty_scope(self) -> list[str]:
         """Subset of `paths` matching ZERO tracked files in the repo (#10958).
 
@@ -515,8 +558,12 @@ def _parse_claim_events(comment: dict) -> list[ClaimEvent]:
         lane = extract_lane(line, marker_line=line)
         if lane is None:
             lane = extract_lane(body, marker_line=line)
+        # #12719 -- malformed-lane witness (bare date / trailing period).
+        # Report-only: the claim is attributed to the bare lane either way.
+        lane_residue = lane_marker_residues(line)
         events.append(ClaimEvent(
             lane=lane,
+            lane_scope_residue=lane_residue,
             action=action,
             marker=marker,
             created_at=created_at,
@@ -624,10 +671,12 @@ def _expand_brace_groups(pattern: str) -> list[str]:
 def _extract_paths_clause(text: str | None) -> list[str] | None:
     """Parse the optional `paths: <comma-list>` clause from a marker line.
 
-    Recognised on [CLAIMED], [RELEASED], and [OVERRIDE] marker lines (#10342
-    introduced the clause for [OVERRIDE]; #10419 extended it to [CLAIMED] and
-    [RELEASED] so disjoint scoped claims no longer false-block each other on a
-    multi-instance issue). Returns the trimmed path list, or None when the
+    Recognised on [CLAIMED], [RELEASED], [OVERRIDE], and [CLAIMED-AMEND]
+    marker lines (#10342 introduced the clause for [OVERRIDE]; #10419
+    extended it to [CLAIMED] and [RELEASED] so disjoint scoped claims no
+    longer false-block each other on a multi-instance issue; #13022 added
+    [CLAIMED-AMEND], where the clause names the replacement scope). Returns
+    the trimmed path list, or None when the
     clause is absent -- the marker is then EPIC-WIDE (legacy semantics: an
     unscoped [CLAIMED] blocks every other lane, an unscoped [OVERRIDE] closes
     every other lane). Brace groups are expanded to sibling globs so that
@@ -831,9 +880,13 @@ def compute_active_claims(
                     or (
                         # scoped claim with at least one live glob AND
                         # disjoint from the override's scope -> keep.
+                        # _scopes_intersect (not _path_matches_any): the
+                        # operand order of the old read was inverted when the
+                        # override's scope carried a joker, so a concrete
+                        # claim it covered was never closed (#12656).
                         e.get("paths") is not None
                         and not _claim_scope_effectively_epic_wide(e)
-                        and not _path_matches_any(scope, e.get("paths") or [])
+                        and not _scopes_intersect(scope, e.get("paths") or [])
                     )
                 }
                 state[ev.lane] = ev
@@ -874,7 +927,12 @@ def _gh_issue_comments(issue: str) -> dict:
             # inventory.
             "--json", "number,title,labels,comments",
         ],
+        # #12811 -- gh emits UTF-8; text=True alone decodes with the Windows
+        # locale (cp1252), which raises UnicodeDecodeError on issue bodies
+        # carrying bytes at cp1252-undefined positions (0x81/0x8D/0x8F/0x90/
+        # 0x9D -- common in the UTF-8 of ICT symbols) and kills the guard.
         capture_output=True, text=True, shell=False,
+        encoding="utf-8", errors="replace",
     )
     if proc.returncode != 0:
         raise RuntimeError(
@@ -965,6 +1023,7 @@ def _fetch_pr_state(pr_ref: int) -> tuple[str | None, str | None]:
                 "--json", "state,merged",
             ],
             capture_output=True, text=True, shell=False,
+            encoding="utf-8", errors="replace",  # #12811
         )
     except Exception as exc:  # pragma: no cover -- defensive
         result = (None, f"gh exec failed: {exc}")
@@ -1063,6 +1122,7 @@ def _post_comment(issue: str, body: str) -> None:
     proc = subprocess.run(
         ["gh", "issue", "comment", str(issue), "--body-file", path],
         capture_output=True, text=True, shell=False,
+        encoding="utf-8", errors="replace",  # #12811
     )
     Path(path).unlink(missing_ok=True)
     if proc.returncode != 0:
@@ -1090,7 +1150,10 @@ def _gh_open_prs_with_files() -> list[dict]:
             "--json", "number,title,headRefName,body,files",
             "--limit", "200",
         ],
+        # #12811 -- 200 PR bodies in one payload: a single non-cp1252 byte
+        # anywhere kills the whole --paths mode on Windows.
         capture_output=True, text=True, shell=False,
+        encoding="utf-8", errors="replace",
     )
     if proc.returncode != 0:
         raise RuntimeError(
@@ -1286,6 +1349,7 @@ def _scope_zero_coverage_warning(
         proc = subprocess.run(
             ["git", "-C", repo_root, "ls-files"],
             capture_output=True, text=True, timeout=10,
+            encoding="utf-8", errors="replace",  # #12811
         )
     except (OSError, subprocess.TimeoutExpired):
         return None
@@ -1342,6 +1406,7 @@ def _git_tracked_files(repo_root: str | None = None) -> list[str] | None:
         proc = subprocess.run(
             ["git", "-C", repo_root, "ls-files"],
             capture_output=True, text=True, timeout=10,
+            encoding="utf-8", errors="replace",  # #12811
         )
     except (OSError, subprocess.TimeoutExpired):
         return None
@@ -1357,6 +1422,91 @@ def _glob_matches_tracked(glob: str, tracked: list[str]) -> bool:
         if _path_matches(path, [glob]):
             return True
     return False
+
+
+# #13129 -- proximity suggestion for dead globs. When a declared glob matches
+# ZERO tracked files AND the glob's basename exists UNIQUE elsewhere in the
+# tracked tree, suggest the real path so the writer can fix the typo at the
+# call site. The threshold prevents the false-positive on README.md /
+# MANIFEST.md / __init__.py (basenames that legitimately appear hundreds of
+# times). Returns None when the suggestion would be ambiguous or noise-prone.
+_PROXIMITY_BASENAME_LIMIT = 5  # > N occurrences => basename is too generic.
+
+
+def _suggest_path_correction(glob: str, tracked: list[str]) -> str | None:
+    """Best-effort 'did you mean ... ?' suggestion for a dead glob (#13129).
+
+    The glob's BASENAME must appear EXACTLY once in the tracked tree for a
+    suggestion to be returned. Multiple matches = ambiguous (the writer must
+    pick by intent, not by basename). Zero matches = no candidate (a brand
+    new file -- the legitimate future case the warn was never meant to
+    block, see #12740).
+
+    The threshold (_PROXIMITY_BASENAME_LIMIT = 5) caps the suggestion at
+    basenames that survive as legitimate identifiers: README.md, MANIFEST.md
+    and __init__.py each have hundreds of occurrences across the repo and
+    would mislead more often than they would help. A basename that appears
+    between 1 and 5 times IS likely a typo (the writer meant one specific
+    file and the regex did not pick the right one).
+    """
+    if not glob or "/" not in glob:
+        return None
+    basename = glob.rsplit("/", 1)[-1]
+    if not basename or basename.startswith(".") and len(basename) <= 2:
+        return None
+    matches = [t for t in tracked if t.endswith("/" + basename)]
+    if not matches or len(matches) > _PROXIMITY_BASENAME_LIMIT:
+        return None
+    if len(matches) == 1:
+        return matches[0]
+    # 2..5 matches: pick the one sharing the LONGEST prefix with the dead glob
+    # (directory proximity beats basename uniqueness). Return it only when the
+    # picked candidate is strictly closer than the runner-up.
+    matches.sort(key=lambda t: -len(_common_prefix(glob, t)))
+    best, second = matches[0], matches[1] if len(matches) > 1 else ""
+    if _common_prefix(best, glob) > _common_prefix(second, glob):
+        return best
+    return None
+
+
+def _common_prefix(a: str, b: str) -> str:
+    n = 0
+    for x, y in zip(a, b):
+        if x != y:
+            break
+        n += 1
+    return a[:n]
+
+
+# #13129 motif B -- detect missing-comma in a glob. The mistake pattern is
+# `paths: a.py b.py` where the writer forgot the comma; the parser treats
+# the whole thing as ONE glob that matches nothing. We flag when a glob
+# contains a SPACE and at least two SPACE-separated tokens each LOOK like a
+# path (contain a `/` OR end with a tracked-file extension).
+_PATHLIKE_TOKEN_RE = re.compile(r"[^\s/]+(?:/[^\s/]+)+|\S+\.(?:py|yml|yaml|md|ipynb|lean|ps1|sh|json|cs|cpp|hpp|go|rs|ts|tsx|js|jsx|txt|csv)")
+
+
+def _looks_like_missing_comma(glob: str) -> list[str] | None:
+    """Return the SPACE-separated tokens if the glob looks like a missing-comma typo (#13129 motif B).
+
+    Heuristic: the glob has whitespace AND `>=2` tokens each look path-shaped
+    (slashed OR ending in a tracked-file extension). Returns None when the
+    heuristic does not fire -- the glob is a single path with possible
+    whitespace, not a typo. Conservative: a single path-shaped token does
+    NOT trigger the suggestion (a space inside a filename is rare but
+    legal; the cost of a false positive is a confusing suggestion, the cost
+    of a false negative is silent dead-glob, which is the existing bug we
+    are not making worse).
+    """
+    if not glob or " " not in glob:
+        return None
+    tokens = glob.split()
+    if len(tokens) < 2:
+        return None
+    pathlike = [t for t in tokens if _PATHLIKE_TOKEN_RE.match(t)]
+    if len(pathlike) < 2:
+        return None
+    return pathlike
 
 
 _INFERRED_PATH_PATTERNS = (
@@ -1417,6 +1567,9 @@ def _lint_claim_events(
     issue_number: int | None,
     repo_root: str | None = None,
     tracked: list[str] | None = None,
+    active_claims: dict[str, ClaimEvent] | None = None,
+    others_verdict: dict[str, ClaimEvent] | None = None,
+    my_lane: str | None = None,
 ) -> None:
     """Emit WARN/INFO lines for malformed claim markers (#10881). Non-blocking.
 
@@ -1440,6 +1593,20 @@ def _lint_claim_events(
     faulty line and the expected marker-line syntax. Fires only on the
     signal -- an intentional epic-wide declaration (no off-marker clause)
     stays silent, so the lint never penalises a deliberate full-lane lock.
+
+    #12327 (verdict qualifier): when `active_claims` and `others_verdict` are
+    provided (caller has already reduced), each epic-wide marker is qualified
+    by its EFFECTIVE state at the time of the verdict:
+    - **superseded** by a later claim of the same lane (the marker exists as
+      legacy noise, the active claim supersedes it -- print as hygiene debt,
+      not as a blocker);
+    - **hors scope declare** when the lane's claim does NOT intersect the
+      verdict's `others` set (the claim was epic-wide in form but did not
+      actually block the caller -- print as informational, never as `il bloque`);
+    - **il bloque** ONLY when the lane IS in `others_verdict` (the claim is
+      what the reducer actually kept against the caller).
+    Without these args, the lint falls back to the legacy behaviour (every
+    epic-wide marker prints `il bloque`), which is the bug #12327 names.
     """
     if tracked is None:
         tracked = _git_tracked_files(repo_root)
@@ -1483,10 +1650,51 @@ def _lint_claim_events(
                 if inferred
                 else ""
             )
+            # #12327 -- qualify the epic-wide lint by the verdict the reducer
+            # actually reached. Three buckets (others_verdict may be None when
+            # the caller has not yet reduced -- legacy path keeps the old
+            # `il bloque` wording for back-compat):
+            ev_lane = ev.lane or "?"
+            ev_active = active_claims.get(ev_lane) if active_claims else None
+            in_others = (others_verdict is not None
+                         and ev_lane in others_verdict)
+            if (active_claims is not None
+                    and ev_active is not None
+                    and ev_active is not ev
+                    and _event_is_active_for(ev, ev_active)):
+                # The marker is shadowed by a later active claim of the SAME
+                # lane -- superseded, sans effet. Hygiene debt: the lane should
+                # [RELEASED] the old marker, but the organ never blocks on it.
+                print(
+                    f"INFO: marqueur {ev.marker} epic-wide SUPERSEDED "
+                    f"(lane {ev_lane}) -- un claim actif ulterieur de la "
+                    f"meme lane tient le verrou (scope: {ev_active.get('paths') or 'epic-wide'}). "
+                    f"Sans effet sur le verdict. Hygiene: "
+                    f"`[RELEASED]` l'ancien marqueur (cf. #12327).{inferred_str}",
+                    file=sys.stderr,
+                )
+                continue
+            if others_verdict is not None and not in_others and ev_lane != my_lane:
+                # Epic-wide form, but the lane did NOT survive the reducer's
+                # scope filter: either the lane re-posted a scoped claim, or
+                # the caller declared `--paths` and the claim does not
+                # intersect. The lint must NOT say `il bloque`.
+                print(
+                    f"INFO: marqueur {ev.marker} epic-wide (lane {ev_lane}) "
+                    f"-- SANS effet sur #{issue_number} "
+                    f"(claim de la lane filtre par scope ou re-poste depuis). "
+                    f"Forme attendue : `[CLAIMED] lane <machine:workspace> "
+                    f"-- paths: <g1>, <g2>` (cf. #11755).{inferred_str}",
+                    file=sys.stderr,
+                )
+                continue
+            # Legacy wording: the marker IS in `others_verdict` (real blocker)
+            # OR the caller has not reduced yet (back-compat). Keep the
+            # original `il bloque toutes les autres lanes` text.
             print(
                 f"INFO: marqueur {ev.marker} epic-wide (pas de clause paths:) "
                 f"-- il bloque toutes les autres lanes sur #{issue_number} "
-                f"(lane {ev.lane or '?'}).{inferred_str} "
+                f"(lane {ev_lane}).{inferred_str} "
                 f"Forme attendue : `[CLAIMED] lane <machine:workspace> "
                 f"-- paths: <g1>, <g2>` (cf. #11755).",
                 file=sys.stderr,
@@ -1505,6 +1713,53 @@ def _lint_claim_events(
                     f"(lane {ev.lane or '?'})",
                     file=sys.stderr,
                 )
+                # #13129 motif B -- missing comma between paths. Fires when
+                # the glob contains whitespace AND >=2 tokens each look path-
+                # shaped. The classic typo is `paths: a.py b.py` which the
+                # parser treats as a single glob that matches nothing.
+                pathlike_tokens = _looks_like_missing_comma(g)
+                if pathlike_tokens:
+                    candidates = ", ".join(repr(t) for t in pathlike_tokens)
+                    print(
+                        f'WARN: glob ressemble a plusieurs chemins separes '
+                        f"par ESPACE au lieu d'une virgule : {candidates}. "
+                        f"Le parser n'a vu qu'un seul glob (motif B, #13129).",
+                        file=sys.stderr,
+                    )
+                # #13129 motif A/C -- proximity suggestion. When the basename
+                # of the dead glob exists UNIQUE elsewhere in the tree,
+                # suggest the real path. Best-effort, non-blocking.
+                elif (suggestion := _suggest_path_correction(g, tracked)) is not None:
+                    print(
+                        f"WARN: glob sans correspondance : \"{g}\" -- "
+                        f"did you mean {suggestion!r} ? (basename unique, "
+                        f"#13129 motif A/C)",
+                        file=sys.stderr,
+                    )
+
+
+def _event_is_active_for(legacy: ClaimEvent, active: ClaimEvent) -> bool:
+    """True when `active` is the live claim that supersedes `legacy`.
+
+    Two markers from the SAME lane supersede each other when the active one
+    was posted LATER (later `created_at`) OR carries a `paths:` clause (the
+    legacy was epic-wide, the active is scoped -- the scoped form is more
+    precise and replaces the legacy intent). If the active marker is OLDER
+    than the legacy one, this is a sequence anomaly -- the legacy was
+    INTENDED to supersede the active, and the active is itself legacy
+    noise; in that case the caller wants the SHARED verdict to surface.
+    """
+    if active is None or active is legacy:
+        return False
+    # A scoped marker always supersedes an epic-wide one of the same lane.
+    if active.get("paths") is not None and legacy.get("paths") is None:
+        return True
+    # Two markers of the same lane, both epic-wide: the LATER one wins.
+    legacy_at = legacy.get("created_at")
+    active_at = active.get("created_at")
+    if legacy_at and active_at and active_at > legacy_at:
+        return True
+    return False
 
 
 def _find_malformed_markers(payload: dict) -> list[dict]:
@@ -1640,11 +1895,6 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
     # #10958 empty-scope witness (best-effort: None outside a git repo, in
     # which case both features degrade to their pre-#10958 behaviour).
     tracked = _git_tracked_files()
-    # #10881 lint -- malformed paths: clauses surface on stderr when the
-    # marker is read: visible to every lane running the check, never changing
-    # a verdict. The four 2026-08-14 markers on #10678 shared the defect the
-    # three checks name (epic-wide by accident / prose swallowed as globs).
-    _lint_claim_events(events, payload.get("number"), tracked=tracked)
     # #11239 lint -- bare markers without brackets (invisible to the organ).
     # Same non-blocking spirit as the #10881 lint above: the writer learns at
     # the call site that their lock was never registered, instead of two lanes
@@ -1667,6 +1917,40 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
         for ev in events:
             if ev.get("paths"):
                 ev["empty_scope"] = _empty_scope_in(ev["paths"], tracked)
+    # #12740 -- dead-scope aggregate, lane-keyed, over ALL claim events.
+    #
+    # The #10881/#10958 witnesses surface a dead glob to a consumer that
+    # reads them, but only for the ACTIVE claims (`active_claims.<lane>
+    # .empty_scope`) and for the CALLER's own scope (`caller_empty_scope`).
+    # A claim whose `paths:` glob is a typo and is then RELEASED/CLOSED leaves
+    # the typo invisible to a JSON sweep -- the stderr WARN in
+    # `_lint_claim_events` is the only channel, and it goes to STDERR, which
+    # the CI gate, `pick_idle_grain` and the lane scripts do not consume.
+    # That is exactly the fail-open #12740 names: a `[CLAIMED] -- paths:
+    # scripts/notebook_tools/check_code_in_markdown.py` (real file:
+    # detect_code_in_markdown_cells.py) claimed #12620, yet both lanes
+    # worked the same real file -- the dead glob never surfaced in the JSON.
+    #
+    # Policy (chosen, #12740): SIGNAL, not re-block. We do NOT re-open the
+    # #10958 fail-open: an ACTIVE claim whose entire scope is dead is STILL
+    # lifted to epic-wide (a broken claim is not a permissive claim, and
+    # lifting it back to scoped would re-create the #9764-style false CLEAR).
+    # We ADD the signal -- a lane-keyed map of dead globs across every claim
+    # event (open, override AND close) -- so a sweep can grep ONE key and a
+    # released-claim typo still surfaces. A coordinator wanting full (a)
+    # fail-CLOSED for the legitimate new-file case can address the semantic
+    # deviation separately; the mechanism here is the visibility half.
+    dead_scope_globs: dict[str, list[str]] = {}
+    if tracked is not None:
+        for ev in events:
+            lane = ev.lane
+            dead = ev.get("empty_scope") or []
+            if not lane or not dead:
+                continue
+            bucket = dead_scope_globs.setdefault(lane, [])
+            for g in dead:
+                if g not in bucket:
+                    bucket.append(g)
     active, unattributed = compute_active_claims(events, pr_states=pr_states)
     others = {ln: ev for ln, ev in active.items() if ln != my_lane}
     mine = active.get(my_lane)
@@ -1713,6 +1997,28 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
             if age is not None and age >= stale_threshold:
                 stale_others[ln] = ev
         others = {ln: ev for ln, ev in others.items() if ln not in stale_others}
+    else:
+        # #12751 -- a zero of absence-of-measurement must not re-read as a
+        # zero of absence-of-claim. Say the detection is OFF on stderr (the
+        # JSON `stale_detection` field is set to "disabled" alongside).
+        print("STALE_DETECTION disabled -- claims are NOT age-filtered "
+              "(--no-stale or threshold None). Old claims still block.",
+              file=sys.stderr)
+
+    # #12327 -- lint qualifier runs AFTER the reducer: the epic-wide marker
+    # lint can no longer say `il bloque toutes les autres lanes` for a
+    # marker whose lane did not survive the scope filter or whose lane
+    # re-posted a scoped claim since. We pass `active` (claim-per-lane) and
+    # the FINAL `others` dict so the lint can bucket each epic-wide marker
+    # into `superseded` / `sans effet` / `il bloque`.
+    _lint_claim_events(
+        events,
+        payload.get("number"),
+        tracked=tracked,
+        active_claims=active,
+        others_verdict=others,
+        my_lane=my_lane,
+    )
 
     # #12322 -- query_scope classifier (POST stale-filter, so the verdict
     # reflects the FINAL blocker set, not the pre-stale one). A call whose
@@ -1767,7 +2073,15 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
         "my_lane": my_lane,
         "my_active_claim": bool(mine),
         "blocking_lanes": sorted(others),
-        "stale_claims": sorted(stale_others),
+        "stale_claims": sorted(stale_others) if stale_threshold is not None else None,
+        # #12751 -- l'etat de la detection est nomme explicitement. "active" :
+        # un seuil est pose, les claims plus vieux sont age-filtered (le
+        # comportement par defaut, 48h). "disabled" : --no-stale / threshold
+        # None -- rien n'est mesure du tout, un claim zombie de 415 h bloquerait
+        # indefiniment. `stale_claims` vaut `null` quand disabled -- un zero
+        # d'ABSENCE de mesure ne doit pas se relire comme un zero d'absence de
+        # claim (avant, les deux rendaient `[]`).
+        "stale_detection": "active" if stale_threshold is not None else "disabled",
         # #12156 -- umbrella classifier (`is_umbrella`) and the pathology it
         # describes (`epic_wide_on_umbrella`). Both default False: on a
         # unit-issue the umbrella flag stays False; on a CLEAR umbrella the
@@ -1812,6 +2126,11 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
                 # scope is fully parseable) or non-empty (the claim carries
                 # patterns fnmatch cannot match).
                 "unparseable_scope": ev.get("unparseable_scope") or [],
+                # #12719 -- malformed-lane witness (bare date after the
+                # token, trailing sentence period). The claim still parses to
+                # the bare lane; the residue is surfaced so the declaring
+                # lane sees its marker was malformed (report, not block).
+                "lane_scope_residue": ev.get("lane_scope_residue") or [],
                 # #10958 -- the dead-glob witness: globs of this claim that
                 # match zero tracked files. Empty when every glob locks
                 # something (or the walk was impossible). Non-empty means the
@@ -1887,6 +2206,16 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
         # the dead globs cover the whole scope, otherwise the live globs
         # continue to carry the disjointness test.
         "caller_empty_scope": caller_empty_scope,
+        # #12740 -- lane-keyed dead-glob map, aggregated over EVERY claim
+        # event (not just active claims). Empty (`{}`) when no glob of any
+        # claim matches zero tracked files, or when the tracked walk was
+        # impossible (`tracked is None` -> cannot prove deadness). Unlike the
+        # per-active-claim `empty_scope` (which disappears when a claim is
+        # released) and the stderr WARN (unread by the CI gate / picker /
+        # lane scripts), this key survives a release so a typo'd scope is
+        # always visible to a JSON sweep. Non-blocking by design -- it only
+        # reports; it does not change the verdict.
+        "dead_scope_globs": dead_scope_globs,
     }
     print(json.dumps(summary, ensure_ascii=False, indent=2))
 
@@ -1996,6 +2325,47 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
             f"`[CLAIMED] paths: ...`, or wait for release.",
             file=sys.stderr,
         )
+        # #12905 -- name the dead-scope lock. A blocker whose declared scope
+        # is ENTIRELY dead (every glob matches zero tracked files) was lifted
+        # to epic-wide by the #10958 fail-safe: it locks the WHOLE issue for
+        # every lane, including callers whose live scope is provably disjoint
+        # (#12905's reproduction on #12844: lane A live on the GT-17b
+        # notebook, blocked by lane B reserving asymmetric_information_lean/**
+        # before the path exists). The fail-closed verdict stays -- a dead
+        # scope must not DE-unlock -- but the blocking text now NAMES the
+        # mechanism: `WARN: glob sans correspondance` alone reads as "stale
+        # worktree", not as "this claim locks the whole umbrella". Same shape
+        # as the LOCKED (v2) sub-message below: explainer only, no exit-code
+        # change.
+        dead_scope_blockers = [
+            ev for ev in others.values()
+            if ev.get("paths") and _claim_scope_effectively_epic_wide(ev)
+        ]
+        if dead_scope_blockers:
+            lines = []
+            for ev in dead_scope_blockers:
+                dead = ", ".join(
+                    repr(g) for g in (ev.get("empty_scope") or ev.get("paths") or [])
+                )
+                ln = ev.get("lane") or "?"
+                lines.append(
+                    f"  - lane {ln} -- declared scope matches zero tracked "
+                    f"files ({dead})"
+                )
+            print(
+                f"\nDEAD-SCOPE LOCK (#12905): the blocker(s) above hold a "
+                f"`paths:` scope that matches NO tracked file yet. By the "
+                f"#10958 fail-safe such a claim is treated as EPIC-WIDE and "
+                f"locks the whole issue #{payload.get('number')} for every "
+                f"lane -- including yours, even when your scope is provably "
+                f"disjoint (the nominal case of a lane reserving a path it "
+                f"is about to create). The lock lifts when the blocking lane "
+                f"re-issues its claim once the path exists, posts "
+                f"`[RELEASED]`, or a coordinator writes an "
+                f"`[OVERRIDE] lane <m:w>` comment (cf #10223).\n"
+                + "\n".join(lines),
+                file=sys.stderr,
+            )
         # #12386 -- v2 LOCKED verdict. When the blocker is a `[DELIVERED]`
         # whose PR reached main (`locked: True`), a plain re-claim is NOT a
         # path forward -- the issue is resolved. We surface a tailored message
@@ -2140,7 +2510,7 @@ def _filter_by_claim_scope(
         if empty and len(empty) >= len(scope):
             filtered[ln] = ev  # lifted to epic-wide -- always blocking
             continue
-        if _path_matches_any(my_scope, scope):
+        if _scopes_intersect(my_scope, scope, tracked):
             filtered[ln] = ev  # scopes intersect -> real collision
         # else: both scoped, disjoint -> free, drop from others
     return filtered
@@ -2151,6 +2521,94 @@ def _path_matches_any(paths: list[str], patterns: list[str]) -> bool:
     for p in paths:
         if _path_matches(p, patterns):
             return True
+    return False
+
+
+def _glob_has_meta(glob: str) -> bool:
+    """True if `glob` carries fnmatch meta (`*`, `?`, `[`) beyond literals."""
+    return any(c in glob for c in "*?[")
+
+
+def _literal_prefix(glob: str) -> str:
+    """Leading run of literal (non-meta) characters in `glob`."""
+    i = 0
+    while i < len(glob) and glob[i] not in "*?[":
+        i += 1
+    return glob[:i]
+
+
+def _prefixes_compatible(pa: str, pb: str) -> bool:
+    """True if two literal prefixes can both prefix a single common string.
+
+    ``''`` (a glob that opens on meta, e.g. ``**``) proves nothing, so it is
+    compatible with anything. Two non-empty prefixes are compatible when they
+    agree on every shared position -- they can then be extended to a common
+    string, so we cannot cheaply prove disjointness.
+    """
+    if not pa or not pb:
+        return True
+    n = min(len(pa), len(pb))
+    return pa[:n] == pb[:n]
+
+
+def _glob_overlap(ga: str, gb: str) -> bool:
+    """Conservative ``True`` if globs `ga` and `gb` MAY match a common string.
+
+    Sound in the disjoint direction: if their literal prefixes conflict, no
+    string matches both. Otherwise we cannot cheaply prove disjointness, so
+    we report overlap (over-block). The fleet's globs are overwhelmingly
+    ``*`` / ``?`` / literal (paths-scoped claims and ``--paths``); character
+    classes are rare and only ever over-approximated here, which is the safe
+    direction for a collision guard.
+    """
+    pa, pb = _literal_prefix(ga), _literal_prefix(gb)
+    if pa and pb and not _prefixes_compatible(pa, pb):
+        return False
+    return True
+
+
+def _scopes_intersect(
+    a: list[str], b: list[str], tracked: list[str] | None = None
+) -> bool:
+    """True if path-scope `a` and path-scope `b` may cover a common file.
+
+    This is the symmetric fix for the operand-order bug that #12656 exposed.
+    The old read was ``_path_matches_any(my_scope, scope)`` -- it fed the
+    CALLER's glob as the ``filename`` operand and the other lane's concrete
+    path as the ``pattern``, so ``fnmatch("dir/**", "dir/file.md")`` is False
+    and a joker caller was told CLEAR against a claim that demonstrably
+    covered its target (fail-OPEN).
+
+    With a `tracked` walk (the normal ``_run_check`` path and every
+    check-level test) the test is EXACT: two scopes intersect iff some real
+    tracked file matches both. Without it (`compute_active_claims`, which has
+    no repo walk) we fall back to a conservative provable-disjoint test:
+    concrete members of either side are matched against the other side's
+    globs, then remaining glob-vs-glob pairs are decided by the literal
+    prefix test of `_glob_overlap`. The fallback never wrongly reports
+    "disjoint" (it over-blocks when unsure), which is the safe direction for
+    a collision guard.
+    """
+    if not a or not b:
+        return False
+    if tracked is not None:
+        for path in tracked:
+            if _path_matches(path, a) and _path_matches(path, b):
+                return True
+        return False
+    # no repo walk: concrete members of each side, matched against the other
+    for side, other in ((a, b), (b, a)):
+        for g in side:
+            if not _glob_has_meta(g) and _path_matches(g, other):
+                return True
+    for ga in a:
+        if not _glob_has_meta(ga):
+            continue
+        for gb in b:
+            if not _glob_has_meta(gb):
+                continue
+            if _glob_overlap(ga, gb):
+                return True
     return False
 
 
@@ -2331,14 +2789,28 @@ def main(argv: list[str] | None = None) -> int:
                    help="your lane, e.g. myia-po-2024:CoursIA")
     p.add_argument("--from-json", metavar="FILE",
                    help="read `gh issue view` JSON from FILE (offline/test mode)")
-    p.add_argument("--stale-threshold", type=float, metavar="HOURS", default=None,
+    p.add_argument("--stale-threshold", type=float, metavar="HOURS", default=48.0,
                    help="treat OTHER lanes' claims older than HOURS as stale: "
                         "warn and do not block (age from server createdAt, never "
                         "the body). The new claimant must still post its own "
-                        "[CLAIMED] -- this is not a silent bypass. Without the "
-                        "flag every active claim blocks (current behaviour).")
-    p.add_argument("--paths", metavar="PATH", nargs="+", default=None,
+                        "[CLAIMED] -- this is not a silent bypass. Default 48 "
+                        "(#12751): the canonical invocation now MEASURES. "
+                        "`--no-stale` restores the legacy behaviour (every active "
+                        "claim blocks).")
+    p.add_argument("--no-stale", action="store_true", default=False,
+                   help="#12751: disable staleness detection entirely (legacy "
+                        "behaviour: every active claim blocks, nothing is "
+                        "age-filtered). The detected state is reported as "
+                        "`stale_detection: \"disabled\"`.")
+    # #13057 -- repeated `--paths` occurrences form one union. argparse's
+    # default `store` action kept only the LAST occurrence, so adding a disjoint
+    # path could erase an earlier intersecting path and turn BLOCKED into CLEAR.
+    # `extend` keeps a flat list across both accepted CLI forms:
+    # `--paths a b` and `--paths a --paths b`.
+    p.add_argument("--paths", metavar="PATH", nargs="+", action="extend",
+                   default=None,
                    help="path-mode (#9959): one or more file paths/globs. "
+                        "Repeated --paths occurrences are combined (#13057). "
                         "Exits 2 if any OPEN PR of a different lane (or with "
                         "an unreadable lane tag) has files[] intersecting. "
                         "Exits 0 if no collision, 1 on usage/`gh` failure. "
@@ -2367,6 +2839,11 @@ def main(argv: list[str] | None = None) -> int:
                         "blocked (#11064). Coordinator arbitration only -- "
                         "the reading side still honours [OVERRIDE] markers.")
     args = p.parse_args(argv)
+    # #12751 -- default is 48 (measuring). `--no-stale`/threshold=None restores
+    # the legacy behaviour (every claim blocks, nothing age-filtered); the
+    # disabled state is reported honestly as `stale_detection: "disabled"`.
+    if args.no_stale:
+        args.stale_threshold = None
 
     # #10881 -- `nargs='+'` on --paths swallows a TRAILING positional issue
     # number (`--lane X --paths a b 10678` puts "10678" into the paths list,

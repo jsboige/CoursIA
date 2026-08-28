@@ -77,7 +77,13 @@ def test_branch_state_json_lists_no_duplicates(capsys):
     assert payload["ok"] is True, payload
     assert payload["duplicates"] == [], payload
     assert payload["total_jobs"] >= 7
-    assert payload["total_workflows"] >= 70
+    # Floor pinned with margin: #12821 (tranche 1/2 #12817) moved 16 heavy
+    # advisories out of the pull_request trigger into the nightly schedule,
+    # dropping PR-triggered workflows from ~75 to 59; #13220 (TRANCHE4
+    # fast-lane) de-PR'd 5 more (md-content-loss + 4 gates SVG), 53 -> 48.
+    # The floor's purpose is to catch an instrument that stops reading files
+    # (collapses to 0), not to freeze the corpus size.
+    assert payload["total_workflows"] >= 40
 
 
 def test_branch_state_no_legacy_ratchet_dupes():
@@ -370,6 +376,7 @@ def test_main_state_quoted_on_works():
     parses correctly."""
     dupes, total_jobs, total_wfs = u.find_duplicates(DEFAULT_WF_DIR)
     # If the workaround didn't fire, the parse would silently skip workflows
-    # (treating `True` as the trigger key). Total workflow count > 50 is the
-    # smoke test that the parser actually sees the trigger.
-    assert total_wfs >= 50, total_wfs
+    # (treating `True` as the trigger key). Total workflow count > 40 is the
+    # smoke test that the parser actually sees the trigger (48 post-#13220
+    # TRANCHE4 de-PR).
+    assert total_wfs >= 40, total_wfs

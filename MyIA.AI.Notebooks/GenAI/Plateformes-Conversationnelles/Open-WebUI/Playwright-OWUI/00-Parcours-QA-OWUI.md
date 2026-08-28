@@ -75,12 +75,12 @@ Refonte conduite sous la gouvernance de l'Epic-parapluie **#4427** (coordination
 | Phase | Objet | État |
 |-------|-------|------|
 | **P0** | Cadrage : fil rouge, carte de mission, capstone, acquis d'apprentissage (ce document) | **en cours** |
-| **P1** | Notebook chapeau `00-Parcours-QA-OWUI.ipynb` (narration + orchestration + exercices) | à venir |
-| **P2** | Couche notebook par module (×5), `.spec.ts` conservés en backend | à venir |
-| **P3** | Revalidation réelle sur **Open WebUI v0.10.2** (drift DOM, payload chat `chat_id`+`id`) | à venir |
-| **P4** | Intégration au catalogue + fil rouge transverse (README parent, diagramme de mission) | à venir |
+| **P1** | Notebook chapeau `00-Parcours-QA-OWUI.ipynb` (narration + orchestration + exercices) | ✔ livré |
+| **P2** | Couche notebook par module (×5), `.spec.ts` conservés en backend | ✔ livré |
+| **P3** | Revalidation réelle contre **Open WebUI v0.11.0** (drift DOM, payload chat `chat_id`+`id`) | ✔ livré (campagne #9854, 2026-08-10) |
+| **P4** | Intégration au catalogue + fil rouge transverse (README parent, diagramme de mission) | ✔ partiel (fil rouge + README parent + bandeau README rafraîchis + `WHATS-NEW-v0.11.md` atterri via #12307 ; le diagramme de mission a été **descopé à la clôture de #4433**) |
 
-> **Note de version.** La flotte a été montée en **Open WebUI v0.10.2** le 2026-07-01 ; la cible de revalidation de la suite est donc **v0.10.2**. Les nouveautés v0.10 sont documentées dans [`WHATS-NEW-v0.10.md`](./WHATS-NEW-v0.10.md) et couvertes par le **module 06**. Le `WHATS-NEW-v0.9.1.md` et la mention « revalidée v0.9.1 » du README restent **périmés** et seront repris en Phase 3. La revalidation de bout en bout des modules 01-05 contre v0.10.2 (drift DOM) reste l'objet de la Phase 3 — tant qu'elle n'est pas faite, aucun claim de compatibilité v0.10.2 n'est porté pour l'ensemble de la suite.
+> **Note de version.** La flotte est montée en **Open WebUI v0.11.0** depuis le **2026-08-07** ; la revalidation de la série (modules 01-06) a été conduite contre cette version (**campagne #9854**, 2026-08-10 : 37 passed / 1 failed / 4 skipped — l'unique rouge était un défaut de **test**, pas de l'application). Les nouveautés v0.11 et les pièges mesurés sont documentés dans [`WHATS-NEW-v0.11.md`](./WHATS-NEW-v0.11.md) ; les précédents [`WHATS-NEW-v0.10.md`](./WHATS-NEW-v0.10.md) (mémoire, dossiers d'équipe, raisonnement streamé — module 06) et [`WHATS-NEW-v0.9.1.md`](./WHATS-NEW-v0.9.1.md) restent valables comme historique. `WHATS-NEW-v0.9.1.md` et la mention « revalidée v0.9.1 » du README, remplacés par les faits v0.10/v0.11, ne doivent plus être traités comme l'état courant. Le détail du triage régression-vs-sélecteur-vs-infra est dans [`TRIAGE-INFRA-VS-TEST.md`](./TRIAGE-INFRA-VS-TEST.md).
 
 ---
 
