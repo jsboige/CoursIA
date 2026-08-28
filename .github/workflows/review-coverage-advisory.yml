@@ -88,8 +88,14 @@ jobs:
           ARGS=()
           if [ "${IN_DRY_RUN:-}" = "true" ]; then ARGS+=(--dry-run); fi
           if [ -n "${IN_THRESHOLD:-}" ]; then ARGS+=(--threshold "$IN_THRESHOLD"); fi
-          # Controle positif : prouver que le script PARSE ses arguments avant
-          # de croire un balayage vert. `--help` sort 0 ; un arg casse sort 2.
-          python scripts/review_coverage.py --help >/dev/null
-          echo "argparse OK -- args: ${ARGS[*]:-(aucun, defauts du script)}"
-          python scripts/review_coverage.py "${ARGS[@]}" --label "large-pr-no-review"
+          echo "args: ${ARGS[*]:-(aucun, defauts du script)}"
+          python scripts/review_coverage.py "${ARGS[@]}" --label "large-pr-no-review"             | tee "$RUNNER_TEMP/sweep.json"
+          # Controle positif porte sur le BALAYAGE, jamais sur le parsing.
+          # Reserve Hermes sur #13370 : un `--help >/dev/null` sort 0 meme si le
+          # script est casse en aval -- il ne couvre que argparse, or c'est
+          # exactement un organe vert-sans-balayage qui a coute #11232. Le script
+          # sort TOUJOURS 0 (advisory) et n'imprime son payload qu'APRES un
+          # balayage effectif : l'assertion porte donc sur le payload. Cette
+          # etape a le droit de rougir -- c'est ainsi que la panne de l'organe
+          # devient visible au lieu de se lire verte.
+          python scripts/ci/assert_sweep_payload.py "$RUNNER_TEMP/sweep.json"
