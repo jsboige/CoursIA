@@ -4,10 +4,10 @@ Reference project importing [DominikPeters/SocialChoiceLean](https://github.com/
 
 ## Status
 
-- **Toolchain**: v4.27.0-rc1 (pinned to Peters' version)
+- **Toolchain**: `leanprover/lean4:v4.32.1` (aligned with the fleet, effective `lean-toolchain` pin)
 - **Sorry count**: 0 production sorry
 - **Build**: `lake build` -- SUCCESS
-- **Dependencies**: Mathlib4, DominikPeters/SocialChoiceLean
+- **Dependencies**: Mathlib4 (`520045ab`), DominikPeters/SocialChoiceLean (`94a4c650`) — effective `lake-manifest.json` revs
 
 ## Modules
 
@@ -31,43 +31,47 @@ Complementary, not duplicate. `social_choice_lean` uses custom `PrefOrder` (our 
 ## Notes
 
 - Backend Lake for a (planned, not yet created) tour companion notebook
-- Peters' repo pinned at commit `355075e3e35f940a2ade0cbfb5be27b4a53c6776` for reproducibility
+- Peters' repo pinned at commit `94a4c650b6a3ef14df801a613c3b46169dbd754d` (`lake-manifest.json` rev) for reproducibility
 - Peters uses `LinearOrder` (strict, Mathlib); we use `PrefOrder` (reflexive, total, transitif)
 
 ## EPIC #4365 Status (anti-proliferation GT 6→2)
 
 This lake is **explicitly out of scope** for absorption into
 [`game_theory_lean/`](../game_theory_lean/) under EPIC #4365 Phase 4 (merge
-cohesive post-convergence lakes), for two cumulative reasons:
+cohesive post-convergence lakes). History of the status:
 
-1. **Upstream lock (`INTRINSIC` verdict)**: this lake **imports**
-   [`DominikPeters/SocialChoiceLean`](https://github.com/DominikPeters/SocialChoiceLean),
-   pinned at commit `d679d950`, which itself depends on a Mathlib in the
-   `v4.27.0-rc1` family. The port of that upstream to `v4.31.0-rc1`
-   (post-#4364 target) is **not** under our control — it is an external project
-   (MIT, Dominik Peters) and the port is potentially heavy (4-version gap, multiple
-   API breakages). **`INTRINSIC` verdict** per
-   [`sota-not-workaround.md`](../../../.claude/rules/sota-not-workaround.md):
-   no real SOTA path to absorb without breaking the dependency.
+1. **Upstream lock (`INTRINSIC` verdict, since lifted)**: at decision time
+   (c.576, 2026-07-17), the external repo
+   [`DominikPeters/SocialChoiceLean`](https://github.com/DominikPeters/SocialChoiceLean)
+   was pinned at `355075e3` on the `v4.27.0-rc1` family, and its port to the
+   post-#4364 target was not under our control — `INTRINSIC` verdict per
+   [`sota-not-workaround.md`](../../../.claude/rules/sota-not-workaround.md).
+   **That lock was lifted by upstream itself**: since 2026-08-21 (#12134,
+   commit `d8ec0b08ba`), the effective pin is Peters `94a4c650` /
+   Mathlib `520045ab` on `lean-toolchain` `v4.32.1` — the family of the rest
+   of the fleet. The #4364 convergence now applies here too; Peters is no
+   longer a v4.27 residue.
 
-2. **Distinct semantic framework**: this lake exposes a Mathlib strict
-   `LinearOrder` which **does not** line up with the reflexive-total-transitive
-   `PrefOrder` API used by `game_theory_lean/SocialChoice/`. A merge would
-   force either (a) a dual linear/preorder port or (b) a rewrite of Peters'
-   proofs — beyond the "atomic R3 PR" budget.
+2. **Distinct semantic framework (still active)**: this lake exposes a Mathlib
+   strict `LinearOrder` which **does not** line up with the
+   reflexive-total-transitive `PrefOrder` API used by
+   `game_theory_lean/SocialChoice/`. A merge would force either (a) a dual
+   linear/preorder port or (b) a rewrite of Peters' proofs. **This is the
+   autonomy rationale that remains** after the toolchain convergence: this
+   lake is an *external port* (the proofs are Peters') while
+   `game_theory_lean/` carries our own proofs.
 
 **Consequence**: `social_choice_lean_peters/` stays a **self-contained
 autonomous lake** with its own `lake build`, its own `lean-toolchain`
-`v4.27.0-rc1`, and its own CI. The #4364 Phase 3 convergence (10 lakes rc2
-bumps to `d568c8c0` / `v4.31.0-rc1`, completed 2026-07-03 by another worker)
-**does not apply** here — Peters is the sole v4.27 residue in the fleet.
+`v4.32.1` (converged), and its own CI. Autonomy is no longer motivated by a
+version lock — it is motivated by the nature of the project: a reference tour
+of an external library, in its own semantic framework.
 
-Firsthand status check (c.576, 2026-07-17): `lake-manifest.json` pinned at
-Peters commit `355075e3e35f940a2ade0cbfb5be27b4a53c6776` (`rev`), Mathlib
-rev `8cb9319191fd34b6f23d7ffea58a4f8fb674cefd`, `lean-toolchain` =
-`v4.27.0-rc1`, `PetersTour.lean` 234 lines, 0 sorry (grep verified),
-build SUCCESS — **the status quo is intentional and documented**, not an
-oversight.
+Firsthand status check (2026-08-26): `lake-manifest.json` Peters rev
+`94a4c650b6a3ef14df801a613c3b46169dbd754d`, Mathlib rev
+`520045ab14e26149ee970e2e617ca04b09bde5d6`, `lean-toolchain` =
+`v4.32.1`, `PetersTour.lean` + `PetersTour_en.lean` (i18n #4980), 0 sorry —
+**the status quo is intentional and documented**, not an oversight.
 
 See also: [`#4365`](https://github.com/jsboige/CoursIA/issues/4365) (GT 6→2
 merge target), [`#4364`](https://github.com/jsboige/CoursIA/issues/4364)
@@ -78,8 +82,8 @@ merge target), [`#4364`](https://github.com/jsboige/CoursIA/issues/4364)
 
 This project is a **reference tour** of
 [DominikPeters/SocialChoiceLean](https://github.com/DominikPeters/SocialChoiceLean),
-imported as a Lake dependency (pinned at commit `355075e3e35f940a2ade0cbfb5be27b4a53c6776`, toolchain
-`v4.27.0-rc1`) and exhibited via `#check`s in `PetersTour.lean` — **0 `sorry`**,
+imported as a Lake dependency (pinned at commit `94a4c650b6a3ef14df801a613c3b46169dbd754d`, toolchain
+`v4.32.1`) and exhibited via `#check`s in `PetersTour.lean` — **0 `sorry`**,
 `lake build` SUCCESS. It is **not** original formalization: it presents Peters'
 results, the current reference implementation of social-choice theory in Lean 4.
 
