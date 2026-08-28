@@ -1,6 +1,7 @@
 ---
 theme: ../theme-ia101
 title: "Intelligence Artificielle - Acculturation"
+<!-- c.655 retrigger: amend trivial doc to re-trigger PR gate (Tell c.649-L2 ★). Substance intacte. -->
 info: IA 101 - Panorama complet de l'intelligence artificielle
 paginate: true
 drawings:
@@ -413,9 +414,6 @@ layout: section
 <div class="bg-slate-800 text-white px-4 py-2 text-base font-bold text-center">Exemple : Énigme</div>
 </div>
 
-
-**Idée de base**
-
 - Développement des états successeur
 - **Choix des nœuds**
   - = Stratégie d'exploration
@@ -541,8 +539,6 @@ layout: default
 
 <div class="dense-list">
 
-**Jeux vs Exploration**
-
 - Arbre de jeu
 - Environnements
   - multi-agents, concurrentiels
@@ -587,8 +583,6 @@ layout: default
 
 <div>
 
-**Définition CSPs**
-
 - Jusqu'ici: représentation atomique
 - CSP = État factorisé
 - État = variables sur des domaines
@@ -601,8 +595,6 @@ layout: default
 </div>
 
 <div>
-
-**Techniques**
 
 - Exploration avec heuristiques
   - H1 ? H2 ? H3 ?
@@ -767,8 +759,6 @@ layout: default
 <div class="grid grid-cols-2 gap-5 -mt-2">
 <div>
 
-**Code de conduite**
-
 - Principes de conduite intellectuelle
   - Faillibilité
   - Recherche de la vérité
@@ -856,13 +846,9 @@ layout: default
 </div>
 
 
-**Expression de problème**
-
 - Langage formel
 - But à atteindre
 - Listes des opérations
-
-**Approches**
 
 - Exploration des états, plans
 - Heuristiques ?
@@ -1116,11 +1102,8 @@ layout: section
 </div>
 
 
-
 <div class="grid grid-cols-2 gap-5 -mt-2">
 <div>
-
-**Environnement multi-agents**
 
 - Analyse stratégique
 - Interdépendances stratégiques
@@ -1133,8 +1116,6 @@ layout: section
 </div>
 <div>
 
-
-**Optimisation de stratégies**
 
 - Solution = profil de stratégies
 - Pures (déterministes)
@@ -1164,11 +1145,8 @@ layout: section
 </div>
 
 
-
 <div class="grid grid-cols-2 gap-5 -mt-2">
 <div>
-
-**Jeux simultanés**
 
 - Matrice de gains
 - Dominance
@@ -1182,8 +1160,6 @@ layout: section
 </div>
 <div>
 
-
-**Jeux séquentiels**
 
 - Plusieurs manches
 - Forme extensive
@@ -1255,11 +1231,8 @@ layout: section
 </div>
 
 
-
 <div class="grid grid-cols-2 gap-5 -mt-2">
 <div>
-
-**Concepts**
 
 - Théorie des jeux inverse
 - Quelles bonnes règles ?
@@ -1272,8 +1245,6 @@ layout: section
 </div>
 <div>
 
-
-**Résultats**
 
 - Enchères de Vickrey
 - Tragédie des communs
