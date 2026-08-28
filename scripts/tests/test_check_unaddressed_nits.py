@@ -980,6 +980,84 @@ def test_deux_reserves_du_meme_auteur_ne_s_auto_levent_pas():
     assert len(result["blocking"]) == 2
 
 
+# --- #12908 : use-vs-mention côté LEVÉE. Instance fondatrice : PREFLIGHT
+# jsboigeEpita 2026-08-25T04:45:30Z sur #12798 — « obtenir de jsboigeEpita
+# une levée explicite sur le head final ». Le sac de mots LIFT_MARKERS y
+# voyait « levée » et enregistrait le PREFLIGHT comme événement de levée :
+# _lift_eligible(auteur == auteur) éteignait les réserves antérieures du
+# même auteur, et le gate rendait un faux OK. Miroir exact de
+# has_live_marker côté réserves : une occurrence précédée d'un déterminant
+# (une/la/les/de/après/…) est un NOM de levée, pas sa performance.
+
+
+def test_12908_has_live_lift_narration_contre_performance():
+    """Unité : le déterminant devant « levée » en fait une narration."""
+    assert mod.has_live_lift(
+        "obtenir de jsboigeEpita une levée explicite sur le head final"
+    ) is False
+    assert mod.has_live_lift(
+        "revalidation apres la levee annoncee"
+    ) is False
+    # Formes performatives : verbe en tête ou acronyme nu — toujours vives.
+    assert mod.has_live_lift("Levee de ma reserve apres verification") is True
+    assert mod.has_live_lift("Les 2 nits sont levees, commit abc") is True
+    assert mod.has_live_lift("reserve levee") is True
+    assert mod.has_live_lift("je leve ma reserve Hermes") is True
+
+
+def test_12908_garde_de_frontiere_aucune_ne_matche_pas_une():
+    """« aucune levée » doit être narré — l'entrée explicite « aucune » le
+    couvre ; sans la garde de frontière, « aucune ».endswith("une")
+    matcherait « une » avec « c » alphanumérique devant, donc ne le
+    matcherait PAS — c'est précisément pourquoi « aucun/aucune » sont des
+    entrées propres de LIFT_NARRATION_CITERS."""
+    assert mod.has_live_lift("sans aucune levée du tout") is False
+
+
+def test_12908_preflight_exigeant_une_levee_n_est_pas_un_geste():
+    """Le fondateur : le PREFLIGHT de #12798 (structure exacte du
+    commentaire 04:45:30Z) exige une levée — il ne l'accorde pas. Les
+    réserves antérieures du même auteur restent bloquantes."""
+    reserve_1 = {
+        "author": {"login": "jsboigeEpita"}, "createdAt": at(10),
+        "body": "[Hermes] COMMENT_WITH_CONCERNS — sortie vLLM absente.",
+    }
+    reserve_2 = {
+        "author": {"login": "jsboigeEpita"}, "createdAt": at(11),
+        "body": "[Hermes] COMMENT_WITH_CONCERNS — cassette non prouvee.",
+    }
+    preflight = {
+        "author": {"login": "jsboigeEpita"}, "createdAt": at(12),
+        "body": (
+            "[Hermes] PREFLIGHT — substance revalidée ; réserve "
+            "uniquement B.0/process. Le gate classe encore cette PR "
+            "**BLOCKED**. Pour débloquer : obtenir de jsboigeEpita une "
+            "levée explicite sur le head final. Seule une phrase explicite "
+            "de cet auteur après vérification, ou un `[OVERRIDE]` "
+            "coordinateur, les lève."
+        ),
+    }
+    data = {
+        "number": 12798, "title": "t", "author": {"login": "jsboige"},
+        "comments": [reserve_1, reserve_2, preflight], "reviews": [],
+        "commits": [{"committedDate": at(19)}],
+    }
+    result = mod.analyse(data, [], MERGED)
+    assert result["blocked"] is True
+    assert len(result["blocking"]) == 2
+
+
+def test_12908_levee_explicite_non_contradictoire_reste_reconnue():
+    """Controle positif (acceptance #12908) : la duree du durcissement ne
+    rend pas toute levée indelebile — la phrase explicite NON contradictoire
+    de l'auteur de la réserve lève toujours."""
+    lift = {
+        "author": {"login": "clusterManager-Myia"}, "createdAt": at(12),
+        "body": "Vérifié sur le head final : reserve levee, commit abc.",
+    }
+    assert run([HERMES_NIT, lift])["blocked"] is False
+
+
 def test_bystander_explicit_lift_ne_leve_pas_changes_requested():
     """#11145 sur l'etat CHANGES_REQUESTED : une PHRASE de levee d'un tiers
     (ni l'auteur du CR, ni l'auteur de la PR) n'eteint pas l'etat."""
@@ -2246,3 +2324,79 @@ def test_13316_override_legitime_ne_produit_aucune_note():
     res = run_coord([lift])
     assert res["blocked"] is False
     assert res["ignored_overrides"] == []
+# --- #12944 : le close-the-loop Hermes. « Mon concern ... est traité et
+# fermé » (PR #12941 fondateur, review 5020777166) : la levee PASSIVE
+# n'etait couverte par aucun LIFT_MARKER, et le verdict mentionne (« ma
+# review REQUEST_CHANGES de #12900 », ref HORS parentheses) echappait aux
+# motifs de mention — l'acquittement etait classe BOT-CONCERN et bloquait
+# le merge. Meme classe que c.504 : un acquittement qui contient des
+# marqueurs formels est mal classe.
+
+def test_12944_levee_passive_est_un_lift_marker():
+    """La forme passive « est traité et fermé » (gras markdown compris, le
+    compose couvre la coupure auxiliaire/participe) et les verbes de
+    fermeture (clos / ferme / resolu) sont des LIFT_MARKERS. « est traité »
+    NU est REJETTE : le body pinned #11639 « le point 3 est traité en
+    argument » est une narration, pas une levee (l'override nu ne leve
+    rien)."""
+    assert mod.has_marker(
+        "Mon concern est **traité et fermé** : registre régénéré.",
+        mod.LIFT_MARKERS)
+    assert mod.has_marker("le point est clos, rien ne bloque", mod.LIFT_MARKERS)
+    assert mod.has_marker("le fil est fermé après vérification", mod.LIFT_MARKERS)
+    assert not mod.has_marker("le point 3 est traité en argument", mod.LIFT_MARKERS)
+    assert not mod.has_marker("Le point 2 n'est pas traité.", mod.LIFT_MARKERS)
+
+
+def test_12944_close_the_loop_leve_la_review_precedente():
+    """End-to-end : la review REQUEST_CHANGES posee par Hermes (self-bot
+    jsboige), puis son close-the-loop (« est traité et fermé », verdict
+    mentionne avec ref inline) par le meme auteur — le gate passe : le
+    close-the-loop est un explicit_lift borne (#11145, meme auteur)."""
+    review = {
+        "author": {"login": "jsboige"},
+        "state": "COMMENTED", "submittedAt": at(10),
+        "body": "[Hermes] — REQUEST_CHANGES : le registre de citations est fabriqué.",
+    }
+    loop = {"author": {"login": "jsboige"}, "createdAt": at(12),
+            "body": "close-the-loop sur ma review REQUEST_CHANGES de #12900 : "
+                    "Mon concern est **traité et fermé**, registre régénéré "
+                    "(commit ffe18961)."}
+    data = {
+        "number": 0, "title": "t", "author": {"login": "myia-po-2026"},
+        "comments": [loop], "reviews": [review],
+        "commits": [{"committedDate": at(13)}],
+    }
+    assert mod.analyse(data, [], MERGED)["blocked"] is False
+
+
+def test_12944_close_the_loop_seul_nest_plus_un_nit():
+    """Le cas mesure sur #12941 : le close-the-loop ETAIT lui-meme l'unique
+    signal bloque (classify BOT-CONCERN sur son propre body). Il doit
+    desormais rendre None — verdict mentionne + levee passive."""
+    body = ("**[Hermes]** — close-the-loop sur ma review REQUEST_CHANGES de "
+            "#12900 (`ffe18961`). Mon concern est **traité et fermé** : "
+            "registre régénéré depuis les diffs réels.")
+    assert mod.classify("jsboige", body) is None
+
+
+def test_12944_revalidation_formelle_avant_levee_reste_bot_concern():
+    """Garde #12798/#12836 intacts : un verdict formel EMIS en tete puis une
+    narration de levee passive en aval reste BOT-CONCERN — le close-the-loop
+    ne debranche pas la revalidation qui REFUTE une levee annoncee."""
+    body = ("[Hermes] COMMENT_WITH_CONCERNS — revalidation : le concern "
+            "précédent est traité et fermé, mais la cassette reste non "
+            "prouvée.")
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+def test_12944_residu_negation_du_compose_documente():
+    """Residu ASSUME (limite NLP, cf can_lift) : une negation INTERNE au
+    compose (« pas encore traité et fermé ») contient le marqueur
+    « traité et fermé » et se leverait a tort. Pin par ecrit : le
+    discriminant exigerait une fenetre de negation cote LIFT, machinery
+    qui n'existe pas (CITERS ne s'applique qu'aux CONCERN_MARKERS via
+    `_is_cited`). Un redacteur futur qui veut fermer ce residu saura que
+    CE test est celui a mettre a jour."""
+    body = "Mon concern n'est pas encore traité et fermé, le registre reste fabriqué."
+    assert mod.has_marker(body, mod.LIFT_MARKERS) is True  # residu assume

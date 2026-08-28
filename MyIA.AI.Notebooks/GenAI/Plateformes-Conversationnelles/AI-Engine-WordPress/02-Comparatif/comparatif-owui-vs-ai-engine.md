@@ -1,14 +1,14 @@
 # Comparatif OWUI vs AI-Engine — tableau structuré
 
-[← README Plateformes conversationnelles](README.md)
+[← README Plateformes conversationnelles](../../README.md)
 
 > Ce comparatif **ne cherche pas à classer** un produit au-dessus de
 > l'autre : OWUI et AI-Engine ciblent des usages différents et
 > **cohabitent souvent**. La question est plutôt : « pour mon projet,
 > **quand** l'un est plus adapté que l'autre ? »
 
-Les informations OWUI sont issues du [Tour OWUI](Open-WebUI/00-Tour-Plateforme/README.md)
-et de la [série QA Playwright-OWUI](Open-WebUI/Playwright-OWUI/README.md) de ce
+Les informations OWUI sont issues du [Tour OWUI](../../Open-WebUI/00-Tour-Plateforme/README.md)
+et de la [série QA Playwright-OWUI](../../Open-WebUI/Playwright-OWUI/README.md) de ce
 dépôt, ainsi que du dépôt GitHub `open-webui/open-webui`. Les informations
 AI-Engine sont issues de la [fiche officielle du plugin sur
 wordpress.org](https://wordpress.org/plugins/ai-engine/) (août 2026,
@@ -231,10 +231,10 @@ Quelques heuristiques pratiques, **sans valeur universelle** :
 
 ## Voir aussi
 
-- [README AI-Engine-WordPress](AI-Engine-WordPress/README.md) — point d'entrée du
+- [README AI-Engine-WordPress](../README.md) — point d'entrée du
   parcours
-- [Tour OWUI](Open-WebUI/00-Tour-Plateforme/README.md) — pendant OWUI
-- [`livresagites-parcours.md`](AI-Engine-WordPress/livresagites-parcours.md) — cas
+- [Tour OWUI](../../Open-WebUI/00-Tour-Plateforme/README.md) — pendant OWUI
+- [`livresagites-parcours.md`](../04-Cas-Usage-livresagites/livresagites-parcours.md) — cas
   d'usage concret sur livresagités
 - Epic [#4433](https://github.com/jsboige/CoursIA/issues/4433) —
   refonte GenAI (extension)

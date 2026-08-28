@@ -47,7 +47,7 @@ def _to_data_uri(path: Path) -> str:
 def _gate(clip: Path) -> dict:
     r = subprocess.run(
         [sys.executable, str(GATE), "--single", str(clip)],
-        capture_output=True, text=True,
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
     )
     return json.loads(r.stdout)
 

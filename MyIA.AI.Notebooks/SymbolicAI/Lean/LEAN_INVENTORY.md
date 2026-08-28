@@ -20,14 +20,14 @@ toolchain 4.32.1). Colonne *sorry (production)* = métrique CI `standalone-tacti
 |------|-----------|--------------------:|--------------:|---------------:|--------|-------|
 | `grothendieck_lean` | v4.32.1 | 0 | 118 | 4 | REF | #1646, #2159 |
 | `conway_lean` | v4.32.1 | 1¹ | 72 | 23 | PEDA | #1453, #1651, #2162 |
-| `knot_lean` | v4.32.1 | 12² | 15 | 4 | PEDA/REF | #2874, #3003 |
+| `knot_lean` | v4.32.1 | 11² | 15 | 4 | PEDA/REF | #2874, #3003 |
 | `finiteness_lean` | v4.32.1 | 0 | 4 | 4 | PEDA | #2978, #3111 |
 | `sensitivity_lean` | v4.32.1 | 0 | 11 | 5 | PEDA/REF | famille calibration |
 | `mimo_lean` | v4.32.1 | 0 | 13 | 3 | PEDA/REF | #10984, #10986 |
 | `galois_lean` | v4.32.1 | 0 | 3 | 1 | REF (vendored) | préprint M₂₃ |
 | `calibration_lean` | v4.32.1 | 0³ | 9 | 1 | HARNESS | #1764 |
 | `mathlib_examples` | v4.32.1 | 0 | 4 | 0 | REF | référence |
-| **Total** | — | **13** | **249** | — | — | — |
+| **Total** | — | **12** | **249** | — | — | — |
 
 ¹ `conway_lean` : **1 distinct** sorry (cible de prover intentionnelle dans
 `Conway/Life/HashlifeCorrectness.lean` — sous-but auto-contenu destiné au harnais de preuve
@@ -38,12 +38,16 @@ ont été closes** (P4 décomposé en `p4_double_nine_shape` / `p4_wave1_ih` / `
 sorry-free, vérifié par `lake build Conway.Life` post-#4780), seule `HashlifeCorrectness`
 reste en cible prover. Régression de compte documentée et HONNÊTE — pas un défaut.
 ² `knot_lean` = **research-HOLD** : théorie des nœuds (#2874). Le compte **est monté** de
-3 (inventaire 2026-07-15) à 12 distincts actuels (24 code_sorry bruts) — la majorité sont
-des **définitions non définies** (`AreMutants`, `alexanderPolynomial`, `IsSmoothlySlice`,
-`IsTopologicallySlice := sorry`) et des preuves de transfert classique ouvertes. Le pont
-GF(3) Path B (`triColorFoxCondition_iff_sum_mod_three`) est **prouvé** (#3003, sorry
-net-zéro vs `main`). Niveau recherche, pas un gap pédagogique. **Hausse documentée** —
-n'est PAS une régression silencieuse.
+3 (inventaire 2026-07-15) à 12 distincts (inventaire 2026-08-27), puis rebaissé à
+**11 distincts actuels (mesure 2026-08-28, `count_code_sorry.py` distinct_code_sorry)**
+— la majorité des 11 sont des **définitions non définies** (`AreMutants`,
+`alexanderPolynomial`, `IsSmoothlySlice`, `IsTopologicallySlice := sorry`) et des
+preuves de transfert classique ouvertes. Le pont GF(3) Path B
+(`triColorFoxCondition_iff_sum_mod_three`) est **prouvé** (#3003, sorry net-zéro vs
+`main`). Niveau recherche, pas un gap pédagogique. **Évolution documentée**
+(3 → 12 → 11) — n'est PAS une régression silencieuse. Le delta 12 → 11 résulte des
+décharges successives #8766 + #11227 (cf. `knot_lean/README.md` pour la trace par
+fichier) — l'inventaire suit avec un cycle de retard.
 ³ `calibration_lean` est un **composant de harnais** (prover calibration, déplacé depuis
 GameTheory, #1764). Les `· sorry` inline de `Calibration/Nash.lean` sont un **fixture de
 test intentionnel** (le harnais doit gérer un *sorry-increase* 1→2 sans régression) — pas
@@ -94,8 +98,10 @@ théorème de Conway.
 - **Toolchain** : `leanprover/lean4:v4.32.1` · **Dépendance** : Mathlib4
 - **`.lean` files** : 15 (vs 6 modules déclarés 2026-07-15 — cf. EN-siblings comptés
   dans la mesure brute)
-- **sorry (production)** : **12 distincts** (24 code_sorry bruts) — recherche-HOLD,
-  hausse documentée vs 3 déclarés 2026-07-15. Majorité = `:= sorry` sur définitions non
+- **sorry (production)** : **11 distincts** (22 code_sorry bruts = 11 FR + 11 EN,
+  dédoublonnés via `count_code_sorry.py distinct_code_sorry`) — recherche-HOLD,
+  évolution 3 (2026-07-15) → 12 (2026-08-27) → **11** (2026-08-28, mesure
+  canonique post-#11211/#11227). Majorité = `:= sorry` sur définitions non
   définies.
 - **Notebook câblé** : 4 notebooks (vs 2 déclarés — 2 notebooks EN-siblings comptés).
 - **Suivi** : #2874 (mandate-C trio MERGED #3997/#3999/#4003), #3003 (Path B GF(3) SHIPPED).
@@ -225,11 +231,11 @@ prover, déplacé depuis GameTheory).
 
 ## Changements vs inventaire 2026-07-15 (ai-01 / po-2024)
 
-| Métrique | 2026-07-15 | 2026-08-27 | Δ | Sens |
+| Métrique | 2026-07-15 | 2026-08-28 | Δ | Sens |
 |----------|----------:|----------:|---|------|
 | **Lakes trackés** | 7 | 9 | +2 | `mimo_lean` et `galois_lean` étaient omis — gap comblé |
 | **Total `.lean` files** | ~38 (modules umbrella) | 249 | ×6.6 | comptage par instrument, inclut sous-modules + EN-siblings (cf. note ¹) |
-| **Total sorry (production)** | 7 distincts | 13 distincts | +6 | knot 3→12 (recherche) et conway 4→1 (régression résolue + recherche) |
+| **Total sorry (production)** | 7 distincts | **12 distincts** (mesure 2026-08-28, knot 3→12→11 + conway 4→1) | +5 | knot 3→12 (recherche) puis 12→11 (#8766, #11227 — l'inventaire suit avec un cycle de retard, cf. #13312) ; conway 4→1 (régression résolue + recherche) |
 | **Toolchain unique** | v4.31.0-rc1 / v4.32.0 mêlés | v4.32.1 (sauf `decision_theory` core-only) | unifié | convergence 4.32.1 #10986, #11256, #11307, #11325 |
 
 ## Vérification c.649 (post-PR #13235)

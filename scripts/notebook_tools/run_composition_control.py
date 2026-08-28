@@ -104,7 +104,7 @@ def main() -> int:
              "--baseline-slide", str(BASELINE_SLIDE),
              "--baseline-commit", BASELINE_COMMIT,
              "--out", str(report_path)],
-            capture_output=True, text=True, timeout=600,
+            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=600,
         )
         exit_code = r.returncode
         try:

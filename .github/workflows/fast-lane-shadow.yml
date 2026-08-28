@@ -58,10 +58,17 @@ name: Fast lane (ombre)
 # NB collision #13203 : ce depot en parallele ouvre TRANCHE3 (1 garde) sur
 # les memes fichiers -- le merge des deux ajuste le compteur a 22.
 
+# DORMANT depuis #13384 : le job fast-lane est absorbe (checkout full +
+# setup-python + dependances + `fast_lane.py --shadow` + controle d'identite,
+# portes verbatim) par always-on-guards.yml -- un seul workflow, un seul
+# checkout, un seul slot de runner par PR (37 % de la file CI etait les cinq
+# gardes always-on pour ~3 min de travail reel, mesure #13384). Le job reste
+# ICI en copie de reference pour la tracabilite ET pour le controle positif
+# d'identite byte-a-byte (check_absorbed_check_run_identity.py lit ce
+# fichier : le nom du job doit rester inchanger). NE PAS reinscrire
+# pull_request ici sans retirer l'organe fastlane d'always-on-guards.
+
 on:
-  pull_request:
-    branches: [ main ]
-    types: [ opened, synchronize, reopened, edited ]
   workflow_dispatch:
 
 permissions:
