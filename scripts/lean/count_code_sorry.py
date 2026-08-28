@@ -228,13 +228,22 @@ def _is_en_mirror(path: Path) -> bool:
 
 
 def discover_lakes(root: Path) -> list[Path]:
-    """Return own lake roots (dirs containing a ``lakefile.lean``), sorted.
+    """Return own lake roots (dirs containing a ``lakefile.lean`` or
+    ``lakefile.toml``), sorted.
+
+    Both ``lakefile.lean`` and ``lakefile.toml`` are valid Lake manifests
+    (Lake's own file resolution accepts either). The ``.toml`` form is the
+    default for new lakes since the 4.x series; the ``.lean`` form remains for
+    legacy own lakes whose config is itself a Lean program.
+
+    A lake that ships both anchors (uncommon but legal) is reported once
+    (deduplicated by resolved path).
 
     Falls back to ``*_lean`` directories without a lakefile (legacy lakes whose
     lakefile was removed when absorbed, e.g. absorbed into game_theory_lean).
     """
     lakes: list[Path] = []
-    for lakefile in root.rglob("lakefile.lean"):
+    for lakefile in (*root.rglob("lakefile.lean"), *root.rglob("lakefile.toml")):
         lake_root = lakefile.parent
         if _is_excluded(lake_root):
             continue

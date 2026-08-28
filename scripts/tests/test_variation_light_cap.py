@@ -1465,6 +1465,7 @@ def test_check_pr_emits_picker_command_when_vein_tripped():
                 Path(__file__).resolve().parents[1]
             ),
             timeout=15,
+            encoding="utf-8", errors="replace",
         )
     finally:
         os.unlink(merged_path)
@@ -1531,6 +1532,7 @@ def test_check_pr_picker_command_absent_when_no_vein():
                 Path(__file__).resolve().parents[1]
             ),
             timeout=15,
+            encoding="utf-8", errors="replace",
         )
     finally:
         os.unlink(merged_path)
@@ -1583,6 +1585,7 @@ def test_genre_signals_emits_picker_command_when_vein_tripped():
                 Path(__file__).resolve().parents[1]
             ),
             timeout=15,
+            encoding="utf-8", errors="replace",
         )
     finally:
         os.unlink(merged_path)
@@ -1629,6 +1632,7 @@ def test_genre_signals_picker_command_absent_when_clean():
                 Path(__file__).resolve().parents[1]
             ),
             timeout=15,
+            encoding="utf-8", errors="replace",
         )
     finally:
         os.unlink(merged_path)

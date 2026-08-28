@@ -1,0 +1,112 @@
+name: Slow lane (voie asynchrone, tranche 1 #12856)
+
+# VOIE LENTE — execution asynchrone sur main, hebdomadaire.
+#
+# Contexte (cf. #11835, #12856) :
+#
+#   Le depot pese 2,1 Go et 46 workflows le clonent avec `fetch-depth: 0` sur
+#   `pull_request`. Une PR notebook declenche ~46 workflows pour ~235 min de
+#   temps runner, contre 17 runners : le `PR gate` (borne 12 min) expire alors
+#   sur des PR SAINES, et c'est ce faux rouge qui fait vieillir les PR.
+#
+#   Le pilote tranche 1 (#11835 volet 1) demontre la voie rapide (1 checkout
+#   pour 9 gardes, gain d'execution 5,1x) en OMBRE — les workflows d'origine
+#   tournent toujours. Le present workflow est le **complement asynchrone** :
+#   sortir les controles **lourds et idempotents** du `pull_request` et les
+#   payer une fois par fournee sur `main`.
+#
+# Strategie user 2026-08-23 :
+#
+#   "Les jobs lourds ne devraient etre payes qu'une fois par fournee,
+#    les legers tournent a chaque fois, et pourquoi pas les moyens peuvent
+#    etre declanches sur des batchs controles."
+#
+# TRANCHE 1 (cette PR) : CABLER LE MECANISME, NE PAS L'ACTIVER.
+#
+#   Ce workflow execute UN job de demonstration (`ict-tests-pilot`) qui re-run
+#   la suite ICT-Series (`ict-tests.yml`) contre `main` sur schedule hebdo.
+#   Aucun workflow d'origine n'est touche dans cette PR : c'est tranche 2+
+#   qui deplacera reellement les triggers `pull_request`, en respect du
+#   critere d'acceptance #12856-2 ("chaque workflow deplace perd son trigger
+#   pull_request **dans le meme commit** que son ajout a la voie lente").
+#
+#   Le pilote sert de preuve que l'infrastructure est viable :
+#     - le schedule declenche bien un run,
+#     - le verdict est publie (annotation sur le run, ou commentaire de fournee),
+#     - la mesure avant/apres est reproductible (`scripts/ci/measure_runner_demand.py`).
+#
+# Critere de sortie : la premiere MOUVEMENT reel d'un workflow dans la voie
+# lente (tranche 2) ne se fait que si cette tranche 1 a ete observee en
+# production pendant >= 1 semaine, avec publication de verdict, sans faux
+# vert ni faux rouge. Cf. acceptance #12856-1, 3, 4.
+#
+# REVERSIBILITE : `git revert` d'un seul commit retire `slow-lane.yml` et
+# restaure le regime actuel. Aucun fichier d'origine n'est modifie dans
+# cette PR, donc la reversibilite est triviale.
+
+on:
+  # Schedule hebdo (mardi 02:30 UTC, apres le pic push europeen) — une seule
+  # execution par fournee, comme le demande la strategie.
+  schedule:
+    - cron: '30 2 * * 2'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  # Groupe distinct du `ict-tests.yml` d'origine : les runs slow-lane ne
+  # partagent pas la cle avec les runs PR, donc pas de cancel-in-progress
+  # croise (cf. pieges `pages-deploy` #11616).
+  group: slow-lane-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # PILOTE — la suite ICT-Series (legerement lourde : ~3-5 min runner, 746
+  # items + 42 items) est ideale pour ce pilote : elle a deja `push: main`
+  # dans `ict-tests.yml`, donc le delta est nul sur main (la voie rapide y
+  # tourne deja), mais le run slow-lane sert de preuve que la voie
+  # asynchrone tient un verdict sur un cycle hebdomadaire. Tranche 2
+  # deplacera reellement le trigger `pull_request` d'`ict-tests.yml` ici.
+  ict-tests-pilot:
+    name: Slow-lane ICT-Series pilot
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          filter: blob:none
+
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+          cache: pip
+
+      - name: Install ICT-Series package
+        working-directory: MyIA.AI.Notebooks/IIT/ICT-Series
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e .
+
+      - name: Run ict-tests suite
+        id: pytest
+        working-directory: MyIA.AI.Notebooks/IIT/ICT-Series
+        run: |
+          set +e
+          python -m pytest tests ict/tests -q --no-header 2>&1 | tee /tmp/ict-pilot.log
+          echo "exit_code=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
+
+      - name: Publish verdict
+        if: always()
+        env:
+          PYTEST_EXIT: "${{ steps.pytest.outputs.exit_code }}"
+        run: |
+          TAIL="$(tail -n 15 /tmp/ict-pilot.log 2>/dev/null || echo '(no log)')"
+          if [ "${PYTEST_EXIT}" != "0" ]; then
+            echo "::error title=Slow-lane ICT-Series pilot (rouge delibere)::La suite ICT-Series a echoue en mode slow-lane (exit=${PYTEST_EXIT}). Verdict : a investiguer. tail : ${TAIL}"
+          else
+            echo "::notice title=Slow-lane ICT-Series pilot (PASS)::La suite ICT-Series a reussi en mode slow-lane (tranche 1 #12856). Ce job sera re-run chaque mardi 02:30 UTC."
+          fi
