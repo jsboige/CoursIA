@@ -36,7 +36,7 @@ def _load(path: Path):
 def _git(repo: Path, *args: str) -> subprocess.CompletedProcess:
     return subprocess.run(
         ["git", "-c", "user.name=test", "-c", "user.email=test@example.com", *args],
-        capture_output=True, text=True, cwd=str(repo), check=True,
+        capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=str(repo), check=True,
     )
 
 

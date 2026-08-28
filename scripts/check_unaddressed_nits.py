@@ -206,6 +206,27 @@ SEVERITY_GLYPHS = (
 # glyphe (pas de LIFT, pas de CONCERN_MARKERS textuel) retournerait None a tort.
 CONCERN_MARKERS = CONCERN_MARKERS + SEVERITY_GLYPHS
 
+# #12908 — le verdict de l'organe B.0 lui-même, en ses deux formes d'EMISSION :
+# le gras de revalidation (« classe encore cette PR **BLOCKED** », commentaire
+# fondateur 2026-08-25T04:45:30Z de #12798) et la sortie pastee de l'organe
+# (« BLOCKED  PR #N — ... », double espace). Ce commentaire fondateur
+# maintenait explicitement la reserve (« quatre réserves tierces actives »,
+# « réserve uniquement B.0/process ») tout en narrant le vocabulaire de levée
+# (« une levée explicite sur le head final ») : le LIFT_MARKER « levée » de la
+# narration absorbait la reserve vivante — le defaut exact que B.0 existe pour
+# traquer. Comme les glyphes : concatene pour que `live_concern` classe le
+# maintien BOT-CONCERN, ET subordonne la branche LIFT de `classify` via
+# `_formal_concern_precedes_lift` (un BLOCKED emis AVANT la narration de
+# levee garde la reserve vivante ; une levée suivie d'un BLOCKED narré au
+# passe reste une levée — la position decide, comme pour les verdicts
+# formels). Le mot NU « BLOCKED » n'est PAS matche : le tag de protocole
+# « [BLOCKED] lane ... » d'une lane et la negation « n'est plus BLOCKED »
+# restent hors du filet. Residuels assumes : un BLOCKED d'emission sans gras
+# ni paste d'organe ne matche pas ; une paste dans un bloc de code fence est
+# une mention (_strip_quoted), comme tout autre verdict backtinque.
+BLOCK_VERDICTS = ("**BLOCKED**", "BLOCKED  PR")
+CONCERN_MARKERS = CONCERN_MARKERS + BLOCK_VERDICTS
+
 # Un commentaire qui ANNONCE la levee ou le merge n'est pas un nit — il en est
 
 # Un commentaire qui ANNONCE la levee ou le merge n'est pas un nit — il en est
@@ -659,7 +680,8 @@ def _formal_concern_precedes_lift(body: str) -> bool:
     normalised = _unaccent(stripped)
     concern_positions = [
         normalised.find(_unaccent(marker))
-        for marker in ("COMMENT_WITH_CONCERNS", "REQUEST_CHANGES", "NEEDS_CHANGES")
+        for marker in ("COMMENT_WITH_CONCERNS", "REQUEST_CHANGES",
+                       "NEEDS_CHANGES", "**BLOCKED**", "BLOCKED  PR")
     ]
     concern_positions = [position for position in concern_positions if position >= 0]
     # #12908 : les occurrences NARRÉES de levée (« après la levée annoncée »)
@@ -991,6 +1013,8 @@ def classify(author: str, body: str) -> str | None:
             # #12836 / #12798 : une revalidation COMMENT_WITH_CONCERNS peut
             # narrer la levee anterieure qu'elle REFUTE. Seul un verdict Hermes
             # formel place AVANT le mot de levee garde la reserve vivante ; les
+            # #12908 : le verdict B.0 (« **BLOCKED** ») est un verdict de
+            # concern a part entiere pour cette comparaison positionnelle.
             # levees explicites historiques (« je leve ma CHANGES_REQUESTED »)
             # restent admissibles parce que leur ordre est inverse.
             and not _formal_concern_precedes_lift(body)):
