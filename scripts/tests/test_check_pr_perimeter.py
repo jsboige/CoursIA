@@ -28,6 +28,7 @@ from check_pr_perimeter import (  # noqa: E402
     _check_unterminated_fence,
     _count_is_incidental,
     _fence_line_indices,
+    _normalize_rest_files,
 )
 
 # The exact shape of the founding incident (#11227).
@@ -2211,3 +2212,35 @@ def test_13246_metadata_dependent_guard_has_no_paths_filter():
         "(42 %) qui portent une vraie assertion authoriale hors de cette "
         "surface. Cf #13232."
     )
+
+def test_normalize_rest_files_maps_filename_to_path():
+    """#13357: fetch_report moved to the paginated REST endpoint (gh pr view
+    --json files caps at 100), whose items name the path `filename`. The
+    normalizer must produce the `path` shape every downstream reader
+    (format_report, check_assertion) expects."""
+    items = [
+        {"filename": "a.py", "additions": 3, "deletions": 1, "status": "modified"},
+        {"filename": "b.md", "additions": 0, "deletions": 0, "status": "added"},
+    ]
+    assert _normalize_rest_files(items) == [
+        {"path": "a.py", "additions": 3, "deletions": 1},
+        {"path": "b.md", "additions": 0, "deletions": 0},
+    ]
+    # (items or []) guards an empty/None payload the same way.
+    assert _normalize_rest_files(None) == []
+
+
+def test_normalize_rest_files_keeps_full_page_count_13357():
+    """The founding incident encoded: #13357 carries 148 real files; the old
+    `gh pr view --json files` read exactly 100 (single-page cap) and the
+    honest body count ("148 fichiers") failed against the truncation -- an
+    unwinnable guard. A full-length payload must survive the normalizer
+    without loss."""
+    payload = [
+        {"filename": f"file_{i:03d}.py", "additions": 1, "deletions": 0}
+        for i in range(148)
+    ]
+    out = _normalize_rest_files(payload)
+    assert len(out) == 148
+    assert out[0] == {"path": "file_000.py", "additions": 1, "deletions": 0}
+    assert out[-1]["path"] == "file_147.py"

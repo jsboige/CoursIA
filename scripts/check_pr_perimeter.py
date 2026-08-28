@@ -1120,9 +1120,33 @@ def _run_gh(args: list[str]) -> str:
     return proc.stdout
 
 
+def _normalize_rest_files(items: list[dict]) -> list[dict]:
+    """Map REST pulls/files items onto the ``path``/``additions``/``deletions``
+    shape the rest of the guard reads (``gh pr view --json files`` field names)."""
+    return [
+        {
+            "path": it.get("filename"),
+            "additions": it.get("additions"),
+            "deletions": it.get("deletions"),
+        }
+        for it in (items or [])
+    ]
+
+
 def fetch_report(pr: int) -> Report:
-    files_json = _run_gh(["pr", "view", str(pr), "--json", "files"])
-    files = json.loads(files_json)["files"]
+    # ``gh pr view --json files`` caps at 100 entries (single page), so the
+    # guard used to confront bodies against a TRUNCATED list on >100-file PRs:
+    # #13357 carries 148 real files, the capped list read 100, and the honest
+    # body count failed against the truncation -- an unwinnable guard. The
+    # REST endpoint paginates; ``--paginate`` without ``-q`` merges the pages
+    # into one JSON array (same pattern as candidate_delivered.py, #10488).
+    repo = json.loads(
+        _run_gh(["repo", "view", "--json", "nameWithOwner"])
+    )["nameWithOwner"]
+    items = json.loads(_run_gh([
+        "api", f"repos/{repo}/pulls/{pr}/files", "--paginate",
+    ]))
+    files = _normalize_rest_files(items)
     diff = _run_gh(["pr", "diff", str(pr)])
     return Report(files=files, moves=extract_baseline_moves(diff))
 
