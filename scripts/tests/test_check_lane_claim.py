@@ -1828,6 +1828,32 @@ def test_check_claimed_10382_five_disjoint_claims(capsys):
     # lanes each scoped to a disjoint notebook on one parapluie issue. Every
     # lane MUST see blocking_lanes: [] -- the artefactual `lane-claim-conflict`
     # that fired on all ~51 PRs of the audit is gone.
+    #
+    # Fixture liveness guard (#13028): each notebook path MUST resolve to at
+    # least one tracked file in the repo. Otherwise a future rename silently
+    # promotes the claim to `empty_scope` -> EPIC_WIDE -> spurious cross-lane
+    # block, indistinguishable from a real collision. Detect this with a
+    # readable assertion at the top of the test, not via `dead_scope_globs`
+    # surfacing downstream.
+    import pathlib
+    repo_root = pathlib.Path(__file__).resolve().parents[2]
+    fixture_paths = [
+        "MyIA.AI.Notebooks/Sudoku/Sudoku-9-GraphColoring-Csharp.ipynb",
+        "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/"
+        "Planners-5-Heuristics-Csharp.ipynb",
+        "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-3-Informed-Csharp.ipynb",
+        "MyIA.AI.Notebooks/Search/Part1-Foundations/"
+        "Search-5-GeneticAlgorithms-Csharp.ipynb",
+        "MyIA.AI.Notebooks/GameTheory/GameTheory-04-NashEquilibrium-Csharp.ipynb",
+    ]
+    for relpath in fixture_paths:
+        resolved = repo_root / relpath
+        assert resolved.exists(), (
+            f"#13028 fixture guard: {relpath} does not exist on disk. "
+            f"Update the fixture to a live notebook or rename this test "
+            f"expectation; otherwise dead_scope will silently promote the "
+            f"claim to EPIC_WIDE."
+        )
     p = payload(
         comment("[CLAIMED] lane myia-po-2023:CoursIA -- "
                 "paths: MyIA.AI.Notebooks/Sudoku/"
@@ -2315,6 +2341,32 @@ def test_parse_claim_event_unparseable_scope_empty_when_clean():
         "scripts/search-9-*.yaml",
     ]
     assert ev.unparseable_scope == []
+
+
+def test_parse_claim_event_lane_residue_reported_not_blocking():
+    """#12719 -- a marker writing a bare date after the lane parses to the
+    BARE lane (no phantom `myia-po-2023:CoursIA 2026-08-23`), and the residue
+    is witnessed in `lane_scope_residue`. Founder marker of the 5-auto-blocage
+    night (issue #12485 form)."""
+    line = ("[CLAIMED] #12485 — myia-po-2023:CoursIA 2026-08-23 — "
+            "Medical-Chatbot : amorcage batch")
+    ev = clc.parse_claim_event(comment(line, "2026-08-23T04:00:00Z"))
+    assert ev is not None
+    # The lane is the BARE token -- the declaring lane is no longer blocked
+    # against its own claim.
+    assert ev.lane == "myia-po-2023:CoursIA"
+    # And the malformed form is REPORTED, not silently reinterpreted.
+    assert ev.lane_scope_residue == ["bare-date:2026-08-23"]
+
+
+def test_parse_claim_event_lane_residue_empty_when_clean():
+    """#12719 regression -- a well-formed marker yields an empty
+    `lane_scope_residue`. The witness must not fire on clean claims."""
+    line = "[CLAIMED] lane myia-po-2023:CoursIA -- paths: scripts/foo.py"
+    ev = clc.parse_claim_event(comment(line, "2026-08-23T04:00:00Z"))
+    assert ev is not None
+    assert ev.lane == "myia-po-2023:CoursIA"
+    assert ev.lane_scope_residue == []
 
 
 def test_filter_by_claim_scope_lifts_unparseable_to_epic_wide():

@@ -54,6 +54,28 @@ Le remede n'est donc pas d'abandonner la grille : c'est une ligne vide.
 
 Contre-exemple deja present dans le depot avant que le diagnostic « impossible » soit pose : [`slides/S3-acculturation/deck-executif.md:39-41`](../../slides/S3-acculturation/deck-executif.md#L39-L41) — un `grid grid-cols-3` qui construit, et qui porte la ligne vide.
 
+## Generalisation : tout wrapper HTML sur sa ligne ouvre un bloc
+
+La regle precedent, portee sur le diagnostic « les grilles sont impossibles », cache une regle plus large : **tout** tag ouvrant HTML seul sur sa ligne ouvre un bloc HTML, et tout markdown de bloc place sur la ligne suivante est avale. Les coupables recurrents sur les decks du depot :
+
+- **`<div class="grid grid-cols-N ...">`** : layout en grille (cf regle 2).
+- **`<div v-click="N">`** : wrapper d'animation incremental Slidev, omnipresent
+  dans `slides/06-apprentissage` (~30 occurrences sur ce seul deck).
+- **`<div class="dense-list">`**, `<div class="columns">`, `<div class="...">`
+  utilitaires de mise en page.
+
+**Compte rendu main, 2026-08-27 (avant fix #13216) : 49 emplacements sur 36 decks, repartis :**
+
+| Deck | markdown avale |
+|---|---|
+| `slides/01-introduction/slides.md` | 1 |
+| `slides/06-apprentissage/slides.md` | 39 |
+| `slides/S8-semantic-web/slides.md` | 9 |
+
+**Le defaut est invisible aux scanners de composition** : `scan_slidev_composition.py` mesure debordement de canvas, chevauchement de glyphes et occupation -- des asterisques litteraux et une liste aplatie sont du texte A L'INTERIEUR du canvas. Le detecteur dedie `scan_slides_html_block_markdown.py` (PR #13218) a ete pose pour le rendu honnete de cette grandeur.
+
+**Regle praticienne a toute nouvelle tranche : apres avoir pose un `<div>` ouvrant seul sur sa ligne, poser systematiquement une ligne vide avant la premiere ligne markdown suivante.** La grille, le wrapper `v-click` ou la classe dense-list n'echappent pas a la regle.
+
 ## Geometrie du canvas — 980 x 552, et le facteur d'echelle
 
 Sans `canvasWidth` / `aspectRatio` / `canvasHeight` dans le headmatter, Slidev applique son defaut : **980 x 552**. Verifier le headmatter avant d'ecrire le moindre `top-[Npx]` — un deck calcule contre une autre constante produit des positions fausses **partout**, et l'erreur se propage a chaque reparation suivante.
