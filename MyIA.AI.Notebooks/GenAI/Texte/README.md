@@ -21,6 +21,7 @@ La maîtrise des LLMs constitue la pierre angulaire de toute expertise en Géné
 - **Production enterprise** : gestion de sessions, retry, batch processing
 - **Déploiement local** : vLLM, quantification, optimisation des coûts
 - **Test-time scaling (ICR)** : routeur agentique, mémoire persistante, Tree-of-Thoughts sur CSP, courbes de scaling, raisonnement natif, plugins Semantic Kernel (notebooks 13 à 18, arc approfondi au-delà de NB-12)
+- **Analyse linguistique (TAL)** : lemmatisation, dépendances syntaxiques, entités nommées avec spaCy, et leur comparaison à la tokenisation BPE (notebook 23)
 
 ## Contenu détaillé
 
@@ -107,6 +108,15 @@ Le fil rouge est volontairement discriminant : enseigner au modèle un **format 
 |---|----------|-------------|-------|
 | 21 | `21_LoRA_FineTuning.ipynb` | **QLoRA** (NF4 4-bit + double quant, bf16) sur Qwen2.5-0.5B-Instruct : fil rouge = format balisé `[T]/[D]/[E]` que le base échoue à produire ; adaptateurs LoRA via `peft` + `bitsandbytes` + `trl` + `datasets`, GPU CUDA requis (pont PostTraining / #10247) | 75 min |
 | 22 | `22_TensorSharp_DotNet_Inference.ipynb` | Pilote diagnostique .NET : TensorSharp CUDA charge Gemma 4 E4B et répond en OpenAI-compatible, mais le contrôle qualitatif détecte une répétition de `<pad>` (`RECOVERABLE-LOCAL`, adoption différée) | 55 min |
+| 23 | `23_LLamaSharp_DotNet_BakeOff.ipynb` | Bake-off Phase 2 du [#12353](https://github.com/jsboige/CoursIA/issues/12353) : binding .NET de `llama.cpp` 0.27.0, charge Qwen3-4B Q4_K_M en local sur RTX 3080 Ti 16 Go, produit 4 réponses Phase 1 en français avec 0% pad à 14.14 tok/s (vs 99.4% pad TensorSharp) — kernel `.NET Interactive` localement bloqué par AppLocker (escalade user) | 50 min |
+
+### Tier 7 : Analyse linguistique (TAL)
+
+Les tiers précédents traitent le langage **côté modèle** (prompts, RAG, fine-tuning). Ce tier exécute la seconde tradition — le **traitement automatique du langage classique** — sur un corpus français fil rouge à deux domaines (fables de La Fontaine, registre RGPD) : tokenisation en mots, lemmatisation, morphosyntaxe, dépendances syntaxiques, entités nommées, puis **comparaison frontale avec la tokenisation BPE** du notebook [`RAG-et-Memoire-Semantique/04`](../RAG-et-Memoire-Semantique/04-Tokenisation-From-Scratch.ipynb) sur le même corpus. Analyse d'erreurs mesurée contre des jeux d'or annotés à la main (lemmes 8/8, NER 2/5), cas d'usage borné : recherche lemmatisée.
+
+| # | Notebook | Description | Durée |
+|---|----------|-------------|-------|
+| 23 | `23_TAL_Du_Mot_Aux_Dependances.ipynb` | Pipeline **spaCy** `fr_core_news_sm` (CPU) : lemmes/POS/morphologie, arcs de dépendance + tripleaux SVO (displacy), NER avec rendu surligné, comparaison mots/lemmes/BPE (60 fusions) sur le corpus exact du NB-04, analyse d'erreurs contre gold (lemmes 8/8, NER 2/5 : dates manquées, ORG/PER instables), recherche lemmatisée vs surface | 60 min |
 
 ## Prérequis
 

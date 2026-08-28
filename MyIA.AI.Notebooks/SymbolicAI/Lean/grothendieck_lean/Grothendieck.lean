@@ -42,6 +42,8 @@ import Grothendieck.Limits
 import Grothendieck.MathlibMap
 import Grothendieck.MayerVietorisSquare
 import Grothendieck.Monads
+import Grothendieck.PlusConstruction
+import Grothendieck.PlusConstruction_en
 import Grothendieck.MonoidalCategories
 import Grothendieck.PullbackCoversLaws
 import Grothendieck.PullbackFunctor
@@ -121,6 +123,11 @@ Substance réelle :
   Préfaisceaux → Ensembles ; faisceautification universelle.
 - `Grothendieck.LeftExact` : exactitude à gauche du foncteur de
   faisceautification (Grothendieck 1958, Tohoku).
+- `Grothendieck.PlusConstruction` : la construction Plus — l'ingrédient
+  constructif de la sheafification en deux passes (SGA 4 II.3) :
+  fonctorialité, flèche canonique `toPlus`, identité clé
+  `(P ⟶ P⁺)⁺ = P⁺ ⟶ P⁺⁺`, point fixe des faisceaux et propriété
+  universelle du relevé.
 - `Grothendieck.Subcanonical` : topologie sous-canonique — le faisceau
   représentable est un faisceau pour la topologie considérée (cf. Yoneda).
 - `Grothendieck.SitePoints` : points d'un site — généralisation des points
@@ -207,6 +214,10 @@ Substance (English):
   Presheaves → Sets; universal sheafification.
 - `Grothendieck.LeftExact`: left exactness of the sheafification functor
   (Grothendieck 1958, Tohoku).
+- `Grothendieck.PlusConstruction`: the Plus construction — the constructive
+  ingredient of the two-pass sheafification (SGA 4 II.3): functoriality,
+  canonical arrow `toPlus`, key identity `(P ⟶ P⁺)⁺ = P⁺ ⟶ P⁺⁺`, sheaf
+  fixed point and the universal property of the lift.
 - `Grothendieck.Subcanonical`: subcanonical topology — the representable
   presheaf is a sheaf for the topology considered (cf. Yoneda).
 - `Grothendieck.SitePoints`: points of a site — generalisation of geometric

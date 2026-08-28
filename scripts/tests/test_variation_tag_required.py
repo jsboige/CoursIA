@@ -21,6 +21,9 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
+_REPO_ROOT = Path(__file__).resolve().parents[2]
 # Insert `scripts/ci/` so the script under test is importable from a flat
 # `import variation_tag_required` (the same convention the existing
 # `scripts/tests/test_grain_tag.py` uses for `scripts/grain_tag.py`).
@@ -173,6 +176,7 @@ def test_cli_body_file_pass_exit_zero():
             capture_output=True,
             text=True,
             check=False,
+            encoding="utf-8", errors="replace",
         )
         assert proc.returncode == 0, f"expected exit 0, got {proc.returncode}; stderr={proc.stderr!r}"
         verdict = json.loads(proc.stdout)
@@ -192,6 +196,7 @@ def test_cli_body_file_fail_exit_one():
             capture_output=True,
             text=True,
             check=False,
+            encoding="utf-8", errors="replace",
         )
         assert proc.returncode == 1, f"expected exit 1, got {proc.returncode}; stderr={proc.stderr!r}"
         verdict = json.loads(proc.stdout)
@@ -209,6 +214,7 @@ def test_cli_stdin_blocks_when_tag_missing():
         capture_output=True,
         text=True,
         check=False,
+        encoding="utf-8", errors="replace",
     )
     assert proc.returncode == 1
     verdict = json.loads(proc.stdout)
@@ -225,6 +231,7 @@ def test_cli_missing_body_file_exits_two():
         capture_output=True,
         text=True,
         check=False,
+        encoding="utf-8", errors="replace",
     )
     assert proc.returncode == 2
     assert proc.stdout == "", f"stdout should be empty on caller error, got {proc.stdout!r}"
@@ -284,4 +291,44 @@ def test_check_name_is_not_advisory_friendly():
         "Adding a `paths:` filter on the workflow would make the job "
         "report `pending` forever on PRs outside the filter, which is "
         "the failure mode #10045 explicitly rejects."
+    )
+
+
+# --- #13232 : les gardes METADONNEE-dependants ne se filtrent pas par chemins --
+
+# Un `paths:` sur un declencheur `pull_request` SAUTE le workflow entier quand
+# aucun fichier modifie ne matche -- et un workflow saute ne poste AUCUN
+# check-run. Le filtre est donc legitime pour un garde dont le verdict depend
+# du DIFF (regression-guard, translation-guard : leur surface est bien la liste
+# de chemins qu'ils inspectent), et destructeur pour un garde dont le verdict
+# depend des METADONNEES de la PR -- base ref, body, labels, auteur -- dont la
+# surface nominale est *toutes les PR*.
+#
+# La tranche 1c d'#12773 (71a36ae8b) a ajoute un `paths:` aux deux workflows
+# ci-dessous, qui lisent le tag `Grain:` du BODY. Les deux fichiers portaient
+# pourtant deja l'interdit par ecrit (variation-tag-guard.yml regle 2 des
+# acceptances d'#10045, et pr-gate.yml). Ce test le rend mecanique.
+METADATA_DEPENDENT_GUARDS = {
+    ".github/workflows/variation-tag-guard.yml": "lit le tag Grain: du body",
+    ".github/workflows/variation-light-genre.yml": "lit le tag Grain: du body",
+    ".github/workflows/base-not-main-advisory.yml": "lit baseRefName (metadonnee)",
+}
+
+
+@pytest.mark.parametrize("wf,why", sorted(METADATA_DEPENDENT_GUARDS.items()))
+def test_13232_metadata_dependent_guard_has_no_paths_filter(wf, why):
+    import yaml
+
+    path = _REPO_ROOT / wf
+    if not path.exists():
+        pytest.skip(f"{wf} absent de cette revision")
+    doc = yaml.safe_load(io.open(path, encoding="utf-8")) or {}
+    # `on` est parse en booleen True par le YAML 1.1 de PyYAML.
+    triggers = doc.get("on", doc.get(True)) or {}
+    pr = triggers.get("pull_request") or {}
+    assert "paths" not in pr and "paths-ignore" not in pr, (
+        f"{wf} porte un filtre de chemins alors que son verdict {why} : "
+        "sa surface nominale est TOUTE PR, et un workflow saute par `paths:` "
+        "ne poste aucun check-run. Reduire le fan-out par `types:` ou "
+        "`concurrency`, jamais par `paths:`. Cf #13232."
     )

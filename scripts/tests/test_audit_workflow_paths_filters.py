@@ -26,6 +26,7 @@ def run(args: list[str]) -> subprocess.CompletedProcess:
         capture_output=True,
         text=True,
         timeout=30,
+        encoding="utf-8", errors="replace",
     )
 
 
