@@ -20,6 +20,12 @@ Comportement :
     docs/qc/qc-research-issue-template.md prerempli (URL + titre), cap --max-issues
     par run (defaut 5), etat mis a jour uniquement pour les IDs reellement
     semes (un echec de creation laisse l'ID hors etat -> retente au run suivant).
+  - dedup contre les issues EXISTANTES du label avant toute creation : l'etat
+    JSON n'est la verite que s'il a ete commitE. Un semis reussi suivi d'un
+    echec de commit d'etat (run 32690576863 : push rejete fetch-first apres
+    3h33 de queue runner sur un main a ~65 merges/jour) laisserait l'ID hors
+    etat et le run suivant re-semerait l'article en double. Une issue
+    existante rattape l'etat sans creer.
 
 Usage :
   python scripts/notebook_tools/qc_research_monitor.py --dry-run
@@ -88,6 +94,40 @@ def load_state(path: Path) -> dict:
 
 def title_from_slug(slug: str) -> str:
     return slug.replace("-", " ").strip().capitalize()
+
+
+def list_seeded_issues(dry_run: bool) -> list[dict]:
+    """Issues du label (tous etats) pour la dedup. Best-effort : un echec gh
+    (token absent en dry-run local, API indisponible) rend [] et le run garde
+    le comportement pre-dedup plutôt que d'echouer pour un garde optionnel."""
+    proc = subprocess.run(
+        ["gh", "issue", "list", "--label", LABEL, "--state", "all",
+         "--json", "number,title", "--limit", "300"],
+        capture_output=True, text=True,
+    )
+    if proc.returncode != 0:
+        if not dry_run:
+            print(f"[WARN] echec gh issue list (dedup sautee) : {proc.stderr.strip()}",
+                  file=sys.stderr)
+        return []
+    try:
+        return json.loads(proc.stdout)
+    except json.JSONDecodeError:
+        return []
+
+
+def find_existing_issue(articles: list[dict], known: list[dict]) -> dict[int, int]:
+    """Map article_id -> issue number pour les articles deja semees.
+
+    Le suffixe du titre "(#<article_id>)" pose par create_issue est
+    deterministe : c'est la cle de jointure etat <-> issues.
+    """
+    by_id: dict[int, int] = {}
+    for row in known:
+        m = re.search(r"\(#(\d+)\)$", (row.get("title") or "").strip())
+        if m:
+            by_id[int(m.group(1))] = int(row["number"])
+    return by_id
 
 
 def issue_body(article: dict) -> str:
@@ -176,8 +216,16 @@ def main() -> int:
         print(f"bootstrap : {len(seeded)} IDs amortces, 0 issue creee "
               f"(les articles existants restent semables a la demande)")
     else:
+        dedup = find_existing_issue(articles, list_seeded_issues(args.dry_run))
         created = 0
         for a in fresh:
+            existing = dedup.get(a["id"])
+            if existing is not None:
+                seeded[str(a["id"])] = {"url": a["url"], "lastmod": a["lastmod"],
+                                        "seeded_at": None, "issue": existing}
+                print(f"dedup : article {a['id']} deja seme en #{existing} "
+                      f"— etat rattrape, pas de nouvelle issue")
+                continue
             if created >= args.max_issues:
                 print(f"cap --max-issues={args.max_issues} atteint ; "
                       f"{len(fresh) - created} restent pour les runs suivants")
