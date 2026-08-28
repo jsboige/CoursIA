@@ -682,3 +682,61 @@ def test_lane_fallback_twin_moves_with_the_primary(  ):
 def test_lane_fallback_historical_form_unchanged():
     line = "[CLAIMED] #9764 - myia-po-2025:CoursIA 2026-08-07T00:52Z"
     assert gt.extract_lane("no lane keyword here", marker_line=line) == "myia-po-2025:CoursIA"
+
+
+# --- #12719: the bare-date phantom lane --------------------------------------
+#
+# Founder night (5 auto-blockages): a marker writing a bare date where the
+# organ expects the lane produced a lane THAT EXISTS NOWHERE, and
+# check_lane_claim then blocked the declaring lane on its OWN claim. The five
+# real-world forms below are the founder markers (issues #12485 #12484 #12466
+# #12518 #12461), verbatim prefixes.
+_REAL_FOUNDER_MARKERS_12719 = [
+    "[CLAIMED] #12485 — myia-po-2023:CoursIA 2026-08-23 — Medical-Chatbot : amorcage batch",
+    "[CLAIMED] #12484 — myia-po-2023:CoursIA 2026-08-23 — Recipe-Maker : terminaison sur livrable",
+    "[CLAIMED] #12466 — myia-po-2023:CoursIA 2026-08-23 — MGS-7c/7d : check réflexif corrigé",
+    "[CLAIMED] #12518 — myia-po-2023:CoursIA 2026-08-23 — rl_6 : ablation exécutée",
+    "[CLAIMED] #12461 — myia-po-2023:CoursIA 2026-08-23 — QC 03-Framework-Composite",
+]
+
+
+def test_lane_bare_date_not_swallowed_founder_markers():
+    # Acceptance #12719-1: the five real markers parse to the BARE lane.
+    for line in _REAL_FOUNDER_MARKERS_12719:
+        assert gt.extract_lane("no lane keyword here", marker_line=line) == "myia-po-2023:CoursIA", line
+
+
+def test_lane_bare_date_with_keyword_not_swallowed():
+    # Same defect via the PRIMARY regex (keyword form).
+    line = "[CLAIMED] lane myia-po-2023:CoursIA 2026-08-23 — grain"
+    assert gt.extract_lane(line, marker_line=line) == "myia-po-2023:CoursIA"
+
+
+def test_lane_spaces_workspace_survives_date_guard():
+    # Acceptance #12719-2 (explicit): the space-tolerant lane is NOT truncated
+    # by the date lookahead -- a legitimate multi-word workspace never starts
+    # `NNNN-NN-NN`.
+    line = "[CLAIMED] lane myia-po-2025:Microsoft VS Code 2026-08-23"
+    assert gt.extract_lane(line, marker_line=line) == "myia-po-2025:Microsoft VS Code"
+
+
+def test_lane_trailing_period_stripped():
+    # Acceptance #12719-3: founder Grain tag of PR #12530.
+    body = "- Grain `MED/genai-video` — lane `myia-po-2023:CoursIA`."
+    assert gt.extract_lane(body, marker_line=body) == "myia-po-2023:CoursIA"
+    # parse_grain_tag strips it too (same single-reader discipline, #9485).
+    assert gt.parse_grain_tag(body)["lane"] == "myia-po-2023:CoursIA"
+
+
+def test_lane_marker_residues_report_malformed_forms():
+    # Acceptance #12719-4: a malformed marker is REPORTED, not silently
+    # reinterpreted.
+    line = _REAL_FOUNDER_MARKERS_12719[0]
+    residues = gt.lane_marker_residues(line)
+    assert residues == ["bare-date:2026-08-23"]
+    # Trailing period is witnessed as well.
+    body = "- Grain `MED/genai-video` — lane `myia-po-2023:CoursIA`."
+    assert any(r.startswith("trailing-period:") for r in gt.lane_marker_residues(body))
+    # A clean marker carries no residue.
+    clean = "[CLAIMED] lane myia-po-2023:CoursIA -- paths: foo.py"
+    assert gt.lane_marker_residues(clean) == []

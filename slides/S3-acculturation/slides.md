@@ -1,6 +1,7 @@
 ---
 theme: ../theme-ia101
 title: "Intelligence Artificielle - Acculturation"
+<!-- c.655 retrigger: amend trivial doc to re-trigger PR gate (Tell c.649-L2 ★). Substance intacte. -->
 info: IA 101 - Panorama complet de l'intelligence artificielle
 paginate: true
 drawings:
@@ -59,7 +60,7 @@ layout: cover
 
 </div>
 <div class="flex items-center justify-center">
-  <img src="./images/img_004.png" class="rounded shadow-lg" alt="Couverture AIMA Russell & Norvig" />
+  <img src="./images/img_004.png" class="rounded shadow-lg max-h-[430px]" alt="Couverture AIMA Russell & Norvig" />
 </div>
 </div>
 
@@ -399,8 +400,8 @@ layout: section
 - Problèmes jouets
 
 <img src="./images/img_robot_extracted.png" class="absolute top-[345px] right-[20px] w-[380px] max-h-[170px] object-contain" alt="Bras robotique articulé — assemblage robotique" />
-<img src="./images/img_019.png" class="absolute top-[460px] right-[40px] w-[160px]" alt="8-puzzle (état initial mélangé)" />
-<img src="./images/img_021.png" class="absolute top-[460px] right-[210px] w-[160px]" alt="Missionnaires et cannibales" />
+<img src="./images/img_019.png" class="absolute top-[452px] right-[40px] w-[160px]" alt="8-puzzle (état initial mélangé)" />
+<img src="./images/img_021.png" class="absolute top-[452px] right-[210px] w-[160px]" alt="Missionnaires et cannibales" />
 
 
 
@@ -412,9 +413,6 @@ layout: section
 <div class="bg-orange-700 text-white px-4 py-2 text-base font-bold text-center">Idée de base</div>
 <div class="bg-slate-800 text-white px-4 py-2 text-base font-bold text-center">Exemple : Énigme</div>
 </div>
-
-
-**Idée de base**
 
 - Développement des états successeur
 - **Choix des nœuds**
@@ -541,8 +539,6 @@ layout: default
 
 <div class="dense-list">
 
-**Jeux vs Exploration**
-
 - Arbre de jeu
 - Environnements
   - multi-agents, concurrentiels
@@ -587,8 +583,6 @@ layout: default
 
 <div>
 
-**Définition CSPs**
-
 - Jusqu'ici: représentation atomique
 - CSP = État factorisé
 - État = variables sur des domaines
@@ -601,8 +595,6 @@ layout: default
 </div>
 
 <div>
-
-**Techniques**
 
 - Exploration avec heuristiques
   - H1 ? H2 ? H3 ?
@@ -767,8 +759,6 @@ layout: default
 <div class="grid grid-cols-2 gap-5 -mt-2">
 <div>
 
-**Code de conduite**
-
 - Principes de conduite intellectuelle
   - Faillibilité
   - Recherche de la vérité
@@ -856,13 +846,9 @@ layout: default
 </div>
 
 
-**Expression de problème**
-
 - Langage formel
 - But à atteindre
 - Listes des opérations
-
-**Approches**
 
 - Exploration des états, plans
 - Heuristiques ?
@@ -1105,8 +1091,6 @@ layout: section
 <img src="./images/img_064.png" class="w-[150px] max-w-full max-h-[300px] object-contain" alt="Grille 3x3 de navigation avec flèches de politique, cases +1/-1, piège, et inégalité sur R(s)" />
 </div>
 ---
-layout: two-cols
----
 
 
 
@@ -1118,7 +1102,8 @@ layout: two-cols
 </div>
 
 
-**Environnement multi-agents**
+<div class="grid grid-cols-2 gap-5 -mt-2">
+<div>
 
 - Analyse stratégique
 - Interdépendances stratégiques
@@ -1128,10 +1113,9 @@ layout: two-cols
   - Quelles règles?
 
 
-::right::
+</div>
+<div>
 
-
-**Optimisation de stratégies**
 
 - Solution = profil de stratégies
 - Pures (déterministes)
@@ -1147,8 +1131,8 @@ layout: two-cols
 
 
 
----
-layout: two-cols
+</div>
+</div>
 ---
 
 
@@ -1161,7 +1145,8 @@ layout: two-cols
 </div>
 
 
-**Jeux simultanés**
+<div class="grid grid-cols-2 gap-5 -mt-2">
+<div>
 
 - Matrice de gains
 - Dominance
@@ -1172,10 +1157,9 @@ layout: two-cols
 <img src="./images/img_070.png" class="w-[300px] max-w-full max-h-[300px] object-contain" alt="Matrice de gains du jeu Ballet/Fight : préférences croisées des deux joueurs, valeurs (2,1) et (1,2)" />
 
 
-::right::
+</div>
+<div>
 
-
-**Jeux séquentiels**
 
 - Plusieurs manches
 - Forme extensive
@@ -1189,14 +1173,18 @@ layout: two-cols
 <!-- Forme extensive : arbre ou chaque noeud = décision, feuilles = gains -->
 
 
----
-layout: two-cols
+</div>
+</div>
 ---
 
 
 
 # Extensions
 
+
+
+<div class="grid grid-cols-2 gap-5 -mt-2">
+<div>
 
 **Algorithmes**
 
@@ -1208,7 +1196,8 @@ layout: two-cols
 - Jeux différentiels
 
 
-::right::
+</div>
+<div>
 
 
 **Équilibres approchés**
@@ -1228,8 +1217,8 @@ layout: two-cols
 
 
 
----
-layout: two-cols
+</div>
+</div>
 ---
 
 
@@ -1242,7 +1231,8 @@ layout: two-cols
 </div>
 
 
-**Concepts**
+<div class="grid grid-cols-2 gap-5 -mt-2">
+<div>
 
 - Théorie des jeux inverse
 - Quelles bonnes règles ?
@@ -1252,10 +1242,9 @@ layout: two-cols
   - Non-stratégiques
 
 
-::right::
+</div>
+<div>
 
-
-**Résultats**
 
 - Enchères de Vickrey
 - Tragédie des communs
@@ -1272,14 +1261,18 @@ layout: two-cols
 </div>
 
 
----
-layout: two-cols
+</div>
+</div>
 ---
 
 
 
 # Décisions collectives
 
+
+
+<div class="grid grid-cols-2 gap-5 -mt-2">
+<div>
 
 **Théorie du choix social**
 
@@ -1290,7 +1283,8 @@ layout: two-cols
   - Électeur médian
 
 
-::right::
+</div>
+<div>
 
 
 **Méthodes de Condorcet**
@@ -1305,6 +1299,8 @@ layout: two-cols
 
 
 
+</div>
+</div>
 ---
 layout: section
 ---
@@ -1342,13 +1338,15 @@ layout: section
 
 
 ---
-layout: two-cols
----
 
 
 
 # Apprentissage
 
+
+
+<div class="grid grid-cols-2 gap-5 -mt-2">
+<div>
 
 **Enjeux**
 
@@ -1358,7 +1356,8 @@ layout: two-cols
 - Les performances
 
 
-::right::
+</div>
+<div>
 
 
 **Structure d'agent**
@@ -1374,14 +1373,18 @@ layout: two-cols
 
 
 
----
-layout: two-cols
+</div>
+</div>
 ---
 
 
 
 # Caractéristiques (1/2)
 
+
+
+<div class="grid grid-cols-2 gap-5 -mt-2">
+<div>
 
 **Composants d'apprentissage**
 
@@ -1394,7 +1397,8 @@ layout: two-cols
   - Par renforcement: récompenses
 
 
-::right::
+</div>
+<div>
 
 
 **Apprentissage inductif**
@@ -1410,6 +1414,8 @@ layout: two-cols
 
 
 
+</div>
+</div>
 ---
 
 
@@ -1704,13 +1710,15 @@ layout: section
 
 
 ---
-layout: two-cols
----
 
 
 
 # Modèles du langage
 
+
+
+<div class="grid grid-cols-2 gap-5 -mt-2">
+<div>
 
 - N-grams
   - Modèles de Markov
@@ -1726,7 +1734,8 @@ layout: two-cols
   - + score  résultats
 
 
-::right::
+</div>
+<div>
 
 
 - Extraction d'information
@@ -1744,14 +1753,18 @@ layout: two-cols
 </div>
 
 
----
-layout: two-cols
+</div>
+</div>
 ---
 
 
 
 # Grammaires
 
+
+
+<div class="grid grid-cols-2 gap-5 -mt-2">
+<div>
 
 **Caractéristiques**
 
@@ -1765,7 +1778,8 @@ layout: two-cols
   - Catégories = Part Of Speech
 
 
-::right::
+</div>
+<div>
 
 
 **Grammaires probabilistes**
@@ -1785,6 +1799,8 @@ layout: two-cols
 </div>
 
 
+</div>
+</div>
 ---
 
 
@@ -1835,13 +1851,15 @@ layout: two-cols
 <img src="./images/img_133.png" class="w-full object-contain" alt="Pipeline de dialogue : prétraitement de l'entrée, NLU, gestion de dialogue, génération, sortie" />
 </div>
 ---
-layout: two-cols
----
 
 
 
 # Applications des chatbots
 
+
+
+<div class="grid grid-cols-2 gap-5 -mt-2">
+<div>
 
 **Processus de création**
 
@@ -1861,7 +1879,8 @@ layout: two-cols
 - Amélioration
 
 
-::right::
+</div>
+<div>
 
 
 **Exemples**
@@ -1878,6 +1897,8 @@ layout: two-cols
 <!-- Chatbots modernes : ChatGPT (OpenAI), Claude (Anthropic), Gemini (Google) -->
 
 
+</div>
+</div>
 ---
 
 

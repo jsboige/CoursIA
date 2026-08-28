@@ -3,8 +3,8 @@
   python: MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Python.ipynb
   csharp: MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb
   parity_level: semantic
-  bridge_verdict: RECOVERABLE-LOCAL
-  bridge_verdict_reason: "Microsoft.Z3 (NuGet officiel, axe 1 du registre #3801) atteint la theorie des chaines et resout la **contrainte d'automate symbolique** via `str.in_re` / `re.++` / `re.*` / `str.to_re`. Annexe S10 du notebook C# (cellules 46-48) : constructeur d'automate symbolique inline (StringBuilder SMT-LIB 2.6) -> temoin mesure en ~133 ms (Z3 4.12.2.0). Le plafond SFAz3+Z3 'monstre regex tronque' (issue AutomataDotNet/Automata#6) reste une limite **academique et documentee** : elle vit dans `known_differences` et ne peut pas motiver un verdict de parite (les deux jumeaux sont frappes a l'identique, voir precedent GT-17 #10464 / GT-13 #10470)."
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Microsoft.Z3 (NuGet officiel, axe 1 du registre #3801) atteint la theorie des chaines et resout la **contrainte d'automate symbolique** via `str.in_re` / `re.++` / `re.*` / `str.to_re`. Annexe S10 du notebook C# (cellules 46-48) : constructeur d'automate symbolique inline (StringBuilder SMT-LIB 2.6) -> temoin mesure en ~133 ms (Z3 4.12.2.0). Le plafond SFAz3+Z3 'monstre regex tronque' (issue AutomataDotNet/Automata#6) reste une limite **academique et documentee** : elle vit dans `known_differences` et ne peut pas motiver un verdict de parite (les deux jumeaux sont frappes a l'identique, voir precedent GT-17 #10464 / GT-13 #10470). Readjudication de coherence 2026-08-25 (dispatch #10382, comment 5412568851, lane myia-po-2024:CoursIA) : le verdict RECOVERABLE-LOCAL contredisait sa propre raison -- l'annexe S10 exerce DEJA le pont Z3 str.in_re avec temoin mesure (~133 ms), reverifie firsthand ce jour (14 cellules Z3/str.in_re dans le twin C#, dont les cellules 0/1/17/18/21/23/26/29). Le pont est livre et execute : rien a recuperer, verdict SOTA-OK."
   audits:
     - date: "2026-08-04"
       by: myia-po-2023:CoursIA
