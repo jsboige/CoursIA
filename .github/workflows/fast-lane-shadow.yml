@@ -41,6 +41,22 @@ name: Fast lane (ombre)
 # fabricated-text, degenerate-figure), memes regles -- nom canonique,
 # conclusion reelle, workflow d'origine retire de `pull_request`. Le
 # compteur du job suit le registre : 16 gardes, toujours 1 checkout.
+#
+# TRANCHE 4 (#12396) : le noyau du grain -- le gate MARKDOWN
+# md-content-loss (iter par notebook change + --base {base_ref}, son
+# anti-auto-desarmement AGREGE porte par le flag `fail_on_all_warn`) -- et
+# les 4 gates SVG de la serie #6959/#6971/#7008 (broken-geometry,
+# decimal-comma, empty-display, offscreen-flat) avec la meme forme que
+# degenerate-figure (rc=1 defaut / rc=2 illisible). La nouveaute de cette
+# tranche : le CONTROLE POSITIF d'identite byte-a-byte
+# (`check_absorbed_check_run_identity.py`, step ci-dessous) -- absent des
+# tranches 1/2/3 -- qui cimente chaque `guard.name` absorbe au nom de
+# check-run que rendait son workflow source (contrainte #12175 : un rename
+# casse la protection de branche).
+#
+# Compteur : PILOT 10 + TRANCHE1 3 + TRANCHE2 3 + TRANCHE4 5 = 21 gardes.
+# NB collision #13203 : ce depot en parallele ouvre TRANCHE3 (1 garde) sur
+# les memes fichiers -- le merge des deux ajuste le compteur a 22.
 
 on:
   pull_request:
@@ -59,7 +75,7 @@ concurrency:
 
 jobs:
   fast-lane:
-    name: "Fast lane (ombre) -- 16 gardes, 1 checkout"
+    name: "Fast lane (ombre) -- 21 gardes, 1 checkout"
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -95,3 +111,14 @@ jobs:
         run: |
           git fetch origin "${{ github.base_ref }}" -q
           python scripts/ci/fast_lane.py --shadow
+
+      # #12396 : controle POSITIF d'identite byte-a-byte. Sans lui, un renom
+      # du registre (guard.name != nom du job rendu par le workflow source)
+      # passerait : le check-run est emis sous le nouveau nom, mais la
+      # protection de branche requiert l'ANCien nom -- ni satisfaite ni
+      # rougie, echec silencieux de la branche (incident #12175). Ce step
+      # rougit la lane si un nom absorbe diverge de sa source. `if: always()`
+      # : diagnostique meme quand un verdict de garde a deja rougi le job.
+      - name: "Controle positif : identite byte-a-byte des gardes absorbes"
+        if: always()
+        run: python scripts/ci/check_absorbed_check_run_identity.py --check

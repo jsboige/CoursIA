@@ -57,9 +57,30 @@ on:
   pull_request:
     branches: [ main ]
     types: [ opened, synchronize, edited, reopened ]
+    # PAS de `paths:` ici -- #13246 (classe #13232). Le verdict de ce garde
+    # depend d'une METADONNEE de la PR (l'assertion de perimetre dans le body
+    # ou une review) confrontee a `gh pr view --json files` (derivee du diff).
+    # Sa surface nominale est donc *toutes* les PR : toute PR dont le body
+    # affirme quelque chose sur son perimetre. Un paths-filter le reduirait
+    # aux PR touchant `.github/workflows/**` ou le script du garde -- soit
+    # ~58 % des PR merged recentes exclues de la verification, dont 21/50
+    # (42 %) portent une vraie assertion authoriale (cf. mesure #13246,
+    # 2026-08-27). Le critere #13232 : filtrer par chemins un garde
+    # METADONNEE-dependant le desarme. L'incident fondateur #11268 (la
+    # review Hermes « 2 fichiers twins uniquement » sur une PR 3-fichiers
+    # incluant un workflow) reste couvert par la surface nominale (toute
+    # PR), pas par un filtre : la PR #11227 elle-meme ne touchait pas
+    # uniquement un workflow, et le verdict a eu lieu parce que le garde
+    # n'avait PAS de paths: a l'epoque (cf. tranche 1c d'#12773, 71a36ae8b,
+    # revertede ici). Reduire le fan-out passe ici par `types:` ou
+    # `concurrency`, jamais par `paths:`.
   pull_request_review:
     branches: [ main ]
     types: [ submitted, edited ]
+    # Meme raisonnement cote review : une review qui affirme un perimetre
+    # sur une PR hors `.github/workflows/**` doit aussi etre confrontee
+    # (cf. #11268 fondateur : la review elle-meme etait la source du defaut,
+    # pas le diff).
 
 permissions:
   contents: read

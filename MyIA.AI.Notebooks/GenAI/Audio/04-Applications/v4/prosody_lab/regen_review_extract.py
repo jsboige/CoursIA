@@ -112,7 +112,7 @@ def main() -> None:
     r = subprocess.run(
         [sys.executable, str(gate_script), "--single", str(out)],
         capture_output=True,
-        text=True,
+        text=True, encoding="utf-8", errors="replace",
     )
     gate_json_path = out_dir / "gate_extrait.json"
     try:

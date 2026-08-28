@@ -32,15 +32,28 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Drift check vs baseline
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
+          # #12735: le gate juge l'apport de la PR, pas le corpus entier contre
+          # une baseline burndown. On restreint le scan aux notebooks que la PR
+          # a reels changes (git -M resout les renommages) ; a defaut (dispatch,
+          # BASE_SHA vide) on retombe sur un drift whole-corpus.
+          EXTRA=""
+          if [ -n "$BASE_SHA" ]; then
+            git diff -M --name-status "$BASE_SHA...$HEAD_SHA" \
+              -- 'MyIA.AI.Notebooks/' > name_status.txt
+            EXTRA="--name-status name_status.txt"
+          fi
           set +e
           python scripts/notebook_tools/scan_md_hierarchy.py MyIA.AI.Notebooks/ \
-            --baseline --diff > drift_report.txt 2> drift_err.txt
+            --baseline --diff $EXTRA > drift_report.txt 2> drift_err.txt
           rc=$?
           set -e
           if [ "$rc" -eq 2 ]; then
