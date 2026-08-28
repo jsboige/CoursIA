@@ -98,43 +98,18 @@ def test_check_nonexistent_path_returns_2(capsys):
     assert main(["--check", "no/such/path"]) == 2
 
 
-def test_corpus_no_regression_on_decks_fixed_by_13230():
-    """Acceptance #13360 : la sortie ne REGRESSE pas les decks corriges par
-    #13230 (classe balise OUVRANTE). Subtilite mesuree : slides/01-introduction
-    est a la fois un deck #13230 ET le porteur de l'unique occurrence vivante
-    -- de la classe FERMANTE (#13345), pas une regression de #13230. On
-    verifie donc la CLASSE du finding (ligne precedente = `</tag>` seul), pas
-    son numero de ligne (il derive a chaque edition du deck)."""
+def test_corpus_is_zero_after_13345_burn_down():
+    """Corpus ZERO depuis le burn-down de #13345 (la forme fermante survivante
+    de slides/01-introduction). Ce test EST le ratchet : toute reapparition
+    de la classe -- ouvrante (#13230/#13242) ou fermante (#13345) -- sur
+    n'importe quel deck rougit ici, sans attendre un cablage workflow."""
     slides_root = _REPO_ROOT / "slides"
     findings = {}
     for deck in iter_decks(slides_root):
         hits = scan_file(deck)
         if hits:
             findings[deck.relative_to(_REPO_ROOT).as_posix()] = hits
-
-    # Les 2 decks non concernes par #13345 : zero finding.
-    for deck in DECKS_FIXED_BY_13230:
-        if deck == "slides/01-introduction/slides.md":
-            continue
-        assert deck not in findings, f"regression de #13230 sur {deck}"
-
-    # Corpus total connu : exactement 1 occurrence vivante.
-    assert list(findings) == ["slides/01-introduction/slides.md"], findings
-    hits = findings["slides/01-introduction/slides.md"]
-    assert len(hits) == 1, hits
-
-    # Et elle est de la classe FERMANTE (#13345), pas de la classe que
-    # #13230 a corrige (ouvrante) : la ligne precedente est un `</tag>` seul.
-    import re
-    lines = (slides_root / "01-introduction" / "slides.md").read_text(
-        encoding="utf-8"
-    ).split("\n")
-    hit_line = hits[0][0]
-    preceding = lines[hit_line - 2]
-    assert re.match(r"^\s*</[a-zA-Z][a-zA-Z0-9-]*>\s*$", preceding), (
-        f"l'occurrence vivante devait etre de classe fermante (#13345), "
-        f"ligne precedente = {preceding!r}"
-    )
+    assert findings == {}, findings
 
 
 def test_corpus_deck_discovery_is_non_recursive_and_finds_the_deck_dirs():
