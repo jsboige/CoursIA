@@ -30,7 +30,7 @@ CI_DIR = Path(__file__).resolve().parents[1] / "ci"
 sys.path.insert(0, str(CI_DIR))
 
 import fast_lane  # noqa: E402
-from fast_lane_registry import PILOT, Guard  # noqa: E402
+from fast_lane_registry import PILOT, TRANCHE1, Guard  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
@@ -51,6 +51,17 @@ from fast_lane_registry import PILOT, Guard  # noqa: E402
      "scripts/notebook_tools/strip_probe_banner.py", True),
     ("scripts/notebook_tools/other.py",
      "scripts/notebook_tools/strip_probe_banner.py", False),
+    # segment `**/` MEDIAN : chez GitHub il matche aussi zero repertoire --
+    # `MyIA.AI.Notebooks/GradeBook.ipynb` vit exactement ce cas, et la
+    # tranche 1 (exercise-leak) porte ce pattern : sans la variante repliee,
+    # un notebook a la racine du sous-dossier echappait au garde absorbe
+    # alors que le workflow d'origine le couvrait.
+    ("MyIA.AI.Notebooks/x.ipynb",
+     "MyIA.AI.Notebooks/**/*.ipynb", True),
+    ("MyIA.AI.Notebooks/x/y.ipynb",
+     "MyIA.AI.Notebooks/**/*.ipynb", True),
+    ("scripts/x.ipynb",
+     "MyIA.AI.Notebooks/**/*.ipynb", False),
 ])
 def test_path_matches(path, pattern, expected):
     assert fast_lane.path_matches(path, pattern) is expected
@@ -160,7 +171,7 @@ def _arm_unrestorable_tree(monkeypatch, published):
     monkeypatch.setattr(fast_lane, "guard_applies", lambda g, c: True)
     monkeypatch.setattr(fast_lane, "run_argv", lambda argv, ctx: (0, "{}"))
     monkeypatch.setattr(fast_lane, "run_iter",
-                        lambda argv, paths, ctx: (0, "{}"))
+                        lambda argv, paths, ctx, warn_rc=(), fail_on_all_warn=False: (0, "{}"))
     monkeypatch.setattr(fast_lane, "git",
                         lambda *a: subprocess.CompletedProcess(a, 0, "", ""))
     monkeypatch.setattr(fast_lane, "stale_added_paths", lambda _p: [])
@@ -493,6 +504,7 @@ def test_bascule_rename_safe_sur_mini_depot(tmp_path):
     doit restaurer l'arbre exact de HEAD."""
     def g(*args):
         return subprocess.run(["git", *args], cwd=tmp_path,
+                              encoding="utf-8", errors="replace",
                               capture_output=True, text=True)
     g("init", "-q", ".")
     g("config", "user.email", "t@example.com")
@@ -520,3 +532,448 @@ def test_bascule_rename_safe_sur_mini_depot(tmp_path):
     assert (tmp_path / "dir" / "new-name.txt").exists()
     assert not (tmp_path / "dir" / "old-name.txt").exists()
     assert clean is True, dirt
+
+
+# ---------------------------------------------------------------------------
+# 5. Tranche 1 d'absorption (#12567) -- mode mixte ombre/canonique
+# ---------------------------------------------------------------------------
+
+def test_tranche1_guards_are_absorbed_and_pilot_is_not():
+    """Le flag `absorbed` est le contrat de la tranche : un garde absorbe
+    rend son verdict sous son nom canonique (donc rougissant), un garde du
+    pilote reste en observation. Si les deux lots se melangent, soit le
+    pilote bloque sans preuve de comparaison, soit la tranche absorbee est
+    neutralisee et son garde d'origine parti sans remplacement."""
+    assert TRANCHE1, "la tranche 1 est vide : ce test n'exerce plus rien"
+    for guard in TRANCHE1:
+        assert guard.absorbed, f"{guard.name} doit porter absorbed=True"
+    for guard in PILOT:
+        assert not guard.absorbed, (
+            f"{guard.name} est un garde PILOT : il reste en ombre jusqu'a "
+            "la conclusion de la comparaison")
+
+
+def test_absorbed_workflows_no_longer_trigger_on_pull_request():
+    """Chaque garde absorbe voit son workflow d'origine retire du
+    declenchement `pull_request` -- sinon le garde tourne deux fois (une
+    fois canonique par la voie rapide, une fois par son workflow) et la
+    mutualisation ne sauuche aucun run. Verification textuelle ancre'e :
+    `pull_request:` en debut d'indentation sous `on:`."""
+    import re as _re
+    for guard in TRANCHE1:
+        wf = WORKFLOWS / guard.source
+        assert wf.is_file(), f"{guard.source} absent du depot"
+        txt = wf.read_text(encoding="utf-8")
+        assert not _re.search(r"^\s+pull_request:", txt, _re.M), (
+            f"{guard.source} declenche encore sur pull_request alors que "
+            f"{guard.name} est absorbe : double execution + zero run sauve")
+
+
+def _drive_mixed_emission(monkeypatch, pilot_rc, tranche_rc):
+    """Fait tourner main() en mode ombre avec un garde pilote et un garde
+    absorbe, tous deux en echec, et capture les check-runs publies."""
+    import fast_lane as fl
+    pilot = Guard(name="pilote-bloquant", argv=["cmd-pilote"], source="s",
+                  blocking=True)
+    tranche = Guard(name="canonique-bloquant", argv=["cmd-tranche"], source="s",
+                    blocking=True, paths=["**/*.ipynb"], absorbed=True)
+    monkeypatch.setattr(fl, "PILOT", [pilot])
+    monkeypatch.setattr(fl, "TRANCHE1", [tranche])
+    monkeypatch.setattr(fl, "TRANCHE2", [])
+    monkeypatch.setattr(fl, "TRANCHE4", [])
+    monkeypatch.setattr(fl, "changed_files", lambda _ref: ["x.ipynb"])
+    monkeypatch.setattr(
+        fl, "run_argv",
+        lambda argv, ctx: (tranche_rc if argv == ["cmd-tranche"]
+                           else pilot_rc, "sortie"))
+    monkeypatch.setattr(fl, "run_iter",
+                        lambda a, p, c, warn_rc=(), fail_on_all_warn=False: (0, ""))
+    monkeypatch.setattr(
+        fl, "git",
+        lambda *a: subprocess.CompletedProcess(a, 0, "sha", ""))
+    published = []
+    monkeypatch.setattr(fl, "emit_check_run",
+                        lambda *a, **k: published.append(a))
+    rc = fl.main(["--shadow", "--base-sha", "abc"])
+    return rc, published
+
+
+def test_mixed_emission_absorbed_is_canonical_and_blocking(monkeypatch):
+    """Le coeur du basculement #12567 : dans une lane qui tourne en ombre,
+    un garde absorbe en echec rend (a) son nom SANS prefixe ombre, (b) une
+    conclusion `failure` non neutralisee, (c) fait rougir le job -- sinon la
+    voie rapide publierait des verdicts que personne ne peut voir."""
+    rc, published = _drive_mixed_emission(monkeypatch, pilot_rc=1,
+                                          tranche_rc=1)
+    by_name = {args[2]: args for args in published}
+    assert "canonique-bloquant" in by_name, (
+        "le garde absorbe doit porter son nom exact, sans prefixe ombre")
+    assert by_name["canonique-bloquant"][3] == "failure", (
+        "un bloquant absorbe en echec doit rendre failure, pas neutral")
+    assert rc == 1, (
+        "l'echec d'un garde absorbe doit faire rougir le job de la voie "
+        "rapide -- sinon le verdict existe mais rien ne bloque")
+
+
+def test_mixed_emission_pilot_stays_shadowed_and_non_blocking(monkeypatch):
+    """Contraste : dans la MEME lane, le garde pilote en echec reste prefixe,
+    neutralise, et ne fait pas rougir le job -- la comparaison ombre n'est
+    pas conclue et ne doit pas se mettre a bloquer par effet de bord."""
+    rc, published = _drive_mixed_emission(monkeypatch, pilot_rc=1,
+                                          tranche_rc=0)
+    names = {args[2] for args in published}
+    ombre = [n for n in names if n.startswith(fast_lane.SHADOW_PREFIX)]
+    assert any("pilote-bloquant" in n for n in ombre), (
+        "le garde pilote doit rester sous prefixe ombre")
+    for args in published:
+        if "pilote-bloquant" in args[2]:
+            assert args[3] == "neutral", (
+                "le pilote en echec doit rester neutralise")
+    assert rc == 0, (
+        "un echec purement ombre ne doit pas rougir le job")
+
+
+# ---------------------------------------------------------------------------
+# 6. Tranche 2 d'absorption (#12567) -- ratchet autonome + warn_rc + skip
+# ---------------------------------------------------------------------------
+
+def test_tranche2_guards_are_absorbed_and_declare_their_warn_rc():
+    """Meme contrat que la tranche 1, plus une clause : les detecteurs de la
+    serie figure/texte rendent rc=2 sur fichier introuvable, saute par leur
+    workflow d'origine -- le garde absorbe doit le declarer sous peine
+    d'etre plus strict que ce qu'il remplace. Le ratchet, lui, porte un
+    pre-contrôle self-test."""
+    from fast_lane_registry import TRANCHE2
+    assert len(TRANCHE2) == 3, (
+        "la tranche 2 documente trois formes moteur ; si le nombre change, "
+        "le commentaire du registre et ce test suivent")
+    for guard in TRANCHE2:
+        assert guard.absorbed, f"{guard.name} doit porter absorbed=True"
+    warners = {g.name for g in TRANCHE2 if g.warn_rc}
+    assert warners == {
+        "No fabricated text output in changed notebooks",
+        "No degenerate figure in changed notebooks",
+    }, ("seuls les detecteurs figure/texte portent un warn_rc ; le ratchet "
+        "est binaire et ne doit pas en declarer")
+    ratchet = next(g for g in TRANCHE2 if g.pre_argv)
+    assert "--self-test" in " ".join(ratchet.pre_argv)
+
+
+def test_pre_argv_failure_short_circuits_the_guard(monkeypatch):
+    """Un self-test en echec est LE verdict du garde : le scan ne tourne pas
+    (un detecteur debranche ne doit pas rendre vert par son silence), le
+    check-run porte l'echec, et le job rougit -- garde absorbe bloquant."""
+    import fast_lane as fl
+    guard = Guard(name="ratchet-test", argv=["cmd-scan"],
+                  pre_argv=["cmd-selftest"], source="s",
+                  blocking=True, absorbed=True, paths=["**/*.ipynb"])
+    calls = []
+    monkeypatch.setattr(fl, "PILOT", [])
+    monkeypatch.setattr(fl, "TRANCHE1", [guard])
+    monkeypatch.setattr(fl, "TRANCHE2", [])
+    monkeypatch.setattr(fl, "TRANCHE4", [])
+    monkeypatch.setattr(fl, "changed_files", lambda _ref: ["x.ipynb"])
+
+    def fake_run_argv(argv, ctx):
+        calls.append(list(argv))
+        return (3, "witness non matche") if argv == ["cmd-selftest"] else (0, "")
+    monkeypatch.setattr(fl, "run_argv", fake_run_argv)
+    monkeypatch.setattr(
+        fl, "git",
+        lambda *a: subprocess.CompletedProcess(a, 0, "sha", ""))
+    published = []
+    monkeypatch.setattr(fl, "emit_check_run",
+                        lambda *a, **k: published.append(a))
+    rc = fl.main(["--shadow", "--base-sha", "abc"])
+    assert ["cmd-selftest"] in calls, "le pre-contrôle doit etre execute"
+    assert ["cmd-scan"] not in calls, (
+        "un self-test en echec doit court-circuiter le scan")
+    assert rc == 1, "l'echec du pre-contrôle d'un absorbe bloquant rougit"
+    assert published[0][3] == "failure"
+
+
+def test_pre_argv_success_chains_into_the_scan(monkeypatch):
+    import fast_lane as fl
+    guard = Guard(name="ratchet-ok", argv=["cmd-scan"],
+                  pre_argv=["cmd-selftest"], source="s",
+                  blocking=True, absorbed=True, paths=["**/*.ipynb"])
+    calls = []
+    monkeypatch.setattr(fl, "PILOT", [])
+    monkeypatch.setattr(fl, "TRANCHE1", [guard])
+    monkeypatch.setattr(fl, "TRANCHE2", [])
+    monkeypatch.setattr(fl, "TRANCHE4", [])
+    monkeypatch.setattr(fl, "changed_files", lambda _ref: ["x.ipynb"])
+
+    def fake_run_argv(argv, ctx):
+        calls.append(list(argv))
+        return (0, "SELF-TEST OK")
+    monkeypatch.setattr(fl, "run_argv", fake_run_argv)
+    monkeypatch.setattr(
+        fl, "git",
+        lambda *a: subprocess.CompletedProcess(a, 0, "sha", ""))
+    monkeypatch.setattr(fl, "emit_check_run", lambda *a, **k: None)
+    rc = fl.main(["--shadow", "--base-sha", "abc"])
+    assert ["cmd-selftest"] in calls and ["cmd-scan"] in calls
+    assert rc == 0
+
+
+def test_absorbed_workflows_of_tranche2_no_longer_trigger_on_pull_request():
+    import re as _re
+    from fast_lane_registry import TRANCHE2
+    for guard in TRANCHE2:
+        wf = WORKFLOWS / guard.source
+        assert wf.is_file(), f"{guard.source} absent du depot"
+        txt = wf.read_text(encoding="utf-8")
+        assert not _re.search(r"^\s+pull_request:", txt, _re.M), (
+            f"{guard.source} declenche encore sur pull_request alors que "
+            f"{guard.name} est absorbe : double execution + zero run sauve")
+
+
+def test_warn_rc_is_success_everywhere(monkeypatch):
+    """Un rc=2 declare en warn_rc doit etre un SUCCES coherant sur les TROIS
+    surfaces : conclusion du check-run, titre, et rouge du job -- sinon le
+    verdict dit success pendant que le job rougit."""
+    guard = Guard(name="warneur", argv=["cmd-w"], source="s",
+                  blocking=True, absorbed=True,
+                  warn_rc=(2,), paths=["**/*.ipynb"])
+    assert fast_lane.conclusion_for(guard, 2) == "success"
+    assert fast_lane.conclusion_for(guard, 1) == "failure"
+    assert fast_lane.conclusion_for(guard, 0) == "success"
+
+    import fast_lane as fl
+    monkeypatch.setattr(fl, "PILOT", [])
+    monkeypatch.setattr(fl, "TRANCHE1", [guard])
+    monkeypatch.setattr(fl, "TRANCHE2", [])
+    monkeypatch.setattr(fl, "TRANCHE4", [])
+    monkeypatch.setattr(fl, "changed_files", lambda _ref: ["x.ipynb"])
+    monkeypatch.setattr(fl, "run_argv", lambda argv, ctx: (2, "illisible"))
+    monkeypatch.setattr(
+        fl, "git",
+        lambda *a: subprocess.CompletedProcess(a, 0, "sha", ""))
+    published = []
+    monkeypatch.setattr(fl, "emit_check_run",
+                        lambda *a, **k: published.append(a))
+    rc = fl.main(["--shadow", "--base-sha", "abc"])
+    assert rc == 0, "un rc warn ne doit pas rougir le job"
+    assert published[0][3] == "success"
+    assert "OK" in published[0][4], published[0][4]
+
+
+def test_iter_paths_skips_files_deleted_by_the_pr(monkeypatch):
+    """Fidelite au `[ -f \"$nb\" ] || continue` des workflows d'origine : un
+    notebook SUPPRIME par la PR ne doit jamais atteindre le detecteur -- sinon
+    son code \"illisible\" (rc=2) deviendrait un verdict sur un fichier que
+    l'original n'examinait pas."""
+    import fast_lane as fl
+    from fast_lane_registry import TRANCHE2
+    seen_paths: list[list[str]] = []
+    real_iter = fl.run_iter
+
+    def spy_iter(argv, paths, ctx, warn_rc=(), fail_on_all_warn=False):
+        seen_paths.append(list(paths))
+        return real_iter(argv, paths, ctx, warn_rc=warn_rc,
+                         fail_on_all_warn=fail_on_all_warn)
+
+    fig = next(g for g in TRANCHE2
+               if g.name.startswith("No degenerate figure"))
+    monkeypatch.setattr(fl, "PILOT", [])
+    monkeypatch.setattr(fl, "TRANCHE1", [])
+    monkeypatch.setattr(fl, "TRANCHE2", [fig])
+    monkeypatch.setattr(fl, "TRANCHE4", [])
+
+    # Un notebook REEL (pour le cas here) + un chemin absent (gone) : le
+    # filtre doit garder le premier et ecarter le second.
+    import os as _os
+    real_nb = None
+    for root, dirs, files in _os.walk(fl.REPO_ROOT / "MyIA.AI.Notebooks"):
+        for f in files:
+            if f.endswith(".ipynb"):
+                real_nb = _os.path.relpath(
+                    _os.path.join(root, f), fl.REPO_ROOT).replace(_os.sep, "/")
+                break
+        if real_nb:
+            break
+        dirs[:] = dirs[:3]  # profondeur bornee : le premier trouve suffit
+    assert real_nb, "l'arbre de test ne porte aucun notebook"
+
+    gone = "MyIA.AI.Notebooks/B/gone.ipynb"
+    monkeypatch.setattr(fl, "changed_files", lambda _ref: [real_nb, gone])
+    monkeypatch.setattr(fl, "run_iter", spy_iter)
+    monkeypatch.setattr(
+        fl, "git",
+        lambda *a: subprocess.CompletedProcess(a, 0, "sha", ""))
+    monkeypatch.setattr(fl, "emit_check_run", lambda *a, **k: None)
+    fl.main(["--shadow", "--base-sha", "abc"])
+
+    examined = seen_paths[0] if seen_paths else []
+    assert real_nb in examined, (
+        f"le notebook existant {real_nb} doit etre examine")
+    assert gone not in examined, (
+        "un fichier supprime par la PR ne doit pas atteindre le detecteur")
+
+
+# ---------------------------------------------------------------------------
+# 7. Tranche 4 (#12396) -- gates SVG absorbes + controle positif d'identite
+# ---------------------------------------------------------------------------
+
+def test_tranche4_guards_are_absorbed_svg_and_declare_warn_rc():
+    """Le noyau du grain #12396 -- le gate MARKDOWN md-content-loss (noyau de
+    la tranche, seul "advisory markdown" a verdict check-run encore en
+    workflow dedie) -- plus les 4 gates SVG de la serie #6959/#6971/#7008
+    (#12384), absorbes avec EXACTEMENT la forme eprouvee de degenerate-figure
+    (tranche 2) : iter par notebook change, rc=1 defaut / rc=2 illisible
+    declare en warn_rc, bloquant."""
+    from fast_lane_registry import TRANCHE4
+    assert len(TRANCHE4) == 5, (
+        "la tranche 4 documente 5 gates (1 markdown + 4 SVG) ; si le nombre "
+        "change, le commentaire du registre et ce test suivent")
+    for guard in TRANCHE4:
+        assert guard.absorbed, f"{guard.name} doit porter absorbed=True"
+        assert guard.blocking, (
+            f"{guard.name} remplace un gate qui rougit le job : il doit "
+            "rougir aussi")
+        assert guard.iterates_paths, (
+            f"{guard.name} remplace une boucle par notebook : il doit "
+            "iterer les chemins")
+        assert guard.warn_rc == (2,), (
+            f"{guard.name} doit declarer rc=2 illisible comme les sources")
+    svg = {g.name for g in TRANCHE4 if "SVG" in g.name}
+    assert svg == {
+        "No SVG broken-geometry (negative-dim) defect in changed notebooks",
+        "No SVG decimal-comma defect in changed notebooks",
+        "No SVG empty-display defect in changed notebooks",
+        "No offscreen-flat SVG in changed notebooks",
+    }, "les noms canoniques doivent etre ceux des jobs des workflows sources"
+    md = next(g for g in TRANCHE4 if "markdown" in g.name)
+    assert md.needs_base, (
+        "md-content-loss diffe contre la base git (`--base {base_ref}`) : "
+        "il doit declarer needs_base")
+    assert md.fail_on_all_warn, (
+        "md-content-loss porte l'anti-auto-desarmement AGREGE (#8655/#8656) : "
+        "il doit le declarer -- sinon un detecteur casse rendrait un quitus "
+        "vert par silence")
+
+
+def test_absorbed_workflows_of_tranche4_no_longer_trigger_on_pull_request():
+    import re as _re
+    from fast_lane_registry import TRANCHE4
+    for guard in TRANCHE4:
+        wf = WORKFLOWS / guard.source
+        assert wf.is_file(), f"{guard.source} absent du depot"
+        txt = wf.read_text(encoding="utf-8")
+        assert not _re.search(r"^\s+pull_request:", txt, _re.M), (
+            f"{guard.source} declenche encore sur pull_request alors que "
+            f"{guard.name} est absorbe : double execution + zero run sauve")
+
+
+def test_tranche4_iterate_paths_restricted_to_asset_glob():
+    """Regression #13220 : les gardes TRANCHE4 portent, comme le workflow
+    d'origine, le detecteur + le workflow dans `paths` (le declencheur, pour
+    que la garde reparte quand ils changent) -- mais leur boucle interne
+    itere UNIQUEMENT le glob d'actifs. Si `iteration` tombait sur `paths`
+    en entier, un `.yml`/`.py` change serait passe au detecteur de
+    notebooks -> rc=2 -> faux echec sur une PR qui ne touche AUCUN notebook
+    (incident : la PR qui ajoute la tranche echouait sur ses propres gardes).
+    `iterate_paths` doit donc restreindre a l'actif et exclure tout
+    non-notebook present dans `paths`."""
+    from fast_lane_registry import TRANCHE4
+    ASSET = "MyIA.AI.Notebooks/**/*.ipynb"
+    for guard in TRANCHE4:
+        assert guard.iterate_paths, (
+            f"{guard.name} doit restreindre l'iteration a l'actif"
+            " (`iterate_paths`) -- sinon une PR workflow/detecteur seule "
+            "echoue a tort (incident #13220)")
+        assert guard.iterate_paths == [ASSET], (
+            f"{guard.name} doit iterer UNIQUEMENT {ASSET}, got "
+            f"{guard.iterate_paths}")
+        extras = set(guard.paths) - set(guard.iterate_paths)
+        assert extras, (
+            f"{guard.name} : sans declencheur distinct de l'iteration, "
+            "le detecteur/workflow ne serait jamais dans `paths` et la garde "
+            "ne repartirait pas quand ils changent")
+        assert all("*" in e or e.endswith((".py", ".yml")) for e in extras), (
+            f"{guard.name} : les entrees de `paths` hors iteration devraient "
+            f"etre detecteur/workflow, got {extras}")
+
+
+def test_absorbed_names_are_byte_identical_to_source_job_names():
+    """Le livrable propre de #12396 : le controle positif que les tranches
+    1/2 n'ont jamais eu. `guard.name` doit etre byte-identique au nom de
+    check-run rendu par le workflow source (`job.name` ou la cle du job) --
+    sinon le rename casse la protection de branche : le check requis porte
+    l'ancien nom, l'emission sous un nom different ne le satisfait ni le
+    rougit (incident #12175)."""
+    import check_absorbed_check_run_identity as ident
+    problems = ident.mismatches()
+    assert problems == [], (
+        "identite byte-a-byte des gardes absorbes cassee :\n"
+        + "\n".join(problems))
+
+
+def test_absorbed_identity_control_detects_a_rename(monkeypatch):
+    """CONTROLE POSITIF DU CONTROLE : si `guard.name` diverge de la source,
+    le verificateur doit le voir -- sinon il mesurerait rien et le test
+    precedent deviendrait du theater."""
+    import dataclasses
+    import check_absorbed_check_run_identity as ident
+    premier = ident.reg.TRANCHE1[0]
+    renomme = dataclasses.replace(premier, name="renomme-oubli-canonique")
+    monkeypatch.setattr(ident.reg, "TRANCHE1", [renomme])
+    problems = ident.mismatches()
+    assert any("renomme-oubli-canonique" in p for p in problems), problems
+
+
+def test_absorbed_identity_control_detects_a_missing_source(monkeypatch):
+    import dataclasses
+    import check_absorbed_check_run_identity as ident
+    premier = ident.reg.TRANCHE1[0]
+    fantome = dataclasses.replace(premier, source="workflow-fantome.yml")
+    monkeypatch.setattr(ident.reg, "TRANCHE1", [fantome])
+    problems = ident.mismatches()
+    assert any("workflow-fantome.yml" in p for p in problems), problems
+
+
+def test_run_iter_fail_on_all_warn_returns_failure_when_every_file_warns(
+        monkeypatch):
+    """Anti-auto-desarmement AGREGE (#8655/#8656) : si CHAQUE fichier rend un
+    rc de `warn_rc`, run_iter doit rendre 1 (fail loud) -- un detecteur casse
+    ne produit pas la bonne conclusion par silence. Sans ce flag, le warn_rc
+    lisserait la panne en succes et absorber muterait la propriete du
+    workflow d'origine."""
+    import fast_lane as fl
+    monkeypatch.setattr(fl, "run_argv",
+                        lambda argv, ctx: (2, "illisible"))
+    rc, log = fl.run_iter(["python", "x.py", "{changed_paths}"],
+                          ["a.ipynb", "b.ipynb"], {},
+                          warn_rc=(2,), fail_on_all_warn=True)
+    assert rc == 1, (
+        "tous les fichiers a l'etat illisible doit rougir le garde")
+    assert "anti-auto-desarmement" in log
+
+
+def test_run_iter_fail_on_all_warn_does_not_fire_on_mixed_results(
+        monkeypatch):
+    """Le flag ne doit se declencher que si TOUS les fichiers ont ete
+    illisibles. Un seul illisible parmi des fichiers sains = la panne est
+    locale, le garde a bien travaille ailleurs -> agregat normal (le warn_rc
+    lisse l'illisible en succes, pas de fail loud)."""
+    import fast_lane as fl
+
+    def fake(argv, ctx):
+        return (2, "illisible") if ctx["changed_paths"] == "a.ipynb" else (0, "ok")
+    monkeypatch.setattr(fl, "run_argv", fake)
+    rc, log = fl.run_iter(["python", "x.py", "{changed_paths}"],
+                          ["a.ipynb", "b.ipynb"], {},
+                          warn_rc=(2,), fail_on_all_warn=True)
+    assert rc == 0, (
+        "un mixte (1 illisible + 1 sain) ne doit pas fail loud : le garde a "
+        "bien travaille ailleurs")
+
+
+def test_run_iter_fail_on_all_warn_ignores_empty_paths():
+    """Vide = aucun fichier a examiner, pas un detecteur casse : le no-op
+    reste 0, meme avec le flag arme (aucune iteration => aucun warn)."""
+    rc, log = fast_lane.run_iter(["python", "x.py", "{changed_paths}"],
+                                 [], {}, warn_rc=(2,), fail_on_all_warn=True)
+    assert rc == 0
+    assert "iterates_paths vide" in log

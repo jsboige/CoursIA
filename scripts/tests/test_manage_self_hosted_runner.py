@@ -51,7 +51,7 @@ def profile(root: Path, *, digest: str = "a" * 64) -> mod.Profile:
         archive_sha256=digest,
         sensitive_templates=(
             (r"{repo_root}\.secrets", r"{repo_root}\.secrets\master.env"),
-            (r"{user_profile}\.ssh", r"{user_profile}\.ssh\jsboige_key"),
+            (r"{user_profile}\.ssh", r"{user_profile}\.ssh"),
             (r"{appdata}\GitHub CLI\hosts.yml", r"{appdata}\GitHub CLI\hosts.yml"),
         ),
     )
@@ -110,6 +110,14 @@ def write_registry(path: Path, base_root: str, **overrides) -> None:
 
 def PureWindows(path: Path) -> str:
     return "C:\\" + "\\".join(path.parts[-3:])
+
+
+@pytest.fixture(autouse=True)
+def _probe_env(monkeypatch, tmp_path):
+    # The isolation-probe templates resolve {user_profile}/{appdata}; native
+    # Windows always defines them, the posix CI host does not.
+    monkeypatch.setenv("USERPROFILE", str(tmp_path / "user"))
+    monkeypatch.setenv("APPDATA", str(tmp_path / "appdata"))
 
 
 def test_run_powershell_delivers_scripts_via_file_not_stdin():
@@ -171,6 +179,29 @@ def test_committed_profiles_are_valid_and_distributed_across_pushers():
         loaded = mod.load_profile(name)
         assert set(loaded.labels) == mod.REQUIRED_LABELS
         assert loaded.archive_sha256 == "d59123a43003e357b0805b5d0f611d0bd2f65ab67d51bd070dd4e7a0f685c162"
+
+
+@requires_windows
+def test_profile_accepts_runner_own_checkout_under_work(tmp_path, monkeypatch):
+    # #13238 : sur le runner lui-meme, le checkout vit sous <root>/_work —
+    # l'invariant "root hors du repository" ne doit pas le refuser.
+    registry = tmp_path / "profiles.json"
+    root = r"C:\CoursIA-Test\runner"
+    write_registry(registry, root)
+    monkeypatch.setattr(mod, "REPO_ROOT", Path(root) / "_work" / "CoursIA")
+    loaded = mod.load_profile("test", registry)
+    assert loaded.name == "test"
+
+
+@requires_windows
+def test_profile_refuses_repository_inside_runner_root_outside_work(tmp_path, monkeypatch):
+    # Repo sous la racine runner mais HORS de la zone work : toujours refuse.
+    registry = tmp_path / "profiles.json"
+    root = r"C:\CoursIA-Test\runner"
+    write_registry(registry, root)
+    monkeypatch.setattr(mod, "REPO_ROOT", Path(root) / "repo")
+    with pytest.raises(mod.Refused, match="outside the repository"):
+        mod.load_profile("test", registry)
 
 
 def test_profile_rejects_unknown_keys(tmp_path):
@@ -294,7 +325,7 @@ def completed(argv=None, **kwargs):
 def test_install_refuses_bad_checksum_before_extraction(tmp_path, monkeypatch):
     data = make_runner_archive()
     target = profile(tmp_path / "runner", digest="0" * 64)
-    monkeypatch.setattr(mod.os, "name", "nt")
+    monkeypatch.setattr(mod, "IS_WINDOWS", True)
     monkeypatch.setenv(mod.ACCOUNT_PASSWORD_ENV, "local-password")
     calls = []
 
@@ -316,7 +347,7 @@ def test_install_extracts_atomically_and_never_logs_password(tmp_path, monkeypat
     data = make_runner_archive()
     target = profile(tmp_path / "runner", digest=hashlib.sha256(data).hexdigest())
     password = "local-password-never-log"
-    monkeypatch.setattr(mod.os, "name", "nt")
+    monkeypatch.setattr(mod, "IS_WINDOWS", True)
     monkeypatch.setenv(mod.ACCOUNT_PASSWORD_ENV, password)
     calls = []
 
