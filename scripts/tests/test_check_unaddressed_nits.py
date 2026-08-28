@@ -980,6 +980,87 @@ def test_deux_reserves_du_meme_auteur_ne_s_auto_levent_pas():
     assert len(result["blocking"]) == 2
 
 
+# --- #12908 : use-vs-mention côté LEVÉE. Instance fondatrice : PREFLIGHT
+# jsboigeEpita 2026-08-25T04:45:30Z sur #12798 — « obtenir de jsboigeEpita
+# une levée explicite sur le head final ». Le sac de mots LIFT_MARKERS y
+# voyait « levée » et enregistrait le PREFLIGHT comme événement de levée :
+# _lift_eligible(auteur == auteur) éteignait les réserves antérieures du
+# même auteur, et le gate rendait un faux OK. Miroir exact de
+# has_live_marker côté réserves : une occurrence précédée d'un déterminant
+# (une/la/les/de/après/…) est un NOM de levée, pas sa performance.
+
+
+def test_12908_has_live_lift_narration_contre_performance():
+    """Unité : le déterminant devant « levée » en fait une narration."""
+    assert mod.has_live_lift(
+        "obtenir de jsboigeEpita une levée explicite sur le head final"
+    ) is False
+    assert mod.has_live_lift(
+        "revalidation apres la levee annoncee"
+    ) is False
+    # Formes performatives : verbe en tête ou acronyme nu — toujours vives.
+    assert mod.has_live_lift("Levee de ma reserve apres verification") is True
+    assert mod.has_live_lift("Les 2 nits sont levees, commit abc") is True
+    assert mod.has_live_lift("reserve levee") is True
+    assert mod.has_live_lift("je leve ma reserve Hermes") is True
+
+
+def test_12908_garde_de_frontiere_aucune_ne_matche_pas_une():
+    """« aucune levée » doit être narré — l'entrée explicite « aucune » le
+    couvre ; sans la garde de frontière, « aucune ».endswith("une")
+    matcherait « une » avec « c » alphanumérique devant, donc ne le
+    matcherait PAS — c'est précisément pourquoi « aucun/aucune » sont des
+    entrées propres de LIFT_NARRATION_CITERS."""
+    assert mod.has_live_lift("sans aucune levée du tout") is False
+
+
+def test_12908_preflight_exigeant_une_levee_n_est_pas_un_geste():
+    """Le fondateur : le PREFLIGHT de #12798 (structure exacte du
+    commentaire 04:45:30Z) exige une levée — il ne l'accorde pas. Les
+    réserves antérieures du même auteur restent bloquantes."""
+    reserve_1 = {
+        "author": {"login": "jsboigeEpita"}, "createdAt": at(10),
+        "body": "[Hermes] COMMENT_WITH_CONCERNS — sortie vLLM absente.",
+    }
+    reserve_2 = {
+        "author": {"login": "jsboigeEpita"}, "createdAt": at(11),
+        "body": "[Hermes] COMMENT_WITH_CONCERNS — cassette non prouvee.",
+    }
+    preflight = {
+        "author": {"login": "jsboigeEpita"}, "createdAt": at(12),
+        "body": (
+            "[Hermes] PREFLIGHT — substance revalidée ; réserve "
+            "uniquement B.0/process. Le gate classe encore cette PR "
+            "**BLOCKED**. Pour débloquer : obtenir de jsboigeEpita une "
+            "levée explicite sur le head final. Seule une phrase explicite "
+            "de cet auteur après vérification, ou un `[OVERRIDE]` "
+            "coordinateur, les lève."
+        ),
+    }
+    data = {
+        "number": 12798, "title": "t", "author": {"login": "jsboige"},
+        "comments": [reserve_1, reserve_2, preflight], "reviews": [],
+        "commits": [{"committedDate": at(19)}],
+    }
+    result = mod.analyse(data, [], MERGED)
+    assert result["blocked"] is True
+    # #12925 (port #12908 emission) : la revalidation maintenante elle-meme
+    # (emission **BLOCKED**) est un signal de plus — 3, pas 2. L'intent du
+    # test (le preflight n'est pas un geste de levee) est preserve.
+    assert len(result["blocking"]) == 3
+
+
+def test_12908_levee_explicite_non_contradictoire_reste_reconnue():
+    """Controle positif (acceptance #12908) : la duree du durcissement ne
+    rend pas toute levée indelebile — la phrase explicite NON contradictoire
+    de l'auteur de la réserve lève toujours."""
+    lift = {
+        "author": {"login": "clusterManager-Myia"}, "createdAt": at(12),
+        "body": "Vérifié sur le head final : reserve levee, commit abc.",
+    }
+    assert run([HERMES_NIT, lift])["blocked"] is False
+
+
 def test_bystander_explicit_lift_ne_leve_pas_changes_requested():
     """#11145 sur l'etat CHANGES_REQUESTED : une PHRASE de levee d'un tiers
     (ni l'auteur du CR, ni l'auteur de la PR) n'eteint pas l'etat."""
@@ -1106,6 +1187,58 @@ def test_coord_override_leve_aussi_le_state_changes_requested():
         "commits": [{"committedDate": at(19)}],
     }
     assert mod.analyse(data, [], MERGED)["blocked"] is False
+
+
+# --- #13030 : OVERRIDE POSE vs CITE -------------------------------------------
+# L'incident #12872 : le rapport de la lane qui DOCUMENTAIT l'option
+# « (b) `[OVERRIDE] lane x` par ai-01 » a eteint deux reserves BOT-CONCERN
+# jamais levees -- la regex ancre-less matchait dans le backtick, le gate
+# passait rc=0 sans que rien ne le signale. Un override fantome SOUS-bloque
+# (inverse exact du [CLAIMED] fantome qui sur-bloque). Le marqueur doit
+# desormais etre POSE en tete de ligne, hors backticks.
+
+def test_override_pose_canonique_leve():
+    """Controle positif : le marqueur seul en tete de ligne POSE l'override."""
+    lift = {"author": {"login": "myia-ai-01"},
+            "createdAt": "2026-08-18T13:06:34Z",
+            "body": "[OVERRIDE] lane myia-po-2026:CoursIA\n"
+                    "Levée de la réserve Hermes du 2026-08-17, points "
+                    "reportés sur #11058."}
+    assert run_coord([lift])["blocked"] is False
+
+
+def test_override_cite_dans_backtick_ne_leve_pas():
+    """Le cas EXACT de #12872 : une option documentee entre backticks dans
+    une puce ne pose PAS l'override -- le rapport qui explique que la
+    decision revient a ai-01 ne doit pas l'exercer."""
+    cited = {"author": {"login": "jsboige"},
+             "createdAt": "2026-08-25T17:38:05Z",
+             "body": "Options :\n"
+                     "- **(a)** attendre la re-review ;\n"
+                     "- **(b)** `[OVERRIDE] lane myia-po-2024:CoursIA-2` "
+                     "par ai-01 (commentaire sur cette PR) ;\n"
+                     "La lane ne peut pas lever ces 2 nits elle-meme."}
+    assert run_coord([cited])["blocked"] is True
+
+
+def test_override_cite_milieu_de_phrase_ne_leve_pas():
+    """« Le marqueur [OVERRIDE] lane x sert a ... » = documentation, pas acte."""
+    doc = {"author": {"login": "jsboige"},
+           "createdAt": "2026-08-26T00:00:00Z",
+           "body": "Le marqueur [OVERRIDE] lane x sert a arbitrer une "
+                   "reserve ; il doit etre pose en tete de ligne."}
+    assert run_coord([doc])["blocked"] is True
+
+
+def test_override_pose_apres_decor_leve():
+    """Non-regression #10906 (famille _DECOR de check_lane_claim) : un
+    override dans un blockquote / puce / heading reste POSE -- la tolerance
+    de decoration ne doit pas voider les formes legitimes de la flotte."""
+    quoted = {"author": {"login": "myia-ai-01"},
+              "createdAt": "2026-08-18T13:06:34Z",
+              "body": "> [OVERRIDE] lane myia-po-2026:CoursIA\n"
+                      "> Levée de la réserve Hermes, reportée sur #11058."}
+    assert run_coord([quoted])["blocked"] is False
 
 
 # --- #11677 : check_unaddressed_nits classe une review APPROVED en BOT-CONCERN
@@ -2089,3 +2222,162 @@ def test_13083_blocage_reel_conditionnel_a_un_override_reste_block():
     body = ("**BLOCAGE MERGE (ai-01)** — pas de merge tant que [OVERRIDE] lane "
             "n'est pas pose par le coordinateur.")
     assert mod.classify("myia-ai-01", body) == "BLOCK"
+# --- #12944 : le close-the-loop Hermes. « Mon concern ... est traité et
+# fermé » (PR #12941 fondateur, review 5020777166) : la levee PASSIVE
+# n'etait couverte par aucun LIFT_MARKER, et le verdict mentionne (« ma
+# review REQUEST_CHANGES de #12900 », ref HORS parentheses) echappait aux
+# motifs de mention — l'acquittement etait classe BOT-CONCERN et bloquait
+# le merge. Meme classe que c.504 : un acquittement qui contient des
+# marqueurs formels est mal classe.
+
+def test_12944_levee_passive_est_un_lift_marker():
+    """La forme passive « est traité et fermé » (gras markdown compris, le
+    compose couvre la coupure auxiliaire/participe) et les verbes de
+    fermeture (clos / ferme / resolu) sont des LIFT_MARKERS. « est traité »
+    NU est REJETTE : le body pinned #11639 « le point 3 est traité en
+    argument » est une narration, pas une levee (l'override nu ne leve
+    rien)."""
+    assert mod.has_marker(
+        "Mon concern est **traité et fermé** : registre régénéré.",
+        mod.LIFT_MARKERS)
+    assert mod.has_marker("le point est clos, rien ne bloque", mod.LIFT_MARKERS)
+    assert mod.has_marker("le fil est fermé après vérification", mod.LIFT_MARKERS)
+    assert not mod.has_marker("le point 3 est traité en argument", mod.LIFT_MARKERS)
+    assert not mod.has_marker("Le point 2 n'est pas traité.", mod.LIFT_MARKERS)
+
+
+def test_12944_close_the_loop_leve_la_review_precedente():
+    """End-to-end : la review REQUEST_CHANGES posee par Hermes (self-bot
+    jsboige), puis son close-the-loop (« est traité et fermé », verdict
+    mentionne avec ref inline) par le meme auteur — le gate passe : le
+    close-the-loop est un explicit_lift borne (#11145, meme auteur)."""
+    review = {
+        "author": {"login": "jsboige"},
+        "state": "COMMENTED", "submittedAt": at(10),
+        "body": "[Hermes] — REQUEST_CHANGES : le registre de citations est fabriqué.",
+    }
+    loop = {"author": {"login": "jsboige"}, "createdAt": at(12),
+            "body": "close-the-loop sur ma review REQUEST_CHANGES de #12900 : "
+                    "Mon concern est **traité et fermé**, registre régénéré "
+                    "(commit ffe18961)."}
+    data = {
+        "number": 0, "title": "t", "author": {"login": "myia-po-2026"},
+        "comments": [loop], "reviews": [review],
+        "commits": [{"committedDate": at(13)}],
+    }
+    assert mod.analyse(data, [], MERGED)["blocked"] is False
+
+
+def test_12944_close_the_loop_seul_nest_plus_un_nit():
+    """Le cas mesure sur #12941 : le close-the-loop ETAIT lui-meme l'unique
+    signal bloque (classify BOT-CONCERN sur son propre body). Il doit
+    desormais rendre None — verdict mentionne + levee passive."""
+    body = ("**[Hermes]** — close-the-loop sur ma review REQUEST_CHANGES de "
+            "#12900 (`ffe18961`). Mon concern est **traité et fermé** : "
+            "registre régénéré depuis les diffs réels.")
+    assert mod.classify("jsboige", body) is None
+
+
+def test_12944_revalidation_formelle_avant_levee_reste_bot_concern():
+    """Garde #12798/#12836 intacts : un verdict formel EMIS en tete puis une
+    narration de levee passive en aval reste BOT-CONCERN — le close-the-loop
+    ne debranche pas la revalidation qui REFUTE une levee annoncee."""
+    body = ("[Hermes] COMMENT_WITH_CONCERNS — revalidation : le concern "
+            "précédent est traité et fermé, mais la cassette reste non "
+            "prouvée.")
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+def test_12944_residu_negation_du_compose_documente():
+    """Residu ASSUME (limite NLP, cf can_lift) : une negation INTERNE au
+    compose (« pas encore traité et fermé ») contient le marqueur
+    « traité et fermé » et se leverait a tort. Pin par ecrit : le
+    discriminant exigerait une fenetre de negation cote LIFT, machinery
+    qui n'existe pas (CITERS ne s'applique qu'aux CONCERN_MARKERS via
+    `_is_cited`). Un redacteur futur qui veut fermer ce residu saura que
+    CE test est celui a mettre a jour."""
+    body = "Mon concern n'est pas encore traité et fermé, le registre reste fabriqué."
+    assert mod.has_marker(body, mod.LIFT_MARKERS) is True  # residu assume
+
+
+
+# PR **BLOCKED** », « réserve uniquement B.0/process ») tout en narrant le
+# vocabulaire de levée (« une levée explicite sur le head final ») était
+# absorbée par le LIFT_MARKER de sa propre narration : la reserve vivante
+# redevenait invisible, rc=0, exactement le defaut que B.0 traque. Le verdict
+# B.0 émis (**BLOCKED** en gras, sortie organe « BLOCKED  PR ») est désormais
+# un concern positionnel — et le mot NU « BLOCKED » reste hors du filet (tag
+# de protocole, négation « n'est plus BLOCKED »).
+
+NIT_EPITA_12908 = {
+    "author": {"login": "jsboigeEpita"}, "createdAt": at(10),
+    "body": "[Hermes] COMMENT_WITH_CONCERNS — sortie vLLM absente du head.",
+}
+
+REVALIDATION_BLOQUANTE_12908 = {
+    "author": {"login": "jsboigeEpita"}, "createdAt": at(11),
+    "body": (
+        "[Hermes] PREFLIGHT COMMENTED — head `7aaf6eab92`\n\n"
+        "Le durcissement B.0 (142/142 tests) classe encore cette PR "
+        "**BLOCKED** : le checker retourne `1` avec quatre réserves tierces "
+        "actives. Seule une phrase explicite de cet auteur après vérification, "
+        "ou un `[OVERRIDE]` coordinateur, les lève selon la sémantique "
+        "corrigée.\n\nSéquençage : obtenir de `jsboigeEpita` une levée "
+        "explicite sur le head final.\n\nAucune demande de modification du "
+        "notebook : substance revalidée ; réserve uniquement B.0/process."
+    ),
+}
+
+
+def test_12908_revalidation_maintenant_le_blocage_ne_leve_pas():
+    """Le cas live (commentaire 2026-08-25T04:45:30Z de #12798, adapté) : la
+    réserve d'origine ET la revalidation maintenante restent toutes deux des
+    signaux — la narration de levée n'éteint rien."""
+    result = run([NIT_EPITA_12908, REVALIDATION_BLOQUANTE_12908])
+    assert result["blocked"] is True
+    assert len(result["blocking"]) == 2
+
+
+def test_12908_levee_explicite_sans_blocage_maintenu_reste_levee():
+    """Contrôle positif : le durcissement ne rend pas la réserve indélébile —
+    une levée explicite non contradictoire du même auteur lève toujours."""
+    lift = {"author": {"login": "jsboigeEpita"}, "createdAt": at(12),
+            "body": "Levée de ma réserve : commit abc vérifié, cassette rejouée."}
+    assert run([NIT_EPITA_12908, lift])["blocked"] is False
+
+
+def test_12908_levee_puis_blocked_narre_au_passe_reste_levee():
+    """La position décide (miroir de `_formal_concern_precedes_lift`) : une
+    levée suivie d'un **BLOCKED** narré comme état passé reste une levée."""
+    lift_narre = {"author": {"login": "jsboigeEpita"}, "createdAt": at(12),
+                  "body": "Je lève ma réserve après rejeu — le gate n'affiche "
+                          "plus **BLOCKED**."}
+    assert run([NIT_EPITA_12908, lift_narre])["blocked"] is False
+
+
+def test_12908_tag_protocol_blocked_n_est_pas_une_reserve():
+    """Le mot NU ne matche pas : un tag de protocole lane « [BLOCKED] » sans
+    forme d'émission n'est pas une réserve tierce."""
+    tag = {"author": {"login": "myia-po-2023"}, "createdAt": at(12),
+           "body": "[BLOCKED] lane myia-po-2023:CoursIA-2 — drainage file CI, "
+                   "pas de geste local possible."}
+    assert run([tag])["blocked"] is False
+
+
+def test_12908_negation_bare_word_n_est_pas_une_reserve():
+    """« n'est plus BLOCKED » (mot nu, sans gras) : la négation d'un état
+    passé n'émet pas de réserve."""
+    passe = {"author": {"login": "myia-po-2023"}, "createdAt": at(12),
+             "body": "Reprise du cycle : le gate n'est plus BLOCKED depuis le "
+                     "drainage, les checks tournent."}
+    assert run([passe])["blocked"] is False
+
+
+def test_12908_sortie_organe_pastee_est_une_emission():
+    """La sortie de l'organe collée hors fence (« BLOCKED  PR #N — ») est une
+    émission de blocage : le commentaire qui la rapporte maintient une
+    réserve vivante."""
+    paste = {"author": {"login": "clusterManager-Myia"}, "createdAt": at(11),
+             "body": "Contre-verification au head frais :\n"
+                     "BLOCKED  PR #42 — 3 nit(s) non leve(s)"}
+    assert run([paste])["blocked"] is True

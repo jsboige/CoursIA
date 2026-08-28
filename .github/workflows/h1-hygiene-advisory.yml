@@ -42,13 +42,32 @@ jobs:
       - name: Scan notebooks ADDED by the PR (advisory)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          # '' under schedule/dispatch (no PR context) -> nocturne window below.
+          PR_NUMBER: ${{ github.event.pull_request.number || '' }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha || '' }}
         run: |
           set -euo pipefail
+
+          # ---- Nocturne window (#12817 tranche 2) ----
+          # Under schedule, BASE_SHA was empty: `git diff ""..HEAD` failed into
+          # `|| true`, ADDED came out empty and the job printed "No notebooks
+          # added" every night -- a green no-op masquerading as a scan. Resolve
+          # the last 24 h of main so the sweep measures the day's merged apport.
+          NOCTURNE=0
+          if [ -z "${BASE_SHA:-}" ]; then
+            NOCTURNE=1
+            BASE_SHA=$(git rev-list -1 --before="24 hours ago" HEAD)
+            [ -n "$BASE_SHA" ] || BASE_SHA=$(git rev-list --max-parents=0 HEAD | tail -1)
+            PR_NUMBER=""
+            echo "Nocturne window: $(git rev-parse --short "$BASE_SHA")..HEAD (24 h of main)"
+          fi
           ADDED=$(git diff --name-only --diff-filter=A "$BASE_SHA"..HEAD -- '*.ipynb' || true)
           if [ -z "$ADDED" ]; then
-            echo "No notebooks added by this PR — advisory skips."
+            if [ "$NOCTURNE" -eq 1 ]; then
+              echo "No notebooks added in the last-24h window — advisory skips."
+            else
+              echo "No notebooks added by this PR — advisory skips."
+            fi
             exit 0
           fi
           echo "Added notebooks:"; echo "$ADDED"
@@ -57,6 +76,10 @@ jobs:
           cat /tmp/scan.txt
           if grep -q "scan complete: 0 notebook" /tmp/scan.txt; then
             echo "No H1 hygiene defects in added notebooks."
+            exit 0
+          fi
+          if [ "$NOCTURNE" -eq 1 ]; then
+            echo "::warning::H1 hygiene defects in notebooks added by the last-24h window: see scan output above (#11840)"
             exit 0
           fi
           gh label create "h1-hygiene-advisory" \

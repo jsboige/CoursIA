@@ -11,18 +11,16 @@ Reference: Conway, J.H. — *On Numbers and Games* (2001).
 
 ## Status
 
-- **Toolchain**: `leanprover/lean4:v4.31.0-rc1` (tracks the upstream repo — newer than the other Lean series on v4.30.0-rc2)
+- **Toolchain**: `leanprover/lean4:v4.31.0-rc2` (tracks the upstream repo, per the effective `lean-toolchain` pin)
 - **Sorry**: **0** — the file is a tour of `#check`s and docstrings, no proofs
 - **Build**: `lake build CGTTour` (depends on Mathlib4 + CombinatorialGames)
 - **Dependencies**:
   - **Mathlib4** (latest)
   - **[CombinatorialGames](https://github.com/vihdzp/combinatorial-games)** (Apache-2.0) — Violeta Hernandez Palacios
-- **i18n coverage (EPIC #4980)**: the tour `CGTTour.lean` is a presentation file
-  (a single `CGTTour` module) with **no `_en.lean` sibling** — the tour is English by design,
-  no namespace to dedupe (`namespace CGTTour` is unique at top level). Documentation is
-  bilingual: `README.md` (FR canonical) + `README.en.md` (EN mirror). For multi-module
-  projects that need an `_en` sibling, see the Option A convention ratified 2026-07-04
-  (cf `code-style.md` §Lean i18n).
+- **i18n coverage (EPIC #4980)**: the tour exists as an FR/EN pair — `CGTTour.lean` (canonical,
+  target of I18N Lean inventory pilot PR #1, tranche 2) + `CGTTour_en.lean` (Pattern A sibling,
+  `_en` namespace). Documentation is bilingual: `README.md` (FR canonical) + `README.en.md`
+  (EN mirror). Option A convention ratified 2026-07-04 (cf `code-style.md` §Lean i18n).
 
 ## Why this exists — Mathlib CGT removal
 
@@ -71,9 +69,10 @@ The file imports the upstream modules and exhibits their key results:
 
 ## Modules
 
-| File | Lines | Content |
-|------|-------|---------|
-| `CGTTour.lean` | 169 | Imports the upstream `CombinatorialGames.*` modules and tours their key types/instances/theorems via `#check` + docstrings (`IGame`/`Game`, `Surreal` + simplicity theorem, `Nimber` + Sprague-Grundy), with a Mathlib-vs-upstream comparison table. |
+| File | Content |
+|------|---------|
+| `CGTTour.lean` | Imports the upstream `CombinatorialGames.*` modules and tours their key types/instances/theorems via `#check` + docstrings (`IGame`/`Game`, `Surreal` + simplicity theorem, `Nimber` + Sprague-Grundy), with a Mathlib-vs-upstream comparison table. |
+| `CGTTour_en.lean` | EN sibling (Pattern A, `_en` namespace) — English docstrings, same `#check`s. |
 
 ## Build
 
@@ -95,9 +94,8 @@ on top of the imported results.
 - **`knot_lean/`** — references this tour in its dependencies table (Conway game-theory foundation)
 - **`conway_lean/`** — Conway's Game of Life / Free Will Theorem (the *other* Conway series)
 - **Epic #2651** — README/structure audit (Lean-series)
-- **EPIC #4980** — Lean i18n harmonization (Option A sibling pair post-2026-07-04); this
-  tour has no `_en.lean` sibling (see Status above) — only `README.md` (FR) +
-  `README.en.md` (EN mirror) for the documentation.
+- **EPIC #4980** — Lean i18n harmonization (Option A sibling pair post-2026-07-04):
+  `CGTTour.lean` / `CGTTour_en.lean` pair + `README.md` (FR) / `README.en.md` (EN mirror) docs.
 
 ## Conclusion
 
