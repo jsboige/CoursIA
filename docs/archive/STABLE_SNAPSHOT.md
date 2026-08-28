@@ -121,4 +121,4 @@ Per CLAUDE.md H.7 P4: monthly regeneration.
 |------|-----|---------|-------|
 | 2026-05-10 | 032e9b6a | po-2025 | Initial forensic audit |
 | 2026-05-11 | 8334458b | po-2025 | Lean: 3 ALL_NULL to ALL_EXEC via lean4-wsl kernel (93% OK) |
-| 2026-05-11 | 08d52b0d | po-2025 | Full re-audit: RDF.Net + SW-5 + Sudoku-6/8 + Linq2Z3 + Fast-Downward + Diagnostic-Medical + App-5 + Semantic-kernel-AutoInteractive patched; GameTheory Lean 100%; STABLE_SNAPSHOT regenerated with accurate series grouping |
+| 2026-05-11 | 08d52b0d | po-2025 | Full re-audit: RDF.Net + SW-5 + Sudoku-06/8 + Linq2Z3 + Fast-Downward + Diagnostic-Medical + App-5 + Semantic-kernel-AutoInteractive patched; GameTheory Lean 100%; STABLE_SNAPSHOT regenerated with accurate series grouping |

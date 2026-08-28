@@ -1,7 +1,7 @@
-- name: "Sudoku-5 PSO"
+- name: "Sudoku-05 PSO"
   family: Sudoku
-  python: MyIA.AI.Notebooks/Sudoku/Sudoku-5-PSO-Python.ipynb
-  csharp: MyIA.AI.Notebooks/Sudoku/Sudoku-5-PSO-Csharp.ipynb
+  python: MyIA.AI.Notebooks/Sudoku/Sudoku-05-PSO-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Sudoku/Sudoku-05-PSO-Csharp.ipynb
   parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Flip SOTA-OK (2026-08-22, post #11954) : les DEUX cotes branchent desormais un moteur metaheuristique de production sur ce notebook. Python = mealpy (PyPI, MIT, 233+ metaheuristiques) execute nativement -- Tranche mealpy 3 seeds (epoch=300, pop=60) : erreurs residuelles 8/4/6 conflits (seeds 42/7/99), non resolu, meme verdict que le jumeau C# (encodage continu -> paysage discontinu, le moteur ne compense pas l'encodage). C# = PythonNet bridge vers mealpy (#11954) en plus de GeneticSharp 3.1.4 (Tranche 2) et du compound MGS ParticleSwarmOptimization (Tranche 3, fitness -35). L'asymetrie lib-PY / from-scratch-C# qui fondait le RECOVERABLE-LOCAL n'existe plus. Note nuance (c.140, #10382) preservee : les tranches C# GeneticSharp/MGS restent des ponts sur la famille metaheuristique voisine (bucket mealpy/simanneal -> MGS). Verifier les entrees known_differences pour le detail des tranches."
@@ -52,6 +52,12 @@
       csharp_sha: 0f36503ced071f92f55dd839895f95d41403fd1d
       content_python_sha: 1203497f64f7a46e6235494f80c84e97de37daa7a7433ba6472490ae62421d54
       content_csharp_sha: 9b0d46f24250f71e2afb83512643589f3f624dc9a57185770ea00cee604a23ad
+    - date: "2026-08-28"
+      by: myia-po-2024:CoursIA
+      python_sha: 17e58e19d964c47bff31c1fc1a7720eeacea3951
+      csharp_sha: c320b886478222409dc3187a854e596ae90be920
+      content_python_sha: 40d38354db01dbbe6bb50cb351fbd465b142cfc257649d0da4bbea6f815e745c
+      content_csharp_sha: 8909307a1f769fbdc14b560923c217a59d019f05a63f2a73b8dc2c5d8c7184ef
   known_differences:
     - "2026-08-22 (post #11954, myia-po-2025:CoursIA-2) : registre aligne sur la realite des notebooks -- mealpy est desormais execute des DEUX cotes (Python natif 3 seeds 8/4/6 conflits ; C# PythonNet bridge #11954). Le grain d'enrichissement Python documente le 2026-08-21 comme restant est LIVRE sur main ; parity_level semantic -> native-both, bridge_verdict RECOVERABLE-LOCAL -> SOTA-OK. Valeurs cote Python citees depuis les outputs committe du notebook main (cellule Tranche mealpy, seeds 42/7/99)."
     - "2026-08-21 (Tranche 4 #11977, myia-po-2026:CoursIA) : PSO a operateurs d'echange ajoute cote C# uniquement -- velocite = liste de swaps (algebre Move/Minus/Times, reference Hernandez & Gonzalez 'Metaheuristics in C#' MIT 2012, reimplementation propre) sur l'encodage permutation-de-ligne de la Tranche 2 : swap (ligne, a, b) parmi cellules vides -> lignes valides par construction. Execution reelle commitee : pur RESOLU 111 ms / 111 iterations x 40 particules ; memetique (hill-climbing tous les 25 pas) RESOLU 31 ms / 25 iterations ; duel a graine fixe 42. 20 cellules code cote C#. mealpy n'a pas de PSO a swaps natif -> pas de port Python symetrique possible via lib, precedent Tranche 3 (C#-only assumee). Cette validation = pierre angulaire de l'axe 3 #12049 (graduation DiscretePSO en compound MGS)."

@@ -110,6 +110,12 @@
       csharp_sha: 3d9260a6817e8d9a946b97a4da24b1f2ceca1ebb
       content_python_sha: d495bc4bf7bb782d013f5031583963c2adf66bf99f15036e05f931872d8a562f
       content_csharp_sha: f31566b476be948bce328fa8205bc13ac2e9ba83f47e65f63e8ffdabfb2c130b
+    - date: "2026-08-28"
+      by: myia-po-2024:CoursIA
+      python_sha: 6a9edf9f061450680744a0c57d7c05e3b58edf09
+      csharp_sha: 73fb2662c512df57ec3ae745d02a098c5b1da14b
+      content_python_sha: 2f77da917c2faaf5134007940a67bd394c39458c369b8c1b6c1d29ef58d21f96
+      content_csharp_sha: a4b6ddd09a89d10155fa94a302d3ad57eaccadceff6d9810d8e75524bdd9eed9
   known_differences:
     - "Rebaseline 2026-08-17 : cote C# draine des timings MACHINE-DEP en cellule[24] (4 valeurs : 350 s, 349,9 s, 0,92 s, 922 ms, 5,8 minutes) et cellule[42] (4 valeurs : ~14-26 s, ~100 ms, ~1,8 s, ~18-112 ms, ~30-60 s) -- mandat #9377/#9434, drain des wall-clock prose (mandat user : seules les valeurs reproductibles d'une execution a l'autre sont conservees). Parite semantique inchangee (aucune cellule code, aucune sortie, aucun exec_count touche) ; cote Python non modifie. Attestation = nouveau blob SHA du cote C#."
     - "Rebaseline 2026-08-17 : cote Python draine des timings MACHINE-DEP en cellule[27] (table comparaison vs C# : 6 wall-clock ~34ms / ~5s / ~57ms / ~140x / ~83x / ~100x) -- mandat #9377/#9434, drain des wall-clock prose (mandat user : seules les valeurs reproductibles d'une execution a l'autre sont conservees). Resultats de resolution et tendance qualitative conserves. Parite semantique inchangee (aucune cellule code, aucune sortie, aucun exec_count touche) ; cote C# non modifie. Attestation = nouveau blob SHA (python) et content_python_sha du cote Python."

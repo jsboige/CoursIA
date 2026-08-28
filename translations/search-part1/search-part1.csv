@@ -15132,7 +15132,7 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-3-Informed.ipynb,conclusion-se
 ### Pour aller plus loin
 
 - **Notebook suivant** : [Search-4-LocalSearch](Search-4-LocalSearch.ipynb) — Hill Climbing, Simulated Annealing, Tabu Search
-- **Applications** : Voir [Sudoku-7-Norvig](../../Sudoku/Sudoku-7-Norvig-Python.ipynb) pour l'application de la propagation de contraintes (inspirée de la recherche informée)
+- **Applications** : Voir [Sudoku-07-Norvig](../../Sudoku/Sudoku-07-Norvig-Python.ipynb) pour l'application de la propagation de contraintes (inspirée de la recherche informée)
 - **Référence** : Russell & Norvig, *Artificial Intelligence: A Modern Approach*, Chapitre 3.5 — Heuristic Functions
 
 ---
@@ -21468,7 +21468,7 @@ A la fin de ce notebook, vous saurez :
 
 - **Original paper** : Knuth, D. E. (2000). *Dancing Links*. arXiv:cs/0011047
 - **Applications** : Sudoku, N-Queens, Pentominoes, Exact Cover
-- **Notebook connexe** : [Sudoku-2-DancingLinks-Python](../../Sudoku/Sudoku-2-DancingLinks-Python.ipynb)",,,,,,,,42c51fbdfc6ad7a0,,,,,,,,
+- **Notebook connexe** : [Sudoku-02-DancingLinks-Python](../../Sudoku/Sudoku-02-DancingLinks-Python.ipynb)",,,,,,,,42c51fbdfc6ad7a0,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-8-DancingLinks.ipynb,ahuwgpl0co,code,fr,fbde0ee781bd1b85,"# Imports
 import sys
 import time
@@ -22581,7 +22581,7 @@ Une implementation complete de Sudoku avec DLX necessite :
 3. L'extraction de la solution DLX vers une grille resolue
 
 Cette implementation complete est presentee dans le notebook dedie :
-**[Sudoku-2-DancingLinks-Python](../../Sudoku/Sudoku-2-DancingLinks-Python.ipynb)**
+**[Sudoku-02-DancingLinks-Python](../../Sudoku/Sudoku-02-DancingLinks-Python.ipynb)**
 
 | Concept | Description |
 |---------|-------------|
@@ -23239,7 +23239,7 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-8-DancingLinks.ipynb,1w8yt0v6t
 ### Pour aller plus loin
 
 - **Papier original** : Knuth, D. E. (2000). *Dancing Links*. [arXiv:cs/0011047](https://arxiv.org/abs/cs/0011047)
-- **Notebook Sudoku** : [Sudoku-2-DancingLinks-Python](../../Sudoku/Sudoku-2-DancingLinks-Python.ipynb)
+- **Notebook Sudoku** : [Sudoku-02-DancingLinks-Python](../../Sudoku/Sudoku-02-DancingLinks-Python.ipynb)
 - **Notebook suivant** : [Search-9-LinearProgramming](Search-9-LinearProgramming.ipynb) - Programmation lineaire
 - **Applications** : [App-11-Picross](../Applications/CSP/App-11-Picross.ipynb) - DLX pour Picross",,,,,,,,4a5520ab93e8c7a2,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-8-DancingLinks.ipynb,ly6c9tsgai,markdown,fr,6eebb7fe4906bbb5,"***
@@ -23247,7 +23247,7 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-8-DancingLinks.ipynb,ly6c9tsga
 **Navigation** : [<< MCTS](Search-7-MCTS-And-Beyond.ipynb) | [Index](../README.md) | [Programmation lineaire >>](Search-9-LinearProgramming.ipynb)
 
 **Series connexes** : 
-- [Sudoku-2-DancingLinks-Python](../../Sudoku/Sudoku-2-DancingLinks-Python.ipynb) - Application complete pour Sudoku
+- [Sudoku-02-DancingLinks-Python](../../Sudoku/Sudoku-02-DancingLinks-Python.ipynb) - Application complete pour Sudoku
 - [Search-App-11-Picross](../Applications/CSP/App-11-Picross.ipynb) - DLX pour Picross",,,,,,,,6eebb7fe4906bbb5,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-8-DancingLinks.ipynb,d1a4b81e,markdown,fr,2098e32f00e13b80,"## Conclusion
 
@@ -25558,7 +25558,7 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-5-GeneticAlgorithms.ipynb,cell
 - `MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics.ipynb` (MEALPy : PSO, ABC, SA, BRO)
 - `MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb` (CSP/OR-Tools Choco)
 
-> **Note pedagogique** : les ratios GA/exact (gap 1.0x a 8 villes puis ~1.13x des n=9) demontrent que **l'algorithme genetique devient sous-optimal quand l'espace de recherche grandit**, malgre sa richesse theorique. Cf. Section 7 de `Sudoku-3-Genetic-Python.ipynb` (ratio GA/OR-Tools *machine-dep* sur Easy) et Section 11 de `Sudoku-4-SimulatedAnnealing-Python.ipynb` (ratio SA/Backtracking *machine-dep* sur Easy) pour des demonstrations equivalentes sur d'autres solveurs heuristiques vs exacts.",,,,,,,,2b242369643aa2bf,,,,,,,,
+> **Note pedagogique** : les ratios GA/exact (gap 1.0x a 8 villes puis ~1.13x des n=9) demontrent que **l'algorithme genetique devient sous-optimal quand l'espace de recherche grandit**, malgre sa richesse theorique. Cf. Section 7 de `Sudoku-03-Genetic-Python.ipynb` (ratio GA/OR-Tools *machine-dep* sur Easy) et Section 11 de `Sudoku-04-SimulatedAnnealing-Python.ipynb` (ratio SA/Backtracking *machine-dep* sur Easy) pour des demonstrations equivalentes sur d'autres solveurs heuristiques vs exacts.",,,,,,,,2b242369643aa2bf,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-7-MCTS-And-Beyond-Csharp.ipynb,cell-02cf00de,markdown,fr,77216ed4889d97b8,"# Search-7-MCTS-And-Beyond (C#) : Monte Carlo Tree Search et Extensions
 
 **Navigation** : [<< Recherche adversariale (C#)](Search-6-AdversarialSearch-Csharp.ipynb) | [Index](../README.md) | [Version Python](Search-7-MCTS-And-Beyond.ipynb) | [Dancing Links >>](Search-8-DancingLinks.ipynb)

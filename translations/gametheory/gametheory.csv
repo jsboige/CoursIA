@@ -42636,14 +42636,14 @@ Le jumeau Python construit ce graphe via **networkx** (`build_swap_graph`, `nx.G
 les distances via `nx.shortest_path_length`. La tranche 1 de ce notebook (cellules 4, 8, 9)
 implémente ces mêmes BFS from-scratch en BCL .NET. **Tranche 2** : on délègue à **QuikGraph 2.5.0**
 (moteur .NET natif, MIT) — construction du graphe, BFS de distance et matrice des distances,
-le même pattern que Search-15 / Sudoku-9 dans ce dépôt. On vérifie la **parité** : les comptes
+le même pattern que Search-15 / Sudoku-09 dans ce dépôt. On vérifie la **parité** : les comptes
 (576 nœuds / 1728 arêtes / degré moyen 6.0) et les 25 distances entre jeux classiques doivent
 être identiques à la matrice de la cellule 9 ainsi qu'aux comptes networkx.",,,,,,,,54b80dcaded07d95,,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-3-Topology2x2-Csharp.ipynb,dd08eaf40589459b912449c80e5e634e,code,fr,7d4c5c7f7741b2e2,"// Cellule 10 — Tranche 2 : Graphe des swaps via QuikGraph 2.5.0 (moteur .NET natif)
 // Le jumeau Python construit ce meme graphe via networkx (build_swap_graph, nx.Graph) et
 // calcule les distances via nx.shortest_path_length. La tranche 1 (cellules 4, 8, 9) fait ces
 // BFS from-scratch en BCL .NET ; la tranche 2 delegue a QuikGraph (MIT, moteur .NET natif),
-// meme pattern que Search-15 / Sudoku-9 / Search-3 dans ce depot.
+// meme pattern que Search-15 / Sudoku-09 / Search-3 dans ce depot.
 #r ""nuget: QuikGraph, 2.5.0""
 using QuikGraph;
 using QuikGraph.Algorithms.Search;
@@ -43818,7 +43818,7 @@ La trajectoire de convergence est lisible dans la sortie :
 Les deux partis **sont arrivés à la même position** (5.0, le médian des électeurs). C'est la prédiction centrale du modèle de Downs : dans une compétition à deux partis, la recherche électoraliste pousse chacun vers le centre, jusqu'à ce que leurs programmes deviennent indistinguables. Là où le théorème de l'électeur médian (§7) décrit le **vainqueur** d'un vote, le modèle de Downs décrit l'**équilibre stratégique** d'une compétition répétée — les deux résultats reposent sur la même propriété : la position médiane est l'attracteur du système.",,,,,,,,d794617be41f4ba7,,,,,,,,
 MyIA.AI.Notebooks/GameTheory/SocialChoice/03-Voting-Methods-Csharp.ipynb,4a5733d7,markdown,fr,a16a49e9afa14fe9,"## 11. Tranche 2 : le graphe de tournoi via QuikGraph (parité lib-vs-lib #10382)
 
-Le twin Python (cell 10) construit le **graphe de tournoi** des duels pairwise avec `networkx` (`nx.DiGraph` : une arête `x → y` ssi `x` bat `y` à la majorité) et y détecte le **cycle de Condorcet** via `nx.simple_cycles`. Cette tranche 2 fait la **même construction sur les mêmes profils** (`condorcetProfile`, `profileWithWinner`, `divergentProfile`) avec **QuikGraph 2.5.0**, la bibliothèque de graphes .NET de production (déjà utilisée par Search-15, Search-16, Sudoku-9, Search-2 et Planners-3 du dépôt).
+Le twin Python (cell 10) construit le **graphe de tournoi** des duels pairwise avec `networkx` (`nx.DiGraph` : une arête `x → y` ssi `x` bat `y` à la majorité) et y détecte le **cycle de Condorcet** via `nx.simple_cycles`. Cette tranche 2 fait la **même construction sur les mêmes profils** (`condorcetProfile`, `profileWithWinner`, `divergentProfile`) avec **QuikGraph 2.5.0**, la bibliothèque de graphes .NET de production (déjà utilisée par Search-15, Search-16, Sudoku-09, Search-2 et Planners-3 du dépôt).
 
 L'implémentation from-scratch des sections 1-4 (ASCII en cell 4, `CondorcetWinner` en cell 8, `CopelandScores` en cell 11) est **préservée intégralement** : QuikGraph la re-vérifie sur les mêmes instances, avec trois prouesses qui font valoir le moteur :
 
@@ -43832,7 +43832,7 @@ MyIA.AI.Notebooks/GameTheory/SocialChoice/03-Voting-Methods-Csharp.ipynb,36ad248
 // Le twin Python (cell 10) construit le graphe de tournoi des duels pairwise avec networkx
 // (nx.DiGraph) et y detecte le cycle de Condorcet via nx.simple_cycles. Ici, la meme
 // construction sur les MEMES profils est faite avec QuikGraph, la bibliotheque de graphes
-// .NET de production (deja utilisee par Search-15/16, Sudoku-9, Search-2, Planners-3).
+// .NET de production (deja utilisee par Search-15/16, Sudoku-09, Search-2, Planners-3).
 
 #r ""nuget: QuikGraph, 2.5.0""
 

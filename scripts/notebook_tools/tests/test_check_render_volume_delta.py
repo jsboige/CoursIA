@@ -795,7 +795,7 @@ def _make_error_cell(traceback_lines: list[str], cell_id: str) -> dict:
 
 
 def test_cli_text_delta_caught_when_stream_drops(tmp_path):
-    """5e point ai-01 c.358 : founder Sudoku-4-SimulatedAnnealing.
+    """5e point ai-01 c.358 : founder Sudoku-04-SimulatedAnnealing.
 
     Cas fondateur : 10 794 B de stream en base -> 3 155 B en head,
     SANS aucune perte de rendu. Le detecteur historique rendait OK
@@ -899,7 +899,7 @@ def test_cli_unavailable_signal_when_lib_import_error_message_appears(tmp_path):
 
 
 def test_cli_no_text_delta_when_stream_preserved(tmp_path):
-    """Control negatif : Sudoku-1-Backtracking (mesure ai-01). Le notebook
+    """Control negatif : Sudoku-01-Backtracking (mesure ai-01). Le notebook
     conserve 100% de son stream base -> head. Pas de TEXT_DELTA,
     pas de UNAVAILABLE_SIGNAL. Verdict OK.
 

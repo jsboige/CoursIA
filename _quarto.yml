@@ -710,7 +710,7 @@ project:
     - "MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Python.ipynb"
     - "MyIA.AI.Notebooks/Sudoku/Sudoku-18b-Statistical-Comparison-Python.ipynb"
     - "MyIA.AI.Notebooks/Sudoku/Sudoku-19-Lean-Propagation.ipynb"
-    - "MyIA.AI.Notebooks/Sudoku/Sudoku-7-Norvig-Csharp.ipynb"
+    - "MyIA.AI.Notebooks/Sudoku/Sudoku-07-Norvig-Csharp.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Agentic-0-init.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Agentic-0-init_agent.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Agentic-1-informal.ipynb"

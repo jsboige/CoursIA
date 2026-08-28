@@ -253,26 +253,6 @@ Vickrey truthfulness + first-price counter-example (#1469). Build repris par
 
 ---
 
-### 10. assignment_lean
-
-**Objective**: Correction skeleton of the Kuhn-Munkres (Hungarian) assignment algorithm (issue #12598, Munkres tribute 1930-2026): the primal (cost matrix, perfect matching, value), the dual (potentials, feasibility, **weak duality**), the zero-gap optimality certificate, and the algorithm's structural invariants (equality graph, **output invariant**, **Hungarian tightening preserves dual feasibility**). Termination and O(n³) complexity deliberately out of scope.
-
-**Toolchain**: v4.32.1 | **Dependencies**: Mathlib4 (v4.32.1)
-
-| File | sorry | Description |
-|------|-------|-------------|
-| `Assignment/Definitions.lean` | 0 | `value`, `IsOptimal` (primal problem) |
-| `Assignment/Duality.lean` | 0 | `DualFeasible`, `dualValue`, `weak_duality` |
-| `Assignment/Optimality.lean` | 0 | `dualValue_eq_of_edges`, `optimality_of_zero_gap` |
-| `Assignment/KuhnMunkres.lean` | 0 | `EqEdge`, `kuhn_munkres_correct`, `dualFeasible_tighten` |
-| `Assignment/*_en.lean` (×4) | 0 | i18n siblings (EPIC #4980) |
-
-**Build**: `lake build Assignment Assignment_en` — SUCCESS (8665 jobs, cf PR #12614) | **0 sorry** (distinct_code_sorry = 0)
-
-**Status**: COMPLETE. Companion notebooks: GT-27 (Python implementation + scipy SOTA) and GT-27b (native `lean4-wsl` companion — `#check` of all 10 declarations + kernel-proved `optimal_C3` certificate, EPIC #11703 visibility).
-
----
-
 ## Remaining Proving Targets
 
 | Priority | Target | Dir | sorry | Feasibility |

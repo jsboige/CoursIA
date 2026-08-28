@@ -678,7 +678,7 @@ MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch-Cshar
 | ↔ Search-12 | [Search-12 — Pattern Databases](Search-12-PatternDatabases.ipynb) | Autre technique avancée pour réduire l'arbre de recherche (mémoïsation de sous-problèmes) |
 | ↔ Search-14 | [Search-14 — Weighted A\*](Search-14-WeightedAstar.ipynb) | A\* paresseux qui échange optimalité contre vitesse, même compromis que LDS |
 | ↔ Python | [Search-13 — LDS (Python)](Search-13-LimitedDiscrepancySearch.ipynb) | Même algorithme en Python (jumeau) — comparer l'expressivité des deux langages |
-| ↔ Sudoku | [Sudoku-1 — Backtracking](../../Sudoku/Sudoku-1-Backtracking-Csharp.ipynb) | Backtracking C# pur — LDS est une DFS bornée par le nombre d'écarts |
+| ↔ Sudoku | [Sudoku-01 — Backtracking](../../Sudoku/Sudoku-01-Backtracking-Csharp.ipynb) | Backtracking C# pur — LDS est une DFS bornée par le nombre d'écarts |
 
 > **Référence :** Harvey & Ginsberg, *Limited Discrepancy Search*, IJCAI 1995.
 ",,,,,,,,8e2623feca666545,,,,,,,,
