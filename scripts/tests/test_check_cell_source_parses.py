@@ -19,19 +19,45 @@ The PEP 701 nested-quote f-string (`print(f"{d["k"]}")`) is only valid on
 on the CI runner is the binding; tests here use the runtime available.
 """
 
+import importlib.util
 import sys
 import unittest
 from pathlib import Path
 
-# Make the script importable from tests/
-TOOLS_DIR = Path(__file__).resolve().parent.parent / "notebook_tools"
-sys.path.insert(0, str(TOOLS_DIR.parent))
 
-from notebook_tools.check_cell_source_parses import (  # noqa: E402
-    _compile_cell,
-    _looks_like_markdown_typed_code,
-    _strip_ipython_magics,
-)
+def _load_check_cell_source_parses():
+    """Load check_cell_source_parses.py directly via importlib spec.
+
+    Direct path-based load bypasses the implicit-namespace-package ambiguity
+    in `scripts/notebook_tools/` (which hosts BOTH a module `notebook_tools.py`
+    AND multiple standalone scripts; Python 3 namespace-package resolution
+    differs between local `pytest scripts/tests` and CI's combined collect
+    from `scripts/tests/` + `scripts/notebook_tools/tests/` under
+    `--import-mode importlib`, surfacing as
+    `ImportError: cannot import name 'X' from 'notebook_tools' (unknown location)`).
+
+    c.690 narrow 157ᵉ fix: the file is imported under its bare name so its
+    location is unambiguous to importlib; the test module rebinds the public
+    surface at import time and downstream tests call `_compile_cell(...)` etc.
+    directly. No `__init__.py` is created in `scripts/notebook_tools/`, so the
+    pre-existing tests that import `from notebook_tools import CellInfo` (the
+    consolidated module) keep working under their original namespace-package
+    semantics.
+    """
+    SCRIPTS_DIR = Path(__file__).resolve().parent.parent
+    TOOL_PATH = SCRIPTS_DIR / "notebook_tools" / "check_cell_source_parses.py"
+    spec = importlib.util.spec_from_file_location(
+        "check_cell_source_parses", str(TOOL_PATH)
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+_mod = _load_check_cell_source_parses()
+_compile_cell = _mod._compile_cell
+_looks_like_markdown_typed_code = _mod._looks_like_markdown_typed_code
+_strip_ipython_magics = _mod._strip_ipython_magics
 
 
 class TestCompileCellNegatives(unittest.TestCase):
@@ -188,8 +214,11 @@ class TestMainPositional(unittest.TestCase):
         # Smoke: just verify argparse accepts a positional without erroring.
         # We don't run main() end-to-end (would scan the repo).
         import argparse
-        from notebook_tools.check_cell_source_parses import _compile_cell
-        # Round-trip: the function must still work with default target_py.
+        # c.690 narrow 157ᵉ: the module is loaded via importlib (see header);
+        # use the rebound `_compile_cell` so we don't reach for
+        # `from notebook_tools.check_cell_source_parses import ...` whose
+        # namespace-package semantics differ between local and CI under
+        # --import-mode importlib.
         err, _ = _compile_cell("x = 1")
         self.assertIsNone(err)
 
