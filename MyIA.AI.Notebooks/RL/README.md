@@ -33,7 +33,7 @@ Le RL se comprend mieux en voyant l'agent apprendre. Six visualisations suivent 
 |---|----------|---------|-------|
 | 1 | [rl_1_intro_cartpole](rl_1_intro_cartpole.ipynb) | Introduction PPO, CartPole | 25-30 min |
 | 2 | [rl_2_wrappers_sauvegarde_callbacks](rl_2_wrappers_sauvegarde_callbacks.ipynb) | Wrappers, sauvegarde, callbacks | 35-40 min |
-| 3 | [rl_3_experience_replay_dqn](rl_3_experience_replay_dqn.ipynb) | HER, goal-conditioned RL | 40-45 min |
+| 3 | [rl_3_experience_replay_her](rl_3_experience_replay_her.ipynb) | HER, goal-conditioned RL | 40-45 min |
 | 4 | [rl_4_multi_armed_bandits](rl_4_multi_armed_bandits.ipynb) | Bandits manchots, exploration vs exploitation, Thompson Sampling | 30-35 min |
 | 5 | [rl_5_mdp_dp_qlearning](rl_5_mdp_dp_qlearning.html) | MDP, Value/Policy Iteration, Q-Learning tabulaire | 45-50 min |
 | 6 | [rl_6_dqn_policy_gradient](rl_6_dqn_policy_gradient.ipynb) | DQN depuis zéro, REINFORCE | 50-55 min |
@@ -524,7 +524,7 @@ L'expérience replay (notebook 6) stocke les transitions (état, action, reward,
 RL/
 ├── rl_1_intro_cartpole.ipynb
 ├── rl_2_wrappers_sauvegarde_callbacks.ipynb
-├── rl_3_experience_replay_dqn.ipynb
+├── rl_3_experience_replay_her.ipynb
 ├── rl_4_multi_armed_bandits.ipynb
 ├── rl_5_mdp_dp_qlearning.ipynb
 ├── rl_6_dqn_policy_gradient.ipynb

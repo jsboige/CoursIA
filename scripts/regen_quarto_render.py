@@ -205,7 +205,7 @@ def git_tracked_notebooks() -> list[str]:
         patterns.append(tree + "**/*.ipynb")
     out = subprocess.run(
         ["git", "-C", str(REPO_ROOT), "-c", "core.quotePath=false", "ls-files", *patterns],
-        capture_output=True, text=True, check=True,
+        capture_output=True, text=True, encoding="utf-8", errors="replace", check=True,
     )
     paths = []
     for line in out.stdout.splitlines():
@@ -235,7 +235,7 @@ def git_tracked_readmes() -> list[str]:
     # single wrap below stays valid YAML on every machine (CI or local).
     out = subprocess.run(
         ["git", "-C", str(REPO_ROOT), "-c", "core.quotePath=false", "ls-files", "*README.md"],
-        capture_output=True, text=True, check=True,
+        capture_output=True, text=True, encoding="utf-8", errors="replace", check=True,
     )
     paths = []
     for line in out.stdout.splitlines():

@@ -131,17 +131,34 @@ _GENRE_SHAPE_RE = re.compile(r"next\s*:\s*(?P<next>\S+)", re.IGNORECASE)
 # Fenced blocks and inline code spans are stripped before matching: a marker
 # inside code is discussion, not decision -- it grants nothing, rejects
 # nothing, and never masks a real override.
-_CODE_FENCE_RE = re.compile(r"```.*?```", re.DOTALL)
-_CODE_SPAN_RE = re.compile(r"`[^`\n]*`")
+#
+# #13273: the stripper's notion of code must coincide with what GitHub
+# RENDERS as code. Two deviations of opposite polarity, same root:
+#   * sous-match (fail-closed): OVERRIDE_EXPECTED_FORM displays the marker
+#     between backticks, so a coordinator recopying the recommended form
+#     posts a span-wrapped marker that stripping erased -- a silent None,
+#     the two-state collapse #12096 closed. A span whose ENTIRE content is
+#     a well-formed override is now UNWRAPPED instead of erased.
+#   * sur-match (fail-open): an UNCLOSED fence ran to the next ``` only, so
+#     a marker after a dangling ``` stayed live while GitHub renders it as
+#     code. An unclosed fence now extends to the end of the body.
+_CODE_FENCE_RE = re.compile(r"```.*?```|```.*", re.DOTALL)
+_CODE_SPAN_RE = re.compile(r"`([^`\n]*)`")
 
 
 def _strip_code_spans(body: str) -> str:
-    """Replace fenced blocks and inline code spans with a single space.
+    """Neutralize code surfaces the way GitHub renders them.
 
-    A space (not the empty string) so stripping never glues the tokens on
-    either side of the removed span into a new match.
+    Fenced blocks become a single space (a space, not the empty string, so
+    stripping never glues the tokens on either side into a new match); an
+    unclosed fence extends to the end of the body. An inline span whose
+    entire content is a well-formed override is unwrapped to that content --
+    everything else in a span is erased.
     """
-    return _CODE_SPAN_RE.sub(" ", _CODE_FENCE_RE.sub(" ", body))
+    def _span(m: re.Match[str]) -> str:
+        inner = m.group(1).strip()
+        return inner if _OVERRIDE_RE.fullmatch(inner) else " "
+    return _CODE_SPAN_RE.sub(_span, _CODE_FENCE_RE.sub(" ", body))
 
 OVERRIDE_EXPECTED_FORM = (
     "`[G-VAR-3 OVERRIDE] lane <machine:workspace> -- next: <genre>`, "
