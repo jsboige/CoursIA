@@ -465,9 +465,12 @@ def main(argv=None) -> int:
     baseline_path = args.baseline if args.baseline else DEFAULT_BASELINE
     baseline = load_baseline(baseline_path)
     if not args.update_baseline:
-        # #12858 : la ligne d'identite part sur stderr -- stdout doit rester
-        # pur en mode --json (consommateurs : jq, scripts CI en pipe, etc.).
-        print(f"baseline: {baseline_path} ({len(baseline)} entries)", file=sys.stderr)
+# #12858 : la ligne d'identite doit etre sur stderr en mode --json,
+        # sinon stdout n'est plus du JSON pur (premiere ligne polluee) et le
+        # premier `| jq` plante sans cause evidente. Mode non-json garde stdout
+        # pour ne pas perdre l'acquis de #12585.
+        identity_stream = sys.stderr if args.json else sys.stdout
+        print(f"baseline: {baseline_path} ({len(baseline)} entries)", file=identity_stream)
     new_findings = [f for f in findings
                     if _finding_hash(f) not in baseline] if baseline else findings
 
