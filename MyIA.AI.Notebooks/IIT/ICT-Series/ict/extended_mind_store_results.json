@@ -1,0 +1,106 @@
+{
+ "case": 9,
+ "issue": 8182,
+ "title": "Parite esprit etendu (Clark & Chalmers 1998, L4 iceberg)",
+ "pre_registration_commit": "b77db0046f",
+ "date": "2026-08-25",
+ "protocol": {
+  "substrat": "CPU-only numpy pur ; 24 faits derive OU (phi=0.999, sigma=0.03)",
+  "otto": "cache interne k=6 (LRU + epinglage adaptatif) + store externe lecture gatee p_read, bruit sigma_e=0.08",
+  "inga": "memoire monolithique 24 cles, sigma_i=0.05 ; bras apparie en budget d erreur total post-shift",
+  "phases": "baseline 600 (p_read=1) / disruption 300 (p_read=0.1, Inga matched) / -",
+  "n_seeds": 5
+ },
+ "predictions": {
+  "P1": "R_p = err_Otto/err_Inga base dans [0.80, 1.20] (mediane)",
+  "P2": "rho_split_Otto >= 3 (>= 4/5) ET rho_split_Inga < 2",
+  "P3": "w3/w1 dans [0.7, 1.6] (saturation adaptation)",
+  "nulls": [
+   "rho_O < 2 : frontiere non reelle (parite complete)",
+   "R_p hors bande : canal coute meme sous glue",
+   "instabilite inter-seeds"
+  ]
+ },
+ "summary": {
+  "r_p_median": 1.0433968742561748,
+  "rho_otto_median": 2.463951753357483,
+  "rho_otto_ge3_count": 0,
+  "rho_inga_median": 0.9954606000467933,
+  "rho_inga_lt2": true,
+  "w3_w1_median": 1.1410700598467676,
+  "n_seeds": 5,
+  "P1_pass": true,
+  "P2_pass": false,
+  "P3_pass": true,
+  "verdict": "INCONCLUSIF"
+ },
+ "rows": [
+  {
+   "seed": 0,
+   "r_p": 1.0433968742561748,
+   "rho_split_otto": 2.463951753357483,
+   "rho_split_inga": 0.8106098238904297,
+   "w3_over_w1": 1.4193111915774261,
+   "matched_budget_ratio": 0.9154287828335709,
+   "otto_base_err": 0.1164776354234514,
+   "inga_base_err": 0.11163310749467878,
+   "consult_before": 0.13406561062131722,
+   "consult_after": 0.38934486546924607,
+   "n_consult_shift": 229
+  },
+  {
+   "seed": 1,
+   "r_p": 1.0509089994727396,
+   "rho_split_otto": 2.6208508980336176,
+   "rho_split_inga": 1.1803365554703842,
+   "w3_over_w1": 0.901903689524938,
+   "matched_budget_ratio": 0.96187189990801,
+   "otto_base_err": 0.1192485924521535,
+   "inga_base_err": 0.11347185390170102,
+   "consult_before": 0.13985223898641935,
+   "consult_after": 0.3958311856042288,
+   "n_consult_shift": 211
+  },
+  {
+   "seed": 2,
+   "r_p": 1.0184453859234441,
+   "rho_split_otto": 2.3806803382395927,
+   "rho_split_inga": 1.0394518606989411,
+   "w3_over_w1": 1.1410700598467676,
+   "matched_budget_ratio": 0.9214466492383869,
+   "otto_base_err": 0.11200960949720937,
+   "inga_base_err": 0.10998096809643661,
+   "consult_before": 0.13620561553661023,
+   "consult_after": 0.4871359605833668,
+   "n_consult_shift": 225
+  },
+  {
+   "seed": 3,
+   "r_p": 0.9974366939105649,
+   "rho_split_otto": 2.967212504627946,
+   "rho_split_inga": 0.7090352688925047,
+   "w3_over_w1": 0.9506755187713822,
+   "matched_budget_ratio": 0.9920588421054095,
+   "otto_base_err": 0.11454628388588822,
+   "inga_base_err": 0.11484065563779931,
+   "consult_before": 0.13652336931066897,
+   "consult_after": 0.4227464874470248,
+   "n_consult_shift": 218
+  },
+  {
+   "seed": 4,
+   "r_p": 1.058155087305001,
+   "rho_split_otto": 2.243661878848318,
+   "rho_split_inga": 0.9954606000467933,
+   "w3_over_w1": 1.3236499176705687,
+   "matched_budget_ratio": 0.9641552209997016,
+   "otto_base_err": 0.1176218203321246,
+   "inga_base_err": 0.11115744917098477,
+   "consult_before": 0.14092466330018907,
+   "consult_after": 0.4005416915971002,
+   "n_consult_shift": 226
+  }
+ ],
+ "verdict": "TESTE (INCONCLUSIF) -- P1 CONFIRME (R_p 1.00-1.06, mediane 1.04) ; P2 seuil >=3 NON ATTEINT (rho_O 2.24-2.97, 0/5) mais localisation REELLE (5/5 >= 2.2, null-a <2 rejete) et controle passe (rho_I ~1.00 < 2, degradation uniforme) ; P3 CONFIRME (w3/w1 mediane 1.14, saturation). Zone grise [2,3).",
+ "diagnostic": "La localisation existe (rho_O ~2.5x vs controle ~1.0x) mais l epinglage adaptatif internalise les 6 cles les plus perturbees et absorbe ~35% de la signature (estime ~3.9 sans adaptation). La force de localisation est bornee par le ratio capacite interne/externe (k/n = 6/24) : la frontiere du systeme couple est GRADEE, pas binaire -- visible en dynamique a une intensite dependant du ratio. Contrainte persona ICT-23/25 : la question un-systeme-ou-deux pour un agent couple a son store ne recoit pas de reponse binaire au niveau performance (P1 passe proprement) ni au niveau dynamique (zone grise) ; elle se pose comme un spectre parametre par la capacite d internalisation."
+}

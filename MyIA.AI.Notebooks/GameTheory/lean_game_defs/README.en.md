@@ -1,14 +1,15 @@
 # Lean Game Definitions
 
-Shared Lean 4 type definitions used by multiple GameTheory Lean projects. **NOT** a standalone Lake project — provides reference definitions imported or copied into adjacent Lake projects.
+Shared Lean 4 type definitions used by multiple GameTheory Lean projects. A **self-contained standalone** Lake project (zero dependencies, core Lean only) — provides reference definitions copied into the teaching notebooks; `lake build` is the verification path (locally and in CI).
 
 ## Status
 
-- **Type:** Code snippets (no `lakefile.lean`, no toolchain pin)
-- **Files:** 6 `.lean`
+- **Type:** Standalone Lake project (`lakefile.toml`, `lean-toolchain` pinned `v4.32.1`, `lake-manifest.json`)
+- **Files:** 12 `.lean` (6 FR + 6 `_en` siblings, EPIC #4980 Pattern A)
 - **`sorry` count:** 0 (definitions only, no proofs)
 - **Mathlib dependency:** None — all files use core Lean 4 only
-- **Buildable in isolation:** No — meant to be imported by Lake projects
+- **Buildable in isolation:** Yes — `lake build` (harness added by #2752, ai-01 review)
+- **Dedicated CI:** `.github/workflows/lean-game-defs.yml` + `lean-game-defs-ext.yml`
 - **Last sorry audit:** 2026-05-29
 - **Last compilation fix:** 2026-06-10 (See #2748)
 
@@ -23,7 +24,7 @@ Shared Lean 4 type definitions used by multiple GameTheory Lean projects. **NOT*
 
 ## Usage
 
-These files are reference definitions, not a buildable library. Use them by:
+These files are reference definitions (introductory layer, 0 proofs), verifiable via `lake build`. Use them by:
 
 1. **Copy-paste into a notebook cell** (typical pedagogical workflow in `GameTheory-2b`, `GameTheory-8b`, etc.).
 2. **Import from an adjacent Lake project** by adding the file path to the project's `lakefile.lean`. Example from `game_theory_lean/SocialChoice/`:
@@ -46,7 +47,7 @@ import Mathlib.SetTheory.Game.Nim
 
 - [game_theory_lean/](../game_theory_lean/) — Multi-module Lake project (StableMarriage = Gale-Shapley formalization, EPIC #4365; CooperativeGames absorbed from `cooperative_games_lean/` rm #6587).
 - [game_theory_lean/SocialChoice/](../game_theory_lean/SocialChoice/) — Module absorbed into `game_theory_lean` (Arrow / Sen / median voter / Voting, EPIC #4365).
-- [social_choice_lean_peters/](../social_choice_lean_peters/) — Independent Lake project pinned on Peters' commit `d679d950` (Gibbard-Satterthwaite, Duggan-Schwartz).
+- [social_choice_lean_peters/](../social_choice_lean_peters/) — Independent Lake project referencing Peters at commit `94a4c650` (per `lake-manifest.json`; Gibbard-Satterthwaite, Duggan-Schwartz).
 
 These projects do **not** depend on `lean_game_defs/` at build time — they vendor their own definitions tailored to their proof obligations. `lean_game_defs/` is the **introductory** layer used by the teaching notebooks.
 
@@ -60,9 +61,10 @@ These projects do **not** depend on `lean_game_defs/` at build time — they ven
 
 `lean_game_defs/` is the **introductory definition layer** of the GameTheory Lean
 track: shared Lean 4 type definitions (no proofs, 0 `sorry`) used by the teaching
-notebooks and importable by adjacent Lake projects. It is **not** a standalone Lake
-project — there is no `lakefile.lean`, no toolchain pin, and no Mathlib dependency;
-every file is core Lean 4 only.
+notebooks and copied by adjacent Lake projects. It has been a standalone Lake
+project since #2752 — `lakefile.toml`, pinned `lean-toolchain`, dedicated CI — with
+no Mathlib dependency; every file is core Lean 4 only, and `lake build` checks the
+whole set (12 modules, FR + `_en` siblings).
 
 ### What it provides
 

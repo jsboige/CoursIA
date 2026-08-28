@@ -67,6 +67,7 @@ flowchart LR
 
 - Ce module benchmark la capacité du prouveur Lean multi-agents à clore des preuves de type manuel
 - Toutes les cibles sont désormais fermées ; le module est conservé comme suite de régression permanente pour les changements du prouveur
+- **Frontière avec `grothendieck_lean/Grothendieck/Calibration.lean`** (arbitrage #13212 : **GARDER AUTONOME**) — ce lake est le consommable effectif du harnais (paths codés dans `agent_tests/prover/config.py`, cibles C-F sur la taxonomie P1-P5). Le module Grothendieck (Partie 5 de l'hommage, `trivial_le_discrete`/`pullback_top`/`zariski_eq_pretopology`/`isSheaf_trivial`) porte 4 cibles de micro-preuve dans le même esprit mais sur la topologie catégorique, consommées uniquement par `Lean-15b` : zéro déclaration partagée, zéro import partagé, consommateurs disjoints. Consolider ferait porter `CategoryTheory.Sites` + `BigZariski` au lake de calibration (god-lake, coût build/cache #4362).
 - Vérification : comptage code-level (docstrings `/-- ... -/` et commentaires `-- ...` strippés) = **0** `sorry` en production (cf [README Lean](../Lean-1-Setup.ipynb)). NB : le `grep -nE '^[^/]*\bsorry\b' Calibration/Nash.lean` naïf retourne **3** correspondances sur main — toutes en prose dans la docstring de la cible F (L90/96/97), pas des termes de preuve
 
 ## Conclusion
