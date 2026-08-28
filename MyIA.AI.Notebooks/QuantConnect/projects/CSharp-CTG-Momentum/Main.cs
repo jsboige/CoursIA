@@ -92,11 +92,24 @@ namespace QuantConnect.Algorithm.CSharp
         // weekly ranking excludes any stock that distributed at least one dividend over
         // the trailing twelve months (history request on Dividend objects).
         // Default OFF: the baseline strategy (slope momentum on OEF constituents) is
-        // unchanged unless the flag is flipped — the two arms are compared honestly.
+        // unchanged unless the flag is flipped — the arms are compared honestly.
+        // Exposed as a QC parameter (#11698) so every arm runs from the same compile:
+        // backtests pass parameters={"filter-dividend-payers": "true"} for the ON arm.
+        [Parameter("filter-dividend-payers")]
         private bool _filterDividendPayers = false;
         private DateTime _lastDividendScan = DateTime.MinValue;
         private readonly Dictionary<Symbol, bool> _paysDividend = new Dictionary<Symbol, bool>();
         private static readonly TimeSpan DividendScanInterval = TimeSpan.FromDays(7);
+
+        // === Universe selection (#11698 QC500 retest) ===
+        // Baseline (default): OEF constituents (S&P 100), byte-identical behavior.
+        // Opt-in "QC500": Universe.QC500 — in current LEAN this is the SPY constituents
+        // universe (~500 US large caps, reconstituted monthly, inherits the algorithm
+        // UniverseSettings, here Resolution.Daily). A wider pool where non-dividend
+        // payers ("capital-gain stocks") are properly represented — closer to the
+        // 1000-most-liquid terrain the Cannon & Lynch (2025) claim was measured on.
+        [Parameter("universe")]
+        private string _universeName = "OEF";
 
         ///Broker fee to take into account to check if Cash is avalaible
         private const decimal BrokerFee = 0.005m;
@@ -143,7 +156,20 @@ namespace QuantConnect.Algorithm.CSharp
 
             //Setup universe based on ETF: https://www.quantconnect.com/docs#Universes
             UniverseSettings.Resolution = Resolution.Daily;
-            AddUniverse(Universe.ETF("OEF", Market.USA, UniverseSettings));
+            bool useQc500 = _universeName.Trim().Equals("QC500", StringComparison.OrdinalIgnoreCase);
+            if (useQc500)
+            {
+                // #11698: QC500 universe (SPY constituents, ~500 US large caps, monthly
+                // reconstitution) — same settings, wider candidate pool than OEF (S&P 100).
+                AddUniverse(Universe.QC500);
+            }
+            else
+            {
+                AddUniverse(Universe.ETF("OEF", Market.USA, UniverseSettings));
+            }
+            // Echo the active configuration so each backtest log proves which arm ran.
+            Debug("CTG-Momentum config: universe=" + _universeName + " (QC500=" + useQc500
+                + "), filter-dividend-payers=" + _filterDividendPayers);
 
             //Trade only on Wednesday at opening after 1 minutes
             Schedule.On(DateRules.Every(DayOfWeek.Thursday),
