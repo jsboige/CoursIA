@@ -44,7 +44,7 @@ def _run_forge(source_code: str, contract_name: str) -> dict:
             # Native: forge on PATH (Linux, Mac, or WSL kernel)
             cmd = ["forge", "build", "--force", "--silent"]
             result = subprocess.run(
-                cmd, capture_output=True, text=True, timeout=60,
+                cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60,
                 cwd=foundry_path
             )
         elif platform.system() == "Windows":
@@ -57,7 +57,7 @@ def _run_forge(source_code: str, contract_name: str) -> dict:
                 f'export PATH="$HOME/.foundry/bin:$PATH" && '
                 f'cd "{wsl_path}" && forge build --force --silent 2>&1'
             ]
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+            result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60)
         else:
             raise RuntimeError(
                 "forge not found on PATH. Install Foundry: "

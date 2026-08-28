@@ -70,7 +70,7 @@ def main():
             cmd,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
-            universal_newlines=True,
+            universal_newlines=True, encoding="utf-8", errors="replace",
             bufsize=1
         )
 

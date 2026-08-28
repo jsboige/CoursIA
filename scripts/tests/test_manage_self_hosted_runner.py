@@ -112,6 +112,14 @@ def PureWindows(path: Path) -> str:
     return "C:\\" + "\\".join(path.parts[-3:])
 
 
+@pytest.fixture(autouse=True)
+def _probe_env(monkeypatch, tmp_path):
+    # The isolation-probe templates resolve {user_profile}/{appdata}; native
+    # Windows always defines them, the posix CI host does not.
+    monkeypatch.setenv("USERPROFILE", str(tmp_path / "user"))
+    monkeypatch.setenv("APPDATA", str(tmp_path / "appdata"))
+
+
 def test_run_powershell_delivers_scripts_via_file_not_stdin():
     # Regression (measured on pwsh 7.5, 2026-08-25): `-Command -` fed over
     # stdin silently stops executing at a PowerShell here-string (@'...'@)
@@ -317,7 +325,7 @@ def completed(argv=None, **kwargs):
 def test_install_refuses_bad_checksum_before_extraction(tmp_path, monkeypatch):
     data = make_runner_archive()
     target = profile(tmp_path / "runner", digest="0" * 64)
-    monkeypatch.setattr(mod.os, "name", "nt")
+    monkeypatch.setattr(mod, "IS_WINDOWS", True)
     monkeypatch.setenv(mod.ACCOUNT_PASSWORD_ENV, "local-password")
     calls = []
 
@@ -339,7 +347,7 @@ def test_install_extracts_atomically_and_never_logs_password(tmp_path, monkeypat
     data = make_runner_archive()
     target = profile(tmp_path / "runner", digest=hashlib.sha256(data).hexdigest())
     password = "local-password-never-log"
-    monkeypatch.setattr(mod.os, "name", "nt")
+    monkeypatch.setattr(mod, "IS_WINDOWS", True)
     monkeypatch.setenv(mod.ACCOUNT_PASSWORD_ENV, password)
     calls = []
 
