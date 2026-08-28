@@ -34,7 +34,9 @@ import unicodedata
 from pathlib import Path
 
 _TOOLS_DIR = Path(__file__).resolve().parent
+_REPO_SCRIPTS = _TOOLS_DIR.parent  # scripts/
 sys.path.insert(0, str(_TOOLS_DIR))
+sys.path.insert(0, str(_REPO_SCRIPTS))
 
 from generate_review_dossier import REPO_ROOT, SCOPE_FILE, _scope_of  # noqa: E402
 
@@ -180,8 +182,23 @@ def build_issue(remark: str, status: str, matches: list[str],
 
 
 def create_issue(issue: dict, label: str) -> tuple[bool, str]:
-    """Crée l'issue via gh. Retourne (succès, sortie/erreur)."""
+    """Crée l'issue via gh, en deux temps pour l'idempotence.
+
+    Étape 1 : `find_recent_duplicate` court-circuite si une issue de même
+    titre existe dans la fenêtre (défaut 10 min). Étape 2 : si rien trouvé,
+    on appelle directement `gh issue create --body-file <tmp>` comme
+    avant -- l'API GitHub ne fournit pas de clé d'idempotence, le titre
+    est le seul signal stable (cf. issue #13208).
+    """
     import tempfile
+    from issue_create_idempotent import find_recent_duplicate
+    window = int(os.environ.get("ISSUE_DEDUP_WINDOW_MINUTES", "10"))
+    existing = find_recent_duplicate(issue["title"], window_minutes=window)
+    if existing is not None:
+        msg = (f"SKIP existing=#{existing['number']} "
+               f"createdAt={existing['createdAt']}")
+        return (False, msg)
+
     with tempfile.NamedTemporaryFile("w", suffix=".md", delete=False,
                                      encoding="utf-8") as fh:
         fh.write(issue["body"])
@@ -190,7 +207,7 @@ def create_issue(issue: dict, label: str) -> tuple[bool, str]:
         proc = subprocess.run(
             ["gh", "issue", "create", "--title", issue["title"],
              "--body-file", path, "--label", label],
-            capture_output=True, text=True, timeout=60,
+            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60,
         )
         ok = proc.returncode == 0
         return (ok, (proc.stdout + proc.stderr).strip())

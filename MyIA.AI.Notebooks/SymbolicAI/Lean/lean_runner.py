@@ -152,7 +152,7 @@ class LeanRunner:
                  "source ~/.lean4-venv/bin/activate 2>/dev/null && "
                  "source ~/.elan/env 2>/dev/null && "
                  "which lean && which repl"],
-                capture_output=True, text=True, timeout=10
+                capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=10
             )
             return result.returncode == 0
         except:
@@ -213,7 +213,7 @@ class LeanRunner:
             if "GITHUB_ACCESS_TOKEN" not in os.environ:
                 try:
                     result = subprocess.run(["gh", "auth", "token"],
-                                            capture_output=True, text=True)
+                                            capture_output=True, text=True, encoding="utf-8", errors="replace")
                     if result.returncode == 0:
                         os.environ["GITHUB_ACCESS_TOKEN"] = result.stdout.strip()
                 except:
@@ -242,7 +242,7 @@ class LeanRunner:
         try:
             result = subprocess.run(
                 [self.lean_path, "--version"],
-                capture_output=True, text=True, timeout=10
+                capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=10
             )
             version = result.stdout.strip() if result.returncode == 0 else "unknown"
             return {
@@ -275,7 +275,7 @@ class LeanRunner:
             result = subprocess.run(
                 ["wsl", "-d", "Ubuntu", "--", "bash", "-c",
                  "source ~/.elan/env && lean --version"],
-                capture_output=True, text=True, timeout=15
+                capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=15
             )
             version = result.stdout.strip() if result.returncode == 0 else "unknown"
             return {
@@ -345,7 +345,7 @@ class LeanRunner:
         try:
             result = subprocess.run(
                 [self.lean_path, str(file_path)],
-                capture_output=True, text=True,
+                capture_output=True, text=True, encoding="utf-8", errors="replace",
                 timeout=self.timeout, cwd=self._temp_dir
             )
 
@@ -420,7 +420,7 @@ class LeanRunner:
                 ["wsl", "-d", "Ubuntu", "--", "bash", "-c",
                  f"cd {self.wsl_project_dir} && source ~/.elan/env "
                  f"&& echo '{json_cmd}' | repl"],
-                capture_output=True, text=True, timeout=self.timeout
+                capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=self.timeout
             )
 
             if result.returncode == 0 and result.stdout.strip():
@@ -727,7 +727,7 @@ theorem test_theorem {theorem} := by
             try:
                 result = subprocess.run(
                     ["wsl", "-d", "Ubuntu", "--", "bash", "-c", "which lean"],
-                    capture_output=True, text=True, timeout=5
+                    capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=5
                 )
                 if result.returncode == 0:
                     backends.append("wsl")
