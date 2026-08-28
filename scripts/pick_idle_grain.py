@@ -626,7 +626,8 @@ def drop_superseded(contexts: list[dict]) -> list[dict]:
     return kept
 
 
-def blocking_causes(state: dict) -> list[str]:
+def blocking_causes(state: dict, *, age_hours: float | None = None,
+                    saturation_hours: float | None = None) -> list[str]:
     """Causes qui empechent VRAIMENT le merge, formulees en geste de reparation.
 
     `mergeStateStatus: BLOCKED` n'est deliberement PAS une cause : il vaut
@@ -634,12 +635,29 @@ def blocking_causes(state: dict) -> list[str]:
     au coordinateur de merger. Verifie firsthand sur #12108 le 2026-08-22 :
     BLOCKED, MERGEABLE, zero check en echec. L'accuser aurait renvoye la lane
     reparer une PR qui n'a rien a reparer.
+
+    `file_saturation` (issue #12830, mandant c.508-L2 + ai-01 c.1331p69) : le
+    3ᵉ etat distinct de `mergeStateStatus: BLOCKED` est `BLOCKED + MERGEABLE
+    + statusCheckRollup.state=PENDING > saturation_hours`. La lane pioche sur
+    un pool virtuellement vide parce que ce 3ᵉ etat n'etait pas declencheur
+    (mesure ai-01 du 2026-08-26T04:52Z : 1000 runs en file, 14 concurrents,
+    attente observee 4 h 25 -- c'est le regime nominal, plus un cas limite).
+    Le critere exige qu'AUCUN check n'ait demarre (PENDING/QUEUED partout)
+    sur une PR MERGEABLE : c'est exactement la file qui n'a pas bouge, pas
+    un rouge substance. La cause est formulee comme geste = commentaire
+    + `--ignore-red` ou `rerun/updater-branch` selon le cas -- la lane peut
+    poser un acte (commenter) mais ne peut pas derainer la file seule.
+
+    Le critere reste PASSIF si `age_hours` ou `saturation_hours` ne sont pas
+    fournis (defaut=None), ce qui preserve la signature utilisee par les 12
+    tests existants (cf `_state(...)` qui ne porte pas `age_hours`).
     """
     causes: list[str] = []
     advisory: list[str] = []
     commits = state.get("commits", {}).get("nodes") or []
     rollup = (commits[0]["commit"].get("statusCheckRollup") if commits else None) or {}
-    for ctx in drop_superseded((rollup.get("contexts", {}) or {}).get("nodes") or []):
+    contexts = drop_superseded((rollup.get("contexts", {}) or {}).get("nodes") or [])
+    for ctx in contexts:
         name = ctx.get("name") or ctx.get("context") or "?"
         verdict = (ctx.get("conclusion") or ctx.get("state") or "").upper()
         if verdict not in CHECK_FAILED:
@@ -659,6 +677,24 @@ def blocking_causes(state: dict) -> list[str]:
     for login, review in latest.items():
         if review["state"] == "CHANGES_REQUESTED":
             causes.append(f"CHANGES_REQUESTED non leve ({login})")
+    # 3ᵉ declencheur `file_saturation` (cf issue #12830) : aucun check n'a
+    # demarre (PENDING/QUEUED partout), pas de conflit, pas de CHANGES_REQUESTED
+    # non leve, et la PR est ouverte depuis plus de `saturation_hours`.
+    # On ne l'ajoute que si rien d'autre n'a deja ete trouve : un rouge
+    # substance prime sur la file-saturation (la lane reparera la substance,
+    # la file draine naturellement).
+    if (age_hours is not None and saturation_hours is not None
+            and age_hours >= saturation_hours
+            and state.get("mergeable") == "MERGEABLE"
+            and not causes
+            and contexts):
+        statuses = {(c.get("conclusion") or c.get("state") or "").upper() for c in contexts}
+        if statuses <= {"PENDING", "QUEUED", ""}:
+            causes.append(
+                f"file_saturation : {len(contexts)} check(s) tous pending depuis > "
+                f"{int(saturation_hours)}h (faux-rouge non-reparable par la lane -- "
+                f"commenter la PR + --ignore-red ou rerun/updater-branch si gel CI)"
+            )
     if causes and advisory:
         causes.append("(diagnostic, non bloquant : " + ", ".join(advisory[:3]) + ")")
     return causes
@@ -778,6 +814,16 @@ def red_backlog(lane: str, threshold_hours: float,
     des points a traiter »). Le declencheur `nits` rend cette regle explicite
     au lieu de la laisser dependre d'un filtre retire ailleurs.
 
+    `file_saturation` (issue #12830) : au moins une PR file-saturee (cf
+    `blocking_causes` pour le critere exact) ouverte depuis plus de
+    `threshold_hours`. C'est le 3ᵉ etat distinct de `mergeStateStatus:
+    BLOCKED` (le `BLOCKED + MERGEABLE + checks tous PENDING depuis > N h`)
+    que le picker ratait jusqu'ici, et la lane po-2027 en etait la premiere
+    victime : narrow persistant ×27 cycles dont la file CI etait la cause
+    jamais diagnostiquee. Le declencheur precede `aged` parce qu'il est
+    l'attribution directe du narrow : la lane doit SAVOIR qu'elle subit la
+    file avant de tenter d'autres rouges.
+
     Rend aussi `unattributed_blocked` : les PRs bloquees dont le tag `Grain:`
     est illisible. Elles ne peuvent bloquer AUCUNE lane -- c'est la bonne
     arithmetique (deviner une lane serait pire) -- mais les taire donnerait a
@@ -815,7 +861,12 @@ def red_backlog(lane: str, threshold_hours: float,
         state = states.get(pr["number"])
         if state is None:
             continue
-        causes = blocking_causes(state)
+        # age_hours sert au critere file_saturation (cf blocking_causes). On le
+        # passe ici plutot que dans la query GraphQL parce que le fragment
+        # `_PR_STATE_FRAGMENT` ne porte pas `createdAt` et l'ajouter alourdirait
+        # chaque appel pour 2 octets deconomie ; le PR-listing le fournit deja.
+        age = _hours_since(pr["createdAt"])
+        causes = blocking_causes(state, age_hours=age, saturation_hours=threshold_hours)
         n_nits = nits_by_pr.get(pr["number"], 0)
         if n_nits:
             # Un point de review non leve est une cause A PART ENTIERE : la PR
@@ -831,7 +882,7 @@ def red_backlog(lane: str, threshold_hours: float,
             causes.append(sat_cause)
         if causes:
             red.append({"number": pr["number"], "title": pr["title"],
-                        "age_hours": round(_hours_since(pr["createdAt"])),
+                        "age_hours": round(age),
                         "causes": causes})
     red.sort(key=lambda r: -r["age_hours"])
 
@@ -840,6 +891,17 @@ def red_backlog(lane: str, threshold_hours: float,
         # D'abord dans la liste : c'est l'ordre dans lequel le mandat du
         # 2026-08-24 veut que la lane les traite.
         triggers.append("nits")
+    # `file_saturation` precede `aged` : une PR file-saturee est l'attribution
+    # directe d'un narrow de file CI (cf issue #12830), et la lane doit
+    # distinguer ce cas des rouges substance. Le critere dans `blocking_causes`
+    # exige que rien d'autre ne soit deja en cause -- si la PR a un FAIL
+    # substance ET est en file-saturation, elle reste categorisee rouge
+    # substance (cause FAIL gagne).
+    file_saturated = [r for r in red
+                       if any("file_saturation" in c for c in r["causes"])
+                       and r["age_hours"] >= threshold_hours]
+    if file_saturated:
+        triggers.append("file_saturation")
     aged = [r for r in red if r["age_hours"] >= threshold_hours]
     if aged:
         triggers.append("aged")
