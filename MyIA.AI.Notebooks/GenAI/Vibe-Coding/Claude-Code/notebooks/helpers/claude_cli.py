@@ -53,7 +53,7 @@ def installation_status() -> Dict[str, Any]:
         result = subprocess.run(
             cmd + ["--version"],
             capture_output=True,
-            text=True,
+            text=True, encoding="utf-8", errors="replace",
             timeout=15
         )
         if result.returncode == 0:
@@ -164,7 +164,7 @@ def run_claude(
             cmd,
             input=prompt,
             capture_output=True,
-            text=True,
+            text=True, encoding="utf-8", errors="replace",
             timeout=timeout,
             cwd=working_dir
         )
@@ -253,7 +253,7 @@ def check_claude_status(timeout: int = 60) -> Dict[str, Any]:
         result = subprocess.run(
             _resolve_claude_command() + ["-p", "Reponds uniquement: OK"],
             capture_output=True,
-            text=True,
+            text=True, encoding="utf-8", errors="replace",
             timeout=timeout
         )
 
@@ -296,7 +296,7 @@ def get_claude_version() -> str:
         result = subprocess.run(
             _resolve_claude_command() + ["--version"],
             capture_output=True,
-            text=True,
+            text=True, encoding="utf-8", errors="replace",
             timeout=10
         )
         return result.stdout.strip() if result.returncode == 0 else f"Erreur: {result.stderr}"
@@ -350,7 +350,7 @@ def run_claude_continue(
             cmd,
             input=prompt,
             capture_output=True,
-            text=True,
+            text=True, encoding="utf-8", errors="replace",
             timeout=timeout
         )
         return result.stdout, result.stderr, result.returncode
@@ -397,7 +397,7 @@ def run_claude_command(
         result = subprocess.run(
             _resolve_claude_command() + [command],
             capture_output=True,
-            text=True,
+            text=True, encoding="utf-8", errors="replace",
             timeout=timeout
         )
         return result.stdout, result.stderr, result.returncode

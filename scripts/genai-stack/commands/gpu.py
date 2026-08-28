@@ -42,7 +42,7 @@ def check_vram() -> List[Dict]:
             '--query-gpu=index,name,memory.total,memory.used,memory.free',
             '--format=csv,noheader,nounits'
         ]
-        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", check=True)
 
         gpus = []
         csv_reader = csv.reader(io.StringIO(result.stdout))
@@ -84,7 +84,7 @@ def print_gpu_table(gpus: List[Dict]):
 def _run_cmd(cmd: str):
     """Execute une commande shell et retourne (success, stdout, stderr)."""
     try:
-        result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+        result = subprocess.run(cmd, shell=True, capture_output=True, text=True, encoding="utf-8", errors="replace")
         return result.returncode == 0, result.stdout, result.stderr
     except Exception as e:
         return False, "", str(e)
@@ -162,7 +162,7 @@ def _get_running_services() -> List[str]:
     for name, svc in SERVICES.items():
         result = subprocess.run(
             ["docker", "inspect", svc["container_name"], "--format", "{{.State.Running}}"],
-            capture_output=True, text=True
+            capture_output=True, text=True, encoding="utf-8", errors="replace"
         )
         if result.returncode == 0 and "true" in result.stdout.lower():
             running.append(name)
