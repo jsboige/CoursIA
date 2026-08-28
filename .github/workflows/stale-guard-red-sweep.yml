@@ -1,0 +1,84 @@
+name: Stale guard-red sweep
+
+# The gap left open by pr-gate-stale-sweep.yml, measured 2026-08-27 on the
+# eleven-PR band of #13321.
+#
+# pr-gate-stale-sweep.yml refreshes stale PR gate verdicts, but its candidate
+# filter only retains PRs where "no check is red besides PR gate itself". A PR
+# whose OTHER guard failed -- and whose guard has since been FIXED on main --
+# is never re-examined by anything. It stays BLOCKED until a human dates its
+# red by hand.
+#
+# The founding band: 11 PRs (#13156 ... #13204) carried a red
+# `Scripts Tests (CPU)` on an assertion that NO LONGER EXISTS -- the test was
+# renamed by 62d47eb7d (#13148) at 2026-08-27T08:53Z, and every red in the
+# band predates that fix by 2h43 at least. None of them had anything to fix.
+#
+# What this sweep does differently: it DATES the red by the FROZEN base the run
+# was actually played against -- run.pull_requests[0].base.sha, embedded in the
+# immutable run object -- NOT by completedAt and NOT by the CURRENT
+# merge_commit_sha of the PR, which GitHub recomputes as main moves (founding
+# discovery of #13321, measured on #13156: the drifted merge-ref already
+# contains the fix while the run was played against an older base). A red is
+# stale iff the guard is green on main at its CURRENT version AND the locating
+# fix commit is NOT an ancestor of that frozen base. See
+# scripts/check_stale_guard_reds.py for the full method, including the positive
+# control: a red rendered AGAINST the fixed guard (base ahead of the fix) is a
+# real defect and is NOT flagged.
+#
+# The remedy it prescribes is `gh pr update-branch` -- NEVER `gh run rerun`,
+# which replays the frozen base and returns the same red. It never rebases
+# and never re-runs anything itself: this is a signal organ (label + comment),
+# because the rattrapage must stay ORTHONNANCE under runner starvation
+# (#11860) -- eleven update-branches at once would push ~350 runs into a
+# queue that already holds hundreds.
+#
+# Daily on an off-minute: the pr-gate sweep runs hourly because it actively
+# unblocks merges; this one files an advisory and its remedy is executed by
+# the owning lanes, one head at a time.
+
+on:
+  schedule:
+    - cron: '53 4 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'List candidates, post nothing'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  pull-requests: write   # label + comment (signal only, never update-branch)
+
+concurrency:
+  group: stale-guard-red-sweep
+  cancel-in-progress: false
+
+jobs:
+  sweep:
+    name: Signal PRs blocked on a pre-fix red
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            scripts/check_stale_guard_reds.py
+
+      - name: Find and signal stale guard reds
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          DRY_RUN: ${{ github.event.inputs.dry_run }}
+        run: |
+          set -uo pipefail
+          if [ "${DRY_RUN:-false}" = "true" ]; then
+            python scripts/check_stale_guard_reds.py --repo "$REPO" --json
+          else
+            python scripts/check_stale_guard_reds.py --repo "$REPO" --apply --json
+          fi
+
+          # Advisory organ: it signals, it never blocks.
+          exit 0

@@ -414,7 +414,7 @@ def check_environment(tweety_dir: Path) -> EnvironmentCheck:
             result = subprocess.run(
                 [str(java_path), "-version"],
                 capture_output=True,
-                text=True,
+                text=True, encoding="utf-8", errors="replace",
                 timeout=10
             )
             # Java version is typically in stderr
@@ -466,7 +466,7 @@ def check_environment(tweety_dir: Path) -> EnvironmentCheck:
             result = subprocess.run(
                 ["clingo", "--version"],
                 capture_output=True,
-                text=True,
+                text=True, encoding="utf-8", errors="replace",
                 timeout=5
             )
             if result.returncode == 0:
@@ -618,7 +618,7 @@ def execute_with_papermill(notebook_path: Path, timeout: int = 600) -> Dict[str,
         result = subprocess.run(
             cmd,
             capture_output=True,
-            text=True,
+            text=True, encoding="utf-8", errors="replace",
             timeout=timeout,
             cwd=str(notebook_path.parent)
         )

@@ -42,7 +42,7 @@ class ComfyUIAuthDiagnostic:
         try:
             result = subprocess.run(
                 ["docker", "ps", "--filter", "name=comfyui-qwen", "--format", "json"],
-                capture_output=True, text=True
+                capture_output=True, text=True, encoding="utf-8", errors="replace"
             )
             
             if result.returncode == 0 and result.stdout.strip():
@@ -69,7 +69,7 @@ class ComfyUIAuthDiagnostic:
         try:
             # Vérification dans le conteneur
             cmd = "docker exec comfyui-qwen find /workspace/ComfyUI/custom_nodes -name '*login*' -type d"
-            result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+            result = subprocess.run(cmd, shell=True, capture_output=True, text=True, encoding="utf-8", errors="replace")
             
             if result.returncode == 0 and result.stdout.strip():
                 print("✅ ComfyUI-Login trouvé dans custom_nodes")
@@ -97,7 +97,7 @@ class ComfyUIAuthDiagnostic:
         for dep in required_deps:
             try:
                 cmd = f"docker exec comfyui-qwen python -c \"import {dep.replace('-', '_')}\""
-                result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+                result = subprocess.run(cmd, shell=True, capture_output=True, text=True, encoding="utf-8", errors="replace")
                 
                 if result.returncode == 0:
                     print(f"✅ {dep} - OK")
@@ -189,7 +189,7 @@ class ComfyUIAuthDiagnostic:
         try:
             result = subprocess.run(
                 ["docker", "logs", "comfyui-qwen", "--tail", str(lines)],
-                capture_output=True, text=True
+                capture_output=True, text=True, encoding="utf-8", errors="replace"
             )
             
             if result.returncode == 0:

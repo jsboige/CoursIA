@@ -120,6 +120,7 @@ Chaque notebook introduit un concept ou algorithme spécifique. Le tableau ci-de
 | 12 | PatternDatabases | Heuristiques précalculées (Culberson & Schaeffer 1996, PDB additives Korf & Felner 2002) : 15-puzzle optimal via IDA* |
 | 13 | LimitedDiscrepancySearch | LDS (Harvey & Ginsberg 1995) : explorer d'abord les écarts au choix glouton, greedy vs LDS(k) vs exhaustif |
 | 14 | WeightedA* | A* pondéré (Pohl 1970) : sous-optimalité bornée par W pour accélérer sur terrain pondéré |
+| 17 | CombinatorialDiscrepancy | Discrépance combinatoire (Beck–Fiala 1981, frontière 2025 Bansal–Jiang) : colorier ±1 sans déséquilibrer, arrondi flottant 2k−1, oracle CP-SAT |
 
 ### Partie 4 : Métaheuristiques composables
 
@@ -169,7 +170,7 @@ Les notebooks d'application GA (EdgeDetection, Portfolio — variants PyGAD Pyth
 | App-7 | Wordle | Solveur Wordle : filtrage CSP + théorie de l'information (entropy) |
 | App-8 | MiniZinc | Modélisation déclarative : syntaxe MiniZinc, contraintes globales |
 | App-9 | EdgeDetection | Détection de bords par GA : PyGAD, filtres de convolution |
-| App-10 | Portfolio | Frontière de Pareto : optimisation multi-objectif de portefeuille |
+| App-10 | Portfolio | Frontière de Pareto : scalarisation, NSGA-II et hypervolume (instance non convexe) |
 | App-11 | Picross | Nonogrammes : speedup 2.78e+24x CP-SAT vs naïve (Etoile 15x15) |
 | App-12 | ConnectFour | Puissance 4 : 5 IA au tournoi (Random, Glouton, Minimax α-β d=4/d=6, MCTS) + framework AIMA |
 | App-13 | TSP | Voyageur de commerce : SA, GA, ACO, OR-Tools routing |
@@ -236,7 +237,8 @@ Les notebooks CSP nécessitent une compréhension préalable de :
 
 Techniques de recherche avancées au-delà des fondations : heuristiques
 précalculées (pattern databases), recherche à écart limité (limited discrepancy search),
-recherche à sous-optimalité bornée (Weighted A\*).
+recherche à sous-optimalité bornée (Weighted A\*) — et discrépance combinatoire
+(Search-18 : l'équilibrage garanti ±1, frontière théorique 2025).
 Cette partie fait le pont entre les fondations ([Partie 1](Part1-Foundations/Search-3-Informed.ipynb) :
 A\*, IDA\*, heuristiques admissibles) et les métaheuristiques composables
 ([Partie 4](Part4-Metaheuristics/README.md)), sans relever de la programmation par
@@ -247,6 +249,7 @@ contraintes ([Partie 2](Part2-CSP/CSP-1-Fundamentals.ipynb)).
 | 1 | [Search-12-PatternDatabases](Part3-Advanced/Search-12-PatternDatabases.ipynb) | ~1h30 | Pattern Databases (Culberson & Schaeffer 1996), PDB additives (Korf & Felner 2002), 15-puzzle optimal, IDA\* | Search-3 |
 | 2 | [Search-13-LimitedDiscrepancySearch](Part3-Advanced/Search-13-LimitedDiscrepancySearch.ipynb) | ~45min | Limited Discrepancy Search (Harvey & Ginsberg 1995), sac à dos 0/1, greedy vs LDS(k) vs exhaustif | Search-3 |
 | 3 | [Search-14-WeightedAstar](Part3-Advanced/Search-14-WeightedAstar.ipynb) | ~1h | Weighted A\* (Pohl 1970), recherche à sous-optimalité bornée par W, terrain pondéré, triptyque Partie 3 | Search-3 |
+| 4 | [Search-18-CombinatorialDiscrepancy](Part3-Advanced/Search-18-CombinatorialDiscrepancy.ipynb) | ~45min | Discrépance combinatoire (Beck–Fiala 1981, Bansal–Jiang 2025) : borne inf √k (Chernoff), arrondi flottant 2k−1 implémenté, CP-SAT en oracle exact, désambiguïsation vs LDS | Search-13 |
 
 ---
 
@@ -351,7 +354,7 @@ Cette série est née **Python d'abord** pour son cœur pédagogique (recherche,
 |-----------|-----------|---------|-------------------------------------|
 | [Part1-Foundations](Part1-Foundations/) | 13 (Search-1 à Search-11, Search-15, Search-16) | Python (12) + C# natif (Search-16 QuikGraph) | **12 jumeaux C#** (Search-1 à 11, 15) + déclinaison deep-dive **Search-11b** (Métaheuristiques, 4 volets) |
 | [Part2-CSP](Part2-CSP/) | 9 (CSP-1 à CSP-9) | Python + .NET | **9 binômes complets** — marathon achevé, voir [bilan final](#marathon-epic-4956) |
-| [Part3-Advanced](Part3-Advanced/) | 3 (Search-12 à Search-14) | Python | **3 jumeaux C#** (Search-12/13/14-Csharp) |
+| [Part3-Advanced](Part3-Advanced/) | 4 (Search-12 à Search-14 + Search-18) | Python | **3 jumeaux C#** (Search-12/13/14-Csharp) |
 | [Part4-Metaheuristics](Part4-Metaheuristics/) | 22 (MGS-1 à MGS-19 + trilogie MGS-7b/7c/7d) | C# / .NET (natif) | Prolonge Search-5 / Search-11 (Python) sous l'angle ingénierie |
 | [Applications](Applications/) | 20 cas réels (App-1 à App-20) | Python + .NET | **20 binômes complets** (40 notebooks) + 1 compagnon statistical-validity (App-2 Python) |
 | Racine | 0 | — | (aucun — voir [_archive/](_archive/) pour les anciens notebooks racine) |
@@ -484,10 +487,11 @@ Search/
 │   ├── CSP-8-Temporal.ipynb
 │   └── CSP-9-Distributed.ipynb
 │
-├── Part3-Advanced/                       # Recherche heuristique avancée (6 notebooks : 3 Python + 3 jumeaux C#)
+├── Part3-Advanced/                       # Recherche heuristique avancée (7 notebooks : 4 Python + 3 jumeaux C#)
 │   ├── Search-12-PatternDatabases.ipynb
 │   ├── Search-13-LimitedDiscrepancySearch.ipynb
-│   └── Search-14-WeightedAstar.ipynb
+│   ├── Search-14-WeightedAstar.ipynb
+│   └── Search-18-CombinatorialDiscrepancy.ipynb
 │
 ├── Applications/
 │   ├── Search/                            # Applications Search (4 notebooks)
@@ -616,7 +620,7 @@ Audit **disque ↔ CATALOG-STATUS ↔ prose** vérifié firsthand via `git ls-fi
 | --- | --- | --- | --- |
 | **Part 1 — Fondements** (`Part1-Foundations/`) | **29** (**12 Python** : Search-1 → Search-11, 15 + **17 C#** : 12 jumeaux `-Csharp` (Search-1 à 11 et 15) + Search-16 QuikGraph natif + déclinaison deep-dive **Search-11b Métaheuristiques en 4 volets** C# natif, marathon #4956) | Python + .NET (C#) | StateSpace, BFS/DFS/UCS/IDDFS, A*, Local Search (SA/Tabu), GA, Minimax/Alpha-Beta, MCTS, DLX, LP, Symbolic Automata, métaheuristiques (PSO/ABC/BRO + 160+ MEALPy), NetworkX, QuikGraph |
 | **Part 2 — Programmation par Contraintes** (`Part2-CSP/`) | **18** (9 Python : CSP-1 → CSP-9 + **9 jumeaux C#**, marathon #4956 achevé) | Python + .NET (C#) | CSP Fundamentals (backtracking), AC-3/FC/MAC, CSP Advanced (AllDifferent/Cumulative/Circuit), Scheduling (Job-Shop/RCPSP/Nurse), Optimization (Bin Packing/Knapsack), Hybridization (LCG/CP+SAT/CP+ML/LLM+CSP), Soft, Temporal (Allen's Interval Algebra), Distributed (Yokoo 1992) |
-| **Part 3 — Recherche heuristique avancée** (`Part3-Advanced/`) | **6** (3 Python : Search-12, 13, 14 + **3 jumeaux C#**) | Python + .NET (C#) | Pattern Databases (Korf & Felner 2002 additives), Limited Discrepancy Search (Harvey & Ginsberg 1995), Weighted A* (Pohl 1970) |
+| **Part 3 — Recherche heuristique avancée** (`Part3-Advanced/`) | **7** (4 Python : Search-12, 13, 14, 18 + **3 jumeaux C#**) | Python + .NET (C#) | Pattern Databases (Korf & Felner 2002 additives), Limited Discrepancy Search (Harvey & Ginsberg 1995), Weighted A* (Pohl 1970), Discrépance combinatoire (Beck–Fiala 2k−1, frontière 2025 Bansal–Jiang) |
 | **Part 4 — Métaheuristiques composables** (`Part4-Metaheuristics/`, C# .NET 9, MetaGeneticSharp) | **22** (MGS-1 → MGS-19, plus la **trilogie MGS-7b/7c/7d** de projection N-D des paysages — 8 fonctions CEC couvertes au total, tous C# .NET au-dessus de GeneticSharp vendored) | C# / .NET | Composition, Eukaryote, Islands, Compound Metaheuristics, TSP, **projection N-D des paysages (trilogie MGS-7b/7c/7d)**, Landscape Explorer, Center Bias, Island Synergy, Axis Alignment, Landscape Debias, Island Synergy Found, Landscape Analysis (FDC), Algorithm Selection (No-Free-Lunch), Parameter Control, CEC Banc, Metropolis Reinsertion |
 | **Applications** (`Applications/`) | **41** (27 CSP + 10 Hybrid + 4 Search — **20 binômes Python ⇄ C#** App-1 à App-20, plus le compagnon statistical-validity App-2 Python) | 21 Python + 20 C# | N-Queens, Graph Coloring, Nurse/Job-Shop/Timetabling Scheduling, Minesweeper, Wordle, MiniZinc, Picross (27M× speedup), Sports/Crossword/WFC CSP, SudokuBenchmark, Portfolio/TSP/VRP/Hyperparameter Tuning, Edge Detection, ConnectFour (Minimax/MCTS) |
 | **archive** (`archive/`) | **2** (CSPs_Intro, Exploration_non_informée_et_informée_intro, historiques pré-tranche 8/8 #5081) | Python | Notebooks historiques, remplacés par Part2-CSP/CSP-1-Fundamentals et Part1-Foundations/Search-{2,3} |
@@ -742,7 +746,7 @@ flowchart LR
     class LA,LM,LP,LK,LG,LB lean
 ```
 
-La double culture **simulation + preuve formelle** est précisément ce que la [cartographie AIMA 3-level du hub central P0](../README.md#lean) (#5045 MERGED) articule : « instinct algorithmique ↔ méta-analyse ↔ preuve formelle ». Le hub Search ancre le **premier niveau (instinct)** par ses 116 notebooks Python/C# gît-tracked (parité complète #4956, marqueur `CATALOG-STATUS` faisant foi — `pedagogical_count: 116` incluant les 22 de la Partie 4) et le **deuxième niveau (méta-analyse)** par les benchmarks comparatifs (App-13 TSP, App-18 hyperparameter tuning, MGS-16 No-Free-Lunch) ; le **troisième niveau (preuve formelle)** arrive ici via `search_lean`, qui démontre ce que les simulations Search-3/Search-14 ne peuvent que suggérer empiriquement : qu'une heuristique admissible **garantit** l'optimalité d'A\*, et qu'une heuristique consistente (P2) **garantit** que le premier chemin trouvé est déjà optimal (sans réouverture).
+La double culture **simulation + preuve formelle** est précisément ce que la [cartographie AIMA 3-level du hub central P0](../README.md#lean) (#5045 MERGED) articule : « instinct algorithmique ↔ méta-analyse ↔ preuve formelle ». Le hub Search ancre le **premier niveau (instinct)** par ses notebooks Python/C# git-tracked (parité complète #4956, marqueur `CATALOG-STATUS` faisant foi — le compte exact vit dans `pedagogical_count`, régénéré par le cron) et le **deuxième niveau (méta-analyse)** par les benchmarks comparatifs (App-13 TSP, App-18 hyperparameter tuning, MGS-16 No-Free-Lunch) ; le **troisième niveau (preuve formelle)** arrive ici via `search_lean`, qui démontre ce que les simulations Search-3/Search-14 ne peuvent que suggérer empiriquement : qu'une heuristique admissible **garantit** l'optimalité d'A\*, et qu'une heuristique consistente (P2) **garantit** que le premier chemin trouvé est déjà optimal (sans réouverture).
 
 Sans cette section, le chainage vers ML (perceptron 0 sorry comme borne duale de la convergence A\* sur graphes pondérés), QC (Kelly, borné inférieurement par l'arbitrage risque/rendement), GameTheory (Arrow, posant les conditions sur les procédures de vote), Probas (PAC iter-2, formalisant pourquoi un échantillon suffit) et SymbolicAI (argumentation, formalisant la sémantique preferred) restait invisible depuis Search.
 

@@ -28,10 +28,14 @@ name: Variation Light Genre Signals
 # la meme source de verite (variation_light_cap.py) et ajoute les 4
 # signaux GENRE que le cap TIER ne sait pas voir.
 
+# DORMANT depuis #13384 : le job check-light-genre-signals est absorbe (run
+# block porte verbatim) par always-on-guards.yml -- un seul workflow, un
+# seul checkout, un seul slot de runner par PR (37 % de la file CI etait les
+# cinq gardes always-on pour ~3 min de travail reel, mesure #13384). Le job
+# reste ICI en copie de reference pour la tracabilite. NE PAS reinscrire
+# pull_request ici sans retirer l'organe GENRE-signals d'always-on-guards.
+
 on:
-  pull_request:
-    types: [opened, edited, synchronize, reopened]
-    branches: [main]
   workflow_dispatch:
 
 permissions:

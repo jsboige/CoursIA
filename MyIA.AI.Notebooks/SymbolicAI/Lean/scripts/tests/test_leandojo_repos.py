@@ -81,7 +81,7 @@ def load_github_token():
     # Try gh CLI
     try:
         import subprocess
-        result = subprocess.run(["gh", "auth", "token"], capture_output=True, text=True)
+        result = subprocess.run(["gh", "auth", "token"], capture_output=True, text=True, encoding="utf-8", errors="replace")
         if result.returncode == 0:
             os.environ["GITHUB_ACCESS_TOKEN"] = result.stdout.strip()
             return True

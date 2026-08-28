@@ -12,18 +12,16 @@ Référence : Conway, J.H. — *On Numbers and Games* (2001).
 
 ## Statut
 
-- **Toolchain** : `leanprover/lean4:v4.31.0-rc1` (suit le dépôt amont)
+- **Toolchain** : `leanprover/lean4:v4.31.0-rc2` (suit le dépôt amont, pin effectif du `lean-toolchain`)
 - **Sorry** : **0** — le fichier est une visite de `#check` et de docstrings, aucune preuve
 - **Build** : `lake build CGTTour` (dépend de Mathlib4 + CombinatorialGames)
 - **Dépendances** :
   - **Mathlib4** (dernière)
   - **[CombinatorialGames](https://github.com/vihdzp/combinatorial-games)** (Apache-2.0) — Violeta Hernandez Palacios
-- **Couverture i18n (EPIC #4980)** : la visite `CGTTour.lean` est un fichier de présentation
-  (un seul module `CGTTour`) qui **n'a pas de sibling `_en.lean`** — c'est un tour en anglais par
-  conception, aucun namespace à dédoubler (`namespace CGTTour` est top-level unique). La
-  documentation est bilingue : `README.md` (FR canonique) + `README.en.md` (mirror). Pour les
-  projets multi-modules ayant besoin d'un sibling `_en`, voir la convention Option A ratifiée
-  2026-07-04 (cf `code-style.md` §Lean i18n).
+- **Couverture i18n (EPIC #4980)** : la visite existe en paire FR/EN — `CGTTour.lean` (canonical,
+  cible de la PR pilote #1 de l'inventaire I18N Lean, tranche 2) + `CGTTour_en.lean` (sibling
+  Pattern A, namespace `_en`). La documentation est bilingue : `README.md` (FR canonique) +
+  `README.en.md` (mirror). Convention Option A ratifiée 2026-07-04 (cf `code-style.md` §Lean i18n).
 
 ## Pourquoi ce dépôt existe — retrait de la TJC de Mathlib
 
@@ -100,9 +98,10 @@ flowchart TD
 
 ## Modules
 
-| Fichier | Lignes | Contenu |
-|---------|--------|---------|
-| `CGTTour.lean` | 169 | Importe les modules amont `CombinatorialGames.*` et visite leurs types/instances/théorèmes clés via `#check` + docstrings (`IGame`/`Game`, `Surreal` + théorème de simplicité, `Nimber` + Sprague-Grundy), avec un tableau comparatif Mathlib-vs-amont. |
+| Fichier | Contenu |
+|---------|---------|
+| `CGTTour.lean` | Importe les modules amont `CombinatorialGames.*` et visite leurs types/instances/théorèmes clés via `#check` + docstrings (`IGame`/`Game`, `Surreal` + théorème de simplicité, `Nimber` + Sprague-Grundy), avec un tableau comparatif Mathlib-vs-amont. |
+| `CGTTour_en.lean` | Sibling EN (Pattern A, namespace `_en`) — docstrings anglaises, mêmes `#check`. |
 
 ## Build
 
@@ -124,9 +123,8 @@ originale construite au-dessus des résultats importés.
 - **`knot_lean/`** — référence cette visite dans son tableau de dépendances (fondement en théorie des jeux de Conway)
 - **`conway_lean/`** — Conway's Game of Life / Free Will Theorem (l'*autre* série Conway)
 - **Epic #2651** — audit README/structure (série Lean)
-- **EPIC #4980** — i18n Lean harmonisation (Option A sibling pair post-2026-07-04) ; cette
-  visite n'a pas de sibling `_en.lean` (cf Statut ci-dessus) — uniquement `README.md` (FR) +
-  `README.en.md` (mirror EN) pour la documentation.
+- **EPIC #4980** — i18n Lean harmonisation (Option A sibling pair post-2026-07-04) : paire
+  `CGTTour.lean` / `CGTTour_en.lean` + documentation `README.md` (FR) / `README.en.md` (mirror EN).
 
 ## Conclusion
 
