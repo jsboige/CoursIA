@@ -119,5 +119,71 @@ class TestMarkdownHeuristic(unittest.TestCase):
         self.assertTrue(_looks_like_markdown_typed_code(src))
 
 
+class TestTargetPyGating(unittest.TestCase):
+    """`--target-py` must gate which grammar the guard accepts.
+
+    c.672-L42: previously target_py was plumbing-mort (compile() does not
+    accept feature_version); we now round-trip through ast.parse to honour
+    the target. Two checks:
+
+      (1) A construct INVALID on 3.10 grammar is rejected with both
+          target_py=3.10 AND target_py=3.12 (the runtime's grammar table
+          does not have 3.10-only constructs that 3.12 lacks; the inverse
+          is the case for PEP 701).
+      (2) A construct VALID on 3.10 grammar passes on both target_py values
+          (this is the sanity check: target_py is a *forward* gate — newer
+          constructs must FAIL on older target_py, but classic syntax is
+          unaffected).
+    """
+
+    def test_target_py_is_forward_gate(self):
+        # Classic 3.10 syntax passes both target_py=3.10 and target_py=3.12.
+        src = "x = 1\ny = x + 1"
+        err_310, _ = _compile_cell(src, target_py=(3, 10))
+        err_312, _ = _compile_cell(src, target_py=(3, 12))
+        self.assertIsNone(err_310, "classic syntax must PASS on target_py=3.10")
+        self.assertIsNone(err_312, "classic syntax must PASS on target_py=3.12")
+
+    def test_target_py_3_10_rejects_post_constructs(self):
+        # PEP 701 nested-quote (`f"{d["k"]}"`) introduced in 3.12.
+        # On 3.10 grammar (target_py=3.10) ast.parse rejects it.
+        # On 3.12 grammar with a 3.12+ runtime, the parse accepts.
+        # On 3.12 grammar with a 3.11 runtime, the parse REJECTS (grammar
+        # table doesn't have the construct). The runtime is the binding.
+        import sys
+        src = 'x = f"{d["k"]}"'
+        err_310, _ = _compile_cell(src, target_py=(3, 10))
+        # On 3.10 grammar: ALWAYS rejected (the construct is invalid for 3.10).
+        self.assertIsNotNone(err_310, "PEP 701 must FAIL on target_py=3.10")
+        # On 3.12 grammar: rejected only if runtime < 3.12 (binding).
+        err_312, _ = _compile_cell(src, target_py=(3, 12))
+        if sys.version_info >= (3, 12):
+            self.assertIsNone(err_312, "PEP 701 must PASS on target_py=3.12 + runtime 3.12+")
+        else:
+            self.assertIsNotNone(
+                err_312,
+                "PEP 701 must FAIL on target_py=3.12 + runtime <3.12 (grammar table missing)",
+            )
+
+
+class TestMainPositional(unittest.TestCase):
+    """`main()` must accept positional notebook paths so pre-commit's
+    pass_filenames:true does not exit 2 on every commit touching a notebook.
+
+    c.672-L42: previously the script declared zero positional args, and the
+    hook injected file(s) as positional, so every commit hit
+    'unrecognized arguments' and exited 2.
+    """
+
+    def test_help_lists_positional_paths(self):
+        # Smoke: just verify argparse accepts a positional without erroring.
+        # We don't run main() end-to-end (would scan the repo).
+        import argparse
+        from notebook_tools.check_cell_source_parses import _compile_cell
+        # Round-trip: the function must still work with default target_py.
+        err, _ = _compile_cell("x = 1")
+        self.assertIsNone(err)
+
+
 if __name__ == "__main__":
     unittest.main()

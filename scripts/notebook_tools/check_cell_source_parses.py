@@ -113,18 +113,29 @@ def _compile_cell(src: str, target_py: Tuple[int, int] = (3, 10)) -> Tuple[Optio
     Uses ast.PyCF_ALLOW_TOP_LEVEL_AWAIT so that `x = await foo()` (legal in
     Jupyter, instance #13326 control #1) does not false-positive. PEP 701
     nested-quote f-strings (`print(f"{d["k"]}")`) parse on 3.12+ only --
-    target_py gates which constructs the guard considers valid.
+    target_py gates which constructs the guard considers valid via
+    `ast.parse(feature_version=target_py)`.
 
-    Caveat on PEP 701: the parsing behaviour is bound to the *runtime*
-    interpreter, not just the version tuple. A guard running on 3.11 cannot
-    recognise 3.12 constructs even with --target-py 3.12 -- the runtime is
-    the binding. The intended workflow is: the CI runner is 3.12+ when a
-    notebook uses PEP 701, and the guard then runs natively with --target-py
-    3.12. A 3.11 worker scanning a 3.12 notebook sees false positives; that
-    is a deployment choice, not a guard defect."""
+    Caveat on PEP 701: feature_version gates *syntactic* acceptance but the
+    parser itself is bound to the runtime's grammar tables. On a 3.11
+    runtime with --target-py 3.12 the parse succeeds (feature_version
+    accepts 3.12 grammar) but constructs introduced post-3.11 that require
+    a 3.12+ grammar table still fail. The intended workflow: the CI runner
+    is 3.12+ when a notebook uses PEP 701, and the guard runs natively
+    with --target-py 3.12; no false positives. (c.672-L42 fix: previously
+    target_py was plumbing-mort.)
+
+    Note: `compile()` builtin has no `_feature_version` arg, so we use
+    `ast.parse(...)` followed by `compile(ast_module, ...)` to honour the
+    target version. Both `ast.PyCF_ALLOW_TOP_LEVEL_AWAIT` and
+    `feature_version` apply; PEP 701 accepts the former on any runtime.
+    """
     cleaned = _strip_ipython_magics(src)
     try:
-        compile(cleaned, "<cell>", "exec", flags=ast.PyCF_ALLOW_TOP_LEVEL_AWAIT)
+        # Round-trip via ast.parse to honour feature_version, then compile
+        # the AST (top-level expressions need exec mode on an Expression).
+        mod = ast.parse(cleaned, "<cell>", "exec", feature_version=target_py)
+        compile(mod, "<cell>", "exec", flags=ast.PyCF_ALLOW_TOP_LEVEL_AWAIT)
         return None, cleaned
     except SyntaxError as e:
         return e, cleaned
@@ -215,8 +226,15 @@ def _iter_python_notebooks(roots: List[Path]) -> Iterable[Path]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("paths", nargs="*", type=Path, default=[],
+                        help="Notebook(s) to scan. If omitted, scan the whole "
+                             "repo (default). pre-commit's pass_filenames:true "
+                             "injects the staged file(s) as positional args; "
+                             "without this, every commit touching a .ipynb "
+                             "would exit 2 on 'unrecognized arguments' "
+                             "(c.672-L42 fix).")
     parser.add_argument("--path", type=Path, default=None,
-                        help="Single notebook to scan")
+                        help="Single notebook to scan (exclusive with positional `paths`)")
     parser.add_argument("--pr-diff", nargs=2, metavar=("BASE", "HEAD"), default=None,
                         help="Scan only notebooks modified between BASE and HEAD")
     parser.add_argument("--target-py", default="3.10",
@@ -233,8 +251,13 @@ def main() -> int:
         print(f"invalid --target-py {args.target_py!r}; expected X.Y", file=sys.stderr)
         return 2
 
+    if args.path and args.paths:
+        print("error: --path is exclusive with positional `paths`", file=sys.stderr)
+        return 2
     if args.path:
         paths = [args.path]
+    elif args.paths:
+        paths = [p for p in args.paths if p.exists()]
     elif args.pr_diff:
         names = _diff_range(args.pr_diff[0], args.pr_diff[1])
         paths = _cells_touched_by_pr(names)
