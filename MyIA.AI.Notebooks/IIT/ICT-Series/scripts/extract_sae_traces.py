@@ -455,11 +455,32 @@ def fetch_sae_config(sae_repo: str) -> dict:
     }
 
 
+def normalize_w_dec(w_dec: torch.Tensor, w_enc: torch.Tensor) -> torch.Tensor:
+    """Normalise W_dec vers [d_sae, d_model] (lignes = features), #12940.
+
+    Layout heterogene des releases : les checkpoints W32K (1.7B et 2B,
+    verifies firsthand) stockent W_dec [d_model, d_sae] ; les autres
+    [d_sae, d_model]. Sans normalisation, l'indexation ``W_dec[clamp_ids]``
+    du hook de clamp designe des LIGNES du residual stream (0..d_model-1)
+    au lieu des directions decodees des features visees — IndexError si un
+    clamp_id depasse d_model, silencieusement faux sinon. d_model se deduit
+    de W_enc [d_sae, d_model] ; la normalisation est non ambigue car
+    d_model != d_sae sur toutes les releases visees. Meme correctif que
+    ``extract_sae_fidelity.py`` (PR #12938).
+    """
+    d_model = w_enc.shape[1]
+    if w_dec.shape[0] == d_model:
+        return w_dec.t().contiguous()
+    return w_dec
+
+
 def load_sae(sae_repo: str, layer: int, device: torch.device):
     """Telecharge et charge le checkpoint SAE de la couche demandee.
 
     Convention Qwen-Scope (app.py officiel) : dict avec W_enc [d_sae, d_model],
-    b_enc [d_sae] (+ W_dec/b_dec pour la reconstruction/le clamp)."""
+    b_enc [d_sae] (+ W_dec/b_dec pour la reconstruction/le clamp). W_dec est
+    rendu en [d_sae, d_model] quelle que soit la release (cf
+    :func:`normalize_w_dec`, #12940) — l'indexation par feature est garantie."""
     from huggingface_hub import hf_hub_download
     path = hf_hub_download(sae_repo, f"layer{layer}.sae.pt")
     sae = torch.load(path, map_location="cpu", weights_only=True)
@@ -469,7 +490,7 @@ def load_sae(sae_repo: str, layer: int, device: torch.device):
     b_enc = sae["b_enc"].to(torch.float32)          # [d_sae]
     w_dec = sae.get("W_dec")
     if w_dec is not None:
-        w_dec = w_dec.to(torch.float32)
+        w_dec = normalize_w_dec(w_dec.to(torch.float32), w_enc)
     return {"W_enc": w_enc, "b_enc": b_enc, "W_dec": w_dec, "path": path}
 
 
@@ -518,7 +539,10 @@ class ResidCapture:
         self.hidden = out.detach()[0].to(torch.float32).cpu()      # [T, d]
         if not self.clamp_ids:
             return output
-        # Clamp causal : h' = h - somme_i acts_i * W_dec[i]  (features forcees a 0)
+        # Clamp causal : h' = h - somme_i acts_i * W_dec[i]  (features forcees a 0).
+        # W_dec est garanti [d_sae, d_model] par load_sae/normalize_w_dec
+        # (#12940) : indexer par clamp_ids (features) y designe les directions
+        # decodees, pas des lignes du residual stream.
         h32 = out.detach().to(torch.float32).cpu()                 # [B, T, d]
         w_enc = self.sae["W_enc"][self.clamp_ids]                  # [C, d]
         b_enc = self.sae["b_enc"][self.clamp_ids]                  # [C]

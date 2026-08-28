@@ -66,7 +66,7 @@ def check_command(cmd, name, version_flag="--version"):
             result = subprocess.run(
                 ["bash", "-c", bash_cmd],
                 capture_output=True,
-                text=True,
+                text=True, encoding="utf-8", errors="replace",
                 timeout=10
             )
             if result.returncode == 0:
@@ -83,7 +83,7 @@ def check_command(cmd, name, version_flag="--version"):
             result = subprocess.run(
                 [cmd, version_flag],
                 capture_output=True,
-                text=True,
+                text=True, encoding="utf-8", errors="replace",
                 timeout=5
             )
             version = result.stdout.strip().split('\n')[0]
@@ -118,7 +118,7 @@ def check_jupyter_kernel(kernel_name):
         result = subprocess.run(
             ["jupyter", "kernelspec", "list"],
             capture_output=True,
-            text=True,
+            text=True, encoding="utf-8", errors="replace",
             timeout=10
         )
         if kernel_name.lower() in result.stdout.lower():
