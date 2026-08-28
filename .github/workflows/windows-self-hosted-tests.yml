@@ -34,7 +34,7 @@ jobs:
       # CONTROLE NEGATIF DE FORK (acceptance D item 2, #12704 -- mission ai-01
       # 2026-08-28T14:33Z, ordre strict item 2) : simulation PAR PAYLOAD de
       # l'evenement fork, executee sur le runner. Le garde canonique vit dans
-      # l'expression YAML du job (PR #13382) ; cette sonde prouve sa SEMANTIQUE
+      # l'expression YAML du job (PR #13387) ; cette sonde prouve sa SEMANTIQUE
       # sur les trois classes de payload -- fork refuse, same-repo et non-PR
       # autorises. Auto-tranchante : un payload fork autorise a tort = run rouge.
       # Version de BRANCHE jetable : jamais merger.
