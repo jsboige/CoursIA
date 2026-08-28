@@ -148,6 +148,31 @@ def _scan_machine_paths(data: dict) -> list[tuple[int, str]]:
     return hits
 
 
+def _forensic_row(forensic: dict) -> tuple[str, str, str, str]:
+    """Ligne d'instrument forensique. La branche PASS doit decrire la realite,
+    pas la tolerer en silence : EXEC_PROVED = outputs reels commites ;
+    ADVISORY_NON_EXEC = non execute localement (exception QC Cloud/Lean H.3) —
+    une signature editoriale ne se lit pas pareil sur les deux (pilote #11259,
+    QC-Py-02)."""
+    f_err = forensic.get("errors", [])
+    if f_err:
+        return ("Exécution forensique (H.1/H.3)", "WARN",
+                f"{len(f_err)} anomalie(s) : " + " ; ".join(f_err[:3]),
+                "validate_pr_notebooks.py")
+    fv = forensic.get("forensic_verdict", "EXEC_PROVED")
+    n = forensic["total_code"]
+    if fv == "ADVISORY_NON_EXEC":
+        mesure = (f"{n} cellules code, NON exécutées localement "
+                  "(exception QC Cloud/Lean tolérée H.3) — signature sur structure, "
+                  "aucun output commité")
+    elif fv == "PII_NO_OUTPUT":
+        mesure = (f"{n} cellules code, outputs vides À DESSEIN "
+                  "(protection données, PII_NO_OUTPUT)")
+    else:
+        mesure = f"{n} cellules code, exec_count + outputs cohérents (EXEC_PROVED)"
+    return ("Exécution forensique (H.1/H.3)", "PASS", mesure, "validate_pr_notebooks.py")
+
+
 def generate(nb_path: Path) -> str:
     rel_posix = str(nb_path.relative_to(REPO_ROOT)).replace("\\", "/")
     rel_from_notebooks = nb_path.relative_to(REPO_ROOT / "MyIA.AI.Notebooks").as_posix() \
@@ -205,12 +230,7 @@ def generate(nb_path: Path) -> str:
 
     rows = []
     f_err = forensic.get("errors", [])
-    if f_err:
-        rows.append(("Exécution forensique (H.1/H.3)", "WARN",
-                     f"{len(f_err)} anomalie(s) : " + " ; ".join(f_err[:3]), "validate_pr_notebooks.py"))
-    else:
-        rows.append(("Exécution forensique (H.1/H.3)", "PASS",
-                     f"{forensic['total_code']} cellules code, exec_count + outputs cohérents", "validate_pr_notebooks.py"))
+    rows.append(_forensic_row(forensic))
 
     if dv is None:
         rows.append(("Densité pédagogique", "WARN", "non mesurable (0 cellule code ou JSON illisible)", "pedagogy_density.py"))

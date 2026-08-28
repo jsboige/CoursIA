@@ -1186,6 +1186,58 @@ def test_coord_override_leve_aussi_le_state_changes_requested():
     assert mod.analyse(data, [], MERGED)["blocked"] is False
 
 
+# --- #13030 : OVERRIDE POSE vs CITE -------------------------------------------
+# L'incident #12872 : le rapport de la lane qui DOCUMENTAIT l'option
+# « (b) `[OVERRIDE] lane x` par ai-01 » a eteint deux reserves BOT-CONCERN
+# jamais levees -- la regex ancre-less matchait dans le backtick, le gate
+# passait rc=0 sans que rien ne le signale. Un override fantome SOUS-bloque
+# (inverse exact du [CLAIMED] fantome qui sur-bloque). Le marqueur doit
+# desormais etre POSE en tete de ligne, hors backticks.
+
+def test_override_pose_canonique_leve():
+    """Controle positif : le marqueur seul en tete de ligne POSE l'override."""
+    lift = {"author": {"login": "myia-ai-01"},
+            "createdAt": "2026-08-18T13:06:34Z",
+            "body": "[OVERRIDE] lane myia-po-2026:CoursIA\n"
+                    "Levée de la réserve Hermes du 2026-08-17, points "
+                    "reportés sur #11058."}
+    assert run_coord([lift])["blocked"] is False
+
+
+def test_override_cite_dans_backtick_ne_leve_pas():
+    """Le cas EXACT de #12872 : une option documentee entre backticks dans
+    une puce ne pose PAS l'override -- le rapport qui explique que la
+    decision revient a ai-01 ne doit pas l'exercer."""
+    cited = {"author": {"login": "jsboige"},
+             "createdAt": "2026-08-25T17:38:05Z",
+             "body": "Options :\n"
+                     "- **(a)** attendre la re-review ;\n"
+                     "- **(b)** `[OVERRIDE] lane myia-po-2024:CoursIA-2` "
+                     "par ai-01 (commentaire sur cette PR) ;\n"
+                     "La lane ne peut pas lever ces 2 nits elle-meme."}
+    assert run_coord([cited])["blocked"] is True
+
+
+def test_override_cite_milieu_de_phrase_ne_leve_pas():
+    """« Le marqueur [OVERRIDE] lane x sert a ... » = documentation, pas acte."""
+    doc = {"author": {"login": "jsboige"},
+           "createdAt": "2026-08-26T00:00:00Z",
+           "body": "Le marqueur [OVERRIDE] lane x sert a arbitrer une "
+                   "reserve ; il doit etre pose en tete de ligne."}
+    assert run_coord([doc])["blocked"] is True
+
+
+def test_override_pose_apres_decor_leve():
+    """Non-regression #10906 (famille _DECOR de check_lane_claim) : un
+    override dans un blockquote / puce / heading reste POSE -- la tolerance
+    de decoration ne doit pas voider les formes legitimes de la flotte."""
+    quoted = {"author": {"login": "myia-ai-01"},
+              "createdAt": "2026-08-18T13:06:34Z",
+              "body": "> [OVERRIDE] lane myia-po-2026:CoursIA\n"
+                      "> Levée de la réserve Hermes, reportée sur #11058."}
+    assert run_coord([quoted])["blocked"] is False
+
+
 # --- #11677 : check_unaddressed_nits classe une review APPROVED en BOT-CONCERN
 # L'etat natif GitHub n'etait pas cable pour les reviews APPROVED (la branche
 # CHANGES_REQUESTED etait la seule symetrique documentee). 4 changes minimaux :
@@ -1983,3 +2035,187 @@ def test_12335_date_changerequested_reste_live():
         "L'agent n'a pas repondu depuis."
     )
     assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+# ---------------------------------------------------------------------------
+# #13083 — le BLOCAGE coordinateur, symetrique non traite de #11639. L'organe
+# modelisait un coordinateur qui LEVE (trappe [OVERRIDE] lane), pas un qui
+# BLOQUE. Mesure du 2026-08-26 : `**BLOCAGE MERGE (ai-01)**` sur #12942/#12946
+# -> classify None -> gate OK (controle de l'instrument). Le blur : « avant TOUT
+# merge » rate la sous-chaine « avant merge » — un marqueur structure ne se
+# rate pas par un adverbe. Le fix : marqueur `[BLOCAGE] lane` / `[BLOCK] lane`
+# pose en tete de ligne (forme stricte #13030) + verdict BLOCAGE/BLOCK en tete
+# de corps ; kind "BLOCK" distinct et levée strictement encadree (jamais par
+# l'auteur de la PR, jamais par un compte qui emet et est auteur de la PR —
+# self-review cap #12319 —, seulement par l'arbitrage ecrit [OVERRIDE] lane ou
+# l'emetteur reel hors self-cap, ou sa re-review APPROVED).
+# ---------------------------------------------------------------------------
+
+
+def test_13083_prose_blocage_reelle_est_vue():
+    """#13083 critere 1 (controle positif) : la prose REELLE du blocage
+    (commentaire 2026-08-26 sur #12942, non modifie) sort le gate du silence.
+    Avant le fix : classify -> None (« avant merge » rate par le « tout »
+    intercale dans « avant tout merge ») et le gate rendait OK. Apres : le
+    verdict BLOCAGE en tete du corps est un signal BLOCK a part entiere."""
+    body = ("**BLOCAGE MERGE (ai-01)** — defaut de **chemin**, pas de substance. "
+            "Le travail scientifique est bon et je ne demande rien dessus ; c'est "
+            "un `git mv` qui separe cette PR du merge. (Poste en commentaire : "
+            "GitHub refuse `--request-changes` sur une PR du compte actif — le "
+            "blocage vaut au titre de B.0, il doit etre leve par une phrase "
+            "avant tout merge.)")
+    assert mod.classify("myia-ai-01", body) == "BLOCK"
+
+
+def test_13083_marqueur_structurel_ne_se_rate_pas_par_un_adverbe():
+    """#13083 — le besoin STRUCTUREL de l'issue en toutes lettres : le marqueur
+    `[BLOCAGE] lane` ne depend d'aucune sous-chaine, donc d'aucun mot intercale.
+    Peu importe la phrase qui suit, le marqueur pose le signal."""
+    body = ("[BLOCAGE] lane myia-ai-01:CoursIA — il doit etre leve par une "
+            "phrase avant tout merge, n'importe quelle phrase.")
+    assert mod.classify("myia-ai-01", body) == "BLOCK"
+    body_en = ("[BLOCK] lane myia-ai-01:CoursIA — path defect, must be fixed "
+               "before any merge.")
+    assert mod.classify("myia-ai-01", body_en) == "BLOCK"
+
+
+def test_13083_blocage_lane_non_levable_par_l_auteur_pr():
+    """#13083 critere 2 : un `[BLOCAGE] lane` pose par un coordinateur ne se
+    leve pas par une phrase de levee de l'auteur de la PR — la borne d'auteur
+    #11145/#12836 tient mot pour mot pour un blocage (documenter un fix n'est
+    pas confirmer a la place de celui qui bloque)."""
+    blocage = {"author": {"login": "myia-ai-01"}, "createdAt": at(10),
+               "body": "[BLOCAGE] lane myia-ai-01:CoursIA — le chemin est mauvais, "
+                       "il doit etre leve par une phrase avant tout merge."}
+    author_lift = {"author": {"login": "jsboige"}, "createdAt": at(12),
+                   "body": "Les 2 points sont adresses : chemin corrige, commit abc."}
+    assert run([blocage, author_lift])["blocked"] is True
+
+
+def test_13083_blocage_lane_self_cap_non_levable_par_le_meme_compte():
+    """#13083 critere 2, cas severe : blocage POSE et PR AUTHOR sur le MEME
+    compte jsboige (self-review cap #12319). La borne d'auteur #11145 est alors
+    vacue (nit_author == pr_author == "jsboige") — sans le garde dedie, une
+    phrase de levee du compte pr leverait son PROPRE blocage. Seul l'arbitrage
+    ecrit le leve (cf test suivant)."""
+    blocage = {"author": {"login": "jsboige"}, "createdAt": at(10),
+               "body": "[BLOCAGE] lane myia-ai-01:CoursIA — chemin mauvais."}
+    self_lift = {"author": {"login": "jsboige"}, "createdAt": at(12),
+                 "body": "Les 2 points sont adresses : chemin corrige."}
+    assert run([blocage, self_lift])["blocked"] is True
+
+
+def test_13083_override_lane_leve_le_blocage():
+    """#13083 critere 3 : un `[OVERRIDE] lane` posterieur d'un coordinateur
+    leve le blocage qu'il arbitre — la mecanique #11639, coherence #13030.
+    Le blocage est pose par un worker (lane CoursIA-2), l'arbitrage par ai-01."""
+    blocage = {"author": {"login": "myia-po-2023"}, "createdAt": at(10),
+               "body": "[BLOCK] lane myia-po-2023:CoursIA-2 — l'arbre est sale, "
+                       "pas de merge tant que le drift n'est pas regle."}
+    override = {"author": {"login": "myia-ai-01"}, "createdAt": at(12),
+                "body": OVERRIDE_BODY}
+    assert run([blocage, override])["blocked"] is False
+
+
+def test_13083_emetteur_hors_self_cap_leve_son_blocage():
+    """#13083 — le pendant de l'issue (« seulement par son emetteur ») :
+    l'emetteur dont le compte est DISTINCT de l'auteur de la PR leve son propre
+    blocage par une phrase de levee — borne d'auteur standard, rien de plus."""
+    blocage = {"author": {"login": "myia-ai-01"}, "createdAt": at(10),
+               "body": "[BLOCAGE] lane myia-ai-01:CoursIA — chemin mauvais."}
+    emetter_lift = {"author": {"login": "myia-ai-01"}, "createdAt": at(12),
+                    "body": "Levee de mon blocage : chemin corrige, commit abc."}
+    assert run([blocage, emetter_lift])["blocked"] is False
+
+
+def test_13083_marqueur_cite_ne_pose_pas():
+    """#13083 garde-fou (forme #13030) : citer `[BLOCAGE] lane x` en liste ou
+    en backticks ne POSE pas le marqueur — un geste qui documente le mecanisme
+    ne bloque pas le merge (le miroir exacter du desarmement #13030, cote
+    sur-blocage cette fois)."""
+    body = ("- **(b)** `[BLOCAGE] lane myia-po-2023:CoursIA-2` serait le marqueur "
+            "(discussion de design).")
+    assert mod.classify("myia-ai-01", body) is None
+
+
+def test_13083_puce_etoile_ne_pose_pas():
+    """#13083 garde-fou (comment Hermes, PR #13093) : `* [BLOCAGE] lane x` en
+    liste a puces markdown ne POSE pas — l'etoile de deco n'est PAS dans
+    l'ancrage `^\\s*` (seule l'indentation est toleree). La forme verdict-gras
+    `**BLOCAGE ...**` reste couverte par la 2e branche de _block_emitted."""
+    body = ("* [BLOCAGE] lane myia-po-2023:CoursIA-2 — liste a puces, "
+            "documentation du mecanisme, pas un blocage.")
+    assert mod.classify("myia-ai-01", body) is None
+
+
+def test_13083_negation_immediate_ne_declenche_pas():
+    """#13083 garde-fou : « Pas de blocage de ma part » ne pose rien — le citer
+    « pas de » neutralise l'occurrence (meme hygiene `_is_cited` que les
+    CONCERN_MARKERS)."""
+    assert mod.classify("myia-ai-01", "Pas de blocage de ma part, LGTM.") is None
+    assert mod.classify("myia-ai-01", "No block from my side.") is None
+
+
+def test_13083_narration_pas_un_blocage_en_section_ne_declenche_pas():
+    """#13083 borne de la position : la narration « pas un blocage » vit en
+    SECTION (hors 60 premiers chars) — elle ne declare rien, et le registre du
+    nit (« a changer », en tete de corps) reste, lui, detecte (BOT-CONCERN,
+    fixture #11190 inchangee)."""
+    body = ("Une seule chose a changer — une ligne.\n\n"
+            "Contexte de la veille, paragraphe de remplissage de reserve.\n\n"
+            "## Ce qui reste — pas un blocage, c'est le grain suivant.")
+    assert mod.classify("myia-ai-01", body) == "BOT-CONCERN"
+
+
+def test_13083_blocage_dans_un_verdict_mention_ne_declenche_pas():
+    """#13083 garde-fou : un verdict positif (APPROVE) qui nomme le BLOCAGE
+    d'un autre cycle dans sa narration reste positif — la mention « leve par »
+    (pattern #11809, reference pointable) neutralise l'occurrence."""
+    body = ("APPROVE — le BLOCAGE leve par le commit 06956bd0a, chemin corrige. "
+            "**Mergée.**")
+    assert mod.classify("myia-ai-01", body) is None
+
+
+def test_13083_override_naturel_nommant_le_blocage_ne_rebloque_pas():
+    """#13083 correctif preflight ADJOINT (po-2025, 2026-08-26), borne A : un
+    override NATUREL « [OVERRIDE] lane x — Blocage leve par override » etait
+    reclasse BLOCK avant l'etage de levee — mesure pre-fix : classify='BLOCK',
+    le post d'arbitrage devenait lui-meme un signal bloquant. L'arbitrage est
+    l'etage superieur du protocole (#11639) : pose en tete, il n'emet jamais."""
+    body = ("[OVERRIDE] lane myia-ai-01:CoursIA — Blocage leve par override, "
+            "chemin corrige.")
+    assert mod._block_emitted(body) is False
+    assert mod.classify("myia-ai-01", body) is None
+
+
+def test_13083_mention_blocage_leve_en_tete_ne_pose_pas():
+    """#13083 correctif preflight ADJOINT, borne B : « Blocage leve par
+    override » SANS marqueur [OVERRIDE] — l'occurrence est le COMPLEMENT d'une
+    levee (mention #11636), pas une emission. Miroir post-fenetre de _is_cited
+    (qui ne regarde que les 30 chars AVANT l'occurrence)."""
+    assert mod.classify("myia-ai-01",
+                        "Blocage leve par override : chemin corrige.") is None
+    assert mod.classify("myia-ai-01", "Blocage levee.") is None
+    assert mod.classify("myia-ai-01",
+                        "BLOCK lifted by override, path fixed.") is None
+
+
+def test_13083_override_naturel_seul_ne_bloque_pas_la_pr():
+    """#13083 correctif preflight ADJOINT, niveau organe : sur une PR SANS
+    blocage prealable, l'override naturel d'un coordinateur (arbitrage d'un
+    nit ordinaire) ne doit pas BLOQUER la PR. Mesure pre-fix : blocked=True sur
+    le seul post d'arbitrage — le coordinateur bloquait la PR en la debloquant."""
+    override = {"author": {"login": "myia-ai-01"}, "createdAt": at(12),
+                "body": "[OVERRIDE] lane myia-ai-01:CoursIA — Blocage leve "
+                        "par override, chemin corrige."}
+    assert run([override])["blocked"] is False
+
+
+def test_13083_blocage_reel_conditionnel_a_un_override_reste_block():
+    """#13083 garde-fou du correctif preflight : un VRAI blocage dont la prose
+    nomme l'override ATTENDU (« tant que [OVERRIDE] lane n'est pas pose »)
+    reste un blocage — la borne A ne desarme que le post qui COMMENCE par
+    l'arbitrage, jamais celui qui commence par le verdict BLOCAGE."""
+    body = ("**BLOCAGE MERGE (ai-01)** — pas de merge tant que [OVERRIDE] lane "
+            "n'est pas pose par le coordinateur.")
+    assert mod.classify("myia-ai-01", body) == "BLOCK"
