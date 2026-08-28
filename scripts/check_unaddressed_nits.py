@@ -412,7 +412,13 @@ _MENTION_VERDICT = re.compile(
     # adresse) porte deja la semantique de mention, et le verdict est
     # encapsule entre parentheses — donc le caractere distinctif (verdict
     # declare) est absent, c'est une mention par construction.
-    r"[^()\n]{0,40}\(\s*([A-Z][A-Z_]{3,})[^()\n]{0,80}\)")
+    # `(?-i:)` sur le verdict : sans lui, le `(?i)` global fait que
+    # `[A-Z][A-Z_]{3,}` capture aussi un mot minuscule (`commit`) dans la
+    # parenthese — et `[^()\n]{0,80}` apres (Position A+) transforme ce
+    # faux match en neutralisation de `commit` au lieu du verdict (2 FAIL
+    # tests #11809 mesures en CI, 2026-08-28). Même discriminant case-
+    # sensitive que la Position D.
+    r"[^()\n]{0,40}\(\s*((?-i:[A-Z][A-Z_]{3,}))[^()\n]{0,80}\)")
 
 # #12311 (cf grain) — Position A : titre de section. Le pattern historique
 # (`[A-Z]{4,}` puis `[A-Z][A-Z_]{2,}[A-Z]`) neutralisait en sous-chaine les
