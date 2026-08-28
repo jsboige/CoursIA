@@ -189,7 +189,7 @@ Là où Vibe-Coding montre les *front-ends* d'agents, cette section documente la
 
 ### Plateformes-Conversationnelles - Interfaces GenAI conversationnelles
 
-Cette catégorie regroupe les **plateformes GenAI réelles** qui apportent une couche de conversation par-dessus les modèles : **Open WebUI** (serveur auto-hébergé multi-tenant, avec son tour guidé et la série QA **Playwright-OWUI** de tests de bout en bout) et **AI-Engine** (extension WordPress, chatbots + Copilot Gutenberg + RAG + WordPress comme serveur MCP). Un [comparatif](Plateformes-Conversationnelles/comparatif-owui-vs-ai-engine.md) vit au niveau catégorie pour aider à choisir selon le terrain.
+Cette catégorie regroupe les **plateformes GenAI réelles** qui apportent une couche de conversation par-dessus les modèles : **Open WebUI** (serveur auto-hébergé multi-tenant, avec son tour guidé et la série QA **Playwright-OWUI** de tests de bout en bout) et **AI-Engine** (extension WordPress, chatbots + Copilot Gutenberg + RAG + WordPress comme serveur MCP). Un [comparatif](Plateformes-Conversationnelles/AI-Engine-WordPress/02-Comparatif/comparatif-owui-vs-ai-engine.md) aide à choisir selon le terrain.
 
 ### CaseStudies - Projets étudiants
 

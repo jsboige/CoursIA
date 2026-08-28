@@ -43,6 +43,7 @@ concurrency:
 
 jobs:
     machine-dep-timing:
+        name: machine-dep-timing (advisory)
         runs-on: ubuntu-latest
         permissions:
             pull-requests: write
@@ -51,6 +52,7 @@ jobs:
               uses: actions/checkout@v4
               with:
                   fetch-depth: 0
+                  filter: blob:none
 
             - name: Set up Python
               uses: actions/setup-python@v5

@@ -42,6 +42,7 @@ jobs:
           # completes (sinon le diff est vide et l'advisory short-circuit en
           # "no .ipynb changed" sur toute PR ; cf. finding NanoClaw #11668).
           fetch-depth: 0
+          filter: blob:none
 
       - uses: actions/setup-python@v5
         with:

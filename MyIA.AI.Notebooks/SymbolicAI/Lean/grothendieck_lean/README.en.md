@@ -22,7 +22,7 @@ formalize EGA/SGA. The goal is to give learners a curated entry point into:
 
 ## The arc
 
-The **55 leaf modules** (0 `sorry`, 0 axiom added) trace a coherent path, from
+The **58 leaf modules** (0 `sorry`, 0 axiom added) trace a coherent path, from
 the raw site up to cohomology:
 
 ```mermaid
@@ -71,7 +71,9 @@ is its measuring instrument.
 3) tie the tour back to the original algebraic geometry, with the bridge
 theorem `zariski_topology_eq`. On the library side, the Mathlib map (Part 4,
 a `#check` index) states honestly what exists and what is missing, and
-`Calibration.lean` (Part 5) feeds the prover harness (Epic #1453).
+`Calibration.lean` (Part 5) reuses the prover harness calibration taxonomy
+(Epic #1453, P1-P4) without being consumed by it: the harness's live targets
+live in `calibration_lean/` (HARNESS class, boundary arbitrated in #13212).
 
 **The categorical foundations** (Parts 24-32). Yoneda, adjunctions, monads,
 comma categories, (co)limits, equivalences, Kan extensions, monoidal
@@ -85,22 +87,22 @@ missing link between `f^*` and `f_*`. In parallel, the *covering* program
 (Phase 5 of Epic #2159, waves 2026-08-14..16: #10879 → #11244) systematizes
 the arrow and bundled forms of the covering — from `covers_comp_iff` to the
 arrow form of the dense topology (Part 44), through the pullback pseudofunctor
-laws and the lattice of topologies. A third vein opens with `Classifier.lean` (Part 58, #2159): the **subobject classifier** Ω — literally the presheaf of sieves of Part 6 — which makes presheaves and sheaves of sets over an essentially small site elementary topoi (Lawvere–Tierney).
+laws and the lattice of topologies. A third vein opens with `Classifier.lean` (Part 58, #2159): the **subobject classifier** Ω — literally the presheaf of sieves of Part 6 — which makes presheaves and sheaves of sets over an essentially small site elementary topoi (Lawvere–Tierney). It closes in two steps: `LawvereTierney.lean` (Part 59) installs the closure operator `j` on Ω (three laws + naturality), then `TopologyDictionary.lean` (Part 60) proves the **dictionary** — Grothendieck topologies and Lawvere–Tierney topologies are the same data, the two transports being inverse to each other.
 
 ## Code structure
 
-The formalization spans **55 leaf modules** + **1 umbrella** `Grothendieck.lean`
+The formalization spans **58 leaf modules** + **1 umbrella** `Grothendieck.lean`
 (imports-only, bilingual inline FR/EN). The three `SheafCohomology/`
 sub-modules are Parts 20, 22, and 23 of the table.
 
 | Part | File | `_en` | Content | Lines |
 |------|------|-------|---------|-------|
-| root | `Grothendieck.lean` | (bilingual inline) | **Umbrella root** (imports-only + bilingual FR/EN doctring); imports **all 55 leaves** FR + 8 `_en` siblings (full FR coverage, no module pending — `ExceptionalDirect` imported c.2026-08-15, closing #11286) | 218 |
+| root | `Grothendieck.lean` | (bilingual inline) | **Umbrella root** (imports-only + bilingual FR/EN doctring); imports **all 60 leaves** FR + 11 `_en` siblings (full FR coverage via the umbrella; the 60 EN siblings are compiled by the lakefile `globs` — the umbrella does not import every `_en`; `ExceptionalDirect` imported c.2026-08-15, closing #11286) | 261 |
 | 1 | `Grothendieck/CategoryAndSites.lean` | `CategoryAndSites_en.lean` | Sieves, Grothendieck topologies (trivial/discrete/dense), three axioms | 243 |
 | 2 | `Grothendieck/SchemesTour.lean` | `SchemesTour_en.lean` | Scheme type, Spec functor, Γ, `homeoOfIso`, fully-faithful | 196 |
 | 3 | `Grothendieck/ZariskiSite.lean` | `ZariskiSite_en.lean` | Zariski pretopology, `zariskiTopology_eq` bridge theorem, subcanonical | 139 |
 | 4 | `Grothendieck/MathlibMap.lean` | `MathlibMap_en.lean` | `#check` index of Grothendieck-related Mathlib definitions | 124 |
-| 5 | `Grothendieck/Calibration.lean` | `Calibration_en.lean` | 4 micro-proof targets for the prover harness (Epic #1453) | 95 |
+| 5 | `Grothendieck/Calibration.lean` | `Calibration_en.lean` | 4 micro-proof targets in the spirit of the prover harness (Epic #1453, not consumed by it — cf `calibration_lean/`, boundary #13212) | 95 |
 | 6 | `Grothendieck/SieveLattice.lean` | `SieveLattice_en.lean` | Sieve pullback identities (7): `pullback_id`, `pullback_pullback`, `pullback_bot`, `pullback_monotone`, `pullback_union` (#7895), `pullback_ofObjects`, `mem_iff_pullback_eq_top` | 253 |
 | 7 | `Grothendieck/SheafBasics.lean` | `SheafBasics_en.lean` | Sheaf/separated presheaf basics, sheaf transfer along J₁ ≤ J₂ | 231 |
 | 8 | `Grothendieck/SieveOps.lean` | `SieveOps_en.lean` | Topology ordering, covering closure, sieve composition | 208 |
@@ -151,17 +153,21 @@ sub-modules are Parts 20, 22, and 23 of the table.
 | 56 | `Grothendieck/CoversZariskiArrow.lean` | `CoversZariskiArrow_en.lean` | Arrow form of the **Zariski topology** (first named concrete topology of the series): `covers_iff_zariski` + geometric characterization by open covers `covers_iff_exists_cover` (Phase 5 of #2159, standalone on main) | 233 |
 | 57 | `Grothendieck/CoversAtomicArrow.lean` | `CoversAtomicArrow_en.lean` | Arrow form of the **atomic topology** (`GrothendieckTopology.atomic`, right Ore condition): pointwise bridge `atomic_covering` (the missing analogue of `dense_covering`), `covers_iff_atomic` (central), `covers_atomic_of_mem`, stability `covers_atomic_precomp`, collapses `covers_atomic_id`/`covers_atomic_top` (Phase 5 of #2159) | 159 |
 | 58 | `Grothendieck/Classifier.lean` | `Classifier_en.lean` | **The subobject classifier**: Ω = the presheaf of sieves (`Functor.sieves`), `truth`/`χ`, `Presheaf.classifier`, J-closed sieves (`Sheaf.Ω`), `HasSubobjectClassifier` instances for presheaves + sheaves; 4 own theorems (`truth_picks_top`, `chi_app_mem_iff`, `chi_app_downward_closed`, `chi_app_eq_top_of_app`) (Part 58 of #2159) | 202 |
+| 59 | `Grothendieck/LawvereTierney.lean` | `LawvereTierney_en.lean` | **The Lawvere–Tierney topology**: the closure operator on Ω (`LawvereTierney`), 3 laws (extensivity, idempotence, meet preservation) + naturality under pullback; discrete (`j S = S`) and indiscrete (`j S = ⊤`) topologies, `j_top`/`j_monotone`/`closure_isClosed`, closed sieves of the indiscrete (Part 59 of #2159) | 241 |
+| 60 | `Grothendieck/TopologyDictionary.lean` | `TopologyDictionary_en.lean` | **The Grothendieck ↔ Lawvere–Tierney dictionary**: the closure `jClosure J S = {f | S.pullback f ∈ J}` (direction J → j, `grothendieckToLawvereTierney`), the dense sieves `j S = ⊤` (direction j → J, `lawvereTierneyToGrothendieck`), central bridge `covering_iff_jClosure`, and the **two inverse round-trips** — the frontier declared open by Part 59 ("requires an operator absent from Mathlib v4.32.1") is closed by building it from the raw axioms (Part 60 of #2159) | 328 |
+| 61 | `Grothendieck/SitesComparison.lean` | `SitesComparison_en.lean` | **Continuous functors and the comparison lemma**: the presheaf→sheaf bridge (`sheafPushforwardContinuous`), functoriality (identity, composition — the sheaf-level mirror of `pullback_pullback`), and the induced adjunction on sheaf categories `adjunction_sheafPushforwardContinuous` (**SGA 4 III.1.6**) — adjunctions descend to sheaves without explicit sheafification (Part 61 of #2159) | 158 |
+| 62 | `Grothendieck/PlusConstruction.lean` | `PlusConstruction_en.lean` | **The Plus construction**: the constructive ingredient of the two-pass sheafification (SGA 4 II.3) — functoriality (`plusFunctor`), canonical arrow `toPlus` (naturality), key identity `(P ⟶ P⁺)⁺ = P⁺ ⟶ P⁺⁺`, sheaf fixed point (`isoToPlus`), universal property of the lift (`plusLift`/`plusLift_unique`/`plus_hom_ext`) (Part 62 of #2159) | 196 |
 
 *The `Lines` column counts the **FR file alone**; the `_en` sibling adds
 roughly as much again.*
 
 ## Build & status
 
-- **Toolchain**: `leanprover/lean4:v4.32.0`
-- **Build**: `lake build` (WSL required). The default target (`globs := #[`Grothendieck.*]` in `lakefile.lean`) compiles **all** FR and `_en` modules. Last verified build: 2026-08-18, "Build completed successfully" (47 leaves at that date); the structure has since grown to 55 leaves + 55 `_en` siblings + 1 umbrella (Parts 54, 55a-c, 58 — Phase 5 and the classifier of #2159). `ExceptionalDirect` was imported c.2026-08-15 (#11286 closed).
+- **Toolchain**: `leanprover/lean4:v4.32.1`
+- **Build**: `lake build` (WSL required). The default target (`globs := #[`Grothendieck.*]` in `lakefile.lean`) compiles **all** FR and `_en` modules. Last verified build: 2026-08-28, "Build completed successfully" (merge of Part 60 + Parts 61-62, PR #12718); the structure now counts 60 leaves + 60 `_en` siblings + 1 umbrella (Parts 55a-c, 58-62 of #2159 — the classifier, Lawvere–Tierney topology, dictionary, continuous functors/comparison lemma, Plus construction; `SheafCohomology/` subfolder included). `ExceptionalDirect` was imported c.2026-08-15 (#11286 closed).
 - **Proofs**: **0 `sorry`, 0 axiom added** — every module is complete at creation. (A naive `grep sorry` matches prose mentions in the bilingual docstrings, notably two in `ExceptionalDirect.lean`; CI counts in `real` mode — after comment stripping — and reads 0.)
 - **Dependencies**: Mathlib 4 (via `lakefile.lean`)
-- **i18n** (EPIC #4980, Option A convention ratified 2026-07-04): complete bilingual coverage — **56 FR files** (1 umbrella + 55 canonical leaves) and **55 `_en.lean` siblings**, integral 1:1 ratio, 55/55 (the historical `PullbackFunctor.lean` gap is closed: `PullbackFunctor_en.lean` is present on disk; the earlier prose saying it was missing was stale — found by the Part 56 §E audit, c.2026-08-18). `_en` namespaces anti-collision, non-docstring content byte-identical, CI-detectable. The umbrella is bilingual inline *by design* (FR canonical first, EN mirrored in the same file). **[`README.md`](./README.md)** is the FR canonical sibling of this file. Out-of-scope: `.lake/packages/`, vendored libs.
+- **i18n** (EPIC #4980, Option A convention ratified 2026-07-04): complete bilingual coverage — **61 FR files** (1 umbrella + 60 canonical leaves) and **60 `_en.lean` siblings**, integral 1:1 ratio, 60/60 (the historical `PullbackFunctor.lean` gap is closed: `PullbackFunctor_en.lean` is present on disk; the earlier prose saying it was missing was stale — found by the Part 56 §E audit, c.2026-08-18). `_en` namespaces anti-collision, non-docstring content byte-identical, CI-detectable. The umbrella is bilingual inline *by design* (FR canonical first, EN mirrored in the same file). **[`README.md`](./README.md)** is the FR canonical sibling of this file. Out-of-scope: `.lake/packages/`, vendored libs.
 
 *Coherence note*: the earlier note about a "46/46 discordance + `PullbackFunctor` gap" is obsolete — `PullbackFunctor_en.lean` is present on disk (verified c.2026-08-18) and the FR/`_en` ratio is 1:1. The lakefile `globs` auto-discovers all leaves; the i18n CI checks the target 1:1 ratio.
 
@@ -180,7 +186,7 @@ The language toured here — Grothendieck topologies, sites, sheaves, and scheme
 ## See also
 
 - Epic #1646 (Grothendieck tribute) — Issue #2159 (formalization depth: Phase 1 shipped, Phase 2 = #10357, Phase 5 = Parts 35-44)
-- EPIC #4980 — Lean i18n convention (Option A sibling pair; 55 `_en` pairs in this lake)
+- EPIC #4980 — Lean i18n convention (Option A sibling pair; 59 `_en` pairs in this lake)
 - Epic #1453 (prover harness calibration) — Issue #8960 (reconciling the two `Part` numberings)
 - [#11286](https://github.com/jsboige/CoursIA/issues/11286) — pending umbrella import of `ExceptionalDirect`
 - Conway tribute workspace (`../conway_lean/`) — Lean notebook series (`../README.md`)

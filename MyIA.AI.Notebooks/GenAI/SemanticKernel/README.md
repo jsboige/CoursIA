@@ -35,9 +35,9 @@ Parcours pédagogique complet sur Semantic Kernel en Python :
 | # | Notebook | Description | Durée |
 |---|----------|-------------|-------|
 | 09 | [SK-9-Building-CLR](09-SemanticKernel-Building-CLR.ipynb) | Interop Python/C# via pythonnet, chargement DLL .NET | 40 min |
-| 10 | [SK-10-NotebookMaker](10-SemanticKernel-NotebookMaker.ipynb) | **Système 3-agents** (Admin, Coder, Reviewer) pour génération de notebooks | 60 min |
-| 10a | [SK-10a-NotebookMaker-batch](10a-SemanticKernel-NotebookMaker-batch.ipynb) | Version batch sans UI interactive | 30 min |
-| 10b | [SK-10b-NotebookMaker-batch-param](10b-SemanticKernel-NotebookMaker-batch-parameterized.ipynb) | Version paramétrisée pour Papermill | 30 min |
+| 10 | [SK-10-NotebookMaker](10-SemanticKernel-NotebookMaker.ipynb) | **Système 3-agents** interactif (Admin, Coder, Reviewer) avec function calling | 60 min |
+| 10a | [SK-10a-NotebookMaker-batch](10a-SemanticKernel-NotebookMaker-batch.ipynb) | Version batch avec contexte agentique borné et budget de tours | 30 min |
+| 10b | [SK-10b-NotebookMaker-batch-param](10b-SemanticKernel-NotebookMaker-batch-parameterized.ipynb) | Version batch paramétrée pour Papermill | 30 min |
 
 ## Démos interactives (curriculum)
 
@@ -214,8 +214,9 @@ Les notebooks 01-03 utilisent les APIs stables (`Kernel`, `ChatCompletionAgent`,
 
 Le NotebookMaker (notebook [10](10-SemanticKernel-NotebookMaker.ipynb)) orchestre 3 agents (Admin, Coder, Reviewer) pour générer un notebook. Si le résultat est vide ou incomplet :
 
-- Vérifier que le modèle LLM configuré supporte le function calling (`gpt-4o-mini` minimum, `gpt-4o` recommandé).
-- Le système nécessite 3 à 5 itérations agentiques pour converger. Les versions batch ([10a](10a-SemanticKernel-NotebookMaker-batch.ipynb)) et paramétrisée ([10b](10b-SemanticKernel-NotebookMaker-batch-parameterized.ipynb)) offrent plus de contrôle sur le nombre de tours.
+- Vérifier que le modèle LLM configuré supporte le function calling. Avec un serveur vLLM compatible OpenAI, l'erreur HTTP 400 `"auto" tool choice requires --enable-auto-tool-choice and --tool-call-parser` signifie que le serveur doit être redémarré avec ces deux options et un parseur adapté au modèle ; désactiver les outils empêcherait les agents de modifier et valider le notebook.
+- Si une erreur HTTP 400 signale que la longueur du contexte dépasse la fenêtre du modèle, ne pas réinjecter le notebook brut à chaque tour : ses outputs et métadonnées Papermill s'accumulent dans l'historique. La variante [10a](10a-SemanticKernel-NotebookMaker-batch.ipynb) expose un inventaire JSON compact, permet de relire une cellule ciblée sans les rendus volumineux et conserve un budget explicite de 24 messages agentiques.
+- Le système nécessite généralement 3 à 5 itérations agentiques pour converger. La variante paramétrée [10b](10b-SemanticKernel-NotebookMaker-batch-parameterized.ipynb) permet en plus de piloter la tâche avec Papermill.
 - Les filtres d'observabilité (notebook [04](04-SemanticKernel-Filters-Observability.ipynb)) permettent de tracer chaque échange agentique et diagnostiquer les blocages.
 
 ### Quelle différence entre Semantic Kernel et LangChain ?

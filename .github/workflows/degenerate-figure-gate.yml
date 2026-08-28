@@ -48,13 +48,13 @@ name: Degenerate figure gate
 # See EPIC #3801 (registre axe-2 SOTA / Prong-A), issue #6891 (the 8 QC
 # quantbook degenerate figures), rollout #6927 (SVG inline fleet-wide).
 
+# ABSORBE PAR LA VOIE RAPIDE sur `pull_request` (#12567, tranche 2) : le
+# verdict PR est rendu par `fast-lane-shadow.yml` (check-run nomme
+# `No degenerate figure in changed notebooks`, meme nom que ce job). Ce
+# fichier garde `workflow_dispatch`. Les `paths:` d'origine vivent dans
+# `scripts/ci/fast_lane_registry.py` (TRANCHE2).
+
 on:
-  pull_request:
-    branches: [ main ]
-    paths:
-      - 'MyIA.AI.Notebooks/**/*.ipynb'
-      - 'scripts/notebook_tools/detect_blank_figures.py'
-      - '.github/workflows/degenerate-figure-gate.yml'
   workflow_dispatch:
 
 permissions:
@@ -70,10 +70,19 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # Tranche 2/2 de #12384 (clone partiel, suite c.518 tranche 1/2 #12884
+      # sur regression-guard). Mêmes exigences : graphe complet pour le
+      # `git diff 3-dot` + matérialisation minimale de l'arbre. Filtre
+      # paths: `MyIA.AI.Notebooks/**/*.ipynb` + le détecteur + ce workflow
+      # -> on ne matérialise que `MyIA.AI.Notebooks/` et `scripts/`.
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          filter: blob:none
+          sparse-checkout: |
+            MyIA.AI.Notebooks
+            scripts
 
       - name: Set up Python
         uses: actions/setup-python@v5

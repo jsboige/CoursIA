@@ -1,6 +1,6 @@
 # Préparation des runners GitHub Actions auto-hébergés
 
-Cette page décrit les mesures et les garde-fous du chantier #12704. **Aucun runner n'est enregistré ni activé par cette première tranche.** Le dépôt `jsboige/CoursIA` est public : une PR de fork peut contenir du code non fiable. Toute future exécution auto-hébergée devra donc être réservée aux branches du dépôt lui-même, avec une garde YAML explicite en plus des réglages GitHub.
+Cette page décrit les mesures et les garde-fous du chantier #12704. **État au 2026-08-28 : activation partielle sur po-2024** (runner `fast-guards` live, tool-cache seedé — cf section Provisionnement ; ré-enregistrement sans UAC opérationnel), les autres profils du registre restant en préparation. Le dépôt `jsboige/CoursIA` est public : une PR de fork peut contenir du code non fiable. Toute exécution auto-hébergée reste réservée aux branches du dépôt lui-même, avec une garde YAML explicite en plus des réglages GitHub.
 
 ## Mesurer avant de dimensionner
 
@@ -63,13 +63,158 @@ Avant toute bascule, relever au minimum :
 
 Le détail par workflow sépare la capacité réellement consommée de l'auto-contention. En particulier, le `PR gate` peut occuper un runner pendant qu'il sonde des checks eux-mêmes en file : dimensionner sur la demande brute financerait ce temps d'attente au lieu de le corriger.
 
-## Tranches suivantes, non activées
+## Topologie retenue
+
+`jsboige/CoursIA` appartient à un compte GitHub personnel. Les groupes de runners personnalisés sont réservés aux organisations et ne constituent donc pas une barrière disponible ici. La frontière activable repose sur deux contrôles complémentaires :
+
+1. une allowlist statique de workflows ;
+2. les labels exacts `self-hosted`, `coursia-ephemeral`, `coursia-fast-guards`.
+
+La capacité est distribuée sur les machines des workers `myia-po-2023` à `myia-po-2026`, pas centralisée sur ai-01. Il n'existe pas d'affinité entre auteur du push et machine d'exécution : GitHub choisit un runner disponible portant les labels. Chaque machine utilise le même compte Windows local dédié et un profil distinct. ai-01 reste hors du pool initial afin de préserver ses charges de coordination, vLLM et entraînement.
+
+Un runner ne doit jamais utiliser un label GitHub-hosted (`ubuntu-latest`, `windows-latest`, etc.) : cela contournerait la classification statique. Il ne doit pas non plus hériter du compte interactif du worker.
+
+## Gestionnaire Windows, à blanc par défaut
+
+Le registre `scripts/ci/self_hosted_runner_profiles.json` épingle pour chaque worker : dépôt, identité locale, chemins possédés, labels, version, URL officielle et SHA-256 du runner. Il ne contient aucun secret.
+
+```powershell
+python scripts/ci/manage_self_hosted_runner.py install `
+  --profile myia-po-2025-fast-guards
+python scripts/ci/manage_self_hosted_runner.py register `
+  --profile myia-po-2025-fast-guards
+python scripts/ci/manage_self_hosted_runner.py verify `
+  --profile myia-po-2025-fast-guards
+python scripts/ci/manage_self_hosted_runner.py teardown `
+  --profile myia-po-2025-fast-guards
+```
+
+Sans `--apply`, ces commandes observent l'état local et impriment un plan JSON déterministe. Elles ne téléchargent rien, ne créent aucun compte, n'écrivent aucun fichier, ne contactent pas GitHub et ne modifient aucun service. Codes retour : `0` plan/état valide, `1` précondition de sécurité refusée, `2` profil ou état illisible.
+
+### Installation ultérieure
+
+`install --apply` est réservé à une session d'activation autorisée et élevée. Il exige `COURSIA_RUNNER_ACCOUNT_PASSWORD` dans l'environnement, puis :
+
+- télécharge uniquement l'archive Windows x64 officielle épinglée ;
+- compare son SHA-256 au pin committé avant extraction ;
+- refuse les chemins absolus, traversals, symlinks et flux alternatifs NTFS dans le ZIP ;
+- extrait dans un staging puis renomme atomiquement ;
+- crée un compte local standard dédié et refuse tout compte préexistant/non possédé ;
+- retire l'héritage ACL du répertoire runner ;
+- ajoute des refus de lecture explicites sur tout le répertoire `.secrets/`, SSH et `GitHub CLI/hosts.yml` ;
+- écrit un manifeste local qui borne les ressources que le teardown peut retirer.
+
+Un hash faux, un chemin sensible absent, un compte administrateur ou un état partiel fait échouer l'installation. Aucun fallback vers `LocalSystem`, `NetworkService` ou le compte interactif n'est admis.
+
+### Bouton d'enregistrement — ne pas presser pendant la préparation
+
+`register --apply` est le geste d'activation. Il exige :
+
+- une installation conforme ;
+- `GITHUB_RUNNER_REGISTRATION_TOKEN` ;
+- `COURSIA_RUNNER_ACCOUNT_PASSWORD`.
+
+Le gestionnaire transmet les secrets via les entrées upstream `ACTIONS_RUNNER_INPUT_*` du runner, et jamais via `--token` ou `--windowslogonpassword` dans la ligne de commande. L'environnement enfant est construit depuis une allowlist et n'hérite ni de `GH_TOKEN`, ni de `GITHUB_TOKEN`, ni du profil interactif. L'invocation fixe `--unattended --ephemeral --replace --runasservice` et les trois labels exacts.
+
+Le token d'enregistrement ne transite jamais par un commit, une PR, un commentaire GitHub ou un dashboard. Le canal éventuel est un DM RooSync privé avec autodestruction adaptée. La commande `register --apply` ne doit être exécutée qu'après un geste explicite du user ou du coordinateur.
+
+### Vérification de l'isolation
+
+Le mode à blanc vérifie manifeste, version, labels et état. `verify --apply`, lors de l'activation contrôlée, exécute sous le compte runner un probe réel qui exige quatre résultats :
+
+1. lecture d'un fichier de contrôle placé dans `.secrets/` refusée ;
+2. lecture SSH refusée ;
+3. lecture de la configuration/keyring `gh` interactive refusée ;
+4. écriture puis suppression dans le workdir réussie.
+
+`whoami` ne suffit pas. Un fichier absent ou une erreur ambiguë n'est jamais assimilé à un refus d'accès réussi. Le probe et son résultat temporaire sont supprimés dans tous les cas.
+
+### Teardown symétrique
+
+`teardown --apply` n'agit que si le manifeste prouve la propriété du chemin et du compte. Pour un runner enregistré, il exige `GITHUB_RUNNER_REMOVAL_TOKEN`, transmis lui aussi par l'environnement upstream. Il arrête et désinstalle le service, désenregistre le runner, copie `_diag` hors workdir, refuse de continuer si un secret fourni apparaît dans les logs, retire les ressources possédées, les ACE et le compte dédié. Un second passage sur un état absent est un succès explicite sans action.
+
+Les logs conservés restent locaux et hors du dépôt. Le contrôle distant « zéro runner enregistré » et la preuve d'un job réel appartiennent à la tranche d'activation, car ils nécessitent l'API GitHub.
+
+## Limite des runners éphémères — et le contrôleur de ré-enregistrement
+
+Un runner `--ephemeral` traite au plus un job puis doit être ré-enregistré : chaque job consomme l'inscription. Le gestionnaire prépare une invocation unique ; il ne crée ni boucle permanente, ni broker de tokens. **La décision est prise** (ai-01, DM 2026-08-28T14:33Z) : un contrôleur de ré-enregistrement supervise l'invocation unique — pas de JIT (il exigerait le broker de tokens que cette page refuse), pas de one-shot (ce n'est pas de la capacité). L'éphémère est préservé : chaque job garde une inscription fraîche, donc un token négocié à chaud à chaque cycle. Un runner persistant n'est pas un raccourci acceptable.
+
+Le contrôleur est `scripts/ci/runner_controller.py` :
+
+| Commande | Effet |
+|---|---|
+| `status` | État distant + plan, aucun effet de bord. |
+| `ensure --apply` | **Idempotent** : runner online → no-op ; absent → token frais via `gh` + `register` + `verify` du gestionnaire. Sans `--apply`, imprime le plan JSON. |
+| `deregister --apply` | Arrêt propre : `config.cmd remove` avec token de retrait. L'installation demeure ; l'état redevient « préparé, pas activé ». |
+| `task-install --apply` | Enregistre la tâche planifiée `CoursIA-Runner-Controller` (tick 60 s, limite d'exécution 10 min, `IgnoreNew`) qui déclenche `ensure --apply`. **C'est le bouton** — exige une session élevée. |
+| `task-remove --apply` | Retire la tâche (retour arrière du bouton). Second passage sur une tâche absente = succès explicite. |
+
+Le tick ne fait quasiment rien quand le runner est online (une lecture d'API) : autant de passages que de minutes, un seul état stable. L'action de la tâche lit le mot de passe du compte dédié dans le fichier machine local conventionnel (`<racine-parent>\secrets\runner_pwd.txt`, jamais dans le dépôt), négocie tout le reste à chaud et journalise dans `<racine-parent>\logs\controller.log`. Le token d'enregistrement ne transite jamais par argv, commit, PR, commentaire ou dashboard, et est retiré de l'environnement après chaque cycle.
+
+**Geste d'activation** (ai-01 ou user, session élevée) : `python scripts/ci/runner_controller.py task-install --profile <profil> --apply`, puis observer `logs\controller.log` et `gh api repos/jsboige/CoursIA/actions/runners`.
+
+**Geste de retour arrière** : `task-remove --apply` (la machine cesse de ré-enregistrer), puis laisser le job courant consommer l'inscription — ou `deregister --apply` pour l'arrêt immédiat. Le teardown complet du gestionnaire (compte, ACL, arborescence) reste disponible en dernier recours.
+
+**Nom de route (2026-08-28, mesuré firsthand sous `myia-ai-01`)** : la route de retrait est `POST /actions/runners/remove-token`, **pas** `removal-token`. Les trois mesures sous une même identité non-admin lèvent l'ambiguïté : `registration-token` → **403**, `remove-token` → **403** (la route existe, seul le droit manque), `removal-token` → **404** (la route n'existe pas). Il n'y a donc **aucune asymétrie d'API** entre l'enregistrement et le retrait — le 404 initialement observé venait du nom de route erroné, corrigé ici. L'élévation reste requise pour l'appel réel (201 sous identité admin, cf. `registration-token` mesuré par po-2024) : `deregister --apply` échoue fail-closed sous identité non-admin, ce qui est le comportement voulu.
+
+## Provisionnement Python du tool-cache (option a2)
+
+`windows-self-hosted-tests.yml` conserve `actions/setup-python`. Les deux alternatives ont été écartées sur preuve (arbitrage #13217, 2026-08-27) :
+
+- **Python machine sans `setup-python`** (PR #13233, fermée) : le compte dédié `.\coursia-runner` n'a aucun `python` dans son PATH — les installations per-user de `C:\Users\<worker>\AppData\Local\Programs\Python` sont hors PATH système et hors ACL du compte service. Mesuré au run 33087876304 : « The term 'python' is not recognized » (`Install test dependencies`, 2 s).
+- **Install all-users + PATH** (option a1) : fonctionnelle mais exige une passe UAC ; non retenue tant que l'alternative sans UAC existe.
+
+Sur un runner éphémère sans provisionnement, le premier `setup-python` télécharge l'interpréteur et son `setup.ps1` est bloqué par l'ExecutionPolicy du compte service (défaut fondateur de #13217). La voie retenue, déployée et mesurée sur po-2024 : **seeder le tool-cache du runner avec un Python épinglé et son stamp de complétude**, pour que `setup-python` trouve l'interpréteur en cache local et n'exécute jamais `setup.ps1` — zéro téléchargement, zéro script d'installation.
+
+### Le stamp est la pièce critique
+
+Un seed sans stamp échoue en détruisant le seed. Sans fichier `x64.complete`, `tc.find()` répond « was not found in the local cache » ; `setup-python` télécharge, et son `setup.ps1` **trouve le dossier seedé, le supprime, puis copie uniquement l'installeur** — l'archive `actions/python-versions` embarque un exécutable, pas un arbre — et échoue en l'exécutant sous le compte service (`0x80070005`, reproduit hors job). Avec le stamp : cache hit immédiat.
+
+### Procédure (mesurée sur po-2024)
+
+1. Installer Python 3.11.9 **per-user** (python.org, hors UAC) sur le compte interactif du worker.
+2. Peupler le tool-cache par `robocopy` vers `<work>\_tool\Python\3.11.9\x64\` sous le compte `.\coursia-runner` (2820 fichiers) — si le compte interactif peut écrire sous `_work\_tool` (ACL par profil), le robocopy direct suffit ; sinon l'exécuter as `coursia-runner`.
+3. Écrire le stamp vide `<work>\_tool\Python\3.11.9\x64.complete` — **frère** du répertoire `x64\`, jamais dedans. `@actions/tool-cache` compose `<cache>/<tool>/<version>/<arch>` puis teste ce **même** chemin suffixé de `.complete` : `find()` évalue `fs.existsSync(cachePath) && fs.existsSync(cachePath + '.complete')`, et `_completeToolPath()` écrit `markerPath = folderPath + '.complete'`. Un marqueur placé *dans* `x64\` n'est donc jamais lu — `tc.find()` répond « not found », et le seed est détruit au premier job par le `io.rmRF(folderPath)` de `_createToolPath()`.
+4. Vérifier sous le compte service : `python --version` → `3.11.9` et `pip --version` → 24.0 (le témoin `TOOL_PYOK 3.11.9` des runs de preuve).
+
+Le tool-cache et le stamp persistent sous `_work` entre jobs éphémères : les ré-enregistrements suivants gardent le cache hit.
+
+### Preuves mesurées (po-2024, 2026-08-27)
+
+- run 33092567324 (main, 16:19Z) : `setup-python` **success** (cache hit), pip success, pytest 39 passed / 1 failed — l'échec résiduel était le bug d'invariant #13238, sans rapport avec le provisionnement ;
+- run 33093119578 (branche, 16:25Z) : **42 passed**, conclusion success ;
+- run de contrôle sans stamp : `0x80070005`, le dossier seedé détruit par `setup.ps1` (mécanisme ci-dessus).
+
+### Ré-enregistrement sans UAC (chaîne po-2024)
+
+Chaque `workflow_dispatch` consomme l'enregistrement éphémère (un job, un runner) : la chaîne de ré-enregistrement doit donc tourner sans intervention élevée. Mise au point sur po-2024 (2026-08-27) :
+
+- **tâche planifiée `CoursIA-Runner-Activate`** : exécute périodiquement le `register --apply` du gestionnaire (les secrets d'enregistrement restent transmis par l'environnement upstream, jamais en ligne de commande) ;
+- **listener interactif lancé sous le compte dédié** : le service runner démarre dans la session du compte `.\coursia-runner`, sans élévation ;
+- résultat mesuré : dispatch 16:00Z pris par un runner ré-enregistré automatiquement — « la machinery vit » sans passe UAC par cycle.
+
+Le stamp `_work\_tool` (section précédente) persiste à travers ces cycles : le cache hit survit aux ré-enregistrements.
+
+Diagnostic complet et arbitrage : #13217. Chantier runners : #12704.
+
+## Tranches suivantes, activation partielle
 
 La préparation complète reste découpée :
 
 1. **Mesure** — instrument de cette page.
-2. **Isolation** — compte OS dédié sans accès à `.secrets/`, SSH ou keyring `gh`; runner éphémère et runner group restreint; scripts d'enrôlement et de teardown idempotents avec `--dry-run`.
-3. **Commutation** — un seul point de bascule et garde `github.event.pull_request.head.repo.full_name == github.repository`; aucun `pull_request_target` auto-hébergé.
-4. **Preuve contrôlée** — une exécution légère réussie, un contrôle négatif fork/payload, puis teardown et preuve que l'état initial est restauré.
+2. **Isolation statique** — scanner fail-closed, allowlist et labels dépôt.
+3. **Cycle de vie local** — gestionnaire, profils, probes et teardown décrits ci-dessus.
+4. **Commutation** — un seul point de bascule et garde `github.event.pull_request.head.repo.full_name == github.repository`; aucun `pull_request_target` auto-hébergé.
+5. **Preuve contrôlée** — autorisation explicite, une exécution légère réussie, contrôle négatif fork/payload (livré : garde #13387, simulation run 33185586681), puis teardown et preuve que l'état initial est restauré.
+6. **Capacité** — le contrôleur ci-dessus ; son test de bout en bout (tâche posée → tick → job consommé → ré-enregistrement observé → tâche retirée) exige une session élevée : c'est la checklist de la session d'activation, le bouton appartient au coordinateur ou au user.
 
-Le token d'enregistrement ne doit jamais apparaître dans un commit, une PR, un commentaire GitHub ou un dashboard. L'activation finale reste un geste explicite du user ou du coordinateur, après validation des tranches précédentes.
+État au 2026-08-28 : les tranches 1-3 sont livrées ; la tranche 4 est active sur po-2024 (jobs réels consommés par le pool `coursia-fast-guards`, ex. runs 33092567324 et 33093119578) ; la preuve contrôlée complète (5) et l'extension du pool aux autres machines restent à faire. Chaque extension machine exige le provisionnement Python de la section dédiée avant le premier job.
+
+| Profil du registre | État au 2026-08-28 |
+|---|---|
+| `myia-po-2023-fast-guards` | en préparation (pas de runner installé) |
+| `myia-po-2024-fast-guards` | **actif** — tool-cache seedé (a2), ré-enregistrement sans UAC, jobs réels consommés |
+| `myia-po-2025-fast-guards` | en préparation (pas de runner installé) |
+| `myia-po-2026-fast-guards` | en préparation (pas de runner installé ; profil vérifié dans le registre) |
+
+Le réglage GitHub « Require approval for all outside collaborators » complète la garde YAML ; il ne la remplace jamais (non exposé par l'API `/actions/permissions` — capture à faire côté admin, UI Settings → Actions). L'activation finale reste un geste explicite du user ou du coordinateur, après validation des tranches précédentes.

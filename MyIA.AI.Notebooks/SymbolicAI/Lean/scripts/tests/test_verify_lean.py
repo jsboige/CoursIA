@@ -537,7 +537,7 @@ class TestArgparse:
     def test_help_exits_0(self):
         result = subprocess.run(
             [sys.executable, str(SCRIPTS_DIR / "verify_lean.py"), "--help"],
-            capture_output=True, text=True, timeout=15,
+            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=15,
         )
         assert result.returncode == 0
         assert "Verify Lean notebooks" in result.stdout
@@ -553,7 +553,7 @@ class TestArgparse:
         # notebooks aren't present.
         result = subprocess.run(
             [sys.executable, str(SCRIPTS_DIR / "verify_lean.py"), "--quick"],
-            capture_output=True, text=True, timeout=30,
+            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=30,
             cwd=str(tmp_path),
         )
         # Script should at least print "Verifying Lean notebooks in:" before exiting
