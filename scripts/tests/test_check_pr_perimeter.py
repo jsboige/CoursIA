@@ -1902,7 +1902,8 @@ def test_founding_incident_11227_criteria_met_on_main():
     ):
         pytest.skip("GitHub Actions runner without GH_TOKEN")
     auth_probe = subprocess.run(
-        ["gh", "auth", "status"], capture_output=True, text=True
+        ["gh", "auth", "status"], capture_output=True, text=True,
+        encoding="utf-8", errors="replace",
     )
     if auth_probe.returncode != 0:
         pytest.skip("gh CLI present but unauthenticated")
@@ -1917,6 +1918,7 @@ def test_founding_incident_11227_criteria_met_on_main():
         capture_output=True,
         text=True,
         timeout=120,
+        encoding="utf-8", errors="replace",
     )
     output = proc.stdout + proc.stderr
     # The tool surfaces the FAIL either in stdout (normal) or via a
@@ -2030,6 +2032,40 @@ def test_12201_bootstrap_never_touches_exclusivity():
     body = "Uniquement le garde est touché, rien d'autre."
     problems = check_assertion(files, body)
     assert any("exclusivite sans nommer" in p for p in problems)
+
+
+def test_12773_perimeter_guard_paths_filter_includes_workflows_globs():
+    """Miroir du paths-filter de `perimeter-review-guard.yml` (#12773 tranche 1a,
+    amendé par Hermes REQUEST_CHANGES sur #13193) : le filtre DOIT inclure le glob
+    `.github/workflows/**`, sinon le garde est désarmé sur sa surface nominale
+    (incidents fondateurs #11268 et #11648 — un workflow qui bouge le
+    sorry-baseline passe inaperçu si le filtre ne couvre que le garde lui-même).
+
+    Verrou : parse le YAML du workflow, assert que les deux blocs `paths:`
+    listent le glob `.github/workflows/**` en plus de `perimeter-review-guard.yml`.
+    Si un futur éditeur retire le glob pour « gagner du CI », ce test rougit et
+    empêche la régression silencieuse.
+    """
+    import re
+    from pathlib import Path
+
+    wf_path = Path(__file__).resolve().parent.parent.parent / ".github" / "workflows" / "perimeter-review-guard.yml"
+    text = wf_path.read_text(encoding="utf-8")
+
+    # Le filtre de chaque bloc paths: doit inclure `.github/workflows/**`
+    # (et non seulement `perimeter-review-guard.yml`).
+    blocks = re.findall(r"paths:\s*\n((?:[ \t]+-[^\n]+\n)+)", text)
+    assert len(blocks) >= 2, f"Le workflow doit avoir ≥2 blocs `paths:` (un par trigger), trouvé {len(blocks)}"
+
+    for i, block in enumerate(blocks):
+        normalized = " ".join(line.strip() for line in block.splitlines())
+        assert ".github/workflows/**" in normalized, (
+            f"Bloc paths #{i + 1} du workflow perimeter-review-guard n'inclut PAS "
+            f"le glob `.github/workflows/**` (texte observé : {normalized!r}). "
+            f"Le garde serait désarmé sur sa surface nominale — restoration requise."
+        )
+        # Sanity check : le bloc couvre aussi le garde lui-même
+        assert ".github/workflows/perimeter-review-guard.yml" in normalized
 
 
 def test_12201_cited_counts_never_join_additive_sum():
