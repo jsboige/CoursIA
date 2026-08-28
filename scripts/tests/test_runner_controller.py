@@ -129,6 +129,20 @@ def test_deregister_noop_when_absent_everywhere(prof):
     assert not argv_of(fake, "remove-token")
 
 
+def test_deregister_pins_the_real_github_remove_token_route(prof):
+    # La route GitHub est `remove-token`. L'ancien `removal-token` rendait 404
+    # (chemin inexistant, mesure ai-01 msg-20260828T190411) : un retour du typo
+    # doit rougir ici, pas dormir jusqu'a la session d'activation elevee.
+    fake = FakeRun(runners=[{"name": "test-fast-guards", "status": "online", "busy": False}])
+    result = ctl.apply_deregister(prof, fake)
+    assert result == {"action": "deregistered"}
+    posts = argv_of(fake, "actions/runners/remove-token")
+    assert posts, "le token de deregistration doit venir de la route remove-token"
+    argv = " ".join(str(a) for a in posts[0][0])
+    assert f"repos/{prof.repository}/actions/runners/remove-token" in argv
+    assert "actions/runners/removal-token" not in argv
+
+
 def test_task_xml_deterministic_and_pinned(prof):
     first, second = ctl.task_xml(prof), ctl.task_xml(prof)
     assert first == second  # deux generations = meme etat (idempotence)
