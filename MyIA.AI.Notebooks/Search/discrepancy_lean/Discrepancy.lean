@@ -21,7 +21,9 @@ Importe les modules des paliers P0 et P1 (issue #12823) :
 - `Discrepancy.Komlos` : conjecture de Komlós et formes Bansal–Jiang 2025
   (arXiv:2508.03961) ;
 - `Discrepancy.ErdosSpencer` : boute P2 — borne inférieure Erdős–Spencer
-  `√k/2` (méthode probabiliste, kernel `PacLearning.Hoeffding` importé).
+  **prouvée à constante explicite `√k/14`** (`erdos_spencer_lb_explicit`,
+  méthode probabiliste, kernel `PacLearning.Hoeffding` importé) ; la forme
+  optimiste `√k/2` (`ErdosSpencerLB`) reste une `Prop` ouverte.
 
 État des preuves et découpage en boutes : `FORMAL_STATUS.md`. Notebook
 compagnon prévu : `Search-15-CombinatorialDiscrepancy` (livrable A de
