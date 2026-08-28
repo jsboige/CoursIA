@@ -1828,6 +1828,32 @@ def test_check_claimed_10382_five_disjoint_claims(capsys):
     # lanes each scoped to a disjoint notebook on one parapluie issue. Every
     # lane MUST see blocking_lanes: [] -- the artefactual `lane-claim-conflict`
     # that fired on all ~51 PRs of the audit is gone.
+    #
+    # Fixture liveness guard (#13028): each notebook path MUST resolve to at
+    # least one tracked file in the repo. Otherwise a future rename silently
+    # promotes the claim to `empty_scope` -> EPIC_WIDE -> spurious cross-lane
+    # block, indistinguishable from a real collision. Detect this with a
+    # readable assertion at the top of the test, not via `dead_scope_globs`
+    # surfacing downstream.
+    import pathlib
+    repo_root = pathlib.Path(__file__).resolve().parents[2]
+    fixture_paths = [
+        "MyIA.AI.Notebooks/Sudoku/Sudoku-9-GraphColoring-Csharp.ipynb",
+        "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/"
+        "Planners-5-Heuristics-Csharp.ipynb",
+        "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-3-Informed-Csharp.ipynb",
+        "MyIA.AI.Notebooks/Search/Part1-Foundations/"
+        "Search-5-GeneticAlgorithms-Csharp.ipynb",
+        "MyIA.AI.Notebooks/GameTheory/GameTheory-04-NashEquilibrium-Csharp.ipynb",
+    ]
+    for relpath in fixture_paths:
+        resolved = repo_root / relpath
+        assert resolved.exists(), (
+            f"#13028 fixture guard: {relpath} does not exist on disk. "
+            f"Update the fixture to a live notebook or rename this test "
+            f"expectation; otherwise dead_scope will silently promote the "
+            f"claim to EPIC_WIDE."
+        )
     p = payload(
         comment("[CLAIMED] lane myia-po-2023:CoursIA -- "
                 "paths: MyIA.AI.Notebooks/Sudoku/"
