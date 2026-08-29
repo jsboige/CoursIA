@@ -111,6 +111,120 @@ def test_saturation_maps_zone_from_declaration():
     assert i2f.get(12373) == "MyIA.AI.Notebooks/Search/Part4-Metaheuristics"
 
 
+# --- Emballement : la MAGNITUDE que la polarite ne voit pas -----------------
+# Les deux premiers tests sont les DEUX zones reelles mesurees le 2026-08-29 :
+# c'est leur ecart qui definit le critere, et non l'inverse. Si un jour le
+# seuil devait bouger, c'est ce couple qui doit continuer a se separer.
+
+
+def _slot(landed, exp, con):
+    return {"new_notebooks": landed, ss.EXPANSION: exp,
+            ss.CONSOLIDATION: con, ss.NEUTRAL: 0}
+
+
+def test_runaway_fires_on_dswa_shape():
+    """DataScienceWithAgents mesure : 11 arrivees, 3 consolidations ouvertes.
+
+    Le verdict de POLARITE la disait OK -- trois remedes ouverts pour deux
+    expansions ouvertes. C'est exactement la zone que le user a nommee comme
+    symptomatique. La parite ne suffit pas : elle ne compte pas ce qui est
+    deja tombe.
+    """
+    slot = _slot(11, 2, 3)
+    assert ss.zone_verdict(slot) == ss.BALANCED, "la polarite reste OK -- c'est le point"
+    assert ss.is_runaway(slot), "11 arrivees pour 3 consolidations = emballement"
+
+
+def test_runaway_silent_on_mgs_shape():
+    """Search/Part4-Metaheuristics mesure : 6 arrivees, 3 consolidations.
+
+    Zone signalee en premier par le user, mais dont la consolidation est
+    engagee (EPIC #12373). Un critere qui la ferait rougir sanctionnerait le
+    remede en cours -- le meme defaut que l'amortissement aveugle corrige la
+    veille.
+    """
+    slot = _slot(6, 1, 3)
+    assert not ss.is_runaway(slot), "consolidation engagee : ne pas sanctionner"
+
+
+def test_runaway_ignores_small_zones():
+    """Trois notebooks sans aucun remede, c'est petit -- pas emballe.
+
+    `SANS REMEDE` dit deja ce qu'il faut en faire. Qualifier ca d'emballement
+    diluerait le mot sur le cas ou il n'apporte rien.
+    """
+    slot = _slot(3, 0, 0)
+    assert ss.zone_verdict(slot) == ss.NO_REMEDY
+    assert not ss.is_runaway(slot)
+
+
+def test_runaway_fires_with_zero_consolidation():
+    """Le plancher a 1 evite la division par zero ET tient le cas le pire.
+
+    Six arrivees et aucun remede ouvert doit rougir : c'est le cas ou personne
+    n'a encore ouvert la contrepartie.
+    """
+    assert ss.is_runaway(_slot(6, 4, 0))
+
+
+def test_runaway_is_orthogonal_to_polarity():
+    """Une zone peut etre DESEQUILIBREE sans etre emballee, et l'inverse.
+
+    Les deux mesures repondent a deux questions differentes ; les fondre en
+    une seule ferait perdre celle qui manquait.
+    """
+    petite_desequilibree = _slot(2, 5, 0)
+    assert ss.zone_verdict(petite_desequilibree) == ss.IMBALANCED
+    assert not ss.is_runaway(petite_desequilibree)
+
+    grosse_ok = _slot(12, 0, 1)
+    assert ss.zone_verdict(grosse_ok) == ss.BALANCED
+    assert ss.is_runaway(grosse_ok)
+
+
+def test_zone_verdict_matches_legacy_inline_logic():
+    """Le verdict extrait doit rendre EXACTEMENT ce que le picker rendait.
+
+    `SANS REMEDE` a un effet de bord -- il retient des grains hors tirage.
+    Extraire la logique sans la reproduire au bit pres changerait le tirage
+    en silence.
+    """
+    for landed in (0, 3, 9):
+        for exp in range(4):
+            for con in range(4):
+                slot = _slot(landed, exp, con)
+                if exp == 0 and con == 0:
+                    attendu = "SANS REMEDE"
+                elif con >= exp:
+                    attendu = "OK"
+                else:
+                    attendu = "DESEQUILIBRE"
+                assert ss.zone_verdict(slot) == attendu, (landed, exp, con)
+
+
+def test_zone_umbrellas_names_the_feeding_epic():
+    """Nommer l'EPIC : sans lui, le lecteur du verdict doit le chercher."""
+    pool = [
+        {"number": 1, "parent": 12373, "title": "a", "body": ""},
+        {"number": 2, "parent": 12373, "title": "b", "body": ""},
+        {"number": 3, "parent": 999, "title": "c", "body": ""},
+        {"number": 4, "parent": None, "title": "d", "body": ""},
+    ]
+    i2f = {1: "Z", 2: "Z", 3: "Z", 4: "Z"}
+    out = ss.zone_umbrellas(i2f, pool)
+    assert out["Z"] == {12373: 2, 999: 1}, out
+
+
+def test_zone_umbrellas_empty_when_no_parent_declared():
+    """Zone chaude sans EPIC : le cas le PLUS grave, pas le plus propre.
+
+    Il doit rendre un vide explicite, que l'appelant rend en clair -- personne
+    n'y est comptable de la contrepartie.
+    """
+    pool = [{"number": 1, "parent": None, "title": "a", "body": ""}]
+    assert ss.zone_umbrellas({1: "Z"}, pool) == {}
+
+
 if __name__ == "__main__":
     import pytest
     sys.exit(pytest.main([__file__, "-v"]))

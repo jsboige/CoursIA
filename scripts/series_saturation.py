@@ -353,6 +353,84 @@ def zone_balance(zones: dict, issue_to_family: dict, pool: list) -> dict:
     return out
 
 
+# --- Emballement d'une zone : la MAGNITUDE, que la polarite ne voit pas ------
+# Mandat user 2026-08-28 : "il ne devrait pas y avoir d'emballement".
+#
+# `zone_verdict` ne lit que la POLARITE du vivier ouvert : une zone dont les
+# grains ouverts consolident plus qu'ils n'ajoutent rend OK, quel que soit le
+# nombre de notebooks DEJA tombes. Mesure du 2026-08-29 :
+# `ML/DataScienceWithAgents` a recu 11 notebooks neufs en 14 jours (21 ajouts
+# bruts au sens git) pour 3 grains de consolidation ouverts, et l'organe
+# repondait OK -- sur la zone la plus saturee du depot, celle-la meme que le
+# user a nommee. Trois remedes ouverts ne repondent pas a onze arrivees : la
+# parite demandee porte sur les issues, le RYTHME est une seconde dimension.
+#
+# Le critere s'enonce, il ne se regle pas : une zone s'emballe si elle a recu
+# au moins RUNAWAY_MIN_LANDED notebooks sur la fenetre ET qu'il lui manque un
+# grain de consolidation ouvert par tranche de RUNAWAY_RATIO arrivees. Le
+# plancher absolu evite de qualifier d'emballement trois notebooks sans
+# remede (c'est petit, pas emballe) ; le ratio evite de sanctionner une zone
+# volumineuse dont la consolidation est deja engagee -- mesure du meme jour :
+# `Search/Part4-Metaheuristics` (6 arrivees, 3 consolidations) ne s'emballe
+# PAS, sa consolidation est en cours, et c'est la zone que le user avait
+# signalee en premier.
+RUNAWAY_MIN_LANDED = 6
+RUNAWAY_RATIO = 3
+
+RUNAWAY = "EMBALLEMENT"
+BALANCED = "OK"
+IMBALANCED = "DESEQUILIBRE"
+NO_REMEDY = "SANS REMEDE"
+
+
+def zone_verdict(slot: dict) -> str:
+    """Verdict de POLARITE d'une zone -- inchange, il gouverne le tirage.
+
+    Extrait du picker pour que les deux lisent la meme source (sinon ils
+    re-divergeraient). `SANS REMEDE` a un effet de bord -- il retient des
+    grains hors tirage -- donc son predicat n'est pas touche ici.
+    """
+    exp = slot.get(EXPANSION, 0)
+    con = slot.get(CONSOLIDATION, 0)
+    if exp == 0 and con == 0:
+        return NO_REMEDY
+    if con >= exp:
+        return BALANCED
+    return IMBALANCED
+
+
+def is_runaway(slot: dict) -> bool:
+    """La zone recoit-elle plus vite qu'elle ne consolide ?
+
+    Dimension ORTHOGONALE a `zone_verdict` : une zone peut etre OK en
+    polarite et emballee en rythme -- c'est meme le cas exact qui a motive
+    cette mesure. On ne remplace donc pas le verdict, on l'accompagne.
+    """
+    landed = slot.get("new_notebooks", 0)
+    con = slot.get(CONSOLIDATION, 0)
+    return landed >= RUNAWAY_MIN_LANDED and landed >= RUNAWAY_RATIO * max(1, con)
+
+
+def zone_umbrellas(issue_to_family: dict, pool: list, families=()) -> dict:
+    """Par zone : quels EPICs parents alimentent ses grains ouverts.
+
+    Le mandat demande qu'un EPIC qui alimente une serie sache produire de la
+    consolidation autant que de l'expansion. Encore faut-il savoir OU l'ecrire
+    -- un verdict qui ne nomme pas l'EPIC responsable laisse le lecteur le
+    chercher. Une zone chaude SANS parent declare est le cas le plus grave et
+    non le plus propre : personne n'y est comptable de la contrepartie.
+    """
+    out: dict[str, dict[int, int]] = {}
+    for it in pool:
+        fam = resolve_family(it, issue_to_family, families)
+        parent = it.get("parent")
+        if not fam or not parent:
+            continue
+        out.setdefault(fam, {})
+        out[fam][parent] = out[fam].get(parent, 0) + 1
+    return out
+
+
 def main() -> int:
     for stream in (sys.stdout, sys.stderr):
         if hasattr(stream, "reconfigure"):
