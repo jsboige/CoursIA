@@ -12,8 +12,44 @@ ouvrir. Le picker defait la troncature par construction (`--limit 300`, une
 seule requete) et rend la selection *aleatoire ponderee* au lieu de
 *recente-d'abord*.
 
-Il **ne decide pas**. Il tire une poignee de candidats et laisse a l'agent le
-choix final selon les criteres de variete de sa lane courante (G-VAR-1/2/3).
+Il **ne decide pas** du grain. Il tire une poignee de candidats et laisse a
+l'agent le choix final selon les criteres de variete de sa lane (G-VAR-1/2/3).
+Il decide en revanche de ce qui est **admissible** -- voir ci-dessous.
+
+Classer ne suffisait pas : le garde d'admission (mandat user 2026-08-28)
+------------------------------------------------------------------------
+Mesure du 2026-08-29. Le tirage place deja **62 % de sa masse au-dela de 7
+jours** et sous-pondere les issues du jour a **0.39x** : son classement n'est
+pas le defaut. Pourtant, sur les 112 issues travaillees en 48 h, **70 avaient
+moins de 24 h** (63 %), la ou le tirage n'en voulait que 3.9 %. L'ecart de
+**16x** ne s'explique pas par le bruit : le travail n'arrivait pas par le
+tirage. Il arrivait par le **steering** du coordinateur et par l'auto-pick --
+deux chemins qu'aucune ponderation ne touche. Un poids se fait battre par la
+population et par le steer ; seul un **refus** s'applique quel que soit le
+chemin de selection.
+
+D'ou deux causes d'inadmissibilite, verifiables par `--admissible <issue>` et
+appliquees aussi au tirage :
+
+- **dwell** -- une issue de moins de `--dwell-hours` (24 h) n'est pas encore
+  consommable. C'est la reponse directe a "les issues auraient du attendre au
+  lieu d'etre immediatement prises en charge" : un audit qui ouvre quinze
+  issues le matin ne doit pas mobiliser la flotte l'apres-midi. Les etiquettes
+  d'urgence (`urgent`, `security`, `regression`, `hotfix`...) court-circuitent
+  le delai -- le garde vise l'emballement, pas les correctifs.
+- **zone sans remede** -- un grain d'EXPANSION dans une zone qui a recu >= 3
+  notebooks neufs sur la fenetre **et dont le vivier ouvert ne contient aucun
+  grain de consolidation** est refuse. C'est "il ne faut pas se taper le
+  produit cartesien MGS x PythonNet x Mealpy" rendu mecanique.
+
+Le second veto porte sur `con == 0`, **pas** sur la parite stricte
+`con >= exp`, bien que le mandat dise "autant ... que" : la parite se mesure
+sur le vivier OUVERT, et *consommer* un grain de consolidation le ferme -- donc
+le retire du vivier et degrade le ratio. Un veto sur la parite punirait la zone
+precisement quand elle vient de faire ce qu'on lui demandait. La parite reste
+**mesuree et affichee** (verdict `DESEQUILIBRE` / `SANS REMEDE`) parce qu'elle
+vise la **redaction des EPICs** : c'est au coordinateur d'y repondre en ouvrant
+des grains de consolidation, pas au worker d'y buter.
 
 Regime : voie normale, pas filet de secours (mandat user 2026-08-20)
 --------------------------------------------------------------------
@@ -213,6 +249,7 @@ def fetch_pool() -> list[dict]:
             "number": it["number"],
             "title": title,
             "labels": labels,
+            "created_at": it["createdAt"],
             "age": age_days(it["createdAt"]),
             "idle": age_days(it["updatedAt"]),
             "updated_at": it["updatedAt"],
@@ -282,6 +319,80 @@ def fetch_visits(days: int = VISITS_WINDOW_DAYS) -> tuple[dict[int, int], str | 
     return counts, None
 
 
+
+# --- Admission : le tirage CLASSE, ce garde ADMET -------------------------
+# Mesure du 2026-08-29 qui fonde ce garde. Le tirage place deja 62 % de sa
+# masse au-dela de 7 jours et sous-pondere les issues du jour a 0.39x -- son
+# classement n'est PAS le defaut. Mais sur 112 issues travaillees en 48 h,
+# 70 avaient moins de 24 h (63 %), la ou le tirage n'en voulait que 3.9 % :
+# un ecart de 16x, que le bruit d'echantillonnage n'explique pas. Le travail
+# n'arrive donc pas par le tirage -- il arrive par le steering et l'auto-pick,
+# deux chemins qu'aucune ponderation ne touche.
+#
+# D'ou la forme : un GARDE, pas un poids. Un poids se fait battre par la
+# population et par le steer ; un refus s'applique quel que soit le chemin de
+# selection. C'est ce que "revois completement l'organe de pick" demandait --
+# pas de mieux classer, mais de cesser d'etre un simple conseil de classement.
+DWELL_HOURS_DEFAULT = 24.0
+
+# Une issue portant l'une de ces etiquettes se consomme sans delai : le
+# dwell existe pour empecher l'emballement d'audit, pas pour retarder un
+# correctif de securite ou une regression qui casse main.
+URGENT_LABELS = {"urgent", "blocker", "security", "regression", "p0",
+                 "critical", "hotfix"}
+
+# Une zone qui a recu ce nombre de notebooks NEUFS sur la fenetre est saturee.
+ZONE_SATURATION_MIN = 3
+
+
+def _hours_old(created: str) -> float:
+    born = dt.datetime.fromisoformat(created.replace("Z", "+00:00"))
+    return max(0.0, (NOW - born).total_seconds() / 3600.0)
+
+
+def admissibility(item: dict, balance: dict | None,
+                  issue_to_family: dict[int, str] | None,
+                  dwell_hours: float = DWELL_HOURS_DEFAULT) -> str | None:
+    """None = admissible. Sinon la CAUSE du refus, redigee pour etre citee.
+
+    Deux causes, et une seule est un veto dur sur la parite -- voir plus bas
+    pourquoi la parite stricte n'en est pas un.
+    """
+    labels_lc = {str(x).lower() for x in item.get("labels", [])}
+    if not (labels_lc & URGENT_LABELS):
+        h = _hours_old(item.get("created_at") or NOW.isoformat())
+        if h < dwell_hours:
+            return ("DWELL : creee il y a {:.0f} h, seuil {:.0f} h. "
+                    "Une issue d'audit ouverte ce matin n'a pas encore ete "
+                    "confrontee au reste du pool -- c'est ce delai qui "
+                    "distingue depiler d'emballer.".format(h, dwell_hours))
+
+    i2f = issue_to_family or {}
+    fam = i2f.get(item["number"])
+    if fam is None and item.get("parent"):
+        fam = i2f.get(item["parent"])
+    if fam and item.get("polarity") == EXPANSION:
+        z = (balance or {}).get(fam) or {}
+        nb = z.get("new_notebooks", 0)
+        con = z.get(CONSOLIDATION, 0)
+        if nb >= ZONE_SATURATION_MIN and con == 0:
+            return ("ZONE SANS REMEDE : {} a recu {} notebooks neufs sur la "
+                    "fenetre et le vivier ouvert ne contient AUCUN grain de "
+                    "consolidation. Ce grain en ajoute un de plus. Ouvrir ou "
+                    "prendre un grain de consolidation de cette zone d'abord."
+                    .format(fam, nb))
+    return None
+
+
+# Pourquoi le veto porte sur `con == 0` et non sur la parite stricte
+# `con >= exp`, alors que le mandat user dit bien "autant ... que" :
+# la parite stricte se mesure sur le vivier OUVERT, et consommer un grain de
+# consolidation le FERME -- donc le retire du vivier et degrade le ratio.
+# Un veto sur `con >= exp` punirait donc la zone precisement quand elle vient
+# de faire ce qu'on lui demandait. Le veto porte sur le cas non ambigu (aucun
+# remede n'existe) ; la parite graduelle reste MESUREE et affichee
+# (verdict DESEQUILIBRE), parce qu'elle vise la redaction des EPICs -- c'est
+# au coordinateur d'y repondre en ouvrant des grains, pas au worker d'y buter.
 
 def weight(item: dict, prev_genre: str | None,
            visits: dict[int, int] | None = None,
@@ -1172,6 +1283,17 @@ def main(argv: list[str] | None = None) -> int:
                          f"= --red-hours, soit {RED_HOURS_DEFAULT} h). Separe de "
                          "--red-hours pour ne pas confondre les deux causes "
                          "(rouge substance vs file-saturated infra-side).")
+    ap.add_argument("--dwell-hours", type=float, default=DWELL_HOURS_DEFAULT,
+                    help="delai avant qu'une issue neuve soit consommable "
+                         f"(defaut {DWELL_HOURS_DEFAULT:.0f} h ; 0 desactive le garde)")
+    ap.add_argument("--admit-reason", default=None, metavar="TEXTE",
+                    help="passer outre le garde d'admission -- exige une "
+                         "justification ECRITE, a reporter sur l'issue")
+    ap.add_argument("--admissible", type=int, default=None, metavar="ISSUE",
+                    help="mode verdict : cette issue est-elle consommable "
+                         "maintenant ? sortie 0 = oui, 1 = non. A appeler AVANT "
+                         "de dispatcher ou de claim, quel que soit le chemin de "
+                         "selection (steer inclus).")
     ap.add_argument("--ignore-red", action="store_true",
                     help="passer outre le garde -- exige une justification ECRITE sur la PR concernee")
     ap.add_argument("--json", action="store_true", help="sortie machine")
@@ -1184,8 +1306,8 @@ def main(argv: list[str] | None = None) -> int:
     args = ap.parse_args(argv)
     if args.apply_comment is not None and not args.orphans_report:
         ap.error("--apply-comment n'a de sens qu'avec --orphans-report")
-    if not args.lane and not args.orphans_report:
-        ap.error("--lane est requis (seul --orphans-report s'en dispense)")
+    if not args.lane and not args.orphans_report and args.admissible is None:
+        ap.error("--lane est requis (--orphans-report et --admissible s'en dispensent)")
 
     # Mode rapport : le garde rouge (lane) ne concerne pas ce chemin -- la file
     # des orphelines est lane-independante et ce mode ne tire pas de grain.
@@ -1197,6 +1319,34 @@ def main(argv: list[str] | None = None) -> int:
             print()
             print(f"[apply] commentaire marker-guarde mis a jour sur #{args.apply_comment}")
         return 0
+
+    # Mode verdict : lane-independant, pas de tirage, pas de garde rouge --
+    # la question posee est "ce grain-ci est-il consommable maintenant ?",
+    # et elle doit pouvoir etre posee sur un grain STEERE, chemin par lequel
+    # arrive l'essentiel du travail (mesure du 2026-08-29).
+    if args.admissible is not None:
+        pool = fetch_pool()
+        series, issue_to_family, series_err = fetch_series_visits()
+        balance = zone_balance(series, issue_to_family, pool)
+        hit = next((x for x in pool if x["number"] == args.admissible), None)
+        if hit is None:
+            print(f"#{args.admissible} : absente du pool ouvert "
+                  "(fermee, ou au-dela de la limite de la requete).")
+            return 1
+        cause = admissibility(hit, balance, issue_to_family, args.dwell_hours)
+        if series_err:
+            print(f"(saturation de zone NON MESUREE : {series_err} -- "
+                  "le volet parite n'a PAS ete evalue)")
+        print(f"#{hit['number']} {hit['title'][:70]}")
+        print(f"  genre {hit['genre']} | polarite {hit['polarity']} | "
+              f"age {_hours_old(hit['created_at']):.0f} h")
+        if cause is None:
+            print("  ADMISSIBLE")
+            return 0
+        print(f"  REFUS -- {cause}")
+        print("  Passer outre exige --admit-reason '<justification>', "
+              "a reporter sur l'issue.")
+        return 1
 
     # Garde "reparer son rouge d'abord" : AVANT le tirage, sinon le grain neuf
     # est deja sous les yeux quand le refus arrive, et c'est lui qui gagne.
@@ -1217,7 +1367,28 @@ def main(argv: list[str] | None = None) -> int:
         print()
 
     pool = fetch_pool()
-    by_class = {k: [it for it in pool if it["klass"] == k]
+    visits, visits_err = fetch_visits()
+    series, issue_to_family, series_err = fetch_series_visits()
+    balance = zone_balance(series, issue_to_family, pool)
+
+    # Admission AVANT les urnes : un grain inadmissible ne doit pas
+    # apparaitre dans le tirage, sinon il est sous les yeux quand le
+    # refus arrive -- et c'est lui qui gagne (meme raison que le garde
+    # rouge, qui s'execute avant le tirage pour cette raison exacte).
+    # L'urne `delivered` en est exempte : verifier puis fermer une issue
+    # deja livree fait REFLUER le pool, c'est l'inverse de l'emballement.
+    withheld: list[tuple[dict, str]] = []
+    admitted = []
+    for it in pool:
+        if it["klass"] == "delivered":
+            admitted.append(it)
+            continue
+        cause = admissibility(it, balance, issue_to_family, args.dwell_hours)
+        if cause and not args.admit_reason:
+            withheld.append((it, cause))
+        else:
+            admitted.append(it)
+    by_class = {k: [it for it in admitted if it["klass"] == k]
                 for k in ("grain", "umbrella", "delivered")}
 
     # Graine : (lane, heure UTC, reroll). Lanes differentes -> tirages
@@ -1226,10 +1397,6 @@ def main(argv: list[str] | None = None) -> int:
     seed_src = f"{args.lane}|{stamp}|{args.reroll}"
     seed = int(hashlib.sha256(seed_src.encode()).hexdigest()[:16], 16)
     rng = random.Random(seed)
-
-    visits, visits_err = fetch_visits()
-    series, issue_to_family, series_err = fetch_series_visits()
-    balance = zone_balance(series, issue_to_family, pool)
 
     picks = (
         draw(by_class["grain"], args.grains, rng, args.prev_genre, visits,
@@ -1248,6 +1415,10 @@ def main(argv: list[str] | None = None) -> int:
             "lane": args.lane, "seed_src": seed_src,
             "pool": {k: len(v) for k, v in by_class.items()},
             "picks": picks, "claims": {str(k): v for k, v in claims.items()},
+            "withheld": [{"number": it["number"], "title": it["title"],
+                          "cause": c} for it, c in withheld],
+            "dwell_hours": args.dwell_hours,
+            "admit_reason": args.admit_reason,
             "series_measured": series_err is None,
             "series_error": series_err,
             "series_zones": sorted(
@@ -1299,6 +1470,17 @@ def main(argv: list[str] | None = None) -> int:
           f"= {len(by_class['grain'])} grains "
           f"+ {len(by_class['umbrella'])} umbrella "
           f"+ {len(by_class['delivered'])} candidate-delivered")
+    if args.admit_reason:
+        print(f"!! --admit-reason : garde d'admission passe outre "
+              f"({args.admit_reason!r}). A reporter sur l'issue retenue.")
+    elif withheld:
+        dwell_n = sum(1 for _, c in withheld if c.startswith("DWELL"))
+        zone_n = len(withheld) - dwell_n
+        print(f"Retenues hors tirage : {len(withheld)} "
+              f"({dwell_n} en attente de dwell, {zone_n} en zone sans remede). "
+              "Elles reviennent d'elles-memes -- aucune n'est refusee sur le fond.")
+        for it, cause in sorted(withheld, key=lambda kv: -kv[0]["number"])[:3]:
+            print(f"   #{it['number']:<7} {cause.split(chr(58))[0]:<18} {it['title'][:46]}")
     if backlog.get("triggers"):
         numbers = ", ".join(f"#{r['number']}" for r in backlog["red"])
         print(f"!! --ignore-red : {len(backlog['red'])} PR(s) bloquee(s) de cette lane restent "
