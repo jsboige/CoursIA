@@ -232,7 +232,7 @@ les variables attendues.
 
 - Pour piloter la même plateforme **par l'API** plutôt qu'à la souris,
   suivre la série **AI Engine par son API**, à partir de
-  [`presenter-ai-engine-par-son-api.ipynb`](../presenter-ai-engine-par-son-api.ipynb).
+  [`presenter-ai-engine-par-son-api.ipynb`](../03-Functional/03-5-Multi-Provider/presenter-ai-engine-par-son-api.ipynb).
 - Pour monter l'instance jetable chez soi et rejouer ce tour :
   [`../instance-jetable/README.md`](../instance-jetable/README.md).
 - Pour la même visite côté Open WebUI, voir le

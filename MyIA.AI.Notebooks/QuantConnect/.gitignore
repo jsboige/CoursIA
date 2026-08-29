@@ -56,6 +56,9 @@ backtests/
 logs/
 *.log
 
+# Detached background-run logs (ML-Training-Pipeline/scripts/bg_logs/)
+bg_logs/
+
 # LEAN cache
 .lean/
 cache/
