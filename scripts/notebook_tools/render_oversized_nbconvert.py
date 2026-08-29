@@ -46,7 +46,7 @@ def render_one(nb: Path, outdir: Path, timeout_s: int = 600) -> dict[str, object
     ]
     try:
         subprocess.run(cmd, check=True, timeout=timeout_s,
-                       capture_output=True, text=True)
+                       capture_output=True, text=True, encoding="utf-8", errors="replace")
         wallclock_s = round(time.perf_counter() - start, 2)
     except subprocess.TimeoutExpired:
         return {"notebook": str(nb), "status": "FAIL", "reason": f"timeout>{timeout_s}s",

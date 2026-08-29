@@ -47,7 +47,7 @@ def _matches_target(text):
     2. `Étapes` (exact, bare aside)
     3. `Étapes a suivre` (no accent, legacy variant)
     4. `Étapes de la modélisation avec <engine>` (long prefix variant)
-    5. `Pistes d'amélioration` (curly apostrophe U+2019, Sudoku-1-Backtracking-Csharp)
+    5. `Pistes d'amélioration` (curly apostrophe U+2019, Sudoku-01-Backtracking-Csharp)
     6. `Pistes d'amelioration` (straight apostrophe, no accent — legacy)
     """
     stem = re.sub(r'\s*\(.*\)\s*$', '', text).strip()
@@ -99,7 +99,7 @@ def _detect_source_format(src):
 def _demote_all_headings(source_lines):
     """Replace EVERY matching heading line with `> **<text> :**` blockquote.
 
-    A cell may contain multiple target headings (Sudoku-6-AIMA-CSP-Python
+    A cell may contain multiple target headings (Sudoku-06-AIMA-CSP-Python
     cells have BOTH `### Étapes` AND `### Indices` in the same cell). We
     demote all occurrences and preserve the body untouched.
 
@@ -195,7 +195,7 @@ def fix_notebook(path, dry_run=False):
         # into lines (keeping newlines) instead of wrapping it as a single
         # line. Without this, a 'string' source cell collapses to one element
         # and ALL non-heading body is lost when the heading is replaced
-        # (incident c.925 #8654: 941 -> 16 chars on Sudoku-1 cell 9).
+        # (incident c.925 #8654: 941 -> 16 chars on Sudoku-01 cell 9).
         src_for_work = src if isinstance(src, list) else src.splitlines(keepends=True)
         new_src, changed = _demote_all_headings(src_for_work)
         if not changed:

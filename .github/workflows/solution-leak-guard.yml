@@ -16,6 +16,28 @@ name: solution-leak-guard
 #     solution-leak-detector-csharp-lean-fp; retracted for `// TODO` c.827).
 #   - an absolute FAIL would therefore block the whole cluster. The delta +
 #     WARN form posts an advisory summary a reviewer reads, without freezing.
+#
+# THE WORD `advisory` IN THE JOB `name:` BELOW IS LOAD-BEARING (#12389).
+# `scripts/pr_gate.py` recognises a non-blocking check by exactly one signal:
+# the case-insensitive substring `advisory` **in the rendered check-run name**
+# (`ADVISORY_MARKER`, rule 6 of its module docstring -- deliberately a name
+# convention, so that no separate registry has to be kept in sync). Declaring
+# the intent in THIS comment, or naming the job "(WARN phase)", carries no
+# weight whatsoever: `is_advisory()` never reads the file, only the name.
+#
+# Until 2026-08-22 the job name said "WARN phase" and not "advisory". A job
+# this header calls advisory three times -- and whose report step is literally
+# named "never fails" -- therefore landed in `pr_gate`'s BAD set and failed
+# `PR gate`, the ONLY required check on `main` (verified firsthand that day:
+# `required: ["PR gate"]`). Measured on PR #12142: this check-run was
+# `cancelled` at 15m04 against `timeout-minutes: 15` below. `cancelled` means
+# "no verdict", and pr_gate is right to refuse to call that a pass -- what was
+# wrong is that a non-blocking guard could reach a blocking verdict at all.
+#
+# WHEN THE WARN -> FAIL SWITCH LANDS (#8053, gated on the detector-precision
+# fix below): REMOVE `advisory` from the job name in the same commit. Leaving
+# it makes the switch a no-op that looks enabled -- the job would fail, and
+# `pr_gate` would divert it to the advisory list and let the PR merge anyway.
 #   - the FAIL switch (a future --fail-on-delta flag on solution_leak_delta.py)
 #     is gated on a detector-precision fix and backlog drain, tracked out of
 #     scope here.
@@ -39,7 +61,7 @@ concurrency:
 
 jobs:
   solution-leak-delta:
-    name: "Solution-leak HIGH delta (WARN phase, #8053)"
+    name: "Solution-leak HIGH delta (advisory, WARN phase, #8053)"
     runs-on: ubuntu-latest
     timeout-minutes: 15
 

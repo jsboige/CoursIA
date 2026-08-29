@@ -50,7 +50,31 @@ Le remede n'est donc pas d'abandonner la grille : c'est une ligne vide.
 
 **Les lignes vides apres chaque `<div>` ouvrant et avant chaque `</div>` fermant ne sont pas cosmetiques — elles sont le mecanisme.** Les retirer casse le rendu.
 
+**La regle vaut pour TOUT bloc HTML, pas seulement les grilles de colonnes.** Un wrapper d'animation `<div v-click="N">`, une classe de densite `<div class="dense-list">`, n'importe quelle ouverture seule sur sa ligne : si la ligne suivante porte une syntaxe markdown de bloc (`**gras**`, liste a tirets, heading `##`, tableau `|`, citation `>`, liste ordonnee), sans ligne vide elle est **avalee dans le HTML brut** et rend en litteral — asterisques comprises, hierarchie de liste aplatie en prose a tirets (#13216 : 49 blocs ainsi avals sur main, dont une liste a trois niveaux effondree). Le defaut est invisible aux gates de composition (le texte litteral reste dans le canvas) : il ne se voit qu'en rendu. Contrairement, la prose HTML inline apres un `<div class="text-sm...">` qui ne porte AUCUNE syntaxe markdown rend correctement sans ligne vide — ne pas sur-corriger.
+
 Contre-exemple deja present dans le depot avant que le diagnostic « impossible » soit pose : [`slides/S3-acculturation/deck-executif.md:39-41`](../../slides/S3-acculturation/deck-executif.md#L39-L41) — un `grid grid-cols-3` qui construit, et qui porte la ligne vide.
+
+## Generalisation : tout wrapper HTML sur sa ligne ouvre un bloc
+
+La regle precedent, portee sur le diagnostic « les grilles sont impossibles », cache une regle plus large : **tout** tag ouvrant HTML seul sur sa ligne ouvre un bloc HTML, et tout markdown de bloc place sur la ligne suivante est avale. Les coupables recurrents sur les decks du depot :
+
+- **`<div class="grid grid-cols-N ...">`** : layout en grille (cf regle 2).
+- **`<div v-click="N">`** : wrapper d'animation incremental Slidev, omnipresent
+  dans `slides/06-apprentissage` (~30 occurrences sur ce seul deck).
+- **`<div class="dense-list">`**, `<div class="columns">`, `<div class="...">`
+  utilitaires de mise en page.
+
+**Compte rendu main, 2026-08-27 (avant fix #13216) : 49 emplacements sur 36 decks, repartis :**
+
+| Deck | markdown avale |
+|---|---|
+| `slides/01-introduction/slides.md` | 1 |
+| `slides/06-apprentissage/slides.md` | 39 |
+| `slides/S8-semantic-web/slides.md` | 9 |
+
+**Le defaut est invisible aux scanners de composition** : `scan_slidev_composition.py` mesure debordement de canvas, chevauchement de glyphes et occupation -- des asterisques litteraux et une liste aplatie sont du texte A L'INTERIEUR du canvas. Le detecteur dedie `scan_slides_html_block_markdown.py` (PR #13218) a ete pose pour le rendu honnete de cette grandeur.
+
+**Regle praticienne a toute nouvelle tranche : apres avoir pose un `<div>` ouvrant seul sur sa ligne, poser systematiquement une ligne vide avant la premiere ligne markdown suivante.** La grille, le wrapper `v-click` ou la classe dense-list n'echappent pas a la regle.
 
 ## Geometrie du canvas — 980 x 552, et le facteur d'echelle
 
@@ -69,6 +93,12 @@ Selectionner la visible par aire maximale, et **faire rendre a l'instrument l'id
 Un controle `bottom > canvasHeight` est necessaire et **tres insuffisant** : il **certifie implicitement tout ce qu'il ne teste pas**. Une slide dont la moitie droite est vide, dont les images sont centrees dans le flot et dont une note orpheline chevauche le pied de page peut passer ce controle sans broncher.
 
 **Directive user (2026-08-20) : sur une composition, le plancher mecanisable n'est jamais le critere d'acceptation.** Un `slidev build` EXIT=0 prouve que le deck *construit*, rien de son rendu. L'acceptation reste un jugement visuel, porte par une lane qui **voit** (cf [`cluster-agents.md` §Capacite vision](cluster-agents.md)). Une estimation arithmetique de hauteur de contenu ne remplace pas non plus le regard : mesuree une fois a **224 px** d'ecart avec le rendu reel.
+
+## Images en pied de colonne d'une grille convertie — contrat de compression
+
+La migration `two-cols` -> `grid grid-cols-2` (campagne **#10950**, tranches 1-10) met certaines images illustratives **en flux dans la cellule**, sous le texte de colonne (ex. `img_070`, `img_125/126`). Le layout `default` etant **block**, `flex`/`max-height` y est inerte : la rangee de grille grandit avec son contenu et l'image de pied **sort du canvas** (mesure `scan_slidev_composition.py`, 2026-08-26 : 6 slides HORS_CANVAS, +4 a +124 px sur [S3-acculturation](../../slides/S3-acculturation/slides.md)).
+
+**Contrat** porte par [`slides/S3-acculturation/style.css`](../../slides/S3-acculturation/style.css) (regle 6) : layout `default` = flex borné (héritage du contrat `two-cols` d'origine — « les images cedent l'espace au texte »), grille `gap-5` = `grid-template-rows: 1fr`, cellule = flex vertical `min-height:0` → toute `<img>`. `flex: 0 1 auto` compressible. **Ne pas retirer ce bloc pour ajuster une slide** : reparer la slide, pas la contrainte. Sur un deck qui n'a pas ce bloc, une `<img>` nue en pied de cellule sans `.img-grid*` ni `absolute` est un debordement en attente.
 
 ## Fond du theme
 

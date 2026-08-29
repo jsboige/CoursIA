@@ -654,7 +654,7 @@ def _repo_root() -> Path:
             ["git", "rev-parse", "--show-toplevel"],
             cwd=str(Path(__file__).resolve().parent),
             stderr=subprocess.DEVNULL,
-            text=True,
+            text=True, encoding="utf-8", errors="replace",
         ).strip()
         if out:
             return Path(out).resolve()
