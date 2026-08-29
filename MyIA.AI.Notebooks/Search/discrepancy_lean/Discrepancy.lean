@@ -23,7 +23,11 @@ Importe les modules des paliers P0 et P1 (issue #12823) :
 - `Discrepancy.ErdosSpencer` : boute P2 — borne inférieure Erdős–Spencer
   **prouvée à constante explicite `√k/14`** (`erdos_spencer_lb_explicit`,
   méthode probabiliste, kernel `PacLearning.Hoeffding` importé) ; la forme
-  optimiste `√k/2` (`ErdosSpencerLB`) reste une `Prop` ouverte.
+  optimiste `√k/2` (`ErdosSpencerLB`) reste une `Prop` ouverte. Découpé en
+  sous-modules (#13508 Volet 2) : `ErdosSpencer.Moments` (boute p1 — moments
+  de la somme de Rademacher colorée) et `ErdosSpencer.LB` (boutes p2–p4 et
+  le théorème final) ; `ErdosSpencer.lean` est l'agrégateur qui re-exporte
+  les deux.
 
 État des preuves et découpage en boutes : `FORMAL_STATUS.md`. Notebook
 compagnon prévu : `Search-15-CombinatorialDiscrepancy` (livrable A de
