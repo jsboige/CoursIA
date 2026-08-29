@@ -45,6 +45,11 @@ Usage
     # Self-test (must include the #13050/#13051 pair, otherwise exit 2):
     python scripts/detect_duplicate_issues.py --self-test
 
+    # The live self-test is wired daily (network trigger) by
+    # .github/workflows/detect-dup-selftest.yml -- DETECT_DUP_NETWORK gates
+    # only the pytest live test, so offline `python -m pytest` still passes
+    # (#13331).
+
 Exit codes:
   0 -- no duplicates found, OR scan completed cleanly under --self-test.
   1 -- duplicates found (non-zero pair count).
@@ -146,7 +151,8 @@ def _gh_issue_list(limit: int, state: str = "all") -> list[dict]:
             "--state", state,
             "--json", "number,title,createdAt,state",
         ],
-        capture_output=True, text=True, timeout=120,
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+        timeout=120,
     )
     if proc.returncode != 0:
         raise RuntimeError(

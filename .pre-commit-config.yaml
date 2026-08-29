@@ -179,4 +179,22 @@ repos:
         language: system
         pass_filenames: true
         files: '\.py$'
+
+      - id: cell-source-parses
+        name: '#13326 — refuse un-compilable cell source (markdown-typed-code or syntax error)'
+        description: |
+          Fails the commit if a staged Python notebook has a code cell whose
+          source does not compile() — the cell cannot have produced the output
+          it carries, falsifying proof of execution (C.2 / H.4). Distinguishes
+          "syntax error" (genuine Python typo, e.g. PR #13287 motif) from
+          "markdown typed code" (a markdown blob typed `code`, e.g.
+          GameTheory-03d-Plan-de-deformation.ipynb cell[7]). Skips IPython
+          magics `!`/`%`; allows top-level `await`. Runtime dependency: the
+          guard's compile() is bound to the worker's interpreter — a 3.10/3.11
+          worker will false-positive on 3.12+ f-string PEP 701 constructs.
+          See #13326 for instance (a)/(b) and acceptance criteria.
+        entry: python scripts/notebook_tools/check_cell_source_parses.py
+        language: system
+        pass_filenames: true
+        files: '\.ipynb$'
         stages: [pre-commit]

@@ -608,7 +608,7 @@ def fetch_open_prs() -> list[dict]:
     """Toutes les PRs ouvertes, avec le corps (pour y lire le tag de lane)."""
     out = subprocess.run(
         ["gh", "pr", "list", "--repo", REPO, "--state", "open", "--limit", "300",
-         "--json", "number,title,body,createdAt,isDraft"],
+         "--json", "number,title,body,createdAt,isDraft,author,headRefName"],
         capture_output=True, text=True, encoding="utf-8", check=True, timeout=120,
     ).stdout
     return json.loads(out)
@@ -839,6 +839,38 @@ def unaddressed_review_points(numbers: list[int]) -> dict[int, int]:
     return out
 
 
+def unattributed_blocked_prs(prs: list[dict] | None = None) -> list[dict]:
+    """PRs ouvertes bloquees sans tag `Grain:` lisible, AVEC leur route.
+
+    Extraction du calcul historique de `red_backlog` (les untagged ne peuvent
+    jamais appartenir a une lane, donc l'ensemble est lane-independant) pour
+    que le mode `--orphans-report` et le garde partagent la meme detection --
+    deux implementations de la meme question finiraient par diverger, et la
+    divergence d'un detecteur se voit toujours du cote du sous-comptage.
+
+    Enrichit l'entree historique (numero, titre, age) de `author` et `branch` :
+    un constat sans destinataire n'est pas un routage (#13086). Les untagged
+    SANS causes bloquantes ne comptent pas : seule la file qui pourrit est
+    routee, pas les PRs en cours de CI.
+    """
+    if prs is None:
+        prs = fetch_open_prs()
+    untagged = [pr for pr in prs
+                if not pr.get("isDraft") and parse_grain_tag(pr.get("body") or "") is None]
+    untagged_states = fetch_pr_states([pr["number"] for pr in untagged]) if untagged else {}
+    out = []
+    for pr in untagged:
+        state = untagged_states.get(pr["number"])
+        if state is None or not blocking_causes(state):
+            continue
+        out.append({"number": pr["number"], "title": pr["title"],
+                    "author": ((pr.get("author") or {}).get("login")) or "inconnu",
+                    "branch": pr.get("headRefName") or "?",
+                    "age_hours": round(_hours_since(pr["createdAt"]))})
+    out.sort(key=lambda r: -r["age_hours"])
+    return out
+
+
 def red_backlog(lane: str, threshold_hours: float,
                 count_threshold: int = RED_COUNT_DEFAULT,
                 saturation_hours: float | None = None) -> dict:
@@ -964,14 +996,7 @@ def red_backlog(lane: str, threshold_hours: float,
     if any("file-saturation" in c for r in red for c in r["causes"]):
         triggers.append("saturation")
 
-    untagged = [pr for pr in others if parse_grain_tag(pr.get("body") or "") is None]
-    untagged_states = fetch_pr_states([pr["number"] for pr in untagged]) if untagged else {}
-    unattributed = [
-        {"number": pr["number"], "title": pr["title"],
-         "age_hours": round(_hours_since(pr["createdAt"]))}
-        for pr in untagged
-        if untagged_states.get(pr["number"]) and blocking_causes(untagged_states[pr["number"]])
-    ]
+    unattributed = unattributed_blocked_prs(prs)
     # Les NUMEROS, pas un compte : le coordinateur est le seul a pouvoir les
     # reprendre (cf skill coordinate, phase 3.5), et un compte ne se traite pas.
     return {"red": red, "aged": aged, "triggers": triggers,
@@ -1022,6 +1047,71 @@ def print_unattributed_blocked(backlog: dict) -> None:
     print()
 
 
+ORPHANS_MARKER_START = "<!-- GRAIN-ORPHANS-SWEEP:START -->"
+ORPHANS_MARKER_END = "<!-- GRAIN-ORPHANS-SWEEP:END -->"
+
+
+def build_orphans_comment(orphans: list[dict]) -> str:
+    """Corps marker-guarde du balayage des orphelines du tag Grain (#13086).
+
+    Un orphelin n'est imputable a aucune lane (deviner la lane serait pire),
+    donc aucun garde ne le proposera jamais : ce commentaire EST le routage.
+    Il nomme chaque PR avec auteur et branche pour un dispatch nomme, une
+    reparation directe, ou une fermeture assumee (skill coordinate, point 5).
+    Upsert marker-guarde : un seul commentaire mis a jour sur place, jamais un
+    flot quotidien -- et le cas vide s'ecrit aussi, parce qu'un balayage muet
+    est indiscernable d'un balayage mort.
+    """
+    stamp = NOW.strftime("%Y-%m-%dT%H:%MZ")
+    lines = [ORPHANS_MARKER_START]
+    if not orphans:
+        lines += [
+            f"**File d'orphelines : 0.** Toute PR ouverte sans tag `Grain:` "
+            f"lisible porte son tag manquant comme seul defaut ; aucune n'est "
+            f"bloquee a l'instant du balayage ({stamp}).",
+            ORPHANS_MARKER_END,
+        ]
+        return "\n".join(lines)
+    lines.append(f"**File d'orphelines : {len(orphans)} PR(s) ouverte(s) bloquee(s) "
+                 f"sans tag `Grain:` lisible** ({stamp}). Imputables a aucune "
+                 f"lane, aucun garde ne les proposera : le tag manquant EST le "
+                 f"defaut -- ajouter le tag, reparer, ou fermer en le disant. "
+                 f"Regroupees par auteur pour dispatch nomme :")
+    lines.append("")
+    by_author: dict[str, list[dict]] = {}
+    for r in orphans:
+        by_author.setdefault(r["author"], []).append(r)
+    for author in sorted(by_author, key=lambda a: (-len(by_author[a]), a)):
+        lines.append(f"- **{author}** ({len(by_author[author])}) :")
+        for r in by_author[author]:
+            lines.append(f"  - #{r['number']} ({r['age_hours']} h, branche `{r['branch']}`) — {r['title']}")
+    lines += ["", f"_Recalcul a la demande : `python scripts/pick_idle_grain.py "
+                  f"--orphans-report`. Cf #13086._", ORPHANS_MARKER_END]
+    return "\n".join(lines)
+
+
+def upsert_orphans_comment(number: int, body: str) -> None:
+    """Un seul commentaire marker-guarde par issue, mis a jour sur place."""
+    comments = json.loads(subprocess.run(
+        ["gh", "issue", "view", str(number), "--repo", REPO,
+         "--json", "comments"],
+        capture_output=True, text=True, encoding="utf-8", check=True, timeout=60,
+    ).stdout)
+    cid = next((c["id"] for c in (comments.get("comments") or [])
+                if ORPHANS_MARKER_START in (c.get("body") or "")), None)
+    if cid is not None:
+        subprocess.run(
+            ["gh", "api", f"repos/{REPO}/issues/comments/{cid}",
+             "-X", "PATCH", "-f", f"body={body}"],
+            capture_output=True, text=True, encoding="utf-8", check=True, timeout=60)
+    else:
+        subprocess.run(
+            ["gh", "issue", "comment", str(number), "--repo", REPO,
+             "--body-file", "-"],
+            input=body, capture_output=True, text=True, encoding="utf-8",
+            check=True, timeout=60)
+
+
 def print_red_refusal(lane: str, backlog: dict, threshold_hours: float) -> None:
     red = backlog["red"]
     triggers = backlog.get("triggers") or []
@@ -1070,7 +1160,7 @@ def print_red_refusal(lane: str, backlog: dict, threshold_hours: float) -> None:
     print("elle ne se prend pas en silence.")
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
     # Console Windows cp1252 : un titre d'issue portant un caractere hors table
     # (fleche U+2192 etc.) fait crasher le print en UnicodeEncodeError et perd
     # le tirage entier. UTF-8 + replace : le titre s'affiche degrades, le
@@ -1080,7 +1170,8 @@ def main() -> int:
             _stream.reconfigure(encoding="utf-8", errors="replace")
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--lane", required=True, help="machine:workspace, ex. myia-po-2026:CoursIA")
+    ap.add_argument("--lane", default=None,
+                    help="machine:workspace, ex. myia-po-2026:CoursIA (requis hors --orphans-report)")
     ap.add_argument("--prev-genre", default=None,
                     help="genre du grain precedent de la lane (penalise ce genre au tirage)")
     ap.add_argument("--grains", type=int, default=4, help="candidats urne 'grain' (defaut 4)")
@@ -1101,7 +1192,28 @@ def main() -> int:
     ap.add_argument("--ignore-red", action="store_true",
                     help="passer outre le garde -- exige une justification ECRITE sur la PR concernee")
     ap.add_argument("--json", action="store_true", help="sortie machine")
-    args = ap.parse_args()
+    ap.add_argument("--orphans-report", action="store_true",
+                    help="mode rapport : PRs bloquees sans tag Grain lisible, groupees par "
+                         "auteur (routage coordinateur, #13086). Ne tire PAS de grain.")
+    ap.add_argument("--apply-comment", type=int, default=None, metavar="ISSUE",
+                    help="avec --orphans-report : upsert du commentaire marker-guarde sur "
+                         "l'issue N (defaut : dry-run, impression seule)")
+    args = ap.parse_args(argv)
+    if args.apply_comment is not None and not args.orphans_report:
+        ap.error("--apply-comment n'a de sens qu'avec --orphans-report")
+    if not args.lane and not args.orphans_report:
+        ap.error("--lane est requis (seul --orphans-report s'en dispense)")
+
+    # Mode rapport : le garde rouge (lane) ne concerne pas ce chemin -- la file
+    # des orphelines est lane-independante et ce mode ne tire pas de grain.
+    if args.orphans_report:
+        body = build_orphans_comment(unattributed_blocked_prs())
+        print(body)
+        if args.apply_comment is not None:
+            upsert_orphans_comment(args.apply_comment, body)
+            print()
+            print(f"[apply] commentaire marker-guarde mis a jour sur #{args.apply_comment}")
+        return 0
 
     # Garde "reparer son rouge d'abord" : AVANT le tirage, sinon le grain neuf
     # est deja sous les yeux quand le refus arrive, et c'est lui qui gagne.

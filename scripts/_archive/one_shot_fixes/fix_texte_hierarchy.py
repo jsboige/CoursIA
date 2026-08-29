@@ -173,7 +173,7 @@ def fix_notebook(path, dry_run=False):
         # instead of wrapping as a single line. Without this, a 'string' source
         # cell collapses to one element and ALL non-heading body is lost when
         # the heading is replaced (incident c.925 #8654: 941 -> 16 chars on
-        # Sudoku-1 cell 9). Same root cause as the c.914 broken commit
+        # Sudoku-01 cell 9). Same root cause as the c.914 broken commit
         # `318faa104` which produced two -970 / -1594 char losses on
         # 11_Quantization cell[3] / 12_Test_Time_Scaling cell[2].
         src_for_work = src if isinstance(src, list) else src.splitlines(keepends=True)
