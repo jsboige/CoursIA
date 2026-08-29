@@ -101,7 +101,15 @@
       csharp_sha: a04765c9a019637d77c08d12f904c120bdffc056
       content_python_sha: d8bfff6dc29dd46b462027dc6a5f930ee5f179598ccc93c517f4a1e7b4c7fceb
       content_csharp_sha: 357ec8e601c47b0b774d61a3a4a0d0a32caefbe1d61d304e173b0426a3da83bd
+    - date: "2026-08-29"
+      by: myia-po-2023:CoursIA-2
+      python_sha: 812d8bf14ea8f78d3bc8902ff31c7184a5e9d669
+      csharp_sha: a04765c9a019637d77c08d12f904c120bdffc056
+      content_python_sha: 8bc3cf8e09e1a2cfb0ab2455d661185a33850073acc2a6b8c202b4a22d69f4b8
+      content_csharp_sha: 357ec8e601c47b0b774d61a3a4a0d0a32caefbe1d61d304e173b0426a3da83bd
+      reason: "feat(gt,#13313) robustesse de la refutation au generateur de poids (reserve Hermes sur #12737), branche empilee sur feature/12682-gt4-desir : partage_nash += controle poids_constants (degrade, xi_B=0.5), nouvelle cellule 3 generateurs (endogene sigmoid / exogene ratio z / constant) + sensibilite 200 instances + verdict markdown ROBUSTE (endo 199/199, exo 199/199, constant 0/199). Re-exec papermill end-to-end kernel python3 local (pattern #13287, kernel WSL declare non requis : imports numpy/scipy/matplotlib/nashpy seulement). csharp inchange. Verdict ROBUSTE -> item ARTEFACT (#12737bis) non declenche."
   known_differences:
+    - "2026-08-29 : extension Python-seule de la section marchandage (#13313, empilee sur #12737) : controle poids_constants dans partage_nash + cellule robustesse 3 generateurs (endogene/exogene/constant) + verdict. Le twin C# ne porte pas la section marchandage (#12682) -- couverture asymetrique existante, la theorie de l'equilibre de Nash (socle commun) est intacte. csharp_sha inchange, entree rebaseline."
     - "2026-08-15 : ajout du pont nashpy CLI (cellule 6.3, meme schema que le pont Gambit 6.2 et la tranche GT-2 #11055). Le C# invoque nashpy (moteur du twin Python) via Process.Start, resout les 5 jeux (PD, MP, BoS, RPS, Asym) et compare l'ensemble des equilibres au SupportEnumeration from-scratch : 5/5 concordent (ecart max 3.3e-07, exploitabilite 0). RunGambit (cell 25) : resolution portable du binaire (GAMBIT_DIR, Program Files (x86), %USERPROFILE%\\gambit) pour reproductibilite sans elevation UAC. Bridge_verdict RECOVERABLE-LOCAL -> SOTA-OK (pont reellement execute)."
     - "2026-08-11 : C.4 enrichment du twin C# (2 cellules markdown interpretation apres les outputs Nash pur §2.1 + Nash mixte) pour egaler la densite pedagogique du twin Python (qui fournit deja ces lectures aux memes positions). Markdown-only, aucun changement d'engine/outputs. Parite semantique preservee (meme theorie, meme interpretation conceptuelle). Attestation rebaselinee par myia-po-2023:CoursIA-2 apres arbitrage ai-01 (DM 2026-08-11) — la PR jumelle #10351 (doublon) est retiree, #10352 est le canonique."
     - "Socle pedagogique commun : calcul des equilibres de Nash (purs + mixtes), meilleure reponse, support des equilibres mixtes."
