@@ -51,13 +51,13 @@ USER_NIT = {
 }
 
 
-def run(comments, commits=None, threads=None):
+def run(comments, commits=None, threads=None, reviews=None, pr_author="jsboige"):
     data = {
         "number": 0,
         "title": "t",
-        "author": {"login": "jsboige"},
+        "author": {"login": pr_author},
         "comments": comments,
-        "reviews": [],
+        "reviews": reviews if reviews is not None else [],
         "commits": commits if commits is not None else [{"committedDate": at(19)}],
     }
     return mod.analyse(data, threads or [], MERGED)
@@ -535,6 +535,125 @@ def test_approved_avant_la_concerne_ne_leve_pas():
         "submittedAt": at(9), "body": "",
     }
     assert run_reviews([early_ok, late_concern])["blocked"] is True
+
+
+# --- #13399 : une levee portee par une REVIEW est aussi visible qu'en
+# commentaire. Le defaut constate sur #13299 : ai-01 pose APPROVED par review
+# en nommant chaque reserve, mais l'organe n'etait capable de lever par re-review
+# que si l'auteur de l'APPROVED etait l'auteur de la reserve (auto-approbation).
+# Un reviewer TIERS qui approuve en nommant la reserve d'un autre la leve aussi.
+# Le garde-fou #12798 reste : c'est l'identite de l'auteur qui tranche.
+
+def test_approval_by_different_reviewer_naming_reserve_leves():
+    """Positif #13299 : reserve en commentaire (lane A), fix, APPROVED en review
+    par un auteur DIFFERENT qui nomme la reserve -> levee (rc=0)."""
+    reserve = {
+        "author": {"login": "po-2026"},
+        "createdAt": at(10),
+        "body": "Verdict : CHANGES_REQUESTED (substance) — sortie degeneree en cell 3.",
+    }
+    fix = {"author": {"login": "jsboige"}, "createdAt": at(12),
+           "body": "cell 3 corrigee, re-exec 5/5."}
+    approval_tierce = {
+        "author": {"login": "ai-01"},
+        "state": "APPROVED", "submittedAt": at(15),
+        "body": ("APPROVED — la reserve de po-2026 (sortie degeneree) est traitee "
+                 "(commit bb573c3819, re-exec 5/5)."),
+    }
+    res = run([reserve, fix], reviews=[approval_tierce])
+    assert res["blocked"] is False
+
+
+def test_approval_by_reserve_author_who_is_pr_author_refused():
+    """Negatif #13399 : si l'auteur de la reserve est l'auteur de la PR, une
+    APPROVED de CE meme compte est une auto-approbation (self-review cap #12319)
+    et ne leve pas. Seul un tiers legitime confirme."""
+    reserve = {
+        "author": {"login": "jsboige"},
+        "createdAt": at(10),
+        "body": "Verdict : CHANGES_REQUESTED (substance) — sortie degeneree en cell 3.",
+    }
+    fix = {"author": {"login": "jsboige"}, "createdAt": at(12),
+           "body": "cell 3 corrigee, re-exec 5/5."}
+    self_approval = {
+        "author": {"login": "jsboige"},
+        "state": "APPROVED", "submittedAt": at(15),
+        "body": "APPROVED.",
+    }
+    res = run([reserve, fix], reviews=[self_approval])
+    assert res["blocked"] is True
+
+
+def test_approval_by_different_reviewer_without_naming_does_not_leve():
+    """Garde-fou : une review APPROVED d'un tiers qui n'identifie pas la reserve
+    (pas de mention de son auteur) ne la leve pas — sinon tout APPROVED d'un
+    coordinateur eteindrait toutes les reserves de la PR."""
+    reserve = {
+        "author": {"login": "po-2026"},
+        "createdAt": at(10),
+        "body": "Verdict : CHANGES_REQUESTED (substance) — sortie degeneree en cell 3.",
+    }
+    fix = {"author": {"login": "jsboige"}, "createdAt": at(12),
+           "body": "cell 3 corrigee."}
+    approval_generique = {
+        "author": {"login": "ai-01"},
+        "state": "APPROVED", "submittedAt": at(15),
+        "body": "APPROVED — le livrable est bon a merger.",
+    }
+    res = run([reserve, fix], reviews=[approval_generique])
+    assert res["blocked"] is True
+
+
+def test_lift_phrase_in_review_commented_leves():
+    """#13399 point 2 : une PHRASE de levee portee par le corps d'une review
+    COMMENTED (et pas un commentaire) leve comme un commentaire — la levee
+    devient symetrique a la pose (qui acceptait deja commentaire et review).
+    La borne d'auteur #11145 reste : la phrase de l'auteur de la reserve leve
+    (ici clusterManager-Myia leve sa propre reserve par une review)."""
+    reserve = {
+        "author": {"login": "clusterManager-Myia"},
+        "state": "COMMENTED", "submittedAt": at(10),
+        "body": "[Hermes] — COMMENT_WITH_CONCERNS\nCI catalog-drift FAIL.",
+    }
+    lift_in_review = {
+        "author": {"login": "clusterManager-Myia"},
+        "state": "COMMENTED", "submittedAt": at(15),
+        "body": "Je leve la CHANGES_REQUESTED — drift corrige au commit c506d04b.",
+    }
+    res = run_reviews([reserve, lift_in_review])
+    assert res["blocked"] is False
+
+
+def test_reserve_in_review_lifted_by_third_party_naming():
+    """Symetrie pose/levee (#13399 point 2) : une reserve posee en REVIEW
+    (COMMENTED, meme surface qu'un __init__ par review) est levee par un tiers
+    APPROVED qui la nomme, comme celle d'un commentaire. La distinction est
+    l'identite de l'auteur, pas le canal."""
+    concern_in_review = {
+        "author": {"login": "po-2026"},
+        "state": "COMMENTED", "submittedAt": at(10),
+        "body": "Verdict : CHANGES_REQUESTED (substance) — sortie degeneree en cell 3.",
+    }
+    approval_tierce = {
+        "author": {"login": "ai-01"},
+        "state": "APPROVED", "submittedAt": at(15),
+        "body": "APPROVED — la reserve de po-2026 (sortie degeneree) est traitee.",
+    }
+    res = run_reviews([concern_in_review, approval_tierce])
+    assert res["blocked"] is False
+
+
+def test_channel_reflects_origin_surface():
+    """#13399 point 3 : le canal de chaque evenement bloqueur est expose
+    (comment vs review), pour qu'un desaccord entre l'organe et une lecture
+    humaine soit diagnosticable sans re-fouiller l'API."""
+    assert run([USER_NIT])["blocking"][0]["channel"] == "comment"
+    assert run_reviews([CONCERN_REVIEW])["blocking"][0]["channel"] == "review"
+    # un thread inline non resolu releve du canal review (surface GitHub review)
+    thread = {"author": "jsboige", "body": "ligne 3 a revoir",
+              "resolved": False, "outdated": False,
+              "createdAt": at(11), "path": "a/b.ipynb", "line": 3}
+    assert run([], threads=[thread])["blocking"][0]["channel"] == "review"
 
 
 # --- #11201 : le faux negatif « corrige X et je merge ». Le test LIFT_MARKERS
