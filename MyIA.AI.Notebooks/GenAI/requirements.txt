@@ -44,6 +44,13 @@ diffusers>=0.24.0
 accelerate>=0.25.0
 safetensors>=0.4.0
 
+# Video upscale (Real-ESRGAN, Video/03-2 Pipeline 2)
+# NB : basicsr 1.4.2 importe torchvision.transforms.functional_tensor, supprime en
+# torchvision>=0.17 -> patch post-install requis dans basicsr/data/degradations.py :
+# remplacer l'import par torchvision.transforms.functional (rgb_to_grayscale).
+realesrgan>=0.3.0
+basicsr>=1.4.2
+
 # Speech & TTS
 faster-whisper>=0.10.0
 TTS>=0.22.0
