@@ -1,0 +1,62 @@
+{
+  "_comment": "Genere par la resynchronisation verbatim. Ne pas editer a la main : relancer une resynchronisation depuis l'amont et regenerer ce fichier.",
+  "upstream_repo": "ArgumentumGames/Argumentum",
+  "upstream_commit": "344ac8c3",
+  "upstream_branch": "master",
+  "synced_on": "2026-08-30",
+  "files": {
+    "argumentum_fallacies_taxonomy.csv": {
+      "blob_sha1": "fdba6a1630a156470f3c1074ebf18cc1aa29bb97",
+      "rows": 1408,
+      "columns": 104,
+      "required_columns": [
+        "AIF_attackType",
+        "AIF_attackedNode",
+        "AIF_skosDirectRef",
+        "AIF_skosExceptionRef",
+        "AIF_skosMappingType",
+        "AIF_skosOther",
+        "crossLink_Allows",
+        "crossLink_Denounces",
+        "crossLink_Inverts",
+        "crossLink_IsRelatedTo",
+        "crossLink_Leverages",
+        "crossLink_Mirrors",
+        "crossLink_Opposes",
+        "crossLink_PredatesOn"
+      ]
+    },
+    "argumentum_virtues_taxonomy.csv": {
+      "blob_sha1": "7d694b95eb32fb32f5eecbe5289268b6ff4f2404",
+      "rows": 223,
+      "columns": 82,
+      "required_columns": [
+        "AIF_attackType",
+        "AIF_attackedNode",
+        "AIF_criticalQuestion",
+        "AIF_skosDirectRef",
+        "AIF_skosExceptionRef",
+        "AIF_skosMappingType",
+        "AIF_skosOther",
+        "crossLink_Allows",
+        "crossLink_Denounces",
+        "crossLink_Inverts",
+        "crossLink_IsRelatedTo",
+        "crossLink_Leverages",
+        "crossLink_Mirrors",
+        "crossLink_Opposes",
+        "crossLink_PredatesOn"
+      ],
+      "families": [
+        "Argument pertinent",
+        "Argument valable",
+        "Honnêteté intellectuelle",
+        "Inférence maîtrisée",
+        "Justesse lexicale",
+        "Présentation intègre",
+        "Sens quantitatif",
+        "Échange enrichissant"
+      ]
+    }
+  }
+}
