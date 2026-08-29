@@ -1,6 +1,6 @@
 # Cadrer ce qu'un agent a le droit de faire
 
-[← Plateformes conversationnelles](README.md) | [← Comparatif OWUI vs AI-Engine](comparatif-owui-vs-ai-engine.md)
+[← Plateformes conversationnelles](README.md) | [← Comparatif OWUI vs AI-Engine](AI-Engine-WordPress/02-Comparatif/comparatif-owui-vs-ai-engine.md)
 
 > **Document de conception, au niveau catégorie.** La question traitée ici se pose
 > à l'identique sur Open WebUI et sur AI-Engine, avec des réponses natives
@@ -234,9 +234,9 @@ une sonde qui répond vert parce qu'elle mesure autre chose que ce qu'on croit.
 
 ## Pour aller plus loin
 
-- [`comparatif-owui-vs-ai-engine.md`](comparatif-owui-vs-ai-engine.md) — quand
+- [`comparatif-owui-vs-ai-engine.md`](AI-Engine-WordPress/02-Comparatif/comparatif-owui-vs-ai-engine.md) — quand
   l'une des deux plateformes est plus adaptée que l'autre.
-- [`AI-Engine-WordPress/livresagites-parcours.md`](AI-Engine-WordPress/livresagites-parcours.md)
+- [`AI-Engine-WordPress/livresagites-parcours.md`](AI-Engine-WordPress/04-Cas-Usage-livresagites/livresagites-parcours.md)
   — section « Sécurité de l'endpoint », côté jeton et capacités.
 - [`Open-WebUI/`](Open-WebUI/README.md) — la plateforme et sa série de tests.
 

@@ -76,14 +76,6 @@ attributions:
     correction: "Schulman GAE: '(2016)' -> '(2015)' (date de 1re publication arXiv, antérieure à ICLR 2016)"
     date: "2026-08-24"
 
-  - arxiv_id: "1506.02438"
-    notebook: "MyIA.AI.Notebooks/RL/rl_6c_ppo_from_scratch.ipynb"
-    cell_index: 27
-    expected_citation: "Schulman, J., Moritz, P., Levine, S., Jordan, M. & Abbeel, P. (2015). High-Dimensional Continuous Control Using Generalized Advantage Estimation. arXiv:1506.02438."
-    source_pr: "#12838"
-    correction: "Schulman GAE: '(2016)' -> '(2015)' (cellule References académiques, retrait mention 'ICLR 2016' qui était parasite)"
-    date: "2026-08-24"
-
   - arxiv_id: "2102.09544"
     notebook: "MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb"
     cell_index: 51

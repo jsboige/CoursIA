@@ -190,13 +190,63 @@ class TestSelfTestCLI(unittest.TestCase):
                 sys.executable, str(_SCRIPT),
                 "--self-test", "--limit", "600", "--window-seconds", "60",
             ],
-            capture_output=True, text=True, timeout=120,
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
+            timeout=120,
         )
         self.assertNotEqual(
             proc.returncode, 2,
             f"self-test FAILED: positive control #13050/#13051 missing.\n"
             f"stdout: {proc.stdout[-500:]}\nstderr: {proc.stderr[-500:]}",
         )
+
+
+class TestSelfTestExitContract(unittest.TestCase):
+    """#13331: the --self-test exit contract, exercised WITHOUT network by
+    patching `_gh_issue_list`. Failure visibility (criterion 3) lives here:
+    a blind window MUST flip the CLI to exit 2, and a missing control MUST
+    take precedence over the duplicates-found exit 1."""
+
+    @staticmethod
+    def _gh_rows(*specs: tuple[int, str, str]) -> list[dict]:
+        return [
+            {"number": n, "title": t, "createdAt": iso, "state": "OPEN"}
+            for n, t, iso in specs
+        ]
+
+    def test_cli_exit_1_when_control_found(self):
+        """Healthy scan: the pair is a real duplicate -> exit 1, never 2."""
+        rows = self._gh_rows(
+            (13050, "[Lean-2] exemple", "2026-08-26T01:39:13Z"),
+            (13051, "[Lean-2] exemple", "2026-08-26T01:39:14Z"),
+        )
+        from unittest import mock
+        with mock.patch.object(_mod, "_gh_issue_list", return_value=rows):
+            rc = _mod._cli(["--self-test", "--limit", "10"])
+        self.assertEqual(rc, 1)
+
+    def test_cli_exit_2_when_control_missing(self):
+        """Control missing -> exit 2, even though other pairs exist
+        (exit 2 takes precedence over exit 1)."""
+        rows = self._gh_rows(
+            (1, "foo", "2026-08-26T01:00:00Z"),
+            (2, "foo", "2026-08-26T01:00:01Z"),
+        )
+        from unittest import mock
+        with mock.patch.object(_mod, "_gh_issue_list", return_value=rows):
+            rc = _mod._cli(["--self-test", "--limit", "10"])
+        self.assertEqual(rc, 2)
+
+    def test_blind_window_drops_control(self):
+        """Window 0 (blind): the known pair's delta (1 s) falls outside the
+        window -> zero pairs, control reported MISSING. This is the exact
+        shape the negative-control workflow step asserts on live data."""
+        rows = [
+            _row(13050, "foo", "2026-08-26T01:39:13Z"),
+            _row(13051, "foo", "2026-08-26T01:39:14Z"),
+        ]
+        result = detect_burst_pairs(rows, window_seconds=0)
+        self.assertEqual(result.n_pairs, 0)
+        self.assertIn((13050, 13051), result.positive_controls_missing)
 
 
 if __name__ == "__main__":

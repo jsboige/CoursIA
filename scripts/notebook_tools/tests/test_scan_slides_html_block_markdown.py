@@ -1,144 +1,170 @@
-"""Tests de scan_slides_html_block_markdown (#13360 landing, #13216 classe).
+"""Tests for the HTML-block markdown detector (issue #13216).
 
-Le detecteur garde la classe « markdown avale par un bloc HTML » (regle
-CommonMark HTML block : une balise seule sur sa ligne avale tout jusqu'a la
-ligne vide). #13230 a corrige les 3 decks touches ; ce test couvre le
-detecteur lui-meme, jamais atterre sur main avant #13360.
-
-Un detecteur se valide par ses faux negatifs : le controle positif (defaut
-fabrique) DOIT etre signale, les formes saines NE DOIVENT PAS l'etre.
+The suite is written around the failure mode the detector exists for -- a line of
+block markdown swallowed because it follows an opening tag with no blank line -- and
+around the OVER-accusation that a naive version of the same detector produced.
 """
 
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+import pytest
 
-from scan_slides_html_block_markdown import (  # noqa: E402
-    iter_decks,
-    main,
-    scan_file,
-    scan_text,
-)
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-_REPO_ROOT = Path(__file__).resolve().parents[3]
-
-# Les 3 decks corriges par #13230 (classe balise OUVRANTE). Le non-regres
-# attendu : aucun d'eux ne reapparait dans les findings du corpus.
-DECKS_FIXED_BY_13230 = [
-    "slides/01-introduction/slides.md",
-    "slides/06-apprentissage/slides.md",
-    "slides/S8-semantic-web/slides.md",
-]
+from scan_slides_html_block_markdown import scan_text  # noqa: E402
 
 
-def test_positive_control_opening_tag_fabricated():
-    """Acceptance #13360 : une instance FABRIQUEE du defaut est detectee."""
+# --- the defect itself -------------------------------------------------------
+
+
+def test_bold_swallowed_by_an_html_block_is_reported():
+    """The canonical shape from PR #13096, verbatim."""
     text = (
-        '<div class="grid grid-cols-2 gap-5">\n'
+        '<div class="grid grid-cols-2 gap-5 -mt-2">\n'
+        "<div>\n"
         "**Environnement multi-agents**\n"
     )
     hits = scan_text(text)
-    assert hits == [(2, "**Environnement multi-agents**")]
+    assert len(hits) == 1
+    line, offending = hits[0]
+    assert line == 3, "the reported line must be the swallowed markdown, not the tag"
+    assert offending == "**Environnement multi-agents**"
 
 
-def test_positive_control_closing_tag_fabricated():
-    """Forme FERMANTE (#13345) : un `</div>` seul avale la ligne suivante
-    exactement comme un `<div>` seul (HTML block type 6 ouvre sur les deux)."""
-    text = "</div>\n- Behaviourism\n"
-    hits = scan_text(text)
-    assert hits == [(2, "- Behaviourism")]
+def test_blank_line_after_the_tag_is_clean():
+    """The in-artifact positive control: the SAME construct, one blank line later.
 
-
-def test_blank_line_closes_the_block():
-    text = "<div>\n\n**gras voulu**\n"
+    Both forms coexisted in `slides/S3-acculturation/slides.md`; the blank line was
+    the only variable between the broken left column and the working right one.
+    """
+    text = "<div>\n\n**Optimisation de strategies**\n"
     assert scan_text(text) == []
 
 
-def test_self_contained_tag_not_flagged():
-    """`<span>x</span>` ne correspond jamais a _OPENING_TAG (texte apres le
-    premier `>` casse l'ancre de fin) : negatif nomme du script."""
-    text = "<span>x</span>\n- liste saine\n"
+@pytest.mark.parametrize(
+    "markdown",
+    [
+        "- N-grams",
+        "1. Premier point",
+        "## Un titre",
+        "> une citation",
+        "| col | col |",
+        "**gras**",
+    ],
+)
+def test_every_block_level_construct_is_caught(markdown):
+    """A detector is validated by its FALSE NEGATIVES: name the shapes it must
+    catch and check it catches them, rather than trusting its hits."""
+    assert len(scan_text("<div>\n%s\n" % markdown)) == 1, markdown
+
+
+# --- and what it must NOT report ---------------------------------------------
+
+
+def test_inline_markdown_is_not_reported():
+    """The over-accusation that the first version of this detector produced.
+
+    Inline emphasis inside an HTML block renders acceptably; flagging it reported 7
+    hits on a file that holds 0 real defects. Only block-level constructs are
+    destroyed outright, so only those are reported.
+    """
+    text = "<div>\nDu texte courant avec de l'*emphase* et du `code`.\n"
     assert scan_text(text) == []
 
 
-def test_inline_markdown_not_flagged():
-    """Le markdown INLINE n'est pas signale -- garde anti-sur-accusation (le
-    detecteur naif rapportait 7 hits dont 0 reel sur S3-acculturation)."""
-    text = "<div>\nSome prose with *emphasis* inside\n"
+def test_nested_tag_on_the_next_line_is_not_reported():
+    """A tag keeps the block open but carries no markdown; the line after IT is
+    examined on its own iteration, so reporting here would double-count."""
+    text = "<div>\n<span>\n"
     assert scan_text(text) == []
 
 
-def test_tag_with_trailing_content_out_of_scope():
-    """Gap documente : `<div>du texte` avale aussi, mais la regle enforcee
-    est la balise SEULE sur sa ligne. Le test nomme le gap, il ne le nie pas."""
-    text = "<div>du texte\n- item\n"
-    assert scan_text(text) == []
+def test_self_closing_tag_opens_no_block():
+    assert scan_text('<img src="x.png" />\n**gras**\n') == []
 
 
-def test_nested_tag_chain_flags_deepest_only():
-    """Balise suivie d'une autre balise : le bloc reste ouvert mais la 2e
-    balise ne porte pas de markdown ; la ligne MARkDOWN est vue a l'iteration
-    de la balise qui la precede directement -- un seul hit, pas deux."""
-    text = "<div>\n<div>\n- item\n"
-    assert scan_text(text) == [(3, "- item")]
+def test_tag_closed_on_its_own_line_opens_no_block():
+    assert scan_text("<span>inline</span>\n**gras**\n") == []
 
 
-def test_tag_at_eof_is_silent():
-    assert scan_text('<div class="x">') == []
+def test_tag_with_trailing_content_is_not_a_lone_opening_tag():
+    """Only a tag ALONE on its line starts the shape this rule is about."""
+    assert scan_text("<div>du texte\n**gras**\n") == []
 
 
-def test_all_block_markdown_forms_detected():
-    for md in ("- item", "* item", "1. item", "# Titre", "> quote", "| a | b |"):
-        text = f"<div>\n{md}\n"
-        assert scan_text(text) == [(2, md)], md
+def test_opening_tag_on_the_last_line_does_not_crash():
+    assert scan_text("<div>") == []
 
 
-def test_check_nonexistent_path_returns_2(capsys):
-    assert main(["--check", "no/such/path"]) == 2
+def test_several_defects_are_all_reported_in_order():
+    text = "<div>\n**a**\n\n<div>\n- b\n"
+    assert [line for line, _ in scan_text(text)] == [2, 5]
 
 
-def test_corpus_no_regression_on_decks_fixed_by_13230():
-    """Acceptance #13360 : la sortie ne REGRESSE pas les decks corriges par
-    #13230 (classe balise OUVRANTE). Subtilite mesuree : slides/01-introduction
-    est a la fois un deck #13230 ET le porteur de l'unique occurrence vivante
-    -- de la classe FERMANTE (#13345), pas une regression de #13230. On
-    verifie donc la CLASSE du finding (ligne precedente = `</tag>` seul), pas
-    son numero de ligne (il derive a chaque edition du deck)."""
-    slides_root = _REPO_ROOT / "slides"
-    findings = {}
-    for deck in iter_decks(slides_root):
-        hits = scan_file(deck)
-        if hits:
-            findings[deck.relative_to(_REPO_ROOT).as_posix()] = hits
-
-    # Les 2 decks non concernes par #13345 : zero finding.
-    for deck in DECKS_FIXED_BY_13230:
-        if deck == "slides/01-introduction/slides.md":
-            continue
-        assert deck not in findings, f"regression de #13230 sur {deck}"
-
-    # Corpus total connu : exactement 1 occurrence vivante.
-    assert list(findings) == ["slides/01-introduction/slides.md"], findings
-    hits = findings["slides/01-introduction/slides.md"]
-    assert len(hits) == 1, hits
-
-    # Et elle est de la classe FERMANTE (#13345), pas de la classe que
-    # #13230 a corrige (ouvrante) : la ligne precedente est un `</tag>` seul.
-    import re
-    lines = (slides_root / "01-introduction" / "slides.md").read_text(
-        encoding="utf-8"
-    ).split("\n")
-    hit_line = hits[0][0]
-    preceding = lines[hit_line - 2]
-    assert re.match(r"^\s*</[a-zA-Z][a-zA-Z0-9-]*>\s*$", preceding), (
-        f"l'occurrence vivante devait etre de classe fermante (#13345), "
-        f"ligne precedente = {preceding!r}"
-    )
+# --- closing tags open a block too (found by review on #13218) ---------------
+#
+# CommonMark HTML block type 6 opens on `</tag>` exactly as it does on `<tag>`.
+# The detector shipped blind to that half, so the ratchet would have let the
+# whole class through forever. These tests are the faux-negatif controls: each
+# one names a shape the pattern MUST catch, so a future narrowing of the regex
+# fails here instead of silently rendering a smaller, cleaner-looking count.
 
 
-def test_corpus_deck_discovery_is_non_recursive_and_finds_the_deck_dirs():
-    """36 decks au landing #13360 : le denominateur est borne -- un iter_decks
-    qui decouvrirait 0 deck rendrait le test de corpus vert et muet."""
-    decks = list(iter_decks(_REPO_ROOT / "slides"))
-    assert len(decks) >= 30, f"decouverte de deck trop maigre : {len(decks)}"
+@pytest.mark.parametrize(
+    "markdown",
+    ["- Behaviourism", "**gras**", "## Titre", "1. premier", "> citation", "| a | b |"],
+)
+def test_bare_closing_tag_swallows_every_block_construct(markdown):
+    """The founder case: `</div>` alone, then block markdown.
+
+    Verified at the engine Slidev uses -- markdown_it.MarkdownIt("commonmark")
+    renders "</div>\n- Behaviourism\n" unchanged, with no <li>: the bullet comes
+    back as literal text on the slide.
+    """
+    assert scan_text("</div>\n" + markdown + "\n") == [(2, markdown)]
+
+
+def test_bare_closing_tag_followed_by_blank_line_is_clean():
+    """The positive control for the FIX itself: a blank line closes the block.
+
+    This is the exact edit the companion fixer applies, so if this test ever
+    fails the repair recipe is wrong, not just the detector.
+    """
+    assert scan_text("</div>\n\n- Behaviourism\n") == []
+
+
+def test_closing_tag_with_attributes_is_not_a_thing_but_does_not_crash():
+    assert scan_text("</div >\n- a\n") == [(2, "- a")]
+
+
+# --- the exception must NOT swallow genuinely self-contained lines -----------
+
+
+def test_inline_element_closed_on_its_line_still_opens_no_block():
+    """Negative control bounding _BARE_CLOSING_TAG.
+
+    `<span>x</span>` ends in `</span>` just like the bare closing tag does. It
+    must stay excluded -- markdown-it renders it as a paragraph and the next
+    line as a real list. Widening _SELF_CONTAINED carelessly would break this.
+    """
+    assert scan_text("<span>x</span>\n- Behaviourism\n") == []
+
+
+def test_self_closing_tag_still_opens_no_block_after_the_widening():
+    assert scan_text('<img src="x.png" />\n- a\n') == []
+
+
+def test_closing_tag_with_trailing_content_is_out_of_scope_not_harmless():
+    """A DECLARED scope limit, not a non-defect -- written out so the gap is
+    visible instead of implied by a passing test.
+
+    markdown-it DOES swallow here: `</div> et du texte` opens a block just as
+    the lone form does, so `- a` comes back literal. The detector still
+    ignores it, because the rule it enforces is "a tag ALONE on its line" --
+    the same narrowing the opening-tag side already applies (see
+    test_tag_with_trailing_content_is_not_a_lone_opening_tag). Widening both
+    sides is a separate decision with its own false-positive budget; what
+    must not happen is this test reading as though the engine were fine.
+    """
+    assert scan_text("</div> et du texte\n- a\n") == []

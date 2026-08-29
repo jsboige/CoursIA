@@ -2093,7 +2093,7 @@ Le calcul dans l'espace projeté se fait **sans projeter explicitement** (astuce
 
 > **ML.NET** (C#) : `ML/ML.Net/` - Classification, regression, clustering
 > **Reinforcement Learning** : `RL/` - CartPole, DQN, Stable Baselines3
-> **Algorithmes genetiques** : `Sudoku/Sudoku-2-Genetic.ipynb`, `Search/Portfolio_Optimization_GeneticSharp.ipynb`
+> **Algorithmes genetiques** : `Sudoku/Sudoku-02-Genetic.ipynb`, `Search/Portfolio_Optimization_GeneticSharp.ipynb`
 > **Deep Learning et GenAI** : `GenAI/` - Transformers, diffusion, LLMs
 > **Probabilités et inference** : `Probas/` - Infer.NET, réseaux bayesiens
 

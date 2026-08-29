@@ -546,7 +546,7 @@ Task(
     prompt="""
     Agent notebook-executor.
 
-    Notebook: MyIA.AI.Notebooks/Sudoku/Sudoku-1-Backtracking.ipynb
+    Notebook: MyIA.AI.Notebooks/Sudoku/Sudoku-01-Backtracking.ipynb
     Mode: selective
     Cell indices: [0, 1, 2, 5, 10]
     Kernel: .net-csharp

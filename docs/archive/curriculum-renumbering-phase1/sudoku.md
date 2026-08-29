@@ -21,7 +21,7 @@ mécaniques, conformes à la méthode phase-1 établie par [#6879](https://githu
    formel) et comparer à l'ordre numérique.
 
 Les navlinks `<<` / `>>` ont déjà été audités par [#6888](https://github.com/jsboige/CoursIA/pull/6888)
-(scan L613 stale-RESOLVES : 1 défaut corrigé sur Sudoku-4-Csharp, résidu de réorg).
+(scan L613 stale-RESOLVES : 1 défaut corrigé sur Sudoku-04-Csharp, résidu de réorg).
 
 ## Verdict : **AUCUNE renumérotation nécessaire pour Sudoku**
 
@@ -37,7 +37,7 @@ arête cross-notebook non triviale** existe dans tout le DAG :
 
 | Notebook | Prereq déclaré (cross-N) | Valide ? |
 |----------|--------------------------|----------|
-| Sudoku-7 (Norvig, propagation de contraintes) | Sudoku-6 (AIMA-CSP) | ✓ 6 < 7 |
+| Sudoku-07 (Norvig, propagation de contraintes) | Sudoku-06 (AIMA-CSP) | ✓ 6 < 7 |
 
 Cette arête est conceptuellement justifiée : Norvig (propagation AC-3) s'appuie sur le cadre CSP
 posé par AIMA-CSP (cell[0]). Elle est correctement ordonnée. Aucun autre notebook ne déclare de
@@ -72,7 +72,7 @@ l'approximatif (rapide, non garanti) puis le formel (preuve).
 ## Contexte — le défaut de navlink (résolu, hors phase-1)
 
 [#6888](https://github.com/jsboige/CoursIA/pull/6888) a corrigé 1 stale-RESOLVES sur
-`Sudoku-4-SimulatedAnnealing-Csharp` (son `<<` pointait vers Sudoku-7, résidu de réorg). Ce défaut
+`Sudoku-04-SimulatedAnnealing-Csharp` (son `<<` pointait vers Sudoku-07, résidu de réorg). Ce défaut
 était **structurellement orthogonal** à la renumérotation : le numéro 4 était correct, c'est le
 *lien narratif* qui était cassé. Il est désormais résolu et n'affecte pas le présent verdict.
 
@@ -82,7 +82,7 @@ Contrairement à Infer (chaîne prérequis riche, chaque notebook s'appuie sur l
 est délibérément **plate** : chaque paradigme (backtracking, génétique, Z3, LLM...) est
 **auto-contenu** et ne nécessite que la base (Sudoku-0). C'est un **choix pédagogique assumé** —
 la série compare 7 paradigmes sur un même problème, chacun lisible indépendamment — et non un
-défaut de numérotation. La seule exception (Sudoku-7 ← Sudoku-6) confirme la règle : Norvig est
+défaut de numérotation. La seule exception (Sudoku-07 ← Sudoku-06) confirme la règle : Norvig est
 une *optimisation* de AIMA-CSP, donc en dépend.
 
 Si l'on voulait forcer une chaîne linéaire (chaque notebook prereq du suivant), on appauvrirait la
@@ -97,4 +97,4 @@ modularité sans gain pédagogique. **Statu quo recommandé.**
   [PyMC](../archive/curriculum-renumbering-phase1/pymc.md),
   [Texte](../archive/curriculum-renumbering-phase1/texte.md),
   [Video](../archive/curriculum-renumbering-phase1/video.md).
-- [#6888](https://github.com/jsboige/CoursIA/pull/6888) — navlink Sudoku-4 (résolu).
+- [#6888](https://github.com/jsboige/CoursIA/pull/6888) — navlink Sudoku-04 (résolu).

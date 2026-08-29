@@ -1044,7 +1044,10 @@ def test_12908_preflight_exigeant_une_levee_n_est_pas_un_geste():
     }
     result = mod.analyse(data, [], MERGED)
     assert result["blocked"] is True
-    assert len(result["blocking"]) == 2
+    # #12925 (port #12908 emission) : la revalidation maintenante elle-meme
+    # (emission **BLOCKED**) est un signal de plus — 3, pas 2. L'intent du
+    # test (le preflight n'est pas un geste de levee) est preserve.
+    assert len(result["blocking"]) == 3
 
 
 def test_12908_levee_explicite_non_contradictoire_reste_reconnue():
@@ -2219,6 +2222,111 @@ def test_13083_blocage_reel_conditionnel_a_un_override_reste_block():
     body = ("**BLOCAGE MERGE (ai-01)** — pas de merge tant que [OVERRIDE] lane "
             "n'est pas pose par le coordinateur.")
     assert mod.classify("myia-ai-01", body) == "BLOCK"
+
+
+# --- #13316 : jsboige n'est pas un compte de levée. L'identité de poussée est
+# PARTAGÉE par toutes les lanes (Hermes self-review cap #12319, push lane) :
+# créditer jsboige comme coordinateur de l'[OVERRIDE] rétablit l'auto-levee que
+# la borne d'auteur #11145 interdit. Cas réel fondateur : PR #12737 — réserve
+# BOT-CONCERN de myia-ai-01 à 02:37:04Z, deux « [OVERRIDE] » poussés sous
+# jsboige à 02:40:01Z et 02:41:06Z par la lane portante. Le garde-fou a tenu
+# par lecture humaine, pas par le gate : jsboige in COORDINATOR_LOGINS était
+# vrai, l'organe aurait rendu rc=0.
+
+LANE_OVERRIDE_BODY = (
+    "**[OVERRIDE] lane myia-po-2023:CoursIA-2** — Levée de la réserve du "
+    "2026-08-28 : les deux points sont adressés par le commit abc123, "
+    "re-review demandée."
+)
+
+
+def test_13316_jsboige_override_ne_leve_pas_reserve_tiers():
+    """Critère 1 : un [OVERRIDE] + phrase de levée poussé sous jsboige (la lane
+    elle-même) n'éteint PAS la réserve d'un tiers — c'est #12798 sous un autre
+    nom, le gate ne le crédite plus."""
+    reserve = HERMES_REVIEW_11479  # tier (bot), déjà porté par run_coord
+    lane_override = {"author": {"login": "jsboige"},
+                     "createdAt": "2026-08-18T13:06:34Z",
+                     "body": LANE_OVERRIDE_BODY}
+    assert reserve  # réserve d'un tier présente dans les reviews
+    assert run_coord([lane_override])["blocked"] is True
+
+
+def test_13316_override_ai01_leve_toujours():
+    """Critère 2 (contrôle positif, même exécution que le critère 1) : l'override
+    légitime de la lane coordinatrice dédiée continue d'éteindre la réserve —
+    le correctif ferme l'auto-levee, il ne transforme pas la trappe en mur."""
+    lift = {"author": {"login": "myia-ai-01"},
+            "createdAt": "2026-08-18T13:06:34Z", "body": OVERRIDE_BODY}
+    assert run_coord([lift])["blocked"] is False
+
+
+def test_13316_self_lift_jsboige_sur_sa_propre_reserve_leve():
+    """Borne intacte : jsboige qui lève SA PROPRE réserve (lift_author ==
+    nit_author) reste la voie légitime #11145 — l'exclusion #13316 ne vise que
+    la trappe coordinateur, pas la self-levee de l'émetteur."""
+    own_nit = {"author": {"login": "jsboige"}, "createdAt": at(10),
+               "body": "CHANGES_REQUESTED: la cellule 12 casse le kernel."}
+    own_lift = {"author": {"login": "jsboige"}, "createdAt": at(12),
+                "body": "Levée de ma réserve : cellule 12 corrigée, commit abc."}
+    assert run([own_nit, own_lift])["blocked"] is False
+
+
+def test_13316_replay_12737_reel():
+    """Critère 3 : replay du cas réel #12737 (timestamps réels) — réserve
+    myia-ai-01 02:37:04Z, « overrides » jsboige 02:40:01Z et 02:41:06Z : la
+    réserve SURVIT et l'organe distingue les deux issues (avant : rc=0)."""
+    reserve = {"author": {"login": "myia-ai-01"},
+               "state": "CHANGES_REQUESTED",
+               "submittedAt": "2026-08-28T02:37:04Z",
+               "body": "CHANGES_REQUESTED: le verdict EXEC_PROVED n'est pas "
+                       "prouvé par le diff (2 cellules sans sortie)."}
+    o1 = {"author": {"login": "jsboige"},
+          "createdAt": "2026-08-28T02:40:01Z", "body": LANE_OVERRIDE_BODY}
+    o2 = {"author": {"login": "jsboige"},
+          "createdAt": "2026-08-28T02:41:06Z", "body": LANE_OVERRIDE_BODY}
+    res = mod.analyse({
+        "number": 12737, "title": "t", "author": {"login": "jsboige"},
+        "comments": [o1, o2], "reviews": [reserve],
+        "commits": [{"committedDate": "2026-08-28T02:00:00Z"}],
+    }, [], datetime(2026, 8, 28, 3, 0, 0, tzinfo=timezone.utc))
+    assert res["blocked"] is True
+    assert len(res["blocking"]) == 1  # la réserve ai-01 seule survit
+    assert res["blocking"][0]["author"] == "myia-ai-01"
+
+
+def test_13316_override_ecarte_est_nomme_dans_la_sortie():
+    """Critère 4 : un override écarté pour cause d'auteur est NOMMÉ (auteur,
+    horodatage, raison) — le silence rendait « rouge malgré notre override »
+    indistinguable d'un bug du détecteur (#13030, #12096)."""
+    reserve = {"author": {"login": "myia-ai-01"},
+               "state": "CHANGES_REQUESTED",
+               "submittedAt": "2026-08-28T02:37:04Z",
+               "body": "CHANGES_REQUESTED: verdict non prouvé."}
+    o1 = {"author": {"login": "jsboige"},
+          "createdAt": "2026-08-28T02:40:01Z", "body": LANE_OVERRIDE_BODY}
+    res = mod.analyse({
+        "number": 0, "title": "t", "author": {"login": "jsboige"},
+        "comments": [o1], "reviews": [reserve],
+        "commits": [{"committedDate": "2026-08-28T02:00:00Z"}],
+    }, [], datetime(2026, 8, 28, 3, 0, 0, tzinfo=timezone.utc))
+    assert res["blocked"] is True
+    ignored = res["ignored_overrides"]
+    assert len(ignored) == 1
+    assert ignored[0]["author"] == "jsboige"
+    assert "2026-08-28T02:40:01" in ignored[0]["at"]
+    assert "n'est pas un compte" in ignored[0]["why"]
+    assert "jsboige" in ignored[0]["why"]
+
+
+def test_13316_override_legitime_ne_produit_aucune_note():
+    """Miroir du critère 4 : l'override légitime (ai-01) ne génère PAS de note
+    « override ignoré » — la liste ne doit nommer que les écarts réels."""
+    lift = {"author": {"login": "myia-ai-01"},
+            "createdAt": "2026-08-18T13:06:34Z", "body": OVERRIDE_BODY}
+    res = run_coord([lift])
+    assert res["blocked"] is False
+    assert res["ignored_overrides"] == []
 # --- #12944 : le close-the-loop Hermes. « Mon concern ... est traité et
 # fermé » (PR #12941 fondateur, review 5020777166) : la levee PASSIVE
 # n'etait couverte par aucun LIFT_MARKER, et le verdict mentionne (« ma
@@ -2295,3 +2403,86 @@ def test_12944_residu_negation_du_compose_documente():
     CE test est celui a mettre a jour."""
     body = "Mon concern n'est pas encore traité et fermé, le registre reste fabriqué."
     assert mod.has_marker(body, mod.LIFT_MARKERS) is True  # residu assume
+
+
+
+# PR **BLOCKED** », « réserve uniquement B.0/process ») tout en narrant le
+# vocabulaire de levée (« une levée explicite sur le head final ») était
+# absorbée par le LIFT_MARKER de sa propre narration : la reserve vivante
+# redevenait invisible, rc=0, exactement le defaut que B.0 traque. Le verdict
+# B.0 émis (**BLOCKED** en gras, sortie organe « BLOCKED  PR ») est désormais
+# un concern positionnel — et le mot NU « BLOCKED » reste hors du filet (tag
+# de protocole, négation « n'est plus BLOCKED »).
+
+NIT_EPITA_12908 = {
+    "author": {"login": "jsboigeEpita"}, "createdAt": at(10),
+    "body": "[Hermes] COMMENT_WITH_CONCERNS — sortie vLLM absente du head.",
+}
+
+REVALIDATION_BLOQUANTE_12908 = {
+    "author": {"login": "jsboigeEpita"}, "createdAt": at(11),
+    "body": (
+        "[Hermes] PREFLIGHT COMMENTED — head `7aaf6eab92`\n\n"
+        "Le durcissement B.0 (142/142 tests) classe encore cette PR "
+        "**BLOCKED** : le checker retourne `1` avec quatre réserves tierces "
+        "actives. Seule une phrase explicite de cet auteur après vérification, "
+        "ou un `[OVERRIDE]` coordinateur, les lève selon la sémantique "
+        "corrigée.\n\nSéquençage : obtenir de `jsboigeEpita` une levée "
+        "explicite sur le head final.\n\nAucune demande de modification du "
+        "notebook : substance revalidée ; réserve uniquement B.0/process."
+    ),
+}
+
+
+def test_12908_revalidation_maintenant_le_blocage_ne_leve_pas():
+    """Le cas live (commentaire 2026-08-25T04:45:30Z de #12798, adapté) : la
+    réserve d'origine ET la revalidation maintenante restent toutes deux des
+    signaux — la narration de levée n'éteint rien."""
+    result = run([NIT_EPITA_12908, REVALIDATION_BLOQUANTE_12908])
+    assert result["blocked"] is True
+    assert len(result["blocking"]) == 2
+
+
+def test_12908_levee_explicite_sans_blocage_maintenu_reste_levee():
+    """Contrôle positif : le durcissement ne rend pas la réserve indélébile —
+    une levée explicite non contradictoire du même auteur lève toujours."""
+    lift = {"author": {"login": "jsboigeEpita"}, "createdAt": at(12),
+            "body": "Levée de ma réserve : commit abc vérifié, cassette rejouée."}
+    assert run([NIT_EPITA_12908, lift])["blocked"] is False
+
+
+def test_12908_levee_puis_blocked_narre_au_passe_reste_levee():
+    """La position décide (miroir de `_formal_concern_precedes_lift`) : une
+    levée suivie d'un **BLOCKED** narré comme état passé reste une levée."""
+    lift_narre = {"author": {"login": "jsboigeEpita"}, "createdAt": at(12),
+                  "body": "Je lève ma réserve après rejeu — le gate n'affiche "
+                          "plus **BLOCKED**."}
+    assert run([NIT_EPITA_12908, lift_narre])["blocked"] is False
+
+
+def test_12908_tag_protocol_blocked_n_est_pas_une_reserve():
+    """Le mot NU ne matche pas : un tag de protocole lane « [BLOCKED] » sans
+    forme d'émission n'est pas une réserve tierce."""
+    tag = {"author": {"login": "myia-po-2023"}, "createdAt": at(12),
+           "body": "[BLOCKED] lane myia-po-2023:CoursIA-2 — drainage file CI, "
+                   "pas de geste local possible."}
+    assert run([tag])["blocked"] is False
+
+
+def test_12908_negation_bare_word_n_est_pas_une_reserve():
+    """« n'est plus BLOCKED » (mot nu, sans gras) : la négation d'un état
+    passé n'émet pas de réserve."""
+    passe = {"author": {"login": "myia-po-2023"}, "createdAt": at(12),
+             "body": "Reprise du cycle : le gate n'est plus BLOCKED depuis le "
+                     "drainage, les checks tournent."}
+    assert run([passe])["blocked"] is False
+
+
+def test_12908_sortie_organe_pastee_est_une_emission():
+    """La sortie de l'organe collée hors fence (« BLOCKED  PR #N — ») est une
+    émission de blocage : le commentaire qui la rapporte maintient une
+    réserve vivante."""
+    paste = {"author": {"login": "clusterManager-Myia"}, "createdAt": at(11),
+             "body": "Contre-verification au head frais :\n"
+                     "BLOCKED  PR #42 — 3 nit(s) non leve(s)"}
+    assert run([paste])["blocked"] is True
