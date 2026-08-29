@@ -288,6 +288,40 @@ GLOBAL_SEED_CALL_RE = re.compile(
 # --------------------------------------------------------------------------- #
 
 
+# --------------------------------------------------------------------------- #
+#  #13534 : un numero de section cite dans un lien n'est pas une mesure
+# --------------------------------------------------------------------------- #
+
+# Un renvoi inter-notebooks -- [2.6 clustering & acp](2.6-clustering-kmeans-pca.ipynb)
+# -- porte un numero de SECTION, pas une grandeur susceptible de deriver d'une machine
+# a l'autre : precisement ce que les classes drainables (MACHINE-DEP / ENV-DEP /
+# STOCHASTIQUE-NON-SEEDEE) existent pour capturer. La classe (c) section-number du
+# cablage v4 reconnait deja ces numeros HORS lien ; elle n'atteint pas l'interieur de
+# la syntaxe [..](..), ou le meme numero apparait DEUX fois (label et cible).
+#
+# Mesure ai-01 2026-08-29 sur le corpus reel d'origin/main (49 notebooks) :
+#   aucun filtre .......................... 210  -> franchit `< 209`, CI rouge
+#   liens markdown seuls .................. 183  -> vert, marge 26
+# Sur les 4 findings du notebook ajoute par #13006 qui ont fait franchir le cliquet,
+# 2 sont des numeros de section dans des liens ; ce masque les retire.
+#
+# Deux regles voisines ont ete MESUREES puis ECARTEES, et ne doivent pas etre
+# rajoutees sans nouvelle mesure :
+#   - masquer les blocs ``` fermes : 183 aussi, exactement +0 finding.
+#   - masquer les spans de code inline : descend a 157, mais masque de VRAIES mesures
+#     que le scanner existe pour trouver -- p.ex. la divergence numpy/torch de
+#     3.3-Regularisation, "fraction de zeros : 0.4014 (numpy) et 0.4007 (torch)", ou
+#     les backticks sont de la TYPOGRAPHIE, pas du code.
+#
+# On masque AVANT la classification, sans toucher a la classification elle-meme.
+_MD_LINK_RE = re.compile(r"\[[^\]\n]*\]\([^)\n]*\)")
+
+
+def _non_measurement_spans(text: str) -> list[tuple[int, int]]:
+    """Spans ou un nombre est une reference, jamais une mesure (#13534)."""
+    return [(m.start(), m.end()) for m in _MD_LINK_RE.finditer(text)]
+
+
 QUANT_CLASSES = ("STRUCTUREL", "MACHINE-DEP", "ENV-DEP", "STOCHASTIQUE-NON-SEEDEE")
 
 
@@ -621,10 +655,14 @@ def analyze_notebook_quant(path: str | os.PathLike) -> NotebookQuantClasses:
         # PRJ42, semver simplifie stricte, etc.) — mais on doit scanner le
         # texte brut pour les versions, donc on **re-scan** avec nos propres
         # regex par-dessus les nombres deja extraits.
+        skip_spans = _non_measurement_spans(text)
         for m in re.finditer(
             r"(?<![A-Za-z0-9_])-?\d+(?:[.,]\d+)?(?:[eE][-+]?\d+)?(?![A-Za-z0-9_])",
             text,
         ):
+            # #13534 : numero de section dans un lien -> pas une mesure.
+            if any(s <= m.start() < e for s, e in skip_spans):
+                continue
             raw = m.group(0)
             v = _parse_fr_number(raw)
             if v is None:
