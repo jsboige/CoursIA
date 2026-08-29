@@ -96,6 +96,11 @@ GENERIC_KNOB = re.compile(r"(?i)(baseline|threshold|ratchet|_cap\b|\bcap\b)")
 
 # Assertion vocabulary: file-count claims and exclusivity markers.
 COUNT_CLAIM = re.compile(r"\b(\d+)\s*(?:fichiers?|files?)\b", re.IGNORECASE)
+# #13440: the boundary `\b` stops the match at "fichier" when the body writes
+# the plural parenthetically ("25 fichier(s) verifies") -- without skipping
+# the "(s)" hump, every downstream tail window (incidental qualifier,
+# negated-diff tail, reference verb) is blind on this form.
+PLURAL_PAREN = re.compile(r"^\s*\(s\)\s*")
 # #11985 rule 1 extension (CLOSED LIST -- never expand to unknown vocabulary):
 # a body can declare its perimeter in words ("trois fichiers", "five files").
 # The authorial declaration is the same shape; we just spell-check the
@@ -456,6 +461,22 @@ INCIDENTAL_QUALIFIERS = frozenset({
     "produites", "sources", "source",
     # #11985 formes 3-4: artifact kinds and scan inventories.
     "audio", "distinct", "distincts", "distinctes", "non-notebook",
+    # #13440 -- participes de RESULTAT DE CONTROLE : ce qu'un controle a
+    # couvert, jamais ce que le diff touche (un claim de perimetre s'ecrit
+    # avec des verbes de modification, qui restent bloquants via
+    # _has_strong_scope et hors liste). Formes mesurees sur main :
+    # "25 fichier(s) verifies sans BOM", "18 fichiers testes sans erreur",
+    # "Controle encodage : 25 fichier(s) conformes".
+    # FN DELIBERE : "restaures"/"restaurés" (campagne accents #2876) et
+    # "re-executes"/"re-exécutés" (tranches MGS) restent HORS liste -- dans
+    # ce depot ces formes SONT des perimetres.
+    "verifies", "vérifiés", "verifie", "vérifié",
+    "testes", "testés", "teste", "testé",
+    "conformes", "conforme",
+    "scannes", "scannés", "scanne", "scanné",
+    "analyses", "analysés", "analyse", "analysé",
+    "audites", "audités", "audite", "audité",
+    "examines", "examinés", "examine", "examiné",
 })
 # A cited threshold ("< 15 fichiers", ">= 10 fichiers") quotes a rule, it does
 # not claim a perimeter.
@@ -613,12 +634,23 @@ def _has_strong_scope(low: str) -> bool:
     )
 
 
-def _count_is_exempt(line: str, m: re.Match) -> bool:
+def _count_is_exempt(line: str, m: re.Match, ante_context: str = "") -> bool:
     """True when the specific COUNT match `m` on `line` is exempted by the
     per-count filters (zero, threshold citation, locative scan scope,
     negated-diff tail, scan antecedent, reference verb, parenthesized
     antecedent, incidental qualifier). Shared by _count_is_incidental and
-    _additive_line_sum (#12103)."""
+    _additive_line_sum (#12103).
+
+    #13335: `ante_context` is the enclosing markdown paragraph above `line`
+    (contiguous non-empty lines, blank line = boundary). ONLY the
+    MEASUREMENT_ANTECEDENT branch consults it: a soft-wrapped body puts the
+    tool antecedent ("Un scan recursif rendait 54 / en accusant 5 fichiers")
+    on the line above the count, and a same-line window would amputate the
+    exemption of the very thing it looks for -- the verdict would depend on
+    where the author pressed Enter, not on what the body asserts. Every other
+    branch stays line-scoped: the issue's controls C/D (founder perimeter
+    assertion, bare authorial count) carry no measurement antecedent anywhere
+    in their paragraph and remain blocking."""
     claimed = int(m.group(1))
     if claimed == 0:
         return True
@@ -627,12 +659,13 @@ def _count_is_exempt(line: str, m: re.Match) -> bool:
         return True
     if LOCATIVE_PREP.search(line):
         return True
-    after = line[m.end():]
+    after = PLURAL_PAREN.sub(" ", line[m.end():], count=1)
     if NEGATED_DIFF_TAIL.match(after):
         return True
     if HIT_ANTECEDENT.search(line[: m.start()]):
         return True
-    if MEASUREMENT_ANTECEDENT.search(line[: m.end()]):
+    ante_scope = f"{ante_context}\n{line[: m.end()]}" if ante_context else line[: m.end()]
+    if MEASUREMENT_ANTECEDENT.search(ante_scope):
         return True
     if REFERENCE_VERB_TAIL.match(after):
         return True
@@ -686,7 +719,7 @@ def _word_form_count(text: str) -> int | None:
     return None
 
 
-def _count_is_incidental(line: str) -> bool:
+def _count_is_incidental(line: str, ante_context: str = "") -> bool:
     """True when every count on the line denotes something other than the PR's
     file list. Caller-facing guarantee: a line with a scope word or a diffstat
     neighborhood is NEVER incidental via the qualifier/locative rules (FN
@@ -695,7 +728,9 @@ def _count_is_incidental(line: str) -> bool:
     a zero count (a PR never has 0 files), a comparison-prefixed count
     ("< 15 fichiers" cites a threshold), and -- #11985 -- a count describing
     ANOTHER object than the head (a table row, a superseded revision, a
-    rejected alternative, an enumeration sub-sum)."""
+    rejected alternative, an enumeration sub-sum). #13335: `ante_context`
+    (paragraph prefix) feeds only the MEASUREMENT_ANTECEDENT exemption -- see
+    _count_is_exempt."""
     low = line.lower()
     # #11985 forme 4 (table case): a markdown table row is a report structure
     # (the tube separates the qualifier from its number -- no cell pairing is
@@ -723,7 +758,7 @@ def _count_is_incidental(line: str) -> bool:
     if _has_strong_scope(low) or DIFFSTAT_NEIGHBORHOOD.search(line):
         return False
     for m in matches:
-        if not _count_is_exempt(line, m):
+        if not _count_is_exempt(line, m, ante_context):
             return False  # this count looks authorial -> the line stays blocking
     return True
 
@@ -754,10 +789,12 @@ def _exclusivity_marker_in_parens(line: str) -> bool:
     return outside_hits == 0 and any(low.find(mk) >= 0 for mk in EXCLUSIVITY_MARKERS)
 
 
-def _is_incidental_assertion(text: str) -> bool:
-    """#11712: kept in candidates (found + printed), excluded from blocking."""
+def _is_incidental_assertion(text: str, ante_context: str = "") -> bool:
+    """#11712: kept in candidates (found + printed), excluded from blocking.
+    #13335: `ante_context` (enclosing paragraph, see _count_is_exempt) makes
+    the measurement-antecedent exemption wrap-invariant."""
     if COUNT_CLAIM.search(text):
-        return _count_is_incidental(text)
+        return _count_is_incidental(text, ante_context)
     if _has_exclusivity(text.lower()):
         return _exclusivity_marker_in_parens(text)
     return False
@@ -934,6 +971,90 @@ def _fence_line_indices(text: str) -> tuple[set[int], int | None]:
     return indices, orphan_opener
 
 
+def _paragraph_prefix(text: str, idx: int) -> str:
+    """#13335: the markdown paragraph ABOVE line `idx` -- contiguous non-empty
+    lines joined by newlines, read top-down. A blank line is a paragraph
+    boundary (the acceptance's explicit cut: without it the window would climb
+    the whole body and a stray "scan" three pages up would exempt everything).
+    A fence delimiter line is also a boundary: a fenced block is transcription,
+    never part of a prose paragraph (#11670 rationale)."""
+    lines = text.splitlines()
+    out: list[str] = []
+    j = idx - 1
+    while j >= 0:
+        stripped = lines[j].strip()
+        if not stripped:
+            break  # blank line: paragraph boundary
+        if stripped.startswith("`" * 3) or stripped.startswith("~" * 3):
+            break  # fence delimiter: transcription boundary
+        out.append(stripped)
+        j -= 1
+    return "\n".join(reversed(out))
+
+
+def _extract_line_candidates(text: str) -> list[tuple[int, str]]:
+    """Index-carrying core of extract_perimeter_assertions: returns
+    (line_index, stripped_line) pairs so callers can re-attach body context
+    (#13335 paragraph prefix) without re-parsing."""
+    fence_indices, _unterminated = _fence_line_indices(text)
+    candidates: list[tuple[int, str]] = []
+    for idx, raw_line in enumerate(text.splitlines()):
+        if idx in fence_indices:
+            continue  # Issue #11670 founder case: L898 transcription, not an authorial claim
+        line = raw_line.strip()
+        if not line:
+            continue
+        if line.startswith("|"):
+            continue  # markdown table row: report structure, not an assertion
+        low = line.lower()
+        if COUNT_CLAIM.search(line):
+            if _counts_all_quoted_or_codespan(line):
+                continue  # citing a count (reported speech / code example), not claiming it
+            candidates.append((idx, line))
+            continue
+        # #12024 / #11985 word-form extension: a body can declare its
+        # perimeter with a spelled-out cardinal ("trois fichiers",
+        # "five files"). Without this branch, the word form never enters
+        # the candidate list and body_declares_effective_count is never
+        # set for word-only declarations. Closed list FR/EN cardinals
+        # 1-10 (see COUNT_WORDS rationale at line ~98).
+        word_triggers = [
+            (m, word)
+            for word in COUNT_WORDS
+            for m in re.finditer(rf"\b{re.escape(word)}\s+(?:fichiers?|files?)\b",
+                                  line, re.IGNORECASE)
+        ]
+        if word_triggers:
+            # Same exclusion as numeric form: a word-form count cited inside
+            # a code-span (`` `trois fichiers` ``) is an example, not an
+            # authorial perimeter declaration. Founder case #12024: body v3
+            # listed two illustrative examples between backticks, the
+            # perimeter-review-guard flagged them as unverifiable assertions.
+            # An all-in-codespan word-form pattern is reported display.
+            if all(
+                _trigger_in_quoted_or_codespan(line, m.start(), m.end() - m.start())
+                for m, _ in word_triggers
+            ):
+                continue
+            candidates.append((idx, line))
+            continue
+        if _has_exclusivity(low) and any(w in low for w in STRONG_SCOPE_WORDS):
+            if _markers_all_quoted(line):
+                continue  # quoting an exclusivity claim, not making one
+            candidates.append((idx, line))
+    return candidates
+
+
+def extract_perimeter_assertions_with_context(text: str) -> list[tuple[str, str]]:
+    """#13335: candidates paired with their enclosing paragraph prefix, for
+    wrap-invariant classification. Same candidate set as
+    extract_perimeter_assertions -- only the context differs."""
+    return [
+        (line, _paragraph_prefix(text, idx))
+        for idx, line in _extract_line_candidates(text)
+    ]
+
+
 def extract_perimeter_assertions(text: str) -> list[str]:
     """Pull candidate perimeter assertions from review/PR prose.
 
@@ -963,53 +1084,9 @@ def extract_perimeter_assertions(text: str) -> list[str]:
     must stay caught -- a backlink exemption would also be a trivial
     evasion.
     """
-    fence_indices, _unterminated = _fence_line_indices(text)
-    candidates: list[str] = []
-    for idx, raw_line in enumerate(text.splitlines()):
-        if idx in fence_indices:
-            continue  # Issue #11670 founder case: L898 transcription, not an authorial claim
-        line = raw_line.strip()
-        if not line:
-            continue
-        if line.startswith("|"):
-            continue  # markdown table row: report structure, not an assertion
-        low = line.lower()
-        if COUNT_CLAIM.search(line):
-            if _counts_all_quoted_or_codespan(line):
-                continue  # citing a count (reported speech / code example), not claiming it
-            candidates.append(line)
-            continue
-        # #12024 / #11985 word-form extension: a body can declare its
-        # perimeter with a spelled-out cardinal ("trois fichiers",
-        # "five files"). Without this branch, the word form never enters
-        # the candidate list and body_declares_effective_count is never
-        # set for word-only declarations. Closed list FR/EN cardinals
-        # 1-10 (see COUNT_WORDS rationale at line ~98).
-        word_triggers = [
-            (m, word)
-            for word in COUNT_WORDS
-            for m in re.finditer(rf"\b{re.escape(word)}\s+(?:fichiers?|files?)\b",
-                                  line, re.IGNORECASE)
-        ]
-        if word_triggers:
-            # Same exclusion as numeric form: a word-form count cited inside
-            # a code-span (`` `trois fichiers` ``) is an example, not an
-            # authorial perimeter declaration. Founder case #12024: body v3
-            # listed two illustrative examples between backticks, the
-            # perimeter-review-guard flagged them as unverifiable assertions.
-            # An all-in-codespan word-form pattern is reported display.
-            if all(
-                _trigger_in_quoted_or_codespan(line, m.start(), m.end() - m.start())
-                for m, _ in word_triggers
-            ):
-                continue
-            candidates.append(line)
-            continue
-        if _has_exclusivity(low) and any(w in low for w in STRONG_SCOPE_WORDS):
-            if _markers_all_quoted(line):
-                continue  # quoting an exclusivity claim, not making it
-            candidates.append(line)
-    return candidates
+    # #13335: core moved to _extract_line_candidates (index-carrying) so the
+    # paragraph context can be attached without changing this public shape.
+    return [line for _, line in _extract_line_candidates(text)]
 
 
 def _check_unterminated_fence(text: str) -> bool:
@@ -1120,9 +1197,33 @@ def _run_gh(args: list[str]) -> str:
     return proc.stdout
 
 
+def _normalize_rest_files(items: list[dict]) -> list[dict]:
+    """Map REST pulls/files items onto the ``path``/``additions``/``deletions``
+    shape the rest of the guard reads (``gh pr view --json files`` field names)."""
+    return [
+        {
+            "path": it.get("filename"),
+            "additions": it.get("additions"),
+            "deletions": it.get("deletions"),
+        }
+        for it in (items or [])
+    ]
+
+
 def fetch_report(pr: int) -> Report:
-    files_json = _run_gh(["pr", "view", str(pr), "--json", "files"])
-    files = json.loads(files_json)["files"]
+    # ``gh pr view --json files`` caps at 100 entries (single page), so the
+    # guard used to confront bodies against a TRUNCATED list on >100-file PRs:
+    # #13357 carries 148 real files, the capped list read 100, and the honest
+    # body count failed against the truncation -- an unwinnable guard. The
+    # REST endpoint paginates; ``--paginate`` without ``-q`` merges the pages
+    # into one JSON array (same pattern as candidate_delivered.py, #10488).
+    repo = json.loads(
+        _run_gh(["repo", "view", "--json", "nameWithOwner"])
+    )["nameWithOwner"]
+    items = json.loads(_run_gh([
+        "api", f"repos/{repo}/pulls/{pr}/files", "--paginate",
+    ]))
+    files = _normalize_rest_files(items)
     diff = _run_gh(["pr", "diff", str(pr)])
     return Report(files=files, moves=extract_baseline_moves(diff))
 
@@ -1208,6 +1309,10 @@ class Candidate:
     # from blocking to signal by the caller. Filled by `select_candidates`
     # when given `n_files`; the `blocking` property below is untouched.
     body_declares_effective_count: bool = False
+    # #13335: enclosing paragraph prefix (see _paragraph_prefix), filled by
+    # select_candidates from the full body text. Feeds only the
+    # MEASUREMENT_ANTECEDENT exemption -- wrap-invariance of the verdict.
+    context: str = ""
 
     @property
     def blocking(self) -> bool:
@@ -1228,7 +1333,9 @@ class Candidate:
         carried >= 2 distinct counts, making a red guaranteed regardless
         of the real perimeter.
         """
-        return self.source == "body" and not _is_incidental_assertion(self.text)
+        return self.source == "body" and not _is_incidental_assertion(
+            self.text, self.context
+        )
 
 
 def select_candidates(
@@ -1274,11 +1381,11 @@ def select_candidates(
             if opener is not None:
                 orphan_opener = opener
         body_candidates = [
-            Candidate(text, item["kind"], item["author"], "body")
-            for text in extract_perimeter_assertions(body)
+            Candidate(text, item["kind"], item["author"], "body", context=ctx)
+            for text, ctx in extract_perimeter_assertions_with_context(body)
         ]
         if n_files is not None and any(
-            not _is_incidental_assertion(c.text)
+            not _is_incidental_assertion(c.text, c.context)
             and _first_confrontable_count(c.text) == n_files
             for c in body_candidates
         ):
@@ -1302,7 +1409,8 @@ def select_candidates(
                     re.IGNORECASE,
                 )
                 if any(
-                    not _is_incidental_assertion(c.text) and pat.search(c.text)
+                    not _is_incidental_assertion(c.text, c.context)
+                    and pat.search(c.text)
                     for c in body_candidates
                 ):
                     for c in body_candidates:

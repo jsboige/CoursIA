@@ -20,9 +20,9 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 
 | Métrique | Valeur |
 |----------|--------|
-| Notebooks | 235 |
+| Notebooks | 255 |
 | PRODUCTION | 0 |
-| BETA | 229 |
+| BETA | 249 |
 | ALPHA | 6 |
 
 ## SymbolicAI (1 notebooks)
@@ -31,7 +31,7 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 |---|----------|----------|------------|
 | 1 | Configuration de l'environnement C# | BETA | Oui |
 
-## SymbolicAI/Argument_Analysis (24 notebooks)
+## SymbolicAI/Argument_Analysis (27 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -47,20 +47,23 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 | 10 | Argument_Analysis_Agentic-5-jtms : Truth Maintenance… | BETA | Oui |
 | 11 | ArgumentProfile : la fiche d'identite… | BETA | Oui |
 | 12 | Argumentum : la carte de sophisme, du nœud de taxonomie… | BETA | Oui |
-| 13 | Argumentation abstraite de Dung — sémantiques grounded,… | BETA | Oui |
-| 14 | Analyse Rhétorique Collaborative par Agents IA -… | BETA | Non |
-| 15 | Routage multi-backend : decider ou echouer bruyamment | BETA | Oui |
-| 16 | Ontologie AIF.owl -- l'architecture Argumentum des… | ALPHA | Oui |
-| 17 | Argument_Analysis_Ontology_CrossLinks.ipynb — PR-B… | BETA | Oui |
-| 18 | Ontologie des vertus argumentatives -- le pole miroir… | BETA | Oui |
-| 19 | Argumentation graduée — sémantiques de classement… | BETA | Oui |
-| 20 | Restitution en 3 actes — scaffold déterministe,… | BETA | Non |
-| 21 | Argument_Analysis — Le modèle de Toulmin (1958) | BETA | Oui |
-| 22 | Interface de Configuration et Préparation du Texte | BETA | Oui |
-| 23 | Argument_Analysis — Argumentation basée sur les valeurs… | BETA | Oui |
-| 24 | I2 - Génération de contre-arguments par raisonnement… | BETA | Oui |
+| 13 | Instrument G_t^arg -> G_{t+1}^arg — graphes… | BETA | Oui |
+| 14 | Argumentation abstraite de Dung — sémantiques grounded,… | BETA | Oui |
+| 15 | Analyse Rhétorique Collaborative par Agents IA -… | BETA | Non |
+| 16 | Routage multi-backend : decider ou echouer bruyamment | BETA | Oui |
+| 17 | Ontologie AIF.owl -- l'architecture Argumentum des… | ALPHA | Oui |
+| 18 | Argument_Analysis_Ontology_CrossLinks.ipynb — PR-B… | BETA | Oui |
+| 19 | Ontologie des vertus argumentatives -- le pole miroir… | BETA | Oui |
+| 20 | Argumentation graduée — sémantiques de classement… | BETA | Oui |
+| 21 | Argument_Analysis_Recollement_Lectures.ipynb — Strate 6… | BETA | Oui |
+| 22 | Argument_Analysis_Recollement_Strate6.ipynb — Strate 6… | BETA | Oui |
+| 23 | Restitution en 3 actes — scaffold déterministe,… | BETA | Non |
+| 24 | Argument_Analysis — Le modèle de Toulmin (1958) | BETA | Oui |
+| 25 | Interface de Configuration et Préparation du Texte | BETA | Oui |
+| 26 | Argument_Analysis — Argumentation basée sur les valeurs… | BETA | Oui |
+| 27 | I2 - Génération de contre-arguments par raisonnement… | BETA | Oui |
 
-## SymbolicAI/Lean (36 notebooks)
+## SymbolicAI/Lean (47 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -80,28 +83,39 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 | 14 | Lean-16d : Game of Life sur kernel Lean natif | BETA | Non |
 | 15 | Lean-16e : FRACTRAN, la machine universelle de Conway,… | BETA | Non |
 | 16 | Lean-16f : Le Theoreme du Libre Arbitre (Conway-Kochen) | BETA | Non |
-| 17 | Lean 17a — Conway, les Nœuds et la Preuve de Piccirillo | BETA | Non |
-| 18 | Lean 17b — Invariants de Nœuds : Calcul et Vérification | BETA | Non |
-| 19 | Lean 17c — Le lake knot_lean par ses déclarations… | BETA | Non |
-| 20 | Lean-18 : A* et l'optimalité sous heuristique… | BETA | Non |
-| 21 | Lean-19 : La Conjecture de Sendov (preuve L. Mazur,… | BETA | Non |
-| 22 | Lean 2 - Types Dependants et Calcul des Constructions | BETA | Non |
-| 23 | Lean-20 : Le manuel *Analysis I* de T. Tao en Lean 4… | BETA | Non |
-| 24 | Lean-21 : La conjecture de Freiman-Ruzsa polynomiale… | BETA | Non |
-| 25 | Lean-22 : Detection MIMO par flips -- le seuil 2 log N… | BETA | Non |
-| 26 | Lean-22b : le lake mimo_lean par ses énoncés —… | BETA | Non |
-| 27 | Lean-23 : Le problème inverse de Galois — M₂₃ refermé… | BETA | Non |
-| 28 | Lean-24 : ERC-20 sous Lean 4 — l'invariant de… | BETA | Non |
-| 29 | Lean 3 - Propositions et Preuves | BETA | Non |
-| 30 | Lean 4 - Quantificateurs et Logique du Premier Ordre | BETA | Non |
-| 31 | Lean 5 - Mode Tactique | BETA | Non |
-| 32 | Lean 6 - Mathlib4 : La Bibliotheque Mathematique | BETA | Non |
-| 33 | Lean 7 - Integration des LLMs pour l'Assistance aux… | BETA | Non |
-| 34 | Lean 7b - Exemples Progressifs et Benchmarks | BETA | Non |
-| 35 | Lean 8 - Agents Autonomes pour Demonstration de… | BETA | Non |
-| 36 | Lean 9 : Multi-Agents avec Semantic Kernel | BETA | Non |
+| 17 | Lean 16g — Canons : le barreau 2 de l'échelle des… | BETA | Non |
+| 18 | Lean-16h : la tournée des motifs du Jeu de la Vie —… | BETA | Non |
+| 19 | Lean-16i — Synthèse d'un translateur minuscule :… | BETA | Non |
+| 20 | Lean-16j : la preuve de correction Hashlife — compagnon… | BETA | Non |
+| 21 | Lean 17a — Conway, les Nœuds et la Preuve de Piccirillo | BETA | Non |
+| 22 | Lean 17b — Invariants de Nœuds : Calcul et Vérification | BETA | Non |
+| 23 | Lean 17c — Le lake knot_lean par ses déclarations… | BETA | Non |
+| 24 | Lean-18 : A* et l'optimalité sous heuristique… | BETA | Non |
+| 25 | Lean-19 : La Conjecture de Sendov (preuve L. Mazur,… | BETA | Non |
+| 26 | Lean 2 - Types Dependants et Calcul des Constructions | BETA | Non |
+| 27 | Lean-20 : Le manuel *Analysis I* de T. Tao en Lean 4… | BETA | Non |
+| 28 | Lean-21 : La conjecture de Freiman-Ruzsa polynomiale… | BETA | Non |
+| 29 | Lean-21b : Trois primitives de PFR, et l'endroit exact… | BETA | Non |
+| 30 | Lean-22 : Detection MIMO par flips -- le seuil 2 log N… | BETA | Non |
+| 31 | Lean-22b : le lake mimo_lean par ses énoncés —… | BETA | Non |
+| 32 | Lean-22c : Le budget de descente - quand la… | BETA | Non |
+| 33 | Lean-23 : Le problème inverse de Galois — M₂₃ refermé… | BETA | Non |
+| 34 | Lean-24 : ERC-20 sous Lean 4 — l'invariant de… | BETA | Non |
+| 35 | Lean-24b — ERC-20 natif : l'invariant de conservation… | BETA | Non |
+| 36 | Lean-26 : le lake calibration_lean par ses énoncés —… | BETA | Non |
+| 37 | Lean-27 — Cohérence et témoin : de Finetti construit le… | BETA | Non |
+| 38 | Lean-28 : Hommage à James R. Munkres — le cours 18.901… | BETA | Non |
+| 39 | Lean-29 : coloration d'arêtes et conjecture de Tutte —… | BETA | Non |
+| 40 | Lean 3 - Propositions et Preuves | BETA | Non |
+| 41 | Lean 4 - Quantificateurs et Logique du Premier Ordre | BETA | Non |
+| 42 | Lean 5 - Mode Tactique | BETA | Non |
+| 43 | Lean 6 - Mathlib4 : La Bibliotheque Mathematique | BETA | Non |
+| 44 | Lean 7 - Integration des LLMs pour l'Assistance aux… | BETA | Non |
+| 45 | Lean 7b - Exemples Progressifs et Benchmarks | BETA | Non |
+| 46 | Lean 8 - Agents Autonomes pour Demonstration de… | BETA | Non |
+| 47 | Lean 9 : Multi-Agents avec Semantic Kernel | BETA | Non |
 
-## SymbolicAI/Planners (23 notebooks)
+## SymbolicAI/Planners (25 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -117,17 +131,19 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 | 10 | Planners-5-Heuristics-Csharp | BETA | Oui |
 | 11 | Planners-5-Heuristiques en Planification | BETA | Oui |
 | 12 | Planners-5b — Admissibilité de la relaxation… | BETA | Non |
-| 13 | Planners-6-Domains-Csharp — Jumeau C# : planificateur… | BETA | Oui |
-| 14 | Planners-6-Domains - Domaines Classiques de… | BETA | Oui |
-| 15 | Planners-7-OR-Tools-Csharp — Jumeau C# : solveur CP… | BETA | Oui |
-| 16 | Planners-7-OR-Tools - Programmation par Contraintes | BETA | Oui |
-| 17 | Planners-8-Temporal — Planification Temporelle (twin… | BETA | Oui |
-| 18 | Planners-8-Temporal - Planification Temporelle | BETA | Oui |
-| 19 | Planners-9-HTN (C#) | BETA | Oui |
-| 20 | Planners-9-HTN - Planification Hiérarchique | BETA | Oui |
-| 21 | Planners-10: LLMs pour la Planification | BETA | Non |
-| 22 | Planners-11: Unified Planning | BETA | Oui |
-| 23 | Planners-12: Learning to Plan avec LOOP | BETA | Non |
+| 13 | Planners-5c — Le différentiel d'atteignabilité : ce que… | BETA | Oui |
+| 14 | Planners-6-Domains-Csharp — Jumeau C# : planificateur… | BETA | Oui |
+| 15 | Planners-6-Domains - Domaines Classiques de… | BETA | Oui |
+| 16 | Planners-7-OR-Tools-Csharp — Jumeau C# : solveur CP… | BETA | Oui |
+| 17 | Planners-7-OR-Tools - Programmation par Contraintes | BETA | Oui |
+| 18 | Planners-8-Temporal — Planification Temporelle (twin… | BETA | Oui |
+| 19 | Planners-8-Temporal - Planification Temporelle | BETA | Oui |
+| 20 | Planners-9-HTN (C#) | BETA | Oui |
+| 21 | Planners-9-HTN - Planification Hiérarchique | BETA | Oui |
+| 22 | Planners-10: LLMs pour la Planification | BETA | Non |
+| 23 | Planners-11: Unified Planning | BETA | Oui |
+| 24 | Planners-12: Learning to Plan avec LOOP | BETA | Non |
+| 25 | Planners-14: Le LLM comme reducteur d'espace de… | BETA | Non |
 
 ## SymbolicAI/SMT (45 notebooks)
 
@@ -179,7 +195,7 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 | 44 | 17 — UNSAT cores Z3 : expliquer l'insatisfiabilité (le… | BETA | Oui |
 | 45 | Notebook 18 - L'enigme d'Einstein : la logique des… | BETA | Oui |
 
-## SymbolicAI/SemanticWeb (25 notebooks)
+## SymbolicAI/SemanticWeb (26 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -192,24 +208,25 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 | 7 | SW-12-Python-GraphRAG | BETA | Non |
 | 8 | SW-13-Reasoners | BETA | Oui |
 | 9 | SW-13 (C#) : Raisonneurs RDF/OWL — Inferer des… | BETA | Oui |
-| 10 | SW-2-RDFBasics | BETA | Oui |
-| 11 | SW-2b-Python-RDFBasics | BETA | Oui |
-| 12 | SW-3-GraphOperations | BETA | Oui |
-| 13 | SW-3b-Python-GraphOperations | BETA | Oui |
-| 14 | SW-4-SPARQL | BETA | Oui |
-| 15 | SW-4b-Python-SPARQL | BETA | Oui |
-| 16 | SW-5-LinkedData | BETA | Non |
-| 17 | SW-5b-Python-LinkedData | BETA | Non |
-| 18 | SW-6-RDFS | BETA | Oui |
-| 19 | SW-6b-Python-RDFS | BETA | Oui |
-| 20 | SW-7-OWL | BETA | Oui |
-| 21 | SW-7b-Python-OWL | BETA | Non |
-| 22 | SW-8-CSharp-SHACL | BETA | Oui |
-| 23 | SW-8-Python-SHACL | BETA | Oui |
-| 24 | SW-9-CSharp-JSONLD — JSON-LD avec dotNetRDF (twin C#) | ALPHA | Oui |
-| 25 | SW-9-Python-JSONLD | BETA | Oui |
+| 10 | SW-14 — Le coup ontologique comme diff de graphe… | BETA | Oui |
+| 11 | SW-2-RDFBasics | BETA | Oui |
+| 12 | SW-2b-Python-RDFBasics | BETA | Oui |
+| 13 | SW-3-GraphOperations | BETA | Oui |
+| 14 | SW-3b-Python-GraphOperations | BETA | Oui |
+| 15 | SW-4-SPARQL | BETA | Oui |
+| 16 | SW-4b-Python-SPARQL | BETA | Oui |
+| 17 | SW-5-LinkedData | BETA | Non |
+| 18 | SW-5b-Python-LinkedData | BETA | Non |
+| 19 | SW-6-RDFS | BETA | Oui |
+| 20 | SW-6b-Python-RDFS | BETA | Oui |
+| 21 | SW-7-OWL | BETA | Oui |
+| 22 | SW-7b-Python-OWL | BETA | Non |
+| 23 | SW-8-CSharp-SHACL | BETA | Oui |
+| 24 | SW-8-Python-SHACL | BETA | Oui |
+| 25 | SW-9-CSharp-JSONLD — JSON-LD avec dotNetRDF (twin C#) | ALPHA | Oui |
+| 26 | SW-9-Python-JSONLD | BETA | Oui |
 
-## SymbolicAI/SmartContracts (29 notebooks)
+## SymbolicAI/SmartContracts (30 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -242,8 +259,9 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 | 27 | SC-24 : Deploiement sur Testnets | BETA | Oui |
 | 28 | SC-25 : Deploiement Mainnet (L2) | BETA | Oui |
 | 29 | SC-26 : Projet Final - DApp Complete | BETA | Oui |
+| 30 | SC-27 : Dette d'irréversibilité — la boucle de… | BETA | Oui |
 
-## SymbolicAI/SymbolicLearning (20 notebooks)
+## SymbolicAI/SymbolicLearning (21 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -253,22 +271,23 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 | 4 | SL-10 --- Apprentissage Actif d'Automates (L*… | BETA | Oui |
 | 5 | SL-11 --- Capstone : un pipeline neuro-symbolique de… | BETA | Non |
 | 6 | SL-12 : Differentiable Logic Gate Networks | BETA | Non |
-| 7 | SL-2 - Apprentissage et Connaissance : EBL & RBL (C#) | ALPHA | Oui |
-| 8 | SL-2 --- Apprentissage et Connaissance (EBL & RBL) | BETA | Oui |
-| 9 | SL-3 — Apprentissage basé sur la pertinence (twin C#… | BETA | Oui |
-| 10 | SL-3 --- Apprentissage Base sur la Pertinence (RBL… | BETA | Oui |
-| 11 | SL-4 — Programmation Logique Inductive (ILP) — Twin C#… | BETA | Oui |
-| 12 | SL-4 --- Programmation Logique Inductive (ILP) | BETA | Non |
-| 13 | SL-5 - Resolution Inverse & ILP (C#) | ALPHA | Oui |
-| 14 | SL-5 --- Resolution Inverse et Progol (ILP bottom-up) | BETA | Oui |
-| 15 | SL-6 (C#) : Moteurs ILP modernes — apprendre des… | BETA | Oui |
-| 16 | SL-6 --- Moteurs ILP modernes : Aleph, Metagol, Popper… | BETA | Non |
-| 17 | SL-7 : Integration Neuro-Symbolique | BETA | Non |
-| 18 | SL-8 (C#) : ILP Moderne et Knowledge Graphs | BETA | Oui |
-| 19 | SL-8 - ILP Moderne et Knowledge Graphs | BETA | Oui |
-| 20 | SL-9 - LLMs et Apprentissage Symbolique : Generation et… | BETA | Non |
+| 7 | SL-1b — Apprentissage PAC formellement : le lake… | BETA | Non |
+| 8 | SL-2 - Apprentissage et Connaissance : EBL & RBL (C#) | ALPHA | Oui |
+| 9 | SL-2 --- Apprentissage et Connaissance (EBL & RBL) | BETA | Oui |
+| 10 | SL-3 — Apprentissage basé sur la pertinence (twin C#… | BETA | Oui |
+| 11 | SL-3 --- Apprentissage Base sur la Pertinence (RBL… | BETA | Oui |
+| 12 | SL-4 — Programmation Logique Inductive (ILP) — Twin C#… | BETA | Oui |
+| 13 | SL-4 --- Programmation Logique Inductive (ILP) | BETA | Non |
+| 14 | SL-5 - Resolution Inverse & ILP (C#) | ALPHA | Oui |
+| 15 | SL-5 --- Resolution Inverse et Progol (ILP bottom-up) | BETA | Oui |
+| 16 | SL-6 (C#) : Moteurs ILP modernes — apprendre des… | BETA | Oui |
+| 17 | SL-6 --- Moteurs ILP modernes : Aleph, Metagol, Popper… | BETA | Non |
+| 18 | SL-7 : Integration Neuro-Symbolique | BETA | Non |
+| 19 | SL-8 (C#) : ILP Moderne et Knowledge Graphs | BETA | Oui |
+| 20 | SL-8 - ILP Moderne et Knowledge Graphs | BETA | Oui |
+| 21 | SL-9 - LLMs et Apprentissage Symbolique : Generation et… | BETA | Non |
 
-## SymbolicAI/Tweety (32 notebooks)
+## SymbolicAI/Tweety (33 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -277,30 +296,31 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 | 3 | Tweety-10 — Markov Logic Networks (MLN) | BETA | Oui |
 | 4 | Tweety-11 — Inférence causale & do-calculus (twin C#… | BETA | Oui |
 | 5 | Tweety-11 — Raisonnement Causal : du do-calculus aux… | BETA | Oui |
-| 6 | Tweety C# / IKVM - Logiques de Base (Port .NET du… | BETA | Oui |
-| 7 | Logiques de Base - Propositionnelle et Premier Ordre | BETA | Oui |
-| 8 | Tweety C# / IKVM - Sémantique propositionnelle : mondes… | BETA | Oui |
-| 9 | Tweety-2c — Logique du premier ordre en C#/.NET (port… | BETA | Oui |
-| 10 | Tweety-3 — Description Logics en C#/.NET (port natif… | BETA | Oui |
-| 11 | Logiques Avancees - DL, Modale, QBF, Conditional | BETA | Oui |
-| 12 | Tweety-3 — Conditional Logics en C#/.NET (port natif… | BETA | Oui |
-| 13 | Tweety-3 — Argumentation abstraite de Dung en C#/.NET… | BETA | Oui |
-| 14 | Tweety-3 Modal Logic en C#/.NET (port natif IKVM) | BETA | Oui |
-| 15 | Tweety-3 - Quantified Boolean Formulas en C#/.NET (port… | BETA | Oui |
-| 16 | Tweety-4 — Argumentation structurée ASPIC+ en C#/.NET… | BETA | Oui |
-| 17 | Tweety C# / IKVM - Revision de Croyances (Port .NET du… | BETA | Oui |
-| 18 | Révision de Croyances et Incohérence | BETA | Oui |
-| 19 | Tweety-5 : Argumentation Abstraite de Dung (C# / .NET)… | BETA | Oui |
-| 20 | Argumentation Abstraite (Dung) | BETA | Oui |
-| 21 | Tweety-5b — Théorie de l'argumentation de Dung… | BETA | Non |
-| 22 | Tweety-6 — Argumentation structuree (twin C# / .NET… | BETA | Oui |
-| 23 | Argumentation Structuree | BETA | Oui |
-| 24 | Tweety-7a : Frameworks d'Argumentation Etendus (C#) | BETA | Oui |
-| 25 | Frameworks d'Argumentation Étendus | BETA | Oui |
-| 26 | Tweety-7b - Ranking Probabilistic Conditional Logic en… | BETA | Oui |
-| 27 | Sémantiques de Classement et Argumentation Probabiliste | BETA | Oui |
-| 28 | Dialogues Multi-Agents Argumentatifs (twin C#) | BETA | Oui |
-| 29 | Dialogues Multi-Agents Argumentatifs | BETA | Oui |
-| 30 | Préférences et Théorie du Vote en C# / .NET (port natif… | ALPHA | Oui |
-| 31 | Préférences et Théorie du Vote | ALPHA | Oui |
-| 32 | Tweety .NET - Probe Phase 1 axe 2 : initialisation du… | BETA | Oui |
+| 6 | Argumentation Abstraite : Grounded Extension - Pont… | BETA | Oui |
+| 7 | Tweety C# / IKVM - Logiques de Base (Port .NET du… | BETA | Oui |
+| 8 | Logiques de Base - Propositionnelle et Premier Ordre | BETA | Oui |
+| 9 | Tweety C# / IKVM - Sémantique propositionnelle : mondes… | BETA | Oui |
+| 10 | Tweety-2c — Logique du premier ordre en C#/.NET (port… | BETA | Oui |
+| 11 | Tweety-3 — Description Logics en C#/.NET (port natif… | BETA | Oui |
+| 12 | Logiques Avancees - DL, Modale, QBF, Conditional | BETA | Oui |
+| 13 | Tweety-3 — Conditional Logics en C#/.NET (port natif… | BETA | Oui |
+| 14 | Tweety-3 — Argumentation abstraite de Dung en C#/.NET… | BETA | Oui |
+| 15 | Tweety-3 Modal Logic en C#/.NET (port natif IKVM) | BETA | Oui |
+| 16 | Tweety-3 - Quantified Boolean Formulas en C#/.NET (port… | BETA | Oui |
+| 17 | Tweety-4 — Argumentation structurée ASPIC+ en C#/.NET… | BETA | Oui |
+| 18 | Tweety C# / IKVM - Revision de Croyances (Port .NET du… | BETA | Oui |
+| 19 | Révision de Croyances et Incohérence | BETA | Oui |
+| 20 | Tweety-5 : Argumentation Abstraite de Dung (C# / .NET)… | BETA | Oui |
+| 21 | Argumentation Abstraite (Dung) | BETA | Oui |
+| 22 | Tweety-5b — Théorie de l'argumentation de Dung… | BETA | Non |
+| 23 | Tweety-6 — Argumentation structuree (twin C# / .NET… | BETA | Oui |
+| 24 | Argumentation Structuree | BETA | Oui |
+| 25 | Tweety-7a : Frameworks d'Argumentation Etendus (C#) | BETA | Oui |
+| 26 | Frameworks d'Argumentation Étendus | BETA | Oui |
+| 27 | Tweety-7b - Ranking Probabilistic Conditional Logic en… | BETA | Oui |
+| 28 | Sémantiques de Classement et Argumentation Probabiliste | BETA | Oui |
+| 29 | Dialogues Multi-Agents Argumentatifs (twin C#) | BETA | Oui |
+| 30 | Dialogues Multi-Agents Argumentatifs | BETA | Oui |
+| 31 | Préférences et Théorie du Vote en C# / .NET (port natif… | ALPHA | Oui |
+| 32 | Préférences et Théorie du Vote | ALPHA | Oui |
+| 33 | Tweety .NET - Probe Phase 1 axe 2 : initialisation du… | BETA | Oui |

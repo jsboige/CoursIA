@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: Search
-pedagogical_count: 118
-breakdown: Applications=43, Part1-Foundations=29, Part4-Metaheuristics=22, Part2-CSP=18, Part3-Advanced=6
-maturity: BETA=109, ALPHA=6, DRAFT=3
+pedagogical_count: 138
+breakdown: Applications=49, Part4-Metaheuristics=33, Part1-Foundations=31, Part2-CSP=18, Part3-Advanced=7
+maturity: BETA=123, ALPHA=10, DRAFT=5
 -->
 
 [← Notebooks](../README.md) | [↑ ..](../README.md) | [→ SymbolicAI](../SymbolicAI/README.md)
@@ -170,7 +170,7 @@ Les notebooks d'application GA (EdgeDetection, Portfolio — variants PyGAD Pyth
 | App-7 | Wordle | Solveur Wordle : filtrage CSP + théorie de l'information (entropy) |
 | App-8 | MiniZinc | Modélisation déclarative : syntaxe MiniZinc, contraintes globales |
 | App-9 | EdgeDetection | Détection de bords par GA : PyGAD, filtres de convolution |
-| App-10 | Portfolio | Frontière de Pareto : optimisation multi-objectif de portefeuille |
+| App-10 | Portfolio | Frontière de Pareto : scalarisation, NSGA-II et hypervolume (instance non convexe) |
 | App-11 | Picross | Nonogrammes : speedup 2.78e+24x CP-SAT vs naïve (Etoile 15x15) |
 | App-12 | ConnectFour | Puissance 4 : 5 IA au tournoi (Random, Glouton, Minimax α-β d=4/d=6, MCTS) + framework AIMA |
 | App-13 | TSP | Voyageur de commerce : SA, GA, ACO, OR-Tools routing |
@@ -327,7 +327,7 @@ Search-4  LocalSearch           CSP-5  Optimization  ───>  App-10 Portfoli
             │                       │
             └──> Search-11 (Meta)   └──> Applications/Hybrid/ App-9 EdgeDetection
 
-Search-8  Dancing Links    ───>  App-11 Picross, Sudoku-5 DLX
+Search-8  Dancing Links    ───>  App-11 Picross, Sudoku-05 DLX
 Search-9  Linear Programming ─>  CSP-5 Optimization   ───>  App-10 Portfolio
 Search-10 Symbolic Automata ─>  Sudoku-12 Automates symboliques
 ```

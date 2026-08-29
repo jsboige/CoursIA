@@ -37,10 +37,10 @@
   - All cells positioned correctly on first attempt
   - BOTTOM-to-TOP strategy prevented index conflicts
   - No git rollbacks needed
-- **2026-02-16**: Sudoku-10-ORTools (anciennement « Sudoku-3-ORTools » avant la renumérotation #5081 ; 4 cells added: 1 header with objectives, 2 interpretations, 1 footer)
+- **2026-02-16**: Sudoku-10-ORTools (anciennement « Sudoku-03-ORTools » avant la renumérotation #5081 ; 4 cells added: 1 header with objectives, 2 interpretations, 1 footer)
   - Navigation header and footer with Search notebook links
   - Learning objectives (Bloom taxonomy) for CSP, CP-SAT, MIP
-  - Duration: 50 minutes, Prerequisites: Sudoku-1-Backtracking
+  - Duration: 50 minutes, Prerequisites: Sudoku-01-Backtracking
   - Interpretations after CP solver test and performance comparison
   - BOTTOM-to-TOP strategy with re-read between each insertion
 - **2026-02-16**: Search — notebook métaheuristiques (anciennement « Search-9-Metaheuristics » avant la renumérotation #5081 ; 3 cells added: 2 interpretations, 1 code improvement)

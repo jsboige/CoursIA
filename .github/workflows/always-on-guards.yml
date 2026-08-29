@@ -1,0 +1,969 @@
+name: Always-on guards
+
+# FUSION DES CINQ GARDES ALWAYS-ON (#13384) -- un seul workflow, un seul
+# checkout, un seul slot de runner par PR.
+#
+# Constat fondateur (issue #13384, mesure 2026-08-28T14:45Z) : la file CI
+# tenait 319 runs en attente, dont 117 (37 %) pour cinq gardes always-on
+# dont le travail reel additionne ~178 s de runner. Chacun paiait son propre
+# `actions/checkout` + `setup-python` et surtout OCCUPAIT UN SLOT -- c'est
+# le slot, pas la minute-CPU, qui est la ressource rare a 14 runners
+# heberges. Ce workflow paie un checkout et enchaine les douze organes.
+#
+# Sources absorbees (les fichiers RESTENT, dormants -- declencheurs
+# pull_request retires, jobs conserves verbatim pour la tracabilite et les
+# identites du registre fast-lane ; cf chaque en-tete) :
+#
+#   variation-tag-guard.yml    -> 6 jobs pull_request (le chemin commentaire
+#                                 [G-VAR-3 OVERRIDE] y reste LIVE, il n'a
+#                                 jamais fait partie des 117 runs)
+#   perimeter-review-guard.yml -> 1 job (porte aussi sur pull_request_review)
+#   fast-lane-shadow.yml       -> 1 job (moteur des 21 gardes diff-dependants)
+#   variation-light-genre.yml  -> 1 job advisory
+#   lane-claim-guard.yml       -> 2 jobs (1 bloquant + 1 advisory)
+#
+# ~117 runs deviennent ~23 par vague, a cout de calcul inchange.
+#
+# PIEGE NOMME PAR L'ISSUE : `scripts/pr_gate.py::derive_always_on_jobs` (la
+# canary de livraison, regle 8) derive l'ensemble des jobs tournant sur
+# CHAQUE pull_request depuis ce repertoire. La fusion change cet ensemble :
+# les 11 anciens noms de job disparaissent, le nom du job umbrella ci-dessous
+# les remplace. La canary reste armee tant que ce workflow garde un
+# declencheur pull_request SANS filtre `paths:` -- ne jamais en ajouter
+# (regle 2 d'#10045 : un check filtre par chemins rapporte `pending` a vie
+# sur les PR hors scope).
+#
+# CANARY PR GATE (invariant documente en tete de pr-gate.yml) : ce workflow
+# doit rendre un verdict sur toute PR, y compris celles qui ne declenchent
+# aucun autre CI. C'est pourquoi il n'a PAS de `paths:` -- sa surface
+# nominale est TOUTES les PR (les organes metadata lisent le body, pas le
+# diff ; cf #13232 : filtrer par chemins un garde METADONNEE-dependant le
+# desarme).
+#
+# SEMANTIQUE DE BLOCAGE : les organes bloquants portent
+# `continue-on-error: true` et un `id:` ; l'etape finale AGREGAT fait
+# rougir le job si l'un d'eux a echoue. Sans cela, un echec premature
+# empecherait les organes suivants de tourner -- aujourd'hui les jobs
+# tournent en parallele et un rouge n'arrete pas les labels advisory. Les
+# advisories tournent EN PREMIER (elles ne peuvent pas rougir) pour que les
+# labels restent poses meme quand un bloquant echoue.
+#
+# Le nom du job ne porte ni "advisory" ni "optional" : il agrege des
+# verdicts bloquants, `is_advisory()` de pr_gate.py ne doit pas le taire.
+
+on:
+  pull_request:
+    branches: [ main ]
+    types: [ opened, synchronize, edited, reopened ]
+    # PAS de `paths:` ici -- cf en-tete + regle 2 d'#10045 + #13232.
+  pull_request_review:
+    branches: [ main ]
+    types: [ submitted, edited ]
+    # Porte le perimeter review guard : une review qui affirme un perimetre
+    # doit etre confrontee (fondateur #11268). Les autres organes sont
+    # `if:`-gates hors de cet evenement.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+  checks: write         # fast-lane : un check-run nomme par garde absorbe
+
+# #11649 : pull_request et pull_request_review tirent sur la MEME paire
+# (PR, head SHA) -- un groupe partage avec cancel-in-progress laisserait un
+# run review ANNULER un run push encore en file. event_name dans la cle :
+# les pushes supplantent les pushes, les reviews supplantent les reviews,
+# les deux triggers ne s'annulent jamais entre eux.
+concurrency:
+  group: always-on-guards-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  always-on-guards:
+    name: "Always-on guards -- 12 organes, 1 checkout"
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    # Env partage par les organes metadata (portes depuis leurs jobs
+    # d'origine ; perimeter utilisait github.token, meme valeur que
+    # secrets.GITHUB_TOKEN).
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_REPO: ${{ github.repository }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      PR_BODY: ${{ github.event.pull_request.body }}
+      PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+      IS_FORK: ${{ github.event.pull_request.head.repo.fork }}
+
+    steps:
+      # fetch-depth: 0 + blob:none : requis par le fast-lane (les gardes
+      # delta comparent HEAD a la base) et SUFFISANT pour les organes
+      # metadata (leur sparse-checkout d'origine est un sous-ensemble de
+      # l'arbre complet). Paye UNE fois pour les douze.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          filter: blob:none
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # Dependances des detecteurs du fast-lane (pyyaml pour le scan de
+      # closure markdown-rendering, Pillow pour scan_md_hierarchy) --
+      # #11850 : sans install, un ImportError etait reporte a tort comme
+      # un _quarto.yml invalide.
+      - name: "Installer dependances detecteurs (pyyaml, Pillow)"
+        run: pip install --quiet pyyaml Pillow
+
+      # -----------------------------------------------------------------
+      # ORGANES ADVISORY (sortent toujours en 0 ; labels et commentaires
+      # seulement). En premier : ils doivent tourner meme si un bloquant
+      # echoue.
+      # -----------------------------------------------------------------
+
+      # Porte de variation-tag-guard.yml :: check-variation-tag.
+      - name: "Grain tag advisory (labels, non bloquant)"
+        if: github.event_name == 'pull_request'
+        run: |
+          set -uo pipefail
+
+          # ATTENTION au shell reel : GitHub invoque ce bloc avec
+          # `/usr/bin/bash -e {0}` -- l'errexit est ACTIF, et `set -uo
+          # pipefail` ne l'annule pas. Ce qui garde ce job non bloquant
+          # n'est pas l'absence de `-e`, c'est que chaque commande faillible
+          # est dans une condition ou suffixee `|| true`. Jamais `|| true`
+          # sur la capture d'un code de retour.
+
+          # Hors scope : bots (catalogue auto-regenere) et forks (PRs
+          # etudiantes, cf student-pr-reviews.md).
+          case "$PR_AUTHOR" in
+            *"[bot]") echo "Auteur bot ($PR_AUTHOR) : hors scope."; exit 0 ;;
+          esac
+          if [ "$IS_FORK" = "true" ]; then
+            echo "PR issue d'un fork : hors scope (PR etudiante)."
+            exit 0
+          fi
+
+          # Extraction via l'extracteur PARTAGE scripts/grain_tag.py
+          # (#9485 : source unique de lecture du tag, tolerate les formes
+          # Grain:, ## Grain, **Grain** :, sans tolerer l'absence de
+          # substance).
+          printf '%s' "${PR_BODY:-}" > /tmp/pr_body.txt
+          python3 scripts/grain_tag.py --body-file /tmp/pr_body.txt > /tmp/tag.json 2>/dev/null || true
+
+          _field() { python3 -c "import json; print(json.load(open('/tmp/tag.json')).get('$1'))" 2>/dev/null || echo "None"; }
+          PRESENT=$(_field present)
+          TIER=$(_field tier)
+          GENRE=$(_field genre)
+          LANE=$(_field lane)
+          TIER_VALID=$(_field tier_valid)
+          GENRE_VALID=$(_field genre_valid)
+
+          DEFECTS=""
+          note_defect() { DEFECTS="$DEFECTS $1"; }
+
+          if [ "$PRESENT" = "True" ]; then
+            echo "Tag lu : TIER=$TIER GENRE=$GENRE lane=$LANE"
+
+            if [ "$TIER_VALID" != "True" ]; then
+              echo "::warning::TIER non reconnu ('${TIER:-vide}'). Attendu DEEP, MED ou LIGHT -- le TIER se decide par le litmus de variation-protocol.md, pas par auto-evaluation de valeur."
+              note_defect variation-tag-malformed
+            fi
+            if [ "$GENRE_VALID" != "True" ]; then
+              echo "::warning::GENRE '${GENRE:-vide}' hors enumeration §1 (lean, qc, training, genai, notebook-python, notebook-dotnet, notebook-lean, slides, docs, guard, refactor, ledger, readme, test, tooling, research-code). G-VAR-3 compare des genres consecutifs : un genre inedit rend l'adjacence invisible. Mappe-le sur le genre qui decrit le TYPE DE TRAVAIL, pas le repertoire traverse."
+              note_defect variation-tag-genre-offlist
+            fi
+            if [ -z "$LANE" ] || [ "$LANE" = "None" ]; then
+              echo "::warning::Aucune 'lane <machine:workspace>' declaree. G-VAR-2 est un cap PAR LANE et PAR JOUR : un grain sans lane est structurellement incomptable, et le cap devient inapplicable sans que personne ne l'ait contourne (§3)."
+              note_defect variation-tag-lane-missing
+            fi
+
+            # `prev:` -- rend G-VAR-3 EVALUABLE. Forme canonique :
+            # `prev: <TIER>/<GENRE> #<PR>` ; exemption premier grain :
+            # `prev: none (premier grain)`.
+            PREV_PRESENT=$(_field prev_present)
+            PREV_EXEMPT=$(_field prev_exempt)
+            if [ "$PREV_PRESENT" = "False" ] && [ "$PREV_EXEMPT" != "True" ]; then
+              echo "::warning::Champ 'prev:' absent du tag. variation-protocol §1 le rend obligatoire (support mecanique de G-VAR-3 : pas deux fois le meme GENRE LIGHT consecutif). Forme : prev: <TIER>/<GENRE> #<PR>. Premier grain d'une lane : prev: none (premier grain)."
+              note_defect variation-tag-prev-absent
+            fi
+          else
+            echo "::warning::Aucun tag 'Grain: <TIER>/<GENRE>' lisible dans le body (formes lues : Grain:, ## Grain, **Grain** :). variation-protocol.md exige 'Grain: <TIER>/<GENRE> -- lane <machine:workspace> -- prev: <TIER>/<GENRE> #<PR>'."
+            note_defect variation-tag-missing
+          fi
+
+          # Labels : un label colle par un push anterieur ne doit pas
+          # survivre a la correction. stderr LAISSE PASSER sur les
+          # create/add (#8786 : masquer l'erreur rend la panne invisible) ;
+          # 2>/dev/null justifie sur les remove (label absent = nominal).
+          for LABEL in variation-tag-missing variation-tag-malformed variation-tag-genre-offlist variation-tag-lane-missing variation-tag-prev-absent; do
+            case "$LABEL" in
+              variation-tag-missing)          COLOR="FBCA04"; DESC="PR sans tag Grain: <TIER>/<GENRE> (variation-protocol)" ;;
+              variation-tag-malformed)       COLOR="FEF2C0"; DESC="Tag Grain present mais TIER != DEEP|MED|LIGHT" ;;
+              variation-tag-genre-offlist)   COLOR="FEF2C0"; DESC="GENRE hors de l'enumeration variation-protocol §1" ;;
+              variation-tag-lane-missing)    COLOR="FEF2C0"; DESC="Tag Grain sans 'lane <machine:workspace>' (cap G-VAR-2 incomptable)" ;;
+              variation-tag-prev-absent)     COLOR="FEF2C0"; DESC="Tag Grain sans 'prev: <TIER>/<GENRE> #<PR>' (adjacence G-VAR-3 inevaluable)" ;;
+            esac
+            case " $DEFECTS " in
+              *" $LABEL "*)
+                gh label create "$LABEL" --description "$DESC" --color "$COLOR" --force || true
+                gh pr edit "$PR_NUMBER" --add-label "$LABEL" || true
+                ;;
+              *)
+                gh pr edit "$PR_NUMBER" --remove-label "$LABEL" 2>/dev/null || true
+                ;;
+            esac
+          done
+
+          if [ -z "$DEFECTS" ]; then
+            echo "Tag conforme : TIER + GENRE dans la liste §1 + lane declaree + prev: (ou exemption premier grain)."
+          else
+            echo "Defauts signales (advisory, non bloquant) :$DEFECTS"
+          fi
+          exit 0
+
+      # Porte de variation-tag-guard.yml :: check-light-cap.
+      - name: "G-VAR-2 light cap (cross-PR, advisory)"
+        if: github.event_name == 'pull_request'
+        run: |
+          set -uo pipefail
+
+          case "$PR_AUTHOR" in
+            *"[bot]") echo "Auteur bot ($PR_AUTHOR) : hors scope."; exit 0 ;;
+          esac
+          if [ "$IS_FORK" = "true" ]; then
+            echo "PR issue d'un fork : hors scope (PR etudiante)."
+            exit 0
+          fi
+
+          # Jour UTC : G-VAR-2 se compte par jour UTC (reset 00:00Z).
+          TODAY=$(date -u +%Y-%m-%d)
+
+          # --limit 500 OBLIGATOIRE : la page par defaut de `gh pr list`
+          # est 30, silencieusement. Le set tronque attaque le
+          # DENOMINATEUR du ratio G-VAR-2 (#10328 : 60 mergees pour 30
+          # vues -> faux positif contre les lanes productives).
+          gh pr list --state merged --search "merged:$TODAY" --limit 500 \
+            --json number,body,mergedAt,labels > /tmp/merged.json 2>/dev/null || true
+
+          printf '%s' "${PR_BODY:-}" > /tmp/pr_body.txt
+
+          # Labels de la PR courante : requalification #8970
+          # (grain-requalified:<TIER>) pre-appliquable sur la PR ouverte.
+          gh pr view "$PR_NUMBER" --json labels > /tmp/pr_labels.json 2>/dev/null || \
+            printf '[]' > /tmp/pr_labels.json
+
+          # ADVISORY : cap_reached consomme les DEUX axes du cap G-VAR-2
+          # (#10480) -- le TIER (LIGHT declare/effectif) ET le GENRE
+          # (light-genre : readme/docs/guard/ledger/test, quel que soit le
+          # tier declare).
+          python3 scripts/variation_light_cap.py \
+            --replay /tmp/merged.json \
+            --check-pr "$PR_NUMBER" \
+            --body-file /tmp/pr_body.txt \
+            --labels-file /tmp/pr_labels.json > /tmp/status.json 2>/tmp/cap.err || true
+
+          echo "--- detector output ---"
+          cat /tmp/status.json 2>/dev/null || true
+          [ -s /tmp/cap.err ] && { echo "--- detector stderr ---"; cat /tmp/cap.err; } || true
+
+          CAP=$(python3 -c "import json; print(json.load(open('/tmp/status.json')).get('cap_reached'))" 2>/dev/null || echo "False")
+
+          gh label create variation-light-cap-reached \
+            --description "Lane ayant deja merge une LIGHT aujourd'hui (cap G-VAR-2 atteint)" \
+            --color B60205 --force 2>/dev/null || true
+
+          if [ "$CAP" = "True" ]; then
+            gh pr edit "$PR_NUMBER" --add-label variation-light-cap-reached 2>/dev/null || true
+            LANE=$(python3 -c "import json; print(json.load(open('/tmp/status.json')).get('lane','?'))" 2>/dev/null || echo "?")
+            CB=$(python3 -c "import json; c=(json.load(open('/tmp/status.json')).get('consumed_by') or {}); print(f\"#{c.get('number','?')} (merge a {c.get('mergedAt','?')})\")" 2>/dev/null || echo "une LIGHT anterieure de cette lane")
+            # Commentaire idempotent (marqueur HTML invisible anti-spam).
+            MARK="<!-- gvar2-light-cap -->"
+            if ! gh pr view "$PR_NUMBER" --json comments --jq '.comments[].body' 2>/dev/null | grep -qF "$MARK"; then
+              BODY="${MARK}
+          **G-VAR-2 light cap reached** (advisory, non bloquant).
+          La lane \`${LANE}\` a deja consomme son budget LIGHT du jour (${CB}).
+          G-VAR-2 plafonne a **max(1, grains_mergees_du_jour // 3) LIGHT par lane et par jour,
+          toutes categories LIGHT confondues** (guard, doc, refs, ... partagent un seul budget) :
+          c'est un RATIO, pas un plafond plat. La decision de merge reste au coordinateur."
+              gh pr comment "$PR_NUMBER" --body "$BODY" 2>/dev/null || true
+            fi
+            echo "::notice::G-VAR-2 cap reached pour la lane ${LANE} (consomme par ${CB})."
+          else
+            gh pr edit "$PR_NUMBER" --remove-label variation-light-cap-reached 2>/dev/null || true
+          fi
+          exit 0
+
+      # Porte de variation-light-genre.yml :: check-light-genre-signals.
+      - name: "G-VAR-2/3 GENRE signals (advisory, #10020)"
+        if: github.event_name == 'pull_request'
+        run: |
+          set -uo pipefail
+
+          case "$PR_AUTHOR" in
+            *"[bot]") echo "Auteur bot ($PR_AUTHOR) : hors scope."; exit 0 ;;
+          esac
+          if [ "$IS_FORK" = "true" ]; then
+            echo "PR issue d'un fork : hors scope (PR etudiante)."
+            exit 0
+          fi
+
+          TODAY=$(date -u +%Y-%m-%d)
+          # --limit 500 : cf light-cap ci-dessus (#10328).
+          gh pr list --state merged --search "merged:$TODAY" --limit 500 \
+            --json number,body,mergedAt,labels > /tmp/merged.json 2>/dev/null || \
+            printf '[]' > /tmp/merged.json
+
+          printf '%s' "${PR_BODY:-}" > /tmp/pr_body.txt
+
+          # Lane : extraite du tag Grain: via l'extracteur partage. Absente
+          # = rien a calculer (le tag guard l'a deja signalee).
+          LANE=$(python3 scripts/grain_tag.py --body-file /tmp/pr_body.txt 2>/dev/null \
+            | python3 -c "import json,sys; print(json.load(sys.stdin).get('lane') or '')" 2>/dev/null || echo "")
+          if [ -z "$LANE" ]; then
+            echo "Lane absente du tag Grain: de la PR. variation-tag-guard l'a surement deja signalee ; ce job n'a rien a calculer sur G-VAR-2/3-by-GENRE."
+            exit 0
+          fi
+          echo "Lane ciblee : ${LANE}"
+
+          gh pr view "$PR_NUMBER" --json labels > /tmp/pr_labels.json 2>/dev/null || \
+            printf '[]' > /tmp/pr_labels.json
+
+          # Fichiers du diff : pour GENRE-MISMATCH (declared vs
+          # _genre_from_paths). PR sans fichiers -> --files "" (missing
+          # input is a missing signal, never a false positive).
+          gh pr view "$PR_NUMBER" --json files > /tmp/pr_files.json 2>/dev/null || \
+            printf '[]' > /tmp/pr_files.json
+          FILES_CSV=$(python3 -c "
+          import json
+          try:
+              data = json.load(open('/tmp/pr_files.json'))
+              files = data if isinstance(data, list) else data.get('files', [])
+              paths = [f.get('path','') for f in files if isinstance(f, dict)]
+              paths = [p for p in paths if p]
+              print(','.join(paths))
+          except Exception:
+              print('')
+          " 2>/dev/null || echo "")
+
+          python3 scripts/variation_light_cap.py \
+            --replay /tmp/merged.json \
+            --genre-signals \
+            --lane "${LANE}" \
+            --body-file /tmp/pr_body.txt \
+            --labels-file /tmp/pr_labels.json \
+            --files "${FILES_CSV}" > /tmp/signals.json 2>/tmp/cap.err || true
+
+          echo "--- detector output ---"
+          cat /tmp/signals.json 2>/dev/null || true
+          [ -s /tmp/cap.err ] && { echo "--- detector stderr ---"; cat /tmp/cap.err; } || true
+
+          SIG_INFLATION=$(python3 -c "import json; print(json.load(open('/tmp/signals.json')).get('signals',{}).get('TIER-INFLATION'))" 2>/dev/null || echo "False")
+          SIG_RUN=$(python3 -c "import json; print(json.load(open('/tmp/signals.json')).get('signals',{}).get('GENRE-RUN'))" 2>/dev/null || echo "False")
+          SIG_CAPEXC=$(python3 -c "import json; print(json.load(open('/tmp/signals.json')).get('signals',{}).get('CAP-EXCEEDED-BY-GENRE'))" 2>/dev/null || echo "False")
+          SIG_MISMATCH=$(python3 -c "import json; print(json.load(open('/tmp/signals.json')).get('signals',{}).get('GENRE-MISMATCH'))" 2>/dev/null || echo "False")
+          SIG_UNKNOWN=$(python3 -c "import json; print(json.load(open('/tmp/signals.json')).get('signals',{}).get('GENRE-UNKNOWN'))" 2>/dev/null || echo "False")
+          UNKNOWN_WORD=$(python3 -c "import json; print(json.load(open('/tmp/signals.json')).get('candidate_genre_unknown_word') or '')" 2>/dev/null || echo "")
+          TALLY=$(python3 -c "import json; t=json.load(open('/tmp/signals.json')).get('tally',{}); print(f\"declared={t.get('light_declared',0)} genre={t.get('light_genre',0)} cap={t.get('cap',1)}\")" 2>/dev/null || echo "inconnu")
+          # #10341 : les signaux agreges (TIER-INFLATION, GENRE-RUN,
+          # CAP-EXCEEDED-BY-GENRE) mesurent le LANE-JOUR, pas la candidate.
+          # Une PR CONTENU ne contribue pas au motif -- le label ne doit pas
+          # etre pose dessus. GENRE-MISMATCH est exempt (son sujet EST la
+          # candidate par construction).
+          CAND_LIGHT=$(python3 -c "import json; print(json.load(open('/tmp/signals.json')).get('candidate_is_light_genre'))" 2>/dev/null || echo "False")
+
+          for LABEL_PAIR in \
+            "variation-tier-inflation:FEF2C0:TIER-INFLATION:declared LIGHT << effective LIGHT-genre (#10020, advisory)" \
+            "variation-genre-run:FEF2C0:GENRE-RUN:>= 2 grains consecutifs du meme genre LIGHT pour la lane (#10020, advisory)" \
+            "variation-genre-cap-exceeded:FBCA04:CAP-EXCEEDED-BY-GENRE:light_genre > cap partage G-VAR-2 (#10020, advisory)" \
+            "variation-genre-mismatch:FEF2C0:GENRE-MISMATCH:declared genre != genre infere depuis les chemins du diff (#10020, advisory)" \
+            "variation-genre-unknown:FBCA04:GENRE-UNKNOWN:genre canonise hors enumeration close -- trou d'adjacence G-VAR-3, requalifier dans le body (#12158, advisory)"
+          do
+            LABEL=$(echo "$LABEL_PAIR" | cut -d: -f1)
+            COLOR=$(echo "$LABEL_PAIR" | cut -d: -f2)
+            SIGNAL=$(echo "$LABEL_PAIR" | cut -d: -f3)
+            DESC=$(echo "$LABEL_PAIR" | cut -d: -f4)
+            # Mapping explicite SIGNAL -> variable (pas d'eval dynamique,
+            # qui ne survit pas a set -u ; cf source d'origine).
+            case "$SIGNAL" in
+              TIER-INFLATION)        SIGVAR="SIG_INFLATION"; MAY_LABEL_INNOCENT="no" ;;
+              GENRE-RUN)             SIGVAR="SIG_RUN"; MAY_LABEL_INNOCENT="no" ;;
+              CAP-EXCEEDED-BY-GENRE) SIGVAR="SIG_CAPEXC"; MAY_LABEL_INNOCENT="no" ;;
+              GENRE-MISMATCH)        SIGVAR="SIG_MISMATCH"; MAY_LABEL_INNOCENT="yes" ;;
+              GENRE-UNKNOWN)         SIGVAR="SIG_UNKNOWN"; MAY_LABEL_INNOCENT="yes" ;;
+              *)
+                echo "Signal non reconnnu : ${SIGNAL} (PR ${PR_NUMBER})"
+                SIGVAR="__UNDEFINED__"
+                MAY_LABEL_INNOCENT="yes"
+                ;;
+            esac
+            if [ "$SIGVAR" = "__UNDEFINED__" ]; then
+              SIGVAL="False"
+            else
+              SIGVAL="${!SIGVAR:-False}"
+            fi
+            gh label create "$LABEL" --description "$DESC" --color "$COLOR" --force 2>/dev/null || true
+            # #10341 : les signaux agreges ne labelisent pas une candidate
+            # innocente ; la branche else retire aussi un label pose avant
+            # que la lane ne croise le cap (idempotence symetrique).
+            if [ "$SIGVAL" = "True" ] && { [ "$MAY_LABEL_INNOCENT" = "yes" ] || [ "$CAND_LIGHT" = "True" ]; }; then
+              gh pr edit "$PR_NUMBER" --add-label "$LABEL" 2>/dev/null || true
+            else
+              gh pr edit "$PR_NUMBER" --remove-label "$LABEL" 2>/dev/null || true
+            fi
+          done
+
+          # Commentaire diagnostique idempotent : RE-EDIT du commentaire
+          # existant (PATCH) plutot qu'un nouveau a chaque synchronize.
+          MARK="<!-- variation-genre-signals -->"
+          ACTIVE_LINES=""
+          [ "$SIG_INFLATION" = "True" ] && ACTIVE_LINES="${ACTIVE_LINES}
+          - **TIER-INFLATION** : declared LIGHT << effective LIGHT-genre (tally : ${TALLY})"
+          [ "$SIG_RUN" = "True" ] && ACTIVE_LINES="${ACTIVE_LINES}
+          - **GENRE-RUN** : run consecutif d'un genre LIGHT (voir \`signals.runs\` dans le log du job)"
+          [ "$SIG_CAPEXC" = "True" ] && ACTIVE_LINES="${ACTIVE_LINES}
+          - **CAP-EXCEEDED-BY-GENRE** : light_genre > cap partage G-VAR-2 (tally : ${TALLY})"
+          [ "$SIG_MISMATCH" = "True" ] && ACTIVE_LINES="${ACTIVE_LINES}
+          - **GENRE-MISMATCH** : declared genre != genre infere depuis les chemins du diff"
+          [ "$SIG_UNKNOWN" = "True" ] && ACTIVE_LINES="${ACTIVE_LINES}
+          - **GENRE-UNKNOWN** : le genre canonise \\\`${UNKNOWN_WORD:-?}\\\` est hors enumeration close -- trou d'adjacence G-VAR-3, requalifier le genre dans le body (#12158)"
+
+          # #10341 nuance : la PR courante CONTENU ne contribue pas au
+          # motif -- le dire explicitement dans le commentaire.
+          if [ "$CAND_LIGHT" != "True" ]; then
+            if [ "$SIG_INFLATION" = "True" ] || [ "$SIG_RUN" = "True" ] || [ "$SIG_CAPEXC" = "True" ]; then
+              ACTIVE_LINES="${ACTIVE_LINES}
+          - **NOTE (#10341)** : la PR courante est de classe CONTENU (non LIGHT-genre) et ne contribue pas au motif ci-dessus -- les labels agregees ne sont PAS poses sur cette PR (le merge-gate ne doit pas la HOLD pour ce motif ; le coupable est parmi les grains META de la lane)."
+            fi
+          fi
+
+          if [ -n "$ACTIVE_LINES" ]; then
+            BODY="${MARK}
+          **G-VAR-2/3 GENRE signals** (advisory, non bloquant, #10020).
+          La lane \\\`${LANE}\\\` voit ces signaux actifs sur les mergees du jour (UTC ${TODAY}) :${ACTIVE_LINES}
+
+          G-VAR-2 plafonne a **max(1, grains_mergees_du_jour // 3) LIGHT par lane et par jour, toutes categories LIGHT confondues** -- un RATIO, pas un plafond plat ; le cap calcule du jour est dans le tally ci-dessus. G-VAR-3 interdit deux genres LIGHT consecutifs. Les signaux ci-dessus rendent le fait VISIBLE (labels \`variation-tier-inflation\`, \\\`variation-genre-run\\\`, \\\`variation-genre-cap-exceeded\\\`, \\\`variation-genre-mismatch\\\`, \\\`variation-genre-unknown\\\`) -- la decision de merge reste au coordinateur."
+            EXISTING_ID=$(gh pr view "$PR_NUMBER" --json comments --jq '.comments[] | select(.body | startswith("'"$MARK"'")) | .id' 2>/dev/null | head -1 || echo "")
+            if [ -n "$EXISTING_ID" ]; then
+              gh api -X PATCH "repos/${GH_REPO}/issues/comments/${EXISTING_ID}" \
+                -f body="$BODY" 2>/dev/null || true
+            else
+              gh pr comment "$PR_NUMBER" --body "$BODY" 2>/dev/null || true
+            fi
+            echo "::notice::G-VAR-2/3-by-GENRE signale sur ${LANE} (tally ${TALLY})."
+          else
+            EXISTING_ID=$(gh pr view "$PR_NUMBER" --json comments --jq '.comments[] | select(.body | startswith("'"$MARK"'")) | .id' 2>/dev/null | head -1 || echo "")
+            if [ -n "$EXISTING_ID" ]; then
+              gh api -X DELETE "repos/${GH_REPO}/issues/comments/${EXISTING_ID}" 2>/dev/null || true
+            fi
+            echo "Aucun signal actif pour ${LANE} aujourd'hui (tally ${TALLY})."
+          fi
+          exit 0
+
+      # Porte de lane-claim-guard.yml :: check-lane-claim-advisory.
+      - name: "Advisory lane-claim labels (adoption telemetry, non-blocking, #10223)"
+        if: github.event_name == 'pull_request'
+        run: |
+          set -uo pipefail
+
+          case "$PR_AUTHOR" in
+            *"[bot]") exit 0 ;;
+          esac
+          [ "$IS_FORK" = "true" ] && exit 0
+
+          printf '%s' "${PR_BODY:-}" > /tmp/pr_body.txt
+
+          # #10323: cross-check closingIssuesReferences (GitHub-authoritaire)
+          # pour ne pas se declencher sur un mot-cle fermant dans un code
+          # span/negation que GitHub ignore.
+          if PR_CLOSING_REFS=$(gh pr view "$PR_NUMBER" \
+              --json closingIssuesReferences \
+              --jq '[.closingIssuesReferences[].number] | join(",")' 2>/dev/null); then
+            PR_CREFS_ARG=(--pr-closing-refs "$PR_CLOSING_REFS")
+          else
+            PR_CREFS_ARG=()
+          fi
+
+          # Advisory : on ignore le code et on ne lit que advisory_labels.
+          python3 scripts/ci/lane_claim_required.py \
+            --body-file /tmp/pr_body.txt "${PR_CREFS_ARG[@]}" \
+            > /tmp/verdict.json 2>/tmp/verdict.err || true
+
+          # #13129 -- annotations ::warning des globs morts du scope,
+          # deleguees au helper (le GitHub Actions bash n'accepte pas un
+          # python3 -c multi-lignes dans un scalaire YAML). Non bloquant.
+          PYTHONPATH=scripts python3 scripts/ci/emit_dead_scope_warnings.py \
+            --body-file /tmp/pr_body.txt \
+            > /tmp/lc_annotations.txt 2>/dev/null || true
+          if [ -s /tmp/lc_annotations.txt ]; then
+            while IFS= read -r line; do
+              [ -n "$line" ] && echo "$line"
+            done < /tmp/lc_annotations.txt
+          fi
+
+          mk_label() {
+            gh label create "$1" --description "$2" --color "$3" --force 2>/dev/null || true
+          }
+          mk_label "lane-claim-absent" "Closing issue carries no claim at all (#10223)" "fbca04"
+
+          set_label()   { gh pr edit "$PR_NUMBER" --add-label "$1" || true; }
+          unset_label() { gh pr edit "$PR_NUMBER" --remove-label "$1" 2>/dev/null || true; }
+
+          # Fail-safe : verdict illisible -> aucun label dans la liste ->
+          # on retire lane-claim-absent.
+          has() { python3 -c "import json,sys; sys.exit(0 if '$1' in json.load(open('/tmp/verdict.json')).get('advisory_labels',[]) else 1)" 2>/dev/null; }
+
+          if has "lane-claim-absent"; then set_label "lane-claim-absent"; else unset_label "lane-claim-absent"; fi
+
+          # Nettoyage a la volee des anciens labels lane-claim-conflict
+          # poses par les versions precedentes du job.
+          unset_label "lane-claim-conflict"
+
+          echo "advisory labels applied."
+          exit 0
+
+      # -----------------------------------------------------------------
+      # ORGANES BLOQUANTS (continue-on-error + id ; l'agregat final fait
+      # rougir le job si l'un d'eux echoue -- cf en-tete).
+      # -----------------------------------------------------------------
+
+      # Porte de variation-tag-guard.yml :: check-variation-tag-required.
+      - name: 'Require Grain tag (block on absent, #10045)'
+        id: tag_required
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        run: |
+          set -uo pipefail
+
+          case "$PR_AUTHOR" in
+            *"[bot]") echo "Auteur bot ($PR_AUTHOR) : hors scope."; exit 0 ;;
+          esac
+          if [ "$IS_FORK" = "true" ]; then
+            echo "PR issue d'un fork : hors scope (PR etudiante, cf student-pr-reviews.md)."
+            exit 0
+          fi
+
+          printf '%s' "${PR_BODY:-}" > /tmp/pr_body.txt
+
+          # Capturer le RC via &&/|| (exempt d'errexit) -- jamais une
+          # commande suivie d'un RC=$? en ligne separee : sous bash -e elle
+          # meurt au block path meme, avant l'affectation.
+          python3 scripts/ci/variation_tag_required.py \
+            --body-file /tmp/pr_body.txt > /tmp/verdict.json 2>/tmp/verdict.err && RC=0 || RC=$?
+
+          if [ -s /tmp/verdict.err ]; then
+            echo "--- helper stderr ---"
+            cat /tmp/verdict.err
+          fi
+          echo "--- verdict ---"
+          cat /tmp/verdict.json
+
+          OVERRIDDEN=$(python3 -c "import json; print(json.load(open('/tmp/verdict.json')).get('overridden'))" 2>/dev/null || echo "None")
+          if [ "$OVERRIDDEN" = "True" ]; then
+            echo "::notice::Adjacence G-VAR-3 REELLE, levee par le coordinateur (clause 24h, section 3). Le grain suivant de la lane change de genre."
+          fi
+
+          if [ "$RC" -eq 0 ]; then
+            echo "Grain tag + lane present -- job passes."
+            exit 0
+          fi
+
+          REASON=$(python3 -c "import json; print(json.load(open('/tmp/verdict.json')).get('reason','unknown'))" 2>/dev/null || echo "unknown")
+          echo "::error::Grain tag ou lane manquant : $REASON"
+
+          GH_TOKEN="${{ secrets.GITHUB_TOKEN }}" gh pr comment "$PR_NUMBER" --body "$(cat <<EOF
+          <!-- vtr-required-block -->
+          **Grain tag obligatoire (#10045, bloquant).**
+
+          \`${REASON}\`.
+
+          Pour passer ce gate, le body doit porter en tete une ligne de la forme :
+
+          \`\`\`
+          Grain: <DEEP|MED|LIGHT>/<genre> -- lane <machine:workspace> -- prev: <TIER>/<GENRE> #<PR>
+          \`\`\`
+
+          Le \`<genre>\` doit figurer dans l'enumeration §1 de \`variation-protocol.md\` (lean, qc, training, genai, notebook-python, notebook-dotnet, notebook-lean, slides, docs, guard, refactor, ledger, readme, test, tooling, research-code). Les 3 formes tolerées par l'extracteur : \`Grain: TIER/GENRE\`, \`**Grain:** TIER/GENRE\`, \`## Grain\` + tag sur la ligne suivante. La lane doit suivre le format \`<machine>:<workspace>\` (cf. \`lane-claim-protocol.md\`).
+          EOF
+          )" 2>/dev/null || true
+
+          exit 1
+
+      # Porte de variation-tag-guard.yml :: check-prev-close-keyword-required.
+      - name: 'Require prev: non-closing (block on close-keyword genre, #10093)'
+        id: prev_guard
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        run: |
+          set -uo pipefail
+
+          case "$PR_AUTHOR" in
+            *"[bot]") echo "Auteur bot ($PR_AUTHOR) : hors scope."; exit 0 ;;
+          esac
+          if [ "$IS_FORK" = "true" ]; then
+            echo "PR issue d'un fork : hors scope (PR etudiante, cf student-pr-reviews.md)."
+            exit 0
+          fi
+
+          printf '%s' "${PR_BODY:-}" > /tmp/pr_body.txt
+
+          # Commit messages : messageBody = ce que GitHub parse pour
+          # l'auto-close. Echec de fetch LOGGE, non masque (#10953).
+          if ! gh pr view "$PR_NUMBER" --json commits --jq '[.commits[].messageBody]' \
+              > /tmp/commits.json; then
+            echo "::warning::gh pr view --json commits a echoue — scan des commits vide, body seul couvert (#10953)"
+            printf '[]' > /tmp/commits.json
+          fi
+
+          python3 scripts/ci/variation_prev_guard.py \
+            --body-file /tmp/pr_body.txt \
+            --commits-file /tmp/commits.json > /tmp/verdict.json 2>/tmp/verdict.err && RC=0 || RC=$?
+
+          if [ -s /tmp/verdict.err ]; then
+            echo "--- helper stderr ---"
+            cat /tmp/verdict.err
+          fi
+          echo "--- verdict ---"
+          cat /tmp/verdict.json
+
+          if [ "$RC" -eq 0 ]; then
+            echo "No \`prev:\` close-keyword genre in body or commits -- job passes."
+            exit 0
+          fi
+
+          REASON=$(python3 -c "import json; print(json.load(open('/tmp/verdict.json')).get('reason','unknown'))" 2>/dev/null || echo "unknown")
+          echo "::error::prev: close-keyword genre detected: $REASON"
+
+          gh pr comment "$PR_NUMBER" --body "$(cat <<EOF
+          <!-- vtr-prev-close-keyword -->
+          **\`prev:\` genre mots-clé fermant -- bloquant (#10093).**
+
+          ${REASON}
+
+          Une \`prev:\` dont le genre est \`fix\`/\`close\`/\`resolve\` (ou une inflexion) fait que GitHub interprète \`<genre> #N\` comme un ordre de fermeture automatique dès que le texte atterrit dans un message de commit -- c'est exactement ce qui a fermé #10067 (sans la merger) au squash-merge de #10063. Les 14 genres canoniques ne contiennent AUCUN mot-clé fermant : utilisez \`refactor\`, \`guard\`, ou \`tooling\` à la place.
+
+          Pour passer ce gate, réécrivez le champ \`prev:\` (dans le body ET dans chaque commit concerné) avec un genre non-fermant :
+
+          \`\`\`
+          Grain: <TIER>/<genre> -- lane <machine:workspace> -- prev: <TIER>/<refactor|guard|tooling|...> #<PR>
+          \`\`\`
+          EOF
+          )" 2>/dev/null || true
+
+          exit 1
+
+      # Porte de variation-tag-guard.yml :: check-close-keyword-pr-ref-required.
+      - name: 'Require no close-keyword + PR-number (block on auto-close of a PR, #10101)'
+        id: close_keyword
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        run: |
+          set -uo pipefail
+
+          case "$PR_AUTHOR" in
+            *"[bot]") echo "Auteur bot ($PR_AUTHOR) : hors scope."; exit 0 ;;
+          esac
+          if [ "$IS_FORK" = "true" ]; then
+            echo "PR issue d'un fork : hors scope (PR etudiante, cf student-pr-reviews.md)."
+            exit 0
+          fi
+
+          printf '%s' "${PR_BODY:-}" > /tmp/pr_body.txt
+
+          if ! gh pr view "$PR_NUMBER" --json commits --jq '[.commits[].messageBody]' \
+              > /tmp/commits.json; then
+            echo "::warning::gh pr view --json commits a echoue — scan des commits vide, body seul couvert (#10953)"
+            printf '[]' > /tmp/commits.json
+          fi
+
+          python3 scripts/ci/pr_close_keyword_guard.py \
+            --body-file /tmp/pr_body.txt \
+            --commits-file /tmp/commits.json > /tmp/verdict.json 2>/tmp/verdict.err && RC=0 || RC=$?
+
+          if [ -s /tmp/verdict.err ]; then
+            echo "--- helper stderr ---"
+            cat /tmp/verdict.err
+          fi
+          echo "--- verdict ---"
+          cat /tmp/verdict.json
+
+          # Warnings fail-open (refs perimees, blips) surfaces meme en pass.
+          python3 -c "import json; [print('::warning::'+w) for w in json.load(open('/tmp/verdict.json')).get('warnings',[])]" 2>/dev/null || true
+
+          if [ "$RC" -eq 0 ]; then
+            echo "No closing-keyword + PR-number reference in body or commits -- job passes."
+            exit 0
+          fi
+
+          REASON=$(python3 -c "import json; print(json.load(open('/tmp/verdict.json')).get('reason','unknown'))" 2>/dev/null || echo "unknown")
+          echo "::error::closing-keyword + PR-number reference detected: $REASON"
+
+          gh pr comment "$PR_NUMBER" --body "$(cat <<EOF
+          <!-- vtr-close-keyword-pr-ref -->
+          **\`<mot-clé fermant> #N\` où N est une PR -- bloquant (#10101).**
+
+          ${REASON}
+
+          GitHub interprète \`close/closes/closed/fix/fixes/fixed/resolve/resolves/resolved #N\` comme un ordre de fermeture automatique dès que le texte atterrit dans le message de squash -- et fermer une **PR** par mot-clé n'est jamais intentionnel (une PR se merge ou se ferme explicitement, elle ne se « résout » pas). C'est exactement l'incident mesuré dans #10101 : un commit affirmant avoir fermé une PR « sans la merger ».
+
+          Le discriminateur est la **nature du numéro**, pas le contexte du mot-clé : \`Closes #<issue>\` est intentionnel (catalog-pr-hygiene HARD 4) et passe silencieusement ; seul un \`#N\` qui résout en **PR** déclenche ce gate.
+
+          Pour passer ce gate :
+          - **retirez le mot-clé fermant** devant le numéro, ou
+          - **écrivez le numéro SANS le \`#\`** (un nombre nu n'est pas un auto-close).
+          EOF
+          )" 2>/dev/null || true
+
+          exit 1
+
+      # Porte de variation-tag-guard.yml :: check-variation-adjacency-required.
+      - name: 'Require genre diversity vs prev (required, block on LIGHT adjacency, #11170)'
+        id: adjacency
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        run: |
+          set -uo pipefail
+
+          case "$PR_AUTHOR" in
+            *"[bot]") echo "Auteur bot ($PR_AUTHOR) : hors scope."; exit 0 ;;
+          esac
+          if [ "$IS_FORK" = "true" ]; then
+            echo "PR issue d'un fork : hors scope (PR etudiante, cf student-pr-reviews.md)."
+            exit 0
+          fi
+
+          printf '%s' "${PR_BODY:-}" > /tmp/pr_body.txt
+
+          # Comments, pour le marqueur [G-VAR-3 OVERRIDE] (#11708).
+          gh pr view "$PR_NUMBER" --json comments \
+            --jq '[.comments[] | {author: .author.login, body: .body}]' \
+            > /tmp/pr_comments.json 2>/dev/null || rm -f /tmp/pr_comments.json
+
+          COMMENTS_ARG=""
+          if [ -s /tmp/pr_comments.json ]; then
+            COMMENTS_ARG="--comments-file /tmp/pr_comments.json"
+          fi
+
+          # Merged PRs pour le VRAI predecesseur de la lane (#12095) :
+          # fenetre merge-time DECOUPEE EN TRANCHES DE DATES via fetch_merged_prs_since.py
+          # (#12636 : --limit 100 est creation-capped ; le cap de recherche a 1000
+          #  impose le decoupage -- une seule requete ne couvre pas 21 j).
+          python3 scripts/ci/fetch_merged_prs_since.py --days 21 \
+            > /tmp/merged_prs.json 2>/tmp/merged_fetch.err || rm -f /tmp/merged_prs.json
+
+          MERGED_ARG=""
+          if [ -s /tmp/merged_prs.json ]; then
+            MERGED_ARG="--merged-prs-file /tmp/merged_prs.json"
+          else
+            # Sans ce warning l'echec est INVISIBLE : le garde continue de
+            # passer et de bloquer, mais sur le champ prev: DECLARE que le
+            # worker ecrit lui-meme, pas sur ce qui a reellement merge. C'est
+            # ainsi que l'option inexistante --page a fait tourner l'adjacence
+            # sur le mauvais axe repo-wide pendant toute la vie du script,
+            # sans qu'aucun run ne le dise (mesure 2026-08-29, 5/5 PRs).
+            echo "::warning::G-VAR-3 : fenetre de merges NON recuperee -- l'adjacence retombe sur le champ prev: DECLARE (ecrit par le worker), pas sur la sequence reelle. Le verdict ci-dessous ne mesure pas ce qui a merge."
+            if [ -s /tmp/merged_fetch.err ]; then
+              echo "--- fetch stderr ---"
+              sed 's/^/  /' /tmp/merged_fetch.err
+            fi
+          fi
+
+          # shellcheck disable=SC2086  # COMMENTS_ARG/MERGED_ARG are deliberate 0-or-2 token splits
+          python3 scripts/ci/variation_adjacency_guard.py \
+            --body-file /tmp/pr_body.txt $COMMENTS_ARG $MERGED_ARG \
+            > /tmp/verdict.json 2>/tmp/verdict.err && RC=0 || RC=$?
+
+          if [ -s /tmp/verdict.err ]; then
+            echo "--- helper stderr ---"
+            cat /tmp/verdict.err
+          fi
+          echo "--- verdict ---"
+          cat /tmp/verdict.json
+
+          ADJACENT=$(python3 -c "import json; print(json.load(open('/tmp/verdict.json')).get('adjacent'))" 2>/dev/null || echo "False")
+
+          # Label advisory pour l'adjacence DEEP/MED (jugement coord).
+          gh label create variation-adjacency-deep-med \
+            --description "Adjacence de genre DEEP/MED (hors liste LIGHT) : §2 l'autorise si substance distincte -- jugement au coordinateur" \
+            --color FEF2C0 --force 2>/dev/null || true
+          if [ "$ADJACENT" = "True" ]; then
+            gh pr edit "$PR_NUMBER" --add-label variation-adjacency-deep-med 2>/dev/null || true
+          else
+            gh pr edit "$PR_NUMBER" --remove-label variation-adjacency-deep-med 2>/dev/null || true
+          fi
+
+          if [ "$RC" -eq 0 ]; then
+            echo "No LIGHT-genre adjacency vs prev: -- job passes."
+            exit 0
+          fi
+
+          REASON=$(python3 -c "import json; print(json.load(open('/tmp/verdict.json')).get('reason','unknown'))" 2>/dev/null || echo "unknown")
+          # L'axe fait partie du verdict : un blocage calcule sur 'declared'
+          # et un blocage calcule sur 'merged-sequence' n'ont pas la meme
+          # valeur probante, et rien ne les distinguait dans la sortie.
+          PREV_SRC=$(python3 -c "import json; print(json.load(open('/tmp/verdict.json')).get('prev_source','?'))" 2>/dev/null || echo "?")
+          echo "::error::G-VAR-3 LIGHT-genre adjacency [predecesseur lu sur: $PREV_SRC]: $REASON"
+
+          gh pr comment "$PR_NUMBER" --body "$(cat <<EOF
+          <!-- vtr-adjacency-block -->
+          **G-VAR-3 : deux grains LIGHT du meme genre consecutifs -- bloquant (#11170).**
+
+          ${REASON}
+
+          variation-protocol.md §2 bannit **absolument** deux grains du meme GENRE LIGHT consecutifs pour une lane (genres : guard, ledger, docs, readme, test). Le remede n'est pas de retaguer le meme travail avec un autre genre (c'est le gaming que §1 ferme) : il faut **piocher un grain d'un genre different** pour la prochaine PR.
+
+          Pour passer ce gate, remplacez la \`prev:\` par un grain precedent d'un genre different (ou changez le genre du grain courant pour un genre de substance differente) :
+
+          \`\`\`
+          Grain: <TIER>/<genre> -- lane <machine:workspace> -- prev: <TIER>/<genre-different> #<PR>
+          \`\`\`
+          EOF
+          )" 2>/dev/null || true
+
+          exit 1
+
+      # Porte de lane-claim-guard.yml :: check-lane-claim-required.
+      - name: 'Require no closing-ref against another lane active claim (block on lane collision, #10223)'
+        id: lane_claim
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        run: |
+          set -uo pipefail
+
+          case "$PR_AUTHOR" in
+            *"[bot]") echo "Auteur bot ($PR_AUTHOR) : hors scope."; exit 0 ;;
+          esac
+          if [ "$IS_FORK" = "true" ]; then
+            echo "PR issue d'un fork : hors scope (PR etudiante, cf student-pr-reviews.md)."
+            exit 0
+          fi
+
+          printf '%s' "${PR_BODY:-}" > /tmp/pr_body.txt
+
+          # #10323: GitHub-authoritative closing refs.
+          if PR_CLOSING_REFS=$(gh pr view "$PR_NUMBER" \
+              --json closingIssuesReferences \
+              --jq '[.closingIssuesReferences[].number] | join(",")' 2>/dev/null); then
+            PR_CREFS_ARG=(--pr-closing-refs "$PR_CLOSING_REFS")
+          else
+            PR_CREFS_ARG=()
+            echo "::warning::closingIssuesReferences fetch failed; falling back to regex finder (#10323)."
+          fi
+
+          python3 scripts/ci/lane_claim_required.py \
+            --body-file /tmp/pr_body.txt "${PR_CREFS_ARG[@]}" \
+            > /tmp/verdict.json 2>/tmp/verdict.err
+          RC=$?
+
+          if [ -s /tmp/verdict.err ]; then
+            echo "--- helper stderr ---"
+            cat /tmp/verdict.err
+          fi
+          echo "--- verdict ---"
+          cat /tmp/verdict.json
+
+          python3 -c "import json; [print('::warning::'+w) for w in json.load(open('/tmp/verdict.json')).get('warnings',[])]" 2>/dev/null || true
+
+          if [ "$RC" -eq 0 ]; then
+            echo "Aucun claim frais d'une autre lane sur un renvoi fermant -- job passes."
+            exit 0
+          fi
+
+          REASON=$(python3 -c "import json; print(json.load(open('/tmp/verdict.json')).get('reason','unknown'))" 2>/dev/null || echo "unknown")
+          echo "::error::collision de lane sur une reference fermante: $REASON"
+
+          gh pr comment "$PR_NUMBER" --body "$(cat <<EOF
+          <!-- lane-claim-conflict -->
+          **Collision de lane sur une reference fermante (#10223).**
+
+          ${REASON}
+
+          Une autre lane detient un claim actif sur une issue que cette PR ferme par mot-cle (\`Closes\`/\`Fixes\`/\`Resolves #N\`). Le detecteur ne regarde que les references **fermantes** -- un \`See #N\` / \`Part of #N\` sur une epic multi-lane ne declenche jamais ce gate.
+
+          Les **trois sorties** pour passer ce gate :
+          - la lane detenrice **relache** son claim (\`[RELEASED] lane <machine:workspace>\` sur l'issue concernee), ou
+          - le **coordinateur ecrit** un arbitrage (\`[OVERRIDE] lane <cette lane>\` -- c'est la trace qui rend l'override mecaniquement traçable, #10223 Tache 2), ou
+          - le claim atteint **48 h** de peremption (le protocole re-arbitre les claims d'une lane inactive).
+
+          Voir #10223 et \`lane-claim-protocol.md\`.
+          EOF
+          )" 2>/dev/null || true
+
+          exit 1
+
+      # Porte de perimeter-review-guard.yml :: perimeter. Tourne AUSSI sur
+      # pull_request_review (submitted/edited) : une review qui affirme un
+      # perimetre doit etre confrontee (#11268). Les autres organes sont
+      # if:-gates hors de cet evenement.
+      - name: "perimeter review guard (#11268)"
+        id: perimeter
+        if: github.event_name == 'pull_request' || github.event_name == 'pull_request_review'
+        continue-on-error: true
+        run: |
+          PR="${{ github.event.pull_request.number }}"
+          python scripts/check_pr_perimeter.py "$PR" --scan-thread || {
+            echo "::error::A perimeter assertion on this PR (body or review) contradicts the effective file list, or an exclusivity claim does not name a touched .github/workflows/** file. Truth source: gh pr view $PR --json files (#11268). Fix the assertion to enumerate the real files."
+            exit 1
+          }
+
+      # Porte de fast-lane-shadow.yml :: fast-lane. Le moteur emet un
+      # check-run nomme par garde absorbe (API Checks) : la granularite
+      # visible sur la PR est preservee, seule l'infrastructure etait
+      # mutualisee -- et l'est desormais pour les cinq workflows.
+      - name: "Fast lane (verdicts par garde absorbe)"
+        id: fastlane
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        env:
+          FAST_LANE_BASE: origin/${{ github.base_ref }}
+          FAST_LANE_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          FAST_LANE_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          FAST_LANE_PR: ${{ github.event.pull_request.number }}
+        run: |
+          git fetch origin "${{ github.base_ref }}" -q
+          python scripts/ci/fast_lane.py --shadow
+
+      # #12396 : controle positif d'identite byte-a-byte des gardes
+      # absorbes -- un renom du registre casserait la protection de branche
+      # (incident #12175). if: always() : diagnostique meme quand un
+      # verdict de garde a deja echoue.
+      - name: "Controle positif : identite byte-a-byte des gardes absorbes"
+        id: identity
+        if: always()
+        continue-on-error: true
+        run: python scripts/ci/check_absorbed_check_run_identity.py --check
+
+      # -----------------------------------------------------------------
+      # AGREGAT : la couleur du job. Un organe bloquant echoue -> rouge.
+      # Les organes advisory ne figurent pas ici (ils sortent toujours 0 ;
+      # si l'un crashe, le step lui-meme rougit le job -- meme posture que
+      # les jobs d'origine).
+      # -----------------------------------------------------------------
+      - name: "Agregat des verdicts bloquants"
+        if: always()
+        run: |
+          FAILED=""
+          check() {
+            # check <step-id> <outcome> -- les outcomes sont injectes par
+            # l'expression actions (steps.<id>.outcome) au templating du
+            # workflow, PAS au runtime shell : pas de reference dynamique de
+            # step possible, chaque organe est enumere explicitement.
+            if [ "$2" = "failure" ]; then
+              FAILED="$FAILED $1"
+            fi
+          }
+          check tag_required  "${{ steps.tag_required.outcome }}"
+          check prev_guard   "${{ steps.prev_guard.outcome }}"
+          check close_keyword "${{ steps.close_keyword.outcome }}"
+          check adjacency    "${{ steps.adjacency.outcome }}"
+          check lane_claim   "${{ steps.lane_claim.outcome }}"
+          check perimeter    "${{ steps.perimeter.outcome }}"
+          check fastlane     "${{ steps.fastlane.outcome }}"
+          check identity     "${{ steps.identity.outcome }}"
+          if [ -n "$FAILED" ]; then
+            echo "::error::Organes bloquants en echec :$FAILED (le detail est dans les steps correspondants ci-dessus)."
+            exit 1
+          fi
+          echo "Tous les organes always-on sont verts (ou skips d'evenement)."

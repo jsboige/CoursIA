@@ -29,10 +29,15 @@ name: Lane Claim Guard
 # le reseau), YAML reduit a la plomberie, suffixe `-required` sur le nom du job
 # pour que `is_advisory()` de scripts/pr_gate.py ne le neutralise pas.
 
+# DORMANT depuis #13384 : les DEUX jobs (required + advisory) sont absorbes
+# (run blocks portes verbatim) par always-on-guards.yml -- un seul workflow,
+# un seul checkout, un seul slot de runner par PR (37 % de la file CI etait
+# les cinq gardes always-on pour ~3 min de travail reel, mesure #13384). Les
+# jobs restent ICI en copie de reference pour la tracabilite. NE PAS
+# reinscrire pull_request ici sans retirer les organes lane-claim
+# d'always-on-guards.
+
 on:
-  pull_request:
-    types: [opened, edited, synchronize, reopened]
-    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -59,6 +64,7 @@ jobs:
             scripts/ci/lane_claim_required.py
             scripts/check_lane_claim.py
             scripts/grain_tag.py
+            scripts/tests/test_check_lane_claim.py
       - name: 'Resolve closing-ref vs other lanes active claims (block on collision)'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -159,6 +165,24 @@ jobs:
           )" 2>/dev/null || true
 
           exit 1
+
+      # #13336 : controle positif LIVE du contrat de schema gh. Le guard ci-dessus
+      # depend de `gh pr view --json state,mergedAt` ; quand gh retire/deplace un
+      # champ, TOUT lookup echoue et le gate degenerate silencieusement (v2 -> v1,
+      # chaque [DELIVERED] relache son claim -- duplication mesuree sur #13216).
+      # Un self-test qui ne tourne jamais ne protege rien (#13331) : ce job a
+      # GH_TOKEN et tourne sur chaque PR, le controle vit donc ICI, pas dans
+      # scripts-tests.yml (push main, sans token). Le test ne tourne QUE ce
+      # controle (skipped hors CI sans LANE_CLAIM_LIVE, le reste de la suite
+      # reste hermetique).
+      - name: 'Live gh schema self-test (pr-state contract, #13336)'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          LANE_CLAIM_LIVE: '1'
+        run: |
+          python3 -m pip install --quiet pytest
+          python3 -m pytest scripts/tests/test_check_lane_claim.py \
+            -k test_13336_live_control_real_pr -q
 
   # Advisory (#10223 Tache 4) : pose deux labels pour mesurer l'adoption du
   # protocole de claim SANS jamais bloquer. Nom portant "advisory" ->
