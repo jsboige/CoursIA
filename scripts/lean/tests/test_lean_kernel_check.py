@@ -19,7 +19,11 @@ import tempfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from lean_kernel_check import inspect_kernel_wrapper  # noqa: E402
+from lean_kernel_check import (  # noqa: E402
+    inspect_kernel_wrapper,
+    inspect_wrapper_content_drift,
+    wsl_to_unc,
+)
 
 
 def _write_kernel_json(tmpdir, argv):
@@ -63,12 +67,100 @@ def test_missing_file_is_warning():
     assert status == "warning", message
 
 
+# --- Content drift guard (#13180) ---
+
+_WRAPPER_ARGV = [
+    "wsl.exe", "-d", "Ubuntu", "--",
+    "/home/jesse/.lean4-venv/bin/python3", "/home/jesse/.lean4-kernel-wrapper.py",
+    "-f", "{connection_file}",
+]
+
+
+def test_wsl_to_unc_translation():
+    unc = wsl_to_unc("/home/jesse/.lean4-kernel-wrapper.py", "Ubuntu")
+    assert str(unc) == r"\\wsl$\Ubuntu\home\jesse\.lean4-kernel-wrapper.py"
+
+
+def test_drift_ok_when_deployed_matches_repo():
+    with tempfile.TemporaryDirectory() as tmp:
+        deployed = Path(tmp) / ".lean4-kernel-wrapper.py"
+        reference = Path(tmp) / "repo_wrapper.py"
+        payload = b"# v6 c.127 canonical\nprint('x')\n"
+        deployed.write_bytes(payload)
+        reference.write_bytes(payload)
+        kj = _write_kernel_json(tmp, [
+            "python", str(deployed), "-f", "{connection_file}",
+        ])
+        status, message = inspect_wrapper_content_drift(
+            kj, repo_reference=reference)
+        assert status == "ok", message
+        assert "repo canonique" in message
+
+
+def test_drift_warning_when_deployed_differs():
+    with tempfile.TemporaryDirectory() as tmp:
+        deployed = Path(tmp) / ".lean4-kernel-wrapper.py"
+        reference = Path(tmp) / "repo_wrapper.py"
+        deployed.write_bytes(b"# v6 c.126 STALE\ncount = 3\n")
+        reference.write_bytes(b"# v6 c.127 canonical\ncount = 3\nnew_fix()\n")
+        kj = _write_kernel_json(tmp, [
+            "python", str(deployed), "-f", "{connection_file}",
+        ])
+        status, message = inspect_wrapper_content_drift(
+            kj, repo_reference=reference)
+        assert status == "warning", message
+        assert "DRIFT" in message and "13180" in message
+
+
+def test_drift_warning_when_deployed_unreadable():
+    with tempfile.TemporaryDirectory() as tmp:
+        kj = _write_kernel_json(tmp, _WRAPPER_ARGV)
+        reference = Path(tmp) / "repo_wrapper.py"
+        reference.write_bytes(b"x = 1\n")
+        # deployed lives at a nonexistent Windows-side path (not WSL-translated
+        # because the argv lacks "wsl"): fixture uses a plain path variant.
+        kj_plain = _write_kernel_json(tmp, [
+            "python", r"C:\nowhere\.lean4-kernel-wrapper.py", "-f", "{connection_file}",
+        ])
+        status, message = inspect_wrapper_content_drift(
+            kj_plain, repo_reference=reference)
+        assert status == "warning", message
+        assert "illisible" in message or "introuvable" in message
+
+
+def test_drift_warning_when_repo_reference_missing():
+    with tempfile.TemporaryDirectory() as tmp:
+        kj = _write_kernel_json(tmp, _WRAPPER_ARGV)
+        status, message = inspect_wrapper_content_drift(
+            kj, repo_reference=Path(tmp) / "no_such_repo_copy.py")
+        assert status == "warning", message
+        assert "repo de référence introuvable" in message
+
+
+def test_drift_never_returns_error():
+    # Posture #12740: signal, don't block. Every degenerate input maps to
+    # ok/warning, never error.
+    with tempfile.TemporaryDirectory() as tmp:
+        kj = _write_kernel_json(tmp, _WRAPPER_ARGV)
+        reference = Path(tmp) / "repo_wrapper.py"
+        reference.write_bytes(b"x = 1\n")
+        for kj_arg in (kj, Path(tmp) / "missing.json"):
+            status, _ = inspect_wrapper_content_drift(kj_arg, repo_reference=reference)
+            assert status in ("ok", "warning")
+
+
 def _run_all():
     tests = [
         test_old_bash_wrapper_is_error,
         test_python_wrapper_is_ok,
         test_unknown_wrapper_is_warning,
         test_missing_file_is_warning,
+        test_wsl_to_unc_translation,
+        test_drift_ok_when_deployed_matches_repo,
+        test_drift_warning_when_deployed_differs,
+        test_drift_warning_when_deployed_unreadable,
+        test_drift_warning_when_repo_reference_missing,
+        test_drift_never_returns_error,
     ]
     failures = 0
     for t in tests:

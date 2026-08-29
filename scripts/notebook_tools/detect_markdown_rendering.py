@@ -67,6 +67,18 @@ Rules
     ``**bold**`` paragraphs are common and must NOT be flagged. A corpus sweep found ~43
     pre-existing single-element instances (Tweety-10, CSP-9, Planners, Lean-8) in addition
     to the multi-element ones — all baselined for burn-down.
+- ``source_list_broken_words`` (ERROR): markdown cell whose ``source`` list splits a
+  word mid-word — the INVERSE of ``source_list_missing_newlines`` (#12363). A repair
+  that re-splits a list can cut a word in half across two segments; the GitHub render
+  re-joins them so the defect is INVISIBLE on render, but every segment-by-segment
+  consumer (diff, translation, twin-parity content-SHA, pedagogical grep) sees the
+  word broken. Detected when a segment does not end with ``\n``, ends with a letter,
+  and the next segment starts with a letter (the boundary glues two word-halves with
+  nothing between). Runs AFTER the missing-newlines early-returns: the ratchet targets
+  the post-repair shape ('\n' adequate everywhere, ONE mid-word boundary), where the
+  missing-newlines rule is silent and only this rule sees the split. Corpus measure
+  2026-08-25: 0 hits repo-wide — a pure cliquet, ERROR is safe because ``--check``
+  only blocks NEW violations.
 
 The correct fix for frontmatter cells is to move the metadata into the notebook
 ``metadata`` (invisible, machine-readable) OR render it inside a fenced ```yaml block
@@ -140,6 +152,15 @@ RULE_SEVERITY = {
     # cosmetic rendering defect, not a page-breaking one (unlike the ERRORs).
     "unclosed_bold": WARN,
     "source_list_missing_newlines": ERROR,
+    # #12363: ERROR (bloquant) -- the corpus measure is 0 hits repo-wide on
+    # 2026-08-25 (903 total findings across the other 4 rules, none of them
+    # broken-words). A pure ratchet: the rule is the INVERSE of
+    # source_list_missing_newlines (a repair that re-splits a list may cut a
+    # word mid-word, invisible on render but breaking segment-by-segment
+    # consumers). Count 0 + delta-vs-baseline --check = only NEW violations
+    # block, which is exactly the cliquet the issue asks for ("la prochaine
+    # tranche ne puisse pas l'introduire sans rougir").
+    "source_list_broken_words": ERROR,
     # #12064: ERROR (bloquant) -- the corpus measure is 1 hit / 20,576 markdown
     # cells (the true positive (A) PT_11 cell 5), reproduced by this lane. That
     # precision is what buys blocking status; a wider pattern set would need
@@ -230,6 +251,13 @@ _LIST_ITEM_RE = re.compile(r"^\s{0,3}(?:[-*+]|\d{1,9}[.)])\s+")
 # `setext_oversized` false positives (CSP cryptarithmes, Sudoku grids, Mermaid-ish
 # boxes). See PR follow-up to #8392 (same precision vein, different FP family).
 _FENCE_RE = re.compile(r"^\s{0,3}(`{3,}|~{3,})")
+# blockquote prefix (up to 3 nestings, optional space after '>'): a fence can
+# live INSIDE a blockquote (`> ```bash` ... `> ````) and its content still
+# renders verbatim -- CommonMark keeps the fenced block within the quote.
+# _FENCE_RE alone is blind to the prefix, so `_inside_fence_lines` strips it
+# before matching (Search-10-SymbolicAutomata c23: `> # Windows` bash comments
+# inside a blockquoted fence were flagged heading_in_list, a scanner FP).
+_BQ_PREFIX_RE = re.compile(r"^\s{0,3}(?:>\s?){1,3}")
 _YAML_KV_RE = re.compile(r"^\s*[A-Za-z_][\w .\-]*:\s?(\S.*)?$")
 # exercise-hint keywords, word-boundary. Deliberately NOT "note"/"remarque"
 # (those are legitimate section headings, not the oversized-hint defect).
@@ -297,6 +325,31 @@ def _as_text(source) -> str:
 
 def _nonblank(lines):
     return [ln for ln in lines if ln.strip() != ""]
+
+
+def _broken_words_in_list(src: list[str]) -> str | None:
+    """First consecutive pair whose join splits a word mid-word (#12363).
+
+    The INVERSE of the missing-newlines artifact: a repair that re-splits a
+    markdown list may cut a word in half, leaving the two halves on adjacent
+    segments. GitHub re-joins them on render (so it looks correct) but any
+    segment-by-segment consumer (diff, translation, twin-parity content-SHA,
+    pedagogical grep) sees the word broken. Detected when a segment does NOT
+    end with '\\n', ends with a letter, and the next segment starts with a
+    letter -- the boundary recreates the word with nothing between.
+
+    Returns a quote of the offending pair, or None. A segment ending with '\\n'
+    is a normal line break and is never flagged; a segment ending with space
+    followed by a letter is a legit join (space preserved) and is not flagged.
+    """
+    for a, b in zip(src, src[1:]):
+        if not a or not b:
+            continue
+        if a.endswith("\n"):
+            continue
+        if a[-1].isalpha() and b[0].isalpha():
+            return f"{a!r} + {b!r}"
+    return None
 
 
 def _cell_hash(rule: str, text: str) -> str:
@@ -428,6 +481,35 @@ def _selfcheck() -> int:
         got = _is_yaml_block_open_no_close(lines, fenced)
         if got != expected:
             failed.append(f"{name}: rule fired={got}, expected={expected}")
+    if failed:
+        print("selfcheck FAIL:", file=sys.stderr)
+        for f in failed:
+            print(f"  !! {f}", file=sys.stderr)
+        return 1
+    # fence fixtures (#11947 residual): validates the fence oracle itself on its
+    # false negatives. A detection pattern validates on what it must NOT flag:
+    # here, bash comments (`> # Windows`) inside a BLOCKQUOTED fenced block were
+    # the last heading_in_list corpus FP (Search-10-SymbolicAutomata c23) -- the
+    # prefix-blind _FENCE_RE let them reach the prose rules.
+    fence_fixtures: list[tuple[str, list[str], set[int]]] = [
+        # (name, lines, expected inside-set)
+        ("blockquote fence: bash comments are verbatim",
+         ["> ```bash", "> # Windows", "> choco install graphviz", "> ```"],
+         {1, 2}),
+        ("plain fence: content verbatim",
+         ["```bash", "# Windows", "choco install graphviz", "```"],
+         {1, 2}),
+        ("blockquote prose OUTSIDE any fence stays scannable",
+         ["> # Windows", "text"],
+         set()),
+        ("tilde fence inside blockquote",
+         ["> ~~~", "> # note", "> ~~~"],
+         {1}),
+    ]
+    for name, flines, expected in fence_fixtures:
+        got = _inside_fence_lines(flines)
+        if got != expected:
+            failed.append(f"{name}: inside={sorted(got)}, expected={sorted(expected)}")
     if failed:
         print("selfcheck FAIL:", file=sys.stderr)
         for f in failed:
@@ -569,6 +651,45 @@ def _selfcheck() -> int:
           "(QC-Py-21 mid-suffix, Video mid-prose) and is silent on fenced CJK; "
           "multilingual-stem exclusion tested via scan_notebook; code-cell "
           "exclusion is the markdown-only filter in scan_cell itself")
+
+    # ---- source_list_broken_words (#12363) ------------------------------------
+    # The ratchet for the INVERSE of the missing-newlines artifact: a repair
+    # that re-splits a list may cut a word mid-word. Two positive controls:
+    # (a) the realistic post-repair shape -- '\n' everywhere EXCEPT one
+    # boundary that cuts a word, so missing-newlines is silent (breaks ==
+    # expected) and ONLY this rule sees the split; (b) the verbatim issue
+    # witness ["une phrase cou", "pee au milieu"], checked on the helper --
+    # through scan_cell that shape also trips the co-occurring missing-
+    # newlines collapse (0 breaks < expected), which claims the diagnosis
+    # first; the organ detects the cell either way. Negatives: newline-
+    # terminated segments, space-preserved join.
+    broken_fixtures: list[tuple[str, list[str], bool]] = [
+        ("post-repair shape: \\n adequate, ONE mid-word boundary",
+         ["ligne un\n", "une phrase cou", "pee au milieu\n", "ligne trois\n"],
+         True),
+        ("newline-terminated segments (legit)",
+         ["ligne complete\n", "suivante\n"],
+         False),
+        ("space-preserved join (legit)",
+         ["foo ", "bar"],
+         False),
+    ]
+    for name, src, expected in broken_fixtures:
+        fired = any(f["rule"] == "source_list_broken_words"
+                    for f in scan_cell({"cell_type": "markdown", "source": src}))
+        if fired != expected:
+            failed.append(f"{name}: source_list_broken_words fired={fired}, expected={expected}")
+    if _broken_words_in_list(["une phrase cou", "pee au milieu"]) is None:
+        failed.append("verbatim #12363 witness ['une phrase cou', 'pee au milieu'] "
+                      "not seen by _broken_words_in_list")
+    if failed:
+        print("selfcheck FAIL:", file=sys.stderr)
+        for f in failed:
+            print(f"  !! {f}", file=sys.stderr)
+        return 1
+    print("selfcheck OK: source_list_broken_words fires on the post-repair "
+          "mid-word boundary and the verbatim #12363 witness (helper level); "
+          "silent on newline-terminated and space-preserved joins")
     return 0
 
 
@@ -582,13 +703,16 @@ def _inside_fence_lines(lines) -> set[int]:
     setext underline. Backtick and tilde fences are independent: a tilde line never
     closes a backtick block (and vice-versa). An unclosed fence leaves every subsequent
     line inside (defensive: prefer a false-negative on setext over a false-positive).
+    Fence markers may carry a blockquote prefix (``> ```bash``): the prefix is
+    stripped before matching, so blockquoted fences bound their verbatim content
+    exactly like plain ones.
     """
     inside: set[int] = set()
     in_fence = False
     fence_char = None
     fence_len = 0
     for i, ln in enumerate(lines):
-        m = _FENCE_RE.match(ln)
+        m = _FENCE_RE.match(_BQ_PREFIX_RE.sub("", ln, count=1))
         if m:
             marker = m.group(1)
             ch, ln_len = marker[0], len(marker)
@@ -752,6 +876,28 @@ def scan_cell(cell) -> list[dict]:
                             f"chars with no '\\n' (heading + body collapsed into one string, "
                             f"renders as a giant heading); line structure lost"),
                 "evidence": single.strip()[:100],
+                "hash": _cell_hash(rule, text),
+            }]
+    # ---- source-list broken-words (#12363) -----------------------------------
+    # INVERSE of the missing-newlines rule above: a repair that re-splits a
+    # markdown list may cut a word mid-word. Placed AFTER the missing-newlines
+    # early-returns because the ratchet targets a cell that HAS proper '\n'
+    # (the fix was applied) but was re-split at a wrong spot -- so it does not
+    # trigger the missing-newlines rule but DOES break a word. Runs before the
+    # line-based rules (which reason on the JOINED text, hiding the split).
+    if isinstance(src, list) and len(src) >= 2:
+        broken = _broken_words_in_list(src)
+        if broken:
+            rule = "source_list_broken_words"
+            return [{
+                "rule": rule,
+                "severity": RULE_SEVERITY[rule],
+                "message": (f"markdown cell source list splits a word mid-word at "
+                            f"boundary {broken}: segment does not end with '\\n' and "
+                            f"both neighbors start/end with a letter, so the render "
+                            f"join glues two word-halves (invisible on render, breaks "
+                            f"segment-by-segment consumers)"),
+                "evidence": text.strip()[:100],
                 "hash": _cell_hash(rule, text),
             }]
     lines = text.split("\n")

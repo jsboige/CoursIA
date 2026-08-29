@@ -88,7 +88,7 @@ def get_last_commit_date(path: Path, repo_root: Path) -> str | None:
             ["git", "-C", str(repo_root), "log", "-1", "--format=%cI", "--", rel],
             check=True,
             capture_output=True,
-            text=True,
+            text=True, encoding="utf-8", errors="replace",
         )
         return out.stdout.strip() or None
     except subprocess.CalledProcessError:
@@ -107,7 +107,7 @@ def get_last_commit_sha(path: Path, repo_root: Path) -> str | None:
             ["git", "-C", str(repo_root), "log", "-1", "--format=%h", "--", rel],
             check=True,
             capture_output=True,
-            text=True,
+            text=True, encoding="utf-8", errors="replace",
         )
         return out.stdout.strip() or None
     except subprocess.CalledProcessError:

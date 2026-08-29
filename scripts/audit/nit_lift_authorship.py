@@ -85,7 +85,9 @@ def measure_pr(pr_data: dict) -> dict:
         (nits.ts(c.get("createdAt")), (c.get("author") or {}).get("login", ""))
         for c in (pr_data.get("comments") or [])
         if nits.can_lift(c)
-        and nits.has_marker(c.get("body", ""), nits.LIFT_MARKERS)
+        # #12908 : levée VIVE, comme l'organe — sinon une exigence narrée
+        # (« obtenir une levée explicite ») compterait comme un geste.
+        and nits.has_live_lift(c.get("body", ""))
         and not nits._lift_cancelled(nits._strip_quoted(c.get("body", "")))
     ]
     comment_lifts = [(t, a) for (t, a) in comment_lifts if t is not None]
