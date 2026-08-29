@@ -119,6 +119,15 @@ class Guard:
     pre_argv: list[str] = field(default_factory=list)
 
 
+# Valeur de `source` pour un garde NE dedoublant aucun workflow unitaire : il
+# est ne dans la voie rapide. La distinction compte parce que `source` sert a
+# tracer quel workflow pourra etre retire quand la voie rapide sortira de
+# l'ombre -- un garde natif n'a pas de jumeau a retirer. Le test qui verifie
+# la tracabilite reste STRICT pour les autres : une faute de frappe dans un
+# nom de workflow doit continuer d'echouer, seule cette valeur exacte est
+# admise comme "pas de workflow d'origine".
+FAST_LANE_NATIVE = "(garde natif de la voie rapide : aucun workflow d'origine)"
+
 NOTEBOOK_GLOBS = ["**/*.ipynb"]
 
 # ---------------------------------------------------------------------------
@@ -137,6 +146,8 @@ NOTEBOOK_GLOBS = ["**/*.ipynb"]
 #   - notebook-interp-positioning-guard : bloquant, scan global baselined
 #   - markdown-rendering-guard : bloquant, scan global baselined
 #   - self-hosted-runner-policy : bloquant, scan statique des workflows
+#   - duplicate-notebook-index-guard : bloquant, delta base-vs-head sur
+#                           les fichiers AJOUTES (#12753)
 #
 # Un lot homogene aurait valide le moteur sur un seul cas de figure -- et un
 # lot entierement vert serait indiscernable d'un moteur debranche.
@@ -269,6 +280,31 @@ PILOT: list[Guard] = [
         argv=["python", "scripts/ci/check_self_hosted_runner_policy.py",
               "--check"],
         blocking=True,
+    ),
+    # -- extension c.1339 (10 -> 11) ----------------------------------------
+    # Ferme un angle mort du merge-gate mesure le 2026-08-24 (#12753) : aucun
+    # garde ne demandait si le contenu AJOUTE existe deja sur la base sous un
+    # AUTRE nom de fichier. Deux notebooks `3.1-*` de la meme lane, cites par
+    # la meme issue, ont ete merges a 29 minutes d'intervalle sans qu'aucune
+    # des cinq portes (nits, perimetre, H.4, tag de grain, cap de variation)
+    # n'ait de quoi le voir : chacune juge la PR en elle-meme, aucune ne la
+    # confronte a ce que la base porte deja.
+    #
+    # Porte aux fichiers AJOUTES seulement. C'est ce qui le rend vert sur le
+    # `main` d'aujourd'hui -- qui porte deja deux collisions (index 3.1 et
+    # index 22, cf #12753) -- tout en empechant la recurrence. Un garde qui
+    # accuserait la dette pre-existante serait rouge des sa naissance et
+    # ferait echouer toutes les PR sans qu'aucune ne l'ait causee.
+    Guard(
+        name="duplicate-notebook-index-guard",
+        source=FAST_LANE_NATIVE,
+        paths=NOTEBOOK_GLOBS + [
+            "scripts/notebook_tools/check_duplicate_notebook_index.py",
+        ],
+        argv=["python", "scripts/notebook_tools/check_duplicate_notebook_index.py",
+              "--base", "{base_ref}", "--head", "HEAD"],
+        blocking=True,
+        needs_base=True,
     ),
 ]
 
