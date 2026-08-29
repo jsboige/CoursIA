@@ -37,8 +37,8 @@ Vérification cell-by-cell (manuelle) pour distinguer MISPLACED vs LEGIT :
 | 16 | QC-Py-24-Autoencoders-Anomaly.ipynb | cell[50] | LEGIT | closing_interp_immediately_after_last_code |
 | 17 | App-12-ConnectFour.ipynb | cell[55] | LEGIT | closing_interp_immediately_after_last_code |
 | 18 | Search-10-SymbolicAutomata.ipynb | cell[88] | LEGIT | closing_interp_immediately_after_last_code |
-| 19 | **Sudoku-3-Genetic-Csharp.ipynb** | **cell[27]** | **POSSIBLE_MISPLACED** | last_code_cell_then_interp_then_only_conclusion (= ORPHAN au sens strict, à vérifier manuellement) |
-| 20 | Sudoku-5-PSO-Csharp.ipynb | cell[31] | LEGIT | closing_interp_immediately_after_last_code |
+| 19 | **Sudoku-03-Genetic-Csharp.ipynb** | **cell[27]** | **POSSIBLE_MISPLACED** | last_code_cell_then_interp_then_only_conclusion (= ORPHAN au sens strict, à vérifier manuellement) |
+| 20 | Sudoku-05-PSO-Csharp.ipynb | cell[31] | LEGIT | closing_interp_immediately_after_last_code |
 | 21 | SC-1-Setup-Foundry.ipynb | cell[21] | LEGIT | closing_interp_immediately_after_last_code |
 
 ## Recommandation Phase 3 (PR #10682)
@@ -273,9 +273,9 @@ Voir aussi : [rapport c.237 original](10678-interp-positioning-audit.md) (24 CHE
 - **Sévérité** : **HIGH** (orphan de fin = l'interp n'est jamais lue, donc jamais validée par un code qu'elle interprète)
 - **Action Phase 2** : relocaliser la cellule juste après le code référencé (prev_code_idx+1)
 
-### `Sudoku-3-Genetic-Csharp.ipynb` cell[27]
+### `Sudoku-03-Genetic-Csharp.ipynb` cell[27]
 
-- **Chemin** : `MyIA.AI.Notebooks/Sudoku/Sudoku-3-Genetic-Csharp.ipynb`
+- **Chemin** : `MyIA.AI.Notebooks/Sudoku/Sudoku-03-Genetic-Csharp.ipynb`
 - **idx** : 27 / 28 total cells
 - **prev_code_idx** : 26 (seul code avant l'interp)
 - **is_last_cell** : True
@@ -284,9 +284,9 @@ Voir aussi : [rapport c.237 original](10678-interp-positioning-audit.md) (24 CHE
 - **Sévérité** : **HIGH** (orphan de fin = l'interp n'est jamais lue, donc jamais validée par un code qu'elle interprète)
 - **Action Phase 2** : relocaliser la cellule juste après le code référencé (prev_code_idx+1)
 
-### `Sudoku-5-PSO-Csharp.ipynb` cell[31]
+### `Sudoku-05-PSO-Csharp.ipynb` cell[31]
 
-- **Chemin** : `MyIA.AI.Notebooks/Sudoku/Sudoku-5-PSO-Csharp.ipynb`
+- **Chemin** : `MyIA.AI.Notebooks/Sudoku/Sudoku-05-PSO-Csharp.ipynb`
 - **idx** : 31 / 33 total cells
 - **prev_code_idx** : 30 (seul code avant l'interp)
 - **is_last_cell** : False

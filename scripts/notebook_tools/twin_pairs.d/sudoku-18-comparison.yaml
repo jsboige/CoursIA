@@ -47,6 +47,12 @@
       csharp_sha: 616510b87ff6246b70d595aa5dd363969e6b0046
       content_python_sha: 47d504e5628e7622d08fb293af1e916fde84fde4b179aae185bcba38d4cd28f0
       content_csharp_sha: 089e5e138c54fa84e639ce073f7e60435e42b3562e4448400a09c618cd1a758e
+    - date: "2026-08-28"
+      by: myia-po-2024:CoursIA
+      python_sha: 36456cc374a7054ff458c0ca9eeff0c34b180fb5
+      csharp_sha: 52efc1edb03936fe61d656af9a2404a287b73e15
+      content_python_sha: eaaf35f6d21a58034fa4e487ee82008786a2e86d189341aacce05240ed072500
+      content_csharp_sha: e02c85e67db262c57193931040c59515029c0db3e7e733582ed24e65072b6bad
   known_differences:
     - "Rebaseline 2026-08-14 : DEUX cotes deplaces par drain wallclock #9434 / PR #10874 (remplacement des timings machine-dependants en ms par des ordres de grandeur dans 2 cellules markdown par cote). Parite semantique inchangee (cellules code byte-identiques, aucune sortie, aucun exec_count touche). Attestations = nouveaux blob SHAs des deux cotes."
     - "Rebaseline 2026-08-05 : cote Python deplace par de-hardcodage de la version numpy depuis le markdown (classe ENV #9434, edition markdown-only). Parite semantique inchangee (aucune cellule code, aucune sortie, aucun exec_count touche) ; cote C# non modifie. Attestation = nouveau blob SHA du cote Python."
