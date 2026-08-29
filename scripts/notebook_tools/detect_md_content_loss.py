@@ -110,12 +110,14 @@ MIN_ORIG_CHARS = 100
 # propriete du pipeline T1/T3/T4 (translation-guard.yml #10038). La base git
 # d'un _en.ipynb est l'ancien rendu (souvent contamine FR, cf #12850) : la
 # comparer au nouveau rendu produit des faux positifs par construction.
-# Meme ensemble que TARGET_LANGS (source unique de verite :
-# scripts/translation/check_perimeter.py #10109), duplique ici pour rester
-# autonome (import stdlib+nbformat uniquement).
-TRANSLATION_LANGS = ("en", "es", "ar", "fa", "zh", "ru", "pt")
+# L'univers ordonne des langues cibles vient de la source unique de verite
+# ``check_perimeter.TARGET_LANGS`` (#10109) -- une copie locale divergente est
+# un bug latent silencieux (garde test_lang_single_source).
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "translation"))
+from check_perimeter import TARGET_LANGS  # noqa: E402  -- single source of truth
+
 _TRANSLATION_SUFFIX_RE = re.compile(
-    r"_(?:" + "|".join(TRANSLATION_LANGS) + r")\.ipynb$", re.IGNORECASE
+    r"_(?:" + "|".join(TARGET_LANGS) + r")\.ipynb$", re.IGNORECASE
 )
 
 # Motifs structurants dont la disparition est un signal fort (design #3 #8655).
