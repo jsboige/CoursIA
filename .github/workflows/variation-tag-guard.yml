@@ -39,10 +39,18 @@ name: Variation Tag Guard
 # la nature du manquement lisible dans `gh pr list --json labels`, sans avoir a
 # ouvrir les logs du job.
 
+# DORMANT depuis #13384 : les SIX jobs pull_request ci-dessous sont absorbes
+# (run blocks portes verbatim) par always-on-guards.yml -- un seul workflow,
+# un seul checkout, un seul slot de runner par PR (37 % de la file CI etait
+# les cinq gardes always-on pour ~3 min de travail reel, mesure #13384).
+# Les jobs restent ICI en copie de reference (noms + logique inchanges) pour
+# la tracabilite ; leur `if: github.event_name != 'issue_comment'` les rend
+# inertes sur les runs issue_comment, et le declencheur pull_request est
+# retire : rien ne les execute plus sur une PR. NE PAS reinscrire
+# pull_request ici sans retirer les organes correspondants d'always-on-guards
+# -- les deux surfaces executeraient le meme verdict en double.
+
 on:
-  pull_request:
-    types: [opened, edited, synchronize, reopened]
-    branches: [main]
   # #11718 : le marqueur [G-VAR-3 OVERRIDE] vit en COMMENTAIRE de PR, mais
   # issue_comment etait absent -- poster le marqueur ne relancait rien. Un run
   # issue_comment checkout la branche par defaut (main), donc execute le gate

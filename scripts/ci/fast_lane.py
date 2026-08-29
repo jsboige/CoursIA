@@ -40,7 +40,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from fast_lane_registry import (  # noqa: E402
-    PILOT, TRANCHE1, TRANCHE2, TRANCHE3, Guard,
+    PILOT, TRANCHE1, TRANCHE2, TRANCHE3, TRANCHE4, Guard,
 )
 
 SHADOW_PREFIX = "fast-lane (ombre): "
@@ -86,7 +86,7 @@ def guard_applies(guard: Guard, changed: list[str]) -> bool:
 def changed_files(base_ref: str) -> list[str]:
     out = subprocess.run(
         ["git", "diff", "--name-only", f"{base_ref}...HEAD"],
-        cwd=REPO_ROOT, capture_output=True, text=True,
+        cwd=REPO_ROOT, capture_output=True, text=True, encoding="utf-8", errors="replace",
     )
     if out.returncode != 0:
         raise SystemExit(
@@ -124,7 +124,7 @@ def run_argv(argv: list[str], ctx: dict[str, str]) -> tuple[int, str]:
     started = time.time()
     try:
         proc = subprocess.run(cmd, cwd=REPO_ROOT, capture_output=True,
-                              text=True, timeout=GUARD_TIMEOUT_S)
+                              text=True, encoding="utf-8", errors="replace", timeout=GUARD_TIMEOUT_S)
     except subprocess.TimeoutExpired:
         joined = " ".join(cmd)
         return 124, f"[fast-lane] delai depasse ({GUARD_TIMEOUT_S}s) : {joined}"
@@ -155,7 +155,8 @@ def expand_paths_token(argv: list[str], paths: list[str]) -> list[str]:
 
 def run_iter(argv_template: list[str], paths: list[str],
              ctx: dict[str, str],
-             warn_rc: tuple[int, ...] = ()) -> tuple[int, str]:
+             warn_rc: tuple[int, ...] = (),
+             fail_on_all_warn: bool = False) -> tuple[int, str]:
     """Execute un garde Pattern 1 (boucle par chemin) en aggregeant un rc
     = max(rc_par_iteration) et une log concatenee. Si `paths` est vide,
     rend un rc=0 no-op (log explicite) -- un CI sans chemin est un vert
@@ -163,19 +164,33 @@ def run_iter(argv_template: list[str], paths: list[str],
     comptent comme succes : les detecteurs de la serie figure/texte rendent
     rc=2 sur fichier illisible, et leur workflow d'origine l'affiche en
     warning -- l'agreger en echec rendrait la lane plus stricte que ce
-    qu'elle absorbe."""
+    qu'elle absorbe.
+
+    `fail_on_all_warn` rend l'anti-auto-desarmement AGREGE des workflows qui
+    le portent (md-content-loss-gate, clause #8655/#8656) : si CHAQUE fichier
+    examine a rendu un rc de `warn_rc`, le garde n'a RIEN analyse et rend 1
+    (fail loud) au lieu d'un quitus vert -- un detecteur casse ne doit pas
+    produire la bonne conclusion par silence."""
     if not paths:
         return 0, "[fast-lane] iterates_paths vide : aucun fichier a examiner"
     rc_agg = 0
+    warned = 0
     chunks: list[str] = []
     for path in paths:
         local_ctx = dict(ctx, changed_paths=path)
         rc, log = run_argv(argv_template, local_ctx)
         if rc in warn_rc:
             rc = 0
+            warned += 1
         chunks.append(f"--- {path} ---\n{log}")
         if rc > rc_agg:
             rc_agg = rc
+    if fail_on_all_warn and warned > 0 and warned == len(paths):
+        return 1, (
+            "[fast-lane] TOUS les fichiers examines etaient illisibles "
+            f"(rc {warn_rc}) : le garde n'a rien analyse et ne peut pas "
+            "certifier -- fail loud (anti-auto-desarmement, #8655/#8656)\n\n"
+            + "\n\n".join(chunks))
     return rc_agg, "\n\n".join(chunks)
 
 
@@ -187,7 +202,7 @@ def payload_of(log: str) -> str:
 
 def git(*args: str) -> subprocess.CompletedProcess:
     return subprocess.run(["git", *args], cwd=REPO_ROOT,
-                          capture_output=True, text=True)
+                          capture_output=True, text=True, encoding="utf-8", errors="replace")
 
 
 def tree_is_clean(paths: list[str]) -> tuple[bool, str]:
@@ -240,7 +255,7 @@ def emit_check_run(repo: str, head_sha: str, name: str, conclusion: str,
         return
     proc = subprocess.run(
         ["gh", "api", "-X", "POST", f"repos/{repo}/check-runs", "--input", "-"],
-        input=json.dumps(payload), capture_output=True, text=True,
+        input=json.dumps(payload), capture_output=True, text=True, encoding="utf-8", errors="replace",
     )
     if proc.returncode != 0:
         # Ne pas faire echouer le job entier : un verdict non publie doit
@@ -299,7 +314,7 @@ def main(argv: list[str] | None = None) -> int:
     print(f"[fast-lane] {len(changed)} fichier(s) modifie(s) "
           f"contre {args.base_ref}")
 
-    guards = [g for g in PILOT + TRANCHE1 + TRANCHE2 + TRANCHE3
+    guards = [g for g in PILOT + TRANCHE1 + TRANCHE2 + TRANCHE3 + TRANCHE4
               if not args.only or g.name == args.only]
     selected = [g for g in guards if guard_applies(g, changed)]
     for guard in guards:
@@ -337,12 +352,19 @@ def main(argv: list[str] | None = None) -> int:
             # continue`). Un chemin absent passe au detecteur rendrait son
             # code "illisible" (rc=2), qui sans ce filtre deviendrait un
             # faux verdict sur un fichier que l'original n'examinait pas.
+            # `iterate_paths` (si renseigne) restreint l'ITERATION au glob
+            # d'actifs, distinct du declencheur `paths` -- sans lui, le
+            # detecteur/workflow present dans `paths` serait passe au
+            # detecteur de notebooks -> rc=2 -> faux echec (incident
+            # #13220 : la PR qui ajoute la garde echouait dessus).
+            iter_patterns = guard.iterate_paths or guard.paths
             arg_paths = sorted({f for f in changed
-                                for p in guard.paths
+                                for p in iter_patterns
                                 if path_matches(f, p)
                                 and (REPO_ROOT / f).is_file()})
             rc, log = run_iter(guard.argv, arg_paths, ctx,
-                               warn_rc=guard.warn_rc)
+                               warn_rc=guard.warn_rc,
+                               fail_on_all_warn=guard.fail_on_all_warn)
             results[guard.name] = (rc, log)
             print(f"[fast-lane] phase 1 {guard.name} (iter sur {len(arg_paths)} "
                   f"fichier(s)) : exit {rc}")

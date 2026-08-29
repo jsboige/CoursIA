@@ -1,0 +1,85 @@
+# Registre des attributions arXiv corrigées
+#
+# Ce registre liste les corrections d'attributions arXiv appliquées dans le dépôt,
+# issues des passes 1-4 de l'EPIC #11168 (vérification des citations arXiv).
+#
+# Le script `scripts/check_arxiv_attributions.py` lit ce registre et vérifie
+# que chaque entrée est **toujours présente** dans le notebook indiqué
+# (la chaîne `expected_citation` doit être trouvable dans la cellule `cell_index`).
+# Si une entrée disparaît (notebook renommé, cellule supprimée, attribution
+# ré-écrite), le check lève rouge en CI.
+#
+# Format de chaque entrée :
+#   - arxiv_id       : identifiant arXiv (ex. "2015.02355")
+#   - notebook       : chemin relatif au notebook (depuis la racine du dépôt)
+#   - cell_index     : index 0-based de la cellule contenant la citation
+#   - expected_citation : chaîne exacte (sensible casse) qui doit subsister
+#   - source_pr      : PR qui a livré la correction (pour traçabilité)
+#   - correction     : description courte de la correction appliquée
+#   - date           : date de la correction (YYYY-MM-DD)
+#
+# **Chaque entrée est extraite MÉCANIQUEMENT depuis le diff de la PR source** :
+# le path, le cell_index et l'exact_citation sont lus depuis `git diff origin/main...<source_pr>`,
+# JAMAIS rédigés de mémoire. Le test `test_real_registry_passes_when_no_drift`
+# valide la mécanique du script ; le test `test_real_registry_passes_against_main`
+# valide la vivacité du registre contre le main actuel.
+
+attributions:
+  # ===== Passe 1 — QC (PR #12832) =====
+  - arxiv_id: "2411.17900"
+    notebook: "MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/research_l4_decision_transformer.ipynb"
+    cell_index: 12
+    expected_citation: "Yun, S. (2024), \"Pretrained LLM Adapted with LoRA as a Decision Transformer for Offline RL in Quantitative Trading\", arXiv:2411.17900"
+    source_pr: "#12832"
+    correction: "Decision Transformer citation: Chen 2021 / arXiv:2411.17900 (titre tronqué) -> Yun 2024 / arXiv:2411.17900 (auteur réel + titre complet)"
+    date: "2026-08-23"
+
+  # ===== Passe 2 — ML (PR #12824) =====
+  - arxiv_id: "2309.07864"
+    notebook: "MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/Day4-Foundations/Lab8-ADK-Introduction.ipynb"
+    cell_index: 1
+    expected_citation: "Z. Xi et al., *The Rise and Potential of Large Language Model Based Agents: A Survey*, arXiv:2309.07864, 2023"
+    source_pr: "#12824"
+    correction: "Survey Xi citation: 2025 -> 2023 (date effective de soumission, cellule Repères bibliographiques)"
+    date: "2026-08-23"
+
+  - arxiv_id: "2309.07864"
+    notebook: "MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/Day4-Foundations/Lab8-ADK-Introduction.ipynb"
+    cell_index: 31
+    expected_citation: "1. Z. Xi et al., *The Rise and Potential of Large Language Model Based Agents: A Survey*, arXiv:2309.07864, 2023."
+    source_pr: "#12824"
+    correction: "Survey Xi citation: 2025 -> 2023 (cellule Références, 1re entrée)"
+    date: "2026-08-23"
+
+  - arxiv_id: "1710.03667"
+    notebook: "MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-DeepLearning/3.5-Phenomenes-de-Generalisation.ipynb"
+    cell_index: 18
+    expected_citation: "5. Advani, M. & Saxe, A. (2017). *High-dimensional dynamics of generalization error in neural networks*. NeurIPS 2017. [arXiv:1710.03667](https://arxiv.org/abs/1710.03667)"
+    source_pr: "#12824"
+    correction: "Advani-Saxe titre: 'generalization in' -> 'generalization error in' (titre réel NeurIPS 2017)"
+    date: "2026-08-23"
+
+  # ===== Passe 3 — GameTheory / RL / Sudoku (PR #12838) =====
+  - arxiv_id: "1705.02955"
+    notebook: "MyIA.AI.Notebooks/GameTheory/GameTheory-13b-Safe-Subgame-Solving.ipynb"
+    cell_index: 0
+    expected_citation: "Brown & Sandholm (2017, arXiv:1705.02955) construisent quand meme le geste"
+    source_pr: "#12838"
+    correction: "Brown-Sandholm arXiv ID: 1612.06947 (Foerster, mauvais auteur) -> 1705.02955 (Safe and Nested Subgame Solving, ID réel)"
+    date: "2026-08-24"
+
+  - arxiv_id: "1506.02438"
+    notebook: "MyIA.AI.Notebooks/RL/rl_6c_ppo_from_scratch.ipynb"
+    cell_index: 1
+    expected_citation: "Schulman, J., Moritz, P., Levine, S., Jordan, M. & Abbeel, P. (2015), High-Dimensional Continuous Control Using Generalized Advantage Estimation, arXiv:1506.02438"
+    source_pr: "#12838"
+    correction: "Schulman GAE: '(2016)' -> '(2015)' (date de 1re publication arXiv, antérieure à ICLR 2016)"
+    date: "2026-08-24"
+
+  - arxiv_id: "2102.09544"
+    notebook: "MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb"
+    cell_index: 51
+    expected_citation: "[Cappart et al. (2021) : Combinatorial optimization and reasoning with graph neural networks](https://arxiv.org/abs/2102.09544)"
+    source_pr: "#12838"
+    correction: "Référence GNN+combinatorial: placeholder 'Graph Neural Networks for combinatorial optimization' (arxiv:2012.01806, lien mort) -> Cappart et al. 2021 (Combinatorial Optimization and Reasoning with Graph Neural Networks, arXiv:2102.09544, référence canonique)"
+    date: "2026-08-24"

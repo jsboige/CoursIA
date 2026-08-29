@@ -41,8 +41,18 @@ jobs:
         run: |
           set -uo pipefail
           # ADVISORY : on ne fail jamais, on collecte et on avertit.
-          BASE="${{ github.event.pull_request.base.sha }}"
-          HEAD="${{ github.event.pull_request.head.sha }}"
+          BASE="${{ github.event.pull_request.base.sha || '' }}"
+          HEAD="${{ github.event.pull_request.head.sha || '' }}"
+          # ---- Nocturne window (#12817 tranche 2) ----
+          # Under schedule, BASE/HEAD were empty: `git diff --raw ""...""` failed
+          # into 2>/dev/null, the loop read nothing and the job printed "OK :
+          # aucun blob" every night -- a green no-op masquerading as a scan.
+          if [ -z "$BASE" ]; then
+            BASE=$(git rev-list -1 --before="24 hours ago" HEAD)
+            [ -n "$BASE" ] || BASE=$(git rev-list --max-parents=0 HEAD | tail -1)
+            HEAD=$(git rev-parse HEAD)
+            echo "Nocturne window (24 h of main)."
+          fi
           echo "Scanning added blobs between ${BASE:0:12}..${HEAD:0:12} (threshold ${THRESHOLD_BYTES} bytes)"
           found=0
           # git diff --raw : ':<oldmode> <newmode> <oldsha> <newsha> <status>\t<path>'
