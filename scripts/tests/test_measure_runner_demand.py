@@ -162,10 +162,15 @@ def test_one_second_github_timestamp_skew_is_counted_not_zeroed():
     assert result["denominators"]["timestamp_skew_jobs"] == 1
 
 
-def test_larger_negative_timestamp_is_broken_not_zero():
-    bad = job(1, dt(), dt(0, 10), dt(0, 9))
-    with pytest.raises(mod.MeasurementError, match="negative duration"):
-        mod.analyze(snapshot([with_jobs(run(1, dt()), [bad])]))
+def test_larger_negative_timestamp_is_skew_not_fatal():
+    # Real-world datum (job 98968836743, 2026-08-28): GitHub inverted runtime
+    # by 6 s. The duration is unmeasurable -- count it as skew, never fatal
+    # (a datum-level anomaly must not kill a 1400-run measurement).
+    bad = job(1, dt(), dt(0, 10), dt(0, 9, 54))
+    result = mod.analyze(snapshot([with_jobs(run(1, dt()), [bad])]))
+    assert result["runner"]["runner_minutes"] == 0.0
+    assert result["denominators"]["timed_jobs"] == 0
+    assert result["denominators"]["timestamp_skew_jobs"] == 1
 
 
 def test_started_job_without_created_at_is_broken():

@@ -91,7 +91,7 @@ def gh_api(endpoint: str, jq: str = ".") -> str:
     """Call gh api with pagination, return raw JSON string."""
     result = subprocess.run(
         ["gh", "api", "--paginate", endpoint],
-        capture_output=True, text=True, timeout=120
+        capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=120
     )
     if result.returncode != 0:
         print(f"  WARN: gh api {endpoint} failed: {result.stderr.strip()}", file=sys.stderr)
@@ -103,7 +103,7 @@ def gh_api_jq(endpoint: str, jq_filter: str) -> list:
     """Call gh api and extract with jq."""
     result = subprocess.run(
         ["gh", "api", "--paginate", endpoint, "--jq", jq_filter],
-        capture_output=True, text=True, timeout=120
+        capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=120
     )
     if result.returncode != 0:
         return []
@@ -193,7 +193,7 @@ def get_ahead_commits(repo: str, fork_owner: str) -> tuple[int, list[str]]:
         result = subprocess.run(
             ["gh", "api", f"repos/{repo}/compare/main...{fork_owner}:main",
              "--jq", ".ahead_by, (.commits // [] | .[].sha)"],
-            capture_output=True, text=True, timeout=30
+            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=30
         )
         if result.returncode != 0:
             return 0, []
@@ -213,7 +213,7 @@ def get_commit_details(repo: str, fork_owner: str, sha: str) -> dict:
         result = subprocess.run(
             ["gh", "api", f"repos/{fork_owner}/{repo.split('/')[-1]}/commits/{sha}",
              "--jq", '{author: .commit.author.name, email: .commit.author.email, message: .commit.message, files: [.files[].filename]}'],
-            capture_output=True, text=True, timeout=30
+            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=30
         )
         if result.returncode != 0:
             return {}
@@ -230,7 +230,7 @@ def check_existing_pr(repo: str, fork_owner: str) -> tuple[bool, int, str]:
         ["gh", "pr", "list", "--repo", repo,
          "--state", "all", "--search", fork_owner,
          "--json", "number,state,title", "--limit", "10"],
-        capture_output=True, text=True, timeout=30
+        capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=30
     )
     if result.returncode == 0 and result.stdout.strip():
         prs = json.loads(result.stdout)
@@ -244,7 +244,7 @@ def check_existing_pr(repo: str, fork_owner: str) -> tuple[bool, int, str]:
         ["gh", "pr", "list", "--repo", repo,
          "--state", "all", "--head", f"{fork_owner}:main",
          "--json", "number,state,title", "--limit", "5"],
-        capture_output=True, text=True, timeout=30
+        capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=30
     )
     if result2.returncode == 0 and result2.stdout.strip():
         prs = json.loads(result2.stdout)

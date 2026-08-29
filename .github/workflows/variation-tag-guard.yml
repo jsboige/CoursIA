@@ -948,8 +948,17 @@ jobs:
   # le fantome workflow_run deja mesure : un SHA qui porte un check sans dire
   # de quoi le check parle).
   #
-  # Le check-run porte le MEME nom que le job pull_request ; le verdict le plus
-  # recent par nom supplante le rouge gele de la vieille run dans la vue PR.
+  # #13401 : le check-run POSTe sous un nom DISTINCT (celui de ce job, avec
+  # deux-points) -- c'est un temoin d'information, il ne deverrouille RIEN :
+  # le check REQUIS (le nom du job pull_request) et l'agregat PR gate gardent
+  # leur rouge gele. Renommer ce POST au nom requis est mort ne : GitHub
+  # exige que TOUT check-run portant le nom d'un check requis soit vert (un
+  # ET, pas un latest-wins, #11519) -- un POST vert pose a cote du rouge gele
+  # de la run originale laisse la PR bloquee. Le mecanisme valide est la
+  # RE-RUN des runs ORIGINAUX pour le SHA de tete (le run pull_request de ce
+  # garde + l'agregat PR gate), dans la branche verdict vert ci-dessous : la
+  # re-run produit son check-run dans la MEME suite, ou le latest-wins tient
+  # (recette pr-gate-rerun.yml, #11519).
   #
   # Anti-boucle : ce job NE POSTE PAS de commentaire en retour (le chemin
   # bloquant s'exprime dans l'output du check-run), et il s'ignore lui-meme :
@@ -979,6 +988,10 @@ jobs:
       contents: read
       pull-requests: write
       checks: write
+      # #13401 : re-runner le run pull_request ORIGINAL de ce garde et
+      # l'agregat PR gate quand l'OVERRIDE est accepte -- le mecanisme
+      # valide est re-run, jamais POST duplique (#11519).
+      actions: write
     steps:
       - name: Checkout the adjacency helper (sparse, branche par defaut = gate COURANT)
         uses: actions/checkout@v4
@@ -1070,7 +1083,46 @@ jobs:
           SUMMARY=$(cat /tmp/verdict.json 2>/dev/null || echo '{}')
           if [ "$RC" -eq 0 ]; then
             echo "Adjacence OK (comment path)."
-            post_check success "Verdict du gate COURANT (main), declenche par commentaire :$SUMMARY"
+
+            # --- Re-run des runs ORIGINAUX, jamais un POST duplique ------
+            # #13401 : l'OVERRIDE accepte rend vert le temoin de CE job
+            # mais ni le check requis (job pull_request de ce garde) ni
+            # l'agregat PR gate ne bougent -- un POST vert sous leur nom
+            # ne les deverrouillerait pas (ET, pas latest-wins, #11519).
+            # On RE-RUN les runs originaux du meme SHA de tete : la re-run
+            # produit son check-run dans la MEME suite, ou le latest-wins
+            # tient (recette pr-gate-rerun.yml). Echec => ::warning::
+            # loud, jamais silencieux.
+
+            # (a) run pull_request de CE workflow pour le SHA de tete (le
+            # filtre --event exclut ce job commentaire, en issue_comment) :
+            # c'est le porte-nom du check requis.
+            GUARD_RUN_ID=$(gh run list --workflow variation-tag-guard.yml --event pull_request \
+              --limit 30 --json databaseId,headSha,status \
+              | python3 -c "import json,os,sys; print(next((r['databaseId'] for r in json.load(sys.stdin) if r['headSha']==os.environ.get('HEAD_SHA','') and r['status']=='completed'), ''))" 2>/dev/null \
+              || true)
+            if [ -n "$GUARD_RUN_ID" ] && gh run rerun "$GUARD_RUN_ID"; then
+              RERUN_NOTES="run pull_request du garde ${GUARD_RUN_ID} re-declenche"
+            else
+              echo "::warning::[G-VAR-3] aucun run pull_request variation-tag-guard termine pour ${HEAD_SHA} -- rerun MANUEL requis (gh run rerun, #13401)."
+              RERUN_NOTES="rerun du garde NON emis -- rerun manuel requis"
+            fi
+
+            # (b) agregat PR gate pour le meme SHA (recette #11519 : run le
+            # plus recent de ce nom pour le SHA ; on ne re-run que les runs
+            # termines -- l'API rejette la re-run d'un run en cours).
+            GATE_RUN_JSON=$(gh api "repos/${GH_REPO}/actions/runs?head_sha=${HEAD_SHA}&event=pull_request&per_page=100" \
+              --jq '[.workflow_runs[] | select(.name == "PR gate")] | sort_by(.created_at) | last')
+            GATE_RUN_ID=$(printf '%s' "$GATE_RUN_JSON" | jq -r '.id // empty' 2>/dev/null || true)
+            GATE_STATUS=$(printf '%s' "$GATE_RUN_JSON" | jq -r '.status // empty' 2>/dev/null || true)
+            if [ -n "$GATE_RUN_ID" ] && [ "$GATE_STATUS" = "completed" ] && gh run rerun "$GATE_RUN_ID"; then
+              RERUN_NOTES="${RERUN_NOTES}; run PR gate ${GATE_RUN_ID} re-declenche"
+            else
+              echo "::warning::[G-VAR-3] aucun run PR gate termine pour ${HEAD_SHA} -- rerun MANUEL requis (gh run rerun, #13401)."
+              RERUN_NOTES="${RERUN_NOTES}; rerun PR gate NON emis -- rerun manuel requis"
+            fi
+
+            post_check success "Verdict du gate COURANT (main), declenche par commentaire :$SUMMARY -- deverrouillage : $RERUN_NOTES"
             exit 0
           fi
           REASON=$(python3 -c "import json; print(json.load(open('/tmp/verdict.json')).get('reason','unknown'))" 2>/dev/null || echo unknown)

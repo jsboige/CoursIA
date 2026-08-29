@@ -51,13 +51,13 @@ USER_NIT = {
 }
 
 
-def run(comments, commits=None, threads=None):
+def run(comments, commits=None, threads=None, reviews=None, pr_author="jsboige"):
     data = {
         "number": 0,
         "title": "t",
-        "author": {"login": "jsboige"},
+        "author": {"login": pr_author},
         "comments": comments,
-        "reviews": [],
+        "reviews": reviews if reviews is not None else [],
         "commits": commits if commits is not None else [{"committedDate": at(19)}],
     }
     return mod.analyse(data, threads or [], MERGED)
@@ -535,6 +535,125 @@ def test_approved_avant_la_concerne_ne_leve_pas():
         "submittedAt": at(9), "body": "",
     }
     assert run_reviews([early_ok, late_concern])["blocked"] is True
+
+
+# --- #13399 : une levee portee par une REVIEW est aussi visible qu'en
+# commentaire. Le defaut constate sur #13299 : ai-01 pose APPROVED par review
+# en nommant chaque reserve, mais l'organe n'etait capable de lever par re-review
+# que si l'auteur de l'APPROVED etait l'auteur de la reserve (auto-approbation).
+# Un reviewer TIERS qui approuve en nommant la reserve d'un autre la leve aussi.
+# Le garde-fou #12798 reste : c'est l'identite de l'auteur qui tranche.
+
+def test_approval_by_different_reviewer_naming_reserve_leves():
+    """Positif #13299 : reserve en commentaire (lane A), fix, APPROVED en review
+    par un auteur DIFFERENT qui nomme la reserve -> levee (rc=0)."""
+    reserve = {
+        "author": {"login": "po-2026"},
+        "createdAt": at(10),
+        "body": "Verdict : CHANGES_REQUESTED (substance) — sortie degeneree en cell 3.",
+    }
+    fix = {"author": {"login": "jsboige"}, "createdAt": at(12),
+           "body": "cell 3 corrigee, re-exec 5/5."}
+    approval_tierce = {
+        "author": {"login": "ai-01"},
+        "state": "APPROVED", "submittedAt": at(15),
+        "body": ("APPROVED — la reserve de po-2026 (sortie degeneree) est traitee "
+                 "(commit bb573c3819, re-exec 5/5)."),
+    }
+    res = run([reserve, fix], reviews=[approval_tierce])
+    assert res["blocked"] is False
+
+
+def test_approval_by_reserve_author_who_is_pr_author_refused():
+    """Negatif #13399 : si l'auteur de la reserve est l'auteur de la PR, une
+    APPROVED de CE meme compte est une auto-approbation (self-review cap #12319)
+    et ne leve pas. Seul un tiers legitime confirme."""
+    reserve = {
+        "author": {"login": "jsboige"},
+        "createdAt": at(10),
+        "body": "Verdict : CHANGES_REQUESTED (substance) — sortie degeneree en cell 3.",
+    }
+    fix = {"author": {"login": "jsboige"}, "createdAt": at(12),
+           "body": "cell 3 corrigee, re-exec 5/5."}
+    self_approval = {
+        "author": {"login": "jsboige"},
+        "state": "APPROVED", "submittedAt": at(15),
+        "body": "APPROVED.",
+    }
+    res = run([reserve, fix], reviews=[self_approval])
+    assert res["blocked"] is True
+
+
+def test_approval_by_different_reviewer_without_naming_does_not_leve():
+    """Garde-fou : une review APPROVED d'un tiers qui n'identifie pas la reserve
+    (pas de mention de son auteur) ne la leve pas — sinon tout APPROVED d'un
+    coordinateur eteindrait toutes les reserves de la PR."""
+    reserve = {
+        "author": {"login": "po-2026"},
+        "createdAt": at(10),
+        "body": "Verdict : CHANGES_REQUESTED (substance) — sortie degeneree en cell 3.",
+    }
+    fix = {"author": {"login": "jsboige"}, "createdAt": at(12),
+           "body": "cell 3 corrigee."}
+    approval_generique = {
+        "author": {"login": "ai-01"},
+        "state": "APPROVED", "submittedAt": at(15),
+        "body": "APPROVED — le livrable est bon a merger.",
+    }
+    res = run([reserve, fix], reviews=[approval_generique])
+    assert res["blocked"] is True
+
+
+def test_lift_phrase_in_review_commented_leves():
+    """#13399 point 2 : une PHRASE de levee portee par le corps d'une review
+    COMMENTED (et pas un commentaire) leve comme un commentaire — la levee
+    devient symetrique a la pose (qui acceptait deja commentaire et review).
+    La borne d'auteur #11145 reste : la phrase de l'auteur de la reserve leve
+    (ici clusterManager-Myia leve sa propre reserve par une review)."""
+    reserve = {
+        "author": {"login": "clusterManager-Myia"},
+        "state": "COMMENTED", "submittedAt": at(10),
+        "body": "[Hermes] — COMMENT_WITH_CONCERNS\nCI catalog-drift FAIL.",
+    }
+    lift_in_review = {
+        "author": {"login": "clusterManager-Myia"},
+        "state": "COMMENTED", "submittedAt": at(15),
+        "body": "Je leve la CHANGES_REQUESTED — drift corrige au commit c506d04b.",
+    }
+    res = run_reviews([reserve, lift_in_review])
+    assert res["blocked"] is False
+
+
+def test_reserve_in_review_lifted_by_third_party_naming():
+    """Symetrie pose/levee (#13399 point 2) : une reserve posee en REVIEW
+    (COMMENTED, meme surface qu'un __init__ par review) est levee par un tiers
+    APPROVED qui la nomme, comme celle d'un commentaire. La distinction est
+    l'identite de l'auteur, pas le canal."""
+    concern_in_review = {
+        "author": {"login": "po-2026"},
+        "state": "COMMENTED", "submittedAt": at(10),
+        "body": "Verdict : CHANGES_REQUESTED (substance) — sortie degeneree en cell 3.",
+    }
+    approval_tierce = {
+        "author": {"login": "ai-01"},
+        "state": "APPROVED", "submittedAt": at(15),
+        "body": "APPROVED — la reserve de po-2026 (sortie degeneree) est traitee.",
+    }
+    res = run_reviews([concern_in_review, approval_tierce])
+    assert res["blocked"] is False
+
+
+def test_channel_reflects_origin_surface():
+    """#13399 point 3 : le canal de chaque evenement bloqueur est expose
+    (comment vs review), pour qu'un desaccord entre l'organe et une lecture
+    humaine soit diagnosticable sans re-fouiller l'API."""
+    assert run([USER_NIT])["blocking"][0]["channel"] == "comment"
+    assert run_reviews([CONCERN_REVIEW])["blocking"][0]["channel"] == "review"
+    # un thread inline non resolu releve du canal review (surface GitHub review)
+    thread = {"author": "jsboige", "body": "ligne 3 a revoir",
+              "resolved": False, "outdated": False,
+              "createdAt": at(11), "path": "a/b.ipynb", "line": 3}
+    assert run([], threads=[thread])["blocking"][0]["channel"] == "review"
 
 
 # --- #11201 : le faux negatif « corrige X et je merge ». Le test LIFT_MARKERS
@@ -2222,6 +2341,111 @@ def test_13083_blocage_reel_conditionnel_a_un_override_reste_block():
     body = ("**BLOCAGE MERGE (ai-01)** — pas de merge tant que [OVERRIDE] lane "
             "n'est pas pose par le coordinateur.")
     assert mod.classify("myia-ai-01", body) == "BLOCK"
+
+
+# --- #13316 : jsboige n'est pas un compte de levée. L'identité de poussée est
+# PARTAGÉE par toutes les lanes (Hermes self-review cap #12319, push lane) :
+# créditer jsboige comme coordinateur de l'[OVERRIDE] rétablit l'auto-levee que
+# la borne d'auteur #11145 interdit. Cas réel fondateur : PR #12737 — réserve
+# BOT-CONCERN de myia-ai-01 à 02:37:04Z, deux « [OVERRIDE] » poussés sous
+# jsboige à 02:40:01Z et 02:41:06Z par la lane portante. Le garde-fou a tenu
+# par lecture humaine, pas par le gate : jsboige in COORDINATOR_LOGINS était
+# vrai, l'organe aurait rendu rc=0.
+
+LANE_OVERRIDE_BODY = (
+    "**[OVERRIDE] lane myia-po-2023:CoursIA-2** — Levée de la réserve du "
+    "2026-08-28 : les deux points sont adressés par le commit abc123, "
+    "re-review demandée."
+)
+
+
+def test_13316_jsboige_override_ne_leve_pas_reserve_tiers():
+    """Critère 1 : un [OVERRIDE] + phrase de levée poussé sous jsboige (la lane
+    elle-même) n'éteint PAS la réserve d'un tiers — c'est #12798 sous un autre
+    nom, le gate ne le crédite plus."""
+    reserve = HERMES_REVIEW_11479  # tier (bot), déjà porté par run_coord
+    lane_override = {"author": {"login": "jsboige"},
+                     "createdAt": "2026-08-18T13:06:34Z",
+                     "body": LANE_OVERRIDE_BODY}
+    assert reserve  # réserve d'un tier présente dans les reviews
+    assert run_coord([lane_override])["blocked"] is True
+
+
+def test_13316_override_ai01_leve_toujours():
+    """Critère 2 (contrôle positif, même exécution que le critère 1) : l'override
+    légitime de la lane coordinatrice dédiée continue d'éteindre la réserve —
+    le correctif ferme l'auto-levee, il ne transforme pas la trappe en mur."""
+    lift = {"author": {"login": "myia-ai-01"},
+            "createdAt": "2026-08-18T13:06:34Z", "body": OVERRIDE_BODY}
+    assert run_coord([lift])["blocked"] is False
+
+
+def test_13316_self_lift_jsboige_sur_sa_propre_reserve_leve():
+    """Borne intacte : jsboige qui lève SA PROPRE réserve (lift_author ==
+    nit_author) reste la voie légitime #11145 — l'exclusion #13316 ne vise que
+    la trappe coordinateur, pas la self-levee de l'émetteur."""
+    own_nit = {"author": {"login": "jsboige"}, "createdAt": at(10),
+               "body": "CHANGES_REQUESTED: la cellule 12 casse le kernel."}
+    own_lift = {"author": {"login": "jsboige"}, "createdAt": at(12),
+                "body": "Levée de ma réserve : cellule 12 corrigée, commit abc."}
+    assert run([own_nit, own_lift])["blocked"] is False
+
+
+def test_13316_replay_12737_reel():
+    """Critère 3 : replay du cas réel #12737 (timestamps réels) — réserve
+    myia-ai-01 02:37:04Z, « overrides » jsboige 02:40:01Z et 02:41:06Z : la
+    réserve SURVIT et l'organe distingue les deux issues (avant : rc=0)."""
+    reserve = {"author": {"login": "myia-ai-01"},
+               "state": "CHANGES_REQUESTED",
+               "submittedAt": "2026-08-28T02:37:04Z",
+               "body": "CHANGES_REQUESTED: le verdict EXEC_PROVED n'est pas "
+                       "prouvé par le diff (2 cellules sans sortie)."}
+    o1 = {"author": {"login": "jsboige"},
+          "createdAt": "2026-08-28T02:40:01Z", "body": LANE_OVERRIDE_BODY}
+    o2 = {"author": {"login": "jsboige"},
+          "createdAt": "2026-08-28T02:41:06Z", "body": LANE_OVERRIDE_BODY}
+    res = mod.analyse({
+        "number": 12737, "title": "t", "author": {"login": "jsboige"},
+        "comments": [o1, o2], "reviews": [reserve],
+        "commits": [{"committedDate": "2026-08-28T02:00:00Z"}],
+    }, [], datetime(2026, 8, 28, 3, 0, 0, tzinfo=timezone.utc))
+    assert res["blocked"] is True
+    assert len(res["blocking"]) == 1  # la réserve ai-01 seule survit
+    assert res["blocking"][0]["author"] == "myia-ai-01"
+
+
+def test_13316_override_ecarte_est_nomme_dans_la_sortie():
+    """Critère 4 : un override écarté pour cause d'auteur est NOMMÉ (auteur,
+    horodatage, raison) — le silence rendait « rouge malgré notre override »
+    indistinguable d'un bug du détecteur (#13030, #12096)."""
+    reserve = {"author": {"login": "myia-ai-01"},
+               "state": "CHANGES_REQUESTED",
+               "submittedAt": "2026-08-28T02:37:04Z",
+               "body": "CHANGES_REQUESTED: verdict non prouvé."}
+    o1 = {"author": {"login": "jsboige"},
+          "createdAt": "2026-08-28T02:40:01Z", "body": LANE_OVERRIDE_BODY}
+    res = mod.analyse({
+        "number": 0, "title": "t", "author": {"login": "jsboige"},
+        "comments": [o1], "reviews": [reserve],
+        "commits": [{"committedDate": "2026-08-28T02:00:00Z"}],
+    }, [], datetime(2026, 8, 28, 3, 0, 0, tzinfo=timezone.utc))
+    assert res["blocked"] is True
+    ignored = res["ignored_overrides"]
+    assert len(ignored) == 1
+    assert ignored[0]["author"] == "jsboige"
+    assert "2026-08-28T02:40:01" in ignored[0]["at"]
+    assert "n'est pas un compte" in ignored[0]["why"]
+    assert "jsboige" in ignored[0]["why"]
+
+
+def test_13316_override_legitime_ne_produit_aucune_note():
+    """Miroir du critère 4 : l'override légitime (ai-01) ne génère PAS de note
+    « override ignoré » — la liste ne doit nommer que les écarts réels."""
+    lift = {"author": {"login": "myia-ai-01"},
+            "createdAt": "2026-08-18T13:06:34Z", "body": OVERRIDE_BODY}
+    res = run_coord([lift])
+    assert res["blocked"] is False
+    assert res["ignored_overrides"] == []
 # --- #12944 : le close-the-loop Hermes. « Mon concern ... est traité et
 # fermé » (PR #12941 fondateur, review 5020777166) : la levee PASSIVE
 # n'etait couverte par aucun LIFT_MARKER, et le verdict mentionne (« ma

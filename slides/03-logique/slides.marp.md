@@ -1377,7 +1377,7 @@ footer: 'III - Logique'
 > `MyIA.AI.Notebooks/SymbolicAI/Lean/`
 
 > **Z3 / SMT** : Solveurs modulo théorie, SAT, contraintes
-> `MyIA.AI.Notebooks/Sudoku/Sudoku-4-Z3.ipynb`
+> `MyIA.AI.Notebooks/Sudoku/Sudoku-04-Z3.ipynb`
 
 > **Argumentation (Tweety)** : Logiques argumentatives de Dung, ASPIC, ABA
 > `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/`
@@ -1387,7 +1387,7 @@ footer: 'III - Logique'
 
 > **CSPs et planification** : Problèmes de satisfaction de contraintes
 > `MyIA.AI.Notebooks/Search/CSPs_Intro.ipynb`
-> `MyIA.AI.Notebooks/Sudoku/Sudoku-3-ORTools.ipynb`
+> `MyIA.AI.Notebooks/Sudoku/Sudoku-03-ORTools.ipynb`
 
 ---
 
