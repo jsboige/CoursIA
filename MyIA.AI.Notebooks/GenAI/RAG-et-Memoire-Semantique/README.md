@@ -239,7 +239,7 @@ Pour le versant *application* du RAG (pas infrastructure), voir les notebooks [`
 | [Notebook — Stockage vectoriel, serveur](05b-Stockage-Vectoriel-Serveur.ipynb) | Rejouer le compromis ef exact/ANN sur un serveur Qdrant réel, 10k vecteurs | Pratique |
 | [Notebook — Kernel Memory in-process](06-KernelMemory-InProcess.ipynb) | Déléguer ETL, partitionnement et citations à Kernel Memory (.NET 9), mesurer la granularité contre le rappel | Pratique |
 | [Notebook — Kernel Memory Python, mode service](07-KernelMemory-Python-Quickstart.ipynb) | Piloter le service web Kernel Memory en HTTP depuis Python : corpus hétérogène, citations, pont Qdrant, réponse sourcée, gold-set mesuré | Pratique |
-| [Notebook — Kernel Memory hybride BM25+dense](08-KernelMemory-Hybrid-Search.ipynb) | Projeter l'index KM vers une collection hybride (dense + BM25 fastembed) et mesurer le gain de la fusion RRF — gold à deux classes, recall@k et MRR | Pratique |
+| [Notebook — Kernel Memory hybride BM25+dense](08-KernelMemory-Hybrid-Search.ipynb) | Projeter l'index KM vers une collection hybride (dense + BM25 fastembed) et mesurer honnêtement ce que la fusion RRF ajoute — y compris quand elle n'ajoute rien — gold à deux classes, recall@k et MRR | Pratique |
 | [Notebook — Kernel Memory multimodal, pont vision](09-KernelMemory-Multimodal.ipynb) | Constater le plafond OCR du service OSS (PNG accepté, pipeline figé), le franchir par le pont vision, mesurer avant/après | Pratique |
 
 ---
