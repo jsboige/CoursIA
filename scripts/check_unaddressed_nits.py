@@ -1105,6 +1105,21 @@ def review_threads(pr: int) -> list[dict]:
     return out
 
 
+def _names_author(body: str, author: str) -> bool:
+    """``body`` mentionne-t-il ``author`` comme identite, pas par hasard ?
+
+    #13399 : un reviewer tiers n'approuve la reserve d'une lane que s'il NOMME
+    cette lane — sinon un APPROVED generique eteindrait toutes les reserves de
+    la PR. La frontiere de mot est posee par non-caractere d'identite (un login
+    contient `-` et `.`, donc `\\b` est fragile autour d'eux : `clusterManager-Myia`
+    n'a pas de frontiere au tiret). On exige un mot-de-login complet delimitere.
+    """
+    if not body or not author:
+        return False
+    return re.search(r"(?<![A-Za-z0-9_.-])" + re.escape(author) + r"(?![A-Za-z0-9_.-])",
+                     body) is not None
+
+
 def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
     """cutoff = mergedAt (audit retro) ou now (gate pre-merge)."""
     commits = [ts(c.get("committedDate")) for c in (pr_data.get("commits") or [])]
@@ -1129,12 +1144,47 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
     # d'exclusion can_lift ne s'applique pas — un state APPROVED n'est pas du
     # bruit de protocole, meme depuis un reviewer bot.
     approved_rereviews = [
-        (ts(r.get("submittedAt")), (r.get("author") or {}).get("login", ""), "")
+        (ts(r.get("submittedAt")), (r.get("author") or {}).get("login", ""),
+         r.get("body", ""))
         for r in (pr_data.get("reviews") or [])
         if r.get("state") == "APPROVED"
         and (r.get("author") or {}).get("login", "") not in BOT_LOGINS
     ]
     approved_rereviews = [x for x in approved_rereviews if x[0] is not None]
+
+    def _approved_lifts_reserve(reserve_author: str, reserve_when: datetime,
+                                pr_author: str) -> bool:
+        """Une re-review APPROVED leve-t-elle la reserve de ``reserve_author`` ?
+
+        #13399 — le defaut constate sur #13299 n'etait pas l'absence de re-review,
+        mais le fait que ``approved_rereviews`` ne levait que la reserve dont
+        l'auteur de l'APPROVED etait l'auteur (auto-approbation). Un reviewer
+        TIERS (ai-01) qui approuve en nommant la reserve d'une lane la leve
+        aussi. Le garde-fou #12798 reste : seule l'identite de l'auteur tranche,
+        jamais un commit ni un SAR. Deux voies, toutes posterieures a la reserve :
+
+        1. **Re-review de l'auteur** (``auteur_approved == reserve_author``) :
+           legitime uniquement si l'auteur de la reserve n'est pas l'auteur de la
+           PR. Sous le self-review cap (#12319) l'auteur de la reserve == l'auteur
+           de la PR == jsboige, et une APPROVED de ce compte est une
+           auto-approbation qui demontre rien — refuse.
+        2. **Approbation d'un tiers nommant la reserve** (auteur different de la
+           reserve ET de l'auteur de la PR, corps mentionnant le login de la
+           reserve) : le coordinateur confirme par ecrit que le point de la lane
+           est traite. Un APPROVED completement generique (qui n'identifie pas
+           la reserve) ne leve rien — sinon tout approval d'un coordinateur
+           eteindrait toutes les reserves de la PR.
+        """
+        for (t, app_author, app_body) in approved_rereviews:
+            if t is None or t <= reserve_when:
+                continue
+            if app_author == reserve_author:
+                if reserve_author != pr_author:
+                    return True
+                continue  # auto-approbation self-review : refusee, voir ci-dessous
+            if app_author != pr_author and _names_author(app_body, reserve_author):
+                return True
+        return False
 
     def _lift_eligible(lift_author: str, nit_author: str,
                        lift_body: str = "") -> bool:
@@ -1182,6 +1232,22 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
         # une reserve, pas un evenement de levee du signal precedent.
         and classify((c.get("author") or {}).get("login", ""),
                      c.get("body", "")) is None
+    ] + [
+        # #13399 point 2 — symetrie de la levee : une PHRASE de levee portee
+        # par le corps d'une review COMMENTED (et pas un commentaire) devait
+        # aussi compter. Aujourd'hui la pose acceptait commentaire et review,
+        # la levee un seul. Une review APPROVED est deja traitee par
+        # approved_rereviews (etat natif) ; une review COMMENTED qui ecrit
+        # « je leve ma CHANGES_REQUESTED » est une levee comme un commentaire.
+        (ts(r.get("submittedAt")), (r.get("author") or {}).get("login", ""),
+         r.get("body", ""))
+        for r in (pr_data.get("reviews") or [])
+        if r.get("state") == "COMMENTED"
+        and can_lift(r)
+        and has_live_lift(r.get("body", ""))
+        and not _lift_cancelled(_strip_quoted(r.get("body", "")))
+        and classify((r.get("author") or {}).get("login", ""),
+                     r.get("body", "")) is None
     ]
     explicit_lifts = [x for x in explicit_lifts if x[0] is not None]
 
@@ -1239,10 +1305,7 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
             # (B.0 : ce qui leve une remarque est une phrase). Les nits portes
             # par un COMMENTAIRE gardent le regime general ci-dessous — limite
             # NLP documentee dans can_lift.
-            lifted = any(
-                when < t < cutoff and author == login
-                for (t, author, _) in approved_rereviews
-            ) or any(
+            lifted = _approved_lifts_reserve(login, when, pr_author) or any(
                 when < t < cutoff and _lift_eligible(lifter, login, lift_body)
                 for (t, lifter, lift_body) in explicit_lifts
             )
@@ -1264,9 +1327,7 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
                     and (lift_author != pr_author
                          or bool(OVERRIDE_LANE.search(lift_body)))
                     for (t, lift_author, lift_body) in explicit_lifts)
-                    or any(
-                    when < t < cutoff and author == login
-                    for (t, author, _) in approved_rereviews)):
+                    or _approved_lifts_reserve(login, when, pr_author)):
                 continue
         # #12319 : meme regime pour un nit porte par un commentaire ou une
         # review COMMENTED (dont chaque reserve Hermes, self-review cap).
@@ -1280,10 +1341,7 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
         elif (any(
                   when < t < cutoff and _lift_eligible(lift_author, login, lift_body)
                   for (t, lift_author, lift_body) in explicit_lifts
-              ) or any(
-                  when < t < cutoff and author == login
-                  for (t, author, _) in approved_rereviews
-              )):
+              ) or _approved_lifts_reserve(login, when, pr_author)):
             continue
         # Un commit poussé après le nit ne le lève PAS à lui seul : sur #10761,
         # le « traitement » était un rebase à 19:41 qui n'adressait aucun des
@@ -1292,6 +1350,7 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
         pushed_after = last_commit is not None and last_commit > when
         blocking.append({
             "kind": kind, "author": login, "src": src,
+            "channel": "review" if src.startswith("review") else "comment",
             "at": when.isoformat(),
             "gap_hours": round((cutoff - when).total_seconds() / 3600.0, 1),
             "code_pushed_after": pushed_after,
@@ -1303,6 +1362,7 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
             continue
         blocking.append({
             "kind": "INLINE-UNRESOLVED", "author": t["author"], "src": "reviewThread",
+            "channel": "review",
             "at": t.get("createdAt") or "?",
             "where": f"{t.get('path')}:{t.get('line')}",
             "excerpt": _excerpt(t.get("body") or ""),
