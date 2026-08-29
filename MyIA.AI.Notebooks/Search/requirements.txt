@@ -5,6 +5,7 @@
 python-constraint>=1.4.0     # CSP basique (backtracking, forward checking)
 ortools>=9.8                 # Google OR-Tools CP-SAT solver
 z3-solver>=4.13              # Microsoft Z3 SMT solver
+python-sat>=1.8.dev13         # SAT/CDCL + cardinality encodings (App-23 PRESENT)
 
 # Automata
 automata-lib>=9.2.0          # Finite automata library (NFA, DFA)
@@ -13,6 +14,7 @@ automata-lib>=9.2.0          # Finite automata library (NFA, DFA)
 deap>=1.4                    # Genetic algorithms framework
 pygad>=3.3                   # GA simplifie
 mealpy>=3.0                  # Metaheuristics library (PSO, SA, ABC, etc.)
+pymoo>=0.6                   # Multi-objectif (NSGA-II) + indicateurs (hypervolume)
 
 # Graph & Visualization
 networkx>=3.1                # Graphes et algorithmes

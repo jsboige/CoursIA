@@ -29,8 +29,6 @@ EXIT_BROKEN = 2
 PER_PAGE = 100
 SEARCH_CAP = 1000
 MIN_SLICE = timedelta(seconds=1)
-TIMESTAMP_SKEW_TOLERANCE = timedelta(seconds=1)
-TIMESTAMP_SKEW_TOLERANCE = timedelta(seconds=1)
 
 
 class MeasurementError(RuntimeError):
@@ -241,12 +239,12 @@ def collect_snapshot(
 def _duration_minutes(start: str, end: str, label: str) -> float | None:
     a, b = parse_time(start), parse_time(end)
     if b < a:
-        # GitHub timestamps have one-second precision and occasionally invert
-        # adjacent events by exactly one second. Exclude and count this datum;
-        # never turn it into a clean zero. Larger inversions remain fatal.
-        if a - b <= TIMESTAMP_SKEW_TOLERANCE:
-            return None
-        raise MeasurementError(f"negative duration for {label}: {start} -> {end}")
+        # GitHub timestamps occasionally invert adjacent events -- observed in
+        # the wild up to several seconds (job 98968836743, 2026-08-28: started
+        # 6 s after completed). An inverted duration is unmeasurable, not
+        # negative: exclude the datum and let the caller count it in the
+        # timestamp_skew denominator. Never fatal, never a clean zero.
+        return None
     return (b - a).total_seconds() / 60.0
 
 

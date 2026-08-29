@@ -37,11 +37,17 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import subprocess
 import sys
 import urllib.request
 from pathlib import Path
+
+_SCRIPTS_PARENT = Path(__file__).resolve().parent.parent  # scripts/
+sys.path.insert(0, str(_SCRIPTS_PARENT))
+
+from issue_create_idempotent import find_recent_duplicate  # noqa: E402
 
 SITEMAP_URL = "https://www.quantconnect.com/research.posts.sitemap.xml"
 STATE_PATH = Path("docs/qc/qc-research-seeded.json")
@@ -158,6 +164,21 @@ def issue_body(article: dict) -> str:
 
 def create_issue(article: dict, dry_run: bool) -> int | None:
     title = f"[QC-research] {title_from_slug(article['slug'])} (#{article['id']})"
+    # Idempotence guard (cf. #13208) : si une issue avec ce titre exact a été
+    # créée dans la fenêtre (défaut 10 min, surchargeable via
+    # `ISSUE_DEDUP_WINDOW_MINUTES`), on court-circuite -- typiquement un retry
+    # du même run. En dry-run, on n'écrit pas l'état, donc on accepte de
+    # "dédoublonner virtuellement" pour que le diagnostic soit lisible.
+    window = int(os.environ.get("ISSUE_DEDUP_WINDOW_MINUTES", "10"))
+    if not dry_run:
+        existing = find_recent_duplicate(title, window_minutes=window)
+        if existing is not None:
+            print(
+                f"[dedup] SKIP {article['id']} : issue #{existing['number']} "
+                f"déjà créée à {existing['createdAt']}",
+                file=sys.stderr,
+            )
+            return existing["number"]
     if dry_run:
         print(f"[dry-run] gh issue create : {title}")
         return None
@@ -168,7 +189,7 @@ def create_issue(article: dict, dry_run: bool) -> int | None:
             "--body", issue_body(article),
             "--label", LABEL,
         ],
-        capture_output=True, text=True,
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
     )
     if proc.returncode != 0:
         print(f"[WARN] echec gh issue create pour {article['id']}: {proc.stderr.strip()}", file=sys.stderr)
