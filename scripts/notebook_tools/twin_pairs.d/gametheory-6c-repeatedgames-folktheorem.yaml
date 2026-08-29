@@ -58,6 +58,13 @@
       content_python_sha: bf3bbe36bc35f5fc1ab4817a63c582b0f7647bb7f67aedaed9b27f291e62a5ba
       content_csharp_sha: a9c2683300f3834ef94023c142ce1741569d1580d93cc01fec5134e3ebd07f25
       reason: "Merge resolution PR #13081 x main : la section 7 etait deja sur main via #13302 (cherry-pick de #12709) ; l'apport UNIQUE de la branche = section 7e statique comparative (mesurer alpha depuis la pente en R_autre au lieu de le poser) — l'issue de suivi ouverte par ai-01 dans la review #12709. Delta = 3 cellules inserees (md 7e + code scipy optimize grille R_autre 2 controles negatifs + md lecture). Notebook reconstruit programmatiquement main[0:24] + br[24:27] + main[24:]. Re-exec papermill python3 : 35 cellules, 0 erreur, 0 non-exec (controles : alpha_hat 0.801 vs vrai 0.8 ; agent plat CI95 couvre 0 ; melange decompose q_hat 0.490 / alpha_hat 0.606). C# twin inchange (au SHA main)."
+    - date: "2026-08-29"
+      by: myia-po-2026:CoursIA
+      python_sha: 08e39c9f60994d100f3c48c134f82f27c751de1f
+      csharp_sha: f880929979f9904c887c79be8b39febd95a83a8c
+      content_python_sha: 5c0a8b01c8dfdc9c6d625cb427515c48bcc1d1e954de6c6e067ca41f651f216d
+      content_csharp_sha: a9c2683300f3834ef94023c142ce1741569d1580d93cc01fec5134e3ebd07f25
+      reason: "Rebaseline post-fix nit Hermes (review #13081, commit a6acdf95c) : controle d'invariance 7e tautologique -> reel (reconstruction par cellule des couples de gains, comparaison des 6 reconstructions + R_autre distinct). Etat COMBINE Python(PR)+C#(main) demande par ai-01. Re-exec complete nbclient python3 35 cellules 0 erreur, valeurs deterministes identiques (alpha_hat 0.801/0.606, q_hat 0.490, pente engagement CI couvre 0). check_twin_parity --per-pair --base origin/main : 18 OK / 0 INTRO / 0 PRE."
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Jeux repetes + Folk Theorem (grim trigger, TFT, horizon fini/infini + facteur d'escompte) portes from-scratch par les deux jumeaux (Python matplotlib.patches.Polygon pour le quadrilatere des paiements faisables, C# BCL pure ASCII art 0 NuGet). Numerique pur des deux cotes -- ni nashpy, ni scipy, ni aucun moteur theorie des jeux dans l'un ou l'autre ecosysteme. Les DEUX cotes implementent les MEMES strategies repetitives en from-scratch -- la portabilite cross-lang est dans la specification formelle (Aumann 1959, Fudenberg-Maskin 1986). Verdict SOTA-OK (solver-free by design des deux cotes, ASCII art pedagogique du cote C# = choix pedagogique assumme, asymetrie medium de visualisation preservee, aucune asymetrie de couverture moteur a corriger)."
   known_differences:
