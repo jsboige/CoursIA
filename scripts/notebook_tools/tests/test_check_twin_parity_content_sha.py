@@ -3,7 +3,7 @@
 
 Avant #9399 volet (c), le gate comparait le **git blob SHA** du notebook entier.
 Or un tampon `metadata.cost` seul (niveau carnet, jamais compile) deplace le blob
-SHA -> DRIFT faux positif (les 2 Sudoku-8/14 BDD du 2026-08-04, ou seul le bloc
+SHA -> DRIFT faux positif (les 2 Sudoku-08/14 BDD du 2026-08-04, ou seul le bloc
 cost avait bouge). Pire, lancer `--update` apres un tel tampon ecrivait une entree
 d'audit datee pour un changement NON pedagogique -> faux audit (ai-01 design-gate #9399).
 

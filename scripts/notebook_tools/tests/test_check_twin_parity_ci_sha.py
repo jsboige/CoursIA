@@ -357,7 +357,7 @@ def test_ci_strict_and_verify_recorded_sha_are_mutually_exclusive():
 # exactement le faux positif que le volet c a ete construit pour tuer. Le gate
 # ne doit donc PAS rougir dessus, sinon il le re-fabrique au niveau du cron.
 #
-# Incident fondateur : cron rouge sur main le 2026-08-07 pour Sudoku-8 et
+# Incident fondateur : cron rouge sur main le 2026-08-07 pour Sudoku-08 et
 # Sudoku-14 BDD (les 2 paires nommees dans la docstring de `_content_sha`),
 # avec un `::error DRIFT DETECTED::<none>` qui ne designait aucune paire, et
 # dont le remede prescrit (`--update`) refusait en no-op par design.

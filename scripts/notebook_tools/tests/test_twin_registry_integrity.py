@@ -34,7 +34,8 @@ yaml = pytest.importorskip("yaml")
 # la logique d'agregation du repertoire file-per-entry).
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from check_twin_parity import (
-    load_registry, _slug, _latest_audit, verify_recorded_sha, update_pair,
+    load_registry, _slug, _latest_audit, _content_sha, verify_recorded_sha,
+    update_pair, surgical_rebaseline,
 )  # noqa: E402
 
 REGISTRY_DIR = Path(__file__).resolve().parents[1] / "twin_pairs.d"
@@ -431,6 +432,26 @@ def _classify_attested_sha(
     return "renamed", f"sha apparu sous ancien(s) path(s) (renommage ?) : {sorted(others)}"
 
 
+def _content_matches_head(repo_root, latest: dict, sha_key: str, rel: str) -> bool:
+    """Reconciliation ``orphelin par squash`` (#13100) cote test.
+
+    Vrai si le `content_*_sha` enregistre dans le dernier audit est present ET
+    egal au content hash calcule a HEAD par `_content_sha` (qui exclut
+    ``nb["metadata"]``, papermill compris -- les normalisations sanctionnees).
+    Un sha (git blob) atteste sur une branche puis orpheline par squash-merge
+    n'est PAS une fabrication quand le contenu qu'il attestait est porteur de ce
+    que main porte aujourd'hui : le hash de contenu le prouve.
+    """
+    ckey = "content_" + sha_key
+    rec = latest.get(ckey)
+    if not isinstance(rec, str) or len(rec) != 64:
+        return False
+    try:
+        return _content_sha(repo_root, rel) == rec
+    except Exception:
+        return False
+
+
 def test_audit_shas_exist_in_file_history():
     """Ferme la faille #9399 (4e manifestation) : le sha du DERNIER audit d'une
     paire doit etre un blob que le carnet a REELLEMENT eu dans son historique git
@@ -457,7 +478,7 @@ def test_audit_shas_exist_in_file_history():
     ``check_twin_parity --check`` au moment d'une PR. Ce test cible exclusivement
     les sha qui ne correspondent JAMAIS au carnet (fabrication), qui ne
     rougiraient nulle part autrement. La reserve de drifts legittimes
-    (Sudoku-8/14-BDD/9, ai-01) reste donc verte ici.
+    (Sudoku-08/14-BDD/9, ai-01) reste donc verte ici.
     """
     import subprocess
 
@@ -473,7 +494,7 @@ def test_audit_shas_exist_in_file_history():
 
     path_blobs, blob_paths = _build_blob_history(repo_root)
     declared = _declared_paths()
-    fabricated, crossfile, renamed = [], [], []
+    fabricated, crossfile, renamed, orphaned = [], [], [], []
     for entry in _entries():
         latest = _latest_audit(entry)
         if not isinstance(latest, dict):
@@ -489,7 +510,21 @@ def test_audit_shas_exist_in_file_history():
             )
             label = f"{entry.get('name', '?')}.{sha_key} = {sha[:12]} ({detail})"
             if verdict == "fabricated":
-                fabricated.append(label)
+                # Reconciliation orphelin par squash (#13100) : un squash-merge
+                # re-hashe le blob sans toucher au contenu pedagogique. Le sha
+                # atteste etait le vrai blob du carnet sur la branche, mais
+                # l'historique de HEAD ne le contient plus -> faux « fabrique ».
+                # Un `content_*_sha` enregistre egal au content hash calcule a
+                # HEAD prouve que l'attestation correspond a un contenu
+                # reellement porte par main (modulo normalisations sanctionnees
+                # -- `_content_sha` exclut `nb["metadata"]`, papermill compris).
+                # Ce n'est PAS une fabrication : on signale (orpheline), on ne
+                # faille pas. Le vrai defaut (fabrication/typo/cross-file) n'a
+                # AUCUN content_sha concordant -> rougit toujours.
+                if _content_matches_head(repo_root, latest, sha_key, relf):
+                    orphaned.append(label)
+                else:
+                    fabricated.append(label)
             elif verdict == "crossfile":
                 crossfile.append(label)
             elif verdict == "renamed":
@@ -507,6 +542,16 @@ def test_audit_shas_exist_in_file_history():
         import warnings
         warnings.warn(
             "sha attestes sous un ancien path (carnet renomme ?) : " + "; ".join(renamed)
+        )
+    # ``orphaned`` est legitime (squash-merge a contenu preserve) -> warning,
+    # pas de FAIL : le `--update` de la prochaine PR re-rebaseline le blob. Ne
+    # pas le remonter en ''fabricated'' : ce serait rougir `main` pour une
+    # attestation veridique.
+    if orphaned:
+        import warnings
+        warnings.warn(
+            "blob(s) orphelins par squash mais contenu atteste identique a HEAD "
+            "(un --update re-baseline le git blob SHA) : " + "; ".join(orphaned)
         )
 
 
@@ -792,7 +837,7 @@ def test_update_pair_metadata_only_drift_is_noop(tmp_path, monkeypatch):
     """Le cas designe par ai-01 : un tampon `metadata.cost` seul deplace le
     git blob SHA mais preserve le content_sha (_shas_match utilise content_sha
     d'abord). -> is_noop True, NE PAS ecrire (sinon faux audit). C'est
-    precisement la classe de drift Sudoku-8/14 BDD/9 GraphColoring que le
+    precisement la classe de drift Sudoku-08/14 BDD/9 GraphColoring que le
     design-gate a designee comme devant etre ignoree.
 
     Discrimination reachability (#11919) : le recorded git blob SHA EST
@@ -988,4 +1033,95 @@ def test_build_blob_history_sees_merge_introduced_blob(tmp_path):
         f"atteste dont la 1re apparition est une resolution de merge est classe "
         f"``fabricated`` a tort par ``test_audit_shas_exist_in_file_history``."
     )
+
+
+# --- #13100 : le rebaseline d'un orphelin par squash ne doit pas etre veto --
+#
+# Criteres 1+2 de #13100 : un bloc d'audit en indentation CANONIQUE 2/4/6 dont
+# le git blob SHA a change (squash-merge) mais dont le content_sha est preserve
+# doit se rebaseliner via `surgical_rebaseline`. `update_pair` a deja tranche
+# is_noop=False (discrimination reachability #11919 : le recorded blob n'est pas
+# ancetre de HEAD) ; la couche d'ecriture ne doit pas RE-veto un _shas_match
+# content-only qui produisait le message trompeur « aucun bloc d'audit
+# reconnu ». Controle positif : ce test est ROUGE avant le fix (#13100 : la
+# cause exacte du refus), VERT apres.
+
+
+def test_surgical_rebaseline_orphan_blob_content_same_appends():
+    """Regression #13100 : entree 2/4/6 canonique, blob deplace (squash),
+    contenu preserve -> APPEND d'une nouvelle entree, touches=1.
+
+    Avant le fix, `_transform_audit_block` vetait via `_shas_match` (content
+    egal -> « rien ne change ») et `surgical_rebaseline` renvoyait touched=0,
+    lis par le caller comme « aucun bloc d'audit reconnu » alors que le header
+    2/4/6 est parfaitement reconnu.
+    """
+    raw = (
+        "- name: \"Search-11 Orphan\"\n"
+        "  family: Search\n"
+        "  python: X.ipynb\n"
+        "  csharp: Y.ipynb\n"
+        "  parity_level: native-both\n"
+        "  audits:\n"
+        "    - date: \"2026-08-24\"\n"
+        "      by: previous-auditor\n"
+        "      python_sha: e032816cc66591c490c447b6bf2bc440e428ce37\n"
+        "      csharp_sha: 8a882e759991dc7a0af2c82376334eaeaa884a74\n"
+        "      content_python_sha: f3921b23c094a8d16d6f990a4fb6bbae2d0375c5afd774b2626b344cda74acb2\n"
+        "      content_csharp_sha: 098a90cd675c7f17f5b3c5debca7305463f1abd7d4788b1ab3a34fa91ad15df4\n"
+    )
+    # Rebaseline sur la paire : le git blob SHA a bouge (squash) MAIS le
+    # content_sha est PRESERVE -- signature exacte de l'orphelin Search-11.
+    new_entry = {
+        "date": "2026-08-26",
+        "by": "myia-po-2026:CoursIA",
+        "python_sha": "3e30af4a17a0c88489539174e669b52619139133",
+        "csharp_sha": "8a882e759991dc7a0af2c82376334eaeaa884a74",
+        "content_python_sha": "f3921b23c094a8d16d6f990a4fb6bbae2d0375c5afd774b2626b344cda74acb2",
+        "content_csharp_sha": "098a90cd675c7f17f5b3c5debca7305463f1abd7d4788b1ab3a34fa91ad15df4",
+    }
+    new_raw, touched = surgical_rebaseline(raw, {"Search-11 Orphan": new_entry})
+    assert touched == 1, (
+        "le rebaseline d'un orphelin par squash (blob deplace, contenu preserve) "
+        "doit APPEND une nouvelle entree -- le bloc d'audit 2/4/6 est reconnu, "
+        "mais le veto content-only de la couche d'ecriture le refusait "
+        "(« aucun bloc d'audit reconnu » trompeur, #13100)."
+    )
+    assert "3e30af4a17a0c88489539174e669b52619139133" in new_raw, (
+        "le nouveau python_sha (blob HEAD) doit apparaitre dans la nouvelle entree"
+    )
+    assert raw.count("    - date:") == 1, "fixture : une seule entree au depart"
+    assert new_raw.count("    - date:") == 2, (
+        "un rebaseline reel APPEND une entree, il ne remplace pas l'historique"
+    )
+
+
+def test_surgical_rebaseline_truly_identical_still_noop():
+    """Garde anti-regression : une attestation STRICTEMENT identique (content
+    ET git blobs egaux) doit RESTER un no-op byte-identical (#9399 critere 2)."""
+    raw = (
+        "- name: \"Search-11 Noop\"\n"
+        "  family: Search\n"
+        "  python: X.ipynb\n"
+        "  csharp: Y.ipynb\n"
+        "  parity_level: native-both\n"
+        "  audits:\n"
+        "    - date: \"2026-08-24\"\n"
+        "      by: previous-auditor\n"
+        "      python_sha: 3e30af4a17a0c88489539174e669b52619139133\n"
+        "      csharp_sha: 8a882e759991dc7a0af2c82376334eaeaa884a74\n"
+        "      content_python_sha: f3921b23c094a8d16d6f990a4fb6bbae2d0375c5afd774b2626b344cda74acb2\n"
+        "      content_csharp_sha: 098a90cd675c7f17f5b3c5debca7305463f1abd7d4788b1ab3a34fa91ad15df4\n"
+    )
+    same = {
+        "date": "2026-08-26",
+        "by": "myia-po-2026:CoursIA",
+        "python_sha": "3e30af4a17a0c88489539174e669b52619139133",
+        "csharp_sha": "8a882e759991dc7a0af2c82376334eaeaa884a74",
+        "content_python_sha": "f3921b23c094a8d16d6f990a4fb6bbae2d0375c5afd774b2626b344cda74acb2",
+        "content_csharp_sha": "098a90cd675c7f17f5b3c5debca7305463f1abd7d4788b1ab3a34fa91ad15df4",
+    }
+    out, touched = surgical_rebaseline(raw, {"Search-11 Noop": same})
+    assert touched == 0
+    assert out == raw, "une attestation identique doit rester byte-identical (faux audit)"
 

@@ -16,7 +16,7 @@ n'entrent pas dans ce compte ; cf.
 | `sudoku_lean` | v4.31.0-rc1 | 0 | 3 | 0¹ | PEDA/REF | #4055, #4038 |
 | **Total** | — | **0** | **3** | — | — | — |
 
-¹ Aucun notebook Lean dédié. Companion conceptuel = le notebook **Sudoku-1** (résolution
+¹ Aucun notebook Lean dédié. Companion conceptuel = le notebook **Sudoku-01** (résolution
 par contraintes .NET C# — convention sibling-lake).
 
 ---

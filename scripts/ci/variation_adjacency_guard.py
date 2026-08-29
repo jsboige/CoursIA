@@ -125,6 +125,41 @@ _MARKER_LINE_RE = re.compile(
 _NEXT_ANYWHERE_RE = re.compile(r"next\s*:", re.IGNORECASE)
 _GENRE_SHAPE_RE = re.compile(r"next\s*:\s*(?P<next>\S+)", re.IGNORECASE)
 
+# #13261: the comment-trigger job's entry gate matches any comment CONTAINING
+# the marker string, so quoting the marker between backticks to DISCUSS it
+# (e.g. explaining a check_unaddressed_nits false positive) arms the parse.
+# Fenced blocks and inline code spans are stripped before matching: a marker
+# inside code is discussion, not decision -- it grants nothing, rejects
+# nothing, and never masks a real override.
+#
+# #13273: the stripper's notion of code must coincide with what GitHub
+# RENDERS as code. Two deviations of opposite polarity, same root:
+#   * sous-match (fail-closed): OVERRIDE_EXPECTED_FORM displays the marker
+#     between backticks, so a coordinator recopying the recommended form
+#     posts a span-wrapped marker that stripping erased -- a silent None,
+#     the two-state collapse #12096 closed. A span whose ENTIRE content is
+#     a well-formed override is now UNWRAPPED instead of erased.
+#   * sur-match (fail-open): an UNCLOSED fence ran to the next ``` only, so
+#     a marker after a dangling ``` stayed live while GitHub renders it as
+#     code. An unclosed fence now extends to the end of the body.
+_CODE_FENCE_RE = re.compile(r"```.*?```|```.*", re.DOTALL)
+_CODE_SPAN_RE = re.compile(r"`([^`\n]*)`")
+
+
+def _strip_code_spans(body: str) -> str:
+    """Neutralize code surfaces the way GitHub renders them.
+
+    Fenced blocks become a single space (a space, not the empty string, so
+    stripping never glues the tokens on either side into a new match); an
+    unclosed fence extends to the end of the body. An inline span whose
+    entire content is a well-formed override is unwrapped to that content --
+    everything else in a span is erased.
+    """
+    def _span(m: re.Match[str]) -> str:
+        inner = m.group(1).strip()
+        return inner if _OVERRIDE_RE.fullmatch(inner) else " "
+    return _CODE_SPAN_RE.sub(_span, _CODE_FENCE_RE.sub(" ", body))
+
 OVERRIDE_EXPECTED_FORM = (
     "`[G-VAR-3 OVERRIDE] lane <machine:workspace> -- next: <genre>`, "
     "sur une seule ligne"
@@ -147,19 +182,24 @@ def parse_override(comments: list[dict] | None) -> dict | None:
         its value not a genre shape. The gate stays down -- a malformed
         override never waives it -- but `check` announces the rejection in
         the verdict so the coordinator gets feedback instead of a mute
-        re-block (#11963).
+        re-block (#11963). Since #13261 this verdict is only reached when NO
+        well-formed marker exists anywhere in the thread: a later prose
+        mention by the same coordinator no longer revokes their earlier
+        valid override, and a marker quoted inside code spans is stripped
+        before matching (discussion is not decision).
       * well-formed dict -- ``author`` + ``lane`` + ``next_genre`` (kept
         verbatim when outside the enum, per the pass-through of section 1).
     """
     if not comments:
         return None
+    fallback: dict | None = None
     for c in reversed(comments):
         login = (c.get("author") or "")
         if isinstance(login, dict):
             login = login.get("login") or ""
         if login not in COORDINATOR_LOGINS:
             continue
-        body = c.get("body") or ""
+        body = _strip_code_spans(c.get("body") or "")
         m = _OVERRIDE_RE.search(body)
         if m:
             return {
@@ -180,8 +220,16 @@ def parse_override(comments: list[dict] | None) -> dict | None:
                 reason = "`next:` pas sur la meme ligne que le marqueur"
             else:
                 reason = "`next:` manquant (aucun remplacant nomme)"
-            return {"author": login, "lane": None, "malformed": reason}
-    return None
+            # #13261: do NOT abandon the search here. A later prose mention
+            # of the marker must not revoke a valid override posted earlier
+            # in the thread -- remember the first (most recent) rejection as
+            # the fallback and keep scanning older comments for a
+            # well-formed marker. "Malformed" is only the verdict when NO
+            # valid override exists anywhere in the thread.
+            if fallback is None:
+                fallback = {"author": login, "lane": None, "malformed": reason}
+            continue
+    return fallback
 
 
 def resolve_merged_prev_genre(merged_prs: list[dict] | None, lane: str | None) -> tuple:

@@ -283,17 +283,20 @@ layout: dense
 - Construction du code:
 
 <div v-click="2">
+
 - **Tri des symboles selon**
   - la fréquence
 </div>
 
 <div v-click="3">
+
 - **Combinaison de symboles**
   - les moins fréquents
 - Tracé d’un chemin
 </div>
 
 <div v-click="4">
+
 - ** Arbre de décision**
   - optimal
 - encodage robuste
@@ -423,6 +426,7 @@ layout: dense
 - **Points forts** : rapide, simple, comprehensible, empiriquement valide, robuste au bruit
 
 <div v-click="2">
+
 - **Points faibles** :
   - Decoupe a un seul attribut : limite les types de problemes supportes
   - Les arbres de grande taille deviennent difficiles a interpreter
@@ -460,16 +464,19 @@ layout: two-cols
 - Et parfois double-descente
 
 <div v-click="2">
+
 - **Attention au dévoilement**
   - de l’ensemble de test:
 </div>
 
 <div v-click="3">
+
 - **Si on change d’hypothèse,**
   - il faut régénérer l’ensemble de test
 </div>
 
 <div v-click="4">
+
 - **Sinon l’ensemble de test a « fuité »**
   - dans l’apprentissage.
 </div>
@@ -488,6 +495,8 @@ layout: two-cols
 # Généralisation et surapprentissage
 
 
+<div class="dense-list xl-dense">
+
 - Toute sorte de « bruits » peuvent apparaitre dans les exemples
   - 2 exemples ont les mêmes attributs mais pas la même classe
   - valeurs incorrectes du fait d’erreur d’acquisition ou de traitement
@@ -503,6 +512,7 @@ layout: two-cols
   - = test du  « khi-deux » en statistiques
   - Hypothèse nulle = variable indépendantes
   - Théorème central limite: n → ∞  distribution χ2
+</div>
 
 
 ::right::
@@ -518,6 +528,8 @@ layout: two-cols
 
 # Choix de la meilleure hypothèse
 
+
+<div class="dense-list">
 
 - Ensembles d’apprentissage et de test
   - Taux d’erreur = proportion d’erreurs
@@ -536,12 +548,18 @@ layout: two-cols
   - Ex: Normes: L0/1 = seuil, L1 = abs, L2 = perte quadratique
   - Score F1 = 2* Precision * Recall / (Précision + Recall)
 
+</div>
+
 
 ::right::
 
 
-<img src="./images/img_014.png" width="380">
-<img src="./images/img_015.png" width="380">
+<div class="img-grid">
+
+<img src="./images/img_014.png">
+<img src="./images/img_015.png">
+
+</div>
 
 
 ---
@@ -582,6 +600,8 @@ layout: dense
 
 # Méthodes d'ensemble
 
+<div class="dense-list">
+
 - Jusqu’à présent: 1 seule hypothèse
 - Apprentissage d’ensemble = ensemble d’hypothèses
 - Si indépendantes  probabilité faible de mauvaise prédiction
@@ -604,6 +624,7 @@ layout: dense
 - Algorithme aléatoire de majorité pondérée
 - Mesure du regret au meilleurs experts
 - et ajustement des poids pour pénaliser les mauvais experts
+</div>
 
 <!-- Image: images/img_020.png -->
 
@@ -652,6 +673,8 @@ layout: two-cols
 # Réseau de neurones artificiels
 
 
+<div class="dense-list">
+
 - Unité de McCulloch-Pitts
 - Inspiration biologique
 - Simplification élémentaire
@@ -670,6 +693,7 @@ layout: two-cols
 - Connexions réentrantes
 -  système dynamique, états stables
 -  mémoire à court terme mais plus complexe à comprendre / maîtriser
+</div>
 
 
 ::right::
@@ -709,6 +733,7 @@ layout: two-cols
 - 2 seuils  1 crète
 
 <div v-click="2">
+
 - **Toute fonction avec**
   - 3 couche
 - 2 crètes  1 bosse
@@ -718,6 +743,7 @@ layout: two-cols
 </div>
 
 <div v-click="3">
+
 - **Similaire à une classification**
   - par hyperplan dans l’espace cible
 
@@ -778,11 +804,13 @@ layout: two-cols
   - partie, objet
 
 <div v-click="2">
+
 - **Caractère, mot, groupe,**
   - clause, phrase, histoire
 </div>
 
 <div v-click="3">
+
 - ** fonctionne bien car**
   - le monde est hiérarchique
 - Librairies de Deep learning
@@ -843,6 +871,8 @@ layout: two-cols
 
 # Réseaux résiduels (ResNets)
 
+<div class="dense-list">
+
 - Problème:
 - Augmentation de la profondeur
 -  Dégradation des performances
@@ -864,6 +894,7 @@ layout: two-cols
 - Ajout de connexions résiduelles
 -  Amélioration de la précision
 - V-Nets, U-Nets++ etc.
+</div>
 
 <!-- Image: images/img_048.png -->
 <!-- Image: images/img_049.png -->
@@ -877,6 +908,8 @@ layout: two-cols
 
 
 # Réseaux antagonistes génératifs (GANs)
+
+<div class="dense-list">
 
 - Principe
 - Apprentissage non-supervisé
@@ -896,6 +929,7 @@ layout: two-cols
 - Découverte de médicaments
 - Génération en 3D
 - Nettoyage audio
+</div>
 
 <!-- Image: images/img_054.png -->
 
@@ -904,6 +938,8 @@ layout: two-cols
 
 
 # Réseaux récurrents - RNNs
+
+<div class="dense-list">
 
 - Réseaux récurrents
 - Pensées persistantes  Connexions réentrantes
@@ -928,6 +964,7 @@ layout: two-cols
 - Réseaux bidirectionnels
 - J’ai ___ faim, je pourrais manger un bœuf.
 - But= tirer profit du futur
+</div>
 
 <!-- Image: images/img_055.png -->
 <!-- Image: images/img_056.png -->
@@ -945,6 +982,8 @@ layout: two-cols
 
 # Mécanisme d'attention
 
+
+<div class="dense-list xl-dense">
 
 - Inspiration naturelle
 - Focalisation  économie de ressources
@@ -973,18 +1012,20 @@ layout: two-cols
 - Tranformers
 - LLM VIzualisation
 
+</div>
+
 
 ::right::
 
 
-<img src="./images/img_062.png" width="380">
-<img src="./images/img_063.jpg" width="380">
-<img src="./images/img_064.jpg" width="380">
-<img src="./images/img_065.png" width="380">
-<img src="./images/img_066.png" width="380">
-<img src="./images/img_067.png" width="380">
-<img src="./images/img_068.png" width="380">
-<img src="./images/img_069.png" width="380">
+<img src="./images/img_062.png" style="display:block; width:100%; max-height:44px; object-fit:contain; margin:2px auto;">
+<img src="./images/img_063.jpg" style="display:block; width:100%; max-height:44px; object-fit:contain; margin:2px auto;">
+<img src="./images/img_064.jpg" style="display:block; width:100%; max-height:44px; object-fit:contain; margin:2px auto;">
+<img src="./images/img_065.png" style="display:block; width:100%; max-height:44px; object-fit:contain; margin:2px auto;">
+<img src="./images/img_066.png" style="display:block; width:100%; max-height:44px; object-fit:contain; margin:2px auto;">
+<img src="./images/img_067.png" style="display:block; width:100%; max-height:44px; object-fit:contain; margin:2px auto;">
+<img src="./images/img_068.png" style="display:block; width:100%; max-height:44px; object-fit:contain; margin:2px auto;">
+<img src="./images/img_069.png" style="display:block; width:100%; max-height:44px; object-fit:contain; margin:2px auto;">
 
 
 ---
@@ -1020,6 +1061,8 @@ layout: two-cols
 
 # Graphs Neural Networks (GNNs)
 
+<div class="dense-list">
+
 - Graphes G = (V,E)
 - GNN opère sur la structure de G
 - Ex: Classification des noeuds: Xv  Tv
@@ -1041,6 +1084,7 @@ layout: two-cols
 - PyTorch Geometric
 - Deep Graph Library
 - tf_geometric
+</div>
 
 <!-- Image: images/img_075.png -->
 <!-- Image: images/img_076.png -->
@@ -1293,10 +1337,12 @@ $$y_i(w \cdot x_i + b) \geq 1 \quad \forall i$$
 - **Astuce 1** : Identifier les points les plus proches du plan de separation optimal (les "vecteurs supports") et travailler directement a partir de ces instances.
 
 <div v-click="2">
+
 - **Astuce 2** : Formuler comme un problème d'optimisation quadratique et utiliser les techniques de programmation quadratique.
 </div>
 
 <div v-click="3">
+
 - **Astuce 3** (le "kernel trick") :
   - Au lieu d'utiliser directement les caractéristiques, representer les données dans un espace de grande dimension construit a partir de fonctions de base (combinaisons polynomiales et gaussiennes des caractéristiques d'origine).
   - Trouver un hyperplan separateur / SVM dans cet espace de grande dimension.
@@ -1332,6 +1378,7 @@ Le calcul dans l'espace projeté se fait **sans projeter explicitement** (astuce
 - **Excellents résultats** jusqu'aux années 2010 (texte, bioinformatique, vision, finance)
 
 <div v-click="2">
+
 - **Avantages** :
   - Optimum global garanti (problème convexe, pas de minimum local)
   - Bonne généralisation en haute dimension
@@ -1339,6 +1386,7 @@ Le calcul dans l'espace projeté se fait **sans projeter explicitement** (astuce
 </div>
 
 <div v-click="3">
+
 - **Limites et contexte actuel** :
   - Coût O(n²) à O(n³) — difficile sur grands datasets
   - Supplanté par le Deep Learning depuis 2012 (AlexNet, ImageNet)
@@ -1416,6 +1464,8 @@ layout: dense
 
 # Apprentissage et connaissance
 
+<div class="dense-list">
+
 - Relation en hypothèses et exemples:
 - Hypothèses ∧ Descriptions |= Classifications
 - Rasoir d’Occam  écarter l’énumération
@@ -1432,6 +1482,7 @@ layout: dense
 -  apprentissage inductif à base de connaissances (KBIL)
 - Contexte ∧ Hypothèse ∧ Descriptions |= Classifications
 - Programmation logique inductive (taille de l’espace d’hypothèses réduite) + hypothèses en FOL
+</div>
 
 
 ---
@@ -1502,6 +1553,7 @@ layout: dense
 - Algorithme FOIL (1990): clauses de but/horn
 
 <div v-click="2">
+
 - **Ex: Père(x,y)GrandPère(x,y) a des contre-exemples,**
   - Père(x,z) ∧ Père(z,y) GrandPère(x,y) fonctionne
 - Couverture de tous les exemples positifs:+ Père(x,z) ∧ Mère(z,y) GrandPère(x,y)
@@ -1512,6 +1564,7 @@ layout: dense
 </div>
 
 <div v-click="3">
+
 - **b très grand mais restrictions de types + utilisation du gain**
   - informationnel  + heuristique d’Occam (ex: longueur de la clause)
 
@@ -1531,6 +1584,8 @@ layout: dense
 
 # Résumé apprentissage et connaissances
 
+<div class="dense-list">
+
 - Utilisation des connaissances
 - Modèles plus expressifs qu’attributs simple
 - Apprentissage cumulatif: utilisation de la KB
@@ -1548,6 +1603,7 @@ layout: dense
 - KBIL en FOL > représentation par attribut
 - Approche top-down /  forward ou bottom-up / backward
 - Génération naturelle de prédicats concis / universels
+</div>
 
 
 ---
@@ -1591,11 +1647,13 @@ layout: section
   - = α p(C) p(F1, ..., Fn | C)
 
 <div v-click="2">
+
 - **Assume that each feature Fi is conditionally independent of the other features given the class C.  Then:**
   - p(C | F1, ..., Fn)  = α p(C) Πi p(Fi | C)
 </div>
 
 <div v-click="3">
+
 - **We can estimate each of these conditional probabilities from the observed counts in the training data:**
   - p(Fi | C)  = N(Fi ∧ C) / N(C)
 - Dealing with zeros
@@ -1605,6 +1663,7 @@ layout: section
 </div>
 
 <div v-click="4">
+
 - **p(Wait | Cuisine, Patrons, Rainy?)  =**
   - α p(Wait) p(Cuisine | Wait) p(Patrons | Wait)
   - p(Rainy? | Wait)
@@ -1747,6 +1806,8 @@ layout: section
 
 # Heuristic search
 
+<div class="dense-list">
+
 - B
 - E
 - A
@@ -1772,41 +1833,35 @@ layout: section
 - C
 
 
+</div>
+
 ---
 
 
 # Exploiting decomposability
 
+<div class="dense-list">
+
 - Delete EA
 - Δscore(A)
-- B
-- E
-- A
-- C
+- B E A C
 - To recompute scores,
 - only need to re-score families
 - that changed in the last move
 
-- B
-- E
-- A
-- C
+- B E A C
 
 - Add EC
 - Δscore(C)
-- B
-- E
-- A
-- C
+- B E A C
 - Reverse EA
 - Δscore(A)
 - Delete EA
 - Δscore(A)
-- B
-- E
-- A
-- C
+- B E A C
 
+
+</div>
 
 ---
 
@@ -1819,6 +1874,7 @@ layout: section
 - Should we throw that data away??
 
 <div v-click="2">
+
 - **Idea: Guess the missing values**
   - based on the other data
 - Earthquake
@@ -1849,21 +1905,25 @@ layout: section
   - New Data:[4, 10, 3.5, 3.5]
 
 <div v-click="2">
+
 - **Step 2: New Mean: 5.25**
   - New Data: [4, 10, 5.25, 5.25]
 </div>
 
 <div v-click="3">
+
 - **Step 3: New Mean: 6.125**
   - New Data: [4, 10, 6.125, 6.125]
 </div>
 
 <div v-click="4">
+
 - **Step 4: New Mean: 6.5625**
   - New Data: [4, 10, 6.5625, 6.5625]
 </div>
 
 <div v-click="5">
+
 - **Step 5: New Mean: 6.7825**
   - New Data: [4, 10, 6.7825, 6.7825]
 - Result: New Mean: 6.890625
@@ -2117,6 +2177,8 @@ layout: dense
 
 # Deep Q learning
 
+<div class="dense-list">
+
 - Réseaux de neurones
 - = excellent espace d’hypothèses
 - Inputs génériques:
@@ -2141,6 +2203,12 @@ layout: dense
 - Algorithme final
 - Autres « tricks »: target network, error clipping, reward clipping etc.
 - Finit par converger
+</div>
+
+---
+
+# Deep Q learning — exploration et avancées
+
 - Récentes avancées
 - Q-learning double
 - Pb: surestimation de Q (malédication de l’optimiseur)
@@ -2176,6 +2244,8 @@ layout: dense
 
 # Minimisation de regret hypothétique
 
+<div class="dense-list">
+
 - Jeux à information imparfaite:
 - Etats de croyance probabilistes
 - Évaluation du regret:
@@ -2194,6 +2264,7 @@ layout: dense
 - Deep CFR
 - cf. RL approximé: Deep Q Learning
 -  = DL utilisé pour subgame solving
+</div>
 
 <!-- Image: images/img_137.gif -->
 <!-- Image: images/img_138.png -->
@@ -2205,6 +2276,8 @@ layout: dense
 
 
 # Résumé apprentissage par renforcement
+
+<div class="dense-list">
 
 - Données: percepts et récompenses occasionnelles
 - Le plus difficile
@@ -2220,6 +2293,14 @@ layout: dense
 - Estimé l’utilité à partir des états successeurs: approxime ADP sans modèle
 - Q fonctions
 - Apprise par approche TD, convergence plus difficile
+</div>
+
+---
+
+# Résumé RL (2/2) — exploration et applications
+
+<div class="dense-list">
+
 - Compromis exploitation / exploration
 - Problème de bandits-manchots: difficile mais de bonnes heuristiques
 - Espaces d’état large: fonction approximée
@@ -2235,6 +2316,8 @@ layout: dense
 - Equilibres de Nash
 - Application du RL au domaine médical
 
+</div>
+
 <!-- RL : agent observe l'etat, choisit une action, recoit une recompense -->
 
 
@@ -2246,6 +2329,7 @@ layout: dense
 - **Problème** : les LLMs entraînés sur du texte brut ne suivent pas forcément les instructions ni les valeurs humaines
 
 <div v-click="2">
+
 - **Comportements problématiques observés** :
   - Réponses toxiques, biaisées ou dangereuses
   - Hallucinations présentées avec confiance
@@ -2253,6 +2337,7 @@ layout: dense
 </div>
 
 <div v-click="3">
+
 - **Solution** : Reinforcement Learning from Human Feedback (RLHF)
   - Apprendre un **modèle de récompense** à partir des préférences humaines
   - Optimiser le LLM via RL pour maximiser cette récompense
@@ -2310,6 +2395,7 @@ layout: dense
   - β · KL : pénalité pour rester proche du modèle SFT (β ≈ 0.02–0.5)
 
 <div v-click="2">
+
 - **InstructGPT** (Ouyang et al., 2022) : première démonstration à grande échelle
   - GPT-3 fine-tuné par RLHF → suivi d'instructions radicalement amélioré
   - Base de ChatGPT (déployé Nov. 2022) puis GPT-4
@@ -2349,6 +2435,8 @@ layout: section
 
 # Projets de groupe
 
+<div class="dense-list">
+
 - Moteur de recherche augmenté par le raisonnement et le langage naturel
 - Grammaire et sémantique des contenus et des requêtes. Lucene.Net, OpenNLP, SharpRDF, FOL
 - Conception de bots de services sur réseaux sociaux
@@ -2367,6 +2455,7 @@ layout: section
 - Approches évolutionnistes, automates cellulaires, Bac a sable. Golly, Encog
 - Pilotage d'un cluster de cache distribué pour le portage d’applications  dans le Cloud
 - Caches distribués, scaling, stratégies et clustering. Redis
+</div>
 
 
 ---
@@ -2376,7 +2465,7 @@ layout: section
 
 > **ML.NET** (C#) : `ML/ML.Net/` - Classification, regression, clustering
 > **Reinforcement Learning** : `RL/` - CartPole, DQN, Stable Baselines3
-> **Algorithmes génétiques** : `Sudoku/Sudoku-2-Genetic.ipynb`, `Search/Portfolio_Optimization_GeneticSharp.ipynb`
+> **Algorithmes génétiques** : `Sudoku/Sudoku-02-Genetic.ipynb`, `Search/Portfolio_Optimization_GeneticSharp.ipynb`
 > **Deep Learning et GenAI** : `GenAI/` - Transformers, diffusion, LLMs
 > **Probabilités et inference** : `Probas/` - Infer.NET, réseaux bayesiens
 

@@ -67,6 +67,10 @@ on:
       # its own subject (#10416 pattern, flagged A2 by Hermes on #11845).
       # Mirrored under pull_request: below.
       - '.github/workflows/pr-gate-rerun.yml'
+      # #12704 self-hosted policy: fork PR tokens cannot publish the fast-lane
+      # check-runs. Keep one ordinary CI surface that executes the scanner for
+      # every workflow change, including workflow-only PRs from forks.
+      - '.github/workflows/**'
   pull_request:
     branches: [main]
     paths:
@@ -92,6 +96,8 @@ on:
       - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/syllable_pitch.py'
       # #11835 no-op guard (mirror of the push path above).
       - '.github/workflows/pr-gate-rerun.yml'
+      # Mirror the push path above so fork workflow-only PRs execute the policy.
+      - '.github/workflows/**'
   workflow_dispatch:
 
 permissions:
@@ -114,10 +120,11 @@ jobs:
           # test_audit_shas_exist_in_file_history (#9399 volet b), which asserts
           # each attested audit sha really existed as a file blob. A shallow
           # clone exposes only the HEAD blob, so legitimate drifts (e.g. the
-          # ai-01 Sudoku-8/14-BDD/9 reserve) whose attested sha predates HEAD
+          # ai-01 Sudoku-08/14-BDD/9 reserve) whose attested sha predates HEAD
           # would false-fail. Consistent with the other git-aware gates
           # (catalog-cron/catalog-drift/cell-order-gate/exercise-leak-ci).
           fetch-depth: 0
+          filter: blob:none
 
       - uses: actions/setup-python@v5
         with:

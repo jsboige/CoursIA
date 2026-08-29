@@ -4909,7 +4909,7 @@
       "pre_rule_c2": false
     },
     {
-      "path": "D:\\Dev\\CoursIA\\MyIA.AI.Notebooks\\Sudoku\\Sudoku-1-Backtracking-Csharp.ipynb",
+      "path": "D:\\Dev\\CoursIA\\MyIA.AI.Notebooks\\Sudoku\\Sudoku-01-Backtracking-Csharp.ipynb",
       "category": "A_ALL_EXEC_OK",
       "n_code": 5,
       "n_exec": 5,
@@ -4920,7 +4920,7 @@
       "pre_rule_c2": false
     },
     {
-      "path": "D:\\Dev\\CoursIA\\MyIA.AI.Notebooks\\Sudoku\\Sudoku-1-Backtracking-Python.ipynb",
+      "path": "D:\\Dev\\CoursIA\\MyIA.AI.Notebooks\\Sudoku\\Sudoku-01-Backtracking-Python.ipynb",
       "category": "A_ALL_EXEC_OK",
       "n_code": 11,
       "n_exec": 11,
@@ -5074,7 +5074,7 @@
       "pre_rule_c2": false
     },
     {
-      "path": "D:\\Dev\\CoursIA\\MyIA.AI.Notebooks\\Sudoku\\Sudoku-2-DancingLinks-Csharp.ipynb",
+      "path": "D:\\Dev\\CoursIA\\MyIA.AI.Notebooks\\Sudoku\\Sudoku-02-DancingLinks-Csharp.ipynb",
       "category": "A_ALL_EXEC_OK",
       "n_code": 7,
       "n_exec": 7,
@@ -5085,7 +5085,7 @@
       "pre_rule_c2": false
     },
     {
-      "path": "D:\\Dev\\CoursIA\\MyIA.AI.Notebooks\\Sudoku\\Sudoku-2-DancingLinks-Python.ipynb",
+      "path": "D:\\Dev\\CoursIA\\MyIA.AI.Notebooks\\Sudoku\\Sudoku-02-DancingLinks-Python.ipynb",
       "category": "A_ALL_EXEC_OK",
       "n_code": 9,
       "n_exec": 9,
@@ -5096,7 +5096,7 @@
       "pre_rule_c2": false
     },
     {
-      "path": "D:\\Dev\\CoursIA\\MyIA.AI.Notebooks\\Sudoku\\Sudoku-3-Genetic-Csharp.ipynb",
+      "path": "D:\\Dev\\CoursIA\\MyIA.AI.Notebooks\\Sudoku\\Sudoku-03-Genetic-Csharp.ipynb",
       "category": "A_ALL_EXEC_OK",
       "n_code": 10,
       "n_exec": 10,
@@ -5107,7 +5107,7 @@
       "pre_rule_c2": false
     },
     {
-      "path": "D:\\Dev\\CoursIA\\MyIA.AI.Notebooks\\Sudoku\\Sudoku-3-Genetic-Python.ipynb",
+      "path": "D:\\Dev\\CoursIA\\MyIA.AI.Notebooks\\Sudoku\\Sudoku-03-Genetic-Python.ipynb",
       "category": "A_ALL_EXEC_OK",
       "n_code": 9,
       "n_exec": 9,
@@ -5118,7 +5118,7 @@
       "pre_rule_c2": true
     },
     {
-      "path": "D:\\Dev\\CoursIA\\MyIA.AI.Notebooks\\Sudoku\\Sudoku-4-SimulatedAnnealing-Csharp.ipynb",
+      "path": "D:\\Dev\\CoursIA\\MyIA.AI.Notebooks\\Sudoku\\Sudoku-04-SimulatedAnnealing-Csharp.ipynb",
       "category": "A_ALL_EXEC_OK",
       "n_code": 14,
       "n_exec": 14,
@@ -5129,7 +5129,7 @@
       "pre_rule_c2": false
     },
     {
-      "path": "D:\\Dev\\CoursIA\\MyIA.AI.Notebooks\\Sudoku\\Sudoku-4-SimulatedAnnealing-Python.ipynb",
+      "path": "D:\\Dev\\CoursIA\\MyIA.AI.Notebooks\\Sudoku\\Sudoku-04-SimulatedAnnealing-Python.ipynb",
       "category": "A_ALL_EXEC_OK",
       "n_code": 15,
       "n_exec": 15,
@@ -5140,7 +5140,7 @@
       "pre_rule_c2": true
     },
     {
-      "path": "D:\\Dev\\CoursIA\\MyIA.AI.Notebooks\\Sudoku\\Sudoku-5-PSO-Csharp.ipynb",
+      "path": "D:\\Dev\\CoursIA\\MyIA.AI.Notebooks\\Sudoku\\Sudoku-05-PSO-Csharp.ipynb",
       "category": "A_ALL_EXEC_OK",
       "n_code": 10,
       "n_exec": 10,
@@ -5151,7 +5151,7 @@
       "pre_rule_c2": false
     },
     {
-      "path": "D:\\Dev\\CoursIA\\MyIA.AI.Notebooks\\Sudoku\\Sudoku-5-PSO-Python.ipynb",
+      "path": "D:\\Dev\\CoursIA\\MyIA.AI.Notebooks\\Sudoku\\Sudoku-05-PSO-Python.ipynb",
       "category": "A_ALL_EXEC_OK",
       "n_code": 12,
       "n_exec": 12,
@@ -5162,7 +5162,7 @@
       "pre_rule_c2": true
     },
     {
-      "path": "D:\\Dev\\CoursIA\\MyIA.AI.Notebooks\\Sudoku\\Sudoku-6-AIMA-CSP-Csharp.ipynb",
+      "path": "D:\\Dev\\CoursIA\\MyIA.AI.Notebooks\\Sudoku\\Sudoku-06-AIMA-CSP-Csharp.ipynb",
       "category": "A_ALL_EXEC_OK",
       "n_code": 15,
       "n_exec": 15,
@@ -5173,7 +5173,7 @@
       "pre_rule_c2": false
     },
     {
-      "path": "D:\\Dev\\CoursIA\\MyIA.AI.Notebooks\\Sudoku\\Sudoku-6-AIMA-CSP-Python.ipynb",
+      "path": "D:\\Dev\\CoursIA\\MyIA.AI.Notebooks\\Sudoku\\Sudoku-06-AIMA-CSP-Python.ipynb",
       "category": "A_ALL_EXEC_OK",
       "n_code": 16,
       "n_exec": 16,
@@ -5184,7 +5184,7 @@
       "pre_rule_c2": true
     },
     {
-      "path": "D:\\Dev\\CoursIA\\MyIA.AI.Notebooks\\Sudoku\\Sudoku-7-Norvig-Csharp.ipynb",
+      "path": "D:\\Dev\\CoursIA\\MyIA.AI.Notebooks\\Sudoku\\Sudoku-07-Norvig-Csharp.ipynb",
       "category": "A_ALL_EXEC_OK",
       "n_code": 12,
       "n_exec": 12,
@@ -5195,7 +5195,7 @@
       "pre_rule_c2": false
     },
     {
-      "path": "D:\\Dev\\CoursIA\\MyIA.AI.Notebooks\\Sudoku\\Sudoku-7-Norvig-Python.ipynb",
+      "path": "D:\\Dev\\CoursIA\\MyIA.AI.Notebooks\\Sudoku\\Sudoku-07-Norvig-Python.ipynb",
       "category": "A_ALL_EXEC_OK",
       "n_code": 10,
       "n_exec": 10,
@@ -5206,7 +5206,7 @@
       "pre_rule_c2": false
     },
     {
-      "path": "D:\\Dev\\CoursIA\\MyIA.AI.Notebooks\\Sudoku\\Sudoku-8-HumanStrategies-Csharp.ipynb",
+      "path": "D:\\Dev\\CoursIA\\MyIA.AI.Notebooks\\Sudoku\\Sudoku-08-HumanStrategies-Csharp.ipynb",
       "category": "A_ALL_EXEC_OK",
       "n_code": 16,
       "n_exec": 16,
@@ -5217,7 +5217,7 @@
       "pre_rule_c2": false
     },
     {
-      "path": "D:\\Dev\\CoursIA\\MyIA.AI.Notebooks\\Sudoku\\Sudoku-8-HumanStrategies-Python.ipynb",
+      "path": "D:\\Dev\\CoursIA\\MyIA.AI.Notebooks\\Sudoku\\Sudoku-08-HumanStrategies-Python.ipynb",
       "category": "A_ALL_EXEC_OK",
       "n_code": 19,
       "n_exec": 19,
@@ -5228,7 +5228,7 @@
       "pre_rule_c2": false
     },
     {
-      "path": "D:\\Dev\\CoursIA\\MyIA.AI.Notebooks\\Sudoku\\Sudoku-9-GraphColoring-Csharp.ipynb",
+      "path": "D:\\Dev\\CoursIA\\MyIA.AI.Notebooks\\Sudoku\\Sudoku-09-GraphColoring-Csharp.ipynb",
       "category": "A_ALL_EXEC_OK",
       "n_code": 11,
       "n_exec": 11,
@@ -5239,7 +5239,7 @@
       "pre_rule_c2": false
     },
     {
-      "path": "D:\\Dev\\CoursIA\\MyIA.AI.Notebooks\\Sudoku\\Sudoku-9-GraphColoring-Python.ipynb",
+      "path": "D:\\Dev\\CoursIA\\MyIA.AI.Notebooks\\Sudoku\\Sudoku-09-GraphColoring-Python.ipynb",
       "category": "A_ALL_EXEC_OK",
       "n_code": 8,
       "n_exec": 8,

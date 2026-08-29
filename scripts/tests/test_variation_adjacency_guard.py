@@ -356,6 +356,177 @@ def test_parse_override_malformed_reasons_distinct():
     assert "n'est pas un genre" in r_shape["malformed"]
 
 
+# --- A prose MENTION must not revoke a valid earlier override (#13261) -------
+#
+# #13234, run 33111721678: the gate went red 62 s after a coordinator review
+# comment that merely QUOTED the marker between backticks to explain a
+# check_unaddressed_nits false positive. parse_override scanned the thread
+# newest-first and RETURNED on the malformed branch, so the later mention
+# masked the valid override posted 3h49 earlier. Two fixes, tested here
+# together and separately: (a) the malformed verdict becomes a FALLBACK --
+# the scan continues and only concludes "malformed" when no well-formed
+# marker exists; (b) code spans/blocks are stripped before matching, so
+# discussing the marker in backticks arms nothing.
+
+_OVERRIDE_13261_OK = ("[G-VAR-3 OVERRIDE] lane myia-po-2026:CoursIA -- "
+                      "next: lean")
+_MENTION_BACKTICK = ("Le faux positif de check_unaddressed_nits : ce n'est "
+                     "pas un `[G-VAR-3 OVERRIDE]` manquant, la lane est "
+                     "conforme.")
+_MENTION_PLAIN = ("Pour rappel le marqueur [G-VAR-3 OVERRIDE] exige un "
+                  "remplacant nomme apres la mention next, sur la meme "
+                  "ligne que le marqueur.")
+
+
+def test_13261_case_C_backtick_mention_after_override_keeps_it():
+    # Route (b): the quoted marker is stripped, the mention comment carries
+    # no marker at all, the valid override below it survives.
+    ov = vag.parse_override([
+        {"author": "myia-ai-01", "body": _OVERRIDE_13261_OK},
+        {"author": "myia-ai-01", "body": _MENTION_BACKTICK},
+    ])
+    assert ov is not None and "malformed" not in ov
+    assert ov["next_genre"] == "lean"
+
+
+def test_13261_case_C_plain_mention_after_override_keeps_it():
+    # Route (a): a plain-text marker (no backticks, no next:) IS read as
+    # malformed -- but only as fallback: the scan continues to the older
+    # comment and finds the valid override.
+    ov = vag.parse_override([
+        {"author": "myia-ai-01", "body": _OVERRIDE_13261_OK},
+        {"author": "myia-ai-01", "body": _MENTION_PLAIN},
+    ])
+    assert ov is not None and "malformed" not in ov
+    assert ov["next_genre"] == "lean"
+
+
+def test_13261_case_D_controls_stay_held():
+    # NEGATIVE CONTROL, same invocation: D must stay rejected in BOTH forms.
+    # A fix that would let prose grant an override would be worse than the
+    # defect (auto-exemption by simply talking about the marker).
+    ov_plain = vag.parse_override([{"author": "myia-ai-01",
+                                    "body": _MENTION_PLAIN}])
+    assert ov_plain is not None and "malformed" in ov_plain
+    # backticked mention alone: stripped to nothing -> "absent", the
+    # nothing-granted-nothing-rejected contract of fix (b).
+    ov_code = vag.parse_override([{"author": "myia-ai-01",
+                                   "body": _MENTION_BACKTICK}])
+    assert ov_code is None
+
+
+def test_13261_case_B_third_party_comment_after_override_keeps_it():
+    # Control B of the issue matrix, unchanged by the fix.
+    ov = vag.parse_override([
+        {"author": "myia-ai-01", "body": _OVERRIDE_13261_OK},
+        {"author": "myia-po-2025", "body": _MENTION_PLAIN},
+    ])
+    assert ov is not None and ov["next_genre"] == "lean"
+
+
+def test_13261_marker_in_fenced_block_grants_and_rejects_nothing():
+    # Fix (b), fenced form: a marker fully inside a code block is
+    # discussion -- neither an override nor a malformed rejection.
+    ov = vag.parse_override([
+        {"author": "myia-ai-01",
+         "body": "```\n[G-VAR-3 OVERRIDE] lane x:y -- next: lean\n```"}])
+    assert ov is None
+    # and it must not MASK a real override posted later in the thread either
+    ov2 = vag.parse_override([
+        {"author": "myia-ai-01", "body": _OVERRIDE_13261_OK},
+        {"author": "myia-ai-01",
+         "body": "exemple : ```[G-VAR-3 OVERRIDE] next: qc```"},
+    ])
+    assert ov2 is not None and "malformed" not in ov2
+    assert ov2["next_genre"] == "lean"
+
+
+def test_13261_malformed_fallback_is_the_MOST_RECENT_rejection():
+    # When no valid override exists, the fallback keeps the pre-fix
+    # newest-first semantics: the MOST RECENT coordinator rejection is the
+    # announced one (its reason is the actionable one).
+    ov = vag.parse_override([
+        {"author": "jsboige", "body": "[G-VAR-3 OVERRIDE] lane x:y"},
+        {"author": "jsboige", "body": "[G-VAR-3 OVERRIDE] next: 7days"},
+    ])
+    assert ov is not None and "malformed" in ov
+    assert "n'est pas un genre" in ov["malformed"]  # the newer, not "manquant"
+
+
+# --- The stripper must follow GitHub's RENDERING of code (#13273) -----------
+#
+# Found in review of #13263 (which fixed #13261): two deviations of opposite
+# polarity, same root -- what the stripper calls "code" is not what GitHub
+# renders as code.
+#
+#   sous-match (fail-closed): OVERRIDE_EXPECTED_FORM DISPLAYS the marker
+#   between backticks, so a coordinator recopying the recommended form posts
+#   a span-wrapped marker that stripping erased -> silent None. Remedy taken:
+#   option 2 of the issue -- a span whose ENTIRE content is a well-formed
+#   override is UNWRAPPED, not erased (this also future-proofs copy-paste
+#   from any doc that puts the marker in code).
+#
+#   sur-match (fail-open): an UNCLOSED fence matched only up to the next ```
+#   (or never), so a marker after a dangling ``` stayed live text while
+#   GitHub renders it as code. Remedy: an unclosed fence extends to the end
+#   of the body.
+
+_SPAN_FULL_MARKER = ("`[G-VAR-3 OVERRIDE] lane myia-ai-01:CoursIA -- "
+                     "next: qc`")
+
+
+def test_13273_case_B_help_text_recopy_unwraps_full_marker_span():
+    # The exact entry the tool recommends, posted the way it displays it:
+    # the span's ENTIRE content is a well-formed override -> unwrapped and
+    # read as a live decision.
+    ov = vag.parse_override([
+        {"author": "myia-ai-01", "body": _SPAN_FULL_MARKER}])
+    assert ov is not None and "malformed" not in ov
+    assert ov["next_genre"] == "qc"
+
+
+def test_13273_partial_or_trailing_span_stays_inert():
+    # Only a span whose content is the marker AND NOTHING ELSE is unwrapped.
+    # Marker without next: (partial) and marker with trailing words inside
+    # the span both render as code on GitHub and stay inert.
+    ov_partial = vag.parse_override([
+        {"author": "myia-ai-01",
+         "body": "`[G-VAR-3 OVERRIDE] lane x:y`"}])
+    assert ov_partial is None
+    ov_trailing = vag.parse_override([
+        {"author": "myia-ai-01",
+         "body": "`[G-VAR-3 OVERRIDE] lane x:y -- next: lean voici pourquoi`"}])
+    assert ov_trailing is None
+
+
+def test_13273_marker_in_unclosed_fence_grants_nothing():
+    # Positive control from the issue: a fence never closed swallows the
+    # marker -- GitHub renders it as code, so it grants nothing.
+    body = ("voici la forme:\n```\n"
+            "[G-VAR-3 OVERRIDE] lane myia-ai-01:CoursIA -- next: lean\n")
+    ov = vag.parse_override([{"author": "myia-ai-01", "body": body}])
+    assert ov is None
+
+
+def test_13273_span_full_marker_inside_unclosed_fence_grants_nothing():
+    # The unwrap must not resurrect a span sitting INSIDE an unclosed fence:
+    # the fence pass runs first and erases to end of body.
+    body = "exemple :\n```\n" + _SPAN_FULL_MARKER + "\n"
+    ov = vag.parse_override([{"author": "myia-ai-01", "body": body}])
+    assert ov is None
+
+
+def test_13273_unwrapped_marker_is_a_full_fledged_newest_decision():
+    # An unwrapped marker is not merely tolerated: newest-first, it beats an
+    # older nude override -- the span-recopy is the coordinator's LAST word.
+    ov = vag.parse_override([
+        {"author": "myia-ai-01", "body": _OVERRIDE_13261_OK},
+        {"author": "myia-ai-01", "body": _SPAN_FULL_MARKER},
+    ])
+    assert ov is not None and "malformed" not in ov
+    assert ov["next_genre"] == "qc"
+
+
 # --- merged-sequence predecessor (#12095) ----------------------------------
 #
 # G-VAR-3 adjacency is a property of the MERGED sequence, which moves while a
