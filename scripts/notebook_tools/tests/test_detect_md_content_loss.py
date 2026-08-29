@@ -796,3 +796,106 @@ class TestFencedBlockReplacement:
         # les caracteres box-drawing sont retires, les labels gardes
         assert "+" not in n and "-" not in n
         assert "A" in n and "B" in n
+
+
+# ---------------------------------------------------------------------------
+# 12. Mode traduction (#13548) : artefact _<lang> compare au sibling FR
+# ---------------------------------------------------------------------------
+EXERCISE_BODY_EN = (
+    "## Exercise: Verifying that a grid is valid\n\n"
+    "### Statement\n\n"
+    "After solving a Sudoku puzzle with backtracking, it is essential to "
+    "verify that the solution is actually valid. Implement a function "
+    "that checks the following constraints:\n\n"
+    "1. Each row contains the digits 1 to 9 without repetition.\n"
+    "2. Each column contains the digits 1 to 9 without repetition.\n"
+    "3. Each 3x3 block contains the digits 1 to 9 without repetition.\n\n"
+    "**Graded hints**:\n\n"
+    "- Hint 1: consider using sets to detect duplicates.\n"
+    "- Hint 2: split the verification into three sub-functions.\n"
+    "- Hint 3: the block constraint uses block coordinates of 3.\n"
+)
+
+
+class TestTranslationAwareMode:
+    """Issue #13548 : un artefact X_<lang>.ipynb dont le sibling FR X.ipynb
+    existe a la meme revision est compare AU SIBLING (pas a sa base git),
+    au seuil TRANSLATION_DROP_THRESHOLD=0.5, motifs comptes bilingues."""
+
+    def _write_pair(self, tmp_path, fr_nb, en_nb, name="nb"):
+        fr = tmp_path / f"{name}.ipynb"
+        en = tmp_path / f"{name}_en.ipynb"
+        fr.write_text(json.dumps(fr_nb), encoding="utf-8")
+        en.write_text(json.dumps(en_nb), encoding="utf-8")
+        return en
+
+    def _scan_en(self, tmp_path, fr_nb, en_nb, name="nb"):
+        # head = working tree (head_ref=None) -> sibling lu depuis le disque.
+        en = self._write_pair(tmp_path, fr_nb, en_nb, name)
+        with mock.patch.object(dml, "ref_resolves", return_value=True), \
+             mock.patch.object(dml, "path_exists_at_ref", return_value=True):
+            return dml.scan_notebook(en, base_ref="MOCK_BASE", head_ref=None)
+
+    def test_faithful_translation_no_finding(self, tmp_path):
+        # Ratio EN/FR ~0.73 (mesure reelle #13542) : au-dessus du seuil 0.5
+        # -> PAS de signal. C'est le critere d'acceptation (1) de #13548.
+        fr = _nb(_md(EXERCISE_BODY, cell_id="c1"))
+        en = _nb(_md(EXERCISE_BODY_EN, cell_id="c1"))
+        r = self._scan_en(tmp_path, fr, en)
+        assert r["mode"] == "translation"
+        assert r["stats"]["findings_count"] == 0
+
+    def test_truncated_title_only_flagged_at_half_threshold(self, tmp_path):
+        # Traduction "au titre seul" (defaut reel #12850) : EN garde le titre
+        # mais perd le corps (ratio ~0.05 << 0.5) -> signal. Critere (2) :
+        # le controle positif reste detecte EN mode traduction.
+        fr = _nb(_md(EXERCISE_BODY, cell_id="c1"))
+        en = _nb(_md("## Exercise: Verifying that a grid is valid", cell_id="c1"))
+        r = self._scan_en(tmp_path, fr, en)
+        assert r["mode"] == "translation"
+        assert any(f["kind"] == "TRUNCATED_CELL" for f in r["findings"])
+        assert all(f.get("threshold") == dml.TRANSLATION_DROP_THRESHOLD
+                   for f in r["findings"] if f["kind"] == "TRUNCATED_CELL")
+
+    def test_translated_motif_not_lost(self, tmp_path):
+        # "Objectif(s)" FR -> "Objectives" EN : l'alias bilingue fait compter
+        # le motif des deux cotes -> PAS de LOST_MOTIF.
+        fr = _nb(_md("## Objectif(s)\n\n" + ("Contenu pedagogique substantiel. " * 20), cell_id="c1"))
+        en = _nb(_md("## Objectives\n\n" + ("Substantial pedagogical content. " * 20), cell_id="c1"))
+        r = self._scan_en(tmp_path, fr, en)
+        assert r["mode"] == "translation"
+        assert not any(f["kind"] == "LOST_MOTIF" for f in r["findings"])
+
+    def test_motif_genuinely_lost_still_signals(self, tmp_path):
+        # Le motif disparait aussi en EN (aucun alias ne matche) -> LOST_MOTIF.
+        fr = _nb(_md("## Objectif(s)\n\n" + ("Contenu pedagogique substantiel. " * 20), cell_id="c1"))
+        en = _nb(_md("## Overview\n\n" + ("Substantial pedagogical content. " * 20), cell_id="c1"))
+        r = self._scan_en(tmp_path, fr, en)
+        assert any(f["kind"] == "LOST_MOTIF" and f.get("motif") == "Objectif(s)"
+                   for f in r["findings"])
+
+    def test_orphan_artifact_falls_back_to_mono_mode(self, tmp_path):
+        # Artefact _en SANS sibling FR sur le disque -> retombee sur la
+        # comparaison mono-langue standard (mode != translation).
+        en = tmp_path / "nb_en.ipynb"
+        en.write_text(json.dumps(_nb(_md(EXERCISE_BODY_EN, cell_id="c1"))), encoding="utf-8")
+        with mock.patch.object(dml, "read_notebook_at_ref", return_value=_nb(_md(EXERCISE_BODY_EN, cell_id="c1"))), \
+             mock.patch.object(dml, "ref_resolves", return_value=True), \
+             mock.patch.object(dml, "path_exists_at_ref", return_value=True):
+            r = dml.scan_notebook(en, base_ref="MOCK_BASE", head_ref=None)
+        assert r.get("mode") != "translation"
+        assert r["stats"]["findings_count"] == 0
+
+    def test_new_artifact_truncated_caught_at_creation(self, tmp_path):
+        # Cas #12850 : creation d'un _en tronque "au titre seul". Le fichier
+        # est NOUVEAU (absent a la base) mais le mode traduction s'applique
+        # AVANT l'exemption new_file -> detecte des la creation.
+        fr = _nb(_md(EXERCISE_BODY, cell_id="c1"))
+        en = _nb(_md("## Exercise: Verifying that a grid is valid", cell_id="c1"))
+        pair = self._write_pair(tmp_path, fr, en)
+        with mock.patch.object(dml, "ref_resolves", return_value=True), \
+             mock.patch.object(dml, "path_exists_at_ref", return_value=False):
+            r = dml.scan_notebook(pair, base_ref="MOCK_BASE", head_ref=None)
+        assert r["mode"] == "translation"
+        assert r.get("new_file") is not True
+        assert any(f["kind"] == "TRUNCATED_CELL" for f in r["findings"])
