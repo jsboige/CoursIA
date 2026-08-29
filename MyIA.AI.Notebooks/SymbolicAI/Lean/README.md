@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: SymbolicAI-Lean
-pedagogical_count: 38
-breakdown: Lean=38
-maturity: BETA=36, DRAFT=2
+pedagogical_count: 49
+breakdown: Lean=49
+maturity: BETA=47, DRAFT=2
 -->
 
 [← SemanticWeb](../SemanticWeb/README.md) | [↑ SymbolicAI](../README.md) | [Planners →](../Planners/README.md)
@@ -154,7 +154,7 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 | 29 | [Lean-29-EdgeColoring-Tutte-Companion](Lean-29-EdgeColoring-Tutte-Companion.ipynb) | Compagnon **natif** (kernel `lean4-wsl`) du notebook [App-22](../../Search/Applications/CSP/App-22-EdgeColoring-Tutte.ipynb) (théorème apex arXiv 2608.22870, #13031) : définitions `IsCubic`/`Edge3Colorable`/`IsApexRelativeTo` posées sur `SimpleGraph` (absentes de Mathlib, vérifié), Petersen = Kneser KG(5,2) via `SimpleGraph.mk'` — 10 sommets, 15 arêtes, cubique prouvés par `decide`, backtracking `#eval` qui certifie l'absence de toute 3-coloration d'arêtes (`0`) avec contrôle positif K4 (`6`), ancrage `SimpleGraph.tutte` | 35 min |
 | 30 | [Lean-30-Complex-Structure-S6](Lean-30-Complex-Structure-S6.ipynb) | Le problème de Hopf résolu : une structure complexe intégrable sur S⁶ (énoncé `Mathoverflow1973` de Formal Conjectures) — digestion du fil constructif (triangle (3,4,∞), accouplement de Shioda ⟨P,P⟩=1/6 calculé, transformations logarithmiques 3 et 4, remplissage de Mumford dP₆, reconnaissance Hurewicz→Smale→Kervaire–Milnor) avec deux invariants **calculés** (|π₁| = |4m+3n| par forme normale de Smith, χ = 2), reproduction **réelle** du dépôt piné `plby/HopfProblem` via `hopf_s6_reproduction.py` (248 818 lignes compilées en 1154 s, 0 sorry/0 axiom, comparator double kernel Lean+nanoda : *« Your solution is okay! »*, axiomes [propext, Classical.choice, Quot.sound]) et attribution différenciée (manuscrit écrit par Claude/communiqué par Alpöge, exposition Engel avec caveat, code Lean majoritairement Codex) | 45 min |
 
-**Durée totale** : ~30h20min
+**Durée totale** : ~33h30min
 
 ## Acquis d'apprentissage
 
