@@ -154,7 +154,7 @@ def fetch_open_prs(threshold: int) -> list[dict]:
         "--json", "number,title,isDraft,baseRefName,additions,reviews,author,url",
         "--limit", "300",
     ]
-    out = subprocess.run(cmd, capture_output=True, text=True, check=True)
+    out = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", check=True)
     return json.loads(out.stdout)
 
 
@@ -163,7 +163,7 @@ def has_label(pr_number: int, label: str) -> bool:
     out = subprocess.run(
         ["gh", "pr", "view", str(pr_number), "--json", "labels",
          "--jq", f'[.labels[] | select(.name == "{label}")] | length'],
-        capture_output=True, text=True, check=True,
+        capture_output=True, text=True, encoding="utf-8", errors="replace", check=True,
     )
     return out.stdout.strip() == "1"
 
@@ -174,11 +174,11 @@ def add_label(pr_number: int, label: str) -> None:
         ["gh", "label", "create", label,
          "--color", LABEL_COLOR, "--description", LABEL_DESC,
          "--force"],
-        capture_output=True, text=True,
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
     )
     subprocess.run(
         ["gh", "pr", "edit", str(pr_number), "--add-label", label],
-        capture_output=True, text=True, check=True,
+        capture_output=True, text=True, encoding="utf-8", errors="replace", check=True,
     )
 
 
@@ -186,7 +186,7 @@ def remove_label(pr_number: int, label: str) -> None:
     """Idempotent -- if the label is not on the PR, this is a no-op."""
     subprocess.run(
         ["gh", "pr", "edit", str(pr_number), "--remove-label", label],
-        capture_output=True, text=True,
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
     )
 
 
@@ -224,7 +224,7 @@ def framed_comments(pr_number: int) -> list[tuple[str | None, str]]:
     out = subprocess.run(
         ["gh", "pr", "view", str(pr_number), "--json", "comments",
          "--jq", "[.comments[] | {url, body}]"],
-        capture_output=True, text=True, check=True,
+        capture_output=True, text=True, encoding="utf-8", errors="replace", check=True,
     )
     try:
         items = json.loads(out.stdout or "[]")
@@ -264,14 +264,14 @@ def upsert_comment(pr_number: int, body: str) -> list[str]:
             continue
         res = subprocess.run(
             ["gh", "api", f"repos/{{owner}}/{{repo}}/issues/comments/{cid}", "-X", "DELETE"],
-            capture_output=True, text=True,
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
         )
         if res.returncode != 0:
             warnings.append(f"#{pr_number}: delete of comment {cid} failed: "
                             f"{res.stderr.strip()[:120]}")
     subprocess.run(
         ["gh", "pr", "comment", str(pr_number), "--body", framed],
-        capture_output=True, text=True, check=True,
+        capture_output=True, text=True, encoding="utf-8", errors="replace", check=True,
     )
     return warnings
 

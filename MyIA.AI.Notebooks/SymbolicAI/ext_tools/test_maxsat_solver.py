@@ -56,7 +56,7 @@ def _run(wcnf_path: Path, *extra: str) -> subprocess.CompletedProcess:
     return subprocess.run(
         [sys.executable, str(EXT_TOOLS_DIR / "maxsat_solver.py"), str(wcnf_path), *extra],
         capture_output=True,
-        text=True,
+        text=True, encoding="utf-8", errors="replace",
     )
 
 

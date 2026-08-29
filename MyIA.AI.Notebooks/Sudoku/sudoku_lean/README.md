@@ -41,7 +41,7 @@ Ce lake s'adresse à trois publics, par ordre de dépendance :
 Ce lake est un **livrable formel**, pas une série de notebooks. Il **fonde** les
 solveurs pédagogiques de la série `Sudoku` :
 
-- `Sudoku-1-Backtracking-Csharp.ipynb` — backtracking C#/.NET.
+- `Sudoku-01-Backtracking-Csharp.ipynb` — backtracking C#/.NET.
 - `Sudoku-10-ORTools-Csharp.ipynb` — OR-Tools.
 - Solveurs Python et Infer.NET (voir `Sudoku/README.md`).
 
@@ -271,7 +271,7 @@ lake build Sudoku
 
 ### Référence croisée
 
-- Série `Sudoku` (`Sudoku-1-Backtracking-Csharp.ipynb`, `Sudoku-10-ORTools-Csharp.ipynb`,
+- Série `Sudoku` (`Sudoku-01-Backtracking-Csharp.ipynb`, `Sudoku-10-ORTools-Csharp.ipynb`,
   …) : les solveurs C#/.NET + Python dont ce lake fonde formellement l'étape de
   propagation. Lake = livrable formel, `lake build` = preuve d'exécution (convention des
   lakes frères).

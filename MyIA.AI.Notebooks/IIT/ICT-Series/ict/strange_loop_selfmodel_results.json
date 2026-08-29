@@ -1,0 +1,180 @@
+{
+ "rows": [
+  {
+   "seed": 0,
+   "loop_beta": {
+    "pre_median_err": 0.03200458414230101,
+    "adaptation_horizon": 90,
+    "caught_up": true
+   },
+   "surrogate_beta": {
+    "pre_median_err": 0.03178990828678385,
+    "adaptation_horizon": 316,
+    "caught_up": true
+   },
+   "loop_alpha": {
+    "pre_median_err": 0.03200458414230101,
+    "adaptation_horizon": 91,
+    "caught_up": true
+   },
+   "surrogate_alpha": {
+    "pre_median_err": 0.03178990828678385,
+    "adaptation_horizon": 91,
+    "caught_up": true
+   },
+   "rho_beta": 3.511111111111111,
+   "rho_alpha": 1.0,
+   "kink": {
+    "d_star": 3,
+    "gain_to_fixpoint": 0.014954193992942733,
+    "gain_beyond_fixpoint": 1.0016746245122832e-05,
+    "finite": true
+   }
+  },
+  {
+   "seed": 1,
+   "loop_beta": {
+    "pre_median_err": 0.04985018601128005,
+    "adaptation_horizon": 74,
+    "caught_up": true
+   },
+   "surrogate_beta": {
+    "pre_median_err": 0.05039508810970522,
+    "adaptation_horizon": 58,
+    "caught_up": true
+   },
+   "loop_alpha": {
+    "pre_median_err": 0.04985018601128005,
+    "adaptation_horizon": 68,
+    "caught_up": true
+   },
+   "surrogate_alpha": {
+    "pre_median_err": 0.05039508810970522,
+    "adaptation_horizon": 57,
+    "caught_up": true
+   },
+   "rho_beta": 0.7837837837837838,
+   "rho_alpha": 0.8382352941176471,
+   "kink": {
+    "d_star": 5,
+    "gain_to_fixpoint": 0.03965740056647049,
+    "gain_beyond_fixpoint": 0.0004781079149512313,
+    "finite": true
+   }
+  },
+  {
+   "seed": 2,
+   "loop_beta": {
+    "pre_median_err": 0.031454061314656,
+    "adaptation_horizon": 212,
+    "caught_up": true
+   },
+   "surrogate_beta": {
+    "pre_median_err": 0.03167596681872942,
+    "adaptation_horizon": 211,
+    "caught_up": true
+   },
+   "loop_alpha": {
+    "pre_median_err": 0.031454061314656,
+    "adaptation_horizon": 270,
+    "caught_up": true
+   },
+   "surrogate_alpha": {
+    "pre_median_err": 0.03167596681872942,
+    "adaptation_horizon": 269,
+    "caught_up": true
+   },
+   "rho_beta": 0.9952830188679245,
+   "rho_alpha": 0.9962962962962963,
+   "kink": {
+    "d_star": 4,
+    "gain_to_fixpoint": 0.10544436621615194,
+    "gain_beyond_fixpoint": 6.054545276290568e-05,
+    "finite": true
+   }
+  },
+  {
+   "seed": 3,
+   "loop_beta": {
+    "pre_median_err": 0.033733355769886675,
+    "adaptation_horizon": 73,
+    "caught_up": true
+   },
+   "surrogate_beta": {
+    "pre_median_err": 0.03307916757371654,
+    "adaptation_horizon": 79,
+    "caught_up": true
+   },
+   "loop_alpha": {
+    "pre_median_err": 0.033733355769886675,
+    "adaptation_horizon": 1767,
+    "caught_up": true
+   },
+   "surrogate_alpha": {
+    "pre_median_err": 0.03307916757371654,
+    "adaptation_horizon": 2000,
+    "caught_up": false
+   },
+   "rho_beta": 1.082191780821918,
+   "rho_alpha": 1.1318619128466327,
+   "kink": {
+    "d_star": 2,
+    "gain_to_fixpoint": 0.01178535674993686,
+    "gain_beyond_fixpoint": 7.60543824163129e-05,
+    "finite": true
+   }
+  },
+  {
+   "seed": 4,
+   "loop_beta": {
+    "pre_median_err": 0.03165920983911047,
+    "adaptation_horizon": 105,
+    "caught_up": true
+   },
+   "surrogate_beta": {
+    "pre_median_err": 0.03174468393817409,
+    "adaptation_horizon": 95,
+    "caught_up": true
+   },
+   "loop_alpha": {
+    "pre_median_err": 0.03165920983911047,
+    "adaptation_horizon": 339,
+    "caught_up": true
+   },
+   "surrogate_alpha": {
+    "pre_median_err": 0.03174468393817409,
+    "adaptation_horizon": 337,
+    "caught_up": true
+   },
+   "rho_beta": 0.9047619047619048,
+   "rho_alpha": 0.9941002949852508,
+   "kink": {
+    "d_star": 4,
+    "gain_to_fixpoint": 0.04264505022294374,
+    "gain_beyond_fixpoint": 0.0002081985656710028,
+    "finite": true
+   }
+  }
+ ],
+ "summary": {
+  "rho_beta_median": 0.9952830188679245,
+  "rho_beta_ge3_count": 1,
+  "rho_alpha_median": 0.9962962962962963,
+  "rho_alpha_lt2": true,
+  "d_star_median": 4.0,
+  "d_star_le12_count": 5,
+  "kink_saturation_count": 5,
+  "n_seeds": 5,
+  "verdict": "FALSIFIED"
+ },
+ "meta": {
+  "case": 8,
+  "issue": 8182,
+  "date": "2026-08-25",
+  "lane": "myia-po-2024:CoursIA-2",
+  "pre_registration_commit": "55d4aad9ef",
+  "prediction": "P1 d*<=12 med (>=4/5) ; P2 rho_beta>=3 (>=4/5) ET rho_alpha<2 med ; P3 kink <10%",
+  "verdict": "P2 FALSIFIE (1/5, med 1.0) -- P1 CONFIRME (med 4.0, 5/5) -- P3 CONFIRME (5/5)",
+  "diagnostic": "action a = pol(x) deterministe : le canal self ne porte aucune information independante de x ; lautoknowledge nachete aucune adaptation a ce regime. Le lacet ne travaille que si le canal self est irreductible a letat."
+ }
+}

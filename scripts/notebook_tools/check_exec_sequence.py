@@ -118,7 +118,7 @@ def tracked_files(root):
     try:
         out = subprocess.run(
             ["git", "ls-files", "--", str(root)],
-            capture_output=True, text=True, check=True,
+            capture_output=True, text=True, encoding="utf-8", errors="replace", check=True,
         ).stdout
     except (subprocess.CalledProcessError, OSError) as err:
         print(f"[!] git ls-files failed ({err}); scanning everything.",
@@ -131,7 +131,7 @@ def head_commit():
     try:
         return subprocess.run(
             ["git", "rev-parse", "--short", "HEAD"],
-            capture_output=True, text=True, check=True,
+            capture_output=True, text=True, encoding="utf-8", errors="replace", check=True,
         ).stdout.strip()
     except (subprocess.CalledProcessError, OSError):
         return "?"

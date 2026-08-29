@@ -1,0 +1,66 @@
+name: Grain orphans sweep
+
+# The ROUTING half of issue #13086. The blocking guard
+# (`variation-tag-guard.yml`, job `check-variation-tag-required`) already
+# posts an instructional comment at the moment of the omission (piste (a),
+# live since 2026-08-24, marker `vtr-required-block`) -- yet the residue
+# persisted (16 untagged open PRs measured 2026-08-27). A signal without a
+# recipient is not a routing: an untagged PR belongs to NO lane, so no
+# "repair your own red first" guard will ever surface it, and the picker's
+# `unattributed_blocked` output is only seen by whichever lane happens to
+# draw a grain -- never by the coordinator.
+#
+# This sweep recomputes that list daily and upserts ONE marker-guarded
+# comment (`GRAIN-ORPHANS-SWEEP`) on #13086, naming each orphan with author
+# and branch for named dispatch. ADVISORY, never blocking: the job always
+# exits 0, it does not tag PRs, does not close anything -- it routes, the
+# coordinator decides (skill coordinate, point 5).
+
+on:
+  schedule:
+    # Daily, off-:00 minute (anti-stampede), staggered vs the 06:17
+    # orphaned-delivery scan. 07:23 UTC.
+    - cron: '23 7 * * *'
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: 'Upsert the marker-guarded comment on #13086 (default: dry-run)'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  issues: write
+  contents: read
+
+concurrency:
+  group: grain-orphans-sweep
+  cancel-in-progress: false
+
+jobs:
+  sweep:
+    name: "Route untagged blocked PRs to the coordinator (advisory)"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (sparse, scripts only)
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: scripts
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Sweep and route
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ARGS="--orphans-report"
+          # Apply only on the scheduled sweep (or a dispatch that explicitly
+          # opts in). The default dispatch is a dry run: the report prints,
+          # nothing is posted.
+          if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ inputs.apply }}" = "true" ]; then
+            ARGS="$ARGS --apply-comment 13086"
+          fi
+          python scripts/pick_idle_grain.py $ARGS
