@@ -1615,6 +1615,25 @@ def main(argv: list[str] | None = None) -> int:
             print(f"{'':>10} {'':>8} {'':>5} {'':>6} {'':>4}  {head.strip()}")
             if tail:
                 print(f"{'':>10} {'':>8} {'':>5} {'':>6} {'':>4}  -> {tail}")
+        # Un verdict qui n'est cable a aucune action ne change rien : la zone
+        # chaude s'affichait en tete du tirage et le pick d'a cote n'en disait
+        # rien. C'est ici que la mesure devient une consigne.
+        zb = (balance or {}).get(p.get("family") or "")
+        if zb and zb["new_notebooks"] >= 3:
+            etat = "EMBALLEMENT" if is_runaway(zb) else "zone chaude"
+            pad = f"{'':>10} {'':>8} {'':>5} {'':>6} {'':>4}  "
+            print(pad + "{} : {} notebooks neufs / 14 j, {} consolidation "
+                        "ouverte(s) pour {} expansion.".format(
+                            etat, zb["new_notebooks"], zb["consolidation"],
+                            zb["expansion"]))
+            if zb["consolidation"] <= zb["expansion"] or is_runaway(zb):
+                quoi = ("le SOUS-grain a creer ici est une CONSOLIDATION"
+                        if p["klass"] == "umbrella"
+                        else "la contrepartie due dans cette zone est une "
+                             "CONSOLIDATION")
+                print(pad + "-> " + quoi + " (renumeroter un numero eleve en "
+                      "lettre d'un numero existant, ou fondre plusieurs "
+                      "lettres en un petit nombre), pas une instance de plus.")
     print()
     print_unattributed_blocked(backlog)
     if visits_err:
