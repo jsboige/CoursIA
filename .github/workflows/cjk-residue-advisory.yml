@@ -22,27 +22,21 @@ name: CJK Residue Advisory
 # paths leave the PR diff. Proven firsthand on exercises-advisory (PR #8820).
 # Enforced structurally by scripts/check_workflow_label_paths.py.
 #
-# Fork PRs are skipped (student-pr-reviews.md): benevolent review, no internal
-# content criterion runs against student submissions.
+# Tranche 2 #12817: the per-PR fork guard below died with the pull_request
+# trigger -- `github.event.pull_request.*` is absent under schedule, so the
+# guard evaluated false and the job ran SKIPPED (extinguished organ: 7 nights
+# of "success" without a single scan). The nocturne now resolves a 24 h window
+# on main and measures the day's merged apport; label side-effects are
+# PR-only and skipped when there is no PR context.
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened]
-    branches: [main]
-    paths:
-      # Leak-bearing content -- run whenever any prose/code/notebook changes.
-      - '**/*.ipynb'
-      - '**/*.md'
-      - '**/*.py'
-      - '**/*.cs'
-      # Self-cover (#8822): so this job re-runs on its own modification and can
-      # clean up its label. Without this, a leak-fix commit that touches only
-      # this workflow/script would leave the label stuck.
-      - '.github/workflows/cjk-residue-advisory.yml'
-      - 'scripts/notebook_tools/detect_cjk_residue.py'
-      - 'scripts/notebook_tools/tests/test_detect_cjk_residue.py'
-  workflow_dispatch:
-
+  schedule:
+    # Nocturnal sweep -- post-merge main verification.
+    # Tranche 1 #12817 : sortir les advisory lourds de pull_request
+    # (clone 2.22 Go par run). Stratification user 2026-08-23 :
+    # "les jobs lourds devraient être payés une fois par fournée".
+    - cron: '09 03 * * *'
+  workflow_dispatch: {}
 permissions:
   contents: read
   pull-requests: write
@@ -55,9 +49,6 @@ jobs:
   cjk-residue-advisory:
     name: "CJK residue advisory (label, non-blocking)"
     runs-on: ubuntu-latest
-    # Same-repo PRs only (agents/staff). Fork PRs are student submissions under
-    # student-pr-reviews.md -- benevolent review, no content gate.
-    if: github.event.pull_request.head.repo.full_name == github.repository
 
     steps:
       - name: Checkout PR
@@ -68,6 +59,7 @@ jobs:
           # the merge-base and the diff would fail instead of scoping to this
           # PR's own apport.
           fetch-depth: 0
+          filter: blob:none
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -79,12 +71,28 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # Without GH_REPO, gh pr edit/label create cannot infer the target repo.
           GH_REPO: ${{ github.repository }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          BASE: ${{ github.event.pull_request.base.sha }}
-          HEAD: ${{ github.event.pull_request.head.sha }}
+          # '' under schedule/dispatch (no PR context) -> nocturne window below.
+          PR_NUMBER: ${{ github.event.pull_request.number || '' }}
+          BASE: ${{ github.event.pull_request.base.sha || '' }}
+          HEAD: ${{ github.event.pull_request.head.sha || '' }}
           LABEL: cjk-residue
         run: |
           set -uo pipefail
+
+          # ---- Nocturne window (#12817 tranche 2) ----
+          # Under schedule/dispatch there is no PR: BASE is empty. Resolve the
+          # last 24 h of main so the sweep measures the day's merged apport
+          # ("attrape la dérive après merge"). The verdict stays state-dependent:
+          # the window's leak count varies with what actually merged.
+          NOCTURNE=0
+          if [ -z "${BASE:-}" ]; then
+            NOCTURNE=1
+            BASE=$(git rev-list -1 --before="24 hours ago" HEAD)
+            [ -n "$BASE" ] || BASE=$(git rev-list --max-parents=0 HEAD | tail -1)
+            HEAD=$(git rev-parse HEAD)
+            PR_NUMBER=""
+            echo "Nocturne window: $(git rev-parse --short "$BASE")..$(git rev-parse --short "$HEAD") (24 h of main)"
+          fi
 
           # The label is decided on what THIS PR changes (#8829 review), not on
           # the state of main. A whole-fleet scan would pose `cjk-residue` on
@@ -96,6 +104,9 @@ jobs:
           # 3-point diff (#10403): "$BASE...$HEAD" diffs from the merge-base of
           # BASE and HEAD, i.e. strictly what THIS branch introduced -- not the
           # union of both directions that a 2-point "$BASE" "$HEAD" reports.
+          # 3-point diff (#10403): under a PR, diffs from the merge-base of
+          # BASE and HEAD (strictly this branch's apport); under the nocturne,
+          # BASE is an ancestor of HEAD so the range IS the 24 h window.
           git diff --name-only --diff-filter=d "$BASE...$HEAD" > changed.txt || true
 
           python scripts/notebook_tools/detect_cjk_residue.py --json --check --stdin \
@@ -128,15 +139,23 @@ jobs:
             FILES=$(python -c \
               "import json; d=json.load(open('pr_payload.json')); \
                print('\n'.join('- '+r['path'] for r in d['results'] if r['allowed'] is None and r['hits']))")
-            echo "::notice::CJK residue in THIS PR ($PR_LEAKS leak line(s)): $FILES -- see the '$LABEL' label (#8826/#8428)."
-            gh label create "$LABEL" \
-              --description "CJK residue: a Chinese/Japanese word soldered into Latin prose (#8428/#8826)" \
-              --color "D93F0B" --force 2>/dev/null || true
-            gh pr edit "$PR_NUMBER" --add-label "$LABEL" || true
+            if [ "$NOCTURNE" -eq 1 ]; then
+              echo "::warning::CJK residue in the last-24h window on main ($PR_LEAKS leak line(s)): $FILES (#8826/#8428)."
+            else
+              echo "::notice::CJK residue in THIS PR ($PR_LEAKS leak line(s)): $FILES -- see the '$LABEL' label (#8826/#8428)."
+              gh label create "$LABEL" \
+                --description "CJK residue: a Chinese/Japanese word soldered into Latin prose (#8428/#8826)" \
+                --color "D93F0B" --force 2>/dev/null || true
+              gh pr edit "$PR_NUMBER" --add-label "$LABEL" || true
+            fi
           else
-            echo "No CJK residue introduced by this PR."
-            # A label from an earlier push is now stale -- remove it so the signal
-            # stays trustworthy (self-cover lets this branch run on the fix commit).
-            gh pr edit "$PR_NUMBER" --remove-label "$LABEL" 2>/dev/null || true
+            if [ "$NOCTURNE" -eq 1 ]; then
+              echo "No CJK residue in the last-24h window on main."
+            else
+              echo "No CJK residue introduced by this PR."
+              # A label from an earlier push is now stale -- remove it so the signal
+              # stays trustworthy (self-cover lets this branch run on the fix commit).
+              gh pr edit "$PR_NUMBER" --remove-label "$LABEL" 2>/dev/null || true
+            fi
           fi
           exit 0

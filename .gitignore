@@ -933,6 +933,9 @@ _freeze/
 # L'ignore (ligne du dessus) reste large pour couvrir les autres fichiers du vestige stale.
 MyIA.AI.Notebooks/SymbolicAI/SMT/**/data/meals/*
 !MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/data/meals/mealplan_cache.json
+# EXCEPTION (#1206) : pin Python mirror du pin C# — le cache derive de Z3-API/16b est egalement
+# EPINGLE pour la meme raison (millesime stable consomme par 16c/16d/16e, re-exec autonome).
+!MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/data/meals/mealplan_cache.json
 
 # PR body scratchpad (root-level) — #9535 item 2
 # A PR body is a scratchpad composed outside the worktree (gh pr create --body-file),
@@ -970,3 +973,12 @@ MyIA.AI.Notebooks/SymbolicAI/Tweety/dotnet-build/.dialogues-build/
 # ls-files '*.gv' is empty).
 MyIA.AI.Notebooks/**/Model_[0-9]*.gv
 MyIA.AI.Notebooks/**/Model_[0-9]*.svg
+
+# SW-12 GraphRAG cache demo (PR #12990) : Exemple guide 2 ecrit cache/graph_extracted.ttl
+# a chaque exec du notebook pour demontrer le pattern cache miss/hit (x494 speedup).
+# Le notebook est committe avec outputs ; les fichiers sur disque sont regenerables et
+# n'apparaissent pas dans git ls-files avant cette PR. Meme logique que Model_*.gv/svg.
+MyIA.AI.Notebooks/**/cache/
+
+# WSL admin credentials (po-2027 onboarding)
+.secrets/wsl_credentials

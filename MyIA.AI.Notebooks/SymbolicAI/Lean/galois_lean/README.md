@@ -20,11 +20,11 @@ Deux énoncés, soigneusement distingués dans le notebook :
 
 ## État
 
-- **Toolchain** : `leanprover/lean4:v4.31.0-rc1`
-- **Mathlib** : rev `d568c8c` (v4.31.0-rc1)
+- **Toolchain** : `leanprover/lean4:v4.32.1` (bump depuis v4.31.0-rc1, post-#11325, cf #11256 ; la preuve amont `M23Lean4Web.lean` reste pinned à sa version d'origine — le bump toolchain ne touche pas le vendored)
+- **Mathlib** : rev pinned au bump 4.32.1 (cf `lake-manifest.json` — le rev exact `d568c8c` datait du pin v4.31.0-rc1 et a évolué avec le bump)
 - **Sorry** : **0** (mode `real`, comptage Lean-aware) — 0 `sorry` tactique, 0 `native_decide`, 0 `axiom` déclaré
 - **Axiomes** : `#print axioms Sporadic.card_M23` / `simple_M23` → `{propext, Classical.choice, Quot.sound}` = whitelist §B
-- **Build** : `lake build Galois` SUCCESS exit 0 — cible lib clean via agrégateur racine (1324 jobs ; feasibility gate c.1039 : M23Lean4Web compilé en 241s sous le pin v4.31.0-rc1)
+- **Build** : `lake build Galois` SUCCESS exit 0 — cible lib clean via agrégateur racine (1324 jobs historiques sous pin v4.31.0-rc1 ; à reverifier sur 4.32.1 pour confirmer que le quirk *job-computation* `globs` reste contourné par la forme bare + agrégateur)
 - **Dépendances** : Mathlib 4 uniquement (8 imports `Mathlib.GroupTheory.*`)
 
 ## Pourquoi réutiliser l'amont plutôt que réécrire

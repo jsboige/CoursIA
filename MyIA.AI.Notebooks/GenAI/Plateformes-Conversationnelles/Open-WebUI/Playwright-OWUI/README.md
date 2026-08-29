@@ -9,7 +9,7 @@ maturity:
 
 [← Plateformes conversationnelles](../../README.md) | [← Documentation GenAI](../../../README.md) | [↑ Open-WebUI](../README.md) | [→ Vibe-Coding](../../../Vibe-Coding/README.md)
 
-> **Refonte pédagogique en cours (#4433).** Cette série évolue d'un banc de tests vers un **parcours QA narratif** : fil rouge « QA Engineer d'une flotte GenAI multi-tenant », format hybride notebook + tests E2E réels conservés en backend, et projet de certification final. Point d'entrée : **[00-Parcours-QA-OWUI.md](./00-Parcours-QA-OWUI.md)** (cadrage de la mission). La flotte multi-tenant est passée en **Open WebUI v0.10.2** (1er juillet 2026) : le nouveau **module [06](06-nouveautes-v0.10/)** en démontre les nouveautés (mémoire, dossiers d'équipe, raisonnement streamé). Les modules 01-05, rédigés sur la base v0.9.x, seront revalidés dans le cadre de la refonte.
+> **Refonte pédagogique en cours (#4433).** Cette série évolue d'un banc de tests vers un **parcours QA narratif** : fil rouge « QA Engineer d'une flotte GenAI multi-tenant », format hybride notebook + tests E2E réels conservés en backend, et projet de certification final. Point d'entrée : **[00-Parcours-QA-OWUI.md](./00-Parcours-QA-OWUI.md)** (cadrage de la mission). La flotte multi-tenant tourne sur **Open WebUI v0.11.0** (depuis le 2026-08-07) ; les modules 01-06 ont été **revalidés contre cette version** (campagne #9854, 2026-08-10 — 37 passed / 1 failed / 4 skipped, l'unique rouge étant un défaut de test, pas de l'application). Le **module [06](06-nouveautes-v0.10/)** démontre les nouveautés v0.10 (mémoire, dossiers d'équipe, raisonnement streamé) ; les pièges v0.11 mesurés (drift DOM, payload chat `chat_id`+`id`) sont documentés dans [WHATS-NEW-v0.11.md](./WHATS-NEW-v0.11.md).
 
 Série pédagogique complète pour apprendre **Playwright** (framework de tests E2E) en testant une application réelle : **Open WebUI**, une plateforme de chat IA générative.
 
@@ -58,6 +58,7 @@ Playwright-OWUI/
 ├── playwright.config.ts
 ├── WHATS-NEW-v0.9.1.md               # Nouveautés v0.9.1 (historique)
 ├── WHATS-NEW-v0.10.md                # Nouveautés v0.10 (côté étudiant)
+├── WHATS-NEW-v0.11.md                # Nouveautés v0.11 (refonte de l'interface)
 ├── TRIAGE-INFRA-VS-TEST.md           # Guide transversal : app, test ou infra ?
 └── README.md                         # Ce fichier
 ```
@@ -74,7 +75,7 @@ Cette section documente **ce qui est commité** dans le harnais et **ce qui est 
 | **Helpers et fixtures** | `helpers/selectors.ts`, `helpers/chat.ts`, `helpers/api.ts`, `fixtures/auth.setup.ts` | Code utilitaire partagé entre modules |
 | **Configuration** | `playwright.config.ts`, `tsconfig.json`, `package.json`, `package-lock.json` | Lockfile = reproductibilité d'`npm install` |
 | **Notebooks pédagogiques** | `00-Parcours-QA-OWUI.ipynb`, `01..06/*/[Module].ipynb` | Format hybride notebook + `.spec.ts` (cf. supra) |
-| **Documentation** | `README.md` (ce fichier), `00-Parcours-QA-OWUI.md`, `TRIAGE-INFRA-VS-TEST.md`, `WHATS-NEW-v0.9.1.md`, `WHATS-NEW-v0.10.md`, `01..06/README.md` | Cadrage pédagogique et guides transverses |
+| **Documentation** | `README.md` (ce fichier), `00-Parcours-QA-OWUI.md`, `TRIAGE-INFRA-VS-TEST.md`, `WHATS-NEW-v0.9.1.md`, `WHATS-NEW-v0.10.md`, `WHATS-NEW-v0.11.md`, `01..06/README.md` | Cadrage pédagogique et guides transverses |
 | **Template de configuration** | `.env.example` | **8 clés actives + 7 commentées (optionnelles), valeurs vides ou exemples neutres** (`OWUI_URL=https://open-webui.example.com`, `OWUI_EMAIL=your_email_here`, etc.). Aucune valeur réelle. |
 
 ### Ignoré (jamais committé)
@@ -435,7 +436,7 @@ Les sélecteurs CSS et les patterns d'auth sont stables entre OWUI v0.8.x et v0.
 
 1. **Sélecteurs** : vérifier avec le mode debug (`npx playwright test --debug`) que les sélecteurs dans [helpers/selectors.ts](helpers/selectors.ts) correspondent a votre version.
 2. **Labels multilingues** : OWUI v0.9+ a changé certains labels. Adapter dans les tests ou utiliser `getByRole()` (plus robuste que `getByText()`).
-3. **Nouvelles fonctionnalités** : OWUI v0.9.1 ajoute Calendar, Automations, Desktop app (voir `WHATS-NEW-v0.9.1.md`) ; OWUI v0.10 ajoute la mémoire persistante, les dossiers d'équipe et le raisonnement streamé (voir `WHATS-NEW-v0.10.md` et le module [06](06-nouveautes-v0.10/)). Ce sont de bons candidats pour des exercices bonus.
+3. **Nouvelles fonctionnalités** : OWUI v0.9.1 ajoute Calendar, Automations, Desktop app (voir `WHATS-NEW-v0.9.1.md`) ; OWUI v0.10 ajoute la mémoire persistante, les dossiers d'équipe et le raisonnement streamé (voir `WHATS-NEW-v0.10.md` et le module [06](06-nouveautes-v0.10/)) ; OWUI v0.11 refond l'interface (réglages en onglets, fork de chat, pages de dossier — voir [`WHATS-NEW-v0.11.md`](./WHATS-NEW-v0.11.md)). Ce sont de bons candidats pour des exercices bonus.
 4. **Changement de comportement v0.10** : le *native tool calling* devient le défaut. Les modèles conversationnels (sans outils) qui répondaient normalement peuvent renvoyer des réponses vides s'ils héritent de ce mode — à surveiller lors de l'adaptation des tests de chat.
 
 Le module [01](01-decouverte/) enseigne les sélecteurs robustes (`getByRole`, `getByTestId`) qui resistent aux changements d'UI.

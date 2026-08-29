@@ -329,7 +329,7 @@ def _baseline_population() -> list[Path]:
     repo_root = _TOOLS_DIR.parents[1]  # scripts/notebook_tools -> repo root
     listed = subprocess.run(
         ["git", "-C", str(repo_root), "ls-files", "--", "MyIA.AI.Notebooks/**/*.ipynb"],
-        capture_output=True, text=True, check=True,
+        capture_output=True, text=True, encoding="utf-8", errors="replace", check=True,
     ).stdout.splitlines()
     out: list[Path] = []
     for line in listed:

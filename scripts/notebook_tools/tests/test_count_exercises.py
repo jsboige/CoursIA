@@ -416,7 +416,7 @@ class TestCodeCellOnlyExercise:
         cell that carries ``display("Exercice ... a completer")`` but neither
         ``// TODO`` nor ``// Indice`` must still be counted.
 
-        Regression for ``GameTheory-5-ZeroSum-Minimax-Csharp`` Ex2, whose stub
+        Regression for ``GameTheory-05-ZeroSum-Minimax-Csharp`` Ex2, whose stub
         marker ``display("Exercice 2 a completer ...")`` was silently
         under-counted (notebook read as 2 exercises instead of its real 3).
         """
@@ -892,7 +892,7 @@ class TestGroupedAndPluralHeaders:
     def test_plural_section_does_not_steal_forward_pairing(self, tmp_path):
         """Bug 2 (pairing side): a plural section header must NOT forward-pair
         the code cell below it. The real Exercice 1 stub must be counted in its
-        own right. Mirrors ``GameTheory/GameTheory-5-ZeroSum-Minimax-Csharp.ipynb``
+        own right. Mirrors ``GameTheory/GameTheory-05-ZeroSum-Minimax-Csharp.ipynb``
         where the section `## 9. Exercices` stole cell 21 (Exercice 1).
         """
         nb = _write_nb(
@@ -1236,7 +1236,7 @@ class TestPathFormInvariance:
         root = tmp_path / "nb_root"
         family = root / "Sudoku"
         family.mkdir(parents=True)
-        _write_nb(family / "Sudoku-1-Backtracking-Csharp.ipynb", [])
+        _write_nb(family / "Sudoku-01-Backtracking-Csharp.ipynb", [])
         _write_nb(family / "Sudoku-0-Environment-Csharp.ipynb", [])
         _write_nb(root / "GradeBook.ipynb", [])  # the only TRUE top-of-tree file
         monkeypatch.setattr(count_exercises, "NOTEBOOKS_DIR", root)
@@ -1245,7 +1245,7 @@ class TestPathFormInvariance:
         # are NOT top-of-tree (GradeBook is). On buggy code both returned
         # ("tooling", None) and corpus_scope(family) yielded an empty list.
         assert _classify(
-            family / "Sudoku-1-Backtracking-Csharp.ipynb",
+            family / "Sudoku-01-Backtracking-Csharp.ipynb",
             standard_threshold=3, root=family,
         ) == ("standard", 3)
         assert _classify(

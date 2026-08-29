@@ -32,6 +32,7 @@ caught before the workflow advisory is shipped.
 """
 import json
 import sys
+import warnings
 from pathlib import Path
 
 import nbformat
@@ -69,6 +70,15 @@ class TestLineSignals:
         assert _line_has_connector("A <-- B <-- C")
         assert not _line_has_connector("| text |")
         assert not _line_has_connector("regular markdown")
+
+    def test_connector_multi_col_vertical(self):
+        # #12324 residuel : connecteurs verticaux multi-colonnes (GT-17 c15)
+        assert _line_has_connector("         v                         v")
+        assert _line_has_connector("         |                         v")
+        assert _line_has_connector("   v   v   v")
+        # Pipes seuls = paroi de cadre decoratif vide (Lean-7 c31), PAS un flux
+        assert not _line_has_connector("|                               |")
+        assert not _line_has_connector("     |          |          |")
 
     def test_table_separator_excluded(self):
         # Tables Markdown (scan_md_table_syntax.py scope)
@@ -127,6 +137,27 @@ Architecture NFSP (Neural Fictitious Self-Play)
               (experience replay buffer)
 """
 
+# Extraction EXACTE des 12 premieres lignes du diagramme de la vraie cellule
+# c15 de GameTheory-17-MultiAgent-RL.ipynb (#12324 residuel) : boites empilees
+# reliees par des connecteurs verticaux MULTI-COLONNES (`|  ...  |`, `v  ...  v`)
+# -- aucune fleche `--->`. La fixture GT_17_NFSP_HORIZONTAL ci-dessus est une
+# reconstitution avec fleches horizontales : elle passait sur main alors que la
+# vraie cellule restait miss (connecteurs multi-colonnes invisibles).
+GT_17_NFSP_C15_REAL = """
++-------------------+     +-------------------+
+|   RL Network      |     |   SL Network      |
+|   (Best Response) |     |   (Avg Strategy)  |
++--------+----------+     +--------+----------+
+         |                         |
+         v                         v
+    Q(s, a)                    pi(a|s)
+         |                         |
+         +------------+------------+
+                      |
+                      v
+              epsilon-greedy:
+"""
+
 QC_PY_13_FRAMEWORK_HORIZONTAL = """
 Les 5 composants du framework QC
 
@@ -176,6 +207,20 @@ class TestFlowchartFound:
         # At least one block must include the LLM box
         b = blocks[0]
         assert b["boxes"] >= 2
+
+    def test_gt17_nfsp_c15_real(self):
+        """La VRAIE cellule c15 de GameTheory-17 (#12324 residuel) : boites
+        empilees reliees par des connecteurs verticaux multi-colonnes
+        (`|  ...  |` / `v  ...  v`), aucune fleche `--->`. Invisible sur main
+        (connecteurs=0 -> aucune branche du discriminant) malgre le commentaire
+        c.474 qui citait ce cas comme couvert.
+        """
+        blocks = _find_flowchart_blocks(GT_17_NFSP_C15_REAL)
+        assert len(blocks) >= 1, (
+            "GT-17 c15 reel toujours invisible (connecteurs multi-colonnes)"
+        )
+        assert blocks[0]["boxes_inline"] >= 2  # rangee de 2 boites en ligne 1
+        assert blocks[0]["connectors"] >= 1
 
     def test_gt17_nfsp_horizontal(self):
         """GameTheory-17 c15 (NFSP architecture) — disposition HORIZONTALE
@@ -317,6 +362,51 @@ Some text after.
         # Single box is not enough — we require >= 2 boxes
         assert blocks == []
 
+    @pytest.mark.parametrize(
+        "src",
+        [
+            """
+┌────────┬───────────┬─────────────────────────────────┐
+│ Signe  │ Exponent  │ Mantissa                        │
+│ 1 bit  │ 8 bits    │ 23 bits                         │
+└────────┴───────────┴─────────────────────────────────┘
+""",
+            """
++-------------------+----------------------+---------------------+
+| Aspect            | Planification Class. | Planification HTN   |
++-------------------+----------------------+---------------------+
+| Objectif          | Etat but             | Tâche a accomplir   |
+| Recherche         | Etats                | Decompositions      |
++-------------------+----------------------+---------------------+
+""",
+            """
++----------+--------+--------------------+--------+---------------------+----------+
+| Version  | Nb In  | Inputs             | Nb Out | Outputs             | Locktime |
+| 4 bytes  | varint | (prev_tx + script) | varint | (amount + script)   | 4 bytes  |
++----------+--------+--------------------+--------+---------------------+----------+
+""",
+        ],
+        ids=["unicode-field-layout", "ascii-comparison", "ascii-record-layout"],
+    )
+    def test_bordered_ascii_tables_excluded(self, src):
+        """Les trois faux positifs corpus #11962 sont des tables encadrées."""
+        assert _find_flowchart_blocks(src) == []
+
+    def test_table_followed_by_flowchart_keeps_flowchart(self):
+        """Neutraliser une table ne doit pas masquer le diagramme suivant."""
+        src = """
++------+------+
+| A    | B    |
++------+------+
+
++--------+      +--------+
+| Input  | ---> | Output |
++--------+      +--------+
+"""
+        blocks = _find_flowchart_blocks(src)
+        assert len(blocks) == 1
+        assert "Input" in blocks[0]["verbatim"]
+
     def test_mermaid_fence_already_converted(self):
         """A cell already in ```mermaid ... ``` is NOT an ASCII flowchart
         (it's the canonical Mermaid rendering). The detector scans
@@ -365,7 +455,7 @@ class TestScanNotebook:
     def test_scan_sw12_founder(self, tmp_path):
         """The founder case is detected via the notebook entry-point.
 
-        c.474 patch d'une ligne (issue #12324) : le retrait de l'ancre `\s*$`
+        c.474 patch d'une ligne (issue #12324) : le retrait de l'ancre `\\s*$`
         du `_RE_BOX_ASCII` permet de detecter le bloc horizontal `+--+ +--+ +--+`
         (boites cote a cote) en plus du bloc vertical traditionnel. Le founder
         SW-12 contient les deux dispositions, donc on attend >= 2 findings
@@ -448,8 +538,34 @@ class TestUnreadableNotebookSkipped:
 # Tous les nouveaux fichiers sont des vrais positifs ou borderline pedagogique
 # (cadres Unicode de comparaison, diagrammes LEAN, pipeline Infer.NET) -- le
 # discriminant les a TOUS verifies un par un avant ce pin.
-CORPUS_BASELINE_TOTAL = 23
-CORPUS_BASELINE_FILES_WITH = 18
+# Re-mesure 2026-08-24 sur le MERGE-REF (origin/main d2be9dae87 + ce fix) :
+# 32 findings / 24 files. Le pin initial a la livraison (37/29) avait ete
+# mesure sur une base stale et sur-compte de 5 (le fix ajoute reellement
+# +5 blocs, pas +10) -- le merge-ref fait foi (cf. pin anti-regression du
+# corpus entier : mesurer sur le merge-ref, jamais sur un main local stale).
+# Le fix multi-colonnes (#12324 residuel) attrape GT-17 c15 NFSP, SK-05
+# VectorStores, Lab8-ADK pipeline, Infer-13 capacites, Infer-15 arbre DBCM,
+# QC-Py-14 c39, QC-Py-17 c7, QC-Py-22 c23, QC-Py-24 c39 (vrais diagrammes) ;
+# les parois vides de cadre type Lean-7 c31 restent exclues par l'exigence
+# d'un caractere de direction.
+#   PR #12637 : 29 findings / 21 files, re-mesure 2026-08-24 sur le merge-ref
+#                  reconstruit (origin/main 0f4b5835fa + conversion Mermaid) :
+#                  la conversion des 3 flowcharts DecInfer-1 / DecInfer-7 /
+#                  DecPyMC-6 retire exactement 1 finding par fichier (aucun
+#                  des 3 n'etait dans les +9 du fix multi-colonnes). Le 20/15
+#                  de la branche originale etait mesure sur un main
+#                  pre-#12729 (23/18) : obsolete au moment du rebase.
+#   c.13099 : 15 findings / 15 files, re-mesure firsthand 2026-08-26 sur
+#                 main 0ceb30e7b. Le detecteur est INCHANGE depuis le pin
+#                 de #12637 (0 commit sur detect_ascii_flowchart.py entre
+#                 2a40b3b0b et HEAD) : la baisse 29 -> 15 mesure la
+#                 conversion de 20 notebooks, pas une perte de detection.
+#   #11962 finalisation : 12 findings / 12 files, re-mesure 2026-08-27 sur
+#                 origin/main 080d55256 + filtre des tables encadrees. La
+#                 baisse 15 -> 12 correspond exactement aux trois faux
+#                 positifs firsthand Lean-11 / Planners-9 / SC-20.
+CORPUS_BASELINE_TOTAL = 12
+CORPUS_BASELINE_FILES_WITH = 12
 
 
 class TestCorpusBaseline:
@@ -458,8 +574,8 @@ class TestCorpusBaseline:
         scripts/notebook_tools/detect_ascii_flowchart.py MyIA.AI.Notebooks/
         --json` and assert the totals match the baseline.
 
-        Skipped by default to keep the test fast. Run with:
-            pytest -k test_corpus_baseline_pinned --runslow
+        Le plancher est un CLIQUET : il ne doit jamais remonter. Le
+        resserrer apres une tranche de conversion (mesure firsthand).
         """
         import subprocess
         repo_root = Path(__file__).resolve().parents[3]
@@ -474,12 +590,28 @@ class TestCorpusBaseline:
         if proc.returncode != 0:
             pytest.skip(f"scan returned {proc.returncode}")
         result = json.loads(proc.stdout)
-        assert result["total_findings"] == CORPUS_BASELINE_TOTAL, (
-            f"Corpus baseline drift: expected {CORPUS_BASELINE_TOTAL}, "
-            f"got {result['total_findings']}. Re-measure firsthand, then "
-            f"update CORPUS_BASELINE_TOTAL."
+        total = result["total_findings"]
+        files_with = result["files_with_findings"]
+        # Cliquet, pas egalite. Une HAUSSE est la regression que ce garde
+        # existe pour attraper : un diagramme ASCII neuf entre dans le corpus.
+        # Une BAISSE est le rollout #11962 qui fait son travail. La faire
+        # rougir a mis `main` au rouge du 2026-08-25T12:35Z au 26/08 alors que
+        # 20 notebooks avaient ete convertis : le test accusait le succes, et
+        # bloquait au passage toutes les PR derriere le `PR gate`.
+        assert total <= CORPUS_BASELINE_TOTAL, (
+            f"Regression ASCII-flowchart : {total} findings > plancher "
+            f"{CORPUS_BASELINE_TOTAL}. Un flowchart ASCII a ete introduit ou "
+            f"reintroduit -- le convertir, ne PAS relever le plancher."
         )
-        assert result["files_with_findings"] == CORPUS_BASELINE_FILES_WITH, (
-            f"Files-with-findings drift: expected {CORPUS_BASELINE_FILES_WITH}, "
-            f"got {result['files_with_findings']}."
+        assert files_with <= CORPUS_BASELINE_FILES_WITH, (
+            f"Regression ASCII-flowchart : {files_with} fichiers > plancher "
+            f"{CORPUS_BASELINE_FILES_WITH}."
         )
+        if total < CORPUS_BASELINE_TOTAL or files_with < CORPUS_BASELINE_FILES_WITH:
+            warnings.warn(
+                f"Plancher ASCII-flowchart desserre : mesure {total}/{files_with} "
+                f"sous le plancher {CORPUS_BASELINE_TOTAL}/"
+                f"{CORPUS_BASELINE_FILES_WITH}. Resserrer CORPUS_BASELINE_* a la "
+                "mesure courante pour que le cliquet garde ses dents.",
+                stacklevel=2,
+            )

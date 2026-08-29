@@ -5,6 +5,14 @@ fondateur (2026-08-21) : #12014 tiree en urne grain a 16:47Z alors que
 #12077, mergee a 16:19Z, avait deja livre 3 de ses 4 items -- le label
 ``candidate-delivered`` (workflow schedule: quotidien, dernier run 05:49Z)
 n'en savait rien. Le replay ci-dessous rejoue cet etat exact.
+
+Second angle mort, ferme le 2026-08-24 (#12504, rapporte par
+myia-po-2023:CoursIA) : ne regarder que les PRs MERGEES laissait passer
+les issues couvertes par une PR encore OUVERTE, qui ne portent aucune
+trace -- ni label, ni body a jour, ni fusion a trouver. #12504 est
+sortie en tete d'urne (p=2.0) alors que #12519 la couvrait ; la lane qui
+l'a prise a pose un claim void. Une PR ouverte prime une fusion recente :
+la fusion dit "c'est peut-etre fait", l'ouverte dit "quelqu'un y est".
 """
 
 import json
@@ -43,7 +51,7 @@ def test_founding_case_12014_surfaces_12077(monkeypatch):
     """
     calls = []
     _patch_gh(monkeypatch, [[
-        {"number": 12077, "mergedAt": "2026-08-21T16:19:17Z"},
+        {"number": 12077, "state": "MERGED", "mergedAt": "2026-08-21T16:19:17Z"},
     ]], calls)
     notes = pig.recent_delivery([_pick()])
     assert 12014 in notes
@@ -64,7 +72,9 @@ def test_query_shape_bounded_one_per_candidate(monkeypatch):
     pig.recent_delivery([_pick(n=1), _pick(n=2)])
     assert len(calls) == 2
     for cmd, n in zip(calls, (1, 2)):
-        assert "--state" in cmd and "merged" in cmd
+        # --state all depuis #12504 : ouvertes ET mergees dans la MEME
+        # requete, donc l'invariant "une par candidat" tient toujours.
+        assert "--state" in cmd and "all" in cmd
         assert "--limit" in cmd and "20" in cmd
         assert "--search" in cmd
         assert cmd[cmd.index("--search") + 1] == f"{n} in:title,body"
@@ -75,7 +85,7 @@ def test_merge_older_than_update_not_annotated(monkeypatch):
     digeree par le body -- pas d'annotation, sinon le signal noie."""
     calls = []
     _patch_gh(monkeypatch, [[
-        {"number": 12077, "mergedAt": "2026-08-21T04:00:00Z"},
+        {"number": 12077, "state": "MERGED", "mergedAt": "2026-08-21T04:00:00Z"},
     ]], calls)
     notes = pig.recent_delivery([_pick(updated_at="2026-08-21T05:13:00Z")])
     assert notes == {}
@@ -92,7 +102,7 @@ def test_candidate_stays_drawable(monkeypatch):
     la fonction rend des notes, les picks passes ne sont ni filtres ni mutés."""
     calls = []
     _patch_gh(monkeypatch, [[
-        {"number": 12077, "mergedAt": "2026-08-21T16:19:17Z"},
+        {"number": 12077, "state": "MERGED", "mergedAt": "2026-08-21T16:19:17Z"},
     ]], calls)
     picks = [_pick()]
     snapshot = dict(picks[0])
@@ -106,8 +116,8 @@ def test_multiple_prs_latest_named_with_count(monkeypatch):
     note, le compte evite de lire 'la livraison' comme l'unique."""
     calls = []
     _patch_gh(monkeypatch, [[
-        {"number": 12077, "mergedAt": "2026-08-21T16:19:17Z"},
-        {"number": 12065, "mergedAt": "2026-08-20T10:00:00Z"},
+        {"number": 12077, "state": "MERGED", "mergedAt": "2026-08-21T16:19:17Z"},
+        {"number": 12065, "state": "MERGED", "mergedAt": "2026-08-20T10:00:00Z"},
     ]], calls)
     notes = pig.recent_delivery([_pick()])
     assert "#12077" in notes[12014]
@@ -124,6 +134,90 @@ def test_gh_failure_annotated_best_effort(monkeypatch):
     notes = pig.recent_delivery([_pick()])
     assert "indisponible" in notes[12014]
     assert "TimeoutExpired" in notes[12014]
+
+
+# --- PR OUVERTE couvrante (#12504, rapporte 2026-08-24) --------------------
+#
+# Le detecteur precedent se validait sur ses faux negatifs cote FUSION. Il en
+# gardait un cote OUVERTURE, plus couteux : une fusion fait perdre du temps de
+# lecture, une PR ouverte fait perdre un claim. Chaque test nomme le defaut
+# qu'il empeche de revenir.
+
+
+def test_founding_case_12504_open_pr_surfaces_12519(monkeypatch):
+    """Controle positif : #12504 tiree en tete d'urne le 2026-08-24 alors que
+    #12519 (OUVERTE, po-2026) la couvrait -- claim void de la lane suivante."""
+    calls = []
+    _patch_gh(monkeypatch, [[
+        {"number": 12519, "state": "OPEN", "isDraft": False, "mergedAt": None},
+    ]], calls)
+    notes = pig.recent_delivery([_pick(n=12504)])
+    assert 12504 in notes
+    assert notes[12504].startswith("TRAVAIL EN COURS")
+    assert "#12519" in notes[12504]
+    assert "VOID" in notes[12504]
+
+
+def test_open_pr_annotated_even_when_issue_freshly_updated(monkeypatch):
+    """Une PR ouverte est courante par construction : contrairement a une
+    fusion, elle n'est PAS comparee a ``updated_at``. Une issue touchee il y a
+    une minute peut tres bien etre en cours de traitement par une autre lane."""
+    calls = []
+    _patch_gh(monkeypatch, [[
+        {"number": 12519, "state": "OPEN", "isDraft": False, "mergedAt": None},
+    ]], calls)
+    notes = pig.recent_delivery([_pick(n=12504, updated_at="2099-01-01T00:00:00Z")])
+    assert 12504 in notes and notes[12504].startswith("TRAVAIL EN COURS")
+
+
+def test_open_pr_takes_priority_over_recent_merge(monkeypatch):
+    """Les deux signaux coexistent souvent (une tranche livree, une en cours).
+    L'ouverte gagne : elle dit ou est le risque de collision maintenant."""
+    calls = []
+    _patch_gh(monkeypatch, [[
+        {"number": 12077, "state": "MERGED", "isDraft": False,
+         "mergedAt": "2026-08-21T16:19:17Z"},
+        {"number": 12519, "state": "OPEN", "isDraft": False, "mergedAt": None},
+    ]], calls)
+    notes = pig.recent_delivery([_pick()])
+    assert notes[12014].startswith("TRAVAIL EN COURS")
+    assert "#12519" in notes[12014]
+
+
+def test_closed_unmerged_pr_is_not_a_signal(monkeypatch):
+    """Sur-accusation a empecher : une PR fermee SANS fusion n'atteste de rien
+    (abandon, doublon dispose). La compter en 'travail en cours' enverrait la
+    lane chercher une collision inexistante."""
+    calls = []
+    _patch_gh(monkeypatch, [[
+        {"number": 12638, "state": "CLOSED", "isDraft": False, "mergedAt": None},
+    ]], calls)
+    assert pig.recent_delivery([_pick()]) == {}
+
+
+def test_draft_open_pr_marked_as_such(monkeypatch):
+    """Une draft compte (quelqu'un y est) mais se lit differemment d'une PR
+    prete : le marqueur doit le dire plutot que de laisser deviner."""
+    calls = []
+    _patch_gh(monkeypatch, [[
+        {"number": 12519, "state": "OPEN", "isDraft": True, "mergedAt": None},
+    ]], calls)
+    notes = pig.recent_delivery([_pick()])
+    assert "[draft]" in notes[12014]
+
+
+def test_several_open_prs_named_with_count(monkeypatch):
+    """Plusieurs lanes deja dessus : le compte evite de lire 'la PR' comme
+    l'unique, et la plus basse est nommee (la premiere arrivee)."""
+    calls = []
+    _patch_gh(monkeypatch, [[
+        {"number": 12640, "state": "OPEN", "isDraft": False, "mergedAt": None},
+        {"number": 12519, "state": "OPEN", "isDraft": False, "mergedAt": None},
+    ]], calls)
+    notes = pig.recent_delivery([_pick()])
+    assert "#12519" in notes[12014]
+    assert "#12640" in notes[12014]
+    assert "+1 autre(s)" in notes[12014]
 
 
 # --- garde "reparer son rouge d'abord" (mandat user 2026-08-22) ------------
@@ -221,9 +315,13 @@ def test_blocked_awaiting_review_is_not_a_red():
     assert pig.blocking_causes(_state(checks=[("PR gate", "SUCCESS", True)])) == []
 
 
-def _patch_backlog(monkeypatch, prs, states):
+def _patch_backlog(monkeypatch, prs, states, nits=None):
     monkeypatch.setattr(pig, "fetch_open_prs", lambda: prs)
     monkeypatch.setattr(pig, "fetch_pr_states", lambda nums: {n: states[n] for n in nums if n in states})
+    # Neutraliser l'organe B.0 par DEFAUT : sans cela chaque test partirait sur
+    # le reseau interroger des numeros de PR fictifs (mesure : 2,9 s pour trois
+    # numeros), et la suite deviendrait non deterministe sans jamais rougir.
+    monkeypatch.setattr(pig, "unaddressed_review_points", lambda nums: dict(nits or {}))
 
 
 def _pr(n, lane, age_hours, *, draft=False):
@@ -234,15 +332,93 @@ def _pr(n, lane, age_hours, *, draft=False):
 
 
 def test_red_backlog_scopes_to_the_lane_and_the_threshold(monkeypatch):
+    """La lane et le brouillon filtrent ; l'age ne filtre PLUS le comptage.
+
+    Une rouge fraiche reste dans `red` (elle nourrit le declencheur `count`)
+    mais seule la vieille arme le declencheur `aged`.
+    """
     red = _state(checks=[("PR gate", "FAILURE", True)])
     _patch_backlog(monkeypatch, [
-        _pr(1, "myia-po-2026:CoursIA", 30),          # ma lane, vieille, rouge -> compte
-        _pr(2, "myia-po-2026:CoursIA", 3),           # ma lane, fraiche        -> non
+        _pr(1, "myia-po-2026:CoursIA", 30),          # ma lane, vieille, rouge -> red + aged
+        _pr(2, "myia-po-2026:CoursIA", 3),           # ma lane, fraiche        -> red seulement
         _pr(3, "myia-po-2023:CoursIA", 30),          # autre lane              -> non
         _pr(4, "myia-po-2026:CoursIA", 30, draft=True),  # brouillon           -> non
     ], {1: red, 2: red, 3: red, 4: red})
-    out = pig.red_backlog("myia-po-2026:CoursIA", 24)
-    assert [r["number"] for r in out["red"]] == [1]
+    out = pig.red_backlog("myia-po-2026:CoursIA", 24, count_threshold=3)
+    assert [r["number"] for r in out["red"]] == [1, 2]
+    assert [r["number"] for r in out["aged"]] == [1]
+    assert out["triggers"] == ["aged"]
+
+
+def test_a_pile_of_fresh_reds_refuses_the_draw(monkeypatch):
+    """Le declencheur que l'age seul ne voyait pas (mandat user 2026-08-23).
+
+    Mesure du jour : 51 des 58 PRs bloquees de la flotte avaient moins de
+    24 h -- invisibles au garde. Une lane portant 3 rouges de 2 h doit
+    reparer avant de produire, exactement comme celle qui en porte une de 30 h.
+    """
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    _patch_backlog(monkeypatch, [
+        _pr(n, "myia-po-2026:CoursIA", 2) for n in (1, 2, 3)
+    ], {n: red for n in (1, 2, 3)})
+    out = pig.red_backlog("myia-po-2026:CoursIA", 24, count_threshold=3)
+    assert [r["number"] for r in out["red"]] == [1, 2, 3]
+    assert out["aged"] == []
+    assert out["triggers"] == ["count"]
+
+
+def test_under_the_count_threshold_a_fresh_red_still_draws(monkeypatch):
+    """Controle positif : le garde n'est pas bloque-a-l'allumage.
+
+    Deux rouges fraiches sous le seuil ne refusent RIEN -- sinon toute lane
+    normalement active serait immobilisee, et l'echappatoire `--ignore-red`
+    deviendrait la voie ordinaire, ce qui viderait le garde de son sens.
+    """
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    _patch_backlog(monkeypatch, [
+        _pr(n, "myia-po-2026:CoursIA", 2) for n in (1, 2)
+    ], {n: red for n in (1, 2)})
+    out = pig.red_backlog("myia-po-2026:CoursIA", 24, count_threshold=3)
+    assert len(out["red"]) == 2
+    assert out["triggers"] == []
+
+
+def test_a_fresh_pr_with_review_points_refuses_alone(monkeypatch):
+    """Un point de review non leve refuse SEUL : ni vieux, ni nombreux.
+
+    C'est la regression que le retrait du filtre d'age aurait introduite en
+    silence. Avant, le filtre s'appliquait en amont : une PR a points non
+    leves n'entrait dans `red` que si elle etait deja vieille. En le retirant
+    pour le declencheur `count`, une PR recente a points non leves tomberait
+    dans `red` sans rien declencher -- la lane tirerait un grain neuf avec une
+    remarque en souffrance, ce que le mandat user du 2026-08-24 interdit.
+
+    Une seule PR, 2 h d'age, sous les deux autres seuils : le refus doit
+    quand meme tomber, et `nits` doit etre le premier motif nomme.
+    """
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    _patch_backlog(monkeypatch, [_pr(1, "myia-po-2026:CoursIA", 2)],
+                   {1: red}, nits={1: 2})
+    out = pig.red_backlog("myia-po-2026:CoursIA", 24, count_threshold=3)
+    assert out["triggers"] == ["nits"]        # ni "aged" ni "count"
+    assert out["aged"] == []
+    assert len(out["red"]) == 1
+    # Le point de review est en TETE des causes : c'est la seule qu'un
+    # `gh pr update-branch` ne levera jamais.
+    assert "point(s) de review" in out["red"][0]["causes"][0]
+
+
+def test_without_review_points_a_fresh_lone_red_still_draws(monkeypatch):
+    """Controle positif du test precedent : sans nits, rien ne se declenche.
+
+    Sans ce temoin, un `triggers == ["nits"]` obtenu parce que le garde refuse
+    TOUT serait indiscernable d'un declencheur qui marche.
+    """
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    _patch_backlog(monkeypatch, [_pr(1, "myia-po-2026:CoursIA", 2)], {1: red})
+    out = pig.red_backlog("myia-po-2026:CoursIA", 24, count_threshold=3)
+    assert out["triggers"] == []
+    assert len(out["red"]) == 1
 
 
 def test_untagged_blocked_prs_are_counted_but_never_attributed(monkeypatch):
@@ -257,9 +433,40 @@ def test_untagged_blocked_prs_are_counted_but_never_attributed(monkeypatch):
         _pr(1, "myia-po-2026:CoursIA", 30),
         _pr(9, None, 30),
     ], {1: red, 9: red})
-    out = pig.red_backlog("myia-po-2026:CoursIA", 24)
+    out = pig.red_backlog("myia-po-2026:CoursIA", 24, count_threshold=99)
     assert [r["number"] for r in out["red"]] == [1]
     assert [u["number"] for u in out["unattributed_blocked"]] == [9]
+
+
+def test_unattributed_blocked_is_printed_on_the_draw_path(monkeypatch, capsys):
+    """#12738 : une lane a `red == []` mais `unattributed_blocked != []`
+    doit voir les numeros dans la sortie humaine du TIRAGE, pas seulement
+    quand elle est refassee. Sans ce cas, le test ne distingue pas le
+    correctif de l'etat actuel (paragraphe confine a `print_red_refusal`).
+    """
+    red_state = _state(checks=[("PR gate", "FAILURE", True)])
+    # age 2 h : sous le seuil red_hours=24, donc `red=[]` ; pas de tag -> `unattributed_blocked`.
+    _patch_backlog(monkeypatch, [
+        _pr(9, None, 2),
+    ], {9: red_state})
+    backlog = pig.red_backlog("myia-po-2026:CoursIA", 24, count_threshold=99)
+    assert backlog["red"] == [], f"Lane doit avoir red vide (age 2h < 24h), got: {backlog['red']}"
+    assert [u["number"] for u in backlog["unattributed_blocked"]] == [9]
+
+    pig.print_unattributed_blocked(backlog)
+    captured = capsys.readouterr().out
+    assert "Portee :" in captured, f"Le paragraphe doit sortir sur le chemin du tirage, got: {captured!r}"
+    assert "#9" in captured, f"Le numero #9 doit etre visible, got: {captured!r}"
+    assert "`Grain:`" in captured, "Mention Grain: obligatoire"
+
+
+def test_unattributed_blocked_stays_silent_when_empty(capsys):
+    """Aucun output si `unattributed_blocked` est vide : ne pas polluer
+    les tirages sans rouge sans tag."""
+    pig.print_unattributed_blocked({"unattributed_blocked": []})
+    pig.print_unattributed_blocked({})
+    captured = capsys.readouterr().out
+    assert captured == "", f"Aucun output attendu quand vide, got: {captured!r}"
 
 
 def test_network_failure_does_not_block_the_draw(monkeypatch):
@@ -270,6 +477,133 @@ def test_network_failure_does_not_block_the_draw(monkeypatch):
     out = pig.red_backlog("myia-po-2026:CoursIA", 24)
     assert out["red"] == [] and out["unavailable"] == "RuntimeError"
     assert out["unattributed_blocked"] == []
+
+
+# --- orphelines du tag Grain : le constat doit porter sa route (#13086) -------
+
+
+def _orphan_pr(n, age_hours, author, branch):
+    pr = _pr(n, None, age_hours)
+    pr["author"] = {"login": author}
+    pr["headRefName"] = branch
+    return pr
+
+
+def test_unattributed_blocked_prs_carries_the_route(monkeypatch):
+    """`--orphans-report` et `red_backlog` partagent la meme detection, et le
+    resultat porte author+branch : un constat sans destinataire n'est pas un
+    routage. Les untagged SANS rouge et les taggees ne comptent pas.
+    """
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    green = _state(checks=[("PR gate", "SUCCESS", True)])
+    tagged = _pr(1, "myia-po-2023:CoursIA", 50)
+    tagged.update(author={"login": "myia-po-2023"}, headRefName="feature/ok")
+    fresh_unblocked = _orphan_pr(2, 1, "myia-po-2024", "feature/fresh")
+    prs = [
+        tagged,
+        fresh_unblocked,
+        _orphan_pr(3, 30, "myia-po-2023", "feature/old"),
+        _orphan_pr(4, 8, "myia-po-2023", "feature/mid"),
+        _orphan_pr(5, 40, "jsboige", "feature/user"),
+    ]
+    monkeypatch.setattr(pig, "fetch_open_prs", lambda: prs)
+    monkeypatch.setattr(
+        pig, "fetch_pr_states",
+        lambda nums: {n: (red if n in (3, 4, 5) else green) for n in nums})
+    out = pig.unattributed_blocked_prs()
+    assert [r["number"] for r in out] == [5, 3, 4]  # tri par age decroissant
+    assert all(r["author"] and r["branch"] for r in out)
+    assert out[0]["author"] == "jsboige" and out[0]["branch"] == "feature/user"
+
+
+def test_red_backlog_unattributed_now_carries_the_route(monkeypatch):
+    """Le champ historique `unattributed_blocked` est ENRICHI (auteur, branche),
+    pas remplace : le skill coordinate lit ce champ, il gagne la route sans
+    changer de canal.
+    """
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    orphan = _orphan_pr(9, 12, "myia-po-2023", "feature/x")
+    _patch_backlog(monkeypatch, [_pr(1, "myia-po-2026:CoursIA", 30), orphan],
+                   {1: red, 9: red})
+    out = pig.red_backlog("myia-po-2026:CoursIA", 24, count_threshold=99)
+    assert out["unattributed_blocked"][0]["author"] == "myia-po-2023"
+    assert out["unattributed_blocked"][0]["branch"] == "feature/x"
+
+
+def test_build_orphans_comment_names_each_orphan_with_author_and_branch():
+    """Le commentaire est le routage : chaque orpheline y est nommee avec son
+    auteur et sa branche, groupees par auteur, entre marqueurs upsert.
+    """
+    orphans = [
+        {"number": 5, "title": "fix thing", "author": "jsboige",
+         "branch": "feature/user", "age_hours": 40},
+        {"number": 3, "title": "other thing", "author": "myia-po-2023",
+         "branch": "feature/old", "age_hours": 30},
+    ]
+    body = pig.build_orphans_comment(orphans)
+    assert pig.ORPHANS_MARKER_START in body and pig.ORPHANS_MARKER_END in body
+    assert "**jsboige** (1)" in body and "**myia-po-2023** (1)" in body
+    assert "#5" in body and "#3" in body
+    assert "`feature/user`" in body and "`feature/old`" in body
+    assert "#13086" in body
+
+
+def test_build_orphans_comment_empty_writes_zero_not_silence():
+    """Un balayage muet est indiscernable d'un balayage mort : le cas vide
+    s'ECRIT (zero date), il ne disparait pas.
+    """
+    body = pig.build_orphans_comment([])
+    assert pig.ORPHANS_MARKER_START in body and pig.ORPHANS_MARKER_END in body
+    assert ": 0." in body
+
+
+def test_orphans_report_mode_dry_run_by_default(monkeypatch, capsys):
+    """Sans --apply-comment : impression seule, AUCUN appel gh d'ecriture.
+    Le mode ne demande pas --lane (la file est lane-independante).
+    """
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    monkeypatch.setattr(pig, "fetch_open_prs",
+                        lambda: [_orphan_pr(9, 5, "myia-po-2023", "feature/x")])
+    monkeypatch.setattr(pig, "fetch_pr_states", lambda nums: {9: red} if 9 in nums else {})
+    def no_post(number, body):
+        raise AssertionError(f"upsert appele en dry-run sur #{number}")
+    monkeypatch.setattr(pig, "upsert_orphans_comment", no_post)
+    rc = pig.main(["--orphans-report"])
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert pig.ORPHANS_MARKER_START in out and "#9" in out
+
+
+def test_orphans_report_apply_upserts_the_comment(monkeypatch, capsys):
+    """Avec --apply-comment N : l'upsert marker-guarde part exactement une fois
+    sur l'issue demandee.
+    """
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    monkeypatch.setattr(pig, "fetch_open_prs",
+                        lambda: [_orphan_pr(9, 5, "myia-po-2023", "feature/x")])
+    monkeypatch.setattr(pig, "fetch_pr_states", lambda nums: {9: red} if 9 in nums else {})
+    calls = []
+    monkeypatch.setattr(pig, "upsert_orphans_comment",
+                        lambda number, body: calls.append((number, body)))
+    rc = pig.main(["--orphans-report", "--apply-comment", "13086"])
+    assert rc == 0
+    assert calls and calls[0][0] == 13086
+    assert pig.ORPHANS_MARKER_START in calls[0][1]
+    assert "mis a jour sur #13086" in capsys.readouterr().out
+
+
+def test_lane_still_required_outside_orphans_report(monkeypatch, capsys):
+    """--lane reste OBLIGATOIRE sur le chemin de tirage : le passage de
+    `required=True` a la validation manuelle ne doit pas ouvrir un tirage
+    sans lane (la graine et le garde en dependent).
+    """
+    try:
+        pig.main([])
+    except SystemExit as exc:
+        assert exc.code != 0
+        assert "--lane" in capsys.readouterr().err
+    else:
+        raise AssertionError("main([]) sans --lane doit sortir en erreur")
 
 
 # --- echecs perimes : le discriminant est temporel, jamais nominal -----------
@@ -307,3 +641,454 @@ def test_repeated_identical_failures_are_named_once():
         ("PR gate", "FAILURE", True, "2026-08-22T13:40:33Z"),
     ])
     assert pig.blocking_causes(state) == ["check requis en echec : PR gate"]
+
+
+# --- file_saturation : 4ᵉ declencheur (issue #12830, c.508-L2) -------------
+#
+# Le defaut fondateur : la lane po-2023 (puis po-2027) tirait dans un pool
+# virtuellement vide parce que `mergeStateStatus: BLOCKED + MERGEABLE +
+# checks tous PENDING depuis > N h` n'etait PAS un declencheur de refus.
+# Le 3ᵉ etat etait mecaniquement non-different d'un `BLOCKED + MERGEABLE
+# + checks SUCCESS` (attente coordinateur), qu'on veut deliberement laisser
+# passer. La discrimination tient en 3 proprietes : AUCUN check n'a demarre
+# (statut dans {PENDING, QUEUED}), la PR est MERGEABLE, et elle est ouverte
+# depuis plus de `saturation_hours`. Mesure ai-01 du 2026-08-26T04:52Z :
+# 1000 runs en file, 14 concurrents, attente observee 4 h 25.
+
+
+def _state_with_started_at(*, checks=(), mergeable="MERGEABLE", reviews=()):
+    """Comme `_state` mais chaque check porte `startedAt` ET `conclusion`/`state`.
+
+    Le format GraphQL reel de `statusCheckRollup.contexts` inclut `startedAt`
+    pour les `CheckRun` et `state` (PAS `conclusion`) pour les `StatusContext`
+    encore en attente. Le discriminateur file_saturation lit `conclusion` puis
+    `state` -- d'ou les helpers ci-dessous qui couvrent les deux formes.
+    """
+    return {
+        "number": 1, "mergeable": mergeable,
+        "reviews": {"nodes": [
+            {"state": s, "submittedAt": "2026-08-20T00:00:00Z", "author": {"login": a}}
+            for s, a in reviews
+        ]},
+        "commits": {"nodes": [{"commit": {"statusCheckRollup": {"contexts": {"nodes": [
+            {"name": t[0], "conclusion": t[1], "state": t[1],
+             "isRequired": t[2], "startedAt": "2026-08-25T00:00:00Z"}
+            for t in checks
+        ]}}}}]},
+    }
+
+
+def test_file_saturation_detected_when_all_checks_pending():
+    """Cas fondateur (c.508-L2 sur #12640) : tous les checks en PENDING depuis
+    > N h, MERGEABLE, pas de conflit, pas de CHANGES_REQUESTED -- c'est
+    exactement la file qui n'a pas bouge, pas un rouge substance.
+
+    Discrimination exigee : un seul FAIL vivant masquerait la file-saturation,
+    parce que la lane peut le reparer et la file draine naturellement.
+    """
+    state = _state_with_started_at(checks=[
+        ("PR gate", "PENDING", True),
+        ("Scripts Tests (CPU)", "PENDING", True),
+        ("Notebook Validation", "PENDING", False),
+    ])
+    causes = pig.blocking_causes(state, age_hours=28, saturation_hours=24)
+    assert any("file_saturation" in c for c in causes)
+    # La cause doit nommer le geste -- la lane peut commenter, pas rerun seule.
+    assert any("commenter la PR" in c for c in causes)
+
+
+def test_file_saturation_not_detected_when_a_check_is_success():
+    """Faux-positif a eviter : un SUCCESS + des PENDING n'est PAS de la
+    file-saturation. La PR a au moins un verdict defini ; elle est en cours
+    de merge, pas en attente de derainage de file.
+    """
+    state = _state_with_started_at(checks=[
+        ("PR gate", "PENDING", True),
+        ("Scripts Tests (CPU)", "SUCCESS", True),
+    ])
+    assert pig.blocking_causes(state, age_hours=28, saturation_hours=24) == []
+
+
+def test_file_saturation_not_detected_when_a_check_fails():
+    """Faux-positif a eviter : un FAIL substance prime sur la file-saturation.
+
+    La lane peut reparer la substance ; la file draine naturellement apres
+    re-push. Le discriminateur `not causes` dans `blocking_causes` protege
+    exactement ce cas (les causes FAIL sont ajoutees avant la detection
+    file_saturation).
+    """
+    state = _state_with_started_at(checks=[
+        ("PR gate", "FAILURE", True),
+        ("Scripts Tests (CPU)", "PENDING", True),
+    ])
+    causes = pig.blocking_causes(state, age_hours=28, saturation_hours=24)
+    # Le FAIL gagne : file_saturation ne s'y ajoute pas, sinon la cause serait
+    # `conflitante` et le geste suggere (commenter + ignore-red) perdrait
+    # l'option reparation.
+    assert any("check requis en echec" in c for c in causes)
+    assert not any("file_saturation" in c for c in causes)
+
+
+def test_file_saturation_not_detected_below_saturation_threshold():
+    """L'age seul ne suffit pas : une PR jeune avec tous checks PENDING est
+    dans la queue normale du depot, pas en saturation.
+
+    Cf le mandat du 2026-08-24 sur le retrait du filtre d'age amont : c'est
+    ici un garde-fou qui empeche la sur-accusation (mesure : 52/55 PRs le
+    2026-08-22 pour la definition naive). Le seuil minimum est le meme que
+    pour `aged` (`threshold_hours`), ce qui garde la coherence.
+    """
+    state = _state_with_started_at(checks=[
+        ("PR gate", "PENDING", True),
+        ("Scripts Tests (CPU)", "PENDING", True),
+    ])
+    # age < saturation : rien.
+    assert pig.blocking_causes(state, age_hours=2, saturation_hours=24) == []
+    # age == saturation : strictement au-dessus (>=) declenche.
+    causes = pig.blocking_causes(state, age_hours=24, saturation_hours=24)
+    assert any("file_saturation" in c for c in causes)
+
+
+def test_file_saturation_not_detected_when_not_mergeable():
+    """CONFLICTING prime sur la file-saturation : la lane peut rebaser, ce
+    n'est plus un rouge de file.
+
+    Le discriminateur exige `mergeable == MERGEABLE`. Une PR en conflit
+    attend un rebase, pas un drainage CI.
+    """
+    state = _state_with_started_at(
+        checks=[("PR gate", "PENDING", True)],
+        mergeable="CONFLICTING",
+    )
+    causes = pig.blocking_causes(state, age_hours=28, saturation_hours=24)
+    assert "conflits avec main -> rebaser" in causes
+    assert not any("file_saturation" in c for c in causes)
+
+
+def test_file_saturation_trigger_in_red_backlog(monkeypatch):
+    """Le 4ᵉ declencheur remonte dans `triggers` quand au moins une PR de la
+    lane est file-saturee et a l'age du seuil.
+
+    Ce test est l'integration : `red_backlog` doit appeler `blocking_causes`
+    avec `age_hours` et `saturation_hours` derives du seuil, et ajouter
+    `"file_saturation"` aux triggers. C'est ce qui rend le narrow
+    diagnostique enfin visible a la lane.
+    """
+    red = _state_with_started_at(checks=[
+        ("PR gate", "PENDING", True),
+        ("Scripts Tests (CPU)", "PENDING", True),
+    ])
+    _patch_backlog(monkeypatch, [
+        _pr(1, "myia-po-2026:CoursIA", 28),
+        _pr(2, "myia-po-2026:CoursIA", 2),
+    ], {1: red, 2: red})
+    out = pig.red_backlog("myia-po-2026:CoursIA", 24, count_threshold=10)
+    # La PR #1 est file-saturee (28 h > 24 h, tous PENDING, MERGEABLE).
+    # La PR #2 ne l'est pas (2 h < 24 h).
+    assert "file_saturation" in out["triggers"]
+    assert any(any("file_saturation" in c for c in r["causes"])
+               for r in out["red"] if r["number"] == 1)
+    # Et l'ordre respecte la docstring : file_saturation precede `aged`
+    # dans la liste des triggers (les deux sont vrais ici, file_saturation
+    # doit apparaitre AVANT `aged`).
+    assert out["triggers"].index("file_saturation") < out["triggers"].index("aged")
+
+
+def test_file_saturation_signature_backward_compatible():
+    """Le defaut `age_hours=None, saturation_hours=None` preserve les appels
+    existants : un PR avec tous checks PENDING et sans ces parametres ne
+    declenche PAS file_saturation. C'est ce qui permet aux 12 tests
+    historiques de `blocking_causes` de rester verts sans modification.
+    """
+    state = _state_with_started_at(checks=[
+        ("PR gate", "PENDING", True),
+        ("Scripts Tests (CPU)", "PENDING", True),
+    ])
+    # Meme PR que test_file_saturation_detected_when_all_checks_pending,
+    # mais sans age_hours : la cause ne doit PAS apparaitre.
+    assert pig.blocking_causes(state) == []
+
+
+# --- affluence flotte : cited_issues / fetch_visits / amortissement --------
+#
+# Le defaut que ces tests auraient attrape (2026-08-23, avant merge) : la
+# colonne `vus` rendait 0 sur TOUTES les issues, y compris celles que la ligne
+# d'annotation juste en dessous disait fraichement livrees. Deux causes
+# distinctes, toutes deux silencieuses :
+#
+#   1. attribution -- on reutilisait `extract_vein_key` (premier `#N` du corps),
+#      qui rend la tranche SOEUR pour une PR d'ombrelle : #12591 s'intitule
+#      `fix(notebooks,#11947)` et porte `See #11947`, mais son premier `#N` de
+#      corps est #11949. Rappel mesure sur 10 issues : 59 % contre 76 %.
+#   2. peche -- `gh pr list --state merged --limit N` trie par date de CREATION ;
+#      filtrer ensuite sur `mergedAt` cote client perdait 44 % de la population
+#      (101 PRs vues pour 181 reelles sur la meme fenetre de 24 h).
+#
+# Un zero d'absence de mesure se lit exactement comme un zero d'affluence : d'ou
+# le controle positif, et d'ou `visits_measured` dans la sortie JSON.
+
+
+def _visit_pr(number, title, body):
+    """PR minimale pour l'attribution. Nom distinct du `_pr` du bloc rouge."""
+    return {"number": number, "title": title, "body": body}
+
+
+def test_umbrella_declared_by_title_and_see_is_attributed():
+    """Cas fondateur #12591 : l'ombrelle est dans le titre et dans `See`."""
+    pr = _visit_pr(12591,
+                   "fix(notebooks,#11947): tranche CaseStudies heading_in_list",
+                   "Grain: MED/notebook-python -- lane myia-po-2025:CoursIA -- "
+                   "prev: MED/notebook-lean (#12491)\n\n"
+                   "La tranche po-2023 d'origine (#11949) couvrait DecInfer.\n"
+                   "See #11947 (contribution partielle)")
+    cited = pig.cited_issues(pr)
+    assert 11947 in cited, "l'ombrelle declaree doit compter"
+    assert 12491 not in cited, "la clause prev: documente le grain PRECEDENT"
+
+
+def test_prose_only_citation_is_not_a_visit():
+    """Une citation de prose nue ne vaut pas declaration de sujet."""
+    pr = _visit_pr(1000, "fix(x,#5000): quelque chose",
+                   "Comparable au cas de #10143, pour memoire.\nSee #5000")
+    assert pig.cited_issues(pr) == {5000}
+
+
+def test_self_reference_never_counts():
+    pr = _visit_pr(7777, "fix(x,#7777): auto", "Closes #7777")
+    assert pig.cited_issues(pr) == set()
+
+
+def test_fetch_visits_filters_dates_server_side(monkeypatch):
+    """La requete DOIT porter `merged:>=` : le tri de gh est par creation."""
+    seen = {}
+
+    def fake_run(cmd, **kwargs):
+        seen["cmd"] = cmd
+        return _FakeCompleted(json.dumps([
+            _visit_pr(1001, "fix(a,#1100): x", "See #1100"),
+            _visit_pr(1002, "fix(b,#1100): y", "Closes #1100"),
+            _visit_pr(1003, "fix(c,#1200): z", "See #1200"),
+        ]))
+
+    monkeypatch.setattr(pig.subprocess, "run", fake_run)
+    visits, err = pig.fetch_visits()
+    assert err is None
+    assert visits == {1100: 2, 1200: 1}
+    assert any(a.startswith("merged:>=") for a in seen["cmd"]), seen["cmd"]
+
+
+def test_fetch_visits_failure_is_reported_not_silently_zero(monkeypatch):
+    def boom(cmd, **kwargs):
+        raise OSError("gh absent")
+
+    monkeypatch.setattr(pig.subprocess, "run", boom)
+    visits, err = pig.fetch_visits()
+    assert visits == {}
+    assert err and "OSError" in err
+
+
+def test_crowding_damps_a_visited_issue():
+    hot = {"number": 1, "age": 30, "idle": 1, "genre": "docs"}
+    cold = {"number": 2, "age": 30, "idle": 1, "genre": "docs"}
+    assert pig.weight(hot, None, {1: 12}) < pig.weight(cold, None, {2: 0})
+
+
+def test_unmeasured_crowding_leaves_the_weight_intact():
+    """Compteur vide = pas de mesure ; il ne doit PAS peser comme un zero."""
+    item = {"number": 1, "age": 30, "idle": 1, "genre": "docs"}
+    assert pig.weight(dict(item), None, {}) == pig.weight(dict(item), None, None)
+
+
+def test_crowding_never_zeroes_a_candidate():
+    """Amortir, jamais exclure : une issue tres visitee reste tirable."""
+    item = {"number": 1, "age": 400, "idle": 90, "genre": "lean"}
+    assert pig.weight(item, None, {1: 50}) > 0
+
+# --- points de review non leves : la 4e cause (mandat user 2026-08-24) -------
+#
+# "Fais en sorte que les agents ne produisent plus tant qu'il leur reste des
+# points a traiter dans leurs vieilles PRs, ca doit leur etre propose en
+# premier lieu a chaque cycle."
+#
+# Les trois causes preexistantes (check requis, conflit, CHANGES_REQUESTED)
+# sont structurellement aveugles aux trois surfaces de B.0 : nits du user en
+# issue comments, reserves d'Hermes en prefixe de body sous `state: COMMENTED`,
+# threads inline dans `reviewThreads`. Une PR peut etre VERTE, sans conflit,
+# sans CHANGES_REQUESTED -- et rester non mergeable.
+
+
+def test_unaddressed_review_point_is_a_red_on_an_otherwise_green_pr(monkeypatch):
+    """Le cas que les trois causes preexistantes laissaient passer."""
+    green = _state(checks=[("PR gate", "SUCCESS", True)])
+    _patch_backlog(monkeypatch, [_pr(1, "myia-po-2026:CoursIA", 30)], {1: green},
+                   nits={1: 2})
+    out = pig.red_backlog("myia-po-2026:CoursIA", 24)
+    assert [r["number"] for r in out["red"]] == [1]
+    cause = out["red"][0]["causes"][0]
+    assert "2 point(s) de review non leve(s)" in cause
+
+
+def test_review_points_come_first_among_the_causes(monkeypatch):
+    """Proposes EN PREMIER : le mandat porte sur l'ordre, pas seulement le fait.
+
+    Une PR qui cumule un rouge de CI et un nit doit montrer le nit d'abord --
+    c'est le seul des deux qu'un `update-branch` ne reparera jamais.
+    """
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    _patch_backlog(monkeypatch, [_pr(1, "myia-po-2026:CoursIA", 30)], {1: red},
+                   nits={1: 1})
+    causes = pig.red_backlog("myia-po-2026:CoursIA", 24)["red"][0]["causes"]
+    assert "point(s) de review non leve(s)" in causes[0]
+    assert any("check requis" in c for c in causes[1:])
+
+
+def test_no_review_point_leaves_a_green_pr_drawable(monkeypatch):
+    """Faux positif : une lane a l'ardoise propre doit pouvoir tirer."""
+    green = _state(checks=[("PR gate", "SUCCESS", True)])
+    _patch_backlog(monkeypatch, [_pr(1, "myia-po-2026:CoursIA", 30)], {1: green})
+    assert pig.red_backlog("myia-po-2026:CoursIA", 24)["red"] == []
+
+
+def test_only_the_lane_s_own_prs_are_examined(monkeypatch):
+    """L'organe coute 2 appels API par PR : ne l'appeler que sur `mine`.
+
+    Le filtre est la LANE, pas l'age. La PR 3 appartient a la lane et n'a que
+    3 h : elle est examinee, parce que les declencheurs `count` et `nits`
+    doivent la voir -- un tas de rouges recentes est precisement ce que le
+    seul critere d'age manquait. La PR 2 (autre lane) reste exclue, et c'est
+    l'invariant que ce test protege.
+
+    Le cout monte avec le nombre de PR recentes de la lane. C'est inherent :
+    on ne peut pas compter un tas sans regarder ce qui le compose.
+    """
+    seen = []
+    monkeypatch.setattr(pig, "fetch_open_prs", lambda: [
+        _pr(1, "myia-po-2026:CoursIA", 30),
+        _pr(2, "myia-po-2023:CoursIA", 30),
+        _pr(3, "myia-po-2026:CoursIA", 3),
+    ])
+    monkeypatch.setattr(pig, "fetch_pr_states", lambda nums: {})
+    monkeypatch.setattr(pig, "unaddressed_review_points",
+                        lambda nums: seen.extend(nums) or {})
+    pig.red_backlog("myia-po-2026:CoursIA", 24)
+    assert seen == [1, 3]      # les deux PR de la lane
+    assert 2 not in seen       # jamais celles d'une autre lane
+
+
+def test_organ_failure_is_said_not_swallowed(monkeypatch):
+    """Un zero de denominateur ne doit pas se lire comme un zero de numerateur.
+
+    Si l'organe est injoignable, la lane peut tirer -- mais le tirage ne prouve
+    plus que son ardoise est propre, et la sortie doit le DIRE.
+    """
+    green = _state(checks=[("PR gate", "SUCCESS", True)])
+    def boom(nums):
+        raise RuntimeError("gh down")
+    monkeypatch.setattr(pig, "fetch_open_prs",
+                        lambda: [_pr(1, "myia-po-2026:CoursIA", 30)])
+    monkeypatch.setattr(pig, "fetch_pr_states", lambda nums: {1: green})
+    monkeypatch.setattr(pig, "unaddressed_review_points", boom)
+    out = pig.red_backlog("myia-po-2026:CoursIA", 24)
+    assert out["red"] == []
+    assert out["nits_unavailable"] == "RuntimeError"
+
+
+def test_the_gap_warning_speaks_only_when_the_surface_was_unread(capsys):
+    pig.print_nits_gap({"nits_unavailable": None})
+    assert capsys.readouterr().out == ""
+    pig.print_nits_gap({"nits_unavailable": "RuntimeError"})
+    said = capsys.readouterr().out
+    assert "n'ont PAS pu etre lus" in said
+    assert "check_unaddressed_nits.py" in said
+
+
+# #12830 : tests pour le 3e etat file-saturation (BLOCKED + MERGEABLE + rollup
+# PENDING > N h). Diagnostic fondateur po-2023 c.508 (PR #12640, 28h, MERGEABLE,
+# 0 fail, rollup PENDING).
+
+
+def _state_with_rollup(rollup_state, checks):
+    """Variante de _state qui injecte statusCheckRollup.state.
+
+    _state() historique ne pose pas rollup.state ; c'est exactement le champ
+    que #12830 ajoute au fragment GraphQL. Les tests du file-saturation
+    ne peuvent pas exister sans cette matiere premiere.
+    """
+    return {
+        "mergeable": "MERGEABLE",
+        "commits": {"nodes": [{"commit": {"statusCheckRollup": {
+            "state": rollup_state,
+            "contexts": {"nodes": [
+                {"name": n, "conclusion": c, "state": c, "isRequired": req}
+                for (n, c, req) in checks
+            ]},
+        }}}]},
+        "reviews": {"nodes": []},
+    }
+
+
+def test_file_saturation_merges_pending_required_check_old_age():
+    """#12830 acceptance #1+#3+#4 : file-saturation detecte si
+    mergeable=MERGEABLE + rollup.state=PENDING + 1+ required check
+    non-FAIL + age > seuil.
+    """
+    s = _state_with_rollup("PENDING", [
+        ("PR gate", "IN_PROGRESS", True),
+        ("Scripts Tests", "SUCCESS", False),
+    ])
+    assert pig.file_saturation_cause(s, 30.0, 24.0) is not None
+
+
+def test_file_saturation_ignores_conflicting_pr():
+    """#12830 acceptance #4 (negatif) : conflit git = blocking_causes classique,
+    pas file-saturation. Cumuler les deux sur une meme PR serait double cause.
+    """
+    s = _state_with_rollup("PENDING", [
+        ("PR gate", "IN_PROGRESS", True),
+    ])
+    s["mergeable"] = "CONFLICTING"
+    assert pig.file_saturation_cause(s, 30.0, 24.0) is None
+
+
+def test_file_saturation_ignores_successful_rollup():
+    """#12830 acceptance #4 (negatif) : rollup SUCCESS = verdict final, pas
+    une saturation. La PR est verte au niveau rollup, la lane n'a rien a
+    faire cote CI.
+    """
+    s = _state_with_rollup("SUCCESS", [
+        ("PR gate", "SUCCESS", True),
+    ])
+    assert pig.file_saturation_cause(s, 30.0, 24.0) is None
+
+
+def test_file_saturation_does_not_double_substance_red():
+    """#12830 acceptance #5 : si un check requis est FAIL, c'est un rouge
+    substance que blocking_causes prend deja. file_saturation_cause doit
+    rendre None pour eviter le double-comptage.
+    """
+    s = _state_with_rollup("FAILURE", [
+        ("PR gate", "FAILURE", True),
+    ])
+    assert pig.file_saturation_cause(s, 30.0, 24.0) is None
+
+
+def test_file_saturation_respects_threshold():
+    """#12830 acceptance parametree : --saturation-hours distinct du seuil
+    substance. Une PR de 5h ne doit pas matcher si seuil=24 ; doit matcher
+    si seuil=4. La separation des deux causes (substance vs infra) tient.
+    """
+    s = _state_with_rollup("PENDING", [
+        ("PR gate", "IN_PROGRESS", True),
+    ])
+    assert pig.file_saturation_cause(s, 5.0, 24.0) is None
+    assert pig.file_saturation_cause(s, 5.0, 4.0) is not None
+
+
+def test_file_saturation_requires_at_least_one_required_check():
+    """#12830 acceptance #4 (negatif) : PR sans check requis = pas de CI
+    structure, juste l'absence de CI. file-saturation ne s'applique pas.
+    """
+    s = _state_with_rollup("PENDING", [
+        ("advisory opt", "NEUTRAL", False),
+    ])
+    assert pig.file_saturation_cause(s, 30.0, 24.0) is None

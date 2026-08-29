@@ -13,7 +13,7 @@ docker-compose build
 docker-compose run notebook-runner --check-env
 
 # Execute a single notebook
-docker-compose run notebook-runner /notebooks/GameTheory/GameTheory-1-Setup.ipynb
+docker-compose run notebook-runner /notebooks/GameTheory/GameTheory-01-Setup.ipynb
 
 # Batch execute all notebooks in a directory
 docker-compose run notebook-runner --batch /notebooks/ML/

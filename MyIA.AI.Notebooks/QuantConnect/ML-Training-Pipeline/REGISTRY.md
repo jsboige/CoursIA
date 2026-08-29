@@ -7,6 +7,11 @@ Updated: 2026-08-14 — M4 DLinear-vol §C entry (issue #10908): NO BEATS (biais
 Updated: 2026-08-15 — M4 DLinear-vol §C re-run perte de précision (issue #11011): BEATS 3/3 (linear → mse : changement de jambe, pas de modèle)
 Updated: 2026-08-14 — M15 LSTM-vol §C entry (issue #10941): NO BEATS (biais différentiel LSTM−HAR, même structure que M4)
 Updated: 2026-08-15 — M15 LSTM-vol §C re-run perte de précision (issue #11034): 2/3 BEATS, 1/3 INCONCLUSIVE, 0/3 NO BEATS
+Updated: 2026-08-24 — M4 DLinear-vol §C re-run dé-biaisé + DM recentré (issue #12734): 2/3 BEATS, 1/3 INCONCLUSIVE — le 3/3 de #11011 était gonflé par le biais de HAR
+Updated: 2026-08-24 — M4 DLinear-vol §C extension ETF (Epic #1454): **NO BEATS** — l'edge brut (+16,75 %) est le biais² de la baseline HAR ; hors biais +0,3 %, dm_p_median 0,41
+Updated: 2026-08-23 — backlog à déposer : M15 h=32 NO BEATS (#11468) et barreau ETF direction 9/9 NO BEATS (#11427) absents du header — cf sections respectives
+Updated: 2026-08-24 — Re-validation hors-biais des keepers BTC (issues #11041/#11034/#11036) : M15 `refuted-de-biased` 3/3 (l'edge publié = biais² de HAR, var_ratio > 1 partout) ; M4 confirmé h=1/h=5, INCONCLUSIVE h=10 (p_median 0,0598, var_ratio < 1)
+Updated: 2026-08-24 — M15 LSTM-vol patch persistance biais + slice 2/2 dé-biaisé symétrique (issue #12734): patch livré, run complet dispatché au prochain cycle
 
 Total checkpoints: 70 (20 legacy ARCHIVED + 50 panier baselines)
 
@@ -104,6 +109,61 @@ non biaisé.
 - **Notebook** : section 8 de `m4_dlinear_vol_sc_validation.ipynb` (recalcul indépendant de la conjonction mse, outputs C.2)
 - **Verdict §C (jambe de précision)** : **3/3 BEATS** (contre 3/3 NO BEATS sous linear — changement de jambe, pas de modèle)
 
+### M4 DLinear-vol — re-run §C dé-biaisé + DM recentré (2026-08-24, issue #12734)
+
+Run **symétrique** demandé par #12734 : baseline HAR **débiaisée** (soustraction de `har_bias_oos`
+des prévisions HAR OOS, jamais du biais train — pas de fuite, acceptance #2 de #10938) **et**
+DM sur **erreurs recentrées** `loss_fn="mse"` (centrage `e − mean(e)` par prévisionneur). Le
+centrage annule le biais (`mean(loss_fn="linear") = 0`) donc le DM compare les variances
+uniquement — c'est la jambe **précision** que l'amendement §C #11010 rend obligatoire pour
+porter le verdict `BEATS`, appliquée ici **après dé-biaisage symétrique**.
+
+Pourquoi ce n'est pas une redite du mse de la section 8 / REGISTRY précédent : la section 8
+mesure la précision mais sur HAR **biaisée** — la baseline gonfle son MSE par son propre biais
+(`MSE = biais² + variance`, donc MSE brut surestime la variance de HAR). Cette entrée élimine
+le biais **sur les deux côtés** : DLinear brut, HAR débiaisée, puis DM recentré.
+
+| Horizon | edge (red MSE vs HAR deb, %) | σ cross-seed | dm_p_median (centered) | var ratio DL/HAR_deb | Verdict §C |
+|---------|----------------------------|--------------|------------------------|----------------------|-------------|
+| h=1  | +10,1 % | 0,15 | 1,5e-09 | 0,899 | **BEATS** |
+| h=5  | +7,3 %  | 0,23 | 9,7e-05 | 0,927 | **BEATS** |
+| h=10 | +3,7 %  | 0,19 | 1,0e-01 | 0,963 | **INCONCLUSIVE** |
+
+**Décomposition biais² + variance** : `har_bias_oos` −0,2266 / −0,3432 / −0,4502 log-RV
+(h=1/5/10, MESURÉ sur test OOS — biais `HAR` en sous-prévision de log-RV). Après dé-biaisage
+HAR, le résiduel biais²/variance chute à 5,8 % (h=1) → 22,6 % (h=5) → 35,5 % (h=10) — le
+dé-biaisage élimine bien le biais dominant sur h=1 mais le résiduel augmente avec l'horizon
+(le biais OLS d'une régression HAR est plus dispersé sur des fenêtres longues). `var_ratio =
+var_DL / var_HAR_debiased` reste < 1 sur les 3 horizons ⇒ DLinear **plus précis** (variance
+plus petite) que HAR une fois son biais soustrait.
+
+**Verdict M4 BTC (#12734 acceptance)** : M4 **survit hors biais sur h=1 et h=5**, devient
+**INCONCLUSIVE sur h=10** après dé-biaisage symétrique. Lecture honnête : le verdict
+**3/3 BEATS** de la section 8 (#11011, mse asymétrique) était **gonflé par le biais de
+HAR** — sans le biais, l'edge MSE se réduit de +38 % à +3,7 % (h=10) et le DM centered
+n'atteint plus le seuil `p < 0,05` (`p = 0,10`, juste au-dessus). Le verdict §C recentré
+est **2/3 BEATS, 1/3 INCONCLUSIVE, 0/3 NO BEATS** — mesurable, défendable, et **plus strict**
+que les 3/3 BEATS de la mse asymétrique. M4 BTC keeper reste défendable : 2 horizons
+passent la conjonction, le 3ᵉ est statistiquement insuffisant (pas un échec).
+
+- **Run** : `python scripts/btc_vol.py --horizons 1 5 10 --seeds 0 7 42 99 --epochs 50 --out-json scripts/results/m4_dlinear_vol_btc_sc_debiased_recentered.json` (1786,9 s ≈ 30 min CPU, 12 combos)
+- **Notebook** : section 9 de `m4_dlinear_vol_sc_validation.ipynb` (recalcul indépendant de la conjonction recentrée, décomposition biais²+variance, outputs C.2)
+- **Verdict §C recentré** : **2/3 BEATS, 0/3 NO BEATS, 1/3 INCONCLUSIVE** (vs 3/3 BEATS mse asymétrique #11011 — la symétrie du dé-biaisage **réduit** l'edge sur h longs, ne le fabrique pas)
+
+**Confirmation indépendante #11036 (re-validation ai-01, lane #1454, 2026-08-24)** : re-validation
+sur les séries du run mse #11011 persistées par combo (M4 déterministe, CPU) — MSE/DM
+**bit-identiques au keeper sur les 12 combos** (moyennes 0,7518/0,3740/0,3521 = valeurs publiées).
+Jambe recentrée : h=1 **+10,11 %** (σ 0,04, p_median 2,3e-09, 0 beaten) ; h=5 **+7,48 %** (σ 0,13,
+p_median 9,1e-05, 0 beaten) ; h=10 +4,31 % (edge/2σ = 6,9 MAIS **p_median 0,0598** — 3 seeds
+p > 0,05, un seul 0,047). **Verdict #11036 : `confirmed` h=1/h=5, `INCONCLUSIVE` h=10** — la
+conjonction échoue de justesse sur la jambe DM à h long, cohérent avec la mesure #12734 ci-dessus
+(p 0,10 sur run ré-entraîné indépendant).
+
+**Note sur M15 BTC (slice 2/2 de #12734)** : le constat d'invérifiabilité post-hoc est **levé** —
+rerun complet 12/12 avec persistance des séries `pred_lstm`/`pred_har`/`pred_target` par combo
+(instrument PR #12745), verdict mesuré : **`refuted-de-biased` 3/3** — section dédiée ci-dessous
+(issues #11041/#11034).
+
 ## M15 LSTM-vol — entrée §C (2026-08-14) — issue #10941
 
 2e entrée du registre conforme au barème `pr-review-discipline.md` §C (suite #10908/#10930) :
@@ -176,6 +236,163 @@ que HAR porte l'essentiel (`har_bias_oos` −0,23/−0,34/−0,45).
 - **Run** : `python m15_lstm_rv.py --coins BTC-USD --seeds 0,1,7,42 --horizons 1,5,10 --loss-fn mse --refit-every 110 --output results/m15_lstm_rv_btc_sc_mse` (1563 s, resume depuis checkpoint 9/12)
 - **Notebook** : section 7 de `m15_lstm_rv_sc_validation.ipynb` (recalcul indépendant de la conjonction mse, outputs C.2)
 - **Verdict §C (jambe de précision)** : **2/3 BEATS, 1/3 INCONCLUSIVE, 0/3 NO BEATS** (contre 3/3 NO BEATS sous linear — changement de jambe, pas de modèle)
+
+### M15 LSTM-vol — re-validation hors-biais (2026-08-24, issues #11041/#11034) — `refuted-de-biased` 3/3
+
+Re-validation du keeper M15 BTC sur la jambe que #12684/#12695 ont rendue obligatoire : DM
+`loss_fn="mse"` sur **erreurs recentrées** (`e − mean(e)` par prévisionneur — le centrage annule
+le biais, le DM compare les variances) + décomposition `MSE = biais² + variance` par seed.
+Rerun complet **12/12 combos** (3 horizons × 4 seeds 0/1/7/42, config harness #11034 :
+`refit-every 110`, walk-forward, GPU RTX 4090, 2782 s) avec persistance des séries par combo —
+l'invérifiabilité post-hoc notée dans les entrées M15 précédentes est levée.
+
+| Horizon | edge brut (mse) | edge recentré | var_ratio LSTM/HAR | seeds BEATEN (rec) | dm_p_median (rec) | Verdict recentré |
+|---------|-----------------|---------------|--------------------|--------------------|-------------------|------------------|
+| h=1  | −0,21 % (INCONCLUSIVE) | **−5,73 %**  | **1,057** | 1/4 (p 0,040) | 0,205 | **NO BEATS** |
+| h=5  | +13,95 % (BEATS)        | **−10,70 %** | **1,107** | 2/4 (p 0,0036/0,014) | 0,090 | **NO BEATS** |
+| h=10 | +17,28 % (BEATS)        | **−27,22 %** | **1,272** | 3/4 (p 0,028/0,0015/0,0047) | 0,016 | **NO BEATS** |
+
+**Rapport de biais signé (contrôle §C(7))** — LSTM : −0,064/−0,039/−0,056 ; HAR :
+−0,227/−0,343/−0,450 (h=1/5/10). HAR sous-prévoit le log-RV sur les 3 horizons ; le LSTM est
+moins biaisé mais **plus dispersé** (`var_ratio > 1` partout).
+
+**Lecture** : la jambe brute **reproduit le keeper publié** avant relecture hors-biais — h=5
++13,95 % (vs +14,9 % #11034), h=10 +17,28 % (vs +18,8 %), h=1 INCONCLUSIVE (−0,2 % vs −0,7 %) :
+le rerun est fidèle, il n'a pas été sélectionné pour favoriser la réfutation. Mais une fois le
+biais² retiré symétriquement (erreurs recentrées des deux côtés), l'edge s'inverse : **3/3 NO
+BEATS** par la règle de dominance (1, 2 puis 3 seeds BEATEN avec l'horizon). L'edge publié était
+le **biais² de la baseline HAR** — même structure exacte que la réfutation ETF #12684/#12695.
+**Verdict #11041/#11034 : `refuted-de-biased` (3/3 horizons)** — le M15 LSTM-vol n'est pas un
+keeper : sa seule propriété réelle est d'être moins biaisé que HAR, au prix d'une variance
+supérieure.
+
+**Le discriminant est le ratio de variance, pas la p-value brute.** M4 DLinear BTC survit hors
+biais parce que `var_DL / var_HAR = 0,899/0,925/0,957 < 1` — l'edge recentré h=1/h=5 (+10,1 %/
++7,5 %, DM p ≤ 9,1e-05) est une vraie réduction de variance. Le M15 échoue parce que
+`var_LSTM / var_HAR = 1,057/1,107/1,272 > 1` — le LSTM n'est **pas plus précis** que HAR, seulement
+moins biaisé. Toute la différence entre les deux verdicts de keepers était lisible dans cette
+colonne avant tout test de significativité ; c'est elle que toute nouvelle entrée vol doit
+désormais rapporter (cf instrument #12745 : la décomposition est exécutable sans ré-entraînement
+sur les séries persistées).
+
+**Portée — et ce que cette entrée ne couvre PAS** : le renversement M15 est mesuré sur **BTC**
+(ce run) et **ETF SPY/TLT/GLD** (#12695 : 9/9 cellules négatives hors biais), les deux terrains
+log-RV du pipeline ; il est général à la famille M15 (LSTM h=64, window 22) sur la cible log-RV.
+En revanche cette entrée **ne couvre pas** : (1) les autres architectures deep-seq (transformer,
+mamba, PatchTST, iTransformer, MoE régimes, GNN — non re-validées hors biais ; leurs éventuels
+edges restent à décomposer par le même instrument) ; (2) la cible direction/rendement (ladder
+#1409 L4 Decision Transformer, validation XRP DT — cible différente, verdict non touché) ;
+(3) M4 DLinear lui-même, qui **survit** sur BTC (`confirmed` h=1/h=5) mais échoue sur ETF
+(#12695) — l'edge M4 est spécifique au terrain crypto (RV BTC agrège 24 h de bars horaires vs
+1 bar OHLC/jour en GK daily ETF), pas une propriété générale de DLinear ; (4) toute conversion
+en stratégie de vol-timing avec coûts de transaction — verdict de prévision (MSE log-RV)
+uniquement, aucune stratégie dérivée, borne crypto 10 bps non imputée.
+
+- **Run** : rerun 12/12 → `results/m15_lstm_rv_btc_sc_mse_persist/` (2782 s) ; re-validation
+  `results/btc_revalidation_recentred/revalidate_recentred.py` (jambes RAW/REC/LIN câblées
+  explicitement — RAW = sanité reproduisant le keeper, REC = jambe verdict, LIN = contrôle de
+  biais uniquement ; décomposition `mse = biais² + var` vérifiée au 1e-12 par seed). Artefacts
+  hors repo (`results/` gitignoré) — instrument de persistance : PR #12745.
+- **Verdict §C recentré** : **0/3 BEATS, 0/3 INCONCLUSIVE, 3/3 NO BEATS** — `refuted-de-biased`.
+
+## M4 DLinear-vol — extension §C ETF (2026-08-23) — Epic #1454
+
+**Verdict §C : NO BEATS.** Première entrée §C **hors BTC**. La question posée était de savoir
+si l'edge M4 (BEATS 3/3 sur BTC log-RV, #11036) est spécifique au terrain crypto ou transfère
+aux ETF anti-biais. La réponse est **non** : ce qui transfère est la **miscalibration de la
+baseline**, pas une capacité prédictive. Une première rédaction de cette entrée concluait
+« BEATS 9/9 » sur l'edge brut ; #12684 l'a réfutée et la décomposition ci-dessous, refaite
+indépendamment sur les 9 cellules, la confirme.
+
+**Modèle** : DLinear (Zeng et al. AAAI 2023), `seq_len=22 -> horizon`, ~22 params — identique
+à l'entrée BTC (#11036). **Univers** : SPY / TLT / GLD daily 2005-01-03 → 2026-08-14
+(`datasets/panier/`, 5 438 obs par symbole ; aucun FAANG/Mag7). **Cible** : log-RV quotidien
+estimée par **Garman-Klass (1980)** sur OHLC daily (`0.5·ln(H/L)² − (2ln2−1)·ln(C/O)²`).
+L'estimateur diffère de la somme horaire du terrain BTC (pas d'intraday ETF sur disque) — la
+comparabilité est **interne**, pas cross-terrain. **Baselines** : HAR (Corsi 2009) +
+persistence. **DM** : `scripts/dm_test.py`, HAC Newey-West + HLN, `loss_fn="mse"`.
+**Protocole** : walk-forward 5-fold expanding, `refit_every=110`, seeds {0,1,7,42},
+horizons {1,5,10}. **Compute** : CPU.
+
+### Décomposition biais-variance — la mesure qui tranche
+
+`MSE = biais² + variance`. Le tableau donne les deux edges : celui du MSE total (ce qu'un
+DM sur `mse` mesure) et celui de la **variance seule**, c'est-à-dire la précision une fois
+les deux prévisionneurs recalés sur leur moyenne.
+
+| Symbole | h | MSE HAR | biais HAR | MSE DL | biais DL | edge brut | **edge hors biais** |
+|---|---|---|---|---|---|---|---|
+| SPY | 1  | 0,70490 | −0,15614 | 0,67767 | +0,00910 | +3,86 %  | **+0,43 %** |
+| SPY | 5  | 0,43526 | −0,23207 | 0,37904 | +0,01425 | +12,92 % | **+0,67 %** |
+| SPY | 10 | 0,45129 | −0,30060 | 0,36056 | +0,01683 | +20,10 % | **+0,18 %** |
+| TLT | 1  | 0,57879 | −0,19761 | 0,54131 | −0,00425 | +6,47 %  | **−0,29 %** |
+| TLT | 5  | 0,27556 | −0,25318 | 0,21095 | −0,00235 | +23,45 % | **+0,24 %** |
+| TLT | 10 | 0,27543 | −0,30853 | 0,17967 | −0,00459 | +34,77 % | **+0,33 %** |
+| GLD | 1  | 0,72318 | −0,18029 | 0,69440 | +0,02748 | +3,98 %  | **−0,43 %** |
+| GLD | 5  | 0,29913 | −0,23270 | 0,24734 | +0,03870 | +17,31 % | **−0,35 %** |
+| GLD | 10 | 0,26761 | −0,27958 | 0,19296 | +0,04861 | +27,90 % | **−0,61 %** |
+
+**Moyenne : +16,75 % brut → +0,02 % hors biais. 9 cellules sur 9 sous 1 %, 4 négatives.**
+Les variances sont identiques à la 4ᵉ décimale : DLinear n'ajoute **aucune précision**
+mesurable. L'edge brut est arithmétiquement le biais² de la baseline — vérification directe,
+SPY h=10 : biais² = 0,0904 soit 20,0 % de 0,45129, edge annoncé 20,10 %.
+
+Les DM sont corrects et fortement significatifs (`p` de 1,0e-14 à 1,9e-05 sur ~4 500
+prédictions) : ils mesurent fidèlement un écart de MSE **réel**. C'est l'interprétation de cet
+écart qui était fausse — un test significatif sur la bonne perte peut porter sur le mauvais
+effet.
+
+### Ce que l'entrée établit malgré tout
+
+- **HAR sous-prévoit systématiquement le log-RV**, sur les 3 ETF comme sur BTC, et le biais
+  **croît avec l'horizon** (−0,16 à −0,31). C'est un défaut réel de la baseline telle
+  qu'implémentée, reproductible sur 4 terrains.
+- **DLinear apprend à être non biaisé** (|biais| ≤ 0,049) sans que ce soit un objectif
+  explicite. Le modèle est bien calibré ; il ne suit simplement pas mieux la dynamique.
+- **La bonne baseline pour la suite est un HAR débiaisé** (correction d'intercept OOS). Toute
+  comparaison future de cette famille sur ce terrain doit la prendre comme référence, faute
+  de quoi elle re-mesurera le même offset. `dlinear_vol.py` porte déjà `debias` côté modèle
+  (l. 203, 242-243, 279-280) et **calcule** `har_bias_oos` (l. 434) sans jamais l'appliquer :
+  l'asymétrie est là, elle est corrigeable.
+- **Contrepoint M15** : sous la même correction, la décomposition **complète** des 9 cellules
+  ETF (SPY/TLT/GLD × h=1/5/10) est **négative 9 fois sur 9** hors biais (jusqu'à −38,6 %),
+  y compris la seule qui tenait la conjonction σ+DM (TLT h=5 : +12,3 % brut → −20,2 % hors
+  biais). M15 ETF est **NO BEATS définitif**, pas « majoritairement inversé » : la famille
+  deep-seq ne bat pas non plus un HAR recalé. Le premier chiffrage (« 3 sur 4 ») portait sur
+  un échantillon partiel des cellules ; il est corrigé ici.
+
+### Reproduction
+
+- **Data** : `datasets/panier/{SPY,TLT,GLD}_daily.csv` (2005-2026, 5 438 lignes chacune)
+- **Run** : `python -u etf_vol.py --symbols SPY TLT GLD --horizons 1 5 10 --seeds 0 1 7 42 --epochs 100 --refit-every 110 --loss-fn mse --out-json results/m4_dlinear_vol_etf_sc_mse/results.json` (4 328 s)
+- **Harnais** : `scripts/etf_vol.py` (réutilise `walk_forward_har`, `walk_forward_dlinear`, `dm_verdict` ; RV GK dans `garman_klass_rv`)
+- **Décomposition** : reproductible depuis les checkpoints `bg_logs/etf_vol*.log` (couples
+  `HAR MSE`/`bias_OOS` et `DLinear MSE`/`bias` par cellule) — variance = MSE − biais²
+- **Suite ouverte** : #12684 (débiaisage de la baseline), #12681 (la ligne de log affiche le
+  MSE HAR agrégé quand le verdict porte sur l'aligné)
+
+### M15 LSTM-vol — patch persistance biais + slice 2/2 dé-biaisé symétrique (2026-08-24, issue #12734)
+
+Slice 2/2 du ticket #12734 (slice 1/2 = M4 DLinear-vol, livré via PR #12742). Le ticket note que `m15_lstm_rv.py` ne persistait ni `har_bias_oos` ni les prédictions brutes — le keeper M15 BTC #11041 était donc **invérifiable post-hoc** par la voie symétrique.
+
+**Patch persistance** : `evaluate_one_combo` calcule désormais `har_bias_oos = mean(har_pred - target)` OOS et persiste **les arrays `har_errors`/`lstm_errors`** (même guard `len >= 10 and isfinite`) par combo, pour que `analyze_one_combo` (wrapper `btc_m15.py`) puisse appliquer la décomposition `MSE = biais² + variance` et le DM recentré post-hoc. Rétro-compatible : les anciens champs `sharpe_*`, `mse_*`, `dm_*` sont préservés. Le JSON `results.json` de chaque run M15 porte donc `har_bias_oos` + les erreurs brutes par combo — vérifiable depuis git sans relancer le sweep.
+
+**Wrapper `scripts/btc_m15.py`** : pendant BTC-only de `scripts/btc_vol.py`. Orchestre le run M15 BTC + applique la décomposition `MSE = biais² + variance` et le DM recentré (`loss_fn="mse"` sur erreurs centrees). Helpers `_mse_decomposition` et `_dm_centered_mse` **dupliqués** depuis `btc_vol.py` (TODO post-merge : consolider dans un module partage `btc_debias.py`).
+
+**Section notebook** : section 8 ajoutée à `m15_lstm_rv_sc_validation.ipynb` (méthodologie + commande de run complet + verdict attendu). Markdown-only — la cellule code de lecture du JSON viendra au prochain cycle avec le rerun.
+
+**Run complet** : 3 horizons × 4 seeds = 12 combos, ~50 min/combo (~10h CPU/GPU) — **hors budget cycle worker**. Acceptance #4 du ticket #12734 autorise explicitement ce defer. Commande :
+
+```bash
+for h in 1 5 10; do
+  for s in 0 1 7 42; do
+    python scripts/btc_m15.py --horizon $h --seed $s --refit-every 110 --hidden-size 32
+  done
+done
+```
+
+- **Verdict attendu** : symétrique à M4 (slice 1/2), conjonction §C recentrée `edge ≥ 2σ AND dm_p_median < 0.05`. Lecture : `var_ratio_lstm_over_har_debiased < 1` = LSTM plus précis ; `har_bias_share_of_mse_debiased` < 0.10 = dé-biaisage propre.
+- **Statut** : PATCH LIVRÉ, RUN DISPATCHÉ au prochain cycle worker (acceptance #4).
 
 ## Ladder #1409 — Final Verdicts (2026-06-12)
 

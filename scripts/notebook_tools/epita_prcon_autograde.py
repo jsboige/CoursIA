@@ -70,7 +70,7 @@ def _gh_api(endpoint: str, token: str | None = None) -> dict | list:
     cmd = ["gh", "api", endpoint]
     if token:
         cmd = ["gh", "api", "--header", f"Authorization: token {token}", endpoint]
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+    result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=30)
     if result.returncode != 0:
         return {}
     return json.loads(result.stdout)
@@ -104,7 +104,7 @@ def get_file_content(repo: str, path: str, token: str | None = None) -> str:
     if token:
         cmd = ["gh", "api", "--header", f"Authorization: token {token}",
                f"repos/{repo}/contents/{path}", "--jq", ".content"]
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=15)
+    result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=15)
     if result.returncode != 0:
         return ""
     import base64

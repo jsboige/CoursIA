@@ -455,11 +455,32 @@ def fetch_sae_config(sae_repo: str) -> dict:
     }
 
 
+def normalize_w_dec(w_dec: torch.Tensor, w_enc: torch.Tensor) -> torch.Tensor:
+    """Normalise W_dec vers [d_sae, d_model] (lignes = features), #12940.
+
+    Layout heterogene des releases : les checkpoints W32K (1.7B et 2B,
+    verifies firsthand) stockent W_dec [d_model, d_sae] ; les autres
+    [d_sae, d_model]. Sans normalisation, l'indexation ``W_dec[clamp_ids]``
+    du hook de clamp designe des LIGNES du residual stream (0..d_model-1)
+    au lieu des directions decodees des features visees — IndexError si un
+    clamp_id depasse d_model, silencieusement faux sinon. d_model se deduit
+    de W_enc [d_sae, d_model] ; la normalisation est non ambigue car
+    d_model != d_sae sur toutes les releases visees. Meme correctif que
+    ``extract_sae_fidelity.py`` (PR #12938).
+    """
+    d_model = w_enc.shape[1]
+    if w_dec.shape[0] == d_model:
+        return w_dec.t().contiguous()
+    return w_dec
+
+
 def load_sae(sae_repo: str, layer: int, device: torch.device):
     """Telecharge et charge le checkpoint SAE de la couche demandee.
 
     Convention Qwen-Scope (app.py officiel) : dict avec W_enc [d_sae, d_model],
-    b_enc [d_sae] (+ W_dec/b_dec pour la reconstruction/le clamp)."""
+    b_enc [d_sae] (+ W_dec/b_dec pour la reconstruction/le clamp). W_dec est
+    rendu en [d_sae, d_model] quelle que soit la release (cf
+    :func:`normalize_w_dec`, #12940) — l'indexation par feature est garantie."""
     from huggingface_hub import hf_hub_download
     path = hf_hub_download(sae_repo, f"layer{layer}.sae.pt")
     sae = torch.load(path, map_location="cpu", weights_only=True)
@@ -469,8 +490,12 @@ def load_sae(sae_repo: str, layer: int, device: torch.device):
     b_enc = sae["b_enc"].to(torch.float32)          # [d_sae]
     w_dec = sae.get("W_dec")
     if w_dec is not None:
-        w_dec = w_dec.to(torch.float32)
-    return {"W_enc": w_enc, "b_enc": b_enc, "W_dec": w_dec, "path": path}
+        w_dec = normalize_w_dec(w_dec.to(torch.float32), w_enc)
+    b_dec = sae.get("b_dec")
+    if b_dec is not None:
+        b_dec = b_dec.to(torch.float32)              # [d_model]
+    return {"W_enc": w_enc, "b_enc": b_enc, "W_dec": w_dec, "b_dec": b_dec,
+            "path": path}
 
 
 def sae_encode_topk(hidden: torch.Tensor, sae: dict, k: int = 50):
@@ -518,7 +543,10 @@ class ResidCapture:
         self.hidden = out.detach()[0].to(torch.float32).cpu()      # [T, d]
         if not self.clamp_ids:
             return output
-        # Clamp causal : h' = h - somme_i acts_i * W_dec[i]  (features forcees a 0)
+        # Clamp causal : h' = h - somme_i acts_i * W_dec[i]  (features forcees a 0).
+        # W_dec est garanti [d_sae, d_model] par load_sae/normalize_w_dec
+        # (#12940) : indexer par clamp_ids (features) y designe les directions
+        # decodees, pas des lignes du residual stream.
         h32 = out.detach().to(torch.float32).cpu()                 # [B, T, d]
         w_enc = self.sae["W_enc"][self.clamp_ids]                  # [C, d]
         b_enc = self.sae["b_enc"][self.clamp_ids]                  # [C]
@@ -630,13 +658,36 @@ def main() -> None:
                 model(**enc)
             hidden = capture.hidden                      # [T, d_model] fp32 CPU
             ids, vals = sae_encode_topk(hidden, sae, k=k)
+            toks = tokenizer.convert_ids_to_tokens(enc["input_ids"][0].tolist())
+            # Positions non-finies : un token (mesure : le BOS du 8B-Qwen3) peut
+            # porter un residu dont TOUT le top-k est inf/nan. Une telle ligne
+            # contamine les stats L0 et les panneaux differentiels en aval
+            # (#12388 : 46/64 filtre-a-la-main vs 14/64 contamine). On l'exclut
+            # a la capture, alignee sur ids/vals/tokens — la trace produite est
+            # propre par construction, quelle que soit la machine.
+            finite = torch.isfinite(vals).all(dim=-1)    # [T]
+            n_bad = int((~finite).sum())
+            if n_bad:
+                bad_pos = (~finite).nonzero().flatten().tolist()
+                if n_bad > 0.05 * vals.shape[0]:
+                    sys.exit(f"ERREUR: {set_name}__{i} : {n_bad}/{vals.shape[0]} "
+                             f"positions top-k non-finies (> 5%) — chargement de "
+                             f"poids probablement casse, pas un token isole. "
+                             f"Positions : {bad_pos[:10]}")
+                bad_toks = [toks[j] for j in bad_pos if j < len(toks)]
+                print(f"[warn] {set_name}__{i} : {n_bad} position(s) top-k "
+                      f"non-fini(es) EXCLUE(S) de la trace : pos {bad_pos[:5]} "
+                      f"tokens {bad_toks[:5]}")
+                hidden = hidden[finite]
+                ids = ids[finite]
+                vals = vals[finite]
+                toks = [t for t, f in zip(toks, finite.tolist()) if f]
             l0 = (vals > 0).sum(dim=-1).float()
             l0_all.append(l0)
             tok_total += hidden.shape[0]
             key = f"{set_name}__{i}"
             arrays[f"{key}__topk_ids"] = ids.numpy()
             arrays[f"{key}__topk_vals"] = vals.to(torch.float16).numpy()
-            toks = tokenizer.convert_ids_to_tokens(enc["input_ids"][0].tolist())
             # dtype unicode fixe (pas object) : le .npz committe se recharge sans
             # allow_pickle=True cote notebooks GPU-free.
             arrays[f"{key}__tokens"] = np.array(toks, dtype=str)

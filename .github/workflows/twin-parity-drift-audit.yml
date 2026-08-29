@@ -47,6 +47,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          filter: blob:none
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -106,7 +107,7 @@ jobs:
             if [ "${DRIFT:-0}" = "0" ] && [ "${MISSING:-0}" = "0" ]; then
               echo "No fleet-wide drift. Advisory gate is GREEN. Promotion criterion for design-gate #9399 (B)->(A) is met: this run can flip to blocking."
             else
-              echo "**Advisory** (design-gate #9399 posture B): a non-zero drift count is a warning, not a red. These are pairs whose notebook moved since their last audit without a re-attestation -- the fleet-wide stale-SHA backlog the per-PR gate deliberately leaves to a dedicated rebaseline (cf #8264). Two of these are known metadata-stamp false positives today (Sudoku-8 / Sudoku-14 BDD: only a metadata.cost block moved, zero cell); volet (c) of #9399 will exclude nb[metadata] from the parity hash so a metadata stamp no longer reddens."
+              echo "**Advisory** (design-gate #9399 posture B): a non-zero drift count is a warning, not a red. These are pairs whose notebook moved since their last audit without a re-attestation -- the fleet-wide stale-SHA backlog the per-PR gate deliberately leaves to a dedicated rebaseline (cf #8264). Two of these are known metadata-stamp false positives today (Sudoku-08 / Sudoku-14 BDD: only a metadata.cost block moved, zero cell); volet (c) of #9399 will exclude nb[metadata] from the parity hash so a metadata stamp no longer reddens."
               echo ""
               echo "Drifted pairs:"
               python -c "import json; d=json.load(open('twin_parity_report.json')); [print(f\"- **{p['name']}** ({p.get('family','?')}): {p.get('verdict') or p.get('status')}\") for p in d.get('pairs',[]) if (p.get('verdict') or p.get('status')) not in (None,'OK')]" || true

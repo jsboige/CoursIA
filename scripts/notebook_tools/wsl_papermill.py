@@ -24,7 +24,7 @@ Usage:
     python wsl_papermill.py check-env [--mode auto]
 
 Examples:
-    python wsl_papermill.py execute MyIA.AI.Notebooks/GameTheory/GameTheory-1-Setup.ipynb
+    python wsl_papermill.py execute MyIA.AI.Notebooks/GameTheory/GameTheory-01-Setup.ipynb
     python wsl_papermill.py batch MyIA.AI.Notebooks/GameTheory/ --kernel python3
     python wsl_papermill.py check-env --mode native
 """
@@ -81,7 +81,7 @@ def run_wsl(cmd: str, timeout: int = 300) -> tuple[int, str, str]:
     # lake/lean (lean_dojo tracing, Lean-10) need ~/.elan/bin on PATH.
     result = subprocess.run(
         ["wsl", "-e", "bash", "-lc", cmd],
-        capture_output=True, text=True, timeout=timeout
+        capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=timeout
     )
     return result.returncode, result.stdout, result.stderr
 
@@ -201,7 +201,7 @@ def _find_papermill() -> str | None:
     try:
         result = subprocess.run(
             [sys.executable, "-m", "papermill", "--version"],
-            capture_output=True, text=True, timeout=10
+            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=10
         )
         if result.returncode == 0:
             return sys.executable
@@ -237,7 +237,7 @@ def execute_notebook_native(notebook: str, output: str | None = None,
 
     start = time.time()
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+        result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=timeout)
         elapsed = time.time() - start
     except subprocess.TimeoutExpired:
         print(f"  TIMEOUT after {timeout}s")

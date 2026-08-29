@@ -39,10 +39,18 @@ name: Variation Tag Guard
 # la nature du manquement lisible dans `gh pr list --json labels`, sans avoir a
 # ouvrir les logs du job.
 
+# DORMANT depuis #13384 : les SIX jobs pull_request ci-dessous sont absorbes
+# (run blocks portes verbatim) par always-on-guards.yml -- un seul workflow,
+# un seul checkout, un seul slot de runner par PR (37 % de la file CI etait
+# les cinq gardes always-on pour ~3 min de travail reel, mesure #13384).
+# Les jobs restent ICI en copie de reference (noms + logique inchanges) pour
+# la tracabilite ; leur `if: github.event_name != 'issue_comment'` les rend
+# inertes sur les runs issue_comment, et le declencheur pull_request est
+# retire : rien ne les execute plus sur une PR. NE PAS reinscrire
+# pull_request ici sans retirer les organes correspondants d'always-on-guards
+# -- les deux surfaces executeraient le meme verdict en double.
+
 on:
-  pull_request:
-    types: [opened, edited, synchronize, reopened]
-    branches: [main]
   # #11718 : le marqueur [G-VAR-3 OVERRIDE] vit en COMMENTAIRE de PR, mais
   # issue_comment etait absent -- poster le marqueur ne relancait rien. Un run
   # issue_comment checkout la branche par defaut (main), donc execute le gate
@@ -855,10 +863,16 @@ jobs:
           # `notebook-python`). Same data source as the G-VAR-2 job above
           # (`gh pr list --state merged`); no `merged:$TODAY` search here --
           # the predecessor may sit on any past day, the script sorts by
-          # mergedAt itself. A fetch failure degrades to the declared `prev:`
-          # (the flag stays absent), never to a crash or a silent pass.
-          gh pr list --state merged --limit 100 \
-            --json number,body,mergedAt \
+          # mergedAt itself. But a raw `--limit 100` is CREATION-capped: with
+          # ~100 merges/day it covers roughly one day of creations, so a
+          # low-activity lane's grain merged a few days ago falls out of the
+          # batch and the guard would silently fall back to the frozen `prev:`
+          # (#12636). Fetch through `fetch_merged_prs_since.py`, which pages the
+          # `merged:>=` window (merge-time, not creation) so any lane merged
+          # since the cutoff is captured. A fetch failure degrades to the
+          # declared `prev:` (the flag stays absent), never to a crash or a
+          # silent pass.
+          python3 scripts/ci/fetch_merged_prs_since.py --days 21 \
             > /tmp/merged_prs.json 2>/dev/null || rm -f /tmp/merged_prs.json
 
           MERGED_ARG=""
@@ -934,8 +948,17 @@ jobs:
   # le fantome workflow_run deja mesure : un SHA qui porte un check sans dire
   # de quoi le check parle).
   #
-  # Le check-run porte le MEME nom que le job pull_request ; le verdict le plus
-  # recent par nom supplante le rouge gele de la vieille run dans la vue PR.
+  # #13401 : le check-run POSTe sous un nom DISTINCT (celui de ce job, avec
+  # deux-points) -- c'est un temoin d'information, il ne deverrouille RIEN :
+  # le check REQUIS (le nom du job pull_request) et l'agregat PR gate gardent
+  # leur rouge gele. Renommer ce POST au nom requis est mort ne : GitHub
+  # exige que TOUT check-run portant le nom d'un check requis soit vert (un
+  # ET, pas un latest-wins, #11519) -- un POST vert pose a cote du rouge gele
+  # de la run originale laisse la PR bloquee. Le mecanisme valide est la
+  # RE-RUN des runs ORIGINAUX pour le SHA de tete (le run pull_request de ce
+  # garde + l'agregat PR gate), dans la branche verdict vert ci-dessous : la
+  # re-run produit son check-run dans la MEME suite, ou le latest-wins tient
+  # (recette pr-gate-rerun.yml, #11519).
   #
   # Anti-boucle : ce job NE POSTE PAS de commentaire en retour (le chemin
   # bloquant s'exprime dans l'output du check-run), et il s'ignore lui-meme :
@@ -965,6 +988,10 @@ jobs:
       contents: read
       pull-requests: write
       checks: write
+      # #13401 : re-runner le run pull_request ORIGINAL de ce garde et
+      # l'agregat PR gate quand l'OVERRIDE est accepte -- le mecanisme
+      # valide est re-run, jamais POST duplique (#11519).
+      actions: write
     steps:
       - name: Checkout the adjacency helper (sparse, branche par defaut = gate COURANT)
         uses: actions/checkout@v4
@@ -1038,9 +1065,10 @@ jobs:
           fi
 
           # Merged PRs for the lane's REAL predecessor (#12095) -- same
-          # plumbing as the pull_request job above.
-          gh pr list --state merged --limit 100 \
-            --json number,body,mergedAt \
+          # plumbing as the pull_request job above. `--limit 100` is
+          # creation-capped and misses a lane's grain merged a few days ago
+          # (#12636): page the merge-time window instead.
+          python3 scripts/ci/fetch_merged_prs_since.py --days 21 \
             > /tmp/merged_prs.json 2>/dev/null || rm -f /tmp/merged_prs.json
           MERGED_ARG=""
           if [ -s /tmp/merged_prs.json ]; then
@@ -1055,7 +1083,46 @@ jobs:
           SUMMARY=$(cat /tmp/verdict.json 2>/dev/null || echo '{}')
           if [ "$RC" -eq 0 ]; then
             echo "Adjacence OK (comment path)."
-            post_check success "Verdict du gate COURANT (main), declenche par commentaire :$SUMMARY"
+
+            # --- Re-run des runs ORIGINAUX, jamais un POST duplique ------
+            # #13401 : l'OVERRIDE accepte rend vert le temoin de CE job
+            # mais ni le check requis (job pull_request de ce garde) ni
+            # l'agregat PR gate ne bougent -- un POST vert sous leur nom
+            # ne les deverrouillerait pas (ET, pas latest-wins, #11519).
+            # On RE-RUN les runs originaux du meme SHA de tete : la re-run
+            # produit son check-run dans la MEME suite, ou le latest-wins
+            # tient (recette pr-gate-rerun.yml). Echec => ::warning::
+            # loud, jamais silencieux.
+
+            # (a) run pull_request de CE workflow pour le SHA de tete (le
+            # filtre --event exclut ce job commentaire, en issue_comment) :
+            # c'est le porte-nom du check requis.
+            GUARD_RUN_ID=$(gh run list --workflow variation-tag-guard.yml --event pull_request \
+              --limit 30 --json databaseId,headSha,status \
+              | python3 -c "import json,os,sys; print(next((r['databaseId'] for r in json.load(sys.stdin) if r['headSha']==os.environ.get('HEAD_SHA','') and r['status']=='completed'), ''))" 2>/dev/null \
+              || true)
+            if [ -n "$GUARD_RUN_ID" ] && gh run rerun "$GUARD_RUN_ID"; then
+              RERUN_NOTES="run pull_request du garde ${GUARD_RUN_ID} re-declenche"
+            else
+              echo "::warning::[G-VAR-3] aucun run pull_request variation-tag-guard termine pour ${HEAD_SHA} -- rerun MANUEL requis (gh run rerun, #13401)."
+              RERUN_NOTES="rerun du garde NON emis -- rerun manuel requis"
+            fi
+
+            # (b) agregat PR gate pour le meme SHA (recette #11519 : run le
+            # plus recent de ce nom pour le SHA ; on ne re-run que les runs
+            # termines -- l'API rejette la re-run d'un run en cours).
+            GATE_RUN_JSON=$(gh api "repos/${GH_REPO}/actions/runs?head_sha=${HEAD_SHA}&event=pull_request&per_page=100" \
+              --jq '[.workflow_runs[] | select(.name == "PR gate")] | sort_by(.created_at) | last')
+            GATE_RUN_ID=$(printf '%s' "$GATE_RUN_JSON" | jq -r '.id // empty' 2>/dev/null || true)
+            GATE_STATUS=$(printf '%s' "$GATE_RUN_JSON" | jq -r '.status // empty' 2>/dev/null || true)
+            if [ -n "$GATE_RUN_ID" ] && [ "$GATE_STATUS" = "completed" ] && gh run rerun "$GATE_RUN_ID"; then
+              RERUN_NOTES="${RERUN_NOTES}; run PR gate ${GATE_RUN_ID} re-declenche"
+            else
+              echo "::warning::[G-VAR-3] aucun run PR gate termine pour ${HEAD_SHA} -- rerun MANUEL requis (gh run rerun, #13401)."
+              RERUN_NOTES="${RERUN_NOTES}; rerun PR gate NON emis -- rerun manuel requis"
+            fi
+
+            post_check success "Verdict du gate COURANT (main), declenche par commentaire :$SUMMARY -- deverrouillage : $RERUN_NOTES"
             exit 0
           fi
           REASON=$(python3 -c "import json; print(json.load(open('/tmp/verdict.json')).get('reason','unknown'))" 2>/dev/null || echo unknown)

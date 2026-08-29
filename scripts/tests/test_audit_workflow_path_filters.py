@@ -325,6 +325,7 @@ on:
         capture_output=True,
         text=True,
         check=False,
+        encoding="utf-8", errors="replace",
     )
     assert result.returncode == 0, f"stderr: {result.stderr}"
     assert (audit_dir / "latest.json").exists()
@@ -345,6 +346,169 @@ def test_main_handles_missing_workflows_dir(tmp_path: Path) -> None:
         capture_output=True,
         text=True,
         check=False,
+        encoding="utf-8", errors="replace",
     )
     assert result.returncode == 1
     assert "not found" in result.stderr.lower()
+
+
+# ---------------------------------------------------------------------------
+# Hygiene de checkout (issue #12385)
+# ---------------------------------------------------------------------------
+
+_CHECKOUT_FIXTURE_HEADER = """name: {name}
+on:
+{trigger}
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+{with_block}
+"""
+
+
+@pytest.fixture
+def checkout_dir(tmp_path: Path) -> Path:
+    """Cree un repertoire de workflows exerçant l'hygiene de checkout."""
+    wf_dir = tmp_path / "workflows"
+    wf_dir.mkdir()
+
+    # Non conforme : PR + fetch-depth:0 sans blob:none
+    (wf_dir / "bad-clone.yml").write_text(
+        _CHECKOUT_FIXTURE_HEADER.format(
+            name="Bad Clone",
+            trigger="  pull_request:\n    branches: [main]",
+            with_block="          fetch-depth: 0",
+        ),
+        encoding="utf-8",
+    )
+    # Conforme : PR + fetch-depth:0 + blob:none
+    (wf_dir / "good-clone.yml").write_text(
+        _CHECKOUT_FIXTURE_HEADER.format(
+            name="Good Clone",
+            trigger="  pull_request:\n    branches: [main]",
+            with_block="          fetch-depth: 0\n          filter: blob:none",
+        ),
+        encoding="utf-8",
+    )
+    # Pas de trigger PR : push + fetch-depth:0
+    (wf_dir / "push-only.yml").write_text(
+        _CHECKOUT_FIXTURE_HEADER.format(
+            name="Push Only",
+            trigger="  push:\n    branches: [main]",
+            with_block="          fetch-depth: 0",
+        ),
+        encoding="utf-8",
+    )
+    # pull_request_target non conforme
+    (wf_dir / "bad-target.yml").write_text(
+        _CHECKOUT_FIXTURE_HEADER.format(
+            name="Bad Target",
+            trigger="  pull_request_target:\n    branches: [main]",
+            with_block="          fetch-depth: 0",
+        ),
+        encoding="utf-8",
+    )
+    return wf_dir
+
+
+def test_checkout_hygiene_nonconforming(checkout_dir: Path) -> None:
+    """PR + fetch-depth:0 sans blob:none -> NON conforme."""
+    from scripts.notebook_tools.audit_workflow_path_filters import audit_workflows
+
+    audit = audit_workflows(checkout_dir)
+    by_name = {w["name"]: w for w in audit["workflows"]}
+    bad = by_name["bad-clone.yml"]
+    assert bad["has_fetch_depth_0"] is True
+    assert bad["has_blob_none_filter"] is False
+    assert bad["checkout_hygiene_nonconforming"] is True
+    assert bad["checkout_hygiene_reason"] == "nonconforming_full_clone"
+
+
+def test_checkout_hygiene_conforming_blob_none(checkout_dir: Path) -> None:
+    """PR + fetch-depth:0 + blob:none -> conforme."""
+    from scripts.notebook_tools.audit_workflow_path_filters import audit_workflows
+
+    audit = audit_workflows(checkout_dir)
+    by_name = {w["name"]: w for w in audit["workflows"]}
+    good = by_name["good-clone.yml"]
+    assert good["has_fetch_depth_0"] is True
+    assert good["has_blob_none_filter"] is True
+    assert good["checkout_hygiene_nonconforming"] is False
+    assert good["checkout_hygiene_reason"] == "conforming_blob_none"
+
+
+def test_checkout_hygiene_no_pr_trigger(checkout_dir: Path) -> None:
+    """push-only + fetch-depth:0 -> hors scope (pas de trigger PR)."""
+    from scripts.notebook_tools.audit_workflow_path_filters import audit_workflows
+
+    audit = audit_workflows(checkout_dir)
+    by_name = {w["name"]: w for w in audit["workflows"]}
+    push = by_name["push-only.yml"]
+    assert push["has_fetch_depth_0"] is True
+    assert push["checkout_hygiene_nonconforming"] is False
+    assert push["checkout_hygiene_reason"] == "no_pr_trigger"
+
+
+def test_checkout_hygiene_pull_request_target(checkout_dir: Path) -> None:
+    """pull_request_target + fetch-depth:0 sans blob:none -> NON conforme."""
+    from scripts.notebook_tools.audit_workflow_path_filters import audit_workflows
+
+    audit = audit_workflows(checkout_dir)
+    by_name = {w["name"]: w for w in audit["workflows"]}
+    target = by_name["bad-target.yml"]
+    assert target["has_fetch_depth_0"] is True
+    assert target["checkout_hygiene_nonconforming"] is True
+    assert target["checkout_hygiene_reason"] == "nonconforming_full_clone"
+
+
+def test_checkout_hygiene_excluded(
+    checkout_dir: Path,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Un workflow dans l'exclusion (clone complet necessaire) -> exclu."""
+    from scripts.notebook_tools import audit_workflow_path_filters as audit_mod
+    from scripts.notebook_tools.audit_workflow_path_filters import audit_workflows
+
+    # Ajoute bad-clone.yml a la whitelist d'exclusion
+    test_exclusion = audit_mod.CHECKOUT_HYGIENE_FULL_HISTORY_WORKFLOWS | {
+        "bad-clone.yml"
+    }
+    monkeypatch.setattr(
+        audit_mod, "CHECKOUT_HYGIENE_FULL_HISTORY_WORKFLOWS", test_exclusion
+    )
+
+    audit = audit_workflows(checkout_dir)
+    by_name = {w["name"]: w for w in audit["workflows"]}
+    excluded = by_name["bad-clone.yml"]
+    assert excluded["checkout_hygiene_nonconforming"] is False
+    assert excluded["checkout_hygiene_reason"] == "excluded_full_history"
+
+
+def test_checkout_hygiene_summary_counts(checkout_dir: Path) -> None:
+    """Le summary hygiene-checkout agrege les machines a clone."""
+    from scripts.notebook_tools.audit_workflow_path_filters import audit_workflows
+
+    audit = audit_workflows(checkout_dir)
+    s = audit["summary"]
+
+    # bad-clone, good-clone, bad-target = PR trigger + fetch-depth:0
+    assert s["checkout_hygiene_machines"] == 3
+    assert s["checkout_hygiene_nonconforming"] == 2  # bad-clone + bad-target
+    assert s["checkout_hygiene_conforming"] == 1  # good-clone
+    assert s["checkout_hygiene_excluded"] == 0  # pas d'exclusion par defaut
+
+
+def test_checkout_hygiene_positive_control() -> None:
+    """Le controle positif detecte exactement les contrevenants synthetiques."""
+    from scripts.notebook_tools.audit_workflow_path_filters import (
+        _checkout_hygiene_positive_control,
+    )
+
+    result = _checkout_hygiene_positive_control()
+    assert result["ran"] is True
+    assert result["ok"] is True
+    assert set(result["detected"]) == set(result["expected"])

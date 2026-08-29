@@ -2,6 +2,7 @@ import Grothendieck.Adjunction
 import Grothendieck.Calibration
 import Grothendieck.CanonicalProps
 import Grothendieck.CategoryAndSites
+import Grothendieck.Classifier
 import Grothendieck.Comma
 import Grothendieck.Conservative
 import Grothendieck.ConstantSheaf
@@ -34,13 +35,17 @@ import Grothendieck.CoversZariskiArrow_en
 import Grothendieck.DenseTopology
 import Grothendieck.DirectImage
 import Grothendieck.ExceptionalDirect
+import Grothendieck.ExceptionalTriple
 import Grothendieck.Equivalences
 import Grothendieck.KanExtensions
+import Grothendieck.LawvereTierney
 import Grothendieck.LeftExact
 import Grothendieck.Limits
 import Grothendieck.MathlibMap
 import Grothendieck.MayerVietorisSquare
 import Grothendieck.Monads
+import Grothendieck.PlusConstruction
+import Grothendieck.PlusConstruction_en
 import Grothendieck.MonoidalCategories
 import Grothendieck.PullbackCoversLaws
 import Grothendieck.PullbackFunctor
@@ -56,7 +61,11 @@ import Grothendieck.SieveGenerate
 import Grothendieck.SieveLattice
 import Grothendieck.SieveOps
 import Grothendieck.SitePoints
+import Grothendieck.SitesComparison
+import Grothendieck.SitesComparison_en
 import Grothendieck.Subcanonical
+import Grothendieck.TopologyDictionary
+import Grothendieck.TopologyDictionary_en
 import Grothendieck.TopologyLattice
 import Grothendieck.YonedaLemma
 import Grothendieck.ZariskiSite
@@ -118,10 +127,18 @@ Substance réelle :
   Préfaisceaux → Ensembles ; faisceautification universelle.
 - `Grothendieck.LeftExact` : exactitude à gauche du foncteur de
   faisceautification (Grothendieck 1958, Tohoku).
+- `Grothendieck.PlusConstruction` : la construction Plus — l'ingrédient
+  constructif de la sheafification en deux passes (SGA 4 II.3) :
+  fonctorialité, flèche canonique `toPlus`, identité clé
+  `(P ⟶ P⁺)⁺ = P⁺ ⟶ P⁺⁺`, point fixe des faisceaux et propriété
+  universelle du relevé.
 - `Grothendieck.Subcanonical` : topologie sous-canonique — le faisceau
   représentable est un faisceau pour la topologie considérée (cf. Yoneda).
 - `Grothendieck.SitePoints` : points d'un site — généralisation des points
   géométriques d'un schéma, faisceaux de points.
+- `Grothendieck.SitesComparison` : foncteurs continus et lemme de
+  comparaison — pushforward continu sur les catégories de faisceaux,
+  fonctorialité, et l'adjonction induite `F ⊣ G` (SGA 4 III.1.6).
 - `Grothendieck.SheafHom` : hom interne de faisceaux — structure de catégorie
   fermée (cartésien closed).
 - `Grothendieck.ConstantSheaf` : faisceau constant associé à un ensemble,
@@ -201,10 +218,17 @@ Substance (English):
   Presheaves → Sets; universal sheafification.
 - `Grothendieck.LeftExact`: left exactness of the sheafification functor
   (Grothendieck 1958, Tohoku).
+- `Grothendieck.PlusConstruction`: the Plus construction — the constructive
+  ingredient of the two-pass sheafification (SGA 4 II.3): functoriality,
+  canonical arrow `toPlus`, key identity `(P ⟶ P⁺)⁺ = P⁺ ⟶ P⁺⁺`, sheaf
+  fixed point and the universal property of the lift.
 - `Grothendieck.Subcanonical`: subcanonical topology — the representable
   presheaf is a sheaf for the topology considered (cf. Yoneda).
 - `Grothendieck.SitePoints`: points of a site — generalisation of geometric
   points of a scheme, point sheaves.
+- `Grothendieck.SitesComparison`: continuous functors and the comparison
+  lemma — continuous pushforward on sheaf categories, functoriality, and
+  the induced adjunction `F ⊣ G` (SGA 4 III.1.6).
 - `Grothendieck.SheafHom`: internal hom of sheaves — structure of cartesian
   closed category.
 - `Grothendieck.ConstantSheaf`: constant sheaf associated to a set,
