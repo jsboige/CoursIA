@@ -147,6 +147,9 @@ from series_saturation import (  # noqa: E402
     cited_issues,
     fetch_series_visits,
     zone_balance,
+    zone_umbrellas,
+    zone_verdict,
+    is_runaway,
     parent_issue,
     polarity,
     resolve_family,
@@ -1584,26 +1587,31 @@ def main(argv: list[str] | None = None) -> int:
                    if b["new_notebooks"] >= 3]
         chaudes.sort(key=lambda kv: (-kv[1]["new_notebooks"],
                                      -kv[1]["expansion"]))
+        umbrellas = zone_umbrellas(issue_to_family, pool, series)
         if chaudes:
             print("Zones chaudes (14 j) -- parite expansion/consolidation :")
             for f, b in chaudes[:5]:
                 exp, con = b["expansion"], b["consolidation"]
-                # 0/0 n est PAS un feu vert : c est une zone qui a recu N
-                # notebooks sans qu AUCUN grain de consolidation soit ouvert --
-                # le pire cas, pas le plus propre. Un zero d absence de donnee
-                # qui se lit comme un zero d absence de defaut est precisement
-                # le faux silencieux que ce garde existe pour ne pas produire.
-                if exp == 0 and con == 0:
-                    verdict = "SANS REMEDE"
-                elif con >= exp:
-                    verdict = "OK"
-                else:
-                    verdict = "DESEQUILIBRE"
+                verdict = zone_verdict(b)
+                if is_runaway(b):
+                    verdict = "EMBALLEMENT"
+                parents = sorted((umbrellas.get(f) or {}).items(),
+                                 key=lambda kv: -kv[1])
+                epic = (" ".join("#{}".format(n) for n, _ in parents[:2])
+                        if parents else "(aucun EPIC declare)")
                 print("  {:>2d} neufs | {:>2d} expansion / {:>2d} consolidation "
                       "  {:12s} {}".format(
                           b["new_notebooks"], exp, con, verdict, f))
+                print("       alimentee par {}".format(epic))
             print("  (un EPIC qui alimente une zone doit produire autant de "
                   "consolidation que d'expansion -- mandat user 2026-08-28)")
+            print("  EMBALLEMENT = la zone recoit plus vite qu'elle ne "
+                  "consolide. La parite porte sur les grains OUVERTS, elle ne "
+                  "voit pas le RYTHME de ce qui est deja tombe : trois remedes "
+                  "ouverts ne repondent pas a onze arrivees. Le remede est "
+                  "d'ouvrir la consolidation dans l'EPIC nomme -- ou, s'il n'y "
+                  "en a aucun, d'en declarer un : une zone chaude sans EPIC "
+                  "n'a personne de comptable pour la contrepartie.")
             print()
     print(f"Pool ouvert : {len(pool)} issues  "
           f"= {len(by_class['grain'])} grains "
@@ -1659,6 +1667,25 @@ def main(argv: list[str] | None = None) -> int:
             print(f"{'':>10} {'':>8} {'':>5} {'':>6} {'':>4}  {head.strip()}")
             if tail:
                 print(f"{'':>10} {'':>8} {'':>5} {'':>6} {'':>4}  -> {tail}")
+        # Un verdict qui n'est cable a aucune action ne change rien : la zone
+        # chaude s'affichait en tete du tirage et le pick d'a cote n'en disait
+        # rien. C'est ici que la mesure devient une consigne.
+        zb = (balance or {}).get(p.get("family") or "")
+        if zb and zb["new_notebooks"] >= 3:
+            etat = "EMBALLEMENT" if is_runaway(zb) else "zone chaude"
+            pad = f"{'':>10} {'':>8} {'':>5} {'':>6} {'':>4}  "
+            print(pad + "{} : {} notebooks neufs / 14 j, {} consolidation "
+                        "ouverte(s) pour {} expansion.".format(
+                            etat, zb["new_notebooks"], zb["consolidation"],
+                            zb["expansion"]))
+            if zb["consolidation"] <= zb["expansion"] or is_runaway(zb):
+                quoi = ("le SOUS-grain a creer ici est une CONSOLIDATION"
+                        if p["klass"] == "umbrella"
+                        else "la contrepartie due dans cette zone est une "
+                             "CONSOLIDATION")
+                print(pad + "-> " + quoi + " (renumeroter un numero eleve en "
+                      "lettre d'un numero existant, ou fondre plusieurs "
+                      "lettres en un petit nombre), pas une instance de plus.")
     print()
     print_unattributed_blocked(backlog)
     if visits_err:

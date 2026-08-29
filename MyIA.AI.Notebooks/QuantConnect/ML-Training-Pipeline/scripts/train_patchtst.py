@@ -386,6 +386,7 @@ def main():
         "--seeds", type=str, default=None,
         help="Comma-separated seeds for multi-seed evaluation (e.g. 0,1,7,42)",
     )
+    parser.add_argument("--device", default=None, help="Force device (cpu/cuda)")
 
     # Splitting
     parser.add_argument("--train-ratio", type=float, default=0.7)
@@ -415,6 +416,7 @@ def main():
         "--indicators", nargs="+", default=None,
         help="Specific indicators to use (overrides --advanced)",
     )
+    parser.add_argument("--device", default=None, help="Force device (cpu/cuda)")
     args = parser.parse_args()
 
     # Seeds
@@ -425,7 +427,10 @@ def main():
     try:
         import torch
         torch.manual_seed(seeds[0])
-        device = "cuda" if torch.cuda.is_available() else "cpu"
+        if args.device:
+            device = args.device
+        else:
+            device = "cuda" if torch.cuda.is_available() else "cpu"
     except ImportError:
         print("ERROR: PyTorch not installed. Run: pip install torch", file=sys.stderr)
         sys.exit(1)
