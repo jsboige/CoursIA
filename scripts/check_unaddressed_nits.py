@@ -1525,12 +1525,63 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
         and author not in nit_authors
     ]
 
+    # #13512 -- CE QUE L'ORGANE N'A PAS EVALUE.
+    #
+    # `classify` reconnait un commentaire humain a ses retours CRLF de l'UI
+    # web (test sur la sequence CR-LF dans le corps). Un commentaire d'UNE
+    # SEULE LIGNE n'en porte aucun : il tombe en `None` et devient invisible.
+    # Mesure du 2026-08-29 sur quatre remarques user reelles : les trois
+    # one-liners (#13476 tika/qwen, #13397 exercices pre-resolus, #13403
+    # prose confuse) rendent `None` ; seule celle de deux lignes (#13472
+    # graphviz) rend "HUMAN". #13476 a ete mergee 2 h 13 apres la remarque,
+    # sous un `OK -- aucun nit non leve` qui ne l'avait jamais lue.
+    #
+    # Aucun detecteur ne repare ca : `jsboige` est a la fois le compte user,
+    # l'identite de poussee des lanes et le login coordinateur, et l'API ne
+    # les distingue par AUCUN champ (author_association, performed_via_github_app,
+    # user.type : identiques, verifie firsthand). Un classifieur candidat
+    # mesure le meme jour attrapait 3/3 des remarques user mais accusait 3/5
+    # des commentaires de lane -- trop bruyant pour bloquer.
+    #
+    # D'ou le parti : ne pas classer, mais CESSER DE CERTIFIER LE SILENCE.
+    # Ce que l'organe n'a pas evalue, il l'imprime. Lancer le gate devient
+    # l'acte de relire la queue -- la regle user HARD (« on ne merge pas sans
+    # avoir relu tous les commentaires au dernier moment ») cesse de dependre
+    # de la vigilance et devient mecanique.
+    lift_keys = {(t_, a) for (t_, a, _b) in explicit_lifts if t_}
+    unevaluated: list[dict] = []
+    for c in pr_data.get("comments") or []:
+        login = (c.get("author") or {}).get("login", "")
+        if login in BOT_LOGINS:
+            continue
+        body = (c.get("body") or "").strip()
+        when = ts(c.get("createdAt"))
+        if not body or when is None or when > cutoff:
+            continue
+        if classify(login, body) is not None:
+            continue  # deja porte par `blocking`, ou explicitement neutralise
+        if (when, login) in lift_keys:
+            continue  # compte comme levee : deja lu par l'etage lift
+        unevaluated.append({
+            "author": login,
+            "at": c.get("createdAt"),
+            "after_last_commit": bool(last_commit and when > last_commit),
+            "body": body,
+        })
+    # Ce qui suit le dernier commit est le plus a risque (rien ne peut
+    # pretendre l'avoir traite) ; a defaut, la queue -- exactement les
+    # `comments[-3:]` que la regle demande de relire avant `gh pr merge`.
+    after_lc = [u for u in unevaluated if u["after_last_commit"]]
+    to_read = after_lc or unevaluated[-3:]
+
     return {
         "pr": pr_data.get("number"),
         "title": (pr_data.get("title") or "")[:110],
         "blocking": blocking,
         "blocked": bool(blocking),
         "ignored_overrides": ignored_overrides,
+        "unevaluated": to_read,
+        "unevaluated_total": len(unevaluated),
     }
 
 
@@ -1544,6 +1595,34 @@ FIELDS = "number,title,mergedAt,author,comments,reviews,commits,url,state"
 LIST_FIELDS = "number,title,mergedAt,url,comments,reviews,author"
 
 
+def _print_unevaluated(result: dict) -> None:
+    """Imprimer verbatim ce que l'organe n'a pas evalue (#13512).
+
+    `OK -- aucun nit non leve` repond « aucune phrase de levee ne manque », et
+    RIEN D'AUTRE : un commentaire que `classify` n'a pas su lire n'est pas un
+    commentaire absent. Le dire est tout l'organe.
+    """
+    rows = result.get("unevaluated") or []
+    if not rows:
+        return
+    after = sum(1 for r in rows if r["after_last_commit"])
+    tail = f", dont {after} posterieur(s) au dernier commit" if after else ""
+    print()
+    print(f"  --- A RELIRE : {len(rows)} commentaire(s) NON EVALUE(S) par cet organe{tail} ---")
+    print("  Le verdict ci-dessus ne porte QUE sur les phrases de levee. Ces")
+    print("  commentaires n'ont pas ete classes : les lire avant `gh pr merge`.")
+    for r in rows:
+        mark = " [APRES LE DERNIER COMMIT]" if r["after_last_commit"] else ""
+        print()
+        print(f"  * {r['author']} — {r['at']}{mark}")
+        lines = r["body"].split("\n")
+        for line in lines[:8]:
+            print(f"      {line[:160]}")
+        if len(lines) > 8:
+            print(f"      ... (+{len(lines) - 8} ligne(s))")
+    print()
+
+
 def gate(pr: int, as_json: bool) -> int:
     data = gh_json(["pr", "view", str(pr), "--repo", REPO, "--json", FIELDS])
     merged = ts(data.get("mergedAt"))
@@ -1553,6 +1632,7 @@ def gate(pr: int, as_json: bool) -> int:
         print(json.dumps(result, indent=1, ensure_ascii=False))
     elif not result["blocked"]:
         print(f"OK  PR #{pr} — aucun nit non leve.")
+        _print_unevaluated(result)
     else:
         print(f"BLOCKED  PR #{pr} — {len(result['blocking'])} nit(s) non leve(s) :\n")
         for b in result["blocking"]:
@@ -1566,6 +1646,7 @@ def gate(pr: int, as_json: bool) -> int:
             print(f"  [i] {o['why']} (commentaire de {o['author']} à {o['at']})")
         print("Lever chaque nit (commit, reponse explicite, ou issue de suivi nommee)")
         print("avant `gh pr merge`. Cf CLAUDE.md section B.0.")
+        _print_unevaluated(result)
     return 1 if result["blocked"] else 0
 
 
