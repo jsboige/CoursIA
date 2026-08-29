@@ -5,7 +5,7 @@ avec sorry stratégiques commentés (références papier + prérequis Mathlib).
 
 Epic #2874 (Phase 5 en cours). Toolchain `v4.32.1` (migration post-#11325, cf #11256).
 
-## État des sorries (vérifié 2026-08-17 contre `origin/main`, **14 réels**)
+## État des sorries (vérifié 2026-08-28 contre `origin/main`, **11 réels**)
 
 Deux comptes, selon le filtre CI :
 
@@ -13,42 +13,52 @@ Deux comptes, selon le filtre CI :
 |---------|------------|-------------------|
 | `Knots/Basic.lean` | 0 | 3 |
 | `Knots/Reidemeister.lean` | 2 | 2 |
-| `Knots/Invariant.lean` | **2** | 15 |
-| `Knots/Conway.lean` | 8 | 11 |
+| `Knots/Invariant.lean` | **1** | 15 |
+| `Knots/Conway.lean` | 6 | 11 |
 | `Knots/Lidman.lean` | 2 | 4 |
 | `Knots/MathlibPrerequisites.lean` | 0 | 2 |
-| **Total** | **14** | **37** |
+| **Total** | **11** | **37** |
 
-- **sorry réels** = ce qui manque vraiment comme preuve. **14** au total, tous
-  stables : 2 dans `Invariant.lean` (`tricolorable_invariant` L350 +
-  `Knot.unknottingNumber` L2143), 2 `reidemeister_theorem` (PL), 8 Conway,
-  2 Lidman. Les **2 résiduels §9.1 `fox`/`col` du backward transfer ont été
-  DISCHARGÉS par #11227** : le mode kink all-distinct est **vacuus** — le kink
-  R1 `C = ⟨a,b,c,c⟩` a `e₃ = e₄ = c`, la continuité d'over-strand Path B
-  `c₂ = c₄` force `col₂(b) = col₂(c) = col₃`, contredisant l'exigence Fox
-  all-distinct `c₂ ≠ c₃` → `absurd` clos les deux résiduels d'une ligne
-  chacun. La **bi-implication R1 connectée est COMPLÈTE** (forward #3000 +
-  backward #3124/#11227).
-- **Baisse historique 17 → 16 → 14** : #8766 a déchargé `trefoil_not_unknot`
+- **sorry réels** = ce qui manque vraiment comme preuve. **11** au total (code-only
+  après strip `--`/`/- -/`, mesuré par `scripts/lean/count_code_sorry.py` champ
+  `distinct_code_sorry`), tous stables : 1 dans `Invariant.lean`
+  (`Knot.unknottingNumber` L2143 — `tricolorable_invariant` est résolu), 2
+  `reidemeister_theorem` (PL), 6 Conway (les 2 defs `IsSmoothlySlice` /
+  `IsTopologicallySlice := sorry` + 4 `exact sorry` de bornes), 2 Lidman. Les
+  **2 résiduels §9.1 `fox`/`col` du backward transfer ont été DISCHARGÉS par
+  #11227** : le mode kink all-distinct est **vacuus** — le kink R1 `C = ⟨a,b,c,c⟩`
+  a `e₃ = e₄ = c`, la continuité d'over-strand Path B `c₂ = c₄` force
+  `col₂(b) = col₂(c) = col₃`, contredisant l'exigence Fox all-distinct
+  `c₂ ≠ c₃` → `absurd` clos les deux résiduels d'une ligne chacun. La
+  **bi-implication R1 connectée est COMPLÈTE** (forward #3000 + backward
+  #3124/#11227).
+- **Baisse historique 17 → 16 → 14 → 11** : #8766 a déchargé `trefoil_not_unknot`
   (composition), #9966 a surélevé à 17 (wall du wrapper
   `tricolorable_forward_r1`), puis le wall a été déchargé (16) et #11227 a
-  clos fox/col (14). #11276 a ajouté **sans sorry** le transfer
-  `tricolorable_forward_r2_up` PROVEN + les murs nommés
-  `r2_append_only_wall` (L1151) et `r3_determined_wall` (L1293) qui bornent
-  l'iff maître.
+  clos fox/col (14) ; la lecture fine par fichier (post-strip commentaires,
+  compter les `sorry` réels restants) donne **11** : la table de ce README
+  sous-comptait `tricolorable_invariant` (déjà résolu mais présenté comme
+  résiduel) et sur-comptait les defs Conway comme 2 entrées distinctes quand
+  le script compte 6 occurrences mais 5 déclarations (cf. mesure 2026-08-28).
+  #11276 a ajouté **sans sorry** le transfer `tricolorable_forward_r2_up`
+  PROVEN + les murs nommés `r2_append_only_wall` (L1151) et
+  `r3_determined_wall` (L1293) qui bornent l'iff maître.
 - **Reidemeister.lean à 2 sorries réels** : `reidemeister_theorem` ×2
   (topologie PL des 3-variétés, hors portée Mathlib actuel).
 - **sorry prose** = **37** (raw, any-line matchant `sorry` — la prose de
   documentation des murs R2/R3 en a ajouté). Le mode CI officiel est
   **`real`** : strippe `--` et `/- -/`, puis compte le mot-bounded
-  `\bsorry\b`. La CI gate sur baseline **14**.
+  `\bsorry\b`. La CI gate sur baseline **11** (alignée avec
+  `LEAN_INVENTORY.md`, voir #13312).
 
-La CI `.github/workflows/lean-knot.yml` gate sur le **real-mode baseline 14**
-(après #11227 ; historique : prose-header 25→28 dans #3124, baissée à 27 après
-#3163, re-bumpée à 28 par #3003 ; switch prose-header→real à baseline 17 le
-2026-07-11 ; 16 après #8766, re-17 par #9966, 16 au wall discharge, 14 après
-#11227) : toute PR qui ajoute un sorry réel fait monter le compte real et
-échoue la CI, sauf justification documentée dans le body PR.
+La CI `.github/workflows/lean-knot.yml` gate sur le **real-mode baseline 11**
+(alignement post-#13312, mesure 2026-08-28 ; historique : prose-header 25→28
+dans #3124, baissée à 27 après #3163, re-bumpée à 28 par #3003 ;
+switch prose-header→real à baseline 17 le 2026-07-11 ; 16 après #8766, re-17
+par #9966, 16 au wall discharge, 14 après #11227, **11 après mesure
+`count_code_sorry.py` 2026-08-28**) : toute PR qui ajoute un sorry réel fait
+monter le compte real et échoue la CI, sauf justification documentée dans le
+body PR.
 
 **Corridor Reidemeister #8696** (c.8162-c.8169, 5 PRs MERGED 2026-07-29 →
 2026-08-08) : les **6 sites** où le move-surgery `with` était utilisé ont été
@@ -105,6 +115,15 @@ après #8766, puis de 4 à 2 après que #11227 ait discharged les résiduels
 `fox`/`col` §9.1 du backward). Classe chaque feuille
 en **PROUVEABLE** / **REFUTÉ** / **RESEARCH-HOLD** / **INFRASTRUCTURE** — l'état
 formel réel, couplé aux preuves :
+
+> Note post-#13312 : la mesure canonique `count_code_sorry.py --lake knot_lean`
+> rend `distinct_code_sorry = 11` (cf. table d'État des sorries plus haut). La
+> table de Verdicts ci-dessous documente l'état **qualitatif** des théorèmes
+> individuellement (OPEN/PROUVÉ/INFRASTRUCTURE), pas le décompte : elle reste
+> exacte sur le verdict de chaque théorème mais peut diverger du compte agrégé
+> si un théorème a été OPEN puis résolu hors table. La table d'État est
+> l'autorité pour le compte, la table de Verdicts pour l'état formel par
+> théorème.
 
 | Ligne | Théorème | Verdict | Débloqueur |
 |-------|----------|---------|------------|

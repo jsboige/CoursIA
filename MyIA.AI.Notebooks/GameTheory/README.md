@@ -45,9 +45,9 @@ Au-delà de la théorie classique, cette série couvre les **applications contem
 
 Les figures qui ponctuent ce parcours sont extraites des sorties réelles des notebooks (EPIC #5654) ; chacune est réintégrée en regard du concept qu'elle illustre, et sa provenance exacte (notebook et cellule) est documentée dans `assets/readme/MANIFEST.md`.
 
-### Phase 1 : Jeux statiques et équilibres (Notebooks 1-6 + side tracks b/c, ~8h30)
+### Phase 1 : Jeux statiques et équilibres (Notebooks 1-6 + side tracks b/c, ~9h05)
 
-Le parcours commence par le setup (Nashpy, OpenSpiel) et les jeux sous forme normale (matrices de gains, dominance, meilleure réponse). Le notebook 3 (Topology2x2) classifie les jeux 2x2 selon la table périodique de Robinson-Goforth, une perspective géométrique unique. Les notebooks 4-4b-4c plongent dans l'équilibre de Nash : calcul en stratégies pures et mixtes, algorithme de Lemke-Howson, et preuve formelle d'existence via Brouwer et Kakutani en Lean 4. Le notebook 5 (ZeroSum) démontre le théorème minimax et la dualité LP. Le notebook 6 (EvolutionTrust) montre comment la coopération émerge dans les tournois itérés (Axelrod, replicator dynamics) **et l'exécution effective du processus de Moran stochastique** (cf. [#7594](https://github.com/jsboige/CoursIA/pull/7594) Prong-B) : la dynamique de population FINIE en Axelrod diverge souvent de l'intuition mean-field, et le drift génétique peut fixer des stratégies sous-optimales (Defector 28 % / Grudger 24 % / TitForTat 12 % sur 25 graines). Son companion **6c** (RepeatedGames-FolkTheorem) formalise cette intuition : horizon fini → effondrement par induction arrière, horizon infini → grim trigger, condition de crédibilité $\delta \geq (T-R)/(T-P)$, Folk Theorem (tout paiement faisable et individuellement rationnel est soutenable comme SPNE pour $\delta$ assez proche de 1). À l'issue de cette phase, vous comprenez les trois piliers : Nash, minimax, et évolution. Les deux figures suivantes, toutes deux bâties sur l'exemple canonique du Dilemme du Prisonnier, illustrent les deux gestes fondateurs de cette phase : **représenter** un jeu, puis le **résoudre**.
+Le parcours commence par le setup (Nashpy, OpenSpiel) et les jeux sous forme normale (matrices de gains, dominance, meilleure réponse). Le notebook 3 (Topology2x2) classifie les jeux 2x2 selon la table périodique de Robinson-Goforth, une perspective géométrique unique. Les notebooks 4-4b-4c plongent dans l'équilibre de Nash : calcul en stratégies pures et mixtes, algorithme de Lemke-Howson, et preuve formelle d'existence via Brouwer et Kakutani en Lean 4. Le notebook 5 (ZeroSum) démontre le théorème minimax et la dualité LP. Le notebook 6 (EvolutionTrust) montre comment la coopération émerge dans les tournois itérés (Axelrod, replicator dynamics) **et l'exécution effective du processus de Moran stochastique** (cf. [#7594](https://github.com/jsboige/CoursIA/pull/7594) Prong-B) : la dynamique de population FINIE en Axelrod diverge souvent de l'intuition mean-field, et le drift génétique peut fixer des stratégies sous-optimales (Defector 28 % / Grudger 24 % / TitForTat 12 % sur 25 graines). Son companion **6c** (RepeatedGames-FolkTheorem) formalise cette intuition : horizon fini → effondrement par induction arrière, horizon infini → grim trigger, condition de crédibilité $\delta \geq (T-R)/(T-P)$, Folk Theorem (tout paiement faisable et individuellement rationnel est soutenable comme SPNE pour $\delta$ assez proche de 1). Son prolongement **6d** (Sympathie-vs-Engagement) construit le protocole qui identifie ce qui porte la coopération quand la menace est retirée : statique comparative sur les gains d'autrui à gains propres gelés — la pente du taux de coopération sépare sympathie (réponse aux gains d'autrui, `alpha` mesuré) et engagement (règle insensible). À l'issue de cette phase, vous comprenez les trois piliers : Nash, minimax, et évolution. Les deux figures suivantes, toutes deux bâties sur l'exemple canonique du Dilemme du Prisonnier, illustrent les deux gestes fondateurs de cette phase : **représenter** un jeu, puis le **résoudre**.
 
 ![Matrice de gains 2×2 du Dilemme du Prisonnier ; la case (Défaire, Défaire) = (1, 1) est encadrée en bleu comme unique équilibre de Nash.](assets/readme/gt1-setup.png)
 
@@ -235,6 +235,7 @@ flowchart TD
 | 6b | [GameTheory-06b-Lean-RepeatedGames](GameTheory-06b-Lean-RepeatedGames.ipynb) | Lean (lecture) | Compagnon **lake** du 6c : les 7 modules noirs de `game_theory_lean` dévoilés par extraction réelle — Stage (PD forcé par le type), Discounting (seuil $\delta^*$ `coop_ge_deviate_iff`), **`grim_trigger_sustains_iff` 0 sorry #4880**, Folk STRETCH (1 sorry assumé, bord réparé), ConeKernel Bondareva-Farkas, infra SocialChoice ; re-mesure visibilité noirs 7→0 (See #11703) | 35 min |
 | 6c | [GameTheory-06c-RepeatedGames-FolkTheorem](GameTheory-06c-RepeatedGames-FolkTheorem.ipynb) | Python | Compagnon **formel** de GT-6 : horizon fini (effondrement par induction arrière), horizon infini, grim trigger, condition $\delta \geq (T-R)/(T-P)$, Folk Theorem (tout paiement IR faisable est SPNE pour $\delta$ assez proche de 1) | 45 min |
 | 6c (C#) | [GameTheory-06c-RepeatedGames-FolkTheorem-Csharp](GameTheory-06c-RepeatedGames-FolkTheorem-Csharp.ipynb) | .NET (C#) | Twin C# du 6c : **grim trigger + tit-for-tat + Folk Theorem from-scratch** (BCL .NET 9, 0 NuGet), série géométrique $\sum \delta^t g = g/(1-\delta)$, condition de crédibilité $\delta^* = (T-R)/(T-P) = 0.5$, comparaison des seuils grim vs TFT ($2/3$), ensemble faisable & IR en ASCII — parité bit-par-bit avec le Python (See #4956) | 45 min |
+| 6d | [GameTheory-06d-Sympathie-vs-Engagement](GameTheory-06d-Sympathie-vs-Engagement.ipynb) | Python | Protocole d'identification du résidu de GT-06c §7d : **statique comparative** sur les gains d'AUTRUI à gains propres byte-identiques (vérifié en code) — pente du taux de coopération ± IC (5 graines), `alpha` estimé **depuis la pente** par MLE (IC profil), contrôles négatifs (sympathie pure rend son alpha / engagement pur rend pente nulle), verdict « non identifié à ce bruit » admis (See #13042) | 35 min |
 
 ### Partie 2 : Jeux dynamiques et raisonnement stratégique (Notebooks 7-12)
 
@@ -265,6 +266,7 @@ flowchart TD
 | 13 | [GameTheory-13-ImperfectInfo-CFR](GameTheory-13-ImperfectInfo-CFR.ipynb) | Python | CFR vanilla, MCCFR, Deep CFR | 70 min |
 | 13 (C#) | [GameTheory-13-ImperfectInfo-CFR-Csharp](GameTheory-13-ImperfectInfo-CFR-Csharp.ipynb) | .NET (C#) | Twin C# du 13 : CFR/CFR+ regret-matching from-scratch sur Kuhn Poker (récursion contrefactuelle, reach probabilities) (See #4956) | 60 min |
 | 13b | [GameTheory-13b-Safe-Subgame-Solving](GameTheory-13b-Safe-Subgame-Solving.ipynb) | Python | Safe subgame solving : le mauvais recollement produit un témoin adversarial explicite | 45 min |
+| 13c | [GameTheory-13c-Safe-Subgame-Solving-Csharp](GameTheory-13c-Safe-Subgame-Solving-Csharp.ipynb) | .NET (C#) | Twin C# du 13b : reproduction, audit des poids de chemin (double comptage 'pp'/'bp'), énumération corrigée, best-response énumérée — la loi survit, les EV absolus non (See #12208) | 40 min |
 | 14 | [GameTheory-14-DifferentialGames](GameTheory-14-DifferentialGames.ipynb) | Python | Boucle ouverte/fermée, Stackelberg | 60 min |
 | 14 (C#) | [GameTheory-14-DifferentialGames-Csharp](GameTheory-14-DifferentialGames-Csharp.ipynb) | .NET (C#) | Twin C# du 14 : **RK4 from-scratch** (remplace scipy.solve_ivp), **Riccati couplée backward** pour LQ feedback, Cournot/Stackelberg closed-form, poursuite-evasion (Isaacs) modelisée en RK4 (See #4956) | 60 min |
 | 15 | [GameTheory-15-CooperativeGames](GameTheory-15-CooperativeGames.ipynb) | Python | Shapley, Core, Bondareva-Shapley | 65 min |
@@ -397,6 +399,7 @@ Chaque notebook introduit un concept ou un modèle spécifique. Le tableau ci-de
 |---|----------|-------------------|
 | 4c | NashExistence-Python | Point fixe Brouwer **discriminant** (`regret ≡ 0 ⟺ fixed point`, double seed non-équilibre/équilibre, anti-tautologie Prong-B [#7664]) — visualisation convergence Nash via `perturbed_br` |
 | 6c | RepeatedGames-FolkTheorem | Compagnon formel de GT-6 : horizon fini vs infini, condition de crédibilité du grim trigger $\delta \geq (T-R)/(T-P)$, Folk Theorem |
+| 6d | Sympathie-vs-Engagement | Statique comparative sur les gains d'autrui : séparer empiriquement sympathie (pente croissante, alpha mesuré) et engagement (pente plate + marque de règle) — l'identification que le classifieur à alpha posé de 6c §7d ne peut pas faire |
 | 8c | CombinatorialGames-Python | Variantes avancées (Wythoff, Chomp), visualisations |
 | 15c | CooperativeGames-Python | Exemples avancés (Glove Game, politique française) |
 
@@ -822,6 +825,7 @@ GameTheory/
 ├── GameTheory-13-ImperfectInfo-CFR.ipynb
 ├── GameTheory-13-ImperfectInfo-CFR-Csharp.ipynb    # Jumeau C# — CFR/CFR+ regret-matching from-scratch (marathon #4956)
 ├── GameTheory-13b-Safe-Subgame-Solving.ipynb       # Recollement sûr et témoin adversarial
+├── GameTheory-13c-Safe-Subgame-Solving-Csharp.ipynb # Twin C# du 13b — reproduction + audit + BR énumérée (maturation #12208)
 ├── GameTheory-14-DifferentialGames.ipynb
 ├── GameTheory-14-DifferentialGames-Csharp.ipynb    # Jumeau C# — jeux différentiels : RK4 + Riccati from-scratch, pursuit-evasion (marathon #4956)
 ├── GameTheory-15-CooperativeGames.ipynb
@@ -838,11 +842,12 @@ GameTheory/
 ├── GameTheory-08d-Lean-CGT-Native.ipynb
 ├── GameTheory-15b-Lean-CooperativeGames.ipynb
 ├── GameTheory-17c-Lean-Lemons-Certificat.ipynb       # Companion natif du lake asymmetric_information_lean
-├── GameTheory-04c-NashExistence-Python.ipynb        # Side tracks c — approfondissement (Python 4c, 6c, 8c, 15c)
+├── GameTheory-04c-NashExistence-Python.ipynb        # Side tracks c — approfondissement (Python 4c, 6c, 6d, 8c, 15c)
 ├── GameTheory-04c-NashExistence-Csharp.ipynb        #   Jumeau C# (.NET Interactive) — Brouwer point fixe + Matching Pennies (parité #4956)
 ├── GameTheory-06b-Lean-RepeatedGames.ipynb          # Compagnon lean (lecture) du 6c — lake game_theory_lean dévoilé, visibilité #11703
 ├── GameTheory-06c-RepeatedGames-FolkTheorem.ipynb
 ├── GameTheory-06c-RepeatedGames-FolkTheorem-Csharp.ipynb  #   Jumeau C# — grim trigger/TFT/Folk Theorem from-scratch (parité #4956)
+├── GameTheory-06d-Sympathie-vs-Engagement.ipynb    #   Protocole d'identification du résidu 6c §7d : statique comparative sur les gains d'autrui (pente, alpha mesuré, contrôles négatifs) #13042
 ├── GameTheory-08c-CombinatorialGames-Python.ipynb
 ├── GameTheory-08c-CombinatorialGames-Csharp.ipynb   #   Jumeau C# — Wythoff/Chomp/périodicité Grundy from-scratch (parité #4956)
 ├── GameTheory-15c-CooperativeGames-Python.ipynb

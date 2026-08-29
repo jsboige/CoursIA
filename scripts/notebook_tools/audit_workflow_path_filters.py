@@ -40,10 +40,15 @@ import yaml
 REQUIRED_UNFILTERED_WORKFLOWS: set[str] = {
     # Gates PR (protection de branche)
     "pr-gate.yml",
-    "lane-claim-guard.yml",
-    "variation-tag-guard.yml",
-    "variation-light-genre.yml",
+    # #13384 : fusion des cinq gardes always-on (variation-tag-guard,
+    # perimeter-review-guard, fast-lane-shadow, variation-light-genre,
+    # lane-claim-guard -- tous dormant) en un seul workflow non filtre qui
+    # porte leurs organes metadata + le moteur fast-lane.
+    "always-on-guards.yml",
     "translation-guard.yml",
+    # Les quatre gardes fusionnes ci-dessus sont DORMANTS depuis #13384
+    # (declencheurs pull_request retires, jobs conserves en reference) :
+    # retires de cette liste, ils ne declenchent plus sur les PR.
     # catalog-pr-guard.yml retire par #11012 : le workflow n'a jamais tourne sur
     # une PR (0 run pull_request), c'est catalog-drift.yml qui tient la ligne.
     # Secret scan (doit voir chaque PR)

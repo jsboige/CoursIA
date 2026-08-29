@@ -58,6 +58,8 @@ Transmettre un secret par **message prive RooSync** (`to: "machine:workspace"`, 
 
 - **Transmettre un secret par message prive** `to: "machine:workspace"` (jamais `to: "dashboard"`).
 - Preferer **attachment + `destruct_after`** (30 m–2 h) : reduit l'empreinte dans les logs et les snapshots GDrive. Hygiene recommandee, condition **non bloquante**.
+  - **API attachment (mise a jour #10333, c.647) :** l'aller-retour fonctionnel est `send` avec `attachments` → `attachments_list(message_id=X)` (cible, O(1) refs via `MessageManager.updateMessageAttachments` depuis PR `jsboige/jsboige-mcp-servers#1039` MERGED 2026-08-25) → `attachments_get(message_id, filename)` (c'est le call qui ferme la boucle — pas de `uuid` discoverable via la liste). `attachments_get(uuid=...)` reste valide par compatibilite, mais le couple `(message_id, filename)` est la voie nominale.
+  - **Sur `destruct_after`** : il s'applique au **message** (`MessageManager` `expires_at`, L983/L1013) — PAS a l'attachment lui-meme (verifie c.647, body `roo-extensions#933` MERGED 2026-08-25). L'attachment vit dans `AttachmentManager`, qui herite d'un cleanup par anciennete (4 sem par defaut), pas d'un TTL message.
 - Un secret **deja couvert par `.secrets/master.env`** se propage de preference par le pipeline `render_envs.py` + `docker compose restart` (plus simple, pas de transit du secret). Mais `master.env` **n'est pas un gate** : quand il ne couvre pas la cible (token ephemere, rotation ad-hoc, service hors catalogue, cle detenue par une seule machine), RooSync prive **est** le bon canal — pas un pis-aller a refuser.
 
 ### Interdit

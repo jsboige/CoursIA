@@ -17,7 +17,7 @@ name: Twin Parity Cron (CI-derived SHA, #9399 volet b)
 # outputs en n'excluant que `nb["metadata"]`, donc ce cas ne peut signifier que
 # du churn de metadata carnet (cost / papermill / kernelspec) -- precisement le
 # faux positif que le volet c elimine. Ne PAS le re-inclure dans le total
-# bloquant : le 2026-08-07 il rougissait main pour Sudoku-8/14 BDD avec un
+# bloquant : le 2026-08-07 il rougissait main pour Sudoku-08/14 BDD avec un
 # `::error ...::<none>` sans nom de paire, et son remede prescrit (`--update`)
 # refusait en no-op par design. Le gate rougit sur `n_blocking_drift`.
 #

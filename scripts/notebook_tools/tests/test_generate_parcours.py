@@ -28,7 +28,7 @@ SAMPLE_ENTRIES = [
     {"path": "Search/Part2/CSP-1.ipynb", "title": "CSP Intro", "serie": "Search",
      "maturity": "BETA", "status": "READY", "executable_locally": True,
      "sous_serie": "Part2-CSP"},
-    {"path": "Sudoku/Sudoku-1.ipynb", "title": "Sudoku Base", "serie": "Sudoku",
+    {"path": "Sudoku/Sudoku-01.ipynb", "title": "Sudoku Base", "serie": "Sudoku",
      "maturity": "PRODUCTION", "status": "READY", "executable_locally": True},
     {"path": "GenAI/Image/GenAI-1.ipynb", "title": "Image Gen", "serie": "GenAI",
      "maturity": "PRODUCTION", "status": "READY", "executable_locally": True},
