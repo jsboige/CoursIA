@@ -1,6 +1,6 @@
 # Verify Before Claiming
 
-Source : incidents 2026-05-07 (faux claim "MultiAgentSorryProver doesn't exist" alors qu'implemente dans `prover/agents.py`, `prover/workflow.py`, etc.) + 2026-04-24 (commit "Mathlib compilation fixes" remplace 9 preuves par `sorry`) + 2026-08-20 (issue **#11900** — picker remonte des EPICs dont le body est devenu **faux** post-resolution, narrow structurel persistant). Voir aussi [pr-review-discipline.md](pr-review-discipline.md), [anti-regression.md](anti-regression.md), [audit-reassessment.md](audit-reassessment.md), [docs/reference/picker-delaisse-detail.md](../docs/reference/picker-delaisse-detail.md).
+Source : incidents 2026-05-07 (faux claim "MultiAgentSorryProver doesn't exist" alors qu'implemente dans `prover/agents.py`, `prover/workflow.py`, etc.) + 2026-04-24 (commit "Mathlib compilation fixes" remplace 9 preuves par `sorry`) + 2026-08-20 (issue **#11900** — picker remonte des EPICs dont le body est devenu **faux** post-resolution, narrow structurel persistant). Voir aussi [pr-review-discipline.md](pr-review-discipline.md), [anti-regression.md](anti-regression.md), [audit-reassessment.md](audit-reassessment.md), [docs/reference/picker-delaisse-detail.md](../../docs/reference/picker-delaisse-detail.md).
 
 ## Regles HARD
 
@@ -20,5 +20,5 @@ Source : incidents 2026-05-07 (faux claim "MultiAgentSorryProver doesn't exist" 
    2. **Le plateau** — `gh pr list --state all --search "head:<branch>"` + `gh pr list --state open --json files` sur le **chemin** visé.
    3. **Le commentaire de fermeture / décision** — `gh issue view N --comments` pour les commentaires après le dernier commit de référence du body.
 
-   Le verdict (4 cases), les anti-patterns et le test de détection systématique vivent dans [docs/reference/picker-delaisse-detail.md](../docs/reference/picker-delaisse-detail.md) — **cette règle ne detaille pas**, elle pose le **geste obligatoire** : vérifier avant de conclure.
+   Le verdict (4 cases), les anti-patterns et le test de détection systématique vivent dans [docs/reference/picker-delaisse-detail.md](../../docs/reference/picker-delaisse-detail.md) — **cette règle ne detaille pas**, elle pose le **geste obligatoire** : vérifier avant de conclure.
 
