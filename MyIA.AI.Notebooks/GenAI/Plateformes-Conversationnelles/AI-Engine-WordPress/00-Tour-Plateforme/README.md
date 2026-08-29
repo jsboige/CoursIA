@@ -1,11 +1,11 @@
 # Tour de la plateforme AI Engine
 
-[← AI-Engine-WordPress](../README.md) | [← Plateformes conversationnelles](../../README.md) | [← Documentation GenAI](../../../README.md) | [Tour Open WebUI](../../Open-WebUI/00-Tour-Plateforme/README.md)
+[← AI-Engine-WordPress](../README.md | [← Plateformes conversationnelles](../../README.md | [← Documentation GenAI](../../../README.md | [Tour Open WebUI](../../Open-WebUI/00-Tour-Plateforme/README.md
 
 > **Parcours découverte.** Ce tour guidé présente, écran par écran, *à quoi
 > ressemble AI Engine et comment on s'en sert depuis son interface
 > d'administration*. Il est le pendant « interface » de la série
-> **[AI Engine par son API](../README.md)**, qui pilote la même plateforme
+> **[AI Engine par son API](../README.md**, qui pilote la même plateforme
 > par requêtes REST : ici on apprend à se servir de l'outil à la souris ;
 > là-bas on apprend à l'automatiser.
 
@@ -29,8 +29,8 @@ Chaque section suit le même rythme :
 
 > **Note sur les captures.** Les 12 images de ce tour sont produites de
 > façon **reproductible** par un script Playwright
-> ([`capturer-le-tour.py`](capturer-le-tour.py)) exécuté contre l'
-> **[instance jetable « Maison Valmont »](../instance-jetable/README.md)** :
+> ([`capturer-le-tour.py`](capturer-le-tour.py) exécuté contre l'
+> **[instance jetable « Maison Valmont »](../instance-jetable/README.md** :
 > une installation WordPress Docker locale, 100 % synthétique (maison
 > d'édition fictive), branchée sur un LLM local. Aucune donnée réelle n'y
 > figure, et aucune capture ne montre de clé d'API ni de mot de passe.
@@ -74,7 +74,7 @@ premiers réglages.
 **Ce qu'on y voit.** La page de bienvenue du plugin, son menu latéral
 d'onglets, et le fil des étapes de prise en main.
 
-![Capture de l'onglet Dashboard d'AI Engine dans l'admin WordPress : menu du plugin à gauche (Dashboard, Modules, Chatbots, Settings), zone principale avec les étapes de prise en main de l'extension.](assets/tour-01-tableau-de-bord.png)
+![Capture de l'onglet Dashboard d'AI Engine dans l'admin WordPress : menu du plugin à gauche (Dashboard, Modules, Chatbots, Settings), zone principale avec les étapes de prise en main de l'extension.](assets/tour-01-tableau-de-bord.png
 
 ## 2 — Catalogue des modules
 
@@ -85,7 +85,7 @@ chacune activable d'un clic — certaines marquées **Pro**.
 **Ce qu'on y voit.** La grille des modules avec leurs interrupteurs
 d'activation et leurs mentions Free / Pro.
 
-![Capture de l'onglet Modules d'AI Engine : grille des modules de l'extension, chacun avec son interrupteur, les modules Pro signalés comme tels.](assets/tour-02-modules.png)
+![Capture de l'onglet Modules d'AI Engine : grille des modules de l'extension, chacun avec son interrupteur, les modules Pro signalés comme tels.](assets/tour-02-modules.png
 
 ## 3 — Éditeur de chatbots
 
@@ -97,7 +97,7 @@ discussion.
 créé par le script de peuplement — et le panneau de réglages du chatbot
 sélectionné.
 
-![Capture de l'onglet Chatbots d'AI Engine : liste des chatbots de l'instance (dont « valmont », créé par le seed) et réglages du chatbot sélectionné (modèle, invite système, apparence).](assets/tour-03-chatbots.png)
+![Capture de l'onglet Chatbots d'AI Engine : liste des chatbots de l'instance (dont « valmont », créé par le seed) et réglages du chatbot sélectionné (modèle, invite système, apparence).](assets/tour-03-chatbots.png
 
 ## 4 — Aperçu live du chatbot
 
@@ -108,7 +108,7 @@ immédiatement.
 **Ce qu'on y voit.** La fenêtre de discussion du chatbot, rendue en bas de
 l'éditeur, telle que la verra un visiteur.
 
-![Capture de l'aperçu live intégré en bas de l'éditeur de chatbots : la fenêtre de discussion telle qu'elle apparaîtra aux visiteurs.](assets/tour-04-chatbots-apercu.png)
+![Capture de l'aperçu live intégré en bas de l'éditeur de chatbots : la fenêtre de discussion telle qu'elle apparaîtra aux visiteurs.](assets/tour-04-chatbots-apercu.png
 
 ## 5 — Environnements par défaut
 
@@ -122,7 +122,7 @@ d'usages types. Le cadrage s'arrête volontairement sous ce titre : la carte
 au-dessus (*Environments for AI*) affiche la clé API et l'URL du serveur de
 modèles en clair — rien de tout ça dans un dépôt public.
 
-![Capture de la section « Default Environments for AI » dans l'onglet Settings : la grille des sept usages types (chat, images, audio,…). La carte « Environments for AI », au-dessus, affichant clé et endpoint en clair, est volontairement hors cadre.](assets/tour-05-environnements-defaut.png)
+![Capture de la section « Default Environments for AI » dans l'onglet Settings : la grille des sept usages types (chat, images, audio,…). La carte « Environments for AI », au-dessus, affichant clé et endpoint en clair, est volontairement hors cadre.](assets/tour-05-environnements-defaut.png
 
 ## 6 — Playground
 
@@ -133,7 +133,7 @@ moindre ligne de code ni toucher au site public.
 **Ce qu'on y voit.** L'interface du Playground : sélecteur de modèle, zone
 de prompt, réponse.
 
-![Capture du Playground d'AI Engine (menu Tools) : sélecteur d'environnement/modèle, zone de saisie du prompt et zone de réponse.](assets/tour-06-playground.png)
+![Capture du Playground d'AI Engine (menu Tools) : sélecteur d'environnement/modèle, zone de saisie du prompt et zone de réponse.](assets/tour-06-playground.png
 
 ## 7 — Workspace *(Pro)*
 
@@ -146,7 +146,7 @@ ci-dessus).
 **Ce qu'on y voit.** L'interface sombre du Workspace occupant tout
 l'écran de l'admin.
 
-![Capture du Workspace AI Engine (chat plein écran dans l'admin WordPress, thème sombre) — module Pro activé temporairement par l'API REST le temps de la capture, comme documenté dans le README.](assets/tour-07-workspace.png)
+![Capture du Workspace AI Engine (chat plein écran dans l'admin WordPress, thème sombre) — module Pro activé temporairement par l'API REST le temps de la capture, comme documenté dans le README.](assets/tour-07-workspace.png
 
 ## 8 — Générateur de contenu
 
@@ -157,7 +157,7 @@ dans l'éditeur WordPress.
 **Ce qu'on y voit.** L'écran du générateur de contenu : formulaire de
 description, options, bouton de génération.
 
-![Capture du générateur de contenu d'AI Engine (module Generators) : formulaire décrivant le contenu à produire et options de génération.](assets/tour-08-generateur-contenu.png)
+![Capture du générateur de contenu d'AI Engine (module Generators) : formulaire décrivant le contenu à produire et options de génération.](assets/tour-08-generateur-contenu.png
 
 ## 9 — Générateur d'images
 
@@ -167,7 +167,7 @@ image produite par le serveur de modèles — toujours sans quitter l'admin.
 **Ce qu'on y voit.** L'écran du générateur d'images : zone de prompt et
 options.
 
-![Capture du générateur d'images d'AI Engine (module Generators) : zone de saisie du prompt et options de génération d'image.](assets/tour-09-generateur-images.png)
+![Capture du générateur d'images d'AI Engine (module Generators) : zone de saisie du prompt et options de génération d'image.](assets/tour-09-generateur-images.png
 
 ## 10 — Accueil public
 
@@ -178,7 +178,7 @@ Valmont », la maison d'édition fictive qui peuple l'instance.
 **Ce qu'on y voit.** L'accueil du site, sans barre d'admin (la capture
 vérifie qu'aucune session ne fuite), avec le thème standard de WordPress.
 
-![Capture de la page d'accueil publique de l'instance jetable « Maison Valmont » : site vitrine de la maison d'édition fictive, sans barre d'administration.](assets/tour-10-accueil-visiteur.png)
+![Capture de la page d'accueil publique de l'instance jetable « Maison Valmont » : site vitrine de la maison d'édition fictive, sans barre d'administration.](assets/tour-10-accueil-visiteur.png
 
 ## 11 — Page Assistant
 
@@ -189,7 +189,7 @@ courte de « l'IA intégrée au site ».
 **Ce qu'on y voit.** La page *Assistant* du site public avec la fenêtre de
 discussion du chatbot « valmont » intégrée au contenu.
 
-![Capture de la page « Assistant » du site public : la fenêtre de discussion du chatbot « valmont » insérée dans la page par shortcode.](assets/tour-11-assistant.png)
+![Capture de la page « Assistant » du site public : la fenêtre de discussion du chatbot « valmont » insérée dans la page par shortcode.](assets/tour-11-assistant.png
 
 ## 12 — Conversation réelle
 
@@ -201,7 +201,7 @@ réponse.
 **Ce qu'on y voit.** L'échange réel dans la fenêtre de discussion : la
 question du visiteur, la réponse du modèle servi localement.
 
-![Capture d'une conversation réelle avec le chatbot « valmont » : question d'un visiteur sur les genres publiés par la maison, réponse complète du modèle local desservi par l'instance.](assets/tour-12-conversation.png)
+![Capture d'une conversation réelle avec le chatbot « valmont » : question d'un visiteur sur les genres publiés par la maison, réponse complète du modèle local desservi par l'instance.](assets/tour-12-conversation.png
 
 ---
 
@@ -232,11 +232,11 @@ les variables attendues.
 
 - Pour piloter la même plateforme **par l'API** plutôt qu'à la souris,
   suivre la série **AI Engine par son API**, à partir de
-  [`presenter-ai-engine-par-son-api.ipynb`](../presenter-ai-engine-par-son-api.ipynb).
+  [`presenter-ai-engine-par-son-api.ipynb`](../03-Functional/03-5-Multi-Provider/presenter-ai-engine-par-son-api.ipynb.
 - Pour monter l'instance jetable chez soi et rejouer ce tour :
-  [`../instance-jetable/README.md`](../instance-jetable/README.md).
+  [`../instance-jetable/README.md`](../instance-jetable/README.md.
 - Pour la même visite côté Open WebUI, voir le
-  [Tour Open WebUI](../../Open-WebUI/00-Tour-Plateforme/README.md).
+  [Tour Open WebUI](../../Open-WebUI/00-Tour-Plateforme/README.md.
 
 ---
 

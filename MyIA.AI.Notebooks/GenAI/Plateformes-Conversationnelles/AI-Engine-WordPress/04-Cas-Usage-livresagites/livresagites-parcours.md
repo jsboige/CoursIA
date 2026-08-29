@@ -1,6 +1,6 @@
 # Cas d'usage livresagités — AI-Engine en contexte éditorial
 
-[← README AI-Engine-WordPress](../README.md) | [← Comparatif OWUI vs AI-Engine](../02-Comparatif/comparatif-owui-vs-ai-engine.md)
+[← README AI-Engine-WordPress](../README.md | [← Comparatif OWUI vs AI-Engine](../02-Comparatif/comparatif-owui-vs-ai-engine.md
 
 > Le projet **livresagités** est une installation WordPress de
 > **maison d'édition** : soumission de manuscrits, comité de lecture,
@@ -52,8 +52,8 @@ d'embeddings** coexistants, ~1600 vecteurs indexés.
 ## Parcours 0 — L'architecture en modules
 
 > Cette section a déménagé vers le dossier
-> [`01-Architecture/`](../01-Architecture/) — voir
-> [`architecture-en-modules.md`](../01-Architecture/architecture-en-modules.md) :
+> [`01-Architecture/`](../01-Architecture — voir
+> [`architecture-en-modules.md`](../01-Architecture/architecture-en-modules.md :
 > trois familles de modules (Client / Server / Admin), l'empreinte modulable
 > d'un déploiement minimal, et les deux sens du protocole MCP qui ne se
 > configurent pas au même endroit.
@@ -105,7 +105,7 @@ catalogue), pas pour le cœur éditorial.
 > la valeur dans un déploiement donné. Cartographier les *flux de
 > texte réels* avant de choisir les modules à activer.
 
-> **Notebook compagnon.** [`mesurer-la-derive-dun-copilot.ipynb`](../mesurer-la-derive-dun-copilot.ipynb)
+> **Notebook compagnon.** [`mesurer-la-derive-dun-copilot.ipynb`](../03-Functional/03-1-Chatbots/mesurer-la-derive-dun-copilot.ipynb
 > creuse le **gate humain** du Copilot (« valide ou rejette »). Les six
 > transformations n'ont pas le même effet informationnel : certaines
 > ajoutent (image, alt text), d'autres réécrivent sans perdre (enhancement,
@@ -118,7 +118,7 @@ catalogue), pas pour le cœur éditorial.
 > étape, isolément, passait le gate. *Le gate est local (étape par étape) ;
 > la dérive est globale (chaîne).*
 
-> **Notebook compagnon (axe conformité).** [`auditer-la-conformite-visuelle.ipynb`](../auditer-la-conformite-visuelle.ipynb)
+> **Notebook compagnon (axe conformité).** [`auditer-la-conformite-visuelle.ipynb`](../06-Securite-et-Methode/auditer-la-conformite-visuelle.ipynb
 > traite l'autre moitié du Copilot : non plus la *dérive du contenu* sur une
 > chaîne, mais la *conformité visuelle* du rendu final. Un smoke test
 > structurel (statut 200, `<main>` non vide, élément d'action présent) passe
@@ -130,10 +130,10 @@ catalogue), pas pour le cœur éditorial.
 > de défauts visuels. *Le gate « la page est servie » ne certifie pas « le
 > rendu est conforme ».* C'est la classe visuelle du motif « la sonde ment »
 > documenté pour la classe système dans
-> [`verification-verte-systeme-casse.md`](../../../../../docs/reference/verification-verte-systeme-casse.md).
+> [`verification-verte-systeme-casse.md`](../../../../../docs/reference/verification-verte-systeme-casse.md.
 
 > **Notebook compagnon (série « par son API »).**
-> [`interroger-lassistant-de-lediteur-par-l-api.ipynb`](../interroger-lassistant-de-lediteur-par-l-api.ipynb)
+> [`interroger-lassistant-de-lediteur-par-l-api.ipynb`](../03-Functional/03-1-Chatbots/interroger-lassistant-de-lediteur-par-l-api.ipynb
 > ouvre la face API de ce Copilot : la route `mwai-ui/v1/editor/submit`,
 > partagée avec le namespace visiteur mais séparée de lui par la paire
 > cookie de session + nonce `wp_rest` (le nonce visiteur de
@@ -211,7 +211,7 @@ En revanche, la notion d'**environnements multiples** au sein d'une
 même instance est plus explicite côté AI-Engine, où elle est un
 champ de configuration de premier niveau.
 
-> [`separer-les-environnements-de-vecteurs.ipynb`](../separer-les-environnements-de-vecteurs.ipynb)
+> [`separer-les-environnements-de-vecteurs.ipynb`](../03-Functional/03-3-RAG-et-Embeddings/separer-les-environnements-de-vecteurs.ipynb
 > convertit les deux défaillances ci-dessus en **mesures reproductibles** :
 > sur un vector store synthétique partitionné en six régimes d'accès, il
 > démontre la fuite cross-environnement (taux de chunks réservés renvoyés
@@ -219,7 +219,7 @@ champ de configuration de premier niveau.
 > (comptage du corpus voisin écrasé). Déterministe, sans clé ni réseau.
 
 > **Notebook compagnon (série « par son API »).**
-> [`brancher-plusieurs-providers-par-l-api.ipynb`](../brancher-plusieurs-providers-par-l-api.ipynb)
+> [`brancher-plusieurs-providers-par-l-api.ipynb`](../03-Functional/03-5-Multi-Provider/brancher-plusieurs-providers-par-l-api.ipynb
 > applique la notion d'environnement aux **modèles** cette fois : la
 > matrice `ai_<usage>_default_env` (chat, fast, vision, images, audio,
 > json, embeddings) route chaque usage vers un environnement distinct,
@@ -234,7 +234,7 @@ champ de configuration de premier niveau.
 > puis restauration à l'identique.
 
 > **Notebook compagnon (série « par son API »).**
-> [`obtenir-des-donnees-structurees-par-l-api.ipynb`](../obtenir-des-donnees-structurees-par-l-api.ipynb)
+> [`obtenir-des-donnees-structurees-par-l-api.ipynb`](../03-Functional/03-1-Chatbots/obtenir-des-donnees-structurees-par-l-api.ipynb
 > écrit enfin la case que le précédent ne faisait que lire : la route
 > `/ai/json` ignore structurellement `envId`/`model` et hérite
 > toujours de la case **json** de la matrice — vide par défaut, et
@@ -312,7 +312,7 @@ soit le CMS ou le langage : la valeur d'un serveur MCP se mesure à
 la distance entre ses outils et le schéma de persistance.
 
 > **Compagnon exécutable.** Le notebook
-> [`auditer-un-serveur-mcp.ipynb`](../auditer-un-serveur-mcp.ipynb) convertit
+> [`auditer-un-serveur-mcp.ipynb`](../03-Functional/03-4-MCP-Server/auditer-un-serveur-mcp.ipynb convertit
 > cette leçon en une mesure reproductible : il classe chaque outil d'un
 > catalogue en CRUD générique ou verbe métier et calcule sa distance au
 > schéma de persistance à partir du seul `inputSchema`. Le catalogue audité
@@ -320,7 +320,7 @@ la distance entre ses outils et le schéma de persistance.
 > et un chemin live optionnel permet de le rejouer sur son propre serveur.
 
 > **Notebook compagnon (face protocole).**
-> [`piloter-wordpress-par-mcp.ipynb`](../piloter-wordpress-par-mcp.ipynb)
+> [`piloter-wordpress-par-mcp.ipynb`](../03-Functional/03-4-MCP-Server/piloter-wordpress-par-mcp.ipynb
 > démontre le protocole lui-même contre l'instance jetable : l'endpoint
 > JSON-RPC `mcp/v1/http` (namespace séparé de l'API REST d'administration),
 > le handshake `initialize` avec **négociation de version** réelle, le
@@ -334,7 +334,7 @@ la distance entre ses outils et le schéma de persistance.
 > client viennent du plugin custom, consommables par le même protocole.
 
 > **Notebook compagnon (face autorisation).**
-> [`autour-du-consent-oauth-du-serveur-mcp.ipynb`](../autour-du-consent-oauth-du-serveur-mcp.ipynb)
+> [`autour-du-consent-oauth-du-serveur-mcp.ipynb`](../03-Functional/03-4-MCP-Server/autour-du-consent-oauth-du-serveur-mcp.ipynb
 > répond à la question que le précédent laisse ouverte : un client
 > tiers réel (Claude Desktop, un IDE) n'a pas l'application password
 > de l'admin — et ne doit pas l'avoir. Le plugin embarque un serveur
@@ -356,7 +356,7 @@ la distance entre ses outils et le schéma de persistance.
 C'est ici qu'AI-Engine se distingue le plus franchement. Open WebUI
 peut *consommer* des outils MCP ; il n'en *expose* pas. AI-Engine
 joue **dans les deux sens** : il consomme des serveurs MCP externes
-(module Orchestration, voir [l'architecture en modules](../01-Architecture/architecture-en-modules.md)) et expose WordPress comme serveur
+(module Orchestration, voir [l'architecture en modules](../01-Architecture/architecture-en-modules.md) et expose WordPress comme serveur
 MCP. C'est un terrain pédagogique de choix pour comprendre le
 protocole des deux côtés du fil, sur une seule installation.
 
@@ -429,7 +429,7 @@ atteignables, le coût en appels LLM de chacun, et les champs déclarés mais
 jamais visibles (branches mortes). Auditer un formulaire conditionnel
 suppose d'énumérer ses chemins, pas de relire ses champs.
 
-> **Notebook compagnon.** [`auditer-un-formulaire-conditionnel.ipynb`](../auditer-un-formulaire-conditionnel.ipynb)
+> **Notebook compagnon.** [`auditer-un-formulaire-conditionnel.ipynb`](../03-Functional/03-2-Forms/auditer-un-formulaire-conditionnel.ipynb
 > rend cette leçon exécutable : il monte un formulaire de soumission
 > synthétique (Maison Valmont) à sept champs conditionnels et **énumère les
 > chemins terminaux**. Sept champs engendrent treize états distincts (contre
@@ -439,7 +439,7 @@ suppose d'énumérer ses chemins, pas de relire ses champs.
 > fonctionnel. stdlib pure, aucune clé, aucun réseau.
 
 > **Notebook compagnon (face API).**
-> [`administrer-les-formulaires-par-l-api.ipynb`](../administrer-les-formulaires-par-l-api.ipynb)
+> [`administrer-les-formulaires-par-l-api.ipynb`](../03-Functional/03-2-Forms/administrer-les-formulaires-par-l-api.ipynb
 > est la face administrative du même objet : dans AI Engine, un formulaire
 > n'est pas une table mais un **contenu** — un custom post type `mwai_form`
 > avec CRUD unitaire (`forms/create` alloue une coquille vide, `forms/update`
@@ -459,7 +459,7 @@ suppose d'énumérer ses chemins, pas de relire ses champs.
 Ce dossier ne contient **aucune capture d'écran**, et c'est un choix
 documenté, pas un manque.
 
-La posture du dépôt ([`PRIVACY.md`](../../../../../PRIVACY.md) §1)
+La posture du dépôt ([`PRIVACY.md`](../../../../../PRIVACY.md §1)
 exclut déjà « aucune capture d'écran, aucun log, aucune sortie nommant
 une personne ». Elle y est formulée pour les données d'étudiants ; ce
 dossier l'applique à un cas voisin — l'**environnement de travail d'un
@@ -554,10 +554,10 @@ latence n'est publiée ici.
 
 ## Voir aussi
 
-- [README AI-Engine-WordPress](../README.md) — point d'entrée
-- [Comparatif OWUI vs AI-Engine](../02-Comparatif/comparatif-owui-vs-ai-engine.md) —
+- [README AI-Engine-WordPress](../README.md — point d'entrée
+- [Comparatif OWUI vs AI-Engine](../02-Comparatif/comparatif-owui-vs-ai-engine.md —
   tableau structuré
-- [Tour OWUI](../../Open-WebUI/00-Tour-Plateforme/README.md) — pendant Open WebUI
+- [Tour OWUI](../../Open-WebUI/00-Tour-Plateforme/README.md — pendant Open WebUI
 - Issue [#9734](https://github.com/jsboige/CoursIA/issues/9734) —
   mandat user à l'origine
 - Epic [#4433](https://github.com/jsboige/CoursIA/issues/4433) —

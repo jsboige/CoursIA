@@ -1,9 +1,9 @@
 # Playwright-AI-Engine — ce que l'API ne voit pas
 
-[← AI-Engine (WordPress)](../README.md) | [Tour de la plateforme](../00-Tour-Plateforme/README.md) | [QA Playwright-OWUI](../../Open-WebUI/Playwright-OWUI/README.md)
+[← AI-Engine (WordPress)](../README.md | [Tour de la plateforme](../00-Tour-Plateforme/README.md | [QA Playwright-OWUI](../../Open-WebUI/Playwright-OWUI/README.md
 
 Pendant « assurance qualité » du dossier AI-Engine, symétrique de
-[`Playwright-OWUI/`](../../Open-WebUI/Playwright-OWUI/README.md) côté
+[`Playwright-OWUI/`](../../Open-WebUI/Playwright-OWUI/README.md côté
 Open WebUI.
 
 ---
@@ -42,7 +42,7 @@ des constats, pas par symétrie d'arborescence.
 
 ## Le parcours — ce qu'il mesure
 
-[`00-Parcours-QA-AI-Engine.ipynb`](00-Parcours-QA-AI-Engine.ipynb) suit
+[`00-Parcours-QA-AI-Engine.ipynb`](00-Parcours-QA-AI-Engine.ipynb suit
 un escalier de quatre paliers sur un indicateur témoin,
 `module_workspace` :
 
@@ -89,7 +89,7 @@ consulter les réglages pour qu'il commence à s'en écarter.
 **Prérequis**
 
 1. l'instance jetable « Maison Valmont » démarrée — voir
-   [`../instance-jetable/README.md`](../instance-jetable/README.md) ;
+   [`../instance-jetable/README.md`](../instance-jetable/README.md ;
 2. `../instance-jetable/.env` renseigné (jamais commité) ;
 3. `pip install requests python-dotenv playwright` puis
    `playwright install chromium`.
@@ -141,14 +141,14 @@ grep -nE "Bearer |password|localhost:80(8|9)[0-9]" 00-Parcours-QA-AI-Engine.ipyn
 
 ## Voir aussi
 
-- [`../00-Tour-Plateforme/README.md`](../00-Tour-Plateforme/README.md) —
+- [`../00-Tour-Plateforme/README.md`](../00-Tour-Plateforme/README.md —
   le tour guidé de l'interface, où ce comportement a été rencontré pour
   la première fois, au détour d'une capture
-- [`../parler-au-chatbot-en-visiteur-par-l-api.ipynb`](../parler-au-chatbot-en-visiteur-par-l-api.ipynb)
+- [`../parler-au-chatbot-en-visiteur-par-l-api.ipynb`](../03-Functional/03-1-Chatbots/parler-au-chatbot-en-visiteur-par-l-api.ipynb
   — dernier grain de la série « par son API », qui épuisait les faces
   atteignables sans navigateur
-- [`../../Open-WebUI/Playwright-OWUI/README.md`](../../Open-WebUI/Playwright-OWUI/README.md)
+- [`../../Open-WebUI/Playwright-OWUI/README.md`](../../Open-WebUI/Playwright-OWUI/README.md
   — le dossier symétrique côté Open WebUI, six modules de tests E2E
-- [`verification-verte-systeme-casse.md`](../../../../../docs/reference/verification-verte-systeme-casse.md)
+- [`verification-verte-systeme-casse.md`](../../../../../docs/reference/verification-verte-systeme-casse.md
   — l'étude de cas sur les vérifications vertes qui ne prouvent rien ; ce
   parcours la prolonge du côté de l'échantillonnage
