@@ -62,6 +62,17 @@ Pour chaque notebook compare entre sa base git (defaut origin/main) et sa tete
      notebook. Un nouveau fichier renvoie rc=0 (exempt), un fichier existant
      illisible renvoie toujours rc=2 (fail loud preserve).
 
+  7. MODE TRADUCTION (#13548) : un artefact ``*_<lang>.ipynb`` dont le sibling
+     FR existe a la MEME revision est compare au sibling FR (pas a sa propre
+     base git, qui est l'ancien rendu souvent contamine FR -- comparer du FR a
+     de l'EN mesure la difference de langue, pas une perte). Seuil de chute
+     recalibre (0.5 : l'anglais fidele est ~26 % plus court ; les troncatures
+     reelles mesurent 0.04-0.36) et motifs comptes avec leurs aliases EN
+     (Objectif/Objective). Une troncature de traduction (cellule reduite au
+     titre) RESTE detectee -- c'est le contre-exemple fondateur : ce garde est
+     le seul a avoir vu les 6 cellules "titre seul" de #12850. Un artefact
+     sans sibling FR retombe sur la comparaison mono-langue standard.
+
 Usage
 -----
     # un notebook, diff vs origin/main (head = working tree)
@@ -102,6 +113,50 @@ DROP_THRESHOLD = 0.75
 # Volume normalise minimal d'origine pour qu'une chute soit signalee : evite
 # le bruit sur les cellules triviales (un titre seul, un separateur).
 MIN_ORIG_CHARS = 100
+
+# ---------------------------------------------------------------------------
+# Mode traduction (#13548). Un artefact *_<lang>.ipynb dont le sibling FR
+# existe a la MEME revision n'est PAS compare a sa propre base git (qui est
+# l'ancien rendu, souvent contamine FR : comparer du FR a de l'EN mesure la
+# difference de langue, pas une perte) mais au sibling FR. L'anglais fidele
+# est plus court que le francais a contenu egal (~26 % mesures sur
+# medical_chatbot) : le seuil mono-langue (0.75) faux-positiverait une
+# traduction honnete (cellule fidele mesuree a 0.734 sur FT-05, #13542).
+# Calibration sur les mesures reelles du cycle #13542 :
+#   - troncatures "titre seul" de medical_chatbot : ratios 0.04 a 0.36 ;
+#   - traductions fideles : ratios 0.734 a 0.92.
+# Le seuil 0.5 separe les deux classes avec ~0.14 de marge de chaque cote.
+# L'univers ordonne des langues vient de la source unique de verite
+# ``check_perimeter.TARGET_LANGS`` (#10109) -- une copie locale divergente est
+# un bug latent silencieux (garde test_lang_single_source).
+# ---------------------------------------------------------------------------
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "translation"))
+from check_perimeter import TARGET_LANGS  # noqa: E402  -- single source of truth
+
+TRANSLATION_DROP_THRESHOLD = 0.5
+_TRANSLATION_SUFFIX_RE = re.compile(
+    r"_(?:" + "|".join(TARGET_LANGS) + r")\.ipynb$", re.IGNORECASE
+)
+
+
+def _fr_sibling_path(nb_path: Path) -> Path:
+    """Chemin du sibling FR d'un artefact de traduction (X_en.ipynb -> X.ipynb)."""
+    return nb_path.with_name(_TRANSLATION_SUFFIX_RE.sub(".ipynb", nb_path.name))
+
+
+def _is_translation_artifact(nb_path: Path) -> bool:
+    """True si le notebook est un artefact de traduction (*_<lang>.ipynb)."""
+    return _TRANSLATION_SUFFIX_RE.search(nb_path.name) is not None
+
+# Aliases EN des motifs structurants : en mode traduction, un motif FR disparu
+# mais present sous sa forme anglaise dans le rendu N'EST PAS une perte --
+# c'est une traduction fidele (Objectif -> Objective, #13548).
+MOTIF_TRANSLATION_ALIASES = {
+    "Navigation": re.compile(r"\bNavigation\b", re.I),  # identique en EN
+    "Objectif(s)": re.compile(r"\bObjectives?\b", re.I),
+    "Prerequis": re.compile(r"\bPrerequisites?\b", re.I),
+    "Enonce": re.compile(r"^#{1,6}\s*(?:Statement|Problem|Task)\b", re.I | re.M),
+}
 
 # Motifs structurants dont la disparition est un signal fort (design #3 #8655).
 # Notes : "Navigation" / "Objectif(s)" / "Prerequis" sont matches aussi bien en
@@ -349,16 +404,25 @@ def extract_md_cells(nb: dict) -> list[tuple[int, str | None, str]]:
     return out
 
 
-def _collect_motifs(nb: dict) -> dict:
+def _collect_motifs(nb: dict, include_aliases: bool = False) -> dict:
     """Compte les occurrences de chaque motif structurant dans le notebook.
 
     Retourne {motif_label: count} + {'nav_links': count}. La comparaison
     base/head revelera les motifs disparus (count tombe a 0).
+
+    ``include_aliases`` (mode traduction #13548) : ajoute au compte les formes
+    EN des motifs (Objectives, Prerequisites, ...) -- cote FR comme cote EN --
+    de sorte qu'un motif traduit fidement n'est pas lu comme disparu.
     """
     counts: dict = {}
     full_md = "\n".join(src for _, _, src in extract_md_cells(nb))
     for pat, label in MOTIF_PATTERNS:
-        counts[label] = len(pat.findall(full_md))
+        n = len(pat.findall(full_md))
+        if include_aliases:
+            alias = MOTIF_TRANSLATION_ALIASES.get(label)
+            if alias is not None:
+                n += len(alias.findall(full_md))
+        counts[label] = n
     counts["nav_links"] = len(NAV_LINK_RE.findall(full_md))
     return counts
 
@@ -429,7 +493,8 @@ def ref_resolves(ref: str) -> bool:
 
 def _compare_cells(base_md: list[tuple[int, str | None, str]],
                    head_md: list[tuple[int, str | None, str]],
-                   head_cost: dict | None = None) -> list[dict]:
+                   head_cost: dict | None = None,
+                   drop_threshold: float = DROP_THRESHOLD) -> list[dict]:
     """Compare cellule-par-cellule (INDEX STABLE requis, design #1 #8655).
 
     Ne descend au niveau cellule QUE quand le nombre de cellules markdown est
@@ -508,22 +573,23 @@ def _compare_cells(base_md: list[tuple[int, str | None, str]],
         base_by_id = {cid: (b_idx, b_src) for b_idx, cid, b_src in base_with_id}
         for h_idx, h_cid, h_src in head_with_id:
             b_idx, b_src = base_by_id[h_cid]
-            _emit_cell_finding(b_idx, b_src, h_idx, h_src, head_cost, findings)
+            _emit_cell_finding(b_idx, b_src, h_idx, h_src, head_cost, findings, drop_threshold)
         base_residue = [t for t in base_md if t[1] is None]
         head_residue = [t for t in head_md if t[1] is None]
         for (b_idx, _, b_src), (h_idx, _, h_src) in zip(base_residue, head_residue):
-            _emit_cell_finding(b_idx, b_src, h_idx, h_src, head_cost, findings)
+            _emit_cell_finding(b_idx, b_src, h_idx, h_src, head_cost, findings, drop_threshold)
     else:
         # IDs absents ou ensembles differents : appariement par index (legacy).
         for (b_idx, _, b_src), (h_idx, _, h_src) in zip(base_md, head_md):
-            _emit_cell_finding(b_idx, b_src, h_idx, h_src, head_cost, findings)
+            _emit_cell_finding(b_idx, b_src, h_idx, h_src, head_cost, findings, drop_threshold)
     return findings
 
 
 def _emit_cell_finding(b_idx: int, b_src: str,
                        h_idx: int, h_src: str,
                        head_cost: dict | None,
-                       findings: list[dict]) -> None:
+                       findings: list[dict],
+                       drop_threshold: float = DROP_THRESHOLD) -> None:
     """Emet un finding TRUNCATED_CELL ou FRONTMATTER_COST_DIVERGENCE si applicable.
 
     Facteur commun aux deux strategies d'appariement (ID stable / index legacy)
@@ -550,7 +616,7 @@ def _emit_cell_finding(b_idx: int, b_src: str,
     h_norm = _norm_len(h_src)
     if b_norm < MIN_ORIG_CHARS:
         return  # cellule d'origine trop courte pour qu'une chute soit du bruit
-    if h_norm < DROP_THRESHOLD * b_norm:
+    if h_norm < drop_threshold * b_norm:
         ratio = (h_norm / b_norm) if b_norm else 0.0
         findings.append({
             "kind": "TRUNCATED_CELL",
@@ -558,6 +624,7 @@ def _emit_cell_finding(b_idx: int, b_src: str,
             "before_chars": b_norm,
             "after_chars": h_norm,
             "ratio": round(ratio, 3),
+            "threshold": drop_threshold,
             "before_excerpt": b_src.strip().split("\n", 1)[0][:90],
             "after_excerpt": h_src.strip().split("\n", 1)[0][:90],
         })
@@ -594,6 +661,30 @@ def _compare_motifs(base_counts: dict, head_counts: dict) -> list[dict]:
     return findings
 
 
+def _load_fr_sibling(nb_path: Path, head_ref: str | None):
+    """Charge le sibling FR d'un artefact de traduction a la MEME revision que le head.
+
+    head = working tree -> lecture disque du sibling ; head = ref git ->
+    ``read_notebook_at_ref``. Retourne (sibling_nb | None, sibling_label).
+    None = pas de sibling FR a cette revision (artefact orphelin) -> l'appelant
+    retombe sur la comparaison mono-langue standard.
+    """
+    sibling = _fr_sibling_path(nb_path)
+    if head_ref is None:
+        if not sibling.exists():
+            return None, None
+        try:
+            return json.loads(sibling.read_text(encoding="utf-8")), str(sibling)
+        except (OSError, json.JSONDecodeError):
+            return None, None
+    if not path_exists_at_ref(sibling, head_ref):
+        return None, None
+    nb = read_notebook_at_ref(sibling, head_ref)
+    if nb is None:
+        return None, None
+    return nb, f"{head_ref}:{sibling.as_posix()}"
+
+
 def scan_notebook(nb_path: Path, base_ref: str, head_ref: str | None = None) -> dict:
     """Compare le contenu markdown d'un notebook entre base_ref et head_ref."""
     if head_ref is None:
@@ -614,6 +705,49 @@ def scan_notebook(nb_path: Path, base_ref: str, head_ref: str | None = None) -> 
     # ferait passer tous les chemins pour "nouveaux" et desarmerait le gate.
     if not ref_resolves(base_ref):
         return {"notebook": str(nb_path), "error": f"base_ref {base_ref} introuvable (ref git invalide)"}
+
+    # MODE TRADUCTION (#13548) : artefact *_<lang>.ipynb dont le sibling FR
+    # existe a la meme revision. La comparaison pertinente n'est pas
+    # head-vs-sa-base-git (l'ancien rendu, souvent contamine FR : cela mesure
+    # la difference de langue, pas une perte) mais head-vs-sibling-FR. Seuil
+    # de chute recalibre (TRANSLATION_DROP_THRESHOLD) car l'anglais fidele est
+    # plus court que le francais ; motifs comptes avec leurs aliases EN.
+    # Un artefact SANS sibling FR (orphelin) retombe sur la comparaison
+    # mono-langue ci-dessous. NB : ce mode s'applique AUSSI aux artefacts
+    # nouveaux (le cas #12850 -- creation d'un _en tronque "au titre seul" --
+    # aurait ete vu ici des la creation, au lieu d'etre exempt new_file).
+    if _is_translation_artifact(nb_path):
+        nb_sibling, sibling_label = _load_fr_sibling(nb_path, head_ref)
+        if nb_sibling is not None:
+            sibling_md = extract_md_cells(nb_sibling)
+            head_md_t = extract_md_cells(nb_head)
+            findings = _compare_cells(
+                sibling_md, head_md_t,
+                nb_head.get("metadata", {}).get("cost"),
+                drop_threshold=TRANSLATION_DROP_THRESHOLD,
+            )
+            findings.extend(_compare_motifs(
+                _collect_motifs(nb_sibling, include_aliases=True),
+                _collect_motifs(nb_head, include_aliases=True),
+            ))
+            sib_total = sum(_norm_len(x) for _, _, x in sibling_md)
+            head_total = sum(_norm_len(x) for _, _, x in head_md_t)
+            return {
+                "notebook": str(nb_path),
+                "base_ref": base_ref,
+                "head_ref": head_label,
+                "mode": "translation",
+                "fr_sibling": sibling_label,
+                "findings": findings,
+                "stats": {
+                    "base_md_cells": len(sibling_md),
+                    "head_md_cells": len(head_md_t),
+                    "cell_count_stable": len(sibling_md) == len(head_md_t),
+                    "base_total_normalized_chars": sib_total,
+                    "head_total_normalized_chars": head_total,
+                    "findings_count": len(findings),
+                },
+            }
 
     # Notebook NOUVEAU (absent a la base) : rien a perdre (tout est ajout),
     # donc exempt de content-loss. On retourne un resultat propre (pas
@@ -703,6 +837,10 @@ def main(argv: list[str] | None = None) -> int:
         if result.get("new_file"):
             print("[NEW FILE] absent a la base -> exempt de content-loss "
                   "(rien a perdre, tout est ajout ; #8655/#8662).")
+        if result.get("mode") == "translation":
+            print(f"[TRANSLATION] artefact *_<lang>.ipynb -> comparaison au sibling FR "
+                  f"de la meme revision ({result.get('fr_sibling')}), seuil "
+                  f"{TRANSLATION_DROP_THRESHOLD}, motifs bilingues (#13548).")
         print(f"[STATS]    md_cells base={st['base_md_cells']} head={st['head_md_cells']} "
               f"stable={st['cell_count_stable']} | "
               f"normalized_chars base={st['base_total_normalized_chars']} "
@@ -713,7 +851,7 @@ def main(argv: list[str] | None = None) -> int:
                 if f["kind"] == "TRUNCATED_CELL":
                     print(f"  - cell {f['cell_idx']} {f['kind']}: "
                           f"{f['before_chars']}c -> {f['after_chars']}c "
-                          f"(ratio {f['ratio']}, seuil {DROP_THRESHOLD})")
+                          f"(ratio {f['ratio']}, seuil {f.get('threshold', DROP_THRESHOLD)})")
                     print(f"      before: {f['before_excerpt']!r}")
                     print(f"      after:  {f['after_excerpt']!r}")
                 elif f["kind"] == "LOST_MOTIF":

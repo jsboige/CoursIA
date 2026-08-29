@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: Search
-pedagogical_count: 138
-breakdown: Applications=49, Part4-Metaheuristics=33, Part1-Foundations=31, Part2-CSP=18, Part3-Advanced=7
-maturity: BETA=123, ALPHA=10, DRAFT=5
+pedagogical_count: 140
+breakdown: Applications=50, Part1-Foundations=31, Part2-CSP=18, Part3-Advanced=7, Part4-Metaheuristics=34
+updated: 2026-08-29
 -->
 
 [← Notebooks](../README.md) | [↑ ..](../README.md) | [→ SymbolicAI](../SymbolicAI/README.md)
@@ -285,6 +285,7 @@ Problèmes du monde réel adaptés de projets étudiants. Chaque application est
 | 12 (C#) | [App-19-ProceduralGeneration-WFC-Csharp](Applications/CSP/App-19-ProceduralGeneration-WFC-Csharp.ipynb) | ~45 min | Twin C# du 12 : WFC from-scratch (entropie de Shannon + propagation AC-3 + backtracking) (See #4956) | Marathon |
 | 13 | [App-20-SudokuBenchmark-Python](Applications/CSP/App-20-SudokuBenchmark-Python.ipynb) | ~50 min | Benchmark 4 solveurs Sudoku (backtracking naïf → optimisé → contraintes) sur banc Easy/Medium/Hard : dénombrement du travail | Synthèse série |
 | 13 (C#) | [App-20b-SudokuBenchmark-CSharp](Applications/CSP/App-20b-SudokuBenchmark-CSharp.ipynb) | ~50 min | Twin C# du 13 : mêmes solveurs from-scratch en .NET, comparaison des écosystèmes | Jumeau .NET |
+| 16 | [App-26-CoveringArrays-Guarantee-Audit](Applications/CSP/App-26-CoveringArrays-Guarantee-Audit.ipynb) | ~55 min | Covering Arrays : oracle constraint-aware, set cover CP-SAT exact, bornes et baselines IPOG/AETG-like — distillation PrCon H4 (Valérian Pichot) | Projet étudiant (PrCon PR #58) |
 
 Les autres jumeaux C# de la sous-série CSP (N-Queens, GraphColoring, NurseScheduling, JobShop, Timetabling, Minesweeper, Wordle, MiniZinc, Picross, SportsScheduling) suivent le même principe : ré-implémentation .NET du notebook Python de référence, solveurs from-scratch ou OR-Tools natif selon le sujet (marathon #4956).
 

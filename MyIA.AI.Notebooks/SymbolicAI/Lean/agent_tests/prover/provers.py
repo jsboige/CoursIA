@@ -277,8 +277,13 @@ def _refuse_true_placeholder_goal(filepath: str, sorry_line: int,
     "The task is already complete" because there is nothing to prove. The
     in-statement mutation form is already blocked upstream by FX-6b; this
     catches the body-sorry form. Detection runs ONE probe compile
-    (`exact True.intro`); it is zero-false-positive (only a `True` goal closes
-    under that probe). Mirrors ``_refuse_in_statement_sorry``. Returns None
+    (`exact True.intro`); only a `True` goal closes under that probe, so the
+    verdict is false-positive-free WHEN the probe build actually elaborated
+    the file — FX-5b (empty output on a timed-out/crashed build) and FX-5c
+    (unpositioned `error:` lines on an infrastructure-failed build: corrupt
+    package, unknown module) both bail out with no refusal, because absence
+    of numbered errors is not evidence of closure when the elaborator never
+    ran. Mirrors ``_refuse_in_statement_sorry``. Returns None
     on any ambiguity (never blocks a legitimate run); the one-probe compile
     cost is small against the 190-2600s run it saves when it fires.
     """
