@@ -42,6 +42,11 @@ name: Fast lane (ombre)
 # conclusion reelle, workflow d'origine retire de `pull_request`. Le
 # compteur du job suit le registre : 16 gardes, toujours 1 checkout.
 #
+# TRANCHE 3 (#13097, remede A -- famine CI) : regression-guard absorbe.
+# Premier garde de la vague « metadata guards » sans filtre paths: qui
+# pesait ~50 % du volume pull_request ; le seul dont le verdict est une
+# invocation python proche sans ecriture PR (les 8 autres exigent des
+# write-perms lane ou une extension moteur -- voir registre TRANCHE3).
 # TRANCHE 4 (#12396) : le noyau du grain -- le gate MARKDOWN
 # md-content-loss (iter par notebook change + --base {base_ref}, son
 # anti-auto-desarmement AGREGE porte par le flag `fail_on_all_warn`) -- et
@@ -54,7 +59,7 @@ name: Fast lane (ombre)
 # check-run que rendait son workflow source (contrainte #12175 : un rename
 # casse la protection de branche).
 #
-# Compteur : PILOT 10 + TRANCHE1 3 + TRANCHE2 3 + TRANCHE4 5 = 21 gardes.
+# Compteur : PILOT 10 + TRANCHE1 3 + TRANCHE2 3 + TRANCHE3 1 + TRANCHE4 5 = 22 gardes.
 # NB collision #13203 : ce depot en parallele ouvre TRANCHE3 (1 garde) sur
 # les memes fichiers -- le merge des deux ajuste le compteur a 22.
 
@@ -82,7 +87,7 @@ concurrency:
 
 jobs:
   fast-lane:
-    name: "Fast lane (ombre) -- 21 gardes, 1 checkout"
+    name: "Fast lane (ombre) -- 22 gardes, 1 checkout"
     runs-on: ubuntu-latest
     timeout-minutes: 20
 

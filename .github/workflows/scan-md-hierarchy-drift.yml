@@ -45,11 +45,18 @@ jobs:
           # une baseline burndown. On restreint le scan aux notebooks que la PR
           # a reels changes (git -M resout les renommages) ; a defaut (dispatch,
           # BASE_SHA vide) on retombe sur un drift whole-corpus.
+          # #13315: la reference "avant" est la BASE DE FUSION re-scannee
+          # (--reference-base), pas la baseline stockee -- une PR basee sur un
+          # main ancien ne doit pas voir imputer la derive de la baseline. Le
+          # mode fallback (sans BASE_SHA) garde la baseline stockee, et la
+          # phrase du commentaire est alors attenuee.
           EXTRA=""
+          SCOPED=0
           if [ -n "$BASE_SHA" ]; then
             git diff -M --name-status "$BASE_SHA...$HEAD_SHA" \
               -- 'MyIA.AI.Notebooks/' > name_status.txt
-            EXTRA="--name-status name_status.txt"
+            EXTRA="--name-status name_status.txt --reference-base $BASE_SHA"
+            SCOPED=1
           fi
           set +e
           python scripts/notebook_tools/scan_md_hierarchy.py MyIA.AI.Notebooks/ \
@@ -60,16 +67,26 @@ jobs:
             {
               echo "## MD hierarchy drift -- ${HEAD_SHA:0:9}"
               echo ""
-              echo "Cette PR augmente le compte de defauts de rendu markdown"
-              echo "(baseline = burndown, ne pas croitre). Nouveaux defauts :"
+              if [ "$SCOPED" -eq 1 ]; then
+                echo "Cette PR augmente le compte de defauts de rendu markdown"
+                echo "par rapport a la base de fusion ${BASE_SHA:0:9} re-scannee."
+                echo "Nouveaux defauts imputables au diff :"
+              else
+                echo "Drift vs la baseline stockee (mode dispatch, sans base de"
+                echo "fusion) -- derive du corpus, pas d'imputation stricte a ce"
+                echo "diff. Details :"
+              fi
               echo ""
               echo '```'
               cat drift_report.txt
               echo '```'
               echo ""
-              echo "Corriger (ex. \`- # Indice : ...\` -> \`- **Indice :** ...\`) ou,"
-              echo "si la regle scanner change dans CETTE PR, re-seeder la baseline"
-              echo "dans le meme commit : \`--update-baseline\`. See #11831."
+              if [ "$SCOPED" -eq 1 ]; then
+                echo "Corriger (ex. \`- # Indice : ...\` -> \`- **Indice :** ...\`). See #11831."
+              else
+                echo "Si la regle scanner change dans CETTE PR, re-seeder la baseline"
+                echo "dans le meme commit : \`--update-baseline\`. See #11831."
+              fi
             } > comment_body.md
             gh pr comment "$PR_NUMBER" --body-file comment_body.md
             echo "::warning file=scripts/notebook_tools/md_hierarchy_baseline.json::MD hierarchy drift detected (advisory, #11831) -- see PR comment"
@@ -79,4 +96,8 @@ jobs:
             cat drift_err.txt
             exit 1
           fi
-          echo "No drift: every per-notebook delta <= 0."
+          if [ "$SCOPED" -eq 1 ]; then
+            echo "No drift imputable au diff de la PR (reference = base de fusion ${BASE_SHA:0:9} re-scannee)."
+          else
+            echo "No drift: every per-notebook delta <= 0."
+          fi

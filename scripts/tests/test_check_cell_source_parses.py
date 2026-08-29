@@ -128,6 +128,66 @@ class TestStripMagics(unittest.TestCase):
         self.assertIn("for i in range(3):", cleaned)
 
 
+class TestStripMagicsContinuation(unittest.TestCase):
+    """PR #13328: a `%` at the start of a CONTINUATION line is the ordinary
+    string-formatting operator, not an IPython magic. Dropping it corrupts
+    the cell (the reported symptom was "'(' was never closed" on the
+    previous line). The stripper must track bracket/string state."""
+
+    def test_percent_operator_continuation_kept(self):
+        src = (
+            'print("  BR1(K2*) - K1* = %.1e ; BR2(K1*) - K2* = %.1e"\n'
+            "      % (float(x.max()), float(y.max())))"
+        )
+        cleaned = _strip_ipython_magics(src)
+        self.assertEqual(cleaned, src)
+        err, _ = _mod._compile_cell(src)
+        self.assertIsNone(err)
+
+    def test_percent_continuation_after_else_print_kept(self):
+        # cell[22] motif: else-branch print, continuation, then closes.
+        src = (
+            'if p > 0.3:\n'
+            '    print("periode ~ %.0f iterations"\n'
+            '          % (1 / f, 100 * p))\n'
+            'else:\n'
+            '    print("aucune periode dominante"\n'
+            '          % (100 * p))'
+        )
+        cleaned = _strip_ipython_magics(src)
+        self.assertEqual(cleaned, src)
+        err, _ = _mod._compile_cell(src)
+        self.assertIsNone(err)
+
+    def test_percent_leading_line_inside_triple_quoted_string_kept(self):
+        src = (
+            'doc = """mise en forme\n'
+            '     %d pourcents\n'
+            '"""\n'
+            "y = 1\n"
+        )
+        cleaned = _strip_ipython_magics(src)
+        self.assertIn("%d pourcents", cleaned)
+        self.assertIn("y = 1", cleaned)
+
+    def test_magic_still_dropped_after_closed_bracket(self):
+        # Depth tracking must RESET after the bracket closes: this %%time
+        # is a real magic at logical-line start, not a continuation.
+        src = 'z = f(a)\n%%time\nfor i in range(3):\n    pass\n'
+        cleaned = _strip_ipython_magics(src)
+        self.assertNotIn("%%time", cleaned)
+        self.assertIn("z = f(a)", cleaned)
+
+    def test_magic_dropped_inside_closed_string_only_context(self):
+        # A line starting with `%` after a COMPLETE statement (no open
+        # bracket, no open string) is a magic even if it looks like an
+        # operator: IPython semantics win at logical-line start.
+        src = 'x = "valeur"\n%matplotlib inline\nprint(x)\n'
+        cleaned = _strip_ipython_magics(src)
+        self.assertNotIn("%matplotlib", cleaned)
+        self.assertIn('x = "valeur"', cleaned)
+
+
 class TestMarkdownHeuristic(unittest.TestCase):
     """`_looks_like_markdown_typed_code` must catch markdown-as-code without
     false-positiving on legitimate code that happens to start with `#`."""

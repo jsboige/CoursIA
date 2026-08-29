@@ -130,7 +130,7 @@ def test_clean_table_without_trailing_pipes_not_flagged():
     """GFM allows tables without trailing pipes (`|---|---`, no closing `|`).
 
     Regression guard: an earlier version of CLEAN_SEP_LINE_RE required a trailing
-    pipe and false-positived on these, caught on Sudoku-6 cell 1 (a valid table).
+    pipe and false-positived on these, caught on Sudoku-06 cell 1 (a valid table).
     """
     clean = (
         "| Composant | Description | Taille\n"
