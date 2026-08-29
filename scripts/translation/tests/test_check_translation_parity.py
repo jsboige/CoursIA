@@ -649,11 +649,13 @@ def test_cli_repo_root_missing_returns_two(tmp_path, capsys, monkeypatch):
 # Declared translation-pair count on main. EQ, not a threshold: the test
 # reddens in BOTH directions — a count below the declaration means pairs were
 # lost, a count above means the perimeter moved without updating this
-# declaration. Today 0 pairs: hold i18n #10038 (decision user 2026-08-12,
-# rollback 2e79bcb77). When i18n resumes, the first reintroduced pair makes
-# this test red and the declaration must be updated knowingly — a skipif
-# would re-arm silently and a >= 0 threshold would stay green forever.
-EXPECTED_PAIR_COUNT = 0
+# declaration. Hold i18n #10038 (decision user 2026-08-12, rollback 2e79bcb77)
+# lifted knowingly for the first 2 T4-rendered pairs of #12850 (42e8b2d7c,
+# 2026-08-29): GenAI/CaseStudies/Medical-Chatbot/medical_chatbot + GenAI/
+# FineTuning/FT-05-ModelMerging-Routing. Each reintroduced pair makes this
+# test red until the declaration is updated knowingly — a skipif would
+# re-arm silently and a >= 0 threshold would stay green forever.
+EXPECTED_PAIR_COUNT = 2
 
 
 def test_full_repo_state_passes_parity():
