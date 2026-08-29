@@ -54,7 +54,7 @@ layout: section
 
 # Agents fondes sur les connaissances
 ---
-layout: default
+layout: compact
 ---
 
 
@@ -96,11 +96,15 @@ fonction KB-AGENT(percept) retourne une action
 - Tell (-> KB) : Ajouter des connaissances
 - Ask (<- KB) : Interroger la base
 
-## Niveaux de l'architecture
+---
+layout: default
+---
 
-- Connaissances (formulation naturelle)
-- Logique (formulation en enonces)
-- Implementation (representation physique des enonces)
+# Niveaux de l'architecture
+
+- **Connaissances** : formulation naturelle
+- **Logique** : formulation en enonces
+- **Implementation** : representation physique des enonces
 
 ---
 layout: default

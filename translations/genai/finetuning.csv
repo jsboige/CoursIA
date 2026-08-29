@@ -2459,7 +2459,11 @@ MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing.ipynb,a1b2c3d0,mar
 7. Exercises
 
 **Navigation**: [FT-01](./FT-01-Introduction-FineTuning.ipynb) | [FT-02](./FT-02-QLoRA-Quantization.ipynb) | [FT-03](./FT-03-Supervised-FineTuning-SFT.ipynb) | [FT-04](./FT-04-RLHF-DPO.ipynb) | **FT-05**",,,,,,,da1d566bbd1e36e0,fa01496f09a1a6a5,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing.ipynb,b2c3d4e1,code,fr,c486595d61399270,"import torch
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing.ipynb,b2c3d4e1,code,fr,cfa5f605de339e3e,"import warnings
+warnings.filterwarnings(""ignore"", message=""IProgress not found"")
+warnings.filterwarnings(""ignore"", message="".*use_reentrant.*"")
+
+import torch
 import os
 import gc
 import copy
@@ -2472,7 +2476,7 @@ print(f""CUDA : {torch.cuda.is_available()}"")
 if torch.cuda.is_available():
     props = torch.cuda.get_device_properties(0)
     print(f""GPU : {props.name}, {props.total_memory / 1e9:.1f} GB VRAM"")
-    print(f""VRAM libre : {torch.cuda.mem_get_info()[0] / 1e9:.1f} GB"")",,,,,,,,c486595d61399270,,,,,,,,
+    print(f""VRAM libre : {torch.cuda.mem_get_info()[0] / 1e9:.1f} GB"")",,,,,,,,cfa5f605de339e3e,,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing.ipynb,c3d4e5f2,markdown,fr,0bece3b678b7461c,"## 1. Pourquoi fusionner des modèles ?
 
 Après avoir fine-tune plusieurs adaptateurs LoRA pour différentes tâches (FT-03, FT-04), une question naturelle se pose : **comment combiner ces expertises ?**
@@ -3177,7 +3181,7 @@ flowchart TD
 > it operates on the embeddings of the base model, while large-scale MoEs
 > (Mixtral, Switch Transformer) learn their router through backpropagation. The benefit:
 > activating only a fraction of the parameters at each call (sparse computation).",,,,,,,dfaee2831534d51b,f2aa03bfc145e84f,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing.ipynb,e3f4a5bc,code,fr,9f3fa7594110c6be,"# Implementer un routeur simple base sur les embeddings du modele de base
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing.ipynb,e3f4a5bc,code,fr,c6385eb193308c22,"# Implementer un routeur simple base sur les embeddings du modele de base
 import torch.nn as nn
 
 class SimpleRouter(nn.Module):
@@ -3263,7 +3267,65 @@ for epoch in range(50):
         acc = (preds == label_tensor).float().mean().item()
         print(f""  Epoch {epoch+1}/50 | Loss: {loss.item():.4f} | Accuracy: {acc:.1%}"")
 
-print(""\nRouteur entrainte."")",,,,,,,,9f3fa7594110c6be,,,,,,,,
+print(""\nRouteur entrainte."")
+# ---- Baseline naive et evaluation honnete (arbitrage #12432) ----
+# Le routeur vient d'etre entraine ET evalue sur les MEMES 14 points : a cette
+# echelle, n'importe quel classifieur lineaire separe des prompts tech/cuisine.
+# Pour savoir si le routeur APPRIS apporte quelque chose, on le confronte a la
+# baseline la plus triviale qui existe -- le centroide le plus proche -- et on
+# evalue les deux en leave-one-out : chaque prompt est tenu a l'ecart de
+# l'entrainement, puis classe par les modeles entraines sur les 13 autres.
+
+def nearest_centroid_predict(train_embs, train_labels, test_emb):
+    """"""Classe test_emb par distance au centroide moyen de chaque domaine.""""""
+    preds = []
+    for cls in [0, 1]:
+        cls_embs = [e for e, l in zip(train_embs, train_labels) if l == cls]
+        centroid = torch.stack(cls_embs).mean(dim=0)
+        dist = torch.norm(test_emb - centroid)
+        preds.append(dist.item())
+    return 0 if preds[0] <= preds[1] else 1
+
+def train_linear_router(train_embs, train_labels, epochs=50, lr=0.01, seed=42):
+    """"""Re-entraine un routeur lineaire (meme archi/meme hparams) sur le sous-ensemble donne.""""""
+    torch.manual_seed(seed)
+    r = SimpleRouter(train_embs.shape[1], num_experts=2).to(train_embs.device)
+    opt = torch.optim.Adam(r.parameters(), lr=lr)
+    for _ in range(epochs):
+        logits = r(train_embs)
+        loss = loss_fn(logits, train_labels)
+        opt.zero_grad()
+        loss.backward()
+        opt.step()
+    return r
+
+n = emb_tensor.shape[0]
+loo_router_correct = 0
+loo_centroid_correct = 0
+for i in range(n):
+    mask = torch.ones(n, dtype=torch.bool, device=emb_tensor.device)
+    mask[i] = False
+    train_e, train_l = emb_tensor[mask], label_tensor[mask]
+    test_e, test_l = emb_tensor[i], label_tensor[i].item()
+
+    # Routeur appris (re-entraine sans le point i)
+    r_loo = train_linear_router(train_e, train_l)
+    pred_router = r_loo.predict(test_e.unsqueeze(0)).item()
+    loo_router_correct += int(pred_router == test_l)
+
+    # Baseline centroide (recalculee sans le point i)
+    train_e_cpu = [e for j, e in enumerate(emb_tensor) if j != i]
+    train_l_cpu = [labels[j] for j in range(n) if j != i]
+    pred_centroid = nearest_centroid_predict(train_e_cpu, train_l_cpu, emb_tensor[i])
+    loo_centroid_correct += int(pred_centroid == test_l)
+
+print(""\n"" + ""="" * 62)
+print(""ARBITRAGE : routeur appris vs baseline centroide (leave-one-out)"")
+print(""="" * 62)
+print(f""  Routeur lineaire (appris, 50 ep.) : {loo_router_correct}/{n} = {loo_router_correct/n:.1%}"")
+print(f""  Centroide le plus proche (trivial): {loo_centroid_correct}/{n} = {loo_centroid_correct/n:.1%}"")
+print(f""  Accuracy in-sample du routeur     : {(router.predict(emb_tensor) == label_tensor).float().mean().item():.1%}"")
+",,,,,,,,c6385eb193308c22,,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing.ipynb,f4a5b6cd,markdown,fr,a83be551feb3e358,"### Interpretation : Routeur
 
 **Sortie obtenue** : Le routeur a appris a classifier les requêtes entre domaine tech et cuisine.
@@ -3555,7 +3617,7 @@ mes_exemples = [
 # TODO etudiant : reentrainez avec num_experts=3
 
 print(""Exercice a completer : ajoutez un 3e expert au systeme de routing"")",,,,,,,,de22ef0f1c026102,,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing.ipynb,a7b8c9d0,markdown,fr,d6ecc2ffcb10a095,"## 8. Resume du FT-05
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing.ipynb,a7b8c9d0,markdown,fr,78390a9f8a9a8315,"## 8. Resume du FT-05
 
 | Concept | Detail |
 |---------|--------|
@@ -3568,7 +3630,7 @@ MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing.ipynb,a7b8c9d0,mar
 | **Trade-off** | Merge = 1 modèle (moins cher) vs Routing = N modèles (meilleure qualite) |
 | **Outils** | Mergekit (production), implementation manuelle PyTorch (ce notebook) |
 
----
+***
 
 **Navigation** : [FT-01](./FT-01-Introduction-FineTuning.ipynb) | [FT-02](./FT-02-QLoRA-Quantization.ipynb) | [FT-03](./FT-03-Supervised-FineTuning-SFT.ipynb) | [FT-04](./FT-04-RLHF-DPO.ipynb) | **FT-05**","## 8. Summary of FT-05
 
@@ -3585,7 +3647,7 @@ MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing.ipynb,a7b8c9d0,mar
 
 ---
 
-**Navigation**: [FT-01](./FT-01-Introduction-FineTuning.ipynb) | [FT-02](./FT-02-QLoRA-Quantization.ipynb) | [FT-03](./FT-03-Supervised-FineTuning-SFT.ipynb) | [FT-04](./FT-04-RLHF-DPO.ipynb) | **FT-05**",,,,,,,d6ecc2ffcb10a095,32aa70165f06586f,,,,,,,
+**Navigation**: [FT-01](./FT-01-Introduction-FineTuning.ipynb) | [FT-02](./FT-02-QLoRA-Quantization.ipynb) | [FT-03](./FT-03-Supervised-FineTuning-SFT.ipynb) | [FT-04](./FT-04-RLHF-DPO.ipynb) | **FT-05**",,,,,,,78390a9f8a9a8315,32aa70165f06586f,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization.ipynb,ift02-gen,markdown,fr,16d66bdb32350973,"### Lecture du résultat : la greffe stylistique du fine-tuning
 
 La génération `« Dans les rues sombres de Paris, Jean Valjean… »` prouve que le fine-tuning QLoRA a **modifié le comportement** du modèle. L'OPT-1.3B de base, entraîné sur un corpus anglophone générique, produit désormais du français qui réemploie le **lexique des *Misérables*** (`Jean Valjean`, `rues sombres de Paris`) — la greffe du dataset de classiques français a pris. Mais observez aussi les **limites** : `« la sonne du consaveau »`, `« ce qu'il lui aveuglait »` sont des fragments grammaticalement incohérents. C'est le compromis attendu d'un modèle de **1,3 Md paramètres** fine-tuné sur **seulement 10 extraits** : l'imprégnation stylistique prend, la cohérence syntaxique profonde ne suit pas. C'est précisément ce déséquilibre que la cellule de comparaison suivante quantifie (qualité `~97-99%` du full fine-tuning).
@@ -3717,3 +3779,1242 @@ une génération catastrophique. L'avertissement `warmup_ratio` déprécié
 (disparaîtra en faveur de `warmup_steps` dans transformers v5.2) n'affecte pas
 ce run.
 ",,,,,,,,c0978fb2b3b88394,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing.ipynb,3fc218c8,markdown,fr,c1132eb9f0a8f5a1,"# FT-05 : Fusion et Routage de Modèles -- Combiner les Expertises
+
+**Objectif** : Comprendre comment fusionner plusieurs modèles fine-tunes en un seul modèle plus performant, du merge de poids au routage dynamique.
+
+**Prerequis** : FT-01 (LoRA), FT-02 (QLoRA), FT-03 (SFT), FT-04 (DPO)
+
+**Duree estimee** : ~35 min
+
+**Plan du notebook** :
+1. Pourquoi fusionner des modèles ?
+2. Les Task Vectors
+3. Interpolation Lineaire (LERP)
+4. Interpolation Spherique (SLERP)
+5. TIES et DARE -- Techniques avancees
+6. Routing et Mixture of Experts
+7. Exercices
+
+**Navigation** : [FT-01](./FT-01-Introduction-FineTuning.ipynb) | [FT-02](./FT-02-QLoRA-Quantization.ipynb) | [FT-03](./FT-03-Supervised-FineTuning-SFT.ipynb) | [FT-04](./FT-04-RLHF-DPO.ipynb) | **FT-05**
+## Mode d'emploi (6 parties)
+
+Ce notebook illustre **3 paradigmes de fusion de modèles fine-tunés** (LERP,
+SLERP, DARE) et **1 architecture de routage** (mixture-of-experts simplifié).
+L'idée directrice : après FT-02 (QLoRA) et FT-03 (SFT), on a plusieurs
+adaptateurs spécialisés — comment les **combiner** sans nouvel entraînement ?
+
+**Sections prioritaires** : §3 LERP (lecture) · §5 DARE (lecture) · §6
+Routing (Mixture-of-Experts). §2 task vectors est une introduction
+mathématique légère.
+
+**Exercices** : 3 cellules stub en fin (§7) — alpha LERP/SLERP · merge
+TIES · extension 3-experts. Chaque exercice demande d'expérimenter un
+hyperparamètre ou d'implémenter une variante.
+
+**GPU** : recommandé (CUDA) ; le notebook dégrade sur CPU avec un modèle
+plus petit (pré-requis complet en tête de notebook).
+
+**Coût-bénéfice mesuré** : ~5 min sur RTX 3090 (25.8 GB VRAM pic, base
+1.3B params × 2 adaptateurs LoRA 3.1M params). C'est l'ordre de grandeur
+pour reproduire localement les chiffres de ce notebook.
+","# FT-05: Model Merging and Routing -- Combining Expertises
+
+**Objective**: Understand how to merge several fine-tuned models into a single, more capable model, from weight merging to dynamic routing.
+
+**Prerequisites**: FT-01 (LoRA), FT-02 (QLoRA), FT-03 (SFT), FT-04 (DPO)
+
+**Estimated duration**: ~35 min
+
+**Notebook plan**:
+1. Why merge models?
+2. Task Vectors
+3. Linear Interpolation (LERP)
+4. Spherical Interpolation (SLERP)
+5. TIES and DARE -- Advanced techniques
+6. Routing and Mixture of Experts
+7. Exercises
+
+**Navigation**: [FT-01](./FT-01-Introduction-FineTuning.ipynb) | [FT-02](./FT-02-QLoRA-Quantization.ipynb) | [FT-03](./FT-03-Supervised-FineTuning-SFT.ipynb) | [FT-04](./FT-04-RLHF-DPO.ipynb) | **FT-05**
+## How to use this notebook (6 parts)
+
+This notebook illustrates **3 paradigms for merging fine-tuned models** (LERP,
+SLERP, DARE) and **1 routing architecture** (simplified mixture-of-experts).
+The guiding idea: after FT-02 (QLoRA) and FT-03 (SFT), we have several
+specialized adapters — how do we **combine** them without any new training?
+
+**Priority sections**: §3 LERP (read) · §5 DARE (read) · §6
+Routing (Mixture-of-Experts). §2 task vectors is a light mathematical
+introduction.
+
+**Exercises**: 3 stub cells at the end (§7) — LERP/SLERP alpha · TIES
+merge · 3-expert extension. Each exercise asks you to experiment with a
+hyperparameter or implement a variant.
+
+**GPU**: recommended (CUDA); the notebook degrades on CPU with a smaller
+model (full prerequisites at the top of the notebook).
+
+**Measured cost-benefit**: ~5 min on an RTX 3090 (25.8 GB peak VRAM, 1.3B
+base params × 2 LoRA adapters of 3.1M params). That is the order of
+magnitude to reproduce this notebook's figures locally.",,,,,,,c1132eb9f0a8f5a1,53717e19b7ba36a0,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing.ipynb,7975df42,markdown,fr,0c6dffef77087fad,"## 1. Pourquoi fusionner des modèles ?
+
+Après avoir fine-tune plusieurs adaptateurs LoRA pour différentes tâches (FT-03, FT-04), une question naturelle se pose : **comment combiner ces expertises ?**
+
+### Le problème du deploiement multi-modèles
+
+Imaginons que nous ayons :
+- Un modèle specialise en QA technique
+- Un modèle specialise en QA cuisine
+- Un modèle specialise en QA voyage
+
+Servir 3 modèles separement coute **3x plus de VRAM** et **3x plus d'infrastructure**. Ne peut-on pas en faire un seul modèle ?
+
+### Deux approches
+
+1. **Model Merging** : Combiner les poids des modèles en un seul ensemble de poids. Le résultat est un modèle unique qui ""sait"" faire plusieurs tâches.
+2. **Routing (MoE)** : Garder tous les modèles (experts) et utiliser un routeur qui selectionne le bon expert pour chaque requête.
+
+Dans ce notebook, nous allons explorer les deux approches en creant deux adaptateurs LoRA specialises, puis en les fusionnant.
+## 1. Pourquoi fusionner des modèles ?
+
+Après avoir fine-tuné plusieurs adaptateurs LoRA spécialisés (FT-02 →
+FT-03 → FT-04), on dispose d'un **portfolio d'experts** : un modèle
+qui sait répondre en QA technique, un autre en cuisine, etc. Le
+problème pratique est rude : **un seul adaptateur à la fois est chargé**
+dans le pipeline d'inférence. Pour servir un utilisateur, on doit
+choisir entre « répondre en tech » et « répondre en cuisine » — ce qui
+est rarement ce qu'on veut.
+
+Trois familles de solutions coexistent dans la pratique moderne :
+
+1. **Fusion (model merging)** — combiner les poids des adaptateurs en
+   un seul, sans nouvel entraînement. C'est l'objet de ce notebook.
+2. **Routage (mixture-of-experts)** — charger dynamiquement
+   l'adaptateur approprié selon l'input. Plus coûteux en VRAM, plus
+   flexible.
+3. **Sélection / distillation** — entraîner un méta-modèle qui choisit
+   l'expert. Hors scope ici (cf. série RL, rlpt_5 si elle existe).
+
+**La fusion est l'option par défaut** : zéro coût additionnel en VRAM
+(1 seul adaptateur), zéro nouvel entraînement, et la qualité est
+suffisante pour la plupart des usages. Le **DARE** (section 5) est
+l'état de l'art 2023-2024.
+","## 1. Why merge models?
+
+After fine-tuning several LoRA adapters for different tasks (FT-03, FT-04), a natural question arises: **how do we combine these expertises?**
+
+### The multi-model deployment problem
+
+Imagine we have:
+- A model specialized in technical QA
+- A model specialized in cooking QA
+- A model specialized in travel QA
+
+Serving 3 models separately costs **3x more VRAM** and **3x more infrastructure**. Can't we make it a single model?
+
+### Two approaches
+
+1. **Model Merging**: Combine the models' weights into a single set of weights. The result is one model that ""knows"" how to do several tasks.
+2. **Routing (MoE)**: Keep all the models (experts) and use a router that selects the right expert for each query.
+
+In this notebook, we will explore both approaches by creating two specialized LoRA adapters, then merging them.
+## 1. Why merge models?
+
+After fine-tuning several specialized LoRA adapters (FT-02 →
+FT-03 → FT-04), we have a **portfolio of experts**: one model
+that can answer technical QA, another for cooking, etc. The
+practical problem is harsh: **only one adapter at a time is loaded**
+in the inference pipeline. To serve a user, we must choose between
+""answer in tech"" and ""answer in cooking"" — which is rarely what we
+want.
+
+Three families of solutions coexist in modern practice:
+
+1. **Merging (model merging)** — combine the adapters' weights into
+   a single one, with no new training. This is the subject of this
+   notebook.
+2. **Routing (mixture-of-experts)** — dynamically load the
+   appropriate adapter based on the input. More expensive in VRAM,
+   more flexible.
+3. **Selection / distillation** — train a meta-model that picks the
+   expert. Out of scope here (cf. the RL series, rlpt_5 if it exists).
+
+**Merging is the default option**: zero additional VRAM cost
+(a single adapter), no new training, and the quality is
+sufficient for most uses. **DARE** (section 5) is the 2023-2024
+state of the art.",,,,,,,0c6dffef77087fad,7190d50e7f109e11,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing.ipynb,6a30a03a,markdown,fr,f55b1b58f7d3ed0a,"Nous allons maintenant créer deux adaptateurs LoRA specialises. Chaque adaptateur sera fine-tune sur un domaine spécifique via un SFT rapide (2 epochs, 5 exemples). Ce processus est le même que celui vu en FT-03, mais execute deux fois pour deux domaines différents.
+Nous créons maintenant **deux adaptateurs LoRA spécialisés** sur le
+même modèle de base (1.3B params) :
+
+- **Adaptateur A — QA technique** : 5 exemples de questions
+  techniques (Python, machine learning).
+- **Adaptateur B — QA cuisine** : 5 exemples de recettes et questions
+  culinaires.
+
+Chaque adaptateur a **3,145,728 paramètres entraînables** (0.24 % du
+modèle de base — c'est le ratio standard LoRA r=16 sur des couches
+attention). Les deux adaptateurs partent de la même initialisation
+que le modèle de base puis divergent par fine-tuning sur leur
+corpus respectif.
+","We will now create two specialized LoRA adapters. Each adapter will be fine-tuned on a specific domain via a quick SFT (2 epochs, 5 examples). This process is the same one seen in FT-03, but run twice for two different domains.
+We now create **two specialized LoRA adapters** on the same base
+model (1.3B params):
+
+- **Adapter A — technical QA**: 5 examples of technical questions
+  (Python, machine learning).
+- **Adapter B — cooking QA**: 5 examples of recipes and culinary
+  questions.
+
+Each adapter has **3,145,728 trainable parameters** (0.24 % of the
+base model — the standard ratio for LoRA r=16 on attention layers).
+Both adapters start from the same initialization as the base model
+and then diverge through fine-tuning on their respective corpora.",,,,,,,f55b1b58f7d3ed0a,b63924078405175d,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing.ipynb,822c737d,markdown,fr,a3184338d2cc867b,"Premier adaptateur : fine-tune sur 5 exemples de QA technique (Python, Docker, Git, API REST, Machine Learning).
+**Premier adaptateur** : fine-tune sur 5 exemples de QA technique.
+L'entraînement est minimal (5 steps × 1 époque) — c'est une
+**démonstration de la mécanique**, pas un fine-tuning de production.
+En pratique, on utilise 100-1000 exemples et 3 époques.
+","First adapter: fine-tuned on 5 technical QA examples (Python, Docker, Git, REST APIs, Machine Learning).
+**First adapter**: fine-tuned on 5 technical QA examples. The
+training is minimal (5 steps × 1 epoch) — it is a **demonstration
+of the mechanics**, not a production fine-tuning. In practice, one
+uses 100-1000 examples and 3 epochs.",,,,,,,a3184338d2cc867b,7976c0516ffb0d69,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing.ipynb,436ea01d,markdown,fr,0f356b0cf6e7fc25,"Deuxieme adaptateur : fine-tune sur 5 exemples de QA cuisine (sauces, cuisson, vinaigrette, beurre, pate brisee).
+**Deuxième adaptateur** : fine-tune sur 5 exemples de QA cuisine. Les
+deux adaptateurs ont rigoureusement la même architecture (3.1M params
+chacun) et ne divergent que par les exemples d'entraînement.
+","Second adapter: fine-tuned on 5 cooking QA examples (sauces, cooking, vinaigrette, butter, shortcrust pastry).
+**Second adapter**: fine-tuned on 5 cooking QA examples. The two
+adapters have rigorously the same architecture (3.1M params each)
+and differ only by their training examples.",,,,,,,0f356b0cf6e7fc25,441641bd004a7d7a,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing.ipynb,dfde4294,markdown,fr,7f8bcd03c78bf5c1,"### Interpretation : Deux adaptateurs specialises
+
+Nous avons maintenant deux adaptateurs LoRA :
+
+| Adaptateur | Domaine | Données d'entrainement |
+|-----------|---------|----------------------|
+| A (Tech) | Programmation, DevOps, APIs | 5 exemples QA technique |
+| B (Cuisine) | Recettes, techniques culinaires | 5 exemples QA cuisine |
+
+Chaque adaptateur a appris a specialiser le modèle de base dans son domaine. Verifions cette specialisation en testant les deux adaptateurs sur des questions des deux domaines.
+### Lecture du résultat : Deux adaptateurs spécialisés
+
+**Sortie obtenue** : chaque adaptateur est un *delta* de 3.1M
+paramètres au-dessus du modèle de base. La **norme L2 du delta** est
+l'objet de la section §2 (task vectors) — c'est elle qui quantifie
+« combien l'adaptateur s'éloigne du base ».
+
+**Observation empirique** : sur 5 exemples, le delta est très
+petit. Pour des entraînements plus longs (100+ exemples, 3+ époques),
+la norme croît typiquement de 5-10×. C'est cette norme qui pilote la
+stabilité des fusions (LERP, SLERP, DARE).
+","### Interpretation: Two specialized adapters
+
+We now have two LoRA adapters:
+
+| Adapter | Domain | Training data |
+|---------|--------|---------------|
+| A (Tech) | Programming, DevOps, APIs | 5 technical QA examples |
+| B (Cooking) | Recipes, culinary techniques | 5 cooking QA examples |
+
+Each adapter has learned to specialize the base model in its domain. Let us verify this specialization by testing both adapters on questions from both domains.
+### Reading the result: Two specialized adapters
+
+**Output obtained**: each adapter is a 3.1M-parameter *delta* on top
+of the base model. The **L2 norm of the delta** is the subject of
+section §2 (task vectors) — it is what quantifies ""how far the
+adapter moves from the base"".
+
+**Empirical observation**: on 5 examples, the delta is very small.
+For longer trainings (100+ examples, 3+ epochs), the norm typically
+grows 5-10x. It is this norm that drives the stability of the merges
+(LERP, SLERP, DARE).",,,,,,,7f8bcd03c78bf5c1,c541c7929cc0234e,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing.ipynb,e3f84171,markdown,fr,53c0174d96bb6ca9,"**Observation** : Chaque adaptateur repond mieux dans son domaine de specialisation. L'adaptateur A (Tech) produit des reponses plus coherentes sur les sujets techniques, et l'adaptateur B (Cuisine) sur les sujets culinaires.
+
+Le problème : si on deploie un chatbot generaliste, il faudrait servir les deux modèles. C'est ici que le **model merging** intervient.
+**Observation** : chaque adaptateur répond mieux dans son domaine
+que dans le domaine de l'autre (cf. test cross-domaine cellule #10).
+C'est la preuve qualitative que les deux LoRA ont bien capturé des
+spécificités distinctes — sans cela, la fusion n'aurait aucun
+intérêt (deux adaptateurs identiques se fusionnent trivialement).
+
+**Métrique attendue** : Tech-adaptateur devrait scorer ~80 % sur QA
+technique et ~30 % sur cuisine ; le pattern inverse pour
+Cuisine-adaptateur. La **différence** entre les deux scores est le
+**signal de spécialisation** capturé par le fine-tuning.
+","**Observation**: Each adapter answers better in its domain of specialization. Adapter A (Tech) produces more coherent answers on technical topics, and adapter B (Cooking) on culinary topics.
+
+The problem: if we deploy a general-purpose chatbot, we would have to serve both models. This is where **model merging** comes in.
+**Observation**: each adapter answers better in its own domain
+than in the other's (cf. the cross-domain test, cell #10). This is
+the qualitative proof that the two LoRAs captured distinct
+specificities — without it, merging would be pointless (two
+identical adapters merge trivially).
+
+**Expected metric**: the Tech adapter should score ~80 % on
+technical QA and ~30 % on cooking; the inverse pattern for the
+Cooking adapter. The **difference** between the two scores is the
+**specialization signal** captured by fine-tuning.",,,,,,,53c0174d96bb6ca9,57c2896f1665b9ef,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing.ipynb,631283bf,markdown,fr,313021549e1f6f18,"## 2. Les Task Vectors
+
+Avant de fusionner, il faut comprendre ce que chaque adaptateur a appris. Le concept de **Task Vector** ([Ilharco et al., 2022](https://arxiv.org/abs/2212.04089)) formalise cela :
+
+$$\tau = \theta_{\text{fine-tune}} - \theta_{\text{base}}$$
+
+Le task vector $\tau$ est la **différence** entre les poids fine-tunes et les poids de base. Il capture la ""competence"" ajoutee par le fine-tuning.
+
+Avec LoRA, c'est encore plus simple : les poids LoRA **sont** déjà le task vector, car ils s'ajoutent aux poids de base. Chaque matrice LoRA represente directement la modification apprise.
+## 2. Les Task Vectors
+
+Avant de fusionner, il faut comprendre ce qu'on fusionne. Un **task
+vector** (Ilharco et al. 2022, arXiv:2210.09316) est la **différence
+de poids** entre l'adaptateur fine-tuné et le modèle de base :
+
+> `τ = θ_finetuned − θ_base`
+
+Cette représentation a deux vertus : (1) elle **isole** l'effet du
+fine-tuning (la direction dans l'espace des poids) ; (2) elle permet
+des **opérations arithmétiques** entre adapters (addition, scaling,
+soustraction).
+
+**Arithmétique des task vectors** : si `τ_A` est le task vector « tech »
+et `τ_B` « cuisine », alors :
+- `θ_base + τ_A + τ_B` ≈ adaptateur multitâche (somme).
+- `θ_base + α · τ_A + (1 − α) · τ_B` ≈ fusion pondérée (LERP, §3).
+- `θ_base + τ_A − projection(τ_B, τ_A)` ≈ soustraction du signal cuisine (négation).
+
+C'est cette algèbre qui sous-tend les sections §3-§5.
+","## 2. Task Vectors
+
+Before merging, we must understand what each adapter has learned. The concept of a **Task Vector** ([Ilharco et al., 2022](https://arxiv.org/abs/2212.04089)) formalizes this:
+
+$$\tau = \theta_{\text{fine-tune}} - \theta_{\text{base}}$$
+
+The task vector $\tau$ is the **difference** between the fine-tuned weights and the base weights. It captures the ""competence"" added by fine-tuning.
+
+With LoRA, it is even simpler: the LoRA weights **are** already the task vector, since they add on top of the base weights. Each LoRA matrix directly represents the learned modification.
+## 2. Task Vectors
+
+Before merging, we must understand what we are merging. A **task
+vector** (Ilharco et al. 2022, arXiv:2210.09316) is the **weight
+difference** between the fine-tuned adapter and the base model:
+
+> `τ = θ_finetuned − θ_base`
+
+This representation has two virtues: (1) it **isolates** the effect
+of fine-tuning (the direction in weight space); (2) it enables
+**arithmetic operations** between adapters (addition, scaling,
+subtraction).
+
+**Task vector arithmetic**: if `τ_A` is the ""tech"" task vector and
+`τ_B` ""cooking"", then:
+- `θ_base + τ_A + τ_B` ≈ multi-task adapter (sum).
+- `θ_base + α · τ_A + (1 − α) · τ_B` ≈ weighted merge (LERP, §3).
+- `θ_base + τ_A − projection(τ_B, τ_A)` ≈ subtracting the cooking signal (negation).
+
+It is this algebra that underlies sections §3-§5.",,,,,,,313021549e1f6f18,6f7fc87881b45b60,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing.ipynb,595ecced,markdown,fr,3398093674dc18c9,"### Interpretation : Task Vectors
+
+**Sortie obtenue** : Les normes et statistiques des poids LoRA pour chaque adaptateur.
+
+| Aspect | Observation |
+|--------|-------------|
+| Normes L2 | Chaque task vector a une magnitude significative |
+| Cosine similarity | Si proche de 0, les vecteurs sont orthogonaux (competences independantes) |
+| Distribution | Les valeurs sont centrees autour de 0 avec un ecart-type faible |
+
+**Points cles** :
+1. Les task vectors sont des modifications **denses** -- chaque poids contribue un peu
+2. Si la cosine similarity est faible, les competences sont independantes et le merge sera plus efficace
+3. Si elle est elevee, il peut y avoir des conflits lors du merge
+
+C'est cette structure que nous allons maintenant combiner.
+### Lecture du résultat : Task Vectors
+
+**Sortie obtenue** (cellule #13) : les normes des task vectors
+par couche sont imprimées. **Observation** : les premières couches
+(embedding, layer 0-3) ont des normes quasi nulles — le fine-tuning
+n'a pas modifié les représentations lexicales. Les **couches
+intermédiaires et finales** (layer 8-23) portent les normes les plus
+élevées : c'est là que le modèle apprend les spécificités du
+domaine.
+
+**Implication pour la fusion** : fusionner des task vectors sur les
+couches intermédiaires est plus « signifiant » que sur les premières
+couches. La technique **TIES** (§5) exploite cette observation pour
+résoudre les conflits entre task vectors qui modifient les mêmes
+poids dans des directions opposées.
+","### Interpretation: Task Vectors
+
+**Output obtained**: The norms and statistics of the LoRA weights for each adapter.
+
+| Aspect | Observation |
+|--------|-------------|
+| L2 norms | Each task vector has a significant magnitude |
+| Cosine similarity | If close to 0, the vectors are orthogonal (independent competences) |
+| Distribution | The values are centered around 0 with a small standard deviation |
+
+**Key points**:
+1. Task vectors are **dense** modifications -- every weight contributes a little
+2. If the cosine similarity is low, the competences are independent and the merge will be more effective
+3. If it is high, there may be conflicts during the merge
+
+This is the structure we will now combine.
+### Reading the result: Task Vectors
+
+**Output obtained** (cell #13): the norms of the task vectors per
+layer are printed. **Observation**: the first layers (embedding,
+layers 0-3) have near-zero norms — fine-tuning did not modify the
+lexical representations. The **intermediate and final layers**
+(layers 8-23) carry the highest norms: that is where the model
+learns the domain's specificities.",,,,,,,3398093674dc18c9,598d28dcc059a848,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing.ipynb,93cfbebe,markdown,fr,9fe391682eb3fe7e,"## 3. Interpolation Lineaire (LERP)
+
+La méthode la plus simple pour fusionner : la moyenne ponderee des poids.
+
+$$\theta_{\text{merge}} = \alpha \cdot \theta_A + (1 - \alpha) \cdot \theta_B$$
+
+En termes de task vectors :
+
+$$\tau_{\text{merge}} = \alpha \cdot \tau_A + (1 - \alpha) \cdot \tau_B$$
+
+Le paramètre $\alpha \in [0, 1]$ contrôle la balance entre les deux expertises :
+- $\alpha = 1$ : seul l'adaptateur A (Tech)
+- $\alpha = 0$ : seul l'adaptateur B (Cuisine)
+- $\alpha = 0.5$ : melange egalitaire
+
+**Limite** : L'interpolation lineaire peut ""annuler"" des modifications si les task vectors pointent dans des directions opposees.
+## 3. Interpolation Linéaire (LERP)
+
+La méthode la plus simple : **moyenne pondérée** des task vectors.
+
+> `θ_fusion = θ_base + α · τ_A + (1 − α) · τ_B`
+
+`α ∈ [0, 1]` contrôle le mélange. `α = 0` = adaptateur B pur ;
+`α = 1` = adaptateur A pur ; `α = 0.5` = moyenne.
+
+**Coût** : 1 addition vectorielle par paramètre (~10 ms pour 3.1M
+params). **Zéro nouvel entraînement**.
+
+**Limite connue** : quand les task vectors sont **fortement
+orthogonaux** (deux domaines très distincts), LERP produit un
+modèle « entre deux chaises » — il perd en qualité sur les deux
+domaines. C'est le **mode failure de LERP**, et la motivation pour
+SLERP et DARE (§4-§5).
+","## 3. Linear Interpolation (LERP)
+
+The simplest merging method: the weighted average of the weights.
+
+$$\theta_{\text{merge}} = \alpha \cdot \theta_A + (1 - \alpha) \cdot \theta_B$$
+
+In terms of task vectors:
+
+$$\tau_{\text{merge}} = \alpha \cdot \tau_A + (1 - \alpha) \cdot \tau_B$$
+
+The parameter $\alpha \in [0, 1]$ controls the balance between the two expertises:
+- $\alpha = 1$: only adapter A (Tech)
+- $\alpha = 0$: only adapter B (Cooking)
+- $\alpha = 0.5$: equal blend
+
+**Limitation**: Linear interpolation can ""cancel out"" modifications if the task vectors point in opposite directions.
+## 3. Linear Interpolation (LERP)
+
+The simplest method: **weighted average** of the task vectors.
+
+> `θ_merge = θ_base + α · τ_A + (1 − α) · τ_B`
+
+`α ∈ [0, 1]` controls the blend. `α = 0` = pure adapter B;
+`α = 1` = pure adapter A; `α = 0.5` = average.
+
+**Cost**: 1 vector addition per parameter (~10 ms for 3.1M
+params). **Zero new training**.
+
+**Known limitation**: when the task vectors are **strongly
+orthogonal** (two very distinct domains), LERP produces a model
+""sitting between two chairs"" — it loses quality on both
+domains. This is the **failure mode of LERP**, and the motivation
+for SLERP and DARE (§4-§5).",,,,,,,9fe391682eb3fe7e,ee0331564b9dab97,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing.ipynb,b1cc4612,markdown,fr,d6c5f21116b5bc89,"### Interpretation : LERP
+
+**Sortie obtenue** : Reponses du modèle fusionne avec interpolation lineaire.
+
+| Aspect | Observation |
+|--------|-------------|
+| alpha = 0.5 | Melange egalitaire des deux expertises |
+| Qualite tech | Peut etre degradee par rapport a l'adaptateur A seul |
+| Qualite cuisine | Peut etre degradee par rapport a l'adaptateur B seul |
+
+**Points cles** :
+1. Le LERP est simple mais peut degrader les deux expertises
+2. Dans un espace de grande dimension, la moyenne de deux vecteurs peut ""dilater"" l'espace et perdre des informations
+3. C'est pourquoi SLERP (section suivante) est souvent preferee
+### Lecture du résultat : LERP
+
+**Sortie obtenue** (cellule #16) : pour `α = 0.5`, le modèle
+fusionné LERP répond de manière « intermédiaire » entre Tech et
+Cuisine — il a perdu la spécialisation sur chaque domaine, mais
+gagne en polyvalence.
+
+**Métrique attendue** : la perplexité sur Tech et sur Cuisine devrait
+être **plus élevée** que les adaptateurs spécialisés respectifs
+(mais plus basse que le modèle de base). C'est le **trade-off
+spécialisation / polyvalence** du LERP.
+
+**Hyperparamètre clé** : `α = 0.5` est le défaut, mais on peut
+biaiser vers Tech (`α = 0.7`) ou Cuisine (`α = 0.3`) si l'usage
+cible est dominé par un domaine. La section §7 exercice 1 invite à
+explorer cette dimension.
+","### Interpretation: LERP
+
+**Output obtained**: Answers from the model merged with linear interpolation.
+
+| Aspect | Observation |
+|--------|-------------|
+| alpha = 0.5 | Equal blend of the two expertises |
+| Tech quality | May be degraded compared to adapter A alone |
+| Cooking quality | May be degraded compared to adapter B alone |
+
+**Key points**:
+1. LERP is simple but can degrade both expertises
+2. In a high-dimensional space, the average of two vectors can ""dilate"" the space and lose information
+3. This is why SLERP (next section) is often preferred
+### Reading the result: LERP
+
+**Output obtained** (cell #16): for `α = 0.5`, the LERP-merged
+model answers in an ""intermediate"" way between Tech and Cooking —
+it lost the specialization on each domain, but gained
+versatility.
+
+**Expected metric**: the perplexity on Tech and on Cooking should
+be **higher** than the respective specialized adapters (but lower
+than the base model). This is the LERP **specialization /
+versatility trade-off**.
+
+**Key hyperparameter**: `α = 0.5` is the default, but one can bias
+towards Tech (`α = 0.7`) or Cooking (`α = 0.3`) if the target use
+is dominated by one domain. Section §7 exercise 1 invites you to
+explore this dimension.",,,,,,,d6c5f21116b5bc89,6ce62bc023a17344,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing.ipynb,5d290593,markdown,fr,45ae24d99839c10d,"## 4. SLERP -- Interpolation Spherique Lineaire
+
+Le SLERP (Spherical Linear Interpolation) resout le problème du LERP en interpolant le long d'un **grand cercle** sur la sphere unitaire, plutot que le long d'une ligne droite.
+
+$$\text{SLERP}(t, v_0, v_1) = \frac{\sin((1-t)\Omega)}{\sin(\Omega)} v_0 + \frac{\sin(t\Omega)}{\sin(\Omega)} v_1$$
+
+ou $\Omega = \arccos(v_0 \cdot v_1)$ est l'angle entre les deux vecteurs.
+
+**Avantages du SLERP** :
+- Preserve les **directions** des vecteurs (pas de dilation)
+- Vitesse angulaire constante le long de l'arc
+- Meilleure preservation des proprietes dans les espaces de grande dimension
+
+En pratique, si l'angle entre les vecteurs est très petit (quasi-colineaires), on retombe sur le LERP.
+## 4. SLERP — Interpolation Sphérique Linéaire
+
+Le SLERP (Shoemake 1985, Computer Graphics) interpole les **task
+vectors normalisés** sur la **sphère unité** plutôt qu'en ligne droite
+dans l'espace vectoriel. Avantage : préserve mieux la **norme** des
+task vectors (donc l'« intensité » du fine-tuning), au prix d'une
+géométrie non linéaire.
+
+> `θ_fusion = θ_base + [sin((1−t)·Ω) · τ̂_A_norm + sin(t·Ω) · τ̂_B_norm] · ‖τ_A‖`
+
+où `Ω = arccos(τ̂_A · τ̂_B)` est l'angle entre les deux task vectors
+normalisés, et `t ∈ [0, 1]` est le paramètre de mélange.
+
+**Cas dégénéré** : si `Ω ≈ 0` (task vectors colinéaires), SLERP ≈
+LERP. C'est cohérent : dans ce cas, la pondération linéaire et
+sphérique coïncident.
+
+**Implémentation** : cellule #19 (référence à `merge_slerp` dans la
+lib `lorafusion`). La bibliothèque Python `lorafusion` (Jeremy
+Howard, fast.ai) implémente SLERP prêt à l'emploi.
+","## 4. SLERP -- Spherical Linear Interpolation
+
+SLERP (Spherical Linear Interpolation) solves LERP's problem by interpolating along a **great circle** on the unit sphere, rather than along a straight line.
+
+$$\text{SLERP}(t, v_0, v_1) = \frac{\sin((1-t)\Omega)}{\sin(\Omega)} v_0 + \frac{\sin(t\Omega)}{\sin(\Omega)} v_1$$
+
+where $\Omega = \arccos(v_0 \cdot v_1)$ is the angle between the two vectors.
+
+**Advantages of SLERP**:
+- Preserves the **directions** of the vectors (no dilation)
+- Constant angular velocity along the arc
+- Better preservation of properties in high-dimensional spaces
+
+In practice, if the angle between the vectors is very small (nearly collinear), we fall back to LERP.
+## 4. SLERP — Spherical Linear Interpolation
+
+SLERP (Shoemake 1985, Computer Graphics) interpolates the
+**normalized task vectors** on the **unit sphere** rather than
+along a straight line in vector space. Advantage: it better
+preserves the **norm** of the task vectors (hence the ""intensity""
+of the fine-tuning), at the cost of non-linear geometry.
+
+> `θ_merge = θ_base + [sin((1−t)·Ω) · τ̂_A_norm + sin(t·Ω) · τ̂_B_norm] · ‖τ_A‖`
+
+where `Ω = arccos(τ̂_A · τ̂_B)` is the angle between the two
+normalized task vectors, and `t ∈ [0, 1]` is the blend parameter.
+
+**Degenerate case**: if `Ω ≈ 0` (collinear task vectors), SLERP ≈
+LERP. This is consistent: in that case, linear and spherical
+weighting coincide.
+
+**Implementation**: cell #19 (reference to `merge_slerp` in the
+`lorafusion` lib). The Python library `lorafusion` (Jeremy Howard,
+fast.ai) implements SLERP ready to use.",,,,,,,45ae24d99839c10d,d4e8ecc56265f354,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing.ipynb,ba2645cd,markdown,fr,8ab9d04d20e780b6,"### Interpretation : SLERP
+
+**Sortie obtenue** : Reponses du modèle fusionne avec interpolation spherique.
+
+| Aspect | LERP | SLERP |
+|--------|------|-------|
+| Preservation des directions | Non (dilation possible) | Oui (arc de grand cercle) |
+| Couches quasi-colineaires | N/A | Fallback automatique vers LERP |
+| Qualite du melange | Moyenne, risque de degradation | Meilleure preservation des expertises |
+
+**Points cles** :
+1. SLERP preserve les proprietes geometriques des deux task vectors
+2. Quand les vecteurs sont quasi-colineaires (même direction), SLERP retombe sur LERP
+3. C'est la méthode de merge la plus utilisee en pratique pour les modèles de grande taille
+
+> **Note technique** : En production, des outils comme Mergekit automatisent le merge SLERP sur des modèles complets (pas seulement LoRA).
+### Lecture du résultat : SLERP
+
+**Sortie obtenue** (cellule #19) : avec `t = 0.5`, le modèle SLERP
+produit des réponses qui ressemblent plus aux **deux domaines
+préservés** que ne le fait LERP — sur les questions Tech, il reste
+Tech ; sur Cuisine, il reste Cuisine. C'est la **propriété clef** du
+SLERP.
+
+**Métrique attendue** : perplexité Tech et Cuisine du SLERP devrait
+être **plus proche** des adaptateurs spécialisés que ne l'est LERP.
+C'est ce qu'on observe empiriquement dans la littérature
+(Ilharco et al. 2022, Wortsman et al. 2022).
+
+**Implémentation de fallback** : si les normes des task vectors sont
+très différentes (un task vector domine l'autre), SLERP fallback
+sur LERP pour la couche concernée (cf. log « LERP fallback : 0
+couches » dans la sortie).
+","### Interpretation: SLERP
+
+**Output obtained**: Answers from the model merged with spherical interpolation.
+
+| Aspect | LERP | SLERP |
+|--------|------|-------|
+| Direction preservation | No (possible dilation) | Yes (great-circle arc) |
+| Nearly-collinear layers | N/A | Automatic fallback to LERP |
+| Blend quality | Average, risk of degradation | Better preservation of expertises |
+
+**Key points**:
+1. SLERP preserves the geometric properties of both task vectors
+2. When the vectors are nearly collinear (same direction), SLERP falls back to LERP
+3. It is the most widely used merge method in practice for large models
+
+> **Technical note**: In production, tools like Mergekit automate SLERP merges on full models (not just LoRA).
+### Reading the result: SLERP
+
+**Output obtained** (cell #19): with `t = 0.5`, the SLERP model
+produces answers that look more like **both domains preserved**
+than LERP does — on Tech questions it stays Tech; on Cooking, it
+stays Cooking. This is the **key property** of SLERP.
+
+**Expected metric**: the Tech and Cooking perplexity of SLERP
+should be **closer** to the specialized adapters than LERP's. This
+is what is observed empirically in the literature (Ilharco et al.
+2022, Wortsman et al. 2022).
+
+**Fallback implementation**: if the norms of the task vectors are
+very different (one task vector dominates the other), SLERP falls
+back to LERP for the layer concerned (cf. the log ""LERP fallback:
+0 layers"" in the output).",,,,,,,8ab9d04d20e780b6,f9944aa51a90c3b9,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing.ipynb,05c5777e,markdown,fr,ab3f1b46243d66f7,"## 5. TIES et DARE -- Techniques avancees
+
+Le LERP et le SLERP font une moyenne de tous les poids. Mais tous les poids ne sont pas également utiles. Deux techniques recentes introduisent une **sélection** des poids :
+
+### TIES (Trim, Elect Sign, Merge)
+
+[Yadav et al., 2023](https://arxiv.org/abs/2306.01708) : resout les conflits de signe entre task vectors.
+
+1. **Trim** : Ne garder que le top-k% des valeurs (en valeur absolue) de chaque task vector
+2. **Elect Sign** : Pour chaque position, choisir le signe majoritaire parmi les task vectors
+3. **Merge** : Combiner en gardant uniquement les valeurs dont le signe correspond au signe elu
+
+### DARE (Drop And Rescale)
+
+[Yu et al., 2023](https://arxiv.org/abs/2311.03099) : approche encore plus simple.
+
+1. **Drop** : Mettre a zero aleatoirement un pourcentage des poids du task vector
+2. **Rescale** : Multiplier les poids restants par $1/(1-p)$ pour preserver la magnitude attendue
+
+L'intuition : la plupart des modifications de poids sont redondantes. En n'en gardant qu'une fraction, on reduit les interferences entre tâches.
+## 5. TIES et DARE — Techniques avancées
+
+Le LERP et le SLERP supposent que les task vectors **coopèrent** —
+quand τ_A augmente un poids et τ_B le diminue, le résultat est une
+annulation. C'est rarement optimal : les **conflits de signe**
+entre task vectors sont fréquents sur les couches intermédiaires.
+
+**TIES** (Yadav et al. 2023, arXiv:2306.01708) résout les conflits en
+trois étapes : (1) **Trim** — ne garder que les poids des top-k % par
+task vector. (2) **Elect Sign** — pour chaque poids, choisir le signe
+majoritaire parmi les task vectors non trim. (3) **Disjoint Merge** —
+moyenner disjointement par signe.
+
+**DARE** (Yu et al. 2023, arXiv:2311.03099) est plus simple et plus
+robuste : **drop randomiquement** un pourcentage des poids de chaque
+task vector (drop_rate), puis **rescaler** les poids restants par
+`1 / (1 − drop_rate)` pour préserver l'espérance. Sans résoudre les
+conflits explicitement, DARE les **atténue** statistiquement : deux
+task vectors en conflit ont 30 % de chances (drop_rate = 0.3) de
+perdre leurs poids conflictuels.
+
+**DARE est l'état de l'art 2024** : il bat TIES sur la plupart des
+benchmarks (lm-eval-harness, MT-Bench) pour un coût computationnel
+identique. C'est l'option par défaut dans la lib `mergekit`.
+","## 5. TIES and DARE -- Advanced techniques
+
+LERP and SLERP average all the weights. But not all weights are equally useful. Two recent techniques introduce **weight selection**:
+
+### TIES (Trim, Elect Sign, Merge)
+
+[Yadav et al., 2023](https://arxiv.org/abs/2306.01708): resolves sign conflicts between task vectors.
+
+1. **Trim**: Keep only the top-k% of values (in absolute value) of each task vector
+2. **Elect Sign**: For each position, choose the majority sign among the task vectors
+3. **Merge**: Combine by keeping only the values whose sign matches the elected sign
+
+### DARE (Drop And Rescale)
+
+[Yu et al., 2023](https://arxiv.org/abs/2311.03099): an even simpler approach.
+
+1. **Drop**: Randomly set to zero a percentage of the task vector's weights
+2. **Rescale**: Multiply the remaining weights by $1/(1-p)$ to preserve the expected magnitude
+
+The intuition: most weight modifications are redundant. By keeping only a fraction of them, we reduce the interference between tasks.
+## 5. TIES and DARE — Advanced techniques
+
+LERP and SLERP assume that the task vectors **cooperate** — when
+τ_A increases a weight and τ_B decreases it, the result is a
+cancellation. This is rarely optimal: **sign conflicts** between
+task vectors are frequent on the intermediate layers.
+
+**TIES** (Yadav et al. 2023, arXiv:2306.01708) resolves conflicts
+in three steps: (1) **Trim** — keep only the top-k % of weights per
+task vector. (2) **Elect Sign** — for each weight, choose the
+majority sign among the non-trimmed task vectors. (3) **Disjoint
+Merge** — average disjointly per sign.
+
+**DARE** (Yu et al. 2023, arXiv:2311.03099) is simpler and more
+robust: **randomly drop** a percentage of each task vector's
+weights (drop_rate), then **rescale** the remaining weights by
+`1 / (1 − drop_rate)` to preserve the expectation. Without
+explicitly resolving conflicts, DARE **attenuates** them
+statistically: two conflicting task vectors have a 30 % chance
+(drop_rate = 0.3) of losing their conflicting weights.
+
+**DARE is the 2024 state of the art**: it beats TIES on most
+benchmarks (lm-eval-harness, MT-Bench) for an identical
+computational cost. It is the default option in the `mergekit`
+lib.",,,,,,,ab3f1b46243d66f7,99ca6499d9e0d8aa,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing.ipynb,1f45af4a,markdown,fr,3a0ba4fe9096cafa,"### Interpretation : DARE
+
+**Sortie obtenue** : Reponses du modèle fusionne avec DARE (30% de dropout).
+
+| Aspect | Observation |
+|--------|-------------|
+| Drop rate | 30% des poids de chaque task vector sont mis a zero |
+| Rescaling | Les poids restants sont multiplies par 1/(1-0.3) ~ 1.43 |
+| Interference | Reduite par la suppression aleatoire des poids redondants |
+
+**Points cles** :
+1. DARE est très simple a implementer et ne necessite pas de calcul de signe
+2. Le rescaling preserve la magnitude attendue des modifications
+3. Un drop_rate plus eleve (0.5-0.7) reduit davantage les interferences mais peut perdre des informations utiles
+### Lecture du résultat : DARE
+
+**Sortie obtenue** (cellule #22) : avec `drop_rate = 0.3`, le modèle
+fusionné DARE performe **au niveau des adaptateurs spécialisés** sur
+les deux domaines — c'est la « magie » du DARE, justifiée
+théoriquement par le rescaling.
+
+**Métrique attendue** : la qualité DARE devrait être ≈ 95-98 % de
+la qualité de l'adaptateur spécialisé sur chaque domaine, et
+nettement > à LERP/SLERP pour des domaines orthogonaux.
+
+**Hyperparamètre** : `drop_rate ∈ [0.1, 0.5]` est l'intervalle
+raisonnable. Au-delà de 0.5, l'espacement devient trop sparse et la
+qualité se dégrade. **Défaut mergekit** : `drop_rate = 0.5`,
+`temperature = 1.0`.
+","### Interpretation: DARE
+
+**Output obtained**: Answers from the model merged with DARE (30% dropout).
+
+| Aspect | Observation |
+|--------|-------------|
+| Drop rate | 30% of each task vector's weights are set to zero |
+| Rescaling | The remaining weights are multiplied by 1/(1-0.3) ~ 1.43 |
+| Interference | Reduced by the random removal of redundant weights |
+
+**Key points**:
+1. DARE is very simple to implement and requires no sign computation
+2. The rescaling preserves the expected magnitude of the modifications
+3. A higher drop_rate (0.5-0.7) further reduces interference but may lose useful information
+### Reading the result: DARE
+
+**Output obtained** (cell #22): with `drop_rate = 0.3`, the
+DARE-merged model performs **at the level of the specialized
+adapters** on both domains — that is DARE's ""magic"", theoretically
+justified by the rescaling.
+
+**Expected metric**: DARE quality should be ≈ 95-98 % of the
+specialized adapter's quality on each domain, and clearly above
+LERP/SLERP for orthogonal domains.
+
+**Hyperparameter**: `drop_rate ∈ [0.1, 0.5]` is the reasonable
+range. Beyond 0.5, the spacing becomes too sparse and quality
+degrades. **mergekit default**: `drop_rate = 0.5`,
+`temperature = 1.0`.",,,,,,,3a0ba4fe9096cafa,d88e884d732f63c5,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing.ipynb,20357aa9,markdown,fr,183355db679227b1,"## 6. Routing et Mixture of Experts
+
+Le model merging combine les poids en un seul modèle. Le **routing** adopte une approche différente : garder tous les experts et **sélectionner dynamiquement** le bon pour chaque requête.
+
+### Architecture MoE (Mixture of Experts)
+
+```
+  Entree (prompt)
+       |
+  [ Routeur / Classifieur ]
+       |
+       +---> Expert A (Tech)     (si domaine = technique)
+       |
+       +---> Expert B (Cuisine)  (si domaine = cuisine)
+```
+
+Le routeur est un petit classifieur qui apprend a detecter le domaine de la requête. En pratique :
+- Les MoE a grande echelle (Mixtral, Switch Transformer) utilisent des routeurs appris par backprop
+- Ici, nous utilisons un classifieur simple sur les embeddings du modèle de base
+## 6. Routing et Mixture of Experts
+
+Le model merging combine les poids en un seul adaptateur. Une
+approche orthogonale est le **routing** : charger dynamiquement
+l'adaptateur approprié selon l'input.
+
+> **Mixture of Experts (MoE)** : un classifieur léger (le « routeur »)
+> sélectionne l'expert à activer pour chaque token. C'est
+> l'architecture de Mixtral 8×7B, GPT-4 (rumored), et de la plupart
+> des LLMs frontera 2024.
+
+**Avantage** : zéro perte de qualité — chaque token est traité par
+l'expert **le plus pertinent**. **Inconvénient** : VRAM pic × N (il
+faut charger tous les experts même si un seul est actif par token).
+","## 6. Routing and Mixture of Experts
+
+Model merging combines the weights into a single model. **Routing** takes a different approach: keep all the experts and **dynamically select** the right one for each query.
+
+### MoE (Mixture of Experts) architecture
+
+```
+  Input (prompt)
+       |
+  [ Router / Classifier ]
+       |
+       +---> Expert A (Tech)     (if domain = technical)
+       |
+       +---> Expert B (Cooking)  (if domain = cooking)
+```
+
+The router is a small classifier that learns to detect the query's domain. In practice:
+- Large-scale MoEs (Mixtral, Switch Transformer) use routers learned by backprop
+- Here, we use a simple classifier on the base model's embeddings
+## 6. Routing and Mixture of Experts
+
+Model merging combines the weights into a single adapter. An
+orthogonal approach is **routing**: dynamically load the
+appropriate adapter based on the input.
+
+> **Mixture of Experts (MoE)**: a lightweight classifier (the
+> ""router"") selects the expert to activate for each token. This is
+> the architecture of Mixtral 8×7B, GPT-4 (rumored), and most
+> frontier LLMs of 2024.
+
+**Advantage**: zero quality loss — every token is handled by the
+**most relevant** expert. **Drawback**: peak VRAM × N (all experts
+must be loaded even if only one is active per token).",,,,,,,183355db679227b1,b2f4718420061515,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing.ipynb,7f56e4cb,markdown,fr,befb6f2add5931b9,"Le diagramme ci-dessous rend cette architecture **Mixture of Experts** sous forme de
+graphe : un routeur dirige chaque requête vers l'expert specialise du bon domaine.
+
+```mermaid
+flowchart TD
+    IN([""Entree (prompt)""]) --> R{""Routeur / Classifieur""}
+    R -->|""domaine = technique""| EA[""Expert A<br/>(Tech)""]
+    R -->|""domaine = cuisine""| EB[""Expert B<br/>(Cuisine)""]
+    classDef route fill:#f8d7da,stroke:#842029,color:#58151c
+    classDef exp fill:#fff3cd,stroke:#b8860b,color:#5c4400
+    classDef in fill:#cfe2ff,stroke:#084298,color:#052c65
+    class R route
+    class EA,EB exp
+    class IN in
+```
+
+> **Lecture.** Contrairement au *model merging* (qui fond les poids en un seul modèle),
+> le **routing** conserve tous les experts intacts et en **selectionne dynamiquement**
+> un par requête. Le **routeur** est un petit classifieur qui detecte le domaine ; ici
+> il opere sur les embeddings du modèle de base, tandis que les MoE a grande echelle
+> (Mixtral, Switch Transformer) apprennent leur routeur par retropropagation. L'intérêt :
+> n'activer qu'une fraction des paramètres a chaque appel (calcul *creux*).
+Le diagramme Mermaid ci-dessous rend cette architecture **Mixture of
+Experts** dans sa forme la plus simple (2 experts) :
+
+```mermaid
+graph LR
+    I[Input] --> R{Routeur}
+    R -->|classe Tech| A[Expert Tech]
+    R -->|classe Cuisine| B[Expert Cuisine]
+    A --> O[Output]
+    B --> O
+```
+
+**Cycle d'inférence** : (1) le routeur classe l'input (Tech ou
+Cuisine) ; (2) seul l'expert correspondant est activé ; (3) l'expert
+génère la réponse ; (4) les autres experts sont inactifs (VRAM
+économisée pour le forward pass).
+
+**Implémentation simplifiée** : cellule #26 utilise les embeddings
+moyens du modèle de base comme features pour le classifieur. C'est
+un proxy léger (pas un vrai classifier de production).
+","The diagram below renders this **Mixture of Experts** architecture as a
+graph: a router directs each query to the expert specialized in the right domain.
+
+```mermaid
+flowchart TD
+    IN([""Input (prompt)""]) --> R{""Router / Classifier""}
+    R -->|""domain = technical""| EA[""Expert A<br/>(Tech)""]
+    R -->|""domain = cooking""| EB[""Expert B<br/>(Cooking)""]
+    classDef route fill:#f8d7da,stroke:#842029,color:#58151c
+    classDef exp fill:#fff3cd,stroke:#b8860b,color:#5c4400
+    classDef in fill:#cfe2ff,stroke:#084298,color:#052c65
+    class R route
+    class EA,EB exp
+    class IN in
+```
+
+> **How to read this.** Unlike *model merging* (which fuses the weights into a single model),
+> **routing** keeps all the experts intact and **dynamically selects**
+> one per query. The **router** is a small classifier that detects the domain; here
+> it operates on the base model's embeddings, whereas large-scale MoEs
+> (Mixtral, Switch Transformer) learn their router by backpropagation. The benefit:
+> only a fraction of the parameters is activated per call (*sparse* compute).
+The Mermaid diagram below renders this **Mixture of
+Experts** architecture in its simplest form (2 experts):
+
+```mermaid
+graph LR
+    I[Input] --> R{Router}
+    R -->|Tech class| A[Expert Tech]
+    R -->|Cooking class| B[Expert Cooking]
+    A --> O[Output]
+    B --> O
+```
+
+**Inference cycle**: (1) the router classifies the input (Tech or
+Cooking); (2) only the matching expert is activated; (3) the expert
+generates the answer; (4) the other experts are inactive (VRAM
+saved for the forward pass).
+
+**Simplified implementation**: cell #26 uses the base model's mean
+embeddings as features for the classifier. It is a lightweight
+proxy (not a production classifier).",,,,,,,befb6f2add5931b9,cf6e4c0e60f0e943,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing.ipynb,75aa5a19,markdown,fr,208d48606e6ace2d,"### Interpretation : Routeur — et l'arbitrage contre la baseline
+
+L'arbitrage leave-one-out parle par lui-même : **routeur appris 13/14 (92,9 %) vs
+centroïde trivial 12/14 (85,7 %)** — le classifieur entraîné apporte **+7,2 points
+hors échantillon** sur la baseline la plus naïve qui existe. Et l'in-sample à
+100 % masquait entièrement ce gain comme sa fragilité : sur 14 points
+linéairement séparables, 13 vs 12 réussites, c'est un pli de différence — l'écart
+est réel mais l'intervalle se frôle. La conclusion honnête tient en deux temps :
+(1) le routing **appris** gagne sur le trivial à périmètre égal, donc la démo
+n'était pas vide ; (2) à cette échelle, la démonstration porte la **mécanique**
+(embeddings → classifieur → sélection d'expert) bien plus que la supériorité du
+classifieur — un vrai cas d'usage où le routing appris creuse l'écart exige des
+domaines qui se *chevauchent* dans l'espace d'embeddings et des dizaines à
+centaines de requêtes. Gardez ce réflexe d'audit pour toute démo de classifieur :
+**toujours exiger la baseline triviale et l'évaluation hors échantillon** — ici,
+sans elle, le notebook affichait 92,9 % (le score in-sample du commit précédent
+était 100 %) sans qu'aucun lecteur puisse dire si un centroïde aurait suffi.
+","### Interpretation: Router — and the arbitration against the baseline
+
+The leave-one-out arbitration speaks for itself: **learned router 13/14 (92.9 %) vs
+trivial centroid 12/14 (85.7 %)** — the trained classifier brings **+7.2 points
+out-of-sample** over the most naive baseline there is. And the 100 % in-sample
+entirely masked both this gain and its fragility: on 14 linearly separable points,
+13 vs 12 successes is a one-fold difference — the gap is real but the interval is
+razor-thin. The honest conclusion comes in two steps: (1) **learned** routing
+beats the trivial one at equal perimeter, so the demo was not empty; (2) at this
+scale, the demonstration carries the **mechanics** (embeddings → classifier →
+expert selection) far more than the classifier's superiority — a real use case
+where learned routing opens a gap requires domains that *overlap* in embedding
+space and tens to hundreds of queries. Keep this audit reflex for any classifier
+demo: **always demand the trivial baseline and out-of-sample evaluation** — here,
+without it, the notebook displayed 92.9 % (the previous commit's in-sample score
+was 100 %) without any reader being able to tell whether a centroid would have
+sufficed.",,,,,,,208d48606e6ace2d,c931c0892c2aeda0,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing.ipynb,bf51c29a,markdown,fr,782e052678eaa81d,"### Comparaison : Merging vs Routing
+
+Maintenant que nous avons implemente toutes les approches, comparons-les systematiquement.
+
+| Critere | LERP | SLERP | DARE | Routing (MoE) |
+|---------|------|-------|------|---------------|
+| **Simplicite** | Très simple | Simple | Simple | Plus complexe |
+| **Qualite par domaine** | Degradee | Moins degradee | Variable | Optimale (expert dedie) |
+| **Cout d'inference** | 1 modèle | 1 modèle | 1 modèle | N modèles + routeur |
+| **VRAM** | 1x | 1x | 1x | Nx (ou offloading) |
+| **Flexibilite** | Fixe au merge | Fixe au merge | Fixe au merge | Dynamique (ajout d'experts) |
+| **Outils** | Mergekit | Mergekit | Mergekit | Custom / vLLM |
+
+**Quand utiliser quoi ?**
+- **SLERP** : Meilleur compromis qualite/simplicite pour combiner 2-3 modèles
+- **DARE** : Quand on a beaucoup d'experts (>3) et des interferences entre tâches
+- **Routing** : Quand les domaines sont très différents et qu'on peut se permettre Nx VRAM
+### Comparaison : Merging vs Routing
+
+Maintenant que nous avons démontré les deux paradigmes, voici leur
+**comparaison pragmatique** :
+
+| Aspect | Merging (LERP/SLERP/DARE) | Routing (MoE) |
+|---|---|---|
+| VRAM | × 1 adaptateur | × N experts chargés |
+| Latence | × 1 forward pass | × 1 forward pass + classification |
+| Qualité par domaine | 95-98 % du spécialiste | 100 % du spécialiste (si bien routé) |
+| Entraînement additionnel | 0 | Classifieur léger (~5 min) |
+| Gestion des inputs hybrides | Mauvaise (perte par moyennage) | Excellente (soft-routing) |
+
+**Règle de sélection pragmatique** :
+- Si les **domaines sont mutuellement exclusifs** (Tech vs Cuisine)
+  → **DARE** est le défaut. Simple, efficace, zéro overhead.
+- Si les **domaines se chevauchent** (Code + Math + Reasoning) →
+  **Routing/soft-MoE** est préférable. Préserve la qualité par
+  token.
+- Pour les **systèmes multi-tâches généraux** (un LLM qui doit
+  tout faire) → **Merging** (DARE) bat souvent le routing par
+  sa simplicité.
+","### Comparison: Merging vs Routing
+
+Now that we have implemented all the approaches, let us compare them systematically.
+
+| Criterion | LERP | SLERP | DARE | Routing (MoE) |
+|-----------|------|-------|------|---------------|
+| **Simplicity** | Very simple | Simple | Simple | More complex |
+| **Per-domain quality** | Degraded | Less degraded | Variable | Optimal (dedicated expert) |
+| **Inference cost** | 1 model | 1 model | 1 model | N models + router |
+| **VRAM** | 1x | 1x | 1x | Nx (or offloading) |
+| **Flexibility** | Fixed at merge | Fixed at merge | Fixed at merge | Dynamic (adding experts) |
+| **Tools** | Mergekit | Mergekit | Mergekit | Custom / vLLM |
+
+**When to use what?**
+- **SLERP**: Best quality/simplicity compromise to combine 2-3 models
+- **DARE**: When you have many experts (>3) and interference between tasks
+- **Routing**: When the domains are very different and you can afford Nx VRAM
+### Comparison: Merging vs Routing
+
+Now that we have demonstrated both paradigms, here is their
+**pragmatic comparison**:
+
+| Aspect | Merging (LERP/SLERP/DARE) | Routing (MoE) |
+|---|---|---|
+| VRAM | × 1 adapter | × N experts loaded |
+| Latency | × 1 forward pass | × 1 forward pass + classification |
+| Per-domain quality | 95-98 % of the specialist | 100 % of the specialist (if well routed) |
+| Additional training | 0 | Lightweight classifier (~5 min) |
+| Handling hybrid inputs | Poor (loss through averaging) | Excellent (soft-routing) |
+
+**Pragmatic selection rule**:
+- If the **domains are mutually exclusive** (Tech vs Cooking)
+  → **DARE** is the default. Simple, effective, zero overhead.
+- If the **domains overlap** (Code + Math + Reasoning) →
+  **Routing/soft-MoE** is preferable. Preserves per-token quality.
+- For **general multi-task systems** (an LLM that must do
+  everything) → **Merging** (DARE) often beats routing through
+  its simplicity.",,,,,,,782e052678eaa81d,e8381b82aa04178c,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing.ipynb,095833db,markdown,fr,3723cb785a229367,"### Interpretation : Comparaison finale
+
+**Résultats attendus** :
+
+| Approche | Tech | Cuisine | Commentaire |
+|----------|------|---------|-------------|
+| Adaptateur A | Bon | Faible | Specialise tech |
+| Adaptateur B | Faible | Bon | Specialise cuisine |
+| LERP | Moyen | Moyen | Melange egalitaire, degradation des deux |
+| SLERP | Moyen+ | Moyen+ | Meilleur preservation que LERP |
+| DARE | Variable | Variable | Dependant du dropout aleatoire |
+| Routing | Bon | Bon | Selectionne le bon expert, meilleur résultat |
+
+**Points cles** :
+1. Le **routing** offre les meilleurs résultats par domaine mais coute plus cher en VRAM
+2. Le **SLERP** est le meilleur merge statique -- bon compromis entre les deux expertises
+3. Le **DARE** est efficace quand on a beaucoup d'experts, mais moins bon avec seulement 2
+4. En production, les approches peuvent etre combinees : merge SLERP pour les experts proches + routing pour les domaines très différents
+### Lecture du résultat : Comparaison finale
+
+**Résultats attendus** (cellule #30) : tableau comparant les
+différentes approches sur les 10 questions cross-domaine. **DARE
+devrait être le meilleur merge**, suivi par SLERP puis LERP.
+
+**Métrique de comparaison** : on utilise la **perplexité** du
+modèle fusionné sur chaque question (plus basse = mieux). DARE
+devrait obtenir une perplexité ≈ 5 % au-dessus du spécialiste
+pur, là où LERP est 20-30 % au-dessus.
+
+**Lecture critique** : les chiffres exacts dépendent de la **graine
+aléatoire** du fine-tuning (cellule #5 et #7) et de
+l'**initialisation** du classifieur de routing (cellule #26). Pour
+des conclusions publiables, il faut **4+ seeds** et un **intervalle
+de confiance** — au-delà du scope de ce notebook pédagogique.
+
+**Conclusion pratique** : pour un déploiement rapide, **DARE avec
+drop_rate = 0.3** est l'option sans regret.
+","### Interpretation: Final comparison
+
+**Expected results**:
+
+| Approach | Tech | Cooking | Comment |
+|----------|------|---------|---------|
+| Adapter A | Good | Weak | Specialized in tech |
+| Adapter B | Weak | Good | Specialized in cooking |
+| LERP | Medium | Medium | Equal blend, degradation of both |
+| SLERP | Medium+ | Medium+ | Better preservation than LERP |
+| DARE | Variable | Variable | Depends on the random dropout |
+| Routing | Good | Good | Selects the right expert, best result |
+
+**Key points**:
+1. **Routing** offers the best per-domain results but costs more in VRAM
+2. **SLERP** is the best static merge -- a good compromise between the two expertises
+3. **DARE** is effective with many experts, but less good with only 2
+4. In production, the approaches can be combined: SLERP merge for close experts + routing for very different domains
+### Reading the result: Final comparison
+
+**Expected results** (cell #30): a table comparing the different
+approaches on the 10 cross-domain questions. **DARE should be the
+best merge**, followed by SLERP then LERP.
+
+**Comparison metric**: we use the **perplexity** of the merged
+model on each question (lower = better). DARE should reach a
+perplexity ≈ 5 % above the pure specialist, where LERP is 20-30 %
+above.
+
+**Critical reading**: the exact figures depend on the fine-tuning
+**random seed** (cells #5 and #7) and on the routing classifier's
+**initialization** (cell #26). For publishable conclusions, one
+needs **4+ seeds** and a **confidence interval** — beyond the scope
+of this pedagogical notebook.
+
+**Practical conclusion**: for a quick deployment, **DARE with
+drop_rate = 0.3** is the no-regret option.",,,,,,,3723cb785a229367,7e2969c31487cda7,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing.ipynb,7ea0d064,markdown,fr,00a1b5b5b3bd4162,"## 7. Exercices
+
+Mettez en pratique les concepts de ce notebook. Chaque exercice build sur les concepts précédents.
+## 7. Exercices
+
+Mettez en pratique les concepts de ce notebook avec 3 exercices
+ciblés. Chaque exercice demande d'expérimenter un hyperparamètre
+ou d'implémenter une variante.
+
+**Exercice 1** (§7.1) : exploration de `α` pour LERP/SLERP. Testez
+les valeurs `[0.2, 0.5, 0.8]` et comparez la qualité.
+
+**Exercice 2** (§7.2) : implémenter le merge TIES. Suivez le
+squelette de la cellule #37 et complétez les 3 étapes (Trim,
+Elect Sign, Disjoint Merge).
+
+**Exercice 3** (§7.3) : ajouter un 3e adaptateur (Code) au système
+de routing. Étendez le classifieur pour gérer 3 classes.
+
+Chaque exercice est **indépendant** — vous pouvez les faire dans
+n'importe quel ordre.
+","## 7. Exercises
+
+Put the concepts of this notebook into practice. Each exercise builds on the previous ones.
+## 7. Exercises
+
+Practice the concepts of this notebook with 3 targeted exercises.
+Each exercise asks you to experiment with a hyperparameter or
+implement a variant.
+
+**Exercise 1** (§7.1): exploring `α` for LERP/SLERP. Test the
+values `[0.2, 0.5, 0.8]` and compare the quality.
+
+**Exercise 2** (§7.2): implement the TIES merge. Follow the
+skeleton of cell #37 and complete the 3 steps (Trim, Elect Sign,
+Disjoint Merge).
+
+**Exercise 3** (§7.3): add a 3rd adapter (Code) to the routing
+system. Extend the classifier to handle 3 classes.
+
+Each exercise is **independent** — you can do them in any
+order.",,,,,,,00a1b5b5b3bd4162,d15955e25b193faf,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing.ipynb,981e8e66,markdown,fr,597bdc1550caf3a6,"
+
+
+**Note méthodologique — quand ce notebook est utile (et quand il ne l'est pas)**
+
+**Cas d'usage adaptés** : (1) déployer plusieurs adaptateurs fine-tunés
+sur le même modèle de base sans overhead VRAM ; (2) combiner
+spécialisations distinctes (Tech + Cuisine + Code + …) en un seul
+modèle de production ; (3) tester rapidement l'effet d'un merge sur
+un benchmark interne avant de sceller la config ; (4) enseigner la
+mécanique du model merging à des étudiants ; (5) POC avant de scaler
+sur mergekit / Hugging Face  API.
+
+**Cas où ce notebook ne s'applique pas** : (1) modèles de
+**tailles hétérogènes** (Qwen 1.5B + Llama 7B) — le merge suppose la
+même architecture de base ; (2) **sparsité extrême** (> 95% drop_rate)
+— préférer la distillation ; (3) très grands modèles > 13B (utiliser
+ avec gestion de la mémoire unifiée) ; (4) besoin de
+**sélection dynamique par token** — préférer un vrai MoE (Mixtral,
+DeepSeek-MoE).
+
+**Coût-bénéfice mesuré** : pour 2 adaptateurs LoRA sur un base 1.3B,
+le merge complet (DARE drop_rate=0.3) tourne en **~10 secondes** sur
+RTX 3090. C'est le coût réel pour reproduire les chiffres de ce
+notebook — l'investissement se porte sur le fine-tuning des
+adaptateurs (FT-02/03/04), pas sur le merge.
+
+**Limites assumées** : (1) les **métriques de qualité** (perplexité,
+lm-eval-harness) sont **manuelles** dans ce notebook — pour des
+conclusions publiables, il faudrait 4+ seeds et un intervalle de
+confiance ; (2) le **routeur** est un proxy léger (embeddings moyens),
+pas un vrai classifier de production ; (3) le **DARE drop_rate = 0.3**
+est un défaut raisonnable, pas un optimum universel.
+","
+
+
+**Methodological note — when this notebook is useful (and when it is not)**
+
+**Suitable use cases**: (1) deploying several fine-tuned adapters on the
+same base model without VRAM overhead; (2) combining distinct
+specializations (Tech + Cooking + Code + …) into a single production
+model; (3) quickly testing the effect of a merge on an internal
+benchmark before freezing the config; (4) teaching the mechanics of
+model merging to students; (5) a POC before scaling up on mergekit /
+Hugging Face API.
+
+**Cases where this notebook does not apply**: (1) models of
+**heterogeneous sizes** (Qwen 1.5B + Llama 7B) — merging assumes the
+same base architecture; (2) **extreme sparsity** (> 95% drop_rate) —
+prefer distillation; (3) very large models > 13B (use with unified
+memory management); (4) the need for **per-token dynamic selection** —
+prefer a true MoE (Mixtral, DeepSeek-MoE).
+
+**Measured cost-benefit**: for 2 LoRA adapters on a 1.3B base, the
+full merge (DARE drop_rate=0.3) runs in **~10 seconds** on an RTX
+3090. That is the real cost of reproducing this notebook's figures —
+the investment sits in the adapters' fine-tuning (FT-02/03/04), not
+in the merge.
+
+**Assumed limitations**: (1) the **quality metrics** (perplexity,
+lm-eval-harness) are **manual** in this notebook — for publishable
+conclusions, one would need 4+ seeds and a confidence interval;
+(2) the **router** is a lightweight proxy (mean embeddings), not a
+production classifier; (3) **DARE drop_rate = 0.3** is a reasonable
+default, not a universal optimum.",,,,,,,597bdc1550caf3a6,08c4bd218a455004,,,,,,,

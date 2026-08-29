@@ -635,6 +635,7 @@ project:
     - "MyIA.AI.Notebooks/Search/Applications/CSP/App-2-GraphColoring.ipynb"
     - "MyIA.AI.Notebooks/Search/Applications/CSP/App-20-SudokuBenchmark-Python.ipynb"
     - "MyIA.AI.Notebooks/Search/Applications/CSP/App-20b-SudokuBenchmark-CSharp.ipynb"
+    - "MyIA.AI.Notebooks/Search/Applications/CSP/App-26-CoveringArrays-Guarantee-Audit.ipynb"
     - "MyIA.AI.Notebooks/Search/Applications/CSP/App-3-NurseScheduling.ipynb"
     - "MyIA.AI.Notebooks/Search/Applications/CSP/App-3b-NurseScheduling-CSharp.ipynb"
     - "MyIA.AI.Notebooks/Search/Applications/CSP/App-4-JobShopScheduling.ipynb"
