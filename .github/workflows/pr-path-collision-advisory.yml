@@ -1,0 +1,61 @@
+name: PR path-collision advisory
+
+# Issue #13359. An ADVISORY organ that renders visibility into OPEN pull
+# requests sharing an identical file path -- the expensive double-delivery
+# case (same notebook delivered twice) that check_lane_claim.py cannot see
+# by construction (a lane never blocks itself; the claim lock only arbitrates
+# across lanes), and that prose rule L898 asks every agent to guard from
+# memory. Measured firsthand 2026-08-28 on #13296/#13339: the same notebook
+# delivered twice, the worse one merged.
+#
+# Deliberately ADVISORY and MANUAL (workflow_dispatch, no cron). The raw
+# shared-path signal over-fires on shared README/manifest edits -- measured
+# 137 collisions on 133 open PRs (2026-08-28) -- so its value is a human
+# looking at the pair list, not a bot flooding comments. The default here is
+# report-only (dry-run); the coordinator opts into posting, optionally
+# narrowed to same-issue collisions (the high-signal double-delivery mode).
+# Under the runner famine (#13097) adding another hot cron would tax the very
+# queue this organ belongs to.
+#
+# The organ NEVER blocks: the script always exits 0 and this job has no
+# merge/status gate.
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'List collisions on stdout, post nothing'
+        required: false
+        type: boolean
+        default: true
+      same_issue_only:
+        description: 'Post only collisions where both PRs cite the same issue in title'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  advisory:
+    name: List open-PR path collisions
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Detect collisions and (optionally) post advisory comments
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DRY_RUN: ${{ github.event.inputs.dry_run }}
+          SAME_ISSUE_ONLY: ${{ github.event.inputs.same_issue_only }}
+        run: |
+          set -uo pipefail
+          ARGS=""
+          [ "$DRY_RUN" = "true" ] && ARGS="$ARGS --dry-run"
+          [ "$SAME_ISSUE_ONLY" = "true" ] && ARGS="$ARGS --same-issue-only"
+          python scripts/check_pr_path_collisions.py $ARGS
