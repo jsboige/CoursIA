@@ -4,7 +4,7 @@
   csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-3-Informed-Csharp.ipynb
   parity_level: native-both
   bridge_verdict: SOTA-OK
-  bridge_verdict_reason: "Python = stdlib + networkx (helper viz graph + heuristic lookup) + heapq (priority queue A*/Greedy/Best-First). Pas de lib SOTA-tier Python pour informed search pure (`aima-python` est jouet non maintained, `pySearch` est un essai), le port pedagogique AIMA ch.4 from-scratch reste canonique. C# = `QuikGraph` NuGet (Pelikan521, MIT-license, lib SOTA graphe .NET : `using QuikGraph;` + `using QuikGraph.Algorithms.ShortestPath;` + `DijkstraShortestPathAlgorithm<TVertex,TEdge>` / `AStarShortestPathAlgorithm<TVertex,TEdge>`, version 2.5.0). Verdict SOTA-OK (modèle owner PR #10412 MERGED pour Sudoku-9 / PR #10387 MERGED pour Search-15 NetworkX) : QuikGraph EST la lib SOTA graphe canonique .NET (Bellman-Ford, Dijkstra, A*, BFS, DFS -- tout y est), l'API `AStarShortestPathAlgorithm` permet un bridge direct A* avec heuristique. Asymetrie documentee : PY from-scratch (algos pedagogiques AIMA), C# bridge via lib SOTA (algo canonique)."
+  bridge_verdict_reason: "Python = stdlib + networkx (helper viz graph + heuristic lookup) + heapq (priority queue A*/Greedy/Best-First). Pas de lib SOTA-tier Python pour informed search pure (`aima-python` est jouet non maintained, `pySearch` est un essai), le port pedagogique AIMA ch.4 from-scratch reste canonique. C# = `QuikGraph` NuGet (Pelikan521, MIT-license, lib SOTA graphe .NET : `using QuikGraph;` + `using QuikGraph.Algorithms.ShortestPath;` + `DijkstraShortestPathAlgorithm<TVertex,TEdge>` / `AStarShortestPathAlgorithm<TVertex,TEdge>`, version 2.5.0). Verdict SOTA-OK (modèle owner PR #10412 MERGED pour Sudoku-09 / PR #10387 MERGED pour Search-15 NetworkX) : QuikGraph EST la lib SOTA graphe canonique .NET (Bellman-Ford, Dijkstra, A*, BFS, DFS -- tout y est), l'API `AStarShortestPathAlgorithm` permet un bridge direct A* avec heuristique. Asymetrie documentee : PY from-scratch (algos pedagogiques AIMA), C# bridge via lib SOTA (algo canonique)."
   audits:
     - date: "2026-08-18"
       by: myia-po-2026:CoursIA
@@ -35,6 +35,25 @@
       csharp_sha: e4f0c1ecc753255b13cc3e4abfe76598e3805506
       content_python_sha: 9d87e4841d569c2f9b5a6f46535ebfe12e82ce888c2d007534e714e06d23c0e4
       content_csharp_sha: d44b27b8348bcdf60427a301d88c55d36e83ab2f1e3e3bffac9bdb8c44a917bb
+    - date: "2026-08-23"
+      by: myia-po-2026:CoursIA-2
+      python_sha: 3e069d1c34f334e0c21348338785242b3d5a8c5d
+      csharp_sha: e4f0c1ecc753255b13cc3e4abfe76598e3805506
+      content_python_sha: ed52afc70fc3e8d75768e552cf9ef0aa3a57d426914caec02fcf9da3fbc494be
+      content_csharp_sha: d44b27b8348bcdf60427a301d88c55d36e83ab2f1e3e3bffac9bdb8c44a917bb
+    - date: "2026-08-28"
+      by: myia-po-2024:CoursIA
+      python_sha: 4bcf7ed07e783c59f429004367900bc9cc0d2f1b
+      csharp_sha: e4f0c1ecc753255b13cc3e4abfe76598e3805506
+      content_python_sha: bfc13ca95a92c74a30220a734366c3899f2cf531c003f976b0e1aea12d743ccf
+      content_csharp_sha: d44b27b8348bcdf60427a301d88c55d36e83ab2f1e3e3bffac9bdb8c44a917bb
+    - date: "2026-08-29"
+      by: myia-po-2026:CoursIA
+      python_sha: 6a38b61b2c754511513922466155023c4a39ae78
+      csharp_sha: e4f0c1ecc753255b13cc3e4abfe76598e3805506
+      content_python_sha: c2795ee971045d3f85e185e6c42fa0633230a70d5ea936b46b060eec49df0775
+      content_csharp_sha: d44b27b8348bcdf60427a301d88c55d36e83ab2f1e3e3bffac9bdb8c44a917bb
+      reason: "rebaseline post-merge origin/main : le notebook Python de la PR #12512 (contre-exemple h non admissible -> sous-optimalite A*, #12465) change le content SHA ; la baseline po-2024 du 2026-08-28 decrivait main pre-PR. Csharp_sha unchanged, parite (surface) preservee."
   known_differences:
     - "Socle pedagogique commun : A* et Greedy Best-First avec differentes heuristiques (distance Manhattan, euclidienne, h=0=degenere en UCS). Arrive en Roumanie + 8-puzzle."
     - "Idiomes framework : Python = `import heapq` (priority queue avec (f, tie_breaker, noeud)). C# = `PriorityQueue<AStarNode, double>` (f-cost = g + h)."

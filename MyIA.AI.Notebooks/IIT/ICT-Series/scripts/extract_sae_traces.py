@@ -71,6 +71,7 @@ from ict.sae_traces import (  # noqa: E402  (necessairement apres sys.path)
     check_sae_model_match,
     resolve_capture_layer,
     trace_filename,
+    w_dec_needs_transpose,
 )
 
 # ---------------------------------------------------------------------------
@@ -463,13 +464,19 @@ def normalize_w_dec(w_dec: torch.Tensor, w_enc: torch.Tensor) -> torch.Tensor:
     [d_sae, d_model]. Sans normalisation, l'indexation ``W_dec[clamp_ids]``
     du hook de clamp designe des LIGNES du residual stream (0..d_model-1)
     au lieu des directions decodees des features visees — IndexError si un
-    clamp_id depasse d_model, silencieusement faux sinon. d_model se deduit
-    de W_enc [d_sae, d_model] ; la normalisation est non ambigue car
-    d_model != d_sae sur toutes les releases visees. Meme correctif que
+    clamp_id depasse d_model, silencieusement faux sinon. Meme correctif que
     ``extract_sae_fidelity.py`` (PR #12938).
+
+    Fusion rebase 2026-08-29 avec #12945 : la decision de layout passe par
+    le predicat partage :func:`ict.sae_traces.w_dec_needs_transpose` — le
+    cas carre (d_model == d_sae) est REFUSE en ValueError au lieu du pari
+    silencieux de la premiere version, et la transposition effective est
+    journalisee (confirmation pre-Gate-24 des layouts par release).
     """
-    d_model = w_enc.shape[1]
-    if w_dec.shape[0] == d_model:
+    if w_dec_needs_transpose(tuple(w_dec.shape), w_enc.shape[1]):
+        print(f"[sae] W_dec {tuple(w_dec.shape)} = [d_model, d_sae] detecte "
+              f"-> normalise {tuple(w_dec.t().shape)} = [d_sae, d_model] "
+              "(clamp Gate 24 : l'indexation par feature exige ce layout)")
         return w_dec.t().contiguous()
     return w_dec
 

@@ -535,10 +535,10 @@ class TestAnalyzeNotebookSerieClassification:
         """Sudoku (no sous_serie, notebooks directly under Serie/) sets
         sous_serie='' so the breakdown groups them as 'root'."""
         monkeypatch.setattr("generate_catalog.NOTEBOOKS_DIR", tmp_path)
-        nb_path = self._write_notebook(tmp_path, "Sudoku/Sudoku-1.ipynb")
+        nb_path = self._write_notebook(tmp_path, "Sudoku/Sudoku-01.ipynb")
         entry = analyze_notebook(nb_path, pedagogical=True, git_meta={})
         assert entry["serie"] == "Sudoku"
-        # parts == ('Sudoku', 'Sudoku-1.ipynb'), len(parts)=2, sous_serie=''
+        # parts == ('Sudoku', 'Sudoku-01.ipynb'), len(parts)=2, sous_serie=''
         assert entry["sous_serie"] == ""
 
 

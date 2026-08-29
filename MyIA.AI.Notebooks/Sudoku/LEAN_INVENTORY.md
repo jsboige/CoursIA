@@ -5,18 +5,19 @@ Inventaire transverse des projets de formalisation Lean 4 sous `Sudoku/`, sur le
 [`SymbolicAI/Lean/LEAN_INVENTORY.md`](../SymbolicAI/Lean/LEAN_INVENTORY.md). Source de
 vérité : corps de l'Epic
 [#4038](https://github.com/jsboige/CoursIA/issues/4038) + vérification `firsthand`. Colonne
-*Sorry (production)* = métrique CI `standalone-tactic` (les mentions prose « 0 sorry »
-n'entrent pas dans ce compte ; cf.
-`lean-ci-sorry-filter`).
+*Sorry (production)* = métrique CI `real` (commentaires strippés, `\bsorry\b`, fichiers FR
+hors `_en` ; bascule #11688 — historiquement `standalone-tactic` ; les mentions prose
+« 0 sorry » n'entrent pas dans ce compte).
 
 ## Résumé
 
 | Lake | Toolchain | sorry (production) | Modules | Notebook câblé | Classe | Suivi |
 |------|-----------|--------------------:|--------:|---------------:|--------|-------|
-| `sudoku_lean` | v4.31.0-rc1 | 0 | 3 | 0¹ | PEDA/REF | #4055, #4038 |
-| **Total** | — | **0** | **3** | — | — | — |
+| `sudoku_lean` | v4.32.1 | 0 | 4 | 1¹ | PEDA/REF | #4055, #4038 |
+| **Total** | — | **0** | **4** | **1** | — | — |
 
-¹ Aucun notebook Lean dédié. Companion conceptuel = le notebook **Sudoku-1** (résolution
+¹ Notebook câblé : **Sudoku-19-Lean-Propagation.ipynb** (propagation des règles en
+cellules Lean). Companion conceptuel = le notebook **Sudoku-01** (résolution
 par contraintes .NET C# — convention sibling-lake).
 
 ---
@@ -29,10 +30,12 @@ par contraintes .NET C# — convention sibling-lake).
 et hidden single. Premier lake Lean de la série Sudoku (roadmap #4038 Tier 3, #4055). Modèle
 abstrait de contraintes (grille 9×9 = instance, pas un cas spécial).
 
-- **Toolchain** : v4.31.0-rc1 · **Dépendance** : Mathlib4
+- **Toolchain** : v4.32.1 · **Dépendance** : Mathlib4
 - **lib** : `Sudoku` (`globs := #[.submodules \`Sudoku]`)
-- **Modules** : `Sudoku/Basic.lean`, `Sudoku/Propagation.lean` + umbrella `Sudoku.lean`
-- **sorry (production)** : **0**. `lake build Sudoku` SUCCESS (8495 jobs, 0 error 0 warning).
+- **Modules** : `Sudoku/Basic.lean`, `Sudoku/Propagation.lean`, `Sudoku/ExactCover.lean` +
+  umbrella `Sudoku.lean`
+- **sorry (production)** : **0** (real-mode). CI verte sur main
+  (`lean-sudoku.yml`, dernier run 2026-08-18).
 
 #### Théorèmes prouvés (0 sorry)
 
@@ -42,14 +45,19 @@ abstrait de contraintes (grille 9×9 = instance, pas un cas spécial).
   préserve la validité de la grille.
 - **`hidden_single_sound`** : si une valeur ne peut aller que dans une seule cellule d'une
   unité, l'y placer préserve la validité.
+- **`ExactCover.lean`** (réduction Sudoku ⟺ couverture exacte, les deux sens) :
+  `solution_imp_exact_cover` (une solution Sudoku est une couverture exacte de ses
+  contraintes), `toSelection_fromSelection` + `fromSelection_mem`/`mem_fromSelection_iff`
+  (sens retour : une couverture exacte sélectionne une solution),
+  `toSelection_cell_unique`/`toSelection_scopeVal_unique` (unicité de la sélection).
 
 #### Honnêteté du périmètre (G.3/G.9)
 
 La **cohérence des règles de propagation** est prouvée 0 sorry (par `by_contra` + keystone
-`peer_excludes_value`). Ce qui reste **OPEN (non sorry-backed)**, documenté honnêtement :
+`peer_excludes_value`), et la **réduction à la couverture exacte** (historiquement OPEN)
+est désormais **livrée dans les deux sens** (`ExactCover.lean`). Ce qui reste
+**OPEN (non sorry-backed)**, documenté honnêtement :
 
-- **Réduction au problème de couverture exacte** (exact cover, Knuth DLX) — la réduction
-  Sudoku ⟺ couverture exacte.
 - **Complétude de l'ensemble de règles** (les trois règles suffisent-elles à résoudre toute
   grille soluble ?).
 
@@ -63,5 +71,5 @@ Prop/Fintype ; **pas de `sorryAx`**).
 - **WDAC workaround** (RECOVERABLE-LOCAL) : `lake exe cache get` bloqué → copie wholesale
   `cp -r sibling/.lake` + `lake-manifest.json` d'un lake frère compatible. Cf.
   `lean-wdac-olean-wholesale-copy`.
-- CI : `.github/workflows/lean-sudoku.yml` (`sorry-filter-mode: standalone-tactic`,
-  baseline `"0"`).
+- CI : `.github/workflows/lean-sudoku.yml` (`sorry-filter-mode: real`, baseline `"0"` ;
+  bascule mode #11688).

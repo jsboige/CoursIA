@@ -4,18 +4,20 @@ Inventaire transverse des projets de formalisation Lean 4 sous `SymbolicAI/Smart
 sur le modèle de [`GameTheory/LEAN_INVENTORY.md`](../../GameTheory/LEAN_INVENTORY.md) et
 [`SymbolicAI/Lean/LEAN_INVENTORY.md`](../Lean/LEAN_INVENTORY.md). Source de vérité : corps
 de l'Epic [#4038](https://github.com/jsboige/CoursIA/issues/4038) + vérification
-`firsthand`. Colonne *Sorry (production)* = métrique CI `standalone-tactic` (les mentions
-prose « 0 sorry » n'entrent pas dans ce compte ; cf.
-`lean-ci-sorry-filter`).
+`firsthand`. Colonne *Sorry (production)* = métrique CI `real` (commentaires strippés,
+`\bsorry\b`, fichiers FR hors `_en` ; bascule #11688 — historiquement
+`standalone-tactic` ; les mentions prose « 0 sorry » n'entrent pas dans ce compte).
 
 ## Résumé
 
 | Lake | Toolchain | sorry (production) | Modules | Notebook câblé | Classe | Suivi |
 |------|-----------|--------------------:|--------:|---------------:|--------|-------|
-| `erc20_lean` | v4.31.0-rc1 | 0 | 4 | 0¹ | PEDA/REF (blockchain) | #4047, #4038 |
-| **Total** | — | **0** | **4** | — | — | — |
+| `erc20_lean` | v4.32.1 | 0 | 4 | 2¹ | PEDA/REF (blockchain) | #4047, #4038 |
+| **Total** | — | **0** | **4** | **2** | — | — |
 
-¹ Aucun notebook Lean dédié. Companion conceptuel = le notebook **SC-7** (ERC-20 en
+¹ Deux notebooks câblés sous `SymbolicAI/Lean/` : **Lean-24** (ERC20 Invariant
+Companion) et **Lean-24b** (ERC20 Native Companion, kernel `lean4-wsl` — modules du lake
+visitables in-kernel). Companion conceptuel = le notebook **SC-7** (ERC-20 en
 Solidity — convention sibling-lake). Premier lake Lean de la série SmartContracts.
 
 ---
@@ -28,11 +30,12 @@ Solidity — convention sibling-lake). Premier lake Lean de la série SmartContr
 tous les comptes est toujours égale au `totalSupply`. Formalisation des méthodes formelles
 appliquées à la blockchain (roadmap #4038 Tier 1, #4047).
 
-- **Toolchain** : v4.31.0-rc1 · **Dépendance** : Mathlib4
+- **Toolchain** : v4.32.1 · **Dépendance** : Mathlib4
 - **lib** : `ERC20` (`globs := #[.submodules \`ERC20]`)
 - **Modules** : `ERC20/State.lean`, `ERC20/Ops.lean`, `ERC20/Invariant.lean` + umbrella
   `ERC20.lean`
-- **sorry (production)** : **0**. `lake build ERC20` SUCCESS (8496 jobs).
+- **sorry (production)** : **0** (real-mode). CI verte sur main
+  (`lean-erc20.yml`, dernier run main 2026-08-18).
 
 #### Théorèmes prouvés (0 sorry)
 
@@ -65,5 +68,5 @@ Axiomes `[propext, Classical.choice, Quot.sound]` (Mathlib standard, **pas de `s
 - **WDAC workaround** (RECOVERABLE-LOCAL) : `lake exe cache get` bloqué → copie wholesale
   des oleans d'un lake frère compatible. Cf.
   `lean-wdac-olean-wholesale-copy`.
-- CI : `.github/workflows/lean-erc20.yml` (`sorry-filter-mode: standalone-tactic`,
-  baseline `"0"`).
+- CI : `.github/workflows/lean-erc20.yml` (`sorry-filter-mode: real`, baseline `"0"` ;
+  bascule mode #11688).

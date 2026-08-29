@@ -262,7 +262,7 @@ Cette série est un **point de convergence** des autres séries du dépôt : cha
 
 | Étude de cas | [Search](../Search/README.md) | [Sudoku](../Sudoku/README.md) | [SymbolicAI](../SymbolicAI/README.md) | [Probas](../Probas/README.md) | [ML](../ML/README.md) |
 |---|---|---|---|---|---|
-| Diagnostic-Medical | A* (`Part1-Foundations`) | Génétique ([`Sudoku-3-Genetic-Python`](../Sudoku/Sudoku-3-Genetic-Python.ipynb)) | — | — | — |
+| Diagnostic-Medical | A* (`Part1-Foundations`) | Génétique ([`Sudoku-03-Genetic-Python`](../Sudoku/Sudoku-03-Genetic-Python.ipynb)) | — | — | — |
 | Oncology-Planning | CSP / CP-SAT (`Part2-CSP`) | — | Ontologie OWL ([SemanticWeb](../SymbolicAI/SemanticWeb/README.md)) | Bayésien / Pyro | — |
 | SmartGrid-Energy | CP-SAT / OR-Tools (`Part2-CSP`) | — | — | Bayésien (risque) | — |
 
@@ -276,4 +276,4 @@ Trois familles d'**outils d'infrastructure** MCP rendent les projets interopéra
 
 ---
 
-*Version 1.3.0 — Juillet 2026 — audit §E whole-file gate (réconciliation disque↔catalogue 6 nb + correction 5 incohérences prose : 3 paradigmes / validation par assertions / requirements.txt 9 deps / Sudoku-3 référence génétique / `SVI+Trace_ELBO` au lieu de `poutine.scale` / tree structure avec README.md+subject.md par cas). EPIC #3975 tranche casestudies.*
+*Version 1.3.0 — Juillet 2026 — audit §E whole-file gate (réconciliation disque↔catalogue 6 nb + correction 5 incohérences prose : 3 paradigmes / validation par assertions / requirements.txt 9 deps / Sudoku-03 référence génétique / `SVI+Trace_ELBO` au lieu de `poutine.scale` / tree structure avec README.md+subject.md par cas). EPIC #3975 tranche casestudies.*
