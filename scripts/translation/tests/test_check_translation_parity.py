@@ -642,6 +642,48 @@ def test_cli_repo_root_missing_returns_two(tmp_path, capsys, monkeypatch):
     assert rc == 2
 
 
+def test_discover_pairs_skips_repo_copies_and_vendored_trees(tmp_path):
+    """Une paire dans `.worktrees/` (copie du depot) ne doit PAS etre comptee.
+
+    Controle POSITIF d abord : la meme paire, placee dans l arbre source, EST
+    vue. Sans cette moitie, le test passerait aussi avec un walk qui ne trouve
+    jamais rien — c est la seule facon de distinguer « exclu » de « aveugle ».
+    """
+    src = tmp_path / "serie" / "N-1.ipynb"
+    src.parent.mkdir(parents=True)
+    src.write_text("{}", encoding="utf-8")
+    src.with_name("N-1_en.ipynb").write_text("{}", encoding="utf-8")
+
+    visible = p.discover_pairs(tmp_path, ["en"])
+    assert len(visible) == 1, "controle positif : une paire de l arbre source doit etre vue"
+
+    for skipped in (".worktrees", ".venv", "node_modules", ".lake"):
+        copy = tmp_path / skipped / "clone" / "serie" / "N-2.ipynb"
+        copy.parent.mkdir(parents=True)
+        copy.write_text("{}", encoding="utf-8")
+        copy.with_name("N-2_en.ipynb").write_text("{}", encoding="utf-8")
+
+    after = p.discover_pairs(tmp_path, ["en"])
+    assert len(after) == 1, (
+        f"4 paires ajoutees dans des repertoires exclus ne doivent rien changer, "
+        f"vu {len(after)}"
+    )
+
+
+def test_is_scannable_matches_on_relative_parts_only(tmp_path):
+    """Un depot dont le CHEMIN PARENT porte un nom exclu reste scannable.
+
+    Regression : un test sur le chemin absolu rendrait invisible tout depot
+    situe sous, par ex., `/home/x/venv/CoursIA`.
+    """
+    root = tmp_path / "venv" / "CoursIA"
+    (root / "serie").mkdir(parents=True)
+    inside = root / "serie" / "N.ipynb"
+    inside.write_text("{}", encoding="utf-8")
+    assert p._is_scannable(inside, root) is True
+    assert p._is_scannable(root / ".venv" / "x" / "N.ipynb", root) is False
+
+
 # ---------------------------------------------------------------------------
 # Reference — live state (manual)
 # ---------------------------------------------------------------------------
@@ -649,10 +691,39 @@ def test_cli_repo_root_missing_returns_two(tmp_path, capsys, monkeypatch):
 # Declared translation-pair count on main. EQ, not a threshold: the test
 # reddens in BOTH directions — a count below the declaration means pairs were
 # lost, a count above means the perimeter moved without updating this
-# declaration. Today 0 pairs: hold i18n #10038 (decision user 2026-08-12,
-# rollback 2e79bcb77). When i18n resumes, the first reintroduced pair makes
-# this test red and the declaration must be updated knowingly — a skipif
-# would re-arm silently and a >= 0 threshold would stay green forever.
+# declaration. When i18n resumes, the first reintroduced pair makes this test
+# red and the declaration must be updated knowingly — a skipif would re-arm
+# silently and a >= 0 threshold would stay green forever.
+#
+# 2026-08-29 : reste a 0, et c est le garde qui a eu raison deux fois.
+#
+# PR #12850 (`42e8b2d7c`, « render first 2 *_en.ipynb notebooks from genai
+# CSV », T4 grain A de #10038) a ajoute deux paires. Premier reflexe : monter
+# la declaration a 2, en la lisant comme un perimetre voulu. La mesure dit
+# l inverse — les deux `_en` ne sont pas des traductions :
+#
+#   FT-05-ModelMerging-Routing_en : 21 des 26 cellules markdown BYTE-IDENTIQUES
+#     au francais, titre compris. Cause : 21 des 41 `cell_id` du CSV n existent
+#     pas dans le notebook (`a1b2c3d0`, `a3b4c5d2`, `a7b8c9d6`... un motif de
+#     comptage), donc le moteur est retombe sur le FR pour exactement ces
+#     cellules. La traduction anglaise du titre dort, inutilisee, dans le CSV.
+#   medical_chatbot_en : 17 des 40 cellules markdown byte-identiques. Cause
+#     differente : les 42 `cell_id` matchent tous, mais 19 lignes ont un
+#     `text_en` VIDE. Couverture reelle ~57 %, livree sans le declarer.
+#
+# Les deux artefacts sont donc RETIRES par cette PR, et le perimetre revient a
+# ce qu il etait : 0. La declaration n avait pas de retard a rattraper.
+#
+# Ce que ca apprend sur la declaration elle-meme : « monter la borne efface la
+# mesure / mettre a jour un perimetre la preserve » reste vrai, mais le
+# classement d un cas dans l une ou l autre categorie ne se lit PAS dans
+# l intention de la PR qui a bouge le chiffre — il se mesure. Ici l intention
+# etait bien un perimetre ; le contenu, lui, etait defectueux.
+#
+# Rework suivi par l issue ouverte contre #10038 (ids CSV FT-05, couverture
+# casestudies, et surtout le seuil manquant dans le moteur : `render_notebook.py`
+# COMPTE deja `n_orphan_keys` / `n_fallback` / `n_byte_identical` et se contente
+# d un WARN — il imprime le defaut a cote du livrable au lieu de le refuser).
 EXPECTED_PAIR_COUNT = 0
 
 
