@@ -1,8 +1,8 @@
 # Pré-enregistrement — dissociation biais d'alignement / dérive précoce (Schurger 2012)
 
-> **Statut.** Grade **T-pré-enregistrement** : protocole verrouillé avant implémentation et avant toute mesure. Ce document ne rapporte aucun résultat. Il est le « grain séparé » annoncé par le pré-enregistrement Owen/Cruse ([command-following-observers-pre-enregistrement.md](command-following-observers-pre-enregistrement.md), source 3) : la dissociation `potentiel de préparation moyen ≠ décision préalable` y était explicitement différée vers ce document.
+> **Statut.** Grade **T-pré-enregistrement** : scellage v1 avant implémentation ; re-verrouillage v2 après un **pilote exploratoire** limité à la graine 1000 (disjointe des graines d'étude) et **avant toute évaluation des gates P1–P5**. Ce document ne rapporte aucun résultat d'évaluation. Il est le « grain séparé » annoncé par le pré-enregistrement Owen/Cruse ([command-following-observers-pre-enregistrement.md](command-following-observers-pre-enregistrement.md), source 3) : la dissociation `potentiel de préparation moyen ≠ décision préalable` y était explicitement différée vers ce document.
 >
-> **Amendement v2 (2026-08-29, commit suivant le scellage initial).** Les paramètres v1 se sont révélés **infaisables avant toute évaluation de gate** (§« Amendement v2 »). Le re-verrouillage documenté ci-dessous a eu lieu avant la première mesure de métrique ; l'historique v1 reste visible au commit de scellage initial.
+> **Amendement v2 (2026-08-29, commit suivant le scellage initial).** Les paramètres v1 se sont révélés **infaisables avant toute évaluation de gate** (§« Amendement v2 »). Le re-verrouillage documenté ci-dessous a eu lieu après un pilote exploratoire — implémentation de faisabilité et métriques descriptives mesurées sur la seule graine 1000, disjointe des graines d'étude — et **avant la première évaluation des gates P1–P5** ; l'historique v1 reste visible au commit de scellage initial.
 >
 > **Objet formel.** Un accumulateur stochastique borné évolue sans aucune dérive déterministe montante ; le « mouvement » est défini comme le premier franchissement d'un seuil absorbant. La question instrumentale est double : (a) la moyenne des trajectoires **alignées sur le franchissement** montre-t-elle une rampe pré-événement alors même que chaque essai est dépourvu de dérive (« biais d'alignement ») ? (b) une **dérive précoce authentique** injectée essai par essai se laisse-t-elle séparer de ce pur artefact de sélection par une grandeur **qui ne recourt pas à l'alignement sur l'événement** ?
 
@@ -13,14 +13,14 @@ Aaron Schurger, Jacobo D. Sitt et Stanislas Dehaene, « An accumulator model for
 ## Claim, contre-claim et périmètre
 
 - **Claim testée.** L'alignement temporel sur un franchissement de seuil suffit à produire une rampe pré-événement dans la moyenne, en l'absence totale de dérive déterministe ; la vue non alignée (contrôle sham) reste plate.
-- **Contre-claim adversarial (comparateur à dérive).** La rampe reflète une dérive précoce authentique présente dans chaque essai. Le banc doit montrer que la vue alignée **ne distingue pas** les deux hypothèses, mais qu'une grandeur hors-alignement (le niveau moyen non aligné) **les sépare**.
+- **Contre-claim adversarial (comparateur à dérive).** La rampe reflète une dérive précoce authentique présente dans chaque essai. Le banc doit montrer que la **présence d'une rampe dans la vue alignée** ne suffit pas à distinguer les deux hypothèses, mais qu'une grandeur hors-alignement (le niveau moyen non aligné) **les sépare**.
 - **Non-claim.** Ce jouet n'est **ni un modèle de conscience, ni une preuve au sujet du libre arbitre**, ni une claim sur l'origine des intentions ou la neurophysiologie réelle du RP. Aucune donnée EEG n'est analysée. La seule portée est méthodologique : comment un conditionnement sur l'événement fabrique une signature moyenne, et quel instrument sépare artefact de sélection et dérive réelle.
 
-## Amendement v2 — re-verrouillage avant mesure
+## Amendement v2 — pilote exploratoire, puis re-verrouillage held-out
 
 Le scellage v1 (λ = 0,08 ; σ = 0,06 ; b = 1) posait des bandes dérivées d'une estimation de premier passage **purement diffusive**, ignorant la traction de fuite vers le bas. L'échelle de Kramers réelle, λ(b−m)²/σ² ≈ 22, rend le franchissement inatteignable : une exécution de faisabilité a produit **0 franchissement sur 2 000 essais × 5 000 pas**, donc aucune métrique évaluable — l'infaisabilité est un fait de simulation, pas un verdict. Sceller un protocole dont l'événement central est inatteignable garantit un faux résultat lu ensuite comme une mesure : ce chemin v1 est **fermé et documenté**, sur le précédent du pré-enregistrement Čech (chemin mort-né fermé avant mesure).
 
-Le re-verrouillage v2 repose sur une **calibration de faisabilité descriptive** sur la graine 1000 — disjointe des graines d'étude (0, 1, 7, 42, 99) — mesurant les échelles (temps de franchissement, niveaux stationnaires, pentes) mais **aucune gate P1–P5**. Faits de calibration consignés : M0 → 1 871/2 000 essais analysables, temps de franchissement moyen 759 (queue lourde), pente alignée 0,0061, pente sham 0,0002, amplitude 0,28, niveau sham 0,216 ; M1 → 1 273/2 000 analysables, pente alignée 0,0051, niveau sham 0,343, élévation 0,127. Les bandes ci-dessous sont posées avec des marges ≥ 2× sur ces échelles calibrées ; **aucun recalibrage post-mesure des gates ne sera fait**.
+Le re-verrouillage v2 repose sur un **pilote exploratoire** : une implémentation de faisabilité exécutée sur la seule graine 1000 — disjointe des graines d'étude (0, 1, 7, 42, 99) — dont les métriques descriptives (temps de franchissement, niveaux stationnaires, pentes) ont servi à calibrer les échelles. Le protocole v2 est ensuite **held-out** : aucune gate P1–P5 n'a été évaluée avant ce re-verrouillage, et l'évaluation ne porte que sur les graines d'étude. Métriques du pilote (à distinguer de l'évaluation held-out) : M0 → 1 871/2 000 essais analysables, temps de franchissement moyen 759 (queue lourde), pente alignée 0,0061, pente sham 0,0002, amplitude 0,28, niveau sham 0,216 ; M1 → 1 273/2 000 analysables, pente alignée 0,0051, niveau sham 0,343, élévation 0,127. Les bandes ci-dessous sont posées avec des marges ≥ 2× sur ces échelles du pilote ; **aucun recalibrage des gates après l'évaluation held-out ne sera fait**.
 
 ## Modèle verrouillé (v2)
 
@@ -58,13 +58,13 @@ Quatre flux `numpy.random.default_rng`, dérivés de la graine par offsets verro
 
 ## Prédictions falsifiables (bandes v2)
 
-Chaque critère s'applique par graine ; « passer » exige ≥ 4 graines sur 5. Les bandes remplacent celles (dérivées diffusive) du scellage v1, selon la même politique de marge, sur les échelles calibrées ci-dessus.
+Chaque critère s'applique par graine ; « passer » exige ≥ 4 graines sur 5. Les bandes remplacent celles (dérivées diffusive) du scellage v1, selon la même politique de marge, sur les échelles du pilote ci-dessus, et sont verrouillées **avant l'évaluation held-out** sur les graines d'étude.
 
 | ID | Prédiction | Critère par graine | Lecture si échec |
 |---|---|---|---|
 | **P1 — rampe par sélection seule** | Sans aucune dérive (M0), l'alignement sur le franchissement produit une rampe pré-événement. | `pente_alignée(M0) ≥ 0,0030` **et** `pente_alignée(M0) ≥ 5·\|pente_sham(M0)\|` | La sélection sur franchissement ne suffit pas à reproduire la signature : le modèle n'instancie pas la claim. |
 | **P2 — contrôle null plat** | Le même essai, aligné sur un instant non informatif, ne montre pas de rampe. | `\|pente_sham(M0)\| ≤ 0,0010` (5× la pente sham calibrée 0,0002) | La métrique de rampe tire des faux positifs sans conditionnement : instrument invalide. |
-| **P3 — l'aligné n'est pas discriminant** | La vue alignée seule ne peut pas départager artefact de sélection et dérive réelle. | `pente_alignée(M0) ≥ 0,0030` **et** `pente_alignée(M1) ≥ 0,0030` | La vue alignée suffirait à distinguer les deux hypothèses, ce qui affaiblirait la lecture Schurger du présent jouet. |
+| **P3 — la rampe alignée n'est pas discriminante** | La **présence d'une rampe** pré-événement dans la vue alignée ne départage pas artefact de sélection et dérive réelle : les deux bras rampent au-dessus du plancher. | `pente_alignée(M0) ≥ 0,0030` **et** `pente_alignée(M1) ≥ 0,0030` | La présence d'une rampe alignée suffirait à distinguer les deux hypothèses, ce qui affaiblirait la lecture Schurger du présent jouet. |
 | **P4 — le discriminant hors-alignement sépare** | Une dérive authentique laisse une trace **sans** alignement : le niveau sham du bras M1 dépasse celui du bras M0. | `moyenne_sham(M1) − moyenne_sham(M0) ≥ 0,060` (≈ moitié de l'élévation calibrée 0,127) | L'instrument hors-alignement ne sépare pas les deux hypothèses : la dissociation revendiquée n'est pas mesurable ici. |
 | **P5 — localisation de l'artefact** | L'artefact de sélection est concentré près de l'événement : loin de l'événement, l'aligné rejoint le sham. | `amplitude(M0) ≥ 0,14` (≈ moitié de l'amplitude calibrée 0,28) **et** `\|moyenne_précoce(M0) − moyenne_sham(M0)\| ≤ 0,10` | La signature n'est pas localisée : le banc ne trace pas la frontière artefact/dérive attendue. |
 
@@ -78,6 +78,7 @@ Un échec est conservé et rapporté tel quel dans le JSON de résultats.
 
 ### Limites d'interprétation déclarées
 
+- **Portée exacte de P3.** P3 n'établit pas que la vue alignée *tout entière* serait indistinguable entre les deux bras : il porte uniquement sur la **présence d'une rampe** au-dessus du plancher scellé. D'autres statistiques de la vue alignée (niveau tardif, amplitude) pourraient départager les bras ; aucune claim d'indistingabilité globale n'est faite. La clé JSON `P3_aligned_view_not_discriminant`, figée dans l'artefact généré, est historique et ne doit pas être lue au-delà de cette portée.
 - La fenêtre sham du bras M1 contient une pente résiduelle ≤ 0,001, trace du transitoire de montée (0 → 0,35) : un ordre de grandeur sous la pente d'artefact (~0,006). Le discriminant P4 porte sur le **niveau** sham, pas sur sa pente.
 - La fraction d'essais M1 exclus (franchissement trop précoce) est une sélection réelle, rapportée par graine ; elle borne la généralité de la comparaison aux mouvements « tardifs ».
 - Un pas de temps ≠ une milliseconde ; l'échelle RP-II n'est qu'une correspondance d'ordre de grandeur.

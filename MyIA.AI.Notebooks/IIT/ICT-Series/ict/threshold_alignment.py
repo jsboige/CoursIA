@@ -11,17 +11,21 @@ d'un seuil absorbant. Le banc mesure alors :
 - que la meme moyenne, alignee sur un instant **non informatif** (sham),
   reste plate (controle null) ;
 - qu'une derive precoce authentique, injectee essai par essai, se separe
-  de l'artefact par le niveau **non aligne** — la vue alignee seule restant
-  ambigue entre les deux hypotheses.
+  de l'artefact par le niveau **non aligne** — la presence d'une rampe dans
+  la vue alignee ne separant pas les deux hypotheses. P3 ne porte que sur
+  cette presence de rampe, pas sur une indistinguishabilite globale de la
+  vue alignee (cf. limites du pre-enregistrement).
 
 Le protocole a ete scelle AVANT implementation dans
 ``docs/ict/threshold-alignment-pre-enregistrement.md`` au commit
 ``fb4d92715``, puis re-verrouille en v2 au commit ``9391a21df`` : les
 parametres v1 rendaient le seuil inatteignable (0 franchissement sur
-2 000 essais x 5 000 pas), fait constate avant toute evaluation de gate.
-Les bandes v2 sont calibrees sur la graine 1000, disjointe des graines
-d'etude. Aucune donnee EEG n'est analysee ; aucune claim n'est faite sur
-l'origine des intentions.
+2 000 essais x 5 000 pas), fait constate par un pilote exploratoire.
+La v2 a ete re-verrouillee apres ce pilote, limite a la graine 1000
+(disjointe des graines d'etude), et AVANT l'evaluation held-out des
+gates P1-P5 sur les graines d'etude : les bandes sont calibrees sur les
+metriques du pilote, jamais retouchees apres l'evaluation. Aucune donnee
+EEG n'est analysee ; aucune claim n'est faite sur l'origine des intentions.
 
 References
 ----------
@@ -68,14 +72,19 @@ SEED_OFFSETS = {
 GATE_NAMES = (
     "P1_alignment_ramp_without_drift",
     "P2_sham_null_flat",
+    # Cle historique, figee dans le JSON genere : la portee verifiee de P3
+    # est la NON-DISCRIMINATION DE LA PRESENCE DE RAMPE alignee au-dessus du
+    # plancher, pas une indistinguishabilite globale de la vue alignee.
     "P3_aligned_view_not_discriminant",
     "P4_sham_elevation_separates",
     "P5_artifact_localized",
 )
 
-# Bandes numeriques v2, scellees avant evaluation de gate (unites : seuil b
-# par pas). Derivees de la calibration de faisabilite (graine 1000) avec des
-# marges >= 2x, cf. docs/ict/threshold-alignment-pre-enregistrement.md.
+# Bandes numeriques v2, scellees apres le pilote exploratoire (graine 1000,
+# disjointe des graines d'etude) et avant l'evaluation held-out des gates
+# sur les graines d'etude (unites : seuil b par pas). Derivees des metriques
+# du pilote avec des marges >= 2x,
+# cf. docs/ict/threshold-alignment-pre-enregistrement.md.
 SLOPE_RAMP_FLOOR = 0.0030
 SHAM_SLOPE_BAND = 0.0010
 SHAM_ELEVATION_FLOOR = 0.060

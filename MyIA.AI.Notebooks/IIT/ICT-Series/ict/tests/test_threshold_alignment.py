@@ -151,7 +151,7 @@ class TestPreregisteredPredictions:
         for row in standard_study["rows"]:
             assert abs(row["null_arm"]["sham"]["slope"]) <= 0.0010
 
-    def test_p3_aligned_view_remains_ambiguous(self, standard_study):
+    def test_p3_aligned_ramp_presence_remains_nondiscriminant(self, standard_study):
         assert (
             standard_study["pass_counts"]["P3_aligned_view_not_discriminant"]
             >= 4
