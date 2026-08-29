@@ -180,6 +180,7 @@ def test_baseline_check_exits_zero_on_main():
         ],
         capture_output=True,
         text=True,
+        encoding="utf-8", errors="replace",
         cwd=REPO_ROOT,
     )
     assert proc.returncode == 0, (
@@ -204,6 +205,7 @@ def test_check_without_baseline_defaults_to_canonical_rc0():
         ],
         capture_output=True,
         text=True,
+        encoding="utf-8", errors="replace",
         cwd=REPO_ROOT,
     )
     assert proc.returncode == 0, (
@@ -227,7 +229,7 @@ def test_json_stdout_is_pure_and_identity_on_stderr():
     import subprocess
     proc = subprocess.run(
         [sys.executable, str(TOOL), "MyIA.AI.Notebooks", "--json"],
-        capture_output=True, text=True,
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
         cwd=REPO_ROOT,
     )
     assert proc.returncode == 0, f"stdout: {proc.stdout[:300]}\nstderr: {proc.stderr[:300]}"
