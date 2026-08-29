@@ -100,6 +100,19 @@ import sys
 
 REPO = "jsboige/CoursIA"
 
+# Saturation par zone d atterrissage (#13420) : l axe partition-proof que
+# le compteur par issue ne peut pas porter. Voir scripts/series_saturation.py
+# pour le diagnostic complet (EPIC decoupe en 9 filles = 9 veines invisibles).
+from series_saturation import (  # noqa: E402
+    CONSOLIDATION,
+    EXPANSION,
+    SERIES_SCALE_DEFAULT,
+    fetch_series_visits,
+    zone_balance,
+    parent_issue,
+    polarity,
+)
+
 # Lecteur PARTAGE du tag `Grain:` (#9485). C'est la SEULE ancre qui rattache
 # une PR a une lane : mesure du 2026-08-22 sur les 55 PRs ouvertes -- 50 sont
 # poussees sous le compte `jsboige`, l'auteur GitHub ne porte donc aucune
@@ -204,7 +217,7 @@ def fetch_pool() -> list[dict]:
     """Une seule requete, limite haute -- c'est ce qui defait la troncature."""
     out = subprocess.run(
         ["gh", "issue", "list", "--repo", REPO, "--state", "open", "--limit", "300",
-         "--json", "number,title,labels,createdAt,updatedAt"],
+         "--json", "number,title,labels,body,createdAt,updatedAt"],
         capture_output=True, text=True, encoding="utf-8", check=True,
     ).stdout
     raw = json.loads(out)
@@ -221,6 +234,8 @@ def fetch_pool() -> list[dict]:
             "idle": age_days(it["updatedAt"]),
             "updated_at": it["updatedAt"],
             "genre": infer_genre(title, labels),
+            "parent": parent_issue(it.get("body") or ""),
+            "polarity": polarity(title, it.get("body") or ""),
             "klass": (
                 "delivered" if "candidate-delivered" in labels
                 else "umbrella" if is_umbrella
@@ -286,7 +301,9 @@ def fetch_visits(days: int = VISITS_WINDOW_DAYS) -> tuple[dict[int, int], str | 
 
 
 def weight(item: dict, prev_genre: str | None,
-           visits: dict[int, int] | None = None) -> float:
+           visits: dict[int, int] | None = None,
+           series: dict[str, dict] | None = None,
+           issue_to_family: dict[int, str] | None = None) -> float:
     """Trois facteurs, tous doux, tous explicables en une ligne.
 
     Trop de ponderation reproduirait une monoculture avec des etapes en plus :
@@ -317,17 +334,48 @@ def weight(item: dict, prev_genre: str | None,
     if seen:
         w /= 1.0 + math.log2(1.0 + seen / VISITS_SCALE)
     item["visits"] = seen
+    # Saturation de ZONE : le facteur que le compteur par issue ne peut pas
+    # porter, parce qu il est defait par le partitionnement. Une fille NEUVE
+    # (age 0, idle 0, aucune visite) herite ici du poids de la zone que sa
+    # FRATRIE sature -- le cas exact des 9 paires de #12373. La remontee par
+    # `parent` est indispensable : sans elle l amortissement ne mord que sur
+    # les issues DEJA travaillees, donc jamais sur la prochaine instance.
+    i2f = issue_to_family or {}
+    fam = i2f.get(item["number"])
+    if fam is None and item.get("parent"):
+        fam = i2f.get(item["parent"])
+    nb_new = 0
+    if fam:
+        nb_new = ((series or {}).get(fam) or {}).get("new_notebooks", 0)
+    if nb_new:
+        # La saturation pousse dans les DEUX sens. Une zone qui vient de
+        # recevoir cinq notebooks n'a pas besoin du sixieme -- elle a besoin
+        # d'etre consolidee. Amortir sans ce miroir ecrasait le remede avec
+        # le mal : mesure du 2026-08-28, #12607 (le tracker de consolidation
+        # de la zone saturee) tombait a 0.36x comme les paires qu'il devait
+        # solder.
+        factor = 1.0 + math.log2(1.0 + nb_new / SERIES_SCALE_DEFAULT)
+        if item.get("polarity") == CONSOLIDATION:
+            w *= factor
+        elif item.get("polarity") == EXPANSION:
+            w /= factor
+        else:
+            w /= 1.0 + (factor - 1.0) / 2.0
+    item["family"] = fam
+    item["family_new_notebooks"] = nb_new
     return w
 
 
 def draw(items: list[dict], n: int, rng: random.Random, prev_genre: str | None,
-         visits: dict[int, int] | None = None) -> list[dict]:
+         visits: dict[int, int] | None = None,
+         series: dict[str, dict] | None = None,
+         issue_to_family: dict[int, str] | None = None) -> list[dict]:
     """Tirage pondere sans remise (Efraimidis-Spirakis : cle = u^(1/w))."""
     if not items:
         return []
     keyed = []
     for it in items:
-        w = weight(it, prev_genre, visits)
+        w = weight(it, prev_genre, visits, series, issue_to_family)
         u = rng.random() or 1e-12
         keyed.append((u ** (1.0 / w), w, it))
     keyed.sort(key=lambda t: t[0], reverse=True)
@@ -336,6 +384,9 @@ def draw(items: list[dict], n: int, rng: random.Random, prev_genre: str | None,
         it = dict(it)
         it["weight"] = round(w, 2)
         it.setdefault("visits", 0)
+        it.setdefault("family", None)
+        it.setdefault("family_new_notebooks", 0)
+        it.setdefault("polarity", "neutral")
         picked.append(it)
     return picked
 
@@ -1194,11 +1245,16 @@ def main(argv: list[str] | None = None) -> int:
     rng = random.Random(seed)
 
     visits, visits_err = fetch_visits()
+    series, issue_to_family, series_err = fetch_series_visits()
+    balance = zone_balance(series, issue_to_family, pool)
 
     picks = (
-        draw(by_class["grain"], args.grains, rng, args.prev_genre, visits)
-        + draw(by_class["umbrella"], args.umbrellas, rng, args.prev_genre, visits)
-        + draw(by_class["delivered"], args.delivered, rng, None, visits)
+        draw(by_class["grain"], args.grains, rng, args.prev_genre, visits,
+             series, issue_to_family)
+        + draw(by_class["umbrella"], args.umbrellas, rng, args.prev_genre, visits,
+               series, issue_to_family)
+        + draw(by_class["delivered"], args.delivered, rng, None, visits,
+               series, issue_to_family)
     )
 
     claims = check_claims([p["number"] for p in picks], args.lane) if args.check_claims else {}
@@ -1209,6 +1265,14 @@ def main(argv: list[str] | None = None) -> int:
             "lane": args.lane, "seed_src": seed_src,
             "pool": {k: len(v) for k, v in by_class.items()},
             "picks": picks, "claims": {str(k): v for k, v in claims.items()},
+            "series_measured": series_err is None,
+            "series_error": series_err,
+            "series_zones": sorted(
+                ({"family": f, **z} for f, z in series.items()),
+                key=lambda d: (-d["new_notebooks"], -d["prs"]))[:10],
+            "zone_balance": sorted(
+                ({"family": f, **b} for f, b in balance.items()),
+                key=lambda d: (-d["new_notebooks"], -d["expansion"]))[:10],
             "visits_window_days": VISITS_WINDOW_DAYS,
             "visits_measured": visits_err is None,
             "visits_error": visits_err,
@@ -1219,6 +1283,35 @@ def main(argv: list[str] | None = None) -> int:
         }, ensure_ascii=False, indent=2))
         return 0
 
+    if series_err:
+        print(f"(saturation de zone NON MESUREE : {series_err} -- aucun amortissement de serie applique)")
+        print()
+    else:
+        chaudes = [(f, b) for f, b in balance.items()
+                   if b["new_notebooks"] >= 3]
+        chaudes.sort(key=lambda kv: (-kv[1]["new_notebooks"],
+                                     -kv[1]["expansion"]))
+        if chaudes:
+            print("Zones chaudes (14 j) -- parite expansion/consolidation :")
+            for f, b in chaudes[:5]:
+                exp, con = b["expansion"], b["consolidation"]
+                # 0/0 n est PAS un feu vert : c est une zone qui a recu N
+                # notebooks sans qu AUCUN grain de consolidation soit ouvert --
+                # le pire cas, pas le plus propre. Un zero d absence de donnee
+                # qui se lit comme un zero d absence de defaut est precisement
+                # le faux silencieux que ce garde existe pour ne pas produire.
+                if exp == 0 and con == 0:
+                    verdict = "SANS REMEDE"
+                elif con >= exp:
+                    verdict = "OK"
+                else:
+                    verdict = "DESEQUILIBRE"
+                print("  {:>2d} neufs | {:>2d} expansion / {:>2d} consolidation "
+                      "  {:12s} {}".format(
+                          b["new_notebooks"], exp, con, verdict, f))
+            print("  (un EPIC qui alimente une zone doit produire autant de "
+                  "consolidation que d'expansion -- mandat user 2026-08-28)")
+            print()
     print(f"Pool ouvert : {len(pool)} issues  "
           f"= {len(by_class['grain'])} grains "
           f"+ {len(by_class['umbrella'])} umbrella "
