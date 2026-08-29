@@ -2389,3 +2389,76 @@ def test_normalize_rest_files_keeps_full_page_count_13357():
     assert len(out) == 148
     assert out[0] == {"path": "file_000.py", "additions": 1, "deletions": 0}
     assert out[-1]["path"] == "file_147.py"
+
+
+# ---------------------------------------------------------------------------
+# #13440 -- comptes de verification sans antecedent d'outil. La classe
+# residuelle apres #13361 : un resultat de controle (« 25 fichier(s)
+# verifies sans BOM », « Controle encodage : 25 fichier(s) conformes ») dont
+# le paragraphe ne porte AUCUN antecedent de mesure reste confronte a
+# len(files) et echoue necessairement, sans qu'aucune assertion de perimetre
+# n'ait ete emise. Fermeture par qualifiers de resultat de controle (liste
+# fermee, pattern #11712/#11985) + lecture du marqueur pluriel
+# parenthetique « fichier(s) » (forme reelle du corpus, #12875).
+# ---------------------------------------------------------------------------
+
+
+def test_13440_check_result_qualifiers_are_incidental():
+    """Positifs de l'issue : les 4 formes residuelles deviennent
+    incidental (le controle a couvert un corpus plus large que le diff --
+    la confrontation d'egalite ne peut jamais les valider)."""
+    body = (
+        "## Verifications\n"
+        "- 25 fichier(s) verifies sans BOM\n"
+        "- 25 fichier(s) vérifiés sans BOM (formes accentuees incluses)\n"
+        "- Controle encodage : 25 fichier(s) conformes\n"
+        "- Controle encodage : 25 fichiers testes\n"
+    )
+    verdicts = dict(_classify(body))
+    assert len(verdicts) == 4, f"candidats attendus, got {verdicts}"
+    for line, incidental in verdicts.items():
+        assert incidental is True, f"doit etre incidental : {line!r}"
+
+
+def test_13440_paren_plural_marker_same_verdict_as_plain():
+    """Le marqueur « (s) » est de la notation, pas du sens : la forme
+    parenthetique doit avoir le MEME verdict que sa jumelle plaine (forme
+    fondatrice #11800 sans mot de scope, et sa variante AVEC mot de scope
+    qui reste bloquante)."""
+    pairs = [
+        ("91 fichier(s) inchanges sur 2 touches", True),
+        ("91 fichiers inchanges sur 2 touches", True),
+        ("91 fichier(s) inchanges sur 2 touches -- scope delta confirme", False),
+        ("91 fichiers inchanges sur 2 touches -- scope delta confirme", False),
+        ("25 fichier(s) verifies", True),
+        ("25 fichiers verifies", True),
+    ]
+    for line, want in pairs:
+        v = _is_incidental_assertion(line)
+        assert v is want, f"{line!r} -> {v}, attendu {want}"
+
+
+def test_13440_fn_controls_stay_blocking():
+    """FN controls : les verbes de modification et les formes perimetres de
+    ce depot restent authoriaux -- restaures (campagne accents #2876) et
+    re-executes (tranches MGS) sont DELIBEREMENT hors liste."""
+    body = (
+        "## Perimetre\n"
+        "13 fichiers touches uniquement, rien d autre.\n"
+        "11 fichiers re-executes : 0 erreur\n"
+        "18 fichiers avec accents restaures\n"
+        "12 fichiers modifies\n"
+    )
+    verdicts = dict(_classify(body))
+    assert len(verdicts) == 4, f"candidats attendus, got {verdicts}"
+    for line, incidental in verdicts.items():
+        assert incidental is False, f"doit rester bloquant : {line!r}"
+
+
+def test_13440_negated_diff_per_count_property_through_paren():
+    """La propriete par-compte de #11800 survit au marqueur (s) : SEUL le
+    compte negatif est exempt -- un compte de modification sur la meme
+    ligne garde la ligne bloquante."""
+    blocking = "5 fichier(s) modifies, 91 fichier(s) inchanges"
+    v = _is_incidental_assertion(blocking)
+    assert v is False, "le compte modifie doit garder la ligne bloquante"

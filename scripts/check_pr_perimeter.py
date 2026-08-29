@@ -456,6 +456,17 @@ INCIDENTAL_QUALIFIERS = frozenset({
     "produites", "sources", "source",
     # #11985 formes 3-4: artifact kinds and scan inventories.
     "audio", "distinct", "distincts", "distinctes", "non-notebook",
+    # #13440: check-RESULT participles -- what a verification COVERED (a
+    # wider corpus than the diff), never what the diff touches. A perimeter
+    # claim writes with modification verbs, which stay authorial: restaures/
+    # restaurés (campagne accents #2876) et re-executes/re-exécutés (tranches
+    # MGS) sont DELIBEREMENT absents -- dans ce depot ces formes SONT des
+    # perimetres.
+    "verifies", "vérifiés", "verifie", "vérifié", "verifiés", "verifié",
+    "testes", "testés", "teste", "testé",
+    "conformes", "conforme",
+    "scannes", "scannés", "analyses", "analysés",
+    "audites", "audités", "examines", "examinés",
 })
 # A cited threshold ("< 15 fichiers", ">= 10 fichiers") quotes a rule, it does
 # not claim a perimeter.
@@ -639,23 +650,30 @@ def _count_is_exempt(line: str, m: re.Match, ante_context: str = "") -> bool:
     if LOCATIVE_PREP.search(line):
         return True
     after = line[m.end():]
-    if NEGATED_DIFF_TAIL.match(after):
+    # #13440: the parenthetical plural "fichier(s)" puts "(s)" between the
+    # noun and the tail -- the real-corpus form ("25 fichier(s) verifies").
+    # Strip EXACTLY that closed marker (s|es) for the tail readers; the
+    # paren-antecedent branch below keeps the raw tail (it inspects the
+    # count's own surrounding parens, a different shape).
+    plural_tail = re.match(r"\s*\((?:s|es)\)", after)
+    tail = after[plural_tail.end():] if plural_tail else after
+    if NEGATED_DIFF_TAIL.match(tail):
         return True
     if HIT_ANTECEDENT.search(line[: m.start()]):
         return True
     ante_scope = f"{ante_context}\n{line[: m.end()]}" if ante_context else line[: m.end()]
     if MEASUREMENT_ANTECEDENT.search(ante_scope):
         return True
-    if REFERENCE_VERB_TAIL.match(after):
+    if REFERENCE_VERB_TAIL.match(tail):
         return True
     if (before.endswith("(") and after.lstrip().startswith(")")
             and PAREN_ANTECEDENT_NUM.search(before[:-1])):
         return True
-    mw = re.match(r"\s+([\wàâäéèêëîïôöùûüçÀÂÄÉÈÊËÎÏÔÖÙÛÜÇ-]+)", after)
+    mw = re.match(r"\s+([\wàâäéèêëîïôöùûüçÀÂÄÉÈÊËÎÏÔÖÙÛÜÇ-]+)", tail)
     mw2 = re.match(
         r"\s+([\wàâäéèêëîïôöùûüçÀÂÄÉÈÊËÎÏÔÖÙÛÜÇ-]+)"
         r"\s+([\wàâäéèêëîïôöùûüçÀÂÄÉÈÊËÎÏÔÖÙÛÜÇ-]+)",
-        after,
+        tail,
     )
     if mw and mw.group(1).lower() in INCIDENTAL_QUALIFIERS:
         return True
