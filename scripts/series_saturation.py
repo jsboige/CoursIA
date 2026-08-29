@@ -64,9 +64,14 @@ _EPIC_PARENT_RE = re.compile(r"(?:EPIC|Epic|epic|ombrelle)\s*#(\d{4,6})\b")
 
 _REF_RE = re.compile(r"#(\d{4,6})\b")
 _PREV_RE = re.compile(r"prev:\s*[^\n]*?#(\d{4,6})\b")
+# Declaration de travail uniquement (#13435) : le vocabulaire qui DIT servir
+# l'issue. Les renvois de contexte (voir, cf, bare "EPIC #N") sont exclus --
+# mesure fenetre 14 j du 2026-08-29 : 19 rattachements sur 459 (4,1 %, 18
+# PRs) venaient d'un renvoi seul et amortissaient une zone que la PR ne
+# touchait pas. Les formes structurelles restent couvertes via `_PARENT_RE`.
 _DECL_RE = re.compile(
-    r"(?:closes|fixes|resolves|see|refs?|part of|voir|ombrelle|epic)"
-    r"\s+#(\d{4,6})\b",
+    r"(?:closes|fixes|resolves|see|refs?|part of)"
+    r"\s*:?\s*#(\d{4,6})\b",
     re.I,
 )
 
@@ -96,9 +101,20 @@ def cited_issues(pr: dict) -> set[int]:
 
     La clause `prev:` du tag `Grain:` est masquee -- elle documente le grain
     PRECEDENT de la lane (adjacence G-VAR-3), jamais le sujet de la PR.
+
+    Declaration != renvoi de contexte (#13435). Seuls rattaches :
+    (a) le vocabulaire de declaration (`closes|fixes|resolves|see|refs|part
+    of`), (b) les formes structurelles (`Enfant de l'Epic #N`, `Paire 3/9 de
+    l'EPIC #N` -- `_PARENT_RE`), (c) les refs du titre. Un `voir #N` ou un
+    bare `EPIC #N` en prose raconte le contexte historique sans declarer
+    travailler la zone : sur la fenetre 14 j du 2026-08-29 (400 PRs mergees),
+    19 rattachements sur 459 venaient d'un renvoi seul -- chacun amortissait
+    le poids d'une issue neutre et gonflait l'expansion apparente d'une zone
+    deja saturee.
     """
     body = _PREV_RE.sub("prev: <adjacence>", pr.get("body") or "")
     found = {int(m.group(1)) for m in _DECL_RE.finditer(body)}
+    found |= {int(m.group(1)) for m in _PARENT_RE.finditer(body)}
     found |= {int(m.group(1)) for m in _REF_RE.finditer(pr.get("title") or "")}
     return found - {pr.get("number")}
 
@@ -247,6 +263,63 @@ def polarity(title: str, body: str = "") -> str:
     return NEUTRAL
 
 
+
+def family_from_text(text: str, families) -> str | None:
+    """Zone NOMMEE explicitement dans le texte d'une issue.
+
+    `issue_to_family` est construit par archeologie de PRs mergees : une issue
+    n'y entre que si une PR l'a deja citee. Une issue FRAICHE -- typiquement le
+    grain de consolidation qu'une zone saturee reclame -- n'y est donc jamais,
+    et la zone reste `SANS REMEDE` alors que son remede vient d'etre ouvert.
+    Un garde dont le remede est invisible ne peut pas etre satisfait : mesure
+    du 2026-08-29, #13467 (renumerotation GenAI/Texte, polarite `consolidation`
+    correctement detectee, parent #5081 correctement extrait) ne remontait a
+    aucune zone -- la zone serait restee fermee a l'expansion pour toujours.
+
+    On resout donc aussi par le TEXTE. Le motif est le chemin de famille
+    lui-meme (`MyIA.AI.Notebooks/GenAI/Texte`) ou ses deux derniers segments
+    (`GenAI/Texte`) -- assez specifique pour ne pas confondre la serie avec le
+    mot courant qui lui sert de feuille : `Texte` seul matcherait toute prose
+    francaise, et c'est le faux positif que ce garde doit eviter.
+    """
+    low = (text or "").replace(chr(92), "/").lower()
+    if not low:
+        return None
+    best_fam, best_len = None, 0
+    for fam in families:
+        segs = fam.replace(chr(92), "/").lower().split("/")
+        cands = ["/".join(segs)]
+        if len(segs) >= 2:
+            cands.append("/".join(segs[-2:]))
+        for c in cands:
+            if len(c) > best_len and c in low:
+                best_fam, best_len = fam, len(c)
+    return best_fam
+
+
+def resolve_family(item: dict, issue_to_family: dict, families=()) -> str | None:
+    """Zone d'un grain : par PR citante, sinon par son EPIC parent, sinon par
+    le texte. Les trois sources vont de la plus factuelle (une PR a reellement
+    touche ce chemin) a la plus declarative (l'issue dit son sujet).
+    """
+    fam = (issue_to_family or {}).get(item.get("number"))
+    if fam is None and item.get("parent"):
+        fam = (issue_to_family or {}).get(item["parent"])
+    if fam is None and families:
+        # TITRE d abord, corps ensuite -- meme principe que polarity().
+        # Le corps CITE beaucoup (regles, conventions, precedents) ; le
+        # titre DIT le sujet. Chercher dans un blob unique laisse la plus
+        # longue citation gagner : mesure du 2026-08-29, #13467 (titre
+        # "GenAI/Texte : renumerotation...") se resolvait en `.claude/rules`
+        # parce que son corps citait `.claude/rules/catalog-pr-hygiene.md`
+        # et que cette chaine est plus longue que `genai/texte`. La zone
+        # reelle restait alors SANS REMEDE, remede en main.
+        fam = family_from_text(item.get("title") or "", families)
+        if fam is None:
+            fam = family_from_text(item.get("body") or "", families)
+    return fam
+
+
 def zone_balance(zones: dict, issue_to_family: dict, pool: list) -> dict:
     """Par zone : combien de grains OUVERTS ajoutent, combien consolident.
 
@@ -256,16 +329,26 @@ def zone_balance(zones: dict, issue_to_family: dict, pool: list) -> dict:
     aucun remede.
     """
     out: dict[str, dict] = {}
+    families = tuple(zones or ())
     for it in pool:
-        fam = issue_to_family.get(it.get("number"))
-        if fam is None and it.get("parent"):
-            fam = issue_to_family.get(it["parent"])
+        fam = resolve_family(it, issue_to_family, families)
         if not fam:
             continue
         pol = polarity(it.get("title", ""), it.get("body", "") or "")
         slot = out.setdefault(
-            fam, {EXPANSION: 0, CONSOLIDATION: 0, NEUTRAL: 0, "new_notebooks": 0})
+            fam, {EXPANSION: 0, CONSOLIDATION: 0, NEUTRAL: 0,
+                  "new_notebooks": 0, "neutral_issues": []})
         slot[pol] += 1
+        if pol == NEUTRAL and it.get("number"):
+            # #13466 (review NanoClaw, concern 1) : le veto "SANS REMEDE"
+            # herite de la recall du lexique de polarite. Un grain de
+            # consolidation dont le titre echappe au lexique tombe en
+            # NEUTRAL -- le remede existe alors, mais il est INVISIBLE, et
+            # le refus devient un faux positif SILENCIEUX. On retient donc
+            # les numeros pour que le refus puisse les citer : le lecteur
+            # voit ou le faux positif se cacherait, au lieu de devoir
+            # deviner que le lexique a pu manquer quelque chose.
+            slot["neutral_issues"].append(it["number"])
         slot["new_notebooks"] = (zones.get(fam) or {}).get("new_notebooks", 0)
     return out
 

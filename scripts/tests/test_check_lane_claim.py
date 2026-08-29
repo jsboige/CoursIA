@@ -4580,6 +4580,15 @@ def test_delivered_close_drops_lane_from_active_claims(capsys):
     `state`. The summary shows `my_active_claim: false` for the
     delivering lane and `blocking_lanes: []` for any other lane that
     arrives after the close.
+
+    #13336 -- hermetic injection: this test ran WITHOUT `pr_states` and
+    passed only because the live lookup was dead (the `merged` field was
+    removed from gh; every fetch failed and v2 silently fell back to
+    `close`). Fixing the lookup made the REAL #12271 resolve OPEN ->
+    the delivering lane keeps its claim -> BLOCKED, flipping the
+    assertion machine-dependently (CI gh is authed, local dev may not
+    be). The legacy-close surface this test pins is now injected
+    explicitly: a CLOSED-without-merge PR.
     """
     p = payload(
         comment("[CLAIMED] lane myia-po-2024:CoursIA-2 -- paths: Lean-16g-*.ipynb",
@@ -4587,7 +4596,8 @@ def test_delivered_close_drops_lane_from_active_claims(capsys):
         comment("[DELIVERED] lane myia-po-2024:CoursIA-2 -- PR #12271 (substance shipped)",
                 "2026-08-22T04:14:00Z"),
     )
-    rc = clc._run_check(p, "myia-po-2025:CoursIA-2")
+    rc = clc._run_check(p, "myia-po-2025:CoursIA-2",
+                        pr_states=_pr_states(12271, "CLOSED"))
     assert rc == 0
     out = _json_out(capsys.readouterr())
     assert out["my_active_claim"] is False
@@ -4606,6 +4616,12 @@ def test_delivered_claims_in_json_summarises_history(capsys):
     PR state. The motivating use case is #12223: po-2024 reads CLEAR,
     the summary tells po-2024 "PR #12271 was delivered here, go check
     it before you start".
+
+    #13336 -- hermetic injection: same live-lookup disease as
+    test_delivered_close_drops_lane_from_active_claims -- the real
+    #12270/#12275 states decide the reduction machine-dependently. The
+    summary surface this test pins (delivered_claims list) is
+    state-independent, so pin both PRs CLOSED to keep it hermetic.
     """
     p = payload(
         comment("[CLAIMED] lane myia-po-2026:CoursIA-2 -- substance A",
@@ -4617,7 +4633,8 @@ def test_delivered_claims_in_json_summarises_history(capsys):
         comment("[DELIVERED] lane myia-po-2026:CoursIA-2 -- PR #12275",
                 "2026-08-22T05:00:00Z"),
     )
-    clc._run_check(p, "myia-po-2023:CoursIA-2")
+    clc._run_check(p, "myia-po-2023:CoursIA-2",
+                   pr_states={12270: "CLOSED", 12275: "CLOSED"})
     out = _json_out(capsys.readouterr())
     assert out["delivered_claims"] == [12270, 12275]
 
@@ -4636,6 +4653,15 @@ def test_delivered_does_not_block_subsequent_claim(capsys):
     the PR is MERGED) requires reading the PR state from `gh`, which
     is a side effect the reducer was deliberately built without.
     Coordinator sign-off gates the v2 release.
+
+    #13336 -- hermetic injection: this test ran WITHOUT `pr_states` and
+    passed only because the live lookup was dead (the `merged` field was
+    removed from gh; every fetch failed and v2 silently fell back to
+    `close`). Fixing the lookup made the REAL #12270 resolve MERGED ->
+    `open_locked` -> blocked, flipping the assertion machine-dependently.
+    The v1 surface this test pins is now injected explicitly: a
+    CLOSED-without-merge PR. The MERGED path has its own v2 test
+    (test_delivered_pr_merged_locks_lane).
     """
     p = payload(
         comment("[CLAIMED] lane myia-po-2026:CoursIA-2",
@@ -4643,7 +4669,8 @@ def test_delivered_does_not_block_subsequent_claim(capsys):
         comment("[DELIVERED] lane myia-po-2026:CoursIA-2 -- PR #12270",
                 "2026-08-22T02:00:00Z"),
     )
-    rc = clc._run_check(p, "myia-po-2023:CoursIA-2")
+    rc = clc._run_check(p, "myia-po-2023:CoursIA-2",
+                        pr_states=_pr_states(12270, "CLOSED"))
     assert rc == 0
     out = _json_out(capsys.readouterr())
     assert out["my_active_claim"] is False
@@ -4906,16 +4933,22 @@ def test_pr_states_signature_is_optional_no_behavioural_change(capsys):
     rc = clc._run_check(p, "myia-po-2023:CoursIA-2",
                        pr_states=None,
                        my_paths=["scripts/check_lane_claim.py"])
-    # Either CLEAR (legacy close when gh auth works) or NOT_SCOPED
-    # (when gh auth fails and we cannot introspect). Both are valid v1
-    # surfaces -- the test pins that v2 did not crash with a TypeError
-    # on the new kwarg.
-    assert rc in (0, 2)
+    # PR 99999 does not exist, so a live lookup FAILS. #13336 split the
+    # failure classes: on an authed machine the "not found" error is
+    # PERMANENT -> fail-CLOSED (rc 1, the claim stays blocking); in a
+    # sandbox without gh/network the error reads environmental -> legacy
+    # close (rc 0) or NOT_SCOPED (rc 2). All three are valid surfaces --
+    # the test pins that v2 accepted the None kwarg without TypeError and
+    # never crashed on the fetch path.
+    assert rc in (0, 1, 2)
     captured = capsys.readouterr()
     if rc == 0:
         out = _json_out(captured)
         # The forensic PR ref still surfaces.
         assert 99999 in out["delivered_claims"]
+    if rc == 1:
+        # fail-CLOSED (authed machine): the unresolved delivery is named.
+        assert "99999" in captured.err
     # On NOT_SCOPED the JSON output is replaced by the trailing
     # NOT_SCOPED banner; the kwarg was accepted without TypeError,
     # which is the only thing this test pins.
@@ -5664,3 +5697,148 @@ def test_gh_calls_pin_utf8_regression_12811(monkeypatch):
     assert issue_payload["title"].endswith(bad_char)
     prs = clc._gh_open_prs_with_files()
     assert prs[0]["title"].endswith(bad_char)
+
+
+# --- #13336 : gh a retire le champ `merged` -- le lookup mourait a chaque appel
+#
+# `_fetch_pr_state` interrogait `--json state,merged` ; gh 2.83+ refuse le champ
+# (`Unknown JSON field`), exit 1 sur la REQUETE entiere : (None, err) pour toute
+# PR. Le `None` tombait dans la branche `close` du reducteur -> TOUT [DELIVERED]
+# relachait son claim (v2 inerte, retour v1 silencieux). Duplication mesuree :
+# #13216 -- meme machine, deux lanes, 49 lignes ecrites deux fois (#13230 OPEN
+# vs #13242 MERGED) ; l'organe avait repondu CLEAR avec
+# `delivered_claims_pr_states: {"13230": null}`.
+
+import os as _os
+import subprocess as _subprocess  # noqa: F401  (monkeypatched via clc.subprocess)
+
+
+class _FakeProc:
+    def __init__(self, returncode=0, stdout="", stderr=""):
+        self.returncode = returncode
+        self.stdout = stdout
+        self.stderr = stderr
+
+
+def _fake_gh(monkeypatch, responses):
+    """Intercept clc.subprocess.run pour `gh pr view N --json ...`.
+
+    responses: {pr_number: _FakeProc}. Captured args are recorded on the
+    returned list for field-model assertions."""
+    calls = []
+
+    real_run = _subprocess.run
+
+    def fake_run(args, **kwargs):
+        if not (len(args) > 1 and args[0] == "gh"):
+            return real_run(args, **kwargs)  # git ls-files & co: pass-through
+        calls.append(list(args))
+        if args[1:3] == ["pr", "list"]:  # --paths collision probe
+            return _FakeProc(0, "[]", "")
+        pr = int(args[args.index("view") + 1])
+        return responses.get(pr, _FakeProc(1, "", "no pull requests found"))
+
+    monkeypatch.setattr(clc.subprocess, "run", fake_run)
+    monkeypatch.setattr(clc, "_PR_STATE_CACHE", {})
+    return calls
+
+
+def test_13336_fetch_queries_live_field_model(monkeypatch):
+    """Critere 1 : la requete interroge `state,mergedAt` (pas le `merged`
+    disparu), et `mergedAt` non-null verrouille meme si `state` est race."""
+    calls = _fake_gh(monkeypatch, {
+        13230: _FakeProc(0, '{"state":"OPEN","mergedAt":null}', ""),
+        13144: _FakeProc(0, '{"state":"OPEN","mergedAt":"2026-08-28T05:00:00Z"}', ""),
+        9977: _FakeProc(0, '{"state":"CLOSED","mergedAt":null}', ""),
+    })
+    assert clc._fetch_pr_state(13230) == ("OPEN", None)
+    assert clc._fetch_pr_state(13144) == ("MERGED", None)  # mergedAt seul verrouille
+    assert clc._fetch_pr_state(9977) == ("CLOSED", None)
+    fields = [c[c.index("--json") + 1] for c in calls]
+    assert all(f == "state,mergedAt" for f in fields)
+    assert "merged" not in fields  # le champ mort n'est plus interroge
+
+
+def test_13336_schema_break_blocks_delivered_claim(monkeypatch, capsys):
+    """Critere 3 : une erreur de schema (permanente) NE RELACHE PAS le claim.
+    Avant : le None tombait dans `close` -> CLEAR, la voie etait faussement
+    libre (mecanisme exact de la duplication #13216)."""
+    _fake_gh(monkeypatch, {
+        13230: _FakeProc(1, "", 'Unknown JSON field: "merged". Available fields:'),
+    })
+    p = payload(
+        comment("[CLAIMED] lane myia-po-2024:CoursIA-2 -- decks S3",
+                "2026-08-28T01:00:00Z"),
+        comment("[DELIVERED] lane myia-po-2024:CoursIA-2 -- PR #13230",
+                "2026-08-28T02:00:00Z"),
+    )
+    rc = clc._run_check(p, "myia-po-2024:CoursIA",
+                        pr_states=None,
+                        my_paths=["slides/**"])
+    assert rc == 1  # BLOCKED : la delivery non resolvable garde le lock
+    captured = capsys.readouterr()
+    out = _json_out(captured)
+    assert "myia-po-2024:CoursIA-2" in out["blocking_lanes"]
+    # Critere 4 (voix BLOCKED) : la CAUSE est nommee, pas seulement le bloc.
+    assert "WARN" in captured.err
+    assert "13230" in captured.err
+    assert "non transitoire" in captured.err
+
+
+def test_13336_transient_network_error_keeps_fail_open(monkeypatch, capsys):
+    """Miroir : une erreur RESEAU reste fail-open (posture documentee
+    #12386) -- mais le verdict porte le WARN (critere 4, voix CLEAR)."""
+    _fake_gh(monkeypatch, {
+        13230: _FakeProc(1, "", "dial tcp: could not resolve host"),
+    })
+    p = payload(
+        comment("[CLAIMED] lane myia-po-2024:CoursIA-2 -- decks S3",
+                "2026-08-28T01:00:00Z"),
+        comment("[DELIVERED] lane myia-po-2024:CoursIA-2 -- PR #13230",
+                "2026-08-28T02:00:00Z"),
+    )
+    rc = clc._run_check(p, "myia-po-2024:CoursIA",
+                        pr_states=None,
+                        my_paths=["slides/**"])
+    assert rc == 0  # fail-open preserve sur erreur transitoire
+    captured = capsys.readouterr()
+    out = _json_out(captured)
+    assert out["blocking_lanes"] == []
+    # ... mais PLUS silencieusement : le WARN nomme la PR non resolue.
+    assert "WARN" in captured.err
+    assert "13230" in captured.err
+
+
+def test_13336_replay_13216_open_pr_blocks_second_lane(capsys):
+    """Critere 5 (mecanisme, PR reelles) : tant que #13230 est OPEN, la lane
+    myia-po-2024:CoursIA-2 reste BLOQUANTE pour myia-po-2024:CoursIA -- c'est
+    exactement ce que l'organe cassat en repondant CLEAR le 28/08."""
+    p = payload(
+        comment("[CLAIMED] lane myia-po-2024:CoursIA-2 -- decks S3",
+                "2026-08-28T01:00:00Z"),
+        comment("[DELIVERED] lane myia-po-2024:CoursIA-2 -- PR #13230",
+                "2026-08-28T02:00:00Z"),
+    )
+    rc = clc._run_check(p, "myia-po-2024:CoursIA",
+                        pr_states=_pr_states(13230, "OPEN"),
+                        my_paths=["slides/**"])
+    assert rc == 1
+    out = _json_out(capsys.readouterr())
+    assert "myia-po-2024:CoursIA-2" in out["blocking_lanes"]
+
+
+def test_13336_live_control_real_pr():
+    """Critere 2 : controle positif END-TO-END (aucune injection) sur une PR
+    REELLE du depot -- rougit si gh change encore de schema. Ne tourne que
+    la ou le reseau et un token sont disponibles (le workflow
+    lane-claim-guard.yml pose LANE_CLAILM_LIVE=1 + GH_TOKEN) ; le skip local
+    reste possible (critere 4 de l'issue : `python -m pytest` hors CI passe).
+
+    PR epinglee : #13144, MERGEE le 2026-08-28 -- un etat fusionne est stable
+    a vie (une PR ouverte finit par merger, une fusionnee reste fusionnee)."""
+    if not (_os.environ.get("GH_TOKEN") and _os.environ.get("LANE_CLAIM_LIVE")):
+        import pytest
+        pytest.skip("live control: set GH_TOKEN + LANE_CLAIM_LIVE=1 (run by lane-claim-guard.yml)")
+    st, err = clc._fetch_pr_state(13144)
+    assert st == "MERGED", f"gh schema ou PR inattendus: state={st!r} err={err!r}"
+    assert err is None

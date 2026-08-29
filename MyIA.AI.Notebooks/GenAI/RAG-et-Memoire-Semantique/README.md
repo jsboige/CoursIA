@@ -25,7 +25,7 @@ Un assistant de codage sans mémoire externe ré-explore le même terrain à cha
 
 - **Opérateurs d'agents** qui veulent comprendre comment leurs outils sont *ancrés* dans un historique vérifié.
 - **Curieux d'infrastructure ML / vectorielle** qui cherchent un récit honnête de mise en production (Docker, WSL2, quantization, anti-split-brain).
-- **Lecteurs des notebooks pratiques** `01-Hands-On-Grounding.ipynb` (le contexte de l'infrastructure avant de manipuler Qdrant), `02-Retrieval-Avance.ipynb` (mesurer HyDE et le reranking sur un gold français), `03-Embeddings-From-Scratch.ipynb` (ce qu'un embedding *est*, avant de s'en servir), `04-Tokenisation-From-Scratch.ipynb` (ce qu'un token *est*, l'unité de compte que tout le dépôt consomme) et `05-Stockage-Vectoriel.ipynb` (la persistance sur disque et le compromis exact/ANN quand le corpus ne tient plus en RAM).
+- **Lecteurs des notebooks pratiques** `01-Hands-On-Grounding.ipynb` (le contexte de l'infrastructure avant de manipuler Qdrant), `02-Retrieval-Avance.ipynb` (mesurer HyDE et le reranking sur un gold français), `03-Embeddings-From-Scratch.ipynb` (ce qu'un embedding *est*, avant de s'en servir), `04-Tokenisation-From-Scratch.ipynb` (ce qu'un token *est*, l'unité de compte que tout le dépôt consomme), `05-Stockage-Vectoriel.ipynb` (la persistance sur disque et le compromis exact/ANN quand le corpus ne tient plus en RAM), `05b-Stockage-Vectoriel-Serveur.ipynb` (le même compromis sur un serveur Qdrant réel) et `06-KernelMemory-InProcess.ipynb` (la couche d'abstraction Kernel Memory par-dessus l'infrastructure), `07-KernelMemory-Python-Quickstart.ipynb` (le jumeau Python en mode service : ingestion HTTP, citations, mesure).
 - **Personnes ayant vécu un incident** (perte de données, dérive de montage disque, sauvegardes à moitié câblées) et cherchant des leçons partageables.
 
 ## Objectifs d'apprentissage
@@ -39,7 +39,7 @@ Un assistant de codage sans mémoire externe ré-explore le même terrain à cha
 
 ## Notebooks et documents
 
-Cette section contient **cinq notebooks** (Qdrant en mémoire, retrieval avancé mesuré, embeddings from scratch, tokenisation BPE à la main et stockage vectoriel persistant) et **quatre documents** de cadrage :
+Cette section contient **huit notebooks** (Qdrant en mémoire, retrieval avancé mesuré, embeddings from scratch, tokenisation BPE à la main, stockage vectoriel persistant et son variant serveur, et la couche d'abstraction Kernel Memory en .NET in-process comme en service Python) et **quatre documents** de cadrage :
 
 | Support | Type | Vous y trouverez |
 |---------|------|------------------|
@@ -48,6 +48,9 @@ Cette section contient **cinq notebooks** (Qdrant en mémoire, retrieval avancé
 | [`03-Embeddings-From-Scratch.ipynb`](03-Embeddings-From-Scratch.ipynb) | Notebook pratique | Construire un word2vec (skip-gram NSG) en NumPy : co-occurrences + PMI, la géométrie qui émerge, et le pont vers un transformer contextuel |
 | [`04-Tokenisation-From-Scratch.ipynb`](04-Tokenisation-From-Scratch.ipynb) | Notebook pratique | Construire une tokenisation BPE à la main, et mesurer le coût du choix de tokenizer sur le chunking et le budget de contexte |
 | [`05-Stockage-Vectoriel.ipynb`](05-Stockage-Vectoriel.ipynb) | Notebook pratique | Persistance sur disque (Qdrant), HNSW déplié à la main, et le compromis rappel-exact vs ANN mesuré — zéro conteneur |
+| [`05b-Stockage-Vectoriel-Serveur.ipynb`](05b-Stockage-Vectoriel-Serveur.ipynb) | Notebook pratique | Le compromis ef exact/ANN sur un serveur Qdrant réel, 10k vecteurs |
+| [`06-KernelMemory-InProcess.ipynb`](06-KernelMemory-InProcess.ipynb) | Notebook pratique (.NET 9) | La couche d'abstraction Kernel Memory in-process : ETL documentaire, partitionnement en paragraphes, recherche avec citations, et le compromis granularité/rappel mesuré — embeddings locaux via LLamaSharp (GGUF `granite-embedding` CPU), zéro service |
+| [`07-KernelMemory-Python-Quickstart.ipynb`](07-KernelMemory-Python-Quickstart.ipynb) | Notebook pratique (Python) | Le jumeau Python du 06, en mode service : le service web Kernel Memory (Docker `kernelmemory/service`) piloté en HTTP depuis Python — ingestion d'un corpus hétérogène (22 textes français + PDF réel du dépôt + code source), recherche par similarité avec citations, inspection de ce que KM écrit dans Qdrant, `/ask` sourcé, gold-set français mesuré, épreuve de persistance par redémarrage |
 | [`01-Pourquoi-Memoire-Semantique.md`](docs/01-Pourquoi-Memoire-Semantique.md) | Document de cadrage | Le besoin : grounding, SDDD, RAG |
 | [`02-Infrastructure-Qdrant.md`](docs/02-Infrastructure-Qdrant.md) | Document de déploiement | Docker, WSL2, quantization, anti-split-brain |
 | [`03-Utilisation-MCP-Indexation.md`](docs/03-Utilisation-MCP-Indexation.md) | Document d'usage | Brancher un agent via MCP, indexer, rechercher |
@@ -129,6 +132,8 @@ RAG-et-Memoire-Semantique/
 ├── 03-Embeddings-From-Scratch.ipynb       # Notebook pratique — word2vec from scratch + pont transformer
 ├── 04-Tokenisation-From-Scratch.ipynb     # Notebook pratique — BPE from scratch + coût du choix de tokenizer
 ├── 05-Stockage-Vectoriel.ipynb            # Notebook pratique — persistance + HNSW + compromis exact/ANN
+├── 06-KernelMemory-InProcess.ipynb        # Notebook pratique (.NET 9) — Kernel Memory in-process, LLamaSharp CPU
+├── 07-KernelMemory-Python-Quickstart.ipynb # Notebook pratique (Python) — service KM en HTTP, corpus hétérogène, citations
 ├── docs/
 │   ├── 01-Pourquoi-Memoire-Semantique.md  # Le besoin : grounding, SDDD, RAG
 │   ├── 02-Infrastructure-Qdrant.md        # Le déploiement : Docker, WSL2, quantization
@@ -183,10 +188,10 @@ R : La mémoire sémantique est *indexée par le sens* (embeddings + recherche v
 
 ## Conclusion / Prochaines étapes
 
-`RAG-et-Memoire-Semantique` est une section modeste en volume (4 notebooks + 4 documents) mais dense en leçons opérationnelles : chaque incident documenté a renforcé une règle de durcissement (disque dédié, sauvegardes testées, anti-split-brain). Pour aller plus loin :
+`RAG-et-Memoire-Semantique` est une section modeste en volume (8 notebooks + 4 documents) mais dense en leçons opérationnelles : chaque incident documenté a renforcé une règle de durcissement (disque dédié, sauvegardes testées, anti-split-brain). Pour aller plus loin :
 
 - **Lire les incidents.** Le document [04 - Incidents et leçons](docs/04-Incidents-et-Lecons.md) est la matière pédagogique la plus utile de cette section — il documente des pannes *réelles* et leurs *solutions*.
-- **Faire tourner les notebooks.** [`01-Hands-On-Grounding.ipynb`](01-Hands-On-Grounding.ipynb) fonctionne en mémoire, sans Docker, en quelques minutes ; [`02-Retrieval-Avance.ipynb`](02-Retrieval-Avance.ipynb) mesure réellement HyDE et un cross-encoder multilingue sur CPU ; [`03-Embeddings-From-Scratch.ipynb`](03-Embeddings-From-Scratch.ipynb) construit un word2vec en NumPy, puis le compare à un transformer contextuel ; [`04-Tokenisation-From-Scratch.ipynb`](04-Tokenisation-From-Scratch.ipynb) construit un BPE à la main et mesure le coût du choix de tokenizer ; [`05-Stockage-Vectoriel.ipynb`](05-Stockage-Vectoriel.ipynb) déplie un HNSW à la main et mesure le compromis rappel-exact vs ANN — le tout en quelques secondes.
+- **Faire tourner les notebooks.** [`01-Hands-On-Grounding.ipynb`](01-Hands-On-Grounding.ipynb) fonctionne en mémoire, sans Docker, en quelques minutes ; [`02-Retrieval-Avance.ipynb`](02-Retrieval-Avance.ipynb) mesure réellement HyDE et un cross-encoder multilingue sur CPU ; [`03-Embeddings-From-Scratch.ipynb`](03-Embeddings-From-Scratch.ipynb) construit un word2vec en NumPy, puis le compare à un transformer contextuel ; [`04-Tokenisation-From-Scratch.ipynb`](04-Tokenisation-From-Scratch.ipynb) construit un BPE à la main et mesure le coût du choix de tokenizer ; [`05-Stockage-Vectoriel.ipynb`](05-Stockage-Vectoriel.ipynb) déplie un HNSW à la main et mesure le compromis rappel-exact vs ANN ; [`05b-Stockage-Vectoriel-Serveur.ipynb`](05b-Stockage-Vectoriel-Serveur.ipynb) rejoue le compromis sur un serveur Qdrant réel ; [`06-KernelMemory-InProcess.ipynb`](06-KernelMemory-InProcess.ipynb) (.NET 9, modèle GGUF d'embeddings mis en cache, inférence llama.cpp CPU) délègue le pipeline à Kernel Memory et mesure le compromis granularité/rappel — sans service ni conteneur ; [`07-KernelMemory-Python-Quickstart.ipynb`](07-KernelMemory-Python-Quickstart.ipynb) en est le jumeau Python en mode service : le conteneur `kernelmemory/service` piloté en HTTP, ingestion d'un corpus hétérogène (textes français, PDF réel, code source), citations, réponse sourcée et épreuve de persistance.
 - **Brancher un agent.** Le document [03 - Utilisation et indexation](docs/03-Utilisation-MCP-Indexation.md) montre comment relier Claude Code ou Roo Code à Qdrant via MCP.
 
 Pour le versant *application* du RAG (pas infrastructure), voir les notebooks [`5_RAG_Modern.ipynb`](../Texte/5_RAG_Modern.ipynb) et [`14_Persistent_Memory.ipynb`](../Texte/14_Persistent_Memory.ipynb) de la section Texte.
@@ -200,6 +205,9 @@ Pour le versant *application* du RAG (pas infrastructure), voir les notebooks [`
 - [Notebook pratique — Embeddings from scratch](03-Embeddings-From-Scratch.ipynb)
 - [Notebook pratique — Tokenisation from scratch](04-Tokenisation-From-Scratch.ipynb)
 - [Notebook pratique — Stockage vectoriel](05-Stockage-Vectoriel.ipynb)
+- [Notebook pratique — Stockage vectoriel, serveur](05b-Stockage-Vectoriel-Serveur.ipynb)
+- [Notebook pratique — Kernel Memory in-process (.NET 9)](06-KernelMemory-InProcess.ipynb)
+- [Notebook pratique — Kernel Memory Python, mode service](07-KernelMemory-Python-Quickstart.ipynb)
 - [Pourquoi la mémoire sémantique](docs/01-Pourquoi-Memoire-Semantique.md)
 - [Infrastructure Qdrant](docs/02-Infrastructure-Qdrant.md)
 - [Utilisation et indexation](docs/03-Utilisation-MCP-Indexation.md)
@@ -222,6 +230,9 @@ Pour le versant *application* du RAG (pas infrastructure), voir les notebooks [`
 | [Notebook — Embeddings from scratch](03-Embeddings-From-Scratch.ipynb) | Construire un word2vec (skip-gram NSG) en NumPy, lire la géométrie, comparer à un transformer | Pratique |
 | [Notebook — Tokenisation from scratch](04-Tokenisation-From-Scratch.ipynb) | Construire une tokenisation BPE à la main, mesurer le coût du choix de tokenizer sur le chunking et le budget | Pratique |
 | [Notebook — Stockage vectoriel](05-Stockage-Vectoriel.ipynb) | Persister sur disque, déplier un HNSW à la main, mesurer le compromis rappel-exact vs ANN | Pratique |
+| [Notebook — Stockage vectoriel, serveur](05b-Stockage-Vectoriel-Serveur.ipynb) | Rejouer le compromis ef exact/ANN sur un serveur Qdrant réel, 10k vecteurs | Pratique |
+| [Notebook — Kernel Memory in-process](06-KernelMemory-InProcess.ipynb) | Déléguer ETL, partitionnement et citations à Kernel Memory (.NET 9), mesurer la granularité contre le rappel | Pratique |
+| [Notebook — Kernel Memory Python, mode service](07-KernelMemory-Python-Quickstart.ipynb) | Piloter le service web Kernel Memory en HTTP depuis Python : corpus hétérogène, citations, pont Qdrant, réponse sourcée, gold-set mesuré | Pratique |
 
 ---
 

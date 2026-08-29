@@ -31,6 +31,12 @@
       csharp_sha: 6c10bba6cbdf6afb8f60a6e56567a273e0eb8e34
       content_python_sha: 42be332ed5fccaefb9e41df6cdddc41cc15f57ce070ac0a167307f4f9da050bf
       content_csharp_sha: 6f667c0b3ea21776c9ee58f81ba3f6fed750f7b6d8148ea7e77ac7fe55009e39
+    - date: "2026-08-29"
+      by: myia-po-2023:CoursIA-2
+      python_sha: dc8823f08ff572c954c1e76a900b56a51b8485ef
+      csharp_sha: 5eeab26867e2fcc80b0fdc54680d1094c5966e79
+      content_python_sha: 42be332ed5fccaefb9e41df6cdddc41cc15f57ce070ac0a167307f4f9da050bf
+      content_csharp_sha: 34c0af00dd7d7d862a4a7c9d333f7e2584809569abe18dc3ec779a2804beae00
   known_differences:
     - "Concept : introduction a la planification classique (domaine, probleme, plan = sequence d'actions)."
     - "Python : unified-planning (API moderne, modelisation Fluent/Action). C# : Tranche 1 from-scratch BCL .NET (dataclasses d'Action/Etat, 0 NuGet) + Tranche 2 Fast Downward via API Docker (depuis 2026-08-15, #10382)."

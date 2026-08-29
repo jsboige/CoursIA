@@ -51,13 +51,13 @@ USER_NIT = {
 }
 
 
-def run(comments, commits=None, threads=None):
+def run(comments, commits=None, threads=None, reviews=None, pr_author="jsboige"):
     data = {
         "number": 0,
         "title": "t",
-        "author": {"login": "jsboige"},
+        "author": {"login": pr_author},
         "comments": comments,
-        "reviews": [],
+        "reviews": reviews if reviews is not None else [],
         "commits": commits if commits is not None else [{"committedDate": at(19)}],
     }
     return mod.analyse(data, threads or [], MERGED)
@@ -535,6 +535,125 @@ def test_approved_avant_la_concerne_ne_leve_pas():
         "submittedAt": at(9), "body": "",
     }
     assert run_reviews([early_ok, late_concern])["blocked"] is True
+
+
+# --- #13399 : une levee portee par une REVIEW est aussi visible qu'en
+# commentaire. Le defaut constate sur #13299 : ai-01 pose APPROVED par review
+# en nommant chaque reserve, mais l'organe n'etait capable de lever par re-review
+# que si l'auteur de l'APPROVED etait l'auteur de la reserve (auto-approbation).
+# Un reviewer TIERS qui approuve en nommant la reserve d'un autre la leve aussi.
+# Le garde-fou #12798 reste : c'est l'identite de l'auteur qui tranche.
+
+def test_approval_by_different_reviewer_naming_reserve_leves():
+    """Positif #13299 : reserve en commentaire (lane A), fix, APPROVED en review
+    par un auteur DIFFERENT qui nomme la reserve -> levee (rc=0)."""
+    reserve = {
+        "author": {"login": "po-2026"},
+        "createdAt": at(10),
+        "body": "Verdict : CHANGES_REQUESTED (substance) — sortie degeneree en cell 3.",
+    }
+    fix = {"author": {"login": "jsboige"}, "createdAt": at(12),
+           "body": "cell 3 corrigee, re-exec 5/5."}
+    approval_tierce = {
+        "author": {"login": "ai-01"},
+        "state": "APPROVED", "submittedAt": at(15),
+        "body": ("APPROVED — la reserve de po-2026 (sortie degeneree) est traitee "
+                 "(commit bb573c3819, re-exec 5/5)."),
+    }
+    res = run([reserve, fix], reviews=[approval_tierce])
+    assert res["blocked"] is False
+
+
+def test_approval_by_reserve_author_who_is_pr_author_refused():
+    """Negatif #13399 : si l'auteur de la reserve est l'auteur de la PR, une
+    APPROVED de CE meme compte est une auto-approbation (self-review cap #12319)
+    et ne leve pas. Seul un tiers legitime confirme."""
+    reserve = {
+        "author": {"login": "jsboige"},
+        "createdAt": at(10),
+        "body": "Verdict : CHANGES_REQUESTED (substance) — sortie degeneree en cell 3.",
+    }
+    fix = {"author": {"login": "jsboige"}, "createdAt": at(12),
+           "body": "cell 3 corrigee, re-exec 5/5."}
+    self_approval = {
+        "author": {"login": "jsboige"},
+        "state": "APPROVED", "submittedAt": at(15),
+        "body": "APPROVED.",
+    }
+    res = run([reserve, fix], reviews=[self_approval])
+    assert res["blocked"] is True
+
+
+def test_approval_by_different_reviewer_without_naming_does_not_leve():
+    """Garde-fou : une review APPROVED d'un tiers qui n'identifie pas la reserve
+    (pas de mention de son auteur) ne la leve pas — sinon tout APPROVED d'un
+    coordinateur eteindrait toutes les reserves de la PR."""
+    reserve = {
+        "author": {"login": "po-2026"},
+        "createdAt": at(10),
+        "body": "Verdict : CHANGES_REQUESTED (substance) — sortie degeneree en cell 3.",
+    }
+    fix = {"author": {"login": "jsboige"}, "createdAt": at(12),
+           "body": "cell 3 corrigee."}
+    approval_generique = {
+        "author": {"login": "ai-01"},
+        "state": "APPROVED", "submittedAt": at(15),
+        "body": "APPROVED — le livrable est bon a merger.",
+    }
+    res = run([reserve, fix], reviews=[approval_generique])
+    assert res["blocked"] is True
+
+
+def test_lift_phrase_in_review_commented_leves():
+    """#13399 point 2 : une PHRASE de levee portee par le corps d'une review
+    COMMENTED (et pas un commentaire) leve comme un commentaire — la levee
+    devient symetrique a la pose (qui acceptait deja commentaire et review).
+    La borne d'auteur #11145 reste : la phrase de l'auteur de la reserve leve
+    (ici clusterManager-Myia leve sa propre reserve par une review)."""
+    reserve = {
+        "author": {"login": "clusterManager-Myia"},
+        "state": "COMMENTED", "submittedAt": at(10),
+        "body": "[Hermes] — COMMENT_WITH_CONCERNS\nCI catalog-drift FAIL.",
+    }
+    lift_in_review = {
+        "author": {"login": "clusterManager-Myia"},
+        "state": "COMMENTED", "submittedAt": at(15),
+        "body": "Je leve la CHANGES_REQUESTED — drift corrige au commit c506d04b.",
+    }
+    res = run_reviews([reserve, lift_in_review])
+    assert res["blocked"] is False
+
+
+def test_reserve_in_review_lifted_by_third_party_naming():
+    """Symetrie pose/levee (#13399 point 2) : une reserve posee en REVIEW
+    (COMMENTED, meme surface qu'un __init__ par review) est levee par un tiers
+    APPROVED qui la nomme, comme celle d'un commentaire. La distinction est
+    l'identite de l'auteur, pas le canal."""
+    concern_in_review = {
+        "author": {"login": "po-2026"},
+        "state": "COMMENTED", "submittedAt": at(10),
+        "body": "Verdict : CHANGES_REQUESTED (substance) — sortie degeneree en cell 3.",
+    }
+    approval_tierce = {
+        "author": {"login": "ai-01"},
+        "state": "APPROVED", "submittedAt": at(15),
+        "body": "APPROVED — la reserve de po-2026 (sortie degeneree) est traitee.",
+    }
+    res = run_reviews([concern_in_review, approval_tierce])
+    assert res["blocked"] is False
+
+
+def test_channel_reflects_origin_surface():
+    """#13399 point 3 : le canal de chaque evenement bloqueur est expose
+    (comment vs review), pour qu'un desaccord entre l'organe et une lecture
+    humaine soit diagnosticable sans re-fouiller l'API."""
+    assert run([USER_NIT])["blocking"][0]["channel"] == "comment"
+    assert run_reviews([CONCERN_REVIEW])["blocking"][0]["channel"] == "review"
+    # un thread inline non resolu releve du canal review (surface GitHub review)
+    thread = {"author": "jsboige", "body": "ligne 3 a revoir",
+              "resolved": False, "outdated": False,
+              "createdAt": at(11), "path": "a/b.ipynb", "line": 3}
+    assert run([], threads=[thread])["blocking"][0]["channel"] == "review"
 
 
 # --- #11201 : le faux negatif « corrige X et je merge ». Le test LIFT_MARKERS
@@ -2223,6 +2342,118 @@ def test_13083_blocage_reel_conditionnel_a_un_override_reste_block():
             "n'est pas pose par le coordinateur.")
     assert mod.classify("myia-ai-01", body) == "BLOCK"
 
+# --- #13083 (2e instance) : symetrie mention/emission de l'etage lift.
+# ai-01 a mesure sur #12896 que ses DEUX commentaires de reserve (5422307622,
+# 5422312669) etaient classes None par le gate : les mentions nominales
+# (« une formule de levee conditionnelle », « une levee reelle ») et la
+# derivation flechee (« -> je merge ») eteignaient une reserve vivante, alors
+# que la mention d'une reserve ne l'emets pas (#11636 symetrique). Corps
+# EXACTS, exiges tels quels par ai-01 : « Un correctif teste sur une prose
+# reecrite pour lui plaire ne mesure rien. »
+
+FIXTURE_12896_A_BODY = (
+    "**CHANGES_REQUESTED (ai-01) — gate de sign-off, pas un desaccord sur le fond.**\n"
+    "\n"
+    "Le constat porte par cette PR est juste et je ne le conteste pas : #11900 a bien montre qu'un body d'EPIC survit a sa propre resolution, et qu'un picker delaisse remonte alors un blocage qui n'existe plus. C'est exactement la lecon [[stale-body-is-the-mechanism-of-neglect]], et elle merite d'etre consignee.\n"
+    "\n"
+    "Ce qui bloque est **la forme du support**, et il ne m'appartient pas de la lever :\n"
+    "\n"
+    "1. **CLAUDE.md §A** : « Aucun agent ne s'auto-autorise a promouvoir une regle : tout ajout a `.claude/rules/` passe par une **PR + sign-off user**. » Ce sign-off n'existe pas sur cette PR — les deux seules interventions sont un advisory `github-actions` et une self-review Hermes. Je ne peux pas me le donner a moi-meme : ce serait precisement le geste que la clause interdit.\n"
+    "\n"
+    "2. **Absence de frontmatter `paths:` = cout permanent.** Le body l'assume explicitement (« auto-chargee dans toutes les sessions »). Consequence mecanique : ce fichier entre dans le contexte de **chaque** session de **chaque** lane, pour toujours. `harness-hygiene.md` pose le tri a trois tiers — regle durable au harnais, detail en `docs/`, etat de cycle au dashboard — et rappelle que le harnais doit **referencer**, pas detailler. Une regle nee d'un incident unique (#11900) commence sa vie du cote « detail » de ce tri.\n"
+    "\n"
+    "**Trois issues me semblent possibles, et le choix revient au user, pas a moi** :\n"
+    "\n"
+    "- **(a)** sign-off user tel quel -> je merge sans autre reserve ;\n"
+    "- **(b)** le contenu descend en `docs/reference/`, et le harnais gagne **une ligne** de pointeur — meme substance, cout de contexte quasi nul ;\n"
+    "- **(c)** le contenu fusionne dans [`verify-before-claiming.md`](.claude/rules/verify-before-claiming.md), deja auto-chargee et deja porteuse de la regle « ne pas propager un claim non verifie » — dont ceci est un cas d'application plutot qu'un principe nouveau.\n"
+    "\n"
+    "Ma recommandation est **(c)**, parce qu'elle ajoute zero fichier auto-charge et range la lecon la ou un lecteur la cherchera. Mais c'est un arbitrage editorial du user.\n"
+    "\n"
+    "Je porte la question a l'arbitrage user dans mon rapport de cycle. **Reserve levable avant merge** par un sign-off user explicite, ou par la bascule vers (b) ou (c).\n"
+    "\n"
+)
+
+FIXTURE_12896_B_BODY = (
+    "**CHANGES_REQUESTED (ai-01) — re-formulation. Le commentaire precedent portait la reserve, mais desarmait le gate.**\n"
+    "\n"
+    "Mesure faite a l'instant : apres mon commentaire de reserve, `check_unaddressed_nits.py 12896` rendait `OK / aucun nit non leve`. La cause est dans **ma** prose — l'option (a) que j'enumerais se terminait par une formule de levee conditionnelle, que l'organe classe comme une levee reelle (meme famille que #12074). Une reserve qui enumere ses conditions de levee **se leve elle-meme**. Je retire donc toute formule de ce type ici.\n"
+    "\n"
+    "Deuxieme instance versee sur **#13083**, qui documentait deja qu'un blocage coordinateur echoue faute de marqueur structure.\n"
+    "\n"
+    "## La reserve, sans conditionnel\n"
+    "\n"
+    "Cette PR ajoute **un fichier auto-charge** a `.claude/rules/` (aucun frontmatter `paths:`, le body l'assume). Deux points, aucun ne portant sur le fond :\n"
+    "\n"
+    "1. **CLAUDE.md §A exige un sign-off user pour tout ajout a `.claude/rules/`.** Il est absent : les seules interventions sont un advisory `github-actions` et une self-review Hermes. Je ne peux pas me l'accorder — c'est exactement le geste que la clause interdit.\n"
+    "\n"
+    "2. **Le cout est permanent et paye par toutes les lanes.** Un fichier auto-charge entre dans le contexte de chaque session. `harness-hygiene.md` veut le harnais **succinct et referencant** ; une regle nee d'un incident unique commence du cote « detail » de ce tri.\n"
+    "\n"
+    "Le constat de fond est juste : #11900 a montre qu'un body d'EPIC survit a sa propre resolution. Il merite d'etre consigne — la question est **ou**.\n"
+    "\n"
+    "## Ce que j'ai porte a l'arbitrage user\n"
+    "\n"
+    "Trois supports possibles, decision editoriale qui ne m'appartient pas : le fichier auto-charge tel quel ; une descente en `docs/reference/` avec une ligne de pointeur au harnais ; ou une fusion dans `verify-before-claiming.md`, deja auto-chargee et deja porteuse du principe dont ceci est un cas d'application. Ma recommandation va au troisieme.\n"
+    "\n"
+    "Reserve a traiter **avant merge**, par le user.\n"
+    "\n"
+)
+
+def test_13083_controle_a_5422307622_est_bot_concern():
+    """#12896 c.5422307622 verbatim : CHANGES_REQUESTED formel + « Reserve
+    levable avant merge » + l'option « (a) sign-off user tel quel -> je merge
+    sans autre reserve ». Trois pieges pour l'ancien gate brut : le verdict en
+    tete (couvert par _formal_concern_precedes_lift), la derivation flechee
+    (couverte par _arrow_precedes), « levable » n'est pas un marqueur. Attendu
+    BOT-CONCERN — exigence ecrite d'ai-01 sur #13083."""
+    assert mod.classify("myia-ai-01", FIXTURE_12896_A_BODY) == "BOT-CONCERN"
+
+
+def test_13083_controle_b_5422312669_est_bot_concern():
+    """#12896 c.5422312669 verbatim : la re-formulation OUVERTE de la meme
+    reserve, expurgee de formules conditionnelles par ai-01 lui-meme — et
+    pourtant invisible au gate : « une formule de levee conditionnelle »,
+    « une levee reelle », « ses conditions de levee » (mentions nominales,
+    fenetre de determinants `LIFT_NARRATION_CITERS` #12908) et « se leve elle-meme » (narration). Attendu
+    BOT-CONCERN — exigence ecrite d'ai-01 sur #13083."""
+    assert mod.classify("myia-ai-01", FIXTURE_12896_B_BODY) == "BOT-CONCERN"
+
+
+def test_13083_mention_genitive_neteint_pas_une_reserve():
+    """« conditions de levee », « formule de levee » : le genitif NOMME le
+    concept, il ne l'emets pas. Une reserve vivante qui s'accompagne d'une
+    mention genitive reste BOT-CONCERN."""
+    body = ("Reserve a traiter avant merge : l'option proposee se termine "
+            "par une formule de levee conditionnelle, ce n'est pas une levee.")
+    assert mod.classify("myia-ai-01", body) == "BOT-CONCERN"
+
+
+def test_13083_mention_article_indefini_neteint_pas_une_reserve():
+    """« une levee reelle » (article indefini + nom, c.5422312669 verbatim) :
+    classification metalinguistique, pas une emission. La reserve vit."""
+    body = ("Reserve a traiter avant merge : le gate traite a tort ceci "
+            "comme une levee reelle.")
+    assert mod.classify("myia-ai-01", body) == "BOT-CONCERN"
+
+
+def test_13083_fleche_derivation_neteint_pas_une_reserve():
+    """« sign-off user tel quel -> je merge » : la fleche fait du merge la
+    CONSEQUENCE d'une precondition non satisfaite — une derivation n'est pas
+    une annonce (regle fleche de `_is_cited`, reprise ISO dans
+    `_live_lift_positions`). La reserve vit."""
+    body = ("Reserve avant merge : la clause exige un sign-off. "
+            "(a) sign-off user tel quel -> je merge sans autre reserve.")
+    assert mod.classify("myia-ai-01", body) == "BOT-CONCERN"
+
+
+def test_13083_annonce_reelle_survit_aux_mentions():
+    """Garde-fou inverse : une mention nominale dans la phrase precedente ne
+    doit pas tuer l'annonce REELLE qui suit (« n'est pas une levee. Levee de
+    ma reserve ») — c'est le piege du `_is_cited` importe entier (fenetre
+    trans-sentence), qui cassait 4 tests du corpus."""
+    body = ("Ce n'est pas une levee de facade. Levee de ma reserve : le "
+            "point 2 est corrige proprement.")
+    assert mod.classify("myia-ai-01", body) is None
 
 # --- #13316 : jsboige n'est pas un compte de levée. L'identité de poussée est
 # PARTAGÉE par toutes les lanes (Hermes self-review cap #12319, push lane) :
@@ -2486,3 +2717,117 @@ def test_12908_sortie_organe_pastee_est_une_emission():
              "body": "Contre-verification au head frais :\n"
                      "BLOCKED  PR #42 — 3 nit(s) non leve(s)"}
     assert run([paste])["blocked"] is True
+# ---------------------------------------------------------------------------
+# #12871 — 6e instance use-vs-mention : la reference pointable des levees
+# doit aussi matcher NUE (`leve par le commit <sha>`) en plus de la forme
+# parenthesee. Les 3 formulations de l'issue (FP1/FP2/FP3) sont classeees
+# BOT-CONCERN a tort ; le fix Position A+ (prose interne apres verdict en
+# parenthese), Position C+ (ref nue apres verbe de levee) et Position E
+# (verdict en tete, verbe de levee + ref dans la meme phrase) les neutralise.
+# Les 3 contre-exemples (CE1/CE2/CE3) restent BOT-CONCERN : pas de ref
+# pointable, pas de verbe de levee, ou emission formelle.
+# ---------------------------------------------------------------------------
+
+
+def test_12871_fp1_parenhese_avec_prose_interne_ne_flagge_pas():
+    """#12871 FP1 — `(COMMENT_WITH_CONCERNS, porte sur...)` : prose interne a
+    la parenthese du verdict (Position A+). Avant : classifie BOT-CONCERN.
+    Apres : classify() rend None (mention, pas emission)."""
+    body = (
+        "Reponse au point de review Hermes (COMMENT_WITH_CONCERNS, porte sur "
+        "la conclusion cell 17 point 3 + objectif cell 0 point 3) - traite "
+        "en code par le commit 05d16623f49."
+    )
+    assert mod.classify("myia-po-2027", body) is None
+
+
+def test_12871_fp2_ref_nue_apres_verbe_leve_ne_flagge_pas():
+    """#12871 FP2 — `COMMENT_WITH_CONCERNS leve par le commit <sha>` : verbe
+    de levee precede, ref pointable NUE dans la meme phrase (Position C+).
+    Avant : classifie BOT-CONCERN. Apres : classify() rend None."""
+    body = (
+        "Reponse au Hermes: COMMENT_WITH_CONCERNS leve par le commit "
+        "05d16623f49."
+    )
+    assert mod.classify("myia-po-2027", body) is None
+
+
+def test_12871_fp3_review_verdict_leve_dans_meme_phrase_ne_flagge_pas():
+    """#12871 FP3 — `La review COMMENT_WITH_CONCERNS de Hermes est traitee par
+    le commit <sha>` : verdict en tete de phrase apres `review/La`, verbe
+    de levee + ref pointable dans la meme phrase (Position E).
+    Avant : classifie BOT-CONCERN. Apres : classify() rend None."""
+    body = (
+        "La review COMMENT_WITH_CONCERNS de Hermes est traitee par le "
+        "commit 05d16623f49."
+    )
+    assert mod.classify("myia-po-2027", body) is None
+
+
+def test_12871_ce1_review_verdict_sans_ref_reste_live():
+    """#12871 CE1 — controle negatif : `Cette review CHANGES_REQUESTED reste
+    bloquante` (pas de ref pointable, pas de verbe de levee). DOIT RESTER
+    BOT-CONCERN. Sans quoi le fix debranche le gate et rouvre le failure
+    mode fondateur de B.0 (#10761)."""
+    body = "Cette review CHANGES_REQUESTED reste bloquante."
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+def test_12871_ce2_verdict_leve_sans_ref_reste_live():
+    """#12871 CE2 — controle negatif : `CHANGES_REQUESTED leve sans reference.`
+    Verbe de levee SANS ref pointable dans la suite immediate. DOIT RESTER
+    BOT-CONCERN (le discriminant C+ exige la ref)."""
+    body = "CHANGES_REQUESTED leve sans reference."
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+def test_12871_ce3_emission_formelle_reste_live():
+    """#12871 CE3 — controle negatif : `Verdict : COMMENT_WITH_CONCERNS` —
+    emission formelle Hermes (state-prefix). DOIT RESTER BOT-CONCERN (les
+    positions A-E ne touchent pas le canal d'emission, cf commentaire
+    `_MENTION_VERDICT_HEADING` ligne 327)."""
+    body = "Verdict : COMMENT_WITH_CONCERNS"
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+# ---------------------------------------------------------------------------
+# #13425 — Position E, borne dure : le commentaire au-dessus de
+# `_MENTION_VERDICT_REVIEW_NARRATIVE` promettait « la phrase complete ne doit
+# pas contenir `Verdict :` ni `reste bloquante` » sans qu'aucun lookahead
+# n'existe (mesure dans l'issue : le cas hybride voyait son verdict
+# neutralise). Le lookahead negatif est desormais implemente dans la fenetre
+# de phrase ; ces tests ECHOUENT sans lui — c'est le controle negatif exige
+# par l'acceptance (verifie mecaniquement : le pattern sans lookahead matche
+# l'hybride, le pattern avec lookahead ne le matche pas).
+# ---------------------------------------------------------------------------
+
+
+def test_13425_hybride_reste_bloquante_avec_commit_preserve_le_verdict():
+    """#13425 cas hybride — `<verdict> reste bloquante - traitee par le
+    commit <sha>` : la Position E voyait verbe de levee + ref pointable dans
+    la meme phrase et neutralisait le verdict, alors que la phrase declare
+    un blocage VIVANT. La borne dure `reste bloquante` preserve le verdict.
+    CE TEST ECHOUE SI ON RETIRE LE LOOKAHEAD."""
+    body = ("Cette review CHANGES_REQUESTED reste bloquante - traitee par le "
+            "commit a1b2c3d4e")
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+def test_13425_verdict_formel_dans_fenetre_preserve_le_verdict():
+    """#13425 seconde borne promise — `Verdict :` (emission formelle) dans la
+    fenetre de phrase de la Position E : le verdict n'est pas non plus
+    neutralise par une mention qui suit une emission formelle.
+    CE TEST ECHOUE SI ON RETIRE LE LOOKAHEAD."""
+    body = ("La review CHANGES_REQUESTED Verdict : reste a traiter, traitee "
+            "par le commit a1b2c3d4e")
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+def test_13425_controles_ce1_fp3_restant_inchanges():
+    """#13425 acceptance — les deux controles mesures dans l'issue gardent
+    leur comportement : CE1 (pas de ref pointable) reste BOT-CONCERN, FP3
+    (verdict leve, ref pointable, pas de declaration de blocage) reste
+    neutralise — sous les formes EXACTES du ticket."""
+    ce1 = "Cette review CHANGES_REQUESTED reste bloquante."
+    fp3 = "La review CHANGES_REQUESTED a ete traitee par le commit a1b2c3d4e"
+    assert mod.classify("jsboige", ce1) == "BOT-CONCERN"
+    assert mod.classify("jsboige", fp3) is None
