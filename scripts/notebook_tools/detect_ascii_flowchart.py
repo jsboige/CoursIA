@@ -104,6 +104,15 @@ _RE_CONNECTOR_VLINE = re.compile(r"\|\s*(v|\^| Extraction| Construction| Indexat
 _RE_CONNECTOR_VERTICAL = re.compile(r"^\s*\|\s*$")  # ligne de bare verticale isolee
 # Lignes courtes avec un seul caractere de connexion (`v`, `^`, `|`, `>`)
 _RE_CONNECTOR_BARE = re.compile(r"^\s*[v^|>]\s*$")
+# Connecteurs verticaux MULTI-COLONNES (#12324 residuel) : ligne composee
+# uniquement de >= 2 fleches isolees separees par des espaces (`v  ...  v`,
+# `|  ...  v` -- GT-17 NFSP c15). Les regex mono-caractere ci-dessus exigent
+# un seul `|`/`v`, donc un flowchart horizontal dont les connexions sont
+# verticales multi-colonnes rendait connectors=0 -> miss. Le lookahead exige
+# au moins un caractere de DIRECTION (v/^/>) : une ligne de pipes seuls
+# (`|     |`, parois vides d'un cadre decoratif -- Lean-7 c31) reste bare,
+# pas un vrai flux de fleches.
+_RE_CONNECTOR_MULTI_COL = re.compile(r"^\s*(?=.*[v^>])(?:[v^|>]\s*){2,}$")
 
 # Label de transition (mot sans symbole, en colonne isolee)
 _RE_LABEL_LINE = re.compile(r"^\s{2,}([A-Z][a-zA-Z]{3,}( [a-z]+){0,3})\s*$")
@@ -142,6 +151,8 @@ def _line_has_connector(line: str) -> bool:
         return True
     if _RE_CONNECTOR_VLINE.search(line):
         return True
+    if _RE_CONNECTOR_MULTI_COL.match(line):
+        return True
     return False
 
 
@@ -177,6 +188,64 @@ def _is_markdown_table_row(line: str) -> bool:
     return stripped.startswith("|") and stripped.endswith("|") and stripped.count("|") >= 2
 
 
+def _is_ascii_table_border(line: str) -> bool:
+    """Reconnaît une bordure multi-colonnes contiguë ASCII ou Unicode.
+
+    Une rangée de boîtes de flowchart contient des espaces entre les boîtes ;
+    une table utilise au contraire une bordure contiguë (`+---+---+` ou
+    `┌───┬───┐`). Le seuil de deux colonnes évite de classer une boîte simple
+    comme table.
+    """
+    stripped = line.strip()
+    if re.fullmatch(r"\+(?:[-=]+\+){2,}", stripped):
+        return True
+    return bool(re.fullmatch(
+        r"[┌├└](?:[─━]+[┬┼┴]){1,}[─━]+[┐┤┘]",
+        stripped,
+    ))
+
+
+def _is_ascii_table_content_row(line: str) -> bool:
+    """Reconnaît une rangée de contenu ayant au moins deux colonnes."""
+    stripped = line.strip()
+    if stripped.startswith("|") and stripped.endswith("|"):
+        return stripped.count("|") >= 3
+    if stripped.startswith("│") and stripped.endswith("│"):
+        return stripped.count("│") >= 3
+    return False
+
+
+def _ascii_table_line_indices(lines: list[str]) -> set[int]:
+    """Retourne les lignes appartenant à des tables encadrées complètes.
+
+    Le détecteur travaille par fenêtres de douze lignes. Sans marquage du bloc
+    complet, il peut démarrer sur la bordure basse d'une table puis emprunter
+    un connecteur au paragraphe suivant. On exige ici une bordure ouvrante, au
+    moins une rangée multi-colonnes et une bordure fermante contiguës.
+    """
+    table_indices: set[int] = set()
+    i = 0
+    while i < len(lines):
+        if not _is_ascii_table_border(lines[i]):
+            i += 1
+            continue
+        j = i + 1
+        has_content_row = False
+        while j < len(lines):
+            if _is_ascii_table_content_row(lines[j]):
+                has_content_row = True
+                j += 1
+                continue
+            if _is_ascii_table_border(lines[j]):
+                if has_content_row:
+                    table_indices.update(range(i, j + 1))
+                j += 1
+                continue
+            break
+        i = max(i + 1, j)
+    return table_indices
+
+
 def _is_inside_fence(lines: list[str], idx: int) -> bool:
     """Verifie si la ligne idx est a l'interieur d'un bloc ``` ... ```
     (mermaid ou autre langage — les fences code block sont l'encadrement
@@ -200,7 +269,7 @@ def _find_flowchart_blocks(cell_source: str) -> list[dict]:
     degrade), mais on flagge `fenced=True` pour que la remediation proposee
     inclue le remplacement de la fence ```` ``` ```` par ```` ```mermaid ````.
 
-    c.474 patch d'une ligne (issue #12324) : l'ancre `\s*$` du `_RE_BOX_ASCII`
+    c.474 patch d'une ligne (issue #12324) : l'ancre `\\s*$` du `_RE_BOX_ASCII`
     a ete retiree, ce qui rend visible la **disposition horizontale** (boites
     cote a cote sur la meme ligne) en plus de la disposition verticale
     traditionnelle. Les 3 branches du discriminant :
@@ -225,10 +294,14 @@ def _find_flowchart_blocks(cell_source: str) -> list[dict]:
     boxes_inline=1 (1 boite par ligne) -- d'ou le seuil 2.
     """
     lines = cell_source.split("\n")
+    table_line_indices = _ascii_table_line_indices(lines)
     blocks = []
     n = len(lines)
     i = 0
     while i < n:
+        if i in table_line_indices:
+            i += 1
+            continue
         if _is_markdown_table_separator(lines[i]):
             i += 1
             continue
@@ -242,9 +315,13 @@ def _find_flowchart_blocks(cell_source: str) -> list[dict]:
         if not (_line_is_box(lines[i]) or _line_has_connector(lines[i])):
             i += 1
             continue
-        # Fenetre 4-12 lignes autour de i
+        # Fenetre 4-12 lignes autour de i. Les lignes de table déjà classées
+        # sont neutralisées même lorsque la fenêtre démarre juste avant elles.
         window_end = min(i + 12, n)
-        window = lines[i:window_end]
+        window = [
+            "" if idx in table_line_indices else lines[idx]
+            for idx in range(i, window_end)
+        ]
         # Compter boites et connecteurs dans la fenetre
         boxes = sum(1 for ln in window if _line_is_box(ln))
         boxes_inline = max(_count_boxes_on_line(ln) for ln in window)

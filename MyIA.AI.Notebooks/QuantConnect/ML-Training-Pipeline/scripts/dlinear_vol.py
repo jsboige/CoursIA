@@ -326,6 +326,21 @@ def _load_panel(
     return out
 
 
+def _mse_without_bias(errors: np.ndarray) -> float:
+    """Return error variance, i.e. MSE after removing the signed mean error."""
+    errors = np.asarray(errors, dtype=float)
+    errors = errors[np.isfinite(errors)]
+    if not len(errors):
+        return float("nan")
+    return float(np.mean((errors - np.mean(errors)) ** 2))
+
+
+def _edge_pct(baseline_mse: float, model_mse: float) -> float:
+    if not np.isfinite(baseline_mse) or baseline_mse <= 0:
+        return float("nan")
+    return float((baseline_mse - model_mse) / baseline_mse * 100)
+
+
 def aggregate_verdicts(rows: list[dict]) -> list[dict]:
     from collections import defaultdict
 
@@ -341,17 +356,28 @@ def aggregate_verdicts(rows: list[dict]) -> list[dict]:
         n_seeds = len(seeds_rows)
         dl_mses = [r["dlinear_mse_logrv"] for r in seeds_rows]
         har_mses = [r["har_mse_logrv"] for r in seeds_rows]
-        verdicts = [r.get("dm_verdict", "UNKNOWN") for r in seeds_rows]
-        p_values = [r.get("dm_pvalue", 1.0) for r in seeds_rows]
+        calibrated_har_mses = [
+            r.get("har_calibrated_mse_logrv", float("nan")) for r in seeds_rows
+        ]
+        verdicts = [r.get("calibrated_dm_verdict", "UNKNOWN") for r in seeds_rows]
+        p_values = [r.get("calibrated_dm_pvalue", 1.0) for r in seeds_rows]
 
         mean_dl = float(np.nanmean(dl_mses))
         mean_har = float(np.nanmean(har_mses))
+        mean_calibrated_har = float(np.nanmean(calibrated_har_mses))
         std_dl = float(np.nanstd(dl_mses))
-        mean_reduction = (mean_har - mean_dl) / mean_har * 100 if mean_har > 0 else 0.0
+        mean_reduction = _edge_pct(mean_har, mean_dl)
+        calibrated_edge_pct = _edge_pct(mean_calibrated_har, mean_dl)
+        debiased_edges = [
+            r.get("edge_debiased_pct", float("nan")) for r in seeds_rows
+        ]
+        mean_debiased_edge_pct = float(np.nanmean(debiased_edges))
 
         # pr-review §C conjunction: edge >= 2*std cross-seed AND dm_p_median < 0.05.
         # sigma alone measures inter-seed dispersion, not significance (#10228).
-        reduction_pcts = [r.get("mse_reduction_pct", float("nan")) for r in seeds_rows]
+        reduction_pcts = [
+            r.get("calibrated_edge_pct", float("nan")) for r in seeds_rows
+        ]
         edge_std_pct = float(np.nanstd(reduction_pcts)) if len(reduction_pcts) > 1 else 0.0
         dm_p_median = float(np.nanmedian(p_values))
 
@@ -361,7 +387,7 @@ def aggregate_verdicts(rows: list[dict]) -> list[dict]:
 
         if n_beaten > 0:
             agg_verdict = "NO BEATS"
-        elif n_beats == n_seeds and std_dl < abs(mean_har - mean_dl):
+        elif n_beats == n_seeds and std_dl < abs(mean_calibrated_har - mean_dl):
             agg_verdict = "BEATS"
         elif n_beats > 0:
             agg_verdict = "INCONCLUSIVE"
@@ -371,7 +397,7 @@ def aggregate_verdicts(rows: list[dict]) -> list[dict]:
         # §C conjunction verdict (kept alongside legacy "verdict" for diff stability).
         if n_beaten > 0:
             verdict_sc = "NO BEATS"
-        elif mean_reduction >= 2.0 * edge_std_pct and dm_p_median < 0.05:
+        elif calibrated_edge_pct >= 2.0 * edge_std_pct and dm_p_median < 0.05:
             verdict_sc = "BEATS"
         else:
             verdict_sc = "INCONCLUSIVE"
@@ -383,7 +409,10 @@ def aggregate_verdicts(rows: list[dict]) -> list[dict]:
             "mean_dlinear_mse": mean_dl,
             "std_dlinear_mse": std_dl,
             "mean_har_mse": mean_har,
+            "mean_calibrated_har_mse": mean_calibrated_har,
             "mean_reduction_pct": mean_reduction,
+            "mean_debiased_edge_pct": mean_debiased_edge_pct,
+            "calibrated_edge_pct": calibrated_edge_pct,
             "edge_std_pct": edge_std_pct,
             "dm_p_median": dm_p_median,
             "n_beats": n_beats,
@@ -409,6 +438,8 @@ def _eval_one_coin(
     decompose: bool = False,
     loss_fn: str = "mse",
     debias: bool = False,
+    checkpoint_path: Path | None = None,
+    skip_keys: set[tuple[str, int, int]] | None = None,
 ) -> list[dict]:
     rv = daily_realized_variance(hourly_rets)
     if len(rv) < 300:
@@ -426,21 +457,40 @@ def _eval_one_coin(
     for h in horizons:
         # Classic HAR baseline (deterministic, seed 0 reference)
         try:
-            har_out = walk_forward_har(rv, horizon=h, n_splits=n_splits, refit_every=refit_every)
+            har_out = walk_forward_har(
+                rv, horizon=h, n_splits=n_splits, refit_every=refit_every,
+            )
+            har_calibrated_out = walk_forward_har(
+                rv, horizon=h, n_splits=n_splits, refit_every=refit_every,
+                calibrate_bias=True,
+            )
             har_mse = har_out["aggregate_mse_logrv"]
+            har_calibrated_mse = har_calibrated_out["aggregate_mse_logrv"]
             har_forecasts = har_out["forecasts"]
             har_targets = har_out["targets"]
             har_errors = (har_forecasts - har_targets).dropna().values
+            har_calibrated_errors = (
+                har_calibrated_out["forecasts"] - har_calibrated_out["targets"]
+            ).dropna().values
             har_bias_oos = float(np.mean(har_errors)) if len(har_errors) else float("nan")
-            print(f"  h={h} HAR baseline MSE={har_mse:.5f} bias_OOS={har_bias_oos:+.5f} "
-                  f"({har_out['n_total_preds']} preds)")
+            har_debiased_mse = _mse_without_bias(har_errors)
+            print(
+                f"  h={h} HAR baseline MSE={har_mse:.5f} "
+                f"calibrated={har_calibrated_mse:.5f} debiased={har_debiased_mse:.5f} "
+                f"bias_OOS={har_bias_oos:+.5f} ({har_out['n_total_preds']} preds)"
+            )
         except Exception as exc:
             print(f"  h={h} HAR baseline FAILED: {exc}")
             har_mse = float("nan")
+            har_calibrated_mse = float("nan")
             har_errors = None
+            har_calibrated_errors = None
             continue
 
         for seed in seeds:
+            if skip_keys is not None and (coin, h, seed) in skip_keys:
+                print(f"  h={h} seed={seed} -- SKIP (checkpoint)", flush=True)
+                continue
             try:
                 dl_out = walk_forward_dlinear(
                     log_rv_arr, rv_idx,
@@ -461,47 +511,103 @@ def _eval_one_coin(
                 print(f"  h={h} seed={seed} DLinear FAILED: {exc}")
                 rows.append({
                     "coin": coin, "horizon": h, "seed": seed,
-                    "dlinear_mse_logrv": float("nan"), "har_mse_logrv": float(har_mse),
+                    "dlinear_mse_logrv": float("nan"),
+                    "har_mse_logrv": float(har_mse),
+                    "har_calibrated_mse_logrv": float(har_calibrated_mse),
                     "dm_verdict": "FAILED",
+                    "calibrated_dm_verdict": "FAILED",
                 })
                 continue
 
-            # DM test: DLinear vs HAR
+            # DM tests: raw HAR is retained for comparability; the calibrated
+            # baseline drives the verdict because it removes a train-estimated offset.
             dm_info = {}
-            if har_errors is not None and len(dl_errors) >= 10 and len(har_errors) >= 10:
-                min_len = min(len(dl_errors), len(har_errors))
+            if (
+                har_errors is not None
+                and har_calibrated_errors is not None
+                and len(dl_errors) >= 10
+                and len(har_errors) >= 10
+                and len(har_calibrated_errors) >= 10
+            ):
+                min_len = min(len(dl_errors), len(har_errors), len(har_calibrated_errors))
                 try:
-                    dm = dm_verdict(dl_errors[:min_len], har_errors[:min_len], horizon=h, loss_fn=loss_fn)
+                    dm = dm_verdict(
+                        dl_errors[:min_len], har_errors[:min_len],
+                        horizon=h, loss_fn=loss_fn,
+                    )
+                    calibrated_dm = dm_verdict(
+                        dl_errors[:min_len], har_calibrated_errors[:min_len],
+                        horizon=h, loss_fn=loss_fn,
+                    )
                     dm_info = {
                         "dm_stat": dm["dm_statistic"],
                         "dm_pvalue": dm["p_value"],
                         "dm_verdict": dm["verdict"],
                         "dm_mean_loss_diff": dm["mean_loss_diff"],
+                        "calibrated_dm_stat": calibrated_dm["dm_statistic"],
+                        "calibrated_dm_pvalue": calibrated_dm["p_value"],
+                        "calibrated_dm_verdict": calibrated_dm["verdict"],
+                        "calibrated_dm_mean_loss_diff": calibrated_dm["mean_loss_diff"],
                     }
-                    print(f"  h={h} seed={seed} DLinear MSE={dl_mse:.5f} "
-                          f"DM={dm['dm_statistic']:.3f} p={dm['p_value']:.4f} "
-                          f"-> {dm['verdict']}")
+                    print(
+                        f"  h={h} seed={seed} DLinear MSE={dl_mse:.5f} "
+                        f"edge_raw={_edge_pct(har_mse, dl_mse):+.2f}% "
+                        f"edge_calibrated={_edge_pct(har_calibrated_mse, dl_mse):+.2f}% "
+                        f"DM_cal={calibrated_dm['dm_statistic']:.3f} "
+                        f"p={calibrated_dm['p_value']:.4f} "
+                        f"-> {calibrated_dm['verdict']}"
+                    )
                 except Exception as exc:
                     print(f"  h={h} seed={seed} DM FAILED: {exc}")
-                    dm_info = {"dm_verdict": "DM_FAILED"}
+                    dm_info = {
+                        "dm_verdict": "DM_FAILED",
+                        "calibrated_dm_verdict": "DM_FAILED",
+                    }
             else:
-                dm_info = {"dm_verdict": "INSUFFICIENT_DATA"}
+                dm_info = {
+                    "dm_verdict": "INSUFFICIENT_DATA",
+                    "calibrated_dm_verdict": "INSUFFICIENT_DATA",
+                }
 
-            rows.append({
+            dl_debiased_mse = _mse_without_bias(dl_errors)
+            # Per-observation persistence (lesson #12684): the out-of-bias
+            # (recentred error) DM re-validation needs the forecast series,
+            # not only aggregates. DL and HAR series are persisted each on
+            # its own dates so the analysis can date-align them exactly.
+            row = {
                 "coin": coin,
                 "horizon": h,
                 "seed": seed,
                 "seq_len": seq_len,
                 "decompose": decompose,
                 "debias": debias,
+                "har_calibrate_bias": True,
                 "har_bias_oos": har_bias_oos,
+                "dlinear_bias_oos": (
+                    float(np.mean(dl_errors)) if len(dl_errors) else float("nan")
+                ),
                 "n_rv_days": int(len(rv)),
                 "n_predictions": int(dl_out["n_total_preds"]),
                 "dlinear_mse_logrv": float(dl_mse),
+                "dlinear_debiased_mse_logrv": dl_debiased_mse,
                 "har_mse_logrv": float(har_mse),
-                "mse_reduction_pct": float((har_mse - dl_mse) / har_mse * 100) if har_mse > 0 else float("nan"),
+                "har_debiased_mse_logrv": har_debiased_mse,
+                "har_calibrated_mse_logrv": float(har_calibrated_mse),
+                "mse_reduction_pct": _edge_pct(har_mse, dl_mse),
+                "edge_debiased_pct": _edge_pct(har_debiased_mse, dl_debiased_mse),
+                "calibrated_edge_pct": _edge_pct(har_calibrated_mse, dl_mse),
+                "dl_dates": [d.strftime("%Y-%m-%d") for d in dl_targets.index],
+                "dl_pred": [float(x) for x in dl_forecasts.values],
+                "dl_target": [float(x) for x in dl_targets.values],
+                "har_dates": [d.strftime("%Y-%m-%d") for d in har_targets.index],
+                "har_pred": [float(x) for x in har_forecasts.values],
+                "har_target": [float(x) for x in har_targets.values],
                 **dm_info,
-            })
+            }
+            rows.append(row)
+            if checkpoint_path is not None:
+                with open(checkpoint_path, "a") as f:
+                    f.write(json.dumps(row, default=str) + "\n")
 
     return rows
 
@@ -530,11 +636,32 @@ def main() -> None:
     args = parser.parse_args()
 
     t0 = time.time()
+
+    # Checkpoint/resume (per (coin, horizon, seed) combo): the keeper runs
+    # take ~40 min CPU with no resume -- a process death loses everything.
+    # Each completed combo (with its persisted forecast series) is appended
+    # to a JSONL beside the out-json and skipped on restart.
+    out_path = Path(args.out_json)
+    checkpoint_path = out_path.with_name(out_path.name + ".checkpoint.jsonl")
+    checkpoint_rows: list[dict] = []
+    skip_keys: set[tuple[str, int, int]] = set()
+    if checkpoint_path.exists():
+        with open(checkpoint_path) as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                row = json.loads(line)
+                checkpoint_rows.append(row)
+                skip_keys.add((row["coin"], row["horizon"], row["seed"]))
+        print(f"[CHECKPOINT] resumed {len(skip_keys)} combos from {checkpoint_path.name}",
+              flush=True)
+
     panel = _load_panel(args.skip_remote, extra_coins=args.extra_coins)
     if args.coins:
         panel = {c: rets for c, rets in panel.items() if c in args.coins}
 
-    all_rows: list[dict] = []
+    all_rows: list[dict] = list(checkpoint_rows)
     for coin, rets in panel.items():
         rows = _eval_one_coin(
             coin=coin,
@@ -548,6 +675,8 @@ def main() -> None:
             decompose=args.decompose,
             loss_fn=args.loss_fn,
             debias=args.debias,
+            checkpoint_path=checkpoint_path,
+            skip_keys=skip_keys,
         )
         all_rows.extend(rows)
 
@@ -564,7 +693,6 @@ def main() -> None:
     print(f"\nSummary: {n_beats} BEATS / {n_no} NO BEATS / {n_inc} INCONCLUSIVE "
           f"(out of {len(agg)} configs)")
 
-    out_path = Path(args.out_json)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps({
         "rows": all_rows,

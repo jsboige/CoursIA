@@ -18,15 +18,22 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from check_pr_perimeter import (  # noqa: E402
     BaselineMove,
     Candidate,
+    COUNT_CLAIM,
     check_assertion,
     extract_baseline_moves,
     extract_perimeter_assertions,
+    extract_perimeter_assertions_with_context,
     format_report,
     is_downgradable_mismatch,
     select_candidates,
+    _additive_line_sum,
     _check_unterminated_fence,
+    _count_is_exempt,
     _count_is_incidental,
     _fence_line_indices,
+    _is_incidental_assertion,
+    _normalize_rest_files,
+    _paragraph_prefix,
 )
 
 # The exact shape of the founding incident (#11227).
@@ -222,6 +229,44 @@ def test_only_standalone_still_flags():
         "only change is the workflow file")
     line = "Only scope change: the workflow file, nothing else."
     assert extract_perimeter_assertions(line) == [line]
+
+
+def test_extract_skips_negated_exclusivity_marker():
+    """A marker under negation asserts universality, not exclusivity.
+
+    Measured on #12547: the body line "Le gate attend tous les checks
+    non-advisory, pas seulement les requis" -- a claim about CI semantics
+    that WIDENS the set it describes -- was read as an exclusivity assertion
+    and fired criterion #11268-2 on two untouched-by-the-claim workflow
+    files, turning the required PR gate red on a correct body. Same failure
+    shape as the read-only compound above: the marker is present, its force
+    is not.
+    """
+    line = ("Le gate attend tous les checks non-advisory, pas seulement "
+            "les requis.")
+    assert extract_perimeter_assertions(line) == []
+    perim = __import__("check_pr_perimeter")
+    for negated in ("pas seulement les requis",
+                    "non seulement les requis mais tous les checks",
+                    "not only the required ones",
+                    "ce n'est pas uniquement une question de perimetre"):
+        assert not perim._has_exclusivity(negated), negated
+
+
+def test_bare_exclusivity_still_flags_after_negation_fix():
+    """Control positive: the negation skip must disarm nothing.
+
+    Every marker in its plain, unnegated form stays a live exclusivity
+    assertion. This is the fixture class whose absence let the negation
+    blindness ship in the first place.
+    """
+    perim = __import__("check_pr_perimeter")
+    for live in ("cette pr touche uniquement ces 2 fichiers",
+                 "seulement le workflow x est modifie",
+                 "aucune autre modification",
+                 "only the sweep is touched",
+                 "nothing else is modified"):
+        assert perim._has_exclusivity(live), live
 
 
 def test_extract_skips_markdown_table_rows():
@@ -631,14 +676,20 @@ import pathlib
 
 
 def _read_perimeter_workflow() -> str:
-    """Locate and read the perimeter-review-guard.yml from repo root.
+    """Locate and read the LIVE perimeter surface from repo root.
+
+    #13384 : le declencheur pull_request du perimeter review guard vit
+    desormais dans always-on-guards.yml (fusion des cinq gardes always-on) ;
+    perimeter-review-guard.yml est dormant (copie de reference). Le pin de
+    trigger cible donc l'umbrella -- c'est la que `edited` doit rester
+    declare pour qu'une correction de body re-evalue le gate.
 
     Resolves from this test file's location so the test is independent of cwd.
     """
     here = pathlib.Path(__file__).resolve()
     # scripts/tests/test_check_pr_perimeter.py → repo root = parents[2]
     repo_root = here.parents[2]
-    wf = repo_root / ".github" / "workflows" / "perimeter-review-guard.yml"
+    wf = repo_root / ".github" / "workflows" / "always-on-guards.yml"
     return wf.read_text(encoding="utf-8")
 
 
@@ -1834,44 +1885,53 @@ def test_perimeter_workflow_file_exists_on_main():
     """The cable's first leg: `.github/workflows/perimeter-review-guard.yml`
     MUST exist on the working tree. A future refactor that renames or
     archives it without updating the workflow list would otherwise leave
-    the gate referencing a phantom name (which pr-gate-rerun-drift-guard
-    catches, but only as a downstream symptom)."""
+    the gate referencing a phantom name, caught only as a downstream
+    symptom."""
     wf = _repo_root() / ".github" / "workflows" / "perimeter-review-guard.yml"
     assert wf.is_file(), f"missing cable leg 1: {wf}"
 
 
 def test_perimeter_workflow_invokes_scan_thread():
-    """The cable's second leg: the workflow MUST call
+    """The cable's second leg: the LIVE gate MUST call
     `scripts/check_pr_perimeter.py --scan-thread`. A copy-paste that drops
     the flag would leave the gate never confront any review (silent green).
+
+    #13384 : la surface live est le step perimeter d'always-on-guards.yml
+    (fusion des cinq gardes always-on) ; perimeter-review-guard.yml est
+    dormant mais reste verifie -- sa copie de reference ne doit pas
+    diverger de ce qu'elle documente.
     """
     import re
-    wf = _repo_root() / ".github" / "workflows" / "perimeter-review-guard.yml"
-    text = wf.read_text(encoding="utf-8")
-    # The flag may be on the same line or split across continuation lines.
-    # Loose match: the file mentions the script and the flag.
-    assert "check_pr_perimeter.py" in text, (
-        "perimeter-review-guard.yml no longer invokes check_pr_perimeter.py"
-    )
-    assert "--scan-thread" in text, (
-        "perimeter-review-guard.yml invocation lost the --scan-thread flag"
-    )
+    for wf_name in ("always-on-guards.yml", "perimeter-review-guard.yml"):
+        wf = _repo_root() / ".github" / "workflows" / wf_name
+        text = wf.read_text(encoding="utf-8")
+        # The flag may be on the same line or split across continuation lines.
+        # Loose match: the file mentions the script and the flag.
+        assert "check_pr_perimeter.py" in text, (
+            f"{wf_name} no longer invokes check_pr_perimeter.py"
+        )
+        assert "--scan-thread" in text, (
+            f"{wf_name} invocation lost the --scan-thread flag"
+        )
 
 
-def test_perimeter_workflow_listed_in_pr_gate_rerun():
-    """The cable's third leg: `perimeter-review-guard` MUST appear in the
-    `workflow_run.workflows:` list of pr-gate-rerun.yml. Without this entry
-    a timeout of perimeter-review-guard itself has NO event-driven rescue
-    path -- measured on #11776 / #11839 by the drift-guard organ.
+def test_perimeter_workflow_rescued_by_universal_sweep():
+    """The perimeter guard's rescue is now UNIVERSAL (#11860). The event-driven
+    per-guard path (pr-gate-rerun.yml `workflow_run` on a derived 76-workflow
+    list) is retired -- measured 2026-08-23 it created 404 of the 784
+    repository CI runs (51.5%) for 0 verdicts, a self-cancellation storm. The
+    schedule sweep (pr-gate-stale-sweep.yml) observes ALL open PRs and
+    re-aggregates any guard whose only red is a stale `PR gate`, so a timeout
+    of perimeter-review-guard itself ALWAYS has a rescue path, independent of
+    the trigger list. Assert the sweep exists and is schedule-driven (the one
+    re-aggregation observer that does not depend on being triggerable).
     """
-    rerun = _repo_root() / ".github" / "workflows" / "pr-gate-rerun.yml"
-    assert rerun.is_file(), f"missing pr-gate-rerun.yml at {rerun}"
-    text = rerun.read_text(encoding="utf-8")
-    # The list is one long literal in workflows:[...]; substring match
-    # suffices -- a precise YAML parse belongs to derive_pr_gate_rerun_workflows.py.
-    assert "perimeter-review-guard" in text, (
-        "perimeter-review-guard is no longer listed in pr-gate-rerun.yml "
-        "workflows:[] -- a perimeter timeout would have no rescue path"
+    sweep = _repo_root() / ".github" / "workflows" / "pr-gate-stale-sweep.yml"
+    assert sweep.is_file(), f"missing pr-gate-stale-sweep.yml at {sweep}"
+    text = sweep.read_text(encoding="utf-8")
+    assert "schedule" in text, (
+        "pr-gate-stale-sweep.yml is no longer schedule-driven -- the universal "
+        "rescue would lose its only trigger-independent path"
     )
 
 
@@ -1898,7 +1958,8 @@ def test_founding_incident_11227_criteria_met_on_main():
     ):
         pytest.skip("GitHub Actions runner without GH_TOKEN")
     auth_probe = subprocess.run(
-        ["gh", "auth", "status"], capture_output=True, text=True
+        ["gh", "auth", "status"], capture_output=True, text=True,
+        encoding="utf-8", errors="replace",
     )
     if auth_probe.returncode != 0:
         pytest.skip("gh CLI present but unauthenticated")
@@ -1913,6 +1974,7 @@ def test_founding_incident_11227_criteria_met_on_main():
         capture_output=True,
         text=True,
         timeout=120,
+        encoding="utf-8", errors="replace",
     )
     output = proc.stdout + proc.stderr
     # The tool surfaces the FAIL either in stdout (normal) or via a
@@ -1929,3 +1991,481 @@ def test_founding_incident_11227_criteria_met_on_main():
         f"end-to-end scan of #11227 produced no founder signature; "
         f"exit={proc.returncode}, output[:500]={output[:500]!r}"
     )
+
+
+# --- #12201 : citations, intervalles, bootstrap --------------------------------
+#
+# Fondateurs : le garde échouait sur le body de SA PROPRE PR de correctif
+# (#12201) — « l'assertion prétend 70, la liste en compte 2 » — parce que
+# check_assertion lisait le premier compte non nul SANS les masques de
+# citation : les lignes qui QUOTENT les formes réparées (contrôles FN,
+# « lake 70 fichiers », `Périmètre : 3 fichiers`) devenaient le claim.
+# Et #12273 : « 12 fichiers `70.png`-`81.png` » — une plage d'exports PNG
+# rendus, pas une énumération de périmètre. Trois masques, un axe : discours
+# RAPPORTÉ vs claim AUTORIAL (distinct des exemptions #11712/#11985, qui
+# restent confrontées — règle 1 de #11985 intouchée, test dédié ci-dessous).
+
+GUARD_FILES_2 = [
+    {"path": "scripts/check_pr_perimeter.py"},
+    {"path": "scripts/tests/test_check_pr_perimeter.py"},
+]
+
+
+def test_12201_l7_verbatim_cited_forms_are_not_the_claim():
+    """Lignes verbatim du body #12201 : la citation « `lake 70 fichiers` » et
+    les contrôles FN cités ne sont pas le claim — le vrai compte l'est."""
+    body = (
+        "Le garde lisait « `lake 70 fichiers` » dans #12181 comme une "
+        "assertion de périmètre.\n"
+        "- **7a** : `lake 70 fichiers`, `corpus 3 fichiers`. Contrôle FN : "
+        "« scan du corpus : 3 fichiers touchés ».\n"
+        "- **Détection inchangée** : `Périmètre : 3 fichiers` reste "
+        "confrontable.\n"
+        "Périmètre : 2 fichiers modifiés.\n"
+    )
+    assert check_assertion(GUARD_FILES_2, body) == []
+
+
+def test_12201_body_of_cited_counts_only_stays_unverifiable():
+    """Contrôle FN : un body fait UNIQUEMENT de comptes cités ne passe pas en
+    silence — il tombe sur le terminal 'non verifiable' (FAIL honnête), pas
+    sur un silence. (Fichiers NON-garde : le bootstrap ne s'applique pas.)"""
+    body = "Le fondateur disait « lake 70 fichiers » et `Périmètre : 3 fichiers`."
+    problems = check_assertion([{"path": "a.py"}, {"path": "b.py"}], body)
+    assert len(problems) == 1
+    assert problems[0].startswith("assertion sans compte")
+
+
+def test_12273_range_form_is_not_the_claim():
+    """Ligne fondatrice #12273 (verbatim de la section Méthode d'origine) :
+    le compte suivi d'un intervalle compact `70.png`-`81.png` désigne des
+    exports rendus ; le vrai périmètre déclaré plus bas l'emporte."""
+    body = (
+        "**Méthode** : `slidev export --per-slide --range 70-81` produit "
+        "12 fichiers `70.png`-`81.png`, un par slide de 70 à 81.\n"
+        "**Périmètre de la PR** : 1 fichier ajouté.\n"
+    )
+    files = [{"path": "slides/S3-acculturation/qa/axe1-generative-phase-verdict.md"}]
+    assert check_assertion(files, body) == []
+
+
+def test_12201_fn_real_enumeration_still_confronted():
+    """Contrôle FN : le format revue « N fichiers : a, b, c » (virgules, pas
+    d'intervalle) reste LE claim — un mauvais compte y échoue toujours."""
+    files = [{"path": "a.py"}, {"path": "b.py"}]
+    problems = check_assertion(files, "3 fichiers : `a.py`, `b.py`")
+    assert len(problems) == 1
+    assert problems[0].startswith("l'assertion pretend 3")
+
+
+def test_12201_fn_unmatched_delimiter_masks_nothing():
+    """Contrôle FN : un délimiteur non fermé ne masque rien — « 2 fichiers
+    sans guillemet fermant reste un claim confronté (échoue sur 3 files)."""
+    files = [{"path": "a.py"}, {"path": "b.py"}, {"path": "c.py"}]
+    problems = check_assertion(files, "Résumé : « 2 fichiers modifiés")
+    assert len(problems) == 1
+    assert problems[0].startswith("l'assertion pretend 2")
+
+
+def test_12201_guard_self_bootstrap_skips_count_confrontation():
+    """Bootstrap : le body d'une PR qui modifie le garde est un corpus
+    diagnostique — aucun compte n'y est confronté (le fondateur même :
+    des dizaines de comptes d'exemple, tous légitimes)."""
+    body = (
+        "Le garde lisait lake 70 fichiers et `Périmètre : 3 fichiers` reste "
+        "confrontable ; 12 fichiers `70.png`-`81.png` fondateur #12273."
+    )
+    assert check_assertion(GUARD_FILES_2, body) == []
+
+
+def test_12201_bootstrap_never_touches_exclusivity():
+    """Contrôle FN : le bootstrap n'excuse PAS l'exclusivité — une PR garde
+    qui touche un workflow doit toujours le nommer (#11268-2)."""
+    files = [
+        {"path": "scripts/check_pr_perimeter.py"},
+        {"path": ".github/workflows/perimeter-review-guard.yml"},
+    ]
+    body = "Uniquement le garde est touché, rien d'autre."
+    problems = check_assertion(files, body)
+    assert any("exclusivite sans nommer" in p for p in problems)
+
+
+def test_12201_cited_counts_never_join_additive_sum():
+    """La somme additive lit le body comme la sélection du claim : un terme
+    cité ne rejoint jamais la somme (1 + « 3 cités » = 1, pas 4)."""
+    line = "1 fichier modifié, « 3 fichiers cités » et `2 fichiers` en exemple."
+    assert _additive_line_sum(line) == 1
+
+
+# ---------------------------------------------------------------------------
+# #13335 — wrap-invariance de l'exemption par antécédent de mesure
+# ---------------------------------------------------------------------------
+
+# Paragraphes fondateurs : l'antécédent (« le scan rendait 54 ») est sur la
+# ligne AU-DESSUS de la ligne de compte. Avant #13335, la fenêtre de recherche
+# de MEASUREMENT_ANTECEDENT était limitée à `line[:m.end()]` → le verdict
+# dépendait de la position de la touche Entrée, pas du contenu.
+WRAPPED_13218 = (
+    "Un scan recursif rendait **54**\n"
+    "/ en accusant 5 fichiers d'`analysis/` que nul moteur de rendu ne consomme."
+)
+ONELINE_13218 = (
+    "Un scan recursif rendait **54** / en accusant 5 fichiers "
+    "d'`analysis/` que nul moteur de rendu ne consomme."
+)
+
+# Contrôles de l'issue : aucun antécédent de mesure nulle part → bloquants,
+# wrap ou non-wrap.
+CONTROL_C_WRAPPED = (
+    "Cette PR couvre un perimetre fige et exigeant\n"
+    "touchant 2 fichiers twins uniquement, aucune autre modification."
+)
+CONTROL_D_ONELINE = "Cette PR touche 3 fichiers."
+
+
+def _classify(body_text: str) -> list:
+    """Extrait les lignes candidates du body avec leur contexte paragraphe."""
+    pairs = extract_perimeter_assertions_with_context(body_text)
+    return [(line, _is_incidental_assertion(line, ctx)) for line, ctx in pairs]
+
+
+def test_13335_wrapped_and_unwrapped_same_verdict():
+    """Le même contenu wrappe et non-wrappe rend le même verdict (#13335)."""
+    wrapped_lines = _classify(WRAPPED_13218)
+    oneline_lines = _classify(ONELINE_13218)
+    assert wrapped_lines, "la ligne de compte wrapped doit être candidate"
+    assert len(wrapped_lines) == len(oneline_lines) == 1
+    # Wrap : l'antécédent vit sur la ligne précédente du même paragraphe.
+    assert wrapped_lines[0][1] is True, (
+        f"wrapped doit être incidental (antécédent sur la ligne au-dessus) : {wrapped_lines}"
+    )
+    # Non-wrap : antécédent et compte sur la même ligne — verdict identique.
+    assert oneline_lines[0][1] is True
+    # Les deux verdicts concordent : le placement du saut de ligne est neutre.
+    assert wrapped_lines[0][1] == oneline_lines[0][1]
+
+
+def test_13335_three_distinct_antecedents_wrap_invariant():
+    """Au moins 3 antécédents distincts de MEASUREMENT_ANTECEDENT (scan,
+    corpus, registre) : chacun rend wrap-invariance + incidental."""
+    cases = [
+        # (antecedent_line, count_line) — l'antécédent précède le compte,
+        # séparés par un simple retour à la ligne (soft-wrap).
+        (
+            "Un scan recursif rendait **54**",
+            "en accusant 5 fichiers d'`analysis/` que nul moteur ne consomme.",
+        ),
+        (
+            "Le corpus des notebooks pesait deja **107**",
+            "dont 12 fichiers d'exclusion automatique cites au passage.",
+        ),
+        (
+            "Le registre arxiv amont listait **8**",
+            "soit au total 6 fichiers entres manuellement ici.",
+        ),
+    ]
+    for ante_line, count_line in cases:
+        wrapped = f"{ante_line}\n{count_line}"
+        oneline = f"{ante_line} {count_line}"
+        w = _classify(wrapped)
+        o = _classify(oneline)
+        assert w and o, f"aucune candidate pour {ante_line!r}"
+        assert w[0][1] is True, f"wrapped doit être incidental pour {ante_line!r} : {w}"
+        assert o[0][1] is True, f"oneline doit être incidental pour {ante_line!r} : {o}"
+        assert w[0][1] == o[0][1]
+
+
+def test_13335_blank_line_cuts_the_window():
+    """Une ligne vide entre l'antécédent et le compte COUPE la fenêtre :
+    l'exemption est perdue (le compte ouvre un nouveau paragraphe)."""
+    body = (
+        "Un scan recursif rendait **54**\n"
+        "\n"
+        "en accusant 5 fichiers d'`analysis/` que nul moteur ne consomme."
+    )
+    verdicts = _classify(body)
+    assert verdicts, "la ligne de compte reste candidate (le compte est présent)"
+    line, incidental = verdicts[0]
+    assert incidental is False, (
+        f"la ligne vide doit couper la fenêtre → non-incidental : {verdicts}"
+    )
+    # Le préfixe paragraphe est vide : la fenêtre ne traverse pas la frontière.
+    lines = body.splitlines()
+    count_idx = 2
+    assert _paragraph_prefix(body, count_idx) == ""
+
+
+def test_13335_controls_C_and_D_stay_blocking():
+    """Contrôles C et D de l'issue : sans antécédent de mesure dans le
+    paragraphe (même multi-lignes), la ligne reste BLOQUANTE."""
+    for text in (CONTROL_C_WRAPPED, CONTROL_D_ONELINE):
+        verdicts = _classify(text)
+        assert verdicts, f"aucune candidate dans {text!r}"
+        line, incidental = verdicts[0]
+        assert incidental is False, (
+            f"contrôle sans antécédent doit rester bloquant : {text!r} → {verdicts}"
+        )
+
+
+def test_13335_fence_delimiter_cuts_the_window():
+    """Un délimiteur de fence (``` ou ~~~) ferme aussi la fenêtre : le
+    contenu d'un bloc de code n'est pas la prose qui annonce la mesure."""
+    body = (
+        "Un scan recursif rendait **54**\n"
+        "```\n"
+        "en accusant 5 fichiers d'`analysis/` que nul moteur ne consomme.\n"
+        "```"
+    )
+    # La ligne dans la fence n'est pas candidate du tout (skip de fence).
+    verdicts = _classify(body)
+    assert verdicts == []
+
+
+def test_13335_candidate_blocking_property_uses_context():
+    """End-to-end sur le paragraphe fondateur #13218 : via select_candidates,
+    la ligne de compte wrapped n'est plus bloquante (contexte paragraphe)."""
+    body = (
+        "Contexte amont de la review.\n"
+        "\n"
+        "Un scan recursif rendait **54**\n"
+        "/ en accusant 5 fichiers d'`analysis/` que nul moteur de rendu ne consomme.\n"
+        "\n"
+        "Rien d'autre a signaler."
+    )
+    items = [{"kind": "review", "author": "reviewer", "source": "body", "body": body}]
+    candidates, _orphan = select_candidates(items)
+    count_candidates = [c for c in candidates if "5 fichiers" in c.text]
+    assert count_candidates, f"la ligne de compte doit être candidate : {[c.text for c in candidates]}"
+    c = count_candidates[0]
+    assert c.context, "le contexte paragraphe doit être attaché au Candidate"
+    assert c.blocking is False, (
+        f"le compte wrapped avec antécédent amont ne doit plus être bloquant : {c.text!r}"
+    )
+
+
+def test_13335_public_extract_delegates_with_context():
+    """extract_perimeter_assertions (API publique) et la variante avec
+    contexte rendent les mêmes lignes dans le même ordre."""
+    body = WRAPPED_13218 + "\n\n" + CONTROL_D_ONELINE
+    plain = extract_perimeter_assertions(body)
+    with_ctx = extract_perimeter_assertions_with_context(body)
+    assert plain == [line for line, _ in with_ctx]
+
+
+
+def test_13246_paths_filter_excludes_pr_with_perimeter_assertion_off_workflow():
+    """Issue #13246 — preuve que le paths-filter historique de
+    `perimeter-review-guard.yml` (4 globs) ECLTAIT du déclenchement les PR
+    hors `.github/workflows/**` et `scripts/check_pr_perimeter.py`.
+
+    Mesure : sur 50 PRs merged recentes (cf. issue body, 2026-08-27), 21
+    (42 %) portent une assertion de perimetre AUTHORIALE (cf. extracteur
+    officiel + `_is_incidental_assertion`) sans toucher aucun chemin du
+    filtre. Le garde ne tournerait PAS sur ces PR.
+
+    Ce test verrouille la MEMOIRE du défaut avant le fix. Une fois le
+    paths: retire (#13246 verdict "a retirer"), ce test reste vert : il
+    documente la mesure, pas le paths-filter.
+
+    Le test MIRROIR du fix (cf. test_13246_metadata_dependent_guard_has_no_paths_filter
+    ci-dessous) verrouille que le paths-filter est bien retiré sur le workflow.
+    """
+    import fnmatch
+    from pathlib import Path
+
+    # Chemins observés dans 50 PRs merged recentes portant une vraie assertion
+    # de perimetre HORS `.github/workflows/**` et `scripts/check_pr_perimeter.py`.
+    # Échantillon représentatif : 4 PRs de la mesure (cf. issue #13246 body).
+    OFF_SCOPE_PATHS_OBSERVED = [
+        ["scripts/notebook_tools/foo.py", "MyIA.AI.Notebooks/Lean/Bar.lean", "docs/lean/LEAN_INVENTORY.md"],  # noqa: E501
+        ["MyIA.AI.Notebooks/Lean/mathlib_examples/README.md", "MyIA.AI.Notebooks/Lean/mathlib_examples/lean-toolchain"],  # noqa: E501
+        ["MyIA.AI.Notebooks/GameTheory/GameTheory-17c-Lean-Lemon-IC-Equilibrium.ipynb"],  # noqa: E501
+        ["MyIA.AI.Notebooks/Search/Search-17-Minima-Fallacieux-Burer.ipynb"],  # noqa: E501
+    ]
+
+    # paths-filter historique de `perimeter-review-guard.yml` (avant #13246).
+    HISTORICAL_PATHS = [
+        ".github/workflows/perimeter-review-guard.yml",
+        ".github/workflows/**",
+        "scripts/check_pr_perimeter.py",
+        "scripts/tests/test_check_pr_perimeter.py",
+    ]
+
+    # Chaque PR de l'echantillon NE MATCHE aucun des globs historiques :
+    # le paths-filter les ECLTAIT du declenchement du garde.
+    for files_paths in OFF_SCOPE_PATHS_OBSERVED:
+        matched = any(
+            any(fnmatch.fnmatch(f, p) for f in files_paths)
+            for p in HISTORICAL_PATHS
+        )
+        assert not matched, (
+            f"PR touchant {files_paths} MATCHERAIT un glob du paths-filter "
+            f"historique {HISTORICAL_PATHS} -- l'echantillon est mal choisi."
+        )
+
+    # Sanity check : la mesure reste vraie apres le fix. Le paths-filter futur
+    # est vide (`on:` sans `paths:`) ; tout chemin matche au sens large (le
+    # vide matche tout) -- c'est le but. Cette assertion sert de REGRESSIoN
+    # : si un futur editeur re-ajoute un `paths:`, ce test continuera de
+    # passer SEULEMENT parce que l'echantillon teste l'absence d'intersection.
+    # Le verrou mecanique est assure par le test suivant
+    # (test_13246_metadata_dependent_guard_has_no_paths_filter).
+    return
+
+
+def test_13246_metadata_dependent_guard_has_no_paths_filter():
+    """Verrou mecanique : apres le fix de #13246, le bloc `paths:` est absent
+    du declencheur `pull_request` de la surface LIVE du perimeter guard.
+
+    #13384 : la surface live est le declencheur `pull_request`/
+    `pull_request_review` d'always-on-guards.yml (fusion des cinq gardes
+    always-on ; perimeter-review-guard.yml est dormant). Le verrou suit la
+    surface qui s'execute : c'est le `paths:` de l'umbrella qui desarmerait
+    les SIX organes metadata qu'il porte.
+
+    Meme contrat que `test_13232_metadata_dependent_guard_has_no_paths_filter`
+    dans `test_variation_tag_required.py` (cf. #13234 tranche 1c), cible
+    sur le 3eme garde METADONNEE-dependant : perimeter-review-guard lit une
+    METADONNEE (assertion dans le body / une review) et la confronte au DIFF
+    (gh pr view --json files). La surface nominale est toute PR portant une
+    assertion -- paths-filter DESARME le garde (#13232).
+
+    Si un futur editeur re-ajoute un `paths:` pour « gagner du CI », ce test
+    rougit.
+    """
+    import re
+    from pathlib import Path
+
+    wf_path = (
+        Path(__file__).resolve().parent.parent.parent
+        / ".github" / "workflows" / "always-on-guards.yml"
+    )
+    text = wf_path.read_text(encoding="utf-8")
+
+    # Sanity check #1 : le fichier existe et contient le declencheur.
+    assert "pull_request:" in text, "Workflow doit declarer pull_request."
+
+    # Recherche : `paths:` a exactement 4 espaces en debut de ligne (= sous
+    # `pull_request:` ou `pull_request_review:`). Ancre la fin de ligne pour
+    # eviter les faux positifs (commentaires contenant le mot).
+    paths_blocks = re.findall(r"^    paths:\s*$", text, flags=re.MULTILINE)
+    assert len(paths_blocks) == 0, (
+        f"always-on-guards.yml porte {len(paths_blocks)} bloc(s) `paths:` "
+        "a 4 espaces (= sous `pull_request:` ou `pull_request_review:`). "
+        "C'est le defaut que #13246 tranche : le verdict du garde perimeter "
+        "depend d'une METADONNEE (assertion dans le body / une review), pas "
+        "du diff. Un paths-filter sur l'umbrella desarmerait en bloc les "
+        "organes metadata qu'elle porte (tag, light-cap, genre-signals, "
+        "lane-claim) : un workflow saute par `paths:` ne poste AUCUN "
+        "check-run. Cf #13232."
+    )
+
+def test_normalize_rest_files_maps_filename_to_path():
+    """#13357: fetch_report moved to the paginated REST endpoint (gh pr view
+    --json files caps at 100), whose items name the path `filename`. The
+    normalizer must produce the `path` shape every downstream reader
+    (format_report, check_assertion) expects."""
+    items = [
+        {"filename": "a.py", "additions": 3, "deletions": 1, "status": "modified"},
+        {"filename": "b.md", "additions": 0, "deletions": 0, "status": "added"},
+    ]
+    assert _normalize_rest_files(items) == [
+        {"path": "a.py", "additions": 3, "deletions": 1},
+        {"path": "b.md", "additions": 0, "deletions": 0},
+    ]
+    # (items or []) guards an empty/None payload the same way.
+    assert _normalize_rest_files(None) == []
+
+
+def test_normalize_rest_files_keeps_full_page_count_13357():
+    """The founding incident encoded: #13357 carries 148 real files; the old
+    `gh pr view --json files` read exactly 100 (single-page cap) and the
+    honest body count ("148 fichiers") failed against the truncation -- an
+    unwinnable guard. A full-length payload must survive the normalizer
+    without loss."""
+    payload = [
+        {"filename": f"file_{i:03d}.py", "additions": 1, "deletions": 0}
+        for i in range(148)
+    ]
+    out = _normalize_rest_files(payload)
+    assert len(out) == 148
+    assert out[0] == {"path": "file_000.py", "additions": 1, "deletions": 0}
+    assert out[-1]["path"] == "file_147.py"
+
+
+# ---------------------------------------------------------------------------
+# #13440 — comptes de résultat de vérification sans antécédent d'outil.
+# Une PR qui documente ses contrôles qualité sur un corpus plus large que son
+# diff (« 25 fichier(s) vérifiés sans BOM ») ne fait AUCUNE assertion de
+# périmètre : la confrontation d'égalité ne peut jamais VALIDER ces formes,
+# donc les bloquer ne protège rien (asymétrie fondatrice #11712/#11985).
+# FN délibéré : « restaurés » (#2876) et « re-exécutés » (tranches MGS) sont
+# des périmètres dans ce dépôt et restent hors liste.
+# ---------------------------------------------------------------------------
+VERIFICATION_COUNT_BODIES_13440 = [
+    "## Vérifications\n"
+    "- 25 fichier(s) vérifiés sans BOM\n"
+    "- 18 fichiers testés sans erreur",
+    "## Résultats\n"
+    "- Contrôle encodage : 25 fichier(s) conformes",
+    "- 40 fichiers scannés par le garde hygiène\n",
+]
+
+PERIMETER_COUNT_BODIES_13440 = [
+    # Campagne accents #2876 : forme identifiée comme périmètre.
+    "- 18 fichiers avec accents restaurés",
+    # Tranches MGS : les re-exécutions SONT le livrable.
+    "- 13 fichiers re-exécutés",
+    "- 13 fichiers re-exécutés avec Papermill",
+    # Verbe de modification : périmètre authentique (contrôle FN de l'issue).
+    "- 13 fichiers touchés uniquement, aucune autre modification.",
+]
+
+
+def test_13440_verification_counts_are_incidental():
+    """Les formes résiduelles mesurées de l'issue deviennent incidental."""
+    for body in VERIFICATION_COUNT_BODIES_13440:
+        pairs = extract_perimeter_assertions_with_context(body)
+        assert pairs, f"aucune ligne candidate pour {body!r}"
+        for line, ctx in pairs:
+            assert _is_incidental_assertion(line, ctx) is True, (
+                f"compte de vérification doit être incidental : {line!r}"
+            )
+
+
+def test_13440_fn_perimeter_forms_stay_blocking():
+    """restaurés / re-exécutés / touchés restent des assertions bloquantes."""
+    for body in PERIMETER_COUNT_BODIES_13440:
+        pairs = extract_perimeter_assertions_with_context(body)
+        assert pairs, f"aucune ligne candidate pour {body!r}"
+        for line, ctx in pairs:
+            assert _is_incidental_assertion(line, ctx) is False, (
+                f"forme périmètre ne doit pas être incidental : {line!r}"
+            )
+
+
+def test_13440_plural_paren_window_no_longer_blind():
+    """Le pluriel parenthétique « fichier(s) » ne doit plus aveugler la fenêtre
+    de qualificatif : CountClaim s'arrête à « fichier » (\b), le « (s) » doit
+    être sauté pour lire le mot qui suit."""
+    # Négated-diff après (s) : l'exemption préexistante doit fonctionner.
+    assert _count_is_incidental("- 25 fichier(s) inchanges apres rebase") is True
+    # Qualificatif incidental après (s) : la nouvelle classe s'applique.
+    assert _count_is_incidental("- 25 fichier(s) vérifiés sans BOM") is True
+    # Un (s) seul ne qualifie rien : la ligne sans qualificatif reste auteur.
+    assert _count_is_incidental("- 25 fichier(s)") is False
+
+
+def test_13440_founder_negated_diff_still_exempt():
+    """Contrôle non-régression : le fondateur #11775 (« 91 fichiers inchanges
+    sur 2 touches ») — la ligne porte « scope » (strong scope word) donc
+    n'est PAS incidental au niveau ligne ; sa protection réelle est
+    l'exemption PAR-COMPTE (negated-diff pour 91, locative pour 2), que la
+    normalisation (s) ne doit pas altérer."""
+    line = "- 91 fichiers inchanges sur 2 touches -- scope delta confirme"
+    matches = list(COUNT_CLAIM.finditer(line))
+    assert matches, "le fondateur doit porter des comptes"
+    for m in matches:
+        assert _count_is_exempt(line, m) is True, (
+            f"le compte fondateur doit rester exempt : {m.group(0)!r}"
+        )

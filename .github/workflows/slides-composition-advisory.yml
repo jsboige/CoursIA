@@ -32,16 +32,13 @@ name: Slides Composition Advisory
 # l'objet git 6cabc826b, hors d'un checkout shallow CI.
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened]
-    branches: [main]
-    paths:
-      - 'slides/**'
-      # self-cover : la PR qui câble ce workflow ne touche pas slides/, et un
-      # revert ultérieur ne doit pas laisser le gate muet (#8822)
-      - '.github/workflows/slides-composition-advisory.yml'
-  workflow_dispatch:
-
+  schedule:
+    # Nocturnal sweep -- post-merge main verification.
+    # Tranche 1 #12817 : sortir les advisory lourds de pull_request
+    # (clone 2.22 Go par run). Stratification user 2026-08-23 :
+    # "les jobs lourds devraient être payés une fois par fournée".
+    - cron: '21 03 * * *'
+  workflow_dispatch: {}
 permissions:
   contents: read
 
@@ -53,9 +50,6 @@ jobs:
   slides-composition-advisory:
     name: "Slidev composition advisory (#11923, non-blocking)"
     runs-on: ubuntu-latest
-    # Same-repo PRs only : les forks étudiants suivent la review bienveillante
-    # (student-pr-reviews.md), pas de content gate.
-    if: github.event.pull_request.head.repo.full_name == github.repository
 
     steps:
       - name: Checkout (blobless, sparse slides)
@@ -103,10 +97,33 @@ jobs:
 
       - name: Measure composition of impacted decks (advisory)
         env:
-          BASE: ${{ github.event.pull_request.base.sha }}
-          HEAD: ${{ github.event.pull_request.head.sha }}
+          # '' under schedule/dispatch (no PR context) -> nocturne window below.
+          BASE: ${{ github.event.pull_request.base.sha || '' }}
+          HEAD: ${{ github.event.pull_request.head.sha || '' }}
         run: |
           set -uo pipefail
+          # #12173 — neutralize errexit ajoutée par le shell wrapper GitHub
+          # (`bash --noprofile --norc -eo pipefail {0}`). Sans ce « set +e »,
+          # les commandes légitimement non-zéro (kill $PID 2>/dev/null,
+          # tail d'un log en cours d'écriture) ferment le script AVANT
+          # qu'on ait pu écrire l'annotation ::error qui le justifie. Le gate
+          # est alors rouge ET muet -- exactement le défaut que les trois
+          # annotations de #12151 viennent documenter. L'erreur n'est pas
+          # supprimée : on l'annote explicitement, on en fait META_FAIL.
+          set +e
+
+          # ---- Nocturne window (#12817 tranche 2) ----
+          # Under schedule/dispatch there is no PR: BASE is empty. Resolve the
+          # last 24 h of main so the sweep measures the decks impacted by the
+          # day's merged apport. Sans ce bloc, le diff ""..."" rendait CHANGED
+          # vide -> "Aucun deck impacté" vert chaque nuit (organe éteint).
+          if [ -z "${BASE:-}" ]; then
+            BASE=$(git rev-list -1 --before="24 hours ago" HEAD)
+            [ -n "$BASE" ] || BASE=$(git rev-list --max-parents=0 HEAD | tail -1)
+            HEAD=$(git rev-parse HEAD)
+            echo "Nocturne window: $(git rev-parse --short "$BASE")..$(git rev-parse --short "$HEAD") (24 h of main)"
+          fi
+
           echo "## Slides composition (advisory #11923)" >> "$GITHUB_STEP_SUMMARY"
           echo "Plancher mécanique — ne remplace pas le QA visuel humain." >> "$GITHUB_STEP_SUMMARY"
 
@@ -115,7 +132,13 @@ jobs:
           if grep -qE 'slides/(theme-ia101|package(-lock)?\.json)' <<< "$CHANGED"; then
             MAPS=$(find slides -name slides.md -not -path '*/node_modules/*' -not -path '*/archive/*')
           else
-            MAPS=$(grep -oE '^slides/[^/]+/slides\.md$' <<< "$CHANGED" || true)
+            # Découverte par DIR (intention du commentaire ci-dessus) : un diff qui
+            # touche slides/<dir>/ via son jumeau Marp (slides.marp.md), analysis/
+            # ou images/ impacte le deck Slidev du dir même si slides.md lui-même
+            # n'est pas dans le diff. L'ancien grep fichier-exact faisait sortir
+            # trap 1 (meta-failure) sur ces diffs dir-seulement.
+            DIRS=$(grep -oE '^slides/[^/]+/' <<< "$CHANGED" | sort -u || true)
+            MAPS=$(for d in $DIRS; do [ -f "${d}slides.md" ] && printf '%s\n' "${d}slides.md"; done)
           fi
 
           if [ -z "$MAPS" ]; then
@@ -139,28 +162,39 @@ jobs:
 
           META_FAIL=0
           PORT=8890
+          # #12173 — budget d'attente JUSTIFIÉ par une mesure, pas doublé au jugé.
+          # 30 itérations × 3s = 90s mesuré sur runner froid ubuntu-24.04 2026-08-21
+          # (run 32529093236 : premier 200 sur `slidev dev` à ~70-90s ; 30 laisse
+          # une marge honnête, ne confond pas un bundling lent avec un serveur mort).
+          WAIT_MAX_ITER=30
+          WAIT_PERIOD=3
+          TOTAL_WAIT_BUDGET_S=$((WAIT_MAX_ITER * WAIT_PERIOD))
+          echo "Budget d'attente par deck : ${TOTAL_WAIT_BUDGET_S}s (mesuré ~70-90s sur runner ubuntu-24.04)." >> "$GITHUB_STEP_SUMMARY"
           for MD in $MAPS; do
             DIR=$(dirname "$MD")
             PORT=$((PORT+1))
             echo "### $MD" >> "$GITHUB_STEP_SUMMARY"
             cp "$MD" "$DIR/dev.md"
             (cd "$DIR" && "$SLIDEV_BIN" dev.md --port "$PORT" --open false \
-               > /tmp/slidev_$PORT.log 2>&1 &)
-            for i in $(seq 1 40); do
+               > /tmp/slidev_$PORT.log 2>&1) &
+            SLIDEV_PID=$!
+            DECK_START_S=$(date +%s)
+            for i in $(seq 1 "$WAIT_MAX_ITER"); do
               curl -sf "http://localhost:$PORT/" > /dev/null && break
-              sleep 3
+              sleep "$WAIT_PERIOD"
             done
+            DECK_WAIT_S=$(($(date +%s) - DECK_START_S))
             if ! curl -sf "http://localhost:$PORT/" > /dev/null; then
               # Un deck DECOUVERT mais NON MESURE est une meta-defaillance au meme
               # titre que « zero deck decouvert » (#8807 trap 1) : dans les deux cas
               # le gate est vert et muet, indiscernable d'un deck sain. Il rougit
               # donc, et imprime sa cause au lieu de la laisser dans /tmp.
-              echo "::error title=Composition gate meta-failure::$MD decouvert mais serveur slidev jamais pret -- deck NON MESURE (le vert de ce job ne dirait rien de sa composition)"
-              echo "Serveur jamais pret -- deck NON MESURE (meta-defaillance)." >> "$GITHUB_STEP_SUMMARY"
+              echo "::error title=Composition gate meta-failure::$MD decouvert mais serveur slidev jamais pret en ${DECK_WAIT_S}s / budget ${TOTAL_WAIT_BUDGET_S}s -- deck NON MESURE"
+              echo "Serveur jamais pret en ${DECK_WAIT_S}s / budget ${TOTAL_WAIT_BUDGET_S}s -- deck NON MESURE (meta-defaillance)." >> "$GITHUB_STEP_SUMMARY"
               echo "--- tail /tmp/slidev_$PORT.log ---"
               tail -40 "/tmp/slidev_$PORT.log" 2>/dev/null || echo "(aucun log serveur)"
               META_FAIL=1
-              rm -f "$DIR/dev.md"; kill %1 2>/dev/null || true; continue
+              rm -f "$DIR/dev.md"; kill "$SLIDEV_PID" 2>/dev/null || true; continue
             fi
             python scripts/notebook_tools/scan_slidev_composition.py \
               --url "http://localhost:$PORT/" \
@@ -190,7 +224,7 @@ jobs:
               print(f"- stale: {len(d['stale_warnings'])} avertissement(s) de mesure")
           PYEOF
             rm -f "$DIR/dev.md"
-            kill %1 2>/dev/null || true
+            kill "$SLIDEV_PID" 2>/dev/null || true
           done
           # Les CONSTATS restent advisory (exit 0) : c'est la doctrine de ce gate.
           # Seule la META-defaillance rougit -- un gate qui n'a PAS mesure doit se

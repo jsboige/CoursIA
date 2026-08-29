@@ -450,7 +450,7 @@ Exploration non informée
 
 > **Notebooks associés :**
 > - `Search/Exploration_non_informee_et_informee_intro.ipynb`
-> - `Sudoku/Sudoku-1-Backtracking.ipynb`
+> - `Sudoku/Sudoku-01-Backtracking.ipynb`
 
 **Outils :**
 - Services Web PKP: Search
@@ -760,7 +760,7 @@ Exploration informée et locale
 > **Notebooks associés :**
 > - `Search/Exploration_non_informee_et_informee_intro.ipynb`
 > - `Search/Portfolio_Optimization_GeneticSharp.ipynb`
-> - `Sudoku/Sudoku-2-Genetic.ipynb`
+> - `Sudoku/Sudoku-02-Genetic.ipynb`
 
 **Outils :**
 - Services Web PKP: Search
@@ -1482,12 +1482,12 @@ Problèmes à satisfaction de contraintes
 
 > **Notebooks associés :**
 > - `Search/CSPs_Intro.ipynb`
-> - `Sudoku/Sudoku-1-Backtracking.ipynb`
-> - `Sudoku/Sudoku-2-Genetic.ipynb`
-> - `Sudoku/Sudoku-3-ORTools.ipynb`
-> - `Sudoku/Sudoku-4-Z3.ipynb`
-> - `Sudoku/Sudoku-5-DancingLinks.ipynb`
-> - `Sudoku/Sudoku-6-Infer.ipynb`
+> - `Sudoku/Sudoku-01-Backtracking.ipynb`
+> - `Sudoku/Sudoku-02-Genetic.ipynb`
+> - `Sudoku/Sudoku-03-ORTools.ipynb`
+> - `Sudoku/Sudoku-04-Z3.ipynb`
+> - `Sudoku/Sudoku-05-DancingLinks.ipynb`
+> - `Sudoku/Sudoku-06-Infer.ipynb`
 
 **Outils :**
 - PKP service web CSPs
@@ -1529,18 +1529,18 @@ Problèmes à satisfaction de contraintes
 
 > **Algorithmes génétiques :**
 > - `Search/Portfolio_Optimization_GeneticSharp.ipynb`
-> - `Sudoku/Sudoku-2-Genetic.ipynb`
+> - `Sudoku/Sudoku-02-Genetic.ipynb`
 
 > **CSPs :**
 > - `Search/CSPs_Intro.ipynb`
-> - `Sudoku/Sudoku-3-ORTools.ipynb`
-> - `Sudoku/Sudoku-4-Z3.ipynb`
+> - `Sudoku/Sudoku-03-ORTools.ipynb`
+> - `Sudoku/Sudoku-04-Z3.ipynb`
 
 > **Jeux combinatoires :**
-> - `GameTheory/GameTheory-8-CombinatorialGames.ipynb`
+> - `GameTheory/GameTheory-08-CombinatorialGames.ipynb`
 
 > **Sudoku (fil rouge) :**
-> - `Sudoku/Sudoku-1-Backtracking.ipynb` à `Sudoku-6-Infer.ipynb`
+> - `Sudoku/Sudoku-01-Backtracking.ipynb` à `Sudoku-06-Infer.ipynb`
 
 ---
 

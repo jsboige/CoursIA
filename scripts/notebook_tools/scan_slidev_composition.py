@@ -383,16 +383,48 @@ def content_overflow(r: dict) -> bool:
 
 
 def occupation_flagged(r: dict, canvas_h: int) -> bool:
-    """Bande latérale vide > 25 % PENDANT saturation verticale (débordement ou bord frôlé)."""
+    """Composition déséquilibrée (image plaquée sur un bord / bande vide).
+
+    Quatre formes calibrées par leurs faux négatifs (#13223) — un seuil qui
+    n'attrape pas la slide à `gap_left_pct: 71.4` n'est pas un seuil, c'est un
+    chemin de flagging mort. Un constat suffit, parmi :
+
+      F1 — bande unilatérale marquée (gap >= 55 %) : slide 7 @ 166195bfc
+            (gap_left_pct=71.4, gap_right_pct=2.0).
+      F2 — bande modérée + décentrage (gap >= 40 % ET |offset| >= 25 %).
+      F3 — image unique très décentrée (n_images==1 ET |offset| >= 30 %).
+      F4 — régression préservée : gap >= 25 % + saturation verticale
+            (débordement contenu ou content_bottom > 0.95*canvas_h). Couvre
+            les compositions qui coupent réellement.
+
+    Le seuil 55 % est volontairement plus strict que 40 % : il évite de
+    ratisser les compositions « image centrée-légèrement décalée » qui ne
+    sont pas un défaut de mise en page, tout en attrapant le cas fondateur.
+    """
     occ = r.get("occupation")
     if not occ:
         return False
-    side_empty = occ.get("gap_right_pct", 0) > 25 or occ.get("gap_left_pct", 0) > 25
-    if not side_empty:
-        return False
-    bottom = occ.get("content_bottom", 0)
-    overflow = content_overflow(r)
-    return overflow or bottom > canvas_h * 0.95
+    gap_left = occ.get("gap_left_pct", 0)
+    gap_right = occ.get("gap_right_pct", 0)
+    offset = abs(occ.get("center_offset_pct", 0))
+    n_images = occ.get("n_images", 0)
+    # F1 — bande unilatérale marquée
+    if gap_left >= 55 or gap_right >= 55:
+        return True
+    # F2 — bande modérée + décentrage cumulé
+    if (gap_left >= 40 or gap_right >= 40) and offset >= 25:
+        return True
+    # F3 — image unique très décentrée (pas de dispersion pour s'auto-corriger)
+    if n_images == 1 and offset >= 30:
+        return True
+    # F4 — ancienne forme préservée (gap >= 25 + saturation verticale)
+    side_empty = gap_left > 25 or gap_right > 25
+    if side_empty:
+        overflow = content_overflow(r)
+        bottom = occ.get("content_bottom", 0)
+        if overflow or bottom > canvas_h * 0.95:
+            return True
+    return False
 
 
 def github_annotations(report: dict, slides_md: Path) -> list[str]:
@@ -542,6 +574,13 @@ def main():
         "n_occupation_flagged": n_occ,
         "controle_positif_ok": ctrl_positif_ok,
         "controle_positif_msg": ctrl_positif_msg,
+        "controle_positif_armed": args.baseline_slide is not None,
+        "controle_positif_warning": (
+            None if args.baseline_slide is not None
+            else "scan sans contrôle positif armé : 'rien à signaler' est "
+                 "indistinguable d'un chemin de flagging mort — passer "
+                 "--baseline-slide <N> pour distinguer"
+        ),
         "stale_warnings": stale_streaks,
         "borne": BORNE,
         "results": results,

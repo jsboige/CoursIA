@@ -680,8 +680,10 @@ def test_aggregate_signals_real_but_candidate_innocent_10341():
     # ...but the OPEN candidate is CONTENT and does not carry the motif.
     assert sig["candidate_is_light_genre"] is False
     # The workflow's suppression gate keys off this flag (see the
-    # MAY_LABEL_INNOCENT branch in variation-light-genre.yml, #10341): the
-    # aggregate LABEL is NOT posed on this PR even though the signal is True.
+    # MAY_LABEL_INNOCENT branch in the GENRE-signals organe -- porte depuis
+    # #13384 dans always-on-guards.yml depuis variation-light-genre.yml,
+    # #10341): the aggregate LABEL is NOT posed on this PR even though the
+    # signal is True.
 
 
 def test_candidate_light_genre_true_for_guilty_meta_candidate():
@@ -1465,6 +1467,7 @@ def test_check_pr_emits_picker_command_when_vein_tripped():
                 Path(__file__).resolve().parents[1]
             ),
             timeout=15,
+            encoding="utf-8", errors="replace",
         )
     finally:
         os.unlink(merged_path)
@@ -1531,6 +1534,7 @@ def test_check_pr_picker_command_absent_when_no_vein():
                 Path(__file__).resolve().parents[1]
             ),
             timeout=15,
+            encoding="utf-8", errors="replace",
         )
     finally:
         os.unlink(merged_path)
@@ -1583,6 +1587,7 @@ def test_genre_signals_emits_picker_command_when_vein_tripped():
                 Path(__file__).resolve().parents[1]
             ),
             timeout=15,
+            encoding="utf-8", errors="replace",
         )
     finally:
         os.unlink(merged_path)
@@ -1629,6 +1634,7 @@ def test_genre_signals_picker_command_absent_when_clean():
                 Path(__file__).resolve().parents[1]
             ),
             timeout=15,
+            encoding="utf-8", errors="replace",
         )
     finally:
         os.unlink(merged_path)

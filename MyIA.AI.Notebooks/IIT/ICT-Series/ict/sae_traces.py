@@ -30,6 +30,7 @@ le GPU est confine au script d'extraction).
 from __future__ import annotations
 
 import json
+import warnings
 from pathlib import Path
 
 import numpy as np
@@ -79,6 +80,16 @@ def load_traces(path: str | Path) -> dict:
         missing = {"ids", "vals"} - set(entry)
         if missing:
             raise ValueError(f"trace {set_name}__{idx} incomplete : manque {missing}")
+        n_bad = int((~np.isfinite(entry["vals"])).sum())
+        if n_bad:
+            # Defaut BOS-inf du run 8B (#12388) : une trace portant des vals
+            # non-finies contamine les panneaux differentiels. Le producteur
+            # (extract_sae_traces.py corrige) exclut ces positions a la
+            # capture — une trace qui en porte est ANTERIEURE au correctif.
+            raise ValueError(
+                f"trace {set_name}__{idx} : {n_bad} vals non-finies — trace "
+                f"pre-correctif (#12388), regenerer via extract_sae_traces.py "
+                f"a jour (il exclut les positions non-finies a la capture)")
     return {"meta": meta, "prompts": prompts}
 
 
@@ -123,11 +134,29 @@ def differential_features(traces: dict, k: int = 64) -> np.ndarray:
     C'est la selection ``acts_topk`` du schema amende de #5101 : les features
     qui *discriminent les regimes* (code vs prose vs dialogue...), pas les plus
     actives en absolu (qui seraient dominees par la ponctuation/le formatage).
+
+    Les colonnes a score non fini (une seule activation ``inf``/``NaN`` en
+    amont suffit) sont **exclues** du classement et signalees par
+    ``RuntimeWarning`` : sans ce garde, ``var`` rend ``inf``/``NaN`` pour ces
+    colonnes et ``argsort()[::-1]`` les promeut **en tete** du top-k au lieu
+    de les ecarter — une donnee polluee devient une corruption de classement
+    invisible (#12560 : facteur 3,3 sur ``overlap_diff64`` des traces 8B).
+    S'il reste moins de ``k`` colonnes finies, la sortie est tronquee d'autant.
     """
     means = mean_activation_by_set(traces)
     stack = np.stack(list(means.values()))               # [n_sets, d_sae]
     score = stack.var(axis=0)
-    return np.argsort(score)[::-1][:k].astype(np.int64)
+    finite = np.isfinite(score)
+    if not finite.all():
+        warnings.warn(
+            f"differential_features : {int(np.count_nonzero(~finite))} colonne(s) "
+            "a score non fini (activation inf/NaN en amont) exclue(s) du "
+            "classement — la trace est polluee, corriger la cause avant "
+            "d'interpreter le top-k.",
+            RuntimeWarning, stacklevel=2)
+    finite_idx = np.flatnonzero(finite)
+    order = finite_idx[np.argsort(score[finite_idx])[::-1][:k]]
+    return order.astype(np.int64)
 
 
 def acts_topk_panels(traces: dict, feature_ids: np.ndarray) -> dict[tuple[str, int], np.ndarray]:
@@ -264,6 +293,39 @@ def assert_bf16_readout(quantization_config: object | None,
             "melangerait l'effet du post-training et l'erreur d'arrondi NF4. "
             "Recharger base+adapters fusionnes en bf16, ou passer "
             "--allow-quantized-readout pour une exploration assumee.")
+
+
+def w_dec_needs_transpose(w_dec_shape: tuple[int, int], d_model: int) -> bool:
+    """Decide si un ``W_dec`` de checkpoint doit etre transpose vers [d_sae, d_model].
+
+    Layout heterogene des releases Qwen-Scope (mesure firsthand #12940) : les
+    checkpoints W32K (1.7B et 2B) stockent ``W_dec`` en **[d_model, d_sae]**
+    (p.ex. (2048, 32768)), alors que l'indexation par feature — le hook de
+    clamp Gate 24 comme la reconstruction — exige ``W_dec[feature_ids] =
+    directions [C, d_model]``, donc un stockage **[d_sae, d_model]**. Sans
+    normalisation, un clamp_id > d_model leve un IndexError immediat, et tout
+    clamp_id < d_model soustrait des **dimensions du residual stream** au lieu
+    des directions decodees des features visees — faux en silence.
+
+    Le layout du 9B/W64K n'est pas sondable localement (checkpoint absent du
+    cache) : cette garde rend la question muette pour la correction — les deux
+    layouts sont acceptes — mais le boolean retourne reste journalise par le
+    producteur pour la confirmation pre-Gate-24.
+
+    Le cas carre (d_model == d_sae) est refuse : la forme seule ne permet plus
+    de lever l'ambiguite, transposer « au cas ou » reviendrait a parier.
+    (Aucune release visee n'est carree : 2048 vs 32768/65536.)
+    """
+    rows, cols = int(w_dec_shape[0]), int(w_dec_shape[1])
+    if rows == d_model and cols != d_model:
+        return True
+    if cols == d_model and rows != d_model:
+        return False
+    raise ValueError(
+        f"layout W_dec ambigue {w_dec_shape} pour d_model={d_model} : ni "
+        f"[d_model, d_sae] ni [d_sae, d_model] ne se deduit de la forme seule "
+        "(cas carre). Verifier le layout de la release a la main avant le "
+        "Gate 24.")
 
 
 # --------------------------------------------------------------------------- #

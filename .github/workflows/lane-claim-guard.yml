@@ -29,10 +29,15 @@ name: Lane Claim Guard
 # le reseau), YAML reduit a la plomberie, suffixe `-required` sur le nom du job
 # pour que `is_advisory()` de scripts/pr_gate.py ne le neutralise pas.
 
+# DORMANT depuis #13384 : les DEUX jobs (required + advisory) sont absorbes
+# (run blocks portes verbatim) par always-on-guards.yml -- un seul workflow,
+# un seul checkout, un seul slot de runner par PR (37 % de la file CI etait
+# les cinq gardes always-on pour ~3 min de travail reel, mesure #13384). Les
+# jobs restent ICI en copie de reference pour la tracabilite. NE PAS
+# reinscrire pull_request ici sans retirer les organes lane-claim
+# d'always-on-guards.
+
 on:
-  pull_request:
-    types: [opened, edited, synchronize, reopened]
-    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -59,6 +64,7 @@ jobs:
             scripts/ci/lane_claim_required.py
             scripts/check_lane_claim.py
             scripts/grain_tag.py
+            scripts/tests/test_check_lane_claim.py
       - name: 'Resolve closing-ref vs other lanes active claims (block on collision)'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -160,6 +166,24 @@ jobs:
 
           exit 1
 
+      # #13336 : controle positif LIVE du contrat de schema gh. Le guard ci-dessus
+      # depend de `gh pr view --json state,mergedAt` ; quand gh retire/deplace un
+      # champ, TOUT lookup echoue et le gate degenerate silencieusement (v2 -> v1,
+      # chaque [DELIVERED] relache son claim -- duplication mesuree sur #13216).
+      # Un self-test qui ne tourne jamais ne protege rien (#13331) : ce job a
+      # GH_TOKEN et tourne sur chaque PR, le controle vit donc ICI, pas dans
+      # scripts-tests.yml (push main, sans token). Le test ne tourne QUE ce
+      # controle (skipped hors CI sans LANE_CLAIM_LIVE, le reste de la suite
+      # reste hermetique).
+      - name: 'Live gh schema self-test (pr-state contract, #13336)'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          LANE_CLAIM_LIVE: '1'
+        run: |
+          python3 -m pip install --quiet pytest
+          python3 -m pytest scripts/tests/test_check_lane_claim.py \
+            -k test_13336_live_control_real_pr -q
+
   # Advisory (#10223 Tache 4) : pose deux labels pour mesurer l'adoption du
   # protocole de claim SANS jamais bloquer. Nom portant "advisory" ->
   # is_advisory() = True (pr_gate.py ne compte pas ce job dans le gate
@@ -215,6 +239,38 @@ jobs:
           python3 scripts/ci/lane_claim_required.py \
             --body-file /tmp/pr_body.txt "${PR_CREFS_ARG[@]}" \
             > /tmp/verdict.json 2>/tmp/verdict.err || true
+
+          # #13129 -- surface dead-scope globs as GitHub annotations so the
+          # author sees them at the call site (the stderr WARN goes to the
+          # job log; `::warning::` lands on the PR Files tab). The advisory
+          # job runs `check_lane_claim.py` on the PR body with the PR's
+          # declared Grain: lane as `my_lane`, captures `caller_empty_scope`
+          # (mirror of the SCOPE_DEAD_GLOB stderr WARN) and emits one
+          # annotation per dead glob. Non-blocking on purpose: this is a
+          # usability hint, not a gate -- a missing path can be a typo
+          # (motif A/C of #13129) or a legitimate future file (#12740).
+          # `|| true` keeps the job vert when the verdict is unparseable
+          # (legacy/fork paths); the advisory label below is still applied.
+          # #13129 -- surface dead-scope globs as GitHub annotations. The
+          # author sees the suggestion at the call site (the stderr WARN
+          # goes to the job log; `::warning::` lands on the PR Files tab).
+          # The annotation format `::warning file=...,title=...::msg` shows
+          # in the PR Checks panel -- the lane sees it where they can
+          # still correct the typo before pushing again. Delegated to
+          # `emit_dead_scope_warnings.py` because the loop spans a line
+          # and the GitHub Actions bash shell does not accept a multi-line
+          # `python3 -c "..."` literal in a YAML scalar. The helper reads
+          # the body file, calls `check_lane_claim.py`, and prints one
+          # annotation per dead glob -- non-blocking, fail-CLOSED via
+          # `|| true` so an unparseable verdict does not red the job.
+          PYTHONPATH=scripts python3 scripts/ci/emit_dead_scope_warnings.py \
+            --body-file /tmp/pr_body.txt \
+            > /tmp/lc_annotations.txt 2>/dev/null || true
+          if [ -s /tmp/lc_annotations.txt ]; then
+            while IFS= read -r line; do
+              [ -n "$line" ] && echo "$line"
+            done < /tmp/lc_annotations.txt
+          fi
 
           # Creation idempotente du seul label survivant. `lane-claim-conflict`
           # a ete RETIRE en #10395 Variante 3 (2026-08-11) : trois mesures

@@ -84,7 +84,7 @@ def convert_windows_path(path):
         # Standard Windows path with proper separators (C:\... or C:/...)
         # Use wslpath for proper conversion
         try:
-            result = subprocess.run(['wslpath', '-a', path], capture_output=True, text=True, timeout=5)
+            result = subprocess.run(['wslpath', '-a', path], capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=5)
             if result.returncode == 0:
                 return result.stdout.strip()
         except:

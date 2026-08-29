@@ -1,0 +1,82 @@
+name: PR gate sweep health advisory
+
+# Form 1 of #11860 / #12588 -- the "last successful sweep run older than 1h"
+# alert. Complement to the dashboard line (form 2, written by ai-01 each
+# /coordinate cycle), which is the floor. See #12588 for the full framing:
+# #12547 removed the event-driven `workflow_run` path of pr-gate-rerun.yml, so
+# pr-gate-stale-sweep.yml is now the ONLY mechanism that re-aggregates a stale
+# `PR gate` verdict. If that sweep's scheduler stops -- saturated runners,
+# accidental disable, plan expiry on a repo inert 60 days -- no rescue remains
+# and nothing says so. This observer exists to say so.
+#
+# Why a DEDICATED schedule and not a job inside pr-gate-stale-sweep.yml: an
+# observer sitting inside the workflow it watches dies with it. The whole
+# point is to detect "the sweep's cron stopped", so this workflow keeps its
+# own cron, offset from the sweep's 7,27,47 so the two never collide. The
+# offset does NOT remove form 1's known limit -- both still share
+# runner-saturation -- which is exactly why #12588 insists form 2 (dashboard,
+# immune to runner failure) is the floor and form 1 is the complement.
+#
+# The workflow name carries "advisory" (ADVISORY_MARKER in scripts/pr_gate.py):
+# the PR gate then treats a red version of this check as non-blocking, so it
+# can rougir to surface the alarm without appearing to block a merge.
+
+on:
+  schedule:
+    # Every 30 minutes on off-:00 minutes, offset from the sweep's 7,27,47.
+    - cron: '13,43 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read       # gh run list --workflow (Actions API)
+
+concurrency:
+  group: pr-gate-sweep-health-advisory
+  cancel-in-progress: false
+
+jobs:
+  health:
+    name: PR gate sweep health advisory
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check age of last successful sweep run
+        env:
+          GH_TOKEN: ${{ github.token }}
+          STALE_AFTER_MINUTES: "60"
+        run: |
+          set -uo pipefail
+
+          # Most recent *successful* run of the sweep, with its creation time.
+          # Filtering to conclusion=success keeps a transient failure from
+          # tripping the alarm as long as a success happened inside the window.
+          RUN=$(gh run list --workflow pr-gate-stale-sweep.yml --status success --limit 1 \
+                --json createdAt,conclusion 2>/dev/null) \
+            || { echo "[sweep-health] gh run list failed (upstream) -- skip this check"; exit 0; }
+
+          # No successful run at all -> that absence IS the state this exists
+          # to catch (history purged or scheduler dead). Fail visibly but, being
+          # advisory, non-blocking.
+          AGE_S=$(python - "$RUN" <<'PY'
+          import json, sys
+          from datetime import datetime, timezone
+          runs = json.loads(sys.argv[1])
+          if not runs:
+              print("NO_SUCCESS_IN_HISTORY", file=sys.stderr)
+              sys.exit(1)
+          created = (runs[0].get("createdAt") or "").replace("Z", "+00:00")
+          if not created:
+              print("NO_CREATED_AT", file=sys.stderr)
+              sys.exit(1)
+          age_s = (datetime.now(timezone.utc) - datetime.fromisoformat(created)).total_seconds()
+          print(int(age_s))
+          PY
+          ) || { echo "::error::[sweep-health] no successful pr-gate-stale-sweep run found -- is its schedule alive? (#11860 / #12588)"; exit 1; }
+
+          if [ "$AGE_S" -gt "$((STALE_AFTER_MINUTES * 60))" ]; then
+            echo "::error::[sweep-health] last successful pr-gate-stale-sweep run is ${AGE_S}s old (> ${STALE_AFTER_MINUTES} min). The PR gate now has NO rescue -- the dashboard line (form 2) is the floor. See #12588."
+            exit 1
+          fi
+
+          echo "[sweep-health] last successful sweep run: ${AGE_S}s ago -- OK"

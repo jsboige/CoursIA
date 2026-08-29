@@ -110,7 +110,7 @@ class GenAIOrchestrator:
                 'docker', 'start', container_name
             ]
             
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+            result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=30)
             
             if result.returncode == 0:
                 logger.info(f"Service {service_id} démarré avec succès")
@@ -138,7 +138,7 @@ class GenAIOrchestrator:
                 'docker', 'stop', container_name
             ]
             
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+            result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=30)
             
             if result.returncode == 0:
                 logger.info(f"Service {service_id} arrêté avec succès")

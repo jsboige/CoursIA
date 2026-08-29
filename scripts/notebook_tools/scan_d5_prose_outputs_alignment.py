@@ -378,6 +378,14 @@ class NotebookAlignment:
 # --------------------------------------------------------------------------- #
 
 
+_HTML_TAG_RE = re.compile(r"<[^>]+>")
+
+
+def _strip_html_tags(html: str) -> str:
+    """Retire les balises d'un fragment HTML, remplacees par des espaces."""
+    return _HTML_TAG_RE.sub(" ", html)
+
+
 def _parse_fr_number(text: str) -> float | None:
     """Parse un token numerique au format FR ou EN vers float.
 
@@ -498,6 +506,20 @@ def _extract_output_numbers(output: dict) -> list[float]:
             for item in tp:
                 if isinstance(item, str):
                     nums.extend(_extract_prose_numbers(item))
+        # 2bis. data['text/html'] (liste ou string) : canal des sorties riches
+        # .NET Interactive (tables rendues, valeurs formatees culture FR).
+        # Moitie text/html du finding instrument 2026-08-19 (#9790) -- sans ce
+        # canal, la comparaison prose<->outputs des familles .NET est vide par
+        # construction. Les balises sont retirees AVANT extraction : les
+        # nombres d'une table HTML rendue sont des valeurs mesurees reelles
+        # (contrairement aux rangees de table markdown cote prose).
+        th = data.get("text/html")
+        if isinstance(th, str):
+            nums.extend(_extract_prose_numbers(_strip_html_tags(th)))
+        elif isinstance(th, list):
+            for item in th:
+                if isinstance(item, str):
+                    nums.extend(_extract_prose_numbers(_strip_html_tags(item)))
     # 3. data['text/latex'] ou similaire -- on laisse pour l'instant.
     return nums
 
@@ -634,7 +656,7 @@ def _is_notebook_cross_reference(value: float, text: str) -> bool:
 
     Entiers ET decimaux : certaines series nomment leurs notebooks par un INDICE
     DECIMAL (ML/DataScience : 2.8, 1.3), d'autres par un INDICE ENTIER (GameTheory,
-    SymbolicAI : « [GameTheory-7](GameTheory-7-ExtensiveForm.ipynb) »,
+    SymbolicAI : « [GameTheory-7](GameTheory-07-ExtensiveForm.ipynb) »,
     « [<< 12-Reputation](12-ReputationGames.ipynb) »). L'exclusion prematuree des
     entiers (historique : « un indice est toujours decimal ») a ete refutee par le
     forensic po-2023 c.188 sur SymbolicAI (375/2458 = 15%) et GameTheory (34%) --
@@ -699,7 +721,7 @@ def _is_code_defined_value(value, prose_text) -> bool:
     Deux heuristiques anterieures ont ete mesurees firsthand et REJETEES comme
     sur-filtrantes (consignees ici pour prevenir les retentes) :
       - cross-cell « var = value dans une cellule code voisine » : un ``value = 1``
-        de code generic collide avec un « 1 » de table (Sudoku-2 c[8]) ;
+        de code generic collide avec un « 1 » de table (Sudoku-02 c[8]) ;
       - intra-prose « identifiant = valeur » hors backtick : filtre les METRIQUES
         restituees en gras (MAE/RMSE dans ML-4 c[36]) -> supprime un vrai drift.
 
@@ -897,7 +919,7 @@ def _detect_prose_enumeration(text: str) -> list[float] | None:
     # par des virgules/conjonctions, jamais un intervalle entier. On retire ces
     # ranges avant extraction, sinon « 81 valeurs (1-9) » etait lu comme une
     # enumeration de 2 niveaux (1 et 9) puis comparee aux outputs globaux ->
-    # FP systematique (confirme firsthand Sudoku-5-PSO cell[9], GameTheory).
+    # FP systematique (confirme firsthand Sudoku-05-PSO cell[9], GameTheory).
     sentence = re.sub(r"\b\d{1,4}\s*[-–—]\s*\d{1,4}\b", " ", sentence)
     nums = _extract_prose_numbers(sentence)
     return nums if len(nums) >= 2 else None

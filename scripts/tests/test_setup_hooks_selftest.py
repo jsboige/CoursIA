@@ -76,6 +76,7 @@ def _fake_run_factory(simulated_gitleaks):
         # git add / git reset: run for real so staging reflects reality.
         proc = subprocess.run(
             cmd, cwd=str(cwd), capture_output=True, text=True, shell=False,
+            encoding="utf-8", errors="replace",
         )
         return proc.returncode, (proc.stdout + proc.stderr).strip()
 
@@ -88,6 +89,7 @@ def _probe_clean(repo):
     status = subprocess.run(
         ["git", "status", "--short"], cwd=str(repo),
         capture_output=True, text=True,
+        encoding="utf-8", errors="replace",
     ).stdout
     in_index = PROBE_NAME in status
     return not on_disk and not in_index

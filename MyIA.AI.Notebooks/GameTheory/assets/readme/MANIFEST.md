@@ -8,7 +8,7 @@ Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'o
 
 ## gt1-setup.png
 
-- **Source** : notebook `GameTheory-1-Setup.ipynb` (cellule 54, output 0, `display_data` `image/png`)
+- **Source** : notebook `GameTheory-01-Setup.ipynb` (cellule 54, output 0, `display_data` `image/png`)
 - **SHA** : `053db4958a99bfc463d585116dd3fc932b5409859b2e27ac27109085a4414d55` (taille 23 099 octets)
 - **Description visuelle** : Figure matplotlib single panel 497×557 px (std 51.6/65.9/72.1 RGB, std le plus élevé B = signature du dégradé rouge-orange sur Nash) « Dilemme du Prisonnier ». Matrice de gains 2×2 (Coopérer/Défaire × Coopérer/Défaire) avec gains (3,3)/(0,5)/(5,0)/(1,1) affichés au centre de chaque cellule. Axes « Joueur Ligne » (y) et « Joueur Colonne » (x) avec labels discrets. **Cadre bleu épais** autour de la cellule (Défaire, Défaire) = équilibre de Nash (1,1). Fond de cellule (1,1) en **dégradé rouge-orange** (vs fond blanc/crème des autres cellules — signature std B=72.1 la plus haute). Légende italique sous la figure : « Cadre bleu = Equilibre de Nash ».
 - **Alt-text (FR)** : Matrice de gains 2×2 du Dilemme du Prisonnier ; la case (Défaire, Défaire) = (1, 1) est encadrée en bleu comme unique équilibre de Nash.
@@ -19,7 +19,7 @@ Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'o
 
 ## gt2-normalform.png
 
-- **Source** : notebook `GameTheory-2-NormalForm.ipynb` (cellule 26, output 0, `display_data` `image/png`)
+- **Source** : notebook `GameTheory-02-NormalForm.ipynb` (cellule 26, output 0, `display_data` `image/png`)
 - **SHA** : `2e892356539af305e017e7ab3110f2c75edbffbccce64cf126da77ad0f06a4b6` (taille 24 124 octets)
 - **Description visuelle** : Figure matplotlib single panel 602×590 px (std 56.7/50.3/56.8 RGB) « Dilemme du Prisonnier (Souligné bleu=BR Ligne, rouge=BR Col, Vert=Nash) ». Matrice de gains 2×2 (Coopérer/Défaire × Coopérer/Défaire) avec gains (3,3)/(0,5)/(5,0)/(1,1). Axes « Joueur Ligne » (y) et « Joueur Colonne » (x). Best Response annotées par soulignements sous les gains : trait **bleu** sous (5,0) = BR Ligne à Coopérer Col ; trait **rouge** sous (0,5) = BR Col à Coopérer Ligne ; traits **bleu+rouge** sous (1,1) à l'intersection. **Cellule (Défaire, Défaire) colorée en vert** (équilibre de Nash — contraste avec gt1 où le Nash est rouge-orange : gt2 utilise vert pour signifier la convergence BR). Légende colorée coin bas-gauche (Bleu/Rouge/Vert/Nash).
 - **Alt-text (FR)** : Le même jeu résolu par la méthode des meilleures réponses : soulignements bleus (joueur Ligne), rouges (joueur Colonne), case verte à leur intersection.

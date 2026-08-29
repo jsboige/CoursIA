@@ -26,8 +26,14 @@ Trois filtres anti-faux-positifs :
    mergee en --merge preserve-SHA, ou contenu porte directement).
 2. **Jambe en vol** : une PR OUVERTE de la base vers ``main`` existe -> le
    contenu va arriver, ce n'est pas un orphelin (verdict stable, pas de course).
-3. **Contenu re-atterri** : les fichiers de la PR sont deja presents a
-   l'identique sur ``main`` (cherry-pick / re-PR) -> pas un orphelin.
+3. **Existence par chemin** (#12723, refonte) : un chemin LIVRE par la PR qui
+   EXISTE sur main est livre, quel que soit son contenu actuel — l'ancienne
+   comparaison d'identite du lot entier labellisait a tort les contenus
+   re-atterris puis evolues (FP reels #11931/#11638). Un chemin absent dont le
+   basename vit ailleurs sur main est un RENOMMAGE, pas une perte. Les fichiers
+   REMOVED par la PR ne sont pas exige sur main. Le label retire aussi bien
+   qu'il se pose : une PR labellisee redevue propre (re-atterri, renomme, en
+   vol) est de-labellisee avec note de resolution.
 
 Un finding est donc : *PR MERGED, base != main, mergeCommit non-ancetre de
 main, aucune PR ouverte de la base vers main, et le contenu manque encore a
@@ -57,6 +63,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import subprocess
 import sys
 from datetime import datetime, timezone
@@ -105,6 +112,8 @@ def commit_exists(repo: Path, commit: str) -> bool:
         ["git", "-C", str(repo), "cat-file", "-e", f"{commit}^{{commit}}"],
         capture_output=True,
         text=True,
+        encoding="utf-8",
+        errors="replace",
     )
     return proc.returncode == 0
 
@@ -115,6 +124,8 @@ def is_ancestor(repo: Path, commit: str, base_ref: str) -> bool:
         ["git", "-C", str(repo), "merge-base", "--is-ancestor", commit, base_ref],
         capture_output=True,
         text=True,
+        encoding="utf-8",
+        errors="replace",
     )
     if proc.returncode == 0:
         return True
@@ -123,27 +134,90 @@ def is_ancestor(repo: Path, commit: str, base_ref: str) -> bool:
     raise GitError(f"git merge-base --is-ancestor -> {proc.returncode}: {proc.stderr.strip()}")
 
 
-def content_missing_from_base(
-    repo: Path, base_ref: str, merge_commit: str, paths: list[str]
-) -> bool:
-    """Vrai si les chemins donnes different encore entre base et mergeCommit.
+# Statuts REST d'un fichier de PR qui livrent du contenu sur la branche cible.
+# "removed" retire du contenu : son absence de main est la livraison elle-meme,
+# jamais une perte (#12723).
+DELIVERED_FILE_STATUSES = ("added", "modified", "changed", "renamed", "copied",
+                           "unchanged", "")
 
-    Diff deux-points volontairement : on compare les arbres tels qu'ils sont
-    aujourd'hui. Un diff trois-points reintroduirait le contenu de la jambe
-    deja squashe et rendrait tout orphelin suspect.
+
+def normalize_pr_files(pr_files: list | None) -> list[dict]:
+    """Normalise les fichiers d'une PR en entrees {path, status}.
+
+    Accepte les entrees REST ({filename, status, previous_filename} -- la seule
+    source du statut, champ ``filename`` et non ``path``), les entrees GraphQL
+    de ``gh --json files`` ({path, additions, deletions} -- sans statut,
+    assimilees a "modified") et les chaines nues des fixtures.
     """
-    if not paths:
-        return False
-    proc = subprocess.run(
-        ["git", "-C", str(repo), "diff", "--quiet", base_ref, merge_commit, "--", *paths],
-        capture_output=True,
-        text=True,
-    )
-    if proc.returncode == 0:
-        return False  # identique -> le contenu est deja dans la base
-    if proc.returncode == 1:
-        return True  # differe -> contenu absent de la base
-    raise GitError(f"git diff --quiet -> {proc.returncode}: {proc.stderr.strip()}")
+    out: list[dict] = []
+    for f in pr_files or []:
+        if isinstance(f, str):
+            out.append({"path": f, "status": "modified"})
+        elif isinstance(f, dict):
+            # REST rend `filename` (pulls/{n}/files), GraphQL rend `path` --
+            # ne lire que `path` fait disparaitre TOUS les fichiers REST et
+            # rendrait n'importe quelle PR "clean" (faux negatif massif,
+            # attrape en live-run : #12423 rendu propre alors que MGS-26 est
+            # absent de main).
+            path = f.get("path") or f.get("filename")
+            if path:
+                out.append({"path": path,
+                            "status": (f.get("status") or "modified").lower()})
+    return out
+
+
+def base_tree_index(repo: Path, base_ref: str) -> tuple[set[str], dict[str, list[str]]]:
+    """(paths, basename->paths) de l'arbre de base, sans toucher aux blobs.
+
+    ``git ls-tree -r --name-only`` ne lit que les objets tree : compatible
+    checkout blobless du workflow (aucun fetch a la demande).
+    """
+    paths: set[str] = set()
+    by_basename: dict[str, list[str]] = {}
+    for line in run_git(repo, "ls-tree", "-r", "--name-only", base_ref).splitlines():
+        p = line.strip()
+        if p:
+            paths.add(p)
+            by_basename.setdefault(p.rsplit("/", 1)[-1], []).append(p)
+    return paths, by_basename
+
+
+def classify_delivered_paths(
+    repo: Path, base_ref: str, pr_files: list | None,
+    base_tree: tuple[set[str], dict[str, list[str]]] | None = None,
+) -> dict:
+    """Filtre 3 refondu (#12723) : EXISTENCE par chemin, pas identite du lot.
+
+    L'ancien filtre comparait l'identite de TOUS les fichiers de la PR contre
+    main : un contenu re-atterri puis evolue par des commits ulterieurs (le cas
+    reel #11931/#11638) passait pour orphelin -- 2 faux positifs labellises en
+    prod. #12723 : « comparer les chemins, pas les SHA ». Un chemin livre qui
+    EXISTE sur main (quel que soit son contenu actuel) est livre ; seul un
+    chemin absent de l'arbre est perdu. Un chemin absent mais dont le basename
+    vit ailleurs sur main est un RENOMMAGE, pas une perte (sur-accuser desarme
+    le garde apres deux faux positifs).
+
+    Rend {"lost": [paths], "renamed": {path: [hits]}, "present": int}.
+    """
+    if base_tree is None:
+        base_tree = base_tree_index(repo, base_ref)
+    tree_paths, by_basename = base_tree
+    lost: list[str] = []
+    renamed: dict[str, list[str]] = {}
+    present = 0
+    for f in normalize_pr_files(pr_files):
+        if f["status"] not in DELIVERED_FILE_STATUSES:
+            continue  # removed : absence = livraison
+        p = f["path"]
+        if p in tree_paths:
+            present += 1
+        else:
+            hits = by_basename.get(p.rsplit("/", 1)[-1], [])
+            if hits:
+                renamed[p] = hits
+            else:
+                lost.append(p)
+    return {"lost": lost, "renamed": renamed, "present": present}
 
 
 def open_prs_to_main(repo: str, base: str) -> int:
@@ -161,16 +235,34 @@ def open_prs_to_main(repo: str, base: str) -> int:
     return len(data)
 
 
+def gh_rest_files(repo_slug: str, number: int) -> list[dict]:
+    """Fichiers REST d'une PR : [{path, status, previous_filename?}].
+
+    Seule source du statut par fichier (added/modified/removed/renamed) —
+    ``gh --json files`` (GraphQL) ne l'expose pas. Sans statut, un fichier
+    removed par la PR serait exige present sur main.
+    """
+    return _gh_json([
+        "api", f"repos/{repo_slug}/pulls/{number}/files?per_page=100",
+    ]) or []
+
+
 def analyse_pr(repo: Path, pr: dict, base_ref: str, repo_slug: str,
-               adjudications: dict | None = None) -> dict:
+               adjudications: dict | None = None,
+               base_tree: tuple[set[str], dict[str, list[str]]] | None = None,
+               files_fetch=None) -> dict:
     """Analyse une PR mergee. Rend un dict de resultat avec `status` explicite.
 
     Statuts :
-      ``orphan``      — mergeCommit non-ancetre de main, jambe morte, contenu absent (finding)
+      ``orphan``      — mergeCommit non-ancetre de main, jambe morte, chemins livres absents de main (finding)
       ``adjudge``     — orphelin adjuge « ne pas recuperer » (#11159, motif ecrit dans le registre)
-      ``clean``       — ancetre de main, ou contenu deja present (re-atterri)
+      ``clean``       — ancetre de main, ou chemins livres presents sur main (re-atterris, meme evolues)
+      ``renamed``     — chemins absents mais renommes ailleurs sur main : pas une perte (#12723)
       ``in_flight``   — jambe encore ouverte vers main (stack legitime en vol)
       ``skipped``     — base == main, ou mergeCommit manquant / introuvable
+
+    ``files_fetch`` (live) fournit les fichiers REST statut-par-statut ;
+    absent (fixtures ``--from-json``), on lit ``pr["rest_files"]``/``pr["files"]``.
     """
     number = pr.get("number")
     base = (pr.get("baseRefName") or "").strip()
@@ -181,7 +273,7 @@ def analyse_pr(repo: Path, pr: dict, base_ref: str, repo_slug: str,
     title = pr.get("title", "")
 
     result = {"number": number, "head": head, "base": base, "merged_at": merged_at,
-              "title": title}
+              "title": title, "issue_refs": parse_issue_refs(pr.get("body", ""))}
 
     if not base or base == "main":
         return {**result, "status": "skipped", "reason": "base is main"}
@@ -201,12 +293,19 @@ def analyse_pr(repo: Path, pr: dict, base_ref: str, repo_slug: str,
             return {**result, "status": "in_flight", "open_prs_to_main": inflight,
                     "reason": f"base '{base}' still has {inflight} open PR(s) towards main"}
 
-    # Filtre 3 : le contenu a-t-il re-atterri par une autre route (cherry-pick) ?
-    paths = [f.get("path") for f in (pr.get("files") or []) if f.get("path")]
-    missing = content_missing_from_base(repo, base_ref, merge_commit, paths)
-    if not missing:
+    # Filtre 3 (#12723) : EXISTENCE par chemin des fichiers LIVRES.
+    pr_files = pr.get("rest_files") or pr.get("files")
+    if files_fetch is not None and not pr.get("rest_files"):
+        pr_files = files_fetch(repo_slug, number)
+    cls = classify_delivered_paths(repo, base_ref, pr_files, base_tree)
+    if not cls["lost"]:
+        if cls["renamed"]:
+            return {**result, "status": "renamed", "merge_commit": merge_commit,
+                    "renamed": cls["renamed"], "paths": sorted(cls["renamed"]),
+                    "reason": "absent de main mais renomme ailleurs (pas une perte)"}
         return {**result, "status": "clean", "merge_commit": merge_commit,
-                "paths": paths, "reason": "content already present in base (re-landed)"}
+                "paths": [f["path"] for f in normalize_pr_files(pr_files)],
+                "reason": "chemins livres presents sur main (re-atterris)"}
 
     # Adjudication (#11159) : la cle est le mergeCommit (immuable), jamais le
     # numero de PR ni la branche (reutilisables). Statut distinct, compte, et
@@ -214,12 +313,12 @@ def analyse_pr(repo: Path, pr: dict, base_ref: str, repo_slug: str,
     if adjudications and merge_commit in adjudications:
         adj = adjudications[merge_commit]
         return {**result, "status": "adjudge", "merge_commit": merge_commit,
-                "paths": paths, "motif": adj["motif"],
+                "paths": cls["lost"], "motif": adj["motif"],
                 "adjudicated_by": adj["adjudicated_by"],
                 "adjudicated_at": adj["date"]}
 
     return {**result, "status": "orphan", "merge_commit": merge_commit,
-            "paths": paths,
+            "paths": cls["lost"], "renamed": cls["renamed"],
             "recovery": f"git merge origin/{head}"}
 
 
@@ -234,7 +333,7 @@ def load_prs(args: argparse.Namespace) -> list[dict]:
 
     cmd = [
         "gh", "pr", "list", "--state", "merged", "--limit", str(args.limit),
-        "--json", "number,title,baseRefName,headRefName,mergedAt,mergeCommit,files",
+        "--json", "number,title,baseRefName,headRefName,mergedAt,mergeCommit,files,body",
     ]
     if args.repo:
         cmd += ["--repo", args.repo]
@@ -292,6 +391,51 @@ def load_adjudications(path: Path | None) -> dict[str, dict]:
     return registry
 
 
+_ISSUE_REF_RE = re.compile(
+    r"(?i)\b(closes?|fixes?|resolves?|see|refs?)\s+(?:\[)?#(\d+)")
+_CLOSE_VERBS = ("close", "closes", "fix", "fixes", "resolve", "resolves")
+
+
+def parse_issue_refs(body: str | None) -> dict:
+    """Refs d'issues du body : {"closes": [n], "see": [n]} (#12723).
+
+    Le signal d'orphelin doit atteindre l'issue d'ORIGINE (Closes/Fixes) —
+    c'est elle qu'une lane consulte pour conclure « livre ». Les refs See/Refs
+    (epics) servent de repli quand la PR n'enferme aucune issue.
+    """
+    closes: list[int] = []
+    see: list[int] = []
+    for m in _ISSUE_REF_RE.finditer(body or ""):
+        n = int(m.group(2))
+        if m.group(1).lower() in _CLOSE_VERBS:
+            if n not in closes:
+                closes.append(n)
+        elif n not in see:
+            see.append(n)
+    return {"closes": closes, "see": see}
+
+
+def issue_signal_targets(refs: dict) -> list[int]:
+    """Issues a notifier : les Closes/Fixes d'abord, See en repli."""
+    return refs["closes"] or refs["see"]
+
+
+def head_branch_alive(repo_slug: str, head: str) -> bool | None:
+    """La branche source vit-elle encore au remote (reparation possible) ?
+
+    None = indetermine (head vide) ; ni le checkout ni les blobs ne sont
+    requis : ls-remote interroge le remote seul.
+    """
+    if not head:
+        return None
+    proc = subprocess.run(
+        ["git", "ls-remote", "--heads",
+         f"https://github.com/{repo_slug}.git", head],
+        capture_output=True, text=True, check=False, encoding="utf-8",
+    )
+    return bool(proc.stdout.strip())
+
+
 def format_report(results: list[dict]) -> str:
     """Rapport texte : les findings d'abord, puis un recapitulatif compte."""
     orphans = [r for r in results if r["status"] == "orphan"]
@@ -314,11 +458,12 @@ def format_report(results: list[dict]) -> str:
         lines.append("")
 
     lines.append(
-        "Analysees: {total} | orphelins: {o} | adjuges: {a} | en vol: {f} | propres: {c} | ignorees: {s}".format(
+        "Analysees: {total} | orphelins: {o} | adjuges: {a} | en vol: {f} | renommees: {r} | propres: {c} | ignorees: {s}".format(
             total=len(results),
             o=len(orphans),
             a=len(adjudges),
             f=len(inflight),
+            r=sum(1 for r in results if r["status"] == "renamed"),
             c=sum(1 for r in results if r["status"] == "clean"),
             s=sum(1 for r in results if r["status"] == "skipped"),
         )
@@ -349,20 +494,34 @@ def ensure_label(repo: str) -> None:
 
 
 def existing_comment(repo: str, number: int) -> int | None:
-    comments = _gh_json(["pr", "view", str(number), "--repo", repo,
-                         "--json", "comments"]) or {}
-    for c in (comments.get("comments") or []):
+    """Id NUMERIQUE REST du commentaire marker-guarde, ou None.
+
+    #12723 (diag) : lister via ``gh pr view --json comments`` rend des ids
+    GraphQL (IC_...) inutilisables dans l'URL REST du PATCH -> 404 silencieux.
+    C'est exactement le bug qui a gelee le registre orphan-branch-scan 9 jours
+    (rapports « updated » imprimes sans jamais atterrir). On liste donc en
+    REST, dont les ids sont numeriques.
+    """
+    comments = _gh_json([
+        "api", f"repos/{repo}/issues/{number}/comments?per_page=100",
+    ]) or []
+    for c in comments:
         if MARKER_START in (c.get("body") or ""):
             return c["id"]
     return None
 
 
-def update_comment(repo: str, comment_id: int, body: str) -> None:
-    subprocess.run(
+def update_comment(repo: str, comment_id: int, body: str) -> bool:
+    proc = subprocess.run(
         ["gh", "api", f"repos/{repo}/issues/comments/{comment_id}",
          "-X", "PATCH", "-f", f"body={body}"],
         capture_output=True, text=True, check=False, encoding="utf-8",
     )
+    if proc.returncode != 0:
+        print(f"[orphan-apply] WARN comment PATCH {comment_id} -> "
+              f"{proc.returncode}: {proc.stderr.strip()[:120]}")
+        return False
+    return True
 
 
 def post_comment(repo: str, number: int, body: str) -> None:
@@ -373,21 +532,127 @@ def post_comment(repo: str, number: int, body: str) -> None:
 
 
 def build_comment(r: dict) -> str:
+    lines = [
+        MARKER_START,
+        "## Contenu orphelin — chemins livres jamais arrives sur `main` (#10981, #12723)",
+        "",
+        f"Cette PR a ete mergee dans `{r['base']}` (base != `main`) et son "
+        f"`mergeCommit` **{r['merge_commit'][:12]}** n'est pas ancetre de "
+        f"`main`. Chemins livres **absents de `main`** :",
+        "",
+    ]
+    for p in r.get("paths", [])[:5]:
+        lines.append(f"- `{p}`")
+    if len(r.get("paths", [])) > 5:
+        lines.append(f"- ... et {len(r['paths']) - 5} autre(s)")
+    if r.get("renamed"):
+        lines += ["", "Chemins absents mais **renommes** sur main (pas une perte) :"]
+        for p, hits in list(r["renamed"].items())[:3]:
+            lines.append(f"- `{p}` -> {', '.join('`' + h + '`' for h in hits[:2])}")
+    alive = r.get("head_alive")
+    head = r.get("head", "")
+    if alive is True:
+        lines += ["", f"Branche source `{head}` : **vivante au remote** — la reparation "
+                  f"peut partir de la (`{r.get('recovery', '')}` puis PR vers `main`)."]
+    elif alive is False:
+        lines += ["", f"Branche source `{head}` : absente du remote — le contenu doit "
+                  f"etre retrouve depuis le mergeCommit {r['merge_commit'][:12]}."]
+    targets = issue_signal_targets(r.get("issue_refs") or {})
+    if targets:
+        lines += ["", f"Signal depose sur : {', '.join('#' + str(t) for t in targets)}"]
+    lines.append(MARKER_END)
+    return "\n".join(lines)
+
+
+def build_issue_comment(r: dict, issue: int) -> str:
+    refs = r.get("issue_refs") or {}
+    kind = "Closes" if issue in (refs.get("closes") or []) else "See"
     return "\n".join([
         MARKER_START,
-        "## Contenu orphelin — mergeCommit jamais arrive sur `main` (#10981)",
+        f"## Livrable jamais arrive sur `main` — PR #{r['number']} mergee hors `main` (#12723)",
         "",
-        f"Cette PR a ete mergee dans `{r['base']}` (base != `main`), et son "
-        f"`mergeCommit` **{r['merge_commit'][:12]}** n'est **pas ancetre de "
-        f"`main`** : le contenu (`{r['title']}`) n'a jamais ete porte sur la "
-        f"branche principale. Recuperation proposee : "
-        f"`{r.get('recovery', '')}` puis PR de la base vers `main`.",
+        f"La PR #{r['number']} (`{r['title'][:80]}`) porte `{kind} #{issue}`"
+        f" vers cette issue, mais elle a ete mergee dans `{r['base']}` et son "
+        f"contenu n'a **jamais atteint `main`** :",
+        "",
+        *[f"- `{p}`" for p in r.get("paths", [])[:5]],
+        "",
+        f"Ne PAS conclure « livre » pour cette partie tant que ces chemins "
+        f"sont absents de `main` (details et reparation sur la PR #{r['number']}).",
         MARKER_END,
     ])
 
 
+def _post_issue_comment(repo: str, issue: int, body: str) -> None:
+    subprocess.run(
+        ["gh", "issue", "comment", str(issue), "--repo", repo, "--body", body],
+        capture_output=True, text=True, check=False, encoding="utf-8",
+    )
+
+
+def labeled_merged_prs(repo: str) -> list[int]:
+    """Numeros des PRs mergees portant encore le label (jeu borne)."""
+    data = _gh_json(["pr", "list", "--repo", repo, "--state", "merged",
+                     "--label", LABEL_NAME, "--json", "number",
+                     "--limit", "100"]) or []
+    return [p.get("number") for p in data if p.get("number")]
+
+
+def unlabel_repaired(repo: str, repo_path: Path, base_ref: str,
+                     orphan_numbers: set[int], dry_run: bool,
+                     base_tree=None, files_fetch=None,
+                     adjudications: dict | None = None) -> None:
+    """#12723 : le label doit dire « contenu TOUJOURS absent », pas « absent un
+    jour ». Les PRs labellisees devenues propres (re-atterrissage, renommage,
+    jambe en vol) — y compris les faux positifs de l'ancien filtre identite
+    (#11931, #11638) et les PRs sorties de la fenetre --days — sont
+    re-verifiees par contenu puis de-labellisees, avec note de resolution."""
+    for n in labeled_merged_prs(repo):
+        if n in orphan_numbers:
+            continue
+        pr = _gh_json(["pr", "view", str(n), "--repo", repo, "--json",
+                       "number,baseRefName,headRefName,mergedAt,mergeCommit,files,body"]) or {}
+        if not pr:
+            continue
+        res = analyse_pr(repo_path, pr, base_ref, repo, adjudications,
+                         base_tree=base_tree, files_fetch=files_fetch)
+        # adjuge aussi : la decision « ne pas recuperer » est tranchee — garder
+        # le label rouge ferait passer une adjudication pour un orphelin non
+        # traite (meme regle que le passage adjuge de apply_findings).
+        if res["status"] not in ("clean", "renamed", "in_flight", "adjudge"):
+            continue
+        if dry_run:
+            print(f"[orphan-apply] #{n} label={LABEL_NAME} removed "
+                  f"({res['status']}, dry-run)")
+            continue
+        subprocess.run(
+            ["gh", "pr", "edit", str(n), "--repo", repo, "--remove-label", LABEL_NAME],
+            capture_output=True, text=True, check=False, encoding="utf-8",
+        )
+        detail = (f"Adjudication (#11159) : {res.get('motif', '')} — "
+                  f"par {res.get('adjudicated_by', '?')}."
+                  if res["status"] == "adjudge" else
+                  f"Re-verification par contenu : {res['reason']}.")
+        body = "\n".join([
+            MARKER_START,
+            f"## Resolu — le contenu est desormais couvert ({res['status']}, #12723)",
+            "",
+            detail,
+            MARKER_END,
+        ])
+        cid = existing_comment(repo, n)
+        if cid is not None:
+            update_comment(repo, cid, body)
+        else:
+            post_comment(repo, n, body)
+        print(f"[orphan-apply] #{n} label={LABEL_NAME} removed ({res['status']})")
+
+
 def apply_findings(repo: str, orphans: list[dict], adjudges: list[dict],
-                   dry_run: bool) -> None:
+                   dry_run: bool, repo_path: Path | None = None,
+                   base_ref: str = "origin/main",
+                   base_tree=None, files_fetch=None,
+                   adjudications: dict | None = None) -> None:
     """Label + commentaire marker-guarde sur les orphelins (upsert, pas de spam).
 
     Les PR adjugees (#11159) reçoivent l'inverse : le label ``orphaned-delivery``
@@ -395,8 +660,11 @@ def apply_findings(repo: str, orphans: list[dict], adjudges: list[dict],
     rouge ferait passer une adjudication pour un orphelin non traite). Le
     commentaire historique reste, marker-guarde, pour que l'adjudicataire puisse
     relire et se dedire.
+
+    #12723 : chaque orphelin signale AUSSI l'issue d'origine (marker-guarde),
+    et les PRs labellisees redevues propres sont de-labellisees.
     """
-    if not orphans and not adjudges:
+    if not orphans and not adjudges and not repo_path:
         return
     if not dry_run:
         ensure_label(repo)
@@ -415,6 +683,8 @@ def apply_findings(repo: str, orphans: list[dict], adjudges: list[dict],
         if dry_run:
             print(f"[orphan-apply] #{number} label={LABEL_NAME} (dry-run)")
             continue
+        if "head_alive" not in r:
+            r["head_alive"] = head_branch_alive(repo, r.get("head", ""))
         body = build_comment(r)
         cid = existing_comment(repo, number)
         if cid is not None:
@@ -427,6 +697,19 @@ def apply_findings(repo: str, orphans: list[dict], adjudges: list[dict],
             ["gh", "pr", "edit", str(number), "--repo", repo, "--add-label", LABEL_NAME],
             capture_output=True, text=True, check=False, encoding="utf-8",
         )
+        for issue in issue_signal_targets(r.get("issue_refs") or {}):
+            ibody = build_issue_comment(r, issue)
+            icid = existing_comment(repo, issue)
+            if icid is not None:
+                update_comment(repo, icid, ibody)
+            else:
+                _post_issue_comment(repo, issue, ibody)
+            print(f"[orphan-apply] #{number} issue signal upserted (#{issue})")
+    if repo_path is not None:
+        unlabel_repaired(repo, repo_path, base_ref,
+                         {r["number"] for r in orphans}, dry_run,
+                         base_tree=base_tree, files_fetch=files_fetch,
+                         adjudications=adjudications)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -466,7 +749,13 @@ def main(argv: list[str] | None = None) -> int:
             repo / "scripts" / "audit" / "orphan_adjudications.json")
         adjudications = load_adjudications(adjudications_path)
         prs = filter_by_age(load_prs(args), args.days)
-        results = [analyse_pr(repo, pr, args.base_ref, repo_slug, adjudications)
+        # Un seul walk d'arbre pour toutes les PRs (#12723) ; fetch REST des
+        # statuts de fichiers uniquement pour les PRs candidates (filtres 1-2
+        # passes) — l'appel vit dans analyse_pr via files_fetch.
+        base_tree = base_tree_index(repo, args.base_ref)
+        files_fetch = None if args.from_json else gh_rest_files
+        results = [analyse_pr(repo, pr, args.base_ref, repo_slug, adjudications,
+                              base_tree=base_tree, files_fetch=files_fetch)
                    for pr in prs]
     except GitError as exc:
         print(f"ERREUR: {exc}", file=sys.stderr)
@@ -494,7 +783,10 @@ def main(argv: list[str] | None = None) -> int:
     adjudges = [r for r in results if r["status"] == "adjudge"]
     if args.apply:
         try:
-            apply_findings(repo_slug, orphans, adjudges, args.dry_run)
+            apply_findings(repo_slug, orphans, adjudges, args.dry_run,
+                           repo_path=repo, base_ref=args.base_ref,
+                           base_tree=base_tree, files_fetch=files_fetch,
+                           adjudications=adjudications)
         except RuntimeError as exc:
             print(f"ERREUR: {exc}", file=sys.stderr)
             return 2
