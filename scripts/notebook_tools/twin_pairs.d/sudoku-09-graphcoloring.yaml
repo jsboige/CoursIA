@@ -46,6 +46,12 @@
       csharp_sha: 548d0e6bfc18e996b89ef811880f24f180b335b5
       content_python_sha: 9c454e029e788c287c4720f9696b5edb0e987dc086e617d06e571f8113d957cf
       content_csharp_sha: 5a8d357683cb758604bee5a5773db292b2a48c2eb4ca19cfb372bd9e4bd51248
+    - date: "2026-08-29"
+      by: myia-po-2025:CoursIA
+      python_sha: 7e0380fda4856a0730496a2774be72907c63257e
+      csharp_sha: 7fc241df73247d9197adf2d79e728735ed205a16
+      content_python_sha: 9c454e029e788c287c4720f9696b5edb0e987dc086e617d06e571f8113d957cf
+      content_csharp_sha: 51126c338dc9bac4f043cd4729ea856d5657e13ae3e734951ad668f3419c87e9
   known_differences:
     - "Rebaseline 2026-08-14 : cote C# deplace par drain wallclock #9434 / PR #10874 (remplacement des timings machine-dependants en ms par des ordres de grandeur dans le markdown). Parite semantique inchangee (cellules code byte-identiques, aucune sortie, aucun exec_count touche) ; cote Python non modifie. Attestation = nouveau blob SHA du cote C#."
     - "Socle pedagogique commun : reformulation du Sudoku comme un probleme de coloration de graphe (une cellule = un noeud, le graphe de contraintes Sudoku, coloration propre a 9 couleurs), meme concept mathematique (graphe de conflits, coloration propre), meme cas d'application."
