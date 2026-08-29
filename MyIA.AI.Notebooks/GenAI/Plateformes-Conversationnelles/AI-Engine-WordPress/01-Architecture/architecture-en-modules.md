@@ -1,8 +1,8 @@
 # L'architecture en modules
 
-[← README Architecture](README.md | [← README AI-Engine-WordPress](../README.md
+[← README Architecture](README.md) | [← README AI-Engine-WordPress](../README.md)
 
-> Extrait du [cas d'usage éditorial](../04-Cas-Usage-livresagites/livresagites-parcours.md
+> Extrait du [cas d'usage éditorial](../04-Cas-Usage-livresagites/livresagites-parcours.md)
 > dont il constituait le « Parcours 0 », relogé ici (réorganisation #12127)
 > avec les parcours fonctionnels restés en place.
 
@@ -25,10 +25,10 @@ Deux conséquences pratiques :
 2. Le module **Orchestration** est la face *cliente* de MCP :
    c'est lui qui permet à AI-Engine de **consommer** des serveurs MCP
    externes. Le serveur MCP *exposé* par WordPress est une mécanique
-   distincte (voir le [Parcours 3 — WordPress comme serveur MCP métier](../04-Cas-Usage-livresagites/livresagites-parcours.md). Les deux sens du protocole ne se
+   distincte (voir le [Parcours 3 — WordPress comme serveur MCP métier](../04-Cas-Usage-livresagites/livresagites-parcours.md)). Les deux sens du protocole ne se
    configurent pas au même endroit — confusion fréquente.
 
-> **Notebook compagnon.** [`consommer-vs-exposer-le-mcp.ipynb`](../03-Functional/03-4-MCP-Server/consommer-vs-exposer-le-mcp.ipynb
+> **Notebook compagnon.** [`consommer-vs-exposer-le-mcp.ipynb`](../03-Functional/03-4-MCP-Server/consommer-vs-exposer-le-mcp.ipynb)
 > rend exécutable cette distinction : il monte les **deux côtés du fil** sur un
 > même fixture synthétique (Maison Valmont) — un mini-serveur MCP exposé et un
 > mini-client MCP consommé — et mesure le chevauchement fonctionnel
@@ -39,7 +39,7 @@ Deux conséquences pratiques :
 > même sous un chevauchement global faible).
 
 > **Notebook compagnon (module Client).**
-> [`configurer-chatbots-par-l-api.ipynb`](../03-Functional/03-1-Chatbots/configurer-chatbots-par-l-api.ipynb
+> [`configurer-chatbots-par-l-api.ipynb`](../03-Functional/03-1-Chatbots/configurer-chatbots-par-l-api.ipynb)
 > ouvre la face exécutable du module Chatbot : dans AI-Engine, un chatbot
 > est un **document JSON** (54 champs — identité, instructions, modèle,
 > présentation) que l'API REST lit et réécrit. Le `POST
@@ -53,7 +53,7 @@ Deux conséquences pratiques :
 > corpus 100 % synthétique, aucun contenu privé.
 
 > **Notebook compagnon (module Client, face visiteur).**
-> [`parler-au-chatbot-en-visiteur-par-l-api.ipynb`](../03-Functional/03-1-Chatbots/parler-au-chatbot-en-visiteur-par-l-api.ipynb
+> [`parler-au-chatbot-en-visiteur-par-l-api.ipynb`](../03-Functional/03-1-Chatbots/parler-au-chatbot-en-visiteur-par-l-api.ipynb)
 > ouvre la troisième face du plugin — celle du **navigateur d'un visiteur
 > anonyme**, dans un namespace propre (`mwai-ui/v1`). Le cycle démontré :
 > la page publique du chatbot n'embarque **aucun jeton** (`restNonce` et
@@ -69,7 +69,7 @@ Deux conséquences pratiques :
 > limites de débit.
 
 > **Notebook compagnon (module Client, face pièces jointes).**
-> [`donner-une-memoire-ephemere-au-chatbot-par-l-api.ipynb`](../03-Functional/03-1-Chatbots/donner-une-memoire-ephemere-au-chatbot-par-l-api.ipynb
+> [`donner-une-memoire-ephemere-au-chatbot-par-l-api.ipynb`](../03-Functional/03-1-Chatbots/donner-une-memoire-ephemere-au-chatbot-par-l-api.ipynb)
 > ouvre la cinquième surface de la série — la famille
 > `mwai-ui/v1/files/*`, celle qui donne au chatbot ses pièces
 > jointes : un manuscrit à relire, un extrait audio, une image. Le
@@ -90,7 +90,7 @@ Deux conséquences pratiques :
 > et détruit en fin de parcours — cleanup mesuré, total 0 → 1 → 0.
 
 > **Notebook compagnon (module Client, consommation des pièces jointes).**
-> [`joindre-un-fichier-au-chatbot-par-l-api.ipynb`](../03-Functional/03-1-Chatbots/joindre-un-fichier-au-chatbot-par-l-api.ipynb
+> [`joindre-un-fichier-au-chatbot-par-l-api.ipynb`](../03-Functional/03-1-Chatbots/joindre-un-fichier-au-chatbot-par-l-api.ipynb)
 > pose la question qui suit le stockage : **comment un fichier
 > téléversé entre-t-il dans une completion ?** La réponse mesurée
 > donne à une pièce jointe trois destins possibles, aucun lisible sur
@@ -113,9 +113,9 @@ Deux conséquences pratiques :
 
 ## Voir aussi
 
-- [`README.md`](README.md — vue d'ensemble, fonctionnalités cœur,
+- [`README.md`](README.md) — vue d'ensemble, fonctionnalités cœur,
   multi-provider : la surface fonctionnelle du plugin
-- [`../04-Cas-Usage-livresagites/livresagites-parcours.md`](../04-Cas-Usage-livresagites/livresagites-parcours.md
+- [`../04-Cas-Usage-livresagites/livresagites-parcours.md`](../04-Cas-Usage-livresagites/livresagites-parcours.md)
   — le cas d'usage complet dont cette page est issue
-- [`../02-Comparatif/comparatif-owui-vs-ai-engine.md`](../02-Comparatif/comparatif-owui-vs-ai-engine.md
+- [`../02-Comparatif/comparatif-owui-vs-ai-engine.md`](../02-Comparatif/comparatif-owui-vs-ai-engine.md)
   — le même plugin vu par le tableau comparatif

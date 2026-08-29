@@ -31,7 +31,7 @@ Ce n'est pas un problème d'attention. C'est un problème de **cadrage** : l'age
 | 7 | « Le correctif du gate ne détecte rien » | Le correctif détectait correctement | Une valeur de test que l'outil met en liste blanche |
 | 8 | « Latence médiane 5,5 s, aucune valeur écrite à la main » | La mesure disait 7,14 s | Rien — la mesure était juste, c'est le rapport qui avait dérivé |
 
-Les incidents 1 à 4 sont anonymisés (voir *Note de méthode*). Les incidents 5 et 6 sont documentés dans le notebook [`eval-choisir-son-modele.ipynb`](../../MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/AI-Engine-WordPress/03-Functional/03-5-Multi-Provider/eval-choisir-son-modele.ipynb, section *Deux pièges rencontrés en écrivant ce notebook*. Les incidents 7 et 8 sont survenus pendant la rédaction de cette note.
+Les incidents 1 à 4 sont anonymisés (voir *Note de méthode*). Les incidents 5 et 6 sont documentés dans le notebook [`eval-choisir-son-modele.ipynb`](../../MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/AI-Engine-WordPress/03-Functional/03-5-Multi-Provider/eval-choisir-son-modele.ipynb), section *Deux pièges rencontrés en écrivant ce notebook*. Les incidents 7 et 8 sont survenus pendant la rédaction de cette note.
 
 **Les incidents 1 à 4 sont consécutifs.** Chacun a été suivi d'un renforcement de la vérification — et le suivant est passé par un chemin que le renforcement ne couvrait pas. C'est le fait le plus instructif de la série : *durcir la sonde après coup ne réduit pas la classe de défaut, il en déplace la frontière.*
 
@@ -148,7 +148,7 @@ La troisième règle est la plus inconfortable, parce qu'elle oblige à écrire 
 
 ## Rapport avec la défense par construction
 
-Ce dépôt a résolu une classe de problème voisine par un autre chemin : voir [`accent-cure-defense-in-depth.md`](accent-cure-defense-in-depth.md, où le critère de sortie est explicitement la **défense par construction** (l'outil ne *peut pas* produire le défaut) plutôt que la défense par revue.
+Ce dépôt a résolu une classe de problème voisine par un autre chemin : voir [`accent-cure-defense-in-depth.md`](accent-cure-defense-in-depth.md), où le critère de sortie est explicitement la **défense par construction** (l'outil ne *peut pas* produire le défaut) plutôt que la défense par revue.
 
 Les deux approches sont complémentaires et leur frontière est nette :
 
@@ -161,7 +161,7 @@ La question à se poser devant une classe de défaut est donc : *puis-je rendre 
 
 ## Note de méthode — ce que cette étude n'expose pas
 
-Les incidents 1 à 4 proviennent d'un projet client réel, avril 2026. Le projet, ses utilisatrices, son domaine et ses contenus **ne sont pas nommés**, et les incidents sont décrits au niveau du motif : ce qui est transposable est la mécanique de la sonde menteuse, pas l'identité de l'installation où elle s'est produite. Aucune capture, aucun extrait de journal, aucune donnée n'est reproduit ici — conformément à [`PRIVACY.md`](../../PRIVACY.md §1, dont le principe s'étend à l'environnement de travail d'un tiers.
+Les incidents 1 à 4 proviennent d'un projet client réel, avril 2026. Le projet, ses utilisatrices, son domaine et ses contenus **ne sont pas nommés**, et les incidents sont décrits au niveau du motif : ce qui est transposable est la mécanique de la sonde menteuse, pas l'identité de l'installation où elle s'est produite. Aucune capture, aucun extrait de journal, aucune donnée n'est reproduit ici — conformément à [`PRIVACY.md`](../../PRIVACY.md) §1, dont le principe s'étend à l'environnement de travail d'un tiers.
 
 Les incidents 5 à 8 sont survenus dans ce dépôt et sont donc, eux, entièrement traçables : les deux premiers dans le notebook concerné et dans la PR qui l'a introduit, le troisième dans le relevé publié sur l'issue du scanner de secrets, le quatrième dans la revue de cette même PR, où un relecteur a re-dérivé le chiffre depuis les sorties et constaté qu'il ne s'y trouvait pas.
 
