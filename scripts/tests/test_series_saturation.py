@@ -324,3 +324,65 @@ def test_is_series_rejects_tooling_paths():
 if __name__ == "__main__":
     import pytest
     sys.exit(pytest.main([__file__, "-v"]))
+
+
+# --- Zone d'un EPIC : le vote de ses enfants (#12373 / #13268) -------------
+#
+# `saturation()` fige une issue sur la zone de la PREMIERE PR mergee qui la
+# cite. Pour un EPIC -- un tracker cite par tout ce qui l'outille -- cela le
+# fige sur un chemin de script, zone qui ne portera jamais de notebook. Ses
+# filles sans PR citante propre heritent alors d'un frein NUL. Mesure du
+# 2026-08-29 : #13268 prenait x1.00 la ou sa soeur #13394, meme EPIC et meme
+# zone saturee, prenait x0.33.
+#
+# Un detecteur se valide par ses faux negatifs : les trois controles epinglent
+# les deux sens -- le vote comble l'absente ET la muette, et n'ecrase JAMAIS
+# une attribution deja informative ni n'invente une zone.
+
+NB_A = "MyIA.AI.Notebooks/Search/Part4-Metaheuristics"
+NB_B = "MyIA.AI.Notebooks/GenAI/Texte"
+SCRIPT_ZONE = "scripts/series_saturation.py"
+
+
+def test_parent_vote_replaces_a_zone_that_holds_no_notebook():
+    """L'EPIC fige sur un chemin de script recoit la zone de ses enfants."""
+    zones = {NB_A: {"new_notebooks": 6}, SCRIPT_ZONE: {"new_notebooks": 0}}
+    i2f = {12373: SCRIPT_ZONE, 13394: NB_A, 12607: NB_A}
+    pool = [{"number": 13394, "parent": 12373},
+            {"number": 12607, "parent": 12373},
+            {"number": 13268, "parent": 12373}]
+    out = ss.enrich_parent_families(pool, i2f, zones)
+    assert out[12373] == NB_A
+
+
+def test_parent_vote_never_overwrites_an_informative_zone():
+    """Une attribution qui porte deja des notebooks reste intacte."""
+    zones = {NB_A: {"new_notebooks": 4}, NB_B: {"new_notebooks": 9}}
+    i2f = {1: NB_A, 2: NB_B}
+    out = ss.enrich_parent_families([{"number": 2, "parent": 1}], i2f, zones)
+    assert out[1] == NB_A
+
+
+def test_parent_vote_invents_nothing_without_an_informative_child():
+    """Aucun enfant informatif : la carte est rendue telle quelle."""
+    zones = {SCRIPT_ZONE: {"new_notebooks": 0}}
+    i2f = {10: SCRIPT_ZONE}
+    out = ss.enrich_parent_families([{"number": 99, "parent": 10}], i2f, zones)
+    assert out[10] == SCRIPT_ZONE
+
+
+def test_resolve_family_walks_past_a_zone_without_notebooks():
+    """La cascade ne s'arrete pas sur une source qui n'informe pas le frein."""
+    zones = {NB_B: {"new_notebooks": 4}, SCRIPT_ZONE: {"new_notebooks": 0}}
+    item = {"number": 77, "parent": 10,
+            "title": "GenAI/Texte : renumerotation", "body": ""}
+    fam = ss.resolve_family(item, {10: SCRIPT_ZONE}, tuple(zones), zones)
+    assert fam == NB_B
+
+
+def test_resolve_family_keeps_legacy_answer_without_zones():
+    """Sans `zones` on ne sait rien : comportement anterieur preserve."""
+    item = {"number": 77, "parent": 10, "title": "x", "body": ""}
+    assert ss.resolve_family(item, {10: SCRIPT_ZONE}, ()) == SCRIPT_ZONE
+
+
