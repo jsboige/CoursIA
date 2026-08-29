@@ -2788,3 +2788,46 @@ def test_12871_ce3_emission_formelle_reste_live():
     `_MENTION_VERDICT_HEADING` ligne 327)."""
     body = "Verdict : COMMENT_WITH_CONCERNS"
     assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+# ---------------------------------------------------------------------------
+# #13425 — Position E, borne dure : le commentaire au-dessus de
+# `_MENTION_VERDICT_REVIEW_NARRATIVE` promettait « la phrase complete ne doit
+# pas contenir `Verdict :` ni `reste bloquante` » sans qu'aucun lookahead
+# n'existe (mesure dans l'issue : le cas hybride voyait son verdict
+# neutralise). Le lookahead negatif est desormais implemente dans la fenetre
+# de phrase ; ces tests ECHOUENT sans lui — c'est le controle negatif exige
+# par l'acceptance (verifie mecaniquement : le pattern sans lookahead matche
+# l'hybride, le pattern avec lookahead ne le matche pas).
+# ---------------------------------------------------------------------------
+
+
+def test_13425_hybride_reste_bloquante_avec_commit_preserve_le_verdict():
+    """#13425 cas hybride — `<verdict> reste bloquante - traitee par le
+    commit <sha>` : la Position E voyait verbe de levee + ref pointable dans
+    la meme phrase et neutralisait le verdict, alors que la phrase declare
+    un blocage VIVANT. La borne dure `reste bloquante` preserve le verdict.
+    CE TEST ECHOUE SI ON RETIRE LE LOOKAHEAD."""
+    body = ("Cette review CHANGES_REQUESTED reste bloquante - traitee par le "
+            "commit a1b2c3d4e")
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+def test_13425_verdict_formel_dans_fenetre_preserve_le_verdict():
+    """#13425 seconde borne promise — `Verdict :` (emission formelle) dans la
+    fenetre de phrase de la Position E : le verdict n'est pas non plus
+    neutralise par une mention qui suit une emission formelle.
+    CE TEST ECHOUE SI ON RETIRE LE LOOKAHEAD."""
+    body = ("La review CHANGES_REQUESTED Verdict : reste a traiter, traitee "
+            "par le commit a1b2c3d4e")
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+def test_13425_controles_ce1_fp3_restant_inchanges():
+    """#13425 acceptance — les deux controles mesures dans l'issue gardent
+    leur comportement : CE1 (pas de ref pointable) reste BOT-CONCERN, FP3
+    (verdict leve, ref pointable, pas de declaration de blocage) reste
+    neutralise — sous les formes EXACTES du ticket."""
+    ce1 = "Cette review CHANGES_REQUESTED reste bloquante."
+    fp3 = "La review CHANGES_REQUESTED a ete traitee par le commit a1b2c3d4e"
+    assert mod.classify("jsboige", ce1) == "BOT-CONCERN"
+    assert mod.classify("jsboige", fp3) is None

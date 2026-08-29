@@ -559,12 +559,21 @@ _MENTION_VERDICT_REVIEW = re.compile(
 # PAS de fin de phrase entre le verdict et le verbe de levee (donc sous la
 # meme phrase), (c) verbe de levee + ref pointable a la fin. Borne dure : la
 # phrase complete ne doit pas contenir `Verdict :` (emission formelle) ni
-# `reste bloquante` (declaration de blocage).
+# `reste bloquante` (declaration de blocage) — implementee par le lookahead
+# #13425 ci-dessous.
 _MENTION_VERDICT_REVIEW_NARRATIVE = re.compile(
     r"(?i)(?:^|[\s,;:(*])"
     r"(?:le|la|les|du|mon|ma|ce|cet|cette|ces|the|my)?\s*"
     r"(?:revue|review)(?![:.])"
     r"[^():\n.]{0,60}?(?-i:([A-Z][A-Z_]{3,}))(?![A-Za-z0-9_])"
+    # #13425 — la borne dure promise ci-dessus, desormais implementee : si la
+    # suite de la phrase (fenetre 200 chars, meme phrase) contient une
+    # declaration de blocage vivante (`reste bloquante`) ou une emission
+    # formelle (`Verdict :`), la position ne s'applique PAS — le verdict
+    # reste emis. Cas hybride fondateur : « Cette review CHANGES_REQUESTED
+    # reste bloquante - traitee par le commit a1b2c3d4e » voyait son verdict
+    # neutralise alors que la phrase declare le blocage vivant.
+    r"(?![^.!?\n]{0,200}(?:reste\s+bloquante|verdict\s*:))"
     # Pas de fin de phrase avant le verbe de levee : `[^.!?\n]{0,200}` est
     # borne a 200 chars pour eviter de manger une phrase distincte (cf
     # discriminateur enonce par l'issue, le verbe de levee doit etre dans
