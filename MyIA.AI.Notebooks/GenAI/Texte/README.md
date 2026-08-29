@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: GenAI-Texte
-pedagogical_count: 21
-breakdown: Texte=21
-maturity: BETA=19, ALPHA=1, DRAFT=1
+pedagogical_count: 29
+breakdown: Texte=29
+maturity: BETA=26, ALPHA=2, DRAFT=1
 -->
 
 [← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Semantic Kernel](../SemanticKernel/README.md)
@@ -55,6 +55,7 @@ La maîtrise des LLMs constitue la pierre angulaire de toute expertise en Géné
 | 9 | `9_Production_Patterns.ipynb` | Conversations API, background mode, retry, batch processing | 70 min |
 | 9b | `09b_Prompt_Security_RedTeam.ipynb` | Versant **adversarial** du 9 : taxonomie de l'injection (directe / indirecte RAG / jailbreak / exfiltration), 3 attaques mesurées sur le routeur DeepSeek self-hosted (≥1 réussie avant défense), défenses testées + tableau attaque × défense, suite de tests rejouable (propriété « PWNED jamais délivré »), 3 exercices stubs C.1 | 70 min |
 | 10 | `10_LocalLlama.ipynb` | vLLM, Qwen3.5-35B-A3B, ZwZ-8B, multi-endpoints, benchmarking | 60 min |
+| 10b | `10b_Inference_Mechanics.ipynb` | KV-cache from scratch, exactitude des logits, speedup/mémoire, TTFT et ITL mesurés sur vLLM | 75 min |
 | 11 | `11_Quantization.ipynb` | AWQ, GPTQ, llmcompressor, modèles vision, déploiement vLLM | 60 min |
 | 12 | `12_Test_Time_Scaling.ipynb` | Best-of-N, Tree-of-Thoughts (BFS/DFS), Reflexion, routeur adaptatif (cf ICR) | 60 min |
 
@@ -124,9 +125,10 @@ Les tiers précédents traitent le langage **côté modèle** (prompts, RAG, fin
 1. Copier `.env.example` vers `.env`
 2. Ajouter votre clé API OpenAI : `OPENAI_API_KEY=sk-...`
 
-### Pour les notebooks locaux (10)
-- Docker avec support GPU
-- Ollama ou vLLM installé
+### Pour les notebooks locaux (10, 10b et 11)
+- Docker avec support GPU pour servir le modèle réel avec vLLM
+- Ollama ou vLLM installé pour les notebooks de déploiement
+- PyTorch CPU suffit pour la partie from scratch de `10b`; un endpoint vLLM authentifié est requis pour ses mesures TTFT/ITL
 
 ## Parcours suggéré
 
@@ -151,7 +153,8 @@ Les tiers précédents traitent le langage **côté modèle** (prompts, RAG, fin
 │                                                       └─attack/defend stack self-hosted
 │                                                                 │
 │  10_LocalLlama (indépendant, prérequis: 1)                     │
-│        └──────► 11_Quantization (prérequis: 10)                │
+│        └──────► 10b_Inference_Mechanics                        │
+│                         └──────► 11_Quantization               │
 │                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -171,7 +174,7 @@ Les tiers précédents traitent le langage **côté modèle** (prompts, RAG, fin
 
 - **OpenAI API** : GPT-4o, GPT-4o-mini, o4-mini, gpt-5-thinking
 - **Python** : openai, pydantic, tiktoken, semantic-kernel
-- **Local** : vLLM, Qwen3.5-35B-A3B, ZwZ-8B, llmcompressor, AWQ/GPTQ
+- **Local** : vLLM, KV-cache et PagedAttention, métriques TTFT/ITL, Qwen3.5-35B-A3B, ZwZ-8B, llmcompressor, AWQ/GPTQ
 - **Bases vectorielles** : scikit-learn (demo), Pinecone, Qdrant, Chroma
 
 ## Mode batch
@@ -205,7 +208,7 @@ Le fil rouge de cette série est la progression de l'interaction basique avec un
 
 3. **Tier 3** (augmentation) : [5_RAG_Modern](5_RAG_Modern.ipynb) et [6_PDF_Web_Search](6_PDF_Web_Search.ipynb) enrichissent le LLM avec des sources externes. [7_Code_Interpreter](7_Code_Interpreter.ipynb) lui donne la capacité d'exécuter du code.
 
-4. **Tier 4** (production et local) : [8_Reasoning_Models](8_Reasoning_Models.ipynb) exploite les modèles raisonnants. [9_Production_Patterns](9_Production_Patterns.ipynb) couvre les patterns enterprise, complété par son **versant adversarial** [09b_Prompt_Security_RedTeam](09b_Prompt_Security_RedTeam.ipynb) qui attaque puis défend la stack self-hosted (injection directe/indirecte RAG, jailbreak, exfiltration). [10_LocalLlama](10_LocalLlama.ipynb) et [11_Quantization](11_Quantization.ipynb) déploient en local avec vLLM.
+4. **Tier 4** (production et local) : [8_Reasoning_Models](8_Reasoning_Models.ipynb) exploite les modèles raisonnants. [9_Production_Patterns](9_Production_Patterns.ipynb) couvre les patterns enterprise, complété par son **versant adversarial** [09b_Prompt_Security_RedTeam](09b_Prompt_Security_RedTeam.ipynb) qui attaque puis défend la stack self-hosted (injection directe/indirecte RAG, jailbreak, exfiltration). [10_LocalLlama](10_LocalLlama.ipynb) déploie le service, [10b_Inference_Mechanics](10b_Inference_Mechanics.ipynb) construit le KV-cache puis relie son coût aux TTFT/ITL réels, et [11_Quantization](11_Quantization.ipynb) réduit l'empreinte des poids servis par vLLM.
 
 5. **Tier 5** (test-time scaling approfondi) : partant de [12_Test_Time_Scaling](12_Test_Time_Scaling.ipynb) (les quatre moteurs en Python pur), l'arc NB-13..18 décompose chaque facette de l'inférence au moment du test — orchestration agentique via function calling ([13](13_Agentic_Orchestration.ipynb)), mémoire persistante par similarité ([14](14_Persistent_Memory.ipynb)), Tree-of-Thoughts sur des problèmes de recherche ([15](15_Tree_of_Thoughts_Search.ipynb)), courbes de scaling de Snell ([16](16_Scaling_Test_Time_Compute.ipynb)), raisonnement natif vs scaling hand-rolled ([17](17_Native_Reasoning_vs_Scaling.ipynb)), puis intégration Semantic Kernel ([18](18_Semantic_Kernel_Plugins.ipynb)).
 
@@ -228,7 +231,7 @@ flowchart TD
     subgraph T4["Tier 4 · Avancé & production"]
         D1["8-9 : Reasoning & Production"]
         D1b["9b : Red-team sécurité LLM (sibling adversarial de 9)"]
-        D2["10-11 : Local Llama & Quantization"]
+        D2["10-11 : Local, KV-cache & Quantization"]
         D3["12 : Test-Time Scaling"]
     end
     subgraph T5["Tier 5 · Test-time scaling approfondi (ICR)"]
@@ -292,7 +295,7 @@ Le notebook [8_Reasoning_Models](8_Reasoning_Models.ipynb) compare les coûts et
 
 ### LLM local (vLLM) : erreur CUDA ou OOM
 
-Les notebooks 10-11 utilisent vLLM pour servir des modèles locaux. Problèmes courants :
+Les notebooks 10, 10b et 11 utilisent vLLM : le 10 déploie et compare les endpoints, le 10b mesure TTFT/ITL et le 11 sert des modèles quantifiés. Problèmes courants :
 
 - **VRAM insuffisante** : Qwen3.5-35B-A3B en FP16 nécessite ~70 GB. Utiliser la quantification AWQ (notebook 11) pour réduire à ~12 GB.
 - **Version CUDA** : vLLM requiert CUDA 12.1+. Vérifier avec `nvidia-smi` et `nvcc --version`.

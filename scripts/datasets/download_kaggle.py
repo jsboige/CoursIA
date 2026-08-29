@@ -24,7 +24,7 @@ DEFAULT_OUTPUT = Path(__file__).resolve().parent.parent.parent / "MyIA.AI.Notebo
 
 def _check_kaggle_cli():
     try:
-        result = subprocess.run(["kaggle", "--version"], capture_output=True, text=True, timeout=10)
+        result = subprocess.run(["kaggle", "--version"], capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=10)
         if result.returncode != 0:
             raise FileNotFoundError
     except (FileNotFoundError, subprocess.TimeoutExpired):
@@ -37,7 +37,7 @@ def search_datasets(query: str, max_results: int = 10):
     _check_kaggle_cli()
     result = subprocess.run(
         ["kaggle", "datasets", "list", "-s", query, "--max-size", str(max_results), "--csv"],
-        capture_output=True, text=True, timeout=30,
+        capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=30,
     )
     print(result.stdout)
     if result.stderr:
@@ -60,7 +60,7 @@ def download(dataset: str, output_dir: Path, unzip: bool = True) -> Path:
     print(f"Downloading Kaggle dataset: {dataset}")
     print(f"  Target: {target}")
 
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+    result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=300)
     if result.returncode != 0:
         print(f"ERROR: {result.stderr}", file=sys.stderr)
         sys.exit(1)

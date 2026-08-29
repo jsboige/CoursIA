@@ -12,11 +12,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libsndfile1 \
     && rm -rf /var/lib/apt/lists/*
 
-# Install PyTorch with CUDA support
+# Install PyTorch with CUDA support.
+# hume-tada pins torch 2.7.x : installer torch+torchaudio PAIRES depuis le
+# wheels cu126 AVANT hume-tada, sinon pip resolve torchaudio 2.11 (cu13) et
+# l'import crash sur libcudart.so.13 (mesure 2026-08-26, #13110).
 RUN pip install --no-cache-dir \
-    torch==2.5.0 \
-    torchaudio==2.5.0 \
-    --index-url https://download.pytorch.org/whl/cu121
+    torch==2.7.1 \
+    torchaudio==2.7.1 \
+    --index-url https://download.pytorch.org/whl/cu126
 
 # Install TADA package from GitHub (required for HumeAI/tada-3b-ml)
 RUN pip install --no-cache-dir git+https://github.com/HumeAI/tada.git

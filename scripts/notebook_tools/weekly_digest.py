@@ -27,7 +27,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 def _git(args: list[str]) -> str:
     """Run a git command and return stdout."""
     result = subprocess.run(
-        ["git"] + args, capture_output=True, text=True,
+        ["git"] + args, capture_output=True, text=True, encoding="utf-8", errors="replace",
         cwd=str(REPO_ROOT), timeout=30,
     )
     return result.stdout.strip()
@@ -37,7 +37,7 @@ def get_merged_prs(since: str, until: str | None = None) -> list[dict]:
     """Get merged PRs via gh CLI."""
     cmd = ["gh", "pr", "list", "--state", "merged", "--limit", "100",
            "--json", "number,title,mergedAt,author,additions,deletions,files"]
-    result = subprocess.run(cmd, capture_output=True, text=True,
+    result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace",
                            cwd=str(REPO_ROOT), timeout=30)
     if result.returncode != 0:
         return []

@@ -465,12 +465,14 @@ def main(argv=None) -> int:
     baseline_path = args.baseline if args.baseline else DEFAULT_BASELINE
     baseline = load_baseline(baseline_path)
     if not args.update_baseline:
-# #12858 : la ligne d'identite doit etre sur stderr en mode --json,
-        # sinon stdout n'est plus du JSON pur (premiere ligne polluee) et le
-        # premier `| jq` plante sans cause evidente. Mode non-json garde stdout
-        # pour ne pas perdre l'acquis de #12585.
-        identity_stream = sys.stderr if args.json else sys.stdout
-        print(f"baseline: {baseline_path} ({len(baseline)} entries)", file=identity_stream)
+        # #12858 : --json doit rendre du JSON pur sur stdout. La ligne
+        # d'identite reste visible a l'humain mais est emise sur stderr en
+        # mode json, pour que stdout reste pipeable (| jq).
+        identity = f"baseline: {baseline_path} ({len(baseline)} entries)"
+        if args.json:
+            print(identity, file=sys.stderr)
+        else:
+            print(identity)
     new_findings = [f for f in findings
                     if _finding_hash(f) not in baseline] if baseline else findings
 
@@ -511,7 +513,10 @@ def main(argv=None) -> int:
                     file=sys.stderr,
                 )
             return 1
-        print("OK: no new code-in-markdown-cell violations.")
+        # #12858 : en mode --json, stdout est le document JSON pur ; le
+        # verdict humain migre sur stderr, comme la ligne d'identite.
+        print("OK: no new code-in-markdown-cell violations.",
+              file=sys.stderr if args.json else sys.stdout)
     return 0
 
 

@@ -34,7 +34,7 @@ garantit la qualité*.
 | **[Tour de la plateforme](00-Tour-Plateforme/README.md)** | « À quoi sert Open WebUI et comment l'utilise-t-on ? » | Markdown pédagogique + captures d'écran annotées | 🟡 Narratif disponible — captures live à venir (Epic #4433) |
 | **[Série QA Playwright-OWUI](Playwright-OWUI/README.md)** | « Comment teste-t-on une plateforme GenAI de bout en bout ? » | Notebooks + specs Playwright (6 modules) | ✅ Disponible |
 
-> **Plateforme voisine.** [AI-Engine (WordPress)](../AI-Engine-WordPress/README.md), présentée comme *presqu'équivalente d'Open WebUI côté site de contenu*, est désormais une **plateforme sœur** au sein de [Plateformes conversationnelles](../README.md) — voir le [`comparatif-owui-vs-ai-engine.md`](../comparatif-owui-vs-ai-engine.md) au niveau catégorie.
+> **Plateforme voisine.** [AI-Engine (WordPress)](../AI-Engine-WordPress/README.md), présentée comme *presqu'équivalente d'Open WebUI côté site de contenu*, est désormais une **plateforme sœur** au sein de [Plateformes conversationnelles](../README.md) — voir le [`comparatif-owui-vs-ai-engine.md`](../AI-Engine-WordPress/02-Comparatif/comparatif-owui-vs-ai-engine.md) dans sa section Comparatif.
 
 ### [Tour de la plateforme](00-Tour-Plateforme/README.md)
 

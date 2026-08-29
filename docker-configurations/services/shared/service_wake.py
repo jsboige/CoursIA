@@ -73,7 +73,7 @@ def docker_start(container: str) -> bool:
         result = subprocess.run(
             ["docker", "start", container],
             capture_output=True,
-            text=True,
+            text=True, encoding="utf-8", errors="replace",
             timeout=30,
             check=False,
         )

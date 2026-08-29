@@ -105,7 +105,7 @@ class ServiceIdleMonitor:
             result = subprocess.run(
                 ["curl", "-sf", "--unix-socket", DOCKER_SOCKET,
                  f"http://localhost{path}"],
-                capture_output=True, text=True, timeout=10
+                capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=10
             )
             if result.returncode == 0 and result.stdout:
                 return json.loads(result.stdout)
@@ -119,7 +119,7 @@ class ServiceIdleMonitor:
             result = subprocess.run(
                 ["curl", "-sf", "-X", "POST", "--unix-socket", DOCKER_SOCKET,
                  f"http://localhost{path}"],
-                capture_output=True, text=True, timeout=60
+                capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60
             )
             return result.returncode == 0
         except Exception:
