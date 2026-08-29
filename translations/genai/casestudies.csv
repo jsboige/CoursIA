@@ -778,7 +778,9 @@ except ImportError:
 ",,,,,,,,98e8009ebbbf579d,,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,4392065a,markdown,fr,7355e403d49d0b9f,"## Import des bibliothèques
 
-Nous importons les briques de Semantic Kernel nécessaires à l'orchestration multi-agent : le `Kernel` (conteneur de services et de plugins), `ChatCompletionAgent` et `AgentGroupChat` (agents et orchestrateur de groupe), `TerminationStrategy` (fin de dialogue), le décorateur `@kernel_function` (pour exposer des fonctions comme outils) et `FunctionChoiceBehavior` (pour l'appel automatique de plugins par le LLM). Le type `Annotated` sert à documenter les paramètres de ces fonctions-plugin.",## Importing libraries,,,,,## Импорт библиотек,,7355e403d49d0b9f,5d4ec997e169bcfa,,,,,e54f8107a37f8e97,,
+Nous importons les briques de Semantic Kernel nécessaires à l'orchestration multi-agent : le `Kernel` (conteneur de services et de plugins), `ChatCompletionAgent` et `AgentGroupChat` (agents et orchestrateur de groupe), `TerminationStrategy` (fin de dialogue), le décorateur `@kernel_function` (pour exposer des fonctions comme outils) et `FunctionChoiceBehavior` (pour l'appel automatique de plugins par le LLM). Le type `Annotated` sert à documenter les paramètres de ces fonctions-plugin.","## Importing libraries
+
+We import the Semantic Kernel building blocks needed for multi-agent orchestration: the `Kernel` (container for services and plugins), `ChatCompletionAgent` and `AgentGroupChat` (agents and group orchestrator), `TerminationStrategy` (end of dialogue), the `@kernel_function` decorator (to expose functions as tools) and `FunctionChoiceBehavior` (for automatic plugin invocation by the LLM). The `Annotated` type documents the parameters of these plugin functions.",,,,,## Импорт библиотек,,7355e403d49d0b9f,f432d5d8634c43f1,,,,,e54f8107a37f8e97,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,ba9fcb5d,markdown,fr,58c8d94d528c3536,"Ce cas d'usage met en oeuvre une **conversation multi-agent** dans le domaine medical. Trois agents cooperent : un medecin generaliste, une IA specialisee en diagnostic et un pharmacien. Chaque agent dispose de son propre prompt système et de plugins dedies via des `@kernel_function`.
 
 **Objectifs pedagogiques** :
@@ -825,7 +827,9 @@ print(""Configuration des logs OK"")
 ",,,,,,,,66ee957e3bef0fc6,,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,6ee57404,markdown,fr,6c5f5e7a9b548692,"## Création du kernel Semantic Kernel
 
-Le `Kernel` est le conteneur central de Semantic Kernel : il regroupe le service d'IA et les plugins. La fonction `create_kernel()` instancie un kernel vierge puis y enregistre un service `OpenAIChatCompletion` (modèle `gpt-4o-mini`, clé API lue depuis l'environnement — jamais codée en dur). Factoriser cette construction dans une fonction permet de créer plusieurs kernels, par exemple un par agent si l'on souhaite les isoler.",## Creating the Semantic Kernel kernel,,,,,,,6c5f5e7a9b548692,30b22f8a5f0b0fe7,,,,,,,
+Le `Kernel` est le conteneur central de Semantic Kernel : il regroupe le service d'IA et les plugins. La fonction `create_kernel()` instancie un kernel vierge puis y enregistre un service `OpenAIChatCompletion` (modèle `gpt-4o-mini`, clé API lue depuis l'environnement — jamais codée en dur). Factoriser cette construction dans une fonction permet de créer plusieurs kernels, par exemple un par agent si l'on souhaite les isoler.","## Creating the Semantic Kernel kernel
+
+The `Kernel` is Semantic Kernel's central container: it brings together the AI service and the plugins. The `create_kernel()` function instantiates an empty kernel, then registers an `OpenAIChatCompletion` service on it (model `gpt-4o-mini`, API key read from the environment — never hard-coded). Factoring this construction into a function makes it possible to create several kernels, for example one per agent if you want to isolate them.",,,,,,,6c5f5e7a9b548692,6b2b9ef214ba9e68,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,560d976c,code,fr,5ece31ba54a59f52,"# Création du kernel Semantic Kernel
 def create_kernel():
     kernel = Kernel()
@@ -892,25 +896,25 @@ class PharmacistPlugin:
 print(""Classe DoctorPlugin définie"")
 print(""Classes DoctorPlugin, MedicalAIPlugin, PharmacistPlugin definies"")
 ",,,,,,,,8e01c92f30814a8b,,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,c3a57d0b,markdown,fr,f63812e2badbdc9c,"### Exercice 1 : Plugin de verification des allergies
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,c3a57d0b,markdown,fr,5d6ca1a0150320dd,"### Exercice 1 : Plugin de verification des allergies
 
 Les plugins actuels couvrent les questions de suivi, la gravite et les medicaments. Il manque un plugin crucial : la **verification des allergies**. L'objectif est de créer `AllergyPlugin` qui permet a l'agent pharmacien de verifier si un medicament recommande est compatible avec les allergies declarees du patient.
 
 **Objectif** : implementer une classe `AllergyPlugin` avec une méthode `check_allergy` annotee `@kernel_function` qui retourne un avertissement si le medicament est incompatible avec une allergie connue.
 
 **Indices** :
-- # Étape 1 : Définir un dictionnaire associant des allergies a des medicaments contre-indiques
-- # Étape 2 : Implementer la méthode `check_allergy` avec les annotations de type `Annotated`
-- # Indice : utiliser le pattern des plugins existants (DoctorPlugin, PharmacistPlugin)","### Exercise 1: Allergy Verification Plugin
+- `# Étape 1` : Définir un dictionnaire associant des allergies a des medicaments contre-indiques
+- `# Étape 2` : Implementer la méthode `check_allergy` avec les annotations de type `Annotated`
+- `# Indice` : utiliser le pattern des plugins existants (DoctorPlugin, PharmacistPlugin)","### Exercise 1: Allergy Verification Plugin
 
 The current plugins cover follow-up questions, severity, and medications. A crucial plugin is missing: **allergy verification**. The objective is to create `AllergyPlugin`, which allows the pharmacist agent to verify whether a recommended medication is compatible with the patient's declared allergies.
 
 **Objective**: implement a class `AllergyPlugin` with a `check_allergy` method annotated with `@kernel_function` that returns a warning if the medication is incompatible with a known allergy.
 
 **Hints**:
-- # Step 1: Define a dictionary mapping allergies to contraindicated medications
-- # Step 2: Implement the `check_allergy` method with `Annotated` type annotations
-- # Hint: use the pattern of the existing plugins (DoctorPlugin, PharmacistPlugin)",,,,,,,f63812e2badbdc9c,cb0bffab0bb3ff3e,,,,,,,
+- `# Step 1`: Define a dictionary mapping allergies to contraindicated medications
+- `# Step 2`: Implement the `check_allergy` method with `Annotated` type annotations
+- `# Hint`: use the pattern of the existing plugins (DoctorPlugin, PharmacistPlugin)",,,,,,,5d6ca1a0150320dd,d9adfe63854609e7,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,82094ec1,code,fr,b7e6599ca302d2e3,"class AllergyPlugin:
     """"""Plugin de verification des allergies medicamenteuses.""""""
     # TODO etudiant : implementer le plugin
@@ -931,14 +935,18 @@ MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,82094e
 print(""Exercice a completer : AllergyPlugin"")",,,,,,,,b7e6599ca302d2e3,,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,c6adcae8,markdown,fr,74e4430cb43a8cfa,"## Création du Kernel
 
-On instancie ici le kernel **partagé** que les trois agents et leurs plugins utiliseront. Tous les `add_plugin` et toutes les créations d'agents qui suivent s'appuient sur cette même instance : c'est ce qui permet à l'IA médicale d'invoquer, via le kernel, les fonctions exposées par les plugins du médecin et du pharmacien.",## Kernel Creation,,,,,,,74e4430cb43a8cfa,f4db9a81e86d1696,,,,,,,
+On instancie ici le kernel **partagé** que les trois agents et leurs plugins utiliseront. Tous les `add_plugin` et toutes les créations d'agents qui suivent s'appuient sur cette même instance : c'est ce qui permet à l'IA médicale d'invoquer, via le kernel, les fonctions exposées par les plugins du médecin et du pharmacien.","## Kernel Creation
+
+Here we instantiate the **shared** kernel that the three agents and their plugins will use. Every `add_plugin` call and every agent creation that follows relies on this same instance: this is what lets the medical AI invoke, through the kernel, the functions exposed by the doctor's and the pharmacist's plugins.",,,,,,,74e4430cb43a8cfa,7308b58f0d7ea348,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,6edc5679,code,fr,08fa670982b97e37,"# Création du kernel
 kernel = create_kernel()
 print(""Kernel instancie"")
 ",,,,,,,,08fa670982b97e37,,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,27e18741,markdown,fr,2f06457057541543,"## Ajout des plugins pour chaque agent
 
-`kernel.add_plugin()` enregistre une instance de plugin sous un nom. Chaque plugin expose ses méthodes `@kernel_function` au kernel, qui les rend discoverable par le LLM. On enregistre ici les trois plugins médicaux (`doctor`, `medical`, `pharmacist`) sur le kernel partagé — ils seront invoquables automatiquement grâce au `FunctionChoiceBehavior.Auto()` configuré plus bas.",## Adding plugins for each agent,,,,,,,2f06457057541543,03ddd847501c0266,,,,,,,
+`kernel.add_plugin()` enregistre une instance de plugin sous un nom. Chaque plugin expose ses méthodes `@kernel_function` au kernel, qui les rend discoverable par le LLM. On enregistre ici les trois plugins médicaux (`doctor`, `medical`, `pharmacist`) sur le kernel partagé — ils seront invoquables automatiquement grâce au `FunctionChoiceBehavior.Auto()` configuré plus bas.","## Adding plugins for each agent
+
+`kernel.add_plugin()` registers a plugin instance under a name. Each plugin exposes its `@kernel_function` methods to the kernel, which makes them discoverable by the LLM. Here we register the three medical plugins (`doctor`, `medical`, `pharmacist`) on the shared kernel — they will be invocable automatically thanks to the `FunctionChoiceBehavior.Auto()` configured further down.",,,,,,,2f06457057541543,2a2077fb8cfe24ed,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,934c210f,code,fr,15cdf9a0e6b507bb,"# Ajout des plugins pour chaque agent
 kernel.add_plugin(DoctorPlugin(), plugin_name=""doctor"")
 kernel.add_plugin(MedicalAIPlugin(), plugin_name=""medical"")
@@ -970,25 +978,25 @@ Mentionnez toujours les précautions d'utilisation et la nécessité d'une consu
 print(""Prompt médical configuré"")
 print(""Prompts medicaux configures"")
 ",,,,,,,,7204ffc5b2db8385,,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,35b7c5f2,markdown,fr,f7393a4e7c64d255,"### Exercice 2 : Adapter les prompts pour un scénario pediatric
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,35b7c5f2,markdown,fr,cc825d4d7e7b961d,"### Exercice 2 : Adapter les prompts pour un scénario pediatric
 
 Les prompts actuels sont configures pour un adulte. L'objectif est d'adapter le système pour une **consultation pediatric** : le medecin doit utiliser un langage adapte aux enfants, l'IA medicale doit prendre en compte les specificites pediatric (posologie différente, signes vitaux spécifiques), et le pharmacien doit mentionner les precautions enfant.
 
 **Objectif** : ecrire les trois prompts système adaptes au contexte pediatric.
 
 **Indices** :
-- # Étape 1 : Modifier le prompt du medecin pour un langage accessible aux enfants
-- # Étape 2 : Adapter le prompt de l'IA medicale pour les dosages et signes pediatric
-- # Indice : ajouter des contraintes comme ""toujours mentionner le poids recommande pour la posologie""","### Exercise 2: Adapt the prompts for a pediatric scenario
+- `# Étape 1` : Modifier le prompt du medecin pour un langage accessible aux enfants
+- `# Étape 2` : Adapter le prompt de l'IA medicale pour les dosages et signes pediatric
+- `# Indice` : ajouter des contraintes comme ""toujours mentionner le poids recommande pour la posologie""","### Exercise 2: Adapt the prompts for a pediatric scenario
 
 The current prompts are configured for an adult. The objective is to adapt the system for a **pediatric consultation**: the doctor must use language suited to children, the medical AI must take pediatric specifics into account (different dosage, specific vital signs), and the pharmacist must mention precautions for children.
 
 **Objective**: write the three system prompts adapted to the pediatric context.
 
 **Hints**:
-- # Step 1: Modify the doctor's prompt for language accessible to children
-- # Step 2: Adapt the medical AI prompt for pediatric dosages and signs
-- # Hint: add constraints such as ""always mention the recommended weight for dosage""",,,,,,,f7393a4e7c64d255,2906243cc0527601,,,,,,,
+- `# Step 1`: Modify the doctor's prompt for language accessible to children
+- `# Step 2`: Adapt the medical AI prompt for pediatric dosages and signs
+- `# Hint`: add constraints such as ""always mention the recommended weight for dosage""",,,,,,,cc825d4d7e7b961d,19b6f45a87941807,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,41dedfea,code,fr,7f431eddf5f2de3e,"# Exercice 2 : Prompts adaptes au contexte pediatric
 # TODO etudiant : rediger les trois prompts pediatric
 
@@ -1017,7 +1025,9 @@ print(""Agents de conversation crees"")
 ",,,,,,,,3d38699948002bb4,,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,f026c6bd,markdown,fr,05fcc10b168eca1c,"## Configuration pour que l'agent médical appelle automatiquement les plugins
 
-Par défaut, un agent ne s'appuie que sur ses instructions textuelles. Pour qu'il puisse **invoquer les plugins** enregistrés dans le kernel, on active `FunctionChoiceBehavior.Auto()` dans ses `KernelArguments` : le LLM décide alors de lui-même, selon le contexte, d'appeler telle ou telle `@kernel_function` (gravité d'un symptôme, recommandation médicamenteuse…). On applique ce réglage à l'agent `IA_Medicale`, puis on crée le pharmacien sur le même modèle.",## Configuration so that the medical agent automatically calls the plugins,,,,,,,05fcc10b168eca1c,524628d7af885989,,,,,,,
+Par défaut, un agent ne s'appuie que sur ses instructions textuelles. Pour qu'il puisse **invoquer les plugins** enregistrés dans le kernel, on active `FunctionChoiceBehavior.Auto()` dans ses `KernelArguments` : le LLM décide alors de lui-même, selon le contexte, d'appeler telle ou telle `@kernel_function` (gravité d'un symptôme, recommandation médicamenteuse…). On applique ce réglage à l'agent `IA_Medicale`, puis on crée le pharmacien sur le même modèle.","## Configuration so that the medical agent automatically calls the plugins
+
+By default, an agent relies only on its textual instructions. So that it can **invoke the plugins** registered in the kernel, we enable `FunctionChoiceBehavior.Auto()` in its `KernelArguments`: the LLM then decides by itself, depending on the context, to call one `@kernel_function` or another (severity of a symptom, medication recommendation, and so on). We apply this setting to the `IA_Medicale` agent, then create the pharmacist on the same model.",,,,,,,05fcc10b168eca1c,20f69d7b628a3c2f,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,80cd3f50,code,fr,3a6d162f88e072cf,"settings = kernel.get_prompt_execution_settings_from_service_id(""openai"")
 settings.function_choice_behavior = FunctionChoiceBehavior.Auto()
 ai_medical_agent.arguments = KernelArguments(settings=settings)
@@ -1038,25 +1048,25 @@ MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,8477b9
 print(""Stratégie de terminaison médicale définie"")
 print(""Strategie de terminaison medicale definie"")
 ",,,,,,,,d223cbb405a662db,,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,c555c4b3,markdown,fr,185f9d24bb4ce125,"### Exercice 3 : Stratégie de terminaison basee sur le diagnostic
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,c555c4b3,markdown,fr,bd87b8571ae6e72c,"### Exercice 3 : Stratégie de terminaison basee sur le diagnostic
 
 La stratégie actuelle arrete après 6 messages. L'objectif est d'implementer une stratégie plus intelligente qui detecte quand un **diagnostic probable** a ete formule par l'IA medicale (presence de mots comme ""diagnostic"", ""hypothese"", ""probablement"" dans le dernier message).
 
 **Objectif** : créer `DiagnosticTerminationStrategy` qui arrete la conversation des qu'un diagnostic est emis ou après 8 echanges maximum.
 
 **Indices** :
-- # Étape 1 : Définir une liste de mots-cles indicatifs d'un diagnostic
-- # Étape 2 : Verifier leur presence dans le contenu du dernier message
-- # Indice : combiner la condition de diagnostic avec un compteur maximum d'echanges","### Exercise 3: Termination strategy based on diagnosis
+- `# Étape 1` : Définir une liste de mots-cles indicatifs d'un diagnostic
+- `# Étape 2` : Verifier leur presence dans le contenu du dernier message
+- `# Indice` : combiner la condition de diagnostic avec un compteur maximum d'echanges","### Exercise 3: Termination strategy based on diagnosis
 
 The current strategy stops after 6 messages. The objective is to implement a smarter strategy that detects when a **probable diagnosis** has been formulated by the medical AI (presence of words such as ""diagnostic"", ""hypothese"", ""probablement"" in the last message).
 
 **Objective**: create `DiagnosticTerminationStrategy` that stops the conversation as soon as a diagnosis is issued or after a maximum of 8 exchanges.
 
 **Hints**:
-- # Step 1: Define a list of keywords indicative of a diagnosis
-- # Step 2: Check for their presence in the content of the last message
-- # Hint: combine the diagnosis condition with a maximum exchange counter",,,,,,,185f9d24bb4ce125,11de8750db351abd,,,,,,,
+- `# Step 1`: Define a list of keywords indicative of a diagnosis
+- `# Step 2`: Check for their presence in the content of the last message
+- `# Hint`: combine the diagnosis condition with a maximum exchange counter",,,,,,,bd87b8571ae6e72c,f9971e3b7cc0edc7,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,ee8117ae,code,fr,29c05ae8855171de,"from typing import ClassVar
 
 class DiagnosticTerminationStrategy(TerminationStrategy):
@@ -1081,38 +1091,64 @@ print(""Prompts medicaux configures"")
 print(""Chat de groupe medical configure"")
 ",,,,,,,,c01fbc60b42fc540,,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,0c12975d,markdown,fr,4561be1ad4182028,## Fonction pour exécuter le dialogue,## Function to run the dialogue,,,,,,,4561be1ad4182028,6fa89c63f220a72e,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,6e4e04a9,markdown,fr,c461b08a7a11465f,"La fonction `run_medical_chat` orchestre le dialogue complet : elle recueille les symptomes initiaux via `input()`, transmet le message a l'`AgentGroupChat`, puis itere sur les reponses des agents. Le cycle se poursuit jusqu'a ce que la stratégie de terminaison declare la consultation terminee.
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,6e4e04a9,markdown,fr,b5c71fbcb3af94e7,"La fonction `run_medical_chat` orchestre le dialogue complet : elle amorce la consultation avec les symptômes du patient, les transmet à l'`AgentGroupChat`, puis itère sur les réponses des agents jusqu'à ce que la stratégie de terminaison déclare la consultation terminée (limite de 6 échanges posée par `MedicalTerminationStrategy`).
 
-En mode interactif (`BATCH_MODE = False`), l'utilisateur peut repondre a chaque agent. En mode batch, l'appel est capture par le bloc `try/except` ci-dessous.","The `run_medical_chat` function orchestrates the complete dialogue: it collects the initial symptoms via `input()`, passes the message to the `AgentGroupChat`, then iterates over the agents' responses. The cycle continues until the termination strategy declares the consultation complete.
+Deux modes d'amorçage :
 
-In interactive mode (`BATCH_MODE = False`), the user can respond to each agent. In batch mode, the call is captured by the `try/except` block below.",,,,,,,c461b08a7a11465f,f5210b28d4ec4827,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,979228df,code,fr,92c4be50a9e82bab,"async def run_medical_chat():
-    logger.info(""🚀 Début de la consultation médicale IA"")
-    chat_history = ChatHistory()
-    
-    symptoms = input(""Décrivez vos symptômes : "")
-    chat_history.add_user_message(symptoms)
-    
+- **Batch** (`BATCH_MODE = True`, le mode Papermill/CI) : un cas clinique fixé (`SYMPTOMES_DEMO`) démarre la consultation. En exécution headless, `stdin` n'existe pas — appeler `input()` lève `StdinNotImplementedError` avant que le moindre agent ne parle, et la consultation n'a pas lieu. C'est le même patron que les deux autres études de cas du répertoire : `Fort-Boyard` amorce avec un mot à deviner fixé, `Barbie-Schreck` avec une contrainte de style tirée au sort.
+- **Interactif** (`BATCH_MODE = False`) : les symptômes initiaux sont saisis au clavier via `input()`.
+
+La consultation est ensuite **agent-driven** : les trois agents se répondent sans intervention. Le `try/except` de la cellule d'exécution n'intercepte plus que `EOFError`/`KeyboardInterrupt` — un échec d'orchestration (clé API, réseau, quota) doit rester **visible**, pas absorbé silencieusement.","The `run_medical_chat` function orchestrates the complete dialogue: it seeds the consultation with the patient's symptoms, passes them to the `AgentGroupChat`, then iterates over the agents' responses until the termination strategy declares the consultation complete (limit of 6 exchanges set by `MedicalTerminationStrategy`).
+
+Two seeding modes:
+
+- **Batch** (`BATCH_MODE = True`, the Papermill/CI mode): a fixed clinical case (`SYMPTOMES_DEMO`) starts the consultation. Under headless execution `stdin` does not exist — calling `input()` raises `StdinNotImplementedError` before any agent has spoken at all, and the consultation never takes place. This is the same pattern as the two other case studies in this directory: `Fort-Boyard` seeds with a fixed word to guess, `Barbie-Schreck` with a randomly drawn style constraint.
+- **Interactive** (`BATCH_MODE = False`): the initial symptoms are typed in at the keyboard via `input()`.
+
+The consultation is then **agent-driven**: the three agents reply to one another without intervention. The `try/except` in the execution cell now catches only `EOFError`/`KeyboardInterrupt` — an orchestration failure (API key, network, quota) must remain **visible**, not silently absorbed.",,,,,,,b5c71fbcb3af94e7,2c3c19dfa45c6329,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,979228df,code,fr,c499959e426cce74,"from semantic_kernel.contents import ChatMessageContent, AuthorRole
+
+SYMPTOMES_DEMO = (""Depuis trois jours, j'ai une fievre a 38,5 degres avec des maux de tete ""
+                  ""et une legere toux seche. Je n'ai pas de douleur thoracique."")
+
+async def run_medical_chat():
+    logger.info(""Début de la consultation médicale IA"")
+
+    # En mode batch (Papermill/CI), stdin n'existe pas : on amorce la consultation
+    # avec un cas clinique fixe -- meme patron que Fort-Boyard et Barbie-Schreck.
+    if BATCH_MODE:
+        symptoms = SYMPTOMES_DEMO
+        print(f""[Batch] Cas clinique démo : {symptoms}"")
+    else:
+        symptoms = input(""Décrivez vos symptômes : "")
+
+    # Le message patient amorce l'historique INTERNE de l'AgentGroupChat (via
+    # add_chat_message) : sans lui, la premiere invocation n'a aucun message
+    # auquel repondre et echoue.
+    await chat.add_chat_message(ChatMessageContent(role=AuthorRole.USER, content=symptoms))
+
+    # Consultation agent-driven : les trois agents se repondent jusqu'a la limite
+    # de 6 echanges posee par MedicalTerminationStrategy.
     while True:
         async for message in chat.invoke():
             logger.info(f""[{message.role}] {message.name}: {message.content}"")
             print(f""{message.name}: {message.content}"")
-            
-            if message.name not in [""Pharmacien""]:
-                user_response = input(""👉 Votre réponse : "")
-                chat_history.add_user_message(user_response)
-        
+
         if chat.is_complete:
             break
-    
-    logger.info(""🏥 Consultation terminée."")
+
+    logger.info(""Consultation terminée."")
+
 print(""Fonction de chat médical prête"")
-print(""Fonction run_medical_chat prete"")
-",,,,,,,,92c4be50a9e82bab,,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,d0d7a23d,code,fr,e0d2761e5f4d5d05,"try:
+",,,,,,,,c499959e426cce74,,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,d0d7a23d,code,fr,e8168f859bef5c86,"# except resserre : plus d'Exception nue. EOFError/KeyboardInterrupt = session
+# interactive interrompue par l'utilisateur ; tout autre echec (API, cle, reseau)
+# doit rester VISIBLE dans la sortie, pas etre absorbe.
+try:
     await run_medical_chat()
-except (EOFError, KeyboardInterrupt, Exception) as e:
-    print(f""[Batch] Consultation interactive ignoree ({type(e).__name__}: {str(e)[:80]})"")",,,,,,,,e0d2761e5f4d5d05,,,,,,,,
+except (EOFError, KeyboardInterrupt) as e:
+    print(f""[Session interactive interrompue ({type(e).__name__}) - la consultation n'a pas eu lieu, relancez la cellule.]"")
+",,,,,,,,e8168f859bef5c86,,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,ceaae36c,markdown,fr,5c7500827f76bbef,"## Ce que nous avons construit
 
 Ce cas d'usage illustre plusieurs concepts avances de Semantic Kernel :
@@ -1606,3 +1642,100 @@ MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,c9681143,ma
 MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,943a4bd5,markdown,fr,20e3bc20c5f86572,"**Lecture de l'échec PDF** — la cellule renvoie `Échec de la génération : Aucun PDF produit malgré les tentatives`. C'est un **échec d'export**, pas un échec de raisonnement : la recette (Salade de Quinoa) a bien été générée et validée par les agents, mais l'outil de rendu PDF n'a pas pu la matérialiser.
 
 **Pourquoi cet échec est pédagogiquement plus intéressant qu'un succès** : il illustre la **frontière entre le raisonnement LLM et l'exécution d'outils**. Le multi-agent a fait son travail (recette correcte, contraintes respectées) ; le pipeline casse à l'interface avec une dépendance externe (librairie PDF, polices, permissions d'écriture). Diagnostiquer cet échec demande de séparer les deux couches : vérifier d'abord que `RecipeState` contient la recette (couche agent = OK), puis inspecter l'exception de l'outil PDF (couche rendu = KO). C'est la discipline de debug que tout système LLM-outils exige — et ce notebook, en assumant l'échec honnêtement plutôt qu'en le masquant, enseigne cette distinction au lieu de la cacher.",,,,,,,,20e3bc20c5f86572,,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,1969ae56,markdown,fr,27ca5071235eb784,"### Vue d'ensemble : un chatbot médical multi-agent en 3 rôles
+
+Ce notebook implémente une consultation médicale simulée entre trois agents LLM : un **médecin généraliste** qui pose des questions complémentaires au patient, une **IA médicale d'analyse** qui propose des hypothèses diagnostiques, et un **pharmacien** qui vérifie les interactions médicamenteuses. Le tout orchestré par un `AgentGroupChat` Semantic Kernel avec une **stratégie de terminaison** à limite d'échanges (6 messages) — la détection d'un diagnostic final par mot-clé étant laissée en exercice. Le notebook couvre les patterns : `Kernel` + `plugins` natifs, `ChatCompletionAgent`, `AgentGroupChat`, `TerminationStrategy`, et `auto function calling`. C'est un cas d'usage type pour les **synthetic clinical reasoning** où plusieurs LLM agents simulent une consultation réelle.","### Overview: a 3-role multi-agent medical chatbot
+
+This notebook implements a simulated medical consultation between three LLM agents: a **general practitioner** who asks the patient follow-up questions, a **medical analysis AI** that proposes diagnostic hypotheses, and a **pharmacist** who checks drug interactions. The whole thing is orchestrated by a Semantic Kernel `AgentGroupChat` with an **exchange-limit termination strategy** (6 messages) — detecting a final diagnosis by keyword is left as an exercise. The notebook covers the patterns: `Kernel` + native `plugins`, `ChatCompletionAgent`, `AgentGroupChat`, `TerminationStrategy`, and `auto function calling`. It is a typical use case for **synthetic clinical reasoning** where several LLM agents simulate a real consultation.",,,,,,,27ca5071235eb784,e343123d74c7e3f6,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,593c25da,markdown,fr,f4649179389e60bd,"### Lecture du résultat : imports et configuration initiale
+
+L'output `""Imports OK""` valide la chaîne complète `python-dotenv` + `semantic-kernel` + `pydantic` : trois dépendances critiques pour ce cas d'usage, et l'échec d'une seule aurait court-circuité la cellule d'imports ci-dessus (`load_dotenv()`). Le notebook utilise des **imports gardés** (try/except ImportError) dans la cellule d'imports ci-dessus — c'est un pattern défensif qui documente la disponibilité des services externes **avant** de planter en aval. L'étudiant doit reproduire ce réflexe : un import nu de `semantic_kernel` dans un clone frais sans la dépendance installée retournerait un `ModuleNotFoundError` peu explicite.","### Reading the result: imports and initial configuration
+
+The `""Imports OK""` output validates the full `python-dotenv` + `semantic-kernel` + `pydantic` chain: three critical dependencies for this use case, and a failure in any single one would have short-circuited the imports cell above (`load_dotenv()`). The notebook uses **guarded imports** (try/except ImportError) in the imports cell above — a defensive pattern that documents the availability of external services **before** failing downstream. The student should reproduce this reflex: a bare `import semantic_kernel` in a fresh clone without the dependency installed would return an unhelpful `ModuleNotFoundError`.",,,,,,,f4649179389e60bd,ab317da5225b77d2,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,43b69f3c,markdown,fr,fee421cd4704c389,"### Lecture du résultat : variables d'environnement chargées
+
+`load_dotenv()` retourne `True` quand un fichier `.env` est trouvé et parsé. C'est le **premier signal** que la configuration LLM est en place : `OPENAI_API_KEY` (modèle GPT-4), `AZURE_OPENAI_ENDPOINT` (déploiement Azure AI Foundry), ou un endpoint local ComfyUI/Qwen selon la cohorte. Si l'étudiant voit `False`, le notebook échouera plus loin lors de l'instanciation du kernel (`Kernel()` sans service LLM = crash silencieux).","### Reading the result: environment variables loaded
+
+`load_dotenv()` returns `True` when a `.env` file is found and parsed. This is the **first signal** that the LLM configuration is in place: `OPENAI_API_KEY` (GPT-4 model), `AZURE_OPENAI_ENDPOINT` (Azure AI Foundry deployment), or a local ComfyUI/Qwen endpoint depending on the cohort. If the student sees `False`, the notebook will fail later when instantiating the kernel (`Kernel()` without an LLM service = silent crash).",,,,,,,fee421cd4704c389,61f1e1da316546ce,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,fcebb55c,markdown,fr,f9fd63648ea86466,"### Lecture du résultat : logging structuré pour traçabilité multi-agent
+
+`""Configuration des logs OK""` valide le format `%(asctime)s [%(levelname)s] %(name)s: %(message)s` avec niveau `INFO`. C'est ce format que la cellule d'exécution de la consultation (en fin de notebook) affichera en sortie (horodatage + `[INFO] Début de la consultation médicale IA` au lancement de la consultation). Le logging **structuré** n'est pas un caprice pédagogique : sans lui, l'étudiant ne peut pas distinguer **qui parle** dans un chat à 3 agents — médecin, IA médicale ou pharmacien. Le préfixe `🚀` est un signal visuel (emoji utilisé comme tag sémantique) qui délimite les phases de l'orchestration : début de consultation, fin de tour, terminaison. L'étudiant doit noter l'horodatage (la date varie à chaque exécution) et l'ordre des événements : c'est cette trace qui valide ex-post la séquence orchestrale.","### Reading the result: structured logging for multi-agent traceability
+
+`""Configuration des logs OK""` validates the `%(asctime)s [%(levelname)s] %(name)s: %(message)s` format at level `INFO`. This is the format the consultation execution cell (at the end of the notebook) will display as output (timestamp + `[INFO] Début de la consultation médicale IA` when the consultation starts). **Structured** logging is not a pedagogical whim: without it, the student cannot tell **who is speaking** in a 3-agent chat — doctor, medical AI, or pharmacist. The `🚀` prefix is a visual signal (emoji used as a semantic tag) that delimits the orchestration phases: consultation start, end of turn, termination. The student should note the timestamp (the date changes on every run) and the order of events: this trace is what validates the orchestral sequence after the fact.",,,,,,,f9fd63648ea86466,e554aac6e66c6909,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,b4543216,markdown,fr,a30d1662e8441dbf,"### Lecture du résultat : fonction factory create_kernel
+
+`""Kernel Semantic Kernel créé""` confirme l'instanciation d'un `Kernel()` vide — la `def create_kernel()` est appelée plus loin dans le notebook (`kernel = create_kernel()`). Cette **séparation définition/instanciation** est un pattern de **testabilité** : la cellule d'instanciation peut être relancée plusieurs fois sans redéfinir la fonction. Dans un notebook pédagogique, cela permet à l'étudiant de **réinstancier** un kernel frais si le précédent a accumulé des plugins contradictoires (ex. après une erreur dans une cellule précédente). Dans un projet en production, c'est l'équivalent d'une **factory pattern** classique (GoF).","### Reading the result: the create_kernel factory function
+
+`""Kernel Semantic Kernel créé""` confirms the instantiation of an empty `Kernel()` — the `def create_kernel()` is called further down in the notebook (`kernel = create_kernel()`). This **definition/instantiation separation** is a **testability** pattern: the instantiation cell can be re-run several times without redefining the function. In a pedagogical notebook, this lets the student **re-instantiate** a fresh kernel if the previous one accumulated contradictory plugins (e.g. after an error in an earlier cell). In a production project, it is the equivalent of a classic **factory pattern** (GoF).",,,,,,,a30d1662e8441dbf,e89dbeac3c215583,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,fd86a9df,markdown,fr,b38fbe151161f8a8,"### Lecture du résultat : kernel Semantic Kernel instancié
+
+La cellule ci-dessus définit `create_kernel()` — c'est la **factory du conteneur central** de Semantic Kernel. Le kernel agrège services LLM, plugins (médecin/pharmacien/allergies) et filters. Dans ce notebook, chaque agent conversationnel (médecin, IA médicale, pharmacien) **partage le même kernel** mais accède à des plugins différents via `kernel.add_plugin(DoctorPlugin(), plugin_name=""doctor"")`. Cette mutualisation du kernel vs duplication par agent est un choix d'architecture : un seul service LLM, N personas.","### Reading the result: Semantic Kernel kernel instantiated
+
+The cell above defines `create_kernel()` — the **factory of Semantic Kernel's central container**. The kernel aggregates LLM services, plugins (doctor/pharmacist/allergies) and filters. In this notebook, each conversational agent (doctor, medical AI, pharmacist) **shares the same kernel** but accesses different plugins via `kernel.add_plugin(DoctorPlugin(), plugin_name=""doctor"")`. Sharing the kernel instead of duplicating it per agent is an architecture choice: one LLM service, N personas.",,,,,,,b38fbe151161f8a8,eec6675a2d05d3f8,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,32073503,markdown,fr,d73179abc1194d34,"### Lecture du résultat : kernel et plugins opérationnels
+
+`""Kernel instancie""` puis `""Kernel configuré avec le plugin médical""` valident la séquence `kernel = create_kernel()` → `kernel.add_plugin(DoctorPlugin(), plugin_name=""doctor"")`. Cette **deuxième étape** est ce qui distingue Semantic Kernel d'un simple wrapper OpenAI : le kernel **enregistre** les plugins comme tools invocables par le LLM via la couche `auto function calling`. Sans `add_plugin`, les `native functions` Python de `DoctorPlugin` seraient inaccessibles aux agents, et le LLM répondrait **sans grounding médical**.","### Reading the result: kernel and plugins operational
+
+`""Kernel instancie""` then `""Kernel configuré avec le plugin médical""` validate the sequence `kernel = create_kernel()` → `kernel.add_plugin(DoctorPlugin(), plugin_name=""doctor"")`. This **second step** is what distinguishes Semantic Kernel from a simple OpenAI wrapper: the kernel **registers** plugins as tools invocable by the LLM via the `auto function calling` layer. Without `add_plugin`, the Python `native functions` of `DoctorPlugin` would be unreachable by the agents, and the LLM would answer **without medical grounding**.",,,,,,,d73179abc1194d34,f2a4dc19b954c65a,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,f685b172,markdown,fr,34cb11f5490b6a1e,"### Lecture du résultat : plugins médicaux définis
+
+`""Classe DoctorPlugin définie""` valide que `DoctorPlugin` (questions complémentaires au patient), `MedicalAIPlugin` (analyse IA), et `PharmacistPlugin` (vérification interactions médicamenteuses) sont instanciés en mémoire. Chaque plugin expose des **native functions** Python décorées `@kernel.function_description()` que les agents peuvent invoquer via le mécanisme d'**auto function calling** de SK. Le notebook utilise 3 plugins médicaux + 1 plugin d'allergies (exercice, ci-dessous) — l'étudiant doit compléter l'`AllergyPlugin` (voir l'exercice ci-dessous). Les plugins sont l'**équivalent médical des tools en LangChain** : la Skill calling devient `function_call` côté LLM.","### Reading the result: medical plugins defined
+
+`""Classe DoctorPlugin définie""` validates that `DoctorPlugin` (patient follow-up questions), `MedicalAIPlugin` (AI analysis), and `PharmacistPlugin` (drug interaction checks) are instantiated in memory. Each plugin exposes Python **native functions** decorated with `@kernel.function_description()` that agents can invoke via SK's **auto function calling** mechanism. The notebook uses 3 medical plugins + 1 allergy plugin (exercise, below) — the student must complete the `AllergyPlugin` (see the exercise below). Plugins are the **medical equivalent of tools in LangChain**: skill calling becomes `function_call` on the LLM side.",,,,,,,34cb11f5490b6a1e,232ed8c6797ed708,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,518877fb,markdown,fr,17fd288a5ba38f14,"### Lecture du résultat : prompts système configurés
+
+`""Prompts medicaux configures""` couvre les 3 rôles : `DOCTOR_PROMPT` (médecin généraliste, questions complémentaires), `AI_MEDICAL_PROMPT` (assistant IA d'analyse), `PHARMACIST_PROMPT` (vérification interactions). Chaque prompt structure la **persona + comportement attendu** : ton professionnel, refus de prescrire, demande de clarifications. C'est l'application du pattern **role prompting** (cf. [OpenAI Best Practices](https://platform.openai.com/docs/guides/prompt-engineering/tactic-ask-the-model-to-adopt-a-persona)). L'exercice sur les prompts (plus bas) invite l'étudiant à rédiger un prompt pediatric — l'ajout d'un persona spécialisé est un exercice classique de **persona engineering**.","### Reading the result: system prompts configured
+
+`""Prompts medicaux configures""` covers the 3 roles: `DOCTOR_PROMPT` (general practitioner, follow-up questions), `AI_MEDICAL_PROMPT` (AI analysis assistant), `PHARMACIST_PROMPT` (interaction checks). Each prompt structures the **persona + expected behavior**: professional tone, refusal to prescribe, asking for clarifications. This is an application of the **role prompting** pattern (cf. [OpenAI Best Practices](https://platform.openai.com/docs/guides/prompt-engineering/tactic-ask-the-model-to-adopt-a-persona)). The prompt exercise (further down) invites the student to write a pediatric prompt — adding a specialized persona is a classic **persona engineering** exercise.",,,,,,,17fd288a5ba38f14,7a36fb10faf9a80b,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,5a6279be,markdown,fr,d92b764a58419333,"### Lecture du résultat : passage du squelette à l'exécution
+
+Avec la cellule d'instanciation du kernel ci-dessus (`kernel = create_kernel()`) et la cellule d'ajout des plugins plus bas (`kernel.add_plugin(...)`), le notebook **quitte la phase de définition** pour la phase d'instanciation. Avant : on *définissait* des classes et fonctions. Après : on les *utilise*. Cette démarcation est un signal pédagogique classique en notebook : la deuxième moitié du notebook est **exécutable** (l'étudiant doit voir la consultation se dérouler), tandis que la première moitié est **structurelle** (l'étudiant peut la lire comme du code de production). Le `print(""Kernel instancie"")` qui accompagne l'instanciation est la **trace écrite** de cette transition.","### Reading the result: from skeleton to execution
+
+With the kernel instantiation cell above (`kernel = create_kernel()`) and the plugin-addition cell further down (`kernel.add_plugin(...)`), the notebook **leaves the definition phase** for the instantiation phase. Before: we *defined* classes and functions. After: we *use* them. This demarcation is a classic pedagogical signal in notebooks: the second half of the notebook is **executable** (the student should see the consultation unfold), while the first half is **structural** (the student can read it as production code). The `print(""Kernel instancie"")` that accompanies the instantiation is the **written trace** of this transition.",,,,,,,d92b764a58419333,b26f4717b2c6fb58,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,887a3c44,markdown,fr,094cd5f3d5d37abf,"### Lecture du résultat : stratégie de terminaison médicale
+
+`""Stratégie de terminaison médicale définie""` marque l'instanciation de `MedicalTerminationStrategy` — sous-classe de `TerminationStrategy` qui détecte la fin du chat multi-agent. Dans ce notebook, le critère de terminaison est une **limite d'échanges** : `should_terminate` retourne `True` dès que l'historique atteint 6 messages (`len(history) >= 6`) — soit 1 message patient + 5 réponses d'agents. Sans stratégie explicite, `AgentGroupChat` boucle indéfiniment. La détection d'un diagnostic par mot-clé est précisément l'**exercice** laissé à l'étudiant plus bas (`DiagnosticTerminationStrategy`). L'étudiant doit observer cette **séparation entre orchestration et logique métier** : la stratégie de terminaison est un **plugin comportemental**, pas une règle codée en dur dans le chat.","### Reading the result: medical termination strategy
+
+`""Stratégie de terminaison médicale définie""` marks the instantiation of `MedicalTerminationStrategy` — a subclass of `TerminationStrategy` that detects the end of the multi-agent chat. In this notebook, the termination criterion is an **exchange limit**: `should_terminate` returns `True` as soon as the history reaches 6 messages (`len(history) >= 6`) — i.e. 1 patient message + 5 agent replies. Without an explicit strategy, `AgentGroupChat` loops forever. Detecting a diagnosis by keyword is precisely the **exercise** left to the student further down (`DiagnosticTerminationStrategy`). The student should observe this **separation between orchestration and business logic**: the termination strategy is a **behavioral plugin**, not a rule hard-coded into the chat.",,,,,,,094cd5f3d5d37abf,642cc195e00643fa,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,79574b2a,markdown,fr,9c51f3268b92ee9b,"### Lecture du résultat : agents conversationnels créés
+
+`""Agents de conversation créés""` marque l'instanciation de trois `ChatCompletionAgent` (médecin, IA médicale, pharmacien) avec leurs rôles respectifs et le `ServiceId=""openai""` du kernel. C'est ici que le **modèle de groupe** (`AgentGroupChat`, instancié plus bas dans le notebook) prend forme : trois personas, un orchestrateur de chat, une stratégie de terminaison médicale. L'étudiant doit observer la distinction agent/kernel : un agent **utilise** un kernel mais n'en est pas le propriétaire. Pour Scalability, ajouter un 4ᵉ agent (ex. infirmier) ne nécessite pas de réinstancier le kernel — seulement un nouveau `ChatCompletionAgent` partageant le même.","### Reading the result: conversational agents created
+
+`""Agents de conversation créés""` marks the instantiation of three `ChatCompletionAgent` (doctor, medical AI, pharmacist) with their respective roles and the kernel's `ServiceId=""openai""`. This is where the **group model** (`AgentGroupChat`, instantiated further down in the notebook) takes shape: three personas, one chat orchestrator, one medical termination strategy. The student should observe the agent/kernel distinction: an agent **uses** a kernel but does not own it. For scalability, adding a 4th agent (e.g. a nurse) does not require re-instantiating the kernel — only a new `ChatCompletionAgent` sharing the same one.",,,,,,,9c51f3268b92ee9b,4010fb6bb8013d2b,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,f72d8c8b,markdown,fr,72884a024d9a6fe6,"### Lecture du résultat : paramètres d'exécution LLM
+
+`""Paramètres d'exécution configurés""` marque `kernel.get_prompt_execution_settings_from_service_id(""openai"")` qui configure la température, le max_tokens, le top_p pour les appels LLM du kernel. Ces paramètres sont **partagés par les 3 agents** via le kernel — pas configurés agent par agent. C'est un choix d'orchestration : pour une consultation médicale, on veut des réponses **reproductibles et conservatives** (température basse, typiquement 0.2-0.5), pas créatives. L'étudiant peut observer l'effet en modifiant `temperature` (de 0.0 = déterministe à 1.0 = exploratoire) et en relançant la cellule `settings` ci-dessus.","### Reading the result: LLM execution settings
+
+`""Paramètres d'exécution configurés""` marks `kernel.get_prompt_execution_settings_from_service_id(""openai"")` which configures the temperature, max_tokens, and top_p for the kernel's LLM calls. These settings are **shared by the 3 agents** through the kernel — not configured agent by agent. It is an orchestration choice: for a medical consultation, we want **reproducible and conservative** answers (low temperature, typically 0.2-0.5), not creative ones. The student can observe the effect by changing `temperature` (from 0.0 = deterministic to 1.0 = exploratory) and re-running the `settings` cell above.",,,,,,,72884a024d9a6fe6,b1fe49df3e1072aa,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,faa01c8b,markdown,fr,b70eda170196f9d2,"### Lecture du résultat : chat de groupe médical configuré
+
+`""Chat de groupe médical configuré""` valide la chaîne `AgentGroupChat(agents=[...], termination_strategy=MedicalTerminationStrategy(), selection_strategy=DefaultSelectionStrategy())`. Le **groupe de chat** orchestre la conversation multi-agent : à chaque tour, le `selection_strategy` choisit l'agent actif (round-robin par défaut, ou basé sur le dernier message), le `termination_strategy` détecte la fin (limite de 6 messages dans l'historique). C'est le **cœur du pattern multi-agent** : sans orchestration explicite, les agents parleraient en parallèle. Ce notebook est un cas d'usage type de **synthetic clinical reasoning** où 3 LLM agents simulent une consultation réelle.","### Reading the result: medical group chat configured
+
+`""Chat de groupe médical configuré""` validates the chain `AgentGroupChat(agents=[...], termination_strategy=MedicalTerminationStrategy(), selection_strategy=DefaultSelectionStrategy())`. The **group chat** orchestrates the multi-agent conversation: at each turn, the `selection_strategy` picks the active agent (round-robin by default, or based on the last message), the `termination_strategy` detects the end (limit of 6 messages in the history). This is the **heart of the multi-agent pattern**: without explicit orchestration, the agents would speak in parallel. This notebook is a typical use case of **synthetic clinical reasoning** where 3 LLM agents simulate a real consultation.",,,,,,,b70eda170196f9d2,12fccd8f8a40d688,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,8ba2019f,markdown,fr,bb60deafe3b577d1,"### Lecture du résultat : squelette multi-agent complet, prêt pour l'exécution
+
+À ce stade du notebook, **toute la machinerie multi-agent est en place** : kernel partagé (1), 3+ plugins médicaux (médecin/IA/pharmacien/allergies), 3 agents conversationnels avec leurs prompts respectifs, 1 stratégie de terminaison médicale, 1 groupe de chat orchestré, 1 fonction `run_medical_chat()` async. Ce qui sépare ce notebook d'un squelette mort, c'est la cellule d'exécution (try/except `await run_medical_chat()`, ci-dessous) : l'appel asynchrone déclenche réellement l'orchestration et l'étudiant voit la conversation se dérouler tour par tour. **Pattern clé** : la complexité d'un système multi-agent est *cachée* dans le setup (tout ce qui précède) et *visible* dans l'exécution (les dernières cellules). L'étudiant doit comprendre ce distinguo pour scripter ses propres use cases.","### Reading the result: complete multi-agent skeleton, ready for execution
+
+At this point in the notebook, **the entire multi-agent machinery is in place**: shared kernel (1), 3+ medical plugins (doctor/AI/pharmacist/allergies), 3 conversational agents with their respective prompts, 1 medical termination strategy, 1 orchestrated group chat, 1 async `run_medical_chat()` function. What separates this notebook from a dead skeleton is the execution cell (try/except `await run_medical_chat()`, below): the asynchronous call actually triggers the orchestration and the student sees the conversation unfold turn by turn. **Key pattern**: the complexity of a multi-agent system is *hidden* in the setup (everything above) and *visible* in the execution (the last cells). The student must understand this distinction to script their own use cases.",,,,,,,bb60deafe3b577d1,6f3060a3f37f2da2,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,a4b715be,markdown,fr,f37fc25bd0283c62,"### Lecture du résultat : fonction de chat médical prête
+
+`""Fonction de chat médical prête""` marque l'aboutissement du squelette : la fonction async `run_medical_chat()` peut être appelée pour démarrer la consultation simulée. Le `logger.info(""🚀 Début de la consultation médicale IA"")` qui suit est le **premier signal d'exécution** quand l'étudiant lance la cellule d'exécution de la consultation (ci-dessous). À ce stade, le notebook a instancié **3 agents**, **1 kernel partagé**, **3+ plugins**, **1 stratégie de terminaison**, **1 groupe de chat** — toute la machinerie multi-agent est en place. La cellule d'exécution lance `await run_medical_chat()` qui bouclera jusqu'à ce que `MedicalTerminationStrategy.should_terminate()` retourne `True` (limite de 6 messages dans l'historique du groupe).","### Reading the result: medical chat function ready
+
+`""Fonction de chat médical prête""` marks the culmination of the skeleton: the async function `run_medical_chat()` can be called to start the simulated consultation. The `logger.info(""🚀 Début de la consultation médicale IA"")` that follows is the **first execution signal** when the student runs the consultation execution cell (below). At this point, the notebook has instantiated **3 agents**, **1 shared kernel**, **3+ plugins**, **1 termination strategy**, **1 group chat** — the whole multi-agent machinery is in place. The execution cell launches `await run_medical_chat()` which will loop until `MedicalTerminationStrategy.should_terminate()` returns `True` (limit of 6 messages in the group history).",,,,,,,f37fc25bd0283c62,2e8f243c81521d1b,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,3ccfe984,markdown,fr,091ceca9427de857,"### Lecture du résultat : exécution effective de la consultation simulée
+
+La sortie ci-dessus est une consultation **réelle** (7 appels `gpt-4o-mini` comptés dans les logs HTTP). Le log `Début de la consultation médicale IA` ouvre la trace, puis le cas clinique démo amorce l'historique du groupe. **L'étudiant observe** :
+
+1. **La rotation round-robin des agents** — les logs `Selected agent at index 0/1/2` montrent la `selection_strategy` par défaut passer le bâton : `Docteur_Humain` → `IA_Medicale` → `Pharmacien` → `Docteur_Humain` → `IA_Medicale` (5 tours d'agents).
+2. **L'auto function calling en action** — dès son premier tour, le médecin invoque **2 plugins en parallèle** (`doctor-ask_followup_questions` + `medical-check_symptom_severity`) : `FunctionChoiceBehavior.Auto()` s'exécute réellement, ce n'est pas une description.
+3. **La terminaison par limite d'échanges** — 1 message patient + 5 réponses d'agents = 6 messages : `MedicalTerminationStrategy` met fin à la consultation (`Consultation terminée.`). La détection d'un **diagnostic final par mot-clé** n'a pas eu lieu : c'est l'exercice laissé à l'étudiant (`DiagnosticTerminationStrategy`, stub ci-dessus).
+
+Cette trace rejouable est ce qui rend le notebook pédagogique : l'étudiant peut relire la séquence async pour comprendre le mécanisme de sélection d'agent, plutôt que de lire une boîte noire.","### Reading the result: actual execution of the simulated consultation
+
+The output above is a **real** consultation (7 `gpt-4o-mini` calls counted in the HTTP logs). The `Début de la consultation médicale IA` log opens the trace, then the demo clinical case seeds the group history. **The student observes**:
+
+1. **The round-robin rotation of the agents** — the `Selected agent at index 0/1/2` logs show the default `selection_strategy` passing the baton: `Docteur_Humain` → `IA_Medicale` → `Pharmacien` → `Docteur_Humain` → `IA_Medicale` (5 agent turns).
+2. **Auto function calling in action** — from its very first turn, the doctor invokes **2 plugins in parallel** (`doctor-ask_followup_questions` + `medical-check_symptom_severity`): `FunctionChoiceBehavior.Auto()` really executes, it is not a description.
+3. **Termination by exchange limit** — 1 patient message + 5 agent replies = 6 messages: `MedicalTerminationStrategy` ends the consultation (`Consultation terminée.`). Detecting a **final diagnosis by keyword** did not happen: that is the exercise left to the student (`DiagnosticTerminationStrategy`, stub above).
+
+This replayable trace is what makes the notebook pedagogical: the student can re-read the async sequence to understand the agent-selection mechanism, instead of reading a black box.",,,,,,,091ceca9427de857,60ca879ab08d4bcb,,,,,,,
