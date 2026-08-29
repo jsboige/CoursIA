@@ -721,7 +721,7 @@ def _is_code_defined_value(value, prose_text) -> bool:
     Deux heuristiques anterieures ont ete mesurees firsthand et REJETEES comme
     sur-filtrantes (consignees ici pour prevenir les retentes) :
       - cross-cell « var = value dans une cellule code voisine » : un ``value = 1``
-        de code generic collide avec un « 1 » de table (Sudoku-2 c[8]) ;
+        de code generic collide avec un « 1 » de table (Sudoku-02 c[8]) ;
       - intra-prose « identifiant = valeur » hors backtick : filtre les METRIQUES
         restituees en gras (MAE/RMSE dans ML-4 c[36]) -> supprime un vrai drift.
 
@@ -919,7 +919,7 @@ def _detect_prose_enumeration(text: str) -> list[float] | None:
     # par des virgules/conjonctions, jamais un intervalle entier. On retire ces
     # ranges avant extraction, sinon « 81 valeurs (1-9) » etait lu comme une
     # enumeration de 2 niveaux (1 et 9) puis comparee aux outputs globaux ->
-    # FP systematique (confirme firsthand Sudoku-5-PSO cell[9], GameTheory).
+    # FP systematique (confirme firsthand Sudoku-05-PSO cell[9], GameTheory).
     sentence = re.sub(r"\b\d{1,4}\s*[-–—]\s*\d{1,4}\b", " ", sentence)
     nums = _extract_prose_numbers(sentence)
     return nums if len(nums) >= 2 else None

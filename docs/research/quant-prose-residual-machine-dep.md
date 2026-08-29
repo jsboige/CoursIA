@@ -18,7 +18,7 @@
 | `Probas/Infer` | 20 | 26 | 46 |
 | `Search/Applications` | 13 | 5 | 18 |
 | `QuantConnect/Python` | 12 | 1 | 13 |
-| `Sudoku/Sudoku-3-Genetic-Python.ipynb` | 9 | 4 | 13 |
+| `Sudoku/Sudoku-03-Genetic-Python.ipynb` | 9 | 4 | 13 |
 | `SymbolicAI/Lean` | 7 | 2 | 9 |
 | `SymbolicAI/Planners` | 6 | 3 | 9 |
 | `Search/Part2-CSP` | 5 | 4 | 9 |
@@ -34,7 +34,7 @@
 |---|---|---|---|---|
 | `Sudoku-13-SymbolicAutomata-Csharp.ipynb` | 0 | 5 | 18 | 5 |
 | `Infer-2-Gaussian-Mixtures.ipynb` | 0 | 0 | 19 | 26 |
-| `Sudoku-3-Genetic-Python.ipynb` | 3 | 0 | 6 | 4 |
+| `Sudoku-03-Genetic-Python.ipynb` | 3 | 0 | 6 | 4 |
 | `04-1-Educational-Audio-Content.ipynb` | 7 | 0 | 0 | 1 |
 | `04-6-Audiobook-Pipeline.ipynb` | 6 | 0 | 0 | 2 |
 | `Sudoku-18-Comparison-Csharp.ipynb` | 2 | 0 | 3 | 0 |

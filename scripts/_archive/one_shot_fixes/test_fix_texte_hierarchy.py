@@ -8,7 +8,7 @@ The most incident-prone logic is _demote_all_hint_headings, which locates
 hint headings in the JOINED source then maps them back to line ranges in
 the original split source -- including the nbformat 'char-split' form (each
 character its own list element). That mapping caused two real content-loss
-incidents (c.925 #8654 Sudoku-1 cell 9: 941 -> 16 chars; c.914 commit
+incidents (c.925 #8654 Sudoku-01 cell 9: 941 -> 16 chars; c.914 commit
 318faa104: -970 / -1594 char losses on GenAI/Texte cells), so its correct
 behavior is locked here.
 

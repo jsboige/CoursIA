@@ -12,7 +12,7 @@ single naming convention (`Foo-Csharp` -> `Foo`) and confidently reported
 were silently misfiled as C#-only:
 
     Tweety-10-MLN-Csharp      <-> Tweety-10-MLN            suffix dropped
-    Sudoku-7-Norvig-Csharp    <-> Sudoku-7-Norvig-Python   suffix substituted
+    Sudoku-07-Norvig-Csharp    <-> Sudoku-07-Norvig-Python   suffix substituted
     SW-10-CSharp-RDFStar      <-> SW-10-Python-RDFStar     medial token
 
 A too-narrow predicate does not fail loudly; it returns a confident wrong
@@ -39,8 +39,8 @@ UNIVERSE = {
     f"{TW}/Tweety-10-MLN-Csharp.ipynb",
     f"{TW}/Tweety-10-MLN.ipynb",
     # convention 2 -- suffix substituted
-    f"{SUD}/Sudoku-7-Norvig-Csharp.ipynb",
-    f"{SUD}/Sudoku-7-Norvig-Python.ipynb",
+    f"{SUD}/Sudoku-07-Norvig-Csharp.ipynb",
+    f"{SUD}/Sudoku-07-Norvig-Python.ipynb",
     f"{GT}/GameTheory-04c-NashExistence-Csharp.ipynb",
     f"{GT}/GameTheory-04c-NashExistence-Python.ipynb",
     # convention 3 -- medial token
@@ -61,8 +61,8 @@ def test_convention_suffix_dropped():
 
 
 def test_convention_suffix_substituted():
-    assert python_twin_candidates(f"{SUD}/Sudoku-7-Norvig-Csharp.ipynb", UNIVERSE) == [
-        f"{SUD}/Sudoku-7-Norvig-Python.ipynb"
+    assert python_twin_candidates(f"{SUD}/Sudoku-07-Norvig-Csharp.ipynb", UNIVERSE) == [
+        f"{SUD}/Sudoku-07-Norvig-Python.ipynb"
     ]
 
 
@@ -95,19 +95,19 @@ def test_part2_extension_is_csharp_only():
 def test_absent_sibling_yields_no_candidate():
     """A convention that matches by name but whose target is absent from the
     universe must not be reported -- the predicate is existence, not naming."""
-    universe = {f"{SUD}/Sudoku-3-Genetic-Csharp.ipynb"}
-    assert python_twin_candidates(f"{SUD}/Sudoku-3-Genetic-Csharp.ipynb", universe) == []
+    universe = {f"{SUD}/Sudoku-03-Genetic-Csharp.ipynb"}
+    assert python_twin_candidates(f"{SUD}/Sudoku-03-Genetic-Csharp.ipynb", universe) == []
 
 
 def test_same_directory_preferred_over_homonym_elsewhere():
     """A sibling in the same directory wins over a same-stem file elsewhere."""
     universe = {
-        f"{SUD}/Sudoku-7-Norvig-Csharp.ipynb",
-        f"{SUD}/Sudoku-7-Norvig-Python.ipynb",
-        f"{GT}/Sudoku-7-Norvig-Python.ipynb",
+        f"{SUD}/Sudoku-07-Norvig-Csharp.ipynb",
+        f"{SUD}/Sudoku-07-Norvig-Python.ipynb",
+        f"{GT}/Sudoku-07-Norvig-Python.ipynb",
     }
-    assert python_twin_candidates(f"{SUD}/Sudoku-7-Norvig-Csharp.ipynb", universe) == [
-        f"{SUD}/Sudoku-7-Norvig-Python.ipynb"
+    assert python_twin_candidates(f"{SUD}/Sudoku-07-Norvig-Csharp.ipynb", universe) == [
+        f"{SUD}/Sudoku-07-Norvig-Python.ipynb"
     ]
 
 

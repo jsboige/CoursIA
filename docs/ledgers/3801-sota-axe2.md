@@ -772,17 +772,17 @@ Famille `MyIA.AI.Notebooks/Sudoku/` = **36 notebooks** `.ipynb` (17 paires `*-Cs
 | **Google.OR-Tools** (CP-SAT) | Sudoku-10-ORTools-{Csharp,Python}, Sudoku-18-Comparison-{Csharp,Python} | 17+8 hits C# + Python twin ; output authentique `"OR-Tools CP-SAT : résolu=True, 67.01 ms"` (Sudoku-18-Csharp cell 20) ; benchmark `Easy 314,5 3 Success` (Sudoku-12-Z3-Csharp cell 23) | **SOTA-OK** |
 | **Choco-solver** (Java CSP via `.NET` IKVM / `JPype` Python) | Sudoku-11-Choco-{Csharp,Python} | **2 disclosures honnêtes** : (a) `limitation technique rencontrée avec IKVM dans dotnet-interactive illustre les défis d'interopérabilité Java/.NET` (cell 27) ; (b) `Choco (Java via JPype), confirmé authentique` | **SOTA-OK avec disclosures assumées** |
 | **Lean 4** (preuve formelle, kernel `lean4-wsl`) | Sudoku-19-Lean-Propagation | output authentique `"'Sudoku.peer_excludes_value' depends on axioms: [propext, Quot.sound]"` ; `#print axioms naked_single_sound` ; `#check Scopes`, `#check Solution`, `#check AllDistinctOn` ; **0 sorry**, dépendances axiomatiques minimales = `propext + Quot.sound` | **SOTA-OK (Lean 4 natif WSL)** |
-| **DlxLib** (Dancing Links .NET, Knuth Algorithm X) | Sudoku-2-DancingLinks-Csharp | `DlxLib` import + solveur DLX linké | **SOTA-OK** |
-| **PyGAD** (algorithme génétique Python) | Sudoku-3-Genetic-Python | `import pygad` | **SOTA-OK** |
-| **GeneticSharp** (.NET GA) | Sudoku-3-Genetic-Csharp | `using GeneticSharp` | **SOTA-OK** |
-| **simanneal** (Python Simulated Annealing) | Sudoku-4-SimulatedAnnealing-Python | `import simanneal` | **SOTA-OK** |
-| **Mealpy** (PSO/swarm Python) | Sudoku-5-PSO-Python | `import mealpy`, `mealpy.problem` | **SOTA-OK** |
+| **DlxLib** (Dancing Links .NET, Knuth Algorithm X) | Sudoku-02-DancingLinks-Csharp | `DlxLib` import + solveur DLX linké | **SOTA-OK** |
+| **PyGAD** (algorithme génétique Python) | Sudoku-03-Genetic-Python | `import pygad` | **SOTA-OK** |
+| **GeneticSharp** (.NET GA) | Sudoku-03-Genetic-Csharp | `using GeneticSharp` | **SOTA-OK** |
+| **simanneal** (Python Simulated Annealing) | Sudoku-04-SimulatedAnnealing-Python | `import simanneal` | **SOTA-OK** |
+| **Mealpy** (PSO/swarm Python) | Sudoku-05-PSO-Python | `import mealpy`, `mealpy.problem` | **SOTA-OK** |
 | **PyTorch** (NN) | Sudoku-16-NeuralNetwork-Python | `import torch`, `torch.nn`, `torch.optim` ; `SimpleRNN` deep learning | **SOTA-OK** |
 | **OpenAI SDK** (LLM API) | Sudoku-17-LLM-Python | `import openai`, `client = openai.OpenAI(api_key=...)` ; **disclosure honnête** `simulation_mode=True` par défaut + `mock_call()` fallback | **SOTA-OK avec simulation honnête disclosed** (reversible RECOVERABLE-USER-HAND via OPENAI_API_KEY) |
-| **NetworkX** (graphe) | Sudoku-9-GraphColoring-Python | `import networkx` ; modélisation Sudoku = graphe 81 sommets | **SOTA-OK** |
+| **NetworkX** (graphe) | Sudoku-09-GraphColoring-Python | `import networkx` ; modélisation Sudoku = graphe 81 sommets | **SOTA-OK** |
 | **regex** (lib Python, Microsoft.Automata C#) | Sudoku-13-SymbolicAutomata-Python, Sudoku-13-Csharp | `import regex` ; contrainte Sudoku encodée comme expression rationnelle monolithique 13515 chars (« monstre regex » D'Antoni/Veanes) | **SOTA-OK** |
-| **python-constraint** (CSP Python pur) | Sudoku-6-AIMA-CSP-Python | `import constraint` ; AIMA constraint programming | **SOTA-OK** |
-| **AIMA** (algorithmes classiques, Norvig) | Sudoku-7-Norvig-{Csharp,Python}, Sudoku-8-HumanStrategies | `aima` references, Norvig `constraint propagation` pur Python | **SOTA-OK** |
+| **python-constraint** (CSP Python pur) | Sudoku-06-AIMA-CSP-Python | `import constraint` ; AIMA constraint programming | **SOTA-OK** |
+| **AIMA** (algorithmes classiques, Norvig) | Sudoku-07-Norvig-{Csharp,Python}, Sudoku-08-HumanStrategies | `aima` references, Norvig `constraint propagation` pur Python | **SOTA-OK** |
 | **matplotlib** (viz) | Sudoku-{1,11,16,18}-Python | `import matplotlib.pyplot`, `matplotlib.patches` ; rendu grilles résolues | **SOTA-OK** |
 | **Plotly.NET** (viz interactif) | Sudoku-0-Environment-Csharp | `using Plotly.NET`, `using Plotly.NET.LayoutObjects` | **SOTA-OK** |
 
@@ -808,15 +808,15 @@ Chaque notebook pose un problème de **résolution de Sudoku** non-trivial qui e
 | Notebook | Problème posé (cellule-clef) | Capacité distinctive exercée |
 |----------|------------------------------|--------------------------------|
 | Sudoku-0-Environment-Csharp | Classes de base (grille, solveur ISudokuSolver) + viz Plotly.NET | Infrastructure partagée (16 paires C#/Python importent ce module via `#!import`) |
-| Sudoku-1-Backtracking-{Csharp,Python} | Backtracking MRV, Forward Checking, count-all-solutions ; benchmark sur `Easy + Hardest` (10+11 puzzles réels) | Recherche exhaustive + heuristique MRV sur puzzles 9×9 réels |
-| Sudoku-2-DancingLinks-{Csharp,Python} | Algorithm X (Knuth) en représentation DLX ; solveur exact pour grilles arbitraires | DLX = représentation sparse linkée pour résolution exacte efficace |
-| Sudoku-3-Genetic-{Csharp,Python} | Algorithme génétique (mutation, crossover, sélection) sur population de grilles candidates | Recherche évolutionniste ; discrétisation chromosomes |
-| Sudoku-4-SimulatedAnnealing-{Csharp,Python} | Recuit simulé avec température décroissante + critère Metropolis | Métaheuristique stochastique |
-| Sudoku-5-PSO-{Csharp,Python} | Particle Swarm Optimization sur espace de recherche Sudoku | Swarm intelligence (Mealpy) |
-| Sudoku-6-AIMA-CSP-{Csharp,Python} | Modélisation AIMA `constraint.Problem` + backtracking + AC-3 + LCV | Paradigme CSP AIMA classique (Norvig/Russell) |
-| Sudoku-7-Norvig-{Csharp,Python} | Solveur Norvig (propagation + recherche) | Algorithme Norvig 100 lignes Python, baseline |
-| Sudoku-8-HumanStrategies-{Csharp,Python} | Stratégies humaines (naked single, hidden single, locked candidate) | Heuristiques interactives déterministes |
-| Sudoku-9-GraphColoring-{Csharp,Python} | Sudoku réduit à coloration de graphe ; NetworkX 81 sommets | Réduction CSP → graph coloring |
+| Sudoku-01-Backtracking-{Csharp,Python} | Backtracking MRV, Forward Checking, count-all-solutions ; benchmark sur `Easy + Hardest` (10+11 puzzles réels) | Recherche exhaustive + heuristique MRV sur puzzles 9×9 réels |
+| Sudoku-02-DancingLinks-{Csharp,Python} | Algorithm X (Knuth) en représentation DLX ; solveur exact pour grilles arbitraires | DLX = représentation sparse linkée pour résolution exacte efficace |
+| Sudoku-03-Genetic-{Csharp,Python} | Algorithme génétique (mutation, crossover, sélection) sur population de grilles candidates | Recherche évolutionniste ; discrétisation chromosomes |
+| Sudoku-04-SimulatedAnnealing-{Csharp,Python} | Recuit simulé avec température décroissante + critère Metropolis | Métaheuristique stochastique |
+| Sudoku-05-PSO-{Csharp,Python} | Particle Swarm Optimization sur espace de recherche Sudoku | Swarm intelligence (Mealpy) |
+| Sudoku-06-AIMA-CSP-{Csharp,Python} | Modélisation AIMA `constraint.Problem` + backtracking + AC-3 + LCV | Paradigme CSP AIMA classique (Norvig/Russell) |
+| Sudoku-07-Norvig-{Csharp,Python} | Solveur Norvig (propagation + recherche) | Algorithme Norvig 100 lignes Python, baseline |
+| Sudoku-08-HumanStrategies-{Csharp,Python} | Stratégies humaines (naked single, hidden single, locked candidate) | Heuristiques interactives déterministes |
+| Sudoku-09-GraphColoring-{Csharp,Python} | Sudoku réduit à coloration de graphe ; NetworkX 81 sommets | Réduction CSP → graph coloring |
 | Sudoku-10-ORTools-{Csharp,Python} | Google OR-Tools CP-SAT (variables + contraintes AllDifferent) | **Vrai moteur CP-SAT industriel** avec benchmark 10+ puzzles |
 | Sudoku-11-Choco-{Csharp,Python} | Choco CSP (Java) via IKVM/.NET ou JPype/Python ; limitation Java/.NET disclosed | Choco = CSP académique, comparaison OR-Tools vs Choco |
 | Sudoku-12-Z3-{Csharp,Python} | Microsoft Z3 SMT ; 4 encodages (Int simple, BitVector simple, BitVector substitution) | **Vrai moteur SMT industriel** ; encodages multiples benchmarkés |
@@ -849,7 +849,7 @@ Pivot L335 anti-monoculture post-c.400 : **7ᵉ famille distincte du ledger** (e
 - **Faux positifs workaround** : 0/36 (1 mention explicite « simulation_mode = True par défaut » dans Sudoku-17 = disclosure honnête RECOVERABLE-USER-HAND, code path réel openai.OpenAI implémenté et documenté ; 1 mention explicite « IKVM limitation technique » dans Sudoku-11-Choco-Csharp = disclosure honnête RECOVERABLE-MACHINE ; 1 mention explicite « NumPyro fonctionne avec des limitations » dans Sudoku-15-Infer-Python = substitution linguistique assumée, pas un fallback dégradé ; 1 mention explicite « monstre regex tronque SFAz3+Z3 » dans Sudoku-13 = INTRINSIC disclosed limite académique prouvée).
 - **Faux positif CJK** : 0/36 fonctionnellement (2 chars CJK = `完整` localisés L398 Sudoku-13-Csharp = terme technique précis dans une documentation mixte FR/ZH sur une limitation de SFA → Z3, **pas une faute de frappe parasite**). A documenter honnêtement.
 - **Audit sub-agent vs audit worker** : sub-agent Sonnet (`a1642a03fd1215256`, model=sonnet, read-only) est invoqué en parallèle mais **les chiffres pivots ont été vérifiés firsthand par le worker** via 4 scripts python3 indépendants AVANT l'écriture de cette entry (1337 cells, 0 null exec, 0 err, 36/36 = 17+18+1 kernelspec cohérence, 0 C.1, 2 CJK localisés, 21 moteurs SOTA distincts). Quand le sub-agent aura livré son rapport, ses counts seront spot-checkés contre ces chiffres — pattern model-delegation c.398 durcie (G.1 2× : sub-agent + worker firsthand).
-- **Anti-régression** : aucun `# Solution` ou `# Exemple résolu` strippé ; aucun notebook dont les outputs ont été hand-edités (vérification : `execution_count != null` sur 525/525 cellules code + `output_type: error = 0` + examples résolus cell 25 de Sudoku-1-Backtracking-Python = `solve_puzzle()` retourne grille 9×9 complète).
+- **Anti-régression** : aucun `# Solution` ou `# Exemple résolu` strippé ; aucun notebook dont les outputs ont été hand-edités (vérification : `execution_count != null` sur 525/525 cellules code + `output_type: error = 0` + examples résolus cell 25 de Sudoku-01-Backtracking-Python = `solve_puzzle()` retourne grille 9×9 complète).
 
 ### Cumul entries (registre axe-2 SOTA)
 
@@ -884,7 +884,7 @@ Pivot L335 anti-monoculture post-c.400 : **7ᵉ famille distincte du ledger** (e
 
 ```
 Sudoku-0-...     CJK=0
-Sudoku-1-...     CJK=0 (×2: Csharp + Python)
+Sudoku-01-...     CJK=0 (×2: Csharp + Python)
 ... (tous CJK=0 sauf)
 Sudoku-13-SymbolicAutomata-Csharp.ipynb  CJK=2 (L398: '完整' = terme technique disclosure)
 Sudoku-13-SymbolicAutomata-Python.ipynb  CJK=0

@@ -327,7 +327,7 @@ Search-4  LocalSearch           CSP-5  Optimization  ───>  App-10 Portfoli
             │                       │
             └──> Search-11 (Meta)   └──> Applications/Hybrid/ App-9 EdgeDetection
 
-Search-8  Dancing Links    ───>  App-11 Picross, Sudoku-5 DLX
+Search-8  Dancing Links    ───>  App-11 Picross, Sudoku-05 DLX
 Search-9  Linear Programming ─>  CSP-5 Optimization   ───>  App-10 Portfolio
 Search-10 Symbolic Automata ─>  Sudoku-12 Automates symboliques
 ```
