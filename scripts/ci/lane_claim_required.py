@@ -88,7 +88,7 @@ def gh_issue_fetcher(number: int) -> "dict | None":
                 "gh", "issue", "view", str(number),
                 "--json", "number,title,comments",
             ],
-            capture_output=True, text=True, timeout=20,
+            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=20,
         )
     except (OSError, subprocess.SubprocessError):
         return None

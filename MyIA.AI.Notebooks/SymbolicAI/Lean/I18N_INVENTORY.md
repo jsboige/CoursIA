@@ -1,7 +1,8 @@
 # Inventaire i18n des projets Lean 4 — couverture FR/EN
 
 Inventaire transverse de la **couverture i18n** (FR canonique + EN sibling) des
-fichiers `.lean` de nos lakes, à la date **2026-07-15**. Source de vérité :
+fichiers `.lean` de nos lakes, à la date **2026-07-15**, dernier recompte firsthand
+**2026-08-28** (§ refresh ↻08-28 ci-dessous). Source de vérité :
 conventions ratifiées par ai-01 (2026-07-04, issue
 [#4980](https://github.com/jsboige/CoursIA/issues/4980) comment-4881909354).
 
@@ -30,21 +31,25 @@ détaillée par type de lake, (3) PR pilote sur un lake cible.
 | Lake | FR canonique | EN sibling | Couverture fichiers | Statut |
 |------|-------------:|-----------:|--------------------:|--------|
 | `learning_theory_lean` | 18 | 18 | 18/18 = **100 %** | EXCELLENT ↻07-17 |
-| `game_theory_lean` | 25 | 21 | 21/25 = **84 %** | EXCELLENT (multi-lib ; a absorbé RepeatedGames #6146 + CooperativeGames + SocialChoice) ↻07-17 |
+| `game_theory_lean` | 28 | 21 | 21/28 = **75 %** | EXCELLENT (multi-lib ; a absorbé RepeatedGames #6146 + CooperativeGames + SocialChoice ; les 7 sans sibling = 3 agrégateurs racine type-D + `_SmokeTest` harness + `Swaps`×2 et `SocialChoice/AMD` substantiels) ↻08-28 |
 | `sudoku_lean` | 4 | 4 | 4/4 = **100 %** | EXCELLENT ↻07-17 |
 | `minimax_lean` | 4 | 4 | 4/4 = **100 %** | EXCELLENT ↻07-17 |
 | `knot_lean` | 7 | 7 | 7/7 = **100 %** | EXCELLENT (⬆ 0→6 : po-2025 #6429/#6440 livrés — bilinguisation complète) ↻07-17 |
 | `sensitivity_lean` | 5 | 5 | 5/5 = **100 %** | EXCELLENT ↻07-17 |
-| `conway_lean` | 27 | 26 | 26/27 = **96 %** | EXCELLENT (les « 5 grains type-C » Doomsday/Fractran/FreeWillTheorem/LookAndSay/Nim sont **livrés** ; seul `HashlifeCorrectness.lean` 3790-L recherche reste sans EN) ↻07-17 |
+| `conway_lean` | 39 | 32 | 32/39 = **82 %** | EXCELLENT (**tous les modules pédagogiques + satellites couverts** — 32/32 paires OK au checker ; les 7 sans sibling sont la machinerie prover EN-first recherche : `HashlifeCorrectness.lean` 7434-L, `Foundation.lean`, `Walls`×4, `JumpCapture.lean`) ↻08-28 |
 | `calibration_lean` | 4 | 4 | 4/4 = **100 %** | EXCELLENT ↻07-17 |
-| `grothendieck_lean` | 25 | 23 | 23/25 = **92 %** | EXCELLENT (les 2 restants sont type-B EN-canon → FR-flip recherche, basse priorité) ↻07-17 |
-| `conway_cgt_lean` | 2 | 1 | 1/1 hors lakefile = **100 %** | **FAIT** (⬆ 0→1 : `CGTTour_en.lean` livré — l'ancien « pilote #1 » est clos) |
+| `grothendieck_lean` | 60 | 59 | 59/60 = **98 %** | EXCELLENT (les 9 type-B EN-canon → FR-flip signalés le 15/07 sont **livrés** ; seul le root agrégateur `Grothendieck.lean` type-D reste sans sibling — modules 59/59 = 100 %) ↻08-28 |
+| `conway_cgt_lean` | 1 | 1 | 1/1 hors lakefile = **100 %** | **FAIT** (⬆ 0→1 : `CGTTour_en.lean` livré — l'ancien « pilote #1 » est clos) ↻08-28 |
 | `finiteness_lean` | 2 | 1 | 1/2 = **50 %** | BON (1 utilitaire interne non traduit) ↻07-17 |
 | `mathlib_examples` | 2 | 1 | 1/2 = **50 %** | BON (`Basic_en.lean` livré #6664 ; seul le root umbrella `MathLibExamples.lean` reste sans sibling) ↻07-17 |
 | `repeated_games_lean` | 1 | 1 | — | **ABSORBÉ** dans `game_theory_lean` (#6146, cf. #4365) — legacy quasi-vide |
-| `social_choice_lean` | 1 | 0 | — | **ABSORBÉ** dans `game_theory_lean` (#6040, cf. #4365) — legacy quasi-vide |
+| `social_choice_lean` | — | — | — | **ABSORBÉ / supprimé du scan** (0 fichier restant, #6040, cf. #4365) ↻08-28 |
 | `cooperative_games_lean` | — | — | — | **ABSORBÉ / lake supprimé** — plus de `lakefile.lean` standalone ; contenu migré dans `game_theory_lean/CooperativeGames/` (cf. `code-style.md` §Lean) |
-| `social_choice_lean_peters` | 1 | 0 | 0/1 = **0 %** | **HORS SCOPE** (vendored, `_peters`) |
+| `social_choice_lean_peters` | 1 | 1 | 1/1 = **100 %** | **HORS SCOPE** (vendored, `_peters`) — un sibling EN existe désormais ↻08-28 |
+| `galois_lean` | 2 | 0 | 0/2 | **À FAIRE (léger)** ↻08-28 (nouveau lake suivi) — vendored `M23Lean4Web.lean` EN-first (Apache-2.0, hors scope traduction) + root agrégateur `Galois.lean` type-D ; « siblings `_en` à venir » cf README du lake |
+| `mimo_lean` | 6 | 6 | 6/6 = **100 %** | EXCELLENT ↻08-28 (nouveau lake suivi) |
+| `assignment_lean` | 5 | 5 | 5/5 = **100 %** | EXCELLENT ↻08-28 (nouveau lake suivi, `GameTheory/`) |
+| `asymmetric_information_lean` | 6 | 6 | 6/6 = **100 %** | EXCELLENT ↻08-28 (nouveau lake suivi, `GameTheory/`) |
 
 > **Refresh 2026-07-15 (ai-01, See #4980)** : recompte firsthand sur `origin/main`
 > @ `77294f5941`. Changements majeurs vs epoch 2026-07-14 (`455492afa`) : (a)
@@ -84,6 +89,27 @@ détaillée par type de lake, (3) PR pilote sur un lake cible.
 > Syntaxe TOML globs **non encore éprouvée dans le repo** (aucun lakefile.toml
 > n'utilise globs) → router vers une lane Lean-build-capable (po-2023/po-2026) pour
 > livrer le grain + vérifier le build.
+
+> **Refresh 2026-08-28 (po-2024, See #13211)** : recompte firsthand sur `origin/main`
+> @ `c9811ce1ff` (même script de reproduction, § « Inventaire brut » — sortie
+> complète 08-28 en fin de fichier). La table ci-dessus est **corrigée**. Principaux
+> changements vs 07-17 : (a) **`lean_game_defs_ext` 0/13 → 13/13** — le grain
+> type-C « À FAIRE » (split `Bayesian.lean` bilingue-inline) est **livré**, la cible
+> pilote de la version 17/07 est **caduque** ; (b) **`grothendieck_lean` 92 % → 98 %**
+> (59/60) — les 9 modules type-B EN-canon déclassés « basse priorité » le 15/07 ont
+> été **flippés et livrés** ; seul le root agrégateur type-D reste sans sibling ;
+> (c) **`conway_lean` 26/27 → 32/39** — l'expansion prover b3'/c.95/c.1035 a ajouté
+> 7 fichiers machinerie EN-first sans sibling (`Foundation`, `Walls`×4,
+> `JumpCapture`, `HashlifeCorrectness` 7434 L) ; **tous les modules pédagogiques
+> restent couverts** (32/32 paires OK au checker `check_i18n_siblings.py`) ;
+> (d) **4 nouveaux lakes suivis** : `assignment_lean` (5/5), `asymmetric_information_lean`
+> (6/6), `mimo_lean` (6/6), `galois_lean` (2/0 — vendored `M23Lean4Web` EN-first +
+> root agrégateur, « siblings `_en` à venir » cf son README) ; (e) complétions de
+> queue : `decision_theory` 92→100 %, `search` 83→100 %, `planning` 75→100 %,
+> `kelly` 75→100 %, `erc20` 60→100 %, `argumentation` 71→83 % (5/6) ;
+> (f) `social_choice_lean` a **disparu du scan** (absorption complète, 0 fichier) ;
+> `social_choice_lean_peters` (vendored, hors scope) porte désormais un sibling
+> `PetersTour_en.lean`.
 
 ---
 
@@ -150,14 +176,14 @@ sibling s'est propagée au-delà du périmètre initial). Ils sont désormais su
 
 | Lake | Famille | FR | EN | Couverture | Statut |
 |------|---------|---:|---:|-----------:|--------|
-| `decision_theory_lean` | `Probas/` | 13 | 12 | 12/13 = **92 %** | EXCELLENT |
-| `search_lean` | `Search/` | 6 | 5 | 5/6 = **83 %** | BON |
-| `planning_lean` | `SymbolicAI/Planners/` | 4 | 3 | 3/4 = **75 %** | BON |
-| `kelly_lean` | `QuantConnect/` | 4 | 3 | 3/4 = **75 %** | BON |
-| `argumentation_lean` | `SymbolicAI/Tweety/` | 7 | 5 | 5/7 = **71 %** | BON |
-| `erc20_lean` | `SymbolicAI/SmartContracts/` | 5 | 3 | 3/5 = **60 %** | BON |
+| `decision_theory_lean` | `Probas/` | 13 | 13 | 13/13 = **100 %** | EXCELLENT ↻08-28 |
+| `search_lean` | `Search/` | 5 | 5 | 5/5 = **100 %** | EXCELLENT ↻08-28 |
+| `planning_lean` | `SymbolicAI/Planners/` | 3 | 3 | 3/3 = **100 %** | EXCELLENT ↻08-28 |
+| `kelly_lean` | `QuantConnect/` | 3 | 3 | 3/3 = **100 %** | EXCELLENT ↻08-28 |
+| `argumentation_lean` | `SymbolicAI/Tweety/` | 6 | 5 | 5/6 = **83 %** | BON ↻08-28 |
+| `erc20_lean` | `SymbolicAI/SmartContracts/` | 4 | 4 | 4/4 = **100 %** | EXCELLENT ↻08-28 |
 | `lean_game_defs` | `GameTheory/` | 6 | 6 | 6/6 = **100 %** | EXCELLENT ↻07-17 |
-| `lean_game_defs_ext` | `GameTheory/` | 13 | 0 | 0/13 = **0 %** | **À FAIRE** — root `Bayesian.lean` bilingue inline (type-C clean, Option B à splitter) ; docstrings FR-canon (type-A léger). ⚠ `lakefile.toml` sans `globs` → sibling root `_en` non type-checké par CI sans ajout globs (router vers lane Lean-build, cf refresh 07-17). See #2610. |
+| `lean_game_defs_ext` | `GameTheory/` | 13 | 13 | 13/13 = **100 %** | EXCELLENT ↻08-28 — le grain type-C « À FAIRE » du refresh 07-17 (split `Bayesian.lean` bilingue-inline) est **livré**. |
 
 > Aucun de ces lakes n'était « à 0 % » : la couverture i18n du repo est **plus
 > avancée** que ne le laissait croire le périmètre de scan initial. Le reste à faire
@@ -167,11 +193,11 @@ sibling s'est propagée au-delà du périmètre initial). Ils sont désormais su
 
 ## Détail par lake
 
-### 1. `learning_theory_lean` — EXCELLENT (95 %)
+### 1. `learning_theory_lean` — EXCELLENT (100 %) ↻08-28
 
 **Chemin** : `MyIA.AI.Notebooks/ML/learning_theory_lean/`
 
-19 fichiers FR canoniques, **18 fichiers EN siblings** (`*_en.lean`). Seul le
+**18 fichiers FR canoniques** (hors lakefile), **18 fichiers EN siblings** (`*_en.lean`) = 18/18. Seul le
 `lakefile.lean` n'a pas de sibling (les lakefiles sont par convention
 aglistiques — pas de docstrings utilisateur).
 
@@ -182,13 +208,16 @@ siblings a été validée en premier.
 
 **Suivi** : aucun ajout nécessaire ; surveiller la dérive (Drift-CI byte-identity).
 
-### 2. `game_theory_lean` — EXCELLENT (81 %)
+### 2. `game_theory_lean` — EXCELLENT (75 %) ↻08-28
 
 **Chemin** : `MyIA.AI.Notebooks/GameTheory/game_theory_lean/`
 
 **Multi-lib lean** (cf. c.299 StableMarriage + c.306 CooperativeGames +
-c.357 SocialChoice regroupement) : 26 fichiers FR canoniques, **21 fichiers EN
-siblings**. La convention `_en` namespace est appliquée par lean_lib
+c.357 SocialChoice regroupement) : **28 fichiers FR canoniques**, **21 fichiers EN
+siblings** (75 %) — les 7 sans sibling (↻08-28) = 3 agrégateurs racine type-D
+(`GameTheory.lean`, `CooperativeGames.lean`, `SocialChoice.lean`), 1 harness
+(`SocialChoice/_SmokeTest.lean`) et 3 substantiels (`Swaps.lean` + `Swaps/Basic.lean`
++ `SocialChoice/AMD.lean`). La convention `_en` namespace est appliquée par lean_lib
 (`StableMarriage`, `CooperativeGames`, `SocialChoice` — chacun avec ses siblings
 `_en`). Lake = pivot central du EPIC #4365 regroupement (a absorbé
 `repeated_games_lean` #6146, `cooperative_games_lean` #6274, `social_choice_lean`
@@ -196,46 +225,46 @@ siblings**. La convention `_en` namespace est appliquée par lean_lib
 
 **Mantra** : "game_theory_lean = cohorte multi-lib (StableMarriage +
 CooperativeGames + SocialChoice), 0 sorry sur le théorème-phare, bilingue sur
-21/26 modules". Reste ~5 siblings internes (utilitaires/lemmas privés).
+21/26 modules". Les siblings restants sont listés ci-dessus (3 substantiels ↻08-28).
 
-### 3. `sudoku_lean` — BON (80 %)
+### 3. `sudoku_lean` — EXCELLENT (100 %) ↻08-28
 
 **Chemin** : `MyIA.AI.Notebooks/Sudoku/sudoku_lean/`
 
-5 fichiers FR canoniques, 4 fichiers EN siblings (`Sudoku.lean`, `Basic.lean`,
-`Propagation.lean`, `ExactCover.lean`). Le `lakefile.lean` est aglistique.
+**4 fichiers FR canoniques** (hors lakefile), **4 fichiers EN siblings** (`Sudoku.lean`,
+`Basic.lean`, `Propagation.lean`, `ExactCover.lean`) = 4/4. Le `lakefile.lean` est
+aglistique.
 
 **Mantra** : "sudoku_lean = soundness propagation + exact-cover, 0 sorry, lake
 pédagogique bilingue canon". Delta résiduel cosmétique seulement.
 
-### 4. `minimax_lean` — BON (80 %)
+### 4. `minimax_lean` — EXCELLENT (100 %) ↻08-28
 
-5 fichiers FR canoniques, 4 fichiers EN siblings. Coverage élevée.
+**4 fichiers FR canoniques** (hors lakefile), **4 fichiers EN siblings**. Coverage complète.
 
-### 5. `knot_lean` — BON (75 %) — bilinguisation livrée
+### 5. `knot_lean` — EXCELLENT (100 %) — bilinguisation livrée ↻08-28
 
 **Chemin** : `MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean/`
 
-8 fichiers FR canoniques, **6 fichiers EN siblings** (⬆ de 0 le 14/07). Lake =
+**7 fichiers FR canoniques** (hors lakefile), **7 fichiers EN siblings** (⬆ de 0 le 14/07) = 7/7 (↻08-28). Lake =
 **recherche** (théorie des nœuds, EPIC #2874). La bilinguisation « in-flight »
 signalée dans la version précédente (po-2025 #6429/#6440) est désormais **livrée**.
 Les `sorry` résiduels sont des définitions non-définies (`AreMutants`,
 `alexanderPolynomial`, `IsSmoothlySlice`, `IsTopologicallySlice`) et des preuves
-de transfert classique ouvertes — cibles prover, **pas** un manque i18n. Restant :
-2 siblings de queue (utilitaires).
+de transfert classique ouvertes — cibles prover, **pas** un manque i18n. Restant : aucun (7/7 ↻08-28).
 
-### 6. `sensitivity_lean` — PARTIEL (67 %)
+### 6. `sensitivity_lean` — EXCELLENT (100 %) ↻08-28
 
-6 fichiers FR canoniques, 4 fichiers EN siblings + **6 markers inline
-bilingues** dans le FR canonique (pattern hybride). Le contenu EN est intégré au
-FR canonique plutôt qu'en fichier sibling. **Cas d'étude pour arbitrer entre
-Option A (sibling) vs Option B (inline)**.
+**5 fichiers FR canoniques** (hors lakefile), **5 fichiers EN siblings** = 5/5.
+L'état « PARTIEL 67 % » du 07-15 (4 siblings + 6 markers inline bilingues, cas
+d'étude Option A vs B) est **supersédé** : l'hybridation a convergé vers le
+pattern sibling canonique.
 
-### 7. `conway_lean` — PARTIEL (64 %) (gros volume)
+### 7. `conway_lean` — EXCELLENT (82 % nominal, pédagogique 100 %) (gros volume) ↻08-28
 
 **Chemin** : `MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/`
 
-**28 fichiers FR canoniques**, **18 fichiers EN siblings** (⬆ de 11 le 14/07).
+**39 fichiers FR canoniques**, **32 fichiers EN siblings** (↻08-28).
 ~1894 lignes FR canonique (le plus gros contributeur de lignes FR du repo). Lake
 = **cœur PEDA Conway** (Life + Doomsday + FRACTRAN + Look-and-Say + Nim + Angel +
 **Hashlife**).
@@ -249,40 +278,40 @@ pédagogique élevé (lake le plus visité après `learning_theory_lean`).
 sous-série par sous-série. ~~**9 siblings restants** — c'est le principal chantier
 i18n substantiel du repo à ce stade.~~ **↻07-17 SUPERSEDÉ** : recompte firsthand =
 **26/27 = 96 %**. Les 5 grains type-C propres identifiés le 15/07 (`Doomsday`,
-`Fractran`, `FreeWillTheorem`, `LookAndSay`, `Nim`) sont **livrés**. **Seul
-`Conway/Life/HashlifeCorrectness.lean` (3790 lignes, preuve recherche EPIC #6724
-GOL-S4) reste sans sibling** — cible prover, pas un grain i18n. Le « principal
+`Fractran`, `FreeWillTheorem`, `LookAndSay`, `Nim`) sont **livrés**. **Les 7 fichiers
+sans sibling sont la machinerie prover EN-first recherche** (`HashlifeCorrectness.lean`
+7434 lignes, `HashlifeCorrectness/Foundation.lean`, `Walls/{NE,NW,SE,SW}.lean`,
+`JumpCapture.lean` — cible prover EPIC #6724 GOL-S4, pas un grain i18n). Le « principal
 chantier i18n » conway est **effectivement clos** côté pédagogique.
 
-### 8. `calibration_lean` — PARTIEL (60 %)
+### 8. `calibration_lean` — EXCELLENT (100 %) ↻08-28
 
-5 fichiers FR canoniques, 3 fichiers EN siblings + **15 markers inline
-bilingues**. Lake = composant harnais de calibration (déplacé depuis GameTheory,
-#1764). Hybridation similaire à `sensitivity_lean`.
+**4 fichiers FR canoniques** (hors lakefile), **4 fichiers EN siblings** = 4/4.
+Lake = composant harnais de calibration (déplacé depuis GameTheory, #1764).
+L'état « PARTIEL 60 % » du 07-15 (3 siblings + 15 markers inline) est **supersédé**.
 
-### 9. `grothendieck_lean` — PARTIEL (58 %)
+### 9. `grothendieck_lean` — EXCELLENT (98 %) ↻08-28
 
 **Chemin** : `MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/`
 
-26 fichiers FR canoniques, **15 fichiers EN siblings** (⬆ de 12 le 14/07 :
-bilinguisation via #6304 SheafCohomology/Basic, #6284 CoverageGen, #6280
-DenseTopology et successeurs). Lake = **recherche** (EPIC #2159 Grothendieck).
-**10 nominal restants** — mais **⚠ tous de type (B) EN-canon → FR-flip** (voir
-_Nature des gaps restants_ ci-dessus). Les 9 modules substantiels NO-EN
-(`CanonicalProps`, `MathlibMap`, `SheafBasics`, `SheafCohomology/MayerVietoris`,
-`Sheafification`, `SieveGenerate`, `SieveLattice`, `SieveOps`, `YonedaLemma`) ont
-des **docstrings anglaises** (`« Grothendieck tribute — Part N: … »`) : ce n'est PAS
-un gap EN-sibling propre mais un FR-flip lourd sur un lake recherche → **priorité
-basse**, pas un grain de remplissage. ⚠ Vérifier aussi l'état d'un éventuel
-WIP-handoff avant toute modification.
+**60 fichiers FR canoniques**, **59 fichiers EN siblings** (↻08-28 — l'expansion de
+l'hommage Grothendieck a plus que doublé le lake depuis le 14/07, et la bilinguisation
+a suivi). Lake = **recherche** (EPIC #2159 Grothendieck).
+**↻08-28 : les 9 modules type-B EN-canon listés le 15/07** (`CanonicalProps`,
+`MathlibMap`, `SheafBasics`, `SheafCohomology/MayerVietoris`, `Sheafification`,
+`SieveGenerate`, `SieveLattice`, `SieveOps`, `YonedaLemma`) **ont été flippés et
+livrés** — le seul fichier sans sibling est le root agrégateur `Grothendieck.lean`
+(type-D, imports-only, sans sibling par convention) : couverture module-level
+**59/59 = 100 %**. Le déclassement « FR-flip lourd basse priorité » du 15/07 est
+clos.
 
 ### 10. `conway_cgt_lean` — FAIT (100 % hors lakefile)
 
 **Chemin** : `MyIA.AI.Notebooks/GameTheory/conway_cgt_lean/`
 
-2 fichiers FR canoniques, **1 fichier EN sibling** (`CGTTour_en.lean`, ⬆ de 0
-le 14/07). L'ancien « candidat PR pilote #1 » est **livré** : le seul module
-pédagogique (`CGTTour.lean`) a désormais son sibling EN. Hors `lakefile.lean`
+**1 fichier FR canonique** (hors lakefile), **1 fichier EN sibling** (`CGTTour_en.lean`,
+⬆ de 0 le 14/07) = 1/1. L'ancien « candidat PR pilote #1 » est **livré** : le seul
+module pédagogique (`CGTTour.lean`) a son sibling EN. Hors `lakefile.lean`
 (aglistique), la couverture est complète.
 
 **Mantra** : "conway_cgt_lean = tour pédagogique de la lib CGT de vihdzp
@@ -290,10 +319,11 @@ pédagogique (`CGTTour.lean`) a désormais son sibling EN. Hors `lakefile.lean`
 dépendant du mismatch mathlib/CombinatorialGames (#6419) — vérifier `lake build`
 si modification.
 
-### 11. `finiteness_lean` — PARTIEL (33 %)
+### 11. `finiteness_lean` — BON (50 %) ↻08-28
 
-3 fichiers FR canoniques, 1 fichier EN sibling. Ratio faible parce que les 2
-fichiers non-traduits sont des utilitaires internes. ~17 lignes FR uniquement.
+**2 fichiers FR canoniques** (hors lakefile), 1 fichier EN sibling (`Basic_en.lean`).
+Le root `Finiteness.lean` est un agrégateur bilingue inline (Option B historique,
+conservé pour la racine — cf. son README).
 
 ### 12. `mathlib_examples` — BON (50 %) ↻07-17
 
@@ -307,17 +337,19 @@ est livré.
 
 - `repeated_games_lean` (`GameTheory/`) : 1/1 legacy quasi-vide — contenu absorbé
   dans `game_theory_lean` (#6146, cf. #4365).
-- `social_choice_lean` (`GameTheory/`) : 1/0 legacy quasi-vide — contenu absorbé
-  dans `game_theory_lean` (#6040, cf. #4365).
+- `social_choice_lean` (`GameTheory/`) : **disparu du scan** (↻08-28, absorption
+  complète, 0 fichier restant — #6040, cf. #4365).
 - `cooperative_games_lean` : **plus de `lakefile.lean` standalone** — le lake a
   disparu du scan, contenu migré dans `game_theory_lean/CooperativeGames/` (cf.
   `code-style.md` §Lean, absorption #6274). Ne plus le compter comme lake actif.
 
 ### 14. `social_choice_lean_peters` — HORS SCOPE
 
-2 fichiers FR canoniques, **0 fichier EN sibling**. **Vendored** (lib Peters
-intégrée, dépendance Lake). Convention i18n = **hors scope** pour les libs
-vendored (cf. `readme-french-first.md` règle périmètre).
+**1 fichier FR canonique** (hors lakefile), **1 fichier EN sibling**
+(`PetersTour_en.lean`, ↻08-28). **Vendored** (lib Peters intégrée, dépendance
+Lake). Convention i18n = **hors scope** pour les libs vendored (cf.
+`readme-french-first.md` règle périmètre) — un sibling EN du module pédagogique
+existe néanmoins désormais.
 
 ### 15. Lakes hors scope historique (Probas / Search / Planners / QC / Tweety / SmartContracts)
 
@@ -429,6 +461,48 @@ sudoku_lean: fr_files=5 en_files=4
 > `cooperative_games_lean` disparu du scan (absorption complète, plus de lakefile).
 > Nouveaux lakes désormais suivis (élargissement scope) : `decision_theory_lean`,
 > `search_lean`, `planning_lean`, `kelly_lean`, `argumentation_lean`, `erc20_lean`.
+
+Sortie 2026-08-28 (refresh po-2024, `origin/main` @ `c9811ce1ff`, See #13211) :
+
+```
+argumentation_lean: fr_files=6 en_files=5
+assignment_lean: fr_files=5 en_files=5
+asymmetric_information_lean: fr_files=6 en_files=6
+calibration_lean: fr_files=4 en_files=4
+conway_cgt_lean: fr_files=1 en_files=1
+conway_lean: fr_files=39 en_files=32
+decision_theory_lean: fr_files=13 en_files=13
+erc20_lean: fr_files=4 en_files=4
+finiteness_lean: fr_files=2 en_files=1
+galois_lean: fr_files=2 en_files=0
+game_theory_lean: fr_files=28 en_files=21
+grothendieck_lean: fr_files=60 en_files=59
+kelly_lean: fr_files=3 en_files=3
+knot_lean: fr_files=7 en_files=7
+lean_game_defs: fr_files=6 en_files=6
+lean_game_defs_ext: fr_files=13 en_files=13
+learning_theory_lean: fr_files=18 en_files=18
+mathlib_examples: fr_files=2 en_files=1
+mimo_lean: fr_files=6 en_files=6
+minimax_lean: fr_files=4 en_files=4
+planning_lean: fr_files=3 en_files=3
+repeated_games_lean: fr_files=0 en_files=0
+search_lean: fr_files=5 en_files=5
+sensitivity_lean: fr_files=5 en_files=5
+social_choice_lean_peters: fr_files=1 en_files=1
+sudoku_lean: fr_files=4 en_files=4
+```
+
+> Delta vs 07-15 : `lean_game_defs_ext` 13/0 → 13/13 (grain type-C livré) ;
+> `grothendieck_lean` 26/15 → 60/59 (expansion hommage + FR-flips type-B livrés) ;
+> `conway_lean` 28/18 → 39/32 (machinerie prover b3'/c.95/c.1035 ajoutée, EN-less
+> by design ; pédagogique complet) ; `decision_theory_lean` 13/12 → 13/13 ;
+> `search_lean` 6/5 → 5/5 ; `planning_lean` 4/3 → 3/3 ; `kelly_lean` 4/3 → 3/3 ;
+> `erc20_lean` 5/3 → 4/4 ; `argumentation_lean` 7/5 → 6/5 ; `conway_cgt_lean`
+> 2/1 → 1/1 ; `social_choice_lean` disparu (0 fichier) ;
+> `social_choice_lean_peters` 2/0 → 1/1 (`PetersTour_en.lean`). Nouveaux lakes
+> suivis : `assignment_lean`, `asymmetric_information_lean`, `galois_lean`,
+> `mimo_lean`.
 
 ---
 

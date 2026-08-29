@@ -1,5 +1,13 @@
 name: SVG decimal-comma gate
 
+# ABSORBE PAR LA VOIE RAPIDE (#12396, tranche 4) : sur `pull_request`, ce
+# garde est desormais rendu par `fast-lane-shadow.yml` (check-run nomme
+# `No SVG decimal-comma defect in changed notebooks`, meme nom que ce job,
+# meme verdict -- rc=1 defaut / rc=2 illisible --, un seul checkout pour
+# toute la lane). Ce fichier garde `workflow_dispatch` pour le re-run manuel
+# sur `main` apres une panne CI (#9858). Les `paths:` et l'argv d'origine
+# vivent dans `scripts/ci/fast_lane_registry.py` (TRANCHE4).
+
 # Purpose
 # -------
 # Per-PR gate for inline SVG outputs that carry French decimal commas in
@@ -42,12 +50,6 @@ name: SVG decimal-comma gate
 # See EPIC #3801, rollout #6927 (SVG inline fleet-wide).
 
 on:
-  pull_request:
-    branches: [ main ]
-    paths:
-      - 'MyIA.AI.Notebooks/**/*.ipynb'
-      - 'scripts/notebook_tools/detect_svg_decimal_commas.py'
-      - '.github/workflows/svg-decimal-comma-gate.yml'
   workflow_dispatch:
 
 permissions:

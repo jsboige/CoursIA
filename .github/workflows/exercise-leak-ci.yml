@@ -18,14 +18,14 @@ name: exercise-leak-ci
 # scripts/notebook_tools/detect_solution_leaks.py (HIGH = Exercice labeled
 # cell containing complete code rather than a stub).
 
+# ABSORBE PAR LA VOIE RAPIDE sur `pull_request` (#12567, tranche 1) : le
+# delta HEAD-vs-BASE (bascule MyIA.AI.Notebooks, meme defense que
+# pip-leak-guard en pilote) est rendu par `fast-lane-shadow.yml` (check-run
+# nomme `Exercice-solution HIGH delta guard (#8053)`, meme nom que ce job).
+# Ce fichier garde `workflow_dispatch`. Les `paths:` d'origine vivent dans
+# `scripts/ci/fast_lane_registry.py` (TRANCHE1).
+
 on:
-  pull_request:
-    branches: [ main ]
-    paths:
-      - 'MyIA.AI.Notebooks/**/*.ipynb'
-      - 'scripts/notebook_tools/detect_solution_leaks.py'
-      - 'scripts/notebook_tools/exercise_leak_delta.py'
-      - '.github/workflows/exercise-leak-ci.yml'
   workflow_dispatch:
 
 permissions:

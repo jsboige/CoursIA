@@ -59,6 +59,19 @@ references the issue is not auto-detected as a release -- the lane should
 `--release` (or post `[DONE]`) when its PR lands. Detecting merges is a future
 flag; the comment contract is the MVP.
 
+Composite comments, the WRITTEN tie-break (#12624): a comment carrying
+several markers is legal ONLY across lines -- each line-anchored marker is
+its own event and the walk order applies ("dernier marqueur gagne": a
+`[CLAIMED] lane X` followed on a LATER LINE by `[RELEASED] lane X` reduces
+to released). A second marker on the SAME line as a head marker is NEVER an
+event (the #10228 mid-prose protection must stand -- the claim template
+itself carries a mid-line `[RELEASED]` citation), so a one-line "lift +
+re-claim" repair comment enacts ONLY the head: the re-claim is silently
+swallowed. That shape is flagged (`composite_single_line_markers`) and the
+canonical repair gesture is documented in
+.claude/rules/lane-claim-protocol.md: ONE comment per marker, a broken
+marker is repaired by a NEW comment carrying only `[CLAIMED]`.
+
 Exit codes: 0 ok / 1 blocked (other lane holds active issue claim) /
 2 io-or-gh error (issue mode) OR cross-lane OPEN-PR collision (--paths mode).
 """
@@ -76,7 +89,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 # Shared lane reader (#9485) -- see scripts/grain_tag.py.
-from grain_tag import extract_lane
+from grain_tag import extract_lane, lane_marker_residues
 
 # --- markers -----------------------------------------------------------------
 
@@ -153,6 +166,46 @@ _MALFORMED_MARKER_RE = re.compile(
     r"[^\n]*(?:lane\s+\S+:\S+|#\d+)",
     re.IGNORECASE,
 )
+# #12624 -- quasi-marker lint (Defaut 1). `_MARKER_RE` requires the EXACT
+# keyword alone in brackets; `_MALFORMED_MARKER_RE` requires the keyword BARE
+# (no brackets). A bracketed line-head token that is ALMOST a keyword falls
+# between the two and is invisible to both: measured 2026-08-22 on #12329,
+# `[CLAGED] lane myia-po-2024:CoursIA-2 -- paths: ...` was never read, the
+# organ answered CLEAR, and a second lane formalised the same four files
+# nine hours later (#12343 / #12433, +375 lines of Lean). Two quasi shapes:
+#   - "typo": the first word in brackets is at edit distance <= 2 of a known
+#     keyword (`CLAGED` -> CLAIMED, `CLAMED` -> CLAIMED, `RELESED` -> RELEASED);
+#   - "suffix": the first word IS a known keyword but the bracket carries
+#     extra content (`[RELEASED claim-malformed]`) -- `_MARKER_RE`'s
+#     `\[\s*KEYWORD\s*\]` rejects it, so the gesture enacts nothing.
+# Same decoration tolerance as `_MARKER_RE`; same claim-motif gate as
+# `_MALFORMED_MARKER_RE` (a `lane <tok>` / `#N` / `paths:` on the line) so
+# prose that merely mentions an almost-word is not flagged. WARN-only by
+# design: the quasi marker is SIGNALED, never auto-corrected and never
+# enacted -- an auto-correction would guess intent where the writer must
+# re-post the canonical form themselves.
+_QUASI_MARKER_RE = re.compile(
+    r"(?m)^[ \t]*" + _DECOR + r"(?:\*\*|__)?[ \t]*"
+    r"\[([A-Za-z][A-Za-z_-]{2,})((?:[ \t][^\]\n]*)?)\]",
+    re.IGNORECASE,
+)
+# #12624 -- the claim motif that gates BOTH quasi shapes. Same selectivity
+# rationale as `_MALFORMED_MARKER_RE`'s tail: a bracketed almost-word on a
+# line that carries no claim motif is prose, not a failed gesture.
+_CLAIM_MOTIF_RE = re.compile(r"(?:lane\s+\S+:\S+|#\d+|paths?\s*:)", re.IGNORECASE)
+# #12624 -- composite single-line detection (Defaut 2). A line-anchored head
+# marker followed LATER ON THE SAME LINE by another exact bracketed keyword
+# carrying a claim motif: the incident's repair comment was one single line
+# `[RELEASED claim-malformed] ignore ... Re-claim ici : [CLAIMED] lane X --
+# paths: ...`. Only the HEAD token is line-anchored, so only the head can be
+# an event; the mid-line `[CLAIMED]` is deliberately NOT one (#10228
+# mid-prose protection -- the claim template itself carries a mid-line
+# `[RELEASED]`). The writer must learn that their re-claim was not read.
+_MIDLINE_KEYWORD_RE = re.compile(
+    r"\[\s*(CLAIMED|RELEASED|CANCELLED|ABANDONED|DONE|OVERRIDE|DELIVERED)\s*\]",
+    re.IGNORECASE,
+)
+_KEYWORDS = ("CLAIMED", "RELEASED", "CANCELLED", "ABANDONED", "DONE", "OVERRIDE", "DELIVERED")
 
 
 def _blank_keeping_shape(line: str) -> str:
@@ -435,6 +488,19 @@ class ClaimEvent(dict):
         return self.get("unparseable_scope") or []
 
     @property
+    def lane_scope_residue(self) -> list[str]:
+        """Malformed-lane residues on the marker line (#12719).
+
+        A bare date after the token (`myia-po-2023:CoursIA 2026-08-23`) or a
+        trailing sentence period (`myia-po-2023:CoursIA.`). The lane regex
+        fix makes both parse to the bare lane, so the claim is NOT blocked
+        anymore; this witness lists the residue so the declaring lane can SEE
+        its marker was malformed instead of the organ silently reinterpreting
+        it. Report-only -- a malformed marker that parses is functional.
+        """
+        return self.get("lane_scope_residue") or []
+
+    @property
     def empty_scope(self) -> list[str]:
         """Subset of `paths` matching ZERO tracked files in the repo (#10958).
 
@@ -546,8 +612,12 @@ def _parse_claim_events(comment: dict) -> list[ClaimEvent]:
         lane = extract_lane(line, marker_line=line)
         if lane is None:
             lane = extract_lane(body, marker_line=line)
+        # #12719 -- malformed-lane witness (bare date / trailing period).
+        # Report-only: the claim is attributed to the bare lane either way.
+        lane_residue = lane_marker_residues(line)
         events.append(ClaimEvent(
             lane=lane,
+            lane_scope_residue=lane_residue,
             action=action,
             marker=marker,
             created_at=created_at,
@@ -1055,9 +1125,37 @@ def _sort_events(payload: dict) -> list[ClaimEvent]:
 # failure -- an unreachable `gh` MUST NOT cause a `[DELIVERED]` to suddenly
 # start blocking. The failure is visible in `delivered_claims_failed` so an
 # operator can see which lookups were silently degraded.
+#
+# #13336 -- that fail-open is now scoped to TRANSIENT failures only. A gh
+# schema break (`Unknown JSON field`) is PERMANENT: while it lasts, every
+# lookup returns None and the v2 gate degenerates to v1 wholesale -- the
+# exact silence that let #13216 be written twice (both lanes passed their
+# guard, the signal was `null`). A permanent failure keeps the claim
+# BLOCKING (fail-CLOSED, the organ's default posture); a network/auth
+# hiccup keeps the documented fail-open.
 _PR_STATE_CACHE: dict[int, tuple[str | None, str | None]] = {}
 # value shape: (pr_state, error_message) where pr_state in
 # {"OPEN","MERGED","CLOSED",None} and error_message is None on success.
+
+# #13336 -- environmental failures (network, auth, gh binary absent) are
+# transient: retryable, orthogonal to the claim protocol, and the documented
+# fail-open applies. Everything else (schema break, non-JSON, unexpected
+# payload, PR not found) is permanent for the lifetime of the process.
+_TRANSIENT_ERROR_MARKERS = (
+    "timed out", "timeout", "could not resolve host", "connection",
+    "dial tcp", "temporary failure", "network", "rate limit",
+    "http 429", "http 5", "502", "503", "504",
+    "gh auth", "not logged in", "authentication required",
+    "gh exec failed",
+)
+
+
+def _is_transient_error(err: str | None) -> bool:
+    """#13336 -- True when a `_fetch_pr_state` error is environmental."""
+    if not err:
+        return False
+    e = err.lower()
+    return any(m in e for m in _TRANSIENT_ERROR_MARKERS)
 
 
 def _fetch_pr_state(pr_ref: int) -> tuple[str | None, str | None]:
@@ -1084,7 +1182,7 @@ def _fetch_pr_state(pr_ref: int) -> tuple[str | None, str | None]:
         proc = subprocess.run(
             [
                 "gh", "pr", "view", str(pr_ref),
-                "--json", "state,merged",
+                "--json", "state,mergedAt",
             ],
             capture_output=True, text=True, shell=False,
             encoding="utf-8", errors="replace",  # #12811
@@ -1103,14 +1201,15 @@ def _fetch_pr_state(pr_ref: int) -> tuple[str | None, str | None]:
         result = (None, f"gh pr view {pr_ref} non-JSON: {exc}")
         _PR_STATE_CACHE[pr_ref] = result
         return result
-    # GH field model: `state` in {OPEN, CLOSED, MERGED}, `merged` is a bool.
-    # When `state == "MERGED"`, the reducer should still treat the substance as
-    # locked -- the PR reached main. `merged=True` on its own is enough to lock
-    # even if `state` was raced (defence in depth: the bool was the canonical
-    # source until 2026).
-    if d.get("merged") is True:
-        result = ("MERGED", None)
-    elif d.get("state") == "MERGED":
+    # GH field model (#13336): `state` in {OPEN, CLOSED, MERGED}, `mergedAt`
+    # is an ISO timestamp (null until merged). The bool field `merged` was
+    # REMOVED from `gh pr view --json` (gh 2.83+): querying it exits 1 on the
+    # WHOLE request, which made every lookup fail and silently reverted the
+    # reducer to v1 (every [DELIVERED] released its claim, #13216 duplicated).
+    # When `state == "MERGED"`, the reducer treats the substance as locked --
+    # the PR reached main. A non-null `mergedAt` alone also locks, defence in
+    # depth against a raced `state`.
+    if d.get("mergedAt") is not None or d.get("state") == "MERGED":
         result = ("MERGED", None)
     elif d.get("state") == "CLOSED":
         result = ("CLOSED", None)
@@ -1157,8 +1256,9 @@ def _resolve_delivered_v2(
         return "close"  # legacy: a DELIVERED without a PR ref is a close
     if pr_states is not None:
         st = pr_states.get(pr_ref)
+        err = None
     else:
-        st, _err = _fetch_pr_state(pr_ref)
+        st, err = _fetch_pr_state(pr_ref)
     # Attach the resolved state to the event for the JSON summary. On a None
     # state (lookup failed) we still attach None so the consumer sees that we
     # TRIED -- the absence of the key would otherwise be indistinguishable from
@@ -1168,6 +1268,15 @@ def _resolve_delivered_v2(
         return "open"
     if st == "MERGED":
         return "open_locked"
+    if (st is None and pr_states is None
+            and err is not None and not _is_transient_error(err)):
+        # #13336 -- PERMANENT lookup failure (gh schema break, non-JSON
+        # payload, PR not found): fail-CLOSED. Releasing the claim here is
+        # what silently reverted v2 to v1 while the `merged` field was dead
+        # (#13216: the same 49 lines written twice, both guards CLEAR).
+        # The lane keeps its lock until a human or a working gh resolves it.
+        ev["pr_state_error"] = err
+        return "open"
     return "close"
 
 
@@ -1488,6 +1597,91 @@ def _glob_matches_tracked(glob: str, tracked: list[str]) -> bool:
     return False
 
 
+# #13129 -- proximity suggestion for dead globs. When a declared glob matches
+# ZERO tracked files AND the glob's basename exists UNIQUE elsewhere in the
+# tracked tree, suggest the real path so the writer can fix the typo at the
+# call site. The threshold prevents the false-positive on README.md /
+# MANIFEST.md / __init__.py (basenames that legitimately appear hundreds of
+# times). Returns None when the suggestion would be ambiguous or noise-prone.
+_PROXIMITY_BASENAME_LIMIT = 5  # > N occurrences => basename is too generic.
+
+
+def _suggest_path_correction(glob: str, tracked: list[str]) -> str | None:
+    """Best-effort 'did you mean ... ?' suggestion for a dead glob (#13129).
+
+    The glob's BASENAME must appear EXACTLY once in the tracked tree for a
+    suggestion to be returned. Multiple matches = ambiguous (the writer must
+    pick by intent, not by basename). Zero matches = no candidate (a brand
+    new file -- the legitimate future case the warn was never meant to
+    block, see #12740).
+
+    The threshold (_PROXIMITY_BASENAME_LIMIT = 5) caps the suggestion at
+    basenames that survive as legitimate identifiers: README.md, MANIFEST.md
+    and __init__.py each have hundreds of occurrences across the repo and
+    would mislead more often than they would help. A basename that appears
+    between 1 and 5 times IS likely a typo (the writer meant one specific
+    file and the regex did not pick the right one).
+    """
+    if not glob or "/" not in glob:
+        return None
+    basename = glob.rsplit("/", 1)[-1]
+    if not basename or basename.startswith(".") and len(basename) <= 2:
+        return None
+    matches = [t for t in tracked if t.endswith("/" + basename)]
+    if not matches or len(matches) > _PROXIMITY_BASENAME_LIMIT:
+        return None
+    if len(matches) == 1:
+        return matches[0]
+    # 2..5 matches: pick the one sharing the LONGEST prefix with the dead glob
+    # (directory proximity beats basename uniqueness). Return it only when the
+    # picked candidate is strictly closer than the runner-up.
+    matches.sort(key=lambda t: -len(_common_prefix(glob, t)))
+    best, second = matches[0], matches[1] if len(matches) > 1 else ""
+    if _common_prefix(best, glob) > _common_prefix(second, glob):
+        return best
+    return None
+
+
+def _common_prefix(a: str, b: str) -> str:
+    n = 0
+    for x, y in zip(a, b):
+        if x != y:
+            break
+        n += 1
+    return a[:n]
+
+
+# #13129 motif B -- detect missing-comma in a glob. The mistake pattern is
+# `paths: a.py b.py` where the writer forgot the comma; the parser treats
+# the whole thing as ONE glob that matches nothing. We flag when a glob
+# contains a SPACE and at least two SPACE-separated tokens each LOOK like a
+# path (contain a `/` OR end with a tracked-file extension).
+_PATHLIKE_TOKEN_RE = re.compile(r"[^\s/]+(?:/[^\s/]+)+|\S+\.(?:py|yml|yaml|md|ipynb|lean|ps1|sh|json|cs|cpp|hpp|go|rs|ts|tsx|js|jsx|txt|csv)")
+
+
+def _looks_like_missing_comma(glob: str) -> list[str] | None:
+    """Return the SPACE-separated tokens if the glob looks like a missing-comma typo (#13129 motif B).
+
+    Heuristic: the glob has whitespace AND `>=2` tokens each look path-shaped
+    (slashed OR ending in a tracked-file extension). Returns None when the
+    heuristic does not fire -- the glob is a single path with possible
+    whitespace, not a typo. Conservative: a single path-shaped token does
+    NOT trigger the suggestion (a space inside a filename is rare but
+    legal; the cost of a false positive is a confusing suggestion, the cost
+    of a false negative is silent dead-glob, which is the existing bug we
+    are not making worse).
+    """
+    if not glob or " " not in glob:
+        return None
+    tokens = glob.split()
+    if len(tokens) < 2:
+        return None
+    pathlike = [t for t in tokens if _PATHLIKE_TOKEN_RE.match(t)]
+    if len(pathlike) < 2:
+        return None
+    return pathlike
+
+
 _INFERRED_PATH_PATTERNS = (
     # French/English label keywords fleet uses to advertise intent in prose.
     # The patterns match the LABEL token followed by a colon and the path; the
@@ -1692,6 +1886,29 @@ def _lint_claim_events(
                     f"(lane {ev.lane or '?'})",
                     file=sys.stderr,
                 )
+                # #13129 motif B -- missing comma between paths. Fires when
+                # the glob contains whitespace AND >=2 tokens each look path-
+                # shaped. The classic typo is `paths: a.py b.py` which the
+                # parser treats as a single glob that matches nothing.
+                pathlike_tokens = _looks_like_missing_comma(g)
+                if pathlike_tokens:
+                    candidates = ", ".join(repr(t) for t in pathlike_tokens)
+                    print(
+                        f'WARN: glob ressemble a plusieurs chemins separes '
+                        f"par ESPACE au lieu d'une virgule : {candidates}. "
+                        f"Le parser n'a vu qu'un seul glob (motif B, #13129).",
+                        file=sys.stderr,
+                    )
+                # #13129 motif A/C -- proximity suggestion. When the basename
+                # of the dead glob exists UNIQUE elsewhere in the tree,
+                # suggest the real path. Best-effort, non-blocking.
+                elif (suggestion := _suggest_path_correction(g, tracked)) is not None:
+                    print(
+                        f"WARN: glob sans correspondance : \"{g}\" -- "
+                        f"did you mean {suggestion!r} ? (basename unique, "
+                        f"#13129 motif A/C)",
+                        file=sys.stderr,
+                    )
 
 
 def _event_is_active_for(legacy: ClaimEvent, active: ClaimEvent) -> bool:
@@ -1745,6 +1962,120 @@ def _find_malformed_markers(payload: dict) -> list[dict]:
                 "author": author,
                 "url": c.get("url"),
             })
+    return found
+
+
+def _levenshtein(a: str, b: str) -> int:
+    """Plain Levenshtein distance (small strings -- keyword-length inputs)."""
+    if a == b:
+        return 0
+    if not a or not b:
+        return len(a) + len(b)
+    prev = list(range(len(b) + 1))
+    for i, ca in enumerate(a, 1):
+        cur = [i]
+        for j, cb in enumerate(b, 1):
+            cur.append(min(
+                prev[j] + 1,          # deletion
+                cur[j - 1] + 1,       # insertion
+                prev[j - 1] + (ca != cb),  # substitution
+            ))
+        prev = cur
+    return prev[-1]
+
+
+def _nearest_keyword(word: str) -> tuple[str | None, int]:
+    """Return (nearest known keyword, distance) for an upper-cased token."""
+    best: str | None = None
+    best_d = 99
+    for k in _KEYWORDS:
+        d = _levenshtein(word, k)
+        if d < best_d:
+            best, best_d = k, d
+    return best, best_d
+
+
+def _find_suspected_typo_markers(payload: dict) -> list[dict]:
+    """Bracketed line-head tokens that ALMOST form a marker (#12624 Defaut 1).
+
+    Covers the gap between `_MARKER_RE` (exact keyword, alone in brackets)
+    and `_MALFORMED_MARKER_RE` (bare keyword, no brackets): a bracketed
+    `[CLAGED]` / `[RELEASED claim-malformed]` at line head is read by
+    NEITHER, so the writer's gesture enacts nothing while they believe their
+    lock is posted. WARN-only, never enacted, never auto-corrected -- the
+    signal tells the writer to re-post the canonical form. Fenced blocks are
+    masked (a quoted quasi marker is a citation, not a gesture).
+    """
+    found: list[dict] = []
+    for c in payload.get("comments", []):
+        body = c.get("body") or ""
+        author = (c.get("author") or {}).get("login")
+        for m in _QUASI_MARKER_RE.finditer(_mask_fenced_blocks(body)):
+            word = m.group(1).upper()
+            suffix = (m.group(2) or "").strip()
+            if word in _KEYWORDS and not suffix:
+                continue  # real marker -- `_MARKER_RE` already enacted it
+            line = _line_for_match(body, m)
+            if not _CLAIM_MOTIF_RE.search(line):
+                continue  # prose mention, not a claim attempt (#11239 gate)
+            if word in _KEYWORDS:
+                kind, nearest = "suffix", word
+            else:
+                nearest, dist = _nearest_keyword(word)
+                # len >= 4: a 3-letter token is within distance 2 of DONE for
+                # almost any input -- the motif gate alone would not save us.
+                if nearest is None or dist > 2 or len(word) < 4:
+                    continue
+                kind = "typo"
+            found.append({
+                "nearest": nearest,
+                "token": m.group(1),
+                "kind": kind,
+                "line": line if len(line) <= 160 else line[:160] + "…",
+                "author": author,
+                "url": c.get("url"),
+            })
+    return found
+
+
+def _find_single_line_composites(payload: dict) -> list[dict]:
+    """Head marker + later exact keyword bracket on the SAME line (#12624 Defaut 2).
+
+    The incident's repair comment was ONE line: `[RELEASED claim-malformed]
+    ignore ... Re-claim ici : [CLAIMED] lane X -- paths: ...`. Only the head
+    token is line-anchored, so the mid-line `[CLAIMED]` is NOT an event (by
+    the #10228 mid-prose protection, which must stand -- the claim template
+    itself carries a mid-line `[RELEASED]` citation). The net effect: the
+    repair gesture enacted nothing, the re-claim never registered, and the
+    lane worked uncovered. This lint names the line so the writer re-posts
+    ONE COMMENT PER MARKER. Multi-LINE composites stay legal ("dernier
+    marqueur gagne" -- walk order, documented in the module docstring); only
+    the single-line shape is flagged, because only it silently swallows the
+    second marker.
+    """
+    found: list[dict] = []
+    for c in payload.get("comments", []):
+        body = c.get("body") or ""
+        author = (c.get("author") or {}).get("login")
+        masked = _mask_fenced_blocks(body)
+        for m in _QUASI_MARKER_RE.finditer(masked):
+            line = _line_for_match(body, m)
+            # masked preserves offsets, so m.end() is valid on `body`; the
+            # remainder of the SAME line is what can carry a swallowed marker.
+            tail = body[m.end():]
+            nl = tail.find("\n")
+            after_head = tail if nl == -1 else tail[:nl]
+            for k in _MIDLINE_KEYWORD_RE.finditer(after_head):
+                rest = after_head[k.end():]
+                if _CLAIM_MOTIF_RE.search(rest):
+                    found.append({
+                        "head": m.group(1).upper(),
+                        "swallowed": k.group(1).upper(),
+                        "line": line if len(line) <= 160 else line[:160] + "…",
+                        "author": author,
+                        "url": c.get("url"),
+                    })
+                    break  # one signal per line is enough
     return found
 
 
@@ -1863,6 +2194,40 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
             f'WARN: marqueur sans crochets "{mm["marker"]}"{who} -- la forme '
             f'attendue est "[{mm["marker"]}]" ; sans crochets, l\'organe ne '
             f"le lit pas (unattributed_markers reste 0). {mm['line']}",
+            file=sys.stderr,
+        )
+    # #12624 Defaut 1 -- quasi-marker lint (bracketed almost-keyword at line
+    # head: `[CLAGED]`, `[RELEASED claim-malformed]`). Invisible to BOTH the
+    # marker regex and the #11239 bare lint -- the gesture enacts nothing
+    # while the writer believes their lock is posted. WARN-only.
+    suspected = _find_suspected_typo_markers(payload)
+    for s in suspected:
+        who = f" by @{s['author']}" if s["author"] else ""
+        if s["kind"] == "typo":
+            why = f'"{s["token"]}" (distance <= 2 de {s["nearest"]})'
+        else:
+            why = f'"{s["token"]}..." ({s["nearest"]} + suffixe dans les crochets)'
+        print(
+            f"WARN: quasi-marqueur {why}{who} -- l'organe ne le lit PAS "
+            f'(ni evenement, ni malformed_markers). Reposter la forme '
+            f'canonique "[{s["nearest"]}] lane <machine:workspace>" dans un '
+            f"commentaire neuf ; ne jamais corriger a la main le marqueur "
+            f"existant (le createdAt serveur fait foi). {s['line']}",
+            file=sys.stderr,
+        )
+    # #12624 Defaut 2 -- single-line composite lint. Only the HEAD token of
+    # a line is line-anchored, so a second marker later on the SAME line is
+    # never an event; the repair-gesture trap is the measured incident shape.
+    composites = _find_single_line_composites(payload)
+    for s in composites:
+        who = f" by @{s['author']}" if s["author"] else ""
+        print(
+            f"WARN: marqueur compose sur une seule ligne{who} -- seul le "
+            f'marqueur de TETE ({s["head"]}) est lu ; le [{s["swallowed"]}] '
+            f"mid-line n'est PAS un evenement (protection mid-prose #10228). "
+            f"Si l'intention etait un re-claim, il n'a PAS ete enregistre : "
+            f"reposter UN commentaire par marqueur (cf. geste de reparation "
+            f"#12624 dans .claude/rules/lane-claim-protocol.md). {s['line']}",
             file=sys.stderr,
         )
     # #10958 -- attach the dead-glob witness to every scoped event (own and
@@ -2097,6 +2462,11 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
                 # scope is fully parseable) or non-empty (the claim carries
                 # patterns fnmatch cannot match).
                 "unparseable_scope": ev.get("unparseable_scope") or [],
+                # #12719 -- malformed-lane witness (bare date after the
+                # token, trailing sentence period). The claim still parses to
+                # the bare lane; the residue is surfaced so the declaring
+                # lane sees its marker was malformed (report, not block).
+                "lane_scope_residue": ev.get("lane_scope_residue") or [],
                 # #10958 -- the dead-glob witness: globs of this claim that
                 # match zero tracked files. Empty when every glob locks
                 # something (or the walk was impossible). Non-empty means the
@@ -2152,6 +2522,20 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
         # the lock that never registered.
         "malformed_markers": len(malformed),
         "malformed_marker_lines": [m["line"] for m in malformed],
+        # #12624 -- quasi-marker witnesses (Defaut 1). A bracketed line-head
+        # token at edit distance <= 2 of a keyword (typo) or a keyword with a
+        # suffix inside the brackets (`[RELEASED claim-malformed]`) is read
+        # by neither the event parser nor the #11239 bare lint. Surfaced so
+        # the writer learns their lock never registered.
+        "suspected_typo_markers": len(suspected),
+        "suspected_typo_marker_lines": [s["line"] for s in suspected],
+        # #12624 -- single-line composite witnesses (Defaut 2). The head
+        # marker is the only line-anchored event of its line; any second
+        # bracketed keyword later on the same line is NOT an event. The
+        # measured repair-trap shape (lift + re-claim in one line) shows up
+        # here instead of silently swallowing the re-claim.
+        "composite_single_line_markers": len(composites),
+        "composite_single_line_marker_lines": [s["line"] for s in composites],
         "blocked": bool(others),
         # #12322 -- query_scope is the read-mode classifier for THIS call.
         # `EPIC_WIDE_NO_PATHS_DECLARED` means the caller did not pass `--paths`
@@ -2253,6 +2637,18 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
             f"reprise autorisee, poster un nouveau [CLAIMED].",
             file=sys.stderr,
         )
+
+    # #13336 -- a DELIVERED whose PR state could not be resolved must be
+    # NAMED in the verdict, whatever the verdict. Before this, the JSON
+    # carried `delivered_claims_pr_states: {"N": null}` while the human line
+    # still said `CLEAR:` -- the second lane on #13216 read CLEAR and
+    # duplicated 49 lines that were already in an OPEN PR.
+    unresolved_delivered = [
+        (ev.get("lane") or "?", ev.get("pr_ref"), ev.get("pr_state_error"))
+        for ev in events
+        if ev.marker == "DELIVERED" and ev.get("pr_ref") is not None
+        and ev.get("pr_state") is None
+    ]
 
     # Human verdict after the JSON.
     if others:
@@ -2383,6 +2779,20 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
                 + "\n".join(lines),
                 file=sys.stderr,
             )
+        # #13336 -- fail-CLOSED witness: a lane blocked HERE because its
+        # DELIVERED could not be resolved (permanent gh/schema error) must
+        # see the CAUSE, not just the block. The exit code is unchanged (1
+        # is BLOCKED); the message explains why a visible [DELIVERED] did
+        # not release the lane.
+        for ln, pr, why in unresolved_delivered:
+            reason = f" ({why})" if why else ""
+            print(
+                f"WARN: le [DELIVERED] lane {ln} -- PR #{pr} n'a pas libere "
+                f"la voie : etat de PR NON RESOLU, echec non transitoire"
+                f"{reason}. Fail-CLOSED #13336 -- la lane garde son lock "
+                f"jusqu'a resolution (gh/schema) ou arbitrage coordinateur.",
+                file=sys.stderr,
+            )
         return 1
     # #12345 -- fail-CLOSED on an entirely-dead scope, EVEN with no
     # blockers. Without this branch, a caller who typo'd every glob in
@@ -2417,6 +2827,17 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
         parts.append(f"{len(stale_others)} stale claim(s) bypassed")
     note = f" ({'; '.join(parts)})" if parts else ""
     print(f"\nCLEAR: no other lane claims #{payload.get('number')}{note}.")
+    if unresolved_delivered:
+        # #13336 -- CLEAR is not an all-clear when a delivery's PR could not
+        # be resolved: the lane may still be holding an OPEN PR on this issue.
+        for ln, pr, why in unresolved_delivered:
+            reason = f" ({why})" if why else ""
+            print(
+                f"WARN: [DELIVERED] lane {ln} -- PR #{pr} non resolu{reason}: "
+                f"l'etat vivant de la PR n'a pas pu etre lu, verifiez-la "
+                f"avant de demarrer (#13336).",
+                file=sys.stderr,
+            )
     return 0
 
 

@@ -53,13 +53,13 @@ name: Fabricated text output gate
 # incident: 8 quantbooks blank-PNG + Row N), #3544 + #9932 (heuristic-beats-
 # optimal bug class), and the sibling degenerate-figure-gate.yml (#6918).
 
+# ABSORBE PAR LA VOIE RAPIDE sur `pull_request` (#12567, tranche 2) : le
+# verdict PR est rendu par `fast-lane-shadow.yml` (check-run nomme
+# `No fabricated text output in changed notebooks`, meme nom que ce job).
+# Ce fichier garde `workflow_dispatch`. Les `paths:` d'origine vivent dans
+# `scripts/ci/fast_lane_registry.py` (TRANCHE2).
+
 on:
-  pull_request:
-    branches: [ main ]
-    paths:
-      - 'MyIA.AI.Notebooks/**/*.ipynb'
-      - 'scripts/notebook_tools/detect_fabricated_outputs.py'
-      - '.github/workflows/fabricated-output-gate.yml'
   workflow_dispatch:
 
 permissions:

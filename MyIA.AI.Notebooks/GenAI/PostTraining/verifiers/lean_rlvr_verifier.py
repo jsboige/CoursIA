@@ -186,7 +186,7 @@ class LeanRLVRVerifier:
             cwd=str(self.project_dir),
             input=source,
             capture_output=True,
-            text=True,
+            text=True, encoding="utf-8", errors="replace",
             timeout=self.timeout,
             env=env,
         )

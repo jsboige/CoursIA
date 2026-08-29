@@ -97,7 +97,7 @@ ALL_AREAS = ["Ciqual", *FORK_AREAS, "RecipeML"]
 
 def _run(cmd: list[str], cwd: Path | None = None) -> None:
     """Lance une commande, leve une exception explicite en cas d'echec."""
-    result = subprocess.run(cmd, cwd=cwd, text=True, capture_output=True)
+    result = subprocess.run(cmd, cwd=cwd, text=True, encoding="utf-8", errors="replace", capture_output=True)
     if result.returncode != 0:
         raise RuntimeError(
             f"echec : {' '.join(cmd)}\nstdout: {result.stdout}\nstderr: {result.stderr}"
