@@ -566,7 +566,7 @@ def test_check_query_scope_path_scoped_when_caller_already_owns_scoped_claim(cap
     at exit 1 -- the caller is, in effect, scoped through their own active
     claim, so the unscoped-caller hint does not apply.
 
-    # #12345 -- the caller's own claim scopes to `Sudoku-9.ipynb`, which does
+    # #12345 -- the caller's own claim scopes to `Sudoku-09.ipynb`, which does
     # NOT exist as a tracked file. Post-#12345, the scope-vivacity classifier
     # sees `caller_empty_scope == my_scope` and routes to
     # `EPIC_WIDE_NO_PATHS_DECLARED` at exit 2 (a broken scope is a non-scope).
@@ -574,7 +574,7 @@ def test_check_query_scope_path_scoped_when_caller_already_owns_scoped_claim(cap
     p = payload(
         comment(
             "[CLAIMED] lane myia-po-2024:CoursIA -- "
-            "paths: MyIA.AI.Notebooks/Sudoku/Sudoku-9.ipynb",
+            "paths: MyIA.AI.Notebooks/Sudoku/Sudoku-09.ipynb",
             "2026-08-11T04:02:00Z",
         ),
         comment(
@@ -584,7 +584,7 @@ def test_check_query_scope_path_scoped_when_caller_already_owns_scoped_claim(cap
     )
     rc = clc._run_check(p, "myia-po-2024:CoursIA")
     out = capsys.readouterr().out
-    # #12345 -- the caller's own scope (`Sudoku-9.ipynb`) is dead, so the
+    # #12345 -- the caller's own scope (`Sudoku-09.ipynb`) is dead, so the
     # classifier sees an entirely-dead scope and routes to
     # `EPIC_WIDE_NO_PATHS_DECLARED` at exit 2. The other lane's epic-wide
     # claim still blocks the caller; the verdict is `NOT_SCOPED` (exit 2),
@@ -1898,7 +1898,7 @@ def test_parse_claimed_with_paths_clause():
     ev = clc.parse_claim_event(
         comment(
             "[CLAIMED] lane myia-po-2023:CoursIA -- "
-            "paths: MyIA.AI.Notebooks/Sudoku/Sudoku-9-GraphColoring-Csharp.ipynb",
+            "paths: MyIA.AI.Notebooks/Sudoku/Sudoku-09-GraphColoring-Csharp.ipynb",
             "2026-08-11T04:02:00Z",
         )
     )
@@ -1906,7 +1906,7 @@ def test_parse_claimed_with_paths_clause():
     assert ev.marker == "CLAIMED"
     assert ev.is_open
     assert ev.paths == [
-        "MyIA.AI.Notebooks/Sudoku/Sudoku-9-GraphColoring-Csharp.ipynb",
+        "MyIA.AI.Notebooks/Sudoku/Sudoku-09-GraphColoring-Csharp.ipynb",
     ]
 
 
@@ -1967,7 +1967,7 @@ def test_check_claimed_disjoint_paths_dont_block(capsys):
                 "2026-08-11T04:02:00Z"),
         comment("[CLAIMED] lane myia-po-2023:CoursIA -- "
                 "paths: MyIA.AI.Notebooks/Sudoku/"
-                "Sudoku-9-GraphColoring-Csharp.ipynb",
+                "Sudoku-09-GraphColoring-Csharp.ipynb",
                 "2026-08-11T04:05:00Z"),
     )
     rc = clc._run_check(p, "myia-po-2025:CoursIA")  # no --paths
@@ -1993,7 +1993,7 @@ def test_check_claimed_10382_five_disjoint_claims(capsys):
     import pathlib
     repo_root = pathlib.Path(__file__).resolve().parents[2]
     fixture_paths = [
-        "MyIA.AI.Notebooks/Sudoku/Sudoku-9-GraphColoring-Csharp.ipynb",
+        "MyIA.AI.Notebooks/Sudoku/Sudoku-09-GraphColoring-Csharp.ipynb",
         "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/"
         "Planners-5-Heuristics-Csharp.ipynb",
         "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-3-Informed-Csharp.ipynb",
@@ -2012,7 +2012,7 @@ def test_check_claimed_10382_five_disjoint_claims(capsys):
     p = payload(
         comment("[CLAIMED] lane myia-po-2023:CoursIA -- "
                 "paths: MyIA.AI.Notebooks/Sudoku/"
-                "Sudoku-9-GraphColoring-Csharp.ipynb",
+                "Sudoku-09-GraphColoring-Csharp.ipynb",
                 "2026-08-11T04:02:00Z"),
         comment("[CLAIMED] lane myia-po-2024:CoursIA -- "
                 "paths: MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/"
@@ -2048,10 +2048,10 @@ def test_check_claimed_same_path_still_blocks(capsys):
     # feature must not dissolve a genuine file-level conflict into a false clear.
     p = payload(
         comment("[CLAIMED] lane A:CoursIA -- paths: MyIA.AI.Notebooks/Sudoku/"
-                "Sudoku-9-GraphColoring-Csharp.ipynb",
+                "Sudoku-09-GraphColoring-Csharp.ipynb",
                 "2026-08-11T04:02:00Z"),
         comment("[CLAIMED] lane B:CoursIA-2 -- paths: MyIA.AI.Notebooks/Sudoku/"
-                "Sudoku-9-GraphColoring-Csharp.ipynb",
+                "Sudoku-09-GraphColoring-Csharp.ipynb",
                 "2026-08-11T04:05:00Z"),
     )
     rc = clc._run_check(p, "A:CoursIA")
@@ -3466,7 +3466,7 @@ def test_third_lane_disjoint_paths_clear_after_release_reclaim(capsys):
     rc = clc._run_check(
         p, "myia-po-2026:CoursIA",
         my_paths=["MyIA.AI.Notebooks/Sudoku/"
-                  "Sudoku-9-GraphColoring-Csharp.ipynb"],
+                  "Sudoku-09-GraphColoring-Csharp.ipynb"],
     )
     assert rc == 0
     captured = capsys.readouterr()

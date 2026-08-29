@@ -479,6 +479,133 @@ def test_network_failure_does_not_block_the_draw(monkeypatch):
     assert out["unattributed_blocked"] == []
 
 
+# --- orphelines du tag Grain : le constat doit porter sa route (#13086) -------
+
+
+def _orphan_pr(n, age_hours, author, branch):
+    pr = _pr(n, None, age_hours)
+    pr["author"] = {"login": author}
+    pr["headRefName"] = branch
+    return pr
+
+
+def test_unattributed_blocked_prs_carries_the_route(monkeypatch):
+    """`--orphans-report` et `red_backlog` partagent la meme detection, et le
+    resultat porte author+branch : un constat sans destinataire n'est pas un
+    routage. Les untagged SANS rouge et les taggees ne comptent pas.
+    """
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    green = _state(checks=[("PR gate", "SUCCESS", True)])
+    tagged = _pr(1, "myia-po-2023:CoursIA", 50)
+    tagged.update(author={"login": "myia-po-2023"}, headRefName="feature/ok")
+    fresh_unblocked = _orphan_pr(2, 1, "myia-po-2024", "feature/fresh")
+    prs = [
+        tagged,
+        fresh_unblocked,
+        _orphan_pr(3, 30, "myia-po-2023", "feature/old"),
+        _orphan_pr(4, 8, "myia-po-2023", "feature/mid"),
+        _orphan_pr(5, 40, "jsboige", "feature/user"),
+    ]
+    monkeypatch.setattr(pig, "fetch_open_prs", lambda: prs)
+    monkeypatch.setattr(
+        pig, "fetch_pr_states",
+        lambda nums: {n: (red if n in (3, 4, 5) else green) for n in nums})
+    out = pig.unattributed_blocked_prs()
+    assert [r["number"] for r in out] == [5, 3, 4]  # tri par age decroissant
+    assert all(r["author"] and r["branch"] for r in out)
+    assert out[0]["author"] == "jsboige" and out[0]["branch"] == "feature/user"
+
+
+def test_red_backlog_unattributed_now_carries_the_route(monkeypatch):
+    """Le champ historique `unattributed_blocked` est ENRICHI (auteur, branche),
+    pas remplace : le skill coordinate lit ce champ, il gagne la route sans
+    changer de canal.
+    """
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    orphan = _orphan_pr(9, 12, "myia-po-2023", "feature/x")
+    _patch_backlog(monkeypatch, [_pr(1, "myia-po-2026:CoursIA", 30), orphan],
+                   {1: red, 9: red})
+    out = pig.red_backlog("myia-po-2026:CoursIA", 24, count_threshold=99)
+    assert out["unattributed_blocked"][0]["author"] == "myia-po-2023"
+    assert out["unattributed_blocked"][0]["branch"] == "feature/x"
+
+
+def test_build_orphans_comment_names_each_orphan_with_author_and_branch():
+    """Le commentaire est le routage : chaque orpheline y est nommee avec son
+    auteur et sa branche, groupees par auteur, entre marqueurs upsert.
+    """
+    orphans = [
+        {"number": 5, "title": "fix thing", "author": "jsboige",
+         "branch": "feature/user", "age_hours": 40},
+        {"number": 3, "title": "other thing", "author": "myia-po-2023",
+         "branch": "feature/old", "age_hours": 30},
+    ]
+    body = pig.build_orphans_comment(orphans)
+    assert pig.ORPHANS_MARKER_START in body and pig.ORPHANS_MARKER_END in body
+    assert "**jsboige** (1)" in body and "**myia-po-2023** (1)" in body
+    assert "#5" in body and "#3" in body
+    assert "`feature/user`" in body and "`feature/old`" in body
+    assert "#13086" in body
+
+
+def test_build_orphans_comment_empty_writes_zero_not_silence():
+    """Un balayage muet est indiscernable d'un balayage mort : le cas vide
+    s'ECRIT (zero date), il ne disparait pas.
+    """
+    body = pig.build_orphans_comment([])
+    assert pig.ORPHANS_MARKER_START in body and pig.ORPHANS_MARKER_END in body
+    assert ": 0." in body
+
+
+def test_orphans_report_mode_dry_run_by_default(monkeypatch, capsys):
+    """Sans --apply-comment : impression seule, AUCUN appel gh d'ecriture.
+    Le mode ne demande pas --lane (la file est lane-independante).
+    """
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    monkeypatch.setattr(pig, "fetch_open_prs",
+                        lambda: [_orphan_pr(9, 5, "myia-po-2023", "feature/x")])
+    monkeypatch.setattr(pig, "fetch_pr_states", lambda nums: {9: red} if 9 in nums else {})
+    def no_post(number, body):
+        raise AssertionError(f"upsert appele en dry-run sur #{number}")
+    monkeypatch.setattr(pig, "upsert_orphans_comment", no_post)
+    rc = pig.main(["--orphans-report"])
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert pig.ORPHANS_MARKER_START in out and "#9" in out
+
+
+def test_orphans_report_apply_upserts_the_comment(monkeypatch, capsys):
+    """Avec --apply-comment N : l'upsert marker-guarde part exactement une fois
+    sur l'issue demandee.
+    """
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    monkeypatch.setattr(pig, "fetch_open_prs",
+                        lambda: [_orphan_pr(9, 5, "myia-po-2023", "feature/x")])
+    monkeypatch.setattr(pig, "fetch_pr_states", lambda nums: {9: red} if 9 in nums else {})
+    calls = []
+    monkeypatch.setattr(pig, "upsert_orphans_comment",
+                        lambda number, body: calls.append((number, body)))
+    rc = pig.main(["--orphans-report", "--apply-comment", "13086"])
+    assert rc == 0
+    assert calls and calls[0][0] == 13086
+    assert pig.ORPHANS_MARKER_START in calls[0][1]
+    assert "mis a jour sur #13086" in capsys.readouterr().out
+
+
+def test_lane_still_required_outside_orphans_report(monkeypatch, capsys):
+    """--lane reste OBLIGATOIRE sur le chemin de tirage : le passage de
+    `required=True` a la validation manuelle ne doit pas ouvrir un tirage
+    sans lane (la graine et le garde en dependent).
+    """
+    try:
+        pig.main([])
+    except SystemExit as exc:
+        assert exc.code != 0
+        assert "--lane" in capsys.readouterr().err
+    else:
+        raise AssertionError("main([]) sans --lane doit sortir en erreur")
+
+
 # --- echecs perimes : le discriminant est temporel, jamais nominal -----------
 
 

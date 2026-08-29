@@ -266,7 +266,7 @@ def python_twin_candidates(csharp_path: str, known_paths: set[str]) -> list[str]
     qu'une classe a tort en « C#-only » tout ce qui suit les deux autres :
 
         Tweety-10-MLN-Csharp.ipynb      <-> Tweety-10-MLN.ipynb          (suffixe retire)
-        Sudoku-7-Norvig-Csharp.ipynb    <-> Sudoku-7-Norvig-Python.ipynb (suffixe substitue)
+        Sudoku-07-Norvig-Csharp.ipynb    <-> Sudoku-07-Norvig-Python.ipynb (suffixe substitue)
         SW-10-CSharp-RDFStar.ipynb      <-> SW-10-Python-RDFStar.ipynb   (position mediale)
 
     Fonction pure : `known_paths` est l'univers des chemins connus (typiquement
@@ -374,7 +374,7 @@ def _blob_ancestor_in(repo_root: Path, blob_sha: str, ref: str = "HEAD") -> bool
     blob SHA d'un notebook sans toucher le contenu didactique. Le recorded
     `python_sha`/`csharp_sha` pointe alors sur un blob qui n'est PLUS ancre
     d'aucun commit accessible (orphelin par squash). Mais un cas
-    distinct -- metadata-only drift (Sudoku-8/14 BDD, design-gate #9399
+    distinct -- metadata-only drift (Sudoku-08/14 BDD, design-gate #9399
     critere 2) -- produit lui aussi un recorded blob SHA divergent de HEAD
     (le `_git_blob_sha` actuel change quand `nb["metadata"]` change, meme si
     `content_*_sha` est preserve). Les deux cas ont la MEME signature sur
@@ -411,7 +411,7 @@ def _content_sha(repo_root: Path, rel_path: str, git_ref: str = "HEAD") -> str |
     Hache le contenu pedagogique (cellules + leurs outputs) en excluant
     `nb["metadata"]` (cost, papermill, kernelspec, language_info) : un tampon
     `metadata.cost` seul ne porte aucune divergence pedagogique et ne doit PAS
-    faire rougir le gate (les 2 faux positifs Sudoku-8/14 BDD du 2026-08-04,
+    faire rougir le gate (les 2 faux positifs Sudoku-08/14 BDD du 2026-08-04,
     ou seul le bloc cost a bouge). Les cellules (et leur `metadata` cellulaire)
     restent hachees : un fix de prose (cellule markdown) ou une re-exec (output
     change) continuent de produire un DRIFT (vrais positifs, critere
@@ -681,7 +681,7 @@ def update_pair(
     Pas de rebaseline silencieux sur metadata-only : un tampon `metadata.cost`
     seul deplace le git blob SHA mais preserve le content_sha (_shas_match
     compare via content_sha d'abord). C'est precisement la classe de drift
-    pre-existante Sudoku-8/14 BDD/9 GraphColoring que ai-01 design-gate a
+    pre-existante Sudoku-08/14 BDD/9 GraphColoring que ai-01 design-gate a
     designee comme devant etre ignoree par le rebaseline (cf commentaire
     ai-01 2026-08-04T23:23Z sur #9399 : « ne les rebaselinez pas avec
     --update ; deux disparaitront d'eux-memes avec volet (c) »).
@@ -724,7 +724,7 @@ def update_pair(
     # C'est la cle qui distingue les deux cas ayant pourtant la meme
     # signature `rec_X != cur_X` -- sans cette discrimination, le fix
     # violerait le design-gate #9399 critere 2 (metadata-only drift DOIT
-    # rester no-op, Sudoku-8/14 BDD du 2026-08-04).
+    # rester no-op, Sudoku-08/14 BDD du 2026-08-04).
     if is_noop and latest:
         rec_py = latest.get("python_sha")
         rec_cs = latest.get("csharp_sha")
@@ -1863,7 +1863,7 @@ def main(argv=None) -> int:
                     # carnet -- exactement le faux positif que le volet c a ete
                     # construit pour tuer (cf docstring de `_content_sha`).
                     # Rougir ici le re-fabriquerait au niveau du cron : incident
-                    # du 2026-08-07, cron rouge sur main pour Sudoku-8/14 BDD --
+                    # du 2026-08-07, cron rouge sur main pour Sudoku-08/14 BDD --
                     # les 2 paires nommees dans cette meme docstring -- avec un
                     # `::error ...::<none>` qui ne designait aucune paire (leur
                     # `status` reste OK, donc `_cron_extract_drift` n'en listait

@@ -39,6 +39,12 @@
       csharp_sha: aff648f287d162203ff6dbd0dbbee5147deeee29
       content_python_sha: ed8f5714eead0af48f5d9beca9bb201cf239850765f8caefdda8e648f67d08dc
       content_csharp_sha: 0aa975afd3eab2e52ecede1483182c23fc4e1e917c3a22beaaaefc86186493cd
+    - date: "2026-08-28"
+      by: myia-po-2024:CoursIA
+      python_sha: cd4c2aff93651a33e279d3d09834770b61c95e03
+      csharp_sha: aff648f287d162203ff6dbd0dbbee5147deeee29
+      content_python_sha: 3d0c1117f8699b16262d2d3c78b3413a29259e4fe1b3c97cbace14df171b06e5
+      content_csharp_sha: 0aa975afd3eab2e52ecede1483182c23fc4e1e917c3a22beaaaefc86186493cd
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: |
     Bucket 3 de l'EPIC #10382 (from-scratch = la contrepartie, a ecrire comme telle). Verifie firsthand : Python = stdlib (collections/dataclasses/typing/sys/time) + matplotlib/numpy pour viz polyominos seulement (pas un solveur -- exclu du compte lib per body #10382) ; C# = pur System.* (0 NuGet, 0 Assembly ref). Les DEUX cotes codent DLX from-scratch (Knuth Algorithm X + doubly-linked list node L/R/U/D/C) -- c'est le coeur pedagogique, identique conceptuellement. Il n'existe PAS de lib SOTA-tier pour DLX : l'algorithme = sujet, pas de solveur tiers a brancher (aucun package PyPI ou NuGet n'implemente Dancing Links comme lib appelable -- DLX est par construction un exercice de structure de donnees, la reference est Knuth 2000). Cas bucket 3 : pas d'equivalent .NET (ni Python), le from-scratch EST la contrepartie. L'ancien verdict RECOVERABLE-LOCAL contredisait sa propre raison (qui disait deja "pas de solveur tiers a brancher") -- RECOVERABLE-LOCAL signifie "installable, pas installe", mais il n'y a rien a installer. Flip RECOVERABLE-LOCAL -> SOTA-OK (both from-scratch assume, bucket 3, parite semantique dans l'algo DLX de Knuth).
@@ -48,4 +54,4 @@
     - "Asymetrie de couverture : le jumeau Python (60 cellules, 21 code) couvre 3 applications (Sudoku solver, Pavage de polyominos, Pentominoes) + visualisation matplotlib ; le jumeau C# (22 cellules, 10 code) couvre uniquement le pavage de polyominos (Sudoku et Pentominoes absents), pas de matplotlib."
     - "Implementation DLX : les deux cotes codent la structure de listes doublement chainees a la main (noeud avec L/R/U/D/C) -- c'est le coeur pedagogique, identique conceptuellement. Aucun solveur tiers."
     - "Le jumeau C# est explicitement plus compact (tranche pedagogique focalisee sur DLX + polyominos) ; le jumeau Python est la version de reference complete."
-    - "2026-08-20 (c.855, myia-po-2025:CoursIA) : flip verdict RECOVERABLE-LOCAL -> SOTA-OK (bucket 3 de #10382, meme classe que Sudoku-7 Norvig #11957). Faux positif : la raison disait deja 'pas de solveur tiers a brancher' mais le verdict restait RECOVERABLE-LOCAL (= installable, pas installe). Verifie firsthand : 0 lib tierce Python (stdlib + matplotlib/numpy viz seulement), 0 NuGet C# (BCL pure), pas de lib SOTA-tier existe pour DLX (la ref = Knuth 2000, DLX est par construction un exercice de structure de donnees). From-scratch des deux cotes = la contrepartie (bucket 3), pas un manque a installer."
+    - "2026-08-20 (c.855, myia-po-2025:CoursIA) : flip verdict RECOVERABLE-LOCAL -> SOTA-OK (bucket 3 de #10382, meme classe que Sudoku-07 Norvig #11957). Faux positif : la raison disait deja 'pas de solveur tiers a brancher' mais le verdict restait RECOVERABLE-LOCAL (= installable, pas installe). Verifie firsthand : 0 lib tierce Python (stdlib + matplotlib/numpy viz seulement), 0 NuGet C# (BCL pure), pas de lib SOTA-tier existe pour DLX (la ref = Knuth 2000, DLX est par construction un exercice de structure de donnees). From-scratch des deux cotes = la contrepartie (bucket 3), pas un manque a installer."

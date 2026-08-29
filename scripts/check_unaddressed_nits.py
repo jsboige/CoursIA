@@ -122,7 +122,16 @@ AGENT_PREFIXES = (
 # deja exige par explicit_lifts) — un OVERRIDE nu ne leve rien. Les bornes
 # temporelles restent entieres : un override POST-merge ne peut pas avoir
 # eteint une reserve avant la decision de merge (borne #10761).
-COORDINATOR_LOGINS = {"myia-ai-01", "jsboige"}
+#
+# #13316 — jsboige n'est PAS un compte de levee : c'est l'identite de poussee
+# PARTAGEE de toutes les lanes (cf le commentaire #12319 de explicit_lifts :
+# Hermes poste sous jsboige, la lane pousse sous jsboige). Crediter jsboige
+# comme coordinateur retablit exactement ce que la borne d'auteur #11145
+# interdit — n'importe quelle lane pose un `[OVERRIDE]` sous jsboige sur sa
+# propre PR et eteint la reserve d'un tiers (#12737 : reserve ai-01 02:37:04Z,
+# « overrides » jsboige 02:40/02:41 ; classe #12798, l'auto-levee). L'arbitre
+# tiers de B.0 est la lane coordinateur dediee, et elle seule.
+LIFT_OVERRIDE_LOGINS = {"myia-ai-01"}
 # #13030 -- le marqueur doit etre POSE, pas CITE. L'ancien pattern sans
 # ancre matchait n'importe quelle mention dans le corps : le commentaire de
 # la lane #12872 qui DOCUMENTAIT l'option « (b) `[OVERRIDE] lane x` par
@@ -1140,8 +1149,11 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
         # #13030 -- search sur le corps ENTIER retire : une citation du
         # marqueur (documentation, dispatch, post-mortem, DM recopie)
         # posait l'override. Seule la forme POSEE en tete de ligne compte.
+        # #13316 -- jsboige n'entre plus : identite de poussee partagee des
+        # lanes (self-review cap #12319), un override jsboige est
+        # indiscernable d'une auto-levee de lane (replay #12737).
         m = OVERRIDE_LANE.search(lift_body or "")
-        return (lift_author in COORDINATOR_LOGINS
+        return (lift_author in LIFT_OVERRIDE_LOGINS
                 and m is not None)
 
     # Fenetre 2026-08-16 (#11222) : les temps plats ne suffisent pas pour un
@@ -1296,11 +1308,30 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
             "excerpt": _excerpt(t.get("body") or ""),
         })
 
+    # #13316 — un override ECARTE pour cause d'auteur doit etre NOMME. Avant,
+    # un gate rouge « malgre notre override » etait indistinguable d'un bug du
+    # detecteur (#13030, #12096) : le commentaire existait, la borne l'avait
+    # rejete, personne ne le disait. Ce n'est PAS bloquant (la reserve qui
+    # survit reste le signal) — c'est l'explication visible du rouge. Un
+    # override de l'auteur de la reserve (self-lift legitime) n'est pas liste.
+    nit_authors = {login for (_, _, login, _, _) in signals}
+    ignored_overrides = [
+        {"author": author, "at": t.isoformat(),
+         "why": (f"override ignoré — auteur « {author} » n'est pas un compte "
+                 "de levée (#13316 : identité de poussée partagée des lanes)")}
+        for (t, author, body) in explicit_lifts
+        if t is not None
+        and OVERRIDE_LANE.search(body or "") is not None
+        and author not in LIFT_OVERRIDE_LOGINS
+        and author not in nit_authors
+    ]
+
     return {
         "pr": pr_data.get("number"),
         "title": (pr_data.get("title") or "")[:110],
         "blocking": blocking,
         "blocked": bool(blocking),
+        "ignored_overrides": ignored_overrides,
     }
 
 
@@ -1330,6 +1361,10 @@ def gate(pr: int, as_json: bool) -> int:
             gap = f" (+{b['gap_hours']}h avant merge)" if "gap_hours" in b else ""
             print(f"  [{b['kind']}] {b['author']} via {b['src']}{where}{gap}")
             print(f"      {b['excerpt']}\n")
+        for o in result.get("ignored_overrides", ()):
+            # #13316 : dire POURQUOI l'override visible n'a rien eteint — le
+            # silence etait le mode d'echec couteux (#13030, #12096).
+            print(f"  [i] {o['why']} (commentaire de {o['author']} à {o['at']})")
         print("Lever chaque nit (commit, reponse explicite, ou issue de suivi nommee)")
         print("avant `gh pr merge`. Cf CLAUDE.md section B.0.")
     return 1 if result["blocked"] else 0

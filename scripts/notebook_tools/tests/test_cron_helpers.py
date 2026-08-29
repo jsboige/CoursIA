@@ -139,7 +139,7 @@ def test_render_basic():
             "n_drift_content": 0,
         },
         "pairs": [
-            {"name": "Sudoku-8", "family": "Sudoku", "parity_level": "full", "status": "DRIFT_BLOB"},
+            {"name": "Sudoku-08", "family": "Sudoku", "parity_level": "full", "status": "DRIFT_BLOB"},
         ],
     }
     path = _write_tmp_json(d)
@@ -148,7 +148,7 @@ def test_render_basic():
         assert r.returncode == 0, r.stderr
         assert "Twin parity CI-strict -- 156 paires" in r.stdout
         assert "n_ok_legacy" in r.stdout
-        assert "Sudoku-8" in r.stdout
+        assert "Sudoku-08" in r.stdout
         assert "DRIFT_BLOB" in r.stdout
     finally:
         os.unlink(path)
@@ -179,7 +179,7 @@ def test_render_touched_pair_includes_details():
         "ci_strict": {"n_drift_blob": 1},
         "pairs": [
             {
-                "name": "Sudoku-8", "family": "Sudoku", "parity_level": "full",
+                "name": "Sudoku-08", "family": "Sudoku", "parity_level": "full",
                 "status": "DRIFT_BLOB",
                 "details": ["python_blob != recorded_sha: abc... vs def..."]
             }
