@@ -418,6 +418,12 @@ _MENTION_VERDICT = re.compile(
     # faux match en neutralisation de `commit` au lieu du verdict (2 FAIL
     # tests #11809 mesures en CI, 2026-08-28). Même discriminant case-
     # sensitive que la Position D.
+    # #13474 — la capture A+ est POSITIONNELLE : le PREMIER token en
+    # capitales apres la parenthese ouvrante, pas « le token le plus proche
+    # du verbe d'emission ». Consequence fail-loud : si un autre marqueur
+    # majuscule precede le verdict dans la parenthese (ex `(BOT_CONCERTATION
+    # a propos du BOT_CONCERN)`), c'est BOT_CONCERTATION qui est capture et
+    # BOT_CONCERN reste emis — le garde reste bruyant.
     r"[^()\n]{0,40}\(\s*((?-i:[A-Z][A-Z_]{3,}))[^()\n]{0,80}\)")
 
 # #12311 (cf grain) — Position A : titre de section. Le pattern historique
@@ -534,11 +540,15 @@ _MENTION_VERDICT_REVIEW = re.compile(
     r"(?:"
     # Forme d'origine : ref pointable entre parentheses immediates.
     r"[^():\n.]{0,12}?"
-    # #12871 (cf grain) — Position D+ : la ref pointable peut etre NUE dans une
-    # fenetre de 60 chars apres le verdict (les formes parenthesees
+    # #12871 (cf grain) — Position D+ : la ref pointable peut etre NUE dans
+    # une fenetre bornee apres le verdict (les formes parenthesees
     # `(SHA ...)` continuent de matcher ; les formes narratives
-    # `... traitee par le commit <sha>` sont ajoutees). Borne courte (60 chars)
-    # pour ne pas avaler une autre phrase distincte.
+    # `... par le commit <sha>` sont ajoutees). #13474 — la borne REELLE est
+    # {0,12} chars de gap verdict->par/via/dans/en (temoin mecanique :
+    # gap 12 matche, gap 13 ne matche plus — test_13474_* dans
+    # test_check_unaddressed_nits.py) ; le long-format releve de la Position
+    # E (fenetre 200). Borne courte volontaire pour ne pas avaler une autre
+    # phrase distincte.
     r"(?:"
     r"\([^()\n]{0,80}?"
     r"(?:[a-f0-9]{7,}|#\d+|\d{4}-\d{2}-\d{2}|\d{1,2}:\d{2}(?::\d{2})?Z?)"
@@ -552,8 +562,8 @@ _MENTION_VERDICT_REVIEW = re.compile(
 
 # #12871 (cf grain) — Position E : `La review <VERDICT> ... traitee par le
 # commit <sha>` (ou variantes). La Position D stricte echoue sur ce cas parce
-# que la ref pointable est trop loin (60+ chars apres le verdict), au-dela
-# d'une frontiere de phrase `.`. Mais la phrase CONTIENT un verbe de levee
+# que la ref pointable est trop loin (plus de 12 chars apres le verdict, borne
+# D+ ci-dessus, #13474), au-dela d'une frontiere de phrase `.`. Mais la phrase CONTIENT un verbe de levee
 # suivi d'une ref pointable — c'est la signature d'une mention, pas d'une
 # emission. Discriminant : on exige (a) `La review/ce <VERDICT>` en tete, (b)
 # PAS de fin de phrase entre le verdict et le verbe de levee (donc sous la
