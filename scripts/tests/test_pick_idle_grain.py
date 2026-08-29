@@ -697,6 +697,90 @@ def test_file_saturation_detected_when_all_checks_pending():
     assert any("commenter la PR" in c for c in causes)
 
 
+# --- #13420 : la saturation date les CHECKS, pas la PR ---------------------
+#
+# Defaut mesure le 2026-08-29 : #12757 (ouverte 121 h) et #12850 (109 h)
+# etaient annoncees "1 check requis en PENDING depuis >24h (cause infra)"
+# alors que leurs checks avaient demarre a 11:39:44Z, soit 25 min plus tot.
+# Le detecteur lisait `age_hours` (age de la PR) et jamais `startedAt`.
+# Consequence : le geste prescrit (--ignore-red ou re-run) etait l'inverse du
+# bon -- re-run RE-EMPILE dans la file dite saturee, --ignore-red pousse la
+# lane devant un garde qui allait repondre. Le bon geste est d'attendre.
+
+
+def _pending_started(when):
+    """PR ancienne (120 h) dont l'unique check requis a demarre a `when`."""
+    return {
+        "number": 1, "mergeable": "MERGEABLE",
+        "reviews": {"nodes": []},
+        "commits": {"nodes": [{"commit": {"statusCheckRollup": {
+            "state": "PENDING",
+            "contexts": {"nodes": [
+                {"name": "PR gate", "conclusion": None, "state": "PENDING",
+                 "isRequired": True, "startedAt": when},
+            ]}}}}]},
+    }
+
+
+def _iso_ago(hours):
+    import datetime as _dt
+    return (_dt.datetime.now(_dt.timezone.utc)
+            - _dt.timedelta(hours=hours)).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def test_13420_check_frais_sur_pr_ancienne_nest_pas_une_saturation():
+    """Le cas mesure : PR ouverte depuis 120 h, check demarre il y a 25 min.
+
+    La file AVANCE. Annoncer une saturation ici prescrit exactement le mauvais
+    geste. CE TEST ECHOUE SI LE DETECTEUR REDEVIENT DATE SUR LA PR.
+    """
+    state = _pending_started(_iso_ago(0.42))  # ~25 min
+    assert pig.file_saturation_cause(state, age_hours=120, threshold_hours=24) is None
+
+
+def test_13420_controle_positif_file_reellement_figee_detectee():
+    """Controle positif -- sans lui, un detecteur simplement ETEINT passerait
+    le test precedent. Meme PR, meme forme, mais le check n'a pas bouge depuis
+    50 h : c'est la vraie saturation, elle DOIT etre annoncee."""
+    state = _pending_started(_iso_ago(50))
+    cause = pig.file_saturation_cause(state, age_hours=120, threshold_hours=24)
+    assert cause is not None
+    assert "file-saturation" in cause
+
+
+def test_13420_frontiere_juste_sous_le_seuil_ne_declenche_pas():
+    """Temoin de frontiere : 23 h < 24 h -> pas de saturation."""
+    state = _pending_started(_iso_ago(23))
+    assert pig.file_saturation_cause(state, age_hours=120, threshold_hours=24) is None
+
+
+def test_13420_sans_horodatage_lisible_on_retombe_sur_lage_de_la_pr():
+    """Un champ absent prive le detecteur de precision, il ne l'eteint pas :
+    sans `startedAt` ni `createdAt`, le comportement historique (age de la PR)
+    reste en vigueur."""
+    state = _pending_started(None)
+    cause = pig.file_saturation_cause(state, age_hours=120, threshold_hours=24)
+    assert cause is not None and "file-saturation" in cause
+
+
+def test_13420_horodatage_illisible_ne_leve_pas_dexception():
+    """Une chaine non-ISO ne doit pas casser un tour de picker."""
+    state = _pending_started("pas-une-date")
+    assert pig.file_saturation_cause(
+        state, age_hours=120, threshold_hours=24) is not None
+
+
+def test_13420_le_plus_recent_gagne_sur_les_anciens():
+    """Dix checks vieux + un frais = la file a bouge. On date sur le PLUS
+    RECENT, parce que la question est 'la file avance-t-elle ?'."""
+    state = _pending_started(_iso_ago(50))
+    nodes = state["commits"]["nodes"][0]["commit"]["statusCheckRollup"]["contexts"]["nodes"]
+    nodes.append({"name": "Always-on guards", "conclusion": None,
+                  "state": "PENDING", "isRequired": True,
+                  "startedAt": _iso_ago(0.2)})
+    assert pig.file_saturation_cause(state, age_hours=120, threshold_hours=24) is None
+
+
 def test_file_saturation_not_detected_when_a_check_is_success():
     """Faux-positif a eviter : un SUCCESS + des PENDING n'est PAS de la
     file-saturation. La PR a au moins un verdict defini ; elle est en cours
