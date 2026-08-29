@@ -1,0 +1,285 @@
+{
+ "reference": {
+  "primary": "Schurger, Sitt & Dehaene, PNAS 109 (2012), E2904-E2913",
+  "doi": "10.1073/pnas.1210467109",
+  "preregistration": "docs/ict/threshold-alignment-pre-enregistrement.md"
+ },
+ "config": {
+  "leak": 0.1,
+  "sigma": 0.15,
+  "threshold": 1.0,
+  "drift_null": 0.0,
+  "drift_comparator": 0.035,
+  "n_trials": 2000,
+  "t_max": 5000,
+  "window": 60,
+  "early_span": 15,
+  "late_span": 15,
+  "min_crossing_index": 61,
+  "seed_offsets": {
+   "trials_null": 0,
+   "trials_drift": 10000,
+   "sham_null": 20000,
+   "sham_drift": 30000
+  }
+ },
+ "seeds": [
+  0,
+  1,
+  7,
+  42,
+  99
+ ],
+ "pass_counts": {
+  "P1_alignment_ramp_without_drift": 5,
+  "P2_sham_null_flat": 5,
+  "P3_aligned_view_not_discriminant": 5,
+  "P4_sham_elevation_separates": 5,
+  "P5_artifact_localized": 5
+ },
+ "verdict": "SUPPORTED",
+ "aggregate": {
+  "aligned_slope_null_mean": 0.0059466941024644655,
+  "sham_slope_null_abs_mean": 0.00024735691960372407,
+  "aligned_slope_drift_mean": 0.004933845545724515,
+  "aligned_amplitude_null_mean": 0.2704834514689504,
+  "sham_elevation_discriminant_mean": 0.13230136624898664
+ },
+ "rows": [
+  {
+   "seed": 0,
+   "null_arm": {
+    "n_trials": 2000,
+    "n_crossed": 2000,
+    "n_analyzed": 1874,
+    "n_short_excluded": 126,
+    "n_uncrossed": 0,
+    "mean_crossing_index": 744.0285,
+    "aligned": {
+     "slope": 0.006131762712777881,
+     "early_mean": 0.2131814625045175,
+     "late_mean": 0.491967161701103,
+     "amplitude": 0.27878569919658547
+    },
+    "sham": {
+     "slope": 0.0002194486043511616,
+     "mean": 0.21219950540163998
+    }
+   },
+   "drift_arm": {
+    "n_trials": 2000,
+    "n_crossed": 2000,
+    "n_analyzed": 1284,
+    "n_short_excluded": 716,
+    "n_uncrossed": 0,
+    "mean_crossing_index": 122.8835,
+    "aligned": {
+     "slope": 0.005052733629787889,
+     "early_mean": 0.3361259606658635,
+     "late_mean": 0.5662298384202572,
+     "amplitude": 0.23010387775439373
+    },
+    "sham": {
+     "slope": 0.0007877427298866909,
+     "mean": 0.340669056680768
+    }
+   },
+   "sham_elevation_discriminant": 0.12846955127912804,
+   "gates": {
+    "P1_alignment_ramp_without_drift": true,
+    "P2_sham_null_flat": true,
+    "P3_aligned_view_not_discriminant": true,
+    "P4_sham_elevation_separates": true,
+    "P5_artifact_localized": true
+   }
+  },
+  {
+   "seed": 1,
+   "null_arm": {
+    "n_trials": 2000,
+    "n_crossed": 1992,
+    "n_analyzed": 1875,
+    "n_short_excluded": 117,
+    "n_uncrossed": 8,
+    "mean_crossing_index": 787.2645582329317,
+    "aligned": {
+     "slope": 0.006024801571190308,
+     "early_mean": 0.21303005457876165,
+     "late_mean": 0.48585842106854277,
+     "amplitude": 0.27282836648978115
+    },
+    "sham": {
+     "slope": 0.0003354408535205253,
+     "mean": 0.21569065214816047
+    }
+   },
+   "drift_arm": {
+    "n_trials": 2000,
+    "n_crossed": 2000,
+    "n_analyzed": 1295,
+    "n_short_excluded": 705,
+    "n_uncrossed": 0,
+    "mean_crossing_index": 125.1935,
+    "aligned": {
+     "slope": 0.004947834302882483,
+     "early_mean": 0.3419862771747339,
+     "late_mean": 0.5662958623439663,
+     "amplitude": 0.22430958516923244
+    },
+    "sham": {
+     "slope": 0.0007500591122417055,
+     "mean": 0.3461154506436286
+    }
+   },
+   "sham_elevation_discriminant": 0.13042479849546812,
+   "gates": {
+    "P1_alignment_ramp_without_drift": true,
+    "P2_sham_null_flat": true,
+    "P3_aligned_view_not_discriminant": true,
+    "P4_sham_elevation_separates": true,
+    "P5_artifact_localized": true
+   }
+  },
+  {
+   "seed": 7,
+   "null_arm": {
+    "n_trials": 2000,
+    "n_crossed": 1999,
+    "n_analyzed": 1859,
+    "n_short_excluded": 140,
+    "n_uncrossed": 1,
+    "mean_crossing_index": 794.8699349674837,
+    "aligned": {
+     "slope": 0.005804460589694374,
+     "early_mean": 0.21632517009374722,
+     "late_mean": 0.47992737489959153,
+     "amplitude": 0.2636022048058443
+    },
+    "sham": {
+     "slope": 0.0002685114058631309,
+     "mean": 0.21298627139866913
+    }
+   },
+   "drift_arm": {
+    "n_trials": 2000,
+    "n_crossed": 2000,
+    "n_analyzed": 1304,
+    "n_short_excluded": 696,
+    "n_uncrossed": 0,
+    "mean_crossing_index": 126.953,
+    "aligned": {
+     "slope": 0.004826657674789222,
+     "early_mean": 0.3399153572885753,
+     "late_mean": 0.5580359900406503,
+     "amplitude": 0.218120632752075
+    },
+    "sham": {
+     "slope": 0.0007491461009370946,
+     "mean": 0.3465572526778733
+    }
+   },
+   "sham_elevation_discriminant": 0.13357098127920417,
+   "gates": {
+    "P1_alignment_ramp_without_drift": true,
+    "P2_sham_null_flat": true,
+    "P3_aligned_view_not_discriminant": true,
+    "P4_sham_elevation_separates": true,
+    "P5_artifact_localized": true
+   }
+  },
+  {
+   "seed": 42,
+   "null_arm": {
+    "n_trials": 2000,
+    "n_crossed": 1997,
+    "n_analyzed": 1863,
+    "n_short_excluded": 134,
+    "n_uncrossed": 3,
+    "mean_crossing_index": 776.4541812719078,
+    "aligned": {
+     "slope": 0.0058738959687594785,
+     "early_mean": 0.21333081439802162,
+     "late_mean": 0.48035226569143885,
+     "amplitude": 0.26702145129341726
+    },
+    "sham": {
+     "slope": 0.000326327665236483,
+     "mean": 0.21561579572938236
+    }
+   },
+   "drift_arm": {
+    "n_trials": 2000,
+    "n_crossed": 2000,
+    "n_analyzed": 1275,
+    "n_short_excluded": 725,
+    "n_uncrossed": 0,
+    "mean_crossing_index": 120.361,
+    "aligned": {
+     "slope": 0.004931699397369422,
+     "early_mean": 0.339042711011226,
+     "late_mean": 0.5650907627093079,
+     "amplitude": 0.2260480516980819
+    },
+    "sham": {
+     "slope": 0.0006613778431054481,
+     "mean": 0.3477653047253211
+    }
+   },
+   "sham_elevation_discriminant": 0.13214950899593872,
+   "gates": {
+    "P1_alignment_ramp_without_drift": true,
+    "P2_sham_null_flat": true,
+    "P3_aligned_view_not_discriminant": true,
+    "P4_sham_elevation_separates": true,
+    "P5_artifact_localized": true
+   }
+  },
+  {
+   "seed": 99,
+   "null_arm": {
+    "n_trials": 2000,
+    "n_crossed": 1996,
+    "n_analyzed": 1872,
+    "n_short_excluded": 124,
+    "n_uncrossed": 4,
+    "mean_crossing_index": 778.4534068136272,
+    "aligned": {
+     "slope": 0.005898549669900285,
+     "early_mean": 0.21329350059811772,
+     "late_mean": 0.4834730361572417,
+     "amplitude": 0.270179535559124
+    },
+    "sham": {
+     "slope": 8.705606904731953e-05,
+     "mean": 0.21101479850415028
+    }
+   },
+   "drift_arm": {
+    "n_trials": 2000,
+    "n_crossed": 2000,
+    "n_analyzed": 1287,
+    "n_short_excluded": 713,
+    "n_uncrossed": 0,
+    "mean_crossing_index": 123.514,
+    "aligned": {
+     "slope": 0.004910302723793559,
+     "early_mean": 0.3406655706366208,
+     "late_mean": 0.5653123567200414,
+     "amplitude": 0.22464678608342065
+    },
+    "sham": {
+     "slope": 0.0009201315013906359,
+     "mean": 0.3479067896993444
+    }
+   },
+   "sham_elevation_discriminant": 0.13689199119519413,
+   "gates": {
+    "P1_alignment_ramp_without_drift": true,
+    "P2_sham_null_flat": true,
+    "P3_aligned_view_not_discriminant": true,
+    "P4_sham_elevation_separates": true,
+    "P5_artifact_localized": true
+   }
+  }
+ ]
+}

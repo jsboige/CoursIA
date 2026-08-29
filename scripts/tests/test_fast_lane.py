@@ -31,7 +31,7 @@ sys.path.insert(0, str(CI_DIR))
 
 import fast_lane  # noqa: E402
 from fast_lane_registry import (  # noqa: E402
-    PILOT, TRANCHE1, TRANCHE2, TRANCHE3, TRANCHE4, Guard,
+    FAST_LANE_NATIVE, PILOT, TRANCHE1, TRANCHE2, TRANCHE3, TRANCHE4, Guard,
 )
 
 
@@ -240,9 +240,32 @@ WORKFLOWS = Path(__file__).resolve().parents[2] / ".github" / "workflows"
 
 
 def test_every_pilot_guard_names_an_existing_workflow():
+    """Tracabilite : chaque garde dit quel workflow il dedouble -- ou qu'il n'en
+    dedouble aucun.
+
+    L'assertion reste STRICTE : seule la valeur exacte `FAST_LANE_NATIVE` est
+    admise comme "pas de workflow d'origine". Un `source` libre ou une faute de
+    frappe dans un nom de workflow echoue toujours, sinon la garantie de
+    tracabilite s'evaporerait a la premiere valeur fantaisiste.
+    """
     for guard in PILOT:
+        if guard.source == FAST_LANE_NATIVE:
+            continue
         assert (WORKFLOWS / guard.source).is_file(), (
             f"{guard.name} declare provenir de {guard.source}, absent du depot"
+        )
+
+
+def test_native_guards_are_declared_with_the_exact_sentinel():
+    """Controle positif du test precedent : sans lui, remplacer la sentinelle
+    par une chaine voisine ferait passer la tracabilite a la trappe en silence.
+    """
+    natifs = [g for g in PILOT if g.source == FAST_LANE_NATIVE]
+    assert natifs, "aucun garde natif : ce test ne mesure rien, le supprimer"
+    for guard in PILOT:
+        est_workflow = (WORKFLOWS / guard.source).is_file()
+        assert est_workflow or guard.source == FAST_LANE_NATIVE, (
+            f"{guard.name} : source ni workflow existant ni sentinelle exacte"
         )
 
 

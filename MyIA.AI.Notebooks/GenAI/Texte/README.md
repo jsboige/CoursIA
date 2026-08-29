@@ -53,9 +53,12 @@ La maîtrise des LLMs constitue la pierre angulaire de toute expertise en Géné
 |---|----------|-------------|-------|
 | 8 | `8_Reasoning_Models.ipynb` | o4-mini, gpt-5-thinking, reasoning_effort, comparaisons | 60 min |
 | 9 | `9_Production_Patterns.ipynb` | Conversations API, background mode, retry, batch processing | 70 min |
-| 9b | `09b_Prompt_Security_RedTeam.ipynb` | Versant **adversarial** du 9 : taxonomie de l'injection (directe / indirecte RAG / jailbreak / exfiltration), 3 attaques mesurées sur le routeur DeepSeek self-hosted (≥1 réussie avant défense), défenses testées + tableau attaque × défense, suite de tests rejouable (propriété « PWNED jamais délivré »), 3 exercices stubs C.1 | 70 min |
+| 9b | `9b_Prompt_Security_RedTeam.ipynb` | Versant **adversarial** du 9 : taxonomie de l'injection (directe / indirecte RAG / jailbreak / exfiltration), 3 attaques mesurées sur le routeur DeepSeek self-hosted (≥1 réussie avant défense), défenses testées + tableau attaque × défense, suite de tests rejouable (propriété « PWNED jamais délivré »), 3 exercices stubs C.1 | 70 min |
 | 10 | `10_LocalLlama.ipynb` | vLLM, Qwen3.5-35B-A3B, ZwZ-8B, multi-endpoints, benchmarking | 60 min |
 | 10b | `10b_Inference_Mechanics.ipynb` | KV-cache from scratch, exactitude des logits, speedup/mémoire, TTFT et ITL mesurés sur vLLM | 75 min |
+| 10c | `10c_Long_Context_Strategies.ipynb` | Stratégies pour contextes longs : budget de tokens (comptage avec le tokenizer réel), biais de position, map-reduce, prefix caching — quatre mesures sur notre vLLM | 50 min |
+| 10d | `10d_TensorSharp_DotNet_Inference.ipynb` | Pilote diagnostique .NET : TensorSharp CUDA charge Gemma 4 E4B et répond en OpenAI-compatible, mais le contrôle qualitatif détecte une répétition de `<pad>` (`RECOVERABLE-LOCAL`, adoption différée) | 55 min |
+| 10e | `10e_LLamaSharp_DotNet_BakeOff.ipynb` | Bake-off Phase 2 du [#12353](https://github.com/jsboige/CoursIA/issues/12353) : binding .NET de `llama.cpp` 0.27.0, charge Qwen3-4B Q4_K_M en local sur RTX 3080 Ti 16 Go, produit 4 réponses Phase 1 en français avec 0% pad à 14.14 tok/s (vs 99.4% pad TensorSharp) — kernel `.NET Interactive` localement bloqué par AppLocker (escalade user) | 50 min |
 | 11 | `11_Quantization.ipynb` | AWQ, GPTQ, llmcompressor, modèles vision, déploiement vLLM | 60 min |
 | 12 | `12_Test_Time_Scaling.ipynb` | Best-of-N, Tree-of-Thoughts (BFS/DFS), Reflexion, routeur adaptatif (cf ICR) | 60 min |
 
@@ -108,8 +111,7 @@ Le fil rouge est volontairement discriminant : enseigner au modèle un **format 
 | # | Notebook | Description | Durée |
 |---|----------|-------------|-------|
 | 21 | `21_LoRA_FineTuning.ipynb` | **QLoRA** (NF4 4-bit + double quant, bf16) sur Qwen2.5-0.5B-Instruct : fil rouge = format balisé `[T]/[D]/[E]` que le base échoue à produire ; adaptateurs LoRA via `peft` + `bitsandbytes` + `trl` + `datasets`, GPU CUDA requis (pont PostTraining / #10247) | 75 min |
-| 22 | `22_TensorSharp_DotNet_Inference.ipynb` | Pilote diagnostique .NET : TensorSharp CUDA charge Gemma 4 E4B et répond en OpenAI-compatible, mais le contrôle qualitatif détecte une répétition de `<pad>` (`RECOVERABLE-LOCAL`, adoption différée) | 55 min |
-| 23 | `23_LLamaSharp_DotNet_BakeOff.ipynb` | Bake-off Phase 2 du [#12353](https://github.com/jsboige/CoursIA/issues/12353) : binding .NET de `llama.cpp` 0.27.0, charge Qwen3-4B Q4_K_M en local sur RTX 3080 Ti 16 Go, produit 4 réponses Phase 1 en français avec 0% pad à 14.14 tok/s (vs 99.4% pad TensorSharp) — kernel `.NET Interactive` localement bloqué par AppLocker (escalade user) | 50 min |
+| 22 | `22_Evaluating_Generated_Text.ipynb` | Évaluation des sorties générées : **BLEU** (précision n-gram avec clipping) et **ROUGE** (rappel) construits à la main et mesurés — deux métriques lexicales aveugles au sens — puis **juge LLM** avec protocole anti-biais (paire évaluée dans les deux ordres à T=0, ne tranche que si les deux passes coïncident), 3 exercices C.1 | — |
 
 ### Tier 7 : Analyse linguistique (TAL)
 
@@ -148,7 +150,7 @@ Les tiers précédents traitent le langage **côté modèle** (prompts, RAG, fin
 │                    ▼                 ▼                 ▼       │
 │           5_RAG_Modern      7_Code_Interpreter  9_Production   │
 │                 │                                    │          │
-│                 └──────► 6_PDF_Web_Search     09b_RedTeam       │
+│                 └──────► 6_PDF_Web_Search     9b_RedTeam       │
 │                                                       │         │
 │                                                       └─attack/defend stack self-hosted
 │                                                                 │
@@ -208,7 +210,7 @@ Le fil rouge de cette série est la progression de l'interaction basique avec un
 
 3. **Tier 3** (augmentation) : [5_RAG_Modern](5_RAG_Modern.ipynb) et [6_PDF_Web_Search](6_PDF_Web_Search.ipynb) enrichissent le LLM avec des sources externes. [7_Code_Interpreter](7_Code_Interpreter.ipynb) lui donne la capacité d'exécuter du code.
 
-4. **Tier 4** (production et local) : [8_Reasoning_Models](8_Reasoning_Models.ipynb) exploite les modèles raisonnants. [9_Production_Patterns](9_Production_Patterns.ipynb) couvre les patterns enterprise, complété par son **versant adversarial** [09b_Prompt_Security_RedTeam](09b_Prompt_Security_RedTeam.ipynb) qui attaque puis défend la stack self-hosted (injection directe/indirecte RAG, jailbreak, exfiltration). [10_LocalLlama](10_LocalLlama.ipynb) déploie le service, [10b_Inference_Mechanics](10b_Inference_Mechanics.ipynb) construit le KV-cache puis relie son coût aux TTFT/ITL réels, et [11_Quantization](11_Quantization.ipynb) réduit l'empreinte des poids servis par vLLM.
+4. **Tier 4** (production et local) : [8_Reasoning_Models](8_Reasoning_Models.ipynb) exploite les modèles raisonnants. [9_Production_Patterns](9_Production_Patterns.ipynb) couvre les patterns enterprise, complété par son **versant adversarial** [9b_Prompt_Security_RedTeam](9b_Prompt_Security_RedTeam.ipynb) qui attaque puis défend la stack self-hosted (injection directe/indirecte RAG, jailbreak, exfiltration). [10_LocalLlama](10_LocalLlama.ipynb) déploie le service, [10b_Inference_Mechanics](10b_Inference_Mechanics.ipynb) construit le KV-cache puis relie son coût aux TTFT/ITL réels, et [11_Quantization](11_Quantization.ipynb) réduit l'empreinte des poids servis par vLLM.
 
 5. **Tier 5** (test-time scaling approfondi) : partant de [12_Test_Time_Scaling](12_Test_Time_Scaling.ipynb) (les quatre moteurs en Python pur), l'arc NB-13..18 décompose chaque facette de l'inférence au moment du test — orchestration agentique via function calling ([13](13_Agentic_Orchestration.ipynb)), mémoire persistante par similarité ([14](14_Persistent_Memory.ipynb)), Tree-of-Thoughts sur des problèmes de recherche ([15](15_Tree_of_Thoughts_Search.ipynb)), courbes de scaling de Snell ([16](16_Scaling_Test_Time_Compute.ipynb)), raisonnement natif vs scaling hand-rolled ([17](17_Native_Reasoning_vs_Scaling.ipynb)), puis intégration Semantic Kernel ([18](18_Semantic_Kernel_Plugins.ipynb)).
 

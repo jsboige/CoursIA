@@ -661,6 +661,7 @@ def main():
         "--indicators", nargs="+", default=None,
         help="Specific indicators to use (overrides --advanced)",
     )
+    parser.add_argument("--device", default=None, help="Force device (cpu/cuda)")
     args = parser.parse_args()
 
     # Seeds
@@ -669,7 +670,10 @@ def main():
     torch.manual_seed(seeds[0])
 
     # Device
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+    if args.device:
+        device = args.device
+    else:
+        device = "cuda" if torch.cuda.is_available() else "cpu"
 
     # Load data
     if args.dry_run:
