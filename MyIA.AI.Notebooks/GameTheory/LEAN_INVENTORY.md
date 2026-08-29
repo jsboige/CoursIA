@@ -216,20 +216,23 @@ Vickrey truthfulness + first-price counter-example (#1469). Build repris par
 
 ### 10. assignment_lean
 
-**Objective**: Formalize the correction skeleton of the Hungarian method (Kuhn 1955, Munkres 1957) — companion lake of the notebook GameTheory-27-Munkres-Assignment, hommage à James R. Munkres (1930-2026). Issue #12598 (1/3).
+**Objective**: Correction skeleton of the Kuhn-Munkres (Hungarian) assignment algorithm — companion lake of the notebook GameTheory-27-Munkres-Assignment, hommage à James R. Munkres (1930-2026). Issue #12598 (1/3). The primal (cost matrix, perfect matching, value), the dual (potentials, feasibility, **weak duality**), the zero-gap optimality certificate, and the algorithm's structural invariants (equality graph, **output invariant**, **Hungarian tightening preserves dual feasibility**). Termination and O(n³) complexity deliberately out of scope.
 
 **Toolchain**: v4.32.1 | **Dependencies**: Mathlib4
 
 | File (FR + `_en` sibling) | sorry | Description |
 |---------------------------|-------|-------------|
-| `Assignment/Definitions.lean` | 0 | Cost matrix, perfect matching (permutation), value, optimality |
-| `Assignment/Duality.lean` | 0 | Dual potentials `u`/`v`, dual feasibility, **weak duality** |
-| `Assignment/Optimality.lean` | 0 | Zero-gap optimality certificate (+ equality-edge lemma) |
-| `Assignment/KuhnMunkres.lean` | 0 | Equality graph, **output invariant**, **Hungarian tightening** preserves dual feasibility |
+| `Assignment/Definitions.lean` | 0 | Cost matrix, perfect matching (permutation), value, optimality (`value`, `IsOptimal`) |
+| `Assignment/Duality.lean` | 0 | Dual potentials `u`/`v`, dual feasibility, **weak duality** (`DualFeasible`, `dualValue`, `weak_duality`) |
+| `Assignment/Optimality.lean` | 0 | Zero-gap optimality certificate + equality-edge lemma (`dualValue_eq_of_edges`, `optimality_of_zero_gap`) |
+| `Assignment/KuhnMunkres.lean` | 0 | Equality graph, **output invariant**, **Hungarian tightening** preserves dual feasibility (`EqEdge`, `kuhn_munkres_correct`, `dualFeasible_tighten`) |
+| `Assignment/*_en.lean` (×4) | 0 | i18n siblings (EPIC #4980) |
 
-**Build**: `lake build Assignment` — SUCCESS | **COMPLETE: 0 sorry**
+**Build**: `lake build Assignment Assignment_en` — SUCCESS (8665 jobs, cf PR #12614) | **COMPLETE: 0 sorry** (distinct_code_sorry = 0)
 
-**Key theorems**: `weak_duality`, `dualValue_eq_of_edges`, `optimality_of_zero_gap`, `kuhn_munkres_correct`, `dualFeasible_tighten`. **Hors scope (délibéré)**: termination / O(n³) complexity (Edmonds-Karp/Tomizawa) — structural correction by duality suffices for the teaching purpose.
+**Key theorems**: `weak_duality`, `dualValue_eq_of_edges`, `optimality_of_zero_gap`, `kuhn_munkres_correct`, `dualFeasible_tighten`.
+
+**Status**: COMPLETE. Companion notebooks: GT-27 (Python implementation + scipy SOTA) and GT-27b (native `lean4-wsl` companion — `#check` of all 10 declarations + kernel-proved `optimal_C3` certificate, EPIC #11703 visibility).
 
 ---
 
@@ -250,26 +253,6 @@ Vickrey truthfulness + first-price counter-example (#1469). Build repris par
 **Build**: `lake build` — SUCCESS | **COMPLETE: 0 code sorry** (2 naive hits = prose)
 
 **Bornes explicites** (per README): no general existence/uniformity theorem for the anticipatory equilibrium (Wilson-MWS); no auxiliary clause in κ (Lemons); no cross-subsidy in RS 1976; no Mathlib `sorry`-backed milestone — proofs on Lean 4 core + `decide`/`omega`.
-
----
-
-### 10. assignment_lean
-
-**Objective**: Correction skeleton of the Kuhn-Munkres (Hungarian) assignment algorithm (issue #12598, Munkres tribute 1930-2026): the primal (cost matrix, perfect matching, value), the dual (potentials, feasibility, **weak duality**), the zero-gap optimality certificate, and the algorithm's structural invariants (equality graph, **output invariant**, **Hungarian tightening preserves dual feasibility**). Termination and O(n³) complexity deliberately out of scope.
-
-**Toolchain**: v4.32.1 | **Dependencies**: Mathlib4 (v4.32.1)
-
-| File | sorry | Description |
-|------|-------|-------------|
-| `Assignment/Definitions.lean` | 0 | `value`, `IsOptimal` (primal problem) |
-| `Assignment/Duality.lean` | 0 | `DualFeasible`, `dualValue`, `weak_duality` |
-| `Assignment/Optimality.lean` | 0 | `dualValue_eq_of_edges`, `optimality_of_zero_gap` |
-| `Assignment/KuhnMunkres.lean` | 0 | `EqEdge`, `kuhn_munkres_correct`, `dualFeasible_tighten` |
-| `Assignment/*_en.lean` (×4) | 0 | i18n siblings (EPIC #4980) |
-
-**Build**: `lake build Assignment Assignment_en` — SUCCESS (8665 jobs, cf PR #12614) | **0 sorry** (distinct_code_sorry = 0)
-
-**Status**: COMPLETE. Companion notebooks: GT-27 (Python implementation + scipy SOTA) and GT-27b (native `lean4-wsl` companion — `#check` of all 10 declarations + kernel-proved `optimal_C3` certificate, EPIC #11703 visibility).
 
 ---
 
