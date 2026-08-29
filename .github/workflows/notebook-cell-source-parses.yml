@@ -1,0 +1,75 @@
+name: Notebook Cell Source Parses
+
+# Issue #13326 (myia-ai-01, 2026-08-28): no guard parses the SOURCE of code
+# cells. A cell whose source is syntactically invalid cannot have produced
+# the output it carries, yet it crosses the 60+ checks without one red.
+#
+# Two instances found firsthand on main:
+#   (a) PR #13287 cell -- `print(f"..."..."...")` -- double-quote outside
+#       f-string substitution (PEP 701 only governs inside `{}`).
+#   (b) GameTheory-03d-Plan-de-deformation.ipynb cell[7] -- a markdown blob
+#       typed `code`, carrying an orphan output from another calculation.
+#
+# This guard:
+#   - parses every Python notebook cell touched by the PR with
+#     compile(src, flags=ast.PyCF_ALLOW_TOP_LEVEL_AWAIT);
+#   - skips IPython magics (`!`/`%`) so !pip / %%time are not false-positives;
+#   - distinguishes "syntax error" from "markdown typed code";
+#   - returns exit 1 on any occurrence in the PR diff (BLOCKING).
+#
+# H.4 / H.7 P3: this is a stop-and-repair guard, not advisory. The defect
+# silently falsifies proof of execution; an advisory would be ignored as
+# the others are.
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '**.ipynb'
+      - 'scripts/notebook_tools/check_cell_source_parses.py'
+      - '.github/workflows/notebook-cell-source-parses.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/notebook_tools/check_cell_source_parses.py'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: notebook-cell-source-parses-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  cell-source-parses:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
+    - name: Scan cells touched by PR
+      env:
+        BASE: ${{ github.event.pull_request.base.sha }}
+        HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+      run: |
+        # When on push to main, BASE..HEAD diff is the entire main; we don't
+        # gate on push, but we still log the result for audit.
+        if [ -z "$BASE" ] || [ "$BASE" = "$HEAD" ]; then
+          echo "No PR base SHA available; running whole-repo scan (informational)."
+          python scripts/notebook_tools/check_cell_source_parses.py --target-py 3.12
+          exit 0
+        fi
+        python scripts/notebook_tools/check_cell_source_parses.py \
+          --target-py 3.12 \
+          --pr-diff "$BASE" "$HEAD"
+
+    - name: Run unit tests
+      run: |
+        python -m unittest scripts.tests.test_check_cell_source_parses -v
