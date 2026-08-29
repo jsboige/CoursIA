@@ -260,3 +260,64 @@ def test_tft_collapses_more_than_gtft_under_noise():
     drop_tft = out["tft"][0] - out["tft"][-1]
     drop_gtft = out["gtft"][0] - out["gtft"][-1]
     assert drop_tft > drop_gtft  # TFT chute davantage
+
+
+# --------------------------------------------------------------------------- #
+#  Selection-mutation : equation replicator-mutator (#12673)                   #
+# --------------------------------------------------------------------------- #
+def test_mutation_matrix_is_column_stochastic():
+    Q = M.mutation_matrix(6, mu=0.03)
+    assert Q.shape == (6, 6)
+    assert np.allclose(Q.sum(axis=0), 1.0, atol=1e-12)
+    # mu=0 -> identite
+    assert np.allclose(M.mutation_matrix(6, mu=0.0), np.eye(6))
+    # mu=1 -> uniforme
+    assert np.allclose(M.mutation_matrix(4, mu=1.0), np.full((4, 4), 0.25))
+
+
+def test_mutation_matrix_rejects_bad_mu():
+    with pytest.raises(ValueError):
+        M.mutation_matrix(4, mu=-0.1)
+    with pytest.raises(ValueError):
+        M.mutation_matrix(4, mu=1.5)
+
+
+def test_replicator_mutator_mu_zero_reduces_to_replicator():
+    # Q = identite : la selection-mutation EST le replicateur (reduction exacte)
+    A = np.array([[3.0, 0.0], [5.0, 1.0]])
+    x0 = np.array([0.7, 0.3])
+    traj_mut = M.replicator_mutator_trajectory(A, x0, n_steps=200, mu=0.0)
+    traj_rep = M.replicator_trajectory(A, x0, n_steps=200)
+    assert np.allclose(traj_mut, traj_rep, atol=1e-12)
+
+
+def test_replicator_mutator_sustains_diversity():
+    """#12673 : la mutation empeche l'effondrement monomorphe. Sur le PD
+    2-strategies, le replicateur pur gele sur D (H -> 0) ; avec mu = 0.1,
+    l'entropie finale reste au-dessus de la moitie de l'uniforme."""
+    A = np.array([[3.0, 0.0], [5.0, 1.0]])
+    x0 = np.array([0.5, 0.5])
+    frozen = M.strategy_entropy(M.replicator_trajectory(A, x0, n_steps=500))[-1]
+    living = M.strategy_entropy(
+        M.replicator_mutator_trajectory(A, x0, n_steps=500, mu=0.1))[-1]
+    # equilibre mutation-selection mesure : x_D ~ 0.942, H ~ 0.318. Le contrat
+    # est l'ORDRE DE GRANDEUR (diversite maintenue vs effondrement a zero),
+    # pas une valeur exacte dependante de la matrice.
+    assert frozen == pytest.approx(0.0, abs=1e-9)  # instantane gele
+    assert living > 0.25                  # plancher de diversite (mesure : 0.318)
+
+
+def test_replicator_mutator_trajectory_shape_and_sum():
+    A = np.array([[3.0, 1.0], [1.0, 3.0]])
+    traj = M.replicator_mutator_trajectory(
+        A, np.array([0.5, 0.5]), n_steps=100, mu=0.05)
+    assert traj.shape == (101, 2)
+    assert np.allclose(traj.sum(axis=1), 1.0, atol=1e-6)
+    assert np.all(traj >= 0.0)
+
+
+def test_strategy_entropy_bounds():
+    H_mono = M.strategy_entropy(np.array([[1.0, 0.0]]))
+    H_uniform = M.strategy_entropy(np.array([[0.5, 0.5]]))
+    assert H_mono[0] == pytest.approx(0.0, abs=1e-12)
+    assert H_uniform[0] == pytest.approx(1.0)  # log2(2)
