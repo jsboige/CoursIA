@@ -13,6 +13,8 @@ on:
       - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/SocialChoice/**.lean'
       - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/SocialChoice/CERTIFIED.txt'
       - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/SocialChoice.lean'
+      - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/Abstraction.lean'
+      - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/Abstraction/**.lean'
       - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/lakefile.lean'
       - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/lean-toolchain'
       # The gates' own implementation: a change to them must re-run them
@@ -29,6 +31,8 @@ on:
       - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/SocialChoice/**.lean'
       - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/SocialChoice/CERTIFIED.txt'
       - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/SocialChoice.lean'
+      - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/Abstraction.lean'
+      - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/Abstraction/**.lean'
       - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/lakefile.lean'
       - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/lean-toolchain'
       - '.github/workflows/lean-social-choice.yml'
@@ -105,7 +109,7 @@ jobs:
     with:
       project-path: MyIA.AI.Notebooks/GameTheory/game_theory_lean
       display-name: game_theory_lean
-      target-modules: "SocialChoice.AMD,SocialChoice.Arrow,SocialChoice.Arrow_en,SocialChoice.Basic,SocialChoice.Basic_en,SocialChoice.Framework,SocialChoice.Framework_en,SocialChoice.MechanismDesign,SocialChoice.MechanismDesign_en,SocialChoice.Sen,SocialChoice.Sen_en,SocialChoice.SortedListCounting,SocialChoice.SortedListCounting_en,SocialChoice.Voting,SocialChoice.Voting_en"
+      target-modules: "SocialChoice.AMD,SocialChoice.Arrow,SocialChoice.Arrow_en,SocialChoice.Basic,SocialChoice.Basic_en,SocialChoice.Framework,SocialChoice.Framework_en,SocialChoice.MechanismDesign,SocialChoice.MechanismDesign_en,SocialChoice.Sen,SocialChoice.Sen_en,SocialChoice.SortedListCounting,SocialChoice.SortedListCounting_en,SocialChoice.Voting,SocialChoice.Voting_en,Abstraction,Abstraction.Basic"
       # allow-axioms inherits the workflow default (named standard set:
       # propext, funext, Classical.choice, Quot.*) -- same contract as conway.
       fail-on-sorry: true
