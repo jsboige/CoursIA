@@ -1,0 +1,784 @@
+{
+ "meta": {
+  "purpose": "App-25 distillation evidence: fresh independent CoursIA re-solve of PrCon group J2 (MIT) results",
+  "source_repo": "jsboigeEpita/2026-Epita-Programmation-par-Contraintes",
+  "source_dir": "Groupe-J2-Enchere_combinatoire_et_Winner_Determination",
+  "source_commit": "b5f3f0351dbd41f3a76f047cf02e9c93e81192f3",
+  "authors": [
+   "Lucas Majerczyk",
+   "Nabil Chartouni",
+   "Wilfrid Wangon-Zekou"
+  ],
+  "license": "MIT (source repo LICENSE at source commit)",
+  "price_unit": "CATS prices are raw integers from -int_prices; value units = raw / bid_alpha with bid_alpha=1000 (CATS default, not recorded in the files)",
+  "coursia_impl": "independent CP-SAT re-implementation, integer milli-prices end-to-end, no import of wdp/",
+  "student_reported_source": "outputs committed in J2-CombinatorialAuctions.ipynb at the source commit (run on macOS, per README)",
+  "environment": {
+   "python": "3.13.14",
+   "ortools": "9.15.6755"
+  }
+ },
+ "source_tests": {
+  "collected": 44,
+  "passed": 44,
+  "command": "python -m pytest tests/",
+  "note": "run at source commit in the PrCon checkout"
+ },
+ "cats": [
+  {
+   "instance": "arbitrary_g30_b100_s10000",
+   "distribution": "arbitrary",
+   "n_real_goods": 30,
+   "n_dummy_goods": 20,
+   "n_bids": 100,
+   "n_xor_groups": 20,
+   "status": "OPTIMAL",
+   "revenue_int": 1958653,
+   "revenue_value_units": 1958.653,
+   "n_winners": 1,
+   "student_reported": {
+    "bids": 100,
+    "xor": 20,
+    "rev_cp": 1958.65,
+    "rev_milp": 1958.65
+   },
+   "delta_student_cp_milli_units": -3,
+   "delta_student_milp_milli_units": -3,
+   "agreement": {
+    "bids": true,
+    "xor_groups": true,
+    "revenue_exact_within_display": true
+   }
+  },
+  {
+   "instance": "arbitrary_g30_b100_s20000",
+   "distribution": "arbitrary",
+   "n_real_goods": 30,
+   "n_dummy_goods": 18,
+   "n_bids": 100,
+   "n_xor_groups": 18,
+   "status": "OPTIMAL",
+   "revenue_int": 1402207,
+   "revenue_value_units": 1402.207,
+   "n_winners": 7,
+   "student_reported": {
+    "bids": 100,
+    "xor": 18,
+    "rev_cp": 1402.22,
+    "rev_milp": 1402.21
+   },
+   "delta_student_cp_milli_units": 13,
+   "delta_student_milp_milli_units": 3,
+   "agreement": {
+    "bids": true,
+    "xor_groups": true,
+    "revenue_exact_within_display": false
+   }
+  },
+  {
+   "instance": "arbitrary_g30_b100_s30000",
+   "distribution": "arbitrary",
+   "n_real_goods": 30,
+   "n_dummy_goods": 19,
+   "n_bids": 101,
+   "n_xor_groups": 19,
+   "status": "OPTIMAL",
+   "revenue_int": 1998513,
+   "revenue_value_units": 1998.513,
+   "n_winners": 4,
+   "student_reported": {
+    "bids": 101,
+    "xor": 19,
+    "rev_cp": 1998.51,
+    "rev_milp": 1998.51
+   },
+   "delta_student_cp_milli_units": -3,
+   "delta_student_milp_milli_units": -3,
+   "agreement": {
+    "bids": true,
+    "xor_groups": true,
+    "revenue_exact_within_display": true
+   }
+  },
+  {
+   "instance": "matching_g32_b100_s10000",
+   "distribution": "matching",
+   "n_real_goods": 32,
+   "n_dummy_goods": 31,
+   "n_bids": 106,
+   "n_xor_groups": 19,
+   "status": "OPTIMAL",
+   "revenue_int": 64213,
+   "revenue_value_units": 64.213,
+   "n_winners": 10,
+   "student_reported": {
+    "bids": 106,
+    "xor": 19,
+    "rev_cp": 64.21,
+    "rev_milp": 64.21
+   },
+   "delta_student_cp_milli_units": -3,
+   "delta_student_milp_milli_units": -3,
+   "agreement": {
+    "bids": true,
+    "xor_groups": true,
+    "revenue_exact_within_display": true
+   }
+  },
+  {
+   "instance": "matching_g32_b100_s20000",
+   "distribution": "matching",
+   "n_real_goods": 32,
+   "n_dummy_goods": 24,
+   "n_bids": 108,
+   "n_xor_groups": 14,
+   "status": "OPTIMAL",
+   "revenue_int": 69173,
+   "revenue_value_units": 69.173,
+   "n_winners": 10,
+   "student_reported": {
+    "bids": 108,
+    "xor": 14,
+    "rev_cp": 69.16,
+    "rev_milp": 69.17
+   },
+   "delta_student_cp_milli_units": -13,
+   "delta_student_milp_milli_units": -3,
+   "agreement": {
+    "bids": true,
+    "xor_groups": true,
+    "revenue_exact_within_display": false
+   }
+  },
+  {
+   "instance": "matching_g32_b100_s30000",
+   "distribution": "matching",
+   "n_real_goods": 32,
+   "n_dummy_goods": 29,
+   "n_bids": 103,
+   "n_xor_groups": 16,
+   "status": "OPTIMAL",
+   "revenue_int": 91144,
+   "revenue_value_units": 91.144,
+   "n_winners": 10,
+   "student_reported": {
+    "bids": 103,
+    "xor": 16,
+    "rev_cp": 91.14,
+    "rev_milp": 91.14
+   },
+   "delta_student_cp_milli_units": -4,
+   "delta_student_milp_milli_units": -4,
+   "agreement": {
+    "bids": true,
+    "xor_groups": true,
+    "revenue_exact_within_display": true
+   }
+  },
+  {
+   "instance": "paths_g30_b100_s10000",
+   "distribution": "paths",
+   "n_real_goods": 30,
+   "n_dummy_goods": 31,
+   "n_bids": 100,
+   "n_xor_groups": 25,
+   "status": "OPTIMAL",
+   "revenue_int": 13125,
+   "revenue_value_units": 13.125,
+   "n_winners": 19,
+   "student_reported": {
+    "bids": 100,
+    "xor": 25,
+    "rev_cp": 13.1,
+    "rev_milp": 13.12
+   },
+   "delta_student_cp_milli_units": -25,
+   "delta_student_milp_milli_units": -5,
+   "agreement": {
+    "bids": true,
+    "xor_groups": true,
+    "revenue_exact_within_display": false
+   }
+  },
+  {
+   "instance": "paths_g30_b100_s20000",
+   "distribution": "paths",
+   "n_real_goods": 30,
+   "n_dummy_goods": 33,
+   "n_bids": 101,
+   "n_xor_groups": 21,
+   "status": "OPTIMAL",
+   "revenue_int": 11829,
+   "revenue_value_units": 11.829,
+   "n_winners": 20,
+   "student_reported": {
+    "bids": 101,
+    "xor": 21,
+    "rev_cp": 11.82,
+    "rev_milp": 11.83
+   },
+   "delta_student_cp_milli_units": -9,
+   "delta_student_milp_milli_units": 1,
+   "agreement": {
+    "bids": true,
+    "xor_groups": true,
+    "revenue_exact_within_display": false
+   }
+  },
+  {
+   "instance": "paths_g30_b100_s30000",
+   "distribution": "paths",
+   "n_real_goods": 30,
+   "n_dummy_goods": 32,
+   "n_bids": 100,
+   "n_xor_groups": 24,
+   "status": "OPTIMAL",
+   "revenue_int": 15268,
+   "revenue_value_units": 15.268,
+   "n_winners": 18,
+   "student_reported": {
+    "bids": 100,
+    "xor": 24,
+    "rev_cp": 15.25,
+    "rev_milp": 15.27
+   },
+   "delta_student_cp_milli_units": -18,
+   "delta_student_milp_milli_units": 2,
+   "agreement": {
+    "bids": true,
+    "xor_groups": true,
+    "revenue_exact_within_display": false
+   }
+  },
+  {
+   "instance": "paths_g60_b200_s10000",
+   "distribution": "paths",
+   "n_real_goods": 60,
+   "n_dummy_goods": 83,
+   "n_bids": 201,
+   "n_xor_groups": 49,
+   "status": "OPTIMAL",
+   "revenue_int": 22102,
+   "revenue_value_units": 22.102,
+   "n_winners": 28,
+   "student_reported": {
+    "bids": 201,
+    "xor": 49,
+    "rev_cp": 22.09,
+    "rev_milp": 22.1
+   },
+   "delta_student_cp_milli_units": -12,
+   "delta_student_milp_milli_units": -2,
+   "agreement": {
+    "bids": true,
+    "xor_groups": true,
+    "revenue_exact_within_display": false
+   }
+  },
+  {
+   "instance": "regions_g30_b100_s10000",
+   "distribution": "regions",
+   "n_real_goods": 30,
+   "n_dummy_goods": 19,
+   "n_bids": 104,
+   "n_xor_groups": 19,
+   "status": "OPTIMAL",
+   "revenue_int": 2114569,
+   "revenue_value_units": 2114.569,
+   "n_winners": 5,
+   "student_reported": {
+    "bids": 104,
+    "xor": 19,
+    "rev_cp": 2114.57,
+    "rev_milp": 2114.57
+   },
+   "delta_student_cp_milli_units": 1,
+   "delta_student_milp_milli_units": 1,
+   "agreement": {
+    "bids": true,
+    "xor_groups": true,
+    "revenue_exact_within_display": true
+   }
+  },
+  {
+   "instance": "regions_g30_b100_s20000",
+   "distribution": "regions",
+   "n_real_goods": 30,
+   "n_dummy_goods": 20,
+   "n_bids": 101,
+   "n_xor_groups": 20,
+   "status": "OPTIMAL",
+   "revenue_int": 1366485,
+   "revenue_value_units": 1366.485,
+   "n_winners": 5,
+   "student_reported": {
+    "bids": 101,
+    "xor": 20,
+    "rev_cp": 1366.48,
+    "rev_milp": 1366.48
+   },
+   "delta_student_cp_milli_units": -5,
+   "delta_student_milp_milli_units": -5,
+   "agreement": {
+    "bids": true,
+    "xor_groups": true,
+    "revenue_exact_within_display": true
+   }
+  },
+  {
+   "instance": "regions_g30_b100_s30000",
+   "distribution": "regions",
+   "n_real_goods": 30,
+   "n_dummy_goods": 19,
+   "n_bids": 102,
+   "n_xor_groups": 19,
+   "status": "OPTIMAL",
+   "revenue_int": 1777423,
+   "revenue_value_units": 1777.423,
+   "n_winners": 2,
+   "student_reported": {
+    "bids": 102,
+    "xor": 19,
+    "rev_cp": 1777.42,
+    "rev_milp": 1777.42
+   },
+   "delta_student_cp_milli_units": -3,
+   "delta_student_milp_milli_units": -3,
+   "agreement": {
+    "bids": true,
+    "xor_groups": true,
+    "revenue_exact_within_display": true
+   }
+  },
+  {
+   "instance": "regions_g60_b200_s10000",
+   "distribution": "regions",
+   "n_real_goods": 60,
+   "n_dummy_goods": 37,
+   "n_bids": 200,
+   "n_xor_groups": 37,
+   "status": "OPTIMAL",
+   "revenue_int": 3443666,
+   "revenue_value_units": 3443.666,
+   "n_winners": 11,
+   "student_reported": {
+    "bids": 200,
+    "xor": 37,
+    "rev_cp": 3443.66,
+    "rev_milp": 3443.67
+   },
+   "delta_student_cp_milli_units": -6,
+   "delta_student_milp_milli_units": 4,
+   "agreement": {
+    "bids": true,
+    "xor_groups": true,
+    "revenue_exact_within_display": false
+   }
+  },
+  {
+   "instance": "scheduling_g30_b100_s10000",
+   "distribution": "scheduling",
+   "n_real_goods": 30,
+   "n_dummy_goods": 7,
+   "n_bids": 108,
+   "n_xor_groups": 7,
+   "status": "OPTIMAL",
+   "revenue_int": 39622,
+   "revenue_value_units": 39.622,
+   "n_winners": 5,
+   "student_reported": {
+    "bids": 108,
+    "xor": 7,
+    "rev_cp": 39.63,
+    "rev_milp": 39.62
+   },
+   "delta_student_cp_milli_units": 8,
+   "delta_student_milp_milli_units": -2,
+   "agreement": {
+    "bids": true,
+    "xor_groups": true,
+    "revenue_exact_within_display": false
+   }
+  },
+  {
+   "instance": "scheduling_g30_b100_s20000",
+   "distribution": "scheduling",
+   "n_real_goods": 30,
+   "n_dummy_goods": 4,
+   "n_bids": 101,
+   "n_xor_groups": 4,
+   "status": "OPTIMAL",
+   "revenue_int": 35062,
+   "revenue_value_units": 35.062,
+   "n_winners": 4,
+   "student_reported": {
+    "bids": 101,
+    "xor": 4,
+    "rev_cp": 35.07,
+    "rev_milp": 35.06
+   },
+   "delta_student_cp_milli_units": 8,
+   "delta_student_milp_milli_units": -2,
+   "agreement": {
+    "bids": true,
+    "xor_groups": true,
+    "revenue_exact_within_display": false
+   }
+  },
+  {
+   "instance": "scheduling_g30_b100_s30000",
+   "distribution": "scheduling",
+   "n_real_goods": 30,
+   "n_dummy_goods": 5,
+   "n_bids": 108,
+   "n_xor_groups": 5,
+   "status": "OPTIMAL",
+   "revenue_int": 43928,
+   "revenue_value_units": 43.928,
+   "n_winners": 3,
+   "student_reported": {
+    "bids": 108,
+    "xor": 5,
+    "rev_cp": 43.93,
+    "rev_milp": 43.93
+   },
+   "delta_student_cp_milli_units": 2,
+   "delta_student_milp_milli_units": 2,
+   "agreement": {
+    "bids": true,
+    "xor_groups": true,
+    "revenue_exact_within_display": true
+   }
+  },
+  {
+   "instance": "scheduling_g60_b200_s10000",
+   "distribution": "scheduling",
+   "n_real_goods": 60,
+   "n_dummy_goods": 4,
+   "n_bids": 204,
+   "n_xor_groups": 4,
+   "status": "OPTIMAL",
+   "revenue_int": 40380,
+   "revenue_value_units": 40.38,
+   "n_winners": 4,
+   "student_reported": {
+    "bids": 204,
+    "xor": 4,
+    "rev_cp": 40.39,
+    "rev_milp": 40.38
+   },
+   "delta_student_cp_milli_units": 10,
+   "delta_student_milp_milli_units": 0,
+   "agreement": {
+    "bids": true,
+    "xor_groups": true,
+    "revenue_exact_within_display": false
+   }
+  }
+ ],
+ "pedagogical": {
+  "toy_example": {
+   "revenue_pure_set_packing": 40,
+   "revenue_expected": 40
+  },
+  "with_budget": {
+   "revenue_no_budget_no_xor": 80,
+   "revenue_budget_xor": 50,
+   "revenue_expected": 50
+  },
+  "with_xor": {
+   "revenue_no_xor": 57,
+   "revenue_xor": 57,
+   "revenue_expected": 57
+  }
+ },
+ "vcg": {
+  "toy_canonical": {
+   "welfare": 40,
+   "payments": {
+    "David": 37
+   },
+   "welfare_without": {
+    "David": 37
+   },
+   "audit": {
+    "individual_rationality": true,
+    "losers_pay_zero": true,
+    "no_deficit": true,
+    "optimal_solves": true,
+    "welfare_monotone": true
+   },
+   "expected_payment_david": 37
+  },
+  "with_xor_canonical": {
+   "welfare": 57,
+   "payments": {
+    "Alice": 16,
+    "Bob": 15
+   },
+   "welfare_without": {
+    "Alice": 38,
+    "Bob": 50
+   },
+   "audit": {
+    "individual_rationality": true,
+    "losers_pay_zero": true,
+    "no_deficit": true,
+    "optimal_solves": true,
+    "welfare_monotone": true
+   }
+  },
+  "cats_regions_g30_b100_s10000_canonical": {
+   "n_bids": 104,
+   "n_xor_groups": 19,
+   "n_winners": 5,
+   "n_solves": 6,
+   "welfare_int": 2114569,
+   "welfare_value_units": 2114.569,
+   "seller_revenue_int": 1485578,
+   "seller_revenue_value_units": 1485.578,
+   "audit": {
+    "individual_rationality": true,
+    "losers_pay_zero": true,
+    "no_deficit": true,
+    "optimal_solves": true,
+    "welfare_monotone": true
+   },
+   "total_time_s": 0.324
+  },
+  "dsic_sweep_toy_david": {
+   "reports": [
+    {
+     "report": 30,
+     "payment": null,
+     "true_utility": 0
+    },
+    {
+     "report": 31,
+     "payment": null,
+     "true_utility": 0
+    },
+    {
+     "report": 32,
+     "payment": null,
+     "true_utility": 0
+    },
+    {
+     "report": 33,
+     "payment": null,
+     "true_utility": 0
+    },
+    {
+     "report": 34,
+     "payment": null,
+     "true_utility": 0
+    },
+    {
+     "report": 35,
+     "payment": null,
+     "true_utility": 0
+    },
+    {
+     "report": 36,
+     "payment": null,
+     "true_utility": 0
+    },
+    {
+     "report": 37,
+     "payment": null,
+     "true_utility": 0
+    },
+    {
+     "report": 38,
+     "payment": 37,
+     "true_utility": 3
+    },
+    {
+     "report": 39,
+     "payment": 37,
+     "true_utility": 3
+    },
+    {
+     "report": 40,
+     "payment": 37,
+     "true_utility": 3
+    },
+    {
+     "report": 41,
+     "payment": 37,
+     "true_utility": 3
+    },
+    {
+     "report": 42,
+     "payment": 37,
+     "true_utility": 3
+    },
+    {
+     "report": 43,
+     "payment": 37,
+     "true_utility": 3
+    },
+    {
+     "report": 44,
+     "payment": 37,
+     "true_utility": 3
+    },
+    {
+     "report": 45,
+     "payment": 37,
+     "true_utility": 3
+    }
+   ],
+   "best_report": 38,
+   "best_utility": 3,
+   "truthful_utility": 3,
+   "dsic_instantiated": true,
+   "note": "DSIC is weak dominance: truthful attains the max utility; reports >= 38 tie with it (payment stays 37, the externality)."
+  }
+ },
+ "counterexample": {
+  "setup": {
+   "items": [
+    "A",
+    "B"
+   ],
+   "bidders": [
+    "b1",
+    "b2",
+    "b3"
+   ],
+   "v1_A": 8,
+   "v2_B": 8,
+   "v3_AB": 9,
+   "global_cap": 11
+  },
+  "truthful": {
+   "r1": 8,
+   "winners": [
+    2
+   ],
+   "welfare_declared": 9,
+   "payments": {
+    "b3": 8
+   },
+   "b1_true_surplus": 0,
+   "audit": {
+    "individual_rationality": true,
+    "losers_pay_zero": true,
+    "no_deficit": true,
+    "optimal_solves": true,
+    "welfare_monotone": true
+   }
+  },
+  "shading": {
+   "r1": 3,
+   "winners": [
+    0,
+    1
+   ],
+   "welfare_declared": 11,
+   "payments": {
+    "b1": 1,
+    "b2": 6
+   },
+   "welfare_without_b1": 9,
+   "b1_true_surplus": 7,
+   "audit": {
+    "individual_rationality": true,
+    "losers_pay_zero": true,
+    "no_deficit": true,
+    "optimal_solves": true,
+    "welfare_monotone": true
+   }
+  },
+  "strict_manipulation": true,
+  "expected": {
+   "surplus_truthful": 0,
+   "surplus_shading": 7,
+   "payment_b1": 1
+  },
+  "provenance": "documented in source research/04_vcg_budget_non_truthful.md (and promised as pytest test_vcg_budget_admits_strict_manipulation, absent from tests/ at the source commit); CoursIA materializes it as executable evidence"
+ },
+ "brute_force_wall": [
+  {
+   "n_bids": 10,
+   "subsets": 1024,
+   "n_items": 5,
+   "revenue_int": 86,
+   "brute_force_s": 0.0012,
+   "cp_sat_s": 0.0132
+  },
+  {
+   "n_bids": 12,
+   "subsets": 4096,
+   "n_items": 6,
+   "revenue_int": 165,
+   "brute_force_s": 0.0043,
+   "cp_sat_s": 0.0108
+  },
+  {
+   "n_bids": 14,
+   "subsets": 16384,
+   "n_items": 7,
+   "revenue_int": 169,
+   "brute_force_s": 0.0222,
+   "cp_sat_s": 0.0089
+  },
+  {
+   "n_bids": 16,
+   "subsets": 65536,
+   "n_items": 8,
+   "revenue_int": 228,
+   "brute_force_s": 0.0846,
+   "cp_sat_s": 0.0068
+  },
+  {
+   "n_bids": 18,
+   "subsets": 262144,
+   "n_items": 9,
+   "revenue_int": 178,
+   "brute_force_s": 0.1736,
+   "cp_sat_s": 0.0128
+  },
+  {
+   "n_bids": 20,
+   "subsets": 1048576,
+   "n_items": 10,
+   "revenue_int": 266,
+   "brute_force_s": 0.8049,
+   "cp_sat_s": 0.009
+  }
+ ],
+ "greedy_los": {
+  "toy_example": {
+   "greedy": 40,
+   "optimum": 40,
+   "ratio": 1.0
+  },
+  "with_xor": {
+   "greedy": 57,
+   "optimum": 57,
+   "ratio": 1.0
+  },
+  "with_budget": {
+   "greedy": 40,
+   "optimum": 50,
+   "ratio": 0.8
+  },
+  "regions_g30_b100_s10000": {
+   "greedy_int": 1833560,
+   "greedy_value_units": 1833.56,
+   "optimum_int": 2114569,
+   "optimum_value_units": 2114.569,
+   "ratio": 0.8671
+  }
+ },
+ "price_scale_forensics": {
+  "observation": "Committed CP-SAT notebook revenues differ from the exact integer optimum on the instances flagged below, while the committed MILP (float path, scale-free) matches the exact optimum on 18/18 modulo 2-decimal display (paths_g30_b100_s10000: exact 13.125 shown as 13.12).",
+  "instances_with_student_cp_delta_milli_nonzero": 10,
+  "max_abs_delta_milli_units": 25,
+  "hypothesis_test": "Re-running the source solver (wdp/solver_cpsat.py) at the source commit with PRICE_SCALE forced to 100 reproduces ALL 18 committed CP outputs exactly; the committed PRICE_SCALE=1000 reproduces only the 8 scale-invariant ones. Conclusion: the committed notebook outputs predate the PRICE_SCALE 100->1000 alignment (docstring still says 'centimes').",
+  "reproduction": "from wdp.cats_parser import parse_cats_file; import wdp.solver_cpsat as sc; sc.PRICE_SCALE = 100; solve_wdp_cpsat(inst)",
+  "coursia_resolution": "The App-25 rewrite carries raw integer milli-prices end to end (no divide-then-rescale roundtrip), so no PRICE_SCALE constant exists and the question of its alignment with bid_alpha cannot arise."
+ }
+}

@@ -34,7 +34,7 @@ La numérotation actuelle **est** déjà un ordre pédagogique valide — rien �
 
 ## 2. Scan stale-RESOLVES (toutes cellules, header + footer)
 
-Un navlink « stale-RESOLVES » (classe L613-L1) est un `[<< Prev]` dont la cible a été **renommée** pendant la réorg : il résout-vers-un-fichier-existant (passe le checker 404) mais pointe vers le **mauvais** voisin narratif — typiquement un numéro **supérieur** au sien. Les défauts trouvés sur Search-8 (#6883) et Sudoku-4 (#6888) résidaient dans le **header ET le footer**, d'où un scan de **toutes** les cellules markdown, pas seulement les deux premières.
+Un navlink « stale-RESOLVES » (classe L613-L1) est un `[<< Prev]` dont la cible a été **renommée** pendant la réorg : il résout-vers-un-fichier-existant (passe le checker 404) mais pointe vers le **mauvais** voisin narratif — typiquement un numéro **supérieur** au sien. Les défauts trouvés sur Search-8 (#6883) et Sudoku-04 (#6888) résidaient dans le **header ET le footer**, d'où un scan de **toutes** les cellules markdown, pas seulement les deux premières.
 
 ```
 total [<< …ipynb] prev-navlinks (toutes cellules) : 17
