@@ -325,6 +325,34 @@ def test_arret_non_declare_mord_des_la_premiere_expansion():
     assert row["defects"] == ["ARRET-NON-DECLARE"]
 
 
+def test_regle_d_arret_ecrite_dans_le_TITRE_seul_est_vue():
+    """Concern 2 de la review NanoClaw sur #13539 : la jambe B lisait `body`
+    seul, donc une borne ecrite uniquement dans l intitule passait inapercue.
+
+    Controle NEGATIF apparie juste en dessous : sans la borne, le meme EPIC
+    mord. Sans cette moitie, le test passerait aussi avec une jambe B qui ne
+    mord plus jamais -- c est la seule facon de distinguer « vue » de
+    « eteinte ».
+    """
+    epic = _issue(20750, "[EPIC] Serie X -- regle d'arret : 12 notebooks",
+                  "Corps sans aucune borne ecrite. Une consolidation suivra.")
+    pool = [_expansion(20751, 20750), _consolidation(20752, 20750)]
+
+    row = audit_epic(epic, pool)
+
+    assert row["feeds_series"] is True
+    assert "ARRET-NON-DECLARE" not in row["defects"], (
+        "la borne est dans le titre, la jambe B doit la voir")
+
+
+def test_controle_negatif_titre_sans_borne_mord_toujours():
+    epic = _issue(20760, "[EPIC] Serie X -- suite du rollout",
+                  "Corps sans aucune borne ecrite. Une consolidation suivra.")
+    pool = [_expansion(20761, 20760), _consolidation(20762, 20760)]
+
+    assert audit_epic(epic, pool)["defects"] == ["ARRET-NON-DECLARE"]
+
+
 def test_pendant_non_declare_isole_de_l_arret():
     """Rollout sans engagement de consolidation ECRIT, mais borne declaree."""
     epic = _issue(20800, "[EPIC] Borne mais sans pendant",

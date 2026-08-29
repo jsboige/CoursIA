@@ -199,7 +199,18 @@ def audit_epic(epic, pool, families=(), expansion_min: int = EXPANSION_MIN):
     # Jambe B -- redaction. Ne se pose QUE sur un EPIC qui alimente
     # effectivement une serie : exiger une regle d'arret d'un EPIC qui
     # n'engendre rien serait du bruit.
-    if feeds_series and not _STOP_RE.search(body):
+    # Deux surfaces et non `body` seul : une regle d'arret ecrite UNIQUEMENT dans
+    # le titre ("EPIC X -- s'arrete a 12 notebooks") passerait inapercue si on
+    # ne lisait que le corps. La jambe etant advisory, la consequence serait un
+    # signal manque et jamais un faux gate -- ce qui est precisement la raison
+    # de corriger : un faux negatif ne se plaint pas, il rend un chiffre plus
+    # propre. Concern 2 de la review NanoClaw sur #13539.
+    #
+    # `_CONSO_PLEDGE_RE` reste volontairement sur le corps seul : un engagement
+    # de consolidation est une clause, pas un intitule -- l'elargir au titre
+    # ajouterait de la surface sans forme attestee derriere.
+    _title = epic.get("title") or ""
+    if feeds_series and not (_STOP_RE.search(body) or _STOP_RE.search(_title)):
         defects.append("ARRET-NON-DECLARE")
     if len(exp) >= expansion_min and not _CONSO_PLEDGE_RE.search(body):
         defects.append("PENDANT-NON-DECLARE")
