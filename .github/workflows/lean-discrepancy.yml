@@ -1,0 +1,45 @@
+name: Lean CI (discrepancy_lean)
+
+# CI for discrepancy_lean (Search/discrepancy_lean) — combinatorial discrepancy
+# lake (Beck-Fiala / Komlós / Bansal-Jiang 2025, arXiv:2508.03961). See #12823.
+# P0: definitions + 3 elementary lemmas proven; conjectures live as named
+# `def ... : Prop` (never sorry-truncated theorems), so the lake is fully
+# sorry-free — baseline 0.
+#
+# sorry-filter-mode=real, baseline=0: `real` strips `--` and `/- -/` then
+# counts `\bsorry\b` word-bordered (catches tactic/block/term `sorry`, never
+# false-positives on prose). Baseline 0 = any new sorry fails CI. See
+# lean-build.yml.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'MyIA.AI.Notebooks/Search/discrepancy_lean/**.lean'
+      - 'MyIA.AI.Notebooks/Search/discrepancy_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/Search/discrepancy_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/Search/discrepancy_lean/lean-toolchain'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'MyIA.AI.Notebooks/Search/discrepancy_lean/**.lean'
+      - 'MyIA.AI.Notebooks/Search/discrepancy_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/Search/discrepancy_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/Search/discrepancy_lean/lean-toolchain'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lean-discrepancy-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  ci:
+    uses: jsboige/CoursIA/.github/workflows/lean-build.yml@main
+    with:
+      project-path: MyIA.AI.Notebooks/Search/discrepancy_lean
+      display-name: discrepancy_lean
+      sorry-baseline: "0"
+      sorry-filter-mode: real

@@ -32,11 +32,12 @@ WORKFLOW = (
     Path(__file__).resolve().parents[2]
     / ".github"
     / "workflows"
-    / "variation-tag-guard.yml"
+    / "always-on-guards.yml"
 )
 
-# The three BLOCKING jobs of variation-tag-guard.yml that capture a helper
-# exit code. Each must pair its invocation with `&& RC=0 || RC=$?`.
+# The three BLOCKING helpers formerly of variation-tag-guard.yml, now steps
+# of always-on-guards.yml (#13384). Each must pair its invocation with
+# `&& RC=0 || RC=$?`.
 BLOCKING_HELPERS = [
     "python3 scripts/ci/variation_tag_required.py",
     "python3 scripts/ci/variation_prev_guard.py",
@@ -58,6 +59,7 @@ def _run_bash_e(script: str) -> subprocess.CompletedProcess:
         [BASH, "-e", "-c", script],
         capture_output=True,
         text=True,
+        encoding="utf-8", errors="replace",
     )
 
 

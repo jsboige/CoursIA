@@ -19,6 +19,7 @@ commitee. numpy CPU pur, gel GPU respecte.
 
 from __future__ import annotations
 
+from dataclasses import dataclass, field
 from typing import Callable, Dict, List, Optional, Tuple
 
 import numpy as np
@@ -270,6 +271,47 @@ def replicator_trajectory(
     return traj
 
 
+def replicator_mutation_trajectory(
+    A: np.ndarray,
+    x0: np.ndarray,
+    n_steps: int = 1000,
+    mutation_rate: float = 0.05,
+) -> np.ndarray:
+    """Trajectoire de la dynamique replicateur-MUTATION discrete :
+
+        x_i(t+1) = (1 - mu) * x_i(t) * f_i(t) / <f>(t) + mu / n,   f_i = (A x)_i.
+
+    ``mu`` = taux de mutation uniforme (fraction de la population remplacee a chaque
+    generation par des mutants uniformement repartis). Contrairement au replicateur
+    pur (qui converge vers une ESS et fige le nuage sur un point), la mutation
+    maintient le polymorphisme : aucune frequence ne s'annule, la trajectoire balaie
+    le simplex au lieu de s'ecraser sur un attracteur. Le nuage soumis au discriminant
+    topologique est alors une trajectoire, pas un instantane — c'est le levier qui
+    donne du relief (b1 > 0 possible) au substrat Axelrod d'ICT-15d.
+
+    ``x0`` = vecteur de frequences (somme 1) sur les strategies. Renvoie la
+    trajectoire ``(n_steps+1, n_strategies)``. Avec ``mutation_rate=0`` elle se
+    reduit au replicateur pur."""
+    x = np.asarray(x0, dtype=float).copy()
+    x = x / x.sum()
+    n = x.size
+    mu = float(mutation_rate)
+    traj = np.empty((n_steps + 1, n))
+    traj[0] = x
+    for t in range(n_steps):
+        f = A @ x
+        avg = float(np.dot(f, x))
+        if avg < 1e-12:
+            break
+        sel = x * f / avg
+        x = (1.0 - mu) * sel + mu / n
+        s = x.sum()
+        if s > 1e-12:
+            x = x / s
+        traj[t + 1] = x
+    return traj
+
+
 def fixation(traj: np.ndarray, tol: float = 1e-3) -> np.ndarray:
     """Vecteur de frequence final de la trajectoire (derniere ligne). Une
     strategie a « envahi » si sa frequence finale > 1 - tol."""
@@ -409,3 +451,125 @@ def noise_collapse(
         for n in strategies:
             out[n][k] = scores[n]
     return out
+
+
+# --------------------------------------------------------------------------- #
+#  Population evolutive : Wright-Fisher selection-mutation (#12673)            #
+# --------------------------------------------------------------------------- #
+@dataclass
+class PopulationEvolution:
+    """Trajectoire d'une population IPD qui evolue (selection-mutation).
+
+    Chaque generation : appariement aleatoire des agents, matchs IPD avec
+    bruit, fitness = gain moyen ; reproduction de Wright-Fisher
+    (echantillonnage proportionnel au gain) avec mutation (resemencement
+    uniforme avec probabilite ``mutation_rate``).
+    """
+
+    frequencies: np.ndarray          # (n_generations+1, n_strategies)
+    dominant_idx: np.ndarray         # (n_generations+1,) strategie majoritaire
+    cooperation_rate: np.ndarray     # (n_generations+1,) taux de C joue
+    mean_payoff: np.ndarray          # (n_generations+1,) gain moyen par agent
+    strategy_names: List[str] = field(default_factory=list)
+
+    def to_dict(self) -> Dict:
+        return {
+            "frequencies": self.frequencies.tolist(),
+            "dominant_idx": self.dominant_idx.tolist(),
+            "cooperation_rate": self.cooperation_rate.tolist(),
+            "mean_payoff": self.mean_payoff.tolist(),
+            "strategy_names": list(self.strategy_names),
+        }
+
+
+def evolve_population(
+    strategies: Dict[str, Strategy],
+    pop_size: int = 60,
+    n_generations: int = 400,
+    n_rounds: int = 30,
+    noise: float = 0.02,
+    mutation_rate: float = 0.05,
+    selection_strength: float = 1.0,
+    rng: Optional[np.random.Generator] = None,
+) -> PopulationEvolution:
+    """Fait evoluer une population d'agents IPD sur ``n_generations``.
+
+    Contrairement a :func:`replicator_trajectory` (dynamique deterministe sur
+    une matrice de gain figee), la population est **agent-based** : chaque
+    agent porte une strategie, joue contre un partenaire aleatoire, se
+    reproduit proportionnellement a son gain — avec mutation uniforme. Le
+    resultat est un **equilibre polymorphe mutation-selection** (pas de
+    fixation) dont le taux de cooperation oscille : c'est le relief que le
+    discriminant topologique d'ICT-15d consomme (#12673 — une population figee
+    trace un instantane sature, une population qui evolue trace une
+    trajectoire).
+
+    Reproductible par ``rng`` injecte ; ~3 s CPU pour pop=60, 400 generations.
+    """
+    if rng is None:
+        rng = np.random.default_rng(0)
+    names = list(strategies.keys())
+    n_strat = len(names)
+    pop = rng.integers(0, n_strat, size=pop_size)
+
+    frequencies = np.zeros((n_generations + 1, n_strat))
+    dominant_idx = np.zeros(n_generations + 1, dtype=int)
+    cooperation_rate = np.zeros(n_generations + 1)
+    mean_payoff = np.zeros(n_generations + 1)
+
+    def _play_and_record(t: int, update: bool) -> None:
+        perm = rng.permutation(pop_size)
+        payoffs = np.zeros(pop_size)
+        n_coop = 0
+        n_plays = 0
+        for k in range(0, pop_size, 2):
+            i, j = int(perm[k]), int(perm[k + 1])
+            s_i = strategies[names[pop[i]]]
+            s_j = strategies[names[pop[j]]]
+            own_i: list = []
+            own_j: list = []
+            g_i = g_j = 0.0
+            for _ in range(n_rounds):
+                a = int(s_i(np.array(own_i), np.array(own_j)))
+                b = int(s_j(np.array(own_j), np.array(own_i)))
+                if noise > 0.0:
+                    if rng.random() < noise:
+                        a = 1 - a
+                    if rng.random() < noise:
+                        b = 1 - b
+                pa, pb = payoff_pair(a, b)
+                g_i += pa
+                g_j += pb
+                own_i.append(a)
+                own_j.append(b)
+                n_coop += (a == C) + (b == C)
+                n_plays += 2
+            payoffs[i] = g_i / n_rounds
+            payoffs[j] = g_j / n_rounds
+        counts = np.bincount(pop, minlength=n_strat) / pop_size
+        frequencies[t] = counts
+        dominant_idx[t] = int(np.argmax(counts))
+        cooperation_rate[t] = n_coop / max(n_plays, 1)
+        mean_payoff[t] = float(np.mean(payoffs))
+        if not update:
+            return
+        # Reproduction de Wright-Fisher : parents tires proportionnellement au
+        # gain (gains IPD canoniques >= 0, clip en garde).
+        w = np.clip(payoffs, 1e-6, None) ** selection_strength
+        parents = rng.choice(pop_size, size=pop_size, p=w / w.sum())
+        children = pop[parents].copy()
+        mutators = rng.random(pop_size) < mutation_rate
+        children[mutators] = rng.integers(0, n_strat, size=int(mutators.sum()))
+        pop[:] = children
+
+    for g in range(n_generations):
+        _play_and_record(g, update=True)
+    _play_and_record(n_generations, update=False)
+
+    return PopulationEvolution(
+        frequencies=frequencies,
+        dominant_idx=dominant_idx,
+        cooperation_rate=cooperation_rate,
+        mean_payoff=mean_payoff,
+        strategy_names=names,
+    )

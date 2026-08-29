@@ -41,7 +41,7 @@ def detect_system_jdk() -> bool:
     try:
         # Test java command
         result = subprocess.run(["java", "-version"], 
-                              capture_output=True, text=True, timeout=10)
+                              capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=10)
         if result.returncode == 0:
             version_info = result.stderr.split('\n')[0] if result.stderr else 'Version inconnue'
             logger.info(f"✅ JDK système détecté: {version_info}")
@@ -158,7 +158,7 @@ def setup_java_environment(jdk_home: pathlib.Path) -> bool:
     java_exe = java_bin / ("java.exe" if platform.system() == "Windows" else "java")
     try:
         result = subprocess.run([str(java_exe), "-version"], 
-                              capture_output=True, text=True, timeout=10)
+                              capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=10)
         if result.returncode == 0:
             version_line = result.stderr.split('\n')[0] if result.stderr else "Version inconnue"
             logger.info(f"☕ JDK portable opérationnel: {version_line}")
