@@ -31,6 +31,7 @@ from check_pr_perimeter import (  # noqa: E402
     _count_is_exempt,
     _count_is_incidental,
     _fence_line_indices,
+    _has_strong_scope,
     _is_incidental_assertion,
     _normalize_rest_files,
     _paragraph_prefix,
@@ -2469,3 +2470,51 @@ def test_13440_founder_negated_diff_still_exempt():
         assert _count_is_exempt(line, m) is True, (
             f"le compte fondateur doit rester exempt : {m.group(0)!r}"
         )
+
+def test_12718_hyphenated_scope_does_not_block():
+    """#12718: 'in-scope' (hyphenated, descriptive) is NOT a strong-scope
+    perimeter label -- `_has_strong_scope` excludes the hyphenated compound,
+    so a line whose count is already incidental via 'neufs' stays incidental
+    instead of being re-blocked by the bare word 'scope' inside 'in-scope'."""
+    line = ("2 fichiers neufs : `TopologyDictionary.lean` (330 lignes), "
+            "in-scope « couverture complète FR » + `TopologyDictionary` neuf.")
+    assert extract_perimeter_assertions(line) == [line], "detection unchanged"
+    assert _has_strong_scope(line.lower()) is False
+    cand = Candidate(line, "body", "author", "body")
+    assert cand.blocking is False
+
+
+
+def test_12718_new_files_qualifier_signal_not_blocking():
+    """#12718 (class #11985 forme 4): 'N fichiers neufs : file1 + file2' names
+    the newly-added files, never the whole-PR perimeter -- 'neufs' qualifies
+    the count, so the '330 lignes' diffstat neighbor is a per-file size, not
+    a diffstat of the PR. Detection unchanged; blocking consequence only."""
+    lines = [
+        # count with 'neufs' qualifier + diffstat neighbor -> incidental
+        "2 fichiers neufs : `Grothendieck/TopologyDictionary.lean` "
+        "(FR, 330 lignes) + sibling `TopologyDictionary_en.lean` "
+        "(EN, 328 lignes, miroir auto-contenu).",
+        # snapshot antecedent + diffstat -> incidental
+        "- avant (main) : grothendieck_lean — 116 fichiers, `distinct_code_sorry: 0`",
+        "- après (branche) : 118 fichiers (+2 neufs), `distinct_code_sorry: 0`",
+        # new-files count without diffstat -> incidental
+        "- Les 2 fichiers neufs sont créés sans `sorry`.",
+    ]
+    for line in lines:
+        assert extract_perimeter_assertions(line) == [line], "detection unchanged"
+        cand = Candidate(line, "body", "author", "body")
+        assert cand.blocking is False, f"new-files qualifier must not block: {line[:50]}"
+
+
+
+def test_12718_scope_label_still_blocks():
+    """The hyphenated-scope relaxation must not swallow a genuine scope label:
+    'in-scope' is excluded, but 'scope = perimetre' remains a strong-scope
+    perimeter anchor. FN control for `_has_strong_scope`."""
+    line = "lake 70 fichiers uniquement, scope = perimetre PR"
+    assert extract_perimeter_assertions(line) == [line]
+    cand = Candidate(line, "body", "author", "body")
+    assert cand.blocking is True
+
+

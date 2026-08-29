@@ -111,10 +111,16 @@ with sync_playwright() as p:
     time.sleep(1.0)
     shot(page, "tour-04-chatbots-apercu")
 
-    # 5. Environnements par defaut (7 types d'usage). La carte "Environments
-    #    for AI" au-dessus affiche la cle API et l'endpoint du serveur de
-    #    modeles en clair : on aligne le titre en haut du viewport pour que
-    #    cette carte reste hors cadre (rien de tout ca dans un depot public).
+    # 5. Environnements par defaut (7 types d'usage). Le scroll aligne le
+    #    titre en haut du viewport ; la carte "Environments for AI" reste
+    #    alors visible en haut du cadre. Ce n'est pas une fuite : son champ
+    #    API Key est de type password (rendu en points par le navigateur --
+    #    la valeur ne s'affiche jamais), et l'endpoint affiche est une
+    #    adresse privee RFC1918 non routable, deja presente sur main. La
+    #    protection vient du type de champ, PAS du cadrage : pour toute
+    #    capture future, verifier le type de l'input qui porte un secret
+    #    (un cadrage ne couvre pas un champ texte, un log ou un toast).
+    #    Voir la review de la PR du tour (correction d'attribution).
     open_admin("/wp-admin/admin.php?page=mwai_settings&nekoTab=settings", 2.0)
     page.evaluate(
         """() => {
