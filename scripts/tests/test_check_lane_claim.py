@@ -4580,6 +4580,15 @@ def test_delivered_close_drops_lane_from_active_claims(capsys):
     `state`. The summary shows `my_active_claim: false` for the
     delivering lane and `blocking_lanes: []` for any other lane that
     arrives after the close.
+
+    #13336 -- hermetic injection: this test ran WITHOUT `pr_states` and
+    passed only because the live lookup was dead (the `merged` field was
+    removed from gh; every fetch failed and v2 silently fell back to
+    `close`). Fixing the lookup made the REAL #12271 resolve OPEN ->
+    the delivering lane keeps its claim -> BLOCKED, flipping the
+    assertion machine-dependently (CI gh is authed, local dev may not
+    be). The legacy-close surface this test pins is now injected
+    explicitly: a CLOSED-without-merge PR.
     """
     p = payload(
         comment("[CLAIMED] lane myia-po-2024:CoursIA-2 -- paths: Lean-16g-*.ipynb",
@@ -4587,7 +4596,8 @@ def test_delivered_close_drops_lane_from_active_claims(capsys):
         comment("[DELIVERED] lane myia-po-2024:CoursIA-2 -- PR #12271 (substance shipped)",
                 "2026-08-22T04:14:00Z"),
     )
-    rc = clc._run_check(p, "myia-po-2025:CoursIA-2")
+    rc = clc._run_check(p, "myia-po-2025:CoursIA-2",
+                        pr_states=_pr_states(12271, "CLOSED"))
     assert rc == 0
     out = _json_out(capsys.readouterr())
     assert out["my_active_claim"] is False
@@ -4606,6 +4616,12 @@ def test_delivered_claims_in_json_summarises_history(capsys):
     PR state. The motivating use case is #12223: po-2024 reads CLEAR,
     the summary tells po-2024 "PR #12271 was delivered here, go check
     it before you start".
+
+    #13336 -- hermetic injection: same live-lookup disease as
+    test_delivered_close_drops_lane_from_active_claims -- the real
+    #12270/#12275 states decide the reduction machine-dependently. The
+    summary surface this test pins (delivered_claims list) is
+    state-independent, so pin both PRs CLOSED to keep it hermetic.
     """
     p = payload(
         comment("[CLAIMED] lane myia-po-2026:CoursIA-2 -- substance A",
@@ -4617,7 +4633,8 @@ def test_delivered_claims_in_json_summarises_history(capsys):
         comment("[DELIVERED] lane myia-po-2026:CoursIA-2 -- PR #12275",
                 "2026-08-22T05:00:00Z"),
     )
-    clc._run_check(p, "myia-po-2023:CoursIA-2")
+    clc._run_check(p, "myia-po-2023:CoursIA-2",
+                   pr_states={12270: "CLOSED", 12275: "CLOSED"})
     out = _json_out(capsys.readouterr())
     assert out["delivered_claims"] == [12270, 12275]
 
