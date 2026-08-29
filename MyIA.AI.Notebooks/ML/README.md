@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: ML
-pedagogical_count: 49
-breakdown: DataScienceWithAgents=29, ML.Net=20
-maturity: BETA=43, ALPHA=5, DRAFT=1
+pedagogical_count: 68
+breakdown: DataScienceWithAgents=47, ML.Net=21
+maturity: BETA=62, ALPHA=5, DRAFT=1
 -->
 
 > **À propos des décomptes** : le marqueur `CATALOG-STATUS` ci-dessus est la **source de vérité autoritative** pour les volumes (notebooks par sous-série, maturité). Il est régénéré chaque nuit par le workflow [`catalog-cron.yml`](../../.github/workflows/catalog-cron.yml) à 03:37 UTC sur `main` (commit `[skip ci]` par `github-actions[bot]`). Si vous observez un décalage entre ce marqueur et une phrase en prose de ce README — par exemple si une sous-série a reçu de nouveaux notebooks mergés après la dernière régénération —, **fiez-vous au marqueur** ; la prose sera ré-alignée manuellement lors du prochain passage. Pour les **décomptes par kernel** (Python vs C#/.NET) au sein d'une sous-série, ce README reste autoritatif car la décomposition langagière par sous-série n'est pas dans le marqueur agrégé.
@@ -124,7 +124,8 @@ ML/
 ├── DataScienceWithAgents/            # Data Science Python + AI Agents
 │   ├── 01-PythonForDataScience/      # Fondations NumPy/Pandas
 │   ├── 02-ML-Cours/                  # Socle ML canonique (scikit-learn)
-│   │   └── 2.8b-Theorie-PAC-Lean.ipynb   # compagnon Lean (lean4-wsl) du lake learning_theory_lean
+│   │   ├── 2.8b-Theorie-PAC-Lean.ipynb   # compagnon Lean (lean4-wsl) du lake learning_theory_lean (moitie PAC)
+│   │   └── 2.8d-Lean-Novikoff-Convergence.ipynb   # compagnon Lean (lean4-wsl) du lake learning_theory_lean (moitie Perceptron)
 │   ├── Track1-LangChain/   # Track LangChain (Labs 1-7)
 │   └── Track2-GoogleADK/           # Track Google ADK (Labs 8-17)
 │
@@ -290,10 +291,10 @@ Documentation complète : [DataScienceWithAgents/Track2-GoogleADK/README.md](Dat
 
 ## Théorie formelle (Lean)
 
-Au-delà des notebooks empiriques (ML.NET, Python), la série ML accueille un **lake Lean 4** qui formalise deux résultats théoriques canoniques de l'apprentissage : [`learning_theory_lean/`](learning_theory_lean/). Convention des **lakes frères** — le lake est le livrable formel, `lake build` SUCCESS en est la preuve d'exécution, et le notebook pédagogique vient en pendant : ici [`02-ML-Cours/2.8b-Theorie-PAC-Lean.ipynb`](DataScienceWithAgents/02-ML-Cours/2.8b-Theorie-PAC-Lean.ipynb), compagnon **kernel Lean** (`lean4-wsl`) placé contre son jumeau empirique [`2.8-Theorie-PAC.ipynb`](DataScienceWithAgents/02-ML-Cours/2.8-Theorie-PAC.ipynb) (EPIC #11703).
+Au-delà des notebooks empiriques (ML.NET, Python), la série ML accueille un **lake Lean 4** qui formalise deux résultats théoriques canoniques de l'apprentissage : [`learning_theory_lean/`](learning_theory_lean/). Convention des **lakes frères** — le lake est le livrable formel, `lake build` SUCCESS en est la preuve d'exécution, et les notebooks pédagogiques viennent en pendant : ici [`02-ML-Cours/2.8b-Theorie-PAC-Lean.ipynb`](DataScienceWithAgents/02-ML-Cours/2.8b-Theorie-PAC-Lean.ipynb) pour la moitié PAC et [`02-ML-Cours/2.8d-Lean-Novikoff-Convergence.ipynb`](DataScienceWithAgents/02-ML-Cours/2.8d-Lean-Novikoff-Convergence.ipynb) pour la moitié Perceptron, compagnons **kernel Lean** (`lean4-wsl`) placés contre leur jumeau empirique [`2.8-Theorie-PAC.ipynb`](DataScienceWithAgents/02-ML-Cours/2.8-Theorie-PAC.ipynb) (EPIC #11703).
 
 - **[`learning_theory_lean/`](learning_theory_lean/)** — **théorème de convergence du perceptron** (Novikoff, 1962) : pour des données linéairement séparables de marge γ et de rayon R, l'algorithme du perceptron effectue au plus `(R/γ)²` mises à jour avant de trouver un classifieur correct. Preuve **géométrique élémentaire et entièrement 0-sorry** (croissance de l'alignement `⟨wₖ,u⟩ ≥ kγ` + croissance de la norme `‖wₖ‖² ≤ kR²` + Cauchy–Schwarz), sur un espace préhilbertien réel abstrait via Mathlib.
-- **Module `PacLearning`** — **théorie PAC** (Valiant, 1984) : la chaîne complète de la **borne de complexité d'échantillon** en classe finie `m ≥ (1/ε)(ln|H| + ln(1/δ))` (concentration de Hoeffding pour Bernoulli + borne de l'union) et la **borne de généralisation agnostic** — toutes deux **0-sorry**. C'est ce module que le notebook [2.8b](DataScienceWithAgents/02-ML-Cours/2.8b-Theorie-PAC-Lean.ipynb) rend exécutable déclaration par déclaration, en pendant formel du [2.8](DataScienceWithAgents/02-ML-Cours/2.8-Theorie-PAC.ipynb) qui en mesure la prédiction empirique.
+- **Module `PacLearning`** — **théorie PAC** (Valiant, 1984) : la chaîne complète de la **borne de complexité d'échantillon** en classe finie `m ≥ (1/ε)(ln|H| + ln(1/δ))` (concentration de Hoeffding pour Bernoulli + borne de l'union) et la **borne de généralisation agnostic** — toutes deux **0-sorry**. C'est ce module que le notebook [2.8b](DataScienceWithAgents/02-ML-Cours/2.8b-Theorie-PAC-Lean.ipynb) rend exécutable déclaration par déclaration, en pendant formel du [2.8](DataScienceWithAgents/02-ML-Cours/2.8-Theorie-PAC.ipynb) qui en mesure la prédiction empirique. Un second compagnon, côté série SymbolicAI, couvre la chaîne complète des bornes et toute la branche perceptron (Novikoff + serrage) avec exercices : [`SymbolicAI/SymbolicLearning/SL-1b-LogicalLearning-Lean-Native.ipynb`](../SymbolicAI/SymbolicLearning/SL-1b-LogicalLearning-Lean-Native.ipynb) (See #11703).
 
 C'est le **pendant prouvé** des notebooks de classification linéaire (`ML.Net/ML-3` entraîne des classifieurs, `02-ML-Cours/2.3` pose régression linéaire/logistique) : là où les notebooks *montrent* que le perceptron converge en pratique, le lake *prouve* la borne. Voir le [README du lake](learning_theory_lean/README.md) pour les modules et le détail de la preuve.
 
@@ -304,7 +305,7 @@ La section ci-dessus focusse sur le **lake phare** `learning_theory_lean` (Novik
 | Famille | Lake phare | Théorème | Branchement notebook ML |
 | --- | --- | --- | --- |
 | ML | `learning_theory_lean` | Convergence perceptron Novikoff 0 sorry #4140 | Ce hub (Novikoff marge γ rayon R) |
-| ML | `learning_theory_lean` | Tightness (borne optimale) #4301 OPEN | Ce hub (à prouver serré) |
+| ML | `learning_theory_lean` | Tightness (borne optimale) #4301 MERGED | Ce hub (borne prouvée serrée : égalité atteinte) |
 | ML | `learning_theory_lean` | i18n-B tranche 5 (FR `.lean` + companion `.en.md`) MERGED #5009 | Convention i18n à étendre aux autres lakes |
 | Probas | `decision_theory_lean` | VNM résolu 0 sorry #4049, Coherence MERGED #4150, Peters Gittins ref v4.27.0-rc1, PAC iter-2 chaîne 0-sorry bout-en-bout | Notebooks PAC (02-ML-Cours 2.5 biais-variance / ERM sous incertitude) |
 | QuantConnect | `kelly_lean` | Kelly criterion Growth MERGED #5003, Calmar/IR/MDD #4223 / #4164 | `02-ML-Cours` lien finance/ML : allocation optimale sous i.i.d. |
@@ -325,7 +326,7 @@ flowchart LR
     end
     subgraph LEAN["Preuves formelles (Lean 4)"]
         L1["learning_theory_lean — Novikoff 0 sorry #4140"]
-        L2["learning_theory_lean — Tightness #4301 OPEN"]
+        L2["learning_theory_lean — Tightness #4301 MERGED"]
         L3["decision_theory_lean — VNM 0 sorry #4049 + Coherence #4150"]
         L4["kelly_lean — Growth #5003 / #4223 / #4164"]
         L5["game_theory_lean/SocialChoice + CooperativeGames — Arrow + Bondareva-Shapley<br/>(lakes #4365 absorbés)"]

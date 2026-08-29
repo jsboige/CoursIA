@@ -79,7 +79,54 @@ class Guard:
     delta_argv: list[str] = field(default_factory=list)
     swap_paths: list[str] = field(default_factory=list)
     iterates_paths: bool = False  # voir `run_iter` dans fast_lane.py
+    absorbed: bool = False  # tranche d'absorption #12567 : nom canonique + conclusion reelle, meme en lane ombre
+    # Codes de retour traites comme SUCCES au-dela de 0. Les detecteurs de
+    # la serie figure/texte rendent rc=1 sur defaut et rc=2 sur fichier
+    # INTROUVABLE (mesure firsthand : un JSON corrompu rend rc=0 avec une
+    # NOTE "unreadable"). Leur workflow d'origine ne voit jamais ce cas --
+    # il saute les fichiers supprimes (`[ -f "$nb" ] || continue`) -- et le
+    # moteur reproduit ce skip ; `warn_rc` est la seconde defense si un
+    # chemin echappe au filtre (checkout partiel). Sans lui, la lane serait
+    # PLUS stricte que le workflow qu'elle absorbe.
+    warn_rc: tuple[int, ...] = ()
+    # Anti-auto-desarmement AGREGE (clause #8655/#8656) : si CHAQUE fichier
+    # examine rend un rc de `warn_rc`, le garde n'a RIEN analyse et ne peut
+    # pas certifier -- on fail loud (rc=1) au lieu de produire un quitus
+    # aveugle. Sans ce flag, `warn_rc` lisserait la panne en succes. Reserved
+    # a `iterates_paths` ; par defaut desarme (un garde sans clause d'origine
+    # ne devient jamais plus strict).
+    fail_on_all_warn: bool = False
+    # Globs EXCLUSIFS d'iteration quand `iterates_paths=True` : seuls les
+    # fichiers qui matchent sont passes au detecteur. Distinct de `paths` (le
+    # declencheur via `guard_applies`), parce que le workflow d'origine SEPARE
+    # les deux : `on.pull_request.paths` inclut le detecteur + le workflow
+    # (pour que la garde reparte quand ils changent), mais sa boucle interne
+    # itere UNIQUEMENT le glob d'actifs (`MyIA.AI.Notebooks/**/*.ipynb`).
+    # Mettre le detecteur/workflow dans le meme sac que l'iter-set ferait
+    # passer un `.yml`/`.py` au detecteur de notebooks -> rc=2 -> faux echec
+    # (incident #13220 : la PR qui ajoute la garde echouait dessus). Vide =
+    # fallback sur `paths` (comportement pre-change pour les gardes sans
+    # distinction trigger/iter).
+    iterate_paths: list[str] = field(default_factory=list)
+    # Commande de PRE-CONTROLE executee avant `argv` (phase 1). Un rc non
+    # nul devient le verdict du garde et `argv` n'est PAS execute. Cas
+    # d'usage : le self-test du ratchet output-failure, qui dans son
+    # workflow d'origine etait un step distinct AVANT le scan -- un
+    # detecteur qui ne peut pas prouver qu'il tire est indiscernable d'un
+    # detecteur debranche (lecon #11685/#12817). Pas de `bash -c ... &&` :
+    # le shell n'est pas resolu pareil selon l'hote (127 mesuré en local
+    # Windows) et le registre interdit la seconde couche de quoting.
+    pre_argv: list[str] = field(default_factory=list)
 
+
+# Valeur de `source` pour un garde NE dedoublant aucun workflow unitaire : il
+# est ne dans la voie rapide. La distinction compte parce que `source` sert a
+# tracer quel workflow pourra etre retire quand la voie rapide sortira de
+# l'ombre -- un garde natif n'a pas de jumeau a retirer. Le test qui verifie
+# la tracabilite reste STRICT pour les autres : une faute de frappe dans un
+# nom de workflow doit continuer d'echouer, seule cette valeur exacte est
+# admise comme "pas de workflow d'origine".
+FAST_LANE_NATIVE = "(garde natif de la voie rapide : aucun workflow d'origine)"
 
 NOTEBOOK_GLOBS = ["**/*.ipynb"]
 
@@ -99,6 +146,8 @@ NOTEBOOK_GLOBS = ["**/*.ipynb"]
 #   - notebook-interp-positioning-guard : bloquant, scan global baselined
 #   - markdown-rendering-guard : bloquant, scan global baselined
 #   - self-hosted-runner-policy : bloquant, scan statique des workflows
+#   - duplicate-notebook-index-guard : bloquant, delta base-vs-head sur
+#                           les fichiers AJOUTES (#12753)
 #
 # Un lot homogene aurait valide le moteur sur un seul cas de figure -- et un
 # lot entierement vert serait indiscernable d'un moteur debranche.
@@ -231,5 +280,381 @@ PILOT: list[Guard] = [
         argv=["python", "scripts/ci/check_self_hosted_runner_policy.py",
               "--check"],
         blocking=True,
+    ),
+    # -- extension c.1339 (10 -> 11) ----------------------------------------
+    # Ferme un angle mort du merge-gate mesure le 2026-08-24 (#12753) : aucun
+    # garde ne demandait si le contenu AJOUTE existe deja sur la base sous un
+    # AUTRE nom de fichier. Deux notebooks `3.1-*` de la meme lane, cites par
+    # la meme issue, ont ete merges a 29 minutes d'intervalle sans qu'aucune
+    # des cinq portes (nits, perimetre, H.4, tag de grain, cap de variation)
+    # n'ait de quoi le voir : chacune juge la PR en elle-meme, aucune ne la
+    # confronte a ce que la base porte deja.
+    #
+    # Porte aux fichiers AJOUTES seulement. C'est ce qui le rend vert sur le
+    # `main` d'aujourd'hui -- qui porte deja deux collisions (index 3.1 et
+    # index 22, cf #12753) -- tout en empechant la recurrence. Un garde qui
+    # accuserait la dette pre-existante serait rouge des sa naissance et
+    # ferait echouer toutes les PR sans qu'aucune ne l'ait causee.
+    Guard(
+        name="duplicate-notebook-index-guard",
+        source=FAST_LANE_NATIVE,
+        paths=NOTEBOOK_GLOBS + [
+            "scripts/notebook_tools/check_duplicate_notebook_index.py",
+        ],
+        argv=["python", "scripts/notebook_tools/check_duplicate_notebook_index.py",
+              "--base", "{base_ref}", "--head", "HEAD"],
+        blocking=True,
+        needs_base=True,
+    ),
+]
+
+
+# ---------------------------------------------------------------------------
+# TRANCHE 1 d'absorption (#12567) -- le basculement, second geste announce
+# par la phase pilote : ces gardes passent DIRECTEMENT en mode canonique
+# (nom exact du check-run d'origine, conclusion reelle qui peut rougir), et
+# leurs workflows dedis perdent le declenchement `pull_request` dans la meme
+# PR -- le fichier source reste pour push/dispatch.
+#
+# `absorbed=True` est ce qui distingue la tranche du pilote : le moteur
+# emet le nom SANS prefixe ombre et la conclusion NON neutralisee, meme quand
+# le reste de la lane tourne en ombre. Le check-run portant le nom original,
+# le rollup de la PR est identique a ce que produisait le workflow dedie.
+#
+# Contrainte de design tranchee par ai-01 (DM 2026-08-26T05:04Z) : chaque
+# garde absorbe CONSERVE son nom de check-run, et `PR gate` -- seul check
+# requis -- reste non filtre.
+#
+# Choix de la tranche : trois formes moteur distinctes (scan global simple,
+# scan globs serie, delta base-vs-head), aucun besoin d'ecriture PR, aucune
+# dependance au-dela de python stdlib -- le pip install pyyaml/Pillow du job
+# couvre deja tout ce que ces trois gardes demandent.
+# ---------------------------------------------------------------------------
+TRANCHE1: list[Guard] = [
+    # Forme 1 : scan global simple, sans base. Source : docs-link-check.yml
+    # (job `check-links`). Le nom du garde est le nom du JOB, pas celui du
+    # workflow -- c'est lui que le rollup affichait.
+    Guard(
+        name="check-links",
+        source="docs-link-check.yml",
+        paths=[
+            "CLAUDE.md", "index.md", "PARCOURS.md",
+            ".claude/rules/**", "docs/**", "**/README.md",
+            "scripts/check_docs_links.py",
+        ],
+        argv=["python", "scripts/check_docs_links.py", "--check"],
+        blocking=True,
+        absorbed=True,
+    ),
+    # Forme 2 : scan globs, bloque sur convention zero-pad GameTheory
+    # (#11840/#12586). Source : series-naming-gate.yml (job affiche
+    # `zero-pad guard (GameTheory serie)`).
+    Guard(
+        name="zero-pad guard (GameTheory serie)",
+        source="series-naming-gate.yml",
+        paths=[
+            "MyIA.AI.Notebooks/GameTheory/**",
+            "scripts/notebook_tools/check_series_zero_pad.py",
+            ".github/workflows/series-naming-gate.yml",
+        ],
+        argv=["python", "scripts/notebook_tools/check_series_zero_pad.py"],
+        blocking=True,
+        absorbed=True,
+    ),
+    # Forme 3 : delta base-vs-head -- meme motif que pip-leak-guard pilote :
+    # scan HEAD capture, bascule MyIA.AI.Notebooks vers la base, scan BASE,
+    # restauration verifyee, puis delta. Source : exercise-leak-ci.yml (job
+    # `Exercice-solution HIGH delta guard (#8053)`). Rouge seulement sur les
+    # NOUVEAUX leaks HIGH -- les herites sont tolere's (#8053).
+    Guard(
+        name="Exercice-solution HIGH delta guard (#8053)",
+        source="exercise-leak-ci.yml",
+        paths=[
+            "MyIA.AI.Notebooks/**/*.ipynb",
+            "scripts/notebook_tools/detect_solution_leaks.py",
+            "scripts/notebook_tools/exercise_leak_delta.py",
+            ".github/workflows/exercise-leak-ci.yml",
+        ],
+        argv=["python", "scripts/notebook_tools/detect_solution_leaks.py",
+              "--scan-all"],
+        delta_argv=["python",
+                    "scripts/notebook_tools/exercise_leak_delta.py",
+                    "{base_json}", "{head_json}"],
+        swap_paths=["MyIA.AI.Notebooks"],
+        blocking=True,
+        needs_base=True,
+        absorbed=True,
+    ),
+]
+
+
+# ---------------------------------------------------------------------------
+# TRANCHE 2 d'absorption (#12567) -- meme contrat que la tranche 1 (nom
+# canonique, conclusion reelle, workflow d'origine retire de pull_request),
+# trois formes moteur nouvelles par rapport a la tranche 1 :
+#
+#   - ratchet AUTONOME : le script fait lui-meme son diff base...HEAD, la lane
+#     ne fournit que {base_ref}. Son self-test est un PRE-CONTROLE (`pre_argv`)
+#     qui gate le garde comme le step distinct du workflow d'origine -- sans
+#     shell, resolu identiquement sur tout hote.
+#   - iter_paths + warn_rc : boucle par notebook change, rc=1 defaut / rc=2
+#     introuvable (skip dans l'original, donc warn_rc=(2,) en defense
+#     seconde, cf docstring du champ).
+#   - iter_paths + dependance Pillow : deja installee par le job lane.
+#
+# Fidelite aux boucles d'origine : les fichiers SUPPRIMES par la PR sont
+# sautes (`[ -f "$nb" ] || continue` dans l'original) -- le moteur filtre
+# les arg_paths inexistants.
+# ---------------------------------------------------------------------------
+TRANCHE2: list[Guard] = [
+    # Forme 1 : ratchet autonome binaire (exit 0/1), PRE-CONTROLE self-test
+    # (les deux steps du workflow d'origine, sans shell).
+    # Source : notebook-output-failure-ratchet.yml (job `ratchet`).
+    Guard(
+        name="Output-failure ratchet (base vs PR)",
+        source="notebook-output-failure-ratchet.yml",
+        paths=[
+            "**.ipynb",
+            "scripts/notebook_tools/check_output_failure_text.py",
+            ".github/workflows/notebook-output-failure-ratchet.yml",
+        ],
+        pre_argv=[
+            "python", "scripts/notebook_tools/check_output_failure_text.py",
+            "--self-test",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/check_output_failure_text.py",
+            "{base_ref}",
+        ],
+        blocking=True,
+        needs_base=True,
+        absorbed=True,
+    ),
+    # Forme 2 : iter par notebook change, rc=1 defaut / rc=2 illisible.
+    # Source : fabricated-output-gate.yml (job `fabricated-output`).
+    Guard(
+        name="No fabricated text output in changed notebooks",
+        source="fabricated-output-gate.yml",
+        paths=[
+            "MyIA.AI.Notebooks/**/*.ipynb",
+            "scripts/notebook_tools/detect_fabricated_outputs.py",
+            ".github/workflows/fabricated-output-gate.yml",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/detect_fabricated_outputs.py",
+            "--check", "{changed_paths}",
+        ],
+        blocking=True,
+        iterates_paths=True,
+        absorbed=True,
+        warn_rc=(2,),
+    ),
+    # Forme 3 : iter par notebook change + Pillow (deja dans le job lane).
+    # Source : degenerate-figure-gate.yml (job `degenerate-figure`).
+    Guard(
+        name="No degenerate figure in changed notebooks",
+        source="degenerate-figure-gate.yml",
+        paths=[
+            "MyIA.AI.Notebooks/**/*.ipynb",
+            "scripts/notebook_tools/detect_blank_figures.py",
+            ".github/workflows/degenerate-figure-gate.yml",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/detect_blank_figures.py",
+            "--check", "{changed_paths}",
+        ],
+        blocking=True,
+        iterates_paths=True,
+        absorbed=True,
+        warn_rc=(2,),
+    ),
+]
+
+
+# ---------------------------------------------------------------------------
+# TRANCHE 3 d'absorption (#13097, remede A) -- premier garde de la vague
+# « metadata guards » pointee par la mesure de famine CI : sur les 9 gardes
+# sans filtre `paths:` qui pesent ~50 % du volume `pull_request`, celui-ci
+# est le seul dont le verdict est UNE invocation python a sortie de processus
+# proche, sans ecriture PR (label/commentaire) ni bypass verdict-relevant :
+#
+#   - regression_scan.py sort 0 (propre) / 1 (sain->degrade) / 2 (import
+#     casse) ; le workflow d'origine capture le rc, publie une annotation
+#     ::warning ou ::notice, puis SORT TOUJOURS 0 -- le check-run d'origine
+#     est donc vert en toute circonstance (ADVISORY, user 2026-06-20). Ici :
+#     blocking=False rend neutral sur rc=1 -- le signal devient visible dans
+#     le titre du check-run (« signale (advisory) ») au lieu d'etre enterre
+#     dans les logs d'un check vert, et `pr_gate` compte neutral comme OK
+#     (CONCLUSION_OK), donc le caractere jamais-bloquant est preserve.
+#     rc=2 (import casse) est mappe succes par warn_rc, comme l'original
+#     qui ne le distinguait pas non plus d'un passage.
+#   - Les bypass d'origine (auteur bot, label `regression-accepted`) ne
+#     changent PAS le verdict (le workflow sortait deja 0 apres bypass) :
+#     les omettre ne durcit rien. Les PR du bot catalogue ne touchent pas
+#     de notebooks, donc le filtre paths les laisse dehors de toute facon.
+#   - Les autres 8 gardes de la liste #13097 restent hors lane pour
+#     l'instant : les label-writers (stale-base, base-not-main,
+#     variation-light-genre, variation-tag) exigeraient `pull-requests:
+#     write` sur le job partage (escalade de permissions = decision
+#     design coordinateur), et les multi-steps (translation-guard avec
+#     override dual-key #10332, lane-claim-guard avec bypass
+#     verdict-relevant bot/fork, secret-scan avec positive-controls)
+#     exigent une extension du moteur (ctx PR author/body, pre-steps) --
+#     tranches suivantes, une par vague, apres arbitrage.
+# ---------------------------------------------------------------------------
+TRANCHE3: list[Guard] = [
+    # ADVISORY report-only (axe-2 output-health) : neutral sur
+    # sain->degrade, jamais bloquant. Source : regression-guard.yml
+    # (job `guard`, check-run « No notebook health regression »).
+    Guard(
+        name="No notebook health regression",
+        source="regression-guard.yml",
+        paths=[
+            "MyIA.AI.Notebooks/**/*.ipynb",
+            "scripts/notebook_tools/regression_scan.py",
+            "scripts/notebook_tools/regression_allowlist.json",
+            "scripts/notebook_tools/diagnose_broken.py",
+            "scripts/notebook_tools/forensic_scan.py",
+            ".github/workflows/regression-guard.yml",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/regression_scan.py",
+            "--guard", "--base", "{base_ref}", "--head", "HEAD",
+            "--paths", "{changed_paths}",
+        ],
+        blocking=False,
+        needs_base=True,
+        iterates_paths=True,
+        absorbed=True,
+        warn_rc=(2,),
+    ),
+]
+
+# TRANCHE 4 d'absorption (#12396) -- meme contrat que les tranches 1/2 (nom
+# canonique, conclusion reelle, workflow source retire de pull_request),
+# avec la nouveaute demandee par l'issue : un CONTROLE POSITIF d'identite
+# byte-a-byte (scripts/ci/check_absorbed_check_run_identity.py + tests) qui
+# cimente `guard.name` == nom de check-run rendu par le workflow source --
+# la contrainte #12175 que les tranches 1/2/3 n'ont jamais verifiee.
+#
+# Forme moteur : iter_paths + warn_rc, IDENTIQUE a la forme 3 de la tranche 2
+# (degenerate-figure) -- pour le gate markdown en plus : `needs_base` (son
+# argv porte `--base {base_ref}`) et le nouveau flag `fail_on_all_warn`.
+#
+# Contenu de la tranche :
+#   - le NOYAU du grain #12396 : md-content-loss-gate.yml (le gate markdown
+#     "petite taille" a verdict check-run qui tournait encore dedie). Sa
+#     clause anti-auto-desarmement AGREGEE (#8655/#8656 : "tous les
+#     notebooks lus sont illisibles -> exit 1") est portee par le flag
+#     `fail_on_all_warn` -- sans lui, `warn_rc` lisserait la panne en succes
+#     et absorber muterait la propriete.
+#   - les 4 gates SVG de la serie #6959/#6971/#7008 (#12384) : derniers
+#     petits gates d'ABSENCE a verdict check-run en workflow dedie, meme
+#     squelette (boucle par notebook change, rc=1 defaut / rc=2 illisible,
+#     aucun besoin d'ecriture PR).
+#
+# Exclusion documentee (cf #13097 pour la tranche 3) :
+#   - markdown-claims-output-advisory.yml / scan-md-hierarchy-drift.yml :
+#     verdict = COMMENTAIRE PR, pas check-run -> exigent `pull-requests:
+#     write`, refuse par le registre.
+# ---------------------------------------------------------------------------
+TRANCHE4: list[Guard] = [
+    Guard(
+        name="No SVG broken-geometry (negative-dim) defect in changed notebooks",
+        source="svg-broken-geometry-gate.yml",
+        paths=[
+            "MyIA.AI.Notebooks/**/*.ipynb",
+            "scripts/notebook_tools/detect_svg_broken_geometry.py",
+            ".github/workflows/svg-broken-geometry-gate.yml",
+        ],
+        iterate_paths=["MyIA.AI.Notebooks/**/*.ipynb"],
+        argv=[
+            "python", "scripts/notebook_tools/detect_svg_broken_geometry.py",
+            "{changed_paths}", "--check",
+        ],
+        blocking=True,
+        iterates_paths=True,
+        absorbed=True,
+        warn_rc=(2,),
+    ),
+    Guard(
+        name="No SVG decimal-comma defect in changed notebooks",
+        source="svg-decimal-comma-gate.yml",
+        paths=[
+            "MyIA.AI.Notebooks/**/*.ipynb",
+            "scripts/notebook_tools/detect_svg_decimal_commas.py",
+            ".github/workflows/svg-decimal-comma-gate.yml",
+        ],
+        iterate_paths=["MyIA.AI.Notebooks/**/*.ipynb"],
+        argv=[
+            "python", "scripts/notebook_tools/detect_svg_decimal_commas.py",
+            "{changed_paths}", "--check",
+        ],
+        blocking=True,
+        iterates_paths=True,
+        absorbed=True,
+        warn_rc=(2,),
+    ),
+    Guard(
+        name="No SVG empty-display defect in changed notebooks",
+        source="svg-empty-display-gate.yml",
+        paths=[
+            "MyIA.AI.Notebooks/**/*.ipynb",
+            "scripts/notebook_tools/detect_svg_empty_display.py",
+            ".github/workflows/svg-empty-display-gate.yml",
+        ],
+        iterate_paths=["MyIA.AI.Notebooks/**/*.ipynb"],
+        argv=[
+            "python", "scripts/notebook_tools/detect_svg_empty_display.py",
+            "{changed_paths}", "--check",
+        ],
+        blocking=True,
+        iterates_paths=True,
+        absorbed=True,
+        warn_rc=(2,),
+    ),
+    Guard(
+        name="No offscreen-flat SVG in changed notebooks",
+        source="svg-offscreen-flat-gate.yml",
+        paths=[
+            "MyIA.AI.Notebooks/**/*.ipynb",
+            "scripts/notebook_tools/detect_svg_offscreen_flat.py",
+            ".github/workflows/svg-offscreen-flat-gate.yml",
+        ],
+        iterate_paths=["MyIA.AI.Notebooks/**/*.ipynb"],
+        argv=[
+            "python", "scripts/notebook_tools/detect_svg_offscreen_flat.py",
+            "--check", "{changed_paths}",
+        ],
+        blocking=True,
+        iterates_paths=True,
+        absorbed=True,
+        warn_rc=(2,),
+    ),
+    # Noyau du grain #12396 : le gate MARKDOWN a verdict check-run. Compare
+    # chaque notebook change a sa base git (--base {base_ref}) ; rc=1 perte de
+    # contenu, rc=2 illisible. Anti-auto-desarmement AGREGE portee par
+    # `fail_on_all_warn` (cf commentaire du champ et clause #8655/#8656 du
+    # workflow d'origine) : un detecteur casse ou une ref git manquante ne
+    # doit pas produire un quitus vert par silence.
+    Guard(
+        name="No markdown content loss in changed notebooks",
+        source="md-content-loss-gate.yml",
+        paths=[
+            "MyIA.AI.Notebooks/**/*.ipynb",
+            "scripts/notebook_tools/detect_md_content_loss.py",
+            ".github/workflows/md-content-loss-gate.yml",
+        ],
+        iterate_paths=["MyIA.AI.Notebooks/**/*.ipynb"],
+        argv=[
+            "python", "scripts/notebook_tools/detect_md_content_loss.py",
+            "--base", "{base_ref}", "--check", "{changed_paths}",
+        ],
+        blocking=True,
+        needs_base=True,
+        iterates_paths=True,
+        absorbed=True,
+        warn_rc=(2,),
+        fail_on_all_warn=True,
     ),
 ]

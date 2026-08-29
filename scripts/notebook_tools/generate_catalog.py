@@ -103,7 +103,7 @@ def build_git_metadata() -> dict[str, dict]:
     try:
         result = subprocess.run(
             ["git", "log", "--name-only", "--format=COMMIT:%ai|%ae|%s"],
-            capture_output=True, text=True, cwd=str(REPO_ROOT), timeout=30,
+            capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=str(REPO_ROOT), timeout=30,
         )
         if result.returncode != 0:
             return {}
@@ -150,7 +150,7 @@ def get_head_sha() -> str:
     try:
         result = subprocess.run(
             ["git", "rev-parse", "--short", "HEAD"],
-            capture_output=True, text=True, cwd=str(REPO_ROOT), timeout=10,
+            capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=str(REPO_ROOT), timeout=10,
         )
         if result.returncode == 0:
             return result.stdout.strip()
@@ -941,7 +941,7 @@ def _load_main_catalog() -> dict[str, dict]:
     try:
         result = subprocess.run(
             ["git", "show", "origin/main:COURSE_CATALOG.generated.json"],
-            capture_output=True, text=True, cwd=str(REPO_ROOT), timeout=15,
+            capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=str(REPO_ROOT), timeout=15,
         )
         if result.returncode != 0:
             return {}

@@ -20,6 +20,8 @@ Avant de committer une sortie degradee, repondre **par ecrit (body PR)** par 1 d
 
 Le defaut paresseux (« ASCII art / reimplementation jouet / 'Java absent' / 'kernel not available locally' ») committe **sans avoir verifie RECOVERABLE-*** = manquement grave.
 
+**Flowcharts : Mermaid est le moteur canonique.** Une architecture pipeline, un flux de données ou un organigramme dessiné en ASCII se remplace par un bloc `mermaid` (`flowchart LR`/`TD`), après vérification sémantique humaine ; `scripts/notebook_tools/detect_ascii_flowchart.py` détecte les candidats mais n'auto-convertit jamais. Les tables et grilles ASCII légitimes sont hors scope et restent des tables.
+
 ### Procedure d'etablissement INTRINSIC — checklist 6 axes obligatoire (NEW c.8243, #10459)
 
 `INTRINSIC` declare une impossibilite : il justifie une substitution durable, invisible pour les auditeurs suivants. Donc **chaque verdict `INTRINSIC` doit repondre nominativement les 6 axes** suivants, par « non applicable, parce que… » ou « oui, mais testé, résultat : ... » :

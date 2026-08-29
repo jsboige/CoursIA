@@ -17,6 +17,7 @@ import shutil
 import stat
 import subprocess
 import sys
+import ntpath
 import tempfile
 import urllib.request
 import zipfile
@@ -29,6 +30,9 @@ EXIT_REFUSED = 1
 EXIT_BROKEN = 2
 PROFILE_PATH = Path(__file__).with_name("self_hosted_runner_profiles.json")
 REPO_ROOT = Path(__file__).resolve().parents[2]
+# Captured at import so tests can fake the Windows host without patching the
+# global os.name (which flips pathlib.Path dispatch and crashes on posix).
+IS_WINDOWS = os.name == "nt"
 REQUIRED_LABELS = {
     "self-hosted",
     "coursia-ephemeral",
@@ -115,6 +119,12 @@ def _is_within(child: Path, parent: Path) -> bool:
         return False
 
 
+def _within_windows(child: str, parent: str) -> bool:
+    child_norm = ntpath.normpath(child).rstrip("\\/").lower()
+    parent_norm = ntpath.normpath(parent).rstrip("\\/").lower()
+    return child_norm == parent_norm or child_norm.startswith(parent_norm + "\\")
+
+
 def _validate_profile(name: str, raw: Any) -> Profile:
     required = {
         "hostname", "repository", "runner_name", "account", "root", "work",
@@ -156,9 +166,13 @@ def _validate_profile(name: str, raw: Any) -> Profile:
     root = _canonical_absolute(raw["root"], "root")
     work = _canonical_absolute(raw["work"], "work")
     log_root = _canonical_absolute(raw["log_root"], "log_root")
-    if not _is_within(work, root):
+    if not _within_windows(str(work), str(root)):
         raise Refused(f"profile {name!r} work directory must be below its runner root")
-    if _is_within(root, REPO_ROOT) or _is_within(REPO_ROOT, root):
+    if _within_windows(str(root), str(REPO_ROOT)):
+        raise Refused(f"profile {name!r} runner root must be outside the repository")
+    # Le checkout du runner lui-meme vit par construction sous <root>/_work :
+    # la clause REPO_ROOT-sous-root ne doit refuser que HORS de la zone work (#13238).
+    if _within_windows(str(REPO_ROOT), str(root)) and not _within_windows(str(REPO_ROOT), str(work)):
         raise Refused(f"profile {name!r} runner root must be outside the repository")
     sensitive = raw["sensitive_paths"]
     if (
@@ -425,7 +439,7 @@ def _sensitive_paths(profile: Profile) -> tuple[tuple[Path, Path], ...]:
             probe = Path(probe_template.format(**values))
         except KeyError as exc:
             raise Broken(f"unknown sensitive path template key: {exc}") from exc
-        if not _is_within(probe, deny) and probe != deny:
+        if not _within_windows(str(probe), str(deny)) and probe != deny:
             raise Refused("sensitive probe must be the denied path or one of its children")
         result.append((deny, probe))
     return tuple(result)
@@ -503,7 +517,7 @@ def _default_download(url: str, target: Path) -> None:
 
 
 def apply_install(profile: Profile, run: CommandRunner = subprocess.run, download: Downloader = _default_download) -> None:
-    if os.name != "nt":
+    if not IS_WINDOWS:
         raise Refused("install --apply is supported only on Windows")
     password = os.environ.get(ACCOUNT_PASSWORD_ENV)
     if not password:
@@ -599,7 +613,16 @@ $c = ConvertFrom-Json @'
 '@
 $results = @()
 foreach ($path in $c.sensitive) {{
-  try {{ Get-Content -LiteralPath $path -TotalCount 1 -ErrorAction Stop | Out-Null; $status = 'READABLE' }}
+  try {{
+    $item = Get-Item -LiteralPath $path -Force -ErrorAction Stop
+    if ($item.PSIsContainer) {{
+      # Directory probe: enumeration of the directory itself must be denied.
+      $null = @(Get-ChildItem -LiteralPath $path -Force -ErrorAction Stop)
+    }} else {{
+      Get-Content -LiteralPath $path -TotalCount 1 -ErrorAction Stop | Out-Null
+    }}
+    $status = 'READABLE'
+  }}
   catch [System.UnauthorizedAccessException] {{ $status = 'ACCESS_DENIED' }}
   catch {{ $status = 'OTHER_ERROR' }}
   $results += $status

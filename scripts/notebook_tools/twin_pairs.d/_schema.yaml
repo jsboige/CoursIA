@@ -76,6 +76,21 @@
 # manuelle. Validation fail-loud : une valeur hors enum fait sortir le check en
 # code 2 (jamais ignoree silencieusement).
 #
+# numbering_exception (OPTIONNEL, #12933) : echappatoire au verdict NUMBERING-DRIFT.
+# Principe de l'EPIC : « parite des identifiants, liberte des contenus » — deux
+# jumeaux declares d'une meme paire partagent leur NUMERO DE BASE (App-N / SW-N ;
+# le suffixe lettre minuscule type App-10b designe un compagnon legitime et n'est
+# pas une derive). Le verdict NUMBERING-DRIFT (check_twin_parity.py) rouge toute
+# paire dont les numeros divergent (renommage unilateral d'un seul cote, classe
+# #5361). QUAND une divergence est JUSTIFIEE au cas par cas (historique de
+# publication different, numero deja pris par un compagnon, etc.), on la documente :
+#   numbering_exception: "<raison courte, avec date de decision>"
+# Le champ DOIT etre une raison textuelle NON VIDE (pattern bridge_verdict_reason
+# #10439 : l'echappatoire sans le raisonnement ne vaut rien ; un booleen/vide est
+# refuse par la validation fail-loud). Une paire portant une exception valide
+# affiche son detail « Numerotation divergente documentee » et reste OK.
+#
+#
 # PILOTE (po-2024, 2026-07-23) : famille SMT/Z3-API (6 paires, NB-01..06).
 # Familles suivantes peuplees dans des PRs ulterieurs : Search/Part1-Part2 (c.802/#8079, 7 paires)
 # + ML.NET/Python (c.803, 8 paires ; ML-6 ONNX exclu = format d'echange, SKIP per #4956 CLOSED)
