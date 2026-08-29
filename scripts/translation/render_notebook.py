@@ -135,6 +135,8 @@ def render(
     dry_run: bool = False,
     verbose: bool = False,
     require_translated: bool = False,
+    min_coverage: Optional[float] = None,
+    strict_orphans: bool = False,
 ) -> RenderResult:
     """Render the notebook at ``nb_path`` to ``out_path`` in language ``lang``.
 
@@ -147,6 +149,27 @@ def render(
     preserved bit-for-bit : ``nbformat``, ``metadata`` (sans
     ``metadata.papermill``), cell order, ``cell_id``, and code cells' ``source``
     + ``outputs`` + ``execution_count``.
+
+    Guardrails (issue #13544) :
+
+    * ``require_translated=True`` refuses a render with 0 translated cells
+      (FR-clone guard, #10349). Always off by default to preserve the
+      re-render idempotent contract.
+    * ``min_coverage=<float>`` (0.0-1.0) refuses when the fraction of
+      translated markdown cells is below the threshold. ``None`` (default)
+      disables the check. A notebook with 0 markdown cells is treated as
+      full coverage (1.0) — the gate has nothing to enforce.
+    * ``strict_orphans=True`` refuses when the CSV carries any ``cell_id``
+      that does not exist in the source notebook. Such an orphan signals
+      a source desynchronisation (the CSV row references a cell the notebook
+      no longer has) and should never silently produce a render. ``False``
+      (default) preserves the existing contract : orphans are listed in the
+      ``.stale`` sidecar and the render is written.
+
+    Both gates sit BEFORE the atomic write so no partial / clone file
+    reaches disk. They are opt-in (off by default) to preserve backward
+    compatibility for callers that relied on the existing permissive
+    behaviour. Issue #13544 §3 : the gates are structural, not advisory.
     """
     if not nb_path.exists():
         raise FileNotFoundError(f"Notebook introuvable : {nb_path}")
@@ -236,6 +259,43 @@ def render(
             f"Refus d'ecrire un clone FR verbatim."
         )
 
+    # Gate #13544 §3 — coverage threshold (opt-in, ``min_coverage`` is None by default).
+    # coverage = n_translated / n_md_cells when n_md_cells > 0 else 1.0
+    # (a notebook without markdown cells has no defect to enforce).
+    if min_coverage is not None:
+        if not 0.0 <= min_coverage <= 1.0:
+            raise ValueError(
+                f"--min-coverage doit etre dans [0.0, 1.0], "
+                f"recu : {min_coverage!r}"
+            )
+        if stats.n_md_cells > 0:
+            coverage = stats.n_translated / stats.n_md_cells
+        else:
+            coverage = 1.0
+        if coverage < min_coverage:
+            raise ValueError(
+                f"--min-coverage {min_coverage:.2f} non atteint : "
+                f"couverture = {coverage:.2%} "
+                f"({stats.n_translated}/{stats.n_md_cells}, "
+                f"lang={lang}, {csv_path.name}). "
+                f"Refus d'ecrire un livrable sous le seuil declare."
+            )
+
+    # Gate #13544 §3 — strict orphans (opt-in, default False preserves .stale contract).
+    # An orphan = CSV row whose cell_id is absent from the source notebook. This
+    # signals a CSV / notebook desynchronisation : the CSV carries prose for a
+    # cell the notebook no longer has. Such an artefact would be silently written
+    # alongside an incomplete render, contaminating downstream parity checks.
+    if strict_orphans and stats.n_orphan_keys > 0:
+        sample = ", ".join(orphan_keys[:5])
+        raise ValueError(
+            f"--strict-orphans : {stats.n_orphan_keys} cle(s) CSV "
+            f"sans cellule correspondante dans le notebook "
+            f"(lang={lang}, {csv_path.name}). "
+            f"Premier(s) : [{sample}{'...' if len(orphan_keys) > 5 else ''}]. "
+            f"Refus d'ecrire un rendu avec un CSV desynchronise."
+        )
+
     if not dry_run and out_path is not None:
         out_path.parent.mkdir(parents=True, exist_ok=True)
         # Atomic write : write to a sibling .tmp then rename. This prevents
@@ -310,6 +370,19 @@ def main(argv: Optional[List[str]] = None) -> int:
              "(guardrail against FR-clone files, #10349). Default off: preserves "
              "the FR-placeholder re-render contract (#10039 criterion 3).",
     )
+    p.add_argument(
+        "--min-coverage", type=float, default=None,
+        help="Refuse a render whose translated markdown fraction is below the "
+             "threshold (0.0-1.0, #13544 §3). Default None : the check is off, "
+             "the existing permissive contract applies. When 0 markdown cells "
+             "are present the gate is bypassed (no defect to enforce).",
+    )
+    p.add_argument(
+        "--strict-orphans", action="store_true",
+        help="Refuse a render whose CSV carries orphan cell_ids absent from "
+             "the source notebook (#13544 §3). Default off : orphans are "
+             "still listed in the .stale sidecar but the render is written.",
+    )
     args = p.parse_args(argv)
 
     dry_run = args.dry_run or args.out is None
@@ -325,6 +398,8 @@ def main(argv: Optional[List[str]] = None) -> int:
             dry_run=dry_run,
             verbose=args.verbose,
             require_translated=args.require_translated,
+            min_coverage=args.min_coverage,
+            strict_orphans=args.strict_orphans,
         )
     except (FileNotFoundError, ValueError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
