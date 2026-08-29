@@ -908,9 +908,9 @@ The current plugins cover follow-up questions, severity, and medications. A cruc
 **Objective**: implement a class `AllergyPlugin` with a `check_allergy` method annotated with `@kernel_function` that returns a warning if the medication is incompatible with a known allergy.
 
 **Hints**:
-- # Step 1: Define a dictionary mapping allergies to contraindicated medications
-- # Step 2: Implement the `check_allergy` method with `Annotated` type annotations
-- # Hint: use the pattern of the existing plugins (DoctorPlugin, PharmacistPlugin)",,,,,,,5d6ca1a0150320dd,cb0bffab0bb3ff3e,,,,,,,
+- `# Step 1`: Define a dictionary mapping allergies to contraindicated medications
+- `# Step 2`: Implement the `check_allergy` method with `Annotated` type annotations
+- `# Hint`: use the pattern of the existing plugins (DoctorPlugin, PharmacistPlugin)",,,,,,,5d6ca1a0150320dd,d9adfe63854609e7,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,82094ec1,code,fr,b7e6599ca302d2e3,"class AllergyPlugin:
     """"""Plugin de verification des allergies medicamenteuses.""""""
     # TODO etudiant : implementer le plugin
@@ -986,9 +986,9 @@ The current prompts are configured for an adult. The objective is to adapt the s
 **Objective**: write the three system prompts adapted to the pediatric context.
 
 **Hints**:
-- # Step 1: Modify the doctor's prompt for language accessible to children
-- # Step 2: Adapt the medical AI prompt for pediatric dosages and signs
-- # Hint: add constraints such as ""always mention the recommended weight for dosage""",,,,,,,cc825d4d7e7b961d,2906243cc0527601,,,,,,,
+- `# Step 1`: Modify the doctor's prompt for language accessible to children
+- `# Step 2`: Adapt the medical AI prompt for pediatric dosages and signs
+- `# Hint`: add constraints such as ""always mention the recommended weight for dosage""",,,,,,,cc825d4d7e7b961d,19b6f45a87941807,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,41dedfea,code,fr,7f431eddf5f2de3e,"# Exercice 2 : Prompts adaptes au contexte pediatric
 # TODO etudiant : rediger les trois prompts pediatric
 
@@ -1054,9 +1054,9 @@ The current strategy stops after 6 messages. The objective is to implement a sma
 **Objective**: create `DiagnosticTerminationStrategy` that stops the conversation as soon as a diagnosis is issued or after a maximum of 8 exchanges.
 
 **Hints**:
-- # Step 1: Define a list of keywords indicative of a diagnosis
-- # Step 2: Check for their presence in the content of the last message
-- # Hint: combine the diagnosis condition with a maximum exchange counter",,,,,,,bd87b8571ae6e72c,11de8750db351abd,,,,,,,
+- `# Step 1`: Define a list of keywords indicative of a diagnosis
+- `# Step 2`: Check for their presence in the content of the last message
+- `# Hint`: combine the diagnosis condition with a maximum exchange counter",,,,,,,bd87b8571ae6e72c,f9971e3b7cc0edc7,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,ee8117ae,code,fr,29c05ae8855171de,"from typing import ClassVar
 
 class DiagnosticTerminationStrategy(TerminationStrategy):
