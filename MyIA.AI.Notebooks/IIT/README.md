@@ -17,7 +17,7 @@ Le premier notebook couvre le spectre fondamental : construction de graphes caus
 À l'issue de cette série, vous serez capable de :
 
 1. **Construire et manipuler des réseaux causaux** binaires avec PyPhi (TPM, nœuds, connexions)
-2. **Calculer Phi** pour un sous-système et interpréter sa valeur (intégration vs séparabilité)
+2. **Calculer Phi** pour un sous-système et interpréter sa valeur (intégration vs séparabilité), puis rechercher le **complexe majeur** (postulat d'exclusion : `major_complex` / `complexes`)
 3. **Analyser une Cause-Effect Structure (CES)** : identifier les concepts, mécanismes et purviews
 4. **Appliquer le partitionnement MIP** pour localiser le "maillon faible" d'un système
 5. **Différencier big Phi et small phi** et comprendre leur rôles respectifs dans la théorie
@@ -28,10 +28,10 @@ Le premier notebook couvre le spectre fondamental : construction de graphes caus
 
 | # | Notebook | Contenu | Durée |
 |---|----------|---------|-------|
-| 1 | [IIT-1-IntroToPyPhi](IIT-1-IntroToPyPhi.ipynb) | Réseau XOR 3-nœuds : TPM, calcul de Φ, CES, états inaccessibles, causation | 60-90 min |
+| 1 | [IIT-1-IntroToPyPhi](IIT-1-IntroToPyPhi.ipynb) | Réseau XOR 3-nœuds : TPM, calcul de Φ, CES, états inaccessibles, causation, complexe majeur | 60-90 min |
 | 2 | [IIT-2-AdvancedTopics](IIT-2-AdvancedTopics.ipynb) | MIP et bipartitions, répertoires cause-effet, MICE, big Φ sur réseau 4-nœuds, coarse-graining | 60-90 min |
 | 3 | [IIT-3-CoarseGrainingMacroPhi](IIT-3-CoarseGrainingMacroPhi.ipynb) | Module `pyphi.macro` : information efficace (Hoel), énumération des regroupements, comparaison Φ micro/macro, causal emergence | 45-60 min |
-| 4 | [IIT-4-Le-Probleme-de-Frontiere](IIT-4-Le-Probleme-de-Frontiere.ipynb) | Le problème de frontière : faire varier le découpage du même substrat, maximiseur de Φ, double dissociation Φ vs EI | 45-60 min |
+| 4 | [IIT-4-Le-Probleme-de-Frontiere](IIT-4-Le-Probleme-de-Frontiere.ipynb) | Le problème de frontière : faire varier le découpage du même substrat, maximiseur de Φ, complexe majeur (`major_complex`), double dissociation Φ vs EI | 45-60 min |
 
 ## Parcours recommandés
 
@@ -54,7 +54,7 @@ Notebook 4 (Le problème de frontière)
 | Maîtrise complète | Notebook 1 puis 2, puis 3, puis 4 |
 | Focus philosophie | Notebook 1 (sections CES + débats) + Notebook 2 (section IIT 4.0) |
 | Focus emergence & échelle | Notebook 1 + Notebook 3 (causal emergence de Hoel) |
-| Focus frontières & dissociation | Notebook 1 + Notebook 4 (Φ vs EI selon le découpage) |
+| Focus frontières & dissociation | Notebook 1 + Notebook 4 (Φ vs EI selon le découpage, complexe majeur) |
 
 ### Parcours d'apprentissage
 
@@ -72,7 +72,7 @@ Le troisième notebook opérationnalise le module `pyphi.macro` resté conceptue
 
 **Phase 4 : Le problème de frontière (~60 min, notebook 4)**
 
-Le quatrième notebook pose la question d'avant toute analyse de recollement : qui décide où sont les bords ? Sur un substrat inchangé (deux paires d'échange), vous énumérez les 11 frontières candidates et mesurez $\Phi$ et l'EI induit pour chacune — découpages **calculés**, jamais discutés. Le résultat est une **double dissociation** mesurée : $\Phi$ privilégie les frontières transversales (ex æquo, la mesure ne tranche pas), l'EI induit privilégie le tout, et les favorites de $\Phi$ coupent une dépendance — hors du domaine même de l'EI. Le *boundary problem* (Gómez Emilsson, cité comme proposition) devient un objet de mesure. Les 3 exercices refont la démarche sur votre propre substrat, jusqu'au verdict explicite.
+Le quatrième notebook pose la question d'avant toute analyse de recollement : qui décide où sont les bords ? Sur un substrat inchangé (deux paires d'échange), vous énumérez les 11 frontières candidates et mesurez $\Phi$ et l'EI induit pour chacune — découpages **calculés**, jamais discutés. Le résultat est une **double dissociation** mesurée : $\Phi$ privilégie les frontières transversales (ex æquo, la mesure ne tranche pas), l'EI induit privilégie le tout, et les favorites de $\Phi$ coupent une dépendance — hors du domaine même de l'EI. Le § 4bis ajoute le verdict du moteur : `pyphi.compute.major_complex` tranche l'ex æquo (BD, $\Phi = 1$) pendant que $\Phi(ABCD) = 0$ écarte le tout — le postulat d'exclusion opérationnalisé, arbitrage d'énumération à l'appui. Le *boundary problem* (Gómez Emilsson, cité comme proposition) devient un objet de mesure. Les 4 exercices refont la démarche sur votre propre substrat, jusqu'au verdict explicite et à la vérification du complexe majeur.
 
 ## Prérequis
 
@@ -162,6 +162,7 @@ flowchart TD
 | Réseaux | Réseau XOR 3-nœuds de référence, inspection des `node_labels` |
 | TPM | Conversion *state-by-node*, dimensions de la matrice de transition |
 | Sous-systèmes & Φ | Calcul de Φ d'un sous-système à un état donné, boucle sur plusieurs états |
+| Complexe majeur | `major_complex` / `complexes` sur le réseau XOR : la recherche de frontière intégrée (postulat d'exclusion) |
 | États inaccessibles | Validation via `StateUnreachableError`, option `VALIDATE_SUBSYSTEM_STATES` |
 | CES | `pyphi.compute.ces`, décompte des concepts d'un sous-système |
 | Causation actuelle | Liens causaux d'une transition (`account`), mécanisme d'un concept |
@@ -199,6 +200,7 @@ flowchart TD
 | Énumération | 11 frontières candidates (≥ 2 nœuds) — le découpage comme choix explicite |
 | Table centrale | Φ et EI induit calculés pour les 11 frontières du même substrat |
 | Maximiseur | Extraction de argmax — l'ex æquo AC/BD est un résultat (la mesure ne tranche pas) |
+| Complexe majeur | `major_complex` rend BD (Φ = 1) ; Φ(ABCD) = 0 écarte le tout — l'ex æquo est départagé par l'ordre d'énumération du moteur, pas par la théorie |
 | Double dissociation | Φ privilégie les frontières transversales, EI le tout — et les favorites de Φ sont hors du domaine de l'EI (frontières coupantes) |
 | Boundary problem | Gómez Emilsson cité comme proposition, jamais comme réponse établie |
 
@@ -441,7 +443,7 @@ Voir la licence du repository principal.
 
 <!-- CATALOG-STATUS
 series: IIT
-pedagogical_count: 58
-breakdown: ICT-Series=55, root=3
-maturity: BETA=53, DRAFT=5
+pedagogical_count: 65
+breakdown: ICT-Series=60, root=5
+maturity: BETA=60, DRAFT=5
 -->

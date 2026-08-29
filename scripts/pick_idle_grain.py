@@ -12,8 +12,44 @@ ouvrir. Le picker defait la troncature par construction (`--limit 300`, une
 seule requete) et rend la selection *aleatoire ponderee* au lieu de
 *recente-d'abord*.
 
-Il **ne decide pas**. Il tire une poignee de candidats et laisse a l'agent le
-choix final selon les criteres de variete de sa lane courante (G-VAR-1/2/3).
+Il **ne decide pas** du grain. Il tire une poignee de candidats et laisse a
+l'agent le choix final selon les criteres de variete de sa lane (G-VAR-1/2/3).
+Il decide en revanche de ce qui est **admissible** -- voir ci-dessous.
+
+Classer ne suffisait pas : le garde d'admission (mandat user 2026-08-28)
+------------------------------------------------------------------------
+Mesure du 2026-08-29. Le tirage place deja **62 % de sa masse au-dela de 7
+jours** et sous-pondere les issues du jour a **0.39x** : son classement n'est
+pas le defaut. Pourtant, sur les 112 issues travaillees en 48 h, **70 avaient
+moins de 24 h** (63 %), la ou le tirage n'en voulait que 3.9 %. L'ecart de
+**16x** ne s'explique pas par le bruit : le travail n'arrivait pas par le
+tirage. Il arrivait par le **steering** du coordinateur et par l'auto-pick --
+deux chemins qu'aucune ponderation ne touche. Un poids se fait battre par la
+population et par le steer ; seul un **refus** s'applique quel que soit le
+chemin de selection.
+
+D'ou deux causes d'inadmissibilite, verifiables par `--admissible <issue>` et
+appliquees aussi au tirage :
+
+- **dwell** -- une issue de moins de `--dwell-hours` (24 h) n'est pas encore
+  consommable. C'est la reponse directe a "les issues auraient du attendre au
+  lieu d'etre immediatement prises en charge" : un audit qui ouvre quinze
+  issues le matin ne doit pas mobiliser la flotte l'apres-midi. Les etiquettes
+  d'urgence (`urgent`, `security`, `regression`, `hotfix`...) court-circuitent
+  le delai -- le garde vise l'emballement, pas les correctifs.
+- **zone sans remede** -- un grain d'EXPANSION dans une zone qui a recu >= 3
+  notebooks neufs sur la fenetre **et dont le vivier ouvert ne contient aucun
+  grain de consolidation** est refuse. C'est "il ne faut pas se taper le
+  produit cartesien MGS x PythonNet x Mealpy" rendu mecanique.
+
+Le second veto porte sur `con == 0`, **pas** sur la parite stricte
+`con >= exp`, bien que le mandat dise "autant ... que" : la parite se mesure
+sur le vivier OUVERT, et *consommer* un grain de consolidation le ferme -- donc
+le retire du vivier et degrade le ratio. Un veto sur la parite punirait la zone
+precisement quand elle vient de faire ce qu'on lui demandait. La parite reste
+**mesuree et affichee** (verdict `DESEQUILIBRE` / `SANS REMEDE`) parce qu'elle
+vise la **redaction des EPICs** : c'est au coordinateur d'y repondre en ouvrant
+des grains de consolidation, pas au worker d'y buter.
 
 Regime : voie normale, pas filet de secours (mandat user 2026-08-20)
 --------------------------------------------------------------------
@@ -74,7 +110,7 @@ Usage
     python scripts/pick_idle_grain.py --lane myia-po-2026:CoursIA
     python scripts/pick_idle_grain.py --lane myia-po-2023:CoursIA-2 --prev-genre guard
     python scripts/pick_idle_grain.py --lane <l> --reroll 1        # nouveau tirage
-    python scripts/pick_idle_grain.py --lane <l> --check-claims    # + verif claims
+    python scripts/pick_idle_grain.py --lane <l> --no-check-claims # sans verif claims
     python scripts/pick_idle_grain.py --lane <l> --json            # sortie machine
     python scripts/pick_idle_grain.py --lane <l> --ignore-red      # rouge non reparable
                                                                    # par cette lane, ECRIT sur la PR
@@ -99,6 +135,22 @@ import subprocess
 import sys
 
 REPO = "jsboige/CoursIA"
+
+# Saturation par zone d atterrissage (#13420) : l axe partition-proof que
+# le compteur par issue ne peut pas porter. Voir scripts/series_saturation.py
+# pour le diagnostic complet (EPIC decoupe en 9 filles = 9 veines invisibles).
+from series_saturation import (  # noqa: E402
+    CONSOLIDATION,
+    EXPANSION,
+    NEUTRAL,
+    SERIES_SCALE_DEFAULT,
+    cited_issues,
+    fetch_series_visits,
+    zone_balance,
+    parent_issue,
+    polarity,
+    resolve_family,
+)
 
 # Lecteur PARTAGE du tag `Grain:` (#9485). C'est la SEULE ancre qui rattache
 # une PR a une lane : mesure du 2026-08-22 sur les 55 PRs ouvertes -- 50 sont
@@ -157,31 +209,13 @@ GENRE_RULES: list[tuple[str, str]] = [
 #
 # Mesure du 2026-08-23 sur 10 issues (verite = `gh pr list --search "N
 # in:title,body"` restreint a la fenetre) : le premier-`#N` rappelle 59 %, le
-# schema ci-dessous 76 %. Cas d'ecole : #12591 s'intitule `fix(notebooks,#11947)`
+# schema d'attribution 76 %. Cas d'ecole : #12591 s'intitule `fix(notebooks,#11947)`
 # et porte `See #11947`, mais son premier `#N` de corps est #11949 (la tranche
 # soeur) -- la veine y est juste pour le cap, et fausse pour l'affluence.
-_REF_RE = re.compile(r"#(\d{4,6})\b")
-_PREV_RE = re.compile(r"prev:\s*[^\n]*?#(\d{4,6})\b")
-# Verbes de rattachement de ce depot (`Closes/See/Part of` -- catalog-pr-hygiene)
-# plus les tournures maison. `See #N` porte l'essentiel du travail d'ombrelle :
-# la convention reserve `Closes` a la resolution complete.
-_DECL_RE = re.compile(
-    r"(?:closes|fixes|resolves|see|refs?|part of|voir|ombrelle|epic)"
-    r"\s+#(\d{4,6})\b",
-    re.I)
-
-
-def cited_issues(pr: dict) -> set[int]:
-    """Issues qu'une PR DECLARE servir : refs du titre + clauses de rattachement.
-
-    La clause `prev:` du tag `Grain:` est masquee -- elle documente le grain
-    PRECEDENT de la lane (adjacence G-VAR-3), jamais le sujet de la PR. Sans ce
-    masque, chaque PR voterait pour le sujet de la precedente.
-    """
-    body = _PREV_RE.sub("prev: <adjacence>", pr.get("body") or "")
-    found = {int(m.group(1)) for m in _DECL_RE.finditer(body)}
-    found |= {int(m.group(1)) for m in _REF_RE.finditer(pr.get("title") or "")}
-    return found - {pr.get("number")}
+#
+# `cited_issues` vit dans series_saturation.py (source unique depuis #13435 :
+# declaration de travail vs renvoi de contexte -- un `voir #N` en prose
+# n'amortit plus l'issue citee dans le compteur de visites).
 
 
 NOW = dt.datetime.now(dt.timezone.utc)
@@ -204,7 +238,7 @@ def fetch_pool() -> list[dict]:
     """Une seule requete, limite haute -- c'est ce qui defait la troncature."""
     out = subprocess.run(
         ["gh", "issue", "list", "--repo", REPO, "--state", "open", "--limit", "300",
-         "--json", "number,title,labels,createdAt,updatedAt"],
+         "--json", "number,title,labels,body,createdAt,updatedAt"],
         capture_output=True, text=True, encoding="utf-8", check=True,
     ).stdout
     raw = json.loads(out)
@@ -217,10 +251,14 @@ def fetch_pool() -> list[dict]:
             "number": it["number"],
             "title": title,
             "labels": labels,
+            "created_at": it["createdAt"],
             "age": age_days(it["createdAt"]),
             "idle": age_days(it["updatedAt"]),
             "updated_at": it["updatedAt"],
             "genre": infer_genre(title, labels),
+            "body": it.get("body") or "",
+            "parent": parent_issue(it.get("body") or ""),
+            "polarity": polarity(title, it.get("body") or ""),
             "klass": (
                 "delivered" if "candidate-delivered" in labels
                 else "umbrella" if is_umbrella
@@ -285,8 +323,111 @@ def fetch_visits(days: int = VISITS_WINDOW_DAYS) -> tuple[dict[int, int], str | 
 
 
 
+# --- Admission : le tirage CLASSE, ce garde ADMET -------------------------
+# Mesure du 2026-08-29 qui fonde ce garde. Le tirage place deja 62 % de sa
+# masse au-dela de 7 jours et sous-pondere les issues du jour a 0.39x -- son
+# classement n'est PAS le defaut. Mais sur 112 issues travaillees en 48 h,
+# 70 avaient moins de 24 h (63 %), la ou le tirage n'en voulait que 3.9 % :
+# un ecart de 16x, que le bruit d'echantillonnage n'explique pas. Le travail
+# n'arrive donc pas par le tirage -- il arrive par le steering et l'auto-pick,
+# deux chemins qu'aucune ponderation ne touche.
+#
+# D'ou la forme : un GARDE, pas un poids. Un poids se fait battre par la
+# population et par le steer ; un refus s'applique quel que soit le chemin de
+# selection. C'est ce que "revois completement l'organe de pick" demandait --
+# pas de mieux classer, mais de cesser d'etre un simple conseil de classement.
+DWELL_HOURS_DEFAULT = 24.0
+
+# Une issue portant l'une de ces etiquettes se consomme sans delai : le
+# dwell existe pour empecher l'emballement d'audit, pas pour retarder un
+# correctif de securite ou une regression qui casse main.
+#
+# Les synonymes FR sont la par PROSPECTIVE, pas par constat : mesure du
+# 2026-08-29, `gh label list` ne rend qu'UNE etiquette de cette famille sur
+# le depot (`security`) -- aucune etiquette FR d'urgence n'existe
+# aujourd'hui. Le concern (review NanoClaw sur #13466) porte donc sur le
+# jour ou quelqu'un en creera une : sur un depot dont les issues sont
+# redigees en francais, `urgence` ou `securite` est la forme qu'on ecrira
+# spontanement, et le bypass echouerait alors en SILENCE -- une issue
+# vraiment urgente retenue 24 h par un garde cense l'exempter. Le cout de
+# la prevention est une ligne ; celui de la detection serait un incident.
+URGENT_LABELS = {"urgent", "blocker", "security", "regression", "p0",
+                 "critical", "hotfix",
+                 # variantes FR (accentuees et nues : les etiquettes
+                 # GitHub acceptent les deux graphies)
+                 "urgence", "bloquant", "securite", "sécurité",
+                 "regression-fr", "régression", "critique"}
+
+# Une zone qui a recu ce nombre de notebooks NEUFS sur la fenetre est saturee.
+ZONE_SATURATION_MIN = 3
+
+
+def _hours_old(created: str) -> float:
+    born = dt.datetime.fromisoformat(created.replace("Z", "+00:00"))
+    return max(0.0, (NOW - born).total_seconds() / 3600.0)
+
+
+def admissibility(item: dict, balance: dict | None,
+                  issue_to_family: dict[int, str] | None,
+                  dwell_hours: float = DWELL_HOURS_DEFAULT) -> str | None:
+    """None = admissible. Sinon la CAUSE du refus, redigee pour etre citee.
+
+    Deux causes, et une seule est un veto dur sur la parite -- voir plus bas
+    pourquoi la parite stricte n'en est pas un.
+    """
+    labels_lc = {str(x).lower() for x in item.get("labels", [])}
+    if not (labels_lc & URGENT_LABELS):
+        h = _hours_old(item.get("created_at") or NOW.isoformat())
+        if h < dwell_hours:
+            return ("DWELL : creee il y a {:.0f} h, seuil {:.0f} h. "
+                    "Une issue d'audit ouverte ce matin n'a pas encore ete "
+                    "confrontee au reste du pool -- c'est ce delai qui "
+                    "distingue depiler d'emballer.".format(h, dwell_hours))
+
+    fam = resolve_family(item, issue_to_family or {},
+                         tuple((balance or {}).keys()))
+    if fam and item.get("polarity") == EXPANSION:
+        z = (balance or {}).get(fam) or {}
+        nb = z.get("new_notebooks", 0)
+        con = z.get(CONSOLIDATION, 0)
+        if nb >= ZONE_SATURATION_MIN and con == 0:
+            msg = ("ZONE SANS REMEDE : {} a recu {} notebooks neufs sur la "
+                   "fenetre et le vivier ouvert ne contient AUCUN grain de "
+                   "consolidation. Ce grain en ajoute un de plus. Ouvrir ou "
+                   "prendre un grain de consolidation de cette zone d'abord."
+                   .format(fam, nb))
+            # Ou le faux positif se cacherait, s'il y en a un : "aucun grain
+            # de consolidation" est une lecture du LEXIQUE de polarite, pas
+            # une lecture des intentions. Un grain NEUTRAL de la meme zone
+            # peut etre une consolidation que le lexique a manquee -- on les
+            # nomme pour que le refus soit refutable sur pieces, au lieu
+            # d'etre a croire sur parole.
+            neutres = (z.get("neutral_issues") or [])[:5]
+            if neutres:
+                msg += (" A verifier avant d'y croire : {} grain(s) NEUTRAL "
+                        "ouvert(s) dans cette zone ({}) -- si l'un d'eux est "
+                        "une consolidation que le lexique a manquee, le "
+                        "remede existe et ce refus est un faux positif."
+                        .format(z.get(NEUTRAL, 0),
+                                ", ".join("#" + str(n) for n in neutres)))
+            return msg
+    return None
+
+
+# Pourquoi le veto porte sur `con == 0` et non sur la parite stricte
+# `con >= exp`, alors que le mandat user dit bien "autant ... que" :
+# la parite stricte se mesure sur le vivier OUVERT, et consommer un grain de
+# consolidation le FERME -- donc le retire du vivier et degrade le ratio.
+# Un veto sur `con >= exp` punirait donc la zone precisement quand elle vient
+# de faire ce qu'on lui demandait. Le veto porte sur le cas non ambigu (aucun
+# remede n'existe) ; la parite graduelle reste MESUREE et affichee
+# (verdict DESEQUILIBRE), parce qu'elle vise la redaction des EPICs -- c'est
+# au coordinateur d'y repondre en ouvrant des grains, pas au worker d'y buter.
+
 def weight(item: dict, prev_genre: str | None,
-           visits: dict[int, int] | None = None) -> float:
+           visits: dict[int, int] | None = None,
+           series: dict[str, dict] | None = None,
+           issue_to_family: dict[int, str] | None = None) -> float:
     """Trois facteurs, tous doux, tous explicables en une ligne.
 
     Trop de ponderation reproduirait une monoculture avec des etapes en plus :
@@ -317,25 +458,57 @@ def weight(item: dict, prev_genre: str | None,
     if seen:
         w /= 1.0 + math.log2(1.0 + seen / VISITS_SCALE)
     item["visits"] = seen
+    # Saturation de ZONE : le facteur que le compteur par issue ne peut pas
+    # porter, parce qu il est defait par le partitionnement. Une fille NEUVE
+    # (age 0, idle 0, aucune visite) herite ici du poids de la zone que sa
+    # FRATRIE sature -- le cas exact des 9 paires de #12373. La remontee par
+    # `parent` est indispensable : sans elle l amortissement ne mord que sur
+    # les issues DEJA travaillees, donc jamais sur la prochaine instance.
+    fam = resolve_family(item, issue_to_family or {}, tuple(series or ()))
+    nb_new = 0
+    if fam:
+        nb_new = ((series or {}).get(fam) or {}).get("new_notebooks", 0)
+    if nb_new:
+        # La saturation pousse dans les DEUX sens. Une zone qui vient de
+        # recevoir cinq notebooks n'a pas besoin du sixieme -- elle a besoin
+        # d'etre consolidee. Amortir sans ce miroir ecrasait le remede avec
+        # le mal : mesure du 2026-08-28, #12607 (le tracker de consolidation
+        # de la zone saturee) tombait a 0.36x comme les paires qu'il devait
+        # solder.
+        factor = 1.0 + math.log2(1.0 + nb_new / SERIES_SCALE_DEFAULT)
+        if item.get("polarity") == CONSOLIDATION:
+            w *= factor
+        elif item.get("polarity") == EXPANSION:
+            w /= factor
+        else:
+            w /= 1.0 + (factor - 1.0) / 2.0
+    item["family"] = fam
+    item["family_new_notebooks"] = nb_new
     return w
 
 
 def draw(items: list[dict], n: int, rng: random.Random, prev_genre: str | None,
-         visits: dict[int, int] | None = None) -> list[dict]:
+         visits: dict[int, int] | None = None,
+         series: dict[str, dict] | None = None,
+         issue_to_family: dict[int, str] | None = None) -> list[dict]:
     """Tirage pondere sans remise (Efraimidis-Spirakis : cle = u^(1/w))."""
     if not items:
         return []
     keyed = []
     for it in items:
-        w = weight(it, prev_genre, visits)
+        w = weight(it, prev_genre, visits, series, issue_to_family)
         u = rng.random() or 1e-12
         keyed.append((u ** (1.0 / w), w, it))
     keyed.sort(key=lambda t: t[0], reverse=True)
     picked = []
     for _, w, it in keyed[:n]:
         it = dict(it)
+        it.pop("body", None)
         it["weight"] = round(w, 2)
         it.setdefault("visits", 0)
+        it.setdefault("family", None)
+        it.setdefault("family_new_notebooks", 0)
+        it.setdefault("polarity", "neutral")
         picked.append(it)
     return picked
 
@@ -395,6 +568,58 @@ def check_claims(numbers: list[int], lane: str) -> dict[int, str]:
     return verdicts
 
 
+def draw_unclaimed(by_class, args, rng, visits, series, issue_to_family):
+    """Tire, puis REMPLACE tout candidat qu une autre lane tient deja.
+
+    Deux raisons de remplacer plutot que d annoter :
+
+    1. Un candidat annote << BLOQUE par X >> reste un candidat. La lane le
+       lit, juge que son scope differe, et ecrit quand meme -- c est le
+       profil exact des quatre collisions mesurees. Le retirer de la liste
+       ne se discute pas ; un avertissement, si.
+    2. Retirer sans remplacer transformerait le garde en source d idle, ce
+       que la regle 4 de coordinator-discipline interdit. On retire ET on
+       retire un candidat de plus dans la meme urne.
+
+    Le cout est borne : N appels sur les tires (une poignee), jamais sur le
+    pool. C est pourquoi le check pouvait etre par defaut sans etre lent --
+    il etait opt-in par prudence de cout, sur une depense qui n existait pas.
+    """
+    urnes = (("grain", args.grains, args.prev_genre),
+             ("umbrella", args.umbrellas, args.prev_genre),
+             ("delivered", args.delivered, None))
+    picks, claims, conflicts = [], {}, []
+    for cls, want, prev in urnes:
+        pool = list(by_class[cls])
+        got = []
+        # Borne dure : au pire on epuise l urne. Pas de while nu.
+        for _ in range(len(pool) + 1):
+            if len(got) >= want or not pool:
+                break
+            cand = draw(pool, want - len(got), rng, prev, visits,
+                        series, issue_to_family)
+            if not cand:
+                break
+            nums = [c["number"] for c in cand]
+            verdicts = (check_claims(nums, args.lane)
+                        if args.check_claims and args.lane else {})
+            claims.update(verdicts)
+            drawn = {c["number"] for c in cand}
+            pool = [it for it in pool
+                    if it["number"] not in drawn]
+            for c in cand:
+                v = verdicts.get(c["number"], "")
+                if v.startswith("BLOQUE par"):
+                    conflicts.append((c, "CLAIM : " + v + (
+                        ". Une autre lane tient ce grain -- ecrire dessus "
+                        "produirait la collision, pas le livrable. Candidat "
+                        "remplace dans la meme urne.")))
+                else:
+                    got.append(c)
+        picks.extend(got)
+    return picks, claims, conflicts
+
+
 def recent_delivery(picks: list[dict]) -> dict[int, str]:
     """Annote les candidats tires qu'une autre PR couvre deja -- ouverte ou mergee.
 
@@ -425,7 +650,7 @@ def recent_delivery(picks: list[dict]) -> dict[int, str]:
     L'annotation **n'ecarte pas** le candidat (parite avec la doctrine
     ``candidate-delivered`` : signale, ne ferme pas) : elle change ce qu'on
     en dit, pas s'il est pris. Le verrou cross-lane reste
-    ``check_lane_claim.py``, que ``--check-claims`` interroge separement.
+    ``check_lane_claim.py``, que le tirage interroge desormais par defaut.
     """
     notes: dict[int, str] = {}
     for p in picks:
@@ -539,7 +764,9 @@ _PR_STATE_FRAGMENT = """
   p%(n)d: pullRequest(number:%(n)d) {
     number mergeable
     reviews(last:40) { nodes { state submittedAt author { login } } }
-    commits(last:1) { nodes { commit { statusCheckRollup { contexts(first:100) { nodes {
+    commits(last:1) { nodes { commit { statusCheckRollup {
+      state   # #12830 : SUCCESS/FAILURE/PENDING/NEUTRAL au niveau rollup, pour le 3e etat file-saturation
+      contexts(first:100) { nodes {
       ... on CheckRun      { name    conclusion completedAt startedAt isRequired(pullRequestNumber:%(n)d) }
       ... on StatusContext { context state       createdAt              isRequired(pullRequestNumber:%(n)d) }
     } } } } } }
@@ -555,7 +782,7 @@ def fetch_open_prs() -> list[dict]:
     """Toutes les PRs ouvertes, avec le corps (pour y lire le tag de lane)."""
     out = subprocess.run(
         ["gh", "pr", "list", "--repo", REPO, "--state", "open", "--limit", "300",
-         "--json", "number,title,body,createdAt,isDraft"],
+         "--json", "number,title,body,createdAt,isDraft,author,headRefName"],
         capture_output=True, text=True, encoding="utf-8", check=True, timeout=120,
     ).stdout
     return json.loads(out)
@@ -624,7 +851,8 @@ def drop_superseded(contexts: list[dict]) -> list[dict]:
     return kept
 
 
-def blocking_causes(state: dict) -> list[str]:
+def blocking_causes(state: dict, *, age_hours: float | None = None,
+                    saturation_hours: float | None = None) -> list[str]:
     """Causes qui empechent VRAIMENT le merge, formulees en geste de reparation.
 
     `mergeStateStatus: BLOCKED` n'est deliberement PAS une cause : il vaut
@@ -632,12 +860,29 @@ def blocking_causes(state: dict) -> list[str]:
     au coordinateur de merger. Verifie firsthand sur #12108 le 2026-08-22 :
     BLOCKED, MERGEABLE, zero check en echec. L'accuser aurait renvoye la lane
     reparer une PR qui n'a rien a reparer.
+
+    `file_saturation` (issue #12830, mandant c.508-L2 + ai-01 c.1331p69) : le
+    3ᵉ etat distinct de `mergeStateStatus: BLOCKED` est `BLOCKED + MERGEABLE
+    + statusCheckRollup.state=PENDING > saturation_hours`. La lane pioche sur
+    un pool virtuellement vide parce que ce 3ᵉ etat n'etait pas declencheur
+    (mesure ai-01 du 2026-08-26T04:52Z : 1000 runs en file, 14 concurrents,
+    attente observee 4 h 25 -- c'est le regime nominal, plus un cas limite).
+    Le critere exige qu'AUCUN check n'ait demarre (PENDING/QUEUED partout)
+    sur une PR MERGEABLE : c'est exactement la file qui n'a pas bouge, pas
+    un rouge substance. La cause est formulee comme geste = commentaire
+    + `--ignore-red` ou `rerun/updater-branch` selon le cas -- la lane peut
+    poser un acte (commenter) mais ne peut pas derainer la file seule.
+
+    Le critere reste PASSIF si `age_hours` ou `saturation_hours` ne sont pas
+    fournis (defaut=None), ce qui preserve la signature utilisee par les 12
+    tests existants (cf `_state(...)` qui ne porte pas `age_hours`).
     """
     causes: list[str] = []
     advisory: list[str] = []
     commits = state.get("commits", {}).get("nodes") or []
     rollup = (commits[0]["commit"].get("statusCheckRollup") if commits else None) or {}
-    for ctx in drop_superseded((rollup.get("contexts", {}) or {}).get("nodes") or []):
+    contexts = drop_superseded((rollup.get("contexts", {}) or {}).get("nodes") or [])
+    for ctx in contexts:
         name = ctx.get("name") or ctx.get("context") or "?"
         verdict = (ctx.get("conclusion") or ctx.get("state") or "").upper()
         if verdict not in CHECK_FAILED:
@@ -657,9 +902,76 @@ def blocking_causes(state: dict) -> list[str]:
     for login, review in latest.items():
         if review["state"] == "CHANGES_REQUESTED":
             causes.append(f"CHANGES_REQUESTED non leve ({login})")
+    # 3ᵉ declencheur `file_saturation` (cf issue #12830) : aucun check n'a
+    # demarre (PENDING/QUEUED partout), pas de conflit, pas de CHANGES_REQUESTED
+    # non leve, et la PR est ouverte depuis plus de `saturation_hours`.
+    # On ne l'ajoute que si rien d'autre n'a deja ete trouve : un rouge
+    # substance prime sur la file-saturation (la lane reparera la substance,
+    # la file draine naturellement).
+    if (age_hours is not None and saturation_hours is not None
+            and age_hours >= saturation_hours
+            and state.get("mergeable") == "MERGEABLE"
+            and not causes
+            and contexts):
+        statuses = {(c.get("conclusion") or c.get("state") or "").upper() for c in contexts}
+        if statuses <= {"PENDING", "QUEUED", ""}:
+            causes.append(
+                f"file_saturation : {len(contexts)} check(s) tous pending depuis > "
+                f"{int(saturation_hours)}h (faux-rouge non-reparable par la lane -- "
+                f"commenter la PR + --ignore-red ou rerun/updater-branch si gel CI)"
+            )
     if causes and advisory:
         causes.append("(diagnostic, non bloquant : " + ", ".join(advisory[:3]) + ")")
     return causes
+
+
+def file_saturation_cause(state: dict, age_hours: float, threshold_hours: float) -> str | None:
+    """#12830 : detecte le 3e etat -- PR non-mergeable non par rouge substance,
+    non par attente-coordinateur (BLOCKED+MERGEABLE+zero-fail, cf #12108),
+    mais par **saturation file** : tous les checks requis PENDING depuis
+    longtemps sans qu'aucun n'ait demarre. Cause = "faux-rouge" : la lane ne
+    peut pas la reparer (c'est l'infra CI), geste = commenter la PR (cause)
+    + --ignore-red ou re-run via api, pas un push muet qui ne leve rien.
+
+    Critere (tous requis) :
+      1. mergeable=MERGEABLE (pas de conflit git)
+      2. statusCheckRollup.state EXPLICITEMENT "PENDING" (pas None : les
+         fixtures de test sans rollup.state ne sont pas des saturations
+         file, juste des PRs sans rollup tracke)
+      3. >=1 check requis existe (sans ca, c'est juste un PR sans CI)
+      4. Aucun check requis en FAIL (sinon c'est un rouge substance classique)
+      5. age >= saturation_hours (defaut 24 h, configurable --saturation-hours)
+
+    Retourne la cause formulee, ou None.
+    """
+    if age_hours < threshold_hours:
+        return None
+    if state.get("mergeable") != "MERGEABLE":
+        return None  # conflit git = rouge classique, pas file-saturation
+    commits = state.get("commits", {}).get("nodes") or []
+    rollup = (commits[0]["commit"].get("statusCheckRollup") if commits else None) or {}
+    rollup_state = (rollup.get("state") or "").upper()
+    # Distinction explicite : "champ absent" (None, fixtures legacy) ne doit
+    # PAS etre lu comme PENDING, sinon les tests historiques et les fixtures
+    # in-memory cassent. PENDING reel = la chaine "PENDING" du rollup GitHub.
+    if rollup_state != "PENDING":
+        return None
+    required_checks = []
+    for ctx in drop_superseded((rollup.get("contexts", {}) or {}).get("nodes") or []):
+        if ctx.get("isRequired"):
+            verdict = (ctx.get("conclusion") or ctx.get("state") or "").upper()
+            if verdict in CHECK_FAILED:
+                # Rouge substance detecte, blocking_causes le prendra ; on ne
+                # double pas la cause.
+                return None
+            required_checks.append(ctx.get("name") or ctx.get("context") or "?")
+    if not required_checks:
+        # Aucun check requis : pas un "faux-rouge CI sature", juste pas de CI.
+        return None
+    n = len(required_checks)
+    return (f"file-saturation : {n} check(s) requis en PENDING depuis "
+            f">{threshold_hours:.0f}h (cause infra, pas substance ; "
+            f"geste = commenter la PR + --ignore-red ou re-run)")
 
 
 def unaddressed_review_points(numbers: list[int]) -> dict[int, int]:
@@ -701,15 +1013,53 @@ def unaddressed_review_points(numbers: list[int]) -> dict[int, int]:
     return out
 
 
+def unattributed_blocked_prs(prs: list[dict] | None = None) -> list[dict]:
+    """PRs ouvertes bloquees sans tag `Grain:` lisible, AVEC leur route.
+
+    Extraction du calcul historique de `red_backlog` (les untagged ne peuvent
+    jamais appartenir a une lane, donc l'ensemble est lane-independant) pour
+    que le mode `--orphans-report` et le garde partagent la meme detection --
+    deux implementations de la meme question finiraient par diverger, et la
+    divergence d'un detecteur se voit toujours du cote du sous-comptage.
+
+    Enrichit l'entree historique (numero, titre, age) de `author` et `branch` :
+    un constat sans destinataire n'est pas un routage (#13086). Les untagged
+    SANS causes bloquantes ne comptent pas : seule la file qui pourrit est
+    routee, pas les PRs en cours de CI.
+    """
+    if prs is None:
+        prs = fetch_open_prs()
+    untagged = [pr for pr in prs
+                if not pr.get("isDraft") and parse_grain_tag(pr.get("body") or "") is None]
+    untagged_states = fetch_pr_states([pr["number"] for pr in untagged]) if untagged else {}
+    out = []
+    for pr in untagged:
+        state = untagged_states.get(pr["number"])
+        if state is None or not blocking_causes(state):
+            continue
+        out.append({"number": pr["number"], "title": pr["title"],
+                    "author": ((pr.get("author") or {}).get("login")) or "inconnu",
+                    "branch": pr.get("headRefName") or "?",
+                    "age_hours": round(_hours_since(pr["createdAt"]))})
+    out.sort(key=lambda r: -r["age_hours"])
+    return out
+
+
 def red_backlog(lane: str, threshold_hours: float,
-                count_threshold: int = RED_COUNT_DEFAULT) -> dict:
-    """PRs de la lane reellement bloquees, avec TROIS declencheurs de refus.
+                count_threshold: int = RED_COUNT_DEFAULT,
+                saturation_hours: float | None = None) -> dict:
+    """PRs de la lane reellement bloquees, avec QUATRE declencheurs de refus.
 
     `aged` : au moins une rouge ouverte depuis plus de `threshold_hours` --
     la queue longue, celle qui pourrit. `count` : au moins `count_threshold`
     rouges simultanees quel que soit leur age -- le tas, que le seul critere
     d'age ne voyait pas (51/58 invisibles, mesure du 2026-08-23). `nits` : au
     moins un point de review non leve, quel que soit l'age et le nombre.
+    `saturation` (#12830) : au moins une PR file-saturated (MERGEABLE mais
+    rollup PENDING depuis >saturation_hours, sans rouge substance) -- le
+    3e etat qu'on ratait (cf #12108 fondateur : BLOCKED+MERGEABLE+zero-fail
+    volontairement ignore pour ne pas piéger la lane sur l'attente-coordinateur,
+    mais cette exclusion avalait aussi les file-saturations infra-side).
 
     Le troisieme n'est pas un ajout de perimetre : il PRESERVE une semantique
     qui existait avant. Le filtre d'age s'appliquait en amont, donc une PR
@@ -721,6 +1071,16 @@ def red_backlog(lane: str, threshold_hours: float,
     des points a traiter »). Le declencheur `nits` rend cette regle explicite
     au lieu de la laisser dependre d'un filtre retire ailleurs.
 
+    `file_saturation` (issue #12830) : au moins une PR file-saturee (cf
+    `blocking_causes` pour le critere exact) ouverte depuis plus de
+    `threshold_hours`. C'est le 3ᵉ etat distinct de `mergeStateStatus:
+    BLOCKED` (le `BLOCKED + MERGEABLE + checks tous PENDING depuis > N h`)
+    que le picker ratait jusqu'ici, et la lane po-2027 en etait la premiere
+    victime : narrow persistant ×27 cycles dont la file CI etait la cause
+    jamais diagnostiquee. Le declencheur precede `aged` parce qu'il est
+    l'attribution directe du narrow : la lane doit SAVOIR qu'elle subit la
+    file avant de tenter d'autres rouges.
+
     Rend aussi `unattributed_blocked` : les PRs bloquees dont le tag `Grain:`
     est illisible. Elles ne peuvent bloquer AUCUNE lane -- c'est la bonne
     arithmetique (deviner une lane serait pire) -- mais les taire donnerait a
@@ -730,11 +1090,14 @@ def red_backlog(lane: str, threshold_hours: float,
     try:
         prs = fetch_open_prs()
     except Exception as exc:  # noqa: BLE001 - le garde ne doit jamais bloquer sur une panne reseau
+        sat_threshold = saturation_hours if saturation_hours is not None else threshold_hours
         return {"unavailable": f"{type(exc).__name__}", "red": [],
                 "triggers": [], "unattributed_blocked": [],
-                "nits_unavailable": None}
+                "nits_unavailable": None,
+                "saturation_hours": sat_threshold}
 
     mine, others = [], []
+    sat_threshold = saturation_hours if saturation_hours is not None else threshold_hours
     for pr in prs:
         if pr.get("isDraft"):
             continue
@@ -755,16 +1118,28 @@ def red_backlog(lane: str, threshold_hours: float,
         state = states.get(pr["number"])
         if state is None:
             continue
-        causes = blocking_causes(state)
+        # age_hours sert au critere file_saturation (cf blocking_causes). On le
+        # passe ici plutot que dans la query GraphQL parce que le fragment
+        # `_PR_STATE_FRAGMENT` ne porte pas `createdAt` et l'ajouter alourdirait
+        # chaque appel pour 2 octets deconomie ; le PR-listing le fournit deja.
+        age = _hours_since(pr["createdAt"])
+        causes = blocking_causes(state, age_hours=age, saturation_hours=threshold_hours)
         n_nits = nits_by_pr.get(pr["number"], 0)
         if n_nits:
             # Un point de review non leve est une cause A PART ENTIERE : la PR
             # peut etre verte et sans conflit et rester non mergeable (B.0).
             causes.insert(0, f"{n_nits} point(s) de review non leve(s) -> repondre, "
                              f"corriger en citant le commit, ou ouvrir une issue de suivi nommee")
+        # #12830 : 3e etat file-saturation (cf docstring file_saturation_cause).
+        # Seuil par defaut = threshold_hours (meme qu'aged) pour ne pas creer
+        # un nouveau param a retenir ; surchargeable via --saturation-hours.
+        sat_threshold = saturation_hours if saturation_hours is not None else threshold_hours
+        sat_cause = file_saturation_cause(state, _hours_since(pr["createdAt"]), sat_threshold)
+        if sat_cause:
+            causes.append(sat_cause)
         if causes:
             red.append({"number": pr["number"], "title": pr["title"],
-                        "age_hours": round(_hours_since(pr["createdAt"])),
+                        "age_hours": round(age),
                         "causes": causes})
     red.sort(key=lambda r: -r["age_hours"])
 
@@ -773,24 +1148,34 @@ def red_backlog(lane: str, threshold_hours: float,
         # D'abord dans la liste : c'est l'ordre dans lequel le mandat du
         # 2026-08-24 veut que la lane les traite.
         triggers.append("nits")
+    # `file_saturation` precede `aged` : une PR file-saturee est l'attribution
+    # directe d'un narrow de file CI (cf issue #12830), et la lane doit
+    # distinguer ce cas des rouges substance. Le critere dans `blocking_causes`
+    # exige que rien d'autre ne soit deja en cause -- si la PR a un FAIL
+    # substance ET est en file-saturation, elle reste categorisee rouge
+    # substance (cause FAIL gagne).
+    file_saturated = [r for r in red
+                       if any("file_saturation" in c for c in r["causes"])
+                       and r["age_hours"] >= threshold_hours]
+    if file_saturated:
+        triggers.append("file_saturation")
     aged = [r for r in red if r["age_hours"] >= threshold_hours]
     if aged:
         triggers.append("aged")
     if len(red) >= count_threshold:
         triggers.append("count")
+    # #12830 : declencheur saturation, distinct de count/aged/nits pour qu'une
+    # PR file-saturated isolee (pas de rouge substance, pas de point review)
+    # puisse declencher le refus quand meme.
+    if any("file-saturation" in c for r in red for c in r["causes"]):
+        triggers.append("saturation")
 
-    untagged = [pr for pr in others if parse_grain_tag(pr.get("body") or "") is None]
-    untagged_states = fetch_pr_states([pr["number"] for pr in untagged]) if untagged else {}
-    unattributed = [
-        {"number": pr["number"], "title": pr["title"],
-         "age_hours": round(_hours_since(pr["createdAt"]))}
-        for pr in untagged
-        if untagged_states.get(pr["number"]) and blocking_causes(untagged_states[pr["number"]])
-    ]
+    unattributed = unattributed_blocked_prs(prs)
     # Les NUMEROS, pas un compte : le coordinateur est le seul a pouvoir les
     # reprendre (cf skill coordinate, phase 3.5), et un compte ne se traite pas.
     return {"red": red, "aged": aged, "triggers": triggers,
             "red_hours": threshold_hours, "red_count_threshold": count_threshold,
+            "saturation_hours": sat_threshold,
             "unattributed_blocked": unattributed,
             "nits_unavailable": nits_unavailable}
 
@@ -834,6 +1219,71 @@ def print_unattributed_blocked(backlog: dict) -> None:
     print("`Grain:` lisible et ne sont donc imputables a aucune lane -- ce garde ne")
     print("les voit pas. Leur tag manquant est lui-meme le defaut a corriger.")
     print()
+
+
+ORPHANS_MARKER_START = "<!-- GRAIN-ORPHANS-SWEEP:START -->"
+ORPHANS_MARKER_END = "<!-- GRAIN-ORPHANS-SWEEP:END -->"
+
+
+def build_orphans_comment(orphans: list[dict]) -> str:
+    """Corps marker-guarde du balayage des orphelines du tag Grain (#13086).
+
+    Un orphelin n'est imputable a aucune lane (deviner la lane serait pire),
+    donc aucun garde ne le proposera jamais : ce commentaire EST le routage.
+    Il nomme chaque PR avec auteur et branche pour un dispatch nomme, une
+    reparation directe, ou une fermeture assumee (skill coordinate, point 5).
+    Upsert marker-guarde : un seul commentaire mis a jour sur place, jamais un
+    flot quotidien -- et le cas vide s'ecrit aussi, parce qu'un balayage muet
+    est indiscernable d'un balayage mort.
+    """
+    stamp = NOW.strftime("%Y-%m-%dT%H:%MZ")
+    lines = [ORPHANS_MARKER_START]
+    if not orphans:
+        lines += [
+            f"**File d'orphelines : 0.** Toute PR ouverte sans tag `Grain:` "
+            f"lisible porte son tag manquant comme seul defaut ; aucune n'est "
+            f"bloquee a l'instant du balayage ({stamp}).",
+            ORPHANS_MARKER_END,
+        ]
+        return "\n".join(lines)
+    lines.append(f"**File d'orphelines : {len(orphans)} PR(s) ouverte(s) bloquee(s) "
+                 f"sans tag `Grain:` lisible** ({stamp}). Imputables a aucune "
+                 f"lane, aucun garde ne les proposera : le tag manquant EST le "
+                 f"defaut -- ajouter le tag, reparer, ou fermer en le disant. "
+                 f"Regroupees par auteur pour dispatch nomme :")
+    lines.append("")
+    by_author: dict[str, list[dict]] = {}
+    for r in orphans:
+        by_author.setdefault(r["author"], []).append(r)
+    for author in sorted(by_author, key=lambda a: (-len(by_author[a]), a)):
+        lines.append(f"- **{author}** ({len(by_author[author])}) :")
+        for r in by_author[author]:
+            lines.append(f"  - #{r['number']} ({r['age_hours']} h, branche `{r['branch']}`) — {r['title']}")
+    lines += ["", f"_Recalcul a la demande : `python scripts/pick_idle_grain.py "
+                  f"--orphans-report`. Cf #13086._", ORPHANS_MARKER_END]
+    return "\n".join(lines)
+
+
+def upsert_orphans_comment(number: int, body: str) -> None:
+    """Un seul commentaire marker-guarde par issue, mis a jour sur place."""
+    comments = json.loads(subprocess.run(
+        ["gh", "issue", "view", str(number), "--repo", REPO,
+         "--json", "comments"],
+        capture_output=True, text=True, encoding="utf-8", check=True, timeout=60,
+    ).stdout)
+    cid = next((c["id"] for c in (comments.get("comments") or [])
+                if ORPHANS_MARKER_START in (c.get("body") or "")), None)
+    if cid is not None:
+        subprocess.run(
+            ["gh", "api", f"repos/{REPO}/issues/comments/{cid}",
+             "-X", "PATCH", "-f", f"body={body}"],
+            capture_output=True, text=True, encoding="utf-8", check=True, timeout=60)
+    else:
+        subprocess.run(
+            ["gh", "issue", "comment", str(number), "--repo", REPO,
+             "--body-file", "-"],
+            input=body, capture_output=True, text=True, encoding="utf-8",
+            check=True, timeout=60)
 
 
 def print_red_refusal(lane: str, backlog: dict, threshold_hours: float) -> None:
@@ -884,7 +1334,7 @@ def print_red_refusal(lane: str, backlog: dict, threshold_hours: float) -> None:
     print("elle ne se prend pas en silence.")
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
     # Console Windows cp1252 : un titre d'issue portant un caractere hors table
     # (fleche U+2192 etc.) fait crasher le print en UnicodeEncodeError et perd
     # le tirage entier. UTF-8 + replace : le titre s'affiche degrades, le
@@ -894,27 +1344,98 @@ def main() -> int:
             _stream.reconfigure(encoding="utf-8", errors="replace")
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--lane", required=True, help="machine:workspace, ex. myia-po-2026:CoursIA")
+    ap.add_argument("--lane", default=None,
+                    help="machine:workspace, ex. myia-po-2026:CoursIA (requis hors --orphans-report)")
     ap.add_argument("--prev-genre", default=None,
                     help="genre du grain precedent de la lane (penalise ce genre au tirage)")
     ap.add_argument("--grains", type=int, default=4, help="candidats urne 'grain' (defaut 4)")
     ap.add_argument("--umbrellas", type=int, default=2, help="candidats urne 'umbrella' (defaut 2)")
     ap.add_argument("--delivered", type=int, default=2, help="candidats urne 'delivered' (defaut 2)")
     ap.add_argument("--reroll", type=int, default=0, help="decale la graine pour un nouveau tirage")
-    ap.add_argument("--check-claims", action="store_true", help="verifie les claims sur les tires")
+    ap.add_argument("--no-check-claims", dest="check_claims",
+                    action="store_false",
+                    help="ne pas verifier les claims sur les tires "
+                         "(par defaut : verifie, et remplace les tenus)")
     ap.add_argument("--red-hours", type=float, default=RED_HOURS_DEFAULT,
                     help=f"seuil du garde 'reparer son rouge d'abord' (defaut {RED_HOURS_DEFAULT} h)")
     ap.add_argument("--red-count", type=int, default=RED_COUNT_DEFAULT,
                     help=f"nombre de rouges simultanees qui refuse le tirage "
                          f"quel que soit leur age (defaut {RED_COUNT_DEFAULT})")
+    ap.add_argument("--saturation-hours", type=float, default=None,
+                    help="#12830 : seuil du declencheur file-saturation (defaut "
+                         f"= --red-hours, soit {RED_HOURS_DEFAULT} h). Separe de "
+                         "--red-hours pour ne pas confondre les deux causes "
+                         "(rouge substance vs file-saturated infra-side).")
+    ap.add_argument("--dwell-hours", type=float, default=DWELL_HOURS_DEFAULT,
+                    help="delai avant qu'une issue neuve soit consommable "
+                         f"(defaut {DWELL_HOURS_DEFAULT:.0f} h ; 0 desactive le garde)")
+    ap.add_argument("--admit-reason", default=None, metavar="TEXTE",
+                    help="passer outre le garde d'admission -- exige une "
+                         "justification ECRITE, a reporter sur l'issue")
+    ap.add_argument("--admissible", type=int, default=None, metavar="ISSUE",
+                    help="mode verdict : cette issue est-elle consommable "
+                         "maintenant ? sortie 0 = oui, 1 = non. A appeler AVANT "
+                         "de dispatcher ou de claim, quel que soit le chemin de "
+                         "selection (steer inclus).")
     ap.add_argument("--ignore-red", action="store_true",
                     help="passer outre le garde -- exige une justification ECRITE sur la PR concernee")
     ap.add_argument("--json", action="store_true", help="sortie machine")
-    args = ap.parse_args()
+    ap.add_argument("--orphans-report", action="store_true",
+                    help="mode rapport : PRs bloquees sans tag Grain lisible, groupees par "
+                         "auteur (routage coordinateur, #13086). Ne tire PAS de grain.")
+    ap.add_argument("--apply-comment", type=int, default=None, metavar="ISSUE",
+                    help="avec --orphans-report : upsert du commentaire marker-guarde sur "
+                         "l'issue N (defaut : dry-run, impression seule)")
+    ap.set_defaults(check_claims=True)
+    args = ap.parse_args(argv)
+    if args.apply_comment is not None and not args.orphans_report:
+        ap.error("--apply-comment n'a de sens qu'avec --orphans-report")
+    if not args.lane and not args.orphans_report and args.admissible is None:
+        ap.error("--lane est requis (--orphans-report et --admissible s'en dispensent)")
+
+    # Mode rapport : le garde rouge (lane) ne concerne pas ce chemin -- la file
+    # des orphelines est lane-independante et ce mode ne tire pas de grain.
+    if args.orphans_report:
+        body = build_orphans_comment(unattributed_blocked_prs())
+        print(body)
+        if args.apply_comment is not None:
+            upsert_orphans_comment(args.apply_comment, body)
+            print()
+            print(f"[apply] commentaire marker-guarde mis a jour sur #{args.apply_comment}")
+        return 0
+
+    # Mode verdict : lane-independant, pas de tirage, pas de garde rouge --
+    # la question posee est "ce grain-ci est-il consommable maintenant ?",
+    # et elle doit pouvoir etre posee sur un grain STEERE, chemin par lequel
+    # arrive l'essentiel du travail (mesure du 2026-08-29).
+    if args.admissible is not None:
+        pool = fetch_pool()
+        series, issue_to_family, series_err = fetch_series_visits()
+        balance = zone_balance(series, issue_to_family, pool)
+        hit = next((x for x in pool if x["number"] == args.admissible), None)
+        if hit is None:
+            print(f"#{args.admissible} : absente du pool ouvert "
+                  "(fermee, ou au-dela de la limite de la requete).")
+            return 1
+        cause = admissibility(hit, balance, issue_to_family, args.dwell_hours)
+        if series_err:
+            print(f"(saturation de zone NON MESUREE : {series_err} -- "
+                  "le volet parite n'a PAS ete evalue)")
+        print(f"#{hit['number']} {hit['title'][:70]}")
+        print(f"  genre {hit['genre']} | polarite {hit['polarity']} | "
+              f"age {_hours_old(hit['created_at']):.0f} h")
+        if cause is None:
+            print("  ADMISSIBLE")
+            return 0
+        print(f"  REFUS -- {cause}")
+        print("  Passer outre exige --admit-reason '<justification>', "
+              "a reporter sur l'issue.")
+        return 1
 
     # Garde "reparer son rouge d'abord" : AVANT le tirage, sinon le grain neuf
     # est deja sous les yeux quand le refus arrive, et c'est lui qui gagne.
-    backlog = red_backlog(args.lane, args.red_hours, args.red_count)
+    backlog = red_backlog(args.lane, args.red_hours, args.red_count,
+                            saturation_hours=args.saturation_hours)
     if backlog.get("triggers") and not args.ignore_red:
         if args.json:
             print(json.dumps({"lane": args.lane, "refus": "rouge-a-reparer",
@@ -930,7 +1451,28 @@ def main() -> int:
         print()
 
     pool = fetch_pool()
-    by_class = {k: [it for it in pool if it["klass"] == k]
+    visits, visits_err = fetch_visits()
+    series, issue_to_family, series_err = fetch_series_visits()
+    balance = zone_balance(series, issue_to_family, pool)
+
+    # Admission AVANT les urnes : un grain inadmissible ne doit pas
+    # apparaitre dans le tirage, sinon il est sous les yeux quand le
+    # refus arrive -- et c'est lui qui gagne (meme raison que le garde
+    # rouge, qui s'execute avant le tirage pour cette raison exacte).
+    # L'urne `delivered` en est exempte : verifier puis fermer une issue
+    # deja livree fait REFLUER le pool, c'est l'inverse de l'emballement.
+    withheld: list[tuple[dict, str]] = []
+    admitted = []
+    for it in pool:
+        if it["klass"] == "delivered":
+            admitted.append(it)
+            continue
+        cause = admissibility(it, balance, issue_to_family, args.dwell_hours)
+        if cause and not args.admit_reason:
+            withheld.append((it, cause))
+        else:
+            admitted.append(it)
+    by_class = {k: [it for it in admitted if it["klass"] == k]
                 for k in ("grain", "umbrella", "delivered")}
 
     # Graine : (lane, heure UTC, reroll). Lanes differentes -> tirages
@@ -940,15 +1482,19 @@ def main() -> int:
     seed = int(hashlib.sha256(seed_src.encode()).hexdigest()[:16], 16)
     rng = random.Random(seed)
 
-    visits, visits_err = fetch_visits()
-
-    picks = (
-        draw(by_class["grain"], args.grains, rng, args.prev_genre, visits)
-        + draw(by_class["umbrella"], args.umbrellas, rng, args.prev_genre, visits)
-        + draw(by_class["delivered"], args.delivered, rng, None, visits)
-    )
-
-    claims = check_claims([p["number"] for p in picks], args.lane) if args.check_claims else {}
+    # Le tirage est claim-aware, et le remplacement est ce qui compte.
+    # Mesure du 2026-08-29 : quatre collisions en quatre jours (#13310, et
+    # les trois paires #12948<-#12791, #12984<-#12983, #13016<-#12758,
+    # PRs ouvertes le 25/08 et supersedees le 28/08 par d'autres lanes sur
+    # les MEMES issues). Le gate CI `lane_claim_required` dit lui-meme ce
+    # qu'il ne fait pas : << The gate cannot prevent the collision (once
+    # the PR exists the work is written) >>. Il empeche le MERGE, pas
+    # l'ecriture. La prevention doit donc vivre en amont, ici -- et elle ne
+    # peut pas etre optionnelle : un tirage qui propose une issue tenue par
+    # une autre lane FABRIQUE la collision qu'il faudra arbitrer ensuite.
+    picks, claims, claim_conflicts = draw_unclaimed(
+        by_class, args, rng, visits, series, issue_to_family)
+    withheld.extend(claim_conflicts)
     delivery = recent_delivery(picks)
 
     if args.json:
@@ -956,6 +1502,18 @@ def main() -> int:
             "lane": args.lane, "seed_src": seed_src,
             "pool": {k: len(v) for k, v in by_class.items()},
             "picks": picks, "claims": {str(k): v for k, v in claims.items()},
+            "withheld": [{"number": it["number"], "title": it["title"],
+                          "cause": c} for it, c in withheld],
+            "dwell_hours": args.dwell_hours,
+            "admit_reason": args.admit_reason,
+            "series_measured": series_err is None,
+            "series_error": series_err,
+            "series_zones": sorted(
+                ({"family": f, **z} for f, z in series.items()),
+                key=lambda d: (-d["new_notebooks"], -d["prs"]))[:10],
+            "zone_balance": sorted(
+                ({"family": f, **b} for f, b in balance.items()),
+                key=lambda d: (-d["new_notebooks"], -d["expansion"]))[:10],
             "visits_window_days": VISITS_WINDOW_DAYS,
             "visits_measured": visits_err is None,
             "visits_error": visits_err,
@@ -966,10 +1524,63 @@ def main() -> int:
         }, ensure_ascii=False, indent=2))
         return 0
 
+    if series_err:
+        print(f"(saturation de zone NON MESUREE : {series_err} -- aucun amortissement de serie applique)")
+        print()
+    else:
+        chaudes = [(f, b) for f, b in balance.items()
+                   if b["new_notebooks"] >= 3]
+        chaudes.sort(key=lambda kv: (-kv[1]["new_notebooks"],
+                                     -kv[1]["expansion"]))
+        if chaudes:
+            print("Zones chaudes (14 j) -- parite expansion/consolidation :")
+            for f, b in chaudes[:5]:
+                exp, con = b["expansion"], b["consolidation"]
+                # 0/0 n est PAS un feu vert : c est une zone qui a recu N
+                # notebooks sans qu AUCUN grain de consolidation soit ouvert --
+                # le pire cas, pas le plus propre. Un zero d absence de donnee
+                # qui se lit comme un zero d absence de defaut est precisement
+                # le faux silencieux que ce garde existe pour ne pas produire.
+                if exp == 0 and con == 0:
+                    verdict = "SANS REMEDE"
+                elif con >= exp:
+                    verdict = "OK"
+                else:
+                    verdict = "DESEQUILIBRE"
+                print("  {:>2d} neufs | {:>2d} expansion / {:>2d} consolidation "
+                      "  {:12s} {}".format(
+                          b["new_notebooks"], exp, con, verdict, f))
+            print("  (un EPIC qui alimente une zone doit produire autant de "
+                  "consolidation que d'expansion -- mandat user 2026-08-28)")
+            print()
     print(f"Pool ouvert : {len(pool)} issues  "
           f"= {len(by_class['grain'])} grains "
           f"+ {len(by_class['umbrella'])} umbrella "
           f"+ {len(by_class['delivered'])} candidate-delivered")
+    if args.admit_reason:
+        print(f"!! --admit-reason : garde d'admission passe outre "
+              f"({args.admit_reason!r}). A reporter sur l'issue retenue.")
+    elif withheld:
+        dwell_n = sum(1 for _, c in withheld if c.startswith("DWELL"))
+        claim_n = sum(1 for _, c in withheld if c.startswith("CLAIM"))
+        zone_n = len(withheld) - dwell_n - claim_n
+        # Les trois causes ne se rangent pas ensemble : dwell et zone
+        # reviennent d'elles-memes, un grain tenu par une autre lane revient
+        # quand CETTE lane le relache. Les fondre dans "zone sans remede"
+        # afficherait "elle revient d'elle-meme" sur le seul cas ou c'est faux.
+        parts = [f"{dwell_n} en attente de dwell",
+                 f"{zone_n} en zone sans remede"]
+        if claim_n:
+            parts.append(f"{claim_n} tenue(s) par une autre lane")
+        print(f"Retenues hors tirage : {len(withheld)} "
+              f"({', '.join(parts)}). "
+              "Dwell et zone reviennent d'elles-memes -- aucune n'est refusee "
+              "sur le fond.")
+        if claim_n:
+            print("   Un grain tenu revient quand sa lane pose [RELEASED], ou "
+                  "sur arbitrage [OVERRIDE] du coordinateur.")
+        for it, cause in sorted(withheld, key=lambda kv: -kv[0]["number"])[:3]:
+            print(f"   #{it['number']:<7} {cause.split(chr(58))[0]:<18} {it['title'][:46]}")
     if backlog.get("triggers"):
         numbers = ", ".join(f"#{r['number']}" for r in backlog["red"])
         print(f"!! --ignore-red : {len(backlog['red'])} PR(s) bloquee(s) de cette lane restent "

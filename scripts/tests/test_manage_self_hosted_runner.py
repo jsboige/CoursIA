@@ -14,6 +14,16 @@ from pathlib import Path
 
 import pytest
 
+# The runner-manager is a Windows-confinement tool (#12704: isolated Windows
+# runners, Windows accounts, NTFS ACLs). The tests below that exercise apply
+# paths assume a Windows host: USERPROFILE/APPDATA probes, os.name == "nt"
+# Path() flavor (a monkeypatched os.name cannot make pathlib instantiate
+# WindowsPath on Linux). Linux CI runs the platform-neutral surface only;
+# the Windows-hosted surface runs on the Windows runners the tool manages.
+requires_windows = pytest.mark.skipif(
+    os.name != "nt", reason="Windows-confinement surface (see #12704)"
+)
+
 MODULE_PATH = Path(__file__).parents[1] / "ci" / "manage_self_hosted_runner.py"
 SPEC = importlib.util.spec_from_file_location("manage_self_hosted_runner", MODULE_PATH)
 mod = importlib.util.module_from_spec(SPEC)
@@ -41,7 +51,7 @@ def profile(root: Path, *, digest: str = "a" * 64) -> mod.Profile:
         archive_sha256=digest,
         sensitive_templates=(
             (r"{repo_root}\.secrets", r"{repo_root}\.secrets\master.env"),
-            (r"{user_profile}\.ssh", r"{user_profile}\.ssh\jsboige_key"),
+            (r"{user_profile}\.ssh", r"{user_profile}\.ssh"),
             (r"{appdata}\GitHub CLI\hosts.yml", r"{appdata}\GitHub CLI\hosts.yml"),
         ),
     )
@@ -102,6 +112,14 @@ def PureWindows(path: Path) -> str:
     return "C:\\" + "\\".join(path.parts[-3:])
 
 
+@pytest.fixture(autouse=True)
+def _probe_env(monkeypatch, tmp_path):
+    # The isolation-probe templates resolve {user_profile}/{appdata}; native
+    # Windows always defines them, the posix CI host does not.
+    monkeypatch.setenv("USERPROFILE", str(tmp_path / "user"))
+    monkeypatch.setenv("APPDATA", str(tmp_path / "appdata"))
+
+
 def test_run_powershell_delivers_scripts_via_file_not_stdin():
     # Regression (measured on pwsh 7.5, 2026-08-25): `-Command -` fed over
     # stdin silently stops executing at a PowerShell here-string (@'...'@)
@@ -124,6 +142,7 @@ def test_run_powershell_delivers_scripts_via_file_not_stdin():
     assert not Path(seen["argv"][-1]).exists()
 
 
+@requires_windows
 def test_generated_apply_scripts_embed_here_strings():
     # If these scripts ever stop embedding here-strings the regression test
     # above loses its teeth: anchor the property the delivery bug broke.
@@ -147,6 +166,7 @@ def test_manager_has_no_duplicate_top_level_definitions():
     assert duplicates == {}
 
 
+@requires_windows
 def test_committed_profiles_are_valid_and_distributed_across_pushers():
     payload = json.loads(mod.PROFILE_PATH.read_text(encoding="utf-8"))
     assert set(payload["profiles"]) == {
@@ -159,6 +179,29 @@ def test_committed_profiles_are_valid_and_distributed_across_pushers():
         loaded = mod.load_profile(name)
         assert set(loaded.labels) == mod.REQUIRED_LABELS
         assert loaded.archive_sha256 == "d59123a43003e357b0805b5d0f611d0bd2f65ab67d51bd070dd4e7a0f685c162"
+
+
+@requires_windows
+def test_profile_accepts_runner_own_checkout_under_work(tmp_path, monkeypatch):
+    # #13238 : sur le runner lui-meme, le checkout vit sous <root>/_work —
+    # l'invariant "root hors du repository" ne doit pas le refuser.
+    registry = tmp_path / "profiles.json"
+    root = r"C:\CoursIA-Test\runner"
+    write_registry(registry, root)
+    monkeypatch.setattr(mod, "REPO_ROOT", Path(root) / "_work" / "CoursIA")
+    loaded = mod.load_profile("test", registry)
+    assert loaded.name == "test"
+
+
+@requires_windows
+def test_profile_refuses_repository_inside_runner_root_outside_work(tmp_path, monkeypatch):
+    # Repo sous la racine runner mais HORS de la zone work : toujours refuse.
+    registry = tmp_path / "profiles.json"
+    root = r"C:\CoursIA-Test\runner"
+    write_registry(registry, root)
+    monkeypatch.setattr(mod, "REPO_ROOT", Path(root) / "repo")
+    with pytest.raises(mod.Refused, match="outside the repository"):
+        mod.load_profile("test", registry)
 
 
 def test_profile_rejects_unknown_keys(tmp_path):
@@ -278,10 +321,11 @@ def completed(argv=None, **kwargs):
     return subprocess.CompletedProcess(argv or [], 0, "", "")
 
 
+@requires_windows
 def test_install_refuses_bad_checksum_before_extraction(tmp_path, monkeypatch):
     data = make_runner_archive()
     target = profile(tmp_path / "runner", digest="0" * 64)
-    monkeypatch.setattr(mod.os, "name", "nt")
+    monkeypatch.setattr(mod, "IS_WINDOWS", True)
     monkeypatch.setenv(mod.ACCOUNT_PASSWORD_ENV, "local-password")
     calls = []
 
@@ -298,11 +342,12 @@ def test_install_refuses_bad_checksum_before_extraction(tmp_path, monkeypatch):
     assert not target.root.exists()
 
 
+@requires_windows
 def test_install_extracts_atomically_and_never_logs_password(tmp_path, monkeypatch):
     data = make_runner_archive()
     target = profile(tmp_path / "runner", digest=hashlib.sha256(data).hexdigest())
     password = "local-password-never-log"
-    monkeypatch.setattr(mod.os, "name", "nt")
+    monkeypatch.setattr(mod, "IS_WINDOWS", True)
     monkeypatch.setenv(mod.ACCOUNT_PASSWORD_ENV, password)
     calls = []
 
@@ -391,6 +436,7 @@ def test_register_redacts_secrets_from_failure(tmp_path, monkeypatch):
     assert str(caught.value).count("[REDACTED]") == 2
 
 
+@requires_windows
 def test_probe_requires_three_denials_and_one_write(tmp_path, monkeypatch):
     target = profile(tmp_path / "runner")
     write_installed(target)
@@ -410,6 +456,7 @@ def test_probe_requires_three_denials_and_one_write(tmp_path, monkeypatch):
     assert not (target.root / ".isolation-probe.json").exists()
 
 
+@requires_windows
 def test_probe_rejects_missing_or_ambiguous_results(tmp_path, monkeypatch):
     target = profile(tmp_path / "runner")
     write_installed(target)
@@ -428,6 +475,7 @@ def test_probe_rejects_missing_or_ambiguous_results(tmp_path, monkeypatch):
         mod.apply_verify(target, run=run)
 
 
+@requires_windows
 def test_acl_scripts_use_sids_and_check_native_exit_codes(tmp_path, monkeypatch):
     target = profile(tmp_path / "runner")
     monkeypatch.setenv("USERPROFILE", str(tmp_path / "user"))
@@ -469,6 +517,7 @@ def test_teardown_requires_removal_token_for_registered_runner(tmp_path, monkeyp
     assert target.root.exists()
 
 
+@requires_windows
 def test_teardown_unregisters_without_secret_argv_and_archives_logs(tmp_path, monkeypatch):
     target = profile(tmp_path / "runner")
     write_installed(target, registered=True)
@@ -519,6 +568,7 @@ def test_apply_noop_does_not_call_mutator(tmp_path, capsys, monkeypatch):
     assert result["applied"] is False
 
 
+@requires_windows
 def test_dry_run_cli_is_deterministic_and_does_not_mutate(tmp_path, capsys):
     registry = tmp_path / "profiles.json"
     root = PureWindows(tmp_path / "runner")

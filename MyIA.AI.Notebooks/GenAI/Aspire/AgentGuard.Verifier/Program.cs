@@ -3,16 +3,16 @@
 // (soulignement jaune) et un test unitaire ; le projet Demo montre le canal
 // build (dotnet build rend le meme diagnostic). Deux canaux, un moteur.
 //
-// usage: dotnet run --project AgentGuard.Verifier -- <fautif.cs> <corrige.cs>
+// usage: dotnet run --project AgentGuard.Verifier -- <fautif.cs> <corrige.cs> [autres.cs ...]
 
 using AgentGuard.Analyzers;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Diagnostics;
 
-if (args.Length != 2)
+if (args.Length < 2)
 {
-    Console.WriteLine("usage: dotnet run -- <fautif.cs> <corrige.cs>");
+    Console.WriteLine("usage: dotnet run -- <fautif.cs> <corrige.cs> [autres.cs ...]");
     return 2;
 }
 
@@ -55,26 +55,35 @@ foreach (var path in args)
             hasTopLevel ? OutputKind.ConsoleApplication : OutputKind.DynamicallyLinkedLibrary));
 
     var withAnalyzers = compilation.WithAnalyzers(
-        [new TaskResultBlockAnalyzer()]);
+        [new TaskResultBlockAnalyzer(), new AsyncVoidAnalyzer(), new TaskRunFireAnalyzer()]);
 
     // Les erreurs de compilation empechent le modele semantique de resoudre
     // les symboles (donc l'analyseur de trancher) : on les rend visibles.
     foreach (var e in compilation.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error))
         Console.WriteLine($"    (erreur de compilation sous-jacente : {e.GetMessage()})");
 
+    var ids = new[]
+    {
+        TaskResultBlockAnalyzer.DiagnosticId,   // AGENTGUARD001
+        AsyncVoidAnalyzer.DiagnosticId,         // AGENTGUARD002
+        TaskRunFireAnalyzer.DiagnosticId,       // AGENTGUARD003
+    };
     var diagnostics = (await withAnalyzers.GetAllDiagnosticsAsync())
-        .Where(d => d.Id == TaskResultBlockAnalyzer.DiagnosticId)
+        .Where(d => ids.Contains(d.Id))
         .OrderBy(d => d.Location.SourceSpan.Start)
         .ToList();
 
     var label = Path.GetFileName(path);
     if (diagnostics.Count == 0)
     {
-        Console.WriteLine($"[{label}] VERDICT : PROPRE -- aucun blocage synchrone detecte");
+        Console.WriteLine($"[{label}] VERDICT : PROPRE -- aucun garde-fou AgentGuard declenche");
     }
     else
     {
-        Console.WriteLine($"[{label}] VERDICT : {diagnostics.Count} diagnostic(s) {TaskResultBlockAnalyzer.DiagnosticId}");
+        var detail = string.Join(", ", ids
+            .Select(id => $"{id} x{diagnostics.Count(d => d.Id == id)}")
+            .Where(c => !c.EndsWith("x0")));
+        Console.WriteLine($"[{label}] VERDICT : {diagnostics.Count} diagnostic(s) -- {detail}");
         foreach (var d in diagnostics)
         {
             var line = d.Location.GetLineSpan();

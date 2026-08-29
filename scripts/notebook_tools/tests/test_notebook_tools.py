@@ -64,7 +64,7 @@ class TestShouldSkip:
         assert should_skip(Path("notebooks/Search-1-BFS.ipynb")) is False
 
     def test_normal_path(self):
-        assert should_skip(Path("MyIA.AI.Notebooks/Sudoku/Sudoku-1-Backtracking-Csharp.ipynb")) is False
+        assert should_skip(Path("MyIA.AI.Notebooks/Sudoku/Sudoku-01-Backtracking-Csharp.ipynb")) is False
 
     def test_output_in_nested_path(self):
         assert should_skip(Path("deep/nested/test_output.ipynb")) is True
@@ -1119,10 +1119,10 @@ class TestFormatMarkdownTable:
         """Notebook name with -N- pattern should extract N."""
         from notebook_tools import _format_markdown_table
         skeleton = NotebookSkeleton(
-            path="test", name="Sudoku-3-Test", total_cells=10, estimated_duration=15,
+            path="test", name="Sudoku-03-Test", total_cells=10, estimated_duration=15,
         )
         result = _format_markdown_table([skeleton], Path("test"))
-        assert "| 3 |" in result
+        assert "| 03 |" in result
 
     def test_fallback_number_when_no_match(self):
         """Notebook without -N- pattern should use index."""

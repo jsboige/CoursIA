@@ -5,38 +5,45 @@ Inventaire transverse des projets de formalisation Lean 4 sous `ML/`, sur le mod
 [`SymbolicAI/Lean/LEAN_INVENTORY.md`](../SymbolicAI/Lean/LEAN_INVENTORY.md). Source de
 vérité : corps de l'Epic
 [#4038](https://github.com/jsboige/CoursIA/issues/4038) + vérification `firsthand`. Colonne
-*Sorry (production)* = métrique CI `standalone-tactic` (les mentions prose « 0 sorry »
-n'entrent pas dans ce compte ; cf.
-`lean-ci-sorry-filter`).
+*Sorry (production)* = métrique CI `real` (commentaires strippés, `\bsorry\b`, fichiers FR
+hors `_en` ; bascule #11688 — historiquement `standalone-tactic` ; les mentions prose
+« 0 sorry » n'entrent pas dans ce compte).
 
 ## Résumé
 
 | Lake | Toolchain | sorry (production) | Modules | Notebook câblé | Classe | Suivi |
 |------|-----------|--------------------:|--------:|---------------:|--------|-------|
-| `learning_theory_lean` | v4.31.0-rc1 | 0 | 5 | 0¹ | PEDA/REF | #4051, #4301, #4038 |
-| **Total** | — | **0** | **5** | — | — | — |
+| `learning_theory_lean` | v4.32.1 | 0 | 18 (2 libs) | 3¹ | PEDA/REF | #4051, #4293, #4301, #4038 |
+| **Total** | — | **0** | **18** | **3** | — | — |
 
-¹ Aucun notebook Lean dédié. Companion conceptuel = la série **ML.NET** (classification
-linéaire, le perceptron comme ancêtre) — convention sibling-lake (le lake est le livrable
-formel, le notebook compagnon revient au propriétaire de la série ML).
+¹ Trois notebooks câblés sous `ML/DataScienceWithAgents/02-ML-Cours/` :
+**2.8b** (Théorie PAC Lean), **2.8c** (Borne Témoin Concentration), **2.8d** (Novikoff
+Convergence). Companion conceptuel historique = la série **ML.NET** (classification
+linéaire, le perceptron comme ancêtre).
 
 ---
 
 ## Par lake
 
-### learning_theory_lean — PEDAGOGIQUE / REFERENCE
+### learning_theory_lean — PEDAGOGIQUE / REFERENCE (2 libs)
 
 **Objectif** : théorème de convergence du Perceptron (Novikoff, 1962) — données
-linéairement séparables de marge γ et rayon R ⟹ au plus `(R/γ)²` mises à jour. Premier lake
-Lean de la série ML (roadmap #4038 Tier 2).
+linéairement séparables de marge γ et rayon R ⟹ au plus `(R/γ)²` mises à jour — puis
+théorie PAC (Valiant 1984) : complexité d'échantillonnage en classe finie, concentration
+uniforme et PAC agnostique. Premier lake Lean de la série ML (roadmap #4038 Tier 2).
 
-- **Toolchain** : v4.31.0-rc1 · **Dépendance** : Mathlib4
-- **lib** : `Perceptron` (`globs := #[.submodules \`Perceptron]`)
-- **Modules** : `Perceptron/Data.lean`, `Perceptron/Perceptron.lean`,
-  `Perceptron/Convergence.lean`, `Perceptron/Tightness.lean` + umbrella `Perceptron.lean`
-- **sorry (production)** : **0**. `lake build Perceptron` SUCCESS (8497 jobs, 0 warning).
+- **Toolchain** : v4.32.1 · **Dépendance** : Mathlib4 (pinnée `v4.32.1`)
+- **libs** (`lean_lib`) : `Perceptron` + `PacLearning` (toutes deux default targets, miroirs
+  `_en` inclus dans les globs — 18 modules FR + 18 EN)
+- **sorry (production)** : **0** (real-mode, FR). CI verte sur main
+  (`lean-learning-theory.yml`, dernier run 2026-08-18).
 
-#### Théorèmes prouvés (0 sorry)
+#### `Perceptron/` (5 modules FR) — 0 sorry
+
+Modules : `Perceptron/Data.lean`, `Perceptron/Perceptron.lean`,
+`Perceptron/Convergence.lean`, `Perceptron/Tightness.lean` + umbrella `Perceptron.lean`.
+
+##### Théorèmes prouvés — Perceptron (0 sorry)
 
 - **`PerceptronRun.novikoff_mistake_bound`** (flagship Convergence, #4140) : `n·γ² ≤ R²` —
   la borne de Novikoff sur le nombre de mises à jour.
@@ -66,16 +73,34 @@ le lac ne se contente pas de la borne universelle, il prouve son optimalité. Au
 laissé en `sorry`. Axiomes `[propext, Classical.choice, Quot.sound]` (Mathlib standard,
 **pas de `sorryAx`**).
 
+#### `PacLearning/` (13 modules FR) — 0 sorry · PEDA/REF · #4293
+
+Théorie PAC (Valiant 1984), complexité d'échantillonnage en classe d'hypothèses finie.
+Umbrella `PacLearning.lean` + 12 sous-modules : `Data`, `Sample`, `SampleExpect`, `MGF`,
+`BernoulliMGF`, `Hoeffding`, `Concentration`, `UnionBound`, `UniformConcentration`,
+`PacFiniteBound`, `ERM`, `Agnostic`.
+
+- **Prouvé** : `pac_finite_class_bound_aux` (borne PAC en classe finie — union bound +
+  concentration), `uniform_concentration` (concentration uniforme sur
+  `Hs : Finset (Hypothesis X)`), `pac_agnostic_generalization` (PAC **agnostique** :
+  généralisation sans hypothèse réalisable), `one_sub_pow_le_exp` (machinerie
+  `(1−x)^n ≤ e^{−nx}`), `empError_eq_zero_iff`, `sampleProb_consistent_le`,
+  `sampleProb_mono` (monotonie).
+- **Honnêteté (G.3/G.9)** : la seule occurrence du mot « sorry » dans la lib est une
+  mention **prose** dans `Data.lean` (« documentée OPEN, pas sorry-backed ») — compteur
+  real-mode = 0. Les jalons ouverts sont documentés OPEN, jamais sorry-stubbés.
+
 ## Notes transverses
 
-- **WDAC workaround** (RECOVERABLE-LOCAL) : `lake exe cache get` bloqué (err 4551) → réutilise
-  les oleans `.lake/packages/` d'un lake frère binairement compatible (`search_lean`, même
-  toolchain `v4.31.0-rc1` + même révision Mathlib). Cf.
+- **WDAC workaround** (RECOVERABLE-LOCAL, cohorte d'alors v4.31.0-rc1) : `lake exe cache get`
+  bloqué (err 4551) → réutilise les oleans `.lake/packages/` d'un lake frère binairement
+  compatible (`search_lean`, même toolchain + même révision Mathlib à l'époque). Cf.
   `lean-wdac-olean-wholesale-copy`.
 - **Mathlib v4.31.0-rc1 IPS-API renames** (documentés durably) : `InnerProductSpace ℝ V`
   exige `[SeminormedAddCommGroup V]` param-class ; `norm_sq_eq_inner`→`real_inner_self_eq_norm_sq` ;
   `abs_inner_le_norm`→`real_inner_le_norm` ; `inner_comm`→`real_inner_comm` ;
   `inner_add_add`→`real_inner_add_add_self` ; `inner_smul_*`→`real_inner_smul_*` ;
   `sq_le_sq` (devenu iff)→`sq_le_sq₀` ; `linarith` aveugle aux produits Nat-cast→`nlinarith [sq_nonneg R]`.
-- CI : `.github/workflows/lean-perceptron.yml` (`sorry-filter-mode: standalone-tactic`,
-  baseline `"0"`).
+- CI : `.github/workflows/lean-learning-theory.yml` (`sorry-filter-mode: real`,
+  baseline `"0"` ; historiquement `lean-perceptron.yml` en `standalone-tactic`, renommé
+  lors de l'ajout de la lib `PacLearning`, bascule mode #11688).

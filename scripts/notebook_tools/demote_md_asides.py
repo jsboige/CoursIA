@@ -147,7 +147,7 @@ def _re_emit_in_format(original_format, new_lines):
 def _demote_all_headings(source_lines):
     """Replace EVERY matching heading line with ``> **<text> :**`` blockquote.
 
-    A cell may contain multiple target headings (Sudoku-6-AIMA-CSP-Python
+    A cell may contain multiple target headings (Sudoku-06-AIMA-CSP-Python
     cells have BOTH ``### Étapes`` AND ``### Indices`` in the same cell).
     We demote all occurrences and preserve the body untouched.
 
@@ -241,7 +241,7 @@ def fix_notebook(path, dry_run=False):
         # single line. Without this, a 'string' source cell collapses to
         # one element and ALL non-heading body is lost when the heading
         # is replaced (incident c.925 #8654: 941 -> 16 chars on
-        # Sudoku-1 cell 9).
+        # Sudoku-01 cell 9).
         src_for_work = src if isinstance(src, list) else src.splitlines(keepends=True)
         new_src, changed = _demote_all_headings(src_for_work)
         if not changed:

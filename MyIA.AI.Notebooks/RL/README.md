@@ -4,9 +4,9 @@
 
 <!-- CATALOG-STATUS
 series: RL
-pedagogical_count: 21
-breakdown: root=21
-maturity: BETA=21
+pedagogical_count: 23
+breakdown: root=23
+maturity: BETA=23
 -->
 
 > **Note éditoriale (counts)** : Le marqueur `CATALOG-STATUS` ci-dessus est autoritatif pour le compte agrégé (17 notebooks canoniques). Pour la **décomposition langagière par kernel** (`metadata.kernelspec.language`), ce README reste autoritatif car la granularité kernel n'est pas dans le marqueur agrégé ; elle est documentée ici par lecture directe des kernelspecs au 10/07/2026 :
@@ -33,12 +33,12 @@ Le RL se comprend mieux en voyant l'agent apprendre. Six visualisations suivent 
 |---|----------|---------|-------|
 | 1 | [rl_1_intro_cartpole](rl_1_intro_cartpole.ipynb) | Introduction PPO, CartPole | 25-30 min |
 | 2 | [rl_2_wrappers_sauvegarde_callbacks](rl_2_wrappers_sauvegarde_callbacks.ipynb) | Wrappers, sauvegarde, callbacks | 35-40 min |
-| 3 | [rl_3_experience_replay_dqn](rl_3_experience_replay_dqn.ipynb) | HER, goal-conditioned RL | 40-45 min |
+| 3 | [rl_3_experience_replay_her](rl_3_experience_replay_her.ipynb) | HER, goal-conditioned RL | 40-45 min |
 | 4 | [rl_4_multi_armed_bandits](rl_4_multi_armed_bandits.ipynb) | Bandits manchots, exploration vs exploitation, Thompson Sampling | 30-35 min |
 | 5 | [rl_5_mdp_dp_qlearning](rl_5_mdp_dp_qlearning.ipynb) | MDP, Value/Policy Iteration, Q-Learning tabulaire | 45-50 min |
 | 6 | [rl_6_dqn_policy_gradient](rl_6_dqn_policy_gradient.ipynb) | DQN depuis zéro, REINFORCE | 50-55 min |
 | 6b | [rl_6b_actor_critic](rl_6b_actor_critic.ipynb) | Actor-Critic (A2C) depuis zéro, advantage, entropy bonus | 45-50 min |
-| 6c | [rl_6c_ppo_from_scratch](rl_6c_ppo_from_scratch.ipynb) | PPO depuis zéro, clipped surrogate, GAE, comparaison A2C vs PPO | 45-50 min |
+| 6c | [rl_6c_ppo_from_scratch](rl_6c_ppo_from_scratch.ipynb) | PPO depuis zéro, échantillonnage d'importance (ratios par epoch, ESS), clipped surrogate, GAE, comparaison A2C vs PPO | 45-50 min |
 | 6d | [rl_6d_sac_from_scratch](rl_6d_sac_from_scratch.ipynb) | SAC depuis zéro, maximum entropy RL, twin Q-networks, auto-température | 45-50 min |
 | 6e | [rl_6e_grpo_from_scratch](rl_6e_grpo_from_scratch.ipynb) | GRPO depuis zéro (DeepSeek-R1), avantage relatif intra-groupe (sans critic), clip PPO + KL vs référence, portefeuille synthétique multi-seed | 45-50 min |
 | 7 | [rl_7_multi_agent_rl](rl_7_multi_agent_rl.ipynb) | Multi-Agent RL, PettingZoo, IQL | 45-50 min |
@@ -48,6 +48,7 @@ Le RL se comprend mieux en voyant l'agent apprendre. Six visualisations suivent 
 | 11 | [rl_11_pomdp](rl_11_pomdp.ipynb) | POMDP, Tiger Problem, belief tracking, Q-MDP | 45-50 min |
 | 12 | [rl_12_distributional_rl](rl_12_distributional_rl.ipynb) | RL distributionnel : C51 (Categorical DQN) depuis zéro, projection catégorielle, politique CVaR | 50-55 min |
 | 13 | [rl_13_curiosity_exploration](rl_13_curiosity_exploration.ipynb) | Exploration par curiosité (RND), motivation intrinsèque, piège d'exploitation | 35-40 min |
+| 15 | [rl_15_grpo_group_relative_policy](rl_15_grpo_group_relative_policy.ipynb) | GRPO (Group Relative Policy Optimization) vs PPO sur CartPole-v1 — avantage relatif intra-groupe (sans critic) vs GAE bootstrapé, multi-seed 6 (0/1/7/42/99/123), Wilcoxon signed-rank + IC95% bootstrap. Prong B discrimination moteur. Sous-grain #13436 de l'EPIC #1454. **Verdict v3 (REPAIR c.644) : INCONCLUSIVE** (le claim initial v1 « GRPO BEATS PPO » souffrait de défauts done-mask + pad-mask — c.642 a corrigé en INCONCLUSIVE, puis c.644 a détecté 4 post-fix incohérences résolues : Wilcoxon n=4 inatteignable, verdict tri-state asymmétrique, hypothèse descriptive fausse réfutée, titre PR ré-aligné — verdict v3 INCONCLUSIVE maintenu, moyennes v3 = 299.36 vs 197.65, std = 55.26 vs 104.99) | 40-45 min |
 | pt-1 | [rlpt_1_ppo_lm_rlhf](rlpt_1_ppo_lm_rlhf.ipynb) | PPO pour alignement d'un petit LM (RLHF toy, from scratch, char-level) : reward model jouet, KL vs politique SFT de référence, multi-seed 4 — la signature RLHF, différenciée de rl_6c (PPO CartPole) et rl_6e (GRPO) | 40-45 min |
 | pt-2 | [rlpt_2_grpo_minimal](rlpt_2_grpo_minimal.ipynb) | GRPO sur Qwen3.5-0.8B local (8 Go Viability), reward vérifiable, budget steps borné — le cœur « à la Deepseek » : group rollouts, avantage sans value net, pont #5105 | 45-55 min |
 | pt-3 | [rlpt_3_reward_hacking](rlpt_3_reward_hacking.ipynb) | Reward hacking × inoculation, version compacte du capstone #5105 : le hack sur récompense vérifiable faillible, la détection rewardspy, l'inoculation comme variable expérimentale, verdict reproductible (seed fixée) | 35-40 min |
@@ -524,7 +525,7 @@ L'expérience replay (notebook 6) stocke les transitions (état, action, reward,
 RL/
 ├── rl_1_intro_cartpole.ipynb
 ├── rl_2_wrappers_sauvegarde_callbacks.ipynb
-├── rl_3_experience_replay_dqn.ipynb
+├── rl_3_experience_replay_her.ipynb
 ├── rl_4_multi_armed_bandits.ipynb
 ├── rl_5_mdp_dp_qlearning.ipynb
 ├── rl_6_dqn_policy_gradient.ipynb
