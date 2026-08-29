@@ -6,6 +6,11 @@
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Modele nominal lib-vs-lib cite par owner #10382 (\"PyMC vs Infer, 2 moteurs qui brillent\") : C# = Microsoft Infer.NET (Microsoft.ML.Probabilistic, NuGet officiel, native .NET, inférence variationnelle EP/VMP) et Python = PyMC (pip pymc, native Python, NUTS/HMC + ADVI). Chaque cote atteint le moteur SOTA de son ecosysteme probabiliste -- ni pont intermediaire ni reimplementation. Aucune asymetrie de machinerie a corriger. Verifie firsthand : C# Microsoft.ML.Probabilistic refs + execution_count, Python pymc imports."
   audits:
+    - date: "2026-08-29"
+      by: myia-po-2023:CoursIA-2
+      python_sha: 9f95808fd0654099f12d9a40dac437d508f4125e
+      csharp_sha: e61bc677cace7fe0525f0f2d3d065fd6ac16a793
+      reason: "Selection K executee #13036 (cf PR livre c.650). Twin parity conservee : meme corpus reproductible (12 mots / 12 docs / 4 themes), meme grille K=2..6, memes criteres (UMass + perplexite/log-lik hold-out), memes priors guides. Verdict documente divergence possible entre moteurs (VMP vs NUTS) - pedagogiquement interessant."
     - date: "2026-08-18"
       by: myia-po-2026:CoursIA
       python_sha: 9f95808fd0654099f12d9a40dac437d508f4125e
