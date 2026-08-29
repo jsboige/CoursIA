@@ -62,16 +62,80 @@ def _is_python_kernel(metadata: dict) -> bool:
     return name.startswith("python") or language == "python"
 
 
+def _scan_line(line: str, depth: int, in_triple: Optional[str]) -> Tuple[int, Optional[str]]:
+    """Fold ONE physical line into the bracket/string state.
+
+    Returns (depth, in_triple) after the line. Bracket changes count only
+    outside strings and comments; a comment ends the scan for the line; a
+    triple-quoted string may open and/or close across the line; the escape
+    ``\\\\`` at end of line inside a single-quote string is irrelevant here
+    because splitlines() already made each line a physical unit (a string
+    never spans lines unless triple-quoted).
+    """
+    i, n = 0, len(line)
+    while i < n:
+        ch = line[i]
+        if in_triple is not None:
+            if line.startswith(in_triple, i):
+                in_triple = None
+                i += 3
+                continue
+            i += 1
+            continue
+        if ch == "#":
+            break  # comment: rest of the line is inert
+        if ch in "\"'":
+            triple = ch * 3
+            if line.startswith(triple, i):
+                # Enter (or pass through) a triple-quoted string.
+                j = line.find(triple, i + 3)
+                if j == -1:
+                    return depth, triple
+                i = j + 3
+                continue
+            # Single-quoted string: scan to the closing quote, honouring \".
+            j = i + 1
+            while j < n:
+                if line[j] == "\\":
+                    j += 2
+                    continue
+                if line[j] == ch:
+                    break
+                j += 1
+            i = j + 1
+            continue
+        if ch in "([{":
+            depth += 1
+        elif ch in ")]}":
+            depth = max(0, depth - 1)
+        i += 1
+    return depth, in_triple
+
+
 def _strip_ipython_magics(src: str) -> str:
     """Drop lines starting with `!` (shell) or `%` (magics incl. `%%`). The
     cell source may legitimately contain `!pip install` or `%%time` -- those
     are IPython, not Python. Naive `compile()` on the raw source would fail
-    on the magic prefix and produce a false positive."""
+    on the magic prefix and produce a false positive.
+
+    A magic is a LINE-level construct of IPython: it can only start a
+    LOGICAL line, never continue one. A line whose first non-space
+    character is `%` while brackets are still open (or a triple-quoted
+    string is active) is the ordinary string-formatting operator in
+    continuation position -- dropping it corrupts the source (PR #13328:
+    ``print("..."\\n      % (a, b))`` lost its argument line and the cell
+    was flagged "'(' was never closed"). The stripper therefore tracks
+    bracket depth and triple-quote state and only drops a magic line at
+    logical-line start."""
     out_lines = []
+    depth = 0
+    in_triple: Optional[str] = None
     for line in src.splitlines():
-        stripped = line.lstrip()
-        if stripped.startswith("!") or stripped.startswith("%"):
-            continue
+        if depth == 0 and in_triple is None:
+            stripped = line.lstrip()
+            if stripped.startswith("!") or stripped.startswith("%"):
+                continue
+        depth, in_triple = _scan_line(line, depth, in_triple)
         out_lines.append(line)
     return "\n".join(out_lines)
 
