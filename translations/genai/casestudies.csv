@@ -778,7 +778,9 @@ except ImportError:
 ",,,,,,,,98e8009ebbbf579d,,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,4392065a,markdown,fr,7355e403d49d0b9f,"## Import des bibliothèques
 
-Nous importons les briques de Semantic Kernel nécessaires à l'orchestration multi-agent : le `Kernel` (conteneur de services et de plugins), `ChatCompletionAgent` et `AgentGroupChat` (agents et orchestrateur de groupe), `TerminationStrategy` (fin de dialogue), le décorateur `@kernel_function` (pour exposer des fonctions comme outils) et `FunctionChoiceBehavior` (pour l'appel automatique de plugins par le LLM). Le type `Annotated` sert à documenter les paramètres de ces fonctions-plugin.",## Importing libraries,,,,,## Импорт библиотек,,7355e403d49d0b9f,5d4ec997e169bcfa,,,,,e54f8107a37f8e97,,
+Nous importons les briques de Semantic Kernel nécessaires à l'orchestration multi-agent : le `Kernel` (conteneur de services et de plugins), `ChatCompletionAgent` et `AgentGroupChat` (agents et orchestrateur de groupe), `TerminationStrategy` (fin de dialogue), le décorateur `@kernel_function` (pour exposer des fonctions comme outils) et `FunctionChoiceBehavior` (pour l'appel automatique de plugins par le LLM). Le type `Annotated` sert à documenter les paramètres de ces fonctions-plugin.","## Importing libraries
+
+We import the Semantic Kernel building blocks needed for multi-agent orchestration: the `Kernel` (container for services and plugins), `ChatCompletionAgent` and `AgentGroupChat` (agents and group orchestrator), `TerminationStrategy` (end of dialogue), the `@kernel_function` decorator (to expose functions as tools) and `FunctionChoiceBehavior` (for automatic plugin invocation by the LLM). The `Annotated` type documents the parameters of these plugin functions.",,,,,## Импорт библиотек,,7355e403d49d0b9f,f432d5d8634c43f1,,,,,e54f8107a37f8e97,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,ba9fcb5d,markdown,fr,58c8d94d528c3536,"Ce cas d'usage met en oeuvre une **conversation multi-agent** dans le domaine medical. Trois agents cooperent : un medecin generaliste, une IA specialisee en diagnostic et un pharmacien. Chaque agent dispose de son propre prompt système et de plugins dedies via des `@kernel_function`.
 
 **Objectifs pedagogiques** :
@@ -825,7 +827,9 @@ print(""Configuration des logs OK"")
 ",,,,,,,,66ee957e3bef0fc6,,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,6ee57404,markdown,fr,6c5f5e7a9b548692,"## Création du kernel Semantic Kernel
 
-Le `Kernel` est le conteneur central de Semantic Kernel : il regroupe le service d'IA et les plugins. La fonction `create_kernel()` instancie un kernel vierge puis y enregistre un service `OpenAIChatCompletion` (modèle `gpt-4o-mini`, clé API lue depuis l'environnement — jamais codée en dur). Factoriser cette construction dans une fonction permet de créer plusieurs kernels, par exemple un par agent si l'on souhaite les isoler.",## Creating the Semantic Kernel kernel,,,,,,,6c5f5e7a9b548692,30b22f8a5f0b0fe7,,,,,,,
+Le `Kernel` est le conteneur central de Semantic Kernel : il regroupe le service d'IA et les plugins. La fonction `create_kernel()` instancie un kernel vierge puis y enregistre un service `OpenAIChatCompletion` (modèle `gpt-4o-mini`, clé API lue depuis l'environnement — jamais codée en dur). Factoriser cette construction dans une fonction permet de créer plusieurs kernels, par exemple un par agent si l'on souhaite les isoler.","## Creating the Semantic Kernel kernel
+
+The `Kernel` is Semantic Kernel's central container: it brings together the AI service and the plugins. The `create_kernel()` function instantiates an empty kernel, then registers an `OpenAIChatCompletion` service on it (model `gpt-4o-mini`, API key read from the environment — never hard-coded). Factoring this construction into a function makes it possible to create several kernels, for example one per agent if you want to isolate them.",,,,,,,6c5f5e7a9b548692,6b2b9ef214ba9e68,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,560d976c,code,fr,5ece31ba54a59f52,"# Création du kernel Semantic Kernel
 def create_kernel():
     kernel = Kernel()
@@ -931,14 +935,18 @@ MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,82094e
 print(""Exercice a completer : AllergyPlugin"")",,,,,,,,b7e6599ca302d2e3,,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,c6adcae8,markdown,fr,74e4430cb43a8cfa,"## Création du Kernel
 
-On instancie ici le kernel **partagé** que les trois agents et leurs plugins utiliseront. Tous les `add_plugin` et toutes les créations d'agents qui suivent s'appuient sur cette même instance : c'est ce qui permet à l'IA médicale d'invoquer, via le kernel, les fonctions exposées par les plugins du médecin et du pharmacien.",## Kernel Creation,,,,,,,74e4430cb43a8cfa,f4db9a81e86d1696,,,,,,,
+On instancie ici le kernel **partagé** que les trois agents et leurs plugins utiliseront. Tous les `add_plugin` et toutes les créations d'agents qui suivent s'appuient sur cette même instance : c'est ce qui permet à l'IA médicale d'invoquer, via le kernel, les fonctions exposées par les plugins du médecin et du pharmacien.","## Kernel Creation
+
+Here we instantiate the **shared** kernel that the three agents and their plugins will use. Every `add_plugin` call and every agent creation that follows relies on this same instance: this is what lets the medical AI invoke, through the kernel, the functions exposed by the doctor's and the pharmacist's plugins.",,,,,,,74e4430cb43a8cfa,7308b58f0d7ea348,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,6edc5679,code,fr,08fa670982b97e37,"# Création du kernel
 kernel = create_kernel()
 print(""Kernel instancie"")
 ",,,,,,,,08fa670982b97e37,,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,27e18741,markdown,fr,2f06457057541543,"## Ajout des plugins pour chaque agent
 
-`kernel.add_plugin()` enregistre une instance de plugin sous un nom. Chaque plugin expose ses méthodes `@kernel_function` au kernel, qui les rend discoverable par le LLM. On enregistre ici les trois plugins médicaux (`doctor`, `medical`, `pharmacist`) sur le kernel partagé — ils seront invoquables automatiquement grâce au `FunctionChoiceBehavior.Auto()` configuré plus bas.",## Adding plugins for each agent,,,,,,,2f06457057541543,03ddd847501c0266,,,,,,,
+`kernel.add_plugin()` enregistre une instance de plugin sous un nom. Chaque plugin expose ses méthodes `@kernel_function` au kernel, qui les rend discoverable par le LLM. On enregistre ici les trois plugins médicaux (`doctor`, `medical`, `pharmacist`) sur le kernel partagé — ils seront invoquables automatiquement grâce au `FunctionChoiceBehavior.Auto()` configuré plus bas.","## Adding plugins for each agent
+
+`kernel.add_plugin()` registers a plugin instance under a name. Each plugin exposes its `@kernel_function` methods to the kernel, which makes them discoverable by the LLM. Here we register the three medical plugins (`doctor`, `medical`, `pharmacist`) on the shared kernel — they will be invocable automatically thanks to the `FunctionChoiceBehavior.Auto()` configured further down.",,,,,,,2f06457057541543,2a2077fb8cfe24ed,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,934c210f,code,fr,15cdf9a0e6b507bb,"# Ajout des plugins pour chaque agent
 kernel.add_plugin(DoctorPlugin(), plugin_name=""doctor"")
 kernel.add_plugin(MedicalAIPlugin(), plugin_name=""medical"")
@@ -1017,7 +1025,9 @@ print(""Agents de conversation crees"")
 ",,,,,,,,3d38699948002bb4,,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,f026c6bd,markdown,fr,05fcc10b168eca1c,"## Configuration pour que l'agent médical appelle automatiquement les plugins
 
-Par défaut, un agent ne s'appuie que sur ses instructions textuelles. Pour qu'il puisse **invoquer les plugins** enregistrés dans le kernel, on active `FunctionChoiceBehavior.Auto()` dans ses `KernelArguments` : le LLM décide alors de lui-même, selon le contexte, d'appeler telle ou telle `@kernel_function` (gravité d'un symptôme, recommandation médicamenteuse…). On applique ce réglage à l'agent `IA_Medicale`, puis on crée le pharmacien sur le même modèle.",## Configuration so that the medical agent automatically calls the plugins,,,,,,,05fcc10b168eca1c,524628d7af885989,,,,,,,
+Par défaut, un agent ne s'appuie que sur ses instructions textuelles. Pour qu'il puisse **invoquer les plugins** enregistrés dans le kernel, on active `FunctionChoiceBehavior.Auto()` dans ses `KernelArguments` : le LLM décide alors de lui-même, selon le contexte, d'appeler telle ou telle `@kernel_function` (gravité d'un symptôme, recommandation médicamenteuse…). On applique ce réglage à l'agent `IA_Medicale`, puis on crée le pharmacien sur le même modèle.","## Configuration so that the medical agent automatically calls the plugins
+
+By default, an agent relies only on its textual instructions. So that it can **invoke the plugins** registered in the kernel, we enable `FunctionChoiceBehavior.Auto()` in its `KernelArguments`: the LLM then decides by itself, depending on the context, to call one `@kernel_function` or another (severity of a symptom, medication recommendation, and so on). We apply this setting to the `IA_Medicale` agent, then create the pharmacist on the same model.",,,,,,,05fcc10b168eca1c,20f69d7b628a3c2f,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,80cd3f50,code,fr,3a6d162f88e072cf,"settings = kernel.get_prompt_execution_settings_from_service_id(""openai"")
 settings.function_choice_behavior = FunctionChoiceBehavior.Auto()
 ai_medical_agent.arguments = KernelArguments(settings=settings)
@@ -1088,9 +1098,14 @@ Deux modes d'amorçage :
 - **Batch** (`BATCH_MODE = True`, le mode Papermill/CI) : un cas clinique fixé (`SYMPTOMES_DEMO`) démarre la consultation. En exécution headless, `stdin` n'existe pas — appeler `input()` lève `StdinNotImplementedError` avant que le moindre agent ne parle, et la consultation n'a pas lieu. C'est le même patron que les deux autres études de cas du répertoire : `Fort-Boyard` amorce avec un mot à deviner fixé, `Barbie-Schreck` avec une contrainte de style tirée au sort.
 - **Interactif** (`BATCH_MODE = False`) : les symptômes initiaux sont saisis au clavier via `input()`.
 
-La consultation est ensuite **agent-driven** : les trois agents se répondent sans intervention. Le `try/except` de la cellule d'exécution n'intercepte plus que `EOFError`/`KeyboardInterrupt` — un échec d'orchestration (clé API, réseau, quota) doit rester **visible**, pas absorbé silencieusement.","The `run_medical_chat` function orchestrates the complete dialogue: it collects the initial symptoms via `input()`, passes the message to the `AgentGroupChat`, then iterates over the agents' responses. The cycle continues until the termination strategy declares the consultation complete.
+La consultation est ensuite **agent-driven** : les trois agents se répondent sans intervention. Le `try/except` de la cellule d'exécution n'intercepte plus que `EOFError`/`KeyboardInterrupt` — un échec d'orchestration (clé API, réseau, quota) doit rester **visible**, pas absorbé silencieusement.","The `run_medical_chat` function orchestrates the complete dialogue: it seeds the consultation with the patient's symptoms, passes them to the `AgentGroupChat`, then iterates over the agents' responses until the termination strategy declares the consultation complete (limit of 6 exchanges set by `MedicalTerminationStrategy`).
 
-In interactive mode (`BATCH_MODE = False`), the user can respond to each agent. In batch mode, the call is captured by the `try/except` block below.",,,,,,,b5c71fbcb3af94e7,f5210b28d4ec4827,,,,,,,
+Two seeding modes:
+
+- **Batch** (`BATCH_MODE = True`, the Papermill/CI mode): a fixed clinical case (`SYMPTOMES_DEMO`) starts the consultation. Under headless execution `stdin` does not exist — calling `input()` raises `StdinNotImplementedError` before any agent has spoken at all, and the consultation never takes place. This is the same pattern as the two other case studies in this directory: `Fort-Boyard` seeds with a fixed word to guess, `Barbie-Schreck` with a randomly drawn style constraint.
+- **Interactive** (`BATCH_MODE = False`): the initial symptoms are typed in at the keyboard via `input()`.
+
+The consultation is then **agent-driven**: the three agents reply to one another without intervention. The `try/except` in the execution cell now catches only `EOFError`/`KeyboardInterrupt` — an orchestration failure (API key, network, quota) must remain **visible**, not silently absorbed.",,,,,,,b5c71fbcb3af94e7,2c3c19dfa45c6329,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,979228df,code,fr,c499959e426cce74,"from semantic_kernel.contents import ChatMessageContent, AuthorRole
 
 SYMPTOMES_DEMO = (""Depuis trois jours, j'ai une fievre a 38,5 degres avec des maux de tete ""
