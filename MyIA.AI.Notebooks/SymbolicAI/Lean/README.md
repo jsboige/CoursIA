@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: SymbolicAI-Lean
-pedagogical_count: 38
-breakdown: Lean=38
-maturity: BETA=36, DRAFT=2
+pedagogical_count: 49
+breakdown: Lean=49
+maturity: BETA=47, DRAFT=2
 -->
 
 [← SemanticWeb](../SemanticWeb/README.md) | [↑ SymbolicAI](../README.md) | [Planners →](../Planners/README.md)
