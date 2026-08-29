@@ -142,6 +142,7 @@ REPO = "jsboige/CoursIA"
 from series_saturation import (  # noqa: E402
     CONSOLIDATION,
     EXPANSION,
+    NEUTRAL,
     SERIES_SCALE_DEFAULT,
     cited_issues,
     fetch_series_visits,
@@ -340,8 +341,22 @@ DWELL_HOURS_DEFAULT = 24.0
 # Une issue portant l'une de ces etiquettes se consomme sans delai : le
 # dwell existe pour empecher l'emballement d'audit, pas pour retarder un
 # correctif de securite ou une regression qui casse main.
+#
+# Les synonymes FR sont la par PROSPECTIVE, pas par constat : mesure du
+# 2026-08-29, `gh label list` ne rend qu'UNE etiquette de cette famille sur
+# le depot (`security`) -- aucune etiquette FR d'urgence n'existe
+# aujourd'hui. Le concern (review NanoClaw sur #13466) porte donc sur le
+# jour ou quelqu'un en creera une : sur un depot dont les issues sont
+# redigees en francais, `urgence` ou `securite` est la forme qu'on ecrira
+# spontanement, et le bypass echouerait alors en SILENCE -- une issue
+# vraiment urgente retenue 24 h par un garde cense l'exempter. Le cout de
+# la prevention est une ligne ; celui de la detection serait un incident.
 URGENT_LABELS = {"urgent", "blocker", "security", "regression", "p0",
-                 "critical", "hotfix"}
+                 "critical", "hotfix",
+                 # variantes FR (accentuees et nues : les etiquettes
+                 # GitHub acceptent les deux graphies)
+                 "urgence", "bloquant", "securite", "sécurité",
+                 "regression-fr", "régression", "critique"}
 
 # Une zone qui a recu ce nombre de notebooks NEUFS sur la fenetre est saturee.
 ZONE_SATURATION_MIN = 3
@@ -376,11 +391,26 @@ def admissibility(item: dict, balance: dict | None,
         nb = z.get("new_notebooks", 0)
         con = z.get(CONSOLIDATION, 0)
         if nb >= ZONE_SATURATION_MIN and con == 0:
-            return ("ZONE SANS REMEDE : {} a recu {} notebooks neufs sur la "
-                    "fenetre et le vivier ouvert ne contient AUCUN grain de "
-                    "consolidation. Ce grain en ajoute un de plus. Ouvrir ou "
-                    "prendre un grain de consolidation de cette zone d'abord."
-                    .format(fam, nb))
+            msg = ("ZONE SANS REMEDE : {} a recu {} notebooks neufs sur la "
+                   "fenetre et le vivier ouvert ne contient AUCUN grain de "
+                   "consolidation. Ce grain en ajoute un de plus. Ouvrir ou "
+                   "prendre un grain de consolidation de cette zone d'abord."
+                   .format(fam, nb))
+            # Ou le faux positif se cacherait, s'il y en a un : "aucun grain
+            # de consolidation" est une lecture du LEXIQUE de polarite, pas
+            # une lecture des intentions. Un grain NEUTRAL de la meme zone
+            # peut etre une consolidation que le lexique a manquee -- on les
+            # nomme pour que le refus soit refutable sur pieces, au lieu
+            # d'etre a croire sur parole.
+            neutres = (z.get("neutral_issues") or [])[:5]
+            if neutres:
+                msg += (" A verifier avant d'y croire : {} grain(s) NEUTRAL "
+                        "ouvert(s) dans cette zone ({}) -- si l'un d'eux est "
+                        "une consolidation que le lexique a manquee, le "
+                        "remede existe et ce refus est un faux positif."
+                        .format(z.get(NEUTRAL, 0),
+                                ", ".join("#" + str(n) for n in neutres)))
+            return msg
     return None
 
 

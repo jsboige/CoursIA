@@ -336,8 +336,19 @@ def zone_balance(zones: dict, issue_to_family: dict, pool: list) -> dict:
             continue
         pol = polarity(it.get("title", ""), it.get("body", "") or "")
         slot = out.setdefault(
-            fam, {EXPANSION: 0, CONSOLIDATION: 0, NEUTRAL: 0, "new_notebooks": 0})
+            fam, {EXPANSION: 0, CONSOLIDATION: 0, NEUTRAL: 0,
+                  "new_notebooks": 0, "neutral_issues": []})
         slot[pol] += 1
+        if pol == NEUTRAL and it.get("number"):
+            # #13466 (review NanoClaw, concern 1) : le veto "SANS REMEDE"
+            # herite de la recall du lexique de polarite. Un grain de
+            # consolidation dont le titre echappe au lexique tombe en
+            # NEUTRAL -- le remede existe alors, mais il est INVISIBLE, et
+            # le refus devient un faux positif SILENCIEUX. On retient donc
+            # les numeros pour que le refus puisse les citer : le lecteur
+            # voit ou le faux positif se cacherait, au lieu de devoir
+            # deviner que le lexique a pu manquer quelque chose.
+            slot["neutral_issues"].append(it["number"])
         slot["new_notebooks"] = (zones.get(fam) or {}).get("new_notebooks", 0)
     return out
 
