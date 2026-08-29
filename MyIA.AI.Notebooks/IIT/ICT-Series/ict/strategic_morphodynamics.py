@@ -198,8 +198,8 @@ def play_match(
     g1 = g2 = 0.0
     for _ in range(n_rounds):
         h1, h2 = np.array(own1), np.array(own2)
-        a = int(s1(h1, h2, rng) if s1_rng else s1(h1, h2))
-        b = int(s2(h2, h1, rng) if s2_rng else s2(h2, h1))
+        a = int(s1(h1, h2, rng=rng) if s1_rng else s1(h1, h2))
+        b = int(s2(h2, h1, rng=rng) if s2_rng else s2(h2, h1))
         if noise > 0.0:
             if rng.random() < noise:
                 a = 1 - a
