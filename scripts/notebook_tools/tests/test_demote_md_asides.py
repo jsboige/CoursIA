@@ -9,7 +9,7 @@ fix_sudoku_hierarchy.py (c.925, PR #8654) and fix_tweety_hierarchy.py
     Étapes de la modélisation..., Pistes d'amélioration/amelioration,
     Notes techniques).
   - Idempotence (re-running on already-demoted cells is a no-op).
-  - Multi-heading per cell (Sudoku-6-AIMA-CSP-Python has both Étapes
+  - Multi-heading per cell (Sudoku-06-AIMA-CSP-Python has both Étapes
     and Indices in the same cell — both must be demoted).
   - File-level fix (write-back semantics, LF-only CR=0, dry-run).
 """
@@ -162,7 +162,7 @@ class TestDemoteAllHeadings:
         assert new[0] == "> **Notes techniques (Tweety 1.30) :**\n"
 
     def test_multi_headings_same_cell(self):
-        """Sudoku-6-AIMA-CSP-Python has BOTH Étapes AND Indices in one cell."""
+        """Sudoku-06-AIMA-CSP-Python has BOTH Étapes AND Indices in one cell."""
         src = [
             "### Étapes\n",
             "\n",
@@ -382,7 +382,7 @@ class TestFixNotebook:
         assert nb_path.read_bytes() == original_bytes
 
     def test_multi_headings_same_cell(self, tmp_path):
-        """Sudoku-6-AIMA-CSP-Python: BOTH Étapes AND Indices in one cell."""
+        """Sudoku-06-AIMA-CSP-Python: BOTH Étapes AND Indices in one cell."""
         nb_path = self._write_nb(tmp_path / "test.ipynb", [
             {"cell_type": "markdown",
              "source": [

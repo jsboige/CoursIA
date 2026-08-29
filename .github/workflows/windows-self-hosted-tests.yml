@@ -27,6 +27,12 @@ concurrency:
 jobs:
   windows-confinement-tests:
     name: Scripts Tests (Windows runner)
+    # Acceptance B item 1 (#12704) : garde fork EXPLICITE au niveau job.
+    # Le declencheur actuel est workflow_dispatch seul -- un fork ne peut pas
+    # l'emettre -- mais "pas de trigger" est un etat qu'une ligne de YAML
+    # defait : si un declencheur pull_request est ajoute un jour, un evenement
+    # fork est refuse ICI, defense-in-depth qui ne se defe pas d'un clic d'UI.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: [self-hosted, coursia-ephemeral, coursia-fast-guards]
     timeout-minutes: 15
 

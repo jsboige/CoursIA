@@ -164,8 +164,8 @@ Algorithmes de recherche classique, satisfaction de contraintes (CSP), résoluti
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | Sudoku-0 : Environnement et Classes de Base (C#) | BETA | Oui |
-| 2 | Sudoku-1 : Résolution par Backtracking | BETA | Oui |
-| 3 | Sudoku-1 : Resolution par Backtracking (Python) | BETA | Oui |
+| 2 | Sudoku-01 : Résolution par Backtracking | BETA | Oui |
+| 3 | Sudoku-01 : Resolution par Backtracking (Python) | BETA | Oui |
 | 4 | Sudoku-10 : Résolution avec OR-Tools (C#) | BETA | Oui |
 | 5 | Sudoku-10-ORTools-Python : OR-Tools CP-SAT (Python) | BETA | Oui |
 | 6 | Sudoku-11-Choco-Csharp : Solveur Choco via IKVM | BETA | Oui |
@@ -186,17 +186,17 @@ Algorithmes de recherche classique, satisfaction de contraintes (CSP), résoluti
 | 21 | Sudoku-7b — Soundness de la propagation de contraintes… | BETA | Oui |
 | 22 | Résolution de Sudoku avec Algorithm X et Dancing Links | BETA | Oui |
 | 23 | Sudoku-Python-DancingLinks : Dancing Links / Algorithm… | BETA | Oui |
-| 24 | Sudoku-3 : Résolution par Algorithme Génétique (C#) | BETA | Oui |
+| 24 | Sudoku-03 : Résolution par Algorithme Génétique (C#) | BETA | Oui |
 | 25 | Sudoku-Python-Genetic : Algorithme Génétique (Python) | BETA | Oui |
 | 26 | Résolution de Sudoku par Recuit Simulé | BETA | Oui |
-| 27 | Sudoku-4 : Recuit Simule (Python) | BETA | Oui |
-| 28 | Sudoku-5 : Particle Swarm Optimization (PSO) | BETA | Oui |
-| 29 | Sudoku-5 : Particle Swarm Optimization (Python) | BETA | Oui |
-| 30 | Sudoku-6 : Résolution par CSP Académique (AIMA) | BETA | Oui |
-| 31 | Sudoku-6 : Résolution par CSP Académique (Python) | BETA | Oui |
-| 32 | Sudoku-7 : Résolution par Propagation de Contraintes… | BETA | Oui |
-| 33 | Sudoku-7 : Résolution par Propagation de Contraintes… | BETA | Oui |
+| 27 | Sudoku-04 : Recuit Simule (Python) | BETA | Oui |
+| 28 | Sudoku-05 : Particle Swarm Optimization (PSO) | BETA | Oui |
+| 29 | Sudoku-05 : Particle Swarm Optimization (Python) | BETA | Oui |
+| 30 | Sudoku-06 : Résolution par CSP Académique (AIMA) | BETA | Oui |
+| 31 | Sudoku-06 : Résolution par CSP Académique (Python) | BETA | Oui |
+| 32 | Sudoku-07 : Résolution par Propagation de Contraintes… | BETA | Oui |
+| 33 | Sudoku-07 : Résolution par Propagation de Contraintes… | BETA | Oui |
 | 34 | Résolution de Sudoku par Stratégies Humaines | BETA | Oui |
-| 35 | Sudoku-8 : Resolution par Stratégies Humaines (Python) | BETA | Oui |
+| 35 | Sudoku-08 : Resolution par Stratégies Humaines (Python) | BETA | Oui |
 | 36 | Notebook 9: Résolution de Sudoku par Coloration de… | BETA | Oui |
-| 37 | Sudoku-9 : Coloration de Graphe (Python) | BETA | Oui |
+| 37 | Sudoku-09 : Coloration de Graphe (Python) | BETA | Oui |

@@ -27,17 +27,17 @@ imports), producing a self-contained notebook that nbclient CAN execute
 headless -- the imported cells run first in the same kernel, so the kernel
 state (classes, helpers) is identical to a real ``#!import``.
 
-Verified firsthand on ``Sudoku-3-Genetic-Csharp``: flatten 28 -> 41 cells,
+Verified firsthand on ``Sudoku-03-Genetic-Csharp``: flatten 28 -> 41 cells,
 headless exec via nbclient (.net-csharp kernel) in 69s, 17 code cells
 ec 1..17, 0 errors, ``SudokuHelper`` resolves, C.1 stubs intact.
 
 Usage
 -----
     # Produce a flattened copy (default: <name>_flat.ipynb beside the input):
-    python flatten_import_notebook.py Sudoku-3-Genetic-Csharp.ipynb
+    python flatten_import_notebook.py Sudoku-03-Genetic-Csharp.ipynb
 
     # Flatten + headless-execute, reporting per-cell errors (no file written):
-    python flatten_import_notebook.py Sudoku-3-Genetic-Csharp.ipynb --execute
+    python flatten_import_notebook.py Sudoku-03-Genetic-Csharp.ipynb --execute
 
     # Write the flattened notebook to a specific path:
     python flatten_import_notebook.py NB.ipynb --output NB_flat.ipynb

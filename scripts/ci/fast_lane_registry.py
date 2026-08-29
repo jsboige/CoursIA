@@ -436,6 +436,64 @@ TRANCHE2: list[Guard] = [
 
 
 # ---------------------------------------------------------------------------
+# TRANCHE 3 d'absorption (#13097, remede A) -- premier garde de la vague
+# « metadata guards » pointee par la mesure de famine CI : sur les 9 gardes
+# sans filtre `paths:` qui pesent ~50 % du volume `pull_request`, celui-ci
+# est le seul dont le verdict est UNE invocation python a sortie de processus
+# proche, sans ecriture PR (label/commentaire) ni bypass verdict-relevant :
+#
+#   - regression_scan.py sort 0 (propre) / 1 (sain->degrade) / 2 (import
+#     casse) ; le workflow d'origine capture le rc, publie une annotation
+#     ::warning ou ::notice, puis SORT TOUJOURS 0 -- le check-run d'origine
+#     est donc vert en toute circonstance (ADVISORY, user 2026-06-20). Ici :
+#     blocking=False rend neutral sur rc=1 -- le signal devient visible dans
+#     le titre du check-run (« signale (advisory) ») au lieu d'etre enterre
+#     dans les logs d'un check vert, et `pr_gate` compte neutral comme OK
+#     (CONCLUSION_OK), donc le caractere jamais-bloquant est preserve.
+#     rc=2 (import casse) est mappe succes par warn_rc, comme l'original
+#     qui ne le distinguait pas non plus d'un passage.
+#   - Les bypass d'origine (auteur bot, label `regression-accepted`) ne
+#     changent PAS le verdict (le workflow sortait deja 0 apres bypass) :
+#     les omettre ne durcit rien. Les PR du bot catalogue ne touchent pas
+#     de notebooks, donc le filtre paths les laisse dehors de toute facon.
+#   - Les autres 8 gardes de la liste #13097 restent hors lane pour
+#     l'instant : les label-writers (stale-base, base-not-main,
+#     variation-light-genre, variation-tag) exigeraient `pull-requests:
+#     write` sur le job partage (escalade de permissions = decision
+#     design coordinateur), et les multi-steps (translation-guard avec
+#     override dual-key #10332, lane-claim-guard avec bypass
+#     verdict-relevant bot/fork, secret-scan avec positive-controls)
+#     exigent une extension du moteur (ctx PR author/body, pre-steps) --
+#     tranches suivantes, une par vague, apres arbitrage.
+# ---------------------------------------------------------------------------
+TRANCHE3: list[Guard] = [
+    # ADVISORY report-only (axe-2 output-health) : neutral sur
+    # sain->degrade, jamais bloquant. Source : regression-guard.yml
+    # (job `guard`, check-run « No notebook health regression »).
+    Guard(
+        name="No notebook health regression",
+        source="regression-guard.yml",
+        paths=[
+            "MyIA.AI.Notebooks/**/*.ipynb",
+            "scripts/notebook_tools/regression_scan.py",
+            "scripts/notebook_tools/regression_allowlist.json",
+            "scripts/notebook_tools/diagnose_broken.py",
+            "scripts/notebook_tools/forensic_scan.py",
+            ".github/workflows/regression-guard.yml",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/regression_scan.py",
+            "--guard", "--base", "{base_ref}", "--head", "HEAD",
+            "--paths", "{changed_paths}",
+        ],
+        blocking=False,
+        needs_base=True,
+        iterates_paths=True,
+        absorbed=True,
+        warn_rc=(2,),
+    ),
+]
+
 # TRANCHE 4 d'absorption (#12396) -- meme contrat que les tranches 1/2 (nom
 # canonique, conclusion reelle, workflow source retire de pull_request),
 # avec la nouveaute demandee par l'issue : un CONTROLE POSITIF d'identite

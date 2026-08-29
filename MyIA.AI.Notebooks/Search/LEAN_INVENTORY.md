@@ -5,19 +5,20 @@ Inventaire transverse des projets de formalisation Lean 4 sous `Search/`, sur le
 [`SymbolicAI/Lean/LEAN_INVENTORY.md`](../SymbolicAI/Lean/LEAN_INVENTORY.md). Source de
 vérité : corps de l'Epic
 [#4038](https://github.com/jsboige/CoursIA/issues/4038) + vérification `firsthand`. Colonne
-*Sorry (production)* = métrique CI `standalone-tactic` (les mentions prose « 0 sorry »
-n'entrent pas dans ce compte ; cf.
-`lean-ci-sorry-filter`).
+*Sorry (production)* = métrique CI `real` (commentaires strippés, `\bsorry\b`, fichiers FR
+hors `_en` ; bascule #11688 — historiquement `standalone-tactic` ; les mentions prose
+« 0 sorry » n'entrent pas dans ce compte).
 
 ## Résumé
 
 | Lake | Toolchain | sorry (production) | Modules | Notebook câblé | Classe | Suivi |
 |------|-----------|--------------------:|--------:|---------------:|--------|-------|
-| `search_lean` | v4.32.1 | 0 | 5 | 0¹ | PEDA/REF | #4048, #4038, #3801 |
+| `search_lean` | v4.32.1 | 0 | 5 | 1¹ | PEDA/REF | #4048, #4038, #3801 |
 | `discrepancy_lean` | v4.32.1 | 0 | 8 | 0² | PEDA/REF | #12823 |
-| **Total** | — | **0** | **13** | — | — | — |
+| **Total** | — | **0** | **13** | **1** | — | — |
 
-¹ Aucun notebook Lean dédié. Companion conceptuel = la série **Search** (CSP/Foundations,
+¹ Notebook câblé : **Lean-18-Search-AStar-Optimality.ipynb**
+(`SymbolicAI/Lean/`). Companion conceptuel = la série **Search** (CSP/Foundations,
 A* vs BFS sur terrain pondéré — convention sibling-lake). Répond aussi au prong-B de l'Epic
 [#3801](https://github.com/jsboige/CoursIA/issues/3801) : démontrer le moteur A* sur un
 problème non-trivial (heuristique discriminante), pas un graphe à coût uniforme où A*
@@ -37,11 +38,12 @@ CP-SAT en oracle exact. Pas encore câblé.
 **consistante**. Lake de la série Search (roadmap #4038 Tier 1, #4048), déployé en 3 phases
 (phase-1 modélisation, phase-2 admissibilité, phase-3 consistance).
 
-- **Toolchain** : v4.31.0-rc1 · **Dépendance** : Mathlib4
+- **Toolchain** : v4.32.1 · **Dépendance** : Mathlib4
 - **lib** : `Astar` (`globs := #[.submodules \`Astar]`)
 - **Modules** : `Astar/Graph.lean`, `Astar/Heuristic.lean`, `Astar/Optimality.lean`,
   `Astar/Consistency.lean` + umbrella `Astar.lean`
-- **sorry (production)** : **0**. `lake build Astar` SUCCESS (8497 jobs, 0 error 0 warning).
+- **sorry (production)** : **0** (real-mode). CI verte sur main
+  (`lean-search.yml`, dernier run 2026-08-18).
 
 #### Théorèmes prouvés (0 sorry)
 
@@ -113,7 +115,7 @@ Désambiguïsation : sans rapport avec la Limited Discrepancy Search de Search-1
   `head?`/`getLast?` non nommés → `simp`/`simp_all` plutôt que lemme nommé ; warnings
   `simp only [..]` unused-arg → préférer `linarith`/`rw` ; le glob `.submodules Astar` build
   les sous-modules, PAS l'umbrella `.olean`.
-- CI : `.github/workflows/lean-astar.yml` (`sorry-filter-mode: standalone-tactic`,
-  baseline `"0"`).
+- CI : `.github/workflows/lean-search.yml` (`sorry-filter-mode: real`, baseline `"0"` ;
+  historiquement `lean-astar.yml` en `standalone-tactic`, renommé, bascule mode #11688).
 - **EPIC #3801 prong-B** : le lake pose un graphe pondéré où l'heuristique discrimine, en
   réponse au grief BFS-vs-A* sur terrain à coût uniforme (commit `8905f8845`).
