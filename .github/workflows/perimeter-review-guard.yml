@@ -53,50 +53,19 @@ name: perimeter-review-guard
 # "fix" a future false-positive by narrowing the detection -- that loses both
 # properties at once (#11648, point 2).
 
+# DORMANT depuis #13384 : le job perimeter est absorbe (run block porte
+# verbatim, declencheurs pull_request + pull_request_review repris) par
+# always-on-guards.yml -- un seul workflow, un seul checkout, un seul slot
+# de runner par PR (37 % de la file CI etait les cinq gardes always-on pour
+# ~3 min de travail reel, mesure #13384). Le job reste ICI en copie de
+# reference pour la tracabilite (et l'identite du registre fast-lane, qui
+# lit ce fichier comme source du garde pilot). NE PAS reinscrire
+# pull_request/pull_request_review ici sans retirer l'organe perimeter
+# d'always-on-guards -- les deux surfaces executeraient le meme verdict en
+# double.
+
 on:
-  pull_request:
-    branches: [ main ]
-    types: [ opened, synchronize, edited, reopened ]
-    # PAS de `paths:` ici -- #13246 (classe #13232). Le verdict de ce garde
-    # depend d'une METADONNEE de la PR (l'assertion de perimetre dans le body
-    # ou une review) confrontee a `gh pr view --json files` (derivee du diff).
-    # Sa surface nominale est donc *toutes* les PR : toute PR dont le body
-    # affirme quelque chose sur son perimetre. Un paths-filter le reduirait
-    # aux PR touchant `.github/workflows/**` ou le script du garde -- soit
-    # ~58 % des PR merged recentes exclues de la verification, dont 21/50
-    # (42 %) portent une vraie assertion authoriale (cf. mesure #13246,
-    # 2026-08-27). Le critere #13232 : filtrer par chemins un garde
-    # METADONNEE-dependant le desarme. L'incident fondateur #11268 (la
-    # review Hermes « 2 fichiers twins uniquement » sur une PR 3-fichiers
-    # incluant un workflow) reste couvert par la surface nominale (toute
-    # PR), pas par un filtre : la PR #11227 elle-meme ne touchait pas
-    # uniquement un workflow, et le verdict a eu lieu parce que le garde
-    # n'avait PAS de paths: a l'epoque (cf. tranche 1c d'#12773, 71a36ae8b,
-    # revertede ici). Reduire le fan-out passe ici par `types:` ou
-    # `concurrency`, jamais par `paths:`.
-  pull_request_review:
-    branches: [ main ]
-    types: [ submitted, edited ]
-    # Meme raisonnement cote review : une review qui affirme un perimetre
-    # sur une PR hors `.github/workflows/**` doit aussi etre confrontee
-    # (cf. #11268 fondateur : la review elle-meme etait la source du defaut,
-    # pas le diff).
-
-permissions:
-  contents: read
-  pull-requests: read
-
-# The concurrency group carries github.event_name: the two triggers fire on
-# the SAME (PR, head SHA) pair, and a shared group with cancel-in-progress
-# lets a review-event run CANCEL a still-QUEUED pull_request run (measured on
-# #11649: pull_request run queued 14:26Z under the CI queue backlog, review
-# run started 14:57Z in the same group, the queued run died CANCELLED and
-# left a cancelled check-run on the head SHA). With event_name in the key,
-# pushes supersede pushes and reviews supersede reviews, but the two
-# triggers never cancel each other.
-concurrency:
-  group: perimeter-review-guard-${{ github.event_name }}-${{ github.event.pull_request.number }}-${{ github.event.pull_request.head.sha }}
-  cancel-in-progress: true
+  workflow_dispatch:
 
 jobs:
   perimeter:

@@ -573,7 +573,7 @@ _Programme de français de première des voies générale et technologique_
   - Argumentation abstraite, Dung semantics
   - Argument schemes, argument mining
 - **Logique formelle** : `SymbolicAI/Lean/` - preuves et tactiques
-- **Z3 / SMT** : `Sudoku/Sudoku-4-Z3.ipynb` - satisfiabilité
+- **Z3 / SMT** : `Sudoku/Sudoku-04-Z3.ipynb` - satisfiabilité
 
 > Voir aussi : Deck III - Logique (slides 28-32) pour l'aparté argumentation
 

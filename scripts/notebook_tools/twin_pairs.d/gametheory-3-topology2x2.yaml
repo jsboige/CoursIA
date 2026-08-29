@@ -39,6 +39,18 @@
       csharp_sha: 557357476ebfce45ccd122af62c2b3c31a708485
       content_python_sha: e7311bc96309c31cbed41ec004a977db77966fb8ea09aad2aaae0f8b301a98f9
       content_csharp_sha: fdd5f1c160f2b8602f7f83cfce67236e3677593e05944fb2468a9792008c426c
+    - date: "2026-08-28"
+      by: myia-po-2024:CoursIA
+      python_sha: a3040cafa7c64c8d8246ee60edcbef9b608ff3e4
+      csharp_sha: 1312fa3636aed198d47ec52f89d6bd2b5cee5f51
+      content_python_sha: e7311bc96309c31cbed41ec004a977db77966fb8ea09aad2aaae0f8b301a98f9
+      content_csharp_sha: 1153e666d916d851999d6a6bdef22191ea606183bf6f311535aae72e5894bad2
+    - date: "2026-08-28"
+      by: myia-po-2024:CoursIA
+      python_sha: a3040cafa7c64c8d8246ee60edcbef9b608ff3e4
+      csharp_sha: 60fc1a27d6cc6b28e4be24b5d252ab9d01301cfe
+      content_python_sha: e7311bc96309c31cbed41ec004a977db77966fb8ea09aad2aaae0f8b301a98f9
+      content_csharp_sha: c9012c5c3f56fdd7b92211ecf8fd683a5fa72ce9dbb75974acd7218617ce65e5
   known_differences:
     - "Socle pedagogique commun : representation ordinale des jeux 2x2 (4 rangs par joueur), classification topologique des 5 archetypes strategiques (Prisonnier, Stag Hunt, BoS, Poulet, Matching Pennies) sur le carre des preferences ordinales."
     - "Idiomes framework : Python = `numpy` + `matplotlib` + `networkx` + classe `OrdinalGame` from-scratch (dataclass + equals). C# = `System.*` (Collections.Generic, Linq) + classe `OrdinalGame` from-scratch (IEquatable<OrdinalGame>)."

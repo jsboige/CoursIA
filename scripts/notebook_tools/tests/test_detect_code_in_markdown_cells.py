@@ -180,6 +180,7 @@ def test_baseline_check_exits_zero_on_main():
         ],
         capture_output=True,
         text=True,
+        encoding="utf-8", errors="replace",
         cwd=REPO_ROOT,
     )
     assert proc.returncode == 0, (
@@ -194,10 +195,7 @@ def test_check_without_baseline_defaults_to_canonical_rc0():
     Avant le fix, l'invocation desarmee rendait un FAIL fantome sur un main
     vert -- toutes les violations acceptees ressortaient « new ». Le test
     existant passait le chemin explicitement, donc ne pouvait pas voir ce
-    defaut. Exige en outre la ligne d'identite qui nomme la reference.
-    #12858 : la ligne d'identite part sur stderr en mode ``--json`` pour
-    garder stdout pur ; en mode non-json (ce test) elle reste sur stdout
-    pour ne pas perdre l'acquis de #12585."""
+    defaut. Exige en outre la ligne d'identite qui nomme la reference."""
     import subprocess
     proc = subprocess.run(
         [
@@ -207,103 +205,43 @@ def test_check_without_baseline_defaults_to_canonical_rc0():
         ],
         capture_output=True,
         text=True,
+        encoding="utf-8", errors="replace",
         cwd=REPO_ROOT,
     )
     assert proc.returncode == 0, (
         f"bare --check exited {proc.returncode}\n"
         f"stdout: {proc.stdout[:500]}\nstderr: {proc.stderr[:500]}"
     )
-    # Mode non-json : la ligne d'identite reste sur stdout (acquis #12585).
     assert "baseline:" in proc.stdout and "entries)" in proc.stdout, (
-        "l'identite de la reference doit etre affichee en mode --check "
+        "l'identite de la reference doit etre affichee "
         f"(baseline: <path> (<n> entries)); stdout: {proc.stdout[:300]}"
     )
 
 
-def test_json_mode_stdout_is_pure_json_baseline_on_stderr():
-    """#12858 : en mode ``--json``, stdout doit etre du JSON pur
-    (consommable par ``jq`` ou tout parser), tandis que la ligne d'identite
-    baseline va sur stderr. Avant ce fix, stdout etait pollue par la ligne
-    ``baseline: <path> (<n> entries)`` qui cassait le parse JSON."""
+def test_json_stdout_is_pure_and_identity_on_stderr():
+    """#12858 : ``--json`` doit rendre du JSON **pur** sur stdout (le premier
+    ``jq``/``json.load`` branche dessus ne doit pas casser), et la ligne
+    d'identite qui nomme la reference ne se perd pas — elle migre sur stderr.
+    Avant le fix, stdout commencait par ``baseline: ... (N entries)`` (prose),
+    donc un ``json.load`` sur tout stdout levait JSONDecodeError (positif_1).
+    """
+    import json as _json
     import subprocess
-    import json
     proc = subprocess.run(
-        [
-            sys.executable, str(TOOL),
-            "MyIA.AI.Notebooks",
-            "--json",
-        ],
-        capture_output=True,
-        text=True,
+        [sys.executable, str(TOOL), "MyIA.AI.Notebooks", "--json"],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
         cwd=REPO_ROOT,
     )
-    # stdout doit etre du JSON valide de bout en bout (pas de ligne parasite)
-    assert proc.stdout, "stdout vide en mode --json"
-    parsed = json.loads(proc.stdout)  # leve json.JSONDecodeError si pollue
-    assert isinstance(parsed, dict), "le JSON doit etre un objet racine"
-    for key in ("total", "new", "baseline_size", "findings"):
-        assert key in parsed, f"cle {key!r} manquante dans le JSON: {parsed.keys()}"
-    # la ligne d'identite reste sur stderr (operateur humain)
-    assert "baseline:" in proc.stderr and "entries)" in proc.stderr, (
-        "l'identite de la reference doit etre affichee sur stderr ; "
-        f"stderr: {proc.stderr[:300]}"
-    )
-
-
-def test_json_mode_stdout_is_pure_json():
-    """#12858 acceptance #1 : `--json` rend du JSON parsable sur stdout.
-    La ligne d'identite doit etre sur stderr pour ne pas polluer la sortie
-    pipeable (`| jq .`). Avant le fix, la premiere ligne stdout etait
-    `baseline: ...`, et `jq` echouait silencieusement."""
-    import subprocess, json as _json
-    proc = subprocess.run(
-        [sys.executable, str(TOOL), "MyIA.AI.Notebooks", "--json"],
-        capture_output=True, text=True, cwd=REPO_ROOT,
-    )
-    assert proc.returncode == 0, (
-        f"--json exited {proc.returncode}\n"
-        f"stdout: {proc.stdout[:500]}\nstderr: {proc.stderr[:500]}"
-    )
-    # stdout doit etre du JSON pur : commence par '{' (apres strip)
-    assert proc.stdout.lstrip().startswith("{"), (
-        f"stdout n'est pas du JSON pur, commence par : "
-        f"{proc.stdout[:80]!r}"
-    )
-    # controle positif : le JSON parse
-    parsed = _json.loads(proc.stdout)
-    assert "total" in parsed
-    assert "findings" in parsed
-
-
-def test_json_mode_identity_on_stderr():
-    """#12858 acceptance #2 (moitie) : en mode --json, la ligne d'identite
-    reste visible — sur stderr, pas sur stdout."""
-    import subprocess
-    proc = subprocess.run(
-        [sys.executable, str(TOOL), "MyIA.AI.Notebooks", "--json"],
-        capture_output=True, text=True, cwd=REPO_ROOT,
-    )
-    assert "baseline:" in proc.stderr, (
-        f"identite absente de stderr ; stderr: {proc.stderr[:300]}"
-    )
-    assert "entries)" in proc.stderr, (
-        f"ligne d'identite incomplete ; stderr: {proc.stderr[:300]}"
-    )
-
-
-def test_nonjson_mode_identity_on_stdout():
-    """#12858 acceptance #2 (autre moitie) : en mode non-json (--report),
-    l'identite reste sur stdout comme avant le fix (#12585 acquis preserve).
-    Un seul test pour les deux faces de l'acceptance #2."""
-    import subprocess
-    proc = subprocess.run(
-        [sys.executable, str(TOOL), "MyIA.AI.Notebooks", "--report"],
-        capture_output=True, text=True, cwd=REPO_ROOT,
-    )
-    assert "baseline:" in proc.stdout, (
-        f"mode non-json doit garder l'identite sur stdout (acquis #12585) ; "
-        f"stdout: {proc.stdout[:300]}"
-    )
+    assert proc.returncode == 0, f"stdout: {proc.stdout[:300]}\nstderr: {proc.stderr[:300]}"
+    # Tout stdout est du JSON parsable (pas de ligne de prose en prefixe).
+    data = _json.loads(proc.stdout)
+    assert {"total", "new", "baseline_size", "findings"} <= set(data), \
+        f"shape inattendue: {sorted(data)}"
+    # L'identite n'est pas perdue : elle apparait sur stderr, pas sur stdout.
+    assert "baseline:" in proc.stderr and "entries)" in proc.stderr, \
+        f"identite absente de stderr: {proc.stderr[:300]}"
+    assert not proc.stdout.lstrip().startswith("baseline:"), \
+        "la ligne d'identite ne doit pas prefixer stdout en mode json"
 
 
 if __name__ == "__main__":
