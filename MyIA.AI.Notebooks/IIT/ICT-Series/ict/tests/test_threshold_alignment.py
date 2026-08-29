@@ -239,7 +239,17 @@ class TestVerdictDerivation:
 
 
 class TestCommittedResults:
-    """Le JSON commit doit etre un artefact derive du meme protocole."""
+    """Le JSON commit doit etre un artefact derive du meme protocole.
+
+    Politique de comparaison : la structure discrete (cles de dict,
+    longueurs et ordre des listes, chaines, booleens, entiers, gates,
+    verdict) doit etre EXACTEMENT identique entre le JSON commit et une
+    execution fraiche ; les flottants sont compares en tolerance croisee
+    plateforme (pytest.approx rel=1e-12, abs=1e-15) car la generation
+    (normal_draws) et les sommations NumPy peuvent differe de quelques
+    ULP entre plateformes/builds. L'identite bit a bit n'est exigee que
+    dans un meme environnement (cf. test_evaluate_seed_is_deterministic).
+    """
 
     def test_results_file_exists_and_parses(self):
         assert RESULTS_PATH.exists()
@@ -259,6 +269,48 @@ class TestCommittedResults:
         recomputed = derive_verdict(row["gates"] for row in payload["rows"])
         assert recomputed == payload["verdict"]
 
-    def test_committed_results_reproduce_bit_for_bit(self, standard_study):
+    @staticmethod
+    def _assert_payload_matches(expected, actual, path: str = "$") -> None:
+        """Comparaison recursive : discret exact, flottants en tolerance.
+
+        ``bool`` est teste avant ``int``/``float`` car c'est une sous-classe
+        d'``int`` en Python ; un flottant integral du JSON reste ``float``
+        et un compteur reste ``int`` — un echange int<->float est un drift
+        de schema, pas une difference d'ULP, et doit echouer.
+        """
+
+        if isinstance(expected, bool) or isinstance(actual, bool):
+            assert isinstance(expected, bool) and isinstance(actual, bool), path
+            assert expected == actual, path
+        elif isinstance(expected, int) and isinstance(actual, int):
+            assert expected == actual, path
+        elif isinstance(expected, float) and isinstance(actual, float):
+            assert actual == pytest.approx(
+                expected, rel=1e-12, abs=1e-15
+            ), path
+        elif isinstance(expected, str) and isinstance(actual, str):
+            assert expected == actual, path
+        elif isinstance(expected, list) and isinstance(actual, list):
+            assert len(expected) == len(actual), path
+            for index, (item_expected, item_actual) in enumerate(
+                zip(expected, actual)
+            ):
+                TestCommittedResults._assert_payload_matches(
+                    item_expected, item_actual, f"{path}[{index}]"
+                )
+        elif isinstance(expected, dict) and isinstance(actual, dict):
+            assert set(expected) == set(actual), path
+            for key in expected:
+                TestCommittedResults._assert_payload_matches(
+                    expected[key], actual[key], f"{path}.{key}"
+                )
+        else:
+            raise AssertionError(
+                f"type mismatch at {path}: {type(expected)} vs {type(actual)}"
+            )
+
+    def test_committed_results_structure_exact_floats_within_tolerance(
+        self, standard_study
+    ):
         payload = json.loads(RESULTS_PATH.read_text(encoding="utf-8"))
-        assert payload == standard_study
+        self._assert_payload_matches(payload, standard_study)

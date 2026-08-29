@@ -85,7 +85,7 @@ Un échec est conservé et rapporté tel quel dans le JSON de résultats.
 
 ## Contrôles instrumentaux
 
-- **Déterminisme** : même graine → trajectoires, fenêtres et métriques identiques bit à bit.
+- **Déterminisme** : dans un **même environnement** (même plateforme, même build NumPy), même graine → trajectoires, fenêtres et métriques identiques **bit à bit**. **Entre plateformes**, la génération des tirages gaussiens et l'ordre des sommations NumPy peuvent différer de quelques ULP sur les seuls flottants ; la structure discrète (clés des objets, longueurs et ordre des listes, chaînes, booléens, entiers — donc gates et verdict) est invariante. Le test de reproduction du JSON committé exige cette structure discrète exacte et compare les flottants en tolérance croisée-plateforme (`pytest.approx` avec `rel=1e-12`, `abs=1e-15`), largement au-dessus de l'écart ULP observé et largement en-deçà des bandes des gates.
 - **Sémantique de franchissement** : l'indice de franchissement est le **premier** `t` avec `x_t ≥ b`, la valeur `x_t` du franchissement appartenant à la fenêtre ; la réflexion garantit `x ≥ 0` en tout point ; cas déterministe pur (`σ = 0`, `μ > 0`, `λ = 0`) → franchissement exact à `⌈b/μ⌉`.
 - **Essai sans événement** : `σ = 0` et `μ = 0` → aucun franchissement ; un bras sans essai analysable lève une erreur explicite plutôt qu'une métrique fabriquée.
 - **Domaines** : rejet de `σ < 0`, `λ ∉ [0, 1)`, `b ≤ 0`, `μ < 0`, tailles non positives.
