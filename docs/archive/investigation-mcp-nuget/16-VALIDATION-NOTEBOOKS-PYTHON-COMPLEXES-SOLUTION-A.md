@@ -68,7 +68,7 @@ Tester l'exécution de notebooks Python complexes réels du projet CoursIA pour 
       "root_cause": "Notebook .NET/C#, pas Python pur"
     },
     {
-      "notebook": "Sudoku-1-Backtracking.ipynb", 
+      "notebook": "Sudoku-01-Backtracking.ipynb", 
       "status": "error",
       "error_type": "Missing Dependencies",
       "issues": ["Cherche Sudoku-0-Environment.ipynb", "Chemin incorrect"],
@@ -77,7 +77,7 @@ Tester l'exécution de notebooks Python complexes réels du projet CoursIA pour 
       "root_cause": "Dépendances inter-notebooks + .NET"
     },
     {
-      "notebook": "Sudoku-2-Genetic.ipynb",
+      "notebook": "Sudoku-02-Genetic.ipynb",
       "status": "error", 
       "error_type": "NuGet .NET Dependencies",
       "issues": ["Framework .NET/C#", "NuGet targets error"],

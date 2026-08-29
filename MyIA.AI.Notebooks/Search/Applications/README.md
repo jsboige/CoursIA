@@ -1,8 +1,8 @@
 # Search - Applications
 
-C'est ici que la série Search se confronte au réel. Les 48 notebooks d'application, pour la plupart adaptés de projets étudiants, prennent les algorithmes des Parties 1 et 2 et les mettent face à des problèmes qui ne se laissent pas faire : planifier les gardes d'un service hospitalier, ordonnancer un atelier, construire un calendrier sportif équitable, router une flotte de véhicules. Trois catégories les organisent — **Search pur** (jeux combinatoires), **CSP** (satisfaction de contraintes) et **Hybride** (combinaisons de solveurs, modèles exacts et métaheuristiques) — et la plupart sont autonomes, avec des pointeurs vers les prérequis pertinents. À cela s'ajoutent les **jumeaux C#** (App-1b, App-2b, App-3b, App-4b, App-5b, App-6-Csharp, App-7b, App-8-Csharp, App-9b, App-10b, App-11b, App-12b, App-13b, App-14-CSharp, App-15b, App-16-CSharp, App-17b, App-18b, App-19-CSharp, App-20b) qui déroulent les mêmes algorithmes *from-scratch* en .NET, en complément des versions Python qui invoquent des solveurs industriels.
+C'est ici que la série Search se confronte au réel. Les 50 notebooks d'application, pour la plupart adaptés de projets étudiants, prennent les algorithmes des Parties 1 et 2 et les mettent face à des problèmes qui ne se laissent pas faire : planifier les gardes d'un service hospitalier, ordonnancer un atelier, construire un calendrier sportif équitable, router une flotte de véhicules. Trois catégories les organisent — **Search pur** (jeux combinatoires), **CSP** (satisfaction de contraintes) et **Hybride** (combinaisons de solveurs, modèles exacts et métaheuristiques) — et la plupart sont autonomes, avec des pointeurs vers les prérequis pertinents. À cela s'ajoutent les **jumeaux C#** (App-1b, App-2b, App-3b, App-4b, App-5b, App-6-Csharp, App-7b, App-8-Csharp, App-9b, App-10b, App-11b, App-12b, App-13b, App-14-CSharp, App-15b, App-16-CSharp, App-17b, App-18b, App-19-CSharp, App-20b) qui déroulent les mêmes algorithmes *from-scratch* en .NET, en complément des versions Python qui invoquent des solveurs industriels.
 
-Sous-série de **48 notebooks** | **~24h20** | Python 3.10+ (`ortools`, `python-sat`, `deap`, `mealpy`, `minizinc`, `optuna`) ; .NET 9 (`dotnet-interactive`) pour les jumeaux C#
+Sous-série de **50 notebooks** | **~26h15** | Python 3.10+ (`ortools`, `python-sat`, `deap`, `mealpy`, `minizinc`, `optuna`) ; .NET 9 (`dotnet-interactive`) pour les jumeaux C#
 
 ## Pourquoi cette sous-série
 
@@ -31,8 +31,8 @@ Un algorithme compris sur un exemple jouet n'est pas encore un algorithme maîtr
 ```text
 Applications/
 ├── Search/     # Applications purement Search (4 notebooks : 2 Python + 2 twins C#)
-├── CSP/        # Applications CSP (29 notebooks : 15 Python + 14 twins C#)
-└── Hybrid/     # Méthodes hybrides / métaheuristiques (15 notebooks : 10 Python + 5 twins C#)
+├── CSP/        # Applications CSP (30 notebooks : 16 Python + 14 twins C#)
+└── Hybrid/     # Méthodes hybrides / métaheuristiques (16 notebooks : 11 Python + 5 twins C#)
 ```
 
 ```mermaid
@@ -41,8 +41,8 @@ flowchart LR
     P2["<b>Partie 2 — CSP</b><br/>modélisation déclarative<br/>(X, D, C) + propagation"]
     P4["<b>Partie 4 — Métaheuristiques</b><br/>SA, GA, ACO, recuit"]
     S["<b>Applications Search</b> (2)<br/>ConnectFour : Minimax,<br/>MCTS, DQN-RL"]
-    C["<b>Applications CSP</b> (13)<br/>N-Queens, GraphColoring,<br/>Nurse/JobShop, Minesweeper,<br/>Wordle, Picross, WFC,<br/>Sudoku..."]
-    H["<b>Applications Hybrides</b> (8)<br/>EdgeDetection, Portfolio,<br/>TSP, VRP, Hyperparameter,<br/>AlgorithmSelection, PRESENT/SAT,<br/>audit MAPF"]
+    C["<b>Applications CSP</b> (16 Python)<br/>N-Queens, GraphColoring,<br/>Nurse/JobShop, Minesweeper,<br/>Wordle, Picross, WFC,<br/>Covering Arrays..."]
+    H["<b>Applications Hybrides</b> (9)<br/>EdgeDetection, Portfolio,<br/>TSP, VRP, Hyperparameter,<br/>AlgorithmSelection, PRESENT/SAT,<br/>audit MAPF, enchères WDP/VCG"]
     P1 --> S
     P2 --> C
     P4 --> H
@@ -126,6 +126,7 @@ La génération procédurale de niveaux (App-19) encode le Wave Function Collaps
 | 13b | [App-20b-SudokuBenchmark-CSharp](CSP/App-20b-SudokuBenchmark-CSharp.ipynb) | ~35 min | **Jumeau C#** — backtracking naïf/MRV, AC-3, Dancing Links (Knuth) from-scratch, benchmark 3 difficultés, parité #4956 | Jumeau .NET |
 | 14 | [App-21-VoiceLeading](CSP/App-21-VoiceLeading.ipynb) | ~40 min | Hommage Munkres : voice leading chorale par affectation (Kuhn-Munkres via scipy) + audit/réparation du contrepoint de Fux en CP-SAT — encodage issu des projets étudiants EPITA PrCon (H1/H1_V2) | Hommage Munkres / projets étudiants EPITA |
 | 15 | [App-22-EdgeColoring-Tutte](CSP/App-22-EdgeColoring-Tutte.ipynb) | ~45 min | Coloration d'arêtes cubiques : Vizing, Petersen, ponts, graphes apex et CP-SAT | Nouveau |
+| 16 | [App-26-CoveringArrays-Guarantee-Audit](CSP/App-26-CoveringArrays-Guarantee-Audit.ipynb) | ~55 min | Covering Arrays : oracle constraint-aware, set cover CP-SAT exact, bornes et baselines IPOG/AETG-like — distillation PrCon H4 (Valérian Pichot) | Projet étudiant (PrCon PR #58) |
 
 ---
 
@@ -150,6 +151,7 @@ Quand l'espace est trop vaste ou l'objectif trop irrégulier pour les méthodes 
 | 8 | [App-22-AlgorithmSelection-Python](Hybrid/App-22-AlgorithmSelection-Python.ipynb) | ~45 min | Sélection empirique d'algorithmes : 3 jeux (Sudoku, Puissance 4, Wordle), 13 familles conceptuelles / 14 étiquettes mesurées, non-commensurabilité des métriques + frontières de Pareto + choix sous préférences — hommage PR IS #42 (Théodore Deguest) | Projet étudiant (IS PR #42) |
 | 9 | [App-23-PRESENT-Differential-Cryptanalysis-SAT](Hybrid/App-23-PRESENT-Differential-Cryptanalysis-SAT.ipynb) | ~55 min | PRESENT : DDT, compression d'implicants, CNF pondérée, frontière SAT/UNSAT du meilleur trail et limites de certification — distillation PrCon F2 (Théodore Deguest) | Projet étudiant (PrCon PR #49) |
 | 10 | [App-24-MAPF-Guarantee-Audit](Hybrid/App-24-MAPF-Guarantee-Audit.ipynb) | ~60 min | MAPF : validateur indépendant, oracle CP-SAT time-expanded, réfutation OD-A*, arrêt CBS au but, audit des garanties ECBS — distillation PrCon G3 (Matteo Atkinson, Paul Witkowski) | Projet étudiant (PrCon PRs #33/#36/#42) |
+| 11 | [App-25-CombinatorialAuctions-WDP-VCG](Hybrid/App-25-CombinatorialAuctions-WDP-VCG.ipynb) | ~60 min | Enchères combinatoires : WDP exact CP-SAT vs force brute, langage XOR, budget global, paiements VCG et audit de leurs garanties, contre-exemple de manipulation sous budget matérialisé, forensics `PRICE_SCALE` sur 18 instances CATS — distillation PrCon J2 (Majerczyk, Chartouni, Wangon-Zekou) | Projet étudiant (PrCon PR #26) |
 
 ---
 
@@ -197,6 +199,7 @@ Quand l'espace est trop vaste ou l'objectif trop irrégulier pour les méthodes 
 | App-20 SudokuBenchmark (C#) | CSP-1, CSP-3, Search-8 (DLX) | dotnet-interactive |
 | App-21 VoiceLeading | affectation, CSP-3 | scipy, ortools |
 | App-22 EdgeColoring-Tutte | coloration de graphes, CSP-3 | networkx, ortools |
+| App-26 CoveringArrays Guarantee Audit | CSP-3, CSP-5 | ortools, pandas, matplotlib |
 
 ### Applications Hybrid
 
@@ -217,6 +220,7 @@ Quand l'espace est trop vaste ou l'objectif trop irrégulier pour les méthodes 
 | App-22 AlgorithmSelection-Python | MGS-16 (Rice / No Free Lunch) | pandas, numpy, matplotlib |
 | App-23 PRESENT Differential Cryptanalysis | SAT, CNF, bit-vectors | python-sat, numpy, matplotlib |
 | App-24 MAPF Guarantee Audit | Search-3 (A*), CSP-3/CSP-4, heuristiques admissibles | ortools, pandas, matplotlib |
+| App-25 CombinatorialAuctions-WDP-VCG | CSP-3 (CP-SAT), CSP-5 (optimisation), GameTheory-16 (VCG) | ortools, pandas, matplotlib |
 
 ---
 
@@ -229,6 +233,10 @@ Le [App-22-AlgorithmSelection-Python](Hybrid/App-22-AlgorithmSelection-Python.ip
 Le [App-23-PRESENT-Differential-Cryptanalysis-SAT](Hybrid/App-23-PRESENT-Differential-Cryptanalysis-SAT.ipynb) distille le projet PrCon F2 de **Théodore Deguest**, *« Cryptanalyse différentielle de PRESENT via SAT »*, PR [PrCon #49](https://github.com/jsboigeEpita/2026-Epita-Programmation-par-Contraintes/pull/49). Le notebook reconstruit l'expérience de façon autonome, reproduit la DDT et les frontières SAT/UNSAT, corrige le seuil documentaire à R=15/W=66 et distingue explicitement trail, cluster et niveau de preuve.
 
 Le [App-24-MAPF-Guarantee-Audit](Hybrid/App-24-MAPF-Guarantee-Audit.ipynb) distille le projet PrCon G3 de **Matteo Atkinson** et **Paul Witkowski**, *« Coordination de drones par Multi-Agent Path Finding »*, PRs [PrCon #33](https://github.com/jsboigeEpita/2026-Epita-Programmation-par-Contraintes/pull/33), [#36](https://github.com/jsboigeEpita/2026-Epita-Programmation-par-Contraintes/pull/36) et [#42](https://github.com/jsboigeEpita/2026-Epita-Programmation-par-Contraintes/pull/42). Un rerun frais alimente un validateur et un oracle CP-SAT indépendants ; le notebook distingue trajectoire valide, optimum observé et garantie réellement établie, avec provenance détaillée dans [`Hybrid/data/app24-mapf-audit/SOURCE.md`](Hybrid/data/app24-mapf-audit/SOURCE.md).
+
+Le [App-25-CombinatorialAuctions-WDP-VCG](Hybrid/App-25-CombinatorialAuctions-WDP-VCG.ipynb) distille le projet PrCon J2 de **Lucas Majerczyk**, **Nabil Chartouni** et **Wilfrid Wangon-Zekou**, *« Enchères combinatoires et Winner Determination »*, PR [PrCon #26](https://github.com/jsboigeEpita/2026-Epita-Programmation-par-Contraintes/pull/26). Le notebook ré-écrit le solveur WDP (CP-SAT, prix entiers milli-unités bout-en-bout) sans importer le package `wdp/` des étudiants ; il re-résout les 18 instances CATS, **matérialise en exécutable** le contre-exemple de manipulation sous budget documenté mais jamais testé dans la source, et audite honnêtement l'écart `PRICE_SCALE` entre les outputs committés et le code au commit source. Données et provenance : [`data/app25-wdp-vcg-audit`](Hybrid/data/app25-wdp-vcg-audit/).
+
+Le [App-26-CoveringArrays-Guarantee-Audit](CSP/App-26-CoveringArrays-Guarantee-Audit.ipynb) distille le projet PrCon H4 de **Valérian Pichot**, *« Covering Arrays »*, PR [PrCon #58](https://github.com/jsboigeEpita/2026-Epita-Programmation-par-Contraintes/pull/58). Sans recopier le générateur étudiant, le notebook reconstruit un oracle indépendant, un set cover CP-SAT exact et deux baselines approchées ; il reproduit surtout le faux verdict d'un validateur qui exige des interactions sémantiquement impossibles, puis le répare par un univers constraint-aware. Provenance : [`CSP/data/app26-covering-arrays-audit/SOURCE.md`](CSP/data/app26-covering-arrays-audit/SOURCE.md).
 
 ---
 
@@ -261,8 +269,10 @@ Couverture par application des sources fondatrices mobilisées dans cette sous-s
 | App-18 (HyperparameterTuning) | Snoek, J., Larochelle, H., & Adams, R. P. (2012) — « Practical Bayesian Optimization of Machine Learning Hyperparameters », *NeurIPS* ; et Kennedy, J., & Eberhart, R. (1995) — « Particle Swarm Optimization », *Proc. IEEE Int. Conf. on Neural Networks*. |
 | App-22 (AlgorithmSelection-Python) | Rice, J. R. (1976) — « The Algorithm Selection Problem », *Advances in Computers* 15, pp. 65-118 ; et Wolpert, D. H., & Macready, W. G. (1997) — « No Free Lunch Theorems for Optimization », *IEEE Trans. on Evolutionary Computation* 1(1), pp. 67-82. |
 | App-23 (PRESENT Differential Cryptanalysis SAT) | Bogdanov, A., et al. (2007) — « PRESENT: An Ultra-Lightweight Block Cipher », *CHES 2007* ; Tseitin, G. S. (1968) — transformations CNF ; Eén, N., & Sörensson, N. (2006) — « Translating Pseudo-Boolean Constraints into SAT ». |
-| App-24 (MAPF Guarantee Audit) | Stern, R., et al. (2019) — « Multi-Agent Pathfinding: Definitions, Variants, and Benchmarks », *SoCS* ; Sharon, G., et al. (2015) — « Conflict-Based Search for Optimal Multi-Agent Path Finding », *Artificial Intelligence* 219 ; Standley, T. (2010) — « Finding Optimal Solutions to Cooperative Pathfinding Problems », *AAAI* ; Barer, M., et al. (2014) — « Suboptimal Variants of the Conflict-Based Search Algorithm for the Multi-Agent Pathfinding Problem », *SoCS*. |
 | App-19 (ProceduralGeneration-WFC) | Gumin, M. (2016) — *WaveFunctionCollapse*, github.com/mxgmn/WaveFunctionCollapse. Génération procédurale de niveaux par propagation de contraintes. |
+| App-24 (MAPF Guarantee Audit) | Stern, R., et al. (2019) — « Multi-Agent Pathfinding: Definitions, Variants, and Benchmarks », *SoCS* ; Sharon, G., et al. (2015) — « Conflict-Based Search for Optimal Multi-Agent Path Finding », *Artificial Intelligence* 219 ; Standley, T. (2010) — « Finding Optimal Solutions to Cooperative Pathfinding Problems », *AAAI* ; Barer, M., et al. (2014) — « Suboptimal Variants of the Conflict-Based Search Algorithm for the Multi-Agent Pathfinding Problem », *SoCS*. |
+| App-25 (CombinatorialAuctions-WDP-VCG) | Rothkopf, M. H., Pekeč, A., & Harstad, R. M. (1998) — « Computationally Combinatorial Auction Design », *Management Science* 44(8) ; Sandholm, T. (2002) — « Algorithm for Optimal Winner Determination in Combinatorial Auctions », *Artificial Intelligence* 135 ; Leyton-Brown, K., Pearson, M., & Shoham, Y. (2000) — « Towards a Universal Test Suite for Combinatorial Auction Design », *EC 2000* (générateur CATS) ; Nisan, N. (2000) — « Bidding and Allocation in Combinatorial Auctions », *EC 2000* (langage XOR) ; Lehmann, D., O'Callaghan, L., & Shoham, Y. (2002) — « Truth Revelation in Approximately Efficient Combinatorial Auctions », *JACM* 49(5) (glouton √m, enchérisseurs single-minded). |
+| App-26 (CoveringArrays Guarantee Audit) | Cohen, D. M., Dalal, S. R., Fredman, M. L., & Patton, G. C. (1997) — « The AETG System: An Approach to Testing Based on Combinatorial Design », *IEEE TSE* 23(7) ; Lei, Y., Kacker, R., Kuhn, D. R., Okun, V., & Lawrence, J. (2007) — « IPOG: A General Strategy for T-Way Software Testing », *ECBS 2007*. |
 
 ## Conclusion / Prochaines étapes
 

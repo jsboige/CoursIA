@@ -96,6 +96,11 @@ GENERIC_KNOB = re.compile(r"(?i)(baseline|threshold|ratchet|_cap\b|\bcap\b)")
 
 # Assertion vocabulary: file-count claims and exclusivity markers.
 COUNT_CLAIM = re.compile(r"\b(\d+)\s*(?:fichiers?|files?)\b", re.IGNORECASE)
+# #13440: the boundary `\b` stops the match at "fichier" when the body writes
+# the plural parenthetically ("25 fichier(s) verifies") -- without skipping
+# the "(s)" hump, every downstream tail window (incidental qualifier,
+# negated-diff tail, reference verb) is blind on this form.
+PLURAL_PAREN = re.compile(r"^\s*\(s\)\s*")
 # #11985 rule 1 extension (CLOSED LIST -- never expand to unknown vocabulary):
 # a body can declare its perimeter in words ("trois fichiers", "five files").
 # The authorial declaration is the same shape; we just spell-check the
@@ -456,7 +461,29 @@ INCIDENTAL_QUALIFIERS = frozenset({
     "produites", "sources", "source",
     # #11985 formes 3-4: artifact kinds and scan inventories.
     "audio", "distinct", "distincts", "distinctes", "non-notebook",
-})
+    # #13440 -- participes de RESULTAT DE CONTROLE : ce qu'un controle a
+    # couvert, jamais ce que le diff touche (un claim de perimetre s'ecrit
+    # avec des verbes de modification, qui restent bloquants via
+    # _has_strong_scope et hors liste). Formes mesurees sur main :
+    # "25 fichier(s) verifies sans BOM", "18 fichiers testes sans erreur",
+    # "Controle encodage : 25 fichier(s) conformes".
+    # FN DELIBERE : "restaures"/"restaurés" (campagne accents #2876) et
+    # "re-executes"/"re-exécutés" (tranches MGS) restent HORS liste -- dans
+    # ce depot ces formes SONT des perimetres.
+    "verifies", "vérifiés", "verifie", "vérifié",
+    "testes", "testés", "teste", "testé",
+    "conformes", "conforme",
+    "scannes", "scannés", "scanne", "scanné",
+    "analyses", "analysés", "analyse", "analysé",
+    "audites", "audités", "audite", "audité",
+    "examines", "examinés", "examine", "examiné",    # #12718 (classe #11985 forme 4): "N fichiers neufs/neuve/neuf" -- the
+    # French "new" adjective in its noun-collocated form -- is a NEW-FILES
+    # descriptor, never the whole-PR perimeter. The equality confrontation
+    # would read "2 fichiers neufs : file1 + file2" as "the PR changes 2
+    # files" when it actually adds 2 new ones among 5 changed. Same family
+    # as "nouveau/nouveaux/nouvelle/nouvelles" above; the masculine/feminine
+    # singular/plural variants were missing.
+    "neuf", "neuve", "neufs",})
 # A cited threshold ("< 15 fichiers", ">= 10 fichiers") quotes a rule, it does
 # not claim a perimeter.
 COMPARISON_PREFIX = re.compile(r"[<>=≤≥]\s*$")
@@ -561,6 +588,20 @@ MEASUREMENT_ANTECEDENT = re.compile(
     r"check_(?:unaddressed_nits|pr_perimeter|perimeter))\b",
     re.IGNORECASE,
 )
+# Forme 4c, snapshot avant/apres: "avant (main) : <composant> — N fichiers" /
+# "apres (branche) : N fichiers" -- a before/after baseline of a MEASURED
+# quantity (a Lean lake's SIZE), never the PR's perimeter (#12718). Same family
+# as MEASUREMENT_ANTECEDENT: bad surface, not bad count. The signal is the
+# snapshot keyword adjacent to a branch-state label -- "avant (main)", "apres
+# (branche)" -- which appears only in baseline-comparison prose. FN-safety is
+# structural: a line carrying a strong scope word or a diffstat neighborhood
+# returns blocking in _count_is_incidental BEFORE this exemption is consulted,
+# so "Perimetre : avant 2 fichiers, apres 5 fichiers" stays blocking.
+SNAPSHOT_ANTECEDENT = re.compile(
+    r"\b(?:avant|après|apres|before|after|baseline)\b"
+    r"[^a-z0-9_]*\(?\b(?:main|branche|branch|master)\b\)?",
+    re.IGNORECASE,
+)
 # Forme 5, compte-antecedent parenthetique: "<N> <unites> (<M> fichiers)" --
 # le compte entre parentheses qualifie la PROVENANCE du nombre qui precede
 # ("32 prescriptions avant (2 fichiers) -> 32 apres"), jamais le perimetre de
@@ -607,10 +648,45 @@ def _has_strong_scope(low: str) -> bool:
     # plain `in` test, blocking the per-match NEGATED_DIFF_TAIL exemption).
     # The 8 STRONG_SCOPE_WORDS are all standalone vocabulary in French/English;
     # a regex boundary costs nothing and removes a class of false positives.
-    return any(
-        re.search(rf"\b{re.escape(w)}\b", low, re.IGNORECASE)
-        for w in STRONG_SCOPE_WORDS
+    # #12718: "scope" as a hyphenated compound ("in-scope", "out-of-scope") is
+    # an adjective describing scope-inclusion, never a perimeter-count label --
+    # a hyphen-negative lookbehind keeps such a line incidental while
+    # "scope = perimetre PR" and "Périmètre : N fichiers modifiés" still block.
+    # All non-"scope" words keep the plain \b...\b boundary ("modif" must not
+    # misfire; "périmètre" is a standalone label).
+    for w in STRONG_SCOPE_WORDS:
+        if w == "scope":
+            if re.search(r"(?<![-\w])scope(?![-\w])", low):
+                return True
+        elif re.search(rf"\b{re.escape(w)}\b", low, re.IGNORECASE):
+            return True
+    return False
+
+
+def _count_has_incidental_qualifier(line: str, m: re.Match) -> bool:
+    """#12718: true when the COUNT match `m` is immediately followed by an
+    `INCIDENTAL_QUALIFIERS` word (or a qualified two-word pair). A count so
+    qualified is a sub-claim ("N fichiers neufs : ... (330 lignes)"), not the
+    whole-PR perimeter -- and, unlike an antecedent exemption, it overrides a
+    diffstat neighbor on the same line. Extracted from _count_is_exempt so the
+    two callers (per-count exemption, incidental override) share one predicate."""
+    # #13440: le pluriel parenthetique "(s)" est neutralise avant lecture du
+    # qualificatif ("fichier(s) verifies" doit lire "verifies").
+    after = PLURAL_PAREN.sub(" ", line[m.end():], count=1)
+    mw = re.match(r"\s+([\wàâäéèêëîïôöùûüçÀÂÄÉÈÊËÎÏÔÖÙÛÜÇ-]+)", after)
+    if mw and mw.group(1).lower() in INCIDENTAL_QUALIFIERS:
+        return True
+    mw2 = re.match(
+        r"\s+([\wàâäéèêëîïôöùûüçÀÂÄÉÈÊËÎÏÔÖÙÛÜÇ-]+)"
+        r"\s+([\wàâäéèêëîïôöùûüçÀÂÄÉÈÊËÎÏÔÖÙÛÜÇ-]+)",
+        after,
     )
+    if mw2:
+        pair = f"{mw2.group(1)} {mw2.group(2)}".lower()
+        if (mw2.group(1).lower() in INCIDENTAL_QUALIFIERS
+                or pair in INCIDENTAL_QUALIFIER_PAIRS):
+            return True
+    return False
 
 
 def _count_is_exempt(line: str, m: re.Match, ante_context: str = "") -> bool:
@@ -638,7 +714,7 @@ def _count_is_exempt(line: str, m: re.Match, ante_context: str = "") -> bool:
         return True
     if LOCATIVE_PREP.search(line):
         return True
-    after = line[m.end():]
+    after = PLURAL_PAREN.sub(" ", line[m.end():], count=1)
     if NEGATED_DIFF_TAIL.match(after):
         return True
     if HIT_ANTECEDENT.search(line[: m.start()]):
@@ -646,24 +722,15 @@ def _count_is_exempt(line: str, m: re.Match, ante_context: str = "") -> bool:
     ante_scope = f"{ante_context}\n{line[: m.end()]}" if ante_context else line[: m.end()]
     if MEASUREMENT_ANTECEDENT.search(ante_scope):
         return True
+    if SNAPSHOT_ANTECEDENT.search(line[: m.start()]):
+        return True
     if REFERENCE_VERB_TAIL.match(after):
         return True
     if (before.endswith("(") and after.lstrip().startswith(")")
             and PAREN_ANTECEDENT_NUM.search(before[:-1])):
         return True
-    mw = re.match(r"\s+([\wàâäéèêëîïôöùûüçÀÂÄÉÈÊËÎÏÔÖÙÛÜÇ-]+)", after)
-    mw2 = re.match(
-        r"\s+([\wàâäéèêëîïôöùûüçÀÂÄÉÈÊËÎÏÔÖÙÛÜÇ-]+)"
-        r"\s+([\wàâäéèêëîïôöùûüçÀÂÄÉÈÊËÎÏÔÖÙÛÜÇ-]+)",
-        after,
-    )
-    if mw and mw.group(1).lower() in INCIDENTAL_QUALIFIERS:
+    if _count_has_incidental_qualifier(line, m):
         return True
-    if mw2:
-        pair = f"{mw2.group(1)} {mw2.group(2)}".lower()
-        if (mw2.group(1).lower() in INCIDENTAL_QUALIFIERS
-                or pair in INCIDENTAL_QUALIFIER_PAIRS):
-            return True
     return False
 
 
@@ -734,7 +801,17 @@ def _count_is_incidental(line: str, ante_context: str = "") -> bool:
         return True  # rejected alternative: "1 PR composite (15 fichiers)" (#11963)
     if ENUMERATION_TAIL.search(line) and NAMED_FILE.search(line):
         return True  # enumeration sub-sum: "X.py + 2 fichiers de tests" (#11935)
-    if _has_strong_scope(low) or DIFFSTAT_NEIGHBORHOOD.search(line):
+    if _has_strong_scope(low):
+        return False
+    if DIFFSTAT_NEIGHBORHOOD.search(line):
+        # A qualifier-exempt count ("N fichiers neufs : file (330 lignes)")
+        # overrides the diffstat guard -- the "lignes" is a per-file size and
+        # the qualifier marks a sub-claim, not the whole-PR perimeter. An
+        # antecedent-exemption (locative "sur 2 fichiers", measurement parent,
+        # snapshot) does NOT override: "+307 lignes / −0 sur 2 fichiers" names
+        # what the diffstat measured (#11935 FN control stays blocking).
+        if all(_count_has_incidental_qualifier(line, m) for m in matches):
+            return True
         return False
     for m in matches:
         if not _count_is_exempt(line, m, ante_context):

@@ -478,7 +478,7 @@ def test_audit_shas_exist_in_file_history():
     ``check_twin_parity --check`` au moment d'une PR. Ce test cible exclusivement
     les sha qui ne correspondent JAMAIS au carnet (fabrication), qui ne
     rougiraient nulle part autrement. La reserve de drifts legittimes
-    (Sudoku-8/14-BDD/9, ai-01) reste donc verte ici.
+    (Sudoku-08/14-BDD/9, ai-01) reste donc verte ici.
     """
     import subprocess
 
@@ -837,7 +837,7 @@ def test_update_pair_metadata_only_drift_is_noop(tmp_path, monkeypatch):
     """Le cas designe par ai-01 : un tampon `metadata.cost` seul deplace le
     git blob SHA mais preserve le content_sha (_shas_match utilise content_sha
     d'abord). -> is_noop True, NE PAS ecrire (sinon faux audit). C'est
-    precisement la classe de drift Sudoku-8/14 BDD/9 GraphColoring que le
+    precisement la classe de drift Sudoku-08/14 BDD/9 GraphColoring que le
     design-gate a designee comme devant etre ignoree.
 
     Discrimination reachability (#11919) : le recorded git blob SHA EST

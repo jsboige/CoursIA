@@ -51,7 +51,7 @@ Tableau : Kernel / Env special / Packages / Cles API. Modèle : `SymbolicAI/READ
 
 ### 9. Ponts cross-series
 
-Un pont doit nommer le notebook ou le concept precis **des deux cotes** (ex. : « le solveur Z3 de Sudoku-7 reprend l'automate symbolique de Search-Part2-X »). Une ligne generique « voir aussi la serie ML » n'apporte rien : la retirer plutot que la garder.
+Un pont doit nommer le notebook ou le concept precis **des deux cotes** (ex. : « le solveur Z3 de Sudoku-07 reprend l'automate symbolique de Search-Part2-X »). Une ligne generique « voir aussi la serie ML » n'apporte rien : la retirer plutot que la garder.
 
 ### 10. References
 
