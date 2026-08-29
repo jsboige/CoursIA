@@ -449,6 +449,58 @@ class TestNewFileExemptionAndRefGuard:
 
 
 # ---------------------------------------------------------------------------
+# 9b. Artefacts de traduction (*_<lang>.ipynb) exempts de content-loss (#13544)
+# ---------------------------------------------------------------------------
+# La prose d'un _en.ipynb est une DERIVATION legitime de la source FR (souvent
+# plus courte a volume de sens egal, motifs traduits != motifs FR). Comparer le
+# nouveau rendu a l'ancien (souvent contamine FR, #12850) produirait des faux
+# positifs par construction. L'integrite du rendu est portee par
+# translation-guard.yml + la parite (check_translation_parity) + le seuil
+# --min-coverage du renderer (#13544 point 3).
+
+
+class TestTranslationArtifactExemption:
+    def test_translation_artifact_exempt_if_base_differs(self, tmp_path):
+        # Un _en.ipynb dont la base "disparaitrait" (cas #12850 : base contamine
+        # FR, cellule 1254c + motif Prerequis) -> exempt, 0 findings.
+        p = tmp_path / "foo_en.ipynb"
+        p.write_text(
+            json.dumps(_nb(_md("### Interpretation: Task Vectors\n\nprose anglaise concise"))),
+            encoding="utf-8",
+        )
+        def _rich_base(_p, _ref):
+            return _nb(_md("### Interpretation : Task Vectors\n\n" + EXERCISE_BODY + "\n\n**Prerequis** : maitriser les grilles."))
+        with mock.patch.object(dml, "ref_resolves", return_value=True), \
+             mock.patch.object(dml, "path_exists_at_ref", return_value=True), \
+             mock.patch.object(dml, "read_notebook_at_ref", side_effect=_rich_base):
+            r = dml.scan_notebook(p, base_ref="MOCK_BASE", head_ref=None)
+        assert r.get("translation_artifact") is True
+        assert r["stats"]["findings_count"] == 0
+        assert r["findings"] == []
+        assert "error" not in r
+
+    def test_non_translation_notebook_not_exempted(self, tmp_path):
+        # Sans suffixe _<lang>, le notebook reste soumis au content-loss : le champ
+        # translation_artifact n'est PAS pose (pas de court-circuit).
+        p = tmp_path / "foo.ipynb"
+        p.write_text(json.dumps(_nb(_md("### Enonce\n\n" + EXERCISE_BODY))), encoding="utf-8")
+        with mock.patch.object(dml, "ref_resolves", return_value=True), \
+             mock.patch.object(dml, "path_exists_at_ref", return_value=True), \
+             mock.patch.object(dml, "read_notebook_at_ref", return_value=_nb(_md("### Enonce\n\n" + EXERCISE_BODY))):
+            r = dml.scan_notebook(p, base_ref="MOCK_BASE", head_ref=None)
+        assert r.get("translation_artifact") is not True
+
+    def test_translation_artifact_main_exits_0(self, tmp_path):
+        # main() renvoie 0 pour un artefact de traduction (exempt).
+        p = tmp_path / "data_ru.ipynb"
+        p.write_text(json.dumps(_nb(_md("Texte rendu en russe"))), encoding="utf-8")
+        with mock.patch.object(dml, "ref_resolves", return_value=True), \
+             mock.patch.object(dml, "path_exists_at_ref", return_value=True), \
+             mock.patch.object(dml, "read_notebook_at_ref", return_value=_nb(_md("texte"))):
+            assert dml.main([str(p), "--base", "MOCK", "--check"]) == 0
+
+
+# ---------------------------------------------------------------------------
 # 10. Frontmatter cost -> metadata.cost migration (#8919)
 # ---------------------------------------------------------------------------
 # Un bloc frontmatter YAML `cost:` retire d'une cellule alors que ses champs

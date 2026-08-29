@@ -103,6 +103,21 @@ DROP_THRESHOLD = 0.75
 # le bruit sur les cellules triviales (un titre seul, un separateur).
 MIN_ORIG_CHARS = 100
 
+# Suffixes de notebooks de traduction (*_<lang>.ipynb). Le content-loss
+# base-vs-head ne s'applique PAS a un artefact de traduction : sa prose est une
+# DERIVATION legitime de la source FR (souvent plus courte a volume de sens
+# egal, motifs traduits != motifs FR), et le fichier _en/_ru/... est la
+# propriete du pipeline T1/T3/T4 (translation-guard.yml #10038). La base git
+# d'un _en.ipynb est l'ancien rendu (souvent contamine FR, cf #12850) : la
+# comparer au nouveau rendu produit des faux positifs par construction.
+# Meme ensemble que TARGET_LANGS (source unique de verite :
+# scripts/translation/check_perimeter.py #10109), duplique ici pour rester
+# autonome (import stdlib+nbformat uniquement).
+TRANSLATION_LANGS = ("en", "es", "ar", "fa", "zh", "ru", "pt")
+_TRANSLATION_SUFFIX_RE = re.compile(
+    r"_(?:" + "|".join(TRANSLATION_LANGS) + r")\.ipynb$", re.IGNORECASE
+)
+
 # Motifs structurants dont la disparition est un signal fort (design #3 #8655).
 # Notes : "Navigation" / "Objectif(s)" / "Prerequis" sont matches aussi bien en
 # titre (`## Navigation`) qu'en callout (`> **Navigation :**`) car la regex
@@ -594,6 +609,19 @@ def _compare_motifs(base_counts: dict, head_counts: dict) -> list[dict]:
     return findings
 
 
+def _is_translation_artifact(nb_path: Path) -> bool:
+    """True si le notebook est un artefact de traduction (*_<lang>.ipynb).
+
+    Les artefacts de traduction sont exclus du content-loss (voir
+    TRANSLATION_LANGS) : leur contenu derive de la source FR et peut
+    legitiment etre plus court (volume de sens egal en anglais) et porter des
+    motifs traduits different de ceux de la base. La comparaison base-vs-head
+    d'un _en.ipynb compare l'ancien rendu (souvent contamine FR, #12850) au
+    nouveau rendu : les ecarts mesures ne sont pas des pertes.
+    """
+    return _TRANSLATION_SUFFIX_RE.search(nb_path.name) is not None
+
+
 def scan_notebook(nb_path: Path, base_ref: str, head_ref: str | None = None) -> dict:
     """Compare le contenu markdown d'un notebook entre base_ref et head_ref."""
     if head_ref is None:
@@ -607,6 +635,31 @@ def scan_notebook(nb_path: Path, base_ref: str, head_ref: str | None = None) -> 
         if nb_head is None:
             return {"notebook": str(nb_path), "error": f"head_ref {head_ref} unreadable"}
         head_label = head_ref
+
+    # Artefact de traduction (*_<lang>.ipynb) : exempt de content-loss (voir
+    # _is_translation_artifact). On retourne un resultat propre (pas d'erreur,
+    # pas de findings) SANS valider la base — un _en.ipynb compare a l'ancien
+    # rendu (contamine FR, #12850) produit des faux positifs par construction.
+    # Son integrite est portee par translation-guard.yml, la parite
+    # (check_translation_parity) et le seuil --min-coverage du renderer (#13544).
+    if _is_translation_artifact(nb_path):
+        head_md_t = extract_md_cells(nb_head)
+        head_total_t = sum(_norm_len(s) for _, _, s in head_md_t)
+        return {
+            "notebook": str(nb_path),
+            "base_ref": base_ref,
+            "head_ref": head_label,
+            "translation_artifact": True,
+            "findings": [],
+            "stats": {
+                "base_md_cells": 0,
+                "head_md_cells": len(head_md_t),
+                "cell_count_stable": False,
+                "base_total_normalized_chars": 0,
+                "head_total_normalized_chars": head_total_t,
+                "findings_count": 0,
+            },
+        }
 
     # Ref de base invalide (ref manquant, checkout rate) = detecteur/ref casse,
     # PAS un nouveau fichier. On le signale en erreur (rc=2) pour que le garde
@@ -703,6 +756,9 @@ def main(argv: list[str] | None = None) -> int:
         if result.get("new_file"):
             print("[NEW FILE] absent a la base -> exempt de content-loss "
                   "(rien a perdre, tout est ajout ; #8655/#8662).")
+        if result.get("translation_artifact"):
+            print("[TRANSLATION ARTIFACT] *_<lang>.ipynb -> exempt de content-loss "
+                  "(prose derivee de la source FR ; propriete pipeline T1/T3/T4).")
         print(f"[STATS]    md_cells base={st['base_md_cells']} head={st['head_md_cells']} "
               f"stable={st['cell_count_stable']} | "
               f"normalized_chars base={st['base_total_normalized_chars']} "
