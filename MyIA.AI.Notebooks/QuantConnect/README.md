@@ -2,14 +2,14 @@
 
 <!-- CATALOG-STATUS
 series: QuantConnect
-pedagogical_count: 108
-breakdown: Python=54, projects=49, ML-Training-Pipeline=4, kelly_lean=1
-maturity: BETA=80, ALPHA=15, DRAFT=12, TEMPLATE=1
+pedagogical_count: 109
+breakdown: Python=54, projects=49, ML-Training-Pipeline=4, kelly_lean=2
+maturity: BETA=82, ALPHA=14, DRAFT=12, TEMPLATE=1
 -->
 
 > **Note éditoriale — counts kernels par sous-série** : Le marqueur CATALOG-STATUS agrégé ci-dessus reste **autoritatif** pour la décomposition par **sous-série** (Python / projects / ML-Training-Pipeline / kelly_lean). En revanche, pour les décomptes par **kernel** (Python vs Lean 4) **au sein** d'une sous-série — c'est-à-dire la répartition technique par interpréteur —, **ce README reste autoritatif** car la décomposition langagière par sous-série n'est pas dans le marqueur agrégé. Cette granularité est documentée ici par lecture directe des `metadata.kernelspec.language` des notebooks :
 >
-> - **`Python/` (parcours QC-Py-*)** : 53/53 = **Python** (mono-langage, QuantConnect Cloud + kernel local Jupyter) — *kernel Python majoritaire, aucun piège sémantique C#*. **Drift constaté c.744** (audit `git ls-files Python/`) : 55 .ipynb sur disque vs 53 déclarés hub → écart +2, attribué aux notebooks Cloud ajoutés 2026-05/06 (PCA-StatArb, TemporalCNN, ValueFactor-ZScore, OptionWheel). CATALOG-STATUS leaf ajouté en c.744.
+> - **`Python/` (parcours QC-Py-*)** : 54/54 = **Python** (mono-langage, QuantConnect Cloud + kernel local Jupyter) — *kernel Python majoritaire, aucun piège sémantique C#*. **Drift constaté c.744** (audit `git ls-files Python/`) : 55 .ipynb sur disque vs 53 déclarés hub → écart +2, attribué aux notebooks Cloud ajoutés 2026-05/06 (PCA-StatArb, TemporalCNN, ValueFactor-ZScore, OptionWheel). CATALOG-STATUS leaf ajouté en c.744. **Réconciliation §E c.S** (audit entier, `_output` exclus) : 54 exacts sur disque = 30 linéaires (QC-Py-01..28 + 12b + 23b) + 24 compléments ; le résiduel +1 du c.744 était `QC-Py-12b-Backtest-Validity`, jamais compté nulle part (corrigé dans les tables et décomptes ci-dessous).
 > - **`ML-Training-Pipeline/`** : 14/14 = **Python** (PyTorch / Stable-Baselines3 / Walk-Forward). **Drift constaté c.744** : 14 .ipynb sur disque vs 2 déclarés hub → écart +12, la sous-série a crû depuis la création du breakdown hub (ajouts RL/DL ladder). CATALOG-STATUS leaf ajouté en c.744.
 > - **`kelly_lean/`** : 7/7 = **Lean 4** (preuve formelle Kelly HMM-regime fee-aware) — *mono-paradigme Lean* : prouve les invariants algébriques du critère de Kelly pour le sizing position-aware des régimes HMM, complémentaire aux notebooks Python ML. **Note c.744** : « 7/7 » dans cette note désigne les **fichiers `.lean` du lake** (7 sources : `Kelly.lean` + lemmes), périmètre différent du marqueur hub (`kelly_lean=1` = 1 notebook Jupyter de référence). CATALOG-STATUS leaf (1 .ipynb) ajouté en c.744.
 > - **`research/`** : 17 .ipynb (standalone research, yfinance/sklearn, hors QC Cloud) — **non-référencé dans le breakdown hub** (4 sous-séries agrégées : Python/projects/ML-Training-Pipeline/kelly_lean). CATALOG-STATUS leaf ajouté en c.744.
@@ -50,7 +50,7 @@ Le matériel QuantConnect se répartit en **5 zones** — un visiteur y navigue 
 
 | Zone | Contenu | Entrée |
 |------|---------|--------|
-| **`Python/`** | 53 notebooks pédagogiques QC-Py-* (8 phases, ci-dessous) | [README Python](Python/README.md) |
+| **`Python/`** | 54 notebooks pédagogiques QC-Py-* (8 phases, ci-dessous) | [README Python](Python/README.md) |
 | **`projects/`** | 112 entrées brutes (101 stratégies déployables `main.py` + 11 autres : 5 recherches, 2 stubs, 2 templates, 2 BROKEN pédagogiques), statut best-guess inventorié | [docs/qc/qc-strategies-status.md](../../docs/qc/qc-strategies-status.md) · [README projects](projects/README.md) |
 | **`research/`** | Recherche autonome standalone (données locales, pas de QC Cloud requis) | [README research](research/README.md) |
 | **`partner-course-quant-trading/`** | Exemples de recherche avancée du cours partenaire | [README cours partenaire](partner-course-quant-trading/README.md) |
@@ -92,7 +92,7 @@ Sélection dynamique d'univers, comprendre les particularités de chaque classe 
 
 ---
 
-### Phase 3 : Trading Avancé et Risk Management (4 notebooks, ~5.5h)
+### Phase 3 : Trading Avancé et Risk Management (5 notebooks, ~6.5h)
 
 Gestion du risque professionnelle, types d'ordres avancés, analyse approfondie de backtests.
 
@@ -102,6 +102,7 @@ Gestion du risque professionnelle, types d'ordres avancés, analyse approfondie 
 | 10 | [QC-Py-10-Risk-Portfolio-Management](Python/QC-Py-10-Risk-Portfolio-Management.ipynb) | 90 min | Position sizing (Kelly, fixed fractional), stop-loss, take-profit |
 | 11 | [QC-Py-11-Technical-Indicators](Python/QC-Py-11-Technical-Indicators.ipynb) | 75 min | Indicateurs intégrés, custom indicators, signal generation |
 | 12 | [QC-Py-12-Backtesting-Analysis](Python/QC-Py-12-Backtesting-Analysis.ipynb) | 75 min | Performance metrics (Sharpe, Sortino, max drawdown), equity curve |
+| 12b | [QC-Py-12b-Backtest-Validity](Python/QC-Py-12b-Backtest-Validity.ipynb) | 60 min | Erreur-type du Sharpe (Lo 2002), signification statistique d'un backtest |
 
 **Objectifs** : Maîtriser gestion du risque, ordres avancés, analyse de backtests.
 
@@ -246,7 +247,7 @@ python -m ipykernel install --user --name=quantconnect --display-name "Python (Q
 
 ## Résumé de la Progression
 
-**Total cours linéaire** : **29 notebooks Python** (QC-Py-01 à QC-Py-28 + le 23b, ~33 heures de contenu) + **24 notebooks compléments** (Phase 4b-RL avancé QC-Py-33..35, paper trading QC-Py-40..41, **15** Cloud strategies QC-Py-Cloud-01..09, training QC-Py-30..32, dataset workflow), plus **17 notebooks de recherche** standalone (`research_*.ipynb`, détaillés dans [research/README.md](research/README.md)).
+**Total cours linéaire** : **30 notebooks Python** (QC-Py-01 à QC-Py-28 + les 12b et 23b, ~34 heures de contenu) + **24 notebooks compléments** (Phase 4b-RL avancé QC-Py-33..35, paper trading QC-Py-40..41, **15** Cloud strategies QC-Py-Cloud-01..09, training QC-Py-30..32, dataset workflow), plus **17 notebooks de recherche** standalone (`research_*.ipynb`, détaillés dans [research/README.md](research/README.md)).
 
 **Répartition cours linéaire (Phases 1-8)** :
 - **18 notebooks non-ML** (Fondations, Universe, Trading Avancé, Framework, Alternative Data) : ~18h

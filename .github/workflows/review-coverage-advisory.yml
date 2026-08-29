@@ -72,10 +72,30 @@ jobs:
       - name: Run sweep
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # `inputs.*` n'existe que sur la jambe workflow_dispatch. Sur la jambe
+          # `schedule:` il s'expanse en CHAINE VIDE, et `--threshold ""` fait
+          # sortir argparse en erreur (`invalid int value: ''`, exit 2) AVANT
+          # tout balayage. Mesure du 2026-08-28 : 0 succes sur les 60 derniers
+          # runs -- l'organe livre pour #11232 n'a jamais balaye une seule PR,
+          # et #11232 a ete fermee dessus le 2026-08-18.
+          #
+          # On lit les inputs par env et on OMET le drapeau quand il est vide,
+          # pour retomber sur le defaut du script (THRESHOLD_DEFAULT=300).
+          IN_THRESHOLD: ${{ inputs.threshold }}
+          IN_DRY_RUN: ${{ inputs.dry_run }}
         run: |
-          DRY=""
-          if [ "${{ inputs.dry_run }}" = "true" ]; then DRY="--dry-run"; fi
-          python scripts/review_coverage.py \
-            $DRY \
-            --threshold "${{ inputs.threshold }}" \
-            --label "large-pr-no-review"
+          set -eo pipefail
+          ARGS=()
+          if [ "${IN_DRY_RUN:-}" = "true" ]; then ARGS+=(--dry-run); fi
+          if [ -n "${IN_THRESHOLD:-}" ]; then ARGS+=(--threshold "$IN_THRESHOLD"); fi
+          echo "args: ${ARGS[*]:-(aucun, defauts du script)}"
+          python scripts/review_coverage.py "${ARGS[@]}" --label "large-pr-no-review"             | tee "$RUNNER_TEMP/sweep.json"
+          # Controle positif porte sur le BALAYAGE, jamais sur le parsing.
+          # Reserve Hermes sur #13370 : un `--help >/dev/null` sort 0 meme si le
+          # script est casse en aval -- il ne couvre que argparse, or c'est
+          # exactement un organe vert-sans-balayage qui a coute #11232. Le script
+          # sort TOUJOURS 0 (advisory) et n'imprime son payload qu'APRES un
+          # balayage effectif : l'assertion porte donc sur le payload. Cette
+          # etape a le droit de rougir -- c'est ainsi que la panne de l'organe
+          # devient visible au lieu de se lire verte.
+          python scripts/ci/assert_sweep_payload.py "$RUNNER_TEMP/sweep.json"

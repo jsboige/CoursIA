@@ -2,7 +2,7 @@
 series: QuantConnect-Python
 pedagogical_count: 54
 breakdown: Python=54
-maturity: BETA=36, ALPHA=11, DRAFT=7
+maturity: BETA=37, ALPHA=10, DRAFT=7
 -->
 
 # QuantConnect Python Notebooks
@@ -52,6 +52,7 @@ Suite à l'audit du 5 mai 2026, voici l'état honnête de chaque notebook. **Auc
 | QC-Py-10-Risk-Portfolio-Management | NON EXÉCUTÉ | |
 | QC-Py-11-Technical-Indicators | NON EXÉCUTÉ | |
 | QC-Py-12-Backtesting-Analysis | NON EXÉCUTÉ | |
+| QC-Py-12b-Backtest-Validity | EXÉCUTÉ | |
 | QC-Py-13-Alpha-Models | NON EXÉCUTÉ | |
 | QC-Py-14-Portfolio-Construction-Execution | NON EXÉCUTÉ | |
 | QC-Py-15-Parameter-Optimization | NON EXÉCUTÉ | |
@@ -124,6 +125,8 @@ Chaque notebook de la série rend visible un geste quantitatif distinct, dans un
 
 **[12 — Le profil risque-rendement d'un backtest.](QC-Py-12-Backtesting-Analysis.ipynb)** La richesse d'un backtest ne tient pas dans un seul Sharpe : le scatter des rendements quotidiens de la stratégie contre son benchmark expose la dispersion, les queues et la fréquence des bons et mauvais jours. C'est la signature statistique complète du comportement de la stratégie.
 
+**[12b — Un Sharpe de 0,2 prouve-t-il quoi que ce soit ?](QC-Py-12b-Backtest-Validity.ipynb)** Non, si le backtest couvre moins de dix ans : l'erreur-type asymptotique du Sharpe annualisé vaut environ `1/sqrt(N_années)` (Lo, 2002) — sur 7 ans, ±0,38. Un Sharpe mesuré à 0,2 est statistiquement indistinguable d'une stratégie sans aucun bord. Le notebook construit la lecture honnête d'un backtest : intervalle de confiance du Sharpe, multiplication des tests et faux positifs, et ce qu'il faut pour qu'une performance soit significative.
+
 <p align="center"><a href="QC-Py-12-Backtesting-Analysis.ipynb"><img src="assets/readme/quantpy12-backtest-scatter.png" width="540" alt="Analyse de backtest : deux sous-graphiques côte-à-côte sur 2 ans (2022-01 → 2024-01). Gauche — scatter Strategy Returns (%) vs Benchmark Returns (%) avec droite de régression rouge en pointillés β = 0.44 (la stratégie amplifie modérément le benchmark), ~250 points bleus dispersés dans le quadrant [-3 %, +3 %]², axes croisés à (0, 0). Droite — equity curves comparées : Strategie (bleu marine) finit à 1.42, Benchmark (gris tirets) finit à 1.47, baseline noire horizontale à 1.00. La Strategie reste sous le Benchmark toute l'année 2022 (sous-performance), puis dépasse en 2023-07 → 2023-10 (pic ~1.50). Démontre la mesure du β (sensibilité au benchmark) et le profil risque/rendement : β=0.44 < 1 = stratégie défensive (moins volatile que le marché)."></a></p>
 
 **[19 — La validation walk-forward, ou l'honnêteté temporelle.](QC-Py-19-ML-Supervised-Classification.ipynb)** Un modèle entraîné une fois puis testé sur tout l'échantillon triche avec le temps. La validation walk-forward décale une fenêtre d'entraînement puis re-teste, fold après fold, en mimant le retrain périodique qu'exige un trading réel. L'accuracy par fold révèle la robustesse — ou l'effondrement — hors échantillon.
@@ -160,6 +163,7 @@ Chaque notebook de la série rend visible un geste quantitatif distinct, dans un
 |----------|---------|
 | [QC-Py-11-Technical-Indicators](QC-Py-11-Technical-Indicators.ipynb) | Indicateurs techniques, indicateurs custom |
 | [QC-Py-12-Backtesting-Analysis](QC-Py-12-Backtesting-Analysis.ipynb) | Mesures de performance, Sharpe, drawdown |
+| [QC-Py-12b-Backtest-Validity](QC-Py-12b-Backtest-Validity.ipynb) | Erreur-type du Sharpe (Lo 2002), signification statistique du backtest |
 | [QC-Py-13-Alpha-Models](QC-Py-13-Alpha-Models.ipynb) | Framework Alpha, signaux, combinaison |
 | [QC-Py-14-Portfolio-Construction-Execution](QC-Py-14-Portfolio-Construction-Execution.ipynb) | Construction portefeuille, exécution |
 | [QC-Py-15-Parameter-Optimization](QC-Py-15-Parameter-Optimization.ipynb) | Optimization, grid search, walk-forward |

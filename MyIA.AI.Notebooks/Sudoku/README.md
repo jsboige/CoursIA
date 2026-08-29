@@ -45,8 +45,8 @@ La série traverse cinq grandes familles algorithmiques, des méthodes exhaustiv
 
 **Notebooks recommandés** :
 1. `Sudoku-0-Environment-Csharp` ou comprendre la structure des données
-2. `Sudoku-1-Backtracking-Csharp` (ou Python) : Premier algorithme de résolution
-3. `Sudoku-7-Norvig-Csharp` : Voir comment la propagation accélère drastiquement
+2. `Sudoku-01-Backtracking-Csharp` (ou Python) : Premier algorithme de résolution
+3. `Sudoku-07-Norvig-Csharp` : Voir comment la propagation accélère drastiquement
 
 **Pourquoi cet ordre ?**
 - Le notebook 0 établit le vocabulaire et les structures de base
@@ -63,8 +63,8 @@ La série traverse cinq grandes familles algorithmiques, des méthodes exhaustiv
 **Objectif** : Comprendre que différentes philosophies de résolution existent et ont chacune leurs forces.
 
 **Notebooks recommandés** :
-1. `Sudoku-3-Genetic-Csharp` (ou Python) : Découvrir les métaheuristiques
-2. `Sudoku-9-GraphColoring-Csharp` (ou Python) : Voir le Sudoku comme un problème de graphe
+1. `Sudoku-03-Genetic-Csharp` (ou Python) : Découvrir les métaheuristiques
+2. `Sudoku-09-GraphColoring-Csharp` (ou Python) : Voir le Sudoku comme un problème de graphe
 3. `Sudoku-10-ORTools-Csharp` (ou Python) : Utiliser un outil industriel
 
 **Pourquoi cet ordre ?**
@@ -281,7 +281,7 @@ Le benchmark du notebook 18 quantifie ces arbitrages : pour chaque solveur, le *
 
 Le solveur exhaustif remplit la grille case par case en revenant sur ses pas à chaque impasse. La figure ci-dessous montre une grille **9×9** où un code couleur distingue les valeurs initiales (données du puzzle) des valeurs trouvées par le solveur — le backtracking parvient à compléter toute la grille.
 
-[![Backtracking : grille 9×9 résolue, valeurs initiales colorées différemment des valeurs trouvées](assets/readme/sudoku1-backtracking.png)](Sudoku-1-Backtracking-Python.ipynb)
+[![Backtracking : grille 9×9 résolue, valeurs initiales colorées différemment des valeurs trouvées](assets/readme/sudoku1-backtracking.png)](Sudoku-01-Backtracking-Python.ipynb)
 
 **Pièges courants** :
 - Confondre complexité moyenne et pire cas
@@ -297,7 +297,7 @@ Le solveur exhaustif remplit la grille case par case en revenant sur ses pas à 
 
 L'algorithme génétique fait évoluer une population de grilles par croisement et mutation, mesurant la qualité par le **nombre d'erreurs** (conflits de ligne/colonne/bloc). Les deux courbes ci-dessous comparent cette fitness au fil des générations pour deux représentations du génome : **Cellules** (chaque gène encode une case) et **Permutations** (les gènes sont des permutations valides par bloc). La courbe Cellules stagne vers 19 erreurs après 300 générations ; la courbe Permutations converge vers zéro en une trentaine de générations — l'encodage par permutations garantit une structure légale qui accélère dramatiquement la recherche.
 
-[![Algorithme génétique : deux courbes de convergence comparées — l'approche "Cellules" (rouge, 300 générations, plateau à 19 erreurs) et l'approche "Permutations" (bleu, ~30 générations, convergence vers 0 erreurs)](assets/readme/sudoku3-genetic.png)](Sudoku-3-Genetic-Python.ipynb)
+[![Algorithme génétique : deux courbes de convergence comparées — l'approche "Cellules" (rouge, 300 générations, plateau à 19 erreurs) et l'approche "Permutations" (bleu, ~30 générations, convergence vers 0 erreurs)](assets/readme/sudoku3-genetic.png)](Sudoku-03-Genetic-Python.ipynb)
 
 **Pièges courants** :
 - Attendre une garantie de solution
@@ -431,15 +431,15 @@ Les notebooks suivants sont disponibles dans les deux langages pour comparaison 
 
 | # | Sujet | C# | Python | Intérêt pédagogique |
 |---|-------|----|----|-------------------|
-| 1 | Backtracking | [Sudoku-1-Backtracking-Csharp](Sudoku-1-Backtracking-Csharp.ipynb) | [Sudoku-1-Backtracking-Python](Sudoku-1-Backtracking-Python.ipynb) | Algorithme de base |
-| 2 | Dancing Links | [Sudoku-2-DancingLinks-Csharp](Sudoku-2-DancingLinks-Csharp.ipynb) | [Sudoku-2-DancingLinks-Python](Sudoku-2-DancingLinks-Python.ipynb) | Couverture exacte |
-| 3 | Genetic | [Sudoku-3-Genetic-Csharp](Sudoku-3-Genetic-Csharp.ipynb) | [Sudoku-3-Genetic-Python](Sudoku-3-Genetic-Python.ipynb) | GeneticSharp vs PyGAD |
-| 4 | Simulated Annealing | [Sudoku-4-SimulatedAnnealing-Csharp](Sudoku-4-SimulatedAnnealing-Csharp.ipynb) | [Sudoku-4-SimulatedAnnealing-Python](Sudoku-4-SimulatedAnnealing-Python.ipynb) | Recherche locale |
-| 5 | PSO | [Sudoku-5-PSO-Csharp](Sudoku-5-PSO-Csharp.ipynb) | [Sudoku-5-PSO-Python](Sudoku-5-PSO-Python.ipynb) | Swarm intelligence |
-| 6 | AIMA CSP | [Sudoku-6-AIMA-CSP-Csharp](Sudoku-6-AIMA-CSP-Csharp.ipynb) | [Sudoku-6-AIMA-CSP-Python](Sudoku-6-AIMA-CSP-Python.ipynb) | Port Russell & Norvig |
-| 7 | Norvig | [Sudoku-7-Norvig-Csharp](Sudoku-7-Norvig-Csharp.ipynb) | [Sudoku-7-Norvig-Python](Sudoku-7-Norvig-Python.ipynb) | Propagation (100x plus rapide) |
-| 8 | Human Stratégies | [Sudoku-8-HumanStrategies-Csharp](Sudoku-8-HumanStrategies-Csharp.ipynb) | [Sudoku-8-HumanStrategies-Python](Sudoku-8-HumanStrategies-Python.ipynb) | Déduction logique |
-| 9 | Graph Coloring | [Sudoku-9-GraphColoring-Csharp](Sudoku-9-GraphColoring-Csharp.ipynb) | [Sudoku-9-GraphColoring-Python](Sudoku-9-GraphColoring-Python.ipynb) | Théorie des graphes |
+| 1 | Backtracking | [Sudoku-01-Backtracking-Csharp](Sudoku-01-Backtracking-Csharp.ipynb) | [Sudoku-01-Backtracking-Python](Sudoku-01-Backtracking-Python.ipynb) | Algorithme de base |
+| 2 | Dancing Links | [Sudoku-02-DancingLinks-Csharp](Sudoku-02-DancingLinks-Csharp.ipynb) | [Sudoku-02-DancingLinks-Python](Sudoku-02-DancingLinks-Python.ipynb) | Couverture exacte |
+| 3 | Genetic | [Sudoku-03-Genetic-Csharp](Sudoku-03-Genetic-Csharp.ipynb) | [Sudoku-03-Genetic-Python](Sudoku-03-Genetic-Python.ipynb) | GeneticSharp vs PyGAD |
+| 4 | Simulated Annealing | [Sudoku-04-SimulatedAnnealing-Csharp](Sudoku-04-SimulatedAnnealing-Csharp.ipynb) | [Sudoku-04-SimulatedAnnealing-Python](Sudoku-04-SimulatedAnnealing-Python.ipynb) | Recherche locale |
+| 5 | PSO | [Sudoku-05-PSO-Csharp](Sudoku-05-PSO-Csharp.ipynb) | [Sudoku-05-PSO-Python](Sudoku-05-PSO-Python.ipynb) | Swarm intelligence |
+| 6 | AIMA CSP | [Sudoku-06-AIMA-CSP-Csharp](Sudoku-06-AIMA-CSP-Csharp.ipynb) | [Sudoku-06-AIMA-CSP-Python](Sudoku-06-AIMA-CSP-Python.ipynb) | Port Russell & Norvig |
+| 7 | Norvig | [Sudoku-07-Norvig-Csharp](Sudoku-07-Norvig-Csharp.ipynb) | [Sudoku-07-Norvig-Python](Sudoku-07-Norvig-Python.ipynb) | Propagation (100x plus rapide) |
+| 8 | Human Stratégies | [Sudoku-08-HumanStrategies-Csharp](Sudoku-08-HumanStrategies-Csharp.ipynb) | [Sudoku-08-HumanStrategies-Python](Sudoku-08-HumanStrategies-Python.ipynb) | Déduction logique |
+| 9 | Graph Coloring | [Sudoku-09-GraphColoring-Csharp](Sudoku-09-GraphColoring-Csharp.ipynb) | [Sudoku-09-GraphColoring-Python](Sudoku-09-GraphColoring-Python.ipynb) | Théorie des graphes |
 | 10 | OR-Tools | [Sudoku-10-ORTools-Csharp](Sudoku-10-ORTools-Csharp.ipynb) | [Sudoku-10-ORTools-Python](Sudoku-10-ORTools-Python.ipynb) | CP-SAT solveur |
 | 11 | Choco | [Sudoku-11-Choco-Csharp](Sudoku-11-Choco-Csharp.ipynb) | [Sudoku-11-Choco-Python](Sudoku-11-Choco-Python.ipynb) | CP industrielle |
 | 12 | Z3 | [Sudoku-12-Z3-Csharp](Sudoku-12-Z3-Csharp.ipynb) | [Sudoku-12-Z3-Python](Sudoku-12-Z3-Python.ipynb) | SMT solveur |
@@ -476,13 +476,13 @@ Les notebooks suivants sont disponibles dans les deux langages pour comparaison 
 ```
 Sudoku-0-Csharp (Environment)
     |
-    +---> Niveau 1 : Sudoku-1-Backtracking-Csharp
+    +---> Niveau 1 : Sudoku-01-Backtracking-Csharp
     |
-    +---> Niveau 2 : Sudoku-2-DancingLinks-Csharp
+    +---> Niveau 2 : Sudoku-02-DancingLinks-Csharp
     |
-    +---> Niveau 3 : Sudoku-3/4/5-Csharp (Métaheuristiques)
+    +---> Niveau 3 : Sudoku-03/4/5-Csharp (Métaheuristiques)
     |
-    +---> Niveau 4 : Sudoku-6/7/8/9/10/11-Csharp (CSP)
+    +---> Niveau 4 : Sudoku-06/7/8/9/10/11-Csharp (CSP)
     |
     +---> Niveau 5 : Sudoku-12/13/14-Csharp (Symbolique)
     |
@@ -497,13 +497,13 @@ Sudoku-0-Csharp (Environment)
 ```
 Sudoku-0-Csharp (Environment - comprendre les structures)
     |
-    +---> Niveau 1 : Sudoku-1-Backtracking-Python
+    +---> Niveau 1 : Sudoku-01-Backtracking-Python
     |
-    +---> Niveau 2 : Sudoku-2-DancingLinks-Python
+    +---> Niveau 2 : Sudoku-02-DancingLinks-Python
     |
-    +---> Niveau 3 : Sudoku-3/4/5-Python (Métaheuristiques)
+    +---> Niveau 3 : Sudoku-03/4/5-Python (Métaheuristiques)
     |
-    +---> Niveau 4 : Sudoku-6/7/8/9/10/11/12-Python (CSP + SMT)
+    +---> Niveau 4 : Sudoku-06/7/8/9/10/11/12-Python (CSP + SMT)
     |
     +---> Niveau 6 : Sudoku-16/17-Python (NN + LLM)
     |
@@ -584,10 +584,10 @@ Les expériences suivantes ont été conduites sur GPU (RTX 3070 Laptop 8GB et R
 dotnet --version
 
 # Les packages NuGet sont installés dans les notebooks :
-# - GeneticSharp          (Sudoku-3 Genetic)
+# - GeneticSharp          (Sudoku-03 Genetic)
 # - Google.OrTools        (Sudoku-10 OR-Tools CP-SAT)
 # - Microsoft.Z3          (Sudoku-12 Z3 SMT, Sudoku-13 Symbolic Automata)
-# - DlxLib                (Sudoku-2 Dancing Links)
+# - DlxLib                (Sudoku-02 Dancing Links)
 # - Microsoft.ML.Probabilistic  (Sudoku-15 Infer.NET)
 # - IKVM 8.15.0           (Sudoku-11 Choco — runtime Java-sur-.NET + DLL précompilée)
 # - Plotly.NET            (visualisations, notebooks 0-15)
@@ -632,24 +632,24 @@ Sudoku/
 ├── choco-solver-4.10.17-jar-with-dependencies.jar  # JAR Choco (utilisé par nb-11 Python via JPype)
 ├── org.chocosolver.solver.dll             # DLL Choco précompilée (utilisée par nb-11 C# via IKVM)
 ├── Sudoku-0-Environment-Csharp.ipynb      # Classes de base C#
-├── Sudoku-1-Backtracking-Csharp.ipynb     # Backtracking C#
-├── Sudoku-1-Backtracking-Python.ipynb     # Backtracking Python
-├── Sudoku-2-DancingLinks-Csharp.ipynb     # Dancing Links C#
-├── Sudoku-2-DancingLinks-Python.ipynb     # Dancing Links Python
-├── Sudoku-3-Genetic-Csharp.ipynb          # Algorithme génétique C#
-├── Sudoku-3-Genetic-Python.ipynb          # Algorithme génétique Python
-├── Sudoku-4-SimulatedAnnealing-Csharp.ipynb  # Recuit simulé C#
-├── Sudoku-4-SimulatedAnnealing-Python.ipynb  # Recuit simulé Python
-├── Sudoku-5-PSO-Csharp.ipynb              # PSO C#
-├── Sudoku-5-PSO-Python.ipynb              # PSO Python
-├── Sudoku-6-AIMA-CSP-Csharp.ipynb         # AIMA CSP C#
-├── Sudoku-6-AIMA-CSP-Python.ipynb         # AIMA CSP Python
-├── Sudoku-7-Norvig-Csharp.ipynb           # Propagation de Norvig C#
-├── Sudoku-7-Norvig-Python.ipynb           # Propagation de Norvig Python
-├── Sudoku-8-HumanStrategies-Csharp.ipynb  # Stratégies humaines C#
-├── Sudoku-8-HumanStrategies-Python.ipynb  # Stratégies humaines Python
-├── Sudoku-9-GraphColoring-Csharp.ipynb    # Graph Coloring C#
-├── Sudoku-9-GraphColoring-Python.ipynb    # Graph Coloring Python
+├── Sudoku-01-Backtracking-Csharp.ipynb     # Backtracking C#
+├── Sudoku-01-Backtracking-Python.ipynb     # Backtracking Python
+├── Sudoku-02-DancingLinks-Csharp.ipynb     # Dancing Links C#
+├── Sudoku-02-DancingLinks-Python.ipynb     # Dancing Links Python
+├── Sudoku-03-Genetic-Csharp.ipynb          # Algorithme génétique C#
+├── Sudoku-03-Genetic-Python.ipynb          # Algorithme génétique Python
+├── Sudoku-04-SimulatedAnnealing-Csharp.ipynb  # Recuit simulé C#
+├── Sudoku-04-SimulatedAnnealing-Python.ipynb  # Recuit simulé Python
+├── Sudoku-05-PSO-Csharp.ipynb              # PSO C#
+├── Sudoku-05-PSO-Python.ipynb              # PSO Python
+├── Sudoku-06-AIMA-CSP-Csharp.ipynb         # AIMA CSP C#
+├── Sudoku-06-AIMA-CSP-Python.ipynb         # AIMA CSP Python
+├── Sudoku-07-Norvig-Csharp.ipynb           # Propagation de Norvig C#
+├── Sudoku-07-Norvig-Python.ipynb           # Propagation de Norvig Python
+├── Sudoku-08-HumanStrategies-Csharp.ipynb  # Stratégies humaines C#
+├── Sudoku-08-HumanStrategies-Python.ipynb  # Stratégies humaines Python
+├── Sudoku-09-GraphColoring-Csharp.ipynb    # Graph Coloring C#
+├── Sudoku-09-GraphColoring-Python.ipynb    # Graph Coloring Python
 ├── Sudoku-10-ORTools-Csharp.ipynb         # OR-Tools C#
 ├── Sudoku-10-ORTools-Python.ipynb         # OR-Tools Python
 ├── Sudoku-11-Choco-Csharp.ipynb           # Choco Solver C#
@@ -786,7 +786,7 @@ Le notebook C# charge Choco via **IKVM 8.15.0** (runtime Java-sur-.NET, package 
 
 ### Si vous découvrez les algorithmes
 
-Commencez par **Sudoku-0 (Environment)** pour comprendre les structures de données, puis **Sudoku-1 (Backtracking)** pour le premier solveur. Passez à **Sudoku-7 (Norvig)** pour voir comment une simple optimisation (propagation) donne des gains de 100x. C'est le socle commun.
+Commencez par **Sudoku-0 (Environment)** pour comprendre les structures de données, puis **Sudoku-01 (Backtracking)** pour le premier solveur. Passez à **Sudoku-07 (Norvig)** pour voir comment une simple optimisation (propagation) donne des gains de 100x. C'est le socle commun.
 
 ### Si vous voulez comparer les paradigmes
 
@@ -798,7 +798,7 @@ Les notebooks C# (suffixe `-Csharp`) utilisent GeneticSharp, OR-Tools .NET, Z3 .
 
 ### Si vous venez du Python / data science
 
-Les notebooks Python (suffixe `-Python`) couvrent 19 solveurs avec PyGAD, OR-Tools Python, Z3 Python, NumPyro et PyTorch. Commencez par **Sudoku-1-Backtracking-Python**, puis montez en complexité. Le notebook **18-Comparison-Python** synthétise les solveurs ; **18b-Statistical-Comparison-Python** ajoute la méthodologie statistique formelle (variance, bootstrap, Mann-Whitney, Bonferroni).
+Les notebooks Python (suffixe `-Python`) couvrent 19 solveurs avec PyGAD, OR-Tools Python, Z3 Python, NumPyro et PyTorch. Commencez par **Sudoku-01-Backtracking-Python**, puis montez en complexité. Le notebook **18-Comparison-Python** synthétise les solveurs ; **18b-Statistical-Comparison-Python** ajoute la méthodologie statistique formelle (variance, bootstrap, Mann-Whitney, Bonferroni).
 
 ## Conclusion / Prochaines étapes
 

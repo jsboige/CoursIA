@@ -1,14 +1,15 @@
 # Lean Game Definitions
 
-Définitions de types partagées en Lean 4, utilisées par plusieurs projets Lean de GameTheory. **N'EST PAS** un projet Lake autonome — fournit des définitions de référence importées ou recopiées dans les projets Lake adjacents.
+Définitions de types partagées en Lean 4, utilisées par plusieurs projets Lean de GameTheory. Projet Lake **autonome et self-contained** (zéro dépendance, cœur Lean uniquement) — fournit des définitions de référence recopiées dans les notebooks d'enseignement ; `lake build` est le chemin de vérification (localement et en CI).
 
 ## Statut
 
-- **Type** : Extraits de code (pas de `lakefile.lean`, pas de pin toolchain)
-- **Fichiers** : 6 `.lean`
+- **Type** : Projet Lake autonome (`lakefile.toml`, `lean-toolchain` pinné `v4.32.1`, `lake-manifest.json`)
+- **Fichiers** : 12 `.lean` (6 FR + 6 siblings `_en`, EPIC #4980 Pattern A)
 - **Compte de `sorry`** : 0 (définitions uniquement, pas de preuves)
 - **Dépendance Mathlib** : aucune — tous les fichiers utilisent le cœur de Lean 4 uniquement
-- **Compilable isolément** : Non — destiné à être importé par des projets Lake
+- **Compilable isolément** : Oui — `lake build` (harnais posé par #2752, review ai-01)
+- **CI dédiée** : `.github/workflows/lean-game-defs.yml` + `lean-game-defs-ext.yml`
 - **Dernier audit sorry** : 2026-05-29
 - **Dernière correction de compilation** : 2026-06-10 (See #2748)
 
@@ -23,7 +24,7 @@ Définitions de types partagées en Lean 4, utilisées par plusieurs projets Lea
 
 ## Utilisation
 
-Ces fichiers sont des définitions de référence, pas une bibliothèque compilable. Utilisation :
+Ces fichiers sont des définitions de référence (couche introductive, 0 preuve), vérifiables par `lake build`. Utilisation :
 
 1. **Copier-coller dans une cellule de notebook** (workflow pédagogique typique dans `GameTheory-2b`, `GameTheory-8b`, etc.).
 2. **Importer depuis un projet Lake adjacent** en ajoutant le chemin du fichier au `lakefile.lean` du projet. Exemple depuis `game_theory_lean/SocialChoice/` :
@@ -46,7 +47,7 @@ import Mathlib.SetTheory.Game.Nim
 
 - [game_theory_lean/](../game_theory_lean/) — Projet Lake multi-module (StableMarriage = formalisation Gale-Shapley, EPIC #4365 ; CooperativeGames absorbé depuis `cooperative_games_lean/` rm #6587).
 - [game_theory_lean/SocialChoice/](../game_theory_lean/SocialChoice/) — Module absorbé dans `game_theory_lean` (Arrow / Sen / électeur médian / Voting, EPIC #4365).
-- [social_choice_lean_peters/](../social_choice_lean_peters/) — Projet Lake indépendant pinné sur le commit `d679d950` de Peters (Gibbard-Satterthwaite, Duggan-Schwartz).
+- [social_choice_lean_peters/](../social_choice_lean_peters/) — Projet Lake indépendant référençant Peters au commit `94a4c650` du `lake-manifest.json` (Gibbard-Satterthwaite, Duggan-Schwartz).
 
 Ces projets ne dépendent **pas** de `lean_game_defs/` à la compilation — ils vendorent leurs propres définitions adaptées à leurs obligations de preuve. `lean_game_defs/` est la couche **introductive** utilisée par les notebooks d'enseignement.
 
@@ -57,7 +58,7 @@ propres définitions) :*
 ```mermaid
 flowchart TD
     NOTEBOOKS["Notebooks d'enseignement<br/><i>copier-coller les définitions</i>"]
-    INTRO["lean_game_defs/<br/><b>couche introductive</b><br/>définitions uniquement · 0 sorry · cœur Lean<br/>(ce module)"]
+    INTRO["lean_game_defs/<br/><b>couche introductive</b><br/>définitions uniquement · 0 sorry · cœur Lean<br/>lake autonome (ce module)"]
     PROJ["Projets Lake — preuves formelles<br/>chacun vendore ses définitions adaptées"]
     SC["game_theory_lean/SocialChoice/<br/>Arrow · Sen · électeur médian<br/>Voting (absorbé, EPIC #4365)"]
     COOP["cooperative_games_lean/<br/>Shapley · Cœur · Banzhaf"]
@@ -65,7 +66,7 @@ flowchart TD
     CGT["conway_cgt_lean/<br/>surréels · nimbers (via Mathlib)"]
 
     NOTEBOOKS -->|"copier-coller"| INTRO
-    INTRO -.->|"inspire / ne compile pas avec"| PROJ
+    INTRO -.->|"inspire (sans obligation de compilation commune)"| PROJ
     PROJ --> SC
     PROJ --> COOP
     PROJ --> SM
@@ -82,10 +83,11 @@ flowchart TD
 
 `lean_game_defs/` est la **couche de définitions introductive** du track Lean de
 GameTheory : définitions de types partagées en Lean 4 (pas de preuves, 0 `sorry`)
-utilisées par les notebooks d'enseignement et importables par les projets Lake
-adjacents. Ce n'est **pas** un projet Lake autonome — il n'y a pas de `lakefile.lean`,
-pas de pin toolchain, et aucune dépendance Mathlib ; chaque fichier utilise le cœur de
-Lean 4 uniquement.
+utilisées par les notebooks d'enseignement et recopiées par les projets Lake
+adjacents. C'est un projet Lake autonome depuis #2752 — `lakefile.toml`,
+`lean-toolchain` pinné, CI dédiée — sans aucune dépendance Mathlib : chaque fichier
+utilise le cœur de Lean 4 uniquement, et `lake build` vérifie l'ensemble (12 modules,
+FR + siblings `_en`).
 
 ### Ce qu'elle fournit
 

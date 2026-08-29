@@ -157,7 +157,7 @@ def load_detector_json(repo_root: Path, paths: List[str] = None) -> dict:
     if paths:
         cmd = [sys.executable, str(detector), "--json"] + paths
 
-    proc = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
+    proc = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=600)
     if proc.returncode != 0:
         raise RuntimeError(
             f"Detector failed (exit {proc.returncode}):\n"

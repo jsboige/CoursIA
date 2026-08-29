@@ -122,8 +122,36 @@ AGENT_PREFIXES = (
 # deja exige par explicit_lifts) — un OVERRIDE nu ne leve rien. Les bornes
 # temporelles restent entieres : un override POST-merge ne peut pas avoir
 # eteint une reserve avant la decision de merge (borne #10761).
-COORDINATOR_LOGINS = {"myia-ai-01", "jsboige"}
-OVERRIDE_LANE = re.compile(r"\[OVERRIDE\]\s+lane\s+\S+")
+#
+# #13316 — jsboige n'est PAS un compte de levee : c'est l'identite de poussee
+# PARTAGEE de toutes les lanes (cf le commentaire #12319 de explicit_lifts :
+# Hermes poste sous jsboige, la lane pousse sous jsboige). Crediter jsboige
+# comme coordinateur retablit exactement ce que la borne d'auteur #11145
+# interdit — n'importe quelle lane pose un `[OVERRIDE]` sous jsboige sur sa
+# propre PR et eteint la reserve d'un tiers (#12737 : reserve ai-01 02:37:04Z,
+# « overrides » jsboige 02:40/02:41 ; classe #12798, l'auto-levee). L'arbitre
+# tiers de B.0 est la lane coordinateur dediee, et elle seule.
+LIFT_OVERRIDE_LOGINS = {"myia-ai-01"}
+# #13030 -- le marqueur doit etre POSE, pas CITE. L'ancien pattern sans
+# ancre matchait n'importe quelle mention dans le corps : le commentaire de
+# la lane #12872 qui DOCUMENTAIT l'option « (b) `[OVERRIDE] lane x` par
+# ai-01 » a eteint deux reserves BOT-CONCERN jamais levees (regex matchee
+# dans le backtick, nom de lane capture avec le backtick parasite), et le
+# gate est passe rc=0 sans que rien ne le signale. Un override fantome
+# SOUS-bloque : la porte s'ouvre silencieusement -- inverse exact du
+# [CLAIMED] fantome qui sur-bloque. Trois proprietes :
+#   1. ancrage ^ (re.M) : le marqueur doit ouvrir la ligne (un tiret de
+#      liste ou une phrase qui le precede = citation) ;
+#   2. rejet de la forme encadree de backticks -- la citation canonique ;
+#   3. lane capturee sans backtick parasite ( `\S+` avalait `CoursIA-2`` `).
+# Decoration de debut de ligne toleree (même famille que _DECOR de
+# check_lane_claim #10906 : `>`, `#`, `-` ne doivent pas voider un vrai
+# override) -- mais le backtick AVANT le crochet reste une citation, seul
+# le decor ASCII #>*+- l'est.
+_OVERRIDE_LANE = re.compile(
+    r"(?m)^[#>*+\-\s]*\[\s*OVERRIDE\s*\]\s+lane\s+([^\s`]+)",
+)
+OVERRIDE_LANE = _OVERRIDE_LANE
 
 # #13083 — le symetrique de #11639 : un coordinateur BLOQUE aussi, et l'organe
 # ne le modelisait pas. Même contrainte de pose stricte que le durcissement de
@@ -187,6 +215,27 @@ SEVERITY_GLYPHS = (
 # glyphe (pas de LIFT, pas de CONCERN_MARKERS textuel) retournerait None a tort.
 CONCERN_MARKERS = CONCERN_MARKERS + SEVERITY_GLYPHS
 
+# #12908 — le verdict de l'organe B.0 lui-même, en ses deux formes d'EMISSION :
+# le gras de revalidation (« classe encore cette PR **BLOCKED** », commentaire
+# fondateur 2026-08-25T04:45:30Z de #12798) et la sortie pastee de l'organe
+# (« BLOCKED  PR #N — ... », double espace). Ce commentaire fondateur
+# maintenait explicitement la reserve (« quatre réserves tierces actives »,
+# « réserve uniquement B.0/process ») tout en narrant le vocabulaire de levée
+# (« une levée explicite sur le head final ») : le LIFT_MARKER « levée » de la
+# narration absorbait la reserve vivante — le defaut exact que B.0 existe pour
+# traquer. Comme les glyphes : concatene pour que `live_concern` classe le
+# maintien BOT-CONCERN, ET subordonne la branche LIFT de `classify` via
+# `_formal_concern_precedes_lift` (un BLOCKED emis AVANT la narration de
+# levee garde la reserve vivante ; une levée suivie d'un BLOCKED narré au
+# passe reste une levée — la position decide, comme pour les verdicts
+# formels). Le mot NU « BLOCKED » n'est PAS matche : le tag de protocole
+# « [BLOCKED] lane ... » d'une lane et la negation « n'est plus BLOCKED »
+# restent hors du filet. Residuels assumes : un BLOCKED d'emission sans gras
+# ni paste d'organe ne matche pas ; une paste dans un bloc de code fence est
+# une mention (_strip_quoted), comme tout autre verdict backtinque.
+BLOCK_VERDICTS = ("**BLOCKED**", "BLOCKED  PR")
+CONCERN_MARKERS = CONCERN_MARKERS + BLOCK_VERDICTS
+
 # Un commentaire qui ANNONCE la levee ou le merge n'est pas un nit — il en est
 
 # Un commentaire qui ANNONCE la levee ou le merge n'est pas un nit — il en est
@@ -210,6 +259,24 @@ LIFT_MARKERS = (
     # backquotee ; celle-ci lui echappe, et le marqueur de concern se
     # trouve alors *a l'interieur* de la phrase qui le leve.
     "lève la", "leve la", "Lève la", "Leve la",
+    # #12944 : le close-the-loop Hermes (« Mon concern ... est traité et
+    # fermé », PR #12941 fondateur, review 5020777166). Forme PASSIVE de
+    # levee, verbes de FERMETURE uniquement (clos / fermé / résolu) plus
+    # les composes « traité et fermé » qui couvrent le gras markdown
+    # separant l'auxiliaire du participe (« est **traité et fermé** »).
+    # La suggestion « est traité » nue de l'issue a ete REJETTEE sur
+    # contre-exemple mesure : le body pinned #11639 « le point 3 est
+    # traité en argument » (override NU qui ne doit rien lever) matcherait
+    # — « traité » narratif se promene (« traité dans la section 4 »),
+    # les verbes de fermeture s'engagent. Residu assume : une negation
+    # INTERNE au compose (« pas encore traité et fermé ») le matcherait
+    # (limite NLP documentee dans can_lift, pinne par
+    # test_12944_residu_negation_du_compose_documente).
+    "est clos", "sont clos", "sont closes",
+    "est fermé", "sont fermés", "sont fermées",
+    "est résolu", "sont résolus", "sont résolues",
+    "traité et fermé", "traitée et fermée",
+    "traité et clos", "traitée et close",
 )
 
 # Un LIFT en construction CONDITIONNELLE (« corrige X et je merge », « je merge
@@ -338,7 +405,20 @@ def _lift_cancelled(stripped: str) -> bool:
 _MENTION_VERDICT = re.compile(
     r"(?i)\b(?:fix(?:ed|ée?e?)?|corrig\w+|suite\s+[àa]|en\s+r[ée]ponse\s+[àa]"
     r"|r[ée]ponse\s+[àa]|lev\w+|lift\w*|adress\w+|trait\w+|repondu\s+[àa])"
-    r"[^()\n]{0,40}\(\s*([A-Z][A-Z_]{3,})\s*\)")
+    # #12871 (cf grain) — Position A+ : tolere une prose INTERNE a la
+    # parenthese du verdict (`(COMMENT_WITH_CONCERNS, porte sur...)`) tant
+    # qu'elle ne commence pas par un verbe d'emission (`Verdict :`,
+    # `Block on`...). Le mot declencheur de mention (fix/reponse a/leve/
+    # adresse) porte deja la semantique de mention, et le verdict est
+    # encapsule entre parentheses — donc le caractere distinctif (verdict
+    # declare) est absent, c'est une mention par construction.
+    # `(?-i:)` sur le verdict : sans lui, le `(?i)` global fait que
+    # `[A-Z][A-Z_]{3,}` capture aussi un mot minuscule (`commit`) dans la
+    # parenthese — et `[^()\n]{0,80}` apres (Position A+) transforme ce
+    # faux match en neutralisation de `commit` au lieu du verdict (2 FAIL
+    # tests #11809 mesures en CI, 2026-08-28). Même discriminant case-
+    # sensitive que la Position D.
+    r"[^()\n]{0,40}\(\s*((?-i:[A-Z][A-Z_]{3,}))[^()\n]{0,80}\)")
 
 # #12311 (cf grain) — Position A : titre de section. Le pattern historique
 # (`[A-Z]{4,}` puis `[A-Z][A-Z_]{2,}[A-Z]`) neutralisait en sous-chaine les
@@ -402,7 +482,17 @@ _MENTION_VERDICT_LIFTED = re.compile(
     r"|traite|traiter|traité|traitée|traités|traitées"
     r"|repondu|répondu|repondre|répondre"
     r"|leve|lever|levé|levée|levés|levées|lift)"
-    r"\w*\s+\((?:commit\s+[a-f0-9]+|#\d+|PR\s*#?\d+|pull/\d+)\)")
+    r"\w*"
+    # #12871 (cf grain) — Position C+ : reference pointable NUE apres le verbe
+    # de levee, dans une fenetre de 40 chars (les formes parenthesees
+    # `leve (commit <sha>)` continuent de matcher ; les formes narratives
+    # `leve par le commit <sha>` sont ajoutees). Borne courte (40 chars) pour
+    # eviter d'avaler une autre phrase ou un commentaire distinct. Le
+    # discriminant reste la piste (b) : une REF POINTABLE suit le verbe ;
+    # sans pointable (CE2), la neutralisation ne s'applique pas.
+    r"(?:\s+\((?:commit\s+[a-f0-9]+|#\d+|PR\s*#?\d+|pull/\d+)\)"
+    r"|\s+(?:par|via|dans|en)\s+(?:le\s+|la\s+|les\s+|du\s+|des\s+)?"
+    r"(?:commit\s+[a-f0-9]+|PR\s*#?\d+|#\d+|pull/\d+))")
 
 
 # #11984 — Position D : le nominal `revue` / `review` DEVANT le verdict, avec
@@ -427,15 +517,75 @@ _MENTION_VERDICT_LIFTED = re.compile(
 # emission revendique sans pointer. Pas de reference pointable = pas de
 # match = le verdict reste emis. Frontiere elargie a `*` : le mot est
 # souvent en gras (« La **revue** CHANGES_REQUESTED »).
+#
+# #12944 — extension de position : la reference pointable HORS parentheses.
+# Cas fondateur #12941 (review Hermes close-the-loop 5020777166) : « sur ma
+# review REQUEST_CHANGES de #12900 (`ffe18961`) » — le numero de la PR/review
+# source suit directement le verdict, sans parenthese. La forme d'origine ne
+# voyait que la ref entre parentheses immediates, le verdict restait emis et
+# `_formal_concern_precedes_lift` annulait meme la levee passive qui suivait.
+# Meme discriminant que #11984 (le ref pointable designe l'evenement passe
+# rapporte ; une emission ne pointe pas), position differente seulement.
 _MENTION_VERDICT_REVIEW = re.compile(
     r"(?i)(?:^|[\s,;:(*])"  # frontiere (inclut * pour **revue**)
     r"(?:le|la|les|du|mon|ma|ce|cet|cette|ces|the|my)?\s*"
     r"(?:revue|review)(?![:.])"
     r"[^():\n.]{0,60}?(?-i:([A-Z][A-Z_]{3,}))(?![A-Za-z0-9_])"
+    r"(?:"
+    # Forme d'origine : ref pointable entre parentheses immediates.
     r"[^():\n.]{0,12}?"
+    # #12871 (cf grain) — Position D+ : la ref pointable peut etre NUE dans une
+    # fenetre de 60 chars apres le verdict (les formes parenthesees
+    # `(SHA ...)` continuent de matcher ; les formes narratives
+    # `... traitee par le commit <sha>` sont ajoutees). Borne courte (60 chars)
+    # pour ne pas avaler une autre phrase distincte.
+    r"(?:"
     r"\([^()\n]{0,80}?"
     r"(?:[a-f0-9]{7,}|#\d+|\d{4}-\d{2}-\d{2}|\d{1,2}:\d{2}(?::\d{2})?Z?)"
-    r"[^()\n]{0,40}\)")
+    r"[^()\n]{0,40}\)"
+    # #12944 : ref pointable inline — « review VERDICT de #N ».
+    r"|\s+(?:de\s+|sur\s+|dans\s+)?(?:la\s+|le\s+)?(?:PR\s+)?#\d+"
+    r"|"
+    r"(?:par|via|dans|en)\s+(?:le\s+|la\s+|les\s+|du\s+|des\s+)?"
+    r"(?:commit\s+[a-f0-9]+|PR\s*#?\d+|#\d+|pull/\d+)"
+    r"))")
+
+# #12871 (cf grain) — Position E : `La review <VERDICT> ... traitee par le
+# commit <sha>` (ou variantes). La Position D stricte echoue sur ce cas parce
+# que la ref pointable est trop loin (60+ chars apres le verdict), au-dela
+# d'une frontiere de phrase `.`. Mais la phrase CONTIENT un verbe de levee
+# suivi d'une ref pointable — c'est la signature d'une mention, pas d'une
+# emission. Discriminant : on exige (a) `La review/ce <VERDICT>` en tete, (b)
+# PAS de fin de phrase entre le verdict et le verbe de levee (donc sous la
+# meme phrase), (c) verbe de levee + ref pointable a la fin. Borne dure : la
+# phrase complete ne doit pas contenir `Verdict :` (emission formelle) ni
+# `reste bloquante` (declaration de blocage) — implementee par le lookahead
+# #13425 ci-dessous.
+_MENTION_VERDICT_REVIEW_NARRATIVE = re.compile(
+    r"(?i)(?:^|[\s,;:(*])"
+    r"(?:le|la|les|du|mon|ma|ce|cet|cette|ces|the|my)?\s*"
+    r"(?:revue|review)(?![:.])"
+    r"[^():\n.]{0,60}?(?-i:([A-Z][A-Z_]{3,}))(?![A-Za-z0-9_])"
+    # #13425 — la borne dure promise ci-dessus, desormais implementee : si la
+    # suite de la phrase (fenetre 200 chars, meme phrase) contient une
+    # declaration de blocage vivante (`reste bloquante`) ou une emission
+    # formelle (`Verdict :`), la position ne s'applique PAS — le verdict
+    # reste emis. Cas hybride fondateur : « Cette review CHANGES_REQUESTED
+    # reste bloquante - traitee par le commit a1b2c3d4e » voyait son verdict
+    # neutralise alors que la phrase declare le blocage vivant.
+    r"(?![^.!?\n]{0,200}(?:reste\s+bloquante|verdict\s*:))"
+    # Pas de fin de phrase avant le verbe de levee : `[^.!?\n]{0,200}` est
+    # borne a 200 chars pour eviter de manger une phrase distincte (cf
+    # discriminateur enonce par l'issue, le verbe de levee doit etre dans
+    # la meme phrase).
+    r"[^.!?\n]{0,200}?"
+    r"(?:adresse|adresser|adressé|adressée|adressés|adressées"
+    r"|traite|traiter|traité|traitée|traités|traitées"
+    r"|repondu|répondu|repondre|répondre"
+    r"|leve|lever|levé|levée|levés|levées|lift)\w*"
+    r"(?:\s+(?:par|via|dans|en)\s+(?:le\s+|la\s+|les\s+|du\s+|des\s+)?"
+    r"|\s+\()"
+    r"(?:commit\s+[a-f0-9]+|PR\s*#?\d+|#\d+|pull/\d+)")
 
 
 def _strip_mentioned_verdicts(body: str) -> str:
@@ -445,10 +595,24 @@ def _strip_mentioned_verdicts(body: str) -> str:
     reste du body sont preserves (les fenetres de `_is_cited` restent
     calibrees sur la vraie position des occurrences survivantes).
     """
-    for pat in (_MENTION_VERDICT, _MENTION_VERDICT_HEADING, _MENTION_VERDICT_INLINE, _MENTION_VERDICT_LIFTED, _MENTION_VERDICT_REVIEW):
+    for pat in (_MENTION_VERDICT, _MENTION_VERDICT_HEADING, _MENTION_VERDICT_INLINE, _MENTION_VERDICT_LIFTED, _MENTION_VERDICT_REVIEW, _MENTION_VERDICT_REVIEW_NARRATIVE):
         body = pat.sub(
             lambda m: m.group(0).replace(m.group(1), " " * len(m.group(1))), body)
     return body
+
+
+# #13083 (2e instance) — mention nominale au generique : « une formule de
+# levee conditionnelle », « ses conditions de levee », « une levee reelle »
+# (#12896 c.5422312669, verbatim). Un determiner DEVANT le mot (genitif « de »,
+# article indefini « une ») en fait un nom : la prose NOMME le concept de
+# levee (metalinguistique), elle ne l'emets pas. Distinct des annonces
+# « Levée de <x> » (EXPLICIT_LIFT_MARKERS) ou le « de » suit le mot —
+# l'annonce reste une emission. La premiere implementation de cette PR
+# (regex `_NOMINAL_LIFT_RE` + `_strip_nominal_lifts`, iso-longueur) a ete
+# FUSIONNEE au rebase 2026-08-29 dans la fenetre de determinants #12908 de
+# main (`LIFT_NARRATION_CITERS` + `_lift_is_narrated`), qui couvre de/une et
+# une largeur supérieure de déterminants (la/son/apres/avant/sans/obtenir/
+# exige...) — les deux mécanismes faisaient le même travail en double.
 
 # NOTE — proposition ecartee (triage 07-15..07-31, retiree au rebase 2026-08-16).
 # Un `NO_CONCERN_TAIL_MARKERS` dechargeant tout body dont les 300 derniers chars
@@ -595,6 +759,28 @@ def has_marker(body: str, markers: tuple[str, ...]) -> bool:
     return any(_unaccent(m) in normalised for m in markers)
 
 
+# #13083 (2e instance) — fleche de derivation DEVANT une occurrence de levee.
+# « -> je merge » / « X => Merged » : la fleche en fait la
+# CONSEQUENCE conditionnelle d'une precondition (« sign-off user tel quel ->
+# je merge sans autre reserve », #12896 c.5422307622 verbatim) — une
+# derivation n'est pas une annonce, elle ne leve rien tant que la
+# precondition n'est pas satisfaite. C'est la regle fleche de `_is_cited`,
+# reprise ISO sans le reste de la fenetre de citation : importer cette
+# derniere dans l'etage lift cassait des annonces reelles trans-sentence
+# (« n'est pas une levee. **Mergée.** » — le « pas » de la phrase
+# precedente tuait le Mergé de la suivante, 4 tests du corpus). Au rebase
+# 2026-08-29 la garde vit dans `_live_lift_positions` (avec `_lift_is_narrated`
+# #12908), plus de fonction `_has_lift_announce` dediee.
+_ARROW_DERIVATIONS = ("->", "=>", "→")
+
+
+def _arrow_precedes(normalised: str, index: int) -> bool:
+    j = index
+    while j > 0 and normalised[j - 1].isspace():
+        j -= 1
+    return normalised[:j].endswith(_ARROW_DERIVATIONS)
+
+
 def _formal_concern_precedes_lift(body: str) -> bool:
     """Un verdict Hermes formel precede-t-il la narration de sa levee ?
 
@@ -608,14 +794,14 @@ def _formal_concern_precedes_lift(body: str) -> bool:
     normalised = _unaccent(stripped)
     concern_positions = [
         normalised.find(_unaccent(marker))
-        for marker in ("COMMENT_WITH_CONCERNS", "REQUEST_CHANGES", "NEEDS_CHANGES")
+        for marker in ("COMMENT_WITH_CONCERNS", "REQUEST_CHANGES",
+                       "NEEDS_CHANGES", "**BLOCKED**", "BLOCKED  PR")
     ]
     concern_positions = [position for position in concern_positions if position >= 0]
-    lift_positions = [
-        normalised.find(_unaccent(marker))
-        for marker in LIFT_MARKERS
-    ]
-    lift_positions = [position for position in lift_positions if position >= 0]
+    # #12908 : les occurrences NARRÉES de levée (« après la levée annoncée »)
+    # ne sont pas des gestes — la garde compare le verdict vivant aux levées
+    # VIVES uniquement.
+    lift_positions = _live_lift_positions(normalised)
     return (
         bool(concern_positions)
         and bool(lift_positions)
@@ -704,6 +890,73 @@ def _is_cited(window: str) -> bool:
             if head == c or (head.endswith(c) and not head[-len(c) - 1].isalnum()):
                 return True
     return False
+
+
+# #12908 — miroir LIFT-side de CITERS : un mot qui fait de l'occurrence
+# suivante un NOM de levee, pas sa PERFORMANCE. « obtenir une levée
+# explicite » (PREFLIGHT jsboigeEpita 2026-08-25T04:45:30Z sur #12798)
+# demande la levee, il ne l'accorde pas ; « la levée annoncée » la narre.
+# Le discriminant est le déterminant/quantificateur immédiatement devant :
+# une émission performative s'ouvre sur un verbe (« Je lève », « est
+# levée », « Levée de ») ou un acronyme nu (LGTM), jamais sur « une ».
+LIFT_NARRATION_CITERS = (
+    "un", "une", "le", "la", "les", "des", "du", "de",
+    "mon", "ma", "ton", "ta", "sa", "son", "ses",
+    "leur", "leurs", "notre", "votre",
+    "ce", "cet", "cette", "ces", "chaque", "aucun", "aucune",
+    "apres", "avant", "sans", "obtenir", "exige", "exiger",
+    "the", "a", "an",
+)
+
+
+def _lift_is_narrated(window: str) -> bool:
+    """La fenetre avant l'occurrence se termine-t-elle sur un déterminant ?
+
+    Même garde de frontière que `_is_cited` : le caractère précédant le mot
+    doit être non-alphanumérique, sinon « aucune » matcherait « une ».
+    """
+    w = window
+    while w and not w[-1].isalnum():
+        w = w[:-1]
+    w = w.lower()
+    for c in LIFT_NARRATION_CITERS:
+        if w == c or (w.endswith(c) and not w[-len(c) - 1].isalnum()):
+            return True
+    return False
+
+
+def _live_lift_positions(normalised: str) -> list[int]:
+    """Positions des occurrences de LIFT_MARKERS NON narrées.
+
+    `has_marker` traite le body comme un sac de mots ; #12798/#12908 a
+    mesuré le coût de ce sac côté LIFT : le PREFLIGHT qui EXIGE « une
+    levée explicite » était enregistré comme événement de levée, et
+    éteignait les réserves antérieures de son propre auteur (faux OK).
+    #13083 (2e instance) y ajoute la flèche de dérivation : « -> je
+    merge » conditionne le merge à une précondition non satisfaite, ce
+    n'est pas une annonce.
+    """
+    out: list[int] = []
+    for marker in LIFT_MARKERS:
+        m = _unaccent(marker)
+        start = 0
+        while (i := normalised.find(m, start)) != -1:
+            if not _lift_is_narrated(normalised[max(0, i - 30):i]) \
+                    and not _arrow_precedes(normalised, i):
+                out.append(i)
+            start = i + 1
+    return out
+
+
+def has_live_lift(body: str) -> bool:
+    """LIFT_MARKER présent avec au moins une occurrence NON narrée.
+
+    Miroir exact de `has_live_marker` côté levée : la classe use-vs-mention
+    (#11636 → #12944 côté verdicts) s'appliquait aux réserves, pas aux
+    levées — la symétrie ferme la dernière porte par laquelle un commentaire
+    neutre passait pour un geste de levée.
+    """
+    return bool(_live_lift_positions(_unaccent(body)))
 
 
 def has_live_marker(body: str, markers: tuple[str, ...]) -> bool:
@@ -844,7 +1097,10 @@ def can_lift(comment: dict) -> bool:
     body = (comment.get("body") or "").lstrip()
     if not body:
         return False
-    if body.startswith(AGENT_PREFIXES) and not has_marker(body, LIFT_MARKERS):
+    # #12908 : la phrase exigée est une levée VIVE — un tag de protocole
+    # qui narre « une levée explicite » (exigence, pas geste) ne peut
+    # toujours pas lever.
+    if body.startswith(AGENT_PREFIXES) and not has_live_lift(body):
         return False
     return True
 
@@ -869,12 +1125,35 @@ def classify(author: str, body: str) -> str | None:
     # reste muet — la sous-accusation coute un merge, la sur-accusation coute
     # une relecture. Aucun body sans glyphe ne change de classement : la
     # table de distribution d'ai-01 reste exacte.
-    if (has_marker(body, LIFT_MARKERS)
+    # #13083 (2e instance) — SYMETRIE de l'etage lift : le concern est evalue
+    # mention-aware (`_strip_mentioned_verdicts`), le lift etait un substring
+    # brut sur le body ENTIER. Consequence mesuree (#12896) : « une formule de
+    # levee conditionnelle », « une levee reelle », « ses conditions de levee »
+    # (mentions nominales — la prose NOMME le concept, elle ne l'emets pas)
+    # eteignaient une reserve vivante — nommer une resolution valait la
+    # prononcer, alors que nommer une reserve ne vaut pas l'emettre (#11636
+    # symetrique). Fusion au rebase 2026-08-29 : le miroir LIFT #12908 deja
+    # sur main (cb95b65020, `_lift_is_narrated` + `LIFT_NARRATION_CITERS`)
+    # couvre les mentions nominales par sa fenetre de determinants (de/une,
+    # la/son, apres/avant/sans, obtenir/exige...) — il est utilise TEL QUEL ;
+    # la presente instance y ajoute (a) la SURFACE : l'etage concern lit
+    # `_strip_mentioned_verdicts(_strip_quoted(body))` (L. ci-dessous), le
+    # lift lit la meme surface stripee — un marqueur de levee DANS une quote
+    # ou un verdict mentionne ne peut pas lever ; (b) la regle FLECHE : « ->
+    # je merge » est une derivation conditionnelle (si sign-off alors merge,
+    # #12896 c.5422307622), syntaxiquement prouvee par la fleche, pliee dans
+    # `_live_lift_positions`. Importer `_is_cited` ENTIER casserait des
+    # annonces reelles trans-sentence (« n'est pas une levee. **Mergée.** » —
+    # le « pas » de la phrase precedente tuerait le Mergé de la suivante,
+    # 4 tests du corpus) : seule la fleche est reprise.
+    if (has_live_lift(_strip_mentioned_verdicts(_strip_quoted(body)))
             and not _lift_cancelled(_strip_quoted(body))
             and not has_live_marker(_strip_quoted(body), SEVERITY_GLYPHS)
             # #12836 / #12798 : une revalidation COMMENT_WITH_CONCERNS peut
             # narrer la levee anterieure qu'elle REFUTE. Seul un verdict Hermes
             # formel place AVANT le mot de levee garde la reserve vivante ; les
+            # #12908 : le verdict B.0 (« **BLOCKED** ») est un verdict de
+            # concern a part entiere pour cette comparaison positionnelle.
             # levees explicites historiques (« je leve ma CHANGES_REQUESTED »)
             # restent admissibles parce que leur ordre est inverse.
             and not _formal_concern_precedes_lift(body)):
@@ -895,9 +1174,8 @@ def classify(author: str, body: str) -> str | None:
         return None  # verdict structurel positif rendu : il decide, la prose ne compte plus
     # #11636 : la recherche porte le body nettoye de ses verdicts MENTIONNES —
     # un rapport de correction qui nomme le verdict qu'il corrige n'emet pas
-    # de reserve. Uniquement pour CONCERN_MARKERS : LIFT_MARKERS et
-    # VERDICT_POSITIVE gardent le body brut (surface minimale du fix — le
-    # controle positif deux formes vit dans les tests, cote a cote).
+    # de reserve. Uniquement pour CONCERN_MARKERS et l'etage lift (symetrie
+    # #13083 ci-dessus) : VERDICT_POSITIVE garde le body brut.
     live_concern = has_live_marker(_strip_mentioned_verdicts(_strip_quoted(body)), CONCERN_MARKERS)
     if not live_concern and _HUMAN_VERDICT_RE.search(body):
         return None  # verdict humain positif (APPROVE / APPROVED / LGTM) SANS reserve vivante : equivalent state:APPROVED
@@ -956,6 +1234,21 @@ def review_threads(pr: int) -> list[dict]:
     return out
 
 
+def _names_author(body: str, author: str) -> bool:
+    """``body`` mentionne-t-il ``author`` comme identite, pas par hasard ?
+
+    #13399 : un reviewer tiers n'approuve la reserve d'une lane que s'il NOMME
+    cette lane — sinon un APPROVED generique eteindrait toutes les reserves de
+    la PR. La frontiere de mot est posee par non-caractere d'identite (un login
+    contient `-` et `.`, donc `\\b` est fragile autour d'eux : `clusterManager-Myia`
+    n'a pas de frontiere au tiret). On exige un mot-de-login complet delimitere.
+    """
+    if not body or not author:
+        return False
+    return re.search(r"(?<![A-Za-z0-9_.-])" + re.escape(author) + r"(?![A-Za-z0-9_.-])",
+                     body) is not None
+
+
 def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
     """cutoff = mergedAt (audit retro) ou now (gate pre-merge)."""
     commits = [ts(c.get("committedDate")) for c in (pr_data.get("commits") or [])]
@@ -980,12 +1273,47 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
     # d'exclusion can_lift ne s'applique pas — un state APPROVED n'est pas du
     # bruit de protocole, meme depuis un reviewer bot.
     approved_rereviews = [
-        (ts(r.get("submittedAt")), (r.get("author") or {}).get("login", ""), "")
+        (ts(r.get("submittedAt")), (r.get("author") or {}).get("login", ""),
+         r.get("body", ""))
         for r in (pr_data.get("reviews") or [])
         if r.get("state") == "APPROVED"
         and (r.get("author") or {}).get("login", "") not in BOT_LOGINS
     ]
     approved_rereviews = [x for x in approved_rereviews if x[0] is not None]
+
+    def _approved_lifts_reserve(reserve_author: str, reserve_when: datetime,
+                                pr_author: str) -> bool:
+        """Une re-review APPROVED leve-t-elle la reserve de ``reserve_author`` ?
+
+        #13399 — le defaut constate sur #13299 n'etait pas l'absence de re-review,
+        mais le fait que ``approved_rereviews`` ne levait que la reserve dont
+        l'auteur de l'APPROVED etait l'auteur (auto-approbation). Un reviewer
+        TIERS (ai-01) qui approuve en nommant la reserve d'une lane la leve
+        aussi. Le garde-fou #12798 reste : seule l'identite de l'auteur tranche,
+        jamais un commit ni un SAR. Deux voies, toutes posterieures a la reserve :
+
+        1. **Re-review de l'auteur** (``auteur_approved == reserve_author``) :
+           legitime uniquement si l'auteur de la reserve n'est pas l'auteur de la
+           PR. Sous le self-review cap (#12319) l'auteur de la reserve == l'auteur
+           de la PR == jsboige, et une APPROVED de ce compte est une
+           auto-approbation qui demontre rien — refuse.
+        2. **Approbation d'un tiers nommant la reserve** (auteur different de la
+           reserve ET de l'auteur de la PR, corps mentionnant le login de la
+           reserve) : le coordinateur confirme par ecrit que le point de la lane
+           est traite. Un APPROVED completement generique (qui n'identifie pas
+           la reserve) ne leve rien — sinon tout approval d'un coordinateur
+           eteindrait toutes les reserves de la PR.
+        """
+        for (t, app_author, app_body) in approved_rereviews:
+            if t is None or t <= reserve_when:
+                continue
+            if app_author == reserve_author:
+                if reserve_author != pr_author:
+                    return True
+                continue  # auto-approbation self-review : refusee, voir ci-dessous
+            if app_author != pr_author and _names_author(app_body, reserve_author):
+                return True
+        return False
 
     def _lift_eligible(lift_author: str, nit_author: str,
                        lift_body: str = "") -> bool:
@@ -997,8 +1325,15 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
         # s'ajoute. Un OVERRIDE sans phrase de levee n'entre meme pas ici :
         # can_lift l'a ecarte (tag de protocole nu), et explicit_lifts exige
         # un LIFT_MARKER.
-        return (lift_author in COORDINATOR_LOGINS
-                and bool(OVERRIDE_LANE.search(lift_body or "")))
+        # #13030 -- search sur le corps ENTIER retire : une citation du
+        # marqueur (documentation, dispatch, post-mortem, DM recopie)
+        # posait l'override. Seule la forme POSEE en tete de ligne compte.
+        # #13316 -- jsboige n'entre plus : identite de poussee partagee des
+        # lanes (self-review cap #12319), un override jsboige est
+        # indiscernable d'une auto-levee de lane (replay #12737).
+        m = OVERRIDE_LANE.search(lift_body or "")
+        return (lift_author in LIFT_OVERRIDE_LOGINS
+                and m is not None)
 
     # Fenetre 2026-08-16 (#11222) : les temps plats ne suffisent pas pour un
     # CHANGES_REQUESTED. Une PHRASE explicite de levee (LIFT_MARKER non
@@ -1018,12 +1353,30 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
          c.get("body", ""))
         for c in (pr_data.get("comments") or [])
         if can_lift(c)
-        and has_marker(c.get("body", ""), LIFT_MARKERS)
+        # #12908 : levée VIVE exigée — le PREFLIGHT de #12798 qui demandait
+        # « une levée explicite » était compté comme levée par le sac de mots.
+        and has_live_lift(c.get("body", ""))
         and not _lift_cancelled(_strip_quoted(c.get("body", "")))
         # #12836 / #12798 : une reserve qui narre une ancienne levee reste
         # une reserve, pas un evenement de levee du signal precedent.
         and classify((c.get("author") or {}).get("login", ""),
                      c.get("body", "")) is None
+    ] + [
+        # #13399 point 2 — symetrie de la levee : une PHRASE de levee portee
+        # par le corps d'une review COMMENTED (et pas un commentaire) devait
+        # aussi compter. Aujourd'hui la pose acceptait commentaire et review,
+        # la levee un seul. Une review APPROVED est deja traitee par
+        # approved_rereviews (etat natif) ; une review COMMENTED qui ecrit
+        # « je leve ma CHANGES_REQUESTED » est une levee comme un commentaire.
+        (ts(r.get("submittedAt")), (r.get("author") or {}).get("login", ""),
+         r.get("body", ""))
+        for r in (pr_data.get("reviews") or [])
+        if r.get("state") == "COMMENTED"
+        and can_lift(r)
+        and has_live_lift(r.get("body", ""))
+        and not _lift_cancelled(_strip_quoted(r.get("body", "")))
+        and classify((r.get("author") or {}).get("login", ""),
+                     r.get("body", "")) is None
     ]
     explicit_lifts = [x for x in explicit_lifts if x[0] is not None]
 
@@ -1081,10 +1434,7 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
             # (B.0 : ce qui leve une remarque est une phrase). Les nits portes
             # par un COMMENTAIRE gardent le regime general ci-dessous — limite
             # NLP documentee dans can_lift.
-            lifted = any(
-                when < t < cutoff and author == login
-                for (t, author, _) in approved_rereviews
-            ) or any(
+            lifted = _approved_lifts_reserve(login, when, pr_author) or any(
                 when < t < cutoff and _lift_eligible(lifter, login, lift_body)
                 for (t, lifter, lift_body) in explicit_lifts
             )
@@ -1106,9 +1456,7 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
                     and (lift_author != pr_author
                          or bool(OVERRIDE_LANE.search(lift_body)))
                     for (t, lift_author, lift_body) in explicit_lifts)
-                    or any(
-                    when < t < cutoff and author == login
-                    for (t, author, _) in approved_rereviews)):
+                    or _approved_lifts_reserve(login, when, pr_author)):
                 continue
         # #12319 : meme regime pour un nit porte par un commentaire ou une
         # review COMMENTED (dont chaque reserve Hermes, self-review cap).
@@ -1122,10 +1470,7 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
         elif (any(
                   when < t < cutoff and _lift_eligible(lift_author, login, lift_body)
                   for (t, lift_author, lift_body) in explicit_lifts
-              ) or any(
-                  when < t < cutoff and author == login
-                  for (t, author, _) in approved_rereviews
-              )):
+              ) or _approved_lifts_reserve(login, when, pr_author)):
             continue
         # Un commit poussé après le nit ne le lève PAS à lui seul : sur #10761,
         # le « traitement » était un rebase à 19:41 qui n'adressait aucun des
@@ -1134,6 +1479,7 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
         pushed_after = last_commit is not None and last_commit > when
         blocking.append({
             "kind": kind, "author": login, "src": src,
+            "channel": "review" if src.startswith("review") else "comment",
             "at": when.isoformat(),
             "gap_hours": round((cutoff - when).total_seconds() / 3600.0, 1),
             "code_pushed_after": pushed_after,
@@ -1145,16 +1491,36 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
             continue
         blocking.append({
             "kind": "INLINE-UNRESOLVED", "author": t["author"], "src": "reviewThread",
+            "channel": "review",
             "at": t.get("createdAt") or "?",
             "where": f"{t.get('path')}:{t.get('line')}",
             "excerpt": _excerpt(t.get("body") or ""),
         })
+
+    # #13316 — un override ECARTE pour cause d'auteur doit etre NOMME. Avant,
+    # un gate rouge « malgre notre override » etait indistinguable d'un bug du
+    # detecteur (#13030, #12096) : le commentaire existait, la borne l'avait
+    # rejete, personne ne le disait. Ce n'est PAS bloquant (la reserve qui
+    # survit reste le signal) — c'est l'explication visible du rouge. Un
+    # override de l'auteur de la reserve (self-lift legitime) n'est pas liste.
+    nit_authors = {login for (_, _, login, _, _) in signals}
+    ignored_overrides = [
+        {"author": author, "at": t.isoformat(),
+         "why": (f"override ignoré — auteur « {author} » n'est pas un compte "
+                 "de levée (#13316 : identité de poussée partagée des lanes)")}
+        for (t, author, body) in explicit_lifts
+        if t is not None
+        and OVERRIDE_LANE.search(body or "") is not None
+        and author not in LIFT_OVERRIDE_LOGINS
+        and author not in nit_authors
+    ]
 
     return {
         "pr": pr_data.get("number"),
         "title": (pr_data.get("title") or "")[:110],
         "blocking": blocking,
         "blocked": bool(blocking),
+        "ignored_overrides": ignored_overrides,
     }
 
 
@@ -1184,6 +1550,10 @@ def gate(pr: int, as_json: bool) -> int:
             gap = f" (+{b['gap_hours']}h avant merge)" if "gap_hours" in b else ""
             print(f"  [{b['kind']}] {b['author']} via {b['src']}{where}{gap}")
             print(f"      {b['excerpt']}\n")
+        for o in result.get("ignored_overrides", ()):
+            # #13316 : dire POURQUOI l'override visible n'a rien eteint — le
+            # silence etait le mode d'echec couteux (#13030, #12096).
+            print(f"  [i] {o['why']} (commentaire de {o['author']} à {o['at']})")
         print("Lever chaque nit (commit, reponse explicite, ou issue de suivi nommee)")
         print("avant `gh pr merge`. Cf CLAUDE.md section B.0.")
     return 1 if result["blocked"] else 0

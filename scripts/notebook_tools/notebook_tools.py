@@ -890,7 +890,7 @@ class EnvironmentChecker:
                 bash_cmd = f"source ~/.elan/env 2>/dev/null && {cmd} {version_flag}"
                 result = subprocess.run(
                     ["bash", "-c", bash_cmd],
-                    capture_output=True, text=True, timeout=10
+                    capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=10
                 )
                 if result.returncode == 0:
                     version = result.stdout.strip().split('\n')[0]
@@ -903,7 +903,7 @@ class EnvironmentChecker:
             try:
                 result = subprocess.run(
                     [cmd, version_flag],
-                    capture_output=True, text=True, timeout=5
+                    capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=5
                 )
                 version = result.stdout.strip().split('\n')[0]
                 return True, version
@@ -928,7 +928,7 @@ class EnvironmentChecker:
         try:
             result = subprocess.run(
                 ["jupyter", "kernelspec", "list"],
-                capture_output=True, text=True, timeout=10
+                capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=10
             )
             return kernel_name.lower() in result.stdout.lower()
         except Exception:
@@ -1205,7 +1205,7 @@ class NotebookExecutor:
                 sub_env.update(env_extra)
 
         try:
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, env=sub_env)
+            result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=timeout, env=sub_env)
             execution_time = time.time() - start_time
 
             # Papermill returns 0 even when cells fail — check output notebook
