@@ -22,6 +22,11 @@ package «discrepancy_lean» where
 require mathlib from git
   "https://github.com/leanprover-community/mathlib4.git" @ "v4.32.1"
 
+/-- Dépendance cross-lake vers le lake frère ML (P2, #12823) : réutilisation
+du kernel de concentration `PacLearning.Hoeffding` par import, jamais
+dupliqué (mandat FORMAL_STATUS). Les deux lakes partagent mathlib v4.32.1. -/
+require learning_theory_lean from ".." / ".." / "ML" / "learning_theory_lean"
+
 @[default_target]
 lean_lib «Discrepancy» where
   -- `.submodules` ne build pas le module racine (apprentissage LEAN_INVENTORY) :
