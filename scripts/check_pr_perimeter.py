@@ -96,6 +96,11 @@ GENERIC_KNOB = re.compile(r"(?i)(baseline|threshold|ratchet|_cap\b|\bcap\b)")
 
 # Assertion vocabulary: file-count claims and exclusivity markers.
 COUNT_CLAIM = re.compile(r"\b(\d+)\s*(?:fichiers?|files?)\b", re.IGNORECASE)
+# #13440: the boundary `\b` stops the match at "fichier" when the body writes
+# the plural parenthetically ("25 fichier(s) verifies") -- without skipping
+# the "(s)" hump, every downstream tail window (incidental qualifier,
+# negated-diff tail, reference verb) is blind on this form.
+PLURAL_PAREN = re.compile(r"^\s*\(s\)\s*")
 # #11985 rule 1 extension (CLOSED LIST -- never expand to unknown vocabulary):
 # a body can declare its perimeter in words ("trois fichiers", "five files").
 # The authorial declaration is the same shape; we just spell-check the
@@ -456,6 +461,22 @@ INCIDENTAL_QUALIFIERS = frozenset({
     "produites", "sources", "source",
     # #11985 formes 3-4: artifact kinds and scan inventories.
     "audio", "distinct", "distincts", "distinctes", "non-notebook",
+    # #13440 -- participes de RESULTAT DE CONTROLE : ce qu'un controle a
+    # couvert, jamais ce que le diff touche (un claim de perimetre s'ecrit
+    # avec des verbes de modification, qui restent bloquants via
+    # _has_strong_scope et hors liste). Formes mesurees sur main :
+    # "25 fichier(s) verifies sans BOM", "18 fichiers testes sans erreur",
+    # "Controle encodage : 25 fichier(s) conformes".
+    # FN DELIBERE : "restaures"/"restaurés" (campagne accents #2876) et
+    # "re-executes"/"re-exécutés" (tranches MGS) restent HORS liste -- dans
+    # ce depot ces formes SONT des perimetres.
+    "verifies", "vérifiés", "verifie", "vérifié",
+    "testes", "testés", "teste", "testé",
+    "conformes", "conforme",
+    "scannes", "scannés", "scanne", "scanné",
+    "analyses", "analysés", "analyse", "analysé",
+    "audites", "audités", "audite", "audité",
+    "examines", "examinés", "examine", "examiné",
 })
 # A cited threshold ("< 15 fichiers", ">= 10 fichiers") quotes a rule, it does
 # not claim a perimeter.
@@ -638,7 +659,7 @@ def _count_is_exempt(line: str, m: re.Match, ante_context: str = "") -> bool:
         return True
     if LOCATIVE_PREP.search(line):
         return True
-    after = line[m.end():]
+    after = PLURAL_PAREN.sub(" ", line[m.end():], count=1)
     if NEGATED_DIFF_TAIL.match(after):
         return True
     if HIT_ANTECEDENT.search(line[: m.start()]):
