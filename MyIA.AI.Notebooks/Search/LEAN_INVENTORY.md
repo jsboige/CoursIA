@@ -14,8 +14,8 @@ hors `_en` ; bascule #11688 — historiquement `standalone-tactic` ; les mention
 | Lake | Toolchain | sorry (production) | Modules | Notebook câblé | Classe | Suivi |
 |------|-----------|--------------------:|--------:|---------------:|--------|-------|
 | `search_lean` | v4.32.1 | 0 | 5 | 1¹ | PEDA/REF | #4048, #4038, #3801 |
-| `discrepancy_lean` | v4.32.1 | 0 | 3 | 0² | PEDA/REF | #12823 |
-| **Total** | — | **0** | **8** | **1** | — | — |
+| `discrepancy_lean` | v4.32.1 | 0 | 8 | 0² | PEDA/REF | #12823 |
+| **Total** | — | **0** | **13** | **1** | — | — |
 
 ¹ Notebook câblé : **Lean-18-Search-AStar-Optimality.ipynb**
 (`SymbolicAI/Lean/`). Companion conceptuel = la série **Search** (CSP/Foundations,
@@ -77,24 +77,33 @@ systèmes d'ensembles de degré `≤ k`, bornes de la pire somme colorée.
 Première formalisation du sujet (dépôt + Mathlib : 0 hit, vérifié 2026-08-24).
 Désambiguïsation : sans rapport avec la Limited Discrepancy Search de Search-13.
 
-- **Toolchain** : v4.32.1 · **Dépendance** : Mathlib4 (`520045ab`)
+- **Toolchain** : v4.32.1 · **Dépendance** : Mathlib4 (`520045ab`) +
+  cross-lake `learning_theory_lean` (kernel `PacLearning.Hoeffding` importé, P2)
 - **lib** : `Discrepancy` (`globs := #[.submodules \`Discrepancy, \`Discrepancy]`)
-- **Modules** : `Discrepancy/Basic.lean`, `Discrepancy/Komlos.lean` + umbrella
-  `Discrepancy.lean`
+- **Modules** : `Discrepancy/Basic.lean`, `Discrepancy/Komlos.lean`,
+  `Discrepancy/Kernel.lean` (b1), `Discrepancy/Partial.lean` (b2),
+  `Discrepancy/Progress.lean` (b3), `Discrepancy/BeckFiala.lean` (b4),
+  `Discrepancy/ErdosSpencer.lean` (P2) + umbrella `Discrepancy.lean`
 - **sorry (production)** : **0** (conjectures = `def ... : Prop` nommées,
   jamais de théorème tronqué).
 
-#### Prouvé (P0) vs ouvert
+#### Prouvé (P0+P1+P2) vs ouvert
 
 - **Prouvé** (P0) : 3 lemmes-limites — `discrepancy_empty`,
   `discrepancy_singleton_empty`, `degree_le_card`.
-- **Énoncés posés, preuves à venir** (registre
-  [`FORMAL_STATUS.md`](discrepancy_lean/FORMAL_STATUS.md)) : cible
-  `BeckFialaClassic` (`disc ≤ 2k − 1`, boutes `b1..b4`), `BeckFialaConjecture`
+- **Prouvé** (P1, b1–b4) : **`theorem beck_fiala_classic`** — Beck–Fiala
+  classique `disc ≤ 2k − 1` assemblé (chaîne b1 double comptage → b2
+  invariant partiel → b3 progrès → b4 terminaison + induction `bf_loop`).
+- **Prouvé** (P2, p1a–p4) : **`theorem erdos_spencer_lb_explicit`** — borne
+  inférieure Erdős–Spencer à constante explicite `√k/14` (moments de
+  Rademacher, 4ᵉ moment `3n²−2n`, Paley–Zygmund, familles aléatoires,
+  union bound, contrôle du degré par blocs appariés).
+- **Ouverts** (registre
+  [`FORMAL_STATUS.md`](discrepancy_lean/FORMAL_STATUS.md)) :
+  `ErdosSpencerLB` (`√k/2`, obstruction structurelle documentée), `BeckFialaConjecture`
   (`O(√k)`, ouverte), `KomlosConjecture` (`O(1)`, ouverte),
   `BansalJiangLargeDegree` + `KomlosBansalJiangWeak` (P3 non engagé : SDP et
-  concentration matricielle absents de Mathlib). P2 = borne inférieure
-  Erdős–Spencer en réutilisant le kernel `PacLearning/Hoeffding.lean`.
+  concentration matricielle absents de Mathlib).
 
 ## Notes transverses
 
