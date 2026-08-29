@@ -122,7 +122,16 @@ AGENT_PREFIXES = (
 # deja exige par explicit_lifts) — un OVERRIDE nu ne leve rien. Les bornes
 # temporelles restent entieres : un override POST-merge ne peut pas avoir
 # eteint une reserve avant la decision de merge (borne #10761).
-COORDINATOR_LOGINS = {"myia-ai-01", "jsboige"}
+#
+# #13316 — jsboige n'est PAS un compte de levee : c'est l'identite de poussee
+# PARTAGEE de toutes les lanes (cf le commentaire #12319 de explicit_lifts :
+# Hermes poste sous jsboige, la lane pousse sous jsboige). Crediter jsboige
+# comme coordinateur retablit exactement ce que la borne d'auteur #11145
+# interdit — n'importe quelle lane pose un `[OVERRIDE]` sous jsboige sur sa
+# propre PR et eteint la reserve d'un tiers (#12737 : reserve ai-01 02:37:04Z,
+# « overrides » jsboige 02:40/02:41 ; classe #12798, l'auto-levee). L'arbitre
+# tiers de B.0 est la lane coordinateur dediee, et elle seule.
+LIFT_OVERRIDE_LOGINS = {"myia-ai-01"}
 # #13030 -- le marqueur doit etre POSE, pas CITE. L'ancien pattern sans
 # ancre matchait n'importe quelle mention dans le corps : le commentaire de
 # la lane #12872 qui DOCUMENTAIT l'option « (b) `[OVERRIDE] lane x` par
@@ -205,6 +214,27 @@ SEVERITY_GLYPHS = (
 # aussi les glyphes isoles — sans cette ligne, un body compose uniquement d'un
 # glyphe (pas de LIFT, pas de CONCERN_MARKERS textuel) retournerait None a tort.
 CONCERN_MARKERS = CONCERN_MARKERS + SEVERITY_GLYPHS
+
+# #12908 — le verdict de l'organe B.0 lui-même, en ses deux formes d'EMISSION :
+# le gras de revalidation (« classe encore cette PR **BLOCKED** », commentaire
+# fondateur 2026-08-25T04:45:30Z de #12798) et la sortie pastee de l'organe
+# (« BLOCKED  PR #N — ... », double espace). Ce commentaire fondateur
+# maintenait explicitement la reserve (« quatre réserves tierces actives »,
+# « réserve uniquement B.0/process ») tout en narrant le vocabulaire de levée
+# (« une levée explicite sur le head final ») : le LIFT_MARKER « levée » de la
+# narration absorbait la reserve vivante — le defaut exact que B.0 existe pour
+# traquer. Comme les glyphes : concatene pour que `live_concern` classe le
+# maintien BOT-CONCERN, ET subordonne la branche LIFT de `classify` via
+# `_formal_concern_precedes_lift` (un BLOCKED emis AVANT la narration de
+# levee garde la reserve vivante ; une levée suivie d'un BLOCKED narré au
+# passe reste une levée — la position decide, comme pour les verdicts
+# formels). Le mot NU « BLOCKED » n'est PAS matche : le tag de protocole
+# « [BLOCKED] lane ... » d'une lane et la negation « n'est plus BLOCKED »
+# restent hors du filet. Residuels assumes : un BLOCKED d'emission sans gras
+# ni paste d'organe ne matche pas ; une paste dans un bloc de code fence est
+# une mention (_strip_quoted), comme tout autre verdict backtinque.
+BLOCK_VERDICTS = ("**BLOCKED**", "BLOCKED  PR")
+CONCERN_MARKERS = CONCERN_MARKERS + BLOCK_VERDICTS
 
 # Un commentaire qui ANNONCE la levee ou le merge n'est pas un nit — il en est
 
@@ -659,7 +689,8 @@ def _formal_concern_precedes_lift(body: str) -> bool:
     normalised = _unaccent(stripped)
     concern_positions = [
         normalised.find(_unaccent(marker))
-        for marker in ("COMMENT_WITH_CONCERNS", "REQUEST_CHANGES", "NEEDS_CHANGES")
+        for marker in ("COMMENT_WITH_CONCERNS", "REQUEST_CHANGES",
+                       "NEEDS_CHANGES", "**BLOCKED**", "BLOCKED  PR")
     ]
     concern_positions = [position for position in concern_positions if position >= 0]
     # #12908 : les occurrences NARRÉES de levée (« après la levée annoncée »)
@@ -991,6 +1022,8 @@ def classify(author: str, body: str) -> str | None:
             # #12836 / #12798 : une revalidation COMMENT_WITH_CONCERNS peut
             # narrer la levee anterieure qu'elle REFUTE. Seul un verdict Hermes
             # formel place AVANT le mot de levee garde la reserve vivante ; les
+            # #12908 : le verdict B.0 (« **BLOCKED** ») est un verdict de
+            # concern a part entiere pour cette comparaison positionnelle.
             # levees explicites historiques (« je leve ma CHANGES_REQUESTED »)
             # restent admissibles parce que leur ordre est inverse.
             and not _formal_concern_precedes_lift(body)):
@@ -1116,8 +1149,11 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
         # #13030 -- search sur le corps ENTIER retire : une citation du
         # marqueur (documentation, dispatch, post-mortem, DM recopie)
         # posait l'override. Seule la forme POSEE en tete de ligne compte.
+        # #13316 -- jsboige n'entre plus : identite de poussee partagee des
+        # lanes (self-review cap #12319), un override jsboige est
+        # indiscernable d'une auto-levee de lane (replay #12737).
         m = OVERRIDE_LANE.search(lift_body or "")
-        return (lift_author in COORDINATOR_LOGINS
+        return (lift_author in LIFT_OVERRIDE_LOGINS
                 and m is not None)
 
     # Fenetre 2026-08-16 (#11222) : les temps plats ne suffisent pas pour un
@@ -1272,11 +1308,30 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
             "excerpt": _excerpt(t.get("body") or ""),
         })
 
+    # #13316 — un override ECARTE pour cause d'auteur doit etre NOMME. Avant,
+    # un gate rouge « malgre notre override » etait indistinguable d'un bug du
+    # detecteur (#13030, #12096) : le commentaire existait, la borne l'avait
+    # rejete, personne ne le disait. Ce n'est PAS bloquant (la reserve qui
+    # survit reste le signal) — c'est l'explication visible du rouge. Un
+    # override de l'auteur de la reserve (self-lift legitime) n'est pas liste.
+    nit_authors = {login for (_, _, login, _, _) in signals}
+    ignored_overrides = [
+        {"author": author, "at": t.isoformat(),
+         "why": (f"override ignoré — auteur « {author} » n'est pas un compte "
+                 "de levée (#13316 : identité de poussée partagée des lanes)")}
+        for (t, author, body) in explicit_lifts
+        if t is not None
+        and OVERRIDE_LANE.search(body or "") is not None
+        and author not in LIFT_OVERRIDE_LOGINS
+        and author not in nit_authors
+    ]
+
     return {
         "pr": pr_data.get("number"),
         "title": (pr_data.get("title") or "")[:110],
         "blocking": blocking,
         "blocked": bool(blocking),
+        "ignored_overrides": ignored_overrides,
     }
 
 
@@ -1306,6 +1361,10 @@ def gate(pr: int, as_json: bool) -> int:
             gap = f" (+{b['gap_hours']}h avant merge)" if "gap_hours" in b else ""
             print(f"  [{b['kind']}] {b['author']} via {b['src']}{where}{gap}")
             print(f"      {b['excerpt']}\n")
+        for o in result.get("ignored_overrides", ()):
+            # #13316 : dire POURQUOI l'override visible n'a rien eteint — le
+            # silence etait le mode d'echec couteux (#13030, #12096).
+            print(f"  [i] {o['why']} (commentaire de {o['author']} à {o['at']})")
         print("Lever chaque nit (commit, reponse explicite, ou issue de suivi nommee)")
         print("avant `gh pr merge`. Cf CLAUDE.md section B.0.")
     return 1 if result["blocked"] else 0

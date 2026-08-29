@@ -146,8 +146,8 @@ class TestNeuralNetworkSubstring:
         [
             ("Sudoku-16-NeuralNetwork-Python.ipynb", True),
             ("Sudoku-10-NeuralNetwork.ipynb", True),  # legacy form
-            ("Sudoku-1-Backtracking-Python.ipynb", False),
-            ("Sudoku-2-DancingLinks-Python.ipynb", False),
+            ("Sudoku-01-Backtracking-Python.ipynb", False),
+            ("Sudoku-02-DancingLinks-Python.ipynb", False),
             ("Sudoku-12-Z3-Python.ipynb", False),
             ("", False),
         ],

@@ -81,7 +81,7 @@ def branch_exists(repo: Path, ref: str) -> bool:
     proc = subprocess.run(
         ["git", "-C", str(repo), "rev-parse", "--verify", "--quiet", ref],
         capture_output=True,
-        text=True,
+        text=True, encoding="utf-8", errors="replace",
     )
     return proc.returncode == 0
 
@@ -132,7 +132,7 @@ def content_missing_from_base(
     proc = subprocess.run(
         ["git", "-C", str(repo), "diff", "--quiet", base_ref, branch_ref, "--", *paths],
         capture_output=True,
-        text=True,
+        text=True, encoding="utf-8", errors="replace",
     )
     if proc.returncode == 0:
         return False  # identique -> le contenu est deja dans la base
