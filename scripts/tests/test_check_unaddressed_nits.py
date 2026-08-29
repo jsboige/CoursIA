@@ -2717,3 +2717,117 @@ def test_12908_sortie_organe_pastee_est_une_emission():
              "body": "Contre-verification au head frais :\n"
                      "BLOCKED  PR #42 — 3 nit(s) non leve(s)"}
     assert run([paste])["blocked"] is True
+# ---------------------------------------------------------------------------
+# #12871 — 6e instance use-vs-mention : la reference pointable des levees
+# doit aussi matcher NUE (`leve par le commit <sha>`) en plus de la forme
+# parenthesee. Les 3 formulations de l'issue (FP1/FP2/FP3) sont classeees
+# BOT-CONCERN a tort ; le fix Position A+ (prose interne apres verdict en
+# parenthese), Position C+ (ref nue apres verbe de levee) et Position E
+# (verdict en tete, verbe de levee + ref dans la meme phrase) les neutralise.
+# Les 3 contre-exemples (CE1/CE2/CE3) restent BOT-CONCERN : pas de ref
+# pointable, pas de verbe de levee, ou emission formelle.
+# ---------------------------------------------------------------------------
+
+
+def test_12871_fp1_parenhese_avec_prose_interne_ne_flagge_pas():
+    """#12871 FP1 — `(COMMENT_WITH_CONCERNS, porte sur...)` : prose interne a
+    la parenthese du verdict (Position A+). Avant : classifie BOT-CONCERN.
+    Apres : classify() rend None (mention, pas emission)."""
+    body = (
+        "Reponse au point de review Hermes (COMMENT_WITH_CONCERNS, porte sur "
+        "la conclusion cell 17 point 3 + objectif cell 0 point 3) - traite "
+        "en code par le commit 05d16623f49."
+    )
+    assert mod.classify("myia-po-2027", body) is None
+
+
+def test_12871_fp2_ref_nue_apres_verbe_leve_ne_flagge_pas():
+    """#12871 FP2 — `COMMENT_WITH_CONCERNS leve par le commit <sha>` : verbe
+    de levee precede, ref pointable NUE dans la meme phrase (Position C+).
+    Avant : classifie BOT-CONCERN. Apres : classify() rend None."""
+    body = (
+        "Reponse au Hermes: COMMENT_WITH_CONCERNS leve par le commit "
+        "05d16623f49."
+    )
+    assert mod.classify("myia-po-2027", body) is None
+
+
+def test_12871_fp3_review_verdict_leve_dans_meme_phrase_ne_flagge_pas():
+    """#12871 FP3 — `La review COMMENT_WITH_CONCERNS de Hermes est traitee par
+    le commit <sha>` : verdict en tete de phrase apres `review/La`, verbe
+    de levee + ref pointable dans la meme phrase (Position E).
+    Avant : classifie BOT-CONCERN. Apres : classify() rend None."""
+    body = (
+        "La review COMMENT_WITH_CONCERNS de Hermes est traitee par le "
+        "commit 05d16623f49."
+    )
+    assert mod.classify("myia-po-2027", body) is None
+
+
+def test_12871_ce1_review_verdict_sans_ref_reste_live():
+    """#12871 CE1 — controle negatif : `Cette review CHANGES_REQUESTED reste
+    bloquante` (pas de ref pointable, pas de verbe de levee). DOIT RESTER
+    BOT-CONCERN. Sans quoi le fix debranche le gate et rouvre le failure
+    mode fondateur de B.0 (#10761)."""
+    body = "Cette review CHANGES_REQUESTED reste bloquante."
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+def test_12871_ce2_verdict_leve_sans_ref_reste_live():
+    """#12871 CE2 — controle negatif : `CHANGES_REQUESTED leve sans reference.`
+    Verbe de levee SANS ref pointable dans la suite immediate. DOIT RESTER
+    BOT-CONCERN (le discriminant C+ exige la ref)."""
+    body = "CHANGES_REQUESTED leve sans reference."
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+def test_12871_ce3_emission_formelle_reste_live():
+    """#12871 CE3 — controle negatif : `Verdict : COMMENT_WITH_CONCERNS` —
+    emission formelle Hermes (state-prefix). DOIT RESTER BOT-CONCERN (les
+    positions A-E ne touchent pas le canal d'emission, cf commentaire
+    `_MENTION_VERDICT_HEADING` ligne 327)."""
+    body = "Verdict : COMMENT_WITH_CONCERNS"
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+# ---------------------------------------------------------------------------
+# #13425 — Position E, borne dure : le commentaire au-dessus de
+# `_MENTION_VERDICT_REVIEW_NARRATIVE` promettait « la phrase complete ne doit
+# pas contenir `Verdict :` ni `reste bloquante` » sans qu'aucun lookahead
+# n'existe (mesure dans l'issue : le cas hybride voyait son verdict
+# neutralise). Le lookahead negatif est desormais implemente dans la fenetre
+# de phrase ; ces tests ECHOUENT sans lui — c'est le controle negatif exige
+# par l'acceptance (verifie mecaniquement : le pattern sans lookahead matche
+# l'hybride, le pattern avec lookahead ne le matche pas).
+# ---------------------------------------------------------------------------
+
+
+def test_13425_hybride_reste_bloquante_avec_commit_preserve_le_verdict():
+    """#13425 cas hybride — `<verdict> reste bloquante - traitee par le
+    commit <sha>` : la Position E voyait verbe de levee + ref pointable dans
+    la meme phrase et neutralisait le verdict, alors que la phrase declare
+    un blocage VIVANT. La borne dure `reste bloquante` preserve le verdict.
+    CE TEST ECHOUE SI ON RETIRE LE LOOKAHEAD."""
+    body = ("Cette review CHANGES_REQUESTED reste bloquante - traitee par le "
+            "commit a1b2c3d4e")
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+def test_13425_verdict_formel_dans_fenetre_preserve_le_verdict():
+    """#13425 seconde borne promise — `Verdict :` (emission formelle) dans la
+    fenetre de phrase de la Position E : le verdict n'est pas non plus
+    neutralise par une mention qui suit une emission formelle.
+    CE TEST ECHOUE SI ON RETIRE LE LOOKAHEAD."""
+    body = ("La review CHANGES_REQUESTED Verdict : reste a traiter, traitee "
+            "par le commit a1b2c3d4e")
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+def test_13425_controles_ce1_fp3_restant_inchanges():
+    """#13425 acceptance — les deux controles mesures dans l'issue gardent
+    leur comportement : CE1 (pas de ref pointable) reste BOT-CONCERN, FP3
+    (verdict leve, ref pointable, pas de declaration de blocage) reste
+    neutralise — sous les formes EXACTES du ticket."""
+    ce1 = "Cette review CHANGES_REQUESTED reste bloquante."
+    fp3 = "La review CHANGES_REQUESTED a ete traitee par le commit a1b2c3d4e"
+    assert mod.classify("jsboige", ce1) == "BOT-CONCERN"
+    assert mod.classify("jsboige", fp3) is None

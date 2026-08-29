@@ -405,7 +405,20 @@ def _lift_cancelled(stripped: str) -> bool:
 _MENTION_VERDICT = re.compile(
     r"(?i)\b(?:fix(?:ed|ée?e?)?|corrig\w+|suite\s+[àa]|en\s+r[ée]ponse\s+[àa]"
     r"|r[ée]ponse\s+[àa]|lev\w+|lift\w*|adress\w+|trait\w+|repondu\s+[àa])"
-    r"[^()\n]{0,40}\(\s*([A-Z][A-Z_]{3,})\s*\)")
+    # #12871 (cf grain) — Position A+ : tolere une prose INTERNE a la
+    # parenthese du verdict (`(COMMENT_WITH_CONCERNS, porte sur...)`) tant
+    # qu'elle ne commence pas par un verbe d'emission (`Verdict :`,
+    # `Block on`...). Le mot declencheur de mention (fix/reponse a/leve/
+    # adresse) porte deja la semantique de mention, et le verdict est
+    # encapsule entre parentheses — donc le caractere distinctif (verdict
+    # declare) est absent, c'est une mention par construction.
+    # `(?-i:)` sur le verdict : sans lui, le `(?i)` global fait que
+    # `[A-Z][A-Z_]{3,}` capture aussi un mot minuscule (`commit`) dans la
+    # parenthese — et `[^()\n]{0,80}` apres (Position A+) transforme ce
+    # faux match en neutralisation de `commit` au lieu du verdict (2 FAIL
+    # tests #11809 mesures en CI, 2026-08-28). Même discriminant case-
+    # sensitive que la Position D.
+    r"[^()\n]{0,40}\(\s*((?-i:[A-Z][A-Z_]{3,}))[^()\n]{0,80}\)")
 
 # #12311 (cf grain) — Position A : titre de section. Le pattern historique
 # (`[A-Z]{4,}` puis `[A-Z][A-Z_]{2,}[A-Z]`) neutralisait en sous-chaine les
@@ -469,7 +482,17 @@ _MENTION_VERDICT_LIFTED = re.compile(
     r"|traite|traiter|traité|traitée|traités|traitées"
     r"|repondu|répondu|repondre|répondre"
     r"|leve|lever|levé|levée|levés|levées|lift)"
-    r"\w*\s+\((?:commit\s+[a-f0-9]+|#\d+|PR\s*#?\d+|pull/\d+)\)")
+    r"\w*"
+    # #12871 (cf grain) — Position C+ : reference pointable NUE apres le verbe
+    # de levee, dans une fenetre de 40 chars (les formes parenthesees
+    # `leve (commit <sha>)` continuent de matcher ; les formes narratives
+    # `leve par le commit <sha>` sont ajoutees). Borne courte (40 chars) pour
+    # eviter d'avaler une autre phrase ou un commentaire distinct. Le
+    # discriminant reste la piste (b) : une REF POINTABLE suit le verbe ;
+    # sans pointable (CE2), la neutralisation ne s'applique pas.
+    r"(?:\s+\((?:commit\s+[a-f0-9]+|#\d+|PR\s*#?\d+|pull/\d+)\)"
+    r"|\s+(?:par|via|dans|en)\s+(?:le\s+|la\s+|les\s+|du\s+|des\s+)?"
+    r"(?:commit\s+[a-f0-9]+|PR\s*#?\d+|#\d+|pull/\d+))")
 
 
 # #11984 — Position D : le nominal `revue` / `review` DEVANT le verdict, avec
@@ -511,12 +534,58 @@ _MENTION_VERDICT_REVIEW = re.compile(
     r"(?:"
     # Forme d'origine : ref pointable entre parentheses immediates.
     r"[^():\n.]{0,12}?"
+    # #12871 (cf grain) — Position D+ : la ref pointable peut etre NUE dans une
+    # fenetre de 60 chars apres le verdict (les formes parenthesees
+    # `(SHA ...)` continuent de matcher ; les formes narratives
+    # `... traitee par le commit <sha>` sont ajoutees). Borne courte (60 chars)
+    # pour ne pas avaler une autre phrase distincte.
+    r"(?:"
     r"\([^()\n]{0,80}?"
     r"(?:[a-f0-9]{7,}|#\d+|\d{4}-\d{2}-\d{2}|\d{1,2}:\d{2}(?::\d{2})?Z?)"
     r"[^()\n]{0,40}\)"
     # #12944 : ref pointable inline — « review VERDICT de #N ».
     r"|\s+(?:de\s+|sur\s+|dans\s+)?(?:la\s+|le\s+)?(?:PR\s+)?#\d+"
-    r")")
+    r"|"
+    r"(?:par|via|dans|en)\s+(?:le\s+|la\s+|les\s+|du\s+|des\s+)?"
+    r"(?:commit\s+[a-f0-9]+|PR\s*#?\d+|#\d+|pull/\d+)"
+    r"))")
+
+# #12871 (cf grain) — Position E : `La review <VERDICT> ... traitee par le
+# commit <sha>` (ou variantes). La Position D stricte echoue sur ce cas parce
+# que la ref pointable est trop loin (60+ chars apres le verdict), au-dela
+# d'une frontiere de phrase `.`. Mais la phrase CONTIENT un verbe de levee
+# suivi d'une ref pointable — c'est la signature d'une mention, pas d'une
+# emission. Discriminant : on exige (a) `La review/ce <VERDICT>` en tete, (b)
+# PAS de fin de phrase entre le verdict et le verbe de levee (donc sous la
+# meme phrase), (c) verbe de levee + ref pointable a la fin. Borne dure : la
+# phrase complete ne doit pas contenir `Verdict :` (emission formelle) ni
+# `reste bloquante` (declaration de blocage) — implementee par le lookahead
+# #13425 ci-dessous.
+_MENTION_VERDICT_REVIEW_NARRATIVE = re.compile(
+    r"(?i)(?:^|[\s,;:(*])"
+    r"(?:le|la|les|du|mon|ma|ce|cet|cette|ces|the|my)?\s*"
+    r"(?:revue|review)(?![:.])"
+    r"[^():\n.]{0,60}?(?-i:([A-Z][A-Z_]{3,}))(?![A-Za-z0-9_])"
+    # #13425 — la borne dure promise ci-dessus, desormais implementee : si la
+    # suite de la phrase (fenetre 200 chars, meme phrase) contient une
+    # declaration de blocage vivante (`reste bloquante`) ou une emission
+    # formelle (`Verdict :`), la position ne s'applique PAS — le verdict
+    # reste emis. Cas hybride fondateur : « Cette review CHANGES_REQUESTED
+    # reste bloquante - traitee par le commit a1b2c3d4e » voyait son verdict
+    # neutralise alors que la phrase declare le blocage vivant.
+    r"(?![^.!?\n]{0,200}(?:reste\s+bloquante|verdict\s*:))"
+    # Pas de fin de phrase avant le verbe de levee : `[^.!?\n]{0,200}` est
+    # borne a 200 chars pour eviter de manger une phrase distincte (cf
+    # discriminateur enonce par l'issue, le verbe de levee doit etre dans
+    # la meme phrase).
+    r"[^.!?\n]{0,200}?"
+    r"(?:adresse|adresser|adressé|adressée|adressés|adressées"
+    r"|traite|traiter|traité|traitée|traités|traitées"
+    r"|repondu|répondu|repondre|répondre"
+    r"|leve|lever|levé|levée|levés|levées|lift)\w*"
+    r"(?:\s+(?:par|via|dans|en)\s+(?:le\s+|la\s+|les\s+|du\s+|des\s+)?"
+    r"|\s+\()"
+    r"(?:commit\s+[a-f0-9]+|PR\s*#?\d+|#\d+|pull/\d+)")
 
 
 def _strip_mentioned_verdicts(body: str) -> str:
@@ -526,7 +595,7 @@ def _strip_mentioned_verdicts(body: str) -> str:
     reste du body sont preserves (les fenetres de `_is_cited` restent
     calibrees sur la vraie position des occurrences survivantes).
     """
-    for pat in (_MENTION_VERDICT, _MENTION_VERDICT_HEADING, _MENTION_VERDICT_INLINE, _MENTION_VERDICT_LIFTED, _MENTION_VERDICT_REVIEW):
+    for pat in (_MENTION_VERDICT, _MENTION_VERDICT_HEADING, _MENTION_VERDICT_INLINE, _MENTION_VERDICT_LIFTED, _MENTION_VERDICT_REVIEW, _MENTION_VERDICT_REVIEW_NARRATIVE):
         body = pat.sub(
             lambda m: m.group(0).replace(m.group(1), " " * len(m.group(1))), body)
     return body
