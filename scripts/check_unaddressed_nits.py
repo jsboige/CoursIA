@@ -173,6 +173,43 @@ BLOCAGE_LANE = re.compile(r"(?m)^\s*\[(?:BLOCAGE|BLOCK)\]\s+lane\s+\S+")
 # sous-chaines citees (CITERS ligne 455+), donc ajouter un verbe n'ouvre pas la
 # porte aux faux positifs « 0 REQUEST_CHANGES » (#11916 controle negatif) :
 # CITERS inclut deja « zero » et sera etendu de « 0 » (cf ligne ~470).
+# #13559 — RESERVE SUR APPROBATION. #11677 a pose que la prose l'emporte sur
+# l'etat natif `APPROVED` : « si classify() a deja retourne un kind, c'est
+# qu'une reserve VIVANTE survit dans la prose ». L'intention est juste ; la
+# mise en oeuvre laissait tout marqueur RESIDUEL renverser l'etat, y compris
+# quand il n'est la que parce que la review NOMME la reserve qu'elle leve
+# (« depuis mon CHANGES_REQUESTED sur `ae88aefc` », #13496 ; « Conversion de
+# la reserve : CHANGES_REQUESTED (`21e0d810`) -> APPROVE », #13027).
+#
+# Mesure (30/08, 160 PR balayees, `state == "APPROVED"` + marqueur survivant
+# a `_strip_mentioned_verdicts`) : **2 occurrences, 0 vraie reserve**. Les
+# deux etaient des narrations retrospectives. Sur la fenetre mesuree,
+# l'override avait donc un taux de vrais positifs NUL — il ne mesurait plus
+# la reserve, il mesurait la mention.
+#
+# Le remede ne SUPPRIME pas l'override (le cas nomme par #11677, « j'approuve
+# mais le point 2 reste ouvert », est reel et doit continuer de bloquer) : il
+# lui demande une trace EXPLICITE de reserve. L'etat natif redevient decisif
+# par defaut, la prose garde le dernier mot quand elle reserve vraiment.
+# Volontairement LARGE : c'est le cote permissif du garde (il MAINTIENT le
+# blocage), donc un faux positif ici ne coute qu'une phrase de levee, tandis
+# qu'un trou coute un merge non mesure.
+_APPROVE_RESERVATION_RE = re.compile(
+    r"(?i)("
+    r"sous\s+r[ée]serve"
+    r"|avec\s+r[ée]serves?\b"
+    r"|r[ée]serve\s+(?:maintenue|subsiste|demeure|tient)"
+    r"|je\s+maintiens"
+    r"|je\s+conserve\s+(?:ma|mon|la)\b"
+    r"|(?:mais|toutefois|cependant|neanmoins|n[ée]anmoins)[^.\n]{0,120}?"
+    r"\b(?:reste|restent|subsiste|subsistent|demeure|demeurent"
+    r"|non\s+trait[ée]|non\s+lev[ée]|ouverte?s?|en\s+suspens)\b"
+    r"|\b(?:[àa]\s+corriger|[àa]\s+traiter|[àa]\s+adresser)\s+"
+    r"(?:avant|imp[ée]rativement)"
+    r"|\bblocage\s+maintenu\b"
+    r")"
+)
+
 CONCERN_MARKERS = (
     "COMMENT_WITH_CONCERNS", "CHANGES_REQUESTED", "REQUEST_CHANGES",
     "NEEDS_CHANGES", "CONCERNS",
@@ -1416,8 +1453,14 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
         # cette branche, le verdict positif est calcule sur la prose seule,
         # alors que la preuve la plus dure (l'etat natif) est disponible
         # deux lignes plus haut. Meme symetrie que CHANGES_REQUESTED ci-dessus.
-        elif r.get("state") == "APPROVED" and kind is None:
-            pass  # kind reste None (l'etat natif confirme l'extinction)
+        elif r.get("state") == "APPROVED":
+            if kind is None:
+                pass  # kind reste None (l'etat natif confirme l'extinction)
+            elif not _APPROVE_RESERVATION_RE.search(body):
+                # #13559 : marqueur residuel SANS langage de reserve — la
+                # review NOMME une reserve (le plus souvent celle qu'elle
+                # leve) au lieu d'en emettre une. L'etat natif decide.
+                kind = None
         if kind:
             signals.append((ts(r.get("submittedAt")), kind, login, body,
                             f"review:{r.get('state')}"))

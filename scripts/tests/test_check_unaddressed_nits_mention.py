@@ -375,3 +375,87 @@ def test_12944_verdict_emis_titre_hermes_sans_ref_inline_reste_vivant():
     body = ("**[Hermes] Review — REQUEST_CHANGES (commentaire, self-review cap)**\n\n"
             "Issue-first check : la methode diverge sur le point central.")
     assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+# --------------------------------------------------------------------------
+# #13559 — la reserve sur APPROBATION. Extraits VERBATIM des deux corps reels
+# mesures le 30/08 (balayage 160 PR : 2 occurrences, 0 vraie reserve).
+# --------------------------------------------------------------------------
+
+# #13496, review APPROVED du 2026-08-29T21:49:43Z. Le marqueur survivant est
+# « CHANGES_REQUESTED », present UNIQUEMENT parce que la review nomme celle
+# qu'elle leve.
+FIXTURE_13496_APPROVE = (
+    "**[Hermes]** — APPROVE (follow-up sur `33ef4d6a` + merge `75dd62ea`, "
+    "depuis mon CHANGES_REQUESTED sur `ae88aefc`). Le one-liner demande est "
+    "pose exactement, et je tiens la promesse de ma review : avec le garde, "
+    "je repasse en APPROVE.\n\n"
+    "Security scan : 0 match sur le delta. Ball merge : Emerjesse."
+)
+
+# #13027, review APPROVED du 2026-08-29T20:59:35Z. Meme classe, autre forme :
+# la conversion explicite d'un verdict vers un autre.
+FIXTURE_13027_APPROVE = (
+    "**[Hermes]** — Conversion de la reserve #13027 : CHANGES_REQUESTED "
+    "(`21e0d810`) -> APPROVE sur le head `34426e6a`. Le chemin relatif est "
+    "desormais couvert par le checker."
+)
+
+
+def _pr_with_review(body, state="APPROVED", login="jsboige"):
+    return {
+        "author": {"login": "myia-ai-01"},
+        "commits": [{"committedDate": "2026-08-29T10:00:00Z"}],
+        "comments": [],
+        "reviews": [{"author": {"login": login}, "state": state,
+                     "submittedAt": "2026-08-29T21:00:00Z", "body": body}],
+    }
+
+
+def _blocking(body, state="APPROVED"):
+    res = mod.analyse(_pr_with_review(body, state), [],
+                      datetime(2026, 8, 30, 12, tzinfo=timezone.utc))
+    return res.get("blocking", res) if isinstance(res, dict) else res
+
+
+def test_13559_approve_nommant_sa_propre_reserve_ne_bloque_plus():
+    """#13496 : « depuis mon CHANGES_REQUESTED sur `ae88aefc` » est une
+    narration retrospective. L'etat natif APPROVED decide."""
+    assert _blocking(FIXTURE_13496_APPROVE) == []
+
+
+def test_13559_approve_convertissant_un_verdict_ne_bloque_plus():
+    """#13027 : « CHANGES_REQUESTED (`21e0d810`) -> APPROVE » — une conversion
+    NOMME le verdict qu'elle remplace."""
+    assert _blocking(FIXTURE_13027_APPROVE) == []
+
+
+def test_13559_approve_avec_reserve_explicite_bloque_toujours():
+    """Controle negatif — la borne du correctif. « Je maintiens » est un
+    langage de reserve : l'etat natif NE decide PAS."""
+    body = ("**[Hermes]** APPROVE partiel. Je maintiens ma CHANGES_REQUESTED "
+            "sur le module B tant que le test n'est pas ajoute.")
+    assert len(_blocking(body)) == 1
+
+
+def test_13559_approve_sous_reserve_bloque_toujours():
+    """Controle negatif — « sous reserve » conserve la reserve vivante."""
+    body = ("**[Hermes]** APPROVE sous reserve de la correction du chemin "
+            "relatif signalee en COMMENT_WITH_CONCERNS.")
+    assert len(_blocking(body)) == 1
+
+
+def test_13559_approve_a_corriger_avant_bloque_toujours():
+    """Controle negatif — une consigne imperative avant merge reserve."""
+    body = ("**[Hermes]** APPROVE. Le typo du docstring est a corriger avant "
+            "merge, CONCERNS mineur.")
+    assert len(_blocking(body)) == 1
+
+
+def test_13559_etats_non_approved_intacts():
+    """Non-regression : le correctif est borne a `state == APPROVED`. Un
+    COMMENT_WITH_CONCERNS sous COMMENTED ou CHANGES_REQUESTED bloque comme
+    avant — c'est le cas fondateur de B.0 (#10761), il ne bouge pas."""
+    body = "**[Hermes] COMMENT_WITH_CONCERNS** — le point 3 n'est pas traite."
+    for state in ("COMMENTED", "CHANGES_REQUESTED"):
+        assert len(_blocking(body, state=state)) == 1, state
