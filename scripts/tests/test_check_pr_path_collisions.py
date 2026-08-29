@@ -168,5 +168,107 @@ class TestCommentProtocol(unittest.TestCase):
         self.assertEqual(result.as_dict(), result2.as_dict())
 
 
+class TestThreeVerbs(unittest.TestCase):
+    """#13489: post/update/retract planned over the UNION colliding ∪ markers."""
+
+    def _collision(self, a, b, path="shared/x.ipynb"):
+        return PathCollision(a_number=a, b_number=b, shared_paths=(path,))
+
+    def test_union_covers_marker_carrier_no_longer_colliding(self):
+        """THE structural fix: a resolved PR stays in the iteration set.
+
+        Before #13489 the loop iterated colliding PRs only, so a PR whose
+        neighbour merged was never visited again and its stale advisory could
+        never be retracted.
+        """
+        plan = _mod.plan_actions(
+            colliding_prs=[10],
+            collisions=[self._collision(10, 11)],
+            title_by_number={10: "A", 11: "B"},
+            marker_by_number={
+                20: ("999", _mod.render_comment(20, "old", [self._collision(20, 21)]))
+            },
+            resolved_on="2026-08-29T00:00Z",
+        )
+        retracts = [a for a in plan if a.verb == "retract"]
+        self.assertEqual([a.number for a in retracts], [20])
+        self.assertEqual(retracts[0].comment_id, "999")
+        self.assertIn(_mod.RESOLVED_SIGNATURE, retracts[0].body)
+
+    def test_post_when_no_marker(self):
+        plan = _mod.plan_actions(
+            colliding_prs=[10, 11],
+            collisions=[self._collision(10, 11)],
+            title_by_number={10: "A", 11: "B"},
+            marker_by_number={10: None, 11: None},
+            resolved_on="2026-08-29T00:00Z",
+        )
+        self.assertEqual(
+            [(a.number, a.verb) for a in plan], [(10, "post"), (11, "post")]
+        )
+
+    def test_update_when_body_drifted(self):
+        """Neighbour changed: the old comment names the WRONG PR -> refresh."""
+        old_body = _mod.render_comment(10, "A", [self._collision(10, 99)])
+        plan = _mod.plan_actions(
+            colliding_prs=[10],
+            collisions=[self._collision(10, 11)],
+            title_by_number={10: "A"},
+            marker_by_number={10: ("77", old_body)},
+            resolved_on="2026-08-29T00:00Z",
+        )
+        updates = [a for a in plan if a.verb == "update"]
+        self.assertEqual(len(updates), 1)
+        self.assertEqual(updates[0].comment_id, "77")
+        self.assertIn("#11", updates[0].body)
+
+    def test_none_when_body_current(self):
+        body = _mod.render_comment(10, "A", [self._collision(10, 11)])
+        plan = _mod.plan_actions(
+            colliding_prs=[10],
+            collisions=[self._collision(10, 11)],
+            title_by_number={10: "A"},
+            marker_by_number={10: ("77", body)},
+            resolved_on="2026-08-29T00:00Z",
+        )
+        self.assertEqual([(a.number, a.verb) for a in plan], [(10, "none")])
+
+    def test_recollision_swaps_resolution_note_back_to_advisory(self):
+        note = _mod.render_resolution_comment(10, "2026-08-28T00:00Z")
+        plan = _mod.plan_actions(
+            colliding_prs=[10],
+            collisions=[self._collision(10, 11)],
+            title_by_number={10: "A"},
+            marker_by_number={10: ("77", note)},
+            resolved_on="2026-08-29T00:00Z",
+        )
+        self.assertEqual([(a.number, a.verb) for a in plan], [(10, "update")])
+        self.assertNotIn(_mod.RESOLVED_SIGNATURE, plan[0].body)
+
+    def test_already_resolved_stays_none(self):
+        note = _mod.render_resolution_comment(20, "2026-08-28T00:00Z")
+        plan = _mod.plan_actions(
+            colliding_prs=[],
+            collisions=[],
+            title_by_number={},
+            marker_by_number={20: ("77", note)},
+            resolved_on="2026-08-29T00:00Z",
+        )
+        self.assertEqual([(a.number, a.verb) for a in plan], [(20, "none")])
+
+    def test_resolution_note_shape(self):
+        note = _mod.render_resolution_comment(20, "2026-08-29T00:00Z")
+        self.assertIn(_mod.COMMENT_MARKER_START, note)
+        self.assertTrue(_mod.is_resolution_note(note))
+        self.assertIn("2026-08-29T00:00Z", note)
+        self.assertFalse(_mod.is_resolution_note(_mod.render_comment(20, "t", [])))
+        self.assertFalse(_mod.is_resolution_note(None))
+
+    def test_find_marker_entry_returns_id_and_body(self):
+        body = "x <!-- PR-PATH-COLLISION:START --> y"
+        self.assertEqual(_mod.find_marker_entry([{"id": 55, "body": body}]), ("55", body))
+        self.assertIsNone(_mod.find_marker_entry([{"id": 1, "body": "plain"}]))
+
+
 if __name__ == "__main__":
     unittest.main()

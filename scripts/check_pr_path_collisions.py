@@ -77,6 +77,7 @@ from __future__ import annotations
 
 import argparse
 import json
+from datetime import datetime, timezone
 import os
 import re
 import subprocess
@@ -88,6 +89,11 @@ from typing import Iterable
 # Marker framing the advisory comment, so re-runs find/update/retract it.
 COMMENT_MARKER_START = "<!-- PR-PATH-COLLISION:START -->"
 COMMENT_MARKER_END = "<!-- PR-PATH-COLLISION:END -->"
+
+# Signature of the dated resolution note left in place of a live advisory
+# (retraction is a body swap, not a delete: less destructive, readable in the
+# PR history, and still marker-framed so re-runs keep finding it).
+RESOLVED_SIGNATURE = "<!-- PR-PATH-COLLISION:RESOLVED -->"
 
 # The synthetic positive control. NOT a live repo pair (those are volatile:
 # they merge and vanish). It is seeded straight into the pure detector, so the
@@ -265,11 +271,105 @@ def render_comment(number: int, title: str, own_collisions: list[PathCollision])
 
 def find_marker_comment(comments: Iterable[dict]) -> str | None:
     """Id of the existing marker comment in ``comments``, or None (pure)."""
+    entry = find_marker_entry(comments)
+    return entry[0] if entry else None
+
+
+def find_marker_entry(comments: Iterable[dict]) -> tuple[str, str] | None:
+    """(id, body) of the existing marker comment, or None (pure).
+
+    Both are needed by the update/retract paths: the id addresses the
+    ``PATCH /issues/comments/{id}`` call, the body decides post vs update vs
+    retract (issue #13489).
+    """
     for c in comments or []:
         body = c.get("body") or ""
         if COMMENT_MARKER_START in body:
-            return str(c.get("id")) if c.get("id") is not None else None
+            if c.get("id") is None:
+                return None
+            return str(c["id"]), body
     return None
+
+
+def render_resolution_comment(number: int, resolved_on: str) -> str:
+    """Dated resolution note replacing a live advisory whose collision ended.
+
+    Marker-framed + RESOLVED-signed so a re-run recognises it as already
+    retracted (idempotent) and can swap it back to a live advisory if the
+    collision reappears (e.g. a new neighbour PR touches the path again).
+    """
+    lines = [
+        COMMENT_MARKER_START,
+        RESOLVED_SIGNATURE,
+        "## Path-collision (organ #13359) — résolue",
+        "",
+        f"La collision de chemins signalée sur **#{number}** n'existe plus "
+        f"au passage du {resolved_on} : aucune autre PR ouverte ne partage "
+        "désormais de chemin de fichier avec elle. Note laissée en place de "
+        "l'avertissement (retraction non destructive).",
+        "",
+        COMMENT_MARKER_END,
+    ]
+    return "\n".join(lines)
+
+
+def is_resolution_note(body: str | None) -> bool:
+    """True if ``body`` is already the dated resolution note (pure)."""
+    return bool(body) and COMMENT_MARKER_START in body and RESOLVED_SIGNATURE in body
+
+
+@dataclass(frozen=True)
+class PlannedAction:
+    """One planned write for a PR, decided BEFORE any network mutation."""
+    number: int
+    verb: str  # "post" | "update" | "retract" | "none"
+    comment_id: str | None  # gh comment id for update/retract
+    body: str  # desired body ("none" carries the unchanged existing body)
+
+
+def plan_actions(
+    colliding_prs: Iterable[int],
+    collisions: Iterable[PathCollision],
+    title_by_number: dict[int, str],
+    marker_by_number: dict[int, tuple[str, str] | None],
+    resolved_on: str,
+) -> list[PlannedAction]:
+    """Plan post/update/retract over the UNION colliding ∪ marker-carriers.
+
+    This union is the structural fix of #13489: iterating colliding PRs only
+    made retraction unattainable (a resolved PR left the iteration set, so its
+    stale comment could never be removed) and made updates blind (a still-
+    colliding PR whose neighbour changed kept a comment naming the wrong PR).
+    """
+    colliding_set = set(colliding_prs)
+    candidates = sorted(colliding_set | set(marker_by_number))
+    plans: list[PlannedAction] = []
+    for number in candidates:
+        existing = marker_by_number.get(number)
+        if number in colliding_set:
+            desired = render_comment(
+                number,
+                title_by_number.get(number, ""),
+                collisions_for_pr(number, collisions),
+            )
+            if existing is None:
+                plans.append(PlannedAction(number, "post", None, desired))
+            elif existing[1] == desired:
+                plans.append(PlannedAction(number, "none", existing[0], existing[1]))
+            else:
+                # includes resolution-note -> live-advisory on re-collision
+                plans.append(PlannedAction(number, "update", existing[0], desired))
+        else:
+            if existing is None:
+                continue  # not colliding, no marker: nothing to say
+            if is_resolution_note(existing[1]):
+                plans.append(PlannedAction(number, "none", existing[0], existing[1]))
+            else:
+                plans.append(PlannedAction(
+                    number, "retract", existing[0],
+                    render_resolution_comment(number, resolved_on),
+                ))
+    return plans
 
 
 # ---------------------------------------------------------------------------
@@ -313,10 +413,31 @@ def list_open_prs(repo: str, limit: int) -> list[PrRow]:
     return [PrRow.from_gh_dict(d) for d in raw]
 
 
-def existing_comment(repo: str, number: int) -> str | None:
+def find_marker(repo: str, number: int) -> tuple[str, str] | None:
+    """(id, body) of the marker comment on PR ``number``, or None."""
     comments = _gh_json(["pr", "view", str(number), "--repo", repo,
                          "--json", "comments"]) or {}
-    return find_marker_comment(comments.get("comments") or [])
+    return find_marker_entry(comments.get("comments") or [])
+
+
+def scan_markers(
+    repo: str, numbers: Iterable[int],
+) -> tuple[dict[int, tuple[str, str] | None], set[int]]:
+    """Marker state for each PR. Returns (state, failed).
+
+    A PR whose comment fetch fails is reported in ``failed`` and excluded from
+    planning: treating a fetch failure as "no marker" would let a colliding PR
+    be re-POSTED as a duplicate. Advisory organ: a scan failure logs and skips,
+    never reds.
+    """
+    state: dict[int, tuple[str, str] | None] = {}
+    failed: set[int] = set()
+    for number in numbers:
+        try:
+            state[number] = find_marker(repo, number)
+        except RuntimeError:
+            failed.add(number)
+    return state, failed
 
 
 def post_comment(repo: str, number: int, body: str, dry_run: bool) -> None:
@@ -331,6 +452,32 @@ def post_comment(repo: str, number: int, body: str, dry_run: bool) -> None:
         subprocess.run(
             ["gh", "pr", "comment", str(number), "--repo", repo,
              "--body-file", tmp_path],
+            capture_output=True, text=True, check=False, encoding="utf-8",
+        )
+    finally:
+        if os.path.exists(tmp_path):
+            os.unlink(tmp_path)
+
+
+def edit_comment(repo: str, comment_id: str, body: str, dry_run: bool) -> None:
+    """PATCH the existing marker comment in place (update or retract swap).
+
+    ``gh pr comment --edit-last`` is not enough: the marker is not guaranteed
+    to be the PR's last comment. The REST id from ``find_marker_entry``
+    addresses the comment directly.
+    """
+    if dry_run:
+        return
+    with tempfile.NamedTemporaryFile(
+        "w", suffix=".json", encoding="utf-8", delete=False
+    ) as tf:
+        json.dump({"body": body}, tf, ensure_ascii=False)
+        tmp_path = tf.name
+    try:
+        subprocess.run(
+            ["gh", "api", "--method", "PATCH",
+             f"repos/{repo}/issues/comments/{comment_id}",
+             "--input", tmp_path],
             capture_output=True, text=True, check=False, encoding="utf-8",
         )
     finally:
@@ -417,15 +564,45 @@ def _cli(argv: list[str] | None = None) -> int:
     print(json.dumps(result.as_dict(), ensure_ascii=False, indent=2))
     print(_format_human_summary(result), file=sys.stderr)
 
-    if not args.dry_run:
-        for number in result.colliding_prs:
-            title = next((p.title for p in prs if p.number == number), "?")
-            body = render_comment(
-                number, title, collisions_for_pr(number, result.collisions)
-            )
-            existing = existing_comment(repo, number)
-            if existing is None:
-                post_comment(repo, number, body, args.dry_run)
+    # Plan over the UNION colliding ∪ marker-carriers (#13489): reads only.
+    title_by_number = {p.number: p.title for p in prs}
+    marker_by_number, scan_failed = scan_markers(
+        repo, [p.number for p in prs]
+    )
+    for number in sorted(scan_failed):
+        print(
+            f"WARN: comment scan failed for #{number} -- skipped this run "
+            "(no post/update/retract planned for it)",
+            file=sys.stderr,
+        )
+    plan = [
+        a for a in plan_actions(
+            set(result.colliding_prs), result.collisions, title_by_number,
+            marker_by_number,
+            datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%MZ"),
+        )
+        if a.number not in scan_failed
+    ]
+
+    counts: dict[str, int] = {}
+    for a in plan:
+        counts[a.verb] = counts.get(a.verb, 0) + 1
+    prefix = "would-" if args.dry_run else ""
+    print(
+        "actions: "
+        + " ".join(
+            f"{v}={counts.get(v, 0)}" for v in ("post", "update", "retract", "none")
+        ),
+        file=sys.stderr,
+    )
+    for a in plan:
+        if a.verb == "none":
+            continue
+        print(f"  {prefix}{a.verb} #{a.number}", file=sys.stderr)
+        if a.verb == "post":
+            post_comment(repo, a.number, a.body, args.dry_run)
+        else:  # update | retract: both are an in-place PATCH by comment id
+            edit_comment(repo, a.comment_id, a.body, args.dry_run)
 
     return 0  # advisory: always green
 
