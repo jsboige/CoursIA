@@ -18,6 +18,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from check_pr_perimeter import (  # noqa: E402
     BaselineMove,
     Candidate,
+    COUNT_CLAIM,
     check_assertion,
     extract_baseline_moves,
     extract_perimeter_assertions,
@@ -27,6 +28,7 @@ from check_pr_perimeter import (  # noqa: E402
     select_candidates,
     _additive_line_sum,
     _check_unterminated_fence,
+    _count_is_exempt,
     _count_is_incidental,
     _fence_line_indices,
     _is_incidental_assertion,
@@ -2389,3 +2391,81 @@ def test_normalize_rest_files_keeps_full_page_count_13357():
     assert len(out) == 148
     assert out[0] == {"path": "file_000.py", "additions": 1, "deletions": 0}
     assert out[-1]["path"] == "file_147.py"
+
+
+# ---------------------------------------------------------------------------
+# #13440 — comptes de résultat de vérification sans antécédent d'outil.
+# Une PR qui documente ses contrôles qualité sur un corpus plus large que son
+# diff (« 25 fichier(s) vérifiés sans BOM ») ne fait AUCUNE assertion de
+# périmètre : la confrontation d'égalité ne peut jamais VALIDER ces formes,
+# donc les bloquer ne protège rien (asymétrie fondatrice #11712/#11985).
+# FN délibéré : « restaurés » (#2876) et « re-exécutés » (tranches MGS) sont
+# des périmètres dans ce dépôt et restent hors liste.
+# ---------------------------------------------------------------------------
+VERIFICATION_COUNT_BODIES_13440 = [
+    "## Vérifications\n"
+    "- 25 fichier(s) vérifiés sans BOM\n"
+    "- 18 fichiers testés sans erreur",
+    "## Résultats\n"
+    "- Contrôle encodage : 25 fichier(s) conformes",
+    "- 40 fichiers scannés par le garde hygiène\n",
+]
+
+PERIMETER_COUNT_BODIES_13440 = [
+    # Campagne accents #2876 : forme identifiée comme périmètre.
+    "- 18 fichiers avec accents restaurés",
+    # Tranches MGS : les re-exécutions SONT le livrable.
+    "- 13 fichiers re-exécutés",
+    "- 13 fichiers re-exécutés avec Papermill",
+    # Verbe de modification : périmètre authentique (contrôle FN de l'issue).
+    "- 13 fichiers touchés uniquement, aucune autre modification.",
+]
+
+
+def test_13440_verification_counts_are_incidental():
+    """Les formes résiduelles mesurées de l'issue deviennent incidental."""
+    for body in VERIFICATION_COUNT_BODIES_13440:
+        pairs = extract_perimeter_assertions_with_context(body)
+        assert pairs, f"aucune ligne candidate pour {body!r}"
+        for line, ctx in pairs:
+            assert _is_incidental_assertion(line, ctx) is True, (
+                f"compte de vérification doit être incidental : {line!r}"
+            )
+
+
+def test_13440_fn_perimeter_forms_stay_blocking():
+    """restaurés / re-exécutés / touchés restent des assertions bloquantes."""
+    for body in PERIMETER_COUNT_BODIES_13440:
+        pairs = extract_perimeter_assertions_with_context(body)
+        assert pairs, f"aucune ligne candidate pour {body!r}"
+        for line, ctx in pairs:
+            assert _is_incidental_assertion(line, ctx) is False, (
+                f"forme périmètre ne doit pas être incidental : {line!r}"
+            )
+
+
+def test_13440_plural_paren_window_no_longer_blind():
+    """Le pluriel parenthétique « fichier(s) » ne doit plus aveugler la fenêtre
+    de qualificatif : CountClaim s'arrête à « fichier » (\b), le « (s) » doit
+    être sauté pour lire le mot qui suit."""
+    # Négated-diff après (s) : l'exemption préexistante doit fonctionner.
+    assert _count_is_incidental("- 25 fichier(s) inchanges apres rebase") is True
+    # Qualificatif incidental après (s) : la nouvelle classe s'applique.
+    assert _count_is_incidental("- 25 fichier(s) vérifiés sans BOM") is True
+    # Un (s) seul ne qualifie rien : la ligne sans qualificatif reste auteur.
+    assert _count_is_incidental("- 25 fichier(s)") is False
+
+
+def test_13440_founder_negated_diff_still_exempt():
+    """Contrôle non-régression : le fondateur #11775 (« 91 fichiers inchanges
+    sur 2 touches ») — la ligne porte « scope » (strong scope word) donc
+    n'est PAS incidental au niveau ligne ; sa protection réelle est
+    l'exemption PAR-COMPTE (negated-diff pour 91, locative pour 2), que la
+    normalisation (s) ne doit pas altérer."""
+    line = "- 91 fichiers inchanges sur 2 touches -- scope delta confirme"
+    matches = list(COUNT_CLAIM.finditer(line))
+    assert matches, "le fondateur doit porter des comptes"
+    for m in matches:
+        assert _count_is_exempt(line, m) is True, (
+            f"le compte fondateur doit rester exempt : {m.group(0)!r}"
+        )
