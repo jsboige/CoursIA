@@ -830,7 +830,7 @@ Grande diversité d'approches -->
 - **Exemple**
   - Linq To Z3 (interface C# pour Z3)
 
-> **Demo** : voir `Sudoku/Sudoku-4-Z3.ipynb` pour une resolution complete en C#
+> **Demo** : voir `Sudoku/Sudoku-04-Z3.ipynb` pour une resolution complete en C#
 
 ---
 
@@ -1006,11 +1006,11 @@ Grande diversité d'approches -->
 
 - **Exploration** : `Search/Exploration_non_informee_et_informee_intro.ipynb`
   - BFS, DFS, UCS, A* sur carte de Roumanie
-- **Algorithmes genetiques** : `Sudoku/Sudoku-2-Genetic.ipynb`
+- **Algorithmes genetiques** : `Sudoku/Sudoku-02-Genetic.ipynb`
   - `Search/Portfolio_Optimization_GeneticSharp.ipynb`
-- **Z3 / SMT** : `Sudoku/Sudoku-4-Z3.ipynb`
+- **Z3 / SMT** : `Sudoku/Sudoku-04-Z3.ipynb`
 - **Logique formelle** : `SymbolicAI/Lean/` (10 notebooks)
-- **CSP** : `Search/CSPs_Intro.ipynb`, `Sudoku/Sudoku-3-ORTools.ipynb`
+- **CSP** : `Search/CSPs_Intro.ipynb`, `Sudoku/Sudoku-03-ORTools.ipynb`
 
 ---
 

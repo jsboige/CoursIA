@@ -182,7 +182,7 @@ class TestShouldSkip:
         assert should_skip(Path("UI_configuration.ipynb")) is True
 
     def test_normal_notebook(self):
-        assert should_skip(Path("MyIA.AI.Notebooks/Sudoku/Sudoku-1.ipynb")) is False
+        assert should_skip(Path("MyIA.AI.Notebooks/Sudoku/Sudoku-01.ipynb")) is False
 
     def test_deep_path_normal(self):
         assert should_skip(Path("a/b/c/nb.ipynb")) is False

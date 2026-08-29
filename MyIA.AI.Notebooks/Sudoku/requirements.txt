@@ -15,12 +15,12 @@ ortools>=9.8                 # Google OR-Tools CP-SAT (Sudoku-10)
 z3-solver>=4.13              # Microsoft Z3 SMT solver (Sudoku-12)
 
 # Metaheuristics
-pygad>=3.3                   # Genetic algorithms (Sudoku-3)
-simanneal>=0.5               # Simulated annealing (Sudoku-4)
-mealpy>=3.0                  # PSO and other metaheuristics (Sudoku-5)
+pygad>=3.3                   # Genetic algorithms (Sudoku-03)
+simanneal>=0.5               # Simulated annealing (Sudoku-04)
+mealpy>=3.0                  # PSO and other metaheuristics (Sudoku-05)
 
 # Graph
-networkx>=3.1                # Graph coloring (Sudoku-9)
+networkx>=3.1                # Graph coloring (Sudoku-09)
 
 # Deep Learning (Sudoku-16)
 torch>=2.0

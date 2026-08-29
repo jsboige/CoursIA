@@ -53,7 +53,7 @@ Le scanner detecte ; **la verification finale est visuelle** (exigence user). Le
 ```bash
 # 1. Rendre le notebook en HTML (env mcp-jupyter)
 conda run -n mcp-jupyter python -m nbconvert --to html \
-  --output-dir /tmp/nbrender "MyIA.AI.Notebooks/Sudoku/Sudoku-1-Backtracking-Python.ipynb"
+  --output-dir /tmp/nbrender "MyIA.AI.Notebooks/Sudoku/Sudoku-01-Backtracking-Python.ipynb"
 # 2. Servir en localhost (file:// est bloque dans Playwright MCP)
 cd /tmp/nbrender && python -m http.server 8899 --bind 127.0.0.1 &
 ```
