@@ -415,7 +415,16 @@ def _informative(fams, zones) -> bool:
 
     Sans `zones` on ne sait rien : on ne degrade pas le comportement
     existant (toute reponse est alors tenue pour informative).
+
+    Une liste VIDE, elle, n'informe jamais -- et c'est le cas qui compte le
+    plus, car c'est celui d'un grain frais sans PR citante ni parent resolu.
+    `any()` sur une liste vide rend deja False ; sans ce garde, le raccourci
+    `zones is None` repondait True et faisait sauter le repli par le texte
+    pour tous les appelants a trois arguments (mesure du 2026-08-29 :
+    `test_titre_prime_sur_le_corps` et ses deux soeurs rendaient None).
     """
+    if not fams:
+        return False
     if zones is None:
         return True
     return any((zones.get(f) or {}).get("new_notebooks", 0) > 0 for f in fams)

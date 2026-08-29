@@ -385,4 +385,17 @@ def test_resolve_family_keeps_legacy_answer_without_zones():
     item = {"number": 77, "parent": 10, "title": "x", "body": ""}
     assert ss.resolve_family(item, {10: SCRIPT_ZONE}, ()) == SCRIPT_ZONE
 
+def test_informative_is_false_on_an_empty_candidate_list():
+    """Le cas qui a casse les appelants a trois arguments.
 
+    `_informative` raccourcit sur `zones is None` pour ne pas degrader
+    l'existant. Sans garde prealable, ce raccourci repondait True sur une
+    liste VIDE -- donc `resolve_family` croyait tenir une source informative
+    la ou elle n'en avait aucune, et sautait le repli par le texte. Trois
+    tests de `test_family_resolution.py` rendaient alors None.
+
+    Une liste vide n'informe jamais, avec ou sans `zones`.
+    """
+    assert ss._informative([], None) is False
+    assert ss._informative([], {}) is False
+    assert ss._informative(["X"], None) is True
