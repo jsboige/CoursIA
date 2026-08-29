@@ -55,10 +55,11 @@
 
   Tout est prouvé par `decide`/`rfl` (réduction du noyau) : aucune
   dépendance à Mathlib, aucun `sorry`, aucun `native_decide`, aucun
-  `Classical.choice`. Les seuls axiomes présents dans le module sont
-  `propext`/`Quot.sound`, hérités des lemmes d'ordre `Int` du cœur
-  utilisés par les trois théorèmes généraux ; les théorèmes concrets
-  (selles, dettes, raffinements, inégalité) n'en dépendent d'aucun.
+  `Classical.choice`. Le seul axiome présent dans le module est
+  `propext`, hérité des lemmes d'ordre `Int` du cœur (théorèmes
+  généraux et théorème-phare qui les invoque) ; les théorèmes
+  concrets (selles, dettes, raffinements, inégalité) n'en dépendent
+  d'aucun.
   Les selles des blocs non triviaux sont prouvées **uniques**, et le
   théorème-phare quantifie sur tout choix de selles : l'aggravation ne
   dépend pas d'un choix arbitraire.
