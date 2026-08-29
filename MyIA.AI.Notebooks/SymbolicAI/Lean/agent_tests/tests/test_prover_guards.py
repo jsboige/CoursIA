@@ -2531,6 +2531,71 @@ def test_is_true_placeholder_goal_false_on_probe_timeout(tmp_path, monkeypatch):
     assert reason == ""
 
 
+def test_is_true_placeholder_goal_false_on_unpositioned_infra_error(tmp_path, monkeypatch):
+    """FX-5c (#1453): a probe build that fails at INFRASTRUCTURE level emits
+    NON-EMPTY output whose `error:` lines carry no file position — the old
+    `_probe_closes_goal` matched no numbered-error pattern, concluded "goal
+    closed", and refused ANY target as TRUE_PLACEHOLDER. Observed firsthand
+    2026-08-21 on the knot sweep: five Conway.lean targets (L51/L128/L138/
+    L157/L165, goals like `alexanderPolynomial conwayKnot = 1`, not `True`)
+    were falsely refused in 2-20s each because .lake/packages/mathlib was a
+    `.git` without a worktree. Exact corrupt-HEAD string from those runs;
+    even a genuinely-True goal file must not be "confirmed" on output the
+    elaborator never produced. Ambiguity must never refuse."""
+    from prover.lean_utils import is_true_placeholder_goal
+
+    _mock_probe_verifier(
+        monkeypatch,
+        raw_output=(
+            "error: D:\\dev\\CoursIA\\MyIA.AI.Notebooks\\SymbolicAI\\Lean"
+            "\\knot_lean\\.lake\\packages\\mathlib: could not resolve 'HEAD' "
+            "to a commit; the repository may be corrupt\n"),
+    )
+    f = tmp_path / "Corrupt.lean"
+    f.write_text(_TRUE_GOAL_FILE, encoding="utf-8")
+    is_true, reason = is_true_placeholder_goal(str(f), 3)
+    assert is_true is False
+    assert reason == ""
+
+
+def test_is_true_placeholder_goal_false_on_unknown_module_error(tmp_path, monkeypatch):
+    """FX-5c: `error: unknown module` (missing dependency / wrong lakefile
+    wiring / dead fetch) is an unpositioned infrastructure failure — the
+    elaborator never reached the probed line, so never refuse."""
+    from prover.lean_utils import is_true_placeholder_goal
+
+    _mock_probe_verifier(
+        monkeypatch,
+        raw_output="error: unknown module 'Knots.Conway'\n",
+    )
+    f = tmp_path / "UnknownMod.lean"
+    f.write_text(_TRUE_GOAL_FILE, encoding="utf-8")
+    assert is_true_placeholder_goal(str(f), 3) == (False, "")
+
+
+def test_is_true_placeholder_goal_false_on_multiline_unpositioned_errors(tmp_path, monkeypatch):
+    """FX-5c: the realistic infra-crash shape is MULTI-LINE — `info:`/status
+    lines interleaved with several unpositioned `error:` headers. None of it
+    is evidence the elaborator ran. Precedence check: a POSITIONED diagnostic
+    far from the probed line (which alone would keep the old "closed" verdict
+    — see test_is_true_placeholder_goal_conservative_on_other_sorries_erroring)
+    does not rescue a run whose build also failed at infrastructure level:
+    the unpositioned error wins, the probe is inconclusive, no refusal."""
+    from prover.lean_utils import is_true_placeholder_goal
+
+    _mock_probe_verifier(
+        monkeypatch,
+        raw_output=(
+            "info: resolving module map\n"
+            "30:2: error: unsolved goals\n"  # positioned, FAR (old semantics: not blocking)
+            "error: failed to update git repository\n"
+            "error: ...packages/mathlib: could not resolve 'HEAD' to a commit\n"),
+    )
+    f = tmp_path / "MultiInfra.lean"
+    f.write_text(_TRUE_GOAL_FILE, encoding="utf-8")
+    assert is_true_placeholder_goal(str(f), 3) == (False, "")
+
+
 def test_is_true_placeholder_goal_false_when_no_sorry_token(tmp_path, monkeypatch):
     """A line without a real sorry token is never probed (no compile)."""
     from prover.lean_utils import is_true_placeholder_goal
