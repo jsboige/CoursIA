@@ -148,6 +148,7 @@ from series_saturation import (  # noqa: E402
     zone_balance,
     parent_issue,
     polarity,
+    resolve_family,
 )
 
 # Lecteur PARTAGE du tag `Grain:` (#9485). C'est la SEULE ancre qui rattache
@@ -254,6 +255,7 @@ def fetch_pool() -> list[dict]:
             "idle": age_days(it["updatedAt"]),
             "updated_at": it["updatedAt"],
             "genre": infer_genre(title, labels),
+            "body": it.get("body") or "",
             "parent": parent_issue(it.get("body") or ""),
             "polarity": polarity(title, it.get("body") or ""),
             "klass": (
@@ -367,10 +369,8 @@ def admissibility(item: dict, balance: dict | None,
                     "confrontee au reste du pool -- c'est ce delai qui "
                     "distingue depiler d'emballer.".format(h, dwell_hours))
 
-    i2f = issue_to_family or {}
-    fam = i2f.get(item["number"])
-    if fam is None and item.get("parent"):
-        fam = i2f.get(item["parent"])
+    fam = resolve_family(item, issue_to_family or {},
+                         tuple((balance or {}).keys()))
     if fam and item.get("polarity") == EXPANSION:
         z = (balance or {}).get(fam) or {}
         nb = z.get("new_notebooks", 0)
@@ -434,10 +434,7 @@ def weight(item: dict, prev_genre: str | None,
     # FRATRIE sature -- le cas exact des 9 paires de #12373. La remontee par
     # `parent` est indispensable : sans elle l amortissement ne mord que sur
     # les issues DEJA travaillees, donc jamais sur la prochaine instance.
-    i2f = issue_to_family or {}
-    fam = i2f.get(item["number"])
-    if fam is None and item.get("parent"):
-        fam = i2f.get(item["parent"])
+    fam = resolve_family(item, issue_to_family or {}, tuple(series or ()))
     nb_new = 0
     if fam:
         nb_new = ((series or {}).get(fam) or {}).get("new_notebooks", 0)
@@ -476,6 +473,7 @@ def draw(items: list[dict], n: int, rng: random.Random, prev_genre: str | None,
     picked = []
     for _, w, it in keyed[:n]:
         it = dict(it)
+        it.pop("body", None)
         it["weight"] = round(w, 2)
         it.setdefault("visits", 0)
         it.setdefault("family", None)
