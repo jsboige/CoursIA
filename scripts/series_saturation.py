@@ -64,9 +64,14 @@ _EPIC_PARENT_RE = re.compile(r"(?:EPIC|Epic|epic|ombrelle)\s*#(\d{4,6})\b")
 
 _REF_RE = re.compile(r"#(\d{4,6})\b")
 _PREV_RE = re.compile(r"prev:\s*[^\n]*?#(\d{4,6})\b")
+# Declaration de travail uniquement (#13435) : le vocabulaire qui DIT servir
+# l'issue. Les renvois de contexte (voir, cf, bare "EPIC #N") sont exclus --
+# mesure fenetre 14 j du 2026-08-29 : 19 rattachements sur 459 (4,1 %, 18
+# PRs) venaient d'un renvoi seul et amortissaient une zone que la PR ne
+# touchait pas. Les formes structurelles restent couvertes via `_PARENT_RE`.
 _DECL_RE = re.compile(
-    r"(?:closes|fixes|resolves|see|refs?|part of|voir|ombrelle|epic)"
-    r"\s+#(\d{4,6})\b",
+    r"(?:closes|fixes|resolves|see|refs?|part of)"
+    r"\s*:?\s*#(\d{4,6})\b",
     re.I,
 )
 
@@ -96,9 +101,20 @@ def cited_issues(pr: dict) -> set[int]:
 
     La clause `prev:` du tag `Grain:` est masquee -- elle documente le grain
     PRECEDENT de la lane (adjacence G-VAR-3), jamais le sujet de la PR.
+
+    Declaration != renvoi de contexte (#13435). Seuls rattaches :
+    (a) le vocabulaire de declaration (`closes|fixes|resolves|see|refs|part
+    of`), (b) les formes structurelles (`Enfant de l'Epic #N`, `Paire 3/9 de
+    l'EPIC #N` -- `_PARENT_RE`), (c) les refs du titre. Un `voir #N` ou un
+    bare `EPIC #N` en prose raconte le contexte historique sans declarer
+    travailler la zone : sur la fenetre 14 j du 2026-08-29 (400 PRs mergees),
+    19 rattachements sur 459 venaient d'un renvoi seul -- chacun amortissait
+    le poids d'une issue neutre et gonflait l'expansion apparente d'une zone
+    deja saturee.
     """
     body = _PREV_RE.sub("prev: <adjacence>", pr.get("body") or "")
     found = {int(m.group(1)) for m in _DECL_RE.finditer(body)}
+    found |= {int(m.group(1)) for m in _PARENT_RE.finditer(body)}
     found |= {int(m.group(1)) for m in _REF_RE.finditer(pr.get("title") or "")}
     return found - {pr.get("number")}
 

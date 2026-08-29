@@ -107,6 +107,7 @@ from series_saturation import (  # noqa: E402
     CONSOLIDATION,
     EXPANSION,
     SERIES_SCALE_DEFAULT,
+    cited_issues,
     fetch_series_visits,
     zone_balance,
     parent_issue,
@@ -170,31 +171,13 @@ GENRE_RULES: list[tuple[str, str]] = [
 #
 # Mesure du 2026-08-23 sur 10 issues (verite = `gh pr list --search "N
 # in:title,body"` restreint a la fenetre) : le premier-`#N` rappelle 59 %, le
-# schema ci-dessous 76 %. Cas d'ecole : #12591 s'intitule `fix(notebooks,#11947)`
+# schema d'attribution 76 %. Cas d'ecole : #12591 s'intitule `fix(notebooks,#11947)`
 # et porte `See #11947`, mais son premier `#N` de corps est #11949 (la tranche
 # soeur) -- la veine y est juste pour le cap, et fausse pour l'affluence.
-_REF_RE = re.compile(r"#(\d{4,6})\b")
-_PREV_RE = re.compile(r"prev:\s*[^\n]*?#(\d{4,6})\b")
-# Verbes de rattachement de ce depot (`Closes/See/Part of` -- catalog-pr-hygiene)
-# plus les tournures maison. `See #N` porte l'essentiel du travail d'ombrelle :
-# la convention reserve `Closes` a la resolution complete.
-_DECL_RE = re.compile(
-    r"(?:closes|fixes|resolves|see|refs?|part of|voir|ombrelle|epic)"
-    r"\s+#(\d{4,6})\b",
-    re.I)
-
-
-def cited_issues(pr: dict) -> set[int]:
-    """Issues qu'une PR DECLARE servir : refs du titre + clauses de rattachement.
-
-    La clause `prev:` du tag `Grain:` est masquee -- elle documente le grain
-    PRECEDENT de la lane (adjacence G-VAR-3), jamais le sujet de la PR. Sans ce
-    masque, chaque PR voterait pour le sujet de la precedente.
-    """
-    body = _PREV_RE.sub("prev: <adjacence>", pr.get("body") or "")
-    found = {int(m.group(1)) for m in _DECL_RE.finditer(body)}
-    found |= {int(m.group(1)) for m in _REF_RE.finditer(pr.get("title") or "")}
-    return found - {pr.get("number")}
+#
+# `cited_issues` vit dans series_saturation.py (source unique depuis #13435 :
+# declaration de travail vs renvoi de contexte -- un `voir #N` en prose
+# n'amortit plus l'issue citee dans le compteur de visites).
 
 
 NOW = dt.datetime.now(dt.timezone.utc)
