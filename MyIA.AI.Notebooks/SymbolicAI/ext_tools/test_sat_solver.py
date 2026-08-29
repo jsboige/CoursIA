@@ -157,7 +157,7 @@ def _run_cli(cnf_path: Path, *extra: str) -> tuple[int, str]:
     proc = subprocess.run(
         [sys.executable, str(SAT_SOLVER), str(cnf_path), *extra],
         capture_output=True,
-        text=True,
+        text=True, encoding="utf-8", errors="replace",
         timeout=60,
     )
     return proc.returncode, proc.stdout

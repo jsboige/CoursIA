@@ -64,7 +64,7 @@ def run_gh(page: int, since: str) -> list[dict]:
             "--page", str(page),
             "--json", "number,body,mergedAt",
         ],
-        capture_output=True, text=True, check=True,
+        capture_output=True, text=True, encoding="utf-8", errors="replace", check=True,
     )
     return json.loads(out.stdout)
 

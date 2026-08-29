@@ -20,7 +20,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 NB_ROOT = REPO_ROOT / "MyIA.AI.Notebooks"
 
 AFFECTED = {
-    "Sudoku/Sudoku-1-Backtracking-Csharp.ipynb": [11],
+    "Sudoku/Sudoku-01-Backtracking-Csharp.ipynb": [11],
     "Sudoku/Sudoku-10-ORTools-Csharp.ipynb": [24],
     "Sudoku/Sudoku-10-ORTools-Python.ipynb": [16],
     "Sudoku/Sudoku-11-Choco-Csharp.ipynb": [20],
@@ -29,15 +29,15 @@ AFFECTED = {
     "Sudoku/Sudoku-15-Infer-Csharp.ipynb": [35],
     "Sudoku/Sudoku-17-LLM-Python.ipynb": [26, 30],
     "Sudoku/Sudoku-18-Comparison-Python.ipynb": [46],
-    "Sudoku/Sudoku-2-DancingLinks-Csharp.ipynb": [18],
-    "Sudoku/Sudoku-2-DancingLinks-Python.ipynb": [25],
-    "Sudoku/Sudoku-3-Genetic-Csharp.ipynb": [16],
-    "Sudoku/Sudoku-4-SimulatedAnnealing-Csharp.ipynb": [34],
-    "Sudoku/Sudoku-4-SimulatedAnnealing-Python.ipynb": [28, 30, 32],
-    "Sudoku/Sudoku-7-Norvig-Csharp.ipynb": [28],
-    "Sudoku/Sudoku-8-HumanStrategies-Python.ipynb": [31],
-    "Sudoku/Sudoku-9-GraphColoring-Csharp.ipynb": [28],
-    "Sudoku/Sudoku-9-GraphColoring-Python.ipynb": [19],
+    "Sudoku/Sudoku-02-DancingLinks-Csharp.ipynb": [18],
+    "Sudoku/Sudoku-02-DancingLinks-Python.ipynb": [25],
+    "Sudoku/Sudoku-03-Genetic-Csharp.ipynb": [16],
+    "Sudoku/Sudoku-04-SimulatedAnnealing-Csharp.ipynb": [34],
+    "Sudoku/Sudoku-04-SimulatedAnnealing-Python.ipynb": [28, 30, 32],
+    "Sudoku/Sudoku-07-Norvig-Csharp.ipynb": [28],
+    "Sudoku/Sudoku-08-HumanStrategies-Python.ipynb": [31],
+    "Sudoku/Sudoku-09-GraphColoring-Csharp.ipynb": [28],
+    "Sudoku/Sudoku-09-GraphColoring-Python.ipynb": [19],
 }
 
 EXERCICE_LINE_RE = re.compile(

@@ -39,9 +39,13 @@ Pour chaque paire du registre, on :
      enregistrement d'audit** (`last_audit` legacy ou `audits[-1]`, #9399) ;
   3. **DRIFT** si l'un des deux a change depuis le dernier audit -> la paire
      doit etre re-auditee (un cote a evolue, la parite n'est plus garantie) ;
-  4. **MISSING** si le chemin n'existe pas dans git (typo, deplacement, jumeau
+  4. **NUMBERING-DRIFT** si les numeros de base des deux jumeaux declares
+     divergent (renommage unilateral d'un seul cote, classe #5361 -- EPIC
+     #12933 « parite des identifiants, liberte des contenus ») -> realigner
+     les numeros OU documenter `numbering_exception: <raison>` au cas par cas ;
+  5. **MISSING** si le chemin n'existe pas dans git (typo, deplacement, jumeau
      non cree) ;
-  5. **OK** sinon (les deux cotes sont au SHA audite, parite tenue).
+  6. **OK** sinon (les deux cotes sont au SHA audite, parite tenue).
 
 Le bouclage d'audit : apres avoir re-audite une paire firsthand, on rebaseline
 avec `--update --pair "<nom>" --by "<lane>"`, qui reecrit les SHAs courants
@@ -174,17 +178,18 @@ BRIDGE_VERDICTS = frozenset({
 def validate_pair_fields(pair: dict) -> list[str]:
     """Valide les champs structurels d'une paire. Retourne une liste d'erreurs
     (vide = OK). Fail-loud sur `bridge_verdict` hors enum, ou `bridge_verdict:
-    INTRINSIC` sans `bridge_verdict_reason` (#10439).
+    INTRINSIC` sans `bridge_verdict_reason` (#10439), ou `numbering_exception`
+    mal forme (#12933 -- doit etre une raison textuelle non vide).
 
     Les champs `bridge_verdict` et `bridge_verdict_reason` sont OPTIONNELS : la
     plupart des paires n'en portent pas (le verdict par defaut est "non-rompt",
     la paire reste actionnable). Un INTRINSIC sans reason est interdit car le
     verdict sans le raisonnement ne vaut rien (cf _schema.yaml + #10439).
 
-    Scope : ne valide QUE bridge_verdict (#10439). `parity_level` n'est pas
-    valide ici -- des fixtures de test utilisent des valeurs placeholders (ex.
-    'full') et l'enumeration reelle (surface/semantic/native-both) est deja
-    enforcee par revue + _schema.yaml.
+    Scope : ne valide QUE bridge_verdict (#10439) et numbering_exception
+    (#12933). `parity_level` n'est pas valide ici -- des fixtures de test
+    utilisent des valeurs placeholders (ex. 'full') et l'enumeration reelle
+    (surface/semantic/native-both) est deja enforcee par revue + _schema.yaml.
     """
     errs: list[str] = []
     name = pair.get("name", "?")
@@ -199,6 +204,18 @@ def validate_pair_fields(pair: dict) -> list[str]:
                 f"{name}: bridge_verdict=INTRINSIC requiert bridge_verdict_reason "
                 f"(le verdict sans le raisonnement ne vaut rien, #10439)"
             )
+    ne = pair.get("numbering_exception")
+    if ne is not None and (not isinstance(ne, str) or not ne.strip()):
+        # Un booleen (numbering_exception: true) ou un champ vide dirait QU'ON
+        # sort de la convention sans dire POURQUOI -- exactement le defaut que
+        # le pattern bridge_verdict_reason (#10439) interdit pour INTRINSIC.
+        # Cote check_pair, un non-string n'est PAS non plus accepte comme
+        # exception valide (isinstance str) : les deux organes sont coherents.
+        errs.append(
+            f"{name}: numbering_exception doit etre une raison textuelle NON VIDE "
+            f"(booleen/entier/champ vide refuses) -- documenter POURQUOI la paire "
+            f"sort de la convention de numerotation, ou supprimer le champ (#12933)"
+        )
     return errs
 
 
@@ -219,6 +236,26 @@ def _pair_file(registry_dir: Path, name: str) -> Path:
     return registry_dir / f"{_slug(name)}.yaml"
 
 
+def _twin_base_number(rel_path: str) -> str | None:
+    """Numero de base d'un jumeau depuis son chemin DECLARE (EPIC #12933).
+
+    Premier groupe de chiffres du basename. Convention du depot : deux jumeaux
+    d'une meme paire partagent ce numero (App-N / SW-N / <Prefixe>-N) ; le
+    suffixe lettre minuscule qui peut suivre (ex. App-10b) designe un compagnon
+    legitime (3e notebook de la serie) et N'EST PAS extrait -- seule la partie
+    numerique compte, un compagnon 10b cote C# face a un 10 cote Python n'est
+    donc PAS une derive de numerotation.
+
+    Retourne None si le basename n'a aucun chiffre (on ne compare pas ce qu'on
+    ne peut pas numeroter). Evalue le chemin tel que DECLARE dans le registre,
+    pas le disque : un renommage unilateral reste visible meme si les deux
+    fichiers existent par ailleurs.
+    """
+    base = str(rel_path).replace("\\", "/").rsplit("/", 1)[-1]
+    m = re.search(r"\d+", base)
+    return m.group(0) if m else None
+
+
 _CSHARP_TOKEN = re.compile(r"[-_][Cc][Ss]harp")
 
 
@@ -229,7 +266,7 @@ def python_twin_candidates(csharp_path: str, known_paths: set[str]) -> list[str]
     qu'une classe a tort en « C#-only » tout ce qui suit les deux autres :
 
         Tweety-10-MLN-Csharp.ipynb      <-> Tweety-10-MLN.ipynb          (suffixe retire)
-        Sudoku-7-Norvig-Csharp.ipynb    <-> Sudoku-7-Norvig-Python.ipynb (suffixe substitue)
+        Sudoku-07-Norvig-Csharp.ipynb    <-> Sudoku-07-Norvig-Python.ipynb (suffixe substitue)
         SW-10-CSharp-RDFStar.ipynb      <-> SW-10-Python-RDFStar.ipynb   (position mediale)
 
     Fonction pure : `known_paths` est l'univers des chemins connus (typiquement
@@ -277,7 +314,7 @@ def scan_coverage(repo_root: Path, pairs: list) -> dict:
     """
     r = subprocess.run(
         ["git", "ls-files", "--", "*.ipynb"],
-        cwd=repo_root, capture_output=True, text=True,
+        cwd=repo_root, capture_output=True, text=True, encoding="utf-8", errors="replace",
     )
     if r.returncode != 0:
         raise SystemExit("Erreur : `git ls-files` a echoue (depot inaccessible ?).")
@@ -319,7 +356,7 @@ def _git_blob_sha(repo_root: Path, rel_path: str, git_ref: str = "HEAD") -> str 
     """
     r = subprocess.run(
         ["git", "ls-tree", git_ref, "--", rel_path],
-        capture_output=True, text=True, cwd=str(repo_root),
+        capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=str(repo_root),
     )
     if r.returncode != 0 or not r.stdout.strip():
         return None
@@ -337,7 +374,7 @@ def _blob_ancestor_in(repo_root: Path, blob_sha: str, ref: str = "HEAD") -> bool
     blob SHA d'un notebook sans toucher le contenu didactique. Le recorded
     `python_sha`/`csharp_sha` pointe alors sur un blob qui n'est PLUS ancre
     d'aucun commit accessible (orphelin par squash). Mais un cas
-    distinct -- metadata-only drift (Sudoku-8/14 BDD, design-gate #9399
+    distinct -- metadata-only drift (Sudoku-08/14 BDD, design-gate #9399
     critere 2) -- produit lui aussi un recorded blob SHA divergent de HEAD
     (le `_git_blob_sha` actuel change quand `nb["metadata"]` change, meme si
     `content_*_sha` est preserve). Les deux cas ont la MEME signature sur
@@ -359,7 +396,7 @@ def _blob_ancestor_in(repo_root: Path, blob_sha: str, ref: str = "HEAD") -> bool
         return False
     r = subprocess.run(
         ["git", "rev-list", "--objects", ref],
-        capture_output=True, text=True, cwd=str(repo_root),
+        capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=str(repo_root),
     )
     if r.returncode != 0:
         return False
@@ -374,7 +411,7 @@ def _content_sha(repo_root: Path, rel_path: str, git_ref: str = "HEAD") -> str |
     Hache le contenu pedagogique (cellules + leurs outputs) en excluant
     `nb["metadata"]` (cost, papermill, kernelspec, language_info) : un tampon
     `metadata.cost` seul ne porte aucune divergence pedagogique et ne doit PAS
-    faire rougir le gate (les 2 faux positifs Sudoku-8/14 BDD du 2026-08-04,
+    faire rougir le gate (les 2 faux positifs Sudoku-08/14 BDD du 2026-08-04,
     ou seul le bloc cost a bouge). Les cellules (et leur `metadata` cellulaire)
     restent hachees : un fix de prose (cellule markdown) ou une re-exec (output
     change) continuent de produire un DRIFT (vrais positifs, critere
@@ -431,7 +468,7 @@ def _load_registry_at_ref(repo_root: Path, git_ref: str, reg_path: Path) -> list
     # (1) Le ref porte-t-il le REPERTOIRE file-per-entry ?
     r_ls = subprocess.run(
         ["git", "ls-tree", "-r", "--name-only", git_ref, "--", f"{reg_rel}/"],
-        capture_output=True, text=True, cwd=str(repo_root),
+        capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=str(repo_root),
     )
     entries: list = []
     if r_ls.returncode == 0 and r_ls.stdout.strip():
@@ -471,7 +508,7 @@ def _load_registry_at_ref(repo_root: Path, git_ref: str, reg_path: Path) -> list
 def _repo_root() -> Path:
     r = subprocess.run(
         ["git", "rev-parse", "--show-toplevel"],
-        capture_output=True, text=True,
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
     )
     if r.returncode != 0:
         raise SystemExit("Erreur : pas un depot git (impossible de trouver la racine).")
@@ -512,8 +549,9 @@ def load_registry(path: Path) -> list:
 def check_pair(repo_root: Path, pair: dict, git_ref: str = "HEAD") -> dict:
     """Verifie une paire. Retourne {name, python, csharp, status, details}.
 
-    status in {OK, DRIFT, MISSING}. details = liste de chaines explicatives.
-    `git_ref` permet de checker a un instant arbitraire (HEAD, origin/main, <sha>...).
+    status in {OK, DRIFT, NUMBERING-DRIFT, MISSING}. details = liste de chaines
+    explicatives. `git_ref` permet de checker a un instant arbitraire (HEAD,
+    origin/main, <sha>...).
     """
     name = pair.get("name", "?")
     py = pair["python"]
@@ -534,6 +572,33 @@ def check_pair(repo_root: Path, pair: dict, git_ref: str = "HEAD") -> dict:
     if cur_cs is None:
         details.append(f"C# MANQUANT dans git : {cs}")
         status = "MISSING"
+
+    # Verdict NUMBERING-DRIFT (EPIC #12933) : numeros de base distincts entre
+    # les jumeaux DECLARES. Evalue AVANT la comparaison de SHAs : si la
+    # numerotation a diverge, la paire est cassee a un niveau plus fondamental
+    # que l'empreinte de contenu -- realigner les numeros (rename) changera de
+    # toute facon les chemins et rendra la comparaison SHA courante caduque.
+    # MISSING garde la priorite (fichier absent = le cas le plus severe ; le
+    # detail de numerotation reste alors seulement informatif, non emis).
+    num_py = _twin_base_number(py)
+    num_cs = _twin_base_number(cs)
+    if status == "OK" and num_py is not None and num_cs is not None and num_py != num_cs:
+        ne_raw = pair.get("numbering_exception")
+        ne = ne_raw.strip() if isinstance(ne_raw, str) else ""
+        if ne:
+            details.append(
+                f"Numerotation divergente documentee : python base={num_py} vs "
+                f"csharp base={num_cs} -- exception : {ne}"
+            )
+        else:
+            details.append(
+                f"Numero de base divergent : python={num_py} ({py}) vs "
+                f"csharp={num_cs} ({cs}) -- renommage unilateral (classe #5361) ou "
+                f"declaration erronee. Realigner les numeros, OU documenter la "
+                f"divergence via `numbering_exception: <raison>` dans l'entree du "
+                f"registre (#12933)."
+            )
+            status = "NUMBERING-DRIFT"
 
     # content_*_sha (#9399 volet c) : metadata-immune. Calcules LAZILY -- UNIQUEMENT
     # quand l'audit les a enregistrees. Les paires legacy (aucune content_*_sha
@@ -616,7 +681,7 @@ def update_pair(
     Pas de rebaseline silencieux sur metadata-only : un tampon `metadata.cost`
     seul deplace le git blob SHA mais preserve le content_sha (_shas_match
     compare via content_sha d'abord). C'est precisement la classe de drift
-    pre-existante Sudoku-8/14 BDD/9 GraphColoring que ai-01 design-gate a
+    pre-existante Sudoku-08/14 BDD/9 GraphColoring que ai-01 design-gate a
     designee comme devant etre ignoree par le rebaseline (cf commentaire
     ai-01 2026-08-04T23:23Z sur #9399 : « ne les rebaselinez pas avec
     --update ; deux disparaitront d'eux-memes avec volet (c) »).
@@ -659,7 +724,7 @@ def update_pair(
     # C'est la cle qui distingue les deux cas ayant pourtant la meme
     # signature `rec_X != cur_X` -- sans cette discrimination, le fix
     # violerait le design-gate #9399 critere 2 (metadata-only drift DOIT
-    # rester no-op, Sudoku-8/14 BDD du 2026-08-04).
+    # rester no-op, Sudoku-08/14 BDD du 2026-08-04).
     if is_noop and latest:
         rec_py = latest.get("python_sha")
         rec_cs = latest.get("csharp_sha")
@@ -1117,14 +1182,19 @@ def _classify_per_pair(base_status: str, head_status: str) -> str:
     DRIFT -> DRIFT_INTRODUCED. (Avant le fix, le 'else' classait MISSING+DRIFT en
     DRIFT_PRE_EXISTING, qui ne fail pas le gate -- contredisait le comment inline et
     laissait passer une paire ajoutee driftante. Forensic po-2026 c.709.)
+
+    NUMBERING-DRIFT (#12933) suit la meme semantique que DRIFT : introduit par la
+    PR (base OK -> head NUMBERING-DRIFT, ex. renommage unilateral dans cette PR) =
+    DRIFT_INTRODUCED, gate ROUGE ; resolu par la PR (renommage realigne, OU
+    divergence documentee via numbering_exception au HEAD) = DRIFT_RESOLVED.
     """
     if base_status == "MISSING":
         return "OK" if head_status == "OK" else "DRIFT_INTRODUCED"
     if base_status == "OK" and head_status == "OK":
         return "OK"
-    if base_status == "OK" and head_status in ("DRIFT", "MISSING"):
+    if base_status == "OK" and head_status in ("DRIFT", "MISSING", "NUMBERING-DRIFT"):
         return "DRIFT_INTRODUCED"
-    if base_status == "DRIFT" and head_status == "OK":
+    if base_status in ("DRIFT", "NUMBERING-DRIFT") and head_status == "OK":
         return "DRIFT_RESOLVED"
     return "DRIFT_PRE_EXISTING"
 
@@ -1140,7 +1210,7 @@ def main(argv=None) -> int:
     p.add_argument("--family", default=None,
                    help="Restreindre a une famille (ex. SMT/Z3-API)")
     p.add_argument("--check", action="store_true",
-                   help="Exit 1 si DRIFT/MISSING detecte (CI-ready)")
+                   help="Exit 1 si DRIFT/MISSING/NUMBERING-DRIFT detecte (CI-ready)")
     p.add_argument("--update", action="store_true",
                    help="Rebaseline : ecrit les SHAs courants comme nouveau last_audit "
                         "(a lancer APRES une audit firsthand d'une paire, ET EN DERNIER : "
@@ -1253,7 +1323,7 @@ def main(argv=None) -> int:
             for state_file, label in (("MERGE_HEAD", "merge"), ("REBASE_HEAD", "rebase")):
                 r = subprocess.run(
                     ["git", "rev-parse", "-q", "--verify", state_file],
-                    capture_output=True, text=True, cwd=str(repo_root_for_state),
+                    capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=str(repo_root_for_state),
                 )
                 if r.returncode == 0:
                     p.error(f"--update pendant un {label} non committe : HEAD ne contient pas "
@@ -1706,6 +1776,7 @@ def main(argv=None) -> int:
     n_ok = sum(1 for r in results if r["status"] == "OK")
     n_drift = sum(1 for r in results if r["status"] == "DRIFT")
     n_missing = sum(1 for r in results if r["status"] == "MISSING")
+    n_numbering = sum(1 for r in results if r["status"] == "NUMBERING-DRIFT")
 
     # --- Mode --ci-strict (#9399 volet b) ---
     # Verdict dur : pour chaque paire, on detaillé le verdict legacy vs content_sha.
@@ -1729,6 +1800,7 @@ def main(argv=None) -> int:
             "n_missing_python": 0,
             "n_missing_csharp": 0,
             "n_no_audit": 0,              # paire sans audits ni last_audit
+            "n_numbering_drift": 0,       # numeros de base distincts (#12933)
         }
         ci_results = []
         for pp, r in zip(pairs, results):
@@ -1750,6 +1822,17 @@ def main(argv=None) -> int:
                 "details": list(r["details"]),
                 "has_content_sha_audit": bool(rec_cpy and rec_ccs),
             }
+
+            # NUMBERING-DRIFT (#12933) : compte dans SA categorie, sans
+            # re-classer la paire dans les buckets SHA (blob/content) -- une
+            # paire renumerotee unilateralement est rouge pour une raison qui
+            # n'a rien a voir avec l'attestation d'empreinte, et la double
+            # comptabilisation (ex. no_audit en plus) fausserait chaque
+            # categorie.
+            if r["status"] == "NUMBERING-DRIFT":
+                cat["n_numbering_drift"] += 1
+                ci_results.append(entry_ci)
+                continue
 
             if not audit:
                 cat["n_no_audit"] += 1
@@ -1780,7 +1863,7 @@ def main(argv=None) -> int:
                     # carnet -- exactement le faux positif que le volet c a ete
                     # construit pour tuer (cf docstring de `_content_sha`).
                     # Rougir ici le re-fabriquerait au niveau du cron : incident
-                    # du 2026-08-07, cron rouge sur main pour Sudoku-8/14 BDD --
+                    # du 2026-08-07, cron rouge sur main pour Sudoku-08/14 BDD --
                     # les 2 paires nommees dans cette meme docstring -- avec un
                     # `::error ...::<none>` qui ne designait aucune paire (leur
                     # `status` reste OK, donc `_cron_extract_drift` n'en listait
@@ -1814,7 +1897,7 @@ def main(argv=None) -> int:
         # les anomalies, pour le reporting.
         n_blocking_drift = (cat["n_drift_blob"] + cat["n_drift_content"]
                             + cat["n_missing_python"] + cat["n_missing_csharp"]
-                            + cat["n_no_audit"])
+                            + cat["n_no_audit"] + cat["n_numbering_drift"])
         n_total_drift = n_blocking_drift + cat["n_drift_legacy_after_content"]
 
         if args.json:
@@ -1837,7 +1920,7 @@ def main(argv=None) -> int:
                   f"drift_blob={cat['n_drift_blob']} drift_content={cat['n_drift_content']} "
                   f"drift_legacy_after_content={cat['n_drift_legacy_after_content']} "
                   f"missing_py={cat['n_missing_python']} missing_cs={cat['n_missing_csharp']} "
-                  f"no_audit={cat['n_no_audit']}")
+                  f"no_audit={cat['n_no_audit']} numbering_drift={cat['n_numbering_drift']}")
             for r in ci_results:
                 if r["status"] != "OK":
                     print(f"  [{r['status']}] {r['name']} ({r['family']}, {r['parity_level']})")
@@ -1869,19 +1952,22 @@ def main(argv=None) -> int:
             "ok": n_ok,
             "drift": n_drift,
             "missing": n_missing,
+            "numbering_drift": n_numbering,
             "pairs": results,
         }
         print(json.dumps(out, ensure_ascii=False, indent=2))
     else:
         for r in results:
-            tag = {"OK": "OK", "DRIFT": "DRIFT", "MISSING": "MISSING"}[r["status"]]
+            tag = {"OK": "OK", "DRIFT": "DRIFT", "MISSING": "MISSING",
+                   "NUMBERING-DRIFT": "NUMBERING-DRIFT"}[r["status"]]
             print(f"[{tag}] {r['name']} ({r['family']}, {r['parity_level']})")
             if r["status"] != "OK":
                 for d in r["details"]:
                     print(f"       - {d}")
-        print(f"\nTotal : {len(results)} paire(s) | OK={n_ok} DRIFT={n_drift} MISSING={n_missing}")
+        print(f"\nTotal : {len(results)} paire(s) | OK={n_ok} DRIFT={n_drift} "
+              f"MISSING={n_missing} NUMBERING-DRIFT={n_numbering}")
 
-    if args.check and (n_drift > 0 or n_missing > 0):
+    if args.check and (n_drift > 0 or n_missing > 0 or n_numbering > 0):
         return 1
     return 0
 

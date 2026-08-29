@@ -56,7 +56,7 @@ python scripts/notebook_tools/notebook_helpers.py get-output notebook.ipynb 5
 ```bash
 # Validate structure (quick) or full (with execution)
 python scripts/notebook_tools/notebook_tools.py validate Sudoku --quick
-python scripts/notebook_tools/notebook_tools.py validate MyIA.AI.Notebooks/Sudoku/Sudoku-1.ipynb
+python scripts/notebook_tools/notebook_tools.py validate MyIA.AI.Notebooks/Sudoku/Sudoku-01.ipynb
 
 # Extract skeleton for README generation
 python scripts/notebook_tools/notebook_tools.py skeleton MyIA.AI.Notebooks/Tweety --output markdown

@@ -63,7 +63,7 @@ def _run(cmd: list[str], cwd: Path) -> tuple[int, str]:
         cmd,
         cwd=str(cwd),
         capture_output=True,
-        text=True,
+        text=True, encoding="utf-8", errors="replace",
         shell=False,
     )
     out = (proc.stdout + proc.stderr).strip()
@@ -80,14 +80,14 @@ def _hooks_dir(repo: Path) -> Path:
     """
     hp = subprocess.run(
         ["git", "config", "core.hooksPath"], cwd=str(repo),
-        capture_output=True, text=True,
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
     ).stdout.strip()
     if hp:
         p = Path(hp)
         return p if p.is_absolute() else (repo / p)
     g = subprocess.run(
         ["git", "rev-parse", "--git-path", "hooks"], cwd=str(repo),
-        capture_output=True, text=True,
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
     ).stdout.strip()
     return (repo / g).resolve() if g else repo / ".git" / "hooks"
 
@@ -137,13 +137,13 @@ def cmd_install(repo: Path, python: str) -> int:
     target_hooks = _hooks_dir(repo)  # where git reads hooks (honors core.hooksPath)
     saved_hookspath = subprocess.run(
         ["git", "config", "core.hooksPath"], cwd=str(repo),
-        capture_output=True, text=True,
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
     ).stdout.strip()
     hook_path = target_hooks / "pre-commit"
     if saved_hookspath:
         subprocess.run(
             ["git", "config", "--unset-all", "core.hooksPath"], cwd=str(repo),
-            capture_output=True, text=True,
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
         )
     try:
         rc, out = _run([python, "-m", "pre_commit", "install"], repo)
@@ -151,13 +151,13 @@ def cmd_install(repo: Path, python: str) -> int:
         if saved_hookspath:
             subprocess.run(
                 ["git", "config", "core.hooksPath", saved_hookspath], cwd=str(repo),
-                capture_output=True, text=True,
+                capture_output=True, text=True, encoding="utf-8", errors="replace",
             )
     # pre-commit writes to gitdir/hooks (its resolved git-path hooks). If git
     # reads hooks from a different dir (core.hooksPath), mirror it there.
     gitdir_hooks_rel = subprocess.run(
         ["git", "rev-parse", "--git-path", "hooks"], cwd=str(repo),
-        capture_output=True, text=True,
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
     ).stdout.strip()
     gitdir_precommit = (repo / gitdir_hooks_rel).resolve() / "pre-commit"
     if rc == 0:
@@ -222,7 +222,7 @@ def cmd_check(repo: Path, python: str) -> int:
     print(f"pre-commit on PATH      : {pc or 'ABSENT'}")
     print(f"pre-commit module (-m)  : {'available' if pc_mod else 'ABSENT'}" + (f" ({ver})" if ver else ""))
     print(f"gitleaks on PATH        : {gl or 'ABSENT (pre-commit manages it in its cache)'}")
-    print(f"core.hooksPath          : {subprocess.run(['git','config','core.hooksPath'], capture_output=True, text=True).stdout.strip() or '(unset → default .git/hooks)'}")
+    print(f"core.hooksPath          : {subprocess.run(['git','config','core.hooksPath'], capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip() or '(unset → default .git/hooks)'}")
     print(f"git hooks/pre-commit    : {'EXISTS' if hook.exists() else 'MISSING (run setup_hooks.py)'}")
     print(f"hooks dir installed     : {', '.join(installed_hooks) or '(only samples)'}")
     # Exit 0 if harness active, 1 otherwise (useful for fleet audit scripting).

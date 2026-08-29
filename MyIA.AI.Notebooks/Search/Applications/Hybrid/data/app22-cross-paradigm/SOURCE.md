@@ -11,6 +11,7 @@ suivant, sans modification. Le quatrième (`wordle_repeated_results.csv`) est un
 | **Auteur** | **Théodore Deguest** |
 | **Dépôt source** | `jsboigeEpita/2026-Epita-Intelligence-Symbolique` |
 | **Pull request** | [#42](https://github.com/jsboigeEpita/2026-Epita-Intelligence-Symbolique/pull/42) |
+| **Projet** | [L4-Benchmark-Cross-Paradigm](https://github.com/jsboigeEpita/2026-Epita-Intelligence-Symbolique/tree/main/L4-Benchmark-Cross-Paradigm) |
 | **Commit source** | `52045085c4efcab96383838d7e55b62d4774af70` (HEAD de la PR #42) |
 | **Chemins d'origine** | `L4-Benchmark-Cross-Paradigm/results/{sudoku,connect_four,wordle}_results.csv` |
 | **Licence** | MIT — copyright 2026, « The 2026-Epita-Intelligence-Symbolique contributors » (voir [`LICENSE`](LICENSE)) |

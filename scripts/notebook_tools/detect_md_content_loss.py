@@ -18,7 +18,7 @@ Deux PR reelles ont passe tous les gardes en detruisant du contenu
 
   | PR    | Notebook                              | Cell | Avant | Apres | Contenu perdu                    |
   |-------|---------------------------------------|------|-------|-------|----------------------------------|
-  | #8654 | Sudoku/Sudoku-1-...Python.ipynb       | 9    | 941 c | 16 c  | enonce + 4 contraintes + 3 indices|
+  | #8654 | Sudoku/Sudoku-01-...Python.ipynb       | 9    | 941 c | 16 c  | enonce + 4 contraintes + 3 indices|
   | #8630 | GenAI/Texte/11_Quantization.ipynb     | 3    | 998 c | 28 c  | Navigation + duree + prerequis   |
   | #8630 | GenAI/Texte/12_Test_Time_Scaling.ipynb| 2    | 1655c | 61 c  | Navigation + ref Snell 2024      |
 

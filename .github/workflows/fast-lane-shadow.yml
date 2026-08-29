@@ -42,6 +42,11 @@ name: Fast lane (ombre)
 # conclusion reelle, workflow d'origine retire de `pull_request`. Le
 # compteur du job suit le registre : 16 gardes, toujours 1 checkout.
 #
+# TRANCHE 3 (#13097, remede A -- famine CI) : regression-guard absorbe.
+# Premier garde de la vague « metadata guards » sans filtre paths: qui
+# pesait ~50 % du volume pull_request ; le seul dont le verdict est une
+# invocation python proche sans ecriture PR (les 8 autres exigent des
+# write-perms lane ou une extension moteur -- voir registre TRANCHE3).
 # TRANCHE 4 (#12396) : le noyau du grain -- le gate MARKDOWN
 # md-content-loss (iter par notebook change + --base {base_ref}, son
 # anti-auto-desarmement AGREGE porte par le flag `fail_on_all_warn`) -- et
@@ -54,14 +59,21 @@ name: Fast lane (ombre)
 # check-run que rendait son workflow source (contrainte #12175 : un rename
 # casse la protection de branche).
 #
-# Compteur : PILOT 10 + TRANCHE1 3 + TRANCHE2 3 + TRANCHE4 5 = 21 gardes.
+# Compteur : PILOT 10 + TRANCHE1 3 + TRANCHE2 3 + TRANCHE3 1 + TRANCHE4 5 = 22 gardes.
 # NB collision #13203 : ce depot en parallele ouvre TRANCHE3 (1 garde) sur
 # les memes fichiers -- le merge des deux ajuste le compteur a 22.
 
+# DORMANT depuis #13384 : le job fast-lane est absorbe (checkout full +
+# setup-python + dependances + `fast_lane.py --shadow` + controle d'identite,
+# portes verbatim) par always-on-guards.yml -- un seul workflow, un seul
+# checkout, un seul slot de runner par PR (37 % de la file CI etait les cinq
+# gardes always-on pour ~3 min de travail reel, mesure #13384). Le job reste
+# ICI en copie de reference pour la tracabilite ET pour le controle positif
+# d'identite byte-a-byte (check_absorbed_check_run_identity.py lit ce
+# fichier : le nom du job doit rester inchanger). NE PAS reinscrire
+# pull_request ici sans retirer l'organe fastlane d'always-on-guards.
+
 on:
-  pull_request:
-    branches: [ main ]
-    types: [ opened, synchronize, reopened, edited ]
   workflow_dispatch:
 
 permissions:
@@ -75,7 +87,7 @@ concurrency:
 
 jobs:
   fast-lane:
-    name: "Fast lane (ombre) -- 21 gardes, 1 checkout"
+    name: "Fast lane (ombre) -- 22 gardes, 1 checkout"
     runs-on: ubuntu-latest
     timeout-minutes: 20
 

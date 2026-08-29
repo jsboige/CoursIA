@@ -519,7 +519,7 @@ class TestDetectProseEnumeration:
     def test_domain_range_not_enumeration(self):
         # A domain/range description (« 81 valeurs (1-9) ») is NOT an output-
         # level enumeration: the hyphenated pair denotes value-space bounds,
-        # not distinct observed levels. Confirmed FP firsthand Sudoku-5-PSO
+        # not distinct observed levels. Confirmed FP firsthand Sudoku-05-PSO
         # cell[9] (« Chaque particule contient 81 valeurs (1-9) » was read as
         # a 2-level enumeration of {1, 9} then compared to global outputs).
         # ASCII hyphen, en-dash and em-dash variants must all be excluded.
