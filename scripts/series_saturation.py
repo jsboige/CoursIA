@@ -162,6 +162,42 @@ def fetch_merged(days: int, now: dt.datetime | None = None) -> tuple[list[dict],
         return [], "{}: {}".format(type(exc).__name__, exc)
 
 
+_CAMEL_RE = re.compile(r"[a-z][A-Z]")
+
+
+def _is_distinctive(seg: str) -> bool:
+    """Le dernier segment d une zone peut-il se chercher SEUL sans faux positif ?
+
+    Chercher `Texte` seul matcherait toute prose francaise -- c est le faux
+    positif que la recherche a deux segments evite, et il faut le garder. Mais
+    le refus etait total, et il coutait le cas inverse : `DataScienceWithAgents`
+    n est pas un mot, c est un identifiant. Mesure du 2026-08-29 : l EPIC
+    #13504, ouvert precisement pour declarer cette zone, ne s y rattachait pas
+    -- son titre dit `consolidation(DataScienceWithAgents)` sans le prefixe
+    `ML/`, et personne n ecrit le chemin complet dans un titre.
+
+    Un segment se cherche seul s il est assez long ET porte une marque qui le
+    sort du lexique : une bosse CamelCase, un chiffre, un tiret ou un underscore. `Texte`,
+    `Audio`, `Video`, `Search` echouent aux deux conditions ; `ML-Training-
+    Pipeline`, `Part4-Metaheuristics`, `DataScienceWithAgents` les passent.
+    """
+    s = seg or ""
+    if len(s) < 10:
+        return False
+    return (bool(_CAMEL_RE.search(s)) or any(c.isdigit() for c in s)
+            or "-" in s or "_" in s)
+
+
+def _is_series(fam: str) -> bool:
+    """Une zone est-elle une serie de notebooks ?
+
+    Le prefixe suffit et se lit : `MyIA.AI.Notebooks/<domaine>/<serie>`. Tout
+    le reste -- `scripts/`, `.github/`, `docs/` -- est de l outillage, jamais
+    une zone d atterrissage pedagogique.
+    """
+    return (fam or "").replace(chr(92), "/").startswith("MyIA.AI.Notebooks/")
+
+
 def saturation(prs: list[dict]) -> tuple[dict[str, dict], dict[int, str]]:
     """Zones saturees + carte issue -> zone, deduites des PRs mergees.
 
@@ -175,12 +211,15 @@ def saturation(prs: list[dict]) -> tuple[dict[str, dict], dict[int, str]]:
     for pr in prs:
         fams: set[str] = set()
         new_here: dict[str, int] = {}
+        nb_here: dict[str, int] = {}
         for f in pr.get("files") or []:
             path = f.get("path", "")
             if not path:
                 continue
             fam = family_of(path)
             fams.add(fam)
+            if path.endswith(".ipynb"):
+                nb_here[fam] = nb_here.get(fam, 0) + 1
             if (path.endswith(".ipynb")
                     and (f.get("deletions") or 0) == 0
                     and (f.get("additions") or 0) >= NEW_NB_MIN_ADDITIONS):
@@ -191,9 +230,27 @@ def saturation(prs: list[dict]) -> tuple[dict[str, dict], dict[int, str]]:
             z["new_notebooks"] += new_here.get(fam, 0)
             z["numbers"].append(pr.get("number"))
         if fams:
-            dominant = max(fams, key=lambda f: (new_here.get(f, 0), f))
+            # Une zone est une SERIE de notebooks, pas n importe quel chemin.
+            # Le classement ne regardait que les notebooks NEUFS, puis l ordre
+            # alphabetique : une PR d outillage pur rattachait donc l issue
+            # qu elle cite a `scripts/<fichier>.py`. Mesure du 2026-08-29 :
+            # `i2f[12373]` -- l EPIC MGS, une serie de notebooks -- valait
+            # `scripts/series_saturation.py`, parce que mes propres PRs de
+            # picker citent #12373 en prose et ne touchent que des scripts.
+            # Toute fille de cet EPIC heritait de la zone d un script.
+            dominant = max(
+                fams,
+                key=lambda f: (new_here.get(f, 0), nb_here.get(f, 0), f))
+            touches_nb = nb_here.get(dominant, 0) > 0
             for key in cited_issues(pr):
-                issue_to_family.setdefault(key, dominant)
+                prev = issue_to_family.get(key)
+                if prev is None:
+                    issue_to_family[key] = dominant
+                elif touches_nb and not _is_series(prev):
+                    # Premier-arrive gagnait sans condition. On autorise UNE
+                    # promotion : un rattachement a une serie remplace un
+                    # rattachement a un chemin qui n en est pas une.
+                    issue_to_family[key] = dominant
     return zones, issue_to_family
 
 
@@ -285,16 +342,36 @@ def family_from_text(text: str, families) -> str | None:
     low = (text or "").replace(chr(92), "/").lower()
     if not low:
         return None
-    best_fam, best_len = None, 0
+    # La FREQUENCE avant la longueur. "La plus longue chaine gagne" traite un
+    # renvoi incident comme le sujet : mesure du 2026-08-29, l'EPIC #13504
+    # (qui nomme deux fois `ML/DataScienceWithAgents` et cite UNE fois
+    # `Search/Part4-Metaheuristics` dans un tableau de comparaison) se
+    # resolvait en Part4-Metaheuristics -- 45 caracteres contre 44. La zone
+    # que l'EPIC venait declarer restait `(aucun EPIC declare)`, c'est-a-dire
+    # que l'organe repondait le contraire de ce qui venait d'etre ecrit.
+    # Ce qu'une issue REPETE est son sujet ; ce qu'elle cite une fois est un
+    # renvoi. La longueur reste en second : elle departage `GenAI/Texte` de
+    # `Texte` quand les deux apparaissent autant.
+    best = None
     for fam in families:
-        segs = fam.replace(chr(92), "/").lower().split("/")
+        raw_segs = fam.replace(chr(92), "/").split("/")
+        segs = [s.lower() for s in raw_segs]
         cands = ["/".join(segs)]
         if len(segs) >= 2:
             cands.append("/".join(segs[-2:]))
+        if _is_distinctive(raw_segs[-1]):
+            cands.append(segs[-1])
+        hits, span = 0, 0
         for c in cands:
-            if len(c) > best_len and c in low:
-                best_fam, best_len = fam, len(c)
-    return best_fam
+            n = low.count(c)
+            if n:
+                hits = max(hits, n)
+                span = max(span, len(c))
+        if hits:
+            key = (hits, span)
+            if best is None or key > best[0]:
+                best = (key, fam)
+    return best[1] if best else None
 
 
 def resolve_family(item: dict, issue_to_family: dict, families=()) -> str | None:

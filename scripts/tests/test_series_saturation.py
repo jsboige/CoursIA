@@ -225,6 +225,102 @@ def test_zone_umbrellas_empty_when_no_parent_declared():
     assert ss.zone_umbrellas({1: "Z"}, pool) == {}
 
 
+# --- Attribution : ce qui empechait de NOMMER l'EPIC -----------------------
+
+
+def test_family_from_text_prefers_frequency_over_length():
+    """Le sujet est ce que l'issue REPETE, pas sa plus longue citation.
+
+    Cas reel : l'EPIC #13504 nomme deux fois `ML/DataScienceWithAgents` et
+    cite une fois `Search/Part4-Metaheuristics` dans un tableau de
+    comparaison. Le second est plus LONG (45 vs 44). Sous l'ancien
+    tie-break, l'EPIC ouvert pour declarer une zone se rattachait a l'autre
+    -- l'organe repondait le contraire de ce qui venait d'etre ecrit.
+    """
+    fams = ["MyIA.AI.Notebooks/ML/DataScienceWithAgents",
+            "MyIA.AI.Notebooks/Search/Part4-Metaheuristics"]
+    txt = ("MyIA.AI.Notebooks/ML/DataScienceWithAgents est la zone chaude. "
+           "La suivante, MyIA.AI.Notebooks/Search/Part4-Metaheuristics, est "
+           "a 6. Voir MyIA.AI.Notebooks/ML/DataScienceWithAgents.")
+    assert ss.family_from_text(txt, fams) == fams[0]
+
+
+def test_family_from_text_length_still_breaks_ties():
+    """A frequence egale, la longueur departage -- le garde d'origine tient."""
+    fams = ["MyIA.AI.Notebooks/GenAI/Texte", "GenAI"]
+    assert ss.family_from_text("MyIA.AI.Notebooks/GenAI/Texte", fams) == fams[0]
+
+
+def test_distinctive_segment_matches_identifiers_not_words():
+    """Un identifiant se cherche seul ; un mot francais courant, jamais.
+
+    C'est la condition qui permet a un TITRE de rattacher une zone : personne
+    n'ecrit le chemin complet dans un titre. Le refus total protegeait de
+    `Texte`, il coutait `DataScienceWithAgents`.
+    """
+    for mot in ("Texte", "Audio", "Video", "Search", "ML"):
+        assert not ss._is_distinctive(mot), mot
+    for ident in ("DataScienceWithAgents", "Part4-Metaheuristics",
+                  "ML-Training-Pipeline", "Argument_Analysis", "ICT-Series"):
+        assert ss._is_distinctive(ident), ident
+
+
+def test_family_from_title_alone_resolves_a_distinctive_zone():
+    """Integration : le titre reel de #13505 doit suffire."""
+    fams = ["MyIA.AI.Notebooks/ML/DataScienceWithAgents"]
+    titre = ("consolidation(DataScienceWithAgents): absorber 2.8c dans "
+             "2.8b/2.8d")
+    assert ss.family_from_text(titre, fams) == fams[0]
+
+
+def test_family_from_text_does_not_match_common_word_zone_by_leaf():
+    """Miroir : `Texte` en prose ne doit rattacher aucune zone."""
+    fams = ["MyIA.AI.Notebooks/GenAI/Texte"]
+    assert ss.family_from_text("On corrige le texte de la conclusion.",
+                               fams) is None
+
+
+def test_issue_zone_is_a_series_not_a_script_path():
+    """Une zone est une SERIE de notebooks, pas `scripts/<fichier>.py`.
+
+    Cas reel : mes propres PRs de picker citent #12373 (l'EPIC MGS) en prose
+    et ne touchent que des scripts. `i2f[12373]` valait donc
+    `scripts/series_saturation.py`, et TOUTE fille de cet EPIC heritait de la
+    zone d'un script au lieu de sa serie.
+    """
+    prs = [
+        {"number": 1, "title": "tooling", "body": "See #12373.",
+         "files": [{"path": "scripts/series_saturation.py",
+                    "additions": 40, "deletions": 2}]},
+        {"number": 2, "title": "notebook", "body": "See #12373.",
+         "files": [{"path": "MyIA.AI.Notebooks/Search/Part4-Metaheuristics/"
+                            "MGS-30.ipynb", "additions": 900, "deletions": 0}]},
+    ]
+    _, i2f = ss.saturation(prs)
+    assert i2f[12373] == "MyIA.AI.Notebooks/Search/Part4-Metaheuristics", i2f
+
+
+def test_series_attribution_is_not_overwritten_by_a_later_script_pr():
+    """La promotion va dans UN sens : serie remplace non-serie, jamais l'inverse."""
+    prs = [
+        {"number": 2, "title": "notebook", "body": "See #12373.",
+         "files": [{"path": "MyIA.AI.Notebooks/Search/Part4-Metaheuristics/"
+                            "MGS-30.ipynb", "additions": 900, "deletions": 0}]},
+        {"number": 3, "title": "tooling", "body": "See #12373.",
+         "files": [{"path": "scripts/pick_idle_grain.py",
+                    "additions": 40, "deletions": 2}]},
+    ]
+    _, i2f = ss.saturation(prs)
+    assert i2f[12373] == "MyIA.AI.Notebooks/Search/Part4-Metaheuristics"
+
+
+def test_is_series_rejects_tooling_paths():
+    assert ss._is_series("MyIA.AI.Notebooks/ML/DataScienceWithAgents")
+    for p in ("scripts/series_saturation.py", ".github/workflows/x.yml",
+              "docs/reference/y.md"):
+        assert not ss._is_series(p), p
+
+
 if __name__ == "__main__":
     import pytest
     sys.exit(pytest.main([__file__, "-v"]))
