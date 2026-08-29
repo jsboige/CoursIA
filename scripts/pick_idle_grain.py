@@ -110,7 +110,7 @@ Usage
     python scripts/pick_idle_grain.py --lane myia-po-2026:CoursIA
     python scripts/pick_idle_grain.py --lane myia-po-2023:CoursIA-2 --prev-genre guard
     python scripts/pick_idle_grain.py --lane <l> --reroll 1        # nouveau tirage
-    python scripts/pick_idle_grain.py --lane <l> --check-claims    # + verif claims
+    python scripts/pick_idle_grain.py --lane <l> --no-check-claims # sans verif claims
     python scripts/pick_idle_grain.py --lane <l> --json            # sortie machine
     python scripts/pick_idle_grain.py --lane <l> --ignore-red      # rouge non reparable
                                                                    # par cette lane, ECRIT sur la PR
@@ -538,6 +538,58 @@ def check_claims(numbers: list[int], lane: str) -> dict[int, str]:
     return verdicts
 
 
+def draw_unclaimed(by_class, args, rng, visits, series, issue_to_family):
+    """Tire, puis REMPLACE tout candidat qu une autre lane tient deja.
+
+    Deux raisons de remplacer plutot que d annoter :
+
+    1. Un candidat annote << BLOQUE par X >> reste un candidat. La lane le
+       lit, juge que son scope differe, et ecrit quand meme -- c est le
+       profil exact des quatre collisions mesurees. Le retirer de la liste
+       ne se discute pas ; un avertissement, si.
+    2. Retirer sans remplacer transformerait le garde en source d idle, ce
+       que la regle 4 de coordinator-discipline interdit. On retire ET on
+       retire un candidat de plus dans la meme urne.
+
+    Le cout est borne : N appels sur les tires (une poignee), jamais sur le
+    pool. C est pourquoi le check pouvait etre par defaut sans etre lent --
+    il etait opt-in par prudence de cout, sur une depense qui n existait pas.
+    """
+    urnes = (("grain", args.grains, args.prev_genre),
+             ("umbrella", args.umbrellas, args.prev_genre),
+             ("delivered", args.delivered, None))
+    picks, claims, conflicts = [], {}, []
+    for cls, want, prev in urnes:
+        pool = list(by_class[cls])
+        got = []
+        # Borne dure : au pire on epuise l urne. Pas de while nu.
+        for _ in range(len(pool) + 1):
+            if len(got) >= want or not pool:
+                break
+            cand = draw(pool, want - len(got), rng, prev, visits,
+                        series, issue_to_family)
+            if not cand:
+                break
+            nums = [c["number"] for c in cand]
+            verdicts = (check_claims(nums, args.lane)
+                        if args.check_claims and args.lane else {})
+            claims.update(verdicts)
+            drawn = {c["number"] for c in cand}
+            pool = [it for it in pool
+                    if it["number"] not in drawn]
+            for c in cand:
+                v = verdicts.get(c["number"], "")
+                if v.startswith("BLOQUE par"):
+                    conflicts.append((c, "CLAIM : " + v + (
+                        ". Une autre lane tient ce grain -- ecrire dessus "
+                        "produirait la collision, pas le livrable. Candidat "
+                        "remplace dans la meme urne.")))
+                else:
+                    got.append(c)
+        picks.extend(got)
+    return picks, claims, conflicts
+
+
 def recent_delivery(picks: list[dict]) -> dict[int, str]:
     """Annote les candidats tires qu'une autre PR couvre deja -- ouverte ou mergee.
 
@@ -568,7 +620,7 @@ def recent_delivery(picks: list[dict]) -> dict[int, str]:
     L'annotation **n'ecarte pas** le candidat (parite avec la doctrine
     ``candidate-delivered`` : signale, ne ferme pas) : elle change ce qu'on
     en dit, pas s'il est pris. Le verrou cross-lane reste
-    ``check_lane_claim.py``, que ``--check-claims`` interroge separement.
+    ``check_lane_claim.py``, que le tirage interroge desormais par defaut.
     """
     notes: dict[int, str] = {}
     for p in picks:
@@ -1270,7 +1322,10 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--umbrellas", type=int, default=2, help="candidats urne 'umbrella' (defaut 2)")
     ap.add_argument("--delivered", type=int, default=2, help="candidats urne 'delivered' (defaut 2)")
     ap.add_argument("--reroll", type=int, default=0, help="decale la graine pour un nouveau tirage")
-    ap.add_argument("--check-claims", action="store_true", help="verifie les claims sur les tires")
+    ap.add_argument("--no-check-claims", dest="check_claims",
+                    action="store_false",
+                    help="ne pas verifier les claims sur les tires "
+                         "(par defaut : verifie, et remplace les tenus)")
     ap.add_argument("--red-hours", type=float, default=RED_HOURS_DEFAULT,
                     help=f"seuil du garde 'reparer son rouge d'abord' (defaut {RED_HOURS_DEFAULT} h)")
     ap.add_argument("--red-count", type=int, default=RED_COUNT_DEFAULT,
@@ -1301,6 +1356,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--apply-comment", type=int, default=None, metavar="ISSUE",
                     help="avec --orphans-report : upsert du commentaire marker-guarde sur "
                          "l'issue N (defaut : dry-run, impression seule)")
+    ap.set_defaults(check_claims=True)
     args = ap.parse_args(argv)
     if args.apply_comment is not None and not args.orphans_report:
         ap.error("--apply-comment n'a de sens qu'avec --orphans-report")
@@ -1396,16 +1452,19 @@ def main(argv: list[str] | None = None) -> int:
     seed = int(hashlib.sha256(seed_src.encode()).hexdigest()[:16], 16)
     rng = random.Random(seed)
 
-    picks = (
-        draw(by_class["grain"], args.grains, rng, args.prev_genre, visits,
-             series, issue_to_family)
-        + draw(by_class["umbrella"], args.umbrellas, rng, args.prev_genre, visits,
-               series, issue_to_family)
-        + draw(by_class["delivered"], args.delivered, rng, None, visits,
-               series, issue_to_family)
-    )
-
-    claims = check_claims([p["number"] for p in picks], args.lane) if args.check_claims else {}
+    # Le tirage est claim-aware, et le remplacement est ce qui compte.
+    # Mesure du 2026-08-29 : quatre collisions en quatre jours (#13310, et
+    # les trois paires #12948<-#12791, #12984<-#12983, #13016<-#12758,
+    # PRs ouvertes le 25/08 et supersedees le 28/08 par d'autres lanes sur
+    # les MEMES issues). Le gate CI `lane_claim_required` dit lui-meme ce
+    # qu'il ne fait pas : << The gate cannot prevent the collision (once
+    # the PR exists the work is written) >>. Il empeche le MERGE, pas
+    # l'ecriture. La prevention doit donc vivre en amont, ici -- et elle ne
+    # peut pas etre optionnelle : un tirage qui propose une issue tenue par
+    # une autre lane FABRIQUE la collision qu'il faudra arbitrer ensuite.
+    picks, claims, claim_conflicts = draw_unclaimed(
+        by_class, args, rng, visits, series, issue_to_family)
+    withheld.extend(claim_conflicts)
     delivery = recent_delivery(picks)
 
     if args.json:
@@ -1473,10 +1532,23 @@ def main(argv: list[str] | None = None) -> int:
               f"({args.admit_reason!r}). A reporter sur l'issue retenue.")
     elif withheld:
         dwell_n = sum(1 for _, c in withheld if c.startswith("DWELL"))
-        zone_n = len(withheld) - dwell_n
+        claim_n = sum(1 for _, c in withheld if c.startswith("CLAIM"))
+        zone_n = len(withheld) - dwell_n - claim_n
+        # Les trois causes ne se rangent pas ensemble : dwell et zone
+        # reviennent d'elles-memes, un grain tenu par une autre lane revient
+        # quand CETTE lane le relache. Les fondre dans "zone sans remede"
+        # afficherait "elle revient d'elle-meme" sur le seul cas ou c'est faux.
+        parts = [f"{dwell_n} en attente de dwell",
+                 f"{zone_n} en zone sans remede"]
+        if claim_n:
+            parts.append(f"{claim_n} tenue(s) par une autre lane")
         print(f"Retenues hors tirage : {len(withheld)} "
-              f"({dwell_n} en attente de dwell, {zone_n} en zone sans remede). "
-              "Elles reviennent d'elles-memes -- aucune n'est refusee sur le fond.")
+              f"({', '.join(parts)}). "
+              "Dwell et zone reviennent d'elles-memes -- aucune n'est refusee "
+              "sur le fond.")
+        if claim_n:
+            print("   Un grain tenu revient quand sa lane pose [RELEASED], ou "
+                  "sur arbitrage [OVERRIDE] du coordinateur.")
         for it, cause in sorted(withheld, key=lambda kv: -kv[0]["number"])[:3]:
             print(f"   #{it['number']:<7} {cause.split(chr(58))[0]:<18} {it['title'][:46]}")
     if backlog.get("triggers"):
