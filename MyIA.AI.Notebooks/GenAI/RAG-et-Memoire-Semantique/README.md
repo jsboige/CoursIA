@@ -25,7 +25,7 @@ Un assistant de codage sans mémoire externe ré-explore le même terrain à cha
 
 - **Opérateurs d'agents** qui veulent comprendre comment leurs outils sont *ancrés* dans un historique vérifié.
 - **Curieux d'infrastructure ML / vectorielle** qui cherchent un récit honnête de mise en production (Docker, WSL2, quantization, anti-split-brain).
-- **Lecteurs des notebooks pratiques** `01-Hands-On-Grounding.ipynb` (le contexte de l'infrastructure avant de manipuler Qdrant), `02-Retrieval-Avance.ipynb` (mesurer HyDE et le reranking sur un gold français), `03-Embeddings-From-Scratch.ipynb` (ce qu'un embedding *est*, avant de s'en servir), `04-Tokenisation-From-Scratch.ipynb` (ce qu'un token *est*, l'unité de compte que tout le dépôt consomme), `05-Stockage-Vectoriel.ipynb` (la persistance sur disque et le compromis exact/ANN quand le corpus ne tient plus en RAM), `05b-Stockage-Vectoriel-Serveur.ipynb` (le même compromis sur un serveur Qdrant réel) et `06-KernelMemory-InProcess.ipynb` (la couche d'abstraction Kernel Memory par-dessus l'infrastructure), `07-KernelMemory-Python-Quickstart.ipynb` (le jumeau Python en mode service : ingestion HTTP, citations, mesure), `09-KernelMemory-Multimodal.ipynb` (le plafond multimodal du service OSS, constaté puis franchi par le pont vision, avec mesure avant/après).
+- **Lecteurs des notebooks pratiques** `01-Hands-On-Grounding.ipynb` (le contexte de l'infrastructure avant de manipuler Qdrant), `02-Retrieval-Avance.ipynb` (mesurer HyDE et le reranking sur un gold français), `03-Embeddings-From-Scratch.ipynb` (ce qu'un embedding *est*, avant de s'en servir), `04-Tokenisation-From-Scratch.ipynb` (ce qu'un token *est*, l'unité de compte que tout le dépôt consomme), `05-Stockage-Vectoriel.ipynb` (la persistance sur disque et le compromis exact/ANN quand le corpus ne tient plus en RAM), `05b-Stockage-Vectoriel-Serveur.ipynb` (le même compromis sur un serveur Qdrant réel) et `06-KernelMemory-InProcess.ipynb` (la couche d'abstraction Kernel Memory par-dessus l'infrastructure), `07-KernelMemory-Python-Quickstart.ipynb` (le jumeau Python en mode service : ingestion HTTP, citations, mesure), `08-KernelMemory-Hybrid-Search.ipynb` (la seconde jambe : BM25 + dense fusionnés en RRF sur l'index KM projeté, et la mesure honnête du gain sur petit corpus), `09-KernelMemory-Multimodal.ipynb` (le plafond multimodal du service OSS, constaté puis franchi par le pont vision, avec mesure avant/après).
 - **Personnes ayant vécu un incident** (perte de données, dérive de montage disque, sauvegardes à moitié câblées) et cherchant des leçons partageables.
 
 ## Objectifs d'apprentissage
@@ -51,6 +51,7 @@ Cette section contient **dix notebooks** (Qdrant en mémoire, retrieval avancé 
 | [`05b-Stockage-Vectoriel-Serveur.ipynb`](05b-Stockage-Vectoriel-Serveur.ipynb) | Notebook pratique | Le compromis ef exact/ANN sur un serveur Qdrant réel, 10k vecteurs |
 | [`06-KernelMemory-InProcess.ipynb`](06-KernelMemory-InProcess.ipynb) | Notebook pratique (.NET 9) | La couche d'abstraction Kernel Memory in-process : ETL documentaire, partitionnement en paragraphes, recherche avec citations, et le compromis granularité/rappel mesuré — embeddings locaux via LLamaSharp (GGUF `granite-embedding` CPU), zéro service |
 | [`07-KernelMemory-Python-Quickstart.ipynb`](07-KernelMemory-Python-Quickstart.ipynb) | Notebook pratique (Python) | Le jumeau Python du 06, en mode service : le service web Kernel Memory (Docker `kernelmemory/service`) piloté en HTTP depuis Python — ingestion d'un corpus hétérogène (22 textes français + PDF réel du dépôt + code source), recherche par similarité avec citations, inspection de ce que KM écrit dans Qdrant, `/ask` sourcé, gold-set français mesuré, épreuve de persistance par redémarrage |
+| [`08-KernelMemory-Hybrid-Search.ipynb`](08-KernelMemory-Hybrid-Search.ipynb) | Notebook pratique (Python) | La recherche hybride par-dessus l'index KM : corpus français ingéré par le service Kernel Memory, constat des deux verrous (KM dense-only, Qdrant refuse d'étendre une collection existante), projection vers une collection hybride (dense + BM25 `Qdrant/bm25` via fastembed), puis mesure contrôlée dense vs BM25 vs fusion RRF — recall@3/@5 et MRR@10 sur un gold à deux classes (terme exact rare vs paraphrase sémantique) |
 | [`09-KernelMemory-Multimodal.ipynb`](09-KernelMemory-Multimodal.ipynb) | Notebook pratique (Python) | La frontière modale du service KM OSS, mesurée : corpus polarisé par modalité (PDF réel, textes, schéma PNG) — le PNG est accepté (202) mais son pipeline **stand silencieusement** à l'extraction (zéro record), plafond documenté ; puis le pont vision : un modèle de vision décrit l'image, la description est ingérée, et la mesure avant/après montre les termes propres à l'image (`capteur impairfaux`) passant de miss à hit avec citations |
 | [`01-Pourquoi-Memoire-Semantique.md`](docs/01-Pourquoi-Memoire-Semantique.md) | Document de cadrage | Le besoin : grounding, SDDD, RAG |
 | [`02-Infrastructure-Qdrant.md`](docs/02-Infrastructure-Qdrant.md) | Document de déploiement | Docker, WSL2, quantization, anti-split-brain |
@@ -135,6 +136,7 @@ RAG-et-Memoire-Semantique/
 ├── 05-Stockage-Vectoriel.ipynb            # Notebook pratique — persistance + HNSW + compromis exact/ANN
 ├── 06-KernelMemory-InProcess.ipynb        # Notebook pratique (.NET 9) — Kernel Memory in-process, LLamaSharp CPU
 ├── 07-KernelMemory-Python-Quickstart.ipynb # Notebook pratique (Python) — service KM en HTTP, corpus hétérogène, citations
+├── 08-KernelMemory-Hybrid-Search.ipynb    # Notebook pratique (Python) — hybride BM25+dense RRF sur index KM projeté, mesure
 ├── 09-KernelMemory-Multimodal.ipynb        # Notebook pratique (Python) — plafond multimodal OSS + pont vision, mesure avant/après
 ├── docs/
 │   ├── 01-Pourquoi-Memoire-Semantique.md  # Le besoin : grounding, SDDD, RAG
@@ -210,6 +212,7 @@ Pour le versant *application* du RAG (pas infrastructure), voir les notebooks [`
 - [Notebook pratique — Stockage vectoriel, serveur](05b-Stockage-Vectoriel-Serveur.ipynb)
 - [Notebook pratique — Kernel Memory in-process (.NET 9)](06-KernelMemory-InProcess.ipynb)
 - [Notebook pratique — Kernel Memory Python, mode service](07-KernelMemory-Python-Quickstart.ipynb)
+- [Notebook pratique — Kernel Memory hybride BM25+dense](08-KernelMemory-Hybrid-Search.ipynb)
 - [Notebook pratique — Kernel Memory multimodal, pont vision](09-KernelMemory-Multimodal.ipynb)
 - [Pourquoi la mémoire sémantique](docs/01-Pourquoi-Memoire-Semantique.md)
 - [Infrastructure Qdrant](docs/02-Infrastructure-Qdrant.md)
@@ -236,6 +239,7 @@ Pour le versant *application* du RAG (pas infrastructure), voir les notebooks [`
 | [Notebook — Stockage vectoriel, serveur](05b-Stockage-Vectoriel-Serveur.ipynb) | Rejouer le compromis ef exact/ANN sur un serveur Qdrant réel, 10k vecteurs | Pratique |
 | [Notebook — Kernel Memory in-process](06-KernelMemory-InProcess.ipynb) | Déléguer ETL, partitionnement et citations à Kernel Memory (.NET 9), mesurer la granularité contre le rappel | Pratique |
 | [Notebook — Kernel Memory Python, mode service](07-KernelMemory-Python-Quickstart.ipynb) | Piloter le service web Kernel Memory en HTTP depuis Python : corpus hétérogène, citations, pont Qdrant, réponse sourcée, gold-set mesuré | Pratique |
+| [Notebook — Kernel Memory hybride BM25+dense](08-KernelMemory-Hybrid-Search.ipynb) | Projeter l'index KM vers une collection hybride (dense + BM25 fastembed) et mesurer honnêtement ce que la fusion RRF ajoute — y compris quand elle n'ajoute rien — gold à deux classes, recall@k et MRR | Pratique |
 | [Notebook — Kernel Memory multimodal, pont vision](09-KernelMemory-Multimodal.ipynb) | Constater le plafond OCR du service OSS (PNG accepté, pipeline figé), le franchir par le pont vision, mesurer avant/après | Pratique |
 
 ---
