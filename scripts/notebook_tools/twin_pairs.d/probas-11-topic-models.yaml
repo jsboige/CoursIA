@@ -29,6 +29,14 @@
       csharp_sha: e61bc677cace7fe0525f0f2d3d065fd6ac16a793
       content_python_sha: d92c4a5e9460cc76c33b08f5a97187c9a654ef5baff63447439a8e63a8b41604
       content_csharp_sha: ac0994633b49512fc0196e76aba3898fe151bf3756a35be0ae095a9ef6ad4448
+    - date: "2026-08-29"
+      by: myia-po-2023:CoursIA-2
+      python_sha: edc08f4697c64e585fe37af785ca753abe76f9f9
+      csharp_sha: b5949f0f739b92d1a518192a9e30f6ba098c4fec
+      content_python_sha: e909bc23772a561a4f24d5b369f68be4cb11eafa0d2c99cff9be7947224ee20a
+      content_csharp_sha: 18d8c737e3a9e5094b0049580c8d1a43f1ea7612755111267246275e687e7c28
+      reason: "Section 5bis ajoutee des deux cotes (#13036) : protocole de selection de K=2..6 en miroir (priors neutres, coherence UMass sur topics appris, redondance cosinus, held-out split-half ; deux ajustements par K -- corpus complet pour la qualite, moitie pour le predictif). Symetrie des protocoles verifiee ; valeurs numeriques non identiques par conception (NUTS vs VMP, cf known_differences)."
+
   known_differences:
   - 'Socle pedagogique commun : modeles de topics (LDA / allocation de Dirichlet) modelise dans les deux stacks.'
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
