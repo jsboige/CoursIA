@@ -26,8 +26,8 @@ Série progressive sur le fine-tuning des modèles de langue : des bases LoRA à
 FineTuning/
 ├── FT-01-Introduction-FineTuning.ipynb   # LoRA, full vs partial vs PEFT
 ├── FT-02-QLoRA-Quantization.ipynb        # Quantization 4-bit (NF4) + LoRA
-├── FT-03-Supervised-FineTuning-SFT.ipynb # SFT : contrat de format, Qwen3.5-0.8B
-├── FT-04-RLHF-DPO.ipynb                  # Alignement préférences, DPO
+├── FT-03-Supervised-FineTuning-SFT.html # SFT : contrat de format, Qwen3.5-0.8B
+├── FT-04-RLHF-DPO.html                  # Alignement préférences, DPO
 ├── FT-05-ModelMerging-Routing.ipynb      # Fusion d'adaptateurs, routage MoE
 └── FT-06-Vision-Language-LoRA.ipynb      # LoRA vision-langage, tâche image->texte
 ```
@@ -38,8 +38,8 @@ FineTuning/
 |----------|-------|-----------|-------|--------|
 | [FT-01](FT-01-Introduction-FineTuning.ipynb) | Fine-tuning complet, partiel, LoRA | Bases LLMs | ~30 min | Débutant |
 | [FT-02](FT-02-QLoRA-Quantization.ipynb) | Quantization NF4, QLoRA, bitsandbytes | FT-01 | ~30 min | Intermédiaire |
-| [FT-03](FT-03-Supervised-FineTuning-SFT.ipynb) | SFT sur Qwen3.5-0.8B : enseigner un contrat de format balisé | FT-01 | ~45 min | Intermédiaire |
-| [FT-04](FT-04-RLHF-DPO.ipynb) | Reward Model, RLHF, DPO | FT-01, FT-02, FT-03 | ~30 min | Avancé |
+| [FT-03](FT-03-Supervised-FineTuning-SFT.html) | SFT sur Qwen3.5-0.8B : enseigner un contrat de format balisé | FT-01 | ~45 min | Intermédiaire |
+| [FT-04](FT-04-RLHF-DPO.html) | Reward Model, RLHF, DPO | FT-01, FT-02, FT-03 | ~30 min | Avancé |
 | [FT-05](FT-05-ModelMerging-Routing.ipynb) | TIES, DARE, MergeKit, routage MoE | FT-01 à FT-04 | ~45 min | Avancé |
 | [FT-06](FT-06-Vision-Language-LoRA.ipynb) | LoRA vision-langage Qwen3.5-0.8B, conformité image->texte | FT-02, FT-03 | ~45 min | Avancé |
 

@@ -32,16 +32,16 @@ Le RL se comprend mieux en voyant l'agent apprendre. Six visualisations suivent 
 | # | Notebook | Contenu | Durée |
 |---|----------|---------|-------|
 | 1 | [rl_1_intro_cartpole](rl_1_intro_cartpole.ipynb) | Introduction PPO, CartPole | 25-30 min |
-| 2 | [rl_2_wrappers_sauvegarde_callbacks](rl_2_wrappers_sauvegarde_callbacks.ipynb) | Wrappers, sauvegarde, callbacks | 35-40 min |
-| 3 | [rl_3_experience_replay_her](rl_3_experience_replay_her.ipynb) | HER, goal-conditioned RL | 40-45 min |
+| 2 | [rl_2_wrappers_sauvegarde_callbacks](rl_2_wrappers_sauvegarde_callbacks.html) | Wrappers, sauvegarde, callbacks | 35-40 min |
+| 3 | [rl_3_experience_replay_her](rl_3_experience_replay_her.html) | HER, goal-conditioned RL | 40-45 min |
 | 4 | [rl_4_multi_armed_bandits](rl_4_multi_armed_bandits.ipynb) | Bandits manchots, exploration vs exploitation, Thompson Sampling | 30-35 min |
 | 5 | [rl_5_mdp_dp_qlearning](rl_5_mdp_dp_qlearning.html) | MDP, Value/Policy Iteration, Q-Learning tabulaire | 45-50 min |
-| 6 | [rl_6_dqn_policy_gradient](rl_6_dqn_policy_gradient.ipynb) | DQN depuis zéro, REINFORCE | 50-55 min |
+| 6 | [rl_6_dqn_policy_gradient](rl_6_dqn_policy_gradient.html) | DQN depuis zéro, REINFORCE | 50-55 min |
 | 6b | [rl_6b_actor_critic](rl_6b_actor_critic.html) | Actor-Critic (A2C) depuis zéro, advantage, entropy bonus | 45-50 min |
 | 6c | [rl_6c_ppo_from_scratch](rl_6c_ppo_from_scratch.html) | PPO depuis zéro, échantillonnage d'importance (ratios par epoch, ESS), clipped surrogate, GAE, comparaison A2C vs PPO | 45-50 min |
 | 6d | [rl_6d_sac_from_scratch](rl_6d_sac_from_scratch.html) | SAC depuis zéro, maximum entropy RL, twin Q-networks, auto-température | 45-50 min |
 | 6e | [rl_6e_grpo_from_scratch](rl_6e_grpo_from_scratch.html) | GRPO depuis zéro (DeepSeek-R1), avantage relatif intra-groupe (sans critic), clip PPO + KL vs référence, portefeuille synthétique multi-seed | 45-50 min |
-| 7 | [rl_7_multi_agent_rl](rl_7_multi_agent_rl.ipynb) | Multi-Agent RL, PettingZoo, IQL | 45-50 min |
+| 7 | [rl_7_multi_agent_rl](rl_7_multi_agent_rl.html) | Multi-Agent RL, PettingZoo, IQL | 45-50 min |
 | 8 | [rl_8_model_based_dyna_q](rl_8_model_based_dyna_q.html) | Model-based RL : Dyna-Q, Dyna-Q+, planification, rollouts | 45-50 min |
 | 9 | [rl_9_offline_rl](rl_9_offline_rl.html) | RL offline : Behavior Cloning, erreur d'extrapolation, BCQ-lite | 50-55 min |
 | 10 | [rl_10_reward_shaping](rl_10_reward_shaping.html) | Reward Shaping (Ng 1999), curriculum learning, pont RLHF | 45-50 min |
@@ -63,8 +63,8 @@ Les sous-séries [`rlpt_*`](.) et [GenAI/PostTraining](../GenAI/PostTraining/REA
 | « Comment GRPO est câblé *intérieurement* (group rollouts, avantage intra-groupe, no critic) ? » | [`rlpt_2`](rlpt_2_grpo_minimal.html) | GRPO Qwen3.5-0.8B local **sans `trl` complet** — la boucle d'entraînement est écrite à la main, on voit chaque rollout, chaque reward. |
 | « Le reward hacking est-il un attracteur spontané sur petit modèle ? Comment l'inoculer ? » | [`rlpt_3`](rlpt_3_reward_hacking.html) | Cas clinique minimal : 3 voies pour tenter de déclencher le hack, inoculation comme variable expérimentale, verdict reproductible (seed fixée). |
 | « DPO offline vs GRPO online à budget égal — qui gagne ? » | [`rlpt_4`](rlpt_4_dpo_vs_ppo.html) | Comparaison à budget 40 steps, préférences auto-fabriquées, verdict multi-seed {42,0,1,7} honnête Diebold-Mariano, dispersion inter-seed documentée. |
-| « GRPO + RLVR sur un vrai LLM, avec `trl` + reward vérifiable + détecteurs Goodhart en ligne ? » | [PT-11a](../GenAI/PostTraining/PT_11_grpo_qwen35_rlvr.ipynb), [PT-11b](../GenAI/PostTraining/PT_11_grpo_qwen_rlvr_on_verifiers.html) | La chaîne *SOTA 2024-2025* appliquée : `trl.GRPOTrainer` + Qwen3.5-0.8B QLoRA 4-bit + Z3/SymPy vérificateur + `rewardspy.watch_trl` en ligne. |
-| « Quels sont les 6 détecteurs statistiques du reward hacking ? » | [PT-07](../GenAI/PostTraining/PT_07_rewardspy_reward_hacking.ipynb) | Le catalogue `rewardspy.detectors` (Component Dominance, Length Drift, etc.). Outil — `rlpt_3` est le cas d'usage. |
+| « GRPO + RLVR sur un vrai LLM, avec `trl` + reward vérifiable + détecteurs Goodhart en ligne ? » | [PT-11a](../GenAI/PostTraining/PT_11_grpo_qwen35_rlvr.html), [PT-11b](../GenAI/PostTraining/PT_11_grpo_qwen_rlvr_on_verifiers.html) | La chaîne *SOTA 2024-2025* appliquée : `trl.GRPOTrainer` + Qwen3.5-0.8B QLoRA 4-bit + Z3/SymPy vérificateur + `rewardspy.watch_trl` en ligne. |
+| « Quels sont les 6 détecteurs statistiques du reward hacking ? » | [PT-07](../GenAI/PostTraining/PT_07_rewardspy_reward_hacking.html) | Le catalogue `rewardspy.detectors` (Component Dominance, Length Drift, etc.). Outil — `rlpt_3` est le cas d'usage. |
 | « InoculationRL complet, panel persona × reward hackable, la réplique poids du capstone ? » | [#5105 ICT-25](https://github.com/jsboige/CoursIA/issues/5105) | Capstone final, **distinct** de `rlpt_3` (qui en est la version compacte). |
 
 **Une phrase à retenir** : `rlpt_*` = *la mécanique, en petit, sans framework* (from scratch, CPU/char-level ou Qwen3.5-0.8B sans la pile `trl` complète — on voit chaque rollout et chaque gradient) ; `GenAI/PostTraining` = *la chaîne réelle, à l'échelle* (`trl`, vrai LLM, solveur vérifiable, multi-seed, détecteurs Goodhart). Si votre question porte sur **pourquoi** un algorithme fonctionne, ouvrez `rlpt_*`. Si votre question porte sur **comment le déployer en SOTA 2025**, ouvrez `PT_*`.
@@ -523,16 +523,16 @@ L'expérience replay (notebook 6) stocke les transitions (état, action, reward,
 ```
 RL/
 ├── rl_1_intro_cartpole.ipynb
-├── rl_2_wrappers_sauvegarde_callbacks.ipynb
-├── rl_3_experience_replay_her.ipynb
+├── rl_2_wrappers_sauvegarde_callbacks.html
+├── rl_3_experience_replay_her.html
 ├── rl_4_multi_armed_bandits.ipynb
 ├── rl_5_mdp_dp_qlearning.ipynb
-├── rl_6_dqn_policy_gradient.ipynb
+├── rl_6_dqn_policy_gradient.html
 ├── rl_6b_actor_critic.ipynb
 ├── rl_6c_ppo_from_scratch.ipynb
 ├── rl_6d_sac_from_scratch.ipynb
 ├── rl_6e_grpo_from_scratch.ipynb
-├── rl_7_multi_agent_rl.ipynb
+├── rl_7_multi_agent_rl.html
 ├── rl_8_model_based_dyna_q.ipynb
 ├── rl_9_offline_rl.ipynb
 ├── rl_10_reward_shaping.ipynb
@@ -572,11 +572,11 @@ Plusieurs notebooks de cette série annoncent un « pont RLHF » (notebook 9 sur
 
 | Concept RL (cette série) | Réalisation côté LLM (GenAI) |
 |--------------------------|------------------------------|
-| Behavior Cloning = imitation ([rl_9](rl_9_offline_rl.html)) | SFT — [PostTraining PT-02](../GenAI/PostTraining/PT_02_sft_baseline.ipynb), [FineTuning FT-03](../GenAI/FineTuning/FT-03-Supervised-FineTuning-SFT.html) |
+| Behavior Cloning = imitation ([rl_9](rl_9_offline_rl.html)) | SFT — [PostTraining PT-02](../GenAI/PostTraining/PT_02_sft_baseline.html), [FineTuning FT-03](../GenAI/FineTuning/FT-03-Supervised-FineTuning-SFT.html) |
 | Contrainte de support BCQ = pénalité KL ([rl_9](rl_9_offline_rl.html)) | KL vers le modèle de référence dans PPO-RLHF / DPO — [PT-03](../GenAI/PostTraining/PT_03_dpo_direct_preference.html) |
 | Reward shaping = guider via le signal ([rl_10](rl_10_reward_shaping.html)) | Reward model appris à partir de préférences — [FineTuning FT-04](../GenAI/FineTuning/FT-04-RLHF-DPO.html) |
-| Biais du shaping naïf = reward hacking ([rl_10](rl_10_reward_shaping.html)) | Goodhart / overoptimisation du reward model — [PT-07](../GenAI/PostTraining/PT_07_rewardspy_reward_hacking.ipynb) |
-| Policy gradient / PPO ([rl_6c](rl_6c_ppo_from_scratch.html)) | PPO-RLHF et son successeur GRPO — [PT-04](../GenAI/PostTraining/PT_04_grpo_deepseek_r1.ipynb) |
+| Biais du shaping naïf = reward hacking ([rl_10](rl_10_reward_shaping.html)) | Goodhart / overoptimisation du reward model — [PT-07](../GenAI/PostTraining/PT_07_rewardspy_reward_hacking.html) |
+| Policy gradient / PPO ([rl_6c](rl_6c_ppo_from_scratch.html)) | PPO-RLHF et son successeur GRPO — [PT-04](../GenAI/PostTraining/PT_04_grpo_deepseek_r1.html) |
 | MDP, value/Q ([rl_5](rl_5_mdp_dp_qlearning.html)) | Socle policy/value réutilisé par tout post-training — [GenAI/PostTraining](../GenAI/PostTraining/README.md) |
 
 En résumé : **DPO** (Direct Preference Optimization) est l'aboutissement direct de la ligne offline RL + contrainte de support + preference learning tracée par les notebooks 9 et 10. Pour le voir tourner sur de vrais LLM, suivre [GenAI/PostTraining](../GenAI/PostTraining/README.md) puis [GenAI/FineTuning](../GenAI/FineTuning/README.md).
