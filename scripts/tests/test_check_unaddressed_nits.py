@@ -2831,3 +2831,36 @@ def test_13425_controles_ce1_fp3_restant_inchanges():
     fp3 = "La review CHANGES_REQUESTED a ete traitee par le commit a1b2c3d4e"
     assert mod.classify("jsboige", ce1) == "BOT-CONCERN"
     assert mod.classify("jsboige", fp3) is None
+
+
+# ---------------------------------------------------------------------------
+# #13474 — frontieres bornees des positions de mention : temoins de frontiere.
+# La Position D+ borne le gap verdict->ref nue narrative (par/via/dans/en) a
+# `{0,12}` chars INCLUS ; au-dela, ni D+ (borne depassee) ni E (pas de verbe
+# de levee avant la ref) ne neutralisent — le verdict reste live. Frontiere
+# mesuree : gap 12 matche, gap 13 ne matche plus. Chaque temoin ECHOUE si la
+# fenetre bouge (elargie a 13 : le temoin hors-frontiere se met a matcher ;
+# retrecie a 10 : le temoin dans-frontiere cesse de matcher).
+# ---------------------------------------------------------------------------
+
+
+def test_13474_dplus_gap_12_chars_dans_la_borne_neutralise():
+    """#13474 temoin dans-frontiere — gap d'EXACTEMENT 12 chars (borne
+    `{0,12}` inclusive) entre le verdict et `par le commit <sha>` : la
+    Position D+ matche, la mention neutralise le verdict.
+    CE TEST ECHOUE SI LA FENETRE EST RETRECIE."""
+    gap = " " + "x" * 10 + " "  # 12 chars exactement
+    assert len(gap) == 12
+    body = "La review CHANGES_REQUESTED" + gap + "par le commit a1b2c3d4e."
+    assert mod.classify("myia-po-2027", body) is None
+
+
+def test_13474_dplus_gap_13_chars_hors_borne_reste_live():
+    """#13474 temoin hors-frontiere — gap de 13 chars : D+ ne matche plus
+    (borne depassee) et E non plus (pas de verbe de levee avant la ref) —
+    le verdict reste emis : BOT-CONCERN.
+    CE TEST ECHOUE SI LA FENETRE EST ELARGIE."""
+    gap = " " + "x" * 11 + " "  # 13 chars exactement
+    assert len(gap) == 13
+    body = "La review CHANGES_REQUESTED" + gap + "par le commit a1b2c3d4e."
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
