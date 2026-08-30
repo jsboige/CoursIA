@@ -12277,7 +12277,7 @@ La probabilite seule repond aux questions d'**association**. Mais de nombreuses 
 ",,,,,,,,653e7209adbafab3,,,,,,,,
 MyIA.AI.Notebooks/Probas/Infer/Infer-5-Causal-Inference.ipynb,1eed3e2cb1b5,markdown,fr,b97c98acc03a4b0e,"## 2. Configuration d'Infer.NET
 
-Chargement du moteur d'inference probabiliste et du helper de visualisation des graphes de facteurs (même `#load` que toute la serie, cf [Infer-3](Infer-3-Factor-Graphs.ipynb), [Infer-4](../DecisionTheory/DecInfer/DecInfer-04-Multi-Attribute.ipynb)).",,,,,,,,b97c98acc03a4b0e,,,,,,,,
+Chargement du moteur d'inference probabiliste et du helper de visualisation des graphes de facteurs (même `#load` que toute la serie, cf [Infer-3](Infer-3-Factor-Graphs.ipynb), [Infer-4](../DecisionTheory/DecInfer/DecInfer-4-Multi-Attribute.ipynb)).",,,,,,,,b97c98acc03a4b0e,,,,,,,,
 MyIA.AI.Notebooks/Probas/Infer/Infer-5-Causal-Inference.ipynb,884c6902f5a2,code,fr,689b05d791f6b1cf,"// Installation Infer.NET
 #r ""nuget: Microsoft.ML.Probabilistic""
 #r ""nuget: Microsoft.ML.Probabilistic.Compiler""
