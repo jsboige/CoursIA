@@ -75,3 +75,21 @@ public static class AgentTaskRunFire
         Task.Run(() => Console.WriteLine("ping"));   // AGENTGUARD003
     }
 }
+
+// Quatrieme terrain fautif (AGENTGUARD004) : la requete fournit un
+// CancellationToken, et la cible sait le recevoir, mais le code genere omet
+// l'argument optionnel. L'annulation est perdue au milieu de la chaine.
+public static class AgentCancellation
+{
+    public static async Task RepondreAsync(
+        string prompt,
+        System.Threading.CancellationToken cancellationToken)
+    {
+        await CallLlmAsync(prompt);                    // AGENTGUARD004
+    }
+
+    private static Task<string> CallLlmAsync(
+        string prompt,
+        System.Threading.CancellationToken cancellationToken = default)
+        => Task.FromResult($"[LLM] {prompt}");
+}

@@ -744,7 +744,7 @@ Total .ipynb: 3
 
 ## Entry #008 — Sudoku (owner po-2025 strict, c.401)
 
-Famille `MyIA.AI.Notebooks/Sudoku/` = **36 notebooks** `.ipynb` (17 paires `*-Csharp.ipynb` dont `Sudoku-0-Environment-Csharp.ipynb` + 17 jumeaux `*-Python.ipynb` + 1 `Sudoku-19-Lean-Propagation.ipynb` kernel `lean4-wsl` + 1 `Sudoku-16-NeuralNetwork-Python` + 1 `Sudoku-17-LLM-Python` ; **16 paires miroir C#/Python** portant les mêmes algorithmes dans les deux langages ; kernel distribution **17×.net-csharp + 18×python3 + 1×lean4-wsl = 36/36 = 100% cohérent**). Worktree `D:\dev\CoursIA-c401`, branche `feature/c401-ledger-008-sudoku` off origin/main `a8eec3fa9` (post-Search L378 #5884 MERGED + Probas/Infer #5886 MERGED + IIT/PyPhi c.402 row #7). Audit read-only, aucun commit code, aucun `gh`.
+Famille `MyIA.AI.Notebooks/Sudoku/` = **36 notebooks** `.ipynb` (17 paires `*-Csharp.ipynb` dont `Sudoku-00-Environment-Csharp.ipynb` + 17 jumeaux `*-Python.ipynb` + 1 `Sudoku-19-Lean-Propagation.ipynb` kernel `lean4-wsl` + 1 `Sudoku-16-NeuralNetwork-Python` + 1 `Sudoku-17-LLM-Python` ; **16 paires miroir C#/Python** portant les mêmes algorithmes dans les deux langages ; kernel distribution **17×.net-csharp + 18×python3 + 1×lean4-wsl = 36/36 = 100% cohérent**). Worktree `D:\dev\CoursIA-c401`, branche `feature/c401-ledger-008-sudoku` off origin/main `a8eec3fa9` (post-Search L378 #5884 MERGED + Probas/Infer #5886 MERGED + IIT/PyPhi c.402 row #7). Audit read-only, aucun commit code, aucun `gh`.
 
 ### Métrique (vérifiée firsthand par 4 scripts python3 worker)
 
@@ -784,7 +784,7 @@ Famille `MyIA.AI.Notebooks/Sudoku/` = **36 notebooks** `.ipynb` (17 paires `*-Cs
 | **python-constraint** (CSP Python pur) | Sudoku-06-AIMA-CSP-Python | `import constraint` ; AIMA constraint programming | **SOTA-OK** |
 | **AIMA** (algorithmes classiques, Norvig) | Sudoku-07-Norvig-{Csharp,Python}, Sudoku-08-HumanStrategies | `aima` references, Norvig `constraint propagation` pur Python | **SOTA-OK** |
 | **matplotlib** (viz) | Sudoku-{1,11,16,18}-Python | `import matplotlib.pyplot`, `matplotlib.patches` ; rendu grilles résolues | **SOTA-OK** |
-| **Plotly.NET** (viz interactif) | Sudoku-0-Environment-Csharp | `using Plotly.NET`, `using Plotly.NET.LayoutObjects` | **SOTA-OK** |
+| **Plotly.NET** (viz interactif) | Sudoku-00-Environment-Csharp | `using Plotly.NET`, `using Plotly.NET.LayoutObjects` | **SOTA-OK** |
 
 **Workaround dégradé** : **0/36**. Aucun ASCII art substituant une image générée ; aucune réimplémentation jouet d'un moteur SOTA. 17 paires C#/Python = traductions mot-à-mot du même algorithme dans les deux langages (vrai port cross-language, pas une dégradation).
 
@@ -807,7 +807,7 @@ Chaque notebook pose un problème de **résolution de Sudoku** non-trivial qui e
 
 | Notebook | Problème posé (cellule-clef) | Capacité distinctive exercée |
 |----------|------------------------------|--------------------------------|
-| Sudoku-0-Environment-Csharp | Classes de base (grille, solveur ISudokuSolver) + viz Plotly.NET | Infrastructure partagée (16 paires C#/Python importent ce module via `#!import`) |
+| Sudoku-00-Environment-Csharp | Classes de base (grille, solveur ISudokuSolver) + viz Plotly.NET | Infrastructure partagée (16 paires C#/Python importent ce module via `#!import`) |
 | Sudoku-01-Backtracking-{Csharp,Python} | Backtracking MRV, Forward Checking, count-all-solutions ; benchmark sur `Easy + Hardest` (10+11 puzzles réels) | Recherche exhaustive + heuristique MRV sur puzzles 9×9 réels |
 | Sudoku-02-DancingLinks-{Csharp,Python} | Algorithm X (Knuth) en représentation DLX ; solveur exact pour grilles arbitraires | DLX = représentation sparse linkée pour résolution exacte efficace |
 | Sudoku-03-Genetic-{Csharp,Python} | Algorithme génétique (mutation, crossover, sélection) sur population de grilles candidates | Recherche évolutionniste ; discrétisation chromosomes |

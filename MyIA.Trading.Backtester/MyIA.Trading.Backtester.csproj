@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Port MyIA.Trading.Backtester (fork MyIntelligenceAgency/Lean, branche MyIABacktesting_integration)
+    vers CoursIA net9.0 — EPIC #7357 geste 3, tranche 1 (scaffold).
+    Substitutions mesurees (docs/reference/backtester-e2-cadrage.md, geste 2) :
+    - HintPath DLL Aricie/DNN : abandonnees, socle = MyIA.AI.Shared
+    - Accord.MachineLearning 3.8.2-alpha : remplace par ML.NET (mapping tranche suivante)
+    - Microsoft.ML.AutoML 0.20.1 : paire preview 0.24.0-preview.26160.2 (seule paire teste
+      bout-en-bout, cadrage 2.2), figee par le test d'integration MyIA.Trading.Backtester.Tests
+    Les PackageReferences Flee/Markdig seront cablees par les tranches portant les fichiers
+    qui les utilisent (pas de dependance inutilisee au scaffold).
+  -->
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MyIA.AI.Shared\MyIA.AI.Shared.csproj" />
+    <ProjectReference Include="..\MyIA.Trading.Converter\MyIA.Trading.Converter.csproj" />
+  </ItemGroup>
+
+</Project>

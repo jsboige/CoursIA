@@ -225,6 +225,62 @@ def test_coverage_report(taxo: ArgumentumTaxonomy) -> None:
     assert rep["leaves_per_family"] == {"FamilleA": 3, "FamilleB": 1}
 
 
+# -- reduction measure (#13573) --------------------------------------
+
+def test_reduction_measure_mini_taxonomy_formulas(taxo: ArgumentumTaxonomy) -> None:
+    """Hand-computed bounds on the 8-node fixture.
+
+    Preorder (children by PK): 1,2,3,4,5,6,7 -> naive cost = position (1..7).
+    Oracle cost = dotted-path depth: 1,2,2,2,3,1,2 (sum 13).
+    """
+    m = taxo.reduction_measure()
+    assert m["total_nodes"] == 8
+    assert m["targets"] == 7  # root anchor excluded from the target set.
+    assert m["max_depth"] == 3
+    assert m["naive"]["mean"] == pytest.approx(4.0)
+    assert m["naive"]["median"] == 4
+    assert m["naive"]["max"] == 7
+    assert m["oracle"]["mean"] == pytest.approx(13 / 7)
+    assert m["oracle"]["median"] == 2
+    assert m["oracle"]["max"] == 3
+    assert m["reduction_ratio_mean"] == pytest.approx(4.0 / (13 / 7))
+
+
+def test_reduction_measure_first_child_is_the_blind_guide(
+    taxo: ArgumentumTaxonomy,
+) -> None:
+    """The ``_descent_chain`` policy (always first child) reaches only the
+    leftmost path {1, 2}: guided != guaranteed -- the downside bound."""
+    m = taxo.reduction_measure()
+    assert m["first_child"]["chain_length"] == 2
+    assert m["first_child"]["hit_rate"] == pytest.approx(2 / 7)
+    assert m["first_child"]["hit_rate"] < 0.5  # worse than a coin flip.
+
+
+def test_reduction_measure_scope_is_labeled_structural(
+    taxo: ArgumentumTaxonomy,
+) -> None:
+    """The measure must declare itself deterministic, not an LLM run."""
+    m = taxo.reduction_measure()
+    assert "NOT an LLM run" in m["scope"]
+    assert "consulted nodes" in m["cost_model"]
+
+
+def test_reduction_measure_real_tree_smoke() -> None:
+    """Smoke on the real CSV (skip when absent): oracle << naive, blind
+    guide misses most of the tree."""
+    from fallacy_detection.argumentum_taxonomy_explorer import _DEFAULT_TAXO
+
+    if not _DEFAULT_TAXO.is_file():
+        pytest.skip(f"real taxonomy absent: {_DEFAULT_TAXO}")
+    m = ArgumentumTaxonomy.from_csv(_DEFAULT_TAXO).reduction_measure()
+    assert m["total_nodes"] == 1408
+    assert m["targets"] == m["total_nodes"] - 1
+    assert m["oracle"]["mean"] < m["naive"]["mean"]
+    assert m["reduction_ratio_mean"] > 1
+    assert m["first_child"]["hit_rate"] < 0.01
+
+
 # -- CLI -----------------------------------------------------------
 
 def test_main_missing_file_exits_2(tmp_path: Path) -> None:
@@ -239,6 +295,15 @@ def test_main_list_categories(taxo_path: Path, capsys) -> None:
     assert rc == 0
     out = capsys.readouterr().out
     assert "FamilleA" in out and "FamilleB" in out
+
+
+def test_main_reduction_measure(taxo_path: Path, capsys) -> None:
+    from fallacy_detection.argumentum_taxonomy_explorer import main
+    rc = main(["--taxonomy", str(taxo_path), "--reduction-measure"])
+    assert rc == 0
+    m = json.loads(capsys.readouterr().out)
+    assert m["targets"] == 7
+    assert m["oracle"]["mean"] < m["naive"]["mean"]
 
 
 def test_main_out_traces_jsonl(taxo_path: Path, tmp_path: Path) -> None:
