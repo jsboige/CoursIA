@@ -35,6 +35,11 @@ CE QUE CHAQUE TEST ATTRAPE
    existent-elles ? Rouge sur l'etat d'avant (AIF_* absentes).
 3. ``test_virtues_families`` -- les libelles de familles sont-ils ceux du
    manifeste ? Rouge sur l'etat d'avant (anciens noms).
+4. ``test_legacy_copy_unified_with_canonical`` -- la troisieme copie historique
+   ``SymbolicAI/data/`` est-elle restee l'octet-presque de la canonique ?
+   Rouge sur l'etat d'avant #13578 : 74 colonnes contre 104, i18n _ar/_es et
+   AIF_* absentes, sans qu'aucun controle par nombre de lignes ne le voie
+   (1408 des deux cotes).
 
 QUE FAIRE QUAND C'EST ROUGE
 ---------------------------
@@ -157,6 +162,35 @@ def test_virtues_families():
         f"  manifeste : {expected}\n  disque    : {actual}\n"
         "Si l'amont a renomme une famille, resynchroniser le CSV et regenerer "
         "le manifeste ; ne pas editer cette attente a la main."
+    )
+
+
+LEGACY_COPY = REPO / "MyIA.AI.Notebooks" / "SymbolicAI" / "data" / "argumentum_fallacies_taxonomy.csv"
+
+
+def test_legacy_copy_unified_with_canonical():
+    """La 3e copie historique SymbolicAI/data/ reste l'octet-presque de la canonique.
+
+    Divergee pendant sept semaines sans qu'aucun rouge ne la voie : aucun script
+    ni notebook ne la lit (explorer et align pointent sur la canonique), donc
+    sa pourriture etait invisible ET sans consequence aval -- double raison de
+    la laisser fuiter. Unifiee le 30/08 (#13578) ; ce test rend toute nouvelle
+    divergence rouge au lieu de silencieuse. Si l'amont bouge : resynchroniser
+    les DEUX copies dans le meme commit, jamais une seule.
+    """
+    assert LEGACY_COPY.exists(), (
+        f"{LEGACY_COPY} a disparu. Si la suppression est deliberee (decision "
+        "documentee de ne plus distribuer la 3e copie), retirer ce test dans "
+        "le meme commit ; sinon le restaurer depuis la canonique."
+    )
+    expected = _manifest()["files"]["argumentum_fallacies_taxonomy.csv"]["blob_sha1"]
+    actual = _git_blob_sha1(LEGACY_COPY)
+    assert actual == expected, (
+        "La copie SymbolicAI/data/argumentum_fallacies_taxonomy.csv a re-diverge "
+        "de la canonique.\n"
+        f"  canonique {expected}\n  copie     {actual}\n"
+        "Verifier la regle -text du .gitattributes couvre bien ce chemin, puis "
+        "recopier la canonique octet pour octet."
     )
 
 

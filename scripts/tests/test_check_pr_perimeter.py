@@ -35,6 +35,7 @@ from check_pr_perimeter import (  # noqa: E402
     _is_incidental_assertion,
     _normalize_rest_files,
     _paragraph_prefix,
+    _word_form_count,
 )
 
 # The exact shape of the founding incident (#11227).
@@ -2518,3 +2519,94 @@ def test_12718_scope_label_still_blocks():
     assert cand.blocking is True
 
 
+
+
+# ---------------------------------------------------------------------------
+# #13535 -- accord de langue cardinal/nom. « une file » (queue CI) n'est pas
+# « 1 fichier » : le garde bloquant sur-accusait toute prose francais parlant
+# de la file d'attente CI (#13499, mesure : FAIL pretendu 1 fichier, liste
+# effective 2).
+
+FILES_2_13499 = [
+    {"path": "scripts/pick_idle_grain.py", "additions": 40, "deletions": 12},
+    {"path": "scripts/tests/test_pick_idle_grain.py", "additions": 55, "deletions": 8},
+]
+
+
+def test_13535_language_agreement_positive_controls():
+    """Controles positifs : l'accord de langue preserve les vraies declarations."""
+    assert _word_form_count("Périmètre : un fichier modifié.") == 1
+    assert _word_form_count("Périmètre : trois fichiers touchés.") == 3
+    assert _word_form_count("Perimeter: one file changed.") == 1
+    assert _word_form_count("Perimeter: three files changed.") == 3
+
+
+def test_13535_queue_file_is_not_a_count():
+    """Controles negatifs : la « file » de CI n'est plus lue comme un compte."""
+    assert _word_form_count(
+        "il rend le même verdict sur une file qui avance et sur une file figée"
+    ) is None
+    assert _word_form_count("la file est figée depuis le merge") is None
+    assert _word_form_count("deux files d'attente bloquent les runners") is None
+
+
+def test_13535_digit_forms_still_asserted():
+    """La forme chiffrée reste langue-neutre, toujours extraite et confrontée :
+    compte juste -> PASS, compte faux -> FAIL avec le compte effectif."""
+    ok_fr = "Périmètre : 2 fichiers uniquement."
+    ok_en = "Perimeter: 2 files only."
+    assert extract_perimeter_assertions(ok_fr) == [ok_fr]
+    assert check_assertion(FILES_2_13499, ok_fr) == []
+    assert extract_perimeter_assertions(ok_en) == [ok_en]
+    assert check_assertion(FILES_2_13499, ok_en) == []
+    problems = check_assertion(FILES_2_13499, "Périmètre : 3 fichiers.")
+    assert problems and any("3" in p for p in problems)
+    problems = check_assertion(FILES_2_13499, "Perimeter: 3 files touched.")
+    assert problems and any("3" in p for p in problems)
+
+
+def test_13535_founder_body_13499_extracts_nothing():
+    """Fixture du corps reel de #13499 (avant reformulation) : la phrase
+    incriminee verbatim + l'enumeration des 2 fichiers reels ne produisent
+    AUCUNE assertion extraite -- le scan du corps rend VERDICT: OK.
+
+    Le replay passe par le MEME chemin que le scan CLI (select_candidates sur
+    une fausse review thread, puis confrontation de chaque candidat) : zero
+    candidat porteur d'un compte -> zero blocage -> verdict OK."""
+    body = (
+        "Le symptôme mesuré : sous cap 8, le sweep ne descend jamais dans la\n"
+        "file des vieilles PRs -- il rend le même verdict sur une file qui\n"
+        "avance et sur une file figée, donc il ne peut pas distinguer.\n"
+        "\n"
+        "**Fichiers:** scripts/pick_idle_grain.py, scripts/tests/test_pick_idle_grain.py\n"
+    )
+    assert _word_form_count(body) is None
+    found = extract_perimeter_assertions(body)
+    assert not any("file" in f.lower() for f in found), (
+        f"la prose « file d'attente » ne doit pas devenir une assertion : {found}"
+    )
+    items = [{
+        "kind": "PR body",
+        "author": "myia-po-2026",
+        "body": body,
+        "source": "body",
+        "ts": "",
+    }]
+    candidates, orphan = select_candidates(items, n_files=len(FILES_2_13499))
+    assert orphan is None
+    for cand in candidates:
+        assert check_assertion(FILES_2_13499, cand.text) == [], (
+            f"le corps de #13499 doit rester OK ; candidat {cand.text!r}"
+        )
+
+
+def test_13535_word_form_extraction_still_fires():
+    """Controle FN : une vraie declaration mot-forme reste extraite et
+    confrontee (l'accord de langue n'affaiblit pas le garde). Compte juste ->
+    PASS ; compte faux -> FAIL avec le compte effectif."""
+    line = "Périmètre : deux fichiers uniquement, aucune autre modification."
+    assert extract_perimeter_assertions(line) == [line]
+    assert check_assertion(FILES_2_13499, line) == []
+    mismatch = "Périmètre : trois fichiers uniquement, aucune autre modification."
+    problems = check_assertion(FILES_2_13499, mismatch)
+    assert problems and any("2" in p for p in problems)
