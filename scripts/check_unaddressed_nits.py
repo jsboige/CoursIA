@@ -281,6 +281,14 @@ CONCERN_MARKERS = CONCERN_MARKERS + BLOCK_VERDICTS
 LIFT_MARKERS = (
     "levée", "levee", "LGTM", "Mergé", "Merged", "je merge", "Merge.",
     "est adressé", "sont adressés", "sont levées", "est levée",
+    # #13635 : les formes MASCULINES de la levee passive manquaient. Le depot
+    # nomme ce qui se leve au masculin (« le concern », « le point », « le nit »)
+    # — la phrase la plus naturelle pour lever un [BOT-CONCERN] (« tes concerns
+    # sont levés ») echappait a LIFT_MARKERS, faux negatif. Miroir exact des
+    # formes feminines ci-dessus : « sont levés », « est levé ». Ces marqueurs
+    # passent par `_lift_is_negated` comme les autres (via `_live_lift_positions`),
+    # donc une negation directe (« n'est pas levé ») reste exclue.
+    "sont levés", "est levé",
     "Je lève", "Je leve", "Levée de", "Levee de",
     # #11677 : « je lève ma CHANGES_REQUESTED » (#11664 fondateur) — LIFT
     # historique ne captait que « levée » (mot complet), donc « lève ma » ne
