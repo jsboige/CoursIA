@@ -1026,7 +1026,7 @@ try {
         $testNotebooks = @(
             "MyIA.AI.Notebooks/ML/ML-1-Introduction.ipynb",
             "MyIA.AI.Notebooks/SemanticKernel/semantickernel-notebook-maker.ipynb",
-            "MyIA.AI.Notebooks/Sudoku/Sudoku-1-Backtracking.ipynb"
+            "MyIA.AI.Notebooks/Sudoku/Sudoku-01-Backtracking.ipynb"
         )
         
         foreach ($notebook in $testNotebooks) {

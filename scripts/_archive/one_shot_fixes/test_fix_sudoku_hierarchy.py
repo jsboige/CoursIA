@@ -55,7 +55,7 @@ def test_matches_target_pistes_curly_and_straight_apostrophe():
 
 def test_matches_target_parenthetical_stripped_before_match():
     # A trailing parenthetical (e.g. engine tag) must not block matching.
-    assert fsh._matches_target("Indices (Sudoku-1)") is True
+    assert fsh._matches_target("Indices (Sudoku-01)") is True
     assert fsh._matches_target("Étapes (legacy)") is True
 
 
@@ -118,7 +118,7 @@ def test_demote_empty_source():
 
 
 def test_demote_multiple_headings_same_cell_reversed_order():
-    # A cell with BOTH ### Étapes and ### Indices (Sudoku-6 pattern).
+    # A cell with BOTH ### Étapes and ### Indices (Sudoku-06 pattern).
     src = ["Some intro.\n", "### Étapes\n", "do stuff\n", "### Indices\n",
            "hint\n"]
     new, n = fsh._demote_all_headings(src)

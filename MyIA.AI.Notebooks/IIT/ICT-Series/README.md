@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: IIT-ICT-Series
-pedagogical_count: 55
-breakdown: ICT-Series=55
-maturity: BETA=50, DRAFT=5
+pedagogical_count: 60
+breakdown: ICT-Series=60
+maturity: BETA=55, DRAFT=5
 -->
 
 [← IIT](../README.md) | [↑ Notebooks](../../README.md) | [→ Probas](../../Probas/README.md)
@@ -147,6 +147,7 @@ La strate 3 se conclut par son capstone [ICT-Synthese-CrossSubstrat](ICT-Synthes
 
 | Document | Contenu |
 |----------|---------|
+| [ICT-13b-DecroisementDynamiqueObservable](ICT-13b-DecroisementDynamiqueObservable.ipynb) | Annexe scientifique d'ICT-13 — *d'où vient le relief $b_1$ du substrat Axelrod ?* Décroise le plan factoriel laissé ouvert par les quatre PRs de l'EPIC substrat (#13039, #12673) : **dynamique** (réplicateur déterministe vs population finie agent-based 60 agents, bruit 2 %) × **observable** (`argmax` vs `digitize(coop, 8)`), même graine, même matrice de gains, même $\mu=0.05$, pipeline $b_1$ unique. **La cellule jamais mesurée — réplicateur × quantifié — rend `0.0000` à toutes les résolutions (2/4/8/16)** : le relief publié (`0.3989`, reproduit **exactement** au pipeline ICT-15j près ; `0.5036` au pipeline unifié) vient de la **dérive d'échantillonnage à population finie dans un vocabulaire fixe**, pas de la résolution de l'observable (amplificateur ~7,5x : `0.047` vers `0.354` multi-seed 5 graines, jamais sous `0.25`) ni de la nouveauté stratégique (réfute la généralisation « bruit différent de nouveauté » : le vocabulaire est fixe et le relief existe). Prescriptif pour l'arbitrage : un $b_1 = 0$ sur l'`argmax` d'un champ moyen est une propriété de l'instrument, pas du système |
 | [ICT-14-FreeEnergySurprise](ICT-14-FreeEnergySurprise.ipynb) | Surprise & énergie libre — *la jambe représentationnelle* du triplet fondateur ($\Phi_\text{dyn}$, $F$, $K$). *Free energy* et *expected free energy* comme substrat computationnel de l'anticipation, articulation avec la trajectoire $\Phi$ d'ICT-1 et le représentant interne `p̂` d'ICT-10. Voir issue #5089 |
 
 ![Lacet de prédation (sinus bruité) : panneau haut = position proie/anticipateur/persistance, panneau bas = surprise S_t - p̂ (bleu) vs S_t - persistance (orange)](assets/readme/ict14-freeenergy.png)

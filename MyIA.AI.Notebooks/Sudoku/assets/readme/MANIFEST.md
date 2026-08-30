@@ -8,8 +8,8 @@ Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'o
 
 | Figure | Fichier | Dimensions | Poids | Source (notebook · cellule · output) | Sujet |
 |--------|---------|------------|-------|--------------------------------------|-------|
-| Backtracking MRV | `sudoku1-backtracking.png` | (auto) | 29.2 KB | `Sudoku-1-Backtracking-Python.ipynb` · cellule `7c13432e` · output 1 | Grille 9×9 résolue, valeurs initiales (noir) vs ajoutées (bleu) |
-| Algorithme génétique | `sudoku3-genetic.png` | (auto) | 25.5 KB | `Sudoku-3-Genetic-Python.ipynb` · cellule 16 · output 3 | Deux courbes de convergence (Cellules rouge / Permutations bleu) |
+| Backtracking MRV | `sudoku1-backtracking.png` | (auto) | 29.2 KB | `Sudoku-01-Backtracking-Python.ipynb` · cellule `7c13432e` · output 1 | Grille 9×9 résolue, valeurs initiales (noir) vs ajoutées (bleu) |
+| Algorithme génétique | `sudoku3-genetic.png` | (auto) | 25.5 KB | `Sudoku-03-Genetic-Python.ipynb` · cellule 16 · output 3 | Deux courbes de convergence (Cellules rouge / Permutations bleu) |
 | Choco CSP | `sudoku11-choco.png` | (auto) | 27.1 KB | `Sudoku-11-Choco-Python.ipynb` · cellule 33 · output 0 | Grille 9×9 résolue par Choco |
 | MLP training | `sudoku16-nn-training.png` | (auto) | 73.2 KB | `Sudoku-16-NeuralNetwork-Python.ipynb` · cellule 16 · output 6 | Courbes perte + précision MLP, 20 epochs |
 | CNN erreurs | `sudoku16-nn-errors.png` | (auto) | 47.8 KB | `Sudoku-16-NeuralNetwork-Python.ipynb` · cellule 43 · output 0 | Carte de chaleur 9×9 des erreurs de prédiction (CNN itératif) |
@@ -23,7 +23,7 @@ Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'o
 
 ### sudoku1-backtracking.png
 
-- **Source** : `Sudoku-1-Backtracking-Python.ipynb` cellule `7c13432e` (index toutes-cellules, convention `extract_readme_figures.py`), output 1 — `plot_sudoku(solved_grid, "Solution (bleu = valeurs ajoutées)", initial_grid)`.
+- **Source** : `Sudoku-01-Backtracking-Python.ipynb` cellule `7c13432e` (index toutes-cellules, convention `extract_readme_figures.py`), output 1 — `plot_sudoku(solved_grid, "Solution (bleu = valeurs ajoutées)", initial_grid)`.
 - **SHA256** : `e30745f0800aa43925355061d42950811dd23b1d821115e644b20b9263401b3c` (29 866 B).
 - **Description visuelle** : Figure matplotlib single panel (565×590, fond blanc quasi-pur) titrée « Solution (bleu = valeurs ajoutées) ». **Grille 9×9 standard Sudoku** avec 9 lignes × 9 colonnes remplies, cases séparées par un trait fin noir, sub-grilles 3×3 séparées par des bordures noires plus épaisses. **Code couleur 2 tons** : chiffres noirs (géométrie sans empattement regular) pour les valeurs initiales du puzzle, chiffres bleus (bleu royal saturé ~RGB 0,0,200) pour les valeurs ajoutées par le solveur. Distribution des valeurs ajoutées : ~28 cases bleues réparties sur les 81 cellules (lignes 1-9, ~3-4 par ligne selon les contraintes résolues). Stats RGB PIL : moyenne (240.42, 240.42, 241.89), std (54.03, 54.03, 51.55) — **fond blanc dominant** (moyennes >240), std élevé signature des chiffres noirs + bleus saturés sur ~5% de la surface totale (texte fin), avec quasi-symétrie R=G signature du noir+bleu sans dominance rouge.
 - **Alt-text (FR)** : Grille 9×9 résolue par le solveur de backtracking MRV, code couleur distinguant les valeurs initiales (noir) des valeurs trouvées (bleu).
@@ -33,7 +33,7 @@ Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'o
 
 ### sudoku3-genetic.png
 
-- **Source** : `Sudoku-3-Genetic-Python.ipynb` cellule 16, output 3 — `def plot_convergence(fitness_history: List[int], title: str = "Convergence"):` ... affichage 2 panneaux côte-à-côte via `plt.figure(figsize=(10, 4))`.
+- **Source** : `Sudoku-03-Genetic-Python.ipynb` cellule 16, output 3 — `def plot_convergence(fitness_history: List[int], title: str = "Convergence"):` ... affichage 2 panneaux côte-à-côte via `plt.figure(figsize=(10, 4))`.
 - **SHA256** : `974414e6fc5b9efca5077ce1b6b9e26dbacf1e87fe6bb9011c55f74de7ba94a1` (26 125 B). MD5 cell output = `4a6d224a896e106de5b16c6fff43c388` (27 989 B). Discrepancy 26 125 vs 27 989 (ratio 0.93×) = léger downscale PIL optimize sans compression palette, **contenu visuel identique** (mêmes courbes, mêmes axes, mêmes couleurs).
 - **Description visuelle** : Figure matplotlib 2 sous-graphiques côte-à-côte (1189×390, fond blanc quasi-pur dominant) sans titre global. **Gauche** : « Cellules (final: 19 erreurs) », courbe rouge pleine, axe Y linéaire 0-60 (« Cellules erronées »), axe X 0-300 (« Génération »), convergence monotone décroissante ~50 → 19 sur 300 générations avec oscillation résiduelle de ±2 autour de 19 vers les générations 250-300. **Droite** : « Permutations (final: 0 erreurs) », courbe bleue pleine, axe Y linéaire 0-25 (« Permutations invalides »), axe X 0-25 (« Génération »), convergence rapide ~21 → 0 sur ~25 générations puis palier strict à 0. Stats RGB PIL : moyenne (249.68, 249.12, 249.63), std (31.25, 32.84, 31.38) — **fond blanc quasi-pur** (moyennes ≥249 sur 3 canaux, signature matplotlib `plt.subplots` standard), std modéré-faible (~31-33) signature de 2 courbes colorées fines (rouge + bleu) couvrant ~5-10% de la surface, avec léger excédent std G/B (33/31) signature du bleu dominant à droite.
 - **Cellule source vérifiée `nbformat`** : cell[16] code avec `def plot_convergence` ; le notebook appelle cette fonction deux fois (l'une pour l'approche « Cellules », l'autre pour « Permutations ») et assemble les deux subplots via `plt.subplots(1, 2)`. L'output 3 capture la figure finale 2 panneaux.

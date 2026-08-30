@@ -112,6 +112,8 @@ def commit_exists(repo: Path, commit: str) -> bool:
         ["git", "-C", str(repo), "cat-file", "-e", f"{commit}^{{commit}}"],
         capture_output=True,
         text=True,
+        encoding="utf-8",
+        errors="replace",
     )
     return proc.returncode == 0
 
@@ -122,6 +124,8 @@ def is_ancestor(repo: Path, commit: str, base_ref: str) -> bool:
         ["git", "-C", str(repo), "merge-base", "--is-ancestor", commit, base_ref],
         capture_output=True,
         text=True,
+        encoding="utf-8",
+        errors="replace",
     )
     if proc.returncode == 0:
         return True

@@ -642,6 +642,48 @@ def test_cli_repo_root_missing_returns_two(tmp_path, capsys, monkeypatch):
     assert rc == 2
 
 
+def test_discover_pairs_skips_repo_copies_and_vendored_trees(tmp_path):
+    """Une paire dans `.worktrees/` (copie du depot) ne doit PAS etre comptee.
+
+    Controle POSITIF d abord : la meme paire, placee dans l arbre source, EST
+    vue. Sans cette moitie, le test passerait aussi avec un walk qui ne trouve
+    jamais rien — c est la seule facon de distinguer « exclu » de « aveugle ».
+    """
+    src = tmp_path / "serie" / "N-1.ipynb"
+    src.parent.mkdir(parents=True)
+    src.write_text("{}", encoding="utf-8")
+    src.with_name("N-1_en.ipynb").write_text("{}", encoding="utf-8")
+
+    visible = p.discover_pairs(tmp_path, ["en"])
+    assert len(visible) == 1, "controle positif : une paire de l arbre source doit etre vue"
+
+    for skipped in (".worktrees", ".venv", "node_modules", ".lake"):
+        copy = tmp_path / skipped / "clone" / "serie" / "N-2.ipynb"
+        copy.parent.mkdir(parents=True)
+        copy.write_text("{}", encoding="utf-8")
+        copy.with_name("N-2_en.ipynb").write_text("{}", encoding="utf-8")
+
+    after = p.discover_pairs(tmp_path, ["en"])
+    assert len(after) == 1, (
+        f"4 paires ajoutees dans des repertoires exclus ne doivent rien changer, "
+        f"vu {len(after)}"
+    )
+
+
+def test_is_scannable_matches_on_relative_parts_only(tmp_path):
+    """Un depot dont le CHEMIN PARENT porte un nom exclu reste scannable.
+
+    Regression : un test sur le chemin absolu rendrait invisible tout depot
+    situe sous, par ex., `/home/x/venv/CoursIA`.
+    """
+    root = tmp_path / "venv" / "CoursIA"
+    (root / "serie").mkdir(parents=True)
+    inside = root / "serie" / "N.ipynb"
+    inside.write_text("{}", encoding="utf-8")
+    assert p._is_scannable(inside, root) is True
+    assert p._is_scannable(root / ".venv" / "x" / "N.ipynb", root) is False
+
+
 # ---------------------------------------------------------------------------
 # Reference — live state (manual)
 # ---------------------------------------------------------------------------
@@ -649,11 +691,13 @@ def test_cli_repo_root_missing_returns_two(tmp_path, capsys, monkeypatch):
 # Declared translation-pair count on main. EQ, not a threshold: the test
 # reddens in BOTH directions — a count below the declaration means pairs were
 # lost, a count above means the perimeter moved without updating this
-# declaration. Today 0 pairs: hold i18n #10038 (decision user 2026-08-12,
-# rollback 2e79bcb77). When i18n resumes, the first reintroduced pair makes
-# this test red and the declaration must be updated knowingly — a skipif
-# would re-arm silently and a >= 0 threshold would stay green forever.
-EXPECTED_PAIR_COUNT = 0
+# declaration. Hold i18n #10038 (decision user 2026-08-12, rollback 2e79bcb77)
+# lifted knowingly for the first 2 T4-rendered pairs of #12850 (42e8b2d7c,
+# 2026-08-29): GenAI/CaseStudies/Medical-Chatbot/medical_chatbot + GenAI/
+# FineTuning/FT-05-ModelMerging-Routing. Each reintroduced pair makes this
+# test red until the declaration is updated knowingly — a skipif would
+# re-arm silently and a >= 0 threshold would stay green forever.
+EXPECTED_PAIR_COUNT = 2
 
 
 def test_full_repo_state_passes_parity():

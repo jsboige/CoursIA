@@ -1,0 +1,107 @@
+name: Detect-Duplicate Self-Test
+
+# Organ for #13331: the live positive control of detect_duplicate_issues.py
+# (pair #13050/#13051, delta 1 s, #13208) was valid but DEBRANCHE -- gated
+# behind DETECT_DUP_NETWORK, posed nowhere. A control that never runs has
+# the same CI signature as a broken detector: green and silent.
+#
+# This daily sweep runs the control REALLY, on a network-enabled trigger
+# (schedule + workflow_dispatch -- NOT pull_request: it consumes
+# `gh issue list` quota and does not need per-PR execution).
+#
+# One step per acceptance criterion of #13331:
+#   4. Without the env var the live pytest test SKIPS (visible in the log)
+#      while unit tests still run -- the offline developer path is intact.
+#   1. With DETECT_DUP_NETWORK=1 the live test runs (not skipped) and the
+#      CLI scan prints the pair #13050/#13051 in its JSON output. Exit 1
+#      (real duplicates found -- the pair itself) is healthy; only exit 2
+#      (positive control missing) is broken.
+#   2. Negative control: a blind window (--window-seconds 0) must render
+#      ZERO pairs -- distinguishing "0 doublon" from "detecteur muet".
+#   3. Failure visibility: under the blind window the control MUST go
+#      missing and the CLI MUST exit 2 -- if blindness stops producing
+#      exit 2, the job goes red.
+
+on:
+  schedule:
+    # Daily, off-:00 minute (anti-stampede). 04:41 UTC.
+    - cron: '41 4 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: read
+
+concurrency:
+  group: detect-dup-selftest
+  cancel-in-progress: false
+
+jobs:
+  self-test:
+    name: "Live positive control #13050/#13051 (detect-dup self-test)"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      # actions/setup-python does NOT ship pytest. The only run of this
+      # workflow (schedule, 2026-08-29T04:43Z) FAILED with "No module named
+      # pytest" at the first step: triggers are schedule/dispatch only, so
+      # no PR check ever exercised the runner. The detector itself is pure
+      # stdlib (gh CLI excluded) and the tests are unittest-style -- pytest
+      # is only the runner.
+      - name: Install pytest (runner only, detector stays stdlib)
+        run: python -m pip install pytest
+
+      # Criterion 4: the skip path stays possible offline.
+      - name: Unit tests (live test SKIPS without DETECT_DUP_NETWORK)
+        run: python -m pytest scripts/tests/test_detect_duplicate_issues.py -v
+
+      # Criterion 1: the control executes via pytest too.
+      - name: Live self-test via pytest (positive control)
+        env:
+          DETECT_DUP_NETWORK: '1'
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python -m pytest scripts/tests/test_detect_duplicate_issues.py -v -k SelfTestCLI
+
+      # Criterion 1 (pair visible): the CLI scan itself. #8894 lesson --
+      # capture the exit code with `&& RC=0 || RC=$?`, never `RC=$?` alone
+      # (bash -e kills the step before the capture on the non-zero path).
+      - name: Live CLI scan (pair #13050/#13051 must appear in output)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python scripts/detect_duplicate_issues.py --self-test --limit 600 --window-seconds 60 && RC=0 || RC=$?
+          echo "cli-exit=$RC"
+          if [ "$RC" -eq 2 ]; then
+            echo "SELF-TEST BROKEN: positive control #13050/#13051 missing"
+            exit 1
+          fi
+          if [ "$RC" -gt 1 ]; then
+            exit 1
+          fi
+
+      # Criteria 2 + 3: the blind window renders zero AND flips the CLI to
+      # exit 2. Two independent assertions.
+      - name: Negative control (window 0 renders zero pairs, exit 2)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python scripts/detect_duplicate_issues.py --self-test --limit 600 --window-seconds 0 > blind.json 2> blind.err && RC=0 || RC=$?
+          echo "cli-exit=$RC"
+          cat blind.err
+          N_PAIRS=$(python -c "import json;print(json.load(open('blind.json'))['n_pairs'])")
+          echo "n_pairs(window=0)=$N_PAIRS"
+          if [ "$N_PAIRS" -ne 0 ]; then
+            echo "NEGATIVE CONTROL BROKEN: window 0 must render zero pairs (a same-second burst would be a REAL finding -- triage it)"
+            exit 1
+          fi
+          if [ "$RC" -ne 2 ]; then
+            echo "FAILURE-VISIBILITY BROKEN: the blind window must flip the CLI to exit 2"
+            exit 1
+          fi
