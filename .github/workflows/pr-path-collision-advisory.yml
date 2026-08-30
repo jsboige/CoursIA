@@ -1,26 +1,34 @@
 name: PR path-collision advisory
 
-# Issue #13359. An ADVISORY organ that renders visibility into OPEN pull
-# requests sharing an identical file path -- the expensive double-delivery
-# case (same notebook delivered twice) that check_lane_claim.py cannot see
-# by construction (a lane never blocks itself; the claim lock only arbitrates
-# across lanes), and that prose rule L898 asks every agent to guard from
-# memory. Measured firsthand 2026-08-28 on #13296/#13339: the same notebook
-# delivered twice, the worse one merged.
+# Issues #13359 + #13615. An ADVISORY organ that renders visibility into OPEN
+# pull requests sharing an identical file path -- the expensive
+# double-delivery case (same notebook delivered twice) that
+# check_lane_claim.py cannot see by construction (a lane never blocks itself;
+# the claim lock only arbitrates across lanes), and that prose rule L898 asks
+# every agent to guard from memory. Measured firsthand 2026-08-28 on
+# #13296/#13339: the same notebook delivered twice, the worse one merged.
+# #13615 measured three more pairs in one night (2026-08-30), one of them a
+# same-lane ordering conflict no claim protocol could ever see.
 #
-# Deliberately ADVISORY and MANUAL (workflow_dispatch, no cron). The raw
-# shared-path signal over-fires on shared README/manifest edits -- measured
-# 137 collisions on 133 open PRs (2026-08-28) -- so its value is a human
-# looking at the pair list, not a bot flooding comments. The default here is
-# report-only (dry-run); the coordinator opts into posting, optionally
-# narrowed to same-issue collisions (the high-signal double-delivery mode).
-# Under the runner famine (#13097) adding another hot cron would tax the very
-# queue this organ belongs to.
+# Trigger: pull_request opened/synchronize (#13615's delivery vehicle) +
+# manual workflow_dispatch. The raw shared-path signal over-fired (137
+# collisions on 133 open PRs, 2026-08-28) -- which is why the organ started
+# MANUAL-ONLY. #13615 makes the hot trigger honest instead: stacked PR pairs
+# (base = other's head) and generated artifacts (catalogue, twin_pairs.d/)
+# are excluded outright, and every posted pair carries a tier (strong = also
+# a common cited issue, weak = file only) plus the overlapping paths. Strong
+# pairs additionally get the `pr-overlap` label.
+#
+# The fixed concurrency group + cancel-in-progress keeps the runner famine
+# (#13097) fed: a burst of synchronize events collapses into one scan (the
+# detector is whole-pool and idempotent, the last run covers everything).
 #
 # The organ NEVER blocks: the script always exits 0 and this job has no
 # merge/status gate.
 
 on:
+  pull_request:
+    types: [opened, synchronize]
   workflow_dispatch:
     inputs:
       dry_run:
@@ -29,14 +37,19 @@ on:
         type: boolean
         default: true
       same_issue_only:
-        description: 'Post only collisions where both PRs cite the same issue in title'
+        description: 'Post only strong-tier collisions (common cited issue)'
         required: false
         type: boolean
         default: false
 
+concurrency:
+  group: pr-path-collision-advisory
+  cancel-in-progress: true
+
 permissions:
   contents: read
   pull-requests: write
+  issues: write  # gh label create (pr-overlap), #13615
 
 jobs:
   advisory:
@@ -51,11 +64,15 @@ jobs:
       - name: Detect collisions and (optionally) post advisory comments
         env:
           GH_TOKEN: ${{ github.token }}
-          DRY_RUN: ${{ github.event.inputs.dry_run }}
-          SAME_ISSUE_ONLY: ${{ github.event.inputs.same_issue_only }}
+          # pull_request events carry no dispatch inputs: post (the tiering +
+          # exclusions of #13615 are what make hot posting honest). Manual
+          # dispatch keeps its explicit inputs, dry-run by default.
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run || 'false' }}
+          SAME_ISSUE_ONLY: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.same_issue_only || 'false' }}
         run: |
           set -uo pipefail
           ARGS=""
           [ "$DRY_RUN" = "true" ] && ARGS="$ARGS --dry-run"
           [ "$SAME_ISSUE_ONLY" = "true" ] && ARGS="$ARGS --same-issue-only"
+          python scripts/check_pr_path_collisions.py --self-test
           python scripts/check_pr_path_collisions.py $ARGS
