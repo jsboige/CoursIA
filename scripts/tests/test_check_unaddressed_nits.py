@@ -3120,3 +3120,36 @@ def test_13639_sha_distant_du_marqueur_est_contexte():
     assert res["blocked"] is False
     assert res["voided_lifts"] == []
     assert res["absent_sha_warnings"] == []
+
+
+def test_13641_ref_par_prefixe_ne_compte_pas():
+    """NanoClaw c.702 sur #13641 : le substring check `any(f"#{n}" in message)`
+    matchait `#13639` dans un message contenant `#136390` (ticket adjacent
+    cite par hasard). Le bon test est l'extraction/tokenisation exacte des
+    references `#\\d+` : la PR doit apparaitre comme MOT COMPLET du message,
+    pas comme prefixe d'un identifiant plus long. Ici, le SHA absent cite
+    `#136390` (prefixe adjacent de `#13639` PR), sans citer `#13639`
+    directement : la levee doit AVERTIR (et non REFUSER)."""
+    res = run([USER_NIT, lift_citant_sha()],
+              commits=[{"oid": NIT_OID, "committedDate": at(19)}],
+              body="See #13639",
+              _absent_sha_messages={
+                  "2d6e4c3642": "fix(x): typo dans #136390 (adjacent)"})
+    assert res["blocked"] is False, "Le substring matchait `#13639` dans `#136390` → faux refus"
+    assert res["voided_lifts"] == []
+    # Avertissement OK (le SHA est bien absent et non resoluble vers la PR)
+    assert [w["sha"] for w in res["absent_sha_warnings"]] == ["2d6e4c3642"]
+
+
+def test_13641_ref_exacte_compte_toujours():
+    """Le contre-test : quand le message cite EXACTEMENT `#13639` (mot complet
+    apres `#` jusqu'au prochain non-alphanumerique), le rattachement reste
+    valide et la levee est REFUSEE. C'est la discrimination qui ferme le faux
+    positif du test precedent."""
+    res = run([USER_NIT, lift_citant_sha()],
+              commits=[{"oid": NIT_OID, "committedDate": at(19)}],
+              body="See #13639",
+              _absent_sha_messages={
+                  "2d6e4c3642": "fix(check,#13639): levee citee (#13640)"})
+    assert res["blocked"] is True
+    assert [v["sha"] for v in res["voided_lifts"]] == ["2d6e4c3642"]

@@ -1248,6 +1248,27 @@ def _sha_in_lift_claim(lift_body: str, sha: str) -> bool:
     return False
 
 
+def _message_refs_pr(message: str, pr_refs: set[str]) -> bool:
+    """Le message de commit reference-t-il exactement un PR/issue de la liste ?
+
+    Substring check trop generique : `#13639` matchait un message contenant
+    `#136390` (ticket adjacent cite par hasard), declenchant un refus au lieu
+    d'un simple avertissement (NanoClaw c.702 sur #13641). Le bon test est
+    l'extraction/tokenisation exacte des references `#\\d+` : la PR/issue
+    doit apparaitre comme un MOT COMPLET du message, pas comme prefixe d'un
+    identifiant plus long.
+
+    Retourne True si au moins une ref de `pr_refs` apparait comme token
+    isole (apres `#`, jusqu'au prochain non-alphanumerique) dans `message`.
+    """
+    if not message or not pr_refs:
+        return False
+    # Tokeniser toutes les references `#\\d+` du message, garder UNIQUEMENT
+    # la portion numerique (le `#` est implicite).
+    cited = {m.group(1) for m in re.finditer(r"#(\d+)", message)}
+    return bool(cited & pr_refs)
+
+
 def _resolve_absent_sha_messages(data: dict, cap: int = 5) -> dict[str, str]:
     """Resoudre cote serveur les SHAs cites mais absents des commits de la PR.
 
@@ -1617,7 +1638,7 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
                 if not _sha_in_lift_claim(lift_body, sha):
                     continue  # citation de contexte : ni refus, ni signalement
                 message = resolved.get(sha)
-                if message and any(f"#{n}" in message for n in pr_refs):
+                if message and _message_refs_pr(message, pr_refs):
                     refused = sha  # rembobine ET rattache : la levee est nue
                     break
                 warned = sha  # non resoluble ou sans rapport : avertir
