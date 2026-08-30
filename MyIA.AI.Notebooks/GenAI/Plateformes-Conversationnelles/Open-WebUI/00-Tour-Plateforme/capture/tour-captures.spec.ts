@@ -204,18 +204,22 @@ test.describe('Tour de la plateforme — captures (compte de capture)', () => {
       await capture(page, '04-canal.png');
     });
 
-    // 5 — Paramètres personnels.
+    // 5 — Paramètres personnels. Le bouton du menu utilisateur porte le libellé
+    // FR « Menu utilisateur » (pas « account/compte/profil ») et l'entrée
+    // « Réglages » du menu déroulant est un <button>, pas un role=menuitem.
     test('05 — paramètres', async ({ page }) => {
       await page
-        .getByRole('button', { name: /account|compte|profil|profile/i })
+        .getByRole('button', { name: /menu utilisateur|user menu/i })
         .first()
         .click()
         .catch(() => {});
+      await page.waitForTimeout(500);
       await page
-        .getByRole('menuitem', { name: /settings|paramètres/i })
+        .getByRole('button', { name: /r[ée]glages|param[èe]tres|settings/i })
         .first()
         .click()
         .catch(() => {});
+      await page.waitForTimeout(1500);
       await capture(page, '05-parametres.png');
     });
 
@@ -278,8 +282,10 @@ test.describe('Tour de la plateforme — captures (compte de capture)', () => {
       await capture(page, '03-dossier-equipe.png');
     });
 
-    // 5 — mémoire (v0.10) : Menu utilisateur > Réglages > Personnalisation >
-    // Mémoire > Gérer (compte neuf → panneau « Mémoire 0 », aucun souvenir réel).
+    // 5 — mémoire (v0.10) : Menu utilisateur > Réglages > Personnalisation.
+    // Compte neuf → panneau « Saved Memories 0 » (aucun souvenir réel). En v0.11
+    // l'état vide de la section Mémoire est visible sur l'onglet Personnalisation,
+    // sans bouton « Gérer » (l'UX v0.10 qui ouvrait un sous-dialogue a été remplacée).
     test('05 — mémoire (v0.10)', async ({ page }) => {
       await page.goto(URL!);
       await page.waitForLoadState('networkidle').catch(() => {});
@@ -296,23 +302,18 @@ test.describe('Tour de la plateforme — captures (compte de capture)', () => {
         .first()
         .click()
         .catch(() => {});
-      await page.waitForTimeout(1000);
+      await page.waitForTimeout(1200);
       const dialog = page.locator('[role="dialog"], .modal').last();
-      // Onglet Personnalisation → section Mémoire → bouton « Gérer ».
+      // Onglet Personnalisation → section Mémoire (état vide directement visible).
       await dialog
         .getByText(/personnalisation|personalization/i)
         .first()
         .click()
         .catch(() => {});
-      await page.waitForTimeout(800);
-      await dialog
-        .getByRole('button', { name: /g[ée]rer|manage/i })
-        .first()
-        .click()
-        .catch(() => {});
+      await page.waitForTimeout(1200);
       await page
         .getByText(
-          /aucun|les souvenirs|no memories|seront affich/i,
+          /les souvenirs|saved memories|aucun|seront affich/i,
         )
         .first()
         .waitFor({ state: 'visible', timeout: 8000 })
