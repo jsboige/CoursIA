@@ -10,19 +10,17 @@ name: Windows Self-Hosted Tests
 # Chaque dispatch consomme donc l'enregistrement courant : un dispatch,
 # un job, un runner. Ne pas dispatcher deux fois de suite sans avoir
 # re-enregistre un runner.
+#
+# Deux jobs, groupes de concurrence SEPARES : un dispatch confinement
+# n'annule pas un dispatch .NET en cours (et inversement). Justification :
+# restore NuGet GradeBookApp.Tests (Lucene.NET/ClosedXML/CsvHelper) prend
+# ~3-5 min ; cancel-in-progress croise gaspillerait ce travail.
 
 on:
   workflow_dispatch:
 
 permissions:
   contents: read
-
-# Un runner ephemeral ne peut prendre qu'un job a la fois : un second
-# dispatch resterait en file pour toujours (plus de runner apres le 1er job).
-# cancel-in-progress annule la file precedente au lieu de l'empiler.
-concurrency:
-  group: windows-self-hosted-tests
-  cancel-in-progress: true
 
 jobs:
   windows-confinement-tests:
@@ -35,6 +33,9 @@ jobs:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: [self-hosted, coursia-ephemeral, coursia-fast-guards]
     timeout-minutes: 15
+    concurrency:
+      group: windows-self-hosted-confinement
+      cancel-in-progress: true
 
     steps:
       - uses: actions/checkout@v4
@@ -53,3 +54,53 @@ jobs:
       # sur l'hote : toutes les mutations passent par des callables injectes.
       - name: Run Windows-confinement tests
         run: python -m pytest scripts/tests/test_manage_self_hosted_runner.py -v
+
+  windows-dotnet-tests:
+    # Job GradeBookApp.Tests -- mission ai-01 chiffree dans #13378 :
+    # valider que le runner Windows `myia-po-2024-fast-guards` peut absorber
+    # un job .NET 9 (csproj Lucene.NET/ClosedXML/CsvHelper). Identity proof
+    # + restore + build Release + test xunit avec TRX logger.
+    name: GradeBookApp.Tests (Windows runner)
+    # Garde fork explicite au niveau job (cf job ci-dessus rationale partagee).
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, coursia-ephemeral, coursia-fast-guards]
+    timeout-minutes: 20
+    # Groupe separe : un dispatch .NET ne doit PAS annuler un dispatch
+    # confinement en cours, et inversement (restore NuGet = ~3-5 min).
+    concurrency:
+      group: windows-self-hosted-dotnet
+      cancel-in-progress: true
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Preuve d'identite du runner + contexte d'execution.
+      - name: Identity proof
+        shell: pwsh
+        run: |
+          Write-Output "runner.name=$env:RUNNER_NAME"
+          Write-Output "runner.os=$env:RUNNER_OS"
+          Write-Output "runner.arch=$env:RUNNER_ARCH"
+          Write-Output "runner.temp=$env:RUNNER_TEMP"
+          dotnet --info | Out-String | Write-Output
+          python --version
+          python -m pip --version
+
+      - name: Set up .NET 9
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      # Restore explicite : le projet GradeBookApp.Tests reference
+      # GradeBookApp.csproj (Lucene.NET 4.8.0-beta00017 + ClosedXML 0.105.0
+      # + CsvHelper 33.1.0). Premier run valide que ces packages NuGet
+      # arrivent bien sur le runner (sinon INTRINSIC reseau a documenter).
+      - name: dotnet restore
+        run: dotnet restore GradeBookApp.Tests/GradeBookApp.Tests.csproj
+
+      - name: dotnet build
+        run: dotnet build GradeBookApp.Tests/GradeBookApp.Tests.csproj --no-restore --configuration Release
+
+      - name: dotnet test
+        run: dotnet test GradeBookApp.Tests/GradeBookApp.Tests.csproj --no-build --configuration Release --logger "trx;LogFileName=gradebook-tests.trx"
+
