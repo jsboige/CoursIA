@@ -44,7 +44,7 @@ La série traverse cinq grandes familles algorithmiques, des méthodes exhaustiv
 **Objectif** : Maîtriser la recherche exhaustive et comprendre pourquoi elle est insuffisante.
 
 **Notebooks recommandés** :
-1. `Sudoku-0-Environment-Csharp` ou comprendre la structure des données
+1. `Sudoku-00-Environment-Csharp` ou comprendre la structure des données
 2. `Sudoku-01-Backtracking-Csharp` (ou Python) : Premier algorithme de résolution
 3. `Sudoku-07-Norvig-Csharp` : Voir comment la propagation accélère drastiquement
 
@@ -631,7 +631,7 @@ Sudoku/
 ├── requirements.txt                       # Dépendances Python (19 notebooks Python canoniques, dont 16 paires miroir C#/Python + 3 only-Python : NN 16 + LLM 17 + Statistical-Comparison 18b)
 ├── choco-solver-4.10.17-jar-with-dependencies.jar  # JAR Choco (utilisé par nb-11 Python via JPype)
 ├── org.chocosolver.solver.dll             # DLL Choco précompilée (utilisée par nb-11 C# via IKVM)
-├── Sudoku-0-Environment-Csharp.ipynb      # Classes de base C#
+├── Sudoku-00-Environment-Csharp.ipynb      # Classes de base C#
 ├── Sudoku-01-Backtracking-Csharp.ipynb     # Backtracking C#
 ├── Sudoku-01-Backtracking-Python.ipynb     # Backtracking Python
 ├── Sudoku-02-DancingLinks-Csharp.ipynb     # Dancing Links C#

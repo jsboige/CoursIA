@@ -5,6 +5,10 @@ The lane-claim-guard advisory job (#10223) calls this helper with the PR body
 file. The helper extracts the Grain: lane, walks the PR body for any
 `paths: <glob>, ...` clause (the lane's declared scope), and emits one GitHub
 `::warning::` annotation per glob that matches zero tracked files in the repo.
+A SECOND channel emits `::notice::` annotations for the missing-comma motif
+(B of #13129): when a glob is SPACE-separated and at least two of its
+fragments LOOK path-shaped, the parser treated the whole string as ONE glob
+that matches nothing -- the lane almost certainly meant a comma between them.
 
 The annotation format `::warning file=<path>,title=...::msg` is rendered by
 GitHub Actions in the PR Checks panel and the Files tab. The lane sees the
@@ -17,6 +21,19 @@ mechanism as `_run_check`) and `_suggest_path_correction` (which mirrors the
 proximity heuristic introduced by this PR). The caller shell iterates over
 the printed lines and emits them; the helper never blocks the advisory job.
 
+#13486: motif B detection (missing comma between globs) lives HERE -- the
+SINGLE machinerie for hints. `check_lane_claim.py` was historically the
+first host (it had `_looks_like_missing_comma`), but the #13129 acceptance
+specifies a single pipeline; the helper exposes the function as
+`_missing_comma_tokens(glob)` and `check_lane_claim.py` delegates.
+
+#13486 acceptance (3) : `dead_scope_suggestions` is a JSON line emitted on
+stdout AFTER the GitHub annotations, structured as
+`{"dead_scope_suggestions": [{"glob": "<g>", "hint": "<h>", "tokens": [...]}]}`
+consumable by lane scripts / `pick_idle_grain.py`. When no suggestion fires,
+the line is `{"dead_scope_suggestions": []}` -- consumers can rely on the
+key being present (cheap parser), not on its non-emptiness.
+
 Exit codes:
   0  annotations printed (or no dead globs found)
   1  body file unreadable, or git walk failed -- the caller should still
@@ -25,6 +42,7 @@ Exit codes:
 from __future__ import annotations
 
 import argparse
+import json
 import re
 import sys
 from pathlib import Path
@@ -50,6 +68,41 @@ _PATHS_LINE_RE = re.compile(
     r"(?:^|\n)\s*paths\s*:\s*(.+?)(?=\s*(?:--|—|–)|\n\s*\n|$)",
     re.IGNORECASE,
 )
+
+# #13129 motif B (canonical home: this file -- #13486). The mistake pattern
+# is `paths: a.py b.py` where the writer forgot the comma; the parser treats
+# the whole thing as ONE glob that matches nothing. We flag when a glob
+# contains a SPACE and at least two SPACE-separated tokens each LOOK like a
+# path (contain a `/` OR end with a tracked-file extension).
+_PATHLIKE_TOKEN_RE = re.compile(
+    r"[^\s/]+(?:/[^\s/]+)+|\S+\.(?:py|yml|yaml|md|ipynb|lean|ps1|sh|json|cs|cpp|hpp|go|rs|ts|tsx|js|jsx|txt|csv)"
+)
+
+
+def _missing_comma_tokens(glob: str) -> list[str] | None:
+    """Return the SPACE-separated tokens if the glob looks like a missing-comma typo (#13129 motif B).
+
+    Heuristic: the glob has whitespace AND `>=2` tokens each look path-shaped
+    (slashed OR ending in a tracked-file extension). Returns None when the
+    heuristic does not fire -- the glob is a single path with possible
+    whitespace, not a typo. Conservative: a single path-shaped token does
+    NOT trigger the suggestion (a space inside a filename is rare but
+    legal; the cost of a false positive is a confusing suggestion, the cost
+    of a false negative is silent dead-glob, which is the existing bug we
+    are not making worse).
+
+    This is the SINGLE machinerie for motif B detection (#13486). The
+    previous duplicate in `check_lane_claim.py` now delegates here.
+    """
+    if not glob or " " not in glob:
+        return None
+    tokens = glob.split()
+    if len(tokens) < 2:
+        return None
+    pathlike = [t for t in tokens if _PATHLIKE_TOKEN_RE.match(t)]
+    if len(pathlike) < 2:
+        return None
+    return pathlike
 
 
 def _extract_paths_in_body(body: str) -> list[str]:
@@ -101,17 +154,52 @@ def _git_tracked() -> list[str] | None:
         return None
 
 
-def _emit_annotations(dead_globs: list[str]) -> list[str]:
-    """Render one `::warning::` line per dead glob."""
-    out: list[str] = []
+def _emit_annotations(
+    dead_globs: list[str],
+) -> tuple[list[str], list[dict]]:
+    """Render one annotation line per dead glob + collect suggestions.
+
+    Returns ``(annotation_lines, suggestions)``. Each suggestion is a dict
+    ``{"glob": <str>, "hint": <str>, "tokens": [<str>, ...]}`` consumable
+    by `dead_scope_suggestions` JSON (see module docstring, #13486).
+
+    Motif B (`paths: a.py b.py` missing comma) is detected BEFORE the
+    dead-glob check: when the glob trips the missing-comma heuristic, the
+    annotation is `::notice::` (not `::warning::`) because the deadness is
+    *explained* by the typo, not by an unrecoverable gap. The lane is told
+    to ADD A COMMA -- the path-shaped tokens are valid, the glob is wrong.
+    """
+    annotations: list[str] = []
+    suggestions: list[dict] = []
     for g in dead_globs:
-        out.append(
-            f"::warning file={g},title=Dead scope glob (#13129)::"
-            f"your declared scope contains a glob that matches zero tracked "
-            f"files in this repo. Reissue with a valid path. Live globs in "
-            f"the same scope continue to carry disjointness."
-        )
-    return out
+        pathlike_tokens = _missing_comma_tokens(g)
+        if pathlike_tokens:
+            candidates = ", ".join(repr(t) for t in pathlike_tokens)
+            annotations.append(
+                f"::notice file={g},title=Missing comma in scope glob "
+                f"(#13129 motif B)::"
+                f"glob looks like {len(pathlike_tokens)} separate paths "
+                f"joined by SPACE instead of COMMA: {candidates}. "
+                f"Rewrite as `paths: <comma-separated>`."
+            )
+            suggestions.append({
+                "glob": g,
+                "hint": "missing_comma",
+                "tokens": list(pathlike_tokens),
+            })
+        else:
+            annotations.append(
+                f"::warning file={g},title=Dead scope glob (#13129)::"
+                f"your declared scope contains a glob that matches zero tracked "
+                f"files in this repo. Reissue with a valid path. Live globs in "
+                f"the same scope continue to carry disjointness."
+            )
+            suggestions.append({
+                "glob": g,
+                "hint": "dead_glob",
+                "tokens": [],
+            })
+    return annotations, suggestions
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -144,8 +232,13 @@ def main(argv: list[str] | None = None) -> int:
     except Exception:
         return 1
 
-    for line in _emit_annotations(dead):
+    annotations, suggestions = _emit_annotations(dead)
+    for line in annotations:
         print(line)
+    # #13486 acceptance (3): emit JSON line so lane scripts / pick_idle_grain
+    # can consume the structured suggestions without re-parsing stdout.
+    # Key always present (cheap consumer), value [] when nothing fires.
+    print(json.dumps({"dead_scope_suggestions": suggestions}, sort_keys=True))
     return 0
 
 
