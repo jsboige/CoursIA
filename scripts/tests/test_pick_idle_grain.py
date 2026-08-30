@@ -421,6 +421,89 @@ def test_without_review_points_a_fresh_lone_red_still_draws(monkeypatch):
     assert len(out["red"]) == 1
 
 
+def _pr_with_author(n, lane, age_hours, author):
+    pr = _pr(n, lane, age_hours)
+    pr["author"] = {"login": author}
+    return pr
+
+
+def test_base_inherited_red_is_not_the_lanes(monkeypatch):
+    """#13545 : 11 PRs / 4 lanes accusees pour un seul defaut de main.
+
+    Le meme check requis en echec chez un AUTEUR distinct = corroboration :
+    le rouge est impute a la base, retire du refus de la lane, et rapporte
+    comme tache coordinateur avec ses corroborations.
+    """
+    red = _state(checks=[("Scripts Tests (CPU)", "FAILURE", True),
+                         ("PR gate", "FAILURE", True)])
+    _patch_backlog(monkeypatch, [
+        _pr_with_author(1, "myia-po-2023:CoursIA", 30, "myia-po-2023"),
+        _pr_with_author(2, "myia-po-2026:CoursIA-2", 5, "myia-po-2026"),
+    ], {1: red, 2: red})
+    out = pig.red_backlog("myia-po-2023:CoursIA", 24, count_threshold=3)
+    assert out["red"] == []            # rien d'imputable a la lane
+    assert out["aged"] == []
+    assert out["triggers"] == []       # pas de refus de tirage
+    assert {i["check"] for i in out["base_inherited"]} == {
+        "Scripts Tests (CPU)", "PR gate"}
+    wits = next(i["corroborated_by"] for i in out["base_inherited"]
+                if i["check"] == "Scripts Tests (CPU)")
+    assert 1 in wits and 2 in wits    # la lane ET l'etrangere corroborent
+
+
+def test_same_author_failures_are_not_imputed(monkeypatch):
+    """Controle negatif : deux PRs du MEME auteur ne se corroborent pas.
+
+    Une lane qui casse le meme ratchet sur 2 PRs porte 2 defauts a elle --
+    les imputer a la base transformerait un motif de refus legitime en
+    silence complice.
+    """
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    _patch_backlog(monkeypatch, [
+        _pr_with_author(1, "myia-po-2023:CoursIA", 30, "myia-po-2023"),
+        _pr_with_author(2, "myia-po-2023:CoursIA", 30, "myia-po-2023"),
+    ], {1: red, 2: red})
+    out = pig.red_backlog("myia-po-2023:CoursIA", 24, count_threshold=3)
+    assert [r["number"] for r in out["red"]] == [1, 2]
+    assert out["base_inherited"] == []
+    assert "aged" in out["triggers"]
+
+
+def test_inheritance_does_not_swallow_other_causes(monkeypatch):
+    """L'imputation retire le CHECK herite, pas les autres causes de la PR.
+
+    Une PR dont le check herite de la base MAIS qui conflit avec main reste
+    rouge : le conflit est bien le sien.
+    """
+    red = _state(checks=[("Scripts Tests (CPU)", "FAILURE", True)],
+                 mergeable="CONFLICTING")
+    _patch_backlog(monkeypatch, [
+        _pr_with_author(1, "myia-po-2023:CoursIA", 30, "myia-po-2023"),
+        _pr_with_author(2, "myia-po-2026:CoursIA-2", 5, "myia-po-2026"),
+    ], {1: red, 2: red})
+    out = pig.red_backlog("myia-po-2023:CoursIA", 24, count_threshold=3)
+    assert [r["number"] for r in out["red"]] == [1]
+    assert out["red"][0]["causes"] == ["conflits avec main -> rebaser"]
+
+
+def test_required_failure_links_advisory_as_its_probable_cause():
+    """#13545 (presentation) : l'agregateur requis et sa cause advisory ne
+    s'affichent plus comme deux lignes qui se contredisent.
+
+    « check requis en echec : PR gate » puis « diagnostic, non bloquant :
+    Scripts Tests (CPU) » sur le MEME rouge est illisible au moment ou le
+    message compte : la deuxieme ligne doit dire qu'elle est la CAUSE
+    probable de la premiere.
+    """
+    state = _state(checks=[("PR gate", "FAILURE", True),
+                           ("Scripts Tests (CPU)", "FAILURE", False)])
+    causes = pig.blocking_causes(state)
+    assert "check requis en echec : PR gate" in causes
+    linked = [c for c in causes if "Scripts Tests (CPU)" in c]
+    assert len(linked) == 1
+    assert "cause probable du requis" in linked[0]
+
+
 def test_untagged_blocked_prs_are_counted_but_never_attributed(monkeypatch):
     """Portee ecrite : ce que le garde NE couvre PAS.
 
@@ -477,6 +560,133 @@ def test_network_failure_does_not_block_the_draw(monkeypatch):
     out = pig.red_backlog("myia-po-2026:CoursIA", 24)
     assert out["red"] == [] and out["unavailable"] == "RuntimeError"
     assert out["unattributed_blocked"] == []
+
+
+# --- orphelines du tag Grain : le constat doit porter sa route (#13086) -------
+
+
+def _orphan_pr(n, age_hours, author, branch):
+    pr = _pr(n, None, age_hours)
+    pr["author"] = {"login": author}
+    pr["headRefName"] = branch
+    return pr
+
+
+def test_unattributed_blocked_prs_carries_the_route(monkeypatch):
+    """`--orphans-report` et `red_backlog` partagent la meme detection, et le
+    resultat porte author+branch : un constat sans destinataire n'est pas un
+    routage. Les untagged SANS rouge et les taggees ne comptent pas.
+    """
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    green = _state(checks=[("PR gate", "SUCCESS", True)])
+    tagged = _pr(1, "myia-po-2023:CoursIA", 50)
+    tagged.update(author={"login": "myia-po-2023"}, headRefName="feature/ok")
+    fresh_unblocked = _orphan_pr(2, 1, "myia-po-2024", "feature/fresh")
+    prs = [
+        tagged,
+        fresh_unblocked,
+        _orphan_pr(3, 30, "myia-po-2023", "feature/old"),
+        _orphan_pr(4, 8, "myia-po-2023", "feature/mid"),
+        _orphan_pr(5, 40, "jsboige", "feature/user"),
+    ]
+    monkeypatch.setattr(pig, "fetch_open_prs", lambda: prs)
+    monkeypatch.setattr(
+        pig, "fetch_pr_states",
+        lambda nums: {n: (red if n in (3, 4, 5) else green) for n in nums})
+    out = pig.unattributed_blocked_prs()
+    assert [r["number"] for r in out] == [5, 3, 4]  # tri par age decroissant
+    assert all(r["author"] and r["branch"] for r in out)
+    assert out[0]["author"] == "jsboige" and out[0]["branch"] == "feature/user"
+
+
+def test_red_backlog_unattributed_now_carries_the_route(monkeypatch):
+    """Le champ historique `unattributed_blocked` est ENRICHI (auteur, branche),
+    pas remplace : le skill coordinate lit ce champ, il gagne la route sans
+    changer de canal.
+    """
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    orphan = _orphan_pr(9, 12, "myia-po-2023", "feature/x")
+    _patch_backlog(monkeypatch, [_pr(1, "myia-po-2026:CoursIA", 30), orphan],
+                   {1: red, 9: red})
+    out = pig.red_backlog("myia-po-2026:CoursIA", 24, count_threshold=99)
+    assert out["unattributed_blocked"][0]["author"] == "myia-po-2023"
+    assert out["unattributed_blocked"][0]["branch"] == "feature/x"
+
+
+def test_build_orphans_comment_names_each_orphan_with_author_and_branch():
+    """Le commentaire est le routage : chaque orpheline y est nommee avec son
+    auteur et sa branche, groupees par auteur, entre marqueurs upsert.
+    """
+    orphans = [
+        {"number": 5, "title": "fix thing", "author": "jsboige",
+         "branch": "feature/user", "age_hours": 40},
+        {"number": 3, "title": "other thing", "author": "myia-po-2023",
+         "branch": "feature/old", "age_hours": 30},
+    ]
+    body = pig.build_orphans_comment(orphans)
+    assert pig.ORPHANS_MARKER_START in body and pig.ORPHANS_MARKER_END in body
+    assert "**jsboige** (1)" in body and "**myia-po-2023** (1)" in body
+    assert "#5" in body and "#3" in body
+    assert "`feature/user`" in body and "`feature/old`" in body
+    assert "#13086" in body
+
+
+def test_build_orphans_comment_empty_writes_zero_not_silence():
+    """Un balayage muet est indiscernable d'un balayage mort : le cas vide
+    s'ECRIT (zero date), il ne disparait pas.
+    """
+    body = pig.build_orphans_comment([])
+    assert pig.ORPHANS_MARKER_START in body and pig.ORPHANS_MARKER_END in body
+    assert ": 0." in body
+
+
+def test_orphans_report_mode_dry_run_by_default(monkeypatch, capsys):
+    """Sans --apply-comment : impression seule, AUCUN appel gh d'ecriture.
+    Le mode ne demande pas --lane (la file est lane-independante).
+    """
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    monkeypatch.setattr(pig, "fetch_open_prs",
+                        lambda: [_orphan_pr(9, 5, "myia-po-2023", "feature/x")])
+    monkeypatch.setattr(pig, "fetch_pr_states", lambda nums: {9: red} if 9 in nums else {})
+    def no_post(number, body):
+        raise AssertionError(f"upsert appele en dry-run sur #{number}")
+    monkeypatch.setattr(pig, "upsert_orphans_comment", no_post)
+    rc = pig.main(["--orphans-report"])
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert pig.ORPHANS_MARKER_START in out and "#9" in out
+
+
+def test_orphans_report_apply_upserts_the_comment(monkeypatch, capsys):
+    """Avec --apply-comment N : l'upsert marker-guarde part exactement une fois
+    sur l'issue demandee.
+    """
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    monkeypatch.setattr(pig, "fetch_open_prs",
+                        lambda: [_orphan_pr(9, 5, "myia-po-2023", "feature/x")])
+    monkeypatch.setattr(pig, "fetch_pr_states", lambda nums: {9: red} if 9 in nums else {})
+    calls = []
+    monkeypatch.setattr(pig, "upsert_orphans_comment",
+                        lambda number, body: calls.append((number, body)))
+    rc = pig.main(["--orphans-report", "--apply-comment", "13086"])
+    assert rc == 0
+    assert calls and calls[0][0] == 13086
+    assert pig.ORPHANS_MARKER_START in calls[0][1]
+    assert "mis a jour sur #13086" in capsys.readouterr().out
+
+
+def test_lane_still_required_outside_orphans_report(monkeypatch, capsys):
+    """--lane reste OBLIGATOIRE sur le chemin de tirage : le passage de
+    `required=True` a la validation manuelle ne doit pas ouvrir un tirage
+    sans lane (la graine et le garde en dependent).
+    """
+    try:
+        pig.main([])
+    except SystemExit as exc:
+        assert exc.code != 0
+        assert "--lane" in capsys.readouterr().err
+    else:
+        raise AssertionError("main([]) sans --lane doit sortir en erreur")
 
 
 # --- echecs perimes : le discriminant est temporel, jamais nominal -----------
@@ -568,6 +778,90 @@ def test_file_saturation_detected_when_all_checks_pending():
     assert any("file_saturation" in c for c in causes)
     # La cause doit nommer le geste -- la lane peut commenter, pas rerun seule.
     assert any("commenter la PR" in c for c in causes)
+
+
+# --- #13420 : la saturation date les CHECKS, pas la PR ---------------------
+#
+# Defaut mesure le 2026-08-29 : #12757 (ouverte 121 h) et #12850 (109 h)
+# etaient annoncees "1 check requis en PENDING depuis >24h (cause infra)"
+# alors que leurs checks avaient demarre a 11:39:44Z, soit 25 min plus tot.
+# Le detecteur lisait `age_hours` (age de la PR) et jamais `startedAt`.
+# Consequence : le geste prescrit (--ignore-red ou re-run) etait l'inverse du
+# bon -- re-run RE-EMPILE dans la file dite saturee, --ignore-red pousse la
+# lane devant un garde qui allait repondre. Le bon geste est d'attendre.
+
+
+def _pending_started(when):
+    """PR ancienne (120 h) dont l'unique check requis a demarre a `when`."""
+    return {
+        "number": 1, "mergeable": "MERGEABLE",
+        "reviews": {"nodes": []},
+        "commits": {"nodes": [{"commit": {"statusCheckRollup": {
+            "state": "PENDING",
+            "contexts": {"nodes": [
+                {"name": "PR gate", "conclusion": None, "state": "PENDING",
+                 "isRequired": True, "startedAt": when},
+            ]}}}}]},
+    }
+
+
+def _iso_ago(hours):
+    import datetime as _dt
+    return (_dt.datetime.now(_dt.timezone.utc)
+            - _dt.timedelta(hours=hours)).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def test_13420_check_frais_sur_pr_ancienne_nest_pas_une_saturation():
+    """Le cas mesure : PR ouverte depuis 120 h, check demarre il y a 25 min.
+
+    La file AVANCE. Annoncer une saturation ici prescrit exactement le mauvais
+    geste. CE TEST ECHOUE SI LE DETECTEUR REDEVIENT DATE SUR LA PR.
+    """
+    state = _pending_started(_iso_ago(0.42))  # ~25 min
+    assert pig.file_saturation_cause(state, age_hours=120, threshold_hours=24) is None
+
+
+def test_13420_controle_positif_file_reellement_figee_detectee():
+    """Controle positif -- sans lui, un detecteur simplement ETEINT passerait
+    le test precedent. Meme PR, meme forme, mais le check n'a pas bouge depuis
+    50 h : c'est la vraie saturation, elle DOIT etre annoncee."""
+    state = _pending_started(_iso_ago(50))
+    cause = pig.file_saturation_cause(state, age_hours=120, threshold_hours=24)
+    assert cause is not None
+    assert "file-saturation" in cause
+
+
+def test_13420_frontiere_juste_sous_le_seuil_ne_declenche_pas():
+    """Temoin de frontiere : 23 h < 24 h -> pas de saturation."""
+    state = _pending_started(_iso_ago(23))
+    assert pig.file_saturation_cause(state, age_hours=120, threshold_hours=24) is None
+
+
+def test_13420_sans_horodatage_lisible_on_retombe_sur_lage_de_la_pr():
+    """Un champ absent prive le detecteur de precision, il ne l'eteint pas :
+    sans `startedAt` ni `createdAt`, le comportement historique (age de la PR)
+    reste en vigueur."""
+    state = _pending_started(None)
+    cause = pig.file_saturation_cause(state, age_hours=120, threshold_hours=24)
+    assert cause is not None and "file-saturation" in cause
+
+
+def test_13420_horodatage_illisible_ne_leve_pas_dexception():
+    """Une chaine non-ISO ne doit pas casser un tour de picker."""
+    state = _pending_started("pas-une-date")
+    assert pig.file_saturation_cause(
+        state, age_hours=120, threshold_hours=24) is not None
+
+
+def test_13420_le_plus_recent_gagne_sur_les_anciens():
+    """Dix checks vieux + un frais = la file a bouge. On date sur le PLUS
+    RECENT, parce que la question est 'la file avance-t-elle ?'."""
+    state = _pending_started(_iso_ago(50))
+    nodes = state["commits"]["nodes"][0]["commit"]["statusCheckRollup"]["contexts"]["nodes"]
+    nodes.append({"name": "Always-on guards", "conclusion": None,
+                  "state": "PENDING", "isRequired": True,
+                  "startedAt": _iso_ago(0.2)})
+    assert pig.file_saturation_cause(state, age_hours=120, threshold_hours=24) is None
 
 
 def test_file_saturation_not_detected_when_a_check_is_success():

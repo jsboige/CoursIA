@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: Probas
-pedagogical_count: 58
-breakdown: Infer=19, PyMC=19, DecisionTheory=18, root=2
-maturity: BETA=58
+pedagogical_count: 65
+breakdown: DecisionTheory=23, Infer=20, PyMC=19, root=3
+maturity: BETA=65
 -->
 
 > **À propos des décomptes** : le marqueur `CATALOG-STATUS` ci-dessus est la **source de vérité autoritative** pour les volumes (notebooks par sous-série, maturité). Il est régénéré chaque nuit par le workflow [`catalog-cron.yml`](../../.github/workflows/catalog-cron.yml) à 03:37 UTC sur `main` (commit `[skip ci]` par `github-actions[bot]`). Pour les **décomptes par kernel** (C#/.NET vs Python vs Lean 4) au sein d'une sous-série — c'est-à-dire la répartition **technique** par interpréteur —, ce README reste autoritatif car la décomposition langagière par sous-série n'est pas dans le marqueur agrégé ; cette granularité est documentée ici par lecture directe des `metadata.kernelspec.language` des notebooks (`28 C# + 29 Python + 2 Lean 4 = 59 ✓` au 22/08/2026). Si vous observez un décalage entre ce marqueur et une phrase en prose de ce README, **fiez-vous au marqueur** ; la prose sera ré-alignée manuellement lors du prochain passage.
@@ -349,7 +349,7 @@ Port Python des modèles Infer.NET, utilisant l'échantillonnage MCMC (NUTS) au 
 | 4 | [PyMC-4-Bayesian-Networks](PyMC/PyMC-4-Bayesian-Networks.ipynb) | Réseaux bayésiens, CPTs |
 | 5 | [PyMC-7-Skills-IRT](PyMC/PyMC-7-Skills-IRT.ipynb) | Item Response Theory, modèles de compétences |
 | 6 | [PyMC-8-TrueSkill](PyMC/PyMC-8-TrueSkill.ipynb) | Classement, TrueSkill |
-| 7 | [PyMC-9-Classification](PyMC/PyMC-9-Classification.ipynb) | Classification bayésienne |
+| 7 | [PyMC-9-Classification](PyMC/PyMC-9-Classification.ipynb) | Classification bayésienne, calibration mesurée |
 | 8 | [PyMC-10-Model-Selection](PyMC/PyMC-10-Model-Selection.ipynb) | Sélection de modèles, Bayes Factors |
 | 9 | [PyMC-11-Topic-Models](PyMC/PyMC-11-Topic-Models.ipynb) | LDA, Dirichlet priors |
 | 10 | [PyMC-13-Crowdsourcing](PyMC/PyMC-13-Crowdsourcing.ipynb) | Agrégation de labels, workers, communautés |
@@ -387,7 +387,7 @@ Port Python des modèles Infer.NET, utilisant l'échantillonnage MCMC (NUTS) au 
 | 16 | [PyMC-12-Modeles-Hierarchiques](PyMC/PyMC-12-Modeles-Hierarchiques.ipynb) | Partial pooling bayésien, shrinkage, paramétrisation non-centrée, divergences NUTS comme diagnostic du funnel |
 | 17 | [PyMC-17-Kalman-Filter](PyMC/PyMC-17-Kalman-Filter.ipynb) | Système dynamique linéaire gaussien, récursion de filtrage fermée, value-add MCMC (estimation jointe Q/R/drift) |
 | 18 | [PyMC-18-Change-Point](PyMC/PyMC-18-Change-Point.ipynb) | Change-point bayésien, `DiscreteUniform` + `switch`, catastrophes minières (Poisson), entropie |
-| 19 | [PyMC-19-Survival-Analysis](PyMC/PyMC-19-Survival-Analysis.ipynb) | Analyse de survie, exponentiel conjugué (Gamma), forme Weibull `k` inférée directement (NUTS), sélection LOO (arviZ) |
+| 19 | [PyMC-19-Survival-Analysis](PyMC/PyMC-19-Survival-Analysis.ipynb) | Analyse de survie, exponentiel conjugué (Gamma), forme Weibull `k` inférée directement (NUTS), sélection LOO (arviZ), censure à droite exécutée (naïf vs `S(c_i)` vs Kaplan–Meier) |
 
 ## Pont causal — les quatre séries causales réunies
 

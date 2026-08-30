@@ -30,7 +30,9 @@ CI_DIR = Path(__file__).resolve().parents[1] / "ci"
 sys.path.insert(0, str(CI_DIR))
 
 import fast_lane  # noqa: E402
-from fast_lane_registry import PILOT, TRANCHE1, Guard  # noqa: E402
+from fast_lane_registry import (  # noqa: E402
+    FAST_LANE_NATIVE, PILOT, TRANCHE1, TRANCHE2, TRANCHE3, TRANCHE4, TRANCHE5, Guard,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -238,9 +240,32 @@ WORKFLOWS = Path(__file__).resolve().parents[2] / ".github" / "workflows"
 
 
 def test_every_pilot_guard_names_an_existing_workflow():
+    """Tracabilite : chaque garde dit quel workflow il dedouble -- ou qu'il n'en
+    dedouble aucun.
+
+    L'assertion reste STRICTE : seule la valeur exacte `FAST_LANE_NATIVE` est
+    admise comme "pas de workflow d'origine". Un `source` libre ou une faute de
+    frappe dans un nom de workflow echoue toujours, sinon la garantie de
+    tracabilite s'evaporerait a la premiere valeur fantaisiste.
+    """
     for guard in PILOT:
+        if guard.source == FAST_LANE_NATIVE:
+            continue
         assert (WORKFLOWS / guard.source).is_file(), (
             f"{guard.name} declare provenir de {guard.source}, absent du depot"
+        )
+
+
+def test_native_guards_are_declared_with_the_exact_sentinel():
+    """Controle positif du test precedent : sans lui, remplacer la sentinelle
+    par une chaine voisine ferait passer la tracabilite a la trappe en silence.
+    """
+    natifs = [g for g in PILOT if g.source == FAST_LANE_NATIVE]
+    assert natifs, "aucun garde natif : ce test ne mesure rien, le supprimer"
+    for guard in PILOT:
+        est_workflow = (WORKFLOWS / guard.source).is_file()
+        assert est_workflow or guard.source == FAST_LANE_NATIVE, (
+            f"{guard.name} : source ni workflow existant ni sentinelle exacte"
         )
 
 
@@ -581,6 +606,7 @@ def _drive_mixed_emission(monkeypatch, pilot_rc, tranche_rc):
     monkeypatch.setattr(fl, "TRANCHE1", [tranche])
     monkeypatch.setattr(fl, "TRANCHE2", [])
     monkeypatch.setattr(fl, "TRANCHE4", [])
+    monkeypatch.setattr(fl, "TRANCHE5", [])
     monkeypatch.setattr(fl, "changed_files", lambda _ref: ["x.ipynb"])
     monkeypatch.setattr(
         fl, "run_argv",
@@ -672,6 +698,7 @@ def test_pre_argv_failure_short_circuits_the_guard(monkeypatch):
     monkeypatch.setattr(fl, "TRANCHE1", [guard])
     monkeypatch.setattr(fl, "TRANCHE2", [])
     monkeypatch.setattr(fl, "TRANCHE4", [])
+    monkeypatch.setattr(fl, "TRANCHE5", [])
     monkeypatch.setattr(fl, "changed_files", lambda _ref: ["x.ipynb"])
 
     def fake_run_argv(argv, ctx):
@@ -702,6 +729,7 @@ def test_pre_argv_success_chains_into_the_scan(monkeypatch):
     monkeypatch.setattr(fl, "TRANCHE1", [guard])
     monkeypatch.setattr(fl, "TRANCHE2", [])
     monkeypatch.setattr(fl, "TRANCHE4", [])
+    monkeypatch.setattr(fl, "TRANCHE5", [])
     monkeypatch.setattr(fl, "changed_files", lambda _ref: ["x.ipynb"])
 
     def fake_run_argv(argv, ctx):
@@ -745,6 +773,7 @@ def test_warn_rc_is_success_everywhere(monkeypatch):
     monkeypatch.setattr(fl, "TRANCHE1", [guard])
     monkeypatch.setattr(fl, "TRANCHE2", [])
     monkeypatch.setattr(fl, "TRANCHE4", [])
+    monkeypatch.setattr(fl, "TRANCHE5", [])
     monkeypatch.setattr(fl, "changed_files", lambda _ref: ["x.ipynb"])
     monkeypatch.setattr(fl, "run_argv", lambda argv, ctx: (2, "illisible"))
     monkeypatch.setattr(
@@ -780,6 +809,7 @@ def test_iter_paths_skips_files_deleted_by_the_pr(monkeypatch):
     monkeypatch.setattr(fl, "TRANCHE1", [])
     monkeypatch.setattr(fl, "TRANCHE2", [fig])
     monkeypatch.setattr(fl, "TRANCHE4", [])
+    monkeypatch.setattr(fl, "TRANCHE5", [])
 
     # Un notebook REEL (pour le cas here) + un chemin absent (gone) : le
     # filtre doit garder le premier et ecarter le second.
@@ -977,3 +1007,146 @@ def test_run_iter_fail_on_all_warn_ignores_empty_paths():
                                  [], {}, warn_rc=(2,), fail_on_all_warn=True)
     assert rc == 0
     assert "iterates_paths vide" in log
+# 9. TRANCHE 3 (#13097 remede A) : absorption de regression-guard
+# ---------------------------------------------------------------------------
+
+def test_tranche3_registry_integrity():
+    """Le garde absorbe doit reproduire le contrat du workflow d'origine :
+    nom canonique du check-run, advisory jamais bloquant, iteration par
+    notebook change, rc=2 (import casse) mappe comme l'original."""
+    assert len(TRANCHE3) == 1
+    guard = TRANCHE3[0]
+    assert guard.name == "No notebook health regression"
+    assert guard.source == "regression-guard.yml"
+    assert guard.absorbed is True
+    # ADVISORY (user 2026-06-20) : le workflow d'origine sort TOUJOURS 0 --
+    # le caractere report-only doit survivre a l'absorption.
+    assert guard.blocking is False
+    assert guard.iterates_paths is True
+    assert "{changed_paths}" in guard.argv
+    assert guard.warn_rc == (2,)
+    assert guard.needs_base is True
+
+
+def test_absorbed_guards_sources_never_fire_on_pull_request():
+    """Contrat d'absorption (TRANCHE1/2/3) : un garde absorbe rend son
+    verdict dans la lane ; si son workflow source se declenchait encore sur
+    `pull_request`, la PR recevrait DEUX check-runs du meme nom (le job
+    d'origine + la lane) et toute divergence entre les deux deviendrait un
+    faux signal. Le fichier source doit garder `workflow_dispatch` (maintien
+    manuel) mais plus jamais `pull_request`."""
+    import re as _re
+    workflows = Path(__file__).resolve().parents[2] / ".github" / "workflows"
+    for guard in TRANCHE1 + TRANCHE2 + TRANCHE3:
+        wf = workflows / guard.source
+        assert wf.is_file(), f"{guard.source} absent du depot"
+        content = wf.read_text(encoding="utf-8")
+        assert "pull_request:" not in content, (
+            f"{guard.source} porte encore un declencheur pull_request alors "
+            f"que {guard.name} est absorbe (double verdict)"
+        )
+        assert "workflow_dispatch" in content, (
+            f"{guard.source} doit garder workflow_dispatch (maintien manuel)"
+        )
+
+
+def test_tranche3_scan_paths_cover_the_scanner_itself():
+    """Une edition DU SCANNER (regression_scan.py ou ses siblings) doit
+    re-declencher le garde -- sinon un scanner casse ne serait plus jamais
+    re-examine sur les PR qui le reparent."""
+    guard = TRANCHE3[0]
+    for needle in (
+        "scripts/notebook_tools/regression_scan.py",
+        "scripts/notebook_tools/regression_allowlist.json",
+        "scripts/notebook_tools/diagnose_broken.py",
+        "scripts/notebook_tools/forensic_scan.py",
+    ):
+        assert needle in guard.paths, f"{needle} absent des paths du garde"
+
+
+# ---------------------------------------------------------------------------
+# 8. Tranche 5 d'absorption (#12567) -- testpaths vs CI coverage
+# ---------------------------------------------------------------------------
+
+def test_tranche5_guards_are_absorbed_single_testpaths_guard():
+    """Tranche 5 = un seul garde : `testpaths vs CI coverage` (derniere mono-script
+    absorbable restant apres exclusion PR-write, cf commentaire registre). Forme
+    simple : scan global, pas de base, pas d'iter_paths, pas de warn_rc, bloquant.
+    Meme squelette que la forme 1 de la tranche 1 (check-links), mais avec un
+    filtre `paths:` restrictif pour preserver le declenchement d'origine (la
+    garde ne sert que si pytest.ini ou les workflows declares bougent).
+    """
+    assert len(TRANCHE5) == 1, (
+        "la tranche 5 documente 1 seul garde (testpaths-coverage-guard) ; "
+        "si le nombre change, le commentaire du registre et ce test suivent"
+    )
+    guard = TRANCHE5[0]
+    assert guard.name == "testpaths vs CI coverage", (
+        f"nom canonique = nom de job du workflow source : "
+        f"attendu `testpaths vs CI coverage`, obtenu `{guard.name}`"
+    )
+    assert guard.absorbed, f"{guard.name} doit porter absorbed=True"
+    assert guard.blocking, (
+        f"{guard.name} remplace un gate qui rougit le job d'origine"
+    )
+    assert guard.source == "testpaths-coverage-guard.yml"
+    # Forme : pas d'iter_paths, pas de delta, pas de pre_argv, pas de warn_rc
+    # -- scan global simple comme la tranche 1 forme 1.
+    assert not guard.iterates_paths, (
+        f"{guard.name} est un scan global, pas une boucle par fichier"
+    )
+    assert not guard.delta_argv, (
+        f"{guard.name} ne delta pas vs la base (lit pytest.ini + workflows)"
+    )
+    assert not guard.pre_argv
+    assert guard.warn_rc == ()
+    # Filtre paths reporte tel quel depuis le workflow d'origine : pytest.ini
+    # + les 5 workflows declares comme sources de verite + le script lui-meme.
+    for needle in (
+        "pytest.ini",
+        "scripts/check_testpaths_coverage.py",
+        ".github/workflows/scripts-tests.yml",
+        ".github/workflows/ml-tests.yml",
+        ".github/workflows/secret-scan.yml",
+        ".github/workflows/ict-tests.yml",
+        ".github/workflows/testpaths-coverage-guard.yml",
+    ):
+        assert needle in guard.paths, (
+            f"{needle} doit figurer dans les paths du garde (declenchement "
+            f"d'origine a preserver)"
+        )
+
+
+def test_absorbed_workflows_of_tranche5_no_longer_trigger_on_pull_request():
+    """Meme contrat que les tranches 1/2/4 : un garde absorbe voit son workflow
+    d'origine retirer de `pull_request` (sinon double execution). Le fichier
+    garde `workflow_dispatch` pour le maintien manuel.
+    """
+    import re as _re
+    for guard in TRANCHE5:
+        wf = WORKFLOWS / guard.source
+        assert wf.is_file(), f"{guard.source} absent du depot"
+        txt = wf.read_text(encoding="utf-8")
+        assert not _re.search(r"^\s+pull_request:", txt, _re.M), (
+            f"{guard.source} declenche encore sur pull_request alors que "
+            f"{guard.name} est absorbe : double execution + zero run sauve"
+        )
+        assert "workflow_dispatch" in txt, (
+            f"{guard.source} doit garder workflow_dispatch (maintien manuel)"
+        )
+
+
+def test_tranche5_identity_byte_check_passes():
+    """L'organe de controle positif (check_absorbed_check_run_identity) doit
+    cimenter que `guard.name` == nom rendu par le workflow source. Tranche 5
+    ajoute TRANCHE5 a la liste des gardes absorbes a verifier ; si la liaison
+    est cassee (workflow retire trop tot, ou nom diverge), l'organe rougit."""
+    import subprocess as _sp
+    r = _sp.run(
+        ["python", "scripts/ci/check_absorbed_check_run_identity.py", "--check"],
+        capture_output=True, text=True, cwd=Path(__file__).resolve().parents[2],
+    )
+    assert r.returncode == 0, (
+        f"identity byte-check a echoue (rc={r.returncode}) : \n"
+        f"stdout={r.stdout}\nstderr={r.stderr}"
+    )

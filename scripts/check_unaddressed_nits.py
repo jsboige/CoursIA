@@ -122,7 +122,16 @@ AGENT_PREFIXES = (
 # deja exige par explicit_lifts) — un OVERRIDE nu ne leve rien. Les bornes
 # temporelles restent entieres : un override POST-merge ne peut pas avoir
 # eteint une reserve avant la decision de merge (borne #10761).
-COORDINATOR_LOGINS = {"myia-ai-01", "jsboige"}
+#
+# #13316 — jsboige n'est PAS un compte de levee : c'est l'identite de poussee
+# PARTAGEE de toutes les lanes (cf le commentaire #12319 de explicit_lifts :
+# Hermes poste sous jsboige, la lane pousse sous jsboige). Crediter jsboige
+# comme coordinateur retablit exactement ce que la borne d'auteur #11145
+# interdit — n'importe quelle lane pose un `[OVERRIDE]` sous jsboige sur sa
+# propre PR et eteint la reserve d'un tiers (#12737 : reserve ai-01 02:37:04Z,
+# « overrides » jsboige 02:40/02:41 ; classe #12798, l'auto-levee). L'arbitre
+# tiers de B.0 est la lane coordinateur dediee, et elle seule.
+LIFT_OVERRIDE_LOGINS = {"myia-ai-01"}
 # #13030 -- le marqueur doit etre POSE, pas CITE. L'ancien pattern sans
 # ancre matchait n'importe quelle mention dans le corps : le commentaire de
 # la lane #12872 qui DOCUMENTAIT l'option « (b) `[OVERRIDE] lane x` par
@@ -164,6 +173,43 @@ BLOCAGE_LANE = re.compile(r"(?m)^\s*\[(?:BLOCAGE|BLOCK)\]\s+lane\s+\S+")
 # sous-chaines citees (CITERS ligne 455+), donc ajouter un verbe n'ouvre pas la
 # porte aux faux positifs « 0 REQUEST_CHANGES » (#11916 controle negatif) :
 # CITERS inclut deja « zero » et sera etendu de « 0 » (cf ligne ~470).
+# #13559 — RESERVE SUR APPROBATION. #11677 a pose que la prose l'emporte sur
+# l'etat natif `APPROVED` : « si classify() a deja retourne un kind, c'est
+# qu'une reserve VIVANTE survit dans la prose ». L'intention est juste ; la
+# mise en oeuvre laissait tout marqueur RESIDUEL renverser l'etat, y compris
+# quand il n'est la que parce que la review NOMME la reserve qu'elle leve
+# (« depuis mon CHANGES_REQUESTED sur `ae88aefc` », #13496 ; « Conversion de
+# la reserve : CHANGES_REQUESTED (`21e0d810`) -> APPROVE », #13027).
+#
+# Mesure (30/08, 160 PR balayees, `state == "APPROVED"` + marqueur survivant
+# a `_strip_mentioned_verdicts`) : **2 occurrences, 0 vraie reserve**. Les
+# deux etaient des narrations retrospectives. Sur la fenetre mesuree,
+# l'override avait donc un taux de vrais positifs NUL — il ne mesurait plus
+# la reserve, il mesurait la mention.
+#
+# Le remede ne SUPPRIME pas l'override (le cas nomme par #11677, « j'approuve
+# mais le point 2 reste ouvert », est reel et doit continuer de bloquer) : il
+# lui demande une trace EXPLICITE de reserve. L'etat natif redevient decisif
+# par defaut, la prose garde le dernier mot quand elle reserve vraiment.
+# Volontairement LARGE : c'est le cote permissif du garde (il MAINTIENT le
+# blocage), donc un faux positif ici ne coute qu'une phrase de levee, tandis
+# qu'un trou coute un merge non mesure.
+_APPROVE_RESERVATION_RE = re.compile(
+    r"(?i)("
+    r"sous\s+r[ée]serve"
+    r"|avec\s+r[ée]serves?\b"
+    r"|r[ée]serve\s+(?:maintenue|subsiste|demeure|tient)"
+    r"|je\s+maintiens"
+    r"|je\s+conserve\s+(?:ma|mon|la)\b"
+    r"|(?:mais|toutefois|cependant|neanmoins|n[ée]anmoins)[^.\n]{0,120}?"
+    r"\b(?:reste|restent|subsiste|subsistent|demeure|demeurent"
+    r"|non\s+trait[ée]|non\s+lev[ée]|ouverte?s?|en\s+suspens)\b"
+    r"|\b(?:[àa]\s+corriger|[àa]\s+traiter|[àa]\s+adresser)\s+"
+    r"(?:avant|imp[ée]rativement)"
+    r"|\bblocage\s+maintenu\b"
+    r")"
+)
+
 CONCERN_MARKERS = (
     "COMMENT_WITH_CONCERNS", "CHANGES_REQUESTED", "REQUEST_CHANGES",
     "NEEDS_CHANGES", "CONCERNS",
@@ -235,6 +281,14 @@ CONCERN_MARKERS = CONCERN_MARKERS + BLOCK_VERDICTS
 LIFT_MARKERS = (
     "levée", "levee", "LGTM", "Mergé", "Merged", "je merge", "Merge.",
     "est adressé", "sont adressés", "sont levées", "est levée",
+    # #13635 : les formes MASCULINES de la levee passive manquaient. Le depot
+    # nomme ce qui se leve au masculin (« le concern », « le point », « le nit »)
+    # — la phrase la plus naturelle pour lever un [BOT-CONCERN] (« tes concerns
+    # sont levés ») echappait a LIFT_MARKERS, faux negatif. Miroir exact des
+    # formes feminines ci-dessus : « sont levés », « est levé ». Ces marqueurs
+    # passent par `_lift_is_negated` comme les autres (via `_live_lift_positions`),
+    # donc une negation directe (« n'est pas levé ») reste exclue.
+    "sont levés", "est levé",
     "Je lève", "Je leve", "Levée de", "Levee de",
     # #11677 : « je lève ma CHANGES_REQUESTED » (#11664 fondateur) — LIFT
     # historique ne captait que « levée » (mot complet), donc « lève ma » ne
@@ -396,7 +450,26 @@ def _lift_cancelled(stripped: str) -> bool:
 _MENTION_VERDICT = re.compile(
     r"(?i)\b(?:fix(?:ed|ée?e?)?|corrig\w+|suite\s+[àa]|en\s+r[ée]ponse\s+[àa]"
     r"|r[ée]ponse\s+[àa]|lev\w+|lift\w*|adress\w+|trait\w+|repondu\s+[àa])"
-    r"[^()\n]{0,40}\(\s*([A-Z][A-Z_]{3,})\s*\)")
+    # #12871 (cf grain) — Position A+ : tolere une prose INTERNE a la
+    # parenthese du verdict (`(COMMENT_WITH_CONCERNS, porte sur...)`) tant
+    # qu'elle ne commence pas par un verbe d'emission (`Verdict :`,
+    # `Block on`...). Le mot declencheur de mention (fix/reponse a/leve/
+    # adresse) porte deja la semantique de mention, et le verdict est
+    # encapsule entre parentheses — donc le caractere distinctif (verdict
+    # declare) est absent, c'est une mention par construction.
+    # `(?-i:)` sur le verdict : sans lui, le `(?i)` global fait que
+    # `[A-Z][A-Z_]{3,}` capture aussi un mot minuscule (`commit`) dans la
+    # parenthese — et `[^()\n]{0,80}` apres (Position A+) transforme ce
+    # faux match en neutralisation de `commit` au lieu du verdict (2 FAIL
+    # tests #11809 mesures en CI, 2026-08-28). Même discriminant case-
+    # sensitive que la Position D.
+    # #13474 — la capture A+ est POSITIONNELLE : le PREMIER token en
+    # capitales apres la parenthese ouvrante, pas « le token le plus proche
+    # du verbe d'emission ». Consequence fail-loud : si un autre marqueur
+    # majuscule precede le verdict dans la parenthese (ex `(BOT_CONCERTATION
+    # a propos du BOT_CONCERN)`), c'est BOT_CONCERTATION qui est capture et
+    # BOT_CONCERN reste emis — le garde reste bruyant.
+    r"[^()\n]{0,40}\(\s*((?-i:[A-Z][A-Z_]{3,}))[^()\n]{0,80}\)")
 
 # #12311 (cf grain) — Position A : titre de section. Le pattern historique
 # (`[A-Z]{4,}` puis `[A-Z][A-Z_]{2,}[A-Z]`) neutralisait en sous-chaine les
@@ -460,7 +533,17 @@ _MENTION_VERDICT_LIFTED = re.compile(
     r"|traite|traiter|traité|traitée|traités|traitées"
     r"|repondu|répondu|repondre|répondre"
     r"|leve|lever|levé|levée|levés|levées|lift)"
-    r"\w*\s+\((?:commit\s+[a-f0-9]+|#\d+|PR\s*#?\d+|pull/\d+)\)")
+    r"\w*"
+    # #12871 (cf grain) — Position C+ : reference pointable NUE apres le verbe
+    # de levee, dans une fenetre de 40 chars (les formes parenthesees
+    # `leve (commit <sha>)` continuent de matcher ; les formes narratives
+    # `leve par le commit <sha>` sont ajoutees). Borne courte (40 chars) pour
+    # eviter d'avaler une autre phrase ou un commentaire distinct. Le
+    # discriminant reste la piste (b) : une REF POINTABLE suit le verbe ;
+    # sans pointable (CE2), la neutralisation ne s'applique pas.
+    r"(?:\s+\((?:commit\s+[a-f0-9]+|#\d+|PR\s*#?\d+|pull/\d+)\)"
+    r"|\s+(?:par|via|dans|en)\s+(?:le\s+|la\s+|les\s+|du\s+|des\s+)?"
+    r"(?:commit\s+[a-f0-9]+|PR\s*#?\d+|#\d+|pull/\d+))")
 
 
 # #11984 — Position D : le nominal `revue` / `review` DEVANT le verdict, avec
@@ -502,12 +585,62 @@ _MENTION_VERDICT_REVIEW = re.compile(
     r"(?:"
     # Forme d'origine : ref pointable entre parentheses immediates.
     r"[^():\n.]{0,12}?"
+    # #12871 (cf grain) — Position D+ : la ref pointable peut etre NUE dans
+    # une fenetre bornee apres le verdict (les formes parenthesees
+    # `(SHA ...)` continuent de matcher ; les formes narratives
+    # `... par le commit <sha>` sont ajoutees). #13474 — la borne REELLE est
+    # {0,12} chars de gap verdict->par/via/dans/en (temoin mecanique :
+    # gap 12 matche, gap 13 ne matche plus — test_13474_* dans
+    # test_check_unaddressed_nits.py) ; le long-format releve de la Position
+    # E (fenetre 200). Borne courte volontaire pour ne pas avaler une autre
+    # phrase distincte.
+    r"(?:"
     r"\([^()\n]{0,80}?"
     r"(?:[a-f0-9]{7,}|#\d+|\d{4}-\d{2}-\d{2}|\d{1,2}:\d{2}(?::\d{2})?Z?)"
     r"[^()\n]{0,40}\)"
     # #12944 : ref pointable inline — « review VERDICT de #N ».
     r"|\s+(?:de\s+|sur\s+|dans\s+)?(?:la\s+|le\s+)?(?:PR\s+)?#\d+"
-    r")")
+    r"|"
+    r"(?:par|via|dans|en)\s+(?:le\s+|la\s+|les\s+|du\s+|des\s+)?"
+    r"(?:commit\s+[a-f0-9]+|PR\s*#?\d+|#\d+|pull/\d+)"
+    r"))")
+
+# #12871 (cf grain) — Position E : `La review <VERDICT> ... traitee par le
+# commit <sha>` (ou variantes). La Position D stricte echoue sur ce cas parce
+# que la ref pointable est trop loin (plus de 12 chars apres le verdict, borne
+# D+ ci-dessus, #13474), au-dela d'une frontiere de phrase `.`. Mais la phrase CONTIENT un verbe de levee
+# suivi d'une ref pointable — c'est la signature d'une mention, pas d'une
+# emission. Discriminant : on exige (a) `La review/ce <VERDICT>` en tete, (b)
+# PAS de fin de phrase entre le verdict et le verbe de levee (donc sous la
+# meme phrase), (c) verbe de levee + ref pointable a la fin. Borne dure : la
+# phrase complete ne doit pas contenir `Verdict :` (emission formelle) ni
+# `reste bloquante` (declaration de blocage) — implementee par le lookahead
+# #13425 ci-dessous.
+_MENTION_VERDICT_REVIEW_NARRATIVE = re.compile(
+    r"(?i)(?:^|[\s,;:(*])"
+    r"(?:le|la|les|du|mon|ma|ce|cet|cette|ces|the|my)?\s*"
+    r"(?:revue|review)(?![:.])"
+    r"[^():\n.]{0,60}?(?-i:([A-Z][A-Z_]{3,}))(?![A-Za-z0-9_])"
+    # #13425 — la borne dure promise ci-dessus, desormais implementee : si la
+    # suite de la phrase (fenetre 200 chars, meme phrase) contient une
+    # declaration de blocage vivante (`reste bloquante`) ou une emission
+    # formelle (`Verdict :`), la position ne s'applique PAS — le verdict
+    # reste emis. Cas hybride fondateur : « Cette review CHANGES_REQUESTED
+    # reste bloquante - traitee par le commit a1b2c3d4e » voyait son verdict
+    # neutralise alors que la phrase declare le blocage vivant.
+    r"(?![^.!?\n]{0,200}(?:reste\s+bloquante|verdict\s*:))"
+    # Pas de fin de phrase avant le verbe de levee : `[^.!?\n]{0,200}` est
+    # borne a 200 chars pour eviter de manger une phrase distincte (cf
+    # discriminateur enonce par l'issue, le verbe de levee doit etre dans
+    # la meme phrase).
+    r"[^.!?\n]{0,200}?"
+    r"(?:adresse|adresser|adressé|adressée|adressés|adressées"
+    r"|traite|traiter|traité|traitée|traités|traitées"
+    r"|repondu|répondu|repondre|répondre"
+    r"|leve|lever|levé|levée|levés|levées|lift)\w*"
+    r"(?:\s+(?:par|via|dans|en)\s+(?:le\s+|la\s+|les\s+|du\s+|des\s+)?"
+    r"|\s+\()"
+    r"(?:commit\s+[a-f0-9]+|PR\s*#?\d+|#\d+|pull/\d+)")
 
 
 def _strip_mentioned_verdicts(body: str) -> str:
@@ -517,10 +650,24 @@ def _strip_mentioned_verdicts(body: str) -> str:
     reste du body sont preserves (les fenetres de `_is_cited` restent
     calibrees sur la vraie position des occurrences survivantes).
     """
-    for pat in (_MENTION_VERDICT, _MENTION_VERDICT_HEADING, _MENTION_VERDICT_INLINE, _MENTION_VERDICT_LIFTED, _MENTION_VERDICT_REVIEW):
+    for pat in (_MENTION_VERDICT, _MENTION_VERDICT_HEADING, _MENTION_VERDICT_INLINE, _MENTION_VERDICT_LIFTED, _MENTION_VERDICT_REVIEW, _MENTION_VERDICT_REVIEW_NARRATIVE):
         body = pat.sub(
             lambda m: m.group(0).replace(m.group(1), " " * len(m.group(1))), body)
     return body
+
+
+# #13083 (2e instance) — mention nominale au generique : « une formule de
+# levee conditionnelle », « ses conditions de levee », « une levee reelle »
+# (#12896 c.5422312669, verbatim). Un determiner DEVANT le mot (genitif « de »,
+# article indefini « une ») en fait un nom : la prose NOMME le concept de
+# levee (metalinguistique), elle ne l'emets pas. Distinct des annonces
+# « Levée de <x> » (EXPLICIT_LIFT_MARKERS) ou le « de » suit le mot —
+# l'annonce reste une emission. La premiere implementation de cette PR
+# (regex `_NOMINAL_LIFT_RE` + `_strip_nominal_lifts`, iso-longueur) a ete
+# FUSIONNEE au rebase 2026-08-29 dans la fenetre de determinants #12908 de
+# main (`LIFT_NARRATION_CITERS` + `_lift_is_narrated`), qui couvre de/une et
+# une largeur supérieure de déterminants (la/son/apres/avant/sans/obtenir/
+# exige...) — les deux mécanismes faisaient le même travail en double.
 
 # NOTE — proposition ecartee (triage 07-15..07-31, retiree au rebase 2026-08-16).
 # Un `NO_CONCERN_TAIL_MARKERS` dechargeant tout body dont les 300 derniers chars
@@ -667,6 +814,28 @@ def has_marker(body: str, markers: tuple[str, ...]) -> bool:
     return any(_unaccent(m) in normalised for m in markers)
 
 
+# #13083 (2e instance) — fleche de derivation DEVANT une occurrence de levee.
+# « -> je merge » / « X => Merged » : la fleche en fait la
+# CONSEQUENCE conditionnelle d'une precondition (« sign-off user tel quel ->
+# je merge sans autre reserve », #12896 c.5422307622 verbatim) — une
+# derivation n'est pas une annonce, elle ne leve rien tant que la
+# precondition n'est pas satisfaite. C'est la regle fleche de `_is_cited`,
+# reprise ISO sans le reste de la fenetre de citation : importer cette
+# derniere dans l'etage lift cassait des annonces reelles trans-sentence
+# (« n'est pas une levee. **Mergée.** » — le « pas » de la phrase
+# precedente tuait le Mergé de la suivante, 4 tests du corpus). Au rebase
+# 2026-08-29 la garde vit dans `_live_lift_positions` (avec `_lift_is_narrated`
+# #12908), plus de fonction `_has_lift_announce` dediee.
+_ARROW_DERIVATIONS = ("->", "=>", "→")
+
+
+def _arrow_precedes(normalised: str, index: int) -> bool:
+    j = index
+    while j > 0 and normalised[j - 1].isspace():
+        j -= 1
+    return normalised[:j].endswith(_ARROW_DERIVATIONS)
+
+
 def _formal_concern_precedes_lift(body: str) -> bool:
     """Un verdict Hermes formel precede-t-il la narration de sa levee ?
 
@@ -811,20 +980,88 @@ def _lift_is_narrated(window: str) -> bool:
     return False
 
 
+# #13622 — negation directe d'un LIFT_MARKER dans la portee locale. La
+# negation est l'inverse semantique d'une levee : « ne pas merger tant
+# qu'elle n'est pas levee » AFFIRME que la levee n'a pas eu lieu, alors
+# que le gate rendait `None` (commentaire non-nitrant). Les tokens sont
+# ceux qui precedent ou suivent immediatement le marqueur (15 chars) ;
+# au-dela, c'est une autre phrase, un autre commentaire, ou une
+# narration sans rapport.
+_LIFT_NEGATION_TOKENS = (
+    "non", "pas", "plus", "aucun", "aucune", "n'est", "nest", "jamais",
+    "rien", "sans",
+)
+
+
+def _lift_is_negated(window_before: str, window_after: str) -> bool:
+    """Le LIFT_MARKER est-il dans une negation directe ?
+
+    #13622 fondateur — PR #13563 verbatim :
+      "... **ne pas merger tant qu'elle n'est pas levee** ..."
+    matchait `LIFT_MARKER=levee` a la fenetre 30 chars etait non-narree
+    (pas de determinant CITERS) ET non-conditionnelle (pas de fleche de
+    derivation), donc classee `None` (= « pas un nit »). Le predicat
+    matchait le TOKEN `lev[ée]` ; il ne modelisait pas la negation.
+
+    Discrimination : tokens de negation (`non`, `pas`, `plus`, `n'est`,
+    `jamais`, `aucun`, `aucune`, `rien`, `sans`) dans une fenetre de
+    15 chars avant OU apres le marker, avec garde de frontiere
+    alphanumerique (mecanique `_is_cited`, symetrie exacte avec
+    `_lift_is_narrated`). Les CITERS determinants (`la`, `le`, `aucun`,
+    etc.) restent geres par `_lift_is_narrated` — la negation est
+    distincte.
+
+    Residuel assume (documente dans l'issue) : une negation NON
+    locale (« levee il y a longtemps, reserve non acquise » avec 20+
+    chars entre les deux) echappe. C'est la frontiere entre negation
+    directe et narration : la derniere appartient a `_lift_is_narrated`
+    (CITERS).
+    """
+    norm_before = _unaccent(window_before).lower()
+    norm_after = _unaccent(window_after).lower()
+    # Tronque les separateurs de bord (espaces, virgules, points) pour
+    # que la negation du dernier token soit testee sans pollution. La
+    # negation NON locale (15+ chars de distance) echappe par construction
+    # — c'est la frontiere documentee dans l'issue #13622.
+    tail = norm_before[-15:].rstrip(" \t\n.,;:!?")
+    head = norm_after[:15].lstrip(" \t\n.,;:!?")
+    for tok in _LIFT_NEGATION_TOKENS:
+        # Token avant : match \btok\b en fin de fenetre (apres strip).
+        if tail.endswith(" " + tok) or tail == tok:
+            return True
+        # Token apres : match \btok\b en tete de fenetre (apres strip).
+        if head.startswith(tok + " ") or head == tok:
+            return True
+    return False
+
+
 def _live_lift_positions(normalised: str) -> list[int]:
-    """Positions des occurrences de LIFT_MARKERS NON narrées.
+    """Positions des occurrences de LIFT_MARKERS NON narrées ET NON niées.
 
     `has_marker` traite le body comme un sac de mots ; #12798/#12908 a
     mesuré le coût de ce sac côté LIFT : le PREFLIGHT qui EXIGE « une
     levée explicite » était enregistré comme événement de levée, et
     éteignait les réserves antérieures de son propre auteur (faux OK).
+    #13083 (2e instance) y ajoute la flèche de dérivation : « -> je
+    merge » conditionne le merge à une précondition non satisfaite, ce
+    n'est pas une annonce.
+    #13622 (3e instance) y ajoute la negation directe : « ne pas merger
+    tant qu'elle n'est pas levee » AFFIRME que la levee n'a pas eu
+    lieu, alors que le token `levee` matchait sans prise en compte de
+    la negation. Le predicat `_lift_is_negated` regarde 15 chars avant
+    ET apres le marker.
     """
     out: list[int] = []
     for marker in LIFT_MARKERS:
         m = _unaccent(marker)
+        m_len = len(m)
         start = 0
         while (i := normalised.find(m, start)) != -1:
-            if not _lift_is_narrated(normalised[max(0, i - 30):i]):
+            window_before = normalised[max(0, i - 30):i]
+            window_after = normalised[i + m_len:i + m_len + 15]
+            if not _lift_is_narrated(window_before) \
+                    and not _arrow_precedes(normalised, i) \
+                    and not _lift_is_negated(window_before, window_after):
                 out.append(i)
             start = i + 1
     return out
@@ -953,6 +1190,200 @@ def gh_json(args: list[str]) -> object:
     return json.loads(out)
 
 
+_ISSUE_CREATED_CACHE: dict[int, datetime | None] = {}
+
+
+def gh_issue_created(n: int) -> datetime | None:
+    """#13495 — createdAt de l'issue #n, ou None si elle n'existe pas (ou PR).
+
+    Résolution des références de la voie 3 de B.0 (« issue de suivi ouverte et
+    nommée AVANT le merge »). Cache global : le createdAt d'une issue est
+    immuable, et l'audit retro croise les memes numeros d'une PR a l'autre.
+    Un numero de PR ne compte PAS : l'endpoint issues resout aussi les PRs
+    (mesure c.705 : `gh issue view <PR> --json createdAt` rend rc=0), d'ou le
+    garde `isPullRequest` — la voie 3 nomme une ISSUE, pas une PR (spec
+    #13495), sinon « rebase de #N fait » serait un report valide.
+    """
+    if n not in _ISSUE_CREATED_CACHE:
+        try:
+            d = gh_json(["issue", "view", str(n), "--repo", REPO,
+                         "--json", "createdAt,isPullRequest"])
+            if (d or {}).get("isPullRequest"):
+                _ISSUE_CREATED_CACHE[n] = None
+            else:
+                _ISSUE_CREATED_CACHE[n] = ts((d or {}).get("createdAt"))
+        except Exception:
+            _ISSUE_CREATED_CACHE[n] = None
+    return _ISSUE_CREATED_CACHE[n]
+
+
+def collect_followup_lifts(pr_data: dict, cutoff: datetime,
+                           issue_created=None) -> list[tuple]:
+    """#13495 — voie 3 de B.0 : « issue de suivi ouverte et nommée AVANT le
+    merge (reportée sciemment) ».
+
+    Un commentaire capable de lever qui NOMME une issue (#N) dans sa prose
+    (hors citation) est un report : il lève un nit antérieur si (a) l'issue
+    existe, (b) son createdAt est antérieur à la décision de merge. C'est la
+    seule voie mécaniquement ouverte à l'AUTEUR de la PR — une phrase de
+    l'auteur ne lève pas la réserve d'un tiers (voie 1 close pour lui,
+    #11145), mais un report nommé avant merge est un geste délibéré que B.0
+    crédite. Mécanique par spec (pas de NLP) : la référence vit hors citation
+    (`_strip_quoted`), comme les LIFT_MARKERs.
+
+    Deux bornes (review c.705 de jsboige, #13563) :
+    - self-ref : le numéro de la PR ELLE-MÊME n'est pas une « issue de
+      suivi » — l'API issues résout un numéro de PR (rc=0, mesuré), donc
+      tout commentaire citant #<cette PR> (« rebase de #N fait ») serait
+      sinon un report valide éteignant tous les nits antérieurs.
+    - nommeur : le report ne compte que s'il émane de l'auteur de la PR ou
+      de l'auteur du nit levé — un bystander citant une issue ancienne
+      quelconque (« ce comportement rappelle #11045 ») n'a pas de lien
+      sémantique avec la réserve (stance #13592, arbitrage po-2024).
+
+    Retourne des couples (instant, nommeur) ; `analyse` applique la borne
+    nommeur par nit. `issue_created=None` coupe la voie — `analyse()` reste
+    pur pour les tests (aucun appel réseau n'y est toléré).
+    """
+    if issue_created is None:
+        return []
+    out: list[tuple] = []
+    self_ref = pr_data.get("number")
+    for c in (pr_data.get("comments") or []):
+        if not can_lift(c):
+            continue
+        t = ts(c.get("createdAt"))
+        if t is None or not t < cutoff:
+            continue
+        stripped = _strip_quoted(c.get("body") or "")
+        for m in re.finditer(r"#(\d+)", stripped):
+            n = int(m.group(1))
+            if n == self_ref:
+                continue
+            created = issue_created(n)
+            if created is not None and created < cutoff:
+                out.append((t, (c.get("author") or {}).get("login", "")))
+                break
+    return out
+
+
+# #13639 -- une levee dont la PREUVE citee n'est plus dans la PR. Sur #13557,
+# la levee citait le commit 2d6e4c3642 (« corrige dans ce commit ») ; un
+# force-push ulterieur avait rembobine ce commit, et le gate restait vert :
+# la phrase etait honnete au moment ou elle fut ecrite, mais ce qu'elle
+# nommait n'existait plus au merge. Le principe B.0 (« ce qui leve une
+# remarque est une phrase ») suppose que la phrase dise VRAI au merge ; une
+# levee qui cite une preuve absente ne dit plus vrai.
+#
+# Refus ETROIT deliberement : (a) le corps de levee cite un SHA, (b) ce SHA
+# n'appartient pas aux commits de la PR (match par prefixe), (c) il RESOUD
+# cote serveur, (d) son message se RAPPORTE a cette PR (`#N`, N = numero de
+# la PR ou issue citee dans le titre/corps). (c)+(d) distinguent le
+# rembobinage (#13557) de la citation de CONTEXTE (« comme fixe en abc1234
+# sur l'autre PR ») : la seconde reste une levee valide, juste signalee.
+# En cas de doute : avertir (A RELIRE), jamais bloquer.
+_SHA_CITED = re.compile(r"\b[0-9a-f]{7,40}\b")
+
+
+def _cited_shas(body: str) -> set[str]:
+    """SHAs cites dans un corps : 7-40 hex, avec AU MOINS une lettre.
+
+    Un token 100% numerique de 7+ chiffres (une date 20260830, un run-id)
+    est hex-compatible mais n'est quasi jamais un SHA -- l'exiger lettree
+    evite de partir resoudre une date cote serveur pour rien.
+    """
+    out: set[str] = set()
+    for m in _SHA_CITED.finditer((body or "").lower()):
+        tok = m.group(0)
+        if any(ch in "abcdef" for ch in tok):
+            out.add(tok)
+    return out
+
+
+# Proximite maximale (caracteres) entre un SHA cite et un marqueur de levee
+# VIVANT pour que le SHA compte comme la PREUVE avancee par la phrase.
+_LIFT_SHA_PROXIMITY = 150
+
+
+def _sha_in_lift_claim(lift_body: str, sha: str) -> bool:
+    """Le SHA est-il cite DANS la clause de levee (proximal du marqueur) ?
+
+    Mesure au deploiement meme de #13639 (PR #13631) : la levee d'ai-01
+    citait `e408b2fce` a ~2000 chars du marqueur, dans un paragraphe
+    forensique qui disait explicitement « c'est main qui a avance » --
+    une reference de CONTEXTE, pas une preuve. Refuser cette levee (ou
+    meme l'avertir) etait un faux positif : la phrase etait valide et sa
+    preuve etait inline (la clé Grain citee dans le commentaire meme).
+    Seul un SHA PROXIMAL du marqueur vivant est ce que la phrase avance ;
+    un SHA distant est une citation annexe et ne doit etre ni refuse ni
+    signale. Marqueurs et SHA sont cherches dans le MEME espace de
+    coordonnees (le corps unaccente), insensible a toute variation de
+    longueur du _unaccent.
+    """
+    norm = _unaccent(lift_body or "")
+    markers = _live_lift_positions(norm)
+    if not markers:
+        return False
+    low = norm.lower()
+    start = 0
+    while (i := low.find(sha, start)) != -1:
+        if min(abs(i - p) for p in markers) <= _LIFT_SHA_PROXIMITY:
+            return True
+        start = i + 1
+    return False
+
+
+def _message_refs_pr(message: str, pr_refs: set[str]) -> bool:
+    """Le message de commit reference-t-il exactement un PR/issue de la liste ?
+
+    Substring check trop generique : `#13639` matchait un message contenant
+    `#136390` (ticket adjacent cite par hasard), declenchant un refus au lieu
+    d'un simple avertissement (NanoClaw c.702 sur #13641). Le bon test est
+    l'extraction/tokenisation exacte des references `#\\d+` : la PR/issue
+    doit apparaitre comme un MOT COMPLET du message, pas comme prefixe d'un
+    identifiant plus long.
+
+    Retourne True si au moins une ref de `pr_refs` apparait comme token
+    isole (apres `#`, jusqu'au prochain non-alphanumerique) dans `message`.
+    """
+    if not message or not pr_refs:
+        return False
+    # Tokeniser toutes les references `#\\d+` du message, garder UNIQUEMENT
+    # la portion numerique (le `#` est implicite).
+    cited = {m.group(1) for m in re.finditer(r"#(\d+)", message)}
+    return bool(cited & pr_refs)
+
+
+def _resolve_absent_sha_messages(data: dict, cap: int = 5) -> dict[str, str]:
+    """Resoudre cote serveur les SHAs cites mais absents des commits de la PR.
+
+    S'execute UNIQUEMENT dans le chemin `gate` (reseau) : `analyse` reste
+    pur et lit le resultat via `data["_absent_sha_messages"]`. Sans entree
+    resolue, `analyse` reste en mode avertissement -- l'audit retro, qui
+    n'appelle jamais ceci, ne peut donc pas produire de faux blocage.
+    Capped a `cap` appels : plus de 5 SHAs absents cites sur une seule PR
+    est extraordinaire, et chaque appel paie un aller-retour API.
+    """
+    oids = {(c.get("oid") or "").lower() for c in (data.get("commits") or [])}
+    oids.discard("")
+    if not oids:
+        return {}
+    cited: set[str] = set()
+    for c in (data.get("comments") or []) + (data.get("reviews") or []):
+        cited |= _cited_shas(c.get("body") or "")
+    absent = sorted(s for s in cited if not any(o.startswith(s) for o in oids))
+    messages: dict[str, str] = {}
+    for sha in absent[:cap]:
+        try:
+            commit = gh_json(["api", f"repos/{REPO}/commits/{sha}"])
+        except subprocess.CalledProcessError:
+            continue  # non resoluble -> analyse restera en mode avertissement
+        head = ((commit.get("commit") or {}).get("message") or "").split("\n")[0]
+        if head:
+            messages[sha] = head
+    return messages
+
+
 def can_lift(comment: dict) -> bool:
     """Ce commentaire est-il capable de LEVER un nit qui le precede ?
 
@@ -1007,7 +1438,28 @@ def classify(author: str, body: str) -> str | None:
     # reste muet — la sous-accusation coute un merge, la sur-accusation coute
     # une relecture. Aucun body sans glyphe ne change de classement : la
     # table de distribution d'ai-01 reste exacte.
-    if (has_live_lift(body)
+    # #13083 (2e instance) — SYMETRIE de l'etage lift : le concern est evalue
+    # mention-aware (`_strip_mentioned_verdicts`), le lift etait un substring
+    # brut sur le body ENTIER. Consequence mesuree (#12896) : « une formule de
+    # levee conditionnelle », « une levee reelle », « ses conditions de levee »
+    # (mentions nominales — la prose NOMME le concept, elle ne l'emets pas)
+    # eteignaient une reserve vivante — nommer une resolution valait la
+    # prononcer, alors que nommer une reserve ne vaut pas l'emettre (#11636
+    # symetrique). Fusion au rebase 2026-08-29 : le miroir LIFT #12908 deja
+    # sur main (cb95b65020, `_lift_is_narrated` + `LIFT_NARRATION_CITERS`)
+    # couvre les mentions nominales par sa fenetre de determinants (de/une,
+    # la/son, apres/avant/sans, obtenir/exige...) — il est utilise TEL QUEL ;
+    # la presente instance y ajoute (a) la SURFACE : l'etage concern lit
+    # `_strip_mentioned_verdicts(_strip_quoted(body))` (L. ci-dessous), le
+    # lift lit la meme surface stripee — un marqueur de levee DANS une quote
+    # ou un verdict mentionne ne peut pas lever ; (b) la regle FLECHE : « ->
+    # je merge » est une derivation conditionnelle (si sign-off alors merge,
+    # #12896 c.5422307622), syntaxiquement prouvee par la fleche, pliee dans
+    # `_live_lift_positions`. Importer `_is_cited` ENTIER casserait des
+    # annonces reelles trans-sentence (« n'est pas une levee. **Mergée.** » —
+    # le « pas » de la phrase precedente tuerait le Mergé de la suivante,
+    # 4 tests du corpus) : seule la fleche est reprise.
+    if (has_live_lift(_strip_mentioned_verdicts(_strip_quoted(body)))
             and not _lift_cancelled(_strip_quoted(body))
             and not has_live_marker(_strip_quoted(body), SEVERITY_GLYPHS)
             # #12836 / #12798 : une revalidation COMMENT_WITH_CONCERNS peut
@@ -1035,9 +1487,8 @@ def classify(author: str, body: str) -> str | None:
         return None  # verdict structurel positif rendu : il decide, la prose ne compte plus
     # #11636 : la recherche porte le body nettoye de ses verdicts MENTIONNES —
     # un rapport de correction qui nomme le verdict qu'il corrige n'emet pas
-    # de reserve. Uniquement pour CONCERN_MARKERS : LIFT_MARKERS et
-    # VERDICT_POSITIVE gardent le body brut (surface minimale du fix — le
-    # controle positif deux formes vit dans les tests, cote a cote).
+    # de reserve. Uniquement pour CONCERN_MARKERS et l'etage lift (symetrie
+    # #13083 ci-dessus) : VERDICT_POSITIVE garde le body brut.
     live_concern = has_live_marker(_strip_mentioned_verdicts(_strip_quoted(body)), CONCERN_MARKERS)
     if not live_concern and _HUMAN_VERDICT_RE.search(body):
         return None  # verdict humain positif (APPROVE / APPROVED / LGTM) SANS reserve vivante : equivalent state:APPROVED
@@ -1096,7 +1547,66 @@ def review_threads(pr: int) -> list[dict]:
     return out
 
 
-def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
+def improper_dismissals(pr: int) -> set[str]:
+    """Auteurs de review dont la reserve a ete dismissee par QUELQU'UN D'AUTRE.
+
+    `gh pr view --json reviews` ne dit ni qui a dismisse ni quand : il ne rend
+    que l'etat final `DISMISSED`. L'acteur vit dans la timeline REST
+    (`review_dismissed`), l'auteur de la review dans les reviews REST — les deux
+    se joignent par l'`id` NUMERIQUE (le champ `id` de `gh pr view` est un
+    node-id GraphQL, `PRR_kwDO...`, non comparable au `review_id` entier).
+
+    Retourne des LOGINS d'auteurs de review, pas des ids : la reserve est
+    reappariee par auteur dans `analyse`. Sur-approximation assumee quand un
+    meme auteur a deux reviews dismissees dont une legitimement — un gate se
+    trompe du cote qui bloque, jamais du cote qui laisse passer.
+
+    Non cable sur `audit()` : deux appels API par PR, pour un chemin retrospectif
+    ou l'enforcement n'a plus lieu. Le gate pre-merge est le point de controle.
+    """
+    try:
+        reviews = gh_json(["api", f"repos/{REPO}/pulls/{pr}/reviews", "--paginate"])
+        events = gh_json(["api", f"repos/{REPO}/issues/{pr}/timeline", "--paginate"])
+    except Exception:
+        return set()  # timeline illisible : on retombe sur l'ancien comportement
+    if not isinstance(reviews, list) or not isinstance(events, list):
+        return set()
+    author_of = {
+        r.get("id"): ((r.get("user") or {}).get("login") or "")
+        for r in reviews if isinstance(r, dict)
+    }
+    improper: set[str] = set()
+    for e in events:
+        if not isinstance(e, dict) or e.get("event") != "review_dismissed":
+            continue
+        actor = ((e.get("actor") or {}).get("login") or "")
+        rid = (e.get("dismissed_review") or {}).get("review_id")
+        emitter = author_of.get(rid)
+        if not emitter:
+            continue
+        if actor == emitter or actor in LIFT_OVERRIDE_LOGINS:
+            continue
+        improper.add(emitter)
+    return improper
+
+
+def _names_author(body: str, author: str) -> bool:
+    """``body`` mentionne-t-il ``author`` comme identite, pas par hasard ?
+
+    #13399 : un reviewer tiers n'approuve la reserve d'une lane que s'il NOMME
+    cette lane — sinon un APPROVED generique eteindrait toutes les reserves de
+    la PR. La frontiere de mot est posee par non-caractere d'identite (un login
+    contient `-` et `.`, donc `\\b` est fragile autour d'eux : `clusterManager-Myia`
+    n'a pas de frontiere au tiret). On exige un mot-de-login complet delimitere.
+    """
+    if not body or not author:
+        return False
+    return re.search(r"(?<![A-Za-z0-9_.-])" + re.escape(author) + r"(?![A-Za-z0-9_.-])",
+                     body) is not None
+
+
+def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
+            issue_created=None, dismissed_improperly=None) -> dict:
     """cutoff = mergedAt (audit retro) ou now (gate pre-merge)."""
     commits = [ts(c.get("committedDate")) for c in (pr_data.get("commits") or [])]
     commits = [c for c in commits if c]
@@ -1120,17 +1630,59 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
     # d'exclusion can_lift ne s'applique pas — un state APPROVED n'est pas du
     # bruit de protocole, meme depuis un reviewer bot.
     approved_rereviews = [
-        (ts(r.get("submittedAt")), (r.get("author") or {}).get("login", ""), "")
+        (ts(r.get("submittedAt")), (r.get("author") or {}).get("login", ""),
+         r.get("body", ""))
         for r in (pr_data.get("reviews") or [])
         if r.get("state") == "APPROVED"
         and (r.get("author") or {}).get("login", "") not in BOT_LOGINS
     ]
     approved_rereviews = [x for x in approved_rereviews if x[0] is not None]
 
+    def _approved_lifts_reserve(reserve_author: str, reserve_when: datetime,
+                                pr_author: str) -> bool:
+        """Une re-review APPROVED leve-t-elle la reserve de ``reserve_author`` ?
+
+        #13399 — le defaut constate sur #13299 n'etait pas l'absence de re-review,
+        mais le fait que ``approved_rereviews`` ne levait que la reserve dont
+        l'auteur de l'APPROVED etait l'auteur (auto-approbation). Un reviewer
+        TIERS (ai-01) qui approuve en nommant la reserve d'une lane la leve
+        aussi. Le garde-fou #12798 reste : seule l'identite de l'auteur tranche,
+        jamais un commit ni un SAR. Deux voies, toutes posterieures a la reserve :
+
+        1. **Re-review de l'auteur** (``auteur_approved == reserve_author``) :
+           legitime uniquement si l'auteur de la reserve n'est pas l'auteur de la
+           PR. Sous le self-review cap (#12319) l'auteur de la reserve == l'auteur
+           de la PR == jsboige, et une APPROVED de ce compte est une
+           auto-approbation qui demontre rien — refuse.
+        2. **Approbation d'un tiers nommant la reserve** (auteur different de la
+           reserve ET de l'auteur de la PR, corps mentionnant le login de la
+           reserve) : le coordinateur confirme par ecrit que le point de la lane
+           est traite. Un APPROVED completement generique (qui n'identifie pas
+           la reserve) ne leve rien — sinon tout approval d'un coordinateur
+           eteindrait toutes les reserves de la PR.
+        """
+        for (t, app_author, app_body) in approved_rereviews:
+            if t is None or t <= reserve_when:
+                continue
+            if app_author == reserve_author:
+                if reserve_author != pr_author:
+                    return True
+                continue  # auto-approbation self-review : refusee, voir ci-dessous
+            if app_author != pr_author and _names_author(app_body, reserve_author):
+                return True
+        return False
+
     def _lift_eligible(lift_author: str, nit_author: str,
                        lift_body: str = "") -> bool:
         if lift_author == nit_author:
             return True
+        # #13495 — la trappe coordinateur ci-dessous ne s'ouvre pas pour
+        # l'auteur de la PR : sinon la voie 3 (report par issue nommee) serait
+        # contournable par la porte de service qu'elle vient d'ouvrir — la
+        # forme d'auto-levee pour laquelle #13316 a deja retire jsboige des
+        # comptes de levee.
+        if lift_author == pr_author:
+            return False
         # #11639 : l'override NOMME du coordinateur — l'arbitre tiers de B.0.
         # La restriction d'auteur reste la regle pour tout le monde (elle
         # bloque l'auto-levee d'un bystander, #11145) ; seule la trappe ecrite
@@ -1140,8 +1692,11 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
         # #13030 -- search sur le corps ENTIER retire : une citation du
         # marqueur (documentation, dispatch, post-mortem, DM recopie)
         # posait l'override. Seule la forme POSEE en tete de ligne compte.
+        # #13316 -- jsboige n'entre plus : identite de poussee partagee des
+        # lanes (self-review cap #12319), un override jsboige est
+        # indiscernable d'une auto-levee de lane (replay #12737).
         m = OVERRIDE_LANE.search(lift_body or "")
-        return (lift_author in COORDINATOR_LOGINS
+        return (lift_author in LIFT_OVERRIDE_LOGINS
                 and m is not None)
 
     # Fenetre 2026-08-16 (#11222) : les temps plats ne suffisent pas pour un
@@ -1170,8 +1725,71 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
         # une reserve, pas un evenement de levee du signal precedent.
         and classify((c.get("author") or {}).get("login", ""),
                      c.get("body", "")) is None
+    ] + [
+        # #13399 point 2 — symetrie de la levee : une PHRASE de levee portee
+        # par le corps d'une review COMMENTED (et pas un commentaire) devait
+        # aussi compter. Aujourd'hui la pose acceptait commentaire et review,
+        # la levee un seul. Une review APPROVED est deja traitee par
+        # approved_rereviews (etat natif) ; une review COMMENTED qui ecrit
+        # « je leve ma CHANGES_REQUESTED » est une levee comme un commentaire.
+        (ts(r.get("submittedAt")), (r.get("author") or {}).get("login", ""),
+         r.get("body", ""))
+        for r in (pr_data.get("reviews") or [])
+        if r.get("state") == "COMMENTED"
+        and can_lift(r)
+        and has_live_lift(r.get("body", ""))
+        and not _lift_cancelled(_strip_quoted(r.get("body", "")))
+        and classify((r.get("author") or {}).get("login", ""),
+                     r.get("body", "")) is None
     ]
     explicit_lifts = [x for x in explicit_lifts if x[0] is not None]
+    # #13495 — voie 3 de B.0 : les commentaires qui NOMMENT une issue de
+    # suivi ouverte avant le cutoff sont des leveries a part entiere.
+    followup_lifts = collect_followup_lifts(pr_data, cutoff, issue_created)
+
+    # #13639 -- passer les levees au crible du SHA rembobine (voir
+    # _SHA_CITED ci-dessus pour le pourquoi et l'etroitesse). Inerte sans
+    # OIDs connus : le pre-filtre d'audit (sans `commits`) et les fixtures
+    # sans `oid` sautent ce passage -- comportement inchange. Limite assumee
+    # : ce pre-filtre d'audit ne verra donc jamais cette classe de defaut
+    # (il rend son verdict sans commits) ; c'est le gate, en direct sur la
+    # PR avant merge, qui est le client visé par #13639.
+    commit_oids = [(c.get("oid") or "").lower()
+                   for c in (pr_data.get("commits") or []) if c.get("oid")]
+    voided_lifts: list[dict] = []
+    absent_sha_warnings: list[dict] = []
+    if commit_oids:
+        pr_refs: set[str] = set()
+        if pr_data.get("number") is not None:
+            pr_refs.add(str(pr_data["number"]))
+        for m in re.finditer(r"#(\d+)", (pr_data.get("title") or "")
+                             + "\n" + (pr_data.get("body") or "")):
+            pr_refs.add(m.group(1))
+        pr_refs.discard("")
+        resolved = pr_data.get("_absent_sha_messages") or {}
+        kept_lifts = []
+        for (t, lifter, lift_body) in explicit_lifts:
+            refused = None
+            warned = None
+            for sha in sorted(_cited_shas(lift_body)):
+                if any(oid.startswith(sha) for oid in commit_oids):
+                    continue  # present dans la PR : preuve valide
+                if not _sha_in_lift_claim(lift_body, sha):
+                    continue  # citation de contexte : ni refus, ni signalement
+                message = resolved.get(sha)
+                if message and _message_refs_pr(message, pr_refs):
+                    refused = sha  # rembobine ET rattache : la levee est nue
+                    break
+                warned = sha  # non resoluble ou sans rapport : avertir
+            if refused:
+                voided_lifts.append(
+                    {"author": lifter, "at": t.isoformat(), "sha": refused})
+            else:
+                kept_lifts.append((t, lifter, lift_body))
+                if warned:
+                    absent_sha_warnings.append(
+                        {"author": lifter, "at": t.isoformat(), "sha": warned})
+        explicit_lifts = kept_lifts
 
     signals: list[tuple] = []
     for c in pr_data.get("comments") or []:
@@ -1182,13 +1800,35 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
     for r in pr_data.get("reviews") or []:
         login = (r.get("author") or {}).get("login", "")
         body = r.get("body", "")
-        if r.get("state") == "DISMISSED":
-            # Une dismissal GitHub n'est possible que par l'auteur de la review
-            # (ou un admin) : la reserve est formellement RETIREE par son
-            # emetteur — pas un signal (#11222, levée (b)).
-            continue
+        state = r.get("state")
+        if state == "DISMISSED":
+            # #13685 — la premisse precedente (« une dismissal n'est possible
+            # que par l'auteur de la review ou un admin ») est FAUSSE : tout
+            # compte disposant du droit d'ecriture peut dismisser la review d'un
+            # tiers, l'auteur de la PR compris. Le `continue` inconditionnel
+            # faisait donc de `PUT /pulls/N/reviews/ID/dismissals` une trappe :
+            # sur #13685, la CHANGES_REQUESTED de clusterManager-Myia (« 1 defect
+            # bloquant trouve ») est dismissee a 18:14:56Z, et `check-navlinks`
+            # passe FAILURE a 18:16:11Z — 75 secondes plus tard. La reserve etait
+            # declaree levee pendant que la propriete qu'elle protege etait encore
+            # cassee. C'est #12798 mecanise : se lever soi-meme la reserve d'un
+            # tiers ne repond pas a la remarque, ca la declare repondue.
+            #
+            # Une dismissal n'eteint donc la reserve que si elle vient de son
+            # EMETTEUR (retrait volontaire, #11222 levee (b)) ou d'un login
+            # d'override nomme. Dismissee par quiconque d'autre, elle SURVIT.
+            if login not in (dismissed_improperly or ()):
+                continue
+            # La reserve survivante reprend son etat D'ORIGINE : la timeline
+            # rend `dismissed_review.state == "changes_requested"`. Sans cette
+            # ligne le signal existe mais retombe en `review:DISMISSED` — hors
+            # de la branche qui force BOT-CONCERN, et hors du durcissement
+            # `src == "review:CHANGES_REQUESTED"` en aval. Mesure sur #13685 :
+            # `improper_dismissals` rendait bien {clusterManager-Myia} et le
+            # gate restait vert. Un signal hors de sa branche ne bloque rien.
+            state = "CHANGES_REQUESTED"
         kind = classify(login, body)
-        if r.get("state") == "CHANGES_REQUESTED":
+        if state == "CHANGES_REQUESTED":
             kind = "BOT-CONCERN" if kind is None else kind
         # #11677 — symetrique APPROVED : l'etat natif GitHub `APPROVED` temoigne
         # qu'aucune reserve n'est posee. Si classify() a deja retourne un kind
@@ -1199,11 +1839,29 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
         # cette branche, le verdict positif est calcule sur la prose seule,
         # alors que la preuve la plus dure (l'etat natif) est disponible
         # deux lignes plus haut. Meme symetrie que CHANGES_REQUESTED ci-dessus.
-        elif r.get("state") == "APPROVED" and kind is None:
-            pass  # kind reste None (l'etat natif confirme l'extinction)
+        elif state == "APPROVED":
+            if kind is None:
+                pass  # kind reste None (l'etat natif confirme l'extinction)
+            # Le test porte sur le corps DEPOUILLE, jamais sur le brut : une
+            # review qui *cite* une formule de reserve (tableau de sondes,
+            # explication du garde, fixture entre backticks ou guillemets) la
+            # MENTIONNE au lieu de l'EMETTRE. Mesure du 30/08 sur la review
+            # Hermes de cette PR meme : 6 matches sur le corps brut, dont 5
+            # sont ses propres fixtures -- le garde bloquait la PR sur les
+            # chaines que la review citait pour demontrer qu'il fonctionne.
+            # Troisieme occurrence de la confusion usage/mention apres #11246
+            # (CONDITIONAL_LIFT) et #13261 (marqueur d'override G-VAR-3) : le
+            # depouillement `_strip_quoted` existait deja et est applique
+            # partout ailleurs (l.803, l.1040) -- cette branche etait la seule
+            # a s'en passer.
+            elif not _APPROVE_RESERVATION_RE.search(_strip_quoted(body)):
+                # #13559 : marqueur residuel SANS langage de reserve — la
+                # review NOMME une reserve (le plus souvent celle qu'elle
+                # leve) au lieu d'en emettre une. L'etat natif decide.
+                kind = None
         if kind:
             signals.append((ts(r.get("submittedAt")), kind, login, body,
-                            f"review:{r.get('state')}"))
+                            f"review:{state}"))
 
     blocking = []
     for (when, kind, login, body, src) in signals:
@@ -1227,13 +1885,12 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
             # (B.0 : ce qui leve une remarque est une phrase). Les nits portes
             # par un COMMENTAIRE gardent le regime general ci-dessous — limite
             # NLP documentee dans can_lift.
-            lifted = any(
-                when < t < cutoff and author == login
-                for (t, author, _) in approved_rereviews
-            ) or any(
-                when < t < cutoff and _lift_eligible(lifter, login, lift_body)
-                for (t, lifter, lift_body) in explicit_lifts
-            )
+            lifted = (_approved_lifts_reserve(login, when, pr_author)
+                      or any(when < t < cutoff
+                             and _lift_eligible(lifter, login, lift_body)
+                             for (t, lifter, lift_body) in explicit_lifts)
+                      or any(when < t < cutoff and namer in (login, pr_author)
+                             for (t, namer) in followup_lifts))
             if lifted:
                 continue
         # #13083 — les bornes strictes du blocage. Un blocage ne se leve ni
@@ -1252,9 +1909,16 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
                     and (lift_author != pr_author
                          or bool(OVERRIDE_LANE.search(lift_body)))
                     for (t, lift_author, lift_body) in explicit_lifts)
-                    or any(
-                    when < t < cutoff and author == login
-                    for (t, author, _) in approved_rereviews)):
+                    or _approved_lifts_reserve(login, when, pr_author)
+                    # #13495 — voie 3 : le report par issue nommee leve aussi
+                    # un blocage. La garde d'auteur ci-dessus est celle des
+                    # PHRASES de levee (#13083) ; la voie 3 porte sa propre
+                    # garantie — l'issue existe et fut creee AVANT le cutoff —
+                    # et reste ouverte a l'auteur : un report nomme avant
+                    # merge est un geste delibere que B.0 credite. Borne
+                    # nommeur (c.705) : {auteur du blocage, auteur de la PR}.
+                    or any(when < t < cutoff and namer in (login, pr_author)
+                           for (t, namer) in followup_lifts)):
                 continue
         # #12319 : meme regime pour un nit porte par un commentaire ou une
         # review COMMENTED (dont chaque reserve Hermes, self-review cap).
@@ -1268,10 +1932,9 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
         elif (any(
                   when < t < cutoff and _lift_eligible(lift_author, login, lift_body)
                   for (t, lift_author, lift_body) in explicit_lifts
-              ) or any(
-                  when < t < cutoff and author == login
-                  for (t, author, _) in approved_rereviews
-              )):
+              ) or _approved_lifts_reserve(login, when, pr_author)
+              or any(when < t < cutoff and namer in (login, pr_author)
+                     for (t, namer) in followup_lifts)):
             continue
         # Un commit poussé après le nit ne le lève PAS à lui seul : sur #10761,
         # le « traitement » était un rebase à 19:41 qui n'adressait aucun des
@@ -1280,6 +1943,7 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
         pushed_after = last_commit is not None and last_commit > when
         blocking.append({
             "kind": kind, "author": login, "src": src,
+            "channel": "review" if src.startswith("review") else "comment",
             "at": when.isoformat(),
             "gap_hours": round((cutoff - when).total_seconds() / 3600.0, 1),
             "code_pushed_after": pushed_after,
@@ -1291,20 +1955,106 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
             continue
         blocking.append({
             "kind": "INLINE-UNRESOLVED", "author": t["author"], "src": "reviewThread",
+            "channel": "review",
             "at": t.get("createdAt") or "?",
             "where": f"{t.get('path')}:{t.get('line')}",
             "excerpt": _excerpt(t.get("body") or ""),
         })
+
+    # #13316 — un override ECARTE pour cause d'auteur doit etre NOMME. Avant,
+    # un gate rouge « malgre notre override » etait indistinguable d'un bug du
+    # detecteur (#13030, #12096) : le commentaire existait, la borne l'avait
+    # rejete, personne ne le disait. Ce n'est PAS bloquant (la reserve qui
+    # survit reste le signal) — c'est l'explication visible du rouge. Un
+    # override de l'auteur de la reserve (self-lift legitime) n'est pas liste.
+    nit_authors = {login for (_, _, login, _, _) in signals}
+    ignored_overrides = [
+        {"author": author, "at": t.isoformat(),
+         "why": (f"override ignoré — auteur « {author} » n'est pas un compte "
+                 "de levée (#13316 : identité de poussée partagée des lanes)")}
+        for (t, author, body) in explicit_lifts
+        if t is not None
+        and OVERRIDE_LANE.search(body or "") is not None
+        and author not in LIFT_OVERRIDE_LOGINS
+        and author not in nit_authors
+    ] + [
+        # #13495 — meme exigence de nomination pour la trappe fermee a
+        # l'auteur de la PR : un override coordinateur pose PAR l'auteur ne
+        # doit pas disparaitre en silence.
+        {"author": author, "at": t.isoformat(),
+         "why": (f"override ignoré — auteur « {author} » est l'auteur de la "
+                 "PR : la trappe coordinateur ne s'ouvre pas pour lui "
+                 "(#13495)")}
+        for (t, author, body) in explicit_lifts
+        if t is not None
+        and OVERRIDE_LANE.search(body or "") is not None
+        and author in LIFT_OVERRIDE_LOGINS
+        and author == pr_author
+    ]
+
+    # #13512 -- CE QUE L'ORGANE N'A PAS EVALUE.
+    #
+    # `classify` reconnait un commentaire humain a ses retours CRLF de l'UI
+    # web (test sur la sequence CR-LF dans le corps). Un commentaire d'UNE
+    # SEULE LIGNE n'en porte aucun : il tombe en `None` et devient invisible.
+    # Mesure du 2026-08-29 sur quatre remarques user reelles : les trois
+    # one-liners (#13476 tika/qwen, #13397 exercices pre-resolus, #13403
+    # prose confuse) rendent `None` ; seule celle de deux lignes (#13472
+    # graphviz) rend "HUMAN". #13476 a ete mergee 2 h 13 apres la remarque,
+    # sous un `OK -- aucun nit non leve` qui ne l'avait jamais lue.
+    #
+    # Aucun detecteur ne repare ca : `jsboige` est a la fois le compte user,
+    # l'identite de poussee des lanes et le login coordinateur, et l'API ne
+    # les distingue par AUCUN champ (author_association, performed_via_github_app,
+    # user.type : identiques, verifie firsthand). Un classifieur candidat
+    # mesure le meme jour attrapait 3/3 des remarques user mais accusait 3/5
+    # des commentaires de lane -- trop bruyant pour bloquer.
+    #
+    # D'ou le parti : ne pas classer, mais CESSER DE CERTIFIER LE SILENCE.
+    # Ce que l'organe n'a pas evalue, il l'imprime. Lancer le gate devient
+    # l'acte de relire la queue -- la regle user HARD (« on ne merge pas sans
+    # avoir relu tous les commentaires au dernier moment ») cesse de dependre
+    # de la vigilance et devient mecanique.
+    lift_keys = {(t_, a) for (t_, a, _b) in explicit_lifts if t_}
+    unevaluated: list[dict] = []
+    for c in pr_data.get("comments") or []:
+        login = (c.get("author") or {}).get("login", "")
+        if login in BOT_LOGINS:
+            continue
+        body = (c.get("body") or "").strip()
+        when = ts(c.get("createdAt"))
+        if not body or when is None or when > cutoff:
+            continue
+        if classify(login, body) is not None:
+            continue  # deja porte par `blocking`, ou explicitement neutralise
+        if (when, login) in lift_keys:
+            continue  # compte comme levee : deja lu par l'etage lift
+        unevaluated.append({
+            "author": login,
+            "at": c.get("createdAt"),
+            "after_last_commit": bool(last_commit and when > last_commit),
+            "body": body,
+        })
+    # Ce qui suit le dernier commit est le plus a risque (rien ne peut
+    # pretendre l'avoir traite) ; a defaut, la queue -- exactement les
+    # `comments[-3:]` que la regle demande de relire avant `gh pr merge`.
+    after_lc = [u for u in unevaluated if u["after_last_commit"]]
+    to_read = after_lc or unevaluated[-3:]
 
     return {
         "pr": pr_data.get("number"),
         "title": (pr_data.get("title") or "")[:110],
         "blocking": blocking,
         "blocked": bool(blocking),
+        "ignored_overrides": ignored_overrides,
+        "voided_lifts": voided_lifts,
+        "absent_sha_warnings": absent_sha_warnings,
+        "unevaluated": to_read,
+        "unevaluated_total": len(unevaluated),
     }
 
 
-FIELDS = "number,title,mergedAt,author,comments,reviews,commits,url,state"
+FIELDS = "number,title,body,mergedAt,author,comments,reviews,commits,url,state"
 
 # `commits` porte une connection `authors` par commit : sur un `gh pr list` large,
 # GraphQL depasse son plafond de 500 000 noeuds. L'audit retro liste donc SANS
@@ -1314,15 +2064,61 @@ FIELDS = "number,title,mergedAt,author,comments,reviews,commits,url,state"
 LIST_FIELDS = "number,title,mergedAt,url,comments,reviews,author"
 
 
+def _print_unevaluated(result: dict) -> None:
+    """Imprimer verbatim ce que l'organe n'a pas evalue (#13512).
+
+    `OK -- aucun nit non leve` repond « aucune phrase de levee ne manque », et
+    RIEN D'AUTRE : un commentaire que `classify` n'a pas su lire n'est pas un
+    commentaire absent. Le dire est tout l'organe.
+    """
+    rows = result.get("unevaluated") or []
+    if not rows:
+        return
+    after = sum(1 for r in rows if r["after_last_commit"])
+    tail = f", dont {after} posterieur(s) au dernier commit" if after else ""
+    print()
+    print(f"  --- A RELIRE : {len(rows)} commentaire(s) NON EVALUE(S) par cet organe{tail} ---")
+    print("  Le verdict ci-dessus ne porte QUE sur les phrases de levee. Ces")
+    print("  commentaires n'ont pas ete classes : les lire avant `gh pr merge`.")
+    for r in rows:
+        mark = " [APRES LE DERNIER COMMIT]" if r["after_last_commit"] else ""
+        print()
+        print(f"  * {r['author']} — {r['at']}{mark}")
+        lines = r["body"].split("\n")
+        for line in lines[:8]:
+            print(f"      {line[:160]}")
+        if len(lines) > 8:
+            print(f"      ... (+{len(lines) - 8} ligne(s))")
+    print()
+
+
+def _print_sha_notes(result: dict) -> None:
+    """#13639 : nommer les levees dont la preuve citee manque de la PR."""
+    for v in result.get("voided_lifts") or []:
+        print(f"  [!] NON LEVE — levee de {v['author']} à {v['at']} : cite "
+              f"{v['sha']}, absent des commits de la PR (résolu côté serveur, "
+              f"mais rembobiné par un push ultérieur)")
+    for w in result.get("absent_sha_warnings") or ():
+        print(f"  [i] levee de {w['author']} à {w['at']} cite {w['sha']} "
+              f"(absent des commits, non rattaché à cette PR) — non bloquant")
+
+
 def gate(pr: int, as_json: bool) -> int:
     data = gh_json(["pr", "view", str(pr), "--repo", REPO, "--json", FIELDS])
+    # #13639 : resolution serveur des SHAs cites-absents, AVANT analyse
+    # (qui reste pure). Sans ceci, la classe #13557 serait invisible.
+    data["_absent_sha_messages"] = _resolve_absent_sha_messages(data)
     merged = ts(data.get("mergedAt"))
     cutoff = merged or datetime.now(timezone.utc)
-    result = analyse(data, review_threads(pr), cutoff)
+    result = analyse(data, review_threads(pr), cutoff,
+                     issue_created=gh_issue_created,
+                     dismissed_improperly=improper_dismissals(pr))
     if as_json:
         print(json.dumps(result, indent=1, ensure_ascii=False))
     elif not result["blocked"]:
         print(f"OK  PR #{pr} — aucun nit non leve.")
+        _print_sha_notes(result)
+        _print_unevaluated(result)
     else:
         print(f"BLOCKED  PR #{pr} — {len(result['blocking'])} nit(s) non leve(s) :\n")
         for b in result["blocking"]:
@@ -1330,8 +2126,14 @@ def gate(pr: int, as_json: bool) -> int:
             gap = f" (+{b['gap_hours']}h avant merge)" if "gap_hours" in b else ""
             print(f"  [{b['kind']}] {b['author']} via {b['src']}{where}{gap}")
             print(f"      {b['excerpt']}\n")
-        print("Lever chaque nit (commit, reponse explicite, ou issue de suivi nommee)")
+        for o in result.get("ignored_overrides", ()):
+            # #13316 : dire POURQUOI l'override visible n'a rien eteint — le
+            # silence etait le mode d'echec couteux (#13030, #12096).
+            print(f"  [i] {o['why']} (commentaire de {o['author']} à {o['at']})")
+        _print_sha_notes(result)
+        print("Lever chaque nit (reponse explicite, thread inline resolu, ou issue de suivi nommee)")
         print("avant `gh pr merge`. Cf CLAUDE.md section B.0.")
+        _print_unevaluated(result)
     return 1 if result["blocked"] else 0
 
 
@@ -1350,7 +2152,11 @@ def audit(limit: int, search: str | None = None) -> int:
             continue
         # Pre-filtre sans `commits` : si rien ne ressort deja, inutile de payer
         # un appel de plus (les commits ne peuvent que LEVER un nit, jamais en creer).
-        if not analyse(p, [], merged)["blocked"]:
+        # #13495 : voie 3 active aussi en retro — sinon l'audit flaggerait des
+        # PRs dont les nits etaient legitiment reportes par issue nommee. Le
+        # cache global de gh_issue_created amortit les lookups croises entre PRs.
+        if not analyse(p, [], merged,
+                       issue_created=gh_issue_created)["blocked"]:
             continue
         try:
             p["commits"] = gh_json(
@@ -1364,7 +2170,7 @@ def audit(limit: int, search: str | None = None) -> int:
         # a besoin pour trier (« du code a bouge apres le nit » = aller lire le
         # diff avant de conclure). Information de triage, pas critere.
         # Audit retro : on n'interroge pas les threads inline (1 appel GraphQL/PR).
-        res = analyse(p, [], merged)
+        res = analyse(p, [], merged, issue_created=gh_issue_created)
         if res["blocked"]:
             res["url"] = p.get("url")
             res["merged_at"] = p["mergedAt"]

@@ -96,6 +96,11 @@ GENERIC_KNOB = re.compile(r"(?i)(baseline|threshold|ratchet|_cap\b|\bcap\b)")
 
 # Assertion vocabulary: file-count claims and exclusivity markers.
 COUNT_CLAIM = re.compile(r"\b(\d+)\s*(?:fichiers?|files?)\b", re.IGNORECASE)
+# #13440: the boundary `\b` stops the match at "fichier" when the body writes
+# the plural parenthetically ("25 fichier(s) verifies") -- without skipping
+# the "(s)" hump, every downstream tail window (incidental qualifier,
+# negated-diff tail, reference verb) is blind on this form.
+PLURAL_PAREN = re.compile(r"^\s*\(s\)\s*")
 # #11985 rule 1 extension (CLOSED LIST -- never expand to unknown vocabulary):
 # a body can declare its perimeter in words ("trois fichiers", "five files").
 # The authorial declaration is the same shape; we just spell-check the
@@ -103,18 +108,37 @@ COUNT_CLAIM = re.compile(r"\b(\d+)\s*(?:fichiers?|files?)\b", re.IGNORECASE)
 # range we fail loud (false-negative default -- the next body with "onze
 # fichiers" / "eleven files" will be caught by a reviewer and the mapping
 # expanded). Closed list = false-negative cost is bounded and visible.
-COUNT_WORDS = {
-    "un": 1, "une": 1,
-    "deux": 2, "two": 2,
-    "trois": 3, "three": 3,
-    "quatre": 4, "four": 4,
-    "cinq": 5, "five": 5,
-    "six": 6, "six": 6,
-    "sept": 7, "seven": 7,
-    "huit": 8, "eight": 8,
-    "neuf": 9, "nine": 9,
-    "dix": 10, "ten": 10,
+#
+# #13535 accord de langue : le cardinal et le nom doivent concorder. Le
+# singulier anglais "file" est aussi un mot francais courant (« file
+# d'attente ») : sans accord, un corps francais qui parle d'une file de CI
+# produisait le bigramme « une file », lu comme <cardinal> <noun> = 1 fichier,
+# et le garde bloquant sur-accusait une phrase sans rapport (#13499 : « le
+# meme verdict sur une file qui avance et sur une file figee » -> FAIL
+# pretendu 1 fichier, liste effective 2). Croisement FR-cardinal + EN-nom
+# n'a aucune forme legitime : on exige la meme langue des deux cotes. Le
+# chiffre (COUNT_CLAIM) reste langue-neutre. Residu assume : « six » est
+# cardinal des deux langues, donc « six files d'attente » (FR) matche quand
+# meme la lecture EN -- borne par la rarece de la forme.
+COUNT_WORDS_FR = {
+    "un": 1, "une": 1, "deux": 2, "trois": 3, "quatre": 4, "cinq": 5,
+    "six": 6, "sept": 7, "huit": 8, "neuf": 9, "dix": 10,
 }
+COUNT_WORDS_EN = {
+    "one": 1, "two": 2, "three": 3, "four": 4, "five": 5,
+    "six": 6, "seven": 7, "eight": 8, "nine": 9, "ten": 10,
+}
+COUNT_WORDS = {**COUNT_WORDS_FR, **COUNT_WORDS_EN}
+# Triggers pre-compiles : (mot, valeur, regex) -- FR cardinal + fichiers?,
+# EN cardinal + files?. Les trois sites consommateurs (_word_form_count,
+# extraction, body_declares_effective_count) partagent cette meme definition.
+WORD_FORM_TRIGGERS = tuple(
+    (word, n, re.compile(rf"\b{re.escape(word)}\s+fichiers?\b", re.IGNORECASE))
+    for word, n in COUNT_WORDS_FR.items()
+) + tuple(
+    (word, n, re.compile(rf"\b{re.escape(word)}\s+files?\b", re.IGNORECASE))
+    for word, n in COUNT_WORDS_EN.items()
+)
 EXCLUSIVITY_MARKERS = (
     "uniquement",
     "seulement",
@@ -394,10 +418,18 @@ def check_assertion(files: list[dict], assertion: str) -> list[str]:
         # reached the terminal "unverifiable" branch despite being a true
         # perimeter claim. Read the same closed list, same first-non-zero
         # rule. FR cardinals are unique 1-10 (no false twin like EN "six").
-        problems.append(
-            f"l'assertion pretend {word_count} fichier(s), la liste effective en compte {len(files)} : "
-            + ", ".join(f["path"] for f in files)
-        )
+        # #13610: an indefinite-article word count whose edit-verb referent is
+        # a NAMED file not in this PR is a descriptive mention of another
+        # file (routing target, dependency, candidate not chosen) -- not the
+        # PR's perimeter. Skip the red; the digit branch never produces this
+        # shape so the guard sits here only.
+        if _word_form_is_indef_non_pr_subject(scan_target, files):
+            pass
+        else:
+            problems.append(
+                f"l'assertion pretend {word_count} fichier(s), la liste effective en compte {len(files)} : "
+                + ", ".join(f["path"] for f in files)
+            )
     exclusive = _has_exclusivity(scan_target.lower())
     if exclusive:
         for f in files:
@@ -456,7 +488,57 @@ INCIDENTAL_QUALIFIERS = frozenset({
     "produites", "sources", "source",
     # #11985 formes 3-4: artifact kinds and scan inventories.
     "audio", "distinct", "distincts", "distinctes", "non-notebook",
-})
+    # #13440 -- participes de RESULTAT DE CONTROLE : ce qu'un controle a
+    # couvert, jamais ce que le diff touche (un claim de perimetre s'ecrit
+    # avec des verbes de modification, qui restent bloquants via
+    # _has_strong_scope et hors liste). Formes mesurees sur main :
+    # "25 fichier(s) verifies sans BOM", "18 fichiers testes sans erreur",
+    # "Controle encodage : 25 fichier(s) conformes".
+    # FN DELIBERE : "restaures"/"restaurés" (campagne accents #2876) et
+    # "re-executes"/"re-exécutés" (tranches MGS) restent HORS liste -- dans
+    # ce depot ces formes SONT des perimetres.
+    "verifies", "vérifiés", "verifie", "vérifié",
+    "testes", "testés", "teste", "testé",
+    "conformes", "conforme",
+    "scannes", "scannés", "scanne", "scanné",
+    "analyses", "analysés", "analyse", "analysé",
+    "audites", "audités", "audite", "audité",
+    "examines", "examinés", "examine", "examiné",    # #12718 (classe #11985 forme 4): "N fichiers neufs/neuve/neuf" -- the
+    # French "new" adjective in its noun-collocated form -- is a NEW-FILES
+    # descriptor, never the whole-PR perimeter. The equality confrontation
+    # would read "2 fichiers neufs : file1 + file2" as "the PR changes 2
+    # files" when it actually adds 2 new ones among 5 changed. Same family
+    # as "nouveau/nouveaux/nouvelle/nouvelles" above; the masculine/feminine
+    # singular/plural variants were missing.
+    "neuf", "neuve", "neufs",})
+# ---------------------------------------------------------------------------
+# #13610 -- article indefini en position d'objet d'un verbe d'action dont le
+# sujet N'est PAS la PR. Founder case PR #13539 l.43 :
+# « generaliser demanderait d'editer un fichier deja porteur de deux PRs
+# ouvertes de la meme lane (#13496, #13499) » -- « un fichier » y designe
+# `pick_idle_grain.py` (un fichier que la PR ne touche pas, cite pour
+# justifier un non-geste de routage), et le guard tirait 1 fichier(s) face a
+# une liste de 3, rougissant un check requis sur une PR saine. Meme classe
+# symetrique que les fondateurs #11985 forme 5/6 : un referent descriptif,
+# pas une assertion de perimetre.
+#
+# Discriminant : « (un|une|des) (fichier|files)(s) » OUVERT par un verbe
+# d'action EDIT + un nom de FICHIER NOMMÉ sur la meme ligne ET ce nom n'est
+# PAS dans `files`. Si le referent reste anonyme (« editer un fichier »),
+# le cas est ambigu et le garde CONSERVE le rouge (FN safety par defaut,
+# coherent avec le pattern fondateur du script).
+# ---------------------------------------------------------------------------
+_INDEF_ARTICLE = re.compile(r"\b(?:un|une|des)\s+(?:fichiers?|files?)\b", re.IGNORECASE)
+_EDIT_VERB = re.compile(
+    r"\b(?:editer|modifier|toucher|ouvrir|créer|creer|ajouter|changer|mettre\s+à\s+jour|mettre\s+a\s+jour|update|edit|modify|touch|open|create|add|change)\b",
+    re.IGNORECASE,
+)
+# A named file as it would appear in a body: backticked path, bare basename
+# (.py/.cs/.yml/.json/.md/.ipynb/.sh), or a known scripts/<x>.py shape.
+_NAMED_FILE_BODY = re.compile(
+    r"(?:`([^`]+\.[A-Za-z0-9]+)`|"  # backticked: `pick_idle_grain.py`
+    r"\b([\w./-]+\.(?:py|cs|yml|yaml|json|md|ipynb|ts|js|sh|toml|cfg|ini))\b)"  # bare basename
+)
 # A cited threshold ("< 15 fichiers", ">= 10 fichiers") quotes a rule, it does
 # not claim a perimeter.
 COMPARISON_PREFIX = re.compile(r"[<>=≤≥]\s*$")
@@ -561,6 +643,20 @@ MEASUREMENT_ANTECEDENT = re.compile(
     r"check_(?:unaddressed_nits|pr_perimeter|perimeter))\b",
     re.IGNORECASE,
 )
+# Forme 4c, snapshot avant/apres: "avant (main) : <composant> — N fichiers" /
+# "apres (branche) : N fichiers" -- a before/after baseline of a MEASURED
+# quantity (a Lean lake's SIZE), never the PR's perimeter (#12718). Same family
+# as MEASUREMENT_ANTECEDENT: bad surface, not bad count. The signal is the
+# snapshot keyword adjacent to a branch-state label -- "avant (main)", "apres
+# (branche)" -- which appears only in baseline-comparison prose. FN-safety is
+# structural: a line carrying a strong scope word or a diffstat neighborhood
+# returns blocking in _count_is_incidental BEFORE this exemption is consulted,
+# so "Perimetre : avant 2 fichiers, apres 5 fichiers" stays blocking.
+SNAPSHOT_ANTECEDENT = re.compile(
+    r"\b(?:avant|après|apres|before|after|baseline)\b"
+    r"[^a-z0-9_]*\(?\b(?:main|branche|branch|master)\b\)?",
+    re.IGNORECASE,
+)
 # Forme 5, compte-antecedent parenthetique: "<N> <unites> (<M> fichiers)" --
 # le compte entre parentheses qualifie la PROVENANCE du nombre qui precede
 # ("32 prescriptions avant (2 fichiers) -> 32 apres"), jamais le perimetre de
@@ -607,10 +703,45 @@ def _has_strong_scope(low: str) -> bool:
     # plain `in` test, blocking the per-match NEGATED_DIFF_TAIL exemption).
     # The 8 STRONG_SCOPE_WORDS are all standalone vocabulary in French/English;
     # a regex boundary costs nothing and removes a class of false positives.
-    return any(
-        re.search(rf"\b{re.escape(w)}\b", low, re.IGNORECASE)
-        for w in STRONG_SCOPE_WORDS
+    # #12718: "scope" as a hyphenated compound ("in-scope", "out-of-scope") is
+    # an adjective describing scope-inclusion, never a perimeter-count label --
+    # a hyphen-negative lookbehind keeps such a line incidental while
+    # "scope = perimetre PR" and "Périmètre : N fichiers modifiés" still block.
+    # All non-"scope" words keep the plain \b...\b boundary ("modif" must not
+    # misfire; "périmètre" is a standalone label).
+    for w in STRONG_SCOPE_WORDS:
+        if w == "scope":
+            if re.search(r"(?<![-\w])scope(?![-\w])", low):
+                return True
+        elif re.search(rf"\b{re.escape(w)}\b", low, re.IGNORECASE):
+            return True
+    return False
+
+
+def _count_has_incidental_qualifier(line: str, m: re.Match) -> bool:
+    """#12718: true when the COUNT match `m` is immediately followed by an
+    `INCIDENTAL_QUALIFIERS` word (or a qualified two-word pair). A count so
+    qualified is a sub-claim ("N fichiers neufs : ... (330 lignes)"), not the
+    whole-PR perimeter -- and, unlike an antecedent exemption, it overrides a
+    diffstat neighbor on the same line. Extracted from _count_is_exempt so the
+    two callers (per-count exemption, incidental override) share one predicate."""
+    # #13440: le pluriel parenthetique "(s)" est neutralise avant lecture du
+    # qualificatif ("fichier(s) verifies" doit lire "verifies").
+    after = PLURAL_PAREN.sub(" ", line[m.end():], count=1)
+    mw = re.match(r"\s+([\wàâäéèêëîïôöùûüçÀÂÄÉÈÊËÎÏÔÖÙÛÜÇ-]+)", after)
+    if mw and mw.group(1).lower() in INCIDENTAL_QUALIFIERS:
+        return True
+    mw2 = re.match(
+        r"\s+([\wàâäéèêëîïôöùûüçÀÂÄÉÈÊËÎÏÔÖÙÛÜÇ-]+)"
+        r"\s+([\wàâäéèêëîïôöùûüçÀÂÄÉÈÊËÎÏÔÖÙÛÜÇ-]+)",
+        after,
     )
+    if mw2:
+        pair = f"{mw2.group(1)} {mw2.group(2)}".lower()
+        if (mw2.group(1).lower() in INCIDENTAL_QUALIFIERS
+                or pair in INCIDENTAL_QUALIFIER_PAIRS):
+            return True
+    return False
 
 
 def _count_is_exempt(line: str, m: re.Match, ante_context: str = "") -> bool:
@@ -638,7 +769,7 @@ def _count_is_exempt(line: str, m: re.Match, ante_context: str = "") -> bool:
         return True
     if LOCATIVE_PREP.search(line):
         return True
-    after = line[m.end():]
+    after = PLURAL_PAREN.sub(" ", line[m.end():], count=1)
     if NEGATED_DIFF_TAIL.match(after):
         return True
     if HIT_ANTECEDENT.search(line[: m.start()]):
@@ -646,25 +777,57 @@ def _count_is_exempt(line: str, m: re.Match, ante_context: str = "") -> bool:
     ante_scope = f"{ante_context}\n{line[: m.end()]}" if ante_context else line[: m.end()]
     if MEASUREMENT_ANTECEDENT.search(ante_scope):
         return True
+    if SNAPSHOT_ANTECEDENT.search(line[: m.start()]):
+        return True
     if REFERENCE_VERB_TAIL.match(after):
         return True
     if (before.endswith("(") and after.lstrip().startswith(")")
             and PAREN_ANTECEDENT_NUM.search(before[:-1])):
         return True
-    mw = re.match(r"\s+([\wàâäéèêëîïôöùûüçÀÂÄÉÈÊËÎÏÔÖÙÛÜÇ-]+)", after)
-    mw2 = re.match(
-        r"\s+([\wàâäéèêëîïôöùûüçÀÂÄÉÈÊËÎÏÔÖÙÛÜÇ-]+)"
-        r"\s+([\wàâäéèêëîïôöùûüçÀÂÄÉÈÊËÎÏÔÖÙÛÜÇ-]+)",
-        after,
-    )
-    if mw and mw.group(1).lower() in INCIDENTAL_QUALIFIERS:
+    if _count_has_incidental_qualifier(line, m):
         return True
-    if mw2:
-        pair = f"{mw2.group(1)} {mw2.group(2)}".lower()
-        if (mw2.group(1).lower() in INCIDENTAL_QUALIFIERS
-                or pair in INCIDENTAL_QUALIFIER_PAIRS):
-            return True
     return False
+
+
+def _word_form_is_indef_non_pr_subject(text: str, files: list[dict]) -> bool:
+    """#13610: True when a word-form count in `text` is an indefinite
+    article (« un/une/des fichier(s) ») opened by an edit-verb whose NAMED
+    referent is NOT in `files`. The phrase describes an OTHER file (a
+    routing target, a dependency, a candidate not chosen) and is not the
+    PR's perimeter.
+
+    FN safety: when the referent is anonymous (« editer un fichier » with
+    no named file), the function returns False -- the ambiguous shape
+    stays blocking, coherent with the script's founder pattern (default
+    fails loud; new vocabulary is gated by a measurement, not an
+    intuition). Founder case PR #13539 l.43 :
+    « generaliser demanderait d'editer un fichier deja porteur de deux PRs
+    ouvertes de la meme lane (#13496, #13499) » -- here "un fichier"
+    designates `pick_idle_grain.py` (a file the PR does not touch), and
+    the guard drew 1 vs 3, blocking a healthy PR.
+
+    Hook: called from `check_assertion` on the `word_count` branch only.
+    The digit branch (COUNT_CLAIM) cannot produce the indefinite-article
+    shape and so does not need this guard.
+    """
+    low = text.lower()
+    m = _INDEF_ARTICLE.search(low)
+    if m is None:
+        return False
+    start = m.start()
+    window_before = text[max(0, start - 80):start]
+    if not _EDIT_VERB.search(window_before):
+        return False
+    paths_in_files = {f["path"] for f in files}
+    paths_in_files_basenames = {p.rsplit("/", 1)[-1] for p in paths_in_files}
+    named = _NAMED_FILE_BODY.findall(text)
+    named_flat = [n[0] or n[1] for n in named if n[0] or n[1]]
+    if not named_flat:
+        return False
+    return any(
+        n not in paths_in_files and n not in paths_in_files_basenames
+        for n in named_flat
+    )
 
 
 def _additive_line_sum(line: str) -> int:
@@ -686,14 +849,15 @@ def _additive_line_sum(line: str) -> int:
 
 
 def _word_form_count(text: str) -> int | None:
-    """#12092: first spelled-out cardinal followed by fichiers/files (closed
-    list COUNT_WORDS, FR/EN 1-10). None when the line carries no word-form
+    """#12092: first spelled-out cardinal followed by its language-agreeing
+    noun (closed list COUNT_WORDS, FR/EN 1-10 ; #13535 : FR cardinal +
+    fichiers?, EN cardinal + files?). None when the line carries no word-form
     count -- mirror of COUNT_CLAIM for the word shape. Reuses the exact
-    trigger pattern of extract_perimeter_assertions (~L829) so both halves
+    trigger list of extract_perimeter_assertions so both halves
     of the organ agree on what a word count is."""
     low = text.lower()
-    for word, n in COUNT_WORDS.items():
-        if re.search(rf"\b{re.escape(word)}\s+(?:fichiers?|files?)\b", low):
+    for _word, n, trig in WORD_FORM_TRIGGERS:
+        if trig.search(low):
             return n
     return None
 
@@ -734,7 +898,17 @@ def _count_is_incidental(line: str, ante_context: str = "") -> bool:
         return True  # rejected alternative: "1 PR composite (15 fichiers)" (#11963)
     if ENUMERATION_TAIL.search(line) and NAMED_FILE.search(line):
         return True  # enumeration sub-sum: "X.py + 2 fichiers de tests" (#11935)
-    if _has_strong_scope(low) or DIFFSTAT_NEIGHBORHOOD.search(line):
+    if _has_strong_scope(low):
+        return False
+    if DIFFSTAT_NEIGHBORHOOD.search(line):
+        # A qualifier-exempt count ("N fichiers neufs : file (330 lignes)")
+        # overrides the diffstat guard -- the "lignes" is a per-file size and
+        # the qualifier marks a sub-claim, not the whole-PR perimeter. An
+        # antecedent-exemption (locative "sur 2 fichiers", measurement parent,
+        # snapshot) does NOT override: "+307 lignes / −0 sur 2 fichiers" names
+        # what the diffstat measured (#11935 FN control stays blocking).
+        if all(_count_has_incidental_qualifier(line, m) for m in matches):
+            return True
         return False
     for m in matches:
         if not _count_is_exempt(line, m, ante_context):
@@ -999,9 +1173,8 @@ def _extract_line_candidates(text: str) -> list[tuple[int, str]]:
         # 1-10 (see COUNT_WORDS rationale at line ~98).
         word_triggers = [
             (m, word)
-            for word in COUNT_WORDS
-            for m in re.finditer(rf"\b{re.escape(word)}\s+(?:fichiers?|files?)\b",
-                                  line, re.IGNORECASE)
+            for word, _n, trig in WORD_FORM_TRIGGERS
+            for m in trig.finditer(line)
         ]
         if word_triggers:
             # Same exclusion as numeric form: a word-form count cited inside
@@ -1380,13 +1553,9 @@ def select_candidates(
         if n_files is not None and not any(
             c.body_declares_effective_count for c in body_candidates
         ):
-            for word, n in COUNT_WORDS.items():
+            for word, n, pat in WORD_FORM_TRIGGERS:
                 if n != n_files:
                     continue
-                pat = re.compile(
-                    rf"\b{re.escape(word)}\s+(?:fichiers?|files?)\b",
-                    re.IGNORECASE,
-                )
                 if any(
                     not _is_incidental_assertion(c.text, c.context)
                     and pat.search(c.text)

@@ -153,6 +153,51 @@ def load_cells(nb_path: Path) -> Tuple[List[CellRecord], Optional[str]]:
 _SUFFIX_RE = re.compile(r"^(?P<stem>.+)_(?P<lang>" + "|".join(TARGET_LANGS) + r")$")
 
 
+# Repertoires qui contiennent des COPIES du depot ou des dependances
+# vendorisees. Les traverser fait dependre le compte de paires de
+# l environnement local : une machine portant deux worktrees rend 6 la ou la
+# CI rend 2, et `EXPECTED_PAIR_COUNT` — une egalite — devient non
+# maintenable (le dev « corrige » vers son chiffre local et casse la CI).
+# Mesure du 2026-08-29 sur cette machine : 6 paires vues, dont 4 venaient de
+# `.worktrees/`, aucune n existant sur `main`.
+_SKIP_DIRS = frozenset({
+    ".worktrees",   # copies du depot (git worktree)
+    ".git",
+    ".venv",
+    "venv",
+    "node_modules",
+    ".lake",        # paquets Lean vendorises
+    ".ipynb_checkpoints",
+})
+
+
+def _is_scannable(path: Path, repo_root: Path) -> bool:
+    """Vrai si ``path`` est dans l arbre source, hors copies et vendorise.
+
+    Teste les composants RELATIFS a ``repo_root`` : un depot situe sous un
+    chemin contenant lui-meme un nom de la liste (par ex. un checkout dans
+    ``/home/x/venv/CoursIA``) ne doit pas devenir invisible en entier.
+    """
+    try:
+        rel = path.relative_to(repo_root)
+    except ValueError:
+        return True
+    if any(part in _SKIP_DIRS for part in rel.parts):
+        return False
+    # La liste de noms ci-dessus ne couvre que les conventions connues. Un
+    # worktree nomme autrement contamine quand meme le compte : mesure du
+    # 2026-08-30, un worktree `.wt-parity-split` a la racine faisait rendre
+    # 2 paires qui n existaient que dans la copie, filtre actif. Ce qui
+    # caracterise une copie n est pas son nom mais la presence d un `.git`
+    # (repertoire pour un clone, fichier pour un worktree ou un submodule).
+    probe = repo_root
+    for part in rel.parts[:-1]:
+        probe = probe / part
+        if (probe / ".git").exists():
+            return False
+    return True
+
+
 def discover_pairs(
     repo_root: Path, langs: List[str]
 ) -> List[Tuple[Path, Path, str, str]]:
@@ -181,6 +226,8 @@ def discover_pairs(
     pairs: List[Tuple[Path, Path, str, str]] = []
     seen: Set[Tuple[str, str]] = set()
     for nb_path in sorted(repo_root.rglob("*.ipynb")):
+        if not _is_scannable(nb_path, repo_root):
+            continue
         stem = nb_path.stem
         suffix_match = _SUFFIX_RE.match(stem)
         if suffix_match and suffix_match.group("lang") in langs:

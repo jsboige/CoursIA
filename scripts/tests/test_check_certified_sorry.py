@@ -176,7 +176,25 @@ def test_workflow_targets_match_manifest():
         (repo / ".github/workflows/lean-social-choice.yml").read_text(
             encoding="utf-8"))
     raw = wf["jobs"]["proof-integrity"]["with"]["target-modules"]
-    actual = sorted(m.strip() for m in raw.split(","))
-    assert actual == expected, (
-        f"lean-social-choice.yml target-modules drifted from "
-        f"SocialChoice/CERTIFIED.txt: workflow={actual} manifest={expected}")
+    actual = {m.strip() for m in raw.split(",")}
+    expected_set = set(expected)
+    allowed_companions = {"Abstraction", "Abstraction.Basic"}
+    assert expected_set <= actual, (
+        f"lean-social-choice.yml target-modules omitted entries from "
+        f"SocialChoice/CERTIFIED.txt: workflow={sorted(actual)} "
+        f"manifest={expected}")
+    assert actual - expected_set == allowed_companions, (
+        f"lean-social-choice.yml has unreviewed companion targets: "
+        f"extras={sorted(actual - expected_set)} "
+        f"allowed={sorted(allowed_companions)}")
+
+    required_paths = {
+        "MyIA.AI.Notebooks/GameTheory/game_theory_lean/Abstraction.lean",
+        "MyIA.AI.Notebooks/GameTheory/game_theory_lean/Abstraction/**.lean",
+    }
+    triggers = wf.get("on", wf.get(True))
+    for event in ("push", "pull_request"):
+        actual_paths = set(triggers[event]["paths"])
+        assert required_paths <= actual_paths, (
+            f"lean-social-choice.yml {event} does not trigger for all "
+            f"Abstraction modules: missing={sorted(required_paths - actual_paths)}")

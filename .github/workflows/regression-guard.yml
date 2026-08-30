@@ -37,9 +37,14 @@ name: Regression Guard
 #   - 'regression-accepted' PR label (logged override)
 #   - catalog files / excluded dirs (skipped by the tool)
 
+# ABSORBE PAR LA VOIE RAPIDE sur `pull_request` (#13097 tranche 3, remede A) :
+# le scan sain->degrade (axis-2) est rendu par `fast-lane-shadow.yml` sous le
+# check-run nomme « No notebook health regression », meme nom que ce job,
+# advisory preserve (neutral jamais bloquant, cf registre TRANCHE3). Ce
+# fichier garde `workflow_dispatch` pour le census SNAPSHOT a la demande.
+# Les `paths:` d'origine vivent dans `scripts/ci/fast_lane_registry.py`.
+
 on:
-  pull_request:
-    branches: [ main ]
   workflow_dispatch:
 
 permissions:

@@ -58,3 +58,38 @@ public static class AgentFireAndForget
         // Si l'appel LLM leve ici, personne ne l'observe : process mort.
     }
 }
+
+// Troisieme terrain fautif (AGENTGUARD003) : le meme agent, troisieme
+// vitesse. `Task.Run(() => ...)` est appele comme enonce autonome -- la
+// signature est honnete (Task, pas void), mais le retour est jete a la
+// corbeille : pas de await, pas d'affectation, pas de `_ =`, pas de
+// return. La tache s'execute en arriere-plan, ses exceptions ne sont
+// observees par personne. Un diagnostic AGENTGUARD003 attendu au build
+// (et c'est la seule forme signalee : `await Task.Run(...)`, `var t =
+// Task.Run(...)`, `_ = Task.Run(...)` et `return Task.Run(...)` sont
+// exemptes).
+public static class AgentTaskRunFire
+{
+    public static void Demarrer()
+    {
+        Task.Run(() => Console.WriteLine("ping"));   // AGENTGUARD003
+    }
+}
+
+// Quatrieme terrain fautif (AGENTGUARD004) : la requete fournit un
+// CancellationToken, et la cible sait le recevoir, mais le code genere omet
+// l'argument optionnel. L'annulation est perdue au milieu de la chaine.
+public static class AgentCancellation
+{
+    public static async Task RepondreAsync(
+        string prompt,
+        System.Threading.CancellationToken cancellationToken)
+    {
+        await CallLlmAsync(prompt);                    // AGENTGUARD004
+    }
+
+    private static Task<string> CallLlmAsync(
+        string prompt,
+        System.Threading.CancellationToken cancellationToken = default)
+        => Task.FromResult($"[LLM] {prompt}");
+}

@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import posixpath
 import re
 import subprocess
 import sys
@@ -308,11 +309,113 @@ def replace_render_block(yml_text: str, new_block_lines: list[str]) -> str:
     return new_block + tail
 
 
+# --- Regle render-list-vs-README (#13025, suite audit #10921 c.5418776353) --
+#
+# Mesure Playwright 2026-08-26 : les READMEs de series continuent de lier les
+# .ipynb bruts alors que le site ne sert QUE les rendus (un lien .ipynb sur
+# Pages = 404 ; Search : 21 liens .ipynb au README, rendus .html siblings
+# presents ; RL : 11 liens, rendus manquants). L'experience apprenant
+# dominante etait la page JSON brute -- exactement le defect que l'EPIC
+# #10921 demandait d'etreindre, ressuscite a chaque nouvelle serie.
+#
+# REGLE : la render-list doit couvrir 100% des notebooks listes dans les
+# READMEs des series rendues. Concrenement, tout lien notebook d'un README
+# sous un NOTEBOOK_SUBTREES doit mener soit a un rendu .html (cible dans la
+# render-list), soit rester une source brute EXPLICITE (notebook exclu du
+# rendu par la garde `---` #11451 ou hors sous-arbre rendu). Les READMEs hors
+# sous-arbres rendus (ex. QuantConnect/) forment la population « source
+# brute » documentee -- nonverifies par cette garde.
+_IPYNB_LINK_RE = re.compile(r"\]\(([^)#\s]+\.ipynb)\)")
+_HTML_LINK_RE = re.compile(r"\]\(([^)#\s]+\.html)\)")
+
+
+def _normalise_readme_target(base: Path, href: str) -> str:
+    """Return a repository-relative POSIX path with ``..`` resolved."""
+    return posixpath.normpath((base / href).as_posix())
+
+
+def readme_link_violations() -> list[tuple[str, str, str]]:
+    """Return [(readme, class, detail)] for render-list-vs-README drift.
+
+    Classes:
+      STALE_LINK  -- the .ipynb target IS in the render list: the README must
+                     link the .html sibling instead (the raw .ipynb 404s on
+                     Pages -- the #13025 defect).
+      BROKEN      -- the .ipynb target does not exist on disk (dead link).
+      DEAD_RENDER -- a .html link names an existing notebook excluded from the
+                     render list, so the rendered page will not exist.
+    UNRENDERED targets (file exists but excluded from the render list by the
+    #11451 `---` guard or by an exclude marker) are NOT violations: they are
+    the documented raw-source population (reported by --check-readme-links as
+    warnings so the sweep stays honest, but the fix is notebook-side).
+    """
+    rendered = set(git_tracked_notebooks())
+    readmes = [p for p in git_tracked_readmes()
+               if any(p.startswith(t) for t in NOTEBOOK_SUBTREES)]
+    out: list[tuple[str, str, str]] = []
+    for rel_readme in sorted(readmes):
+        text = (REPO_ROOT / rel_readme).read_text(encoding="utf-8", errors="replace")
+        base = Path(rel_readme).parent
+        for m in _IPYNB_LINK_RE.finditer(text):
+            href = m.group(1)
+            if href.startswith(("http://", "https://", "#", "mailto:")):
+                continue  # absolute/anchor links are out of scope
+            norm = _normalise_readme_target(base, href)
+            if norm in rendered:
+                out.append((rel_readme, "STALE_LINK", href))
+            elif not (REPO_ROOT / norm).exists():
+                out.append((rel_readme, "BROKEN", href))
+            # else: UNRENDERED -- raw-source population, not a violation
+        for m in _HTML_LINK_RE.finditer(text):
+            href = m.group(1)
+            if href.startswith(("http://", "https://", "#", "mailto:")):
+                continue
+            source_href = href.removesuffix(".html") + ".ipynb"
+            source = _normalise_readme_target(base, source_href)
+            if (REPO_ROOT / source).exists() and source not in rendered:
+                out.append((rel_readme, "DEAD_RENDER", href))
+    return out
+
+
+def report_readme_links() -> int:
+    """Print the README-link audit and exit 1 on STALE_LINK/BROKEN (#13025)."""
+    rendered = set(git_tracked_notebooks())
+    readmes = [p for p in git_tracked_readmes()
+               if any(p.startswith(t) for t in NOTEBOOK_SUBTREES)]
+    unrendered = 0
+    for rel_readme in sorted(readmes):
+        text = (REPO_ROOT / rel_readme).read_text(encoding="utf-8", errors="replace")
+        base = Path(rel_readme).parent
+        for m in _IPYNB_LINK_RE.finditer(text):
+            href = m.group(1)
+            if href.startswith(("http://", "https://", "#", "mailto:")):
+                continue  # absolute/anchor links are out of scope
+            norm = _normalise_readme_target(base, href)
+            if norm not in rendered and (REPO_ROOT / norm).exists():
+                unrendered += 1
+    violations = readme_link_violations()
+    for rel_readme, cls, href in violations:
+        print(f"::error::{cls} {rel_readme} -> {href}", file=sys.stderr)
+    n_readmes = len(readmes)
+    print(f"README-link audit: {n_readmes} rendered-subtree READMEs, "
+          f"{len(violations)} violation(s), {unrendered} raw-source link(s) "
+          "(excluded from render -- garde #11451 or hors sous-arbre).")
+    return 1 if violations else 0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--check", action="store_true",
                     help="exit 1 if _quarto.yml render list is stale")
+    ap.add_argument("--check-readme-links", action="store_true",
+                    help="exit 1 if a rendered-subtree README links a raw "
+                         ".ipynb whose render exists (STALE_LINK), a missing "
+                         "source (BROKEN), or a .html page whose notebook is "
+                         "not rendered (DEAD_RENDER) -- regle #13025")
     args = ap.parse_args()
+
+    if args.check_readme_links:
+        return report_readme_links()
 
     new_block = build_render_block()
     current = QUARTO_YML.read_text(encoding="utf-8")

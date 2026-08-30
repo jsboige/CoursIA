@@ -747,14 +747,27 @@ jobs:
           fi
 
           # Merged PRs pour le VRAI predecesseur de la lane (#12095) :
-          # fenetre merge-time pagee via fetch_merged_prs_since.py
-          # (#12636 : --limit 100 est creation-capped).
+          # fenetre merge-time DECOUPEE EN TRANCHES DE DATES via fetch_merged_prs_since.py
+          # (#12636 : --limit 100 est creation-capped ; le cap de recherche a 1000
+          #  impose le decoupage -- une seule requete ne couvre pas 21 j).
           python3 scripts/ci/fetch_merged_prs_since.py --days 21 \
-            > /tmp/merged_prs.json 2>/dev/null || rm -f /tmp/merged_prs.json
+            > /tmp/merged_prs.json 2>/tmp/merged_fetch.err || rm -f /tmp/merged_prs.json
 
           MERGED_ARG=""
           if [ -s /tmp/merged_prs.json ]; then
             MERGED_ARG="--merged-prs-file /tmp/merged_prs.json"
+          else
+            # Sans ce warning l'echec est INVISIBLE : le garde continue de
+            # passer et de bloquer, mais sur le champ prev: DECLARE que le
+            # worker ecrit lui-meme, pas sur ce qui a reellement merge. C'est
+            # ainsi que l'option inexistante --page a fait tourner l'adjacence
+            # sur le mauvais axe repo-wide pendant toute la vie du script,
+            # sans qu'aucun run ne le dise (mesure 2026-08-29, 5/5 PRs).
+            echo "::warning::G-VAR-3 : fenetre de merges NON recuperee -- l'adjacence retombe sur le champ prev: DECLARE (ecrit par le worker), pas sur la sequence reelle. Le verdict ci-dessous ne mesure pas ce qui a merge."
+            if [ -s /tmp/merged_fetch.err ]; then
+              echo "--- fetch stderr ---"
+              sed 's/^/  /' /tmp/merged_fetch.err
+            fi
           fi
 
           # shellcheck disable=SC2086  # COMMENTS_ARG/MERGED_ARG are deliberate 0-or-2 token splits
@@ -787,7 +800,11 @@ jobs:
           fi
 
           REASON=$(python3 -c "import json; print(json.load(open('/tmp/verdict.json')).get('reason','unknown'))" 2>/dev/null || echo "unknown")
-          echo "::error::G-VAR-3 LIGHT-genre adjacency: $REASON"
+          # L'axe fait partie du verdict : un blocage calcule sur 'declared'
+          # et un blocage calcule sur 'merged-sequence' n'ont pas la meme
+          # valeur probante, et rien ne les distinguait dans la sortie.
+          PREV_SRC=$(python3 -c "import json; print(json.load(open('/tmp/verdict.json')).get('prev_source','?'))" 2>/dev/null || echo "?")
+          echo "::error::G-VAR-3 LIGHT-genre adjacency [predecesseur lu sur: $PREV_SRC]: $REASON"
 
           gh pr comment "$PR_NUMBER" --body "$(cat <<EOF
           <!-- vtr-adjacency-block -->
@@ -904,6 +921,17 @@ jobs:
           FAST_LANE_BASE_SHA: ${{ github.event.pull_request.base.sha }}
           FAST_LANE_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           FAST_LANE_PR: ${{ github.event.pull_request.number }}
+          # #13491 : passer le body de la PR aux detecteurs qui lisent
+          # `MD_CONTENT_LOSS_PR_BODY` (env var in-memory, pas de fichier
+          # sur le runner). On utilise le canal in-memory pour eviter le
+          # pattern CodeQL `actions/code-injection` declenche par
+          # `printf '%s' "${{ github.event.pull_request.body }}" > file`
+          # (le taint traverse `printf` vers le shell). Le detecteur
+          # resout `MD_CONTENT_LOSS_PR_BODY` en priorite sur
+          # `MD_CONTENT_LOSS_PR_BODY_FILE` ; ce dernier reste conserve
+          # pour le workflow dedie md-content-loss-gate.yml et les tests
+          # unitaires (cf PR #13673 follow-up c.715).
+          MD_CONTENT_LOSS_PR_BODY: ${{ github.event.pull_request.body }}
         run: |
           git fetch origin "${{ github.base_ref }}" -q
           python scripts/ci/fast_lane.py --shadow

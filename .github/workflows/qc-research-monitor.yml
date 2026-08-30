@@ -52,5 +52,27 @@ jobs:
             echo "etat inchange, rien a committer"
           else
             git commit -m "chore(qc-research,#11698): etat semis monitor [skip ci]"
-            git push
+            # Race push-main (#12834 partie 2) : le checkout porte le SHA fige au
+            # DECLENCHEMENT schedule ; a ~65 merges/jour, une queue de 3h+ rend le
+            # push non-fast-forward (run 32690576863 : declenche 04:35, runner 08:08,
+            # push rejete -> etat JSON stale -> re-semis en double garanti au run
+            # suivant). Le commit est deterministe : rebase sans conflit legitime.
+            MAX_RETRIES=3
+            attempt=1
+            until git push 2>&1; do
+              if [ "$attempt" -ge "$MAX_RETRIES" ]; then
+                echo "push ECHOUE apres $MAX_RETRIES tentatives -- etat semis NON committe, le prochain run re-activera le dedup (#12834 partie 1)"
+                exit 1
+              fi
+              echo "push REJECTED tentative $attempt/$MAX_RETRIES -- main a avance pendant la queue, re-synchronisation"
+              sleep $((5 * attempt * attempt))   # 5 s puis 20 s (backoff quadratique, 3 essais)
+              attempt=$((attempt + 1))
+              git fetch origin main
+              if ! git rebase origin/main; then
+                echo "rebase CONFLICT -- abandon (commit deterministe : un conflit signale un etat corrompu)"
+                git rebase --abort
+                exit 1
+              fi
+            done
+            echo "push SUCCESS (tentative $attempt)"
           fi

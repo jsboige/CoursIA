@@ -659,7 +659,7 @@ Task(
     prompt="""
     Agent notebook-validator.
 
-    Notebook: MyIA.AI.Notebooks/Sudoku/Sudoku-1-Backtracking.ipynb
+    Notebook: MyIA.AI.Notebooks/Sudoku/Sudoku-01-Backtracking.ipynb
     Level: quick
     Execute: false
     Report format: markdown
