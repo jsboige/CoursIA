@@ -37,7 +37,7 @@ pip install jupyter papermill
 jupyter notebook MyIA.AI.Notebooks/
 ```
 
-[Commencer le parcours 1 →](README.md){.btn .btn-primary .parcours-cta}
+[Commencer le parcours 1 →](MyIA.AI.Notebooks/Search/Part1-Foundations/README.md){.btn .btn-primary .parcours-cta}
 :::
 
 ::: {.g-col-12 .g-col-md-4 .parcours-card .parcours-card--dotnet}
@@ -57,7 +57,7 @@ jupyter notebook MyIA.AI.Notebooks/
 - [SymbolicAI/Tweety](MyIA.AI.Notebooks/SymbolicAI/Tweety/README.md) — argumentation computationnelle (port IKVM)
 - [SymbolicAI/Planners](MyIA.AI.Notebooks/SymbolicAI/Planners/README.md) — planification automatique (OR-tools)
 
-[Commencer le parcours 2 →](README.md){.btn .btn-primary .parcours-cta}
+[Commencer le parcours 2 →](MyIA.AI.Notebooks/ML/README.md){.btn .btn-primary .parcours-cta}
 :::
 
 ::: {.g-col-12 .g-col-md-4 .parcours-card .parcours-card--genai}
@@ -76,7 +76,7 @@ jupyter notebook MyIA.AI.Notebooks/
 - [GenAI/Vibe-Coding](MyIA.AI.Notebooks/GenAI/Vibe-Coding/README.md) — assistants IA en local (Claude Code, Roo)
 - [QuantConnect/](MyIA.AI.Notebooks/QuantConnect/README.md) — 50+ stratégies de trading algorithmique (Lean engine)
 
-[Commencer le parcours 3 →](README.md){.btn .btn-primary .parcours-cta}
+[Commencer le parcours 3 →](MyIA.AI.Notebooks/GenAI/Image/README.md){.btn .btn-primary .parcours-cta}
 :::
 
 :::
