@@ -88,7 +88,11 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import grain_tag as gt  # noqa: E402
-from variation_light_cap import LIGHT_GENRES, canonicalize_genre  # noqa: E402
+from variation_light_cap import (  # noqa: E402
+    canonicalize_genre,
+    genre_counts_light,
+    genre_resolves,
+)
 
 
 # --- G-VAR-3 override (#11708) --------------------------------------------
@@ -356,8 +360,19 @@ def check(body: str | None, override: dict | None = None,
         }
 
     # Same genre. The LIGHT set is the absolute ban of §2; a DEEP/MED
-    # domain-core genre is the advisory judgment of §2.
-    if genre in LIGHT_GENRES:
+    # domain-core genre is the advisory judgment of §2. The predicate is
+    # the fail-CLOSED one of #13475 (`genre_counts_light`): an UNRESOLVED
+    # genre (off the closed enumeration) counts LIGHT here too -- before,
+    # `LIGHT/zzz` twice in a row compared equal but escaped `LIGHT_GENRES`
+    # membership, so the ban never fired on invented words.
+    if genre_counts_light(genre):
+        unknown_note = ""
+        if not genre_resolves(genre):
+            unknown_note = (
+                f" GENRE-UNKNOWN: `{genre}` n est pas dans l enumeration "
+                f"fermee (variation-protocol §1) -- retaguez avec un genre "
+                f"canonique, le vocabulaire est ferme par intention."
+            )
         # The adjacency is real. Before failing, ask whether the coordinator
         # has exercised the 24h decision section 3 already grants (#11708).
         if override and override.get("next_genre") \
@@ -418,7 +433,8 @@ def check(body: str | None, override: dict | None = None,
                 f"(§2): piochez un grain d'UN AUTRE genre, ne retaguez pas "
                 f"le meme travail (#11170). Tenu > 24 h : le coordinateur "
                 f"tranche par `[G-VAR-3 OVERRIDE] lane {lane} -- next: "
-                f"<genre>` (section 3), il ne laisse pas vieillir.{hint}{src_note}"
+                f"<genre>` (section 3), il ne laisse pas vieillir."
+                f"{unknown_note}{hint}{src_note}"
             ),
         }
         # `override_rejected` absent du verdict = "aucun marqueur de
