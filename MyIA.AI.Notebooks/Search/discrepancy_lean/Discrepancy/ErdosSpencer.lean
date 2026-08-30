@@ -4,8 +4,9 @@ import Discrepancy.ErdosSpencer.LB
 /-!
 # Agrégateur Erdős–Spencer — re-export Moments + LB
 
-Découpage de l'ancien monolithe de 1 827 lignes (issue #13508, Volet 2) :
-déplacements byte-identiques, aucun énoncé réécrit.
+Découpage de l'ancien monolithe (1 826 lignes au commit de split, 1 874
+après absorption au rebase des 49 lignes de docstring volet 1 de #13556 ;
+issue #13508, Volet 2) : déplacements byte-identiques, aucun énoncé réécrit.
 
 - `Discrepancy.ErdosSpencer.Moments` : boute p1 — moments de la somme de
   Rademacher colorée, Paley–Zygmund, minoration de queue ;
