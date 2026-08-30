@@ -141,6 +141,7 @@ REPO = "jsboige/CoursIA"
 # pour le diagnostic complet (EPIC decoupe en 9 filles = 9 veines invisibles).
 from series_saturation import (  # noqa: E402
     CONSOLIDATION,
+    enrich_parent_families,
     EXPANSION,
     NEUTRAL,
     SERIES_SCALE_DEFAULT,
@@ -388,7 +389,7 @@ def admissibility(item: dict, balance: dict | None,
                     "distingue depiler d'emballer.".format(h, dwell_hours))
 
     fam = resolve_family(item, issue_to_family or {},
-                         tuple((balance or {}).keys()))
+                         tuple((balance or {}).keys()), balance)
     if fam and item.get("polarity") == EXPANSION:
         z = (balance or {}).get(fam) or {}
         nb = z.get("new_notebooks", 0)
@@ -467,7 +468,8 @@ def weight(item: dict, prev_genre: str | None,
     # FRATRIE sature -- le cas exact des 9 paires de #12373. La remontee par
     # `parent` est indispensable : sans elle l amortissement ne mord que sur
     # les issues DEJA travaillees, donc jamais sur la prochaine instance.
-    fam = resolve_family(item, issue_to_family or {}, tuple(series or ()))
+    fam = resolve_family(item, issue_to_family or {}, tuple(series or ()),
+                         series)
     nb_new = 0
     if fam:
         nb_new = ((series or {}).get(fam) or {}).get("new_notebooks", 0)
@@ -1456,6 +1458,8 @@ def main(argv: list[str] | None = None) -> int:
     pool = fetch_pool()
     visits, visits_err = fetch_visits()
     series, issue_to_family, series_err = fetch_series_visits()
+    issue_to_family = enrich_parent_families(
+        pool, issue_to_family, series)
     balance = zone_balance(series, issue_to_family, pool)
 
     # Admission AVANT les urnes : un grain inadmissible ne doit pas
