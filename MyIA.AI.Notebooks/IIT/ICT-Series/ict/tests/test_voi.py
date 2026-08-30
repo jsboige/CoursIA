@@ -249,28 +249,75 @@ def test_evsi_net_observation_decision_expensive_test():
 # --------------------------------------------------------------------------- #
 
 
-def test_evsi_zero_likelihood_column_ignored():
-    """Une colonne de likelihood marginale < 1e-12 est ignoree (no division by 0).
+def test_evsi_rejects_non_normalised_rows():
+    """Une likelihood dont les lignes ne somment pas a 1 est REJETEE.
 
-    Si la colonne ne contribue pas numeriquement, on ne divise pas par
-    ``P(outcome) ≈ 0`` dans le posterior de Bayes. Ici, l'outcome 1 est
-    le seul informatif (senseur quasi-parfait) : EVSI ≈ EVPI.
-    L'outcome 2 est negligeable : il est ignore, pas de NaN.
+    La convention conditionnelle ``P(outcome | etat)`` impose que chaque
+    ligne somme a 1 (loi des probabilites totales par etat). Une matrice
+    dont les lignes somment a autre chose que 1 n'est pas une vraisemblance
+    conditionnelle : EVPI/EVSI ne sont pas definis. Levée ValueError
+    explicite avec les lignes fautives et leur somme.
+    """
+    pb = _parapluie()
+    L_bad = np.array([
+        [0.99, 1e-15],  # ligne 0 somme 0.99+1e-15 ≈ 0.99
+        [0.01, 1e-15],  # ligne 1 somme 0.01+1e-15 ≈ 0.01
+    ])
+    with pytest.raises(ValueError, match="chaque ligne de likelihood doit sommer a 1"):
+        voi_mod.evsi(pb, L_bad)
+
+
+def test_evsi_accepts_normalised_quasi_perfect_sensor():
+    """Senseur quasi-parfait (lignes normalisées) → EVSI mesure ~95% EVPI.
+
+    Matrice 2x2 conditionnelle : P(outcome | etat) somme a 1 par ligne.
+    Le senseur se trompe dans 1% des cas. La mesure verbatim (calcul
+    fermé sur le problème parapluie) donne EVSI = 3.315, EVPI = 3.5, soit
+    94.7% de l'EVPI. La perte de 5.3% vient du risque résiduel sur
+    l'outcome "+" (2.3% soleil → EU=-0.115 au lieu de 0).
+
+    Convention : on accepte >= 90% de l'EVPI — la discrimination reste
+    nette (senseur proche de l'oracle), et la borne est mesurée, pas
+    optimiste. La règle SOTA Prong B impose de mesurer la discrimination
+    avant de la clamer.
     """
     pb = _parapluie()
     L = np.array([
-        [0.99, 1e-15],  # pluie -> [out1 informatif, out2 negligeable]
-        [0.01, 1e-15],  # soleil -> [out1 informatif, out2 negligeable]
+        [0.99, 0.01],  # pluie -> 99% prev "+", 1% bruit
+        [0.01, 0.99],  # soleil -> 99% prev "-", 1% bruit
     ])
     e = voi_mod.evsi(pb, L)
-    # Pas de NaN (outcome negligeable ignore correctement)
-    assert np.isfinite(e), f"EVSI doit etre fini, recu {e}"
-    # Outcome 1 = senseur quasi-parfait → EVSI ≈ EVPI (perte ~1%)
     e_evpi = voi_mod.evpi(pb)
+    assert np.isfinite(e), f"EVSI doit etre fini, recu {e}"
     assert e <= e_evpi + 1e-9, f"EVSI ({e}) doit etre <= EVPI ({e_evpi})"
-    assert e >= e_evpi * 0.95, (
-        f"EVSI senseur 99% doit etre >= 95% EVPI, recu {e:.4f} vs EVPI={e_evpi:.4f}"
+    assert e >= e_evpi * 0.90, (
+        f"EVSI senseur 99% doit etre >= 90% EVPI (mesure), "
+        f"recu {e:.4f} vs EVPI={e_evpi:.4f}"
     )
+
+
+def test_evsi_rejects_1d_likelihood():
+    """Une likelihood 1D leve ValueError explicite, pas IndexError."""
+    pb = _parapluie()
+    L_1d = np.array([0.5, 0.5])  # 1D : pas une matrice
+    with pytest.raises(ValueError, match="likelihood doit etre 2D"):
+        voi_mod.evsi(pb, L_1d)
+
+
+def test_evsi_rejects_zero_column_likelihood():
+    """Une colonne entierement nulle (probabilité 0 sur un outcome) est rejetee.
+
+    Une ligne ne peut pas sommer à 1 si une colonne est 0 et l'autre aussi :
+    ce n'est pas une distribution de probabilites. La validation rows-sum=1
+    attrape ce cas avant le calcul.
+    """
+    pb = _parapluie()
+    L_zero_col = np.array([
+        [0.0, 0.0],  # ligne 0 somme 0
+        [1.0, 0.0],  # ligne 1 somme 1
+    ])
+    with pytest.raises(ValueError, match="chaque ligne de likelihood doit sommer a 1"):
+        voi_mod.evsi(pb, L_zero_col)
 
 
 def test_evsi_likelihood_validation():

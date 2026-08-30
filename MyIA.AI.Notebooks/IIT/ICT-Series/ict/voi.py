@@ -13,10 +13,21 @@ observer avant d'agir.
 | ``PyMC/DecPyMC-5-Value-Information.ipynb``     | PyMC      | bayesien + MCMC       |
 | ``PyMC/DecPyMC-11-Valeur-Info-Souscription.ipynb`` | PyMC   | bayesien applique     |
 
-Ce module degage **l'interface canonique** que ICT appelle pour les deux
-moteurs : ``prior + utility_matrix`` en entree, ``EVPI`` / ``EVSI`` / ``EV_net``
-en sortie. Les implementations natives (DecInfer-6, DecPyMC-5) restent
-*appelees*, pas recopiees — la greffe #13569.
+**Tranche 1/3 (cette PR) — interface analytique commune NumPy.** Ce module
+fournit l'implementation analytique close-form EVPI/EVSI en NumPy pur.
+Les moteurs natifs DecInfer-6 (Infer.NET) et DecPyMC-5 (PyMC) restent les
+organes de calcul canoniques du depot ; **la preuve cross-engine qu'ils
+donnent la meme valeur viendra des adaptateurs/outputs de la tranche 2/3**
+(notebook ICT-12e), pas de cette tranche-ci. Cette interface analytique
+sert de specification executable et de cible de test commune aux deux
+moteurs ; son role est de poser la signature, pas de reimplementer les
+moteurs.
+
+**Tranche 2/3 (a venir) — adaptateurs et controle croise.** La tranche
+suivante branchera l'interface sur les notebooks natifs et montrera que
+``ict.voi.evpi()`` et ``DecInfer-6.EVPI()`` (idem PyMC) rendent la meme
+valeur a tolerance pres sur les memes cas canoniques (parapluie, forage,
+animat incarne).
 
 Principe directeur : **la valeur n'est pas declaree, elle est mesuree**.
 Chaque fonction renvoie un flottant ; aucun raccourci bayesien n'est pris
@@ -177,15 +188,31 @@ def evsi(
     posterior de Bayes).
     """
     L = np.asarray(likelihood, dtype=float)
-    if L.shape != (len(problem.states), L.shape[1]):
+    if L.ndim != 2:
+        raise ValueError(
+            f"likelihood doit etre 2D, recu ndim={L.ndim} shape={L.shape}"
+        )
+    if L.shape[0] != len(problem.states):
         raise ValueError(
             f"likelihood.shape[0]={L.shape[0]} doit valoir "
             f"len(states)={len(problem.states)}"
         )
-    if np.any(L < 0):
-        raise ValueError("likelihood doit etre >= 0 partout")
     if L.shape[1] < 1:
         raise ValueError("likelihood doit avoir au moins 1 colonne (outcome)")
+    if np.any(L < 0):
+        raise ValueError("likelihood doit etre >= 0 partout")
+    # Chaque ligne est P(outcome | etat) : distribution conditionnelle, somme a 1.
+    row_sums = L.sum(axis=1)
+    if not np.allclose(row_sums, 1.0, atol=1e-9):
+        bad = [
+            (i, float(row_sums[i]))
+            for i in range(len(problem.states))
+            if not np.isclose(row_sums[i], 1.0, atol=1e-9)
+        ]
+        raise ValueError(
+            f"chaque ligne de likelihood doit sommer a 1 "
+            f"(P(outcome | etat)), got {bad}"
+        )
     eu_sans, _ = optimal_action_without_info(problem)
     n_outcomes = L.shape[1]
     eu_avec = 0.0
