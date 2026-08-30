@@ -303,6 +303,50 @@ class TestLandingPages:
 
 
 # ---------------------------------------------------------------------------
+# README-link target normalisation
+# ---------------------------------------------------------------------------
+
+class TestReadmeLinkTargets:
+    def test_resolves_parent_segments(self):
+        base = Path("MyIA.AI.Notebooks/Search/Part2-CSP")
+        href = "../Part1-Foundations/Search-1-StateSpace.ipynb"
+
+        assert rqr._normalise_readme_target(base, href) == (
+            "MyIA.AI.Notebooks/Search/Part1-Foundations/"
+            "Search-1-StateSpace.ipynb"
+        )
+
+    def test_removes_current_directory_segments(self):
+        base = Path("MyIA.AI.Notebooks/RL")
+
+        assert rqr._normalise_readme_target(
+            base, "./rl_1_intro_cartpole.ipynb"
+        ) == "MyIA.AI.Notebooks/RL/rl_1_intro_cartpole.ipynb"
+
+    def test_flags_html_when_source_not_rendered(self, monkeypatch, tmp_path):
+        readme = tmp_path / "MyIA.AI.Notebooks" / "Search" / "README.md"
+        source = readme.parent / "Excluded.ipynb"
+        readme.parent.mkdir(parents=True)
+        readme.write_text("[Excluded](Excluded.html)\n", encoding="utf-8")
+        source.write_text("{}\n", encoding="utf-8")
+        monkeypatch.setattr(rqr, "REPO_ROOT", tmp_path)
+        monkeypatch.setattr(
+            rqr,
+            "git_tracked_readmes",
+            lambda: ["MyIA.AI.Notebooks/Search/README.md"],
+        )
+        monkeypatch.setattr(rqr, "git_tracked_notebooks", lambda: [])
+
+        assert rqr.readme_link_violations() == [
+            (
+                "MyIA.AI.Notebooks/Search/README.md",
+                "DEAD_RENDER",
+                "Excluded.html",
+            )
+        ]
+
+
+# ---------------------------------------------------------------------------
 # argparse — --check flag
 # ---------------------------------------------------------------------------
 

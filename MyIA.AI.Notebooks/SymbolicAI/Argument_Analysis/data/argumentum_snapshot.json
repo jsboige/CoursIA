@@ -1,0 +1,76 @@
+{
+  "_comment": "Genere par la resynchronisation verbatim. Ne pas editer a la main : relancer une resynchronisation depuis l'amont et regenerer ce fichier. Le commit amont est celui de master : une ref de branche de travail ne serait pas retrouvable pour un tiers. Les deux CSV sont inchanges entre a23e9568 et c86b71ff : le commit unique reste coherent. Les ontologies sont renommees a l'import (amont argumentum.owl -> local argumentum_fallacies.owl) ; `upstream_path` conserve la correspondance, sans quoi un tiers ne retrouve pas la source.",
+  "upstream_repo": "ArgumentumGames/Argumentum",
+  "upstream_commit": "c86b71ff",
+  "upstream_branch": "master",
+  "synced_on": "2026-08-30",
+  "files": {
+    "argumentum_fallacies_taxonomy.csv": {
+      "blob_sha1": "fdba6a1630a156470f3c1074ebf18cc1aa29bb97",
+      "rows": 1408,
+      "columns": 104,
+      "required_columns": [
+        "AIF_attackType",
+        "AIF_attackedNode",
+        "AIF_skosDirectRef",
+        "AIF_skosExceptionRef",
+        "AIF_skosMappingType",
+        "AIF_skosOther",
+        "crossLink_Allows",
+        "crossLink_Denounces",
+        "crossLink_Inverts",
+        "crossLink_IsRelatedTo",
+        "crossLink_Leverages",
+        "crossLink_Mirrors",
+        "crossLink_Opposes",
+        "crossLink_PredatesOn"
+      ]
+    },
+    "argumentum_virtues_taxonomy.csv": {
+      "blob_sha1": "7d694b95eb32fb32f5eecbe5289268b6ff4f2404",
+      "rows": 223,
+      "columns": 82,
+      "required_columns": [
+        "AIF_attackType",
+        "AIF_attackedNode",
+        "AIF_criticalQuestion",
+        "AIF_skosDirectRef",
+        "AIF_skosExceptionRef",
+        "AIF_skosMappingType",
+        "AIF_skosOther",
+        "crossLink_Allows",
+        "crossLink_Denounces",
+        "crossLink_Inverts",
+        "crossLink_IsRelatedTo",
+        "crossLink_Leverages",
+        "crossLink_Mirrors",
+        "crossLink_Opposes",
+        "crossLink_PredatesOn"
+      ],
+      "families": [
+        "Argument pertinent",
+        "Argument valable",
+        "Honnêteté intellectuelle",
+        "Inférence maîtrisée",
+        "Justesse lexicale",
+        "Présentation intègre",
+        "Sens quantitatif",
+        "Échange enrichissant"
+      ]
+    }
+  },
+  "ontologies": {
+    "argumentum_fallacies.owl": {
+      "upstream_path": "docs/ontology/argumentum.owl",
+      "blob_sha1": "4b4fc620dc3285a04850f7608fde61bb2dc3eb99",
+      "object_property_assertions": 2122,
+      "annotation_assertions": 18388
+    },
+    "argumentum_virtues.owl": {
+      "upstream_path": "docs/ontology/argumentum_virtues.owl",
+      "blob_sha1": "c67d08f01c7876b83383bdc113616bd2887745f0",
+      "object_property_assertions": 444,
+      "annotation_assertions": 3305
+    }
+  }
+}

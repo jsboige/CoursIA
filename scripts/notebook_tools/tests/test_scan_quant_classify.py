@@ -1560,3 +1560,57 @@ class TestV8ModeledMinuteIntegration:
         assert len(machine_dep) >= 1, (
             f"genuine runtime min doit rester MACHINE-DEP, got {result.by_class}"
         )
+
+
+# --------------------------------------------------------------------------- #
+#  #13534 — masque des liens markdown, et contrôle positif contre le sur-filtrage
+# --------------------------------------------------------------------------- #
+class TestMarkdownLinkNotAMeasurement:
+    """Un numéro de section cité dans un lien n'est pas une mesure (#13534).
+
+    Le premier test vérifie que le masque mord. Les deux suivants sont des
+    CONTRÔLES POSITIFS : sans eux, élargir le masque jusqu'à tout supprimer
+    passerait le premier test et viderait le scanner de sa fonction.
+    """
+
+    def _write_nb(self, tmp_path, source, name="t.ipynb"):
+        p = tmp_path / name
+        p.write_text(
+            json.dumps({"cells": [{"cell_type": "markdown", "source": [source]}]}),
+            encoding="utf-8",
+        )
+        return analyze_notebook_quant(p)
+
+    def test_section_number_in_link_is_masked(self, tmp_path):
+        """Le numéro apparaît deux fois (label ET cible) et n'est pas une grandeur."""
+        result = self._write_nb(
+            tmp_path,
+            "Le [2.6 clustering & acp](2.6-clustering-kmeans-pca.ipynb) enseigne l'acp.\n",
+        )
+        drainable = sum(v for k, v in result.by_class.items() if k != "STRUCTUREL")
+        assert drainable == 0, f"lien markdown -> aucun drainable, got {result.by_class}"
+
+    def test_version_outside_link_still_detected(self, tmp_path):
+        """CONTRÔLE POSITIF : hors lien, une version d'environnement reste ENV-DEP."""
+        result = self._write_nb(
+            tmp_path,
+            "Environnement teste : python 3.11.4 sur la machine de reference.\n",
+        )
+        assert result.by_class.get("ENV-DEP", 0) >= 1, (
+            f"une version hors lien doit rester drainable, got {result.by_class}"
+        )
+
+    def test_value_in_backticks_still_detected(self, tmp_path):
+        """CONTRÔLE POSITIF : les backticks sont de la typographie, pas du code.
+
+        Masquer les spans inline `...` ferait tomber le corpus de 183 à 157, mais
+        supprimerait cette divergence numpy/torch — exactement ce que le scanner
+        existe pour trouver. Variante mesurée puis écartée le 2026-08-29.
+        """
+        result = self._write_nb(
+            tmp_path,
+            "Fraction de zeros : `0.4014` (numpy) et `0.4007` (torch).\n",
+        )
+        assert result.by_class.get("ENV-DEP", 0) >= 1, (
+            f"une mesure entre backticks doit rester drainable, got {result.by_class}"
+        )

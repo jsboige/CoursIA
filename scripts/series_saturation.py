@@ -374,15 +374,94 @@ def family_from_text(text: str, families) -> str | None:
     return best[1] if best else None
 
 
-def resolve_family(item: dict, issue_to_family: dict, families=()) -> str | None:
+
+def enrich_parent_families(pool, issue_to_family: dict, zones: dict) -> dict:
+    """Rend la zone d'un EPIC a ses ENFANTS, pas aux PRs qui le citent.
+
+    `saturation()` lie une issue a la zone dominante de la premiere PR
+    mergee qui la cite (`setdefault`). Pour un GRAIN c'est factuel. Pour un
+    EPIC c'est un piege : un EPIC est un tracker, cite par tout ce qui
+    l'outille, et la premiere PR d'outillage le fige sur un chemin de script
+    qui ne portera jamais de notebook. Mesure du 2026-08-29 : #12373 (EPIC
+    MGS, 9 paires de notebooks) etait fige sur `scripts/series_saturation.py`,
+    zone a 0 notebook -- si bien que sa fille #13268, sans PR citante propre,
+    heritait d'un frein NUL (x1.00) la ou sa soeur #13394 prenait x0.33 dans
+    la meme zone saturee. Deux grains d'expansion du meme EPIC, deux poids
+    incomparables, selon qu'une PR les avait deja touches ou non.
+
+    Le vote des enfants est la source factuelle qui manquait : la zone d'un
+    EPIC est celle ou ses grains ATTERRISSENT. Il ne remplace jamais une
+    attribution deja informative -- il ne comble que l'absente et la muette.
+    """
+    votes: dict[int, dict[str, int]] = {}
+    for it in pool or ():
+        parent = it.get("parent")
+        if not parent:
+            continue
+        fam = (issue_to_family or {}).get(it.get("number"))
+        if fam and (zones.get(fam) or {}).get("new_notebooks", 0) > 0:
+            tally = votes.setdefault(parent, {})
+            tally[fam] = tally.get(fam, 0) + 1
+    out = dict(issue_to_family or {})
+    for parent, tally in votes.items():
+        cur = out.get(parent)
+        if cur is None or (zones.get(cur) or {}).get("new_notebooks", 0) == 0:
+            out[parent] = max(tally, key=lambda f: (tally[f], f))
+    return out
+
+
+def _informative(fams, zones) -> bool:
+    """Une zone informe le frein si elle a MESURE des notebooks neufs.
+
+    Sans `zones` on ne sait rien : on ne degrade pas le comportement
+    existant (toute reponse est alors tenue pour informative).
+
+    Une liste VIDE, elle, n'informe jamais -- et c'est le cas qui compte le
+    plus, car c'est celui d'un grain frais sans PR citante ni parent resolu.
+    `any()` sur une liste vide rend deja False ; sans ce garde, le raccourci
+    `zones is None` repondait True et faisait sauter le repli par le texte
+    pour tous les appelants a trois arguments (mesure du 2026-08-29 :
+    `test_titre_prime_sur_le_corps` et ses deux soeurs rendaient None).
+    """
+    if not fams:
+        return False
+    if zones is None:
+        return True
+    return any((zones.get(f) or {}).get("new_notebooks", 0) > 0 for f in fams)
+
+
+def resolve_family(item: dict, issue_to_family: dict, families=(),
+                   zones: dict | None = None) -> str | None:
     """Zone d'un grain : par PR citante, sinon par son EPIC parent, sinon par
     le texte. Les trois sources vont de la plus factuelle (une PR a reellement
     touche ce chemin) a la plus declarative (l'issue dit son sujet).
+
+    Une source qui repond une zone SANS accumulation de notebooks mesuree
+    n'informe pas un frein qui compte des notebooks : la cascade continue au
+    lieu de s'arreter dessus (`zones` fourni). Mesure du 2026-08-29 :
+    #13268 (paire 8/9 de l'EPIC #12373, MGS) n'avait pas de PR citante, sa
+    source parente rendait `scripts/series_saturation.py` -- l'EPIC est un
+    tracker, la premiere PR d'outillage qui le cite le lie a un chemin de
+    script par `setdefault` + departage alphabetique -- et ce chemin, qui ne
+    peut par construction porter aucun notebook, ANNULAIT le frein : x1.00 la
+    ou sa soeur #13394 prenait x0.33 dans la meme zone saturee. C'est le trou
+    par lequel passe exactement l'emballement decrit par le user (les grains
+    qui arrivent frais chaque jour n'ont pas encore de PR citante).
+
+    Le garde-fou ne peut pas inventer de frein : il ne retient une source
+    ulterieure que si elle porte des notebooks MESURES ; si aucune n'en porte,
+    la premiere reponse non nulle est rendue, comme avant.
     """
+    cands = []
     fam = (issue_to_family or {}).get(item.get("number"))
-    if fam is None and item.get("parent"):
+    if fam is not None:
+        cands.append(fam)
+    if item.get("parent"):
         fam = (issue_to_family or {}).get(item["parent"])
-    if fam is None and families:
+        if fam is not None:
+            cands.append(fam)
+    fam = cands[0] if cands else None
+    if families and not _informative(cands, zones):
         # TITRE d abord, corps ensuite -- meme principe que polarity().
         # Le corps CITE beaucoup (regles, conventions, precedents) ; le
         # titre DIT le sujet. Chercher dans un blob unique laisse la plus
@@ -391,9 +470,11 @@ def resolve_family(item: dict, issue_to_family: dict, families=()) -> str | None
         # parce que son corps citait `.claude/rules/catalog-pr-hygiene.md`
         # et que cette chaine est plus longue que `genai/texte`. La zone
         # reelle restait alors SANS REMEDE, remede en main.
-        fam = family_from_text(item.get("title") or "", families)
-        if fam is None:
-            fam = family_from_text(item.get("body") or "", families)
+        txt = family_from_text(item.get("title") or "", families)
+        if txt is None:
+            txt = family_from_text(item.get("body") or "", families)
+        if txt is not None and (not cands or _informative([txt], zones)):
+            return txt
     return fam
 
 
@@ -408,7 +489,7 @@ def zone_balance(zones: dict, issue_to_family: dict, pool: list) -> dict:
     out: dict[str, dict] = {}
     families = tuple(zones or ())
     for it in pool:
-        fam = resolve_family(it, issue_to_family, families)
+        fam = resolve_family(it, issue_to_family, families, zones)
         if not fam:
             continue
         pol = polarity(it.get("title", ""), it.get("body", "") or "")

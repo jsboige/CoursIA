@@ -1657,7 +1657,55 @@ open PacLearning in
 `1 ≤ k ≤ n` il existe une famille de parties de `Fin n`, de degre
 maximal au plus `k`, dont aucune coloration ±1 n'abaisse la discrepance
 sous `sqrt(k) / 14` - la contrepartie asymptotique de Beck-Fiala (la
-borne `O(sqrt k)` est serree), a constante explicite. -/
+borne `O(sqrt k)` est serree), a constante explicite.
+
+**Derivation de la constante 14** (volet 1 de #13508 - chaque maillon
+chiffre, dans l'ordre ou la preuve l'assemble ; `t = k / 12` designe la
+taille du bloc) :
+
+1. Queue d'un tirage (`prob_tail_ge_of_isColoring`) : Paley-Zygmund au
+   seuil `theta = 1/2` donne `P[Z² >= t/2] >= 1/12`, car
+   `(1-theta)² * E[Z²]² / E[Z⁴]` avec `E[Z²] = t` (exact) et
+   `E[Z⁴] = 3t² - 2t <= 3t²` (`expect_rademacherSum_sq/fourth_moment_...
+   of_isColoring`), soit `(t/2)² / 3t² = 1/12`.
+2. Famille existentielle (`exists_family_beats_all_colorings`) :
+   `m = 12t` tirages battent TOUTES les `<= 2^t` colorations - union
+   bound `2^t * (11/12)^{12t} = (2 * (11/12)^12)^t < 1`, la numerie
+   etant `(11/12)^12 < 1/2` (`norm_num`). Le `12` de `m = 12t` est le
+   `1/p` du maillon 1.
+3. Choix du bloc `t = k / 12` : le degre de la famille appariee est
+   `<= m = 12 * (k/12) <= k` (`degree_pairFamily_le`).
+4. Garantie par coloration : `exists j, t / 2 <= Z_j ^ 2` (maillon 2).
+5. Retour aux ensembles (`rademacherSum_eq_two_sub`) : `Z_j = 2 D_j - B`
+   avec `D_j` la somme sur le tirage et `B` celle du bloc. La famille
+   APPARIEE contient `D_j` ET son complement, chacun de somme majoree
+   en valeur absolue par `d` : triangle
+   `|Z_j| = |D_j + (D_j - B)| <= d + d = 2d`.
+6. Combinaison : `t <= 2 * Z_j ^ 2 <= 2 * (2d)² = 8 d²`.
+7. Partage euclidien : `k <= 12 * (k/12) + 11 <= 23 * (k/12) = 23 t`
+   (branche `k >= 12`, donc `t >= 1` absorbe le reste `11`).
+8. Total : `k <= 23 * 8 * d² = 184 d² < (14 d + 1)² = 196 d² + 28 d + 1`,
+   donc `Nat.sqrt k < 14 d + 1` (strict, via `Nat.sqrt_lt`), soit
+   `Nat.sqrt k <= 14 d`. La constante est `ceil(sqrt 184) = 14`
+   (`sqrt 184 = 13,56...`).
+
+**Meilleure constante atteignable par cette machinerie** : deux leviers
+gachent un facteur ~1,6. (a) `lambda = m / t = 12` est surdimensionne :
+l'union bound n'exige que `(11/12)^lambda < 1/2`, deja vraie pour
+`lambda = 8` (`(11/12)^8 = 0,4986 < 1/2`, verifiable par `norm_num` en
+exact : `2 * 11^8 < 12^8`) ; re-cabler `m = 8t` et `t = k / 8` (meme
+Paley-Zygmund, aucun sous-lemme mathematique touche) donne
+`k <= 15 t <= 120 d²`, soit `c = ceil(sqrt 120) = 11`. (b) l'arrondi
+grossier `k <= (2s - 1) t` (facteur ~2 quand `s` est petit) :
+l'optimum joint `theta = 1/3` (maximise `theta (1 - theta)²`),
+`p = 4/27`, `lambda = 5` (`(23/27)^5 < 1/2` en exact) donne lui aussi
+`c = 11` avec la technique d'arrondi actuelle, mais `c² -> 4 lambda /
+theta = 60` (soit `c = 8`) des que le reste additif `s - 1` est absorbe
+dans la marge `(c d + 1)²` pour `d` grand. Meilleure constante entiere
+de cette methode : **11** (re-cablage seul), **8** (asymptotique). La
+forme optimiste `sqrt k / 2` reste ouverte - obstruction structurelle
+documentee : Paley-Zygmund exige `m >= lambda t` tirages quand le degre
+borne `m <= k`, et le triangle du maillon 5 coute son facteur 2. -/
 theorem erdos_spencer_lb_explicit : ∀ (n k : ℕ), 1 ≤ k → k ≤ n →
     ∃ F : Finset (Finset (Fin n)),
       maxDegree F ≤ k ∧
