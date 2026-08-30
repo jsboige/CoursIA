@@ -10,13 +10,13 @@
 
 La série couvre la théorie de la décision avec Infer.NET :
 
-- **DecInfer-1-Utility-Foundations** — fondements de l'utilité, rationalité, axiomes von Neumann–Morgenstern.
-- **DecInfer-3-Utility-Money** — utilité de la richesse, aversion au risque, fonction d'utilité CRRA.
-- **DecInfer-4-Multi-Attribute** — utilité multi-attributs, pondération, trade-offs.
-- **DecInfer-5-Decision-Networks** — réseaux de décision (influence diagrams), valeur de l'information structurelle.
-- **DecInfer-6-Value-Information** — valeur espérée de l'information (EVPI/EVSI), Infer.NET inference.
-- **DecInfer-7-Expert-Systems** — systèmes experts probabilistes, règles bayésiennes.
-- **DecInfer-8-Sequential** — décision séquentielle, équations de Bellman, horizon fini.
+- **DecInfer-01-Utility-Foundations** — fondements de l'utilité, rationalité, axiomes von Neumann–Morgenstern.
+- **DecInfer-03-Utility-Money** — utilité de la richesse, aversion au risque, fonction d'utilité CRRA.
+- **DecInfer-04-Multi-Attribute** — utilité multi-attributs, pondération, trade-offs.
+- **DecInfer-05-Decision-Networks** — réseaux de décision (influence diagrams), valeur de l'information structurelle.
+- **DecInfer-06-Value-Information** — valeur espérée de l'information (EVPI/EVSI), Infer.NET inference.
+- **DecInfer-07-Expert-Systems** — systèmes experts probabilistes, règles bayésiennes.
+- **DecInfer-08-Sequential** — décision séquentielle, équations de Bellman, horizon fini.
 - **DecInfer-10-Thompson-Sampling** — échantillonnage de Thompson, compromis exploration/exploitation.
 
 **Schéma** : 21 colonnes (#4957 §1). `src_lang=fr`, `src_hash` (sha256-16) + `text_fr` remplies ; colonnes cible (`text_en/es/ar/fa/zh/ru/pt`) vides pour le moteur T3 Argumentum (#1650 Phase 1).
@@ -26,13 +26,13 @@ La série couvre la théorie de la décision avec Infer.NET :
 ```bash
 # Depuis la racine du dépôt :
 python scripts/translation/extract_cells_to_csv.py \
-    MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-1-Utility-Foundations.ipynb \
-    MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-3-Utility-Money.ipynb \
-    MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-4-Multi-Attribute.ipynb \
-    MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-5-Decision-Networks.ipynb \
-    MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-6-Value-Information.ipynb \
-    MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-7-Expert-Systems.ipynb \
-    MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-8-Sequential.ipynb \
+    MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-01-Utility-Foundations.ipynb \
+    MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-03-Utility-Money.ipynb \
+    MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-04-Multi-Attribute.ipynb \
+    MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-05-Decision-Networks.ipynb \
+    MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-06-Value-Information.ipynb \
+    MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-07-Expert-Systems.ipynb \
+    MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-08-Sequential.ipynb \
     MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-10-Thompson-Sampling.ipynb \
     -o translations/probas-decinfer/probas_decinfer.csv \
     --src-lang fr
@@ -58,6 +58,6 @@ DecInfer est une série .NET (Infer.NET probabilistic programming) sans labs age
 
 ## Hors scope
 
-- `DecInfer-2-Lean-ExpectedUtility.ipynb`, `DecInfer-9-Lean-Gittins.ipynb` — notebooks **Lean 4** exclus (EPIC #4980, sibling-pair FR-first, piste i18n distincte gérée par po-2026). Convention cohérente avec `probas_infer.csv` / `probas_pymc.csv` (0 notebook Lean en CSV).
+- `DecInfer-02-Lean-ExpectedUtility.ipynb`, `DecInfer-09-Lean-Gittins.ipynb` — notebooks **Lean 4** exclus (EPIC #4980, sibling-pair FR-first, piste i18n distincte gérée par po-2026). Convention cohérente avec `probas_infer.csv` / `probas_pymc.csv` (0 notebook Lean en CSV).
 - `Probas/DecisionTheory/PyMC/` (DecPyMC-1..7) — série Python PyMC, owner po-2025 (cf owner-lock `Probas-DecPyMC`). Non incluse ici.
 - `Probas/DecisionTheory/Causal-Bridges/` — série causale Python standalone, non encore seedée.
