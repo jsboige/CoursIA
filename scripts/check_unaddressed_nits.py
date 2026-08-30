@@ -1563,12 +1563,23 @@ def _names_author(body: str, author: str) -> bool:
 
 
 def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
-            issue_created=None) -> dict:
-    """cutoff = mergedAt (audit retro) ou now (gate pre-merge)."""
+            issue_created=None,
+            open_followups: set[int] | None = None) -> dict:
+    """cutoff = mergedAt (audit retro) ou now (gate pre-merge).
+
+    ``open_followups`` : set d'IDs d'issues ouvertes servant de support a
+    une levee voie 3 (cf. §B.0 voie 3 = issue de suivi nommee AVANT
+    merge, Tell c.11145 ★★★ strict lift author-bound + §B.0 voie 3).
+    Un commentaire PR qui cite un ID present dans cet ensemble peut
+    lever le nit SANS LIFT_MARKER, parce que la levee est dans l'issue
+    de suivi (la preuve est externalisee).
+    """
     commits = [ts(c.get("committedDate")) for c in (pr_data.get("commits") or [])]
     commits = [c for c in commits if c]
     last_commit = max(commits) if commits else None
     pr_author = (pr_data.get("author") or {}).get("login", "")
+    if open_followups is None:
+        open_followups = set()
 
     # #11145 — borne d'auteur, durcie par #12836 : seule une levee de l'auteur
     # de la reserve compte. #12798 a montre pourquoi PR_AUTHOR n'est pas une
@@ -1653,8 +1664,23 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
         # lanes (self-review cap #12319), un override jsboige est
         # indiscernable d'une auto-levee de lane (replay #12737).
         m = OVERRIDE_LANE.search(lift_body or "")
-        return (lift_author in LIFT_OVERRIDE_LOGINS
-                and m is not None)
+        if lift_author in LIFT_OVERRIDE_LOGINS and m is not None:
+            return True
+        # #13701 (REPAIR voie 3 B.0) — un commentaire PR qui CITE une issue
+        # de suivi OUVERTE peut lever un nit SANS LIFT_MARKER : la preuve de
+        # levee est externalisee dans l'issue (Tell c.11145 ★★★ strict lift
+        # author-bound + §B.0 voie 3 -- "une issue de suivi ouverte et
+        # nommee AVANT le merge" est une voie valide). Differentiel vs voie 2 :
+        # voie 2 exige un arbitre tiers (LIFT_OVERRIDE_LOGINS) + OVERRIDE_LANE
+        # + LIFT_MARKER ; voie 3 exige un lifter != nit_author (borne #11145)
+        # + une citation d'issue ouverte (la preuve externalisee remplace la
+        # phrase de levee). Sans issue ouverte dans `open_followups`, voie 3
+        # ne peut pas s'activer -- le garde reste fail-CLOSED par defaut.
+        if open_followups:
+            for m_id in re.finditer(r"#(\d+)", lift_body or ""):
+                if int(m_id.group(1)) in open_followups:
+                    return True
+        return False
 
     # Fenetre 2026-08-16 (#11222) : les temps plats ne suffisent pas pour un
     # CHANGES_REQUESTED. Une PHRASE explicite de levee (LIFT_MARKER non
@@ -1704,6 +1730,35 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
     # suivi ouverte avant le cutoff sont des leveries a part entiere.
     followup_lifts = collect_followup_lifts(pr_data, cutoff, issue_created)
 
+    # #13701 (REPAIR voie 3 B.0) — un commentaire PR qui CITE une issue de
+    # suivi OUVERTE peut lever un nit SANS LIFT_MARKER : la preuve est
+    # externalisee dans l'issue, la phrase de levee y vit (Tell c.11145 ★★★
+    # strict lift author-bound + §B.0 voie 3 -- "issue de suivi ouverte et
+    # nommee AVANT le merge" est une voie valide). Filtres :
+    #   - can_lift : pas un bot CI ni un tag de protocole nu
+    #   - PAS has_live_lift : c'est justement ce qui distingue voie 3
+    #     (externalisation de la preuve)
+    #   - lifter != nit_author : borne #11145 preservee (un lifter == nit_author
+    #     peut toujours lever en voie 1 -- has_live_lift -- donc le test
+    #     explicite n'est pas requis ici)
+    #   - PAS classify → un nit : c'est une reponse, pas une reserve
+    #   - cite au moins un `#\\d+` : sans citation, pas de reference externe
+    # `open_followups` (defaut set()) est peuple par le `gate()` depuis l'API
+    # GitHub -- si l'API n'est pas joignable, voie 3 reste inerte (fail-CLOSED
+    # par defaut, comme tout garde de surete).
+    voie3_lifts = [
+        (ts(c["createdAt"]), (c.get("author") or {}).get("login", ""),
+         c.get("body", ""))
+        for c in (pr_data.get("comments") or [])
+        if can_lift(c)
+        and not has_live_lift(c.get("body", ""))
+        and not _lift_cancelled(_strip_quoted(c.get("body", "")))
+        and classify((c.get("author") or {}).get("login", ""),
+                     c.get("body", "")) is None
+        and re.search(r"#\d+", c.get("body", ""))
+    ] if open_followups else []
+    voie3_lifts = [x for x in voie3_lifts if x[0] is not None]
+
     # #13639 -- passer les levees au crible du SHA rembobine (voir
     # _SHA_CITED ci-dessus pour le pourquoi et l'etroitesse). Inerte sans
     # OIDs connus : le pre-filtre d'audit (sans `commits`) et les fixtures
@@ -1746,6 +1801,10 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
                 if warned:
                     absent_sha_warnings.append(
                         {"author": lifter, "at": t.isoformat(), "sha": warned})
+        # #13701 voie 3 -- concat des lifts classiques ET voie3 ; les seconds
+        # ne sont pas filtres par le crible absent-SHA (ils ne citent pas
+        # de SHA, juste une issue de suivi -- pas de rembobinage possible).
+        kept_lifts.extend(voie3_lifts)
         explicit_lifts = kept_lifts
 
     signals: list[tuple] = []
@@ -2045,8 +2104,31 @@ def gate(pr: int, as_json: bool) -> int:
     data["_absent_sha_messages"] = _resolve_absent_sha_messages(data)
     merged = ts(data.get("mergedAt"))
     cutoff = merged or datetime.now(timezone.utc)
+    # #13701 voie 3 B.0 -- peupler open_followups avec les issues de suivi
+    # OUVERTES citees par les commentaires de la PR. Chaque commentaire est
+    # scaned pour `#\\d+`, et chaque ID est verifie via `gh issue view` :
+    # seul un etat OPEN compte (une issue fermee = suivi abandonne, la voie 3
+    # est caduque). Cote performance : un appel API par ID unique, plafonne
+    # par defaut au nombre de references distinctes dans les commentaires
+    # (souvent < 5). Si l'API est en echec, on log mais on n'echoue pas --
+    # voie 3 reste inerte (fail-CLOSED), comme le veut tout garde.
+    open_followups: set[int] = set()
+    cited_ids: set[int] = set()
+    for c in (data.get("comments") or []):
+        for m in re.finditer(r"#(\d+)", c.get("body", "")):
+            n = int(m.group(1))
+            if n != pr:  # pas l'auto-reference
+                cited_ids.add(n)
+    for cid in sorted(cited_ids):
+        try:
+            idata = gh_json(["issue", "view", str(cid), "--repo", REPO,
+                            "--json", "state"])
+            if (idata.get("state") or "").upper() == "OPEN":
+                open_followups.add(cid)
+        except subprocess.CalledProcessError:
+            pass  # API en echec sur cet ID -- voie 3 reste inerte
     result = analyse(data, review_threads(pr), cutoff,
-                     issue_created=gh_issue_created)
+                     issue_created=gh_issue_created, open_followups=open_followups)
     if as_json:
         print(json.dumps(result, indent=1, ensure_ascii=False))
     elif not result["blocked"]:

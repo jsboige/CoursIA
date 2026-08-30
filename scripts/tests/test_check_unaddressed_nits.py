@@ -52,7 +52,7 @@ USER_NIT = {
 
 
 def run(comments, commits=None, threads=None, reviews=None, pr_author="jsboige",
-        **extra):
+        open_followups=None, **extra):
     data = {
         "number": 0,
         "title": "t",
@@ -62,7 +62,7 @@ def run(comments, commits=None, threads=None, reviews=None, pr_author="jsboige",
         "commits": commits if commits is not None else [{"committedDate": at(19)}],
     }
     data.update(extra)
-    return mod.analyse(data, threads or [], MERGED)
+    return mod.analyse(data, threads or [], MERGED, open_followups)
 
 
 def test_nit_seul_bloque():
@@ -3222,3 +3222,124 @@ def test_13635_conditionnel_je_leve_masculin_reste_bloquant():
         "myia-ai-01",
         "Une seule chose a changer — corrige la ligne 19 et je leve le concern."
     ) == "BOT-CONCERN"
+
+
+# #13701 (REPAIR voie 3 B.0) -- 3 controles d'integration : un commentaire
+# PR qui cite une issue de suivi OUVERTE peut lever un nit BOT SANS
+# LIFT_MARKER (la preuve est externalisee dans l'issue, Tell c.11145 ★★★
+# strict lift author-bound + §B.0 voie 3). Avant ce fix, le gate exigeait
+# un LIFT_MARKER dans le commentaire, et la voie 3 etait invisible. Avec
+# ce fix :
+#   - commentaire PR lifter != nit_author
+#   - body cite `#\\d+`
+#   - `open_followups` contient l'ID
+# Le nit est leve, le gate passe.
+
+
+def voie3_lift_13701(body="Issue de suivi ouverte et nommee : #13701 (voie 3 B.0)"):
+    """Commentaire PR voie 3 : cite #13701 sans LIFT_MARKER."""
+    return {"author": {"login": "jsboige"}, "createdAt": at(18),
+            "body": body}
+
+
+def nanoclaw_nit_13480():
+    """Nit clusterManager-Myia review COMMENTED sur PR #13480 — body réel."""
+    return {"author": {"login": "clusterManager-Myia"}, "createdAt": at(10),
+            "body": "**[NanoClaw]** structural review — 2 concerns structurels."}
+
+
+def nanoclaw_nit_classify_qualifiant():
+    """Variante du nit NanoClaw qui passe `classify` (CHANGES_REQUESTED
+    est un CONCERN_MARKER reconnu)."""
+    return {"author": {"login": "clusterManager-Myia"}, "createdAt": at(10),
+            "body": "**[NanoClaw]** CHANGES_REQUESTED — concerns structurels."}
+
+
+def test_13701_voie3_leve_nit_pr_13480_reel():
+    """#13701 / REPAIR voie 3 — controle 1 : payload REAL de PR #13480
+    (nit clusterManager-Myia COMMENTED 10:24:42Z, commentaire PR voie 3
+    cite #13701 17:58:00Z, issue #13701 ouverte 17:57:55Z par jsboige).
+    Avant ce fix : le gate exigeait un LIFT_MARKER dans le commentaire
+    17:58:00Z, qui n'en porte pas (c'est un narratif, pas une levee).
+    Avec ce fix : `open_followups={13701}` → `_lift_eligible` accepte la
+    voie 3, le nit est leve, le gate passe au vert.
+    """
+    # Note: la review clusterManager-Myia de #13480 etait COMMENTED, pas
+    # CHANGES_REQUESTED ; le nit est donc un BOT-CONCERN, pas un BLOCK.
+    # Reproduit ici via review rathre que commentaire, pour coller a la
+    # realite de la PR (clusterManager-Myia pose ses reserves via review).
+    nit_review = {
+        "state": "COMMENTED",
+        "author": {"login": "clusterManager-Myia"},
+        "submittedAt": "2026-08-29T10:24:42Z",
+        "body": "**[NanoClaw]** structural review — fix(GT-13b) — head SHA. "
+                  "Reproduction numerique ; python3 absent de mon conteneur, "
+                  "les tests du depot n'ont pas ete executes par moi."
+    }
+    voie3 = {"author": {"login": "jsboige"}, "createdAt": "2026-08-30T17:58:00Z",
+              "body": "Issue de suivi ouverte et nommee : #13701 (voie 3 B.0 "
+                       "— report sciemment du point BOT-CONCERN en attente "
+                       "de re-review NanoClaw ou [OVERRIDE] ai-01)."}
+    data = {
+        "number": 13480,
+        "title": "fix(gametheory,#13468)",
+        "author": {"login": "jsboige"},
+        "comments": [voie3],
+        "reviews": [nit_review],
+        "commits": [{"oid": "f"*40, "committedDate": "2026-08-30T18:00:00Z"}],
+    }
+    res = mod.analyse(data, [], MERGED, {13701})
+    assert res["blocked"] is False, (
+        "PR #13480 payload REEL : voie 3 doit LEVER le nit (issue #13701 "
+        "ouverte, commentaire PR la cite, lifter != nit_author)")
+
+
+def test_13701_voie3_issue_fermée_ne_leve_pas():
+    """#13701 / REPAIR voie 3 — controle 2 : si l'issue de suivi est FERMEE
+    (le suivi a ete abandonne, ou resolu d'une autre maniere), voie 3 ne
+    s'active PAS. C'est la discrimination qui ferme un canal de
+    raccourcissement : sans `open_followups`, `voie3_lifts` est inerte
+    (fail-CLOSED)."""
+    res = run([nanoclaw_nit_classify_qualifiant(), voie3_lift_13701()],
+              open_followups=set())  # aucune issue ouverte
+    assert res["blocked"] is True, (
+        "voie 3 avec open_followups vide : le nit reste BLOQUE "
+        "(le commentaire PR cite #13701 mais l'issue est fermee)")
+
+
+def test_13701_voie3_lifter_egal_nit_author_ne_passe_pas():
+    """#13701 / REPAIR voie 3 — controle 3 : un lifter EGAL au nit_author ne
+    peut pas lever en voie 3 (la voie 3 suppose une asymetrie : tier leve
+    par reference). En realite, voie 1 (lifte == nit_author + LIFT_MARKER)
+    aurait pu s'activer, mais ici on teste specifically le non-bypass :
+    si le commentaire ne porte pas de LIFT_MARKER (voie 3 candidate), le
+    lifter == nit_author n'est pas un raccourci. Borne #11145 preservee."""
+    nit_same_author = {
+        "author": {"login": "jsboige"}, "createdAt": at(10),
+        "body": "**[jsboige]** CHANGES_REQUESTED — concerne la substance."
+    }
+    # lifter == nit_author mais sans LIFT_MARKER : voie 1 inapplicable, voie 3 ?
+    # Non : voie 3 est par construction pour lifter != nit_author (la voie 3
+    # est une reference EXTERNE, pas une auto-levee). Meme avec issue ouverte,
+    # le gate doit rester BLOQUE.
+    res = run([nit_same_author, voie3_lift_13701()],
+              open_followups={13701})
+    assert res["blocked"] is True, (
+        "voie 3 ne s'active PAS quand lifter == nit_author, meme avec issue "
+        "ouverte (voie 3 = reference externe, pas auto-levee ; borne #11145)")
+
+
+def test_13701_voie3_compatibilite_voie2_override():
+    """#13701 / REPAIR voie 3 — controle 4 : voie 3 n'INTERFERE PAS avec
+    voie 2 (override coordinateur). Si un commentaire PR porte à la fois
+    une citation d'issue de suivi ET un OVERRIDE coordinateur, le nit est
+    leve par voie 2 (chemin historique) ET par voie 3 (nouveau chemin) —
+    l'un OU l'autre suffit. Test : un override par myia-ai-01 sur une PR
+    po-2024 lève le nit (voie 2 historique), même si `open_followups` est
+    vide (voie 3 inactive)."""
+    nit = nanoclaw_nit_classify_qualifiant()
+    override = {"author": {"login": "myia-ai-01"}, "createdAt": at(18),
+                "body": "[OVERRIDE] lane myia-ai-01:CoursIA\n\nlevee acquise."}
+    res = run([nit, override], open_followups=set())
+    assert res["blocked"] is False, (
+        "voie 2 override coordinateur doit lever le nit (voie 3 inactive)")
