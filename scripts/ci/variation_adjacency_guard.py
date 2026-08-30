@@ -361,11 +361,15 @@ def check(body: str | None, override: dict | None = None,
 
     # Same genre. The LIGHT set is the absolute ban of §2; a DEEP/MED
     # domain-core genre is the advisory judgment of §2. The predicate is
-    # the fail-CLOSED one of #13475 (`genre_counts_light`): an UNRESOLVED
-    # genre (off the closed enumeration) counts LIGHT here too -- before,
+    # the fail-CLOSED one of #13475 (`genre_counts_light`), TIER-AWARE
+    # since the ai-01 reserve on #13585 (demande 2): an UNRESOLVED genre
+    # (off the closed enumeration) counts LIGHT here too -- before, a
     # `LIGHT/zzz` twice in a row compared equal but escaped `LIGHT_GENRES`
-    # membership, so the ban never fired on invented words.
-    if genre_counts_light(genre):
+    # membership, so the ban never fired on invented words. A grain whose
+    # DECLARED tier is MED/DEEP does not requalify as LIGHT on a genre
+    # word alone: the retag is asked (note GENRE-UNKNOWN below), the ban
+    # is not applied.
+    if genre_counts_light(genre, g.get("tier")):
         unknown_note = ""
         if not genre_resolves(genre):
             unknown_note = (

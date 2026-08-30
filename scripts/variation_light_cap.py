@@ -486,6 +486,17 @@ _GENRE_ALIASES = {
     # them would launder a mis-tag -- it stays GENRE-UNKNOWN.
     "documentation": "docs",
     "prose": "docs",
+    # #13585 (reserve ai-01) -- `docs-lean` : both segments are valid genres,
+    # so the mechanical single-deletion ladder below cannot decide (`lean`
+    # would win at drop-index 0). The protocol prescribes the head
+    # (« le composé se réduit toujours à sa tête » -- the work is docs ABOUT
+    # lean), so the ambiguous two-genre composites stay table-driven.
+    # `infra-docker` : the genre rides on the ALIASED head (`infra` ->
+    # tooling) and the tail `docker` is opaque -- rescuing the head would
+    # violate the tail-preservation guard of the ladder (the `genai-reexec`
+    # laundering case, #12158), so this form is table-driven too.
+    "docs-lean": "docs",
+    "infra-docker": "tooling",
 }
 
 # Compoments `<famille>-<genre>` always reduce to the head genre (the family
@@ -527,12 +538,36 @@ def canonicalize_genre(genre: str | None) -> str | None:
         return g
     if g in _GENRE_ALIASES:
         return _GENRE_ALIASES[g]
-    # Compound form `<famille>-<genre>` -> head. The head is the LAST
-    # hyphen-separated segment, NOT the first -- `lean-ci` is family=`lean`,
-    # genre=`ci`; `cjk-ci` is family=`cjk`, genre=`ci`; `audit-tooling` is
-    # family=`audit`, genre=`tooling`. The head is `ci` or `tooling`, and
-    # the alias map handles those.
+    # Composite reduction (#13585 reserve ai-01, demande 1) : avant de
+    # conclure GENRE-UNKNOWN, tenter la suppression d'UN segment --
+    # n'importe lequel SAUF LE DERNIER (la queue est le candidat-genre,
+    # #12158 : la sauver en la sacrifiant laverait un mis-tag), de gauche
+    # a droite -- et accepter le premier candidat qui atterrit dans
+    # l'enumeration fermee, directement ou via la table d'alias. Cela
+    # reduit sans ambiguite les formes composees mesurees :
+    #   `research-notebook-python` -> `notebook-python`  (prefixe famille)
+    #   `notebook-genai-python`    -> `notebook-python`  (famille au milieu)
+    #   `pedagogy-prose`           -> `prose` -> alias -> `docs`
+    #   `lean-tooling`             -> `tooling` (drop-index 0 ; meme reponse
+    #                                  que le rsplit historique ci-dessous)
+    # Une suppression qui produit un autre mot hors-table est SAUTEE (jamais
+    # devinee) : `genai-reexec` reste GENRE-UNKNOWN (queue `reexec`
+    # irrecuperable, decision explicite #12158), `notebook-junk` aussi.
     if "-" in g:
+        segs = g.split("-")
+        for i in range(len(segs) - 1):
+            cand = "-".join(segs[:i] + segs[i + 1:])
+            if not cand:
+                continue
+            if cand in GENRES:
+                return cand
+            if cand in _GENRE_ALIASES and _GENRE_ALIASES[cand] in GENRES:
+                return _GENRE_ALIASES[cand]
+        # Compound form `<famille>-<genre>` -> head. The head is the LAST
+        # hyphen-separated segment, NOT the first -- `lean-ci` is family=`lean`,
+        # genre=`ci`; `cjk-ci` is family=`cjk`, genre=`ci`; `audit-tooling` is
+        # family=`audit`, genre=`tooling`. The head is `ci` or `tooling`, and
+        # the alias map handles those.
         head = g.rsplit("-", 1)[-1]
         if head in _GENRE_ALIASES:
             return _GENRE_ALIASES[head]
@@ -560,7 +595,7 @@ LIGHT_GENRES = frozenset({"docs", "readme", "guard", "ledger", "test"})
 GENRE_UNKNOWN_KEY = "(genre-unknown)"
 
 
-def genre_counts_light(genre: str | None) -> bool:
+def genre_counts_light(genre: str | None, tier: str | None = None) -> bool:
     """G-VAR-2/3 LIGHT accounting for a genre token, fail-CLOSED (#13475).
 
     True when the canonical form lands in `LIGHT_GENRES` OR when it does
@@ -572,11 +607,23 @@ def genre_counts_light(genre: str | None) -> bool:
     positive the worker contests by re-tagging; a silence that relaxes
     the cap proves nothing. `None` (no genre readable) is `False` -- the
     record does not exist upstream, untagged PRs are dropped before this.
+
+    #13585 (reserve ai-01, demande 2) : the fail-CLOSED branch is now
+    TIER-AWARE. An unresolved genre carried by a grain whose DECLARED tier
+    is MED or DEEP no longer consumes the LIGHT budget nor forms a run --
+    the tier is a separately-readable axis and a mis-chosen genre word
+    must not requalify deep work as a throwaway grain. The signal stays
+    (the `unknown_genres` ledger names the word and the retag is asked);
+    only the budget and the run accounting are spared.
     """
     if not genre:
         return False
     c = canonicalize_genre(genre)
-    return c is not None and (c not in GENRES or c in LIGHT_GENRES)
+    if c is None:
+        return False
+    if c in GENRES:
+        return c in LIGHT_GENRES
+    return tier not in ("MED", "DEEP")
 
 
 def genre_resolves(genre: str | None) -> bool:
@@ -620,14 +667,15 @@ def _candidate_record(merged_prs: list[dict], target_lane: str) -> list[dict]:
             continue
         if g["lane"] != target_lane:
             continue
+        tier = effective_tier(body, labels)
         out.append({
             "number": pr.get("number"),
             "lane": g["lane"],
-            "tier": effective_tier(body, labels),
+            "tier": tier,
             "genre": g["genre"],
             "canonical_genre": canonicalize_genre(g["genre"]),
             "genre_resolved": genre_resolves(g["genre"]),
-            "is_light_genre": genre_counts_light(g["genre"]),
+            "is_light_genre": genre_counts_light(g["genre"], tier),
             "vein_key": extract_vein_key(pr),
             "mergedAt": pr.get("mergedAt") or "",
         })

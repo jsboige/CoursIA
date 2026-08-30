@@ -684,3 +684,21 @@ def test_single_unknown_genre_after_different_prev_still_passes():
     assert v["guard_pass"] is True
     assert v["blocking"] is False
     assert v["adjacent"] is False
+
+
+def test_med_unknown_genre_same_prev_is_advisory_not_blocking():
+    # Reserve ai-01 sur #13585 (demande 2) : un grain MED declare dont le mot
+    # de genre est hors-table, consecutif au MEME mot hors-table, ne declenche
+    # PAS le ban G-VAR-3 -- le tier MED declare se lit sans ambiguite, le
+    # retag est demande par le ledger GENRE-UNKNOWN, pas par une requalification
+    # en LIGHT. Le cas LIGHT reste bloquant (fail-CLOSED d'origine #13475).
+    body_med = "Grain: MED/secrets -- lane myia-po-2026:CoursIA -- prev: MED/secrets 13540"
+    v = vag.check(body_med)
+    assert v["guard_pass"] is True
+    assert v["blocking"] is False
+    assert v["adjacent"] is True
+    assert "advisory" in v["reason"]
+    body_light = "Grain: LIGHT/secrets -- lane myia-po-2026:CoursIA -- prev: LIGHT/secrets 13540"
+    v2 = vag.check(body_light)
+    assert v2["guard_pass"] is False
+    assert v2["blocking"] is True

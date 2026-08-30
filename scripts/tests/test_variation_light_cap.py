@@ -568,14 +568,16 @@ def test_effective_genre_aliases_via_body():
 def test_lane_genre_tally_po2025_day():
     # 16 grains, 5 readme + 2 docs (9986 + 9987 alias) + 4 tooling +
     # 2 notebook-python + 1 refactor + 1 secrets + 1 guard (10010 alias).
-    # light_genre = 5 + 2 + 1 + 1 = 9 since #13475: `secrets` is off the
-    # closed enumeration and now counts LIGHT (fail-CLOSED -- before, it
-    # inflated the denominator AND escaped the numerator). light_declared
-    # = 0, cap = max(1, 16//3) = 5.
+    # light_genre = 5 + 2 + 1 = 8 : `secrets` (MED declare) est hors
+    # enumeration mais ne consomme PLUS le budget depuis la reserve ai-01
+    # sur #13585 (demande 2 : le tier MED declare se lit sans ambiguite,
+    # le mot hors-table va au ledger sans requalifier le grain en LIGHT).
+    # C'etait 9 au premier tour de #13475 (fail-CLOSED inconditionnel).
+    # light_declared = 0, cap = max(1, 16//3) = 5.
     tally = vlc.lane_genre_tally(_PO2025_DAY, _P_2025_C2)
     assert tally["lane_grains"] == 16
     assert tally["light_declared"] == 0
-    assert tally["light_genre"] == 9
+    assert tally["light_genre"] == 8
     assert tally["cap"] == 5
     # The by_genre histogram: readme=5, tooling=4, notebook-python=2,
     # docs=2 (canonical, including 9987 translation), refactor=1,
@@ -618,12 +620,13 @@ def test_genre_runs_po2025_signals_genre_run():
 def test_compute_signals_po2025_inflation_and_cap_exceeded():
     # The full panel of signals for the issue's reference case.
     sig = vlc.compute_signals(_PO2025_DAY, _P_2025_C2)
-    # light_genre=9 (8 + the fail-closed `secrets`, #13475) >
-    # light_declared=0 + 1 = 1 -> TIER-INFLATION
+    # light_genre=8 (the MED-declared `secrets` no longer counts since the
+    # ai-01 reserve on #13585, demande 2) > light_declared=0 + 1 = 1
+    # -> TIER-INFLATION
     assert sig["signals"]["TIER-INFLATION"] is True
     # 5 readme consecutive -> GENRE-RUN
     assert sig["signals"]["GENRE-RUN"] is True
-    # light_genre=9 > cap=5 -> CAP-EXCEEDED-BY-GENRE
+    # light_genre=8 > cap=5 -> CAP-EXCEEDED-BY-GENRE
     assert sig["signals"]["CAP-EXCEEDED-BY-GENRE"] is True
     # No candidate files provided -> GENRE-MISMATCH inactive.
     assert sig["signals"]["GENRE-MISMATCH"] is False
@@ -1787,12 +1790,79 @@ def test_witness_day_prose_consumes_the_light_budget():
                 at="2026-08-29T16:00:00Z"),
     ]
     tally = vlc.lane_genre_tally(day, _LANE_13475)
-    # light_genre = 2 : la LIGHT/prose EST vue cette fois (alias -> docs),
-    # PLUS le MED/notebook nu qui compte light par fail-closed -- c'est le
-    # comportement demande ("signaler ET compter light"), pas un bug.
-    assert tally["light_genre"] == 2
-    assert tally["genre_unknown"] == 1  # notebook nu, compte a part
+    # light_genre = 1 : la LIGHT/prose EST vue (alias -> docs). Le
+    # MED/notebook nu ne consomme PLUS le budget depuis la reserve ai-01
+    # sur #13585 (demande 2) : un tier MED declare se lit sans ambiguite,
+    # le mot de genre hors-table va au ledger sans requalifier le grain
+    # en LIGHT. C'etait light_genre=2 au premier tour de #13475.
+    assert tally["light_genre"] == 1
+    assert tally["genre_unknown"] == 1  # notebook nu, ledger seulement
     assert tally["unknown_genres"] == {"notebook": 1}
+
+
+def test_composites_reduce_before_unknown():
+    # Reserve ai-01 sur #13585 (demande 1) : les composes reduisibles ne
+    # sont PAS des GENRE-UNKNOWN. Les six formes mesurees (100 dernieres
+    # PR) font la suite de tests naturelle -- chaque fleche est prescrite
+    # par la table de la reserve.
+    for composite, reduced in [
+        ("notebook-genai-python", "notebook-python"),    # famille au milieu
+        ("research-notebook-python", "notebook-python"), # prefixe famille
+        ("docs-translation", "docs"),                    # alias plein (existant)
+        ("docs-lean", "docs"),                           # deux genres valides -> table
+        ("pedagogy-prose", "docs"),                      # suffixe -> alias prose
+        ("infra-docker", "tooling"),                     # tete aliassee -> table
+    ]:
+        assert vlc.canonicalize_genre(composite) == reduced, composite
+        assert vlc.genre_resolves(composite) is True, composite
+    # Les reductions NON-light ne consomment pas le budget meme en DEEP ;
+    # les reductions docs restent light (c'est l'axe GENRE, independant du
+    # tier declare -- un DEEP/docs compte, par design #10020).
+    assert vlc.genre_counts_light("notebook-genai-python", "DEEP") is False
+    assert vlc.genre_counts_light("infra-docker", "DEEP") is False
+    assert vlc.genre_counts_light("docs-lean", "DEEP") is True
+    # La queue est PRESERVEE : sauver une tete valide en sacrifiant une
+    # queue inconnue laverait un mis-tag (decision #12158, garde du ladder).
+    assert vlc.canonicalize_genre("genai-reexec") == "reexec"
+    assert vlc.genre_resolves("genai-reexec") is False
+
+
+def test_deep_reducible_composite_neither_counts_light_nor_runs():
+    # LE controle negatif demande par la reserve (demande 3) : un grain
+    # DEEP declare avec un compose reducible ne consomme PAS le budget
+    # LIGHT et ne forme PAS de course.
+    day = [
+        _tag_pr(13531, "DEEP", "notebook-genai-python", lane=_LANE_13475,
+                at="2026-08-29T09:00:00Z"),
+        _tag_pr(13532, "DEEP", "research-notebook-python", lane=_LANE_13475,
+                at="2026-08-29T10:00:00Z"),
+    ]
+    tally = vlc.lane_genre_tally(day, _LANE_13475)
+    assert tally["light_genre"] == 0
+    assert tally["genre_unknown"] == 0
+    # Les deux reduisent au meme genre canonique notebook-python (non-LIGHT)
+    assert tally["by_genre"] == {"notebook-python": 2}
+    assert vlc.genre_runs(day, _LANE_13475) == []
+
+
+def test_med_unknown_genre_ledgered_not_light():
+    # Reserve ai-01 demande 2 : le scenario « MED/secrets » -- le tier MED
+    # est declare et lisible, le mot de genre est hors-table. Fail-CLOSED
+    # du SIGNAL (ledger + retag demande), PAS du budget : le grain ne
+    # consomme pas light_genre et ne forme pas de course GENRE-UNKNOWN.
+    day = [
+        _tag_pr(13541, "MED", "secrets", lane=_LANE_13475,
+                at="2026-08-29T09:00:00Z"),
+        _tag_pr(13542, "MED", "notebook-dotnet", lane=_LANE_13475,
+                at="2026-08-29T10:00:00Z"),
+        _tag_pr(13543, "MED", "tooling", lane=_LANE_13475,
+                at="2026-08-29T11:00:00Z"),
+    ]
+    tally = vlc.lane_genre_tally(day, _LANE_13475)
+    assert tally["light_genre"] == 0  # secrets n'est pas compte
+    assert tally["genre_unknown"] == 1  # mais le ledger le nomme
+    assert tally["unknown_genres"] == {"secrets": 1}
+    assert vlc.genre_runs(day, _LANE_13475) == []
 
 
 def test_two_different_unknown_words_form_one_genre_unknown_run():
