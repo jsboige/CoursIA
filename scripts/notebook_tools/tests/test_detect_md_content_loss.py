@@ -899,3 +899,45 @@ class TestTranslationAwareMode:
         assert r["mode"] == "translation"
         assert r.get("new_file") is not True
         assert any(f["kind"] == "TRUNCATED_CELL" for f in r["findings"])
+
+    def test_split_cell_emits_structure_drift_not_truncations(self, tmp_path):
+        # #13552 : une cellule markdown SCINDIEE en deux dans l'artefact
+        # traduit doit sortir comme UN drift de structure, jamais comme une
+        # volee de TRUNCATED_CELL (comparaison desalignee par construction).
+        fr = _nb(_md(EXERCISE_BODY, cell_id="c1"))
+        half = len(EXERCISE_BODY) // 2
+        en = _nb(
+            _md(EXERCISE_BODY[:half], cell_id="c1"),
+            _md(EXERCISE_BODY[half:], cell_id="c1b"),
+        )
+        r = self._scan_en(tmp_path, fr, en)
+        assert r["mode"] == "translation"
+        assert r["stats"]["cell_count_stable"] is False
+        kinds = [f["kind"] for f in r["findings"]]
+        assert kinds.count("STRUCTURE_DRIFT") == 1
+        assert "TRUNCATED_CELL" not in kinds
+
+    def test_merged_cell_emits_structure_drift(self, tmp_path):
+        # Cas dual : deux cellules FR fusionnees en une dans l'artefact.
+        fr = _nb(
+            _md(EXERCISE_BODY[:len(EXERCISE_BODY) // 2], cell_id="c1"),
+            _md(EXERCISE_BODY[len(EXERCISE_BODY) // 2:], cell_id="c2"),
+        )
+        en = _nb(_md(EXERCISE_BODY_EN, cell_id="c1"))
+        r = self._scan_en(tmp_path, fr, en)
+        kinds = [f["kind"] for f in r["findings"]]
+        assert kinds.count("STRUCTURE_DRIFT") == 1
+        assert "TRUNCATED_CELL" not in kinds
+
+    def test_structure_drift_is_blocking(self, tmp_path):
+        # Le finding de structure est bloquant : main() --check renvoie 1.
+        fr = _nb(_md(EXERCISE_BODY, cell_id="c1"))
+        half = len(EXERCISE_BODY) // 2
+        en = _nb(
+            _md(EXERCISE_BODY[:half], cell_id="c1"),
+            _md(EXERCISE_BODY[half:], cell_id="c1b"),
+        )
+        pair = self._write_pair(tmp_path, fr, en)
+        with mock.patch.object(dml, "ref_resolves", return_value=True), \
+             mock.patch.object(dml, "path_exists_at_ref", return_value=True):
+            assert dml.main([str(pair), "--base", "MOCK", "--check"]) == 1
