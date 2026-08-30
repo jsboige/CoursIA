@@ -49,6 +49,15 @@ jobs:
         with:
           python-version: '3.13'
 
+      # actions/setup-python does NOT ship pytest. The only run of this
+      # workflow (schedule, 2026-08-29T04:43Z) FAILED with "No module named
+      # pytest" at the first step: triggers are schedule/dispatch only, so
+      # no PR check ever exercised the runner. The detector itself is pure
+      # stdlib (gh CLI excluded) and the tests are unittest-style -- pytest
+      # is only the runner.
+      - name: Install pytest (runner only, detector stays stdlib)
+        run: python -m pip install pytest
+
       # Criterion 4: the skip path stays possible offline.
       - name: Unit tests (live test SKIPS without DETECT_DUP_NETWORK)
         run: python -m pytest scripts/tests/test_detect_duplicate_issues.py -v
