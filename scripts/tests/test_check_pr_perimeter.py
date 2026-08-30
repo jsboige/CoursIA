@@ -36,6 +36,7 @@ from check_pr_perimeter import (  # noqa: E402
     _normalize_rest_files,
     _paragraph_prefix,
     _word_form_count,
+    _word_form_is_indef_non_pr_subject,
 )
 
 # The exact shape of the founding incident (#11227).
@@ -2610,3 +2611,125 @@ def test_13535_word_form_extraction_still_fires():
     mismatch = "Périmètre : trois fichiers uniquement, aucune autre modification."
     problems = check_assertion(FILES_2_13499, mismatch)
     assert problems and any("2" in p for p in problems)
+
+# ---------------------------------------------------------------------------
+# #13610 -- article indefini ("un/une/des fichier(s)") + verbe d'action dont
+# le referent NOMMÉ n'est pas dans la PR. Founder case PR #13539 l.43 :
+# « generaliser demanderait d'editer pick_idle_grain.py, un fichier deja
+# porteur de deux PRs ouvertes de la meme lane (#13496, #13499) ». The
+# "un fichier" describes an OTHER file (a routing target, a dependency), not
+# the PR's perimeter. FN safety: anonymous referent (no named file on the
+# line) keeps the rouge -- consistent with the script's founder pattern of
+# default-fail-loud on ambiguous shapes.
+# ---------------------------------------------------------------------------
+
+FILES_13610 = [
+    {"path": ".github/workflows/epic-charter-advisory.yml"},
+    {"path": "scripts/check_epic_charter.py"},
+    {"path": "scripts/tests/test_epic_charter.py"},
+]
+
+
+def test_13610_founder_case_named_out_of_scope_passes():
+    """Founder case (verbatim shape, with the named file explicit): the
+    'un fichier' referent is `pick_idle_grain.py`, a file the PR does NOT
+    touch. The guard must NOT rouge the word-form count."""
+    line = (
+        "generaliser demanderait d'editer pick_idle_grain.py, un fichier "
+        "deja porteur de deux PRs ouvertes de la meme lane (#13496, #13499)"
+    )
+    problems = check_assertion(FILES_13610, line)
+    assert problems == [], (
+        "founder shape must not rouge the word-form count; got: " + repr(problems)
+    )
+
+
+def test_13610_founder_case_via_une_target():
+    """Symmetric founder case via the feminine article 'une cible', with a
+    named file. Mirrors the live #13539 reformulation: 'une cible' was
+    already outside the count regex (no 'fichier(s)' in the phrase), and
+    the `non verifiable` guard fires because no count + no exclusivity is
+    recognized -- but the body still does not falsely rouge on a NUMBER
+    mismatch. The shape's exemption from the count branch is structural;
+    this test pins that."""
+    line = (
+        "generaliser demanderait d'editer scripts/pick_idle_grain.py, une "
+        "cible deja porteuse de deux PRs ouvertes de la meme lane (#13496)"
+    )
+    problems = check_assertion(FILES_13610, line)
+    # The 'non verifiable' guard fires (no digit count + no exclusivity
+    # marker) -- this is NOT the founder case (#13610); the founder case
+    # is the COUNT_MISMATCH branch with an indefinite article. Documented
+    # here to prevent a future refactor from collapsing the two shapes.
+    assert any("formulation non verifiable" in p for p in problems), (
+        "expected the 'non verifiable' guard to fire for a 'une cible' "
+        "shape (no digit count, no exclusivity); got: " + repr(problems)
+    )
+    assert not any("l'assertion pretend" in p for p in problems), (
+        "an indefinite article with no 'fichier(s)' must not trigger a "
+        "count-mismatch rouge; got: " + repr(problems)
+    )
+
+
+def test_13610_true_assertion_one_file_named_in_scope_still_rouges():
+    """A genuine 'un fichier' perimeter claim whose named referent IS in
+    the PR stays blocking -- the filter must not silence true assertions."""
+    line = "Cette PR modifie un fichier scripts/check_epic_charter.py"
+    problems = check_assertion(FILES_13610, line)
+    assert len(problems) == 1, (
+        "true assertion must still rouge; got: " + repr(problems)
+    )
+    assert "l'assertion pretend 1 fichier" in problems[0]
+
+
+def test_13610_fn_safety_anonymous_referent_keeps_rouge():
+    """FN control 1: no named file on the line, but the edit-verb is
+    present. The shape is AMBIGUOUS -- 'editer un fichier' could mean the
+    PR or another file. Default-fail-loud: keep the rouge."""
+    line = (
+        "generaliser demanderait d'editer un fichier deja porteur de "
+        "deux PRs ouvertes de la meme lane"
+    )
+    problems = check_assertion(FILES_13610, line)
+    assert len(problems) == 1, (
+        "anonymous referent must stay rouge; got: " + repr(problems)
+    )
+
+
+def test_13610_fn_safety_no_edit_verb_keeps_rouge():
+    """FN control 2: no edit-verb in the run-up. The 'un fichier' is
+    descriptive prose, but without an action verb the exemption branch
+    cannot fire -- the rouge stays."""
+    line = "il y a un fichier quelque part qui pose probleme."
+    problems = check_assertion(FILES_13610, line)
+    assert len(problems) == 1, (
+        "no-verb shape must stay rouge; got: " + repr(problems)
+    )
+
+
+def test_13610_predicate_unit_unanimous():
+    """Direct unit test of _word_form_is_indef_non_pr_subject: 5 sentences,
+    unanimous verdicts. Decoupled from check_assertion so a future pipeline
+    change cannot mask a predicate regression."""
+    files = FILES_13610
+    # True cases
+    assert _word_form_is_indef_non_pr_subject(
+        "editer pick_idle_grain.py, un fichier deja porteur", files
+    ) is True
+    assert _word_form_is_indef_non_pr_subject(
+        "modifier scripts/foo.py, un fichier de tests", files
+    ) is True
+    # False cases (genuine or ambiguous)
+    assert _word_form_is_indef_non_pr_subject(
+        "Cette PR modifie un fichier scripts/check_epic_charter.py", files
+    ) is False
+    assert _word_form_is_indef_non_pr_subject(
+        "editer un fichier quelque part", files
+    ) is False  # anonymous
+    assert _word_form_is_indef_non_pr_subject(
+        "il y a un fichier ici", files
+    ) is False  # no edit-verb
+    assert _word_form_is_indef_non_pr_subject(
+        "Cette PR ajoute un fichier scripts/check_epic_charter.py dans "
+        "scripts/check_epic_charter.py", files
+    ) is False  # named file IS in scope
