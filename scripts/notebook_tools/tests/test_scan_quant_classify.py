@@ -1042,6 +1042,108 @@ def _aggregate_total(results):
     return sum(r.total_findings for r in results)
 
 
+# --- Cohortes de la baseline #10016 (origin/main @ a0c5d142f, 2026-08-08) ---
+#
+# Les bornes 209 / 378 ci-dessous ont ete mesurees sur les notebooks qui
+# existaient A CETTE DATE. Les comparer au compte du corpus ENTIER fait
+# dependre un test de cablage de la croissance du corpus : chaque notebook
+# ajoute depuis pousse le total, et le test rougit sans qu aucun faux positif
+# ne soit revenu.
+#
+# Mesure du 2026-08-29 (issue #13534), instrument = _aggregate_drainable :
+#   cohorte ML/DfA (28 nb) : 93 -> 68   le cablage tient (-27 %)
+#   arrivants   (21 nb)    :       142   soit 6.8/nb, ~2.8x le taux draine
+#   total                  :       210   au-dessus de la borne 209
+#
+# On epingle donc la cohorte : l assertion porte sur les notebooks que la
+# baseline a effectivement comptes. Ce que le test affirme -- << le cablage
+# v4 a retire des FP >> -- redevient falsifiable, et le reste quand le
+# corpus grandit. Monter la borne a 211 aurait fait l inverse : effacer la
+# seule chose que le test mesurait.
+# 28 notebooks, chemins relatifs a CORPUS_ML_DFA
+_COHORT_ML_DFA = frozenset((
+    "01-PythonForDataScience/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb",
+    "01-PythonForDataScience/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb",
+    "02-ML-Cours/2.1-Workflow-ML.ipynb",
+    "02-ML-Cours/2.2-Descente-de-gradient.ipynb",
+    "02-ML-Cours/2.3-Regression-lineaire-logistique.ipynb",
+    "02-ML-Cours/2.4-Arbres-Forets-Ensembles.ipynb",
+    "02-ML-Cours/2.5-Biais-Variance-CV-ROC.ipynb",
+    "02-ML-Cours/2.6-Clustering-KMeans-PCA.ipynb",
+    "02-ML-Cours/2.7-Modeles-Non-Parametriques.ipynb",
+    "02-ML-Cours/2.8-Theorie-PAC.ipynb",
+    "02-ML-Cours/2.9-Grokking-Generalisation.ipynb",
+    "Track1-LangChain/Day1-Foundations/Labs/Lab1-PythonForDataScience.ipynb",
+    "Track1-LangChain/Day2-Document-Agents/Labs/Lab2-RFP-Analysis/Lab2-RFP-Analysis.ipynb",
+    "Track1-LangChain/Day2-Document-Agents/Labs/Lab3-CV-Screening/Lab3-CV-Screening.ipynb",
+    "Track1-LangChain/Day3-Data-Agents/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb",
+    "Track1-LangChain/Day3-Data-Agents/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb",
+    "Track1-LangChain/Day3-Data-Agents/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb",
+    "Track1-LangChain/Day3-Data-Agents/Labs/Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb",
+    "Track2-GoogleADK/Day4-Foundations/Lab8-ADK-Introduction.ipynb",
+    "Track2-GoogleADK/Day4-Foundations/Lab9-First-ADK-Agent.ipynb",
+    "Track2-GoogleADK/Day5-DS-Star/Lab10-File-Analyzer.ipynb",
+    "Track2-GoogleADK/Day5-DS-Star/Lab11-Planner-Coder-Loop.ipynb",
+    "Track2-GoogleADK/Day5-DS-Star/Lab12-DS-Star-Workshop.ipynb",
+    "Track2-GoogleADK/Day6-MLE-Star/Lab13-Web-Search-SOTA.ipynb",
+    "Track2-GoogleADK/Day6-MLE-Star/Lab14-Ablation-Refinement.ipynb",
+    "Track2-GoogleADK/Day6-MLE-Star/Lab15-Kaggle-Challenge.ipynb",
+    "Track2-GoogleADK/Day7-Production/Lab16-Data-Science-Agent.ipynb",
+    "Track2-GoogleADK/Day7-Production/Lab17-Final-Project.ipynb",
+))
+
+# 29 notebooks, relatifs a CORPUS_SEARCH_PART1
+_COHORT_SEARCH_PART1 = frozenset((
+    "Search-1-StateSpace-Csharp.ipynb",
+    "Search-1-StateSpace.ipynb",
+    "Search-10-SymbolicAutomata-Csharp.ipynb",
+    "Search-10-SymbolicAutomata.ipynb",
+    "Search-11-Metaheuristics-Csharp.ipynb",
+    "Search-11-Metaheuristics.ipynb",
+    "Search-11b-Metaheuristiques-Deep-Part2.ipynb",
+    "Search-11b-Metaheuristiques-Deep-Part3.ipynb",
+    "Search-11b-Metaheuristiques-Deep-Part4.ipynb",
+    "Search-11b-Metaheuristiques-Deep.ipynb",
+    "Search-15-NetworkX-Csharp.ipynb",
+    "Search-15-NetworkX.ipynb",
+    "Search-16-QuikGraph.ipynb",
+    "Search-2-Uninformed-Csharp.ipynb",
+    "Search-2-Uninformed.ipynb",
+    "Search-3-Informed-Csharp.ipynb",
+    "Search-3-Informed.ipynb",
+    "Search-4-LocalSearch-Csharp.ipynb",
+    "Search-4-LocalSearch.ipynb",
+    "Search-5-GeneticAlgorithms-Csharp.ipynb",
+    "Search-5-GeneticAlgorithms.ipynb",
+    "Search-6-AdversarialSearch-Csharp.ipynb",
+    "Search-6-AdversarialSearch.ipynb",
+    "Search-7-MCTS-And-Beyond-Csharp.ipynb",
+    "Search-7-MCTS-And-Beyond.ipynb",
+    "Search-8-DancingLinks-Csharp.ipynb",
+    "Search-8-DancingLinks.ipynb",
+    "Search-9-LinearProgramming-Csharp.ipynb",
+    "Search-9-LinearProgramming.ipynb",
+))
+
+def _split_cohort(results, corpus_root, cohort):
+    """Separe les resultats entre cohorte de baseline et arrivants.
+
+    Retourne ``(dans_la_cohorte, hors_cohorte)``. Un notebook de la cohorte
+    supprime depuis disparait des deux listes -- la borne haute reste valide
+    (moins de notebooks ne peut pas faire monter le compte).
+    """
+    inside, outside = [], []
+    root = Path(corpus_root).resolve()
+    for r in results:
+        try:
+            rel = Path(str(r.path)).resolve().relative_to(root).as_posix()
+        except (ValueError, OSError):
+            outside.append(r)
+            continue
+        (inside if rel in cohort else outside).append(r)
+    return inside, outside
+
+
 @pytest.mark.c1301_23
 class TestC130123PostCablageCorpusDelta:
     """Mesure corpus post-cablage v4 falsifiable — issue #10012.
@@ -1079,10 +1181,13 @@ class TestC130123PostCablageCorpusDelta:
             pytest.skip(f"Corpus {CORPUS_ML_DFA} absent (machine sans ML).")
 
         results = scan_corpus_quant(corpus)
-        drainable = _aggregate_drainable(results)
-        n_notebooks = len(results)
+        cohort, newcomers = _split_cohort(results, corpus, _COHORT_ML_DFA)
+        drainable = _aggregate_drainable(cohort)
+        n_notebooks = len(cohort)
 
-        # Pre-cablage baseline documente dans #10012 + #10016 = 209 drainables.
+        # Baseline #10012 + #10016 = 209, mesuree sur _COHORT_ML_DFA (28 nb).
+        # L assertion porte sur CES notebooks : sur le corpus entier elle
+        # mesurerait la croissance, pas le cablage (#13534).
         # Post-cablage v4 doit reduire significativement (-55% attendu).
         assert drainable < 209, (
             f"ML/DfA post-cablage drainable={drainable} >= 209 (baseline pre-cablage). "
@@ -1095,8 +1200,10 @@ class TestC130123PostCablageCorpusDelta:
         )
         delta_pct = (209 - drainable) / 209 * 100
         print(
-            f"\n[ML/DfA] n_notebooks={n_notebooks} drainable={drainable} "
-            f"(pre-cablage=209, delta={delta_pct:.1f}%)"
+            f"\n[ML/DfA] cohorte n={n_notebooks} drainable={drainable} "
+            f"(pre-cablage=209, delta={delta_pct:.1f}%) | "
+            f"hors-cohorte n={len(newcomers)} "
+            f"drainable={_aggregate_drainable(newcomers)} (non gatant)"
         )
 
     def test_c1301_23_search_part1_post_cablage_drainable_below_pre_cablage(self):
@@ -1109,9 +1216,14 @@ class TestC130123PostCablageCorpusDelta:
             pytest.skip(f"Corpus {CORPUS_SEARCH_PART1} absent.")
 
         results = scan_corpus_quant(corpus)
-        drainable = _aggregate_drainable(results)
-        n_notebooks = len(results)
+        cohort, newcomers = _split_cohort(results, corpus, _COHORT_SEARCH_PART1)
+        drainable = _aggregate_drainable(cohort)
+        n_notebooks = len(cohort)
 
+        # Meme epinglage que ML/DfA : la borne 378 a ete mesuree sur les
+        # 29 notebooks de _COHORT_SEARCH_PART1. La serie n a grandi que de 2
+        # notebooks (13 drainables) -- le defaut y est latent, pas encore
+        # declenche. On le corrige avant qu il ne rougisse (#13534).
         assert drainable < 378, (
             f"Search/Part1 post-cablage drainable={drainable} >= 378 (pre-cablage). "
             f"Câblage v4 n'a pas reduit les FP. n_notebooks={n_notebooks}."
@@ -1121,8 +1233,10 @@ class TestC130123PostCablageCorpusDelta:
         )
         delta_pct = (378 - drainable) / 378 * 100
         print(
-            f"\n[Search/Part1] n_notebooks={n_notebooks} drainable={drainable} "
-            f"(pre-cablage=378, delta={delta_pct:.1f}%)"
+            f"\n[Search/Part1] cohorte n={n_notebooks} drainable={drainable} "
+            f"(pre-cablage=378, delta={delta_pct:.1f}%) | "
+            f"hors-cohorte n={len(newcomers)} "
+            f"drainable={_aggregate_drainable(newcomers)} (non gatant)"
         )
 
     def test_c1301_23_ml_dfA_drainable_breakdown_minimum_mach_dep(self):
@@ -1445,4 +1559,58 @@ class TestV8ModeledMinuteIntegration:
         machine_dep = [f for f in result.findings if f.quant_class == "MACHINE-DEP"]
         assert len(machine_dep) >= 1, (
             f"genuine runtime min doit rester MACHINE-DEP, got {result.by_class}"
+        )
+
+
+# --------------------------------------------------------------------------- #
+#  #13534 — masque des liens markdown, et contrôle positif contre le sur-filtrage
+# --------------------------------------------------------------------------- #
+class TestMarkdownLinkNotAMeasurement:
+    """Un numéro de section cité dans un lien n'est pas une mesure (#13534).
+
+    Le premier test vérifie que le masque mord. Les deux suivants sont des
+    CONTRÔLES POSITIFS : sans eux, élargir le masque jusqu'à tout supprimer
+    passerait le premier test et viderait le scanner de sa fonction.
+    """
+
+    def _write_nb(self, tmp_path, source, name="t.ipynb"):
+        p = tmp_path / name
+        p.write_text(
+            json.dumps({"cells": [{"cell_type": "markdown", "source": [source]}]}),
+            encoding="utf-8",
+        )
+        return analyze_notebook_quant(p)
+
+    def test_section_number_in_link_is_masked(self, tmp_path):
+        """Le numéro apparaît deux fois (label ET cible) et n'est pas une grandeur."""
+        result = self._write_nb(
+            tmp_path,
+            "Le [2.6 clustering & acp](2.6-clustering-kmeans-pca.ipynb) enseigne l'acp.\n",
+        )
+        drainable = sum(v for k, v in result.by_class.items() if k != "STRUCTUREL")
+        assert drainable == 0, f"lien markdown -> aucun drainable, got {result.by_class}"
+
+    def test_version_outside_link_still_detected(self, tmp_path):
+        """CONTRÔLE POSITIF : hors lien, une version d'environnement reste ENV-DEP."""
+        result = self._write_nb(
+            tmp_path,
+            "Environnement teste : python 3.11.4 sur la machine de reference.\n",
+        )
+        assert result.by_class.get("ENV-DEP", 0) >= 1, (
+            f"une version hors lien doit rester drainable, got {result.by_class}"
+        )
+
+    def test_value_in_backticks_still_detected(self, tmp_path):
+        """CONTRÔLE POSITIF : les backticks sont de la typographie, pas du code.
+
+        Masquer les spans inline `...` ferait tomber le corpus de 183 à 157, mais
+        supprimerait cette divergence numpy/torch — exactement ce que le scanner
+        existe pour trouver. Variante mesurée puis écartée le 2026-08-29.
+        """
+        result = self._write_nb(
+            tmp_path,
+            "Fraction de zeros : `0.4014` (numpy) et `0.4007` (torch).\n",
+        )
+        assert result.by_class.get("ENV-DEP", 0) >= 1, (
+            f"une mesure entre backticks doit rester drainable, got {result.by_class}"
         )

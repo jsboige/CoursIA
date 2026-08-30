@@ -162,6 +162,42 @@ def fetch_merged(days: int, now: dt.datetime | None = None) -> tuple[list[dict],
         return [], "{}: {}".format(type(exc).__name__, exc)
 
 
+_CAMEL_RE = re.compile(r"[a-z][A-Z]")
+
+
+def _is_distinctive(seg: str) -> bool:
+    """Le dernier segment d une zone peut-il se chercher SEUL sans faux positif ?
+
+    Chercher `Texte` seul matcherait toute prose francaise -- c est le faux
+    positif que la recherche a deux segments evite, et il faut le garder. Mais
+    le refus etait total, et il coutait le cas inverse : `DataScienceWithAgents`
+    n est pas un mot, c est un identifiant. Mesure du 2026-08-29 : l EPIC
+    #13504, ouvert precisement pour declarer cette zone, ne s y rattachait pas
+    -- son titre dit `consolidation(DataScienceWithAgents)` sans le prefixe
+    `ML/`, et personne n ecrit le chemin complet dans un titre.
+
+    Un segment se cherche seul s il est assez long ET porte une marque qui le
+    sort du lexique : une bosse CamelCase, un chiffre, un tiret ou un underscore. `Texte`,
+    `Audio`, `Video`, `Search` echouent aux deux conditions ; `ML-Training-
+    Pipeline`, `Part4-Metaheuristics`, `DataScienceWithAgents` les passent.
+    """
+    s = seg or ""
+    if len(s) < 10:
+        return False
+    return (bool(_CAMEL_RE.search(s)) or any(c.isdigit() for c in s)
+            or "-" in s or "_" in s)
+
+
+def _is_series(fam: str) -> bool:
+    """Une zone est-elle une serie de notebooks ?
+
+    Le prefixe suffit et se lit : `MyIA.AI.Notebooks/<domaine>/<serie>`. Tout
+    le reste -- `scripts/`, `.github/`, `docs/` -- est de l outillage, jamais
+    une zone d atterrissage pedagogique.
+    """
+    return (fam or "").replace(chr(92), "/").startswith("MyIA.AI.Notebooks/")
+
+
 def saturation(prs: list[dict]) -> tuple[dict[str, dict], dict[int, str]]:
     """Zones saturees + carte issue -> zone, deduites des PRs mergees.
 
@@ -175,12 +211,15 @@ def saturation(prs: list[dict]) -> tuple[dict[str, dict], dict[int, str]]:
     for pr in prs:
         fams: set[str] = set()
         new_here: dict[str, int] = {}
+        nb_here: dict[str, int] = {}
         for f in pr.get("files") or []:
             path = f.get("path", "")
             if not path:
                 continue
             fam = family_of(path)
             fams.add(fam)
+            if path.endswith(".ipynb"):
+                nb_here[fam] = nb_here.get(fam, 0) + 1
             if (path.endswith(".ipynb")
                     and (f.get("deletions") or 0) == 0
                     and (f.get("additions") or 0) >= NEW_NB_MIN_ADDITIONS):
@@ -191,9 +230,27 @@ def saturation(prs: list[dict]) -> tuple[dict[str, dict], dict[int, str]]:
             z["new_notebooks"] += new_here.get(fam, 0)
             z["numbers"].append(pr.get("number"))
         if fams:
-            dominant = max(fams, key=lambda f: (new_here.get(f, 0), f))
+            # Une zone est une SERIE de notebooks, pas n importe quel chemin.
+            # Le classement ne regardait que les notebooks NEUFS, puis l ordre
+            # alphabetique : une PR d outillage pur rattachait donc l issue
+            # qu elle cite a `scripts/<fichier>.py`. Mesure du 2026-08-29 :
+            # `i2f[12373]` -- l EPIC MGS, une serie de notebooks -- valait
+            # `scripts/series_saturation.py`, parce que mes propres PRs de
+            # picker citent #12373 en prose et ne touchent que des scripts.
+            # Toute fille de cet EPIC heritait de la zone d un script.
+            dominant = max(
+                fams,
+                key=lambda f: (new_here.get(f, 0), nb_here.get(f, 0), f))
+            touches_nb = nb_here.get(dominant, 0) > 0
             for key in cited_issues(pr):
-                issue_to_family.setdefault(key, dominant)
+                prev = issue_to_family.get(key)
+                if prev is None:
+                    issue_to_family[key] = dominant
+                elif touches_nb and not _is_series(prev):
+                    # Premier-arrive gagnait sans condition. On autorise UNE
+                    # promotion : un rattachement a une serie remplace un
+                    # rattachement a un chemin qui n en est pas une.
+                    issue_to_family[key] = dominant
     return zones, issue_to_family
 
 
@@ -285,27 +342,126 @@ def family_from_text(text: str, families) -> str | None:
     low = (text or "").replace(chr(92), "/").lower()
     if not low:
         return None
-    best_fam, best_len = None, 0
+    # La FREQUENCE avant la longueur. "La plus longue chaine gagne" traite un
+    # renvoi incident comme le sujet : mesure du 2026-08-29, l'EPIC #13504
+    # (qui nomme deux fois `ML/DataScienceWithAgents` et cite UNE fois
+    # `Search/Part4-Metaheuristics` dans un tableau de comparaison) se
+    # resolvait en Part4-Metaheuristics -- 45 caracteres contre 44. La zone
+    # que l'EPIC venait declarer restait `(aucun EPIC declare)`, c'est-a-dire
+    # que l'organe repondait le contraire de ce qui venait d'etre ecrit.
+    # Ce qu'une issue REPETE est son sujet ; ce qu'elle cite une fois est un
+    # renvoi. La longueur reste en second : elle departage `GenAI/Texte` de
+    # `Texte` quand les deux apparaissent autant.
+    best = None
     for fam in families:
-        segs = fam.replace(chr(92), "/").lower().split("/")
+        raw_segs = fam.replace(chr(92), "/").split("/")
+        segs = [s.lower() for s in raw_segs]
         cands = ["/".join(segs)]
         if len(segs) >= 2:
             cands.append("/".join(segs[-2:]))
+        if _is_distinctive(raw_segs[-1]):
+            cands.append(segs[-1])
+        hits, span = 0, 0
         for c in cands:
-            if len(c) > best_len and c in low:
-                best_fam, best_len = fam, len(c)
-    return best_fam
+            n = low.count(c)
+            if n:
+                hits = max(hits, n)
+                span = max(span, len(c))
+        if hits:
+            key = (hits, span)
+            if best is None or key > best[0]:
+                best = (key, fam)
+    return best[1] if best else None
 
 
-def resolve_family(item: dict, issue_to_family: dict, families=()) -> str | None:
+
+def enrich_parent_families(pool, issue_to_family: dict, zones: dict) -> dict:
+    """Rend la zone d'un EPIC a ses ENFANTS, pas aux PRs qui le citent.
+
+    `saturation()` lie une issue a la zone dominante de la premiere PR
+    mergee qui la cite (`setdefault`). Pour un GRAIN c'est factuel. Pour un
+    EPIC c'est un piege : un EPIC est un tracker, cite par tout ce qui
+    l'outille, et la premiere PR d'outillage le fige sur un chemin de script
+    qui ne portera jamais de notebook. Mesure du 2026-08-29 : #12373 (EPIC
+    MGS, 9 paires de notebooks) etait fige sur `scripts/series_saturation.py`,
+    zone a 0 notebook -- si bien que sa fille #13268, sans PR citante propre,
+    heritait d'un frein NUL (x1.00) la ou sa soeur #13394 prenait x0.33 dans
+    la meme zone saturee. Deux grains d'expansion du meme EPIC, deux poids
+    incomparables, selon qu'une PR les avait deja touches ou non.
+
+    Le vote des enfants est la source factuelle qui manquait : la zone d'un
+    EPIC est celle ou ses grains ATTERRISSENT. Il ne remplace jamais une
+    attribution deja informative -- il ne comble que l'absente et la muette.
+    """
+    votes: dict[int, dict[str, int]] = {}
+    for it in pool or ():
+        parent = it.get("parent")
+        if not parent:
+            continue
+        fam = (issue_to_family or {}).get(it.get("number"))
+        if fam and (zones.get(fam) or {}).get("new_notebooks", 0) > 0:
+            tally = votes.setdefault(parent, {})
+            tally[fam] = tally.get(fam, 0) + 1
+    out = dict(issue_to_family or {})
+    for parent, tally in votes.items():
+        cur = out.get(parent)
+        if cur is None or (zones.get(cur) or {}).get("new_notebooks", 0) == 0:
+            out[parent] = max(tally, key=lambda f: (tally[f], f))
+    return out
+
+
+def _informative(fams, zones) -> bool:
+    """Une zone informe le frein si elle a MESURE des notebooks neufs.
+
+    Sans `zones` on ne sait rien : on ne degrade pas le comportement
+    existant (toute reponse est alors tenue pour informative).
+
+    Une liste VIDE, elle, n'informe jamais -- et c'est le cas qui compte le
+    plus, car c'est celui d'un grain frais sans PR citante ni parent resolu.
+    `any()` sur une liste vide rend deja False ; sans ce garde, le raccourci
+    `zones is None` repondait True et faisait sauter le repli par le texte
+    pour tous les appelants a trois arguments (mesure du 2026-08-29 :
+    `test_titre_prime_sur_le_corps` et ses deux soeurs rendaient None).
+    """
+    if not fams:
+        return False
+    if zones is None:
+        return True
+    return any((zones.get(f) or {}).get("new_notebooks", 0) > 0 for f in fams)
+
+
+def resolve_family(item: dict, issue_to_family: dict, families=(),
+                   zones: dict | None = None) -> str | None:
     """Zone d'un grain : par PR citante, sinon par son EPIC parent, sinon par
     le texte. Les trois sources vont de la plus factuelle (une PR a reellement
     touche ce chemin) a la plus declarative (l'issue dit son sujet).
+
+    Une source qui repond une zone SANS accumulation de notebooks mesuree
+    n'informe pas un frein qui compte des notebooks : la cascade continue au
+    lieu de s'arreter dessus (`zones` fourni). Mesure du 2026-08-29 :
+    #13268 (paire 8/9 de l'EPIC #12373, MGS) n'avait pas de PR citante, sa
+    source parente rendait `scripts/series_saturation.py` -- l'EPIC est un
+    tracker, la premiere PR d'outillage qui le cite le lie a un chemin de
+    script par `setdefault` + departage alphabetique -- et ce chemin, qui ne
+    peut par construction porter aucun notebook, ANNULAIT le frein : x1.00 la
+    ou sa soeur #13394 prenait x0.33 dans la meme zone saturee. C'est le trou
+    par lequel passe exactement l'emballement decrit par le user (les grains
+    qui arrivent frais chaque jour n'ont pas encore de PR citante).
+
+    Le garde-fou ne peut pas inventer de frein : il ne retient une source
+    ulterieure que si elle porte des notebooks MESURES ; si aucune n'en porte,
+    la premiere reponse non nulle est rendue, comme avant.
     """
+    cands = []
     fam = (issue_to_family or {}).get(item.get("number"))
-    if fam is None and item.get("parent"):
+    if fam is not None:
+        cands.append(fam)
+    if item.get("parent"):
         fam = (issue_to_family or {}).get(item["parent"])
-    if fam is None and families:
+        if fam is not None:
+            cands.append(fam)
+    fam = cands[0] if cands else None
+    if families and not _informative(cands, zones):
         # TITRE d abord, corps ensuite -- meme principe que polarity().
         # Le corps CITE beaucoup (regles, conventions, precedents) ; le
         # titre DIT le sujet. Chercher dans un blob unique laisse la plus
@@ -314,9 +470,11 @@ def resolve_family(item: dict, issue_to_family: dict, families=()) -> str | None
         # parce que son corps citait `.claude/rules/catalog-pr-hygiene.md`
         # et que cette chaine est plus longue que `genai/texte`. La zone
         # reelle restait alors SANS REMEDE, remede en main.
-        fam = family_from_text(item.get("title") or "", families)
-        if fam is None:
-            fam = family_from_text(item.get("body") or "", families)
+        txt = family_from_text(item.get("title") or "", families)
+        if txt is None:
+            txt = family_from_text(item.get("body") or "", families)
+        if txt is not None and (not cands or _informative([txt], zones)):
+            return txt
     return fam
 
 
@@ -331,7 +489,7 @@ def zone_balance(zones: dict, issue_to_family: dict, pool: list) -> dict:
     out: dict[str, dict] = {}
     families = tuple(zones or ())
     for it in pool:
-        fam = resolve_family(it, issue_to_family, families)
+        fam = resolve_family(it, issue_to_family, families, zones)
         if not fam:
             continue
         pol = polarity(it.get("title", ""), it.get("body", "") or "")
@@ -350,6 +508,84 @@ def zone_balance(zones: dict, issue_to_family: dict, pool: list) -> dict:
             # deviner que le lexique a pu manquer quelque chose.
             slot["neutral_issues"].append(it["number"])
         slot["new_notebooks"] = (zones.get(fam) or {}).get("new_notebooks", 0)
+    return out
+
+
+# --- Emballement d'une zone : la MAGNITUDE, que la polarite ne voit pas ------
+# Mandat user 2026-08-28 : "il ne devrait pas y avoir d'emballement".
+#
+# `zone_verdict` ne lit que la POLARITE du vivier ouvert : une zone dont les
+# grains ouverts consolident plus qu'ils n'ajoutent rend OK, quel que soit le
+# nombre de notebooks DEJA tombes. Mesure du 2026-08-29 :
+# `ML/DataScienceWithAgents` a recu 11 notebooks neufs en 14 jours (21 ajouts
+# bruts au sens git) pour 3 grains de consolidation ouverts, et l'organe
+# repondait OK -- sur la zone la plus saturee du depot, celle-la meme que le
+# user a nommee. Trois remedes ouverts ne repondent pas a onze arrivees : la
+# parite demandee porte sur les issues, le RYTHME est une seconde dimension.
+#
+# Le critere s'enonce, il ne se regle pas : une zone s'emballe si elle a recu
+# au moins RUNAWAY_MIN_LANDED notebooks sur la fenetre ET qu'il lui manque un
+# grain de consolidation ouvert par tranche de RUNAWAY_RATIO arrivees. Le
+# plancher absolu evite de qualifier d'emballement trois notebooks sans
+# remede (c'est petit, pas emballe) ; le ratio evite de sanctionner une zone
+# volumineuse dont la consolidation est deja engagee -- mesure du meme jour :
+# `Search/Part4-Metaheuristics` (6 arrivees, 3 consolidations) ne s'emballe
+# PAS, sa consolidation est en cours, et c'est la zone que le user avait
+# signalee en premier.
+RUNAWAY_MIN_LANDED = 6
+RUNAWAY_RATIO = 3
+
+RUNAWAY = "EMBALLEMENT"
+BALANCED = "OK"
+IMBALANCED = "DESEQUILIBRE"
+NO_REMEDY = "SANS REMEDE"
+
+
+def zone_verdict(slot: dict) -> str:
+    """Verdict de POLARITE d'une zone -- inchange, il gouverne le tirage.
+
+    Extrait du picker pour que les deux lisent la meme source (sinon ils
+    re-divergeraient). `SANS REMEDE` a un effet de bord -- il retient des
+    grains hors tirage -- donc son predicat n'est pas touche ici.
+    """
+    exp = slot.get(EXPANSION, 0)
+    con = slot.get(CONSOLIDATION, 0)
+    if exp == 0 and con == 0:
+        return NO_REMEDY
+    if con >= exp:
+        return BALANCED
+    return IMBALANCED
+
+
+def is_runaway(slot: dict) -> bool:
+    """La zone recoit-elle plus vite qu'elle ne consolide ?
+
+    Dimension ORTHOGONALE a `zone_verdict` : une zone peut etre OK en
+    polarite et emballee en rythme -- c'est meme le cas exact qui a motive
+    cette mesure. On ne remplace donc pas le verdict, on l'accompagne.
+    """
+    landed = slot.get("new_notebooks", 0)
+    con = slot.get(CONSOLIDATION, 0)
+    return landed >= RUNAWAY_MIN_LANDED and landed >= RUNAWAY_RATIO * max(1, con)
+
+
+def zone_umbrellas(issue_to_family: dict, pool: list, families=()) -> dict:
+    """Par zone : quels EPICs parents alimentent ses grains ouverts.
+
+    Le mandat demande qu'un EPIC qui alimente une serie sache produire de la
+    consolidation autant que de l'expansion. Encore faut-il savoir OU l'ecrire
+    -- un verdict qui ne nomme pas l'EPIC responsable laisse le lecteur le
+    chercher. Une zone chaude SANS parent declare est le cas le plus grave et
+    non le plus propre : personne n'y est comptable de la contrepartie.
+    """
+    out: dict[str, dict[int, int]] = {}
+    for it in pool:
+        fam = resolve_family(it, issue_to_family, families)
+        parent = it.get("parent")
+        if not fam or not parent:
+            continue
+        out.setdefault(fam, {})
+        out[fam][parent] = out[fam].get(parent, 0) + 1
     return out
 
 
