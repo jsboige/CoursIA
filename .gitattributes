@@ -71,3 +71,14 @@ scripts/notebook_tools/twin_pairs.d/*.yaml text eol=lf
 # differait de l'amont. `-text` desactive toute conversion : le blob est l'amont.
 # Ne pas "corriger" en `text eol=...` : ce serait re-ouvrir la meme corruption.
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/data/argumentum_*_taxonomy.csv -text
+
+# Meme raisonnement pour les ontologies OWL distillees depuis le meme amont, et
+# meme phenomene mesure : argumentum.owl porte 41 sauts de ligne ISOLES (LF nu)
+# au milieu de ses 107853 CRLF, argumentum_virtues.owl est en CRLF pur. L'amont
+# stocke ces octets tels quels ; sous `core.autocrlf=true` et sans regle, git
+# normaliserait ici et le blob stocke differerait de l'amont alors que le fichier
+# sur disque semblerait identique -- la panne exacte de l'import #5183.
+# `text eol=crlf` ne conviendrait pas davantage que pour les CSV : il ecraserait
+# les 41 LF nus. La preuve de verbatim est l'EGALITE DES SHA DE BLOB (consignee
+# dans argumentum_snapshot.json), et elle n'est atteignable qu'avec `-text`.
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/ontologies/argumentum_*.owl -text

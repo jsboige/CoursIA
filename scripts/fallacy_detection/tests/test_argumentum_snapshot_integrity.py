@@ -44,6 +44,19 @@ diverge de l'amont, pas que l'attendu est faux. Un renommage amont DOIT passer
 par une resynchronisation deliberee -- c'est precisement le geste que ce test
 rend obligatoire au lieu de le laisser filer en silence.
 
+LES ONTOLOGIES SONT COUVERTES PAR LES MEMES GARDES
+--------------------------------------------------
+``Argument_Analysis/ontologies/`` recoit les deux OWL du meme amont, avec en
+plus un invariant qui leur est propre : les aretes du graphe argumentatif
+doivent etre RAISONNABLES. Jusqu'au 30/08 elles etaient emises uniquement en
+``AnnotationAssertion`` -- hors semantique logique d'OWL : SPARQL les voit,
+aucun raisonneur (HermiT, Pellet, owlrl) ne les voit. Les OWL distribues ici
+portaient donc ``ObjectPropertyAssertion = 0``, et tout delta d'inference owlrl
+calcule dessus etait vide PAR CONSTRUCTION -- ce qui se serait lu comme un
+verdict sur l'outillage aval alors que la panne etait en amont (critere 3 de
+#13567). L'amont emet desormais les deux formes (Argumentum #1231) ; ces tests
+verifient que la distribution locale les porte toujours toutes les deux.
+
 Hermetique : stdlib only, aucun acces reseau, aucun appel a git.
 """
 
@@ -144,4 +157,78 @@ def test_virtues_families():
         f"  manifeste : {expected}\n  disque    : {actual}\n"
         "Si l'amont a renomme une famille, resynchroniser le CSV et regenerer "
         "le manifeste ; ne pas editer cette attente a la main."
+    )
+
+
+ONTOLOGIES_DIR = REPO / "MyIA.AI.Notebooks" / "SymbolicAI" / "Argument_Analysis" / "ontologies"
+
+ONTOLOGIES = ["argumentum_fallacies.owl", "argumentum_virtues.owl"]
+
+
+def _owl(name: str) -> str:
+    return (ONTOLOGIES_DIR / name).read_bytes().decode("utf-8", "replace")
+
+
+@pytest.mark.parametrize("name", ONTOLOGIES)
+def test_ontology_blob_sha(name):
+    """L'OWL sur disque est octet pour octet celui de l'amont.
+
+    Meme piege que pour les CSV, et deja materialise : argumentum.owl porte 41
+    sauts de ligne ISOLES au milieu de ses 107853 CRLF, et l'amont stocke ces
+    octets tels quels. Sous `core.autocrlf=true`, git normaliserait ici : le
+    fichier sur disque semblerait identique, le blob stocke ne le serait pas.
+    D'ou la regle `-text` du .gitattributes, dont ce test verifie qu'elle tient.
+    """
+    entry = _manifest()["ontologies"][name]
+    path = ONTOLOGIES_DIR / name
+    assert path.exists(), f"{name} absent de {ONTOLOGIES_DIR}"
+    actual = _git_blob_sha1(path)
+    assert actual == entry["blob_sha1"], (
+        f"{name} a diverge des octets synchronises.\n"
+        f"  attendu {entry['blob_sha1']}\n"
+        f"  obtenu  {actual}\n"
+        f"  amont   {entry['upstream_path']}\n"
+        "Resynchroniser depuis l'amont et regenerer le manifeste."
+    )
+
+
+@pytest.mark.parametrize("name", ONTOLOGIES)
+def test_ontology_carries_object_property_assertions(name):
+    """Le graphe distribue est RAISONNABLE, pas seulement lisible.
+
+    Rouge si une resynchronisation ramene un artefact ou les aretes sont a
+    nouveau annotees sans etre assertees : aucun raisonneur ne les verrait, et
+    le delta d'inference serait vide sans que rien ne le signale.
+    """
+    entry = _manifest()["ontologies"][name]
+    actual = _owl(name).count("<ObjectPropertyAssertion")
+    assert actual > 0, (
+        f"{name} ne porte AUCUNE ObjectPropertyAssertion : les aretes du graphe "
+        "argumentatif sont hors semantique logique d'OWL, donc invisibles a tout "
+        "raisonneur. Resynchroniser depuis un amont posterieur a Argumentum #1231."
+    )
+    assert actual == entry["object_property_assertions"], (
+        f"{name} : {actual} ObjectPropertyAssertion, manifeste "
+        f"{entry['object_property_assertions']}. Resynchroniser et regenerer le "
+        "manifeste plutot que d'ajuster l'attente."
+    )
+
+
+@pytest.mark.parametrize("name", ONTOLOGIES)
+def test_ontology_keeps_annotations_alongside_assertions(name):
+    """L'emission reste ADDITIVE : annotation ET assertion, jamais l'une pour l'autre.
+
+    Retirer l'annotation casserait la lecture SKOS du thesaurus ; n'emettre que
+    l'annotation prive l'ontologie de toute consequence inferable. Une
+    "simplification" amont qui n'emettrait plus qu'une seule forme doit rougir.
+    """
+    entry = _manifest()["ontologies"][name]
+    actual = _owl(name).count("<AnnotationAssertion")
+    assert actual > 0, (
+        f"{name} a perdu ses AnnotationAssertion : la lecture SKOS du thesaurus "
+        "est cassee. L'emission doit rester additive."
+    )
+    assert actual == entry["annotation_assertions"], (
+        f"{name} : {actual} AnnotationAssertion, manifeste "
+        f"{entry['annotation_assertions']}."
     )

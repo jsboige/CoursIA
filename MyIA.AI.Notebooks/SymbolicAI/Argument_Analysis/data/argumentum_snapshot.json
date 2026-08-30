@@ -1,7 +1,7 @@
 {
-  "_comment": "Genere par la resynchronisation verbatim. Ne pas editer a la main : relancer une resynchronisation depuis l'amont et regenerer ce fichier. Le commit amont est celui de master : une ref de branche de travail ne serait pas retrouvable pour un tiers.",
+  "_comment": "Genere par la resynchronisation verbatim. Ne pas editer a la main : relancer une resynchronisation depuis l'amont et regenerer ce fichier. Le commit amont est celui de master : une ref de branche de travail ne serait pas retrouvable pour un tiers. Les deux CSV sont inchanges entre a23e9568 et c86b71ff : le commit unique reste coherent. Les ontologies sont renommees a l'import (amont argumentum.owl -> local argumentum_fallacies.owl) ; `upstream_path` conserve la correspondance, sans quoi un tiers ne retrouve pas la source.",
   "upstream_repo": "ArgumentumGames/Argumentum",
-  "upstream_commit": "a23e9568",
+  "upstream_commit": "c86b71ff",
   "upstream_branch": "master",
   "synced_on": "2026-08-30",
   "files": {
@@ -57,6 +57,20 @@
         "Sens quantitatif",
         "Échange enrichissant"
       ]
+    }
+  },
+  "ontologies": {
+    "argumentum_fallacies.owl": {
+      "upstream_path": "docs/ontology/argumentum.owl",
+      "blob_sha1": "4b4fc620dc3285a04850f7608fde61bb2dc3eb99",
+      "object_property_assertions": 2122,
+      "annotation_assertions": 18388
+    },
+    "argumentum_virtues.owl": {
+      "upstream_path": "docs/ontology/argumentum_virtues.owl",
+      "blob_sha1": "c67d08f01c7876b83383bdc113616bd2887745f0",
+      "object_property_assertions": 444,
+      "annotation_assertions": 3305
     }
   }
 }
