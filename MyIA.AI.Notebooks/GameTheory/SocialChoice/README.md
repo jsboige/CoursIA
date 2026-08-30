@@ -9,7 +9,7 @@ maturity: BETA=5, ALPHA=2
 
 La théorie du choix social étudie comment agréger des préférences individuelles en une décision collective. Ses résultats les plus célèbres sont des **théorèmes d'impossibilité** : le théorème d'Arrow (1951) montre qu'aucune règle de vote ne peut satisfaire simultanément des axiomes "raisonnables" (Pareto, IIA, non-dictature) dès que 3 alternatives ou plus sont en jeu ; le théorème de Sen (1970) démontre un conflit fondamental entre liberté individuelle et efficacité collective.
 
-Cette sous-série du parcours [GameTheory](../README.md) explore ces résultats sous quatre angles complémentaires : la simulation Python des axiomes, la formalisation en Lean 4 (preuve formelle), les méthodes de vote concrète, et l'encodage SAT/Z3 pour la vérification mécanique.
+Cette sous-série du parcours [GameTheory](../README.md) explore ces résultats sous cinq angles complémentaires : la simulation Python des axiomes, la formalisation en Lean 4 (preuve formelle), les méthodes de vote concrète, l'encodage SAT/Z3 pour la vérification mécanique, et la manipulation stratégique comme témoin (Gibbard-Satterthwaite).
 
 **À qui s'adresse cette série** : étudiants en économie, informatique, sciences politiques et mathématiques appliquées. Les notebooks 01 et 03 ne nécessitent que Python (numpy, matplotlib). Les notebooks 02 (Lean) et 04 (SAT/Z3) requièrent des installations supplémentaires décrites dans le [README parent](../README.md). Aucun prérequis en théorie du choix social : les concepts sont introduits progressivement.
 
@@ -24,14 +24,15 @@ Cette sous-série du parcours [GameTheory](../README.md) explore ces résultats 
 | SC-03 (C#) | [03-Voting-Methods-Csharp](03-Voting-Methods-Csharp.ipynb) | **Jumeau C#** — parité .NET du SC-03 (méthodes de vote) implémenté from-scratch en C# (.NET Interactive) (See #4956) | 35 min | PARITÉ |
 | SC-04 | [04-Computational-Aggregation-SAT-Z3](04-Computational-Aggregation-SAT-Z3.ipynb) | Agrégation Computationnelle : SAT et Z3 | 45 min | COMPLET |
 | SC-04 (C#) | [04-Computational-Aggregation-SAT-Z3-Csharp](04-Computational-Aggregation-SAT-Z3-Csharp.ipynb) | **Jumeau C#** — parité .NET du SC-04 (agrégation SAT/Z3) implémenté from-scratch en C# (.NET Interactive) (See #4956) | 45 min | PARITÉ |
+| SC-05 | [05-Gibbard-Satterthwaite](05-Gibbard-Satterthwaite.ipynb) | Gibbard-Satterthwaite sans mystère : la manipulation comme témoin (ex-GT-22, re-slot #12375) | 30 min | COMPLET |
 
-**Durée totale** : ~3h25
+**Durée totale** : ~3h55
 
-> **Parité .NET** : les notebooks [01-Arrow-Impossibility-Theorem-Csharp.ipynb](01-Arrow-Impossibility-Theorem-Csharp.ipynb) (jumeau du SC-01), [03-Voting-Methods-Csharp.ipynb](03-Voting-Methods-Csharp.ipynb) (jumeau du SC-03) et [04-Computational-Aggregation-SAT-Z3-Csharp.ipynb](04-Computational-Aggregation-SAT-Z3-Csharp.ipynb) (jumeau du SC-04) sont les miroirs C# (.NET Interactive) des originaux Python — mêmes algorithmes implémentés from-scratch en C#. Marathon parité .NET ⇄ Python (#4956). Ces trois jumeaux C# sont comptés dans le `pedagogical_count` de la sous-série mais arborent le statut `PARITÉ` dans le tableau ci-dessus pour les distinguer des quatre notebooks Python d'origine dont ils sont les retranscriptions .NET.
+> **Parité .NET** : les notebooks [01-Arrow-Impossibility-Theorem-Csharp.ipynb](01-Arrow-Impossibility-Theorem-Csharp.ipynb) (jumeau du SC-01), [03-Voting-Methods-Csharp.ipynb](03-Voting-Methods-Csharp.ipynb) (jumeau du SC-03) et [04-Computational-Aggregation-SAT-Z3-Csharp.ipynb](04-Computational-Aggregation-SAT-Z3-Csharp.ipynb) (jumeau du SC-04) sont les miroirs C# (.NET Interactive) des originaux Python — mêmes algorithmes implémentés from-scratch en C#. Marathon parité .NET ⇄ Python (#4956). Ces trois jumeaux C# sont comptés dans le `pedagogical_count` de la sous-série mais arborent le statut `PARITÉ` dans le tableau ci-dessus pour les distinguer des cinq notebooks d'origine dont ils sont les retranscriptions .NET.
 
 ## Parcours d'apprentissage
 
-Les quatre notebooks attaquent les mêmes résultats d'impossibilité sous des angles complémentaires -- l'intuition par la simulation, la pratique électorale, la certitude formelle et la vérification automatique -- qui convergent vers une cartographie des relaxations possibles.
+Les cinq notebooks attaquent les mêmes résultats d'impossibilité sous des angles complémentaires -- l'intuition par la simulation, la pratique électorale, la certitude formelle, la vérification automatique et la manipulation stratégique -- qui convergent vers une cartographie des relaxations possibles.
 
 ```mermaid
 flowchart TD
@@ -41,11 +42,13 @@ flowchart TD
     E2["SC-03 · Méthodes de vote<br/>Condorcet · Borda · électeur médian<br/>→ pratique électorale"]
     E3["SC-02 · Preuve formelle Lean 4<br/>infinité des cas couverte · 0 sorry<br/>→ certitude"]
     E4["SC-04 · Vérification SAT/Z3<br/>impossibilité = UNSAT<br/>→ vérification automatique"]
+    E5["SC-05 · Gibbard-Satterthwaite<br/>manipulation comme témoin<br/>→ comportement stratégique"]
 
     E1 --> Result
     E2 --> Result
     E3 --> Result
     E4 --> Result
+    E5 --> Result
     Result -.- Relax["Cartographie des relaxations<br/>électeur médian (Downs) · Split Cycle<br/>chaque paire d'axiomes réalisable"]
 ```
 
@@ -99,9 +102,13 @@ Le notebook SC-04 encode les théorèmes d'Arrow et de Sen comme des problèmes 
 
 *Illustration conceptuelle du SC-04 (et non une sortie du solveur), deux panneaux : à gauche, le diagramme de Venn des trois contraintes Pareto / IIA / Non-dictature dont l'intersection centrale est marquée « VIDE » ; à droite, la courbe semi-log du nombre de profils `(m!)^k` croissant avec le nombre d'alternatives `m` et d'électeurs `k` — 36 profils pour 2 électeurs et 3 alternatives, 216 pour 3 électeurs — avec l'annotation « Arrow ne s'applique pas » au point m = 2, seuil en deçà duquel le théorème est muet.*
 
+### Étape 5 : Gibbard-Satterthwaite, la manipulation comme témoin (SC-05, 30 min)
+
+Le notebook SC-05 retourne la question des quatre premières étapes : au lieu de demander quelle règle agrège honnêtement, il demande laquelle peut être **instrumentée par un électeur stratégique**. Une règle est manipulable s'il existe un profil et un électeur qui, avec un bulletin insincère, obtient un résultat strictement préféré — et le notebook **exhibe ce témoin d'exploitation par le code** (3 votants, 3 candidats, recherche explicite sur les bulletins), au lieu de le postuler. Le théorème de Gibbard-Satterthwaite (1973/1975) en donne la version générale : toute règle non-dictatoriale sur 3+ alternatives est manipulable ; sa formalisation Lean figure dans le tour de la librairie SocialChoiceLean du SC-02. Re-slot depuis `GameTheory-22` (doctrine #5081, geste 1).
+
 ## Prerequisites
 
-- Python 3.10+ avec numpy, matplotlib, networkx (notebooks 01, 03, 04)
+- Python 3.10+ avec numpy, matplotlib, networkx (notebooks 01, 03, 04, 05)
 - pysat et z3-solver pour le notebook 04
 - Lean 4 + kernel WSL pour le notebook 02 (cf [README parent](../README.md))
 
@@ -158,15 +165,16 @@ Le projet `social_choice_lean_peters/` (DominikPeters, Lean 4 + Mathlib) formali
 | Moulin, "Condorcet's Principle Implies the No Show Paradox" (1988) | Paradoxe de la non-participation |
 | Holliday & Pacuit, "Split Cycle" (2023) | Règle de vote optimale |
 | Peters, [SocialChoiceLean](https://github.com/DominikPeters/SocialChoiceLean) | Formalisation Lean 4 de 12 règles + 4 théorèmes |
+| Gibbard (1973) / Satterthwaite (1975) | Théorème de manipulabilité (SC-05) |
 
 ## Conclusion / Prochaines étapes
 
 ### Ce que vous avez appris
 
-Cette sous-série vous a fait saisir pourquoi le **choix social** est l'un des résultats intellectuels les plus troublants de la théorie de la décision : il existe des limites *mathématiquement prouvées* à ce qu'une collectivité peut décider de manière cohérente. L'arc pédagogique repose sur **quatre angles complémentaires** braqués sur les mêmes résultats d'impossibilité :
+Cette sous-série vous a fait saisir pourquoi le **choix social** est l'un des résultats intellectuels les plus troublants de la théorie de la décision : il existe des limites *mathématiquement prouvées* à ce qu'une collectivité peut décider de manière cohérente. L'arc pédagogique repose sur **cinq angles complémentaires** braqués sur les mêmes résultats d'impossibilité :
 
 - **Le résultat fondateur** — le théorème d'Arrow (1951) : aucune règle d'agrégation ne peut, simultanément et dès que 3 alternatives sont en jeu, satisfaire Pareto, l'indépendance vis-à-vis des alternatives non pertinentes (IIA) et la non-dictature. Le théorème de Sen (1970) étend le constat : liberté minimale et efficacité parétienne sont incompatibles. Ces théorèmes ne disent pas « la démocratie est impossible » ; ils délimitent précisément *quels compromis* toute règle de vote doit accepter.
-- **La quadruple convergence, délibérément juxtaposée** — un même énoncé est attaqué par quatre méthodes, chacune révélant une facette différente. La **simulation Python** (SC-01) teste les axiomes sur des règles concrètes et suit la preuve de Geanakoplos (lemme extrémal, pivot, dictateur partiel) ; la **preuve formelle Lean 4** (SC-02) couvre l'infinité des cas que la simulation ne peut qu'échantillonner, avec 0 sorry sur Arrow et Sen ; les **méthodes de vote** (SC-03) incarnent les paradoxes dans des règles réelles (Condorcet, Borda, Copeland, électeur médian de Downs) ; la **vérification mécanique SAT/Z3** (SC-04) fait émerger l'impossibilité comme un résultat UNSAT des solveurs. Comprendre les quatre, c'est comprendre qu'une *même vérité* se laisse approcher par l'expérience, la déduction formelle, la pratique électorale et la recherche combinatoire.
+- **La quadruple convergence, délibérément juxtaposée** — un même énoncé est attaqué par cinq méthodes, chacune révélant une facette différente. La **simulation Python** (SC-01) teste les axiomes sur des règles concrètes et suit la preuve de Geanakoplos (lemme extrémal, pivot, dictateur partiel) ; la **preuve formelle Lean 4** (SC-02) couvre l'infinité des cas que la simulation ne peut qu'échantillonner, avec 0 sorry sur Arrow et Sen ; les **méthodes de vote** (SC-03) incarnent les paradoxes dans des règles réelles (Condorcet, Borda, Copeland, électeur médian de Downs) ; la **vérification mécanique SAT/Z3** (SC-04) fait émerger l'impossibilité comme un résultat UNSAT des solveurs ; la **manipulation stratégique** (SC-05) exhibe le témoin d'exploitation que Gibbard-Satterthwaite promet. Comprendre les cinq, c'est comprendre qu'une *même vérité* se laisse approcher par l'expérience, la déduction formelle, la pratique électorale, la recherche combinatoire et le comportement stratégique.
 - **L'instrument** — les outils qui opérationnalisent chaque angle : numpy/matplotlib pour la simulation, Lean 4 + la librairie SocialChoiceLean de Peters (12 règles de vote, Gibbard-Satterthwaite, Split Cycle, Duggan-Schwartz) pour la preuve, PySAT (clauses CNF) et Z3 (rangs entiers SMT) pour la vérification mécanique. Chaque outil éclaire un aspect que les autres laissent dans l'ombre : la simulation donne l'intuition, Lean donne la certitude, SAT/Z3 donnent la vérification automatique.
 - **La finesse** — qu'un théorème d'impossibilité n'est pas une impasse mais une **cartographie des relaxations possibles**. SC-04 montre que chaque *paire* d'axiomes d'Arrow est réalisable ; Split Cycle (Holliday & Pacuit) satisfait Condorcet sans tomber dans l'acyclicité totale ; le théorème de l'électeur médian (Downs) restaure l'existence d'un vainqueur sous l'hypothèse d'unimodalité. La leçon pratique : on ne contourne pas Arrow, on *choisit* quel axiome relâcher selon le contexte.
 

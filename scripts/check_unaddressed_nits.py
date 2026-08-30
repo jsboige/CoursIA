@@ -281,6 +281,14 @@ CONCERN_MARKERS = CONCERN_MARKERS + BLOCK_VERDICTS
 LIFT_MARKERS = (
     "levée", "levee", "LGTM", "Mergé", "Merged", "je merge", "Merge.",
     "est adressé", "sont adressés", "sont levées", "est levée",
+    # #13635 : les formes MASCULINES de la levee passive manquaient. Le depot
+    # nomme ce qui se leve au masculin (« le concern », « le point », « le nit »)
+    # — la phrase la plus naturelle pour lever un [BOT-CONCERN] (« tes concerns
+    # sont levés ») echappait a LIFT_MARKERS, faux negatif. Miroir exact des
+    # formes feminines ci-dessus : « sont levés », « est levé ». Ces marqueurs
+    # passent par `_lift_is_negated` comme les autres (via `_live_lift_positions`),
+    # donc une negation directe (« n'est pas levé ») reste exclue.
+    "sont levés", "est levé",
     "Je lève", "Je leve", "Levée de", "Levee de",
     # #11677 : « je lève ma CHANGES_REQUESTED » (#11664 fondateur) — LIFT
     # historique ne captait que « levée » (mot complet), donc « lève ma » ne
@@ -1182,6 +1190,83 @@ def gh_json(args: list[str]) -> object:
     return json.loads(out)
 
 
+_ISSUE_CREATED_CACHE: dict[int, datetime | None] = {}
+
+
+def gh_issue_created(n: int) -> datetime | None:
+    """#13495 — createdAt de l'issue #n, ou None si elle n'existe pas (ou PR).
+
+    Résolution des références de la voie 3 de B.0 (« issue de suivi ouverte et
+    nommée AVANT le merge »). Cache global : le createdAt d'une issue est
+    immuable, et l'audit retro croise les memes numeros d'une PR a l'autre.
+    Un numero de PR ne compte PAS : l'endpoint issues resout aussi les PRs
+    (mesure c.705 : `gh issue view <PR> --json createdAt` rend rc=0), d'ou le
+    garde `isPullRequest` — la voie 3 nomme une ISSUE, pas une PR (spec
+    #13495), sinon « rebase de #N fait » serait un report valide.
+    """
+    if n not in _ISSUE_CREATED_CACHE:
+        try:
+            d = gh_json(["issue", "view", str(n), "--repo", REPO,
+                         "--json", "createdAt,isPullRequest"])
+            if (d or {}).get("isPullRequest"):
+                _ISSUE_CREATED_CACHE[n] = None
+            else:
+                _ISSUE_CREATED_CACHE[n] = ts((d or {}).get("createdAt"))
+        except Exception:
+            _ISSUE_CREATED_CACHE[n] = None
+    return _ISSUE_CREATED_CACHE[n]
+
+
+def collect_followup_lifts(pr_data: dict, cutoff: datetime,
+                           issue_created=None) -> list[tuple]:
+    """#13495 — voie 3 de B.0 : « issue de suivi ouverte et nommée AVANT le
+    merge (reportée sciemment) ».
+
+    Un commentaire capable de lever qui NOMME une issue (#N) dans sa prose
+    (hors citation) est un report : il lève un nit antérieur si (a) l'issue
+    existe, (b) son createdAt est antérieur à la décision de merge. C'est la
+    seule voie mécaniquement ouverte à l'AUTEUR de la PR — une phrase de
+    l'auteur ne lève pas la réserve d'un tiers (voie 1 close pour lui,
+    #11145), mais un report nommé avant merge est un geste délibéré que B.0
+    crédite. Mécanique par spec (pas de NLP) : la référence vit hors citation
+    (`_strip_quoted`), comme les LIFT_MARKERs.
+
+    Deux bornes (review c.705 de jsboige, #13563) :
+    - self-ref : le numéro de la PR ELLE-MÊME n'est pas une « issue de
+      suivi » — l'API issues résout un numéro de PR (rc=0, mesuré), donc
+      tout commentaire citant #<cette PR> (« rebase de #N fait ») serait
+      sinon un report valide éteignant tous les nits antérieurs.
+    - nommeur : le report ne compte que s'il émane de l'auteur de la PR ou
+      de l'auteur du nit levé — un bystander citant une issue ancienne
+      quelconque (« ce comportement rappelle #11045 ») n'a pas de lien
+      sémantique avec la réserve (stance #13592, arbitrage po-2024).
+
+    Retourne des couples (instant, nommeur) ; `analyse` applique la borne
+    nommeur par nit. `issue_created=None` coupe la voie — `analyse()` reste
+    pur pour les tests (aucun appel réseau n'y est toléré).
+    """
+    if issue_created is None:
+        return []
+    out: list[tuple] = []
+    self_ref = pr_data.get("number")
+    for c in (pr_data.get("comments") or []):
+        if not can_lift(c):
+            continue
+        t = ts(c.get("createdAt"))
+        if t is None or not t < cutoff:
+            continue
+        stripped = _strip_quoted(c.get("body") or "")
+        for m in re.finditer(r"#(\d+)", stripped):
+            n = int(m.group(1))
+            if n == self_ref:
+                continue
+            created = issue_created(n)
+            if created is not None and created < cutoff:
+                out.append((t, (c.get("author") or {}).get("login", "")))
+                break
+    return out
+
+
 # #13639 -- une levee dont la PREUVE citee n'est plus dans la PR. Sur #13557,
 # la levee citait le commit 2d6e4c3642 (« corrige dans ce commit ») ; un
 # force-push ulterieur avait rembobine ce commit, et le gate restait vert :
@@ -1477,7 +1562,8 @@ def _names_author(body: str, author: str) -> bool:
                      body) is not None
 
 
-def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
+def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
+            issue_created=None) -> dict:
     """cutoff = mergedAt (audit retro) ou now (gate pre-merge)."""
     commits = [ts(c.get("committedDate")) for c in (pr_data.get("commits") or [])]
     commits = [c for c in commits if c]
@@ -1547,6 +1633,13 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
                        lift_body: str = "") -> bool:
         if lift_author == nit_author:
             return True
+        # #13495 — la trappe coordinateur ci-dessous ne s'ouvre pas pour
+        # l'auteur de la PR : sinon la voie 3 (report par issue nommee) serait
+        # contournable par la porte de service qu'elle vient d'ouvrir — la
+        # forme d'auto-levee pour laquelle #13316 a deja retire jsboige des
+        # comptes de levee.
+        if lift_author == pr_author:
+            return False
         # #11639 : l'override NOMME du coordinateur — l'arbitre tiers de B.0.
         # La restriction d'auteur reste la regle pour tout le monde (elle
         # bloque l'auto-levee d'un bystander, #11145) ; seule la trappe ecrite
@@ -1607,6 +1700,9 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
                      r.get("body", "")) is None
     ]
     explicit_lifts = [x for x in explicit_lifts if x[0] is not None]
+    # #13495 — voie 3 de B.0 : les commentaires qui NOMMENT une issue de
+    # suivi ouverte avant le cutoff sont des leveries a part entiere.
+    followup_lifts = collect_followup_lifts(pr_data, cutoff, issue_created)
 
     # #13639 -- passer les levees au crible du SHA rembobine (voir
     # _SHA_CITED ci-dessus pour le pourquoi et l'etroitesse). Inerte sans
@@ -1724,10 +1820,12 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
             # (B.0 : ce qui leve une remarque est une phrase). Les nits portes
             # par un COMMENTAIRE gardent le regime general ci-dessous — limite
             # NLP documentee dans can_lift.
-            lifted = _approved_lifts_reserve(login, when, pr_author) or any(
-                when < t < cutoff and _lift_eligible(lifter, login, lift_body)
-                for (t, lifter, lift_body) in explicit_lifts
-            )
+            lifted = (_approved_lifts_reserve(login, when, pr_author)
+                      or any(when < t < cutoff
+                             and _lift_eligible(lifter, login, lift_body)
+                             for (t, lifter, lift_body) in explicit_lifts)
+                      or any(when < t < cutoff and namer in (login, pr_author)
+                             for (t, namer) in followup_lifts))
             if lifted:
                 continue
         # #13083 — les bornes strictes du blocage. Un blocage ne se leve ni
@@ -1746,7 +1844,16 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
                     and (lift_author != pr_author
                          or bool(OVERRIDE_LANE.search(lift_body)))
                     for (t, lift_author, lift_body) in explicit_lifts)
-                    or _approved_lifts_reserve(login, when, pr_author)):
+                    or _approved_lifts_reserve(login, when, pr_author)
+                    # #13495 — voie 3 : le report par issue nommee leve aussi
+                    # un blocage. La garde d'auteur ci-dessus est celle des
+                    # PHRASES de levee (#13083) ; la voie 3 porte sa propre
+                    # garantie — l'issue existe et fut creee AVANT le cutoff —
+                    # et reste ouverte a l'auteur : un report nomme avant
+                    # merge est un geste delibere que B.0 credite. Borne
+                    # nommeur (c.705) : {auteur du blocage, auteur de la PR}.
+                    or any(when < t < cutoff and namer in (login, pr_author)
+                           for (t, namer) in followup_lifts)):
                 continue
         # #12319 : meme regime pour un nit porte par un commentaire ou une
         # review COMMENTED (dont chaque reserve Hermes, self-review cap).
@@ -1760,7 +1867,9 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
         elif (any(
                   when < t < cutoff and _lift_eligible(lift_author, login, lift_body)
                   for (t, lift_author, lift_body) in explicit_lifts
-              ) or _approved_lifts_reserve(login, when, pr_author)):
+              ) or _approved_lifts_reserve(login, when, pr_author)
+              or any(when < t < cutoff and namer in (login, pr_author)
+                     for (t, namer) in followup_lifts)):
             continue
         # Un commit poussé après le nit ne le lève PAS à lui seul : sur #10761,
         # le « traitement » était un rebase à 19:41 qui n'adressait aucun des
@@ -1803,6 +1912,19 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
         and OVERRIDE_LANE.search(body or "") is not None
         and author not in LIFT_OVERRIDE_LOGINS
         and author not in nit_authors
+    ] + [
+        # #13495 — meme exigence de nomination pour la trappe fermee a
+        # l'auteur de la PR : un override coordinateur pose PAR l'auteur ne
+        # doit pas disparaitre en silence.
+        {"author": author, "at": t.isoformat(),
+         "why": (f"override ignoré — auteur « {author} » est l'auteur de la "
+                 "PR : la trappe coordinateur ne s'ouvre pas pour lui "
+                 "(#13495)")}
+        for (t, author, body) in explicit_lifts
+        if t is not None
+        and OVERRIDE_LANE.search(body or "") is not None
+        and author in LIFT_OVERRIDE_LOGINS
+        and author == pr_author
     ]
 
     # #13512 -- CE QUE L'ORGANE N'A PAS EVALUE.
@@ -1923,7 +2045,8 @@ def gate(pr: int, as_json: bool) -> int:
     data["_absent_sha_messages"] = _resolve_absent_sha_messages(data)
     merged = ts(data.get("mergedAt"))
     cutoff = merged or datetime.now(timezone.utc)
-    result = analyse(data, review_threads(pr), cutoff)
+    result = analyse(data, review_threads(pr), cutoff,
+                     issue_created=gh_issue_created)
     if as_json:
         print(json.dumps(result, indent=1, ensure_ascii=False))
     elif not result["blocked"]:
@@ -1942,7 +2065,7 @@ def gate(pr: int, as_json: bool) -> int:
             # silence etait le mode d'echec couteux (#13030, #12096).
             print(f"  [i] {o['why']} (commentaire de {o['author']} à {o['at']})")
         _print_sha_notes(result)
-        print("Lever chaque nit (commit, reponse explicite, ou issue de suivi nommee)")
+        print("Lever chaque nit (reponse explicite, thread inline resolu, ou issue de suivi nommee)")
         print("avant `gh pr merge`. Cf CLAUDE.md section B.0.")
         _print_unevaluated(result)
     return 1 if result["blocked"] else 0
@@ -1963,7 +2086,11 @@ def audit(limit: int, search: str | None = None) -> int:
             continue
         # Pre-filtre sans `commits` : si rien ne ressort deja, inutile de payer
         # un appel de plus (les commits ne peuvent que LEVER un nit, jamais en creer).
-        if not analyse(p, [], merged)["blocked"]:
+        # #13495 : voie 3 active aussi en retro — sinon l'audit flaggerait des
+        # PRs dont les nits etaient legitiment reportes par issue nommee. Le
+        # cache global de gh_issue_created amortit les lookups croises entre PRs.
+        if not analyse(p, [], merged,
+                       issue_created=gh_issue_created)["blocked"]:
             continue
         try:
             p["commits"] = gh_json(
@@ -1977,7 +2104,7 @@ def audit(limit: int, search: str | None = None) -> int:
         # a besoin pour trier (« du code a bouge apres le nit » = aller lire le
         # diff avant de conclure). Information de triage, pas critere.
         # Audit retro : on n'interroge pas les threads inline (1 appel GraphQL/PR).
-        res = analyse(p, [], merged)
+        res = analyse(p, [], merged, issue_created=gh_issue_created)
         if res["blocked"]:
             res["url"] = p.get("url")
             res["merged_at"] = p["mergedAt"]
