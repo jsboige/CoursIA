@@ -1,6 +1,6 @@
 # Strates ICT comme adjonctions — prototype grade C
 
-> **Grade C explicite.** Ce document est un **prototype** de la conjecture posée en jalon 3 de [#8182](https://github.com/jsboige/CoursIA/issues/8182) (TOE ↔ conscience, carrefour Jaimungal) : *chaque strate ICT = acquisition d'une adjonction que la précédente n'a pas*. **Gated sur [#7738](https://github.com/jsboige/CoursIA/issues/7738) (tresse conceptuelle, CLOSED 2026-08-XX)** — c'est-à-dire que la tresse a livré son cadrage (Thom/Grothendieck/Schmidhuber/Friston) au point où poser la conjecture est légitime. **Ce prototype n'est pas une preuve**, c'est une **forme** qui se laisse réfuter empiriquement sur substrat.
+> **Grade C explicite.** Ce document est un **prototype** de la conjecture posée en jalon 3 de [#8182](https://github.com/jsboige/CoursIA/issues/8182) (TOE ↔ conscience, carrefour Jaimungal) : *chaque strate ICT = acquisition d'une adjonction que la précédente n'a pas*. **Gated sur [#7738](https://github.com/jsboige/CoursIA/issues/7738) (tresse conceptuelle, CLOSED 2026-08-06)** — c'est-à-dire que la tresse a livré son cadrage (Thom/Grothendieck/Schmidhuber/Friston) au point où poser la conjecture est légitime. **Ce prototype n'est pas une preuve**, c'est une **forme** qui se laisse réfuter empiriquement sur substrat.
 >
 > **Cycle c.1331p258**, lane `myia-po-2027:CoursIA-2`. Issue de veille : [#8182](https://github.com/jsboige/CoursIA/issues/8182). PR : à ouvrir (`feature/8182-strates-adjunctions-prototype`).
 
@@ -12,7 +12,7 @@ Dit autrement : la progression verticale d'ICT n'est pas une *liste* de substrat
 
 ## 2. Trois adjonctions plausibles, à titre d'exemple
 
-### 2.1 S1 → S2 : adjonction **Forgetful ⊣ Free** (auto-organisation → morphogenèse)
+### 2.1 S1 → S2 : adjonction **Free ⊣ Forgetful** (auto-organisation → morphogenèse)
 
 - **S1** (tri auto-organisé par bulle de Voronoï, Boltzmann simple) : la dynamique est markovienne, l'état interne est un point dans un espace métrique, l'**observation** est un clustering. Catégorie naturelle : `Set` ou `Met`. Pas de notion de *pattern* local persistant.
 - **S2** (Gray-Scott, Turing patterns) : un **champ scalaire 2D** `(u, v)(t, x, y)` admet une dynamique de réaction-diffusion. La catégorie naturelle devient `Vect_{R}^{ReacDiff}` (foncteurs vers les champs) où la morphogenèse est une **limite** de cocycle.
@@ -28,7 +28,7 @@ Dit autrement : la progression verticale d'ICT n'est pas une *liste* de substrat
 - **Capacité nouvelle** : l'**inhibition comme mécanisme négatif distinct de l'incapacité** (cf. case 8 `ICT-30` du tableau de dissociation). C'est précisément l'**Elasticity** de Schreiber (`Re⊣ℑ⊣&`) : le rapport entre le réel, l'imaginaire et la modalité d'action.
 - **Test falsifiable sur S3 → S4** : un agent Axelrod "augmenté d'un état interne nutrition" doit exhiber une dette d'inhibition mesurable quand on lui retire la capacité d'agir, dette **strictement nulle** sur Axelrod pur. ICT-30 (`docs/ict/dissociations-matrix.md`) teste cette case et la confirme déjà partiellement.
 
-### 2.3 S⊥ (Čech cohomologie) : adjonction **Global sections ⊣ Presheaf constant**
+### 2.3 S⊥ (Čech cohomologie) : adjonction **Const ⊣ Γ** (Global sections — Presheaf constant)
 
 - **Substrat transversal** : à toute strate `S_k` on peut attacher un **site** (catégorie des ouverts d'observation) et un **faisceau** (sections locales = mesures ICT-15d, cf. `ICT-15d-CechObstruction.ipynb`).
 - **Adjonction candidate** : `Γ : Sh(X) → Set` (sections globales) admet un adjoint à gauche `Const : Set → Sh(X)` (préfaisceau constant).
@@ -47,7 +47,7 @@ Urs Schreiber, dans *Perì Pantheōrías* (nLab, 2025-03-08), pose trois triplet
 
 **Conjecture forte** : *les trois triplets de Schreiber sont les adjonctions qui, ajoutées successivement à un substrat markovien S1, construisent S2 (cohésion), S4 (élasticité), S⊥ (solidité) — les trois jambes de la tresse sont des adjonctions, pas des « analogies »*. Cette conjecture est **plus forte** que le prototype ci-dessus : elle identifie la séquence modale de Schreiber à la séquence verticale d'ICT.
 
-**Ce que ce n'est pas** : Schreiber pose ces triplets au grade A d'une physique dérivée (SUGRA 11D, M-théorie). ICT les pose au grade C documentaire (cf. `grothendieckian-lens.md` § Schreiber-témoin). **L'isomorphisme formel n'est pas garanti** — la transitivité du grade A vers le grade C est une **hypothèse de travail**, pas un théorème.
+**Ce que ce n'est pas** : Schreiber pose ces triplets au grade A d'une physique dérivée (SUGRA 11D, M-théorie). ICT les pose au grade C documentaire (cf. `grothendieckian-lens.md` § *« Quand le recollement échoue — l'obstruction pour seul invariant »*, où le témoignage de Schreiber figure en prose). **L'isomorphisme formel n'est pas garanti** — la transitivité du grade A vers le grade C est une **hypothèse de travail**, pas un théorème.
 
 ## 4. Prédiction chiffrée falsifiable sur ICT-12c
 
@@ -98,6 +98,6 @@ Le substrat **ICT-12c `PregnanceAnimat`** (`MyIA.AI.Notebooks/IIT/ICT-Series/ict
 - **Tresse conceptuelle** : [#7738](https://github.com/jsboige/CoursIA/issues/7738) — CLOSED, cadrage livré.
 - **Substrat-test proposé** : ICT-12c `PregnanceAnimat` (`MyIA.AI.Notebooks/IIT/ICT-Series/ict/pregnance_animat.py`).
 - **Matrice de dissociation** : `docs/ict/dissociations-matrix.md` (la case « s ⟂ π » est déjà testée).
-- **Lens grothendieckienne** : `docs/grothendieckian-lens.md` § Schreiber-témoin.
+- **Lens grothendieckienne** : `docs/grothendieckian-lens.md` § *« Quand le recollement échoue — l'obstruction pour seul invariant »* (témoignage de Schreiber en prose, pas une section nommée).
 
 — myia-po-2027:CoursIA-2, c.1331p258, prototype grade C
