@@ -1201,20 +1201,69 @@ def gh_issue_created(n: int) -> datetime | None:
     immuable, et l'audit retro croise les memes numeros d'une PR a l'autre.
     Un numero de PR ne compte PAS : l'endpoint issues resout aussi les PRs
     (mesure c.705 : `gh issue view <PR> --json createdAt` rend rc=0), d'ou le
-    garde `isPullRequest` — la voie 3 nomme une ISSUE, pas une PR (spec
-    #13495), sinon « rebase de #N fait » serait un report valide.
+    garde issue-vs-PR — la voie 3 nomme une ISSUE, pas une PR (spec #13495),
+    sinon « rebase de #N fait » serait un report valide.
+
+    #13725 — le garde passait par `gh issue view --json isPullRequest`, un
+    champ que `gh issue view` N'EXPOSE PAS (« Unknown JSON field », rc=1).
+    Chaque resolution levait donc, tombait dans le `except` et rendait None :
+    la voie 3 etait MORTE sur tout le depot depuis son cablage. Le refus
+    etait silencieux et indiscernable d'une issue inexistante — une lane
+    employant la forme canonique de B.0 voyait son report refuse sans motif
+    (mesure sur #13618 : #13719 OPEN, nommee par l'auteur de la PR 18 s apres
+    sa creation, resolue None — et #12459/#13608/#13671/#13684/#13686/#13692
+    avec elle, tous existants).
+
+    Le discriminant correct est REST : la representation `issues/{n}` porte
+    la cle `pull_request` UNIQUEMENT pour une PR (mesure : #13719 -> absente,
+    #13618 -> presente), et rend un 404 franc pour un numero inexistant.
     """
     if n not in _ISSUE_CREATED_CACHE:
         try:
-            d = gh_json(["issue", "view", str(n), "--repo", REPO,
-                         "--json", "createdAt,isPullRequest"])
-            if (d or {}).get("isPullRequest"):
+            d = gh_json(["api", "repos/" + REPO + "/issues/" + str(n)])
+            if not isinstance(d, dict) or "pull_request" in d:
                 _ISSUE_CREATED_CACHE[n] = None
             else:
-                _ISSUE_CREATED_CACHE[n] = ts((d or {}).get("createdAt"))
+                _ISSUE_CREATED_CACHE[n] = ts(d.get("created_at"))
         except Exception:
             _ISSUE_CREATED_CACHE[n] = None
     return _ISSUE_CREATED_CACHE[n]
+
+
+# #13725 -- la voie 3 exige un report DELIBERE, pas une mention.
+#
+# La spec de B.0 dit « issue de suivi ouverte et nommee AVANT le merge
+# (reportee sciemment) » : c'est un GESTE, pas une coincidence lexicale.
+# L'implementation d'origine creditait tout `#N` hors citation resolvant en
+# issue -- donc « cf. le defaut #13316 », « Tell c.11145 #13649 », un renvoi
+# de code vers #12319 : autant de reports valides eteignant n'importe quelle
+# reserve anterieure. Le trou etait INVISIBLE tant que `gh_issue_created`
+# levait sur tout (meme incident, cf. sa docstring) : reparer le resolveur
+# SEUL convertissait un gate qui SUR-bloque en trappe qui s'ouvre en
+# silence -- strictement pire, une trappe ne se voit pas.
+#
+# Mesure au moment du fix, sur les 37 PRs ouvertes : 61 reports auraient ete
+# credites par le seul resolveur repare, dont 15 deliberes et **46 par
+# mention incidente** (75 %).
+#
+# Le predicat est lexical et PROCHE : le marqueur de report doit vivre dans
+# la meme ligne que la reference, ou dans les 200 caracteres qui la
+# precedent -- de sorte qu'un commentaire disant « issue de suivi » a propos
+# d'une chose et citant `#N` a propos d'une autre ne credite rien.
+_FOLLOWUP_MARK = re.compile(
+    "issue\\s+de\\s+suivi|issues?\\s+de\\s+report|follow[-\\s]?up|"
+    "report(?:e|\u00e9)e?\\s+sciemment|suivi\\s+ouverte",
+    re.I)
+
+
+def _is_deliberate_followup(stripped: str, pos: int) -> bool:
+    """Le marqueur de report vit-il au voisinage immediat de la reference ?"""
+    line_start = stripped.rfind("\n", 0, pos) + 1
+    line_end = stripped.find("\n", pos)
+    line = stripped[line_start:line_end if line_end != -1 else len(stripped)]
+    if _FOLLOWUP_MARK.search(line):
+        return True
+    return bool(_FOLLOWUP_MARK.search(stripped[max(0, pos - 200):pos]))
 
 
 def collect_followup_lifts(pr_data: dict, cutoff: datetime,
@@ -1259,6 +1308,8 @@ def collect_followup_lifts(pr_data: dict, cutoff: datetime,
         for m in re.finditer(r"#(\d+)", stripped):
             n = int(m.group(1))
             if n == self_ref:
+                continue
+            if not _is_deliberate_followup(stripped, m.start()):
                 continue
             created = issue_created(n)
             if created is not None and created < cutoff:
