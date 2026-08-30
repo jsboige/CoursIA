@@ -59,9 +59,10 @@ def resolver(table):
     return lambda n: table.get(n)
 
 
-def run(comments, reviews=(), pr_author="jsboige", issue_created=None):
+def run(comments, reviews=(), pr_author="jsboige", issue_created=None,
+        number=0):
     data = {
-        "number": 0, "title": "t",
+        "number": number, "title": "t",
         "author": {"login": pr_author},
         "comments": comments,
         "reviews": list(reviews),
@@ -125,6 +126,38 @@ def test_voie3_bruit_bot_ne_leve_pas():
            "body": "Follow-up issue #500 created by automation."}
     res = run([USER_NIT, bot], issue_created=resolver(ISSUE_OK))
     assert res["blocked"] is True
+
+
+def test_voie3_self_ref_ne_leve_pas():
+    """c.705 : le numéro de la PR elle-même n'est pas une « issue de suivi ».
+    L'endpoint issues résout aussi les PRs (mesuré rc=0), donc sans le garde
+    self-ref, « rebase de #13563 fait » éteindrait tous les nits antérieurs.
+    Le résolveur réponds VRAI pour ce numéro : c'est le garde qui doit tenir."""
+    selfref = dict(REPORT, body="Rebase de #13563 fait, checks relancés.")
+    res = run([USER_NIT, selfref], issue_created=resolver(
+        {13563: datetime(2026, 8, 13, 12, 0, tzinfo=timezone.utc)}),
+        number=13563)
+    assert res["blocked"] is True
+
+
+def test_voie3_bystander_ne_leve_pas():
+    """c.705, borne nommeur : un bystander citant une issue ancienne
+    quelconque (« ce comportement rappelle #500 ») n'a pas de lien sémantique
+    avec la réserve — stance #13592, arbitrage po-2024. Seuls comptent les
+    reports de l'auteur de la PR ou de l'auteur du nit."""
+    bystander = {"author": {"login": "myia-po-2025"}, "createdAt": at(12),
+                 "body": "Ce comportement rappelle l'issue #500, à mon avis."}
+    res = run([USER_NIT, bystander], issue_created=resolver(ISSUE_OK))
+    assert res["blocked"] is True
+
+
+def test_voie3_report_par_auteur_du_nit_leve():
+    """Contrôle positif de la borne nommeur : l'AUTEUR DU NIT (distinct de
+    l'auteur de la PR) peut reporter sa propre réserve sur une issue nommée —
+    la borne ne doit pas être plus étroite que sa raison d'être."""
+    res = run([USER_NIT, REPORT], pr_author="myia-po-2026",
+              issue_created=resolver(ISSUE_OK))
+    assert res["blocked"] is False
 
 
 def test_voie3_leve_un_changes_requested():
