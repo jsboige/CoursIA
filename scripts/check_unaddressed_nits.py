@@ -1152,6 +1152,46 @@ def can_lift(comment: dict) -> bool:
     return True
 
 
+# #13495 -- voie 3 de B.0 : l'issue de suivi nommee. Une reserve peut etre
+# DIFFEREE plutot que levee : B.0 tient pour une reponse le commentaire qui
+# nomme une issue (#N) ouverte avant la decision de merge. Le detecteur ne
+# lit pas le sens -- il exige la mecanique : ref numerique dans un
+# commentaire eligible, issue existante (fetch), creee avant le cutoff.
+_ISSUE_REF = re.compile(r"#(\d{1,6})\b")
+
+
+def followup_issue_dates(pr_data: dict) -> dict[int, datetime]:
+    """Dates de creation des issues nommees par les commentaires eligibles.
+
+    Deduplique les refs ``#N`` (le numero de la PR elle-meme est exclu : un
+    self-ref est du bruit, pas une differance). Les issues inexistantes ou
+    injoignables sont simplement absentes du resultat : voie 3 fail-closed,
+    ce qui n'est pas prouve ne leve rien. La borne ``createdAt < cutoff``
+    est appliquee dans ``analyse``, pas ici, pour rester testable sans
+    reseau.
+    """
+    pr_number = pr_data.get("number")
+    refs: set[int] = set()
+    for c in pr_data.get("comments") or []:
+        if not can_lift(c):
+            continue
+        for m in _ISSUE_REF.finditer(c.get("body") or ""):
+            n = int(m.group(1))
+            if n != pr_number:
+                refs.add(n)
+    dates: dict[int, datetime] = {}
+    for n in sorted(refs):
+        try:
+            issue = gh_json(["issue", "view", str(n), "--repo", REPO,
+                             "--json", "number,createdAt"])
+        except (subprocess.CalledProcessError, json.JSONDecodeError):
+            continue
+        created = ts(issue.get("createdAt"))
+        if created is not None:
+            dates[n] = created
+    return dates
+
+
 def classify(author: str, body: str) -> str | None:
     """'HUMAN' (nit user, UI web) | 'BOT-CONCERN' (reviewer avec reserves) | None."""
     if author in BOT_LOGINS or not body:
@@ -1296,8 +1336,15 @@ def _names_author(body: str, author: str) -> bool:
                      body) is not None
 
 
-def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
-    """cutoff = mergedAt (audit retro) ou now (gate pre-merge)."""
+def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
+            followups: dict[int, datetime] | None = None) -> dict:
+    """cutoff = mergedAt (audit retro) ou now (gate pre-merge).
+
+    ``followups`` : dates de creation des issues de suivi nommees (voie 3,
+    #13495), p.ex. le rendu de ``followup_issue_dates``. ``None`` = voie 3
+    inactive -- l'audit pre-filtre et les tests unitaires n'ont pas a payer
+    d'appels reseau.
+    """
     commits = [ts(c.get("committedDate")) for c in (pr_data.get("commits") or [])]
     commits = [c for c in commits if c]
     last_commit = max(commits) if commits else None
@@ -1378,8 +1425,13 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
         # #13316 -- jsboige n'entre plus : identite de poussee partagee des
         # lanes (self-review cap #12319), un override jsboige est
         # indiscernable d'une auto-levee de lane (replay #12737).
+        # #13495 -- l'arbitre n'arbitre pas sa propre cause : un override
+        # POSE par un coordinateur sur SA PR est une auto-levee avec le
+        # costume de l'arbitre. La trappe #11639 est tierce par construction
+        # -- l'auteur de la PR en est exclu.
         m = OVERRIDE_LANE.search(lift_body or "")
         return (lift_author in LIFT_OVERRIDE_LOGINS
+                and lift_author != pr_author
                 and m is not None)
 
     # Fenetre 2026-08-16 (#11222) : les temps plats ne suffisent pas pour un
@@ -1426,6 +1478,43 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
                      r.get("body", "")) is None
     ]
     explicit_lifts = [x for x in explicit_lifts if x[0] is not None]
+
+    # #13495 -- voie 3 de B.0 : l'issue de suivi nommee. Sur #13372, la
+    # reserve Hermes etait differree vers #13488 par un commentaire de
+    # l'auteur de la PR (ai-01) : ni phrase de levee, ni re-review -- et le
+    # gate restait rouge alors que B.0 tient cette voie pour une reponse.
+    # Mecanique deliberement bornee : (1) le commentaire doit pouvoir lever
+    # (can_lift, hygiene anti-bruit existante) ; (2) son auteur est l'auteur
+    # de la reserve OU celui de la PR -- un bystander ne differre pas la
+    # reserve d'autrui ; (3) l'issue nommee EXISTE et a ete creee AVANT la
+    # decision de merge (cutoff) -- une issue ouverte apres coup est une
+    # retro-justification, pas une deferrance. Le self-ref (#numero de la
+    # PR) est exclu des la collecte.
+    followups = followups or {}
+    followup_lifts: list[dict] = []
+
+    def _followup_lifts_reserve(nit_author: str, reserve_when: datetime,
+                                allow_pr_author: bool = True) -> bool:
+        namers = {nit_author} | ({pr_author} if allow_pr_author else set())
+        for c in pr_data.get("comments") or []:
+            namer = (c.get("author") or {}).get("login", "")
+            t = ts(c.get("createdAt"))
+            if t is None or not (reserve_when < t < cutoff):
+                continue
+            if not can_lift(c) or namer not in namers:
+                continue
+            for m in _ISSUE_REF.finditer(c.get("body") or ""):
+                n = int(m.group(1))
+                if n == pr_data.get("number"):
+                    continue
+                created = followups.get(n)
+                if created is not None and created < cutoff:
+                    followup_lifts.append({
+                        "nit_author": nit_author, "by": namer, "issue": n,
+                        "at": t.isoformat(),
+                    })
+                    return True
+        return False
 
     signals: list[tuple] = []
     for c in pr_data.get("comments") or []:
@@ -1499,10 +1588,12 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
             # (B.0 : ce qui leve une remarque est une phrase). Les nits portes
             # par un COMMENTAIRE gardent le regime general ci-dessous — limite
             # NLP documentee dans can_lift.
-            lifted = _approved_lifts_reserve(login, when, pr_author) or any(
-                when < t < cutoff and _lift_eligible(lifter, login, lift_body)
-                for (t, lifter, lift_body) in explicit_lifts
-            )
+            lifted = (_approved_lifts_reserve(login, when, pr_author)
+                      or any(
+                          when < t < cutoff
+                          and _lift_eligible(lifter, login, lift_body)
+                          for (t, lifter, lift_body) in explicit_lifts)
+                      or _followup_lifts_reserve(login, when))
             if lifted:
                 continue
         # #13083 — les bornes strictes du blocage. Un blocage ne se leve ni
@@ -1521,7 +1612,13 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
                     and (lift_author != pr_author
                          or bool(OVERRIDE_LANE.search(lift_body)))
                     for (t, lift_author, lift_body) in explicit_lifts)
-                    or _approved_lifts_reserve(login, when, pr_author)):
+                    or _approved_lifts_reserve(login, when, pr_author)
+                    # #13495 : voie 3 sur un BLOCAGE -- l'auteur de la PR ne
+                    # peut pas differer le blocage d'un tiers (#13083 : un
+                    # blocage ne se leve ni par l'auteur de la PR) ; seul
+                    # l'emetteur du blocage peut le differer lui-meme.
+                    or _followup_lifts_reserve(login, when,
+                                               allow_pr_author=False)):
                 continue
         # #12319 : meme regime pour un nit porte par un commentaire ou une
         # review COMMENTED (dont chaque reserve Hermes, self-review cap).
@@ -1535,7 +1632,8 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
         elif (any(
                   when < t < cutoff and _lift_eligible(lift_author, login, lift_body)
                   for (t, lift_author, lift_body) in explicit_lifts
-              ) or _approved_lifts_reserve(login, when, pr_author)):
+              ) or _approved_lifts_reserve(login, when, pr_author)
+              or _followup_lifts_reserve(login, when)):
             continue
         # Un commit poussé après le nit ne le lève PAS à lui seul : sur #10761,
         # le « traitement » était un rebase à 19:41 qui n'adressait aucun des
@@ -1569,15 +1667,28 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
     # survit reste le signal) — c'est l'explication visible du rouge. Un
     # override de l'auteur de la reserve (self-lift legitime) n'est pas liste.
     nit_authors = {login for (_, _, login, _, _) in signals}
+
+    def _ignored_why(author: str) -> str:
+        # #13495 : la symetrie du refus nomme. Un override coordinateur
+        # ecarte parce qu'il porte sur SA propre PR doit etre liste comme
+        # tel -- un gate rouge « malgre notre override » reste indistinguable
+        # d'un bug du detecteur si personne ne dit pourquoi (#13316).
+        if author in LIFT_OVERRIDE_LOGINS:
+            return (f"override ignoré — l'arbitre « {author} » est l'auteur "
+                    "de la PR (#13495 : l'arbitre n'arbitre pas sa propre "
+                    "cause)")
+        return (f"override ignoré — auteur « {author} » n'est pas un compte "
+                "de levée (#13316 : identité de poussée partagée des lanes)")
+
     ignored_overrides = [
-        {"author": author, "at": t.isoformat(),
-         "why": (f"override ignoré — auteur « {author} » n'est pas un compte "
-                 "de levée (#13316 : identité de poussée partagée des lanes)")}
+        {"author": author, "at": t.isoformat(), "why": _ignored_why(author)}
         for (t, author, body) in explicit_lifts
         if t is not None
         and OVERRIDE_LANE.search(body or "") is not None
-        and author not in LIFT_OVERRIDE_LOGINS
         and author not in nit_authors
+        # #13316 : jsboige n'entre pas ; #13495 : un coordinateur entre,
+        # SAUF sur sa propre PR — les deux refus doivent etre NOMMES.
+        and (author not in LIFT_OVERRIDE_LOGINS or author == pr_author)
     ]
 
     # #13512 -- CE QUE L'ORGANE N'A PAS EVALUE.
@@ -1604,6 +1715,10 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
     # avoir relu tous les commentaires au dernier moment ») cesse de dependre
     # de la vigilance et devient mecanique.
     lift_keys = {(t_, a) for (t_, a, _b) in explicit_lifts if t_}
+    # #13495 : un commentaire de voie 3 qui a servi est EVALUE (il leve la
+    # reserve via l'issue nommee) -- il ne doit pas revenir hanter la file
+    # « a relire » de #13512.
+    lift_keys |= {(ts(f["at"]), f["by"]) for f in followup_lifts}
     unevaluated: list[dict] = []
     for c in pr_data.get("comments") or []:
         login = (c.get("author") or {}).get("login", "")
@@ -1635,6 +1750,7 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
         "blocking": blocking,
         "blocked": bool(blocking),
         "ignored_overrides": ignored_overrides,
+        "followup_lifts": followup_lifts,
         "unevaluated": to_read,
         "unevaluated_total": len(unevaluated),
     }
@@ -1682,7 +1798,8 @@ def gate(pr: int, as_json: bool) -> int:
     data = gh_json(["pr", "view", str(pr), "--repo", REPO, "--json", FIELDS])
     merged = ts(data.get("mergedAt"))
     cutoff = merged or datetime.now(timezone.utc)
-    result = analyse(data, review_threads(pr), cutoff)
+    result = analyse(data, review_threads(pr), cutoff,
+                     followup_issue_dates(data))
     if as_json:
         print(json.dumps(result, indent=1, ensure_ascii=False))
     elif not result["blocked"]:
@@ -1699,7 +1816,14 @@ def gate(pr: int, as_json: bool) -> int:
             # #13316 : dire POURQUOI l'override visible n'a rien eteint — le
             # silence etait le mode d'echec couteux (#13030, #12096).
             print(f"  [i] {o['why']} (commentaire de {o['author']} à {o['at']})")
-        print("Lever chaque nit (commit, reponse explicite, ou issue de suivi nommee)")
+        for f in result.get("followup_lifts", ()):
+            # #13495 : rendre la voie 3 visible quand meme — un rouge qui
+            # tient uniquement a une deferrance doit se lire comme tel.
+            print(f"  [i] voie 3 : réserve de {f['nit_author']} différée vers "
+                  f"#{f['issue']} (nommée par {f['by']} à {f['at']})")
+        # #13495 : « commit » retiré — un commit ne lève rien (#10761),
+        # l'annoncer comme levier enseigne le mauvais geste.
+        print("Lever chaque nit (reponse explicite, ou issue de suivi nommee)")
         print("avant `gh pr merge`. Cf CLAUDE.md section B.0.")
         _print_unevaluated(result)
     return 1 if result["blocked"] else 0
@@ -1734,7 +1858,11 @@ def audit(limit: int, search: str | None = None) -> int:
         # a besoin pour trier (« du code a bouge apres le nit » = aller lire le
         # diff avant de conclure). Information de triage, pas critere.
         # Audit retro : on n'interroge pas les threads inline (1 appel GraphQL/PR).
-        res = analyse(p, [], merged)
+        # #13495 : voie 3 activee au 2e passage seulement, en miroir du fetch
+        # commits -- le pre-filtre reste conservateur (une reserve differree
+        # y parait bloquee, ce qui en fait une candidate), et ce passage la
+        # re-juge avec les dates reelles des issues nommees.
+        res = analyse(p, [], merged, followup_issue_dates(p))
         if res["blocked"]:
             res["url"] = p.get("url")
             res["merged_at"] = p["mergedAt"]

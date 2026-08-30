@@ -2917,3 +2917,157 @@ def test_13512_classified_comment_is_not_duplicated_in_the_tail():
     res = mod.analyse(pr, [], datetime(2026, 8, 29, 11, 14, tzinfo=timezone.utc))
     assert mod.classify("jsboige", concern) is not None, "pre-condition : celui-la EST classe"
     assert all(u["body"] != concern for u in res["unevaluated"])
+
+
+# ---------------------------------------------------------------------------
+# #13495 -- voie 3 de B.0 : l'issue de suivi nommee (3e levier), et le trou
+# d'auto-levee coordinateur. Instance fondatrice #13372 : PR auteur ai-01,
+# reserve Hermes sous jsboige, differree par un commentaire de l'auteur de la
+# PR nommant #13488 (ouverte avant le merge) -- le gate restait rouge.
+# ---------------------------------------------------------------------------
+
+HERMES_RESERVE_13495 = {
+    "author": {"login": "jsboige"},
+    "createdAt": at(9),
+    "body": "[Hermes] — COMMENT_WITH_CONCERNS\nCI catalog-drift FAIL sur cette base.",
+}
+
+DEFERRAL_13495 = {
+    "author": {"login": "myia-ai-01"},
+    "createdAt": at(12),
+    "body": "Reserve Hermes differee vers #13488 — le suivi se fait la-bas.",
+}
+
+# #13488 ouverte a 13:00, merge a 20:00 : AVANT la decision (MERGED).
+ISSUE_13488 = {13488: datetime(2026, 8, 14, 13, 0, tzinfo=timezone.utc)}
+
+
+def run_voie3(comments, followups, pr_author="myia-ai-01"):
+    data = {
+        "number": 13372,
+        "title": "t",
+        "author": {"login": pr_author},
+        "comments": comments,
+        "reviews": [],
+        "commits": [{"committedDate": at(19)}],
+    }
+    return mod.analyse(data, [], MERGED, followups)
+
+
+def test_voie3_issue_nomme_par_auteur_pr_leve():
+    res = run_voie3([HERMES_RESERVE_13495, DEFERRAL_13495], ISSUE_13488)
+    assert res["blocked"] is False
+    assert res["followup_lifts"][0]["issue"] == 13488
+    assert res["followup_lifts"][0]["by"] == "myia-ai-01"
+
+
+def test_voie3_sans_dictionnaire_reste_rouge():
+    """Voie 3 inactive (audit pre-filtre, tests) : comportement d'avant."""
+    res = run_voie3([HERMES_RESERVE_13495, DEFERRAL_13495], None)
+    assert res["blocked"] is True
+
+
+def test_voie3_issue_inexistante_reste_rouge():
+    """Controle positif exige par #13495 : rouge quand l'issue n'existe pas
+    (absente du dictionnaire = fetch echoue = fail-closed)."""
+    res = run_voie3([HERMES_RESERVE_13495, DEFERRAL_13495], {})
+    assert res["blocked"] is True
+
+
+def test_voie3_issue_creee_apres_merge_reste_rouge():
+    """Controle positif exige par #13495 : une issue ouverte APRES la
+    decision de merge est une retro-justification, pas une deferrance."""
+    late = {13488: datetime(2026, 8, 14, 22, 0, tzinfo=timezone.utc)}  # merge 20:00
+    res = run_voie3([HERMES_RESERVE_13495, DEFERRAL_13495], late)
+    assert res["blocked"] is True
+
+
+def test_voie3_par_bystander_ne_leve_pas():
+    other = dict(DEFERRAL_13495)
+    other["author"] = {"login": "myia-po-2023"}
+    res = run_voie3([HERMES_RESERVE_13495, other], ISSUE_13488)
+    assert res["blocked"] is True
+
+
+def test_voie3_nominee_par_auteur_de_la_reserve_leve():
+    """L'auteur de la reserve peut aussi differer sa propre remarque."""
+    own = dict(DEFERRAL_13495)
+    own["author"] = {"login": "jsboige"}
+    res = run_voie3([HERMES_RESERVE_13495, own], ISSUE_13488)
+    assert res["blocked"] is False
+
+
+def test_voie3_nomination_antérieure_a_la_reserve_ne_leve_pas():
+    early = dict(DEFERRAL_13495)
+    early["createdAt"] = at(5)  # avant la reserve de 9h
+    res = run_voie3([HERMES_RESERVE_13495, early], ISSUE_13488)
+    assert res["blocked"] is True
+
+
+def test_voie3_self_ref_ne_compte_pas():
+    selfref = dict(DEFERRAL_13495)
+    selfref["body"] = "Reserve differee, voir #13372."  # numero de la PR
+    res = run_voie3([HERMES_RESERVE_13495, selfref],
+                    {13372: datetime(2026, 8, 1, tzinfo=timezone.utc)})
+    assert res["blocked"] is True
+
+
+def test_voie3_sur_blocage_auteur_pr_ne_leve_pas():
+    """#13083 : l'auteur de la PR ne peut pas differer le blocage d'un tiers
+    -- seul l'emetteur du blocage peut le differer lui-meme."""
+    blocage = {
+        "author": {"login": "jsboige"},
+        "createdAt": at(9),
+        "body": "[BLOCAGE] lane myia-po-2026:CoursIA — regression sorry detectee.",
+    }
+    res = run_voie3([blocage, DEFERRAL_13495], ISSUE_13488)
+    assert res["blocked"] is True
+
+
+def test_voie3_sur_blocage_par_emetteur_leve():
+    blocage = {
+        "author": {"login": "jsboige"},
+        "createdAt": at(9),
+        "body": "[BLOCAGE] lane myia-po-2026:CoursIA — regression sorry detectee.",
+    }
+    own = dict(DEFERRAL_13495)
+    own["author"] = {"login": "jsboige"}  # l'emetteur du blocage differre
+    res = run_voie3([blocage, own], ISSUE_13488)
+    assert res["blocked"] is False
+
+
+def test_voie3_le_commentaire_de_deferrance_est_evalue():
+    """Symetrie #13512 : un commentaire qui a servi de voie 3 ne doit pas
+    revenir dans la file « a relire »."""
+    res = run_voie3([HERMES_RESERVE_13495, DEFERRAL_13495], ISSUE_13488)
+    unevaluated_bodies = [u.get("body") for u in res.get("unevaluated", [])]
+    assert DEFERRAL_13495["body"] not in unevaluated_bodies
+
+
+def test_13495_override_coordinateur_sur_sa_propre_pr_refuse():
+    """Le trou d'auto-levee : ai-01 POSE un [OVERRIDE] lane sur SA PR —
+    _lift_eligible doit refuser (l'arbitre n'arbitre pas sa propre cause),
+    et le refus doit etre NOMME (#13316 symetrique)."""
+    override = {
+        "author": {"login": "myia-ai-01"},
+        "createdAt": at(12),
+        "body": "**[OVERRIDE] lane myia-ai-01:CoursIA** — Levée de la "
+                "réserve Hermes, points reportés sur #11058.",
+    }
+    res = run_voie3([HERMES_RESERVE_13495, override], {})
+    assert res["blocked"] is True
+    assert any("propre cause" in o["why"] for o in res["ignored_overrides"])
+
+
+def test_13495_override_coordinateur_sur_pr_tierce_leve_toujours():
+    """Controle non-regression : la trappe #11639 reste ouverte a l'arbitre
+    VRAIMENT tiers (PR d'un worker, override d'ai-01)."""
+    override = {
+        "author": {"login": "myia-ai-01"},
+        "createdAt": at(12),
+        "body": "**[OVERRIDE] lane myia-ai-01:CoursIA** — Levée de la "
+                "réserve Hermes, points reportés sur #11058.",
+    }
+    res = run_voie3([HERMES_RESERVE_13495, override], {},
+                    pr_author="myia-po-2026")
+    assert res["blocked"] is False
