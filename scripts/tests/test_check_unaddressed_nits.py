@@ -3222,3 +3222,116 @@ def test_13635_conditionnel_je_leve_masculin_reste_bloquant():
         "myia-ai-01",
         "Une seule chose a changer — corrige la ligne 19 et je leve le concern."
     ) == "BOT-CONCERN"
+
+
+# #13636 (REPAIR #13703) — 4 controles d'integration : le tag `Grain: lane X`
+# du dernier commit FONCTIONNEL identifie l'operateur fonctionnel, et un
+# override `[OVERRIDE] lane X` pose par un lifter dans LIFT_OVERRIDE_LOGINS
+# (= `myia-ai-01`) sur une PR dont la lane est aussi cote ai-01 constitue
+# un self-override par construction (REJETE). Avant ce fix, le garde ne
+# pouvait rien conclure (le login commit = `jsboige`, l'operateur reel =
+# `myia-ai-01` -- l'identite de poussee partagee #13316 masquait le vrai
+# operateur). Le fix lit la lane du tag `Grain:` du dernier commit
+# fonctionnel (non-merge).
+
+
+def lift_myia_override(body="[OVERRIDE] lane myia-ai-01:CoursIA"):
+    """Override pose par myia-ai-01 (arbitre tiers)."""
+    return {"author": {"login": "myia-ai-01"}, "createdAt": at(12),
+            "body": body + "\n\nTes trois concerns sont leves, levee acquise."}
+
+
+def lift_ai01_comment(body=None):
+    """Commentaire leveur par myia-ai-01, sans override ni LIFT_MARKER."""
+    return {"author": {"login": "myia-ai-01"}, "createdAt": at(12),
+            "body": body or "Acknowledge."}
+
+
+def commit_with_grain(grain_lane="myia-ai-01:CoursIA"):
+    """Commit fonctionnel portant le tag Grain: lane X."""
+    return {"oid": NIT_OID, "committedDate": at(19),
+            "messageHeadline": "fix(guard,#13636): test",
+            "messageBody": f"Grain: MED/guard - lane {grain_lane} - prev: MED/guard #13698\n\nTest commit."}
+
+
+def merge_commit():
+    """Commit merge (a sauter dans le parsing)."""
+    return {"oid": "a" * 40, "committedDate": at(20),
+            "messageHeadline": "Merge branch 'main' into fix/13636",
+            "messageBody": ""}
+
+
+def test_13636_self_override_ai01_on_ai01_pr_bloque():
+    """#13636 / REPAIR #13703 — controle 1 : override par myia-ai-01 sur PR
+    dont le Grain lane est `myia-ai-01:` (self-override) doit BLOQUER le
+    merge (le lifter ne peut pas s'auto-arbiter). Avant ce fix, le gate
+    passait vert (le `or` annulait le garde, et l'operateur reel etait
+    masque par l'identite de poussee partagee `jsboige`). Avec le fix, le
+    tag Grain identifie l'operateur fonctionnel et le self-override est
+    detecte puis rejete.
+    """
+    bot_nit = {"author": {"login": "clusterManager-Myia"},
+               "createdAt": at(9),
+               "body": "**[NanoClaw]** CHANGES_REQUESTED - 2 concerns structurels."}
+    res = run([bot_nit, lift_myia_override()],
+              commits=[merge_commit(), commit_with_grain("myia-ai-01:CoursIA")],
+              pr_author="jsboige")
+    assert res["blocked"] is True, "self-override par ai-01 sur PR ai-01 doit BLOQUER"
+
+
+def test_13636_override_ai01_on_po2024_pr_passe():
+    """#13636 / REPAIR #13703 — controle 2 : override par myia-ai-01 sur PR
+    dont le Grain lane est `myia-po-2024:` (autre lane) doit PASSER le
+    merge (l'arbitre tiers est distinct de l'operateur fonctionnel).
+    """
+    bot_nit = {"author": {"login": "clusterManager-Myia"},
+               "createdAt": at(9),
+               "body": "**[NanoClaw]** CHANGES_REQUESTED - 2 concerns structurels."}
+    res = run([bot_nit, lift_myia_override()],
+              commits=[commit_with_grain("myia-po-2024:CoursIA-2")],
+              pr_author="jsboige")
+    assert res["blocked"] is False, "override tiers par ai-01 sur PR po-2024 doit PASSER"
+
+
+def test_13636_pr_sans_grain_fail_open():
+    """#13636 / REPAIR #13703 — controle 3 : PR sans tag Grain sur le dernier
+    commit fonctionnel. On ne peut pas conclure (pas de signal), on laisse
+    passer (fail-OPEN) — un override bien forme par un tiers reste valide.
+    """
+    bot_nit = {"author": {"login": "clusterManager-Myia"},
+               "createdAt": at(9),
+               "body": "**[NanoClaw]** CHANGES_REQUESTED - 2 concerns structurels."}
+    no_grain_commit = {"oid": NIT_OID, "committedDate": at(19),
+                       "messageHeadline": "fix: typo",
+                       "messageBody": "No grain tag here"}
+    res = run([bot_nit, lift_myia_override()],
+              commits=[merge_commit(), no_grain_commit],
+              pr_author="jsboige")
+    assert res["blocked"] is False, "PR sans Grain : fail-OPEN sur override"
+
+
+def test_13636_payload_reel_pr_13703_bloque():
+    """#13636 / REPAIR #13703 — controle 4 : payload REEL de PR #13703 avant
+    merge (`authors` liste, login affiche `jsboige`, tag Grain
+    `myia-ai-01:CoursIA`). Avant ce fix, le gate passait vert (parser
+    defect : `authors` rend liste, mon code lisait `author` objet et rendait
+    `last_committer_login=""`, donc `pr_operator=pr_author="jsboige"` ; le
+    `or` annulait le garde et `lifter != pr_operator` (VRAI) ouvrait la
+    porte sans consulter `_has_named_override`). Avec ce fix, le tag Grain
+    identifie `myia-ai-01:CoursIA`, l'override est reconnu comme self-override,
+    le gate BLOQUE.
+    """
+    bot_nit = {"author": {"login": "clusterManager-Myia"},
+               "createdAt": at(9),
+               "body": "**[NanoClaw]** CHANGES_REQUESTED - 2 concerns structurels."}
+    pr_13703_payload = {
+        "oid": "6c59372c02ac908bb95f54e56428e78fc49e2092",
+        "committedDate": "2026-08-30T18:20:34Z",
+        "authors": [{"login": "jsboige"}, {"login": "claude"}],
+        "messageHeadline": "fix(guard,#13636): trappe d'override ai-01 sur sa propre PR",
+        "messageBody": "Grain: MED/guard - lane myia-ai-01:CoursIA - prev: MED/guard #13698\n\n#13636 signale qu'un commentaire [OVERRIDE] lane myia-ai-01:CoursIA pose par myia-ai-01 sur sa PROPRE PR levait la branche BLOCK...",
+    }
+    res = run([bot_nit, lift_myia_override()],
+              commits=[pr_13703_payload],
+              pr_author="jsboige")
+    assert res["blocked"] is True, "PR #13703 payload REEL : self-override doit BLOQUER"

@@ -1562,6 +1562,70 @@ def _names_author(body: str, author: str) -> bool:
                      body) is not None
 
 
+# #13636 — pattern `Grain: ... lane <machine:workspace>` du dernier commit
+# FONCTIONNEL (non-merge). Le tag `Grain:` est la voie de verite de la lane
+# qui a livre le commit (cf variation-protocol.md §1), distincte du login
+# PR affiche qui peut etre `jsboige` pour cause d'identite de poussee
+# partagee (#13316). On extrait la lane `<machine:workspace>` au tag, sans
+# considerer le login commit author (qui peut etre jsboige meme quand
+# l'operateur fonctionnel est myia-ai-01). Une lane `myia-ai-01:*` signale
+# un override de meme operateur (self-override) ; toute autre lane signale
+# un override tiers legitime.
+_GRAIN_LANE_RE = re.compile(
+    r"(?im)^\s*\[?\s*Grain\s*:\s*[^\n]*?\blane\s+([A-Za-z0-9_.-]+:[A-Za-z0-9_.-]+)"
+)
+
+
+def _pr_operator_lane(pr_data: dict) -> str:
+    """Lane fonctionnelle de la PR, lue du dernier commit FONCTIONNEL.
+
+    #13636 (REPAIR #13703) — le tag `Grain: ... lane X` du commit
+    fonctionnel est la seule source de verite de la lane operatrice quand
+    l'identite de poussee partagee `jsboige` masque l'operateur reel. On
+    parcourt les commits par date decroissante, on SAUTE les merges
+    (commit message commence par `Merge `), et on prend le premier commit
+    FONCTIONNEL. Renvoie la lane (`machine:workspace`) ou `""` si aucune
+    n'est trouvee (= on ne peut pas conclure self-override).
+    """
+    raw_commits = pr_data.get("commits") or []
+    by_date = sorted(
+        [c for c in raw_commits if c.get("committedDate")],
+        key=lambda c: c.get("committedDate") or "",
+        reverse=True,
+    )
+    for c in by_date:
+        msg = c.get("messageBody") or ""
+        headline = c.get("messageHeadline") or ""
+        full = (headline + "\n" + msg).strip()
+        if full.lower().startswith("merge "):
+            continue
+        m = _GRAIN_LANE_RE.search(full)
+        if m:
+            return m.group(1)
+    return ""
+
+
+def _is_self_override(lift_author: str, lift_body: str, pr_data: dict) -> bool:
+    """L'override pose par `lift_author` est-il un self-override par la lane ?
+
+    #13636 (REPAIR #13703) — un override `[OVERRIDE] lane X` pose par un
+    lifter dans LIFT_OVERRIDE_LOGINS (= `myia-ai-01`) sur une PR dont le
+    dernier commit FONCTIONNEL porte `Grain: ... lane myia-ai-01:...` est
+    un self-override par construction (l'arbitre tiers ne peut pas etre
+    l'operateur de la PR). Renvoie True si la lane du Grain matche la lane
+    du lifter (i.e. toutes deux cote ai-01). Renvoie False par defaut si la
+    lane fonctionnelle est introuvable (on ne peut pas conclure, on laisse
+    passer — fail-OPEN pour les PRs sans tag Grain).
+    """
+    if lift_author not in LIFT_OVERRIDE_LOGINS:
+        return False
+    pr_lane = _pr_operator_lane(pr_data)
+    if not pr_lane:
+        return False  # pas de signal Grain : on ne peut pas conclure
+    # Si la lane fonctionnelle est cote ai-01, l'override est self-override.
+    return pr_lane.startswith("myia-ai-01:")
+
+
 def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
             issue_created=None) -> dict:
     """cutoff = mergedAt (audit retro) ou now (gate pre-merge)."""
@@ -1569,6 +1633,11 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
     commits = [c for c in commits if c]
     last_commit = max(commits) if commits else None
     pr_author = (pr_data.get("author") or {}).get("login", "")
+    # #13636 (REPAIR #13703) — lane fonctionnelle lue du tag `Grain:` du
+    # dernier commit FONCTIONNEL. Sert dans `_is_self_override` pour
+    # detecter l'override de meme operateur pose par ai-01 sur PR
+    # jsboige-pushed (login commit = jsboige, mais l'operateur reel = ai-01).
+    pr_operator_lane = _pr_operator_lane(pr_data)
 
     # #11145 — borne d'auteur, durcie par #12836 : seule une levee de l'auteur
     # de la reserve compte. #12798 a montre pourquoi PR_AUTHOR n'est pas une
@@ -1653,8 +1722,16 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
         # lanes (self-review cap #12319), un override jsboige est
         # indiscernable d'une auto-levee de lane (replay #12737).
         m = OVERRIDE_LANE.search(lift_body or "")
-        return (lift_author in LIFT_OVERRIDE_LOGINS
-                and m is not None)
+        if not (lift_author in LIFT_OVERRIDE_LOGINS and m is not None):
+            return False
+        # #13636 (REPAIR #13703) — un override par l'arbitre tiers n'est
+        # recevable que si l'arbitre n'est PAS l'operateur fonctionnel de
+        # la PR. Le tag `Grain:` du dernier commit FONCTIONNEL identifie
+        # cette lane. Si elle est cote `myia-ai-01:`, l'override est un
+        # self-override (REJETE). Si le Grain manque (PR sans tag), on ne
+        # peut pas conclure et on laisse passer (fail-OPEN) — un override
+        # bien forme par un tiers reste valide par ailleurs.
+        return not _is_self_override(lift_author, lift_body or "", pr_data)
 
     # Fenetre 2026-08-16 (#11222) : les temps plats ne suffisent pas pour un
     # CHANGES_REQUESTED. Une PHRASE explicite de levee (LIFT_MARKER non
