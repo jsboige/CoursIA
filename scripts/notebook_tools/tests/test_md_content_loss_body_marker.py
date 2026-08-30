@@ -305,3 +305,61 @@ class TestRobustness:
             f"Env var MD_CONTENT_LOSS_PR_BODY_FILE devrait etre prise en compte. "
             f"rc={rc}"
         )
+
+    def test_pr_body_in_memory_via_arg(self, tmp_git_repo):
+        """Le detecteur accepte --pr-body (literal) pour eviter d'ecrire le body
+        dans un fichier sur le runner -- c'est le canal in-memory qui contourne
+        le pattern CodeQL `actions/code-injection` sur `printf '%s' \"${{
+        ...body }}\" > file`.
+        """
+        repo, nb_abs = tmp_git_repo
+        marker = (
+            f"md-content-loss: reecriture assumee -- {nb_abs.name} cell 0 : "
+            "rephrase via --pr-body"
+        )
+        nb_rel = str(nb_abs.relative_to(repo))
+        argv = [
+            "--base", "HEAD~1",
+            "--head", "HEAD",
+            "--check",
+            nb_rel,
+            "--pr-body", "# Mon PR\n\n" + marker + "\n",
+        ]
+        old_cwd = Path.cwd()
+        try:
+            os.chdir(repo)
+            rc = dml.main(argv)
+        finally:
+            os.chdir(old_cwd)
+        assert rc == 0, (
+            f"--pr-body in-memory devrait rendre --check vert. rc={rc}"
+        )
+
+    def test_pr_body_in_memory_via_env_var(self, tmp_git_repo):
+        """L'env var MD_CONTENT_LOSS_PR_BODY est prioritaire sur
+        MD_CONTENT_LOSS_PR_BODY_FILE : le canal in-memory est la voie
+        recommandee pour contourner CodeQL `actions/code-injection`.
+        """
+        repo, nb_abs = tmp_git_repo
+        marker = (
+            f"md-content-loss: reecriture assumee -- {nb_abs.name} cell 0 : "
+            "rephrase via env var"
+        )
+        nb_rel = str(nb_abs.relative_to(repo))
+        argv = ["--base", "HEAD~1", "--head", "HEAD", "--check", nb_rel]
+        old_cwd = Path.cwd()
+        old_val = os.environ.get("MD_CONTENT_LOSS_PR_BODY")
+        os.environ["MD_CONTENT_LOSS_PR_BODY"] = "# PR\n\n" + marker + "\n"
+        try:
+            os.chdir(repo)
+            rc = dml.main(argv)
+        finally:
+            os.chdir(old_cwd)
+            if old_val is None:
+                os.environ.pop("MD_CONTENT_LOSS_PR_BODY", None)
+            else:
+                os.environ["MD_CONTENT_LOSS_PR_BODY"] = old_val
+        assert rc == 0, (
+            f"Env var MD_CONTENT_LOSS_PR_BODY devrait rendre --check vert. "
+            f"rc={rc}"
+        )

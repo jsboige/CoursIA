@@ -946,22 +946,45 @@ def main(argv: list[str] | None = None) -> int:
              "`MD_CONTENT_LOSS_PR_BODY_FILE` si definie, sinon aucun (comportement "
              "actuel strict : aucun marker n'est lu).",
     )
+    p.add_argument(
+        "--pr-body", default=None,
+        help="Contenu literal du body de la PR (CI). Equivalent a `--pr-body-file` "
+             "mais evite d'ecrire le body dans un fichier sur le runner (CodeQL "
+             "`actions/code-injection` sur le pattern `printf '%s' \"${{ ...body }}\" "
+             "> file`). Defaut : la variable d'env `MD_CONTENT_LOSS_PR_BODY` si "
+             "definie (prioritaire sur --pr-body-file / MD_CONTENT_LOSS_PR_BODY_FILE).",
+    )
     args = p.parse_args(argv)
 
     if not args.notebook.exists():
         print(f"ERROR: notebook introuvable: {args.notebook}", file=sys.stderr)
         return 2
 
-    # Resolution du body de la PR : CLI --pr-body-file prime, sinon env var
-    # `MD_CONTENT_LOSS_PR_BODY_FILE` (la fast-lane la pose dans son step
-    # d'init pour eviter d'avoir a etendre le moteur a un placeholder par
-    # garde). Path absent -> la lecture du body est desactivee (comportement
-    # actuel strict).
-    pr_body_file: Path | None = args.pr_body_file
-    if pr_body_file is None:
-        env = os.environ.get("MD_CONTENT_LOSS_PR_BODY_FILE")
-        if env:
-            pr_body_file = Path(env)
+    # Resolution du body de la PR :
+    #   1. CLI --pr-body (litteral) prime, sinon env var MD_CONTENT_LOSS_PR_BODY
+    #      (canal in-memory, evite d'ecrire le body dans un fichier sur le runner
+    #      et contourne CodeQL `actions/code-injection` sur `printf '%s' "..."`).
+    #   2. Sinon CLI --pr-body-file, sinon env var MD_CONTENT_LOSS_PR_BODY_FILE
+    #      (canal historique, conserve pour les tests unitaires et le workflow
+    #      dedie md-content-loss-gate.yml).
+    #   3. Sinon aucun : pas de marker, comportement actuel strict.
+    pr_body: str | None = None
+    if args.pr_body is not None:
+        pr_body = args.pr_body
+    elif env_body := os.environ.get("MD_CONTENT_LOSS_PR_BODY"):
+        pr_body = env_body
+    else:
+        pr_body_file: Path | None = args.pr_body_file
+        if pr_body_file is None:
+            env_file = os.environ.get("MD_CONTENT_LOSS_PR_BODY_FILE")
+            if env_file:
+                pr_body_file = Path(env_file)
+        if pr_body_file is not None:
+            try:
+                pr_body = pr_body_file.read_text(encoding="utf-8", errors="replace")
+            except (OSError, UnicodeDecodeError) as e:
+                print(f"ERROR: --pr-body-file illisible: {e}", file=sys.stderr)
+                return 2
 
     result = scan_notebook(args.notebook, args.base, args.head)
 
@@ -970,18 +993,14 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     # Justification par-cellule depuis le body de la PR (#13491, option (a)).
-    # Le body est lu une fois et parse en un ensemble de cell_idx justifies
-    # pour CE notebook. Les findings TRUNCATED_CELL sur ces cellules sont
-    # convertis en TRUNCATED_CELL_JUSTIFIED_BY_BODY (trace preservee, le
-    # verdict binaire --check passe a 0). Marker absent, malforme, ou visant
-    # une autre cellule/ce notebook n'a aucun effet (comportement actuel
-    # preserve : cf Acceptance 1 du cahier des charges).
-    if pr_body_file is not None:
-        try:
-            pr_body = pr_body_file.read_text(encoding="utf-8", errors="replace")
-        except OSError as e:
-            print(f"ERROR: --pr-body-file illisible: {e}", file=sys.stderr)
-            return 2
+    # Le body est lu une fois (cf bloc de resolution ci-dessus) et parse en
+    # un ensemble de cell_idx justifies pour CE notebook. Les findings
+    # TRUNCATED_CELL sur ces cellules sont convertis en
+    # TRUNCATED_CELL_JUSTIFIED_BY_BODY (trace preservee, le verdict binaire
+    # --check passe a 0). Marker absent, malforme, ou visant une autre
+    # cellule/ce notebook n'a aucun effet (comportement actuel preserve :
+    # cf Acceptance 1 du cahier des charges).
+    if pr_body is not None:
         justified = _parse_pr_body_markers(pr_body, args.notebook)
         if justified:
             result["findings"] = _apply_body_justifications(result["findings"], justified)

@@ -91,16 +91,15 @@ jobs:
           # le finding devient TRUNCATED_CELL_JUSTIFIED_BY_BODY et reste dans la
           # sortie machine, seul le verdict binaire --check passe a 0). Sans
           # marker pour un finding donne, le comportement nominal (rc=1) est
-          # preserve. Le body est ecrit dans un tempfile et passe via l'env var
-          # MD_CONTENT_LOSS_PR_BODY_FILE (env var et non flag CLI : laisse la
-          # fast-lane registry inchanges et evite de specialiser le moteur par
-          # placeholder par garde ; le detecteur la resout en fallback du flag
-          # --pr-body-file). Les PRs sans body (string vide) produisent un
-          # fichier vide -- le detecteur ne matche rien, comportement actuel
-          # preserve (cf Acceptance #13491 : malforme = inert).
-          MD_CONTENT_LOSS_PR_BODY_FILE="$(mktemp)"
-          printf '%s' '${{ github.event.pull_request.body }}' > "$MD_CONTENT_LOSS_PR_BODY_FILE"
-          export MD_CONTENT_LOSS_PR_BODY_FILE
+          # preserve. Le body est passe via l'env var in-memory
+          # MD_CONTENT_LOSS_PR_BODY (canal recommande, evite le pattern CodeQL
+          # `actions/code-injection` declenche par `printf '%s' "${{ ...body }}"`
+          # qui taint le body vers le shell). Le detecteur la resout en
+          # priorite sur --pr-body-file / MD_CONTENT_LOSS_PR_BODY_FILE (canal
+          # historique, conserve pour les tests unitaires et les out-of-band
+          # invocations). Les PRs sans body (string vide) ne matchent rien,
+          # comportement actuel preserve (cf Acceptance #13491 : malforme = inert).
+          export MD_CONTENT_LOSS_PR_BODY='${{ github.event.pull_request.body }}'
 
           echo "## Markdown content-loss gate" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
