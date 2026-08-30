@@ -11,6 +11,7 @@ import json
 import pathlib
 import subprocess
 import sys
+import tempfile
 import unittest
 from unittest import mock
 
@@ -108,11 +109,23 @@ class TestClassifyPath(unittest.TestCase):
 
 
 class TestScanNotebook(unittest.TestCase):
-    """Scan end-to-end d'un notebook dans un faux repo."""
+    """Scan end-to-end d'un notebook dans un faux repo.
 
-    def _make_nb(self, tmp: pathlib.Path, code_sources: list) -> pathlib.Path:
+    Les fixtures vivent dans un TemporaryDirectory (issue #13603) : la
+    suite ne depose plus test_nb.ipynb / md_only.ipynb / corrupt.ipynb
+    dans le cwd du run (worktree propre apres passage complet).
+    """
+
+    def setUp(self):
+        self._tmpdir = tempfile.TemporaryDirectory()
+        self.tmp = pathlib.Path(self._tmpdir.name)
+
+    def tearDown(self):
+        self._tmpdir.cleanup()
+
+    def _make_nb(self, code_sources: list) -> pathlib.Path:
         nb = {"cells": [{"cell_type": "code", "source": s} for s in code_sources]}
-        nb_path = tmp / "test_nb.ipynb"
+        nb_path = self.tmp / "test_nb.ipynb"
         nb_path.write_bytes(json.dumps(nb).encode())
         return nb_path
 
@@ -141,38 +154,36 @@ class TestScanNotebook(unittest.TestCase):
             return result
 
         with mock.patch("subprocess.run", fake_run):
-            with mock.patch.object(g, "find_repo_root", return_value=pathlib.Path(".")):
-                nb_path = self._make_nb(pathlib.Path("."),
-                                          ["results_path = Path('scripts/results/GITIGNORED_DIR/x.json')",
-                                           "p = Path('scripts/results/baselines_zeroshot/results.json')",
-                                           "p = Path('scripts/results/NEVER_TRACKED_NEVER_GITIGNORED/x.json')"])
-                result = g.scan_notebook(nb_path, pathlib.Path("."))
+            with mock.patch.object(g, "find_repo_root", return_value=self.tmp):
+                nb_path = self._make_nb(
+                    ["results_path = Path('scripts/results/GITIGNORED_DIR/x.json')",
+                     "p = Path('scripts/results/baselines_zeroshot/results.json')",
+                     "p = Path('scripts/results/NEVER_TRACKED_NEVER_GITIGNORED/x.json')"])
+                result = g.scan_notebook(nb_path, self.tmp)
 
         statuses = [f["status"] for f in result["findings"]]
         self.assertEqual(statuses, ["GITIGNORED", "OK", "MISSING"])
 
     def test_scan_empty_notebook(self):
-        nb_path = self._make_nb(pathlib.Path("."), [])
-        result = g.scan_notebook(nb_path, pathlib.Path("."))
+        nb_path = self._make_nb([])
+        result = g.scan_notebook(nb_path, self.tmp)
         self.assertEqual(result["findings"], [])
 
     def test_scan_markdown_only(self):
         # Cellules markdown ne produisent pas de paths.
         with mock.patch("subprocess.run", mock.Mock()):
-            with mock.patch.object(g, "find_repo_root", return_value=pathlib.Path(".")):
+            with mock.patch.object(g, "find_repo_root", return_value=self.tmp):
                 nb = {"cells": [{"cell_type": "markdown", "source": ["# scripts/results/foo/results.json\n"]}]}
-                nb_path = pathlib.Path("md_only.ipynb")
+                nb_path = self.tmp / "md_only.ipynb"
                 nb_path.write_bytes(json.dumps(nb).encode())
-                result = g.scan_notebook(nb_path, pathlib.Path("."))
+                result = g.scan_notebook(nb_path, self.tmp)
                 self.assertEqual(result["findings"], [])
-                nb_path.unlink()
 
     def test_scan_corrupt_json(self):
-        bad_path = pathlib.Path("corrupt.ipynb")
+        bad_path = self.tmp / "corrupt.ipynb"
         bad_path.write_bytes(b"{not json")
-        result = g.scan_notebook(bad_path, pathlib.Path("."))
+        result = g.scan_notebook(bad_path, self.tmp)
         self.assertIn("error", result)
-        bad_path.unlink()
 
 
 class TestRealM15Case(unittest.TestCase):
