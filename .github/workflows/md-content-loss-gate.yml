@@ -70,6 +70,13 @@ jobs:
           python-version: '3.11'
 
       - name: Gate changed notebooks
+        env:
+          # Forme sure : le body arrive comme variable d'environnement et
+          # n'est jamais interpole dans le shell (identique a
+          # always-on-guards.yml l.934). Sur workflow_dispatch,
+          # github.event.pull_request est nul -> chaine vide -> inerte,
+          # conforme a l'Acceptance #13491 (malforme = inert).
+          MD_CONTENT_LOSS_PR_BODY: ${{ github.event.pull_request.body }}
         run: |
           set -uo pipefail
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
@@ -93,13 +100,12 @@ jobs:
           # marker pour un finding donne, le comportement nominal (rc=1) est
           # preserve. Le body est passe via l'env var in-memory
           # MD_CONTENT_LOSS_PR_BODY (canal recommande, evite le pattern CodeQL
-          # `actions/code-injection` declenche par `printf '%s' "${{ ...body }}"`
+          # `actions/code-injection` declenche par `printf` du body dans le shell
           # qui taint le body vers le shell). Le detecteur la resout en
           # priorite sur --pr-body-file / MD_CONTENT_LOSS_PR_BODY_FILE (canal
           # historique, conserve pour les tests unitaires et les out-of-band
           # invocations). Les PRs sans body (string vide) ne matchent rien,
           # comportement actuel preserve (cf Acceptance #13491 : malforme = inert).
-          export MD_CONTENT_LOSS_PR_BODY='${{ github.event.pull_request.body }}'
 
           echo "## Markdown content-loss gate" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
