@@ -972,8 +972,63 @@ def _lift_is_narrated(window: str) -> bool:
     return False
 
 
+# #13622 — negation directe d'un LIFT_MARKER dans la portee locale. La
+# negation est l'inverse semantique d'une levee : « ne pas merger tant
+# qu'elle n'est pas levee » AFFIRME que la levee n'a pas eu lieu, alors
+# que le gate rendait `None` (commentaire non-nitrant). Les tokens sont
+# ceux qui precedent ou suivent immediatement le marqueur (15 chars) ;
+# au-dela, c'est une autre phrase, un autre commentaire, ou une
+# narration sans rapport.
+_LIFT_NEGATION_TOKENS = (
+    "non", "pas", "plus", "aucun", "aucune", "n'est", "nest", "jamais",
+    "rien", "sans",
+)
+
+
+def _lift_is_negated(window_before: str, window_after: str) -> bool:
+    """Le LIFT_MARKER est-il dans une negation directe ?
+
+    #13622 fondateur — PR #13563 verbatim :
+      "... **ne pas merger tant qu'elle n'est pas levee** ..."
+    matchait `LIFT_MARKER=levee` a la fenetre 30 chars etait non-narree
+    (pas de determinant CITERS) ET non-conditionnelle (pas de fleche de
+    derivation), donc classee `None` (= « pas un nit »). Le predicat
+    matchait le TOKEN `lev[ée]` ; il ne modelisait pas la negation.
+
+    Discrimination : tokens de negation (`non`, `pas`, `plus`, `n'est`,
+    `jamais`, `aucun`, `aucune`, `rien`, `sans`) dans une fenetre de
+    15 chars avant OU apres le marker, avec garde de frontiere
+    alphanumerique (mecanique `_is_cited`, symetrie exacte avec
+    `_lift_is_narrated`). Les CITERS determinants (`la`, `le`, `aucun`,
+    etc.) restent geres par `_lift_is_narrated` — la negation est
+    distincte.
+
+    Residuel assume (documente dans l'issue) : une negation NON
+    locale (« levee il y a longtemps, reserve non acquise » avec 20+
+    chars entre les deux) echappe. C'est la frontiere entre negation
+    directe et narration : la derniere appartient a `_lift_is_narrated`
+    (CITERS).
+    """
+    norm_before = _unaccent(window_before).lower()
+    norm_after = _unaccent(window_after).lower()
+    # Tronque les separateurs de bord (espaces, virgules, points) pour
+    # que la negation du dernier token soit testee sans pollution. La
+    # negation NON locale (15+ chars de distance) echappe par construction
+    # — c'est la frontiere documentee dans l'issue #13622.
+    tail = norm_before[-15:].rstrip(" \t\n.,;:!?")
+    head = norm_after[:15].lstrip(" \t\n.,;:!?")
+    for tok in _LIFT_NEGATION_TOKENS:
+        # Token avant : match \btok\b en fin de fenetre (apres strip).
+        if tail.endswith(" " + tok) or tail == tok:
+            return True
+        # Token apres : match \btok\b en tete de fenetre (apres strip).
+        if head.startswith(tok + " ") or head == tok:
+            return True
+    return False
+
+
 def _live_lift_positions(normalised: str) -> list[int]:
-    """Positions des occurrences de LIFT_MARKERS NON narrées.
+    """Positions des occurrences de LIFT_MARKERS NON narrées ET NON niées.
 
     `has_marker` traite le body comme un sac de mots ; #12798/#12908 a
     mesuré le coût de ce sac côté LIFT : le PREFLIGHT qui EXIGE « une
@@ -982,14 +1037,23 @@ def _live_lift_positions(normalised: str) -> list[int]:
     #13083 (2e instance) y ajoute la flèche de dérivation : « -> je
     merge » conditionne le merge à une précondition non satisfaite, ce
     n'est pas une annonce.
+    #13622 (3e instance) y ajoute la negation directe : « ne pas merger
+    tant qu'elle n'est pas levee » AFFIRME que la levee n'a pas eu
+    lieu, alors que le token `levee` matchait sans prise en compte de
+    la negation. Le predicat `_lift_is_negated` regarde 15 chars avant
+    ET apres le marker.
     """
     out: list[int] = []
     for marker in LIFT_MARKERS:
         m = _unaccent(marker)
+        m_len = len(m)
         start = 0
         while (i := normalised.find(m, start)) != -1:
-            if not _lift_is_narrated(normalised[max(0, i - 30):i]) \
-                    and not _arrow_precedes(normalised, i):
+            window_before = normalised[max(0, i - 30):i]
+            window_after = normalised[i + m_len:i + m_len + 15]
+            if not _lift_is_narrated(window_before) \
+                    and not _arrow_precedes(normalised, i) \
+                    and not _lift_is_negated(window_before, window_after):
                 out.append(i)
             start = i + 1
     return out
