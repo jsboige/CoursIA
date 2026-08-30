@@ -237,14 +237,47 @@ def age_days(created: str) -> int:
     return max(0, (NOW - created_dt).days)
 
 
+# Plafond de recuperation du pool. Ce n'est PAS un reglage de confort : quand
+# il sature, `gh issue list` rend les N plus RECENTES (mesure du 2026-08-30 :
+# les 12 premieres rendues etaient les 12 dernieres creees), donc la
+# troncature ampute exactement la traine -- la population que la ponderation
+# age + delaissement existe pour atteindre. Un plafond atteint inverse
+# l'instrument au lieu de le borner, et le fait sans rien dire.
+#
+# Mesure du 2026-08-30 : 213 ouvertes, et ce que l'ancien plafond de 300
+# aurait fait tomber en premier etait #1028 (mandat audiobook), #1203, #1206,
+# #1210, #1453, #1454 -- six EPICs de mai, tous vivants.
+POOL_FETCH_LIMIT = 2000
+
+
 def fetch_pool() -> list[dict]:
-    """Une seule requete, limite haute -- c'est ce qui defait la troncature."""
+    """Une seule requete, limite haute -- c'est ce qui defait la troncature.
+
+    Le plafond est haut ET surveille : aucun plafond ne se choisit une fois
+    pour toutes, et celui-ci se fait franchir en silence par construction.
+    """
     out = subprocess.run(
-        ["gh", "issue", "list", "--repo", REPO, "--state", "open", "--limit", "300",
+        ["gh", "issue", "list", "--repo", REPO, "--state", "open",
+         "--limit", str(POOL_FETCH_LIMIT),
          "--json", "number,title,labels,body,createdAt,updatedAt"],
         capture_output=True, text=True, encoding="utf-8", check=True,
     ).stdout
     raw = json.loads(out)
+    if len(raw) >= POOL_FETCH_LIMIT:
+        # Signature de la troncature : on a recu exactement ce qu'on a demande.
+        # Le tirage reste possible et se poursuit -- bloquer la lane serait pire
+        # que la biaiser (R4 : jamais sanctionner l'idle). Mais il est desormais
+        # biaise VERS LE RECENT, et le dire est la seule chose qui empeche de
+        # lire son resultat comme une couverture du pool.
+        print(
+            f"[POOL TRONQUE] {len(raw)} issues rendues pour un plafond de "
+            f"{POOL_FETCH_LIMIT} : le pool est probablement plus grand. "
+            "gh rend les plus RECENTES, donc la traine -- vieux EPICs, sujets "
+            "delaisses -- est absente de ce tirage. Le resultat ci-dessous est "
+            "biaise vers le recent : relever POOL_FETCH_LIMIT avant de s'en "
+            "servir pour conclure quoi que ce soit sur la couverture.",
+            file=sys.stderr,
+        )
     pool = []
     for it in raw:
         labels = [lb["name"] for lb in it.get("labels", [])]
