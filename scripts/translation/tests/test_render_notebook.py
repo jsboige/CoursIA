@@ -202,7 +202,9 @@ def test_render_csv_text_en_for_code_cell_does_not_affect_code(tmp_path):
 # --------------------------------------------------------------------------
 
 def test_render_empty_csv_falls_back_to_fr(tmp_path):
-    """Aucun texte_en dans le CSV → tous les markdown en fallback FR."""
+    """Aucun texte_en dans le CSV → tous les markdown en fallback FR.
+    (min_coverage=0.0 explicite : depuis #13557, 0% de couverture sans demande
+    explicite est refusé par le fail-closed par défaut.)"""
     nb = _write_nb(tmp_path, "nb.ipynb", [
         {"id": "m1", "type": "markdown", "source": ["# Titre"]},
         {"id": "c1", "type": "code", "source": ["x"], "execution_count": None},
@@ -210,7 +212,7 @@ def test_render_empty_csv_falls_back_to_fr(tmp_path):
     ])
     csv_p = _write_csv(tmp_path, "tr.csv", [])  # 0 lignes (pas de row, header seul)
     out = tmp_path / "out_en.ipynb"
-    result = r.render(nb, csv_p, "en", out)
+    result = r.render(nb, csv_p, "en", out, min_coverage=0.0)
     assert result.stats.n_md_cells == 2
     assert result.stats.n_translated == 0
     assert result.stats.n_fallback == 2
@@ -280,14 +282,16 @@ def test_require_translated_noop_when_no_markdown_cells(tmp_path):
 
 
 def test_default_render_preserves_criterion3_fr_placeholder(tmp_path):
-    """Sans require_translated (defaut) → 0 traduit produit un clone FR (critere 3 #10039),
-    le guardrail opt-in ne casse PAS le contrat de re-render idempotent."""
+    """Sans require_translated (defaut) → 0 traduit produit un clone FR (critere 3 #10039).
+    Depuis #13557 la couverture 0% exige un min_coverage=0.0 explicite : le
+    placeholder FR reste atteignable, mais declare."""
     nb = _write_nb(tmp_path, "nb.ipynb", [
         {"id": "m1", "type": "markdown", "source": ["# Titre FR"]},
     ])
     csv_p = _write_csv(tmp_path, "tr.csv", [])  # 0 traduction
     out = tmp_path / "out_en.ipynb"
-    result = r.render(nb, csv_p, "en", out)  # defaut require_translated=False
+    # defaut require_translated=False ; couverture partielle explicite.
+    result = r.render(nb, csv_p, "en", out, min_coverage=0.0)
     assert result.stats.n_translated == 0
     out_nb = json.loads(out.read_text(encoding="utf-8"))
     assert out_nb["cells"][0]["source"] == ["# Titre FR"]  # placeholder FR, pas d'erreur
@@ -309,7 +313,8 @@ def test_main_require_translated_returns_exit_2(tmp_path):
 
 
 def test_render_partial_csv_translates_only_present_cells(tmp_path):
-    """Cellule absente du CSV → fallback FR (jamais blank, jamais placeholder)."""
+    """Cellule absente du CSV → fallback FR (jamais blank, jamais placeholder).
+    (min_coverage=0.5 explicite : la couverture 50% serait refusee par defaut.)"""
     nb = _write_nb(tmp_path, "nb.ipynb", [
         {"id": "m1", "type": "markdown", "source": ["# Titre FR"]},
         {"id": "m2", "type": "markdown", "source": ["## Section FR"]},
@@ -321,7 +326,7 @@ def test_render_partial_csv_translates_only_present_cells(tmp_path):
          "text_en": "# Title EN"},
     ])
     out = tmp_path / "out_en.ipynb"
-    result = r.render(nb, csv_p, "en", out)
+    result = r.render(nb, csv_p, "en", out, min_coverage=0.5)
     assert result.stats.n_translated == 1
     assert result.stats.n_fallback == 1
     out_nb = json.loads(out.read_text(encoding="utf-8"))
@@ -334,48 +339,6 @@ def test_render_partial_csv_translates_only_present_cells(tmp_path):
 # Gate 4 — Orphelines : CSV a une clé absente du notebook → capturée + non-crash
 # --------------------------------------------------------------------------
 
-def test_render_orphans_collected_in_stale_sidecar(tmp_path):
-    """Clé CSV sans cellule correspondante → capturée, pas d'erreur."""
-    nb = _write_nb(tmp_path, "nb.ipynb", [
-        {"id": "m1", "type": "markdown", "source": ["# A"]},
-    ])
-    csv_p = _write_csv(tmp_path, "tr.csv", [
-        {"notebook": str(nb), "cell_id": "m1", "cell_type": "markdown",
-         "src_lang": "fr", "src_hash": "1", "text_fr": "# A", "text_en": "# A EN"},
-        # Orpheline : pas dans le notebook.
-        {"notebook": str(nb), "cell_id": "ORPHAN", "cell_type": "markdown",
-         "src_lang": "fr", "src_hash": "x", "text_fr": "fantôme",
-         "text_en": "ghost"},
-    ])
-    out = tmp_path / "out_en.ipynb"
-    result = r.render(nb, csv_p, "en", out)
-    assert "ORPHAN" in result.orphan_keys
-    assert result.stats.n_orphan_keys == 1
-    # Sidecar écrit à côté de l'output (1 clé par ligne).
-    stale = out.with_suffix(out.suffix + ".stale")
-    assert stale.exists()
-    assert stale.read_text(encoding="utf-8").strip() == "ORPHAN"
-
-
-def test_render_orphan_does_not_crash_render(tmp_path):
-    """3 orphelines, 1 cellule valide → rendu OK, sidecar contient 3 clés."""
-    nb = _write_nb(tmp_path, "nb.ipynb", [
-        {"id": "m1", "type": "markdown", "source": ["ok"]},
-    ])
-    csv_p = _write_csv(tmp_path, "tr.csv", [
-        {"notebook": str(nb), "cell_id": "m1", "cell_type": "markdown",
-         "src_lang": "fr", "src_hash": "1", "text_fr": "ok", "text_en": "OK"},
-        {"notebook": str(nb), "cell_id": "ghost1", "cell_type": "markdown",
-         "src_lang": "fr", "src_hash": "x", "text_fr": "g1", "text_en": "G1"},
-        {"notebook": str(nb), "cell_id": "ghost2", "cell_type": "markdown",
-         "src_lang": "fr", "src_hash": "y", "text_fr": "g2", "text_en": "G2"},
-        {"notebook": str(nb), "cell_id": "ghost3", "cell_type": "markdown",
-         "src_lang": "fr", "src_hash": "z", "text_fr": "g3", "text_en": "G3"},
-    ])
-    out = tmp_path / "out_en.ipynb"
-    result = r.render(nb, csv_p, "en", out)
-    assert result.stats.n_orphan_keys == 3
-    assert sorted(result.orphan_keys) == ["ghost1", "ghost2", "ghost3"]
 
 
 # --------------------------------------------------------------------------
@@ -403,20 +366,6 @@ def test_render_dry_run_writes_nothing(tmp_path):
     assert result.stats.n_translated == 1
     assert result.stats.n_code_cells == 1
 
-
-def test_render_dry_run_orphan_sidecar_not_written(tmp_path):
-    """--dry-run : pas de sidecar .stale non plus (on n'écrit rien)."""
-    nb = _write_nb(tmp_path, "nb.ipynb", [
-        {"id": "m1", "type": "markdown", "source": ["a"]},
-    ])
-    csv_p = _write_csv(tmp_path, "tr.csv", [
-        {"notebook": str(nb), "cell_id": "ORPHAN", "cell_type": "markdown",
-         "src_lang": "fr", "src_hash": "x", "text_fr": "g",
-         "text_en": "G"},
-    ])
-    out = tmp_path / "out_en.ipynb"
-    r.render(nb, csv_p, "en", out, dry_run=True)
-    assert not out.with_suffix(out.suffix + ".stale").exists()
 
 
 # --------------------------------------------------------------------------
@@ -532,7 +481,7 @@ def test_diff_summary_returns_no_diff_when_all_fallback(tmp_path):
     ])
     csv_p = _write_csv(tmp_path, "tr.csv", [])
     out = tmp_path / "out_en.ipynb"
-    r.render(nb, csv_p, "en", out)
+    r.render(nb, csv_p, "en", out, min_coverage=0.0)
     diff = r.diff_summary(nb, out, "en")
     assert diff == "(no markdown diffs)"
 
@@ -554,13 +503,13 @@ def test_diff_summary_returns_diff_when_substituted(tmp_path):
 
 
 # --------------------------------------------------------------------------
-# Gate 7 — #13544 §3 — comportement par défaut documenté (tests rouges)
+# Gate 7 — #13544 §3 — fail-closed par défaut (inversion preflight #13557)
 # --------------------------------------------------------------------------
 
-def test_default_render_accepts_orphans_writes_stale(tmp_path):
-    """#13544 §3 — par défaut (strict_orphans=False), un CSV avec orphelines
-    est ACCEPTÉ, et le sidecar .stale est écrit. C'est le comportement
-    historique documenté, le refus dur est opt-in."""
+def test_default_render_refuses_orphans_no_artifact(tmp_path):
+    """#13544 §3 — SANS aucun flag, un CSV avec orphelines est REFUSÉ.
+    Le sidecar .stale a disparu avec l'opt-in : la correction est le CSV,
+    pas une option."""
     nb = _write_nb(tmp_path, "nb.ipynb", [
         {"id": "m1", "type": "markdown", "source": ["# A"]},
     ])
@@ -574,19 +523,15 @@ def test_default_render_accepts_orphans_writes_stale(tmp_path):
          "src_lang": "fr", "src_hash": "y", "text_fr": "g2", "text_en": "G2"},
     ])
     out = tmp_path / "out_en.ipynb"
-    # Pas de strict_orphans → rendu accepté, sidecar écrit.
-    result = r.render(nb, csv_p, "en", out)
-    assert result.stats.n_orphan_keys == 2
-    assert out.exists()
-    stale = out.with_suffix(out.suffix + ".stale")
-    assert stale.exists()
-    assert sorted(stale.read_text(encoding="utf-8").strip().splitlines()) == ["ghost1", "ghost2"]
+    with pytest.raises(ValueError, match="orphelin"):
+        r.render(nb, csv_p, "en", out)
+    assert not out.exists()
+    assert not out.with_suffix(out.suffix + ".stale").exists()
 
 
-def test_default_render_accepts_sub_coverage(tmp_path):
-    """#13544 §3 — par défaut (min_coverage=None), une couverture partielle
-    est ACCEPTÉE. Le rendu sort avec les fallbacks FR, structure préservée.
-    Le refus sous seuil est opt-in."""
+def test_default_render_refuses_sub_coverage(tmp_path):
+    """#13544 §3 — SANS flag, le seuil par défaut (1.0) refuse une couverture
+    partielle. Le rendu partiel doit être explicitement demandé."""
     nb = _write_nb(tmp_path, "nb.ipynb", [
         {"id": "m1", "type": "markdown", "source": ["# Titre FR"]},
         {"id": "m2", "type": "markdown", "source": ["## Section FR"]},
@@ -600,22 +545,39 @@ def test_default_render_accepts_sub_coverage(tmp_path):
          "text_en": "# Title EN"},
     ])
     out = tmp_path / "out_en.ipynb"
-    # Pas de min_coverage → rendu accepté, fallback FR sur m2 et m3.
-    result = r.render(nb, csv_p, "en", out)
-    assert result.stats.n_md_cells == 3
+    with pytest.raises(ValueError, match="--min-coverage"):
+        r.render(nb, csv_p, "en", out)
+    assert not out.exists()
+
+
+def test_explicit_partial_coverage_accepted(tmp_path):
+    """#13544 §2 — couverture partielle EXPLICITE : --min-coverage 0.3 + 33%
+    de couverture → rendu écrit, fallbacks FR assumés et comptés."""
+    nb = _write_nb(tmp_path, "nb.ipynb", [
+        {"id": "m1", "type": "markdown", "source": ["# Titre FR"]},
+        {"id": "m2", "type": "markdown", "source": ["## Section FR"]},
+        {"id": "m3", "type": "markdown", "source": ["para"]},
+        {"id": "c1", "type": "code", "source": ["x"], "execution_count": None},
+    ])
+    csv_p = _write_csv(tmp_path, "tr.csv", [
+        {"notebook": str(nb), "cell_id": "m1", "cell_type": "markdown",
+         "src_lang": "fr", "src_hash": "1", "text_fr": "# Titre FR",
+         "text_en": "# Title EN"},
+    ])
+    out = tmp_path / "out_en.ipynb"
+    result = r.render(nb, csv_p, "en", out, min_coverage=0.3)
     assert result.stats.n_translated == 1
     assert result.stats.n_fallback == 2
     assert out.exists()
-    # Vérifier que m2/m3 gardent leur source FR (fallback).
     out_nb = json.loads(out.read_text(encoding="utf-8"))
     md = [c for c in out_nb["cells"] if c["cell_type"] == "markdown"]
     assert md[0]["source"] == ["# Title EN"]
-    assert md[1]["source"] == ["## Section FR"]
+    assert md[1]["source"] == ["## Section FR"]  # fallback FR assumé, déclaré
     assert md[2]["source"] == ["para"]
 
 
 # --------------------------------------------------------------------------
-# Gate 8 — #13544 §3 — refus dur (tests verts, opt-in)
+# Gate 8 — #13544 §3 — refus dur (seuil explicite, bornes)
 # --------------------------------------------------------------------------
 
 def test_min_coverage_refuses_below_threshold(tmp_path):
@@ -652,7 +614,6 @@ def test_min_coverage_writes_no_file_on_refusal(tmp_path):
     with pytest.raises(ValueError):
         r.render(nb, csv_p, "en", out, min_coverage=0.8)
     assert not out.exists()
-    # Pas de sidecar non plus (le refus est avant l'ecriture).
     assert not out.with_suffix(out.suffix + ".stale").exists()
 
 
@@ -670,6 +631,26 @@ def test_min_coverage_passes_when_at_or_above_threshold(tmp_path):
     result = r.render(nb, csv_p, "en", out, min_coverage=0.5)
     assert result.stats.n_translated == 1
     assert result.stats.n_fallback == 1
+    assert out.exists()
+
+
+def test_full_coverage_passes_with_default_threshold(tmp_path):
+    """Défaut 1.0 + couverture complète (2/2) → passe sans aucun flag :
+    le chemin sain de main n'est pas pénalisé par le fail-closed."""
+    nb = _write_nb(tmp_path, "nb.ipynb", [
+        {"id": "m1", "type": "markdown", "source": ["x"]},
+        {"id": "m2", "type": "markdown", "source": ["y"]},
+    ])
+    csv_p = _write_csv(tmp_path, "tr.csv", [
+        {"notebook": str(nb), "cell_id": "m1", "cell_type": "markdown",
+         "src_lang": "fr", "src_hash": "1", "text_fr": "x", "text_en": "X"},
+        {"notebook": str(nb), "cell_id": "m2", "cell_type": "markdown",
+         "src_lang": "fr", "src_hash": "2", "text_fr": "y", "text_en": "Y"},
+    ])
+    out = tmp_path / "out_en.ipynb"
+    result = r.render(nb, csv_p, "en", out)
+    assert result.stats.n_fallback == 0
+    assert result.stats.n_orphan_keys == 0
     assert out.exists()
 
 
@@ -703,8 +684,12 @@ def test_min_coverage_rejects_out_of_range(tmp_path):
         assert not out.exists()
 
 
-def test_strict_orphans_refuses_on_any_orphan(tmp_path):
-    """strict_orphans=True + 1 orpheline → ValueError."""
+# --------------------------------------------------------------------------
+# Gate 9 — #13544 §3 — orphelins inconditionnels (plus d'opt-in)
+# --------------------------------------------------------------------------
+
+def test_orphans_refused_unconditionally(tmp_path):
+    """1 orpheline, AUCUN flag → ValueError : rien ne désactive ce refus."""
     nb = _write_nb(tmp_path, "nb.ipynb", [
         {"id": "m1", "type": "markdown", "source": ["# A"]},
     ])
@@ -716,13 +701,32 @@ def test_strict_orphans_refuses_on_any_orphan(tmp_path):
          "text_en": "ghost"},
     ])
     out = tmp_path / "out_en.ipynb"
-    with pytest.raises(ValueError, match="--strict-orphans"):
-        r.render(nb, csv_p, "en", out, strict_orphans=True)
+    with pytest.raises(ValueError, match="orphelin"):
+        r.render(nb, csv_p, "en", out)
     assert not out.exists()
 
 
-def test_strict_orphans_passes_when_no_orphans(tmp_path):
-    """strict_orphans=True + 0 orpheline → rendu normal, pas d'erreur."""
+def test_orphans_refused_even_with_lowered_coverage(tmp_path):
+    """Abaisser --min-coverage ne rachète pas les orphelins : les deux gates
+    sont indépendantes, aucune n'est l'échappatoire de l'autre."""
+    nb = _write_nb(tmp_path, "nb.ipynb", [
+        {"id": "m1", "type": "markdown", "source": ["x"]},
+        {"id": "m2", "type": "markdown", "source": ["y"]},
+    ])
+    csv_p = _write_csv(tmp_path, "tr.csv", [
+        {"notebook": str(nb), "cell_id": "m1", "cell_type": "markdown",
+         "src_lang": "fr", "src_hash": "1", "text_fr": "x", "text_en": "X"},
+        {"notebook": str(nb), "cell_id": "ghost", "cell_type": "markdown",
+         "src_lang": "fr", "src_hash": "y", "text_fr": "g", "text_en": "G"},
+    ])
+    out = tmp_path / "out_en.ipynb"
+    with pytest.raises(ValueError, match="orphelin"):
+        r.render(nb, csv_p, "en", out, min_coverage=0.0)
+    assert not out.exists()
+
+
+def test_no_orphans_renders_normally(tmp_path):
+    """0 orpheline + couverture complète (défaut 1.0) → rendu normal."""
     nb = _write_nb(tmp_path, "nb.ipynb", [
         {"id": "m1", "type": "markdown", "source": ["# A"]},
     ])
@@ -731,10 +735,39 @@ def test_strict_orphans_passes_when_no_orphans(tmp_path):
          "src_lang": "fr", "src_hash": "1", "text_fr": "# A", "text_en": "# A EN"},
     ])
     out = tmp_path / "out_en.ipynb"
-    result = r.render(nb, csv_p, "en", out, strict_orphans=True)
+    result = r.render(nb, csv_p, "en", out)
     assert result.stats.n_orphan_keys == 0
     assert out.exists()
 
+
+def test_min_coverage_refusal_precedes_orphan_report(tmp_path):
+    """Deux défauts à la fois : à seuil exigeant le refus couverture arrive
+    en premier ; à seuil abaissé c'est l'orphelin qui refuse — chacun des
+    deux défects est nommé selon la configuration."""
+    nb = _write_nb(tmp_path, "nb.ipynb", [
+        {"id": "m1", "type": "markdown", "source": ["x"]},
+        {"id": "m2", "type": "markdown", "source": ["y"]},
+    ])
+    csv_p = _write_csv(tmp_path, "tr.csv", [
+        # Couverture 1/2 = 50% < 0.8.
+        {"notebook": str(nb), "cell_id": "m1", "cell_type": "markdown",
+         "src_lang": "fr", "src_hash": "1", "text_fr": "x", "text_en": "X"},
+        # Et 1 orpheline.
+        {"notebook": str(nb), "cell_id": "ghost", "cell_type": "markdown",
+         "src_lang": "fr", "src_hash": "y", "text_fr": "g", "text_en": "G"},
+    ])
+    out = tmp_path / "out_en.ipynb"
+    with pytest.raises(ValueError, match="--min-coverage"):
+        r.render(nb, csv_p, "en", out, min_coverage=0.8)
+    assert not out.exists()
+    with pytest.raises(ValueError, match="orphelin"):
+        r.render(nb, csv_p, "en", out, min_coverage=0.3)
+    assert not out.exists()
+
+
+# --------------------------------------------------------------------------
+# Gate 10 — CLI : exit codes du fail-closed
+# --------------------------------------------------------------------------
 
 def test_main_min_coverage_refuses_returns_exit_2(tmp_path):
     """main() avec --min-coverage + sous-couverture → exit code 2."""
@@ -755,8 +788,28 @@ def test_main_min_coverage_refuses_returns_exit_2(tmp_path):
     assert not out.exists()
 
 
-def test_main_strict_orphans_refuses_returns_exit_2(tmp_path):
-    """main() avec --strict-orphans + orpheline → exit code 2."""
+def test_main_default_refuses_sub_coverage_exit_2(tmp_path):
+    """main() SANS flags + sous-couverture → exit 2 : le défaut est
+    fail-closed, le refus ne dépend plus d'un flag oublié."""
+    nb = _write_nb(tmp_path, "nb.ipynb", [
+        {"id": "m1", "type": "markdown", "source": ["x"]},
+        {"id": "m2", "type": "markdown", "source": ["y"]},
+    ])
+    csv_p = _write_csv(tmp_path, "tr.csv", [
+        {"notebook": str(nb), "cell_id": "m1", "cell_type": "markdown",
+         "src_lang": "fr", "src_hash": "1", "text_fr": "x", "text_en": "X"},
+    ])
+    out = tmp_path / "out_en.ipynb"
+    rc = r.main([
+        "--csv", str(csv_p), "--notebook", str(nb),
+        "--lang", "en", "--out", str(out),
+    ])
+    assert rc == 2
+    assert not out.exists()
+
+
+def test_main_orphans_refused_returns_exit_2(tmp_path):
+    """main() SANS flags + orpheline → exit 2."""
     nb = _write_nb(tmp_path, "nb.ipynb", [
         {"id": "m1", "type": "markdown", "source": ["x"]},
     ])
@@ -769,30 +822,7 @@ def test_main_strict_orphans_refuses_returns_exit_2(tmp_path):
     out = tmp_path / "out_en.ipynb"
     rc = r.main([
         "--csv", str(csv_p), "--notebook", str(nb),
-        "--lang", "en", "--out", str(out), "--strict-orphans",
+        "--lang", "en", "--out", str(out),
     ])
     assert rc == 2
-    assert not out.exists()
-
-
-def test_min_coverage_and_strict_orphans_combined(tmp_path):
-    """Les deux gates peuvent être activés en meme temps : les deux sont
-    appliqués, et chacun peut refuser indépendamment."""
-    nb = _write_nb(tmp_path, "nb.ipynb", [
-        {"id": "m1", "type": "markdown", "source": ["x"]},
-        {"id": "m2", "type": "markdown", "source": ["y"]},
-    ])
-    csv_p = _write_csv(tmp_path, "tr.csv", [
-        # Couverture 1/2 = 50% < 0.8.
-        {"notebook": str(nb), "cell_id": "m1", "cell_type": "markdown",
-         "src_lang": "fr", "src_hash": "1", "text_fr": "x", "text_en": "X"},
-        # Et 1 orpheline.
-        {"notebook": str(nb), "cell_id": "ghost", "cell_type": "markdown",
-         "src_lang": "fr", "src_hash": "y", "text_fr": "g", "text_en": "G"},
-    ])
-    out = tmp_path / "out_en.ipynb"
-    # Le refus min_coverage se declenche en premier (avant strict_orphans)
-    # car les gates sont evaluees dans cet ordre.
-    with pytest.raises(ValueError, match="--min-coverage"):
-        r.render(nb, csv_p, "en", out, min_coverage=0.8, strict_orphans=True)
     assert not out.exists()
