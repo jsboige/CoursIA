@@ -1575,30 +1575,33 @@ def _common_prefix(a: str, b: str) -> str:
 # the whole thing as ONE glob that matches nothing. We flag when a glob
 # contains a SPACE and at least two SPACE-separated tokens each LOOK like a
 # path (contain a `/` OR end with a tracked-file extension).
-_PATHLIKE_TOKEN_RE = re.compile(r"[^\s/]+(?:/[^\s/]+)+|\S+\.(?:py|yml|yaml|md|ipynb|lean|ps1|sh|json|cs|cpp|hpp|go|rs|ts|tsx|js|jsx|txt|csv)")
+#
+# #13486: SINGLE machinerie. The canonical implementation lives in
+# `scripts/ci/emit_dead_scope_warnings.py` (the CI helper that emits
+# `::notice::` annotations and the `dead_scope_suggestions` JSON line).
+# This module DELEGATES -- the regex + heuristic are imported from there.
+# Do not re-implement them here; if you need to change motif B detection,
+# change the helper and re-export.
+_PATHLIKE_TOKEN_RE = None  # back-compat alias (lazy-resolved on first call)
 
 
 def _looks_like_missing_comma(glob: str) -> list[str] | None:
-    """Return the SPACE-separated tokens if the glob looks like a missing-comma typo (#13129 motif B).
+    """Delegate to the SINGLE motif-B machinerie (#13486).
 
-    Heuristic: the glob has whitespace AND `>=2` tokens each look path-shaped
-    (slashed OR ending in a tracked-file extension). Returns None when the
-    heuristic does not fire -- the glob is a single path with possible
-    whitespace, not a typo. Conservative: a single path-shaped token does
-    NOT trigger the suggestion (a space inside a filename is rare but
-    legal; the cost of a false positive is a confusing suggestion, the cost
-    of a false negative is silent dead-glob, which is the existing bug we
-    are not making worse).
+    The canonical implementation lives in `emit_dead_scope_warnings.py`
+    (`_missing_comma_tokens`). We import it lazily so `import check_lane_claim`
+    does not require the helper to be on sys.path (the helper sits in
+    `scripts/ci/`, imported only by the CI advisory job).
     """
-    if not glob or " " not in glob:
-        return None
-    tokens = glob.split()
-    if len(tokens) < 2:
-        return None
-    pathlike = [t for t in tokens if _PATHLIKE_TOKEN_RE.match(t)]
-    if len(pathlike) < 2:
-        return None
-    return pathlike
+    try:
+        from scripts.ci.emit_dead_scope_warnings import _missing_comma_tokens  # type: ignore  # noqa: E501
+    except Exception:
+        try:
+            # Fallback path when this module is invoked as `python -m scripts.check_lane_claim`
+            from scripts.ci.emit_dead_scope_warnings import _missing_comma_tokens  # type: ignore  # noqa: E501,F811
+        except Exception:
+            return None
+    return _missing_comma_tokens(glob)
 
 
 _INFERRED_PATH_PATTERNS = (
