@@ -81,9 +81,9 @@ puis l'espace de conversation où tout se passe.
 3. Vous arrivez sur l'écran de chat : une zone de saisie au centre, l'historique
    des conversations à gauche, le sélecteur de modèle en haut.
 
-![Capture pré-authentification d'Open WebUI 0.11.0 : fond blanc cassé uniforme avec, seul élément rendu, un minuscule logo magenta centré (carré stylisé) — pas de champ e-mail, pas de champ mot de passe, pas de bouton « Connexion » à l'écran (capture réalisée avant le rendu du formulaire de connexion).](assets/01-connexion.png)
+![Capture de la page de connexion Open WebUI 0.11.0 : formulaire rendu (champs « E-mail » et « Mot de passe » vides, bouton « Connexion », lien d'inscription) — aucune donnée saisie, aucun compte identifiable (capture vérifiée vision, voir MANIFEST).](assets/01-connexion.png)
 
-*Page de connexion (aucun contenu réel — capture pré-authentification).*
+*Page de connexion (formulaire vide — aucune donnée saisie).*
 
 > ![Capture de la première vue post-connexion Open WebUI 0.11.0 : l'écran de chat de départ, sur un compte de capture non-admin (aucune donnée d'établissement).](assets/01-premiere-vue.png)
 
@@ -122,9 +122,10 @@ plus anciens pour rester dans la fenêtre de contexte du modèle, sans qu'on ait
 démarrer une nouvelle conversation. La discussion se prolonge donc sans perdre le
 fil ni provoquer d'erreur de dépassement de contexte.
 
-![Capture Open WebUI 0.11.0 d'une réponse de l'assistant en cours de streaming sur une invite fictive (« Rédige un court poème sur la mer. »), éditeur de saisie en bas.](assets/02-chat-streaming.png)
+![Capture Open WebUI 0.11.0 : réponse de l'assistant « TP Prompt Engineering » à l'invite fictive « Rédige un court poème sur la mer. » — un court poème sur la mer, suivi de l'analyse pédagogique du tuteur (leçon Zero-Shot, rôle et contexte, défi du module) ; éditeur de saisie en bas, zones d'identité masquées.](assets/02-chat-streaming.png)
 
-*Réponse en streaming sur une invite fictive (aucun contenu propriétaire).*
+*Réponse d'un tuteur sur une invite fictive (aucun contenu propriétaire) : le
+poème, puis l'analyse de prompt que le tuteur ajoute par conception.*
 
 > 📷 Capture à venir — `02-selecteur-modele.png` (liste des modèles) et le
 > raisonnement affiché en direct (« thinking »), qui nécessitent un modèle de
