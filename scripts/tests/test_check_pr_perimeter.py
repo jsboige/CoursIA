@@ -2827,7 +2827,18 @@ def test_13637_report_omits_age_when_unresolvable():
     assert any("dont 1 charrié(s) de main, non compté(s)" in l for l in lines)
     assert not any("vieille de" in l for l in lines), "age must be omitted when unresolvable"
     assert any("STALE-BASE" in l for l in lines)
-    assert not any("04-7-TTS-Voice-Benchmark.ipynb" in l for l in lines if "charrié(s) de main" in l) or True
+    # The cardinal line carries the count only; carried paths live on the
+    # dedicated enumeration line (rendered without any age qualifier here).
+    # A path on the cardinal line would mean count-note and enumeration
+    # merged -- the displaced defect #13637 step 1+3 exists to close.
+    cardinal = [l for l in lines if l.lstrip().startswith("— dont")]
+    assert len(cardinal) == 1
+    assert "04-7-TTS-Voice-Benchmark.ipynb" not in cardinal[0]
+    assert any(
+        "04-7-TTS-Voice-Benchmark.ipynb" in l
+        and l.lstrip().startswith("— charrié(s) de main")
+        for l in lines
+    ), "carried paths must be enumerated on the dedicated line"
 
 
 def test_13637_report_backward_compat_without_carried():
