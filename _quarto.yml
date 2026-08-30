@@ -49,7 +49,6 @@ project:
     - "MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/README.md"
     - "MyIA.AI.Notebooks/cross-series/matching-cv/README.md"
     - "MyIA.AI.Notebooks/cross-series/README.md"
-    - "MyIA.AI.Notebooks/FallacyDetection/README.md"
     - "MyIA.AI.Notebooks/GameTheory/conway_cgt_lean/README.md"
     - "MyIA.AI.Notebooks/GameTheory/game_theory_lean/README.md"
     - "MyIA.AI.Notebooks/GameTheory/lean_game_defs/README.md"
@@ -73,6 +72,7 @@ project:
     - "MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/README.md"
     - "MyIA.AI.Notebooks/GenAI/CaseStudies/README.md"
     - "MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/README.md"
+    - "MyIA.AI.Notebooks/GenAI/FallacyDetection/README.md"
     - "MyIA.AI.Notebooks/GenAI/FineTuning/README.md"
     - "MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-4-Forge-SD-XL-Turbo_README.md"
     - "MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Qwen-Image-Edit_README.md"
@@ -453,12 +453,10 @@ project:
     # Notebooks rendus en HTML (EPIC #10921, pilote Search #10923).
     # Liste explicite — globs non etendus en Quarto 1.7.
     # Execution desactivee + echo: true au niveau racine (_quarto.yml).
-    # 351 notebooks (sous-arbres: MyIA.AI.Notebooks/CaseStudies/, MyIA.AI.Notebooks/FallacyDetection/, MyIA.AI.Notebooks/GameTheory/, MyIA.AI.Notebooks/GenAI/Aspire/, MyIA.AI.Notebooks/GenAI/Audio/, MyIA.AI.Notebooks/GenAI/CaseStudies/, MyIA.AI.Notebooks/GenAI/FineTuning/, MyIA.AI.Notebooks/GenAI/Image/, MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/, MyIA.AI.Notebooks/GenAI/PostTraining/, MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/, MyIA.AI.Notebooks/GenAI/SemanticKernel/, MyIA.AI.Notebooks/GenAI/Texte/, MyIA.AI.Notebooks/GenAI/Vibe-Coding/, MyIA.AI.Notebooks/GenAI/Video/, MyIA.AI.Notebooks/IIT/, MyIA.AI.Notebooks/ML/, MyIA.AI.Notebooks/Probas/, MyIA.AI.Notebooks/RL/, MyIA.AI.Notebooks/Search/, MyIA.AI.Notebooks/Sudoku/, MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/, MyIA.AI.Notebooks/SymbolicAI/Lean/, MyIA.AI.Notebooks/SymbolicAI/Planners/, MyIA.AI.Notebooks/SymbolicAI/SMT/, MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/, MyIA.AI.Notebooks/SymbolicAI/SmartContracts/, MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/, MyIA.AI.Notebooks/SymbolicAI/Tweety/, MyIA.AI.Notebooks/cross-series/).
+    # 351 notebooks (sous-arbres: MyIA.AI.Notebooks/CaseStudies/, MyIA.AI.Notebooks/GameTheory/, MyIA.AI.Notebooks/GenAI/Aspire/, MyIA.AI.Notebooks/GenAI/Audio/, MyIA.AI.Notebooks/GenAI/CaseStudies/, MyIA.AI.Notebooks/GenAI/FallacyDetection/, MyIA.AI.Notebooks/GenAI/FineTuning/, MyIA.AI.Notebooks/GenAI/Image/, MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/, MyIA.AI.Notebooks/GenAI/PostTraining/, MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/, MyIA.AI.Notebooks/GenAI/SemanticKernel/, MyIA.AI.Notebooks/GenAI/Texte/, MyIA.AI.Notebooks/GenAI/Vibe-Coding/, MyIA.AI.Notebooks/GenAI/Video/, MyIA.AI.Notebooks/IIT/, MyIA.AI.Notebooks/ML/, MyIA.AI.Notebooks/Probas/, MyIA.AI.Notebooks/RL/, MyIA.AI.Notebooks/Search/, MyIA.AI.Notebooks/Sudoku/, MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/, MyIA.AI.Notebooks/SymbolicAI/Lean/, MyIA.AI.Notebooks/SymbolicAI/Planners/, MyIA.AI.Notebooks/SymbolicAI/SMT/, MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/, MyIA.AI.Notebooks/SymbolicAI/SmartContracts/, MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/, MyIA.AI.Notebooks/SymbolicAI/Tweety/, MyIA.AI.Notebooks/cross-series/).
     - "MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb"
     - "MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb"
     - "MyIA.AI.Notebooks/cross-series/socle-metadata-driven/Socle-MetadataDriven-Csharp.ipynb"
-    - "MyIA.AI.Notebooks/FallacyDetection/02_fallacy_datasets_landscape.ipynb"
-    - "MyIA.AI.Notebooks/FallacyDetection/03_taxonomy_coverage_gap.ipynb"
     - "MyIA.AI.Notebooks/GameTheory/GameTheory-11-BayesianGames-Csharp.ipynb"
     - "MyIA.AI.Notebooks/GameTheory/GameTheory-11b-Lean-BayesianGamesExt.ipynb"
     - "MyIA.AI.Notebooks/GameTheory/GameTheory-12-ReputationGames-Csharp.ipynb"
@@ -476,6 +474,8 @@ project:
     - "MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb"
     - "MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb"
     - "MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb"
+    - "MyIA.AI.Notebooks/GenAI/FallacyDetection/02_fallacy_datasets_landscape.ipynb"
+    - "MyIA.AI.Notebooks/GenAI/FallacyDetection/03_taxonomy_coverage_gap.ipynb"
     - "MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning.ipynb"
     - "MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization.ipynb"
     - "MyIA.AI.Notebooks/GenAI/FineTuning/FT-03-Supervised-FineTuning-SFT.ipynb"
