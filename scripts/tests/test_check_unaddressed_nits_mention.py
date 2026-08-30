@@ -459,3 +459,57 @@ def test_13559_etats_non_approved_intacts():
     body = "**[Hermes] COMMENT_WITH_CONCERNS** — le point 3 n'est pas traite."
     for state in ("COMMENTED", "CHANGES_REQUESTED"):
         assert len(_blocking(body, state=state)) == 1, state
+
+
+# --- usage vs mention : une review qui CITE une reserve ne l'emet pas -------
+# Extrait VERBATIM de la review Hermes du 2026-08-30 sur #13560 (cette PR).
+# Elle APPROUVE, et cite en tableau les chaines-sondes du garde pour montrer
+# qu'il discrimine. Sur le corps brut le garde y voyait 6 reserves, dont 5
+# etaient ses propres fixtures : il bloquait la PR sur la demonstration qu'il
+# marche. Troisieme instance de la confusion usage/mention (#11246, #13261).
+FIXTURE_13560_HERMES_CITE_SES_SONDES = (
+    "**[Hermes]** — review approfondi du head `62b00d2bf9`.\n\n"
+    "| sonde | resultat attendu | obtenu |\n"
+    "|---|---|---|\n"
+    "| « je maintiens » / « sous reserve » / « a corriger avant » | match | OK |\n"
+    "| cas fondateur #11677 « mais le point 2 reste ouvert » | match | OK |\n\n"
+    "Correctif borne, teste, cause racine identifiee — **APPROVE**."
+)
+
+
+def test_13560_review_citant_ses_propres_sondes_ne_bloque_plus():
+    """Les formules de reserve sont entre guillemets/backticks : citees, pas
+    emises. L'etat natif APPROVED decide."""
+    assert _blocking(FIXTURE_13560_HERMES_CITE_SES_SONDES) == []
+
+
+def test_13560_narration_benigne_reste_conforme_ne_bloque_plus():
+    """Sous-cas signale par Hermes : « reste » + adjectif positif, cite."""
+    body = ("**[Hermes]** APPROVE. Une sonde annexe : la phrase "
+            "« Toutefois apres relecture complete, le code reste conforme » "
+            "matche la branche permissive — signale, non bloquant.")
+    assert _blocking(body) == []
+
+
+def test_13560_reserve_vivante_hors_citation_bloque_toujours():
+    """Controle negatif du meme correctif : marqueur NON cite + langage de
+    reserve NON cite -> la reserve reste vivante et bloque. Sans ce test,
+    depouiller le corps reviendrait a eteindre le garde sans qu'on le voie.
+
+    La paire avec le test suivant est ce qui prouve que le depouillement
+    DISCRIMINE au lieu de tout laisser passer : meme marqueur, meme formule,
+    seule la citation change."""
+    body = ("**[Hermes]** APPROVE partiel sur le head. Ma CHANGES_REQUESTED "
+            "sur le module A tient, mais le point 2 reste ouvert : la "
+            "re-exec n'a pas ete relancee.")
+    assert _blocking(body) != []
+
+
+def test_13560_meme_reserve_citee_ne_bloque_pas():
+    """Jumeau du precedent : marqueur non cite (donc classify() le voit), mais
+    la formule de reserve est CITEE -- la review parle d'une reserve, elle n'en
+    pose pas. C'est le seul bit qui doit changer le verdict."""
+    body = ("**[Hermes]** APPROVE partiel sur le head. Ma CHANGES_REQUESTED "
+            "sur le module A tient, et je rappelle la formule qui la "
+            "portait : « mais le point 2 reste ouvert ».")
+    assert _blocking(body) == []

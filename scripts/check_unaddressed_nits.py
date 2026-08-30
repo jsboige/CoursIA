@@ -1456,7 +1456,19 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
         elif r.get("state") == "APPROVED":
             if kind is None:
                 pass  # kind reste None (l'etat natif confirme l'extinction)
-            elif not _APPROVE_RESERVATION_RE.search(body):
+            # Le test porte sur le corps DEPOUILLE, jamais sur le brut : une
+            # review qui *cite* une formule de reserve (tableau de sondes,
+            # explication du garde, fixture entre backticks ou guillemets) la
+            # MENTIONNE au lieu de l'EMETTRE. Mesure du 30/08 sur la review
+            # Hermes de cette PR meme : 6 matches sur le corps brut, dont 5
+            # sont ses propres fixtures -- le garde bloquait la PR sur les
+            # chaines que la review citait pour demontrer qu'il fonctionne.
+            # Troisieme occurrence de la confusion usage/mention apres #11246
+            # (CONDITIONAL_LIFT) et #13261 (marqueur d'override G-VAR-3) : le
+            # depouillement `_strip_quoted` existait deja et est applique
+            # partout ailleurs (l.803, l.1040) -- cette branche etait la seule
+            # a s'en passer.
+            elif not _APPROVE_RESERVATION_RE.search(_strip_quoted(body)):
                 # #13559 : marqueur residuel SANS langage de reserve — la
                 # review NOMME une reserve (le plus souvent celle qu'elle
                 # leve) au lieu d'en emettre une. L'etat natif decide.
