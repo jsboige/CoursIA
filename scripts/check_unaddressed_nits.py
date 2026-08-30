@@ -1484,6 +1484,36 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
     last_commit = max(commits) if commits else None
     pr_author = (pr_data.get("author") or {}).get("login", "")
 
+    # #13636 — trappe d'override ai-01 sur SA PROPRE PR. LIFT_OVERRIDE_LOGINS
+    # limite l'override au coordinateur, mais quand ai-01 pousse sous l'identite
+    # partagee jsboige (les lanes ont une seule identite de poussee, cf #13316),
+    # `pr_author == "jsboige"` rend le garde `lift_author != pr_author` vert pour
+    # un override pose par myia-ai-01 : la trappe s'ouvre par la porte reservee a
+    # l'arbitre tiers. Renres l'identite d'OPERATEUR en testant si l'auteur du
+    # dernier commit appartient au flot ai-01 -- l'override ne peut PAS etre pose
+    # par le meme operateur que celui qui a pousse la PR, quel que soit le login
+    # affiche. Renforce #13316 : la reduction `LIFT_OVERRIDE_LOGINS={"myia-ai-01"}`
+    # bouchait l'auto-levee jsboige ; elle n'epuisait pas le cas ai-01 sur PR
+    # jsboige-pushed. Lie a #12798 (auto-levee fabriquee) et #13539 (constat
+    # firsthand sur ce depot).
+    commits_full = pr_data.get("commits") or []
+    last_committer_login = ""
+    if commits_full:
+        # Le dernier commit (par date) porte l'operateur fonctionnel.
+        sorted_commits = sorted(
+            [c for c in commits_full if c.get("committedDate")],
+            key=lambda c: c.get("committedDate") or "",
+            reverse=True,
+        )
+        if sorted_commits:
+            author_obj = sorted_commits[0].get("author") or {}
+            last_committer_login = (author_obj.get("user") or {}).get("login") or author_obj.get("login", "")
+    # Resolution operateur : si le dernier commit a ete pousse par myia-ai-01,
+    # l'operateur fonctionnel EST myia-ai-01, quel que soit le login affiche sur
+    # la PR. C'est cette identite qui doit etre comparee au lifter pour
+    # bloquer l'auto-levee par la porte override.
+    pr_operator = last_committer_login or pr_author
+
     # #11145 — borne d'auteur, durcie par #12836 : seule une levee de l'auteur
     # de la reserve compte. #12798 a montre pourquoi PR_AUTHOR n'est pas une
     # confirmation : l'auteur de la PR avait declare la reserve Hermes levee,
@@ -1562,6 +1592,29 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
         m = OVERRIDE_LANE.search(lift_body or "")
         return (lift_author in LIFT_OVERRIDE_LOGINS
                 and m is not None)
+
+    # #13636 — un override pose par le meme operateur que la PR (login
+    # distinct possible via l'identite de poussee partagee) n'est recevable
+    # QUE s'il nomme un tiers dans le corps du commentaire, distinct du
+    # pr_operator. Le marqueur `[OVERRIDE] lane X` est obligatoire ; la lane
+    # X doit designer un operateur distinct de ai-01 (l'arbitre tiers ne
+    # peut pas s'auto-designer). Un commentaire "[OVERRIDE] lane myia-ai-01:
+    # CoursIA" par myia-ai-01 sur sa propre PR = self-override = REJETE.
+    # L'arbitrage tiers historique (#11639) exigeait juste le marqueur ; ce
+    # durcissement supplemente #13316 en bouchant l'auto-levee par la porte
+    # OVERRIDE pour le flot ai-01. Si un VRAI tiers doit trancher, il pose
+    # l'override sous SON login (ex. jsboige, ou une autre lane reviewer)
+    # et la verification d'auteur reste assuree par `lift_author !=
+    # pr_operator`.
+    def _has_named_override(body: str) -> bool:
+        m = OVERRIDE_LANE.search(body or "")
+        if m is None:
+            return False
+        named_lane = m.group(1).rstrip("`").rstrip(",").rstrip(".")
+        # Un override qui designe une lane ai-01 est un self-override par
+        # construction (l'arbitre tiers ne peut pas etre le coordinateur
+        # qui est aussi l'operateur de la PR).
+        return bool(named_lane) and not named_lane.startswith("myia-ai-01:")
 
     # Fenetre 2026-08-16 (#11222) : les temps plats ne suffisent pas pour un
     # CHANGES_REQUESTED. Une PHRASE explicite de levee (LIFT_MARKER non
@@ -1725,7 +1778,14 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
             # par un COMMENTAIRE gardent le regime general ci-dessous — limite
             # NLP documentee dans can_lift.
             lifted = _approved_lifts_reserve(login, when, pr_author) or any(
-                when < t < cutoff and _lift_eligible(lifter, login, lift_body)
+                when < t < cutoff
+                and _lift_eligible(lifter, login, lift_body)
+                # #13636 — branche BOT-CONCERN : on ajoute le meme garde
+                # que la branche BLOCK (qui le portait deja, mais vacant).
+                # L'override pose par le meme OPERATEUR fonctionnel que
+                # l'auteur de la PR est refuse, quel que soit le login
+                # affiche.
+                and (lifter != pr_operator or _has_named_override(lift_body))
                 for (t, lifter, lift_body) in explicit_lifts
             )
             if lifted:
@@ -1740,11 +1800,21 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
         # de l'emetteur (etat natif), plus l'emetteur reel quand son compte est
         # DISTINCT de l'auteur de la PR.
         elif kind == "BLOCK":
+            # #13636 — la branche BLOCK portait un pseudo-garde
+            # `lift_author != pr_author or OVERRIDE_LANE.search(lift_body)` :
+            # le `or` annulait le garde des qu'un override etait present, et un
+            # override porte la marque par construction. Ai-01 sur sa propre PR
+            # (login affiche jsboige via l'identite de poussee partagee) passait
+            # la porte sans entrave. On resout l'OPERATEUR par le dernier commit
+            # et on exige que le lifter soit distinct du pr_operator, OU que
+            # l'override nomme explicitement un TIERS (et non le lifter lui-
+            # meme). La regle preservee : un [OVERRIDE] reste un arbitrage
+            # TIERS, pas une auto-levee.
             if (any(
                     when < t < cutoff
                     and _lift_eligible(lift_author, login, lift_body)
-                    and (lift_author != pr_author
-                         or bool(OVERRIDE_LANE.search(lift_body)))
+                    and (lift_author != pr_operator
+                         or _has_named_override(lift_body))
                     for (t, lift_author, lift_body) in explicit_lifts)
                     or _approved_lifts_reserve(login, when, pr_author)):
                 continue
@@ -1758,7 +1828,17 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
         # OU une re-review APPROVED de l'auteur de la reserve (etat natif
         # GitHub, phrase de levee au sens fort).
         elif (any(
-                  when < t < cutoff and _lift_eligible(lift_author, login, lift_body)
+                  when < t < cutoff
+                  and _lift_eligible(lift_author, login, lift_body)
+                  # #13636 — branche generale : l'override par le meme
+                  # operateur fonctionnel (resolu par dernier commit) est
+                  # REFUSE ; seul un tiers distinct peut poser un [OVERRIDE]
+                  # valable. Renforce #13316 : la reduction LIFT_OVERRIDE_LOGINS
+                  # bouchait l'auto-levee jsboige, mais ai-01 sur PR jsboige-
+                  # pushed restait une trappe. La resolution par dernier commit
+                  # ferme la porte du meme OPERATEUR, pas seulement du meme
+                  # login.
+                  and (lift_author != pr_operator or _has_named_override(lift_body))
                   for (t, lift_author, lift_body) in explicit_lifts
               ) or _approved_lifts_reserve(login, when, pr_author)):
             continue
