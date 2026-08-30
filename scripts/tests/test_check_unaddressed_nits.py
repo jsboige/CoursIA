@@ -2917,3 +2917,95 @@ def test_13512_classified_comment_is_not_duplicated_in_the_tail():
     res = mod.analyse(pr, [], datetime(2026, 8, 29, 11, 14, tzinfo=timezone.utc))
     assert mod.classify("jsboige", concern) is not None, "pre-condition : celui-la EST classe"
     assert all(u["body"] != concern for u in res["unevaluated"])
+
+
+# --- #13622 : has_live_lift doit distinguer negation directe d'une vraie levee. ---
+
+
+def test_13622_negation_nest_pas_levee_exclue():
+    """PR #13563 verbatim : '... ne pas merger tant qu'elle n'est pas levee'.
+
+    Avant fix : has_live_lift=True, classify=None (faux OK). Le commentaire
+    etait considere comme une levee alors qu'il AFFIRME que la levee n'a
+    pas eu lieu — c'est l'inverse semantique.
+    """
+    body = "## [ai-01] RESERVE BLOQUANTE — ... **ne pas merger tant qu'elle n'est pas levee**"
+    assert not mod.has_live_lift(body), (
+        "une negation directe ('n'est pas levee') ne doit pas etre classee levee")
+
+
+def test_13622_negation_non_levee_exclue():
+    """Forme simplifiee : 'non levee' (avant, colle)."""
+    assert not mod.has_live_lift("non levee")
+    assert not mod.has_live_lift("Pas levee encore.")
+    assert not mod.has_live_lift("Aucune levee en vue.")
+
+
+def test_13622_negation_apres_levee_exclue():
+    """Forme avec negation APRES le mot : 'levee non acquise'."""
+    assert not mod.has_live_lift("La reserve tient, levee non acquise.")
+
+
+def test_13622_negation_13550_verbatim():
+    """PR #13550 verbatim : '[ai-01 ARBITRAGE] La reserve GPU tient. Ne pas merger sur les verts.'
+
+    Avant fix : has_live_lift=False (deja OK car pas de LIFT_MARKER direct).
+    Apres fix : inchange. Cas fondateur documente dans l'issue #13622.
+    """
+    body = "## [ai-01 ARBITRAGE] La reserve GPU tient. **Ne pas merger sur les verts.**"
+    assert not mod.has_live_lift(body)
+
+
+def test_13622_vraie_levee_apres_negation_locale_reste_levee():
+    """Body avec NEGATION LOCALE + VRAIE LEVEE : seul le token leve est compte.
+
+    PR #13563 verbatim long :
+      '**Je leve mon CHANGES_REQUESTED.** ... CHANGES_REQUESTED : **ne pas
+      merger tant qu'elle n'est pas levee**.)*'
+    Avant fix : la 2e occurrence ('n'est pas levee') classee comme levee
+    a tort ; la 1re ('Je leve mon CHANGES_REQUESTED') classee a raison.
+    Apres fix : seule la 1re survit ; has_live_lift=True global (la vraie
+    levee reste reconnue).
+    """
+    body = ("**Je leve mon CHANGES_REQUESTED.** ... CHANGES_REQUESTED : "
+            "**ne pas merger tant qu'elle n'est pas levee**.)*")
+    assert mod.has_live_lift(body), "la vraie levee 'Je leve mon CHANGES_REQUESTED' doit rester"
+
+
+def test_13622_vraie_levee_simple_reste_levee():
+    """Regression : les vraies levees doivent toujours etre reconnues."""
+    assert mod.has_live_lift("Reserve levee, je merge.")
+    assert mod.has_live_lift("LGTM")
+    assert mod.has_live_lift("Merged.")
+    assert mod.has_live_lift("Je leve mon CHANGES_REQUESTED.")
+    assert mod.has_live_lift("Je leve la CHANGES_REQUESTED de Hermes.")
+
+
+def test_13622_negation_distante_ne_touche_pas_levee():
+    """Residuel documente : une negation NON locale (>15 chars) echappe.
+
+    La levee immediate ('Reserve levee') doit rester classee ; seule la
+    negation LOCALE est dans le predicat `_lift_is_negated`. C'est la
+    frontiere documentee dans l'issue : au-dela, c'est de la narration,
+    pas une negation directe du geste de levee.
+    """
+    body = "Reserve levee il y a longtemps, mais la reserve n'est pas levee vraiment"
+    assert mod.has_live_lift(body), (
+        "negation non locale (>15 chars) ne doit pas annuler la levee locale")
+
+
+def test_13622_negation_nest_dans_fenetre_negated_direct():
+    """Le predicat `_lift_is_negated` est appele sur les fenetres locales.
+
+    Verification unitaire de la nouvelle fonction : les 4 patterns
+    negatifs documentees dans l'issue (#13622) doivent etre reconnus
+    sur les memes chaines que `has_live_lift` recoupe en amont.
+    """
+    assert mod._lift_is_negated("merger tant qu'elle n'est pas ", "")
+    assert mod._lift_is_negated("non ", "")
+    assert mod._lift_is_negated("Pas ", "")
+    assert mod._lift_is_negated("Reserve tient, levee", " non acquise")
+    # Positifs (ne doivent PAS etre reconnus comme negation)
+    assert not mod._lift_is_negated("Reserve levee", "")
+    assert not mod._lift_is_negated("Je leve mon CHANGES_REQUESTED", "")
+    assert not mod._lift_is_negated("", ". Je merge.")
