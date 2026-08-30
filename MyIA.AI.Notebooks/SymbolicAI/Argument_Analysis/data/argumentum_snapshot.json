@@ -1,7 +1,7 @@
 {
-  "_comment": "Genere par la resynchronisation verbatim. Ne pas editer a la main : relancer une resynchronisation depuis l'amont et regenerer ce fichier.",
+  "_comment": "Genere par la resynchronisation verbatim. Ne pas editer a la main : relancer une resynchronisation depuis l'amont et regenerer ce fichier. Le commit amont est celui de master : une ref de branche de travail ne serait pas retrouvable pour un tiers.",
   "upstream_repo": "ArgumentumGames/Argumentum",
-  "upstream_commit": "344ac8c3",
+  "upstream_commit": "a23e9568",
   "upstream_branch": "master",
   "synced_on": "2026-08-30",
   "files": {
