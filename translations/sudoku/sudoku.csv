@@ -1,5 +1,5 @@
 notebook,cell_id,cell_type,src_lang,src_hash,text_fr,text_en,text_es,text_ar,text_fa,text_zh,text_ru,text_pt,hash_fr,hash_en,hash_es,hash_ar,hash_fa,hash_zh,hash_ru,hash_pt,translate_policy
-MyIA.AI.Notebooks/Sudoku/Sudoku-00-Environment-Csharp.ipynb,5f5837a4,markdown,fr,05046c297d40a715,"# Sudoku-00 : Environnement et Classes de Base (C#)
+MyIA.AI.Notebooks/Sudoku/Sudoku-0-Environment-Csharp.ipynb,5f5837a4,markdown,fr,05046c297d40a715,"# Sudoku-0 : Environnement et Classes de Base (C#)
 
 **Navigation** : [Index](README.md) | [Sudoku-1 Backtracking C# >>](Sudoku-1-Backtracking-Csharp.ipynb)
 
@@ -13,7 +13,7 @@ MyIA.AI.Notebooks/Sudoku/Sudoku-00-Environment-Csharp.ipynb,5f5837a4,markdown,fr
 
 **Prérequis** : Notions de base en C# (.NET Interactive)  
 **Durée estimée** : ~15 min",,,,,,,,05046c297d40a715,,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-00-Environment-Csharp.ipynb,d6c2d96d,code,fr,b45c25edfbc26047,"using System;
+MyIA.AI.Notebooks/Sudoku/Sudoku-0-Environment-Csharp.ipynb,d6c2d96d,code,fr,b45c25edfbc26047,"using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -21,11 +21,11 @@ using System.Linq;
 using System.Text;
 
 #r ""nuget: Plotly.NET, 5.1.0""",,,,,,,,b45c25edfbc26047,,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-00-Environment-Csharp.ipynb,bfa3995d,markdown,fr,89c73d430735a5e5,"## Définition de la classe SudokuGrid
+MyIA.AI.Notebooks/Sudoku/Sudoku-0-Environment-Csharp.ipynb,bfa3995d,markdown,fr,89c73d430735a5e5,"## Définition de la classe SudokuGrid
 
 Nous définissons ici la classe SudokuGrid qui représente une grille de Sudoku et fournit des méthodes pour manipuler et afficher les grilles.
 ",,,,,,,,89c73d430735a5e5,,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-00-Environment-Csharp.ipynb,5c31b6b3,code,fr,457002ea4975432d,"using System.Collections.ObjectModel;
+MyIA.AI.Notebooks/Sudoku/Sudoku-0-Environment-Csharp.ipynb,5c31b6b3,code,fr,457002ea4975432d,"using System.Collections.ObjectModel;
 using System.IO;
 public class SudokuGrid : ICloneable
 {
@@ -232,7 +232,7 @@ public class SudokuGrid : ICloneable
 
 Console.WriteLine(""SudokuGrid defini."");
 ",,,,,,,,457002ea4975432d,,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-00-Environment-Csharp.ipynb,cc706d7b,markdown,fr,a6854d280459c324,"### Interprétation : Structure de données pour la grille Sudoku
+MyIA.AI.Notebooks/Sudoku/Sudoku-0-Environment-Csharp.ipynb,cc706d7b,markdown,fr,a6854d280459c324,"### Interprétation : Structure de données pour la grille Sudoku
 
 **Sortie obtenue** : La classe `SudokuGrid` encapsule toutes les opérations de manipulation, validation et affichage d'une grille de Sudoku 9x9.
 
@@ -251,18 +251,18 @@ MyIA.AI.Notebooks/Sudoku/Sudoku-00-Environment-Csharp.ipynb,cc706d7b,markdown,fr
 4. **Parsing tolerant** : `ReadMultiSudoku` accepte plusieurs formats (`.`, `X`, `-`, espaces)
 
 > **Note technique** : La structure `CellNeighbours[i][j]` contient environ 20 positions (8 ligne + 8 colonne + 4 bloc, moins les doublons). Ce pré-calcul est crucial pour les performances des algorithmes de backtracking et de propagation de contraintes.",,,,,,,,a6854d280459c324,,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-00-Environment-Csharp.ipynb,094f5f3e,markdown,fr,d58584572ec188f1,"## Définition de l'interface ISudokuSolver
+MyIA.AI.Notebooks/Sudoku/Sudoku-0-Environment-Csharp.ipynb,094f5f3e,markdown,fr,d58584572ec188f1,"## Définition de l'interface ISudokuSolver
 
 Nous définissons ici l'interface ISudokuSolver qui sera implémentée par les différentes stratégies de résolution de Sudoku.
 ",,,,,,,,d58584572ec188f1,,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-00-Environment-Csharp.ipynb,6f36e204,code,fr,16e43a83e89fb581,"public interface ISudokuSolver
+MyIA.AI.Notebooks/Sudoku/Sudoku-0-Environment-Csharp.ipynb,6f36e204,code,fr,16e43a83e89fb581,"public interface ISudokuSolver
 {
     SudokuGrid Solve(SudokuGrid s);
 }
 
 Console.WriteLine(""ISudokuSolver defini."");
 ",,,,,,,,16e43a83e89fb581,,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-00-Environment-Csharp.ipynb,bb9446a7,markdown,fr,d652f397414fb0ad,"### Interprétation : Interface de stratégie
+MyIA.AI.Notebooks/Sudoku/Sudoku-0-Environment-Csharp.ipynb,bb9446a7,markdown,fr,d652f397414fb0ad,"### Interprétation : Interface de stratégie
 
 **Sortie obtenue** : L'interface `ISudokuSolver` définit le contrat que tous les solveurs doivent respecter.
 
@@ -278,7 +278,7 @@ MyIA.AI.Notebooks/Sudoku/Sudoku-00-Environment-Csharp.ipynb,bb9446a7,markdown,fr
 4. **Extensibilité** : Ajouter un nouveau solver ne nécessite que d'implémenter l'interface
 
 > **Note technique** : Ce design pattern permet à `SudokuHelper.TestSolvers` d'accepter une liste de `(string, ISudokuSolver)` pour comparer tous les algorithmes avec le même code de test.",,,,,,,,d652f397414fb0ad,,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-00-Environment-Csharp.ipynb,f8ecaba7,markdown,fr,e4b0a862d4a5433f,"## Définition de la classe SudokuHelper
+MyIA.AI.Notebooks/Sudoku/Sudoku-0-Environment-Csharp.ipynb,f8ecaba7,markdown,fr,e4b0a862d4a5433f,"## Définition de la classe SudokuHelper
 
 Nous ajoutons ici la classe SudokuHelper qui contient des méthodes utilitaires pour charger  des grilles de Sudoku et tester des solvers.
 
@@ -288,7 +288,7 @@ Nous ajoutons ici la classe SudokuHelper qui contient des méthodes utilitaires 
 - `DisplayResults` : affiche les résultats des tests sous forme de graphiques.
 
 ",,,,,,,,e4b0a862d4a5433f,,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-00-Environment-Csharp.ipynb,cac5cfab,code,fr,6e89a9fd3030e31e,"using System.IO;
+MyIA.AI.Notebooks/Sudoku/Sudoku-0-Environment-Csharp.ipynb,cac5cfab,code,fr,6e89a9fd3030e31e,"using System.IO;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
@@ -453,7 +453,7 @@ public static void DisplayResults(List<(string SolverName, string Difficulty, do
 
 Console.WriteLine(""SudokuHelper defini."");
 ",,,,,,,,6e89a9fd3030e31e,,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-00-Environment-Csharp.ipynb,2f8d2fb0,markdown,fr,4f06077e6dfb348f,"### Interprétation : Infrastructure de test et benchmark
+MyIA.AI.Notebooks/Sudoku/Sudoku-0-Environment-Csharp.ipynb,2f8d2fb0,markdown,fr,4f06077e6dfb348f,"### Interprétation : Infrastructure de test et benchmark
 
 **Sortie obtenue** : La classe `SudokuHelper` fournit une infrastructure complète pour tester et comparer les solveurs de Sudoku.
 
@@ -471,7 +471,7 @@ MyIA.AI.Notebooks/Sudoku/Sudoku-00-Environment-Csharp.ipynb,2f8d2fb0,markdown,fr
 4. **Disqualification** : Un solver échouant sur une grille est disqualifié pour la difficulté
 
 > **Note technique** : La méthode `TestSolvers` utilise `Interlocked.Increment` pour un thread-safe incrément du compteur de solutions. Le `CancellationToken` permet d'interrompre proprement les solveurs trop lents.",,,,,,,,4f06077e6dfb348f,,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-00-Environment-Csharp.ipynb,56f8e8c8,markdown,fr,22755a7a67c26fb6,"## Exercice : Validation d'une grille Sudoku
+MyIA.AI.Notebooks/Sudoku/Sudoku-0-Environment-Csharp.ipynb,56f8e8c8,markdown,fr,22755a7a67c26fb6,"## Exercice : Validation d'une grille Sudoku
 
 ### Énoncé
 
@@ -484,7 +484,7 @@ Utilisez cette méthode pour valider les résultats de `SudokuHelper.SolveSudoku
 - Parcourez les 9 lignes, 9 colonnes et 9 blocs
 - Pour chaque unité, verifiez que les 9 chiffres sont tous présents sans doublon
 - `SudokuGrid.AllNeighbours` contient déjà les indices des unités",,,,,,,,22755a7a67c26fb6,,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-00-Environment-Csharp.ipynb,e277187b,code,fr,7fcec24187a9ffb4,"// EXERCICE : Validation d'une grille Sudoku
+MyIA.AI.Notebooks/Sudoku/Sudoku-0-Environment-Csharp.ipynb,e277187b,code,fr,7fcec24187a9ffb4,"// EXERCICE : Validation d'une grille Sudoku
 // TODO: Implementez la methode IsValidSolution qui retourne true si la grille est une solution valide
 
 // Etape 1 : Verifiez que chaque ligne contient les chiffres 1-9 sans doublon
@@ -502,7 +502,7 @@ public static bool IsValidSolution(SudokuGrid grid)
 // Console.WriteLine($""Test IsValidSolution : {IsValidSolution(testSudoku)}"");
 
 Console.WriteLine(""Exercice a completer"");",,,,,,,,7fcec24187a9ffb4,,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-00-Environment-Csharp.ipynb,803f6c70,markdown,fr,65c9fc101d0236f4,"## Résumé et perspectives
+MyIA.AI.Notebooks/Sudoku/Sudoku-0-Environment-Csharp.ipynb,803f6c70,markdown,fr,65c9fc101d0236f4,"## Résumé et perspectives
 
 Ce notebook a posé les fondations de toute la série Sudoku en définissant trois composants essentiels. La classe `SudokuGrid` encapsule la représentation d'une grille 9x9 avec le pré-calcul des voisins (`AllNeighbours`, `CellNeighbours`), ce qui évite les recalculs coûteux lors de la résolution. L'interface `ISudokuSolver` implante le pattern Stratégie, permettant de permuter les algorithmes de résolution sans modifier le code client. Enfin, la classe `SudokuHelper` fournit une infrastructure de benchmark complète avec chargement de puzzles, mesures de performance et visualisation Plotly.NET.
 
@@ -511,7 +511,7 @@ L'infrastructure de test (`TestSolvers`, `DisplayResults`) permet de comparer ob
 Le notebook suivant, [Sudoku-1-Backtracking](Sudoku-1-Backtracking-Csharp.ipynb), utilise ces classes pour implémenter le premier algorithme de résolution : le backtracking récursif avec ses heuristiques d'amélioration.",,,,,,,,65c9fc101d0236f4,,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-1-Backtracking-Csharp.ipynb,e7eb1226,markdown,fr,1e4197f41aab212d,"# Sudoku-1 : Résolution par Backtracking
 
-**Navigation** : [<< Sudoku-00 Environment](Sudoku-00-Environment-Csharp.ipynb) | [Index](README.md) | [Sudoku-3 Genetic >>](Sudoku-3-Genetic-Csharp.ipynb)
+**Navigation** : [<< Sudoku-0 Environment](Sudoku-0-Environment-Csharp.ipynb) | [Index](README.md) | [Sudoku-3 Genetic >>](Sudoku-3-Genetic-Csharp.ipynb)
 
 ## Objectifs d'apprentissage
 
@@ -520,7 +520,7 @@ MyIA.AI.Notebooks/Sudoku/Sudoku-1-Backtracking-Csharp.ipynb,e7eb1226,markdown,fr
 2. **Comprendre** l'exploration en profondeur et le retour arrière
 3. **Analyser** les performances du backtracking selon la difficulté des puzzles
 
-**Durée estimée** : ~7 min | **Prérequis** : [Sudoku-00 Environment](Sudoku-00-Environment-Csharp.ipynb) | **Lien** : Voir [CSP-1-Fondamentaux](../Search/Part2-CSP/CSP-1-Fundamentals.ipynb) pour la théorie du backtracking
+**Durée estimée** : ~7 min | **Prérequis** : [Sudoku-0 Environment](Sudoku-0-Environment-Csharp.ipynb) | **Lien** : Voir [CSP-1-Fondamentaux](../Search/Part2-CSP/CSP-1-Fundamentals.ipynb) pour la théorie du backtracking
 
 ---
 
@@ -543,7 +543,7 @@ L'algorithme suit ces étapes :
 
 ## Importation des Classes de Base
 ",,,,,,,,1e4197f41aab212d,,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-1-Backtracking-Csharp.ipynb,b2de26b0,code,fr,eb3d945ae449b902,"#!import Sudoku-00-Environment-Csharp.ipynb
+MyIA.AI.Notebooks/Sudoku/Sudoku-1-Backtracking-Csharp.ipynb,b2de26b0,code,fr,eb3d945ae449b902,"#!import Sudoku-0-Environment-Csharp.ipynb
 ",,,,,,,,eb3d945ae449b902,,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-1-Backtracking-Csharp.ipynb,50d4e0cf,markdown,fr,b27f32db4024ea1c,"## Affichage des Puzzles de chaque Difficulté
 
@@ -779,11 +779,11 @@ Dans les notebooks suivants, nous explorerons des techniques plus avancées :
 
 ---
 
-**Navigation** : [<< Sudoku-00 Environment](Sudoku-00-Environment-Csharp.ipynb) | [Index](README.md) | [Sudoku-3 Genetic >>](Sudoku-3-Genetic-Csharp.ipynb)
+**Navigation** : [<< Sudoku-0 Environment](Sudoku-0-Environment-Csharp.ipynb) | [Index](README.md) | [Sudoku-3 Genetic >>](Sudoku-3-Genetic-Csharp.ipynb)
 ",,,,,,,,7d98b0006cb01dc8,,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-1-Backtracking-Python.ipynb,884e2b68,markdown,fr,1c77defdc8933d71,"# Sudoku-1 : Resolution par Backtracking (Python)
 
-**Navigation** : [<< Sudoku-00 Environment](Sudoku-00-Environment-Csharp.ipynb) | [Index](README.md) | [Sudoku-2 DancingLinks Python >>](Sudoku-2-DancingLinks-Python.ipynb)
+**Navigation** : [<< Sudoku-0 Environment](Sudoku-0-Environment-Csharp.ipynb) | [Index](README.md) | [Sudoku-2 DancingLinks Python >>](Sudoku-2-DancingLinks-Python.ipynb)
 
 ## Objectifs d'apprentissage
 
@@ -1479,7 +1479,7 @@ MyIA.AI.Notebooks/Sudoku/Sudoku-1-Backtracking-Python.ipynb,10e891bf,markdown,fr
 - [Sudoku-2-DancingLinks-Python](Sudoku-2-DancingLinks-Python.ipynb) - Algorithm X / Dancing Links
 
 ### Notebooks C# équivalents
-- [Sudoku-00-Environment-Csharp](Sudoku-00-Environment-Csharp.ipynb) - Configuration et benchmarks
+- [Sudoku-0-Environment-Csharp](Sudoku-0-Environment-Csharp.ipynb) - Configuration et benchmarks
 - [Sudoku-1-Backtracking-Csharp](Sudoku-1-Backtracking-Csharp.ipynb) - Backtracking en C#
 - [Sudoku-10-ORTools-Csharp](Sudoku-10-ORTools-Csharp.ipynb) - OR-Tools en C#
 - [Sudoku-12-Z3-Csharp](Sudoku-12-Z3-Csharp.ipynb) - Z3 en C#
@@ -1690,7 +1690,7 @@ MyIA.AI.Notebooks/Sudoku/Sudoku-10-ORTools-Csharp.ipynb,58f7ac86,markdown,fr,03b
 
 Nous allons importer les classes de base définies dans le notebook précédent, fournissant notamment la représentation, le chargement et l'affichage de Sudokus, et l'infrastructure de résolution.
 ",,,,,,,,03bf47fc69a84cef,,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-10-ORTools-Csharp.ipynb,56afc953,code,fr,eb3d945ae449b902,#!import Sudoku-00-Environment-Csharp.ipynb,,,,,,,,eb3d945ae449b902,,,,,,,,
+MyIA.AI.Notebooks/Sudoku/Sudoku-10-ORTools-Csharp.ipynb,56afc953,code,fr,eb3d945ae449b902,#!import Sudoku-0-Environment-Csharp.ipynb,,,,,,,,eb3d945ae449b902,,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-10-ORTools-Csharp.ipynb,e8d2c3e6,markdown,fr,092f9f7f06129dd6,"## Implémentations des Solveurs
 
 ### Solveur par contraintes classique (ConstraintSolver legacy)
@@ -2449,7 +2449,7 @@ A la fin de ce notebook, vous saurez :
 3. Comparer les performances d'un solveur industriel avec le backtracking
 4. Utiliser la contrainte AllDifferent pour modéliser des problèmes combinatoires
 
-**Duree estimee** : ~10 min | **Prerequis** : [Sudoku-00 Environment](Sudoku-00-Environment-Csharp.ipynb) | **Lien** : Voir [CSP-3-Avance](../Search/Part2-CSP/CSP-3-Advanced.ipynb)
+**Duree estimee** : ~10 min | **Prerequis** : [Sudoku-0 Environment](Sudoku-0-Environment-Csharp.ipynb) | **Lien** : Voir [CSP-3-Avance](../Search/Part2-CSP/CSP-3-Advanced.ipynb)
 
 ---
 
@@ -3005,7 +3005,7 @@ A la fin de ce notebook, vous saurez :
 3. **Configurer** différentes stratégies de recherche (FirstFail, DomOverWDeg)
 4. **Comparer** Choco avec d'autrès solveurs de contraintes
 
-**Durée estimée** : ~30 min | **Prérequis** : [Sudoku-00 Environment](Sudoku-00-Environment-Csharp.ipynb)
+**Durée estimée** : ~30 min | **Prérequis** : [Sudoku-0 Environment](Sudoku-0-Environment-Csharp.ipynb)
 
 ---
 
@@ -3057,11 +3057,11 @@ string FindSudokuDir()
     while (dir != null)
     {
         // Check if we're in the Sudoku directory
-        if (File.Exists(Path.Combine(dir.FullName, ""Sudoku-00-Environment-Csharp.ipynb"")))
+        if (File.Exists(Path.Combine(dir.FullName, ""Sudoku-0-Environment-Csharp.ipynb"")))
             return dir.FullName;
         // Check if Sudoku is a subdirectory
         var candidate = Path.Combine(dir.FullName, ""MyIA.AI.Notebooks"", ""Sudoku"");
-        if (Directory.Exists(candidate) && File.Exists(Path.Combine(candidate, ""Sudoku-00-Environment-Csharp.ipynb"")))
+        if (Directory.Exists(candidate) && File.Exists(Path.Combine(candidate, ""Sudoku-0-Environment-Csharp.ipynb"")))
             return candidate;
         dir = dir.Parent;
     }
@@ -3163,7 +3163,7 @@ using Task = System.Threading.Tasks.Task;
 Console.WriteLine(""Choco-solver via IKVM 8.15.0 - Pret pour resolution Sudoku"");",,,,,,,,76a6fbe0cfa909e5,,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-11-Choco-Csharp.ipynb,dd052198,markdown,fr,bf7ea9906dc9a3ca,Import des classes de base depuis le notebook d'environnement.,,,,,,,,bf7ea9906dc9a3ca,,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-11-Choco-Csharp.ipynb,d7aa0870,code,fr,56f3a5006e69ef4a,"// Importer les classes de base depuis le notebook d'environnement
-#!import Sudoku-00-Environment-Csharp.ipynb
+#!import Sudoku-0-Environment-Csharp.ipynb
 ",,,,,,,,56f3a5006e69ef4a,,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-11-Choco-Csharp.ipynb,39592b3b,markdown,fr,224061d5a4da858e,"## 1. Implémentation Simple : ChocoSimpleSolver
 
@@ -4626,7 +4626,7 @@ MyIA.AI.Notebooks/Sudoku/Sudoku-12-Z3-Csharp.ipynb,5f811f2c,markdown,fr,03bf47fc
 
 Nous allons importer les classes de base définies dans le notebook précédent, fournissant notamment la représentation, le chargement et l'affichage de Sudokus, et l'infrastructure de résolution.
 ",,,,,,,,03bf47fc69a84cef,,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-12-Z3-Csharp.ipynb,15096401,code,fr,eb3d945ae449b902,#!import Sudoku-00-Environment-Csharp.ipynb,,,,,,,,eb3d945ae449b902,,,,,,,,
+MyIA.AI.Notebooks/Sudoku/Sudoku-12-Z3-Csharp.ipynb,15096401,code,fr,eb3d945ae449b902,#!import Sudoku-0-Environment-Csharp.ipynb,,,,,,,,eb3d945ae449b902,,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-12-Z3-Csharp.ipynb,f93d667a,markdown,fr,370912d6432127a9,"### 1. Implémentation de base avec des entiers
 
 Comme nous allons tester plusieurs stratégies de résolution, nous commencerons par implémenter un solver simple utilisant des entiers pour représenter les cellules du Sudoku et fournissant les méthodes pour construire les contraintes.
@@ -5411,7 +5411,7 @@ A la fin de ce notebook, vous saurez :
 3. Utiliser des BitVectors pour optimiser les representations
 4. Comparer Z3 Int avec Z3 BitVector
 
-**Duree estimee** : ~10 min | **Prerequis** : [Sudoku-00 Environment](Sudoku-00-Environment-Csharp.ipynb)
+**Duree estimee** : ~10 min | **Prerequis** : [Sudoku-0 Environment](Sudoku-0-Environment-Csharp.ipynb)
 
 ---
 
@@ -7512,7 +7512,7 @@ Un **MDD** généralise le BDD aux domaines finis (comme {1,2,...,9} pour Sudoku
 
 ### Prérequis
 
-- [Sudoku-0-Environment](Sudoku-00-Environment-Csharp.ipynb) - Classes de base Sudoku
+- [Sudoku-0-Environment](Sudoku-0-Environment-Csharp.ipynb) - Classes de base Sudoku
 - [Sudoku-13-SymbolicAutomata](Sudoku-13-SymbolicAutomata-Csharp.ipynb) - Théorie des automates (recommandée)
 - Connaissance de base des graphes et arbres
 
@@ -9441,7 +9441,7 @@ MyIA.AI.Notebooks/Sudoku/Sudoku-15-Infer-Csharp.ipynb,e7eef7c2,code,fr,8173d7fc0
 MyIA.AI.Notebooks/Sudoku/Sudoku-15-Infer-Csharp.ipynb,c1519e7d,markdown,fr,2d7cee553e792e57,"### 3. Importation des Classes de Base
 
 Nous allons importer les classes de base définies dans le notebook précédent, fournissant notamment la représentation, le chargement et l'affichage de Sudokus, et l'infrastructure de résolution.",,,,,,,,2d7cee553e792e57,,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-15-Infer-Csharp.ipynb,43960a6f,code,fr,eb3d945ae449b902,#!import Sudoku-00-Environment-Csharp.ipynb,,,,,,,,eb3d945ae449b902,,,,,,,,
+MyIA.AI.Notebooks/Sudoku/Sudoku-15-Infer-Csharp.ipynb,43960a6f,code,fr,eb3d945ae449b902,#!import Sudoku-0-Environment-Csharp.ipynb,,,,,,,,eb3d945ae449b902,,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-15-Infer-Csharp.ipynb,3b1ef3eb,markdown,fr,1edcaf04fb9ffca1,"### 4. Implémentation du Solver Naïf
 
 Nous commencerons par implémenter un solver naïf en utilisant `Infer.NET`.
@@ -10491,7 +10491,7 @@ A la fin de ce notebook, vous saurez :
 3. **Utiliser** SVI (Stochastic Variational Inference) pour l'inference
 4. **Comparer** avec l'approche Infer.NET RobustProbabilisticSolver du notebook C#
 
-**Duree estimee** : ~45 min | **Prerequis** : Sudoku-00 Environment, probabilites bayesiennes
+**Duree estimee** : ~45 min | **Prerequis** : Sudoku-0 Environment, probabilites bayesiennes
 
 ---
 
@@ -17934,7 +17934,7 @@ MyIA.AI.Notebooks/Sudoku/Sudoku-2-DancingLinks-Csharp.ipynb,61dfd268,markdown,fr
 
 Nous allons importer les classes de base définies dans le notebook précédent, fournissant notamment la représentation, le chargement et l'affichage de Sudokus, et l'infrastructure de résolution.
 ",,,,,,,,2fb51cde89d7c13e,,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-2-DancingLinks-Csharp.ipynb,caa1ff0d,code,fr,eb3d945ae449b902,#!import Sudoku-00-Environment-Csharp.ipynb,,,,,,,,eb3d945ae449b902,,,,,,,,
+MyIA.AI.Notebooks/Sudoku/Sudoku-2-DancingLinks-Csharp.ipynb,caa1ff0d,code,fr,eb3d945ae449b902,#!import Sudoku-0-Environment-Csharp.ipynb,,,,,,,,eb3d945ae449b902,,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-2-DancingLinks-Csharp.ipynb,fd0a097c,markdown,fr,44fdb1ab3afcc99f,"## 3. Implémentation avec DLXLib
 
 Nous allons commencer par implémenter le solver en utilisant la bibliothèque `DlxLib`.",,,,,,,,44fdb1ab3afcc99f,,,,,,,,
@@ -18563,7 +18563,7 @@ A la fin de ce notebook, vous saurez :
 3. Comprendre les structures de données de listes doublement chainees circulaires
 4. Comparer les performances de DLX avec d'autres approches
 
-**Duree estimee** : ~13 min | **Prerequis** : [Sudoku-00 Environment](Sudoku-00-Environment-Csharp.ipynb) | **Lien** : Voir aussi [Sudoku-2 DancingLinks C#](Sudoku-2-DancingLinks-Csharp.ipynb)
+**Duree estimee** : ~13 min | **Prerequis** : [Sudoku-0 Environment](Sudoku-0-Environment-Csharp.ipynb) | **Lien** : Voir aussi [Sudoku-2 DancingLinks C#](Sudoku-2-DancingLinks-Csharp.ipynb)
 
 ---
 
@@ -19670,7 +19670,7 @@ MyIA.AI.Notebooks/Sudoku/Sudoku-3-Genetic-Csharp.ipynb,218e1883,markdown,fr,03bf
 
 Nous allons importer les classes de base définies dans le notebook précédent, fournissant notamment la représentation, le chargement et l'affichage de Sudokus, et l'infrastructure de résolution.
 ",,,,,,,,03bf47fc69a84cef,,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-3-Genetic-Csharp.ipynb,0a480dea,code,fr,eb3d945ae449b902,#!import Sudoku-00-Environment-Csharp.ipynb,,,,,,,,eb3d945ae449b902,,,,,,,,
+MyIA.AI.Notebooks/Sudoku/Sudoku-3-Genetic-Csharp.ipynb,0a480dea,code,fr,eb3d945ae449b902,#!import Sudoku-0-Environment-Csharp.ipynb,,,,,,,,eb3d945ae449b902,,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-3-Genetic-Csharp.ipynb,47ce5ce8,markdown,fr,ade0f073d4057206,"## Implémentation du Solveur de Sudoku par Algorithme Génétique
 
 Nous allons maintenant implémenter ce solveur en C#. Comme indiqué précédemment il nous faut code la notion de chromosome et de fonction d'évaluation.
@@ -20121,7 +20121,7 @@ A la fin de ce notebook, vous saurez :
 3. Comprendre pourquoi le Sudoku est difficile pour les algorithmes génétiques
 4. Comparer deux stratégies d'encodage : cellules vs permutations
 
-**Duree estimee** : ~10 min | **Prerequis** : [Sudoku-00 Environment](Sudoku-00-Environment-Csharp.ipynb) | **Lien** : Voir [Search-5 GeneticAlgorithms](../Search/Part1-Foundations/Search-5-GeneticAlgorithms.ipynb)
+**Duree estimee** : ~10 min | **Prerequis** : [Sudoku-0 Environment](Sudoku-0-Environment-Csharp.ipynb) | **Lien** : Voir [Search-5 GeneticAlgorithms](../Search/Part1-Foundations/Search-5-GeneticAlgorithms.ipynb)
 
 ---
 
@@ -21044,7 +21044,7 @@ MyIA.AI.Notebooks/Sudoku/Sudoku-4-SimulatedAnnealing-Csharp.ipynb,d84f8ac8,markd
 5. Analyser les **forces et limites** du recuit simulé pour le Sudoku
 
 ### Prérequis
-- Notebook [Sudoku-0-Environment](Sudoku-00-Environment-Csharp.ipynb) : classes de base (`SudokuGrid`, `ISudokuSolver`, `SudokuHelper`)
+- Notebook [Sudoku-0-Environment](Sudoku-0-Environment-Csharp.ipynb) : classes de base (`SudokuGrid`, `ISudokuSolver`, `SudokuHelper`)
 - Notions de base en optimisation et recherche locale
 
 ### Voir aussi
@@ -21093,7 +21093,7 @@ ou $\Delta E = E(\text{voisin}) - E(\text{courant})$ et $T$ est la température 
 MyIA.AI.Notebooks/Sudoku/Sudoku-4-SimulatedAnnealing-Csharp.ipynb,73e8f48c,markdown,fr,9fd439577d1a0078,"## 2. Importation de l'environnement
 
 Nous importons les classes de base définies dans le notebook d'environnement : `SudokuGrid`, `ISudokuSolver`, `SudokuHelper`.",,,,,,,,9fd439577d1a0078,,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-4-SimulatedAnnealing-Csharp.ipynb,990b7456,code,fr,eb3d945ae449b902,#!import Sudoku-00-Environment-Csharp.ipynb,,,,,,,,eb3d945ae449b902,,,,,,,,
+MyIA.AI.Notebooks/Sudoku/Sudoku-4-SimulatedAnnealing-Csharp.ipynb,990b7456,code,fr,eb3d945ae449b902,#!import Sudoku-0-Environment-Csharp.ipynb,,,,,,,,eb3d945ae449b902,,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-4-SimulatedAnnealing-Csharp.ipynb,fd1145fe,markdown,fr,6a6f1f3fe77f8d6b,Import du solver de backtracking pour comparaison de performance.,,,,,,,,6a6f1f3fe77f8d6b,,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-4-SimulatedAnnealing-Csharp.ipynb,irhgn2rrl3,code,fr,854eade82fbb168c,"#!import Sudoku-1-Backtracking-Csharp.ipynb
 ",,,,,,,,854eade82fbb168c,,,,,,,,
@@ -21841,7 +21841,7 @@ MyIA.AI.Notebooks/Sudoku/Sudoku-4-SimulatedAnnealing-Csharp.ipynb,5917371d,markd
 ",,,,,,,,4f98058003edb47d,,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-4-SimulatedAnnealing-Python.ipynb,42074b14,markdown,fr,10acfa46afd470cd,"# Sudoku-4 : Recuit Simule (Python)
 
-**Niveau** : Métaheuristique | **Duree** : ~20 min | **Prerequis** : Sudoku-00 Environment
+**Niveau** : Métaheuristique | **Duree** : ~20 min | **Prerequis** : Sudoku-0 Environment
 
 ## Navigation
 
@@ -22641,7 +22641,7 @@ L'équation de vélocité ci-dessus est définie sur un espace **continu** : add
 - **Meilleure globale** : l'essaim conserve la meilleure grille rencontree (`bestError` / `bestSolution`), qui est la solution retournee.
 
 > **A retenir** : il n'y a ici ni champ de vélocité, ni mémoire `pBest` par particule, ni coefficients `w`/`c1`/`c2`. Les workers ne sont pas attires par `gBest` au sens de l'équation canonique : chaque worker se compare a sa **propre** erreur courante. C'est un exemple typique de la difficulté a transposer une métaheuristique **continue** (PSO) vers un espace **discret** : on garde l'idée d'essaim (exploration parallèle + mémoire de la meilleure solution), mais le mécanisme de deplacement est entièrement repense (échanges locaux + redémarrages).",,,,,,,,12b669e9ed8378fe,,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-5-PSO-Csharp.ipynb,eea78693,code,fr,eb3d945ae449b902,#!import Sudoku-00-Environment-Csharp.ipynb,,,,,,,,eb3d945ae449b902,,,,,,,,
+MyIA.AI.Notebooks/Sudoku/Sudoku-5-PSO-Csharp.ipynb,eea78693,code,fr,eb3d945ae449b902,#!import Sudoku-0-Environment-Csharp.ipynb,,,,,,,,eb3d945ae449b902,,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-5-PSO-Csharp.ipynb,56ccfa8e,markdown,fr,d0be71f6be982ea8,## 2. Implémentation des classes auxiliaires,,,,,,,,d0be71f6be982ea8,,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-5-PSO-Csharp.ipynb,864062f1,code,fr,c40c654acd704695,"// Helper pour la manipulation des matrices Sudoku
 public static class MatrixHelperPSO
@@ -23291,7 +23291,7 @@ Le **Particle Swarm Optimization** est une métaheuristique interessante pour Su
 | [Sudoku-4-SimulatedAnnealing](Sudoku-4-SimulatedAnnealing-Csharp.ipynb) | | [Sudoku-6-AIMA-CSP](Sudoku-6-AIMA-CSP-Csharp.ipynb) |",,,,,,,,8ce25da96cba2b9a,,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-5-PSO-Python.ipynb,4862d5e2,markdown,fr,5498bb6a78ad537e,"# Sudoku-5 : Particle Swarm Optimization (Python)
 
-**Niveau** : Métaheuristique | **Duree** : ~20 min | **Prerequis** : Sudoku-00 Environment
+**Niveau** : Métaheuristique | **Duree** : ~20 min | **Prerequis** : Sudoku-0 Environment
 
 ## Navigation
 
@@ -24347,7 +24347,7 @@ Contrairement aux bibliothèques industrielles (OR-Tools, Choco) ou aux métaheu
 | **Forward Checking** | Propagation 1-niveau | $O(n \cdot d^2)$ | Moderee
 | **AC-3** | Arc-consistance | $O(e \cdot d^3)$ | Forte
 | **MAC** | AC-3 + Backtracking | Variable | Très forte",,,,,,,,5567eecf17a5f271,,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-6-AIMA-CSP-Csharp.ipynb,edb9f15b,code,fr,eb3d945ae449b902,#!import Sudoku-00-Environment-Csharp.ipynb,,,,,,,,eb3d945ae449b902,,,,,,,,
+MyIA.AI.Notebooks/Sudoku/Sudoku-6-AIMA-CSP-Csharp.ipynb,edb9f15b,code,fr,eb3d945ae449b902,#!import Sudoku-0-Environment-Csharp.ipynb,,,,,,,,eb3d945ae449b902,,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-6-AIMA-CSP-Csharp.ipynb,89c6543d,markdown,fr,faa266165cdd7004,"## 2. Classe CSP générique
 
 L'intérêt d'une classe *générique* est précisément l'abstraction : variables, domaines et
@@ -25301,7 +25301,7 @@ MyIA.AI.Notebooks/Sudoku/Sudoku-6-AIMA-CSP-Csharp.ipynb,a4b30559,markdown,fr,6ca
 | [Sudoku-5-PSO](Sudoku-5-PSO-Csharp.ipynb) | | [Sudoku-7-Norvig-Csharp](Sudoku-7-Norvig-Csharp.ipynb) |",,,,,,,,6caf0ef783ce58d2,,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-6-AIMA-CSP-Python.ipynb,71960cdb,markdown,fr,8881fb575310ce28,"# Sudoku-6 : Résolution par CSP Académique (Python)
 
-**Niveau** : Programmation par Contraintes | **Durée** : ~25 min | **Prérequis** : Sudoku-00 Environment
+**Niveau** : Programmation par Contraintes | **Durée** : ~25 min | **Prérequis** : Sudoku-0 Environment
 
 ## Navigation
 
@@ -26495,7 +26495,7 @@ MyIA.AI.Notebooks/Sudoku/Sudoku-7-Norvig-Csharp.ipynb,4cfgcd822ht,markdown,fr,87
 4. Comparer les performances avec les solveurs précédents (Backtracking, OR-Tools)
 
 ### Prérequis
-- [Sudoku-0-Environment](Sudoku-00-Environment-Csharp.ipynb) : classes `SudokuGrid`, `ISudokuSolver`, `SudokuHelper`
+- [Sudoku-0-Environment](Sudoku-0-Environment-Csharp.ipynb) : classes `SudokuGrid`, `ISudokuSolver`, `SudokuHelper`
 - Notions de base en résolution de problemes de satisfaction de contraintes (CSP)
 
 ### Durée estimée : 20 minutes
@@ -26521,7 +26521,7 @@ Lorsque la propagation seule ne suffit pas (typiquement sur les grilles difficil
 
 Nous importons les classes définies dans le notebook d'environnement.
 ",,,,,,,,14837ec221776cf9,,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-7-Norvig-Csharp.ipynb,zunydfk37jp,code,fr,eb3d945ae449b902,#!import Sudoku-00-Environment-Csharp.ipynb,,,,,,,,eb3d945ae449b902,,,,,,,,
+MyIA.AI.Notebooks/Sudoku/Sudoku-7-Norvig-Csharp.ipynb,zunydfk37jp,code,fr,eb3d945ae449b902,#!import Sudoku-0-Environment-Csharp.ipynb,,,,,,,,eb3d945ae449b902,,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-7-Norvig-Csharp.ipynb,4mpi8aild85,markdown,fr,172d56e9c4f76591,"Verifions que l'environnement est bien charge en affichant un puzzle de chaque difficulte.
 ",,,,,,,,172d56e9c4f76591,,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-7-Norvig-Csharp.ipynb,d4v2nx3k96g,code,fr,d64e91395e1339ed,"// Affichage d'un puzzle par difficulte
@@ -27755,14 +27755,14 @@ MyIA.AI.Notebooks/Sudoku/Sudoku-8-HumanStrategies-Csharp.ipynb,5387691e,markdown
 6. Analyser quelles techniques sont necessaires selon la difficulté du puzzle
 
 ### Prérequis
-- [Sudoku-0-Environment](Sudoku-00-Environment-Csharp.ipynb) : classes `SudokuGrid`, `ISudokuSolver`, `SudokuHelper`
+- [Sudoku-0-Environment](Sudoku-0-Environment-Csharp.ipynb) : classes `SudokuGrid`, `ISudokuSolver`, `SudokuHelper`
 - Familiarite avec les règles du Sudoku (lignes, colonnes, blocs 3x3)
 
 ### Durée estimee : 60 minutes",,,,,,,,39303be19c8448fe,,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-8-HumanStrategies-Csharp.ipynb,fe408d48,markdown,fr,b3e7f29d01b7f7c5,"## Importation de l'environnement
 
 Nous importons les classes de base définies dans le notebook `Sudoku-0-Environment` : `SudokuGrid`, `ISudokuSolver`, `SudokuHelper`.",,,,,,,,b3e7f29d01b7f7c5,,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-8-HumanStrategies-Csharp.ipynb,26c26cc0,code,fr,eb3d945ae449b902,#!import Sudoku-00-Environment-Csharp.ipynb,,,,,,,,eb3d945ae449b902,,,,,,,,
+MyIA.AI.Notebooks/Sudoku/Sudoku-8-HumanStrategies-Csharp.ipynb,26c26cc0,code,fr,eb3d945ae449b902,#!import Sudoku-0-Environment-Csharp.ipynb,,,,,,,,eb3d945ae449b902,,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-8-HumanStrategies-Csharp.ipynb,d916d0fd,markdown,fr,2d9877788250d823,"## 1. Introduction : Comment les humains résolvent les Sudoku (~3 min)
 
 Les algorithmes que nous avons vus dans les notebooks précédents (backtracking, OR-Tools, Dancing Links, etc.) résolvent les Sudoku par **force brute** ou par **satisfaction de contraintes** de manière systématique. Un expert humain procède tout autrement : il applique des **techniques de déduction logique** de difficulté croissante, en commencant par les plus simples.
@@ -29034,7 +29034,7 @@ public class ExpertHumanStrategySolver : ISudokuSolver
 Console.WriteLine(""Classe ExpertHumanStrategySolver definie (TODO etudiant : Swordfish + Hidden Pairs + pipeline)"");",,,,,,,,73a6e74b57b56596,,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-8-HumanStrategies-Python.ipynb,47ecd0a8,markdown,fr,6916b3135f6b9698,"# Sudoku-8 : Resolution par Stratégies Humaines (Python)
 
-**Niveau** : Techniques d'inference | **Duree** : ~40 min | **Prerequis** : Sudoku-00 Environment
+**Niveau** : Techniques d'inference | **Duree** : ~40 min | **Prerequis** : Sudoku-0 Environment
 
 ## Navigation
 
@@ -30427,7 +30427,7 @@ Le Sudoku peut être modélisé comme un **problème de coloration de graphe** :
 
 Cette formulation permet d'appliquer des algorithmes classiques de coloration !",,,,,,,,9f87622c8edf835c,,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-9-GraphColoring-Csharp.ipynb,ef2057d5,code,fr,29f202f32ddc9f86,"// Import des classes de base
-#!import ""Sudoku-00-Environment-Csharp.ipynb""",,,,,,,,29f202f32ddc9f86,,,,,,,,
+#!import ""Sudoku-0-Environment-Csharp.ipynb""",,,,,,,,29f202f32ddc9f86,,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-9-GraphColoring-Csharp.ipynb,0704d45f,markdown,fr,5d17073ddd69e9aa,"## Construction du Graphe Sudoku
 
 Nous définissons une classe `SudokuGraph` qui représente le graphe d'un Sudoku :
@@ -31850,7 +31850,7 @@ A la fin de ce notebook, vous saurez :
 3. **Utiliser** NetworkX pour manipuler des graphes de contraintes
 4. **Comparer** l'efficacite de différentes stratégies de coloration
 
-**Duree estimee** : ~15 min | **Prerequis** : Sudoku-00 Environment
+**Duree estimee** : ~15 min | **Prerequis** : Sudoku-0 Environment
 
 ---
 
