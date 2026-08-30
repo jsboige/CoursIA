@@ -721,11 +721,32 @@ def scan_notebook(nb_path: Path, base_ref: str, head_ref: str | None = None) -> 
         if nb_sibling is not None:
             sibling_md = extract_md_cells(nb_sibling)
             head_md_t = extract_md_cells(nb_head)
-            findings = _compare_cells(
-                sibling_md, head_md_t,
-                nb_head.get("metadata", {}).get("cost"),
-                drop_threshold=TRANSLATION_DROP_THRESHOLD,
-            )
+            if len(sibling_md) != len(head_md_t):
+                # Divergence de STRUCTURE (#13552) : scission/fusion de
+                # cellules markdown entre sibling FR et artefact traduit.
+                # La comparaison cellule-par-cellule est desalignee par
+                # construction -- l'emettre produirait une volee de
+                # TRUNCATED_CELL faux dans leur categorie. On categorise
+                # en UN finding de structure (bloquant), et on garde les
+                # motifs (comptes sur le notebook entier, insensibles aux
+                # scissions).
+                findings = [{
+                    "kind": "STRUCTURE_DRIFT",
+                    "base_md_cells": len(sibling_md),
+                    "head_md_cells": len(head_md_t),
+                    "detail": (
+                        "l'artefact traduit n'a pas le meme nombre de "
+                        "cellules markdown que le sibling FR (scission ou "
+                        "fusion) -- divergence de structure, pas une perte "
+                        "de contenu mesurable cellule par cellule"
+                    ),
+                }]
+            else:
+                findings = _compare_cells(
+                    sibling_md, head_md_t,
+                    nb_head.get("metadata", {}).get("cost"),
+                    drop_threshold=TRANSLATION_DROP_THRESHOLD,
+                )
             findings.extend(_compare_motifs(
                 _collect_motifs(nb_sibling, include_aliases=True),
                 _collect_motifs(nb_head, include_aliases=True),
