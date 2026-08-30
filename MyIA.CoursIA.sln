@@ -9,6 +9,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MyIA.AI.Notebooks", "MyIA.A
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MyIA.Trading.Converter", "MyIA.Trading.Converter\MyIA.Trading.Converter.csproj", "{F3B5C8D1-2E47-4A89-9B6E-3C8F2A1D7E45}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MyIA.Trading.Backtester", "MyIA.Trading.Backtester\MyIA.Trading.Backtester.csproj", "{95DE1847-B570-4AEF-9FD6-BA2D3B827C9D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MyIA.Trading.Backtester.Tests", "MyIA.Trading.Backtester.Tests\MyIA.Trading.Backtester.Tests.csproj", "{DF112603-A4EE-4651-B9DD-19E9BA338320}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +31,14 @@ Global
 		{F3B5C8D1-2E47-4A89-9B6E-3C8F2A1D7E45}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F3B5C8D1-2E47-4A89-9B6E-3C8F2A1D7E45}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F3B5C8D1-2E47-4A89-9B6E-3C8F2A1D7E45}.Release|Any CPU.Build.0 = Release|Any CPU
+{95DE1847-B570-4AEF-9FD6-BA2D3B827C9D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+{95DE1847-B570-4AEF-9FD6-BA2D3B827C9D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+{95DE1847-B570-4AEF-9FD6-BA2D3B827C9D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+{95DE1847-B570-4AEF-9FD6-BA2D3B827C9D}.Release|Any CPU.Build.0 = Release|Any CPU
+{DF112603-A4EE-4651-B9DD-19E9BA338320}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+{DF112603-A4EE-4651-B9DD-19E9BA338320}.Debug|Any CPU.Build.0 = Debug|Any CPU
+{DF112603-A4EE-4651-B9DD-19E9BA338320}.Release|Any CPU.ActiveCfg = Release|Any CPU
+{DF112603-A4EE-4651-B9DD-19E9BA338320}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
