@@ -3153,3 +3153,72 @@ def test_13641_ref_exacte_compte_toujours():
                   "2d6e4c3642": "fix(check,#13639): levee citee (#13640)"})
     assert res["blocked"] is True
     assert [v["sha"] for v in res["voided_lifts"]] == ["2d6e4c3642"]
+
+
+# --- #13635 : LIFT_MARKERS ne connaissait que le feminin. Les formes
+# MASCULINES de la levee passive (« est levé », « sont levés ») manquaient, alors
+# que ce depot nomme ce qui se leve au masculin (le concern / le point / le nit).
+# Un motif se valide par ses faux negatifs, pas par ses hits : chaque colonne du
+# tableau de l'issue est un test.
+
+def test_13635_masculin_leve_reconnu():
+    """Les 6 formes du tableau de l'issue rendent True apres correctif."""
+    # feminines (deja couvertes — controle de symetrie)
+    assert mod.has_live_lift("**Tes trois reserves sont levees.**") or mod.has_live_lift("**Tes trois réserves sont levées.**")
+    assert mod.has_live_lift("**La reserve est levee.**") or mod.has_live_lift("**La réserve est levée.**")
+    # masculines (le correctif)
+    assert mod.has_live_lift("**[ai-01]** Tes trois concerns sont levés.")
+    assert mod.has_live_lift("**[ai-01]** Le concern est levé.")
+    assert mod.has_live_lift("**[ai-01]** Levée de la réserve NanoClaw.") or mod.has_live_lift("**[ai-01]** Leve de la reserve NanoClaw.")
+    assert mod.has_live_lift("**[ai-01]** Le point est levé.")
+
+
+def test_13635_masculin_singulier_leve():
+    assert mod.has_live_lift("Le nit est levé.")
+    assert mod.has_live_lift("Le concern est levé.")
+
+
+def test_13635_negation_masculin_restaure_pas_levee():
+    """Control 3 (#13635) : le nouveau motif masculin passe par `_lift_is_negated`.
+
+    Une negation directe (« n'est pas levé ») doit reste exclue, comme c'est le
+    cas pour le feminin depuis #13622. Sans cette verification, un motif ajoute
+    hors du chemin de negation rouvrirait le defaut par la porte de service.
+    """
+    assert not mod.has_live_lift("Le concern n'est pas levé.")
+    assert not mod.has_live_lift("**ne pas merger tant qu'il n'est pas levé**")
+    assert not mod.has_live_lift("ce point n'est pas levé")
+    # positive lointaine : la levee locale reste reconnue
+    assert mod.has_live_lift("Le concern est levé.")
+
+
+def test_13635_negation_apres_masculin_exclue():
+    """Forme avec negation APRES le mot : 'levee non acquise' => 'levé non acquis'."""
+    assert not mod.has_live_lift("Le concern est levé non acquis.")
+
+
+def test_13635_conditionnel_feminin_nest_pas_annule_par_le_correctif():
+    """Control 2 (#13635) : le correctif n'ouvre PAS de porte conditionnelle
+    du cote masculin qui serait fermee du cote feminin.
+
+    Verifie par faux negatif (symetrie) : CONDITIONAL_LIFT ne neutralise
+    aujourd'hui que les formes a la 1re personne (« et je leve / et je merge »),
+    pas la passive 3e personne « et <sujet> est leve(e) ». Le feminin
+    (« et le point est levée ») et le masculin (« et le point est levé ») se
+    comportent de facon IDENTIQUE apres correctif — le correctif n'introduit
+    aucune asymetrie de genre.
+    """
+    # le correctif rend le masculin symetrique du feminin (aucun des deux n'est
+    # neutralise par CONDITIONAL_LIFT, mais rien n'est introduit non plus)
+    assert mod.has_live_lift("corrige la ligne 19 et le point est levé.") == \
+           mod.has_live_lift("corrige la ligne 19 et le point est levée.")
+
+
+def test_13635_conditionnel_je_leve_masculin_reste_bloquant():
+    """Les formes conditionnelles a la 1re personne restent bloquantes apres
+    correctif (regression CONDITIONAL_LIFT deja cablée, que le correctif ne
+    touche pas) — miroir de test_lift_conditionnel_nest_pas_une_levee (#11201)."""
+    assert mod.classify(
+        "myia-ai-01",
+        "Une seule chose a changer — corrige la ligne 19 et je leve le concern."
+    ) == "BOT-CONCERN"
