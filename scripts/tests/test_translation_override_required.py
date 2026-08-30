@@ -156,7 +156,6 @@ def test_12773_translation_guard_paths_filter_includes_translations_dir():
     coquille. Si un futur editeur reintroduit l'une des trois deviations,
     ce test rougit.
     """
-    import re
     from pathlib import Path
 
     wf_path = (
@@ -165,19 +164,34 @@ def test_12773_translation_guard_paths_filter_includes_translations_dir():
     )
     text = wf_path.read_text(encoding="utf-8")
 
-    # Extract the `paths:` block under `pull_request`
-    pull_req_block = re.search(
-        r"pull_request:\s*\n(?P<inner>(?:[ ]+[^\n]+\n)+)workflow_dispatch",
-        text,
+    # Extract the `paths:` block under `pull_request` -- parsing LINEAIRE.
+    # Le parsing regex precedent (pull_request:\s*\n(?P<inner>(?:[ ]+[^\n]+\n)+)
+    # workflow_dispatch) etait sujet au backtracking catastrophique : sur le
+    # YAML modifie par cette branche, re.search ne rendait JAMAIS (stall
+    # deterministe de Scripts Tests (CPU) a 31 %, 10 runs CI consecutifs
+    # timeout a 20 min + repro locale 15 min). L'extraction ligne par ligne
+    # est lineaire et ne peut pas exploser.
+    lines = text.splitlines()
+    start = next(
+        (i for i, l in enumerate(lines) if l.strip() == "pull_request:"), None
     )
-    assert pull_req_block, "Le bloc pull_request doit exister dans translation-guard.yml"
-    inner = pull_req_block.group("inner")
-    paths_block = re.search(
-        r"paths:\s*\n((?:[ \t]+-[^\n]+\n)+)",
-        inner,
+    assert start is not None, "Le bloc pull_request doit exister dans translation-guard.yml"
+    base_indent = len(lines[start]) - len(lines[start].lstrip())
+    block: list = []
+    for l in lines[start + 1:]:
+        if l.strip() and (len(l) - len(l.lstrip())) <= base_indent:
+            break  # cle de meme niveau (ex. workflow_dispatch:) : fin du bloc
+        block.append(l)
+    p_idx = next(
+        (i for i, l in enumerate(block) if l.strip() == "paths:"), None
     )
-    assert paths_block, "Le paths-filter doit exister sous pull_request"
-    normalized = " ".join(line.strip() for line in paths_block.group(1).splitlines())
+    assert p_idx is not None, "Le paths-filter doit exister sous pull_request"
+    entries = [
+        l.strip()[2:].strip()
+        for l in block[p_idx + 1:]
+        if l.strip().startswith("- ")
+    ]
+    normalized = " ".join(entries)
 
     # Acceptance #1 — translations/** present (Hermes ecart principal)
     assert "translations/**" in normalized, (
