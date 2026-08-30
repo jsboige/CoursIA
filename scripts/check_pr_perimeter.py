@@ -108,18 +108,37 @@ PLURAL_PAREN = re.compile(r"^\s*\(s\)\s*")
 # range we fail loud (false-negative default -- the next body with "onze
 # fichiers" / "eleven files" will be caught by a reviewer and the mapping
 # expanded). Closed list = false-negative cost is bounded and visible.
-COUNT_WORDS = {
-    "un": 1, "une": 1,
-    "deux": 2, "two": 2,
-    "trois": 3, "three": 3,
-    "quatre": 4, "four": 4,
-    "cinq": 5, "five": 5,
-    "six": 6, "six": 6,
-    "sept": 7, "seven": 7,
-    "huit": 8, "eight": 8,
-    "neuf": 9, "nine": 9,
-    "dix": 10, "ten": 10,
+#
+# #13535 accord de langue : le cardinal et le nom doivent concorder. Le
+# singulier anglais "file" est aussi un mot francais courant (« file
+# d'attente ») : sans accord, un corps francais qui parle d'une file de CI
+# produisait le bigramme « une file », lu comme <cardinal> <noun> = 1 fichier,
+# et le garde bloquant sur-accusait une phrase sans rapport (#13499 : « le
+# meme verdict sur une file qui avance et sur une file figee » -> FAIL
+# pretendu 1 fichier, liste effective 2). Croisement FR-cardinal + EN-nom
+# n'a aucune forme legitime : on exige la meme langue des deux cotes. Le
+# chiffre (COUNT_CLAIM) reste langue-neutre. Residu assume : « six » est
+# cardinal des deux langues, donc « six files d'attente » (FR) matche quand
+# meme la lecture EN -- borne par la rarece de la forme.
+COUNT_WORDS_FR = {
+    "un": 1, "une": 1, "deux": 2, "trois": 3, "quatre": 4, "cinq": 5,
+    "six": 6, "sept": 7, "huit": 8, "neuf": 9, "dix": 10,
 }
+COUNT_WORDS_EN = {
+    "one": 1, "two": 2, "three": 3, "four": 4, "five": 5,
+    "six": 6, "seven": 7, "eight": 8, "nine": 9, "ten": 10,
+}
+COUNT_WORDS = {**COUNT_WORDS_FR, **COUNT_WORDS_EN}
+# Triggers pre-compiles : (mot, valeur, regex) -- FR cardinal + fichiers?,
+# EN cardinal + files?. Les trois sites consommateurs (_word_form_count,
+# extraction, body_declares_effective_count) partagent cette meme definition.
+WORD_FORM_TRIGGERS = tuple(
+    (word, n, re.compile(rf"\b{re.escape(word)}\s+fichiers?\b", re.IGNORECASE))
+    for word, n in COUNT_WORDS_FR.items()
+) + tuple(
+    (word, n, re.compile(rf"\b{re.escape(word)}\s+files?\b", re.IGNORECASE))
+    for word, n in COUNT_WORDS_EN.items()
+)
 EXCLUSIVITY_MARKERS = (
     "uniquement",
     "seulement",
@@ -753,14 +772,15 @@ def _additive_line_sum(line: str) -> int:
 
 
 def _word_form_count(text: str) -> int | None:
-    """#12092: first spelled-out cardinal followed by fichiers/files (closed
-    list COUNT_WORDS, FR/EN 1-10). None when the line carries no word-form
+    """#12092: first spelled-out cardinal followed by its language-agreeing
+    noun (closed list COUNT_WORDS, FR/EN 1-10 ; #13535 : FR cardinal +
+    fichiers?, EN cardinal + files?). None when the line carries no word-form
     count -- mirror of COUNT_CLAIM for the word shape. Reuses the exact
-    trigger pattern of extract_perimeter_assertions (~L829) so both halves
+    trigger list of extract_perimeter_assertions so both halves
     of the organ agree on what a word count is."""
     low = text.lower()
-    for word, n in COUNT_WORDS.items():
-        if re.search(rf"\b{re.escape(word)}\s+(?:fichiers?|files?)\b", low):
+    for _word, n, trig in WORD_FORM_TRIGGERS:
+        if trig.search(low):
             return n
     return None
 
@@ -1076,9 +1096,8 @@ def _extract_line_candidates(text: str) -> list[tuple[int, str]]:
         # 1-10 (see COUNT_WORDS rationale at line ~98).
         word_triggers = [
             (m, word)
-            for word in COUNT_WORDS
-            for m in re.finditer(rf"\b{re.escape(word)}\s+(?:fichiers?|files?)\b",
-                                  line, re.IGNORECASE)
+            for word, _n, trig in WORD_FORM_TRIGGERS
+            for m in trig.finditer(line)
         ]
         if word_triggers:
             # Same exclusion as numeric form: a word-form count cited inside
@@ -1457,13 +1476,9 @@ def select_candidates(
         if n_files is not None and not any(
             c.body_declares_effective_count for c in body_candidates
         ):
-            for word, n in COUNT_WORDS.items():
+            for word, n, pat in WORD_FORM_TRIGGERS:
                 if n != n_files:
                     continue
-                pat = re.compile(
-                    rf"\b{re.escape(word)}\s+(?:fichiers?|files?)\b",
-                    re.IGNORECASE,
-                )
                 if any(
                     not _is_incidental_assertion(c.text, c.context)
                     and pat.search(c.text)
