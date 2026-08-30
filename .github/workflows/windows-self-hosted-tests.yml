@@ -15,9 +15,28 @@ name: Windows Self-Hosted Tests
 # n'annule pas un dispatch .NET en cours (et inversement). Justification :
 # restore NuGet GradeBookApp.Tests (Lucene.NET/ClosedXML/CsvHelper) prend
 # ~3-5 min ; cancel-in-progress croise gaspillerait ce travail.
+#
+# Selection du job : un input `target` choice {confinement, dotnet} est
+# declare sur workflow_dispatch. Chaque job est garde par
+# `inputs.target == '<job>'` (combine au garde fork existant). Un seul
+# job eligible par dispatch -- sinon, le runner ephemere
+# myia-po-*-fast-guards peut laisser un job en file sans runner (cf
+# commentaire adjoint preflight #13605 issuecomment-5467391147 + DM
+# po-2025:CoursIA-2 msg-20260830T072849-2le6l1 + DM ai-01:CoursIA
+# msg-20260830T072329-ah0km5 greenlight (B) confirme allowlist runtime
+# inchangee -- le repair preserve le vehicule option B).
 
 on:
   workflow_dispatch:
+    inputs:
+      target:
+        description: "Job a executer (un seul par dispatch -- runner ephemere)"
+        type: choice
+        required: true
+        default: "confinement"
+        options:
+          - confinement
+          - dotnet
 
 permissions:
   contents: read
@@ -30,7 +49,9 @@ jobs:
     # l'emettre -- mais "pas de trigger" est un etat qu'une ligne de YAML
     # defait : si un declencheur pull_request est ajoute un jour, un evenement
     # fork est refuse ICI, defense-in-depth qui ne se defe pas d'un clic d'UI.
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    # Garde selection : inputs.target == 'confinement' (sinon ce job n'est
+    # pas eligible -- un dispatch `target=dotnet` ne planifie que le job .NET).
+    if: (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && inputs.target == 'confinement'
     runs-on: [self-hosted, coursia-ephemeral, coursia-fast-guards]
     timeout-minutes: 15
     concurrency:
@@ -62,7 +83,10 @@ jobs:
     # + restore + build Release + test xunit avec TRX logger.
     name: GradeBookApp.Tests (Windows runner)
     # Garde fork explicite au niveau job (cf job ci-dessus rationale partagee).
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    # Garde selection : inputs.target == 'dotnet' (sinon ce job n'est pas
+    # eligible -- un dispatch `target=confinement` ne planifie que le job
+    # confinement).
+    if: (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && inputs.target == 'dotnet'
     runs-on: [self-hosted, coursia-ephemeral, coursia-fast-guards]
     timeout-minutes: 20
     # Groupe separe : un dispatch .NET ne doit PAS annuler un dispatch
