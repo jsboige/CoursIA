@@ -57,7 +57,9 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -uo pipefail
-          python scripts/epic_neglect_sweep.py --self-test
+          # exit 2 by design on a failed control: the sweep must not run
+          # (nor post) on logic whose positive control just failed (#13653, review NanoClaw obs.1)
+          python scripts/epic_neglect_sweep.py --self-test || exit 2
           ARGS=""
           # Apply only on the scheduled sweep (or a dispatch that explicitly
           # opts in). The default dispatch is a dry run: the report prints,
