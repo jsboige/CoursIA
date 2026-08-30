@@ -51,7 +51,8 @@ USER_NIT = {
 }
 
 
-def run(comments, commits=None, threads=None, reviews=None, pr_author="jsboige"):
+def run(comments, commits=None, threads=None, reviews=None, pr_author="jsboige",
+        **extra):
     data = {
         "number": 0,
         "title": "t",
@@ -60,6 +61,7 @@ def run(comments, commits=None, threads=None, reviews=None, pr_author="jsboige")
         "reviews": reviews if reviews is not None else [],
         "commits": commits if commits is not None else [{"committedDate": at(19)}],
     }
+    data.update(extra)
     return mod.analyse(data, threads or [], MERGED)
 
 
@@ -3009,3 +3011,145 @@ def test_13622_negation_nest_dans_fenetre_negated_direct():
     assert not mod._lift_is_negated("Reserve levee", "")
     assert not mod._lift_is_negated("Je leve mon CHANGES_REQUESTED", "")
     assert not mod._lift_is_negated("", ". Je merge.")
+
+
+# --- #13639 : levee citant un commit absent de la branche (rembobine) ---
+
+NIT_OID = "f" * 40
+
+
+def lift_citant_sha(sha="2d6e4c3642"):
+    return {"author": {"login": "jsboige"}, "createdAt": at(12),
+            "body": f"Les 2 nits sont adresses dans le commit {sha}."}
+
+
+def test_13639_levee_citant_commit_absent_ne_leve_plus():
+    """#13557 : la levee citait 2d6e4c3642, rembobine par un force-push.
+
+    La phrase etait honnete a l'ecriture, mais la preuve qu'elle nomme
+    n'existe plus au merge : le nit doit rester NON LEVE, avec la levee
+    annulee nommee dans le resultat.
+    """
+    res = run([USER_NIT, lift_citant_sha()],
+              commits=[{"oid": NIT_OID, "committedDate": at(19)}],
+              body="See #77",
+              _absent_sha_messages={
+                  "2d6e4c3642": "fix(audio,#77): corrige l'attribution"})
+    assert res["blocked"] is True
+    assert [v["sha"] for v in res["voided_lifts"]] == ["2d6e4c3642"]
+
+
+def test_13639_levee_citant_commit_present_leve_toujours():
+    """SHA prefixe present dans les OIDs de la PR : preuve valide, levee."""
+    res = run([USER_NIT, lift_citant_sha()],
+              commits=[{"oid": "2d6e4c3642" + "a" * 30, "committedDate": at(19)}],
+              body="See #77")
+    assert res["blocked"] is False
+    assert res["voided_lifts"] == []
+
+
+def test_13639_absent_sans_rapport_avertit_sans_bloquer():
+    """Citation de CONTEXTE (« comme fixe sur l'autre PR ») : levee valide.
+
+    Le message resolu ne se rattache pas a cette PR (aucun #N commun) :
+    on signale, on ne refuse pas.
+    """
+    res = run([USER_NIT, lift_citant_sha()],
+              commits=[{"oid": NIT_OID, "committedDate": at(19)}],
+              body="See #77",
+              _absent_sha_messages={
+                  "2d6e4c3642": "fix(other,#999): unrelated lane"})
+    assert res["blocked"] is False
+    assert [w["sha"] for w in res["absent_sha_warnings"]] == ["2d6e4c3642"]
+
+
+def test_13639_absent_non_resolu_avertit_sans_bloquer():
+    """SHA non resoluble cote serveur : doute -> avertissement, pas blocage."""
+    res = run([USER_NIT, lift_citant_sha()],
+              commits=[{"oid": NIT_OID, "committedDate": at(19)}],
+              body="See #77")
+    assert res["blocked"] is False
+    assert [w["sha"] for w in res["absent_sha_warnings"]] == ["2d6e4c3642"]
+
+
+def test_13639_rattachement_via_numero_de_pr():
+    """Le message resolu cite le NUMERO de la PR (pas seulement une issue
+    du corps) : rattachement valide, levee refusee."""
+    res = run([USER_NIT, lift_citant_sha()],
+              commits=[{"oid": NIT_OID, "committedDate": at(19)}],
+              _absent_sha_messages={"2d6e4c3642": "fix(x,#0): typo"})
+    assert res["blocked"] is True
+    assert [v["sha"] for v in res["voided_lifts"]] == ["2d6e4c3642"]
+
+
+def test_13639_token_numerique_non_sha():
+    """Un token 100% numerique (date 20260814) n'est pas un SHA : la levee
+    qui le cite reste valide, sans meme un avertissement."""
+    res = run([USER_NIT, lift_citant_sha("20260814")],
+              commits=[{"oid": NIT_OID, "committedDate": at(19)}],
+              body="See #77",
+              _absent_sha_messages={"20260814": "fix(x,#77): piege"})
+    assert res["blocked"] is False
+    assert res["absent_sha_warnings"] == []
+
+
+def test_13639_sans_oids_comportement_inchange():
+    """Fixtures sans `oid` (pre-filtre d'audit, anciens payloads) : le
+    passage est inert, la levee compte comme avant."""
+    res = run([USER_NIT, lift_citant_sha()])
+    assert res["blocked"] is False
+    assert res["voided_lifts"] == []
+
+
+def test_13639_sha_distant_du_marqueur_est_contexte():
+    """Mesure au deploiement (PR #13631) : la levee d'ai-01 citait
+    `e408b2fce` a ~2000 chars du marqueur, dans un paragraphe forensique
+    (« c'est main qui a avance ») -- contexte, pas preuve. Meme resolu et
+    rattache au sujet de la PR, un SHA DISTANT ne doit ni refuser la levee
+    ni meme la signaler.
+    """
+    filler = "Un paragraphe forensique qui explique la mesure cote serveur. " * 8
+    body = ("Les 2 nits sont adresses.\n\n" + filler
+            + "\n\nPar ailleurs, c'est main qui a avance (e408b2fce, #13624).")
+    reply = {"author": {"login": "jsboige"}, "createdAt": at(12), "body": body}
+    res = run([USER_NIT, reply],
+              commits=[{"oid": NIT_OID, "committedDate": at(19)}],
+              body="See #13624",
+              _absent_sha_messages={
+                  "e408b2fce": "fix(check,#13622): _live_lift_positions (#13624)"})
+    assert res["blocked"] is False
+    assert res["voided_lifts"] == []
+    assert res["absent_sha_warnings"] == []
+
+
+def test_13641_ref_par_prefixe_ne_compte_pas():
+    """NanoClaw c.702 sur #13641 : le substring check `any(f"#{n}" in message)`
+    matchait `#13639` dans un message contenant `#136390` (ticket adjacent
+    cite par hasard). Le bon test est l'extraction/tokenisation exacte des
+    references `#\\d+` : la PR doit apparaitre comme MOT COMPLET du message,
+    pas comme prefixe d'un identifiant plus long. Ici, le SHA absent cite
+    `#136390` (prefixe adjacent de `#13639` PR), sans citer `#13639`
+    directement : la levee doit AVERTIR (et non REFUSER)."""
+    res = run([USER_NIT, lift_citant_sha()],
+              commits=[{"oid": NIT_OID, "committedDate": at(19)}],
+              body="See #13639",
+              _absent_sha_messages={
+                  "2d6e4c3642": "fix(x): typo dans #136390 (adjacent)"})
+    assert res["blocked"] is False, "Le substring matchait `#13639` dans `#136390` → faux refus"
+    assert res["voided_lifts"] == []
+    # Avertissement OK (le SHA est bien absent et non resoluble vers la PR)
+    assert [w["sha"] for w in res["absent_sha_warnings"]] == ["2d6e4c3642"]
+
+
+def test_13641_ref_exacte_compte_toujours():
+    """Le contre-test : quand le message cite EXACTEMENT `#13639` (mot complet
+    apres `#` jusqu'au prochain non-alphanumerique), le rattachement reste
+    valide et la levee est REFUSEE. C'est la discrimination qui ferme le faux
+    positif du test precedent."""
+    res = run([USER_NIT, lift_citant_sha()],
+              commits=[{"oid": NIT_OID, "committedDate": at(19)}],
+              body="See #13639",
+              _absent_sha_messages={
+                  "2d6e4c3642": "fix(check,#13639): levee citee (#13640)"})
+    assert res["blocked"] is True
+    assert [v["sha"] for v in res["voided_lifts"]] == ["2d6e4c3642"]

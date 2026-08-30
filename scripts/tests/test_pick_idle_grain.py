@@ -421,6 +421,89 @@ def test_without_review_points_a_fresh_lone_red_still_draws(monkeypatch):
     assert len(out["red"]) == 1
 
 
+def _pr_with_author(n, lane, age_hours, author):
+    pr = _pr(n, lane, age_hours)
+    pr["author"] = {"login": author}
+    return pr
+
+
+def test_base_inherited_red_is_not_the_lanes(monkeypatch):
+    """#13545 : 11 PRs / 4 lanes accusees pour un seul defaut de main.
+
+    Le meme check requis en echec chez un AUTEUR distinct = corroboration :
+    le rouge est impute a la base, retire du refus de la lane, et rapporte
+    comme tache coordinateur avec ses corroborations.
+    """
+    red = _state(checks=[("Scripts Tests (CPU)", "FAILURE", True),
+                         ("PR gate", "FAILURE", True)])
+    _patch_backlog(monkeypatch, [
+        _pr_with_author(1, "myia-po-2023:CoursIA", 30, "myia-po-2023"),
+        _pr_with_author(2, "myia-po-2026:CoursIA-2", 5, "myia-po-2026"),
+    ], {1: red, 2: red})
+    out = pig.red_backlog("myia-po-2023:CoursIA", 24, count_threshold=3)
+    assert out["red"] == []            # rien d'imputable a la lane
+    assert out["aged"] == []
+    assert out["triggers"] == []       # pas de refus de tirage
+    assert {i["check"] for i in out["base_inherited"]} == {
+        "Scripts Tests (CPU)", "PR gate"}
+    wits = next(i["corroborated_by"] for i in out["base_inherited"]
+                if i["check"] == "Scripts Tests (CPU)")
+    assert 1 in wits and 2 in wits    # la lane ET l'etrangere corroborent
+
+
+def test_same_author_failures_are_not_imputed(monkeypatch):
+    """Controle negatif : deux PRs du MEME auteur ne se corroborent pas.
+
+    Une lane qui casse le meme ratchet sur 2 PRs porte 2 defauts a elle --
+    les imputer a la base transformerait un motif de refus legitime en
+    silence complice.
+    """
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    _patch_backlog(monkeypatch, [
+        _pr_with_author(1, "myia-po-2023:CoursIA", 30, "myia-po-2023"),
+        _pr_with_author(2, "myia-po-2023:CoursIA", 30, "myia-po-2023"),
+    ], {1: red, 2: red})
+    out = pig.red_backlog("myia-po-2023:CoursIA", 24, count_threshold=3)
+    assert [r["number"] for r in out["red"]] == [1, 2]
+    assert out["base_inherited"] == []
+    assert "aged" in out["triggers"]
+
+
+def test_inheritance_does_not_swallow_other_causes(monkeypatch):
+    """L'imputation retire le CHECK herite, pas les autres causes de la PR.
+
+    Une PR dont le check herite de la base MAIS qui conflit avec main reste
+    rouge : le conflit est bien le sien.
+    """
+    red = _state(checks=[("Scripts Tests (CPU)", "FAILURE", True)],
+                 mergeable="CONFLICTING")
+    _patch_backlog(monkeypatch, [
+        _pr_with_author(1, "myia-po-2023:CoursIA", 30, "myia-po-2023"),
+        _pr_with_author(2, "myia-po-2026:CoursIA-2", 5, "myia-po-2026"),
+    ], {1: red, 2: red})
+    out = pig.red_backlog("myia-po-2023:CoursIA", 24, count_threshold=3)
+    assert [r["number"] for r in out["red"]] == [1]
+    assert out["red"][0]["causes"] == ["conflits avec main -> rebaser"]
+
+
+def test_required_failure_links_advisory_as_its_probable_cause():
+    """#13545 (presentation) : l'agregateur requis et sa cause advisory ne
+    s'affichent plus comme deux lignes qui se contredisent.
+
+    « check requis en echec : PR gate » puis « diagnostic, non bloquant :
+    Scripts Tests (CPU) » sur le MEME rouge est illisible au moment ou le
+    message compte : la deuxieme ligne doit dire qu'elle est la CAUSE
+    probable de la premiere.
+    """
+    state = _state(checks=[("PR gate", "FAILURE", True),
+                           ("Scripts Tests (CPU)", "FAILURE", False)])
+    causes = pig.blocking_causes(state)
+    assert "check requis en echec : PR gate" in causes
+    linked = [c for c in causes if "Scripts Tests (CPU)" in c]
+    assert len(linked) == 1
+    assert "cause probable du requis" in linked[0]
+
+
 def test_untagged_blocked_prs_are_counted_but_never_attributed(monkeypatch):
     """Portee ecrite : ce que le garde NE couvre PAS.
 
