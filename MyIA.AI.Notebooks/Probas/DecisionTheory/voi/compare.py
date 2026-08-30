@@ -171,11 +171,12 @@ def compare(
                     agreement = False
 
     # Coherence de la decision observe / ne pas observer.
-    decisions = {"analytical": analytical.observe}
+    # Conversion en bool natif (analytical.observe est np.bool_ chez numpy).
+    decisions = {"analytical": bool(analytical.observe)}
     if pymc_result:
-        decisions["pymc"] = pymc_result.observe
+        decisions["pymc"] = bool(pymc_result.observe)
     if infernet_result:
-        decisions["infernet"] = infernet_result.observe
+        decisions["infernet"] = bool(infernet_result.observe)
     if len(set(decisions.values())) > 1:
         diffs.append({
             "type": "decision_disagreement",

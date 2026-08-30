@@ -167,7 +167,14 @@ class VoiResult:
     raw: Dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
-        return asdict(self)
+        """Serialisation JSON-compatible (convertit numpy en Python natif)."""
+        d = asdict(self)
+        d["eu_no_info"] = float(d["eu_no_info"])
+        d["evpi"] = float(d["evpi"])
+        d["evsi"] = float(d["evsi"])
+        d["evsi_net"] = float(d["evsi_net"])
+        d["observe"] = bool(d["observe"])
+        return d
 
 
 def animat_decision_summary_contract(
