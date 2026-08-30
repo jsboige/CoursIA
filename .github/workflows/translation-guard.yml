@@ -28,6 +28,27 @@ name: Translation Guard
 on:
   pull_request:
     branches: [ main ]
+    # #12773 tranche 1b + amend. #13196 Hermes : paths-filter pour limiter
+    # les declenchements aux PR touchant la surface reelle du garde
+    # (`translation_override_required.py` qui interroge l'API `gh pr`). La
+    # cible du garde = fichiers de traduction derives : `translations/**`
+    # (CSV de sync, derives par T1/T3) et les `*_<lang>.ipynb` rendus.
+    # Hermetique : sans `translations/**` le garde est desarme sur sa cible
+    # principale (86 fichiers mesures firsthand par Hermes sur `main`).
+    paths:
+      - '.github/workflows/translation-guard.yml'
+      - 'scripts/ci/translation_override_required.py'
+      - 'scripts/tests/test_translation_override_required.py'
+      # CSV source des traductions (derive par T1/T3, hand-edit = regression silencieuse) :
+      - 'translations/**'
+      # Surface des traductions derivees rendues (cible reelle du garde) :
+      - 'MyIA.AI.Notebooks/**/*_en.ipynb'
+      - 'MyIA.AI.Notebooks/**/*_es.ipynb'
+      - 'MyIA.AI.Notebooks/**/*_ar.ipynb'
+      - 'MyIA.AI.Notebooks/**/*_fa.ipynb'
+      - 'MyIA.AI.Notebooks/**/*_zh.ipynb'
+      - 'MyIA.AI.Notebooks/**/*_ru.ipynb'
+      - 'MyIA.AI.Notebooks/**/*_pt.ipynb'
   workflow_dispatch:
 
 permissions:
