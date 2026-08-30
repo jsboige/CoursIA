@@ -1,0 +1,80 @@
+{
+  "issue": "#13117",
+  "phase": "Re-Phase C (c.701 narrow worker po-2024, narrow-attente drainage broken by delivered-triage opportunity)",
+  "date": "2026-08-30",
+  "worker": "myia-po-2024 (lane myia-po-2024:CoursIA-2)",
+  "trigger": "Picker R5 narrow REFUS code 2 × 18ᵉ cycle c.701 + delivered-triage #13117 (label candidate-delivered retiré + [CLAIMED] STALE_CLAIM po-2027) + user feedback 'On a dit que vous aviez droit à des gestes moins narrow'",
+  "deliverable": "fee model added + re-execution QC Cloud backtest with diagnostic honest verdict",
+  "qc_project_id": 35674722,
+  "qc_project_url": "https://www.quantconnect.com/project/35674722",
+  "results_summary": {
+    "verdict": "INCONCLUSIVE",
+    "trades_filled": 0,
+    "orders_placed_attempts": [
+      {"version": "v3", "compile_id": "a147bb2a8a4ae069aa2645fc8a84984e-2d360d9dbd4cc0a7c2086ea86f88c765", "backtest_id": "df0827172f79005662081999bfa894fa", "total_orders": 181813, "trades_filled": 0, "completed": true, "diagnosis": "use data[sym].close (deprecated alias) + missing is_warming_up guard"},
+      {"version": "v4", "compile_id": "905bed2102b8c22060eec2ee25059135-82e20712cd23124695d9a2e96e21c4f2", "backtest_id": "4b85d281ee39b1139504cbe3113e461d", "total_orders": 151653, "trades_filled": 0, "completed": true, "diagnosis": "set_warm_up AFTER indicator creation → warmup not applied to indicators, is_ready false"},
+      {"version": "v5", "compile_id": "2313a761334cbb0599b296e89223625e-18e8695b1f9e3450e8f972fafadd32d0", "backtest_id": "627b58197f03336d40d8aba7f4c4e83b", "total_orders": 0, "trades_filled": 0, "completed": false, "error": "Runtime Error 2025-01-01: 'BinanceMeanReversionBB' object has no attribute 'trades' (self.trades does not exist in QCAlgorithm)", "diagnosis": "v5 reached 2025-01-01 (warmup+execution started), but crashed on diagnostic self.trades debug"},
+      {"version": "v6", "compile_id": "f98947a7e21d28e5a36b14fcfc710c2e-0bf7734cc369713da2c6b8cccac614c9", "backtest_id": "769a748768e0b321fcc07756bb197d7b", "total_orders": 0, "trades_filled": 0, "completed": true, "diagnosis": "warmup fixed, but entry condition (price < lower BB AND RSI < 40) never fires on Minute data over 4 years. Strategy never places orders."}
+    ],
+    "fee_model": "ConstantFeeModel(0.001) = 0.1% maker/taker, conforme paper_trading_config.fees_simulated du notebook",
+    "warmup": "self.set_warm_up(timedelta(days=2)) avant creation des indicateurs (corrige v4)",
+    "indicators": "BB(20, 2.0, SIMPLE, MINUTE) + RSI(14, SIMPLE, MINUTE)",
+    "entry_condition": "price < lower BB AND RSI < 40 (assoupli de 35 a 40 vs v3-v4)",
+    "exit_conditions": ["price > middle BB (mean reversion complete)", "stop-loss pnl < -5%"],
+    "period": "2021-01-01 to 2024-12-31",
+    "capital": 10000,
+    "brokerage": "BrokerageName.BINANCE + AccountType.CASH",
+    "resolution": "MINUTE"
+  },
+  "self_criticism": [
+    {
+      "item": 1,
+      "problem": "0 trades filled after 4 backtest versions",
+      "honest_verdict": "The mean-reversion Bollinger Bands strategy as specified (BB 20-period 2-sigma + RSI 14 <40 entry on Minute data over 4 years 2021-2024) does not produce a single fill. The entry condition requires both price < lower BB AND RSI < 40 simultaneously, which is rare on Minute data. The strategy is probably too conservative for the chosen timeframe."
+    },
+    {
+      "item": 2,
+      "problem": "set_warm_up must be called BEFORE indicator creation",
+      "honest_verdict": "V4 backtest placed 151K orders but no fills because set_warm_up(20, MINUTE) was called AFTER the indicators were created — LEAN does not retroactively apply warmup to already-instantiated indicators. Moving set_warm_up BEFORE indicator creation (V5) finally let indicators populate. Lesson: warmup order matters in LEAN."
+    },
+    {
+      "item": 3,
+      "problem": "self.trades does not exist in QCAlgorithm",
+      "honest_verdict": "V5 diagnostic log `len(self.trades)` crashed on_end_of_algorithm because QCAlgorithm doesn't have a `trades` attribute. Should have used `self.TradeBuilder.ClosedTrades` or just removed the diagnostic. V6 removed it."
+    },
+    {
+      "item": 4,
+      "problem": "fee model was missing in Phase C v2",
+      "honest_verdict": "Self-criticism #3 from PR #13160 already documented this. V3-V6 added ConstantFeeModel(0.001) via initialize_security hook override (correct LEAN API, alternative to BrokerageModelSecurityInitializer which requires a security_seeder)."
+    },
+    {
+      "item": 5,
+      "problem": "diagnostic scope: 4 backtests is too many for a narrow worker cycle",
+      "honest_verdict": "Each backtest takes 5-10 minutes on QC Cloud. 4 attempts = 30-40 min of compute, on top of compile + diagnostic. The narrow worker (30 min cycle budget per cron) cannot sustainably iterate on a strategy with multiple unknowns (warmup ordering, fee model API, indicator timing, entry condition feasibility). The honest verdict is: this strategy needs broader parameter exploration (different BB periods, RSI thresholds, entry conditions) which exceeds narrow worker scope. Better: dispatch to QC-strategy-analyzer subagent or escalate to ai-01."
+    }
+  ],
+  "path_forward": [
+    "Document Phase C v6 result as INCONCLUSIVE in the notebook (replacing Phase B placeholders with honest 0-trades verdict + 4-attempt diagnostic trail).",
+    "Issue #13117 acceptance partially satisfied: backtest did execute on QC Cloud with fee model, but the strategy produced 0 fills.",
+    "Next iteration needs broader parameter sweep (BB period ∈ {10, 15, 20, 30}, RSI threshold ∈ {30, 35, 40, 45}, entry condition OR instead of AND) — scope exceeds narrow worker cycle. Escalate to ai-01 for QC-strategy-analyzer subagent dispatch or accept INCONCLUSIVE as final verdict for #13117.",
+    "Re-apply label candidate-delivered once notebook is realigned with honest INCONCLUSIVE verdict (acceptance = backtest executed + notebook realigned, NOT 0-trades-as-success)."
+  ],
+  "files_modified": [
+    "MyIA.AI.Notebooks/QuantConnect/_results/QC-Py-40-Re-Phase-C.json (this file)",
+    "QC Cloud project 35674722 main.py (4 versions v3-v6, all compile + backtest logs preserved in qc-mcp-lite)"
+  ],
+  "tells_observed": [
+    {
+      "id": "c.701-delivered-label-without-notebook-realignment",
+      "summary": "A PR that delivers a JSON of backtest results but does NOT realign the notebook to those results → partial acceptance does NOT justify candidate-delivered label. The label requires the complete deliverable (notebook + real results), not just the experiment."
+    },
+    {
+      "id": "c.701-stale-claim-recovery",
+      "summary": "Picking up a STALE_CLAIM (>48h since last [CLAIMED] with no [DELIVERED]/[RELEASED]) is legitimate when the previous claimant did not complete acceptance. Pattern: read prior claim timestamp, verify no progress in interim, claim with [CLAIMED-AMEND] referencing the STALE state."
+    },
+    {
+      "id": "c.701-qc-fee-model-api",
+      "summary": "LEAN custom fee model requires override of `initialize_security(self, security)` and `security.set_fee_model(ConstantFeeModel(0.001))`. BrokerageModelSecurityInitializer requires a security_seeder; the initialize_security hook is the simpler API."
+    }
+  ]
+}

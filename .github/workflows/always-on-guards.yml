@@ -921,6 +921,17 @@ jobs:
           FAST_LANE_BASE_SHA: ${{ github.event.pull_request.base.sha }}
           FAST_LANE_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           FAST_LANE_PR: ${{ github.event.pull_request.number }}
+          # #13491 : passer le body de la PR aux detecteurs qui lisent
+          # `MD_CONTENT_LOSS_PR_BODY` (env var in-memory, pas de fichier
+          # sur le runner). On utilise le canal in-memory pour eviter le
+          # pattern CodeQL `actions/code-injection` declenche par
+          # `printf '%s' "${{ github.event.pull_request.body }}" > file`
+          # (le taint traverse `printf` vers le shell). Le detecteur
+          # resout `MD_CONTENT_LOSS_PR_BODY` en priorite sur
+          # `MD_CONTENT_LOSS_PR_BODY_FILE` ; ce dernier reste conserve
+          # pour le workflow dedie md-content-loss-gate.yml et les tests
+          # unitaires (cf PR #13673 follow-up c.715).
+          MD_CONTENT_LOSS_PR_BODY: ${{ github.event.pull_request.body }}
         run: |
           git fetch origin "${{ github.base_ref }}" -q
           python scripts/ci/fast_lane.py --shadow
