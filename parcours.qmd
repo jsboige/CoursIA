@@ -4,11 +4,14 @@ subtitle: "Trois parcours certifiés selon votre niveau"
 description: "Parcours d'apprentissage CoursIA : local sobre (Python uniquement), ML.NET + Symbolic (avec .NET Interactive + Lean 4), GenAI complet (Docker + GPU)."
 ---
 
-# Parcours d'apprentissage
-
 Trois parcours certifiés selon votre niveau, vos prérequis, et votre matériel. Tous convergent vers le catalogue unifié — vous pouvez passer de l'un à l'autre au fil de votre progression.
 
-## 1. Local sobre — Python + Jupyter uniquement
+::: {.grid}
+
+::: {.g-col-12 .g-col-md-4 .parcours-card .parcours-card--local}
+### 1. Local sobre
+
+**Python + Jupyter uniquement**
 
 **Prérequis** : Python 3.10+, 8 GB RAM. Aucun GPU, aucun Docker.
 
@@ -16,7 +19,7 @@ Trois parcours certifiés selon votre niveau, vos prérequis, et votre matériel
 
 **Séries accessibles** :
 
-- [Search/Part1-Foundations](MyIA.AI.Notebooks/Search/Part1-Foundations/README.md) — BFS, DFS, Dijkstra, A*
+- [Search/Part1-Foundations](MyIA.AI.Notebooks/Search/Part1-Foundations/README.md) — BFS, DFS, Dijkstra, A\*
 - [Sudoku/Sudoku-Python](MyIA.AI.Notebooks/Sudoku/index.qmd) — solveur Python pur
 - [GameTheory](MyIA.AI.Notebooks/GameTheory/index.qmd) — jeux combinatoires en Python
 - [Probas/InferGlossary](MyIA.AI.Notebooks/Probas/index.qmd) — probabilités discrètes de base
@@ -34,7 +37,13 @@ pip install jupyter papermill
 jupyter notebook MyIA.AI.Notebooks/
 ```
 
-## 2. ML.NET + Symbolic — .NET Interactive + Lean 4
+[Commencer le parcours 1 →](README.md){.btn .btn-primary .parcours-cta}
+:::
+
+::: {.g-col-12 .g-col-md-4 .parcours-card .parcours-card--dotnet}
+### 2. ML.NET + Symbolic
+
+**.NET Interactive + Lean 4**
 
 **Prérequis** : Python (parcours 1) + .NET 9 SDK + (optionnel) WSL pour Lean 4.
 
@@ -48,7 +57,13 @@ jupyter notebook MyIA.AI.Notebooks/
 - [SymbolicAI/Tweety](MyIA.AI.Notebooks/SymbolicAI/Tweety/README.md) — argumentation computationnelle (port IKVM)
 - [SymbolicAI/Planners](MyIA.AI.Notebooks/SymbolicAI/Planners/README.md) — planification automatique (OR-tools)
 
-## 3. GenAI complet — Docker + GPU + services cloud
+[Commencer le parcours 2 →](README.md){.btn .btn-primary .parcours-cta}
+:::
+
+::: {.g-col-12 .g-col-md-4 .parcours-card .parcours-card--genai}
+### 3. GenAI complet
+
+**Docker + GPU + services cloud**
 
 **Prérequis** : parcours 2 + Docker Desktop + GPU NVIDIA (RTX 3090 recommandée, 24 GB VRAM).
 
@@ -60,6 +75,11 @@ jupyter notebook MyIA.AI.Notebooks/
 - [GenAI/Audio/02-Advanced](MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/README.md) — TTS, Whisper, music generation
 - [GenAI/Vibe-Coding](MyIA.AI.Notebooks/GenAI/Vibe-Coding/README.md) — assistants IA en local (Claude Code, Roo)
 - [QuantConnect/](MyIA.AI.Notebooks/QuantConnect/README.md) — 50+ stratégies de trading algorithmique (Lean engine)
+
+[Commencer le parcours 3 →](README.md){.btn .btn-primary .parcours-cta}
+:::
+
+:::
 
 ## Passerelles entre parcours
 
