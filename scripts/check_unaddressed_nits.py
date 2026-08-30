@@ -1547,6 +1547,49 @@ def review_threads(pr: int) -> list[dict]:
     return out
 
 
+def improper_dismissals(pr: int) -> set[str]:
+    """Auteurs de review dont la reserve a ete dismissee par QUELQU'UN D'AUTRE.
+
+    `gh pr view --json reviews` ne dit ni qui a dismisse ni quand : il ne rend
+    que l'etat final `DISMISSED`. L'acteur vit dans la timeline REST
+    (`review_dismissed`), l'auteur de la review dans les reviews REST — les deux
+    se joignent par l'`id` NUMERIQUE (le champ `id` de `gh pr view` est un
+    node-id GraphQL, `PRR_kwDO...`, non comparable au `review_id` entier).
+
+    Retourne des LOGINS d'auteurs de review, pas des ids : la reserve est
+    reappariee par auteur dans `analyse`. Sur-approximation assumee quand un
+    meme auteur a deux reviews dismissees dont une legitimement — un gate se
+    trompe du cote qui bloque, jamais du cote qui laisse passer.
+
+    Non cable sur `audit()` : deux appels API par PR, pour un chemin retrospectif
+    ou l'enforcement n'a plus lieu. Le gate pre-merge est le point de controle.
+    """
+    try:
+        reviews = gh_json(["api", f"repos/{REPO}/pulls/{pr}/reviews", "--paginate"])
+        events = gh_json(["api", f"repos/{REPO}/issues/{pr}/timeline", "--paginate"])
+    except Exception:
+        return set()  # timeline illisible : on retombe sur l'ancien comportement
+    if not isinstance(reviews, list) or not isinstance(events, list):
+        return set()
+    author_of = {
+        r.get("id"): ((r.get("user") or {}).get("login") or "")
+        for r in reviews if isinstance(r, dict)
+    }
+    improper: set[str] = set()
+    for e in events:
+        if not isinstance(e, dict) or e.get("event") != "review_dismissed":
+            continue
+        actor = ((e.get("actor") or {}).get("login") or "")
+        rid = (e.get("dismissed_review") or {}).get("review_id")
+        emitter = author_of.get(rid)
+        if not emitter:
+            continue
+        if actor == emitter or actor in LIFT_OVERRIDE_LOGINS:
+            continue
+        improper.add(emitter)
+    return improper
+
+
 def _names_author(body: str, author: str) -> bool:
     """``body`` mentionne-t-il ``author`` comme identite, pas par hasard ?
 
@@ -1563,7 +1606,7 @@ def _names_author(body: str, author: str) -> bool:
 
 
 def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
-            issue_created=None) -> dict:
+            issue_created=None, dismissed_improperly=None) -> dict:
     """cutoff = mergedAt (audit retro) ou now (gate pre-merge)."""
     commits = [ts(c.get("committedDate")) for c in (pr_data.get("commits") or [])]
     commits = [c for c in commits if c]
@@ -1757,13 +1800,35 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
     for r in pr_data.get("reviews") or []:
         login = (r.get("author") or {}).get("login", "")
         body = r.get("body", "")
-        if r.get("state") == "DISMISSED":
-            # Une dismissal GitHub n'est possible que par l'auteur de la review
-            # (ou un admin) : la reserve est formellement RETIREE par son
-            # emetteur — pas un signal (#11222, levée (b)).
-            continue
+        state = r.get("state")
+        if state == "DISMISSED":
+            # #13685 — la premisse precedente (« une dismissal n'est possible
+            # que par l'auteur de la review ou un admin ») est FAUSSE : tout
+            # compte disposant du droit d'ecriture peut dismisser la review d'un
+            # tiers, l'auteur de la PR compris. Le `continue` inconditionnel
+            # faisait donc de `PUT /pulls/N/reviews/ID/dismissals` une trappe :
+            # sur #13685, la CHANGES_REQUESTED de clusterManager-Myia (« 1 defect
+            # bloquant trouve ») est dismissee a 18:14:56Z, et `check-navlinks`
+            # passe FAILURE a 18:16:11Z — 75 secondes plus tard. La reserve etait
+            # declaree levee pendant que la propriete qu'elle protege etait encore
+            # cassee. C'est #12798 mecanise : se lever soi-meme la reserve d'un
+            # tiers ne repond pas a la remarque, ca la declare repondue.
+            #
+            # Une dismissal n'eteint donc la reserve que si elle vient de son
+            # EMETTEUR (retrait volontaire, #11222 levee (b)) ou d'un login
+            # d'override nomme. Dismissee par quiconque d'autre, elle SURVIT.
+            if login not in (dismissed_improperly or ()):
+                continue
+            # La reserve survivante reprend son etat D'ORIGINE : la timeline
+            # rend `dismissed_review.state == "changes_requested"`. Sans cette
+            # ligne le signal existe mais retombe en `review:DISMISSED` — hors
+            # de la branche qui force BOT-CONCERN, et hors du durcissement
+            # `src == "review:CHANGES_REQUESTED"` en aval. Mesure sur #13685 :
+            # `improper_dismissals` rendait bien {clusterManager-Myia} et le
+            # gate restait vert. Un signal hors de sa branche ne bloque rien.
+            state = "CHANGES_REQUESTED"
         kind = classify(login, body)
-        if r.get("state") == "CHANGES_REQUESTED":
+        if state == "CHANGES_REQUESTED":
             kind = "BOT-CONCERN" if kind is None else kind
         # #11677 — symetrique APPROVED : l'etat natif GitHub `APPROVED` temoigne
         # qu'aucune reserve n'est posee. Si classify() a deja retourne un kind
@@ -1774,7 +1839,7 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
         # cette branche, le verdict positif est calcule sur la prose seule,
         # alors que la preuve la plus dure (l'etat natif) est disponible
         # deux lignes plus haut. Meme symetrie que CHANGES_REQUESTED ci-dessus.
-        elif r.get("state") == "APPROVED":
+        elif state == "APPROVED":
             if kind is None:
                 pass  # kind reste None (l'etat natif confirme l'extinction)
             # Le test porte sur le corps DEPOUILLE, jamais sur le brut : une
@@ -1796,7 +1861,7 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
                 kind = None
         if kind:
             signals.append((ts(r.get("submittedAt")), kind, login, body,
-                            f"review:{r.get('state')}"))
+                            f"review:{state}"))
 
     blocking = []
     for (when, kind, login, body, src) in signals:
@@ -2046,7 +2111,8 @@ def gate(pr: int, as_json: bool) -> int:
     merged = ts(data.get("mergedAt"))
     cutoff = merged or datetime.now(timezone.utc)
     result = analyse(data, review_threads(pr), cutoff,
-                     issue_created=gh_issue_created)
+                     issue_created=gh_issue_created,
+                     dismissed_improperly=improper_dismissals(pr))
     if as_json:
         print(json.dumps(result, indent=1, ensure_ascii=False))
     elif not result["blocked"]:
