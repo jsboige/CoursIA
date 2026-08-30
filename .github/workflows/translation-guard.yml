@@ -213,8 +213,11 @@ jobs:
 
       - name: Journalise accepted override (#10332)
         if: steps.override.outputs.override_applied == 'true'
+        env:
+          # PR-controlled text: never interpolate into run: (backticks in the
+          # motif triggered command substitution => exit 127, run 33318105740)
+          MOTIF: ${{ steps.override.outputs.motif }}
         run: |
-          MOTIF="${{ steps.override.outputs.motif }}"
           echo "::notice title=Translation guard::OVERRIDE accepted -- motif: $MOTIF. The override is auditable; see #10332."
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "## Translation Guard OVERRIDE accepted (#10332)" >> "$GITHUB_STEP_SUMMARY"
