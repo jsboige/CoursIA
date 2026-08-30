@@ -124,7 +124,7 @@ Ces corrections sont **éditoriales** (prose, pas de modification des figures su
 | 4 | [PyMC-4-Bayesian-Networks](PyMC-4-Bayesian-Networks.ipynb) | 55 min | CPT, D-separation, causalité |
 | 5 | [PyMC-7-Skills-IRT](PyMC-7-Skills-IRT.ipynb) | 60 min | IRT, DINA, many-to-many |
 | 6 | [PyMC-8-TrueSkill](PyMC-8-TrueSkill.ipynb) | 55 min | Ranking, online learning, équipes |
-| 7 | [PyMC-9-Classification](PyMC-9-Classification.ipynb) | 50 min | Classification bayésienne, tests A/B |
+| 7 | [PyMC-9-Classification](PyMC-9-Classification.ipynb) | 50 min | Classification bayésienne, tests A/B, calibration hors échantillon (Brier/AUC/fiabilité) |
 | 8 | [PyMC-10-Model-Selection](PyMC-10-Model-Selection.ipynb) | 45 min | Evidence, Bayes factors, ARD |
 | 9 | [PyMC-11-Topic-Models](PyMC-11-Topic-Models.ipynb) | 60 min | LDA, Dirichlet, documents-topics-mots |
 | 10 | [PyMC-13-Crowdsourcing](PyMC-13-Crowdsourcing.ipynb) | 55 min | Workers, communautés, agrégation de labels |
