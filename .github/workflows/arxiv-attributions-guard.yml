@@ -1,0 +1,98 @@
+name: arXiv attributions guard
+
+# Issue #12853 acceptance 9.3 : le check scripts/check_arxiv_attributions.py
+# (livré par la veine 1, registre + check + tests) n'était câblé à AUCUN
+# workflow — scan exhaustif origin/main du 30/08 : zéro référence. Un organe
+# non branché ne voit rien : la classe de défaut « attribution fausse »
+# (#11065, #11110, #11127) re-driftait sans garde-fou, ce qui est exactement
+# le trou que l'issue décrit (« maintenance continue », passes 1-4 = des
+# événements ponctuels).
+#
+# Sémantique BLOQUANTE (contraste cjk-residue-advisory.yml, #8826) : la
+# présence d'une chaîne exacte dans une cellule d'un notebook est un invariant
+# de FICHIER déterministe — pas un jugement de contenu. Une entrée disparue
+# (notebook déplacé, cellule supprimée, attribution réécrite) = FAIL rouge,
+# pas un label. Le remède est mécanique : mettre à jour le registre (chemin /
+# cell_index / expected_citation lus depuis le diff réel, jamais de mémoire —
+# nit Hermes #12900, leçon c.542-L1) ou restaurer la citation.
+#
+# `--strict` : un RENAME (notebook déplacé, citation encore présente) échoue
+# aussi — en CI le registre DOIT suivre les déplacements ; le mode RENAMED
+# non-strict reste un outil de triage local.
+#
+# Étatique, pas diff-scopé : le check relit les 6 notebooks du registre sur
+# l'arbre courant (coût ~6 fichiers), indépendamment de ce que la PR change.
+# Le filtre de chemins ne fait qu'éviter des runs inutiles : registry /
+# script / tests / workflow (self-cover #8822) + les notebooks enregistrés.
+# Une entrée NOUVELLE passe par le registre (dans paths) donc déclenche son
+# propre contrôle. Le nocturne 03:47 UTC est le filet : un rename dont le
+# diff ne montre que le nouveau chemin esquive le filtre per-PR ; la sweep
+# suivante le voit (RENAMED/FAIL) sur main.
+#
+# Cron nocturne compatible stratification #12817/#12821 (minute étalée hors
+# :00/:30, après la fenêtre catalogue 03:37).
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'arxiv_attributions_registry.yaml'
+      - 'scripts/check_arxiv_attributions.py'
+      - 'scripts/tests/test_check_arxiv_attributions.py'
+      - '.github/workflows/arxiv-attributions-guard.yml'
+      - 'MyIA.AI.Notebooks/GameTheory/GameTheory-13b-Safe-Subgame-Solving.ipynb'
+      - 'MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-DeepLearning/3.5-Phenomenes-de-Generalisation.ipynb'
+      - 'MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/Day4-Foundations/Lab8-ADK-Introduction.ipynb'
+      - 'MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/research_l4_decision_transformer.ipynb'
+      - 'MyIA.AI.Notebooks/RL/rl_6c_ppo_from_scratch.ipynb'
+      - 'MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb'
+  schedule:
+    - cron: '47 03 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: arxiv-attributions-guard-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  arxiv-attributions:
+    name: "arXiv attributions registry (7 entrees)"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        # Etatique : aucune diff n'est resolue, depth 1 suffit.
+        with:
+          fetch-depth: 1
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install PyYAML (lecteur du registre)
+        run: python -m pip install --quiet pyyaml
+
+      - name: Guard — chaque entree du registre vit encore dans son notebook
+        run: |
+          set -uo pipefail
+          # rc capture sans abort (#8884) : ni `|| true` (desarme le gate)
+          # ni bare $( ) sous -e.
+          out=$(python scripts/check_arxiv_attributions.py --strict) && rc=0 || rc=$?
+          echo "$out"
+
+          echo "## arXiv attributions guard" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          echo "$out" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "$rc" -ne 0 ]; then
+            echo "::error title=arXiv attributions::Une entree du registre n'est plus presente dans son notebook (FAIL) ou un notebook enregistre a ete deplace (RENAMED). Remede : mettre a jour arxiv_attributions_registry.yaml depuis le diff reel (chemin + cell_index + expected_citation, jamais de memoire) ou restaurer la citation. Cf #12853 / #11168."
+            exit 1
+          fi
+          echo "::notice title=arXiv attributions guard::Registre verifie : chaque entree vit encore dans son notebook (#12853)."
