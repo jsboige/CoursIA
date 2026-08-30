@@ -56,9 +56,9 @@ La série propose délibérément deux stacks en parité (.NET ⇄ Python, marat
 
 | Statistique | Valeur |
 |-------------|--------|
-| Notebooks .NET C# (dotNetRDF) | 13 (fondations SW-1..7, standards SW-8/9/10/11/13, setup RDF.Net) |
-| Notebooks Python (rdflib/pySHACL/owlready2/kglab) | 12 (miroirs SW-2b..7b, standards SW-8..13) |
-| Total | 27 notebooks (parité marathon #4956) |
+| Notebooks .NET C# (dotNetRDF) | 12 (fondations SW-1..7, standards SW-8/9/10/11/13, setup RDF.Net) |
+| Notebooks Python (rdflib/pySHACL/owlready2/kglab) | 14 (miroirs SW-2b..7b, standards SW-8..13, extensions SW-14/15) |
+| Total | 26 notebooks (parité marathon #4956) |
 | Durée totale | ~10h (parcours principal), +4h (twins optionnels) |
 | Langages | .NET C# + Python |
 | Niveau | Débutant à avancé |
