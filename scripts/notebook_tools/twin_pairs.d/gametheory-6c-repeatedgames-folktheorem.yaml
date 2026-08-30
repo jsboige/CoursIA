@@ -71,6 +71,13 @@
       csharp_sha: f880929979f9904c887c79be8b39febd95a83a8c
       content_python_sha: f873c80f5f8fd8e92d15b0c294e39f1da8020aae7581b2a9be77f08e3fdc5ff4
       content_csharp_sha: a9c2683300f3834ef94023c142ce1741569d1580d93cc01fec5134e3ebd07f25
+    - date: "2026-08-29"
+      by: myia-po-2026:CoursIA
+      python_sha: ae3dda4dda933cd53642a8c7a686b4dbfc5a47f3
+      csharp_sha: 047acbda3706e65b8646327e025a7df8b0d8d174
+      content_python_sha: 67166e3dffe4084bf23da95a309583368d8d6d7b62ca95096f954216bfb8d30c
+      content_csharp_sha: 86532bf20f3f1ec07581367c98841c67926ca368d260f72e0642038f4822918a
+      reason: "Audit de PAIRE #13497 : les deux blob SHA mesures par git ls-tree sur le MEME arbre de tete de branche (post-rebase sur 700748f9a = merge de #13081 -- la premiere passe, faite sur base stale 33 cellules/13 code, aurait reverte la section 8 statique comparative et a ete rejouee). Entree appuyee sur une re-execution reelle des DEUX cotes sous ce head : Python papermill kernel python3 36 cellules / 14 code, 14/14 executes, 0 erreur ; C# nbclient kernel .net-csharp 22 cellules / 9 code, 9/9, 0 erreur. Sources byte-identiques (0 cellule modifiee), textes d'outputs et PNG identiques aux valeurs commitees (verifie cellule par cellule) ; le diff = bloc papermill frais + metadata language_info + metadata de cellules. L entree precedente (30eef0a9/f8809299, PR #13081) enregistrait le csharp SHA de main sans re-executer ce cote -- le motif exact que #13497 demande de cesser. Aucune normalisation outillee apres ce --update (lecon #8957)."
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Jeux repetes + Folk Theorem (grim trigger, TFT, horizon fini/infini + facteur d'escompte) portes from-scratch par les deux jumeaux (Python matplotlib.patches.Polygon pour le quadrilatere des paiements faisables, C# BCL pure ASCII art 0 NuGet). Numerique pur des deux cotes -- ni nashpy, ni scipy, ni aucun moteur theorie des jeux dans l'un ou l'autre ecosysteme. Les DEUX cotes implementent les MEMES strategies repetitives en from-scratch -- la portabilite cross-lang est dans la specification formelle (Aumann 1959, Fudenberg-Maskin 1986). Verdict SOTA-OK (solver-free by design des deux cotes, ASCII art pedagogique du cote C# = choix pedagogique assumme, asymetrie medium de visualisation preservee, aucune asymetrie de couverture moteur a corriger)."
   known_differences:
