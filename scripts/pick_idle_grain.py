@@ -141,6 +141,7 @@ REPO = "jsboige/CoursIA"
 # pour le diagnostic complet (EPIC decoupe en 9 filles = 9 veines invisibles).
 from series_saturation import (  # noqa: E402
     CONSOLIDATION,
+    enrich_parent_families,
     EXPANSION,
     NEUTRAL,
     SERIES_SCALE_DEFAULT,
@@ -237,14 +238,47 @@ def age_days(created: str) -> int:
     return max(0, (NOW - created_dt).days)
 
 
+# Plafond de recuperation du pool. Ce n'est PAS un reglage de confort : quand
+# il sature, `gh issue list` rend les N plus RECENTES (mesure du 2026-08-30 :
+# les 12 premieres rendues etaient les 12 dernieres creees), donc la
+# troncature ampute exactement la traine -- la population que la ponderation
+# age + delaissement existe pour atteindre. Un plafond atteint inverse
+# l'instrument au lieu de le borner, et le fait sans rien dire.
+#
+# Mesure du 2026-08-30 : 213 ouvertes, et ce que l'ancien plafond de 300
+# aurait fait tomber en premier etait #1028 (mandat audiobook), #1203, #1206,
+# #1210, #1453, #1454 -- six EPICs de mai, tous vivants.
+POOL_FETCH_LIMIT = 2000
+
+
 def fetch_pool() -> list[dict]:
-    """Une seule requete, limite haute -- c'est ce qui defait la troncature."""
+    """Une seule requete, limite haute -- c'est ce qui defait la troncature.
+
+    Le plafond est haut ET surveille : aucun plafond ne se choisit une fois
+    pour toutes, et celui-ci se fait franchir en silence par construction.
+    """
     out = subprocess.run(
-        ["gh", "issue", "list", "--repo", REPO, "--state", "open", "--limit", "300",
+        ["gh", "issue", "list", "--repo", REPO, "--state", "open",
+         "--limit", str(POOL_FETCH_LIMIT),
          "--json", "number,title,labels,body,createdAt,updatedAt"],
         capture_output=True, text=True, encoding="utf-8", check=True,
     ).stdout
     raw = json.loads(out)
+    if len(raw) >= POOL_FETCH_LIMIT:
+        # Signature de la troncature : on a recu exactement ce qu'on a demande.
+        # Le tirage reste possible et se poursuit -- bloquer la lane serait pire
+        # que la biaiser (R4 : jamais sanctionner l'idle). Mais il est desormais
+        # biaise VERS LE RECENT, et le dire est la seule chose qui empeche de
+        # lire son resultat comme une couverture du pool.
+        print(
+            f"[POOL TRONQUE] {len(raw)} issues rendues pour un plafond de "
+            f"{POOL_FETCH_LIMIT} : le pool est probablement plus grand. "
+            "gh rend les plus RECENTES, donc la traine -- vieux EPICs, sujets "
+            "delaisses -- est absente de ce tirage. Le resultat ci-dessous est "
+            "biaise vers le recent : relever POOL_FETCH_LIMIT avant de s'en "
+            "servir pour conclure quoi que ce soit sur la couverture.",
+            file=sys.stderr,
+        )
     pool = []
     for it in raw:
         labels = [lb["name"] for lb in it.get("labels", [])]
@@ -388,7 +422,7 @@ def admissibility(item: dict, balance: dict | None,
                     "distingue depiler d'emballer.".format(h, dwell_hours))
 
     fam = resolve_family(item, issue_to_family or {},
-                         tuple((balance or {}).keys()))
+                         tuple((balance or {}).keys()), balance)
     if fam and item.get("polarity") == EXPANSION:
         z = (balance or {}).get(fam) or {}
         nb = z.get("new_notebooks", 0)
@@ -467,7 +501,8 @@ def weight(item: dict, prev_genre: str | None,
     # FRATRIE sature -- le cas exact des 9 paires de #12373. La remontee par
     # `parent` est indispensable : sans elle l amortissement ne mord que sur
     # les issues DEJA travaillees, donc jamais sur la prochaine instance.
-    fam = resolve_family(item, issue_to_family or {}, tuple(series or ()))
+    fam = resolve_family(item, issue_to_family or {}, tuple(series or ()),
+                         series)
     nb_new = 0
     if fam:
         nb_new = ((series or {}).get(fam) or {}).get("new_notebooks", 0)
@@ -763,6 +798,11 @@ RED_COUNT_DEFAULT = 3
 # faux positif qui rend un garde de cascade inutilisable.
 CHECK_FAILED = {"FAILURE", "TIMED_OUT", "ACTION_REQUIRED", "STARTUP_FAILURE", "ERROR"}
 
+# #13420 : un check "en vol" est celui dont la file peut encore bouger. C'est
+# lui qui date la saturation -- pas la PR qui le porte. La chaine vide couvre
+# le CheckRun reel, dont `conclusion` est `null` tant qu'il n'a pas conclu.
+CHECK_IN_FLIGHT = {"PENDING", "QUEUED", "IN_PROGRESS", "WAITING", "EXPECTED", ""}
+
 _PR_STATE_FRAGMENT = """
   p%(n)d: pullRequest(number:%(n)d) {
     number mergeable
@@ -928,6 +968,29 @@ def blocking_causes(state: dict, *, age_hours: float | None = None,
     return causes
 
 
+def _newest_start_hours(stamps) -> float | None:
+    """Age, en heures, du demarrage le PLUS RECENT parmi `stamps` (ISO-8601).
+
+    None si aucun horodatage n'est lisible -- l'appelant retombe alors sur
+    l'age de la PR. On prend le plus RECENT et non le plus ancien : la
+    question posee est "la file a-t-elle bouge recemment ?", a laquelle un
+    seul check parti il y a 5 min repond oui, meme si dix autres attendent
+    depuis la veille.
+    """
+    best = None
+    for s in stamps:
+        if not s:
+            continue
+        try:
+            when = dt.datetime.fromisoformat(str(s).replace("Z", "+00:00"))
+        except ValueError:
+            continue
+        hours = (dt.datetime.now(dt.timezone.utc) - when).total_seconds() / 3600.0
+        if best is None or hours < best:
+            best = hours
+    return best
+
+
 def file_saturation_cause(state: dict, age_hours: float, threshold_hours: float) -> str | None:
     """#12830 : detecte le 3e etat -- PR non-mergeable non par rouge substance,
     non par attente-coordinateur (BLOCKED+MERGEABLE+zero-fail, cf #12108),
@@ -943,7 +1006,22 @@ def file_saturation_cause(state: dict, age_hours: float, threshold_hours: float)
          file, juste des PRs sans rollup tracke)
       3. >=1 check requis existe (sans ca, c'est juste un PR sans CI)
       4. Aucun check requis en FAIL (sinon c'est un rouge substance classique)
-      5. age >= saturation_hours (defaut 24 h, configurable --saturation-hours)
+      5. le check requis PENDING le PLUS RECEMMENT DEMARRE l'a ete il y a
+         >= saturation_hours (defaut 24 h, configurable --saturation-hours)
+
+    Le critere 5 date les **checks**, pas la PR (#13420). Une PR ouverte
+    depuis 121 h dont la CI vient de re-declencher il y a 25 min n'est pas
+    saturee : sa file avance. Datee sur l'age de la PR -- ce que faisait ce
+    detecteur -- elle etait annoncee "PENDING depuis >24h, cause infra", et
+    le geste prescrit (`--ignore-red` ou re-run) etait exactement le mauvais :
+    re-run RE-EMPILE dans la file que le message dit saturee, et --ignore-red
+    pousse la lane devant un garde qui allait repondre. Mesure du 2026-08-29 :
+    #12757 (ouverte 121 h) et #12850 (109 h) etaient annoncees saturees alors
+    que leurs checks avaient demarre a 11:39:44Z, soit 25 min plus tot.
+
+    Quand aucun horodatage n'est lisible, on retombe sur l'age de la PR
+    (comportement historique) : un champ absent ne doit pas eteindre le
+    detecteur, seulement le priver de sa precision.
 
     Retourne la cause formulee, ou None.
     """
@@ -960,6 +1038,7 @@ def file_saturation_cause(state: dict, age_hours: float, threshold_hours: float)
     if rollup_state != "PENDING":
         return None
     required_checks = []
+    stamps = []
     for ctx in drop_superseded((rollup.get("contexts", {}) or {}).get("nodes") or []):
         if ctx.get("isRequired"):
             verdict = (ctx.get("conclusion") or ctx.get("state") or "").upper()
@@ -968,8 +1047,16 @@ def file_saturation_cause(state: dict, age_hours: float, threshold_hours: float)
                 # double pas la cause.
                 return None
             required_checks.append(ctx.get("name") or ctx.get("context") or "?")
+            if verdict in CHECK_IN_FLIGHT:
+                # Check encore en vol : c'est SON demarrage qui date la file.
+                stamps.append(ctx.get("startedAt") or ctx.get("createdAt"))
     if not required_checks:
         # Aucun check requis : pas un "faux-rouge CI sature", juste pas de CI.
+        return None
+    newest = _newest_start_hours(stamps)
+    if newest is not None and newest < threshold_hours:
+        # La file AVANCE : un check requis a demarre recemment. Le bon geste
+        # est d'attendre, pas de re-run (qui re-empile) ni d'--ignore-red.
         return None
     n = len(required_checks)
     return (f"file-saturation : {n} check(s) requis en PENDING depuis "
@@ -1456,6 +1543,8 @@ def main(argv: list[str] | None = None) -> int:
     pool = fetch_pool()
     visits, visits_err = fetch_visits()
     series, issue_to_family, series_err = fetch_series_visits()
+    issue_to_family = enrich_parent_families(
+        pool, issue_to_family, series)
     balance = zone_balance(series, issue_to_family, pool)
 
     # Admission AVANT les urnes : un grain inadmissible ne doit pas

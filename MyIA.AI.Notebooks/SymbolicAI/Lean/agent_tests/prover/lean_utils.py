@@ -398,20 +398,43 @@ def sorry_is_def_body(content: str, sorry_line: int) -> bool:
 #
 # Conservative by design: `exact True.intro` closes a goal IFF its type is
 # exactly `True`. Equality/Prop/Unit goals type-mismatch, so real theorems
-# are never refused. The broader "probe-closable by rfl/trivial" family is a
-# riskier follow-up (rfl can close legitimate reflexive goals) and is NOT
-# covered here.
+# are never refused — PROVIDED the probe build actually elaborated the file.
+# The probe's evidence is only as good as the build that produced it, so two
+# infrastructure-failure shapes must never be read as "goal closed":
+#   - FX-5b (#11380): failed build with EMPTY raw_output (timeout/crash);
+#   - FX-5c (#1453, knot sweep 2026-08-21): NON-EMPTY output whose `error:`
+#     lines carry no file position — corrupt package (mathlib reduced to a
+#     bare `.git`, "could not resolve 'HEAD' to a commit"), unknown module,
+#     dead lakefile fetch. Five Conway.lean targets were falsely refused as
+#     TRUE_PLACEHOLDER on exactly this shape; absence of a numbered error is
+#     not evidence of closure when the elaborator never ran.
+# The broader "probe-closable by rfl/trivial" family is a riskier follow-up
+# (rfl can close legitimate reflexive goals) and is NOT covered here.
 _TRUE_PROBE = "exact True.intro"
 _PROBE_LINE_TOL = 3
 _PROBE_UNSOLVED_TOL = 25
+# FX-5c: a lake/lean `error:` line with no `NN:NN:` file position anywhere
+# in it is an infrastructure failure, not an elaboration verdict.
+_UNPOSITIONED_ERROR_LINE_RE = re.compile(r"^\s*error:")
+_FILE_POSITION_RE = re.compile(r"\d+:\d+:")
 
 
 def _probe_closes_goal(raw_output: str, sorry_line: int) -> bool:
     """True when a probe replacing the sorry CLOSED that goal: no compile
     error at the sorry line and no 'unsolved goals' report there. Other
     sorries elsewhere in the file may still error — only the target line
-    matters."""
+    matters.
+
+    FX-5c (#1453): an ``error:`` line with NO file position
+    (``\\d+:\\d+:``) is an infrastructure failure — the elaborator never
+    reached the probed line, so the output carries no evidence either way.
+    Ambiguity must never refuse: return False and let the run proceed under
+    the downstream guards. Position-carrying lines (near or far) keep their
+    full prior semantics."""
     for line in raw_output.split("\n"):
+        if (_UNPOSITIONED_ERROR_LINE_RE.match(line)
+                and not _FILE_POSITION_RE.search(line)):
+            return False  # infra failure → probe never elaborated the file
         m = re.match(r".*?(\d+):\d+: error: ", line)
         if not m:
             m = re.match(r"error: .*?(\d+):\d+: ", line)
@@ -431,8 +454,11 @@ def is_true_placeholder_goal(filepath: str, sorry_line: int) -> Tuple[bool, str]
 
     Detection replaces the sorry with ``exact True.intro`` and compiles: if
     that probe closes the goal (no error and no unsolved goal at the sorry
-    line), the goal type is exactly ``True``. See the FX-5 module note for why
-    this is zero-false-positive and what the broader follow-up would cover.
+    line), the goal type is exactly ``True``. See the FX-5 module note: the
+    probe is false-positive-free only when the probe build actually
+    elaborated the file — FX-5b (empty output) and FX-5c (unpositioned
+    ``error:`` lines) guard the infrastructure-failure shapes where absence
+    of errors is not evidence of closure.
 
     Returns ``(True, reason)`` for a True goal, ``(False, "")`` otherwise
     (including unreadable files, out-of-range lines, deeply-nested sorrys
@@ -495,8 +521,12 @@ def is_true_placeholder_goal(filepath: str, sorry_line: int) -> Tuple[bool, str]
     # 600s probe build timed out under host memory pressure — the run never
     # entered its loop. Empty output on a failed build is NO evidence either
     # way; only a probe that produced output (or succeeded cleanly) may
-    # decide. Non-empty output keeps full prior semantics: errors far from
-    # the probed line stay valid evidence the elaborator ran there.
+    # decide. Non-empty output keeps full prior semantics for POSITIONED
+    # diagnostics: errors far from the probed line stay valid evidence the
+    # elaborator ran there. FX-5c (#1453): non-empty output whose `error:`
+    # lines carry NO file position is an infrastructure failure (corrupt
+    # package, unknown module) — ``_probe_closes_goal`` returns False on it,
+    # so ambiguity still never refuses.
     raw_output = probe_result.get("raw_output", "") or ""
     if not probe_result.get("success") and not raw_output.strip():
         return False, ""

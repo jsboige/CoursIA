@@ -173,6 +173,43 @@ BLOCAGE_LANE = re.compile(r"(?m)^\s*\[(?:BLOCAGE|BLOCK)\]\s+lane\s+\S+")
 # sous-chaines citees (CITERS ligne 455+), donc ajouter un verbe n'ouvre pas la
 # porte aux faux positifs « 0 REQUEST_CHANGES » (#11916 controle negatif) :
 # CITERS inclut deja « zero » et sera etendu de « 0 » (cf ligne ~470).
+# #13559 — RESERVE SUR APPROBATION. #11677 a pose que la prose l'emporte sur
+# l'etat natif `APPROVED` : « si classify() a deja retourne un kind, c'est
+# qu'une reserve VIVANTE survit dans la prose ». L'intention est juste ; la
+# mise en oeuvre laissait tout marqueur RESIDUEL renverser l'etat, y compris
+# quand il n'est la que parce que la review NOMME la reserve qu'elle leve
+# (« depuis mon CHANGES_REQUESTED sur `ae88aefc` », #13496 ; « Conversion de
+# la reserve : CHANGES_REQUESTED (`21e0d810`) -> APPROVE », #13027).
+#
+# Mesure (30/08, 160 PR balayees, `state == "APPROVED"` + marqueur survivant
+# a `_strip_mentioned_verdicts`) : **2 occurrences, 0 vraie reserve**. Les
+# deux etaient des narrations retrospectives. Sur la fenetre mesuree,
+# l'override avait donc un taux de vrais positifs NUL — il ne mesurait plus
+# la reserve, il mesurait la mention.
+#
+# Le remede ne SUPPRIME pas l'override (le cas nomme par #11677, « j'approuve
+# mais le point 2 reste ouvert », est reel et doit continuer de bloquer) : il
+# lui demande une trace EXPLICITE de reserve. L'etat natif redevient decisif
+# par defaut, la prose garde le dernier mot quand elle reserve vraiment.
+# Volontairement LARGE : c'est le cote permissif du garde (il MAINTIENT le
+# blocage), donc un faux positif ici ne coute qu'une phrase de levee, tandis
+# qu'un trou coute un merge non mesure.
+_APPROVE_RESERVATION_RE = re.compile(
+    r"(?i)("
+    r"sous\s+r[ée]serve"
+    r"|avec\s+r[ée]serves?\b"
+    r"|r[ée]serve\s+(?:maintenue|subsiste|demeure|tient)"
+    r"|je\s+maintiens"
+    r"|je\s+conserve\s+(?:ma|mon|la)\b"
+    r"|(?:mais|toutefois|cependant|neanmoins|n[ée]anmoins)[^.\n]{0,120}?"
+    r"\b(?:reste|restent|subsiste|subsistent|demeure|demeurent"
+    r"|non\s+trait[ée]|non\s+lev[ée]|ouverte?s?|en\s+suspens)\b"
+    r"|\b(?:[àa]\s+corriger|[àa]\s+traiter|[àa]\s+adresser)\s+"
+    r"(?:avant|imp[ée]rativement)"
+    r"|\bblocage\s+maintenu\b"
+    r")"
+)
+
 CONCERN_MARKERS = (
     "COMMENT_WITH_CONCERNS", "CHANGES_REQUESTED", "REQUEST_CHANGES",
     "NEEDS_CHANGES", "CONCERNS",
@@ -1416,8 +1453,26 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
         # cette branche, le verdict positif est calcule sur la prose seule,
         # alors que la preuve la plus dure (l'etat natif) est disponible
         # deux lignes plus haut. Meme symetrie que CHANGES_REQUESTED ci-dessus.
-        elif r.get("state") == "APPROVED" and kind is None:
-            pass  # kind reste None (l'etat natif confirme l'extinction)
+        elif r.get("state") == "APPROVED":
+            if kind is None:
+                pass  # kind reste None (l'etat natif confirme l'extinction)
+            # Le test porte sur le corps DEPOUILLE, jamais sur le brut : une
+            # review qui *cite* une formule de reserve (tableau de sondes,
+            # explication du garde, fixture entre backticks ou guillemets) la
+            # MENTIONNE au lieu de l'EMETTRE. Mesure du 30/08 sur la review
+            # Hermes de cette PR meme : 6 matches sur le corps brut, dont 5
+            # sont ses propres fixtures -- le garde bloquait la PR sur les
+            # chaines que la review citait pour demontrer qu'il fonctionne.
+            # Troisieme occurrence de la confusion usage/mention apres #11246
+            # (CONDITIONAL_LIFT) et #13261 (marqueur d'override G-VAR-3) : le
+            # depouillement `_strip_quoted` existait deja et est applique
+            # partout ailleurs (l.803, l.1040) -- cette branche etait la seule
+            # a s'en passer.
+            elif not _APPROVE_RESERVATION_RE.search(_strip_quoted(body)):
+                # #13559 : marqueur residuel SANS langage de reserve — la
+                # review NOMME une reserve (le plus souvent celle qu'elle
+                # leve) au lieu d'en emettre une. L'etat natif decide.
+                kind = None
         if kind:
             signals.append((ts(r.get("submittedAt")), kind, login, body,
                             f"review:{r.get('state')}"))
@@ -1525,12 +1580,63 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
         and author not in nit_authors
     ]
 
+    # #13512 -- CE QUE L'ORGANE N'A PAS EVALUE.
+    #
+    # `classify` reconnait un commentaire humain a ses retours CRLF de l'UI
+    # web (test sur la sequence CR-LF dans le corps). Un commentaire d'UNE
+    # SEULE LIGNE n'en porte aucun : il tombe en `None` et devient invisible.
+    # Mesure du 2026-08-29 sur quatre remarques user reelles : les trois
+    # one-liners (#13476 tika/qwen, #13397 exercices pre-resolus, #13403
+    # prose confuse) rendent `None` ; seule celle de deux lignes (#13472
+    # graphviz) rend "HUMAN". #13476 a ete mergee 2 h 13 apres la remarque,
+    # sous un `OK -- aucun nit non leve` qui ne l'avait jamais lue.
+    #
+    # Aucun detecteur ne repare ca : `jsboige` est a la fois le compte user,
+    # l'identite de poussee des lanes et le login coordinateur, et l'API ne
+    # les distingue par AUCUN champ (author_association, performed_via_github_app,
+    # user.type : identiques, verifie firsthand). Un classifieur candidat
+    # mesure le meme jour attrapait 3/3 des remarques user mais accusait 3/5
+    # des commentaires de lane -- trop bruyant pour bloquer.
+    #
+    # D'ou le parti : ne pas classer, mais CESSER DE CERTIFIER LE SILENCE.
+    # Ce que l'organe n'a pas evalue, il l'imprime. Lancer le gate devient
+    # l'acte de relire la queue -- la regle user HARD (« on ne merge pas sans
+    # avoir relu tous les commentaires au dernier moment ») cesse de dependre
+    # de la vigilance et devient mecanique.
+    lift_keys = {(t_, a) for (t_, a, _b) in explicit_lifts if t_}
+    unevaluated: list[dict] = []
+    for c in pr_data.get("comments") or []:
+        login = (c.get("author") or {}).get("login", "")
+        if login in BOT_LOGINS:
+            continue
+        body = (c.get("body") or "").strip()
+        when = ts(c.get("createdAt"))
+        if not body or when is None or when > cutoff:
+            continue
+        if classify(login, body) is not None:
+            continue  # deja porte par `blocking`, ou explicitement neutralise
+        if (when, login) in lift_keys:
+            continue  # compte comme levee : deja lu par l'etage lift
+        unevaluated.append({
+            "author": login,
+            "at": c.get("createdAt"),
+            "after_last_commit": bool(last_commit and when > last_commit),
+            "body": body,
+        })
+    # Ce qui suit le dernier commit est le plus a risque (rien ne peut
+    # pretendre l'avoir traite) ; a defaut, la queue -- exactement les
+    # `comments[-3:]` que la regle demande de relire avant `gh pr merge`.
+    after_lc = [u for u in unevaluated if u["after_last_commit"]]
+    to_read = after_lc or unevaluated[-3:]
+
     return {
         "pr": pr_data.get("number"),
         "title": (pr_data.get("title") or "")[:110],
         "blocking": blocking,
         "blocked": bool(blocking),
         "ignored_overrides": ignored_overrides,
+        "unevaluated": to_read,
+        "unevaluated_total": len(unevaluated),
     }
 
 
@@ -1544,6 +1650,34 @@ FIELDS = "number,title,mergedAt,author,comments,reviews,commits,url,state"
 LIST_FIELDS = "number,title,mergedAt,url,comments,reviews,author"
 
 
+def _print_unevaluated(result: dict) -> None:
+    """Imprimer verbatim ce que l'organe n'a pas evalue (#13512).
+
+    `OK -- aucun nit non leve` repond « aucune phrase de levee ne manque », et
+    RIEN D'AUTRE : un commentaire que `classify` n'a pas su lire n'est pas un
+    commentaire absent. Le dire est tout l'organe.
+    """
+    rows = result.get("unevaluated") or []
+    if not rows:
+        return
+    after = sum(1 for r in rows if r["after_last_commit"])
+    tail = f", dont {after} posterieur(s) au dernier commit" if after else ""
+    print()
+    print(f"  --- A RELIRE : {len(rows)} commentaire(s) NON EVALUE(S) par cet organe{tail} ---")
+    print("  Le verdict ci-dessus ne porte QUE sur les phrases de levee. Ces")
+    print("  commentaires n'ont pas ete classes : les lire avant `gh pr merge`.")
+    for r in rows:
+        mark = " [APRES LE DERNIER COMMIT]" if r["after_last_commit"] else ""
+        print()
+        print(f"  * {r['author']} — {r['at']}{mark}")
+        lines = r["body"].split("\n")
+        for line in lines[:8]:
+            print(f"      {line[:160]}")
+        if len(lines) > 8:
+            print(f"      ... (+{len(lines) - 8} ligne(s))")
+    print()
+
+
 def gate(pr: int, as_json: bool) -> int:
     data = gh_json(["pr", "view", str(pr), "--repo", REPO, "--json", FIELDS])
     merged = ts(data.get("mergedAt"))
@@ -1553,6 +1687,7 @@ def gate(pr: int, as_json: bool) -> int:
         print(json.dumps(result, indent=1, ensure_ascii=False))
     elif not result["blocked"]:
         print(f"OK  PR #{pr} — aucun nit non leve.")
+        _print_unevaluated(result)
     else:
         print(f"BLOCKED  PR #{pr} — {len(result['blocking'])} nit(s) non leve(s) :\n")
         for b in result["blocking"]:
@@ -1566,6 +1701,7 @@ def gate(pr: int, as_json: bool) -> int:
             print(f"  [i] {o['why']} (commentaire de {o['author']} à {o['at']})")
         print("Lever chaque nit (commit, reponse explicite, ou issue de suivi nommee)")
         print("avant `gh pr merge`. Cf CLAUDE.md section B.0.")
+        _print_unevaluated(result)
     return 1 if result["blocked"] else 0
 
 
