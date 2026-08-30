@@ -658,3 +658,44 @@ TRANCHE4: list[Guard] = [
         fail_on_all_warn=True,
     ),
 ]
+
+
+# ---------------------------------------------------------------------------
+# TRANCHE 5 d'absorption (#12567) -- garde de derive pytest testpaths vs CI.
+# Forme moteur : scan global simple, sans base (le script lit pytest.ini +
+# tous les workflows et fait la difference -- pas de notion de delta base
+# vs head pour cette garde). Meme contrat que la tranche 1 forme 1.
+#
+# Selection rationale : apres les 4 premieres tranches, le scan systematique
+# (script ci-dessus) des 96 workflows pull_request ne trouve que 2 mono-script
+# restants : (1) base-not-main-advisory.yml -- ecrit un label + commentaire
+# PR, donc exige `pull-requests: write` exclus par le registre (#13097 /
+# tranche 3 documente l'exclusion) ; (2) testpaths-coverage-guard.yml --
+# mono-script, `contents: read` only, scan global sans base. La tranche 5
+# absorbe ce dernier.
+#
+# Forme : scan global, pas de `paths:` restrictif (la garde porte sur pytest.ini
+# + workflows declares comme sources de verite -- tout PR touchant un test
+# config peut deriver la garde). Le filtre `paths:` du workflow d'origine
+# est reporte tel quel dans `Guard.paths` pour preserver le comportement
+# de declenchement actuel : une PR qui ne touche aucun de ces chemins ne
+# declenche PAS la garde absorbee (coherence avec les tranches 1-4).
+# ---------------------------------------------------------------------------
+TRANCHE5: list[Guard] = [
+    Guard(
+        name="testpaths vs CI coverage",
+        source="testpaths-coverage-guard.yml",
+        paths=[
+            "pytest.ini",
+            "scripts/check_testpaths_coverage.py",
+            ".github/workflows/scripts-tests.yml",
+            ".github/workflows/ml-tests.yml",
+            ".github/workflows/secret-scan.yml",
+            ".github/workflows/ict-tests.yml",
+            ".github/workflows/testpaths-coverage-guard.yml",
+        ],
+        argv=["python", "scripts/check_testpaths_coverage.py", "--verbose"],
+        blocking=True,
+        absorbed=True,
+    ),
+]
