@@ -489,6 +489,61 @@ def test_render_csv_without_lang_col_raises(tmp_path):
         r.render(nb, csv_p, "en", tmp_path / "out.ipynb")
 
 
+# --------------------------------------------------------------------------
+# #13546 : --fail-on-stale refuse un rendu dont le CSV porte des orphelins
+# --------------------------------------------------------------------------
+
+def test_render_fail_on_stale_raises_and_writes_nothing(tmp_path):
+    """fail_on_stale + CSV orphelin -> ValueError AVANT toute ecriture."""
+    nb = _write_nb(tmp_path, "nb.ipynb", [
+        {"id": "m1", "type": "markdown", "source": ["x"]},
+    ])
+    csv_p = _write_csv(tmp_path, "tr.csv", [
+        {"notebook": str(nb), "cell_id": "m1", "cell_type": "markdown",
+         "src_lang": "fr", "src_hash": "1", "text_fr": "x", "text_en": "X"},
+        # ligne orpheline : cell_id absent du notebook (cellule supprimee)
+        {"notebook": str(nb), "cell_id": "gone1", "cell_type": "markdown",
+         "src_lang": "fr", "src_hash": "2", "text_fr": "y", "text_en": "Y"},
+    ])
+    out = tmp_path / "out_en.ipynb"
+    with pytest.raises(ValueError, match=r"--fail-on-stale : 1 ligne\(s\) CSV orpheline\(s\)"):
+        r.render(nb, csv_p, "en", out, fail_on_stale=True)
+    assert not out.exists()
+    assert not out.with_suffix(out.suffix + ".stale").exists()
+
+
+def test_render_fail_on_stale_passes_when_no_orphan(tmp_path):
+    """fail_on_stale sans orphelin -> rendu normal, .stale absent."""
+    nb = _write_nb(tmp_path, "nb.ipynb", [
+        {"id": "m1", "type": "markdown", "source": ["x"]},
+    ])
+    csv_p = _write_csv(tmp_path, "tr.csv", [
+        {"notebook": str(nb), "cell_id": "m1", "cell_type": "markdown",
+         "src_lang": "fr", "src_hash": "1", "text_fr": "x", "text_en": "X"},
+    ])
+    out = tmp_path / "out_en.ipynb"
+    res = r.render(nb, csv_p, "en", out, fail_on_stale=True)
+    assert out.exists()
+    assert res.stats.n_orphan_keys == 0
+    assert not out.with_suffix(out.suffix + ".stale").exists()
+
+
+def test_render_default_keeps_warn_contract_on_orphans(tmp_path):
+    """Sans fail_on_stale : contract inchange -> WARN + sidecar .stale ecrit."""
+    nb = _write_nb(tmp_path, "nb.ipynb", [
+        {"id": "m1", "type": "markdown", "source": ["x"]},
+    ])
+    csv_p = _write_csv(tmp_path, "tr.csv", [
+        {"notebook": str(nb), "cell_id": "gone1", "cell_type": "markdown",
+         "src_lang": "fr", "src_hash": "2", "text_fr": "y", "text_en": "Y"},
+    ])
+    out = tmp_path / "out_en.ipynb"
+    res = r.render(nb, csv_p, "en", out)
+    assert res.stats.n_orphan_keys == 1
+    assert out.with_suffix(out.suffix + ".stale").read_text(
+        encoding="utf-8").strip() == "gone1"
+
+
 def test_render_dry_run_requires_out_path(tmp_path):
     nb = _write_nb(tmp_path, "nb.ipynb", [
         {"id": "m1", "type": "markdown", "source": ["x"]},

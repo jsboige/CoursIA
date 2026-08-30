@@ -394,10 +394,11 @@ jobs:
                   r = subprocess.run(
                     ["python", "scripts/translation/render_notebook.py",
                      "--csv", str(csv_path), "--notebook", nb,
-                     "--lang", lang, "--out", str(out)],
+                     "--lang", lang, "--out", str(out),
+                     "--fail-on-stale"],
                     capture_output=True, text=True)
                   if r.returncode != 0:
-                    print(f"T4 render {nb} -> {lang}: non-zero (may have 0 translated cells). {r.stderr[:160]}")
+                    print(f"T4 render {nb} -> {lang}: non-zero (0 translated cells, or stale/orphan CSV rows). {r.stderr[:160]}")
           print("T4 render pass complete.")
           PY
 
