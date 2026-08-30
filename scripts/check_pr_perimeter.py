@@ -418,10 +418,18 @@ def check_assertion(files: list[dict], assertion: str) -> list[str]:
         # reached the terminal "unverifiable" branch despite being a true
         # perimeter claim. Read the same closed list, same first-non-zero
         # rule. FR cardinals are unique 1-10 (no false twin like EN "six").
-        problems.append(
-            f"l'assertion pretend {word_count} fichier(s), la liste effective en compte {len(files)} : "
-            + ", ".join(f["path"] for f in files)
-        )
+        # #13610: an indefinite-article word count whose edit-verb referent is
+        # a NAMED file not in this PR is a descriptive mention of another
+        # file (routing target, dependency, candidate not chosen) -- not the
+        # PR's perimeter. Skip the red; the digit branch never produces this
+        # shape so the guard sits here only.
+        if _word_form_is_indef_non_pr_subject(scan_target, files):
+            pass
+        else:
+            problems.append(
+                f"l'assertion pretend {word_count} fichier(s), la liste effective en compte {len(files)} : "
+                + ", ".join(f["path"] for f in files)
+            )
     exclusive = _has_exclusivity(scan_target.lower())
     if exclusive:
         for f in files:
@@ -503,6 +511,34 @@ INCIDENTAL_QUALIFIERS = frozenset({
     # as "nouveau/nouveaux/nouvelle/nouvelles" above; the masculine/feminine
     # singular/plural variants were missing.
     "neuf", "neuve", "neufs",})
+# ---------------------------------------------------------------------------
+# #13610 -- article indefini en position d'objet d'un verbe d'action dont le
+# sujet N'est PAS la PR. Founder case PR #13539 l.43 :
+# « generaliser demanderait d'editer un fichier deja porteur de deux PRs
+# ouvertes de la meme lane (#13496, #13499) » -- « un fichier » y designe
+# `pick_idle_grain.py` (un fichier que la PR ne touche pas, cite pour
+# justifier un non-geste de routage), et le guard tirait 1 fichier(s) face a
+# une liste de 3, rougissant un check requis sur une PR saine. Meme classe
+# symetrique que les fondateurs #11985 forme 5/6 : un referent descriptif,
+# pas une assertion de perimetre.
+#
+# Discriminant : « (un|une|des) (fichier|files)(s) » OUVERT par un verbe
+# d'action EDIT + un nom de FICHIER NOMMÉ sur la meme ligne ET ce nom n'est
+# PAS dans `files`. Si le referent reste anonyme (« editer un fichier »),
+# le cas est ambigu et le garde CONSERVE le rouge (FN safety par defaut,
+# coherent avec le pattern fondateur du script).
+# ---------------------------------------------------------------------------
+_INDEF_ARTICLE = re.compile(r"\b(?:un|une|des)\s+(?:fichiers?|files?)\b", re.IGNORECASE)
+_EDIT_VERB = re.compile(
+    r"\b(?:editer|modifier|toucher|ouvrir|créer|creer|ajouter|changer|mettre\s+à\s+jour|mettre\s+a\s+jour|update|edit|modify|touch|open|create|add|change)\b",
+    re.IGNORECASE,
+)
+# A named file as it would appear in a body: backticked path, bare basename
+# (.py/.cs/.yml/.json/.md/.ipynb/.sh), or a known scripts/<x>.py shape.
+_NAMED_FILE_BODY = re.compile(
+    r"(?:`([^`]+\.[A-Za-z0-9]+)`|"  # backticked: `pick_idle_grain.py`
+    r"\b([\w./-]+\.(?:py|cs|yml|yaml|json|md|ipynb|ts|js|sh|toml|cfg|ini))\b)"  # bare basename
+)
 # A cited threshold ("< 15 fichiers", ">= 10 fichiers") quotes a rule, it does
 # not claim a perimeter.
 COMPARISON_PREFIX = re.compile(r"[<>=≤≥]\s*$")
@@ -751,6 +787,47 @@ def _count_is_exempt(line: str, m: re.Match, ante_context: str = "") -> bool:
     if _count_has_incidental_qualifier(line, m):
         return True
     return False
+
+
+def _word_form_is_indef_non_pr_subject(text: str, files: list[dict]) -> bool:
+    """#13610: True when a word-form count in `text` is an indefinite
+    article (« un/une/des fichier(s) ») opened by an edit-verb whose NAMED
+    referent is NOT in `files`. The phrase describes an OTHER file (a
+    routing target, a dependency, a candidate not chosen) and is not the
+    PR's perimeter.
+
+    FN safety: when the referent is anonymous (« editer un fichier » with
+    no named file), the function returns False -- the ambiguous shape
+    stays blocking, coherent with the script's founder pattern (default
+    fails loud; new vocabulary is gated by a measurement, not an
+    intuition). Founder case PR #13539 l.43 :
+    « generaliser demanderait d'editer un fichier deja porteur de deux PRs
+    ouvertes de la meme lane (#13496, #13499) » -- here "un fichier"
+    designates `pick_idle_grain.py` (a file the PR does not touch), and
+    the guard drew 1 vs 3, blocking a healthy PR.
+
+    Hook: called from `check_assertion` on the `word_count` branch only.
+    The digit branch (COUNT_CLAIM) cannot produce the indefinite-article
+    shape and so does not need this guard.
+    """
+    low = text.lower()
+    m = _INDEF_ARTICLE.search(low)
+    if m is None:
+        return False
+    start = m.start()
+    window_before = text[max(0, start - 80):start]
+    if not _EDIT_VERB.search(window_before):
+        return False
+    paths_in_files = {f["path"] for f in files}
+    paths_in_files_basenames = {p.rsplit("/", 1)[-1] for p in paths_in_files}
+    named = _NAMED_FILE_BODY.findall(text)
+    named_flat = [n[0] or n[1] for n in named if n[0] or n[1]]
+    if not named_flat:
+        return False
+    return any(
+        n not in paths_in_files and n not in paths_in_files_basenames
+        for n in named_flat
+    )
 
 
 def _additive_line_sum(line: str) -> int:
