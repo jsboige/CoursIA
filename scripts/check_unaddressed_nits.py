@@ -1182,6 +1182,123 @@ def gh_json(args: list[str]) -> object:
     return json.loads(out)
 
 
+# #13639 -- une levee dont la PREUVE citee n'est plus dans la PR. Sur #13557,
+# la levee citait le commit 2d6e4c3642 (« corrige dans ce commit ») ; un
+# force-push ulterieur avait rembobine ce commit, et le gate restait vert :
+# la phrase etait honnete au moment ou elle fut ecrite, mais ce qu'elle
+# nommait n'existait plus au merge. Le principe B.0 (« ce qui leve une
+# remarque est une phrase ») suppose que la phrase dise VRAI au merge ; une
+# levee qui cite une preuve absente ne dit plus vrai.
+#
+# Refus ETROIT deliberement : (a) le corps de levee cite un SHA, (b) ce SHA
+# n'appartient pas aux commits de la PR (match par prefixe), (c) il RESOUD
+# cote serveur, (d) son message se RAPPORTE a cette PR (`#N`, N = numero de
+# la PR ou issue citee dans le titre/corps). (c)+(d) distinguent le
+# rembobinage (#13557) de la citation de CONTEXTE (« comme fixe en abc1234
+# sur l'autre PR ») : la seconde reste une levee valide, juste signalee.
+# En cas de doute : avertir (A RELIRE), jamais bloquer.
+_SHA_CITED = re.compile(r"\b[0-9a-f]{7,40}\b")
+
+
+def _cited_shas(body: str) -> set[str]:
+    """SHAs cites dans un corps : 7-40 hex, avec AU MOINS une lettre.
+
+    Un token 100% numerique de 7+ chiffres (une date 20260830, un run-id)
+    est hex-compatible mais n'est quasi jamais un SHA -- l'exiger lettree
+    evite de partir resoudre une date cote serveur pour rien.
+    """
+    out: set[str] = set()
+    for m in _SHA_CITED.finditer((body or "").lower()):
+        tok = m.group(0)
+        if any(ch in "abcdef" for ch in tok):
+            out.add(tok)
+    return out
+
+
+# Proximite maximale (caracteres) entre un SHA cite et un marqueur de levee
+# VIVANT pour que le SHA compte comme la PREUVE avancee par la phrase.
+_LIFT_SHA_PROXIMITY = 150
+
+
+def _sha_in_lift_claim(lift_body: str, sha: str) -> bool:
+    """Le SHA est-il cite DANS la clause de levee (proximal du marqueur) ?
+
+    Mesure au deploiement meme de #13639 (PR #13631) : la levee d'ai-01
+    citait `e408b2fce` a ~2000 chars du marqueur, dans un paragraphe
+    forensique qui disait explicitement « c'est main qui a avance » --
+    une reference de CONTEXTE, pas une preuve. Refuser cette levee (ou
+    meme l'avertir) etait un faux positif : la phrase etait valide et sa
+    preuve etait inline (la clé Grain citee dans le commentaire meme).
+    Seul un SHA PROXIMAL du marqueur vivant est ce que la phrase avance ;
+    un SHA distant est une citation annexe et ne doit etre ni refuse ni
+    signale. Marqueurs et SHA sont cherches dans le MEME espace de
+    coordonnees (le corps unaccente), insensible a toute variation de
+    longueur du _unaccent.
+    """
+    norm = _unaccent(lift_body or "")
+    markers = _live_lift_positions(norm)
+    if not markers:
+        return False
+    low = norm.lower()
+    start = 0
+    while (i := low.find(sha, start)) != -1:
+        if min(abs(i - p) for p in markers) <= _LIFT_SHA_PROXIMITY:
+            return True
+        start = i + 1
+    return False
+
+
+def _message_refs_pr(message: str, pr_refs: set[str]) -> bool:
+    """Le message de commit reference-t-il exactement un PR/issue de la liste ?
+
+    Substring check trop generique : `#13639` matchait un message contenant
+    `#136390` (ticket adjacent cite par hasard), declenchant un refus au lieu
+    d'un simple avertissement (NanoClaw c.702 sur #13641). Le bon test est
+    l'extraction/tokenisation exacte des references `#\\d+` : la PR/issue
+    doit apparaitre comme un MOT COMPLET du message, pas comme prefixe d'un
+    identifiant plus long.
+
+    Retourne True si au moins une ref de `pr_refs` apparait comme token
+    isole (apres `#`, jusqu'au prochain non-alphanumerique) dans `message`.
+    """
+    if not message or not pr_refs:
+        return False
+    # Tokeniser toutes les references `#\\d+` du message, garder UNIQUEMENT
+    # la portion numerique (le `#` est implicite).
+    cited = {m.group(1) for m in re.finditer(r"#(\d+)", message)}
+    return bool(cited & pr_refs)
+
+
+def _resolve_absent_sha_messages(data: dict, cap: int = 5) -> dict[str, str]:
+    """Resoudre cote serveur les SHAs cites mais absents des commits de la PR.
+
+    S'execute UNIQUEMENT dans le chemin `gate` (reseau) : `analyse` reste
+    pur et lit le resultat via `data["_absent_sha_messages"]`. Sans entree
+    resolue, `analyse` reste en mode avertissement -- l'audit retro, qui
+    n'appelle jamais ceci, ne peut donc pas produire de faux blocage.
+    Capped a `cap` appels : plus de 5 SHAs absents cites sur une seule PR
+    est extraordinaire, et chaque appel paie un aller-retour API.
+    """
+    oids = {(c.get("oid") or "").lower() for c in (data.get("commits") or [])}
+    oids.discard("")
+    if not oids:
+        return {}
+    cited: set[str] = set()
+    for c in (data.get("comments") or []) + (data.get("reviews") or []):
+        cited |= _cited_shas(c.get("body") or "")
+    absent = sorted(s for s in cited if not any(o.startswith(s) for o in oids))
+    messages: dict[str, str] = {}
+    for sha in absent[:cap]:
+        try:
+            commit = gh_json(["api", f"repos/{REPO}/commits/{sha}"])
+        except subprocess.CalledProcessError:
+            continue  # non resoluble -> analyse restera en mode avertissement
+        head = ((commit.get("commit") or {}).get("message") or "").split("\n")[0]
+        if head:
+            messages[sha] = head
+    return messages
+
+
 def can_lift(comment: dict) -> bool:
     """Ce commentaire est-il capable de LEVER un nit qui le precede ?
 
@@ -1491,6 +1608,50 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
     ]
     explicit_lifts = [x for x in explicit_lifts if x[0] is not None]
 
+    # #13639 -- passer les levees au crible du SHA rembobine (voir
+    # _SHA_CITED ci-dessus pour le pourquoi et l'etroitesse). Inerte sans
+    # OIDs connus : le pre-filtre d'audit (sans `commits`) et les fixtures
+    # sans `oid` sautent ce passage -- comportement inchange. Limite assumee
+    # : ce pre-filtre d'audit ne verra donc jamais cette classe de defaut
+    # (il rend son verdict sans commits) ; c'est le gate, en direct sur la
+    # PR avant merge, qui est le client visé par #13639.
+    commit_oids = [(c.get("oid") or "").lower()
+                   for c in (pr_data.get("commits") or []) if c.get("oid")]
+    voided_lifts: list[dict] = []
+    absent_sha_warnings: list[dict] = []
+    if commit_oids:
+        pr_refs: set[str] = set()
+        if pr_data.get("number") is not None:
+            pr_refs.add(str(pr_data["number"]))
+        for m in re.finditer(r"#(\d+)", (pr_data.get("title") or "")
+                             + "\n" + (pr_data.get("body") or "")):
+            pr_refs.add(m.group(1))
+        pr_refs.discard("")
+        resolved = pr_data.get("_absent_sha_messages") or {}
+        kept_lifts = []
+        for (t, lifter, lift_body) in explicit_lifts:
+            refused = None
+            warned = None
+            for sha in sorted(_cited_shas(lift_body)):
+                if any(oid.startswith(sha) for oid in commit_oids):
+                    continue  # present dans la PR : preuve valide
+                if not _sha_in_lift_claim(lift_body, sha):
+                    continue  # citation de contexte : ni refus, ni signalement
+                message = resolved.get(sha)
+                if message and _message_refs_pr(message, pr_refs):
+                    refused = sha  # rembobine ET rattache : la levee est nue
+                    break
+                warned = sha  # non resoluble ou sans rapport : avertir
+            if refused:
+                voided_lifts.append(
+                    {"author": lifter, "at": t.isoformat(), "sha": refused})
+            else:
+                kept_lifts.append((t, lifter, lift_body))
+                if warned:
+                    absent_sha_warnings.append(
+                        {"author": lifter, "at": t.isoformat(), "sha": warned})
+        explicit_lifts = kept_lifts
+
     signals: list[tuple] = []
     for c in pr_data.get("comments") or []:
         login = (c.get("author") or {}).get("login", "")
@@ -1699,12 +1860,14 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
         "blocking": blocking,
         "blocked": bool(blocking),
         "ignored_overrides": ignored_overrides,
+        "voided_lifts": voided_lifts,
+        "absent_sha_warnings": absent_sha_warnings,
         "unevaluated": to_read,
         "unevaluated_total": len(unevaluated),
     }
 
 
-FIELDS = "number,title,mergedAt,author,comments,reviews,commits,url,state"
+FIELDS = "number,title,body,mergedAt,author,comments,reviews,commits,url,state"
 
 # `commits` porte une connection `authors` par commit : sur un `gh pr list` large,
 # GraphQL depasse son plafond de 500 000 noeuds. L'audit retro liste donc SANS
@@ -1742,8 +1905,22 @@ def _print_unevaluated(result: dict) -> None:
     print()
 
 
+def _print_sha_notes(result: dict) -> None:
+    """#13639 : nommer les levees dont la preuve citee manque de la PR."""
+    for v in result.get("voided_lifts") or []:
+        print(f"  [!] NON LEVE — levee de {v['author']} à {v['at']} : cite "
+              f"{v['sha']}, absent des commits de la PR (résolu côté serveur, "
+              f"mais rembobiné par un push ultérieur)")
+    for w in result.get("absent_sha_warnings") or ():
+        print(f"  [i] levee de {w['author']} à {w['at']} cite {w['sha']} "
+              f"(absent des commits, non rattaché à cette PR) — non bloquant")
+
+
 def gate(pr: int, as_json: bool) -> int:
     data = gh_json(["pr", "view", str(pr), "--repo", REPO, "--json", FIELDS])
+    # #13639 : resolution serveur des SHAs cites-absents, AVANT analyse
+    # (qui reste pure). Sans ceci, la classe #13557 serait invisible.
+    data["_absent_sha_messages"] = _resolve_absent_sha_messages(data)
     merged = ts(data.get("mergedAt"))
     cutoff = merged or datetime.now(timezone.utc)
     result = analyse(data, review_threads(pr), cutoff)
@@ -1751,6 +1928,7 @@ def gate(pr: int, as_json: bool) -> int:
         print(json.dumps(result, indent=1, ensure_ascii=False))
     elif not result["blocked"]:
         print(f"OK  PR #{pr} — aucun nit non leve.")
+        _print_sha_notes(result)
         _print_unevaluated(result)
     else:
         print(f"BLOCKED  PR #{pr} — {len(result['blocking'])} nit(s) non leve(s) :\n")
@@ -1763,6 +1941,7 @@ def gate(pr: int, as_json: bool) -> int:
             # #13316 : dire POURQUOI l'override visible n'a rien eteint — le
             # silence etait le mode d'echec couteux (#13030, #12096).
             print(f"  [i] {o['why']} (commentaire de {o['author']} à {o['at']})")
+        _print_sha_notes(result)
         print("Lever chaque nit (commit, reponse explicite, ou issue de suivi nommee)")
         print("avant `gh pr merge`. Cf CLAUDE.md section B.0.")
         _print_unevaluated(result)
