@@ -894,8 +894,49 @@ def drop_superseded(contexts: list[dict]) -> list[dict]:
     return kept
 
 
+def impute_base_reds(states_by_number: dict[int, dict],
+                     author_by_number: dict[int, str]) -> dict[str, list[int]]:
+    """Checks rouges presents chez >=2 auteurs DISTINCTS : imputes a la base (#13545).
+
+    Le predicat que le garde n'avait pas : « ce rouge existe-t-il aussi sur la
+    base ? ». Un check qui echoue sur des PRs d'auteurs sans rapport ne peut
+    pas etre un defaut de chacune -- elles partagent la base (mesure
+    2026-08-29 : `Scripts Tests (CPU)` rouge sur 11 PRs / 4 lanes pour un seul
+    test casse sur main). Les PRs d'un MEME auteur ne se corroborent jamais :
+    une lane qui casse le meme ratchet sur 3 PRs porte 3 defauts a elle.
+
+    Renvoie {nom de check: [numeros de PRs corroborantes]}.
+    """
+    failures: dict[str, dict[str, list[int]]] = {}
+    for number, state in states_by_number.items():
+        author = author_by_number.get(number) or "?"
+        commits = state.get("commits", {}).get("nodes") or []
+        rollup = (commits[0]["commit"].get("statusCheckRollup") if commits else None) or {}
+        contexts = drop_superseded((rollup.get("contexts", {}) or {}).get("nodes") or [])
+        for ctx in contexts:
+            verdict = (ctx.get("conclusion") or ctx.get("state") or "").upper()
+            if verdict not in CHECK_FAILED:
+                continue
+            name = ctx.get("name") or ctx.get("context") or "?"
+            failures.setdefault(name, {}).setdefault(author, []).append(number)
+    return {name: sorted(n for nums in authors.values() for n in nums)
+            for name, authors in failures.items()
+            if len(authors) >= 2}
+
+
+def _has_failed_check(state: dict | None) -> bool:
+    if not state:
+        return False
+    commits = state.get("commits", {}).get("nodes") or []
+    rollup = (commits[0]["commit"].get("statusCheckRollup") if commits else None) or {}
+    contexts = drop_superseded((rollup.get("contexts", {}) or {}).get("nodes") or [])
+    return any((c.get("conclusion") or c.get("state") or "").upper() in CHECK_FAILED
+               for c in contexts)
+
+
 def blocking_causes(state: dict, *, age_hours: float | None = None,
-                    saturation_hours: float | None = None) -> list[str]:
+                    saturation_hours: float | None = None,
+                    inherited: set[str] | None = None) -> list[str]:
     """Causes qui empechent VRAIMENT le merge, formulees en geste de reparation.
 
     `mergeStateStatus: BLOCKED` n'est deliberement PAS une cause : il vaut
@@ -929,6 +970,10 @@ def blocking_causes(state: dict, *, age_hours: float | None = None,
         name = ctx.get("name") or ctx.get("context") or "?"
         verdict = (ctx.get("conclusion") or ctx.get("state") or "").upper()
         if verdict not in CHECK_FAILED:
+            continue
+        if inherited and name in inherited:
+            # #13545 : rouge impute a la base (corrobore chez >=2 auteurs
+            # distincts) -- il n'est pas reparable par cette lane.
             continue
         if ctx.get("isRequired"):
             cause = f"check requis en echec : {name}"
@@ -964,7 +1009,13 @@ def blocking_causes(state: dict, *, age_hours: float | None = None,
                 f"commenter la PR + --ignore-red ou rerun/updater-branch si gel CI)"
             )
     if causes and advisory:
-        causes.append("(diagnostic, non bloquant : " + ", ".join(advisory[:3]) + ")")
+        # #13545 : l'advisory n'est pas une seconde panne independante --
+        # c'est la CAUSE probable du requis rouge au-dessus (PR gate est un
+        # agregateur : il est rouge PARCE QUE Scripts Tests l'est). Dire le
+        # lien plutot que deux lignes qui se contredisent (« requis en
+        # echec » vs « non bloquant ») sur le meme rouge.
+        causes.append("(diagnostic, non bloquant : " + ", ".join(advisory[:3])
+                      + " -- cause probable du requis ci-dessus, reparer UNE cause)")
     return causes
 
 
@@ -1183,7 +1234,7 @@ def red_backlog(lane: str, threshold_hours: float,
         sat_threshold = saturation_hours if saturation_hours is not None else threshold_hours
         return {"unavailable": f"{type(exc).__name__}", "red": [],
                 "triggers": [], "unattributed_blocked": [],
-                "nits_unavailable": None,
+                "nits_unavailable": None, "base_inherited": [],
                 "saturation_hours": sat_threshold}
 
     mine, others = [], []
@@ -1203,6 +1254,19 @@ def red_backlog(lane: str, threshold_hours: float,
         nits_unavailable = None
     except Exception as exc:  # noqa: BLE001
         nits_by_pr, nits_unavailable = {}, f"{type(exc).__name__}"
+    # #13545 : imputation a la base. Le garde n'interroge les etats que de la
+    # lane par cout (docstring fetch_pr_states) ; on ne paie l'echantillon
+    # etranger QUE si la lane porte un check rouge a imputer ou non, et borne
+    # (16 PRs les plus recentes = 2 lots GraphQL) pour que le garde reste
+    # bon marche meme sur un ouvert charge.
+    author_by = {pr["number"]: ((pr.get("author") or {}).get("login")) or "?"
+                 for pr in prs if not pr.get("isDraft")}
+    inherited: dict[str, list[int]] = {}
+    if any(_has_failed_check(states.get(pr["number"])) for pr in mine):
+        sample = sorted(others, key=lambda p: p.get("createdAt") or "",
+                        reverse=True)[:16]
+        foreign_states = fetch_pr_states([p["number"] for p in sample])
+        inherited = impute_base_reds({**states, **foreign_states}, author_by)
     red = []
     for pr in mine:
         state = states.get(pr["number"])
@@ -1213,7 +1277,8 @@ def red_backlog(lane: str, threshold_hours: float,
         # `_PR_STATE_FRAGMENT` ne porte pas `createdAt` et l'ajouter alourdirait
         # chaque appel pour 2 octets deconomie ; le PR-listing le fournit deja.
         age = _hours_since(pr["createdAt"])
-        causes = blocking_causes(state, age_hours=age, saturation_hours=threshold_hours)
+        causes = blocking_causes(state, age_hours=age, saturation_hours=threshold_hours,
+                                 inherited=set(inherited))
         n_nits = nits_by_pr.get(pr["number"], 0)
         if n_nits:
             # Un point de review non leve est une cause A PART ENTIERE : la PR
@@ -1267,7 +1332,33 @@ def red_backlog(lane: str, threshold_hours: float,
             "red_hours": threshold_hours, "red_count_threshold": count_threshold,
             "saturation_hours": sat_threshold,
             "unattributed_blocked": unattributed,
+            "base_inherited": [{"check": name, "corroborated_by": nums}
+                               for name, nums in sorted(inherited.items())],
             "nits_unavailable": nits_unavailable}
+
+
+def print_base_inherited(backlog: dict) -> None:
+    """Rouges imputes a la base (#13545) : une tache COORDINATEUR, pas lane.
+
+    Mesure fondatrice 2026-08-29 : un test casse sur main s'est presente comme
+    11 defauts de PR independants sur 4 lanes -- chaque lane envoyee reparer
+    ce qu'elle n'a pas casse et ne peut pas atteindre, pendant que le seul
+    reparateur possible (main) n'etait assigne a personne. Ces rouges ne
+    comptent plus dans le refus ; ils sont dits ici, une fois, avec leurs
+    corroborations, pour que la base ait un destinataire.
+    """
+    items = backlog.get("base_inherited") or []
+    if not items:
+        return
+    print("ROUGE IMPUTE A LA BASE -- pas le votre, pas reparable par la lane :")
+    for item in items:
+        wits = ", ".join(f"#{n}" for n in item["corroborated_by"][:6])
+        more = "" if len(item["corroborated_by"]) <= 6 else ", ..."
+        print(f"  - {item['check']} : corrobore par {wits}{more}")
+    print("Ces rouges ne comptent pas dans le refus. La cause est sur main :")
+    print("tache COORDINATEUR (unique reparateur possible), a router sur le")
+    print("dashboard ou en DM ai-01.")
+    print()
 
 
 def print_nits_gap(backlog: dict) -> None:
@@ -1418,6 +1509,7 @@ def print_red_refusal(lane: str, backlog: dict, threshold_hours: float) -> None:
     print("     chaque point non leve, son auteur et sa surface.")
     print()
     print_unattributed_blocked(backlog)
+    print_base_inherited(backlog)
     print("Si un rouge n'est PAS reparable par cette lane (garde casse sur main,")
     print("dependance d'une autre PR), l'ECRIRE en commentaire sur la PR concernee,")
     print("puis relancer avec --ignore-red. L'echappatoire se justifie par ecrit,")
@@ -1536,6 +1628,7 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     if not args.json:
         print_nits_gap(backlog)
+        print_base_inherited(backlog)
     if backlog.get("unavailable") and not args.json:
         print(f"(garde rouge indisponible : {backlog['unavailable']} -- tirage rendu sans verification)")
         print()

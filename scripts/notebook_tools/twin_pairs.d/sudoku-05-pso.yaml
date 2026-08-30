@@ -58,6 +58,12 @@
       csharp_sha: c320b886478222409dc3187a854e596ae90be920
       content_python_sha: 40d38354db01dbbe6bb50cb351fbd465b142cfc257649d0da4bbea6f815e745c
       content_csharp_sha: 8909307a1f769fbdc14b560923c217a59d019f05a63f2a73b8dc2c5d8c7184ef
+    - date: "2026-08-30"
+      by: myia-po-2024:CoursIA-2
+      python_sha: 91571df04c47d1678721318de2e0f87c20905827
+      csharp_sha: 19871eccca5c60cebc6c81b61d73ec76c846663d
+      content_python_sha: f41893dc19015c8870db87a6c2eef71e4261600a32c39d6766368eb400bbc4b6
+      content_csharp_sha: 2b811e48119345663a3c39f0773b1a8315c909e4121838df3bf8c86791c19e4c
   known_differences:
     - "2026-08-22 (post #11954, myia-po-2025:CoursIA-2) : registre aligne sur la realite des notebooks -- mealpy est desormais execute des DEUX cotes (Python natif 3 seeds 8/4/6 conflits ; C# PythonNet bridge #11954). Le grain d'enrichissement Python documente le 2026-08-21 comme restant est LIVRE sur main ; parity_level semantic -> native-both, bridge_verdict RECOVERABLE-LOCAL -> SOTA-OK. Valeurs cote Python citees depuis les outputs committe du notebook main (cellule Tranche mealpy, seeds 42/7/99)."
     - "2026-08-21 (Tranche 4 #11977, myia-po-2026:CoursIA) : PSO a operateurs d'echange ajoute cote C# uniquement -- velocite = liste de swaps (algebre Move/Minus/Times, reference Hernandez & Gonzalez 'Metaheuristics in C#' MIT 2012, reimplementation propre) sur l'encodage permutation-de-ligne de la Tranche 2 : swap (ligne, a, b) parmi cellules vides -> lignes valides par construction. Execution reelle commitee : pur RESOLU 111 ms / 111 iterations x 40 particules ; memetique (hill-climbing tous les 25 pas) RESOLU 31 ms / 25 iterations ; duel a graine fixe 42. 20 cellules code cote C#. mealpy n'a pas de PSO a swaps natif -> pas de port Python symetrique possible via lib, precedent Tranche 3 (C#-only assumee). Cette validation = pierre angulaire de l'axe 3 #12049 (graduation DiscretePSO en compound MGS)."

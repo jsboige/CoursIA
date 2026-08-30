@@ -39,6 +39,12 @@
       csharp_sha: 09d1fc60063456e4f5dc2800c75bacdff41548dd
       content_python_sha: b9cff1f4424edee9741ad98b94b173efd3dba3a74e22b872b349549488fe176d
       content_csharp_sha: bdbd6cf10651f61bb75a755f0e8b03418a147b5ea57089e50adcf934f798589e
+    - date: "2026-08-30"
+      by: myia-po-2024:CoursIA-2
+      python_sha: cebbea4951c0ea5b25cc8b25fb102e90e3d2016a
+      csharp_sha: 6b6f0a035dd366be7cf55dbc9f8d3018f1454627
+      content_python_sha: 23015d820c41474015686df2029bfc7261472199b1617c94e7df2bf4b64769de
+      content_csharp_sha: c461229e5c91ab19b7d9f1d34aae4947a80c3e1a2d9e965d237795c0d721057a
   known_differences:
     - "Rebaseline 2026-08-14 : cote Python deplace par drain wallclock #9434 / PR #10874 (remplacement des timings machine-dependants en ms par des ordres de grandeur dans le markdown). Parite semantique inchangee (cellules code byte-identiques, aucune sortie, aucun exec_count touche) ; cote C# non modifie. Attestation = nouveau blob SHA du cote Python."
     - "Socle pedagogique commun : algorithme genetique (GA) applique au Sudoku -- population d'individus, selection, crossover, mutation, fonction de fitness (nombre de conflits). Meme concept evolutionnaire, meme cas d'application (resolution/amelioration d'une grille de Sudoku). Les deux exposent les memes primitives : Population, Crossover, Mutation, GeneticAlgorithm."

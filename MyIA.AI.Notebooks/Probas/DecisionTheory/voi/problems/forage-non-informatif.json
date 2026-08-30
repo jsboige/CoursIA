@@ -1,0 +1,26 @@
+{
+  "problem": "forage-non-informatif",
+  "description": "Controle negatif : meme probleme que forage-petrolier mais le test est independant de l'etat (lignes de vraisemblance identiques) -- le posterior egale le prior pour chaque signal, donc EVSI = 0 exactement.",
+  "source": {
+    "derived_from": "forage-petrolier.json"
+  },
+  "states": ["petrole", "pas_petrole"],
+  "priors": {
+    "petrole": 0.3,
+    "pas_petrole": 0.7
+  },
+  "actions": ["forer", "vendre"],
+  "utilities": {
+    "forer": { "petrole": 1500000, "pas_petrole": -500000 },
+    "vendre": { "petrole": 200000, "pas_petrole": 200000 }
+  },
+  "signals": ["positif", "negatif"],
+  "likelihood": {
+    "positif": { "petrole": 0.5, "pas_petrole": 0.5 },
+    "negatif": { "petrole": 0.5, "pas_petrole": 0.5 }
+  },
+  "test_cost": 60000,
+  "expected_controls": {
+    "negative": "EVSI = 0 (les deux moteurs doivent le confirmer dans la tolerance)"
+  }
+}

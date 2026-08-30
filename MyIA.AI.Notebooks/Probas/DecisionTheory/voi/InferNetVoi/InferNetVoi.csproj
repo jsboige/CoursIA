@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Le package Compiler porte l'API Models (Variable, InferenceEngine) et
+         depend transitivement de Microsoft.ML.Probabilistic 0.4.2504.701 ;
+         le pin 0.4.2403.801 seul n'expose plus Microsoft.ML.Probabilistic.Models. -->
+    <PackageReference Include="Microsoft.ML.Probabilistic.Compiler" Version="0.4.2504.701" />
+  </ItemGroup>
+
+</Project>

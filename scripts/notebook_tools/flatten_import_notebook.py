@@ -6,7 +6,7 @@ WHY THIS TOOL EXISTS
 --------------------
 ``dotnet-interactive``'s ``#!import <Other.ipynb>`` magic command lets a .NET
 notebook pull in another notebook's cells (shared helper classes, e.g. the
-Sudoku family's ``Sudoku-0-Environment-Csharp.ipynb`` defining ``SudokuGrid`` /
+Sudoku family's ``Sudoku-00-Environment-Csharp.ipynb`` defining ``SudokuGrid`` /
 ``SudokuHelper``). It works in the VS Code Interactive / Jupyter context but
 THROWS ``ArgumentNullException (key=null)`` in ``LoadAndRunInteractiveDocument``
 under headless execution (nbclient / papermill / nbconvert --execute) -- see
