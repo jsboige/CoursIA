@@ -74,11 +74,21 @@ Trois urnes, parce que le pool n'est pas homogene
 
 Reprendre ses PRs AVANT de piocher (mandats user 2026-08-22 et 2026-08-24)
 --------------------------------------------------------------------------
-Le picker **refuse de tirer** (sortie 2, aucun candidat rendu) tant que la
+Le picker **assigne la reparation** (sortie 0, un grain rendu) tant que la
 lane porte une PR a reprendre, ouverte depuis plus de 24 h. La reparation
 n'appartient qu'a sa lane : le coordinateur ne peut ni rebaser, ni corriger,
 ni repondre a sa place -- une lane qui pioche du neuf en laissant sa PR
 derriere elle fabrique un residu que personne d'autre ne peut resorber.
+
+Ce chemin a longtemps rendu **"REFUS DE TIRAGE" + sortie 2, aucun candidat**.
+Le fond etait juste -- la liste, les causes, les gestes -- mais la forme
+disait *l'outil n'a rien pour toi*, et une lane pouvait s'arreter en croyant
+la sortie sanctionnee. Une lane a forte cadence accumule les PRs plus vite,
+declenche `count`/`nits` plus tot, et recevait donc ce refus a **chaque**
+cycle : le boost causait le drain (incident lanes 2, 2026-08-30). Le travail
+rendu ici EST le grain du cycle. Aucune sortie de cet outil n'autorise une
+lane a ne rien produire tant que du rouge lui appartient ou que
+`gh issue list` renvoie > 0.
 
 Quatre causes, dont la derniere est arrivee en dernier et couvre le plus :
 
@@ -1387,7 +1397,8 @@ def print_unattributed_blocked(backlog: dict) -> None:
     couvre tout l'ouvert. Il ne le couvre pas, et le tag manquant est lui-meme
     le defaut a corriger (le coordinateur peut les reprendre via `skill
     coordinate` phase 3.5). Cf #12738 : avant le fix, ce paragraphe vivait
-    dans `print_red_refusal` et n'apparaissait que sur le chemin du refus, pas
+    dans `print_red_assignment` et n'apparaissait que sur le chemin de la
+    reparation, pas
     sur le chemin du tirage -- verdict non cable a sa preuve sur le chemin
     ou il sert.
     """
@@ -1467,7 +1478,7 @@ def upsert_orphans_comment(number: int, body: str) -> None:
             check=True, timeout=60)
 
 
-def print_red_refusal(lane: str, backlog: dict, threshold_hours: float) -> None:
+def print_red_assignment(lane: str, backlog: dict, threshold_hours: float) -> None:
     red = backlog["red"]
     triggers = backlog.get("triggers") or []
     aged = backlog.get("aged") or []
@@ -1484,7 +1495,12 @@ def print_red_refusal(lane: str, backlog: dict, threshold_hours: float) -> None:
     if "aged" in triggers:
         motifs.append(f"porte {len(aged)} PR(s) bloquee(s) ouverte(s) depuis plus "
                       f"de {threshold_hours:g} h")
-    print(f"REFUS DE TIRAGE -- lane {lane} " + ", ".join(motifs) + ".")
+    print(f"GRAIN DU CYCLE -- lane {lane} : reparer ses propres PRs.")
+    print("Motif : la lane " + ", ".join(motifs) + ".")
+    print()
+    print("Ce n'est PAS un refus de tirage : le travail de ce cycle est nomme")
+    print("ci-dessous. Aucune sortie de cet outil n'autorise une lane a ne rien")
+    print("produire -- ni celle-ci, ni un tirage dont aucun candidat ne plait.")
     print()
     print_nits_gap(backlog)
     print("Reprendre ses propres PRs est la PREMIERE tache du cycle, avant tout")
@@ -1619,13 +1635,20 @@ def main(argv: list[str] | None = None) -> int:
     backlog = red_backlog(args.lane, args.red_hours, args.red_count,
                             saturation_hours=args.saturation_hours)
     if backlog.get("triggers") and not args.ignore_red:
+        # Sortie 0, et le mot "refus" ne parait nulle part : ce chemin REND un
+        # grain -- la reparation des PRs de la lane -- il n'en prive pas. La
+        # forme precedente ("REFUS DE TIRAGE", sortie 2, aucun candidat) rendait
+        # un travail nomme sous l'apparence d'un vide, et se declenchait
+        # d'autant plus souvent que la lane etait active.
         if args.json:
-            print(json.dumps({"lane": args.lane, "refus": "rouge-a-reparer",
+            print(json.dumps({"lane": args.lane, "mode": "repair",
+                              "assignment": "reparer-son-rouge",
+                              "grain": (backlog.get("red") or [None])[0],
                               "red_hours": args.red_hours, **backlog},
                              ensure_ascii=False, indent=2))
         else:
-            print_red_refusal(args.lane, backlog, args.red_hours)
-        return 2
+            print_red_assignment(args.lane, backlog, args.red_hours)
+        return 0
     if not args.json:
         print_nits_gap(backlog)
         print_base_inherited(backlog)
