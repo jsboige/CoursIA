@@ -59,6 +59,7 @@ Cette partie est l'alphabet de toute la série : la formalisation en espace d'é
 | 15 (.NET) | [Search-15-NetworkX (C#)](Search-15-NetworkX-Csharp.ipynb) | .NET (C#) | **Jumeau .NET** : théorie des graphes from-scratch (`Dictionary` / adjacency list pondérée) — parcours BFS/DFS, plus courts chemins (Dijkstra), centralités, flot maximum (Ford-Fulkerson), exercices (détection de cycles DFS 3 couleurs, A* avec heuristique, communautés Louvain) — port C# fidèle du notebook Python NetworkX, distinct de Search-16 (QuikGraph, approche library) — parité #4956 | ~1h |
 | 16 | [Search-16-QuikGraph](Search-16-QuikGraph.ipynb) | .NET (C#) | Bibliothèque de graphes QuikGraph 2.5.0 (NuGet) : AdjacencyGraph / BidirectionalGraph / UndirectedGraph, DFS/BFS, Dijkstra, Bellman-Ford, centralités de degré, composantes connexes, Edmonds-Karp (flot max), parité avec NetworkX | ~1h |
 | 17 | [Search-17-SpuriousMinima](Search-17-SpuriousMinima.ipynb) | Python 3 | Relaxation SDP de MaxCut (Goemans–Williamson, résolue exactement par cvxpy/CLARABEL) **et sa factorisation de Burer–Monteiro** $Y = XX^T$ : recensement borné des minima fallacieux par rang (40 départs × 3 instances C6/K8/G10, graines fixes, référence brute-force $2^{n-1}$) — à $r=1$ le paysage dégénère en MaxCut discret (40/40 fallacieux), les pièges se raréfient aux rangs intermédiaires, et **aucun piège à/au-dessus du seuil** $r(r+1)/2 > m$ (Burer–Monteiro 2005, Barvinok–Pataki) — le point d'arrivée « certification » du fil paysages (suite directe de Search-9, écho de MGS-15) | ~1h15 |
+| 17b | [Search-17-Empirical-Algorithm-Selection](Search-17-Empirical-Algorithm-Selection.ipynb) | Python 3 | Distillation du projet L4 EPITA SCIA 2026 (Th. Deguest, PR source #42) : **sélection empirique d'algorithmes** sous protocole commun (timeout 5 s, budget nœuds explicite, métriques uniformes) sur deux terrains — Sudoku (BT naïf/MRV, DLX, CP-SAT, Z3, GA, recuit simulé ; tranche 1) et Puissance 4 (random, minimax, alpha-beta, MCTS ; round-robin double, tranche 2) — front de Pareto qualité-coût, sweep de budget qui **inverse la sélection**, carte problème × paradigme : No Free Lunch mesuré (Rice 1976, Wolpert 1996), écho App-14 | ~1h30 |
 
 ## Progression
 
@@ -67,7 +68,7 @@ Les trois premiers notebooks forment le socle commun — on y apprend à poser u
 - **Recherche locale et évolutive** : Search-4 (LocalSearch) puis Search-5 (GeneticAlgorithms) puis Search-11 (Metaheuristics)
 - **Recherche dans les jeux** : Search-3 puis Search-6 (AdversarialSearch) puis Search-7 (MCTS)
 - **Couverture exacte** : Search-2 puis Search-8 (DancingLinks)
-- **Indépendants** : Search-9 (LinearProgramming, algèbre linéaire requise), Search-17 (SpuriousMinima, sa suite semidéfinie : Search-9 recommandé au préalable) et Search-10 (SymbolicAutomata, liens avec SymbolicAI/SMT/Z3-Linq2Z3)
+- **Indépendants** : Search-9 (LinearProgramming, algèbre linéaire requise), Search-17 (SpuriousMinima, sa suite semidéfinie : Search-9 recommandé au préalable), Search-17b (Empirical-Algorithm-Selection, distillation benchmark cross-paradigmes : aucun prérequis, écho App-14) et Search-10 (SymbolicAutomata, liens avec SymbolicAI/SMT/Z3-Linq2Z3)
 
 ```mermaid
 flowchart LR
@@ -89,10 +90,10 @@ Les fondamentaux de cette partie (formalisation, backtracking, heuristiques) son
 | Besoin | Détail |
 |--------|--------|
 | Python | 3.10+, environnement virtuel recommandé |
-| `ortools` | Search-9 (Linear Programming) |
+| `ortools` | Search-9 (Linear Programming), Search-17b (CP-SAT) |
 | `deap` | Search-5 (Genetic Algorithms) |
 | `mealpy` | Search-11 (Métaheuristiques) |
-| `z3-solver` | Search-10 (Symbolic Automata) |
+| `z3-solver` | Search-10 (Symbolic Automata), Search-17b (SMT) |
 | OpenSpiel | Search-7 (MCTS) : requiert WSL ou Linux |
 | `cvxpy` | Search-17 (relaxation SDP, solveur CLARABEL embarqué) |
 | `QuikGraph 2.5.0` (NuGet) | Search-16 (parité C#) : nécessite .NET Interactive, installable via `dotnet tool install --global Microsoft.dotnet-interactive` |
