@@ -66,19 +66,19 @@ MCP error -32001: Request timed out (après 60s)
 
 ### 3. Sudoku (.NET packages) - 3/3 ÉCHECS
 
-#### ❌ Sudoku-3-ORTools.ipynb
+#### ❌ Sudoku-03-ORTools.ipynb
 - **Statut :** ÉCHEC
 - **Erreur :** `Value cannot be null. (Parameter 'path1')`
 - **Projet NuGet :** `92032--6a253d0d-08e7-46c7-aab8-e7790ba47a93\Project.fsproj`
 - **Temps d'exécution :** < 5s (échec immédiat)
 
-#### ❌ Sudoku-4-Z3.ipynb
+#### ❌ Sudoku-04-Z3.ipynb
 - **Statut :** ÉCHEC
 - **Erreur :** `Value cannot be null. (Parameter 'path1')`
 - **Projet NuGet :** `103936--e09b124e-c35e-4289-bf66-aff0a99ca6b1\Project.fsproj`
 - **Temps d'exécution :** < 5s (échec immédiat)
 
-#### ❌ Sudoku-6-Infer.ipynb
+#### ❌ Sudoku-06-Infer.ipynb
 - **Statut :** ÉCHEC
 - **Erreur :** `Value cannot be null. (Parameter 'path1')`
 - **Projet NuGet :** `104668--52e87008-305d-41c2-892b-830f1c92b1f5\Project.fsproj`

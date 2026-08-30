@@ -119,6 +119,15 @@ class Guard:
     pre_argv: list[str] = field(default_factory=list)
 
 
+# Valeur de `source` pour un garde NE dedoublant aucun workflow unitaire : il
+# est ne dans la voie rapide. La distinction compte parce que `source` sert a
+# tracer quel workflow pourra etre retire quand la voie rapide sortira de
+# l'ombre -- un garde natif n'a pas de jumeau a retirer. Le test qui verifie
+# la tracabilite reste STRICT pour les autres : une faute de frappe dans un
+# nom de workflow doit continuer d'echouer, seule cette valeur exacte est
+# admise comme "pas de workflow d'origine".
+FAST_LANE_NATIVE = "(garde natif de la voie rapide : aucun workflow d'origine)"
+
 NOTEBOOK_GLOBS = ["**/*.ipynb"]
 
 # ---------------------------------------------------------------------------
@@ -137,6 +146,8 @@ NOTEBOOK_GLOBS = ["**/*.ipynb"]
 #   - notebook-interp-positioning-guard : bloquant, scan global baselined
 #   - markdown-rendering-guard : bloquant, scan global baselined
 #   - self-hosted-runner-policy : bloquant, scan statique des workflows
+#   - duplicate-notebook-index-guard : bloquant, delta base-vs-head sur
+#                           les fichiers AJOUTES (#12753)
 #
 # Un lot homogene aurait valide le moteur sur un seul cas de figure -- et un
 # lot entierement vert serait indiscernable d'un moteur debranche.
@@ -269,6 +280,31 @@ PILOT: list[Guard] = [
         argv=["python", "scripts/ci/check_self_hosted_runner_policy.py",
               "--check"],
         blocking=True,
+    ),
+    # -- extension c.1339 (10 -> 11) ----------------------------------------
+    # Ferme un angle mort du merge-gate mesure le 2026-08-24 (#12753) : aucun
+    # garde ne demandait si le contenu AJOUTE existe deja sur la base sous un
+    # AUTRE nom de fichier. Deux notebooks `3.1-*` de la meme lane, cites par
+    # la meme issue, ont ete merges a 29 minutes d'intervalle sans qu'aucune
+    # des cinq portes (nits, perimetre, H.4, tag de grain, cap de variation)
+    # n'ait de quoi le voir : chacune juge la PR en elle-meme, aucune ne la
+    # confronte a ce que la base porte deja.
+    #
+    # Porte aux fichiers AJOUTES seulement. C'est ce qui le rend vert sur le
+    # `main` d'aujourd'hui -- qui porte deja deux collisions (index 3.1 et
+    # index 22, cf #12753) -- tout en empechant la recurrence. Un garde qui
+    # accuserait la dette pre-existante serait rouge des sa naissance et
+    # ferait echouer toutes les PR sans qu'aucune ne l'ait causee.
+    Guard(
+        name="duplicate-notebook-index-guard",
+        source=FAST_LANE_NATIVE,
+        paths=NOTEBOOK_GLOBS + [
+            "scripts/notebook_tools/check_duplicate_notebook_index.py",
+        ],
+        argv=["python", "scripts/notebook_tools/check_duplicate_notebook_index.py",
+              "--base", "{base_ref}", "--head", "HEAD"],
+        blocking=True,
+        needs_base=True,
     ),
 ]
 
@@ -436,6 +472,64 @@ TRANCHE2: list[Guard] = [
 
 
 # ---------------------------------------------------------------------------
+# TRANCHE 3 d'absorption (#13097, remede A) -- premier garde de la vague
+# « metadata guards » pointee par la mesure de famine CI : sur les 9 gardes
+# sans filtre `paths:` qui pesent ~50 % du volume `pull_request`, celui-ci
+# est le seul dont le verdict est UNE invocation python a sortie de processus
+# proche, sans ecriture PR (label/commentaire) ni bypass verdict-relevant :
+#
+#   - regression_scan.py sort 0 (propre) / 1 (sain->degrade) / 2 (import
+#     casse) ; le workflow d'origine capture le rc, publie une annotation
+#     ::warning ou ::notice, puis SORT TOUJOURS 0 -- le check-run d'origine
+#     est donc vert en toute circonstance (ADVISORY, user 2026-06-20). Ici :
+#     blocking=False rend neutral sur rc=1 -- le signal devient visible dans
+#     le titre du check-run (« signale (advisory) ») au lieu d'etre enterre
+#     dans les logs d'un check vert, et `pr_gate` compte neutral comme OK
+#     (CONCLUSION_OK), donc le caractere jamais-bloquant est preserve.
+#     rc=2 (import casse) est mappe succes par warn_rc, comme l'original
+#     qui ne le distinguait pas non plus d'un passage.
+#   - Les bypass d'origine (auteur bot, label `regression-accepted`) ne
+#     changent PAS le verdict (le workflow sortait deja 0 apres bypass) :
+#     les omettre ne durcit rien. Les PR du bot catalogue ne touchent pas
+#     de notebooks, donc le filtre paths les laisse dehors de toute facon.
+#   - Les autres 8 gardes de la liste #13097 restent hors lane pour
+#     l'instant : les label-writers (stale-base, base-not-main,
+#     variation-light-genre, variation-tag) exigeraient `pull-requests:
+#     write` sur le job partage (escalade de permissions = decision
+#     design coordinateur), et les multi-steps (translation-guard avec
+#     override dual-key #10332, lane-claim-guard avec bypass
+#     verdict-relevant bot/fork, secret-scan avec positive-controls)
+#     exigent une extension du moteur (ctx PR author/body, pre-steps) --
+#     tranches suivantes, une par vague, apres arbitrage.
+# ---------------------------------------------------------------------------
+TRANCHE3: list[Guard] = [
+    # ADVISORY report-only (axe-2 output-health) : neutral sur
+    # sain->degrade, jamais bloquant. Source : regression-guard.yml
+    # (job `guard`, check-run « No notebook health regression »).
+    Guard(
+        name="No notebook health regression",
+        source="regression-guard.yml",
+        paths=[
+            "MyIA.AI.Notebooks/**/*.ipynb",
+            "scripts/notebook_tools/regression_scan.py",
+            "scripts/notebook_tools/regression_allowlist.json",
+            "scripts/notebook_tools/diagnose_broken.py",
+            "scripts/notebook_tools/forensic_scan.py",
+            ".github/workflows/regression-guard.yml",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/regression_scan.py",
+            "--guard", "--base", "{base_ref}", "--head", "HEAD",
+            "--paths", "{changed_paths}",
+        ],
+        blocking=False,
+        needs_base=True,
+        iterates_paths=True,
+        absorbed=True,
+        warn_rc=(2,),
+    ),
+]
+
 # TRANCHE 4 d'absorption (#12396) -- meme contrat que les tranches 1/2 (nom
 # canonique, conclusion reelle, workflow source retire de pull_request),
 # avec la nouveaute demandee par l'issue : un CONTROLE POSITIF d'identite

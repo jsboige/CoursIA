@@ -438,6 +438,8 @@ def _eval_one_coin(
     decompose: bool = False,
     loss_fn: str = "mse",
     debias: bool = False,
+    checkpoint_path: Path | None = None,
+    skip_keys: set[tuple[str, int, int]] | None = None,
 ) -> list[dict]:
     rv = daily_realized_variance(hourly_rets)
     if len(rv) < 300:
@@ -486,6 +488,9 @@ def _eval_one_coin(
             continue
 
         for seed in seeds:
+            if skip_keys is not None and (coin, h, seed) in skip_keys:
+                print(f"  h={h} seed={seed} -- SKIP (checkpoint)", flush=True)
+                continue
             try:
                 dl_out = walk_forward_dlinear(
                     log_rv_arr, rv_idx,
@@ -565,7 +570,11 @@ def _eval_one_coin(
                 }
 
             dl_debiased_mse = _mse_without_bias(dl_errors)
-            rows.append({
+            # Per-observation persistence (lesson #12684): the out-of-bias
+            # (recentred error) DM re-validation needs the forecast series,
+            # not only aggregates. DL and HAR series are persisted each on
+            # its own dates so the analysis can date-align them exactly.
+            row = {
                 "coin": coin,
                 "horizon": h,
                 "seed": seed,
@@ -574,6 +583,9 @@ def _eval_one_coin(
                 "debias": debias,
                 "har_calibrate_bias": True,
                 "har_bias_oos": har_bias_oos,
+                "dlinear_bias_oos": (
+                    float(np.mean(dl_errors)) if len(dl_errors) else float("nan")
+                ),
                 "n_rv_days": int(len(rv)),
                 "n_predictions": int(dl_out["n_total_preds"]),
                 "dlinear_mse_logrv": float(dl_mse),
@@ -584,8 +596,18 @@ def _eval_one_coin(
                 "mse_reduction_pct": _edge_pct(har_mse, dl_mse),
                 "edge_debiased_pct": _edge_pct(har_debiased_mse, dl_debiased_mse),
                 "calibrated_edge_pct": _edge_pct(har_calibrated_mse, dl_mse),
+                "dl_dates": [d.strftime("%Y-%m-%d") for d in dl_targets.index],
+                "dl_pred": [float(x) for x in dl_forecasts.values],
+                "dl_target": [float(x) for x in dl_targets.values],
+                "har_dates": [d.strftime("%Y-%m-%d") for d in har_targets.index],
+                "har_pred": [float(x) for x in har_forecasts.values],
+                "har_target": [float(x) for x in har_targets.values],
                 **dm_info,
-            })
+            }
+            rows.append(row)
+            if checkpoint_path is not None:
+                with open(checkpoint_path, "a") as f:
+                    f.write(json.dumps(row, default=str) + "\n")
 
     return rows
 
@@ -614,11 +636,32 @@ def main() -> None:
     args = parser.parse_args()
 
     t0 = time.time()
+
+    # Checkpoint/resume (per (coin, horizon, seed) combo): the keeper runs
+    # take ~40 min CPU with no resume -- a process death loses everything.
+    # Each completed combo (with its persisted forecast series) is appended
+    # to a JSONL beside the out-json and skipped on restart.
+    out_path = Path(args.out_json)
+    checkpoint_path = out_path.with_name(out_path.name + ".checkpoint.jsonl")
+    checkpoint_rows: list[dict] = []
+    skip_keys: set[tuple[str, int, int]] = set()
+    if checkpoint_path.exists():
+        with open(checkpoint_path) as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                row = json.loads(line)
+                checkpoint_rows.append(row)
+                skip_keys.add((row["coin"], row["horizon"], row["seed"]))
+        print(f"[CHECKPOINT] resumed {len(skip_keys)} combos from {checkpoint_path.name}",
+              flush=True)
+
     panel = _load_panel(args.skip_remote, extra_coins=args.extra_coins)
     if args.coins:
         panel = {c: rets for c, rets in panel.items() if c in args.coins}
 
-    all_rows: list[dict] = []
+    all_rows: list[dict] = list(checkpoint_rows)
     for coin, rets in panel.items():
         rows = _eval_one_coin(
             coin=coin,
@@ -632,6 +675,8 @@ def main() -> None:
             decompose=args.decompose,
             loss_fn=args.loss_fn,
             debias=args.debias,
+            checkpoint_path=checkpoint_path,
+            skip_keys=skip_keys,
         )
         all_rows.extend(rows)
 
@@ -648,7 +693,6 @@ def main() -> None:
     print(f"\nSummary: {n_beats} BEATS / {n_no} NO BEATS / {n_inc} INCONCLUSIVE "
           f"(out of {len(agg)} configs)")
 
-    out_path = Path(args.out_json)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps({
         "rows": all_rows,

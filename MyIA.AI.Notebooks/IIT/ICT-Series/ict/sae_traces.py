@@ -295,6 +295,39 @@ def assert_bf16_readout(quantization_config: object | None,
             "--allow-quantized-readout pour une exploration assumee.")
 
 
+def w_dec_needs_transpose(w_dec_shape: tuple[int, int], d_model: int) -> bool:
+    """Decide si un ``W_dec`` de checkpoint doit etre transpose vers [d_sae, d_model].
+
+    Layout heterogene des releases Qwen-Scope (mesure firsthand #12940) : les
+    checkpoints W32K (1.7B et 2B) stockent ``W_dec`` en **[d_model, d_sae]**
+    (p.ex. (2048, 32768)), alors que l'indexation par feature — le hook de
+    clamp Gate 24 comme la reconstruction — exige ``W_dec[feature_ids] =
+    directions [C, d_model]``, donc un stockage **[d_sae, d_model]**. Sans
+    normalisation, un clamp_id > d_model leve un IndexError immediat, et tout
+    clamp_id < d_model soustrait des **dimensions du residual stream** au lieu
+    des directions decodees des features visees — faux en silence.
+
+    Le layout du 9B/W64K n'est pas sondable localement (checkpoint absent du
+    cache) : cette garde rend la question muette pour la correction — les deux
+    layouts sont acceptes — mais le boolean retourne reste journalise par le
+    producteur pour la confirmation pre-Gate-24.
+
+    Le cas carre (d_model == d_sae) est refuse : la forme seule ne permet plus
+    de lever l'ambiguite, transposer « au cas ou » reviendrait a parier.
+    (Aucune release visee n'est carree : 2048 vs 32768/65536.)
+    """
+    rows, cols = int(w_dec_shape[0]), int(w_dec_shape[1])
+    if rows == d_model and cols != d_model:
+        return True
+    if cols == d_model and rows != d_model:
+        return False
+    raise ValueError(
+        f"layout W_dec ambigue {w_dec_shape} pour d_model={d_model} : ni "
+        f"[d_model, d_sae] ni [d_sae, d_model] ne se deduit de la forme seule "
+        "(cas carre). Verifier le layout de la release a la main avant le "
+        "Gate 24.")
+
+
 # --------------------------------------------------------------------------- #
 # Garde-fou cross-L0 (L0_50 <-> L0_100) — etape 2 PT-12 (#10289)
 #

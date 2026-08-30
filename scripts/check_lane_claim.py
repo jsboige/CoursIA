@@ -1044,9 +1044,37 @@ def _sort_events(payload: dict) -> list[ClaimEvent]:
 # failure -- an unreachable `gh` MUST NOT cause a `[DELIVERED]` to suddenly
 # start blocking. The failure is visible in `delivered_claims_failed` so an
 # operator can see which lookups were silently degraded.
+#
+# #13336 -- that fail-open is now scoped to TRANSIENT failures only. A gh
+# schema break (`Unknown JSON field`) is PERMANENT: while it lasts, every
+# lookup returns None and the v2 gate degenerates to v1 wholesale -- the
+# exact silence that let #13216 be written twice (both lanes passed their
+# guard, the signal was `null`). A permanent failure keeps the claim
+# BLOCKING (fail-CLOSED, the organ's default posture); a network/auth
+# hiccup keeps the documented fail-open.
 _PR_STATE_CACHE: dict[int, tuple[str | None, str | None]] = {}
 # value shape: (pr_state, error_message) where pr_state in
 # {"OPEN","MERGED","CLOSED",None} and error_message is None on success.
+
+# #13336 -- environmental failures (network, auth, gh binary absent) are
+# transient: retryable, orthogonal to the claim protocol, and the documented
+# fail-open applies. Everything else (schema break, non-JSON, unexpected
+# payload, PR not found) is permanent for the lifetime of the process.
+_TRANSIENT_ERROR_MARKERS = (
+    "timed out", "timeout", "could not resolve host", "connection",
+    "dial tcp", "temporary failure", "network", "rate limit",
+    "http 429", "http 5", "502", "503", "504",
+    "gh auth", "not logged in", "authentication required",
+    "gh exec failed",
+)
+
+
+def _is_transient_error(err: str | None) -> bool:
+    """#13336 -- True when a `_fetch_pr_state` error is environmental."""
+    if not err:
+        return False
+    e = err.lower()
+    return any(m in e for m in _TRANSIENT_ERROR_MARKERS)
 
 
 def _fetch_pr_state(pr_ref: int) -> tuple[str | None, str | None]:
@@ -1073,7 +1101,7 @@ def _fetch_pr_state(pr_ref: int) -> tuple[str | None, str | None]:
         proc = subprocess.run(
             [
                 "gh", "pr", "view", str(pr_ref),
-                "--json", "state,merged",
+                "--json", "state,mergedAt",
             ],
             capture_output=True, text=True, shell=False,
             encoding="utf-8", errors="replace",  # #12811
@@ -1092,14 +1120,15 @@ def _fetch_pr_state(pr_ref: int) -> tuple[str | None, str | None]:
         result = (None, f"gh pr view {pr_ref} non-JSON: {exc}")
         _PR_STATE_CACHE[pr_ref] = result
         return result
-    # GH field model: `state` in {OPEN, CLOSED, MERGED}, `merged` is a bool.
-    # When `state == "MERGED"`, the reducer should still treat the substance as
-    # locked -- the PR reached main. `merged=True` on its own is enough to lock
-    # even if `state` was raced (defence in depth: the bool was the canonical
-    # source until 2026).
-    if d.get("merged") is True:
-        result = ("MERGED", None)
-    elif d.get("state") == "MERGED":
+    # GH field model (#13336): `state` in {OPEN, CLOSED, MERGED}, `mergedAt`
+    # is an ISO timestamp (null until merged). The bool field `merged` was
+    # REMOVED from `gh pr view --json` (gh 2.83+): querying it exits 1 on the
+    # WHOLE request, which made every lookup fail and silently reverted the
+    # reducer to v1 (every [DELIVERED] released its claim, #13216 duplicated).
+    # When `state == "MERGED"`, the reducer treats the substance as locked --
+    # the PR reached main. A non-null `mergedAt` alone also locks, defence in
+    # depth against a raced `state`.
+    if d.get("mergedAt") is not None or d.get("state") == "MERGED":
         result = ("MERGED", None)
     elif d.get("state") == "CLOSED":
         result = ("CLOSED", None)
@@ -1146,8 +1175,9 @@ def _resolve_delivered_v2(
         return "close"  # legacy: a DELIVERED without a PR ref is a close
     if pr_states is not None:
         st = pr_states.get(pr_ref)
+        err = None
     else:
-        st, _err = _fetch_pr_state(pr_ref)
+        st, err = _fetch_pr_state(pr_ref)
     # Attach the resolved state to the event for the JSON summary. On a None
     # state (lookup failed) we still attach None so the consumer sees that we
     # TRIED -- the absence of the key would otherwise be indistinguishable from
@@ -1157,6 +1187,15 @@ def _resolve_delivered_v2(
         return "open"
     if st == "MERGED":
         return "open_locked"
+    if (st is None and pr_states is None
+            and err is not None and not _is_transient_error(err)):
+        # #13336 -- PERMANENT lookup failure (gh schema break, non-JSON
+        # payload, PR not found): fail-CLOSED. Releasing the claim here is
+        # what silently reverted v2 to v1 while the `merged` field was dead
+        # (#13216: the same 49 lines written twice, both guards CLEAR).
+        # The lane keeps its lock until a human or a working gh resolves it.
+        ev["pr_state_error"] = err
+        return "open"
     return "close"
 
 
@@ -2174,6 +2213,17 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
     # caller can see WHY a scope they thought is alive is being treated
     # as empty.
     caller_empty_scope = _empty_scope_in(my_scope, tracked) if tracked is not None else []
+    # #12862 -- split the dead-scope verdict by CAUSE. A dead glob that is
+    # SYNTACTICALLY VALID (survives `_unparseable_scope_in`: has a `/` or an
+    # fnmatch metacharacter, braces closed) names files that do not exist
+    # YET -- the expected state of a CREATION tranche (a notebook or lake to
+    # be built). A dead glob that the parser flags as prose/fragment is a
+    # typo and keeps the #12345 fail-CLOSED. Only the syntactically-valid
+    # subset is eligible for the creation relaxation below.
+    parse_residue = _unparseable_scope_in(my_scope)
+    creation_scope_globs = ([g for g in caller_empty_scope
+                             if g not in parse_residue]
+                            if tracked is not None else [])
 
     # Override-scope filter (#10342): an `[OVERRIDE]` with a `paths:` clause
     # only locks lanes whose intended files intersect the scope. Without
@@ -2241,7 +2291,17 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
         # #12345 -- every glob in `my_scope` is dead: the caller declared a
         # scope they believe is alive, but it matches zero tracked files.
         # Cannot prove disjointness -> same verdict as the no-scope case.
-        query_scope = "EPIC_WIDE_NO_PATHS_DECLARED"
+        # #12862 -- UNLESS every dead glob is syntactically valid: then the
+        # deadness is the EXPECTED state of a creation tranche, not a typo.
+        # Such a scope stays `PATH_SCOPED`: it clears at exit 0 when no lane
+        # blocks (the #12844 partition shape) and takes the normal BLOCKED
+        # exit 1 when one does (the relaxation never opens a disputed
+        # scope -- disjointness from a not-yet-existing tree is unprovable,
+        # so any other active claim keeps blocking).
+        if len(creation_scope_globs) == len(caller_empty_scope):
+            query_scope = "PATH_SCOPED"
+        else:
+            query_scope = "EPIC_WIDE_NO_PATHS_DECLARED"
     else:
         query_scope = "PATH_SCOPED"
 
@@ -2421,6 +2481,11 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
         # the dead globs cover the whole scope, otherwise the live globs
         # continue to carry the disjointness test.
         "caller_empty_scope": caller_empty_scope,
+        # #12862 -- the syntactically-valid subset of `caller_empty_scope`
+        # (dead globs that are not parse residue). Non-empty with an empty
+        # `blocking_lanes` and `query_scope == PATH_SCOPED` = a creation
+        # scope, expected to stay dead until the tranche lands.
+        "creation_scope_globs": creation_scope_globs,
         # #12740 -- lane-keyed dead-glob map, aggregated over EVERY claim
         # event (not just active claims). Empty (`{}`) when no glob of any
         # claim matches zero tracked files, or when the tracked walk was
@@ -2446,11 +2511,18 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
     # `exit 2` via the verdict block below.
     if caller_empty_scope:
         dead = ", ".join(repr(g) for g in caller_empty_scope)
+        creation_note = (
+            " Those are syntactically valid -- read as a CREATION scope "
+            "(#12862): the paths are expected not to exist yet. The verdict "
+            "below clears if no lane blocks."
+            if creation_scope_globs else
+            " Reissue with valid paths to lift this hint."
+        )
         print(
             f"SCOPE_DEAD_GLOB: your declared scope contains globs that "
             f"match zero tracked files in this repo: {dead}. The live "
-            f"globs (if any) continue to carry disjointness; reissue with "
-            f"valid paths to lift this hint.",
+            f"globs (if any) continue to carry disjointness."
+            + creation_note,
             file=sys.stderr,
         )
 
@@ -2483,6 +2555,18 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
             f"reprise autorisee, poster un nouveau [CLAIMED].",
             file=sys.stderr,
         )
+
+    # #13336 -- a DELIVERED whose PR state could not be resolved must be
+    # NAMED in the verdict, whatever the verdict. Before this, the JSON
+    # carried `delivered_claims_pr_states: {"N": null}` while the human line
+    # still said `CLEAR:` -- the second lane on #13216 read CLEAR and
+    # duplicated 49 lines that were already in an OPEN PR.
+    unresolved_delivered = [
+        (ev.get("lane") or "?", ev.get("pr_ref"), ev.get("pr_state_error"))
+        for ev in events
+        if ev.marker == "DELIVERED" and ev.get("pr_ref") is not None
+        and ev.get("pr_state") is None
+    ]
 
     # Human verdict after the JSON.
     if others:
@@ -2613,6 +2697,20 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
                 + "\n".join(lines),
                 file=sys.stderr,
             )
+        # #13336 -- fail-CLOSED witness: a lane blocked HERE because its
+        # DELIVERED could not be resolved (permanent gh/schema error) must
+        # see the CAUSE, not just the block. The exit code is unchanged (1
+        # is BLOCKED); the message explains why a visible [DELIVERED] did
+        # not release the lane.
+        for ln, pr, why in unresolved_delivered:
+            reason = f" ({why})" if why else ""
+            print(
+                f"WARN: le [DELIVERED] lane {ln} -- PR #{pr} n'a pas libere "
+                f"la voie : etat de PR NON RESOLU, echec non transitoire"
+                f"{reason}. Fail-CLOSED #13336 -- la lane garde son lock "
+                f"jusqu'a resolution (gh/schema) ou arbitrage coordinateur.",
+                file=sys.stderr,
+            )
         return 1
     # #12345 -- fail-CLOSED on an entirely-dead scope, EVEN with no
     # blockers. Without this branch, a caller who typo'd every glob in
@@ -2647,6 +2745,27 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
         parts.append(f"{len(stale_others)} stale claim(s) bypassed")
     note = f" ({'; '.join(parts)})" if parts else ""
     print(f"\nCLEAR: no other lane claims #{payload.get('number')}{note}.")
+    # #12862 -- the acceptance asks that one invocation surface BOTH the
+    # dead-glob count AND the blocker set, so a CLEAR on a creation scope
+    # can never be misread as a CLEAR on a live scope.
+    if creation_scope_globs:
+        print(
+            f"  scope de creation : {len(creation_scope_globs)} glob(s) sans "
+            f"correspondance sur les fichiers trackes, aucune lane bloquante "
+            f"(blocking_lanes: []). Les chemins vises n'existent pas encore -- "
+            f"etat attendu pour une tranche de creation (#12862)."
+        )
+    if unresolved_delivered:
+        # #13336 -- CLEAR is not an all-clear when a delivery's PR could not
+        # be resolved: the lane may still be holding an OPEN PR on this issue.
+        for ln, pr, why in unresolved_delivered:
+            reason = f" ({why})" if why else ""
+            print(
+                f"WARN: [DELIVERED] lane {ln} -- PR #{pr} non resolu{reason}: "
+                f"l'etat vivant de la PR n'a pas pu etre lu, verifiez-la "
+                f"avant de demarrer (#13336).",
+                file=sys.stderr,
+            )
     return 0
 
 

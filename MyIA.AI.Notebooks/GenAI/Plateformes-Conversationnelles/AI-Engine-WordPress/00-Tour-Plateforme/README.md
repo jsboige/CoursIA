@@ -118,11 +118,18 @@ répond. AI Engine en préremplit sept — chat, images, transcription, etc. —
 qu'il suffit de pointer vers son propre serveur.
 
 **Ce qu'on y voit.** La section *Default Environments for AI* et sa grille
-d'usages types. Le cadrage s'arrête volontairement sous ce titre : la carte
-au-dessus (*Environments for AI*) affiche la clé API et l'URL du serveur de
-modèles en clair — rien de tout ça dans un dépôt public.
+d'usages types, avec en haut du cadre la carte *Environments for AI* qui
+porte les identifiants du serveur de modèles. Cette carte est visible, et ce
+n'est pas un oubli : le champ **API Key** est de type mot de passe — le
+navigateur l'affiche en points, il ne rend jamais sa valeur — et l'endpoint
+affiché est une **adresse privée non routable** (RFC 1918), déjà présente
+ailleurs dans ce dépôt public. Ce qui protège ici, c'est le rendu du champ,
+pas le cadrage : le réflexe à retenir pour toute capture future est de
+vérifier le **type** du champ qui porte un secret, car un cadrage ne couvre
+pas un jour où la même valeur transiterait par un champ texte, un log ou un
+toast.
 
-![Capture de la section « Default Environments for AI » dans l'onglet Settings : la grille des sept usages types (chat, images, audio,…). La carte « Environments for AI », au-dessus, affichant clé et endpoint en clair, est volontairement hors cadre.](assets/tour-05-environnements-defaut.png)
+![Capture de la section « Default Environments for AI » dans l'onglet Settings : la grille des sept usages types (chat, images, audio,…), avec en haut du cadre la carte « Environments for AI » dont le champ API Key apparaît en points (type mot de passe) et l'endpoint est une adresse privée non routable.](assets/tour-05-environnements-defaut.png)
 
 ## 6 — Playground
 
@@ -223,16 +230,18 @@ capture 12 attend la réponse complète du modèle avant de déclencher.
 Conformément à la politique du dossier ombrelle : les captures sont
 produites contre l'instance jetable « Maison Valmont », peuplée
 **exclusivement** de données synthétiques — jamais contre une installation
-réelle. La seule interface qui affiche une clé d'API est cadrée pour laisser
-la carte correspondante hors champ (étape 5). Les identifiants de l'instance
-vivent dans un `.env` **non commité** ; seuls les `*.env.example` documentent
-les variables attendues.
+réelle. La seule interface qui affiche une clé d'API (étape 5) la montre
+**masquée par le rendu du champ** — l'input est de type mot de passe, la
+valeur ne s'affiche jamais en clair ; l'endpoint visible à côté est une
+adresse privée non routable, déjà présente dans ce dépôt. Les identifiants
+de l'instance vivent dans un `.env` **non commité** ; seuls les
+`*.env.example` documentent les variables attendues.
 
 ## Et ensuite ?
 
 - Pour piloter la même plateforme **par l'API** plutôt qu'à la souris,
   suivre la série **AI Engine par son API**, à partir de
-  [`presenter-ai-engine-par-son-api.ipynb`](../presenter-ai-engine-par-son-api.ipynb).
+  [`presenter-ai-engine-par-son-api.ipynb`](../03-Functional/03-5-Multi-Provider/presenter-ai-engine-par-son-api.ipynb).
 - Pour monter l'instance jetable chez soi et rejouer ce tour :
   [`../instance-jetable/README.md`](../instance-jetable/README.md).
 - Pour la même visite côté Open WebUI, voir le

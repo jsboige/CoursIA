@@ -14,6 +14,7 @@ automata-lib>=9.2.0          # Finite automata library (NFA, DFA)
 deap>=1.4                    # Genetic algorithms framework
 pygad>=3.3                   # GA simplifie
 mealpy>=3.0                  # Metaheuristics library (PSO, SA, ABC, etc.)
+pymoo>=0.6                   # Multi-objectif (NSGA-II) + indicateurs (hypervolume)
 
 # Graph & Visualization
 networkx>=3.1                # Graphes et algorithmes
