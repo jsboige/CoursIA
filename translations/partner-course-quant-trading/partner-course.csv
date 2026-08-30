@@ -9431,19 +9431,31 @@ print(f""  Full period: {corr_full:.3f}"")
 print(f""  Bull regime: {corr_bull:.3f}"")
 print(f""  Bear regime: {corr_bear:.3f}"")
 print(f""\nDiversification benefit: {'STRONG' if abs(corr_full) < 0.3 else 'MODERATE' if abs(corr_full) < 0.6 else 'WEAK'}"")",,,,,,,,4ccefc3dfb2ba3fd,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/03-Framework-Composite/research.ipynb,cell-6dd76863,markdown,fr,8245559ab4793775,"## 5. Allocation Optimale
+MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/03-Framework-Composite/research.ipynb,cell-6dd76863,markdown,fr,1e1e9a1704f30f1f,"## 5. Allocation Optimale
 
-L'output de la cellule [12] teste **5 allocations proxy** entre les deux alpha models.
+L'output de la cellule [12] teste **5 allocations proxy** entre les deux alpha models — avec la **bascule de régime** que le Framework applique réellement : en jour bear (SPY < SMA 200), `BEAR_TILT = 0.5` transfère la moitié du poids sectoriel vers le sleeve défensif (70/30 nominal → 35/65 effectif) ; en jour bull, l'allocation nominale s'applique.
 
-**Fait majeur** : le **Sharpe proxy est maximal à 50/50** (0.929), devant 60/40 (0.917), 70/30 (0.896), 80/20 (0.870), 90/10 (0.842). Le main.py utilise **70/30** — et c'est un **choix délibéré, pas optimal**.
+**Fait majeur** : le **Sharpe proxy est monotone croissant et saturant** — il monte de 1.094 (50/50) à 1.170 (90/10), mais le gain marginal s'évanouit : +0.041, +0.024, +0.011 puis **+0.0005** entre 80/20 et 90/10 (ex-aequo statistique).
 
-**Lecture critique** : la relation Sharpe vs allocation est **monotone décroissante** quand on ajoute du secteur. Dit autrement : ajouter du defensive **réduit le rendement annualisé** (de 13.11% à 10.88%) **mais réduit aussi la volatilité** (de 15.56% à 11.71%), et le ratio net favorise la diversification.
+**La signature mesurable du fix** : avant correction, les deux branches de la bascule calculaient la même somme (l'addition est commutative) et `is_bear_day` était un no-op — la frontière Sharpe était alors monotone **décroissante** (0.929 à 50/50 → 0.843 à 90/10), « meilleure » allocation = 50/50. Avec la bascule active, le classement **s'inverse** : à 90/10, le rendement annualisé gagne +1.99 pts (0.1311 → 0.1510) pendant que la volatilité **perd** 2.65 pts (0.1556 → 0.1291) — le tilt dynamique coupe l'exposition sectorielle exactement les jours bear où elle coûte le plus cher.
 
-**Pourquoi main.py retient 70/30 et non 50/50** : le proxy ci-dessus **ignore les coûts de transaction** du rebalancement hebdo et **ignore la path-dependence du drawdown**. Un 50/50 smoother en proxy se traduit souvent par un **Sharpe OOS inférieur en backtest réel** à cause du glissement (rebalance 50% → 50% chaque semaine = turnover 2× supérieur à 70/30 → 30%). La ratchet baseline retient donc 70/30 comme compromis Sharpe/proxy/backtest-réel.
+**Pourquoi AnnReturn reste affine** (écarts constants ≈ +0.0086 par pas de 10 pts) : propriété mathématique du proxy, pas un défaut — la moyenne annualisée est linéaire et les poids par régime sont affines dans l'allocation nominale. La dépendance au régime se lit dans les grandeurs **non linéaires** : la volatilité (0.1291 à 90/10 au lieu de 0.1556 — la queue de pertes bear est amputée) et le Sharpe (frontière inversée).
 
-**À noter** : ce proxy est une **proxy simplifiée**, pas un backtest. La cellule [12] est explicite là-dessus. Un vrai backtest main.py via QC Cloud donnera le Sharpe OOS authoritative — qu'on comparera au proxy en conclusion.","## 5. Optimal Allocation
+**Pourquoi main.py retient 70/30** : le proxy place 70/30 à 1.158, troisième sur cinq, à 0.011 de la frontière — et le gain marginal au-delà de 80/20 est nul (+0.0005). Le compromis reste celui de la section suivante : coûts de transaction du rebalancement hebdo, path-dependence du drawdown, robustesse OOS. La lecture change de nature : ce n'est plus « 50/50 gagne mais on sacrifie » (ancienne conclusion, artefact du if mort), c'est « le tilt dynamique se substitue au poids défensif statique — au-delà de 80/20 on n'achète plus rien, en deçà de 70/30 on laisse du rendement ».
 
-Testing different allocations between the two alpha models. The main.py uses 70/30 (Sector/Defensive).",,,,,,,8245559ab4793775,da5b7d0aa17b8ffc,,,,,,,
+**À noter** : ce proxy reste une **proxy simplifiée** (poids journaliers fixes par régime, pas de coûts). Le backtest main.py via QC Cloud donnera le Sharpe OOS de référence.","## 5. Optimal Allocation
+
+The output of cell [12] tests **5 proxy allocations** between the two alpha models — with the **regime switch** the Framework actually applies: on a bear day (SPY < SMA 200), `BEAR_TILT = 0.5` transfers half of the sector weight to the defensive sleeve (70/30 nominal → 35/65 effective); on a bull day, the nominal allocation applies.
+
+**Headline fact**: the **proxy Sharpe is monotonically increasing and saturating** — it rises from 1.094 (50/50) to 1.170 (90/10), but the marginal gain vanishes: +0.041, +0.024, +0.011 then **+0.0005** between 80/20 and 90/10 (a statistical tie).
+
+**The measurable signature of the fix**: before the correction, both branches of the switch computed the same sum (addition is commutative) and `is_bear_day` was a no-op — the Sharpe frontier was then monotonically **decreasing** (0.929 at 50/50 → 0.843 at 90/10), ""best"" allocation = 50/50. With the switch active, the ranking **reverses**: at 90/10, the annualized return gains +1.99 pts (0.1311 → 0.1510) while volatility **loses** 2.65 pts (0.1556 → 0.1291) — the dynamic tilt cuts sector exposure exactly on the bear days where it costs the most.
+
+**Why AnnReturn stays affine** (constant gaps ≈ +0.0086 per 10-pt step): a mathematical property of the proxy, not a defect — the annualized mean is linear and the per-regime weights are affine in the nominal allocation. Regime dependence shows in the **non-linear** quantities: volatility (0.1291 at 90/10 instead of 0.1556 — the bear loss tail is cut off) and the Sharpe (inverted frontier).
+
+**Why main.py keeps 70/30**: the proxy places 70/30 at 1.158, third of five, 0.011 from the frontier — and the marginal gain beyond 80/20 is nil (+0.0005). The trade-off remains that of the next section: transaction costs of weekly rebalancing, drawdown path-dependence, OOS robustness. The reading changes nature: it is no longer ""50/50 wins but we sacrifice"" (the old conclusion, an artefact of the dead if), it is ""the dynamic tilt substitutes for the static defensive weight — beyond 80/20 you buy nothing more, below 70/30 you leave return on the table"".
+
+**Note**: this proxy remains a **simplified proxy** (fixed daily weights per regime, no costs). The main.py backtest via QC Cloud will give the reference OOS Sharpe.",,,,,,,1e1e9a1704f30f1f,1694fcbede6452fd,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/03-Framework-Composite/research.ipynb,cell-8d86ce40,code,fr,9ed14755cb901cc6,"# Simulate different allocations
 allocations = [(50, 50), (60, 40), (70, 30), (80, 20), (90, 10)]
 
@@ -9556,7 +9568,7 @@ print(""  - L'approche Framework separe les preoccupations (alpha, risk, executi
 print(""  - Deux alpha models decorreles offrent une meilleure diversification"")
 print(""  - Le circuit breaker a 15% protege contre les crashs majeurs"")
 print(""  - L'allocation 70/30 privilegie le momentum tout en gardant une couverture defensive"")",,,,,,,,9cc784c7433388c1,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/03-Framework-Composite/research.ipynb,cell-b5f1fd1e,markdown,fr,6c81779eeef1c595,"## Conclusion et Pistes d'Itération
+MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/03-Framework-Composite/research.ipynb,cell-b5f1fd1e,markdown,fr,ef07db607cda6304,"## Conclusion et Pistes d'Itération
 
 ### Synthèse des résultats de recherche
 
@@ -9566,48 +9578,49 @@ MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/03-F
 | §2 Signal | Combien de temps le signal momentum est-il actif ? | 63.7% en moyenne, dispersion sectorielle 50-74% |
 | §3 Bear | Quels refuges protègent vraiment en bear ? | **TLT** (spread +49.30%), **XLU échec** (-59.41%) |
 | §4 Corr | Les deux alphas sont-ils décorrelés ? | MODERATE (0.383), **bear 0.595 = break** |
-| §5 Alloc | Quelle allocation maximise le Sharpe proxy ? | 50/50 = 0.929, mais main.py retient 70/30 = 0.896 |
+| §5 Alloc | Quelle allocation maximise le Sharpe proxy (bascule de régime) ? | 90/10 = 1.1697 ≈ 80/20 = 1.1692 (frontière saturante), retenu main.py : 70/30 = 1.158 |
 | §6 CB | Le circuit breaker à 15% est-il adapté ? | 1.7% du temps sous −15%, max SPY = −33.72% |
 
 ### Leçons principales du notebook
 
 1. **Le Framework composite n'est pas un générateur de Sharpe magique** — c'est un **proxy de risk management**. Les deux alpha models sont **partiellement corrélés** (surtout en bear), donc la diversification est réelle mais asymétrique.
 2. **TLT écrase le rôle de hedge**, XLU **échoue structurellement** en bear. Inclure XLU dans le defensive universe réduit la qualité du hedge.
-3. **L'allocation 70/30 n'est PAS optimale sur le proxy** (50/50 gagne), mais elle est **robuste au backtest réel** (coûts tx, slippage, path-dependence). Le compromis est délibéré.
+3. **La bascule de régime est réelle et mesurable** : `BEAR_TILT = 0.5` (70/30 nominal → 35/65 effectif en jour bear) **inverse la frontière Sharpe** (monotone décroissante → croissante saturante) et ampute la volatilité de 2.65 pts à 90/10. Le tilt dynamique se substitue au poids défensif statique ; le 70/30 du main.py reste un compromis turnover/robustesse à 0.011 de la frontière. AnnReturn reste affine **par construction** (moyenne linéaire, poids affines par régime) — la signature du régime vit dans la volatilité et le Sharpe.
 4. **Le circuit breaker à 15% est conservateur** vs standards industrie (20-25%). Il coupe sur du *bruit* 10.6% du temps (DD > 5%) mais garantit une DD structurelle basse.
 
 ### Pistes pour itération N+1
 
 - **Réallouer le defensive universe** : remplacer XLU par IEF ou SHY (duration intermédiaire) pour corriger le talon d'Achille bear.
-- **Allocation dynamique risk-parity** : ajuster 70/30 en fonction de la volatilité realized (plus de defensive en haute vol).
+- **Calibrer BEAR_TILT** : 0.5 est arbitraire — balayer 0.25/0.5/0.75 et mesurer la saturation de la frontière.
 - **Ajout d'un 3ᵉ alpha** : mean-reversion RSI<30 sur secteurs en oversold — découplé du momentum, complémentaire au defensive.
 - **Circuit breaker adaptive** : seuil dynamique 15% en bull, 20% en bear (évite les faux triggers en régime turbulent).
-- **Backtest OOS authoritatif** : comparer les résultats du main.py (QC Cloud 2015-2024) au proxy §5 pour quantifier le coût de la simplification.","## Conclusion and Iteration Ideas
+- **Backtest OOS de référence** : comparer les résultats du main.py (QC Cloud 2015-2024) au proxy §5 pour quantifier le coût de la simplification.","## Conclusion and Iteration Ideas
 
-### Architecture
+### Synthesis of research results
 
-| Component | Implementation | Parameters |
-|-----------|---------------|------------|
-| Alpha 1 | SectorMomentum | SMA200 + 126j momentum |
-| Alpha 2 | Defensive | SPY < SMA200 trigger |
-| PCM | MultiStrategyPCM | 70/30 allocation |
-| Risk | MaxDrawdownCircuitBreaker | 15% DD max |
-| Execution | ImmediateExecutionModel | Market orders |
+| Step | Question | Key output |
+|---|---|---|
+| §1 Perf | Which assets have the best annualized Sharpe? | XLF 1.074, TLT 0.855 (best refuge), XLU 0.637 |
+| §2 Signal | How often is the momentum signal active? | 63.7% on average, sector dispersion 50-74% |
+| §3 Bear | Which refuges truly protect in bear? | **TLT** (spread +49.30%), **XLU failure** (-59.41%) |
+| §4 Corr | Are the two alphas decorrelated? | MODERATE (0.383), **bear 0.595 = break** |
+| §5 Alloc | Which allocation maximizes the proxy Sharpe (regime switch)? | 90/10 = 1.1697 ≈ 80/20 = 1.1692 (saturating frontier), kept in main.py: 70/30 = 1.158 |
+| §6 CB | Is the 15% circuit breaker adequate? | 1.7% of the time below −15%, SPY max = −33.72% |
 
-### Key Points
+### Main lessons of the notebook
 
-1. **QC Framework**: clean modular architecture, each component can be tested independently
-2. **Alpha diversification**: sector momentum + defensive are naturally decorrelated
-3. **Regime detection**: the SPY/SMA200 filter automatically switches between the two modes
-4. **Circuit breaker**: protection against extreme drawdowns
+1. **The composite Framework is not a magic Sharpe generator** — it is a **risk management proxy**. The two alpha models are **partially correlated** (especially in bear), so diversification is real but asymmetric.
+2. **TLT crushes the hedge role**, XLU **structurally fails** in bear. Including XLU in the defensive universe reduces hedge quality.
+3. **The regime switch is real and measurable**: `BEAR_TILT = 0.5` (70/30 nominal → 35/65 effective on bear days) **inverts the Sharpe frontier** (monotonically decreasing → increasing and saturating) and cuts volatility by 2.65 pts at 90/10. The dynamic tilt substitutes for the static defensive weight; main.py's 70/30 remains a turnover/robustness compromise 0.011 from the frontier. AnnReturn stays affine **by construction** (linear mean, affine weights per regime) — the signature of the regime lives in volatility and Sharpe.
+4. **The 15% circuit breaker is conservative** vs industry standards (20-25%). It triggers on *noise* 10.6% of the time (DD > 5%) but guarantees a low structural DD.
 
 ### Ideas for iteration N+1
 
-- Add a 3rd alpha model: mean reversion on oversold sectors
-- Dynamically adjust allocation based on volatility (risk parity)
-- Add sector constraints (max exposure per sector)
-- Implement position-level risk management (individual stop-loss)
-- Test alternative indicators (RSI, ADX) for the momentum signal",,,,,,,6c81779eeef1c595,028264304a6e20ca,,,,,,,
+- **Reallocate the defensive universe**: replace XLU with IEF or SHY (intermediate duration) to fix the bear-market Achilles' heel.
+- **Calibrate BEAR_TILT**: 0.5 is arbitrary — sweep 0.25/0.5/0.75 and measure the saturation of the frontier.
+- **Add a 3rd alpha**: RSI<30 mean-reversion on oversold sectors — decoupled from momentum, complementary to the defensive sleeve.
+- **Adaptive circuit breaker**: dynamic threshold 15% in bull, 20% in bear (avoids false triggers in turbulent regimes).
+- **Reference OOS backtest**: compare the main.py results (QC Cloud 2015-2024) to the §5 proxy to quantify the cost of the simplification.",,,,,,,ef07db607cda6304,ddfa461d17c906fc,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/deep_research_optimization.ipynb,deepresearch-interp-data,markdown,fr,eb7391b18e56944c,"**Lecture des sorties.** L'univers charge 9 ETF sectoriels couvrant ~15 ans de cotation (3804 jours de VIX). Les `hit` du cache confirment que la trajectoire est figée : le notebook est reproductible. Notons que `XLI` (Industrials) apparaît dans la liste de téléchargement de la prose mais pas dans l'univers final des 9 — l'univers effectif est XLK/XLF/XLV/XLY/XLP/XLE/XLB/XLU/XLRE, soit la décomposition Sector SPDR canonique. C'est un point à garder en tête pour l'interprétation : le signal momentum porte sur ces 9 rotateurs, pas sur un panier plus large.
 ",,,,,,,,eb7391b18e56944c,,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/deep_research_optimization.ipynb,deepresearch-interp-vix,markdown,fr,0d20c56000abf6d8,"**Lecture des statistiques VIX.** La distribution est **asymétrique à droite** : moyenne 18.36, médiane 16.59 — l'écart signale une longue queue de valeurs hautes (crises). Le percentile 90 à 27.02 et les jours au-dessus de 30 (6.4 % seulement) montrent que le régime extrême est rare mais marqué. Deux conséquences pour le calibrage du filtre : (1) un seuil absolu de 25 filtre ~29.2 % des jours (au-dessus de la moyenne), ce qui est **beaucoup** pour un filtre défensif ; (2) un seuil de 35 ne filtre que les ~6 % de jours de panique franche. Le grid search tranchera lequel des deux protège réellement le Sharpe — l'intuition « filtrer plus = plus sûr » n'est pas garantie, car chaque jour filtré est aussi un rebond manqué.
