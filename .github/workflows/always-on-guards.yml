@@ -921,8 +921,15 @@ jobs:
           FAST_LANE_BASE_SHA: ${{ github.event.pull_request.base.sha }}
           FAST_LANE_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           FAST_LANE_PR: ${{ github.event.pull_request.number }}
+          # #13491 : passer le body de la PR aux detecteurs qui lisent
+          # `MD_CONTENT_LOSS_PR_BODY_FILE` (env var transparente pour le
+          # moteur fast-lane : pas de placeholder par garde a maintenir).
+          # L'ecriture dans un tempfile (et non l'inline) contourne les
+          # caveats `env:` (saute sur les retours-ligne etroits de yaml).
+          MD_CONTENT_LOSS_PR_BODY_FILE: ${{ runner.temp }}/pr-body.md
         run: |
           git fetch origin "${{ github.base_ref }}" -q
+          printf '%s' "${{ github.event.pull_request.body }}" > "$MD_CONTENT_LOSS_PR_BODY_FILE"
           python scripts/ci/fast_lane.py --shadow
 
       # #12396 : controle positif d'identite byte-a-byte des gardes

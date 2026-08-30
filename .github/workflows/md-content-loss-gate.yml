@@ -84,6 +84,24 @@ jobs:
             exit 0
           fi
 
+          # Justification par-cellule depuis le body de la PR (#13491, option a) :
+          # le detecteur parse le body de la PR a la recherche de markers
+          # `md-content-loss: reecriture assumee -- <notebook> cell <N> : <raison>`
+          # qui exonerent le finding TRUNCATED_CELL correspondant (transparence :
+          # le finding devient TRUNCATED_CELL_JUSTIFIED_BY_BODY et reste dans la
+          # sortie machine, seul le verdict binaire --check passe a 0). Sans
+          # marker pour un finding donne, le comportement nominal (rc=1) est
+          # preserve. Le body est ecrit dans un tempfile et passe via l'env var
+          # MD_CONTENT_LOSS_PR_BODY_FILE (env var et non flag CLI : laisse la
+          # fast-lane registry inchanges et evite de specialiser le moteur par
+          # placeholder par garde ; le detecteur la resout en fallback du flag
+          # --pr-body-file). Les PRs sans body (string vide) produisent un
+          # fichier vide -- le detecteur ne matche rien, comportement actuel
+          # preserve (cf Acceptance #13491 : malforme = inert).
+          MD_CONTENT_LOSS_PR_BODY_FILE="$(mktemp)"
+          printf '%s' '${{ github.event.pull_request.body }}' > "$MD_CONTENT_LOSS_PR_BODY_FILE"
+          export MD_CONTENT_LOSS_PR_BODY_FILE
+
           echo "## Markdown content-loss gate" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
           fail=0
@@ -100,7 +118,7 @@ jobs:
             # NOT `|| true` (that makes $? read 0 from `true` and permanently disarms the gate).
             out=$(python scripts/notebook_tools/detect_md_content_loss.py --base "$BASE" --check "$nb" 2>&1) && rc=0 || rc=$?
             if [ "$rc" -eq 1 ]; then
-              echo "::error title=Markdown content loss::$nb lost substantial markdown content (truncated cell or lost structuring motif). If this is a legit rephrase, justify in review."
+              echo "::error title=Markdown content loss::$nb lost substantial markdown content (truncated cell or lost structuring motif). If this is a legit rephrase, add a per-cell marker in the PR body: 'md-content-loss: reecriture assumee -- <notebook> cell <N> : <raison>' (one per justified cell, see #13491)."
               echo "<details><summary><code>$nb</code></summary>" >> "$GITHUB_STEP_SUMMARY"
               echo "" >> "$GITHUB_STEP_SUMMARY"
               echo '```' >> "$GITHUB_STEP_SUMMARY"
@@ -128,7 +146,7 @@ jobs:
 
           if [ "$fail" -ne 0 ]; then
             echo "" >> "$GITHUB_STEP_SUMMARY"
-            echo "FIX: a markdown cell lost substantial content. Two usual causes (see the detector log above for which): (1) the demotion one-shot replaced a whole joined-string cell instead of its heading line only (#8655) -- restore the content and re-apply the heading->callout demotion LINE BY LINE via \`python scripts/notebook_tools/demote_md_asides.py --dir\` ; (2) a YAML frontmatter cost block was removed but its fields were NOT migrated equivalently into \`nb['metadata']['cost']\` (#8919) -- migrate the cost values verbatim (the detector names the divergent fields). A legit migration (fields preserved verbatim in metadata.cost) passes without this notice." >> "$GITHUB_STEP_SUMMARY"
+            echo "FIX: a markdown cell lost substantial content. Two usual causes (see the detector log above for which): (1) the demotion one-shot replaced a whole joined-string cell instead of its heading line only (#8655) -- restore the content and re-apply the heading->callout demotion LINE BY LINE via \`python scripts/notebook_tools/demote_md_asides.py --dir\` ; (2) a YAML frontmatter cost block was removed but its fields were NOT migrated equivalently into \`nb['metadata']['cost']\` (#8919) -- migrate the cost values verbatim (the detector names the divergent fields). A legit rephrase in the 4-75 % band (not a migration) is now admitted by per-cell markers in the PR body (#13491): add 'md-content-loss: reecriture assumee -- <notebook> cell <N> : <raison>' -- one per cell you knowingly rewrote; the gate verifies the marker names the right (notebook, cell) before honoring it." >> "$GITHUB_STEP_SUMMARY"
             exit 1
           fi
           echo "::notice title=Markdown content-loss gate::Checked $checked changed notebook(s); no content loss."
