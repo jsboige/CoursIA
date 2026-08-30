@@ -1,0 +1,230 @@
+{
+  "reference": {
+    "prototype": "docs/ict/strates-as-adjunctions-prototype.md#41-amendement-pre-execution--observables-et-frontieres",
+    "substrate": "ict.salience_valence_dissociation",
+    "source_issue": 8182,
+    "source_pr": 13580
+  },
+  "config": {
+    "n_stimuli": 160,
+    "n_epochs": 200,
+    "alpha": 0.15,
+    "n_trials": 500,
+    "kappa": 2.0,
+    "mu": 2.0,
+    "nu": 2.0,
+    "joint_partial_floor": 0.4,
+    "absent_partial_ceiling": 0.2
+  },
+  "seeds": [
+    0,
+    1,
+    7,
+    42,
+    99
+  ],
+  "pass_counts": {
+    "P1_coupled_responds_to_both_channels": 5,
+    "P1_null_s_excludes_pi": 5,
+    "P1_null_pi_excludes_s": 4,
+    "P3_scalar_operation_ratio_at_most_two": 5
+  },
+  "verdicts": {
+    "original_specification": "FALSIFIED_SPECIFICATION",
+    "operational_channel": "SUPPORTED_OPERATIONAL_CHANNEL",
+    "P2_inhibition_debt": "NOT_TESTABLE_ON_THIS_SUBSTRATE",
+    "categorical_adjunction": "NOT_ESTABLISHED"
+  },
+  "aggregate": {
+    "coupled_abs_partial_pi_median": 0.9802997003639312,
+    "coupled_abs_partial_s_median": 0.79476126627312,
+    "operation_ratio": 2.0
+  },
+  "rows": [
+    {
+      "seed": 0,
+      "rho_s_pi": -0.09308549436157411,
+      "partials": {
+        "coupled": {
+          "pi_given_s": 0.9745797631107121,
+          "s_given_pi": 0.8246211321045794
+        },
+        "null_s": {
+          "pi_given_s": 0.09513683885134117,
+          "s_given_pi": 0.9681015053460351
+        },
+        "null_pi": {
+          "pi_given_s": 0.989454161480646,
+          "s_given_pi": -0.015728099779268388
+        }
+      },
+      "decision_entropy_bits": {
+        "coupled": 0.5846496497686956,
+        "null_s": 0.7773405412980223,
+        "null_pi": 0.8076319807564076
+      },
+      "complexity": {
+        "additive_two_channel_scalar_ops": 3,
+        "coupled_scalar_ops": 6,
+        "ratio": 2.0,
+        "asymptotic_order": "O(n_stimuli)",
+        "verdict": "SUPPORTED"
+      },
+      "P2_original_inhibition_debt": "NOT_TESTABLE_ON_THIS_SUBSTRATE",
+      "gates": {
+        "P1_coupled_responds_to_both_channels": true,
+        "P1_null_s_excludes_pi": true,
+        "P1_null_pi_excludes_s": true,
+        "P3_scalar_operation_ratio_at_most_two": true
+      }
+    },
+    {
+      "seed": 1,
+      "rho_s_pi": -0.028976759617452386,
+      "partials": {
+        "coupled": {
+          "pi_given_s": 0.9853370902105336,
+          "s_given_pi": 0.79476126627312
+        },
+        "null_s": {
+          "pi_given_s": -0.03258697599905401,
+          "s_given_pi": 0.9443156692538882
+        },
+        "null_pi": {
+          "pi_given_s": 0.9908151446714385,
+          "s_given_pi": -0.01362928514883322
+        }
+      },
+      "decision_entropy_bits": {
+        "coupled": 0.6423377703689619,
+        "null_s": 0.7916379548658291,
+        "null_pi": 0.8063959829510576
+      },
+      "complexity": {
+        "additive_two_channel_scalar_ops": 3,
+        "coupled_scalar_ops": 6,
+        "ratio": 2.0,
+        "asymptotic_order": "O(n_stimuli)",
+        "verdict": "SUPPORTED"
+      },
+      "P2_original_inhibition_debt": "NOT_TESTABLE_ON_THIS_SUBSTRATE",
+      "gates": {
+        "P1_coupled_responds_to_both_channels": true,
+        "P1_null_s_excludes_pi": true,
+        "P1_null_pi_excludes_s": true,
+        "P3_scalar_operation_ratio_at_most_two": true
+      }
+    },
+    {
+      "seed": 7,
+      "rho_s_pi": -0.030428854644804586,
+      "partials": {
+        "coupled": {
+          "pi_given_s": 0.9761536470295008,
+          "s_given_pi": 0.710270907399059
+        },
+        "null_s": {
+          "pi_given_s": -0.019988070023372426,
+          "s_given_pi": 0.9637651098996023
+        },
+        "null_pi": {
+          "pi_given_s": 0.989099422393221,
+          "s_given_pi": 0.008966843729688544
+        }
+      },
+      "decision_entropy_bits": {
+        "coupled": 0.6160855825561937,
+        "null_s": 0.789946546005516,
+        "null_pi": 0.8110301500614687
+      },
+      "complexity": {
+        "additive_two_channel_scalar_ops": 3,
+        "coupled_scalar_ops": 6,
+        "ratio": 2.0,
+        "asymptotic_order": "O(n_stimuli)",
+        "verdict": "SUPPORTED"
+      },
+      "P2_original_inhibition_debt": "NOT_TESTABLE_ON_THIS_SUBSTRATE",
+      "gates": {
+        "P1_coupled_responds_to_both_channels": true,
+        "P1_null_s_excludes_pi": true,
+        "P1_null_pi_excludes_s": true,
+        "P3_scalar_operation_ratio_at_most_two": true
+      }
+    },
+    {
+      "seed": 42,
+      "rho_s_pi": 0.03308219027196349,
+      "partials": {
+        "coupled": {
+          "pi_given_s": 0.983959465817467,
+          "s_given_pi": 0.7326031512090635
+        },
+        "null_s": {
+          "pi_given_s": 0.16887550566042833,
+          "s_given_pi": 0.9519244846739126
+        },
+        "null_pi": {
+          "pi_given_s": 0.988975037748623,
+          "s_given_pi": 0.0015062089671353256
+        }
+      },
+      "decision_entropy_bits": {
+        "coupled": 0.640701806932966,
+        "null_s": 0.8002992900779745,
+        "null_pi": 0.8007212310367635
+      },
+      "complexity": {
+        "additive_two_channel_scalar_ops": 3,
+        "coupled_scalar_ops": 6,
+        "ratio": 2.0,
+        "asymptotic_order": "O(n_stimuli)",
+        "verdict": "SUPPORTED"
+      },
+      "P2_original_inhibition_debt": "NOT_TESTABLE_ON_THIS_SUBSTRATE",
+      "gates": {
+        "P1_coupled_responds_to_both_channels": true,
+        "P1_null_s_excludes_pi": true,
+        "P1_null_pi_excludes_s": true,
+        "P3_scalar_operation_ratio_at_most_two": true
+      }
+    },
+    {
+      "seed": 99,
+      "rho_s_pi": 0.010994568655071611,
+      "partials": {
+        "coupled": {
+          "pi_given_s": 0.9802997003639312,
+          "s_given_pi": 0.8010882830496479
+        },
+        "null_s": {
+          "pi_given_s": 0.12863860493275273,
+          "s_given_pi": 0.957964135614794
+        },
+        "null_pi": {
+          "pi_given_s": 0.9892693423232501,
+          "s_given_pi": 0.2704453401134868
+        }
+      },
+      "decision_entropy_bits": {
+        "coupled": 0.5981045891028183,
+        "null_s": 0.783883283072145,
+        "null_pi": 0.8201438571337437
+      },
+      "complexity": {
+        "additive_two_channel_scalar_ops": 3,
+        "coupled_scalar_ops": 6,
+        "ratio": 2.0,
+        "asymptotic_order": "O(n_stimuli)",
+        "verdict": "SUPPORTED"
+      },
+      "P2_original_inhibition_debt": "NOT_TESTABLE_ON_THIS_SUBSTRATE",
+      "gates": {
+        "P1_coupled_responds_to_both_channels": true,
+        "P1_null_s_excludes_pi": true,
+        "P1_null_pi_excludes_s": false,
+        "P3_scalar_operation_ratio_at_most_two": true
+      }
+    }
+  ]
+}

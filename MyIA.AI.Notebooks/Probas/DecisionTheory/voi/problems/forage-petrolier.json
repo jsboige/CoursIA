@@ -1,0 +1,28 @@
+{
+  "problem": "forage-petrolier",
+  "description": "Probleme de forage petrolier extrait de DecInfer-6 (cellules 32 et 35) et DecPyMC-5 (cellule 33). Convention : objets imbriques partout, aucune matrice -- chaque adaptateur mappe explicitement vers sa convention interne (C# Utilities[action,state], Python U[state,action]).",
+  "source": {
+    "decinfer6_cells": [32, 35],
+    "decpymc5_cells": [33]
+  },
+  "states": ["petrole", "pas_petrole"],
+  "priors": {
+    "petrole": 0.3,
+    "pas_petrole": 0.7
+  },
+  "actions": ["forer", "vendre"],
+  "utilities": {
+    "forer": { "petrole": 1500000, "pas_petrole": -500000 },
+    "vendre": { "petrole": 200000, "pas_petrole": 200000 }
+  },
+  "signals": ["positif", "negatif"],
+  "likelihood": {
+    "positif": { "petrole": 0.9, "pas_petrole": 0.2 },
+    "negatif": { "petrole": 0.1, "pas_petrole": 0.8 }
+  },
+  "test_cost": 60000,
+  "expected_controls": {
+    "discriminant": "0 < EVSI_nette < EVPI (test informatif mais imparfait)",
+    "negative": "EVSI = 0 pour le probleme jumeau a vraisemblance non informative"
+  }
+}

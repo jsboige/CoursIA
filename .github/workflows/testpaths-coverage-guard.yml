@@ -1,15 +1,12 @@
 name: testpaths-coverage-guard
 
+# #12567 tranche 5 : cette garde est absorbee par la voie rapide
+# (scripts/ci/fast_lane.py). Le declenchement `pull_request` est retire ici
+# pour eviter la double execution (lane + workflow dedie) ; `workflow_dispatch`
+# reste pour execution manuelle / replay. La garde est rendue par la voie
+# rapide sous son nom canonique `testpaths vs CI coverage` (conclusion reelle,
+# conclusion_for ne neutralise pas les absorbes).
 on:
-  pull_request:
-    paths:
-      - 'pytest.ini'
-      - 'scripts/check_testpaths_coverage.py'
-      - '.github/workflows/scripts-tests.yml'
-      - '.github/workflows/ml-tests.yml'
-      - '.github/workflows/secret-scan.yml'
-      - '.github/workflows/ict-tests.yml'
-      - '.github/workflows/testpaths-coverage-guard.yml'
   workflow_dispatch:
 
 permissions:

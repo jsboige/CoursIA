@@ -843,7 +843,7 @@ project:
     - "MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-7d-MichalewiczDixonPrice.ipynb"
     - "MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-8-LandscapeExplorer.ipynb"
     - "MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-9-EverestRelief.ipynb"
-    - "MyIA.AI.Notebooks/Sudoku/Sudoku-0-Environment-Csharp.ipynb"
+    - "MyIA.AI.Notebooks/Sudoku/Sudoku-00-Environment-Csharp.ipynb"
     - "MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Python.ipynb"
     - "MyIA.AI.Notebooks/Sudoku/Sudoku-15-Infer-Csharp.ipynb"
     - "MyIA.AI.Notebooks/Sudoku/Sudoku-18b-Statistical-Comparison-Python.ipynb"
