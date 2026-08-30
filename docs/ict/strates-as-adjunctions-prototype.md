@@ -66,7 +66,39 @@ Le substrat **ICT-12c `PregnanceAnimat`** (`MyIA.AI.Notebooks/IIT/ICT-Series/ict
 
 **Null adversarial** : un animat dont `f_aj` est un **foncteur sans adjoint** (par exemple une composition libre sans co-unit) ne modifie ni (P1) ni (P2) — c'est l'**absence d'adjonction** qui tue la prédiction.
 
-**Statut au 2026-08-30** : prédiction **PRÉDIT** (non exécutée). Le substrat `pregnance_animat.py` permet l'extension en quelques dizaines de lignes (canal `f_aj` à ajouter dans `ict/ajointion_saillance_pregnance.py`, à créer). Cycle suivant : exécution et verdict honnête `CONFIRMED` / `PARTIEL` / `FALSIFIÉ` / `INCONCLUSIF`.
+**Statut au 2026-08-30** : prédiction originale **EXÉCUTÉE ET FALSIFIÉE COMME SPÉCIFICATION** ; signature empirique plus faible du canal couplé **SUPPORTÉE**. Le protocole, les tests et les résultats reproductibles vivent dans `ict/adjonction_saillance_pregnance.py`, `ict/tests/test_adjonction_saillance_pregnance.py` et `ict/adjonction_saillance_pregnance_results.json`.
+
+### 4.1 Amendement pré-exécution — observables et frontières
+
+**Scellé avant toute exécution de la tranche.** La relecture du code révèle que les trois prédictions ci-dessus ne sont pas toutes mesurables telles quelles ; elles restent conservées comme hypothèses originales et ne sont pas réécrites après coup.
+
+1. Dans `pregnance_animat.py`, la variable nommée `salience` vaut déjà `pi + intr`. ICT-12c mesure donc surtout `p̂ ⟂ π`, pas la dissociation `s ⟂ π`. L'exécution réutilise la batterie dédiée `salience_valence_dissociation.py`, où `s` et `π` sont tirés indépendamment, puis ajoute un canal de décision bilinéaire `σ(κs + μπ + νsπ)`.
+2. Une fonction scalaire `f_aj(s, π)` n'est **pas** une adjonction catégorielle : aucune catégorie, paire de foncteurs, naturalité ou bijection de hom-sets n'est définie ici. Le traitement est nommé **canal couplé**, jamais preuve d'adjonction. Les nulls sont les canaux `s`-seul et `π`-seul.
+3. La dette d'inhibition d'ICT-30 vit dans `inhibited_action.py` / `inhibited_invention.py`, pas dans ce substrat. **P2 originale est non testable dans cette tranche** ; une entropie de décision est rapportée comme diagnostic exploratoire, sans être renommée « dette d'inhibition ».
+4. `corr(engagement, (s, π))` n'a pas de définition canonique. **P1 opérationnelle**, évaluée sur les graines `(0, 1, 7, 42, 99)`, exige dans au moins 4/5 graines : `|ρ(dec, π | s)| ≥ 0,40` et `|ρ(dec, s | π)| ≥ 0,40` pour le canal couplé, tandis que chaque null doit laisser son canal absent sous `0,20`. Aucune bande ne sera recalibrée après mesure.
+5. **P3 opérationnelle** compte les opérations scalaires ajoutées avant la sigmoïde commune : ratio `≤ 2` confirmé, `> 5` falsifié, intervalle `(2, 5]` explicitement **INCONCLUSIF**. L'ordre asymptotique reste `O(n)` dans tous les bras.
+
+Le verdict global distingue donc deux niveaux : (a) **conjecture originale telle que spécifiée**, falsifiée si elle exige une vraie adjonction ou l'annulation de la dette ICT-30 ; (b) **signature empirique du canal couplé**, supportée seulement si P1 passe sur au moins 4/5 graines. Ce découpage empêche un succès du jouet de valider rétroactivement la thèse catégorielle.
+
+### 4.2 Verdict post-exécution — cinq graines, seuils inchangés
+
+L'exécution sur les graines `(0, 1, 7, 42, 99)` donne :
+
+| Porte pré-enregistrée | Passage |
+|---|---:|
+| Canal couplé : les deux corrélations partielles ≥ 0,40 | **5/5** |
+| Null `s`-seul : canal `π` absent ≤ 0,20 et canal `s` présent ≥ 0,40 | **5/5** |
+| Null `π`-seul : canal `s` absent ≤ 0,20 et canal `π` présent ≥ 0,40 | **4/5** |
+| P3 : ratio d'opérations scalaires ≤ 2 | **5/5**, ratio = **2,0** |
+
+Les médianes du traitement sont `|ρ(dec, π | s)| = 0,9803` et `|ρ(dec, s | π)| = 0,7948`. La graine 99 du null `π`-seul dépasse le plafond de canal absent (`0,2704 > 0,20`) ; elle est conservée comme échec, sans exclusion ni recalibrage. L'ordre asymptotique demeure `O(n)`.
+
+- **Verdict de la spécification originale : `FALSIFIED_SPECIFICATION`.** Le traitement n'instancie aucune adjonction catégorielle et P2 n'est pas mesurable sur ce substrat.
+- **Verdict du canal empirique : `SUPPORTED_OPERATIONAL_CHANNEL`.** Le traitement répond aux deux canaux et les nulls mono-canal discriminent l'effet dans au moins 4/5 graines.
+- **P2 : `NOT_TESTABLE_ON_THIS_SUBSTRATE`.** L'entropie de décision archivée est exploratoire ; elle ne mesure pas la dette d'inhibition ICT-30.
+- **Adjonction catégorielle : `NOT_ESTABLISHED`.** Les résultats ne valident ni les hom-sets, ni la naturalité, ni la transposition Schreiber ↔ ICT.
+
+Le JSON committé est vérifié contre une ré-exécution fraîche par le test automatisé, avec égalité exacte des champs discrets et tolérance numérique `1e-12` sur les flottants.
 
 ## 5. Honnêteté grade C
 

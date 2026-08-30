@@ -11,6 +11,10 @@ fenetre 14 j du 2026-08-29).
 Un detecteur se valide par ses faux negatifs (anti-regression.md) : les
 controles ci-dessous epinglent les DEUX sens -- le renvoi de contexte NE
 rattache PAS, la declaration (et la forme structurelle) rattache.
+
+Extension #13507 : `parent_issue` applique la meme distinction declaration vs
+renvoi -- le motif nu `EPIC #N` ne rattache qu'en tete de corps, jamais au
+fil du texte.
 """
 from __future__ import annotations
 
@@ -319,6 +323,45 @@ def test_is_series_rejects_tooling_paths():
     for p in ("scripts/series_saturation.py", ".github/workflows/x.yml",
               "docs/reference/y.md"):
         assert not ss._is_series(p), p
+def test_parent_issue_prose_renvoi_mid_body_returns_none():
+    """Controle positif du fix #13507 : la phrase REELLE du corps de #13504.
+
+    #13504 se voyait attribuer parent=12373 sur ce seul renvoi de comparaison
+    mi-corps : "dont l'EPIC #12373 porte la consolidation".
+    """
+    body_13504 = (
+        "## La zone\n\nDecrire `ML/DataScienceWithAgents`.\n\nC'est la difference exacte avec "
+        "`Part4-Metaheuristics`, qui recoit vite **aussi** mais dont l'EPIC #12373 porte la "
+        "consolidation."
+    )
+    assert ss.parent_issue(body_13504) is None
+
+
+def test_parent_issue_structural_formulations_anywhere():
+    """Les formulations REELLES des filles de #12373 rattachent, quelle que soit la position."""
+    assert ss.parent_issue("Enfant de l'Epic #12373.") == 12373
+    assert ss.parent_issue("Paire 9/9 de l'EPIC #12373 (MGS vs mealpy).") == 12373
+    assert ss.parent_issue("Paire 8/9 de l'EPIC #12373.") == 12373
+    assert ss.parent_issue("Intro longue.\n\nPuis du recit.\n\nEnfin : Fille de l'EPIC #5081.") == 5081
+
+
+def test_parent_issue_naked_epic_head_declares():
+    """Le motif nu garde sa valeur de declaration en TETE de corps.
+
+    Formes reelles mesurees sur les issues ouvertes : #13436, #12915, #12607.
+    """
+    assert ss.parent_issue("## Contexte\nSous-grain de l'EPIC #1454.") == 1454
+    assert ss.parent_issue("## Contexte\nTranche T5 de l'EPIC #12904.") == 12904
+    assert ss.parent_issue("Fils techniques de l'axe 5 de l'Epic #12373.") == 12373
+
+
+def test_parent_issue_naked_epic_mid_body_returns_none():
+    """Le MEME motif nu, mi-corps, ne rattache plus (frontiere des 3 lignes)."""
+    body = (
+        "Un long sujet.\n\nUne premiere etape.\n\nUne deuxieme etape.\n\n"
+        "Pour finir : l'EPIC #1621 a corrige ce point ailleurs."
+    )
+    assert ss.parent_issue(body) is None
 
 
 if __name__ == "__main__":
