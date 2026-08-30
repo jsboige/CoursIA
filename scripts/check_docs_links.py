@@ -212,6 +212,19 @@ def scan_file(filepath: Path) -> list[LinkRef]:
     return refs
 
 
+def _is_quarto_render_target(html_path: Path, root: Path) -> bool:
+    """Return whether Quarto generates ``html_path`` from a listed notebook."""
+    notebook = html_path.with_suffix(".ipynb")
+    if not notebook.is_file():
+        return False
+    try:
+        notebook_rel = notebook.relative_to(root).as_posix()
+        quarto = (root / "_quarto.yml").read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError, ValueError):
+        return False
+    return f'"{notebook_rel}"' in quarto
+
+
 def check_link(target: str, source_path: Path, root: Path = REPO_ROOT) -> bool:
     """Check if a relative link target exists.
 
@@ -239,7 +252,15 @@ def check_link(target: str, source_path: Path, root: Path = REPO_ROOT) -> bool:
     if any(rel_posix == sm or rel_posix.startswith(sm + "/") for sm in SUBMODULE_PATHS):
         return True
 
-    return resolved.exists()
+    if resolved.exists():
+        return True
+
+    # Quarto-generated pages are absent from the source tree by design. They are
+    # valid only when the sibling notebook exists and is explicitly listed in
+    # project.render; otherwise the link remains a genuine broken render target.
+    return resolved.suffix.lower() == ".html" and _is_quarto_render_target(
+        resolved, root
+    )
 
 
 def find_orphan_docs(scanned_files: list[Path], all_refs: list[LinkRef]) -> list[str]:
