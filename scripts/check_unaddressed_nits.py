@@ -281,6 +281,15 @@ CONCERN_MARKERS = CONCERN_MARKERS + BLOCK_VERDICTS
 LIFT_MARKERS = (
     "levée", "levee", "LGTM", "Mergé", "Merged", "je merge", "Merge.",
     "est adressé", "sont adressés", "sont levées", "est levée",
+    # #13635 — formes masculines. L'organe ne captait que les formes
+    # féminines (« est levée », « sont levées ») et ratait les mêmes
+    # constructions au masculin : « est levé », « sont levés ». Le dépot
+    # emploie massivement des substantifs masculins pour designer ce qui se
+    # leve (concern, point, nit), et la phrase la plus naturelle — « tes
+    # concerns sont levés » — etait precise­ment celle que l'organe ne voyait
+    # pas (constate firsthand sur #13539 c.704). Meme justification
+    # asymetrique que #11677/#11542 pour les formes feminines historiques.
+    "est levé", "sont levés",
     "Je lève", "Je leve", "Levée de", "Levee de",
     # #11677 : « je lève ma CHANGES_REQUESTED » (#11664 fondateur) — LIFT
     # historique ne captait que « levée » (mot complet), donc « lève ma » ne
