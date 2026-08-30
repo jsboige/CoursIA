@@ -46,6 +46,12 @@
       csharp_sha: c1e10cf15b9ac3514980ce690d0ffc569d551494
       content_python_sha: b5821a8d5d05b6a4ce1223725d44947aaf20e4b703db42131562d95270178d8d
       content_csharp_sha: daf84cce8959cae775fe78a90f52bff45c9b0e1f87b3df41edc8ab7d5a106e32
+    - date: "2026-08-30"
+      by: myia-po-2024:CoursIA-2
+      python_sha: 1d92584245918e7cd17f0687faedb68b9cb71bf8
+      csharp_sha: 30f558d60054714f780c7acf6e5a02523a54f366
+      content_python_sha: b5821a8d5d05b6a4ce1223725d44947aaf20e4b703db42131562d95270178d8d
+      content_csharp_sha: b182e225839a1431f3199458d0257dd4a33f7786decbf2d141041ea5c4a67dc3
   known_differences:
     - "Socle pedagogique commun : recuit simule (Simulated Annealing) applique au Sudoku -- schema de refroidissement, temperature decroissante, acceptation de Metropolis, voisinage par mutation locale. Tranche 1 (C# from scratch, sections 3-8) et le jumeau Python enseignent le meme algorithme."
     - "Lib-vs-lib native-both (mandat #10382) : chaque cote atteint un moteur metaheuristique de production de son ecosysteme. Python : framework 'simanneal' (l'etudiant sous-classe Annealer, herite de l'infrastructure temperature/voisinage/Metropolis) -- from simanneal import Annealer, classe SudokuAnnealer(Annealer). C# : librairie 'GeneticSharp' (Tranche 2, section 9) -- le solver SudokuGeneticSharpSolver branche un chromosome a permutation de ligne + operateurs custom (mutation echange intra-ligne, crossover OX par ligne) sur l'infrastructure Population/GeneticAlgorithm/EliteSelection/TplTaskExecutor de GeneticSharp. Les deux cotes deleguent le MOTEUR a une lib de production et se concentrent sur le probleme (encodage, voisinage/fitness)."
