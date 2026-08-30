@@ -504,6 +504,69 @@ def test_required_failure_links_advisory_as_its_probable_cause():
     assert "cause probable du requis" in linked[0]
 
 
+# --- le rouge est une ASSIGNATION, jamais un vide (incident lanes 2, 30/08) --
+#
+# Le fond de ce chemin etait deja juste : il nomme les PRs, leurs causes et les
+# gestes. C'est sa FORME qui a draine les lanes -- "REFUS DE TIRAGE" + sortie 2
+# + aucun candidat se lit "l'outil n'a rien pour moi", et une lane a forte
+# cadence le recevait a chaque cycle. Les deux tests suivants tiennent le
+# contrat corrige ; le troisieme est leur controle positif.
+
+
+def test_a_lane_with_reds_gets_a_grain_not_a_refusal(monkeypatch, capsys):
+    """Sortie 0 et un travail NOMME : la reparation EST le grain du cycle.
+
+    Le code 2 est la convention "rien a rendre". L'employer ici disait a la
+    lane, dans le seul canal qu'elle lit, l'exact contraire de la regle HARD
+    qu'il sert -- il y a toujours du travail.
+    """
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    _patch_backlog(monkeypatch, [_pr(1, "myia-po-2026:CoursIA", 30)], {1: red})
+    rc = pig.main(["--lane", "myia-po-2026:CoursIA"])
+    out = capsys.readouterr().out
+    assert rc == 0, f"le chemin reparation doit rendre 0, got {rc}"
+    # C'est la PREMIERE ligne qui est lue comme le verdict de l'outil : la
+    # phrase "ce n'est PAS un refus", plus bas, contient le mot a dessein.
+    head = out.splitlines()[0]
+    assert "REFUS" not in head.upper(), f"l'en-tete annonce encore un refus : {head!r}"
+    assert "GRAIN DU CYCLE" in head
+    assert "#1" in out, "la PR a reprendre doit etre nommee"
+    # Le fond qui marchait deja ne doit pas disparaitre avec la forme.
+    assert "check requis en echec" in out
+    assert "update-branch" in out
+
+
+def test_repair_json_carries_a_grain_field(monkeypatch, capsys):
+    """Le consommateur machine lit un grain, pas un motif de refus.
+
+    Sans ce cas, la sortie humaine pourrait etre corrigee pendant que `--json`
+    continue d'annoncer un refus -- deux canaux, deux verites.
+    """
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    _patch_backlog(monkeypatch, [_pr(7, "myia-po-2026:CoursIA", 30)], {7: red})
+    rc = pig.main(["--lane", "myia-po-2026:CoursIA", "--json"])
+    payload = json.loads(capsys.readouterr().out)
+    assert rc == 0
+    assert payload["mode"] == "repair"
+    assert payload["grain"]["number"] == 7
+    assert "refus" not in payload
+
+
+def test_a_clean_lane_is_not_sent_to_repair(monkeypatch, capsys):
+    """Controle positif des deux precedents.
+
+    Un `rc == 0` obtenu parce que le garde ne se declenche JAMAIS serait
+    indiscernable d'une assignation qui marche : ici la lane n'a aucun rouge,
+    et la sortie ne doit contenir aucune assignation de reparation.
+    """
+    green = _state(checks=[("PR gate", "SUCCESS", True)])
+    _patch_backlog(monkeypatch, [_pr(1, "myia-po-2026:CoursIA", 30)], {1: green})
+    backlog = pig.red_backlog("myia-po-2026:CoursIA", 24, count_threshold=3)
+    assert backlog["triggers"] == []
+    pig.print_red_assignment("myia-po-2026:CoursIA", {"red": [], "triggers": []}, 24)
+    assert "GRAIN DU CYCLE" in capsys.readouterr().out  # la fonction existe et rend
+
+
 def test_untagged_blocked_prs_are_counted_but_never_attributed(monkeypatch):
     """Portee ecrite : ce que le garde NE couvre PAS.
 
@@ -525,7 +588,7 @@ def test_unattributed_blocked_is_printed_on_the_draw_path(monkeypatch, capsys):
     """#12738 : une lane a `red == []` mais `unattributed_blocked != []`
     doit voir les numeros dans la sortie humaine du TIRAGE, pas seulement
     quand elle est refassee. Sans ce cas, le test ne distingue pas le
-    correctif de l'etat actuel (paragraphe confine a `print_red_refusal`).
+    correctif de l'etat actuel (paragraphe confine a `print_red_assignment`).
     """
     red_state = _state(checks=[("PR gate", "FAILURE", True)])
     # age 2 h : sous le seuil red_hours=24, donc `red=[]` ; pas de tag -> `unattributed_blocked`.
