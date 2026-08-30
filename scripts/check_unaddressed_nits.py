@@ -1201,20 +1201,69 @@ def gh_issue_created(n: int) -> datetime | None:
     immuable, et l'audit retro croise les memes numeros d'une PR a l'autre.
     Un numero de PR ne compte PAS : l'endpoint issues resout aussi les PRs
     (mesure c.705 : `gh issue view <PR> --json createdAt` rend rc=0), d'ou le
-    garde `isPullRequest` — la voie 3 nomme une ISSUE, pas une PR (spec
-    #13495), sinon « rebase de #N fait » serait un report valide.
+    garde issue-vs-PR — la voie 3 nomme une ISSUE, pas une PR (spec #13495),
+    sinon « rebase de #N fait » serait un report valide.
+
+    #13725 — le garde passait par `gh issue view --json isPullRequest`, un
+    champ que `gh issue view` N'EXPOSE PAS (« Unknown JSON field », rc=1).
+    Chaque resolution levait donc, tombait dans le `except` et rendait None :
+    la voie 3 etait MORTE sur tout le depot depuis son cablage. Le refus
+    etait silencieux et indiscernable d'une issue inexistante — une lane
+    employant la forme canonique de B.0 voyait son report refuse sans motif
+    (mesure sur #13618 : #13719 OPEN, nommee par l'auteur de la PR 18 s apres
+    sa creation, resolue None — et #12459/#13608/#13671/#13684/#13686/#13692
+    avec elle, tous existants).
+
+    Le discriminant correct est REST : la representation `issues/{n}` porte
+    la cle `pull_request` UNIQUEMENT pour une PR (mesure : #13719 -> absente,
+    #13618 -> presente), et rend un 404 franc pour un numero inexistant.
     """
     if n not in _ISSUE_CREATED_CACHE:
         try:
-            d = gh_json(["issue", "view", str(n), "--repo", REPO,
-                         "--json", "createdAt,isPullRequest"])
-            if (d or {}).get("isPullRequest"):
+            d = gh_json(["api", "repos/" + REPO + "/issues/" + str(n)])
+            if not isinstance(d, dict) or "pull_request" in d:
                 _ISSUE_CREATED_CACHE[n] = None
             else:
-                _ISSUE_CREATED_CACHE[n] = ts((d or {}).get("createdAt"))
+                _ISSUE_CREATED_CACHE[n] = ts(d.get("created_at"))
         except Exception:
             _ISSUE_CREATED_CACHE[n] = None
     return _ISSUE_CREATED_CACHE[n]
+
+
+# #13725 -- la voie 3 exige un report DELIBERE, pas une mention.
+#
+# La spec de B.0 dit « issue de suivi ouverte et nommee AVANT le merge
+# (reportee sciemment) » : c'est un GESTE, pas une coincidence lexicale.
+# L'implementation d'origine creditait tout `#N` hors citation resolvant en
+# issue -- donc « cf. le defaut #13316 », « Tell c.11145 #13649 », un renvoi
+# de code vers #12319 : autant de reports valides eteignant n'importe quelle
+# reserve anterieure. Le trou etait INVISIBLE tant que `gh_issue_created`
+# levait sur tout (meme incident, cf. sa docstring) : reparer le resolveur
+# SEUL convertissait un gate qui SUR-bloque en trappe qui s'ouvre en
+# silence -- strictement pire, une trappe ne se voit pas.
+#
+# Mesure au moment du fix, sur les 37 PRs ouvertes : 61 reports auraient ete
+# credites par le seul resolveur repare, dont 15 deliberes et **46 par
+# mention incidente** (75 %).
+#
+# Le predicat est lexical et PROCHE : le marqueur de report doit vivre dans
+# la meme ligne que la reference, ou dans les 200 caracteres qui la
+# precedent -- de sorte qu'un commentaire disant « issue de suivi » a propos
+# d'une chose et citant `#N` a propos d'une autre ne credite rien.
+_FOLLOWUP_MARK = re.compile(
+    "issue\\s+de\\s+suivi|issues?\\s+de\\s+report|follow[-\\s]?up|"
+    "report(?:e|\u00e9)e?\\s+sciemment|suivi\\s+ouverte",
+    re.I)
+
+
+def _is_deliberate_followup(stripped: str, pos: int) -> bool:
+    """Le marqueur de report vit-il au voisinage immediat de la reference ?"""
+    line_start = stripped.rfind("\n", 0, pos) + 1
+    line_end = stripped.find("\n", pos)
+    line = stripped[line_start:line_end if line_end != -1 else len(stripped)]
+    if _FOLLOWUP_MARK.search(line):
+        return True
+    return bool(_FOLLOWUP_MARK.search(stripped[max(0, pos - 200):pos]))
 
 
 def collect_followup_lifts(pr_data: dict, cutoff: datetime,
@@ -1259,6 +1308,8 @@ def collect_followup_lifts(pr_data: dict, cutoff: datetime,
         for m in re.finditer(r"#(\d+)", stripped):
             n = int(m.group(1))
             if n == self_ref:
+                continue
+            if not _is_deliberate_followup(stripped, m.start()):
                 continue
             created = issue_created(n)
             if created is not None and created < cutoff:
@@ -1547,6 +1598,49 @@ def review_threads(pr: int) -> list[dict]:
     return out
 
 
+def improper_dismissals(pr: int) -> set[str]:
+    """Auteurs de review dont la reserve a ete dismissee par QUELQU'UN D'AUTRE.
+
+    `gh pr view --json reviews` ne dit ni qui a dismisse ni quand : il ne rend
+    que l'etat final `DISMISSED`. L'acteur vit dans la timeline REST
+    (`review_dismissed`), l'auteur de la review dans les reviews REST — les deux
+    se joignent par l'`id` NUMERIQUE (le champ `id` de `gh pr view` est un
+    node-id GraphQL, `PRR_kwDO...`, non comparable au `review_id` entier).
+
+    Retourne des LOGINS d'auteurs de review, pas des ids : la reserve est
+    reappariee par auteur dans `analyse`. Sur-approximation assumee quand un
+    meme auteur a deux reviews dismissees dont une legitimement — un gate se
+    trompe du cote qui bloque, jamais du cote qui laisse passer.
+
+    Non cable sur `audit()` : deux appels API par PR, pour un chemin retrospectif
+    ou l'enforcement n'a plus lieu. Le gate pre-merge est le point de controle.
+    """
+    try:
+        reviews = gh_json(["api", f"repos/{REPO}/pulls/{pr}/reviews", "--paginate"])
+        events = gh_json(["api", f"repos/{REPO}/issues/{pr}/timeline", "--paginate"])
+    except Exception:
+        return set()  # timeline illisible : on retombe sur l'ancien comportement
+    if not isinstance(reviews, list) or not isinstance(events, list):
+        return set()
+    author_of = {
+        r.get("id"): ((r.get("user") or {}).get("login") or "")
+        for r in reviews if isinstance(r, dict)
+    }
+    improper: set[str] = set()
+    for e in events:
+        if not isinstance(e, dict) or e.get("event") != "review_dismissed":
+            continue
+        actor = ((e.get("actor") or {}).get("login") or "")
+        rid = (e.get("dismissed_review") or {}).get("review_id")
+        emitter = author_of.get(rid)
+        if not emitter:
+            continue
+        if actor == emitter or actor in LIFT_OVERRIDE_LOGINS:
+            continue
+        improper.add(emitter)
+    return improper
+
+
 def _names_author(body: str, author: str) -> bool:
     """``body`` mentionne-t-il ``author`` comme identite, pas par hasard ?
 
@@ -1563,7 +1657,7 @@ def _names_author(body: str, author: str) -> bool:
 
 
 def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
-            issue_created=None) -> dict:
+            issue_created=None, dismissed_improperly=None) -> dict:
     """cutoff = mergedAt (audit retro) ou now (gate pre-merge)."""
     commits = [ts(c.get("committedDate")) for c in (pr_data.get("commits") or [])]
     commits = [c for c in commits if c]
@@ -1757,13 +1851,35 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
     for r in pr_data.get("reviews") or []:
         login = (r.get("author") or {}).get("login", "")
         body = r.get("body", "")
-        if r.get("state") == "DISMISSED":
-            # Une dismissal GitHub n'est possible que par l'auteur de la review
-            # (ou un admin) : la reserve est formellement RETIREE par son
-            # emetteur — pas un signal (#11222, levée (b)).
-            continue
+        state = r.get("state")
+        if state == "DISMISSED":
+            # #13685 — la premisse precedente (« une dismissal n'est possible
+            # que par l'auteur de la review ou un admin ») est FAUSSE : tout
+            # compte disposant du droit d'ecriture peut dismisser la review d'un
+            # tiers, l'auteur de la PR compris. Le `continue` inconditionnel
+            # faisait donc de `PUT /pulls/N/reviews/ID/dismissals` une trappe :
+            # sur #13685, la CHANGES_REQUESTED de clusterManager-Myia (« 1 defect
+            # bloquant trouve ») est dismissee a 18:14:56Z, et `check-navlinks`
+            # passe FAILURE a 18:16:11Z — 75 secondes plus tard. La reserve etait
+            # declaree levee pendant que la propriete qu'elle protege etait encore
+            # cassee. C'est #12798 mecanise : se lever soi-meme la reserve d'un
+            # tiers ne repond pas a la remarque, ca la declare repondue.
+            #
+            # Une dismissal n'eteint donc la reserve que si elle vient de son
+            # EMETTEUR (retrait volontaire, #11222 levee (b)) ou d'un login
+            # d'override nomme. Dismissee par quiconque d'autre, elle SURVIT.
+            if login not in (dismissed_improperly or ()):
+                continue
+            # La reserve survivante reprend son etat D'ORIGINE : la timeline
+            # rend `dismissed_review.state == "changes_requested"`. Sans cette
+            # ligne le signal existe mais retombe en `review:DISMISSED` — hors
+            # de la branche qui force BOT-CONCERN, et hors du durcissement
+            # `src == "review:CHANGES_REQUESTED"` en aval. Mesure sur #13685 :
+            # `improper_dismissals` rendait bien {clusterManager-Myia} et le
+            # gate restait vert. Un signal hors de sa branche ne bloque rien.
+            state = "CHANGES_REQUESTED"
         kind = classify(login, body)
-        if r.get("state") == "CHANGES_REQUESTED":
+        if state == "CHANGES_REQUESTED":
             kind = "BOT-CONCERN" if kind is None else kind
         # #11677 — symetrique APPROVED : l'etat natif GitHub `APPROVED` temoigne
         # qu'aucune reserve n'est posee. Si classify() a deja retourne un kind
@@ -1774,7 +1890,7 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
         # cette branche, le verdict positif est calcule sur la prose seule,
         # alors que la preuve la plus dure (l'etat natif) est disponible
         # deux lignes plus haut. Meme symetrie que CHANGES_REQUESTED ci-dessus.
-        elif r.get("state") == "APPROVED":
+        elif state == "APPROVED":
             if kind is None:
                 pass  # kind reste None (l'etat natif confirme l'extinction)
             # Le test porte sur le corps DEPOUILLE, jamais sur le brut : une
@@ -1796,7 +1912,7 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
                 kind = None
         if kind:
             signals.append((ts(r.get("submittedAt")), kind, login, body,
-                            f"review:{r.get('state')}"))
+                            f"review:{state}"))
 
     blocking = []
     for (when, kind, login, body, src) in signals:
@@ -2046,7 +2162,8 @@ def gate(pr: int, as_json: bool) -> int:
     merged = ts(data.get("mergedAt"))
     cutoff = merged or datetime.now(timezone.utc)
     result = analyse(data, review_threads(pr), cutoff,
-                     issue_created=gh_issue_created)
+                     issue_created=gh_issue_created,
+                     dismissed_improperly=improper_dismissals(pr))
     if as_json:
         print(json.dumps(result, indent=1, ensure_ascii=False))
     elif not result["blocked"]:

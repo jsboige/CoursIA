@@ -9,13 +9,13 @@ observer avant d'agir.
 
 | Notebook                                       | Moteur    | Calcul                |
 |------------------------------------------------|-----------|-----------------------|
-| ``DecInfer/DecInfer-6-Value-Information.ipynb``| Infer.NET | bayesien deterministe |
+| ``DecInfer/DecInfer-06-Value-Information.ipynb``| Infer.NET | bayesien deterministe |
 | ``PyMC/DecPyMC-5-Value-Information.ipynb``     | PyMC      | bayesien + MCMC       |
 | ``PyMC/DecPyMC-11-Valeur-Info-Souscription.ipynb`` | PyMC   | bayesien applique     |
 
 **Tranche 1/3 (cette PR) — interface analytique commune NumPy.** Ce module
 fournit l'implementation analytique close-form EVPI/EVSI en NumPy pur.
-Les moteurs natifs DecInfer-6 (Infer.NET) et DecPyMC-5 (PyMC) restent les
+Les moteurs natifs DecInfer-06 (Infer.NET) et DecPyMC-5 (PyMC) restent les
 organes de calcul canoniques du depot ; **la preuve cross-engine qu'ils
 donnent la meme valeur viendra des adaptateurs/outputs de la tranche 2/3**
 (notebook ICT-12e), pas de cette tranche-ci. Cette interface analytique
@@ -25,7 +25,7 @@ moteurs.
 
 **Tranche 2/3 (a venir) — adaptateurs et controle croise.** La tranche
 suivante branchera l'interface sur les notebooks natifs et montrera que
-``ict.voi.evpi()`` et ``DecInfer-6.EVPI()`` (idem PyMC) rendent la meme
+``ict.voi.evpi()`` et ``DecInfer-06.EVPI()`` (idem PyMC) rendent la meme
 valeur a tolerance pres sur les memes cas canoniques (parapluie, forage,
 animat incarne).
 
