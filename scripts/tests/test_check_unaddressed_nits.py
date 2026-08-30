@@ -2864,3 +2864,56 @@ def test_13474_dplus_gap_13_chars_hors_borne_reste_live():
     assert len(gap) == 13
     body = "La review CHANGES_REQUESTED" + gap + "par le commit a1b2c3d4e."
     assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+# --- #13512 : ce que l'organe n'a pas evalue, il l'imprime -----------------
+#
+# Regression du merge de #13476 : une remarque user d'UNE SEULE LIGNE tombe en
+# `mod.classify(...) is None` (le test CRLF de `classify` n'a pas de prise sur un
+# corps sans retour a la ligne), la PR merge sous un `OK -- aucun nit non leve`
+# qui ne l'a jamais lue. L'organe ne peut pas CLASSER (identites confondues :
+# `jsboige` = user + poussee des lanes + coordinateur), il doit RENDRE VISIBLE.
+
+_ONE_LINER = ("Pour info, on a un container tika a disposition sur ai-01, et notre "
+              "modele vllm maison qwen 3.6 a la vision, donc je pense qu'il y a "
+              "encore du grain a moudre dans ce notebook")
+
+
+def _pr_with(comments, commit_at="2026-08-29T08:40:00Z"):
+    return {
+        "number": 13476, "title": "t", "author": {"login": "jsboige"},
+        "commits": [{"committedDate": commit_at}],
+        "reviews": [], "comments": comments,
+    }
+
+
+def test_13512_one_liner_user_comment_is_surfaced():
+    """Le corps EXACT qui a ete manque doit ressortir dans `unevaluated`."""
+    pr = _pr_with([{"author": {"login": "jsboige"},
+                    "createdAt": "2026-08-29T09:01:03Z", "body": _ONE_LINER}])
+    res = mod.analyse(pr, [], datetime(2026, 8, 29, 11, 14, tzinfo=timezone.utc))
+    # l'organe ne le classe TOUJOURS pas -- c'est admis, et c'est le point
+    assert mod.classify("jsboige", _ONE_LINER) is None
+    assert not res["blocked"], "surfacer n'est pas bloquer (3/5 FP mesures)"
+    bodies = [u["body"] for u in res["unevaluated"]]
+    assert _ONE_LINER in bodies, "la remarque manquee doit etre imprimee"
+    assert res["unevaluated"][0]["after_last_commit"] is True
+
+
+def test_13512_bot_comments_are_not_surfaced():
+    """Controle negatif : le bruit de bot ne doit pas noyer la queue."""
+    bot = sorted(mod.BOT_LOGINS)[0]
+    pr = _pr_with([{"author": {"login": bot},
+                    "createdAt": "2026-08-29T09:01:03Z", "body": "rapport advisory"}])
+    res = mod.analyse(pr, [], datetime(2026, 8, 29, 11, 14, tzinfo=timezone.utc))
+    assert res["unevaluated"] == []
+
+
+def test_13512_classified_comment_is_not_duplicated_in_the_tail():
+    """Un commentaire deja porte par `blocking` n'est pas re-imprime a cote."""
+    concern = "Attention, graphviz n'est pas installee sur la machine source.\r\nLes graphes manquent."
+    pr = _pr_with([{"author": {"login": "jsboige"},
+                    "createdAt": "2026-08-29T09:01:03Z", "body": concern}])
+    res = mod.analyse(pr, [], datetime(2026, 8, 29, 11, 14, tzinfo=timezone.utc))
+    assert mod.classify("jsboige", concern) is not None, "pre-condition : celui-la EST classe"
+    assert all(u["body"] != concern for u in res["unevaluated"])

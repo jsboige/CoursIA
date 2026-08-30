@@ -56,7 +56,7 @@ Le trait distinctif d'Infer.NET : le modèle déclaratif est **compilé** (via R
 | 6 | [Infer-6-Debugging](Infer-6-Debugging.ipynb) | 45 min | Troubleshooting, diagnostics, algorithmes |
 | 7 | [Infer-7-Skills-IRT](Infer-7-Skills-IRT.ipynb) | 60 min | IRT, DINA, many-to-many — *MBML Ch.2* « Assessing People's Skills » |
 | 8 | [Infer-8-TrueSkill](Infer-8-TrueSkill.ipynb) | 55 min | Ranking, online learning, équipes — *MBML Ch.3* « Meeting Your Match » |
-| 9 | [Infer-9-Classification](Infer-9-Classification.ipynb) | 50 min | BPM, régression logistique, A/B |
+| 9 | [Infer-9-Classification](Infer-9-Classification.ipynb) | 50 min | BPM, régression logistique, A/B, calibration hors échantillon (Brier/AUC/fiabilité) |
 | 10 | [Infer-10-Model-Selection](Infer-10-Model-Selection.ipynb) | 45 min | Evidence, Bayes factors, ARD |
 | 11 | [Infer-11-Topic-Models](Infer-11-Topic-Models.ipynb) | 60 min | LDA, documents-topics-mots |
 | 12 | [Infer-12-Modeles-Hierarchiques](Infer-12-Modeles-Hierarchiques.ipynb) | 50 min | Modèles hiérarchiques, pooling partiel, shrinkage, VariableArray indexé |
@@ -66,7 +66,7 @@ Le trait distinctif d'Infer.NET : le modèle déclaratif est **compilé** (via R
 | 16 | [Infer-16-Sparse-Gaussian-Process](Infer-16-Sparse-Gaussian-Process.ipynb) | 55 min | Processus gaussiens, noyau RBF, classification non-linéaire, sparse GP |
 | 17 | [Infer-17-Kalman-Filter](Infer-17-Kalman-Filter.ipynb) | 55 min | Filtre de Kalman, système dynamique linéaire gaussien, conjugaison, EP exacte |
 | 18 | [Infer-18-Change-Point](Infer-18-Change-Point.ipynb) | 50 min | Détection de rupture, DiscreteUniform, ForEach + If/IfNot sur plage, EP, Poisson |
-| 19 | [Infer-19-Survival-Analysis](Infer-19-Survival-Analysis.ipynb) | 50 min | Analyse de survie, Exponentielle conjugée (Gamma), Weibull par transformée, S(t) forme fermée |
+| 19 | [Infer-19-Survival-Analysis](Infer-19-Survival-Analysis.ipynb) | 50 min | Analyse de survie, Exponentielle conjugée (Gamma), Weibull par transformée, S(t) forme fermée, censure à droite exécutée (`ConstrainPositive` vs Kaplan–Meier) |
 
 > **Théorie de la décision** : les 10 notebooks de décision (utilité, EVPI, MDPs, Thompson Sampling, plus 2 companions Lean) forment désormais un arc autonome dans [`../DecisionTheory/DecInfer/`](../DecisionTheory/DecInfer/README.md), adossé au lake [`decision_theory_lean`](../decision_theory_lean/).
 

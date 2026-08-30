@@ -13,7 +13,23 @@ S'applique à **tous les agents du cluster CoursIA** (workers `po-*` + coordinat
 
   **Le bot crée lui-même le véhicule depuis le 2026-08-12** (résolution du 403 de #10331) : le réglage dépôt *Settings → Actions → General → « Allow GitHub Actions to create and approve pull requests »* est actif — première PR véhicule créée par le bot : #10558 (2026-08-12), puis #11195/#11384/#11585/#11717/#11897 mergées, #12287 ouverte. L'ouverture manuelle du véhicule (#10348, par `jsboige` sous le 403) **n'est plus requise** : après chaque merge du véhicule, le cron du jour suivant recrée la PR de remplacement tout seul.
 
-  **Le commit du bot ne porte plus `[skip ci]`** (retiré par #10425, cf. #10421) : il le portait, et c'est précisément ce qui rendait le véhicule permanent **immergeable** — une tête sans check ne satisfait jamais le `PR gate`, donc la PR ne pouvait pas être mergée sans un geste manuel de réveil. Le marqueur avait été mis pour éviter que le cron ne se redéclenche lui-même ; il a été payé au prix d'une PR bloquée. Si une `chore/*-pending` se présente malgré tout avec un rollup quasi vide, le geste de réveil est un `gh pr update-branch` (ou un commit vide) sur la branche : il produit une nouvelle tête et déclenche les checks — mesuré sur #10348, 5 → 27 checks.
+  **Le commit du bot ne porte plus `[skip ci]`** (retiré par #10425, cf. #10421) : il le portait, et c'est précisément ce qui rendait le véhicule permanent **immergeable** — une tête sans check ne satisfait jamais le `PR gate`, donc la PR ne pouvait pas être mergée sans un geste manuel de réveil. Le marqueur avait été mis pour éviter que le cron ne se redéclenche lui-même ; il a été payé au prix d'une PR bloquée. Si une `chore/*-pending` se présente malgré tout avec un rollup quasi vide (≤ 10 checks, **tous CodeQL *default setup*, tous verts**, PR **BLOCKED**), la cause est connue et le geste de réveil est canonique :
+
+  **Cause** : `actions/checkout@v4` pousse avec `GITHUB_TOKEN` (persist-credentials par défaut). **Un push authentifié par `GITHUB_TOKEN` n'émet aucun événement `pull_request`** (garde anti-récursion GitHub : un workflow `on: pull_request` ne peut pas se déclencher sur un push de `GITHUB_TOKEN`). Aucun événement → aucun check (autre que le *default setup* CodeQL, qui passe par un chemin hors-dépôt) → la tête reste sans le `PR gate` → `BLOCKED`. Le `[skip ci]` retiré par #10421 était une cause partielle de l'immergeabilité de la tête ; **la cause structurelle est le `GITHUB_TOKEN`**, et elle survit au retrait du marqueur.
+
+  **Tell** (à vérifier avant le geste) : `gh api repos/<owner>/<repo>/commits/<sha>/check-runs` rendu sur la **tête bot** retourne ~5 checks, exclusivement CodeQL ; rendu sur **le même arbre sous identité non-bot** retourne ~25-27 checks. Si la tête bot a 5 verts-CodeQL et la PR est BLOCKED, c'est ce cas.
+
+  **Geste canonique** : un **commit vide** (arbre identique, parent stable) sous une identité non-bot. À arbre inchangé, le contenu de la PR ne bouge pas — le prochain run du cron re-root la branche sur main et force-push sous bail, ce que ce commit ne gêne pas. Mesure : 5 → 25 checks (#11202 vérif sur #11195, cohérent avec #10348 5 → 27).
+
+  ```bash
+  # Sur la branche chore/catalog-refresh-pending (ou translation-sync-pending) :
+  TREE=$(git rev-parse origin/chore/catalog-refresh-pending^{tree})
+  PARENT=$(git rev-parse origin/chore/catalog-refresh-pending)
+  NEW=$(git commit-tree "$TREE" -p "$PARENT" -m "chore(catalog): wake checks (GITHUB_TOKEN no-event workaround)")
+  git push origin "$NEW:chore/catalog-refresh-pending"
+  ```
+
+  **`gh pr update-branch` est relégué** au seul cas « branche en retard sur main » (mesure : no-op quand la branche est déjà à jour, qui est le cas nominal d'une `chore/*-pending` re-rooted par le cron). Il ne couvre pas le cas GITHUB_TOKEN.
 - `.github/workflows/catalog-drift.yml` — **par-PR**, auto-régénère et committe le catalogue sur la branche d'une PR same-repo (préserve les champs curés via `_merge_curated_fields`, #2433).
 - `.github/workflows/translation-sync.yml` — variante pour les **traductions dérivées** (CSV + `*_<lang>.ipynb`), même motif longue-durée : `chore/translation-sync-pending` + PR permanente, post-merge delivery (cf. #10133, #10136). **Sur hold user depuis le 2026-08-12** (#10038, PR #10767) : le trigger `on: push` a été retiré par décision user — le moteur ne tourne plus que sur `workflow_dispatch` (« manual maintainer trigger »). Un véhicule `chore/translation-sync-pending` dormant n'est **pas** un bug : le mécanisme d'ouverture est débloqué (même toggle que catalog-cron, cf #10331), le véhicule s'ouvrira de lui-même à la première exécution post-levée du hold.
 
