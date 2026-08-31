@@ -617,9 +617,72 @@ jobs:
             printf '[]' > /tmp/commits.json
           fi
 
+          # PREV-INVALID metadata (#13475) : pour chaque `prev: ... #N` cité
+          # dans le body ou les commits, on resout via `gh pr view` / `gh
+          # issue view` pour savoir si la cible est une PR mergée, une PR
+          # ouverte, ou une issue. On passe le résultat au gate via
+          # --prev-targets-file : sans metadata, le gate s'abstient sur les
+          # invariants 2/3 (FN-safety contract documenté).
+          PREV_TARGETS=$(python3 - <<'PY' 2>/dev/null || echo "{}"
+          import json, re, subprocess, sys
+          prev_re = re.compile(r"prev\s*:?\s*[A-Za-z]+\s*/\s*[A-Za-z0-9_-]+\s*#(\d+)\b", re.IGNORECASE)
+          nums = set()
+          try:
+              body = open("/tmp/pr_body.txt", encoding="utf-8").read()
+              nums.update(int(m.group(1)) for m in prev_re.finditer(body))
+          except OSError:
+              pass
+          try:
+              commits = json.load(open("/tmp/commits.json", encoding="utf-8"))
+              for msg in commits or []:
+                  if isinstance(msg, str):
+                      nums.update(int(m.group(1)) for m in prev_re.finditer(msg))
+          except (OSError, json.JSONDecodeError):
+              pass
+          out = {}
+          for n in sorted(nums):
+              # Try PR first. gh pr view exits 0 even for issues (with a
+              # not-found payload), so we read the JSON and check the
+              # 'state' field's presence -- a PR has one, an issue does not.
+              pr = subprocess.run(
+                  ["gh", "pr", "view", str(n), "--json", "state,merged"],
+                  capture_output=True, text=True, timeout=15,
+              )
+              if pr.returncode == 0:
+                  try:
+                      d = json.loads(pr.stdout)
+                      if "merged" in d:
+                          out[str(n)] = {
+                              "kind": "pr",
+                              "merged": bool(d.get("merged", False)),
+                          }
+                          continue
+                  except json.JSONDecodeError:
+                      pass
+              # Fall back to issue. If neither resolves, the gate abstains
+              # (FN-safety: unresolvable target -> no flag).
+              issue = subprocess.run(
+                  ["gh", "issue", "view", str(n), "--json", "state"],
+                  capture_output=True, text=True, timeout=15,
+              )
+              if issue.returncode == 0:
+                  try:
+                      d = json.loads(issue.stdout)
+                      if "state" in d:
+                          out[str(n)] = {"kind": "issue"}
+                          continue
+                  except json.JSONDecodeError:
+                      pass
+          json.dump(out, sys.stdout)
+          PY
+          )
+          printf '%s' "$PREV_TARGETS" > /tmp/prev_targets.json
+
           python3 scripts/ci/variation_prev_guard.py \
             --body-file /tmp/pr_body.txt \
-            --commits-file /tmp/commits.json > /tmp/verdict.json 2>/tmp/verdict.err && RC=0 || RC=$?
+            --commits-file /tmp/commits.json \
+            --current-pr "$PR_NUMBER" \
+            --prev-targets-file /tmp/prev_targets.json > /tmp/verdict.json 2>/tmp/verdict.err && RC=0 || RC=$?
 
           if [ -s /tmp/verdict.err ]; then
             echo "--- helper stderr ---"
