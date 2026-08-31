@@ -935,7 +935,7 @@ project:
     - "MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch.ipynb"
     - "MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar-Csharp.ipynb"
     - "MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar.ipynb"
-    - "MyIA.AI.Notebooks/Search/Part3-Advanced/Search-18-CombinatorialDiscrepancy.ipynb"
+    - "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09c-CombinatorialDiscrepancy.ipynb"
     - "MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-1-Introduction.ipynb"
     - "MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-11-IslandSynergy.ipynb"
     - "MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-12-AxisAlignment.ipynb"
