@@ -189,7 +189,7 @@ l'Epic) ; un dossier de revue est alors préparé (T2).*
 ### EPF — GenAI Bachelor 3A (MSBNS3IN03) (34)
 
 <!-- MyIA.AI.Notebooks/GenAI/Image/02-Advanced -->
-- [ ] `MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-1-Qwen-Image-Edit-2509.ipynb`
+- [ ] `MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb`
 - [ ] `MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-FLUX-1-Advanced-Generation.ipynb`
 - [ ] `MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Stable-Diffusion-3-5.ipynb`
 - [ ] `MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-4-Z-Image-Lumina2.ipynb`

@@ -28,7 +28,7 @@ intégrité du DAG vérifiées mécaniquement (script `pymc_spine.py`, 19 notebo
 | Navlinks cassés (404) | 0 |
 
 > Note G.1 : un premier scan `grep -iv infer` avait faussement signalé PyMC-5 manquant —
-> le filtre excluant « infer » (insensible casse) rayait `PyMC-5-Causal-Inference.ipynb`.
+> le filtre excluant « infer » (insensible casse) rayait `PyMC-05-Causal-Inference.ipynb`.
 > PyMC-5 **existe** (verified firsthand). Artefact d'outil, corrigé.
 
 ## Arc narratif (cohérent)

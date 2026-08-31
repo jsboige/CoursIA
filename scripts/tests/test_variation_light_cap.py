@@ -1903,3 +1903,96 @@ def test_genre_counts_light_none_is_false():
     # defensive du predicat est False, pas une exception.
     assert vlc.genre_counts_light(None) is False
     assert vlc.genre_counts_light("") is False
+
+
+def _run_check_pr(body_now: str, merged_payload: list[dict]) -> dict:
+    """Sous-processus --check-pr sur une journee synthetique (--replay)."""
+    import subprocess
+    import tempfile
+    import os
+
+    with tempfile.NamedTemporaryFile(
+        "w", suffix=".json", delete=False, encoding="utf-8",
+    ) as f:
+        json.dump(merged_payload, f)
+        merged_path = f.name
+    with tempfile.NamedTemporaryFile(
+        "w", suffix=".md", delete=False, encoding="utf-8",
+    ) as f:
+        f.write(body_now)
+        body_path = f.name
+    try:
+        proc = subprocess.run(
+            [
+                sys.executable, str(Path(__file__).resolve().parents[1] / "variation_light_cap.py"),
+                "--check-pr", "999",
+                "--body-file", body_path,
+                "--replay", merged_path,
+            ],
+            capture_output=True, text=True, cwd=str(
+                Path(__file__).resolve().parents[1]
+            ),
+            timeout=15,
+            encoding="utf-8", errors="replace",
+        )
+    finally:
+        os.unlink(merged_path)
+        os.unlink(body_path)
+    assert proc.returncode == 0, proc.stderr
+    return json.loads(proc.stdout)
+
+
+def _issue_13632_day() -> tuple[list[dict], str]:
+    """La journee synthetique du body de l'issue #13632, verbatim.
+
+    3 grains merges sur la lane : un seul LIGHT et dans un genre de
+    CONTENU (LIGHT/qc) -- budget tier epuise (max(1, 3//3) = 1, spent 1),
+    axe genre a zero (qc n'est pas un LIGHT genre).
+    """
+    lane = "myia-zz-test:CoursIA"
+    merged = [
+        {"number": 900, "mergedAt": "2026-08-30T08:00:00Z",
+         "body": f"Grain: LIGHT/qc -- lane {lane}\n\nTranche 1."},
+        {"number": 901, "mergedAt": "2026-08-30T09:00:00Z",
+         "body": f"Grain: DEEP/lean -- lane {lane}\n\nFond."},
+        {"number": 902, "mergedAt": "2026-08-30T10:00:00Z",
+         "body": f"Grain: MED/notebook-python -- lane {lane}\n\nSubstance."},
+    ]
+    return merged, lane
+
+
+def test_deep_guard_does_not_inherit_light_tier_budget_13632():
+    """Candidat A de l'issue : DEEP/guard ne herite pas du budget LIGHT.
+
+    Avant le fix, `tier_cap_reached` (fait de lane-jour, aveugle au tier
+    du candidat) bloquait le DEEP/guard alors que l'axe genre -- le seul
+    que ce candidat porte -- disait false. Les deux verdicts DEEP/LIGHT
+    etaient indiscernables : le tier declare etait inerte.
+    """
+    merged, lane = _issue_13632_day()
+    out = _run_check_pr(
+        f"Grain: DEEP/guard -- lane {lane}\n\nGarde de fond.",
+        merged,
+    )
+    # L'axe genre reste a zero : le candidat ne porte que ce motif-là.
+    assert out["cap_exceeded_by_genre"] is False
+    # Le budget tier est bien epuise (le fait de lane-jour reste expose)...
+    assert out["tier_cap_reached"] is True
+    # ...mais il ne s'applique qu'a un EFFECTIVE LIGHT (commentaire L1022).
+    assert out["cap_reached"] is False
+
+
+def test_light_guard_on_spent_tier_budget_still_caps_13632():
+    """Controle negatif obligatoire (body de l'issue) : candidat B.
+
+    Un LIGHT/guard sur budget tier epuise doit rester cap_reached: true --
+    un correctif qui ne verifierait que la direction A serait aveugle a
+    la regression qui compte (le garde desarme sur les vrais LIGHT).
+    """
+    merged, lane = _issue_13632_day()
+    out = _run_check_pr(
+        f"Grain: LIGHT/guard -- lane {lane}\n\nGarde leger.",
+        merged,
+    )
+    assert out["tier_cap_reached"] is True
+    assert out["cap_reached"] is True

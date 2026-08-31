@@ -12,7 +12,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from scan_slides_html_block_markdown import scan_text  # noqa: E402
+from scan_slides_html_block_markdown import iter_decks, scan_file, scan_text  # noqa: E402
 
 
 # --- the defect itself -------------------------------------------------------
@@ -57,6 +57,59 @@ def test_every_block_level_construct_is_caught(markdown):
     """A detector is validated by its FALSE NEGATIVES: name the shapes it must
     catch and check it catches them, rather than trusting its hits."""
     assert len(scan_text("<div>\n%s\n" % markdown)) == 1, markdown
+
+
+def test_lone_closing_tag_swallows_following_block_markdown():
+    """The closing-tag form of HTML-block type 6 (CommonMark) — a lone `</div>`
+    alone on its line opens the block just like `<div>` does.
+
+    Issue #13345 found one live occurrence: `slides/01-introduction`, where a
+    bare `</div>` swallowed three list bullets rendered as literal text. The
+    detector must catch this form, not only the opening-tag form.
+    """
+    text = "</div>\n- Behaviourism\n"
+    assert scan_text(text) == [(2, "- Behaviourism")]
+
+
+def test_blank_line_after_closing_tag_is_clean():
+    """The burn-down shape from issue #13345: a blank line after the lone
+    `</div>` makes the next line parse normally. Verifies the fix path."""
+    text = "</div>\n\n- Behaviourism\n"
+    assert scan_text(text) == []
+
+
+def test_corpus_is_zero_on_main():
+    """The ratchet the PR #13681 body claims to hold.
+
+    Scans the rendered Slidev/Marp corpus (``slides/<deck>/*.md``, top-level only
+    — see ``iter_decks`` docstring for the non-recursive convention) and asserts
+    zero violations. This is what the body of PR #13681 calls "the test IS the
+    ratchet": if the defect class reappears on any deck, this test goes red in
+    local pytest BEFORE the workflow wiring of #13364 lands.
+
+    Pre-PR #13681 corpus measurement: 1 live occurrence at ``slides/01-introduction``
+    L598 (`- Behaviourism` swallowed by the bare `</div>` L597). Post-PR measurement
+    on the same commit: 0. The blank line after `</div>` is the fix; this test
+    asserts the post-fix state holds across the whole rendered corpus.
+
+    Skipped if the ``slides/`` directory is absent (e.g. CI environment where only
+    a partial checkout is present).
+    """
+    repo_root = Path(__file__).resolve().parents[3]
+    slides_root = repo_root / "slides"
+    if not slides_root.is_dir():
+        pytest.skip("slides/ not present in this checkout (partial CI checkout)")
+
+    violations = {}
+    for deck in iter_decks(slides_root):
+        hits = scan_file(deck)
+        if hits:
+            violations[deck.as_posix()] = hits
+
+    assert violations == {}, (
+        "rendered Slidev/Marp corpus is expected to hold zero HTML-block-swallowed "
+        "markdown after PR #13681; found: %r" % violations
+    )
 
 
 # --- and what it must NOT report ---------------------------------------------

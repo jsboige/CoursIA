@@ -11,6 +11,10 @@ fenetre 14 j du 2026-08-29).
 Un detecteur se valide par ses faux negatifs (anti-regression.md) : les
 controles ci-dessous epinglent les DEUX sens -- le renvoi de contexte NE
 rattache PAS, la declaration (et la forme structurelle) rattache.
+
+Extension #13507 : `parent_issue` applique la meme distinction declaration vs
+renvoi -- le motif nu `EPIC #N` ne rattache qu'en tete de corps, jamais au
+fil du texte.
 """
 from __future__ import annotations
 
@@ -182,6 +186,64 @@ def test_runaway_is_orthogonal_to_polarity():
     assert ss.is_runaway(grosse_ok)
 
 
+# --- Polarity : forme [<tag> N/M] (#13533) --------------------------------
+# Bug #13533 : la sous-fille EPIC #12373 utilise la forme compacte
+# `paire 4/9` precede d'une etiquette (ex. `[MGS-vs-mealpy 4/9]`).
+# Le pattern originel `paire \d+\s*/\s*\d+` ne matche pas cette forme,
+# et la sous-fille tombe en `consolidation` par defaut, ce qui fausse
+# la parite de `Search/Part4-Metaheuristics` : 5 expansions mesuerees
+# comme `consolidation` (vs parite reelle 6/5 OK).
+# Le pattern etendu doit :
+#   1. Rattraper la forme bracket-tag exact -- sans bruit sur les autres.
+#   2. Ne pas reclasser `consolidation` ni `neutral` (sanity guards).
+#   3. Rattraper la forme `paire N/M` SANS etiquette (le pattern originel).
+
+
+def test_polarity_bracket_tag_pattern_is_expansion():
+    """#13533 -- `paire N/M` precede d'un tag [<...>] est expansion."""
+    title = "[MGS-vs-mealpy 4/9] Algorithme genetique vs metaheuristique"
+    assert ss.polarity(title, "") == ss.EXPANSION, (
+        f"forme bracket-tag classee {ss.polarity(title, '')!r}, "
+        f"attendue {ss.EXPANSION!r}"
+    )
+
+
+def test_polarity_bracket_tag_variations_all_expansion():
+    """Variations reelles mesurees sur les 5 sous-filles #12373."""
+    for title in (
+        "[MGS-vs-mealpy 4/9] titre",
+        "[MGS-vs-mealpy  4 / 9 ] titre",
+        "[autre-tag 1/12] titre",
+        "[foo bar 7/42] titre",
+    ):
+        assert ss.polarity(title, "") == ss.EXPANSION, (
+            f"variation {title!r} classee {ss.polarity(title, '')!r}"
+        )
+
+
+def test_polarity_bracket_tag_does_not_regress_consolidation():
+    """Sanity guard -- le pattern ne doit pas reclasser une consolidation.
+
+    Si `_EXPANSION_RE` mange un ratio qui suit un mot-cle consolidation
+    (ex. `consolidation 4/9`), la polarite bascule. Verifier que
+    l'ordre `_CONSOLIDATION_RE` -> `_EXPANSION_RE` tient.
+    """
+    title = "consolidation 4/9 vers une seule paire"
+    assert ss.polarity(title, "") == ss.CONSOLIDATION, (
+        f"consolidation classee {ss.polarity(title, '')!r} -- regression"
+    )
+
+
+def test_polarity_bracket_tag_does_not_match_neutral():
+    """Sanity guard -- un titre neutre sans aucune paire ne doit pas matcher.
+
+    Si le pattern etait trop large (ex. `[\d+\s*/\s*\d+]`), il mangerait
+    `4/9` isoles. Le pattern exige un tag texte (non-vide) avant le ratio.
+    """
+    assert ss.polarity("note de release", "") == ss.NEUTRAL
+    assert ss.polarity("ratio 4/9 hors bracket-tag", "") == ss.NEUTRAL
+
+
 def test_zone_verdict_matches_legacy_inline_logic():
     """Le verdict extrait doit rendre EXACTEMENT ce que le picker rendait.
 
@@ -319,6 +381,45 @@ def test_is_series_rejects_tooling_paths():
     for p in ("scripts/series_saturation.py", ".github/workflows/x.yml",
               "docs/reference/y.md"):
         assert not ss._is_series(p), p
+def test_parent_issue_prose_renvoi_mid_body_returns_none():
+    """Controle positif du fix #13507 : la phrase REELLE du corps de #13504.
+
+    #13504 se voyait attribuer parent=12373 sur ce seul renvoi de comparaison
+    mi-corps : "dont l'EPIC #12373 porte la consolidation".
+    """
+    body_13504 = (
+        "## La zone\n\nDecrire `ML/DataScienceWithAgents`.\n\nC'est la difference exacte avec "
+        "`Part4-Metaheuristics`, qui recoit vite **aussi** mais dont l'EPIC #12373 porte la "
+        "consolidation."
+    )
+    assert ss.parent_issue(body_13504) is None
+
+
+def test_parent_issue_structural_formulations_anywhere():
+    """Les formulations REELLES des filles de #12373 rattachent, quelle que soit la position."""
+    assert ss.parent_issue("Enfant de l'Epic #12373.") == 12373
+    assert ss.parent_issue("Paire 9/9 de l'EPIC #12373 (MGS vs mealpy).") == 12373
+    assert ss.parent_issue("Paire 8/9 de l'EPIC #12373.") == 12373
+    assert ss.parent_issue("Intro longue.\n\nPuis du recit.\n\nEnfin : Fille de l'EPIC #5081.") == 5081
+
+
+def test_parent_issue_naked_epic_head_declares():
+    """Le motif nu garde sa valeur de declaration en TETE de corps.
+
+    Formes reelles mesurees sur les issues ouvertes : #13436, #12915, #12607.
+    """
+    assert ss.parent_issue("## Contexte\nSous-grain de l'EPIC #1454.") == 1454
+    assert ss.parent_issue("## Contexte\nTranche T5 de l'EPIC #12904.") == 12904
+    assert ss.parent_issue("Fils techniques de l'axe 5 de l'Epic #12373.") == 12373
+
+
+def test_parent_issue_naked_epic_mid_body_returns_none():
+    """Le MEME motif nu, mi-corps, ne rattache plus (frontiere des 3 lignes)."""
+    body = (
+        "Un long sujet.\n\nUne premiere etape.\n\nUne deuxieme etape.\n\n"
+        "Pour finir : l'EPIC #1621 a corrige ce point ailleurs."
+    )
+    assert ss.parent_issue(body) is None
 
 
 if __name__ == "__main__":

@@ -1220,12 +1220,16 @@ def main(argv: list[str] | None = None) -> int:
         genre_cap = light_budget(tally["lane_grains"] + 1)  # +1 candidate, aligned
         cap_exceeded_by_genre = light_genre_count > genre_cap
         tier_cap_reached = status["cap_reached"]
-        # UNION only when the candidate carries the genre motif (#10341): a
-        # LIGHT/tooling (tier LIGHT, genre not LIGHT) cannot trip the genre
-        # cap; a MED/readme (tier MED, genre LIGHT) can. Both directions of
-        # the defect are closed -- the declared-MED bypass AND the coherence
-        # with --genre-signals.
-        cap_reached = tier_cap_reached or (cap_exceeded_by_genre and candidate_is_light_genre)
+        # UNION only when the candidate carries the axis motif (#10341 for
+        # genre, #13632 for tier): a LIGHT/tooling (tier LIGHT, genre not
+        # LIGHT) cannot trip the genre cap; a MED/readme (tier MED, genre
+        # LIGHT) can -- and symmetrically a non-LIGHT-tier candidate cannot
+        # inherit the TIER budget spent by other grains of the day
+        # (`tier_cap_reached` is a lane-day aggregate, blind to the
+        # candidate's declared tier; unguarded it blocked DEEP/guard on a
+        # budget only an EFFECTIVE LIGHT spends, cf L1022 comment).
+        cap_reached = (tier_cap_reached and eff == "LIGHT") \
+            or (cap_exceeded_by_genre and candidate_is_light_genre)
         # VEIN-RUN (#11343 tranche 2) : when the lane's day trips a vein
         # (2+ PRs citing the same issue), the cap must point the lane
         # at the picker. The picker-call is informationally added to

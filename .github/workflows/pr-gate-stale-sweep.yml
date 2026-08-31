@@ -5,7 +5,11 @@ name: PR gate stale-verdict sweep
 # pr-gate.yml aggregates once on `pull_request` and polls 12 min. Under runner
 # starvation the slowest checks are still queued when that budget runs out, so
 # the gate posts FAIL -- "timed out waiting for: Analyze (actions), Analyze
-# (csharp)". pr-gate-rerun.yml exists to re-aggregate afterwards, but it is
+# (csharp)". Since #13510 a starved gate cancels its own run instead (leg
+# CANCELLED, exit still 1), so those legs now arrive here through the
+# `cancelled` half of the RED set below -- the founding FAILURE case below is
+# history, kept for the record. pr-gate-rerun.yml exists to re-aggregate
+# afterwards, but it is
 # driven by `workflow_run` and therefore can only listen to workflows that are
 # ADDRESSABLE BY NAME in this repository:
 #

@@ -73,8 +73,8 @@ Algorithmes de recherche classique, satisfaction de contraintes (CSP), résoluti
 | 42 | App-25 — Enchères combinatoires : Winner Determination… | BETA | Oui |
 | 43 | App-9 : Detection de bords par algorithmes génétiques | BETA | Oui |
 | 44 | TP : Conception d'Algorithmes Génétiques avec… | BETA | Oui |
-| 45 | App-12 (C#) : Puissance 4 -- Comparaison d'algorithmes… | BETA | Oui |
-| 46 | App-12 : Puissance 4 -- Comparaison d'algorithmes IA… | BETA | Oui |
+| 45 | App-14c (C#) : Puissance 4 -- Comparaison d'algorithmes… | BETA | Oui |
+| 46 | App-14b : Puissance 4 -- Comparaison d'algorithmes IA… | BETA | Oui |
 | 47 | App-14-ConnectFour-Adversarial-CSharp — Jumeau C# :… | BETA | Oui |
 | 48 | App-14 - Connect Four : Benchmark Adversarial Search | BETA | Oui |
 
