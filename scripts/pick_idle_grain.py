@@ -174,6 +174,14 @@ from series_saturation import (  # noqa: E402
 # de merges invisibles au cap G-VAR-2.
 from grain_tag import parse_grain_tag  # noqa: E402
 
+# Normalisation CANONIQUE du genre (#10020). Reutilisee, jamais
+# reimplementee : `notebook-genai-python` et `research-notebook-python`
+# se replient tous deux sur `notebook-python` (du CONTENU), et les lire
+# bruts les compterait META -- une lane qui vient de livrer un notebook
+# serait accusee de secheresse. Mesure du 2026-08-31 : la canonicalisation
+# resout 8 des 11 genres hors-enumeration du corpus, dont 2 CONTENU.
+from variation_light_cap import canonicalize_genre  # noqa: E402
+
 # Enumeration CLOSE de variation-protocol.md, partitionnee CONTENU / META.
 CONTENU = {
     "lean", "qc", "training", "genai",
@@ -1532,6 +1540,203 @@ def print_red_assignment(lane: str, backlog: dict, threshold_hours: float) -> No
     print("elle ne se prend pas en silence.")
 
 
+
+# --- Secheresse de substance : G-VAR-1 recoit son organe (#13086) ----------
+#
+# Mandat user verbatim (#13086, 2026-08-31) : "JE NE VEUX PLUS JAMAIS DE
+# SESSION IDLE. Je l'ai signalee une bonne dizaine de fois. Tu escalades tout
+# de suite et de la facon la plus ferme possible, et tu prends un deep grain
+# stp."
+#
+# "une bonne dizaine de fois" est le fait qui dicte la forme du remede. La
+# regle existe DEJA en prose a quatre endroits -- proactive-coordination
+# R1/R5/R6/R7, coordinator-discipline R4, variation-protocol G-VAR-1 -- et
+# elle a echoue a chaque fois. En rajouter une cinquieme serait l'echec-
+# pendule que le CLAUDE.md global interdit. Ce qui manquait n'est pas une
+# phrase : c'est un ORGANE.
+#
+# Le defaut precis, mesure : ce module PONDERE deja le genre CONTENU dans
+# `weight()` et le marque d'une etoile a l'affichage -- mais il pondere le
+# CANDIDAT, jamais l'HISTOIRE. Le picker n'a aucune memoire. Une lane qui
+# vient de livrer six grains META recoit exactement le meme tirage qu'une
+# lane qui vient de livrer une preuve Lean. G-VAR-1 exige que le grain-
+# plancher soit DEEP/MED **et** CONTENU ; aucun organe ne l'a jamais mesure.
+# `variation_light_cap.py` n'emet que quatre signaux, tous de comptabilite
+# LIGHT (TIER-INFLATION, GENRE-RUN, CAP-EXCEEDED-BY-GENRE, GENRE-MISMATCH) :
+# une lane qui alterne guard -> tooling -> docs -> test ne declenche JAMAIS
+# GENRE-RUN tout en produisant zero contenu indefiniment. C'est exactement le
+# profil de l'agent que le user a fait escalader.
+#
+# Mesure du 2026-08-31 sur les 400 dernieres PRs mergees (398 taguees, 2 sans
+# tag), genres passes par `canonicalize_genre` :
+#
+#   lane                       merges  contenu  runs sans contenu
+#   myia-po-2025:CoursIA           45       41  [2, 1, 1]        <- la plus saine
+#   myia-po-2024:CoursIA           58       38  [4, 3, 3, 2, ...]
+#   myia-po-2026:CoursIA           73       31  [8, 6, 6, 5, ...]
+#   myia-ai-01:CoursIA             29        2  [16, 8, 3]       <- la pire
+#
+# D'ou le seuil par defaut de 3, qui n'est pas un chiffre d'intuition : la
+# lane la plus saine de la flotte (po-2025:CoursIA, 41 CONTENU sur 45 merges)
+# ne depasse JAMAIS un run de 2. Trois est donc la plus petite valeur qui ne
+# peut pas se declencher sur un comportement demontrablement sain. 71 % de
+# tous les runs mesures sont <= 2 et restent intouches.
+#
+# Le geste, quand le seuil est atteint : le tirage n'est pas refuse -- il est
+# RESTREINT aux genres CONTENU. La lane recoit un grain, toujours ; c'est le
+# "tu prends un deep grain" du mandat, rendu mecanique. La lecon de la forme
+# precedente du garde rouge ("REFUS DE TIRAGE", sortie 2, aucun candidat) est
+# reprise telle quelle : aucune sortie de cet outil n'autorise une lane a ne
+# rien produire.
+
+DROUGHT_RUN_DEFAULT = 3
+
+# Fenetre de lecture. Large : le run se compte sur l'historique de la lane,
+# et une lane peu active peut n'avoir que quelques merges dans 400 PRs de
+# flotte. Le cout est une seule requete, partagee par tout le tirage.
+DROUGHT_FETCH_LIMIT = 400
+
+
+def fetch_merged_grains(limit: int = DROUGHT_FETCH_LIMIT) -> tuple[list[dict], str | None]:
+    """Les PRs mergees recentes, taguees, du plus ANCIEN au plus RECENT.
+
+    Rend `(grains, erreur)`. En cas d'echec de lecture la liste est vide ET
+    l'erreur est nommee : un organe qui ne peut pas mesurer doit le DIRE, pas
+    rendre un zero indiscernable d'une ardoise propre.
+    """
+    try:
+        out = subprocess.run(
+            ["gh", "pr", "list", "--repo", REPO, "--state", "merged",
+             "--limit", str(limit), "--json", "number,body,mergedAt,title"],
+            capture_output=True, text=True, encoding="utf-8", timeout=120)
+    except (OSError, subprocess.SubprocessError) as exc:
+        return [], f"{type(exc).__name__}: {exc}"
+    if out.returncode != 0:
+        return [], (out.stderr or "").strip()[:200] or f"gh exit {out.returncode}"
+    try:
+        data = json.loads(out.stdout or "[]")
+    except json.JSONDecodeError as exc:
+        return [], f"JSON illisible: {exc}"
+    data.sort(key=lambda p: p.get("mergedAt") or "")
+    grains = []
+    for pr in data:
+        tag = parse_grain_tag(pr.get("body") or "")
+        if not tag or not tag.get("lane"):
+            continue
+        raw = (tag.get("genre") or "").strip().lower()
+        grains.append({"number": pr.get("number"),
+                       "title": pr.get("title") or "",
+                       "lane": tag["lane"],
+                       "genre_raw": raw,
+                       "genre": canonicalize_genre(raw),
+                       "mergedAt": pr.get("mergedAt")})
+    return grains, None
+
+
+def substance_drought(lane: str, grains: list[dict], threshold: int,
+                      error: str | None = None) -> dict:
+    """Compte les merges consecutifs de `lane` SANS genre CONTENU.
+
+    Le run se lit depuis le merge le plus recent en remontant, et s'arrete au
+    premier genre CONTENU. Un genre qui ne se resout pas dans l'enumeration
+    close compte NON-CONTENU (fail-CLOSED, meme direction que la politique
+    #13475 de `variation_light_cap.genre_counts_light`) mais il est NOMME
+    dans la sortie : un mis-tag est un faux positif que la lane conteste en
+    re-taguant, alors qu'un silence qui relache le garde ne prouve rien. La
+    surface est bornee et mesuree -- 4 PRs sur 398 (1 %) au 2026-08-31.
+
+    `measured` est False quand la lecture a echoue : le run vaut alors 0 et
+    ne declenche rien, mais l'appelant doit dire qu'il n'a pas mesure.
+    """
+    mine = [g for g in grains if g["lane"] == lane]
+    run: list[dict] = []
+    last_content = None
+    for g in reversed(mine):
+        if g["genre"] in CONTENU:
+            last_content = g
+            break
+        run.append(g)
+    run.reverse()
+    unresolved = [g for g in run
+                  if g["genre"] not in CONTENU and g["genre"] not in META]
+    return {
+        "lane": lane,
+        "measured": error is None,
+        "error": error,
+        "threshold": threshold,
+        "run": len(run),
+        "run_prs": [{"number": g["number"], "genre": g["genre_raw"],
+                     "title": g["title"][:70]} for g in run],
+        "unresolved": [{"number": g["number"], "genre": g["genre_raw"]}
+                       for g in unresolved],
+        "last_content": ({"number": last_content["number"],
+                          "genre": last_content["genre"],
+                          "mergedAt": last_content["mergedAt"]}
+                         if last_content else None),
+        "lane_merges": len(mine),
+        "lane_content": sum(1 for g in mine if g["genre"] in CONTENU),
+        "triggered": error is None and len(run) >= threshold,
+    }
+
+
+def print_drought_banner(d: dict, restricted: int, fell_back: bool) -> None:
+    """L'escalade, "de la facon la plus ferme possible" (mandat #13086)."""
+    bar = "=" * 72
+    print(bar)
+    print(f"SECHERESSE DE SUBSTANCE -- lane {d['lane']} : {d['run']} merges "
+          f"consecutifs sans genre CONTENU (seuil {d['threshold']}).")
+    print(bar)
+    print()
+    print("G-VAR-1 exige que le grain-plancher du cycle soit DEEP ou MED **et**")
+    print("porte un genre de la classe CONTENU. Cette lane ne l'a pas tenu sur")
+    print(f"ses {d['run']} derniers merges :")
+    print()
+    for pr in d["run_prs"]:
+        print(f"  #{pr['number']}  {pr['genre']:<18s} {pr['title']}")
+    print()
+    if d["last_content"]:
+        lc = d["last_content"]
+        print(f"Dernier grain de CONTENU : #{lc['number']} ({lc['genre']}), "
+              f"merge {lc['mergedAt']}.")
+    else:
+        print("Aucun grain de CONTENU dans la fenetre lue : la lane n'a jamais")
+        print("tenu le plancher sur l'historique mesure.")
+    print(f"Sur toute la fenetre : {d['lane_content']} CONTENU / "
+          f"{d['lane_merges']} merges taguees.")
+    print()
+    if d["unresolved"]:
+        print("Genres non resolus dans l'enumeration close (comptes NON-CONTENU,")
+        print("fail-CLOSED) -- si l'un d'eux est du contenu, le re-taguer leve")
+        print("le compte, et c'est la bonne facon de contester :")
+        for u in d["unresolved"]:
+            print(f"  #{u['number']}  genre declare : {u['genre']}")
+        print()
+    print("Mandat user (#13086, verbatim) : \"JE NE VEUX PLUS JAMAIS DE SESSION")
+    print("IDLE. Je l'ai signalee une bonne dizaine de fois. Tu escalades tout de")
+    print("suite et de la facon la plus ferme possible, et tu prends un deep")
+    print("grain stp.\"")
+    print()
+    if fell_back:
+        print("ATTENTION : la restriction aux genres CONTENU ne laissait AUCUN")
+        print("candidat admissible. Le tirage ci-dessous est donc RENDU SANS")
+        print("restriction -- ne rien rendre fabriquerait l'idle que ce garde")
+        print("existe pour empecher. Mais l'absence de grain de contenu piochable")
+        print("est elle-meme un defaut de provisionnement : l'ECRIRE au")
+        print("coordinateur (variation-protocol section 4), ne pas la traverser")
+        print("en silence.")
+    else:
+        print(f"Le tirage ci-dessous est RESTREINT aux genres CONTENU "
+              f"({restricted} candidats). Ce n'est pas un refus : la lane")
+        print("recoit un grain, et ce grain tient le plancher. Prendre un META")
+        print("de plus avant d'avoir casse la sequence, c'est la monoculture")
+        print("que le mandat interdit.")
+    print()
+    print("Echappatoire : si la secheresse n'est pas reparable par cette lane")
+    print("(aucun grain de contenu dans sa capability -- GPU-only, vision-only),")
+    print("l'ECRIRE au coordinateur, puis relancer avec --ignore-drought.")
+    print("Elle se justifie par ecrit, elle ne se prend pas en silence.")
+    print()
+
 def main(argv: list[str] | None = None) -> int:
     # Console Windows cp1252 : un titre d'issue portant un caractere hors table
     # (fleche U+2192 etc.) fait crasher le print en UnicodeEncodeError et perd
@@ -1577,6 +1782,15 @@ def main(argv: list[str] | None = None) -> int:
                          "selection (steer inclus).")
     ap.add_argument("--ignore-red", action="store_true",
                     help="passer outre le garde -- exige une justification ECRITE sur la PR concernee")
+    ap.add_argument("--drought-run", type=int, default=DROUGHT_RUN_DEFAULT,
+                    metavar="N",
+                    help="merges consecutifs sans genre CONTENU a partir "
+                         "desquels le tirage est restreint au CONTENU "
+                         "(defaut %(default)s)")
+    ap.add_argument("--ignore-drought", action="store_true",
+                    help="passe outre la restriction CONTENU. A justifier "
+                         "PAR ECRIT aupres du coordinateur -- elle ne se "
+                         "prend pas en silence.")
     ap.add_argument("--json", action="store_true", help="sortie machine")
     ap.add_argument("--orphans-report", action="store_true",
                     help="mode rapport : PRs bloquees sans tag Grain lisible, groupees par "
@@ -1700,6 +1914,46 @@ def main(argv: list[str] | None = None) -> int:
     # l'ecriture. La prevention doit donc vivre en amont, ici -- et elle ne
     # peut pas etre optionnelle : un tirage qui propose une issue tenue par
     # une autre lane FABRIQUE la collision qu'il faudra arbitrer ensuite.
+    # G-VAR-1 recoit son organe (#13086) : le tirage a une MEMOIRE. Une lane
+    # en secheresse de substance ne recoit plus une loterie ou le CONTENU est
+    # seulement mieux pondere -- elle recoit un tirage RESTREINT au CONTENU.
+    # Place APRES le garde rouge (reparer son rouge reste la premiere tache,
+    # mandat user 2026-08-24) et AVANT le tirage, pour la meme raison que lui :
+    # un candidat META deja sous les yeux quand la restriction arrive, c'est
+    # lui qui gagne.
+    drought = {"triggered": False, "measured": False, "run": 0}
+    drought_fell_back = False
+    if args.lane:
+        grains_hist, grains_err = fetch_merged_grains()
+        drought = substance_drought(args.lane, grains_hist, args.drought_run,
+                                    grains_err)
+        if drought["triggered"] and not args.ignore_drought:
+            restricted = {k: [it for it in v if it["genre"] in CONTENU]
+                          for k, v in by_class.items()}
+            # Degradation gracieuse : si la restriction vide les urnes, on rend
+            # le tirage NON restreint plutot que rien. Ne rien rendre
+            # fabriquerait l'idle que ce garde existe pour empecher -- et
+            # l'absence de grain de contenu piochable est un defaut de
+            # provisionnement a ECRIRE, pas un motif de silence.
+            if restricted["grain"] or restricted["umbrella"]:
+                by_class = restricted
+                by_class["delivered"] = []
+            else:
+                drought_fell_back = True
+            if not args.json:
+                print_drought_banner(
+                    drought,
+                    len(by_class["grain"]) + len(by_class["umbrella"]),
+                    drought_fell_back)
+        elif drought["triggered"] and args.ignore_drought and not args.json:
+            print(f"(secheresse de substance ignoree : {drought['run']} merges "
+                  f"sans CONTENU -- justification ecrite attendue)")
+            print()
+        elif not drought["measured"] and not args.json:
+            print(f"(secheresse NON MESUREE : {drought['error']} -- le tirage "
+                  "ne prouve donc rien sur le plancher G-VAR-1)")
+            print()
+
     picks, claims, claim_conflicts = draw_unclaimed(
         by_class, args, rng, visits, series, issue_to_family)
     withheld.extend(claim_conflicts)
@@ -1729,6 +1983,7 @@ def main(argv: list[str] | None = None) -> int:
                                  key=lambda d: (-d["n"], d["issue"]))[:10],
             "recent_delivery": {str(k): v for k, v in delivery.items()},
             "red_backlog": backlog,
+            "substance_drought": drought,
         }, ensure_ascii=False, indent=2))
         return 0
 
