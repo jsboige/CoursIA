@@ -206,3 +206,32 @@ this tour is the foundation, not the ceiling. To go further: `conway_lean/`
 and the Lean notebook series as companions; Mac Lane–Moerdijk and SGA 4 for
 the topos-theoretic core; Vakil and the Stacks Project for schemes and
 cohomology.
+
+## Digestion (grid #13106)
+
+First-level digestion of the lake against the mandatory grid of [#13106](https://github.com/jsboige/CoursIA/issues/13106) (digestion & canonicalisation EPIC). Verdicts based on the README, module docstrings and formalisation issues — marked PRESENT/PARTIAL/ABSENT with the verified `file:line` evidence. A finer digestion (reconstructing each `Partie`'s path) remains for dedicated grains.
+
+| # | Grid point | Verdict | Evidence / status |
+|---|---|---|---|
+| 1 | Exact statement + guarantee level | **PRESENT** | modules `Grothendieck/*.lean` ; guarantee "0 `sorry`, 0 added axiom" (`README.md` §Build & status, `lakefile.lean` `globs`) |
+| 2 | Provenance, literature, priority, attribution | **PARTIAL** | §References (`README.md`: Mac Lane–Moerdijk, SGA 4, EGA, Vakil, Stacks, Mathlib, nLab) + docstrings citing SGA 4 I/II (§ `CategoryAndSites.lean:1-20`) ; attribution **per `Partie`** (which author, which snippet) is not systematic |
+| 3 | Real novelty vs dependencies | **PARTIAL** | "already lives in Mathlib 4", boundary indexed by Partie 4 (`#check`) ; no explicit claim "what this lake adds to Mathlib" |
+| 4 | Dependency / toolchain / axioms map | **PRESENT** | §Build & status (`README.md`): v4.32.1 toolchain, Mathlib dependency, 0 added axiom ; i18n #4980 |
+| 5 | Trivial vs new developed | **PARTIAL** | the arc (sites→sheaves→cohomology) stratifies, but trivial/new is not declared party-by-party |
+| 6 | Natural friction (obstacles, failed tries, debt) | **ABSENT→filled below** | §Scope, honestly + `Classifier.lean:190` (`ElementaryTopos` "not yet available"), `#11286` (pending umbrella import of `ExceptionalDirect`), phases #2159/#10357 |
+| 7 | Discovery path vs reconstruction | **ABSENT→filled below** | the arc is pedagogical but doesn't spell out "why this order / what was discarded" |
+| 8 | Limits, unestablished claims, review reservations | **PRESENT** | §Scope, honestly: "foundation, not ceiling", Mathlib boundary exposed |
+| 9 | Corpus connection + prerequisites | **PRESENT** | navlinks `Lean-15-Grothendieck-Tribute.ipynb` / `Lean-15b-Lean-Grothendieck.ipynb` / `Lean-15c-Lean-Grothendieck-Companion.ipynb` (re-link the lake) ; §See also |
+
+### Point 6 — natural friction (fill)
+
+Four real frictions, documented at source:
+
+1. **Self-imposed anti-regression constraint**: every module complete at creation (0 `sorry`, 0 added axiom) — the lake's ceiling is bounded by what Mathlib already exposes, not by a choice of sub-formalisation. This is a **scope** friction: when a concept is missing from Mathlib, it is either reconstructed locally or deferred.
+2. **Living Mathlib boundary**: `Classifier.lean:190` — `ElementaryTopos` "not yet available in this revision": the lake's bound moves with Mathlib.
+3. **Open reconnection debt**: `#11286` — pending umbrella import of `ExceptionalDirect`: a module built yet not linked to the umbrella.
+4. **Historical i18n friction**: a missing `_en` sibling for `PullbackFunctor` (filled since, cf §Build & status) — the bilingual pair is a maintenance constraint, not just a format.
+
+### Point 7 — discovery path (fill)
+
+The path is not a reconstruction — it is an **indexed tour**, and this fact is the central discovery: "the Grothendieckian language already lives in Mathlib 4". The pedagogical order (sites → sieves/topologies → sheaves → sheafification → cohomology, anchored by Spec/Zariski and by the `#check` index) is a **reading path**, not the trace of a development. A learner's entry point: README → companions (`Lean-15*`) → modules, with Mac Lane–Moerdijk and SGA 4 as background reading. What was **discarded** and why (the "hommage, not an EGA/SGA formalisation" choice) is explicit in §The spirit of the tour and §Scope, honestly — but the trace of the real development (which attempts were abandoned) is not recorded per `Partie`; that is this digestion's limit, to be completed by a grain that interviews the authors.
