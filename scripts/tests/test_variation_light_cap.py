@@ -411,6 +411,24 @@ def test_untagged_body_is_unassessable_not_false(tmp_path, capsys):
     assert "unassessable" in res["reason"]
 
 
+def test_prose_lowercase_token_cap_reached_null_not_false(tmp_path, capsys):
+    # #13633 -- the exact #13550 defect: a body carrying NO `Grain:` key but a
+    # lowercase noun phrase "le grain MED/tooling suivant" plus a Lane signature
+    # line used to arm parse_grain into {'tier': 'MED', 'lane': ...}, and the
+    # gate returned `cap_reached: false` ("not LIGHT (effective MED)") -- the
+    # green that #9465's `null` exists to prevent. It must be the third state.
+    body = (
+        "#13544 (renderer hard gate before rerender) est le grain MED/tooling "
+        "suivant, priorite P1.\n"
+        "Lane myia-po-2027:CoursIA-2 -- c.1331p250"
+    )
+    rc, res = _check_pr(tmp_path, [], body, capsys=capsys)
+    assert rc == 0
+    assert res["cap_reached"] is None    # NOT False -- nothing was evaluated
+    assert "unassessable" in res["reason"]
+    assert "MED" not in res.get("reason", "")  # tier must not be read from prose
+
+
 def test_light_without_lane_is_unassessable(tmp_path, capsys):
     # Tier known, but the budget is per-lane: no lane -> no denominator.
     rc, res = _check_pr(tmp_path, [], "Grain: LIGHT/guard -- no lane here", capsys=capsys)
