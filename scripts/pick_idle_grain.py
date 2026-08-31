@@ -74,11 +74,21 @@ Trois urnes, parce que le pool n'est pas homogene
 
 Reprendre ses PRs AVANT de piocher (mandats user 2026-08-22 et 2026-08-24)
 --------------------------------------------------------------------------
-Le picker **refuse de tirer** (sortie 2, aucun candidat rendu) tant que la
+Le picker **assigne la reparation** (sortie 0, un grain rendu) tant que la
 lane porte une PR a reprendre, ouverte depuis plus de 24 h. La reparation
 n'appartient qu'a sa lane : le coordinateur ne peut ni rebaser, ni corriger,
 ni repondre a sa place -- une lane qui pioche du neuf en laissant sa PR
 derriere elle fabrique un residu que personne d'autre ne peut resorber.
+
+Ce chemin a longtemps rendu **"REFUS DE TIRAGE" + sortie 2, aucun candidat**.
+Le fond etait juste -- la liste, les causes, les gestes -- mais la forme
+disait *l'outil n'a rien pour toi*, et une lane pouvait s'arreter en croyant
+la sortie sanctionnee. Une lane a forte cadence accumule les PRs plus vite,
+declenche `count`/`nits` plus tot, et recevait donc ce refus a **chaque**
+cycle : le boost causait le drain (incident lanes 2, 2026-08-30). Le travail
+rendu ici EST le grain du cycle. Aucune sortie de cet outil n'autorise une
+lane a ne rien produire tant que du rouge lui appartient ou que
+`gh issue list` renvoie > 0.
 
 Quatre causes, dont la derniere est arrivee en dernier et couvre le plus :
 
@@ -141,6 +151,7 @@ REPO = "jsboige/CoursIA"
 # pour le diagnostic complet (EPIC decoupe en 9 filles = 9 veines invisibles).
 from series_saturation import (  # noqa: E402
     CONSOLIDATION,
+    enrich_parent_families,
     EXPANSION,
     NEUTRAL,
     SERIES_SCALE_DEFAULT,
@@ -237,14 +248,47 @@ def age_days(created: str) -> int:
     return max(0, (NOW - created_dt).days)
 
 
+# Plafond de recuperation du pool. Ce n'est PAS un reglage de confort : quand
+# il sature, `gh issue list` rend les N plus RECENTES (mesure du 2026-08-30 :
+# les 12 premieres rendues etaient les 12 dernieres creees), donc la
+# troncature ampute exactement la traine -- la population que la ponderation
+# age + delaissement existe pour atteindre. Un plafond atteint inverse
+# l'instrument au lieu de le borner, et le fait sans rien dire.
+#
+# Mesure du 2026-08-30 : 213 ouvertes, et ce que l'ancien plafond de 300
+# aurait fait tomber en premier etait #1028 (mandat audiobook), #1203, #1206,
+# #1210, #1453, #1454 -- six EPICs de mai, tous vivants.
+POOL_FETCH_LIMIT = 2000
+
+
 def fetch_pool() -> list[dict]:
-    """Une seule requete, limite haute -- c'est ce qui defait la troncature."""
+    """Une seule requete, limite haute -- c'est ce qui defait la troncature.
+
+    Le plafond est haut ET surveille : aucun plafond ne se choisit une fois
+    pour toutes, et celui-ci se fait franchir en silence par construction.
+    """
     out = subprocess.run(
-        ["gh", "issue", "list", "--repo", REPO, "--state", "open", "--limit", "300",
+        ["gh", "issue", "list", "--repo", REPO, "--state", "open",
+         "--limit", str(POOL_FETCH_LIMIT),
          "--json", "number,title,labels,body,createdAt,updatedAt"],
         capture_output=True, text=True, encoding="utf-8", check=True,
     ).stdout
     raw = json.loads(out)
+    if len(raw) >= POOL_FETCH_LIMIT:
+        # Signature de la troncature : on a recu exactement ce qu'on a demande.
+        # Le tirage reste possible et se poursuit -- bloquer la lane serait pire
+        # que la biaiser (R4 : jamais sanctionner l'idle). Mais il est desormais
+        # biaise VERS LE RECENT, et le dire est la seule chose qui empeche de
+        # lire son resultat comme une couverture du pool.
+        print(
+            f"[POOL TRONQUE] {len(raw)} issues rendues pour un plafond de "
+            f"{POOL_FETCH_LIMIT} : le pool est probablement plus grand. "
+            "gh rend les plus RECENTES, donc la traine -- vieux EPICs, sujets "
+            "delaisses -- est absente de ce tirage. Le resultat ci-dessous est "
+            "biaise vers le recent : relever POOL_FETCH_LIMIT avant de s'en "
+            "servir pour conclure quoi que ce soit sur la couverture.",
+            file=sys.stderr,
+        )
     pool = []
     for it in raw:
         labels = [lb["name"] for lb in it.get("labels", [])]
@@ -388,7 +432,7 @@ def admissibility(item: dict, balance: dict | None,
                     "distingue depiler d'emballer.".format(h, dwell_hours))
 
     fam = resolve_family(item, issue_to_family or {},
-                         tuple((balance or {}).keys()))
+                         tuple((balance or {}).keys()), balance)
     if fam and item.get("polarity") == EXPANSION:
         z = (balance or {}).get(fam) or {}
         nb = z.get("new_notebooks", 0)
@@ -467,7 +511,8 @@ def weight(item: dict, prev_genre: str | None,
     # FRATRIE sature -- le cas exact des 9 paires de #12373. La remontee par
     # `parent` est indispensable : sans elle l amortissement ne mord que sur
     # les issues DEJA travaillees, donc jamais sur la prochaine instance.
-    fam = resolve_family(item, issue_to_family or {}, tuple(series or ()))
+    fam = resolve_family(item, issue_to_family or {}, tuple(series or ()),
+                         series)
     nb_new = 0
     if fam:
         nb_new = ((series or {}).get(fam) or {}).get("new_notebooks", 0)
@@ -763,6 +808,11 @@ RED_COUNT_DEFAULT = 3
 # faux positif qui rend un garde de cascade inutilisable.
 CHECK_FAILED = {"FAILURE", "TIMED_OUT", "ACTION_REQUIRED", "STARTUP_FAILURE", "ERROR"}
 
+# #13420 : un check "en vol" est celui dont la file peut encore bouger. C'est
+# lui qui date la saturation -- pas la PR qui le porte. La chaine vide couvre
+# le CheckRun reel, dont `conclusion` est `null` tant qu'il n'a pas conclu.
+CHECK_IN_FLIGHT = {"PENDING", "QUEUED", "IN_PROGRESS", "WAITING", "EXPECTED", ""}
+
 _PR_STATE_FRAGMENT = """
   p%(n)d: pullRequest(number:%(n)d) {
     number mergeable
@@ -854,8 +904,49 @@ def drop_superseded(contexts: list[dict]) -> list[dict]:
     return kept
 
 
+def impute_base_reds(states_by_number: dict[int, dict],
+                     author_by_number: dict[int, str]) -> dict[str, list[int]]:
+    """Checks rouges presents chez >=2 auteurs DISTINCTS : imputes a la base (#13545).
+
+    Le predicat que le garde n'avait pas : « ce rouge existe-t-il aussi sur la
+    base ? ». Un check qui echoue sur des PRs d'auteurs sans rapport ne peut
+    pas etre un defaut de chacune -- elles partagent la base (mesure
+    2026-08-29 : `Scripts Tests (CPU)` rouge sur 11 PRs / 4 lanes pour un seul
+    test casse sur main). Les PRs d'un MEME auteur ne se corroborent jamais :
+    une lane qui casse le meme ratchet sur 3 PRs porte 3 defauts a elle.
+
+    Renvoie {nom de check: [numeros de PRs corroborantes]}.
+    """
+    failures: dict[str, dict[str, list[int]]] = {}
+    for number, state in states_by_number.items():
+        author = author_by_number.get(number) or "?"
+        commits = state.get("commits", {}).get("nodes") or []
+        rollup = (commits[0]["commit"].get("statusCheckRollup") if commits else None) or {}
+        contexts = drop_superseded((rollup.get("contexts", {}) or {}).get("nodes") or [])
+        for ctx in contexts:
+            verdict = (ctx.get("conclusion") or ctx.get("state") or "").upper()
+            if verdict not in CHECK_FAILED:
+                continue
+            name = ctx.get("name") or ctx.get("context") or "?"
+            failures.setdefault(name, {}).setdefault(author, []).append(number)
+    return {name: sorted(n for nums in authors.values() for n in nums)
+            for name, authors in failures.items()
+            if len(authors) >= 2}
+
+
+def _has_failed_check(state: dict | None) -> bool:
+    if not state:
+        return False
+    commits = state.get("commits", {}).get("nodes") or []
+    rollup = (commits[0]["commit"].get("statusCheckRollup") if commits else None) or {}
+    contexts = drop_superseded((rollup.get("contexts", {}) or {}).get("nodes") or [])
+    return any((c.get("conclusion") or c.get("state") or "").upper() in CHECK_FAILED
+               for c in contexts)
+
+
 def blocking_causes(state: dict, *, age_hours: float | None = None,
-                    saturation_hours: float | None = None) -> list[str]:
+                    saturation_hours: float | None = None,
+                    inherited: set[str] | None = None) -> list[str]:
     """Causes qui empechent VRAIMENT le merge, formulees en geste de reparation.
 
     `mergeStateStatus: BLOCKED` n'est deliberement PAS une cause : il vaut
@@ -889,6 +980,10 @@ def blocking_causes(state: dict, *, age_hours: float | None = None,
         name = ctx.get("name") or ctx.get("context") or "?"
         verdict = (ctx.get("conclusion") or ctx.get("state") or "").upper()
         if verdict not in CHECK_FAILED:
+            continue
+        if inherited and name in inherited:
+            # #13545 : rouge impute a la base (corrobore chez >=2 auteurs
+            # distincts) -- il n'est pas reparable par cette lane.
             continue
         if ctx.get("isRequired"):
             cause = f"check requis en echec : {name}"
@@ -924,8 +1019,37 @@ def blocking_causes(state: dict, *, age_hours: float | None = None,
                 f"commenter la PR + --ignore-red ou rerun/updater-branch si gel CI)"
             )
     if causes and advisory:
-        causes.append("(diagnostic, non bloquant : " + ", ".join(advisory[:3]) + ")")
+        # #13545 : l'advisory n'est pas une seconde panne independante --
+        # c'est la CAUSE probable du requis rouge au-dessus (PR gate est un
+        # agregateur : il est rouge PARCE QUE Scripts Tests l'est). Dire le
+        # lien plutot que deux lignes qui se contredisent (« requis en
+        # echec » vs « non bloquant ») sur le meme rouge.
+        causes.append("(diagnostic, non bloquant : " + ", ".join(advisory[:3])
+                      + " -- cause probable du requis ci-dessus, reparer UNE cause)")
     return causes
+
+
+def _newest_start_hours(stamps) -> float | None:
+    """Age, en heures, du demarrage le PLUS RECENT parmi `stamps` (ISO-8601).
+
+    None si aucun horodatage n'est lisible -- l'appelant retombe alors sur
+    l'age de la PR. On prend le plus RECENT et non le plus ancien : la
+    question posee est "la file a-t-elle bouge recemment ?", a laquelle un
+    seul check parti il y a 5 min repond oui, meme si dix autres attendent
+    depuis la veille.
+    """
+    best = None
+    for s in stamps:
+        if not s:
+            continue
+        try:
+            when = dt.datetime.fromisoformat(str(s).replace("Z", "+00:00"))
+        except ValueError:
+            continue
+        hours = (dt.datetime.now(dt.timezone.utc) - when).total_seconds() / 3600.0
+        if best is None or hours < best:
+            best = hours
+    return best
 
 
 def file_saturation_cause(state: dict, age_hours: float, threshold_hours: float) -> str | None:
@@ -943,7 +1067,22 @@ def file_saturation_cause(state: dict, age_hours: float, threshold_hours: float)
          file, juste des PRs sans rollup tracke)
       3. >=1 check requis existe (sans ca, c'est juste un PR sans CI)
       4. Aucun check requis en FAIL (sinon c'est un rouge substance classique)
-      5. age >= saturation_hours (defaut 24 h, configurable --saturation-hours)
+      5. le check requis PENDING le PLUS RECEMMENT DEMARRE l'a ete il y a
+         >= saturation_hours (defaut 24 h, configurable --saturation-hours)
+
+    Le critere 5 date les **checks**, pas la PR (#13420). Une PR ouverte
+    depuis 121 h dont la CI vient de re-declencher il y a 25 min n'est pas
+    saturee : sa file avance. Datee sur l'age de la PR -- ce que faisait ce
+    detecteur -- elle etait annoncee "PENDING depuis >24h, cause infra", et
+    le geste prescrit (`--ignore-red` ou re-run) etait exactement le mauvais :
+    re-run RE-EMPILE dans la file que le message dit saturee, et --ignore-red
+    pousse la lane devant un garde qui allait repondre. Mesure du 2026-08-29 :
+    #12757 (ouverte 121 h) et #12850 (109 h) etaient annoncees saturees alors
+    que leurs checks avaient demarre a 11:39:44Z, soit 25 min plus tot.
+
+    Quand aucun horodatage n'est lisible, on retombe sur l'age de la PR
+    (comportement historique) : un champ absent ne doit pas eteindre le
+    detecteur, seulement le priver de sa precision.
 
     Retourne la cause formulee, ou None.
     """
@@ -960,6 +1099,7 @@ def file_saturation_cause(state: dict, age_hours: float, threshold_hours: float)
     if rollup_state != "PENDING":
         return None
     required_checks = []
+    stamps = []
     for ctx in drop_superseded((rollup.get("contexts", {}) or {}).get("nodes") or []):
         if ctx.get("isRequired"):
             verdict = (ctx.get("conclusion") or ctx.get("state") or "").upper()
@@ -968,8 +1108,16 @@ def file_saturation_cause(state: dict, age_hours: float, threshold_hours: float)
                 # double pas la cause.
                 return None
             required_checks.append(ctx.get("name") or ctx.get("context") or "?")
+            if verdict in CHECK_IN_FLIGHT:
+                # Check encore en vol : c'est SON demarrage qui date la file.
+                stamps.append(ctx.get("startedAt") or ctx.get("createdAt"))
     if not required_checks:
         # Aucun check requis : pas un "faux-rouge CI sature", juste pas de CI.
+        return None
+    newest = _newest_start_hours(stamps)
+    if newest is not None and newest < threshold_hours:
+        # La file AVANCE : un check requis a demarre recemment. Le bon geste
+        # est d'attendre, pas de re-run (qui re-empile) ni d'--ignore-red.
         return None
     n = len(required_checks)
     return (f"file-saturation : {n} check(s) requis en PENDING depuis "
@@ -1096,7 +1244,7 @@ def red_backlog(lane: str, threshold_hours: float,
         sat_threshold = saturation_hours if saturation_hours is not None else threshold_hours
         return {"unavailable": f"{type(exc).__name__}", "red": [],
                 "triggers": [], "unattributed_blocked": [],
-                "nits_unavailable": None,
+                "nits_unavailable": None, "base_inherited": [],
                 "saturation_hours": sat_threshold}
 
     mine, others = [], []
@@ -1116,6 +1264,19 @@ def red_backlog(lane: str, threshold_hours: float,
         nits_unavailable = None
     except Exception as exc:  # noqa: BLE001
         nits_by_pr, nits_unavailable = {}, f"{type(exc).__name__}"
+    # #13545 : imputation a la base. Le garde n'interroge les etats que de la
+    # lane par cout (docstring fetch_pr_states) ; on ne paie l'echantillon
+    # etranger QUE si la lane porte un check rouge a imputer ou non, et borne
+    # (16 PRs les plus recentes = 2 lots GraphQL) pour que le garde reste
+    # bon marche meme sur un ouvert charge.
+    author_by = {pr["number"]: ((pr.get("author") or {}).get("login")) or "?"
+                 for pr in prs if not pr.get("isDraft")}
+    inherited: dict[str, list[int]] = {}
+    if any(_has_failed_check(states.get(pr["number"])) for pr in mine):
+        sample = sorted(others, key=lambda p: p.get("createdAt") or "",
+                        reverse=True)[:16]
+        foreign_states = fetch_pr_states([p["number"] for p in sample])
+        inherited = impute_base_reds({**states, **foreign_states}, author_by)
     red = []
     for pr in mine:
         state = states.get(pr["number"])
@@ -1126,7 +1287,8 @@ def red_backlog(lane: str, threshold_hours: float,
         # `_PR_STATE_FRAGMENT` ne porte pas `createdAt` et l'ajouter alourdirait
         # chaque appel pour 2 octets deconomie ; le PR-listing le fournit deja.
         age = _hours_since(pr["createdAt"])
-        causes = blocking_causes(state, age_hours=age, saturation_hours=threshold_hours)
+        causes = blocking_causes(state, age_hours=age, saturation_hours=threshold_hours,
+                                 inherited=set(inherited))
         n_nits = nits_by_pr.get(pr["number"], 0)
         if n_nits:
             # Un point de review non leve est une cause A PART ENTIERE : la PR
@@ -1180,7 +1342,33 @@ def red_backlog(lane: str, threshold_hours: float,
             "red_hours": threshold_hours, "red_count_threshold": count_threshold,
             "saturation_hours": sat_threshold,
             "unattributed_blocked": unattributed,
+            "base_inherited": [{"check": name, "corroborated_by": nums}
+                               for name, nums in sorted(inherited.items())],
             "nits_unavailable": nits_unavailable}
+
+
+def print_base_inherited(backlog: dict) -> None:
+    """Rouges imputes a la base (#13545) : une tache COORDINATEUR, pas lane.
+
+    Mesure fondatrice 2026-08-29 : un test casse sur main s'est presente comme
+    11 defauts de PR independants sur 4 lanes -- chaque lane envoyee reparer
+    ce qu'elle n'a pas casse et ne peut pas atteindre, pendant que le seul
+    reparateur possible (main) n'etait assigne a personne. Ces rouges ne
+    comptent plus dans le refus ; ils sont dits ici, une fois, avec leurs
+    corroborations, pour que la base ait un destinataire.
+    """
+    items = backlog.get("base_inherited") or []
+    if not items:
+        return
+    print("ROUGE IMPUTE A LA BASE -- pas le votre, pas reparable par la lane :")
+    for item in items:
+        wits = ", ".join(f"#{n}" for n in item["corroborated_by"][:6])
+        more = "" if len(item["corroborated_by"]) <= 6 else ", ..."
+        print(f"  - {item['check']} : corrobore par {wits}{more}")
+    print("Ces rouges ne comptent pas dans le refus. La cause est sur main :")
+    print("tache COORDINATEUR (unique reparateur possible), a router sur le")
+    print("dashboard ou en DM ai-01.")
+    print()
 
 
 def print_nits_gap(backlog: dict) -> None:
@@ -1209,7 +1397,8 @@ def print_unattributed_blocked(backlog: dict) -> None:
     couvre tout l'ouvert. Il ne le couvre pas, et le tag manquant est lui-meme
     le defaut a corriger (le coordinateur peut les reprendre via `skill
     coordinate` phase 3.5). Cf #12738 : avant le fix, ce paragraphe vivait
-    dans `print_red_refusal` et n'apparaissait que sur le chemin du refus, pas
+    dans `print_red_assignment` et n'apparaissait que sur le chemin de la
+    reparation, pas
     sur le chemin du tirage -- verdict non cable a sa preuve sur le chemin
     ou il sert.
     """
@@ -1289,7 +1478,7 @@ def upsert_orphans_comment(number: int, body: str) -> None:
             check=True, timeout=60)
 
 
-def print_red_refusal(lane: str, backlog: dict, threshold_hours: float) -> None:
+def print_red_assignment(lane: str, backlog: dict, threshold_hours: float) -> None:
     red = backlog["red"]
     triggers = backlog.get("triggers") or []
     aged = backlog.get("aged") or []
@@ -1306,7 +1495,12 @@ def print_red_refusal(lane: str, backlog: dict, threshold_hours: float) -> None:
     if "aged" in triggers:
         motifs.append(f"porte {len(aged)} PR(s) bloquee(s) ouverte(s) depuis plus "
                       f"de {threshold_hours:g} h")
-    print(f"REFUS DE TIRAGE -- lane {lane} " + ", ".join(motifs) + ".")
+    print(f"GRAIN DU CYCLE -- lane {lane} : reparer ses propres PRs.")
+    print("Motif : la lane " + ", ".join(motifs) + ".")
+    print()
+    print("Ce n'est PAS un refus de tirage : le travail de ce cycle est nomme")
+    print("ci-dessous. Aucune sortie de cet outil n'autorise une lane a ne rien")
+    print("produire -- ni celle-ci, ni un tirage dont aucun candidat ne plait.")
     print()
     print_nits_gap(backlog)
     print("Reprendre ses propres PRs est la PREMIERE tache du cycle, avant tout")
@@ -1331,6 +1525,7 @@ def print_red_refusal(lane: str, backlog: dict, threshold_hours: float) -> None:
     print("     chaque point non leve, son auteur et sa surface.")
     print()
     print_unattributed_blocked(backlog)
+    print_base_inherited(backlog)
     print("Si un rouge n'est PAS reparable par cette lane (garde casse sur main,")
     print("dependance d'une autre PR), l'ECRIRE en commentaire sur la PR concernee,")
     print("puis relancer avec --ignore-red. L'echappatoire se justifie par ecrit,")
@@ -1440,15 +1635,23 @@ def main(argv: list[str] | None = None) -> int:
     backlog = red_backlog(args.lane, args.red_hours, args.red_count,
                             saturation_hours=args.saturation_hours)
     if backlog.get("triggers") and not args.ignore_red:
+        # Sortie 0, et le mot "refus" ne parait nulle part : ce chemin REND un
+        # grain -- la reparation des PRs de la lane -- il n'en prive pas. La
+        # forme precedente ("REFUS DE TIRAGE", sortie 2, aucun candidat) rendait
+        # un travail nomme sous l'apparence d'un vide, et se declenchait
+        # d'autant plus souvent que la lane etait active.
         if args.json:
-            print(json.dumps({"lane": args.lane, "refus": "rouge-a-reparer",
+            print(json.dumps({"lane": args.lane, "mode": "repair",
+                              "assignment": "reparer-son-rouge",
+                              "grain": (backlog.get("red") or [None])[0],
                               "red_hours": args.red_hours, **backlog},
                              ensure_ascii=False, indent=2))
         else:
-            print_red_refusal(args.lane, backlog, args.red_hours)
-        return 2
+            print_red_assignment(args.lane, backlog, args.red_hours)
+        return 0
     if not args.json:
         print_nits_gap(backlog)
+        print_base_inherited(backlog)
     if backlog.get("unavailable") and not args.json:
         print(f"(garde rouge indisponible : {backlog['unavailable']} -- tirage rendu sans verification)")
         print()
@@ -1456,6 +1659,8 @@ def main(argv: list[str] | None = None) -> int:
     pool = fetch_pool()
     visits, visits_err = fetch_visits()
     series, issue_to_family, series_err = fetch_series_visits()
+    issue_to_family = enrich_parent_families(
+        pool, issue_to_family, series)
     balance = zone_balance(series, issue_to_family, pool)
 
     # Admission AVANT les urnes : un grain inadmissible ne doit pas

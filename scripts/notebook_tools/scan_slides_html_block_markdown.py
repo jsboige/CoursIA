@@ -48,9 +48,10 @@ the refined rule, the 10 genuine regressions of PR #13096 stand out cleanly.
 Two shapes are reported: a lone **opening** tag (`<div ...>`) and a lone
 **closing** tag (`</div>`). CommonMark HTML block type 6 opens on both, and
 the closing half was missing from the first version of this script -- caught
-by review on #13218 and confirmed at the engine. One real occurrence survives
-on main after the opening-tag burn-down of #13242: `slides/01-introduction`,
-where `</div>` swallows three bullets (tracked by #13345).
+by review on #13218 and confirmed at the engine. The last known occurrence
+(`slides/01-introduction`, where `</div>` swallowed three bullets, #13345)
+was burned down by this PR's companion change: the corpus now sits at zero,
+and the test is the ratchet.
 
 What stays out of scope, deliberately: a tag with trailing content on its
 line (`<div>du texte`, `</div> et du texte`). markdown-it swallows those too,
@@ -65,10 +66,10 @@ Usage
     python scripts/notebook_tools/scan_slides_html_block_markdown.py --json
 
 Exit status is 1 when any violation is found, 0 otherwise. There is NO baseline
-mechanism: the corpus is expected at zero once the last known occurrence is
-burned down (#13345, the closing-tag form in `slides/01-introduction`), at
-which point the scan can be armed as a blocking gate (landing #13360 keeps it
-advisory-unwired until then).
+mechanism: the corpus sits at ZERO since #13345 burned down the last known
+occurrence (the closing-tag form in `slides/01-introduction`), and the corpus
+test in `tests/test_scan_slides_html_block_markdown.py` holds that line.
+Arming the scan as a blocking gate is gated on that corpus test staying green.
 """
 
 from __future__ import annotations

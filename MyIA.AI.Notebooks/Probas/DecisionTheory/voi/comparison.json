@@ -1,0 +1,266 @@
+{
+  "tolerance": {
+    "probability_abs": 0.01,
+    "utility_abs": 20000.0
+  },
+  "problems": {
+    "forage-non-informatif": {
+      "agree": true,
+      "controls_ok": true,
+      "rows": [
+        {
+          "field": "eu_no_info",
+          "infer_net": "200000.00",
+          "pymc": "200000.00",
+          "verdict": "accord"
+        },
+        {
+          "field": "evpi",
+          "infer_net": "390000.00",
+          "pymc": "390000.00",
+          "verdict": "accord"
+        },
+        {
+          "field": "evsi_brute",
+          "infer_net": "0.00",
+          "pymc": "0.00",
+          "verdict": "accord"
+        },
+        {
+          "field": "evsi_nette",
+          "infer_net": "-60000.00",
+          "pymc": "-60000.00",
+          "verdict": "accord"
+        },
+        {
+          "field": "action_no_info",
+          "infer_net": "vendre",
+          "pymc": "vendre",
+          "verdict": "accord"
+        },
+        {
+          "field": "decision",
+          "infer_net": "agir_sans_test",
+          "pymc": "agir_sans_test",
+          "verdict": "accord"
+        },
+        {
+          "field": "P(petrole|positif)",
+          "infer_net": "0.300000",
+          "pymc": "0.298788",
+          "verdict": "accord"
+        },
+        {
+          "field": "P(pas_petrole|positif)",
+          "infer_net": "0.700000",
+          "pymc": "0.701212",
+          "verdict": "accord"
+        },
+        {
+          "field": "P(petrole|negatif)",
+          "infer_net": "0.300000",
+          "pymc": "0.300107",
+          "verdict": "accord"
+        },
+        {
+          "field": "P(pas_petrole|negatif)",
+          "infer_net": "0.700000",
+          "pymc": "0.699893",
+          "verdict": "accord"
+        },
+        {
+          "field": "P(positif)",
+          "infer_net": "0.500000",
+          "pymc": "0.498095",
+          "verdict": "accord"
+        },
+        {
+          "field": "P(negatif)",
+          "infer_net": "0.500000",
+          "pymc": "0.501905",
+          "verdict": "accord"
+        }
+      ],
+      "outputs": {
+        "infer_net": {
+          "engine": "infer-net",
+          "problem": "forage-non-informatif",
+          "eu_no_info": 200000,
+          "action_no_info": "vendre",
+          "evpi": 390000,
+          "evsi_brute": 0,
+          "evsi_nette": -60000,
+          "decision": "agir_sans_test",
+          "signal_marginals": {
+            "positif": 0.5,
+            "negatif": 0.5
+          },
+          "posteriors": {
+            "positif": {
+              "petrole": 0.3,
+              "pas_petrole": 0.7
+            },
+            "negatif": {
+              "petrole": 0.3,
+              "pas_petrole": 0.7
+            }
+          }
+        },
+        "pymc": {
+          "engine": "pymc",
+          "problem": "forage-non-informatif",
+          "draws": 200000,
+          "eu_no_info": 200000.0,
+          "action_no_info": "vendre",
+          "evpi": 390000.0,
+          "evsi_brute": 0.0,
+          "evsi_nette": -60000.0,
+          "decision": "agir_sans_test",
+          "signal_marginals": {
+            "positif": 0.498095,
+            "negatif": 0.501905
+          },
+          "posteriors": {
+            "positif": {
+              "petrole": 0.29878838374205724,
+              "pas_petrole": 0.7012116162579427
+            },
+            "negatif": {
+              "petrole": 0.3001065938773274,
+              "pas_petrole": 0.6998934061226726
+            }
+          }
+        }
+      }
+    },
+    "forage-petrolier": {
+      "agree": true,
+      "controls_ok": true,
+      "rows": [
+        {
+          "field": "eu_no_info",
+          "infer_net": "200000.00",
+          "pymc": "200000.00",
+          "verdict": "accord"
+        },
+        {
+          "field": "evpi",
+          "infer_net": "390000.00",
+          "pymc": "390000.00",
+          "verdict": "accord"
+        },
+        {
+          "field": "evsi_brute",
+          "infer_net": "253000.00",
+          "pymc": "252796.00",
+          "verdict": "accord"
+        },
+        {
+          "field": "evsi_nette",
+          "infer_net": "193000.00",
+          "pymc": "192796.00",
+          "verdict": "accord"
+        },
+        {
+          "field": "action_no_info",
+          "infer_net": "vendre",
+          "pymc": "vendre",
+          "verdict": "accord"
+        },
+        {
+          "field": "decision",
+          "infer_net": "observer",
+          "pymc": "observer",
+          "verdict": "accord"
+        },
+        {
+          "field": "P(petrole|positif)",
+          "infer_net": "0.658537",
+          "pymc": "0.659102",
+          "verdict": "accord"
+        },
+        {
+          "field": "P(pas_petrole|positif)",
+          "infer_net": "0.341463",
+          "pymc": "0.340898",
+          "verdict": "accord"
+        },
+        {
+          "field": "P(petrole|negatif)",
+          "infer_net": "0.050847",
+          "pymc": "0.050636",
+          "verdict": "accord"
+        },
+        {
+          "field": "P(pas_petrole|negatif)",
+          "infer_net": "0.949153",
+          "pymc": "0.949364",
+          "verdict": "accord"
+        },
+        {
+          "field": "P(positif)",
+          "infer_net": "0.410000",
+          "pymc": "0.408920",
+          "verdict": "accord"
+        },
+        {
+          "field": "P(negatif)",
+          "infer_net": "0.590000",
+          "pymc": "0.591080",
+          "verdict": "accord"
+        }
+      ],
+      "outputs": {
+        "infer_net": {
+          "engine": "infer-net",
+          "problem": "forage-petrolier",
+          "eu_no_info": 200000,
+          "action_no_info": "vendre",
+          "evpi": 390000,
+          "evsi_brute": 252999.99999999994,
+          "evsi_nette": 192999.99999999994,
+          "decision": "observer",
+          "signal_marginals": {
+            "positif": 0.41000000000000003,
+            "negatif": 0.59
+          },
+          "posteriors": {
+            "positif": {
+              "petrole": 0.6585365853658536,
+              "pas_petrole": 0.3414634146341464
+            },
+            "negatif": {
+              "petrole": 0.05084745762711864,
+              "pas_petrole": 0.9491525423728814
+            }
+          }
+        },
+        "pymc": {
+          "engine": "pymc",
+          "problem": "forage-petrolier",
+          "draws": 200000,
+          "eu_no_info": 200000.0,
+          "action_no_info": "vendre",
+          "evpi": 390000.0,
+          "evsi_brute": 252796.0,
+          "evsi_nette": 192796.0,
+          "decision": "observer",
+          "signal_marginals": {
+            "positif": 0.40892,
+            "negatif": 0.59108
+          },
+          "posteriors": {
+            "positif": {
+              "petrole": 0.6591020248459356,
+              "pas_petrole": 0.3408979751540644
+            },
+            "negatif": {
+              "petrole": 0.05063612370575895,
+              "pas_petrole": 0.949363876294241
+            }
+          }
+        }
+      }
+    }
+  }
+}

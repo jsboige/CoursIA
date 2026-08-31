@@ -1,0 +1,105 @@
+name: Source-Output Ratchet
+
+# Purpose
+# -------
+# ADVISORY (tranche 2 of #13562, "advisory d'abord"): surface as a WARNING
+# when a changed notebook has a code cell whose SOURCE changed while its
+# committed OUTPUTS stayed byte-identical to base -- the mirror image of the
+# papermill ratchet (which catches new outputs under an unchanged
+# metadata.papermill block). This is rule C.2's blind spot: modified code
+# must be re-executed before commit, and no other organ catches the
+# un-re-executed case -- check_exec_sequence / check_exec_ratchet /
+# check_papermill_ratchet are all green by construction on it (founding
+# measure #13550: cells [23,26,29] stale on a CLEAN PR).
+#
+# Posture: report-only, never blocks the merge. Promote to a hard gate in a
+# later tranche only after the FP rate of the comment-only-edit case is
+# validated. The tier-1 measure on merged history returned 0 occurrences
+# across 739 notebooks / 3000 commits -- the class exists in-flight only,
+# so the ratchet starts cold.
+#
+# Escape door (per-cell, written in the PR body, same mechanics as the
+# other lifts -- a sentence, an author, an hour; not a label, not a skip):
+#   Source-output ratchet: [12] exempte -- comment-only edit, output unchanged.
+# or scoped to one notebook:
+#   Source-output ratchet: Path/To.ipynb: [12] exempte -- ...
+#
+# Kernel/path exemptions are imported from validate_pr_notebooks (Lean
+# kernels, QC Cloud paths, QuantBook) -- one list, not a second one to
+# maintain in parallel.
+#
+# Exceptions:
+#   - github-actions[bot] author (catalog/automation commits)
+
+on:
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ratchet:
+    name: "Source-output ratchet (advisory)"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout (full history)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run source-output ratchet
+        env:
+          # Env-var indirection: the PR body and author are untrusted /
+          # repo text -- never inline them into run: (script injection).
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          set -euo pipefail
+
+          # Bypass: automation author.
+          if [ "$PR_AUTHOR" = "github-actions[bot]" ]; then
+            echo "::notice title=Source-output ratchet::Author is github-actions[bot] - bypassed."
+            exit 0
+          fi
+
+          # Manual dispatch has no PR context -> nothing to diff.
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "::notice title=Source-output ratchet::Manual dispatch - nothing to diff."
+            exit 0
+          fi
+
+          BASE="origin/${{ github.base_ref }}"
+
+          # Per-cell exemptions ride the PR body.
+          printf '%s' "$PR_BODY" > pr_body.txt
+
+          set +e
+          python scripts/notebook_tools/check_source_output_ratchet.py \
+            "$BASE" --body-file pr_body.txt | tee ratchet_output.txt
+          RC=${PIPESTATUS[0]}
+          set -e
+
+          {
+            echo "## Source-Output Ratchet"
+            echo ""
+            echo '```'
+            cat ratchet_output.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          # ADVISORY mode (tranche 2 of #13562): report-only, never fail
+          # the check. Promotion to required is a separate tranche.
+          if [ "$RC" -ne 0 ]; then
+            echo "::warning title=Source-output ratchet (advisory)::A changed code cell rides outputs byte-identical to base (stale - rule C.2). Re-execute the notebook (papermill) and commit fresh outputs, or lift the specific cell in the PR body: 'Source-output ratchet: [12] exempte -- reason'. This check is advisory and does NOT block the merge."
+          else
+            echo "::notice title=Source-output ratchet (advisory)::No stale-output cell on changed notebooks."
+          fi
+          exit 0

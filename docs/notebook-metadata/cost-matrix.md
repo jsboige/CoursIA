@@ -336,7 +336,7 @@ cost:
 ### Probas / Infer.NET (CPU only)
 
 ```yaml
-# DecInfer-1-Utility-Foundations.ipynb (Probas/DecisionTheory/DecInfer)
+# DecInfer-01-Utility-Foundations.ipynb (Probas/DecisionTheory/DecInfer)
 cost:
   api_usd_est: 0.0             # Microsoft.ML.Probabilistic NuGet, pas d'API externe
   api_provider: none
@@ -354,7 +354,7 @@ cost:
 ```
 
 ```yaml
-# DecInfer-2-Lean-ExpectedUtility.ipynb (Probas/DecisionTheory/DecInfer)
+# DecInfer-02-Lean-ExpectedUtility.ipynb (Probas/DecisionTheory/DecInfer)
 cost:
   api_usd_est: 0.0
   api_provider: none
