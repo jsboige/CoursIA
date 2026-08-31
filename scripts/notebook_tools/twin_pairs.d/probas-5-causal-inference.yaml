@@ -34,6 +34,13 @@
       csharp_sha: a9994421484ddf512dcf380c582b3ba8a14744e7
       content_python_sha: e6f81df80b812e7b6f54573f12cbfe0c5f53dea2f60484dad064d7b66e58cf0e
       content_csharp_sha: a02fdf845c8c1ed3ef662f3374b3ddad7a9809c8a29b35a22d6e156879a41df0
+    - date: "2026-08-31"
+      by: myia-po-2027:CoursIA-2
+      reason: "Reclass #13753 : balayage markdown-only des renvois/navlinks Infer-6-Debugging -> Infer-2b-Debugging-Bonnes-Pratiques dans ce jumeau C#. Cellules code + sorties INCHANGEES (cellule_type/execution_count/outputs tous identiques au diff), seuls la prose de navigation et les separateurs de section --- -> *** (normalisation pre-commit) ont bouge. Jumeau Python NON touche : content_python_sha identique. --update en dernier (#8957)."
+      python_sha: 4cecffa24d110c020f5d59fc1b7430cd20e6a92f
+      csharp_sha: 9cf206efaa5feacea5e42311add4ed99ff68837d
+      content_python_sha: e6f81df80b812e7b6f54573f12cbfe0c5f53dea2f60484dad064d7b66e58cf0e
+      content_csharp_sha: 4b99b6834c86238b1602de1d0795ee13b0c173a457c743d8a015fb22d5df8a62
   known_differences:
   - 'Socle pedagogique commun : inference causale (do-calculus, ajustement) modelise dans les deux stacks.'
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
