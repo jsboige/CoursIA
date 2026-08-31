@@ -4,7 +4,7 @@ Série de notebooks pour la **détection et classification de sophismes** (falla
 
 - **EPIC parent** : [#10355](https://github.com/jsboige/CoursIA/issues/10355)
 - **Phase 1 (sous-issue opérationnelle)** : [#10356](https://github.com/jsboige/CoursIA/issues/10356)
-- **Survey SOTA fondateur** : [docs/research/fallacy-detection-survey.md](../../docs/research/fallacy-detection-survey.md) (livrable 1, 10 sources primaires)
+- **Survey SOTA fondateur** : [docs/research/fallacy-detection-survey.md](../../../docs/research/fallacy-detection-survey.md) (livrable 1, 10 sources primaires)
 
 ## Notebooks de la série
 
@@ -18,8 +18,8 @@ Série de notebooks pour la **détection et classification de sophismes** (falla
 
 | Phase | Livrable | Statut |
 |---|---|---|
-| 1 — Survey SOTA | [docs/research/fallacy-detection-survey.md](../../docs/research/fallacy-detection-survey.md) | livré |
-| 1 — Extraction Jessynoo | [data/jessynoo_rfallacy_anonymized.csv](data/jessynoo_rfallacy_anonymized.csv) + [scripts/fallacy_detection/extract_jessynoo_fallacy.py](../../scripts/fallacy_detection/extract_jessynoo_fallacy.py) | livré |
+| 1 — Survey SOTA | [docs/research/fallacy-detection-survey.md](../../../docs/research/fallacy-detection-survey.md) | livré |
+| 1 — Extraction Jessynoo | [data/jessynoo_rfallacy_anonymized.csv](data/jessynoo_rfallacy_anonymized.csv) + [scripts/fallacy_detection/extract_jessynoo_fallacy.py](../../../scripts/fallacy_detection/extract_jessynoo_fallacy.py) | livré |
 | 1 — Paysage datasets | [02_fallacy_datasets_landscape.ipynb](02_fallacy_datasets_landscape.ipynb) — 7 datasets testés en accès réel | livré |
 | 1 — Inventaire SAE Qwen | ≥ 3 tailles (gate de faisabilité) | à livrer |
 | 2 — Dataset builder | projection de la taxonomie Argumentum par **produit cartésien Scénarii × Fallacy** (167 × 1408), colonnes `_en` (natif AN) ou autres langues au choix | Phase 2 |
