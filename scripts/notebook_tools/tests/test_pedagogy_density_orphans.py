@@ -105,3 +105,57 @@ class TestCheckOrphans:
         out = capsys.readouterr().out
         assert "gone.ipynb" in out
         assert "1 cle(s) orpheline(s)" in out
+
+
+# -------- Non-ASCII paths (regression: git quoting, not Python decoding) --------
+
+@pytest.fixture
+def _accented_repo(tmp_path):
+    """Fixture repo tracking a notebook whose name carries a non-ASCII char.
+
+    ``core.quotepath`` is pinned to ``true`` -- git's own default -- so the
+    control is deterministic on any machine: git then emits the path
+    octal-escaped AND double-quoted (``"cafÃ©.ipynb"``), which no
+    baseline key can ever equal. The defect is in git's rendering, upstream of
+    any Python decoding, so ``encoding="utf-8"`` on the subprocess does not
+    prevent it -- only ``-c core.quotepath=false`` does.
+    """
+    repo = tmp_path / "repo"
+    tools = repo / "scripts" / "notebook_tools"
+    tools.mkdir(parents=True)
+    git = ["git", "-C", str(repo)]
+    subprocess.run([*git, "init", "-q"], check=True)
+    subprocess.run([*git, "config", "core.quotepath", "true"], check=True)
+    (repo / "café.ipynb").write_text("{}", encoding="utf-8")
+    subprocess.run([*git, "add", "."], check=True)
+    subprocess.run(
+        [*git, "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-q", "-m", "c1"],
+        check=True,
+    )
+    return repo, tools
+
+
+class TestNonAsciiPathsAreNotOrphans:
+    """A tracked non-ASCII path must never be reported as an orphan.
+
+    Measured on the real repo (2026-08-31): without the fix the organ counted
+    48 orphans, with it 47 -- the 48th being the tracked notebook
+    ``GenAI/SemanticKernel/Créateur de mail personnalisé.ipynb``.
+    A count that depends on the reader's git config is not a measurement, and
+    a CI gate wired to it would disagree with itself across machines.
+    """
+
+    def test_tracked_accented_path_is_not_orphan(self, _accented_repo, monkeypatch):
+        repo, tools = _accented_repo
+        _write_baseline(tools, {"café.ipynb": 1.0})
+        monkeypatch.setattr(pd, "_TOOLS_DIR", tools)
+        monkeypatch.setattr(pd, "BASELINE_FILE", tools / "pedagogy_density_baseline.json")
+        assert pd._check_orphans() == 0
+
+    def test_git_listing_carries_no_escaping(self, _accented_repo, monkeypatch):
+        """Positive control: the listing itself must hold the literal path."""
+        repo, tools = _accented_repo
+        monkeypatch.setattr(pd, "_TOOLS_DIR", tools)
+        listed = pd._tracked_notebook_paths()
+        assert "café.ipynb" in listed
+        assert not any(k.startswith('"') or "\3" in k for k in listed)

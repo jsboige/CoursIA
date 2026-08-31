@@ -49,6 +49,9 @@ Usage:
         | python pedagogy_density.py --stdin --json
 
 Always exits 0 (advisory): the signal is the label, not this exit code.
+Sole exception -- ``--check-orphans`` exits 1 when the baseline carries keys
+that git no longer tracks. That mode is a correctness check, not a
+pedagogical judgement: its non-zero is a verdict, never a crash.
 """
 
 from __future__ import annotations
@@ -328,7 +331,7 @@ def _baseline_population() -> list[Path]:
 
     repo_root = _TOOLS_DIR.parents[1]  # scripts/notebook_tools -> repo root
     listed = subprocess.run(
-        ["git", "-C", str(repo_root), "ls-files", "--", "MyIA.AI.Notebooks/**/*.ipynb"],
+        ["git", "-C", str(repo_root), "-c", "core.quotepath=false", "ls-files", "--", "MyIA.AI.Notebooks/**/*.ipynb"],
         capture_output=True, text=True, encoding="utf-8", errors="replace", check=True,
     ).stdout.splitlines()
     out: list[Path] = []
@@ -402,7 +405,7 @@ def _tracked_notebook_paths() -> set[str]:
 
     repo_root = _TOOLS_DIR.parents[1]  # scripts/notebook_tools -> repo root
     listed = subprocess.run(
-        ["git", "-C", str(repo_root), "ls-files", "--", "*.ipynb"],
+        ["git", "-C", str(repo_root), "-c", "core.quotepath=false", "ls-files", "--", "*.ipynb"],
         capture_output=True, text=True, encoding="utf-8", errors="replace", check=True,
     ).stdout.splitlines()
     return {line for line in listed if line}
