@@ -34,7 +34,6 @@ Voir aussi : .claude/rules/catalog-pr-hygiene.md, scripts/notebook_tools/check_t
 
 import argparse
 import json
-import os
 import subprocess
 import sys
 from pathlib import Path
@@ -172,10 +171,10 @@ def run_update(pair_name: str, lane: str, repo_root: Path) -> bool:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n", 1)[0])
-    parser.add_argument("--dry-run", action="store_true", default=True,
-                        help="Mode dry-run (défaut) : aucune écriture.")
+    parser.add_argument("--dry-run", action="store_true", default=False,
+                        help="Mode dry-run : aucune écriture (no-op si --apply).")
     parser.add_argument("--apply", action="store_true",
-                        help="Exécuter réellement les --update.")
+                        help="Exécuter réellement les --update (prime sur --dry-run).")
     parser.add_argument("--pr", type=int, default=PR_NUMBER,
                         help=f"Numéro de PR (défaut {PR_NUMBER}).")
     parser.add_argument("--lane", default=LANE,
