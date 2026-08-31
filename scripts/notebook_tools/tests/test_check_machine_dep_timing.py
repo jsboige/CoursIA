@@ -719,7 +719,7 @@ def test_class5_pymc2_real_notebook_silenced() -> None:
         / "MyIA.AI.Notebooks"
         / "Probas"
         / "PyMC"
-        / "PyMC-2-Gaussian-Mixtures.ipynb"
+        / "PyMC-02-Gaussian-Mixtures.ipynb"
     )
     if not nb_path.exists():
         import pytest
