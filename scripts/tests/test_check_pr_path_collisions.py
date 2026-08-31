@@ -15,10 +15,14 @@ nothing (#13615).
 """
 from __future__ import annotations
 
+import contextlib
 import importlib.util
+import io
+import subprocess as _subprocess
 import sys
 import unittest
 from pathlib import Path
+from unittest import mock
 
 _SCRIPT = Path(__file__).resolve().parent.parent / "check_pr_path_collisions.py"
 _spec = importlib.util.spec_from_file_location("check_pr_path_collisions", _SCRIPT)
@@ -442,6 +446,76 @@ class TestGhRowExtraction(unittest.TestCase):
         self.assertEqual(row.base_ref, "main")
         self.assertEqual(row.head_ref, "feature/x")
         self.assertEqual(row.cited_issues(), {9})
+
+
+class TestWriteFailureReporting(unittest.TestCase):
+    """#13623 acceptance 4: a forced write failure is WARNed and not confirmed.
+
+    Positive control: the defect itself is that a non-zero rc is swallowed. A
+    test must force a non-zero rc and prove BOTH that the WARN appears AND that
+    the write reports failure (so the caller's ``confirmed`` count excludes it)
+    -- otherwise "no write fails" is indistinguishable from "failures are not
+    looked at".
+    """
+
+    @staticmethod
+    def _proc(rc: int, stderr: str, stdout: str = "") -> _subprocess.CompletedProcess:
+        return _subprocess.CompletedProcess(
+            args=[], returncode=rc, stdout=stdout, stderr=stderr
+        )
+
+    def _run(self, fn, *args, rc: int, stderr: str) -> tuple[bool, str]:
+        stderr_buf = io.StringIO()
+        with mock.patch.object(
+            _mod.subprocess, "run", return_value=self._proc(rc, stderr)
+        ):
+            with contextlib.redirect_stderr(stderr_buf):
+                ok = fn(*args, dry_run=False)
+        return ok, stderr_buf.getvalue()
+
+    def test_post_comment_warns_and_reports_failure(self):
+        ok, err = self._run(
+            _mod.post_comment, "repo", 123, "body", rc=1, stderr="gh: permission denied"
+        )
+        self.assertFalse(ok)
+        self.assertIn("WARN: write failed for #123", err)
+        self.assertIn("permission denied", err)
+
+    def test_edit_comment_warns_and_reports_failure(self):
+        stderr_buf = io.StringIO()
+        with mock.patch.object(
+            _mod.subprocess, "run", return_value=self._proc(1, "gh: rate limit")
+        ):
+            with contextlib.redirect_stderr(stderr_buf):
+                ok = _mod.edit_comment("repo", 123, "id456", "body", dry_run=False)
+        self.assertFalse(ok)
+        self.assertIn("WARN: write failed for #123", stderr_buf.getvalue())
+        self.assertIn("rate limit", stderr_buf.getvalue())
+
+    def test_post_comment_success_silent(self):
+        ok, err = self._run(
+            _mod.post_comment, "repo", 123, "body", rc=0, stderr=""
+        )
+        self.assertTrue(ok)
+        self.assertNotIn("WARN", err)
+
+    def test_edit_comment_success_silent(self):
+        stderr_buf = io.StringIO()
+        with mock.patch.object(
+            _mod.subprocess, "run", return_value=self._proc(0, "")
+        ):
+            with contextlib.redirect_stderr(stderr_buf):
+                ok = _mod.edit_comment("repo", 123, "id456", "body", dry_run=False)
+        self.assertTrue(ok)
+        self.assertNotIn("WARN", stderr_buf.getvalue())
+
+    def test_dry_run_never_calls_gh(self):
+        with mock.patch.object(
+            _mod.subprocess, "run", side_effect=AssertionError("gh must not run in dry-run")
+        ) as mocked:
+            ok = _mod.post_comment("repo", 123, "body", dry_run=True)
+            self.assertTrue(ok)
+            mocked.assert_not_called()
 
 
 if __name__ == "__main__":
