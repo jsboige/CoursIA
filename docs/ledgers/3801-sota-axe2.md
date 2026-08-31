@@ -2227,7 +2227,7 @@ La famille GenAI/Image présente une **architecture bimodale cloud/self-hosted**
 | 01-3-Basic-Image-Operations | OpenAI + diffusers | **SOTA-OK / RECOVERABLE-USER-HAND** |
 | 01-4-Forge-SD-XL-Turbo | Forge (SD WebUI) | **RECOVERABLE-MACHINE** (self-hosted) |
 | 01-5-Qwen-Image-Edit | ComfyUI + Qwen-Image | **RECOVERABLE-MACHINE** |
-| 02-1-Qwen-Image-Edit-2509 | ComfyUI + Qwen | **RECOVERABLE-MACHINE** |
+| 01-5b-Qwen-Image-Edit-2509 | ComfyUI + Qwen | **RECOVERABLE-MACHINE** |
 | 02-2-FLUX-1-Advanced-Generation | diffusers FLUX.1 | **RECOVERABLE-MACHINE** (GPU) |
 | 02-3-Stable-Diffusion-3-5 | diffusers SD3.5 | **RECOVERABLE-MACHINE** |
 | 02-4-Z-Image-Lumina2 | diffusers Lumina2 | **RECOVERABLE-MACHINE** |
