@@ -1,5 +1,5 @@
 // Adaptateur Infer.NET du contrat JSON VoI (tranche 3/3 #13569).
-// Extraction fidele de DecInfer-6 : combinateur generique cellule 32 +
+// Extraction fidele de DecInfer-06 : combinateur generique cellule 32 +
 // inference bayesienne reelle cellule 35, generalisee a chaque signal.
 // Les posterieurs P(etat|signal) ET les marginales P(signal) sortent de
 // InferenceEngine (Microsoft.ML.Probabilistic), jamais de Bayes a la main.

@@ -7,7 +7,7 @@ Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'o
 
 ## pymc2-gaussian-mixtures.png
 
-- **Source** : notebook `PyMC-2-Gaussian-Mixtures.ipynb` (cellule 4, output 6)
+- **Source** : notebook `PyMC-02-Gaussian-Mixtures.ipynb` (cellule 4, output 6)
 - **Description visuelle** : Figure matplotlib 2 panneaux KDE ArviZ côte à côte (1173×550, fond blanc quasi-pur), titrée « Posterior : moyenne et precision du temps de trajet ». Gauche : densité postérieure `mu` (courbe bleue, pic mean=16, 94% HDI [14, 18], axe 10-22, barre HDI noire horizontale en bas). Droite : densité postérieure `tau` (courbe bleue, pic mean=0.081, 94% HDI [0.025, 0.14], axe 0.00-0.25, barre HDI noire horizontale). Stats RGB PIL : moyenne (250.25, 250.81, 251.21), std (30.67, 27.82, 26.59) — toutes les moyennes >250, std faible = **fond blanc quasi-pur** typique des KDE ArviZ authentiques sur blanc, sans marqueur ni légende. Cohérent avec un **inférence bayésienne sur modèle Normal simple** (sortie ArviZ `plot_posterior` 2 panels μ/τ).
 - **Alt-text (FR)** : Inférence bayésienne sur les temps de trajet : postérieures de la moyenne (μ) et de la précision (τ) du modèle Normal simple.
 - **Poids** : 44.4 KB (PIL optimisé)
@@ -16,7 +16,7 @@ Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'o
 
 ## pymc5-irt-curves.png
 
-- **Source** : notebook `PyMC-7-Skills-IRT.ipynb` (cellule 15, output 3)
+- **Source** : notebook `PyMC-07-Skills-IRT.ipynb` (cellule 15, output 3)
 - **Description visuelle** : Courbe ROC matplotlib (690×590, fond blanc) titrée « Courbe ROC - Modele IRT ». Axes standard ROC : X « Taux de faux positifs » (0.0-1.0), Y « Taux de vrais positifs » (0.0-1.0). **Une seule courbe en escalier bleue pleine** « IRT (AUC = 0.788) » + **diagonale pointillée noire** « Aleatoire » (référence hasard, ligne y=x). Légende interne coin haut-gauche (2 entrées). Stats RGB PIL : moyenne (249.09, 249.09, 250.90), std (35.07, 35.07, 28.93) — **R=G (249/249)** signature d'une diagonale pointillée pure (la courbe IRT bleue tire B vers le bas à 250.90). Pas d'autres marqueurs ni séries. Cohérent avec une **évaluation ROC sklearn** sur modèle IRT binaire.
 - **Alt-text (FR)** : Évaluation IRT : courbe ROC du modèle sur la prédiction de réussite aux items, AUC=0.788 au-dessus du hasard.
 - **Poids** : 29.3 KB (PIL optimisé)
@@ -43,7 +43,7 @@ Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'o
 
 ## pymc13-mcmc-diagnostics.png
 
-- **Source** : notebook `PyMC-6-Debugging.ipynb` (cellule 21, output 6)
+- **Source** : notebook `PyMC-06-Debugging.ipynb` (cellule 21, output 6)
 - **Description visuelle** : Figure ArviZ grille 2×2 (1189×413, fond blanc quasi-pur) avec **title général centré** « Trace plots : verifier le melange des chaines ». 4 panneaux : ligne 1 « hyper_mean » avec à gauche une **densité KDE bleue** (overlay 4 chaînes en pointillés + courbe pleine, axe X -10 à 17, pic ~5) + à droite un **trace plot** (axe X 0-2000 samples, axe Y -10 à 20, oscillation dense bleue semi-transparente autour de 5 + rug plot noir en bas marquant les samples) ; ligne 2 « hyper_sigma » symétrique (densité KDE à gauche, axe X 0.0-17.5, pic ~2, queue étalée vers 7+ ; trace plot à droite, axe Y 0-15, oscillations 0-10). Pas de panneau numérique R-hat/ESS visible. Stats RGB PIL : moyenne (233.16, 237.48, 240.46), std (55.07, 47.46, 44.17) — **B plus haut que R** (240 vs 233), std modéré typique d'une grille 2×2 sur fond pâle avec beaucoup de pixels bleus (KDE + trace dense). Cohérent avec un **diagnostic MCMC ArviZ `plot_trace` standard** (densité KDE + trace, **pas de R-hat/ESS numérique**).
 - **Alt-text (FR)** : Diagnostics MCMC : vérification visuelle du mélange des chaînes via KDE postérieure et trace plot pour les hyperparamètres.
 - **Poids** : 142.1 KB (PIL optimisé)

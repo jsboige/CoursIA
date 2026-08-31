@@ -312,6 +312,7 @@ _CONSOLIDATION_RE = re.compile(
 )
 _EXPANSION_RE = re.compile(
     r"nouveau notebook|nouvelle instance|ajouter un notebook|paire \d+\s*/\s*\d+"
+    r"|\[\s*[^\]]+?\s+\d+\s*/\s*\d+\s*\]"
     r"|\bajout\b|\bcr[eé]er\b|\bnew notebook\b",
     re.I,
 )

@@ -1,0 +1,70 @@
+name: EPIC neglect sweep
+
+# Issue #13653. Mandate (user, 2026-08-30): no EPIC left behind. Measured
+# firsthand the same morning: the picker's draw IS varied, but 13/28 open
+# EPICs had no merged PR citing them over the 48 h window -- and nothing
+# renders that neglect visible between two draws. A lane that does not draw
+# this EPIC this cycle has no way to see it falling behind.
+#
+# Same mold as GRAIN-ORPHANS-SWEEP (#13086): a daily workflow recomputes a
+# list that is invisible between two manual looks, and upserts ONE
+# marker-guarded comment on the rendez-vous issue (#13653). ADVISORY, never
+# blocking: the job always exits 0, closes nothing, assigns nothing -- it
+# NAMES, the coordinator slices (G.9: read the EPIC body before concluding).
+#
+# Standalone organ by design: the picker selects a grain FOR a lane; this
+# sweep measures EPIC neglect FLEET-wide -- different cadence, different
+# consumer, no picker state.
+
+on:
+  schedule:
+    # Daily, off-:00 minute (anti-stampede), staggered vs the 07:23
+    # grain-orphans sweep. 08:37 UTC.
+    - cron: '37 8 * * *'
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: 'Upsert the marker-guarded comment on #13653 (default: dry-run)'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  issues: write
+  contents: read
+
+concurrency:
+  group: epic-neglect-sweep
+  cancel-in-progress: false
+
+jobs:
+  sweep:
+    name: "Name EPICs no merged PR cites lately (advisory)"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (sparse, scripts only)
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: scripts
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Sweep and upsert the neglect report
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -uo pipefail
+          # exit 2 by design on a failed control: the sweep must not run
+          # (nor post) on logic whose positive control just failed (#13653, review NanoClaw obs.1)
+          python scripts/epic_neglect_sweep.py --self-test || exit 2
+          ARGS=""
+          # Apply only on the scheduled sweep (or a dispatch that explicitly
+          # opts in). The default dispatch is a dry run: the report prints,
+          # nothing is posted.
+          if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ inputs.apply }}" = "true" ]; then
+            ARGS="$ARGS --apply-comment 13653"
+          fi
+          python scripts/epic_neglect_sweep.py $ARGS

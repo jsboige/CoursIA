@@ -354,7 +354,7 @@ theorem network_robust (x : Vector ℝ n) (ε : ℝ) (hε : ε > 0) :
 - **CROWN** : bornes plus precises via relaxation lineaire
 - **α-CROWN** : variante optimisee (champion CAV 2021)
 
-> **Notebooks** : `Lean-11-TorchLean.ipynb` + `Lean-11-TorchLean-Python.ipynb` — 1h30-2h
+> **Notebooks** : `Lean-11-TorchLean.ipynb` + `Lean-11b-TorchLean-Python.ipynb` — 1h30-2h
 
 ---
 

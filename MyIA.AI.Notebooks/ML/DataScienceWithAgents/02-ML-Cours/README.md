@@ -175,5 +175,4 @@ La série s'ouvrait sur une thèse : *on ne peut juger ce qu'un agent LLM produi
 ---
 
 ## Licence
-
 Voir la licence du repository principal.

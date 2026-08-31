@@ -598,7 +598,7 @@ def test_categorize_ambiguous_only_when_neither() -> None:
 #  Proposee par po-2024, c.66 (comment #5232772579) sur 14 + 45 findings FP
 #  dans Infer-101 / Infer-2 (durees trajet velo). Falsifiable :
 #    - PyMC-2 cell[17] : 3 wallclock -> 0 (composantes, observations)
-#    - DecInfer-4 cell[18] : 2 wallclock -> 0 (Trajet: 60min -> 10min)
+#    - DecInfer-04 cell[18] : 2 wallclock -> 0 (Trajet: 60min -> 10min)
 # --------------------------------------------------------------------------- #
 def test_class5_distribution_keywords_composante_observation_trajet_ecarttype() -> None:
     """Les discriminants bayesiens sont detectes par DISTRIBUTION_KEYWORDS.
@@ -612,7 +612,7 @@ def test_class5_distribution_keywords_composante_observation_trajet_ecarttype() 
     Cas verbatim :
     - PyMC-2 cell[17] : 'La composante "normale" capture les trajets de
       11 a 20 minutes' (composantes + trajets)
-    - DecInfer-4 cell[18] : 'Trajet: 60min -> 10min' (Trajet)
+    - DecInfer-04 cell[18] : 'Trajet: 60min -> 10min' (Trajet)
     - 'observations (13, 17, 16 min)' (observations)
     - 'ecart-type 4.14 min' (ecart-type)
     """
@@ -653,7 +653,7 @@ def test_class5_pymc2_composante_routed_to_distribution() -> None:
 
 
 def test_class5_decinfer4_trajet_routed_to_distribution() -> None:
-    """Verbatim DecInfer-4 cell[18] : 'Trajet: 60min -> 10min' -> distribution_param.
+    """Verbatim DecInfer-04 cell[18] : 'Trajet: 60min -> 10min' -> distribution_param.
 
     Cas reel (#10178 Classe 5, indice 2 notebook pedagogique) : un swing
     decisionnel sur la duree de trajet n'est pas un wallclock, c'est une
@@ -719,7 +719,7 @@ def test_class5_pymc2_real_notebook_silenced() -> None:
         / "MyIA.AI.Notebooks"
         / "Probas"
         / "PyMC"
-        / "PyMC-2-Gaussian-Mixtures.ipynb"
+        / "PyMC-02-Gaussian-Mixtures.ipynb"
     )
     if not nb_path.exists():
         import pytest

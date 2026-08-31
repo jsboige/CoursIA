@@ -16,15 +16,15 @@ Jusqu'à la restructuration de la série, la théorie de la décision était imb
 
 | # | Notebook | Durée | Concepts |
 |---|----------|-------|----------|
-| 1 | [DecInfer-1-Utility-Foundations](DecInfer-1-Utility-Foundations.ipynb) | 50 min | Loteries, axiomes VNM, utilité espérée |
-| 2 | [DecInfer-2-Lean-ExpectedUtility](DecInfer-2-Lean-ExpectedUtility.ipynb) | 45 min | **Companion natif** (kernel Lean) : preuve formelle 0-sorry de la direction sound du théorème vNM + cohérence de de Finetti (Dutch Book) dans le lake `decision_theory_lean` |
-| 3 | [DecInfer-3-Utility-Money](DecInfer-3-Utility-Money.ipynb) | 45 min | Paradoxe St-Petersbourg, CARA, CRRA |
-| 4 | [DecInfer-4-Multi-Attribute](DecInfer-4-Multi-Attribute.ipynb) | 50 min | MAUT, SMART, swing weights |
-| 5 | [DecInfer-5-Decision-Networks](DecInfer-5-Decision-Networks.ipynb) | 55 min | Diagrammes d'influence, politique optimale |
-| 6 | [DecInfer-6-Value-Information](DecInfer-6-Value-Information.ipynb) | 45 min | EVPI, EVSI, valeur de l'information |
-| 7 | [DecInfer-7-Expert-Systems](DecInfer-7-Expert-Systems.ipynb) | 50 min | Systèmes experts, Minimax, regret |
-| 8 | [DecInfer-8-Sequential](DecInfer-8-Sequential.ipynb) | 60 min | MDPs, itération valeur/politique |
-| 9 | [DecInfer-9-Lean-Gittins](DecInfer-9-Lean-Gittins.ipynb) | 45 min | Preuves formelles Lean 4, indice de Gittins, SFABP |
+| 1 | [DecInfer-01-Utility-Foundations](DecInfer-01-Utility-Foundations.ipynb) | 50 min | Loteries, axiomes VNM, utilité espérée |
+| 2 | [DecInfer-02-Lean-ExpectedUtility](DecInfer-02-Lean-ExpectedUtility.ipynb) | 45 min | **Companion natif** (kernel Lean) : preuve formelle 0-sorry de la direction sound du théorème vNM + cohérence de de Finetti (Dutch Book) dans le lake `decision_theory_lean` |
+| 3 | [DecInfer-03-Utility-Money](DecInfer-03-Utility-Money.ipynb) | 45 min | Paradoxe St-Petersbourg, CARA, CRRA |
+| 4 | [DecInfer-04-Multi-Attribute](DecInfer-04-Multi-Attribute.ipynb) | 50 min | MAUT, SMART, swing weights |
+| 5 | [DecInfer-05-Decision-Networks](DecInfer-05-Decision-Networks.ipynb) | 55 min | Diagrammes d'influence, politique optimale |
+| 6 | [DecInfer-06-Value-Information](DecInfer-06-Value-Information.ipynb) | 45 min | EVPI, EVSI, valeur de l'information |
+| 7 | [DecInfer-07-Expert-Systems](DecInfer-07-Expert-Systems.ipynb) | 50 min | Systèmes experts, Minimax, regret |
+| 8 | [DecInfer-08-Sequential](DecInfer-08-Sequential.ipynb) | 60 min | MDPs, itération valeur/politique |
+| 9 | [DecInfer-09-Lean-Gittins](DecInfer-09-Lean-Gittins.ipynb) | 45 min | Preuves formelles Lean 4, indice de Gittins, SFABP |
 | 10 | [DecInfer-10-Thompson-Sampling](DecInfer-10-Thompson-Sampling.ipynb) | 60 min | Thompson Sampling bayésien, posterior Beta-Bernoulli par le moteur, regret vs ε-greedy/UCB1 |
 
 **Durée totale** : ~8h
@@ -51,21 +51,21 @@ Le socle des **fondations** (1-3) pose les axiomes de rationalité et la notion 
 
 ## Détail des notebooks
 
-### DecInfer-1 : Fondements de l'utilité (axiomes VNM)
+### DecInfer-01 : Fondements de l'utilité (axiomes VNM)
 
 **Durée** : 50 min | **Prérequis** : corpus bayésien [Infer-4](../../Infer/Infer-4-Bayesian-Networks.ipynb)
 
 Les loteries comme représentation des choix stochastiques ; les **axiomes de Von Neumann-Morgenstern** (complétude, transitivité, continuité, indépendance) ; dérivation de la fonction d'utilité par calibration ; l'agent rationnel maximise E[U]. Applications : décision médicale, assurance, investissement.
 
-### DecInfer-2 : Companion Lean — théorème vNM (sound) + cohérence de de Finetti
+### DecInfer-02 : Companion Lean — théorème vNM (sound) + cohérence de de Finetti
 
-**Durée** : 45 min | **Kernel** : Lean 4 (WSL) | **Prérequis** : DecInfer-1, bases Lean 4
+**Durée** : 45 min | **Kernel** : Lean 4 (WSL) | **Prérequis** : DecInfer-01, bases Lean 4
 
-**Companion natif** de [DecInfer-1](DecInfer-1-Utility-Foundations.ipynb) : preuve formelle **0-sorry** de la direction *sound* du théorème de représentation vNM (représentation ⟹ rationalité) dans le lake [`decision_theory_lean`](../../decision_theory_lean/) (lib `Utility`). Vérification in-kernel via `#check` + `#print axioms`. Les sections 7-8 étendent au socle probabiliste lui-même (lib `Coherence`, EPIC visibilité #11703) : la **cohérence de de Finetti** — prix incohérents ⟹ Dutch Book à quatre tickets (witness constructif), et la caractérisation mono-livret `SingleCoherent q ↔ ProbBounds q` (quatre témoins explicites, une par borne violée).
+**Companion natif** de [DecInfer-01](DecInfer-01-Utility-Foundations.ipynb) : preuve formelle **0-sorry** de la direction *sound* du théorème de représentation vNM (représentation ⟹ rationalité) dans le lake [`decision_theory_lean`](../../decision_theory_lean/) (lib `Utility`). Vérification in-kernel via `#check` + `#print axioms`. Les sections 7-8 étendent au socle probabiliste lui-même (lib `Coherence`, EPIC visibilité #11703) : la **cohérence de de Finetti** — prix incohérents ⟹ Dutch Book à quatre tickets (witness constructif), et la caractérisation mono-livret `SingleCoherent q ↔ ProbBounds q` (quatre témoins explicites, une par borne violée).
 
-### DecInfer-3 : Utilité de l'argent et aversion au risque
+### DecInfer-03 : Utilité de l'argent et aversion au risque
 
-**Durée** : 45 min | **Prérequis** : DecInfer-1
+**Durée** : 45 min | **Prérequis** : DecInfer-01
 
 Paradoxe de Saint-Petersbourg (valeur espérée infinie), fonctions **CARA** et **CRRA**, coefficients Arrow-Pratt (aversion absolue/relative), dominance stochastique (1er et 2nd ordre), équivalent certain et prime de risque. Application : sélection de portefeuille (Livret A vs Fonds vs Actions).
 
@@ -75,41 +75,41 @@ La concavité de la fonction d'utilité — fondement de l'aversion au risque et
 
 *Figure reprise de la racine Probas (MANIFEST c.491 audit G.1, 1/1 ACCURATE). Source originale : [`DecPyMC-2-Utility-Money.ipynb`](../../DecisionTheory/PyMC/DecPyMC-2-Utility-Money.ipynb), cellule 10 « Démonstration numérique : utilité marginale décroissante ». Voir aussi le [README racine Probas § De la distribution à l'utilité](../../README.md#de-la-distribution-à-lutilité--pourquoi-la-courbe-est-concave) pour le cadrage théorique (Pratt 1964, Arrow 1965).*
 
-### DecInfer-4 : Utilité multi-attributs
+### DecInfer-04 : Utilité multi-attributs
 
-**Durée** : 50 min | **Prérequis** : DecInfer-1, DecInfer-3
+**Durée** : 50 min | **Prérequis** : DecInfer-01, DecInfer-03
 
 Décisions multi-critères, fonctions de valeur vs utilité, indépendance préférentielle, théorèmes d'additivité (Debreu-Gorman) et multiplicativité, méthode **SMART** (swing weights). Applications : achat automobile (prix, sécurité, conso, confort), choix de carrière.
 
-### DecInfer-5 : Réseaux de décision
+### DecInfer-05 : Réseaux de décision
 
 **Durée** : 55 min | **Prérequis** : [Infer-4 bayésien](../../Infer/Infer-4-Bayesian-Networks.ipynb), Infer-1, Infer-4
 
 Extension des réseaux bayésiens par les nœuds de **décision** (rectangle) et d'**utilité** (losange) ; arcs informationnels ; calcul de la politique optimale par backward induction ; décisions séquentielles. Applications : diagnostic médical avec décision de traitement, investissement avec étude de marché.
 
-### DecInfer-6 : Valeur de l'information
+### DecInfer-06 : Valeur de l'information
 
-**Durée** : 45 min | **Prérequis** : DecInfer-1 à DecInfer-5
+**Durée** : 45 min | **Prérequis** : DecInfer-01 à DecInfer-05
 
 **EVPI** (valeur de l'information parfaite) et **EVSI** (valeur de l'information d'échantillon) ; quand l'information a-t-elle de la valeur ; efficacité relative d'un test (EVSI/EVPI). Applications : droits pétroliers (test sismique), diagnostic médical itératif.
 
-### DecInfer-7 : Systèmes experts et robustesse
+### DecInfer-07 : Systèmes experts et robustesse
 
-**Durée** : 50 min | **Prérequis** : DecInfer-1 à DecInfer-6
+**Durée** : 50 min | **Prérequis** : DecInfer-01 à DecInfer-06
 
 Systèmes experts (architecture, historique) ; décision sous **incertitude sévère** (knightienne) ; critères **Minimax**, **Minimax Regret**, Maximax, Hurwicz ; robustesse aux erreurs de modélisation. Applications : diagnostic informatique, décisions financières robustes.
 
-### DecInfer-8 : Décisions séquentielles (MDPs)
+### DecInfer-08 : Décisions séquentielles (MDPs)
 
-**Durée** : 60 min | **Prérequis** : DecInfer-1 à DecInfer-7
+**Durée** : 60 min | **Prérequis** : DecInfer-01 à DecInfer-07
 
 **Processus de Décision Markoviens** (MDPs) ; équation de Bellman `V(s) = max_a [R(s,a) + γ·Σ P(s'|s,a)·V(s')]` ; **itération de valeur** et **itération de politique** ; alternatives (LP, Expectimax, RTDP) ; reward shaping ; POMDPs. Pont vers la série [RL](../../../RL/README.md).
 
-### DecInfer-9 : Companion Lean — indice de Gittins
+### DecInfer-09 : Companion Lean — indice de Gittins
 
-**Durée** : 45 min | **Kernel** : Lean 4 (WSL) | **Prérequis** : DecInfer-8, bases Lean 4
+**Durée** : 45 min | **Kernel** : Lean 4 (WSL) | **Prérequis** : DecInfer-08, bases Lean 4
 
-**Companion natif** de [DecInfer-8](DecInfer-8-Sequential.ipynb) : preuves formelles en Lean 4. Formalisation du cadre **SFABP** (Simple Family of Alternative Bandit Processes), optimalité de l'indice de Gittins via l'argument des prevailing charges, limitations (geometric discount, NP-difficulté du calcul exact). Le théorème d'optimalité est énoncé dans le lake [`decision_theory_lean`](../../decision_theory_lean/) ; sa preuve complète exige une formalisation des MDP qui manque encore à Mathlib.
+**Companion natif** de [DecInfer-08](DecInfer-08-Sequential.ipynb) : preuves formelles en Lean 4. Formalisation du cadre **SFABP** (Simple Family of Alternative Bandit Processes), optimalité de l'indice de Gittins via l'argument des prevailing charges, limitations (geometric discount, NP-difficulté du calcul exact). Le théorème d'optimalité est énoncé dans le lake [`decision_theory_lean`](../../decision_theory_lean/) ; sa preuve complète exige une formalisation des MDP qui manque encore à Mathlib.
 
 ### DecInfer-10 : Thompson Sampling bayésien
 
@@ -127,10 +127,10 @@ Applications : A/B testing adaptatif, recommandation en ligne, essais cliniques 
 | [PyMC](../PyMC/README.md) | DecPyMC-1 à DecPyMC-7 | Même arc décision en Python/NUTS (Thompson MCMC, diagnostics ArviZ) |
 | [Lake `decision_theory_lean`](../../decision_theory_lean/) | Companions 2, 9 | Preuves formelles Lean 4 (vNM, Gittins) |
 | [GameTheory](../../../GameTheory/README.md) | Décision sous incertitude | Miroir : adversaire rationnel vs processus stochastique |
-| [RL](../../../RL/README.md) | MDPs (DecInfer-8) | L'agent apprend la politique par interaction |
+| [RL](../../../RL/README.md) | MDPs (DecInfer-08) | L'agent apprend la politique par interaction |
 
 ## Conclusion
 
-La théorie de la décision bayésienne ferme la boucle ouverte par le corpus bayésien : un posterior n'est utile que s'il informe une **action**. De l'**utilité espérée** (DecInfer-1) aux **MDPs** (DecInfer-8), cet arc montre que décider sous incertitude est un calcul rigoureux — et les companions Lean 4 (DecInfer-2, DecInfer-9) ancrent ce calcul dans la **preuve formelle** : l'indice de Gittins n'est pas une heuristique, c'est un théorème.
+La théorie de la décision bayésienne ferme la boucle ouverte par le corpus bayésien : un posterior n'est utile que s'il informe une **action**. De l'**utilité espérée** (DecInfer-01) aux **MDPs** (DecInfer-08), cet arc montre que décider sous incertitude est un calcul rigoureux — et les companions Lean 4 (DecInfer-02, DecInfer-09) ancrent ce calcul dans la **preuve formelle** : l'indice de Gittins n'est pas une heuristique, c'est un théorème.
 
 Bonne exploration de la théorie de la décision bayésienne !
