@@ -785,7 +785,7 @@ project:
     - "MyIA.AI.Notebooks/Search/Applications/Hybrid/App-25-CombinatorialAuctions-WDP-VCG.ipynb"
     - "MyIA.AI.Notebooks/Search/Applications/Hybrid/App-9-EdgeDetection.ipynb"
     - "MyIA.AI.Notebooks/Search/Applications/Hybrid/App-9b-EdgeDetection-CSharp.ipynb"
-    - "MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour.ipynb"
+    - "MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb"
     - "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace-Csharp.ipynb"
     - "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb"
     - "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata.ipynb"
