@@ -391,6 +391,57 @@ def _update_baseline() -> int:
     return 0
 
 
+def _tracked_notebook_paths() -> set[str]:
+    """All tracked ``*.ipynb`` paths, relative to the repo root.
+
+    The orphan test is against *any* tracked notebook (not just the
+    density-judged kinds): a baseline key whose path is not tracked at all is a
+    stale density whatever kind the notebook once had.
+    """
+    import subprocess
+
+    repo_root = _TOOLS_DIR.parents[1]  # scripts/notebook_tools -> repo root
+    listed = subprocess.run(
+        ["git", "-C", str(repo_root), "ls-files", "--", "*.ipynb"],
+        capture_output=True, text=True, encoding="utf-8", errors="replace", check=True,
+    ).stdout.splitlines()
+    return {line for line in listed if line}
+
+
+def _baseline_orphan_keys(baseline: dict[str, float], tracked: set[str]) -> list[str]:
+    """Baseline keys whose path is no longer a tracked notebook.
+
+    #13815 -- a rename or a delete leaves the old path out of ``git ls-files``;
+    its density float becomes a stale measurement that the Phase-2 ratchet would
+    read as if the notebook still existed there. Sorted for a deterministic diff.
+    """
+    return sorted(k for k in baseline if k not in tracked)
+
+
+def _check_orphans() -> int:
+    """Report baseline keys that are no longer tracked (the #13815 organ).
+
+    Loads :data:`BASELINE_FILE`, cross-references against ``git ls-files``, and
+    prints each orphan. Intentionally NOT advisory (unlike the density label):
+    a stale baseline key is a correctness defect, not a soft pedagogical
+    threshold -- so it exits non-zero when orphans exist.
+    """
+    data = json.loads(BASELINE_FILE.read_text(encoding="utf-8"))
+    baseline = data.get("notebooks", {})
+    tracked = _tracked_notebook_paths()
+    orphans = _baseline_orphan_keys(baseline, tracked)
+    if orphans:
+        print(f"WARN: {len(orphans)} cle(s) orpheline(s) dans le baseline:")
+        for key in orphans:
+            print(f"  - {key}")
+        return 1
+    print(
+        f"OK: {len(baseline)} cles du baseline, 0 orpheline "
+        f"(vs {len(tracked)} notebooks suivi(s))."
+    )
+    return 0
+
+
 def _render_text(result: DensityResult) -> str:
     """Human-readable summary (the workflow log; the labels are separate).
 
@@ -466,6 +517,16 @@ def main(argv: list[str] | None = None) -> int:
             "Phase-2 regression ratchet is never retro-fitted."
         ),
     )
+    parser.add_argument(
+        "--check-orphans", action="store_true",
+        help=(
+            "Fail (non-zero) if the baseline carries orphan keys (a notebook "
+            "path that is no longer tracked -- renamed or deleted), signaling a "
+            "density value lost before a renum PR merges (#13815). NOT advisory "
+            "by design: a stale baseline key is a correctness defect, not a soft "
+            "pedagogical threshold."
+        ),
+    )
     # The floor is deliberately NOT a CLI flag: it is locked by calibration
     # against the #10479 table. A mutable threshold would silently change what
     # the label means from one invocation to the next.
@@ -473,6 +534,9 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.update_baseline:
         return _update_baseline()
+
+    if args.check_orphans:
+        return _check_orphans()
 
     targets = list(args.paths) + list(args.targets)
     if not targets and not args.stdin:
