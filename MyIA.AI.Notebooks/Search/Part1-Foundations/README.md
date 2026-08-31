@@ -52,6 +52,7 @@ Cette partie est l'alphabet de toute la série : la formalisation en espace d'é
 | 9 (.NET) | [Search-9-LinearProgramming (C#)](Search-9-LinearProgramming-Csharp.ipynb) | .NET (C#) | **Jumeau .NET** : programmation linéaire avec Google OrTools (`LinearSolver`, solveurs GLOP/CBC) — problème de production, diet problem, analyse de sensibilité et dualité (shadow prices), PLNE (sac à dos binaire), exercices (set cover, optimisation multi-objectif) — port C# fidèle du notebook Python (PuLP) — parité #4956 | ~1h |
 | 9b | [Search-09b-SpuriousMinima](Search-09b-SpuriousMinima.ipynb) | Python 3 | Relaxation SDP de MaxCut (Goemans–Williamson, résolue exactement par cvxpy/CLARABEL) **et sa factorisation de Burer–Monteiro** $Y = XX^T$ : recensement borné des minima fallacieux par rang (40 départs × 3 instances C6/K8/G10, graines fixes, référence brute-force $2^{n-1}$) — à $r=1$ le paysage dégénère en MaxCut discret (40/40 fallacieux), les pièges se raréfient aux rangs intermédiaires, et **aucun piège à/au-dessus du seuil** $r(r+1)/2 > m$ (Burer–Monteiro 2005, Barvinok–Pataki) — le point d'arrivée « certification » du fil paysages (suite directe de Search-9, écho de MGS-15) | ~1h15 |
 | 9c | [Search-09c-CombinatorialDiscrepancy](Search-09c-CombinatorialDiscrepancy.ipynb) | Python 3 | Discrépance combinatoire (Beck–Fiala 1981, frontière 2025 Bansal–Jiang arXiv:2508.03961) : colorier ±1 sans déséquilibrer, borne inf √k (Chernoff), arrondi flottant 2k−1 implémenté, CP-SAT en oracle exact, désambiguïsation vs LDS de Search-13 — fil relaxation/arrondi/optimisation combinatoire (accretion de Search-9, vient de Part3-Advanced) | ~45min |
+| 9d | [Search-09d-Lean-Discrepancy-Komlos](Search-09d-Lean-Discrepancy-Komlos.ipynb) | lean4-wsl | **Compagnon formel de Search-09c** : le lake [`discrepancy_lean`](../discrepancy_lean/README.md) exécuté depuis le kernel Lean 4 — `#check` des conjectures (Komlós ∃C universel, Beck–Fiala 2k−1, régimes Bansal–Jiang 2025), témoins coloriés ±1 énumérés exhaustivement sur des instances jouet (Hadamard ½n en particulier), exercices ancrés sur les énoncés du lake | ~45min |
 | 10 | [Search-10-SymbolicAutomata](Search-10-SymbolicAutomata.html) | Python 3 | Automates finis (DFA/NFA) avec automata-lib, prédicats Z3, automates symboliques | ~2h |
 | 10 (.NET) | [Search-10-SymbolicAutomata (C#)](Search-10-SymbolicAutomata-Csharp.ipynb) | .NET (C#) | **Jumeau .NET** (tranches 1+2) : automates finis classiques (DFA/NFA hand-rolled, opérations ensemblistes par produit cartésien) **+** automates symboliques avec `Microsoft.Z3` (NuGet 4.12.2) — classe `SymbolicAutomaton` (transitions = prédicats Z3, décision via solveur SMT), intervalle [10,100], parité, multiples de 5, opérations symboliques (union/intersection/complément via `MkAnd`/`MkOr`/`MkNot` vérifiées exactes) — port C# fidèle §1-4 — parité #4956 | ~1h30 |
 | 11 | [Search-11-Metaheuristics](Search-11-Metaheuristics.html) | Python 3 | PSO, ABC, SA, BRO avec MEALPy, benchmark comparatif de métaheuristiques | ~1h30 |
@@ -69,7 +70,7 @@ Les trois premiers notebooks forment le socle commun — on y apprend à poser u
 - **Recherche locale et évolutive** : Search-4 (LocalSearch) puis Search-5 (GeneticAlgorithms) puis Search-11 (Metaheuristics)
 - **Recherche dans les jeux** : Search-3 puis Search-6 (AdversarialSearch) puis Search-7 (MCTS)
 - **Couverture exacte** : Search-2 puis Search-8 (DancingLinks)
-- **Indépendants** : Search-9 (LinearProgramming, algèbre linéaire requise), Search-09b (SpuriousMinima, sa suite semidéfinie : Search-9 recommandé au préalable), Search-09c (CombinatorialDiscrepancy, relaxation/arrondi — écho du fil optimisation), Search-17b (Empirical-Algorithm-Selection, distillation benchmark cross-paradigmes : aucun prérequis, écho App-14) et Search-10 (SymbolicAutomata, liens avec SymbolicAI/SMT/Z3-Linq2Z3)
+- **Indépendants** : Search-9 (LinearProgramming, algèbre linéaire requise), Search-09b (SpuriousMinima, sa suite semidéfinie : Search-9 recommandé au préalable), Search-09c (CombinatorialDiscrepancy, relaxation/arrondi — écho du fil optimisation) suivi de son compagnon formel Search-09d (Lean, kernel `lean4-wsl` : Search-09c recommandé au préalable), Search-17b (Empirical-Algorithm-Selection, distillation benchmark cross-paradigmes : aucun prérequis, écho App-14) et Search-10 (SymbolicAutomata, liens avec SymbolicAI/SMT/Z3-Linq2Z3)
 
 ```mermaid
 flowchart LR
@@ -97,6 +98,7 @@ Les fondamentaux de cette partie (formalisation, backtracking, heuristiques) son
 | `z3-solver` | Search-10 (Symbolic Automata), Search-17b (SMT) |
 | OpenSpiel | Search-7 (MCTS) : requiert WSL ou Linux |
 | `cvxpy` | Search-09b (relaxation SDP, solveur CLARABEL embarqué) |
+| Kernel `lean4-wsl` | Search-09d : kernel Jupyter Lean 4 + miroir local du lake [`discrepancy_lean`](../discrepancy_lean/README.md) (Mathlib 4 via les packages du dépôt) — cf. [`docs/reference/wsl-kernels-detail.md`](../../../docs/reference/wsl-kernels-detail.md) |
 | `QuikGraph 2.5.0` (NuGet) | Search-16 (parité C#) : nécessite .NET Interactive, installable via `dotnet tool install --global Microsoft.dotnet-interactive` |
 
 Pour le setup complet, voir le [README de la série Search](../README.md).
@@ -126,6 +128,7 @@ Couverture par notebook des sources fondatrices mobilisées dans cette partie :
 | Search-5 (GeneticAlgorithms) | Holland, J. H. (1975) — *Adaptation in Natural and Artificial Systems*. University of Michigan Press. Origine des algorithmes génétiques. |
 | Search-7 (MCTS) | Browne, C. B., Powley, E., et al. (2012) — « A Survey of Monte Carlo Tree Search Methods », *IEEE Trans. on Computational Intelligence and AI in Games* 4(1). |
 | Search-8 (DancingLinks) | Knuth, D. E. (2000) — « Dancing Links », dans *Millennial Perspectives in Computer Science* (Springer). |
+| Search-09d (conjecture de Komlós) | Matoušek, J. (1999) — *Geometric Discrepancy: An Illustrated Guide*, Springer. Contexte classique de la conjecture de Komlós (disc ≤ C pour colonnes unitaires) ; les énoncés `KomlosConjecture` / `BansalJiangLargeDegree` / `KomlosBansalJiangWeak` formalisés dans [`discrepancy_lean/Komlos.lean`](../discrepancy_lean/Discrepancy/Komlos.lean) suivent les régimes de Bansal & Jiang (2025, arXiv:2508.03961 — cf. Search-09c). |
 | Search-11 (Metaheuristics) | Kennedy, J., & Eberhart, R. (1995) — « Particle Swarm Optimization », *Proc. IEEE Int. Conf. on Neural Networks*. Origine du PSO. |
 
 ## FAQ
