@@ -2087,10 +2087,28 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
             "body": body,
         })
     # Ce qui suit le dernier commit est le plus a risque (rien ne peut
-    # pretendre l'avoir traite) ; a defaut, la queue -- exactement les
+    # pretendre l'avoir traite) ; s'y ajoute la queue -- exactement les
     # `comments[-3:]` que la regle demande de relire avant `gh pr merge`.
+    #
+    # #13779 -- le repli etait EXCLUSIF (`after_lc or queue`) : des qu'UN
+    # commentaire suivait le dernier commit, toute la queue anterieure
+    # sortait de l'affichage, et l'en-tete imprimait le compte du
+    # SOUS-ENSEMBLE en le presentant comme le total. Mesure sur #13712 :
+    # 5 non evalues, 3 affiches -- et parmi les 2 masques, le
+    # `[ADJOINT PREFLIGHT]` de 19:30:49Z dont le point non traite motivait
+    # le HOLD du coordinateur sur cette PR meme. Masque parce qu'un commit
+    # etait passe apres lui, alors que « un commit pousse apres la remarque
+    # ne la leve PAS a lui seul » (B.0) : sur la seule PR ou l'echappatoire
+    # a servi, elle a cache le commentaire qui justifiait le blocage.
+    #
+    # Les deux mecanismes COMPOSENT au lieu de s'exclure : tout le
+    # post-dernier-commit, PLUS la queue des anterieurs -- que l'existence
+    # du premier n'annule plus. Strict sur-ensemble de l'ancien affichage :
+    # cette borne ne peut que montrer davantage, jamais moins, et ne touche
+    # aucun verdict (`unevaluated` ne participe pas a `blocked`).
     after_lc = [u for u in unevaluated if u["after_last_commit"]]
-    to_read = after_lc or unevaluated[-3:]
+    before_lc = [u for u in unevaluated if not u["after_last_commit"]]
+    to_read = sorted(after_lc + before_lc[-3:], key=lambda u: u["at"] or "")
 
     return {
         "pr": pr_data.get("number"),
@@ -2125,10 +2143,16 @@ def _print_unevaluated(result: dict) -> None:
     rows = result.get("unevaluated") or []
     if not rows:
         return
+    # #13779 : le compte imprime est celui du TOTAL non evalue, pas celui des
+    # lignes affichees -- un organe dont tout le propos est de ne pas certifier
+    # son propre silence ne peut pas sous-declarer ce qu'il n'a pas lu.
+    total = result.get("unevaluated_total") or len(rows)
+    omitted = total - len(rows)
     after = sum(1 for r in rows if r["after_last_commit"])
     tail = f", dont {after} posterieur(s) au dernier commit" if after else ""
+    cut = f" — {len(rows)} affiche(s), {omitted} plus ancien(s) omis" if omitted > 0 else ""
     print()
-    print(f"  --- A RELIRE : {len(rows)} commentaire(s) NON EVALUE(S) par cet organe{tail} ---")
+    print(f"  --- A RELIRE : {total} commentaire(s) NON EVALUE(S) par cet organe{tail}{cut} ---")
     print("  Le verdict ci-dessus ne porte QUE sur les phrases de levee. Ces")
     print("  commentaires n'ont pas ete classes : les lire avant `gh pr merge`.")
     for r in rows:
