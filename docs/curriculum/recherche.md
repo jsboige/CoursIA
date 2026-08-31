@@ -248,7 +248,7 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 | 14 | Infer-3-Factor-Graphs : Graphes de Facteurs et… | BETA | Oui |
 | 15 | Infer-4-Bayesian-Networks : Reseaux Bayesiens… | BETA | Oui |
 | 16 | Infer-5-Causal-Inference : Inférence Causale et… | BETA | Oui |
-| 17 | Infer-6-Debugging : Troubleshooting et Bonnes Pratiques | BETA | Oui |
+| 17 | Infer-2b-Debugging-Bonnes-Pratiques : Troubleshooting et Bonnes Pratiques | BETA | Oui |
 | 18 | Infer-7-Skills-IRT : Evaluation de Competences et… | BETA | Oui |
 | 19 | Infer-8-TrueSkill : Système de Classement et… | BETA | Oui |
 | 20 | Infer-9-Classification : Classification Bayesienne | BETA | Oui |
