@@ -1366,6 +1366,93 @@ def test_paths_multiple_prs_mixed(capsys):
     assert "BLOCKED" in captured.err
 
 
+# --- --open-prs-on mode (#13595) --------------------------------------------
+#
+# The `--paths` guard filters by lane: an OPEN PR of the caller's OWN lane
+# reads as "your own PR is fine" and is dropped from the verdict. That is the
+# blind spot of case A (one machine, SAME lane, two worktrees, 74 s apart):
+# there is only one lane, so the guard finds no *other*-lane collision and
+# reports CLEAR while two branches of the same lane race on the same files.
+# `--open-prs-on` drops the lane filter entirely and lists EVERY intersecting
+# OPEN PR -- including the caller's own -- as a NON-BLOCKING signal.
+
+def test_open_prs_on_same_lane_both_surface(capsys):
+    """THE positive control (#13595 point 2): two OPEN PRs of the SAME lane
+    on the same file must BOTH surface. A detector that renders nothing on
+    this case is indistinguishable from a disconnected detector -- and this
+    is exactly the shape `--paths` misses (self_overlap == 'your own PR is
+    fine', exit 0, no verdict)."""
+    body = (
+        "Grain: MED/tooling -- lane myia-po-2024:CoursIA -- prev: ...\n"
+    )
+    prs = [
+        _pr(13586, ["scripts/check_lane_claim.py"], body=body),
+        _pr(13558, ["scripts/check_lane_claim.py"], body=body),
+    ]
+    rc = clc._run_open_prs_on(["scripts/check_lane_claim.py"], prs=prs)
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert "#13586" in out
+    assert "#13558" in out
+    assert "lane=myia-po-2024:CoursIA" in out
+    # The same-lane caveat is stated so the lane cannot mistake the list for
+    # a clearance.
+    assert "NO lane filter" in out
+
+
+def test_open_prs_on_cross_lane_both_surface(capsys):
+    # Two lanes both surface -- the mode is lane-agnostic, so the other-lane
+    # collision is listed too (it would BLOCK under `--paths` but here it is
+    # a list only).
+    self_body = "Grain: MED/tooling -- lane myia-po-2024:CoursIA -- prev: ...\n"
+    other_body = "Grain: MED/lean -- lane myia-po-2026:CoursIA-2 -- prev: ...\n"
+    prs = [
+        _pr(9001, ["scripts/check_lane_claim.py"], body=self_body),
+        _pr(9002, ["scripts/check_lane_claim.py"], body=other_body),
+    ]
+    rc = clc._run_open_prs_on(["scripts/check_lane_claim.py"], prs=prs)
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert "#9001" in out
+    assert "#9002" in out
+    assert "myia-po-2024:CoursIA" in out
+    assert "myia-po-2026:CoursIA-2" in out
+
+
+def test_open_prs_on_no_intersection_free(capsys):
+    # No OPEN PR intersects the paths -> "Path is free", exit 0.
+    prs = [_pr(9003, ["docs/other.md", "scripts/unrelated.py"])]
+    rc = clc._run_open_prs_on(["scripts/check_lane_claim.py"], prs=prs)
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert "Path is free" in out
+
+
+def test_open_prs_on_empty_paths_usage_error(capsys):
+    rc = clc._run_open_prs_on([], prs=[])
+    assert rc == 1
+    assert "--open-prs-on requires" in capsys.readouterr().err
+
+
+def test_open_prs_on_untagged_lane_surfaces(capsys):
+    # PR with no readable Grain lane tag still surfaces, labeled UNREADABLE --
+    # same treatment as `--paths` (the tag is the only attribution signal).
+    prs = [_pr(9004, ["scripts/check_lane_claim.py"], body="no grain tag here")]
+    rc = clc._run_open_prs_on(["scripts/check_lane_claim.py"], prs=prs)
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert "#9004" in out
+    assert "UNREADABLE" in out
+
+
+def test_open_prs_on_non_blocking_even_with_hits(capsys):
+    # Hits present, yet exit 0 -- the mode refuses nothing (#13595 point 3).
+    body = "Grain: MED/tooling -- lane myia-po-2024:CoursIA -- prev: ...\n"
+    prs = [_pr(9005, ["scripts/check_lane_claim.py"], body=body)]
+    rc = clc._run_open_prs_on(["scripts/check_lane_claim.py"], prs=prs)
+    assert rc == 0
+
+
 # --- [OVERRIDE] (#10223) -- coordinator adjudication -------------------------
 #
 # `[OVERRIDE] lane <X>` grants the claim to lane X and closes every other
