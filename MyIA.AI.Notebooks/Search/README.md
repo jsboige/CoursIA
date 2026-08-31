@@ -120,7 +120,6 @@ Chaque notebook introduit un concept ou algorithme spécifique. Le tableau ci-de
 | 12 | PatternDatabases | Heuristiques précalculées (Culberson & Schaeffer 1996, PDB additives Korf & Felner 2002) : 15-puzzle optimal via IDA* |
 | 13 | LimitedDiscrepancySearch | LDS (Harvey & Ginsberg 1995) : explorer d'abord les écarts au choix glouton, greedy vs LDS(k) vs exhaustif |
 | 14 | WeightedA* | A* pondéré (Pohl 1970) : sous-optimalité bornée par W pour accélérer sur terrain pondéré |
-| 17 | CombinatorialDiscrepancy | Discrépance combinatoire (Beck–Fiala 1981, frontière 2025 Bansal–Jiang) : colorier ±1 sans déséquilibrer, arrondi flottant 2k−1, oracle CP-SAT |
 
 ### Partie 4 : Métaheuristiques composables
 
