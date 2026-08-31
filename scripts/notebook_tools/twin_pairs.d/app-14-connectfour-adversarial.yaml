@@ -33,6 +33,18 @@
       content_python_sha: f100151580be3258af1eb05e86786741742ef6b709972d50c115a18347137e05
       content_csharp_sha: 05c4ceeb8195f16696d454bfeeebb757fcd886c9e2edab6240dcb96f6cff148b
       reason: "Mouvement unilateral du cote Python (PR #11482 : prose quantitative alignee sur les sorties seedees, puis nit Hermes cellule 25 qualifie ~lineaire, 2,4-2,5 ms/iteration mesures) — csharp_sha et content_csharp_sha inchanges (2ec088ff / 05c4ceeb) : la parite na pas ete reparee, elle a ete RE-ATTESTEE. Controle anti-#11351 mesure par ai-01 base-de-fusion 947ce428 -> tete de PR : image/png 1 bloc -> 1 bloc (57 538 -> 57 033 octets), stream/html/text inchanges, 18/18 execution_count non nuls, 0 erreur. Attestation posee en DERNIER apres figeage du notebook, aucun strip outille en attente (papermill deja en basename, #8957)."
+    - date: "2026-08-31"
+      by: myia-po-2025:CoursIA
+      python_sha: bd7911a3f47be061cefa09b2b78c3cbdc58a722a
+      csharp_sha: 955b4fb9fb8dfe8d803c27a770f68c2c899e7bfe
+      content_python_sha: 196dd2ba8f9cb28290dab4363d9a8a02313af4d0f7b7457b2338b8646cd8247a
+      content_csharp_sha: 9619e41e46ee1e534adacf2ce9044eb3ac99cc06c2c1d179b6ff24f474f4b53c
+    - date: "2026-08-31"
+      by: myia-po-2025:CoursIA
+      python_sha: b7f87beefcadb9f3e2c53bc8a06c98f53315710f
+      csharp_sha: fec2aff63d9bb3832f6a6e5712628eac3c00fb27
+      content_python_sha: c55b7652e11436cf63c35dbf311b5859864f73b2ba1c8c2dafa157a03ae5fe97
+      content_csharp_sha: c5653475b98ba109427ced840e7527df179a1be318d00c5082457b1d4d5518eb
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Minimax/MCTS Connect-4 from-scratch pedagogique (Puissance 4 adversarial, IA jeux combinatoires) porte par les deux jumeaux sans dependance moteur SOTA (Python stdlib seulement, C# BCL pure 0 NuGet). Les DEUX cotes implementent les MEMES algorithmes adversariaux (minimax/alpha-beta + MCTS Monte Carlo) en from-scratch -- la portabilite cross-lang est dans le pseudo-code specifie par AIMA. Ni Python ni C# n'invoque de moteur SOTA partage, aucune lib bridgeable entre les deux ecosystemes sans quitter le gabarit pedagogique. Verdict SOTA-OK (solver-free by design des deux cotes, asymetrie de couverture de l'enveloppe pedagogique preserve, aucune asymetrie de couverture moteur a corriger)."
   known_differences:

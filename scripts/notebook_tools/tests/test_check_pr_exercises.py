@@ -116,7 +116,7 @@ class TestExemptionsConsumed:
 
     def test_lean_exempt_never_flagged(self, tmp_path):
         """A Lean notebook carries its own (lenient) threshold, not 3."""
-        nb = _write_nb(tmp_path / "DecInfer-9-Lean-Gittins.ipynb", [_md("# Lean cours")])
+        nb = _write_nb(tmp_path / "DecInfer-09-Lean-Gittins.ipynb", [_md("# Lean cours")])
         result = cpe.check_notebooks([nb])
         assert len(result.sub_threshold) == 0
         assert result.ok[0].kind == "lean"

@@ -18,13 +18,16 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from check_pr_perimeter import (  # noqa: E402
     BaselineMove,
     Candidate,
+    CarriedNote,
     COUNT_CLAIM,
     check_assertion,
     extract_baseline_moves,
     extract_perimeter_assertions,
+    extract_perimeter_assertions_with_block,
     extract_perimeter_assertions_with_context,
     format_report,
     is_downgradable_mismatch,
+    partition_propres,
     select_candidates,
     _additive_line_sum,
     _check_unterminated_fence,
@@ -34,7 +37,10 @@ from check_pr_perimeter import (  # noqa: E402
     _has_strong_scope,
     _is_incidental_assertion,
     _normalize_rest_files,
+    _paragraph_block,
     _paragraph_prefix,
+    _word_form_count,
+    _word_form_is_indef_non_pr_subject,
 )
 
 # The exact shape of the founding incident (#11227).
@@ -2518,3 +2524,469 @@ def test_12718_scope_label_still_blocks():
     assert cand.blocking is True
 
 
+
+
+# ---------------------------------------------------------------------------
+# #13535 -- accord de langue cardinal/nom. « une file » (queue CI) n'est pas
+# « 1 fichier » : le garde bloquant sur-accusait toute prose francais parlant
+# de la file d'attente CI (#13499, mesure : FAIL pretendu 1 fichier, liste
+# effective 2).
+
+FILES_2_13499 = [
+    {"path": "scripts/pick_idle_grain.py", "additions": 40, "deletions": 12},
+    {"path": "scripts/tests/test_pick_idle_grain.py", "additions": 55, "deletions": 8},
+]
+
+
+def test_13535_language_agreement_positive_controls():
+    """Controles positifs : l'accord de langue preserve les vraies declarations."""
+    assert _word_form_count("Périmètre : un fichier modifié.") == 1
+    assert _word_form_count("Périmètre : trois fichiers touchés.") == 3
+    assert _word_form_count("Perimeter: one file changed.") == 1
+    assert _word_form_count("Perimeter: three files changed.") == 3
+
+
+def test_13535_queue_file_is_not_a_count():
+    """Controles negatifs : la « file » de CI n'est plus lue comme un compte."""
+    assert _word_form_count(
+        "il rend le même verdict sur une file qui avance et sur une file figée"
+    ) is None
+    assert _word_form_count("la file est figée depuis le merge") is None
+    assert _word_form_count("deux files d'attente bloquent les runners") is None
+
+
+def test_13535_digit_forms_still_asserted():
+    """La forme chiffrée reste langue-neutre, toujours extraite et confrontée :
+    compte juste -> PASS, compte faux -> FAIL avec le compte effectif."""
+    ok_fr = "Périmètre : 2 fichiers uniquement."
+    ok_en = "Perimeter: 2 files only."
+    assert extract_perimeter_assertions(ok_fr) == [ok_fr]
+    assert check_assertion(FILES_2_13499, ok_fr) == []
+    assert extract_perimeter_assertions(ok_en) == [ok_en]
+    assert check_assertion(FILES_2_13499, ok_en) == []
+    problems = check_assertion(FILES_2_13499, "Périmètre : 3 fichiers.")
+    assert problems and any("3" in p for p in problems)
+    problems = check_assertion(FILES_2_13499, "Perimeter: 3 files touched.")
+    assert problems and any("3" in p for p in problems)
+
+
+def test_13535_founder_body_13499_extracts_nothing():
+    """Fixture du corps reel de #13499 (avant reformulation) : la phrase
+    incriminee verbatim + l'enumeration des 2 fichiers reels ne produisent
+    AUCUNE assertion extraite -- le scan du corps rend VERDICT: OK.
+
+    Le replay passe par le MEME chemin que le scan CLI (select_candidates sur
+    une fausse review thread, puis confrontation de chaque candidat) : zero
+    candidat porteur d'un compte -> zero blocage -> verdict OK."""
+    body = (
+        "Le symptôme mesuré : sous cap 8, le sweep ne descend jamais dans la\n"
+        "file des vieilles PRs -- il rend le même verdict sur une file qui\n"
+        "avance et sur une file figée, donc il ne peut pas distinguer.\n"
+        "\n"
+        "**Fichiers:** scripts/pick_idle_grain.py, scripts/tests/test_pick_idle_grain.py\n"
+    )
+    assert _word_form_count(body) is None
+    found = extract_perimeter_assertions(body)
+    assert not any("file" in f.lower() for f in found), (
+        f"la prose « file d'attente » ne doit pas devenir une assertion : {found}"
+    )
+    items = [{
+        "kind": "PR body",
+        "author": "myia-po-2026",
+        "body": body,
+        "source": "body",
+        "ts": "",
+    }]
+    candidates, orphan = select_candidates(items, n_files=len(FILES_2_13499))
+    assert orphan is None
+    for cand in candidates:
+        assert check_assertion(FILES_2_13499, cand.text) == [], (
+            f"le corps de #13499 doit rester OK ; candidat {cand.text!r}"
+        )
+
+
+def test_13535_word_form_extraction_still_fires():
+    """Controle FN : une vraie declaration mot-forme reste extraite et
+    confrontee (l'accord de langue n'affaiblit pas le garde). Compte juste ->
+    PASS ; compte faux -> FAIL avec le compte effectif."""
+    line = "Périmètre : deux fichiers uniquement, aucune autre modification."
+    assert extract_perimeter_assertions(line) == [line]
+    assert check_assertion(FILES_2_13499, line) == []
+    mismatch = "Périmètre : trois fichiers uniquement, aucune autre modification."
+    problems = check_assertion(FILES_2_13499, mismatch)
+    assert problems and any("2" in p for p in problems)
+
+# ---------------------------------------------------------------------------
+# #13610 -- article indefini ("un/une/des fichier(s)") + verbe d'action dont
+# le referent NOMMÉ n'est pas dans la PR. Founder case PR #13539 l.43 :
+# « generaliser demanderait d'editer pick_idle_grain.py, un fichier deja
+# porteur de deux PRs ouvertes de la meme lane (#13496, #13499) ». The
+# "un fichier" describes an OTHER file (a routing target, a dependency), not
+# the PR's perimeter. FN safety: anonymous referent (no named file on the
+# line) keeps the rouge -- consistent with the script's founder pattern of
+# default-fail-loud on ambiguous shapes.
+# ---------------------------------------------------------------------------
+
+FILES_13610 = [
+    {"path": ".github/workflows/epic-charter-advisory.yml"},
+    {"path": "scripts/check_epic_charter.py"},
+    {"path": "scripts/tests/test_epic_charter.py"},
+]
+
+
+def test_13610_founder_case_named_out_of_scope_passes():
+    """Founder case (verbatim shape, with the named file explicit): the
+    'un fichier' referent is `pick_idle_grain.py`, a file the PR does NOT
+    touch. The guard must NOT rouge the word-form count."""
+    line = (
+        "generaliser demanderait d'editer pick_idle_grain.py, un fichier "
+        "deja porteur de deux PRs ouvertes de la meme lane (#13496, #13499)"
+    )
+    problems = check_assertion(FILES_13610, line)
+    assert problems == [], (
+        "founder shape must not rouge the word-form count; got: " + repr(problems)
+    )
+
+
+def test_13610_founder_case_via_une_target():
+    """Symmetric founder case via the feminine article 'une cible', with a
+    named file. Mirrors the live #13539 reformulation: 'une cible' was
+    already outside the count regex (no 'fichier(s)' in the phrase), and
+    the `non verifiable` guard fires because no count + no exclusivity is
+    recognized -- but the body still does not falsely rouge on a NUMBER
+    mismatch. The shape's exemption from the count branch is structural;
+    this test pins that."""
+    line = (
+        "generaliser demanderait d'editer scripts/pick_idle_grain.py, une "
+        "cible deja porteuse de deux PRs ouvertes de la meme lane (#13496)"
+    )
+    problems = check_assertion(FILES_13610, line)
+    # The 'non verifiable' guard fires (no digit count + no exclusivity
+    # marker) -- this is NOT the founder case (#13610); the founder case
+    # is the COUNT_MISMATCH branch with an indefinite article. Documented
+    # here to prevent a future refactor from collapsing the two shapes.
+    assert any("formulation non verifiable" in p for p in problems), (
+        "expected the 'non verifiable' guard to fire for a 'une cible' "
+        "shape (no digit count, no exclusivity); got: " + repr(problems)
+    )
+    assert not any("l'assertion pretend" in p for p in problems), (
+        "an indefinite article with no 'fichier(s)' must not trigger a "
+        "count-mismatch rouge; got: " + repr(problems)
+    )
+
+
+def test_13610_true_assertion_one_file_named_in_scope_still_rouges():
+    """A genuine 'un fichier' perimeter claim whose named referent IS in
+    the PR stays blocking -- the filter must not silence true assertions."""
+    line = "Cette PR modifie un fichier scripts/check_epic_charter.py"
+    problems = check_assertion(FILES_13610, line)
+    assert len(problems) == 1, (
+        "true assertion must still rouge; got: " + repr(problems)
+    )
+    assert "l'assertion pretend 1 fichier" in problems[0]
+
+
+def test_13610_fn_safety_anonymous_referent_keeps_rouge():
+    """FN control 1: no named file on the line, but the edit-verb is
+    present. The shape is AMBIGUOUS -- 'editer un fichier' could mean the
+    PR or another file. Default-fail-loud: keep the rouge."""
+    line = (
+        "generaliser demanderait d'editer un fichier deja porteur de "
+        "deux PRs ouvertes de la meme lane"
+    )
+    problems = check_assertion(FILES_13610, line)
+    assert len(problems) == 1, (
+        "anonymous referent must stay rouge; got: " + repr(problems)
+    )
+
+
+def test_13610_fn_safety_no_edit_verb_keeps_rouge():
+    """FN control 2: no edit-verb in the run-up. The 'un fichier' is
+    descriptive prose, but without an action verb the exemption branch
+    cannot fire -- the rouge stays."""
+    line = "il y a un fichier quelque part qui pose probleme."
+    problems = check_assertion(FILES_13610, line)
+    assert len(problems) == 1, (
+        "no-verb shape must stay rouge; got: " + repr(problems)
+    )
+
+
+def test_13610_predicate_unit_unanimous():
+    """Direct unit test of _word_form_is_indef_non_pr_subject: 5 sentences,
+    unanimous verdicts. Decoupled from check_assertion so a future pipeline
+    change cannot mask a predicate regression."""
+    files = FILES_13610
+    # True cases
+    assert _word_form_is_indef_non_pr_subject(
+        "editer pick_idle_grain.py, un fichier deja porteur", files
+    ) is True
+    assert _word_form_is_indef_non_pr_subject(
+        "modifier scripts/foo.py, un fichier de tests", files
+    ) is True
+    # False cases (genuine or ambiguous)
+    assert _word_form_is_indef_non_pr_subject(
+        "Cette PR modifie un fichier scripts/check_epic_charter.py", files
+    ) is False
+    assert _word_form_is_indef_non_pr_subject(
+        "editer un fichier quelque part", files
+    ) is False  # anonymous
+    assert _word_form_is_indef_non_pr_subject(
+        "il y a un fichier ici", files
+    ) is False  # no edit-verb
+    assert _word_form_is_indef_non_pr_subject(
+        "Cette PR ajoute un fichier scripts/check_epic_charter.py dans "
+        "scripts/check_epic_charter.py", files
+    ) is False  # named file IS in scope
+
+
+# ---------------------------------------------------------------------------
+# #13637 -- carried-from-main files. GitHub's /pulls/N/files diffs base-tip ->
+# head, so a branch that merged main gets main's own changes attributed to it
+# (founder #13601: 04-7 showed +2708/-2708 although the PR did not touch it).
+# The fix subtracts files the head already agrees with main on from the
+# effective perimeter and names them separately. The git predicate itself is
+# verified on a live negative control (#13606 fresh base -> 0 carried; ~40 open
+# PRs scanned -> 0 carried) and on a synthetic founder shape (a main-changed
+# file merged into the branch is classified carried); these unit tests pin the
+# PURE partition + render, which is what the .py avoids network for.
+# ---------------------------------------------------------------------------
+
+# The founder shape, encoded with a synthetic carried path (04-7 from #13601).
+# The carried set carries FULL paths (the API list's `filename`), so the
+# basename does not match -- partition_propres compares the whole path.
+# The two propres are deliberately NOT scripts/check_pr_perimeter.py, so the
+# #12201 self-hosting exemption (skip equality on a PR that edits the guard)
+# never fires -- here we exercise the ordinary subtraction path.
+_CARRIED_13637 = "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-7-TTS-Voice-Benchmark.ipynb"
+_FILES_13637 = [
+    {"path": _CARRIED_13637, "additions": 2708, "deletions": 2708},
+    {"path": "MyIA.AI.Notebooks/GameTheory/game_theory_lean/CooperativeGames/Shapley.lean",
+     "additions": 60, "deletions": 20},
+    {"path": "docs/lean/i18n-inventory.md", "additions": 45, "deletions": 5},
+]
+
+
+def test_13637_partition_splits_carried_from_own():
+    """#13637: partition_propres separates the carried file from the PR's own
+    work. 04-7 (head agrees with main) is carried; the two fichiers are the
+    PR's contribution."""
+    propres, charries = partition_propres(_FILES_13637, {_CARRIED_13637})
+    assert [f["path"] for f in propres] == [
+        "MyIA.AI.Notebooks/GameTheory/game_theory_lean/CooperativeGames/Shapley.lean",
+        "docs/lean/i18n-inventory.md",
+    ]
+    assert [f["path"] for f in charries] == [_CARRIED_13637]
+
+
+def test_13637_partition_no_carried_is_all_propre():
+    """#13637 negative control: an empty carried set leaves the list whole."""
+    propres, charries = partition_propres(_FILES_13637, set())
+    assert len(propres) == 3 and charries == []
+
+
+def test_13637_partition_is_order_preserving():
+    """#13637: a rounding of the perimeter reorders nothing -- diff-reading
+    reviewers keep their anchors (order, not sorted)."""
+    files = [{"path": "z.py"}, {"path": "a.py"}, {"path": "m.py"}]
+    propres, charries = partition_propres(files, {"a.py"})
+    assert [f["path"] for f in propres] == ["z.py", "m.py"]
+    assert [f["path"] for f in charries] == ["a.py"]
+
+
+def test_13637_report_renders_carried_note_and_stale_signal():
+    """#13637 step 1+3: the cardinal change is EXPLAINED (count + carried paths
+    + stale-base signal), never silently masked."""
+    report = __import__("check_pr_perimeter").Report(
+        files=partition_propres(_FILES_13637, {_CARRIED_13637})[0],
+        moves=[],
+        carried=CarriedNote(
+            propres=partition_propres(_FILES_13637, {_CARRIED_13637})[0],
+            charries=partition_propres(_FILES_13637, {_CARRIED_13637})[1],
+            base_age_hours=48,
+        ),
+    )
+    lines = format_report(report, None).splitlines()
+    assert any("Périmètre effectif : 2 fichier(s)" in l for l in lines)
+    assert any("dont 1 charrié(s)" in l for l in lines)
+    assert any("04-7-TTS-Voice-Benchmark.ipynb" in l for l in lines)
+    assert any("STALE-BASE" in l for l in lines)
+    assert any("2 j" in l for l in lines), "48 h must render as ~2 j (days bound)"
+
+
+def test_13637_report_omits_age_when_unresolvable():
+    """#13637: an unresolvable base age omits the 'vieille de X' qualifier rather
+    than inventing one -- the count + note stay informative."""
+    report = __import__("check_pr_perimeter").Report(
+        files=partition_propres(_FILES_13637, {_CARRIED_13637})[0],
+        moves=[],
+        carried=CarriedNote(
+            propres=partition_propres(_FILES_13637, {_CARRIED_13637})[0],
+            charries=partition_propres(_FILES_13637, {_CARRIED_13637})[1],
+            base_age_hours=None,
+        ),
+    )
+    lines = format_report(report, None).splitlines()
+    assert any("dont 1 charrié(s) de main, non compté(s)" in l for l in lines)
+    assert not any("vieille de" in l for l in lines), "age must be omitted when unresolvable"
+    assert any("STALE-BASE" in l for l in lines)
+    # The cardinal line carries the count only; carried paths live on the
+    # dedicated enumeration line (rendered without any age qualifier here).
+    # A path on the cardinal line would mean count-note and enumeration
+    # merged -- the displaced defect #13637 step 1+3 exists to close.
+    cardinal = [l for l in lines if l.lstrip().startswith("— dont")]
+    assert len(cardinal) == 1
+    assert "04-7-TTS-Voice-Benchmark.ipynb" not in cardinal[0]
+    assert any(
+        "04-7-TTS-Voice-Benchmark.ipynb" in l
+        and l.lstrip().startswith("— charrié(s) de main")
+        for l in lines
+    ), "carried paths must be enumerated on the dedicated line"
+
+
+def test_13637_report_backward_compat_without_carried():
+    """#13637 non-regression: a report with no carried note renders exactly as
+    before (existing callers pass (report, None))."""
+    lines = format_report(
+        __import__("check_pr_perimeter").Report(
+            files=[{"path": "README.md", "additions": 1, "deletions": 1}],
+            moves=[],
+        ),
+        None,
+    ).splitlines()
+    assert any("Périmètre effectif : 1 fichier(s)" in l for l in lines)
+    assert not any("charrié" in l for l in lines)
+    assert not any("STALE-BASE" in l for l in lines)
+
+
+def test_13637_partition_exposes_correct_count_for_assertion():
+    """#13637 end-to-end at the pure level: after subtracting the carried file,
+    the effective perimeter is 2 -- so `check_assertion` confronts a body claim
+    against 2, not the API's 3."""
+    propres, charries = partition_propres(_FILES_13637, {_CARRIED_13637})
+    assert len(propres) == 2 and len(charries) == 1
+    # The perimeter-review guard confronts against len(report.files) == 2.
+    problems = check_assertion(
+        propres, "Périmètre : 3 fichiers."  # body over-counts the API list
+    )
+    assert any("3" in p and "2" in p for p in problems), (
+        "a body that counts the carried file must be over-count: " + repr(problems)
+    )
+    # A body that states the true (propre) count passes.
+    assert check_assertion(propres, "Périmètre : 2 fichiers.") == []
+
+
+# ---------------------------------------------------------------------------
+# #13791 — somme additive au bloc paragraphe + vocabulaire grep + word-form
+# objet de mesure. Fondateurs mesurés : #13736 (deux puces "1 fichier" + une
+# ligne diagnostique word-form) et #13782 ("(grep : 1 fichier)").
+# ---------------------------------------------------------------------------
+
+FOUNDER_13736_BODY = (
+    "## Périmètre\n"
+    "\n"
+    "- 1 fichier modifié (`scripts/ci/check_concurrency_conj.py`, +1/-1)\n"
+    "- 1 fichier de test modifié (`scripts/tests/test_check_concurrency_conj.py`, +37/-0)\n"
+    "- Aucune collision chemin : les PRs parentes ne touchent plus ce fichier.\n"
+)
+FOUNDER_13736_FILES = [
+    {"path": "scripts/ci/check_concurrency_conj.py"},
+    {"path": "scripts/tests/test_check_concurrency_conj.py"},
+]
+# Ligne diagnostique fondatrice (#13736 l.26) : le word-form « un fichier »
+# y désigne les objets d'une comparaison, pas le périmètre.
+FOUNDER_13736_DIAG = (
+    "Tout workflow malformé fait planter l'instrument, et le script échoue "
+    "sur un faux positif (l'instrument ne peut pas distinguer un fichier "
+    "corrompu d'un fichier offensif)."
+)
+# Ligne fondatrice #13782 : « (grep : 1 fichier) » est une mesure du corpus.
+FOUNDER_13782_LINE = (
+    "2.9 est le **seul notebook torch de 02-ML-Cours** (grep : 1 fichier) : "
+    "c'est assumé par le README."
+)
+
+
+def test_13791_additive_block_sum_spans_bullets():
+    """L'énumération additive sur deux puces (1 + 1 = 2) passe quand la
+    confrontation reçoit le bloc paragraphe -- chaque ligne candidate voit
+    la somme du bloc, pas seulement sa ligne."""
+    triple = extract_perimeter_assertions_with_block(FOUNDER_13736_BODY)
+    digit_candidates = [(l, b) for l, _ctx, b in triple if COUNT_CLAIM.search(l)]
+    assert len(digit_candidates) == 2, digit_candidates
+    for line, block in digit_candidates:
+        assert "1 fichier" in line
+        # chaque puce du bloc porte exactement un compte survivant
+        assert sum(_additive_line_sum(ln) for ln in block.splitlines()) == 2
+        assert check_assertion(FOUNDER_13736_FILES, line, block=block) == [], line
+
+
+def test_13791_additive_line_scope_still_fails_without_block():
+    """Sans bloc (mode --assert, candidates de thread), la somme line-scope
+    mismatche 1 vs 2 -- comportement inchangé, c'est le résidu #13791."""
+    assert check_assertion(
+        FOUNDER_13736_FILES, "- 1 fichier modifié (`scripts/ci/check_concurrency_conj.py`, +1/-1)"
+    ) != []
+
+
+def test_13791_block_sum_never_validates_wrong_total():
+    """Contrôle FN local : une somme de bloc ≠ len(files) reste rouge -- le
+    bloc dessert l'énumération exacte, pas n'importe quelle somme."""
+    body = "- 1 fichier a\n- 1 fichier b\n- 1 fichier c\n"
+    files = [{"path": "a"}, {"path": "b"}]
+    triple = extract_perimeter_assertions_with_block(body)
+    for line, _ctx, block in triple:
+        assert check_assertion(files, line, block=block) != [], line
+
+
+def test_13791_grep_antecedent_exempts_corpus_count():
+    """« (grep : 1 fichier) » est une mesure du corpus (#13782) : le compte
+    est incidental, la candidate ne bloque pas (l'architecture #11712 : la
+    détection reste, seule la conséquence bouge -- check_assertion rend le
+    mismatch, `blocking` le rétrograde en signal)."""
+    assert _is_incidental_assertion(FOUNDER_13782_LINE, "") is True
+    cand = Candidate(FOUNDER_13782_LINE, "PR body", "author", "body")
+    assert cand.blocking is False
+
+
+def test_13791_grep_absence_keeps_the_red():
+    """Contrôle FN : sans antécédent de mesure, « 1 fichier modifié » devant
+    une liste de 2 reste rouge -- grep n'a rien desserré d'autre."""
+    files = [{"path": "a.py"}, {"path": "b.py"}]
+    assert check_assertion(files, "1 fichier modifié (`a.py`)") != []
+
+
+def test_13791_word_form_discrimination_verb_exempts():
+    """« distinguer un fichier corrompu d'un fichier offensif » (#13736) :
+    le word-form désigne les objets d'une comparaison, pas le périmètre."""
+    files = [{"path": "scripts/ci/check_concurrency_conj.py"},
+             {"path": "scripts/tests/test_check_concurrency_conj.py"}]
+    assert check_assertion(files, FOUNDER_13736_DIAG) == []
+
+
+def test_13791_word_form_plain_indefinite_still_blocks():
+    """Contrôle FN : « un fichier modifié » sans verbe de discrimination
+    reste confronté (1 vs 2 -> rouge)."""
+    files = [{"path": "a.py"}, {"path": "b.py"}]
+    assert check_assertion(files, "un fichier modifié (`a.py`)") != []
+
+
+def test_13791_paragraph_block_boundaries():
+    """Le bloc paragraphe s'arrête aux lignes vides et aux fences, dans les
+    deux directions."""
+    text = (
+        "avant le vide\n"
+        "\n"
+        "- 1 fichier a\n"
+        "- 1 fichier b\n"
+        "\n"
+        "après le vide\n"
+    )
+    lines = text.splitlines()
+    idx = lines.index("- 1 fichier a")
+    block = _paragraph_block(text, idx)
+    assert "- 1 fichier a" in block and "- 1 fichier b" in block
+    assert "avant le vide" not in block and "après le vide" not in block
+    # fence delimiter en borne inférieure
+    fenced = "- 1 fichier a\n```python\nx = 1\n```\n"
+    idx_f = fenced.splitlines().index("- 1 fichier a")
+    assert "x = 1" not in _paragraph_block(fenced, idx_f)

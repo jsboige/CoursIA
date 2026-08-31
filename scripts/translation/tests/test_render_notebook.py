@@ -11,8 +11,10 @@ Couvre les 6 critères d'acceptance du ticket #10039 :
    devrait jamais arriver), la cellule code reste byte-identique à la source.
 3. Falsification 2 : CSV vide (aucune traduction) → *_en.ipynb identique à
    la source pour les champs traduisibles, structure préservée.
-4. Orphelines : cellule dans le CSV mais pas dans le notebook → capturée dans
-   la sidecar ``.stale``, ne fait PAS crasher le rendu.
+4. Orphelines : cellule dans le CSV mais pas dans le notebook → refus
+   inconditionnel (``ValueError``, aucun fichier écrit) depuis #13544 §3 ;
+   le contrat historique WARN + sidecar ``.stale`` (opt-in ``--fail-on-stale``
+   de #13546) est supersedé.
 5. ``--dry-run`` : aucun fichier écrit ; stats et diagnostics calculés.
 6. Déterminisme : deux exécutions successives produisent un output byte-
    identique (json.dumps + indent=1 stable).
@@ -436,6 +438,50 @@ def test_render_csv_without_lang_col_raises(tmp_path):
                      encoding="utf-8")
     with pytest.raises(ValueError, match="text_en"):
         r.render(nb, csv_p, "en", tmp_path / "out.ipynb")
+
+
+# --------------------------------------------------------------------------
+# #13546 (supersede par #13544 §3) : --fail-on-stale est un no-op deprecie --
+# le refus orphelin est inconditionnel. Les tests ci-dessous verifient que le
+# flag reste accepte (compat translation-sync.yml) et que le contrat est
+# strictement plus fort qu'en #13546 : refus AVANT ecriture, sans sidecar.
+# --------------------------------------------------------------------------
+
+def test_render_fail_on_stale_raises_and_writes_nothing(tmp_path):
+    """Orphelins -> ValueError AVANT toute ecriture, meme via le flag deprecie."""
+    nb = _write_nb(tmp_path, "nb.ipynb", [
+        {"id": "m1", "type": "markdown", "source": ["x"]},
+    ])
+    csv_p = _write_csv(tmp_path, "tr.csv", [
+        {"notebook": str(nb), "cell_id": "m1", "cell_type": "markdown",
+         "src_lang": "fr", "src_hash": "1", "text_fr": "x", "text_en": "X"},
+        # ligne orpheline : cell_id absent du notebook (cellule supprimee)
+        {"notebook": str(nb), "cell_id": "gone1", "cell_type": "markdown",
+         "src_lang": "fr", "src_hash": "2", "text_fr": "y", "text_en": "Y"},
+    ])
+    out = tmp_path / "out_en.ipynb"
+    # Le flag est accepte (kwargs API + CLI) mais le refus vient de la gate
+    # inconditionnelle : le message est celui de la gate, pas du flag.
+    with pytest.raises(ValueError, match=r"orphelin\(s\) CSV : 1 cle\(s\) sans cellule"):
+        r.render(nb, csv_p, "en", out, fail_on_stale=True)
+    assert not out.exists()
+    assert not out.with_suffix(out.suffix + ".stale").exists()
+
+
+def test_render_fail_on_stale_passes_when_no_orphan(tmp_path):
+    """Flag deprecie sans orphelin -> rendu normal, .stale absent."""
+    nb = _write_nb(tmp_path, "nb.ipynb", [
+        {"id": "m1", "type": "markdown", "source": ["x"]},
+    ])
+    csv_p = _write_csv(tmp_path, "tr.csv", [
+        {"notebook": str(nb), "cell_id": "m1", "cell_type": "markdown",
+         "src_lang": "fr", "src_hash": "1", "text_fr": "x", "text_en": "X"},
+    ])
+    out = tmp_path / "out_en.ipynb"
+    res = r.render(nb, csv_p, "en", out, fail_on_stale=True)
+    assert out.exists()
+    assert res.stats.n_orphan_keys == 0
+    assert not out.with_suffix(out.suffix + ".stale").exists()
 
 
 def test_render_dry_run_requires_out_path(tmp_path):

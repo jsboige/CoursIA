@@ -232,8 +232,8 @@ def test_fixture_f_todo_stub_marker_counts(tmp_path):
 
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
-GT20 = REPO_ROOT / "MyIA.AI.Notebooks" / "GameTheory" / "GameTheory-20-Commitment-Stackelberg.ipynb"
-GT21 = REPO_ROOT / "MyIA.AI.Notebooks" / "GameTheory" / "GameTheory-21-Deux-Especes-de-Fleches.ipynb"
+GT20 = REPO_ROOT / "MyIA.AI.Notebooks" / "GameTheory" / "GameTheory-09b-Commitment-Stackelberg.ipynb"
+GT21 = REPO_ROOT / "MyIA.AI.Notebooks" / "GameTheory" / "GameTheory-03h-Deux-Especes-de-Fleches.ipynb"
 
 
 @pytest.mark.skipif(not GT20.exists(), reason="GT-20 not on this checkout")

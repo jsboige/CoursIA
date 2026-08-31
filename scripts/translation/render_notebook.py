@@ -137,6 +137,10 @@ def render(
     verbose: bool = False,
     require_translated: bool = False,
     min_coverage: float = 1.0,
+    # deprecated no-op : le refus orphelin est inconditionnel (#13544 §3) ;
+    # le parametre survit pour la compatibilite CLI (translation-sync.yml
+    # passe --fail-on-stale) et les appelants kwargs existants.
+    fail_on_stale: bool = False,
 ) -> RenderResult:
     """Render the notebook at ``nb_path`` to ``out_path`` in language ``lang``.
 
@@ -287,7 +291,8 @@ def render(
 
     # Gate #13544 §3 — orphelins inconditionnels : un cell_id du CSV absent du
     # notebook n'est jamais benin (desalignement de source). Aucun flag ne le
-    # desactive : la correction est le CSV, pas une option.
+    # desactive : la correction est le CSV, pas une option. (Supersede le
+    # guardrail opt-in #13546 : --fail-on-stale est un no-op deprecie.)
     if stats.n_orphan_keys > 0:
         sample = ", ".join(orphan_keys[:5])
         raise ValueError(
@@ -372,6 +377,12 @@ def main(argv: Optional[List[str]] = None) -> int:
              "flag (#13544 §2). When 0 markdown cells are present the gate "
              "is bypassed (no defect to enforce).",
     )
+    p.add_argument(
+        "--fail-on-stale", action="store_true",
+        help="Deprecated no-op (kept for translation-sync.yml compatibility) : "
+             "orphan CSV rows now refuse the render unconditionally "
+             "(#13544 §3, supersedes the #13546 opt-in).",
+    )
     args = p.parse_args(argv)
 
     dry_run = args.dry_run or args.out is None
@@ -388,6 +399,7 @@ def main(argv: Optional[List[str]] = None) -> int:
             verbose=args.verbose,
             require_translated=args.require_translated,
             min_coverage=args.min_coverage,
+            fail_on_stale=args.fail_on_stale,
         )
     except (FileNotFoundError, ValueError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)

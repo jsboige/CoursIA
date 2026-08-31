@@ -46,7 +46,14 @@
       csharp_sha: 7e97fae158d43d849d56cc0fbd91671452e15184
       content_python_sha: 63a80ea314cee32b4822dcd7d4fc06fc88863e1acfb14f28f65a4c8a266a11ac
       content_csharp_sha: a48883881358fcfcec35103227c761928c7069a50048ebbce1aaf70fbacabec8
+    - date: "2026-08-31"
+      by: myia-ai-01:CoursIA
+      python_sha: 7db1d84743aa00fe8052f207617c13f2c8347af3
+      csharp_sha: 7e97fae158d43d849d56cc0fbd91671452e15184
+      content_python_sha: 9d41a7ced9813cd4145ace313fbcfca32287e8d4714f4b62401bfed3a3be0fe9
+      content_csharp_sha: a48883881358fcfcec35103227c761928c7069a50048ebbce1aaf70fbacabec8
   known_differences:
+    - '2026-08-31 : ATTESTATION UNILATERALE (PR #13659, lane myia-ai-01:CoursIA) -- reparation d''echappements JSON manges dans le markdown du cote Python. CAUSE : dans le .ipynb, la sequence dollar-\bot-dollar ecrite avec UN SEUL antislash est lue par le parseur JSON comme l''echappement \b (backspace, U+0008) ; la source chargee porte un caractere de controle et le notebook rend un dollar-ot-dollar prive de sa commande LaTeX. FIX : doubler l''antislash (\\bot). Le DRIFT est UNILATERAL parce que le DEFAUT l''est : la contrepartie CSP-3-Advanced-Csharp.ipynb (C#), 14 cellules markdown, a ete scannee sous controle positif (le litteral defectueux passe a json.loads doit rendre U+0008 -- assertion verifiee avant le scan) et ne porte AUCUN caractere de controle U+0008/U+000B/U+000C. Il n''y a donc rien a reparer de ce cote : l''attestation ne consacre aucune asymetrie de contenu. PORTEE DU DIFF cote repare (comparaison des JSON parses origin/main -> HEAD) : markdown uniquement, 0 cellule code touchee, 0 sortie modifiee, 0 execution_count deplace, 0 cellule ajoutee ou retiree.'
     - "Socle pedagogique commun : global constraints (all_different, sum, element) + backtracking avec propagation globale + symetrie breaking (lexicographique)."
     - "Cote C# : Choco-solver (memes recettes infrastructure) - global constraints implementes en Python pur (classe AllDifferent via matching de Hall), cote C# delegue a Choco.IntVar+Constraint via IKVM."
     - "Concepts avances : latin squares (N-Reines etendu), magic series, Golomb rulers. Cote Python = from-scratch, cote C# = Choco + benchmarks comparatifs."
