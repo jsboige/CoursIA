@@ -278,7 +278,16 @@ def test_failed_delete_is_reported_not_swallowed(monkeypatch):
     assert len(warnings) == 1 and "404" in warnings[0], warnings
 
 
+def test_label_constants_within_github_api_limits():
+    # 422 muet du run 2026-08-29 : LABEL_DESC faisait 189 chars, la limite
+    # REST est 100 -- gh label create echouait en silence et le payload
+    # (le label) ne s'appliquait jamais.
+    assert len(rc.LABEL_DESC) <= 100
+    assert len(rc.LABEL_DEFAULT) <= 63
+
+
 if __name__ == "__main__":
+    test_label_constants_within_github_api_limits()
     test_large_no_review_flags()
     test_large_no_review_flags_883()
     test_medium_with_2_reviews_clears()

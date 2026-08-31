@@ -395,7 +395,7 @@ def _count_is_range_enum(line: str, m: re.Match) -> bool:
     return bool(_RANGE_ENUM_TAIL.match(tail if nl < 0 else tail[:nl]))
 
 
-def check_assertion(files: list[dict], assertion: str) -> list[str]:
+def check_assertion(files: list[dict], assertion: str, block: str = "") -> list[str]:
     """Confront a perimeter assertion with the effective file list.
 
     Fence blocks (transcribed commands, L898 proof) are masked out of the
@@ -411,6 +411,15 @@ def check_assertion(files: list[dict], assertion: str) -> list[str]:
     body of a PR that modifies the guard itself is diagnostic corpus
     (bootstrap): its counts describe other PRs and the forms being fixed,
     so the equality confrontation is skipped entirely there.
+
+    #13791: `block` is the assertion's enclosing paragraph BLOCK (prefix +
+    line + contiguous lines below, see _paragraph_block). The additive
+    enumeration (#12103) confronts the sum over the BLOCK when the
+    single-line sum mismatches -- an enumeration spanning two bullets
+    ("- 1 fichier modifie (...)" / "- 1 fichier de test modifie (...)",
+    founder #13736) declares 1 + 1 = 2, and the verdict must not depend on
+    where the author pressed Enter. Safe by the same #12103 construction: a
+    FAIL becomes a PASS only when the block sum is exactly len(files).
     """
     problems: list[str] = []
     guard_self = any(f["path"] in GUARD_SELF_PATHS for f in files)
@@ -448,7 +457,20 @@ def check_assertion(files: list[dict], assertion: str) -> list[str]:
             # that survive the per-count filters instead. Safe by
             # construction: a FAIL becomes a PASS only when the sum is
             # exactly len(files) -- never a new failure.
+            # #13791: the sum spans the enclosing paragraph BLOCK when one
+            # is given -- an additive enumeration lists downward as often as
+            # sideways ("_additive_line_sum est line-scope, la somme additive
+            # meurt au retour a la ligne", founder #13736). Per-count filters
+            # stay per-LINE (each line is classified on its own surface).
             additive = _additive_line_sum(scan_target)
+            if additive != len(files) and block:
+                # the block already contains the candidate line -- replace,
+                # never add (no double count).
+                additive = sum(
+                    _additive_line_sum(ln)
+                    for ln in _fence_mask(block).splitlines()
+                    if ln.strip()
+                )
             if additive != len(files):
                 problems.append(
                     f"l'assertion pretend {claimed} fichier(s), la liste effective en compte {len(files)} : "
@@ -466,7 +488,12 @@ def check_assertion(files: list[dict], assertion: str) -> list[str]:
         # file (routing target, dependency, candidate not chosen) -- not the
         # PR's perimeter. Skip the red; the digit branch never produces this
         # shape so the guard sits here only.
+        # #13791: an indefinite word-form opened by a discrimination verb
+        # ("distinguer un fichier corrompu d'un fichier offensif") names the
+        # objects of a comparison, not the perimeter (founder #13736 l.26).
         if _word_form_is_indef_non_pr_subject(scan_target, files):
+            pass
+        elif _word_form_is_measurement_object(scan_target):
             pass
         else:
             problems.append(
@@ -672,6 +699,15 @@ HIT_ANTECEDENT = re.compile(r"\b\d+\s*hits?\b", re.IGNORECASE)
 # _count_is_incidental (no scope word, no diffstat neighborhood). The
 # founder case is the asphalt.
 #
+# #13791: grep / git grep / rg added to the closed list -- grep is THE most
+# common measurement verb in this repo's PR bodies ("2.9 est le seul
+# notebook torch de 02-ML-Cours (grep : 1 fichier)", founder #13782), and
+# without it the guard read a corpus count as a perimeter declaration.
+# FN-control measured on the six verdict PRs of #13791: #11956/#12065/
+# #13557/#13685 carry no grep-antecedent line that flips (their blocking
+# counts sit on diffstat/scope-word lines, which stay blocking before this
+# exemption is even consulted).
+#
 # The pattern matches the antecedent ALONE (no count baked in); the count
 # exemption is per-match and uses line[:m.end()] to allow the antecedent to
 # sit anywhere in the run-up to the count (the per-match exemption already
@@ -682,6 +718,8 @@ MEASUREMENT_ANTECEDENT = re.compile(
     r"count_code_sorry(?:\.py)?|"
     r"scan(?:\s+(?:sur|of|on))?|"
     r"mesures?(?:\s+(?:sur|of|on))?|"
+    r"(?:git\s+)?grep(?:\s+(?:sur|of|on|:|--?rn?))?|"
+    r"rg(?:\s+(?:sur|of|on|:))?|"
     r"registry|registre(?:\s+(?:de|of))?|"
     r"check_(?:unaddressed_nits|pr_perimeter|perimeter))\b",
     re.IGNORECASE,
@@ -871,6 +909,38 @@ def _word_form_is_indef_non_pr_subject(text: str, files: list[dict]) -> bool:
         n not in paths_in_files and n not in paths_in_files_basenames
         for n in named_flat
     )
+
+
+# #13791 -- indefinite word-form count opened by a DISCRIMINATION verb. The
+# founder line (#13736 l.26): "le script echoue sur un faux positif
+# (l'instrument ne peut pas distinguer un fichier corrompu d'un fichier
+# offensif)" -- the word-form trigger read "un fichier" as a 1-file perimeter
+# claim against a 2-file list, while the phrase names the OBJECTS OF A
+# COMPARISON the body is making about the instrument. Same family as
+# #11985 forme 4b (bad surface, not bad count) and #13610 (indefinite
+# article + governing verb). Closed verb list; FN-safety mirrors
+# _word_form_is_indef_non_pr_subject: same 80-char window before the article,
+# and a genuine word-form perimeter claim ("un fichier modifie : X.py")
+# never follows a discrimination verb -- the residual risk ("on distingue un
+# fichier modifie") is the deliberate closed-list trade, measured against
+# the #13791 control PRs (none of #11956/#12065/#13557/#13685 carries a
+# discrimination verb before a word-form count).
+_DISCRIMINATION_VERB = re.compile(
+    r"\b(?:distinguer|diff[ée]rencier|discriminer|contraster|opposer|"
+    r"s[ée]parer|comparer)\b",
+    re.IGNORECASE,
+)
+
+
+def _word_form_is_measurement_object(text: str) -> bool:
+    """#13791: True when a word-form count's indefinite article ("un fichier")
+    sits within 80 chars AFTER a discrimination verb -- the phrase names the
+    objects of a comparison (diagnostic prose about what an instrument
+    distinguishes), not the PR's perimeter."""
+    m = _INDEF_ARTICLE.search(text.lower())
+    if m is None:
+        return False
+    return bool(_DISCRIMINATION_VERB.search(text[max(0, m.start() - 80):m.start()]))
 
 
 def _additive_line_sum(line: str) -> int:
@@ -1188,6 +1258,32 @@ def _paragraph_prefix(text: str, idx: int) -> str:
     return "\n".join(reversed(out))
 
 
+def _paragraph_block(text: str, idx: int) -> str:
+    """#13791: the markdown paragraph CONTAINING line `idx` -- the prefix of
+    `_paragraph_prefix` PLUS the line PLUS the contiguous non-empty lines
+    below it. Same boundaries (blank line, fence delimiter): a block is the
+    maximal run of prose lines an author would read as one unit, which is the
+    unit an additive enumeration spans ("- 1 fichier modifie (...)" /
+    "- 1 fichier de test modifie (...)" on two bullets, founder #13736). The
+    #13335 prefix alone could not see the lines BELOW the candidate -- and an
+    additive enumeration lists downward."""
+    lines = text.splitlines()
+    if not 0 <= idx < len(lines):
+        return ""
+    low, hi = idx, idx
+    while low - 1 >= 0:
+        s = lines[low - 1].strip()
+        if not s or s.startswith("`" * 3) or s.startswith("~" * 3):
+            break
+        low -= 1
+    while hi + 1 < len(lines):
+        s = lines[hi + 1].strip()
+        if not s or s.startswith("`" * 3) or s.startswith("~" * 3):
+            break
+        hi += 1
+    return "\n".join(l.strip() for l in lines[low:hi + 1])
+
+
 def _extract_line_candidates(text: str) -> list[tuple[int, str]]:
     """Index-carrying core of extract_perimeter_assertions: returns
     (line_index, stripped_line) pairs so callers can re-attach body context
@@ -1246,6 +1342,18 @@ def extract_perimeter_assertions_with_context(text: str) -> list[tuple[str, str]
     extract_perimeter_assertions -- only the context differs."""
     return [
         (line, _paragraph_prefix(text, idx))
+        for idx, line in _extract_line_candidates(text)
+    ]
+
+
+def extract_perimeter_assertions_with_block(text: str) -> list[tuple[str, str, str]]:
+    """#13791: candidates paired with (paragraph prefix, enclosing paragraph
+    BLOCK). The block extends the #13335 prefix to the lines BELOW the
+    candidate -- the unit an additive enumeration ("- 1 fichier modifie" /
+    "- 1 fichier de test modifie" on two bullets, founder #13736) spans.
+    Same candidate set; only the carried context differs."""
+    return [
+        (line, _paragraph_prefix(text, idx), _paragraph_block(text, idx))
         for idx, line in _extract_line_candidates(text)
     ]
 
@@ -1680,6 +1788,11 @@ class Candidate:
     # select_candidates from the full body text. Feeds only the
     # MEASUREMENT_ANTECEDENT exemption -- wrap-invariance of the verdict.
     context: str = ""
+    # #13791: enclosing paragraph BLOCK (see _paragraph_block) -- prefix +
+    # line + the contiguous lines below. Feeds only the additive-enumeration
+    # confrontation in check_assertion: an enumeration spanning two bullets
+    # sums across the block, not the single line.
+    block: str = ""
 
     @property
     def blocking(self) -> bool:
@@ -1748,8 +1861,8 @@ def select_candidates(
             if opener is not None:
                 orphan_opener = opener
         body_candidates = [
-            Candidate(text, item["kind"], item["author"], "body", context=ctx)
-            for text, ctx in extract_perimeter_assertions_with_context(body)
+            Candidate(text, item["kind"], item["author"], "body", context=ctx, block=blk)
+            for text, ctx, blk in extract_perimeter_assertions_with_block(body)
         ]
         if n_files is not None and any(
             not _is_incidental_assertion(c.text, c.context)
@@ -1836,7 +1949,7 @@ def main() -> int:
         if body_orphan is not None:
             orphan_opener = body_orphan
         for cand in candidates:
-            for p in check_assertion(report.files, cand.text):
+            for p in check_assertion(report.files, cand.text, block=cand.block):
                 line = f"[{cand.kind} / {cand.author}] {p}"
                 # Every catch stays visible either way -- the detector is not
                 # disarmed, only its consequence is placed where it can be
