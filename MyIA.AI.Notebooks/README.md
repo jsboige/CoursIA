@@ -10,9 +10,9 @@ Le catalogue rassemble **plusieurs centaines de notebooks pédagogiques** répar
 
 <!-- CATALOG-STATUS
 series: ALL
-total: 936
-breakdown: SymbolicAI=239, GenAI=182, Search=118, QuantConnect=108, IIT=58, Probas=58, GameTheory=57, ML=49, Sudoku=37, RL=21, CaseStudies=6, FallacyDetection=2, cross-series=1
-maturity: BETA=845, ALPHA=47, DRAFT=40, TEMPLATE=4
+total: 1064
+breakdown: SymbolicAI=259, GenAI=202, Search=138, QuantConnect=109, GameTheory=89, ML=68, IIT=65, Probas=65, Sudoku=37, RL=23, CaseStudies=6, FallacyDetection=2, cross-series=1
+maturity: BETA=961, ALPHA=56, DRAFT=43, TEMPLATE=4
 -->
 
 <sub>*Marqueur auto-régénéré quotidiennement par `.github/workflows/catalog-cron.yml` (file [`COURSE_CATALOG.generated.md`](../COURSE_CATALOG.generated.md) — source de vérité sur les volumes et la maturité). Toute PR qui modifierait ce bloc est signalée par `catalog-drift.yml` (read-only, catalog-pr-hygiene R1).*</sub>
@@ -296,7 +296,7 @@ Le Niveau 3 promet de « prouver ce qu'on a calculé » ; le dépôt tient cette
 | **SymbolicAI** (Lean) | `knot_lean` (tricolorabilité Fox GF(3) + Piccirillo), `conway_lean` (Free Will Theorem 0 sorry), `grothendieck_lean` | Nœud trinôme / sliceness, théorème du libre arbitre (Kochen-Specker), visite catégorielle | SymbolicAI/Lean-16a (Conway) + 17a/b (Nœuds) + 15b (Grothendieck) |
 | **SymbolicAI** (SC) | `erc20_lean` | Pas de réentrance ERC-20 (cf. `#4047`) | SmartContracts/Erc20 |
 | **Search** | `search_lean` | Consistance + heuristique admissible = optimalité (cf. `#4048`) | Search-13 (A*), Part3-Advanced |
-| **Probas** | `decision_theory_lean/VNM` | Axiomes VNM ⇔ utilité espérée (cf. `#4049`) | DecisionTheory/DecInfer-1..2 (VNM) + DecInfer-9 (Gittins) |
+| **Probas** | `decision_theory_lean/VNM` | Axiomes VNM ⇔ utilité espérée (cf. `#4049`) | DecisionTheory/DecInfer-01..02 (VNM) + DecInfer-09 (Gittins) |
 | **QuantConnect** | `kelly_lean` | Kelly `g(f) ≤ g(f*)` + unicité (cf. `#4052`) | QuantConnect QC-Py-10 Risk Management |
 | **GameTheory** | `game_theory_lean` (SocialChoice + CooperativeGames, absorption `#4365`) | Impossibilité d'Arrow + Bondareva-Shapley (0 sorry) | GameTheory/16b-* Choix social |
 

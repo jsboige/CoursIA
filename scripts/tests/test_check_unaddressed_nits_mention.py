@@ -312,3 +312,204 @@ def test_11984_forme_11628_non_regie_par_le_nouveau_motif():
     assert m is None, body
     # Le strip global neutralise toujours (via #11636).
     assert "CHANGES_REQUESTED" not in mod._strip_mentioned_verdicts(body)
+
+
+# ---------------------------------------------------------------------------
+# #12944 — extension de la position D : reference pointable HORS parentheses.
+# Instance fondatrice : #12941, review Hermes close-the-loop 5020777166 —
+# « sur ma review REQUEST_CHANGES de #12900 (`ffe18961`) » : le numero de la
+# PR source suit le verdict SANS parenthese. Le verdict mentionne restait
+# emis, et `_formal_concern_precedes_lift` annulait de surcroit la levee
+# passive qui suivait (« est **traité et fermé** », nouveaux LIFT_MARKERS).
+# Meme discriminant que #11984 : le ref pointable designe l'evenement passe
+# rapporte ; sans ref, le verdict reste emis.
+# ---------------------------------------------------------------------------
+
+FOUNDER_12941_BODY = (
+    "**[Hermes]** — close-the-loop sur ma review REQUEST_CHANGES de #12900 "
+    "(`ffe18961`). Mon concern (registre de 18 entrées dont 16 notebooks "
+    "inexistants + test-théâtre) est **traité et fermé** :\n\n"
+    "1. **Registre régénéré depuis les diffs réels** : les 8 entrées "
+    "proviennent de l'extraction mécanique, pas de mémoire.\n\n"
+    "Verdict : le fix répond à la cause racine plutôt qu'à la dérive.\n"
+    "*(contrainte token : COMMENT only — auteur `jsboige`)*\n"
+)
+
+
+def test_12944_fondateur_close_the_loop_nest_plus_un_nit():
+    """Corps (raccourci, structure exacte) de la review 5020777166 de #12941 :
+    le verdict mentionne (« ma review REQUEST_CHANGES de #12900 ») est
+    neutralise, la levee passive (« est **traité et fermé** ») est reconnue —
+    classify rend None au lieu de BOT-CONCERN. AVANT le fix, ce close-the-loop
+    etait l'unique item bloquant du gate sur #12941."""
+    assert mod.classify("jsboige", FOUNDER_12941_BODY) is None
+
+
+def test_12944_ref_hors_parentheses_neutralise_le_verdict():
+    """Unite sur le motif : « review VERDICT de #N » (ref inline, sans
+    parenthese) neutralise le verdict via _strip_mentioned_verdicts."""
+    body = "close-the-loop sur ma review REQUEST_CHANGES de #12900 (`ffe18961`)."
+    assert "REQUEST_CHANGES" not in mod._strip_mentioned_verdicts(body)
+
+
+def test_12944_ref_inline_variante_sans_preposition():
+    """« the review REQUEST_CHANGES #12900 » — la preposition « de » est
+    optionnelle, le # pointable suffit (forme anglaise)."""
+    body = "the review REQUEST_CHANGES #12900 was mine, and it is now addressed."
+    assert "REQUEST_CHANGES" not in mod._strip_mentioned_verdicts(body)
+
+
+def test_12944_ref_inline_sans_numero_reste_vivant():
+    """Controle negatif du discriminant : nominal + verdict SANS ref pointable
+    reste une emission — « Ma review REQUEST_CHANGES tient toujours. »
+    (miroir exact du contre-exemple #11984 « Cette review CHANGES_REQUESTED
+    reste bloquante »)."""
+    body = "Ma review REQUEST_CHANGES tient toujours."
+    assert mod.classify("hermes-bot", body) == "BOT-CONCERN"
+
+
+def test_12944_verdict_emis_titre_hermes_sans_ref_inline_reste_vivant():
+    """Non-regression #12311 : l'emission Hermes en titre (« Review —
+    REQUEST_CHANGES (commentaire, self-review cap) ») ne porte NI ref entre
+    parentheses NI #N inline apres le verdict — l'extension ne l'avale pas."""
+    body = ("**[Hermes] Review — REQUEST_CHANGES (commentaire, self-review cap)**\n\n"
+            "Issue-first check : la methode diverge sur le point central.")
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+# --------------------------------------------------------------------------
+# #13559 — la reserve sur APPROBATION. Extraits VERBATIM des deux corps reels
+# mesures le 30/08 (balayage 160 PR : 2 occurrences, 0 vraie reserve).
+# --------------------------------------------------------------------------
+
+# #13496, review APPROVED du 2026-08-29T21:49:43Z. Le marqueur survivant est
+# « CHANGES_REQUESTED », present UNIQUEMENT parce que la review nomme celle
+# qu'elle leve.
+FIXTURE_13496_APPROVE = (
+    "**[Hermes]** — APPROVE (follow-up sur `33ef4d6a` + merge `75dd62ea`, "
+    "depuis mon CHANGES_REQUESTED sur `ae88aefc`). Le one-liner demande est "
+    "pose exactement, et je tiens la promesse de ma review : avec le garde, "
+    "je repasse en APPROVE.\n\n"
+    "Security scan : 0 match sur le delta. Ball merge : Emerjesse."
+)
+
+# #13027, review APPROVED du 2026-08-29T20:59:35Z. Meme classe, autre forme :
+# la conversion explicite d'un verdict vers un autre.
+FIXTURE_13027_APPROVE = (
+    "**[Hermes]** — Conversion de la reserve #13027 : CHANGES_REQUESTED "
+    "(`21e0d810`) -> APPROVE sur le head `34426e6a`. Le chemin relatif est "
+    "desormais couvert par le checker."
+)
+
+
+def _pr_with_review(body, state="APPROVED", login="jsboige"):
+    return {
+        "author": {"login": "myia-ai-01"},
+        "commits": [{"committedDate": "2026-08-29T10:00:00Z"}],
+        "comments": [],
+        "reviews": [{"author": {"login": login}, "state": state,
+                     "submittedAt": "2026-08-29T21:00:00Z", "body": body}],
+    }
+
+
+def _blocking(body, state="APPROVED"):
+    res = mod.analyse(_pr_with_review(body, state), [],
+                      datetime(2026, 8, 30, 12, tzinfo=timezone.utc))
+    return res.get("blocking", res) if isinstance(res, dict) else res
+
+
+def test_13559_approve_nommant_sa_propre_reserve_ne_bloque_plus():
+    """#13496 : « depuis mon CHANGES_REQUESTED sur `ae88aefc` » est une
+    narration retrospective. L'etat natif APPROVED decide."""
+    assert _blocking(FIXTURE_13496_APPROVE) == []
+
+
+def test_13559_approve_convertissant_un_verdict_ne_bloque_plus():
+    """#13027 : « CHANGES_REQUESTED (`21e0d810`) -> APPROVE » — une conversion
+    NOMME le verdict qu'elle remplace."""
+    assert _blocking(FIXTURE_13027_APPROVE) == []
+
+
+def test_13559_approve_avec_reserve_explicite_bloque_toujours():
+    """Controle negatif — la borne du correctif. « Je maintiens » est un
+    langage de reserve : l'etat natif NE decide PAS."""
+    body = ("**[Hermes]** APPROVE partiel. Je maintiens ma CHANGES_REQUESTED "
+            "sur le module B tant que le test n'est pas ajoute.")
+    assert len(_blocking(body)) == 1
+
+
+def test_13559_approve_sous_reserve_bloque_toujours():
+    """Controle negatif — « sous reserve » conserve la reserve vivante."""
+    body = ("**[Hermes]** APPROVE sous reserve de la correction du chemin "
+            "relatif signalee en COMMENT_WITH_CONCERNS.")
+    assert len(_blocking(body)) == 1
+
+
+def test_13559_approve_a_corriger_avant_bloque_toujours():
+    """Controle negatif — une consigne imperative avant merge reserve."""
+    body = ("**[Hermes]** APPROVE. Le typo du docstring est a corriger avant "
+            "merge, CONCERNS mineur.")
+    assert len(_blocking(body)) == 1
+
+
+def test_13559_etats_non_approved_intacts():
+    """Non-regression : le correctif est borne a `state == APPROVED`. Un
+    COMMENT_WITH_CONCERNS sous COMMENTED ou CHANGES_REQUESTED bloque comme
+    avant — c'est le cas fondateur de B.0 (#10761), il ne bouge pas."""
+    body = "**[Hermes] COMMENT_WITH_CONCERNS** — le point 3 n'est pas traite."
+    for state in ("COMMENTED", "CHANGES_REQUESTED"):
+        assert len(_blocking(body, state=state)) == 1, state
+
+
+# --- usage vs mention : une review qui CITE une reserve ne l'emet pas -------
+# Extrait VERBATIM de la review Hermes du 2026-08-30 sur #13560 (cette PR).
+# Elle APPROUVE, et cite en tableau les chaines-sondes du garde pour montrer
+# qu'il discrimine. Sur le corps brut le garde y voyait 6 reserves, dont 5
+# etaient ses propres fixtures : il bloquait la PR sur la demonstration qu'il
+# marche. Troisieme instance de la confusion usage/mention (#11246, #13261).
+FIXTURE_13560_HERMES_CITE_SES_SONDES = (
+    "**[Hermes]** — review approfondi du head `62b00d2bf9`.\n\n"
+    "| sonde | resultat attendu | obtenu |\n"
+    "|---|---|---|\n"
+    "| « je maintiens » / « sous reserve » / « a corriger avant » | match | OK |\n"
+    "| cas fondateur #11677 « mais le point 2 reste ouvert » | match | OK |\n\n"
+    "Correctif borne, teste, cause racine identifiee — **APPROVE**."
+)
+
+
+def test_13560_review_citant_ses_propres_sondes_ne_bloque_plus():
+    """Les formules de reserve sont entre guillemets/backticks : citees, pas
+    emises. L'etat natif APPROVED decide."""
+    assert _blocking(FIXTURE_13560_HERMES_CITE_SES_SONDES) == []
+
+
+def test_13560_narration_benigne_reste_conforme_ne_bloque_plus():
+    """Sous-cas signale par Hermes : « reste » + adjectif positif, cite."""
+    body = ("**[Hermes]** APPROVE. Une sonde annexe : la phrase "
+            "« Toutefois apres relecture complete, le code reste conforme » "
+            "matche la branche permissive — signale, non bloquant.")
+    assert _blocking(body) == []
+
+
+def test_13560_reserve_vivante_hors_citation_bloque_toujours():
+    """Controle negatif du meme correctif : marqueur NON cite + langage de
+    reserve NON cite -> la reserve reste vivante et bloque. Sans ce test,
+    depouiller le corps reviendrait a eteindre le garde sans qu'on le voie.
+
+    La paire avec le test suivant est ce qui prouve que le depouillement
+    DISCRIMINE au lieu de tout laisser passer : meme marqueur, meme formule,
+    seule la citation change."""
+    body = ("**[Hermes]** APPROVE partiel sur le head. Ma CHANGES_REQUESTED "
+            "sur le module A tient, mais le point 2 reste ouvert : la "
+            "re-exec n'a pas ete relancee.")
+    assert _blocking(body) != []
+
+
+def test_13560_meme_reserve_citee_ne_bloque_pas():
+    """Jumeau du precedent : marqueur non cite (donc classify() le voit), mais
+    la formule de reserve est CITEE -- la review parle d'une reserve, elle n'en
+    pose pas. C'est le seul bit qui doit changer le verdict."""
+    body = ("**[Hermes]** APPROVE partiel sur le head. Ma CHANGES_REQUESTED "
+            "sur le module A tient, et je rappelle la formule qui la "
+            "portait : « mais le point 2 reste ouvert ».")
+    assert _blocking(body) == []

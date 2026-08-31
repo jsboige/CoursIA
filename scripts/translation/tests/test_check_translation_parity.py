@@ -642,6 +642,48 @@ def test_cli_repo_root_missing_returns_two(tmp_path, capsys, monkeypatch):
     assert rc == 2
 
 
+def test_discover_pairs_skips_repo_copies_and_vendored_trees(tmp_path):
+    """Une paire dans `.worktrees/` (copie du depot) ne doit PAS etre comptee.
+
+    Controle POSITIF d abord : la meme paire, placee dans l arbre source, EST
+    vue. Sans cette moitie, le test passerait aussi avec un walk qui ne trouve
+    jamais rien — c est la seule facon de distinguer « exclu » de « aveugle ».
+    """
+    src = tmp_path / "serie" / "N-1.ipynb"
+    src.parent.mkdir(parents=True)
+    src.write_text("{}", encoding="utf-8")
+    src.with_name("N-1_en.ipynb").write_text("{}", encoding="utf-8")
+
+    visible = p.discover_pairs(tmp_path, ["en"])
+    assert len(visible) == 1, "controle positif : une paire de l arbre source doit etre vue"
+
+    for skipped in (".worktrees", ".venv", "node_modules", ".lake"):
+        copy = tmp_path / skipped / "clone" / "serie" / "N-2.ipynb"
+        copy.parent.mkdir(parents=True)
+        copy.write_text("{}", encoding="utf-8")
+        copy.with_name("N-2_en.ipynb").write_text("{}", encoding="utf-8")
+
+    after = p.discover_pairs(tmp_path, ["en"])
+    assert len(after) == 1, (
+        f"4 paires ajoutees dans des repertoires exclus ne doivent rien changer, "
+        f"vu {len(after)}"
+    )
+
+
+def test_is_scannable_matches_on_relative_parts_only(tmp_path):
+    """Un depot dont le CHEMIN PARENT porte un nom exclu reste scannable.
+
+    Regression : un test sur le chemin absolu rendrait invisible tout depot
+    situe sous, par ex., `/home/x/venv/CoursIA`.
+    """
+    root = tmp_path / "venv" / "CoursIA"
+    (root / "serie").mkdir(parents=True)
+    inside = root / "serie" / "N.ipynb"
+    inside.write_text("{}", encoding="utf-8")
+    assert p._is_scannable(inside, root) is True
+    assert p._is_scannable(root / ".venv" / "x" / "N.ipynb", root) is False
+
+
 # ---------------------------------------------------------------------------
 # Reference — live state (manual)
 # ---------------------------------------------------------------------------
@@ -649,11 +691,61 @@ def test_cli_repo_root_missing_returns_two(tmp_path, capsys, monkeypatch):
 # Declared translation-pair count on main. EQ, not a threshold: the test
 # reddens in BOTH directions — a count below the declaration means pairs were
 # lost, a count above means the perimeter moved without updating this
-# declaration. Today 0 pairs: hold i18n #10038 (decision user 2026-08-12,
-# rollback 2e79bcb77). When i18n resumes, the first reintroduced pair makes
-# this test red and the declaration must be updated knowingly — a skipif
-# would re-arm silently and a >= 0 threshold would stay green forever.
-EXPECTED_PAIR_COUNT = 0
+# declaration. Hold i18n #10038 (decision user 2026-08-12, rollback 2e79bcb77)
+# lifted knowingly for the first 2 T4-rendered pairs of #12850 (42e8b2d7c,
+# 2026-08-29): GenAI/CaseStudies/Medical-Chatbot/medical_chatbot + GenAI/
+# FineTuning/FT-05-ModelMerging-Routing. Each reintroduced pair makes this
+# test red until the declaration is updated knowingly — a skipif would
+# re-arm silently and a >= 0 threshold would stay green forever.
+EXPECTED_PAIR_COUNT = 2
+
+
+def _collect_parity_failures(repo_root: Path,
+                             expected_pair_count: int) -> list[str]:
+    """#13553 — accumuler compte ET invariants, au lieu de court-circuiter.
+
+    L'ancienne forme (``assert len(pairs) == EXPECTED_PAIR_COUNT`` PUIS la
+    boucle d'invariants) rendait un échec unique et rassurant dès que le
+    compte dérivait : pytest s'arrête à la première assertion, donc AUCUN
+    invariant de contenu n'était évalué. La docstring promettait pourtant
+    « Any existing pair ... is still checked against all invariants » —
+    faux précisément dans le seul scénario qu'elle anticipe (reprise du
+    hold, dérive par construction). Accumulation sans dépendance : chaque
+    défaut devient une ligne, l'assert finale les porte toutes.
+    """
+    pairs = p.discover_pairs(repo_root, ["en", "ru"])
+    failures: list[str] = []
+    if len(pairs) != expected_pair_count:
+        failures.append(
+            f"translation pair count drifted from the declared perimeter: "
+            f"found {len(pairs)}, declared {expected_pair_count} "
+            f"(update EXPECTED_PAIR_COUNT knowingly — hold i18n #10038)"
+        )
+    for src_path, trd_path, stem, lang in pairs:
+        src_cells, src_err = p.load_cells(src_path)
+        trd_cells, trd_err = p.load_cells(trd_path)
+        if src_err is not None:
+            failures.append(f"source unreadable : {src_path} ({src_err})")
+            continue
+        if trd_err is not None:
+            failures.append(f"translation unreadable : {trd_path} ({trd_err})")
+            continue
+        anomalies = p.check_invariants(src_cells, trd_cells, strict_fr=True)
+        blocking = [
+            a
+            for a in anomalies
+            if a.verdict in ("CODE_DRIFT", "STRUCTURE_DRIFT", "OUTPUT_FABRICATED")
+        ]
+        fr_contam_strict = [a for a in anomalies if a.verdict == "FR_CONTAM"]
+        if blocking:
+            failures.append(
+                f"pair {stem}_{lang} has blocking anomalies : {blocking}"
+            )
+        if fr_contam_strict:
+            failures.append(
+                f"pair {stem}_{lang} has FR_CONTAM under strict_fr : {fr_contam_strict}"
+            )
+    return failures
 
 
 def test_full_repo_state_passes_parity():
@@ -667,30 +759,51 @@ def test_full_repo_state_passes_parity():
     Expected pair count is declared in ``EXPECTED_PAIR_COUNT`` above (hold
     i18n #10038). Any existing pair — including every pair reintroduced after
     the hold lifts — is still checked against all invariants including
-    strict-fr.
+    strict-fr (#13553 : l'échec de compte n'éclipse plus les invariants —
+    tous les défauts sont rapportés dans le même run).
     """
     repo_root = HERE.parent.parent.parent  # scripts/translation/tests/ → repo root
-    pairs = p.discover_pairs(repo_root, ["en", "ru"])
-    assert len(pairs) == EXPECTED_PAIR_COUNT, (
-        f"translation pair count drifted from the declared perimeter: "
-        f"found {len(pairs)}, declared {EXPECTED_PAIR_COUNT} "
-        f"(update EXPECTED_PAIR_COUNT knowingly — hold i18n #10038)"
-    )
-    for src_path, trd_path, stem, lang in pairs:
-        src_cells, src_err = p.load_cells(src_path)
-        trd_cells, trd_err = p.load_cells(trd_path)
-        assert src_err is None, f"source unreadable : {src_path} ({src_err})"
-        assert trd_err is None, f"translation unreadable : {trd_path} ({trd_err})"
-        anomalies = p.check_invariants(src_cells, trd_cells, strict_fr=True)
-        blocking = [
-            a
-            for a in anomalies
-            if a.verdict in ("CODE_DRIFT", "STRUCTURE_DRIFT", "OUTPUT_FABRICATED")
-        ]
-        fr_contam_strict = [a for a in anomalies if a.verdict == "FR_CONTAM"]
-        assert blocking == [], (
-            f"pair {stem}_{lang} has blocking anomalies : {blocking}"
-        )
-        assert fr_contam_strict == [], (
-            f"pair {stem}_{lang} has FR_CONTAM under strict_fr : {fr_contam_strict}"
-        )
+    failures = _collect_parity_failures(repo_root, EXPECTED_PAIR_COUNT)
+    assert failures == [], "\n".join(failures)
+
+
+# ---------------------------------------------------------------------------
+# #13553 — le cliquet de compte ne masque pas les invariants (acceptance)
+# ---------------------------------------------------------------------------
+
+
+def test_13553_count_drift_and_fr_contam_surface_together(tmp_path):
+    """Acceptance : compte faux ET FR_CONTAM => LES DEUX dans un seul run.
+
+    Contrôle négatif structurel : sous l'ancienne forme (assert de compte en
+    tête), ce test échoue — la ligne FR_CONTAM n'existerait pas dans la
+    sortie. C'est la seule façon de distinguer « accumule » de « masque ».
+    """
+    src = [_md_cell("c1", "# Un titre détaillé\n\nCorps long et riche.")]
+    trd = [_md_cell("c1", "# Un titre détaillé\n\nCorps long et riche.")]
+    _write_pair(tmp_path, "Drift-Contam", src, trd)
+    failures = _collect_parity_failures(tmp_path, expected_pair_count=7)
+    assert len(failures) == 2, failures
+    assert "declared perimeter" in failures[0]
+    assert "FR_CONTAM" in failures[1]
+
+
+def test_13553_count_drift_alone_still_reddens(tmp_path):
+    """Contrôle négatif : une dérive de compte SEULE reste rouge — on
+    n'affaiblit pas le cliquet, on l'empêche seulement de masquer."""
+    src = [_md_cell("c1", "# Un titre détaillé\n\nCorps long et riche.")]
+    trd = [_md_cell("c1", "# A detailed title\n\nLong rich body.")]
+    _write_pair(tmp_path, "Clean-Drift", src, trd)
+    failures = _collect_parity_failures(tmp_path, expected_pair_count=3)
+    assert len(failures) == 1, failures
+    assert "declared perimeter" in failures[0]
+
+
+def test_13553_clean_state_collects_nothing(tmp_path):
+    """Compte juste + paire propre => aucune ligne de défaut (comportement
+    du test de référence inchangé sur un état sain)."""
+    src = [_md_cell("c1", "# Un titre détaillé\n\nCorps long et riche.")]
+    trd = [_md_cell("c1", "# A detailed title\n\nLong rich body.")]
+    _write_pair(tmp_path, "Clean-01", src, trd)
+    failures = _collect_parity_failures(tmp_path, expected_pair_count=1)
+    assert failures == []

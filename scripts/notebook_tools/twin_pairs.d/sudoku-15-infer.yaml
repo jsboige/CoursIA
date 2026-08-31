@@ -110,7 +110,26 @@
       csharp_sha: 3d9260a6817e8d9a946b97a4da24b1f2ceca1ebb
       content_python_sha: d495bc4bf7bb782d013f5031583963c2adf66bf99f15036e05f931872d8a562f
       content_csharp_sha: f31566b476be948bce328fa8205bc13ac2e9ba83f47e65f63e8ffdabfb2c130b
+    - date: "2026-08-24"
+      by: myia-po-2027:CoursIA
+      python_sha: 62d06424631c65c5ecb9c86601b366fc67cbb8e5
+      csharp_sha: 8f63ece3fcbcca84e999fe613271adc119a67c66
+      content_python_sha: d495bc4bf7bb782d013f5031583963c2adf66bf99f15036e05f931872d8a562f
+      content_csharp_sha: d9c5efc338626025a50df808bbe06c70544fba92d15ce1e16e43bbd64acda2e7
+    - date: "2026-08-29"
+      by: myia-po-2024:CoursIA
+      python_sha: 6a9edf9f061450680744a0c57d7c05e3b58edf09
+      csharp_sha: 8f63ece3fcbcca84e999fe613271adc119a67c66
+      content_python_sha: 2f77da917c2faaf5134007940a67bd394c39458c369b8c1b6c1d29ef58d21f96
+      content_csharp_sha: d9c5efc338626025a50df808bbe06c70544fba92d15ce1e16e43bbd64acda2e7
+    - date: "2026-08-30"
+      by: myia-po-2024:CoursIA-2
+      python_sha: d599d4110a060afbbf50c801144edfe1447497ab
+      csharp_sha: 0399593c01dba01559c70bd6ef701a6b7cd75a20
+      content_python_sha: cee6c2c540878a2222eeb6fbaefac7e58438ef9998f03c23648643346562e651
+      content_csharp_sha: c16a1ba1f60b0e9da17c8886d5cc6ccb66527989cca87710935d9213016071cd
   known_differences:
+    - "Rebaseline 2026-08-24 : cote C# -- solveur v4 max-product hongrois reel ajoute (Kuhn-Munkres sur -log p, messages c2f extrinseques, damping 0.5, bruit log-uniforme aux restarts, seed=k/grille, PR #12769, issue #11925 : critere benchmark Medium hardest 9/11 ATTEINT contre 0/11 avant). Re-exec complete kernel .net-csharp : 26 cellules code, 0 exec_null, 0 erreur. Ancre de parite Infer.NET conservee (58 references) : le v4 est une strategie deterministe ADDITIONNELLE qui contraste avec l'inference probabiliste (Infer.NET), l'arc pedagogique probabiliste est intact. Cote Python non modifie (byte-identique a main). Attestation = nouveau blob SHA csharp."
     - "Rebaseline 2026-08-17 : cote C# draine des timings MACHINE-DEP en cellule[24] (4 valeurs : 350 s, 349,9 s, 0,92 s, 922 ms, 5,8 minutes) et cellule[42] (4 valeurs : ~14-26 s, ~100 ms, ~1,8 s, ~18-112 ms, ~30-60 s) -- mandat #9377/#9434, drain des wall-clock prose (mandat user : seules les valeurs reproductibles d'une execution a l'autre sont conservees). Parite semantique inchangee (aucune cellule code, aucune sortie, aucun exec_count touche) ; cote Python non modifie. Attestation = nouveau blob SHA du cote C#."
     - "Rebaseline 2026-08-17 : cote Python draine des timings MACHINE-DEP en cellule[27] (table comparaison vs C# : 6 wall-clock ~34ms / ~5s / ~57ms / ~140x / ~83x / ~100x) -- mandat #9377/#9434, drain des wall-clock prose (mandat user : seules les valeurs reproductibles d'une execution a l'autre sont conservees). Resultats de resolution et tendance qualitative conserves. Parite semantique inchangee (aucune cellule code, aucune sortie, aucun exec_count touche) ; cote C# non modifie. Attestation = nouveau blob SHA (python) et content_python_sha du cote Python."
     - "Rebaseline 2026-08-05 : cote Python deplace par de-pin des versions JAX/NumPyro depuis la table de la cellule[3] (criterion 2 #9434, edition markdown-only). Parite semantique inchangee (aucune cellule code, aucune sortie, aucun exec_count touche) ; cote C# non modifie. Attestation = nouveau blob SHA du cote Python."

@@ -5,7 +5,11 @@ name: PR gate stale-verdict sweep
 # pr-gate.yml aggregates once on `pull_request` and polls 12 min. Under runner
 # starvation the slowest checks are still queued when that budget runs out, so
 # the gate posts FAIL -- "timed out waiting for: Analyze (actions), Analyze
-# (csharp)". pr-gate-rerun.yml exists to re-aggregate afterwards, but it is
+# (csharp)". Since #13510 a starved gate cancels its own run instead (leg
+# CANCELLED, exit still 1), so those legs now arrive here through the
+# `cancelled` half of the RED set below -- the founding FAILURE case below is
+# history, kept for the record. pr-gate-rerun.yml exists to re-aggregate
+# afterwards, but it is
 # driven by `workflow_run` and therefore can only listen to workflows that are
 # ADDRESSABLE BY NAME in this repository:
 #
@@ -88,9 +92,9 @@ on:
     # them. Matching the cadence to the observed service time is what stops the
     # sweeps killing each other.
     #
-    # This does NOT fix the 99 % queue wait -- see #12728 T2, which routes this
-    # workflow to the self-hosted runners of #12704. Repair still arrives late;
-    # it just stops failing to arrive at all.
+    # This does NOT fix the queue wait. The final timing step below measures the
+    # run-created -> job-started queue separately from observed execution time;
+    # #12728 requires that evidence before any further cadence or runner change.
     - cron: '7 * * * *'
   workflow_dispatch:
     inputs:
@@ -263,8 +267,33 @@ jobs:
               print(f'{p["number"]} {p["sha"]} {str(p.get("fork", False)).lower()}')
           PY
 
+          # OLDEST FIRST, and the cap is the whole reason it matters.
+          #
+          # `GET /pulls` defaults to `sort=created&direction=desc`, and nothing
+          # downstream re-orders, so `candidates.txt` arrived NEWEST-first and
+          # MAX_POSTS took the newest 8. That is backwards for a capped queue:
+          # a young PR still receives `synchronize` / `reopened` events, and
+          # pr-gate.yml re-runs on each of them, so it has a second repair
+          # path. A quiet old PR emits no more events -- this sweep is its
+          # ONLY one. Newest-first therefore spends the cap on the population
+          # that needs it least and starves the one that has nothing else.
+          #
+          # Measured 2026-08-28T12:33Z (run 33169455408): 16 candidates, cap 8,
+          # served 13355 13347 13343 13332 13320 13286 13195 13191 -- eight
+          # consecutive descending numbers, i.e. exactly the newest eight. At
+          # 14:24Z the five left behind (12390 12534 12791 12995 13091) were
+          # still BLOCKED on stale gates dating from 07:42Z-10:35Z: 4 to 7
+          # hours, on PRs carrying no red constituent at all. The queue makes
+          # the effective cadence ~3 h (sweeps at 01:47, 04:53, 07:44, 12:02),
+          # so "the next sweep takes the next batch" holds only while arrivals
+          # stay under the cap; above it the tail is never reached.
+          #
+          # PR numbers are monotonic in creation time, so a numeric sort IS
+          # the age order -- no extra API call.
+          sort -n -o /tmp/candidates.txt /tmp/candidates.txt
+
           COUNT=$(wc -l < /tmp/candidates.txt | tr -d ' ')
-          echo "[stale-sweep] PRs whose only red is a stale \`PR gate\`: $COUNT"
+          echo "[stale-sweep] PRs whose only red is a stale \`PR gate\`: $COUNT (oldest first)"
           if [ "$COUNT" = "0" ]; then
             echo "[stale-sweep] nothing to do"
             exit 0
@@ -274,7 +303,7 @@ jobs:
           while read -r NUM SHA FORK; do
             [ -z "${NUM:-}" ] && continue
             if [ "$n" -ge "$MAX_POSTS" ]; then
-              echo "[stale-sweep] cap $MAX_POSTS reached -- remaining candidates wait for the next sweep"
+              echo "[stale-sweep] cap $MAX_POSTS reached -- $((COUNT - n)) newer candidate(s) wait for the next sweep"
               break
             fi
             # Re-run the ORIGINAL run rather than POSTing a fresh verdict.
@@ -322,3 +351,86 @@ jobs:
 
           # Advisory organ: it acts, it never blocks.
           exit 0
+
+      - name: Measure queue and observed execution separately
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+          JOB_NAME: Re-aggregate stale PR gate verdicts
+        run: |
+          set -uo pipefail
+
+          RUN=$(gh api "repos/$REPO/actions/runs/$RUN_ID" 2>/dev/null) || {
+            echo "::warning::stale-sweep timing unavailable: run API failed"
+            exit 0
+          }
+          # The endpoint defaults to filter=latest. Keep it that way: filter=all
+          # includes prior attempts after a re-run and makes the current job name
+          # ambiguous, exactly when this workflow is measuring repeated service.
+          JOBS=$(gh api "repos/$REPO/actions/runs/$RUN_ID/jobs?filter=latest&per_page=100" 2>/dev/null) || {
+            echo "::warning::stale-sweep timing unavailable: jobs API failed"
+            exit 0
+          }
+
+          RUN_JSON="$RUN" JOBS_JSON="$JOBS" python - <<'PY'
+          import json
+          import os
+          from datetime import datetime, timezone
+
+          def parse_timestamp(value, label):
+              if not value:
+                  raise ValueError(f"missing {label}")
+              text = value[:-1] + "+00:00" if value.endswith("Z") else value
+              parsed = datetime.fromisoformat(text)
+              if parsed.tzinfo is None:
+                  raise ValueError(f"timezone missing from {label}")
+              return parsed.astimezone(timezone.utc)
+
+          try:
+              run = json.loads(os.environ["RUN_JSON"])
+              jobs_payload = json.loads(os.environ["JOBS_JSON"])
+              jobs = [
+                  job for job in jobs_payload.get("jobs", [])
+                  if job.get("name") == os.environ["JOB_NAME"]
+              ]
+              if len(jobs) != 1:
+                  raise ValueError(
+                      f"expected one current job named {os.environ['JOB_NAME']!r}, "
+                      f"found {len(jobs)}"
+                  )
+
+              job = jobs[0]
+              created = parse_timestamp(run.get("created_at"), "run.created_at")
+              started = parse_timestamp(job.get("started_at"), "job.started_at")
+              measured = datetime.now(timezone.utc)
+              queue_seconds = (started - created).total_seconds()
+              execution_seconds = (measured - started).total_seconds()
+              if queue_seconds < 0 or execution_seconds < 0:
+                  raise ValueError(
+                      "negative duration: "
+                      f"queue={queue_seconds}, execution={execution_seconds}"
+                  )
+
+              lines = [
+                  "## Stale-sweep timing (#12728)",
+                  "",
+                  "Measured from job-level timestamps; `run_started_at` is not used.",
+                  "",
+                  f"- Run created: `{run['created_at']}`",
+                  f"- Job started: `{job['started_at']}`",
+                  f"- Measured at: `{measured.isoformat().replace('+00:00', 'Z')}`",
+                  f"- Queue: **{queue_seconds:.0f} s**",
+                  f"- Observed execution: **{execution_seconds:.0f} s**",
+              ]
+              with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as summary:
+                  summary.write("\n".join(lines) + "\n")
+              print(
+                  "[stale-sweep] timing: "
+                  f"queue_seconds={queue_seconds:.0f} "
+                  f"observed_execution_seconds={execution_seconds:.0f}"
+              )
+          except (KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
+              print(f"::warning::stale-sweep timing unavailable: {exc}")
+          PY

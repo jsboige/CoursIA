@@ -106,10 +106,16 @@ def test_write_then_load_baseline_roundtrip(tmp_path):
     bl = _seed_baseline(tmp_path, root)
     loaded = smh.load_baseline(bl)
     assert loaded == smh.compute_counts([str(root)])
-    # determinisme : deux ecritures = bytes identiques
+    # determinisme : deux ecritures avec la MÊME date PINNEE = bytes identiques
+    # (une auto-timestamp rendrait deux writes non-reproductibles)
+    smh.write_baseline(bl, smh.compute_counts([str(root)]),
+                       generated_at="2026-08-24T00:00:00Z")
     first = bl.read_bytes()
-    smh.write_baseline(bl, smh.compute_counts([str(root)]))
+    smh.write_baseline(bl, smh.compute_counts([str(root)]),
+                       generated_at="2026-08-24T00:00:00Z")
     assert bl.read_bytes() == first
+    # la date est bien dans la sortie (acceptance #12735)
+    assert smh.baseline_generated_at(bl) == "2026-08-24T00:00:00Z"
 
 
 def test_load_baseline_rejects_foreign_format(tmp_path):
@@ -214,3 +220,249 @@ def test_update_baseline_then_diff_is_green(tmp_path, capsys):
     assert rc == 0
     assert "baseline updated" in capsys.readouterr().out
     assert _diff(root, bl) == 0
+
+
+# --- 4. #12735 : veredict sur le NET intra-notebook, pas sur le +kind ---------
+
+def test_within_notebook_migration_is_net_NOT_a_regression(tmp_path, capsys):
+    """Cas PT_11 (#12735) : le meme notebook  migre d'une classe a l'autre
+    (+1 HINT, -1 IN-LIST). Le verdict est le NET (0 ici), pas le '+1 HINT'.
+    Un +1/-1 sur le meme fichier = burndown potentiel, jamais une regression."""
+    root = _corpus(tmp_path)
+    bl = _seed_baseline(tmp_path, root)  # flagged.ipynb : {HINT:1, IN-LIST:1}
+    _mutate(root, "flagged.ipynb", ["# Titre", "# Indice", "## Astuce"])
+    rc = _diff(root, bl)
+    assert rc == 0  # net 0 -> pas de regression a attribuer
+    out = capsys.readouterr().out
+    assert "(mixed, net 0)" in out
+    assert "+1 HINT-AS-HEADING" in out  # le delta kind EST informe
+
+
+def test_within_notebook_burndown_not_a_regression(tmp_path, capsys):
+    """PT_11 (net -8) : le notebook GUERIT (IN-LIST tombe) mais garde un hint.
+    Net negatif = burndown, exit 0. JAMAIS de '+1 nouveau defaut'."""
+    root = _corpus(tmp_path)
+    bl = _seed_baseline(tmp_path, root)
+    _mutate(root, "flagged.ipynb", ["# Titre", "# Indice"])  # drop l'IN-LIST
+    rc = _diff(root, bl)
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert "(burndown)" in out
+    assert "-1 HEADING-IN-LIST" in out
+    assert "+1" not in out.split("\n")[0]  # la ligne verdict n'est pas une augmentation
+
+
+# --- 5. #12735 : attribution PR-scopee (--name-status) ------------------------
+
+def _ns(tmp_path, *lines):
+    p = tmp_path / "ns.txt"
+    p.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return str(p)
+
+
+def test_pr_scope_ignores_regression_outside_pr(tmp_path, capsys):
+    """La CI scanne le CORPUS entier, pas le diff de la PR (#11831 invariant casse
+    par #12735). Avec --name-status, un notebook qui a empiré mais N'EST PAS dans
+    la PR ne doit PAS etre impute a cette PR."""
+    root = _corpus(tmp_path)
+    bl = _seed_baseline(tmp_path, root)
+    _mutate(root, "flagged.ipynb", WORSE)  # +2, mais hors diff PR
+    ns = _ns(tmp_path, f"M\t{_key(root, 'clean.ipynb')}")  # PR ne touche que clean
+    assert smh.main([str(root), "--baseline", str(bl), "--diff", "--name-status", ns]) == 0
+    out = capsys.readouterr().out
+    assert "flagged.ipynb" not in out
+
+
+def test_pr_scope_flags_regression_inside_pr(tmp_path, capsys):
+    """Controle positif : une PR qui TOUCHE un notebook et y introduit des defauts
+    est detectee, nommee, exit 2 (le garde redevient parlant)."""
+    root = _corpus(tmp_path)
+    bl = _seed_baseline(tmp_path, root)
+    _mutate(root, "flagged.ipynb", WORSE)  # +2, dans la PR
+    ns = _ns(tmp_path, f"M\t{_key(root, 'flagged.ipynb')}")
+    assert smh.main([str(root), "--baseline", str(bl), "--diff", "--name-status", ns]) == 2
+    out = capsys.readouterr().out
+    assert "flagged.ipynb" in out
+    assert "+2" in out
+
+
+def test_rename_resolution_no_phantom(tmp_path, capsys):
+    """Zero-pad phantom (#12735) : baseline '4b.ipynb', PR renomme en '04b.ipynb'
+    (git -M -> R100 old new). Le renommage resout l'entree baseline -> delta 0,
+    pas de '+1' fantome."""
+    root = _corpus(tmp_path)
+    _mutate(root, "old.ipynb", ["# Titre", "# Indice"])  # {HINT:1}
+    bl = _seed_baseline(tmp_path, root)
+    old_key = _key(root, "old.ipynb")
+    _mutate(root, "new.ipynb", ["# Titre", "# Indice"])  # meme contenu, 1 HINT
+    new_key = _key(root, "new.ipynb")
+    (root / "old.ipynb").unlink()
+    ns = _ns(tmp_path, f"R100\t{old_key}\t{new_key}")
+    assert smh.main([str(root), "--baseline", str(bl), "--diff", "--name-status", ns]) == 0
+    out = capsys.readouterr().out
+    assert "drift: +0" in out
+    assert "+1" not in out
+
+
+# --- 6. #12735 : baseline datee dans le rapport -------------------------------
+
+def test_baseline_date_in_report(tmp_path, capsys):
+    root = _corpus(tmp_path)
+    bl = _seed_baseline(tmp_path, root)  # date "now"
+    smh.write_baseline(bl, smh.compute_counts([str(root)]), generated_at="2026-08-24T00:00:00Z")
+    _diff(root, bl)
+    out = capsys.readouterr().out
+    assert "generated 2026-08-24T00:00:00Z" in out
+
+
+# --- 7. #13315 : reference = base de fusion re-scannee (--reference-base) ------
+#
+# Defaut #13315 : la reference "avant la PR" etait la BASELINE STOCKEE, re-seedee
+# sur main a chaque regle scanner. Une PR basee sur un main ancien (stale base)
+# comparait ses notebooks a une baseline qui a bouge SOUS elle -> drift non
+# imputable au diff, voire +1 fantome. Le fix : re-scanner les versions de la
+# BASE DE FUSION (git show SHA:path) comme reference, cles explicites (ancien
+# chemin pour un renommage).
+
+def _fake_materializer(items_spec):
+    """Remplace la couche git : items_spec = [(key, cellules de la version base)]."""
+    def fake(base_sha, heads, renames, repo_root=None):
+        out = []
+        for key, cells in items_spec:
+            dest = None
+            # un fichier SANS version a la base (Added) n'a pas d'entree
+            if cells is not None:
+                import tempfile
+                dest = Path(tempfile.mkdtemp()) / "base.ipynb"
+                dest.write_text(json.dumps(_nb(cells), ensure_ascii=False),
+                                encoding="utf-8")
+                out.append((key, dest))
+        return out
+    return fake
+
+
+def test_reference_base_kills_stale_baseline_phantom(tmp_path, capsys, monkeypatch):
+    """Criterium 1 : la PR ne change PAS le compte, mais la baseline stockee est
+    stale (pas d'entree pour ce notebook). Vs baseline stockee : +1 fantome.
+    Vs base de fusion re-scannee : delta 0, rc 0."""
+    root = _corpus(tmp_path)
+    _mutate(root, "touched.ipynb", FLAGGED_CELLS)  # 1 HINT a la base ET au head
+    # baseline stockee POISONNEE : aucune entree pour touched.ipynb
+    bl = tmp_path / "poison_baseline.json"
+    smh.write_baseline(bl, {})  # corpus vide -> rien
+    ns = _ns(tmp_path, f"M\t{_key(root, 'touched.ipynb')}")
+    # ancien comportement (sans --reference-base) : +1 fantome
+    assert smh.main([str(root), "--baseline", str(bl), "--diff",
+                     "--name-status", ns]) == 2
+    # nouveau : la reference est la version de touched.ipynb A LA BASE
+    monkeypatch.setattr(smh, "materialize_reference_base",
+                        _fake_materializer([(_key(root, "touched.ipynb"),
+                                             FLAGGED_CELLS)]))
+    assert smh.main([str(root), "--baseline", str(bl), "--diff",
+                     "--name-status", ns, "--reference-base", "deadbeef"]) == 0
+    out = capsys.readouterr().out
+    assert "drift: +0" in out
+
+
+def test_reference_base_flags_real_regression(tmp_path, capsys, monkeypatch):
+    """Controle positif : la PR EMPIRE reellement un notebook vs sa version de
+    base -> rc 2, notebook nomme (le garde ne devient pas permissif)."""
+    root = _corpus(tmp_path)
+    _mutate(root, "touched.ipynb", WORSE)  # 4 findings au head
+    ns = _ns(tmp_path, f"M\t{_key(root, 'touched.ipynb')}")
+    monkeypatch.setattr(smh, "materialize_reference_base",
+                        _fake_materializer([(_key(root, "touched.ipynb"),
+                                             FLAGGED_CELLS)]))  # 2 a la base
+    assert smh.main([str(root), "--diff", "--name-status", ns,
+                     "--reference-base", "deadbeef"]) == 2
+    out = capsys.readouterr().out
+    assert "touched.ipynb" in out
+    assert "+2" in out
+
+
+def test_reference_base_added_notebook_finding_is_regression(tmp_path, capsys, monkeypatch):
+    """Fichier AJOUTE par la PR (pas de version a la base) : tout finding est
+    nouveau -> imputation correcte (rc 2), pas un faux zero."""
+    root = _corpus(tmp_path)
+    _mutate(root, "added.ipynb", FLAGGED_CELLS)
+    ns = _ns(tmp_path, f"A\t{_key(root, 'added.ipynb')}")
+    monkeypatch.setattr(smh, "materialize_reference_base",
+                        _fake_materializer([(_key(root, "added.ipynb"), None)]))
+    assert smh.main([str(root), "--diff", "--name-status", ns,
+                     "--reference-base", "deadbeef"]) == 2
+    out = capsys.readouterr().out
+    assert "added.ipynb" in out
+
+
+def test_reference_base_rename_no_phantom(tmp_path, capsys, monkeypatch):
+    """Criterium 3 : R100 old->new, meme contenu. La version de base est lue ET
+    clee a l'ANCIEN chemin -> resolution par renames -> delta 0, pas de +1."""
+    root = _corpus(tmp_path)
+    _mutate(root, "new.ipynb", ["# Titre", "# Indice"])  # 1 HINT (au head)
+    old_key, new_key = _key(root, "old.ipynb"), _key(root, "new.ipynb")
+    ns = _ns(tmp_path, f"R100\t{old_key}\t{new_key}")
+    monkeypatch.setattr(smh, "materialize_reference_base",
+                        _fake_materializer([(old_key, ["# Titre", "# Indice"])]))
+    assert smh.main([str(root), "--diff", "--name-status", ns,
+                     "--reference-base", "deadbeef"]) == 0
+    out = capsys.readouterr().out
+    assert "drift: +0" in out
+    assert "+1" not in out
+
+
+def test_reference_report_names_base_sha(tmp_path, capsys, monkeypatch):
+    """Criterium 5 : le rapport NOMME la reference (base de fusion re-scannee),
+    comme la baseline stockee est datee (#12735) -- sinon le verdict se lit
+    comme un etat live."""
+    root = _corpus(tmp_path)
+    _mutate(root, "touched.ipynb", CLEAN_CELLS)
+    ns = _ns(tmp_path, f"M\t{_key(root, 'touched.ipynb')}")
+    monkeypatch.setattr(smh, "materialize_reference_base",
+                        _fake_materializer([(_key(root, "touched.ipynb"),
+                                             CLEAN_CELLS)]))
+    assert smh.main([str(root), "--diff", "--name-status", ns,
+                     "--reference-base", "abc123def456"]) == 0
+    out = capsys.readouterr().out
+    assert "reference: merge base abc123def456 re-scanned" in out
+
+
+def test_reference_base_requires_name_status(tmp_path):
+    """--reference-base sans --name-status : refus explicite (la reference est
+    scopee au diff), pas un whole-corpus silencieux."""
+    root = _corpus(tmp_path)
+    with pytest.raises(SystemExit):
+        smh.main([str(root), "--diff", "--reference-base", "deadbeef"])
+
+
+def test_materialize_reference_base_real_git(tmp_path):
+    """Couche git end-to-end : mini-repo, base commit avec old.ipynb (1 HINT).
+    Le materialiseur lit le blob a l'ANCIEN chemin et le CLE a l'ancien chemin ;
+    un fichier absent a la base (added) n'a pas d'entree."""
+    import subprocess
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    def _git(*a):
+        subprocess.run(["git", "-c", "user.email=t@t", "-c", "user.name=t",
+                        "-C", str(repo), *a], check=True, capture_output=True)
+    try:
+        _git("init", "-q")
+    except Exception:
+        pytest.skip("git indisponible")
+    (repo / "old.ipynb").write_text(
+        json.dumps(_nb(["# Titre", "# Indice"]), ensure_ascii=False),
+        encoding="utf-8")
+    _git("add", "-A")
+    _git("commit", "-q", "-m", "base")
+    base_sha = subprocess.run(
+        ["git", "-C", str(repo), "rev-parse", "HEAD"],
+        capture_output=True, text=True).stdout.strip()
+    items = smh.materialize_reference_base(
+        base_sha, {"new.ipynb", "added.ipynb"},
+        {"new.ipynb": "old.ipynb"}, repo_root=repo)
+    keys = [k for k, _ in items]
+    assert keys == ["old.ipynb"]  # added.ipynb : pas de version a la base
+    counts = smh.reference_counts_from(items)
+    # ["# Titre", "# Indice"] = 1 HINT + (H1-DEEP, MULTI-H1) selon les regles ;
+    # l'assertion cle : le blob de l'ANCIEN chemin, clee a l'ancien chemin.
+    assert "old.ipynb" in counts
+    assert counts["old.ipynb"]["HINT-AS-HEADING"] == 1

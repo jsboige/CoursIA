@@ -389,7 +389,7 @@ NON_REGRESSION_TESTS = {
         "test": "Validation des 22 outils MCP existants",
         "notebooks": [
             "MyIA.AI.Notebooks/ML/ML-1-Introduction.ipynb",
-            "MyIA.AI.Notebooks/Sudoku/Sudoku-1-Backtracking.ipynb",
+            "MyIA.AI.Notebooks/Sudoku/Sudoku-01-Backtracking.ipynb",
             "MyIA.AI.Notebooks/GenAI/05-SemanticKernel-NotebookMaker.ipynb"
         ],
         "expected": "AUCUNE régression, performance identique"

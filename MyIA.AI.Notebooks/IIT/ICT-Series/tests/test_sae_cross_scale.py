@@ -26,6 +26,7 @@ from ict.sae_traces import (  # noqa: E402
     check_sae_model_match,
     resolve_capture_layer,
     trace_filename,
+    w_dec_needs_transpose,
 )
 
 # Indicateur de disponibilite huggingface_hub pour les tests qui font un
@@ -375,3 +376,40 @@ def test_trace_filename_discrimine_l50_et_l100_par_le_slug_du_repo():
     # meme couche. C'est une note pour le PR suivant (sortie disque), pas
     # ici -- la discrimination cote GARDE-FOU est deja couverte par
     # assert_sae_topk_compatible qui refuse des k incompatibles.
+
+
+# --------------------------------------------------------------------------- #
+# Garde-fou layout W_dec (clamp Gate 24, #12940) — layouts W32K mesures
+# --------------------------------------------------------------------------- #
+# Les checkpoints W32K (1.7B et 2B, sondes firsthand #12940) stockent W_dec en
+# [d_model, d_sae] : (2048, 32768). Le hook de clamp indexe W_dec par des
+# FEATURES — sans normalisation, un clamp_id > 2047 leve un IndexError et tout
+# clamp_id < 2048 soustrait des dimensions du residual stream au lieu des
+# directions decodees des features visees (faux en silence).
+# --------------------------------------------------------------------------- #
+def test_w_dec_layout_w32k_mesure_exige_transposition():
+    """Le layout mesure firsthand sur les deux checkpoints W32K locaux :
+    (2048, 32768) = [d_model, d_sae] pour d_model=2048 -> doit transposer."""
+    assert w_dec_needs_transpose((D_MODEL_2B, W_2B), D_MODEL_2B) is True
+
+
+def test_w_dec_layout_reference_9b_w64k_passe_sans_transposition():
+    """Le layout [d_sae, d_model] attendu du 9B/W64K (non sondable
+    localement) passe tel quel — la garde accepte les deux layouts, c'est
+    ce qui rend le Gate 24 insensible au layout de la release."""
+    assert w_dec_needs_transpose((W_9B, D_MODEL_9B), D_MODEL_9B) is False
+
+
+def test_w_dec_layout_carre_refuse_ambiguite():
+    """Cas carre (d_model == d_sae) : la forme seule ne tranche plus,
+    la garde refuse plutot que de parier sur une transposition."""
+    with pytest.raises(ValueError, match="ambigue.*carre"):
+        w_dec_needs_transpose((4096, 4096), 4096)
+
+
+def test_w_dec_layout_etranger_a_d_model_refuse():
+    """Une forme qui ne contient pas d_model dans aucune dimension est une
+    erreur d'appariement (p.ex. SAE 2B sur modele 9B) : refus explicite,
+    pas un retour silencieux."""
+    with pytest.raises(ValueError, match="ambigue"):
+        w_dec_needs_transpose((W_2B, W_2B), D_MODEL_9B)

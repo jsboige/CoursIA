@@ -372,15 +372,15 @@ Post-c.390 PR #5840 (entry #003 SymbolicLearning audit axe-2), pivot vers substa
 
 | Nb | Cells | Code | EXEC | Err | Stubs C.1 | Kernel | Outils SOTA | Verdict |
 |----|-------|------|------|-----|-----------|--------|-------------|---------|
-| DecInfer-1-Utility-Foundations | 30 | 16 | 16/16 | 0 | 0 | .net-csharp | Microsoft.Infer.NET (Variable<double>, expectations) | **SOTA-OK** |
-| **DecInfer-2-Lean-ExpectedUtility** | 14 | 5 | 5/5 | 0 | 0 | **lean4-wsl** | **Lean 4 formel** (von Neumann–Morgenstern 0-sorry) | **SOTA-OK** |
-| DecInfer-3-Utility-Money | 50 | 22 | 22/22 | 0 | 0 | .net-csharp | Microsoft.Infer.NET + Bernoulli mixtures (Saint-Petersbourg / Friedman-Savage / Arrow-Pratt) | **SOTA-OK** |
-| DecInfer-4-Multi-Attribute | 50 | 23 | 23/23 | 0 | 0 | .net-csharp | Microsoft.Infer.NET + CPLEX/GLPK (LP additives pondérés) | **SOTA-OK** |
-| DecInfer-5-Decision-Networks | 35 | 17 | 17/17 | 0 | 0 | .net-csharp | Microsoft.Infer.NET (influence diagrams Variable<int>) | **SOTA-OK** |
-| DecInfer-6-Value-Information | 38 | 19 | 19/19 | 0 | 0 | .net-csharp | Microsoft.Infer.NET (EVPI/Expected Value of Perfect Information) | **SOTA-OK** |
-| DecInfer-7-Expert-Systems | 32 | 14 | 14/14 | 0 | 0 | .net-csharp | Microsoft.Infer.NET (decision rules + uncertainty propagation) | **SOTA-OK** |
-| DecInfer-8-Sequential | 32 | 14 | 14/14 | 0 | 0 | .net-csharp | Microsoft.Infer.NET (dynamic decision processes backward induction) | **SOTA-OK** |
-| **DecInfer-9-Lean-Gittins** | 25 | 10 | 10/10 | 0 | 0 | **lean4-wsl** | **Lean 4 formel** (Gittins index preuves partielles) | **SOTA-OK** |
+| DecInfer-01-Utility-Foundations | 30 | 16 | 16/16 | 0 | 0 | .net-csharp | Microsoft.Infer.NET (Variable<double>, expectations) | **SOTA-OK** |
+| **DecInfer-02-Lean-ExpectedUtility** | 14 | 5 | 5/5 | 0 | 0 | **lean4-wsl** | **Lean 4 formel** (von Neumann–Morgenstern 0-sorry) | **SOTA-OK** |
+| DecInfer-03-Utility-Money | 50 | 22 | 22/22 | 0 | 0 | .net-csharp | Microsoft.Infer.NET + Bernoulli mixtures (Saint-Petersbourg / Friedman-Savage / Arrow-Pratt) | **SOTA-OK** |
+| DecInfer-04-Multi-Attribute | 50 | 23 | 23/23 | 0 | 0 | .net-csharp | Microsoft.Infer.NET + CPLEX/GLPK (LP additives pondérés) | **SOTA-OK** |
+| DecInfer-05-Decision-Networks | 35 | 17 | 17/17 | 0 | 0 | .net-csharp | Microsoft.Infer.NET (influence diagrams Variable<int>) | **SOTA-OK** |
+| DecInfer-06-Value-Information | 38 | 19 | 19/19 | 0 | 0 | .net-csharp | Microsoft.Infer.NET (EVPI/Expected Value of Perfect Information) | **SOTA-OK** |
+| DecInfer-07-Expert-Systems | 32 | 14 | 14/14 | 0 | 0 | .net-csharp | Microsoft.Infer.NET (decision rules + uncertainty propagation) | **SOTA-OK** |
+| DecInfer-08-Sequential | 32 | 14 | 14/14 | 0 | 0 | .net-csharp | Microsoft.Infer.NET (dynamic decision processes backward induction) | **SOTA-OK** |
+| **DecInfer-09-Lean-Gittins** | 25 | 10 | 10/10 | 0 | 0 | **lean4-wsl** | **Lean 4 formel** (Gittins index preuves partielles) | **SOTA-OK** |
 | DecInfer-10-Thompson-Sampling | 28 | 12 | 12/12 | 0 | 0 | .net-csharp | Microsoft.Infer.NET (Beta-Bernoulli Thompson sampling bayésien) | **SOTA-OK** |
 | DecPyMC-1-Utility-Foundations | 28 | 12 | 12/12 | 0 | 0 | python3 | PyMC + ArviZ (utility curves posteriors) | **SOTA-OK** |
 | DecPyMC-2-Utility-Money | 60 | 28 | 28/28 | 0 | 0 | python3 | PyMC + ArviZ (CARA/CRRA Savage/Friedman) | **SOTA-OK** |
@@ -403,8 +403,8 @@ Post-c.390 PR #5840 (entry #003 SymbolicLearning audit axe-2), pivot vers substa
 
 ### Disclosures honnêtes vérifiées
 
-- (a) `DecInfer-2-Lean-ExpectedUtility.ipynb` = Lean 4 formel companion **0-sorry** pour la direction sound du théorème de représentation d'utilité espérée de von Neumann–Morgenstern (cf cellule [18] Conclusion : "0-sorry pour la direction sound"). La direction completeness (rationalité ⟹ représentation) reste **gated** sur Mathlib4 stabilisation des `ConvexCone` / `BoundedConvexSet`, honest disclosure dans la cellule [4].
-- (b) `DecInfer-9-Lean-Gittins.ipynb` = Lean 4 formel pour Gittins index (cellule [22] Résumé enseignant) : définitions formalisées (BanditArm, BanditProcess), preuves partielles honnêtement disclosées, **état actuel = scaffolding + certitudes BornesSup** (gated sur `lake build` 100%).
+- (a) `DecInfer-02-Lean-ExpectedUtility.ipynb` = Lean 4 formel companion **0-sorry** pour la direction sound du théorème de représentation d'utilité espérée de von Neumann–Morgenstern (cf cellule [18] Conclusion : "0-sorry pour la direction sound"). La direction completeness (rationalité ⟹ représentation) reste **gated** sur Mathlib4 stabilisation des `ConvexCone` / `BoundedConvexSet`, honest disclosure dans la cellule [4].
+- (b) `DecInfer-09-Lean-Gittins.ipynb` = Lean 4 formel pour Gittins index (cellule [22] Résumé enseignant) : définitions formalisées (BanditArm, BanditProcess), preuves partielles honnêtement disclosées, **état actuel = scaffolding + certitudes BornesSup** (gated sur `lake build` 100%).
 - (c) `Do-Calculus-Bridge.ipynb` cellule 5 = commentaire explicite sur advisory dowhy (chemin absolu fuit) — disclosed honnêtement comme **info utile d'identification causale**, pas scrubbé (Stop & Repair respecté, cf [secrets-hygiene.md](../../.claude/rules/secrets-hygiene.md) règle 6 + [[feedback-no-cell-output-scrubbing]]).
 
 **Workaround dégradé** : 0/18 (3 occurrences du mot « workaround » vérifiées = toutes disclosures honnêtes ci-dessus, pas de workaround réel).
@@ -413,14 +413,14 @@ Post-c.390 PR #5840 (entry #003 SymbolicLearning audit axe-2), pivot vers substa
 
 Chaque notebook pose un problème de **théorie de la décision** avancé qui exerce la capacité distinctive du moteur :
 
-- **DecInfer-1/DecPyMC-1** : Utility foundations (axiomes von Neumann–Morgenstern) — courbes d'utilité, concavité/convexité, certainty equivalent
-- **DecInfer-2/DecInfer-9** : Lean 4 formel (preuve sound représentation vNM + Gittins index) — fondation mathématique
-- **DecInfer-3/DecPyMC-2** : Utility of money — Saint-Petersbourg paradoxe, Friedman-Savage, Arrow-Pratt RRA, CARA/CRRA
-- **DecInfer-4/DecPyMC-3** : Multi-attribute utility (MAUT) — pondérations additives, dominance stochastique
-- **DecInfer-5/DecPyMC-4** : Decision networks (influence diagrams) — backward induction sur DAG décision/chance/valeur
-- **DecInfer-6/DecPyMC-5** : Value of information (EVPI) — Expected Value of Perfect Information, EVSI
-- **DecInfer-7/DecPyMC-6** : Expert systems — fusion de jugements experts par pondération bayésienne de précision
-- **DecInfer-8/DecPyMC-7** : Sequential decisions — dynamic programming, Bellman-style backward induction
+- **DecInfer-01/DecPyMC-1** : Utility foundations (axiomes von Neumann–Morgenstern) — courbes d'utilité, concavité/convexité, certainty equivalent
+- **DecInfer-02/DecInfer-09** : Lean 4 formel (preuve sound représentation vNM + Gittins index) — fondation mathématique
+- **DecInfer-03/DecPyMC-2** : Utility of money — Saint-Petersbourg paradoxe, Friedman-Savage, Arrow-Pratt RRA, CARA/CRRA
+- **DecInfer-04/DecPyMC-3** : Multi-attribute utility (MAUT) — pondérations additives, dominance stochastique
+- **DecInfer-05/DecPyMC-4** : Decision networks (influence diagrams) — backward induction sur DAG décision/chance/valeur
+- **DecInfer-06/DecPyMC-5** : Value of information (EVPI) — Expected Value of Perfect Information, EVSI
+- **DecInfer-07/DecPyMC-6** : Expert systems — fusion de jugements experts par pondération bayésienne de précision
+- **DecInfer-08/DecPyMC-7** : Sequential decisions — dynamic programming, Bellman-style backward induction
 - **DecInfer-10** : Thompson Sampling — bandits manchots bayésiens (Beta-Bernoulli conjugué, posterior updating)
 - **Do-Calculus-Bridge** : dowhy (Microsoft) + backdoor adjustment — causal inference Pearl
 
@@ -455,7 +455,7 @@ Couvre 5ᵉ famille du ledger (ML/ML.Net → Tweety → SymbolicLearning → Sem
 | **L289** (anti-doublon temporel) | OK | Entry #005 ≠ entry #001/#002/#003/#004 = substance distincte (DecisionTheory vs ML/ML.Net vs Tweety vs SymbolicLearning vs SemanticWeb) |
 | **L327** (`+N/-0` purement additif) | OK | Modifs = cumul table update (4 lignes remplacées) + entry #005 appendu, 0 ligne supprimée |
 | **L335** (anti-monoculture) | OK | pivot post-c.396 PR #5859 vers substance NEUVE audit axe-2 owner po-2025 strict, pas 11ᵉ+ PR i18n monotone gated, ≠ re-sweep monotone #5780, ≠ clôture admin #5661, ≠ Argumentum PR-A #5721 close c.371+c.393 |
-| **L378 durcie** (G.1 2× audit+commit) | OK | Audit direct G.1 lecture exhaustive 18 nb, 3 disclosures honnêtes vérifiées (Lean DecInfer-2 vNM sound 0-sorry, DecInfer-9 Gittins scaffolding, Do-Calculus-Bridge dowhy advisory), 0 violation C.1, 0 workaround dégradé |
+| **L378 durcie** (G.1 2× audit+commit) | OK | Audit direct G.1 lecture exhaustive 18 nb, 3 disclosures honnêtes vérifiées (Lean DecInfer-02 vNM sound 0-sorry, DecInfer-09 Gittins scaffolding, Do-Calculus-Bridge dowhy advisory), 0 violation C.1, 0 workaround dégradé |
 | **Stop & Repair** (no scrub) | OK | 0 modification de cellule, audit purement consultatif |
 | **SOTA 5 verdicts** | OK | 18/18 SOTA-OK (8 DecInfer Microsoft.Infer.NET, 2 Lean 4 WSL, 7 DecPyMC PyMC+ArviZ, 1 Causal-Bridges dowhy) |
 | **0 parasite CJK** | OK | 4 ranges Unicode scannés (CJK Unified U+4E00-U+9FFF, CJK Ext A U+3400-U+4DBF, Hangul U+AC00-U+D7AF, Fullwidth U+FF00-U+FFEF) = 0/18 .ipynb (notebook audit script python3 = 0/18) |
@@ -497,7 +497,7 @@ Total .ipynb: 18
 
 **Moteurs SOTA cumulés sur 8 entries** : Microsoft.ML.Probabilistic, Microsoft.Infer.NET, PyPhi, Google.OR-Tools, Z3, Microsoft.Automata, Lean 4, PyTorch, OpenAI SDK, NetworkX, python-constraint, AIMA, Choco, Dancing Links, PyGAD, GeneticSharp, simanneal, Mealpy, NumPyro/JAX, regex, matplotlib, Plotly.NET = **22 moteurs SOTA distincts** sur 8 familles du registre axe-2 SOTA.
 
-**Spécificité registre** : entry #008 = première entrée avec **3 kernels différents** (17×.net-csharp + 18×python3 + 1×lean4-wsl = 36/36). Sudoku-19-Lean-Propagation (lake `sudoku_lean/Sudoku.{Basic,ExactCover,Propagation}` + 0 sorry + 2 axiomes `propext, Quot.sound`). Marqueur de la **branche Kernel `leans`** du registre déjà initiée par entry #005 DecisionTheory (2 Lean companions DecInfer-2 + DecInfer-9) — kernel `lean4-wsl` déjà représenté.
+**Spécificité registre** : entry #008 = première entrée avec **3 kernels différents** (17×.net-csharp + 18×python3 + 1×lean4-wsl = 36/36). Sudoku-19-Lean-Propagation (lake `sudoku_lean/Sudoku.{Basic,ExactCover,Propagation}` + 0 sorry + 2 axiomes `propext, Quot.sound`). Marqueur de la **branche Kernel `leans`** du registre déjà initiée par entry #005 DecisionTheory (2 Lean companions DecInfer-02 + DecInfer-09) — kernel `lean4-wsl` déjà représenté.
 
 ## Voir aussi
 
@@ -744,7 +744,7 @@ Total .ipynb: 3
 
 ## Entry #008 — Sudoku (owner po-2025 strict, c.401)
 
-Famille `MyIA.AI.Notebooks/Sudoku/` = **36 notebooks** `.ipynb` (17 paires `*-Csharp.ipynb` dont `Sudoku-0-Environment-Csharp.ipynb` + 17 jumeaux `*-Python.ipynb` + 1 `Sudoku-19-Lean-Propagation.ipynb` kernel `lean4-wsl` + 1 `Sudoku-16-NeuralNetwork-Python` + 1 `Sudoku-17-LLM-Python` ; **16 paires miroir C#/Python** portant les mêmes algorithmes dans les deux langages ; kernel distribution **17×.net-csharp + 18×python3 + 1×lean4-wsl = 36/36 = 100% cohérent**). Worktree `D:\dev\CoursIA-c401`, branche `feature/c401-ledger-008-sudoku` off origin/main `a8eec3fa9` (post-Search L378 #5884 MERGED + Probas/Infer #5886 MERGED + IIT/PyPhi c.402 row #7). Audit read-only, aucun commit code, aucun `gh`.
+Famille `MyIA.AI.Notebooks/Sudoku/` = **36 notebooks** `.ipynb` (17 paires `*-Csharp.ipynb` dont `Sudoku-00-Environment-Csharp.ipynb` + 17 jumeaux `*-Python.ipynb` + 1 `Sudoku-19-Lean-Propagation.ipynb` kernel `lean4-wsl` + 1 `Sudoku-16-NeuralNetwork-Python` + 1 `Sudoku-17-LLM-Python` ; **16 paires miroir C#/Python** portant les mêmes algorithmes dans les deux langages ; kernel distribution **17×.net-csharp + 18×python3 + 1×lean4-wsl = 36/36 = 100% cohérent**). Worktree `D:\dev\CoursIA-c401`, branche `feature/c401-ledger-008-sudoku` off origin/main `a8eec3fa9` (post-Search L378 #5884 MERGED + Probas/Infer #5886 MERGED + IIT/PyPhi c.402 row #7). Audit read-only, aucun commit code, aucun `gh`.
 
 ### Métrique (vérifiée firsthand par 4 scripts python3 worker)
 
@@ -772,19 +772,19 @@ Famille `MyIA.AI.Notebooks/Sudoku/` = **36 notebooks** `.ipynb` (17 paires `*-Cs
 | **Google.OR-Tools** (CP-SAT) | Sudoku-10-ORTools-{Csharp,Python}, Sudoku-18-Comparison-{Csharp,Python} | 17+8 hits C# + Python twin ; output authentique `"OR-Tools CP-SAT : résolu=True, 67.01 ms"` (Sudoku-18-Csharp cell 20) ; benchmark `Easy 314,5 3 Success` (Sudoku-12-Z3-Csharp cell 23) | **SOTA-OK** |
 | **Choco-solver** (Java CSP via `.NET` IKVM / `JPype` Python) | Sudoku-11-Choco-{Csharp,Python} | **2 disclosures honnêtes** : (a) `limitation technique rencontrée avec IKVM dans dotnet-interactive illustre les défis d'interopérabilité Java/.NET` (cell 27) ; (b) `Choco (Java via JPype), confirmé authentique` | **SOTA-OK avec disclosures assumées** |
 | **Lean 4** (preuve formelle, kernel `lean4-wsl`) | Sudoku-19-Lean-Propagation | output authentique `"'Sudoku.peer_excludes_value' depends on axioms: [propext, Quot.sound]"` ; `#print axioms naked_single_sound` ; `#check Scopes`, `#check Solution`, `#check AllDistinctOn` ; **0 sorry**, dépendances axiomatiques minimales = `propext + Quot.sound` | **SOTA-OK (Lean 4 natif WSL)** |
-| **DlxLib** (Dancing Links .NET, Knuth Algorithm X) | Sudoku-2-DancingLinks-Csharp | `DlxLib` import + solveur DLX linké | **SOTA-OK** |
-| **PyGAD** (algorithme génétique Python) | Sudoku-3-Genetic-Python | `import pygad` | **SOTA-OK** |
-| **GeneticSharp** (.NET GA) | Sudoku-3-Genetic-Csharp | `using GeneticSharp` | **SOTA-OK** |
-| **simanneal** (Python Simulated Annealing) | Sudoku-4-SimulatedAnnealing-Python | `import simanneal` | **SOTA-OK** |
-| **Mealpy** (PSO/swarm Python) | Sudoku-5-PSO-Python | `import mealpy`, `mealpy.problem` | **SOTA-OK** |
+| **DlxLib** (Dancing Links .NET, Knuth Algorithm X) | Sudoku-02-DancingLinks-Csharp | `DlxLib` import + solveur DLX linké | **SOTA-OK** |
+| **PyGAD** (algorithme génétique Python) | Sudoku-03-Genetic-Python | `import pygad` | **SOTA-OK** |
+| **GeneticSharp** (.NET GA) | Sudoku-03-Genetic-Csharp | `using GeneticSharp` | **SOTA-OK** |
+| **simanneal** (Python Simulated Annealing) | Sudoku-04-SimulatedAnnealing-Python | `import simanneal` | **SOTA-OK** |
+| **Mealpy** (PSO/swarm Python) | Sudoku-05-PSO-Python | `import mealpy`, `mealpy.problem` | **SOTA-OK** |
 | **PyTorch** (NN) | Sudoku-16-NeuralNetwork-Python | `import torch`, `torch.nn`, `torch.optim` ; `SimpleRNN` deep learning | **SOTA-OK** |
 | **OpenAI SDK** (LLM API) | Sudoku-17-LLM-Python | `import openai`, `client = openai.OpenAI(api_key=...)` ; **disclosure honnête** `simulation_mode=True` par défaut + `mock_call()` fallback | **SOTA-OK avec simulation honnête disclosed** (reversible RECOVERABLE-USER-HAND via OPENAI_API_KEY) |
-| **NetworkX** (graphe) | Sudoku-9-GraphColoring-Python | `import networkx` ; modélisation Sudoku = graphe 81 sommets | **SOTA-OK** |
+| **NetworkX** (graphe) | Sudoku-09-GraphColoring-Python | `import networkx` ; modélisation Sudoku = graphe 81 sommets | **SOTA-OK** |
 | **regex** (lib Python, Microsoft.Automata C#) | Sudoku-13-SymbolicAutomata-Python, Sudoku-13-Csharp | `import regex` ; contrainte Sudoku encodée comme expression rationnelle monolithique 13515 chars (« monstre regex » D'Antoni/Veanes) | **SOTA-OK** |
-| **python-constraint** (CSP Python pur) | Sudoku-6-AIMA-CSP-Python | `import constraint` ; AIMA constraint programming | **SOTA-OK** |
-| **AIMA** (algorithmes classiques, Norvig) | Sudoku-7-Norvig-{Csharp,Python}, Sudoku-8-HumanStrategies | `aima` references, Norvig `constraint propagation` pur Python | **SOTA-OK** |
+| **python-constraint** (CSP Python pur) | Sudoku-06-AIMA-CSP-Python | `import constraint` ; AIMA constraint programming | **SOTA-OK** |
+| **AIMA** (algorithmes classiques, Norvig) | Sudoku-07-Norvig-{Csharp,Python}, Sudoku-08-HumanStrategies | `aima` references, Norvig `constraint propagation` pur Python | **SOTA-OK** |
 | **matplotlib** (viz) | Sudoku-{1,11,16,18}-Python | `import matplotlib.pyplot`, `matplotlib.patches` ; rendu grilles résolues | **SOTA-OK** |
-| **Plotly.NET** (viz interactif) | Sudoku-0-Environment-Csharp | `using Plotly.NET`, `using Plotly.NET.LayoutObjects` | **SOTA-OK** |
+| **Plotly.NET** (viz interactif) | Sudoku-00-Environment-Csharp | `using Plotly.NET`, `using Plotly.NET.LayoutObjects` | **SOTA-OK** |
 
 **Workaround dégradé** : **0/36**. Aucun ASCII art substituant une image générée ; aucune réimplémentation jouet d'un moteur SOTA. 17 paires C#/Python = traductions mot-à-mot du même algorithme dans les deux langages (vrai port cross-language, pas une dégradation).
 
@@ -807,16 +807,16 @@ Chaque notebook pose un problème de **résolution de Sudoku** non-trivial qui e
 
 | Notebook | Problème posé (cellule-clef) | Capacité distinctive exercée |
 |----------|------------------------------|--------------------------------|
-| Sudoku-0-Environment-Csharp | Classes de base (grille, solveur ISudokuSolver) + viz Plotly.NET | Infrastructure partagée (16 paires C#/Python importent ce module via `#!import`) |
-| Sudoku-1-Backtracking-{Csharp,Python} | Backtracking MRV, Forward Checking, count-all-solutions ; benchmark sur `Easy + Hardest` (10+11 puzzles réels) | Recherche exhaustive + heuristique MRV sur puzzles 9×9 réels |
-| Sudoku-2-DancingLinks-{Csharp,Python} | Algorithm X (Knuth) en représentation DLX ; solveur exact pour grilles arbitraires | DLX = représentation sparse linkée pour résolution exacte efficace |
-| Sudoku-3-Genetic-{Csharp,Python} | Algorithme génétique (mutation, crossover, sélection) sur population de grilles candidates | Recherche évolutionniste ; discrétisation chromosomes |
-| Sudoku-4-SimulatedAnnealing-{Csharp,Python} | Recuit simulé avec température décroissante + critère Metropolis | Métaheuristique stochastique |
-| Sudoku-5-PSO-{Csharp,Python} | Particle Swarm Optimization sur espace de recherche Sudoku | Swarm intelligence (Mealpy) |
-| Sudoku-6-AIMA-CSP-{Csharp,Python} | Modélisation AIMA `constraint.Problem` + backtracking + AC-3 + LCV | Paradigme CSP AIMA classique (Norvig/Russell) |
-| Sudoku-7-Norvig-{Csharp,Python} | Solveur Norvig (propagation + recherche) | Algorithme Norvig 100 lignes Python, baseline |
-| Sudoku-8-HumanStrategies-{Csharp,Python} | Stratégies humaines (naked single, hidden single, locked candidate) | Heuristiques interactives déterministes |
-| Sudoku-9-GraphColoring-{Csharp,Python} | Sudoku réduit à coloration de graphe ; NetworkX 81 sommets | Réduction CSP → graph coloring |
+| Sudoku-00-Environment-Csharp | Classes de base (grille, solveur ISudokuSolver) + viz Plotly.NET | Infrastructure partagée (16 paires C#/Python importent ce module via `#!import`) |
+| Sudoku-01-Backtracking-{Csharp,Python} | Backtracking MRV, Forward Checking, count-all-solutions ; benchmark sur `Easy + Hardest` (10+11 puzzles réels) | Recherche exhaustive + heuristique MRV sur puzzles 9×9 réels |
+| Sudoku-02-DancingLinks-{Csharp,Python} | Algorithm X (Knuth) en représentation DLX ; solveur exact pour grilles arbitraires | DLX = représentation sparse linkée pour résolution exacte efficace |
+| Sudoku-03-Genetic-{Csharp,Python} | Algorithme génétique (mutation, crossover, sélection) sur population de grilles candidates | Recherche évolutionniste ; discrétisation chromosomes |
+| Sudoku-04-SimulatedAnnealing-{Csharp,Python} | Recuit simulé avec température décroissante + critère Metropolis | Métaheuristique stochastique |
+| Sudoku-05-PSO-{Csharp,Python} | Particle Swarm Optimization sur espace de recherche Sudoku | Swarm intelligence (Mealpy) |
+| Sudoku-06-AIMA-CSP-{Csharp,Python} | Modélisation AIMA `constraint.Problem` + backtracking + AC-3 + LCV | Paradigme CSP AIMA classique (Norvig/Russell) |
+| Sudoku-07-Norvig-{Csharp,Python} | Solveur Norvig (propagation + recherche) | Algorithme Norvig 100 lignes Python, baseline |
+| Sudoku-08-HumanStrategies-{Csharp,Python} | Stratégies humaines (naked single, hidden single, locked candidate) | Heuristiques interactives déterministes |
+| Sudoku-09-GraphColoring-{Csharp,Python} | Sudoku réduit à coloration de graphe ; NetworkX 81 sommets | Réduction CSP → graph coloring |
 | Sudoku-10-ORTools-{Csharp,Python} | Google OR-Tools CP-SAT (variables + contraintes AllDifferent) | **Vrai moteur CP-SAT industriel** avec benchmark 10+ puzzles |
 | Sudoku-11-Choco-{Csharp,Python} | Choco CSP (Java) via IKVM/.NET ou JPype/Python ; limitation Java/.NET disclosed | Choco = CSP académique, comparaison OR-Tools vs Choco |
 | Sudoku-12-Z3-{Csharp,Python} | Microsoft Z3 SMT ; 4 encodages (Int simple, BitVector simple, BitVector substitution) | **Vrai moteur SMT industriel** ; encodages multiples benchmarkés |
@@ -849,7 +849,7 @@ Pivot L335 anti-monoculture post-c.400 : **7ᵉ famille distincte du ledger** (e
 - **Faux positifs workaround** : 0/36 (1 mention explicite « simulation_mode = True par défaut » dans Sudoku-17 = disclosure honnête RECOVERABLE-USER-HAND, code path réel openai.OpenAI implémenté et documenté ; 1 mention explicite « IKVM limitation technique » dans Sudoku-11-Choco-Csharp = disclosure honnête RECOVERABLE-MACHINE ; 1 mention explicite « NumPyro fonctionne avec des limitations » dans Sudoku-15-Infer-Python = substitution linguistique assumée, pas un fallback dégradé ; 1 mention explicite « monstre regex tronque SFAz3+Z3 » dans Sudoku-13 = INTRINSIC disclosed limite académique prouvée).
 - **Faux positif CJK** : 0/36 fonctionnellement (2 chars CJK = `完整` localisés L398 Sudoku-13-Csharp = terme technique précis dans une documentation mixte FR/ZH sur une limitation de SFA → Z3, **pas une faute de frappe parasite**). A documenter honnêtement.
 - **Audit sub-agent vs audit worker** : sub-agent Sonnet (`a1642a03fd1215256`, model=sonnet, read-only) est invoqué en parallèle mais **les chiffres pivots ont été vérifiés firsthand par le worker** via 4 scripts python3 indépendants AVANT l'écriture de cette entry (1337 cells, 0 null exec, 0 err, 36/36 = 17+18+1 kernelspec cohérence, 0 C.1, 2 CJK localisés, 21 moteurs SOTA distincts). Quand le sub-agent aura livré son rapport, ses counts seront spot-checkés contre ces chiffres — pattern model-delegation c.398 durcie (G.1 2× : sub-agent + worker firsthand).
-- **Anti-régression** : aucun `# Solution` ou `# Exemple résolu` strippé ; aucun notebook dont les outputs ont été hand-edités (vérification : `execution_count != null` sur 525/525 cellules code + `output_type: error = 0` + examples résolus cell 25 de Sudoku-1-Backtracking-Python = `solve_puzzle()` retourne grille 9×9 complète).
+- **Anti-régression** : aucun `# Solution` ou `# Exemple résolu` strippé ; aucun notebook dont les outputs ont été hand-edités (vérification : `execution_count != null` sur 525/525 cellules code + `output_type: error = 0` + examples résolus cell 25 de Sudoku-01-Backtracking-Python = `solve_puzzle()` retourne grille 9×9 complète).
 
 ### Cumul entries (registre axe-2 SOTA)
 
@@ -884,7 +884,7 @@ Pivot L335 anti-monoculture post-c.400 : **7ᵉ famille distincte du ledger** (e
 
 ```
 Sudoku-0-...     CJK=0
-Sudoku-1-...     CJK=0 (×2: Csharp + Python)
+Sudoku-01-...     CJK=0 (×2: Csharp + Python)
 ... (tous CJK=0 sauf)
 Sudoku-13-SymbolicAutomata-Csharp.ipynb  CJK=2 (L398: '完整' = terme technique disclosure)
 Sudoku-13-SymbolicAutomata-Python.ipynb  CJK=0

@@ -42,6 +42,13 @@ with **zero edits to vendored files**.  It produces the SFT seed traces the
 EPIC needs ("sans generateur de traces, pas de seed SFT") by exercising the 6
 operations on the real 1408-node tree.
 
+``reduction_measure`` (#13573) bridges this module to the Planners series'
+search-space-reduction thesis (``Planners/04-NeuroSymbolic/
+Planners-14-LLM-Space-Reducer.ipynb``): the same structural question -- how
+much reading does a guide that decides WHERE to descend save over a
+systematic scan -- answered deterministically on the taxonomy (naive vs
+oracle vs first-child bounds; no LLM call, see the method's docstring).
+
 The 6 operations (mirroring the ``@kernel_function`` names/signatures):
     list_fallacy_categories  -> unique families
     list_fallacies_in_category(category) -> leaves of a family
@@ -64,6 +71,7 @@ import json
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
+from statistics import mean, median
 from typing import Optional
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -437,6 +445,93 @@ class ArgumentumTaxonomy:
             "leaves_per_family": per_family,
         }
 
+    def reduction_measure(self) -> dict:
+        """Structural bounds of a guided descent vs a systematic read (#13573).
+
+        Bridge to the Planners-14 thesis ("an LLM that decides WHERE to
+        descend is a search-space reducer, not a solver"): how much reading
+        does a guide save on THIS taxonomy?  Deterministic -- these are
+        structural bounds, complementary to (not a substitute for) the
+        notebook's measured LLM comparison.
+
+        Cost model: number of CONSULTED nodes, root anchor excluded.
+
+        * ``naive`` -- a systematic reader consults nodes in preorder
+          (children by PK, i.e. CSV order) until it reaches the target:
+          cost = preorder position.
+        * ``oracle`` -- a perfect guide reads only the root->target path:
+          cost = path depth.  The floor ANY guide can reach.
+        * ``first_child`` -- this explorer's own ``_descent_chain`` policy
+          (always descend the first child, read nothing else): a guide that
+          chooses without reading.  It reaches only the leftmost path;
+          ``hit_rate`` is the share of targets it ever reaches -- the honest
+          downside bound (guided-worse-than-naive is a real possibility).
+
+        A real LLM descent lands between ``oracle`` and ``first_child``; the
+        SFT target of ``generate_sft_traces`` is the oracle behaviour.
+        """
+        preorder: list[TaxonomyNode] = []
+
+        def walk(path: str) -> None:
+            for child in self._children_by_parent_path.get(path, []):
+                preorder.append(child)
+                walk(child.path)
+
+        walk("0")  # depth-1 parents are indexed under the literal root path.
+        naive_costs = list(range(1, len(preorder) + 1))
+        # depth read off the dotted path (self-consistent with the tree this
+        # module builds), not the CSV ``depth`` column.
+        oracle_costs = [len(n.path.split(".")) for n in preorder]
+
+        # leftmost path from the root = the _descent_chain policy's reachable set.
+        leftmost: set[int] = set()
+        parent_path = "0"
+        while True:
+            children = self._children_by_parent_path.get(parent_path, [])
+            if not children:
+                break
+            leftmost.add(children[0].pk)
+            parent_path = children[0].path
+            if not children:
+                break
+            leftmost.add(children[0].pk)
+            pk = children[0].pk
+
+        naive_mean = mean(naive_costs) if naive_costs else 0.0
+        oracle_mean = mean(oracle_costs) if oracle_costs else 0.0
+        return {
+            "total_nodes": len(self._nodes),
+            "targets": len(preorder),
+            "max_depth": max(oracle_costs, default=0),
+            "naive": {
+                "mean": naive_mean,
+                "median": median(naive_costs) if naive_costs else 0.0,
+                "max": max(naive_costs, default=0),
+            },
+            "oracle": {
+                "mean": oracle_mean,
+                "median": median(oracle_costs) if oracle_costs else 0.0,
+                "max": max(oracle_costs, default=0),
+            },
+            "reduction_ratio_mean": (
+                naive_mean / oracle_mean if oracle_mean else None
+            ),
+            "first_child": {
+                "hit_rate": len(leftmost) / len(preorder) if preorder else None,
+                "chain_length": len(leftmost),
+            },
+            "cost_model": (
+                "consulted nodes, root anchor excluded; naive = preorder "
+                "position (children by PK), oracle = dotted-path depth "
+                "(root->target path only)"
+            ),
+            "scope": (
+                "structural bounds of a guided descent (#13573) -- "
+                "deterministic, NOT an LLM run; a real LLM descent lands "
+                "between oracle and first_child"
+            ),
+        }
+
 
 def main(argv: Optional[list[str]] = None) -> int:
     p = argparse.ArgumentParser(
@@ -451,6 +546,11 @@ def main(argv: Optional[list[str]] = None) -> int:
     p.add_argument("--list-categories", action="store_true")
     p.add_argument("--explore-pk", type=int, metavar="PK", help="Explore hierarchy at PK.")
     p.add_argument("--report", action="store_true", help="Print coverage report.")
+    p.add_argument(
+        "--reduction-measure",
+        action="store_true",
+        help="Print the structural reduction measure (#13573).",
+    )
     p.add_argument(
         "--out-traces",
         type=Path,
@@ -482,6 +582,14 @@ def main(argv: Optional[list[str]] = None) -> int:
                 taxo.explore_fallacy_hierarchy(args.explore_pk),
                 ensure_ascii=False,
                 indent=2,
+            )
+        )
+        return 0
+
+    if args.reduction_measure:
+        print(
+            json.dumps(
+                taxo.reduction_measure(), ensure_ascii=False, indent=2
             )
         )
         return 0
@@ -524,14 +632,20 @@ def main(argv: Optional[list[str]] = None) -> int:
         print(f"  ecrites dans : {args.out_traces}")
 
     if not any(
-        (args.list_categories, args.explore_pk is not None, args.report, args.out_traces)
+        (
+            args.list_categories,
+            args.explore_pk is not None,
+            args.report,
+            args.reduction_measure,
+            args.out_traces,
+        )
     ):
         # default: print the coverage report.
         rep = taxo.coverage_report()
         print(
             f"Taxonomie: {rep['total_nodes']} noeuds, {rep['family_count']} familles, "
             f"{rep['leaves']} feuilles.  Utilisez --report / --list-categories / "
-            f"--explore-pk PK / --out-traces PATH."
+            f"--explore-pk PK / --reduction-measure / --out-traces PATH."
         )
     return 0
 

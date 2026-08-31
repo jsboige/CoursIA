@@ -240,7 +240,9 @@ def test_wait_loop_fails_fast_on_a_failure():
     assert len(polls) == 1
 
 
-def test_wait_loop_times_out_into_a_failure():
+def test_wait_loop_times_out_into_a_starved_failure():
+    """#13510: the wait loop's timeout verdict carries the STARVED marker the
+    driver keys on for the self-cancel; the exit code stays 1 (rule 1)."""
     def fetch(_repo, _sha):
         return [run("Slow CI", None, status="in_progress")]
 
@@ -249,7 +251,131 @@ def test_wait_loop_times_out_into_a_failure():
         settle_polls=2, sleep=lambda _s: None, fetch=fetch, now=_clock(),
     )
     assert code == 1
+    assert msg.startswith("STARVED")
     assert "timed out" in msg and "Slow CI" in msg
+
+
+# --- #13510 -- starvation renders CANCELLED, not FAILURE ---------------------
+#
+# The defect: a starved gate (deadline fired, constituents still pending,
+# nothing red) concluded FAILURE -- a red leg on a PR with no red check,
+# unmergeable until the hourly sweep repaired it. The fix: such a verdict is
+# marked STARVED and the driver cancels its own run, so the leg concludes
+# CANCELLED (grey, still blocking) and the existing stale-sweep re-drives it
+# (#11862: `cancelled` is in the sweep's gate-side RED set by design). Rule 1
+# is about never PASSING on unknown -- every exit code below stays 1.
+
+
+def test_starved_verdict_is_marked_and_names_constituents():
+    """Acceptance #13510: the timeout-with-pending verdict carries the marker
+    the driver keys on -- without it the self-cancel never fires."""
+    code, msg = pr_gate.verdict(pending=["Slow CI"], bad=[], settled=False)
+    assert code == 1, "rule 1: starvation never passes"
+    assert msg.startswith("STARVED")
+    assert "Slow CI" in msg
+
+
+def test_red_verdict_is_not_marked_starved():
+    """Positive control: a genuine red is a FAIL, never STARVED -- the gate
+    must keep failing loudly on real failures."""
+    code, msg = pr_gate.verdict(pending=[], bad=["Lean CI"], settled=True)
+    assert code == 1
+    assert msg.startswith("FAIL")
+    assert "Lean CI" in msg
+
+
+def test_empty_wait_set_guard_is_not_starved():
+    """The #11751 empty-unsettled sentinel reports a gate BUG -- it must not
+    route into the self-cancel path."""
+    code, msg = pr_gate.verdict(pending=[], bad=[], settled=False)
+    assert code == 1
+    assert msg.startswith("FAIL") and "gate bug" in msg
+
+
+def test_cancel_own_run_true_on_accepted(monkeypatch):
+    calls = {}
+
+    class _Proc:
+        returncode = 0
+        stderr = ""
+
+    def fake_run(cmd, **_kw):
+        calls["cmd"] = cmd
+        return _Proc()
+
+    monkeypatch.setattr(pr_gate.subprocess, "run", fake_run)
+    assert pr_gate.cancel_own_run("o/r", "424242") is True
+    assert "repos/o/r/actions/runs/424242/cancel" in " ".join(calls["cmd"])
+
+
+def test_cancel_own_run_false_on_refusal(monkeypatch):
+    class _Proc:
+        returncode = 1
+        stderr = "409 Conflict"
+
+    monkeypatch.setattr(pr_gate.subprocess, "run", lambda *_a, **_k: _Proc())
+    assert pr_gate.cancel_own_run("o/r", "1") is False
+
+
+def _drive_starved(monkeypatch, extra_args, cancel_result=True):
+    """Run main() over a starved wait loop; return (exit, cancels, sleeps)."""
+    cancels = []
+    sleeps = []
+
+    def fake_wait(*_a, **_k):
+        return 1, "STARVED -- timed out waiting for: Slow CI"
+
+    def fake_cancel(repo, run_id):
+        cancels.append((repo, run_id))
+        return cancel_result
+
+    monkeypatch.setattr(pr_gate, "wait_and_decide", fake_wait)
+    monkeypatch.setattr(pr_gate, "cancel_own_run", fake_cancel)
+    monkeypatch.setattr(pr_gate.time, "sleep", lambda s: sleeps.append(s))
+    monkeypatch.delenv("GITHUB_RUN_ID", raising=False)
+    code = pr_gate.main(["--repo", "o/r", "--sha", "deadbeef", *extra_args])
+    return code, cancels, sleeps
+
+
+def test_main_starved_cancels_own_run_then_exits_one(monkeypatch):
+    """Acceptance #13510: workflow-run mode renders starvation as a self-
+    cancel with a grace wait; the exit code stays 1 (never pass on unknown)."""
+    code, cancels, sleeps = _drive_starved(monkeypatch, ["--run-id", "424242"])
+    assert code == 1
+    assert cancels == [("o/r", "424242")]
+    assert sleeps and sleeps[0] == pr_gate.CANCEL_GRACE_SEC
+
+
+def test_main_starved_without_run_id_stays_plain_fail(monkeypatch):
+    """Local run (no run id resolvable): no cancel, plain FAIL, no grace."""
+    code, cancels, sleeps = _drive_starved(monkeypatch, [])
+    assert code == 1
+    assert cancels == [] and sleeps == []
+
+
+def test_main_starved_no_self_cancel_flag_disables(monkeypatch):
+    code, cancels, _ = _drive_starved(
+        monkeypatch, ["--run-id", "424242", "--no-self-cancel"])
+    assert code == 1 and cancels == []
+
+
+def test_main_starved_post_mode_does_not_self_cancel(monkeypatch):
+    """--post-check-run is the default-branch operator harness (#10433):
+    its own run is not the PR's gate leg, so cancelling it would kill the
+    POST. It keeps posting the verdict instead."""
+    code, cancels, _ = _drive_starved(
+        monkeypatch, ["--run-id", "424242", "--post-check-run"])
+    assert code == 1 and cancels == []
+
+
+def test_main_starved_refused_cancel_still_exits_one(monkeypatch):
+    """A refused cancel (API hiccup) degrades to the pre-#13510 FAIL, never
+    to a pass."""
+    code, cancels, sleeps = _drive_starved(
+        monkeypatch, ["--run-id", "424242"], cancel_result=False)
+    assert code == 1
+    assert cancels == [("o/r", "424242")]
+    assert sleeps == [], "no grace wait when the cancel never landed"
 
 
 # --- #11751 -- phantom FAIL when the deadline fires between polls ------------
@@ -560,9 +686,51 @@ def test_advisory_jobs_roster_only_advisory_workflows():
     roster = pr_gate.derive_advisory_jobs()
     assert "PR gate" not in roster, "the gate itself must never be advisory"
     assert "Lean CI" not in roster, "non-advisory workflow jobs must not leak"
-    assert "machine-dep-timing" in roster, (
-        "the canonical fix from the 2026-08-25 incident must hold"
+    assert roster, "an empty roster would silently disable the workflow-name path"
+    # `machine-dep-timing` is the workflow the 2026-08-25 incident was about,
+    # so it must stay covered -- but NOT under a pinned spelling. #12860
+    # (a81c5842c) gave its job an explicit `name: machine-dep-timing
+    # (advisory)`, which fixed the incident AT THE SOURCE: the marker now
+    # lives in the job name, so `is_advisory` catches it by substring and the
+    # roster is merely a second line of defence. Pinning the bare job key
+    # asserted the SYMPTOM (a nameless job recovered via the roster), so
+    # repairing the cause read as a regression and turned `main` red for 3
+    # consecutive runs (2026-08-25T12:35Z, 2026-08-26T00:26Z, 05:02Z).
+    # Assert coverage; let the spelling drift.
+    assert any(j.startswith("machine-dep-timing") for j in roster), (
+        "the workflow behind the 2026-08-25 incident must stay covered"
     )
+
+
+ADVISORY_WORKFLOW_FIXTURE = "name: synthetic (advisory)\non:\n  pull_request:\njobs:\n  nameless-job:\n    runs-on: ubuntu-latest\n    steps:\n      - run: 'true'\n"
+
+BLOCKING_WORKFLOW_FIXTURE = "name: synthetic blocking\non:\n  pull_request:\njobs:\n  nameless-job-blocking:\n    runs-on: ubuntu-latest\n    steps:\n      - run: 'true'\n"
+
+
+def test_advisory_jobs_roster_recovers_a_nameless_job(tmp_path):
+    """The contract the 2026-08-25 incident actually exposed: a job whose
+    WORKFLOW name carries the marker but whose JOB name does not must still
+    be routed as advisory. Held on a synthetic fixture rather than on a live
+    workflow, so that repairing a real workflow's job name -- which is the
+    better fix, and what #12860 did -- can never read as a regression again.
+    """
+    (tmp_path / "synthetic-advisory.yml").write_text(
+        ADVISORY_WORKFLOW_FIXTURE, encoding="utf-8"
+    )
+    (tmp_path / "synthetic-blocking.yml").write_text(
+        BLOCKING_WORKFLOW_FIXTURE, encoding="utf-8"
+    )
+    roster = pr_gate.derive_advisory_jobs(workflows_dir=str(tmp_path))
+    assert "nameless-job" in roster, (
+        "a job with no `name:` must be recovered by its key"
+    )
+    assert "nameless-job-blocking" not in roster, (
+        "a non-advisory workflow must not leak its jobs into the roster"
+    )
+    # And the routing the roster exists to enable:
+    checks = [run("nameless-job", "failure")]
+    _pending, bad, _ok, advisory = pr_gate.classify(checks, "PR gate", roster)
+    assert bad == [] and len(advisory) == 1
 
 
 def test_advisory_jobs_roster_handles_missing_directory(tmp_path):
