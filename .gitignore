@@ -982,3 +982,15 @@ MyIA.AI.Notebooks/**/cache/
 
 # WSL admin credentials (po-2027 onboarding)
 .secrets/wsl_credentials
+
+# Etat local machine : untrack V1 consolidation #13739 (copies disque conservees via --cached)
+# Artifacts regenerables : build .NET Tweety, plans/progress/agent-memory Claude, forensics, snapshots CI.
+# NE PAS de-commenter pour .claude/agents|skills|rules|commands (partages, tracks legitimes).
+.claude/PROJECT_MEMORY.md
+.claude/plans/
+.claude/progress/
+.claude/agent-memory/
+.claude/settings.local.json
+MyIA.AI.Notebooks/SymbolicAI/Tweety/dotnet-build/
+scripts/notebook_tools/forensic_results.json
+scripts/ci/snapshots/
