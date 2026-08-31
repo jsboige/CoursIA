@@ -1,36 +1,3 @@
 {
-  "broken_links": [
-    {
-      "notebook": "MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/09-KernelMemory-Multimodal.ipynb",
-      "cell_idx": 0,
-      "line_no": 3,
-      "text": "<< Précédent",
-      "target": "08-KernelMemory-Hybrid-Search.ipynb",
-      "kind": "nav"
-    },
-    {
-      "notebook": "MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/09-KernelMemory-Multimodal.ipynb",
-      "cell_idx": 0,
-      "line_no": 6,
-      "text": "08",
-      "target": "08-KernelMemory-Hybrid-Search.ipynb",
-      "kind": "link"
-    },
-    {
-      "notebook": "MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/09-KernelMemory-Multimodal.ipynb",
-      "cell_idx": 3,
-      "line_no": 4,
-      "text": "08",
-      "target": "08-KernelMemory-Hybrid-Search.ipynb",
-      "kind": "link"
-    },
-    {
-      "notebook": "MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/09-KernelMemory-Multimodal.ipynb",
-      "cell_idx": 5,
-      "line_no": 5,
-      "text": "08",
-      "target": "08-KernelMemory-Hybrid-Search.ipynb",
-      "kind": "link"
-    }
-  ]
+  "broken_links": []
 }
