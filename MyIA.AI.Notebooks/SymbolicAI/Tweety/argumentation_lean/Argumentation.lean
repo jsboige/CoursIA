@@ -10,7 +10,7 @@ caractéristique, Knaster–Tarski).
 
 ## Statut
 
-- **Toolchain** : `leanprover/lean4:v4.31.0-rc1` + Mathlib4 (`v4.31.0-rc1`).
+- **Toolchain** : `leanprover/lean4:v4.32.1` + Mathlib4 (`v4.32.1`).
 - **Sorry** : **0** sur tout le module — Fundamental Lemma de Dung, identités de
   point fixe du grounded, plus-petite-complétude, hiérarchie des sémantiques
   (stable ⇒ preferred ⇒ complete ⇒ admissible), et le lemme-clé
@@ -31,6 +31,8 @@ caractéristique, Knaster–Tarski).
 - `Argumentation.Fundamental` — **Fundamental Lemma de Dung** (sans sorry).
 - `Argumentation.Grounded` — `grounded_fixed`, `grounded_defends_iff_mem`,
   `grounded_least_complete`, `F_preserves_admissible`.
+- `Argumentation.Synthesis` — synthèse certifiée (Loi II #12205) : témoin Z3
+  d'extension stable évalué `by decide`, non-existence du 3-cycle.
 
 ## Références croisées
 
@@ -49,7 +51,7 @@ Knaster–Tarski).
 
 ## Status
 
-- **Toolchain**: `leanprover/lean4:v4.31.0-rc1` + Mathlib4 (`v4.31.0-rc1`).
+- **Toolchain**: `leanprover/lean4:v4.32.1` + Mathlib4 (`v4.32.1`).
 - **Sorry**: **0** across the whole module — Dung's Fundamental Lemma, grounded
   fixed-point identities, least-complete property, semantics hierarchy
   (stable ⇒ preferred ⇒ complete ⇒ admissible), and the key lemma
@@ -70,6 +72,8 @@ Knaster–Tarski).
 - `Argumentation.Fundamental` — **Dung's Fundamental Lemma** (sorry-free).
 - `Argumentation.Grounded` — `grounded_fixed`, `grounded_defends_iff_mem`,
   `grounded_least_complete`, `F_preserves_admissible`.
+- `Argumentation.Synthesis` — certified synthesis (Law II #12205): Z3 witness
+  of a stable extension evaluated `by decide`, 3-cycle non-existence.
 
 ## Cross-references
 

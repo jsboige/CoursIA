@@ -1007,7 +1007,19 @@ print(f""GPT-5 Multimodal - Analyse et Generation d'Images"")
 print(f""{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"")
 print(f""Mode: {notebook_mode}, Analyse: {analysis_mode}, Niveau: {educational_level}"")
 print(f""Langue: {language}, Max tokens: {max_tokens}"")",,,,,,,,98c192db6e0a735e,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,on4ridys1z,markdown,fr,c458b428a8643a4e,L'environnement est initialise. La cellule suivante configure l'acces a l'API OpenRouter et verifie que le modèle GPT-5 est disponible pour les requêtes multimodales.,,,,,,"Окружение инициализировано. Следующая ячейка настраивает доступ к API OpenRouter и проверяет, что модель GPT-5 доступна для мультимодальных запросов.",,c458b428a8643a4e,,,,,,a911c4e1d37b5a22,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,on4ridys1z,markdown,fr,5bafb2aad41bcd17,"L'environnement est initialise. La cellule suivante configure l'acces a l'API OpenRouter et verifie que le modèle GPT-5 est disponible pour les requêtes multimodales.
+
+### Lecture du résultat — initialisation de l'environnement
+
+La cellule précédente atteste que les quatre dépendances critiques sont résolues sur la machine hôte : **Pillow** (encodage base64 des images), **requests** (POST `/chat/completions` vers OpenRouter), **matplotlib** (visualisation locale optionnelle des images) et **python-dotenv** (chargement du fichier `.env`). Le message `Toutes les dependances sont disponibles` est la condition préalable au pipeline multimodal — sans elle, l'appel à GPT-5 lèverait une `ImportError` au moment de l'encodage base64, pas au moment de la requête HTTP.
+
+Le bloc suivant charge la configuration utilisateur depuis `.env` (clé `OPENROUTER_API_KEY`, base URL, variables additionnelles). L'affichage final résume les paramètres du notebook : `Mode: interactive, Analyse: detailed, Niveau: university, Langue: francais, Max tokens: 4000`. Ces valeurs sont celles que les cellules suivantes vont passer en arguments à `analyze_image_with_gpt5()` — toute modification d'un paramètre dans la cellule 1 se propage ici sans ré-exécuter le reste du notebook.",,,,,,"Окружение инициализировано. Следующая ячейка настраивает доступ к API OpenRouter и проверяет, что модель GPT-5 доступна для мультимодальных запросов.
+
+### Чтение результата — инициализация окружения
+
+Предыдущая ячейка подтверждает, что четыре критические зависимости разрешены на хост-машине: **Pillow** (base64-кодирование изображений), **requests** (POST `/chat/completions` к OpenRouter), **matplotlib** (опциональная локальная визуализация изображений) и **python-dotenv** (загрузка файла `.env`). Сообщение `Toutes les dependances sont disponibles` — необходимое условие для мультимодального пайплайна: без него вызов GPT-5 поднял бы `ImportError` в момент base64-кодирования, а не в момент HTTP-запроса.
+
+Следующий блок загружает пользовательскую конфигурацию из `.env` (ключ `OPENROUTER_API_KEY`, base URL, дополнительные переменные). Итоговый вывод суммирует параметры ноутбука: `Mode: interactive, Analyse: detailed, Niveau: university, Langue: francais, Max tokens: 4000`. Именно эти значения следующие ячейки передают в качестве аргументов `analyze_image_with_gpt5()` — любое изменение параметра в ячейке 1 отражается здесь без повторного запуска остальной части ноутбука.",,5bafb2aad41bcd17,,,,,,616293512c23182b,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,6005d149,code,fr,200eedfda142d11e,"# Configuration API OpenRouter pour GPT-5
 print(""\n🔑 CONFIGURATION GPT-5 MULTIMODAL"")
 print(""="" * 42)
@@ -1065,7 +1077,19 @@ print(f""\n🎯 Modèle sélectionné: {model_name}"")
 print(f""⚙️  Paramètres: Temperature={temperature}, Max tokens={max_tokens}"")
 print(f""📊 Mode d'analyse: {analysis_mode}"")
 ",,,,,,,,200eedfda142d11e,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,c9dx4xmi4ka,markdown,fr,4eb4e466acad7b80,L'API est configuree et la connexion validee. La cellule suivante définit les fonctions d'analyse multimodale qui encapsulent les appels a GPT-5 avec encodage des images en base64.,,,,,,"API настроен, и соединение проверено. Следующая ячейка определяет функции мультимодального анализа, которые инкапсулируют вызовы GPT-5 с кодированием изображений в base64.",,4eb4e466acad7b80,,,,,,a557bf216994fd90,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,c9dx4xmi4ka,markdown,fr,d6b3feb1ad826937,"L'API est configuree et la connexion validee. La cellule suivante définit les fonctions d'analyse multimodale qui encapsulent les appels a GPT-5 avec encodage des images en base64.
+
+### Lecture du résultat — connexion à OpenRouter
+
+La cellule précédente a effectué un `GET /models` sur le point d'entrée OpenRouter configuré. La réponse `HTTP/1.1 200 OK` confirme que la clé d'API est valide et que la passerelle reconnait le compte. L'extraction `gpt5_models` filtre 26 modèles dont l'identifiant contient `gpt-5` — c'est l'écart le plus visible entre la nomenclature officielle (OpenAI publie `gpt-5`, `gpt-5-mini`, `gpt-5-pro`, etc.) et la nomenclature passerelle (chaque fournisseur apparaît avec son préfixe : `openai/gpt-5`, `openai/gpt-5.5-pro`, `openai/gpt-5.4-image-2`, `openai/gpt-5.3-codex`…). Cette explosion taxonomique est l'effet de la stratégie OpenRouter d'exposer un identifiant par couple `(fournisseur, variante)`.
+
+La ligne `Contexte: 400000 tokens` (modèle `gpt-5`) rappelle que la fenêtre de contexte est de 400K tokens — un message image + un long prompt d'analyse multimodal tiennent sans dépasser. À titre de comparaison, `gpt-5.5-pro` et `gpt-5.4-pro` remontent à 1 050 000 tokens, soit 2.6× plus, ce qui ouvre la voie à des workflows multi-tours où l'analyse préliminaire est rappelée dans chaque question suivante.",,,,,,"API настроен, и соединение проверено. Следующая ячейка определяет функции мультимодального анализа, которые инкапсулируют вызовы GPT-5 с кодированием изображений в base64.
+
+### Чтение результата — подключение к OpenRouter
+
+Предыдущая ячейка выполнила `GET /models` на настроенной точке входа OpenRouter. Ответ `HTTP/1.1 200 OK` подтверждает, что API-ключ действителен и шлюз распознаёт учётную запись. Извлечение `gpt5_models` фильтрует 26 моделей, чей идентификатор содержит `gpt-5` — это самый заметный разрыв между официальной номенклатурой (OpenAI публикует `gpt-5`, `gpt-5-mini`, `gpt-5-pro` и т.д.) и номенклатурой шлюза (каждый провайдер появляется со своим префиксом: `openai/gpt-5`, `openai/gpt-5.5-pro`, `openai/gpt-5.4-image-2`, `openai/gpt-5.3-codex`…). Этот таксономический взрыв — следствие стратегии OpenRouter: выставлять по одному идентификатору на каждую пару `(провайдер, вариант)`.
+
+Строка `Contexte: 400000 tokens` (модель `gpt-5`) напоминает, что окно контекста составляет 400K токенов — сообщение с изображением плюс длинный промпт мультимодального анализа помещаются без переполнения. Для сравнения: `gpt-5.5-pro` и `gpt-5.4-pro` поднимаются до 1 050 000 токенов, то есть в 2.6 раза больше, что открывает путь к многоходовым сценариям, где предварительный анализ вспоминается в каждом следующем вопросе.",,d6b3feb1ad826937,,,,,,3d844f865c78df9f,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,ec1512a5,code,fr,33a4d8cf7e230a88,"# Fonctions utilitaires pour traitement d'images
 def encode_image_base64(image_path: Union[str, Path]) -> str:
     """"""
@@ -1148,11 +1172,23 @@ def prepare_image_for_gpt5(image_source: Union[str, Path]) -> Dict[str, str]:
     raise ValueError(f""Format d'image non supporté: {type(image_source)}"")
 
 print(""✅ Fonctions utilitaires images prêtes"")",,,,,,,,33a4d8cf7e230a88,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,9un0u6qzrtv,markdown,fr,1ea1ba58d854b6df,"### Fonction d'analyse et images de demonstration
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,9un0u6qzrtv,markdown,fr,d3f8e8f22d9aab84,"### Fonction d'analyse et images de demonstration
 
-La cellule suivante définit la fonction principale `analyze_image_with_gpt5()` qui encode une image en base64 et l'envoie a l'API multimodale. On prepare ensuite un ensemble d'images de test.",,,,,,"### Функция анализа и демонстрационные изображения
+La cellule suivante définit la fonction principale `analyze_image_with_gpt5()` qui encode une image en base64 et l'envoie a l'API multimodale. On prepare ensuite un ensemble d'images de test.
 
-Следующая ячейка определяет основную функцию `analyze_image_with_gpt5()`, которая кодирует изображение в base64 и отправляет его в мультимодальный API. Затем мы подготавливаем набор тестовых изображений.",,1ea1ba58d854b6df,,,,,,e70c00663d1bb024,,
+### Lecture du résultat — pipeline d'encodage des images
+
+La cellule précédente expose trois fonctions utilitaires qui forment le pipeline d'encodage : `encode_image_base64()` (lecture locale + encodage base64), `download_and_encode_image()` (GET HTTP + encodage pour les URLs distantes) et `prepare_image_for_gpt5()` (dispatcher qui choisit entre URL directe et base64 selon le préfixe). Le retour uniforme est un dict `{type: image_url, image_url: {url: ...}}` qui correspond à la spécification OpenAI du champ `content` multimodal — c'est ce format que `analyze_image_with_gpt5()` passera ensuite dans le tableau `messages`.
+
+Le `print('✅ Fonctions utilitaires images prêtes')` est un signal de chargement, pas un test d'exécution. Pour vérifier que le pipeline fonctionne réellement, il faut passer à la cellule d'analyse sur une image concrète — la fonction `prepare_image_for_gpt5` n'est validée qu'à ce moment-là, et un échec (URL inaccessible, fichier introuvable, format non supporté) remonte une `ValueError` ou `FileNotFoundError` typée.",,,,,,"### Функция анализа и демонстрационные изображения
+
+Следующая ячейка определяет основную функцию `analyze_image_with_gpt5()`, которая кодирует изображение в base64 и отправляет его в мультимодальный API. Затем мы подготавливаем набор тестовых изображений.
+
+### Чтение результата — пайплайн кодирования изображений
+
+Предыдущая ячейка предоставляет три вспомогательные функции, образующие пайплайн кодирования: `encode_image_base64()` (локальное чтение + base64-кодирование), `download_and_encode_image()` (HTTP GET + кодирование для удалённых URL) и `prepare_image_for_gpt5()` (диспетчер, выбирающий между прямым URL и base64 по префиксу). Единообразный возврат — это dict `{type: image_url, image_url: {url: ...}}`, соответствующий спецификации OpenAI мультимодального поля `content` — именно этот формат `analyze_image_with_gpt5()` затем передаст в массив `messages`.
+
+`print('✅ Fonctions utilitaires images prêtes')` — это сигнал загрузки, а не тест выполнения. Чтобы проверить, что пайплайн действительно работает, нужно перейти к ячейке анализа на конкретном изображении — функция `prepare_image_for_gpt5` валидируется только в этот момент, и сбой (недоступный URL, ненайденный файл, неподдерживаемый формат) поднимает типизированную `ValueError` или `FileNotFoundError`.",,d3f8e8f22d9aab84,,,,,,e643461d691fc34b,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,c95a0959,code,fr,add01a9d7ba21508,"# Fonction principale d'analyse d'image avec GPT-5
 def analyze_image_with_gpt5(image_source: Union[str, Path], 
                            prompt: str = None,
@@ -1297,7 +1333,19 @@ Adapte ton vocabulaire au niveau {educational_level}.""""""
         }
 
 print(""✅ Fonction d'analyse GPT-5 prête"")",,,,,,,,add01a9d7ba21508,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,r56pmixdacs,markdown,fr,7eea830c39ad6b27,"Les exemples d'images et les prompts pedagogiques sont définis. La cellule suivante lance l'analyse de demonstration en testant les trois modes (quick, detailed, educational) sur une image concrete.",,,,,,"Примеры изображений и педагогические промпты определены. Следующая ячейка запускает демонстрационный анализ, тестируя три режима (quick, detailed, educational) на конкретном изображении.",,7eea830c39ad6b27,,,,,,c12933ddd2ff637c,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,r56pmixdacs,markdown,fr,e4aef333821034c7,"Les exemples d'images et les prompts pedagogiques sont définis. La cellule suivante lance l'analyse de demonstration en testant les trois modes (quick, detailed, educational) sur une image concrete.
+
+### Lecture du résultat — fonction `analyze_image_with_gpt5`
+
+La cellule précédente assemble trois prompts prédéfinis (`quick`, `detailed`, `educational`) sélectionnés par l'argument `analysis_type`. Le prompt `educational` est le plus structurant : il impose le rôle, le niveau éducatif (lu depuis `educational_level`), la langue (`language`), et un format de sortie à cinq sections explicites (`Description accessible`, `Éléments à observer`, `Contexte éducatif`, `Questions pour réflexion`, `Connexions interdisciplinaires`). Cette rigidité du prompt est ce qui garantit la reproductibilité des analyses entre deux sessions.
+
+Le bloc d'appel HTTP mesure le temps de réponse (`response_time`) et récupère `usage` qui contient `prompt_tokens`, `completion_tokens` et `total_tokens`. Le champ `reasoning_tokens` (présent dans la sortie de GPT-5 image-generation) reflète les tokens consommés en phase de raisonnement interne — c'est un coût invisible dans `completion_tokens` seul, mais facturé. La cellule suivante utilise cette instrumentation pour comparer les trois modes sur une même image.",,,,,,"Примеры изображений и педагогические промпты определены. Следующая ячейка запускает демонстрационный анализ, тестируя три режима (quick, detailed, educational) на конкретном изображении.
+
+### Чтение результата — функция `analyze_image_with_gpt5`
+
+Предыдущая ячейка собирает три предустановленных промпта (`quick`, `detailed`, `educational`), выбираемых аргументом `analysis_type`. Промпт `educational` — самый структурирующий: он задаёт роль, образовательный уровень (читается из `educational_level`), язык (`language`) и формат вывода с пятью явными разделами (`Description accessible`, `Éléments à observer`, `Contexte éducatif`, `Questions pour réflexion`, `Connexions interdisciplinaires`). Именно эта жёсткость промпта гарантирует воспроизводимость анализа между двумя сессиями.
+
+Блок HTTP-вызова измеряет время ответа (`response_time`) и извлекает `usage`, содержащий `prompt_tokens`, `completion_tokens` и `total_tokens`. Поле `reasoning_tokens` (присутствующее в выводе GPT-5 image-generation) отражает токены, израсходованные на фазу внутреннего рассуждения, — это стоимость, невидимая в одном лишь `completion_tokens`, но она тарифицируется. Следующая ячейка использует эту телеметрию, чтобы сравнить три режима на одном изображении.",,e4aef333821034c7,,,,,,a20a4e397551206c,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,66a1b41e,code,fr,f4c5761ce8cf97ca,"# Exemples d'images pour démonstration
 print(""\n🖼️  EXEMPLES D'ANALYSE GPT-5"")
 print(""="" * 40)
@@ -1343,11 +1391,41 @@ print(f""• Posez des questions spécifiques"")
 print(f""• Exploitez le contexte éducatif"")
 print(f""• Combinez analyse textuelle et visuelle"")
 print(f""• Adaptez le niveau de complexité"")",,,,,,,,f4c5761ce8cf97ca,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,vkgiro82pk7,markdown,fr,04758d06016ab082,"### Test : analyse d'une image de demonstration
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,vkgiro82pk7,markdown,fr,569af8f9933786f6,"### Test : analyse d'une image de demonstration
 
-Testons la fonction d'analyse sur une image concrete. GPT-5 va decrire le contenu, identifier les éléments visuels, et fournir une analyse structuree.",,,,,,"### Тест: анализ демонстрационного изображения
+Testons la fonction d'analyse sur une image concrete. GPT-5 va decrire le contenu, identifier les éléments visuels, et fournir une analyse structuree.
 
-Протестируем функцию анализа на конкретном изображении. GPT-5 опишет содержимое, определит визуальные элементы и предоставит структурированный анализ.",,04758d06016ab082,,,,,,2093ef69e281bd4f,,
+### Lecture du résultat — comparaison quick/detailed/educational
+
+La cellule précédente lance trois appels successifs sur l'image `Architecture Historique` (Colisée de Rome, en fait identifié par GPT-5 comme la Gran Vía à Madrid — première surprise factuelle à noter). Les trois appels produisent des sorties de longueurs et complexités très différentes :
+
+| Mode | Caractères | Tokens total | Temps | Coût upstream |
+|---|---|---|---|---|
+| Quick | 206 | 942 | 7.76s | $0.0037 |
+| Detailed | 2606 | 1791 | 19.14s | $0.0113 |
+| Educational | 2908 | 2256 | 25.73s | $0.0155 |
+
+**Observations factuelles** :
+1. Le temps de réponse n'est pas linéaire en longueur de sortie : passer de 942 à 2256 tokens (×2.4) fait passer le temps de 7.76s à 25.73s (×3.3). La latence est dominée par la phase de raisonnement (`reasoning_tokens` : 192 → 320 → 704), pas par la génération.
+2. Le coût upstream (côté fournisseur d'inférence) suit approximativement les tokens total ; le prompt `educational` est le plus cher parce qu'il injecte structure + format de sortie dans l'entrée.
+3. Pour un usage `alt-text`, le mode `quick` suffit — 206 caractères est dans la plage WCAG (<125) après trim. Pour un usage pédagogique structuré, le mode `educational` produit des questions de guidage de l'élève en sus.",,,,,,"### Тест: анализ демонстрационного изображения
+
+Протестируем функцию анализа на конкретном изображении. GPT-5 опишет содержимое, определит визуальные элементы и предоставит структурированный анализ.
+
+### Чтение результата — сравнение quick/detailed/educational
+
+Предыдущая ячейка выполняет три последовательных вызова на изображении `Architecture Historique` (Колизей в Риме, впрочем опознанный GPT-5 как Gran Vía в Мадриде — первый фактический сюрприз, который стоит отметить). Три вызова дают выводы очень разной длины и сложности:
+
+| Режим | Символов | Всего токенов | Время | Стоимость upstream |
+|---|---|---|---|---|
+| Quick | 206 | 942 | 7.76s | $0.0037 |
+| Detailed | 2606 | 1791 | 19.14s | $0.0113 |
+| Educational | 2908 | 2256 | 25.73s | $0.0155 |
+
+**Фактические наблюдения**:
+1. Время ответа не линейно по длине вывода: переход от 942 к 2256 токенам (×2.4) переводит время с 7.76s на 25.73s (×3.3). Латентность определяется фазой рассуждения (`reasoning_tokens`: 192 → 320 → 704), а не генерацией.
+2. Стоимость upstream (со стороны провайдера инференса) приблизительно следует общим токенам; промпт `educational` самый дорогой, потому что он внедряет структуру + формат вывода во вход.
+3. Для использования `alt-text` достаточно режима `quick` — 206 символов после trim попадает в диапазон WCAG (<125). Для структурированного педагогического использования режим `educational` даёт вдобавок наводящие вопросы для ученика.",,569af8f9933786f6,,,,,,9764119d4bfbacfe,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,368e963b,code,fr,d4e94d8c40e61cf0,"# Analyse d'une image de démonstration
 print(""\n🚀 ANALYSE DE DÉMONSTRATION - GPT-5"")
 print(""="" * 50)
@@ -1454,15 +1532,27 @@ image_test = example_images[0]['url']  # Architecture historique
 # TODO etudiant : les questions guides sont-elles pertinentes ?
 
 print(""Exercice a completer"")",,,,,,,,f28cd708ceeb4cef,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,jxwlftsm05,markdown,fr,bcd4bf8b8b742fc6,"### Applications pratiques : accessibilite et pedagogie
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,jxwlftsm05,markdown,fr,48efe12db3a1beab,"### Applications pratiques : accessibilite et pedagogie
 
 GPT-5 excelle dans deux cas d'usage concrets :
 - **Alt text** : generer automatiquement des descriptions d'accessibilite pour les images web
-- **Analyse pedagogique** : utiliser la vision multimodale pour créer du contenu educatif a partir d'images",,,,,,"### Практические применения: доступность и педагогика
+- **Analyse pedagogique** : utiliser la vision multimodale pour créer du contenu educatif a partir d'images
+
+### Lecture du résultat — génération d'alt text
+
+La cellule précédente appelle `analyze_image_with_gpt5()` avec un prompt spécialisé accessibilité qui impose trois contraintes : (1) sortie ≤ 125 caractères, (2) ton factuel et objectif, (3) pas de formatage additionnel. La sortie obtenue est *Vue aérienne de la Gran Vía à Madrid au coucher du soleil, dôme du Metropolis, immeubles illuminés et circulation.* — **114 caractères** (sous le seuil 125), validée par le `print` qui suit.
+
+**Pourquoi cette longueur compte** : le standard WCAG 2.1 (critère 1.1.1 *Non-text Content*) recommande des alt texts courts pour les images informatives. Au-delà de 125 caractères, les lecteurs d'écran tronquent et l'expérience se dégrade. Au-dessous de 50, l'utilisateur perd le contexte. La cellule 19 ci-dessous propose d'expérimenter avec trois niveaux de longueur pour étudier cette zone de confort — c'est l'un des usages où la multimodalité native remplace un pipeline séparé (modèle vision → modèle texte → formatage).",,,,,,"### Практические применения: доступность и педагогика
 
 GPT-5 отлично справляется с двумя конкретными сценариями использования:
 - **Alt text**: автоматическая генерация описаний доступности для веб-изображений
-- **Педагогический анализ**: использование мультимодального зрения для создания образовательного контента на основе изображений",,bcd4bf8b8b742fc6,,,,,,5ad1325b55a0897d,,
+- **Педагогический анализ**: использование мультимодального зрения для создания образовательного контента на основе изображений
+
+### Чтение результата — генерация alt text
+
+Предыдущая ячейка вызывает `analyze_image_with_gpt5()` со специализированным промптом доступности, налагающим три ограничения: (1) вывод ≤ 125 символов, (2) фактический и объективный тон, (3) без дополнительного форматирования. Полученный вывод — *Vue aérienne de la Gran Vía à Madrid au coucher du soleil, dôme du Metropolis, immeubles illuminés et circulation.* — **114 символов** (ниже порога 125), что подтверждает следующий за ним `print`.
+
+**Почему эта длина имеет значение**: стандарт WCAG 2.1 (критерий 1.1.1 *Non-text Content*) рекомендует короткие alt text для информативных изображений. Свыше 125 символов скринридеры обрезают текст, и опыт деградирует. Ниже 50 пользователь теряет контекст. Ячейка 19 ниже предлагает поэкспериментировать с тремя уровнями длины, чтобы изучить эту зону комфорта, — это одно из применений, где нативная мультимодальность заменяет отдельный пайплайн (модель зрения → текстовая модель → форматирование).",,48efe12db3a1beab,,,,,,7bb55f5783c16de6,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,a01bfa80,code,fr,fafb03e3949280b8,"# Génération de descriptions d'accessibilité (Alt text)
 if generate_alt_text and analysis_results:
     print(""\n♿ GÉNÉRATION DE DESCRIPTIONS D'ACCESSIBILITÉ"")
@@ -1560,7 +1650,19 @@ prompt_pedago = ""...""  # TODO etudiant : prompt adapte a des eleves du seconda
 # TODO etudiant : verifiez que les descriptions sont factuelles (pas d'interpretation subjective)
 
 print(""Exercice a completer"")",,,,,,,,514737d6192e76aa,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,htbu4le2fb,markdown,fr,32bbcd099b6439f2,Les analyses de demonstration sont completes. Le mode interactif ci-dessous permet d'experimenter avec vos propres images et prompts d'analyse personnalises.,,,,,,Демонстрационные анализы завершены. Интерактивный режим ниже позволяет экспериментировать с вашими собственными изображениями и персонализированными подсказками для анализа.,,32bbcd099b6439f2,,,,,,0335eca0bf3723aa,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,htbu4le2fb,markdown,fr,de45731f506b0ab3,"Les analyses de demonstration sont completes. Le mode interactif ci-dessous permet d'experimenter avec vos propres images et prompts d'analyse personnalises.
+
+### Lecture du résultat — mode batch vs interactif
+
+La cellule précédente tente `input()` pour récupérer une URL ou un chemin local. En exécution Papermill / batch, l'entrée standard n'est pas disponible : le `except EOFError` intercepte proprement et bascule sur le message `⏭️  Mode interactif non disponible (exécution automatisée)`. Ce pattern est la convention du dépôt pour les notebooks qui mélangent usage interactif et usage batch : la cellule reste fonctionnelle dans les deux modes sans `raise NotImplementedError` (interdit par C.1 — `pass`/`print` sont les stubs corrects).
+
+La cellule suivante passe aux cas d'usage applicatifs — c'est le pont entre la démonstration technique et l'usage métier. Les 5 domaines listés (Histoire, Sciences, Géographie, Art, Médecine) couvrent les disciplines où l'analyse multimodale apporte le plus vs un modèle purement textuel.",,,,,,"Демонстрационные анализы завершены. Интерактивный режим ниже позволяет экспериментировать с вашими собственными изображениями и персонализированными промптами для анализа.
+
+### Чтение результата — пакетный режим против интерактивного
+
+Предыдущая ячейка пытается вызвать `input()`, чтобы получить URL или локальный путь. При выполнении через Papermill / в пакетном режиме стандартный ввод недоступен: `except EOFError` аккуратно перехватывает и переключается на сообщение `⏭️  Mode interactif non disponible (exécution automatisée)`. Этот шаблон — конвенция репозитория для ноутбуков, сочетающих интерактивное и пакетное использование: ячейка остаётся работоспособной в обоих режимах без `raise NotImplementedError` (запрещено правилом C.1 — `pass`/`print` являются корректными заглушками).
+
+Следующая ячейка переходит к прикладным сценариям использования — это мост между технической демонстрацией и бизнес-применением. Перечисленные 5 доменов (История, Науки, География, Искусство, Медицина) охватывают дисциплины, где мультимодальный анализ даёт наибольшее преимущество перед чисто текстовой моделью.",,de45731f506b0ab3,,,,,,c4af4d006ee4a7e5,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,0bc5a8f8,code,fr,5bb341f4638450f9,"# Mode interactif - Analyse d'image personnalisée
 if notebook_mode == ""interactive"" and not skip_widgets:
     print(""\n🎨 MODE INTERACTIF - ANALYSE PERSONNALISÉE"")
@@ -1640,7 +1742,19 @@ if notebook_mode == ""interactive"" and not skip_widgets:
 else:
     print(""\n🤖 Mode batch - Interface interactive désactivée"")
     print(""💡 Pour mode interactif: notebook_mode = 'interactive'"")",,,,,,,,5bb341f4638450f9,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,gkk2vqpxov,markdown,fr,a8aa31416d79dea3,"Le mode interactif etant traite, la cellule suivante presente les principaux cas d'usage applicatifs de l'analyse visuelle par GPT-5 dans un contexte professionnel et pedagogique.",,,,,,После рассмотрения интерактивного режима следующая ячейка представляет основные прикладные сценарии использования визуального анализа с помощью GPT-5 в профессиональном и педагогическом контексте.,,a8aa31416d79dea3,,,,,,e5cc4b48072a5407,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,gkk2vqpxov,markdown,fr,51ea8a4d260d2a5a,"Le mode interactif etant traite, la cellule suivante presente les principaux cas d'usage applicatifs de l'analyse visuelle par GPT-5 dans un contexte professionnel et pedagogique.
+
+### Lecture du résultat — matrice domaine × prompt
+
+La cellule précédente catalogue cinq domaines d'application (Histoire, Sciences, Géographie, Art et Culture, Médecine) avec pour chacun un `prompt_template` prédéfini qui peut être passé directement à `analyze_image_with_gpt5()`. Chaque template impose un rôle disciplinaire, un format de sortie, et un ton adapté au domaine — par exemple, le prompt `Médecine` spécifie *Analyse cette image médicale pour des étudiants en médecine. Explique l'anatomie visible et les points d'intérêt clinique.*
+
+L'output ne contient pas de sortie GPT-5 visible — la cellule a uniquement *annoncé* les cas d'usage, sans encore les exécuter. Les exécutions effectives sont laissées à l'exercice 3 (cellule 27), où l'étudiant compose lui-même son template en combinant les ingrédients observés ici. C'est une inversion pédagogique intéressante : la cellule 24 montre les templates, l'exercice demande de les recombiner.",,,,,,"Интерактивный режим рассмотрен, и следующая ячейка представляет основные прикладные сценарии использования визуального анализа GPT-5 в профессиональном и педагогическом контексте.
+
+### Чтение результата — матрица домен × промпт
+
+Предыдущая ячейка каталогизирует пять доменов применения (История, Науки, География, Искусство и культура, Медицина), каждому из которых соответствует предустановленный `prompt_template`, который можно передать напрямую в `analyze_image_with_gpt5()`. Каждый шаблон задаёт дисциплинарную роль, формат вывода и тон, адаптированный к домену, — например, промпт `Médecine` задаёт *Analyse cette image médicale pour des étudiants en médecine. Explique l'anatomie visible et les points d'intérêt clinique.*
+
+Вывод не содержит видимого результата GPT-5 — ячейка лишь *анонсировала* сценарии использования, не исполняя их. Фактические выполнения оставлены упражнению 3 (ячейка 27), где студент сам составляет свой шаблон, комбинируя наблюдаемые здесь ингредиенты. Это интересная педагогическая инверсия: ячейка 24 показывает шаблоны, упражнение требует их рекомбинировать.",,51ea8a4d260d2a5a,,,,,,11d0972728d5abb5,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,03146442,code,fr,583bd43216b1385e,"# Cas d'usage pédagogiques avec GPT-5
 print(""\n🎓 CAS D'USAGE PÉDAGOGIQUES GPT-5"")
 print(""="" * 45)
@@ -1698,7 +1812,7 @@ print(f""2. Analyse GPT-5 avec prompt éducatif"")
 print(f""3. Génération de questions pour les étudiants"")
 print(f""4. Discussion interactive basée sur l'analyse"")
 print(f""5. Évaluation de la compréhension"")",,,,,,,,583bd43216b1385e,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,a07f0ce4,markdown,fr,70173ee4915c2fb6,"## 🎯 Résumé et Bonnes Pratiques
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,a07f0ce4,markdown,fr,cba151b1841d6795,"## 🎯 Résumé et Bonnes Pratiques
 
 ### ✅ Ce que vous avez appris
 
@@ -1743,7 +1857,16 @@ MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,a0
 
 - **OpenAI** (2025). *GPT-5 System Card & Model Page*. — Modèle multimodal (texte + vision), fenêtre de contexte **400 000 tokens**, 128 000 tokens de sortie maximum. Sources officielles : openai.com/gpt-5/ et developers.openai.com/api/docs/models/gpt-5.
 - **OpenAI** (2024). *GPT-4o System Card*. — Précurseur multimodal de GPT-5 (vision + texte unifiés), base de l'API multimodale utilisée via OpenRouter dans ce notebook.
-",,,,,,"## 🎯 Резюме и лучшие практики
+
+
+### Lecture du résultat — ce que la cellule suivante présente vraiment
+
+Le `print('Cas d'usage pédagogiques')` précédent est un **catalogue statique**, pas une exécution. Les cinq domaines listés sont là pour donner à l'étudiant un point de départ structuré — chaque `prompt_template` est immédiatement réutilisable via `analyze_image_with_gpt5(image, prompt=...)`, sans avoir à le réécrire. Le `print('Template de prompt disponible')` est l'indice que la cellule a déjà joué son rôle pédagogique au moment où l'étudiant l'a lue, même si rien n'a été exécuté.
+
+**Trois choses à retenir pour la cellule de résumé** :
+1. L'API OpenRouter expose 26 modèles GPT-5 distincts — la nomenclature est plus large que la nomenclature OpenAI officielle, et la sélection se fait sur le compromis `contexte × coût × capabilities` (vision, tools, etc.).
+2. Les trois modes d'analyse (quick/detailed/educational) ne sont pas interchangeables : quick est optimisé pour l'alt-text WCAG, educational produit des questions de guidage de l'élève — c'est le seul mode qui fournit un livrable pédagogique clé en main.
+3. Le pipeline multimodal (encode → POST → parse) est uniforme quelle que soit l'image — la complexité se trouve dans le prompt, pas dans le transport.",,,,,,"## 🎯 Резюме и лучшие практики
 
 ### ✅ Что вы изучили
 
@@ -1787,7 +1910,16 @@ MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,a0
 ### 📖 Научные ссылки
 
 - **OpenAI** (2025). *GPT-5 System Card & Model Page*. — Мультимодальная модель (текст + зрение), окно контекста **400 000 tokens**, максимум 128 000 tokens на выходе. Официальные источники : openai.com/gpt-5/ и developers.openai.com/api/docs/models/gpt-5.
-- **OpenAI** (2024). *GPT-4o System Card*. — Мультимодальный предшественник GPT-5 (объединённые зрение + текст), основа мультимодального API, используемого через OpenRouter в этом notebook.",,70173ee4915c2fb6,,,,,,1c023411cc7b0966,,
+- **OpenAI** (2024). *GPT-4o System Card*. — Мультимодальный предшественник GPT-5 (объединённые зрение + текст), основа мультимодального API, используемого через OpenRouter в этом notebook.
+
+### Чтение результата — что следующая ячейка представляет на самом деле
+
+Предыдущий `print('Cas d'usage pédagogiques')` — это **статический каталог**, а не выполнение. Перечисленные пять доменов дают студенту структурированную отправную точку — каждый `prompt_template` немедленно переиспользуется через `analyze_image_with_gpt5(image, prompt=...)` без переписывания. `print('Template de prompt disponible')` — знак того, что ячейка уже сыграла свою педагогическую роль к моменту, когда студент её прочитал, даже если ничего не было выполнено.
+
+**Три вещи, которые стоит запомнить для ячейки резюме**:
+1. API OpenRouter выставляет 26 различных моделей GPT-5 — номенклатура шире официальной номенклатуры OpenAI, и выбор делается по компромиссу `контекст × стоимость × возможности` (зрение, tools и т.д.).
+2. Три режима анализа (quick/detailed/educational) не взаимозаменяемы: quick оптимизирован под alt-text WCAG, educational даёт наводящие вопросы для ученика — это единственный режим, дающий готовый педагогический результат.
+3. Мультимодальный пайплайн (encode → POST → parse) одинаков для любого изображения — сложность живёт в промпте, а не в транспорте.",,cba151b1841d6795,,,,,,2de15031478a994d,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,ubm6sfxypqb,markdown,fr,85635ba21bab5fc9,"---
 
 ### Exercice 3 : Synthèse — Workflow d’analyse multimodale complet

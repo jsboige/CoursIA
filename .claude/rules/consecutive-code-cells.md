@@ -29,4 +29,4 @@ Quand une PR touche un notebook portant `consecutive-code-cells`, l'agent d'enri
 
 - [notebook-conventions.md](notebook-conventions.md) — C.1 stubs, C.2 outputs
 - [cell-interpretation-ordering.md](cell-interpretation-ordering.md) — placement des cellules d'interprétation
-- `docs/reference/subagents-reference.md` — agents d'enrichissement
+- [docs/reference/subagents-reference.md](../../docs/reference/subagents-reference.md) — agents d'enrichissement

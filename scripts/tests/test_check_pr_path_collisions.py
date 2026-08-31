@@ -1,15 +1,17 @@
 #!/usr/bin/env python3
-"""Tests for `scripts.check_pr_path_collisions` (issue #13359).
+"""Tests for `scripts.check_pr_path_collisions` (issues #13359, #13615).
 
 The detector core is PURE (no network, no `gh`); idempotency and comment
 rendering are also pure. Only the CLI driver (`list_open_prs`,
-`existing_comment`, `post_comment`) touches GitHub -- those are exercised by the
+`find_marker`, `post_comment`) touches GitHub -- those are exercised by the
 live `--dry-run`, not by these offline unit tests.
 
-The positive control is a SYNTHETIC pair seeded directly into the pure
-detector, so it is reproducible offline and fails loudly if the detector
-breaks (the acceptance criterion for #13359 is that the control is present and
-verifiable, not that it points at a volatile live pair).
+The positive controls are SYNTHETIC pairs seeded directly into the pure
+detector, plus the two HISTORICAL pairs of #13615 replayed at their state of
+then, so the suite is reproducible offline and fails loudly if the detector
+breaks. The negative controls (stacked pair, artifact-only overlap) are as
+load-bearing as the positives: a guard that reports everything reports
+nothing (#13615).
 """
 from __future__ import annotations
 
@@ -34,10 +36,13 @@ find_marker_comment = _mod.find_marker_comment
 COMMENT_MARKER_START = _mod.COMMENT_MARKER_START
 SELF_TEST_PAIR = _mod.SELF_TEST_PAIR
 SELF_TEST_SHARED_PATH = _mod.SELF_TEST_SHARED_PATH
+HISTORICAL_STRONG_PAIRS = _mod.HISTORICAL_STRONG_PAIRS
 
 
-def _pr(number: int, paths: list[str], title: str = "") -> PrRow:
-    return PrRow(number=number, title=title, paths=tuple(paths))
+def _pr(number: int, paths: list[str], title: str = "", body: str = "",
+        base_ref: str = "", head_ref: str = "") -> PrRow:
+    return PrRow(number=number, title=title, paths=tuple(paths), body=body,
+                 base_ref=base_ref, head_ref=head_ref)
 
 
 class TestDetectPathCollisions(unittest.TestCase):
@@ -105,31 +110,163 @@ class TestDetectPathCollisions(unittest.TestCase):
         self.assertIn(41, (c.a_number, c.b_number))
 
 
-class TestSameIssueFilter(unittest.TestCase):
-    def test_same_issue_kept(self):
-        """Two PRs sharing a path AND citing the same issue -> kept."""
+class TestTiering(unittest.TestCase):
+    """#13615: strong = shared file + common cited issue, weak otherwise."""
+
+    def test_strong_when_common_issue_in_title(self):
         result = detect_path_collisions([
             _pr(1, ["x.ipynb"], title="fix(#11703): deliver X"),
             _pr(2, ["x.ipynb"], title="fix(#11703): deliver X (take 2)"),
         ])
-        tbn = {1: "fix(#11703): deliver X", 2: "fix(#11703): deliver X (take 2)"}
-        kept = _mod.filter_same_issue_collisions(result.collisions, tbn)
-        self.assertEqual(len(kept), 1)
-        self.assertEqual((kept[0].a_number, kept[0].b_number), (1, 2))
+        self.assertEqual(result.n_collisions, 1)
+        c = result.collisions[0]
+        self.assertEqual(c.tier, "strong")
+        self.assertEqual(c.common_issues, (11703,))
 
-    def test_different_issue_dropped(self):
-        """Shared path but different issues -> dropped (README-manifest noise)."""
+    def test_weak_when_issues_disjoint(self):
+        """Shared README, different issues -> weak, NOT dropped (#13615 posts it)."""
         result = detect_path_collisions([
             _pr(1, ["README.md"], title="docs: fix intro (#100)"),
             _pr(2, ["README.md"], title="docs: fix links (#200)"),
         ])
-        tbn = {1: "docs: fix intro (#100)", 2: "docs: fix links (#200)"}
-        kept = _mod.filter_same_issue_collisions(result.collisions, tbn)
-        self.assertEqual(kept, [])
+        self.assertEqual(result.n_collisions, 1)
+        c = result.collisions[0]
+        self.assertEqual(c.tier, "weak")
+        self.assertEqual(c.common_issues, ())
 
-    def test_issue_numbers_parser(self):
-        self.assertEqual(_mod._issue_numbers("feat(a,b,#12/#13): x"), {12, 13})
-        self.assertEqual(_mod._issue_numbers("no issue here"), set())
+    def test_strong_when_common_issue_only_in_body(self):
+        """Body keywords (Closes/Fixes/See/refs/Part of) also cite issues.
+
+        The pre-#13615 filter read titles only, so a pair whose common issue
+        lived in both bodies was tiered weak. #13615 measures the emission
+        channel by title AND body.
+        """
+        result = detect_path_collisions([
+            _pr(1, ["n/x.ipynb"], title="feat: X", body="Closes #12373"),
+            _pr(2, ["n/x.ipynb"], title="fix: Y", body="See #12373 for context."),
+        ])
+        self.assertEqual(result.n_collisions, 1)
+        c = result.collisions[0]
+        self.assertEqual(c.tier, "strong")
+        self.assertIn(12373, c.common_issues)
+
+    def test_body_keyword_scoped_not_incidental(self):
+        """An incidental ``#N`` in the body (no cite keyword) does NOT count."""
+        row = PrRow(number=1, title="", paths=(), body="discussed in #999 elsewhere")
+        self.assertNotIn(999, row.cited_issues())
+        row2 = PrRow(number=2, title="", paths=(), body="Refs #999")
+        self.assertIn(999, row2.cited_issues())
+
+    def test_cited_issues_merges_title_and_body(self):
+        row = PrRow(number=1, title="fix(a,#12/#13): x", paths=(),
+                    body="Closes #12. Part of #77.")
+        self.assertEqual(row.cited_issues(), {12, 13, 77})
+
+    def test_strong_collisions_selector(self):
+        result = detect_path_collisions([
+            _pr(1, ["x.ipynb"], title="fix(#10): a"),
+            _pr(2, ["x.ipynb"], title="fix(#10): b"),
+            _pr(3, ["y.ipynb"], title="docs(#20): c"),
+            _pr(4, ["y.ipynb"], title="docs(#30): d"),
+        ])
+        strong = _mod.strong_collisions(result.collisions)
+        self.assertEqual([(c.a_number, c.b_number) for c in strong], [(1, 2)])
+        self.assertEqual(
+            [(c.a_number, c.b_number) for c in result.collisions],
+            [(1, 2), (3, 4)],
+        )
+
+
+class TestExclusions(unittest.TestCase):
+    """#13615 negative controls: expected overlaps report NOTHING."""
+
+    def test_stacked_pair_excluded(self):
+        """Base of one = head of the other -> the overlap IS the stack."""
+        result = detect_path_collisions([
+            _pr(900010, ["stacked/x.md"], title="base tranche",
+                base_ref="main", head_ref="feature/stack-1"),
+            _pr(900011, ["stacked/x.md"], title="upper tranche",
+                base_ref="feature/stack-1", head_ref="feature/stack-2"),
+        ])
+        self.assertEqual(result.n_collisions, 0)
+        self.assertIn((900010, 900011), result.stacked_pairs_excluded)
+
+    def test_same_base_different_heads_not_stacked(self):
+        """Two tranches on a COMMON base are siblings, not a stack -> signal."""
+        result = detect_path_collisions([
+            _pr(10, ["x.md"], title="a", base_ref="main", head_ref="feature/one"),
+            _pr(11, ["x.md"], title="b", base_ref="main", head_ref="feature/two"),
+        ])
+        self.assertEqual(result.n_collisions, 1)
+
+    def test_stacked_needs_both_refs_known(self):
+        """Missing base/head data never stacks anything (fail-open to signal)."""
+        result = detect_path_collisions([
+            _pr(10, ["x.md"], title="a", head_ref="feature/one"),
+            _pr(11, ["x.md"], title="b", base_ref="feature/one"),
+        ])
+        self.assertEqual(result.n_collisions, 1)
+
+    def test_catalog_artifacts_excluded(self):
+        """COURSE_CATALOG.generated.* overlap carries no signal."""
+        result = detect_path_collisions([
+            _pr(1, ["COURSE_CATALOG.generated.json", "x/a.md"], title="a"),
+            _pr(2, ["COURSE_CATALOG.generated.json", "COURSE_CATALOG.generated.md"],
+                 title="b"),
+        ])
+        self.assertEqual(result.n_collisions, 0)
+
+    def test_twin_registry_excluded(self):
+        """twin_pairs.d/ rebaselines overlap structurally, permanently."""
+        result = detect_path_collisions([
+            _pr(1, ["scripts/notebook_tools/twin_pairs.d/app-1-nqueens.yaml"],
+                title="a"),
+            _pr(2, ["scripts/notebook_tools/twin_pairs.d/app-2-pct.yaml"],
+                title="b"),
+        ])
+        self.assertEqual(result.n_collisions, 0)
+
+    def test_mixed_pair_survives_on_signal_path(self):
+        """Artifact overlap + one real shared path -> still reported."""
+        result = detect_path_collisions([
+            _pr(1, ["COURSE_CATALOG.generated.md", "real/n.ipynb"], title="a"),
+            _pr(2, ["real/n.ipynb"], title="b"),
+        ])
+        self.assertEqual(result.n_collisions, 1)
+        self.assertEqual(result.collisions[0].shared_paths, ("real/n.ipynb",))
+
+
+class TestHistoricalPairs(unittest.TestCase):
+    """#13615 acceptance: the two real pairs replayed at their state of then."""
+
+    def test_both_historical_pairs_flagged_strong(self):
+        for a, b, path, issue in HISTORICAL_STRONG_PAIRS:
+            with self.subTest(pair=f"#{a}/#{b}"):
+                result = detect_path_collisions([
+                    _pr(a, [path, f"other/{a}.md"], title=f"feat(#{issue}): x",
+                        body=f"Closes #{issue}"),
+                    _pr(b, [path], title=f"fix(#{issue}): y",
+                        body=f"See #{issue}"),
+                ])
+                self.assertEqual(result.n_collisions, 1)
+                c = result.collisions[0]
+                self.assertEqual(c.tier, "strong")
+                self.assertIn(issue, c.common_issues)
+                self.assertIn(path, c.shared_paths)
+
+    def test_historical_paths_exist_in_repo(self):
+        """The fixtures encode REAL repo paths (verified on main), not inventions."""
+        import subprocess
+        for _, _, path, _ in HISTORICAL_STRONG_PAIRS:
+            with self.subTest(path=path):
+                proc = subprocess.run(
+                    ["git", "cat-file", "-e", f"HEAD:{path}"],
+                    capture_output=True,
+                )
+                self.assertEqual(
+                    proc.returncode, 0,
+                    f"fixture path {path} does not exist in the checkout",
+                )
 
 
 class TestCommentProtocol(unittest.TestCase):
@@ -141,6 +278,26 @@ class TestCommentProtocol(unittest.TestCase):
         self.assertIn(COMMENT_MARKER_START, body)
         self.assertIn(_mod.COMMENT_MARKER_END, body)
         self.assertIn("#2", body)
+
+    def test_render_comment_names_tier_and_issues(self):
+        """#13615: the comment names the tier, the paths AND the common issues."""
+        result = detect_path_collisions([
+            _pr(1, ["x.ipynb"], title="fix(#42): a"),
+            _pr(2, ["x.ipynb"], title="fix(#42): b"),
+        ])
+        body = render_comment(1, "t", collisions_for_pr(1, result.collisions))
+        self.assertIn("fort", body)
+        self.assertIn("#42", body)
+        self.assertIn("x.ipynb", body)
+
+    def test_render_comment_weak_tier_no_issue_line(self):
+        result = detect_path_collisions([
+            _pr(1, ["README.md"], title="docs(#100): a"),
+            _pr(2, ["README.md"], title="docs(#200): b"),
+        ])
+        body = render_comment(1, "t", collisions_for_pr(1, result.collisions))
+        self.assertIn("faible", body)
+        self.assertNotIn("issues communes", body)
 
     def test_find_marker_comment_idempotent(self):
         """Acceptance #3: a re-run finds the existing marker comment (no dup)."""
@@ -166,6 +323,125 @@ class TestCommentProtocol(unittest.TestCase):
         self.assertEqual(numbers, [(3, 5), (3, 7)])
         result2 = detect_path_collisions(prs)
         self.assertEqual(result.as_dict(), result2.as_dict())
+
+
+class TestThreeVerbs(unittest.TestCase):
+    """#13489: post/update/retract planned over the UNION colliding ∪ markers."""
+
+    def _collision(self, a, b, path="shared/x.ipynb"):
+        return PathCollision(a_number=a, b_number=b, shared_paths=(path,))
+
+    def test_union_covers_marker_carrier_no_longer_colliding(self):
+        """THE structural fix: a resolved PR stays in the iteration set.
+
+        Before #13489 the loop iterated colliding PRs only, so a PR whose
+        neighbour merged was never visited again and its stale advisory could
+        never be retracted.
+        """
+        plan = _mod.plan_actions(
+            colliding_prs=[10],
+            collisions=[self._collision(10, 11)],
+            title_by_number={10: "A", 11: "B"},
+            marker_by_number={
+                20: ("999", _mod.render_comment(20, "old", [self._collision(20, 21)]))
+            },
+            resolved_on="2026-08-29T00:00Z",
+        )
+        retracts = [a for a in plan if a.verb == "retract"]
+        self.assertEqual([a.number for a in retracts], [20])
+        self.assertEqual(retracts[0].comment_id, "999")
+        self.assertIn(_mod.RESOLVED_SIGNATURE, retracts[0].body)
+
+    def test_post_when_no_marker(self):
+        plan = _mod.plan_actions(
+            colliding_prs=[10, 11],
+            collisions=[self._collision(10, 11)],
+            title_by_number={10: "A", 11: "B"},
+            marker_by_number={10: None, 11: None},
+            resolved_on="2026-08-29T00:00Z",
+        )
+        self.assertEqual(
+            [(a.number, a.verb) for a in plan], [(10, "post"), (11, "post")]
+        )
+
+    def test_update_when_body_drifted(self):
+        """Neighbour changed: the old comment names the WRONG PR -> refresh."""
+        old_body = _mod.render_comment(10, "A", [self._collision(10, 99)])
+        plan = _mod.plan_actions(
+            colliding_prs=[10],
+            collisions=[self._collision(10, 11)],
+            title_by_number={10: "A"},
+            marker_by_number={10: ("77", old_body)},
+            resolved_on="2026-08-29T00:00Z",
+        )
+        updates = [a for a in plan if a.verb == "update"]
+        self.assertEqual(len(updates), 1)
+        self.assertEqual(updates[0].comment_id, "77")
+        self.assertIn("#11", updates[0].body)
+
+    def test_none_when_body_current(self):
+        body = _mod.render_comment(10, "A", [self._collision(10, 11)])
+        plan = _mod.plan_actions(
+            colliding_prs=[10],
+            collisions=[self._collision(10, 11)],
+            title_by_number={10: "A"},
+            marker_by_number={10: ("77", body)},
+            resolved_on="2026-08-29T00:00Z",
+        )
+        self.assertEqual([(a.number, a.verb) for a in plan], [(10, "none")])
+
+    def test_recollision_swaps_resolution_note_back_to_advisory(self):
+        note = _mod.render_resolution_comment(10, "2026-08-28T00:00Z")
+        plan = _mod.plan_actions(
+            colliding_prs=[10],
+            collisions=[self._collision(10, 11)],
+            title_by_number={10: "A"},
+            marker_by_number={10: ("77", note)},
+            resolved_on="2026-08-29T00:00Z",
+        )
+        self.assertEqual([(a.number, a.verb) for a in plan], [(10, "update")])
+        self.assertNotIn(_mod.RESOLVED_SIGNATURE, plan[0].body)
+
+    def test_already_resolved_stays_none(self):
+        note = _mod.render_resolution_comment(20, "2026-08-28T00:00Z")
+        plan = _mod.plan_actions(
+            colliding_prs=[],
+            collisions=[],
+            title_by_number={},
+            marker_by_number={20: ("77", note)},
+            resolved_on="2026-08-29T00:00Z",
+        )
+        self.assertEqual([(a.number, a.verb) for a in plan], [(20, "none")])
+
+    def test_resolution_note_shape(self):
+        note = _mod.render_resolution_comment(20, "2026-08-29T00:00Z")
+        self.assertIn(_mod.COMMENT_MARKER_START, note)
+        self.assertTrue(_mod.is_resolution_note(note))
+        self.assertIn("2026-08-29T00:00Z", note)
+        self.assertFalse(_mod.is_resolution_note(_mod.render_comment(20, "t", [])))
+        self.assertFalse(_mod.is_resolution_note(None))
+
+    def test_find_marker_entry_returns_id_and_body(self):
+        body = "x <!-- PR-PATH-COLLISION:START --> y"
+        self.assertEqual(_mod.find_marker_entry([{"id": 55, "body": body}]), ("55", body))
+        self.assertIsNone(_mod.find_marker_entry([{"id": 1, "body": "plain"}]))
+
+
+class TestGhRowExtraction(unittest.TestCase):
+    def test_from_gh_dict_reads_body_and_refs(self):
+        row = PrRow.from_gh_dict({
+            "number": 7,
+            "title": "fix(#9): t",
+            "body": "Closes #9",
+            "baseRefName": "main",
+            "headRefName": "feature/x",
+            "files": [{"path": "a\\b.ipynb"}, {"path": ""}],
+        })
+        self.assertEqual(row.paths, ("a/b.ipynb",))
+        self.assertEqual(row.body, "Closes #9")
+        self.assertEqual(row.base_ref, "main")
+        self.assertEqual(row.head_ref, "feature/x")
+        self.assertEqual(row.cited_issues(), {9})
 
 
 if __name__ == "__main__":
