@@ -2,10 +2,11 @@ name: Markdown table syntax advisory
 
 # Source-level lint for GFM markdown table syntax defects (#10097, sub-issue of
 # #3966). The scanner (scripts/notebook_tools/scan_md_table_syntax.py) detects
-# five pathologies that break table rendering: COL_MISMATCH (bare unescaped |
-# in a cell), CODE_SPAN_PIPE (bare | inside an inline code span -- the notebook
-# renderer does not protect code spans), NO_SEP (missing |---| separator),
-# NO_BLANK_BEFORE/AFTER (paragraph glued to the table). This workflow makes
+# seven pathologies that break table rendering: COL_MISMATCH (bare unescaped |
+# in a cell), CODE_SPAN_PIPE and notebook-only MATH_SPAN_PIPE (the notebook
+# renderer does not protect either span), NO_SEP (missing |---| separator),
+# NO_BLANK_BEFORE/AFTER (paragraph glued to the table), and ORPHAN_TABLE_ROW.
+# This workflow makes
 # defects in *.ipynb markdown cells and *.md / README* files VISIBLE on the PR.
 #
 # ADVISORY, never blocking (mirrors exercises-advisory.yml, #8814 acceptance 5):
@@ -120,7 +121,7 @@ jobs:
             unset_label() { true; }
           fi
 
-          ensure_label "$LABEL_DEFECT" "PR introduces a markdown table syntax defect (COL_MISMATCH / CODE_SPAN_PIPE / NO_SEP / NO_BLANK_BEFORE/AFTER). Advisory, non-blocking. See #10097." "d93f0b"
+          ensure_label "$LABEL_DEFECT" "PR introduces a markdown table syntax defect (COL_MISMATCH / CODE_SPAN_PIPE / MATH_SPAN_PIPE / NO_SEP / NO_BLANK_BEFORE/AFTER / ORPHAN_TABLE_ROW). Advisory, non-blocking. See #10097." "d93f0b"
 
           if [ "$COUNT" -eq 0 ]; then
             echo "No in-scope files to scan."
