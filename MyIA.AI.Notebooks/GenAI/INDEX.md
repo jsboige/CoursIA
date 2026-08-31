@@ -115,10 +115,9 @@ MyIA.AI.Notebooks/GenAI/
 ├── 01-Images-Foundation/          # 🟢 Fondamentaux
 │   ├── 01-1-OpenAI-DALL-E-3.ipynb
 │   ├── 01-2-GPT-5-Image-Generation.ipynb
-│   └── 01-3-Basic-Image-Operations.ipynb
-│
+│   ├── 01-3-Basic-Image-Operations.ipynb
+│   └── 01-5b-Qwen-Image-Edit-2509.ipynb
 ├── 02-Images-Advanced/            # 🟠 Avancé (Docker)
-│   ├── 02-1-Qwen-Image-Edit-2509.ipynb
 │   ├── 02-2-FLUX-1-Advanced-Generation.ipynb
 │   └── 02-3-Stable-Diffusion-3-5.ipynb
 │
@@ -189,7 +188,7 @@ MyIA.AI.Notebooks/GenAI/
 
 | Notebook | Modèle | Temps | Difficulté | Prérequis Docker |
 |----------|--------|-------|------------|------------------|
-| **02-1-Qwen-Image-Edit-2509** | Qwen 2.5 | 3h | ⭐⭐ | ✅ Requis |
+| **01-5b-Qwen-Image-Edit-2509** | Qwen 2.5 | 3h | ⭐⭐ | ✅ Requis |
 | **02-2-FLUX-1-Advanced-Generation** | FLUX.1 | 3h | ⭐⭐ | ✅ Requis |
 | **02-3-Stable-Diffusion-3-5** | SD 3.5 | 3h | ⭐⭐ | ✅ Requis |
 
@@ -477,7 +476,7 @@ MyIA.AI.Notebooks/GenAI/
 
 **Phase 1 : Docker & Advanced Models (15h)**
 1. `00-2-Docker-Services-Management` (20min)
-2. `02-1-Qwen-Image-Edit-2509` (3h)
+2. `01-5b-Qwen-Image-Edit-2509` (3h)
 3. `02-2-FLUX-1-Advanced-Generation` (3h)
 4. `02-3-Stable-Diffusion-3-5` (3h)
 5. Infrastructure Docker setup (5h40)

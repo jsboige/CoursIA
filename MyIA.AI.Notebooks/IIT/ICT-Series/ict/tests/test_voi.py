@@ -51,7 +51,7 @@ def _parapluie() -> voi_mod.DecisionProblem:
 
 
 def _forage() -> voi_mod.DecisionProblem:
-    """Scenario forage petrolier (DecInfer-6 + DecPyMC-5 section 3).
+    """Scenario forage petrolier (DecInfer-06 + DecPyMC-5 section 3).
 
     P(petrole) = 0.3, P(pas_petrole) = 0.7.
 
@@ -214,7 +214,7 @@ def test_evsi_le_evpi_inequality():
 def test_evsi_observation_decision_forage():
     """EVSI sismique > cout d'observation de 50k : l'animat fore apres test.
 
-    Scenario forage DecInfer-6 : EVSI = environ 250k (test informatif), cout
+    Scenario forage DecInfer-06 : EVSI = environ 250k (test informatif), cout
     50k : rentable. Verification semantique du verdict observation_is_worthwhile.
     """
     pb = _forage()

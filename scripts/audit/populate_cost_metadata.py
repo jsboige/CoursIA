@@ -116,7 +116,7 @@ def _is_pymc_notebook(nb: dict, path: Path) -> bool:
 
 
 def _extract_pymc_index(path: Path) -> int | None:
-    """Extrait le numero de notebook PyMC depuis le nom de fichier (PyMC-3-Factor-Graphs.ipynb -> 3)."""
+    """Extrait le numero de notebook PyMC depuis le nom de fichier (PyMC-03-Factor-Graphs.ipynb -> 3)."""
     import re as _re
     m = _re.search(r"PyMC-(\d+)", path.name)
     return int(m.group(1)) if m else None
@@ -150,7 +150,7 @@ def build_probas_cpu_cost(nb: dict, path: Path, by: str, today: str) -> dict:
     - `notes` : depuis `PYMC_NOTES` indexe par numero de notebook PyMC (1..19) ;
       fallback sur `DECPYMC_NOTES` si DecPyMC-1..7 ; sinon note generique.
     - `reduced_pedagogical` :
-      - `Probas/PyMC/PyMC-1-Setup.ipynb` pour PyMC-2..19 ;
+      - `Probas/PyMC/PyMC-01-Setup.ipynb` pour PyMC-2..19 ;
       - `Probas/DecisionTheory/PyMC/DecPyMC-1-Utility-Foundations.ipynb` pour DecPyMC-2..7 ;
       - `None` si NB lui-meme (PyMC-1, DecPyMC-1).
     - `metadata_written` : date du jour (etablissement metadata).
@@ -160,7 +160,7 @@ def build_probas_cpu_cost(nb: dict, path: Path, by: str, today: str) -> dict:
         notes = PYMC_NOTES.get(idx, f"Notebook PyMC #{idx} — profile probas-cpu generique. Re-exec mesure : ~15s.")
         reduced_pedagogical = None
         if idx != 1:
-            reduced_pedagogical = "Probas/PyMC/PyMC-1-Setup.ipynb"
+            reduced_pedagogical = "Probas/PyMC/PyMC-01-Setup.ipynb"
     else:
         d_idx = _extract_decpymc_index(path)
         if d_idx is not None:
