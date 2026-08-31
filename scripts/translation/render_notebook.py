@@ -135,6 +135,7 @@ def render(
     dry_run: bool = False,
     verbose: bool = False,
     require_translated: bool = False,
+    fail_on_stale: bool = False,
 ) -> RenderResult:
     """Render the notebook at ``nb_path`` to ``out_path`` in language ``lang``.
 
@@ -236,6 +237,18 @@ def render(
             f"Refus d'ecrire un clone FR verbatim."
         )
 
+    # Guardrail (#13546) : refuse a render whose CSV carried orphan cell_ids.
+    # Default off preserves the WARN + .stale sidecar contract ; opt-in pour le
+    # moteur de livraison (translation-sync) afin qu'une ligne CSV pointant une
+    # cellule supprimee bloque le pipeline au lieu de passer inapercue.
+    if fail_on_stale and orphan_keys:
+        raise ValueError(
+            f"--fail-on-stale : {len(orphan_keys)} ligne(s) CSV orpheline(s) "
+            f"(cell_id absent du notebook source, lang={lang}, {csv_path.name}) : "
+            f"{', '.join(orphan_keys[:8])}"
+            f"{'...' if len(orphan_keys) > 8 else ''}. Purger le CSV ou re-extraire."
+        )
+
     if not dry_run and out_path is not None:
         out_path.parent.mkdir(parents=True, exist_ok=True)
         # Atomic write : write to a sibling .tmp then rename. This prevents
@@ -310,6 +323,12 @@ def main(argv: Optional[List[str]] = None) -> int:
              "(guardrail against FR-clone files, #10349). Default off: preserves "
              "the FR-placeholder re-render contract (#10039 criterion 3).",
     )
+    p.add_argument(
+        "--fail-on-stale", action="store_true",
+        help="Refuse a render whose CSV carried orphan cell_ids (rows pointing "
+             "at cells absent from the source notebook, #13546). Default off: "
+             "WARN + .stale sidecar.",
+    )
     args = p.parse_args(argv)
 
     dry_run = args.dry_run or args.out is None
@@ -325,6 +344,7 @@ def main(argv: Optional[List[str]] = None) -> int:
             dry_run=dry_run,
             verbose=args.verbose,
             require_translated=args.require_translated,
+            fail_on_stale=args.fail_on_stale,
         )
     except (FileNotFoundError, ValueError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
