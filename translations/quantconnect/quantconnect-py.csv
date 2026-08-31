@@ -49129,7 +49129,7 @@ qui règle le compromis réactivité/stabilité du signal, et le seuil de 0.2,
 qui détermine la fréquence des trades. Ce tableau est le point d'entrée du 
 notebook pour un re-déploiement : chaque valeur est un paramètre modifiable 
 via `get_parameter` dans l'algorithme.",,,,,,,,b462774594c05962,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-01-RiskParity-Composite.ipynb,cell-145ac6ff,markdown,fr,e0c0a5ceff717c50,"[<< Sommaire QC](../README.md) | [Précédent : QC-Py-Cloud-01-FinBERT-Sentiment <<](./QC-Py-Cloud-01-FinBERT-Sentiment.ipynb) | [Suivant : QC-Py-Cloud-02-ML-Classification >>](./QC-Py-Cloud-02-ML-Classification.ipynb)
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-03b-RiskParity-Composite.ipynb,cell-145ac6ff,markdown,fr,e0c0a5ceff717c50,"[<< Sommaire QC](../README.md) | [Précédent : QC-Py-Cloud-01-FinBERT-Sentiment <<](./QC-Py-Cloud-01-FinBERT-Sentiment.ipynb) | [Suivant : QC-Py-Cloud-02-ML-Classification >>](./QC-Py-Cloud-02-ML-Classification.ipynb)
 
 # QC-Py-Cloud-01 — Risk Parity Composite Multi-Asset
 
@@ -49141,7 +49141,7 @@ MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-01-RiskParity-Composite.ipynb,
 
 > **Note de conception** : Ce notebook est un descriptif pedagogique. Le code executable se trouve dans le projet QuantConnect Cloud correspondant (voir le lien dans le notebook). L'absence d'outputs est intentionnelle.
 ",,,,,,,,e0c0a5ceff717c50,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-01-RiskParity-Composite.ipynb,cell-885d3cde,markdown,fr,47d23e44116a2c47,"## 1. Concept : Risk Parity
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-03b-RiskParity-Composite.ipynb,cell-885d3cde,markdown,fr,47d23e44116a2c47,"## 1. Concept : Risk Parity
 
 Le Risk Parity (""parite des risques"") est une approche d'allocation developpee par Bridgewater (Ray Dalio, 1996). Plutot que d'allouer un capital egal par position (equal-weight), on alloue un **budget de risque egal**.
 
@@ -49159,7 +49159,7 @@ Le Risk Parity (""parite des risques"") est une approche d'allocation developpee
 - Sous-performance quand les taux montent (TLT bear 2020-2024)
 - necessite un univers diversifie pour fonctionner
 - Leverage implicite sur les actifs low-vol",,,,,,,,47d23e44116a2c47,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-01-RiskParity-Composite.ipynb,cell-533730fc,markdown,fr,c5a482d1e56e1782,"## 2. Univers : 6 ETFs Multi-Asset
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-03b-RiskParity-Composite.ipynb,cell-533730fc,markdown,fr,c5a482d1e56e1782,"## 2. Univers : 6 ETFs Multi-Asset
 
 | Ticker | Classe d'actif | Rôle dans le portefeuille |
 |--------|---------------|--------------------------|
@@ -49169,7 +49169,7 @@ MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-01-RiskParity-Composite.ipynb,
 | EFA | Actions internationales | Diversification geographique |
 | EEM | Marches emergents | Growth, carry |
 | DBC | Matieres premières | Inflation, commodity cycle |",,,,,,,,c5a482d1e56e1782,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-01-RiskParity-Composite.ipynb,cell-8ab0ca97,markdown,fr,e706d8b3ec217459,"## 3. Methodologie
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-03b-RiskParity-Composite.ipynb,cell-8ab0ca97,markdown,fr,e706d8b3ec217459,"## 3. Methodologie
 
 Quatre versions ont ete testees sur QC Cloud (projet 30820857):
 
@@ -49193,7 +49193,7 @@ Quatre versions ont ete testees sur QC Cloud (projet 30820857):
 - Allocation egale parmi les candidats qualifies
 - Rebalance mensuel
 - Approche inspiree de Hurst, Ooi, Pedersen (AQR, 2014)",,,,,,,,e706d8b3ec217459,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-01-RiskParity-Composite.ipynb,cell-1cabf47a,markdown,fr,12c094baecbf7fd0,"## 4. Résultats QC Cloud
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-03b-RiskParity-Composite.ipynb,cell-1cabf47a,markdown,fr,12c094baecbf7fd0,"## 4. Résultats QC Cloud
 
 **Projet QC Cloud**: 30820857 (`Cloud-RiskParity-Composite`)
 **Periode**: 2014-01-01 au 2025-01-01 (11 ans)
@@ -49208,7 +49208,7 @@ MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-01-RiskParity-Composite.ipynb,
 
 ### Benchmark : SPY Buy & Hold
 Sur la même periode, SPY a un CAGR ~12.8% et un MaxDD ~24%.",,,,,,,,12c094baecbf7fd0,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-01-RiskParity-Composite.ipynb,cell-49314f73,markdown,fr,d6b1ab31239c0270,"## 5. Analyse : Pourquoi le Risk Parity ne atteint pas Sharpe 0.8
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-03b-RiskParity-Composite.ipynb,cell-49314f73,markdown,fr,d6b1ab31239c0270,"## 5. Analyse : Pourquoi le Risk Parity ne atteint pas Sharpe 0.8
 
 La cible de Sharpe > 0.8 n'est pas atteinte (meilleur résultat : 0.278). Voici pourquoi :
 
@@ -49226,7 +49226,7 @@ La v1 (avec stops) a un Sharpe de -0.913. Les mécanismes de protection empechen
 
 ### Lecon : Le Risk Parity est un outil d'allocation, pas d'alpha
 Le risk parity excelle pour construire un portefeuille diversifie avec un bon ratio rendement/risque *ajuste pour la diversification*. Mais il ne genere pas d'alpha pur. Pour ameliorer le Sharpe, il faut combiner avec des signaux d'alpha (momentum, carry, value).",,,,,,,,d6b1ab31239c0270,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-01-RiskParity-Composite.ipynb,cell-635a129c,markdown,fr,590515a81aead8b3,"## 6. Code source (v4 — meilleur résultat)
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-03b-RiskParity-Composite.ipynb,cell-635a129c,markdown,fr,590515a81aead8b3,"## 6. Code source (v4 — meilleur résultat)
 
 Le code est disponible sur QC Cloud (projet 30820857). Le notebook local ne contient que les résultats et l'analyse, conformement au workflow cloud-native.
 
@@ -49235,7 +49235,7 @@ Le code est disponible sur QC Cloud (projet 30820857). Le notebook local ne cont
 # Approche : SMA200 + 6m momentum dual filter
 # Rebalance mensuel, allocation egale parmi actifs eligibles
 ```",,,,,,,,590515a81aead8b3,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-01-RiskParity-Composite.ipynb,cell-54ec786e,markdown,fr,483af67b29df701e,"## 7. Pour aller plus loin
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-03b-RiskParity-Composite.ipynb,cell-54ec786e,markdown,fr,483af67b29df701e,"## 7. Pour aller plus loin
 
 1. **Risk Parity + Alpha Overlay**: Ajouter des signaux d'alpha (momentum score) pour ponderer au lieu de l'egalite
 2. **Dynamic Vol Targeting**: Ajuster l'exposition globale selon le regime de vol (VIX > 25 = reduce)
@@ -49243,37 +49243,37 @@ MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-01-RiskParity-Composite.ipynb,
 4. **Universe etendu**: Ajouter des ETFs sectoriels (XLU, XLK), crypto (BTC), ou real estate (VNQ)
 
 **Reference**: Hurst, Ooi, Pedersen (2014) — ""A Century of Evidence on Trend-Following Investing"", AQR.",,,,,,,,483af67b29df701e,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-01-RiskParity-Composite.ipynb,d473f51cc237,markdown,fr,6b116c8623ae5f49,"### Exercice 1 : Calcul des poids Risk Parity pour 3 actifs
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-03b-RiskParity-Composite.ipynb,d473f51cc237,markdown,fr,6b116c8623ae5f49,"### Exercice 1 : Calcul des poids Risk Parity pour 3 actifs
 
 Calculer les poids optimaux dun portefeuille Risk Parity avec 3 actifs.
 
 **Indice** : La contribution au risque de chaque actif doit etre egale.
 ",,,,,,,,6b116c8623ae5f49,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-01-RiskParity-Composite.ipynb,2d7d004c25cd,code,fr,0c4934b18f547fef,"# Exercice : Calcul des poids Risk Parity pour 3 actifs
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-03b-RiskParity-Composite.ipynb,2d7d004c25cd,code,fr,0c4934b18f547fef,"# Exercice : Calcul des poids Risk Parity pour 3 actifs
 # TODO etudiant : Calculer les poids optimaux dun portefeuille Risk Parity avec 3 actifs
 # Indice : La contribution au risque de chaque actif doit etre egale
 result = None  # TODO etudiant : remplacer par votre implementation
 print(""Exercice a completer : Calcul des poids Risk Parity pour 3 actifs"")
 ",,,,,,,,0c4934b18f547fef,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-01-RiskParity-Composite.ipynb,132eb9d6ba84,markdown,fr,011289359cd6a145,"### Exercice 2 : Backtest dun portefeuille Risk Parity
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-03b-RiskParity-Composite.ipynb,132eb9d6ba84,markdown,fr,011289359cd6a145,"### Exercice 2 : Backtest dun portefeuille Risk Parity
 
 Implementer un backtest simple dune stratégie Risk Parity.
 
 **Indice** : Utilisez les rendements quotidiens et un lookback de 252 jours.
 ",,,,,,,,011289359cd6a145,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-01-RiskParity-Composite.ipynb,a277665c2e1c,code,fr,68c08b6a1e421676,"# Exercice : Backtest dun portefeuille Risk Parity
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-03b-RiskParity-Composite.ipynb,a277665c2e1c,code,fr,68c08b6a1e421676,"# Exercice : Backtest dun portefeuille Risk Parity
 # TODO etudiant : Implementer un backtest simple dune strategie Risk Parity
 # Indice : Utilisez les rendements quotidiens et un lookback de 252 jours
 result = None  # TODO etudiant : remplacer par votre implementation
 print(""Exercice a completer : Backtest dun portefeuille Risk Parity"")
 ",,,,,,,,68c08b6a1e421676,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-01-RiskParity-Composite.ipynb,838d0e5237da,markdown,fr,4102ea36713d208b,"### Exercice 3 : Comparaison Risk Parity vs Equal Weight
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-03b-RiskParity-Composite.ipynb,838d0e5237da,markdown,fr,4102ea36713d208b,"### Exercice 3 : Comparaison Risk Parity vs Equal Weight
 
 Comparer le ratio de Sharpe et le max drawdown entre Risk Parity et Equal Weight.
 
 **Indice** : Calculez les rendements annuels et la volatilite.
 ",,,,,,,,4102ea36713d208b,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-01-RiskParity-Composite.ipynb,e4c137b32bb2,code,fr,c0527cd342471734,"# Exercice : Comparaison Risk Parity vs Equal Weight
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-03b-RiskParity-Composite.ipynb,e4c137b32bb2,code,fr,c0527cd342471734,"# Exercice : Comparaison Risk Parity vs Equal Weight
 # TODO etudiant : Comparer le ratio de Sharpe et le max drawdown entre Risk Parity et Equal Weight
 # Indice : Calculez les rendements annuels et la volatilite
 result = None  # TODO etudiant : remplacer par votre implementation
