@@ -77,12 +77,12 @@ Les sidetracks marqués `b-Python` sont des notebooks complémentaires qui prés
 
 | Sidetrack | Notebook principal | Contenu |
 |-----------|-------------------|---------|
-| SW-2b-Python-RDFBasics | SW-2-CSharp-RDFBasics | RDF en Python avec rdflib |
-| SW-3b-Python-GraphOperations | SW-3-CSharp-GraphOperations | Graphes RDF en Python avec rdflib |
-| SW-4b-Python-SPARQL | SW-4-CSharp-SPARQL | SPARQL en Python avec rdflib |
-| SW-5b-Python-LinkedData | SW-5-CSharp-LinkedData | DBpedia/Wikidata avec SPARQLWrapper |
-| SW-6b-Python-RDFS | SW-6-CSharp-RDFS | RDFS en Python avec rdflib/owlready2 |
-| SW-7b-Python-OWL | SW-7-CSharp-OWL | Ontologies OWL avec OWLReady2 |
+| SW-02b-Python-RDFBasics | SW-02-CSharp-RDFBasics | RDF en Python avec rdflib |
+| SW-03b-Python-GraphOperations | SW-03-CSharp-GraphOperations | Graphes RDF en Python avec rdflib |
+| SW-04b-Python-SPARQL | SW-04-CSharp-SPARQL | SPARQL en Python avec rdflib |
+| SW-05b-Python-LinkedData | SW-05-CSharp-LinkedData | DBpedia/Wikidata avec SPARQLWrapper |
+| SW-06b-Python-RDFS | SW-06-CSharp-RDFS | RDFS en Python avec rdflib/owlready2 |
+| SW-07b-Python-OWL | SW-07-CSharp-OWL | Ontologies OWL avec OWLReady2 |
 
 ---
 
@@ -94,12 +94,12 @@ Cette partie pose les fondations du Web Sémantique en utilisant l'écosystème 
 
 | # | Notebook | Durée | Sidetrack Python |
 |---|----------|-------|------------------|
-| 1 | **SW-1-CSharp-Setup** | 20 min | - |
-| 2 | **SW-2-CSharp-RDFBasics** | 45 min | SW-2b-Python-RDFBasics |
-| 3 | **SW-3-CSharp-GraphOperations** | 50 min | SW-3b-Python-GraphOperations |
-| 4 | **SW-4-CSharp-SPARQL** | 45 min | SW-4b-Python-SPARQL |
+| 1 | **SW-01-CSharp-Setup** | 20 min | - |
+| 2 | **SW-02-CSharp-RDFBasics** | 45 min | SW-02b-Python-RDFBasics |
+| 3 | **SW-03-CSharp-GraphOperations** | 50 min | SW-03b-Python-GraphOperations |
+| 4 | **SW-04-CSharp-SPARQL** | 45 min | SW-04b-Python-SPARQL |
 
-#### SW-1-CSharp-Setup : Premier pas dans le Web Sémantique (20 min)
+#### SW-01-CSharp-Setup : Premier pas dans le Web Sémantique (20 min)
 
 Ce notebook d'introduction vous guide à travers l'installation de dotNetRDF et découvre la vision historique du Web Sémantique. Vous créerez votre premier graphe RDF "Hello World" et comprendrez l'architecture en couches du W3C.
 
@@ -109,7 +109,7 @@ Ce notebook d'introduction vous guide à travers l'installation de dotNetRDF et 
 - Création d'un graphe et assertion de triplets (sujet-prédicat-objet)
 - Les différents types de nœuds : URI, blank nodes, littéraux
 
-#### SW-2-CSharp-RDFBasics : Triples, Nœuds et Sérialisation (45 min)
+#### SW-02-CSharp-RDFBasics : Triples, Nœuds et Sérialisation (45 min)
 
 Dans ce notebook, vous approfondirez votre compréhension du modèle de données RDF. Vous manipulerez les différents types de nœuds et découvrirez les principaux formats de sérialisation.
 
@@ -119,9 +119,9 @@ Dans ce notebook, vous approfondirez votre compréhension du modèle de données
 - Formats de sérialisation : Turtle, N-Triples, RDF/XML
 - Création de namespaces pour simplifier l'écriture
 
-> **Sidetrack Python disponible** : [SW-2b-Python-RDFBasics](SW-2b-Python-RDFBasics.ipynb) - Équivalent Python avec rdflib
+> **Sidetrack Python disponible** : [SW-02b-Python-RDFBasics](SW-02b-Python-RDFBasics.ipynb) - Équivalent Python avec rdflib
 
-#### SW-3-CSharp-GraphOperations : Manipulation Avancée de Graphes (50 min)
+#### SW-03-CSharp-GraphOperations : Manipulation Avancée de Graphes (50 min)
 
 Ce notebook couvre les opérations quotidiennes sur les graphes RDF : lecture/écriture, fusion, et sélection avancée avec LINQ.
 
@@ -132,7 +132,7 @@ Ce notebook couvre les opérations quotidiennes sur les graphes RDF : lecture/é
 - Utilisation de LINQ pour des requêtes complexes sur les triplets
 - Listes RDF : `AssertList()`, `GetListItems()`, `AddToList()`
 
-#### SW-4-CSharp-SPARQL : Le Langage de Requête (45 min)
+#### SW-04-CSharp-SPARQL : Le Langage de Requête (45 min)
 
 SPARQL est au RDF ce que SQL est aux bases de données relationnelles. Ce notebook vous apprendra à interroger vos graphes avec le Query Builder de dotNetRDF.
 
@@ -143,7 +143,7 @@ SPARQL est au RDF ce que SQL est aux bases de données relationnelles. Ce notebo
 - `UNION` pour combiner plusieurs patterns
 - `ORDER BY`, `LIMIT`, `OFFSET` pour pagination
 
-> **Sidetrack Python disponible** : [SW-4b-Python-SPARQL](SW-4b-Python-SPARQL.ipynb) - Équivalent Python avec rdflib
+> **Sidetrack Python disponible** : [SW-04b-Python-SPARQL](SW-04b-Python-SPARQL.ipynb) - Équivalent Python avec rdflib
 
 ---
 
@@ -153,11 +153,11 @@ Cette partie étend vos compétences aux données du Web ouvert et aux ontologie
 
 | # | Notebook | Durée | Sidetrack Python |
 |---|----------|-------|------------------|
-| 5 | **SW-5-CSharp-LinkedData** | 50 min | SW-5b-Python-LinkedData |
-| 6 | **SW-6-CSharp-RDFS** | 40 min | SW-6b-Python-RDFS |
-| 7 | **SW-7-CSharp-OWL** | 50 min | SW-7b-Python-OWL |
+| 5 | **SW-05-CSharp-LinkedData** | 50 min | SW-05b-Python-LinkedData |
+| 6 | **SW-06-CSharp-RDFS** | 40 min | SW-06b-Python-RDFS |
+| 7 | **SW-07-CSharp-OWL** | 50 min | SW-07b-Python-OWL |
 
-#### SW-5-CSharp-LinkedData : DBpedia, Wikidata et Requêtes Fédérées (50 min)
+#### SW-05-CSharp-LinkedData : DBpedia, Wikidata et Requêtes Fédérées (50 min)
 
 Découvrez le Web de données liées en interrogeant des endpoints publics comme DBpedia et Wikidata.
 
@@ -168,9 +168,9 @@ Découvrez le Web de données liées en interrogeant des endpoints publics comme
 - Exploration de DBpedia : sujets, catégories, liens inter-langues
 - Wikidata et ses Q-items/P-properties
 
-> **Sidetrack Python disponible** : [SW-5b-Python-LinkedData](SW-5b-Python-LinkedData.ipynb) - DBpedia/Wikidata avec SPARQLWrapper
+> **Sidetrack Python disponible** : [SW-05b-Python-LinkedData](SW-05b-Python-LinkedData.ipynb) - DBpedia/Wikidata avec SPARQLWrapper
 
-#### SW-6-CSharp-RDFS : Schema et Inférence (40 min)
+#### SW-06-CSharp-RDFS : Schema et Inférence (40 min)
 
 RDFS (RDF Schema) est la couche vocabulaire du Web Sémantique. Ce notebook vous montre comment définir des classes, des propriétés et comment l'inférence fonctionne.
 
@@ -180,7 +180,7 @@ RDFS (RDF Schema) est la couche vocabulaire du Web Sémantique. Ce notebook vous
 - Inférence RDFS : déduction automatique de types et de relations
 - `OntologyGraph` de dotNetRDF pour activer l'inférence
 
-#### SW-7-CSharp-OWL : Ontologies et Raisonnement Avancé (50 min)
+#### SW-07-CSharp-OWL : Ontologies et Raisonnement Avancé (50 min)
 
 OWL (Web Ontology Language) étend RDFS avec des constructeurs logiques puissants. Ce notebook présente les profils OWL 2 et le raisonnement.
 
@@ -191,7 +191,7 @@ OWL (Web Ontology Language) étend RDFS avec des constructeurs logiques puissant
 - Restrictions : `owl:someValuesFrom` (∃), `owl:allValuesFrom` (∀)
 - Raisonnement avec `OntologyGraph`
 
-> **Sidetrack Python disponible** : [SW-7b-Python-OWL](SW-7b-Python-OWL.ipynb) - Ontologies OWL avec OWLReady2
+> **Sidetrack Python disponible** : [SW-07b-Python-OWL](SW-07b-Python-OWL.ipynb) - Ontologies OWL avec OWLReady2
 
 ---
 
@@ -201,14 +201,14 @@ Cette partie couvre les standards modernes du Web Sémantique. L'écosystème Py
 
 | # | Notebook | Durée | Contenu |
 |---|----------|-------|---------|
-| 8 | **SW-8-Python-SHACL** | 45 min | Validation de données avec pySHACL |
-| 8 (C#) | **SW-8-CSharp-SHACL** | 45 min | Jumeau .NET de SW-8 : validation SHACL avec dotNetRDF (`VDS.RDF.Shacl`) |
-| 9 | **SW-9-Python-JSONLD** | 40 min | Données structurées pour le web |
-| 9 (C#) | **SW-9-CSharp-JSONLD** | 40 min | Jumeau .NET de SW-9 : parsing/écriture JSON-LD avec dotNetRDF (`JsonLdParser`/`JsonLdWriter`, `TripleStore`) |
+| 8 | **SW-08-Python-SHACL** | 45 min | Validation de données avec pySHACL |
+| 8 (C#) | **SW-08-CSharp-SHACL** | 45 min | Jumeau .NET de SW-8 : validation SHACL avec dotNetRDF (`VDS.RDF.Shacl`) |
+| 9 | **SW-09-Python-JSONLD** | 40 min | Données structurées pour le web |
+| 9 (C#) | **SW-09-CSharp-JSONLD** | 40 min | Jumeau .NET de SW-9 : parsing/écriture JSON-LD avec dotNetRDF (`JsonLdParser`/`JsonLdWriter`, `TripleStore`) |
 | 10 | **SW-10-Python-RDFStar** | 40 min | RDF 1.2, annotations et provenance |
 | 10 (C#) | **SW-10-CSharp-RDFStar** | 40 min | Jumeau .NET de SW-10 : réification + annotations de confiance avec dotNetRDF (`Graph`, `TripleStore`, graphes nommés) |
 
-#### SW-8-Python-SHACL : Validation de Qualité des Données (45 min)
+#### SW-08-Python-SHACL : Validation de Qualité des Données (45 min)
 
 SHACL (Shapes Constraint Language) est le standard W3C pour valider la conformité des données RDF. Ce notebook utilise pySHACL pour définir des shapes et valider des graphes.
 
@@ -219,7 +219,7 @@ SHACL (Shapes Constraint Language) est le standard W3C pour valider la conformit
 - `sh:pattern` (regex), `sh:in` (enum), `sh:class` (type checking)
 - Validation avec pySHACL : `Validate(graph, data_graph)`
 
-#### SW-9-Python-JSONLD : Données Structurées pour le Web (40 min)
+#### SW-09-Python-JSONLD : Données Structurées pour le Web (40 min)
 
 JSON-LD est le pont entre le monde JSON des développeurs web et le Web Sémantique. Ce notebook montre comment utiliser JSON-LD avec Schema.org pour le SEO.
 
@@ -230,7 +230,7 @@ JSON-LD est le pont entre le monde JSON des développeurs web et le Web Sémanti
 - Rich snippets Google : 73% des résultats utilisent des données structurées
 - Cas d'usage : e-commerce (Produit), articles (Article), organisations (Organization)
 
-> **Twin C# disponible** : [SW-9-CSharp-JSONLD](SW-9-CSharp-JSONLD.ipynb) — JSON-LD via dotNetRDF (`JsonLdParser`/`JsonLdWriter`, `TripleStore`). Compagnon cross-langage du notebook Python `rdflib` + `pyld` sur le même standard W3C JSON-LD 1.1 (marathon parité .NET ⇄ Python #4956, Prong B).
+> **Twin C# disponible** : [SW-09-CSharp-JSONLD](SW-09-CSharp-JSONLD.ipynb) — JSON-LD via dotNetRDF (`JsonLdParser`/`JsonLdWriter`, `TripleStore`). Compagnon cross-langage du notebook Python `rdflib` + `pyld` sur le même standard W3C JSON-LD 1.1 (marathon parité .NET ⇄ Python #4956, Prong B).
 
 #### SW-10-Python-RDFStar : Annotations et Provenance (40 min)
 
@@ -345,11 +345,11 @@ couche logique qui transforme un graphe déclaratif en connaissances déductible
 
 **Techniques**
 
-1. **Modéliser un domaine en RDF** (triplets, IRIs, littéraux typés, namespaces) et manipuler des graphes en C# avec dotNetRDF (`SW-2-CSharp-RDFBasics.ipynb`, `SW-3-CSharp-GraphOperations.ipynb`) ou en Python avec rdflib (`SW-2b-Python-RDFBasics.ipynb`).
-2. **Interroger un graphe en SPARQL 1.1** (SELECT, CONSTRUCT, ASK, DESCRIBE, federations via SERVICE) côté .NET (`SW-4-CSharp-SPARQL.ipynb`) et Python (`SW-4b-Python-SPARQL.ipynb`), puis publier des données Linked Data résolvables (`SW-5-CSharp-LinkedData.ipynb`, `SW-5b-Python-LinkedData.ipynb`).
-3. **Formaliser une ontologie en RDFS puis OWL** (classes, propriétés, restrictions, hiérarchies) et tirer parti d'un raisonneur pour matérialiser les inférences (`SW-6-CSharp-RDFS.ipynb`, `SW-7-CSharp-OWL.ipynb`, `SW-7b-Python-OWL.ipynb`, `SW-13-Python-Reasoners.ipynb`).
-4. **Valider la conformité d'un graphe** avec SHACL (NodeShapes/PropertyShapes, contraintes de cardinalité et de type, rapport de validation) via pySHACL (`SW-8-Python-SHACL.ipynb`).
-5. **Sérialiser et échanger des données RDF en JSON-LD** (`@context`, framing, compaction/expansion) pour interopérer avec les APIs Web modernes (`SW-9-Python-JSONLD.ipynb`).
+1. **Modéliser un domaine en RDF** (triplets, IRIs, littéraux typés, namespaces) et manipuler des graphes en C# avec dotNetRDF (`SW-02-CSharp-RDFBasics.ipynb`, `SW-03-CSharp-GraphOperations.ipynb`) ou en Python avec rdflib (`SW-02b-Python-RDFBasics.ipynb`).
+2. **Interroger un graphe en SPARQL 1.1** (SELECT, CONSTRUCT, ASK, DESCRIBE, federations via SERVICE) côté .NET (`SW-04-CSharp-SPARQL.ipynb`) et Python (`SW-04b-Python-SPARQL.ipynb`), puis publier des données Linked Data résolvables (`SW-05-CSharp-LinkedData.ipynb`, `SW-05b-Python-LinkedData.ipynb`).
+3. **Formaliser une ontologie en RDFS puis OWL** (classes, propriétés, restrictions, hiérarchies) et tirer parti d'un raisonneur pour matérialiser les inférences (`SW-06-CSharp-RDFS.ipynb`, `SW-07-CSharp-OWL.ipynb`, `SW-07b-Python-OWL.ipynb`, `SW-13-Python-Reasoners.ipynb`).
+4. **Valider la conformité d'un graphe** avec SHACL (NodeShapes/PropertyShapes, contraintes de cardinalité et de type, rapport de validation) via pySHACL (`SW-08-Python-SHACL.ipynb`).
+5. **Sérialiser et échanger des données RDF en JSON-LD** (`@context`, framing, compaction/expansion) pour interopérer avec les APIs Web modernes (`SW-09-Python-JSONLD.ipynb`).
 6. **Annoter des assertions avec RDF-Star / SPARQL-Star** (citations de triplets, provenance, niveau de confiance) pour modéliser métadonnées et réification compacte (`SW-10-Python-RDFStar.ipynb`).
 
 **Applicatives**
@@ -389,10 +389,10 @@ pip install rdflib pySHACL owlready2 kglab SPARQLWrapper
 dotnet restore
 
 # Premier notebook recommandé (Python) :
-jupyter notebook SW-2b-Python-RDFBasics.ipynb
+jupyter notebook SW-02b-Python-RDFBasics.ipynb
 
 # Ou en .NET :
-jupyter notebook SW-1-CSharp-Setup.ipynb
+jupyter notebook SW-01-CSharp-Setup.ipynb
 ```
 
 Aucune API key requise pour les notebooks fondamentaux (SW-1 à SW-11). SW-12 (GraphRAG) nécessite une clé LLM.
@@ -503,23 +503,23 @@ SemanticWeb/
 │   ├── product.jsonld       # Exemple JSON-LD (SW-9)
 │   ├── example.srj          # Résultats SPARQL JSON (SW-5)
 │   └── example.srx          # Résultats SPARQL XML (SW-5)
-├── SW-1-CSharp-Setup.ipynb
-├── SW-2-CSharp-RDFBasics.ipynb
-├── SW-2b-Python-RDFBasics.ipynb     # Sidetrack
-├── SW-3-CSharp-GraphOperations.ipynb
-├── SW-3b-Python-GraphOperations.ipynb   # Sidetrack
-├── SW-4-CSharp-SPARQL.ipynb
-├── SW-4b-Python-SPARQL.ipynb        # Sidetrack
-├── SW-5-CSharp-LinkedData.ipynb
-├── SW-5b-Python-LinkedData.ipynb    # Sidetrack
-├── SW-6-CSharp-RDFS.ipynb
-├── SW-6b-Python-RDFS.ipynb           # Sidetrack
-├── SW-7-CSharp-OWL.ipynb
-├── SW-7b-Python-OWL.ipynb           # Sidetrack
-├── SW-8-CSharp-SHACL.ipynb           # Jumeau .NET de SW-8 (dotNetRDF.SHACL, marathon #4956)
-├── SW-8-Python-SHACL.ipynb
-├── SW-9-Python-JSONLD.ipynb
-├── SW-9-CSharp-JSONLD.ipynb         # Twin C# (marathon #4956 Prong B)
+├── SW-01-CSharp-Setup.ipynb
+├── SW-02-CSharp-RDFBasics.ipynb
+├── SW-02b-Python-RDFBasics.ipynb     # Sidetrack
+├── SW-03-CSharp-GraphOperations.ipynb
+├── SW-03b-Python-GraphOperations.ipynb   # Sidetrack
+├── SW-04-CSharp-SPARQL.ipynb
+├── SW-04b-Python-SPARQL.ipynb        # Sidetrack
+├── SW-05-CSharp-LinkedData.ipynb
+├── SW-05b-Python-LinkedData.ipynb    # Sidetrack
+├── SW-06-CSharp-RDFS.ipynb
+├── SW-06b-Python-RDFS.ipynb           # Sidetrack
+├── SW-07-CSharp-OWL.ipynb
+├── SW-07b-Python-OWL.ipynb           # Sidetrack
+├── SW-08-CSharp-SHACL.ipynb           # Jumeau .NET de SW-8 (dotNetRDF.SHACL, marathon #4956)
+├── SW-08-Python-SHACL.ipynb
+├── SW-09-Python-JSONLD.ipynb
+├── SW-09-CSharp-JSONLD.ipynb         # Twin C# (marathon #4956 Prong B)
 ├── SW-10-Python-RDFStar.ipynb
 ├── SW-10-CSharp-RDFStar.ipynb       # Twin C# (marathon #4956 Prong B)
 ├── SW-11-Python-KnowledgeGraphs.ipynb
@@ -536,7 +536,7 @@ SemanticWeb/
 ```
 
 > **Note** — `RDF.Net-Legacy/` conserve l'ancien notebook C# (kernel .NET Interactive)
-> avant la bascule pédagogique vers Python (`SW-2b-Python-RDFBasics.ipynb` et suivants).
+> avant la bascule pédagogique vers Python (`SW-02b-Python-RDFBasics.ipynb` et suivants).
 > Archive de référence, non maintenue. Pour le RDF actuel, voir SW-2 / SW-2b.
 
 ## Ressources

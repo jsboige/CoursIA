@@ -94,7 +94,7 @@ La série SymbolicLearning (20 notebooks : 12 Python + 8 jumeaux C# from-scratch
 |-------|-----------------|-----------------|
 | **Tweety** | `Tweety/Tweety-1-Setup.ipynb` | Ouvrir dans Jupyter, exécuter toutes les cellules |
 | **Lean** | `Lean/Lean-1-Setup.ipynb` | `wsl -d Ubuntu -- bash -c "jupyter notebook Lean-1-Setup.ipynb"` |
-| **SemanticWeb** | `SemanticWeb/SW-1-CSharp-Setup.ipynb` (.NET) ou `SW-2b-Python-RDFBasics.ipynb` (Python) | `pip install rdflib pySHACL` |
+| **SemanticWeb** | `SemanticWeb/SW-01-CSharp-Setup.ipynb` (.NET) ou `SW-02b-Python-RDFBasics.ipynb` (Python) | `pip install rdflib pySHACL` |
 | **Planners** | `Planners/00-Environment/Planners-0-Setup.ipynb` | `pip install ortools unified_planning` |
 | **SmartContracts** | `SmartContracts/00-Foundations/SC-0-Cypherpunk-Origins.ipynb` | `pip install py-solc-x web3` |
 | **SymbolicLearning** | `SymbolicLearning/SL-1-LogicalLearning.ipynb` | Python 3.10+ standard library, aucune installation |
@@ -325,25 +325,25 @@ Série de **25 notebooks** sur le Web Sémantique (**13 C#** incluant le noteboo
 | # | Notebook | Kernel | Contenu | Exercices |
 |---|----------|--------|---------|-----------|
 | **Partie 1 : Fondations RDF** |   |   |   |   |
-| 1 | [SW-1-CSharp-Setup](SemanticWeb/SW-1-CSharp-Setup.ipynb) | .NET C# | Installation dotNetRDF, pile W3C "Layer Cake" | Setup |
-| 2 | [SW-2-CSharp-RDFBasics](SemanticWeb/SW-2-CSharp-RDFBasics.ipynb) | .NET C# | Triplets RDF, noeuds, serialisation (Turtle, N-Triples, RDF/XML) | 6 |
-| 2b | [SW-2b-Python-RDFBasics](SemanticWeb/SW-2b-Python-RDFBasics.ipynb) | Python | Équivalent Python avec rdflib | 5 |
-| 3 | [SW-3-CSharp-GraphOperations](SemanticWeb/SW-3-CSharp-GraphOperations.ipynb) | .NET C# | Parsers/Writers, fusion de graphes, LINQ sur RDF | 7 |
-| 3b | [SW-3b-Python-GraphOperations](SemanticWeb/SW-3b-Python-GraphOperations.ipynb) | Python | Twin Python (rdflib) — opérations sur graphes RDF | twin |
-| 4 | [SW-4-CSharp-SPARQL](SemanticWeb/SW-4-CSharp-SPARQL.ipynb) | .NET C# | Query Builder, SELECT/FILTER, OPTIONAL, UNION | 7 |
-| 4b | [SW-4b-Python-SPARQL](SemanticWeb/SW-4b-Python-SPARQL.ipynb) | Python | Équivalent Python avec SPARQLWrapper | 5 |
+| 1 | [SW-01-CSharp-Setup](SemanticWeb/SW-01-CSharp-Setup.ipynb) | .NET C# | Installation dotNetRDF, pile W3C "Layer Cake" | Setup |
+| 2 | [SW-02-CSharp-RDFBasics](SemanticWeb/SW-02-CSharp-RDFBasics.ipynb) | .NET C# | Triplets RDF, noeuds, serialisation (Turtle, N-Triples, RDF/XML) | 6 |
+| 2b | [SW-02b-Python-RDFBasics](SemanticWeb/SW-02b-Python-RDFBasics.ipynb) | Python | Équivalent Python avec rdflib | 5 |
+| 3 | [SW-03-CSharp-GraphOperations](SemanticWeb/SW-03-CSharp-GraphOperations.ipynb) | .NET C# | Parsers/Writers, fusion de graphes, LINQ sur RDF | 7 |
+| 3b | [SW-03b-Python-GraphOperations](SemanticWeb/SW-03b-Python-GraphOperations.ipynb) | Python | Twin Python (rdflib) — opérations sur graphes RDF | twin |
+| 4 | [SW-04-CSharp-SPARQL](SemanticWeb/SW-04-CSharp-SPARQL.ipynb) | .NET C# | Query Builder, SELECT/FILTER, OPTIONAL, UNION | 7 |
+| 4b | [SW-04b-Python-SPARQL](SemanticWeb/SW-04b-Python-SPARQL.ipynb) | Python | Équivalent Python avec SPARQLWrapper | 5 |
 | **Partie 2 : Données Liees et Ontologies** |   |   |   |   |
-| 5 | [SW-5-CSharp-LinkedData](SemanticWeb/SW-5-CSharp-LinkedData.ipynb) | .NET C# | DBpedia, Wikidata, requêtes federees SERVICE | 6 |
-| 5b | [SW-5b-Python-LinkedData](SemanticWeb/SW-5b-Python-LinkedData.ipynb) | Python | Équivalent Python | 5 |
-| 6 | [SW-6-CSharp-RDFS](SemanticWeb/SW-6-CSharp-RDFS.ipynb) | .NET C# | RDFS, inference automatique, OntologyGraph | 4 |
-| 6b | [SW-6b-Python-RDFS](SemanticWeb/SW-6b-Python-RDFS.ipynb) | Python | Sidetrack Python (rdflib + owlrl) — schéma et inférence RDFS | twin |
-| 7 | [SW-7-CSharp-OWL](SemanticWeb/SW-7-CSharp-OWL.ipynb) | .NET C# | OWL 2, profils (EL/QL/RL), restrictions | 5 |
-| 7b | [SW-7b-Python-OWL](SemanticWeb/SW-7b-Python-OWL.ipynb) | Python | Équivalent Python avec OWLReady2 | 5 |
+| 5 | [SW-05-CSharp-LinkedData](SemanticWeb/SW-05-CSharp-LinkedData.ipynb) | .NET C# | DBpedia, Wikidata, requêtes federees SERVICE | 6 |
+| 5b | [SW-05b-Python-LinkedData](SemanticWeb/SW-05b-Python-LinkedData.ipynb) | Python | Équivalent Python | 5 |
+| 6 | [SW-06-CSharp-RDFS](SemanticWeb/SW-06-CSharp-RDFS.ipynb) | .NET C# | RDFS, inference automatique, OntologyGraph | 4 |
+| 6b | [SW-06b-Python-RDFS](SemanticWeb/SW-06b-Python-RDFS.ipynb) | Python | Sidetrack Python (rdflib + owlrl) — schéma et inférence RDFS | twin |
+| 7 | [SW-07-CSharp-OWL](SemanticWeb/SW-07-CSharp-OWL.ipynb) | .NET C# | OWL 2, profils (EL/QL/RL), restrictions | 5 |
+| 7b | [SW-07b-Python-OWL](SemanticWeb/SW-07b-Python-OWL.ipynb) | Python | Équivalent Python avec OWLReady2 | 5 |
 | **Partie 3 : Standards Modernes (Python + jumeaux C#)** |   |   |   |   |
-| 8 | [SW-8-Python-SHACL](SemanticWeb/SW-8-Python-SHACL.ipynb) | Python | SHACL, NodeShape, PropertyShape, pySHACL | 7 |
-| 8c | [SW-8-CSharp-SHACL](SemanticWeb/SW-8-CSharp-SHACL.ipynb) | .NET C# | Jumeau C# (dotNetRDF) — validation SHACL | twin |
-| 9 | [SW-9-Python-JSONLD](SemanticWeb/SW-9-Python-JSONLD.ipynb) | Python | JSON-LD, Schema.org, SEO | 7 |
-| 9c | [SW-9-CSharp-JSONLD](SemanticWeb/SW-9-CSharp-JSONLD.ipynb) | .NET C# | Jumeau C# (dotNetRDF) — JSON-LD | twin |
+| 8 | [SW-08-Python-SHACL](SemanticWeb/SW-08-Python-SHACL.ipynb) | Python | SHACL, NodeShape, PropertyShape, pySHACL | 7 |
+| 8c | [SW-08-CSharp-SHACL](SemanticWeb/SW-08-CSharp-SHACL.ipynb) | .NET C# | Jumeau C# (dotNetRDF) — validation SHACL | twin |
+| 9 | [SW-09-Python-JSONLD](SemanticWeb/SW-09-Python-JSONLD.ipynb) | Python | JSON-LD, Schema.org, SEO | 7 |
+| 9c | [SW-09-CSharp-JSONLD](SemanticWeb/SW-09-CSharp-JSONLD.ipynb) | .NET C# | Jumeau C# (dotNetRDF) — JSON-LD | twin |
 | 10 | [SW-10-Python-RDFStar](SemanticWeb/SW-10-Python-RDFStar.ipynb) | Python | RDF 1.2, quoted triples, SPARQL-Star | 5 |
 | 10c | [SW-10-CSharp-RDFStar](SemanticWeb/SW-10-CSharp-RDFStar.ipynb) | .NET C# | Jumeau C# (dotNetRDF) — réification/annotation de triplets | twin |
 | **Partie 4 : Graphes de Connaissances et IA (Python + jumeaux C#)** |   |   |   |   |
@@ -507,7 +507,7 @@ SymbolicAI/
 │   └── README.md
 │
 ├── SemanticWeb/               # Web semantique (25 notebooks : 13 C# + 12 Python, incluant RDF.Net-Legacy)
-│   ├── SW-1-CSharp-Setup.ipynb ... SW-13-Python-Reasoners.ipynb
+│   ├── SW-01-CSharp-Setup.ipynb ... SW-13-Python-Reasoners.ipynb
 │   ├── data/                 # Fichiers RDF, OWL, SHACL, JSON-LD
 │   ├── RDF.Net-Legacy/      # Notebook original (référence historique)
 │   └── README.md
@@ -719,7 +719,7 @@ Le setup est entièrement automatisé via `Tweety-1-Setup.ipynb` :
 | SMT/Z3-Linq2Z3 (C# Linq2Z3) | 18 | 18 (100%) | 0 | Excellent |
 | SMT/Z3-API (Python + 6 jumeaux C#) | 28 | 28 (100%, 22 Python + 6 C# jumeaux) | 0 | Excellent |
 
-**Total** : 230 notebooks pédagogiques — soit 230 fichiers `.ipynb` actifs au catalogue (cf. bloc `<!-- CATALOG-STATUS -->`), après déduction 1 Probe Tweety (`_probes/Tweety-IKVM-Init-Probe`), 2 archives SymbolicLearning (`_archive/2026-07-04-Neurosymbolic-EML-precurseur-SL12/`), 1 archive Planners (`archive/Fast-Downward-Legacy`) et 1 archive Tweety top-level (`archive/Tweety.ipynb`). Les notebooks sans exercices sont uniquement les notebooks de setup (Tweety-1-Setup, SW-1-CSharp-Setup, Planners-0-Setup, Lean-1-Setup, Argument_Analysis_Agentic-0-init), les notebooks legacy/démo (Lean-7b-Examples, RDF.Net-Legacy), le squelette Lean-21-PFR, les archives précurseurs EML, et le probe IKVM (`Tweety-IKVM-Init-Probe` non pédagogique). Argument_Analysis inclut également 4 artefacts `_agent.ipynb` (papermill, versionnés) qui dérivent de 4 notebooks Agentic — ils ne sont **pas** comptés comme sources pédagogiques distinctes. Les chiffres ci-dessus sont la **réconciliation disque ↔ catalogue** en date du **15 août 2026** (post-#5894 SocialChoice figures sweep, post-EPIC #4956 parité marathon, post-EPIC #4960 Argumentum EPITA-IS landing, post-PR #5345/#5390 Probas & SocialChoice README rolls, post-c.728y+14 audit SymbolicAI/README §E cohérence, post-c.756 Lean-17-Knots series a/b + Lean-18-Search-AStar-Optimality, post-c.826x Lean-19-Sendov + Lean-20-Analysis-I-Tao-Workflow + Lean-21-PFR, Argumentum_Cards/Toulmin_Model/Value_Based_AF et Z3-API 28/28 ajoutés depuis le §E 22/07).
+**Total** : 230 notebooks pédagogiques — soit 230 fichiers `.ipynb` actifs au catalogue (cf. bloc `<!-- CATALOG-STATUS -->`), après déduction 1 Probe Tweety (`_probes/Tweety-IKVM-Init-Probe`), 2 archives SymbolicLearning (`_archive/2026-07-04-Neurosymbolic-EML-precurseur-SL12/`), 1 archive Planners (`archive/Fast-Downward-Legacy`) et 1 archive Tweety top-level (`archive/Tweety.ipynb`). Les notebooks sans exercices sont uniquement les notebooks de setup (Tweety-1-Setup, SW-01-CSharp-Setup, Planners-0-Setup, Lean-1-Setup, Argument_Analysis_Agentic-0-init), les notebooks legacy/démo (Lean-7b-Examples, RDF.Net-Legacy), le squelette Lean-21-PFR, les archives précurseurs EML, et le probe IKVM (`Tweety-IKVM-Init-Probe` non pédagogique). Argument_Analysis inclut également 4 artefacts `_agent.ipynb` (papermill, versionnés) qui dérivent de 4 notebooks Agentic — ils ne sont **pas** comptés comme sources pédagogiques distinctes. Les chiffres ci-dessus sont la **réconciliation disque ↔ catalogue** en date du **15 août 2026** (post-#5894 SocialChoice figures sweep, post-EPIC #4956 parité marathon, post-EPIC #4960 Argumentum EPITA-IS landing, post-PR #5345/#5390 Probas & SocialChoice README rolls, post-c.728y+14 audit SymbolicAI/README §E cohérence, post-c.756 Lean-17-Knots series a/b + Lean-18-Search-AStar-Optimality, post-c.826x Lean-19-Sendov + Lean-20-Analysis-I-Tao-Workflow + Lean-21-PFR, Argumentum_Cards/Toulmin_Model/Value_Based_AF et Z3-API 28/28 ajoutés depuis le §E 22/07).
 
 > **Note (15/08, révisée c.118)** : réconciliation whole-file audit §E post-#5894 (SocialChoice sweep), post-fin marathon parité #4956 (Tweety 32 = 13 Python + 18 C# + 1 probe, **SemanticWeb 25 = 13 C# incluant RDF.Net-Legacy + 12 Python** [réconciliée c.1297 post-c.1296 audit], SMT/Z3-API 28 = 22 Python + 6 C# jumeaux, Planners 23 actifs = 14 Python (dont Planners-0-Setup) + 9 C# jumeaux, SymbolicLearning 20 = 12 Python + 8 C# jumeaux (+ 2 archives EML hors compte), Argument_Analysis 25 = 10 Agentic (5 sources + 4 artefacts `_agent.ipynb` + 1 setup) + 14 analytiques + 1 groupe I2 contre-arguments ASPIC), **Lean 31** (18 preuves natives + 13 companions Python/WSL — Lean-19-Sendov, Lean-20-Analysis-I-Tao-Workflow et Lean-21-PFR sont des companions Python 3). Pour les comptes courants, le marqueur `<!-- CATALOG-STATUS -->` (régénéré quotidiennement par `.github/workflows/catalog-cron.yml`) fait foi.
 

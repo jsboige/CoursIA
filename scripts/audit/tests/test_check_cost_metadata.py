@@ -207,7 +207,7 @@ def test_litmus2_gemini_real_api_call_still_detected(tmp_path):
 
 def test_litmus2_claude_bare_word_fp_suppressed(tmp_path):
     """FP-c.1226 (suite c.912/c.1172) : bare `claude` matched the OWL ontology
-    entity `LLM("Claude")` in SW-7b-Python-OWL — a knowledge-representation
+    entity `LLM("Claude")` in SW-07b-Python-OWL — a knowledge-representation
     notebook ABOUT LLMs (owlready2/HermiT, CPU) that calls NONE. A bare word /
     entity name is never an API call. Must NOT trigger api_used_but_cost_zero."""
     code = (

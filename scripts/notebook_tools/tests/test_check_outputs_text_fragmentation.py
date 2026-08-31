@@ -69,7 +69,7 @@ def test_founder_case_flagged(tmp_path: Path) -> None:
     res = subprocess.run(
         [sys.executable, str(SCRIPT), str(p), "--check"],
         capture_output=True,
-        text=True,
+        text=True, encoding="utf-8",
     )
     assert res.returncode == 1, f"devrait flagger, exit={res.returncode}, stderr={res.stderr}"
     assert "FRAGMENTED" in res.stdout
@@ -92,7 +92,7 @@ def test_normal_multiline_output_passes(tmp_path: Path) -> None:
     res = subprocess.run(
         [sys.executable, str(SCRIPT), str(p), "--check"],
         capture_output=True,
-        text=True,
+        text=True, encoding="utf-8",
     )
     assert res.returncode == 0, f"ne devrait PAS flagger, stderr={res.stderr}"
 
@@ -105,7 +105,7 @@ def test_short_output_under_threshold_passes(tmp_path: Path) -> None:
     res = subprocess.run(
         [sys.executable, str(SCRIPT), str(p), "--check"],
         capture_output=True,
-        text=True,
+        text=True, encoding="utf-8",
     )
     assert res.returncode == 0, f"court OK, stderr={res.stderr}"
 
@@ -117,7 +117,7 @@ def test_single_long_line_passes(tmp_path: Path) -> None:
     res = subprocess.run(
         [sys.executable, str(SCRIPT), str(p), "--check"],
         capture_output=True,
-        text=True,
+        text=True, encoding="utf-8",
     )
     assert res.returncode == 0
 
@@ -133,7 +133,7 @@ def test_display_data_output_ignored(tmp_path: Path) -> None:
     res = subprocess.run(
         [sys.executable, str(SCRIPT), str(p), "--check"],
         capture_output=True,
-        text=True,
+        text=True, encoding="utf-8",
     )
     assert res.returncode == 0, f"display_data ignore, stderr={res.stderr}"
 
@@ -157,7 +157,7 @@ def test_markdown_cells_ignored(tmp_path: Path) -> None:
     res = subprocess.run(
         [sys.executable, str(SCRIPT), str(p), "--check"],
         capture_output=True,
-        text=True,
+        text=True, encoding="utf-8",
     )
     assert res.returncode == 0
 
@@ -169,7 +169,7 @@ def test_json_output_stable(tmp_path: Path) -> None:
     res = subprocess.run(
         [sys.executable, str(SCRIPT), str(p), "--json"],
         capture_output=True,
-        text=True,
+        text=True, encoding="utf-8",
     )
     assert res.returncode == 0
     payload = json.loads(res.stdout)
@@ -191,7 +191,7 @@ def test_multiple_outputs_mixed(tmp_path: Path) -> None:
     res = subprocess.run(
         [sys.executable, str(SCRIPT), str(p), "--check"],
         capture_output=True,
-        text=True,
+        text=True, encoding="utf-8",
     )
     assert res.returncode == 1, "au moins 1 fragmented -> exit 1"
     # 1 seul finding (l'output OK n'est pas flague)
@@ -215,7 +215,7 @@ def test_mutation_disable_threshold_caught(tmp_path: Path) -> None:
     res = subprocess.run(
         [sys.executable, str(SCRIPT), str(p), "--check"],
         capture_output=True,
-        text=True,
+        text=True, encoding="utf-8",
     )
     # mediane = 3 > seuil 2 -> PAS flagger (sinon MEDIAN_THRESHOLD serait mort)
     assert res.returncode == 0, f"mediane 3 > seuil 2 -> OK, stderr={res.stderr}"
@@ -235,7 +235,7 @@ def test_mutation_disable_max_threshold_caught(tmp_path: Path) -> None:
     res = subprocess.run(
         [sys.executable, str(SCRIPT), str(p), "--check"],
         capture_output=True,
-        text=True,
+        text=True, encoding="utf-8",
     )
     # max=50 > 2 -> conjonction leve l'exemption -> OK (pas de finding)
     assert res.returncode == 0, f"max=50 > seuil max=2 -> OK, stderr={res.stderr}"
@@ -254,7 +254,7 @@ def test_min_items_below_threshold_passes(tmp_path: Path) -> None:
     res = subprocess.run(
         [sys.executable, str(SCRIPT), str(p), "--check"],
         capture_output=True,
-        text=True,
+        text=True, encoding="utf-8",
     )
     # n_items=3 < MIN_TEXT_ITEMS=10 -> early-exit, exit=0
     assert res.returncode == 0
@@ -282,11 +282,11 @@ FP_CASES = [
     ("MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-8-LandscapeExplorer.ipynb", 16, 7, "stderr MGS-8 cell16"),
     ("MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics-Csharp.ipynb", 4, 3, "stderr Planners-2"),
     ("MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-6-Domains-Csharp.ipynb", 2, 2, "stderr Planners-6"),
-    ("MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-9-CSharp-JSONLD.ipynb", 6, 2, "stderr SW-9 cell6"),
-    ("MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-9-CSharp-JSONLD.ipynb", 13, 4, "stderr SW-9 cell13"),
-    ("MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-9-CSharp-JSONLD.ipynb", 16, 3, "stderr SW-9 cell16"),
-    ("MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-9-CSharp-JSONLD.ipynb", 18, 5, "stderr SW-9 cell18"),
-    ("MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-9-CSharp-JSONLD.ipynb", 25, 1, "stderr SW-9 cell25"),
+    ("MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-09-CSharp-JSONLD.ipynb", 6, 2, "stderr SW-9 cell6"),
+    ("MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-09-CSharp-JSONLD.ipynb", 13, 4, "stderr SW-9 cell13"),
+    ("MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-09-CSharp-JSONLD.ipynb", 16, 3, "stderr SW-9 cell16"),
+    ("MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-09-CSharp-JSONLD.ipynb", 18, 5, "stderr SW-9 cell18"),
+    ("MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-09-CSharp-JSONLD.ipynb", 25, 1, "stderr SW-9 cell25"),
     ("MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/08_Meal_Planner_Patient_Capstone.ipynb", 20, 9, "stderr Z3-Linq2Z3 meal planner"),
     ("MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-Csharp.ipynb", 3, 10, "stderr SL-4"),
     ("MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-7a-Extended-Frameworks-Csharp.ipynb", 23, 3, "stderr Tweety-7a cell23"),
@@ -311,7 +311,7 @@ def test_fp_case_not_flagged(rel_path: str, cell_idx: int, out_idx: int, desc: s
     res = subprocess.run(
         [sys.executable, str(SCRIPT), str(nb_path), "--check"],
         capture_output=True,
-        text=True,
+        text=True, encoding="utf-8",
     )
     assert res.returncode == 0, (
         f"FP regression sur {rel_path} cell#{cell_idx} output#{out_idx} "
@@ -325,7 +325,7 @@ def test_explain_mode() -> None:
     res = subprocess.run(
         [sys.executable, str(SCRIPT), "--explain"],
         capture_output=True,
-        text=True,
+        text=True, encoding="utf-8",
     )
     assert res.returncode == 0
     assert "fragmentation" in res.stdout.lower() or "fragment" in res.stdout.lower()

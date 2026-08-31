@@ -103,7 +103,7 @@ GPU_PATTERNS = [
 API_PATTERNS = {
     'openai': r'openai\.ChatCompletion|openai\.Image|openai\.Audio|from openai',
     # FP-c.1226 (suite c.912/c.1172) : le `claude` nu matchait l'entité ontologie
-    # `LLM("Claude")` du notebook SW-7b-Python-OWL (KR À PROPOS des LLM, qui n'en
+    # `LLM("Claude")` du notebook SW-07b-Python-OWL (KR À PROPOS des LLM, qui n'en
     # appelle aucun — owlready2/HermiT, CPU). On resserre au contexte API reel :
     # import du SDK (`from anthropic`), appel qualifie (`anthropic.\w`), endpoint
     # REST (`api.anthropic.com`), ou nom de modele versionne (`claude-<digit>`,

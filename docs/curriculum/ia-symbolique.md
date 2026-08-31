@@ -200,7 +200,7 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | Introduction au web sémantique avec RDF.Net | BETA | Non |
-| 2 | SW-1-Setup | BETA | Oui |
+| 2 | SW-01-Setup | BETA | Oui |
 | 3 | SW-10-CSharp-RDFStar — Jumeau C# : annoter des triplets… | BETA | Oui |
 | 4 | SW-10-Python-RDFStar | BETA | Oui |
 | 5 | SW-11-CSharp-KnowledgeGraphs | BETA | Oui |
@@ -209,22 +209,22 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 | 8 | SW-13-Reasoners | BETA | Oui |
 | 9 | SW-13 (C#) : Raisonneurs RDF/OWL — Inferer des… | BETA | Oui |
 | 10 | SW-14 — Le coup ontologique comme diff de graphe… | BETA | Oui |
-| 11 | SW-2-RDFBasics | BETA | Oui |
-| 12 | SW-2b-Python-RDFBasics | BETA | Oui |
-| 13 | SW-3-GraphOperations | BETA | Oui |
-| 14 | SW-3b-Python-GraphOperations | BETA | Oui |
-| 15 | SW-4-SPARQL | BETA | Oui |
-| 16 | SW-4b-Python-SPARQL | BETA | Oui |
-| 17 | SW-5-LinkedData | BETA | Non |
-| 18 | SW-5b-Python-LinkedData | BETA | Non |
-| 19 | SW-6-RDFS | BETA | Oui |
-| 20 | SW-6b-Python-RDFS | BETA | Oui |
-| 21 | SW-7-OWL | BETA | Oui |
-| 22 | SW-7b-Python-OWL | BETA | Non |
-| 23 | SW-8-CSharp-SHACL | BETA | Oui |
-| 24 | SW-8-Python-SHACL | BETA | Oui |
-| 25 | SW-9-CSharp-JSONLD — JSON-LD avec dotNetRDF (twin C#) | ALPHA | Oui |
-| 26 | SW-9-Python-JSONLD | BETA | Oui |
+| 11 | SW-02-RDFBasics | BETA | Oui |
+| 12 | SW-02b-Python-RDFBasics | BETA | Oui |
+| 13 | SW-03-GraphOperations | BETA | Oui |
+| 14 | SW-03b-Python-GraphOperations | BETA | Oui |
+| 15 | SW-04-SPARQL | BETA | Oui |
+| 16 | SW-04b-Python-SPARQL | BETA | Oui |
+| 17 | SW-05-LinkedData | BETA | Non |
+| 18 | SW-05b-Python-LinkedData | BETA | Non |
+| 19 | SW-06-RDFS | BETA | Oui |
+| 20 | SW-06b-Python-RDFS | BETA | Oui |
+| 21 | SW-07-OWL | BETA | Oui |
+| 22 | SW-07b-Python-OWL | BETA | Non |
+| 23 | SW-08-CSharp-SHACL | BETA | Oui |
+| 24 | SW-08-Python-SHACL | BETA | Oui |
+| 25 | SW-09-CSharp-JSONLD — JSON-LD avec dotNetRDF (twin C#) | ALPHA | Oui |
+| 26 | SW-09-Python-JSONLD | BETA | Oui |
 
 ## SymbolicAI/SmartContracts (30 notebooks)
 

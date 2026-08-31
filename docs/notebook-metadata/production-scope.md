@@ -48,7 +48,7 @@ Le détail par notebook suit en strate A ci-dessous : consultation, plus décisi
 | Argument Analysis | EPITA IA Symbolique | `Argument_Analysis_Toulmin_Model.ipynb` | 4 | |
 | Tweety | EPITA IA Symbolique | `Tweety-2-Basic-Logics.ipynb` | 6 | |
 | Lean | EPITA IA Symbolique | `Lean-2-Dependent-Types.ipynb` | 2 | |
-| Semantic Web | EPITA IA Symbolique | `SW-2-CSharp-RDFBasics.ipynb` | 2 | |
+| Semantic Web | EPITA IA Symbolique | `SW-02-CSharp-RDFBasics.ipynb` | 2 | |
 | Planners (01-02) | EPITA IA Symbolique | `Planners-1-Introduction.ipynb` | 3 | |
 | SmartContracts (00-01) | EPITA IA Symbolique | `SC-0-Cypherpunk-Origins.ipynb` | 2 | |
 
@@ -170,8 +170,8 @@ Le détail par notebook suit en strate A ci-dessous : consultation, plus décisi
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-2-Dependent-Types.ipynb`
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-3-Propositions-Proofs.ipynb`
 <!-- MyIA.AI.Notebooks/SymbolicAI/SemanticWeb -->
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-2-CSharp-RDFBasics.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-3-CSharp-GraphOperations.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-02-CSharp-RDFBasics.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-03-CSharp-GraphOperations.ipynb`
 <!-- MyIA.AI.Notebooks/SymbolicAI/Planners -->
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipynb`
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb`
@@ -299,12 +299,12 @@ l'Epic) ; un dossier de revue est alors préparé (T2).*
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21-PFR-Entropy-Method.ipynb`
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-22-MIMO-Detection-Flips.ipynb`
 <!-- MyIA.AI.Notebooks/SymbolicAI/SemanticWeb -->
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-4-CSharp-SPARQL.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-5-CSharp-LinkedData.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-6-CSharp-RDFS.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-7-CSharp-OWL.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-8-Python-SHACL.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-9-Python-JSONLD.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-04-CSharp-SPARQL.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-05-CSharp-LinkedData.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-06-CSharp-RDFS.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07-CSharp-OWL.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-08-Python-SHACL.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-09-Python-JSONLD.ipynb`
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-Python-RDFStar.ipynb`
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-Python-KnowledgeGraphs.ipynb`
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-12-Python-GraphRAG.ipynb`

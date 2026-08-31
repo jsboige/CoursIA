@@ -49,7 +49,7 @@ UNIVERSE = {
     # genuinely C#-only
     f"{TW}/Tweety-2c-FOL-Csharp.ipynb",
     f"{SUD}/Sudoku-00-Environment-Csharp.ipynb",
-    f"{SW}/SW-1-CSharp-Setup.ipynb",
+    f"{SW}/SW-01-CSharp-Setup.ipynb",
     f"{GT}/GameTheory-02-NormalForm-Csharp-Part2.ipynb",
 }
 
@@ -78,7 +78,7 @@ def test_csharp_only_has_no_candidate():
     for cs in (
         f"{TW}/Tweety-2c-FOL-Csharp.ipynb",
         f"{SUD}/Sudoku-00-Environment-Csharp.ipynb",
-        f"{SW}/SW-1-CSharp-Setup.ipynb",
+        f"{SW}/SW-01-CSharp-Setup.ipynb",
     ):
         assert python_twin_candidates(cs, UNIVERSE) == [], cs
 

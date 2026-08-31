@@ -1,7 +1,7 @@
 - name: "SW-3 Graph-Operations"
   family: SemanticWeb/dotNetRDF-rdflib
-  python: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-3b-Python-GraphOperations.ipynb
-  csharp: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-3-CSharp-GraphOperations.ipynb
+  python: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-03b-Python-GraphOperations.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-03-CSharp-GraphOperations.ipynb
   parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Modele nominal lib-vs-lib (#10382, comme PyMC/Infer.NET) : C# = dotNetRDF 3.2.1 (NuGet officiel `#r \"nuget: dotNetRDF, 3.2.1\"` + espaces VDS.RDF.*, native .NET) et Python = rdflib (from rdflib import *, native Python). Chaque cote atteint le moteur SOTA de son ecosysteme -- ni pont intermediaire (IKVM/PythonNet) ni reimplementation from-scratch. Aucune asymetrie de machinerie a corriger. Verifie firsthand : C# VDS.RDF refs + execution_count, Python rdflib imports."

@@ -5657,7 +5657,7 @@
       "pre_rule_c2": false
     },
     {
-      "path": "D:\\Dev\\CoursIA\\MyIA.AI.Notebooks\\SymbolicAI\\SemanticWeb\\SW-1-CSharp-Setup.ipynb",
+      "path": "D:\\Dev\\CoursIA\\MyIA.AI.Notebooks\\SymbolicAI\\SemanticWeb\\SW-01-CSharp-Setup.ipynb",
       "category": "A_ALL_EXEC_OK",
       "n_code": 4,
       "n_exec": 4,
@@ -5712,7 +5712,7 @@
       "pre_rule_c2": false
     },
     {
-      "path": "D:\\Dev\\CoursIA\\MyIA.AI.Notebooks\\SymbolicAI\\SemanticWeb\\SW-2-CSharp-RDFBasics.ipynb",
+      "path": "D:\\Dev\\CoursIA\\MyIA.AI.Notebooks\\SymbolicAI\\SemanticWeb\\SW-02-CSharp-RDFBasics.ipynb",
       "category": "A_ALL_EXEC_OK",
       "n_code": 15,
       "n_exec": 15,
@@ -5723,7 +5723,7 @@
       "pre_rule_c2": true
     },
     {
-      "path": "D:\\Dev\\CoursIA\\MyIA.AI.Notebooks\\SymbolicAI\\SemanticWeb\\SW-2b-Python-RDFBasics.ipynb",
+      "path": "D:\\Dev\\CoursIA\\MyIA.AI.Notebooks\\SymbolicAI\\SemanticWeb\\SW-02b-Python-RDFBasics.ipynb",
       "category": "A_ALL_EXEC_OK",
       "n_code": 9,
       "n_exec": 9,
@@ -5734,7 +5734,7 @@
       "pre_rule_c2": true
     },
     {
-      "path": "D:\\Dev\\CoursIA\\MyIA.AI.Notebooks\\SymbolicAI\\SemanticWeb\\SW-3-CSharp-GraphOperations.ipynb",
+      "path": "D:\\Dev\\CoursIA\\MyIA.AI.Notebooks\\SymbolicAI\\SemanticWeb\\SW-03-CSharp-GraphOperations.ipynb",
       "category": "A_ALL_EXEC_OK",
       "n_code": 17,
       "n_exec": 17,
@@ -5745,7 +5745,7 @@
       "pre_rule_c2": true
     },
     {
-      "path": "D:\\Dev\\CoursIA\\MyIA.AI.Notebooks\\SymbolicAI\\SemanticWeb\\SW-4-CSharp-SPARQL.ipynb",
+      "path": "D:\\Dev\\CoursIA\\MyIA.AI.Notebooks\\SymbolicAI\\SemanticWeb\\SW-04-CSharp-SPARQL.ipynb",
       "category": "A_ALL_EXEC_OK",
       "n_code": 16,
       "n_exec": 16,
@@ -5756,7 +5756,7 @@
       "pre_rule_c2": true
     },
     {
-      "path": "D:\\Dev\\CoursIA\\MyIA.AI.Notebooks\\SymbolicAI\\SemanticWeb\\SW-4b-Python-SPARQL.ipynb",
+      "path": "D:\\Dev\\CoursIA\\MyIA.AI.Notebooks\\SymbolicAI\\SemanticWeb\\SW-04b-Python-SPARQL.ipynb",
       "category": "A_ALL_EXEC_OK",
       "n_code": 10,
       "n_exec": 10,
@@ -5767,7 +5767,7 @@
       "pre_rule_c2": false
     },
     {
-      "path": "D:\\Dev\\CoursIA\\MyIA.AI.Notebooks\\SymbolicAI\\SemanticWeb\\SW-5-CSharp-LinkedData.ipynb",
+      "path": "D:\\Dev\\CoursIA\\MyIA.AI.Notebooks\\SymbolicAI\\SemanticWeb\\SW-05-CSharp-LinkedData.ipynb",
       "category": "A_ALL_EXEC_OK",
       "n_code": 19,
       "n_exec": 19,
@@ -5778,7 +5778,7 @@
       "pre_rule_c2": false
     },
     {
-      "path": "D:\\Dev\\CoursIA\\MyIA.AI.Notebooks\\SymbolicAI\\SemanticWeb\\SW-5b-Python-LinkedData.ipynb",
+      "path": "D:\\Dev\\CoursIA\\MyIA.AI.Notebooks\\SymbolicAI\\SemanticWeb\\SW-05b-Python-LinkedData.ipynb",
       "category": "A_ALL_EXEC_OK",
       "n_code": 8,
       "n_exec": 8,
@@ -5789,7 +5789,7 @@
       "pre_rule_c2": true
     },
     {
-      "path": "D:\\Dev\\CoursIA\\MyIA.AI.Notebooks\\SymbolicAI\\SemanticWeb\\SW-6-CSharp-RDFS.ipynb",
+      "path": "D:\\Dev\\CoursIA\\MyIA.AI.Notebooks\\SymbolicAI\\SemanticWeb\\SW-06-CSharp-RDFS.ipynb",
       "category": "A_ALL_EXEC_OK",
       "n_code": 11,
       "n_exec": 11,
@@ -5800,7 +5800,7 @@
       "pre_rule_c2": true
     },
     {
-      "path": "D:\\Dev\\CoursIA\\MyIA.AI.Notebooks\\SymbolicAI\\SemanticWeb\\SW-7-CSharp-OWL.ipynb",
+      "path": "D:\\Dev\\CoursIA\\MyIA.AI.Notebooks\\SymbolicAI\\SemanticWeb\\SW-07-CSharp-OWL.ipynb",
       "category": "A_ALL_EXEC_OK",
       "n_code": 11,
       "n_exec": 11,
@@ -5811,7 +5811,7 @@
       "pre_rule_c2": true
     },
     {
-      "path": "D:\\Dev\\CoursIA\\MyIA.AI.Notebooks\\SymbolicAI\\SemanticWeb\\SW-7b-Python-OWL.ipynb",
+      "path": "D:\\Dev\\CoursIA\\MyIA.AI.Notebooks\\SymbolicAI\\SemanticWeb\\SW-07b-Python-OWL.ipynb",
       "category": "A_ALL_EXEC_OK",
       "n_code": 10,
       "n_exec": 10,
@@ -5822,7 +5822,7 @@
       "pre_rule_c2": true
     },
     {
-      "path": "D:\\Dev\\CoursIA\\MyIA.AI.Notebooks\\SymbolicAI\\SemanticWeb\\SW-8-Python-SHACL.ipynb",
+      "path": "D:\\Dev\\CoursIA\\MyIA.AI.Notebooks\\SymbolicAI\\SemanticWeb\\SW-08-Python-SHACL.ipynb",
       "category": "A_ALL_EXEC_OK",
       "n_code": 15,
       "n_exec": 15,
@@ -5833,7 +5833,7 @@
       "pre_rule_c2": true
     },
     {
-      "path": "D:\\Dev\\CoursIA\\MyIA.AI.Notebooks\\SymbolicAI\\SemanticWeb\\SW-9-Python-JSONLD.ipynb",
+      "path": "D:\\Dev\\CoursIA\\MyIA.AI.Notebooks\\SymbolicAI\\SemanticWeb\\SW-09-Python-JSONLD.ipynb",
       "category": "A_ALL_EXEC_OK",
       "n_code": 22,
       "n_exec": 22,

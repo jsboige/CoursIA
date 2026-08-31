@@ -33,7 +33,7 @@ Tout le reste est deja dans l'etat cible : ne pas toucher.
 
 ## Reference validee user (etat CIBLE)
 
-`SW-2-CSharp` : cell42 et cell45 = **Exemples guides** (solutions correctes, GARDEES) + cell48 = **Exercice** stub. C'est l'etat correct. **Ne PAS toucher.**
+`SW-02-CSharp` : cell42 et cell45 = **Exemples guides** (solutions correctes, GARDEES) + cell48 = **Exercice** stub. C'est l'etat correct. **Ne PAS toucher.**
 
 ## Rappel C.1 (notebook-conventions)
 

@@ -282,7 +282,7 @@ class TestMarkdownTableDataFalsePositive:
         assert 36.0 not in nums
 
     def test_filter_table_cell_version_reference(self):
-        # Cas corpus (SW-9-JSONLD) : table de versions "1.1 (2020)" = reference.
+        # Cas corpus (SW-09-JSONLD) : table de versions "1.1 (2020)" = reference.
         nums = mod._extract_prose_numbers(
             "| Standard | Version |\n|---|---|\n| RDF-Star | 1.2 (2020) |\n"
         )
@@ -350,7 +350,7 @@ class TestHexColorAndExponentFalsePositives:
     """
 
     def test_filter_hex_color_mermaid_classdef(self):
-        # SW-6-CSharp-RDFS cell[6]: mermaid `classDef root fill:#cfe2ff,stroke:#084298`
+        # SW-06-CSharp-RDFS cell[6]: mermaid `classDef root fill:#cfe2ff,stroke:#084298`
         # -> the #084298 channel was extracted as the number 84298. Systematic in
         # any mermaid-styled notebook.
         nums = mod._extract_prose_numbers(
@@ -1628,7 +1628,7 @@ class TestCLI:
         result = subprocess.run(
             [sys.executable, "-m", "scan_d5_prose_outputs_alignment",
              "--root", str(tmp_path / "absent"), "--check"],
-            cwd=_ROOT, capture_output=True, text=True,
+            cwd=_ROOT, capture_output=True, text=True, encoding="utf-8",
         )
         assert result.returncode == 2, f"attendu 2, obtenu {result.returncode}\n{result.stderr}"
 
@@ -1642,7 +1642,7 @@ class TestCLI:
         result = subprocess.run(
             [sys.executable, "-m", "scan_d5_prose_outputs_alignment",
              "--root", str(tmp_path), "--check"],
-            cwd=_ROOT, capture_output=True, text=True,
+            cwd=_ROOT, capture_output=True, text=True, encoding="utf-8",
         )
         assert result.returncode == 1
 
@@ -1655,6 +1655,6 @@ class TestCLI:
         result = subprocess.run(
             [sys.executable, "-m", "scan_d5_prose_outputs_alignment",
              "--root", str(tmp_path), "--check"],
-            cwd=_ROOT, capture_output=True, text=True,
+            cwd=_ROOT, capture_output=True, text=True, encoding="utf-8",
         )
         assert result.returncode == 0

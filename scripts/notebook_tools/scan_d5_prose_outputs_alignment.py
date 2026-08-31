@@ -144,7 +144,7 @@ _LATEX_MATH_SPAN_RE = re.compile(r"\$\$.*?\$\$|\$[^\$\n]*?\$", re.DOTALL)
 
 # Codes couleur hex (#RRGGBB / #RGB / #RRGGBBAA) dans les diagrammes mermaid
 # et le CSS inline. Un canal comme #084298 etait extrait comme le nombre
-# 84298 (c.1295 firsthand : SW-6-CSharp-RDFS cell[6] classDef mermaid ->
+# 84298 (c.1295 firsthand : SW-06-CSharp-RDFS cell[6] classDef mermaid ->
 # stroke:#084298, plus #0f5132/#b8860b/#5c4400 dans la meme cellule ; la
 # classe est systematique des qu'un notebook embarque du mermaid style).
 # On exclut tout token `#` + 3 a 8 chiffres hex ; une mesure reelle n'est

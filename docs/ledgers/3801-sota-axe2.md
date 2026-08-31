@@ -260,22 +260,22 @@ Chaque entry = 1 audit de famille/source, avec :
 **Violations C.1 réelles** : **0/24** (0 faux positif initial détecté, audit direct G.1 tranché d'emblée via lecture exhaustive).
 
 **Vrais outils SOTA invoqués** :
-- **rdflib** : SW-2b, SW-3b, SW-4b, SW-5b, SW-6b, SW-7b, SW-8-Python, SW-9-Python, SW-10-Python, SW-11-Python (10 nb Python) — vraie lib Python canonique RDF
+- **rdflib** : SW-2b, SW-3b, SW-4b, SW-5b, SW-6b, SW-7b, SW-08-Python, SW-09-Python, SW-10-Python, SW-11-Python (10 nb Python) — vraie lib Python canonique RDF
 - **dotNetRDF (VDS.RDF 3.4.1, meta-nuget)** : SW-1, SW-2, SW-3, SW-4, SW-5, SW-6, SW-7, SW-8, SW-9, SW-10, SW-11, SW-13 (12 nb .NET C#) — vraie lib C# RDF canonique
 - **owlready2 / owlrl** : SW-7b OWL-Python, SW-6b RDFS-Python — raisonneurs OWL/RDFS natifs Python
-- **pyshacl** : SW-8-Python-SHACL.ipynb — vraie implémentation SHACL W3C
-- **dotNetRDF.SHACL** : SW-8-CSharp-SHACL.ipynb (inclus dans `dotNetRDF 3.4.1` depuis v3.0) — vraie implémentation SHACL W3C native
+- **pyshacl** : SW-08-Python-SHACL.ipynb — vraie implémentation SHACL W3C
+- **dotNetRDF.SHACL** : SW-08-CSharp-SHACL.ipynb (inclus dans `dotNetRDF 3.4.1` depuis v3.0) — vraie implémentation SHACL W3C native
 - **StaticRdfsReasoner (VDS.RDF.Query.Inference)** : SW-13-Reasoners-CSharp.ipynb — vrai raisonneur RDFS natif dotNetRDF
-- **SPARQL engine** (VDS.RDF.Query.SparqlQuery/OwLReady2.sparql) : SW-4-CSharp-SPARQL + SW-4b-Python-SPARQL — vrais endpoints SPARQL W3C
-- **JSON-LD / jsonld** : SW-9-CSharp + SW-9-Python — vrai standard W3C Linked Data
+- **SPARQL engine** (VDS.RDF.Query.SparqlQuery/OwLReady2.sparql) : SW-04-CSharp-SPARQL + SW-04b-Python-SPARQL — vrais endpoints SPARQL W3C
+- **JSON-LD / jsonld** : SW-09-CSharp + SW-09-Python — vrai standard W3C Linked Data
 - **Turtle / RDF/XML / NTriples parsers** : SW-2, SW-2b, SW-5, SW-5b, SW-7b — vrais parsers sérialisation W3C
 - **NetworkX** : SW-3b (manipulation graphes RDF adossée à NetworkX)
 - **GraphRAG / graphrag** : SW-12-GraphRAG.ipynb — vraie approche RAG sur graphes de connaissances (Microsoft)
 - **HermiT / Pellet** : SW-13-Reasoners-Python.ipynb — vrais raisonneurs OWL 2 DL natifs Python (owlready2)
-- **DBpedia / Wikidata / Schema.org** : SW-5b-LinkedData-Python.ipynb + SW-11 — vraies sources LOD W3C
+- **DBpedia / Wikidata / Schema.org** : SW-05b-LinkedData-Python.ipynb + SW-11 — vraies sources LOD W3C
 - **SKOS / skos** : SW-5b + SW-6 (vocabulaires SKOS W3C)
-- **Newtonsoft.Json** : SW-9-CSharp-JSONLD.ipynb + parsing JSON-LD natif
-- **RDFa / rdfa** : SW-5-LinkedData + SW-5b — vrai standard W3C
+- **Newtonsoft.Json** : SW-09-CSharp-JSONLD.ipynb + parsing JSON-LD natif
+- **RDFa / rdfa** : SW-05-LinkedData + SW-5b — vrai standard W3C
 
 **Disclosures honnêtes vérifiées** :
 - (a) **SW-13-Reasoners-CSharp.ipynb** cell 11 = verdict **RECOVERABLE-MACHINE/INTRINSIC** honnête : "Implementation native OWL 2 DL complete (HermiT/Pellet) : NON (RECOVERABLE-...)" — dotNetRDF n'inclut PAS de raisonneur OWL 2 DL natif (StaticRdfsReasoner = RDFS uniquement) ; le notebook documente HONNÊTEMENT le plafond atteignable et route vers HermiT/Pellet via Python (SW-13-Python-Reasoners.ipynb) = RECOVERABLE-MACHINE canonique.
