@@ -331,7 +331,7 @@ Chaque série non recensée ci-dessus, et pourquoi (contestable sur l'Epic sans 
 | `Probas/` (Infer.NET) | idem — non rattachée à une des 4 écoles |
 | `GameTheory/` | les preuves Lean associées sont du code (i18n #4980), non des notebooks à signer ; les `.ipynb` ne sont pas cités nommément par le calendrier |
 | `IIT/` (PyPhi) | non rattaché à un cours du calendrier |
-| `RL/`, `CaseStudies/`, `FallacyDetection/`, `cross-series/` | hors des 4 écoles in-scope |
+| `RL/`, `CaseStudies/`, `GenAI/FallacyDetection/`, `cross-series/` | hors des 4 écoles in-scope (FallacyDetection descendu dans GenAI/ via tranche 1 #13581, 2026-08-30) |
 | `QuantConnect/` hors `Python/` (C#, partner-course, ML-Training-Pipeline, projects, kelly_lean) | le cours ECE/partner suit la série Python ; le reste est outillage/projets, non enseigné en cours |
 | `SymbolicAI/Planners/03-Advanced/`, `04-NeuroSymbolic/` | au-delà des 2 sous-séries scoping EPITA-IS (TP = tête de série) |
 | `SymbolicAI/SmartContracts/02-*/` à `06-*/` | idem — scoping EPITA-IS limité à `00-Foundations` + `01-Solidity-Foundation` |
