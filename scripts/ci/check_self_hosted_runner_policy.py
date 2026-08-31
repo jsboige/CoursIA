@@ -79,6 +79,15 @@ SAME_REPO_REUSABLE_PATTERN = re.compile(
 SAME_REPO_GUARD = (
     "github.event.pull_request.head.repo.full_name == github.repository"
 )
+# Defense-in-depth guard form that covers pull_request_target as well as
+# pull_request, without enumerating the trigger. The first disjunct is true
+# for every non-PR payload (workflow_dispatch, schedule, push) and the
+# second covers both pull_request and pull_request_target -- the unsafe
+# trigger that runs the base with write token + secrets access. Issue #13874.
+SAME_REPO_GUARD_NULL_SAFE = (
+    "github.event.pull_request.head.repo.full_name == null "
+    "|| github.event.pull_request.head.repo.full_name == github.repository"
+)
 DEFAULT_WORKFLOWS_DIR = Path(__file__).resolve().parents[2] / ".github" / "workflows"
 
 
@@ -348,7 +357,7 @@ def scan_workflows(workflows_dir: Path = DEFAULT_WORKFLOWS_DIR) -> ScanResult:
 
             if "pull_request" in triggers:
                 condition = _normalise_condition(job.get("if"))
-                if condition != SAME_REPO_GUARD:
+                if condition not in (SAME_REPO_GUARD, SAME_REPO_GUARD_NULL_SAFE):
                     violations.append(Violation(
                         path.name,
                         str(job_name),

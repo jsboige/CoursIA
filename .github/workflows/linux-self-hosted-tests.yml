@@ -26,9 +26,17 @@ jobs:
     # Garde fork EXPLICITE au niveau job (defense-in-depth, pattern maison).
     # Le declencheur actuel est workflow_dispatch seul -- un fork ne peut pas
     # l'emettre -- mais "pas de trigger" est un etat qu'une ligne de YAML
-    # defait : si un declencheur pull_request est ajoute un jour, un evenement
-    # fork est refuse ICI.
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    # defait : si un declencheur pull_request (ou pull_request_target, qui
+    # execute la base avec un jeton en ecriture + acces secrets sur une
+    # ref controlee par le fork) est ajoute un jour, un evenement fork est
+    # refuse ICI.
+    #
+    # La forme '== null' est vraie pour tout evenement sans payload de PR
+    # (workflow_dispatch, schedule, push), et la seconde jambe couvre
+    # pull_request ET pull_request_target d'un seul test. Elle ne se defait
+    # pas quand on ajoute un declencheur.
+    # Ref : issue #13874.
+    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
     timeout-minutes: 10
     concurrency:

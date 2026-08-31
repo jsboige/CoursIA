@@ -358,6 +358,69 @@ def test_pull_request_target_is_always_rejected(tmp_path):
     assert "PULL_REQUEST_TARGET" in codes(policy.scan_workflows(tmp_path))
 
 
+def test_null_safe_pull_request_guard_is_accepted(tmp_path):
+    """Defense-in-depth guard form that covers pull_request_target too.
+
+    Issue #13874: the strict `head.repo.full_name == github.repository` form
+    leaves the job vulnerable to a future addition of `pull_request_target`
+    trigger (the scanner still rejects the trigger itself, but the runtime
+    YAML guard should not depend on enumerating events). The null-safe form
+    is `head.repo.full_name == null || head.repo.full_name == repo` -- true
+    for every non-PR payload and for any PR payload from the same repo.
+    """
+    write_workflow(tmp_path, "pr-gate-stale-sweep", """
+        name: null-safe-guard
+        on: [pull_request]
+        jobs:
+          test:
+            if: ${{ github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository }}
+            runs-on: [self-hosted, coursia-ephemeral, coursia-fast-guards]
+            steps:
+              - run: echo safe
+        """)
+    result = policy.scan_workflows(tmp_path)
+    assert result.broken == []
+    assert "SAME_REPO_GUARD" not in codes(result)
+    assert "PULL_REQUEST_TARGET" not in codes(result)
+    assert result.self_hosted_jobs == 1
+
+
+def test_strict_pull_request_guard_still_accepted(tmp_path):
+    """The strict canonical guard form remains valid -- no regression."""
+    write_workflow(tmp_path, "pr-gate-stale-sweep", """
+        name: strict-guard
+        on: [pull_request]
+        jobs:
+          test:
+            if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
+            runs-on: [self-hosted, coursia-ephemeral, coursia-fast-guards]
+            steps:
+              - run: echo safe
+        """)
+    result = policy.scan_workflows(tmp_path)
+    assert result.broken == []
+    assert "SAME_REPO_GUARD" not in codes(result)
+    assert result.self_hosted_jobs == 1
+
+
+def test_null_safe_guard_with_extra_or_is_rejected(tmp_path):
+    """A null-safe guard weakened by an extra `|| always()`-like disjunct
+    must still be rejected -- the new predicate accepts only the exact
+    null-safe form, not weakened variants.
+    """
+    write_workflow(tmp_path, "pr-gate-stale-sweep", """
+        name: weak-null-safe
+        on: [pull_request]
+        jobs:
+          test:
+            if: ${{ github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository || always() }}
+            runs-on: [self-hosted, coursia-ephemeral, coursia-fast-guards]
+            steps:
+              - run: echo safe
+        """)
+    assert "SAME_REPO_GUARD" in codes(policy.scan_workflows(tmp_path))
+
+
 def test_workflow_call_cannot_hide_self_hosted_job(tmp_path):
     write_workflow(tmp_path, "callee", """
         name: callee
