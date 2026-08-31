@@ -523,7 +523,7 @@ Famille `MyIA.AI.Notebooks/Probas/Infer/` = 19 notebooks `Infer-{1..19}-*.ipynb`
 | Mentions SOTA API (`Variable`/`VariableArray`/`Range`/`InferenceEngine`/`Bernoulli`/`Gaussian`/`Gamma`/`Beta`/`Dirichlet`) | **3 031 occurrences cumulées** | Regex scan des 20 notebooks — preuve d'usage massif, pas import décoratif |
 | Violations C.1 (`raise NotImplementedError` / `assert False` / `1/0`) | **0** | `grep -nE "raise NotImplementedError\|assert False\|1/0"` sur les 20 nb = 0 résultat |
 | CJK parasites | **0** | 4 ranges Unicode scannés = 0 parasite |
-| Fallback Python/PyMC/Julia | **1 disclosure honnête** | Infer-5 cellules markdown 0/13/36/37 = cross-check pédagogique "cross-validation avec PyMC-4" pointant `../PyMC/PyMC-4-Bayesian-Networks.ipynb` + cell 14 = cellule mixte (Python + Infer.NET côte à côte) — **validation croisée cross-family**, pas un fallback |
+| Fallback Python/PyMC/Julia | **1 disclosure honnête** | Infer-5 cellules markdown 0/13/36/37 = cross-check pédagogique "cross-validation avec PyMC-4" pointant `../PyMC/PyMC-04-Bayesian-Networks.ipynb` + cell 14 = cellule mixte (Python + Infer.NET côte à côte) — **validation croisée cross-family**, pas un fallback |
 | Helper `FactorGraphHelper.cs` | **existe, 274 lignes** | `wc -l FactorGraphHelper.cs` = 274 — wrapper Graphviz légitime (résolution PATH + fallback conda/Program Files, issue #3473) |
 
 ### Findings détaillés
@@ -549,7 +549,7 @@ Famille `MyIA.AI.Notebooks/Probas/Infer/` = 19 notebooks `Infer-{1..19}-*.ipynb`
 
 ### Disclosures honnêtes vérifiées
 
-- (a) `Infer-5-Causal-Inference.ipynb` cellules 0/13/36/37 (markdown) = commentaires pédagogiques "cross-check avec PyMC-4" pointant `../PyMC/PyMC-4-Bayesian-Networks.ipynb`. Cellule 14 (code) contient côte à côte une comparaison `pm.sample()` PyMC et `Variable<bool> cloudySpr = Variable.Bernoulli(0.5)` Infer.NET sur le même réseau bayésien `Cloudy → Sprinkler → WetGrass`. **Le moteur primaire reste Infer.NET** (9 appels `.Infer<>()` avec outputs réels dans ce notebook). Ce n'est **pas** un fallback, c'est une **validation croisée cross-family** — force pédagogique, à discloser honnêtement dans le ledger mais **SOTA-OK (Infer.NET autonome)**.
+- (a) `Infer-5-Causal-Inference.ipynb` cellules 0/13/36/37 (markdown) = commentaires pédagogiques "cross-check avec PyMC-4" pointant `../PyMC/PyMC-04-Bayesian-Networks.ipynb`. Cellule 14 (code) contient côte à côte une comparaison `pm.sample()` PyMC et `Variable<bool> cloudySpr = Variable.Bernoulli(0.5)` Infer.NET sur le même réseau bayésien `Cloudy → Sprinkler → WetGrass`. **Le moteur primaire reste Infer.NET** (9 appels `.Infer<>()` avec outputs réels dans ce notebook). Ce n'est **pas** un fallback, c'est une **validation croisée cross-family** — force pédagogique, à discloser honnêtement dans le ledger mais **SOTA-OK (Infer.NET autonome)**.
 
 **Cross-check double-vérifié** : (1) audit sub-agent a identifié la présence de `PyMC` dans 4 markdown cells + 1 code cell mixt ; (2) vérification firsthand worker via `python -c` confirme ces 5 cellules — claim confirmée.
 
@@ -2555,14 +2555,14 @@ Part of #3801, #1621
 
 | Nb | Cells | Code | EXEC | Err | Stubs C.1 | Kernel | Outils SOTA | Verdict |
 |-----|-------|------|------|-----|-----------|--------|-------------|---------|
-| PyMC-1-Setup | 26 | 11 | 11/11 | 0 | 0 (3 ex.) | python3 | Beta-Bernoulli + **hierarchical 6-coin non-centered** (Sec.6) ; NUTS, `az.plot_posterior` | **SOTA-OK** |
-| PyMC-2-Gaussian-Mixtures | 23 | 10 | 10/10 | 0 | 0 (3 ex.) | python3 | `pm.NormalMixture`+`pm.Dirichlet`+`CompoundStep` NUTS+BinaryGibbsMetropolis ; label-switching | **SOTA-OK** |
-| PyMC-3-Factor-Graphs | 18 | 8 | 8/8 | 0 | 0 (3 ex.) | python3 | Murder Mystery (explaining-away) + Monty Hall ; `pm.Categorical`+`CategoricalGibbsMetropolis` | **SOTA-OK** |
-| PyMC-4-Bayesian-Networks | 26 | 11 | 11/11 | 0 | 0 (4 ex.) | python3 | Wet Grass DAG, d-separation, **do-calculus** (P(Cloudy\|do(Rain=1))=0.500 vs obs 0.800, Pearl 2000) | **SOTA-OK** |
-| PyMC-6-Debugging | 43 | 13 | 13/13 | 0 | 0 (3 ex.) | python3 | **Neal funnel + non-centered reparam + NUTS vs ADVI** ; 573 divergences live ; R-hat/ESS (Vehtari 2021) | **SOTA-OK** |
-| PyMC-7-Skills-IRT | 33 | 14 | 14/14 | 0 | 0 (4 ex.) | python3 | IRT 1PL/2PL probit + DINA (AND-gate) ; `pm.math.invprobit`, `sklearn.roc_curve/auc` | **SOTA-OK** |
-| PyMC-8-TrueSkill | 30 | 13 | 13/13 | 0 | 0 (3 ex.) | python3 | Latent-skill Gaussian ranking, `pm.Potential`, online/team/FFA ; EP V(t)/W(t) dérivé Sec.7bis | **SOTA-OK** |
-| PyMC-9-Classification | 22 | 10 | 10/10 | 0 | 0 (3 ex.) | python3 | Probit classifier (Bayes Point Machine) + A/B testing + CTR ; Beta-Binomial (BDA3) | **SOTA-OK** |
+| PyMC-01-Setup | 26 | 11 | 11/11 | 0 | 0 (3 ex.) | python3 | Beta-Bernoulli + **hierarchical 6-coin non-centered** (Sec.6) ; NUTS, `az.plot_posterior` | **SOTA-OK** |
+| PyMC-02-Gaussian-Mixtures | 23 | 10 | 10/10 | 0 | 0 (3 ex.) | python3 | `pm.NormalMixture`+`pm.Dirichlet`+`CompoundStep` NUTS+BinaryGibbsMetropolis ; label-switching | **SOTA-OK** |
+| PyMC-03-Factor-Graphs | 18 | 8 | 8/8 | 0 | 0 (3 ex.) | python3 | Murder Mystery (explaining-away) + Monty Hall ; `pm.Categorical`+`CategoricalGibbsMetropolis` | **SOTA-OK** |
+| PyMC-04-Bayesian-Networks | 26 | 11 | 11/11 | 0 | 0 (4 ex.) | python3 | Wet Grass DAG, d-separation, **do-calculus** (P(Cloudy\|do(Rain=1))=0.500 vs obs 0.800, Pearl 2000) | **SOTA-OK** |
+| PyMC-06-Debugging | 43 | 13 | 13/13 | 0 | 0 (3 ex.) | python3 | **Neal funnel + non-centered reparam + NUTS vs ADVI** ; 573 divergences live ; R-hat/ESS (Vehtari 2021) | **SOTA-OK** |
+| PyMC-07-Skills-IRT | 33 | 14 | 14/14 | 0 | 0 (4 ex.) | python3 | IRT 1PL/2PL probit + DINA (AND-gate) ; `pm.math.invprobit`, `sklearn.roc_curve/auc` | **SOTA-OK** |
+| PyMC-08-TrueSkill | 30 | 13 | 13/13 | 0 | 0 (3 ex.) | python3 | Latent-skill Gaussian ranking, `pm.Potential`, online/team/FFA ; EP V(t)/W(t) dérivé Sec.7bis | **SOTA-OK** |
+| PyMC-09-Classification | 22 | 10 | 10/10 | 0 | 0 (3 ex.) | python3 | Probit classifier (Bayes Point Machine) + A/B testing + CTR ; Beta-Binomial (BDA3) | **SOTA-OK** |
 | PyMC-10-Model-Selection | 35 | 16 | 16/16 | 0 | 0 (3 ex.) | python3 | **WAIC/LOO** (`az.compare`/`az.loo`, `pm.compute_log_likelihood`), ARD, Pareto k | **SOTA-OK** |
 | PyMC-11-Topic-Models | 33 | 15 | 15/15 | 0 | 0 (3 ex.) | python3 | **LDA** (`pm.Dirichlet`/`pm.Multinomial`), symmetry-breaking ; sklearn LDA réf | **SOTA-OK** |
 | PyMC-12-Modeles-Hierarchiques | 23 | 9 | 9/9 | 0 | 0 (3 ex.) | python3 | **Hierarchical partial pooling + shrinkage**, non-centered (`mu+sigma*z`), funnel, MSE no-pool 2.825→hier 0.983 (65%) | **SOTA-OK** |
@@ -2710,11 +2710,11 @@ La série **exerce des capacités d'orchestration agentique distinctives** sans 
 Part of #3801, #1385
 
 
-## Entry #030 — Probas/PyMC-5-Causal-Inference (owner po-2025 strict, c.538)
+## Entry #030 — Probas/PyMC-05-Causal-Inference (owner po-2025 strict, c.538)
 
 | Métrique | Valeur |
 |----------|--------|
-| Famille | `MyIA.AI.Notebooks/Probas/PyMC/PyMC-5-Causal-Inference.ipynb` (1 .ipynb — causalité bayésienne + do-calculus, parité Infer-5-Causal-Inference entry #006) |
+| Famille | `MyIA.AI.Notebooks/Probas/PyMC/PyMC-05-Causal-Inference.ipynb` (1 .ipynb — causalité bayésienne + do-calculus, parité Infer-5-Causal-Inference entry #006) |
 | Kernel | `python3` |
 | Owner-lane | **po-2025 strict** (lane Python bayésienne native ; entry #028 PyMC 1-15 c.411 + Infer-extension #018 PyMC-16..19) |
 | Date audit | 2026-07-16 (c.538) |
@@ -2725,7 +2725,7 @@ Part of #3801, #1385
 
 | Nb | Cells | Code | EXEC | Err | Stubs C.1 | Kernel | Outils SOTA | Verdict |
 |-----|-------|------|------|-----|-----------|--------|-------------|---------|
-| PyMC-5-Causal-Inference | 30 | 14 | 14/14 | 0 | 0 (4 ex.) | python3 | **PyMC `pm.do`/`pm.observe` (Pearl)** + énumération exacte SCM + `pm.sample_prior_predictive` ; 3 niveaux de Pearl | **SOTA-OK** |
+| PyMC-05-Causal-Inference | 30 | 14 | 14/14 | 0 | 0 (4 ex.) | python3 | **PyMC `pm.do`/`pm.observe` (Pearl)** + énumération exacte SCM + `pm.sample_prior_predictive` ; 3 niveaux de Pearl | **SOTA-OK** |
 | **TOTAL** | **30** | **14** | **14/14** | **0** | **0** | python3 | PyMC + ArviZ + NumPy | **SOTA-OK 1/1** |
 
 - **EXEC_PROVED** : 14/14 (100%) — `execution_count != null` sur 14/14 cellules code.
@@ -2747,7 +2747,7 @@ Part of #3801, #1385
 - **Backdoor adjustment** cell 16 : `P(tempete|do(barometre))=0.310` via formule de Somme vs `pm.do` direct → « Les deux méthodes coïncident (0.310 ~ 0.310) : vérification de cohérence. »
 - **Front-door adjustment** cell 18 : smoke→tar→cancer + U genotype non observé, formule front-door restitue `do(X=1)=0.689` = mutilation directe → « la formule front-door restitue l'effet causal. »
 - **Paradoxe de Simpson** cell 20 : `P(Rec|do(Drug))=0.700` vs `P(Rec|do(NoDrug))=0.500` → « le médicament AIDE causalement » (renversement agrégé vs conditionnel démontré).
-- **Cross-check PyMC-4** cell 14 : réseau Sprinkler sous-graphe `Cloudy→Rain`, pointe `../PyMC/PyMC-4-Bayesian-Networks.ipynb` (cross-family validation, pas fallback).
+- **Cross-check PyMC-4** cell 14 : réseau Sprinkler sous-graphe `Cloudy→Rain`, pointe `../PyMC/PyMC-04-Bayesian-Networks.ipynb` (cross-family validation, pas fallback).
 
 ### Prong B — problème non-trivial (DISCRIMINATING)
 
@@ -2776,7 +2776,7 @@ Le do-calculus **est la capacité distinctive** de la causalité — il n'existe
 
 ### Conclusions audit
 
-- **PyMC-5-Causal-Inference = substance causale solide**, 14/14 EXEC_PROVED, PyMC `pm.do`/`pm.observe` (opérateurs Pearl natifs) + énumération exacte cross-validée, Prong-B DISCRIMINATING (do-calculus). **Pas de fix nécessaire** : audit = SOTA-OK, 0 PR de substance.
+- **PyMC-05-Causal-Inference = substance causale solide**, 14/14 EXEC_PROVED, PyMC `pm.do`/`pm.observe` (opérateurs Pearl natifs) + énumération exacte cross-validée, Prong-B DISCRIMINATING (do-calculus). **Pas de fix nécessaire** : audit = SOTA-OK, 0 PR de substance.
 - **Continuité c.538** : greenlight ai-01 (DM `msg-20260716T045341-edgoyo`) pour série PyMC SOTA audit — mais dispatch pointait PyMC-12/18 (déjà #028/#018 SOTA-OK, 4e dispatch stale ce motif) ; **G.1 firsthand** a identifié PyMC-5 comme le **vrai gap non-audité**. R6 anti-monotony : famille probabiliste PyMC (substance) après forensic-docs GameTheory c.537.
 - **Collision-avoidance** : `gh pr list --state all --search` = 0 PR PyMC-5 SOTA en vol ; entry #030 stacked à la suite de #029.
 - **Cumulatif** : entry #030 = **PyMC-5 standalone** (1 nb) → **famille Probas/PyMC COMPLÈTE 15/15** dans le registre (entry #028 14 + entry #018 PyMC-16..19 + entry #030 PyMC-5 = 19 notebooks PyMC couverts). PyMC/ArviZ déjà comptés ; cette entry clôture le gap PyMC-5.

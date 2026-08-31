@@ -1,7 +1,8 @@
 - name: Probas-7 Skills-IRT
   family: Probas/Infer.NET-PyMC
-  python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-7-Skills-IRT.ipynb
+  python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-07-Skills-IRT.ipynb
   csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-7-Skills-IRT.ipynb
+  numbering_exception: 'Zero-padding cote Python uniquement PyMC-1..9 -> PyMC-01..09 (renommage #13760) ; jumeau C# Infer-1..9 non concerne, contenu pedagogique inchange.'
   parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Modele nominal lib-vs-lib cite par owner #10382 (\"PyMC vs Infer, 2 moteurs qui brillent\") : C# = Microsoft Infer.NET (Microsoft.ML.Probabilistic, NuGet officiel, native .NET, inférence variationnelle EP/VMP) et Python = PyMC (pip pymc, native Python, NUTS/HMC + ADVI). Chaque cote atteint le moteur SOTA de son ecosysteme probabiliste -- ni pont intermediaire ni reimplementation. Aucune asymetrie de machinerie a corriger. Verifie firsthand : C# Microsoft.ML.Probabilistic refs + execution_count, Python pymc imports."
@@ -26,6 +27,12 @@
       python_sha: 11375befea475f214935935283ae3a1da08ec3eb
       csharp_sha: 605d0f4b203dcabe7969c33da632779c0e3fef7f
       content_python_sha: 5107358535723f2ea0404f53a1330f63aac57b82dbcc72a3dcd5bc163b09ba05
+      content_csharp_sha: c6300fdd8aa7a07f68303807a60824ba587f7c17b7829369b7dc60913de8a83b
+    - date: "2026-08-31"
+      by: myia-po-2025:CoursIA
+      python_sha: 420f7c835253b8813b23365cdb981c6cf7f25fd0
+      csharp_sha: 605d0f4b203dcabe7969c33da632779c0e3fef7f
+      content_python_sha: 81fde360a3cab1a935f7d0afbb20a8a88c0a18e02cdbf280f15403e60b709476
       content_csharp_sha: c6300fdd8aa7a07f68303807a60824ba587f7c17b7829369b7dc60913de8a83b
   known_differences:
   - '2026-07-28 (myia-po-2023) #8711 / See #8081 : FERME l''asymetrie creee par #8530 -- le backfill attribution MBML
