@@ -1,7 +1,7 @@
-- name: "Search-15 NetworkX"
+- name: "Search-02b NetworkX"
   family: Search/Part1-Foundations
-  python: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX.ipynb
-  csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX-Csharp.ipynb
+  python: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX-Csharp.ipynb
   parity_level: native-both
   audits:
     - date: "2026-08-04"
@@ -30,7 +30,7 @@
   bridge_verdict_reason: |
     Python = networkX (librairie mature graphes : plus courts chemins, centralites, flot max, Louvain, matching pondere) -- vrai SOTA ecosysteme Python (BSD). C# = QuikGraph 2.5.0 (moteur .NET natif graphes, post Tranche 2 PR #10382 cycle 11) avec Dijkstra sur MEME instance 6-villes (dist(A,F)=7, chemin A-B-E-F verifies chiffres a chiffres) -- vrai SOTA ecosysteme .NET. Tranche 1 C# from-scratch pedagogique (BFS, DFS, Dijkstra, centralites, Ford-Fulkerson sur adjacency list maison) preservee + Tranche 2 ajoute QuikGraph lib-vs-lib. Les DEUX cotes branchent une lib native de leur ecosysteme (networkX + QuikGraph). Asymetrie de couverture asumee (Louvain/matching pondere/Prong-B cote Python seulement). Verdict SOTA-OK.
   known_differences:
-    - "Bibliotheque vs from-scratch puis lib-vs-lib : Python invoque NetworkX (librairie mature : plus courts chemins, centralites, flot max, Louvain, matching). C# = deux tranches -- Tranche 1 (sections 1-5.1) reimplementation from-scratch pedagogique (BFS, DFS, Dijkstra, centralites, Ford-Fulkerson sur adjacency list maison) PRESERVEE integgralement ; Tranche 2 (PR #10382 cycle 11) ajoute QuikGraph 2.5.0 (moteur .NET natif, deja en service dans Search-16) avec Dijkstra sur la MEME instance 6-villes -- parite verifiee chiffre a chiffre (dist(A,F)=7, chemin A-B-E-F = tranche 1). parity_level=native-both (Python/networkX ET C#/QuikGraph atteignent chacun un moteur de production de son ecosysteme)."
+    - "Bibliotheque vs from-scratch puis lib-vs-lib : Python invoque NetworkX (librairie mature : plus courts chemins, centralites, flot max, Louvain, matching). C# = deux tranches -- Tranche 1 (sections 1-5.1) reimplementation from-scratch pedagogique (BFS, DFS, Dijkstra, centralites, Ford-Fulkerson sur adjacency list maison) PRESERVEE integgralement ; Tranche 2 (PR #10382 cycle 11) ajoute QuikGraph 2.5.0 (moteur .NET natif, deja en service dans Search-02c, alors numerote Search-16) avec Dijkstra sur la MEME instance 6-villes -- parite verifiee chiffre a chiffre (dist(A,F)=7, chemin A-B-E-F = tranche 1). parity_level=native-both (Python/networkX ET C#/QuikGraph atteignent chacun un moteur de production de son ecosysteme)."
     - "Asymetrie de couverture : Python (42 cellules, 21 code) couvre §1-10 (construction, visualisation matplotlib, plus courts chemins, centralites, flot maximum, detection de communautes Louvain, matching pondere, Prong-B #3801) ; C# (20 cellules, 9 code) couvre §1-6 (graphe pondere, BFS/DFS, Dijkstra, centralites, flot maximum Ford-Fulkerson, visualisation ASCII). Louvain, matching pondere et Prong-B sont absents du C#."
     - "Visualisation : Python = matplotlib (rendu graphique du reseau) ; C# = visualisation ASCII du graphe (sortie textuelle)."
     - "Parite réelle : memes concepts fondamentaux (parcours, plus courts chemins, centralites, flot max) ; C# valorise la reimplementation pedagogique la ou Python valorise l'invocation de la lib SOTA."
