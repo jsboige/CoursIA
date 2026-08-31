@@ -372,15 +372,15 @@ Post-c.390 PR #5840 (entry #003 SymbolicLearning audit axe-2), pivot vers substa
 
 | Nb | Cells | Code | EXEC | Err | Stubs C.1 | Kernel | Outils SOTA | Verdict |
 |----|-------|------|------|-----|-----------|--------|-------------|---------|
-| DecInfer-1-Utility-Foundations | 30 | 16 | 16/16 | 0 | 0 | .net-csharp | Microsoft.Infer.NET (Variable<double>, expectations) | **SOTA-OK** |
-| **DecInfer-2-Lean-ExpectedUtility** | 14 | 5 | 5/5 | 0 | 0 | **lean4-wsl** | **Lean 4 formel** (von Neumann–Morgenstern 0-sorry) | **SOTA-OK** |
-| DecInfer-3-Utility-Money | 50 | 22 | 22/22 | 0 | 0 | .net-csharp | Microsoft.Infer.NET + Bernoulli mixtures (Saint-Petersbourg / Friedman-Savage / Arrow-Pratt) | **SOTA-OK** |
-| DecInfer-4-Multi-Attribute | 50 | 23 | 23/23 | 0 | 0 | .net-csharp | Microsoft.Infer.NET + CPLEX/GLPK (LP additives pondérés) | **SOTA-OK** |
-| DecInfer-5-Decision-Networks | 35 | 17 | 17/17 | 0 | 0 | .net-csharp | Microsoft.Infer.NET (influence diagrams Variable<int>) | **SOTA-OK** |
-| DecInfer-6-Value-Information | 38 | 19 | 19/19 | 0 | 0 | .net-csharp | Microsoft.Infer.NET (EVPI/Expected Value of Perfect Information) | **SOTA-OK** |
-| DecInfer-7-Expert-Systems | 32 | 14 | 14/14 | 0 | 0 | .net-csharp | Microsoft.Infer.NET (decision rules + uncertainty propagation) | **SOTA-OK** |
-| DecInfer-8-Sequential | 32 | 14 | 14/14 | 0 | 0 | .net-csharp | Microsoft.Infer.NET (dynamic decision processes backward induction) | **SOTA-OK** |
-| **DecInfer-9-Lean-Gittins** | 25 | 10 | 10/10 | 0 | 0 | **lean4-wsl** | **Lean 4 formel** (Gittins index preuves partielles) | **SOTA-OK** |
+| DecInfer-01-Utility-Foundations | 30 | 16 | 16/16 | 0 | 0 | .net-csharp | Microsoft.Infer.NET (Variable<double>, expectations) | **SOTA-OK** |
+| **DecInfer-02-Lean-ExpectedUtility** | 14 | 5 | 5/5 | 0 | 0 | **lean4-wsl** | **Lean 4 formel** (von Neumann–Morgenstern 0-sorry) | **SOTA-OK** |
+| DecInfer-03-Utility-Money | 50 | 22 | 22/22 | 0 | 0 | .net-csharp | Microsoft.Infer.NET + Bernoulli mixtures (Saint-Petersbourg / Friedman-Savage / Arrow-Pratt) | **SOTA-OK** |
+| DecInfer-04-Multi-Attribute | 50 | 23 | 23/23 | 0 | 0 | .net-csharp | Microsoft.Infer.NET + CPLEX/GLPK (LP additives pondérés) | **SOTA-OK** |
+| DecInfer-05-Decision-Networks | 35 | 17 | 17/17 | 0 | 0 | .net-csharp | Microsoft.Infer.NET (influence diagrams Variable<int>) | **SOTA-OK** |
+| DecInfer-06-Value-Information | 38 | 19 | 19/19 | 0 | 0 | .net-csharp | Microsoft.Infer.NET (EVPI/Expected Value of Perfect Information) | **SOTA-OK** |
+| DecInfer-07-Expert-Systems | 32 | 14 | 14/14 | 0 | 0 | .net-csharp | Microsoft.Infer.NET (decision rules + uncertainty propagation) | **SOTA-OK** |
+| DecInfer-08-Sequential | 32 | 14 | 14/14 | 0 | 0 | .net-csharp | Microsoft.Infer.NET (dynamic decision processes backward induction) | **SOTA-OK** |
+| **DecInfer-09-Lean-Gittins** | 25 | 10 | 10/10 | 0 | 0 | **lean4-wsl** | **Lean 4 formel** (Gittins index preuves partielles) | **SOTA-OK** |
 | DecInfer-10-Thompson-Sampling | 28 | 12 | 12/12 | 0 | 0 | .net-csharp | Microsoft.Infer.NET (Beta-Bernoulli Thompson sampling bayésien) | **SOTA-OK** |
 | DecPyMC-1-Utility-Foundations | 28 | 12 | 12/12 | 0 | 0 | python3 | PyMC + ArviZ (utility curves posteriors) | **SOTA-OK** |
 | DecPyMC-2-Utility-Money | 60 | 28 | 28/28 | 0 | 0 | python3 | PyMC + ArviZ (CARA/CRRA Savage/Friedman) | **SOTA-OK** |
@@ -403,8 +403,8 @@ Post-c.390 PR #5840 (entry #003 SymbolicLearning audit axe-2), pivot vers substa
 
 ### Disclosures honnêtes vérifiées
 
-- (a) `DecInfer-2-Lean-ExpectedUtility.ipynb` = Lean 4 formel companion **0-sorry** pour la direction sound du théorème de représentation d'utilité espérée de von Neumann–Morgenstern (cf cellule [18] Conclusion : "0-sorry pour la direction sound"). La direction completeness (rationalité ⟹ représentation) reste **gated** sur Mathlib4 stabilisation des `ConvexCone` / `BoundedConvexSet`, honest disclosure dans la cellule [4].
-- (b) `DecInfer-9-Lean-Gittins.ipynb` = Lean 4 formel pour Gittins index (cellule [22] Résumé enseignant) : définitions formalisées (BanditArm, BanditProcess), preuves partielles honnêtement disclosées, **état actuel = scaffolding + certitudes BornesSup** (gated sur `lake build` 100%).
+- (a) `DecInfer-02-Lean-ExpectedUtility.ipynb` = Lean 4 formel companion **0-sorry** pour la direction sound du théorème de représentation d'utilité espérée de von Neumann–Morgenstern (cf cellule [18] Conclusion : "0-sorry pour la direction sound"). La direction completeness (rationalité ⟹ représentation) reste **gated** sur Mathlib4 stabilisation des `ConvexCone` / `BoundedConvexSet`, honest disclosure dans la cellule [4].
+- (b) `DecInfer-09-Lean-Gittins.ipynb` = Lean 4 formel pour Gittins index (cellule [22] Résumé enseignant) : définitions formalisées (BanditArm, BanditProcess), preuves partielles honnêtement disclosées, **état actuel = scaffolding + certitudes BornesSup** (gated sur `lake build` 100%).
 - (c) `Do-Calculus-Bridge.ipynb` cellule 5 = commentaire explicite sur advisory dowhy (chemin absolu fuit) — disclosed honnêtement comme **info utile d'identification causale**, pas scrubbé (Stop & Repair respecté, cf [secrets-hygiene.md](../../.claude/rules/secrets-hygiene.md) règle 6 + [[feedback-no-cell-output-scrubbing]]).
 
 **Workaround dégradé** : 0/18 (3 occurrences du mot « workaround » vérifiées = toutes disclosures honnêtes ci-dessus, pas de workaround réel).
@@ -413,14 +413,14 @@ Post-c.390 PR #5840 (entry #003 SymbolicLearning audit axe-2), pivot vers substa
 
 Chaque notebook pose un problème de **théorie de la décision** avancé qui exerce la capacité distinctive du moteur :
 
-- **DecInfer-1/DecPyMC-1** : Utility foundations (axiomes von Neumann–Morgenstern) — courbes d'utilité, concavité/convexité, certainty equivalent
-- **DecInfer-2/DecInfer-9** : Lean 4 formel (preuve sound représentation vNM + Gittins index) — fondation mathématique
-- **DecInfer-3/DecPyMC-2** : Utility of money — Saint-Petersbourg paradoxe, Friedman-Savage, Arrow-Pratt RRA, CARA/CRRA
-- **DecInfer-4/DecPyMC-3** : Multi-attribute utility (MAUT) — pondérations additives, dominance stochastique
-- **DecInfer-5/DecPyMC-4** : Decision networks (influence diagrams) — backward induction sur DAG décision/chance/valeur
-- **DecInfer-6/DecPyMC-5** : Value of information (EVPI) — Expected Value of Perfect Information, EVSI
-- **DecInfer-7/DecPyMC-6** : Expert systems — fusion de jugements experts par pondération bayésienne de précision
-- **DecInfer-8/DecPyMC-7** : Sequential decisions — dynamic programming, Bellman-style backward induction
+- **DecInfer-01/DecPyMC-1** : Utility foundations (axiomes von Neumann–Morgenstern) — courbes d'utilité, concavité/convexité, certainty equivalent
+- **DecInfer-02/DecInfer-09** : Lean 4 formel (preuve sound représentation vNM + Gittins index) — fondation mathématique
+- **DecInfer-03/DecPyMC-2** : Utility of money — Saint-Petersbourg paradoxe, Friedman-Savage, Arrow-Pratt RRA, CARA/CRRA
+- **DecInfer-04/DecPyMC-3** : Multi-attribute utility (MAUT) — pondérations additives, dominance stochastique
+- **DecInfer-05/DecPyMC-4** : Decision networks (influence diagrams) — backward induction sur DAG décision/chance/valeur
+- **DecInfer-06/DecPyMC-5** : Value of information (EVPI) — Expected Value of Perfect Information, EVSI
+- **DecInfer-07/DecPyMC-6** : Expert systems — fusion de jugements experts par pondération bayésienne de précision
+- **DecInfer-08/DecPyMC-7** : Sequential decisions — dynamic programming, Bellman-style backward induction
 - **DecInfer-10** : Thompson Sampling — bandits manchots bayésiens (Beta-Bernoulli conjugué, posterior updating)
 - **Do-Calculus-Bridge** : dowhy (Microsoft) + backdoor adjustment — causal inference Pearl
 
@@ -455,7 +455,7 @@ Couvre 5ᵉ famille du ledger (ML/ML.Net → Tweety → SymbolicLearning → Sem
 | **L289** (anti-doublon temporel) | OK | Entry #005 ≠ entry #001/#002/#003/#004 = substance distincte (DecisionTheory vs ML/ML.Net vs Tweety vs SymbolicLearning vs SemanticWeb) |
 | **L327** (`+N/-0` purement additif) | OK | Modifs = cumul table update (4 lignes remplacées) + entry #005 appendu, 0 ligne supprimée |
 | **L335** (anti-monoculture) | OK | pivot post-c.396 PR #5859 vers substance NEUVE audit axe-2 owner po-2025 strict, pas 11ᵉ+ PR i18n monotone gated, ≠ re-sweep monotone #5780, ≠ clôture admin #5661, ≠ Argumentum PR-A #5721 close c.371+c.393 |
-| **L378 durcie** (G.1 2× audit+commit) | OK | Audit direct G.1 lecture exhaustive 18 nb, 3 disclosures honnêtes vérifiées (Lean DecInfer-2 vNM sound 0-sorry, DecInfer-9 Gittins scaffolding, Do-Calculus-Bridge dowhy advisory), 0 violation C.1, 0 workaround dégradé |
+| **L378 durcie** (G.1 2× audit+commit) | OK | Audit direct G.1 lecture exhaustive 18 nb, 3 disclosures honnêtes vérifiées (Lean DecInfer-02 vNM sound 0-sorry, DecInfer-09 Gittins scaffolding, Do-Calculus-Bridge dowhy advisory), 0 violation C.1, 0 workaround dégradé |
 | **Stop & Repair** (no scrub) | OK | 0 modification de cellule, audit purement consultatif |
 | **SOTA 5 verdicts** | OK | 18/18 SOTA-OK (8 DecInfer Microsoft.Infer.NET, 2 Lean 4 WSL, 7 DecPyMC PyMC+ArviZ, 1 Causal-Bridges dowhy) |
 | **0 parasite CJK** | OK | 4 ranges Unicode scannés (CJK Unified U+4E00-U+9FFF, CJK Ext A U+3400-U+4DBF, Hangul U+AC00-U+D7AF, Fullwidth U+FF00-U+FFEF) = 0/18 .ipynb (notebook audit script python3 = 0/18) |
@@ -497,7 +497,7 @@ Total .ipynb: 18
 
 **Moteurs SOTA cumulés sur 8 entries** : Microsoft.ML.Probabilistic, Microsoft.Infer.NET, PyPhi, Google.OR-Tools, Z3, Microsoft.Automata, Lean 4, PyTorch, OpenAI SDK, NetworkX, python-constraint, AIMA, Choco, Dancing Links, PyGAD, GeneticSharp, simanneal, Mealpy, NumPyro/JAX, regex, matplotlib, Plotly.NET = **22 moteurs SOTA distincts** sur 8 familles du registre axe-2 SOTA.
 
-**Spécificité registre** : entry #008 = première entrée avec **3 kernels différents** (17×.net-csharp + 18×python3 + 1×lean4-wsl = 36/36). Sudoku-19-Lean-Propagation (lake `sudoku_lean/Sudoku.{Basic,ExactCover,Propagation}` + 0 sorry + 2 axiomes `propext, Quot.sound`). Marqueur de la **branche Kernel `leans`** du registre déjà initiée par entry #005 DecisionTheory (2 Lean companions DecInfer-2 + DecInfer-9) — kernel `lean4-wsl` déjà représenté.
+**Spécificité registre** : entry #008 = première entrée avec **3 kernels différents** (17×.net-csharp + 18×python3 + 1×lean4-wsl = 36/36). Sudoku-19-Lean-Propagation (lake `sudoku_lean/Sudoku.{Basic,ExactCover,Propagation}` + 0 sorry + 2 axiomes `propext, Quot.sound`). Marqueur de la **branche Kernel `leans`** du registre déjà initiée par entry #005 DecisionTheory (2 Lean companions DecInfer-02 + DecInfer-09) — kernel `lean4-wsl` déjà représenté.
 
 ## Voir aussi
 
@@ -744,7 +744,7 @@ Total .ipynb: 3
 
 ## Entry #008 — Sudoku (owner po-2025 strict, c.401)
 
-Famille `MyIA.AI.Notebooks/Sudoku/` = **36 notebooks** `.ipynb` (17 paires `*-Csharp.ipynb` dont `Sudoku-0-Environment-Csharp.ipynb` + 17 jumeaux `*-Python.ipynb` + 1 `Sudoku-19-Lean-Propagation.ipynb` kernel `lean4-wsl` + 1 `Sudoku-16-NeuralNetwork-Python` + 1 `Sudoku-17-LLM-Python` ; **16 paires miroir C#/Python** portant les mêmes algorithmes dans les deux langages ; kernel distribution **17×.net-csharp + 18×python3 + 1×lean4-wsl = 36/36 = 100% cohérent**). Worktree `D:\dev\CoursIA-c401`, branche `feature/c401-ledger-008-sudoku` off origin/main `a8eec3fa9` (post-Search L378 #5884 MERGED + Probas/Infer #5886 MERGED + IIT/PyPhi c.402 row #7). Audit read-only, aucun commit code, aucun `gh`.
+Famille `MyIA.AI.Notebooks/Sudoku/` = **36 notebooks** `.ipynb` (17 paires `*-Csharp.ipynb` dont `Sudoku-00-Environment-Csharp.ipynb` + 17 jumeaux `*-Python.ipynb` + 1 `Sudoku-19-Lean-Propagation.ipynb` kernel `lean4-wsl` + 1 `Sudoku-16-NeuralNetwork-Python` + 1 `Sudoku-17-LLM-Python` ; **16 paires miroir C#/Python** portant les mêmes algorithmes dans les deux langages ; kernel distribution **17×.net-csharp + 18×python3 + 1×lean4-wsl = 36/36 = 100% cohérent**). Worktree `D:\dev\CoursIA-c401`, branche `feature/c401-ledger-008-sudoku` off origin/main `a8eec3fa9` (post-Search L378 #5884 MERGED + Probas/Infer #5886 MERGED + IIT/PyPhi c.402 row #7). Audit read-only, aucun commit code, aucun `gh`.
 
 ### Métrique (vérifiée firsthand par 4 scripts python3 worker)
 
@@ -784,7 +784,7 @@ Famille `MyIA.AI.Notebooks/Sudoku/` = **36 notebooks** `.ipynb` (17 paires `*-Cs
 | **python-constraint** (CSP Python pur) | Sudoku-06-AIMA-CSP-Python | `import constraint` ; AIMA constraint programming | **SOTA-OK** |
 | **AIMA** (algorithmes classiques, Norvig) | Sudoku-07-Norvig-{Csharp,Python}, Sudoku-08-HumanStrategies | `aima` references, Norvig `constraint propagation` pur Python | **SOTA-OK** |
 | **matplotlib** (viz) | Sudoku-{1,11,16,18}-Python | `import matplotlib.pyplot`, `matplotlib.patches` ; rendu grilles résolues | **SOTA-OK** |
-| **Plotly.NET** (viz interactif) | Sudoku-0-Environment-Csharp | `using Plotly.NET`, `using Plotly.NET.LayoutObjects` | **SOTA-OK** |
+| **Plotly.NET** (viz interactif) | Sudoku-00-Environment-Csharp | `using Plotly.NET`, `using Plotly.NET.LayoutObjects` | **SOTA-OK** |
 
 **Workaround dégradé** : **0/36**. Aucun ASCII art substituant une image générée ; aucune réimplémentation jouet d'un moteur SOTA. 17 paires C#/Python = traductions mot-à-mot du même algorithme dans les deux langages (vrai port cross-language, pas une dégradation).
 
@@ -807,7 +807,7 @@ Chaque notebook pose un problème de **résolution de Sudoku** non-trivial qui e
 
 | Notebook | Problème posé (cellule-clef) | Capacité distinctive exercée |
 |----------|------------------------------|--------------------------------|
-| Sudoku-0-Environment-Csharp | Classes de base (grille, solveur ISudokuSolver) + viz Plotly.NET | Infrastructure partagée (16 paires C#/Python importent ce module via `#!import`) |
+| Sudoku-00-Environment-Csharp | Classes de base (grille, solveur ISudokuSolver) + viz Plotly.NET | Infrastructure partagée (16 paires C#/Python importent ce module via `#!import`) |
 | Sudoku-01-Backtracking-{Csharp,Python} | Backtracking MRV, Forward Checking, count-all-solutions ; benchmark sur `Easy + Hardest` (10+11 puzzles réels) | Recherche exhaustive + heuristique MRV sur puzzles 9×9 réels |
 | Sudoku-02-DancingLinks-{Csharp,Python} | Algorithm X (Knuth) en représentation DLX ; solveur exact pour grilles arbitraires | DLX = représentation sparse linkée pour résolution exacte efficace |
 | Sudoku-03-Genetic-{Csharp,Python} | Algorithme génétique (mutation, crossover, sélection) sur population de grilles candidates | Recherche évolutionniste ; discrétisation chromosomes |

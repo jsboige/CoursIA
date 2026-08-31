@@ -44,6 +44,13 @@ What it does (issue #11268 acceptance 1-3)
    assertion, so the PR cannot stand merged with one. Baseline moves are
    reported with direction but do not block in this mode (the reviewer
    applies #11268-3 on unjustified loosening; the output names the move).
+6. (#13637) The API's file list is base-tip -> head, so a branch that merged
+   ``main`` gets ``main``'s own changes attributed to it (measured on #13601:
+   04-7 showed ``+2708/-2708`` although the PR did not touch it). Files the
+   head already agrees with main on are subtracted from the effective list
+   and reported separately ("dont M charriés d'une base vieille de X") --
+   the perimeter is the PR's OWN contribution. ``is_pr_own_file`` exposes the
+   predicate for the collision checks that re-implement it by hand.
 
 Exit codes
 ----------
@@ -75,6 +82,7 @@ import re
 import shutil
 import subprocess
 import sys
+import time
 from dataclasses import dataclass, field
 from typing import Optional
 
@@ -225,6 +233,41 @@ class Report:
     files: list[dict] = field(default_factory=list)
     moves: list[BaselineMove] = field(default_factory=list)
     problems: list[str] = field(default_factory=list)
+    # #13637: files the API attributes to the PR but that main itself changed
+    # and the branch merged -- NOT the PR's own work. They are subtracted from
+    # `files` (the effective perimeter) and named separately so a cardinal that
+    # changes is explained, not silently masked.
+    carried: Optional["CarriedNote"] = None
+
+
+@dataclass
+class CarriedNote:
+    """#13637: partition of the API file list between the PR's own contribution
+    and files carried from a stale main the branch merged.
+
+    ``propres`` is what the PR actually changes; ``charries`` is what the API
+    reports but the head already agrees with main on. ``base_age_hours`` is the
+    age of the branch's divergence point from main (stale-base indicator, None
+    when unresolvable).
+    """
+
+    propres: list[dict] = field(default_factory=list)
+    charries: list[dict] = field(default_factory=list)
+    base_age_hours: Optional[int] = None
+
+
+def partition_propres(files: list[dict], carried_paths: set[str]) -> tuple[list[dict], list[dict]]:
+    """#13637: partition ``files`` (the API list) into the PR's own contributions
+    and the carried files. Pure -- ``carried_paths`` is the set of paths already
+    classified by the caller (``_classify_carried``). Order-preserving: a
+    rounding of the perimeter reorders nothing, so diff-reading reviewers keep
+    their anchors.
+    """
+    propres: list[dict] = []
+    charries: list[dict] = []
+    for f in files:
+        (charries if f.get("path") in carried_paths else propres).append(f)
+    return propres, charries
 
 
 def extract_baseline_moves(diff_text: str) -> list[BaselineMove]:
@@ -1307,9 +1350,43 @@ def _format_signal_explanation(candidates: list[Candidate]) -> str:
     )
 
 
-def format_report(report: Report, assertion: Optional[str]) -> str:
+def _render_carried_note(carried: Optional[CarriedNote]) -> list[str]:
+    """#13637 step 1+3: explain the subtracted carried files and surface the
+    stale-base signal. A cardinal that changes must say WHY, not move silently
+    -- otherwise the defect is displaced, not closed. The stale-base note is
+    free signal: API count − propre count is a more direct stale-base indicator
+    than `base-stale-14d`."""
+    if carried is None or not carried.charries:
+        return []
+    m = len(carried.charries)
+    age = carried.base_age_hours
+    if age is not None:
+        age_txt = f"~{age} h" if age < 48 else f"~{age // 24} j"
+        note = f"  — dont {m} charrié(s) d'une base vieille de {age_txt}, non compté(s)"
+    else:
+        note = f"  — dont {m} charrié(s) de main, non compté(s)"
+    lines = [note]
+    lines.append(
+        "  — charrié(s) de main (la tête est déjà d'accord avec main, la PR ne les "
+        "modifie pas) : " + ", ".join(f["path"] for f in carried.charries)
+    )
+    lines.append(
+        "  -> STALE-BASE : l'écart liste API − périmètre propre ("
+        f"{m}) signale une base en retard sur un main actif ; la liste effective "
+        "ci-dessus ne compte que les fichiers que la PR modifie réellement."
+    )
+    return lines
+
+
+def format_report(report: Report, assertion: Optional[str], carried: Optional[CarriedNote] = None) -> str:
+    # Default to the field the report carries; an explicit override lets callers
+    # display a partition they computed themselves (e.g. in tests).
+    if carried is None:
+        carried = report.carried
     lines = []
-    lines.append(f"Périmètre effectif : {len(report.files)} fichier(s)")
+    head = f"Périmètre effectif : {len(report.files)} fichier(s)"
+    lines.append(head)
+    lines.extend(_render_carried_note(carried))
     for f in sorted(report.files, key=lambda x: x["path"]):
         lines.append(f"  {f.get('additions', '?')}+/{f.get('deletions', '?')}-  {f['path']}")
     wf = [f for f in report.files if f["path"].startswith(WORKFLOW_PREFIX)]
@@ -1362,6 +1439,137 @@ def _normalize_rest_files(items: list[dict]) -> list[dict]:
     ]
 
 
+def _branch_ref_exists(ref: str) -> bool:
+    """True when ``ref`` (e.g. ``origin/main``) resolves locally."""
+    proc = subprocess.run(
+        ["git", "rev-parse", "--verify", "--quiet", ref],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+    )
+    return proc.returncode == 0
+
+
+def _pr_head_sha(pr: int) -> Optional[str]:
+    try:
+        return json.loads(_run_gh(["pr", "view", str(pr), "--json", "headRefOid"]))["headRefOid"]
+    except SystemExit:
+        return None
+
+
+def _pr_base_ref(pr: int) -> Optional[str]:
+    try:
+        return json.loads(_run_gh(["pr", "view", str(pr), "--json", "baseRefName"]))["baseRefName"]
+    except SystemExit:
+        return None
+
+
+def _resolve_base_pair(pr: int) -> tuple[Optional[str], Optional[str]]:
+    """Return (head_sha, base_ref) or (None, None). ``base_ref`` is the local
+    ``origin/<baseRefName>``, fetched if the checkout lacks it (a PR runner
+    checks out the merge ref but may not have the base branch fetched)."""
+    head = _pr_head_sha(pr)
+    base = _pr_base_ref(pr)
+    if not head or not base:
+        return None, None
+    ref = f"origin/{base}"
+    if not _branch_ref_exists(ref):
+        subprocess.run(
+            ["git", "fetch", "origin", base],
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
+        )
+        if not _branch_ref_exists(ref):
+            return None, None
+    return head, ref
+
+
+def _base_age_hours(base_ref: str, head: str) -> Optional[int]:
+    """Age in whole hours of the branch's divergence point from main (the
+    merge-base date). None when unresolvable -- the carried note then omits the
+    age rather than inventing one."""
+    mb = subprocess.run(
+        ["git", "merge-base", base_ref, head],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+    )
+    if mb.returncode != 0 or not mb.stdout.strip():
+        return None
+    d = subprocess.run(
+        ["git", "show", "-s", "--format=%ct", mb.stdout.strip()],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+    )
+    if d.returncode != 0 or not d.stdout.strip():
+        return None
+    try:
+        ts = int(d.stdout.strip())
+    except ValueError:
+        return None
+    return max(0, (int(time.time()) - ts)) // 3600
+
+
+def _classify_carried(pr: int, files: list[dict]) -> CarriedNote:
+    """#13637: partition ``files`` (the API list) into the PR's own contribution
+    and the carried files.
+
+    GitHub's ``/pulls/N/files`` diffs the base tip -> head, so a branch that
+    merged ``main`` has ``main``'s own changes attributed to it (#13601: 04-7
+    showed as ``+2708/-2708`` although the PR did not touch it). A file is the
+    PR's OWN work iff the head differs from main on it; ``git diff
+    origin/<base> <head> -- p`` empty => carried.
+
+    Fail-safe: on any resolution failure (base ref unfetchable, head unknown,
+    git error) returns an empty ``charries`` -- no file is ever wrongly
+    excluded, the fallback is the pre-fix behaviour.
+    """
+    if not files:
+        return CarriedNote(propres=files, charries=[], base_age_hours=None)
+    head, base_ref = _resolve_base_pair(pr)
+    if not head:
+        return CarriedNote(propres=files, charries=[], base_age_hours=None)
+    api_paths = sorted({f["path"] for f in files if f.get("path")})
+    if not api_paths:
+        return CarriedNote(propres=files, charries=[], base_age_hours=None)
+    proc = subprocess.run(
+        ["git", "diff", "--name-only", base_ref, head, "--"] + api_paths,
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+    )
+    if proc.returncode != 0:
+        return CarriedNote(propres=files, charries=[], base_age_hours=None)
+    changed = set(proc.stdout.splitlines())
+    carried = set(api_paths) - changed
+    propres, charries = partition_propres(files, carried)
+    return CarriedNote(
+        propres=propres, charries=charries, base_age_hours=_base_age_hours(base_ref, head)
+    )
+
+
+def is_pr_own_file(pr: int, path: str, head: Optional[str] = None, base_ref: str = "origin/main") -> Optional[bool]:
+    """#13637 step 2: the exposed callable predicate.
+
+    True when ``path`` is the PR's OWN contribution (the head differs from main
+    on it); False when carried (the head already agrees with main -- main
+    changed it and the branch merged it); None when the predicate cannot be
+    resolved. This is what collision checks re-implement by hand on
+    ``--json files`` today; call this instead.
+    """
+    if head is None:
+        head = _pr_head_sha(pr)
+    if head is None:
+        return None
+    if not _branch_ref_exists(base_ref):
+        refreshed = _resolve_base_pair(pr)
+        if parsed := refreshed[1]:
+            base_ref = parsed
+        else:
+            return None
+    proc = subprocess.run(
+        ["git", "diff", "--quiet", base_ref, head, "--", path],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+    )
+    if proc.returncode == 1:
+        return True
+    if proc.returncode == 0:
+        return False
+    return None
+
+
 def fetch_report(pr: int) -> Report:
     # ``gh pr view --json files`` caps at 100 entries (single page), so the
     # guard used to confront bodies against a TRUNCATED list on >100-file PRs:
@@ -1376,8 +1584,15 @@ def fetch_report(pr: int) -> Report:
         "api", f"repos/{repo}/pulls/{pr}/files", "--paginate",
     ]))
     files = _normalize_rest_files(items)
+    # #13637: subtract files carried from a stale main the branch merged. The
+    # effective perimeter is the PR's OWN contribution. A cardinal that changes
+    # is explained in the rendered output (see _render_carried_note), not
+    # silently masked.
+    carried = _classify_carried(pr, files)
+    if carried.charries:
+        files = carried.propres
     diff = _run_gh(["pr", "diff", str(pr)])
-    return Report(files=files, moves=extract_baseline_moves(diff))
+    return Report(files=files, moves=extract_baseline_moves(diff), carried=carried)
 
 
 def fetch_review_thread(pr: int) -> list[dict]:

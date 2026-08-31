@@ -55,7 +55,12 @@ foreach (var path in args)
             hasTopLevel ? OutputKind.ConsoleApplication : OutputKind.DynamicallyLinkedLibrary));
 
     var withAnalyzers = compilation.WithAnalyzers(
-        [new TaskResultBlockAnalyzer(), new AsyncVoidAnalyzer(), new TaskRunFireAnalyzer()]);
+        [
+            new TaskResultBlockAnalyzer(),
+            new AsyncVoidAnalyzer(),
+            new TaskRunFireAnalyzer(),
+            new CancellationTokenPropagationAnalyzer(),
+        ]);
 
     // Les erreurs de compilation empechent le modele semantique de resoudre
     // les symboles (donc l'analyseur de trancher) : on les rend visibles.
@@ -67,6 +72,7 @@ foreach (var path in args)
         TaskResultBlockAnalyzer.DiagnosticId,   // AGENTGUARD001
         AsyncVoidAnalyzer.DiagnosticId,         // AGENTGUARD002
         TaskRunFireAnalyzer.DiagnosticId,       // AGENTGUARD003
+        CancellationTokenPropagationAnalyzer.DiagnosticId, // AGENTGUARD004
     };
     var diagnostics = (await withAnalyzers.GetAllDiagnosticsAsync())
         .Where(d => ids.Contains(d.Id))

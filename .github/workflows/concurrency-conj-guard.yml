@@ -1,0 +1,52 @@
+name: concurrency-conj-guard
+
+# #13488 -- refoule la conjonction ``push: main`` + ``concurrency.group`` portant
+# ``github.ref`` + ``concurrency.cancel-in-progress: true`` (litteral).
+# Le defaut que #13372 corrige (mesure 2026-08-28 : 27/30 et 26/30 runs
+# annules par le merge suivant) est silencieux isolement et bruyant en
+# cascade : un seul run isole passe, mais la premiere paire de merges
+# successifs detruit la moitie de la verification. Cet organe rend la
+# regression impossible a relivrer : la prochaine PR qui reintroduit la
+# conjonction rougit ici, nomme le fichier + la ligne + la forme du fix.
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: concurrency-conj-guard-${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  guard:
+    name: concurrency-conj-guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            .github/workflows
+            scripts/ci/check_concurrency_conj.py
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install PyYAML if absent
+        # PyYAML n'est pas preinstalle sur les runners ubuntu-latest par
+        # defaut. Pattern partage avec unique-check-run-names-guard.yml :
+        # import-test en dry-run, fallback pip install silencieux. Sans
+        # cette etape, exit 2 BROKEN_INSTRUMENT masquerait la conjonction
+        # en rouge de complaisance (cf #11850).
+        run: python -c "import yaml" 2>/dev/null || pip install --quiet pyyaml
+
+      - name: Check concurrency conjunction
+        # Forme fix de #13372 deja majoritaire : cancel-in-progress gate sur
+        # event_name == 'pull_request' pour annuler sur PR (un groupe par
+        # PR, jamais collision) et laisser vivre sur push:main (les merges
+        # successifs ne se tuent pas entre eux).
+        run: python scripts/ci/check_concurrency_conj.py --check --json
