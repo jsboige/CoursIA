@@ -52,6 +52,23 @@ CONJUNCTION_YML = textwrap.dedent("""\
 """)
 
 
+MALFORMED_YML = textwrap.dedent("""\
+    name: malformed
+    on:
+      push:
+        branches: [main]
+      invalid_yaml_indicator: : :
+    concurrency:
+      group: malformed-${{ github.ref }}
+      cancel-in-progress: true
+    jobs:
+      j:
+        runs-on: ubuntu-latest
+        steps:
+          - run: echo hi
+""")
+
+
 def _write_workflow(tmpdir: Path, name: str, body: str) -> Path:
     wf = tmpdir / ".github" / "workflows"
     wf.mkdir(parents=True, exist_ok=True)
@@ -86,6 +103,27 @@ def test_branches_include_main_absent():
 
 def test_branches_include_main_no_push():
     assert _branches_include_main({"pull_request": {"branches": ["main"]}}) is False
+
+
+def test_parse_workflow_malformed_returns_none():
+    """Regression test for #13732: yaml.YAMLObject is not an exception class.
+
+    Before the fix, the clause `except yaml.YAMLObject:` could never trigger
+    (YAMLObject is the base class for custom tags, not an exception). A
+    malformed workflow therefore raised uncaught (YAMLError) and the caller
+    could not tell a parsing failure from a benign non-dict parse. After the
+    fix to `except yaml.YAMLError:`, malformed input is converted to `None`,
+    matching the comment on _parse_workflow that says "Returns the parsed
+    dict or None".
+    """
+    from check_concurrency_conj import _parse_workflow
+    yaml = __import__("yaml")
+    result = _parse_workflow(MALFORMED_YML, yaml)
+    assert result is None, (
+        f"malformed YAML should parse to None, got {result!r}; the "
+        "YAMLError exception class is the one PyYAML actually raises "
+        "on malformed input."
+    )
 
 
 def test_group_has_github_ref_positive():
