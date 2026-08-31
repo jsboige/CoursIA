@@ -164,6 +164,36 @@ OVERRIDE_LANE = _OVERRIDE_LANE
 # ecrites en anglais.
 BLOCAGE_LANE = re.compile(r"(?m)^\s*\[(?:BLOCAGE|BLOCK)\]\s+lane\s+\S+")
 
+# #13779 -- HOLD est le verbe canonique du merge-gate (variation-protocol
+# section 3, l.90-101) et pas un synonyme de BLOCAGE. La forme structurelle
+# doit etre reconnue comme la deuxieme branche de `_block_emitted` (verdict
+# en tete du corps, meme pose stricte que `**BLOCAGE ...**`) ; alias anglais
+# `[BLOCK] hold` exclu -- la synonymie est francaise, pas bilingue. Le
+# pattern exige « HOLD <coord> » puis REJETTE si le premier mot qui suit est
+# un participe de levee (leve/levee/lifted/annule) -- miroir exact de la
+# borne (b) BLOCAGE (« BLOCAGE leve » n'est pas une emission). Les `_lstrip`
+# mangent les separateurs (`*_-—,.;:()`) comme dans la boucle BLOCAGE.
+HOLD_HEAD_VERDICT = re.compile(
+    r"(?m)^\s*\*\*\s*HOLD\s+(?:coordinateur|coordinator|coordonnateur)"
+    r"(?!\s*(?:leve|levee|lifted|annule|annulee|releve|relevee|retire))"
+)
+
+# #13779 -- Marqueur structurel `[ADJOINT PREFLIGHT]` (et alias court
+# `[PREFLIGHT]`) pose en tete de ligne -- une EMISSION explicite d'un
+# preflight par un reviewer (jsboige self-bot typique). Ne PAS l'ajouter a
+# `AGENT_PREFIXES` (mesure : elargir `AGENT_PREFIXES` DESSERRE le gate
+# `classify` car la branche prefixe precede la branche CRLF et le verdict
+# None neutralise -- le gate perd en detection). Le traiter comme un
+# marqueur structurel, comme `[BLOCAGE] lane` : la position en tete de
+# ligne est l'ancre, pas la presence du mot. Trois formes valides :
+#   (a) `[ADJOINT PREFLIGHT]` (ferme immediatement) suivi de corps,
+#   (b) `[ADJOINT PREFLIGHT — COMMENTED]` (separateur em-dash, cf #13712),
+#   (c) `[PREFLIGHT]` / `[PREFLIGHT] Verifier la cellule 5.`.
+# Le `\b` apres `PREFLIGHT` empeche `[PREFLIGHTFOO]` (FN safety).
+ADJOINT_PREFLIGHT_MARK = re.compile(
+    r"(?m)^\s*\[(?:ADJOINT\s+PREFLIGHT|PREFLIGHT)\b(?:\]|\s+\S|\s*[—\-:])"
+)
+
 # Marqueurs de reserve d'un reviewer bot (le verdict est dans le body, pas l'etat).
 # #12311 — `REQUEST_CHANGES` (verbe, e.g. « [Hermes] Review — REQUEST_CHANGES »)
 # complete `CHANGES_REQUESTED` (nom) : Hermes self-bot est force a state:COMMENTED
@@ -1150,10 +1180,22 @@ def _block_emitted(body: str) -> bool:
     normalised = _unaccent(stripped)
     if BLOCAGE_LANE.search(normalised):
         return True
+    # #13779 -- `[ADJOINT PREFLIGHT]` / `[PREFLIGHT]` en tete de ligne est une
+    # EMISSION structurelle (cf commentaire sur `ADJOINT_PREFLIGHT_MARK`). On
+    # teste sur `normalised` (full body), pas `head` (60 chars), car le
+    # marqueur peut etre suivi d'une ligne blanche avant le contenu.
+    if ADJOINT_PREFLIGHT_MARK.search(normalised):
+        return True
     head = normalised[:60]
     uhead = head.upper()
     if head.lstrip(" \t*_").upper().startswith("[OVERRIDE]"):
         return False
+    # #13779 -- HOLD verdict (forme (c)) : alinea + « HOLD coordinateur » en
+    # tete du corps. Le mot `HOLD` seul n'est pas retenu -- un « HOLD the
+    # line » en prose n'est pas un verdict. `_strip_quoted` peut avoir
+    # enleve l'indentation de citation ; on reteste sur `head` directement.
+    if HOLD_HEAD_VERDICT.match(head):
+        return True
     for marker in ("BLOCAGE", "BLOCK"):
         pos = 0
         while (i := uhead.find(marker, pos)) != -1:

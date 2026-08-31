@@ -3222,3 +3222,120 @@ def test_13635_conditionnel_je_leve_masculin_reste_bloquant():
         "myia-ai-01",
         "Une seule chose a changer — corrige la ligne 19 et je leve le concern."
     ) == "BOT-CONCERN"
+
+
+# -- #13779 -- HOLD verdict + ADJOINT PREFLIGHT detectes par _block_emitted --
+
+
+def test_13779_hold_verdict_en_tete_est_emis():
+    """Forme (c) ajoutee par #13779 : `**HOLD coordinateur ...**` en tete du
+    corps est un verdict d'arbitrage, equivalent a `**BLOCAGE ...**`. Cas
+    fondateur : commentaire myia-ai-01 sur #13712, 22:19:57Z (3322 chars,
+    point non leve) que l'ancien gate rendait `None` -> la preflight passait
+    alors qu'elle aurait du bloquer."""
+    assert mod._block_emitted(
+        "**HOLD coordinateur - un point du preflight reste ouvert, et le gate ne le voit pas.**"
+    ) is True
+
+
+def test_13779_hold_coordonnateur_orthographe_alternative():
+    """Variante orthographique `coordonnateur` (double n) -- mesure sur les
+    corpus, certaines revues du coordinateur utilisent cette graphie. La
+    synonymie acceptée par `HOLD_HEAD_VERDICT` couvre les 3 graphies."""
+    assert mod._block_emitted("**HOLD coordonnateur** PR bloquee") is True
+
+
+def test_13779_hold_leve_par_levée_n_est_pas_une_emission():
+    """Faux negatif symétrique : `**HOLD coordinateur leve** ...` n'est PAS
+    une émission de HOLD actif -- c'est l'annonce de la levée (analogue a
+    la borne (b) BLOCAGE pour « BLOCAGE leve »). Le negative lookahead
+    dans `HOLD_HEAD_VERDICT` capture leve/levee/lifted/annule/etc."""
+    assert mod._block_emitted("**HOLD coordinateur leve** par le commit abc123") is False
+    assert mod._block_emitted("**HOLD coordinateur annule** par la revue") is False
+    assert mod._block_emitted("**HOLD coordinateur lifted** by the patch") is False
+
+
+def test_13779_hold_en_prose_n_est_pas_une_emission():
+    """Faux negatif : le mot `HOLD` apparait souvent en prose (« hold the
+    line », « threshold OK », « householder matrix »). Le pattern `HOLD`
+    doit etre isole : pas dans un mot plus long, pas en prose sans verdict.
+    Les `_lstrip`/`isalnum` du pattern garantissent les frontieres."""
+    assert mod._block_emitted("hold the line on this PR") is False
+    assert mod._block_emitted("threshold OK") is False
+    assert mod._block_emitted("aHOLDING the matrix") is False
+    assert mod._block_emitted("FOLDING is not HOLD") is False
+
+
+def test_13779_hold_verdict_en_milieu_de_corps_pas_une_emission():
+    """Faux negatif : la forme (c) exige `HOLD` en TETE du corps (60
+    premiers chars), comme `**BLOCAGE ...**`. Une mention de HOLD au-delà
+    des 60 chars (verdict arrivé tard dans le message) n'est pas une
+    emission structurelle -- le gate reste conservateur mais n'attrape pas
+    ce cas (par design, comme BLOCAGE)."""
+    assert mod._block_emitted(
+        "Longue introduction sans verdict, puis en plein milieu du corps : "
+        "**HOLD coordinateur** PR bloquee et le commit ne leve pas la remarque."
+    ) is False
+
+
+def test_13779_adjoint_preflight_avec_em_dash_est_emis():
+    """Forme (b) ADJOINT PREFLIGHT detectee : le commentaire fondateur de
+    #13712 commence par `[ADJOINT PREFLIGHT — COMMENTED]` (em-dash +
+    suffixe). Le pattern couvre 3 formes valides (cf commentaire sur
+    `ADJOINT_PREFLIGHT_MARK`) : em-dash, deux-points, espace + contenu."""
+    body = ("[ADJOINT PREFLIGHT — COMMENTED]\n\n"
+            "Relecture complete de #13567 et de #13712 : body, commentaires, "
+            "review actuellement PENDING, threads (0), diff integre.")
+    assert mod._block_emitted(body) is True
+    assert mod.classify("jsboige", body) == "BLOCK"
+
+
+def test_13779_adjoint_preflight_crochet_ferme_est_emis():
+    """Forme (a) : `[ADJOINT PREFLIGHT]` (ferme immediatement) suivi d'un
+    corps non vide est aussi une emission. Le pattern autorise `]` si
+    suivi de quoi que ce soit (le marqueur reste l'ancre)."""
+    body = "[ADJOINT PREFLIGHT] La cellule 12 n'est pas reexecutee."
+    assert mod._block_emitted(body) is True
+    assert mod.classify("po-2025", body) == "BLOCK"
+
+
+def test_13779_preflight_court_est_emis():
+    """Forme (c) : alias court `[PREFLIGHT]` seul, suivi d'un contenu, est
+    une emission. Cas typique des preflights minimaux."""
+    body = "[PREFLIGHT] Verifier la cellule 5."
+    assert mod._block_emitted(body) is True
+
+
+def test_13779_preflight_minuscule_n_est_pas_une_emission():
+    """Faux negatif symétrique : la convention du depot utilise la casse
+    PascalCase pour les tags de protocole (`[PREFLIGHT]`, `[DONE]`,
+    `[CLAIMED]`). Un `[preflight]` minuscule n'est pas un marqueur
+    structurel -- le `_block_emitted` reste strict sur la casse."""
+    assert mod._block_emitted("[preflight] lowercase version") is False
+
+
+def test_13779_preflight_en_prose_n_est_pas_une_emission():
+    """Faux negatif : le mot `preflight` en prose sans crochets n'est pas
+    un marqueur. `[PREFLIGHTFOO]` non plus (extension, `\b` du pattern)."""
+    assert mod._block_emitted("Le mot preflight apparait en prose, sans crochet.") is False
+    assert mod._block_emitted("[PREFLIGHTFOO]") is False
+    assert mod._block_emitted("[PREFLIGHTEUR]") is False
+
+
+def test_13779_preflight_isole_compte_comme_emission():
+    """Cas limite : `[PREFLIGHT]` ferme immediatement sans suffixe. Si un
+    commentaire ne contient RIEN d'autre que ce tag, c'est par convention
+    un preflight vide (les commentaires reels ont tous un corps immediat).
+    On accepte ce cas pour ne pas casser le pattern."""
+    assert mod._block_emitted("[PREFLIGHT]") is True
+
+
+def test_13779_ne_casse_pas_les_anciens_blocs():
+    """Regression check : l'ajout de HOLD + ADJOINT_PREFLIGHT ne change pas
+    le verdict sur les commentaires classiques (BLOCAGE lane, BLOCAGE
+    verdict, OVERRIDE en tete, etc.). Miroir des 232 tests existants."""
+    assert mod._block_emitted("[BLOCAGE] lane myia-po-2026:CoursIA") is True
+    assert mod._block_emitted("[BLOCK] lane myia-po-2024:CoursIA-2") is True
+    assert mod._block_emitted("**BLOCAGE - PR non mergeable tant que X**") is True
+    assert mod._block_emitted("**OVERRIDE** je leve le concern") is False
+    assert mod._block_emitted("BLOCAGE leve par la suite") is False
