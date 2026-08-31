@@ -1,7 +1,7 @@
 # VoI cross-engine — Infer.NET × PyMC sur un contrat JSON commun
 
 Tranche 3/3 de l'acceptance cross-engine #13569 (VOI / valeur de l'information).
-Le notebook DecInfer-6 (`DecInfer/`) calcule la VOI avec Infer.NET, DecPyMC-5
+Le notebook DecInfer-06 (`DecInfer/`) calcule la VOI avec Infer.NET, DecPyMC-5
 (`PyMC/`) avec PyMC — mais jamais sur le **même problème au même moment** avec
 comparaison des sorties. Ce répertoire ferme ce trou : **un contrat JSON,
 deux adaptateurs indépendants, un comparateur** qui exécute les deux et
@@ -12,7 +12,7 @@ constantes.
 
 | Élément | Rôle |
 |---|---|
-| `problems/forage-petrolier.json` | Problème de forage extrait de DecInfer-6 cell. 32/35 + DecPyMC-5 cell. 33 (contrôle discriminant) |
+| `problems/forage-petrolier.json` | Problème de forage extrait de DecInfer-06 cell. 32/35 + DecPyMC-5 cell. 33 (contrôle discriminant) |
 | `problems/forage-non-informatif.json` | Contrôle négatif : vraisemblance indépendante de l'état → EVSI = 0 |
 | `InferNetVoi/` | Adaptateur C# : **Infer.NET réel** (`Microsoft.ML.Probabilistic`) infère les postérieurs de chaque signal et les marginales du signal |
 | `pymc_voi.py` | Adaptateur Python : **PyMC réel** échantillonne le même modèle génératif (prior predictive seedé, conditionnement empirique) |
