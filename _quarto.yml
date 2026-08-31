@@ -1077,7 +1077,7 @@ project:
     - "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10-LLM-Planning.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-11-Unified-Planning.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-12-LOOP.ipynb"
-    - "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-14-LLM-Space-Reducer.ipynb"
+    - "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10b-LLM-Space-Reducer.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-1-CSharp-Setup.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-Python-RDFStar.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-CSharp-KnowledgeGraphs.ipynb"
