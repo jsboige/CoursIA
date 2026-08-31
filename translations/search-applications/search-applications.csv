@@ -1259,7 +1259,7 @@ BATCH_MODE = ""true""
 ",,,,,,,,d8cfd07b7b0f3965,,,,,,,,
 MyIA.AI.Notebooks/Search/Applications/CSP/App-11-Picross.ipynb,c9bb1012,markdown,fr,b9083434ab8c7312,"# App-11 - Picross (Nonogrammes)
 
-**Navigation** : [<< App-10 Portfolio](../Hybrid/App-10-Portfolio.ipynb) | [Index](../README.md) | [App-12 ConnectFour >>](../Search/App-14b-ConnectFour.ipynb)
+**Navigation** : [<< App-10 Portfolio](../Hybrid/App-10-Portfolio.ipynb) | [Index](../README.md) | [App-12 ConnectFour >>](../Search/App-12-ConnectFour.ipynb)
 
 ## Solveur de Picross : backtracking naif vs CP-SAT
 
@@ -28730,11 +28730,11 @@ L'approche par decomposition en genes permet une evolution fine et progressive d
 Cette demarche pedagogique demontre la puissance des algorithmes evolutionnaires pour resoudre des problemes complexes dans le domaine de la vision par ordinateur.
 
 **Retour au sommaire** : [Index](../../README.md)",,,,,,,,43d9c35dc24407fd,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14c-ConnectFour-CSharp.ipynb,9e94c4cb,markdown,fr,101175721e006779,"# App-12 (C#) : Puissance 4 -- Comparaison d'algorithmes IA (Bonus)
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour-CSharp.ipynb,9e94c4cb,markdown,fr,101175721e006779,"# App-12 (C#) : Puissance 4 -- Comparaison d'algorithmes IA (Bonus)
 
 **Navigation** : [<< App-11 Picross](../CSP/App-11-Picross.ipynb) | [Index](../../README.md) | [App-13 TSP](../Hybrid/App-13-TSP-Metaheuristics.ipynb) >>
 
-**Serie** : Search / Applications (Bonus) — jumeau .NET du notebook Python [App-14b-ConnectFour](App-14b-ConnectFour.ipynb).
+**Serie** : Search / Applications (Bonus) — jumeau .NET du notebook Python [App-12-ConnectFour](App-12-ConnectFour.ipynb).
 
 **Duree estimee** : ~1h30
 
@@ -28742,7 +28742,7 @@ MyIA.AI.Notebooks/Search/Applications/Search/App-14c-ConnectFour-CSharp.ipynb,9e
 
 **Pourquoi un jumeau C# ?** Le notebook Python compare 5 intelligences artificielles (aleatoire, Minimax avec elagage alpha-beta, MCTS, glouton, iterative deepening) sur le jeu de Puissance 4, en s'appuyant sur `numpy` et `matplotlib`. Ce jumeau reimplemente les mêmes algorithmes en **C# .NET 9 (BCL seule, 0 NuGet)** : moteur de jeu, heuristique de fenêtre, Minimax alpha-beta, MCTS (UCB1), tournoi round-robin et iterative deepening. Les graphiques `matplotlib` sont remplacés par un rendu **ASCII autonome**. Les deux notebooks derivent les mêmes résultats (echelle de profondeur, tournoi).
 ",,,,,,,,101175721e006779,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14c-ConnectFour-CSharp.ipynb,8e619664,markdown,fr,f60e1c16674e6727,"## 1. Introduction
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour-CSharp.ipynb,8e619664,markdown,fr,f60e1c16674e6727,"## 1. Introduction
 
 Le Puissance 4 est un jeu de stratégie combinatoire abstrait a information complete : deux joueurs (Rouge = joueur 1, Jaune = joueur 2) s'affrontent sur un plateau 6x7 en cherchant a aligner 4 jetons. Sa profondeur de jeu limitee (42 coups maximum) et son espace d'etats reduit (~4.5 trillions mais très echantillonnable) en font un banc d'essai ideal pour comparer des algorithmes de decision.
 
@@ -28753,11 +28753,11 @@ Ce notebook met en compétition **5 approches** :
 4. **Joueur glouton** (heuristique immediate, 1-ply)
 5. **Iterative deepening alpha-beta** (profondeur progressive avec limite de temps)
 ",,,,,,,,f60e1c16674e6727,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14c-ConnectFour-CSharp.ipynb,c3a528f4,markdown,fr,feed6ad8b5005049,"## 2. Moteur de jeu
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour-CSharp.ipynb,c3a528f4,markdown,fr,feed6ad8b5005049,"## 2. Moteur de jeu
 
 On encode le plateau comme une grille 6x7 (`grid[row, col]`, `row=0` en haut, pieces posees en bas). `EMPTY=0`, `PLAYER1=1` (Rouge), `PLAYER2=2` (Jaune). Les opérations essentielles : `LegalMoves` (colonnes non pleines), `DropPiece` (gravite), `UndoMove` (backtracking), `CheckWin` (4 alignes en H/V/diag), `IsTerminal`.
 ",,,,,,,,feed6ad8b5005049,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14c-ConnectFour-CSharp.ipynb,7310e22e,code,fr,f5a9bd86880de475,"// Imports et constantes du jeu. Plateau 6x7, alignement de 4.
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour-CSharp.ipynb,7310e22e,code,fr,f5a9bd86880de475,"// Imports et constantes du jeu. Plateau 6x7, alignement de 4.
 const int ROWS = 6;
 const int COLS = 7;
 const int EMPTY = 0;
@@ -28839,7 +28839,7 @@ public class Board
 
 Console.WriteLine(""Puissance 4 : plateau 6x7, alignement de 4 | Environnement pret."");
 ",,,,,,,,f5a9bd86880de475,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14c-ConnectFour-CSharp.ipynb,544eeadc,code,fr,2b3bdde7b70eded4,"// Plateau de demonstration : quelques coups joues pour evaluer l'heuristique ensuite.
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour-CSharp.ipynb,544eeadc,code,fr,2b3bdde7b70eded4,"// Plateau de demonstration : quelques coups joues pour evaluer l'heuristique ensuite.
 var demoBoard = new Board();
 demoBoard.DropPiece(3, PLAYER1);   // Rouge au centre
 demoBoard.DropPiece(3, PLAYER2);   // Jaune au centre
@@ -28851,11 +28851,11 @@ Console.WriteLine(""Plateau de demonstration :"");
 Console.WriteLine(demoBoard.ToString());
 Console.WriteLine($""Coups legaux : [{string.Join("", "", demoBoard.LegalMoves())}]"");
 ",,,,,,,,2b3bdde7b70eded4,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14c-ConnectFour-CSharp.ipynb,7f95f32f,markdown,fr,e544b0c49692210e,"### Fonction de jeu
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour-CSharp.ipynb,7f95f32f,markdown,fr,e544b0c49692210e,"### Fonction de jeu
 
 `PlayGame` fait s'affronter deux fonctions de decision (chaque IA recoit le plateau et le joueur, retourne une colonne) et renvoie le gagnant + l'historique + les temps par coup.
 ",,,,,,,,e544b0c49692210e,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14c-ConnectFour-CSharp.ipynb,6bff0b97,code,fr,0b704ef021fd36cb,"// Fonction de jeu : alterne les coups entre deux IA, chronometre chaque coup.
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour-CSharp.ipynb,6bff0b97,code,fr,0b704ef021fd36cb,"// Fonction de jeu : alterne les coups entre deux IA, chronometre chaque coup.
 // Signature IA : Func<Board, int, int>  (plateau, joueur) -> colonne.
 public static (int winner, List<int> history, double t1Ms, double t2Ms) PlayGame(
     Func<Board, int, int> ai1, Func<Board, int, int> ai2, bool verbose = false)
@@ -28898,13 +28898,13 @@ Func<Board, int, int> AiRandom = (board, player) =>
 
 Console.WriteLine(""Fonction PlayGame et IA aleatoire definies."");
 ",,,,,,,,0b704ef021fd36cb,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14c-ConnectFour-CSharp.ipynb,c1a6869a,code,fr,c96054cc5c6a9110,"// Test : deux joueurs aleatoires s'affrontent (sanity check du moteur).
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour-CSharp.ipynb,c1a6869a,code,fr,c96054cc5c6a9110,"// Test : deux joueurs aleatoires s'affrontent (sanity check du moteur).
 rng = new Random(123);
 var (winner, history, _, _) = PlayGame(AiRandom, AiRandom, verbose: true);
 string res = winner == 0 ? ""Match nul"" : (winner == PLAYER1 ? ""Rouge (P1) gagne"" : ""Jaune (P2) gagne"");
 Console.WriteLine($""\nResultat : {res} en {history.Count} coups"");
 ",,,,,,,,c96054cc5c6a9110,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14c-ConnectFour-CSharp.ipynb,4b48ad98,markdown,fr,4d2141ea667b74e5,"## 3. Heuristique de position (fenêtres de 4)
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour-CSharp.ipynb,4b48ad98,markdown,fr,4d2141ea667b74e5,"## 3. Heuristique de position (fenêtres de 4)
 
 L'evaluation du plateau pour Minimax repose sur le decompte des **fenêtres de 4 cases** contigues (horizontales, verticales, diagonales). Pour chaque fenêtre :
 - 4 jetons du joueur : **+1000** (gagnant)
@@ -28914,7 +28914,7 @@ L'evaluation du plateau pour Minimax repose sur le decompte des **fenêtres de 4
 
 Un **bonus de centre** (+3 par jeton en colonne 3) favorise le contrôle du centre, strategiquement fort.
 ",,,,,,,,4d2141ea667b74e5,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14c-ConnectFour-CSharp.ipynb,f8d23649,code,fr,043a63900856aaa4,"// Heuristique : evaluation d'une fenetre de 4 cases, puis de la position globale.
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour-CSharp.ipynb,f8d23649,code,fr,043a63900856aaa4,"// Heuristique : evaluation d'une fenetre de 4 cases, puis de la position globale.
 static int EvaluateWindow(int[] window, int player)
 {
     int opponent = player == PLAYER1 ? PLAYER2 : PLAYER1;
@@ -28962,13 +28962,13 @@ Console.WriteLine($""Score joueur 1 (Rouge) : {scoreP1}"");
 Console.WriteLine($""Score joueur 2 (Jaune) : {scoreP2}"");
 Console.WriteLine($""Avantage : {(scoreP1 > scoreP2 ? ""Rouge"" : ""Jaune"")} (+{Math.Abs(scoreP1 - scoreP2)})"");
 ",,,,,,,,043a63900856aaa4,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14c-ConnectFour-CSharp.ipynb,6e6d1883,markdown,fr,66a59421b464e373,"## 4. IA 2 : Minimax avec elagage alpha-beta
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour-CSharp.ipynb,6e6d1883,markdown,fr,66a59421b464e373,"## 4. IA 2 : Minimax avec elagage alpha-beta
 
 Minimax explore l'arbre de jeu jusqu'a une profondeur donnee en supposant que l'adversaire joue optimalement. L'elagage **alpha-beta** coupe les branches surement inferieures (pas besoin de les explorer). Les feuilles sont evaluees par `EvaluatePosition`. Les cas terminaux : victoire = +100000+depth (preferer les victoires rapides), defaite = -100000-depth.
 
 L'**ordonnancement des coups** (centre d'abord) augmente l'efficacite de l'elagage.
 ",,,,,,,,66a59421b464e373,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14c-ConnectFour-CSharp.ipynb,e06c935b,code,fr,1ce93d4a5827d55a,"// Minimax avec elagage alpha-beta + ordonnancement centre d'abord.
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour-CSharp.ipynb,e06c935b,code,fr,1ce93d4a5827d55a,"// Minimax avec elagage alpha-beta + ordonnancement centre d'abord.
 public static (int col, int score) Minimax(Board board, int depth, int alpha, int beta, bool maximizing, int player)
 {
     int opponent = player == PLAYER1 ? PLAYER2 : PLAYER1;
@@ -29020,7 +29020,7 @@ static Func<Board, int, int> MakeMinimaxAi(int depth) => (board, player) => Mini
 Console.WriteLine(""Minimax alpha-beta implemente."");
 Console.WriteLine(""Profondeurs recommandees : 2 (rapide), 4 (bon), 6 (fort mais lent)"");
 ",,,,,,,,1ce93d4a5827d55a,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14c-ConnectFour-CSharp.ipynb,a14ca3f0,code,fr,81816c519c716e5e,"// Test : Minimax (profondeur 4) vs Random.
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour-CSharp.ipynb,a14ca3f0,code,fr,81816c519c716e5e,"// Test : Minimax (profondeur 4) vs Random.
 rng = new Random(123);
 var aiMm4 = MakeMinimaxAi(4);
 var (winner, history, t1Ms, t2Ms) = PlayGame(aiMm4, AiRandom, verbose: true);
@@ -29029,11 +29029,11 @@ Console.WriteLine($""\nResultat : {res} en {history.Count} coups"");
 Console.WriteLine($""Temps moyen Minimax : {t1Ms/1000.0:F3}s/coup"");
 Console.WriteLine($""Temps moyen Random  : {t2Ms/1e6:F6}s/coup"");
 ",,,,,,,,81816c519c716e5e,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14c-ConnectFour-CSharp.ipynb,2b82d0a2,markdown,fr,b88bc64fbe0b4c00,"### Expérience : effet de la profondeur
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour-CSharp.ipynb,2b82d0a2,markdown,fr,b88bc64fbe0b4c00,"### Expérience : effet de la profondeur
 
 Plus la profondeur de recherche augmente, plus Minimax anticipe loin — au prix du temps de calcul (croissance exponentielle). On mesure le **taux de victoire** et le **temps par coup** pour les profondeurs 2, 4 et 6 contre le joueur aleatoire.
 ",,,,,,,,b88bc64fbe0b4c00,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14c-ConnectFour-CSharp.ipynb,2b0a0bbe,code,fr,5d9bd7978af64ff8,"// Comparer les profondeurs 2, 4 et 6 (10 parties chacune vs Random).
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour-CSharp.ipynb,2b0a0bbe,code,fr,5d9bd7978af64ff8,"// Comparer les profondeurs 2, 4 et 6 (10 parties chacune vs Random).
 foreach (int depth in new[] { 2, 4, 6 })
 {
     int wins = 0;
@@ -29050,11 +29050,11 @@ foreach (int depth in new[] { 2, 4, 6 })
     Console.WriteLine($""Minimax(d={depth}) : {wins}/{nGames} victoires, {totalMs / nGames / 1000.0:F1} ms/coup"");
 }
 ",,,,,,,,5d9bd7978af64ff8,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14c-ConnectFour-CSharp.ipynb,46fa2f27,markdown,fr,4f02b8dd346911d9,"## 5. IA 3 : Monte Carlo Tree Search (MCTS)
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour-CSharp.ipynb,46fa2f27,markdown,fr,4f02b8dd346911d9,"## 5. IA 3 : Monte Carlo Tree Search (MCTS)
 
 MCTS construit progressivement un arbre de jeu par **simulations aleatoires** (rollouts). Chaque noeud choisit ses enfants via **UCB1** (Upper Confidence Bound) qui equilibre exploitation (moyenne des recompenses) et exploration (visites rares). Après un budget d'itérations, on joue le coup le plus visite.
 ",,,,,,,,4f02b8dd346911d9,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14c-ConnectFour-CSharp.ipynb,23393897,code,fr,1f85e10d3aefd24a,"// MCTS pour Puissance 4 : selection UCB1, expansion, rollout aleatoire, backpropagation.
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour-CSharp.ipynb,23393897,code,fr,1f85e10d3aefd24a,"// MCTS pour Puissance 4 : selection UCB1, expansion, rollout aleatoire, backpropagation.
 public class MctsNode
 {
     public Board State;
@@ -29153,7 +29153,7 @@ static Func<Board, int, int> MakeMctsAi(int iterations) => (board, player) => Mc
 Console.WriteLine(""MCTS implemente."");
 Console.WriteLine(""Iterations recommandees : 100 (rapide), 500 (bon), 1000 (fort)"");
 ",,,,,,,,1f85e10d3aefd24a,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14c-ConnectFour-CSharp.ipynb,811a4df6,code,fr,a12704e06ebf28d4,"// Test : MCTS (500 iterations) vs Minimax (profondeur 3).
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour-CSharp.ipynb,811a4df6,code,fr,a12704e06ebf28d4,"// Test : MCTS (500 iterations) vs Minimax (profondeur 3).
 rng = new Random(42);
 var aiMcts = MakeMctsAi(500);
 var aiMm3 = MakeMinimaxAi(3);
@@ -29163,11 +29163,11 @@ Console.WriteLine($""\nResultat : {res} en {history.Count} coups"");
 Console.WriteLine($""Temps moyen MCTS    : {t1Ms/1000.0:F3}s/coup"");
 Console.WriteLine($""Temps moyen Minimax : {t2Ms/1000.0:F3}s/coup"");
 ",,,,,,,,a12704e06ebf28d4,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14c-ConnectFour-CSharp.ipynb,71930676,markdown,fr,c92e6f7709a380de,"## 6. IA 4 : Joueur glouton (heuristique 1-ply)
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour-CSharp.ipynb,71930676,markdown,fr,c92e6f7709a380de,"## 6. IA 4 : Joueur glouton (heuristique 1-ply)
 
 Le joueur glouton teste chaque coup legal, l'evalue immediatement via `EvaluatePosition`, et joue le meilleur. Pas de recherche : c'est une **stratégie 1-ply** (un seul coup anticipe). Rapide mais sans vision d'adversaire.
 ",,,,,,,,c92e6f7709a380de,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14c-ConnectFour-CSharp.ipynb,dd632d67,code,fr,b1426aa08b6a0016,"// IA glouton : teste chaque coup, garde celui qui maximise EvaluatePosition.
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour-CSharp.ipynb,dd632d67,code,fr,b1426aa08b6a0016,"// IA glouton : teste chaque coup, garde celui qui maximise EvaluatePosition.
 Func<Board, int, int> AiGreedy = (board, player) =>
 {
     var moves = board.LegalMoves();
@@ -29188,11 +29188,11 @@ string resG = wG == 0 ? ""Match nul"" : (wG == PLAYER1 ? ""Greedy gagne"" : ""Ra
 Console.WriteLine($""Resultat : {resG} en {histG.Count} coups"");
 Console.WriteLine($""Temps moyen Greedy : {tG/1000.0:F2} ms/coup"");
 ",,,,,,,,b1426aa08b6a0016,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14c-ConnectFour-CSharp.ipynb,894ca186,markdown,fr,b84cd88afecaf971,"## 7. Tournoi round-robin
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour-CSharp.ipynb,894ca186,markdown,fr,b84cd88afecaf971,"## 7. Tournoi round-robin
 
 On fait s'affronter chaque paire d'IA (5 IA, aller-retour) sur un nombre de parties donne. Le tournoi revele la **hiérarchie** des algorithmes : Minimax profond domine, MCTS suit, glouton bat random.
 ",,,,,,,,b84cd88afecaf971,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14c-ConnectFour-CSharp.ipynb,4d99efc3,code,fr,4d248e51147d2f3f,"// Tournoi round-robin : chaque paire d'IA s'affronte (gamesPerPair parties).
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour-CSharp.ipynb,4d99efc3,code,fr,4d248e51147d2f3f,"// Tournoi round-robin : chaque paire d'IA s'affronte (gamesPerPair parties).
 var competitors = new Dictionary<string, Func<Board, int, int>>
 {
     { ""Random"",   AiRandom },
@@ -29241,11 +29241,11 @@ foreach (var n in names.OrderByDescending(n => wins[n] * 2 + draws[n]))
     Console.WriteLine($""{n,-12} {wins[n],4} {losses[n],4} {draws[n],4} {score,6}"");
 }
 ",,,,,,,,4d248e51147d2f3f,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14c-ConnectFour-CSharp.ipynb,83bb30f9,markdown,fr,0d4a5fcd798a8a6e,"## 8. Iterative deepening alpha-beta (limite de temps)
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour-CSharp.ipynb,83bb30f9,markdown,fr,0d4a5fcd798a8a6e,"## 8. Iterative deepening alpha-beta (limite de temps)
 
 Plutot qu'une profondeur fixe, l'**iterative deepening** relance Minimax en augmentant la profondeur (1, 2, 3, ...) jusqu'a epuisement d'un budget temps. On garde le meilleur coup de la dernière profondeur completee. Cette approche combine les avantages d'alpha-beta (l'ordonnancement s'ameliore avec la profondeur) et d'une garantie de reponse dans le temps imparti.
 ",,,,,,,,0d4a5fcd798a8a6e,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14c-ConnectFour-CSharp.ipynb,2db42d35,code,fr,5bf242d3e93b4940,"// Iterative deepening : relance Minimax en augmentant la profondeur jusqu'a la limite de temps.
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour-CSharp.ipynb,2db42d35,code,fr,5bf242d3e93b4940,"// Iterative deepening : relance Minimax en augmentant la profondeur jusqu'a la limite de temps.
 public static (int col, int depthReached) IterativeDeepening(Board board, int player, double timeBudgetSec)
 {
     int bestCol = board.LegalMoves()[0];
@@ -29276,11 +29276,11 @@ for (int g = 0; g < idGames; g++)
 Console.WriteLine($""Iterative deepening (0.3s budget) : {idWins}/{idGames} victoires vs Random"");
 Console.WriteLine(""L'iterative deepening garantit une reponse dans le budget temps, en profitant de l'amelioration de l'elagage avec la profondeur."");
 ",,,,,,,,5bf242d3e93b4940,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14c-ConnectFour-CSharp.ipynb,000e3c10,markdown,fr,b05e6b778df2424b,"## 9. Exercices
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour-CSharp.ipynb,000e3c10,markdown,fr,b05e6b778df2424b,"## 9. Exercices
 
 Trois exercices pour approfondir : Negamax (reformulation elégante de Minimax), iterative deepening manuel, et l'ordonnancement intelligent des coups (speedup).
 ",,,,,,,,b05e6b778df2424b,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14c-ConnectFour-CSharp.ipynb,e33fe976,code,fr,fe285c6786c5403c,"// Exercice 1 : Negamax avec elagage alpha-beta.
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour-CSharp.ipynb,e33fe976,code,fr,fe285c6786c5403c,"// Exercice 1 : Negamax avec elagage alpha-beta.
 // Le negamax reformule Minimax en exploitant la propriete :
 //   score(A) = -score(B) quand on echange les roles (jeu a somme nulle).
 // Il en resulte une seule fonction recursive plus concise.
@@ -29294,7 +29294,7 @@ public static (int col, int score) Negamax(Board board, int depth, int alpha, in
 Console.WriteLine(""Exercice 1 a completer : implementez negamax() pour comparer a minimax."");
 Console.WriteLine(""Attendu : negamax doit retourner le meme coup que minimax (forme equivalente)."");
 ",,,,,,,,fe285c6786c5403c,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14c-ConnectFour-CSharp.ipynb,e9465bb5,code,fr,db29fb8a5a34c5fa,"// Exercice 2 : Iterative deepening avec mesure de profondeur atteinte.
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour-CSharp.ipynb,e9465bb5,code,fr,db29fb8a5a34c5fa,"// Exercice 2 : Iterative deepening avec mesure de profondeur atteinte.
 public static (int col, int maxDepth) IterativeDeepeningMeasure(Board board, int player, double timeBudgetSec)
 {
     // TODO etudiant : implementez l'iterative deepening et retournez la profondeur max atteinte
@@ -29305,7 +29305,7 @@ public static (int col, int maxDepth) IterativeDeepeningMeasure(Board board, int
 Console.WriteLine(""Exercice 2 a completer : iterative deepening avec mesure."");
 Console.WriteLine(""Attendu : ID(0.5s) devrait battre Random (>80% de victoires)."");
 ",,,,,,,,db29fb8a5a34c5fa,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14c-ConnectFour-CSharp.ipynb,3599f0ce,code,fr,72840223d90e497f,"// Exercice 3 : Ordonnancement intelligent des coups et mesure du speedup.
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour-CSharp.ipynb,3599f0ce,code,fr,72840223d90e497f,"// Exercice 3 : Ordonnancement intelligent des coups et mesure du speedup.
 public static int CountNodes(Board board, int depth, int player)
 {
     // TODO etudiant : comptez le nombre de noeuds explores par Minimax a profondeur donnee
@@ -29316,7 +29316,7 @@ public static int CountNodes(Board board, int depth, int player)
 Console.WriteLine(""Exercice 3 a completer : implementez order_moves() et count_nodes."");
 Console.WriteLine(""Attendu : speedup 2-5x avec ordering (moins de noeuds explores pour le meme coup)."");
 ",,,,,,,,72840223d90e497f,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14c-ConnectFour-CSharp.ipynb,c2811080,markdown,fr,06a7102933c2508d,"## Conclusion et resume
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour-CSharp.ipynb,c2811080,markdown,fr,06a7102933c2508d,"## Conclusion et resume
 
 Ce jumeau C# a reimplemente, sans aucune librairie externe, le banc d'essai comparatif du notebook Python :
 
@@ -29351,10 +29351,10 @@ Le tournoi revele un résultat contre-intuitif mais **reel et documente** : **Mi
 
 *Part of #4956 (marathon parite .NET <-> Python).*
 ",,,,,,,,06a7102933c2508d,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb,nav-header,markdown,fr,06772a7d85fcb00d,"# App-12 : Puissance 4 -- Comparaison d'algorithmes IA (Bonus)
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour.ipynb,nav-header,markdown,fr,06772a7d85fcb00d,"# App-12 : Puissance 4 -- Comparaison d'algorithmes IA (Bonus)
 
 **Navigation** : [<< App-11 Picross](../CSP/App-11-Picross.ipynb) | [Index](../../README.md) | [Part1-Foundations](../../Part1-Foundations/README.md)",,,,,,,,06772a7d85fcb00d,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb,intro-section,markdown,fr,b7ef8cce3ccea3f6,"## 1. Introduction
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour.ipynb,intro-section,markdown,fr,b7ef8cce3ccea3f6,"## 1. Introduction
 
 ### Le Puissance 4
 
@@ -29384,7 +29384,7 @@ Dans ce notebook, nous implementons et comparons **4 approches** :
 | Greedy | Heuristique | 1 | Instantane |
 | Minimax (alpha-beta) | Arbre adversaire | Configurable | modère |
 | MCTS | Monte Carlo | variable | Configurable |",,,,,,,,b7ef8cce3ccea3f6,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb,engine-intro,markdown,fr,3077144c1a9f2247,"## 2. Moteur de jeu
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour.ipynb,engine-intro,markdown,fr,3077144c1a9f2247,"## 2. Moteur de jeu
 
 Nous commencons par implementer le moteur de jeu : représentation du plateau, règles, détection de victoire et affichage graphique.
 
@@ -29396,7 +29396,7 @@ Le plateau est une matrice numpy 6x7 :
 - `2` = jeton du joueur 2 (Jaune)
 
 La ligne 0 est le **haut** du plateau (dernière a se remplir).",,,,,,,,3077144c1a9f2247,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb,imports,code,fr,43270d663a0b1cef,"# Imports
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour.ipynb,imports,code,fr,43270d663a0b1cef,"# Imports
 import sys
 sys.path.insert(0, '..')
 
@@ -29427,10 +29427,10 @@ CONNECT = 4  # Nombre de jetons a aligner
 
 print(f""Puissance 4 : plateau {ROWS}x{COLS}, alignement de {CONNECT}"")
 print(""Environnement pret."")",,,,,,,,43270d663a0b1cef,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb,board-class-intro,markdown,fr,e401ee9bb1956862,"### Classe Board
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour.ipynb,board-class-intro,markdown,fr,e401ee9bb1956862,"### Classe Board
 
 La classe `Board` encapsule l'etat du jeu et fournit les opérations fondamentales : coups legaux, placement de jeton, détection de victoire et affichage.",,,,,,,,e401ee9bb1956862,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb,board-class,code,fr,761ccaa86a817169,"class Board:
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour.ipynb,board-class,code,fr,761ccaa86a817169,"class Board:
     """"""Plateau de Puissance 4 avec logique de jeu complete.""""""
 
     def __init__(self, grid=None):
@@ -29518,7 +29518,7 @@ board.drop_piece(4, PLAYER1)
 print(board)
 print(f""\nCoups legaux : {board.legal_moves()}"")
 print(f""Jetons poses : {board.move_count()}"")",,,,,,,,761ccaa86a817169,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb,board-interpretation,markdown,fr,b5d49875e2966186,"### Interprétation : Moteur de jeu
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour.ipynb,board-interpretation,markdown,fr,b5d49875e2966186,"### Interprétation : Moteur de jeu
 
 **Sortie obtenue** : Le plateau s'affiche en mode texte avec R (Rouge) et J (Jaune). Les jetons tombent correctement vers le bas.
 
@@ -29533,10 +29533,10 @@ MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb,board-int
 1. La méthode `legal_moves()` vérifie la ligne supérieure (indice 0) : si elle est occupee, la colonne est pleine
 2. `check_win` parcourt les 4 directions avec des fenêtrès de taille 4 -- complexité O(ROWS x COLS)
 3. L'utilisation de `undo_move` évite de copier le plateau a chaque noeud de l'arbre de recherche",,,,,,,,b5d49875e2966186,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb,display-intro,markdown,fr,ecb4ba582929c774,"### Affichage graphique
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour.ipynb,display-intro,markdown,fr,ecb4ba582929c774,"### Affichage graphique
 
 Pour une meilleure lisibilite, affichons le plateau avec matplotlib en utilisant des cercles colores sur fond bleu, a l'image d'un vrai plateau de Puissance 4.",,,,,,,,ecb4ba582929c774,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb,display-code,code,fr,f8117341598fc4a2,"def display_board(board, title=""Puissance 4"", highlight_col=None, ax=None):
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour.ipynb,display-code,code,fr,f8117341598fc4a2,"def display_board(board, title=""Puissance 4"", highlight_col=None, ax=None):
     """"""Affiche le plateau avec des cercles colores (rouge/jaune sur fond bleu).""""""
     if ax is None:
         fig, ax = plt.subplots(figsize=(8, 7))
@@ -29594,7 +29594,7 @@ for col, player in moves:
 fig = display_board(demo_board, ""Partie en cours (8 coups joues)"")
 plt.tight_layout()
 plt.show()",,,,,,,,f8117341598fc4a2,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb,display-interpretation,markdown,fr,262131dac543b7bd,"### Interprétation : Affichage graphique
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour.ipynb,display-interpretation,markdown,fr,262131dac543b7bd,"### Interprétation : Affichage graphique
 
 **Sortie obtenue** : Le plateau apparaît avec les cercles rouge (joueur 1) et jaune (joueur 2) sur fond bleu, fidélément au jeu réel.
 
@@ -29602,10 +29602,10 @@ MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb,display-i
 1. L'axe Y est inverse pour que la gravite soit naturelle (les jetons tombent vers le bas)
 2. Les cases vides sont affichees en bleu clair pour simuler les trous du plateau
 3. Cette visualisation sera réutilisée pour afficher les parties entre IA",,,,,,,,262131dac543b7bd,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb,play-intro,markdown,fr,163bfa5672598870,"### Fonction de jeu
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour.ipynb,play-intro,markdown,fr,163bfa5672598870,"### Fonction de jeu
 
 Implementons la boucle de jeu qui fait s'affronter deux IA. Chaque IA est une fonction qui prend un plateau et le joueur courant, et retourne la colonne choisie.",,,,,,,,163bfa5672598870,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb,play-function,code,fr,45e491d81ced7f63,"def play_game(ai1, ai2, verbose=False, display=False):
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour.ipynb,play-function,code,fr,45e491d81ced7f63,"def play_game(ai1, ai2, verbose=False, display=False):
     """"""
     Fait jouer ai1 (joueur 1) contre ai2 (joueur 2).
 
@@ -29647,10 +29647,10 @@ MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb,play-func
 
 
 print(""Fonction play_game definie."")",,,,,,,,45e491d81ced7f63,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb,random-section,markdown,fr,61eb9eb5f6b634bc,"## 3. IA 1 : Joueur aléatoire (baseline)
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour.ipynb,random-section,markdown,fr,61eb9eb5f6b634bc,"## 3. IA 1 : Joueur aléatoire (baseline)
 
 Le joueur aléatoire constitue notre **baseline** : il choisit uniformêment parmi les colonnes legales, sans aucune stratégie. Cette IA nous permettra de mesurer a quel point les autrès approches sont meilleures qu'un jeu au hasard.",,,,,,,,61eb9eb5f6b634bc,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb,random-ai,code,fr,be8c5aefae26ccf3,"def ai_random(board, player):
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour.ipynb,random-ai,code,fr,be8c5aefae26ccf3,"def ai_random(board, player):
     """"""IA aleatoire : choisit une colonne legale au hasard.""""""
     return random.choice(board.legal_moves())
 
@@ -29661,7 +29661,7 @@ winner, history, times = play_game(ai_random, ai_random, verbose=True, display=T
 
 result = {0: ""Match nul"", PLAYER1: ""Rouge gagne"", PLAYER2: ""Jaune gagne""}
 print(f""\nResultat : {result[winner]} en {len(history)} coups"")",,,,,,,,be8c5aefae26ccf3,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb,random-interpretation,markdown,fr,1619d9eaf952f564,"### Interprétation : Joueur aléatoire
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour.ipynb,random-interpretation,markdown,fr,1619d9eaf952f564,"### Interprétation : Joueur aléatoire
 
 **Sortie obtenue** : Une partie entre deux joueurs aléatoires, typiquement chaotique et sans stratégie.
 
@@ -29672,7 +29672,7 @@ MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb,random-in
 | utilité | Baseline pour mesurer la qualite des autrès IA |
 
 **Point cle** : Le joueur aléatoire ne détecte même pas les victoires immédiates. Il peut ""oublier"" de gagner ou de bloquer l'adversaire. C'est la pire IA possible -- tout algorithme raisonnable devrait le battre systématiquement.",,,,,,,,1619d9eaf952f564,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb,minimax-section,markdown,fr,a8c1db56ff3089fa,"## 4. IA 2 : Minimax avec elagage alpha-beta
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour.ipynb,minimax-section,markdown,fr,a8c1db56ff3089fa,"## 4. IA 2 : Minimax avec elagage alpha-beta
 
 ### Principe
 
@@ -29696,7 +29696,7 @@ Pour limiter la profondeur de recherche, il faut une **fonction d'évaluation** 
 | 2 jetons du joueur + 2 vides | +2 |
 | 3 jetons adversaire + 1 vide | -8 (menace) |
 | Jeton au centre | +3 (bonus positionnel) |",,,,,,,,a8c1db56ff3089fa,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb,eval-function,code,fr,8d848badf831b739,"def evaluate_window(window, player):
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour.ipynb,eval-function,code,fr,8d848badf831b739,"def evaluate_window(window, player):
     """"""Evalue une fenetre de 4 cases pour le joueur donne.""""""
     opponent = PLAYER2 if player == PLAYER1 else PLAYER1
     score = 0
@@ -29761,10 +29761,10 @@ score_p2 = evaluate_position(demo_board, PLAYER2)
 print(f""Score joueur 1 (Rouge) : {score_p1}"")
 print(f""Score joueur 2 (Jaune) : {score_p2}"")
 print(f""Avantage : {'Rouge' if score_p1 > score_p2 else 'Jaune'} (+{abs(score_p1 - score_p2)})"")",,,,,,,,8d848badf831b739,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb,minimax-impl-intro,markdown,fr,a843224f269414a9,"### Implementation de Minimax alpha-beta
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour.ipynb,minimax-impl-intro,markdown,fr,a843224f269414a9,"### Implementation de Minimax alpha-beta
 
 L'algorithme explore l'arbre de jeu avec une profondeur limite configurable. L'ordre d'exploration des colonnes est optimise : on commence par le centre (meilleure heuristique en général).",,,,,,,,a843224f269414a9,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb,minimax-code,code,fr,189db2ea3ef1f226,"def minimax(board, depth, alpha, beta, maximizing, player):
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour.ipynb,minimax-code,code,fr,189db2ea3ef1f226,"def minimax(board, depth, alpha, beta, maximizing, player):
     """"""
     Minimax avec elagage alpha-beta.
 
@@ -29838,10 +29838,10 @@ def make_minimax_ai(depth):
 
 print(""Minimax alpha-beta implemente."")
 print(""Profondeurs recommandees : 2 (rapide), 4 (bon), 6 (fort mais lent)"")",,,,,,,,189db2ea3ef1f226,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb,minimax-test-intro,markdown,fr,ef0dde653af6d7d6,"### Test : Minimax vs Random
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour.ipynb,minimax-test-intro,markdown,fr,ef0dde653af6d7d6,"### Test : Minimax vs Random
 
 vérifions que Minimax domine clairement le joueur aléatoire. Nous utilisons une profondeur de 4 pour un bon compromis qualite/vitesse.",,,,,,,,ef0dde653af6d7d6,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb,minimax-test,code,fr,29f2e3930759fc51,"# Minimax (profondeur 4) vs Random
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour.ipynb,minimax-test,code,fr,29f2e3930759fc51,"# Minimax (profondeur 4) vs Random
 ai_mm4 = make_minimax_ai(4)
 
 random.seed(123)
@@ -29851,7 +29851,7 @@ result_str = {0: ""Match nul"", PLAYER1: ""Minimax gagne"", PLAYER2: ""Random ga
 print(f""\nResultat : {result_str[winner]} en {len(history)} coups"")
 print(f""Temps moyen Minimax : {np.mean(times[PLAYER1]):.3f}s/coup"")
 print(f""Temps moyen Random  : {np.mean(times[PLAYER2]):.6f}s/coup"")",,,,,,,,29f2e3930759fc51,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb,minimax-interpretation,markdown,fr,10a0b9a8f57eff21,"### Interprétation : Minimax vs Random
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour.ipynb,minimax-interpretation,markdown,fr,10a0b9a8f57eff21,"### Interprétation : Minimax vs Random
 
 **Sortie obtenue** : Minimax (profondeur 4) devrait battre le joueur aléatoire sans difficulté.
 
@@ -29865,10 +29865,10 @@ MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb,minimax-i
 1. Minimax gagne rapidement car il exploite les erreurs du joueur aléatoire
 2. L'elagage alpha-beta réduit considérablement le nombre de noeuds explores
 3. L'ordonnancement des coups (centre en premier) améliore l'efficacité de l'elagage",,,,,,,,10a0b9a8f57eff21,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb,depth-experiment-intro,markdown,fr,2b922f849ac35148,"### Experiment : Effet de la profondeur
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour.ipynb,depth-experiment-intro,markdown,fr,2b922f849ac35148,"### Experiment : Effet de la profondeur
 
 Comparons trois profondeurs de Minimax pour observer le compromis qualite/temps. Chaque profondeur joue 10 parties contre le joueur aléatoire.",,,,,,,,2b922f849ac35148,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb,depth-experiment,code,fr,d7edc633f0f4ebdd,"# Comparer les profondeurs 2, 4 et 6
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour.ipynb,depth-experiment,code,fr,d7edc633f0f4ebdd,"# Comparer les profondeurs 2, 4 et 6
 depths = [2, 4, 6]
 n_games = 10
 depth_results = {}
@@ -29912,7 +29912,7 @@ ax2.grid(axis='y', alpha=0.3)
 plt.suptitle('Effet de la profondeur de Minimax', fontsize=14, fontweight='bold')
 plt.tight_layout()
 plt.show()",,,,,,,,d7edc633f0f4ebdd,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb,depth-interpretation,markdown,fr,1ceccf544900a391,"### Interprétation : Effet de la profondeur
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour.ipynb,depth-interpretation,markdown,fr,1ceccf544900a391,"### Interprétation : Effet de la profondeur
 
 **Sortie obtenue** : Les trois profondeurs remportent 10/10 contre le joueur aléatoire ; seul le temps de calcul diffère.
 
@@ -29932,7 +29932,7 @@ MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb,depth-int
 
 > La vraie différence se verra dans le tournoi, ou les IA s'affrontent entre elles.
 ",,,,,,,,1ceccf544900a391,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb,mcts-section,markdown,fr,7b9a494407a1512b,"## 5. IA 3 : Monte Carlo Tree Search (MCTS)
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour.ipynb,mcts-section,markdown,fr,7b9a494407a1512b,"## 5. IA 3 : Monte Carlo Tree Search (MCTS)
 
 ### Principe
 
@@ -29961,7 +29961,7 @@ $$UCB1(i) = \frac{w_i}{n_i} + c \sqrt{\frac{\ln N}{n_i}}$$
 - **Scalable** : plus on donne d'itérations, meilleure est la décision
 
 > **Voir aussi** : la [serie GameTheory](../../../GameTheory/README.md) pour une présentation detaillee de MCTS et ses variantes (UCT, RAVE, PUCT).",,,,,,,,7b9a494407a1512b,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb,mcts-code,code,fr,1a4eb2980fb25691,"class MCTSNode:
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour.ipynb,mcts-code,code,fr,1a4eb2980fb25691,"class MCTSNode:
     """"""Noeud de l'arbre MCTS.""""""
 
     def __init__(self, board, player, parent=None, move=None):
@@ -30066,10 +30066,10 @@ def make_mcts_ai(iterations):
 
 print(""MCTS implemente."")
 print(""Iterations recommandees : 100 (rapide), 500 (bon), 1000 (fort), 5000 (tres fort)"")",,,,,,,,1a4eb2980fb25691,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb,mcts-test-intro,markdown,fr,34a51bcace605f44,"### Test : MCTS vs Minimax
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour.ipynb,mcts-test-intro,markdown,fr,34a51bcace605f44,"### Test : MCTS vs Minimax
 
 Faisons s'affronter MCTS (1000 itérations) contre Minimax (profondeur 4) pour observer la qualite de jeu des deux approches.",,,,,,,,34a51bcace605f44,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb,mcts-test,code,fr,037e297b5ec5285e,"# MCTS (1000 iterations) vs Minimax (profondeur 4)
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour.ipynb,mcts-test,code,fr,037e297b5ec5285e,"# MCTS (1000 iterations) vs Minimax (profondeur 4)
 ai_mcts_1000 = make_mcts_ai(1000)
 ai_mm4 = make_minimax_ai(4)
 
@@ -30081,7 +30081,7 @@ result_str = ""Match nul"" if winner == 0 else f""{names[winner]} gagne""
 print(f""\nResultat : {result_str} en {len(history)} coups"")
 print(f""Temps moyen MCTS     : {np.mean(times[PLAYER1]):.3f}s/coup"")
 print(f""Temps moyen Minimax  : {np.mean(times[PLAYER2]):.3f}s/coup"")",,,,,,,,037e297b5ec5285e,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb,mcts-interpretation,markdown,fr,2d33b08318e9822f,"### Interprétation : MCTS vs Minimax
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour.ipynb,mcts-interpretation,markdown,fr,2d33b08318e9822f,"### Interprétation : MCTS vs Minimax
 
 **Sortie obtenue** : MCTS(1000 itérations) bat Minimax(d=4) en 29 coups dans cette partie ; MCTS est nettement plus lent par coup.
 
@@ -30098,7 +30098,7 @@ MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb,mcts-inte
 3. MCTS explore automatiquement plus profondement les lignes prometteuses
 4. Avec plus d'itérations (5000+), MCTS tend a surpasser Minimax(d=4)
 ",,,,,,,,2d33b08318e9822f,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb,greedy-section,markdown,fr,0ffdcbbf59a9674d,"## 6. IA 4 : Joueur glouton (heuristique)
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour.ipynb,greedy-section,markdown,fr,0ffdcbbf59a9674d,"## 6. IA 4 : Joueur glouton (heuristique)
 
 Le joueur **glouton** applique une hiérarchie de priorites simple, sans exploration de l'arbre :
 
@@ -30108,7 +30108,7 @@ Le joueur **glouton** applique une hiérarchie de priorites simple, sans explora
 4. **aléatoire** : sinon, choisir au hasard parmi les coups restants
 
 Cette approche est rapide mais limitée : elle ne regarde qu'un coup en avance.",,,,,,,,0ffdcbbf59a9674d,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb,greedy-code,code,fr,1aa9442753de0dd3,"def ai_greedy(board, player):
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour.ipynb,greedy-code,code,fr,1aa9442753de0dd3,"def ai_greedy(board, player):
     """"""
     IA gloutonne : priorite win > block > center > random.
     Regarde un seul coup en avance.
@@ -30154,7 +30154,7 @@ names = {PLAYER1: ""Greedy"", PLAYER2: ""Random""}
 result_str = ""Match nul"" if winner == 0 else f""{names[winner]} gagne""
 print(f""Resultat : {result_str} en {len(history)} coups"")
 print(f""Temps moyen Greedy : {np.mean(times[PLAYER1])*1000:.2f} ms/coup"")",,,,,,,,1aa9442753de0dd3,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb,greedy-interpretation,markdown,fr,1cb302c9a0f2288f,"### Interprétation : Joueur glouton
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour.ipynb,greedy-interpretation,markdown,fr,1cb302c9a0f2288f,"### Interprétation : Joueur glouton
 
 **Sortie obtenue** : Le joueur glouton bat facilement le joueur aléatoire.
 
@@ -30170,7 +30170,7 @@ MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb,greedy-in
 2. Il détecte les coups gagnants et les menaces immédiates (profondeur 1)
 3. Il sera surpasse par Minimax qui voit plus loin dans l'arbre de jeu
 4. Le bonus positionnel (centre) lui donne une stratégie rudimentaire",,,,,,,,1cb302c9a0f2288f,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb,tournament-section,markdown,fr,dd622f09c717352e,"## 7. Tournoi round-robin
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour.ipynb,tournament-section,markdown,fr,dd622f09c717352e,"## 7. Tournoi round-robin
 
 Organisons un tournoi complet entre toutes les IA. Chaque paire joue **6 parties** (3 en tant que joueur 1, 3 en tant que joueur 2) pour eliminer l'avantage du premier joueur.
 
@@ -30185,7 +30185,7 @@ Organisons un tournoi complet entre toutes les IA. Chaque paire joue **6 parties
 | Minimax(d=4) | Arbre adversaire | Profondeur 4, alpha-beta |
 | Minimax(d=6) | Arbre adversaire | Profondeur 6, alpha-beta |
 | MCTS(500) | Monte Carlo | 500 itérations |",,,,,,,,dd622f09c717352e,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb,tournament-code,code,fr,4e9b770b336d4d8c,"def run_tournament(ais, games_per_pair=6, verbose=True):
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour.ipynb,tournament-code,code,fr,4e9b770b336d4d8c,"def run_tournament(ais, games_per_pair=6, verbose=True):
     """"""
     Tournoi round-robin entre toutes les IA.
 
@@ -30268,10 +30268,10 @@ t_start = time.time()
 results, matrix = run_tournament(tournament_ais, games_per_pair=6)
 t_total = time.time() - t_start
 print(f""\\nTournoi termine en {t_total:.1f}s"")",,,,,,,,4e9b770b336d4d8c,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb,tournament-results-intro,markdown,fr,5183be226fe6641a,"### Résultats du tournoi
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour.ipynb,tournament-results-intro,markdown,fr,5183be226fe6641a,"### Résultats du tournoi
 
 Affichons les résultats sous forme de tableau recapitulatif et de graphiques.",,,,,,,,5183be226fe6641a,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb,tournament-results,code,fr,8d627478da6ed88b,"# Tableau recapitulatif
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour.ipynb,tournament-results,code,fr,8d627478da6ed88b,"# Tableau recapitulatif
 print(""\n"" + ""="" * 80)
 print(""  RESULTATS DU TOURNOI"")
 print(""="" * 80)
@@ -30310,8 +30310,8 @@ for n1 in names:
         else:
             print(f""{'?':>14}"", end="""")
     print()",,,,,,,,8d627478da6ed88b,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb,jbmqqusg4x,markdown,fr,97944850613c0803,Visualisons ces résultats sous forme de graphiques pour mieux comparer les performances relatives et les couts en temps de calcul.,,,,,,,,97944850613c0803,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb,tournament-charts,code,fr,2ecccaff4758a2db,"# Graphiques de resultats
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour.ipynb,jbmqqusg4x,markdown,fr,97944850613c0803,Visualisons ces résultats sous forme de graphiques pour mieux comparer les performances relatives et les couts en temps de calcul.,,,,,,,,97944850613c0803,,,,,,,,
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour.ipynb,tournament-charts,code,fr,2ecccaff4758a2db,"# Graphiques de resultats
 fig, axes = plt.subplots(1, 3, figsize=(18, 6))
 
 # 1. Barres empilees : victoires / nuls / defaites
@@ -30364,7 +30364,7 @@ plt.suptitle('Tournoi Puissance 4 -- 5 IA, 20 parties par paire',
              fontsize=14, fontweight='bold', y=1.02)
 plt.tight_layout()
 plt.show()",,,,,,,,2ecccaff4758a2db,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb,tournament-interpretation,markdown,fr,d5fce90a0061fe9b,"### Interprétation : Résultats du tournoi
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour.ipynb,tournament-interpretation,markdown,fr,d5fce90a0061fe9b,"### Interprétation : Résultats du tournoi
 
 **Sortie obtenue** : Classement issu du round-robin (5 IA, 6 parties par paire). Minimax(d=4) et Minimax(d=6) dominent MCTS(500) (respectivement 6W-0D-0L et 4W-0D-2L).
 
@@ -30385,7 +30385,7 @@ MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb,tournamen
 
 > **observation** : Augmenter les itérations de MCTS (5000+) ou la profondeur de Minimax (d=8) améliorérait les performances, mais au prix d'un temps de calcul significativement plus élevé.
 ",,,,,,,,d5fce90a0061fe9b,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb,47befe96,markdown,fr,4f7ad464470d9e19,"## 8. Framework AIMA - Approche du livre de référence
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour.ipynb,47befe96,markdown,fr,4f7ad464470d9e19,"## 8. Framework AIMA - Approche du livre de référence
 
 ### 8.1 Le framework Game de Russell & Norvig
 
@@ -30405,7 +30405,7 @@ Le livre **""Artificial Intelligence: A Modern Approach""** (AIMA) de Russell et
 > **Source** : [aima-python/games4e.py](https://github.com/aimacode/aima-python/blob/master/games4e.py) - Chapitre 5, Jeux Adversariaux
 >
 > **référence avancée** : [aima-java ConnectFour](https://github.com/aimacode/aima-java/blob/AIMA3e/aima-core/src/main/java/aima/core/environment/connectfour/) - Implementation sophistiquee avec analyse des positions gagnantes",,,,,,,,4f7ad464470d9e19,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb,c8e07cf2,code,fr,95f77c0a96698be2,"# Framework AIMA simplifie - inspire de games4e.py et aima-java
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour.ipynb,c8e07cf2,code,fr,95f77c0a96698be2,"# Framework AIMA simplifie - inspire de games4e.py et aima-java
 from collections import namedtuple
 import math
 import time
@@ -30525,10 +30525,10 @@ def random_player(game, state):
 
 print(""Framework AIMA de base charge"")
 print(""  - play_game_aima(), alpha_beta_player(), random_player() disponibles"")",,,,,,,,95f77c0a96698be2,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb,292278bc,markdown,fr,783ddd644b1120af,"### 8.2 Adaptateur ConnectFour_AIMA
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour.ipynb,292278bc,markdown,fr,783ddd644b1120af,"### 8.2 Adaptateur ConnectFour_AIMA
 
 Nous creons maintenant un adaptateur qui rend notre classe `Board` compatible avec le framework AIMA. Cet adaptateur inclut également l'**analyse des positions gagnantes**, inspiree de l'implementation AIMA Java.",,,,,,,,783ddd644b1120af,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb,93659b63,code,fr,f7c945c3c1bd3bd1,"class ConnectFour_AIMA(Game):
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour.ipynb,93659b63,code,fr,f7c945c3c1bd3bd1,"class ConnectFour_AIMA(Game):
     """"""
     Adaptateur Connect Four pour le framework AIMA.
     
@@ -30664,7 +30664,7 @@ MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb,93659b63,
 
 
 print(""Adaptateur ConnectFour_AIMA avec analyse des positions gagnantes."")",,,,,,,,f7c945c3c1bd3bd1,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb,6fb2fd22,markdown,fr,fe8b37701e134b63,"### 8.3 Approfondissement itératif avec limite de temps
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour.ipynb,6fb2fd22,markdown,fr,fe8b37701e134b63,"### 8.3 Approfondissement itératif avec limite de temps
 
 L'implementation AIMA Java utilise `IterativeDeepeningAlphaBetaSearch` qui:
 1. Explore a des profondeurs croissantes (1, 2, 3, ...)
@@ -30672,7 +30672,7 @@ L'implementation AIMA Java utilise `IterativeDeepeningAlphaBetaSearch` qui:
 3. **préfère les victoires rapides** en ajustant l'évaluation
 
 Cette approche transforme Alpha-Beta en algorithme **anytime** : il peut retourner un résultat valide a tout moment.",,,,,,,,fe8b37701e134b63,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb,ed991b67,code,fr,cc44e1a329402291,"class IterativeDeepeningAlphaBeta:
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour.ipynb,ed991b67,code,fr,cc44e1a329402291,"class IterativeDeepeningAlphaBeta:
     """"""
     Alpha-Beta avec approfondissement iteratif et limite de temps.
     
@@ -30821,13 +30821,13 @@ def make_id_alphabeta_player(game, time_limit=1.0):
 
 
 print(""IterativeDeepeningAlphaBeta charge."")",,,,,,,,cc44e1a329402291,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb,8e2a4c96,markdown,fr,37bcc22b16d558f7,"### 8.4 Comparaison et benchmark
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour.ipynb,8e2a4c96,markdown,fr,37bcc22b16d558f7,"### 8.4 Comparaison et benchmark
 
 Comparons les différentes approches AIMA pour mesurer l'impact des optimisations inspirees d'AIMA Java:
 - Alpha-Beta classique (profondeur fixe)
 - Alpha-Beta avec ordonnancement intelligent
 - Approfondissement itératif avec limite de temps",,,,,,,,37bcc22b16d558f7,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb,c80fa982,code,fr,5db0313d046e92ee,"# Benchmark des approches AIMA
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour.ipynb,c80fa982,code,fr,5db0313d046e92ee,"# Benchmark des approches AIMA
 
 def benchmark_aima_approaches(n_games=5):
     """"""
@@ -30893,7 +30893,7 @@ def benchmark_aima_approaches(n_games=5):
 # Executer le benchmark
 print(""Test des techniques avancees inspirees d'AIMA Java\n"")
 benchmark_aima_approaches(n_games=3)",,,,,,,,5db0313d046e92ee,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb,226ea666,markdown,fr,bbfa98abbc0c4fa9,"### Interprétation : Framework AIMA avance
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour.ipynb,226ea666,markdown,fr,bbfa98abbc0c4fa9,"### Interprétation : Framework AIMA avance
 
 **Sortie obtenue** : Comparaison entre Alpha-Beta classique et l'approfondissement itératif.
 
@@ -30918,14 +30918,14 @@ MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb,226ea666,
 > - Bit-coding pour une représentation memoire compacte (4 bits par cellule)
 > - Mise a jour incrementielle des positions gagnantes
 > - Transposition tables pour éviter les recalculs",,,,,,,,bbfa98abbc0c4fa9,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb,exercises-section,markdown,fr,e0608583a8ff7ed5,"## 9. Exercices
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour.ipynb,exercises-section,markdown,fr,e0608583a8ff7ed5,"## 9. Exercices
 
 ### Exercice 1 : Negamax
 
 Le **Negamax** est une variante simplifiee de Minimax qui exploite la propriete des jeux a somme nulle : la valeur d'une position pour un joueur est l'oppose de sa valeur pour l'adversaire.
 
 **Tâche** : Completez l'implementation de Negamax avec elagage alpha-beta.",,,,,,,,e0608583a8ff7ed5,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb,exercise1-code,code,fr,ad2fee1b0f15e8b1,"# Exercice 1 : Negamax avec elagage alpha-beta
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour.ipynb,exercise1-code,code,fr,ad2fee1b0f15e8b1,"# Exercice 1 : Negamax avec elagage alpha-beta
 
 def negamax(board, depth, alpha, beta, player):
     """"""
@@ -30975,7 +30975,7 @@ except (TypeError, AttributeError):
     print(""Exercice a completer : implementez negamax() pour comparer avec Minimax."")
     print(""Attendu : negamax doit retourner (colonne, score), meme decision que Minimax."")
 ",,,,,,,,ad2fee1b0f15e8b1,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb,exercise2-section,markdown,fr,d81d411b51f58f67,"### Exercice 2 : Approfondissement itératif
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour.ipynb,exercise2-section,markdown,fr,d81d411b51f58f67,"### Exercice 2 : Approfondissement itératif
 
 L'**approfondissement itératif** (itérative Deepening) consiste a lancer Minimax avec des profondeurs croissantes (d=1, 2, 3, ...) et a s'arreter quand le temps imparti est ecoule.
 
@@ -30994,7 +30994,7 @@ def iterative_deepening_minimax(board, player, time_limit=1.0):
     # - Si le temps est ecoule, retourner le meilleur coup de la profondeur précédente
     pass
 ```",,,,,,,,d81d411b51f58f67,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb,exercise2-code,code,fr,38f06de542b0d507,"# Exercice 2 : Approfondissement iteratif
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour.ipynb,exercise2-code,code,fr,38f06de542b0d507,"# Exercice 2 : Approfondissement iteratif
 
 def iterative_deepening_minimax(board, player, time_limit=1.0):
     """"""
@@ -31034,7 +31034,7 @@ except (TypeError, ValueError, AttributeError):
     print(""Exercice a completer : implementez iterative_deepening_minimax() pour tester."")
     print(""Attendu : ID(0.5s) devrait battre Random (>80% de victoires)."")
 ",,,,,,,,38f06de542b0d507,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb,exercise3-section,markdown,fr,9751000951cf7a5c,"### Exercice 3 : Ordonnancement des coups et mesure du speedup
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour.ipynb,exercise3-section,markdown,fr,9751000951cf7a5c,"### Exercice 3 : Ordonnancement des coups et mesure du speedup
 
 L'efficacité de l'elagage alpha-beta dépend fortement de l'**ordre dans lequel les coups sont explores**. Si on essaie d'abord les meilleurs coups, plus de branches sont coupees.
 
@@ -31052,7 +31052,7 @@ def order_moves(board, player, moves):
     # - Retourner la liste triee
     pass
 ```",,,,,,,,9751000951cf7a5c,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb,exercise3-code,code,fr,850b11733caf9261,"# Exercice 3 : Ordonnancement intelligent des coups
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour.ipynb,exercise3-code,code,fr,850b11733caf9261,"# Exercice 3 : Ordonnancement intelligent des coups
 
 def order_moves(board, player, moves):
     """"""Trie les coups par priorite : win > block > center > edges.
@@ -31097,7 +31097,7 @@ except (TypeError, ValueError, AttributeError):
     print(""Exercice a completer : implementez order_moves() et count_nodes_minimax()."")
     print(""Attendu : speedup 2-5x avec ordering (moins de noeuds explores)."")
 ",,,,,,,,850b11733caf9261,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb,exercises-interpretation,markdown,fr,c7d7aed69d69127d,"### Interprétation : Exercices
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour.ipynb,exercises-interpretation,markdown,fr,c7d7aed69d69127d,"### Interprétation : Exercices
 
 | Exercice | Concept cle | résultat attendu |
 |----------|-------------|------------------|
@@ -31109,7 +31109,7 @@ MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb,exercises
 1. Negamax et Minimax produisent les mêmes résultats -- la différence est purement stylistique
 2. L'approfondissement itératif transforme Minimax en algorithme **anytime** (comme MCTS)
 3. L'ordonnancement des coups est l'optimisation la plus impactante pour alpha-beta : un bon ordonnancement peut reduire le nombre de noeuds de 50% a 90%",,,,,,,,c7d7aed69d69127d,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb,summary-section,markdown,fr,b058d31f4db864ed,"## Conclusion et resume
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour.ipynb,summary-section,markdown,fr,b058d31f4db864ed,"## Conclusion et resume
 
 ### Comparaison des approches
 
@@ -31140,8 +31140,8 @@ MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb,summary-s
 - **Parallelisation** : Paralleliser MCTS ou Alpha-Beta pour explorer plus de noeuds
 - **recherche de Monte Carlo améliorée** : Ajouter une heuristique de simulation (RAVE, etc.)
 ",,,,,,,,b058d31f4db864ed,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb,nav-footer,markdown,fr,0fbdab9d44165124,**Navigation** : [<< App-11 Picross](../CSP/App-11-Picross.ipynb) | [Index](../../README.md) | [Part1-Foundations](../../Part1-Foundations/README.md),,,,,,,,0fbdab9d44165124,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb,e07392a1,markdown,fr,7b8bdc47a0d29e46,"## Conclusion
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour.ipynb,nav-footer,markdown,fr,0fbdab9d44165124,**Navigation** : [<< App-11 Picross](../CSP/App-11-Picross.ipynb) | [Index](../../README.md) | [Part1-Foundations](../../Part1-Foundations/README.md),,,,,,,,0fbdab9d44165124,,,,,,,,
+MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour.ipynb,e07392a1,markdown,fr,7b8bdc47a0d29e46,"## Conclusion
 
 Ce notebook a comparé quatre approches d'intelligence artificielle sur le jeu de Puissance 4. Le **joueur aléatoire** sert de baseline nulle, le **joueur glouton** (profondeur 1) détecte les menaces immédiates mais manque de vision stratégique, le **Minimax avec élagage alpha-beta** offre une recherche exhaustive configurable en profondeur, et le **MCTS** (Monte Carlo Tree Search) construit progressivement un arbre de décision par simulations aléatoires sans nécessiter de fonction d'évaluation artisanale. Le tournoi confirme la hiérarchie attendue : Minimax(d=6) domine grâce à sa profondeur de recherche, suivi de Minimax(d=4) et MCTS qui sont compétitifs entre eux. Le framework AIMA (section 8) illustre l'importance de séparer la logique du jeu des algorithmes de recherche, et l'approfondissement itératif transforme alpha-beta en algorithme anytime. Les exercices (Negamax, approfondissement itératif, ordonnancement des coups) permettent de mesurer l'impact de chaque optimisation sur les performances.",,,,,,,,7b8bdc47a0d29e46,,,,,,,,
 MyIA.AI.Notebooks/Search/Applications/Search/App-14-ConnectFour-Adversarial-CSharp.ipynb,87cc1921,markdown,fr,e6e8ad70e8ee8505,"# App-14-ConnectFour-Adversarial-CSharp — Jumeau C# : recherche adversariale from-scratch
@@ -31702,13 +31702,13 @@ MyIA.AI.Notebooks/Search/Applications/Search/App-14-ConnectFour-Adversarial-CSha
 
 ---
 
-**Navigation** : [`<< App-12 ConnectFour`](App-14b-ConnectFour.ipynb) | [Index Search Applications](../README.md) | Jumeau Python : [`App-14-ConnectFour-Adversarial`](App-14-ConnectFour-Adversarial.ipynb)
+**Navigation** : [`<< App-12 ConnectFour`](App-12-ConnectFour.ipynb) | [Index Search Applications](../README.md) | Jumeau Python : [`App-14-ConnectFour-Adversarial`](App-14-ConnectFour-Adversarial.ipynb)
 
 *Marathon #4956 — parité .NET ⇄ Python. Prong B : reconstruction from-scratch en C# pur (BCL .NET 9, zéro NuGet).*
 ",,,,,,,,212163e0543f7275,,,,,,,,
 MyIA.AI.Notebooks/Search/Applications/Search/App-14-ConnectFour-Adversarial.ipynb,nav-header,markdown,fr,be3ba8b538591939,"# App-14 - Connect Four : Benchmark Adversarial Search
 
-**Navigation** : [<< App-12 ConnectFour](../Search/App-14b-ConnectFour.ipynb) | [Index](../../README.md) | [CSP Applications >>](../CSP/App-1-NQueens.ipynb)
+**Navigation** : [<< App-12 ConnectFour](../Search/App-12-ConnectFour.ipynb) | [Index](../../README.md) | [CSP Applications >>](../CSP/App-1-NQueens.ipynb)
 
 ## Objectifs d'apprentissage
 
@@ -31728,7 +31728,7 @@ A la fin de ce notebook, vous saurez :
 > **Source** : adapté des projets etudiants JVX (ECE 2026) et EPITA PPC 2025.
 >
 > **Note** : Ce notebook se concentre sur le benchmark des trois algorithmes principaux.
-> Pour une étude complète avec 8 algorithmes (DQN-RL, etc.), voir [App-12](../Search/App-14b-ConnectFour.ipynb).",,,,,,,,be3ba8b538591939,,,,,,,,
+> Pour une étude complète avec 8 algorithmes (DQN-RL, etc.), voir [App-12](../Search/App-12-ConnectFour.ipynb).",,,,,,,,be3ba8b538591939,,,,,,,,
 MyIA.AI.Notebooks/Search/Applications/Search/App-14-ConnectFour-Adversarial.ipynb,intro-section,markdown,fr,6f4061bbe0522d50,"## 1. Introduction
 
 ### Pourquoi le Puissance 4 ?
@@ -33006,7 +33006,7 @@ MyIA.AI.Notebooks/Search/Applications/Search/App-14-ConnectFour-Adversarial.ipyn
 
 ---
 
-**Navigation** : [<< App-12 ConnectFour](../Search/App-14b-ConnectFour.ipynb) | [Index](../../README.md) | [CSP Applications >>](../CSP/App-1-NQueens.ipynb)",,,,,,,,1c6ee2fb6c66d93a,,,,,,,,
+**Navigation** : [<< App-12 ConnectFour](../Search/App-12-ConnectFour.ipynb) | [Index](../../README.md) | [CSP Applications >>](../CSP/App-1-NQueens.ipynb)",,,,,,,,1c6ee2fb6c66d93a,,,,,,,,
 MyIA.AI.Notebooks/Search/Applications/CSP/App-11b-Picross-CSharp.ipynb,t2-intro,markdown,fr,379b84d273203577,"### Tranche 2 (#10382) : le vrai solveur CP-SAT (Google.OrTools)
 
 Les §1–6 ci-dessus implantent le nonogram **from-scratch** : énumération des motifs d'une ligne, propagation par intersection (point fixe), et baseline naïve par produit cartésien (exponentielle). La **Tranche 2** branche le **même moteur production** que le jumeau Python (`ortools.sat.python.cp_model`) — **Google.OrTools CP-SAT** (Perron & Furney) — le solveur SAT modulaire SOTA. Mêmes puzzles diamant → on confronte la propagation pédagogique au moteur SOTA sur le problème de nonogram (NP-difficile).",,,,,,,,379b84d273203577,,,,,,,,

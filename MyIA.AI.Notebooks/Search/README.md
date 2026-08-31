@@ -172,7 +172,7 @@ Les notebooks d'application GA (EdgeDetection, Portfolio — variants PyGAD Pyth
 | App-9 | EdgeDetection | Détection de bords par GA : PyGAD, filtres de convolution |
 | App-10 | Portfolio | Frontière de Pareto : scalarisation, NSGA-II et hypervolume (instance non convexe) |
 | App-11 | Picross | Nonogrammes : speedup 2.78e+24x CP-SAT vs naïve (Etoile 15x15) |
-| App-12 | ConnectFour | Puissance 4 : 5 IA au tournoi (Random, Glouton, Minimax α-β d=4/d=6, MCTS) + framework AIMA |
+| App-14b | ConnectFour | Puissance 4 : 5 IA au tournoi (Random, Glouton, Minimax α-β d=4/d=6, MCTS) + framework AIMA |
 | App-13 | TSP | Voyageur de commerce : SA, GA, ACO, OR-Tools routing |
 | App-14 | ConnectFour-Adversarial | Benchmark adversarial : Minimax vs Alpha-Beta vs MCTS |
 | App-15 | SportsScheduling | Calendrier sportif : contraintes TV, équité, déplacements |
@@ -312,7 +312,7 @@ Les autres jumeaux C# de la sous-série CSP (N-Queens, GraphColoring, NurseSched
 Part1-Foundations/              Part2-CSP/                  Applications/
 Search-1  StateSpace     ───>  CSP-1  Fundamentals   ───>  App-1 NQueens, App-2 GraphColoring
 Search-2  Uninformed     ───>  CSP-2  Consistency    ───>  App-6 Minesweeper, App-7 Wordle
-Search-3  Informed       ───>  Search-6 Adversarial  ───>  App-12 ConnectFour
+Search-3  Informed       ───>  Search-6 Adversarial  ───>  App-14b ConnectFour
        │                        CSP-3  Advanced      ───>  App-3 NurseScheduling, App-4 JobShop
        │                        CSP-4  Scheduling    ───>  App-3, App-4, App-5 Timetabling
        └──> Search-6 (Adversarial)
