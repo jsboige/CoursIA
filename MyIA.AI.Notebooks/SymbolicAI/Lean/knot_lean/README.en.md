@@ -348,13 +348,33 @@ Reference: Fox (1962), *A quick trip through knot theory*; Adams,
 | [prathamesh-t/Tangle-Isabelle](https://github.com/prathamesh-t/Tangle-Isabelle) | Tangles in Isabelle/HOL | Design reference |
 | [Mathlib](https://github.com/leanprover-community/mathlib4) | Polynomials, categories, partial topology | Lake dependency |
 
-## Pedagogical notebook
+## Place in the ecosystem — actual novelty (digestion #13106, point 3)
 
-`Lean-17-Knots-a-Conway-and-Proofs.ipynb` (in `SymbolicAI/Lean/`):
-- Python visualizations of knots (trefoil, Conway, Kinoshita-Terasaka)
-- History of the Piccirillo proof (PhD student, 1 week, 50 years of waiting)
-- Lidman's result as a "short but deep proof" case study
-- Perspective on Lean formalization (why it's far, what's missing)
+What this lake provides that its dependencies **do not**:
+
+- **Mathlib** (toolchain v4.32.1) ships **no knot theory module** — no `Knot`/`Braid`/`Link` entry at the top level of the `Mathlib/` tree (measured 2026-08-31). No PD-codes, no Reidemeister moves, no colorability invariants: all of that vocabulary is defined here, in `Knots/Basic.lean`.
+- **[shua/leanknot](https://github.com/shua/leanknot)** covers bricks/walls, tangles, braids — not colorability invariants nor their transfer under moves.
+- **[Tangle-Isabelle](https://github.com/prathamesh-t/Tangle-Isabelle)** (Prathamesh 2015) is Isabelle/HOL, not Lean 4; cited as a design reference, not consumable in our toolchain.
+
+The **original** contributions of this port (formal and methodological, not mathematical — the mathematical priorities belong to Fox, Reidemeister, Piccirillo, Freedman, Lidman, cf References):
+
+1. The **connected R1 bi-implication** of the 3-colorability transfer (#3000 + #3124/#11227) — to our knowledge the first Lean formalization of this transfer under a connected model.
+2. **Named walls** (`r2_append_only_wall`, `r3_determined_wall`, #11276): formal proofs that the target statement is **false** under the current model — the "refute before proving" pattern, as opposed to passive scaffolding.
+3. The **brute-force exhaustive validation BEFORE the statement** protocol (R1: 2526 diagrams; R2: #11467; R3: #11486), now the standard of track #2874.
+
+## Corpus connection and transmission (digestion #13106, points 9-10)
+
+Three notebooks in `SymbolicAI/Lean/` carry the transmission, one per level:
+
+| Notebook | Role | Transmission |
+|---|---|---|
+| `Lean-17-Knots-a-Conway-and-Proofs.ipynb` | History and Python visualizations (trefoil, Conway, Kinoshita-Terasaka); the Piccirillo proof (PhD student, 1 week, 50 years of waiting); Lidman as a "short but deep proof" case study | Visualizations + narrative, zero Lean prerequisite |
+| `Lean-17b-Knots-Invariants-Companion.ipynb` | Executable companion: PD-codes, Reidemeister moves, Fox tricolorability — 5 exercises, worked examples | Worked examples + exercises |
+| `Lean-17c-Knots-Companion-Formel.ipynb` | Formal companion: lake modules not covered by 17b, R2/R3 walls, i18n mirror | Direct bridge to the Lean code |
+
+**Prerequisites**: none for 17-a; elementary PD-codes for 17-b; basic Lean 4 (tactics, structures) for 17-c.
+
+**Human review — honest state**: to date the lake has been reviewed by bot organs (Hermes, proof-integrity CI) and merged by the coordinator, but **no named human review of the whole lake** has taken place. This is a declared limitation of the present digestion (grid #13106 point 10): the human review remains to be done and should be recorded here when it happens.
 
 ## References
 
@@ -430,7 +450,13 @@ unknotting number, Reidemeister theorem ↔ ambient isotopy — remain
 **permanent scaffolding**: they exceed the current scope of Mathlib
 (PL topology of 3-manifolds, Heegaard-Floer).
 
-### Methodological lessons
+### Methodological lessons — discovery path vs reconstruction
+
+What follows is the **discovery path** — the order in which obstacles were
+met and understood — as distinct from the **final reconstruction** given by
+the merged PRs and the order of the code: each re-modeling below was first
+*refuted* before being corrected, and that order of failures is not readable
+in any diff (digestion #13106, point 7).
 
 The Phase 5 trajectory illustrates the pattern "*intractable* = false
 statement" (cf. `conway_lean` P4): before proving, **verify by
