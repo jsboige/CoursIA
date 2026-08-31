@@ -2,53 +2,40 @@
   family: Probas/Infer.NET-PyMC
   python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-05-Causal-Inference.ipynb
   csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-5-Causal-Inference.ipynb
+  numbering_exception: 'Zero-padding cote Python uniquement PyMC-1..9 -> PyMC-01..09 (renommage #13760) ; jumeau C# Infer-1..9 non concerne, contenu pedagogique inchange.'
   parity_level: native-both
   bridge_verdict: SOTA-OK
-  bridge_verdict_reason: 'Modele nominal lib-vs-lib cite par owner #10382 ("PyMC vs
-    Infer, 2 moteurs qui brillent") : C# = Microsoft Infer.NET (Microsoft.ML.Probabilistic,
-    NuGet officiel, native .NET, inférence variationnelle EP/VMP) et Python = PyMC
-    (pip pymc, native Python, NUTS/HMC + ADVI). Chaque cote atteint le moteur SOTA
-    de son ecosysteme probabiliste -- ni pont intermediaire ni reimplementation. Aucune
-    asymetrie de machinerie a corriger. Verifie firsthand : C# Microsoft.ML.Probabilistic
-    refs + execution_count, Python pymc imports.'
+  bridge_verdict_reason: "Modele nominal lib-vs-lib cite par owner #10382 (\"PyMC vs Infer, 2 moteurs qui brillent\") : C# = Microsoft Infer.NET (Microsoft.ML.Probabilistic, NuGet officiel, native .NET, inférence variationnelle EP/VMP) et Python = PyMC (pip pymc, native Python, NUTS/HMC + ADVI). Chaque cote atteint le moteur SOTA de son ecosysteme probabiliste -- ni pont intermediaire ni reimplementation. Aucune asymetrie de machinerie a corriger. Verifie firsthand : C# Microsoft.ML.Probabilistic refs + execution_count, Python pymc imports."
   audits:
-  - date: '2026-08-18'
-    by: myia-po-2026:CoursIA
-    python_sha: 9c569a28a0d7395d0211dfc26a9d0a00cd03f4d2
-    csharp_sha: 85bc41d76098400b0727d7ea7b6184d021704f4c
-    reason: 'parity_level basculee -> native-both conformement a l''arbitrage ai-01
-      2026-08-16 sur #11200 Option A (parite de moteur, lib-vs-lib) : C# atteint Microsoft
-      Infer.NET (Microsoft.ML.Probabilistic, moteur probabiliste SOTA de l''ecosysteme
-      .NET, EP/VMP), Python atteint PyMC (NUTS/HMC + ADVI, moteur probabiliste SOTA
-      de l''ecosysteme Python). bridge_verdict_reason inchangee -- le bridge etait
-      deja documente dans le verdict existant. Imports verifies firsthand sur les
-      38 notebooks (pymc / Microsoft.ML.Probabilistic, re-grep 2026-08-18).'
-  - date: '2026-07-29'
-    by: myia-po-2023:CoursIA-2
-    python_sha: 9c569a28a0d7395d0211dfc26a9d0a00cd03f4d2
-    csharp_sha: 85bc41d76098400b0727d7ea7b6184d021704f4c
-  - date: '2026-08-23'
-    by: myia-po-2024:CoursIA
-    python_sha: 6e57837153c85d2e220f068750d55c29d550d2bb
-    csharp_sha: 85bc41d76098400b0727d7ea7b6184d021704f4c
-    content_python_sha: 7982b837250567bfcb6ea251dcc50c02a9c86977ed91b0774f1bc9ba1ecea800
-    content_csharp_sha: a0f227fe94560563b68715671c05d1add944a7620260f56b850caa97b58464b6
-  - date: '2026-08-30'
-    by: myia-po-2023:CoursIA
-    python_sha: 6e57837153c85d2e220f068750d55c29d550d2bb
-    csharp_sha: fb451b2558aa9cedf8ba583926bd7fb9d6b8d2c0
-    content_python_sha: 7982b837250567bfcb6ea251dcc50c02a9c86977ed91b0774f1bc9ba1ecea800
-    content_csharp_sha: 1bd5d0be313fb5b8fc0c2ee24504aae7c21b5d1b0a2766035bf200b94958f33b
+    - date: "2026-08-18"
+      by: myia-po-2026:CoursIA
+      python_sha: 9c569a28a0d7395d0211dfc26a9d0a00cd03f4d2
+      csharp_sha: 85bc41d76098400b0727d7ea7b6184d021704f4c
+      reason: "parity_level basculee -> native-both conformement a l'arbitrage ai-01 2026-08-16 sur #11200 Option A (parite de moteur, lib-vs-lib) : C# atteint Microsoft Infer.NET (Microsoft.ML.Probabilistic, moteur probabiliste SOTA de l'ecosysteme .NET, EP/VMP), Python atteint PyMC (NUTS/HMC + ADVI, moteur probabiliste SOTA de l'ecosysteme Python). bridge_verdict_reason inchangee -- le bridge etait deja documente dans le verdict existant. Imports verifies firsthand sur les 38 notebooks (pymc / Microsoft.ML.Probabilistic, re-grep 2026-08-18)."
+    - date: "2026-07-29"
+      by: myia-po-2023:CoursIA-2
+      python_sha: 9c569a28a0d7395d0211dfc26a9d0a00cd03f4d2
+      csharp_sha: 85bc41d76098400b0727d7ea7b6184d021704f4c
+    - date: "2026-08-23"
+      by: myia-po-2024:CoursIA
+      python_sha: 6e57837153c85d2e220f068750d55c29d550d2bb
+      csharp_sha: 85bc41d76098400b0727d7ea7b6184d021704f4c
+      content_python_sha: 7982b837250567bfcb6ea251dcc50c02a9c86977ed91b0774f1bc9ba1ecea800
+      content_csharp_sha: a0f227fe94560563b68715671c05d1add944a7620260f56b850caa97b58464b6
+    - date: "2026-08-30"
+      by: myia-po-2023:CoursIA
+      python_sha: 6e57837153c85d2e220f068750d55c29d550d2bb
+      csharp_sha: fb451b2558aa9cedf8ba583926bd7fb9d6b8d2c0
+      content_python_sha: 7982b837250567bfcb6ea251dcc50c02a9c86977ed91b0774f1bc9ba1ecea800
+      content_csharp_sha: 1bd5d0be313fb5b8fc0c2ee24504aae7c21b5d1b0a2766035bf200b94958f33b
+    - date: "2026-08-31"
+      by: myia-po-2025:CoursIA
+      python_sha: 5f08cdce5b5a352cde2040da17ec720e9b52cb15
+      csharp_sha: a9994421484ddf512dcf380c582b3ba8a14744e7
+      content_python_sha: e6f81df80b812e7b6f54573f12cbfe0c5f53dea2f60484dad064d7b66e58cf0e
+      content_csharp_sha: a02fdf845c8c1ed3ef662f3374b3ddad7a9809c8a29b35a22d6e156879a41df0
   known_differences:
-  - 'Socle pedagogique commun : inference causale (do-calculus, ajustement) modelise
-    dans les deux stacks.'
-  - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee
-    (Expectation Propagation / Variational Message Passing, modele compile en code
-    d''inference) ; Python PyMC = echantillonnage MCMC (NUTS/HMC par defaut) + ADVI
+  - 'Socle pedagogique commun : inference causale (do-calculus, ajustement) modelise dans les deux stacks.'
+  - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
+    Message Passing, modele compile en code d''inference) ; Python PyMC = echantillonnage MCMC (NUTS/HMC par defaut) + ADVI
     (variationnel) sur backend PyTensor. Memes concepts, paradigmes d''inference differents.'
-  numbering_exception: 'Zero-padding Python PyMC-01..09 sans impact C# Infer (symetrie
-    1..9 conservee pour Infer.NET). Le renommage unilateral Python est autorise par
-    #12933 Option A : liberte des contenus, parite des identifiants — les numeros
-    sont des identifiants de serie, pas du contenu. Le zero-padding ameliore le tri
-    lexicographique et l''alignement avec la convention CoursIA (01-09 pour les series
-    a 9+ elements).'

@@ -14310,7 +14310,7 @@
     "executable_locally": true
   },
   {
-    "path": "Probas/PyMC/PyMC-01-Setup.ipynb",
+    "path": "Probas/PyMC/PyMC-1-Setup.ipynb",
     "title": "PyMC-1 : Configuration et Premier Modèle",
     "serie": "Probas",
     "sous_serie": "PyMC",
@@ -14640,7 +14640,7 @@
     "executable_locally": true
   },
   {
-    "path": "Probas/PyMC/PyMC-02-Gaussian-Mixtures.ipynb",
+    "path": "Probas/PyMC/PyMC-2-Gaussian-Mixtures.ipynb",
     "title": "PyMC-2 : Distributions Gaussiennes et Mélanges",
     "serie": "Probas",
     "sous_serie": "PyMC",
@@ -14670,7 +14670,7 @@
     "executable_locally": true
   },
   {
-    "path": "Probas/PyMC/PyMC-03-Factor-Graphs.ipynb",
+    "path": "Probas/PyMC/PyMC-3-Factor-Graphs.ipynb",
     "title": "PyMC-3 : Graphes de Facteurs et Inference Discrete",
     "serie": "Probas",
     "sous_serie": "PyMC",
@@ -14700,7 +14700,7 @@
     "executable_locally": true
   },
   {
-    "path": "Probas/PyMC/PyMC-04-Bayesian-Networks.ipynb",
+    "path": "Probas/PyMC/PyMC-4-Bayesian-Networks.ipynb",
     "title": "PyMC-4 : Reseaux Bayesiens",
     "serie": "Probas",
     "sous_serie": "PyMC",
@@ -14730,8 +14730,8 @@
     "executable_locally": true
   },
   {
-    "path": "Probas/PyMC/PyMC-05-Causal-Inference.ipynb",
-    "title": "PyMC-05-Causal-Inference : Inference Causale et do-calculus",
+    "path": "Probas/PyMC/PyMC-5-Causal-Inference.ipynb",
+    "title": "PyMC-5-Causal-Inference : Inference Causale et do-calculus",
     "serie": "Probas",
     "sous_serie": "PyMC",
     "kernel": "Python 3",
@@ -14760,8 +14760,8 @@
     "executable_locally": true
   },
   {
-    "path": "Probas/PyMC/PyMC-06-Debugging.ipynb",
-    "title": "PyMC-06-Debugging : Troubleshooting et Bonnes Pratiques",
+    "path": "Probas/PyMC/PyMC-6-Debugging.ipynb",
+    "title": "PyMC-6-Debugging : Troubleshooting et Bonnes Pratiques",
     "serie": "Probas",
     "sous_serie": "PyMC",
     "kernel": "Python 3",
@@ -14790,7 +14790,7 @@
     "executable_locally": true
   },
   {
-    "path": "Probas/PyMC/PyMC-07-Skills-IRT.ipynb",
+    "path": "Probas/PyMC/PyMC-7-Skills-IRT.ipynb",
     "title": "PyMC-7 : Modèles de Competences (IRT et DINA)",
     "serie": "Probas",
     "sous_serie": "PyMC",
@@ -14820,7 +14820,7 @@
     "executable_locally": true
   },
   {
-    "path": "Probas/PyMC/PyMC-08-TrueSkill.ipynb",
+    "path": "Probas/PyMC/PyMC-8-TrueSkill.ipynb",
     "title": "PyMC-8 : TrueSkill - Classement et Apprentissage en Ligne",
     "serie": "Probas",
     "sous_serie": "PyMC",
@@ -14850,7 +14850,7 @@
     "executable_locally": true
   },
   {
-    "path": "Probas/PyMC/PyMC-09-Classification.ipynb",
+    "path": "Probas/PyMC/PyMC-9-Classification.ipynb",
     "title": "PyMC-9 : Classification Bayesienne et Tests A/B",
     "serie": "Probas",
     "sous_serie": "PyMC",
