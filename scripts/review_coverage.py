@@ -64,10 +64,12 @@ from typing import Iterable
 # reads. Color is red (the absence is a coverage hole, not a failure).
 LABEL_DEFAULT = "large-pr-no-review"
 LABEL_COLOR = "b60205"
+# L'API REST refuse les descriptions > 100 chars (422) : la premiere version
+# (189 chars, run 2026-08-29) rendait gh label create muet en echec -- garde
+# par test_label_constants_within_github_api_limits.
 LABEL_DESC = (
-    "PR > seuil (par defaut 300 additions) sans review (ni bot ni humaine) "
-    "-- couverture review absente (#11232). Le label est retire des qu'une "
-    "review arrive ou que le diff passe sous le seuil."
+    "PR > seuil sans review (ni bot ni humaine) -- retire quand une review "
+    "arrive (#11232)"
 )
 
 # Authors whose reviews count as "bot" for this purpose. We do NOT exclude
@@ -169,12 +171,18 @@ def has_label(pr_number: int, label: str) -> bool:
 
 
 def add_label(pr_number: int, label: str) -> None:
-    """Create the label if missing, then add it. Both steps are idempotent."""
+    """Create the label if missing, then add it. Both steps are idempotent.
+
+    La creation echoue BRUYAMMENT (check=True) : le run 2026-08-29 l'a vue
+    echouer en silence (422 description > 100 chars), puis gh pr edit
+    echouer sur label absent -- un sweep vert dont le payload ne s'applique
+    jamais est exactement le defaut que #11232 decrit, pas un etat sain.
+    """
     subprocess.run(
         ["gh", "label", "create", label,
          "--color", LABEL_COLOR, "--description", LABEL_DESC,
          "--force"],
-        capture_output=True, text=True, encoding="utf-8", errors="replace",
+        capture_output=True, text=True, encoding="utf-8", errors="replace", check=True,
     )
     subprocess.run(
         ["gh", "pr", "edit", str(pr_number), "--add-label", label],

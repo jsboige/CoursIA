@@ -23,15 +23,15 @@
 
 ```
 DecInfer/  (10 notebooks : 8 C#/.NET + 2 Lean 4)
-  └── DecInfer-1  Utility-Foundations        (aligne)
-        DecInfer-2  Lean-ExpectedUtility     (companion Lean, suffixe)
-        DecInfer-3  Utility-Money            (decalé)  ─┐
-        DecInfer-4  Multi-Attribute          (decalé)   │ arc commun
-        DecInfer-5  Decision-Networks       (decalé)   │ 6 paires
-        DecInfer-6  Value-Information        (decalé)   │ décalées
-        DecInfer-7  Expert-Systems           (decalé)   │
-        DecInfer-8  Sequential               (decalé)  ─┘
-        DecInfer-9  Lean-Gittins             (companion Lean, suffixe)
+  └── DecInfer-01  Utility-Foundations        (aligne)
+        DecInfer-02  Lean-ExpectedUtility     (companion Lean, suffixe)
+        DecInfer-03  Utility-Money            (decalé)  ─┐
+        DecInfer-04  Multi-Attribute          (decalé)   │ arc commun
+        DecInfer-05  Decision-Networks       (decalé)   │ 6 paires
+        DecInfer-06  Value-Information        (decalé)   │ décalées
+        DecInfer-07  Expert-Systems           (decalé)   │
+        DecInfer-08  Sequential               (decalé)  ─┘
+        DecInfer-09  Lean-Gittins             (companion Lean, suffixe)
         DecInfer-10 Thompson-Sampling        (aligné au DecPyMC-7 multi-section, extension unilatérale)
 
 DecPyMC/   (9+ notebooks : NUTS/ADVI Python)
@@ -51,19 +51,19 @@ DecPyMC/   (9+ notebooks : NUTS/ADVI Python)
 
 | # | Concept partagé | DecInfer | DecPyMC | Verdict numérique | Paire commune ? |
 |---|---|---|---|---|---|
-| 1 | Fondations de l'utilité (axiomes VNM, utilité espérée) | `DecInfer-1-Utility-Foundations` | `DecPyMC-1-Utility-Foundations` | **aligné** (1 ↔ 1) | ✅ |
-| 2 | Utilité et monnaie (St-Petersbourg, CARA/CRRA) | `DecInfer-3-Utility-Money` | `DecPyMC-2-Utility-Money` | **décalé** (3 ↔ 2) | ✅ |
-| 3 | Décision multi-attributs (MAUT, SMART, swing weights) | `DecInfer-4-Multi-Attribute` | `DecPyMC-3-Multi-Attribute` | **décalé** (4 ↔ 3) | ✅ |
-| 4 | Réseaux de décision (diagrammes d'influence) | `DecInfer-5-Decision-Networks` | `DecPyMC-4-Decision-Networks` | **décalé** (5 ↔ 4) | ✅ |
-| 5 | Valeur de l'information (EVPI, EVSI) | `DecInfer-6-Value-Information` | `DecPyMC-5-Value-Information` | **décalé** (6 ↔ 5) | ✅ |
-| 6 | Systèmes experts (Minimax, regret) | `DecInfer-7-Expert-Systems` | `DecPyMC-6-Expert-Systems` | **décalé** (7 ↔ 6) | ✅ |
-| 7 | Décision séquentielle (MDPs, valeur/politique, bandits) | `DecInfer-8-Sequential` | `DecPyMC-7-Sequential` | **décalé** (8 ↔ 7) | ✅ |
+| 1 | Fondations de l'utilité (axiomes VNM, utilité espérée) | `DecInfer-01-Utility-Foundations` | `DecPyMC-1-Utility-Foundations` | **aligné** (1 ↔ 1) | ✅ |
+| 2 | Utilité et monnaie (St-Petersbourg, CARA/CRRA) | `DecInfer-03-Utility-Money` | `DecPyMC-2-Utility-Money` | **décalé** (3 ↔ 2) | ✅ |
+| 3 | Décision multi-attributs (MAUT, SMART, swing weights) | `DecInfer-04-Multi-Attribute` | `DecPyMC-3-Multi-Attribute` | **décalé** (4 ↔ 3) | ✅ |
+| 4 | Réseaux de décision (diagrammes d'influence) | `DecInfer-05-Decision-Networks` | `DecPyMC-4-Decision-Networks` | **décalé** (5 ↔ 4) | ✅ |
+| 5 | Valeur de l'information (EVPI, EVSI) | `DecInfer-06-Value-Information` | `DecPyMC-5-Value-Information` | **décalé** (6 ↔ 5) | ✅ |
+| 6 | Systèmes experts (Minimax, regret) | `DecInfer-07-Expert-Systems` | `DecPyMC-6-Expert-Systems` | **décalé** (7 ↔ 6) | ✅ |
+| 7 | Décision séquentielle (MDPs, valeur/politique, bandits) | `DecInfer-08-Sequential` | `DecPyMC-7-Sequential` | **décalé** (8 ↔ 7) | ✅ |
 | 7' | Thompson Sampling bayésien (bandits) | `DecInfer-10-Thompson-Sampling` | inclus dans `DecPyMC-7-Sequential` | **extension unilatérale** | ❌ (pas une paire) |
 
 **Verdict synthèse** :
 - **1 paire alignée** (Utility-Foundations).
 - **6 paires communes décalées d'un cran** (la numérotation DecInfer a été décalée par
-  l'insertion de DecInfer-2 — companion Lean — entre le N°1 et le N°3 subséquent).
+  l'insertion de DecInfer-02 — companion Lean — entre le N°1 et le N°3 subséquent).
 - **1 extension unilatérale** côté DecInfer (Thompson Sampling disaggregated).
 - **2 extensions unilatérales** côté DecPyMC (Actuarial-Credibility, Prime-Pure-Chargement),
   plus une 3ᵉ en route (Frequence × Severite, PR #12920 pre-merge).
@@ -71,10 +71,10 @@ DecPyMC/   (9+ notebooks : NUTS/ADVI Python)
 ## 2. Cause structurelle du décalage
 
 L'EPIC #12933 a déjà diagnostiqué la cause (cf body §La cause n'est pas un mauvais contenu) :
-> `DecInfer-2-Lean-ExpectedUtility` est un companion formel légitime, mais son insertion dans
+> `DecInfer-02-Lean-ExpectedUtility` est un companion formel légitime, mais son insertion dans
 > la séquence principale a décalé tous les concepts communs suivants.
 
-Le même mécanisme vaut pour `DecInfer-9-Lean-Gittins` (companion Lean, intercalé en N°9, suivi
+Le même mécanisme vaut pour `DecInfer-09-Lean-Gittins` (companion Lean, intercalé en N°9, suivi
 du Thompson Sampling en N°10). Les companions Lean NE DEVRAIENT PAS décaler le compteur commun,
 mais le système de numérotation initial les a traités comme des entrées à part entière.
 
@@ -87,7 +87,7 @@ Trois voies possibles (à arbitrer en EPIC, pas dans cette tranche) :
 
 | Voie | Description | Effet sur les notebooks | Risque |
 |---|---|---|---|
-| **(a) Suffixe compagnon** (recommandée par le principle directeur) | Renommer `DecInfer-2-Lean-ExpectedUtility` → `DecInfer-1b-Lean-ExpectedUtility` (companion de #1, suffixe `b`). Idem `DecInfer-9-Lean-Gittins` → `DecInfer-8b-Lean-Gittins`. Les DecInfer-3..8 restent alignés avec DecPyMC-2..7. | 2 `git mv` + réparations de liens entrants (REVIEW, datasets, manifestes) ; pas de renommage côté PyMC. | Faible (companions explicites, déjà conventionnés `App-Nb` / `SW-Nb`). |
+| **(a) Suffixe compagnon** (recommandée par le principle directeur) | Renommer `DecInfer-02-Lean-ExpectedUtility` → `DecInfer-01b-Lean-ExpectedUtility` (companion de #1, suffixe `b`). Idem `DecInfer-09-Lean-Gittins` → `DecInfer-08b-Lean-Gittins`. Les DecInfer-03..08 restent alignés avec DecPyMC-2..7. | 2 `git mv` + réparations de liens entrants (REVIEW, datasets, manifestes) ; pas de renommage côté PyMC. | Faible (companions explicites, déjà conventionnés `App-Nb` / `SW-Nb`). |
 | **(b) Re-numérotation totale PyMC** | Renommer `DecPyMC-2..7` → `DecPyMC-3..8` pour s'aligner à DecInfer. Coûteux en références entrantes. | 6 renommages + réparations systématiques des liens Python (catalogue, baselines, tests). | Élevé (les notebooks PyMC sont les plus référencés par les notebooks Causal-Bridges et autres arcs). |
 | **(c) Slot compagnon vide PyMC** | Ajouter `DecPyMC-1b` et `DecPyMC-8b` vides (companion slot non rempli) pour préserver la parité des nombres, sans toucher au contenu PyMC. | 2 fichiers stubs vides, déclaration d'absence. | Faible techniquement, fort symboliquement (pourquoi des fichiers vides ?). |
 
@@ -132,15 +132,15 @@ explicitement les extensions unilatérales. Chaque fichier suit le format `_sche
 
 | Fichier | SHA-256[:12] |
 |---|---|
-| `DecInfer-1-Utility-Foundations.ipynb` | `95e3f0de1967` |
-| `DecInfer-2-Lean-ExpectedUtility.ipynb` | `fc68d29f5607` |
-| `DecInfer-3-Utility-Money.ipynb` | `5d9730fcdfca` |
-| `DecInfer-4-Multi-Attribute.ipynb` | `43c7a0f7e033` |
-| `DecInfer-5-Decision-Networks.ipynb` | `5f0a534d7a9e` |
-| `DecInfer-6-Value-Information.ipynb` | `84dbb0657965` |
-| `DecInfer-7-Expert-Systems.ipynb` | `395123d8c37b` |
-| `DecInfer-8-Sequential.ipynb` | `17f2afe786af` |
-| `DecInfer-9-Lean-Gittins.ipynb` | `b3428a08ced3` |
+| `DecInfer-01-Utility-Foundations.ipynb` | `95e3f0de1967` |
+| `DecInfer-02-Lean-ExpectedUtility.ipynb` | `fc68d29f5607` |
+| `DecInfer-03-Utility-Money.ipynb` | `5d9730fcdfca` |
+| `DecInfer-04-Multi-Attribute.ipynb` | `43c7a0f7e033` |
+| `DecInfer-05-Decision-Networks.ipynb` | `5f0a534d7a9e` |
+| `DecInfer-06-Value-Information.ipynb` | `84dbb0657965` |
+| `DecInfer-07-Expert-Systems.ipynb` | `395123d8c37b` |
+| `DecInfer-08-Sequential.ipynb` | `17f2afe786af` |
+| `DecInfer-09-Lean-Gittins.ipynb` | `b3428a08ced3` |
 | `DecInfer-10-Thompson-Sampling.ipynb` | `fc01f40aa3b8` |
 | `DecPyMC-1-Utility-Foundations.ipynb` | `ed6ab40b030f` |
 | `DecPyMC-2-Utility-Money.ipynb` | `b873c515ac49` |
