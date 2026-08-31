@@ -2990,9 +2990,6 @@ run_upscaling = True               # Executer l'upscaling
 compute_metrics = True             # Calculer PSNR/SSIM
 save_results = True
 ",,,,,,,,d88d957676dc4105,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-4-Video-Enhancement-ESRGAN.ipynb,5cabb31a,code,fr,d8cfd07b7b0f3965,"# Parameters
-BATCH_MODE = ""true""
-",,,,,,,,d8cfd07b7b0f3965,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-4-Video-Enhancement-ESRGAN.ipynb,b4cau229bbs,markdown,fr,cea5b03871acef7d,"Les paramètres sont définis. La cellule suivante configure l'environnement Python : imports, detection du chemin GenAI, chargement du `.env` et verification de la disponibilite de Real-ESRGAN.",,,,,,,,cea5b03871acef7d,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-4-Video-Enhancement-ESRGAN.ipynb,cell-2,code,fr,ca481eddd4dde0b3,"# Import guards - verification des dependances
 try:
@@ -4984,9 +4981,6 @@ run_generation = True              # Executer la generation
 save_as_mp4 = True                 # Sauvegarder en MP4
 save_results = True
 ",,,,,,,,4c6fba4aefc30bba,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-1-HunyuanVideo-Generation.ipynb,1c2315b2,code,fr,d8cfd07b7b0f3965,"# Parameters
-BATCH_MODE = ""true""
-",,,,,,,,d8cfd07b7b0f3965,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-1-HunyuanVideo-Generation.ipynb,lo8o3p2kbq,markdown,fr,a1e903c4b838f1ce,"Les paramètres Papermill configures, on importe maintenant le client ComfyUI qui permettra de communiquer avec le serveur HunyuanVideo. Un fallback est prevu si le helper n'est pas disponible dans l'environnement courant.",,,,,,,,a1e903c4b838f1ce,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-1-HunyuanVideo-Generation.ipynb,cell-2,code,fr,880831e6938322ad,"# Import helpers GenAI (setup du path shared/helpers)
 # Miroir du pattern canonique de 02-3-Wan-Video-Generation.ipynb
@@ -6129,9 +6123,6 @@ run_img2vid = True                 # Tester image-to-video
 save_as_mp4 = True                 # Sauvegarder en MP4
 save_results = True
 ",,,,,,,,aa62658284702950,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb,627f8e41,code,fr,d7a1ea74a47bcb51,"# Parameters
-BATCH_MODE = True
-",,,,,,,,d7a1ea74a47bcb51,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb,ca225672,markdown,fr,6bd621e955973242,"## Setup de l'environnement
 
 Installation des dependances, chargement de la configuration depuis , et verification de la disponibilite GPU.",,,,,,,,6bd621e955973242,,,,,,,,
@@ -7247,9 +7238,6 @@ fps_output = 16                    # FPS de la video de sortie
 run_generation = True              # Executer la generation
 save_results = True
 ",,,,,,,,74f737469f92738c,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-3-Wan-Video-Generation.ipynb,51876294,code,fr,d7a1ea74a47bcb51,"# Parameters
-BATCH_MODE = True
-",,,,,,,,d7a1ea74a47bcb51,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-3-Wan-Video-Generation.ipynb,n5z05qy88ao,markdown,fr,8dfc8aa3f7a42e02,"Les paramètres Papermill initialises, la cellule suivante installe les dependances requises et importe les bibliotheques necessaires : diffusers pour le pipeline Wan, torch pour l'acceleration GPU, et les utilitaires de gestion des fichiers video.",,,,,,,,8dfc8aa3f7a42e02,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-3-Wan-Video-Generation.ipynb,8f09a5ea,code,fr,8f4d58f9acc3ca2a,"# Setup environnement et imports
 import os
@@ -9226,9 +9214,6 @@ simple reste statique. C'est ce que l'**Exercice 1** (`compare_image_categories`
 explore : comparer l'amplitude de mouvement générée sur des catégories d'images de
 textures croissantes.
 ",,,,,,,,d468f08ee1d9c2a8,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-LTX2-Audiovisual.ipynb,2ad9398f,code,fr,d8cfd07b7b0f3965,"# Parameters
-BATCH_MODE = ""true""
-",,,,,,,,d8cfd07b7b0f3965,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-LTX2-Audiovisual.ipynb,ltx2-00,markdown,fr,33e0c98ad4ba9c0a,"# LTX-2 - Generation Audiovisuelle Conjointe (Video + Audio)
 
 **Module :** 02-Video-Advanced
@@ -10219,9 +10204,6 @@ guidance_scale = 6.0               # Valeur par defaut informative (CFG classiqu
 run_benchmark = True               # Executer le benchmark
 save_as_mp4 = True                 # Conserver les MP4 telecharges cote notebook
 save_results = True",,,,,,,,94ab717dcd847deb,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-1-Multi-Model-Video-Comparison.ipynb,950456c5,code,fr,d8cfd07b7b0f3965,"# Parameters
-BATCH_MODE = ""true""
-",,,,,,,,d8cfd07b7b0f3965,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-1-Multi-Model-Video-Comparison.ipynb,v9rfo38sg48,markdown,fr,693f9e47189797b9,"On importe ensuite toutes les bibliotheques necessaires : diffusers pour les modèles de generation, numpy et PIL pour la manipulation des frames, et les outils de mesure de performance.",,,,,,,,693f9e47189797b9,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-1-Multi-Model-Video-Comparison.ipynb,cell-setup,code,fr,d6980a441e783f22,"# Setup environnement et imports
 import os
@@ -15360,110 +15342,6 @@ MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-2-Creative-Video-Workflows.ipyn
 La creation d'un clip musical synchronise implique de detecter le rythme (BPM)
 et de placer des coupes, effets et transitions sur les temps forts.
 Ici, nous simulons un signal audio rythmique et synchronisons les effets video.",,,,,,,,f141e5ff9182a065,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-2-Creative-Video-Workflows.ipynb,cell-7,code,fr,77d4ef087f453376,"# Creation de clip musical avec synchronisation
-if enable_music_video:
-    print(""\n--- CREATION CLIP MUSICAL ---"")
-    print(""="" * 40)
-    
-    # Simuler la detection de beats (BPM = 120)
-    bpm = 120
-    beat_interval = 60.0 / bpm  # Secondes entre chaque beat
-    total_seconds = video_duration
-    
-    # Generer les positions des beats
-    beat_times = np.arange(0, total_seconds, beat_interval)
-    beat_frames = (beat_times * video_fps).astype(int)
-    beat_frames = beat_frames[beat_frames < len(source_frames)]
-    
-    print(f""BPM simule : {bpm}"")
-    print(f""Intervalle entre beats : {beat_interval:.3f}s"")
-    print(f""Nombre de beats : {len(beat_frames)}"")
-    print(f""Positions (frames) : {beat_frames.tolist()}"")
-    
-    # Effets synchronises sur les beats
-    def apply_beat_flash(frame: np.ndarray, intensity: float = 0.5) -> np.ndarray:
-        """"""Flash lumineux sur un beat.""""""
-        flash = np.full_like(frame, 255)
-        return np.clip(frame * (1 - intensity) + flash * intensity, 0, 255).astype(np.uint8)
-    
-    def apply_beat_zoom(frame: np.ndarray, zoom_factor: float = 1.15) -> np.ndarray:
-        """"""Effet zoom leger sur un beat.""""""
-        h, w = frame.shape[:2]
-        img = Image.fromarray(frame)
-        
-        # Zoom au centre
-        new_w = int(w * zoom_factor)
-        new_h = int(h * zoom_factor)
-        img_zoomed = img.resize((new_w, new_h), Image.LANCZOS)
-        
-        # Recadrer au centre
-        left = (new_w - w) // 2
-        top = (new_h - h) // 2
-        img_cropped = img_zoomed.crop((left, top, left + w, top + h))
-        
-        return np.array(img_cropped)
-    
-    # Appliquer les effets avec decroissance
-    music_frames = [f.copy() for f in source_frames]
-    beat_decay_frames = 3  # Nombre de frames pour l'attenuation de l'effet
-    
-    for beat_frame in beat_frames:
-        for offset in range(beat_decay_frames):
-            idx = beat_frame + offset
-            if idx >= len(music_frames):
-                break
-            decay = 1.0 - (offset / beat_decay_frames)
-            # Alterner flash et zoom
-            if (np.where(beat_frames == beat_frame)[0][0]) % 2 == 0:
-                music_frames[idx] = apply_beat_flash(music_frames[idx], 0.4 * decay)
-            else:
-                zoom = 1.0 + 0.1 * decay
-                music_frames[idx] = apply_beat_zoom(music_frames[idx], zoom)
-    
-    print(f""Effets appliques sur {len(beat_frames)} beats"")
-    
-    # Visualiser quelques beats
-    if len(beat_frames) >= 3:
-        fig, axes = plt.subplots(2, 3, figsize=(14, 6))
-        for col in range(3):
-            b_idx = beat_frames[col]
-            axes[0, col].imshow(source_frames[b_idx])
-            axes[0, col].set_title(f""Original (beat {col+1}, frame {b_idx})"", fontsize=9)
-            axes[0, col].axis('off')
-            axes[1, col].imshow(music_frames[b_idx])
-            axes[1, col].set_title(f""Avec effet"", fontsize=9)
-            axes[1, col].axis('off')
-        plt.suptitle(f""Effets synchronises sur les beats ({bpm} BPM)"", fontsize=13, fontweight='bold')
-        plt.tight_layout()
-        plt.show()
-    
-    if dependencies.get('imageio', False) and save_results:
-        music_path = OUTPUT_DIR / ""creative_music_video.mp4""
-        writer = imageio.get_writer(str(music_path), fps=video_fps, codec='libx264')
-        for f in music_frames:
-            writer.append_data(f)
-        writer.close()
-        print(f""Video sauvegardee : {music_path.name} ({music_path.stat().st_size / 1024:.0f} KB)"")
-else:
-    print(""Creation clip musical desactivee"")",,,,,,,,77d4ef087f453376,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-2-Creative-Video-Workflows.ipynb,cell-8,markdown,fr,e9ca6f03a81247cf,"### Interpretation : Clip musical
-
-| Aspect | Valeur | Signification |
-|--------|--------|---------------|
-| BPM | 120 | Rythme moyen (pop/dance) |
-| Intervalle beats | 0.5s | Un beat toutes les 12 frames a 24fps |
-| Effets | Flash + Zoom | Alternance pour varier le rythme visuel |
-| Decay | 3 frames | Attenuation progressive de l'effet |
-
-**Points cles** :
-1. En production, le BPM serait detecte par analyse audio (librosa.beat)
-2. L'attenuation progressive donne un rendu plus naturel que des effets instantanes
-3. La synchronisation audio-video est critique : 1 frame de decalage est perceptible
-
-## Section 3 : Effet stop-motion et color grading
-
-L'effet stop-motion simule une animation image par image en reduisant le taux de frames
-et en ajoutant des imperfections. Le color grading transforme l'ambiance de la video.",,,,,,,,e9ca6f03a81247cf,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-2-Creative-Video-Workflows.ipynb,cell-9,code,fr,4f01313494597b6f,"# Effet stop-motion
 if enable_stop_motion:
     print(""\n--- EFFET STOP-MOTION ---"")

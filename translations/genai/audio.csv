@@ -43,9 +43,6 @@ generate_audio = True              # Generer les fichiers audio
 save_audio_files = True            # Sauvegarder les fichiers generes
 compare_voices = True              # Comparer toutes les voix
 ",,,,,,,,2a0f5d29114855b6,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-1-OpenAI-TTS-Intro.ipynb,9029f092,code,fr,d8cfd07b7b0f3965,"# Parameters
-BATCH_MODE = ""true""
-",,,,,,,,d8cfd07b7b0f3965,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-1-OpenAI-TTS-Intro.ipynb,p54icnvk4d,markdown,fr,7b810979bd81c7db,"Les paramètres Papermill etant définis, nous configurons l'environnement Python et importons les bibliotheques necessaires pour interagir avec l'API TTS d'OpenAI.",,,,,,,,7b810979bd81c7db,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-1-OpenAI-TTS-Intro.ipynb,cell-setup,code,fr,003e02cf1e0399d1,"# Setup environnement et imports
 import os
@@ -276,18 +273,6 @@ MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-1-OpenAI-TTS-Intro.ipynb,63044a1a
 1. La reponse est un flux binaire, pas du JSON
 2. `IPython.display.Audio` permet l'ecoute directe dans le notebook
 3. Le texte francais est bien gere sans paramètre de langue explicite",,,,,,,,e9d6b143172c94a7,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-1-OpenAI-TTS-Intro.ipynb,cell-section1-interpretation,markdown,fr,7a95b439769b350b,"### Interpretation : Première generation
-
-| Aspect | Observation | Signification |
-|--------|-------------|---------------|
-| Temps de generation | Typiquement < 3s | L'API est optimisee pour une reponse rapide |
-| Taille fichier | Variable selon format | MP3 compresse, WAV plus volumineux |
-| Qualite audio | Voix naturelle | Les modèles TTS d'OpenAI sont parmi les meilleurs du marche |
-
-**Points cles** :
-1. La reponse est un flux binaire, pas du JSON
-2. `IPython.display.Audio` permet l'ecoute directe dans le notebook
-3. Le texte francais est bien gere sans paramètre de langue explicite",,,,,,,,7a95b439769b350b,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-1-OpenAI-TTS-Intro.ipynb,cell-section2-intro,markdown,fr,0bd75db411f4c7ca,"## Section 2 : Comparaison des 6 voix
 
 OpenAI propose 6 voix pre-entrainees, chacune avec un caractère distinct :
@@ -886,9 +871,6 @@ test_translation = True            # Tester l'endpoint de traduction
 compare_models = True              # Comparer whisper-1 et gpt-4o-transcribe
 save_results = True                # Sauvegarder les resultats de transcription
 ",,,,,,,,041f7eb72fd0194c,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,62092acb,code,fr,d8cfd07b7b0f3965,"# Parameters
-BATCH_MODE = ""true""
-",,,,,,,,d8cfd07b7b0f3965,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,azuifendbh,markdown,fr,9341b08a313a9c9a,"Les paramètres Papermill etant définis, nous configurons l'environnement Python et importons les bibliotheques necessaires pour la reconnaissance vocale et la gestion des fichiers audio.",,,,,,,,9341b08a313a9c9a,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,cell-setup,code,fr,d8e7751ca881247f,"# Setup environnement et imports
 import os
@@ -1753,9 +1735,6 @@ show_visualizations = True         # Afficher les visualisations
 test_pydub_ops = True              # Tester les operations pydub
 save_results = True                # Sauvegarder les resultats
 ",,,,,,,,86cdc5916b2fce3d,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-3-Basic-Audio-Operations.ipynb,7013f8ae,code,fr,d8cfd07b7b0f3965,"# Parameters
-BATCH_MODE = ""true""
-",,,,,,,,d8cfd07b7b0f3965,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-3-Basic-Audio-Operations.ipynb,1551ccab,markdown,fr,b496a78098920ce1,"## Structure du notebook
 
 Ce notebook explore les opérations fondamentales de traitement audio en 5 sections :
@@ -2724,11 +2703,6 @@ batch_transcribe = True            # Tester la transcription batch
 monitor_vram = True                # Surveiller l'utilisation VRAM
 save_results = True                # Sauvegarder les resultats
 ",,,,,,,,dac842acbbeb28c2,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-4-Whisper-Local.ipynb,dffdf8ce,code,fr,047fea4267513be7,"# Parameters
-BATCH_MODE = ""true""
-notebook_mode = ""batch""
-skip_widgets = True
-",,,,,,,,047fea4267513be7,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-4-Whisper-Local.ipynb,h24ifvekap5,markdown,fr,89a59f48694c6697,"Les paramètres Papermill etant définis, nous importons les bibliotheques necessaires, notamment faster-whisper pour la transcription GPU locale et les utilitaires de gestion des fichiers audio.",,,,,,,,89a59f48694c6697,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-4-Whisper-Local.ipynb,cell-setup,code,fr,a875a603da6ce596,"# Setup environnement et imports
 import os
@@ -3705,11 +3679,6 @@ test_multiple_voices = True        # Tester plusieurs voix
 benchmark_latency = True           # Benchmarks de latence
 save_results = True                # Sauvegarder les resultats
 ",,,,,,,,a7570229221656c9,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,a314d5e6,code,fr,047fea4267513be7,"# Parameters
-BATCH_MODE = ""true""
-notebook_mode = ""batch""
-skip_widgets = True
-",,,,,,,,047fea4267513be7,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,d03aa336,markdown,fr,23982dd165f2dd7a,"## Introduction technique
 
 Ce notebook explore **Kokoro TTS**, un modèle de synthese vocale open-source alternatif aux solutions cloud comme OpenAI TTS.
@@ -4958,9 +4927,6 @@ save_results = True                # Sauvegarder les fichiers generes
 compare_emotions = True            # Comparer les differentes emotions
 test_voice_conditioning = True     # Tester le voice conditioning
 ",,,,,,,,d72d92acef5d6f5e,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-1-Chatterbox-TTS.ipynb,5738a84c,code,fr,d8cfd07b7b0f3965,"# Parameters
-BATCH_MODE = ""true""
-",,,,,,,,d8cfd07b7b0f3965,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-1-Chatterbox-TTS.ipynb,evxxhn28efi,markdown,fr,9111e821adbe2377,"Les paramètres Papermill definissent le comportement global du notebook (mode interactif/batch, device GPU/CPU, valeurs d'`exaggeration` et de `cfg_weight`). La cellule suivante initialise l'environnement Python et verifie la disponibilite du GPU.",,,,,,,,9111e821adbe2377,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-1-Chatterbox-TTS.ipynb,cell-setup,code,fr,0cfcda14182a205a,"# Setup environnement et imports
 import os
@@ -5864,9 +5830,6 @@ save_results = True                # Sauvegarder les fichiers generes
 test_multilingual = True           # Tester plusieurs langues
 analyze_similarity = True          # Analyser la similarite vocale
 ",,,,,,,,03023c6e52237131,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-2-XTTS-Voice-Cloning.ipynb,f56899e6,code,fr,d7a1ea74a47bcb51,"# Parameters
-BATCH_MODE = True
-",,,,,,,,d7a1ea74a47bcb51,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-2-XTTS-Voice-Cloning.ipynb,kpyu0fkvpoh,markdown,fr,c2b3728aba98f83f,Les paramètres Papermill configurent le mode d'exécution et la langue par defaut. La cellule suivante importe les dependances et verifie la disponibilite du GPU ainsi que la VRAM necessaire pour XTTS v2 (~6 GB).,,,,,,,,c2b3728aba98f83f,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-2-XTTS-Voice-Cloning.ipynb,cell-setup,code,fr,b77bc254e160c372,"# Setup environnement et imports
 import os
@@ -6744,11 +6707,6 @@ Cette cellule définit les paramètres modifiables pour différentes utilisation
 | `compare_models` | Comparer small/medium | `False` (couteux en VRAM) |
 
 > **Note** : Pour une première exécution, laissez les valeurs par defaut. Adjustez la temperature (0.8-1.2) pour explorer la creativite du modèle.",,,,,,,,9b95c44200ba334a,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-3-MusicGen-Generation.ipynb,66de968a,code,fr,047fea4267513be7,"# Parameters
-BATCH_MODE = ""true""
-notebook_mode = ""batch""
-skip_widgets = True
-",,,,,,,,047fea4267513be7,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-3-MusicGen-Generation.ipynb,llc56jpi1g,markdown,fr,8aecfd5e5a448a1f,"Les paramètres Papermill definissent la variante du modèle (`small`, `medium`, `large`), la duree de generation et la temperature de sampling. La cellule suivante configure l'environnement et verifie la VRAM disponible.",,,,,,,,8aecfd5e5a448a1f,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-3-MusicGen-Generation.ipynb,5430a334,markdown,fr,5bab877b5caa6c36,"## Introduction a MusicGen
 
@@ -7033,28 +6991,6 @@ Le code ci-dessous genere trois morceaux avec des styles différents pour demont
 
 **Processus** :
 Pour chaque description, le code mesure le temps de generation, calcule la duree reelle, et affiche le ratio temps reel (generation / lecture).",,,,,,,,f47617af428501f7,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-3-MusicGen-Generation.ipynb,0b23e74b,markdown,fr,a9d06eddd7fe7267,"### Interpretation : Generation text-to-music
-
-Les résultats montrent la capacite de MusicGen a generer de la musique instrumentale originale a partir de descriptions textuelles.
-
-| Aspect | Valeur observee | Interpretation |
-|--------|----------------|----------------|
-| **Ratio temps reel** | 0.5-2x (GPU) | La generation est plus lente que la lecture mais reste acceptable |
-| **Qualite audio** | 32kHz mono | Qualite correcte pour demos et prototypage |
-| **Coherence texte** | Bonne a très bonne | Le modèle suit les descriptions avec precision |
-| **Variabilite** | Haute | Chaque generation est unique (non-déterministe) |
-
-**Analyse des exemples** :
-1. **Jazz** : Piano et saxophone dominants, rythme swing
-2. **Ambient** : Pads synthetiques, evolution lente, atmospherique
-3. **Rock** : Guitares electriques, batterie puissante, energie elevee
-
-**Points cles** :
-- Les descriptions en anglais donnent les meilleurs résultats (langue d'entrainement)
-- La precision des termes musicaux influence la fidelite (instruments, tempo, ambiance)
-- Plus la description est detaillee, plus le résultat est spécifique
-
-> **Note technique** : La generation est stochastique - le même prompt peut donner des résultats différents a chaque appel. Cette variabilite est une feature, pas un bug.",,,,,,,,a9d06eddd7fe7267,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-3-MusicGen-Generation.ipynb,cell-section2-interpretation,markdown,fr,e04ba3c06e5433a3,"### Interpretation : Generation text-to-music
 
 | Aspect | Valeur typique | Signification |
@@ -7682,11 +7618,6 @@ save_results = True                # Sauvegarder les stems
 visualize_stems = True             # Visualiser les formes d'onde
 compare_models = False             # Comparer htdemucs vs htdemucs_ft
 ",,,,,,,,27c1f2ec3473cbb7,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-4-Demucs-Source-Separation.ipynb,f4237623,code,fr,047fea4267513be7,"# Parameters
-BATCH_MODE = ""true""
-notebook_mode = ""batch""
-skip_widgets = True
-",,,,,,,,047fea4267513be7,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-4-Demucs-Source-Separation.ipynb,zbhbuzc422g,markdown,fr,c6c48350ea5570fc,"Les paramètres Papermill selectionnent le modèle Demucs (`htdemucs` ou `htdemucs_ft`), le device et la taille des segments audio. La cellule suivante importe les dependances et detecte le GPU disponible.",,,,,,,,c6c48350ea5570fc,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-4-Demucs-Source-Separation.ipynb,cell-setup,code,fr,102e4b4132d4f9c8,"# Setup environnement et imports
 import os
@@ -8561,10 +8492,6 @@ Ce notebook a permis d'explorer les aspects essentiels de 02 4 demucs source sep
 - Les résultats obtenus permettent de valider la comprehension
 
 **Pour aller plus loin** : approfondir les aspects avances du sujet et explorer les liens avec d'autres domaines.",,,,,,,,a97ba7c8339446ca,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-5-Multi-Model-TTS-Gateway.ipynb,8b18fbf2,code,fr,63d79e46ba34a904,"# Parameters
-skip_widgets = True
-notebook_mode = ""batch""
-",,,,,,,,63d79e46ba34a904,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-5-Multi-Model-TTS-Gateway.ipynb,cell-header,markdown,fr,44cd7bc3a106740b,"# Multi-Model TTS Gateway - Synthese Vocale Multi-Modèles
 
 **Module :** 02-Audio-Advanced  
@@ -9354,11 +9281,6 @@ generate_midi = True               # Generer les fichiers MIDI
 save_results = True                # Sauvegarder les fichiers
 synthesize_audio = True            # Synthetiser MIDI en audio
 test_prompts = True                # Tester les prompts musicaux",,,,,,,,3061d97a2dfbd2fb,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,a899efcb,code,fr,55eaf3dee475f6ef,"# Parameters
-BATCH_MODE = ""true""
-skip_widgets = True
-notebook_mode = ""batch""
-",,,,,,,,55eaf3dee475f6ef,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,2d932353,markdown,fr,11b96398f1c523ee,"Les paramètres Papermill definissent le modèle midi-model (`skytnt/midi-model-tv2o-medium`), les paramètres de sampling (temperature, top_k, top_p) et les options de generation. La cellule suivante initialise l'environnement Python et verifie la disponibilite du GPU.",,,,,,,,11b96398f1c523ee,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,0a84bc93,code,fr,673e7f8b22cbf7b2,"# Setup environnement et imports
 import os
@@ -10538,9 +10460,6 @@ songgen_separate = True            # Pistes separees vocal/bgm
 device = ""cuda""                    # ""cuda"" ou ""cpu""
 save_results = True                # Sauvegarder les fichiers
 compare_models = True              # Generer le tableau comparatif",,,,,,,,74daf23b20421a88,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,cd4cb880,code,fr,d8cfd07b7b0f3965,"# Parameters
-BATCH_MODE = ""true""
-",,,,,,,,d8cfd07b7b0f3965,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,8ed5db51,markdown,fr,5b538af4e0b42228,"Les paramètres Papermill configurent les modèles a tester (YuE et SongGeneration 2), le device GPU/CPU et les options de generation. La cellule suivante initialise l'environnement Python et verifie la disponibilite du GPU.",,,,,,,,5b538af4e0b42228,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,65355945,code,fr,0ba22f81bc9ead13,"# Setup environnement et imports
 import os
@@ -10908,18 +10827,6 @@ Le script verifie la presence des repositories YuE et SongGeneration 2 dans le r
 1. Les deux modèles necessitent le clonage de repositories entiers (pas de simple `pip install`)
 2. FlashAttention 2 est critique pour YuE sur 24 GB (OOM sans)
 3. SongGeneration 2 est plus simple a installer et plus leger",,,,,,,,48f9784a58b7f094,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,d09a8a83,markdown,fr,78d06aa1b0520c4f,"### Interpretation : Installation
-
-| Modèle | Taille telechargement | Temps installation | Difficulte |
-|--------|----------------------|-------------------|------------|
-| YuE (7B+1B) | ~16 GB | 15-30 min | Moyenne (FlashAttn requis) |
-| SongGen 2 base | ~4 GB + runtime | 10-20 min | Facile |
-| SongGen 2 v2-large | ~10 GB + runtime | 15-30 min | Facile |
-
-**Points cles** :
-1. Les deux modèles necessitent le clonage de repositories entiers (pas de simple `pip install`)
-2. FlashAttention 2 est critique pour YuE sur 24 GB (OOM sans)
-3. SongGeneration 2 est plus simple a installer et plus leger",,,,,,,,78d06aa1b0520c4f,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,613922e3,markdown,fr,bc72af33dfe0ce2d,"## Section 4 : Preparation des paroles
 
 Les deux modèles necessitent des paroles structurees avec des marqueurs de section. Le formatage est crucial pour la qualite du résultat.
@@ -11868,10 +11775,6 @@ device = ""cuda""                    # ""cuda"" ou ""cpu""
 save_results = True                # Sauvegarder les fichiers audio
 test_voice_cloning = True          # Tester le voice cloning
 test_multilingual = True           # Tester la generation multilingue",,,,,,,,30ec7fcf67504ccb,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-8-Expressive-TTS.ipynb,71ab7980,code,fr,63d79e46ba34a904,"# Parameters
-skip_widgets = True
-notebook_mode = ""batch""
-",,,,,,,,63d79e46ba34a904,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-8-Expressive-TTS.ipynb,c3f48938,markdown,fr,103a902cd88ded4f,"Les paramètres Papermill selectionnent les moteurs TTS (Fish S2 Pro, Dia TTS), configurent le device et les options de voice cloning. La cellule suivante initialise l'environnement Python et detecte le GPU disponible.",,,,,,,,103a902cd88ded4f,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-8-Expressive-TTS.ipynb,4d15b183,code,fr,d7698316de9cad6b,"# Setup environnement et imports
 import os
@@ -14505,9 +14408,6 @@ En 2026, l'ecosysteme des modèles audio a atteint une maturite remarquable. Plu
 - Basculer vers l'API en cas de pic de charge (failover)
 
 Ce notebook propose un cadre systématique pour comparer ces approches sur des metriques objectives : latence, qualite, cout, consommation GPU. Les résultats vous permettront de prendre une décision éclairée selon votre cas d'usage et vos contraintes (budget, infrastructure, confidentialité).",,,,,,,,df450bf9e44557c7,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-1-Multi-Model-Audio-Comparison.ipynb,bd23ac74,code,fr,d7a1ea74a47bcb51,"# Parameters
-BATCH_MODE = True
-",,,,,,,,d7a1ea74a47bcb51,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-1-Multi-Model-Audio-Comparison.ipynb,u7jzjj7ovb,markdown,fr,dce20b12b78554e8,"L'environnement de travail est configure avec les paramètres Papermill. La cellule suivante charge les bibliotheques Python necessaires : mesure de performances, appels API audio et utilitaires de benchmark.",,,,,,,,dce20b12b78554e8,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-1-Multi-Model-Audio-Comparison.ipynb,cell-setup,code,fr,ebe1b7dfb262c3c4,"# Setup environnement et imports
 import os
@@ -15776,9 +15676,6 @@ Cette section définit les paramètres de configuration du notebook, notamment l
 - `pipeline_mode` : définit quel pipeline executer (stt_llm_tts, translation, podcast)
 - `llm_model` : choix du modèle LLM (gpt-4o-mini recommande pour equilibre performance/cout)
 - `max_retries` : nombre de tentatives en cas d'erreur API (3 par defaut)",,,,,,,,fa698a83f63e9171,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-2-Audio-Pipeline-Orchestration.ipynb,faf5ee7e,code,fr,d7a1ea74a47bcb51,"# Parameters
-BATCH_MODE = True
-",,,,,,,,d7a1ea74a47bcb51,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-2-Audio-Pipeline-Orchestration.ipynb,cv270pagpz7,markdown,fr,214df8c6dda752d3,"L'environnement de travail est configure avec les paramètres Papermill. La cellule suivante charge les bibliotheques Python necessaires : orchestration de pipelines, appels API séquentiels et gestion des flux audio.",,,,,,,,214df8c6dda752d3,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-2-Audio-Pipeline-Orchestration.ipynb,cell-setup,code,fr,b857f9d7169097ae,"# Setup environnement et imports
 import os
@@ -16977,9 +16874,6 @@ enable_function_calling = True     # Activer le function calling
 save_results = True                # Sauvegarder les fichiers generes
 simulate_realtime = True           # Simuler via texte (pas de micro dans notebook)
 ",,,,,,,,8641878ab8f7a81b,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-3-Realtime-Voice-API.ipynb,0a759e49,code,fr,d8cfd07b7b0f3965,"# Parameters
-BATCH_MODE = ""true""
-",,,,,,,,d8cfd07b7b0f3965,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-3-Realtime-Voice-API.ipynb,f3twl204tg9,markdown,fr,d9fad54d1c49f7df,"L'environnement de travail est configure avec les paramètres Papermill. La cellule suivante charge les bibliotheques Python necessaires : WebSocket asyncio, gestion des flux audio temps reel et protocole de l'API Realtime.",,,,,,,,d9fad54d1c49f7df,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-3-Realtime-Voice-API.ipynb,cell-setup,code,fr,2cac99f34c8184f1,"# Setup environnement et imports
 import os
@@ -17482,19 +17376,6 @@ Les 3 messages de test ont permis de valider le fonctionnement de l'API Realtime
 1. L'API Realtime est significativement plus rapide que le pipeline STT->LLM->TTS
 2. Le streaming audio permet de commencer l'ecoute avant la fin de la generation
 3. Le function calling fonctionne de maniere transparente dans le flux vocal",,,,,,,,680d645183f6793d,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-3-Realtime-Voice-API.ipynb,cell-section2-interpretation,markdown,fr,2528f168ec35c017,"### Interpretation : Conversation Realtime
-
-| Metrique | Valeur typique | Signification |
-|----------|---------------|---------------|
-| Latence premier chunk | 300-800ms | Temps avant le premier byte audio |
-| Latence totale | 1-3s | Temps de reponse complete |
-| Chunks audio | 10-50 | Nombre de segments audio recus |
-| Format audio | PCM16 24kHz | Qualite CD (non compresse) |
-
-**Points cles** :
-1. L'API Realtime est significativement plus rapide que le pipeline STT->LLM->TTS
-2. Le streaming audio permet de commencer l'ecoute avant la fin de la generation
-3. Le function calling fonctionne de maniere transparente dans le flux vocal",,,,,,,,2528f168ec35c017,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-3-Realtime-Voice-API.ipynb,cell-section3-intro,markdown,fr,3694dfaee2dba5cc,"## Section 3 : Envoi d'audio et streaming
 
 Pour une interaction vocale complete, on envoie de l'audio (PCM16, 24kHz) plutot que du texte. Voici comment convertir et envoyer un fichier audio.
@@ -18410,18 +18291,6 @@ Texte source (cours) -> LLM (GPT-4o-mini) -> Script narre avec marqueurs -> Pars
 | `[PAUSE]` | Silence naturel | Respiration, emphasis, transitions |
 
 Le LLM recoit le texte de cours et un prompt pedagogique specifiant le format de sortie, puis genere un script avec des indications de voix, pauses et intonation.",,,,,,,,7616b91b588a7810,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-1-Educational-Audio-Content.ipynb,cell-section1-interpretation,markdown,fr,b0b3a3ae7a430ca9,"### Interpretation : Generation de scripts
-
-| Aspect | Observation | Signification |
-|--------|-------------|---------------|
-| Temps LLM | Typiquement < 5s | GPT-4o-mini est rapide pour cette tâche |
-| Marqueurs | [PAUSE], [NARRATEUR], [EXPERT] | Permettent le contrôle fin de la narration |
-| Longueur | Script ~2x plus long que le texte source | L'oral necessite plus de mots que l'ecrit |
-
-**Points cles** :
-1. Le LLM adapte naturellement le registre ecrit vers l'oral
-2. Les marqueurs structurent le script pour le pipeline TTS
-3. La temperature 0.7 donne un bon equilibre naturel/fidele",,,,,,,,b0b3a3ae7a430ca9,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-1-Educational-Audio-Content.ipynb,a4c79308,markdown,fr,dd0af65b57c7aa84,"---
 
 ## Exercice : Prompt engineering pour scripts de narration
@@ -18638,18 +18507,6 @@ Un contenu educatif beneficie de plusieurs voix pour distinguer les rôles et ma
 | Exemples / Illustrations | `echo` (F) ou `shimmer` (F) | Cas pratiques, analogies, ton plus leger |
 
 Nous allons parser le script genere par le LLM pour identifier les segments par rôle (marqueurs `[NARRATEUR]`, `[EXPERT]`), puis generer chaque segment avec la voix OpenAI appropriee.",,,,,,,,e959f8d4f3ac189a,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-1-Educational-Audio-Content.ipynb,cell-section2-interpretation,markdown,fr,16f2caac217366d3,"### Interpretation : Narration multi-voix
-
-| Aspect | Valeur | Signification |
-|--------|--------|---------------|
-| Segments | Variable (4-10 typique) | Chaque changement de rôle créé un segment |
-| Temps par segment | ~1-3s | L'API est rapide même pour du texte long |
-| Differenciation | Voix distinctes par rôle | Ameliore la comprehension et l'engagement |
-
-**Points cles** :
-1. Le parsing des marqueurs [RÔLE] permet une attribution automatique des voix
-2. Les pauses [PAUSE] sont converties en ellipses pour un rythme naturel
-3. La multi-voix rend le contenu plus dynamique qu'un narrateur unique",,,,,,,,16f2caac217366d3,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-1-Educational-Audio-Content.ipynb,cell-section3-intro,markdown,fr,2528f45372e7229d,"## Section 3 : Contenu multilingue
 
 L'API OpenAI TTS gere nativement de nombreuses langues. Pour créer du contenu multilingue, deux approches :
@@ -18758,15 +18615,6 @@ L'API OpenAI TTS supporte plus de 50 langues, ce qui permet de créer du contenu
 | **TTS direct multilingue** | Fournir texte traduit, synthetiser direct | Plus simple, une seule étape | Qualite depend de la traduction source |
 
 Nous utilisons la première approche (traduction LLM) pour garantir que le contenu reste pedagogique et naturel dans chaque langue cible. Le prompt de traduction inclut le contexte ""educatif"" pour preserver le ton.",,,,,,,,863ca25d280427ad,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-1-Educational-Audio-Content.ipynb,cell-section3-interpretation,markdown,fr,d5771d43accaacf0,"### Interpretation : Contenu multilingue
-
-| Aspect | Valeur | Signification |
-|--------|--------|---------------|
-| Qualite FR | Excellente | Voix OpenAI optimisees pour le francais |
-| Qualite EN | Excellente | Langue native du modèle |
-| Traduction LLM | Fidele au contenu | GPT-4o-mini conserve le ton pedagogique |
-
-> **Note technique** : Pour des langues moins bien supportees, tester la qualite avec un locuteur natif avant production.",,,,,,,,d5771d43accaacf0,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-1-Educational-Audio-Content.ipynb,cell-section4-intro,markdown,fr,e3187ea42677e159,"## Section 4 : Accessibilite audio
 
 Un contenu educatif accessible doit prendre en compte différents profils d'apprenants :
@@ -18985,16 +18833,6 @@ L'assemblage final combine tous les segments audio en un fichier unique avec pyd
 5. **Exporter** en format final (MP3 192kbps)
 
 Cette approche créé une expérience d'ecoute fluide et professionnelle.",,,,,,,,355a7226ab198e01,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-1-Educational-Audio-Content.ipynb,cell-section5-interpretation,markdown,fr,bf9056f7fbf5c240,"### Interpretation : Assemblage
-
-| Aspect | Valeur | Signification |
-|--------|--------|---------------|
-| Silences inter-segments | 800ms | Pause naturelle entre phrases |
-| Silences inter-sections | 1500ms | Marque un changement de locuteur/sujet |
-| Normalisation | -20 dBFS | Volume confortable pour l'ecoute |
-| Format final | MP3 192kbps | Bon compromis qualite/taille |
-
-> **Note technique** : pydub utilise ffmpeg en arriere-plan. Assurez-vous que ffmpeg est installe dans votre environnement.",,,,,,,,bf9056f7fbf5c240,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-1-Educational-Audio-Content.ipynb,cell-section6-intro,markdown,fr,1e06fcf61f2d83fa,"## Section 6 : Verification qualite par round-trip STT
 
 Pour valider que la narration est fidele au texte source, nous effectuons un round-trip :
@@ -22532,9 +22370,6 @@ use_local_whisper = False          # Desactive Whisper local pour validation (pr
 generate_audio = True              # Generer des fichiers audio de test
 save_output_files = True           # Sauvegarder les transcriptions
 ",,,,,,,,2baec2b5b6712b07,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-2-Transcription-Pipeline.ipynb,e32920a4,code,fr,d7a1ea74a47bcb51,"# Parameters
-BATCH_MODE = True
-",,,,,,,,d7a1ea74a47bcb51,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-2-Transcription-Pipeline.ipynb,qh2kt7yja5n,markdown,fr,a1266bb541993353,"L'environnement de travail est configure avec les paramètres Papermill. La cellule suivante charge les bibliotheques Python necessaires : traitement audio, appels API Whisper et utilitaires de formatage.",,,,,,,,a1266bb541993353,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-2-Transcription-Pipeline.ipynb,cell-setup,code,fr,17140a43852b6ca9,"# Setup environnement et imports
 import os
@@ -23766,9 +23601,6 @@ generate_audio = True
 save_audio_files = True
 apply_effects = True               # Appliquer les effets audio
 ",,,,,,,,a3144df64425ced7,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-3-Music-Composition-Workflow.ipynb,f67fb4a7,code,fr,d7a1ea74a47bcb51,"# Parameters
-BATCH_MODE = True
-",,,,,,,,d7a1ea74a47bcb51,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-3-Music-Composition-Workflow.ipynb,ib651xjp2n,markdown,fr,e094cea582ae1938,"L'environnement de travail est configure avec les paramètres Papermill. La cellule suivante charge les bibliotheques Python necessaires : generation audio, traitement de signal et utilitaires de composition.",,,,,,,,e094cea582ae1938,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-3-Music-Composition-Workflow.ipynb,cell-setup,code,fr,bbbe19baf564b19e,"# Setup environnement et imports
 import os
@@ -30560,9 +30392,6 @@ skip_widgets = True
 MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,c36c04e3,code,fr,d8cfd07b7b0f3965,"# Parameters
 BATCH_MODE = ""true""
 ",,,,,,,,d8cfd07b7b0f3965,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-1-Chatterbox-TTS.ipynb,f0f9bf67,code,fr,d8cfd07b7b0f3965,"# Parameters
-BATCH_MODE = ""true""
-",,,,,,,,d8cfd07b7b0f3965,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-2-XTTS-Voice-Cloning.ipynb,2196760a,code,fr,d8cfd07b7b0f3965,"# Parameters
 BATCH_MODE = ""true""
 ",,,,,,,,d8cfd07b7b0f3965,,,,,,,,
@@ -30694,34 +30523,9 @@ MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-3-MusicGen-Generation.ipynb,a71bc27
 - Plus la description est detaillee, plus le résultat est spécifique
 
 > **Note technique** : La generation est stochastique - le même prompt peut donner des résultats différents a chaque appel. Cette variabilite est une feature, pas un bug.",,,,,,,,2eff8a29412d43ec,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-4-Demucs-Source-Separation.ipynb,022e3f2a,code,fr,047fea4267513be7,"# Parameters
-BATCH_MODE = ""true""
-notebook_mode = ""batch""
-skip_widgets = True
-",,,,,,,,047fea4267513be7,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-5-Multi-Model-TTS-Gateway.ipynb,f34ef87e,code,fr,d8cfd07b7b0f3965,"# Parameters
-BATCH_MODE = ""true""
-",,,,,,,,d8cfd07b7b0f3965,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,dcc88ea1,code,fr,d8cfd07b7b0f3965,"# Parameters
-BATCH_MODE = ""true""
-",,,,,,,,d8cfd07b7b0f3965,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,3bbda7f3,code,fr,d8cfd07b7b0f3965,"# Parameters
-BATCH_MODE = ""true""
-",,,,,,,,d8cfd07b7b0f3965,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-8-Expressive-TTS.ipynb,77d97cd7,code,fr,d8cfd07b7b0f3965,"# Parameters
-BATCH_MODE = ""true""
-",,,,,,,,d8cfd07b7b0f3965,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-9-AceStep-Music-Generation.ipynb,de9d89c9,code,fr,d8cfd07b7b0f3965,"# Parameters
 BATCH_MODE = ""true""
 ",,,,,,,,d8cfd07b7b0f3965,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-1-Multi-Model-Audio-Comparison.ipynb,e8af8311,code,fr,3e4ebee39c2b49ed,"# Parameters
-notebook_mode = ""batch""
-skip_widgets = True
-",,,,,,,,3e4ebee39c2b49ed,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-2-Audio-Pipeline-Orchestration.ipynb,8e952347,code,fr,3e4ebee39c2b49ed,"# Parameters
-notebook_mode = ""batch""
-skip_widgets = True
-",,,,,,,,3e4ebee39c2b49ed,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-3-Realtime-Voice-API.ipynb,5ca740c3,code,fr,3e4ebee39c2b49ed,"# Parameters
 notebook_mode = ""batch""
 skip_widgets = True
