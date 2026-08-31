@@ -266,3 +266,65 @@ class TestOutputSchema:
         # Format ISO-8601 UTC.
         assert payload["generated_at_utc"].endswith("+00:00") or \
                payload["generated_at_utc"].endswith("Z")
+
+
+# -------- Cliquet rename-aware pour count_revisions_follow (#13776) --------
+
+class TestCountRevisionsFollow:
+    """Cliquet de non-regression pour ``count_revisions_follow`` (#13776).
+
+    Ce compteur est le compte AUTHENTIQUE de revisions du selecteur Phase 0
+    (l.204 de scripts/notebook_tools/phase0_sample_stratify.py) : il fixe la
+    bande d'un notebook, donc sa presence dans l'echantillon d'audit #9768.
+    Il n'avait aucun test. Un futur refactor qui retirerait ``--follow`` de la
+    liste d'arguments passerait toute la suite au vert (les 11 tests existants
+    portent sur les bandes/priorites/fail-loud, aucun ne traverse cette
+    fonction). Les deux tests ci-dessous echouent si ``--follow`` disparait.
+    """
+
+    def _make_fixture(self, tmp_path, monkeypatch):
+        """Repaire git auto-contenu : commit c1, ``git mv``, commit c2.
+
+        Le module derive ``REPO_ROOT`` de son propre emplacement et exige que
+        le notebook soit dessous ; on pointe donc le module sur le repaire via
+        ``monkeypatch`` (aucune dependance au corpus reel du depot).
+        """
+        import subprocess
+
+        repo = tmp_path / "repo"
+        repo.mkdir()
+
+        def git(*args):
+            subprocess.run(["git", "-C", str(repo), *args], check=True)
+
+        git("init", "-q")
+        nb = repo / "notebook.ipynb"
+        nb.write_text("{}", encoding="utf-8")
+        git("add", ".")
+        git("-c", "user.email=t@t", "-c", "user.name=t", "commit", "-q", "-m", "c1")
+        renamed = repo / "renamed.ipynb"
+        git("mv", "notebook.ipynb", "renamed.ipynb")
+        git("-c", "user.email=t@t", "-c", "user.name=t", "commit", "-q", "-m", "c2")
+
+        monkeypatch.setattr(p0, "REPO_ROOT", repo)
+        return repo, renamed
+
+    def test_follow_compte_a_travers_le_rename(self, tmp_path, monkeypatch):
+        """Sans ``--follow``, ``git log`` sur le chemin renomme voit 1 commit ;
+        avec ``--follow`` il voit les 2. Le cliquet exige >= 2."""
+        _repo, renamed = self._make_fixture(tmp_path, monkeypatch)
+        assert p0.count_revisions_follow(renamed) >= 2
+
+    def test_sans_follow_le_compte_nu_est_1_controle_positif(self, tmp_path, monkeypatch):
+        """Preuve que le cliquet n'est pas une assertion morte (cf. #13667) :
+        le compte NU sur le chemin renomme vaut exactement 1, donc un compte
+        traversant le rename (>= 2) ne peut venir que de ``--follow``. Retirer
+        cet argument fait echouer le test precedent."""
+        import subprocess
+
+        repo, _renamed = self._make_fixture(tmp_path, monkeypatch)
+        bare = subprocess.run(
+            ["git", "-C", str(repo), "log", "HEAD", "--format=oneline", "--", "renamed.ipynb"],
+            capture_output=True, text=True, encoding="utf-8", check=True,
+        )
+        assert sum(1 for l in bare.stdout.splitlines() if l.strip()) == 1
