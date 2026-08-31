@@ -49,6 +49,7 @@ Une série sœur existe en C# : [SymbolicAI/Z3-Linq2Z3/](../Z3-Linq2Z3/README.md
 |---|----------|-------|------|--------|
 | 01 | [Introduction](Z3-Python-01-Introduction.ipynb) | `Solver`, `Int`/`Bool`/`Real`, sat/unsat, `Optimize` | ~30 min | PRODUCTION |
 | 01ᶜˢ | [Introduction (twin C# .NET)](Z3-Python-01-Introduction-Csharp.ipynb) | Parité .NET : même moteur Z3 via `Microsoft.Z3` (NuGet) | ~30 min | PRODUCTION |
+| 01b | [Du style déclaratif LINQ au solveur Z3](Z3-Python-01b-Style-Declaratif-Linq.ipynb) | Pont C# Z3.Linq ↔ pyz3 : `assert_and_track`, `unsat_core`, coloration de graphe (Australie) | ~30 min | PRODUCTION |
 | 02 | [Sudoku](Z3-Python-02-Sudoku.ipynb) | Sudoku comme CSP, `Distinct`, visualisation matplotlib | ~25 min | PRODUCTION |
 | 02ᶜˢ | [Sudoku (twin C# .NET)](Z3-Python-02-Sudoku-Csharp.ipynb) | Parité .NET : même moteur Z3, visualisation ASCII | ~25 min | PRODUCTION |
 | 03 | [Tactiques et théories](Z3-Python-03-Tactics.ipynb) | `Tactic`, `BitVec`, `Array` | ~35 min | PRODUCTION |
@@ -59,7 +60,6 @@ Une série sœur existe en C# : [SymbolicAI/Z3-Linq2Z3/](../Z3-Linq2Z3/README.md
 | 05ᶜˢ | [Quantificateurs et preuves (twin C# .NET)](Z3-Python-05-Quantifiers-Proofs-Csharp.ipynb) | Parité .NET : `MkForall`, `MkExists`, réfutation, `ReasonUnknown` via `Microsoft.Z3` (NuGet) | ~35 min | PRODUCTION |
 | 06 | [Optimisation avancée](Z3-Python-06-Advanced-Optimization.ipynb) | Pareto, objectifs multiples, `Optimize` hiérarchique, MaxSAT | ~40 min | PRODUCTION |
 | 06ᶜˢ | [Optimisation avancée (twin C# .NET)](Z3-Python-06-Advanced-Optimization-Csharp.ipynb) | Parité .NET : `MkOptimize`, `MkMaximize`/`MkMinimize`, front de Pareto, `AssertSoft` (MaxSAT) via `Microsoft.Z3` (NuGet) | ~40 min | PRODUCTION |
-| 07 | [Du style déclaratif LINQ au solveur Z3](Z3-Python-07-Style-Declaratif-Linq.ipynb) | Pont C# Z3.Linq ↔ pyz3 : `assert_and_track`, `unsat_core`, coloration de graphe (Australie) | ~30 min | PRODUCTION |
 | 08 | [Ordonnancement (Job-Shop Scheduling)](Z3-Python-08-Ordonnancement.ipynb) | `Optimize.minimize`, contrainte disjonctive `Or(...)`, makespan minimal, diagramme de Gantt | ~35 min | PRODUCTION |
 | 09 | [L'énigme d'Einstein (Zebra puzzle)](Z3-Python-09-Enigme-Einstein.ipynb) | Encodage par position, `Distinct`, adjacences, satisfiabilité vs optimisation, unicité prouvée | ~30 min | PRODUCTION |
 | 10 | [Cryptarithmes (SEND + MORE = MONEY)](Z3-Python-10-Cryptarithmetic.ipynb) | `Int`, `Distinct`, équation positionnelle, propagation vs brute force, retenues déduites | ~25 min | PRODUCTION |

@@ -259,13 +259,13 @@ La série joue un rôle charnière dans la famille SymbolicAI : elle **consomme*
 |---|----------|--------|---------|-----------|
 | **Fondations Z3-API (Python + jumeaux C#)** |   |   |   |   |
 | 01 | [Z3-Python-01-Introduction](SMT/Z3-API/Z3-Python-01-Introduction.ipynb) · [C#](SMT/Z3-API/Z3-Python-01-Introduction-Csharp.ipynb) | Python / .NET | Premier solve() : booléens, entiers, solveur, modèle | 3 |
+| 01b | [Z3-Python-01b-Style-Declaratif-Linq](SMT/Z3-API/Z3-Python-01b-Style-Declaratif-Linq.ipynb) | Python | Comparaison style impératif vs LINQ-like avec Z3 Python | 2 |
 | 02 | [Z3-Python-02-Sudoku](SMT/Z3-API/Z3-Python-02-Sudoku.ipynb) · [C#](SMT/Z3-API/Z3-Python-02-Sudoku-Csharp.ipynb) | Python / .NET | Sudoku 9×9 par contraintes, propagation, unicité | 3 |
 | 03 | [Z3-Python-03-Tactics](SMT/Z3-API/Z3-Python-03-Tactics.ipynb) · [C#](SMT/Z3-API/Z3-Python-03-Tactics-Csharp.ipynb) | Python / .NET | Tactiques (simplify, solve-eq, bit-blast), combinaison de solveurs | 3 |
 | 04 | [Z3-Python-04-Strings-Regex](SMT/Z3-API/Z3-Python-04-Strings-Regex.ipynb) · [C#](SMT/Z3-API/Z3-Python-04-Strings-Regex-Csharp.ipynb) | Python / .NET | Théorie des chaînes, regex, exemples Sphinx | 3 |
 | 05 | [Z3-Python-05-Quantifiers-Proofs](SMT/Z3-API/Z3-Python-05-Quantifiers-Proofs.ipynb) · [C#](SMT/Z3-API/Z3-Python-05-Quantifiers-Proofs-Csharp.ipynb) | Python / .NET | Quantificateurs ∀/∃, preuve par instantiation, incomplétude | 3 |
 | 06 | [Z3-Python-06-Advanced-Optimization](SMT/Z3-API/Z3-Python-06-Advanced-Optimization.ipynb) · [C#](SMT/Z3-API/Z3-Python-06-Advanced-Optimization-Csharp.ipynb) | Python / .NET | Optimisation MaxSAT, Optimize(), Pareto | 3 |
 | **Z3-API patterns impératifs (Python)** |   |   |   |   |
-| 07 | [Z3-Python-07-Style-Declaratif-Linq](SMT/Z3-API/Z3-Python-07-Style-Declaratif-Linq.ipynb) | Python | Comparaison style impératif vs LINQ-like avec Z3 Python | 2 |
 | 08 | [Z3-Python-08-Ordonnancement](SMT/Z3-API/Z3-Python-08-Ordonnancement.ipynb) | Python | Ordonnancement de tâches, précédences, disjonctions | 3 |
 | 09 | [Z3-Python-09-Enigme-Einstein](SMT/Z3-API/Z3-Python-09-Enigme-Einstein.ipynb) | Python | Énigme d'Einstein, 5 maisons, 5 attributs × 5 valeurs | 3 |
 | 10 | [Z3-Python-10-Cryptarithmetic](SMT/Z3-API/Z3-Python-10-Cryptarithmetic.ipynb) | Python | Cryptarithmes SEND+MORE=MONEY, alphamétique | 3 |
