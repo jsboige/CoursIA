@@ -50,9 +50,9 @@ def _md(source: str) -> dict:
 
 class TestImportDetection:
     def test_import_re_matches_notebook_target(self):
-        m = IMPORT_RE.search("#!import Sudoku-0-Environment-Csharp.ipynb")
+        m = IMPORT_RE.search("#!import Sudoku-00-Environment-Csharp.ipynb")
         assert m is not None
-        assert m.group(1) == "Sudoku-0-Environment-Csharp.ipynb"
+        assert m.group(1) == "Sudoku-00-Environment-Csharp.ipynb"
 
     def test_import_re_ignores_non_ipynb_magic(self):
         # Other magic commands (#!csharp, #!time, %%) are NOT #!import targets.

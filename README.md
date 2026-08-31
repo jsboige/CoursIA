@@ -420,8 +420,8 @@ s'installent directement via leur `requirements.txt`.
 |-------|---------------------------|--------------------|
 | GenAI | `GenAI/00-GenAI-Environment/` (6 notebooks : environment, services Docker, endpoints API, validation, test ComfyUI local, déploiement Docker local) | `requirements.txt` (+ `-audio` / `-video`) ; `00-GenAI-Environment/validate_auth.py` |
 | GameTheory | `GameTheory/GameTheory-01-Setup.ipynb` | `GameTheory/scripts/setup_wsl_openspiel.sh`, `GameTheory/scripts/setup_wsl_lean4.sh`, `GameTheory/scripts/setup_lean4_kernel.ps1` |
-| Sudoku | `Sudoku/Sudoku-0-Environment-Csharp.ipynb` | kernel .NET Interactive |
-| Probas | `Probas/Infer/Infer-1-Setup.ipynb`, `Probas/PyMC/PyMC-1-Setup.ipynb` | `Probas/Infer/scripts/setup_environment.ps1` |
+| Sudoku | `Sudoku/Sudoku-00-Environment-Csharp.ipynb` | kernel .NET Interactive |
+| Probas | `Probas/Infer/Infer-1-Setup.ipynb`, `Probas/PyMC/PyMC-01-Setup.ipynb` | `Probas/Infer/scripts/setup_environment.ps1` |
 | QuantConnect | `QuantConnect/Python/QC-Py-01-Setup.ipynb` | `requirements.txt` |
 | Lean | `SymbolicAI/Lean/Lean-1-Setup.ipynb` | `SymbolicAI/Lean/scripts/setup_wsl_python.sh`, `SymbolicAI/Lean/scripts/validate_lean_setup.py` |
 | Planners | `SymbolicAI/Planners/00-Environment/Planners-0-Setup.ipynb` | `requirements.txt` ; `SymbolicAI/scripts/install_clingo.py` |

@@ -1,6 +1,6 @@
 # Search - Applications
 
-C'est ici que la série Search se confronte au réel. Les 50 notebooks d'application, pour la plupart adaptés de projets étudiants, prennent les algorithmes des Parties 1 et 2 et les mettent face à des problèmes qui ne se laissent pas faire : planifier les gardes d'un service hospitalier, ordonnancer un atelier, construire un calendrier sportif équitable, router une flotte de véhicules. Trois catégories les organisent — **Search pur** (jeux combinatoires), **CSP** (satisfaction de contraintes) et **Hybride** (combinaisons de solveurs, modèles exacts et métaheuristiques) — et la plupart sont autonomes, avec des pointeurs vers les prérequis pertinents. À cela s'ajoutent les **jumeaux C#** (App-1b, App-2b, App-3b, App-4b, App-5b, App-6-Csharp, App-7b, App-8-Csharp, App-9b, App-10b, App-11b, App-12b, App-13b, App-14-CSharp, App-15b, App-16-CSharp, App-17b, App-18b, App-19-CSharp, App-20b) qui déroulent les mêmes algorithmes *from-scratch* en .NET, en complément des versions Python qui invoquent des solveurs industriels.
+C'est ici que la série Search se confronte au réel. Les 50 notebooks d'application, pour la plupart adaptés de projets étudiants, prennent les algorithmes des Parties 1 et 2 et les mettent face à des problèmes qui ne se laissent pas faire : planifier les gardes d'un service hospitalier, ordonnancer un atelier, construire un calendrier sportif équitable, router une flotte de véhicules. Trois catégories les organisent — **Search pur** (jeux combinatoires), **CSP** (satisfaction de contraintes) et **Hybride** (combinaisons de solveurs, modèles exacts et métaheuristiques) — et la plupart sont autonomes, avec des pointeurs vers les prérequis pertinents. À cela s'ajoutent les **jumeaux C#** (App-1b, App-2b, App-3b, App-4b, App-5b, App-6-Csharp, App-7b, App-8-Csharp, App-9b, App-10b, App-11b, App-13b, App-14-CSharp, App-14c, App-15b, App-16-CSharp, App-17b, App-18b, App-19-CSharp, App-20b) qui déroulent les mêmes algorithmes *from-scratch* en .NET, en complément des versions Python qui invoquent des solveurs industriels.
 
 Sous-série de **50 notebooks** | **~26h15** | Python 3.10+ (`ortools`, `python-sat`, `deap`, `mealpy`, `minizinc`, `optuna`) ; .NET 9 (`dotnet-interactive`) pour les jumeaux C#
 
@@ -58,8 +58,8 @@ Deux notebooks autour du Puissance 4, le banc d'essai idéal de la recherche adv
 
 | # | Notebook | Durée | Contenu | Source |
 |---|----------|-------|---------|--------|
-| 1 | [App-12-ConnectFour](Search/App-12-ConnectFour.ipynb) | ~50 min | Puissance 4 : Minimax, MCTS, DQN-RL | Projet étudiant |
-| 1b | [App-12-ConnectFour-CSharp](Search/App-12-ConnectFour-CSharp.ipynb) | ~45 min | **Jumeau C#** — Minimax + Alpha-Beta + MCTS (UCB1) + glouton + iterative deepening from-scratch, heuristique de fenêtres + tournoi round-robin, parité #4956 | Jumeau .NET |
+| 1 | [App-14b-ConnectFour](Search/App-14b-ConnectFour.html) | ~50 min | Puissance 4 : Minimax, MCTS, DQN-RL | Projet étudiant |
+| 1b | [App-14c-ConnectFour-CSharp](Search/App-14c-ConnectFour-CSharp.ipynb) | ~45 min | **Jumeau C#** — Minimax + Alpha-Beta + MCTS (UCB1) + glouton + iterative deepening from-scratch, heuristique de fenêtres + tournoi round-robin, parité #4956 | Jumeau .NET |
 | 2 | [App-14-ConnectFour-Adversarial](Search/App-14-ConnectFour-Adversarial.ipynb) | ~45 min | Benchmark adversarial : Minimax, Alpha-Beta, MCTS | Projet étudiant |
 | 2b | [App-14-ConnectFour-Adversarial-CSharp](Search/App-14-ConnectFour-Adversarial-CSharp.ipynb) | ~40 min | **Jumeau C#** — Minimax + Alpha-Beta (élagage) + MCTS (UCB1) from-scratch, benchmark nœuds + tournoi round-robin, parité #4956 | Jumeau .NET |
 
@@ -71,59 +71,59 @@ Le gros de la sous-série, et un panorama de ce que la programmation par contrai
 
 Les classiques fondateurs d'abord : les N-Queens (App-1) — le banc d'essai canonique de la recherche avec contraintes, ici résolu sur 8 reines par la solution connue que toute la littérature partage :
 
-[![Échiquier 8×8 avec une solution connue des 8-Reines : aucune paire de reines ne se menace](assets/readme/app1-nqueens-board.png)](CSP/App-1-NQueens.ipynb)
+[![Échiquier 8×8 avec une solution connue des 8-Reines : aucune paire de reines ne se menace](assets/readme/app1-nqueens-board.png)](CSP/App-1-NQueens.html)
 
 La coloration de graphes (App-2) part, elle, du graphe d'adjacence des départements français métropolitains — encore sans couleur assignée ici, le tracé sert de support à l'illustration de la contrainte de différence par frontière :
 
-[![Graphe d'adjacence des départements français métropolitains — vue non colorée servant de support à l'illustration de la contrainte de différence par frontière](assets/readme/app2-graphcoloring-map.png)](CSP/App-2-GraphColoring.ipynb)
+[![Graphe d'adjacence des départements français métropolitains — vue non colorée servant de support à l'illustration de la contrainte de différence par frontière](assets/readme/app2-graphcoloring-map.png)](CSP/App-2-GraphColoring.html)
 
 Viennent ensuite les problèmes d'ordonnancement réalistes. Le planning infirmier (App-3) montre 15 infirmières réparties sur 28 jours, avec les créneaux Matin/Après-midi/Nuit, les jours de repos et les week-ends marqués en rouge :
 
-[![Planning de gardes : 15 infirmières sur 28 jours, créneaux M/A/N/Repos, week-ends en rouge, équité des charges](assets/readme/app3-nurseschedule-planning.png)](CSP/App-3-NurseScheduling.ipynb)
+[![Planning de gardes : 15 infirmières sur 28 jours, créneaux M/A/N/Repos, week-ends en rouge, équité des charges](assets/readme/app3-nurseschedule-planning.png)](CSP/App-3-NurseScheduling.html)
 
 Le calendrier sportif (App-15) commence, lui, par ses données brutes : la matrice des distances entre les six villes de la ligue, à partir de laquelle le solveur équilibre les déplacements :
 
-[![Matrice des distances entre les 6 villes de la ligue (entrée du calendrier sportif App-15)](assets/readme/app15-sports-calendar.png)](CSP/App-15-SportsScheduling.ipynb)
+[![Matrice des distances entre les 6 villes de la ligue (entrée du calendrier sportif App-15)](assets/readme/app15-sports-calendar.png)](CSP/App-15-SportsScheduling.html)
 
 Enfin, deux terrains où la modélisation est tout le travail. Le Picross (App-11) sert de leçon de vitesse : un puzzle 5×5 présenté avec ses indices de lignes et de colonnes — la grille encore vierge, à laisser au solveur CP-SAT le soin de noircir :
 
-[![Puzzle Picross 5x5 avec indices de lignes/colonnes (énoncé) : grille à résoudre par propagation de contraintes](assets/readme/app11-picross-grid.png)](CSP/App-11-Picross.ipynb)
+[![Puzzle Picross 5x5 avec indices de lignes/colonnes (énoncé) : grille à résoudre par propagation de contraintes](assets/readme/app11-picross-grid.png)](CSP/App-11-Picross.html)
 
 La génération procédurale de niveaux (App-19) encode le Wave Function Collapse en CP-SAT — un niveau OPTIMAL produit par le solveur, avec un héros, trois ennemis, une clé et un coffre, sur un pavage de tuiles mur / sol / eau / porte / herbe :
 
-[![Niveau WFC généré par CP-SAT : tuiles wall/floor/water/door/grass, héros, 3 ennemis, clé, coffre](assets/readme/app19-wfc-tiles.png)](CSP/App-19-ProceduralGeneration-WFC.ipynb)
+[![Niveau WFC généré par CP-SAT : tuiles wall/floor/water/door/grass, héros, 3 ennemis, clé, coffre](assets/readme/app19-wfc-tiles.png)](CSP/App-19-ProceduralGeneration-WFC.html)
 
 *Figures : sorties d'exécution réelles extraites des notebooks (non régénérées, règle C.3), downscalées ≤1200 px / ≤200 ko (EPIC #5654) — provenance détaillée dans [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).*
 
 | # | Notebook | Durée | Contenu | Source |
 |---|----------|-------|---------|--------|
-| 1 | [App-1-NQueens](CSP/App-1-NQueens.ipynb) | ~30 min | Backtracking, Min-Conflicts, OR-Tools | Classique |
+| 1 | [App-1-NQueens](CSP/App-1-NQueens.html) | ~30 min | Backtracking, Min-Conflicts, OR-Tools | Classique |
 | 1b | [App-1b-NQueens-CSharp](CSP/App-1b-NQueens-CSharp.ipynb) | ~35 min | Twin C# : Backtracking (simple/MRV/FC), Min-Conflicts, énumération + symétrie D4 | Classique |
-| 2 | [App-2-GraphColoring](CSP/App-2-GraphColoring.ipynb) | ~45 min | Greedy, DSATUR, CP-SAT, départements | Projet étudiant |
+| 2 | [App-2-GraphColoring](CSP/App-2-GraphColoring.html) | ~45 min | Greedy, DSATUR, CP-SAT, départements | Projet étudiant |
 | 2b | [App-2b-GraphColoring-CSharp](CSP/App-2b-GraphColoring-CSharp.ipynb) | ~40 min | Twin C# : Greedy (3 ordres), DSATUR, Welsh-Powell, backtracking χ exact + Mycielski | Classique |
 | 2c | [App-2-GraphColoring-Statistical-Validity-Python](CSP/App-2-GraphColoring-Statistical-Validity-Python.ipynb) | ~50 min | Validité statistique cross-instance : bootstrap, Mann-Whitney, taille d'effet et densité | Nouveau |
-| 3 | [App-3-NurseScheduling](CSP/App-3-NurseScheduling.ipynb) | ~60 min | Hard/soft constraints, CP-SAT | Projet étudiant |
-| 3b | [App-3b-NurseScheduling-CSharp](CSP/App-3b-NurseScheduling-CSharp.ipynb) | ~45 min | **Jumeau C#** — glouton, backtracking, min-conflicts from-scratch (modélisation 1 var/slot, optimisation préférences), parité #4956 | Jumeau .NET |
-| 4 | [App-4-JobShopScheduling](CSP/App-4-JobShopScheduling.ipynb) | ~60 min | Intervalles, précédences, makespan | Projet étudiant |
-| 4b | [App-4b-JobShopScheduling-CSharp](CSP/App-4b-JobShopScheduling-CSharp.ipynb) | ~45 min | **Jumeau C#** — dispatching heuristics (SPT/LPT/MOR/MWKR/FIFO) + branch-and-bound optimal from-scratch (énumération active + élagage), Gantt ASCII, parité #4956 | Jumeau .NET |
-| 5 | [App-5-Timetabling](CSP/App-5-Timetabling.ipynb) | ~50 min | MiniZinc + OR-Tools | Projet étudiant |
+| 3 | [App-3-NurseScheduling](CSP/App-3-NurseScheduling.html) | ~60 min | Hard/soft constraints, CP-SAT | Projet étudiant |
+| 3b | [App-3b-NurseScheduling-CSharp](CSP/App-3b-NurseScheduling-CSharp.html) | ~45 min | **Jumeau C#** — glouton, backtracking, min-conflicts from-scratch (modélisation 1 var/slot, optimisation préférences), parité #4956 | Jumeau .NET |
+| 4 | [App-4-JobShopScheduling](CSP/App-4-JobShopScheduling.html) | ~60 min | Intervalles, précédences, makespan | Projet étudiant |
+| 4b | [App-4b-JobShopScheduling-CSharp](CSP/App-4b-JobShopScheduling-CSharp.html) | ~45 min | **Jumeau C#** — dispatching heuristics (SPT/LPT/MOR/MWKR/FIFO) + branch-and-bound optimal from-scratch (énumération active + élagage), Gantt ASCII, parité #4956 | Jumeau .NET |
+| 5 | [App-5-Timetabling](CSP/App-5-Timetabling.html) | ~50 min | MiniZinc + OR-Tools | Projet étudiant |
 | 5b | [App-5-Timetabling-CSharp](CSP/App-5-Timetabling-CSharp.ipynb) | ~35 min | **Jumeau C#** — glouton MRV + branch-and-bound optimal from-scratch (énumération avec élagage par contrainte dure), visualisation ASCII, parité #4956 | Jumeau .NET |
-| 6 | [App-6-Minesweeper](CSP/App-6-Minesweeper.ipynb) | ~50 min | CSP + probabilités + LLM | Projet étudiant |
+| 6 | [App-6-Minesweeper](CSP/App-6-Minesweeper.html) | ~50 min | CSP + probabilités + LLM | Projet étudiant |
 | 6 | [App-6-Minesweeper-Csharp](CSP/App-6-Minesweeper-Csharp.ipynb) | ~50 min | **Jumeau C#** — CSP backtracking from-scratch + probabilités, parité #4956 | Jumeau .NET |
-| 7 | [App-7-Wordle](CSP/App-7-Wordle.ipynb) | ~45 min | Filtrage CSP + théorie de l'information | Projet étudiant |
-| 7b | [App-7b-Wordle-CSharp](CSP/App-7b-Wordle-CSharp.ipynb) | ~35 min | **Jumeau C#** — filtrage simple, CSP par propagation de domaines, solveur par entropie de Shannon from-scratch, parité #4956 | Jumeau .NET |
-| 8 | [App-8-MiniZinc](CSP/App-8-MiniZinc.ipynb) | ~50 min | Syntaxe MiniZinc, contraintes globales | Nouveau |
-| 8 | [App-8-MiniZinc-Csharp](CSP/App-8-MiniZinc-Csharp.ipynb) | ~50 min | **Jumeau C#** — Google.OrTools CP-SAT (Prong A #3801), modèles déclaratifs équivalents MiniZinc (MiniZinc n'a pas de binding .NET), parité #4956 | Jumeau .NET |
-| 9 | [App-11-Picross](CSP/App-11-Picross.ipynb) | ~40 min | Nonogrammes : 27Mx speedup CP-SAT | Projet étudiant |
+| 7 | [App-7-Wordle](CSP/App-7-Wordle.html) | ~45 min | Filtrage CSP + théorie de l'information | Projet étudiant |
+| 7b | [App-7b-Wordle-CSharp](CSP/App-7b-Wordle-CSharp.html) | ~35 min | **Jumeau C#** — filtrage simple, CSP par propagation de domaines, solveur par entropie de Shannon from-scratch, parité #4956 | Jumeau .NET |
+| 8 | [App-8-MiniZinc](CSP/App-8-MiniZinc.html) | ~50 min | Syntaxe MiniZinc, contraintes globales | Nouveau |
+| 8 | [App-8-MiniZinc-Csharp](CSP/App-8-MiniZinc-Csharp.html) | ~50 min | **Jumeau C#** — Google.OrTools CP-SAT (Prong A #3801), modèles déclaratifs équivalents MiniZinc (MiniZinc n'a pas de binding .NET), parité #4956 | Jumeau .NET |
+| 9 | [App-11-Picross](CSP/App-11-Picross.html) | ~40 min | Nonogrammes : 27Mx speedup CP-SAT | Projet étudiant |
 | 9b | [App-11b-Picross-CSharp](CSP/App-11b-Picross-CSharp.ipynb) | ~40 min | Twin C# : énumération de motifs, propagation par intersection (point fixe), naïf vs propagation | Classique |
-| 10 | [App-15-SportsScheduling](CSP/App-15-SportsScheduling.ipynb) | ~55 min | Calendrier sportif : contraintes TV, équité, déplacements | Projet étudiant |
+| 10 | [App-15-SportsScheduling](CSP/App-15-SportsScheduling.html) | ~55 min | Calendrier sportif : contraintes TV, équité, déplacements | Projet étudiant |
 | 10b | [App-15b-SportsScheduling-CSharp](CSP/App-15b-SportsScheduling-CSharp.ipynb) | ~55 min | **Jumeau C#** — Google.OrTools CP-SAT natif .NET, round-robin + équilibre D/E + déplacements, parité #4956 | Jumeau .NET |
-| 11 | [App-16-Crossword-CSP](CSP/App-16-Crossword-CSP.ipynb) | ~45 min | Mots croisés : backtracking, OR-Tools, génération | Projet étudiant |
+| 11 | [App-16-Crossword-CSP](CSP/App-16-Crossword-CSP.html) | ~45 min | Mots croisés : backtracking, OR-Tools, génération | Projet étudiant |
 | 11 | [App-16-Crossword-CSP-Csharp](CSP/App-16-Crossword-CSP-Csharp.ipynb) | ~45 min | **Jumeau C#** — backtracking + propagation de domaines from-scratch (le twin Python s'appuie sur OR-Tools CP-SAT), parité #4956 | Jumeau .NET |
-| 12 | [App-19-ProceduralGeneration-WFC](CSP/App-19-ProceduralGeneration-WFC.ipynb) | ~45 min | Génération procédurale : Wave Function Collapse via CP-SAT | Projet étudiant |
+| 12 | [App-19-ProceduralGeneration-WFC](CSP/App-19-ProceduralGeneration-WFC.html) | ~45 min | Génération procédurale : Wave Function Collapse via CP-SAT | Projet étudiant |
 | 12 | [App-19-ProceduralGeneration-WFC-Csharp](CSP/App-19-ProceduralGeneration-WFC-Csharp.ipynb) | ~45 min | **Jumeau C#** — Wave Function Collapse from-scratch (algorithme de Gumin : effondrement progressif + propagation de contraintes), parité #4956 | Jumeau .NET |
-| 13 | [App-20-SudokuBenchmark-Python](CSP/App-20-SudokuBenchmark-Python.ipynb) | ~50 min | Benchmark comparatif : 4 solveurs Sudoku, un problème NP-complet | Nouveau |
-| 13b | [App-20b-SudokuBenchmark-CSharp](CSP/App-20b-SudokuBenchmark-CSharp.ipynb) | ~35 min | **Jumeau C#** — backtracking naïf/MRV, AC-3, Dancing Links (Knuth) from-scratch, benchmark 3 difficultés, parité #4956 | Jumeau .NET |
+| 13 | [App-20-SudokuBenchmark-Python](CSP/App-20-SudokuBenchmark-Python.html) | ~50 min | Benchmark comparatif : 4 solveurs Sudoku, un problème NP-complet | Nouveau |
+| 13b | [App-20b-SudokuBenchmark-CSharp](CSP/App-20b-SudokuBenchmark-CSharp.html) | ~35 min | **Jumeau C#** — backtracking naïf/MRV, AC-3, Dancing Links (Knuth) from-scratch, benchmark 3 difficultés, parité #4956 | Jumeau .NET |
 | 14 | [App-21-VoiceLeading](CSP/App-21-VoiceLeading.ipynb) | ~40 min | Hommage Munkres : voice leading chorale par affectation (Kuhn-Munkres via scipy) + audit/réparation du contrepoint de Fux en CP-SAT — encodage issu des projets étudiants EPITA PrCon (H1/H1_V2) | Hommage Munkres / projets étudiants EPITA |
 | 15 | [App-22-EdgeColoring-Tutte](CSP/App-22-EdgeColoring-Tutte.ipynb) | ~45 min | Coloration d'arêtes cubiques : Vizing, Petersen, ponts, graphes apex et CP-SAT | Nouveau |
 | 16 | [App-26-CoveringArrays-Guarantee-Audit](CSP/App-26-CoveringArrays-Guarantee-Audit.ipynb) | ~55 min | Covering Arrays : oracle constraint-aware, set cover CP-SAT exact, bornes et baselines IPOG/AETG-like — distillation PrCon H4 (Valérian Pichot) | Projet étudiant (PrCon PR #58) |
@@ -136,17 +136,17 @@ Quand l'espace est trop vaste ou l'objectif trop irrégulier pour les méthodes 
 
 | # | Notebook | Durée | Contenu | Source |
 |---|----------|-------|---------|--------|
-| 1 | [App-9-EdgeDetection](Hybrid/App-9-EdgeDetection.ipynb) | ~40 min | GA pour filtres de convolution | Existant |
-| 2 | [App-9b-EdgeDetection-CSharp](Hybrid/App-9b-EdgeDetection-CSharp.ipynb) | ~35 min | GeneticSharp (C#) | Existant |
-| 3 | [App-10-Portfolio](Hybrid/App-10-Portfolio.ipynb) | ~40 min | Multi-objectif, frontière de Pareto | Existant |
-| 4 | [App-10b-Portfolio-CSharp](Hybrid/App-10b-Portfolio-CSharp.ipynb) | ~30 min | GeneticSharp (C#) | Existant |
+| 1 | [App-9-EdgeDetection](Hybrid/App-9-EdgeDetection.html) | ~40 min | GA pour filtres de convolution | Existant |
+| 2 | [App-9b-EdgeDetection-CSharp](Hybrid/App-9b-EdgeDetection-CSharp.html) | ~35 min | GeneticSharp (C#) | Existant |
+| 3 | [App-10-Portfolio](Hybrid/App-10-Portfolio.html) | ~40 min | Multi-objectif, frontière de Pareto | Existant |
+| 4 | [App-10b-Portfolio-CSharp](Hybrid/App-10b-Portfolio-CSharp.html) | ~30 min | GeneticSharp (C#) | Existant |
 | 5 | [App-13-TSP-Metaheuristics](Hybrid/App-13-TSP-Metaheuristics.ipynb) | ~50 min | TSP : SA, GA, ACO, OR-Tools routing | Classique |
 | 5b | [App-13b-TSP-Metaheuristics-CSharp](Hybrid/App-13b-TSP-Metaheuristics-CSharp.ipynb) | ~45 min | Twin C# : force brute, plus proche voisin, 2-opt from-scratch, recuit simulé sur permutations | Classique |
-| 6 | [App-17-VRP-Logistics](Hybrid/App-17-VRP-Logistics.ipynb) | ~60 min | Vehicle Routing : SA, GA, ACO, CP-SAT | Projet étudiant |
+| 6 | [App-17-VRP-Logistics](Hybrid/App-17-VRP-Logistics.html) | ~60 min | Vehicle Routing : SA, GA, ACO, CP-SAT | Projet étudiant |
 | 6b | [App-17b-VRP-Logistics-CSharp](Hybrid/App-17b-VRP-Logistics-Csharp.ipynb) | ~50 min | Twin C# : Nearest-Neighbor, cheapest-insertion, 2-opt, recuit simulé (métaheuristiques from-scratch) | Jumeau .NET |
 | 6c | [App-17b-VRP-Logistics-Python](Hybrid/App-17b-VRP-Logistics-Python.ipynb) | ~45 min | Twin Python from-scratch : NN, insertion, 2-opt, recuit et vérification OR-Tools | Jumeau Python |
-| 7 | [App-18-HyperparameterTuning](Hybrid/App-18-HyperparameterTuning.ipynb) | ~40 min | Optimisation ML : Bayésienne, GA, PSO, Optuna | Nouveau |
-| 7b | [App-18b-HyperparameterTuning-CSharp](Hybrid/App-18b-HyperparameterTuning-CSharp.ipynb) | ~40 min | **Jumeau C#** — Grid/Random Search + Bayesian Optimization from-scratch (Gaussian Process RBF + Expected Improvement via Abramowitz-Stegun) + GA + PSO, objectif = k-NN CV 5-fold, parité #4956 | Jumeau .NET |
+| 7 | [App-18-HyperparameterTuning](Hybrid/App-18-HyperparameterTuning.html) | ~40 min | Optimisation ML : Bayésienne, GA, PSO, Optuna | Nouveau |
+| 7b | [App-18b-HyperparameterTuning-CSharp](Hybrid/App-18b-HyperparameterTuning-CSharp.html) | ~40 min | **Jumeau C#** — Grid/Random Search + Bayesian Optimization from-scratch (Gaussian Process RBF + Expected Improvement via Abramowitz-Stegun) + GA + PSO, objectif = k-NN CV 5-fold, parité #4956 | Jumeau .NET |
 | 7c | [App-18b-HyperparameterTuning-Python](Hybrid/App-18b-HyperparameterTuning-Python.ipynb) | ~45 min | Twin Python from-scratch : Grid/Random, GP-EI, GA, PSO et vérification Optuna | Jumeau Python |
 | 8 | [App-22-AlgorithmSelection-Python](Hybrid/App-22-AlgorithmSelection-Python.ipynb) | ~45 min | Sélection empirique d'algorithmes : 3 jeux (Sudoku, Puissance 4, Wordle), 13 familles conceptuelles / 14 étiquettes mesurées, non-commensurabilité des métriques + frontières de Pareto + choix sous préférences — hommage PR IS #42 (Théodore Deguest) | Projet étudiant (IS PR #42) |
 | 9 | [App-23-PRESENT-Differential-Cryptanalysis-SAT](Hybrid/App-23-PRESENT-Differential-Cryptanalysis-SAT.ipynb) | ~55 min | PRESENT : DDT, compression d'implicants, CNF pondérée, frontière SAT/UNSAT du meilleur trail et limites de certification — distillation PrCon F2 (Théodore Deguest) | Projet étudiant (PrCon PR #49) |
@@ -161,10 +161,10 @@ Quand l'espace est trop vaste ou l'objectif trop irrégulier pour les méthodes 
 
 | Notebook | Fondations requises |
 |----------|--------------------|
-| App-12 ConnectFour | Search-3 (A*), Search-4 (LocalSearch) |
+| App-14b ConnectFour | Search-3 (A*), Search-4 (LocalSearch) |
 | App-14 ConnectFour-Adversarial | Search-3 (Heuristiques), Search-6 (AdversarialSearch) |
 | App-14-CSharp | Search-3 (Heuristiques), Search-6 (AdversarialSearch) |
-| App-12-CSharp | Search-6 (AdversarialSearch), Search-7 (MCTS) |
+| App-14c-CSharp | Search-6 (AdversarialSearch), Search-7 (MCTS) |
 
 ### Applications CSP
 
@@ -228,7 +228,7 @@ Quand l'espace est trop vaste ou l'objectif trop irrégulier pour les méthodes 
 
 La plupart des notebooks d'application sont adaptés de projets étudiants réalisés dans le cadre de cours d'IA. Les références spécifiques sont indiquées dans chaque notebook.
 
-Le [App-22-AlgorithmSelection-Python](Hybrid/App-22-AlgorithmSelection-Python.ipynb) est un cas particulier : il **distille** un projet étudiant — **Théodore Deguest**, *« Benchmark cross-paradigme de solveurs de jeux »*, PR [IS #42](https://github.com/jsboigeEpita/2026-Epita-Intelligence-Symbolique/pull/42) — sans en recopier le code. Les solveurs restent dans le dépôt source ; seules les données de résultats sont réutilisées (licence MIT, attribution conservée), et l'analyse est nouvelle et porte la marque CoursIA.
+Le [App-22-AlgorithmSelection-Python](Hybrid/App-22-AlgorithmSelection-Python.html) est un cas particulier : il **distille** un projet étudiant — **Théodore Deguest**, *« Benchmark cross-paradigme de solveurs de jeux »*, PR [IS #42](https://github.com/jsboigeEpita/2026-Epita-Intelligence-Symbolique/pull/42) — sans en recopier le code. Les solveurs restent dans le dépôt source ; seules les données de résultats sont réutilisées (licence MIT, attribution conservée), et l'analyse est nouvelle et porte la marque CoursIA.
 
 Le [App-23-PRESENT-Differential-Cryptanalysis-SAT](Hybrid/App-23-PRESENT-Differential-Cryptanalysis-SAT.ipynb) distille le projet PrCon F2 de **Théodore Deguest**, *« Cryptanalyse différentielle de PRESENT via SAT »*, PR [PrCon #49](https://github.com/jsboigeEpita/2026-Epita-Programmation-par-Contraintes/pull/49). Le notebook reconstruit l'expérience de façon autonome, reproduit la DDT et les frontières SAT/UNSAT, corrige le seuil documentaire à R=15/W=66 et distingue explicitement trail, cluster et niveau de preuve.
 
@@ -249,7 +249,7 @@ Le [App-26-CoveringArrays-Guarantee-Audit](CSP/App-26-CoveringArrays-Guarantee-A
 | [Search (parent)](../README.md) | Vue d'ensemble | Contexte et parcours global |
 | [ML/ML.Net](../../ML/ML.Net/) | App-18 (HyperparameterTuning) | Optimisation bayésienne + GA |
 | [Sudoku](../../Sudoku/) | App-11 (Picross), App-1 (NQueens) | Problèmes combinatoires similaires |
-| [GameTheory](../../GameTheory/) | App-12/14 (ConnectFour) | Jeux à deux joueurs, MCTS |
+| [GameTheory](../../GameTheory/) | App-14/14b (ConnectFour) | Jeux à deux joueurs, MCTS |
 
 ## Références
 
@@ -262,7 +262,7 @@ Couverture par application des sources fondatrices mobilisées dans cette sous-s
 | App-5 (Timetabling), App-8 (MiniZinc) | Nethercote, N., Stuckey, P. J., Becket, R., Brand, S., Duck, G. J., & Tack, G. (2007) — « MiniZinc: Towards a Standard CP Modelling Language », *CP 2007*, LNCS 4741. |
 | App-6 (Minesweeper), App-7 (Wordle) | AIMA, ch. « Probabilistic Reasoning » (CSP doublé de probabilités pour le démineur) ; Cover, T. M., & Thomas, J. A. — *Elements of Information Theory* (2e éd., 2006), Wiley. Entropie et théorie de l'information mobilisées pour le filtrage optimal des hypothèses dans Wordle. |
 | App-11 (Picross) | Knuth, D. E. (2000) — « Dancing Links », dans *Millennial Perspectives in Computer Science* (Springer). Couverture exacte, formulation à l'origine du backtracking naïf sur les nonogrammes avant le saut vers CP-SAT. |
-| App-12, App-14 (ConnectFour) | Browne, C. B., Powley, E., et al. (2012) — « A Survey of Monte Carlo Tree Search Methods », *IEEE Trans. on Computational Intelligence and AI in Games* 4(1) ; et AIMA, ch. « Adversarial Search » (Minimax, élagage Alpha-Beta). |
+| App-14, App-14b (ConnectFour) | Browne, C. B., Powley, E., et al. (2012) — « A Survey of Monte Carlo Tree Search Methods », *IEEE Trans. on Computational Intelligence and AI in Games* 4(1) ; et AIMA, ch. « Adversarial Search » (Minimax, élagage Alpha-Beta). |
 | App-9 (EdgeDetection), App-10 (Portfolio) | Holland, J. H. (1975) — *Adaptation in Natural and Artificial Systems*, University of Michigan Press. Algorithmes génétiques à la base de la recherche de filtres de convolution (App-9) et de l'optimisation de portefeuille (App-10). |
 | App-10 (Portfolio, multi-objectif) | Markowitz, H. (1952) — « Portfolio Selection », *The Journal of Finance* 7(1) — frontière efficiente ; et Deb, K. (2001) — *Multi-Objective Optimization using Evolutionary Algorithms*, Wiley — optimisation évolutionnaire multi-objectif (frontière de Pareto). |
 | App-13 (TSP), App-17 (VRP) | Applegate, D. L., Bixby, R. E., Chvátal, V., & Cook, W. J. (2006) — *The Traveling Salesman Problem: A Computational Study*, Princeton University Press ; Toth, P., & Vigo, D. (2014) — *Vehicle Routing: Problems, Methods, and Applications*, SIAM (2e éd.) ; et Dorigo, M., & Gambardella, L. M. (1997) — « Ant colonies for the traveling salesman problem », *IEEE Trans. on Evolutionary Computation* 1(2) — colonies de fourmis. |
@@ -280,7 +280,7 @@ Couverture par application des sources fondatrices mobilisées dans cette sous-s
 
 Cette sous-série est le lieu de la **confrontation**. Les algorithmes des Parties 1 et 2, compris sur des exemples jouets, y sont mis à l'épreuve de problèmes qui ne se laissent pas réduire — et l'enseignement principal n'est pas « tel algorithme résout tel problème », mais trois leçons transversales que seule la pratique donne :
 
-- **La confrontation des méthodes** — un même problème, résolu plusieurs fois, pour que la comparaison chiffrée parle d'elle-même. Les N-Queens (App-1) le sont en backtracking, en Min-Conflicts puis en OR-Tools ; le TSP (App-13) en recuit simulé, en génétique, en colonies de fourmis et en solveur de routage ; le Puissance 4 (App-12, App-14) en Minimax, Alpha-Beta et MCTS. Le verdict change avec le problème : là où l'exact domine sur les petites instances, l'approché prend le relais dès que l'espace explose — c'est ce basculement, observé et non raconté, qui est l'enseignement.
+- **La confrontation des méthodes** — un même problème, résolu plusieurs fois, pour que la comparaison chiffrée parle d'elle-même. Les N-Queens (App-1) le sont en backtracking, en Min-Conflicts puis en OR-Tools ; le TSP (App-13) en recuit simulé, en génétique, en colonies de fourmis et en solveur de routage ; le Puissance 4 (App-14, App-14b) en Minimax, Alpha-Beta et MCTS. Le verdict change avec le problème : là où l'exact domine sur les petites instances, l'approché prend le relais dès que l'espace explose — c'est ce basculement, observé et non raconté, qui est l'enseignement.
 - **L'ordre de grandeur** — voir un solveur de Picross (App-11) gagner un facteur de plusieurs millions en passant au CP-SAT imprime durablement ce que « propagation » veut dire. Ce n'est pas un détail d'implémentation : c'est le saut de paradigme de la Partie 2 qui devient tangible, mesuré sur un cas où le backtracking naïf s'effondre.
 - **La modélisation comme vrai travail** — le démineur (App-6) devient un CSP doublé de probabilités, Wordle (App-7) un problème de théorie de l'information, la génération procédurale (App-19) un Wave Function Collapse encodé en contraintes. Trouver la bonne formulation y est souvent toute la difficulté — et toute la clé.
 

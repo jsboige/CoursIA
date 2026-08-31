@@ -147,7 +147,7 @@ ARTIFACT_STEM_RE = re.compile(
 )
 
 #: Setup / environment notebooks -- rule threshold 0-1.
-#: `Lean-1-Setup`, `Sudoku-0-Environment-Csharp`, `SC-1-Setup-Foundry`,
+#: `Lean-1-Setup`, `Sudoku-00-Environment-Csharp`, `SC-1-Setup-Foundry`,
 #: `QC-Py-01-Setup`, `Argument_Analysis_Agentic-0-init`, `..-0-init_agent`.
 SETUP_STEM_RE = re.compile(
     r"(?:^|[-_])(?:setup|environment|init)(?:$|[-_])", re.IGNORECASE
@@ -160,7 +160,7 @@ SETUP_DIR_RE = re.compile(r"environment", re.IGNORECASE)
 
 #: Purely-Lean notebooks -- rule threshold 0-2.
 #: `Lean-3-Propositions-Proofs`, `GameTheory-11b-Lean-BayesianGamesExt`,
-#: `DecInfer-9-Lean-Gittins`.
+#: `DecInfer-09-Lean-Gittins`.
 LEAN_STEM_RE = re.compile(r"(?:^|[-_])lean(?:$|[-_])", re.IGNORECASE)
 
 #: Legacy material -- rule "Archive / Legacy" row. Matched on DIRECTORY parts

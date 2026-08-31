@@ -120,8 +120,8 @@ Recensement chiffré des valeurs quantitatives écrites en dur dans les cellules
 | `MyIA.AI.Notebooks\Probas\Infer\Infer-2-Gaussian-Mixtures.ipynb` | 38 |
 | `MyIA.AI.Notebooks\Probas\Infer\Infer-15-Recommenders.ipynb` | 27 |
 | `MyIA.AI.Notebooks\Probas\DecisionTheory\PyMC\DecPyMC-7-Sequential.ipynb` | 17 |
-| `MyIA.AI.Notebooks\Probas\DecisionTheory\DecInfer\DecInfer-3-Utility-Money.ipynb` | 16 |
-| `MyIA.AI.Notebooks\Probas\PyMC\PyMC-6-Debugging.ipynb` | 16 |
+| `MyIA.AI.Notebooks\Probas\DecisionTheory\DecInfer\DecInfer-03-Utility-Money.ipynb` | 16 |
+| `MyIA.AI.Notebooks\Probas\PyMC\PyMC-06-Debugging.ipynb` | 16 |
 
 ### QuantConnect (drainable total = 1392)
 

@@ -103,7 +103,12 @@ def test_main_emits_one_warning_per_dead_glob(tmp_path, capsys):
 def test_main_no_warnings_when_all_globs_live(tmp_path, capsys):
     """Negative control -- a body whose every glob matches a tracked file
     produces ZERO annotations. Selectivity pin: the helper is a hint
-    channel, not a no-op rewriter of every PR."""
+    channel, not a no-op rewriter of every PR.
+
+    #13486 : the JSON line is ALWAYS emitted (even when no suggestion
+    fires), so the assertion pins ZERO annotations AND a JSON line whose
+    suggestions list is empty.
+    """
     body_file = tmp_path / "body.txt"
     body_file.write_text(
         "Grain: MED/tooling — lane myia-po-2024:CoursIA-2\n\n"
@@ -114,7 +119,16 @@ def test_main_no_warnings_when_all_globs_live(tmp_path, capsys):
     rc = HELPER.main(["--body-file", str(body_file)])
     assert rc == 0
     captured = capsys.readouterr()
-    assert captured.out.strip() == ""
+    annotation_lines = [
+        ln for ln in captured.out.splitlines() if ln.startswith("::")
+    ]
+    assert annotation_lines == []
+    json_lines = [
+        ln for ln in captured.out.splitlines()
+        if ln.startswith("{") and "dead_scope_suggestions" in ln
+    ]
+    assert len(json_lines) == 1
+    assert json.loads(json_lines[0]) == {"dead_scope_suggestions": []}
 
 
 def test_main_no_warnings_when_no_paths_clause(tmp_path, capsys):
@@ -126,6 +140,7 @@ def test_main_no_warnings_when_no_paths_clause(tmp_path, capsys):
     )
     rc = HELPER.main(["--body-file", str(body_file)])
     assert rc == 0
+    # #13486 : no paths clause -> no scope to check -> no JSON emitted.
     assert capsys.readouterr().out.strip() == ""
 
 
@@ -137,7 +152,143 @@ def test_main_no_warnings_when_no_lane(tmp_path, capsys):
     )
     rc = HELPER.main(["--body-file", str(body_file)])
     assert rc == 0
+    # #13486 : no declared lane -> nothing to anchor -> no JSON emitted.
     assert capsys.readouterr().out.strip() == ""
+
+
+def test_missing_comma_tokens_returns_space_joined_paths():
+    """#13129 motif B -- glob with whitespace and 2+ path-shaped tokens.
+
+    Acceptance #13486 témoin : un glob espace-fusionne (`a.py b.py`) doit
+    retourner la liste des tokens path-shaped (`['a.py', 'b.py']`).
+    """
+    assert HELPER._missing_comma_tokens("a.py b.py") == ["a.py", "b.py"]
+    assert HELPER._missing_comma_tokens("scripts/check_lane_claim.py scripts/grain_tag.py") == [
+        "scripts/check_lane_claim.py",
+        "scripts/grain_tag.py",
+    ]
+    assert HELPER._missing_comma_tokens("docs/foo.md docs/bar.md docs/baz.md") == [
+        "docs/foo.md",
+        "docs/bar.md",
+        "docs/baz.md",
+    ]
+
+
+def test_missing_comma_tokens_silent_on_healthy_globs():
+    """#13129 motif B -- healthy glob must NOT trip the suggestion.
+
+    Acceptance #13486 témoin : un glob sain (path without whitespace, or
+    single token with whitespace but no path-shaped neighbor) doit
+    retourner None -- silence.
+    """
+    # Single path, no whitespace: never a missing-comma candidate.
+    assert HELPER._missing_comma_tokens("scripts/check_lane_claim.py") is None
+    # Single token with surrounding whitespace-only: not a missing-comma
+    # because only ONE path-shaped token, not two.
+    assert HELPER._missing_comma_tokens("a.py not-a-path") is None
+    # Empty / no whitespace: never.
+    assert HELPER._missing_comma_tokens("") is None
+    assert HELPER._missing_comma_tokens("scripts/check_lane_claim.py") is None
+
+
+def test_missing_comma_tokens_silent_on_future_files():
+    """#13129 motif B -- a glob that LOOKS like a future file (motif C) must
+    NOT trip the missing-comma heuristic. Heuristic fires only on
+    whitespace + 2+ path-shaped tokens -- a single 'to-create.py' is silent.
+
+    Acceptance #13486 témoin : FUTUR (fichier a creer) -> silence. The
+    test pins the heuristic: a future file is one token (no whitespace).
+    """
+    # Single future file: no whitespace, no missing-comma signal.
+    assert HELPER._missing_comma_tokens("scripts/not_yet_created.py") is None
+    # Single future dir: no whitespace.
+    assert HELPER._missing_comma_tokens("scripts/new_module/") is None
+    # Two tokens but only one path-shaped: not enough for the heuristic.
+    assert HELPER._missing_comma_tokens("scripts/future.py just prose") is None
+
+
+def test_main_emits_notice_for_missing_comma_glob(tmp_path, capsys):
+    """End-to-end -- a body with a missing-comma glob yields ONE
+    `::notice::` annotation (motif B, #13129) AND a structured
+    `dead_scope_suggestions` JSON line with `hint=missing_comma` and the
+    tokens list.
+
+    Acceptance #13486 témoin : glob espace-fusionne -> hint virgule.
+    Acceptance #13486 (3) : champ JSON expose + consomme.
+    """
+    body_file = tmp_path / "body.txt"
+    body_file.write_text(
+        "Grain: MED/tooling — lane myia-po-2024:CoursIA-2\n\n"
+        "[CLAIMED] lane myia-po-2024:CoursIA-2 -- "
+        "paths: scripts/check_lane_claim.py scripts/grain_tag.py\n",
+        encoding="utf-8",
+    )
+    rc = HELPER.main(["--body-file", str(body_file)])
+    assert rc == 0
+    captured = capsys.readouterr()
+    lines = [ln for ln in captured.out.splitlines() if ln.startswith("::")]
+    # Exactly one notice (no warning -- the deadness is EXPLAINED by the typo).
+    notices = [ln for ln in lines if ln.startswith("::notice")]
+    warnings = [ln for ln in lines if ln.startswith("::warning")]
+    assert len(notices) == 1, lines
+    assert len(warnings) == 0, lines
+    assert "Missing comma" in notices[0]
+    assert "scripts/check_lane_claim.py" in notices[0]
+    assert "scripts/grain_tag.py" in notices[0]
+
+    # JSON line consumable by lane scripts.
+    json_lines = [
+        ln for ln in captured.out.splitlines()
+        if ln.startswith("{") and "dead_scope_suggestions" in ln
+    ]
+    assert len(json_lines) == 1
+    payload = json.loads(json_lines[0])
+    assert "dead_scope_suggestions" in payload
+    suggestions = payload["dead_scope_suggestions"]
+    assert len(suggestions) == 1
+    s = suggestions[0]
+    assert s["hint"] == "missing_comma"
+    assert "scripts/check_lane_claim.py" in s["tokens"]
+    assert "scripts/grain_tag.py" in s["tokens"]
+
+
+def test_main_emits_empty_suggestions_when_no_dead_globs(tmp_path, capsys):
+    """#13486 (3) -- the JSON key is ALWAYS present in stdout, even when no
+    suggestion fires. Consumers can rely on the key being there (cheap
+    parser), not on its non-emptiness."""
+    body_file = tmp_path / "body.txt"
+    body_file.write_text(
+        "Grain: MED/tooling — lane myia-po-2024:CoursIA-2\n\n"
+        "[CLAIMED] lane myia-po-2024:CoursIA-2 -- "
+        "paths: scripts/check_lane_claim.py, scripts/grain_tag.py\n",
+        encoding="utf-8",
+    )
+    rc = HELPER.main(["--body-file", str(body_file)])
+    assert rc == 0
+    captured = capsys.readouterr()
+    json_lines = [
+        ln for ln in captured.out.splitlines()
+        if ln.startswith("{") and "dead_scope_suggestions" in ln
+    ]
+    assert len(json_lines) == 1
+    payload = json.loads(json_lines[0])
+    assert payload == {"dead_scope_suggestions": []}
+
+
+def test_missing_comma_heuristic_negative_control():
+    """#13486 (4) -- faux négatif : muter la detection doit faire echouer
+    le temoin. We hard-pin the heuristic: if someone WEAKENS the regex
+    (e.g. drops `lean` from the tracked extensions) the test catches it.
+
+    The regex `_PATHLIKE_TOKEN_RE` MUST treat a path ending in `.lean`
+    as path-shaped. Mute the assertion to fail if `.lean` is dropped.
+    """
+    regex = HELPER._PATHLIKE_TOKEN_RE
+    assert regex.match("MyIA.AI.Notebooks/GameTheory/game_theory_lean/Foo.lean"), (
+        "_PATHLIKE_TOKEN_RE must recognize .lean as a tracked-file extension; "
+        "if you dropped it from the alternation, motif B detection on Lean "
+        "files (#13486) silently degrades."
+    )
 
 
 def test_lane_claim_guard_workflow_yaml_remains_valid():

@@ -1575,30 +1575,33 @@ def _common_prefix(a: str, b: str) -> str:
 # the whole thing as ONE glob that matches nothing. We flag when a glob
 # contains a SPACE and at least two SPACE-separated tokens each LOOK like a
 # path (contain a `/` OR end with a tracked-file extension).
-_PATHLIKE_TOKEN_RE = re.compile(r"[^\s/]+(?:/[^\s/]+)+|\S+\.(?:py|yml|yaml|md|ipynb|lean|ps1|sh|json|cs|cpp|hpp|go|rs|ts|tsx|js|jsx|txt|csv)")
+#
+# #13486: SINGLE machinerie. The canonical implementation lives in
+# `scripts/ci/emit_dead_scope_warnings.py` (the CI helper that emits
+# `::notice::` annotations and the `dead_scope_suggestions` JSON line).
+# This module DELEGATES -- the regex + heuristic are imported from there.
+# Do not re-implement them here; if you need to change motif B detection,
+# change the helper and re-export.
+_PATHLIKE_TOKEN_RE = None  # back-compat alias (lazy-resolved on first call)
 
 
 def _looks_like_missing_comma(glob: str) -> list[str] | None:
-    """Return the SPACE-separated tokens if the glob looks like a missing-comma typo (#13129 motif B).
+    """Delegate to the SINGLE motif-B machinerie (#13486).
 
-    Heuristic: the glob has whitespace AND `>=2` tokens each look path-shaped
-    (slashed OR ending in a tracked-file extension). Returns None when the
-    heuristic does not fire -- the glob is a single path with possible
-    whitespace, not a typo. Conservative: a single path-shaped token does
-    NOT trigger the suggestion (a space inside a filename is rare but
-    legal; the cost of a false positive is a confusing suggestion, the cost
-    of a false negative is silent dead-glob, which is the existing bug we
-    are not making worse).
+    The canonical implementation lives in `emit_dead_scope_warnings.py`
+    (`_missing_comma_tokens`). We import it lazily so `import check_lane_claim`
+    does not require the helper to be on sys.path (the helper sits in
+    `scripts/ci/`, imported only by the CI advisory job).
     """
-    if not glob or " " not in glob:
-        return None
-    tokens = glob.split()
-    if len(tokens) < 2:
-        return None
-    pathlike = [t for t in tokens if _PATHLIKE_TOKEN_RE.match(t)]
-    if len(pathlike) < 2:
-        return None
-    return pathlike
+    try:
+        from scripts.ci.emit_dead_scope_warnings import _missing_comma_tokens  # type: ignore  # noqa: E501
+    except Exception:
+        try:
+            # Fallback path when this module is invoked as `python -m scripts.check_lane_claim`
+            from scripts.ci.emit_dead_scope_warnings import _missing_comma_tokens  # type: ignore  # noqa: E501,F811
+        except Exception:
+            return None
+    return _missing_comma_tokens(glob)
 
 
 _INFERRED_PATH_PATTERNS = (
@@ -3107,6 +3110,86 @@ def _run_check_paths(
     return 0
 
 
+def _run_open_prs_on(
+    paths: list[str],
+    prs: list[dict] | None = None,
+) -> int:
+    """List OPEN PRs touching `paths` across ALL lanes (no lane filter).
+
+    #13595: the `--paths` guard filters its result by *lane* -- an OPEN PR of
+    the caller's OWN lane reads as "your own PR is fine" and is dropped from
+    the verdict. That is exactly the blind spot of case A (one machine, same
+    lane, two worktrees, 74 s apart): there is only one lane, so the guard
+    finds no *other*-lane collision and concludes CLEAR while two branches of
+    the same lane are racing on the same files.
+
+    This mode drops the lane filter entirely: it lists EVERY OPEN PR whose
+    files intersect `paths`, whatever the lane -- INCLUDING the caller's own.
+    It is NON-BLOCKING (returns 0 always): the signal is broad enough to
+    produce legitimate false positives (two PRs on a large notebook), so the
+    lane decides, it is never summarily refused (#13595 point 3).
+
+    Returns:
+        0 always (list mode). A `RuntimeError` from `gh` is surfaced by the
+          caller as exit 1; this mode itself carries no collision verdict.
+    """
+    if not paths:
+        print("error: --open-prs-on requires at least one path/glob",
+              file=sys.stderr)
+        return 1
+    if prs is None:
+        try:
+            prs = _gh_open_prs_with_files()
+        except RuntimeError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
+
+    hits: list[dict] = []
+    for pr in prs:
+        pr_files = pr.get("files") or []
+        intersecting = [
+            f.get("path", "") for f in pr_files
+            if f.get("path") and _path_matches(f["path"], paths)
+        ]
+        if not intersecting:
+            continue
+        lane = extract_lane(pr.get("body") or "")
+        hits.append({
+            "number": pr.get("number"),
+            "headRefName": pr.get("headRefName"),
+            "lane": lane,
+            "lane_readable": lane is not None,
+            "files": intersecting,
+            "title": pr.get("title"),
+        })
+
+    if hits:
+        print(
+            f"OPEN PRs on paths {paths!r} "
+            f"(mode open-prs-on -- NO lane filter, non-blocking):"
+        )
+        for h in hits:
+            lane = h["lane"] if h["lane_readable"] else "UNREADABLE"
+            print(
+                f"  #{h['number']} lane={lane} head={h['headRefName']} "
+                f"files=[{', '.join(h['files'])}] -- {h['title']}"
+            )
+        print(
+            "\nNote: your OWN lane appearing here is the case-A signal "
+            "(same lane, two worktrees). Re-check before opening a branch, "
+            "or confirm the other PR is resolved/separate before pushing.\n"
+            "Re-query equivalent (the geste from #13595):"
+        )
+        print(
+            "  gh pr list --state open --json number,headRefName,files "
+            "--jq '.[] | select(.files[].path | test(\"<chemin>\")) "
+            "| \"#\\(.number) \\(.headRefName)\"'"
+        )
+    else:
+        print(f"NO open PR intersects paths {paths!r}. Path is free.")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(
         description=(
@@ -3159,6 +3242,17 @@ def main(argv: list[str] | None = None) -> int:
                         "treated as if it did not exist for the blocker "
                         "decision. Without `--paths`, override scope is "
                         "ignored (legacy epic-wide behaviour, preserved).")
+    p.add_argument("--open-prs-on", metavar="PATH", nargs="+", action="extend",
+                   default=None,
+                   help="list-mode (#13595): one or more file paths/globs. "
+                        "List EVERY OPEN PR whose files[] intersect, "
+                        "REGARDLESS of lane -- including the caller's own "
+                        "(case A: same lane, two worktrees). NON-BLOCKING: "
+                        "returns 0 always; the lane decides, it is never "
+                        "refused. Use when a PATH may be raced by another "
+                        "worktree of your own machine/lane, where the "
+                        "lane-filtered `--paths` guard is structurally blind. "
+                        "Mutually exclusive with `--paths`.")
     act = p.add_mutually_exclusive_group()
     act.add_argument("--claim", metavar="INTENTION",
                      help="post a [CLAIMED] comment for your lane. Runs the "
@@ -3194,6 +3288,24 @@ def main(argv: list[str] | None = None) -> int:
                 f"(positional FIRST).",
                 file=sys.stderr,
             )
+    if args.open_prs_on is not None:
+        for entry in _warn_bare_integer_paths(args.open_prs_on):
+            print(
+                f"WARN: --open-prs-on entry {entry!r} is a bare integer -- an "
+                f"issue number swallowed by nargs='+' (#10881). Correct form: "
+                f"`check_lane_claim.py {entry} --lane <lane> --open-prs-on ...` "
+                f"(positional FIRST).",
+                file=sys.stderr,
+            )
+
+    # #13595 -- `--open-prs-on` (list-mode) and `--paths` (guard-mode) are
+    # mutually exclusive. The guard fires BEFORE either branch, else `--paths`
+    # returns first and the caller never learns their `--open-prs-on` was
+    # silently ignored.
+    if args.open_prs_on is not None and args.paths is not None:
+        print("error: --open-prs-on and --paths are mutually exclusive; "
+              "run them separately", file=sys.stderr)
+        return 1
 
     # Path-only mode (#9959) does NOT require an issue number -- it is the
     # missing leg of L898 dispatched pre-claim to detect cross-lane PR
@@ -3203,6 +3315,11 @@ def main(argv: list[str] | None = None) -> int:
     # `[OVERRIDE]` markers, #10342).
     if args.paths is not None and args.issue is None:
         return _run_check_paths(args.paths, args.lane)
+
+    # #13595 -- list-mode: no lane filter, non-blocking. `--open-prs-on` is
+    # its own mode and does not require an issue number.
+    if args.open_prs_on is not None:
+        return _run_open_prs_on(args.open_prs_on)
 
     # Posting modes: short-circuit before any read. Both require an issue.
     if args.issue is None:

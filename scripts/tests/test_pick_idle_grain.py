@@ -421,6 +421,152 @@ def test_without_review_points_a_fresh_lone_red_still_draws(monkeypatch):
     assert len(out["red"]) == 1
 
 
+def _pr_with_author(n, lane, age_hours, author):
+    pr = _pr(n, lane, age_hours)
+    pr["author"] = {"login": author}
+    return pr
+
+
+def test_base_inherited_red_is_not_the_lanes(monkeypatch):
+    """#13545 : 11 PRs / 4 lanes accusees pour un seul defaut de main.
+
+    Le meme check requis en echec chez un AUTEUR distinct = corroboration :
+    le rouge est impute a la base, retire du refus de la lane, et rapporte
+    comme tache coordinateur avec ses corroborations.
+    """
+    red = _state(checks=[("Scripts Tests (CPU)", "FAILURE", True),
+                         ("PR gate", "FAILURE", True)])
+    _patch_backlog(monkeypatch, [
+        _pr_with_author(1, "myia-po-2023:CoursIA", 30, "myia-po-2023"),
+        _pr_with_author(2, "myia-po-2026:CoursIA-2", 5, "myia-po-2026"),
+    ], {1: red, 2: red})
+    out = pig.red_backlog("myia-po-2023:CoursIA", 24, count_threshold=3)
+    assert out["red"] == []            # rien d'imputable a la lane
+    assert out["aged"] == []
+    assert out["triggers"] == []       # pas de refus de tirage
+    assert {i["check"] for i in out["base_inherited"]} == {
+        "Scripts Tests (CPU)", "PR gate"}
+    wits = next(i["corroborated_by"] for i in out["base_inherited"]
+                if i["check"] == "Scripts Tests (CPU)")
+    assert 1 in wits and 2 in wits    # la lane ET l'etrangere corroborent
+
+
+def test_same_author_failures_are_not_imputed(monkeypatch):
+    """Controle negatif : deux PRs du MEME auteur ne se corroborent pas.
+
+    Une lane qui casse le meme ratchet sur 2 PRs porte 2 defauts a elle --
+    les imputer a la base transformerait un motif de refus legitime en
+    silence complice.
+    """
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    _patch_backlog(monkeypatch, [
+        _pr_with_author(1, "myia-po-2023:CoursIA", 30, "myia-po-2023"),
+        _pr_with_author(2, "myia-po-2023:CoursIA", 30, "myia-po-2023"),
+    ], {1: red, 2: red})
+    out = pig.red_backlog("myia-po-2023:CoursIA", 24, count_threshold=3)
+    assert [r["number"] for r in out["red"]] == [1, 2]
+    assert out["base_inherited"] == []
+    assert "aged" in out["triggers"]
+
+
+def test_inheritance_does_not_swallow_other_causes(monkeypatch):
+    """L'imputation retire le CHECK herite, pas les autres causes de la PR.
+
+    Une PR dont le check herite de la base MAIS qui conflit avec main reste
+    rouge : le conflit est bien le sien.
+    """
+    red = _state(checks=[("Scripts Tests (CPU)", "FAILURE", True)],
+                 mergeable="CONFLICTING")
+    _patch_backlog(monkeypatch, [
+        _pr_with_author(1, "myia-po-2023:CoursIA", 30, "myia-po-2023"),
+        _pr_with_author(2, "myia-po-2026:CoursIA-2", 5, "myia-po-2026"),
+    ], {1: red, 2: red})
+    out = pig.red_backlog("myia-po-2023:CoursIA", 24, count_threshold=3)
+    assert [r["number"] for r in out["red"]] == [1]
+    assert out["red"][0]["causes"] == ["conflits avec main -> rebaser"]
+
+
+def test_required_failure_links_advisory_as_its_probable_cause():
+    """#13545 (presentation) : l'agregateur requis et sa cause advisory ne
+    s'affichent plus comme deux lignes qui se contredisent.
+
+    « check requis en echec : PR gate » puis « diagnostic, non bloquant :
+    Scripts Tests (CPU) » sur le MEME rouge est illisible au moment ou le
+    message compte : la deuxieme ligne doit dire qu'elle est la CAUSE
+    probable de la premiere.
+    """
+    state = _state(checks=[("PR gate", "FAILURE", True),
+                           ("Scripts Tests (CPU)", "FAILURE", False)])
+    causes = pig.blocking_causes(state)
+    assert "check requis en echec : PR gate" in causes
+    linked = [c for c in causes if "Scripts Tests (CPU)" in c]
+    assert len(linked) == 1
+    assert "cause probable du requis" in linked[0]
+
+
+# --- le rouge est une ASSIGNATION, jamais un vide (incident lanes 2, 30/08) --
+#
+# Le fond de ce chemin etait deja juste : il nomme les PRs, leurs causes et les
+# gestes. C'est sa FORME qui a draine les lanes -- "REFUS DE TIRAGE" + sortie 2
+# + aucun candidat se lit "l'outil n'a rien pour moi", et une lane a forte
+# cadence le recevait a chaque cycle. Les deux tests suivants tiennent le
+# contrat corrige ; le troisieme est leur controle positif.
+
+
+def test_a_lane_with_reds_gets_a_grain_not_a_refusal(monkeypatch, capsys):
+    """Sortie 0 et un travail NOMME : la reparation EST le grain du cycle.
+
+    Le code 2 est la convention "rien a rendre". L'employer ici disait a la
+    lane, dans le seul canal qu'elle lit, l'exact contraire de la regle HARD
+    qu'il sert -- il y a toujours du travail.
+    """
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    _patch_backlog(monkeypatch, [_pr(1, "myia-po-2026:CoursIA", 30)], {1: red})
+    rc = pig.main(["--lane", "myia-po-2026:CoursIA"])
+    out = capsys.readouterr().out
+    assert rc == 0, f"le chemin reparation doit rendre 0, got {rc}"
+    # C'est la PREMIERE ligne qui est lue comme le verdict de l'outil : la
+    # phrase "ce n'est PAS un refus", plus bas, contient le mot a dessein.
+    head = out.splitlines()[0]
+    assert "REFUS" not in head.upper(), f"l'en-tete annonce encore un refus : {head!r}"
+    assert "GRAIN DU CYCLE" in head
+    assert "#1" in out, "la PR a reprendre doit etre nommee"
+    # Le fond qui marchait deja ne doit pas disparaitre avec la forme.
+    assert "check requis en echec" in out
+    assert "update-branch" in out
+
+
+def test_repair_json_carries_a_grain_field(monkeypatch, capsys):
+    """Le consommateur machine lit un grain, pas un motif de refus.
+
+    Sans ce cas, la sortie humaine pourrait etre corrigee pendant que `--json`
+    continue d'annoncer un refus -- deux canaux, deux verites.
+    """
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    _patch_backlog(monkeypatch, [_pr(7, "myia-po-2026:CoursIA", 30)], {7: red})
+    rc = pig.main(["--lane", "myia-po-2026:CoursIA", "--json"])
+    payload = json.loads(capsys.readouterr().out)
+    assert rc == 0
+    assert payload["mode"] == "repair"
+    assert payload["grain"]["number"] == 7
+    assert "refus" not in payload
+
+
+def test_a_clean_lane_is_not_sent_to_repair(monkeypatch, capsys):
+    """Controle positif des deux precedents.
+
+    Un `rc == 0` obtenu parce que le garde ne se declenche JAMAIS serait
+    indiscernable d'une assignation qui marche : ici la lane n'a aucun rouge,
+    et la sortie ne doit contenir aucune assignation de reparation.
+    """
+    green = _state(checks=[("PR gate", "SUCCESS", True)])
+    _patch_backlog(monkeypatch, [_pr(1, "myia-po-2026:CoursIA", 30)], {1: green})
+    backlog = pig.red_backlog("myia-po-2026:CoursIA", 24, count_threshold=3)
+    assert backlog["triggers"] == []
+    pig.print_red_assignment("myia-po-2026:CoursIA", {"red": [], "triggers": []}, 24)
+    assert "GRAIN DU CYCLE" in capsys.readouterr().out  # la fonction existe et rend
+
+
 def test_untagged_blocked_prs_are_counted_but_never_attributed(monkeypatch):
     """Portee ecrite : ce que le garde NE couvre PAS.
 
@@ -442,7 +588,7 @@ def test_unattributed_blocked_is_printed_on_the_draw_path(monkeypatch, capsys):
     """#12738 : une lane a `red == []` mais `unattributed_blocked != []`
     doit voir les numeros dans la sortie humaine du TIRAGE, pas seulement
     quand elle est refassee. Sans ce cas, le test ne distingue pas le
-    correctif de l'etat actuel (paragraphe confine a `print_red_refusal`).
+    correctif de l'etat actuel (paragraphe confine a `print_red_assignment`).
     """
     red_state = _state(checks=[("PR gate", "FAILURE", True)])
     # age 2 h : sous le seuil red_hours=24, donc `red=[]` ; pas de tag -> `unattributed_blocked`.
@@ -695,6 +841,90 @@ def test_file_saturation_detected_when_all_checks_pending():
     assert any("file_saturation" in c for c in causes)
     # La cause doit nommer le geste -- la lane peut commenter, pas rerun seule.
     assert any("commenter la PR" in c for c in causes)
+
+
+# --- #13420 : la saturation date les CHECKS, pas la PR ---------------------
+#
+# Defaut mesure le 2026-08-29 : #12757 (ouverte 121 h) et #12850 (109 h)
+# etaient annoncees "1 check requis en PENDING depuis >24h (cause infra)"
+# alors que leurs checks avaient demarre a 11:39:44Z, soit 25 min plus tot.
+# Le detecteur lisait `age_hours` (age de la PR) et jamais `startedAt`.
+# Consequence : le geste prescrit (--ignore-red ou re-run) etait l'inverse du
+# bon -- re-run RE-EMPILE dans la file dite saturee, --ignore-red pousse la
+# lane devant un garde qui allait repondre. Le bon geste est d'attendre.
+
+
+def _pending_started(when):
+    """PR ancienne (120 h) dont l'unique check requis a demarre a `when`."""
+    return {
+        "number": 1, "mergeable": "MERGEABLE",
+        "reviews": {"nodes": []},
+        "commits": {"nodes": [{"commit": {"statusCheckRollup": {
+            "state": "PENDING",
+            "contexts": {"nodes": [
+                {"name": "PR gate", "conclusion": None, "state": "PENDING",
+                 "isRequired": True, "startedAt": when},
+            ]}}}}]},
+    }
+
+
+def _iso_ago(hours):
+    import datetime as _dt
+    return (_dt.datetime.now(_dt.timezone.utc)
+            - _dt.timedelta(hours=hours)).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def test_13420_check_frais_sur_pr_ancienne_nest_pas_une_saturation():
+    """Le cas mesure : PR ouverte depuis 120 h, check demarre il y a 25 min.
+
+    La file AVANCE. Annoncer une saturation ici prescrit exactement le mauvais
+    geste. CE TEST ECHOUE SI LE DETECTEUR REDEVIENT DATE SUR LA PR.
+    """
+    state = _pending_started(_iso_ago(0.42))  # ~25 min
+    assert pig.file_saturation_cause(state, age_hours=120, threshold_hours=24) is None
+
+
+def test_13420_controle_positif_file_reellement_figee_detectee():
+    """Controle positif -- sans lui, un detecteur simplement ETEINT passerait
+    le test precedent. Meme PR, meme forme, mais le check n'a pas bouge depuis
+    50 h : c'est la vraie saturation, elle DOIT etre annoncee."""
+    state = _pending_started(_iso_ago(50))
+    cause = pig.file_saturation_cause(state, age_hours=120, threshold_hours=24)
+    assert cause is not None
+    assert "file-saturation" in cause
+
+
+def test_13420_frontiere_juste_sous_le_seuil_ne_declenche_pas():
+    """Temoin de frontiere : 23 h < 24 h -> pas de saturation."""
+    state = _pending_started(_iso_ago(23))
+    assert pig.file_saturation_cause(state, age_hours=120, threshold_hours=24) is None
+
+
+def test_13420_sans_horodatage_lisible_on_retombe_sur_lage_de_la_pr():
+    """Un champ absent prive le detecteur de precision, il ne l'eteint pas :
+    sans `startedAt` ni `createdAt`, le comportement historique (age de la PR)
+    reste en vigueur."""
+    state = _pending_started(None)
+    cause = pig.file_saturation_cause(state, age_hours=120, threshold_hours=24)
+    assert cause is not None and "file-saturation" in cause
+
+
+def test_13420_horodatage_illisible_ne_leve_pas_dexception():
+    """Une chaine non-ISO ne doit pas casser un tour de picker."""
+    state = _pending_started("pas-une-date")
+    assert pig.file_saturation_cause(
+        state, age_hours=120, threshold_hours=24) is not None
+
+
+def test_13420_le_plus_recent_gagne_sur_les_anciens():
+    """Dix checks vieux + un frais = la file a bouge. On date sur le PLUS
+    RECENT, parce que la question est 'la file avance-t-elle ?'."""
+    state = _pending_started(_iso_ago(50))
+    nodes = state["commits"]["nodes"][0]["commit"]["statusCheckRollup"]["contexts"]["nodes"]
+    nodes.append({"name": "Always-on guards", "conclusion": None,
+                  "state": "PENDING", "isRequired": True,
+                  "startedAt": _iso_ago(0.2)})
+    assert pig.file_saturation_cause(state, age_hours=120, threshold_hours=24) is None
 
 
 def test_file_saturation_not_detected_when_a_check_is_success():

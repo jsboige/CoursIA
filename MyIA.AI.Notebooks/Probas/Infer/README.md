@@ -56,7 +56,7 @@ Le trait distinctif d'Infer.NET : le modèle déclaratif est **compilé** (via R
 | 6 | [Infer-6-Debugging](Infer-6-Debugging.ipynb) | 45 min | Troubleshooting, diagnostics, algorithmes |
 | 7 | [Infer-7-Skills-IRT](Infer-7-Skills-IRT.ipynb) | 60 min | IRT, DINA, many-to-many — *MBML Ch.2* « Assessing People's Skills » |
 | 8 | [Infer-8-TrueSkill](Infer-8-TrueSkill.ipynb) | 55 min | Ranking, online learning, équipes — *MBML Ch.3* « Meeting Your Match » |
-| 9 | [Infer-9-Classification](Infer-9-Classification.ipynb) | 50 min | BPM, régression logistique, A/B |
+| 9 | [Infer-9-Classification](Infer-9-Classification.ipynb) | 50 min | BPM, régression logistique, A/B, calibration hors échantillon (Brier/AUC/fiabilité) |
 | 10 | [Infer-10-Model-Selection](Infer-10-Model-Selection.ipynb) | 45 min | Evidence, Bayes factors, ARD |
 | 11 | [Infer-11-Topic-Models](Infer-11-Topic-Models.ipynb) | 60 min | LDA, documents-topics-mots |
 | 12 | [Infer-12-Modeles-Hierarchiques](Infer-12-Modeles-Hierarchiques.ipynb) | 50 min | Modèles hiérarchiques, pooling partiel, shrinkage, VariableArray indexé |
@@ -66,7 +66,7 @@ Le trait distinctif d'Infer.NET : le modèle déclaratif est **compilé** (via R
 | 16 | [Infer-16-Sparse-Gaussian-Process](Infer-16-Sparse-Gaussian-Process.ipynb) | 55 min | Processus gaussiens, noyau RBF, classification non-linéaire, sparse GP |
 | 17 | [Infer-17-Kalman-Filter](Infer-17-Kalman-Filter.ipynb) | 55 min | Filtre de Kalman, système dynamique linéaire gaussien, conjugaison, EP exacte |
 | 18 | [Infer-18-Change-Point](Infer-18-Change-Point.ipynb) | 50 min | Détection de rupture, DiscreteUniform, ForEach + If/IfNot sur plage, EP, Poisson |
-| 19 | [Infer-19-Survival-Analysis](Infer-19-Survival-Analysis.ipynb) | 50 min | Analyse de survie, Exponentielle conjugée (Gamma), Weibull par transformée, S(t) forme fermée |
+| 19 | [Infer-19-Survival-Analysis](Infer-19-Survival-Analysis.ipynb) | 50 min | Analyse de survie, Exponentielle conjugée (Gamma), Weibull par transformée, S(t) forme fermée, censure à droite exécutée (`ConstrainPositive` vs Kaplan–Meier) |
 
 > **Théorie de la décision** : les 10 notebooks de décision (utilité, EVPI, MDPs, Thompson Sampling, plus 2 companions Lean) forment désormais un arc autonome dans [`../DecisionTheory/DecInfer/`](../DecisionTheory/DecInfer/README.md), adossé au lake [`decision_theory_lean`](../decision_theory_lean/).
 
@@ -664,9 +664,9 @@ Cette extraction clarifie les deux fils du corpus Probas : la **modélisation ba
 | Front-door | `Σ_m P(M\|X)Σ_{x'} P(Y\|M,x')P(x')` | Ajustement par médiateur quand U est inobservable |
 | Simpson | agrégé ≠ conditionnel | Renversement : la conclusion s'inverse |
 
-**Positionnement** : le notebook [Infer-4](Infer-4-Bayesian-Networks.ipynb) n'abordait la causalité qu'en deux cellules isolées. Infer-5 en fait un traitement dédié et **distributionnel** : les effets causaux sont **calculés** par le moteur d'inférence Infer.NET via mutilation de graphe, là où le jumeau symbolique [Tweety-11-Causal](../../SymbolicAI/Tweety/Tweety-11-Causal.ipynb) raisonne en Java propositionnel, et où [PyMC-4](../PyMC/PyMC-4-Bayesian-Networks.ipynb) démontre `P(Cloudy|do(Rain))` en MCMC.
+**Positionnement** : le notebook [Infer-4](Infer-4-Bayesian-Networks.ipynb) n'abordait la causalité qu'en deux cellules isolées. Infer-5 en fait un traitement dédié et **distributionnel** : les effets causaux sont **calculés** par le moteur d'inférence Infer.NET via mutilation de graphe, là où le jumeau symbolique [Tweety-11-Causal](../../SymbolicAI/Tweety/Tweety-11-Causal.ipynb) raisonne en Java propositionnel, et où [PyMC-4](../PyMC/PyMC-04-Bayesian-Networks.ipynb) démontre `P(Cloudy|do(Rain))` en MCMC.
 
-**Ponts causaux** : Infer-5 est le maillon **distributionnel par message passing** (Infer.NET, EP/VMP) d'un pont à quatre paradigmes autour du `do(·)` de Pearl — le jumeau symbolique [Tweety-11-Causal](../../SymbolicAI/Tweety/Tweety-11-Causal.ipynb) (Java propositionnel), le jumeau MCMC [PyMC-5](../PyMC/PyMC-5-Causal-Inference.ipynb), et la lecture par l'émergence causale [ICT-5](../../IIT/ICT-Series/ICT-5-CausalEmergence.ipynb), où la distribution d'intervention `p(C)` uniforme **est** `do(X_t = x)`. Vue d'ensemble : le [README IIT](../../IIT/README.md), section « Ponts causaux : le do-calculus de Pearl à travers les paradigmes ».
+**Ponts causaux** : Infer-5 est le maillon **distributionnel par message passing** (Infer.NET, EP/VMP) d'un pont à quatre paradigmes autour du `do(·)` de Pearl — le jumeau symbolique [Tweety-11-Causal](../../SymbolicAI/Tweety/Tweety-11-Causal.ipynb) (Java propositionnel), le jumeau MCMC [PyMC-5](../PyMC/PyMC-05-Causal-Inference.ipynb), et la lecture par l'émergence causale [ICT-5](../../IIT/ICT-Series/ICT-5-CausalEmergence.ipynb), où la distribution d'intervention `p(C)` uniforme **est** `do(X_t = x)`. Vue d'ensemble : le [README IIT](../../IIT/README.md), section « Ponts causaux : le do-calculus de Pearl à travers les paradigmes ».
 
 **Applications** : baromètre (confondeur), diagnostic médical (paradoxe de Simpson), tabac-cancer (front-door), requêtes contrefactuelles.
 
@@ -853,7 +853,7 @@ Infer/
 +-- scripts/                      # Scripts de maintenance
 ```
 
-> Le companion Lean 4 (preuves formelles de l'indice de Gittins) vit dans l'arc théorie de la décision : [`../DecisionTheory/DecInfer/DecInfer-9-Lean-Gittins.ipynb`](../DecisionTheory/DecInfer/DecInfer-9-Lean-Gittins.ipynb) (post-renumérotation #5200).
+> Le companion Lean 4 (preuves formelles de l'indice de Gittins) vit dans l'arc théorie de la décision : [`../DecisionTheory/DecInfer/DecInfer-09-Lean-Gittins.ipynb`](../DecisionTheory/DecInfer/DecInfer-09-Lean-Gittins.ipynb) (post-renumérotation #5200).
 
 ## Domaines d'Application
 
@@ -977,11 +977,11 @@ Consultez le [Glossaire](Infer-Glossary.md) pour les définitions des termes tec
 
 ### Ce que vous avez appris
 
-Cette série vous a fait parcourir l'arc complet de la programmation probabiliste en .NET : des **fondamentaux** (variables `Variable<T>`, `InferenceEngine`, compilation Roslyn — [Infer-1-Setup](Infer-1-Setup.ipynb) à [Infer-3-Factor-Graphs](Infer-3-Factor-Graphs.ipynb)) aux **modèles relationnels avancés** (réseaux bayésiens, IRT, TrueSkill, LDA, HMM, recommandation — notebooks 4 à 12), jusqu'aux **frontières** (causalité, processus gaussiens, modèles hiérarchiques, filtre de Kalman — notebooks 14 à 17). La **théorie de la décision** (utilité espérée, EVPI/EVSI, MDPs, bandits) forme un **arc autonome** dans [`../DecisionTheory/DecInfer/`](../DecisionTheory/DecInfer/README.md), dont le **capstone formel** Lean 4 ([DecInfer-9-Lean-Gittins](../DecisionTheory/DecInfer/DecInfer-9-Lean-Gittins.ipynb)) démontre l'indice de Gittins. Trois acquis clés :
+Cette série vous a fait parcourir l'arc complet de la programmation probabiliste en .NET : des **fondamentaux** (variables `Variable<T>`, `InferenceEngine`, compilation Roslyn — [Infer-1-Setup](Infer-1-Setup.ipynb) à [Infer-3-Factor-Graphs](Infer-3-Factor-Graphs.ipynb)) aux **modèles relationnels avancés** (réseaux bayésiens, IRT, TrueSkill, LDA, HMM, recommandation — notebooks 4 à 12), jusqu'aux **frontières** (causalité, processus gaussiens, modèles hiérarchiques, filtre de Kalman — notebooks 14 à 17). La **théorie de la décision** (utilité espérée, EVPI/EVSI, MDPs, bandits) forme un **arc autonome** dans [`../DecisionTheory/DecInfer/`](../DecisionTheory/DecInfer/README.md), dont le **capstone formel** Lean 4 ([DecInfer-09-Lean-Gittins](../DecisionTheory/DecInfer/DecInfer-09-Lean-Gittins.ipynb)) démontre l'indice de Gittins. Trois acquis clés :
 
 - **Penser en factor graphs et message passing** — Infer.NET propose trois moteurs sur le graphe de facteurs : EP (message passing déterministe, rapide, par défaut, approximatif), VMP (déterministe, converge sur les modèles complexes) et Gibbs (échantillonnage, exact asymptotiquement). Les factor graphs (rendus via `FactorGraphHelper` et Graphviz) exposent la *structure* du modèle, pas seulement ses posteriors.
 - **Lire et choisir son algorithme d'inférence** — contrairement à un échantillonneur générique, Infer.NET **compile un algorithme dédié par modèle** (reflection + Roslyn). Vous savez désormais quand le message passing déterministe (EP/VMP) sur modèles conjugués et structurés est avantageux, et quand il faut céder la place à MCMC.
-- **Relier inference et décision, jusqu'à la preuve** — l'arc [`../DecisionTheory/DecInfer/`](../DecisionTheory/DecInfer/README.md) ferme la boucle (un posterior est l'**input** d'une politique optimale sous incertitude), et le companion Lean [DecInfer-9-Lean-Gittins](../DecisionTheory/DecInfer/DecInfer-9-Lean-Gittins.ipynb) pousse la rigueur jusqu'à la **preuve formelle Lean 4** de l'indice de Gittins.
+- **Relier inference et décision, jusqu'à la preuve** — l'arc [`../DecisionTheory/DecInfer/`](../DecisionTheory/DecInfer/README.md) ferme la boucle (un posterior est l'**input** d'une politique optimale sous incertitude), et le companion Lean [DecInfer-09-Lean-Gittins](../DecisionTheory/DecInfer/DecInfer-09-Lean-Gittins.ipynb) pousse la rigueur jusqu'à la **preuve formelle Lean 4** de l'indice de Gittins.
 
 ### Prochaines étapes
 
@@ -991,6 +991,6 @@ Cette série vous a fait parcourir l'arc complet de la programmation probabilist
 
 ### Le fil rouge
 
-Le fil rouge de cette série est la **compilation d'un algorithme d'inférence dédié** : à partir du modèle déclaratif, Infer.NET génère (via Roslyn) un solveur spécialisé qui **propage des messages** sur le graphe de facteurs. Ses moteurs par défaut — EP et VMP — exploitent la **conjugaison** des distributions pour des mises à jour déterministes en forme close, rapides et sans diagnostics de convergence ; un moteur de **Gibbs** (échantillonnage) prend le relais quand la conjugaison fait défaut. Là où PyMC fait tourner un échantillonneur MCMC générique sur une densité compilée, Infer.NET compile l'algorithme lui-même. Le capstone Lean 4 ([DecInfer-9-Lean-Gittins](../DecisionTheory/DecInfer/DecInfer-9-Lean-Gittins.ipynb), dans l'arc [`DecisionTheory`](../DecisionTheory/DecInfer/README.md)) élève ce fil rouge jusqu'à la **preuve formelle** : l'indice de Gittins n'est plus seulement calculé, il est *démontré*. Maîtriser Infer.NET, c'est savoir quand la structure d'un modèle se prête au message passing sur graphe de facteurs plutôt qu'à l'échantillonnage MCMC de PyMC.
+Le fil rouge de cette série est la **compilation d'un algorithme d'inférence dédié** : à partir du modèle déclaratif, Infer.NET génère (via Roslyn) un solveur spécialisé qui **propage des messages** sur le graphe de facteurs. Ses moteurs par défaut — EP et VMP — exploitent la **conjugaison** des distributions pour des mises à jour déterministes en forme close, rapides et sans diagnostics de convergence ; un moteur de **Gibbs** (échantillonnage) prend le relais quand la conjugaison fait défaut. Là où PyMC fait tourner un échantillonneur MCMC générique sur une densité compilée, Infer.NET compile l'algorithme lui-même. Le capstone Lean 4 ([DecInfer-09-Lean-Gittins](../DecisionTheory/DecInfer/DecInfer-09-Lean-Gittins.ipynb), dans l'arc [`DecisionTheory`](../DecisionTheory/DecInfer/README.md)) élève ce fil rouge jusqu'à la **preuve formelle** : l'indice de Gittins n'est plus seulement calculé, il est *démontré*. Maîtriser Infer.NET, c'est savoir quand la structure d'un modèle se prête au message passing sur graphe de facteurs plutôt qu'à l'échantillonnage MCMC de PyMC.
 
 Bonne exploration de la programmation probabiliste et de la théorie de la décision !

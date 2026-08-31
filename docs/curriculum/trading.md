@@ -116,16 +116,16 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 |---|----------|----------|------------|
 | 1 | Du graphe causal au do-calculus — le pont entre les… | BETA | Oui |
 | 2 | Méthodes quasi-expérimentales — identifier l'effet… | BETA | Oui |
-| 3 | DecInfer-1-Utility-Foundations : Axiomes et Fondements | BETA | Oui |
+| 3 | DecInfer-01-Utility-Foundations : Axiomes et Fondements | BETA | Oui |
 | 4 | DecInfer-10-Thompson-Sampling : Bandits bayesiens par… | BETA | Oui |
-| 5 | DecInfer-2-Théorème de représentation de von… | BETA | Oui |
-| 6 | DecInfer-3-Utility-Money : Utilite de l'Argent et… | BETA | Oui |
-| 7 | DecInfer-4-Multi-Attribute : Utilite Multi-Attributs | BETA | Oui |
-| 8 | DecInfer-5-Decision-Networks : Reseaux de Decision | BETA | Oui |
-| 9 | DecInfer-6-Value-Information : Valeur de l'Information | BETA | Oui |
-| 10 | DecInfer-7-Expert-Systems : Decisions Robustes et… | BETA | Oui |
-| 11 | DecInfer-8-Sequential : MDPs, Bandits et POMDPs | BETA | Oui |
-| 12 | DecInfer-9-Preuves formelles — Indice de Gittins | BETA | Oui |
+| 5 | DecInfer-02-Théorème de représentation de von… | BETA | Oui |
+| 6 | DecInfer-03-Utility-Money : Utilite de l'Argent et… | BETA | Oui |
+| 7 | DecInfer-04-Multi-Attribute : Utilite Multi-Attributs | BETA | Oui |
+| 8 | DecInfer-05-Decision-Networks : Reseaux de Decision | BETA | Oui |
+| 9 | DecInfer-06-Value-Information : Valeur de l'Information | BETA | Oui |
+| 10 | DecInfer-07-Expert-Systems : Decisions Robustes et… | BETA | Oui |
+| 11 | DecInfer-08-Sequential : MDPs, Bandits et POMDPs | BETA | Oui |
+| 12 | DecInfer-09-Preuves formelles — Indice de Gittins | BETA | Oui |
 | 13 | DecPyMC-1-Utility-Foundations : Axiomes et Fondements | BETA | Oui |
 | 14 | DecPyMC-10 : Ruine et capital — le processus de… | BETA | Oui |
 | 15 | DecPyMC-12 — Fréquence × sévérité hiérarchique : le… | BETA | Oui |
@@ -181,8 +181,8 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 | 12 | PyMC-2 : Distributions Gaussiennes et Mélanges | BETA | Oui |
 | 13 | PyMC-3 : Graphes de Facteurs et Inference Discrete | BETA | Oui |
 | 14 | PyMC-4 : Reseaux Bayesiens | BETA | Oui |
-| 15 | PyMC-5-Causal-Inference : Inference Causale et… | BETA | Oui |
-| 16 | PyMC-6-Debugging : Troubleshooting et Bonnes Pratiques | BETA | Oui |
+| 15 | PyMC-05-Causal-Inference : Inference Causale et… | BETA | Oui |
+| 16 | PyMC-06-Debugging : Troubleshooting et Bonnes Pratiques | BETA | Oui |
 | 17 | PyMC-7 : Modèles de Competences (IRT et DINA) | BETA | Oui |
 | 18 | PyMC-8 : TrueSkill - Classement et Apprentissage en… | BETA | Oui |
 | 19 | PyMC-9 : Classification Bayesienne et Tests A/B | BETA | Oui |
