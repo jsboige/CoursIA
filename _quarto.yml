@@ -872,7 +872,7 @@ project:
     - "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Restitution_3_Actes.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_UI_configuration.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/groupe-I2-contre-arguments-aspic/I2_Contre_arguments_ASPIC.ipynb"
-    - "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-11-TorchLean-Python.ipynb"
+    - "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-11b-TorchLean-Python.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-12b-Lean-Sensitivity-Theorem.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-14-Finiteness-Derivatives.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-14b-Finiteness-Lean-Companion.ipynb"
