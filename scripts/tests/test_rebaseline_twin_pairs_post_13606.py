@@ -282,3 +282,89 @@ def test_git_show_captures_all_files_in_merge_diff(tmp_path: Path):
     assert files == ["a.Csharp.ipynb", "b.Csharp.ipynb"], (
         f"pathspec Csharp.ipynb filter should restrict to 2 files, got {files}"
     )
+
+
+def test_git_show_first_parent_on_real_merge_commit(tmp_path: Path):
+    """Acceptance #1 (étendu) : la fast-path `git show --first-parent
+    --name-only --format= <merge_sha>` capture les fichiers d'un VRAI
+    merge commit (parents=2), contrairement à `git show --name-only` qui
+    rend un combined-diff (souvent vide sur merge pur).
+
+    Construit :
+    - base : commit `init` avec 1 fichier C#
+    - branche feat : commit `feat` qui ajoute 1 fichier C#
+    - merge : `git merge --no-ff feat` → commit 2 parents
+
+    Sans `--first-parent`, git show du merge commit peut rendre vide
+    (combined-diff par défaut). Avec `--first-parent`, les 2 fichiers
+    C# de la branche mergée remontent.
+
+    Régression de review #13859 (Hermes COMMENT_WITH_CONCERNS,
+    jsboige 2026-08-31) : la version antérieure sans `--first-parent`
+    échouait silencieusement sur ce cas (exit 2 sans emprunter le
+    fallback gh api /files).
+    """
+    repo = tmp_path / "merge_repo"
+    repo.mkdir()
+    subprocess.run(["git", "init", "-q", "-b", "main"], cwd=repo, check=True)
+    subprocess.run(["git", "config", "user.email", "t@t"], cwd=repo, check=True)
+    subprocess.run(["git", "config", "user.name", "t"], cwd=repo, check=True)
+
+    # Base : 1 fichier C#
+    cs_base = repo / "base.Csharp.ipynb"
+    cs_base.write_text("base", encoding="utf-8")
+    subprocess.run(["git", "add", "-A"], cwd=repo, check=True)
+    subprocess.run(["git", "commit", "-q", "-m", "init"], cwd=repo, check=True)
+
+    # Branche feat : ajoute 1 fichier C#
+    subprocess.run(["git", "checkout", "-q", "-b", "feat"], cwd=repo, check=True)
+    cs_feat = repo / "feat.Csharp.ipynb"
+    cs_feat.write_text("feat", encoding="utf-8")
+    subprocess.run(["git", "add", "-A"], cwd=repo, check=True)
+    subprocess.run(["git", "commit", "-q", "-m", "feat"], cwd=repo, check=True)
+
+    # Merge --no-ff → commit avec 2 parents
+    subprocess.run(["git", "checkout", "-q", "main"], cwd=repo, check=True)
+    subprocess.run(["git", "merge", "--no-ff", "-q", "feat"], cwd=repo, check=True)
+
+    # Vérifie que le merge commit a bien 2 parents
+    parents = subprocess.run(
+        ["git", "log", "--format=%P", "-1", "HEAD"],
+        cwd=repo, capture_output=True, text=True,
+        encoding="utf-8", errors="replace", check=True,
+    ).stdout.strip().split()
+    assert len(parents) == 2, f"merge commit doit avoir 2 parents, got {parents}"
+
+    # Sanity check : `git show --name-only --format=` du merge (combined diff)
+    # rend SOUVENT vide (pas de résolution conflictuelle = rien à merger).
+    out_default = subprocess.run(
+        ["git", "show", "--name-only", "--format=", "HEAD", "--", "*.Csharp.ipynb"],
+        cwd=repo, capture_output=True, text=True,
+        encoding="utf-8", errors="replace", check=True,
+    )
+    files_default = sorted(line.strip() for line in out_default.stdout.splitlines()
+                           if line.strip())
+    # Le test NE FAIT PAS d'assertion dure ici : on documente seulement que
+    # `git show` par défaut peut rendre vide. La primitive qu'on protège,
+    # c'est `git show --first-parent`.
+
+    # La primitive qu'utilise le helper post-fix :
+    out = subprocess.run(
+        ["git", "show", "--first-parent", "--name-only", "--format=",
+         "HEAD", "--", "*.Csharp.ipynb"],
+        cwd=repo, capture_output=True, text=True,
+        encoding="utf-8", errors="replace", check=True,
+    )
+    files_first_parent = sorted(line.strip() for line in out.stdout.splitlines()
+                                if line.strip())
+    # `--first-parent` doit remonter **uniquement le fichier ajouté par la
+    # branche mergée** (`feat.Csharp.ipynb`), parce qu'il suit le diff de
+    # la branche mergée : le fichier pré-existant dans `main` (`base`)
+    # n'est PAS modifié par le merge commit. C'est exactement la
+    # sémantique qu'on veut pour le helper : lister les fichiers
+    # **modifiés par la PR** (et pas tous les fichiers présents dans la
+    # branche).
+    assert files_first_parent == ["feat.Csharp.ipynb"], (
+        f"--first-parent doit lister UNIQUEMENT le fichier ajouté par la "
+        f"PR, got {files_first_parent}; default={files_default}"
+    )

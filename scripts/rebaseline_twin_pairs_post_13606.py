@@ -12,12 +12,18 @@ affectées via `gh pr diff 13606` (ou, post-merge, via `git log`).
 Mécanique :
     Pour chaque paire C# touchée par #13606 :
     1. Liste les fichiers C# affectés par la PR (post-merge : `git show
-       --name-only --format= <merge_sha>` ; pre-merge ou fallback : `gh api
-       /files` paginé). La fast-path `git show` capture TOUS les fichiers du
-       diff du merge commit, indépendamment du mode de merge (squash,
-       merge-commit, rebase) — la version antérieure utilisait
-       `--first-parent -1` qui ratait les fichiers antérieurs au dernier
-       commit de la PR.
+       --first-parent --name-only --format= <merge_sha>` ; pre-merge ou
+       fallback : `gh api /files` paginé). La fast-path `git show
+       --first-parent` capture TOUS les fichiers de la branche fusionnée,
+       ce qui couvre **les trois modes de merge** : squash (1 parent,
+       `--first-parent` no-op), merge-commit (2 parents, le combined-diff
+       par défaut peut être vide — `--first-parent` suit la branche PR) et
+       rebase (1 parent, les fichiers sont déjà dans la branche rebasée).
+       La version antérieure utilisait `--first-parent -1` qui ratait les
+       fichiers antérieurs au dernier commit de la PR. Si la fast-path
+       rend vide malgré tout (corner case), on retombe sur le fallback
+       `gh api /files` paginé plutôt que retourner [] (qui mènerait à
+       l'exit 2 « aucun fichier C# trouvé » avec perte de signal).
     2. Mappe chaque fichier C# à sa paire dans `twin_pairs.d/*.yaml`.
     3. Skip si la paire est **déjà alignée** : `csharp_sha` YAML == blob SHA
        actuel du fichier (`git hash-object`). Évite une re-touch qui pollue
@@ -102,14 +108,18 @@ def get_csharp_files_from_pr(pr_number: int, repo_root: Path) -> list[str]:
                 )
                 if merged.returncode == 0:
                     # PR mergée : extraire les fichiers C# touchés par le merge commit.
-                    # Stratégie : `git show --name-only --format= <merge_sha>` liste
-                    # TOUS les fichiers du diff du merge commit, indépendamment du
-                    # mode de merge (squash, merge-commit, rebase). Cela évite la
-                    # régression de la fast-path précédente qui utilisait
-                    # `--first-parent -1` (un seul commit, donc fichiers partiels).
+                    # Stratégie : `git show --first-parent --name-only --format=
+                    # <merge_sha>` liste TOUS les fichiers de la branche fusionnée
+                    # (first-parent suit la branche mergée, qui contient les
+                    # commits PR). Le `--first-parent` est **obligatoire** pour les
+                    # merge-commits (parents=2) : sans lui, git show rend un
+                    # combined-diff par défaut, qui peut être vide pour un merge
+                    # pur (sans résolution conflictuelle) — mesuré en review #13859.
+                    # En squash ou rebase, le merge commit a 1 parent, et le
+                    # `--first-parent` est un no-op (la branche = le commit).
                     out = subprocess.run(
-                        ["git", "show", "--name-only", "--format=", source_sha,
-                         "--", "*.Csharp.ipynb"],
+                        ["git", "show", "--first-parent", "--name-only", "--format=",
+                         source_sha, "--", "*.Csharp.ipynb"],
                         cwd=repo_root,
                         capture_output=True,
                         text=True,
@@ -117,8 +127,17 @@ def get_csharp_files_from_pr(pr_number: int, repo_root: Path) -> list[str]:
                         errors="replace",
                         check=True,
                     )
-                    return sorted(set(line for line in out.stdout.splitlines()
-                                      if line.endswith("Csharp.ipynb")))
+                    files = sorted(set(line for line in out.stdout.splitlines()
+                                       if line.endswith("Csharp.ipynb")))
+                    # Robustesse : si la fast-path rend vide (corner case
+                    # théorique, e.g. merge commit bizarre), on RETOMBE sur le
+                    # fallback gh api /files plutôt que retourner [] et risquer
+                    # l'exit 2 « aucun fichier C# trouvé » avec perte de signal.
+                    if files:
+                        return files
+                    print(f"WARN: git show first-parent a rendu vide pour {source_sha}, "
+                          f"fallback gh api /files",
+                          file=sys.stderr)
 
     # Fallback : gh api /files (pagination). Aussi chemin nominal quand la PR
     # n'est pas encore mergée (pre-merge).
