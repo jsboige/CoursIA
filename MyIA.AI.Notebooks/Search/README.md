@@ -120,7 +120,6 @@ Chaque notebook introduit un concept ou algorithme spécifique. Le tableau ci-de
 | 12 | PatternDatabases | Heuristiques précalculées (Culberson & Schaeffer 1996, PDB additives Korf & Felner 2002) : 15-puzzle optimal via IDA* |
 | 13 | LimitedDiscrepancySearch | LDS (Harvey & Ginsberg 1995) : explorer d'abord les écarts au choix glouton, greedy vs LDS(k) vs exhaustif |
 | 14 | WeightedA* | A* pondéré (Pohl 1970) : sous-optimalité bornée par W pour accélérer sur terrain pondéré |
-| 17 | CombinatorialDiscrepancy | Discrépance combinatoire (Beck–Fiala 1981, frontière 2025 Bansal–Jiang) : colorier ±1 sans déséquilibrer, arrondi flottant 2k−1, oracle CP-SAT |
 
 ### Partie 4 : Métaheuristiques composables
 
@@ -201,6 +200,8 @@ Algorithmes de recherche classiques, recherche adversariale et métaheuristiques
 | 7 | [Search-7-MCTS-And-Beyond](Part1-Foundations/Search-7-MCTS-And-Beyond.ipynb) | ~1h30 | MCTS, UCB1, OpenSpiel, AlphaGo-style (DQN+MCTS) | Search-6 |
 | 8 | [Search-8-DancingLinks](Part1-Foundations/Search-8-DancingLinks.ipynb) | ~1h30 | Algorithme X, DLX, Sudoku, N-Queens, Pentominoes | Search-2 |
 | 9 | [Search-9-LinearProgramming](Part1-Foundations/Search-9-LinearProgramming.ipynb) | ~2h | PuLP, simplex, transport, diet, sensibilité, PLNE | Algèbre linéaire |
+| 9b | [Search-09b-SpuriousMinima](Part1-Foundations/Search-09b-SpuriousMinima.ipynb) | ~1h15 | Relaxation SDP de MaxCut (Goemans–Williamson, résolue exactement par cvxpy/CLARABEL) et sa factorisation de Burer–Monteiro $Y = XX^T$ : recensement borné des minima fallacieux par rang (40 départs × 3 instances C6/K8/G10, graines fixes) — à $r=1$ dégénère en MaxCut discret, pièges se raréfiant aux rangs intermédiaires, aucun piège au-dessus du seuil de Burer–Monteiro/Barvinok–Pataki | Search-9 |
+| 9c | [Search-09c-CombinatorialDiscrepancy](Part1-Foundations/Search-09c-CombinatorialDiscrepancy.ipynb) | ~45min | Discrépance combinatoire (Beck–Fiala 1981, frontière 2025 Bansal–Jiang arXiv:2508.03961) : colorier ±1 sans déséquilibrer, borne inf √k (Chernoff), arrondi flottant 2k−1 implémenté, CP-SAT en oracle exact, désambiguïsation vs LDS | Search-13 |
 | 10 | [Search-10-SymbolicAutomata](Part1-Foundations/Search-10-SymbolicAutomata.html) | ~2h | DFA/NFA (automata-lib), prédicats Z3, automates symboliques | Search-1, SymbolicAI/SMT/Z3-Linq2Z3 |
 | 11 | [Search-11-Metaheuristics](Part1-Foundations/Search-11-Metaheuristics.html) | ~1h30 | PSO, ABC, SA, BRO avec MEALPy, benchmark comparatif | Search-4, Search-5 |
 | 15 | [Search-15-NetworkX](Part1-Foundations/Search-15-NetworkX.html) | ~1h | `networkx` : `Graph`/`DiGraph`, DFS/BFS, Dijkstra, Bellman-Ford, centralités de degré, MST, Floyd-Warshall | Search-2 |
@@ -237,8 +238,7 @@ Les notebooks CSP nécessitent une compréhension préalable de :
 
 Techniques de recherche avancées au-delà des fondations : heuristiques
 précalculées (pattern databases), recherche à écart limité (limited discrepancy search),
-recherche à sous-optimalité bornée (Weighted A\*) — et discrépance combinatoire
-(Search-18 : l'équilibrage garanti ±1, frontière théorique 2025).
+recherche à sous-optimalité bornée (Weighted A\*).
 Cette partie fait le pont entre les fondations ([Partie 1](Part1-Foundations/Search-3-Informed.ipynb) :
 A\*, IDA\*, heuristiques admissibles) et les métaheuristiques composables
 ([Partie 4](Part4-Metaheuristics/README.md)), sans relever de la programmation par
@@ -249,7 +249,6 @@ contraintes ([Partie 2](Part2-CSP/CSP-1-Fundamentals.html)).
 | 1 | [Search-12-PatternDatabases](Part3-Advanced/Search-12-PatternDatabases.ipynb) | ~1h30 | Pattern Databases (Culberson & Schaeffer 1996), PDB additives (Korf & Felner 2002), 15-puzzle optimal, IDA\* | Search-3 |
 | 2 | [Search-13-LimitedDiscrepancySearch](Part3-Advanced/Search-13-LimitedDiscrepancySearch.html) | ~45min | Limited Discrepancy Search (Harvey & Ginsberg 1995), sac à dos 0/1, greedy vs LDS(k) vs exhaustif | Search-3 |
 | 3 | [Search-14-WeightedAstar](Part3-Advanced/Search-14-WeightedAstar.html) | ~1h | Weighted A\* (Pohl 1970), recherche à sous-optimalité bornée par W, terrain pondéré, triptyque Partie 3 | Search-3 |
-| 4 | [Search-18-CombinatorialDiscrepancy](Part3-Advanced/Search-18-CombinatorialDiscrepancy.ipynb) | ~45min | Discrépance combinatoire (Beck–Fiala 1981, Bansal–Jiang 2025) : borne inf √k (Chernoff), arrondi flottant 2k−1 implémenté, CP-SAT en oracle exact, désambiguïsation vs LDS | Search-13 |
 ---
 
 ## Applications (`Applications/`)
@@ -350,9 +349,9 @@ Cette série est née **Python d'abord** pour son cœur pédagogique (recherche,
 
 | Sous-série | Cœur pédagogique | Langage | Correspondance dans l'autre langage |
 |-----------|-----------|---------|-------------------------------------|
-| [Part1-Foundations](Part1-Foundations/) | 13 (Search-1 à Search-11, Search-15, Search-16) | Python (12) + C# natif (Search-16 QuikGraph) | **12 jumeaux C#** (Search-1 à 11, 15) + déclinaison deep-dive **Search-11b** (Métaheuristiques, 4 volets) |
+| [Part1-Foundations](Part1-Foundations/) | 15 (Search-1 à Search-11, Search-15, Search-16, Search-09b, Search-09c) | Python (14) + C# natif (Search-16 QuikGraph) | **12 jumeaux C#** (Search-1 à 11, 15) + déclinaison deep-dive **Search-11b** (Métaheuristiques, 4 volets) |
 | [Part2-CSP](Part2-CSP/) | 9 (CSP-1 à CSP-9) | Python + .NET | **9 binômes complets** — marathon achevé, voir [bilan final](#marathon-epic-4956) |
-| [Part3-Advanced](Part3-Advanced/) | 4 (Search-12 à Search-14 + Search-18) | Python | **3 jumeaux C#** (Search-12/13/14-Csharp) |
+| [Part3-Advanced](Part3-Advanced/) | 3 (Search-12 à Search-14) | Python | **3 jumeaux C#** (Search-12/13/14-Csharp) |
 | [Part4-Metaheuristics](Part4-Metaheuristics/) | 22 (MGS-1 à MGS-19 + trilogie MGS-7b/7c/7d) | C# / .NET (natif) | Prolonge Search-5 / Search-11 (Python) sous l'angle ingénierie |
 | [Applications](Applications/) | 20 cas réels (App-1 à App-20) | Python + .NET | **20 binômes complets** (40 notebooks) + 1 compagnon statistical-validity (App-2 Python) |
 | Racine | 0 | — | (aucun — voir [_archive/](_archive/) pour les anciens notebooks racine) |
@@ -458,7 +457,7 @@ Search/
 ├── search_helpers.py                      # Utilitaires partages
 ├── resources/                             # Images et données
 │
-├── Part1-Foundations/                     # Search Fondamental (29 notebooks : 12 Python + 17 C# — 12 jumeaux directs Search-1..11/15 + Search-16 QuikGraph natif + déclinaison Métaheuristiques Search-11b en 4 volets)
+├── Part1-Foundations/                     # Search Fondamental (31 notebooks : 14 Python + 17 C# — 12 jumeaux directs Search-1..11/15 + Search-16 QuikGraph natif + déclinaison Métaheuristiques Search-11b en 4 volets)
 │   ├── Search-1-StateSpace.ipynb
 │   ├── Search-2-Uninformed.ipynb
 │   ├── Search-3-Informed.ipynb
@@ -468,6 +467,8 @@ Search/
 │   ├── Search-7-MCTS-And-Beyond.ipynb
 │   ├── Search-8-DancingLinks.ipynb
 │   ├── Search-9-LinearProgramming.ipynb
+│   ├── Search-09b-SpuriousMinima.ipynb
+│   ├── Search-09c-CombinatorialDiscrepancy.ipynb
 │   ├── Search-10-SymbolicAutomata.ipynb
 │   ├── Search-11-Metaheuristics.ipynb
 │   ├── Search-15-NetworkX.ipynb
@@ -485,11 +486,10 @@ Search/
 │   ├── CSP-8-Temporal.ipynb
 │   └── CSP-9-Distributed.ipynb
 │
-├── Part3-Advanced/                       # Recherche heuristique avancée (7 notebooks : 4 Python + 3 jumeaux C#)
+├── Part3-Advanced/                       # Recherche heuristique avancée (6 notebooks : 3 Python + 3 jumeaux C#)
 │   ├── Search-12-PatternDatabases.ipynb
 │   ├── Search-13-LimitedDiscrepancySearch.ipynb
-│   ├── Search-14-WeightedAstar.ipynb
-│   └── Search-18-CombinatorialDiscrepancy.ipynb
+│   └── Search-14-WeightedAstar.ipynb
 │
 ├── Applications/
 │   ├── Search/                            # Applications Search (4 notebooks)
