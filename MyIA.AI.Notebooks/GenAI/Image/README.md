@@ -204,7 +204,7 @@ Le fil rouge de cette série est la création d'un système de visuels pédagogi
 
 1. **01-Foundation** (génération de base) : [01-1](01-Foundation/01-1-OpenAI-DALL-E-3.ipynb) et [01-2](01-Foundation/01-2-GPT-5-Image-Generation.ipynb) couvrent la génération via API cloud. [01-4](01-Foundation/01-4-Forge-SD-XL-Turbo.ipynb) et [01-5](01-Foundation/01-5-Qwen-Image-Edit.ipynb) introduisent les modèles locaux. À la fin, vous savez générer une image à partir d'un texte.
 
-2. **02-Advanced** (édition et qualité) : [02-1](01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb) permet d'éditer une image existante pour corriger ou enrichir un visuel. [02-4](02-Advanced/02-4-Z-Image-Lumina2.ipynb) offre une génération rapide pour le prototypage. [02-2](02-Advanced/02-2-FLUX-1-Advanced-Generation.ipynb) pousse la qualité plus loin. [02-5](02-Advanced/02-5-Bonsai-Image-Ternary.ipynb) montre la quantization extrême (ternaire 1.58-bit) pour faire tenir un modèle 4B dans ~7 GB de VRAM.
+2. **02-Advanced** (édition et qualité) : [01-5b](01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb) permet d'éditer une image existante pour corriger ou enrichir un visuel. [02-4](02-Advanced/02-4-Z-Image-Lumina2.ipynb) offre une génération rapide pour le prototypage. [02-2](02-Advanced/02-2-FLUX-1-Advanced-Generation.ipynb) pousse la qualité plus loin. [02-5](02-Advanced/02-5-Bonsai-Image-Ternary.ipynb) montre la quantization extrême (ternaire 1.58-bit) pour faire tenir un modèle 4B dans ~7 GB de VRAM.
 
 3. **03-Orchestration** (comparaison et pipelines) : [03-1](03-Orchestration/03-1-Multi-Model-Comparison.ipynb) compare les modèles pour choisir le meilleur rapport qualité/coût. [03-2](03-Orchestration/03-2-Workflow-Orchestration.ipynb) assemble un pipeline de génération complet.
 
@@ -269,7 +269,7 @@ Les notebooks ont une graceful degradation : sans token, ils basculent vers les 
 
 ### Qwen Image Edit ne modifie pas l'image correctement
 
-Le modèle Qwen Image Edit (notebooks [01-5](01-Foundation/01-5-Qwen-Image-Edit.ipynb) et [02-1](01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb)) est sensible au format du prompt d'édition. Points critiques :
+Le modèle Qwen Image Edit (notebooks [01-5](01-Foundation/01-5-Qwen-Image-Edit.ipynb) et [01-5b](01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb)) est sensible au format du prompt d'édition. Points critiques :
 
 - L'image source doit être en PNG ou JPEG, résolution <= 1024x1024 pour des résultats optimaux.
 - Le prompt d'édition doit être spécifique : "remplacer le texte 'X' par 'Y'" plutôt que "changer le texte".

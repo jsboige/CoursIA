@@ -4,7 +4,7 @@
 
 Ce module explore les modèles de pointe : Qwen Image Edit avancé, FLUX, SD 3.5, Z-Image/Lumina, et la quantification extrême (Bonsai ternaire 1.58-bit).
 
-**Dans le cadre du fil rouge contenu visuel éducatif** : un visuel de qualité demande des outils précis. 01-5b-Qwen-Image-Edit-2509.ipynb) édite une image existante pour corriger ou enrichir un diagramme. [02-2](02-2-FLUX-1-Advanced-Generation.ipynb) génère des images haute qualité. [02-4](02-4-Z-Image-Lumina2.ipynb) offre une génération rapide pour le prototypage itératif. [02-5](02-5-Bonsai-Image-Ternary.ipynb) aborde la quantification ternaire 1.58-bit : un modèle 4B compressé à ~4 GB qui se génère en ~2s, parfait pour déployer la génération d'images sur du matériel modeste (formation, demos) sans sacrifier la qualité.
+**Dans le cadre du fil rouge contenu visuel éducatif** : un visuel de qualité demande des outils précis. [01-5b](../01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb) édite une image existante pour corriger ou enrichir un diagramme. [02-2](02-2-FLUX-1-Advanced-Generation.ipynb) génère des images haute qualité. [02-4](02-4-Z-Image-Lumina2.ipynb) offre une génération rapide pour le prototypage itératif. [02-5](02-5-Bonsai-Image-Ternary.ipynb) aborde la quantification ternaire 1.58-bit : un modèle 4B compressé à ~4 GB qui se génère en ~2s, parfait pour déployer la génération d'images sur du matériel modeste (formation, demos) sans sacrifier la qualité.
 
 ## Vue d'overview
 
@@ -19,7 +19,7 @@ Ce module explore les modèles de pointe : Qwen Image Edit avancé, FLUX, SD 3.5
 
 | # | Notebook | Contenu | Service | VRAM |
 |---|----------|---------|---------|------ |
-| 1 | [01-5b-Qwen-Image-Edit-2509../01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb) | Édition avancée Qwen | ComfyUI | ~29GB |
+| 1 | [01-5b-Qwen-Image-Edit-2509](../01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb) | Édition avancée Qwen | ComfyUI | ~29GB |
 | 2 | [02-2-FLUX-1-Advanced-Generation](02-2-FLUX-1-Advanced-Generation.ipynb) | Génération FLUX | ComfyUI | Variable |
 | 3 | [02-3-Stable-Diffusion-3-5](02-3-Stable-Diffusion-3-5.ipynb) | SD 3.5 | ComfyUI | Variable |
 | 4 | [02-4-Z-Image-Lumina2](02-4-Z-Image-Lumina2.ipynb) | Z-Image/Lumina | ComfyUI | ~10GB |
@@ -56,13 +56,13 @@ pip install -r requirements-comfyui.txt
 - **VRAM** : ~29GB (VAE 16 canaux)
 
 <p align="center">
-  <a href="01-5b-Qwen-Image-Edit-2509.ipynb"><img src="assets/readme/img2-qwen-edit.png" alt="Triptyque d'édition Qwen Image Edit — image originale d'intérieur de café (gauche), masque blanc flou (centre), zone d'édition marquée en rouge (droite)" width="460"/></a><br>
-  <em>Sortie du notebook <a href="01-5b-Qwen-Image-Edit-2509.ipynb">02-1</a> (cellule 17) : triptyque d'édition Qwen Image Edit — image originale d'intérieur de café / masque blanc / zone d'édition marquée en rouge (workflow image-to-image avec masque d'inpainting).</em>
+  <a href="../01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb"><img src="assets/readme/img2-qwen-edit.png" alt="Triptyque d'édition Qwen Image Edit — image originale d'intérieur de café (gauche), masque blanc flou (centre), zone d'édition marquée en rouge (droite)" width="460"/></a><br>
+  <em>Sortie du notebook <a href="../01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb">02-1</a> (cellule 17) : triptyque d'édition Qwen Image Edit — image originale d'intérieur de café / masque blanc / zone d'édition marquée en rouge (workflow image-to-image avec masque d'inpainting).</em>
 </p>
 
 <p align="center">
-  <a href="01-5b-Qwen-Image-Edit-2509.ipynb"><img src="assets/readme/img2-qwen-edit2.webp" alt="Batch generation Qwen Image Edit — mosaïque 4 variations thématiques (cityscape futuriste au coucher de soleil / temple japonais en automne / récif corallien sous-marin / bibliothèque cosy avec chat)" width="320"/></a><br>
-  <em>Sortie du notebook <a href="01-5b-Qwen-Image-Edit-2509.ipynb">02-1</a> (cellule 24) : batch generation Qwen Image Edit — mosaïque 4 variations thématiques (cityscape / temple / récif / bibliothèque) sur 4 domaines visuels distincts.</em>
+  <a href="../01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb"><img src="assets/readme/img2-qwen-edit2.webp" alt="Batch generation Qwen Image Edit — mosaïque 4 variations thématiques (cityscape futuriste au coucher de soleil / temple japonais en automne / récif corallien sous-marin / bibliothèque cosy avec chat)" width="320"/></a><br>
+  <em>Sortie du notebook <a href="../01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb">02-1</a> (cellule 24) : batch generation Qwen Image Edit — mosaïque 4 variations thématiques (cityscape / temple / récif / bibliothèque) sur 4 domaines visuels distincts.</em>
 </p>
 
 ### FLUX 1
