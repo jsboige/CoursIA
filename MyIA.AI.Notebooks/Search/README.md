@@ -260,8 +260,8 @@ Problèmes du monde réel adaptés de projets étudiants. Chaque application est
 
 | # | Notebook | Durée | Contenu | Source |
 |---|----------|-------|---------|--------|
-| 1 | [App-12-ConnectFour](Applications/Search/App-12-ConnectFour.html) | ~50 min | Puissance 4 : 5 IA au tournoi (Random, Glouton, Minimax α-β d=4/d=6, MCTS) + framework AIMA | Projet étudiant |
-| 1b | [App-12-ConnectFour-CSharp](Applications/Search/App-12-ConnectFour-CSharp.ipynb) | ~45 min | **Jumeau C#** — Minimax + Alpha-Beta + MCTS (UCB1) + glouton + iterative deepening from-scratch, heuristique de fenêtres + tournoi round-robin, parité #4956 | Jumeau .NET |
+| 1 | [App-14b-ConnectFour](Applications/Search/App-14b-ConnectFour.html) | ~50 min | Puissance 4 : 5 IA au tournoi (Random, Glouton, Minimax α-β d=4/d=6, MCTS) + framework AIMA | Projet étudiant |
+| 1b | [App-14c-ConnectFour-CSharp](Applications/Search/App-14c-ConnectFour-CSharp.ipynb) | ~45 min | **Jumeau C#** — Minimax + Alpha-Beta + MCTS (UCB1) + glouton + iterative deepening from-scratch, heuristique de fenêtres + tournoi round-robin, parité #4956 | Jumeau .NET |
 | 2 | [App-14-ConnectFour-Adversarial](Applications/Search/App-14-ConnectFour-Adversarial.ipynb) | ~45 min | Benchmark adversarial : Minimax, Alpha-Beta, MCTS | Projet étudiant |
 | 2b | [App-14-ConnectFour-Adversarial-CSharp](Applications/Search/App-14-ConnectFour-Adversarial-CSharp.ipynb) | ~40 min | **Jumeau C#** — Minimax + Alpha-Beta (élagage) + MCTS (UCB1) from-scratch, benchmark nœuds + tournoi round-robin, parité #4956 | Jumeau .NET |
 
@@ -493,8 +493,8 @@ Search/
 │
 ├── Applications/
 │   ├── Search/                            # Applications Search (4 notebooks)
-│   │   ├── App-12-ConnectFour.ipynb
-│   │   ├── App-12-ConnectFour-CSharp.ipynb
+│   │   ├── App-14b-ConnectFour.ipynb
+│   │   ├── App-14c-ConnectFour-CSharp.ipynb
 │   │   ├── App-14-ConnectFour-Adversarial.ipynb
 │   │   └── App-14-ConnectFour-Adversarial-CSharp.ipynb
 │   │

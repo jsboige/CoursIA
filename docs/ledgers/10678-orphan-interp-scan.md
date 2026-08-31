@@ -35,7 +35,7 @@ Vérification cell-by-cell (manuelle) pour distinguer MISPLACED vs LEGIT :
 | 14 | QC-Py-18-ML-Features-Engineering.ipynb | cell[58] | LEGIT | closing_interp_immediately_after_last_code |
 | 15 | QC-Py-20-ML-Regression-Prediction.ipynb | cell[65] | LEGIT | closing_interp_immediately_after_last_code |
 | 16 | QC-Py-24-Autoencoders-Anomaly.ipynb | cell[50] | LEGIT | closing_interp_immediately_after_last_code |
-| 17 | App-12-ConnectFour.ipynb | cell[55] | LEGIT | closing_interp_immediately_after_last_code |
+| 17 | App-14b-ConnectFour.ipynb | cell[55] | LEGIT | closing_interp_immediately_after_last_code |
 | 18 | Search-10-SymbolicAutomata.ipynb | cell[88] | LEGIT | closing_interp_immediately_after_last_code |
 | 19 | **Sudoku-03-Genetic-Csharp.ipynb** | **cell[27]** | **POSSIBLE_MISPLACED** | last_code_cell_then_interp_then_only_conclusion (= ORPHAN au sens strict, à vérifier manuellement) |
 | 20 | Sudoku-05-PSO-Csharp.ipynb | cell[31] | LEGIT | closing_interp_immediately_after_last_code |
@@ -251,9 +251,9 @@ Voir aussi : [rapport c.237 original](10678-interp-positioning-audit.md) (24 CHE
 - **Sévérité** : **HIGH** (orphan de fin = l'interp n'est jamais lue, donc jamais validée par un code qu'elle interprète)
 - **Action Phase 2** : relocaliser la cellule juste après le code référencé (prev_code_idx+1)
 
-### `App-12-ConnectFour.ipynb` cell[55]
+### `App-14b-ConnectFour.ipynb` cell[55]
 
-- **Chemin** : `MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour.ipynb`
+- **Chemin** : `MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb`
 - **idx** : 55 / 59 total cells
 - **prev_code_idx** : 54 (seul code avant l'interp)
 - **is_last_cell** : False

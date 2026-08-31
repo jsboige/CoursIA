@@ -58,8 +58,8 @@ Deux notebooks autour du Puissance 4, le banc d'essai idéal de la recherche adv
 
 | # | Notebook | Durée | Contenu | Source |
 |---|----------|-------|---------|--------|
-| 1 | [App-12-ConnectFour](Search/App-12-ConnectFour.html) | ~50 min | Puissance 4 : Minimax, MCTS, DQN-RL | Projet étudiant |
-| 1b | [App-12-ConnectFour-CSharp](Search/App-12-ConnectFour-CSharp.ipynb) | ~45 min | **Jumeau C#** — Minimax + Alpha-Beta + MCTS (UCB1) + glouton + iterative deepening from-scratch, heuristique de fenêtres + tournoi round-robin, parité #4956 | Jumeau .NET |
+| 1 | [App-14b-ConnectFour](Search/App-14b-ConnectFour.html) | ~50 min | Puissance 4 : Minimax, MCTS, DQN-RL | Projet étudiant |
+| 1b | [App-14c-ConnectFour-CSharp](Search/App-14c-ConnectFour-CSharp.ipynb) | ~45 min | **Jumeau C#** — Minimax + Alpha-Beta + MCTS (UCB1) + glouton + iterative deepening from-scratch, heuristique de fenêtres + tournoi round-robin, parité #4956 | Jumeau .NET |
 | 2 | [App-14-ConnectFour-Adversarial](Search/App-14-ConnectFour-Adversarial.ipynb) | ~45 min | Benchmark adversarial : Minimax, Alpha-Beta, MCTS | Projet étudiant |
 | 2b | [App-14-ConnectFour-Adversarial-CSharp](Search/App-14-ConnectFour-Adversarial-CSharp.ipynb) | ~40 min | **Jumeau C#** — Minimax + Alpha-Beta (élagage) + MCTS (UCB1) from-scratch, benchmark nœuds + tournoi round-robin, parité #4956 | Jumeau .NET |
 
