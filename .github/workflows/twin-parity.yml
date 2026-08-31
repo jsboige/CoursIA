@@ -67,6 +67,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          filter: blob:none
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -164,7 +165,7 @@ jobs:
     # identiques aux SHA calcules au HEAD du PR.
     #
     # Pourquoi ADVISORY d'abord : 3 paires en mismatch pre-existant sur main
-    # (Sudoku-8 / Sudoku-14 BDD / Sudoku-9 GraphColoring) -- detail cf
+    # (Sudoku-08 / Sudoku-14 BDD / Sudoku-09 GraphColoring) -- detail cf
     # c.1267 smoke test + rapport design-gate c.1205. Un gate bloquant
     # rendrait main permanent red ; un gate advisory surface la regression
     # sans bloquer le merge, et fournit une baseline quantifiee pour la
@@ -182,6 +183,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          filter: blob:none
 
       - name: Set up Python
         uses: actions/setup-python@v5

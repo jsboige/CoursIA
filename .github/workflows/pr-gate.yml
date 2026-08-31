@@ -67,6 +67,12 @@ permissions:
   contents: read
   checks: read
   statuses: read
+  # #13510: on starvation (deadline, nothing red, constituents still
+  # pending) the script cancels ITS OWN run so the leg concludes CANCELLED
+  # instead of FAILURE. The PR stays blocked (a cancelled required check is
+  # not success) and pr-gate-stale-sweep re-drives cancelled gate legs
+  # exactly like supersession-cancels (#11862).
+  actions: write
 
 concurrency:
   group: pr-gate-${{ github.event.pull_request.number || github.ref }}
@@ -99,6 +105,13 @@ jobs:
     # that works but burns a runner-aggregate cycle on every Quarto-touched
     # PR. Workflow timeout raised in lockstep to keep the script's budget
     # below the runner's ceiling (28 vs the prior 12).
+    # #13510: since the STARVED verdict, a self-chosen cancellation is no
+    # longer the illegible outcome the first comment guards against: the
+    # script prints "STARVED -- timed out waiting for: X" BEFORE cancelling
+    # its own run, so the LOG keeps the named constituents while the LEG
+    # concludes CANCELLED (sweep-recoverable) instead of FAILURE (a red
+    # lie). The runner-killed case this ceiling prevents is different: no
+    # verdict is printed at all, which stays worth avoiding.
     timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4

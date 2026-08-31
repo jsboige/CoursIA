@@ -35,8 +35,15 @@ permissions:
   contents: read
 
 concurrency:
-  group: banner-guard-${{ github.ref }}
-  cancel-in-progress: true
+  # #13363/cascade : `github.ref` vaut `refs/heads/main` pour TOUS les commits
+  # de main, donc `cancel-in-progress: true` faisait tuer le controle du commit
+  # precedent par le merge suivant. Mesure du 2026-08-28 sur 30 runs main :
+  # 26-27 annules, 2-3 verdicts rendus. Le backstop cense attraper une mauvaise
+  # cascade etait tue par la cascade -- il defaillait exactement quand il servait.
+  # Sur une branche de PR, superseder est CORRECT (seule la tete compte) ; sur
+  # main, chaque commit est un sujet distinct qu'aucun autre ne peut remplacer.
+  group: banner-guard-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   banner-scan:

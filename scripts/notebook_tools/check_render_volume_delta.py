@@ -116,7 +116,7 @@ DEFAULT_MIN_BASE_BYTES = 1000
 # chute de texte n'a pas la meme cause qu'une chute de rendu (env / lib
 # absente / try-except ImportError qui bascule vs. Graphviz helper detruit),
 # donc pas le meme correctif. Voir le cas fondateur c.358 :
-# Sudoku-4-SimulatedAnnealing perd 10 794 -> 3 155 B de stream (la grille
+# Sudoku-04-SimulatedAnnealing perd 10 794 -> 3 155 B de stream (la grille
 # resolue, `Energie finale: 0`, `Solution valide: True`) tout en gardant 0
 # B de rendu -- aucun signal `image` ou `html` ne pouvait le voir.
 DEFAULT_TEXT_DELTA_THRESHOLD = 0.50
@@ -296,7 +296,7 @@ def _output_text_bytes(outp: dict) -> int:
     des erreurs). Un notebook peut perdre TOUT son volume de stream sans
     perdre une seule image -- les deux deltas sont diagnostiquement
     distincts (env / lib absente vs. helper Graphviz detruit, cf. cas
-    fondateur Sudoku-4-SimulatedAnnealing c.358 : 10 794 -> 3 155 B de
+    fondateur Sudoku-04-SimulatedAnnealing c.358 : 10 794 -> 3 155 B de
     stream sans toucher au rendu).
     """
     if outp.get("output_type") == "stream":

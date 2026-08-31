@@ -120,7 +120,7 @@ Recensement chiffré des valeurs quantitatives écrites en dur dans les cellules
 | `MyIA.AI.Notebooks\Probas\Infer\Infer-2-Gaussian-Mixtures.ipynb` | 38 |
 | `MyIA.AI.Notebooks\Probas\Infer\Infer-15-Recommenders.ipynb` | 27 |
 | `MyIA.AI.Notebooks\Probas\DecisionTheory\PyMC\DecPyMC-7-Sequential.ipynb` | 17 |
-| `MyIA.AI.Notebooks\Probas\DecisionTheory\DecInfer\DecInfer-3-Utility-Money.ipynb` | 16 |
+| `MyIA.AI.Notebooks\Probas\DecisionTheory\DecInfer\DecInfer-03-Utility-Money.ipynb` | 16 |
 | `MyIA.AI.Notebooks\Probas\PyMC\PyMC-6-Debugging.ipynb` | 16 |
 
 ### QuantConnect (drainable total = 1392)
@@ -157,11 +157,11 @@ Recensement chiffré des valeurs quantitatives écrites en dur dans les cellules
 
 | Notebook | Drainable |
 |---|---|
-| `MyIA.AI.Notebooks\Sudoku\Sudoku-3-Genetic-Python.ipynb` | 70 |
+| `MyIA.AI.Notebooks\Sudoku\Sudoku-03-Genetic-Python.ipynb` | 70 |
 | `MyIA.AI.Notebooks\Sudoku\Sudoku-18-Comparison-Csharp.ipynb` | 64 |
 | `MyIA.AI.Notebooks\Sudoku\Sudoku-13-SymbolicAutomata-Csharp.ipynb` | 61 |
 | `MyIA.AI.Notebooks\Sudoku\Sudoku-18-Comparison-Python.ipynb` | 53 |
-| `MyIA.AI.Notebooks\Sudoku\Sudoku-4-SimulatedAnnealing-Python.ipynb` | 51 |
+| `MyIA.AI.Notebooks\Sudoku\Sudoku-04-SimulatedAnnealing-Python.ipynb` | 51 |
 
 ### SymbolicAI (drainable total = 2165)
 

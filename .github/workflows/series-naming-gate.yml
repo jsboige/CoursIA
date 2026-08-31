@@ -13,13 +13,13 @@ name: series-naming-gate
 # elle a une convention arretee -- une regle imposee a une serie qui n'a pas
 # tranche fabrique du rouge sans defaut.
 
+# ABSORBE PAR LA VOIE RAPIDE sur `pull_request` (#12567, tranche 1) : le
+# verdict PR est rendu par `fast-lane-shadow.yml` (check-run nomme
+# `zero-pad guard (GameTheory serie)`, meme nom que ce job). Ce fichier
+# garde `push` (couverture post-merge) et `workflow_dispatch`. Les `paths:`
+# d'origine vivent dans `scripts/ci/fast_lane_registry.py` (TRANCHE1).
+
 on:
-  pull_request:
-    branches: [ main ]
-    paths:
-      - 'MyIA.AI.Notebooks/GameTheory/**'
-      - 'scripts/notebook_tools/check_series_zero_pad.py'
-      - '.github/workflows/series-naming-gate.yml'
   push:
     branches: [ main ]
     paths:
@@ -31,8 +31,15 @@ permissions:
   contents: read
 
 concurrency:
-  group: series-naming-gate-${{ github.ref }}
-  cancel-in-progress: true
+  # #13363/cascade : `github.ref` vaut `refs/heads/main` pour TOUS les commits
+  # de main, donc `cancel-in-progress: true` faisait tuer le controle du commit
+  # precedent par le merge suivant. Mesure du 2026-08-28 sur 30 runs main :
+  # 26-27 annules, 2-3 verdicts rendus. Le backstop cense attraper une mauvaise
+  # cascade etait tue par la cascade -- il defaillait exactement quand il servait.
+  # Sur une branche de PR, superseder est CORRECT (seule la tete compte) ; sur
+  # main, chaque commit est un sujet distinct qu'aucun autre ne peut remplacer.
+  group: series-naming-gate-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   zero-pad-scan:

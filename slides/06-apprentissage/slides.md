@@ -283,17 +283,20 @@ layout: dense
 - Construction du code:
 
 <div v-click="2">
+
 - **Tri des symboles selon**
   - la fréquence
 </div>
 
 <div v-click="3">
+
 - **Combinaison de symboles**
   - les moins fréquents
 - Tracé d’un chemin
 </div>
 
 <div v-click="4">
+
 - ** Arbre de décision**
   - optimal
 - encodage robuste
@@ -423,6 +426,7 @@ layout: dense
 - **Points forts** : rapide, simple, comprehensible, empiriquement valide, robuste au bruit
 
 <div v-click="2">
+
 - **Points faibles** :
   - Decoupe a un seul attribut : limite les types de problemes supportes
   - Les arbres de grande taille deviennent difficiles a interpreter
@@ -460,16 +464,19 @@ layout: two-cols
 - Et parfois double-descente
 
 <div v-click="2">
+
 - **Attention au dévoilement**
   - de l’ensemble de test:
 </div>
 
 <div v-click="3">
+
 - **Si on change d’hypothèse,**
   - il faut régénérer l’ensemble de test
 </div>
 
 <div v-click="4">
+
 - **Sinon l’ensemble de test a « fuité »**
   - dans l’apprentissage.
 </div>
@@ -489,6 +496,7 @@ layout: two-cols
 
 
 <div class="dense-list xl-dense">
+
 - Toute sorte de « bruits » peuvent apparaitre dans les exemples
   - 2 exemples ont les mêmes attributs mais pas la même classe
   - valeurs incorrectes du fait d’erreur d’acquisition ou de traitement
@@ -593,6 +601,7 @@ layout: dense
 # Méthodes d'ensemble
 
 <div class="dense-list">
+
 - Jusqu’à présent: 1 seule hypothèse
 - Apprentissage d’ensemble = ensemble d’hypothèses
 - Si indépendantes  probabilité faible de mauvaise prédiction
@@ -665,6 +674,7 @@ layout: two-cols
 
 
 <div class="dense-list">
+
 - Unité de McCulloch-Pitts
 - Inspiration biologique
 - Simplification élémentaire
@@ -723,6 +733,7 @@ layout: two-cols
 - 2 seuils  1 crète
 
 <div v-click="2">
+
 - **Toute fonction avec**
   - 3 couche
 - 2 crètes  1 bosse
@@ -732,6 +743,7 @@ layout: two-cols
 </div>
 
 <div v-click="3">
+
 - **Similaire à une classification**
   - par hyperplan dans l’espace cible
 
@@ -792,11 +804,13 @@ layout: two-cols
   - partie, objet
 
 <div v-click="2">
+
 - **Caractère, mot, groupe,**
   - clause, phrase, histoire
 </div>
 
 <div v-click="3">
+
 - ** fonctionne bien car**
   - le monde est hiérarchique
 - Librairies de Deep learning
@@ -858,6 +872,7 @@ layout: two-cols
 # Réseaux résiduels (ResNets)
 
 <div class="dense-list">
+
 - Problème:
 - Augmentation de la profondeur
 -  Dégradation des performances
@@ -895,6 +910,7 @@ layout: two-cols
 # Réseaux antagonistes génératifs (GANs)
 
 <div class="dense-list">
+
 - Principe
 - Apprentissage non-supervisé
 - Jeu à somme nulle
@@ -924,6 +940,7 @@ layout: two-cols
 # Réseaux récurrents - RNNs
 
 <div class="dense-list">
+
 - Réseaux récurrents
 - Pensées persistantes  Connexions réentrantes
 - Peuvent être vus « dépliés »
@@ -1045,6 +1062,7 @@ layout: two-cols
 # Graphs Neural Networks (GNNs)
 
 <div class="dense-list">
+
 - Graphes G = (V,E)
 - GNN opère sur la structure de G
 - Ex: Classification des noeuds: Xv  Tv
@@ -1319,10 +1337,12 @@ $$y_i(w \cdot x_i + b) \geq 1 \quad \forall i$$
 - **Astuce 1** : Identifier les points les plus proches du plan de separation optimal (les "vecteurs supports") et travailler directement a partir de ces instances.
 
 <div v-click="2">
+
 - **Astuce 2** : Formuler comme un problème d'optimisation quadratique et utiliser les techniques de programmation quadratique.
 </div>
 
 <div v-click="3">
+
 - **Astuce 3** (le "kernel trick") :
   - Au lieu d'utiliser directement les caractéristiques, representer les données dans un espace de grande dimension construit a partir de fonctions de base (combinaisons polynomiales et gaussiennes des caractéristiques d'origine).
   - Trouver un hyperplan separateur / SVM dans cet espace de grande dimension.
@@ -1358,6 +1378,7 @@ Le calcul dans l'espace projeté se fait **sans projeter explicitement** (astuce
 - **Excellents résultats** jusqu'aux années 2010 (texte, bioinformatique, vision, finance)
 
 <div v-click="2">
+
 - **Avantages** :
   - Optimum global garanti (problème convexe, pas de minimum local)
   - Bonne généralisation en haute dimension
@@ -1365,6 +1386,7 @@ Le calcul dans l'espace projeté se fait **sans projeter explicitement** (astuce
 </div>
 
 <div v-click="3">
+
 - **Limites et contexte actuel** :
   - Coût O(n²) à O(n³) — difficile sur grands datasets
   - Supplanté par le Deep Learning depuis 2012 (AlexNet, ImageNet)
@@ -1443,6 +1465,7 @@ layout: dense
 # Apprentissage et connaissance
 
 <div class="dense-list">
+
 - Relation en hypothèses et exemples:
 - Hypothèses ∧ Descriptions |= Classifications
 - Rasoir d’Occam  écarter l’énumération
@@ -1530,6 +1553,7 @@ layout: dense
 - Algorithme FOIL (1990): clauses de but/horn
 
 <div v-click="2">
+
 - **Ex: Père(x,y)GrandPère(x,y) a des contre-exemples,**
   - Père(x,z) ∧ Père(z,y) GrandPère(x,y) fonctionne
 - Couverture de tous les exemples positifs:+ Père(x,z) ∧ Mère(z,y) GrandPère(x,y)
@@ -1540,6 +1564,7 @@ layout: dense
 </div>
 
 <div v-click="3">
+
 - **b très grand mais restrictions de types + utilisation du gain**
   - informationnel  + heuristique d’Occam (ex: longueur de la clause)
 
@@ -1560,6 +1585,7 @@ layout: dense
 # Résumé apprentissage et connaissances
 
 <div class="dense-list">
+
 - Utilisation des connaissances
 - Modèles plus expressifs qu’attributs simple
 - Apprentissage cumulatif: utilisation de la KB
@@ -1621,11 +1647,13 @@ layout: section
   - = α p(C) p(F1, ..., Fn | C)
 
 <div v-click="2">
+
 - **Assume that each feature Fi is conditionally independent of the other features given the class C.  Then:**
   - p(C | F1, ..., Fn)  = α p(C) Πi p(Fi | C)
 </div>
 
 <div v-click="3">
+
 - **We can estimate each of these conditional probabilities from the observed counts in the training data:**
   - p(Fi | C)  = N(Fi ∧ C) / N(C)
 - Dealing with zeros
@@ -1635,6 +1663,7 @@ layout: section
 </div>
 
 <div v-click="4">
+
 - **p(Wait | Cuisine, Patrons, Rainy?)  =**
   - α p(Wait) p(Cuisine | Wait) p(Patrons | Wait)
   - p(Rainy? | Wait)
@@ -1845,6 +1874,7 @@ layout: section
 - Should we throw that data away??
 
 <div v-click="2">
+
 - **Idea: Guess the missing values**
   - based on the other data
 - Earthquake
@@ -1875,21 +1905,25 @@ layout: section
   - New Data:[4, 10, 3.5, 3.5]
 
 <div v-click="2">
+
 - **Step 2: New Mean: 5.25**
   - New Data: [4, 10, 5.25, 5.25]
 </div>
 
 <div v-click="3">
+
 - **Step 3: New Mean: 6.125**
   - New Data: [4, 10, 6.125, 6.125]
 </div>
 
 <div v-click="4">
+
 - **Step 4: New Mean: 6.5625**
   - New Data: [4, 10, 6.5625, 6.5625]
 </div>
 
 <div v-click="5">
+
 - **Step 5: New Mean: 6.7825**
   - New Data: [4, 10, 6.7825, 6.7825]
 - Result: New Mean: 6.890625
@@ -2211,6 +2245,7 @@ layout: dense
 # Minimisation de regret hypothétique
 
 <div class="dense-list">
+
 - Jeux à information imparfaite:
 - Etats de croyance probabilistes
 - Évaluation du regret:
@@ -2294,6 +2329,7 @@ layout: dense
 - **Problème** : les LLMs entraînés sur du texte brut ne suivent pas forcément les instructions ni les valeurs humaines
 
 <div v-click="2">
+
 - **Comportements problématiques observés** :
   - Réponses toxiques, biaisées ou dangereuses
   - Hallucinations présentées avec confiance
@@ -2301,6 +2337,7 @@ layout: dense
 </div>
 
 <div v-click="3">
+
 - **Solution** : Reinforcement Learning from Human Feedback (RLHF)
   - Apprendre un **modèle de récompense** à partir des préférences humaines
   - Optimiser le LLM via RL pour maximiser cette récompense
@@ -2358,6 +2395,7 @@ layout: dense
   - β · KL : pénalité pour rester proche du modèle SFT (β ≈ 0.02–0.5)
 
 <div v-click="2">
+
 - **InstructGPT** (Ouyang et al., 2022) : première démonstration à grande échelle
   - GPT-3 fine-tuné par RLHF → suivi d'instructions radicalement amélioré
   - Base de ChatGPT (déployé Nov. 2022) puis GPT-4
@@ -2398,6 +2436,7 @@ layout: section
 # Projets de groupe
 
 <div class="dense-list">
+
 - Moteur de recherche augmenté par le raisonnement et le langage naturel
 - Grammaire et sémantique des contenus et des requêtes. Lucene.Net, OpenNLP, SharpRDF, FOL
 - Conception de bots de services sur réseaux sociaux
@@ -2426,7 +2465,7 @@ layout: section
 
 > **ML.NET** (C#) : `ML/ML.Net/` - Classification, regression, clustering
 > **Reinforcement Learning** : `RL/` - CartPole, DQN, Stable Baselines3
-> **Algorithmes génétiques** : `Sudoku/Sudoku-2-Genetic.ipynb`, `Search/Portfolio_Optimization_GeneticSharp.ipynb`
+> **Algorithmes génétiques** : `Sudoku/Sudoku-02-Genetic.ipynb`, `Search/Portfolio_Optimization_GeneticSharp.ipynb`
 > **Deep Learning et GenAI** : `GenAI/` - Transformers, diffusion, LLMs
 > **Probabilités et inference** : `Probas/` - Infer.NET, réseaux bayesiens
 

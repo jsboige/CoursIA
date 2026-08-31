@@ -56,7 +56,12 @@ now and later, with no per-workflow wiring to maintain.
 
 1. **Bias to fail.** Timeout, API error, or a check with no verdict => exit 1.
    A gate that passes when it does not know is not a gate. This is deliberate
-   and is the single most important property of the file.
+   and is the single most important property of the file. #13510 refines the
+   RENDERING, not the rule: a timeout with nothing red (starvation, not
+   failure) still exits 1 but cancels its own run, so the leg concludes
+   CANCELLED -- the PR stays BLOCKED (never passes on unknown), yet the log
+   does not claim a failure that never happened and the stale-sweep re-drives
+   it like any other cancelled gate leg (#11862).
 2. **Latest run per workflow wins.** GitHub's concurrency groups cancel
    superseded runs, and re-runs leave the old attempt visible. Without
    de-duplication, one benign `cancelled` from a superseded run would block a
@@ -113,6 +118,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 import time
@@ -505,6 +511,11 @@ def verdict(pending: Sequence[str], bad: Sequence[str], settled: bool) -> tuple[
     `settled` is False when the wait loop ran out of time. Unsettled is a
     failure even with zero bad checks: we do not know, therefore we refuse.
 
+    #13510: a starvation (still-pending constituents, nothing red) is marked
+    `STARVED` in the message -- the exit code stays 1 (rule 1: never pass on
+    unknown), but the driver renders it as CANCELLED, not FAILURE, so the
+    stale-sweep re-drives the leg instead of a human reading a red lie.
+
     Note (#11751): the wait loop now re-reads the check set one last time at
     the deadline; an empty `pending` AND empty `bad` at that point is treated
     as `settled=True` BEFORE this function is reached, so this `not settled`
@@ -517,7 +528,7 @@ def verdict(pending: Sequence[str], bad: Sequence[str], settled: bool) -> tuple[
         return 1, "FAIL -- failing checks: " + ", ".join(bad)
     if not settled:
         if pending:
-            return 1, "FAIL -- timed out waiting for: " + ", ".join(pending)
+            return 1, "STARVED -- timed out waiting for: " + ", ".join(pending)
         return 1, (
             "FAIL -- timed out with empty wait set (gate bug, see #11751)"
         )
@@ -535,7 +546,7 @@ def _gh_api(path: str) -> object:
         completed = subprocess.run(
             ["gh", "api", path],
             capture_output=True,
-            text=True,
+            text=True, encoding="utf-8", errors="replace",
             check=False,
         )
     except FileNotFoundError as exc:  # pragma: no cover - environment problem
@@ -566,7 +577,7 @@ def _gh_api_post(path: str, fields: dict[str, str]) -> dict:
         completed = subprocess.run(
             cmd,
             capture_output=True,
-            text=True,
+            text=True, encoding="utf-8", errors="replace",
             check=False,
         )
     except FileNotFoundError as exc:  # pragma: no cover - environment problem
@@ -584,6 +595,43 @@ def _gh_api_post(path: str, fields: dict[str, str]) -> dict:
         return json.loads(body)
     except json.JSONDecodeError as exc:
         raise GateError(f"gh api -X POST {path} returned non-JSON: {exc}") from exc
+
+
+# Seconds to hold the step open after a successful self-cancel POST, so the
+# cancellation signal reaches the runner BEFORE this process exits. Exiting
+# first would complete the run as FAILURE and make the cancel a no-op -- the
+# exact red lie #13510 removes. The signal lands in ~1-5 s; 15 s bounds the
+# wait well above that while staying far under any job budget.
+CANCEL_GRACE_SEC = 15.0
+
+
+def cancel_own_run(repo: str, run_id: str) -> bool:
+    """POST the Actions cancel endpoint for OUR OWN run (#13510).
+
+    Boolean by design, unlike the GateError-raising neighbours: a refused
+    cancel (run already completing, permissions hiccup, gh absent) is a
+    degraded rendering, not an unknown state -- the caller keeps exit 1
+    (rule 1) and the leg concludes FAILURE exactly as before this change.
+    """
+    try:
+        completed = subprocess.run(
+            ["gh", "api", "-X", "POST",
+             f"repos/{repo}/actions/runs/{run_id}/cancel"],
+            capture_output=True,
+            text=True, encoding="utf-8", errors="replace",
+            check=False,
+        )
+    except FileNotFoundError:
+        print("[pr-gate] WARN -- gh CLI not available for self-cancel", flush=True)
+        return False
+    if completed.returncode != 0:
+        print(
+            f"[pr-gate] WARN -- self-cancel refused (exit "
+            f"{completed.returncode}): {completed.stderr.strip()[:300]}",
+            flush=True,
+        )
+        return False
+    return True
 
 
 def post_check_run(
@@ -843,6 +891,23 @@ def main(argv: Iterable[str] | None = None) -> int:
             "verdict is invisible to the PR's mergeState."
         ),
     )
+    parser.add_argument(
+        "--run-id",
+        default=None,
+        help=(
+            "Workflow run id used to self-cancel on starvation (#13510); "
+            "defaults to $GITHUB_RUN_ID when the script runs inside Actions."
+        ),
+    )
+    parser.add_argument(
+        "--no-self-cancel",
+        action="store_true",
+        help=(
+            "On starvation, exit FAIL without cancelling the own run "
+            "(escape hatch; also the implicit behaviour when no run id "
+            "is resolvable, e.g. a local run)."
+        ),
+    )
     args = parser.parse_args(list(argv) if argv is not None else None)
 
     if args.is_fork:
@@ -898,6 +963,41 @@ def main(argv: Iterable[str] | None = None) -> int:
         print(f"[pr-gate] FAIL -- cannot establish check state: {exc}", file=sys.stderr)
         _maybe_post_check_run(args, 1, f"FAIL -- cannot establish check state: {exc}")
         return 1
+
+    # #13510: render a starvation as CANCELLED, not FAILURE. The PR stays
+    # BLOCKED (a cancelled required check is not success), but the leg no
+    # longer claims a failure that never happened, and pr-gate-stale-sweep
+    # already treats a cancelled gate leg as a re-run candidate (#11862) --
+    # the same recovery channel as a supersession-cancel. Workflow-run mode
+    # only: --post-check-run runs on the default branch as an operator
+    # harness whose own run is NOT the PR's gate leg, so it keeps POSTing
+    # the verdict instead of cancelling itself.
+    if (
+        code == 1
+        and message.startswith("STARVED")
+        and not args.no_self_cancel
+        and not args.post_check_run
+    ):
+        run_id = args.run_id or os.environ.get("GITHUB_RUN_ID")
+        if run_id:
+            print(
+                f"[pr-gate] STARVED -- constituents still pending, nothing "
+                f"red; cancelling own run {run_id} so the leg concludes "
+                "CANCELLED, not FAILURE (#13510). The PR stays blocked; "
+                "pr-gate-stale-sweep will re-aggregate.",
+                flush=True,
+            )
+            if cancel_own_run(args.repo, run_id):
+                # Hold the step open so the cancel signal lands before we
+                # exit (see CANCEL_GRACE_SEC). Exit code stays 1: if the
+                # cancel lost the race, rule 1 still holds.
+                time.sleep(CANCEL_GRACE_SEC)
+        else:
+            print(
+                "[pr-gate] STARVED but no run id resolvable (local run) -- "
+                "FAIL per rule 1",
+                flush=True,
+            )
 
     print(f"[pr-gate] {message}", flush=True)
     _maybe_post_check_run(args, code, message)

@@ -24,12 +24,19 @@ formalisées ici.
 |---------|---------|
 | `Discrepancy/Basic.lean` | définitions (`IsColoring`, `discrepancy`, `degree`, `maxDegree`), 3 lemmes élémentaires, `BeckFialaConjecture` (`O(√k)`), cible `BeckFialaClassic` (`disc ≤ 2k − 1`) |
 | `Discrepancy/Komlos.lean` | `KomlosConjecture` (`O(1)`, colonnes unitaires), `BansalJiangLargeDegree` (`k ≥ log² n`), `KomlosBansalJiangWeak` (forme concrète affaiblie) |
+| `Discrepancy/Kernel.lean` | brique b1 — double comptage dimensionnel `card_dangerous_lt_card_floating` + direction de noyau `exists_dangerous_kernel_vec` |
+| `Discrepancy/Partial.lean` | brique b2 — invariant de coloration partielle `frozen_line_sum_le` (lignes figées ≤ 2k−1) |
+| `Discrepancy/Progress.lean` | brique b3 — lemme de progrès `exists_step_hits_boundary` (≥ 1 flottant se fige par phase) |
+| `Discrepancy/BeckFiala.lean` | brique b4 — terminaison + assemblage : `theorem beck_fiala_classic` (`disc ≤ 2k − 1`), la « noix » P1 **PROUVÉE** |
+| `Discrepancy/ErdosSpencer.lean` | chaîne P2 p1a–p4 — moments de Rademacher, 4ᵉ moment, Paley–Zygmund, familles aléatoires, union bound : `theorem erdos_spencer_lb_explicit` (√k/14) **PROUVÉ** |
 | `Discrepancy.lean` | agrégateur racine |
 | `Discrepancy/Basic_en.lean`, `Discrepancy/Komlos_en.lean`, `Discrepancy_en.lean` | siblings EN (i18n #4980) : docstrings traduites, signatures/preuves byte-identiques |
 
-État des preuves et découpage en boutes `b1..b4` (la « noix » Beck–Fiala
-classique, grignotée par petits bôuts multi-cycles) :
-[FORMAL_STATUS.md](FORMAL_STATUS.md).
+État des preuves et découpage en boutes (Beck–Fiala classique `b1..b4` et
+Erdős–Spencer `p1a..p4`, toutes **PROUVÉES**) :
+[FORMAL_STATUS.md](FORMAL_STATUS.md). La forme optimiste `√k/2`
+(`ErdosSpencerLB`) reste une `Prop` ouverte ; le palier P3 (Banaszczyk)
+n'est pas engagé (aucun étage correspondant dans Mathlib).
 
 ## Conventions
 
@@ -45,6 +52,10 @@ classique, grignotée par petits bôuts multi-cycles) :
 lake exe cache get   # oleans Mathlib
 lake build
 ```
+
+Dépendance cross-lake : `require learning_theory_lean` (chemin relatif
+`../../ML/learning_theory_lean`, kernel `PacLearning.Hoeffding` importé
+pour P2, jamais dupliqué) — le lake frère fait partie du build.
 
 ## Le fil « découplage » (pourquoi ce lake ici)
 

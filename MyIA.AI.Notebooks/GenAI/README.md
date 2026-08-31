@@ -189,7 +189,7 @@ Là où Vibe-Coding montre les *front-ends* d'agents, cette section documente la
 
 ### Plateformes-Conversationnelles - Interfaces GenAI conversationnelles
 
-Cette catégorie regroupe les **plateformes GenAI réelles** qui apportent une couche de conversation par-dessus les modèles : **Open WebUI** (serveur auto-hébergé multi-tenant, avec son tour guidé et la série QA **Playwright-OWUI** de tests de bout en bout) et **AI-Engine** (extension WordPress, chatbots + Copilot Gutenberg + RAG + WordPress comme serveur MCP). Un [comparatif](Plateformes-Conversationnelles/comparatif-owui-vs-ai-engine.md) vit au niveau catégorie pour aider à choisir selon le terrain.
+Cette catégorie regroupe les **plateformes GenAI réelles** qui apportent une couche de conversation par-dessus les modèles : **Open WebUI** (serveur auto-hébergé multi-tenant, avec son tour guidé et la série QA **Playwright-OWUI** de tests de bout en bout) et **AI-Engine** (extension WordPress, chatbots + Copilot Gutenberg + RAG + WordPress comme serveur MCP). Un [comparatif](Plateformes-Conversationnelles/AI-Engine-WordPress/02-Comparatif/comparatif-owui-vs-ai-engine.md) aide à choisir selon le terrain.
 
 ### CaseStudies - Projets étudiants
 
@@ -379,7 +379,7 @@ Les notebooks GenAI exposent trois familles d'**outils d'infrastructure** que le
 
 <!-- CATALOG-STATUS
 series: GenAI
-pedagogical_count: 182
-breakdown: Audio=30, Plateformes-Conversationnelles=27, Texte=21, Video=21, SemanticKernel=20, Image=17, PostTraining=14, Vibe-Coding=8, 00-GenAI-Environment=6, Aspire=6, FineTuning=5, CaseStudies=4, CopilotSDK=1, RAG-et-Memoire-Semantique=1, root=1
-maturity: BETA=154, DRAFT=13, ALPHA=12, TEMPLATE=3
+pedagogical_count: 202
+breakdown: Audio=32, Texte=29, Plateformes-Conversationnelles=28, Video=21, SemanticKernel=20, Image=17, PostTraining=16, Vibe-Coding=8, 00-GenAI-Environment=6, Aspire=6, FineTuning=6, RAG-et-Memoire-Semantique=6, CaseStudies=4, CopilotSDK=1, EFCore=1, root=1
+maturity: BETA=168, ALPHA=18, DRAFT=13, TEMPLATE=3
 -->

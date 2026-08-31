@@ -18,7 +18,7 @@ Deux PR reelles ont passe tous les gardes en detruisant du contenu
 
   | PR    | Notebook                              | Cell | Avant | Apres | Contenu perdu                    |
   |-------|---------------------------------------|------|-------|-------|----------------------------------|
-  | #8654 | Sudoku/Sudoku-1-...Python.ipynb       | 9    | 941 c | 16 c  | enonce + 4 contraintes + 3 indices|
+  | #8654 | Sudoku/Sudoku-01-...Python.ipynb       | 9    | 941 c | 16 c  | enonce + 4 contraintes + 3 indices|
   | #8630 | GenAI/Texte/11_Quantization.ipynb     | 3    | 998 c | 28 c  | Navigation + duree + prerequis   |
   | #8630 | GenAI/Texte/12_Test_Time_Scaling.ipynb| 2    | 1655c | 61 c  | Navigation + ref Snell 2024      |
 
@@ -62,6 +62,36 @@ Pour chaque notebook compare entre sa base git (defaut origin/main) et sa tete
      notebook. Un nouveau fichier renvoie rc=0 (exempt), un fichier existant
      illisible renvoie toujours rc=2 (fail loud preserve).
 
+  7. MODE TRADUCTION (#13548) : un artefact ``*_<lang>.ipynb`` dont le sibling
+     FR existe a la MEME revision est compare au sibling FR (pas a sa propre
+     base git, qui est l'ancien rendu souvent contamine FR -- comparer du FR a
+     de l'EN mesure la difference de langue, pas une perte). Seuil de chute
+     recalibre (0.5 : l'anglais fidele est ~26 % plus court ; les troncatures
+     reelles mesurent 0.04-0.36) et motifs comptes avec leurs aliases EN
+     (Objectif/Objective). Une troncature de traduction (cellule reduite au
+     titre) RESTE detectee -- c'est le contre-exemple fondateur : ce garde est
+     le seul a avoir vu les 6 cellules "titre seul" de #12850. Un artefact
+     sans sibling FR retombe sur la comparaison mono-langue standard.
+
+  8. JUSTIFICATION PAR-CELLULE (#13491) : un garde qui dit "justifie en
+     review" sans rien lire laisse la bande intermediaire (4 % < ratio < 75 %)
+     sans porte. Le detecteur accepte un drapeau ``--pr-body-file <f>``
+     pointant vers le body de la PR, et y cherche des marqueurs de la forme
+
+         md-content-loss: reecriture assumee -- <notebook> cell <N> : <raison>
+
+     Chaque ligne MATCHEE supprime de la sortie le finding ``TRUNCATED_CELL``
+     qui porte le meme couple ``(notebook, cell_idx)`` -- et UNIQUEMENT
+     celui-la. Un marker malforme (mauvais notebook, mauvaise cellule, ou
+     non-trouve : pas de finding a cette cle) reste inerte ; un marker qui
+     pointe vers une cellule intacte n'invalide rien. Les autres categories
+     de findings (``LOST_MOTIF``, ``LOST_NAV_LINKS``,
+     ``FRONTMATTER_COST_DIVERGENCE``) ne sont pas couvertes par ce dispositif
+     -- une perte de structuration n'est pas couverte par une reecriture
+     assumee de cellule tronquee. La trace de la decision reste dans le
+     body PR, lisible par un auditeur ulterieur -- c'est la propriete que la
+     baseline fichier ne donne pas avec la meme qualite.
+
 Usage
 -----
     # un notebook, diff vs origin/main (head = working tree)
@@ -69,12 +99,18 @@ Usage
     python detect_md_content_loss.py NB.ipynb --base origin/main --head origin/fix/ma-branche --check
     # sortie machine
     python detect_md_content_loss.py NB.ipynb --json
+    # CI gate avec justification par-cellule (#13491)
+    python detect_md_content_loss.py NB.ipynb --check --pr-body-file /tmp/pr-body.md
 
 Exit codes
 ----------
     0 -- aucune perte de contenu detectee (ou mode non --check), y compris un
          notebook NOUVEAU (absent a la base : rien a comparer -> exempt)
-    1 -- une ou plusieurs pertes detectees (--check)
+    1 -- une ou plusieurs pertes detectees (--check). Les findings ``TRUNCATED_CELL``
+         pour lesquels un marker de body valide a ete trouve sont SUPPRIMES
+         du verdict et la sortie les mentionne comme
+         ``TRUNCATED_CELL_JUSTIFIED_BY_BODY`` (transparence : la PR a
+         assumee la reecriture, le garde ne masque rien).
     2 -- erreur (notebook EXISTANT illisible, ref git introuvable). Un notebook
          absent a la base (nouveau fichier) ne declenche PAS rc=2 : il est exempt.
 
@@ -84,12 +120,14 @@ Voir aussi
 - detect_caps_regression.py (#7198) -- autre regression markdown base-vs-head
 - scan_md_hierarchy / check_notebook_navlinks -- gardes existants (volume-aveugles)
 - Issue #8655 -- cahier des charges + 3 cas reels
+- Issue #13491 -- justification par cellule (option (a) du choix de porte)
 - Registre #3966 -- le rollout demotion-de-titres dont provient le defaut
 """
 from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import subprocess
 import sys
@@ -102,6 +140,50 @@ DROP_THRESHOLD = 0.75
 # Volume normalise minimal d'origine pour qu'une chute soit signalee : evite
 # le bruit sur les cellules triviales (un titre seul, un separateur).
 MIN_ORIG_CHARS = 100
+
+# ---------------------------------------------------------------------------
+# Mode traduction (#13548). Un artefact *_<lang>.ipynb dont le sibling FR
+# existe a la MEME revision n'est PAS compare a sa propre base git (qui est
+# l'ancien rendu, souvent contamine FR : comparer du FR a de l'EN mesure la
+# difference de langue, pas une perte) mais au sibling FR. L'anglais fidele
+# est plus court que le francais a contenu egal (~26 % mesures sur
+# medical_chatbot) : le seuil mono-langue (0.75) faux-positiverait une
+# traduction honnete (cellule fidele mesuree a 0.734 sur FT-05, #13542).
+# Calibration sur les mesures reelles du cycle #13542 :
+#   - troncatures "titre seul" de medical_chatbot : ratios 0.04 a 0.36 ;
+#   - traductions fideles : ratios 0.734 a 0.92.
+# Le seuil 0.5 separe les deux classes avec ~0.14 de marge de chaque cote.
+# L'univers ordonne des langues vient de la source unique de verite
+# ``check_perimeter.TARGET_LANGS`` (#10109) -- une copie locale divergente est
+# un bug latent silencieux (garde test_lang_single_source).
+# ---------------------------------------------------------------------------
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "translation"))
+from check_perimeter import TARGET_LANGS  # noqa: E402  -- single source of truth
+
+TRANSLATION_DROP_THRESHOLD = 0.5
+_TRANSLATION_SUFFIX_RE = re.compile(
+    r"_(?:" + "|".join(TARGET_LANGS) + r")\.ipynb$", re.IGNORECASE
+)
+
+
+def _fr_sibling_path(nb_path: Path) -> Path:
+    """Chemin du sibling FR d'un artefact de traduction (X_en.ipynb -> X.ipynb)."""
+    return nb_path.with_name(_TRANSLATION_SUFFIX_RE.sub(".ipynb", nb_path.name))
+
+
+def _is_translation_artifact(nb_path: Path) -> bool:
+    """True si le notebook est un artefact de traduction (*_<lang>.ipynb)."""
+    return _TRANSLATION_SUFFIX_RE.search(nb_path.name) is not None
+
+# Aliases EN des motifs structurants : en mode traduction, un motif FR disparu
+# mais present sous sa forme anglaise dans le rendu N'EST PAS une perte --
+# c'est une traduction fidele (Objectif -> Objective, #13548).
+MOTIF_TRANSLATION_ALIASES = {
+    "Navigation": re.compile(r"\bNavigation\b", re.I),  # identique en EN
+    "Objectif(s)": re.compile(r"\bObjectives?\b", re.I),
+    "Prerequis": re.compile(r"\bPrerequisites?\b", re.I),
+    "Enonce": re.compile(r"^#{1,6}\s*(?:Statement|Problem|Task)\b", re.I | re.M),
+}
 
 # Motifs structurants dont la disparition est un signal fort (design #3 #8655).
 # Notes : "Navigation" / "Objectif(s)" / "Prerequis" sont matches aussi bien en
@@ -349,16 +431,25 @@ def extract_md_cells(nb: dict) -> list[tuple[int, str | None, str]]:
     return out
 
 
-def _collect_motifs(nb: dict) -> dict:
+def _collect_motifs(nb: dict, include_aliases: bool = False) -> dict:
     """Compte les occurrences de chaque motif structurant dans le notebook.
 
     Retourne {motif_label: count} + {'nav_links': count}. La comparaison
     base/head revelera les motifs disparus (count tombe a 0).
+
+    ``include_aliases`` (mode traduction #13548) : ajoute au compte les formes
+    EN des motifs (Objectives, Prerequisites, ...) -- cote FR comme cote EN --
+    de sorte qu'un motif traduit fidement n'est pas lu comme disparu.
     """
     counts: dict = {}
     full_md = "\n".join(src for _, _, src in extract_md_cells(nb))
     for pat, label in MOTIF_PATTERNS:
-        counts[label] = len(pat.findall(full_md))
+        n = len(pat.findall(full_md))
+        if include_aliases:
+            alias = MOTIF_TRANSLATION_ALIASES.get(label)
+            if alias is not None:
+                n += len(alias.findall(full_md))
+        counts[label] = n
     counts["nav_links"] = len(NAV_LINK_RE.findall(full_md))
     return counts
 
@@ -429,7 +520,8 @@ def ref_resolves(ref: str) -> bool:
 
 def _compare_cells(base_md: list[tuple[int, str | None, str]],
                    head_md: list[tuple[int, str | None, str]],
-                   head_cost: dict | None = None) -> list[dict]:
+                   head_cost: dict | None = None,
+                   drop_threshold: float = DROP_THRESHOLD) -> list[dict]:
     """Compare cellule-par-cellule (INDEX STABLE requis, design #1 #8655).
 
     Ne descend au niveau cellule QUE quand le nombre de cellules markdown est
@@ -508,22 +600,23 @@ def _compare_cells(base_md: list[tuple[int, str | None, str]],
         base_by_id = {cid: (b_idx, b_src) for b_idx, cid, b_src in base_with_id}
         for h_idx, h_cid, h_src in head_with_id:
             b_idx, b_src = base_by_id[h_cid]
-            _emit_cell_finding(b_idx, b_src, h_idx, h_src, head_cost, findings)
+            _emit_cell_finding(b_idx, b_src, h_idx, h_src, head_cost, findings, drop_threshold)
         base_residue = [t for t in base_md if t[1] is None]
         head_residue = [t for t in head_md if t[1] is None]
         for (b_idx, _, b_src), (h_idx, _, h_src) in zip(base_residue, head_residue):
-            _emit_cell_finding(b_idx, b_src, h_idx, h_src, head_cost, findings)
+            _emit_cell_finding(b_idx, b_src, h_idx, h_src, head_cost, findings, drop_threshold)
     else:
         # IDs absents ou ensembles differents : appariement par index (legacy).
         for (b_idx, _, b_src), (h_idx, _, h_src) in zip(base_md, head_md):
-            _emit_cell_finding(b_idx, b_src, h_idx, h_src, head_cost, findings)
+            _emit_cell_finding(b_idx, b_src, h_idx, h_src, head_cost, findings, drop_threshold)
     return findings
 
 
 def _emit_cell_finding(b_idx: int, b_src: str,
                        h_idx: int, h_src: str,
                        head_cost: dict | None,
-                       findings: list[dict]) -> None:
+                       findings: list[dict],
+                       drop_threshold: float = DROP_THRESHOLD) -> None:
     """Emet un finding TRUNCATED_CELL ou FRONTMATTER_COST_DIVERGENCE si applicable.
 
     Facteur commun aux deux strategies d'appariement (ID stable / index legacy)
@@ -550,7 +643,7 @@ def _emit_cell_finding(b_idx: int, b_src: str,
     h_norm = _norm_len(h_src)
     if b_norm < MIN_ORIG_CHARS:
         return  # cellule d'origine trop courte pour qu'une chute soit du bruit
-    if h_norm < DROP_THRESHOLD * b_norm:
+    if h_norm < drop_threshold * b_norm:
         ratio = (h_norm / b_norm) if b_norm else 0.0
         findings.append({
             "kind": "TRUNCATED_CELL",
@@ -558,6 +651,7 @@ def _emit_cell_finding(b_idx: int, b_src: str,
             "before_chars": b_norm,
             "after_chars": h_norm,
             "ratio": round(ratio, 3),
+            "threshold": drop_threshold,
             "before_excerpt": b_src.strip().split("\n", 1)[0][:90],
             "after_excerpt": h_src.strip().split("\n", 1)[0][:90],
         })
@@ -594,6 +688,30 @@ def _compare_motifs(base_counts: dict, head_counts: dict) -> list[dict]:
     return findings
 
 
+def _load_fr_sibling(nb_path: Path, head_ref: str | None):
+    """Charge le sibling FR d'un artefact de traduction a la MEME revision que le head.
+
+    head = working tree -> lecture disque du sibling ; head = ref git ->
+    ``read_notebook_at_ref``. Retourne (sibling_nb | None, sibling_label).
+    None = pas de sibling FR a cette revision (artefact orphelin) -> l'appelant
+    retombe sur la comparaison mono-langue standard.
+    """
+    sibling = _fr_sibling_path(nb_path)
+    if head_ref is None:
+        if not sibling.exists():
+            return None, None
+        try:
+            return json.loads(sibling.read_text(encoding="utf-8")), str(sibling)
+        except (OSError, json.JSONDecodeError):
+            return None, None
+    if not path_exists_at_ref(sibling, head_ref):
+        return None, None
+    nb = read_notebook_at_ref(sibling, head_ref)
+    if nb is None:
+        return None, None
+    return nb, f"{head_ref}:{sibling.as_posix()}"
+
+
 def scan_notebook(nb_path: Path, base_ref: str, head_ref: str | None = None) -> dict:
     """Compare le contenu markdown d'un notebook entre base_ref et head_ref."""
     if head_ref is None:
@@ -614,6 +732,70 @@ def scan_notebook(nb_path: Path, base_ref: str, head_ref: str | None = None) -> 
     # ferait passer tous les chemins pour "nouveaux" et desarmerait le gate.
     if not ref_resolves(base_ref):
         return {"notebook": str(nb_path), "error": f"base_ref {base_ref} introuvable (ref git invalide)"}
+
+    # MODE TRADUCTION (#13548) : artefact *_<lang>.ipynb dont le sibling FR
+    # existe a la meme revision. La comparaison pertinente n'est pas
+    # head-vs-sa-base-git (l'ancien rendu, souvent contamine FR : cela mesure
+    # la difference de langue, pas une perte) mais head-vs-sibling-FR. Seuil
+    # de chute recalibre (TRANSLATION_DROP_THRESHOLD) car l'anglais fidele est
+    # plus court que le francais ; motifs comptes avec leurs aliases EN.
+    # Un artefact SANS sibling FR (orphelin) retombe sur la comparaison
+    # mono-langue ci-dessous. NB : ce mode s'applique AUSSI aux artefacts
+    # nouveaux (le cas #12850 -- creation d'un _en tronque "au titre seul" --
+    # aurait ete vu ici des la creation, au lieu d'etre exempt new_file).
+    if _is_translation_artifact(nb_path):
+        nb_sibling, sibling_label = _load_fr_sibling(nb_path, head_ref)
+        if nb_sibling is not None:
+            sibling_md = extract_md_cells(nb_sibling)
+            head_md_t = extract_md_cells(nb_head)
+            if len(sibling_md) != len(head_md_t):
+                # Divergence de STRUCTURE (#13552) : scission/fusion de
+                # cellules markdown entre sibling FR et artefact traduit.
+                # La comparaison cellule-par-cellule est desalignee par
+                # construction -- l'emettre produirait une volee de
+                # TRUNCATED_CELL faux dans leur categorie. On categorise
+                # en UN finding de structure (bloquant), et on garde les
+                # motifs (comptes sur le notebook entier, insensibles aux
+                # scissions).
+                findings = [{
+                    "kind": "STRUCTURE_DRIFT",
+                    "base_md_cells": len(sibling_md),
+                    "head_md_cells": len(head_md_t),
+                    "detail": (
+                        "l'artefact traduit n'a pas le meme nombre de "
+                        "cellules markdown que le sibling FR (scission ou "
+                        "fusion) -- divergence de structure, pas une perte "
+                        "de contenu mesurable cellule par cellule"
+                    ),
+                }]
+            else:
+                findings = _compare_cells(
+                    sibling_md, head_md_t,
+                    nb_head.get("metadata", {}).get("cost"),
+                    drop_threshold=TRANSLATION_DROP_THRESHOLD,
+                )
+            findings.extend(_compare_motifs(
+                _collect_motifs(nb_sibling, include_aliases=True),
+                _collect_motifs(nb_head, include_aliases=True),
+            ))
+            sib_total = sum(_norm_len(x) for _, _, x in sibling_md)
+            head_total = sum(_norm_len(x) for _, _, x in head_md_t)
+            return {
+                "notebook": str(nb_path),
+                "base_ref": base_ref,
+                "head_ref": head_label,
+                "mode": "translation",
+                "fr_sibling": sibling_label,
+                "findings": findings,
+                "stats": {
+                    "base_md_cells": len(sibling_md),
+                    "head_md_cells": len(head_md_t),
+                    "cell_count_stable": len(sibling_md) == len(head_md_t),
+                    "base_total_normalized_chars": sib_total,
+                    "head_total_normalized_chars": head_total,
+                    "findings_count": len(findings),
+                },
+            }
 
     # Notebook NOUVEAU (absent a la base) : rien a perdre (tout est ajout),
     # donc exempt de content-loss. On retourne un resultat propre (pas
@@ -672,6 +854,81 @@ def scan_notebook(nb_path: Path, base_ref: str, head_ref: str | None = None) -> 
     }
 
 
+def _parse_pr_body_markers(pr_body: str, notebook_path: Path) -> set[int]:
+    """Parse les markers ``md-content-loss: reecriture assumee -- <nb> cell <N> : <raison>``.
+
+    Retourne l'ensemble des ``cell_idx`` JUSTIFIES pour CE notebook. La regex
+    accepte le ``-`` ou le em-dash (U+2014) entre "assumee" et le chemin : les
+    PR body GitHub sont rendus en UTF-8 et les editeurs transposent souvent
+    ``--`` en em-dash automatiquement. Le chemin du notebook est compare en
+    SUFFIXE (egalite de basename OU chemin se terminant par ``/basename``),
+    pour absorber les variantes de cwd du CI runner.
+
+    Un marker est valide si TOUT est present : mot-cle ``md-content-loss``,
+    token ``reecriture assumee``, chemin ou basename du notebook, token
+    ``cell <N>`` (N = entier >= 0), et une raison non vide (au moins un
+    caractere non-blanc apres les deux-points). Un marker incomplet est
+    IGNORE (et serait de toute façon sans cible s'il ne nommait pas la
+    cellule).
+
+    .. note::
+       Cette fonction est exportee pour les tests unitaires. Elle NE lit
+       PAS le notebook ni n'ouvre de ref git : c'est une simple regex sur
+       le body de la PR (le stdin du gate CI, sous forme de fichier).
+    """
+    if not pr_body:
+        return set()
+    # Em-dash tolerant : les PR GitHub sont souvent editees avec un editeur
+    # intelligent qui transpose -- en em-dash a l'affichage. Le pattern
+    # `[-—]` dans une classe matche UNIQUEMENT un caractere (NB : -- != un
+    # seul - dans une classe), il faut une alternation explicite pour
+    # matcher les deux formes textuelles.
+    NB_TAIL_RE = r"[^\s:]+"
+    PAT = re.compile(
+        r"^md-content-loss\s*:\s*re[eé]criture\s+assum[eé]+\s*(?:--|—)\s*"
+        r"(?P<nb>" + NB_TAIL_RE + r")"
+        r"\s+cell\s+(?P<cell>\d+)"
+        r"\s*:\s*(?P<reason>\S.*?)$",
+        re.MULTILINE,
+    )
+    nb_name = notebook_path.name
+    justified: set[int] = set()
+    for m in PAT.finditer(pr_body):
+        nb_token = m.group("nb").rstrip("/").rstrip(":")
+        # Le token dans le marker est compare au basename OU au chemin se
+        # terminant par /basename -- le cwd du CI runner peut varier, et un
+        # reviewer peut citer `MyIA.AI.Notebooks/.../notebook.ipynb` ou
+        # simplement `notebook.ipynb` (deux formes valides).
+        if nb_token != nb_name and not nb_token.endswith("/" + nb_name):
+            continue
+        justified.add(int(m.group("cell")))
+    return justified
+
+
+def _apply_body_justifications(findings: list[dict], justified_cells: set[int]) -> list[dict]:
+    """Supprime les findings ``TRUNCATED_CELL`` justifies par le body, en gardant une trace.
+
+    Chaque finding ``TRUNCATED_CELL`` sur une cellule justifiee est remplace
+    par un finding de meme cle de cellule mais de kind
+    ``TRUNCATED_CELL_JUSTIFIED_BY_BODY`` : la sortie n'est pas masquee (un
+    auditeur en review voit ce qui s'est passe), seul le verdict binaire du
+    ``--check`` le rend vert. Les autres categories de findings restent
+    intactes (la justification par cellule ne couvre pas les pertes de
+    structuration).
+    """
+    if not justified_cells:
+        return findings
+    out: list[dict] = []
+    for f in findings:
+        if f.get("kind") == "TRUNCATED_CELL" and f.get("cell_idx") in justified_cells:
+            f2 = dict(f)
+            f2["kind"] = "TRUNCATED_CELL_JUSTIFIED_BY_BODY"
+            out.append(f2)
+        else:
+            out.append(f)
+    return out
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description=__doc__.split("\n", 1)[0])
     p.add_argument("notebook", type=Path, help="Chemin vers le .ipynb")
@@ -679,17 +936,84 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--head", default=None, help="Ref git du head (defaut working tree)")
     p.add_argument("--check", action="store_true", help="Exit 1 si perte detectee (CI)")
     p.add_argument("--json", action="store_true", help="Sortie JSON machine")
+    p.add_argument(
+        "--pr-body-file", type=Path, default=None,
+        help="Chemin vers un fichier contenant le body de la PR (CI). Y cherche les "
+             "markers `md-content-loss: reecriture assumee -- <notebook> cell <N> : "
+             "<raison>` qui justifient un finding TRUNCATED_CELL sur le meme "
+             "couple (notebook, cell_idx) (#13491). Marker absent ou invalide = "
+             "comportement actuel (rc=1 inchangé). Defaut : la variable d'env "
+             "`MD_CONTENT_LOSS_PR_BODY_FILE` si definie, sinon aucun (comportement "
+             "actuel strict : aucun marker n'est lu).",
+    )
+    p.add_argument(
+        "--pr-body", default=None,
+        help="Contenu literal du body de la PR (CI). Equivalent a `--pr-body-file` "
+             "mais evite d'ecrire le body dans un fichier sur le runner (CodeQL "
+             "`actions/code-injection` sur le pattern `printf '%s' \"${{ ...body }}\" "
+             "> file`). Defaut : la variable d'env `MD_CONTENT_LOSS_PR_BODY` si "
+             "definie (prioritaire sur --pr-body-file / MD_CONTENT_LOSS_PR_BODY_FILE).",
+    )
     args = p.parse_args(argv)
 
     if not args.notebook.exists():
         print(f"ERROR: notebook introuvable: {args.notebook}", file=sys.stderr)
         return 2
 
+    # Resolution du body de la PR :
+    #   1. CLI --pr-body (litteral) prime, sinon env var MD_CONTENT_LOSS_PR_BODY
+    #      (canal in-memory, evite d'ecrire le body dans un fichier sur le runner
+    #      et contourne CodeQL `actions/code-injection` sur `printf '%s' "..."`).
+    #   2. Sinon CLI --pr-body-file, sinon env var MD_CONTENT_LOSS_PR_BODY_FILE
+    #      (canal historique, conserve pour les tests unitaires et le workflow
+    #      dedie md-content-loss-gate.yml).
+    #   3. Sinon aucun : pas de marker, comportement actuel strict.
+    pr_body: str | None = None
+    if args.pr_body is not None:
+        pr_body = args.pr_body
+    elif env_body := os.environ.get("MD_CONTENT_LOSS_PR_BODY"):
+        pr_body = env_body
+    else:
+        pr_body_file: Path | None = args.pr_body_file
+        if pr_body_file is None:
+            env_file = os.environ.get("MD_CONTENT_LOSS_PR_BODY_FILE")
+            if env_file:
+                pr_body_file = Path(env_file)
+        if pr_body_file is not None:
+            try:
+                pr_body = pr_body_file.read_text(encoding="utf-8", errors="replace")
+            except (OSError, UnicodeDecodeError) as e:
+                print(f"ERROR: --pr-body-file illisible: {e}", file=sys.stderr)
+                return 2
+
     result = scan_notebook(args.notebook, args.base, args.head)
 
     if "error" in result:
         print(f"ERROR: {result['error']}", file=sys.stderr)
         return 2
+
+    # Justification par-cellule depuis le body de la PR (#13491, option (a)).
+    # Le body est lu une fois (cf bloc de resolution ci-dessus) et parse en
+    # un ensemble de cell_idx justifies pour CE notebook. Les findings
+    # TRUNCATED_CELL sur ces cellules sont convertis en
+    # TRUNCATED_CELL_JUSTIFIED_BY_BODY (trace preservee, le verdict binaire
+    # --check passe a 0). Marker absent, malforme, ou visant une autre
+    # cellule/ce notebook n'a aucun effet (comportement actuel preserve :
+    # cf Acceptance 1 du cahier des charges).
+    if pr_body is not None:
+        justified = _parse_pr_body_markers(pr_body, args.notebook)
+        if justified:
+            result["findings"] = _apply_body_justifications(result["findings"], justified)
+            # Recompte utile : les JUSTIFIED restent visibles en sortie
+            # machine (transparence), mais le verdict --check ignore
+            # les JUSTIFIED_BY_BODY : le marqueur est la PORTE assumee par
+            # l'auteur, pas une dispense systematique.
+            result["stats"]["findings_count"] = sum(
+                1 for f in result["findings"]
+                if f.get("kind") not in ("TRUNCATED_CELL_JUSTIFIED_BY_BODY",)
+            )
+            result["stats"]["findings_count_with_justified"] = len(result["findings"])
+            result["stats"]["justified_by_body_cells"] = sorted(justified)
 
     if args.json:
         print(json.dumps(result, ensure_ascii=False, indent=2))
@@ -703,17 +1027,31 @@ def main(argv: list[str] | None = None) -> int:
         if result.get("new_file"):
             print("[NEW FILE] absent a la base -> exempt de content-loss "
                   "(rien a perdre, tout est ajout ; #8655/#8662).")
+        if result.get("mode") == "translation":
+            print(f"[TRANSLATION] artefact *_<lang>.ipynb -> comparaison au sibling FR "
+                  f"de la meme revision ({result.get('fr_sibling')}), seuil "
+                  f"{TRANSLATION_DROP_THRESHOLD}, motifs bilingues (#13548).")
         print(f"[STATS]    md_cells base={st['base_md_cells']} head={st['head_md_cells']} "
               f"stable={st['cell_count_stable']} | "
               f"normalized_chars base={st['base_total_normalized_chars']} "
               f"head={st['head_total_normalized_chars']} | findings={st['findings_count']}")
+        if st.get("justified_by_body_cells"):
+            print(f"[JUSTIFIED_BY_BODY] cellules {st['justified_by_body_cells']} "
+                  f"-- reecritures assumees par marqueur de body (#13491).")
         if fins:
             print("\n[FINDINGS]")
             for f in fins:
                 if f["kind"] == "TRUNCATED_CELL":
                     print(f"  - cell {f['cell_idx']} {f['kind']}: "
                           f"{f['before_chars']}c -> {f['after_chars']}c "
-                          f"(ratio {f['ratio']}, seuil {DROP_THRESHOLD})")
+                          f"(ratio {f['ratio']}, seuil {f.get('threshold', DROP_THRESHOLD)})")
+                    print(f"      before: {f['before_excerpt']!r}")
+                    print(f"      after:  {f['after_excerpt']!r}")
+                elif f["kind"] == "TRUNCATED_CELL_JUSTIFIED_BY_BODY":
+                    print(f"  - cell {f['cell_idx']} {f['kind']}: "
+                          f"{f['before_chars']}c -> {f['after_chars']}c "
+                          f"(ratio {f['ratio']}, seuil {f.get('threshold', DROP_THRESHOLD)}) -- "
+                          "reecriture assumee par marqueur de body (#13491).")
                     print(f"      before: {f['before_excerpt']!r}")
                     print(f"      after:  {f['after_excerpt']!r}")
                 elif f["kind"] == "LOST_MOTIF":
@@ -729,7 +1067,15 @@ def main(argv: list[str] | None = None) -> int:
                           f"du head : {', '.join(f['divergent_fields'])}")
 
     if args.check and result["findings"]:
-        return 1
+        # Les findings marques *_JUSTIFIED_BY_BODY ne bloquent PAS le verdict
+        # binaire : le marker de body est la PORTE assumee par l'auteur de la
+        # PR (#13491). La trace reste dans result["findings"] et est listee
+        # dans la sortie non-JSON, ce qui preserve la transparence pour un
+        # auditeur en review.
+        blocking = [f for f in result["findings"]
+                     if not str(f.get("kind", "")).endswith("JUSTIFIED_BY_BODY")]
+        if blocking:
+            return 1
     return 0
 
 

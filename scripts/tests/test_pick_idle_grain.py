@@ -421,6 +421,152 @@ def test_without_review_points_a_fresh_lone_red_still_draws(monkeypatch):
     assert len(out["red"]) == 1
 
 
+def _pr_with_author(n, lane, age_hours, author):
+    pr = _pr(n, lane, age_hours)
+    pr["author"] = {"login": author}
+    return pr
+
+
+def test_base_inherited_red_is_not_the_lanes(monkeypatch):
+    """#13545 : 11 PRs / 4 lanes accusees pour un seul defaut de main.
+
+    Le meme check requis en echec chez un AUTEUR distinct = corroboration :
+    le rouge est impute a la base, retire du refus de la lane, et rapporte
+    comme tache coordinateur avec ses corroborations.
+    """
+    red = _state(checks=[("Scripts Tests (CPU)", "FAILURE", True),
+                         ("PR gate", "FAILURE", True)])
+    _patch_backlog(monkeypatch, [
+        _pr_with_author(1, "myia-po-2023:CoursIA", 30, "myia-po-2023"),
+        _pr_with_author(2, "myia-po-2026:CoursIA-2", 5, "myia-po-2026"),
+    ], {1: red, 2: red})
+    out = pig.red_backlog("myia-po-2023:CoursIA", 24, count_threshold=3)
+    assert out["red"] == []            # rien d'imputable a la lane
+    assert out["aged"] == []
+    assert out["triggers"] == []       # pas de refus de tirage
+    assert {i["check"] for i in out["base_inherited"]} == {
+        "Scripts Tests (CPU)", "PR gate"}
+    wits = next(i["corroborated_by"] for i in out["base_inherited"]
+                if i["check"] == "Scripts Tests (CPU)")
+    assert 1 in wits and 2 in wits    # la lane ET l'etrangere corroborent
+
+
+def test_same_author_failures_are_not_imputed(monkeypatch):
+    """Controle negatif : deux PRs du MEME auteur ne se corroborent pas.
+
+    Une lane qui casse le meme ratchet sur 2 PRs porte 2 defauts a elle --
+    les imputer a la base transformerait un motif de refus legitime en
+    silence complice.
+    """
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    _patch_backlog(monkeypatch, [
+        _pr_with_author(1, "myia-po-2023:CoursIA", 30, "myia-po-2023"),
+        _pr_with_author(2, "myia-po-2023:CoursIA", 30, "myia-po-2023"),
+    ], {1: red, 2: red})
+    out = pig.red_backlog("myia-po-2023:CoursIA", 24, count_threshold=3)
+    assert [r["number"] for r in out["red"]] == [1, 2]
+    assert out["base_inherited"] == []
+    assert "aged" in out["triggers"]
+
+
+def test_inheritance_does_not_swallow_other_causes(monkeypatch):
+    """L'imputation retire le CHECK herite, pas les autres causes de la PR.
+
+    Une PR dont le check herite de la base MAIS qui conflit avec main reste
+    rouge : le conflit est bien le sien.
+    """
+    red = _state(checks=[("Scripts Tests (CPU)", "FAILURE", True)],
+                 mergeable="CONFLICTING")
+    _patch_backlog(monkeypatch, [
+        _pr_with_author(1, "myia-po-2023:CoursIA", 30, "myia-po-2023"),
+        _pr_with_author(2, "myia-po-2026:CoursIA-2", 5, "myia-po-2026"),
+    ], {1: red, 2: red})
+    out = pig.red_backlog("myia-po-2023:CoursIA", 24, count_threshold=3)
+    assert [r["number"] for r in out["red"]] == [1]
+    assert out["red"][0]["causes"] == ["conflits avec main -> rebaser"]
+
+
+def test_required_failure_links_advisory_as_its_probable_cause():
+    """#13545 (presentation) : l'agregateur requis et sa cause advisory ne
+    s'affichent plus comme deux lignes qui se contredisent.
+
+    « check requis en echec : PR gate » puis « diagnostic, non bloquant :
+    Scripts Tests (CPU) » sur le MEME rouge est illisible au moment ou le
+    message compte : la deuxieme ligne doit dire qu'elle est la CAUSE
+    probable de la premiere.
+    """
+    state = _state(checks=[("PR gate", "FAILURE", True),
+                           ("Scripts Tests (CPU)", "FAILURE", False)])
+    causes = pig.blocking_causes(state)
+    assert "check requis en echec : PR gate" in causes
+    linked = [c for c in causes if "Scripts Tests (CPU)" in c]
+    assert len(linked) == 1
+    assert "cause probable du requis" in linked[0]
+
+
+# --- le rouge est une ASSIGNATION, jamais un vide (incident lanes 2, 30/08) --
+#
+# Le fond de ce chemin etait deja juste : il nomme les PRs, leurs causes et les
+# gestes. C'est sa FORME qui a draine les lanes -- "REFUS DE TIRAGE" + sortie 2
+# + aucun candidat se lit "l'outil n'a rien pour moi", et une lane a forte
+# cadence le recevait a chaque cycle. Les deux tests suivants tiennent le
+# contrat corrige ; le troisieme est leur controle positif.
+
+
+def test_a_lane_with_reds_gets_a_grain_not_a_refusal(monkeypatch, capsys):
+    """Sortie 0 et un travail NOMME : la reparation EST le grain du cycle.
+
+    Le code 2 est la convention "rien a rendre". L'employer ici disait a la
+    lane, dans le seul canal qu'elle lit, l'exact contraire de la regle HARD
+    qu'il sert -- il y a toujours du travail.
+    """
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    _patch_backlog(monkeypatch, [_pr(1, "myia-po-2026:CoursIA", 30)], {1: red})
+    rc = pig.main(["--lane", "myia-po-2026:CoursIA"])
+    out = capsys.readouterr().out
+    assert rc == 0, f"le chemin reparation doit rendre 0, got {rc}"
+    # C'est la PREMIERE ligne qui est lue comme le verdict de l'outil : la
+    # phrase "ce n'est PAS un refus", plus bas, contient le mot a dessein.
+    head = out.splitlines()[0]
+    assert "REFUS" not in head.upper(), f"l'en-tete annonce encore un refus : {head!r}"
+    assert "GRAIN DU CYCLE" in head
+    assert "#1" in out, "la PR a reprendre doit etre nommee"
+    # Le fond qui marchait deja ne doit pas disparaitre avec la forme.
+    assert "check requis en echec" in out
+    assert "update-branch" in out
+
+
+def test_repair_json_carries_a_grain_field(monkeypatch, capsys):
+    """Le consommateur machine lit un grain, pas un motif de refus.
+
+    Sans ce cas, la sortie humaine pourrait etre corrigee pendant que `--json`
+    continue d'annoncer un refus -- deux canaux, deux verites.
+    """
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    _patch_backlog(monkeypatch, [_pr(7, "myia-po-2026:CoursIA", 30)], {7: red})
+    rc = pig.main(["--lane", "myia-po-2026:CoursIA", "--json"])
+    payload = json.loads(capsys.readouterr().out)
+    assert rc == 0
+    assert payload["mode"] == "repair"
+    assert payload["grain"]["number"] == 7
+    assert "refus" not in payload
+
+
+def test_a_clean_lane_is_not_sent_to_repair(monkeypatch, capsys):
+    """Controle positif des deux precedents.
+
+    Un `rc == 0` obtenu parce que le garde ne se declenche JAMAIS serait
+    indiscernable d'une assignation qui marche : ici la lane n'a aucun rouge,
+    et la sortie ne doit contenir aucune assignation de reparation.
+    """
+    green = _state(checks=[("PR gate", "SUCCESS", True)])
+    _patch_backlog(monkeypatch, [_pr(1, "myia-po-2026:CoursIA", 30)], {1: green})
+    backlog = pig.red_backlog("myia-po-2026:CoursIA", 24, count_threshold=3)
+    assert backlog["triggers"] == []
+    pig.print_red_assignment("myia-po-2026:CoursIA", {"red": [], "triggers": []}, 24)
+    assert "GRAIN DU CYCLE" in capsys.readouterr().out  # la fonction existe et rend
+
+
 def test_untagged_blocked_prs_are_counted_but_never_attributed(monkeypatch):
     """Portee ecrite : ce que le garde NE couvre PAS.
 
@@ -442,7 +588,7 @@ def test_unattributed_blocked_is_printed_on_the_draw_path(monkeypatch, capsys):
     """#12738 : une lane a `red == []` mais `unattributed_blocked != []`
     doit voir les numeros dans la sortie humaine du TIRAGE, pas seulement
     quand elle est refassee. Sans ce cas, le test ne distingue pas le
-    correctif de l'etat actuel (paragraphe confine a `print_red_refusal`).
+    correctif de l'etat actuel (paragraphe confine a `print_red_assignment`).
     """
     red_state = _state(checks=[("PR gate", "FAILURE", True)])
     # age 2 h : sous le seuil red_hours=24, donc `red=[]` ; pas de tag -> `unattributed_blocked`.
@@ -477,6 +623,133 @@ def test_network_failure_does_not_block_the_draw(monkeypatch):
     out = pig.red_backlog("myia-po-2026:CoursIA", 24)
     assert out["red"] == [] and out["unavailable"] == "RuntimeError"
     assert out["unattributed_blocked"] == []
+
+
+# --- orphelines du tag Grain : le constat doit porter sa route (#13086) -------
+
+
+def _orphan_pr(n, age_hours, author, branch):
+    pr = _pr(n, None, age_hours)
+    pr["author"] = {"login": author}
+    pr["headRefName"] = branch
+    return pr
+
+
+def test_unattributed_blocked_prs_carries_the_route(monkeypatch):
+    """`--orphans-report` et `red_backlog` partagent la meme detection, et le
+    resultat porte author+branch : un constat sans destinataire n'est pas un
+    routage. Les untagged SANS rouge et les taggees ne comptent pas.
+    """
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    green = _state(checks=[("PR gate", "SUCCESS", True)])
+    tagged = _pr(1, "myia-po-2023:CoursIA", 50)
+    tagged.update(author={"login": "myia-po-2023"}, headRefName="feature/ok")
+    fresh_unblocked = _orphan_pr(2, 1, "myia-po-2024", "feature/fresh")
+    prs = [
+        tagged,
+        fresh_unblocked,
+        _orphan_pr(3, 30, "myia-po-2023", "feature/old"),
+        _orphan_pr(4, 8, "myia-po-2023", "feature/mid"),
+        _orphan_pr(5, 40, "jsboige", "feature/user"),
+    ]
+    monkeypatch.setattr(pig, "fetch_open_prs", lambda: prs)
+    monkeypatch.setattr(
+        pig, "fetch_pr_states",
+        lambda nums: {n: (red if n in (3, 4, 5) else green) for n in nums})
+    out = pig.unattributed_blocked_prs()
+    assert [r["number"] for r in out] == [5, 3, 4]  # tri par age decroissant
+    assert all(r["author"] and r["branch"] for r in out)
+    assert out[0]["author"] == "jsboige" and out[0]["branch"] == "feature/user"
+
+
+def test_red_backlog_unattributed_now_carries_the_route(monkeypatch):
+    """Le champ historique `unattributed_blocked` est ENRICHI (auteur, branche),
+    pas remplace : le skill coordinate lit ce champ, il gagne la route sans
+    changer de canal.
+    """
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    orphan = _orphan_pr(9, 12, "myia-po-2023", "feature/x")
+    _patch_backlog(monkeypatch, [_pr(1, "myia-po-2026:CoursIA", 30), orphan],
+                   {1: red, 9: red})
+    out = pig.red_backlog("myia-po-2026:CoursIA", 24, count_threshold=99)
+    assert out["unattributed_blocked"][0]["author"] == "myia-po-2023"
+    assert out["unattributed_blocked"][0]["branch"] == "feature/x"
+
+
+def test_build_orphans_comment_names_each_orphan_with_author_and_branch():
+    """Le commentaire est le routage : chaque orpheline y est nommee avec son
+    auteur et sa branche, groupees par auteur, entre marqueurs upsert.
+    """
+    orphans = [
+        {"number": 5, "title": "fix thing", "author": "jsboige",
+         "branch": "feature/user", "age_hours": 40},
+        {"number": 3, "title": "other thing", "author": "myia-po-2023",
+         "branch": "feature/old", "age_hours": 30},
+    ]
+    body = pig.build_orphans_comment(orphans)
+    assert pig.ORPHANS_MARKER_START in body and pig.ORPHANS_MARKER_END in body
+    assert "**jsboige** (1)" in body and "**myia-po-2023** (1)" in body
+    assert "#5" in body and "#3" in body
+    assert "`feature/user`" in body and "`feature/old`" in body
+    assert "#13086" in body
+
+
+def test_build_orphans_comment_empty_writes_zero_not_silence():
+    """Un balayage muet est indiscernable d'un balayage mort : le cas vide
+    s'ECRIT (zero date), il ne disparait pas.
+    """
+    body = pig.build_orphans_comment([])
+    assert pig.ORPHANS_MARKER_START in body and pig.ORPHANS_MARKER_END in body
+    assert ": 0." in body
+
+
+def test_orphans_report_mode_dry_run_by_default(monkeypatch, capsys):
+    """Sans --apply-comment : impression seule, AUCUN appel gh d'ecriture.
+    Le mode ne demande pas --lane (la file est lane-independante).
+    """
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    monkeypatch.setattr(pig, "fetch_open_prs",
+                        lambda: [_orphan_pr(9, 5, "myia-po-2023", "feature/x")])
+    monkeypatch.setattr(pig, "fetch_pr_states", lambda nums: {9: red} if 9 in nums else {})
+    def no_post(number, body):
+        raise AssertionError(f"upsert appele en dry-run sur #{number}")
+    monkeypatch.setattr(pig, "upsert_orphans_comment", no_post)
+    rc = pig.main(["--orphans-report"])
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert pig.ORPHANS_MARKER_START in out and "#9" in out
+
+
+def test_orphans_report_apply_upserts_the_comment(monkeypatch, capsys):
+    """Avec --apply-comment N : l'upsert marker-guarde part exactement une fois
+    sur l'issue demandee.
+    """
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    monkeypatch.setattr(pig, "fetch_open_prs",
+                        lambda: [_orphan_pr(9, 5, "myia-po-2023", "feature/x")])
+    monkeypatch.setattr(pig, "fetch_pr_states", lambda nums: {9: red} if 9 in nums else {})
+    calls = []
+    monkeypatch.setattr(pig, "upsert_orphans_comment",
+                        lambda number, body: calls.append((number, body)))
+    rc = pig.main(["--orphans-report", "--apply-comment", "13086"])
+    assert rc == 0
+    assert calls and calls[0][0] == 13086
+    assert pig.ORPHANS_MARKER_START in calls[0][1]
+    assert "mis a jour sur #13086" in capsys.readouterr().out
+
+
+def test_lane_still_required_outside_orphans_report(monkeypatch, capsys):
+    """--lane reste OBLIGATOIRE sur le chemin de tirage : le passage de
+    `required=True` a la validation manuelle ne doit pas ouvrir un tirage
+    sans lane (la graine et le garde en dependent).
+    """
+    try:
+        pig.main([])
+    except SystemExit as exc:
+        assert exc.code != 0
+        assert "--lane" in capsys.readouterr().err
+    else:
+        raise AssertionError("main([]) sans --lane doit sortir en erreur")
 
 
 # --- echecs perimes : le discriminant est temporel, jamais nominal -----------
@@ -514,6 +787,256 @@ def test_repeated_identical_failures_are_named_once():
         ("PR gate", "FAILURE", True, "2026-08-22T13:40:33Z"),
     ])
     assert pig.blocking_causes(state) == ["check requis en echec : PR gate"]
+
+
+# --- file_saturation : 4ᵉ declencheur (issue #12830, c.508-L2) -------------
+#
+# Le defaut fondateur : la lane po-2023 (puis po-2027) tirait dans un pool
+# virtuellement vide parce que `mergeStateStatus: BLOCKED + MERGEABLE +
+# checks tous PENDING depuis > N h` n'etait PAS un declencheur de refus.
+# Le 3ᵉ etat etait mecaniquement non-different d'un `BLOCKED + MERGEABLE
+# + checks SUCCESS` (attente coordinateur), qu'on veut deliberement laisser
+# passer. La discrimination tient en 3 proprietes : AUCUN check n'a demarre
+# (statut dans {PENDING, QUEUED}), la PR est MERGEABLE, et elle est ouverte
+# depuis plus de `saturation_hours`. Mesure ai-01 du 2026-08-26T04:52Z :
+# 1000 runs en file, 14 concurrents, attente observee 4 h 25.
+
+
+def _state_with_started_at(*, checks=(), mergeable="MERGEABLE", reviews=()):
+    """Comme `_state` mais chaque check porte `startedAt` ET `conclusion`/`state`.
+
+    Le format GraphQL reel de `statusCheckRollup.contexts` inclut `startedAt`
+    pour les `CheckRun` et `state` (PAS `conclusion`) pour les `StatusContext`
+    encore en attente. Le discriminateur file_saturation lit `conclusion` puis
+    `state` -- d'ou les helpers ci-dessous qui couvrent les deux formes.
+    """
+    return {
+        "number": 1, "mergeable": mergeable,
+        "reviews": {"nodes": [
+            {"state": s, "submittedAt": "2026-08-20T00:00:00Z", "author": {"login": a}}
+            for s, a in reviews
+        ]},
+        "commits": {"nodes": [{"commit": {"statusCheckRollup": {"contexts": {"nodes": [
+            {"name": t[0], "conclusion": t[1], "state": t[1],
+             "isRequired": t[2], "startedAt": "2026-08-25T00:00:00Z"}
+            for t in checks
+        ]}}}}]},
+    }
+
+
+def test_file_saturation_detected_when_all_checks_pending():
+    """Cas fondateur (c.508-L2 sur #12640) : tous les checks en PENDING depuis
+    > N h, MERGEABLE, pas de conflit, pas de CHANGES_REQUESTED -- c'est
+    exactement la file qui n'a pas bouge, pas un rouge substance.
+
+    Discrimination exigee : un seul FAIL vivant masquerait la file-saturation,
+    parce que la lane peut le reparer et la file draine naturellement.
+    """
+    state = _state_with_started_at(checks=[
+        ("PR gate", "PENDING", True),
+        ("Scripts Tests (CPU)", "PENDING", True),
+        ("Notebook Validation", "PENDING", False),
+    ])
+    causes = pig.blocking_causes(state, age_hours=28, saturation_hours=24)
+    assert any("file_saturation" in c for c in causes)
+    # La cause doit nommer le geste -- la lane peut commenter, pas rerun seule.
+    assert any("commenter la PR" in c for c in causes)
+
+
+# --- #13420 : la saturation date les CHECKS, pas la PR ---------------------
+#
+# Defaut mesure le 2026-08-29 : #12757 (ouverte 121 h) et #12850 (109 h)
+# etaient annoncees "1 check requis en PENDING depuis >24h (cause infra)"
+# alors que leurs checks avaient demarre a 11:39:44Z, soit 25 min plus tot.
+# Le detecteur lisait `age_hours` (age de la PR) et jamais `startedAt`.
+# Consequence : le geste prescrit (--ignore-red ou re-run) etait l'inverse du
+# bon -- re-run RE-EMPILE dans la file dite saturee, --ignore-red pousse la
+# lane devant un garde qui allait repondre. Le bon geste est d'attendre.
+
+
+def _pending_started(when):
+    """PR ancienne (120 h) dont l'unique check requis a demarre a `when`."""
+    return {
+        "number": 1, "mergeable": "MERGEABLE",
+        "reviews": {"nodes": []},
+        "commits": {"nodes": [{"commit": {"statusCheckRollup": {
+            "state": "PENDING",
+            "contexts": {"nodes": [
+                {"name": "PR gate", "conclusion": None, "state": "PENDING",
+                 "isRequired": True, "startedAt": when},
+            ]}}}}]},
+    }
+
+
+def _iso_ago(hours):
+    import datetime as _dt
+    return (_dt.datetime.now(_dt.timezone.utc)
+            - _dt.timedelta(hours=hours)).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def test_13420_check_frais_sur_pr_ancienne_nest_pas_une_saturation():
+    """Le cas mesure : PR ouverte depuis 120 h, check demarre il y a 25 min.
+
+    La file AVANCE. Annoncer une saturation ici prescrit exactement le mauvais
+    geste. CE TEST ECHOUE SI LE DETECTEUR REDEVIENT DATE SUR LA PR.
+    """
+    state = _pending_started(_iso_ago(0.42))  # ~25 min
+    assert pig.file_saturation_cause(state, age_hours=120, threshold_hours=24) is None
+
+
+def test_13420_controle_positif_file_reellement_figee_detectee():
+    """Controle positif -- sans lui, un detecteur simplement ETEINT passerait
+    le test precedent. Meme PR, meme forme, mais le check n'a pas bouge depuis
+    50 h : c'est la vraie saturation, elle DOIT etre annoncee."""
+    state = _pending_started(_iso_ago(50))
+    cause = pig.file_saturation_cause(state, age_hours=120, threshold_hours=24)
+    assert cause is not None
+    assert "file-saturation" in cause
+
+
+def test_13420_frontiere_juste_sous_le_seuil_ne_declenche_pas():
+    """Temoin de frontiere : 23 h < 24 h -> pas de saturation."""
+    state = _pending_started(_iso_ago(23))
+    assert pig.file_saturation_cause(state, age_hours=120, threshold_hours=24) is None
+
+
+def test_13420_sans_horodatage_lisible_on_retombe_sur_lage_de_la_pr():
+    """Un champ absent prive le detecteur de precision, il ne l'eteint pas :
+    sans `startedAt` ni `createdAt`, le comportement historique (age de la PR)
+    reste en vigueur."""
+    state = _pending_started(None)
+    cause = pig.file_saturation_cause(state, age_hours=120, threshold_hours=24)
+    assert cause is not None and "file-saturation" in cause
+
+
+def test_13420_horodatage_illisible_ne_leve_pas_dexception():
+    """Une chaine non-ISO ne doit pas casser un tour de picker."""
+    state = _pending_started("pas-une-date")
+    assert pig.file_saturation_cause(
+        state, age_hours=120, threshold_hours=24) is not None
+
+
+def test_13420_le_plus_recent_gagne_sur_les_anciens():
+    """Dix checks vieux + un frais = la file a bouge. On date sur le PLUS
+    RECENT, parce que la question est 'la file avance-t-elle ?'."""
+    state = _pending_started(_iso_ago(50))
+    nodes = state["commits"]["nodes"][0]["commit"]["statusCheckRollup"]["contexts"]["nodes"]
+    nodes.append({"name": "Always-on guards", "conclusion": None,
+                  "state": "PENDING", "isRequired": True,
+                  "startedAt": _iso_ago(0.2)})
+    assert pig.file_saturation_cause(state, age_hours=120, threshold_hours=24) is None
+
+
+def test_file_saturation_not_detected_when_a_check_is_success():
+    """Faux-positif a eviter : un SUCCESS + des PENDING n'est PAS de la
+    file-saturation. La PR a au moins un verdict defini ; elle est en cours
+    de merge, pas en attente de derainage de file.
+    """
+    state = _state_with_started_at(checks=[
+        ("PR gate", "PENDING", True),
+        ("Scripts Tests (CPU)", "SUCCESS", True),
+    ])
+    assert pig.blocking_causes(state, age_hours=28, saturation_hours=24) == []
+
+
+def test_file_saturation_not_detected_when_a_check_fails():
+    """Faux-positif a eviter : un FAIL substance prime sur la file-saturation.
+
+    La lane peut reparer la substance ; la file draine naturellement apres
+    re-push. Le discriminateur `not causes` dans `blocking_causes` protege
+    exactement ce cas (les causes FAIL sont ajoutees avant la detection
+    file_saturation).
+    """
+    state = _state_with_started_at(checks=[
+        ("PR gate", "FAILURE", True),
+        ("Scripts Tests (CPU)", "PENDING", True),
+    ])
+    causes = pig.blocking_causes(state, age_hours=28, saturation_hours=24)
+    # Le FAIL gagne : file_saturation ne s'y ajoute pas, sinon la cause serait
+    # `conflitante` et le geste suggere (commenter + ignore-red) perdrait
+    # l'option reparation.
+    assert any("check requis en echec" in c for c in causes)
+    assert not any("file_saturation" in c for c in causes)
+
+
+def test_file_saturation_not_detected_below_saturation_threshold():
+    """L'age seul ne suffit pas : une PR jeune avec tous checks PENDING est
+    dans la queue normale du depot, pas en saturation.
+
+    Cf le mandat du 2026-08-24 sur le retrait du filtre d'age amont : c'est
+    ici un garde-fou qui empeche la sur-accusation (mesure : 52/55 PRs le
+    2026-08-22 pour la definition naive). Le seuil minimum est le meme que
+    pour `aged` (`threshold_hours`), ce qui garde la coherence.
+    """
+    state = _state_with_started_at(checks=[
+        ("PR gate", "PENDING", True),
+        ("Scripts Tests (CPU)", "PENDING", True),
+    ])
+    # age < saturation : rien.
+    assert pig.blocking_causes(state, age_hours=2, saturation_hours=24) == []
+    # age == saturation : strictement au-dessus (>=) declenche.
+    causes = pig.blocking_causes(state, age_hours=24, saturation_hours=24)
+    assert any("file_saturation" in c for c in causes)
+
+
+def test_file_saturation_not_detected_when_not_mergeable():
+    """CONFLICTING prime sur la file-saturation : la lane peut rebaser, ce
+    n'est plus un rouge de file.
+
+    Le discriminateur exige `mergeable == MERGEABLE`. Une PR en conflit
+    attend un rebase, pas un drainage CI.
+    """
+    state = _state_with_started_at(
+        checks=[("PR gate", "PENDING", True)],
+        mergeable="CONFLICTING",
+    )
+    causes = pig.blocking_causes(state, age_hours=28, saturation_hours=24)
+    assert "conflits avec main -> rebaser" in causes
+    assert not any("file_saturation" in c for c in causes)
+
+
+def test_file_saturation_trigger_in_red_backlog(monkeypatch):
+    """Le 4ᵉ declencheur remonte dans `triggers` quand au moins une PR de la
+    lane est file-saturee et a l'age du seuil.
+
+    Ce test est l'integration : `red_backlog` doit appeler `blocking_causes`
+    avec `age_hours` et `saturation_hours` derives du seuil, et ajouter
+    `"file_saturation"` aux triggers. C'est ce qui rend le narrow
+    diagnostique enfin visible a la lane.
+    """
+    red = _state_with_started_at(checks=[
+        ("PR gate", "PENDING", True),
+        ("Scripts Tests (CPU)", "PENDING", True),
+    ])
+    _patch_backlog(monkeypatch, [
+        _pr(1, "myia-po-2026:CoursIA", 28),
+        _pr(2, "myia-po-2026:CoursIA", 2),
+    ], {1: red, 2: red})
+    out = pig.red_backlog("myia-po-2026:CoursIA", 24, count_threshold=10)
+    # La PR #1 est file-saturee (28 h > 24 h, tous PENDING, MERGEABLE).
+    # La PR #2 ne l'est pas (2 h < 24 h).
+    assert "file_saturation" in out["triggers"]
+    assert any(any("file_saturation" in c for c in r["causes"])
+               for r in out["red"] if r["number"] == 1)
+    # Et l'ordre respecte la docstring : file_saturation precede `aged`
+    # dans la liste des triggers (les deux sont vrais ici, file_saturation
+    # doit apparaitre AVANT `aged`).
+    assert out["triggers"].index("file_saturation") < out["triggers"].index("aged")
+
+
+def test_file_saturation_signature_backward_compatible():
+    """Le defaut `age_hours=None, saturation_hours=None` preserve les appels
+    existants : un PR avec tous checks PENDING et sans ces parametres ne
+    declenche PAS file_saturation. C'est ce qui permet aux 12 tests
+    historiques de `blocking_causes` de rester verts sans modification.
+    """
+    state = _state_with_started_at(checks=[
+        ("PR gate", "PENDING", True),
+        ("Scripts Tests (CPU)", "PENDING", True),
+    ])
+    # Meme PR que test_file_saturation_detected_when_all_checks_pending,
+    # mais sans age_hours : la cause ne doit PAS apparaitre.
+    assert pig.blocking_causes(state) == []
 
 
 # --- affluence flotte : cited_issues / fetch_visits / amortissement --------
@@ -707,3 +1230,95 @@ def test_the_gap_warning_speaks_only_when_the_surface_was_unread(capsys):
     said = capsys.readouterr().out
     assert "n'ont PAS pu etre lus" in said
     assert "check_unaddressed_nits.py" in said
+
+
+# #12830 : tests pour le 3e etat file-saturation (BLOCKED + MERGEABLE + rollup
+# PENDING > N h). Diagnostic fondateur po-2023 c.508 (PR #12640, 28h, MERGEABLE,
+# 0 fail, rollup PENDING).
+
+
+def _state_with_rollup(rollup_state, checks):
+    """Variante de _state qui injecte statusCheckRollup.state.
+
+    _state() historique ne pose pas rollup.state ; c'est exactement le champ
+    que #12830 ajoute au fragment GraphQL. Les tests du file-saturation
+    ne peuvent pas exister sans cette matiere premiere.
+    """
+    return {
+        "mergeable": "MERGEABLE",
+        "commits": {"nodes": [{"commit": {"statusCheckRollup": {
+            "state": rollup_state,
+            "contexts": {"nodes": [
+                {"name": n, "conclusion": c, "state": c, "isRequired": req}
+                for (n, c, req) in checks
+            ]},
+        }}}]},
+        "reviews": {"nodes": []},
+    }
+
+
+def test_file_saturation_merges_pending_required_check_old_age():
+    """#12830 acceptance #1+#3+#4 : file-saturation detecte si
+    mergeable=MERGEABLE + rollup.state=PENDING + 1+ required check
+    non-FAIL + age > seuil.
+    """
+    s = _state_with_rollup("PENDING", [
+        ("PR gate", "IN_PROGRESS", True),
+        ("Scripts Tests", "SUCCESS", False),
+    ])
+    assert pig.file_saturation_cause(s, 30.0, 24.0) is not None
+
+
+def test_file_saturation_ignores_conflicting_pr():
+    """#12830 acceptance #4 (negatif) : conflit git = blocking_causes classique,
+    pas file-saturation. Cumuler les deux sur une meme PR serait double cause.
+    """
+    s = _state_with_rollup("PENDING", [
+        ("PR gate", "IN_PROGRESS", True),
+    ])
+    s["mergeable"] = "CONFLICTING"
+    assert pig.file_saturation_cause(s, 30.0, 24.0) is None
+
+
+def test_file_saturation_ignores_successful_rollup():
+    """#12830 acceptance #4 (negatif) : rollup SUCCESS = verdict final, pas
+    une saturation. La PR est verte au niveau rollup, la lane n'a rien a
+    faire cote CI.
+    """
+    s = _state_with_rollup("SUCCESS", [
+        ("PR gate", "SUCCESS", True),
+    ])
+    assert pig.file_saturation_cause(s, 30.0, 24.0) is None
+
+
+def test_file_saturation_does_not_double_substance_red():
+    """#12830 acceptance #5 : si un check requis est FAIL, c'est un rouge
+    substance que blocking_causes prend deja. file_saturation_cause doit
+    rendre None pour eviter le double-comptage.
+    """
+    s = _state_with_rollup("FAILURE", [
+        ("PR gate", "FAILURE", True),
+    ])
+    assert pig.file_saturation_cause(s, 30.0, 24.0) is None
+
+
+def test_file_saturation_respects_threshold():
+    """#12830 acceptance parametree : --saturation-hours distinct du seuil
+    substance. Une PR de 5h ne doit pas matcher si seuil=24 ; doit matcher
+    si seuil=4. La separation des deux causes (substance vs infra) tient.
+    """
+    s = _state_with_rollup("PENDING", [
+        ("PR gate", "IN_PROGRESS", True),
+    ])
+    assert pig.file_saturation_cause(s, 5.0, 24.0) is None
+    assert pig.file_saturation_cause(s, 5.0, 4.0) is not None
+
+
+def test_file_saturation_requires_at_least_one_required_check():
+    """#12830 acceptance #4 (negatif) : PR sans check requis = pas de CI
+    structure, juste l'absence de CI. file-saturation ne s'applique pas.
+    """
+    s = _state_with_rollup("PENDING", [
+        ("advisory opt", "NEUTRAL", False),
+    ])
+    assert pig.file_saturation_cause(s, 30.0, 24.0) is None

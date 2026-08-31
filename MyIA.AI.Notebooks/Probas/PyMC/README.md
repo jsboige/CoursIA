@@ -98,7 +98,7 @@ Le notebook [PyMC-15 — Recommenders](PyMC-15-Recommenders.ipynb) aborde la rec
 
 ### Classification par Processus Gaussien (illustration dense jouet)
 
-Le notebook [PyMC-16 — Sparse Gaussian Process](PyMC-16-Sparse-Gaussian-Process.ipynb) introduit les Processus Gaussiens (prior sur fonctions, noyau RBF, classification probit). La cellule précise illustrée ici est un **pré-requis** : un GP classification 2D dense classique sur un problème jouet en « donut » (classe 0 au centre, classe 1 en couronne). Le panneau de gauche montre la probabilité prédite de la classe 1 (colormap bleu→rouge, frontière de décision en noir) ; celui de droite visualise l'incertitude (écart-type de f*, colormap jaune→orange, valeurs 0.725 à 1.025). Les inducing points du sparse GP proprement dit sont introduits dans les cellules ultérieures du notebook — cette cellule est l'illustration dense servant de référence comparative.
+Le notebook [PyMC-16 — Sparse Gaussian Process](PyMC-16-Sparse-Gaussian-Process.ipynb) introduit les Processus Gaussiens (prior sur fonctions, noyau RBF, classification logit). La cellule précise illustrée ici est un **pré-requis** : un GP classification 2D dense classique sur un problème jouet en « donut » (classe 0 au centre, classe 1 en couronne). Le panneau de gauche montre la probabilité prédite de la classe 1 (colormap bleu→rouge, frontière de décision en noir) ; celui de droite visualise l'incertitude (écart-type de f*, colormap jaune→orange, valeurs 0.725 à 1.025). Le GP scalable proprement dit est exécuté dans la section 6 du notebook (HSGP, approximation par base spectrale de Hilbert : mur $O(N^3)$ du dense mesuré, budgets de bases, N=1200) — cette cellule reste l'illustration dense servant de référence comparative (les inducing points sont, eux, le mécanisme du jumeau Infer.NET).
 
 <img src="assets/readme/pymc15-sparse-gp.png" width="720" alt="Classification par Processus Gaussien sur un problème jouet en « donut » : probabilité prédite de la classe 1 et incertitude associée (écart-type de f*), sans inducer points (illustration dense classique).">
 
@@ -124,7 +124,7 @@ Ces corrections sont **éditoriales** (prose, pas de modification des figures su
 | 4 | [PyMC-4-Bayesian-Networks](PyMC-4-Bayesian-Networks.ipynb) | 55 min | CPT, D-separation, causalité |
 | 5 | [PyMC-7-Skills-IRT](PyMC-7-Skills-IRT.ipynb) | 60 min | IRT, DINA, many-to-many |
 | 6 | [PyMC-8-TrueSkill](PyMC-8-TrueSkill.ipynb) | 55 min | Ranking, online learning, équipes |
-| 7 | [PyMC-9-Classification](PyMC-9-Classification.ipynb) | 50 min | Classification bayésienne, tests A/B |
+| 7 | [PyMC-9-Classification](PyMC-9-Classification.ipynb) | 50 min | Classification bayésienne, tests A/B, calibration hors échantillon (Brier/AUC/fiabilité) |
 | 8 | [PyMC-10-Model-Selection](PyMC-10-Model-Selection.ipynb) | 45 min | Evidence, Bayes factors, ARD |
 | 9 | [PyMC-11-Topic-Models](PyMC-11-Topic-Models.ipynb) | 60 min | LDA, Dirichlet, documents-topics-mots |
 | 10 | [PyMC-13-Crowdsourcing](PyMC-13-Crowdsourcing.ipynb) | 55 min | Workers, communautés, agrégation de labels |
@@ -132,11 +132,11 @@ Ces corrections sont **éditoriales** (prose, pas de modification des figures su
 | 12 | [PyMC-15-Recommenders](PyMC-15-Recommenders.ipynb) | 60 min | Factorisation de matrices, recommandation |
 | 13 | [PyMC-6-Debugging](PyMC-6-Debugging.ipynb) | 45 min | Troubleshooting, diagnostics NUTS, convergence |
 | 14 | [PyMC-5-Causal-Inference](PyMC-5-Causal-Inference.ipynb) | 65 min | do-calculus de Pearl, `pm.do`, backdoor/front-door, paradoxe de Simpson, contrefactuel |
-| 15 | [PyMC-16-Sparse-Gaussian-Process](PyMC-16-Sparse-Gaussian-Process.ipynb) | 55 min | Processus gaussiens (prior sur fonctions), noyau RBF, classification GP probit, frontière non linéaire, length-scale apprise |
+| 15 | [PyMC-16-Sparse-Gaussian-Process](PyMC-16-Sparse-Gaussian-Process.ipynb) | 75 min | Processus gaussiens (prior sur fonctions), noyau RBF, classification GP logit, frontière non linéaire, length-scale apprise, GP scalable HSGP exécuté (mur $O(N^3)$, budgets de bases, N=1200) |
 | 16 | [PyMC-12-Modeles-Hierarchiques](PyMC-12-Modeles-Hierarchiques.ipynb) | 50 min | Partial pooling, shrinkage, paramétrisation non-centrée, divergences/funnel |
 | 17 | [PyMC-17-Kalman-Filter](PyMC-17-Kalman-Filter.ipynb) | 55 min | Système dynamique linéaire gaussien, récursion de filtrage fermée, value-add MCMC (estimation Q/R/drift) |
 | 18 | [PyMC-18-Change-Point](PyMC-18-Change-Point.ipynb) | 50 min | Change-point bayésien, `DiscreteUniform` + `switch`, catastrophes minières (Poisson), entropie |
-| 19 | [PyMC-19-Survival-Analysis](PyMC-19-Survival-Analysis.ipynb) | 50 min | Analyse de survie, exponentiel conjugué (Gamma), Weibull `k` inféré directement (NUTS), sélection LOO (arviZ) |
+| 19 | [PyMC-19-Survival-Analysis](PyMC-19-Survival-Analysis.ipynb) | 50 min | Analyse de survie, exponentiel conjugué (Gamma), Weibull `k` inféré directement (NUTS), sélection LOO (arviZ), censure à droite exécutée (naïf vs `S(c_i)` vs Kaplan–Meier) |
 
 > **Théorie de la décision** : les notebooks décisionnels (utilité espérée, EVPI, MDPs, bandits) forment désormais une sous-série autonome dans [DecisionTheory/PyMC/](../DecisionTheory/PyMC/README.md) (1 à 7), miroir Python de [DecisionTheory/Infer/](../DecisionTheory/DecInfer/README.md).
 
@@ -319,7 +319,7 @@ Cette série vous a fait passer des **fondamentaux de l'inférence bayésienne**
 
 ### Prochaines étapes
 
-- **Approfondir la théorie de la décision** — [Infer-4-Multi-Attribute](../DecisionTheory/DecInfer/DecInfer-4-Multi-Attribute.ipynb) et [Infer-8-Sequential](../DecisionTheory/DecInfer/DecInfer-8-Sequential.ipynb) reprennent ces modèles en message passing pour comparer les deux moteurs sur les mêmes problèmes.
+- **Approfondir la théorie de la décision** — [Infer-4-Multi-Attribute](../DecisionTheory/DecInfer/DecInfer-04-Multi-Attribute.ipynb) et [Infer-8-Sequential](../DecisionTheory/DecInfer/DecInfer-08-Sequential.ipynb) reprennent ces modèles en message passing pour comparer les deux moteurs sur les mêmes problèmes.
 - **Aller plus loin en inférence bayésienne** — *Statistical Rethinking* (McElreath, cité en Ressources) est le prolongement naturel de cette série pour les modèles hiérarchiques et la réflexion épistémologique sur les priors.
 - **Appliquer au trading et au ML** — les ponts vers [QuantConnect](../../QuantConnect/) et [ML](../../ML/) ouvrent la mise en production : modèles bayésiens de stratégie, régression logistique bayésienne, incertitude calibrée en prédiction.
 

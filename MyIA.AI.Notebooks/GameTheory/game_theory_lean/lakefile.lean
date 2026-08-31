@@ -96,3 +96,17 @@ lean_lib RepeatedGames where
 @[default_target]
 lean_lib Swaps where
   globs := #[`Swaps.*]
+
+-- Ajout `lean_lib Abstraction` — grain #12204 opération 2
+-- (GameTheory-19, dette d'abstraction). Contre-exemple certifié au
+-- « raffiner une abstraction ne peut qu'améliorer la dette » : sur
+-- trois duels d'entiers en stratégies pures, raffiner {{0,1,2}} en
+-- {{0},{1,2}} aggrave strictement la dette retransportée (3 → 4),
+-- la partition discrète retombe à 0 ; selles de blocs uniques,
+-- aggravation indépendante du choix. VOLONTAIREMENT sans Mathlib
+-- (pattern `Swaps`) : tout est certifié par `decide`/`rfl` sur des
+-- littéraux entiers, aucun théorème concret ne dépend d'un axiome,
+-- et `lake build Abstraction` ne déclenche aucune dépendance.
+@[default_target]
+lean_lib Abstraction where
+  globs := #[`Abstraction.*]

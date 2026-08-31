@@ -1,0 +1,17 @@
+import Discrepancy.ErdosSpencer.Moments
+import Discrepancy.ErdosSpencer.LB
+
+/-!
+# Agrégateur Erdős–Spencer — re-export Moments + LB
+
+Découpage de l'ancien monolithe (1 826 lignes au commit de split, 1 874
+après absorption au rebase des 49 lignes de docstring volet 1 de #13556 ;
+issue #13508, Volet 2) : déplacements byte-identiques, aucun énoncé réécrit.
+
+- `Discrepancy.ErdosSpencer.Moments` : boute p1 — moments de la somme de
+  Rademacher colorée, Paley–Zygmund, minoration de queue ;
+- `Discrepancy.ErdosSpencer.LB` : bouts p2–p4 — familles aléatoires, union
+  bound sur les colorations, contrôle du degré, et le théorème final
+  `erdos_spencer_lb_explicit` (√k/14, prouvé). La forme optimiste
+  `ErdosSpencerLB` (√k/2) reste une `Prop` ouverte.
+-/

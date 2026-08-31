@@ -1,0 +1,6 @@
+InferNetVoi/bin/
+InferNetVoi/obj/
+out_infer_net_*.json
+out_pymc_*.json
+__pycache__/
+.pytest_cache/

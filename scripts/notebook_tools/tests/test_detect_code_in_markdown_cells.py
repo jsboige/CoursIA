@@ -180,6 +180,7 @@ def test_baseline_check_exits_zero_on_main():
         ],
         capture_output=True,
         text=True,
+        encoding="utf-8", errors="replace",
         cwd=REPO_ROOT,
     )
     assert proc.returncode == 0, (
@@ -204,6 +205,7 @@ def test_check_without_baseline_defaults_to_canonical_rc0():
         ],
         capture_output=True,
         text=True,
+        encoding="utf-8", errors="replace",
         cwd=REPO_ROOT,
     )
     assert proc.returncode == 0, (
@@ -214,6 +216,32 @@ def test_check_without_baseline_defaults_to_canonical_rc0():
         "l'identite de la reference doit etre affichee "
         f"(baseline: <path> (<n> entries)); stdout: {proc.stdout[:300]}"
     )
+
+
+def test_json_stdout_is_pure_and_identity_on_stderr():
+    """#12858 : ``--json`` doit rendre du JSON **pur** sur stdout (le premier
+    ``jq``/``json.load`` branche dessus ne doit pas casser), et la ligne
+    d'identite qui nomme la reference ne se perd pas — elle migre sur stderr.
+    Avant le fix, stdout commencait par ``baseline: ... (N entries)`` (prose),
+    donc un ``json.load`` sur tout stdout levait JSONDecodeError (positif_1).
+    """
+    import json as _json
+    import subprocess
+    proc = subprocess.run(
+        [sys.executable, str(TOOL), "MyIA.AI.Notebooks", "--json"],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+        cwd=REPO_ROOT,
+    )
+    assert proc.returncode == 0, f"stdout: {proc.stdout[:300]}\nstderr: {proc.stderr[:300]}"
+    # Tout stdout est du JSON parsable (pas de ligne de prose en prefixe).
+    data = _json.loads(proc.stdout)
+    assert {"total", "new", "baseline_size", "findings"} <= set(data), \
+        f"shape inattendue: {sorted(data)}"
+    # L'identite n'est pas perdue : elle apparait sur stderr, pas sur stdout.
+    assert "baseline:" in proc.stderr and "entries)" in proc.stderr, \
+        f"identite absente de stderr: {proc.stderr[:300]}"
+    assert not proc.stdout.lstrip().startswith("baseline:"), \
+        "la ligne d'identite ne doit pas prefixer stdout en mode json"
 
 
 if __name__ == "__main__":
