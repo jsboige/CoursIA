@@ -16,7 +16,7 @@ deux regles mecaniques pour qu'un notebook converti rende REELLEMENT :
      qu'elle s'execute sans erreur (`execution_count` set).
      NB : le canon initial disait « derniere expression PAS display() » -- ai-01
      l'a CORRIGE (2026-07-17) : `display()` REND quand le helper est charge
-     (preuve #6967 DecInfer-7 cell[32] `display(SvgChartHelper...)` capture le
+     (preuve #6967 DecInfer-07 cell[32] `display(SvgChartHelper...)` capture le
      `<svg>`, 26 outputs) ; le vrai discriminant du blanc est **helper non
      charge**, pas display-vs-expression.
   2. no-cdn + no-comma sont **necessaires PAS suffisantes** : un output vide
@@ -25,7 +25,7 @@ deux regles mecaniques pour qu'un notebook converti rende REELLEMENT :
      pas les outputs text/html manquants). Resultat : **figure BLANCHE sur
      GitHub** alors que CI est verte, code execute, valeurs correctes ->
      invisible a la review de code et a la validation structurelle. Incident
-     fondateur : PR #6963 (DecInfer-6, po-2023) -- 4 cellules
+     fondateur : PR #6963 (DecInfer-06, po-2023) -- 4 cellules
      `display(SvgChartHelper.Bar(...))` avec exec_count set mais `outputs: []`,
      0 SVG dans tout le notebook ; base main avait 5 outputs Plotly-CDN, head a
      0 chart = regression nette (Plotly-blanc -> rien du tout).

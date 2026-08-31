@@ -39,7 +39,7 @@ WORKFLOWS_DIR = ROOT / ".github" / "workflows"
 
 def absorbed_guards():
     """Tous les gardes absorbes du registre, tranches 1/2/4 + 3 si merge."""
-    for tranche_name in ("TRANCHE1", "TRANCHE2", "TRANCHE3", "TRANCHE4"):
+    for tranche_name in ("TRANCHE1", "TRANCHE2", "TRANCHE3", "TRANCHE4", "TRANCHE5"):
         yield from getattr(reg, tranche_name, [])
 
 

@@ -595,6 +595,7 @@ Un agent naif pourrait stocker une table "percepts → action" :<br>la table ser
 
 - Intelligence animale
 </div>
+
 - Behaviourism
 - Artificial Life
 - Cellular Automata

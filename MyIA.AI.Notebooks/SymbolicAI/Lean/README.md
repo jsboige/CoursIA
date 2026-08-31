@@ -17,14 +17,14 @@ Six visualisations extraites des notebooks illustrent l'arc de la série : de l'
 
 ### Assistance aux preuves et vérification formelle
 
-L'état de l'art de la série : un LLM génère des preuves Lean, dont on mesure la performance sur un banc de théorèmes ([Lean-7b](Lean-7b-Examples.ipynb)), puis TorchLean propage intervalles (IBP) et bornes (CROWN) pour certifier formellement la robustesse d'un réseau de neurones ([Lean-11a](Lean-11-TorchLean-Python.ipynb)).
+L'état de l'art de la série : un LLM génère des preuves Lean, dont on mesure la performance sur un banc de théorèmes ([Lean-7b](Lean-7b-Examples.ipynb)), puis TorchLean propage intervalles (IBP) et bornes (CROWN) pour certifier formellement la robustesse d'un réseau de neurones ([Lean-11b](Lean-11b-TorchLean-Python.ipynb)).
 
 <p align="center">
   <a href="Lean-7b-Examples.ipynb"><img src="assets/readme/lean-llm-examples.png" width="420" alt="Génération de preuves par LLM sur dix théorèmes Lean : 0 succès / 10 échecs — itérations, temps d'exécution et tokens consommés par théorème."></a>
 </p>
 
 <p align="center">
-  <a href="Lean-11-TorchLean-Python.ipynb"><img src="assets/readme/lean-torchlean.png" width="420" alt="TorchLean : propagation IBP pour la vérification formelle de réseaux de neurones."></a>
+  <a href="Lean-11b-TorchLean-Python.ipynb"><img src="assets/readme/lean-torchlean.png" width="420" alt="TorchLean : propagation IBP pour la vérification formelle de réseaux de neurones."></a>
 </p>
 
 ### Conway — Game of Life
@@ -90,7 +90,7 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 | 9 | [Lean-9-SK-Multi-Agents](Lean-9-SK-Multi-Agents.ipynb) | Agent Framework (Microsoft), orchestration multi-agents | 45 min |
 | 10 | [Lean-10-LeanDojo](Lean-10-LeanDojo.ipynb) | LeanDojo: tracing, theorems, Dojo interactif | 45 min |
 | 11 | [Lean-11-TorchLean](Lean-11-TorchLean.ipynb) | TorchLean: réseaux de neurones vérifiés, IBP, CROWN | 1h30-2h |
-| 11a | [Lean-11-TorchLean-Python](Lean-11-TorchLean-Python.ipynb) | Implémentation Python des algorithmes de vérification (IBP, CROWN) | 1h30-2h |
+| 11b | [Lean-11b-TorchLean-Python](Lean-11b-TorchLean-Python.ipynb) | Implémentation Python des algorithmes de vérification (IBP, CROWN) | 1h30-2h |
 | 12 | [Lean-12-Sensitivity-Theorem](Lean-12-Sensitivity-Theorem.ipynb) | théorème de sensibilité (Huang 2019), hypercube, signing matrix, port Lean 4 | 60 min |
 | 12b | [Lean-12b-Lean-Sensitivity-Theorem](Lean-12b-Lean-Sensitivity-Theorem.ipynb) | Companion **natif** (kernel Lean) : preuve formelle 0-sorry de Huang dans le lake `sensitivity_lean`, `#check` + `#print axioms` rendus in-kernel (UNLOCK c.127, jonction Mathlib #2611) | 45 min |
 
@@ -192,7 +192,7 @@ Pour l'état formel détaillé des modules support (preuves résolues vs `sorry`
 | 9 | SK-Multi-Agents | ~50 | 2 | 2 | **COMPLET** |
 | 10 | LeanDojo | ~100 | 2 | 0 | **COMPLET** |
 | 11 | TorchLean | ~40 | 3 | Oui | **COMPLET** |
-| 11a | TorchLean Python | ~45 | 3 | Oui | **COMPLET** |
+| 11b | TorchLean Python | ~45 | 3 | Oui | **COMPLET** |
 | 12 | Sensitivity-Theorem | ~31 | 4 | Non | **NOUVEAU** |
 | 12b | Lean-Sensitivity-Theorem (natif) | ~19 | 3 | 0 | **NOUVEAU** (kernel `lean4-wsl`) |
 | 13 | Kochen-Specker | ~25 | 1 | 0 | **NOUVEAU** |
@@ -394,7 +394,7 @@ Lean/
 ├── Lean-9-SK-Multi-Agents.ipynb    # Python kernel - Agent Framework
 ├── Lean-10-LeanDojo.ipynb          # Python kernel - LeanDojo
 ├── Lean-11-TorchLean.ipynb         # Lean4 kernel - NN verification
-├── Lean-11-TorchLean-Python.ipynb  # Python kernel - Implémentation algorithmes
+├── Lean-11b-TorchLean-Python.ipynb  # Python kernel - Implémentation algorithmes
 ├── Lean-12-Sensitivity-Theorem.ipynb # Python kernel - théorème de sensibilité (Huang 2019, hypercube, signing matrix)
 ├── Lean-15-Grothendieck-Tribute.ipynb # Python kernel - hommage Grothendieck (langage grothendieckien Mathlib)
 ├── Lean-15b-Lean-Grothendieck.ipynb # Python kernel - atelier pratique Grothendieck (compagnon grothendieck_lean)

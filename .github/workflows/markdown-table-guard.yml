@@ -35,10 +35,19 @@ on:
     # (clone 2.22 Go par run). Stratification user 2026-08-23 :
     # "les jobs lourds devraient être payés une fois par fournée".
     - cron: '15 03 * * *'
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: 'Upsert the marker-guarded MD-TABLE-SWEEP comment on the rendezvous issue (default: dry-run). See #13660.'
+        required: false
+        type: boolean
+        default: false
 permissions:
   contents: read
   pull-requests: write
+  # Used only to post the marker-guarded sweep comment (#13660); the job stays
+  # advisory (exit 0), it never closes anything nor blocks a merge.
+  issues: write
 
 concurrency:
   group: markdown-table-guard-${{ github.ref }}
@@ -137,5 +146,24 @@ jobs:
           else
             unset_label "$LABEL_DEFECT"
             echo "Clean."
+          fi
+
+          # ---- Nocturne : upserter le verdict sur une issue de rendez-vous OUVERTE (#13660) ----
+          # Patron GRAIN-ORPHANS-SWEEP (#13086) : un verdict qui tombe dans un log
+          # planifie que personne n'ouvre est un organe muet (le scan trouvait,
+          # personne ne le voyait). On upserte un commentaire marker-garde
+          # (MD-TABLE-SWEEP) sur l'issue de rendez-vous. ADVISORY (exit 0) : pas
+          # de tag, pas de fermeture, pas de blocage de merge -- on route, ai-01
+          # tranche. apply : schedule toujours ; workflow_dispatch seulement si
+          # apply=true (defaut dry-run, le corps s'imprime pour controle).
+          if [ "$NOCTURNE" -eq 1 ]; then
+            WINDOW_DESC="$(git rev-parse --short "$BASE")..$(git rev-parse --short "$HEAD") (24 h de main)"
+            EXTRA=""
+            if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ inputs.apply }}" = "true" ]; then
+              EXTRA="--apply"
+            fi
+            python scripts/notebook_tools/md_table_sweep_comment.py \
+              --payload payload.json --window "$WINDOW_DESC" \
+              --issue 13660 $EXTRA || true
           fi
           exit 0

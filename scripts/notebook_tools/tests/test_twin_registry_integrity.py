@@ -52,6 +52,9 @@ ALLOWED_KEYS = {
     # Optionnel (#10439) : verdict de bridge SOTA structure (INTRINSIC/SOTA-OK/
     # RECOVERABLE-*), orthogonal a parity_level. La plupart des paires n'en portent pas.
     "bridge_verdict", "bridge_verdict_reason",
+    # Optionnel (#12933) : justification d'une divergence de numerotation python/csharp
+    # documentee (lue par check_twin_parity.py au verdict NUMBERING-DRIFT).
+    "numbering_exception",
 }
 # Plancher d'entrees (post-migration #8542 : 116 paires sur origin/main). En
 # mode file-per-entry, une entree perdue = un fichier supprime ; ce plancher le

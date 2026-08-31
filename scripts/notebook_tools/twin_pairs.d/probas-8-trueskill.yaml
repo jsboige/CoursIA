@@ -1,7 +1,8 @@
 - name: Probas-8 TrueSkill
   family: Probas/Infer.NET-PyMC
-  python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-8-TrueSkill.ipynb
+  python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-08-TrueSkill.ipynb
   csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-8-TrueSkill.ipynb
+  numbering_exception: 'Zero-padding cote Python uniquement PyMC-1..9 -> PyMC-01..09 (renommage #13760) ; jumeau C# Infer-1..9 non concerne, contenu pedagogique inchange.'
   parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Modele nominal lib-vs-lib cite par owner #10382 (\"PyMC vs Infer, 2 moteurs qui brillent\") : C# = Microsoft Infer.NET (Microsoft.ML.Probabilistic, NuGet officiel, native .NET, inférence variationnelle EP/VMP) et Python = PyMC (pip pymc, native Python, NUTS/HMC + ADVI). Chaque cote atteint le moteur SOTA de son ecosysteme probabiliste -- ni pont intermediaire ni reimplementation. Aucune asymetrie de machinerie a corriger. Verifie firsthand : C# Microsoft.ML.Probabilistic refs + execution_count, Python pymc imports."
@@ -51,6 +52,12 @@
       python_sha: 79f6c78203313b8db03eb2397dae4d11eba3592d
       csharp_sha: ec972d10edc2a47588ddfedefc4ec529a0ec2532
       content_python_sha: 0728e9a1c74add739e6f799b05ac0489f2d9de2f9c1fd86c9eec8a7d6a324db6
+      content_csharp_sha: 844487a722a729158e13f01b7fae0a9ba2c96772d9148775f7b57b5e22606a63
+    - date: "2026-08-31"
+      by: myia-po-2025:CoursIA
+      python_sha: 839419be2b1346d11b3147aaeb6ce9f1294594da
+      csharp_sha: ec972d10edc2a47588ddfedefc4ec529a0ec2532
+      content_python_sha: 251a921cc9421e445bc57e380c154386308606c7dd6bf3fa9cab31912df9f13a
       content_csharp_sha: 844487a722a729158e13f01b7fae0a9ba2c96772d9148775f7b57b5e22606a63
   known_differences:
   - '2026-08-27 (myia-po-2027:CoursIA-2) #12752 : REBASELINE cote Python apres re-execution complete fresh kernel (44 cellules, ratchet Exec-sequence). Cause du drift : bandeau pytensor "g++ not available, if using conda: conda install gxx" imprime par l''import pymc 6.3.1 sans compilateur C, qualifie TOOL_FAILURE par le ratchet Output-failure. Re-exec avec PYTENSOR_FLAGS=cxx= (mode CXX desactive explicite, meme comportement, plus de bandeau). Resultats seedes IDENTIQUES au blob precedent (r_hat 1.002/1.001, ess 1761/1884, sigma mu 6.43/6.44, "took 21 seconds") -- parite semantique intacte. Sources inchangees (0 cellule source modifiee), cote C# non touche.'

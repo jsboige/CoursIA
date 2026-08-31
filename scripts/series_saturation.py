@@ -76,6 +76,16 @@ _DECL_RE = re.compile(
 )
 
 
+# Un motif nu `EPIC #N` ne vaut declaration qu'en TETE de corps : une
+# ascendance se pose d'emblee ("## Contexte / Sous-grain de l'EPIC #1454"),
+# un renvoi de comparaison se glisse au fil du texte. Mesure 2026-08-29 sur
+# les 201 issues ouvertes : couper a 3 lignes garde les declarations reelles
+# (#13436 "Sous-grain", #12915 "Tranche T5", #12607 "Fils techniques") et
+# retire les 14 renvois mi-corps ; 1 ligne perdait les declarations, 5
+# n'apportait rien de plus.
+_EPIC_PARENT_HEAD_LINES = 3
+
+
 def parent_issue(body: str) -> int | None:
     """L'ombrelle qu'une issue DECLARE servir, ou None.
 
@@ -89,10 +99,22 @@ def parent_issue(body: str) -> int | None:
     qui est exactement la seule qu'il faudrait freiner. (Verifie firsthand le
     2026-08-28 : sans ascendance, #13394 et #13268 ressortaient a `zone=None`,
     poids intact -- le correctif ne corrigeait pas son propre cas.)
+
+    Declaration != renvoi de contexte (#13435, etendu ici par #13507) : le
+    motif nu `EPIC #N` ne rattache plus au fil du texte. Mesure 2026-08-29 sur
+    les 201 issues ouvertes : 39 parents declares, 14 changent -- tous des
+    renvois mi-corps, dont #13504 qui rendait parent=12373 sur la foi de
+    "dont l'EPIC #12373 porte la consolidation". Les formes structurelles
+    (`_PARENT_RE`, n'importe ou) et les declarations nues en tete de corps
+    restent rattachees.
     """
     if not body:
         return None
-    m = _PARENT_RE.search(body) or _EPIC_PARENT_RE.search(body)
+    m = _PARENT_RE.search(body)
+    if m:
+        return int(m.group(1))
+    head = "\n".join(body.splitlines()[:_EPIC_PARENT_HEAD_LINES])
+    m = _EPIC_PARENT_RE.search(head)
     return int(m.group(1)) if m else None
 
 
@@ -290,6 +312,7 @@ _CONSOLIDATION_RE = re.compile(
 )
 _EXPANSION_RE = re.compile(
     r"nouveau notebook|nouvelle instance|ajouter un notebook|paire \d+\s*/\s*\d+"
+    r"|\[\s*[^\]]+?\s+\d+\s*/\s*\d+\s*\]"
     r"|\bajout\b|\bcr[eé]er\b|\bnew notebook\b",
     re.I,
 )
