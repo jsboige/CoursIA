@@ -69,7 +69,7 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 |---|----------|----------|------------|
 | 1 | Lean 4 - Installation et Configuration | BETA | Non |
 | 2 | Lean 10 : LeanDojo - ML/LLM Theorem Proving | BETA | Non |
-| 3 | Lean 11a - TorchLean : Implémentation Python des… | BETA | Non |
+| 3 | Lean 11b - TorchLean : Implémentation Python des… | BETA | Non |
 | 4 | Lean 11 - TorchLean : Réseaux de Neurones Formellement… | BETA | Non |
 | 5 | Lean-12 : Le Theoreme de Sensibilite (Huang 2019) | BETA | Non |
 | 6 | Lean-12b — Théorème de Sensibilité de Huang (companion… | BETA | Non |
