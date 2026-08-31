@@ -516,6 +516,86 @@ class TestFindTableBlocks:
 
 
 # ---------------------------------------------------------------------------
+# ORPHAN_TABLE_ROW -- fence awareness (c.773, po-2025 adjoint FP on #13843)
+# ---------------------------------------------------------------------------
+
+class TestOrphanTableRowFenceAware:
+    def test_orphan_after_prose_break_still_flagged(self):
+        # Nominal positive case: a pipe-line after an image/italic break IS an
+        # orphan (c.770/c.771 contract). Fix must NOT regress this.
+        lines = [
+            "| A | B |",
+            "|---|---|",
+            "| 1 | 2 |",
+            "",
+            "*Figure extraite de foo.png*",
+            "",
+            "| 3 | 4 |",
+        ]
+        findings = detect_md_table_syntax(lines)
+        assert any(
+            f["pathology"] == "ORPHAN_TABLE_ROW" and f["line"] == 7
+            for f in findings
+        ), f"expected ORPHAN_TABLE_ROW at L7, got {findings}"
+
+    def test_orphan_in_bash_fence_skipped(self):
+        # The c.773 finding: a pipe-line inside a ```bash``` block (e.g. a
+        # pipeline `cat ... | grep ... | wc -l`) is code, not a table
+        # continuation. Must NOT be flagged as ORPHAN_TABLE_ROW.
+        lines = [
+            "| A | B |",
+            "|---|---|",
+            "| 1 | 2 |",
+            "",
+            "```bash",
+            "cat data.txt | grep foo | wc -l",
+            "```",
+            "",
+            "| 3 | 4 |",  # this IS an orphan (after the fence)
+        ]
+        findings = detect_md_table_syntax(lines)
+        # Only the L9 orphan is reported; L6 fence line is silently skipped.
+        orphan_lines = [f["line"] for f in findings if f["pathology"] == "ORPHAN_TABLE_ROW"]
+        assert orphan_lines == [9], (
+            f"expected only orphan at L9 (fence L6 must be skipped), got {orphan_lines}"
+        )
+
+    def test_orphan_blocked_by_heading(self):
+        # A heading between the table and the candidate orphan means a NEW
+        # section; the pipe-line that follows starts a new table, not an
+        # orphan continuation. Pre-existing guard (c.771 HEADING_RE), kept.
+        lines = [
+            "| A | B |",
+            "|---|---|",
+            "| 1 | 2 |",
+            "",
+            "### Strate 1",
+            "| Document | Contenu |",  # start of a new table, not orphan
+        ]
+        findings = detect_md_table_syntax(lines)
+        assert not any(
+            f["pathology"] == "ORPHAN_TABLE_ROW" for f in findings
+        ), f"heading must break orphan scan, got {findings}"
+
+    def test_orphan_blocked_by_redeclared_header(self):
+        # If the candidate is itself followed by a separator row, it is the
+        # start of a NEW table -- pre-existing guard (c.771 SEP_ROW_RE), kept.
+        lines = [
+            "| A | B |",
+            "|---|---|",
+            "| 1 | 2 |",
+            "",
+            "| X | Y |",      # new table starts here
+            "|---|---|",
+            "| 9 | 9 |",
+        ]
+        findings = detect_md_table_syntax(lines)
+        assert not any(
+            f["pathology"] == "ORPHAN_TABLE_ROW" for f in findings
+        ), f"redeclared header must break orphan scan, got {findings}"
+
+
+# ---------------------------------------------------------------------------
 # Notebook / markdown walkers
 # ---------------------------------------------------------------------------
 
