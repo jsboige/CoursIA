@@ -326,7 +326,7 @@ cost:
   vram_tier: MID
   network: true                # Téléchargement modèle HuggingFace au premier run
   external_account: hf         # HF_TOKEN pour download gated
-  free_alternative: GenAI/Image/02-Advanced/02-1-Qwen-Image-Edit-2509.ipynb
+  free_alternative: GenAI/Image/01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb
   reduced_pedagogical: GenAI/Image/01-Foundation/01-4-Forge-SD-XL-Turbo.ipynb
   reproducibility: HIGH        # torch.manual_seed(42) + déterminisme sampler
   metadata_written: 2026-07-23T01:30Z
@@ -504,7 +504,7 @@ litmus correspondant dans `check_cost_metadata.py` signale tout quantbook
 ### GenAI/Image GPU lourd (référence HIGH tier)
 
 ```yaml
-# 02-1-Qwen-Image-Edit-2509.ipynb (GenAI/Image/02-Advanced)
+# 01-5b-Qwen-Image-Edit-2509.ipynb (GenAI/Image/02-Advanced)
 cost:
   api_usd_est: 0.0
   api_provider: local

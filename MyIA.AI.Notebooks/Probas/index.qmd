@@ -24,7 +24,7 @@ listing:
     sort: "filename"
     page-size: 24
   - id: pymc-setup
-    contents: "PyMC/PyMC-1-Setup.ipynb"
+    contents: "PyMC/PyMC-01-Setup.ipynb"
     type: grid
     sort: "filename"
     page-size: 24
