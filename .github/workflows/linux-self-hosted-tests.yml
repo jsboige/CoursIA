@@ -43,7 +43,7 @@ jobs:
           python-version: '3.11'
 
       - name: Install test dependencies
-        run: python -m pip install pytest
+        run: python -m pip install pytest pyyaml
 
       # Preuve d'identite : ce job doit s'executer DANS le conteneur Linux
       # (RUNNER_OS=Linux, RUNNER_ARCH=X64), pas sur un runner Windows ou

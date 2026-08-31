@@ -20,6 +20,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
        ca-certificates curl git jq unzip tar gzip xz-utils python3 python3-pip \
+       libicu74 \
     && rm -rf /var/lib/apt/lists/*
 
 # Tarball runner epingle par SHA-256 (meme discipline que les profils
