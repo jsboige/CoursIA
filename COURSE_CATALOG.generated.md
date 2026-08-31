@@ -1020,8 +1020,8 @@ Total notebooks: 1064
 | 57 | PyMC-2 : Distributions Gaussiennes et Mélanges | Python 3 | READY | BETA | 30min | po-2023 |
 | 58 | PyMC-3 : Graphes de Facteurs et Inference Discrete | Python 3 | READY | BETA | 30min | po-2023 |
 | 59 | PyMC-4 : Reseaux Bayesiens | Python 3 | READY | BETA | 30min | po-2023 |
-| 60 | PyMC-5-Causal-Inference : Inference Causale et… | Python 3 | READY | BETA | 30min | po-2023 |
-| 61 | PyMC-6-Debugging : Troubleshooting et Bonnes… | Python 3 | READY | BETA | 30min | po-2023 |
+| 60 | PyMC-05-Causal-Inference : Inference Causale et… | Python 3 | READY | BETA | 30min | po-2023 |
+| 61 | PyMC-06-Debugging : Troubleshooting et Bonnes… | Python 3 | READY | BETA | 30min | po-2023 |
 | 62 | PyMC-7 : Modèles de Competences (IRT et DINA) | Python 3 | READY | BETA | 30min | po-2023 |
 | 63 | PyMC-8 : TrueSkill - Classement et Apprentissage… | Python 3 | READY | BETA | 45min | po-2023 |
 | 64 | PyMC-9 : Classification Bayesienne et Tests A/B | Python 3 | READY | BETA | 30min | po-2023 |

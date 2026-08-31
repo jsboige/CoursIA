@@ -1,7 +1,7 @@
 notebook,cell_id,cell_type,src_lang,src_hash,text_fr,text_en,text_es,text_ar,text_fa,text_zh,text_ru,text_pt,hash_fr,hash_en,hash_es,hash_ar,hash_fa,hash_zh,hash_ru,hash_pt,translate_policy
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-1-Setup.ipynb,d5e36ea9,markdown,fr,d7a1f6d2858cd923,"# PyMC-1 : Configuration et Premier Modèle
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-01-Setup.ipynb,d5e36ea9,markdown,fr,d7a1f6d2858cd923,"# PyMC-1 : Configuration et Premier Modèle
 
-**Navigation** : [Index](../README.md) | [Fin de serie >>](PyMC-2-Gaussian-Mixtures.ipynb)
+**Navigation** : [Index](../README.md) | [Fin de serie >>](PyMC-02-Gaussian-Mixtures.ipynb)
 
 **Equivalent Infer.NET** : [Infer-1-Setup](../Infer/Infer-1-Setup.ipynb)
 
@@ -16,8 +16,8 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-1-Setup.ipynb,d5e36ea9,markdown,fr,d7a1f6d285
 
 **Prerequis** : Aucun (premier notebook de la serie)
 ",,,,,,,,d7a1f6d2858cd923,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-1-Setup.ipynb,824dbcc0,markdown,fr,42db5efd6d441292,## 1. Installation et Import,,,,,,,,42db5efd6d441292,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-1-Setup.ipynb,b5e04482,code,fr,e76e22263ee93224,"# Dependances : installer silencieusement seulement ce qui manque.
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-01-Setup.ipynb,824dbcc0,markdown,fr,42db5efd6d441292,## 1. Installation et Import,,,,,,,,42db5efd6d441292,,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-01-Setup.ipynb,b5e04482,code,fr,e76e22263ee93224,"# Dependances : installer silencieusement seulement ce qui manque.
 # (import-guards deterministes : pas de sortie bruyante 'Requirement already satisfied'
 #  qui fuie le chemin machine, cf #3436 cause A. La cellule suivante fait les imports effectifs.)
 import importlib, subprocess, sys
@@ -28,10 +28,10 @@ if _MISSING:
 else:
     print(""Toutes les dependances (pymc, arviz, matplotlib, numpy, scipy) sont disponibles."")
 ",,,,,,,,e76e22263ee93224,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-1-Setup.ipynb,7235b124,markdown,fr,cc30c2263b12cca5,"### Verification de l'installation
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-01-Setup.ipynb,7235b124,markdown,fr,cc30c2263b12cca5,"### Verification de l'installation
 
 PyMC 5.x et ses dependances (ArviZ, PyTensor, NumPy, SciPy) sont maintenant disponibles. La cellule suivante importe les bibliotheques necessaires et verifie les versions. PyMC (**Salvatier et al., 2016**) utilise **PyTensor** comme backend de calcul symbolique (equivalent de TensorFlow Probability pour les modèles probabilistes) et **ArviZ** (**Kumar et al., 2019**) pour la visualisation et le diagnostic des chaînes MCMC.",,,,,,,,cc30c2263b12cca5,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-1-Setup.ipynb,0ac2091a,code,fr,3966bc879358cea4,"try:
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-01-Setup.ipynb,0ac2091a,code,fr,3966bc879358cea4,"try:
     import numpy as np
     NUMPY_AVAILABLE = True
 except ImportError:
@@ -61,7 +61,7 @@ if NUMPY_AVAILABLE and PYMC_AVAILABLE:
     print(f""ArviZ version: {az.__version__}"")
 else:
     print(""PyMC n'est pas installe. Executez: %pip install pymc arviz matplotlib numpy scipy"")",,,,,,,,3966bc879358cea4,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-1-Setup.ipynb,9d50c4ba,markdown,fr,b28c192f92eab99b,"## 2. Programmation Probabiliste avec PyMC
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-01-Setup.ipynb,9d50c4ba,markdown,fr,b28c192f92eab99b,"## 2. Programmation Probabiliste avec PyMC
 
 ### Infer.NET vs PyMC
 
@@ -80,10 +80,10 @@ Infer.NET (**Minka et al., 2018**) est un framework de programmation probabilist
 1. **Définir** le modèle (distributions, relations, observations)
 2. **Echantillonner** le posterior (`pm.sample`)
 3. **Analyser** les résultats (ArviZ: traces, summaries, plots)",,,,,,,,b28c192f92eab99b,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-1-Setup.ipynb,6ac1fbc8,markdown,fr,2a2b8ba624e07b31,"## 3. Exemple : Problème des Deux Pieces
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-01-Setup.ipynb,6ac1fbc8,markdown,fr,2a2b8ba624e07b31,"## 3. Exemple : Problème des Deux Pieces
 
 Le même problème que dans Infer-1-Setup : on lance deux pieces, on observe le nombre de faces. Quelle est la probabilite que les deux pieces soient biaisees ?",,,,,,,,2a2b8ba624e07b31,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-1-Setup.ipynb,62138dcd,code,fr,391bf8882d28aa21,"# Donnees observees : 10 lancers, 7 faces
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-01-Setup.ipynb,62138dcd,code,fr,391bf8882d28aa21,"# Donnees observees : 10 lancers, 7 faces
 n_lancers = 10
 n_faces = 7
 
@@ -102,7 +102,7 @@ with pm.Model() as two_coins:
 print(f""Prior: Beta(1, 1)"")
 print(f""Posterior analytique: Beta({1 + n_faces}, {1 + n_lancers - n_faces})"")
 print(f""E[theta] = {(1 + n_faces) / (2 + n_lancers):.3f}"")",,,,,,,,391bf8882d28aa21,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-1-Setup.ipynb,2a1ef25d,markdown,fr,6e74a8530742c5fd,"### Interpretation de l'echantillonnage
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-01-Setup.ipynb,2a1ef25d,markdown,fr,6e74a8530742c5fd,"### Interpretation de l'echantillonnage
 
 L'echantillonneur NUTS (*No-U-Turn Sampler*, Hoffman & Gelman 2014) a genere 4 chaînes de 2000 echantillons chacune (plus 1000 de warmup), pour un total de 8000 tirages du posterior. Le posterior analytique est **Beta(8, 4)** car le prior Beta(1,1) se combine avec 7 faces et 3 piles.
 
@@ -113,11 +113,11 @@ L'echantillonneur NUTS (*No-U-Turn Sampler*, Hoffman & Gelman 2014) a genere 4 c
 | E[theta] | 0.500 | -- | 0.667 | 0.667 |
 
 La cellule suivante affiche la distribution posterior complete via ArviZ, incluant la densite, la moyenne et l'intervalle de credibilite a 94%.",,,,,,,,6e74a8530742c5fd,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-1-Setup.ipynb,b5495e80,code,fr,ae0275a1754e5d31,"# Visualisation du posterior
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-01-Setup.ipynb,b5495e80,code,fr,ae0275a1754e5d31,"# Visualisation du posterior
 az.plot_posterior(trace, var_names=['theta'])
 plt.suptitle('Posterior de theta (probabilite de face)', y=1.02)
 plt.show()",,,,,,,,ae0275a1754e5d31,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-1-Setup.ipynb,f1b6f5e3,markdown,fr,5844ae1598d7a5d0,"## 4. Prior Conjugue Beta-Bernoulli
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-01-Setup.ipynb,f1b6f5e3,markdown,fr,5844ae1598d7a5d0,"## 4. Prior Conjugue Beta-Bernoulli
 
 Le couple Beta-Bernoulli est conjugue : le posterior a la même forme que le prior.
 
@@ -126,7 +126,7 @@ $$\text{Vraisemblance: } x_i \sim \text{Bernoulli}(\theta)$$
 $$\text{Posterior: } \theta | x \sim \text{Beta}(\alpha + \sum x_i,\ \beta + n - \sum x_i)$$
 
 Ce résultat est le cas classique de prior conjugue : le posterior reste dans la même famille fonctionnelle que le prior (Raiffa & Schlaiffer 1961).",,,,,,,,5844ae1598d7a5d0,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-1-Setup.ipynb,a23ff6f4,code,fr,80e9742ab6632654,"# Comparaison prior vs posterior
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-01-Setup.ipynb,a23ff6f4,code,fr,80e9742ab6632654,"# Comparaison prior vs posterior
 from scipy import stats
 
 x = np.linspace(0, 1, 200)
@@ -143,7 +143,7 @@ ax.legend()
 ax.set_title('Prior vs Posterior (Beta-Bernoulli conjugue)')
 plt.tight_layout()
 plt.show()",,,,,,,,80e9742ab6632654,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-1-Setup.ipynb,exo1-prior-md,markdown,fr,3231099b181c0a5a,"## Exercice : Influence du prior sur le posterior
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-01-Setup.ipynb,exo1-prior-md,markdown,fr,3231099b181c0a5a,"## Exercice : Influence du prior sur le posterior
 
 La Section 4 a montre qu'avec un prior uniforme `Beta(1,1)` et 7 faces sur 10 lancers, le posterior est `Beta(8,4)`. Mais le choix du prior n'est **pas neutre** quand les données sont rares.
 
@@ -157,7 +157,7 @@ On reprend les mêmes données (10 lancers, 7 faces) avec deux priors contrastes
 
 > **Indice :** posterior = Beta(alpha + k, beta + n - k). Comparez les ecarts-types
 > scipy.stats.beta(a, b).std() donne l'ecart-type. Le prior informe ""resserre"" le posterior.",,,,,,,,3231099b181c0a5a,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-1-Setup.ipynb,exo1-prior-code,code,fr,e30b28dfffd759d9,"# TODO etudiant : comparer deux posteriors sous priors uniforme vs informe
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-01-Setup.ipynb,exo1-prior-code,code,fr,e30b28dfffd759d9,"# TODO etudiant : comparer deux posteriors sous priors uniforme vs informe
 # Donnees (memes que la Section 3) :
 n_lancers_exo = 10
 n_faces_exo = 7
@@ -167,10 +167,10 @@ n_faces_exo = 7
 # - Tracer les deux densites sur x = np.linspace(0, 1, 200) avec plt.plot
 result_exo_prior = None  # TODO etudiant : votre graphique comparatif
 print(""Exercice a completer : influence du prior sur le posterior"")",,,,,,,,e30b28dfffd759d9,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-1-Setup.ipynb,cc8c056e,markdown,fr,aacd27c703761b80,"## 5. Apprentissage en Ligne
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-01-Setup.ipynb,cc8c056e,markdown,fr,aacd27c703761b80,"## 5. Apprentissage en Ligne
 
 Mise a jour séquentielle du posterior : chaque nouvelle observation met a jour le prior.",,,,,,,,aacd27c703761b80,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-1-Setup.ipynb,50e11458,code,fr,af065badefa4baeb,"# Apprentissage en ligne : arrivent sequentiellement
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-01-Setup.ipynb,50e11458,code,fr,af065badefa4baeb,"# Apprentissage en ligne : arrivent sequentiellement
 observations = [1, 1, 0, 1, 0, 1, 1, 0, 1, 1]  # 1=face, 0=pile
 
 alpha, beta_param = 1, 1  # Prior initial
@@ -206,7 +206,7 @@ axes[1].legend()
 
 plt.tight_layout()
 plt.show()",,,,,,,,af065badefa4baeb,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-1-Setup.ipynb,a1b2c3d4,markdown,fr,d98eb60cb1437b3a,"## 6. Pourquoi l'echantillonnage MCMC ? Le cas non-conjugue
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-01-Setup.ipynb,a1b2c3d4,markdown,fr,d98eb60cb1437b3a,"## 6. Pourquoi l'echantillonnage MCMC ? Le cas non-conjugue
 
 Jusqu'ici, le cas **Beta-Bernoulli** etait chanceux : le posterior a une **forme fermee**
 (Section 4), donc `pm.sample` et le calcul analytique donnent le même résultat. Mais des
@@ -226,7 +226,7 @@ restent fideles a leur MLE. C'est exactement ce que la forme fermee ne peut pas 
 > *funnel* qui fait diverger NUTS ; la version non-centree l'evite (voir PyMC-6-Debugging
 > pour le diagnostic detaille des divergences).
 ",,,,,,,,d98eb60cb1437b3a,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-1-Setup.ipynb,e5f60718,code,fr,0e0d088f4846dc5b,"# Donnees : 6 pieces, chacune avec un nombre de lancers different.
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-01-Setup.ipynb,e5f60718,code,fr,0e0d088f4846dc5b,"# Donnees : 6 pieces, chacune avec un nombre de lancers different.
 # Certaines sont 'eparses' (n=5 ou 8) -> leur MLE est fortement bruite.
 n_obs = np.array([5, 10, 20, 50, 8, 30])
 heads = np.array([4,  3, 12, 31, 7, 21])
@@ -250,7 +250,7 @@ with pm.Model() as hier:
 
 az.summary(trace_hier, var_names=['mu', 'sigma', 'theta'])
 ",,,,,,,,0e0d088f4846dc5b,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-1-Setup.ipynb,9a0b1c2d,markdown,fr,f961e15ffa815040,"### Interpretation : le shrinkage rendu visible
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-01-Setup.ipynb,9a0b1c2d,markdown,fr,f961e15ffa815040,"### Interpretation : le shrinkage rendu visible
 
 La cellule ci-dessus ajuste un modèle dans lequel les 6 pieces se partagent deux
 paramètres de groupe (`mu`, `sigma`). Le reseau de dependances fait que l'estimation
@@ -259,7 +259,7 @@ suivante compare, pour chaque piece, le **MLE brut** (estimateur indépendant, `
 et la **moyenne du posterior hiérarchique**. L'ecart entre les deux **est l'apport propre
 de MCMC** : impossible a obtenir par une forme fermee.
 ",,,,,,,,f961e15ffa815040,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-1-Setup.ipynb,3e4f5a6b,code,fr,9c61573ff28878eb,"# Shrinkage : MLE brut (independant par piece) vs moyenne du posterior hierarchique.
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-01-Setup.ipynb,3e4f5a6b,code,fr,9c61573ff28878eb,"# Shrinkage : MLE brut (independant par piece) vs moyenne du posterior hierarchique.
 post_means = trace_hier.posterior['theta'].mean(dim=('chain', 'draw')).values
 
 fig, ax = plt.subplots(1, 1, figsize=(9, 4.5))
@@ -284,7 +284,7 @@ plt.show()
 print('Ecart MLE -> posterior (shrinkage absolu par piece) :')
 print(np.round(np.abs(post_means - mle), 3))
 ",,,,,,,,9c61573ff28878eb,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-1-Setup.ipynb,exo2-shrink-md,markdown,fr,810bbb337f1b009f,"## Exercice : Predire une piece eparse (partial pooling)
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-01-Setup.ipynb,exo2-shrink-md,markdown,fr,810bbb337f1b009f,"## Exercice : Predire une piece eparse (partial pooling)
 
 Le modèle hiérarchique de la Section 6 tire les pieces eparses vers le biais moyen du groupe. Verifions ce **shrinkage** sur un cas extreme : une piece lancee très peu de fois.
 
@@ -299,7 +299,7 @@ On ajoute une 7eme piece avec seulement `n=3` lancers et `0` face. Son MLE brut 
 > **Étape 1 :** etendre les données avec np.append(n_obs, 3) et np.append(heads, 0)
 > **Étape 2 :** re-définir le pm.Model() non-centre : logit(theta_i) = mu + sigma * z_i
 > **Étape 3 :** extraire la mediane de theta_7 via np.median(trace.posterior['theta'][..., 6])",,,,,,,,810bbb337f1b009f,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-1-Setup.ipynb,exo2-shrink-code,code,fr,abf1e7bd56e30fa1,"# TODO etudiant : ajouter une 7eme piece eparse et mesurer son shrinkage
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-01-Setup.ipynb,exo2-shrink-code,code,fr,abf1e7bd56e30fa1,"# TODO etudiant : ajouter une 7eme piece eparse et mesurer son shrinkage
 # Indices :
 # - Etape 1 : n_obs_7 = np.append(n_obs, 3) ; heads_7 = np.append(heads, 0)
 # - Etape 2 : re-utiliser la parametrisation non-centree (mu, sigma, z) de la Section 6
@@ -307,7 +307,7 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-1-Setup.ipynb,exo2-shrink-code,code,fr,abf1e7
 # - Etape 4 : np.median(trace_exo.posterior['theta'][..., 6].values)
 posterior_7eme_piece = None  # TODO etudiant : posterior mediane de la 7eme piece
 print(""Exercice a completer : shrinkage de la 7eme piece eparse"")",,,,,,,,abf1e7bd56e30fa1,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-1-Setup.ipynb,ef617c31,markdown,fr,1ca3c4abd4f88aff,"## 7. Comparaison avec Infer.NET
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-01-Setup.ipynb,ef617c31,markdown,fr,1ca3c4abd4f88aff,"## 7. Comparaison avec Infer.NET
 
 ### Code Infer.NET equivalent
 
@@ -332,7 +332,7 @@ Console.WriteLine(engine.Infer(theta));  // Beta(8, 4)
 | Scalabilite | Message passing (rapide) | MCMC (plus lent mais general) |
 
 > NUTS est une variante adaptive de Hamiltonian Monte Carlo (Duane et al. 1987 ; Neal 2011). Les méthodes MCMC construisent une chaîne de Markov dont la loi stationnaire est le posterior (Metropolis et al. 1953 ; Hastings 1970).",,,,,,,,1ca3c4abd4f88aff,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-1-Setup.ipynb,c90e514c,markdown,fr,12938c0a45725cf1,"## Exercice : Piece Biaisee Inconnue
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-01-Setup.ipynb,c90e514c,markdown,fr,12938c0a45725cf1,"## Exercice : Piece Biaisee Inconnue
 
 On a une piece dont on ne connait pas le biais. On effectue 20 lancers et obtient 15 faces.
 
@@ -340,7 +340,7 @@ On a une piece dont on ne connait pas le biais. On effectue 20 lancers et obtien
 2. Calculer le posterior
 3. Afficher la distribution posterior
 4. Quelle est la probabilite a posteriori que theta > 0.7 ?",,,,,,,,12938c0a45725cf1,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-1-Setup.ipynb,645fbcf8,code,fr,3c3ba0d2ad55ead0,"# TODO etudiant : implementer le modele pour la piece biaisee
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-01-Setup.ipynb,645fbcf8,code,fr,3c3ba0d2ad55ead0,"# TODO etudiant : implementer le modele pour la piece biaisee
 # Indices :
 # - Utiliser pm.Model() context
 # - Prior: pm.Beta('theta', alpha=2, beta=5)
@@ -349,7 +349,7 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-1-Setup.ipynb,645fbcf8,code,fr,3c3ba0d2ad55ea
 # - Calculer P(theta > 0.7) avec (trace.posterior['theta'] > 0.7).mean()
 
 print(""Exercice a completer"")",,,,,,,,3c3ba0d2ad55ead0,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-1-Setup.ipynb,4411434a,markdown,fr,68c8bc62ae0f9224,"## Conclusion
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-01-Setup.ipynb,4411434a,markdown,fr,68c8bc62ae0f9224,"## Conclusion
 
 Ce notebook a introduit les bases de PyMC : installation, configuration, et premier modèle probabiliste (Beta-Binomial pour une piece de monnaie).
 
@@ -375,7 +375,7 @@ Ce notebook a introduit les bases de PyMC : installation, configuration, et prem
 **Retour au sommaire** : [Index Probas](../README.md)",,,,,,,,68c8bc62ae0f9224,,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-10-Model-Selection.ipynb,a1b2c3d0,markdown,fr,1c52a197fc3ac2da,"# PyMC-10 : Sélection de Modèles et Comparaison Bayesienne
 
-**Navigation** : [Index](../README.md) | [<< PyMC-9](PyMC-9-Classification.ipynb) | [PyMC-11 >>](PyMC-11-Topic-Models.ipynb)
+**Navigation** : [Index](../README.md) | [<< PyMC-9](PyMC-09-Classification.ipynb) | [PyMC-11 >>](PyMC-11-Topic-Models.ipynb)
 
 **Equivalent Infer.NET** : [Infer-10-Model-Sélection](../Infer/Infer-10-Model-Selection.ipynb)
 
@@ -3893,7 +3893,7 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-16-Sparse-Gaussian-Process.ipynb,65abe950,mar
 
 **Serie** : Programmation Probabiliste avec PyMC (16 / parite Infer.NET, #4956)
 **Duree estimee** : 55 minutes
-**Prerequis** : [PyMC-9-Classification](PyMC-9-Classification.ipynb) (régression logistique), [PyMC-2-Gaussian-Mixtures](PyMC-2-Gaussian-Mixtures.ipynb)
+**Prerequis** : [PyMC-9-Classification](PyMC-09-Classification.ipynb) (régression logistique), [PyMC-2-Gaussian-Mixtures](PyMC-02-Gaussian-Mixtures.ipynb)
 
 ---
 
@@ -4220,7 +4220,7 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-17-Kalman-Filter.ipynb,69155af3,markdown,fr,c
 > Infer.NET suppose connues.
 
 **Duree estimee** : 55 minutes
-**Prerequis** : [PyMC-14 -- Sequences (HMM)](PyMC-14-Sequences.ipynb), [PyMC-2 -- Melanges gaussiens](PyMC-2-Gaussian-Mixtures.ipynb)
+**Prerequis** : [PyMC-14 -- Sequences (HMM)](PyMC-14-Sequences.ipynb), [PyMC-2 -- Melanges gaussiens](PyMC-02-Gaussian-Mixtures.ipynb)
 
 ## Objectifs
 
@@ -4529,7 +4529,7 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-17-Kalman-Filter.ipynb,9d255904,markdown,fr,2
 |-----------|------|----------|
 | <-> Infer-17 | [Infer-17 -- Filtre de Kalman](../Infer/Infer-17-Kalman-Filter.ipynb) | **Jumeau .NET** (Infer.NET, EP) : même terrain de jeu, mêmes equations exactes. Ce notebook ajoute l'estimation MCMC des hyperparametres. |
 | <-> PyMC-14 | [PyMC-14 -- Sequences (HMM)](PyMC-14-Sequences.ipynb) | HMM a etat **discret** <-> filtre de Kalman a etat **continu** : même squelette markovien (etat cache + observation), nature de l'etat différente |
-| <- PyMC-2 | [PyMC-2 -- Melanges gaussiens](PyMC-2-Gaussian-Mixtures.ipynb) | Le Kalman repose sur la **conjugaison gaussienne** -- PyMC-2 en pose les bases |
+| <- PyMC-2 | [PyMC-2 -- Melanges gaussiens](PyMC-02-Gaussian-Mixtures.ipynb) | Le Kalman repose sur la **conjugaison gaussienne** -- PyMC-2 en pose les bases |
 | <-> PyMC-12 | [PyMC-12 -- Modèles hiérarchiques](PyMC-12-Modeles-Hierarchiques.ipynb) | Le modèle joint section 4 est un cas particulier de modèle hiérarchique (hyperparametres $Q, R$ partage sur toute la trajectoire) |
 
 **Reference fondatrice** : Kalman, R. E. (1960) -- *A New Approach to Linear Filtering and
@@ -4865,7 +4865,7 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-19-Survival-Analysis.ipynb,14f058d8,markdown,
 > **LOO cross-validation** (arviZ) au lieu d'un balayage manuel.
 
 **Duree estimee** : 50 minutes
-**Prerequis** : [PyMC-2 -- Melanges gaussiens](PyMC-2-Gaussian-Mixtures.ipynb) (conjugaison Gamma-Exponentielle)
+**Prerequis** : [PyMC-2 -- Melanges gaussiens](PyMC-02-Gaussian-Mixtures.ipynb) (conjugaison Gamma-Exponentielle)
 
 ## Objectifs
 
@@ -5143,9 +5143,9 @@ au-dela de ce notebook.
 - Relation a la serie : [PyMC-12](PyMC-12-Modeles-Hierarchiques.ipynb) (modèles hiérarchiques),
   [PyMC-18](PyMC-18-Change-Point.ipynb) (rupture — ou le taux change brusquement).
 ",,,,,,,,da294bb357eb11b0,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-2-Gaussian-Mixtures.ipynb,fde6ae1d,markdown,fr,5b836551dfeec468,"# PyMC-2 : Distributions Gaussiennes et Mélanges
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-02-Gaussian-Mixtures.ipynb,fde6ae1d,markdown,fr,5b836551dfeec468,"# PyMC-2 : Distributions Gaussiennes et Mélanges
 
-**Navigation** : [Index](../README.md) | [<< PyMC-1](PyMC-1-Setup.ipynb) | [PyMC-3 >>](PyMC-3-Factor-Graphs.ipynb)
+**Navigation** : [Index](../README.md) | [<< PyMC-1](PyMC-01-Setup.ipynb) | [PyMC-3 >>](PyMC-03-Factor-Graphs.ipynb)
 
 **Equivalent Infer.NET** : [Infer-2-Gaussian-Mixtures](../Infer/Infer-2-Gaussian-Mixtures.ipynb)
 
@@ -5160,14 +5160,14 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-2-Gaussian-Mixtures.ipynb,fde6ae1d,markdown,f
 
 **Prerequis** : PyMC-1, bases de statistique (loi normale, prior conjugue)
 ",,,,,,,,5b836551dfeec468,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-2-Gaussian-Mixtures.ipynb,9d4770c2,markdown,fr,bfc97493c12de271,"## 1. Le Scénario du Cycliste
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-02-Gaussian-Mixtures.ipynb,9d4770c2,markdown,fr,bfc97493c12de271,"## 1. Le Scénario du Cycliste
 
 Vous vous rendez au travail a velo chaque jour. Votre temps de trajet varie.
 Après quelques jours d'observation, vous voulez :
 - Estimer votre temps moyen
 - Predire le temps de demain
 - Detecter les jours exceptionnels (melange de distributions)",,,,,,,,bfc97493c12de271,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-2-Gaussian-Mixtures.ipynb,808287e7,code,fr,b9d34d4608296d05,"import warnings
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-02-Gaussian-Mixtures.ipynb,808287e7,code,fr,b9d34d4608296d05,"import warnings
 # arviz (FutureWarning de refactor) et pytensor (""could not link BLAS"", advisory de perf, pas de correctness)
 # leakent le chemin absolu du fichier source site-packages ; on les filtre. Les alertes utiles (R-hat, ESS) restent visibles.
 warnings.filterwarnings(""ignore"", category=FutureWarning, module=""arviz"")
@@ -5213,7 +5213,7 @@ if NUMPY_AVAILABLE and PYMC_AVAILABLE:
     print(f""PyMC version: {pm.__version__}"")
 else:
     print(""PyMC n'est pas installe. Executez: pip install pymc arviz matplotlib numpy scipy"")",,,,,,,,b9d34d4608296d05,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-2-Gaussian-Mixtures.ipynb,821b95b7,markdown,fr,16db28fd17b3532a,"## 2. Modèle Simple : Une Gaussienne
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-02-Gaussian-Mixtures.ipynb,821b95b7,markdown,fr,16db28fd17b3532a,"## 2. Modèle Simple : Une Gaussienne
 
 ### Infer.NET vs PyMC
 
@@ -5222,7 +5222,7 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-2-Gaussian-Mixtures.ipynb,821b95b7,markdown,f
 | Moyenne | `Variable.GaussianFromMeanAndPrecision(m, p)` | `pm.Normal('mu', mu=m, tau=p)` |
 | Precision | `Variable.GammaFromShapeAndScale(s, r)` | `pm.Gamma('tau', alpha=s, beta=1/r)` |
 | Observation | `Variable.GaussianFromMeanAndPrecision(mu, tau)` | `pm.Normal('x', mu=mu, tau=tau, observed=data)` |",,,,,,,,16db28fd17b3532a,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-2-Gaussian-Mixtures.ipynb,238dab2d,code,fr,0772704550692bc7,"# Donnees observees : temps de trajet (minutes)
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-02-Gaussian-Mixtures.ipynb,238dab2d,code,fr,0772704550692bc7,"# Donnees observees : temps de trajet (minutes)
 donnees_trajets = np.array([13.0, 17.0, 20.0, 25.0, 16.0, 11.0, 16.0, 14.0, 13.0])
 
 # Modele PyMC : Gaussienne avec priors vagues
@@ -5249,10 +5249,10 @@ tau_post = trace_simple.posterior['tau'].values.flatten()
 print(f""Moyenne posterior: {mu_post.mean():.2f} min (ecart-type: {mu_post.std():.2f})"")
 print(f""Precision posterior: {tau_post.mean():.2f}"")
 print(f""Ecart-type posterior: {1/np.sqrt(tau_post.mean()):.2f} min"")",,,,,,,,0772704550692bc7,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-2-Gaussian-Mixtures.ipynb,2c5fbf40,markdown,fr,eb31aae2bcce56da,"## 3. Prediction du Temps de Demain
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-02-Gaussian-Mixtures.ipynb,2c5fbf40,markdown,fr,eb31aae2bcce56da,"## 3. Prediction du Temps de Demain
 
 La **distribution predictive posterior** combine l'incertitude sur les paramètres avec la variabilite naturelle du modèle.",,,,,,,,eb31aae2bcce56da,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-2-Gaussian-Mixtures.ipynb,3593c7fd,code,fr,5e28ecb8d033fcb0,"# Prediction : echantillons de la distribution predictive
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-02-Gaussian-Mixtures.ipynb,3593c7fd,code,fr,5e28ecb8d033fcb0,"# Prediction : echantillons de la distribution predictive
 with cycliste_simple:
     ppc = pm.sample_posterior_predictive(trace_simple, random_seed=42)
 
@@ -5273,7 +5273,7 @@ plt.show()
 print(f""P(trajet < 18 min) = {(predictions < 18).mean():.3f}"")
 print(f""P(trajet > 25 min) = {(predictions > 25).mean():.3f}"")
 print(f""P(14 < trajet < 20 min) = {((predictions > 14) & (predictions < 20)).mean():.3f}"")",,,,,,,,5e28ecb8d033fcb0,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-2-Gaussian-Mixtures.ipynb,a97e6401,markdown,fr,0ddf94e610120c7e,"## Exercice 2 : Prediction d'un seuil de trajet
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-02-Gaussian-Mixtures.ipynb,a97e6401,markdown,fr,0ddf94e610120c7e,"## Exercice 2 : Prediction d'un seuil de trajet
 
 A partir des predictions de la distribution predictive posterieure, calculez le seuil
 tel que la probabilite de depasser ce temps de trajet soit exactement 5%.
@@ -5285,17 +5285,17 @@ au 95e centile de la distribution predictive.
 - Utiliser `np.percentile(predictions, 95)` pour le calcul direct
 - Verifier avec `(predictions > seuil).mean()` que la probabilite est bien ~0.05
 - Comparer le seuil obtenu avec les observations extremes du jeu de données",,,,,,,,0ddf94e610120c7e,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-2-Gaussian-Mixtures.ipynb,a9781026,code,fr,ab206b21a3802a16,"# TODO etudiant : calculer le seuil tel que P(trajet > seuil) = 0.05
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-02-Gaussian-Mixtures.ipynb,a9781026,code,fr,ab206b21a3802a16,"# TODO etudiant : calculer le seuil tel que P(trajet > seuil) = 0.05
 # Etape 1 : utiliser le tableau 'predictions' de la section precedente
 # Etape 2 : trier les predictions et trouver le 95e centile
 # Etape 3 : afficher le seuil et verifier que P(trajet > seuil) ~ 0.05
 
 result = None  # TODO etudiant : remplacer par le calcul du seuil
 print(""Exercice a completer"")",,,,,,,,ab206b21a3802a16,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-2-Gaussian-Mixtures.ipynb,7e976442,markdown,fr,6e8b76120e35a97f,"## 4. Gaussienne Tronquee
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-02-Gaussian-Mixtures.ipynb,7e976442,markdown,fr,6e8b76120e35a97f,"## 4. Gaussienne Tronquee
 
 Une gaussienne tronquee restreint les valeurs a un intervalle. Utile quand une variable ne peut pas etre negative (temps, distances, etc.).",,,,,,,,6e8b76120e35a97f,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-2-Gaussian-Mixtures.ipynb,7814aa2d,code,fr,481b3819cbbf6390,"# Gaussienne tronquee : temps de trajet ne peut pas etre negatif
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-02-Gaussian-Mixtures.ipynb,7814aa2d,code,fr,481b3819cbbf6390,"# Gaussienne tronquee : temps de trajet ne peut pas etre negatif
 # Equivalent Infer.NET : Variable.GaussianFromMeanAndPrecision + Variable.ConstrainBetween
 
 with pm.Model() as cycliste_tronque:
@@ -5313,7 +5313,7 @@ print(f""Ecart-type (tronquee) : {1/np.sqrt(trace_tronq.posterior['tau'].values.
 print()
 print(""La troncature a peu d'effet ici car les donnees sont bien positives."")
 print(""Elle devient importante quand le prior couvre des valeurs negatives."")",,,,,,,,481b3819cbbf6390,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-2-Gaussian-Mixtures.ipynb,5eba5f3f,markdown,fr,93a9e70f8272be74,"## Exercice 3 : Gaussienne tronquee sur données negatives
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-02-Gaussian-Mixtures.ipynb,5eba5f3f,markdown,fr,93a9e70f8272be74,"## Exercice 3 : Gaussienne tronquee sur données negatives
 
 Generez des données synthetiques a partir d'une `Normal(10, 5)` en incluant
 intentionnellement des valeurs negatives. Modelisez ensuite ces données avec
@@ -5325,14 +5325,14 @@ moyenne empirique de l'echantillon.
 - Le modèle TruncatedNormal corrige le biais introduit par les valeurs negatives
 - Comparer : la moyenne posterieure devrait etre superieure a la moyenne empirique
   car la troncature elimine l'effet des valeurs negatives",,,,,,,,93a9e70f8272be74,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-2-Gaussian-Mixtures.ipynb,851b9f2e,code,fr,62bf96145b17e383,"# TODO etudiant : creer des donnees avec valeurs negatives et modeliser avec TruncatedNormal
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-02-Gaussian-Mixtures.ipynb,851b9f2e,code,fr,62bf96145b17e383,"# TODO etudiant : creer des donnees avec valeurs negatives et modeliser avec TruncatedNormal
 # Etape 1 : generer des donnees depuis Normal(10, 5) avec certaines valeurs negatives
 # Etape 2 : construire un modele avec TruncatedNormal(lower=0)
 # Etape 3 : comparer la moyenne posterior a la moyenne empirique
 
 result = None  # TODO etudiant : remplacer par le modele et l'echantillonnage
 print(""Exercice a completer"")",,,,,,,,62bf96145b17e383,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-2-Gaussian-Mixtures.ipynb,59fe8f27,markdown,fr,485a522113676246,"## 5. Melange de Gaussiennes (GMM)
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-02-Gaussian-Mixtures.ipynb,59fe8f27,markdown,fr,485a522113676246,"## 5. Melange de Gaussiennes (GMM)
 
 Les données contiennent des événements extraordinaires (jours ou le trajet est beaucoup plus long). Un melange de gaussiennes capture cette structure :
 - **Composante 1** : trajet normal (moyenne ~15 min)
@@ -5361,7 +5361,7 @@ Au-dela des references classiques ci-dessus (Pearson 1894, EM Dempster-Laird-Rub
 4. **Ghahramani & Beal (2000).** *Variational inference for Bayesian mixtures of factor analysers*, NIPS 1999. Inference variationnelle pour melanges bayesiens -- alternative au MCMC `pm.sample` utilise dans ce notebook.
 
 Ces references completent le socle Pearson/EM/McLachlan-Stephens cite dans le notebook et permettent au lecteur d'approfondir selon l'angle (theorie de l'information, inference variationnelle, ou extension haute-dimension).",,,,,,,,485a522113676246,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-2-Gaussian-Mixtures.ipynb,791be0b9,code,fr,126d37d011355993,"# Donnees avec evenements extraordinaires
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-02-Gaussian-Mixtures.ipynb,791be0b9,code,fr,126d37d011355993,"# Donnees avec evenements extraordinaires
 donnees_mixtes = np.array([13.0, 17.0, 20.0, 25.0, 16.0, 11.0, 16.0, 14.0, 13.0, 32.0, 35.0, 28.0])
 
 # Modele de melange a 2 composantes
@@ -5387,7 +5387,7 @@ with pm.Model() as cycliste_mixte:
     trajets = pm.Normal('trajets', mu=mu_obs, sigma=sigma_obs, observed=donnees_mixtes)
     
     trace_mixte = pm.sample(3000, random_seed=42, return_inferencedata=True)",,,,,,,,126d37d011355993,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-2-Gaussian-Mixtures.ipynb,61bdfe5c,markdown,fr,ef9ae868683a7bd0,"### Interpretation de l'echantillonnage GMM
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-02-Gaussian-Mixtures.ipynb,61bdfe5c,markdown,fr,ef9ae868683a7bd0,"### Interpretation de l'echantillonnage GMM
 
 Le modèle de mélange à 2 composantes a été échantillonné avec un algorithme hybride : NUTS pour les paramètres continus (poids, moyennes, ecarts-types) et BinaryGibbsMetropolis pour les assignations discretes (z). Les **271 divergences** et les **warnings rhat/ESS** signalent un problème d'echantillonnage classique dans les modèles de melange : les changements de label entre les composantes rendent le paysage posterior multimodal.
 
@@ -5400,7 +5400,7 @@ La cellule suivante extrait les moyennes, ecarts-types et poids posterior de cha
 
 Ce phenomene de permutation des etiquettes (*label switching*) est inherent a l'identifiabilite des melanges (**Redner & Walker, 1984** ; **Stephens, 2000**).
 ",,,,,,,,ef9ae868683a7bd0,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-2-Gaussian-Mixtures.ipynb,164a548e,code,fr,d853755b206a75a6,"# Resultats du melange
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-02-Gaussian-Mixtures.ipynb,164a548e,code,fr,d853755b206a75a6,"# Resultats du melange
 mu_comp = trace_mixte.posterior['mu_components'].values.reshape(-1, K)
 sigma_comp = trace_mixte.posterior['sigma_components'].values.reshape(-1, K)
 w_post = trace_mixte.posterior['w'].values.reshape(-1, K)
@@ -5434,10 +5434,10 @@ ax.legend()
 ax.set_title('Melange de Gaussiennes : trajets normaux vs exceptionnels')
 plt.tight_layout()
 plt.show()",,,,,,,,d853755b206a75a6,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-2-Gaussian-Mixtures.ipynb,b122e747,markdown,fr,3104c7c0025a0956,"## 6. Version plus simple avec pm.NormalMixture
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-02-Gaussian-Mixtures.ipynb,b122e747,markdown,fr,3104c7c0025a0956,"## 6. Version plus simple avec pm.NormalMixture
 
 PyMC offre une API plus directe pour les melanges gaussiens.",,,,,,,,3104c7c0025a0956,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-2-Gaussian-Mixtures.ipynb,bcea493b,code,fr,761af03eefcd8708,"# Version avec pm.NormalMixture (API plus directe)
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-02-Gaussian-Mixtures.ipynb,bcea493b,code,fr,761af03eefcd8708,"# Version avec pm.NormalMixture (API plus directe)
 with pm.Model() as cycliste_normal_mixture:
     w = pm.Dirichlet('w', a=np.ones(K))
     mu_comp = pm.Normal('mu_comp', mu=np.array([15, 30]), sigma=10, shape=K)
@@ -5454,7 +5454,7 @@ order_nm = np.argsort(mu_nm.mean(axis=0))
 print(""=== NormalMixture (API directe) ==="")
 for i, idx in enumerate(order_nm):
     print(f""Composante {i+1} : mu={mu_nm[:, idx].mean():.1f} min"")",,,,,,,,761af03eefcd8708,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-2-Gaussian-Mixtures.ipynb,be434f27,markdown,fr,4a83cbc5fa5d3a53,"## 7. Comparaison Infer.NET vs PyMC pour les gaussiennes
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-02-Gaussian-Mixtures.ipynb,be434f27,markdown,fr,4a83cbc5fa5d3a53,"## 7. Comparaison Infer.NET vs PyMC pour les gaussiennes
 
 | Aspect | Infer.NET | PyMC |
 |--------|-----------|------|
@@ -5467,7 +5467,7 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-2-Gaussian-Mixtures.ipynb,be434f27,markdown,f
 ---
 
 **Retour au sommaire** : [Index Probas](../README.md)",,,,,,,,4a83cbc5fa5d3a53,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-2-Gaussian-Mixtures.ipynb,1ae37a49,markdown,fr,2e521bf09f37634e,"## Exercice : Melange a 3 Composantes
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-02-Gaussian-Mixtures.ipynb,1ae37a49,markdown,fr,2e521bf09f37634e,"## Exercice : Melange a 3 Composantes
 
 Modifiez le modèle de mélange pour utiliser 3 composantes au lieu de 2 :
 - Composante 1 : trajets rapides (~10 min)
@@ -5478,11 +5478,11 @@ Modifiez le modèle de mélange pour utiliser 3 composantes au lieu de 2 :
 - Changer `K = 3`
 - Ajuster les priors : `mu=np.array([10, 16, 30])`
 - Utiliser `pm.NormalMixture` comme dans la section 6",,,,,,,,2e521bf09f37634e,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-2-Gaussian-Mixtures.ipynb,479b72bf,code,fr,b822b81674791235,"# TODO etudiant : implementer le melange a 3 composantes
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-02-Gaussian-Mixtures.ipynb,479b72bf,code,fr,b822b81674791235,"# TODO etudiant : implementer le melange a 3 composantes
 # Resultat attendu : 3 composantes avec moyennes proches de 10, 16 et 30 min
 
 print(""Exercice a completer"")",,,,,,,,b822b81674791235,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-2-Gaussian-Mixtures.ipynb,7205e762,markdown,fr,3ad0cbb5def4213d,"## Conclusion
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-02-Gaussian-Mixtures.ipynb,7205e762,markdown,fr,3ad0cbb5def4213d,"## Conclusion
 
 Nous avons explore les melanges gaussiens : des modèles capables de detecter des sous-populations dans les données sans supervision.
 
@@ -5503,9 +5503,9 @@ Nous avons explore les melanges gaussiens : des modèles capables de detecter de
 - Redner, R. A., & Walker, H. F. (1984). *Mixture densities, maximum likelihood and the EM algorithm.* SIAM Review 26(2).
 - Stephens, M. (2000). *Dealing with label switching in mixture models.* JRSS B 62(4).
 ",,,,,,,,3ad0cbb5def4213d,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-3-Factor-Graphs.ipynb,28974d5e,markdown,fr,186a381512c1fba0,"# PyMC-3 : Graphes de Facteurs et Inference Discrete
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-03-Factor-Graphs.ipynb,28974d5e,markdown,fr,186a381512c1fba0,"# PyMC-3 : Graphes de Facteurs et Inference Discrete
 
-**Navigation** : [Index](../README.md) | [<< PyMC-2](PyMC-2-Gaussian-Mixtures.ipynb) | [PyMC-4 >>](PyMC-4-Bayesian-Networks.ipynb)
+**Navigation** : [Index](../README.md) | [<< PyMC-2](PyMC-02-Gaussian-Mixtures.ipynb) | [PyMC-4 >>](PyMC-04-Bayesian-Networks.ipynb)
 
 **Equivalent Infer.NET** : [Infer-3-Factor-Graphs](../Infer/Infer-3-Factor-Graphs.ipynb)
 
@@ -5520,7 +5520,7 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-3-Factor-Graphs.ipynb,28974d5e,markdown,fr,18
 
 **Prerequis** : PyMC-1 a PyMC-2, probabilites discretes
 ",,,,,,,,186a381512c1fba0,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-3-Factor-Graphs.ipynb,910eeabc,code,fr,ca447f6593790106,"try:
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-03-Factor-Graphs.ipynb,910eeabc,code,fr,ca447f6593790106,"try:
     import numpy as np
     NUMPY_AVAILABLE = True
 except ImportError:
@@ -5554,7 +5554,7 @@ if NUMPY_AVAILABLE and PYMC_AVAILABLE:
     print(f""PyMC version: {pm.__version__}"")
 else:
     print(""PyMC n'est pas installe. Executez: pip install pymc arviz matplotlib numpy scipy"")",,,,,,,,ca447f6593790106,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-3-Factor-Graphs.ipynb,86532f58,markdown,fr,0223917c07b177bb,"## 1. Le Problème Murder Mystery
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-03-Factor-Graphs.ipynb,86532f58,markdown,fr,0223917c07b177bb,"## 1. Le Problème Murder Mystery
 
 ### Histoire
 
@@ -5569,7 +5569,7 @@ On sait que :
 On decouvre que le **revolver appartient a Colonel Mustard**. Qui est le coupable ?
 
 > *Source.* Le « Murder Mystery » (M. Boddy, Miss Scarlet, Colonel Mustard, Mrs. Peacock) est l'exemple introductif phare du **chapitre 1** de Winn & Bishop, *Model-Based Machine Learning* (2019, [mbmlbook.com](https://www.mbmlbook.com)) — conçu pour faire émerger l'inférence bayésienne *via* un récit, sans équation, en révisant itérativement les *a priori* à chaque indice. Le notebook en reprend l'énoncé et le résout en PyMC (`pm.Categorical` + vraisemblance conditionnelle) ; le twin Infer.NET utilise `Variable.Discrete` + `Variable.If/Case` (voir [Infer-3](../Infer/Infer-3-Factor-Graphs.ipynb)).",,,,,,,,0223917c07b177bb,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-3-Factor-Graphs.ipynb,a7fc7c4a,code,fr,4bb3ab3acb7f19fc,"# Modele Murder Mystery avec PyMC
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-03-Factor-Graphs.ipynb,a7fc7c4a,code,fr,4bb3ab3acb7f19fc,"# Modele Murder Mystery avec PyMC
 # Equivalent Infer.NET : Variable.Discrete + Variable.If/Case
 
 with pm.Model() as murder_mystery:
@@ -5595,7 +5595,7 @@ probs = trace.posterior['coupable'].values.flatten()
 suspects = ['Scarlet', 'Mustard', 'Peacock']
 for i, name in enumerate(suspects):
     print(f""P({name} coupable | arme=Mustard) = {(probs == i).mean():.3f}"")",,,,,,,,4bb3ab3acb7f19fc,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-3-Factor-Graphs.ipynb,bd33d3f1,markdown,fr,85decee529ed7b34,"### Interpretation des résultats Murder Mystery
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-03-Factor-Graphs.ipynb,bd33d3f1,markdown,fr,85decee529ed7b34,"### Interpretation des résultats Murder Mystery
 
 Les probabilites posterieures montrent clairement l'effet de l'observation de l'arme :
 
@@ -5610,7 +5610,7 @@ Les probabilites posterieures montrent clairement l'effet de l'observation de l'
 > **Note technique** : L'echantillonnage par CategoricalGibbsMetropolis est adapte aux variables discretes comme `coupable`. L'utilisation de `pt.switch` (equivalent de `Variable.If` en Infer.NET) permet de conditionner la probabilite de l'observation selon la valeur du coupable.
 
 La cellule suivante visualise la distribution posterieure sous forme de diagramme en barres, permettant de comparer visuellement les frequences d'echantillonnage entre les trois suspects.",,,,,,,,85decee529ed7b34,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-3-Factor-Graphs.ipynb,2f9efc11,code,fr,ceb58f6a5dec6e7a,"# Visualisation
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-03-Factor-Graphs.ipynb,2f9efc11,code,fr,ceb58f6a5dec6e7a,"# Visualisation
 fig, ax = plt.subplots(1, 1, figsize=(8, 4))
 counts = [np.sum(probs == i) for i in range(3)]
 colors = ['red', 'gold', 'skyblue']
@@ -5621,7 +5621,7 @@ for i, (s, c) in enumerate(zip(suspects, counts)):
     ax.text(i, c + 50, f'{c/len(probs):.1%}', ha='center')
 plt.tight_layout()
 plt.show()",,,,,,,,ceb58f6a5dec6e7a,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-3-Factor-Graphs.ipynb,6461eb94,markdown,fr,7d24210140f12388,"## Exercice 2 : Inference avec evidence partielle
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-03-Factor-Graphs.ipynb,6461eb94,markdown,fr,7d24210140f12388,"## Exercice 2 : Inference avec evidence partielle
 
 Construisez un modèle avec 3 variables binaires (A, B, C) liees par des
 dependances conditionnelles. Fixez une evidence sur C (observez C=1) et
@@ -5635,19 +5635,19 @@ les probabilites des variables non observees a travers le graphe.
 - Créer un lien A -> B -> C (chaîne) ou A -> C, B -> C (collider)
 - Observer C=1 avec `observed=1` et examiner le posterior de A
 - Comparer P(A=1) avant et après observation de C",,,,,,,,7d24210140f12388,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-3-Factor-Graphs.ipynb,a4f90840,code,fr,ae428ca924f084cb,"# TODO etudiant : implementer l'inference avec evidence partielle sur 3 variables
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-03-Factor-Graphs.ipynb,a4f90840,code,fr,ae428ca924f084cb,"# TODO etudiant : implementer l'inference avec evidence partielle sur 3 variables
 # Etape 1 : definir un modele avec 3 variables (A, B, C) liees par des facteurs
 # Etape 2 : fixer C=1 (evidence) et calculer le posterior sur A
 # Etape 3 : comparer P(A) avant et apres l'observation de C
 
 result = None  # TODO etudiant : remplacer par le modele et l'inference
 print(""Exercice a completer"")",,,,,,,,ae428ca924f084cb,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-3-Factor-Graphs.ipynb,3c8c3c62,markdown,fr,7057bda7b9c7ac26,"## 2. Explaining Away
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-03-Factor-Graphs.ipynb,3c8c3c62,markdown,fr,7057bda7b9c7ac26,"## 2. Explaining Away
 
 Le phenomene d'**explaining away** : quand on observe l'arme de Mustard, la probabilite que Scarlet soit coupable diminue, car l'observation ""explique"" le crime par Mustard.
 
 > *Référence.* Le mécanisme d'« explaining away » est propre aux structures en V (colliders) : deux causes partagent un effet commun, et observer l'effet les rend *compétitives*. Formalisé par Pearl (1988), *Probabilistic Reasoning in Intelligent Systems* (Morgan Kaufmann), §3.3 — c'est l'une des structures élémentaires de la propagation d'information dans un réseau bayésien (chaîne, fourche, collider).",,,,,,,,7057bda7b9c7ac26,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-3-Factor-Graphs.ipynb,ecca77c2,code,fr,dd19b2ebb6acbe0a,"# Avant observation
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-03-Factor-Graphs.ipynb,ecca77c2,code,fr,dd19b2ebb6acbe0a,"# Avant observation
 print(""Prior (avant observation de l'arme):"")
 print(f""  P(Scarlet) = 0.6, P(Mustard) = 0.3, P(Peacock) = 0.1"")
 print()
@@ -5656,7 +5656,7 @@ for i, name in enumerate(suspects):
     print(f""  P({name}) = {(probs == i).mean():.3f}"")
 print()
 print(""Explaining away : P(Scarlet) a diminue car Mustard 'explique' le crime"")",,,,,,,,dd19b2ebb6acbe0a,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-3-Factor-Graphs.ipynb,e1ab7aeb,markdown,fr,7949429cad745ef9,"## 3. Paradoxe de Monty Hall
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-03-Factor-Graphs.ipynb,e1ab7aeb,markdown,fr,7949429cad745ef9,"## 3. Paradoxe de Monty Hall
 
 ### Le problème
 
@@ -5678,7 +5678,7 @@ using (Variable.Case(door, 2)) { monty = 1; }
 ```
 
 ### PyMC : `pm.Categorical` + `pt.switch`",,,,,,,,7949429cad745ef9,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-3-Factor-Graphs.ipynb,bc07ac6b,code,fr,f94876c2042f3478,"# Monty Hall avec PyMC
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-03-Factor-Graphs.ipynb,bc07ac6b,code,fr,f94876c2042f3478,"# Monty Hall avec PyMC
 # porte 0, 1, 2 ; la voiture est derriere une porte aleatoire
 
 with pm.Model() as monty_hall:
@@ -5715,7 +5715,7 @@ for i, name in enumerate(portes):
     p = (voiture_samples == i).mean()
     print(f""  {name}: {p:.3f}"")
 print(f""\nReponse : il faut CHANGER ! P(gagner si changement) = {(voiture_samples == 2).mean():.3f}"")",,,,,,,,f94876c2042f3478,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-3-Factor-Graphs.ipynb,0d7e4f60,markdown,fr,78bdc6dae3b5bc05,"## Exercice 3 : Propagation dans un reseau en chaîne
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-03-Factor-Graphs.ipynb,0d7e4f60,markdown,fr,78bdc6dae3b5bc05,"## Exercice 3 : Propagation dans un reseau en chaîne
 
 Implementez un reseau en chaîne a 4 noeuds (X1 -> X2 -> X3 -> X4) avec
 des variables discretes et des matrices de transition. Observez X4 et
@@ -5729,14 +5729,14 @@ et comment l'observation d'un noeud extreme influence les noeuds distants.
 - Définir une matrice de transition `trans_mat` avec forte persistance diagonale
 - Observer X4=1 avec `observed=1` dans `pm.Categorical`
 - Utiliser `CategoricalGibbsMetropolis` pour l'echantillonnage des variables discretes",,,,,,,,78bdc6dae3b5bc05,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-3-Factor-Graphs.ipynb,5ac3b0b1,code,fr,ae1c459cca534618,"# TODO etudiant : implementer la propagation dans un reseau en chaine a 4 noeuds
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-03-Factor-Graphs.ipynb,5ac3b0b1,code,fr,ae1c459cca534618,"# TODO etudiant : implementer la propagation dans un reseau en chaine a 4 noeuds
 # Etape 1 : definir 4 variables discretes (X1, X2, X3, X4) avec transitions
 # Etape 2 : definir les facteurs de transition entre noeuds adjacents
 # Etape 3 : observer X4 et calculer les marginales sur X1, X2, X3
 
 result = None  # TODO etudiant : remplacer par le modele et les marginales
 print(""Exercice a completer"")",,,,,,,,ae1c459cca534618,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-3-Factor-Graphs.ipynb,c8e2590a,markdown,fr,276e5c937a7f6fba,"## 4. Comparaison Infer.NET vs PyMC pour l'inference discrete
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-03-Factor-Graphs.ipynb,c8e2590a,markdown,fr,276e5c937a7f6fba,"## 4. Comparaison Infer.NET vs PyMC pour l'inference discrete
 
 | Aspect | Infer.NET | PyMC |
 |--------|-----------|------|
@@ -5758,7 +5758,7 @@ approximation Monte-Carlo du calcul exact qu'Infer.NET obtient par EP.
 ---
 
 **Retour au sommaire** : [Index Probas](../README.md)",,,,,,,,276e5c937a7f6fba,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-3-Factor-Graphs.ipynb,d618b283,markdown,fr,5783511d18b25df0,"## Exercice : Problème du Test Medical
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-03-Factor-Graphs.ipynb,d618b283,markdown,fr,5783511d18b25df0,"## Exercice : Problème du Test Medical
 
 Un test medical a une sensibilite de 95% et une specificite de 90%.
 La prevalence de la maladie est de 1%.
@@ -5768,12 +5768,12 @@ Le test est positif. Quelle est la probabilite d'etre malade ?
 - Modèle : `maladie ~ Bernoulli(prevalence)`, `test_positif ~ Bernoulli(p)` ou p depend de `maladie`
 - Utiliser `pt.switch(pt.eq(maladie, 1), sensibilite, 1-specificite)` pour le lien
 - Observer `test_positif = 1`",,,,,,,,5783511d18b25df0,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-3-Factor-Graphs.ipynb,f7337618,code,fr,74f2b0aa89ddedfe,"# TODO etudiant : implementer le modele du test medical
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-03-Factor-Graphs.ipynb,f7337618,code,fr,74f2b0aa89ddedfe,"# TODO etudiant : implementer le modele du test medical
 # P(malade | test+) = ?
 # Resultat attendu : environ 8.7% (paradoxe de la prevalence)
 
 print(""Exercice a completer"")",,,,,,,,74f2b0aa89ddedfe,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-3-Factor-Graphs.ipynb,185bb59c,markdown,fr,27e38b9aefb60dfc,"## Conclusion
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-03-Factor-Graphs.ipynb,185bb59c,markdown,fr,27e38b9aefb60dfc,"## Conclusion
 
 Les graphes de facteurs offrent une representation visuelle et algorithmique des modèles probabilistes, decomposant la distribution jointe en facteurs locaux.
 
@@ -5788,9 +5788,9 @@ Les graphes de facteurs offrent une representation visuelle et algorithmique des
 ---
 
 **Retour au sommaire** : [Index Probas](../README.md)",,,,,,,,27e38b9aefb60dfc,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-4-Bayesian-Networks.ipynb,6ddc2b96,markdown,fr,a8ce08ea6eae70cb,"# PyMC-4 : Reseaux Bayesiens
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-04-Bayesian-Networks.ipynb,6ddc2b96,markdown,fr,a8ce08ea6eae70cb,"# PyMC-4 : Reseaux Bayesiens
 
-**Navigation** : [Index](../README.md) | [<< PyMC-3](PyMC-3-Factor-Graphs.ipynb) | [PyMC-5 >>](PyMC-5-Causal-Inference.ipynb)
+**Navigation** : [Index](../README.md) | [<< PyMC-3](PyMC-03-Factor-Graphs.ipynb) | [PyMC-5 >>](PyMC-05-Causal-Inference.ipynb)
 
 **Equivalent Infer.NET** : [Infer-4-Bayesian-Networks](../Infer/Infer-4-Bayesian-Networks.ipynb)
 
@@ -5810,7 +5810,7 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-4-Bayesian-Networks.ipynb,6ddc2b96,markdown,f
 
 Les reseaux bayesiens sont formalises par **Pearl (1988)**, *Probabilistic Reasoning in Intelligent Systems* (Morgan Kaufmann). L'inference exacte par junction tree est due a **Lauritzen & Spiegelhalter (1988)**, *Local Computations with Probabilities on Graphical Structures*, JRSS B 50(2), et **Jensen, Lauritzen & Olesen (1990)**, *Bayesian updating in récursive graphical models by local computations*, SIAM J. Numer. Anal. 27(2).
 ",,,,,,,,a8ce08ea6eae70cb,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-4-Bayesian-Networks.ipynb,978a8128,markdown,fr,f6db1426eeb654e5,"## 1. Le Reseau Wet Grass
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-04-Bayesian-Networks.ipynb,978a8128,markdown,fr,f6db1426eeb654e5,"## 1. Le Reseau Wet Grass
 
 ### Structure du reseau
 
@@ -5835,7 +5835,7 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-4-Bayesian-Networks.ipynb,978a8128,markdown,f
 | Variable booleenne | `Variable.New<bool>()` | `pm.Bernoulli` |
 | Observation | `.ObservedValue = true` | `observed=1` |
 | D-separation | Analytique (EP) | MCMC (approximation) |",,,,,,,,f6db1426eeb654e5,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-4-Bayesian-Networks.ipynb,5d04e31c,code,fr,fc32aee06e2871a6,"try:
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-04-Bayesian-Networks.ipynb,5d04e31c,code,fr,fc32aee06e2871a6,"try:
     import numpy as np
     NUMPY_AVAILABLE = True
 except ImportError:
@@ -5873,13 +5873,13 @@ if NUMPY_AVAILABLE and PYMC_AVAILABLE:
     print(f""PyMC version: {pm.__version__}"")
 else:
     print(""PyMC n'est pas installe. Executez: pip install pymc arviz matplotlib numpy scipy"")",,,,,,,,fc32aee06e2871a6,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-4-Bayesian-Networks.ipynb,a5c00340,markdown,fr,e7d28567252f6326,"## 2. Tables de Probabilites Conditionnelles
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-04-Bayesian-Networks.ipynb,a5c00340,markdown,fr,e7d28567252f6326,"## 2. Tables de Probabilites Conditionnelles
 
 La CPT de WetGrass a 4 entrees (combinaisons de Sprinkler et Rain) :
 
 Les tables de probabilites conditionnelles (CPT) et l'inference exacte par junction tree sont decrites par Lauritzen & Spiegelhalter (1988) et Jensen, Lauritzen & Olesen (1990).
 ",,,,,,,,e7d28567252f6326,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-4-Bayesian-Networks.ipynb,b2n4etgr,markdown,fr,095832c35674075c,"Le reseau bayesien **Wet Grass** (exemple filrouge) est un DAG a quatre variables
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-04-Bayesian-Networks.ipynb,b2n4etgr,markdown,fr,095832c35674075c,"Le reseau bayesien **Wet Grass** (exemple filrouge) est un DAG a quatre variables
 booleennes. La structure encode les dependances conditionnelles : `Cloudy` (racine)
 influence a la fois `Sprinkler` et `Rain`, qui determinent conjointement `WetGrass`.
 Cette structure graphique est exactement celle que les tables de probabilites
@@ -5909,7 +5909,7 @@ flowchart TD
 > `Cloudy` connu, ils sont conditionnellement independants -- c'est la **d-separation**
 > exploree en section 7, et la base du phenomene d'**explaining away** (section 5).
 ",,,,,,,,095832c35674075c,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-4-Bayesian-Networks.ipynb,873753a9,code,fr,033f05d863d8df9e,"# Tables de probabilites conditionnelles (CPT)
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-04-Bayesian-Networks.ipynb,873753a9,code,fr,033f05d863d8df9e,"# Tables de probabilites conditionnelles (CPT)
 # Cloudy
 p_cloudy = 0.5
 
@@ -5930,10 +5930,10 @@ p_wetgrass = {
 print(""CPT WetGrass :"")
 for (s, r), p in p_wetgrass.items():
     print(f""  P(W=1 | S={int(s)}, R={int(r)}) = {p}"")",,,,,,,,033f05d863d8df9e,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-4-Bayesian-Networks.ipynb,4f76b167,markdown,fr,c09d1ace30873757,"## 3. Modèle PyMC du Reseau Bayesien
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-04-Bayesian-Networks.ipynb,4f76b167,markdown,fr,c09d1ace30873757,"## 3. Modèle PyMC du Reseau Bayesien
 
 On traduit les CPT avec `pt.switch` (equivalent de `Variable.If`/`Variable.IfNot` en Infer.NET).",,,,,,,,c09d1ace30873757,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-4-Bayesian-Networks.ipynb,96d9e8e5,code,fr,dd74678054035838,"# Modele PyMC complet du reseau Wet Grass
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-04-Bayesian-Networks.ipynb,96d9e8e5,code,fr,dd74678054035838,"# Modele PyMC complet du reseau Wet Grass
 # Equivalent Infer.NET : Variable.If / Variable.IfNot + SetTo
 
 with pm.Model() as wet_grass_net:
@@ -5969,7 +5969,7 @@ print(f""P(Cloudy=1) = {cloudy_samples.mean():.3f} (theorie: 0.500)"")
 print(f""P(Sprinkler=1) = {sprinkler_samples.mean():.3f} (theorie: 0.300)"")
 print(f""P(Rain=1) = {rain_samples.mean():.3f} (theorie: 0.500)"")
 print(f""P(WetGrass=1) = {wetgrass_samples.mean():.3f}"")",,,,,,,,dd74678054035838,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-4-Bayesian-Networks.ipynb,d486ac23,markdown,fr,79d9518e1697eac2,"## Exercice 2 : Reseau Sprinkler
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-04-Bayesian-Networks.ipynb,d486ac23,markdown,fr,79d9518e1697eac2,"## Exercice 2 : Reseau Sprinkler
 
 Implementez le reseau bayesien classique Sprinkler avec PyMC :
 
@@ -5988,7 +5988,7 @@ P(Rain=1|Cloudy=0) = 0.1, P(Sprinkler=1|Cloudy=1) = 0.1, P(Sprinkler=1|Cloudy=0)
 - Commencer par `Cloudy = pm.Bernoulli('cloudy', p=0.4)`
 - Utiliser `pt.switch(pt.eq(cloudy, 1), p_si_cloudy, p_si_not_cloudy)` pour les CPT
 - WetGrass depend de Sprinkler ET Rain (utiliser des `pt.switch` imbriques)",,,,,,,,79d9518e1697eac2,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-4-Bayesian-Networks.ipynb,fa09e961,code,fr,ad462756308b391b,"# TODO etudiant : implementer le reseau Sprinkler classique
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-04-Bayesian-Networks.ipynb,fa09e961,code,fr,ad462756308b391b,"# TODO etudiant : implementer le reseau Sprinkler classique
 # Etape 1 : definir Cloudy comme variable racine avec P(Cloudy=1) = 0.4
 # Etape 2 : definir Rain (P(Rain=1|Cloudy=1)=0.8, P(Rain=1|Cloudy=0)=0.1)
 # Etape 3 : definir Sprinkler (P(Sprinkler=1|Cloudy=1)=0.1, P(Sprinkler=1|Cloudy=0)=0.5)
@@ -5996,10 +5996,10 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-4-Bayesian-Networks.ipynb,fa09e961,code,fr,ad
 
 result = None  # TODO etudiant : remplacer par le modele pm.Model()
 print(""Exercice a completer"")",,,,,,,,ad462756308b391b,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-4-Bayesian-Networks.ipynb,d4b45bea,markdown,fr,d33e2788550b4e72,"## 4. Inference Conditionnelle : Herbe Mouillee Observee
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-04-Bayesian-Networks.ipynb,d4b45bea,markdown,fr,d33e2788550b4e72,"## 4. Inference Conditionnelle : Herbe Mouillee Observee
 
 On observe que l'herbe est mouillee (WetGrass = True). Qu'en deduit-on sur la pluie et l'arroseur ?",,,,,,,,d33e2788550b4e72,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-4-Bayesian-Networks.ipynb,6e953cce,code,fr,ef33e41e0406536a,"# Inference avec observation WetGrass = True
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-04-Bayesian-Networks.ipynb,6e953cce,code,fr,ef33e41e0406536a,"# Inference avec observation WetGrass = True
 with pm.Model() as wet_grass_obs:
     cloudy = pm.Bernoulli('cloudy', p=p_cloudy)
     
@@ -6026,7 +6026,7 @@ print(""=== Posterior (WetGrass = True observe) ==="")
 print(f""P(Sprinkler=1 | WetGrass=1) = {s_obs.mean():.3f} (theorie: ~0.43)"")
 print(f""P(Rain=1 | WetGrass=1) = {r_obs.mean():.3f} (theorie: ~0.71)"")
 print(f""P(Cloudy=1 | WetGrass=1) = {c_obs.mean():.3f}"")",,,,,,,,ef33e41e0406536a,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-4-Bayesian-Networks.ipynb,a16f54de,markdown,fr,d68ce2ac45904f58,"## Exercice 3 : Requête conditionnelle sur le reseau Sprinkler
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-04-Bayesian-Networks.ipynb,a16f54de,markdown,fr,d68ce2ac45904f58,"## Exercice 3 : Requête conditionnelle sur le reseau Sprinkler
 
 En utilisant le reseau Sprinkler que vous avez construit a l'exercice précédent,
 calculez P(Rain=1 | WetGrass=1). Observez comment l'information remonte
@@ -6037,17 +6037,17 @@ de l'effet (herbe mouillee) vers la cause (pluie).
 - Ajoutez `observed=1` sur la variable WetGrass
 - Echantillonnez et calculez la moyenne des echantillons de Rain
 - Résultat attendu : P(Rain=1 | WetGrass=1) devrait etre superieur a P(Rain=1) marginal",,,,,,,,d68ce2ac45904f58,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-4-Bayesian-Networks.ipynb,d6e9a223,code,fr,07bfec9ba54db847,"# TODO etudiant : calculer P(Rain | WetGrass=True) dans le reseau Sprinkler
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-04-Bayesian-Networks.ipynb,d6e9a223,code,fr,07bfec9ba54db847,"# TODO etudiant : calculer P(Rain | WetGrass=True) dans le reseau Sprinkler
 # Etape 1 : reutiliser la structure du reseau Sprinkler
 # Etape 2 : observer WetGrass=1 dans la vraisemblance
 # Etape 3 : echantillonner et extraire P(Rain=1 | WetGrass=1)
 
 result = None  # TODO etudiant : remplacer par le modele avec observation
 print(""Exercice a completer"")",,,,,,,,07bfec9ba54db847,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-4-Bayesian-Networks.ipynb,25a8b119,markdown,fr,67856a5b5841e579,"## 5. Explaining Away
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-04-Bayesian-Networks.ipynb,25a8b119,markdown,fr,67856a5b5841e579,"## 5. Explaining Away
 
 Le phenomene d'**explaining away** : quand on sait qu'il pleut, la probabilite que l'arroseur soit en marche diminue, car la pluie ""explique"" déjà l'herbe mouillee.",,,,,,,,67856a5b5841e579,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-4-Bayesian-Networks.ipynb,d6903ecf,code,fr,d758af65901d4909,"# Explaining Away : observer la pluie EN PLUS de l'herbe mouillee
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-04-Bayesian-Networks.ipynb,d6903ecf,code,fr,d758af65901d4909,"# Explaining Away : observer la pluie EN PLUS de l'herbe mouillee
 with pm.Model() as wet_grass_explaining:
     cloudy = pm.Bernoulli('cloudy', p=p_cloudy)
     
@@ -6074,10 +6074,10 @@ print(f""P(Sprinkler=1 | WetGrass=1, Rain=1) = {s_expl.mean():.3f}"")
 print()
 print(""La probabilite de l'arroseur diminue car la pluie explique deja l'herbe mouillee."")
 print(""C'est le phenomene d'explaining away : les causes competitives se supplantent."")",,,,,,,,d758af65901d4909,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-4-Bayesian-Networks.ipynb,d5f96e7c,markdown,fr,6bf90fc23098e227,"## 6. Visualisation des Effets
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-04-Bayesian-Networks.ipynb,d5f96e7c,markdown,fr,6bf90fc23098e227,"## 6. Visualisation des Effets
 
 Comparaison des probabilites conditionnelles dans différents scénarios.",,,,,,,,6bf90fc23098e227,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-4-Bayesian-Networks.ipynb,26ca15a0,code,fr,40ce659b4c8b45a0,"# Scenario supplementaire : Sprinkler observe + WetGrass observe
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-04-Bayesian-Networks.ipynb,26ca15a0,code,fr,40ce659b4c8b45a0,"# Scenario supplementaire : Sprinkler observe + WetGrass observe
 with pm.Model() as wet_grass_sprinkler_obs:
     cloudy = pm.Bernoulli('cloudy', p=p_cloudy)
     
@@ -6113,7 +6113,7 @@ for bar, val in zip(bars, values):
             f'{val:.3f}', ha='center', fontsize=12)
 plt.tight_layout()
 plt.show()",,,,,,,,40ce659b4c8b45a0,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-4-Bayesian-Networks.ipynb,4c9f1798,markdown,fr,1efc60a4b6bb5633,"## 7. D-Separation
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-04-Bayesian-Networks.ipynb,4c9f1798,markdown,fr,1efc60a4b6bb5633,"## 7. D-Separation
 
 La **D-separation** determine si deux variables sont independantes conditionnellement a un ensemble de variables observees.
 
@@ -6131,7 +6131,7 @@ La **D-separation** determine si deux variables sont independantes conditionnell
 
 La D-separation est formalisee par **Pearl, Geiger & Verma (1989)** et **Verma & Pearl (1988)**, *Causal Networks: Semantics and Expressiveness*.
 ",,,,,,,,1efc60a4b6bb5633,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-4-Bayesian-Networks.ipynb,c8a3722a,code,fr,727f6e3afe1970f0,"# Verification de la D-separation par correlation
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-04-Bayesian-Networks.ipynb,c8a3722a,code,fr,727f6e3afe1970f0,"# Verification de la D-separation par correlation
 from scipy.stats import pearsonr
 
 # 1. Fourche (Fork) : S <-- C --> R
@@ -6162,7 +6162,7 @@ if mask_w1.sum() > 100:
     print(f""-> Explaining away : S et R deviennent negativement correles"")
 else:
     print(""Pas assez d'echantillons W=1 pour la correlation"")",,,,,,,,727f6e3afe1970f0,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-4-Bayesian-Networks.ipynb,152cc56b,markdown,fr,19a069d886a5d05d,"## 8. Inference Observationnelle vs Interventionnelle
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-04-Bayesian-Networks.ipynb,152cc56b,markdown,fr,19a069d886a5d05d,"## 8. Inference Observationnelle vs Interventionnelle
 
 La distinction entre **voir** (observation) et **faire** (intervention) est fondamentale en causalite.
 
@@ -6170,7 +6170,7 @@ La distinction entre **voir** (observation) et **faire** (intervention) est fond
 - **P(Cloudy | do(Rain=True))** : interventionnelle. Si on FAIT pleuvoir, cela n'affecte pas les nuages.
 
 Le **do-calculus de Pearl** (Pearl, 1995 ; Pearl, 2000, *Causality*, Cambridge University Press) : `do(X=x)` coupe les fleches entrantes vers X, transformant une requête observationnelle en intervention causale.",,,,,,,,19a069d886a5d05d,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-4-Bayesian-Networks.ipynb,e8b6a7f1,code,fr,304c45d3d2655708,"# Observationnel : P(Cloudy | Rain=True)
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-04-Bayesian-Networks.ipynb,e8b6a7f1,code,fr,304c45d3d2655708,"# Observationnel : P(Cloudy | Rain=True)
 with pm.Model() as obs_rain:
     cloudy = pm.Bernoulli('cloudy', p=0.5)
     p_s = pt.switch(pt.eq(cloudy, 1), 0.1, 0.5)
@@ -6214,7 +6214,7 @@ print(""Difference cle :"")
 print(f""  Observer la pluie nous informe sur les nuages ({c_or.mean():.3f})"")
 print(f""  Provoquer la pluie n'affecte pas les nuages ({c_do.mean():.3f})"")
 print(f""  Voir != Faire (Pearl, 2000)"")",,,,,,,,304c45d3d2655708,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-4-Bayesian-Networks.ipynb,bcfe0a5e,markdown,fr,c37a2649a84cf2f5,"## 9. Comparaison Infer.NET vs PyMC pour les Reseaux Bayesiens
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-04-Bayesian-Networks.ipynb,bcfe0a5e,markdown,fr,c37a2649a84cf2f5,"## 9. Comparaison Infer.NET vs PyMC pour les Reseaux Bayesiens
 
 | Aspect | Infer.NET | PyMC |
 |--------|-----------|------|
@@ -6228,7 +6228,7 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-4-Bayesian-Networks.ipynb,bcfe0a5e,markdown,f
 ---
 
 **Retour au sommaire** : [Index Probas](../README.md)",,,,,,,,c37a2649a84cf2f5,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-4-Bayesian-Networks.ipynb,c3ddd909,markdown,fr,1b8ea2ab143b9c89,"## Exercice : Diagnostic Medical
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-04-Bayesian-Networks.ipynb,c3ddd909,markdown,fr,1b8ea2ab143b9c89,"## Exercice : Diagnostic Medical
 
 Modelisez un reseau bayesien pour un diagnostic medical simplifie :
 
@@ -6249,13 +6249,13 @@ Modelisez un reseau bayesien pour un diagnostic medical simplifie :
 **Indices** :
 - Utiliser `pt.switch` imbriques pour la CPT de Fatigue
 - Observer Fever=1 et comparer P(Cold=1 | Fever=1) vs P(Cold=1 | Fever=1, Flu=1)",,,,,,,,1b8ea2ab143b9c89,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-4-Bayesian-Networks.ipynb,a434a9e3,code,fr,50808912261b9b03,"# TODO etudiant : implementer le reseau bayesien medical
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-04-Bayesian-Networks.ipynb,a434a9e3,code,fr,50808912261b9b03,"# TODO etudiant : implementer le reseau bayesien medical
 # P(Fever=1) = ?
 # P(Cold=1 | Fever=1) = ?
 # P(Flu=1 | Fever=1) = ?
 
 print(""Exercice a completer"")",,,,,,,,50808912261b9b03,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-4-Bayesian-Networks.ipynb,ee571335,markdown,fr,c46747281a6f5491,"## Conclusion
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-04-Bayesian-Networks.ipynb,ee571335,markdown,fr,c46747281a6f5491,"## Conclusion
 
 Les reseaux bayesiens structurent les dependances conditionnelles entre variables sous forme de graphe dirige acyclique.
 
@@ -6274,11 +6274,11 @@ Les reseaux bayesiens structurent les dependances conditionnelles entre variable
 
 ---
 **Retour au sommaire** : [Index Probas](../README.md)",,,,,,,,c46747281a6f5491,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-5-Causal-Inference.ipynb,b5a4a10f,markdown,fr,5012eef6f40f61e2,"# PyMC-5-Causal-Inference : Inference Causale et do-calculus
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-05-Causal-Inference.ipynb,b5a4a10f,markdown,fr,5012eef6f40f61e2,"# PyMC-5-Causal-Inference : Inference Causale et do-calculus
 
 **Serie** : Programmation Probabiliste avec PyMC (5 / parite Infer.NET)
 **Duree estimee** : 65 minutes
-**Prerequis** : [PyMC-4-Bayesian-Networks](PyMC-4-Bayesian-Networks.ipynb) (reseaux bayesiens, CPT, D-separation)
+**Prerequis** : [PyMC-4-Bayesian-Networks](PyMC-04-Bayesian-Networks.ipynb) (reseaux bayesiens, CPT, D-separation)
 
 ---
 
@@ -6299,7 +6299,7 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-5-Causal-Inference.ipynb,b5a4a10f,markdown,fr
 > **Note de numerotation** : ce notebook porte le numéro **5** par **parite** avec son jumeau C# [Infer-5-Causal-Inference](../Infer/Infer-5-Causal-Inference.ipynb). Le sujet d'Infer-21 (Thompson Sampling) est, cote Python, **integre dans** [PyMC-7-Sequential](../DecisionTheory/PyMC/DecPyMC-7-Sequential.ipynb) (section 10ter, bandits bayesiens) — d'ou l'absence d'un PyMC-21 distinct.
 
 > **Ponts inter-series** : le versant **message passing** (Infer.NET, effet causal *calcule* par EP/VMP) est dans [Infer-5-Causal-Inference](../Infer/Infer-5-Causal-Inference.ipynb) ; le versant **symbolique** (Java/Tweety, raisonneur contrefactuel propositionnel) est dans [Tweety-11-Causal](../../SymbolicAI/Tweety/Tweety-11-Causal.ipynb). Ce notebook en est le versant **probabiliste MCMC + enumeration exacte**, ou l'opérateur `do` est une **transformation de graphe native** de PyMC.",,,,,,,,5012eef6f40f61e2,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-5-Causal-Inference.ipynb,715907fb,markdown,fr,55de101d49d00325,"## 1. Pourquoi la causalite ? — L'echelle de Pearl
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-05-Causal-Inference.ipynb,715907fb,markdown,fr,55de101d49d00325,"## 1. Pourquoi la causalite ? — L'echelle de Pearl
 
 La probabilite seule repond aux questions d'**association**. Mais de nombreuses questions pratiques sont **causales** :
 
@@ -6318,7 +6318,7 @@ La probabilite seule repond aux questions d'**association**. Mais de nombreuses 
 **Inegalite fondamentale** : `P(Y|X) != P(Y|do(X))` des qu'un **confondeur** (cause commune de X et Y) biaise l'observation. Ce notebook montre comment **conditionner** (observer) differe de **`do`** (intervenir) : `do(X)` **mutile le graphe** en coupant les arcs entrants de `X`. La ou Infer.NET demande une mutilation manuelle (forcer une variable sans parent), **PyMC fournit `pm.do`**, une transformation de modèle qui realise exactement cette mutilation.
 
 > **References** : Pearl, J. (1995), *Causal diagrams for empirical research*, JRSS B 57(3) ; Pearl, J. (2000), *Causality : Models, Reasoning, and Inference*, Cambridge University Press ; Pearl, J., Glymour, M. & Jewell, N. P. (2016), *Causal Inference in Statistics : A Primer*, Wiley.",,,,,,,,55de101d49d00325,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-5-Causal-Inference.ipynb,642b6142,markdown,fr,8adf767b0f92bcbc,"## 2. Configuration PyMC
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-05-Causal-Inference.ipynb,642b6142,markdown,fr,8adf767b0f92bcbc,"## 2. Configuration PyMC
 
 Chargement de PyMC (modèles probabilistes + opérateurs causaux `do`/`observe`), ArviZ (diagnostics) et NumPy. Les reseaux de ce notebook sont **discrets** (Bernoulli) : on dispose donc de **deux moteurs complementaires** —
 
@@ -6326,7 +6326,7 @@ Chargement de PyMC (modèles probabilistes + opérateurs causaux `do`/`observe`)
 - **`pm.do` / `pm.observe` + echantillonnage** : l'API causale **native** de PyMC, qui realise la mutilation de graphe et le conditionnement comme des transformations de modèle de première classe.
 
 On confronte les deux a chaque étape : l'enumeration donne le chiffre exact, `pm.do` prouve que l'opérateur natif retrouve le même résultat.",,,,,,,,8adf767b0f92bcbc,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-5-Causal-Inference.ipynb,463b8439,code,fr,618b3758d18512e3,"import numpy as np
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-05-Causal-Inference.ipynb,463b8439,code,fr,618b3758d18512e3,"import numpy as np
 import itertools
 import pymc as pm
 from pymc import do, observe
@@ -6337,10 +6337,10 @@ print(f""PyMC  : {pm.__version__}"")
 print(f""ArviZ : {az.__version__}"")
 print(f""NumPy : {np.__version__}"")
 print(""Operateurs causaux disponibles : pm.do (intervention), pm.observe (conditionnement)"")",,,,,,,,618b3758d18512e3,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-5-Causal-Inference.ipynb,1a1bcce0,markdown,fr,1b19dd59eea01642,"### 2.1 Moteur d'enumeration exacte
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-05-Causal-Inference.ipynb,1a1bcce0,markdown,fr,1b19dd59eea01642,"### 2.1 Moteur d'enumeration exacte
 
 Un petit moteur generique : un SCM discret est decrit par une liste de noeuds, chacun fourni avec une fonction `P(noeud=1 | parents)`. On enumere les `2^n` configurations, on calcule la probabilite jointe de chacune, puis on marginalise/conditionne par sommation. Pour `do(X=x)`, on **remplace** la CPT de `X` par la constante `x` (mutilation), sans toucher au reste — exactement ce que `pm.do` fait structurellement.",,,,,,,,1b19dd59eea01642,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-5-Causal-Inference.ipynb,a89a0117,code,fr,8e79ee3a80b96389,"def enumerate_scm(nodes, query, evidence=None, do_vars=None):
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-05-Causal-Inference.ipynb,a89a0117,code,fr,8e79ee3a80b96389,"def enumerate_scm(nodes, query, evidence=None, do_vars=None):
     """"""Inference exacte par enumeration sur un SCM discret booleen.
 
     nodes    : liste ordonnee (topologique) de (nom, proba_true_fn). proba_true_fn(assign)
@@ -6376,7 +6376,7 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-5-Causal-Inference.ipynb,a89a0117,code,fr,8e7
 
 
 print(""Moteur enumerate_scm pret (inference exacte par sommation sur 2^n configurations)."")",,,,,,,,8e79ee3a80b96389,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-5-Causal-Inference.ipynb,44f7b002,markdown,fr,a516c3418c6f1cd4,"## 3. Exemple 1 — Le barometre (confondeur a 3 noeuds)
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-05-Causal-Inference.ipynb,44f7b002,markdown,fr,a516c3418c6f1cd4,"## 3. Exemple 1 — Le barometre (confondeur a 3 noeuds)
 
 Pearl illustre la confusion causale par le **barometre** : un barometre qui baisse annonce une tempete, mais **provoquer** la chute du barometre ne declenche **pas** de tempete. Pourquoi ? Parce qu'une **cause commune** — la **basse pression atmospherique** — provoque a la fois la chute du barometre ET la tempete.
 
@@ -6392,7 +6392,7 @@ Pearl illustre la confusion causale par le **barometre** : un barometre qui bais
 - **Pas d'arc** `Barometre -> Tempete` : le barometre n'est qu'un **indicateur**, pas une cause.
 
 Le barometre et la tempete sont donc **correles** (observation) mais il n'y a **aucun effet causal** de l'un sur l'autre (intervention). Construisons ce SCM avec les mêmes CPT que le jumeau Infer.NET (`P(basse pression)=0.30`, `P(baro|basse)=0.90`, `P(storm|basse)=0.80`).",,,,,,,,a516c3418c6f1cd4,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-5-Causal-Inference.ipynb,60980a51,code,fr,a80014cffd3558e2,"# SCM du barometre (Pearl) : basse_pression -> {barometre, tempete}, AUCUN arc barometre -> tempete.
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-05-Causal-Inference.ipynb,60980a51,code,fr,a80014cffd3558e2,"# SCM du barometre (Pearl) : basse_pression -> {barometre, tempete}, AUCUN arc barometre -> tempete.
 barometre_scm = [
     (""basse_pression"", lambda a: 0.30),
     (""barometre"",      lambda a: 0.90 if a[""basse_pression""] else 0.10),
@@ -6403,10 +6403,10 @@ barometre_scm = [
 p_storm_marg = enumerate_scm(barometre_scm, ""tempete"")
 print(f""Structure : basse_pression -> {{barometre, tempete}} (pas d'arc barometre -> tempete)"")
 print(f""P(tempete) marginale = {p_storm_marg:.3f}"")",,,,,,,,a80014cffd3558e2,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-5-Causal-Inference.ipynb,7d59b320,markdown,fr,81982ec7080767e1,"### 3.1 Niveau 1 — Observation `P(Tempete | Barometre baisse)`
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-05-Causal-Inference.ipynb,7d59b320,markdown,fr,81982ec7080767e1,"### 3.1 Niveau 1 — Observation `P(Tempete | Barometre baisse)`
 
 Si on **observe** le barometre baisser, la probabilite d'une tempete grimpe : la baisse est un signal que la pression est probablement basse, et donc qu'une tempete approche. **Mais c'est une simple association statistique.** On construit le modèle PyMC, on le conditionne avec **`pm.observe`** (l'opérateur de conditionnement natif), puis on lit la conditionnelle exacte par enumeration (le reseau est petit et discret — pour un modèle continu on echantillonnerait le posterieur).",,,,,,,,81982ec7080767e1,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-5-Causal-Inference.ipynb,0f273ae3,code,fr,e62d9c33854a0b96,"# Modele PyMC du SCM barometre (memes CPT que l'enumeration ci-dessus)
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-05-Causal-Inference.ipynb,0f273ae3,code,fr,e62d9c33854a0b96,"# Modele PyMC du SCM barometre (memes CPT que l'enumeration ci-dessus)
 with pm.Model() as m_baro:
     lp    = pm.Bernoulli(""basse_pression"", 0.30)
     baro  = pm.Bernoulli(""barometre"", pm.math.switch(lp, 0.90, 0.10))
@@ -6421,12 +6421,12 @@ print(""pm.observe : modele conditionne sur barometre=1 ""
 p_storm_obs = enumerate_scm(barometre_scm, ""tempete"", evidence={""barometre"": True})
 print(f""[exact]  P(tempete | barometre baisse) = {p_storm_obs:.3f}   (observationnel)"")
 print(""Conclusion naive : 'le barometre predit la tempete'."")",,,,,,,,e62d9c33854a0b96,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-5-Causal-Inference.ipynb,ee6dfddb,markdown,fr,a0be9e8b67d9fb52,"### 3.2 Niveau 2 — Intervention `P(Tempete | do(Barometre baisse))`
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-05-Causal-Inference.ipynb,ee6dfddb,markdown,fr,a0be9e8b67d9fb52,"### 3.2 Niveau 2 — Intervention `P(Tempete | do(Barometre baisse))`
 
 Maintenant **provoquons** la chute du barometre (en tapant dessus). Pour modeliser cette intervention, on **mutile le graphe** : on coupe l'arc `BassePression -> Barometre` et on force `Barometre = baisse` **independamment** de la pression.
 
 C'est exactement ce que fait **`pm.do`** : il retourne un *nouveau* modèle ou la variable interventee n'a plus de parents, fixee a la valeur du `do`. Cote enumeration, on passe `do_vars={""barometre"": True}` (la CPT de `barometre` est remplacée par une constante).",,,,,,,,a0be9e8b67d9fb52,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-5-Causal-Inference.ipynb,b4477684,code,fr,e6d9ea8cc80b319d,"# NIVEAU 2 — Intervention : P(tempete | do(barometre=True))
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-05-Causal-Inference.ipynb,b4477684,code,fr,e6d9ea8cc80b319d,"# NIVEAU 2 — Intervention : P(tempete | do(barometre=True))
 # [exact] mutilation : on coupe l'arc basse_pression -> barometre
 p_storm_do = enumerate_scm(barometre_scm, ""tempete"", do_vars={""barometre"": True})
 print(f""[exact]  P(tempete | do(barometre baisse)) = {p_storm_do:.3f}   (interventionnel)"")
@@ -6441,13 +6441,13 @@ print()
 print(f""=> Observer le barometre informe sur la tempete : {p_storm_obs:.3f}"")
 print(f""   PROVOQUER sa chute ne change rien a la tempete : {p_storm_do:.3f}  (= P(tempete) marginale)"")
 print(""   Voir != Faire (Pearl, 2000)."")",,,,,,,,e6d9ea8cc80b319d,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-5-Causal-Inference.ipynb,8ec2df39,markdown,fr,a5de604727ec7ed9,"**Résultat** : `P(Tempete|Barometre baisse)` (observation) **!=** `P(Tempete|do(Barometre baisse))` (intervention). L'effet causal de l'intervention est nul — la chute du barometre ne provoque pas de tempete, et `P(tempete|do(baro))` retombe sur la marginale `P(tempete)`. L'observation etait **biaisee** par le confondeur `BassePression`.
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-05-Causal-Inference.ipynb,8ec2df39,markdown,fr,a5de604727ec7ed9,"**Résultat** : `P(Tempete|Barometre baisse)` (observation) **!=** `P(Tempete|do(Barometre baisse))` (intervention). L'effet causal de l'intervention est nul — la chute du barometre ne provoque pas de tempete, et `P(tempete|do(baro))` retombe sur la marginale `P(tempete)`. L'observation etait **biaisee** par le confondeur `BassePression`.
 
 > **Prong-B (non-trivialite)** : ce résultat n'est pas une lecture triviale de CPT. Conditionner (`pm.observe`) et intervenir (`pm.do`) donnent des **nombres différents** sur le *même* modèle — la différence visible (`0.656` vs `0.310`) prouve que l'opérateur `do` fait un travail structurel reel : il **supprime un arc**, il ne se contente pas de lire une table.",,,,,,,,a5de604727ec7ed9,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-5-Causal-Inference.ipynb,c2ec0017,markdown,fr,be7a7a7721730501,"## 4. Reseau Sprinkler — cross-check avec PyMC-4
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-05-Causal-Inference.ipynb,c2ec0017,markdown,fr,be7a7a7721730501,"## 4. Reseau Sprinkler — cross-check avec PyMC-4
 
-Verifions sur le reseau canonique de Pearl (Cloudy -> {Sprinkler, Rain} -> WetGrass, déjà construit en [PyMC-4](PyMC-4-Bayesian-Networks.ipynb)) la distinction observation/intervention sur la requête inverse `P(Cloudy | Rain)`. La théorie donne `P(Cloudy | Rain=True) = 0.800` (observationnel) vs `P(Cloudy | do(Rain=True)) = 0.500` (interventionnel : `Rain` n'a aucun effet *remontant* sur `Cloudy`, donc on retombe sur le prior `P(Cloudy)=0.5`).",,,,,,,,be7a7a7721730501,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-5-Causal-Inference.ipynb,58f301e0,code,fr,d9c63e6bb200bb23,"# Reseau Sprinkler (Pearl) — sous-graphe Cloudy -> Rain (suffisant pour P(Cloudy|Rain) vs do)
+Verifions sur le reseau canonique de Pearl (Cloudy -> {Sprinkler, Rain} -> WetGrass, déjà construit en [PyMC-4](PyMC-04-Bayesian-Networks.ipynb)) la distinction observation/intervention sur la requête inverse `P(Cloudy | Rain)`. La théorie donne `P(Cloudy | Rain=True) = 0.800` (observationnel) vs `P(Cloudy | do(Rain=True)) = 0.500` (interventionnel : `Rain` n'a aucun effet *remontant* sur `Cloudy`, donc on retombe sur le prior `P(Cloudy)=0.5`).",,,,,,,,be7a7a7721730501,,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-05-Causal-Inference.ipynb,58f301e0,code,fr,d9c63e6bb200bb23,"# Reseau Sprinkler (Pearl) — sous-graphe Cloudy -> Rain (suffisant pour P(Cloudy|Rain) vs do)
 sprinkler_scm = [
     (""cloudy"", lambda a: 0.5),
     (""rain"",   lambda a: 0.8 if a[""cloudy""] else 0.2),
@@ -6469,7 +6469,7 @@ with do(m_spr, {rain: 1}):
 print(f""[pm.do] P(Cloudy | do(Rain=True)) ~ {float(pp_spr.prior['cloudy'].mean()):.3f}"")
 print()
 print(""Cross-check PyMC-4 (meme structure) : 0.800 obs vs 0.500 do => coherent."")",,,,,,,,d9c63e6bb200bb23,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-5-Causal-Inference.ipynb,fe765a62,markdown,fr,1d04e0fa54885680,"## 5. Backdoor adjustment
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-05-Causal-Inference.ipynb,fe765a62,markdown,fr,1d04e0fa54885680,"## 5. Backdoor adjustment
 
 Quand le confondeur `U` est **observe**, l'effet causal se calcule sans mutiler le graphe, par la **formule d'adjustment backdoor** (Pearl, 1995) :
 
@@ -6478,7 +6478,7 @@ P(Y | do(X)) = Somme_u P(Y | X, u) P(u)
 ```
 
 On somme l'effet de `X` sur `Y` sur toutes les valeurs du confondeur, pondere par la distribution marginale de `U`. Si `U` **bloque tous les chemins backdoor** (arcs entrants de `X` passant par `U`), cette formule restitue l'effet causal exact. Verifions sur le barometre, ou `U = BassePression` bloque le chemin `Barometre <- BassePression -> Tempete` : l'ajustement doit **coincider** avec le `do()` direct (0.310).",,,,,,,,1d04e0fa54885680,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-5-Causal-Inference.ipynb,8e4b4a3b,code,fr,c52689daff79d0cd,"# BACKDOOR : P(tempete | do(barometre)) = Somme_pression P(tempete | barometre, pression) P(pression)
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-05-Causal-Inference.ipynb,8e4b4a3b,code,fr,c52689daff79d0cd,"# BACKDOOR : P(tempete | do(barometre)) = Somme_pression P(tempete | barometre, pression) P(pression)
 # Ici tempete _||_ barometre | pression  =>  P(tempete | barometre, pression) = P(tempete | pression)
 p_basse = 0.30
 p_storm_basse = enumerate_scm(barometre_scm, ""tempete"", evidence={""basse_pression"": True})   # 0.80
@@ -6489,7 +6489,7 @@ print(f""Backdoor = P(tempete|basse)*{p_basse} + P(tempete|haute)*{1-p_basse:.1f
 print(f""        = {p_storm_basse:.2f}*{p_basse} + {p_storm_haute:.2f}*{1-p_basse:.1f} = {backdoor:.3f}"")
 print(f""do(barometre) direct (pm.do / enumeration) = {p_storm_do:.3f}"")
 print(f""=> Les deux methodes coincident ({backdoor:.3f} ~ {p_storm_do:.3f}) : verification de coherence."")",,,,,,,,c52689daff79d0cd,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-5-Causal-Inference.ipynb,90d84c36,markdown,fr,d7b736cd6b384549,"## 6. Front-door adjustment
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-05-Causal-Inference.ipynb,90d84c36,markdown,fr,d7b736cd6b384549,"## 6. Front-door adjustment
 
 Quand le confondeur `U` est **non observe** mais qu'un **mediateur** `M` entre `X` et `Y` capture tout l'effet de `X` sur `Y`, Pearl (1995) montre que l'effet causal reste identifiable par la **formule front-door** :
 
@@ -6498,7 +6498,7 @@ P(Y | do(X)) = Somme_m P(M=m | X) * Somme_x' P(Y | M=m, x') P(x')
 ```
 
 Exemple canonique (Pearl) : `X` = fumer, `M` = goudron dans les poumons, `Y` = cancer, `U` = genotype (non observe, cause a la fois l'envie de fumer et le risque de cancer). On n'a pas acces au genotype, mais le goudron transmet tout l'effet causal de la fumee sur le cancer. On verifie la formule contre le `do(X)` direct (mutilation, ici licite car on *connait* le modèle complet, U compris).",,,,,,,,d7b736cd6b384549,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-5-Causal-Inference.ipynb,ca712ea1,code,fr,c8c93c988f0c1649,"# FRONT-DOOR : X=smoke, M=tar, Y=cancer, U=genotype (non observe)
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-05-Causal-Inference.ipynb,ca712ea1,code,fr,c8c93c988f0c1649,"# FRONT-DOOR : X=smoke, M=tar, Y=cancer, U=genotype (non observe)
 # SCM complet (U inclus) pour la verification do() directe
 front_scm = [
     (""u"",      lambda a: 0.20),                          # genotype (latent)
@@ -6528,10 +6528,10 @@ print(f""P(M=1|X=1) = {p_m1_given_x1:.3f} ; P(M=0|X=1) = {p_m0_given_x1:.3f}"")
 print(f""Front-door  P(Cancer | do(Smoke)) = {front_door:.3f}  (ajustement SANS acceder a U)"")
 print(f""do(X=1) direct (mutilation)       = {do_direct:.3f}  (verification, U connu)"")
 print(f""=> Les deux coincident : la formule front-door restitue l'effet causal."")",,,,,,,,c8c93c988f0c1649,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-5-Causal-Inference.ipynb,aeba42bb,markdown,fr,0dd8d417846fa1c5,"## 7. Paradoxe de Simpson
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-05-Causal-Inference.ipynb,aeba42bb,markdown,fr,0dd8d417846fa1c5,"## 7. Paradoxe de Simpson
 
 Un **renversement de Simpson** survient quand une conclusion s'inverse entre l'analyse agregee et l'analyse conditionnelle. Cas clinique : un medicament semble **nuire** a la guerison dans la population totale, alors qu'il **aide** dans **chaque** sous-groupe (patients graves / patients legers). La cause : la **severite** est un confondeur — les patients graves, qui guerissent moins bien, recoivent aussi plus souvent le medicament. Le `do(Drug)` (backdoor sur la severite) restaure la verite causale.",,,,,,,,0dd8d417846fa1c5,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-5-Causal-Inference.ipynb,df8d337b,code,fr,9f4449c3b30dbfb5,"# SIMPSON : severite (confondeur) -> {drug, recovery}, drug -> recovery
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-05-Causal-Inference.ipynb,df8d337b,code,fr,9f4449c3b30dbfb5,"# SIMPSON : severite (confondeur) -> {drug, recovery}, drug -> recovery
 simpson_scm = [
     (""severe"", lambda a: 0.5),
     (""drug"",   lambda a: 0.8 if a[""severe""] else 0.2),       # graves -> plus de drug
@@ -6560,7 +6560,7 @@ print()
 print(""=== EFFET CAUSAL (do = backdoor sur la severite) ==="")
 print(f""P(Rec | do(Drug))   = {do_drug:.3f}"")
 print(f""P(Rec | do(NoDrug)) = {do_nodrug:.3f}   => le medicament AIDE causalement."")",,,,,,,,9f4449c3b30dbfb5,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-5-Causal-Inference.ipynb,2b6c5490,markdown,fr,d3bdbf2145e58a9c,"## 8. Le do-calculus (règles de Pearl)
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-05-Causal-Inference.ipynb,2b6c5490,markdown,fr,d3bdbf2145e58a9c,"## 8. Le do-calculus (règles de Pearl)
 
 Pearl (1995) a demontre que **toute** quantite causale identifiable peut etre calculee a partir de trois règles de reecriture, qui transforment des expressions avec `do()` en expressions observationnelles (sans `do()`). Soit `G_X` le graphe mutile (arcs entrants de `X` supprimes) et `G_{X bas}` le graphe ou les arcs sortants de `X` sont supprimes :
 
@@ -6573,7 +6573,7 @@ Pearl (1995) a demontre que **toute** quantite causale identifiable peut etre ca
 **Critere backdoor** : un ensemble `Z` satisfait le critere backdoor relatif a `(X,Y)` si aucun noeud de `Z` n'est descendant de `X`, et `Z` bloque tous les chemins backdoor (arcs entrants de `X`). Alors `P(Y|do(X)) = Somme_z P(Y|X,Z)P(Z)` — exactement la formule appliquee en section 5.
 
 > **Theoreme de completude** (Shpitser & Pearl, 2006) : les trois règles sont **completes** — si un effet causal n'est pas calculable par ces règles, il n'est **pas identifiable** a partir du graphe seul. C'est un plafond fondamental, pas une limite d'implementation. `pm.do` realise la mutilation ; l'*identifiabilite* (peut-on exprimer la cible sans `do` a partir des données disponibles ?) reste une question graphique en amont.",,,,,,,,d3bdbf2145e58a9c,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-5-Causal-Inference.ipynb,14c3de0b,markdown,fr,5656f7818d25d0f3,"## 9. Niveau 3 — Contrefactuel (capstone)
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-05-Causal-Inference.ipynb,14c3de0b,markdown,fr,5656f7818d25d0f3,"## 9. Niveau 3 — Contrefactuel (capstone)
 
 Le niveau 3 de l'echelle de Pearl repond aux questions **contrefactuelles** : *""Sachant qu'un patient a pris le medicament ET a gueri, aurait-il gueri SANS medicament ?""*
 
@@ -6583,7 +6583,7 @@ On resout cela en **deux étapes** (abduction-prediction) :
 2. **Prediction/action** : reutiliser ce posterieur comme **prior** dans le graphe **mutile** (`do(NoDrug)`) pour predire le résultat contrefactuel.
 
 C'est plus couteux qu'une simple intervention (une inference posterieure puis une seconde inference) — honnetement le plafond pratique de l'inference causale **exacte** sur ce type de SCM.",,,,,,,,5656f7818d25d0f3,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-5-Causal-Inference.ipynb,77ffc216,code,fr,5b36d0ed80e1779c,"# CONTREFACTUEL : ""drug=True ET rec=True observes -> aurait-il gueri si do(drug=False) ?""
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-05-Causal-Inference.ipynb,77ffc216,code,fr,5b36d0ed80e1779c,"# CONTREFACTUEL : ""drug=True ET rec=True observes -> aurait-il gueri si do(drug=False) ?""
 # ETAPE 1 — Abduction : posterieur sur 'severe' sachant (drug=True, rec=True)
 p_severe_given = enumerate_scm(simpson_scm, ""severe"", evidence={""drug"": True, ""rec"": True})
 print(f""Abduction : P(severe | drug=True, rec=True) = {p_severe_given:.3f}"")
@@ -6600,7 +6600,7 @@ print(f""Contrefactuel : P(rec | do(NoDrug), 'a pris drug & gueri') = {p_rec_cf:
 print()
 print(f""=> Meme si le patient a gueri AVEC le medicament, sans medicament il n'aurait eu"")
 print(f""   qu'environ {p_rec_cf*100:.0f}% de chances de guerison (contrefactuel)."")",,,,,,,,5b36d0ed80e1779c,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-5-Causal-Inference.ipynb,97025264,markdown,fr,741bd8cc975a47dc,"## 10. Exercices
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-05-Causal-Inference.ipynb,97025264,markdown,fr,741bd8cc975a47dc,"## 10. Exercices
 
 Quatre exercices pour ancrer le do-calculus. Chaque stub s'execute sans erreur (`print` de confirmation) ; a vous de completer le code entre les `# TODO`. Reutilisez `enumerate_scm` (section 2.1) et/ou `pm.do`.
 
@@ -6610,7 +6610,7 @@ Quatre exercices pour ancrer le do-calculus. Chaque stub s'execute sans erreur (
 | 2 | Backdoor adjustment sur un reseau personnalise | Identification de l'ensemble Z |
 | 3 | Front-door : smoke -> tar -> cancer (Pearl) | Ajustement par mediateur |
 | 4 | Paradoxe de Simpson personnalise | Renversement agrege vs conditionnel |",,,,,,,,741bd8cc975a47dc,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-5-Causal-Inference.ipynb,374ff75a,code,fr,37afb1fe044dc09b,"# Exercice 1 : Construire un SCM confondu ""education -> revenu""
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-05-Causal-Inference.ipynb,374ff75a,code,fr,37afb1fe044dc09b,"# Exercice 1 : Construire un SCM confondu ""education -> revenu""
 # Modele suggere : U = niveau_etudes_parents cause a la fois Education (X) et Revenu (Y),
 #                  et X -> Y (l'education augmente le revenu).
 # Indice : reutilisez enumerate_scm. Decrivez 3 noeuds (u, education, revenu) avec leurs CPT.
@@ -6619,28 +6619,28 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-5-Causal-Inference.ipynb,374ff75a,code,fr,37a
 # Etape 3 : P(revenu | do(education=True)) interventionnel -> enumerate_scm(..., do_vars=...)
 # edu_scm = None  # TODO etudiant : construire le SCM
 print(""Exercice 1 a completer : SCM education -> revenu (observation vs intervention)."")",,,,,,,,37afb1fe044dc09b,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-5-Causal-Inference.ipynb,864e0205,code,fr,69a9e2912d4c0e8b,"# Exercice 2 : Backdoor adjustment — identifier l'ensemble Z et calculer P(Y|do(X))
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-05-Causal-Inference.ipynb,864e0205,code,fr,69a9e2912d4c0e8b,"# Exercice 2 : Backdoor adjustment — identifier l'ensemble Z et calculer P(Y|do(X))
 # Reprenez un reseau a 3-4 noeuds avec un confondeur OBSERVE Z.
 # Indice : verifiez que Z bloque tous les chemins backdoor vers X, puis appliquez Somme_z P(Y|X,z)P(z).
 # Etape 1 : choisir Z (ensemble d'ajustement) et le SCM
 # Etape 2 : calculer chaque P(Y|X,z) via enumerate_scm(evidence={...})
 # Etape 3 : sommer pondere par P(z) et comparer au do() direct (do_vars={...})
 print(""Exercice 2 a completer : backdoor adjustment, identifier Z et calculer P(Y|do(X))."")",,,,,,,,69a9e2912d4c0e8b,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-5-Causal-Inference.ipynb,c937d336,code,fr,e715b076c82ddae1,"# Exercice 3 : Front-door sur smoke -> tar -> cancer (classique Pearl)
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-05-Causal-Inference.ipynb,c937d336,code,fr,e715b076c82ddae1,"# Exercice 3 : Front-door sur smoke -> tar -> cancer (classique Pearl)
 # Adaptez la section 6 en changeant les CPT (par ex. tabagisme passif, exposition professionnelle).
 # Indice : la structure X -> M -> Y + U -> X, U -> Y doit etre preservee (U non observe).
 # Etape 1 : fixer de nouvelles CPT coherentes dans un nouveau front_scm
 # Etape 2 : recalculer P(M|X), P(x'), P(Y|M,x') avec enumerate_scm
 # Etape 3 : appliquer la formule front-door et comparer au do() direct
 print(""Exercice 3 a completer : front-door smoke -> tar -> cancer (Pearl)."")",,,,,,,,e715b076c82ddae1,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-5-Causal-Inference.ipynb,1e976e5b,code,fr,030fffe9429f6a57,"# Exercice 4 : Paradoxe de Simpson personnalise
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-05-Causal-Inference.ipynb,1e976e5b,code,fr,030fffe9429f6a57,"# Exercice 4 : Paradoxe de Simpson personnalise
 # Concevez des CPT ou la conclusion s'INVERSE entre l'agrege et le conditionnel.
 # Indice : il faut un confondeur Z favorisant a la fois X et defavorisant Y (ou l'inverse).
 # Etape 1 : choisir un scenario (ex. admission Berkeley 1973 : genre + departement)
 # Etape 2 : coder des CPT produisant un renversement
 # Etape 3 : montrer P(Y|X) agrege != P(Y|do(X)) et expliquer le mecanisme
 print(""Exercice 4 a completer : concevoir un paradoxe de Simpson (renversement agrege vs conditionnel)."")",,,,,,,,030fffe9429f6a57,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-5-Causal-Inference.ipynb,c0961fd6,markdown,fr,51caf77a527de88f,"## Synthese
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-05-Causal-Inference.ipynb,c0961fd6,markdown,fr,51caf77a527de88f,"## Synthese
 
 | Niveau | Question | Opérateur | Méthode PyMC |
 |--------|----------|-----------|--------------|
@@ -6667,7 +6667,7 @@ Ce notebook traite le `do()` en **probabiliste MCMC + enumeration exacte** (`pm.
 - **Symbolique (Java/Tweety)** : [Tweety-11-Causal](../../SymbolicAI/Tweety/Tweety-11-Causal.ipynb) — `do()` et contrefactuels par raisonnement **propositionnel** (`scm.intervene`), sans probabilites.
 - **Bayesien par message passing (Infer.NET)** : [Infer-5-Causal-Inference](../Infer/Infer-5-Causal-Inference.ipynb) — mêmes effets **calcules** par message passing (EP/VMP par defaut, Gibbs aussi disponible), avec mutilation du graphe. Ce message passing est *exact* sur ces reseaux discrets sans boucle, mais c'est une inference **approchee** en general — a la différence de l'enumeration exhaustive de ce notebook.
 - **Théorie de l'information / emergence (ICT)** : [ICT-5-CausalEmergence](../../IIT/ICT-Series/ICT-5-CausalEmergence.ipynb) — l'intervention `do(X_t = x)` devient une **distribution uniforme** `p(C)` sur les etats ; le do-calculus y mesure *a quelle echelle* la causalite est la plus effective (EI / CP).
-- **Pre-requis Python** : [PyMC-4-Bayesian-Networks](PyMC-4-Bayesian-Networks.ipynb) demontre la même distinction `P(Cloudy|Rain)` vs `P(Cloudy|do(Rain))`.
+- **Pre-requis Python** : [PyMC-4-Bayesian-Networks](PyMC-04-Bayesian-Networks.ipynb) demontre la même distinction `P(Cloudy|Rain)` vs `P(Cloudy|do(Rain))`.
 
 > **Synthese transversale** : voir le [README IIT](../../IIT/README.md), section **« Ponts causaux : le do-calculus de Pearl a travers les paradigmes »**, qui aligne l'echelle de Pearl (association -> intervention -> contrefactuel) sur les quatre instanciations de l'opérateur `do`.
 
@@ -6676,7 +6676,7 @@ Ce notebook traite le `do()` en **probabiliste MCMC + enumeration exacte** (`pm.
 ---
 
 [← PyMC-7-Sequential](../DecisionTheory/PyMC/DecPyMC-7-Sequential.ipynb) | [Retour a la serie](README.md)",,,,,,,,51caf77a527de88f,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,a09b80c5,markdown,fr,053d8f08d8dd0989,"# PyMC-6-Debugging : Troubleshooting et Bonnes Pratiques
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-06-Debugging.ipynb,a09b80c5,markdown,fr,053d8f08d8dd0989,"# PyMC-6-Debugging : Troubleshooting et Bonnes Pratiques
 
 **Serie** : Programmation probabiliste avec PyMC (6/20)  
 **Duree estimee** : 45 minutes  
@@ -6700,8 +6700,8 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,a09b80c5,markdown,fr,053d8f
 | [PyMC-15-Recommenders](PyMC-15-Recommenders.ipynb) | [README](../Infer/README.md) |
 
 ---",,,,,,,,053d8f08d8dd0989,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,81322ef1,markdown,fr,e79ffbc6e4857f98,## 1. Configuration,,,,,,,,e79ffbc6e4857f98,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,8bffbe67,code,fr,05a3aabc35def4a4,"import numpy as np
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-06-Debugging.ipynb,81322ef1,markdown,fr,e79ffbc6e4857f98,## 1. Configuration,,,,,,,,e79ffbc6e4857f98,,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-06-Debugging.ipynb,8bffbe67,code,fr,05a3aabc35def4a4,"import numpy as np
 import pymc as pm
 import arviz as az
 import matplotlib.pyplot as plt
@@ -6716,7 +6716,7 @@ rng = np.random.default_rng(RANDOM_SEED)
 print(f""PyMC version : {pm.__version__}"")
 print(f""ArviZ version : {az.__version__}"")
 print(""PyMC pret !"")",,,,,,,,05a3aabc35def4a4,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,340483a5,markdown,fr,ea056dfbbcbc6d5d,"### Packages charges
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-06-Debugging.ipynb,340483a5,markdown,fr,ea056dfbbcbc6d5d,"### Packages charges
 
 | Package | Rôle |
 |---------|------|
@@ -6729,7 +6729,7 @@ Les outils importants pour le debugging sont :
 - `az.summary()` : statistiques de diagnostic (R-hat, ESS)
 - `az.plot_trace()` : visualisation des traces
 - `az.plot_energy()` : diagnostic de l'énergie du hamiltonien",,,,,,,,ea056dfbbcbc6d5d,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,26ffedb5,markdown,fr,56739d1ed6aef3e6,"> **Note technique** : Ce notebook est oriente *troubleshooting*. Il suppose que vous avez déjà explore plusieurs notebooks de la serie et rencontre des comportements inattendus. Les exemples sont volontairement simplifies pour isoler chaque type de problème.
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-06-Debugging.ipynb,26ffedb5,markdown,fr,56739d1ed6aef3e6,"> **Note technique** : Ce notebook est oriente *troubleshooting*. Il suppose que vous avez déjà explore plusieurs notebooks de la serie et rencontre des comportements inattendus. Les exemples sont volontairement simplifies pour isoler chaque type de problème.
 
 Le debugging en programmation probabiliste differe du debugging classique :
 
@@ -6738,7 +6738,7 @@ Le debugging en programmation probabiliste differe du debugging classique :
 | Erreur = crash ou mauvaise valeur | Erreur = divergence, R-hat > 1.01, ESS faible |
 | Cause souvent déterministe | Cause souvent liee aux priors ou a la parametrisation |
 | Solution : corriger le code | Solution : ajuster le modèle ou la parametrisation |",,,,,,,,56739d1ed6aef3e6,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,a1d2727b,markdown,fr,46f586ae0396b11b,"## 2. Problèmes Courants et Solutions
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-06-Debugging.ipynb,a1d2727b,markdown,fr,46f586ae0396b11b,"## 2. Problèmes Courants et Solutions
 
 ### 2.1 Catalogue des Problèmes
 
@@ -6749,7 +6749,7 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,a1d2727b,markdown,fr,46f586
 | ESS faible | Autocorrelation élevée | Plus d'itérations ou thinning |
 | Erreur `SamplingError` | Prior incompatible avec les données | Elargir le prior ou vérifier les observations |
 | Erreur `BadInitialEnergy` | Point de depart avec probabilité nulle | Changer l'initialisation ou elargir les priors |",,,,,,,,46f586ae0396b11b,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,36b607cb,code,fr,f5c7ea700d90df4c,"# Exemple 1 : Probleme d'initialisation (BadInitialEnergy)
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-06-Debugging.ipynb,36b607cb,code,fr,f5c7ea700d90df4c,"# Exemple 1 : Probleme d'initialisation (BadInitialEnergy)
 
 print(""=== Probleme : Prior incompatible avec les donnees ==="")
 print()
@@ -6777,17 +6777,17 @@ print(f""Resultat avec prior large : x ~ Normal(mean={trace_narrow.posterior['x'
       f""std={trace_narrow.posterior['x'].std().values:.1f})"")
 print()
 print(""Le posterior est concentre autour de l'observation car le prior est vague."")",,,,,,,,f5c7ea700d90df4c,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,f52a622f,markdown,fr,29f5e459daeee5f4,"**interprétation des résultats** :
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-06-Debugging.ipynb,f52a622f,markdown,fr,29f5e459daeee5f4,"**interprétation des résultats** :
 
 Avec un prior large `Normal(0, 100)`, l'observation `y=50` domine le posterior. Le résultat est cohérent : la moyenne postérieure est proche de 50.
 
 > **règle pratique** : Si votre prior a un ecart-type `sigma`, les observations situees a plus de `3*sigma` de la moyenne du prior auront une vraisemblance quasi-nulle sous le prior. Avec `sigma=0.001`, cela représente environ `0.003` unites autour de 0.",,,,,,,,29f5e459daeee5f4,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,e728b8f5,markdown,fr,692e115e4ae1605c,"### 2.2 Divergences
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-06-Debugging.ipynb,e728b8f5,markdown,fr,692e115e4ae1605c,"### 2.2 Divergences
 
 Les divergences sont le problème le plus courant avec NUTS. Elles indiquent que l'échantillonneur a du mal a explorer certaines regions de l'espace des paramètres, souvent a cause de la **geometrie du posterior**.
 
 > **mécanisme** : Une divergence se produit lorsque l'integrateur hamiltonien de NUTS commet une erreur de simulation trop grande (erreur d'énergie depassant le seuil lie a `target_accept`) en traversant une region de forte courbure - typiquement le col etroit d'un entonnoir hiérarchique. La trajectoire quitte alors l'ensemble typique (*typical set*) et l'échantillon est rejeté. Traitement de référence : Betancourt (2017), *A conceptual introduction to Hamiltonian Monte Carlo*, arXiv:1701.02434.",,,,,,,,692e115e4ae1605c,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,65e3c067,code,fr,0c43559d96e13e54,"# Exemple 2 : Divergences causees par une mauvaise parametrisation
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-06-Debugging.ipynb,65e3c067,code,fr,0c43559d96e13e54,"# Exemple 2 : Divergences causees par une mauvaise parametrisation
 
 print(""=== Probleme : Divergences avec un modele mal parametrise ==="")
 print()
@@ -6819,7 +6819,7 @@ with pm.Model() as model_funnel:
 n_diverging = trace_funnel.sample_stats[""diverging""].sum().values
 print(f""\nDivergences : {n_diverging} sur {trace_funnel.posterior.dims['draw'] * trace_funnel.posterior.dims['chain']}"")
 print(""La reparametrisation et target_accept eleve reduisent les divergences."")",,,,,,,,0c43559d96e13e54,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,55b10e08,markdown,fr,d07f3759aa96a9ae,"## Exercice 2 : Reparametrisation non-centree
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-06-Debugging.ipynb,55b10e08,markdown,fr,d07f3759aa96a9ae,"## Exercice 2 : Reparametrisation non-centree
 
 Le modèle hiérarchique ci-dessous souffre d'un problème d'entonnoir (funnel) :
 la variance de `theta` dépend de `sigma_groupe`, ce qui créé une geometrie
@@ -6833,7 +6833,7 @@ difficile pour NUTS. Corrigez-le en appliquant la **reparametrisation non-centre
 - utiliser `pm.Deterministic` pour declarer theta comme variable dérivée
 - Echantillonner avec `target_accept=0.95`
 - vérifier que le nombre de divergences est 0 avec `trace.sample_stats[""diverging""].sum()`",,,,,,,,d07f3759aa96a9ae,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,22538dbb,code,fr,22cf86b559c1a831,"# TODO etudiant : reparametriser un modele hierarchique avec entonnoir
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-06-Debugging.ipynb,22538dbb,code,fr,22cf86b559c1a831,"# TODO etudiant : reparametriser un modele hierarchique avec entonnoir
 # Le modele ci-dessous a un probleme de funnel (divergences)
 # Corrigez-le en utilisant la reparametrisation non-centree
 
@@ -6850,7 +6850,7 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,22538dbb,code,fr,22cf86b559
 
 result = None  # TODO etudiant : remplacer par le modele reparametrise
 print(""Exercice a completer"")",,,,,,,,22cf86b559c1a831,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,f9d4a6d8,markdown,fr,9b71a4537ee39b6b,"### La reparametrisation non-centree
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-06-Debugging.ipynb,f9d4a6d8,markdown,fr,9b71a4537ee39b6b,"### La reparametrisation non-centree
 
 Le problème de l'entonnoir est un cas classique. Quand la variance d'un paramètre dépend d'un autre, NUTS peut ""diverger"" dans les regions etroites de l'entonnoir.
 
@@ -6863,7 +6863,7 @@ Les solutions incluent :
 | Reparametrisation non-centree | Elimine souvent les divergences | Necessite de reflechir a la geometrie |
 | Augmenter `target_accept` | Simple a implementer | Ralentit l'échantillonnage |
 | Changer de parametrisation | Peut simplifier la geometrie | spécifique au modèle |",,,,,,,,9b71a4537ee39b6b,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,7f697f0e,markdown,fr,ebf3da20990ca658,"## 3. Comparaison des Algorithmes d'Inférence
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-06-Debugging.ipynb,7f697f0e,markdown,fr,ebf3da20990ca658,"## 3. Comparaison des Algorithmes d'Inférence
 
 ### Quand utiliser quel algorithme ?
 
@@ -6874,7 +6874,7 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,7f697f0e,markdown,fr,ebf3da
 | **Metropolis** | Simple | Autocorrelation élevée, necessite tuning | modèles discrets, vérification |
 
 > **références algorithmiques** : NUTS - Hoffman & Gelman (2014), *The No-U-Turn Sampler*, JMLR 15. ADVI (mean-field) - Kucukelbir, Ranganath, Gelman & Blei (2017), *Automatic variational inférence in Stan*, JMLR 18 (analyse la sous-estimation de l'incertitude due a la factorisation). Metropolis-Hastings - Hastings (1970), Biometrika 57(1).",,,,,,,,ebf3da20990ca658,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,9a6f1cae,markdown,fr,d8e69429f45e4104,"La cellule suivante compare NUTS et ADVI sur un problème simple d'estimation de moyenne avec variance inconnue.
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-06-Debugging.ipynb,9a6f1cae,markdown,fr,d8e69429f45e4104,"La cellule suivante compare NUTS et ADVI sur un problème simple d'estimation de moyenne avec variance inconnue.
 
 **Configuration du test** :
 - 6 observations autour de 2.0
@@ -6882,7 +6882,7 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,9a6f1cae,markdown,fr,d8e694
 - Prior sur l'ecart-type : HalfNormal(10)
 
 Ce type de modèle (données gaussiennes avec paramètres inconnus) est un cas classique ou NUTS et ADVI donnent des résultats comparables mais avec des niveaux d'incertitude différents.",,,,,,,,d8e69429f45e4104,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,b51fae2c,code,fr,6c1fb680ee938b50,"# Comparaison NUTS vs ADVI sur un modele simple
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-06-Debugging.ipynb,b51fae2c,code,fr,6c1fb680ee938b50,"# Comparaison NUTS vs ADVI sur un modele simple
 
 print(""=== Comparaison NUTS vs ADVI ==="")
 print()
@@ -6924,7 +6924,7 @@ print(f""  ADVI : mean = {advi_mean.mean():.3f}, std = {advi_mean.std():.4f}"")
 print()
 print(""Note : ADVI tend a avoir une variance plus faible (sous-estime l'incertitude)"")
 print(""       car il approxime par une distribution gaussienne factorisee."")",,,,,,,,6c1fb680ee938b50,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,565c2293,markdown,fr,2b975a9915b844a5,"**interprétation des résultats NUTS vs ADVI** :
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-06-Debugging.ipynb,565c2293,markdown,fr,2b975a9915b844a5,"**interprétation des résultats NUTS vs ADVI** :
 
 Les deux algorithmes estiment la moyenne autour de 2.05 (proche de la moyenne empirique 2.050), avec un accord quasi-parfait sur l'estimation ponctuelle : NUTS `mean=2.046` et ADVI `mean=2.046`. Les deux std postérieures (`NUTS=0.109`, `ADVI=0.098`) sont également très proches et sous-estiment légèrement l'écart-type empirique (les 6 observations donnent un écart-type d'échantillon ~0.18), ce qui est attendu avec un prior aussi vague et peu de données.
 
@@ -6945,7 +6945,7 @@ Les deux algorithmes estiment la moyenne autour de 2.05 (proche de la moyenne em
 - La prise de décision sous incertitude
 - Les intervalles de prédiction
 - La propagation de l'incertitude dans des modèles hiérarchiques",,,,,,,,2b975a9915b844a5,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,8d8cbdfe,markdown,fr,4d521b7b1f6846fe,"## 4. Outils de Diagnostic avec ArviZ
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-06-Debugging.ipynb,8d8cbdfe,markdown,fr,4d521b7b1f6846fe,"## 4. Outils de Diagnostic avec ArviZ
 
 ### 4.1 Indicateurs cles
 
@@ -6957,7 +6957,7 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,8d8cbdfe,markdown,fr,4d521b
 | divergences | 0 | Qualite de l'échantillonnage |
 
 > **Source des seuils** : Les valeurs `R-hat < 1.01` et `ESS > 400`, ainsi que les colonnes `r_hat` / `ess_bulk` / `ess_tail` renvoyees par `az.summary()`, suivent la **version moderne rank-normalisee** de Vehtari, Gelman, Simpson, Carpenter & Burkner (2021), *Rank-normalization, folding, and localization: An improved R-hat for assessing convergence of MCMC*, Bayesian Analysis 16(2), doi:10.1214/20-BA1221. Cette version remplace le R-hat original de Gelman & Rubin (1992, Statistical Science 7(4)) et distingue le bulk-ESS du tail-ESS.",,,,,,,,4d521b7b1f6846fe,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,a162ffb1,code,fr,42e40d1757fde56f,"# Demonstration des outils de diagnostic
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-06-Debugging.ipynb,a162ffb1,code,fr,42e40d1757fde56f,"# Demonstration des outils de diagnostic
 
 print(""=== Outils de Diagnostic ==="")
 print()
@@ -6992,7 +6992,7 @@ print(f""  Divergences : {n_div} {'OK' if n_div == 0 else 'PROBLEME'}"")
 print()
 print(f""Resultat : mu ~ Normal(mean={trace_debug.posterior['mu'].mean().values:.2f}, ""
       f""std={trace_debug.posterior['mu'].std().values:.2f})"")",,,,,,,,42e40d1757fde56f,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,8513ab02,markdown,fr,4895265e5ac99d77,"**interprétation du résultat** :
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-06-Debugging.ipynb,8513ab02,markdown,fr,4895265e5ac99d77,"**interprétation du résultat** :
 
 Le posterior de `mu` resulte de la mise a jour bayesienne :
 
@@ -7001,7 +7001,7 @@ $$\mu_{\text{post}} = \frac{\tau_{\text{prior}} \cdot \mu_{\text{prior}} + \tau_
 $$\sigma^2_{\text{post}} = \frac{1}{\tau_{\text{prior}} + \tau_{\text{likelihood}}} = \frac{1}{2} = 0.5$$
 
 Ou $\tau = 1/\sigma^2$ représente la precision. Le posterior est exactement a mi-chemin entre le prior (0) et l'observation (5), car les deux ont la même precision.",,,,,,,,4895265e5ac99d77,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,bcec3882,markdown,fr,1f5c2418a48abf15,"### 4.2 Visualisation des traces et diagnostics
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-06-Debugging.ipynb,bcec3882,markdown,fr,1f5c2418a48abf15,"### 4.2 Visualisation des traces et diagnostics
 
 ArviZ propose plusieurs visualisations essentielles :
 
@@ -7013,7 +7013,7 @@ ArviZ propose plusieurs visualisations essentielles :
 | `plot_pair()` | identifier les corrélations entre paramètres |
 
 > **Cadre methodologique** : Ces visualisations s'inscrivent dans le *workflow bayesien* de Gabry, Simpson, Vehtari, Betancourt & Gelman (2019), *Visualization in Bayesian workflow*, JRSS C 68(2), doi:10.1111/rssc.12346, et de Gelman et al. (2020), *Bayesian Workflow*, arXiv:2011.01808. `plot_rank()` implemente les *rank plots* de Vehtari et al. (2021).",,,,,,,,1f5c2418a48abf15,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,86a0797a,code,fr,1dc310a3b0ecaecd,"# Demonstration de la visualisation des diagnostics
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-06-Debugging.ipynb,86a0797a,code,fr,1dc310a3b0ecaecd,"# Demonstration de la visualisation des diagnostics
 
 print(""=== Visualisation des diagnostics ==="")
 print()
@@ -7040,7 +7040,7 @@ summary_hier = az.summary(trace_hier, var_names=[""hyper_mean"", ""hyper_sigma""
 print("""")
 print(""Resume du modele hierarchique :"")
 print(summary_hier[['mean', 'sd', 'ess_bulk', 'r_hat']])",,,,,,,,1dc310a3b0ecaecd,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,93bd1e0e,markdown,fr,d0eee5d5c9605140,"### Comment interpréter les diagnostics ?
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-06-Debugging.ipynb,93bd1e0e,markdown,fr,d0eee5d5c9605140,"### Comment interpréter les diagnostics ?
 
 | Élément | Bon signe | Mauvais signe |
 |---------|-----------|---------------|
@@ -7056,7 +7056,7 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,93bd1e0e,markdown,fr,d0eee5
 > 2. Les posteriors ont des formes raisonnables
 > 3. Il n'y a pas de divergences qui indiqueraient un problème de geometrie
 > 4. L'ESS est suffisant pour des estimations fiables",,,,,,,,d0eee5d5c9605140,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,607ab2fb,markdown,fr,979c356e037578b9,"## 5. Bonnes Pratiques de Modelisation
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-06-Debugging.ipynb,607ab2fb,markdown,fr,979c356e037578b9,"## 5. Bonnes Pratiques de Modelisation
 
 ### 5.1 Nommage et organisation
 
@@ -7078,7 +7078,7 @@ with pm.Model() as model:
 | Ecart-type inconnu | HalfNormal ou HalfCauchy | `pm.HalfNormal(""sigma"", sigma=10)` |
 | probabilité | Beta ou Uniform | `pm.Beta(""p"", alpha=1, beta=1)` |
 | Poids melange | Dirichlet | `pm.Dirichlet(""w"", a=np.ones(k))` |",,,,,,,,979c356e037578b9,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,6edacfe6,markdown,fr,12ce8bbab699b106,"### Demonstration de l'impact des priors
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-06-Debugging.ipynb,6edacfe6,markdown,fr,12ce8bbab699b106,"### Demonstration de l'impact des priors
 
 Le choix des priors est souvent la source principale de problèmes en programmation probabiliste. Un prior mal choisi peut :
 
@@ -7087,7 +7087,7 @@ Le choix des priors est souvent la source principale de problèmes en programmat
 3. **Ralentir la convergence** : si le prior est très différent des données
 
 La cellule suivante illustre l'impact de différents priors Beta sur l'estimation d'une probabilité binomiale avec seulement 5 observations.",,,,,,,,12ce8bbab699b106,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,0e2648db,code,fr,cf2aba0728954eb3,"# Demonstration de l'importance des priors
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-06-Debugging.ipynb,0e2648db,code,fr,cf2aba0728954eb3,"# Demonstration de l'importance des priors
 
 print(""=== Impact du choix des Priors ==="")
 print()
@@ -7121,7 +7121,7 @@ for nom, a, b in priors:
 
 print()
 print(""Observation : Le prior influence le posterior, surtout avec peu de donnees."")",,,,,,,,cf2aba0728954eb3,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,5993b7ed,markdown,fr,63ca54c6adee10cb,"**Analyse detaillee des résultats** :
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-06-Debugging.ipynb,5993b7ed,markdown,fr,63ca54c6adee10cb,"**Analyse detaillee des résultats** :
 
 | Prior | Alpha | Beta | Moyenne prior | Moyenne postérieure attendue | Ecart au MLE |
 |-------|-------|------|---------------|------------------------------|--------------|
@@ -7143,7 +7143,7 @@ $$\mathbb{E}[p \mid \text{data}] = \frac{\alpha + \text{succes}}{\alpha + \beta 
 > - Le prior **biaise** (Beta(8,2)) domine les observations et maintient une estimation élevée
 >
 > La force de l'effet du prior dépend du ratio entre les pseudo-observations du prior ($\alpha + \beta$) et les observations réelles (5 dans cet exemple).",,,,,,,,63ca54c6adee10cb,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,a40e9009,markdown,fr,575f6b978434aa5a,"## 6. Checklist de Debugging
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-06-Debugging.ipynb,a40e9009,markdown,fr,575f6b978434aa5a,"## 6. Checklist de Debugging
 
 Quand votre modèle ne fonctionne pas, verifiez :
 
@@ -7163,10 +7163,10 @@ Quand votre modèle ne fonctionne pas, verifiez :
 - [ ] Les posteriors ne sont pas degenerees (variance > 0)
 - [ ] Les moyennes sont dans des plages raisonnables
 - [ ] Les predictions sur données connues sont correctes",,,,,,,,575f6b978434aa5a,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,9dcde343,markdown,fr,c612f694ba759236,"### 6.1 Fonctions de diagnostic automatisees
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-06-Debugging.ipynb,9dcde343,markdown,fr,c612f694ba759236,"### 6.1 Fonctions de diagnostic automatisees
 
 Plutot que d'inspecter manuellement chaque posterior, il est recommande de créer des fonctions de diagnostic reutilisables. La fonction ci-dessous vérifie automatiquement les conditions de sante d'un trace pour tous les paramètres.",,,,,,,,c612f694ba759236,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,5256a0c7,code,fr,c6b190e254076f21,"# Fonction utilitaire de diagnostic complet
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-06-Debugging.ipynb,5256a0c7,code,fr,c6b190e254076f21,"# Fonction utilitaire de diagnostic complet
 
 def diagnose_trace(idata, var_names=None):
     """"""Diagnostique un InferenceData et affiche les alertes.""""""
@@ -7220,7 +7220,7 @@ with pm.Model() as model_diag:
     )
 
 diagnose_trace(trace_diag)",,,,,,,,c6b190e254076f21,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,5f9fed59,markdown,fr,43838ed704484fc3,"## Exercice 3 : Diagnostic de convergence
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-06-Debugging.ipynb,5f9fed59,markdown,fr,43838ed704484fc3,"## Exercice 3 : Diagnostic de convergence
 
 Le modèle ci-dessous est volontairement mal parametrise avec des priors
 trop etroits. Votre mission : utiliser les outils ArviZ pour identifier
@@ -7234,7 +7234,7 @@ précisément le problème et proposer une correction.
 - utiliser `az.plot_trace()` pour vérifier visuellement le melange des chaînes
 - Le problème : les observations (moyenne ~5) sont bien loin du prior (mu=0, sigma=0.1)
 - La correction : elargir les priors (par ex. sigma=10 au lieu de 0.1)",,,,,,,,43838ed704484fc3,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,fdc5e10e,code,fr,24d280625d334703,"# TODO etudiant : analyser un trace et diagnostiquer les problemes de convergence
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-06-Debugging.ipynb,fdc5e10e,code,fr,24d280625d334703,"# TODO etudiant : analyser un trace et diagnostiquer les problemes de convergence
 # Le modele ci-dessous est volontairement mal parametrise.
 # Utilisez les outils ArviZ pour identifier les problemes.
 
@@ -7251,7 +7251,7 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,fdc5e10e,code,fr,24d280625d
 
 result = None  # TODO etudiant : remplacer par le diagnostic et la correction
 print(""Exercice a completer"")",,,,,,,,24d280625d334703,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,c441d144,markdown,fr,0084207fa4bfcb51,"**interprétation des diagnostics** :
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-06-Debugging.ipynb,c441d144,markdown,fr,0084207fa4bfcb51,"**interprétation des diagnostics** :
 
 La fonction `diagnose_trace` vérifie les conditions de sante du posterior :
 
@@ -7284,7 +7284,7 @@ La fonction `diagnose_trace` vérifie les conditions de sante du posterior :
 | **HalfNormal** | (sigma,) | Ecarts-types, variances (positifs) |
 | **Beta** | (alpha, beta) | probabilités binomiales, proportions |
 | **Binomial** | (n, p) | Comptages de succes |",,,,,,,,0084207fa4bfcb51,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,098d43bf,markdown,fr,078c13b70fab6f30,"## 7. Exemple guide : Debugger un Modele
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-06-Debugging.ipynb,098d43bf,markdown,fr,078c13b70fab6f30,"## 7. Exemple guide : Debugger un Modele
 
 ### Le modele sain (reference)
 
@@ -7296,7 +7296,7 @@ Avant de deboguer un modele casse, fixons la cible : a quoi ressemble un modele 
 
 Les diagnostics (divergences, $\hat{R}$, ESS) doivent etre propres -- c'est le signe que le modele est sain.
 ",,,,,,,,078c13b70fab6f30,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,c1b60f75,code,fr,52f2c3896ee82b29,"# Exemple guide : Modele d'estimation bien specifie.
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-06-Debugging.ipynb,c1b60f75,code,fr,52f2c3896ee82b29,"# Exemple guide : Modele d'estimation bien specifie.
 # IMPORTANT : on observe n=30 mesures (et non 1 seule) pour que sigma soit IDENTIFIABLE.
 # Avec une observation unique, sigma est sous-determine -> NUTS diverge (funnel, voir §2.2).
 print(""=== Exemple : Modele bien specifie (n=30 observations) ==="")
@@ -7327,11 +7327,11 @@ print(f""  Divergences : {n_div}"")
 print(f""  R-hat max : {float(summary_corrige['r_hat'].max()):.4f}"")
 print(f""  ESS bulk min : {float(summary_corrige['ess_bulk'].min()):.0f}"")
 ",,,,,,,,52f2c3896ee82b29,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,d8874600,markdown,fr,e9fb179ffb49574e,"### A votre tour : un modele bugge
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-06-Debugging.ipynb,d8874600,markdown,fr,e9fb179ffb49574e,"### A votre tour : un modele bugge
 
 La cellule suivante comporte **trois erreurs classiques** de specification. On la fait tourner pour en observer les *symptomes*, puis on applique les corrections et on relance pour verifier que le modele sain est retrouve.
 ",,,,,,,,e9fb179ffb49574e,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,a4e92b89,code,fr,8aa961d1836918f5,"# Exemple guide : Debuggons un modele BUGGE, puis corrigeons-le.
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-06-Debugging.ipynb,a4e92b89,code,fr,8aa961d1836918f5,"# Exemple guide : Debuggons un modele BUGGE, puis corrigeons-le.
 print(""=== Debug : modele bugge, puis corrige ==="")
 print(f""Rappel : les donnees (n=30) ont une moyenne empirique de {donnees.mean():.1f}."")
 print()
@@ -7372,7 +7372,7 @@ print()
 print(""=> Le reflexe debug : comparer la posterior a la DONNEE, pas seulement aux divergences."")
 print(""   Ici les deux modeles ont 0 divergence -- c'est l'ecart m~0 vs donnee~25 qui revele le bug."")
 ",,,,,,,,8aa961d1836918f5,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,818b9439,markdown,fr,cbcf7e50e5efaf5c,"**Analyse des corrections** :
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-06-Debugging.ipynb,818b9439,markdown,fr,cbcf7e50e5efaf5c,"**Analyse des corrections** :
 
 | probleme original | consequence observee | correction appliquee |
 |-------------------|----------------------|----------------------|
@@ -7387,7 +7387,7 @@ Le contraste entre les deux executions est frappant :
 
 > **Lecon de debogage** : un prior trop concentre est un piege *silencieux*. Le sampler peut tourner sans divergence apparente, pourtant la posterior ignore la donnee. Le reflexe : **comparer la posterior a la donnee empirique** (et non se fier uniquement aux divergences / $\hat{R}$ / ESS, qui peuvent rester bonnes).
 ",,,,,,,,cbcf7e50e5efaf5c,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,c47c65da,markdown,fr,864d6eb7b34a5b07,"### Points cles a retenir
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-06-Debugging.ipynb,c47c65da,markdown,fr,864d6eb7b34a5b07,"### Points cles a retenir
 
 > **stratégie de debugging en 3 étapes** :
 >
@@ -7401,7 +7401,7 @@ La plupart des problèmes d'inférence proviennent de :
 - **modèle trop complexe** (simplifier d'abord, complexifier ensuite)
 
 ---",,,,,,,,864d6eb7b34a5b07,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,de9bcce9,markdown,fr,1eb0800a76a1e0c5,"## 8. Resume
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-06-Debugging.ipynb,de9bcce9,markdown,fr,1eb0800a76a1e0c5,"## 8. Resume
 
 | problème | Symptome | Solution |
 |----------|----------|----------|
@@ -7428,7 +7428,7 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,de9bcce9,markdown,fr,1eb080
 - [Guide de troubleshooting PyMC](https://www.pymc.io/projects/docs/en/stable/learn/core_notebooks/pymc_overview.html)
 
 ---",,,,,,,,1eb0800a76a1e0c5,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,95970d75,markdown,fr,2bffc9b9b02bafc1,"## 9. Exercice : Deboguer un Modèle Hiérarchique
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-06-Debugging.ipynb,95970d75,markdown,fr,2bffc9b9b02bafc1,"## 9. Exercice : Deboguer un Modèle Hiérarchique
 
 Le modèle ci-dessous tente d'estimer les moyennes de performance de 3 groupes, mais il contient **3 erreurs**. Identifiez et corrigez chaque erreur.
 
@@ -7438,7 +7438,7 @@ Le modèle ci-dessous tente d'estimer les moyennes de performance de 3 groupes, 
 3. Chaque observation doit etre liee au bon groupe
 
 Corrigez le code et verifiez que les posteriors correspondent aux moyennes des groupes.",,,,,,,,2bffc9b9b02bafc1,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,3fb79ac6,code,fr,8924801049c02e4c,"# Exercice : Corriger ce modele hierarchique bayesien (3 erreurs)
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-06-Debugging.ipynb,3fb79ac6,code,fr,8924801049c02e4c,"# Exercice : Corriger ce modele hierarchique bayesien (3 erreurs)
 
 donnees_groupes = {
     0: [12.1, 11.8, 12.5, 12.3],  # Groupe 0 : ~12
@@ -7459,16 +7459,16 @@ donnees_groupes = {
 
 print(""Exercice a completer : corrigez les 3 erreurs dans le modele hierarchique."")
 print(""Indices : ecarts-types positifs, lien population-groupe, bon indexage."")",,,,,,,,8924801049c02e4c,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,3fef01be,markdown,fr,1757fe1a3d622904,"---
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-06-Debugging.ipynb,3fef01be,markdown,fr,1757fe1a3d622904,"---
 
 **Conclusion** : Ce notebook a couvert les outils de diagnostic MCMC (R-hat, ESS, divergences), la comparaison NUTS vs ADVI, et les bonnes pratiques de modelisation pour résoudre les problèmes d'inférence courants.
 
 **Retour au sommaire** : [Index Probas](../README.md)
 
-**Navigation** : [<< PyMC-5](PyMC-5-Causal-Inference.ipynb) | [PyMC-7 >>](PyMC-7-Skills-IRT.ipynb)",,,,,,,,1757fe1a3d622904,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-7-Skills-IRT.ipynb,4a471023,markdown,fr,19ce4fd777d9eeeb,"# PyMC-7 : Modèles de Competences (IRT et DINA)
+**Navigation** : [<< PyMC-5](PyMC-05-Causal-Inference.ipynb) | [PyMC-7 >>](PyMC-07-Skills-IRT.ipynb)",,,,,,,,1757fe1a3d622904,,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-07-Skills-IRT.ipynb,4a471023,markdown,fr,19ce4fd777d9eeeb,"# PyMC-7 : Modèles de Competences (IRT et DINA)
 
-**Navigation** : [Index](../README.md) | [<< PyMC-6](PyMC-6-Debugging.ipynb) | [PyMC-8 >>](PyMC-8-TrueSkill.ipynb)
+**Navigation** : [Index](../README.md) | [<< PyMC-6](PyMC-06-Debugging.ipynb) | [PyMC-8 >>](PyMC-08-TrueSkill.ipynb)
 
 **Equivalent Infer.NET** : [Infer-7-Skills-IRT](../Infer/Infer-7-Skills-IRT.ipynb)
 
@@ -7483,7 +7483,7 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-7-Skills-IRT.ipynb,4a471023,markdown,fr,19ce4
 
 **Prerequis** : PyMC-1 a PyMC-4, theoreme de Bayes, variables latentes
 ",,,,,,,,19ce4fd777d9eeeb,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-7-Skills-IRT.ipynb,35fc902f,code,fr,594091244ed1cd62,"import warnings
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-07-Skills-IRT.ipynb,35fc902f,code,fr,594091244ed1cd62,"import warnings
 # arviz (FutureWarning de refactor) et pytensor (""could not link BLAS"", advisory de perf, pas de correctness)
 # leakent le chemin absolu du fichier source site-packages ; on les filtre. Les alertes utiles (R-hat, ESS) restent visibles.
 warnings.filterwarnings(""ignore"", category=FutureWarning, module=""arviz"")
@@ -7535,14 +7535,14 @@ if NUMPY_AVAILABLE and PYMC_AVAILABLE:
     print(f""PyMC version: {pm.__version__}"")
 else:
     print(""PyMC n'est pas installe. Executez: pip install pymc arviz matplotlib numpy scipy scikit-learn"")",,,,,,,,594091244ed1cd62,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-7-Skills-IRT.ipynb,bb12e38a,markdown,fr,be78acc07843ff66,"## 1. Introduction a l'Evaluation Cognitive
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-07-Skills-IRT.ipynb,bb12e38a,markdown,fr,be78acc07843ff66,"## 1. Introduction a l'Evaluation Cognitive
 
 On veut evaluer les competences d'etudiants a partir de leurs reponses a un questionnaire.
 Deux approches principales :
 
 - **IRT (Item Response Theory)** : competence continue, chaque question a une difficulte
 - **DINA** : competences discretes (maitrise ou non), questions requierent des competences spécifiques",,,,,,,,be78acc07843ff66,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-7-Skills-IRT.ipynb,4b1cd6f6,markdown,fr,4228a0ee9e9fa5c7,"## 2. Modèle IRT : Théorie de la Reponse a l'Item
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-07-Skills-IRT.ipynb,4b1cd6f6,markdown,fr,4228a0ee9e9fa5c7,"## 2. Modèle IRT : Théorie de la Reponse a l'Item
 
 Le modèle IRT suppose que chaque etudiant a une capacite continue et chaque question
 a une difficulte. La probabilite de reponse correcte depend de l'ecart entre capacite et difficulte.
@@ -7557,7 +7557,7 @@ a une difficulte. La probabilite de reponse correcte depend de l'ecart entre cap
 | Difficulte | `Variable.GaussianFromMeanAndPrecision(0, 1)` | `pm.Normal('difficulty', 0, 1)` |
 | Discrimination | `Variable.GammaFromShapeAndScale(2, 0.5)` | `pm.Gamma('disc', alpha=2, beta=2)` |
 | Reponse | `avantageBruite > 0` (threshold) | `pm.Bernoulli` avec lien probit |",,,,,,,,4228a0ee9e9fa5c7,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-7-Skills-IRT.ipynb,ba6d4075,code,fr,7d8d745bdc0cd86f,"# Donnees : 10 etudiants x 5 questions (1=correct, 0=incorrect)
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-07-Skills-IRT.ipynb,ba6d4075,code,fr,7d8d745bdc0cd86f,"# Donnees : 10 etudiants x 5 questions (1=correct, 0=incorrect)
 # Meme donnees que le notebook Infer.NET original
 reponses_irt = np.array([
     [1, 1, 1, 0, 0],  # Etudiant 0
@@ -7575,7 +7575,7 @@ reponses_irt = np.array([
 n_etudiants, n_questions = reponses_irt.shape
 print(f""Donnees: {n_etudiants} etudiants, {n_questions} questions"")
 print(f""Taux de reussite moyen: {reponses_irt.mean():.2f}"")",,,,,,,,7d8d745bdc0cd86f,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-7-Skills-IRT.ipynb,dfa89fb4,markdown,fr,b1a5c0ba371130cf,"### Definition du modèle IRT
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-07-Skills-IRT.ipynb,dfa89fb4,markdown,fr,b1a5c0ba371130cf,"### Definition du modèle IRT
 
 Les données montrent un taux de reussite moyen de 0.52 (equilibre entre reponses correctes et incorrectes), ce qui est ideal pour calibrer le modèle. L'etudiant 6 a un score parfait (5/5) et l'etudiant 7 a 0/5, signalant des niveaux extremes.
 
@@ -7585,7 +7585,7 @@ Le modèle IRT estime simultanement trois types de paramètres :
 - **Discrimination** globale (prior Gamma(2,2))
 
 Le lien probit (`pm.math.invprobit`) transforme la différence capacite-difficulte en probabilite de reponse correcte.",,,,,,,,b1a5c0ba371130cf,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-7-Skills-IRT.ipynb,d2e50400,code,fr,868aeff41fd60a47,"# Modele IRT avec PyMC
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-07-Skills-IRT.ipynb,d2e50400,code,fr,868aeff41fd60a47,"# Modele IRT avec PyMC
 # Equivalent Infer.NET : capacite/ability ~ N(0,1), difficulte ~ N(0,1)
 # Lien probit : P(correct) = Phi(ability - difficulty)
 # En Infer.NET, on utilise un Gaussienne bruitee et un threshold > 0
@@ -7612,7 +7612,7 @@ with pm.Model() as irt_model:
     responses = pm.Bernoulli('responses', p=p_correct, observed=reponses_irt)
     
     trace_irt = pm.sample(3000, random_seed=42, return_inferencedata=True)",,,,,,,,868aeff41fd60a47,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-7-Skills-IRT.ipynb,89c1fa2e,markdown,fr,47ff046096da01a1,"### Preparation des données IRT
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-07-Skills-IRT.ipynb,89c1fa2e,markdown,fr,47ff046096da01a1,"### Preparation des données IRT
 
 Le taux de reussite moyen de 0.52 indique que les données sont equilibrees, ni trop faciles ni trop difficiles. Ce scénario est ideal pour calibrer le modèle IRT, car il permet d'identifier a la fois les etudiants forts et les questions difficiles.
 
@@ -7620,7 +7620,7 @@ Le modèle va maintenant estimer simultanement :
 - La capacite de chacun des 10 etudiants (prior N(0,1))
 - La difficulte de chacune des 5 questions (prior N(0,1))
 - Le pouvoir de discrimination des questions (prior Gamma(2,2))",,,,,,,,47ff046096da01a1,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-7-Skills-IRT.ipynb,0e20eb03,code,fr,d8a9991a49871655,"# Resultats IRT
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-07-Skills-IRT.ipynb,0e20eb03,code,fr,d8a9991a49871655,"# Resultats IRT
 ability_post = trace_irt.posterior['ability'].values.reshape(-1, n_etudiants)
 difficulty_post = trace_irt.posterior['difficulty'].values.reshape(-1, n_questions)
 disc_post = trace_irt.posterior['discrimination'].values.flatten()
@@ -7637,12 +7637,12 @@ print(""Difficultes estimees (moyenne posterior):"")
 diff_means = difficulty_post.mean(axis=0)
 for j in range(n_questions):
     print(f""  Question {j}: {diff_means[j]:+.2f}"")",,,,,,,,d8a9991a49871655,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-7-Skills-IRT.ipynb,4f1ff051,markdown,fr,9086b978cb619005,"### Interpretation de l'echantillonnage
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-07-Skills-IRT.ipynb,4f1ff051,markdown,fr,9086b978cb619005,"### Interpretation de l'echantillonnage
 
 L'echantillonnage MCMC a converge (duree mesurable en direct par la cellule de sampling ci-dessus — machine-dependante, non reproductible d'une machine a l'autre) avec 4 chaînes. Le modèle IRT utilise un lien probit (fonction inverse de la distribution normale cumulative) pour modeliser la probabilite de reponse correcte en fonction de la différence entre capacite de l'etudiant et difficulte de la question.
 
 La **discrimination** posterieure est estimee a ~0,30 -- une valeur **faible**. Dans le modele IRT a 2 parametres (2PL), la discrimination est la pente de la courbe P(correct) = Phi( discrimination x (capacite - difficulte) ) : une pente elevee signifie que la probabilite de reussite augmente vite avec la capacite (la question distingue nettement les etudiants forts des faibles), tandis qu'une pente faible (~0,30 ici) << aplatit >> la courbe -- les questions reussissent presque independamment du niveau de l'etudiant, donc elles **discriminent peu**. C'est coherent avec les donnees : le taux de reussite moyen (0,52) et la presence d'un etudiant total (5/5) comme d'un etudiant nul (0/5) laissent une marge d'incertitude sur l'ordre reel des difficultes, que le modele traduit par une faible discrimination. Un Q-concept clair : **mesurer la discrimination** (et pas seulement les capacites/difficultes) est ce qui permet de detecter les questions mal calibrees.",,,,,,,,9086b978cb619005,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-7-Skills-IRT.ipynb,76b12769,code,fr,d9e809bd0055afe7,"# Visualisation capacites vs difficultes
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-07-Skills-IRT.ipynb,76b12769,code,fr,d9e809bd0055afe7,"# Visualisation capacites vs difficultes
 fig, axes = plt.subplots(1, 2, figsize=(14, 5))
 
 # Capacites des etudiants
@@ -7661,7 +7661,7 @@ axes[1].axhline(0, color='gray', linestyle='--')
 
 plt.tight_layout()
 plt.show()",,,,,,,,d9e809bd0055afe7,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-7-Skills-IRT.ipynb,440fbad1,markdown,fr,2cc16491b7f7009a,"## Exercice 1 : Evaluer un Nouvel Etudiant avec DINA
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-07-Skills-IRT.ipynb,440fbad1,markdown,fr,2cc16491b7f7009a,"## Exercice 1 : Evaluer un Nouvel Etudiant avec DINA
 
 Un nouvel etudiant repond aux 6 questions du modèle DINA.
 Ses reponses sont : `[1, 0, 1, 0, 1, 0]`
@@ -7673,25 +7673,25 @@ Ses reponses sont : `[1, 0, 1, 0, 1, 0]`
 - Reutiliser le modèle DINA ci-dessus avec les mêmes slip/guess
 - Ajouter l'etudiant 8 au tableau de données
 - Examiner `alpha_post[:, 8, :]` pour les probabilites de maitrise",,,,,,,,2cc16491b7f7009a,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-7-Skills-IRT.ipynb,8326e94b,code,fr,01a0bdeb2baa6e16,"# TODO etudiant : evaluer le nouvel etudiant avec le modele DINA
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-07-Skills-IRT.ipynb,8326e94b,code,fr,01a0bdeb2baa6e16,"# TODO etudiant : evaluer le nouvel etudiant avec le modele DINA
 # Indices :
 # - Ajouter les reponses du nouvel etudiant aux donnees existantes
 # - Reprendre le modele DINA avec n_etud_dina = 9
 # - Examiner les probabilites de maitrise pour l'etudiant 8
 
 print(""Exercice a completer"")",,,,,,,,01a0bdeb2baa6e16,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-7-Skills-IRT.ipynb,1b9e1c0a,markdown,fr,dc2a8d87af0e781f,"### Interpretation : Résultats IRT
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-07-Skills-IRT.ipynb,1b9e1c0a,markdown,fr,dc2a8d87af0e781f,"### Interpretation : Résultats IRT
 
 **Capacites estimees** : Les etudiants 6 et 7 sont aux extremes (capacite +0.84 et -0.86), ce qui correspond a leurs profils observes (100% et 0% de reussite). La plupart des autres etudiants ont des capacites proches de 0, indiquant un niveau moyen.
 
 **Difficultes des questions** : Les questions 0-2 sont plus faciles (difficulte negative, autour de -0.26) que les questions 3-4 (difficulte positive, autour de +0.28). Cela correspond aux taux de reussite observes dans les données.
 
 **Paramètre de discrimination** : La valeur de 0.30 indique une discrimination moderee - le modèle distingue relativement bien les etudiants de différents niveaux.",,,,,,,,dc2a8d87af0e781f,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-7-Skills-IRT.ipynb,b0cc38fd,markdown,fr,e15a1efcdb801ea5,"## 3. Evaluation avec la Courbe ROC
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-07-Skills-IRT.ipynb,b0cc38fd,markdown,fr,e15a1efcdb801ea5,"## 3. Evaluation avec la Courbe ROC
 
 La courbe ROC (Receiver Operating Characteristic) mesure la capacite du modèle a
 distinguer les reponses correctes des incorrectes.",,,,,,,,e15a1efcdb801ea5,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-7-Skills-IRT.ipynb,37c8107b,code,fr,c4f6cd3a50a60f84,"# Courbe ROC pour le modele IRT
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-07-Skills-IRT.ipynb,37c8107b,code,fr,c4f6cd3a50a60f84,"# Courbe ROC pour le modele IRT
 # Probabilites predictives : P(correct) pour chaque paire etudiant-question
 with irt_model:
     ppc_irt = pm.sample_posterior_predictive(trace_irt, random_seed=42)
@@ -7716,7 +7716,7 @@ plt.tight_layout()
 plt.show()
 
 print(f""AUC (IRT): {roc_auc:.3f}"")",,,,,,,,c4f6cd3a50a60f84,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-7-Skills-IRT.ipynb,26856f11,markdown,fr,c6eb0162c4c7e5bf,"## 4. Modèle DINA (Deterministic Input, Noisy And gate)
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-07-Skills-IRT.ipynb,26856f11,markdown,fr,c6eb0162c4c7e5bf,"## 4. Modèle DINA (Deterministic Input, Noisy And gate)
 
 Le modèle DINA suppose que chaque question requiert un ensemble de competences.
 Un etudiant ne peut repondre correctement que s'il maitrise TOUTES les competences requises.
@@ -7732,7 +7732,7 @@ Un etudiant ne peut repondre correctement que s'il maitrise TOUTES les competenc
 | Slip (faute) | `Variable.Bernoulli(slip)` si competent | `pt.switch` |
 | Guess (chance) | `Variable.Bernoulli(guess)` si non-competent | `pt.switch` |
 | Q-matrix | Conditions manuelles | Matrice numpy + indexation |",,,,,,,,c6eb0162c4c7e5bf,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-7-Skills-IRT.ipynb,00cf05ac,code,fr,5762c8149bc46320,"# Donnees DINA : 8 etudiants x 6 questions x 3 competences
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-07-Skills-IRT.ipynb,00cf05ac,code,fr,5762c8149bc46320,"# Donnees DINA : 8 etudiants x 6 questions x 3 competences
 # Q-matrix : quelles competences sont requises pour chaque question
 Q_matrix = np.array([
     [1, 0, 0],  # Question 0 : competence 1 uniquement
@@ -7759,14 +7759,14 @@ n_comp = Q_matrix.shape[1]
 
 print(f""DINA: {n_etud_dina} etudiants, {n_quest_dina} questions, {n_comp} competences"")
 print(f""Q-matrix:\n{Q_matrix}"")",,,,,,,,5762c8149bc46320,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-7-Skills-IRT.ipynb,7e95dcd1,markdown,fr,d28c22fce32c2a97,"### Preparation des données DINA
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-07-Skills-IRT.ipynb,7e95dcd1,markdown,fr,d28c22fce32c2a97,"### Preparation des données DINA
 
 Les 8 etudiants presentent des profils variés face aux 6 questions : l'etudiant 2 repond correctement a tout (maitrise probable de toutes les competences), tandis que l'etudiant 3 echoue partout. La Q-matrix montre que les questions 3, 4 et 5 requierent des combinaisons de competences (respectivement 1+2, 2+3, et 1+2+3), ce qui les rend plus discriminantes.
 
 Le modèle DINA va maintenant estimer les competences de chaque etudiant comme des variables binaires (maitrise / non-maitrise), ainsi que les paramètres de bruit :
 - **Slip** : probabilite de se tromper malgre la maitrise (faute d'inattention)
 - **Guess** : probabilite de reussir par chance sans maitrise",,,,,,,,d28c22fce32c2a97,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-7-Skills-IRT.ipynb,e2376568,code,fr,fcb762e8dea0e196,"# Modele DINA avec PyMC
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-07-Skills-IRT.ipynb,e2376568,code,fr,fcb762e8dea0e196,"# Modele DINA avec PyMC
 # Equivalent Infer.NET : Variable.Bernoulli(0.5) par competence
 # puis AND logique pour determiner la maitrise de la question
 
@@ -7799,12 +7799,12 @@ with pm.Model() as dina_model:
     responses_dina = pm.Bernoulli('responses_dina', p=p_correct, observed=reponses_dina)
     
     trace_dina = pm.sample(3000, random_seed=42, return_inferencedata=True)",,,,,,,,fcb762e8dea0e196,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-7-Skills-IRT.ipynb,5a61922d,markdown,fr,b1c670a7bf85857c,"### Preparation des données DINA
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-07-Skills-IRT.ipynb,5a61922d,markdown,fr,b1c670a7bf85857c,"### Preparation des données DINA
 
 La Q-matrix définit la structure cognitive du test : chaque colonne represente une competence et chaque ligne indique quelles competences sont necessaires pour reussir la question. Par exemple, la question 5 requiert les 3 competences [1,1,1], ce qui la rend très difficile.
 
 Le modèle DINA va estimer pour chaque etudiant la probabilite de maitrise de chaque competence, ainsi que les paramètres de slip (faute quand on est competent) et guess (chance quand on ne l'est pas). Les priors Beta(2,18) et Beta(3,12) encodent nos connaissances a priori : les etudiants competents se trompent rarement (slip ~0.1) et les etudiants non-competents devinent rarement (guess ~0.2).",,,,,,,,b1c670a7bf85857c,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-7-Skills-IRT.ipynb,a6fefe5f,code,fr,28d0cd17c409ffb8,"# Resultats DINA
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-07-Skills-IRT.ipynb,a6fefe5f,code,fr,28d0cd17c409ffb8,"# Resultats DINA
 alpha_post = trace_dina.posterior['alpha'].values.reshape(-1, n_etud_dina, n_comp)
 slip_post = trace_dina.posterior['slip'].values.reshape(-1, n_quest_dina)
 guess_post = trace_dina.posterior['guess'].values.reshape(-1, n_quest_dina)
@@ -7828,10 +7828,10 @@ print()
 print(""Parametres de guess (chance si non-competent):"")
 for j in range(n_quest_dina):
     print(f""  Question {j}: guess={guess_post[:,j].mean():.3f}"")",,,,,,,,28d0cd17c409ffb8,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-7-Skills-IRT.ipynb,63d1c599,markdown,fr,14c68afc044a2062,"### Interpretation de l'echantillonnage DINA
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-07-Skills-IRT.ipynb,63d1c599,markdown,fr,14c68afc044a2062,"### Interpretation de l'echantillonnage DINA
 
 L'echantillonnage (duree mesurable en direct par la cellule de sampling ci-dessus — machine-dependante) utilise un algorithme hybride : BinaryGibbsMetropolis pour les competences binaires (alpha) et NUTS pour les paramètres continus (slip, guess). Cette combinaison est necessaire car les variables competences sont discretes tandis que slip et guess sont continus.",,,,,,,,14c68afc044a2062,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-7-Skills-IRT.ipynb,82004c14,code,fr,ff710093ea0bc3f7,"# Visualisation des competences DINA
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-07-Skills-IRT.ipynb,82004c14,code,fr,ff710093ea0bc3f7,"# Visualisation des competences DINA
 fig, ax = plt.subplots(1, 1, figsize=(8, 5))
 im = ax.imshow(alpha_mean, cmap='RdYlGn', vmin=0, vmax=1, aspect='auto')
 ax.set_xlabel('Competence')
@@ -7848,7 +7848,7 @@ for i in range(n_etud_dina):
 
 plt.tight_layout()
 plt.show()",,,,,,,,ff710093ea0bc3f7,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-7-Skills-IRT.ipynb,bf2c21e2,markdown,fr,e7381472d113b1ea,"### Interpretation : Profils de competences DINA
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-07-Skills-IRT.ipynb,bf2c21e2,markdown,fr,e7381472d113b1ea,"### Interpretation : Profils de competences DINA
 
 La matrice de probabilites revele des profils d'apprentissage distincts :
 - **Etudiant 2** : Maitrise quasi-certaine des 3 competences (0.99-1.00), ce qui correspond a ses reponses parfaites
@@ -7856,13 +7856,13 @@ La matrice de probabilites revele des profils d'apprentissage distincts :
 - **Etudiant 3** : Aucune competence maitrisee (0.08-0.10), correspondant a ses reponses toutes incorrectes
 
 **Paramètres de bruit** : Les valeurs de slip (~0.09-0.10) et guess (~0.14-0.21) sont coherrentes avec les priors informatifs, indiquant que le modèle a bien capture la structure des données.",,,,,,,,e7381472d113b1ea,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-7-Skills-IRT.ipynb,df45baa7,markdown,fr,36ffb3cf3d2d9a2a,"## 5. Estimation avec Priors Informatifs
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-07-Skills-IRT.ipynb,df45baa7,markdown,fr,36ffb3cf3d2d9a2a,"## 5. Estimation avec Priors Informatifs
 
 Les priors informatifs sur slip et guess ameliorent l'estimation quand les données
 sont limitees. On utilise des Beta concentres autour des valeurs attendues :
 - **Slip** : `Beta(2, 18)` — en moyenne 0.1, l'etudiant competent se trompe rarement
 - **Guess** : `Beta(3, 12)` — en moyenne 0.2, l'etudiant non-competent a une petite chance",,,,,,,,36ffb3cf3d2d9a2a,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-7-Skills-IRT.ipynb,bce94a4a,code,fr,1825facde01f6631,"# Comparaison des priors informatifs vs non-informatifs
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-07-Skills-IRT.ipynb,bce94a4a,code,fr,1825facde01f6631,"# Comparaison des priors informatifs vs non-informatifs
 x = np.linspace(0, 0.6, 200)
 
 fig, axes = plt.subplots(1, 2, figsize=(12, 4))
@@ -7894,7 +7894,7 @@ plt.show()
 
 print(""Les priors informatifs concentrent la probabilite autour des valeurs plausibles."")
 print(""Cela stabilise l'estimation quand les donnees sont limitees (peu d'etudiants)."")",,,,,,,,1825facde01f6631,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-7-Skills-IRT.ipynb,8314185d,markdown,fr,df221d4157899ebd,"## 6. Comparaison IRT vs DINA
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-07-Skills-IRT.ipynb,8314185d,markdown,fr,df221d4157899ebd,"## 6. Comparaison IRT vs DINA
 
 | Aspect | IRT | DINA |
 |--------|-----|------|
@@ -7911,7 +7911,7 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-7-Skills-IRT.ipynb,8314185d,markdown,fr,df221
 ---
 
 **Retour au sommaire** : [Index Probas](../README.md)",,,,,,,,df221d4157899ebd,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-7-Skills-IRT.ipynb,f0e781fd,markdown,fr,a8e00c72c9fe16cd,"## Exercice 2 : Comparer Deux Classes
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-07-Skills-IRT.ipynb,f0e781fd,markdown,fr,a8e00c72c9fe16cd,"## Exercice 2 : Comparer Deux Classes
 
 On a deux classes d'etudiants qui ont passe le même questionnaire.
 Comparer les niveaux moyens de competence entre les deux classes.
@@ -7920,7 +7920,7 @@ Comparer les niveaux moyens de competence entre les deux classes.
 - Utiliser le modèle IRT avec les deux groupes
 - Comparer les distributions posterieures des capacites
 - Visualiser avec un boxplot ou un violin plot",,,,,,,,a8e00c72c9fe16cd,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-7-Skills-IRT.ipynb,b14240ee,code,fr,1ab81c090189e4f5,"# TODO etudiant : comparer deux classes
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-07-Skills-IRT.ipynb,b14240ee,code,fr,1ab81c090189e4f5,"# TODO etudiant : comparer deux classes
 # Donnees pour la classe B
 # reponses_classe_b = np.array([...])  # a definir
 # Indices :
@@ -7929,7 +7929,7 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-7-Skills-IRT.ipynb,b14240ee,code,fr,1ab81c090
 # - Utiliser plt.boxplot ou az.plot_posterior pour la comparaison
 
 print(""Exercice a completer"")",,,,,,,,1ab81c090189e4f5,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-7-Skills-IRT.ipynb,f3121ba7,markdown,fr,e1a84dd46bb094eb,"## Exercice 3 : Modèle IRT a 2 paramètres (2PL)
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-07-Skills-IRT.ipynb,f3121ba7,markdown,fr,e1a84dd46bb094eb,"## Exercice 3 : Modèle IRT a 2 paramètres (2PL)
 
 Etendez le modèle IRT a 1 paramètre (Rasch) en ajoutant un paramètre de
 **discrimination** propre a chaque question. Dans le modèle 2PL :
@@ -7943,7 +7943,7 @@ ou $a_j$ est le pouvoir de discrimination de la question $j$.
 - La formule devient : `p_correct = pm.math.invprobit(disc[j] * (ability[i] - difficulty[j]))`
 - Comparer les capacites estimees avec le modèle 1PL précédent
 - Les questions avec une discrimination plus elevee separent mieux les etudiants",,,,,,,,e1a84dd46bb094eb,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-7-Skills-IRT.ipynb,17cd6f26,code,fr,224c0368973ed678,"# TODO etudiant : implementer le modele IRT a 2 parametres (2PL)
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-07-Skills-IRT.ipynb,17cd6f26,code,fr,224c0368973ed678,"# TODO etudiant : implementer le modele IRT a 2 parametres (2PL)
 # Etape 1 : reutiliser les donnees reponses_irt
 # Etape 2 : ajouter un parametre de discrimination par question (au lieu d'un seul global)
 # Etape 3 : P(correct) = Phi(disc_j * (ability_i - diff_j))
@@ -7951,7 +7951,7 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-7-Skills-IRT.ipynb,17cd6f26,code,fr,224c03689
 
 result = None  # TODO etudiant : remplacer par le modele 2PL
 print(""Exercice a completer"")",,,,,,,,224c0368973ed678,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-7-Skills-IRT.ipynb,40fefb6e,markdown,fr,6d773c51e496667c,"## Conclusion
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-07-Skills-IRT.ipynb,40fefb6e,markdown,fr,6d773c51e496667c,"## Conclusion
 
 La Théorie de la Reponse aux Items (IRT) modelise la probabilite de reponse correcte comme fonction de la competence de l'etudiant et de la difficulte de l'item.
 
@@ -7963,9 +7963,9 @@ La Théorie de la Reponse aux Items (IRT) modelise la probabilite de reponse cor
 ---
 
 **Retour au sommaire** : [Index Probas](../README.md)",,,,,,,,6d773c51e496667c,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-8-TrueSkill.ipynb,706bed3c,markdown,fr,551e5e8016c3ad90,"# PyMC-8 : TrueSkill - Classement et Apprentissage en Ligne
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-08-TrueSkill.ipynb,706bed3c,markdown,fr,551e5e8016c3ad90,"# PyMC-8 : TrueSkill - Classement et Apprentissage en Ligne
 
-**Navigation** : [Index](../README.md) | [<< PyMC-7](PyMC-7-Skills-IRT.ipynb) | [PyMC-9 >>](PyMC-9-Classification.ipynb)
+**Navigation** : [Index](../README.md) | [<< PyMC-7](PyMC-07-Skills-IRT.ipynb) | [PyMC-9 >>](PyMC-09-Classification.ipynb)
 
 **Equivalent Infer.NET** : [Infer-8-TrueSkill](../Infer/Infer-8-TrueSkill.ipynb)
 
@@ -7980,7 +7980,7 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-8-TrueSkill.ipynb,706bed3c,markdown,fr,551e5e
 
 **Prerequis** : PyMC-7 (modèles de competences IRT), statistiques
 ",,,,,,,,551e5e8016c3ad90,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-8-TrueSkill.ipynb,5ad1ba8f,code,fr,5f1389b8deaa3710,"try:
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-08-TrueSkill.ipynb,5ad1ba8f,code,fr,5f1389b8deaa3710,"try:
     import numpy as np
     NUMPY_AVAILABLE = True
 except ImportError:
@@ -8020,7 +8020,7 @@ if NUMPY_AVAILABLE and PYMC_AVAILABLE:
     print(f""PyMC version: {pm.__version__}"")
 else:
     print(""PyMC n'est pas installe. Executez: pip install pymc arviz matplotlib numpy scipy"")",,,,,,,,5f1389b8deaa3710,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-8-TrueSkill.ipynb,4bc5c2d8,markdown,fr,357085cbb064694d,"## 1. Introduction a TrueSkill
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-08-TrueSkill.ipynb,4bc5c2d8,markdown,fr,357085cbb064694d,"## 1. Introduction a TrueSkill
 
 **TrueSkill** est le système de classement bayesien developpe par Microsoft Research pour Xbox Live.
 
@@ -8051,7 +8051,7 @@ $$\text{perf}_i = \text{skill}_i + \epsilon_i, \quad \epsilon_i \sim \mathcal{N}
 | Incertitude | Non modelisee | Capturee par sigma |
 | Convergence | Lente (K fixe) | Rapide (adaptatif via sigma) |
 | Équipes | Moyenne | Somme des performances |",,,,,,,,357085cbb064694d,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-8-TrueSkill.ipynb,10fcd304,markdown,fr,72d22a218630bff2,"## 2. Modèle Deux Joueurs
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-08-TrueSkill.ipynb,10fcd304,markdown,fr,72d22a218630bff2,"## 2. Modèle Deux Joueurs
 
 ### Infer.NET vs PyMC
 
@@ -8061,7 +8061,7 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-8-TrueSkill.ipynb,10fcd304,markdown,fr,72d22a
 | Performance | `Variable.GaussianFromMeanAndVariance(skill, beta^2)` | `pm.Normal('perf', skill, beta)` |
 | Comparaison | `(perf1 > perf2)` directement | `pm.Potential` ou lien probit |
 | Observation | `.ObservedValue = true` | `observed=` ou `pm.Potential` |",,,,,,,,72d22a218630bff2,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-8-TrueSkill.ipynb,40e53b79,code,fr,c9614b01b4a38e71,"# Parametres TrueSkill
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-08-TrueSkill.ipynb,40e53b79,code,fr,c9614b01b4a38e71,"# Parametres TrueSkill
 mu_init = 25.0
 sigma_init = 25.0 / 3.0
 beta = sigma_init / 2.0
@@ -8094,8 +8094,8 @@ print(f""=== Apres un match (Joueur 1 gagne) ==="")
 print(f""Avant : Skill1 = N({mu_init:.1f}, {sigma_init:.2f}), Skill2 = N({mu_init:.1f}, {sigma_init:.2f})"")
 print(f""Apres : Skill1 = N({s1_post.mean():.2f}, {s1_post.std():.2f}), Skill2 = N({s2_post.mean():.2f}, {s2_post.std():.2f})"")
 print(f""Changement : J1 = {s1_post.mean() - mu_init:+.2f}, J2 = {s2_post.mean() - mu_init:+.2f}"")",,,,,,,,c9614b01b4a38e71,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-8-TrueSkill.ipynb,16031c41,markdown,fr,7de0c040692946d1,"Le modèle 1v1 confirme le mécanisme central de TrueSkill : un `pm.Potential` impose la contrainte ""gagnant a une meilleure performance"", et l'echantillonnage NUTS propage cette information vers les posterieurs de skill. Le gagnant voit son $\mu$ augmenter (+4.09) et le perdant le sien diminuer (-4.22), tandis que les deux incertitudes diminuent. Visualisons ces distributions posterieures.",,,,,,,,7de0c040692946d1,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-8-TrueSkill.ipynb,5760e439,code,fr,56b4f333ab0afe5f,"# Visualisation des distributions de skill
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-08-TrueSkill.ipynb,16031c41,markdown,fr,7de0c040692946d1,"Le modèle 1v1 confirme le mécanisme central de TrueSkill : un `pm.Potential` impose la contrainte ""gagnant a une meilleure performance"", et l'echantillonnage NUTS propage cette information vers les posterieurs de skill. Le gagnant voit son $\mu$ augmenter (+4.09) et le perdant le sien diminuer (-4.22), tandis que les deux incertitudes diminuent. Visualisons ces distributions posterieures.",,,,,,,,7de0c040692946d1,,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-08-TrueSkill.ipynb,5760e439,code,fr,56b4f333ab0afe5f,"# Visualisation des distributions de skill
 fig, ax = plt.subplots(1, 1, figsize=(10, 4))
 x = np.linspace(0, 50, 200)
 prior = stats.norm(mu_init, sigma_init)
@@ -8114,7 +8114,7 @@ plt.show()
 
 print(""Le gagnant voit son mu augmenter et le perdant voit le sien diminuer."")
 print(""Les deux incertitudes (sigma) diminuent car on a de l'information."")",,,,,,,,56b4f333ab0afe5f,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-8-TrueSkill.ipynb,864804e1,markdown,fr,018ec2c1d18872e2,"## 3. Gestion des Matchs Nuls
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-08-TrueSkill.ipynb,864804e1,markdown,fr,018ec2c1d18872e2,"## 3. Gestion des Matchs Nuls
 
 Un match nul se produit quand la différence de performances est dans un intervalle $[-\epsilon, \epsilon]$.
 
@@ -8123,7 +8123,7 @@ Un match nul se produit quand la différence de performances est dans un interva
 | Concept | Infer.NET | PyMC |
 |---------|-----------|------|
 | Match nul | `Variable.ConstrainBetween(diff, -eps, eps)` | `pm.TruncatedNormal` ou `pm.Potential` |",,,,,,,,018ec2c1d18872e2,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-8-TrueSkill.ipynb,ab84b100,code,fr,e47fece2aeded6b3,"# Modele avec match nul
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-08-TrueSkill.ipynb,ab84b100,code,fr,e47fece2aeded6b3,"# Modele avec match nul
 # Equivalent Infer.NET : Variable.ConstrainBetween(diff, -epsilon, epsilon)
 
 epsilon = 1.0  # Marge pour match nul
@@ -8150,7 +8150,7 @@ print(f""SkillA = N({sA_post.mean():.2f}, {sA_post.std():.2f})"")
 print(f""SkillB = N({sB_post.mean():.2f}, {sB_post.std():.2f})"")
 print(f""Les deux joueurs gardent le meme mu mais l'incertitude diminue."")
 print(f""Sigma: {sigma_init:.2f} -> J1={sA_post.std():.2f}, J2={sB_post.std():.2f}"")",,,,,,,,e47fece2aeded6b3,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-8-TrueSkill.ipynb,2012de4d,markdown,fr,da646a8e566dab18,"## Exercice 1 : Ligue de Football
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-08-TrueSkill.ipynb,2012de4d,markdown,fr,da646a8e566dab18,"## Exercice 1 : Ligue de Football
 
 Modelisez une ligue de football a 4 équipes avec TrueSkill :
 - PSG bat Marseille
@@ -8162,14 +8162,14 @@ Modelisez une ligue de football a 4 équipes avec TrueSkill :
 - Utiliser la classe `TrueSkillOnline` avec `mu_init=100, sigma_init=33.33`
 - Appeler `record_match` pour chaque résultat
 - Afficher le classement avec `show_ranking`",,,,,,,,da646a8e566dab18,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-8-TrueSkill.ipynb,a3853c70,code,fr,a72547dfa23c8956,"# TODO etudiant : implementer la ligue de football
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-08-TrueSkill.ipynb,a3853c70,code,fr,a72547dfa23c8956,"# TODO etudiant : implementer la ligue de football
 # Indices :
 # - Creer TrueSkillOnline(mu_init=100, sigma_init=33.33)
 # - Enregistrer les 4 matchs
 # - Afficher le classement
 
 print(""Exercice a completer"")",,,,,,,,a72547dfa23c8956,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-8-TrueSkill.ipynb,ad753021,markdown,fr,e27222b5db14caf2,"## 4. Apprentissage en Ligne
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-08-TrueSkill.ipynb,ad753021,markdown,fr,e27222b5db14caf2,"## 4. Apprentissage en Ligne
 
 Le principe de l'apprentissage en ligne : les **posterieurs** deviennent les **priors** pour le match suivant.
 
@@ -8179,7 +8179,7 @@ Le principe de l'apprentissage en ligne : les **posterieurs** deviennent les **p
 |---------|-----------|------|
 | Prior iteratif | `Variable.Random<double, Gaussian>(prior)` | Nouveau modèle avec priors maj |
 | Stockage | `Dictionary<string, Gaussian>` | `dict` de tuples (mu, sigma) |",,,,,,,,e27222b5db14caf2,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-8-TrueSkill.ipynb,22afe534,code,fr,62e460149c609a56,"class TrueSkillOnline:
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-08-TrueSkill.ipynb,22afe534,code,fr,62e460149c609a56,"class TrueSkillOnline:
     """"""Apprentissage en ligne TrueSkill avec PyMC.
     Equivalent de la classe TrueSkillOnline en Infer.NET.
     """"""
@@ -8226,8 +8226,8 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-8-TrueSkill.ipynb,22afe534,code,fr,62e460149c
             print(f""{rang}. {nom:<10} : mu={mu:.1f}, sigma={sigma:.2f}, rating={rating:.1f}"")
 
 print(""Classe TrueSkillOnline definie."")",,,,,,,,62e460149c609a56,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-8-TrueSkill.ipynb,0d31df09,markdown,fr,4f611c945c82f25c,"La classe `TrueSkillOnline` encapsule la logique de mise a jour incrementale : a chaque match, les posterieurs deviennent les priors du match suivant. La méthode `record_match` construit un nouveau modèle PyMC a chaque rencontre, echantillonne, puis met a jour les paramètres stockes. Appliquons cette classe a un tournoi complet de 6 matchs.",,,,,,,,4f611c945c82f25c,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-8-TrueSkill.ipynb,c0f1b776,code,fr,f876e2c979d4a852,"# Simulation d'un tournoi
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-08-TrueSkill.ipynb,0d31df09,markdown,fr,4f611c945c82f25c,"La classe `TrueSkillOnline` encapsule la logique de mise a jour incrementale : a chaque match, les posterieurs deviennent les priors du match suivant. La méthode `record_match` construit un nouveau modèle PyMC a chaque rencontre, echantillonne, puis met a jour les paramètres stockes. Appliquons cette classe a un tournoi complet de 6 matchs.",,,,,,,,4f611c945c82f25c,,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-08-TrueSkill.ipynb,c0f1b776,code,fr,f876e2c979d4a852,"# Simulation d'un tournoi
 ts = TrueSkillOnline()
 
 matchs = [
@@ -8245,8 +8245,8 @@ for gagnant, perdant in matchs:
     ts.record_match(gagnant, perdant)
 
 ts.show_ranking()",,,,,,,,f876e2c979d4a852,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-8-TrueSkill.ipynb,9cd5cccd,markdown,fr,356ade5e2b7f617c,"Le tournoi de 6 matchs revele une hiérarchie claire : Alice domine avec $\mu = 33.3$, suivie de Charlie ($\mu = 28.5$), Bob ($\mu = 21.8$) et Dave ($\mu = 16.5$). Le *conservative rating* ($\mu - 3\sigma$) penalise les joueurs avec plus d'incertitude — Dave a le rating le plus bas ($-1.8$) non seulement a cause de son $\mu$ faible, mais aussi de son $\sigma$ eleve. Observons les distributions posterieures completes.",,,,,,,,356ade5e2b7f617c,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-8-TrueSkill.ipynb,b73bd9ad,code,fr,ee675549c69c79c7,"# Visualisation de l'evolution des skills
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-08-TrueSkill.ipynb,9cd5cccd,markdown,fr,356ade5e2b7f617c,"Le tournoi de 6 matchs revele une hiérarchie claire : Alice domine avec $\mu = 33.3$, suivie de Charlie ($\mu = 28.5$), Bob ($\mu = 21.8$) et Dave ($\mu = 16.5$). Le *conservative rating* ($\mu - 3\sigma$) penalise les joueurs avec plus d'incertitude — Dave a le rating le plus bas ($-1.8$) non seulement a cause de son $\mu$ faible, mais aussi de son $\sigma$ eleve. Observons les distributions posterieures completes.",,,,,,,,356ade5e2b7f617c,,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-08-TrueSkill.ipynb,b73bd9ad,code,fr,ee675549c69c79c7,"# Visualisation de l'evolution des skills
 fig, ax = plt.subplots(1, 1, figsize=(10, 5))
 
 noms = list(ts.skills.keys())
@@ -8265,7 +8265,7 @@ ax.legend()
 ax.set_title('Distributions de skill posterieures apres le tournoi')
 plt.tight_layout()
 plt.show()",,,,,,,,ee675549c69c79c7,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-8-TrueSkill.ipynb,033a0995,markdown,fr,0437941d4eac2a72,"## 5. Extension aux Équipes
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-08-TrueSkill.ipynb,033a0995,markdown,fr,0437941d4eac2a72,"## 5. Extension aux Équipes
 
 Pour un match par équipes, la performance d'équipe est la **somme** des performances individuelles.
 
@@ -8275,7 +8275,7 @@ Pour un match par équipes, la performance d'équipe est la **somme** des perfor
 |---------|-----------|------|
 | Perf d'équipe | `perfA + perfB` | `pm.Deterministic` ou somme directe |
 | Comparaison équipes | `(perfEquipe1 > perfEquipe2)` | `pm.Potential` avec somme |",,,,,,,,0437941d4eac2a72,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-8-TrueSkill.ipynb,3b2c7481,code,fr,20fddd4220117bda,"# Modele par equipes (2v2)
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-08-TrueSkill.ipynb,3b2c7481,code,fr,20fddd4220117bda,"# Modele par equipes (2v2)
 # Equipe 1 : Joueurs A et B bat Equipe 2 : Joueurs C et D
 
 with pm.Model() as trueskill_team:
@@ -8308,7 +8308,7 @@ for name in ['skillA', 'skillB', 'skillC', 'skillD']:
 
 print(""\nTous les membres de l'equipe gagnante voient leur skill augmenter."")
 print(""Le gain (+2.99) est plus faible qu'en 1v1 (+4.21) : l'information est diluee."")",,,,,,,,20fddd4220117bda,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-8-TrueSkill.ipynb,8fcf0537,markdown,fr,299522ba7254cfe9,"## 6. Multi-joueurs (Free-for-all)
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-08-TrueSkill.ipynb,8fcf0537,markdown,fr,299522ba7254cfe9,"## 6. Multi-joueurs (Free-for-all)
 
 Pour N joueurs classes, on impose des contraintes d'ordre transitives :
 perf[0] > perf[1] > perf[2] > perf[3]
@@ -8318,7 +8318,7 @@ perf[0] > perf[1] > perf[2] > perf[3]
 | Concept | Infer.NET | PyMC |
 |---------|-----------|------|
 | Ordre transitif | `Variable.ConstrainTrue(perf[0] > perf[1])` | `pm.Potential` multiples |",,,,,,,,299522ba7254cfe9,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-8-TrueSkill.ipynb,050f6d0d,code,fr,dda27c72a4fb1380,"# Modele multi-joueurs (4 joueurs)
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-08-TrueSkill.ipynb,050f6d0d,code,fr,dda27c72a4fb1380,"# Modele multi-joueurs (4 joueurs)
 # Resultat : P1 > P2 > P3 > P4
 
 n_players = 4
@@ -8341,8 +8341,8 @@ for i in range(n_players):
     mu = skills_post[:, i].mean()
     sigma = skills_post[:, i].std()
     print(f""Joueur {i+1} (position {i+1}) : mu={mu:.2f}, sigma={sigma:.2f}"")",,,,,,,,dda27c72a4fb1380,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-8-TrueSkill.ipynb,3088ba7e,markdown,fr,ec1d653b518604ab,"Le modèle free-for-all estime les skills de 4 joueurs simultanement. Les résultats montrent une separation nette entre les positions : le Joueur 1 ($\mu \approx 32.7$) et le Joueur 4 ($\mu \approx 17.4$) sont les plus affectes, tandis que les positions intermediaires presentent des changements plus moderes. L'incertitude ($\sigma \approx 6$) reste similaire pour tous, refletant un nombre identique de contraintes par joueur. Comparons visuellement ces distributions posterieures.",,,,,,,,ec1d653b518604ab,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-8-TrueSkill.ipynb,3e9588ea,code,fr,f202f029d36076b1,"# Visualisation multi-joueurs
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-08-TrueSkill.ipynb,3088ba7e,markdown,fr,ec1d653b518604ab,"Le modèle free-for-all estime les skills de 4 joueurs simultanement. Les résultats montrent une separation nette entre les positions : le Joueur 1 ($\mu \approx 32.7$) et le Joueur 4 ($\mu \approx 17.4$) sont les plus affectes, tandis que les positions intermediaires presentent des changements plus moderes. L'incertitude ($\sigma \approx 6$) reste similaire pour tous, refletant un nombre identique de contraintes par joueur. Comparons visuellement ces distributions posterieures.",,,,,,,,ec1d653b518604ab,,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-08-TrueSkill.ipynb,3e9588ea,code,fr,f202f029d36076b1,"# Visualisation multi-joueurs
 fig, ax = plt.subplots(1, 1, figsize=(10, 5))
 x = np.linspace(5, 45, 200)
 colors_ffa = ['gold', 'silver', '#cd7f32', 'gray']
@@ -8363,7 +8363,7 @@ plt.show()
 
 print(""Le 1er a la plus forte augmentation, le dernier la plus forte diminution."")
 print(""Les positions intermediaires ont des changements moderes."")",,,,,,,,f202f029d36076b1,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-8-TrueSkill.ipynb,3aa251cf,markdown,fr,3d6a03475f09adde,"## 7. Resume : Infer.NET vs PyMC pour TrueSkill
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-08-TrueSkill.ipynb,3aa251cf,markdown,fr,3d6a03475f09adde,"## 7. Resume : Infer.NET vs PyMC pour TrueSkill
 
 | Aspect | Infer.NET | PyMC |
 |--------|-----------|------|
@@ -8380,7 +8380,7 @@ de Gaussiennes de maniere analytique. PyMC est plus general mais plus lent pour 
 ---
 
 **Retour au sommaire** : [Index Probas](../README.md)",,,,,,,,3d6a03475f09adde,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-8-TrueSkill.ipynb,ca1eafe9,markdown,fr,d69d61c4ff346be2,"## 7 bis. Le coeur de TrueSkill : EP, formules V(t)/W(t) et dynamique
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-08-TrueSkill.ipynb,ca1eafe9,markdown,fr,d69d61c4ff346be2,"## 7 bis. Le coeur de TrueSkill : EP, formules V(t)/W(t) et dynamique
 
 Jusqu'ici nous avons laisse PyMC (NUTS) calculer les posteriors des skills par echantillonnage. C'est correct mais cache **la vraie contribution du papier TrueSkill** : un algorithme analytique qui rend la mise a jour **exacte et O(1) par match**. C'est ce qui rend TrueSkill deployable en production sur des millions de joueurs. Cette section l'explicite.
 
@@ -8423,7 +8423,7 @@ Un detail essentiel, absent des sections précédentes : en production, TrueSkil
 ---
 
 **Retour au sommaire** : [Index Probas](../README.md)",,,,,,,,d69d61c4ff346be2,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-8-TrueSkill.ipynb,1e2770fb,markdown,fr,e6082501a6c63039,"## Exercice 2 : Tournoi Simule avec Vrais Skills
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-08-TrueSkill.ipynb,1e2770fb,markdown,fr,e6082501a6c63039,"## Exercice 2 : Tournoi Simule avec Vrais Skills
 
 Créez 6 joueurs avec des ""vrais skills"" connus. Simulez 15 matchs aleatoires
 (le meilleur joueur gagne plus souvent). Comparez les estimations TrueSkill aux vrais skills.
@@ -8433,14 +8433,14 @@ Créez 6 joueurs avec des ""vrais skills"" connus. Simulez 15 matchs aleatoires
 - Pour chaque match, ajouter du bruit aux vrais skills pour determiner le gagnant
 - Utiliser `TrueSkillOnline` pour estimer
 - Comparer classement estime vs vrai",,,,,,,,e6082501a6c63039,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-8-TrueSkill.ipynb,5a6152f1,code,fr,570d2d8742a8cc12,"# TODO etudiant : simuler un tournoi avec vrais skills
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-08-TrueSkill.ipynb,5a6152f1,code,fr,570d2d8742a8cc12,"# TODO etudiant : simuler un tournoi avec vrais skills
 # Indices :
 # - vrais_skills = {""Elite1"": 35, ""Elite2"": 32, ""Moyen1"": 25, ...}
 # - Pour chaque match : perf = vrai_skill + np.random.normal(0, 5)
 # - Comparer le classement final aux vrais skills
 
 print(""Exercice a completer"")",,,,,,,,570d2d8742a8cc12,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-8-TrueSkill.ipynb,8e6d8eaa,markdown,fr,dd8ab12d44b4619f,"## Exercice 3 : Matchs nuls avec draw margin
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-08-TrueSkill.ipynb,8e6d8eaa,markdown,fr,dd8ab12d44b4619f,"## Exercice 3 : Matchs nuls avec draw margin
 
 Le modèle TrueSkill actuel ne distingue que victoire et defaite. Etendez-le
 pour gerer les **matchs nuls** en ajoutant un paramètre de marge de nul
@@ -8452,7 +8452,7 @@ pour gerer les **matchs nuls** en ajoutant un paramètre de marge de nul
   defaite (diff < -epsilon), nul (|diff| < epsilon)
 - Utiliser `pt.switch` avec `pt.abs(diff)` pour distinguer les trois cas
 - Tester en observant un match nul entre deux joueurs de même niveau",,,,,,,,dd8ab12d44b4619f,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-8-TrueSkill.ipynb,dcd98748,code,fr,e84d32660c23f992,"# TODO etudiant : etendre TrueSkill pour gerer les matchs nuls avec draw margin
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-08-TrueSkill.ipynb,dcd98748,code,fr,e84d32660c23f992,"# TODO etudiant : etendre TrueSkill pour gerer les matchs nuls avec draw margin
 # Etape 1 : definir un prior sur le parametre draw_margin (epsilon)
 # Etape 2 : modifier la vraisemblance pour distinguer victoire, defaite et nul
 # Etape 3 : si |perf1 - perf2| < epsilon => match nul
@@ -8460,7 +8460,7 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-8-TrueSkill.ipynb,dcd98748,code,fr,e84d32660c
 
 result = None  # TODO etudiant : remplacer par le modele avec draw margin
 print(""Exercice a completer"")",,,,,,,,e84d32660c23f992,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-8-TrueSkill.ipynb,0e08ae63,markdown,fr,c48fa679cab91e69,"## Conclusion
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-08-TrueSkill.ipynb,0e08ae63,markdown,fr,c48fa679cab91e69,"## Conclusion
 
 TrueSkill et son successeur TrueSkill 2 sont des modèles de classement bases sur l'inference bayesienne, utilises pour le matchmaking dans les jeux video.
 
@@ -8473,9 +8473,9 @@ TrueSkill et son successeur TrueSkill 2 sont des modèles de classement bases su
 ---
 
 **Retour au sommaire** : [Index Probas](../README.md)",,,,,,,,c48fa679cab91e69,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-9-Classification.ipynb,75ef92e0,markdown,fr,03fa36a4d396fa47,"# PyMC-9 : Classification Bayesienne et Tests A/B
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-09-Classification.ipynb,75ef92e0,markdown,fr,03fa36a4d396fa47,"# PyMC-9 : Classification Bayesienne et Tests A/B
 
-**Navigation** : [Index](../README.md) | [<< PyMC-8](PyMC-8-TrueSkill.ipynb) | [PyMC-10 >>](PyMC-10-Model-Selection.ipynb)
+**Navigation** : [Index](../README.md) | [<< PyMC-8](PyMC-08-TrueSkill.ipynb) | [PyMC-10 >>](PyMC-10-Model-Selection.ipynb)
 
 **Equivalent Infer.NET** : [Infer-9-Classification](../Infer/Infer-9-Classification.ipynb)
 
@@ -8490,7 +8490,7 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-9-Classification.ipynb,75ef92e0,markdown,fr,0
 
 **Prerequis** : PyMC-1 a PyMC-4, statistiques (loi binomiale, test d'hypothese)
 ",,,,,,,,03fa36a4d396fa47,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-9-Classification.ipynb,3cc69a7e,code,fr,5f1389b8deaa3710,"try:
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-09-Classification.ipynb,3cc69a7e,code,fr,5f1389b8deaa3710,"try:
     import numpy as np
     NUMPY_AVAILABLE = True
 except ImportError:
@@ -8530,7 +8530,7 @@ if NUMPY_AVAILABLE and PYMC_AVAILABLE:
     print(f""PyMC version: {pm.__version__}"")
 else:
     print(""PyMC n'est pas installe. Executez: pip install pymc arviz matplotlib numpy scipy"")",,,,,,,,5f1389b8deaa3710,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-9-Classification.ipynb,bdb738f4,markdown,fr,4a2430758bc8e8e8,"## 1. Bayes Point Machine (Probit)
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-09-Classification.ipynb,bdb738f4,markdown,fr,4a2430758bc8e8e8,"## 1. Bayes Point Machine (Probit)
 
 La **Bayes Point Machine** d'Infer.NET classifie en utilisant un score lineaire.
 En PyMC, on utilise un modèle **probit** : P(y=1|x) = Phi(w*x - b) ou Phi est la CDF normale.
@@ -8544,7 +8544,7 @@ En PyMC, on utilise un modèle **probit** : P(y=1|x) = Phi(w*x - b) ou Phi est l
 | Score lineaire | `Variable.InnerProduct(w, x)` | `poids * x_train - seuil` |
 | Fonction lien | Infer.NET interne | `pm.math.invprobit` |
 | Classification | `Variable.GaussianFromMeanAndVariance` | `pm.Bernoulli(p=invprobit(score))` |",,,,,,,,4a2430758bc8e8e8,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-9-Classification.ipynb,2c3ba543,code,fr,df561c459dac01e5,"# Donnees synthetiques : score d'entree vs admission
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-09-Classification.ipynb,2c3ba543,code,fr,df561c459dac01e5,"# Donnees synthetiques : score d'entree vs admission
 np.random.seed(42)
 x_train = np.concatenate([np.random.normal(0.3, 0.15, 20), np.random.normal(0.7, 0.15, 20)])
 y_train = np.concatenate([np.zeros(20), np.ones(20)])
@@ -8572,10 +8572,10 @@ poids_post = trace_bpm.posterior['poids'].values.flatten()
 seuil_post = trace_bpm.posterior['seuil'].values.flatten()
 print(f""Poids posterior: {poids_post.mean():.2f} (std: {poids_post.std():.2f})"")
 print(f""Seuil posterior: {seuil_post.mean():.2f} (std: {seuil_post.std():.2f})"")",,,,,,,,df561c459dac01e5,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-9-Classification.ipynb,88db38e8,markdown,fr,fb0b0a8bfa8649a8,"## 2. Frontiere de Decision
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-09-Classification.ipynb,88db38e8,markdown,fr,fb0b0a8bfa8649a8,"## 2. Frontiere de Decision
 
 Visualisation de la frontiere de decision avec les incertitudes posterieures.",,,,,,,,fb0b0a8bfa8649a8,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-9-Classification.ipynb,75dfc0f1,code,fr,4271c8a36d8595da,"# Frontiere de decision avec bandes d'incertitude
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-09-Classification.ipynb,75dfc0f1,code,fr,4271c8a36d8595da,"# Frontiere de decision avec bandes d'incertitude
 x_grid = np.linspace(-0.2, 1.2, 200)
 
 fig, ax = plt.subplots(1, 1, figsize=(10, 5))
@@ -8601,7 +8601,7 @@ ax.legend()
 ax.set_title('Bayes Point Machine : frontiere de decision bayesienne')
 plt.tight_layout()
 plt.show()",,,,,,,,4271c8a36d8595da,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-9-Classification.ipynb,b9bdbd14,markdown,fr,e78097b5f0d6a725,"## Exercice 2 : Regression logistique bayesienne
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-09-Classification.ipynb,b9bdbd14,markdown,fr,e78097b5f0d6a725,"## Exercice 2 : Regression logistique bayesienne
 
 Implementez un modèle de regression logistique bayesienne pour la classification
 binaire. Contrairement au modèle probit qui utilise `pm.math.invprobit`, la
@@ -8616,7 +8616,7 @@ données synthetiques.
 - Fonction de lien : `p = pm.math.sigmoid(score)` au lieu de `invprobit`
 - Poids : `pm.Normal('w', mu=0, sigma=5, shape=n_features)`
 - Tracer la frontiere de decision avec les bandes d'incertitude posterieure",,,,,,,,e78097b5f0d6a725,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-9-Classification.ipynb,dc87018d,code,fr,f3f5018982acf684,"# TODO etudiant : implementer une regression logistique bayesienne
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-09-Classification.ipynb,dc87018d,code,fr,f3f5018982acf684,"# TODO etudiant : implementer une regression logistique bayesienne
 # Etape 1 : generer des donnees synthetiques (2 features, classification binaire)
 # Etape 2 : definir le modele avec pm.Normal pour les poids et pm.math.sigmoid pour le lien
 # Etape 3 : echantillonner et extraire les poids posterieurs
@@ -8624,7 +8624,7 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-9-Classification.ipynb,dc87018d,code,fr,f3f50
 
 result = None  # TODO etudiant : remplacer par le modele logistique
 print(""Exercice a completer"")",,,,,,,,f3f5018982acf684,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-9-Classification.ipynb,d9935e00,markdown,fr,bb0c24540555dd57,"## 3. Test A/B Bayesien
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-09-Classification.ipynb,d9935e00,markdown,fr,bb0c24540555dd57,"## 3. Test A/B Bayesien
 
 Le test A/B bayesien compare deux proportions (taux de clic, conversions, etc.).
 Contrairement aux tests frequentistes, on obtient directement P(theta_B > theta_A).
@@ -8638,7 +8638,7 @@ Contrairement aux tests frequentistes, on obtient directement P(theta_B > theta_
 | Taux A | `Variable.Beta(aA, bA)` | `pm.Beta('theta_a', a, b)` |
 | Taux B | `Variable.Beta(aB, bB)` | `pm.Beta('theta_b', a, b)` |
 | Différence | Inferer delta | `pm.Deterministic('delta', theta_b - theta_a)` |",,,,,,,,bb0c24540555dd57,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-9-Classification.ipynb,e38f59d2,code,fr,095637946f60db29,"# Test A/B : comparaison de deux versions d'une page
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-09-Classification.ipynb,e38f59d2,code,fr,095637946f60db29,"# Test A/B : comparaison de deux versions d'une page
 # Version A : 30 clics sur 100 visites
 # Version B : 45 clics sur 120 visites
 
@@ -8668,10 +8668,10 @@ print(f""Taux A : {theta_a_post.mean():.3f} (95% CI: [{np.percentile(theta_a_pos
 print(f""Taux B : {theta_b_post.mean():.3f} (95% CI: [{np.percentile(theta_b_post, 2.5):.3f}, {np.percentile(theta_b_post, 97.5):.3f}])"")
 print(f""Delta (B - A) : {delta_post.mean():.3f}"")
 print(f""P(theta_B > theta_A) = {(delta_post > 0).mean():.3f}"")",,,,,,,,095637946f60db29,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-9-Classification.ipynb,977c77be,markdown,fr,86ec480a326cc2d9,"## 4. Impact de la Taille d'Echantillon
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-09-Classification.ipynb,977c77be,markdown,fr,86ec480a326cc2d9,"## 4. Impact de la Taille d'Echantillon
 
 Plus l'echantillon est grand, plus l'incertitude diminue et la probabilite posterieure converge.",,,,,,,,86ec480a326cc2d9,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-9-Classification.ipynb,db62adc3,code,fr,3ec61f061d64cb3b,"# Impact de la taille d'echantillon sur la certitude
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-09-Classification.ipynb,db62adc3,code,fr,3ec61f061d64cb3b,"# Impact de la taille d'echantillon sur la certitude
 sizes = [10, 30, 50, 100, 200, 500]
 p_better = []
 
@@ -8704,8 +8704,8 @@ ax.set_title('Convergence du test A/B avec la taille')
 ax.legend()
 plt.tight_layout()
 plt.show()",,,,,,,,3ec61f061d64cb3b,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-9-Classification.ipynb,362b60f1,markdown,fr,fe2fa9f220ce7ee2,## 5. Visualisation des Distributions A/B,,,,,,,,fe2fa9f220ce7ee2,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-9-Classification.ipynb,ebe74f79,code,fr,c7c05de269066ea1,"# Visualisation des distributions posterieures
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-09-Classification.ipynb,362b60f1,markdown,fr,fe2fa9f220ce7ee2,## 5. Visualisation des Distributions A/B,,,,,,,,fe2fa9f220ce7ee2,,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-09-Classification.ipynb,ebe74f79,code,fr,c7c05de269066ea1,"# Visualisation des distributions posterieures
 fig, axes = plt.subplots(1, 2, figsize=(14, 4))
 
 # Distributions theta_a et theta_b
@@ -8728,14 +8728,14 @@ axes[1].set_title(f'Distribution du delta (P(B>A) = {(delta_post > 0).mean():.3f
 
 plt.tight_layout()
 plt.show()",,,,,,,,c7c05de269066ea1,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-9-Classification.ipynb,2df8c6e7,markdown,fr,99284df89863931a,"## 6. Application : Click-Through Rate (CTR)
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-09-Classification.ipynb,2df8c6e7,markdown,fr,99284df89863931a,"## 6. Application : Click-Through Rate (CTR)
 
 Un annonceur veut savoir si une nouvelle banniere a un meilleur CTR.
 - Ancienne banniere : 150 clics sur 1000 impressions
 - Nouvelle banniere : 180 clics sur 1000 impressions
 
 La différence est-elle statistiquement significative ?",,,,,,,,99284df89863931a,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-9-Classification.ipynb,f67b10e9,code,fr,93fbc7e7d41bb65b,"# CTR : test A/B pour bannieres publicitaires
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-09-Classification.ipynb,f67b10e9,code,fr,93fbc7e7d41bb65b,"# CTR : test A/B pour bannieres publicitaires
 with pm.Model() as ctr_test:
     theta_old = pm.Beta('theta_old', alpha=1, beta=1)
     theta_new = pm.Beta('theta_new', alpha=1, beta=1)
@@ -8756,7 +8756,7 @@ print(f""CTR nouveau : {theta_new_post.mean():.3f}"")
 print(f""Amelioration : {delta_ctr_post.mean():.3f}"")
 print(f""P(nouveau > ancien) = {(delta_ctr_post > 0).mean():.3f}"")
 print(f""Lift relatif : {delta_ctr_post.mean() / theta_old_post.mean() * 100:.1f}%"")",,,,,,,,93fbc7e7d41bb65b,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-9-Classification.ipynb,421a782b,markdown,fr,c9656de8b752e4aa,"## Exercice 3 : Calibration des probabilites
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-09-Classification.ipynb,421a782b,markdown,fr,c9656de8b752e4aa,"## Exercice 3 : Calibration des probabilites
 
 Après avoir entraine un modèle de classification, evaluez la **calibration**
 de ses predictions probabilistes. Un modèle bien calibre predit des probabilites
@@ -8771,7 +8771,7 @@ et interpreter le résultat.
 - Tracer : x = probabilite predite, y = frequence observee
 - Un modèle parfait suit la diagonale y = x
 - Un modèle surconfiant a des points en-dessous de la diagonale pour p > 0.5",,,,,,,,c9656de8b752e4aa,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-9-Classification.ipynb,f80f194e,code,fr,3ef27a351c518707,"# TODO etudiant : calculer et tracer une courbe de calibration
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-09-Classification.ipynb,f80f194e,code,fr,3ef27a351c518707,"# TODO etudiant : calculer et tracer une courbe de calibration
 # Etape 1 : obtenir les probabilites predites par un modele (probit ou logistique)
 # Etape 2 : diviser les predictions en bins (par ex. 10 bins deciles)
 # Etape 3 : pour chaque bin, calculer la frequence observee vs la probabilite moyenne predite
@@ -8779,7 +8779,7 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-9-Classification.ipynb,f80f194e,code,fr,3ef27
 
 result = None  # TODO etudiant : remplacer par le calcul de calibration
 print(""Exercice a completer"")",,,,,,,,3ef27a351c518707,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-9-Classification.ipynb,9e97cd72,markdown,fr,4a482b9953887d56,"## 7. Comparaison Infer.NET vs PyMC pour la classification
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-09-Classification.ipynb,9e97cd72,markdown,fr,4a482b9953887d56,"## 7. Comparaison Infer.NET vs PyMC pour la classification
 
 | Aspect | Infer.NET | PyMC |
 |--------|-----------|------|
@@ -8795,7 +8795,7 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-9-Classification.ipynb,9e97cd72,markdown,fr,4
 ---
 
 **Retour au sommaire** : [Index Probas](../README.md)",,,,,,,,4a482b9953887d56,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-9-Classification.ipynb,772b4a37,markdown,fr,e33305847b243c75,"## Exercice : Classificateur de Spam
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-09-Classification.ipynb,772b4a37,markdown,fr,e33305847b243c75,"## Exercice : Classificateur de Spam
 
 Implementer un classificateur de spam bayesien avec 3 features :
 - x1 : frequence du mot ""gratuit""
@@ -8808,11 +8808,11 @@ Le modèle : score = w1*x1 + w2*x2 + w3*x3 - seuil
 - Priors : `pm.Normal('w', mu=0, sigma=5, shape=3)` pour les poids
 - Score : `pt.dot(X, w) - seuil`
 - Lien : `pm.math.invprobit(score)`",,,,,,,,e33305847b243c75,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-9-Classification.ipynb,927f8ffa,code,fr,811b67c4f7fb000e,"# TODO etudiant : implementer le classificateur de spam bayesien
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-09-Classification.ipynb,927f8ffa,code,fr,811b67c4f7fb000e,"# TODO etudiant : implementer le classificateur de spam bayesien
 # Resultat attendu : poids posterieurs pour chaque feature + frontiere de decision
 
 print(""Exercice a completer"")",,,,,,,,811b67c4f7fb000e,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-9-Classification.ipynb,ddaa67d8,markdown,fr,af97874011d14931,"## Conclusion
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-09-Classification.ipynb,ddaa67d8,markdown,fr,af97874011d14931,"## Conclusion
 
 La classification bayesienne estime P(classe|features) en combinant prior et vraisemblance, fournissant non seulement une prediction mais aussi une incertitude quantifiee.
 
@@ -9026,7 +9026,7 @@ Les trois sous-graphiques tracent des fonctions tir&eacute;es du **m&ecirc;me pr
 
 C'est le **compromis biais-variance du GP** exprim&eacute; via le noyau : `ls` trop petit = variance &eacute;lev&eacute;e (wiggly, sur-apprend) ; `ls` trop grand = biais &eacute;lev&eacute; (lisse, sous-apprend). Sur le dataset &laquo; donut &raquo; qui suit, PyMC va **apprendre `ls` depuis les donn&eacute;es** : trop petit, il &eacute;pouse le bruit de l'anneau ; trop grand, il ne s&eacute;pare plus le disque de l'anneau. Le &laquo; sparse &raquo; du titre d&eacute;signe l'astuce computationnelle (points induits) qui rend ce tirage d'&eacute;chelle abordable quand $N$ grandit.
 ",,,,,,,,f012dbb96ace4678,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-2-Gaussian-Mixtures.ipynb,ppc-check-intro-8081,markdown,fr,e0e2b2a9cc3e90d9,"### D'abord : la Gaussienne unique suffit-elle ? (controle predictif)
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-02-Gaussian-Mixtures.ipynb,ppc-check-intro-8081,markdown,fr,e0e2b2a9cc3e90d9,"### D'abord : la Gaussienne unique suffit-elle ? (controle predictif)
 
 Avant d'introduire le melange, une etape cle de la demarche *model-based* (Winn & Bishop, MBML Ch.1) reste implicite dans ce notebook : **controler que le modele simple rend bien compte des donnees**. La section 3 utilise la distribution predictive pour *predire le temps de demain*, mais jamais pour **diagnostiquer un mauvais ajustement**.
 
@@ -9034,7 +9034,7 @@ On reprend ici les donnees bimodales (jours normaux + jours exceptionnels) et on
 
 > **Note (#8081)** : ce controle predictif etait absent de la distillation. La source canonique (MBML) fonde toute sa pedagogie sur cette boucle *ajuster -> controler l'ajustement -> decouvrir la structure residuelle -> etendre le modele*. Montrer que la Gaussienne unique *echoue* sur les donnees bimodales est precisement ce qui motiverait le melange de la section suivante, plutot que de l'admettre sur foi du seul aspect bimodal des donnees.
 ",,,,,,,,e0e2b2a9cc3e90d9,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-2-Gaussian-Mixtures.ipynb,ppc-check-8081,code,fr,4f1571ddb09a455a,"# Controle predictif (posterior predictive check) : la Gaussienne unique suffit-elle ?
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-02-Gaussian-Mixtures.ipynb,ppc-check-8081,code,fr,4f1571ddb09a455a,"# Controle predictif (posterior predictive check) : la Gaussienne unique suffit-elle ?
 # On ajuste une Gaussienne UNIQUE sur les donnees bimodales (jours normaux + exceptionnels)
 # et on compare sa distribution predictive aux donnees observees.
 # La predictive d'une Gaussienne a moyenne+variance inconnues (prior conjugue vague)
@@ -9078,12 +9078,12 @@ print(""\nLa Gaussienne unique lisse le creux entre les deux regimes ; elle ne p
 print(""representer a la fois les jours normaux (~15 min) et exceptionnels (~32 min)."")
 print(""C'est ce diagnostic d'ajustement qui justifie le passage a un melange (section 5)."")
 ",,,,,,,,4f1571ddb09a455a,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-7-Skills-IRT.ipynb,origine-mbml-ch2-pymc,markdown,fr,efe34c484859d16e,"### Origine pédagogique : Model-Based Machine Learning (Chap. 2)
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-07-Skills-IRT.ipynb,origine-mbml-ch2-pymc,markdown,fr,efe34c484859d16e,"### Origine pédagogique : Model-Based Machine Learning (Chap. 2)
 
 Ce notebook est une **distillation pratique en PyMC** du **Chapitre 2 — *Assessing People's Skills*** de *Model-Based Machine Learning* (Winn, Bishop, Diethe, Guiver & Zaykov, 2020 — [mbmlbook.com](https://mbmlbook.com/LearningSkills.html)), qui résout le même problème : **inférer les compétences d'un candidat à partir de ses réponses à un test**, en modélisant capacité latente, difficulté des questions et bruit d'observation (slip/guess).
 
 > Les **racines académiques** du modèle — Rasch (1960), Lord (1980), Birnbaum (1968) pour l'IRT, Junker & Sijtsma (2001) pour le DINA — sont détaillées dans les sections 2 et 4 ci-dessous, afin d'éviter de dupliquer ici le pedigree. La structure pédagogique (problème → défis → modèle) reprend la démarche de modélisation du chapitre MBML ; les scénarios numériques et l'inférence PyMC (MCMC NUTS + Gibbs pour les variables latentes binaires) sont propres au notebook.",,,,,,,,efe34c484859d16e,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-8-TrueSkill.ipynb,89b5a9f5,markdown,fr,bbd08e67b1d96934,"### Elo : le predecesseur deterministe que TrueSkill generalise
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-08-TrueSkill.ipynb,89b5a9f5,markdown,fr,bbd08e67b1d96934,"### Elo : le predecesseur deterministe que TrueSkill generalise
 
 Avant TrueSkill, le classement competitif etait domine par **Elo** (chess, 1960s), que la cellule suivante implemente from-scratch. Chaque joueur y est represente par un **unique scalaire** $R$ (son rating) :
 
@@ -9094,7 +9094,7 @@ $$E_A = \frac{1}{1 + 10^{(R_B - R_A)/400}}, \qquad R_A \leftarrow R_A + K \cdot 
 - $K$ : facteur de mise a jour **FIXE** (typiquement 16 a 32).
 
 Elo est simple, robuste et eprouve. Mais il est **deterministe et ponctuel** : il ne modelise pas son incertitude. La cellule suivante montre concretement ce que cela implique, et pourquoi Microsoft a developpe TrueSkill pour Xbox Live.",,,,,,,,bbd08e67b1d96934,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-8-TrueSkill.ipynb,9c8620b6,code,fr,a4b0f67ee99d3b26,"# Elo : le systeme de classement deterministe que TrueSkill generalise.
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-08-TrueSkill.ipynb,9c8620b6,code,fr,a4b0f67ee99d3b26,"# Elo : le systeme de classement deterministe que TrueSkill generalise.
 # Implementation from-scratch (pure Python, deterministe) pour servir de baseline.
 import math
 
@@ -9132,7 +9132,7 @@ print()
 print("">>> Elo ne SAIT PAS qu'il est incertain. Un nouveau joueur et un"")
 print(""    veteran de 1000 matchs au meme rating sont traites identiquement."")
 print(""    C'est ce defaut que TrueSkill corrige en modelisant sigma."")",,,,,,,,a4b0f67ee99d3b26,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-8-TrueSkill.ipynb,7ca5818a,markdown,fr,c0eba88a30314845,"### Interpretation : les 4 limites d'Elo que TrueSkill corrige
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-08-TrueSkill.ipynb,7ca5818a,markdown,fr,c0eba88a30314845,"### Interpretation : les 4 limites d'Elo que TrueSkill corrige
 
 La serie de 5 victoires ci-dessus revele une chose subtile et essentielle :
 
@@ -9150,7 +9150,7 @@ TrueSkill generalise Elo sur **quatre axes** concrets :
 | Matchs nuls / multi-joueurs (bidouilles) | **Draw margin** $\epsilon$ et contraintes d'ordre (free-for-all) nativement |
 
 La section suivante construit le modele TrueSkill 1v1 et montre la **premiere** de ces ameliorations : un match fait passer $\mathcal{N}(25, 8.33^2) \rightarrow \mathcal{N}(29.09, 7.19^2)$ — notez que **$\sigma$ diminue** (de 8.33 a 7.19), ce qu'Elo est incapable d'exprimer.",,,,,,,,c0eba88a30314845,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-8-TrueSkill.ipynb,ep-closedform-demo,code,fr,37d184480aeb32c8,"# Demonstration numerique : la mise a jour closed-form EP (V(t), W(t)) de la section 7 bis.
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-08-TrueSkill.ipynb,ep-closedform-demo,code,fr,37d184480aeb32c8,"# Demonstration numerique : la mise a jour closed-form EP (V(t), W(t)) de la section 7 bis.
 # On calcule l'equivalent analytique exact de ce que NUTS approxime par echantillonnage plus haut.
 from scipy.stats import norm
 from math import sqrt
@@ -9182,7 +9182,7 @@ print(""Constate : le gagnant monte, le perdant descend, l'incertitude (sigma) s
 print(""des deux cotes -- exactement la dynamique qu'on retrouve dans les sorties NUTS des sections 2-3,"")
 print(""mais ici en O(1) analytique (aucun echantillonnage)."")
 ",,,,,,,,37d184480aeb32c8,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-8-TrueSkill.ipynb,ep-closedform-interp,markdown,fr,e998429ad008c940,"### Interpretation : la mise a jour analytique EP
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-08-TrueSkill.ipynb,ep-closedform-interp,markdown,fr,e998429ad008c940,"### Interpretation : la mise a jour analytique EP
 
 La cellule precedente calcule en forme fermee (O(1), aucun echantillonnage) ce que NUTS
 approxime par tirages Monte Carlo dans les sections 2-3. Sur un match a priors egaux,
