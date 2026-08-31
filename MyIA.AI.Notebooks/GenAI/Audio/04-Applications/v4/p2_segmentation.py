@@ -91,18 +91,23 @@ Assure-toi que :
 # ── Pre-processing ──
 
 
-def load_source_text(path: Path = SOURCE_TEXT) -> str:
+def load_source_text(path: Path | None = None) -> str:
     """Load the full source text file.
+
+    Reads the module-level ``SOURCE_TEXT`` at call time (an orchestrator may
+    override it after import; a default-argument binding would freeze the
+    original path).
 
     Raises:
         FileNotFoundError: If the source text file does not exist.
     """
-    if not path.exists():
+    resolved = SOURCE_TEXT if path is None else path
+    if not resolved.exists():
         raise FileNotFoundError(
-            f"Source text not found: {path}\n"
+            f"Source text not found: {resolved}\n"
             "Place boule_de_suif_full.txt in the 04-Applications directory."
         )
-    return path.read_text(encoding="utf-8")
+    return resolved.read_text(encoding="utf-8")
 
 
 def split_into_paragraphs(text: str) -> list[dict]:
