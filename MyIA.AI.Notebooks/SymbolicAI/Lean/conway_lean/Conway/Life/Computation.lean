@@ -179,6 +179,12 @@ theorem glider_2periods : evolve 8 glider = shift (2, -2) glider := by decide
     (`decide` dans le noyau, zero axiome — reductible apres le fix `ceilLog2` #9536, #8869.) -/
 theorem glider_3periods : evolve 12 glider = shift (3, -3) glider := by decide
 
+/-- Le glider canonique a une periode de 4 generations et se deplace de (1, -1) par periode.
+    Ce pattern est celui retrouve par le moteur de `scripts/lean/life_synthesize.py`
+    (spec `evolve^4 T = shift (1, -1) T`) : la machine le decouvre, il n'est pas recopie.
+    (`decide` dans le noyau, zero axiome.) -/
+theorem machine_glider_period : evolve 4 glider = shift (1, -1) glider := by decide
+
 /-- Hashlife et reference sont d'accord sur le glider apres 8 generations (2 periodes).
     (`decide` dans le noyau, zero axiome — reductible apres le fix `ceilLog2` #9536, #8869.) -/
 theorem hashlife_glider_8 : evolveHashlife 8 glider = evolve 8 glider := by decide
