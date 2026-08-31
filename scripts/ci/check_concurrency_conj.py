@@ -97,7 +97,7 @@ def _parse_workflow(text: str, yaml):
     rewritten = "".join(out_lines)
     try:
         return yaml.safe_load(rewritten)
-    except yaml.YAMLObject:
+    except yaml.YAMLError:
         return None
 
 

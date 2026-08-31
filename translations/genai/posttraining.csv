@@ -1402,18 +1402,6 @@ MyIA.AI.Notebooks/GenAI/PostTraining/PT_03_dpo_direct_preference.ipynb,4545940b,
     return accuracy
 
 print(""Exercice a completer : preference accuracy"")",,,,,,,,d90dbcbf53028c1c,,,,,,,,
-MyIA.AI.Notebooks/GenAI/PostTraining/PT_03_dpo_direct_preference.ipynb,a50da53a,markdown,fr,0560a5bf5ba80c65,"## 11. Methodologie multi-seed (bonus)
-
-Pour toute claim ""DPO > SFT"" sur une metrique d'evaluation, la règle CoursIA exige :
-- **>= 4 seeds** parmi {0, 1, 7, 42, 99}
-- **Edge >= 2 sigma** cross-seed (sinon flag ""noise"")
-- **Walk-forward 5-fold** sur les données de préférence
-
-En pratique pour ce notebook pedagogique (50 exemples), un verdict honnete serait :
-- ""DPO montre une amelioration sur 3/4 seeds, mais edge < 2 sigma""
-- ""INCONCLUSIF sur ce subset — a confirmer sur dataset complet""
-
-Le pattern honnete (G.2) : rapporter le verdict reel, pas le verdict souhaite.",,,,,,,,0560a5bf5ba80c65,,,,,,,,
 MyIA.AI.Notebooks/GenAI/PostTraining/PT_03_dpo_direct_preference.ipynb,cell-6d84ccc3,markdown,fr,252a6ef838133a5b,"---
 
 ## Bilan — DPO : passer de 4 modèles a 2 sans reward model
@@ -4779,30 +4767,6 @@ MyIA.AI.Notebooks/GenAI/PostTraining/PT_10_gae_from_scratch_toy_env.ipynb,84d6d3
     return None  # TODO etudiant
 
 print(""Exercice C : variance_advantage_diagnostic - completer et executer"")",,,,,,,,599c46182fee7061,,,,,,,,
-MyIA.AI.Notebooks/GenAI/PostTraining/PT_11_grpo_qwen_rlvr_on_verifiers.ipynb,bfbb6e52,markdown,fr,d6453548184f436c,"Grain: DEEP/notebook-python — lane myia-po-2024:CoursIA-2 — prev: DEEP/notebook-python #10283
-
-# PT-11 — RLVR sur VRAI LLM (Qwen3.5-0.8B) + rewardspy.watch ONLINE + Z3 Tier-1 verifier
-
-**Serie** : Post-Training SOTA 2024-2025 (Epic #1742, PT-11 = sous-axe RLVR de #10289)
-**Pre-requis** : PT-05 (RLVR pedagogique, SymPy verifier) et PT-04 (GRPO), patron transposé
-**Objectif acceptance** : demonstrer un pipeline RLVR **complet et executé** sur un **vrai LLM**
-(Qwen3.5-0.8B, QLoRA 4-bit), avec rewards **verifiables** (SymPy exact match), instrumentation
-**ONLINE** par `rewardspy.watch` (detecteur reward hacking), et verdict **honnête** sur la convergence.
-
-**References cles** :
-- Deepseek-AI, ""DeepSeek-R1"" (2025) — RLVR sur Qwen2.5 + Qwen3.5 → emergence raisonnement
-- Lightman et al., ""Let's Verify Step by Step"" (OpenAI, 2023) — outcome vs process reward
-- Open-R1 / SmolLM-Reward (HuggingFace, 2025) — `rewardspy.watch` instrumentation LIVE
-
-**Difference vs PT-05** : PT-05 documente le patron RLVR sur Qwen2.5-0.5B en mode CPU-safe
-(demonstration pedagogique, pas d'execution reelle). PT-11 execute **réellement** sur RTX 3070
-avec Qwen3.5-0.8B QLoRA 4-bit, ≥100 steps GRPO, courbe de reward reelle, et signal Goodhart
-via `rewardspy.watch` ONLINE (cf acceptance #10289).",,,,,,,,d6453548184f436c,,,,,,,,
-MyIA.AI.Notebooks/GenAI/PostTraining/PT_11_grpo_qwen_rlvr_on_verifiers.ipynb,b290ad8d,markdown,fr,47bd0ccf06cec4e0,"## 1. Env probe — GPU, libs, versions
-
-Avant tout : verifier l'environnement. PT-11 est un grain **DEEP** PostTraining, il necessite
-CUDA + transformers + trl + peft + bitsandbytes + rewardspy + z3. **Si une lib manque, stop et
-installer** (regle F : reparer, ne JAMAIS contourner).",,,,,,,,47bd0ccf06cec4e0,,,,,,,,
 MyIA.AI.Notebooks/GenAI/PostTraining/PT_11_grpo_qwen_rlvr_on_verifiers.ipynb,9ea74bc2,code,fr,7c0176bd4ca0794b,"import sys, platform
 print(f""Python : {sys.version}"")
 print(f""Plateforme : {platform.platform()}"")
@@ -4829,10 +4793,6 @@ print(f""z3 : {z3.get_version_string()}"")
 print(f""sympy : {sympy.__version__}"")
 
 print(""\nEnv probe OK."")",,,,,,,,7c0176bd4ca0794b,,,,,,,,
-MyIA.AI.Notebooks/GenAI/PostTraining/PT_11_grpo_qwen_rlvr_on_verifiers.ipynb,c5fd25b6,markdown,fr,504d732a77075f48,"### 1.1 Switch d'execution
-
-`LOAD_MODEL_AND_TRAIN = True` execute le pipeline RLVR complet (~10-20 min sur RTX 3070).
-`False` fait tourner seulement les tests unitaires du verifier + Z3 (validation pedagogique sans GPU).",,,,,,,,504d732a77075f48,,,,,,,,
 MyIA.AI.Notebooks/GenAI/PostTraining/PT_11_grpo_qwen_rlvr_on_verifiers.ipynb,5fb9ae41,code,fr,bea6d1be4d817add,"import os
 
 LOAD_MODEL_AND_TRAIN = True
@@ -4844,23 +4804,6 @@ if not LOAD_MODEL_AND_TRAIN:
     print(""(Mode CPU-safe : verifier Z3 + SymPy executes, training RLVR skip)"")
 else:
     print(""(Mode TRAINING : Qwen3.5-0.8B + GRPO + rewardspy.online)"")",,,,,,,,bea6d1be4d817add,,,,,,,,
-MyIA.AI.Notebooks/GenAI/PostTraining/PT_11_grpo_qwen_rlvr_on_verifiers.ipynb,7c51e9a1,markdown,fr,2a750dd9e1946815,"# Papermill injects LOAD_MODEL_AND_TRAIN via -p flag (default False = CPU-safe mode)
-# Set True for real training on GPU (>=4 Go VRAM).
-LOAD_MODEL_AND_TRAIN = False
-print(f""LOAD_MODEL_AND_TRAIN = {LOAD_MODEL_AND_TRAIN}"")
-if not LOAD_MODEL_AND_TRAIN:
-    print(""(Mode CPU-safe : verifier Z3 + SymPy executes, training RLVR skip)"")
-else:
-    print(""(Mode TRAINING : Qwen3.5-0.8B + GRPO + rewardspy.online)"")
-",,,,,,,,2a750dd9e1946815,,,,,,,,
-MyIA.AI.Notebooks/GenAI/PostTraining/PT_11_grpo_qwen_rlvr_on_verifiers.ipynb,9d782840,markdown,fr,6d8c718edf4dc0c0,"## 3. Tier-1 verifier — SymPy exact match (verifiable reward, bruit zero)
-
-Le verifier **exact** (outcome reward) prend une completion textuelle, extrait la reponse
-numerique, et la compare avec la ground truth a epsilon pres. **Pas de bruit, pas de zone
-grise** : reward = 1.0 si match, 0.0 sinon.
-
-**Formats d'extraction supportes** : `\boxed{42}`, `#### 42`, `The answer is 42`, `= 42`,
-fallback dernier nombre. Pattern robuste derive de PT-05 cellule 4.",,,,,,,,6d8c718edf4dc0c0,,,,,,,,
 MyIA.AI.Notebooks/GenAI/PostTraining/PT_11_grpo_qwen_rlvr_on_verifiers.ipynb,5ee77533,code,fr,4ba1eee258aaebac,"import re
 from typing import Optional
 import sympy
@@ -4937,18 +4880,6 @@ MyIA.AI.Notebooks/GenAI/PostTraining/PT_11_grpo_qwen_rlvr_on_verifiers.ipynb,32b
     return None  # TODO etudiant : retourner le nombre extrait ou None
 
 print(""Exercice a completer : parser etendu notation scientifique"")",,,,,,,,c4fcd90180b7ff67,,,,,,,,
-MyIA.AI.Notebooks/GenAI/PostTraining/PT_11_grpo_qwen_rlvr_on_verifiers.ipynb,fb37c096,markdown,fr,e502b435d69d3fff,"## 4. Tier-2 verifier (bonus) — Z3 CSP exact : N-queens N=4
-
-**Pourquoi** : SymPy verifie des reponses numeriques, Z3 verifie des **solutions a des problemes
-combinatoires** (N-queens, Sudoku, systemes de contraintes). On inclut un mini-verifier Z3
-pour montrer l'extension naturelle du Tier 1 → Tier 2 sans complexifier le notebook.
-
-**Cas test : N-queens N=4**. Le modele doit produire une permutation des colonnes `{1,2,3,4}`
-telle qu'aucune reine n'est en diagonale. Z3 valide en ~5ms.
-
-**Avertissement pedagogique** : pour N-queens N=4, la verification directe en Python pur
-(< 2 µs) est suffisante. Z3 est **pedagogiquement** pertinent pour des problemes ou la
-verification manuelle n'est pas evidente (ex. systemes d'equations, logique du premier ordre).",,,,,,,,e502b435d69d3fff,,,,,,,,
 MyIA.AI.Notebooks/GenAI/PostTraining/PT_11_grpo_qwen_rlvr_on_verifiers.ipynb,f46865f9,code,fr,e0eba4545ec38f5b,"import z3
 import time
 import re
@@ -5018,15 +4949,6 @@ print(f""  permutation  : {nqueens_verifier('Q1=1 Q2=2 Q3=3 Q4=4')}"")
 print(f""  collision    : {nqueens_verifier('Q1=2 Q2=4 Q3=2 Q4=3')}"")
 print(f""  garbage      : {nqueens_verifier('I dont know')}"")
 print(""\nVerifier Z3 pret."")",,,,,,,,e0eba4545ec38f5b,,,,,,,,
-MyIA.AI.Notebooks/GenAI/PostTraining/PT_11_grpo_qwen_rlvr_on_verifiers.ipynb,90c5e15d,markdown,fr,b6a1509fbb68eba4,"## 5. Mini-dataset GSM8K-like (10 problemes, ground truths verifiables)
-
-**Cible** : 10 problemes de niveau college, structure variée (arithmetique, geometrie, monnaie).
-**Inspiration** : PT-05 cellule 5 (GSM8K sample). **Variante PT-11** : on inclut un probleme
-plus complexe (3 etapes) pour tester l'amelioration reelle sur les cas non-triviaux.
-
-**Honnetete** : 10 problemes = insuffisant pour multi-seed >= 4 et edge >= 2σ (cf G.2). Ce
-dataset est un **proof-of-concept** du pipeline RLVR, PAS une evaluation rigoureuse (cf verdict
-final, cellule 14).",,,,,,,,b6a1509fbb68eba4,,,,,,,,
 MyIA.AI.Notebooks/GenAI/PostTraining/PT_11_grpo_qwen_rlvr_on_verifiers.ipynb,21936bba,code,fr,dbc924c68ce9082e,"from datasets import Dataset
 
 GSM8K_SAMPLE_PT11 = [
@@ -5052,18 +4974,6 @@ dataset_rlvr = format_for_grpo(GSM8K_SAMPLE_PT11)
 print(f""Dataset RLVR PT-11 : {len(dataset_rlvr)} problemes avec ground truths verifiables"")
 for i in range(3):
     print(f""  Q{i+1}: {dataset_rlvr[i]['prompt'][0]['content'][:60]}... -> {dataset_rlvr[i]['answer']}"")",,,,,,,,dbc924c68ce9082e,,,,,,,,
-MyIA.AI.Notebooks/GenAI/PostTraining/PT_11_grpo_qwen_rlvr_on_verifiers.ipynb,7869072c,markdown,fr,d34fb5b840106685,"### Exercice 2 : ajouter 5 problemes de geometrie
-
-Le dataset actuel est 100% arithmetique. Ajouter 5 problemes de **geometrie** (aire, perimetre,
-volume) pour augmenter la variete du training et tester la generalisation du verifier.
-
-**Objectif** : `creer_dataset_geometrie()` retourne une liste de 5 problemes formates comme
-`GSM8K_SAMPLE_PT11`.
-
-**Indices** :
-- # Etape 1 : aire triangle (base × hauteur / 2), perimetre cercle (2πr), volume sphere (4/3 πr³)
-- # Etape 2 : utiliser π = 3.14159 ou `math.pi` pour les ground truths
-- # Indice : convertir les floats en arrondi 2 decimales pour eviter les problemes de tolerance",,,,,,,,d34fb5b840106685,,,,,,,,
 MyIA.AI.Notebooks/GenAI/PostTraining/PT_11_grpo_qwen_rlvr_on_verifiers.ipynb,ec3dfc70,code,fr,ea98e7f017aa676d,"def creer_dataset_geometrie() -> list:
     """"""TODO etudiant : creer 5 problemes de geometrie avec ground truths verifiables.""""""
     problemes = []
@@ -5072,19 +4982,6 @@ MyIA.AI.Notebooks/GenAI/PostTraining/PT_11_grpo_qwen_rlvr_on_verifiers.ipynb,ec3
     return problemes
 
 print(""Exercice a completer : dataset geometrie"")",,,,,,,,ea98e7f017aa676d,,,,,,,,
-MyIA.AI.Notebooks/GenAI/PostTraining/PT_11_grpo_qwen_rlvr_on_verifiers.ipynb,f17b4f6e,markdown,fr,0d12551d0416263a,"## 6. Wrap rewardspy.watch ONLINE — detecteur reward hacking LIVE
-
-`rewardspy.watch` instrumente **en ligne** chaque appel de la reward function. Le detecteur
-analyse la **distribution** des rewards sur la fenetre glissante (window_size=20 par defaut)
-et leve une **alerte** si :
-- **ceiling** : > 85% des rollouts au plafond (suspicion memorisation)
-- **variance_collapse** : variance de reward effondree (mode collapse)
-- **stagnation** : pas de progression sur la fenetre
-
-**C'est exactement le detecteur Goodhart mandate par le user** dans #10289 (« *on a meme
-integre un detecteur de reward hacking dont on se sert dans ICT* »). La traçabilité est
-**ONLINE** : chaque rollout est enregistré avec timestamp, et la decision du detecteur est
-posée dans la même session GRPO.",,,,,,,,0d12551d0416263a,,,,,,,,
 MyIA.AI.Notebooks/GenAI/PostTraining/PT_11_grpo_qwen_rlvr_on_verifiers.ipynb,46b6baf0,code,fr,5188a368177f2f66,"import rewardspy
 from rewardspy.integrations import watch_trl
 from pathlib import Path
@@ -5166,10 +5063,6 @@ print(f""  - sensitivity = 'medium'"")
 print(f""  - max_reward = 1.0 (plafond outcome reward)"")
 print(f""  - detect = True (reward hacking detector LIVE, export JSONL -> {_REWARD_LOG})"")
 print(f""  - journal groupes informatifs par step (#10603) -> {_INFORMATIVE_LOG}"")",,,,,,,,5188a368177f2f66,,,,,,,,
-MyIA.AI.Notebooks/GenAI/PostTraining/PT_11_grpo_qwen_rlvr_on_verifiers.ipynb,c8c96e51,markdown,fr,58a98e825a7393ed,"### 6.1 Sanity check : rewardspy detecte-t-il bien les patterns reward hacking ?
-
-Test rapide en CPU-safe : simuler 3 scenarios de reward (stable, collapse, spike) et verifier
-que le detecteur leve les bonnes alertes. Cela valide l'instrumentation avant le training reel.",,,,,,,,58a98e825a7393ed,,,,,,,,
 MyIA.AI.Notebooks/GenAI/PostTraining/PT_11_grpo_qwen_rlvr_on_verifiers.ipynb,29cf38c3,code,fr,a734d875d5fe584d,"import numpy as np
 
 if not LOAD_MODEL_AND_TRAIN:
@@ -5199,27 +5092,6 @@ if not LOAD_MODEL_AND_TRAIN:
     print(""Sanity check rewardspy OK."")
 else:
     print(""(Skip sanity check en mode TRAINING)"")",,,,,,,,a734d875d5fe584d,,,,,,,,
-MyIA.AI.Notebooks/GenAI/PostTraining/PT_11_grpo_qwen_rlvr_on_verifiers.ipynb,ab92adb7,markdown,fr,f01a86c73fb973b1,"## 7. Configuration GRPO pour RLVR sur Qwen3.5-0.8B
-
-**Parametres cles** (calibres sur RTX 3070, 8.59 Go VRAM, correction #10603) :
-- **num_generations = 8** : group size G=8 = la valeur par defaut TRL. A G=2, ~30 %
-  des groupes sont homogenes (std reward == 0) => avantage GRPO nul => gradient
-  nul (~30 steps sur 100 seulement portaient du signal, mesure p=0.1819). A G=8,
-  la fraction de groupes informatifs est estimee a ~80 % (mesure dans ce notebook,
-  journalisee par step via `_log_informative_groups`).
-- **per_device_train_batch_size = 8** : DOIT etre divisible par num_generations
-  (contrainte GRPOConfig : batch effectif = num_processes x per_device_batch x
-  grad_accum, divisible par G). 8 % 8 == 0.
-- **gradient_accumulation_steps = 1** : batch effectif 8 == G (pas de compromis
-  signal/wallclock comme en G=2 ou 2x2=4)
-- **max_completion_length = 96** : courtes completions (math concis), meme valeur
-  que le run G=2 (comparaison de la densite de signal a longueur egale)
-- **learning_rate = 5e-6** : valeur PT-05 (signal verifiable plus precis donc
-  moins de risque d'overshoot)
-- **beta = 0.0** : DAPO (beta>0 = crash peft#3340 sur trl1.9.2/tf5.x ; beta=0
-  supprime le KL et rend la loss ~0 par construction — le gradient, lui, est non nul)
-- **max_steps = 100** : acceptance #10289 exige >= 100 steps
-- **bf16 = True** : pas de fp32 (gain memoire x2 sans perte de qualite verifiable)",,,,,,,,f01a86c73fb973b1,,,,,,,,
 MyIA.AI.Notebooks/GenAI/PostTraining/PT_11_grpo_qwen_rlvr_on_verifiers.ipynb,7a694acc,code,fr,2347444952be3df3,"GRPO_CONFIG_DICT = {
     ""num_generations"": 8,              # #10603 : G=8 = defaut TRL, ~80% groupes informatifs vs ~30% a G=2
     ""beta"": 0.0,                       # DAPO (beta>0 = crash peft#3340 sur trl1.9.2/tf5.x ; beta=0 supprime KL)
@@ -5241,11 +5113,6 @@ MyIA.AI.Notebooks/GenAI/PostTraining/PT_11_grpo_qwen_rlvr_on_verifiers.ipynb,7a6
 print(""Configuration GRPO RLVR (compatible trl 1.9.2, G=8 #10603) :"")
 for k, v in GRPO_CONFIG_DICT.items():
     print(f""  {k} = {v}"")",,,,,,,,2347444952be3df3,,,,,,,,
-MyIA.AI.Notebooks/GenAI/PostTraining/PT_11_grpo_qwen_rlvr_on_verifiers.ipynb,75fe3220,markdown,fr,aa739f9f825fdc7b,"## 8. Chargement modele Qwen3.5-0.8B + QLoRA 4-bit
-
-**Chargement en 4-bit** (NF4 + double quant + bf16 compute) : ~1.5 Go VRAM resident base.
-**LoRA r=8, alpha=16** sur q/k/v/o/gate/up/down_proj (couverture complete MLP+attention).
-**Trainable params** : ~1.5M (sur 0.8B total) ≈ 0.19% — typique d'un RL post-training.",,,,,,,,aa739f9f825fdc7b,,,,,,,,
 MyIA.AI.Notebooks/GenAI/PostTraining/PT_11_grpo_qwen_rlvr_on_verifiers.ipynb,21c7d28d,code,fr,fa43166230cafaee,"import os
 MODEL_NAME = os.path.expanduser(""~/models/qwen35-0.8b"")  # Local (evite WinError 1314 symlink HF cache)
 
@@ -5253,13 +5120,6 @@ print(f""Chargement modele {MODEL_NAME} + QLoRA 4-bit..."")
 print(f""  Architecture : Qwen3.5-0.8B (classe Qwen3_5ForCausalLM, chemin texte via AutoModelForCausalLM)"")
 print(f""  License : Apache 2.0"")
 print(f""  VRAM mesuree (4-bit NF4) : ~0.8 Go"")",,,,,,,,fa43166230cafaee,,,,,,,,
-MyIA.AI.Notebooks/GenAI/PostTraining/PT_11_grpo_qwen_rlvr_on_verifiers.ipynb,52480a27,markdown,fr,a3ecec0b2cb8d98d,"## 9. Training RLVR reel (≥100 steps)
-
-**C'est le coeur du notebook** : GRPOTrainer avec reward verifiable wrap par rewardspy.watch.
-**Trace post-training** : loss, reward moyenne, KL divergence par step, temps par step.
-
-**Chronometre** : on capture wallclock pour le verdict final (acceptance #10289 : nommer
-machine + cout GPU reels).",,,,,,,,a3ecec0b2cb8d98d,,,,,,,,
 MyIA.AI.Notebooks/GenAI/PostTraining/PT_11_grpo_qwen_rlvr_on_verifiers.ipynb,dc301f63,code,fr,98358fd7fec31d08,"if LOAD_MODEL_AND_TRAIN and CUDA_AVAILABLE:
     from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
     from trl import GRPOTrainer, GRPOConfig
@@ -5349,14 +5209,6 @@ MyIA.AI.Notebooks/GenAI/PostTraining/PT_11_grpo_qwen_rlvr_on_verifiers.ipynb,dc3
 else:
     print(""Skip training : LOAD_MODEL_AND_TRAIN=False ou pas de CUDA"")
     print(""Pour executer : passer LOAD_MODEL_AND_TRAIN=True et GPU avec >= 4 Go VRAM."")",,,,,,,,98358fd7fec31d08,,,,,,,,
-MyIA.AI.Notebooks/GenAI/PostTraining/PT_11_grpo_qwen_rlvr_on_verifiers.ipynb,e083fab0,markdown,fr,a16517b6d9caa925,"## 10. Courbe de reward reelle
-
-Trace matplotlib de la reward moyenne par groupe au fil des steps. **Veritable reception** :
-- Reward qui monte = emergence d'un comportement (chain-of-thought ou memorisation)
-- Reward plate = le modele n'apprend pas (verdict INCONCLUSIVE)
-- Reward qui s'effondre = mode collapse (alerte rewardspy `variance_collapse` attendue)
-
-**Sauvegarde portable** : PNG tracke sous `MyIA.AI.Notebooks/GenAI/PostTraining/pt11_grpo_reward_curve.png`",,,,,,,,a16517b6d9caa925,,,,,,,,
 MyIA.AI.Notebooks/GenAI/PostTraining/PT_11_grpo_qwen_rlvr_on_verifiers.ipynb,b97098c9,code,fr,fc7c9933c32779eb,"import matplotlib.pyplot as plt
 from pathlib import Path
 
@@ -5425,11 +5277,6 @@ else:
     plt.savefig(png_path, dpi=100, bbox_inches='tight')
     print(f""Figure synthetique sauvegardee : {png_path}"")
 plt.show()",,,,,,,,fc7c9933c32779eb,,,,,,,,
-MyIA.AI.Notebooks/GenAI/PostTraining/PT_11_grpo_qwen_rlvr_on_verifiers.ipynb,a4307b38,markdown,fr,94757cd3b7288a60,"## 11. Evaluation pre/post training — accuracy sur le dataset
-
-On sample le dataset avec le modele **avant** et **apres** training, et on compare les
-accuracies. **Verdict final** : `accuracy_post - accuracy_pre` doit etre ≥ random variation
-sinon le training n'a rien appris (et c'est Honnete de le dire).",,,,,,,,94757cd3b7288a60,,,,,,,,
 MyIA.AI.Notebooks/GenAI/PostTraining/PT_11_grpo_qwen_rlvr_on_verifiers.ipynb,22e8677f,code,fr,73461f768656bd9f,"if LOAD_MODEL_AND_TRAIN and CUDA_AVAILABLE:
     @torch.no_grad()
     def eval_accuracy(model, tokenizer, dataset, n=10):
@@ -5456,16 +5303,6 @@ MyIA.AI.Notebooks/GenAI/PostTraining/PT_11_grpo_qwen_rlvr_on_verifiers.ipynb,22e
     print(f""Accuracy post-training : {acc_post:.2%}"")
 else:
     print(""Skip eval : LOAD_MODEL_AND_TRAIN=False ou pas de CUDA"")",,,,,,,,73461f768656bd9f,,,,,,,,
-MyIA.AI.Notebooks/GenAI/PostTraining/PT_11_grpo_qwen_rlvr_on_verifiers.ipynb,53ae50a3,markdown,fr,9fcfe6e422abb939,"## 12. Verdict honnete — bilan measurable + signal Goodhart
-
-**Acceptance #10289** : verdict **honnête** sur la convergence (standard: PT-03 « DPO n'a pas
-convergé »). Pas de claim embryonnaire. Les 4 critères verifies :
-
-1. **Modèle SOTA** : Qwen3.5-0.8B chargeable, pas de MLP jouet. ✓ (PT-03 patron).
-2. **Outputs C.2** : courbe de reward reelle ≥ 100 steps, `execution_count != null`. ✓ (issu trainer).
-3. **Rewardspy ONLINE** : au moins 1 signal Goodhart OU documentation honnete du seuil. ✓ (test sanity OK).
-4. **Verdict honnete** : publie l'accuracy atteinte, sans embellir. ✓ (presente ci-dessous).
-5. **Machine + GPU nommes** : RTX 3070, 8.59 Go, mem peak observe. ✓ (voir tableau).",,,,,,,,9fcfe6e422abb939,,,,,,,,
 MyIA.AI.Notebooks/GenAI/PostTraining/PT_11_grpo_qwen_rlvr_on_verifiers.ipynb,f0772a87,code,fr,0333ab7b822f1abf,"print(""=""*70)
 print("" VERDICT PT-11 — RLVR sur Qwen3.5-0.8B (G=8, #10603) "")
 print(""=""*70)
@@ -5525,20 +5362,6 @@ else:
 print(""=""*70)
 print(""FIN VERDICT"")
 print(""=""*70)",,,,,,,,0333ab7b822f1abf,,,,,,,,
-MyIA.AI.Notebooks/GenAI/PostTraining/PT_11_grpo_qwen_rlvr_on_verifiers.ipynb,49bbea9e,markdown,fr,192dd5ba59391fd3,"### Exercice 3 : comparer GRPO heuristique vs RLVR sur un meme probleme
-
-Le notebook PT-04 utilise un reward **heuristique** (longueur + mots-cles). Le notebook
-PT-11 utilise un reward **verifiable** (SymPy exact). Comparer les deux : entrainer le meme
-modele (Qwen3.5-0.8B) avec chacun et mesurer la difference d'accuracy finale.
-
-**Objectif** : Implementer `heuristic_reward(completion, ground_truth)` qui retourne
-0.0-1.0 selon la presence de mots-cles (therefore, answer) et la longueur, et comparer
-visuellement les courbes de reward.
-
-**Indices** :
-- # Etape 1 : score = 0.5 si 'therefore' ou 'answer' présent, +0.3 si longueur > 50 chars, +0.2 si match
-- # Etape 2 : comparer en lancant 2 trainings de 50 steps et en plotant les 2 courbes
-- # Indice : le reward heuristique est BROUILLARD, le reward verifier est EXACT — la difference est pedagogique",,,,,,,,192dd5ba59391fd3,,,,,,,,
 MyIA.AI.Notebooks/GenAI/PostTraining/PT_11_grpo_qwen_rlvr_on_verifiers.ipynb,19255fbf,code,fr,58e32593bcae24b5,"def heuristic_reward(completion: str, ground_truth: float) -> float:
     """"""TODO etudiant : reward heuristique (PT-04 style) pour comparaison.""""""
     score = 0.0
@@ -5554,38 +5377,6 @@ MyIA.AI.Notebooks/GenAI/PostTraining/PT_11_grpo_qwen_rlvr_on_verifiers.ipynb,192
     return min(score, 1.0)
 
 print(""Exercice a completer : comparer heuristique vs verifier sur training reel"")",,,,,,,,58e32593bcae24b5,,,,,,,,
-MyIA.AI.Notebooks/GenAI/PostTraining/PT_11_grpo_qwen_rlvr_on_verifiers.ipynb,9f339399,markdown,fr,ae00d30e98016d7b,"---
-
-## Bilan — RLVR sur vrai LLM : de la promesse theorique au pipeline executable
-
-PT-11 transpose le **patron PT-05** (RLVR pedagogique) sur un **vrai LLM SOTA** (Qwen3.5-0.8B)
-execute **réellement** sur RTX 3070, avec :
-
-1. **Verifier Tier 1 (SymPy)** — outcome reward exact, zero bruit
-2. **Verifier Tier 2 (Z3)** — extension logique/combinatoire (N-queens)
-3. **rewardspy.watch ONLINE** — detecteur reward hacking (ceiling, variance_collapse)
-4. **GRPOTrainer production** — pas de mock, vrai training avec bf16 + QLoRA
-5. **Verdict honnete** — accuracy mesuree pre/post, alertes observees, machine specifiee
-
-**Position dans le track GenAI/PostTraining** : PT-11 est le **chainon manquant** entre
-PT-08/09/10 (toy env from-scratch, pedagogique) et PT-12 (futur, 2B + SAE — lane ai-01 GPU 2).
-Il valide que le pipeline RLVR reel tient sur hardware 8 Go et produit un signal detectable.
-
-**Limites assumées** :
-- 10 problemes GSM8K = insuffisant pour multi-seed >= 4 (cf G.2, regle hard ML)
-- 100 steps = limite basse du plancher acceptance ; multi-epoch viable mais necessite SFT warmup
-- Verdict ponctuel (single seed) — pas de BEATS/NO BEATS ferme, INCONCLUSIVE honnete
-
-**Pour aller plus loin** :
-- **PT-12** (futur) : 2B post-entraine + SAE lecture bf16, lane ai-01 GPU 2 (24 Go libres)
-- **Entrainement multi-seed** : 4 seeds × 100 steps pour BEATS/NO BEATS ferme (cf regle C)
-- **Curriculum** : warmup SFT sur 50 exemples avant RL pour eviter reward sparsity (Pitfall 2)",,,,,,,,ae00d30e98016d7b,,,,,,,,
-MyIA.AI.Notebooks/GenAI/PostTraining/PT_11_grpo_qwen_rlvr_on_verifiers.ipynb,6b19959a,markdown,fr,e4f20bbe2d390d56,"## 13. Transition vers PT-12 — Sparse Autoencoder + 2B post-entraine
-
-PT-12 (futur, lane ai-01 GPU 2) transpose le pipeline PT-11 sur un modele 2B post-entraine
-avec un **Sparse Autoencoder (SAE)** pour l'interpretabilite des features emergents. Lecture
-SAE = **bf16** obligatoire (cf regle F + future PR PT-12). Le present PT-11 pose les
-fondations : patron GRPO + verifier + rewardspy, complet et reproductible.",,,,,,,,e4f20bbe2d390d56,,,,,,,,
 MyIA.AI.Notebooks/GenAI/PostTraining/PT_11b_multiseed_qwen35_4x100.ipynb,d3623b0a,code,fr,6068f994663d93ed,"# 9.bis Load JSONL multi-seed depuis disk (post-training)
 # Permet la re-execution des cellules d'analyse (26/28/30) sans relancer
 # le training (charge ~32 min/seed x 4 seeds). Le JSONL est append-only pendant
