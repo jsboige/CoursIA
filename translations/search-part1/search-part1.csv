@@ -7992,11 +7992,11 @@ Cette tranche a posé les fondations des métaheuristiques en C#/.NET via le **r
 ---
 
 *Tranche 1 du twin .NET⇄Python (#4956, marathon). SA = 1er des 4 algorithmes (SA, PSO, ABC, benchmark).*",,,,,,,,1363698cb6c9b844,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX-Csharp.ipynb,8f2ab8c5-564e-437d-9bd1-dee4e6f4808b,markdown,fr,9d8d86dbf87341c6,"# Search-02b : Théorie des Graphes avec NetworkX (C#)
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX-Csharp.ipynb,8f2ab8c5-564e-437d-9bd1-dee4e6f4808b,markdown,fr,9d8d86dbf87341c6,"# Search-15 : Théorie des Graphes avec NetworkX (C#)
 
-**Navigation** : [<< 14-WeightedAstar](../Part3-Advanced/Search-14-WeightedAstar-Csharp.ipynb) | [Index](../README.md) | [2c-QuikGraph >>](Search-02c-QuikGraph.ipynb)
+**Navigation** : [<< 14-WeightedAstar](../Part3-Advanced/Search-14-WeightedAstar-Csharp.ipynb) | [Index](../README.md) | [16-QuikGraph >>](Search-16-QuikGraph.ipynb)
 
-**Twin C# (.NET Interactive)** de [Search-02b-NetworkX.ipynb](Search-02b-NetworkX.ipynb) — marathon **#4956** (parite .NET <-> Python).
+**Twin C# (.NET Interactive)** de [Search-15-NetworkX.ipynb](Search-15-NetworkX.ipynb) — marathon **#4956** (parite .NET <-> Python).
 
 **NetworkX** est la librairie de reference pour la théorie des graphes en Python (200+ algorithmes). Ce twin C# (.NET 9, **0 NuGet**) **reimplemente from-scratch** les moteurs algorithmiques centraux : construction de graphe (adjacency list pondere), parcours (BFS/DFS), plus courts chemins (Dijkstra avec priority queue), centralites (degré, proximite, intermediaire, PageRank), et flot maximum (Ford-Fulkerson). Les **internes** (queue FIFO du BFS, relaxation du Dijkstra, accumulation des chemins pour l'intermediaire, itération de puissance du PageRank) sont visibles — c'est tout l'intérêt pedagogique.
 
@@ -8011,10 +8011,10 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX-Csharp.ipynb,8f2a
 
 > **Parite #4956** : la version Python s'appuie sur **networkx** (boite noire industrielle, 200+ algos) pour TOUT. Ce twin C# (BCL .NET 9, **0 NuGet**) traduit les **moteurs from-scratch** (le coeur algorithmique). networkx = **RECOVERABLE-MACHINE** : pas d'equivalent C# du même niveau en une seule lib pour ce notebook pedagogique ; le from-scratch engine EST la substance. Louvain (communautes) et matching pondere (Hongrois) — couverts par networkx cote Python mais complexes au-dela du coeur — deviennent des **exercices** cote C#.
 ",,,,,,,,9d8d86dbf87341c6,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX-Csharp.ipynb,e761f921-1467-407a-8323-29565c6d8753,markdown,fr,e9b3181edd45ce30,"## 1. Graphe pondere : modèle adjacency list
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX-Csharp.ipynb,e761f921-1467-407a-8323-29565c6d8753,markdown,fr,e9b3181edd45ce30,"## 1. Graphe pondere : modèle adjacency list
 
 Un graphe $G = (V, E)$ : un ensemble de **sommets** $V$ et d'**aretes** $E$. On modelise ici une **adjacency list** : pour chaque sommet, la liste de ses voisins (avec poids). Le graphe peut etre **oriente** ou **non-oriente**. Les poids servent aux plus courts chemins (Dijkstra) et au flot (capacites).",,,,,,,,e9b3181edd45ce30,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX-Csharp.ipynb,4a4c56cc-ea28-45c3-a0ad-6a138537c458,code,fr,d13318adaaf28c27,"using System.Linq;
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX-Csharp.ipynb,4a4c56cc-ea28-45c3-a0ad-6a138537c458,code,fr,d13318adaaf28c27,"using System.Linq;
 using System.Text;
 using System.Collections.Generic;
 
@@ -8067,13 +8067,13 @@ foreach (var v in g.Nodes)
     sb.AppendLine($""  {v} -> [{string.Join("", "", g.Adj[v].OrderBy(e=>e.To).Select(e => $""{e.To}:{e.Weight}""))}]"");
 Show(sb.ToString());
 ",,,,,,,,d13318adaaf28c27,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX-Csharp.ipynb,db1b3e68-4c42-4937-80c4-1ebd72d3ee5d,markdown,fr,fcc45566f7af55c3,"## 2. Parcours BFS et DFS
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX-Csharp.ipynb,db1b3e68-4c42-4937-80c4-1ebd72d3ee5d,markdown,fr,fcc45566f7af55c3,"## 2. Parcours BFS et DFS
 
 Deux facons fondamentales d'explorer un graphe depuis une source :
 
 - **BFS (Breadth-First Search)** — explore par couches (tous les voisins d'abord, puis les voisins des voisins). Trouve les plus courts chemins **en nombre d'aretes**. Structure : **queue FIFO**.
 - **DFS (Depth-First Search)** — plonge le plus profond possible avant de revenir (backtracking). Utilise pour la detection de cycles, la tri-topologique. Structure : **pile LIFO** (ou recursion).",,,,,,,,fcc45566f7af55c3,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX-Csharp.ipynb,faaae46d-7fc3-4adc-9bcc-d84ff8bf1e58,code,fr,f62fe6c834a30dab,"#nullable enable
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX-Csharp.ipynb,faaae46d-7fc3-4adc-9bcc-d84ff8bf1e58,code,fr,f62fe6c834a30dab,"#nullable enable
 // BFS : retourne l'ordre de visite + les distances (en nombre d'aretes) depuis la source.
 public static (List<string> order, Dictionary<string,int> dist) BFS(Graph g, string source)
 {
@@ -8121,7 +8121,7 @@ $""Distances (nb aretes) : {string.Join(""  "", bfsDist.OrderBy(kv=>kv.Key).Sele
 $""  -> A=0, B=D=1, C=E=2, F=3 (attendu : 3 sauts A-B-E-F ou A-B-C-F)"".Display();
 $""DFS depuis A : ordre = [{string.Join("", "", DFS(g, ""A""))}]"".Display();
 ",,,,,,,,f62fe6c834a30dab,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX-Csharp.ipynb,d9610948-4314-4d60-8994-b1cfc8e4b630,markdown,fr,dbb2367572bb9d44,"## 3. Plus courts chemins : Dijkstra
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX-Csharp.ipynb,d9610948-4314-4d60-8994-b1cfc8e4b630,markdown,fr,dbb2367572bb9d44,"## 3. Plus courts chemins : Dijkstra
 
 L'algorithme de **Dijkstra** (1959) trouve les plus courts chemins depuis une source vers tous les sommets, sur un graphe a **poids positifs**. Principe :
 
@@ -8131,7 +8131,7 @@ L'algorithme de **Dijkstra** (1959) trouve les plus courts chemins depuis une so
 4. Marquer `u` finalise, repeter.
 
 Le **tas de priorite** (min-heap) est la cle de l'efficacite : $O((V+E) \log V)$.",,,,,,,,dbb2367572bb9d44,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX-Csharp.ipynb,f098fdf2-64ff-487d-9a5b-1eedeed6d30a,code,fr,6aef61829c9a1ccd,"#nullable enable
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX-Csharp.ipynb,f098fdf2-64ff-487d-9a5b-1eedeed6d30a,code,fr,6aef61829c9a1ccd,"#nullable enable
 // Dijkstra : plus courts chemins depuis source (poids positifs).
 // Retourne (distances, predecesseurs).
 public static (Dictionary<string,double> dist, Dictionary<string,string?> prev) Dijkstra(Graph g, string source)
@@ -8182,7 +8182,7 @@ foreach (var v in g.Nodes)
 Show(sb2.ToString());
 $""Verification analytique : A->F = 7 (A-B-E-F : 4+1+2), A->C = 7 (A-B-C : 4+3)."".Display();
 ",,,,,,,,6aef61829c9a1ccd,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX-Csharp.ipynb,88b1d2f5-57e2-4836-9d1e-f2e57bb5d5ef,markdown,fr,1f474893db42df64,"## 4. Centralites — qui est important dans le reseau ?
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX-Csharp.ipynb,88b1d2f5-57e2-4836-9d1e-f2e57bb5d5ef,markdown,fr,1f474893db42df64,"## 4. Centralites — qui est important dans le reseau ?
 
 Différentes **centralites** mesurent l'importance d'un sommet selon des critères distincts :
 
@@ -8190,7 +8190,7 @@ Différentes **centralites** mesurent l'importance d'un sommet selon des critèr
 - **Proximite (closeness)** : $C_C(v) = (n-1) / \sum_u d(v,u)$. Eleve si $v$ est proche de tous les autres.
 - **Intermediaire (betweenness)** : $C_B(v) = \sum_{s \neq v \neq t} \sigma_{st}(v)/\sigma_{st}$ — fraction des plus courts chemins passant par $v$.
 - **PageRank** : vecteur propre de la matrice de transition (Page et al. 1999). Approxime par **itération de puissance** : $\pi_{k+1} = (1-d)\mathbf{1}/n + d \, A^T \pi_k$, $d=0{,}85$.",,,,,,,,1f474893db42df64,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX-Csharp.ipynb,48bb33b8-997b-4623-adb2-0ebdc1b7a44c,code,fr,a4c1f7f65e7b581a,"#nullable enable
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX-Csharp.ipynb,48bb33b8-997b-4623-adb2-0ebdc1b7a44c,code,fr,a4c1f7f65e7b581a,"#nullable enable
 // Centralite de degre (non-oriente : nombre de voisins).
 public static Dictionary<string,int> DegreeCentrality(Graph g)
     => g.Nodes.ToDictionary(v => v, v => g.Adj[v].Count);
@@ -8288,7 +8288,7 @@ foreach (var v in g.Nodes)
 Show(sb3.ToString());
 $""Attendu : B a la betweenness la plus haute (5.0, carrefour central sur 5 plus courts chemins A-C/A-E/A-F/C-D/C-E), E 2e (3.0)."".Display();
 ",,,,,,,,a4c1f7f65e7b581a,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX-Csharp.ipynb,ad6eeb81-67ac-488d-96da-eb502c17e4d2,markdown,fr,96e8b5f85d0b287e,"## 5. Flot maximum : Ford-Fulkerson
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX-Csharp.ipynb,ad6eeb81-67ac-488d-96da-eb502c17e4d2,markdown,fr,96e8b5f85d0b287e,"## 5. Flot maximum : Ford-Fulkerson
 
 Le **flot maximum** de $s$ a $t$ sur un graphe de capacites : la quantite maximale qu'on peut acheminer. **Ford-Fulkerson** (1956) procede par augmentation :
 
@@ -8297,7 +8297,7 @@ Le **flot maximum** de $s$ a $t$ sur un graphe de capacites : la quantite maxima
 3. Augmenter le flot de `bottleneck`, mettre a jour les aretes residuelles.
 
 Theoreme max-flow/min-cut (Ford-Fulkerson) : le flot maximum = la capacite de la coupe minimale.",,,,,,,,96e8b5f85d0b287e,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX-Csharp.ipynb,72ad6dd1-c764-4d30-834e-de0db3ab52fe,code,fr,7edca144b76b1a71,"#nullable enable
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX-Csharp.ipynb,72ad6dd1-c764-4d30-834e-de0db3ab52fe,code,fr,7edca144b76b1a71,"#nullable enable
 // Flot maximum (Ford-Fulkerson / Edmonds-Karp : chemin augmentant via BFS).
 public static double MaxFlow(Graph g, string source, string sink)
 {
@@ -8356,10 +8356,10 @@ var flowG = new Graph(directed: true)
 double mf = MaxFlow(flowG, ""s"", ""t"");
 $""Flot maximum s -> t = {mf}   (attendu : 5 = min(coupe sortie s=6, coupe entree t=5))"".Display();
 ",,,,,,,,7edca144b76b1a71,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX-Csharp.ipynb,c644ee1a-a154-447d-ae46-f9400831fc29,markdown,fr,f3a38c7bfc4bb29d,"## 5.1 Visualisation ASCII du graphe
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX-Csharp.ipynb,c644ee1a-a154-447d-ae46-f9400831fc29,markdown,fr,f3a38c7bfc4bb29d,"## 5.1 Visualisation ASCII du graphe
 
 En Python, networkx + matplotlib produisent une figure. En C# headless, on dessine le graphe en ASCII (les sommets et leurs aretes ponderees) pour valider la structure visuellement.",,,,,,,,f3a38c7bfc4bb29d,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX-Csharp.ipynb,5cad3ed9-cce3-4824-ba5c-d4443c5159ad,code,fr,e8fd5b5d4975d60a,"// Dessin ASCII du graphe : chaque noeud + ses aretes.
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX-Csharp.ipynb,5cad3ed9-cce3-4824-ba5c-d4443c5159ad,code,fr,e8fd5b5d4975d60a,"// Dessin ASCII du graphe : chaque noeud + ses aretes.
 var sbDraw = new StringBuilder();
 sbDraw.AppendLine(""Graphe de test (reseau de villes) :"");
 sbDraw.AppendLine();
@@ -8377,7 +8377,7 @@ foreach (var v in g.Nodes)
 }
 Show(sbDraw.ToString());
 ",,,,,,,,e8fd5b5d4975d60a,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX-Csharp.ipynb,993a5ee8-03e5-4716-b777-15389d1edbfe,markdown,fr,03841b5836e84927,"## 6. Exercices
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX-Csharp.ipynb,993a5ee8-03e5-4716-b777-15389d1edbfe,markdown,fr,03841b5836e84927,"## 6. Exercices
 
 > **Convention C.1** : les stubs s'executent sans erreur (jamais `throw`). Remplir le corps, re-executer, verifier.
 
@@ -8386,7 +8386,7 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX-Csharp.ipynb,993a
 Implementer la **detection de cycles** dans un graphe oriente via DFS a 3 couleurs (BLANC/GRIS/NOIR). Un cycle existe si on atteint un sommet GRIS pendant le DFS.
 
 **Indice** : marquer GRIS en entrant, NOIR en sortant ; si un voisin est GRIS -> cycle.",,,,,,,,03841b5836e84927,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX-Csharp.ipynb,7dce2b69-1070-4e30-8bdd-3f10de886b91,code,fr,84c2a4fc973ed13f,"#nullable enable
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX-Csharp.ipynb,7dce2b69-1070-4e30-8bdd-3f10de886b91,code,fr,84c2a4fc973ed13f,"#nullable enable
 // Exercice 1 : detection de cycle (DFS 3 couleurs) sur graphe oriente.
 // TODO etudiant : retourner true si le graphe contient un cycle.
 static bool HasCycle(Graph g)
@@ -8402,12 +8402,12 @@ var cyclic  = new Graph(directed: true).AddEdge(""a"",""b"").AddEdge(""b"",""c""
 $""HasCycle(acyclique) = {HasCycle(acyclic)}   (attendu False)"".Display();
 $""HasCycle(cyclique)  = {HasCycle(cyclic)}   (attendu True)"".Display();
 ",,,,,,,,84c2a4fc973ed13f,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX-Csharp.ipynb,03b009ed-6496-407d-adfa-e9c914f28572,markdown,fr,37460f2326939195,"### Exercice 2 — A* avec heuristique
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX-Csharp.ipynb,03b009ed-6496-407d-adfa-e9c914f28572,markdown,fr,37460f2326939195,"### Exercice 2 — A* avec heuristique
 
 Implementer **A*** (A-star) sur un graphe pondere avec une **heuristique admissible** $h(v) \leq h^*(v)$ (distance reelle vers la cible). A* etend Dijkstra en priorisant les sommets par `g(v) + h(v)`.
 
 **Indice** : même structure que Dijkstra, mais la priority queue ordonne par `dist[u] + h(u)`.",,,,,,,,37460f2326939195,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX-Csharp.ipynb,87ca7f3a-b0d8-47ac-bd62-920265832315,code,fr,ee8976e2982e4395,"#nullable enable
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX-Csharp.ipynb,87ca7f3a-b0d8-47ac-bd62-920265832315,code,fr,ee8976e2982e4395,"#nullable enable
 // Exercice 2 : A* avec heuristique admissible.
 // TODO etudiant : plus court chemin source->target avec heuristique.
 static double AStar(Graph g, string source, string target, Dictionary<string,double> heuristic)
@@ -8418,12 +8418,12 @@ static double AStar(Graph g, string source, string target, Dictionary<string,dou
 
 $""Exercice a completer (tester avec heuristique = distance euclidienne approchee vers F)."".Display();
 ",,,,,,,,ee8976e2982e4395,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX-Csharp.ipynb,fc2b31f0-c727-442c-a5bb-c16d1cd2fbf2,markdown,fr,ca90df001004bcae,"### Exercice 3 — Detection de communautes (Louvain)
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX-Csharp.ipynb,fc2b31f0-c727-442c-a5bb-c16d1cd2fbf2,markdown,fr,ca90df001004bcae,"### Exercice 3 — Detection de communautes (Louvain)
 
 **Louvain** (Blondel et al. 2008) est l'algorithme SOTA de detection de communautes (maximisation de **modularite**). networkx l'offre en une ligne ; l'implementer from-scratch depasse le coeur de ce notebook.
 
 **Indice** : la modularite $Q = \frac{1}{2m}\sum_{ij}\left[A_{ij} - \frac{k_i k_j}{2m}\right]\delta(c_i, c_j)$. Louvain optimise $Q$ en deux phases repetees : (1) deplacer chaque noeud vers la communaute qui maximise le gain de modularite, (2) construire le meta-graphe des communautes.",,,,,,,,ca90df001004bcae,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX-Csharp.ipynb,a1d86cfd-aaf9-431a-87de-b422973b2864,code,fr,e5ff490a2da4e9d2,"#nullable enable
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX-Csharp.ipynb,a1d86cfd-aaf9-431a-87de-b422973b2864,code,fr,e5ff490a2da4e9d2,"#nullable enable
 // Exercice 3 : modularite d'un partitionnement (brique de base de Louvain).
 // TODO etudiant : calculer Q pour un partitionnement donne.
 static double Modularity(Graph g, Dictionary<string,int> community)
@@ -8434,7 +8434,7 @@ static double Modularity(Graph g, Dictionary<string,int> community)
 
 $""Exercice a completer (Louvain complet = meta-graphe + iteration, hors scope coeur)."".Display();
 ",,,,,,,,e5ff490a2da4e9d2,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX-Csharp.ipynb,8e5d87ab-d52a-4f07-ae74-8ce442e57e01,markdown,fr,3626690b61c0b338,"## Conclusion
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX-Csharp.ipynb,8e5d87ab-d52a-4f07-ae74-8ce442e57e01,markdown,fr,3626690b61c0b338,"## Conclusion
 
 ### Ce que vous avez appris
 
@@ -8446,7 +8446,7 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX-Csharp.ipynb,8e5d
 
 ### Pont avec la version Python
 
-La version Python ([Search-02b-NetworkX.ipynb](Search-02b-NetworkX.ipynb)) utilise **networkx** (200+ algorithmes, boite noire industrielle) et matplotlib pour la visualisation. Ce twin C# (BCL .NET 9, 0 NuGet) **reimplemente from-scratch** les moteurs centraux (adjacency list, BFS/DFS, Dijkstra, centralites, Ford-Fulkerson) — les internes algorithmiques sont visibles. networkx reste l'outil SOTA cote Python (**RECOVERABLE-MACHINE**) : pas d'equivalent C# du même niveau en une seule lib pedagogique. Louvain (communautes) et le matching pondere (Hongrois), couverts par networkx cote Python, sont laisses en exercices (complexite au-dela du coeur).
+La version Python ([Search-15-NetworkX.ipynb](Search-15-NetworkX.ipynb)) utilise **networkx** (200+ algorithmes, boite noire industrielle) et matplotlib pour la visualisation. Ce twin C# (BCL .NET 9, 0 NuGet) **reimplemente from-scratch** les moteurs centraux (adjacency list, BFS/DFS, Dijkstra, centralites, Ford-Fulkerson) — les internes algorithmiques sont visibles. networkx reste l'outil SOTA cote Python (**RECOVERABLE-MACHINE**) : pas d'equivalent C# du même niveau en une seule lib pedagogique. Louvain (communautes) et le matching pondere (Hongrois), couverts par networkx cote Python, sont laisses en exercices (complexite au-dela du coeur).
 
 ### Parite #4956
 
@@ -8455,7 +8455,7 @@ Twin de parite legitime (Prong B) : les deux langages couvrent les mêmes concep
 ---
 *Marathon #4956 (parite .NET <-> Python).*
 ",,,,,,,,3626690b61c0b338,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb,680aacd4,markdown,fr,dc528c0c25b7abf0,"# Search-02b-NetworkX : Algorithmes de Graphe avec NetworkX
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX.ipynb,680aacd4,markdown,fr,dc528c0c25b7abf0,"# Search-15-NetworkX : Algorithmes de Graphe avec NetworkX
 
 **Navigation** : [<< Search-11 (Métaheuristiques)](Search-11-Metaheuristics.ipynb) | [↑ Série Search](../README.md) | [Partie 2 : CSP →](../Part2-CSP/README.md)
 
@@ -8471,10 +8471,10 @@ Dans [Search-3 (Informed)](Search-3-Informed.ipynb), nous avons implémenté A* 
 Ce notebook illustre les **briques algorithmiques essentielles** de NetworkX sur des **problèmes non triviaux** (Prong B de l'EPIC #3801) : un réseau routier de type routier régional, un graphe de collaborations académiques, et un réseau de transport de marchandises. **Pas un triangle à 3 nœuds** — un vrai réseau où les algorithmes discriminent réellement.
 
 **Prérequis** : Python 3.10+, `networkx >= 3.0`, `matplotlib`. Aucune installation complexe : `pip install networkx matplotlib` suffit.",,,,,,,,dc528c0c25b7abf0,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb,36d11e1b,markdown,fr,57eb3c1a466cc737,"## 1. Imports et configuration
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX.ipynb,36d11e1b,markdown,fr,57eb3c1a466cc737,"## 1. Imports et configuration
 
 Commençons par importer NetworkX et configurer Matplotlib pour un rendu cohérent en notebook.",,,,,,,,57eb3c1a466cc737,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb,b01c8045,code,fr,ef282d5ce53cc63e,"# Imports
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX.ipynb,b01c8045,code,fr,ef282d5ce53cc63e,"# Imports
 import networkx as nx
 import matplotlib.pyplot as plt
 import numpy as np
@@ -8490,7 +8490,7 @@ plt.rcParams['font.size'] = 10
 plt.rcParams['axes.titlesize'] = 12
 plt.rcParams['axes.labelsize'] = 10
 ",,,,,,,,ef282d5ce53cc63e,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb,e8b0d793,markdown,fr,96d446850bd149e3,"## 2. Construction de graphes
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX.ipynb,e8b0d793,markdown,fr,96d446850bd149e3,"## 2. Construction de graphes
 
 NetworkX propose plusieurs types de graphes selon la structure du problème :
 
@@ -8502,7 +8502,7 @@ NetworkX propose plusieurs types de graphes selon la structure du problème :
 | Multi-graphe dirigé | `nx.MultiDiGraph` | Réseau de vols avec plusieurs compagnies |
 
 Les **nœuds** peuvent porter des **attributs** (population, label, type...) et les **arêtes** aussi (poids, capacité, label). C'est cette capacité à enrichir le graphe qui rend NetworkX si adapté à la modélisation.",,,,,,,,96d446850bd149e3,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb,4c34d9ec,code,fr,5c4b79b82d656228,"# --- Construction d'un petit graphe illustratif : réseau de 6 villes ---
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX.ipynb,4c34d9ec,code,fr,5c4b79b82d656228,"# --- Construction d'un petit graphe illustratif : réseau de 6 villes ---
 G = nx.Graph()
 
 # Ajout de nœuds avec attributs
@@ -8537,10 +8537,10 @@ print(f""Type : {type(G).__name__}"")
 print(f""\nAttributs Paris : {G.nodes['Paris']}"")
 print(f""Attribut arête Paris-Lyon : {G.edges['Paris', 'Lyon']}"")
 ",,,,,,,,5c4b79b82d656228,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb,4951f7d2,markdown,fr,c9dfba46374657e0,"### 2.1. Prédicats et propriétés
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX.ipynb,4951f7d2,markdown,fr,c9dfba46374657e0,"### 2.1. Prédicats et propriétés
 
 NetworkX expose des **prédicats** calculant des propriétés structurelles du graphe en un appel.",,,,,,,,c9dfba46374657e0,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb,bef23e51,code,fr,64d30eae350bc36c,"# Degré, diamètre, densité
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX.ipynb,bef23e51,code,fr,64d30eae350bc36c,"# Degré, diamètre, densité
 print(f""Degré Paris : {G.degree('Paris')}"")
 print(f""Degré moyen : {sum(dict(G.degree()).values()) / G.number_of_nodes():.2f}"")
 print(f""Densité : {nx.density(G):.3f}"")
@@ -8554,7 +8554,7 @@ voisins_paris = list(nx.neighbors(G, 'Paris')) + ['Paris']
 sous_graphe = G.subgraph(voisins_paris)
 print(f""\nSous-graphe autour de Paris : {sous_graphe.number_of_nodes()} nœuds, {sous_graphe.number_of_edges()} arêtes"")
 ",,,,,,,,64d30eae350bc36c,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb,d6995d93,markdown,fr,0cff92144ba51fec,"## 3. Visualisation avec Matplotlib
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX.ipynb,d6995d93,markdown,fr,0cff92144ba51fec,"## 3. Visualisation avec Matplotlib
 
 NetworkX s'intègre nativement avec Matplotlib. Le choix du **layout** est crucial :
 
@@ -8563,7 +8563,7 @@ NetworkX s'intègre nativement avec Matplotlib. Le choix du **layout** est cruci
 - `kamada_kawai_layout` : minimise l'énergie sur un graphe planaire
 - `shell_layout` : couches concentriques
 - `random_layout` : aléatoire (debug)",,,,,,,,0cff92144ba51fec,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb,e14e5d3b,code,fr,29858d14066ece4c,"# Comparaison de layouts
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX.ipynb,e14e5d3b,code,fr,29858d14066ece4c,"# Comparaison de layouts
 fig, axes = plt.subplots(1, 3, figsize=(16, 5))
 
 for ax, (nom_layout, layout_fn) in zip(axes, [
@@ -8585,10 +8585,10 @@ for ax, (nom_layout, layout_fn) in zip(axes, [
 plt.tight_layout()
 plt.show()
 ",,,,,,,,29858d14066ece4c,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb,2579dbbe,markdown,fr,3eb006de61b49165,"### 3.1. Coloration par attribut
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX.ipynb,2579dbbe,markdown,fr,3eb006de61b49165,"### 3.1. Coloration par attribut
 
 Visualisons le graphe avec une couleur par **région** et une taille proportionnelle à la **population** — c'est ici que les attributs deviennent vraiment utiles.",,,,,,,,3eb006de61b49165,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb,ea434592,code,fr,d78731e0a18d5ae6,"# Couleur par région, taille par population
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX.ipynb,ea434592,code,fr,d78731e0a18d5ae6,"# Couleur par région, taille par population
 pos = nx.spring_layout(G, seed=42)
 regions = nx.get_node_attributes(G, 'region')
 populations = nx.get_node_attributes(G, 'population')
@@ -8618,7 +8618,7 @@ ax.axis('off')
 plt.tight_layout()
 plt.show()
 ",,,,,,,,d78731e0a18d5ae6,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb,19541bc0,markdown,fr,68370d9a9debb721,"## 4. Plus courts chemins
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX.ipynb,19541bc0,markdown,fr,68370d9a9debb721,"## 4. Plus courts chemins
 
 NetworkX embarque les algorithmes classiques :
 
@@ -8629,7 +8629,7 @@ NetworkX embarque les algorithmes classiques :
 | Bellman-Ford | `nx.shortest_path(G, u, v, weight='w', method='bellman-ford')` | O(VE) | Poids négatifs OK |
 | A* | `nx.astar_path(G, u, v, heuristic=...)` | O(E) typique | Avec heuristique |
 | Floyd-Warshall | `nx.shortest_path_length(G, weight='w', method='floyd-warshall')` | O(V³) | Tous les paires |",,,,,,,,68370d9a9debb721,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb,c47339f2,code,fr,bec3e0f16c88c9e2,"# Plus court chemin Paris → Marseille (en km)
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX.ipynb,c47339f2,code,fr,bec3e0f16c88c9e2,"# Plus court chemin Paris → Marseille (en km)
 chemin = nx.shortest_path(G, 'Paris', 'Marseille', weight='weight')
 distance = nx.shortest_path_length(G, 'Paris', 'Marseille', weight='weight')
 print(f""Paris → Marseille : {' → '.join(chemin)} ({distance} km)"")
@@ -8695,7 +8695,7 @@ print(f""\n10 000 itérations :"")
 print(f""  Dijkstra       : {t_dijkstra*1000:.1f} ms"")
 print(f""  Bellman-Ford   : {t_bellman*1000:.1f} ms"")
 ",,,,,,,,bec3e0f16c88c9e2,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb,139927f7,markdown,fr,57a4c39955097ad5,"## 5. Centralités — qui est important dans le réseau ?
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX.ipynb,139927f7,markdown,fr,57a4c39955097ad5,"## 5. Centralités — qui est important dans le réseau ?
 
 Les **mesures de centralité** répondent à des questions différentes :
 
@@ -8704,7 +8704,7 @@ Les **mesures de centralité** répondent à des questions différentes :
 - **Closeness centrality** : à quelle distance moyenne des autres nœuds ?
 - **PageRank** : quelle est l'importance issue des connexions (utilisé par Google)
 - **Eigenvector centrality** : voisinage de qualité (connecté à des nœuds centraux)",,,,,,,,57a4c39955097ad5,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb,22364718,code,fr,730879c971a20d41,"# Calcul des centralités
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX.ipynb,22364718,code,fr,730879c971a20d41,"# Calcul des centralités
 deg_cent = nx.degree_centrality(G)
 bet_cent = nx.betweenness_centrality(G, weight='weight')
 clo_cent = nx.closeness_centrality(G)
@@ -8716,10 +8716,10 @@ print(""-"" * 55)
 for v in G.nodes():
     print(f""{v:<12} {deg_cent[v]:>8.3f} {bet_cent[v]:>10.3f} {clo_cent[v]:>11.3f} {pagerank[v]:>10.3f}"")
 ",,,,,,,,730879c971a20d41,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb,21b52faa,markdown,fr,83213e82955eb6c5,"### 5.1. Visualisation par centralité
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX.ipynb,21b52faa,markdown,fr,83213e82955eb6c5,"### 5.1. Visualisation par centralité
 
 Visualisons le graphe avec une taille de nœud proportionnelle à la **betweenness centrality** — on voit immédiatement qui sont les ""hubs"" par lesquels transitent la majorité des flux.",,,,,,,,83213e82955eb6c5,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb,efefa3d3,code,fr,ce60ea24795cae42,"# Visualisation par betweenness centrality
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX.ipynb,efefa3d3,code,fr,ce60ea24795cae42,"# Visualisation par betweenness centrality
 pos = nx.spring_layout(G, seed=42)
 bet = nx.betweenness_centrality(G, weight='weight')
 tailles = [500 + bet[v] * 8000 for v in G.nodes()]
@@ -8734,12 +8734,12 @@ plt.tight_layout()
 plt.show()
 print(f""\nNœud avec la plus grande betweenness : {max(bet, key=bet.get)}"")
 ",,,,,,,,ce60ea24795cae42,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb,89a560a3,markdown,fr,a85868ac8a8152b1,"## 6. Flot maximum
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX.ipynb,89a560a3,markdown,fr,a85868ac8a8152b1,"## 6. Flot maximum
 
 L'algorithme de **flot maximum** (Edmonds-Karp, variante BFS de Ford-Fulkerson) calcule la quantité maximale qu'on peut faire transiter d'une **source** à un **puits** à travers un réseau où chaque arête a une **capacité**.
 
 Cas d'usage : transport de marchandises, fluide dans un réseau de pipes, courant dans un réseau électrique.",,,,,,,,a85868ac8a8152b1,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb,9af3396f,code,fr,6a593866148db8ca,"# Réseau de transport avec capacités (tonnes/jour)
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX.ipynb,9af3396f,code,fr,6a593866148db8ca,"# Réseau de transport avec capacités (tonnes/jour)
 T = nx.DiGraph()
 aretes_transport = [
     (""Usine_A"", ""Depot_1"", {""capacity"": 30}),
@@ -8777,8 +8777,8 @@ for (u, v), f in sorted(flots.items()):
     cap = T[u][v].get('capacity', '?')
     print(f""  {u:<10} → {v:<10} : {f}/{cap} tonnes/jour"")
 ",,,,,,,,6a593866148db8ca,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb,4d200c85,markdown,fr,a28508ee3b3163b5,### 6.1. Visualisation du flot,,,,,,,,a28508ee3b3163b5,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb,9ffbd447,code,fr,3a57f3f814ad5d9c,"# Visualisation du réseau avec capacités vs flot
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX.ipynb,4d200c85,markdown,fr,a28508ee3b3163b5,### 6.1. Visualisation du flot,,,,,,,,a28508ee3b3163b5,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX.ipynb,9ffbd447,code,fr,3a57f3f814ad5d9c,"# Visualisation du réseau avec capacités vs flot
 pos = {
     ""Source"": (0, 2.5), ""Usine_A"": (1, 3.5), ""Usine_B"": (1, 1.5),
     ""Depot_1"": (3, 3.5), ""Depot_2"": (3, 2), ""Depot_3"": (3, 0.5),
@@ -8804,10 +8804,10 @@ ax.axis('off')
 plt.tight_layout()
 plt.show()
 ",,,,,,,,3a57f3f814ad5d9c,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb,8f669564,markdown,fr,4b62dc5300092c0d,"## 7. Détection de communautés (Louvain)
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX.ipynb,8f669564,markdown,fr,4b62dc5300092c0d,"## 7. Détection de communautés (Louvain)
 
 L'algorithme de **Louvain** (Blondel et al., 2008) partitionne un graphe en communautés en maximisant la **modularité**. Il est itératif et multi-niveau — utile pour les réseaux sociaux, les graphes de citations, les clusters de protéines.",,,,,,,,4b62dc5300092c0d,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb,bc8e4b87,code,fr,d06d04d1f1d62d3c,"# Réseau social : 18 personnes, amitiés
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX.ipynb,bc8e4b87,code,fr,d06d04d1f1d62d3c,"# Réseau social : 18 personnes, amitiés
 Social = nx.Graph()
 Social.add_edges_from([
     # Cluster 1 : équipe IA
@@ -8832,8 +8832,8 @@ for i, comm in enumerate(communautes, 1):
 mod = nx.community.modularity(Social, communautes)
 print(f""\nModularité : {mod:.3f} (1.0 = parfait, 0 = aléatoire)"")
 ",,,,,,,,d06d04d1f1d62d3c,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb,32f58f16,markdown,fr,21517400d4232228,### 7.1. Visualisation des communautés,,,,,,,,21517400d4232228,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb,dbc92525,code,fr,c39daefb8d73d6da,"# Visualisation des communautés avec couleurs distinctes
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX.ipynb,32f58f16,markdown,fr,21517400d4232228,### 7.1. Visualisation des communautés,,,,,,,,21517400d4232228,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX.ipynb,dbc92525,code,fr,c39daefb8d73d6da,"# Visualisation des communautés avec couleurs distinctes
 pos = nx.spring_layout(Social, seed=42)
 couleurs_communautes = []
 for v in Social.nodes():
@@ -8851,10 +8851,10 @@ ax.axis('off')
 plt.tight_layout()
 plt.show()
 ",,,,,,,,c39daefb8d73d6da,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb,0706e562,markdown,fr,67ff57dbec46da6e,"## 8. Matching pondéré
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX.ipynb,0706e562,markdown,fr,67ff57dbec46da6e,"## 8. Matching pondéré
 
 Le **matching** apparie des nœuds en maximisant la somme des poids des arêtes retenues, sous contrainte qu'aucun nœud ne soit dans plus d'une paire. Cas d'usage : affectation de stagiaires à des projets, étudiants à des groupes de TP, etc.",,,,,,,,67ff57dbec46da6e,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb,da96d0db,code,fr,209569d0025ede0f,"# Problème d'affectation : 4 étudiants ↔ 4 projets
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX.ipynb,da96d0db,code,fr,209569d0025ede0f,"# Problème d'affectation : 4 étudiants ↔ 4 projets
 # Poids = préférence (1-10)
 M = nx.Graph()
 etudiants = [""Alice"", ""Bob"", ""Charlie"", ""Diana""]
@@ -8877,13 +8877,13 @@ print(f""Matching optimal (somme des préférences = {total}) :"")
 for u, v in matching:
     print(f""  {u:<10} ↔ {v:<10} (préférence : {M[u][v]['weight']})"")
 ",,,,,,,,209569d0025ede0f,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb,0f3edd51,markdown,fr,eb8c4a669ef82810,"## 9. Problèmes non-triviaux — Prong B #3801
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX.ipynb,0f3edd51,markdown,fr,eb8c4a669ef82810,"## 9. Problèmes non-triviaux — Prong B #3801
 
 Pour faire valoir les algorithmes (et pas illustrer un cas dégénéré où tout équivaut à BFS), nous construisons **deux graphes réalistes** : un réseau routier régional et un réseau de collaborations académiques.",,,,,,,,eb8c4a669ef82810,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb,b89a4a5f,markdown,fr,4036e34d8a49db37,"### 9.1. Réseau routier régional — Dijkstra vs A* avec heuristique
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX.ipynb,b89a4a5f,markdown,fr,4036e34d8a49db37,"### 9.1. Réseau routier régional — Dijkstra vs A* avec heuristique
 
 Un graphe routier de 25 villes réparties sur une grille 5×5, avec des poids proportionnels à la distance euclidienne (modulo bruit sur 20% des arêtes pour rendre le cas non trivial). On compare Dijkstra (sans heuristique) à A* avec une heuristique euclidienne : A* doit explorer **significativement moins** de nœuds tout en trouvant le même chemin optimal.",,,,,,,,4036e34d8a49db37,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb,fd2441a9,code,fr,7c6a587547bb1d90,"# --- Génération d'un graphe routier 5x5 (25 villes) ---
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX.ipynb,fd2441a9,code,fr,7c6a587547bb1d90,"# --- Génération d'un graphe routier 5x5 (25 villes) ---
 np.random.seed(42)
 route_nœuds = [(i, j) for i in range(5) for j in range(5)]
 R = nx.Graph()
@@ -8968,7 +8968,7 @@ print(f""Identiques : {abs(cout_d - cout_a) < 1e-9}"")
 print(f""A* a exploré {n_explores_a} nœuds contre {n_explores_d} pour Dijkstra ""
       f""({100*(1 - n_explores_a/n_explores_d):.0f}% de moins) : l'heuristique oriente la recherche."")
 ",,,,,,,,7c6a587547bb1d90,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb,6e41bfb4,code,fr,8626a8d5edd46f68,"# Visualisation du réseau routier
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX.ipynb,6e41bfb4,code,fr,8626a8d5edd46f68,"# Visualisation du réseau routier
 pos_grid = {n: (n[1], -n[0]) for n in R.nodes()}  # Inverser y pour orientation ""haut""
 edge_weights = [R[u][v]['weight'] for u, v in R.edges()]
 
@@ -8990,10 +8990,10 @@ ax.axis('off')
 plt.tight_layout()
 plt.show()
 ",,,,,,,,8626a8d5edd46f68,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb,1808320a,markdown,fr,daa46e2e9520fffc,"### 9.2. Graphe de collaborations académiques — PageRank vs Betweenness
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX.ipynb,1808320a,markdown,fr,daa46e2e9520fffc,"### 9.2. Graphe de collaborations académiques — PageRank vs Betweenness
 
 Un réseau de **30 chercheurs** issus de 3 communautés thématiques (IA / Bio / Physique), avec quelques liens inter-communautés. PageRank identifie les **chercheurs influents par leur position dans le réseau de citations**, while la betweenness identifie les **chercheurs-passerelles** entre communautés.",,,,,,,,daa46e2e9520fffc,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb,134fbdd8,code,fr,9640c37224108364,"# --- Génération d'un graphe de collaborations ---
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX.ipynb,134fbdd8,code,fr,9640c37224108364,"# --- Génération d'un graphe de collaborations ---
 np.random.seed(123)
 Collab = nx.Graph()
 
@@ -9046,7 +9046,7 @@ for u, v in liens_inter:
     inter_links_set.add(v)
 print(f""\nChercheurs identifiés comme passerelles : {sorted(inter_links_set)}"")
 ",,,,,,,,9640c37224108364,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb,034a4e3c,code,fr,5ec8038d26ace7d2,"# Visualisation : couleur par communauté, taille par PageRank
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX.ipynb,034a4e3c,code,fr,5ec8038d26ace7d2,"# Visualisation : couleur par communauté, taille par PageRank
 couleurs_theme = {""IA"": ""#e74c3c"", ""Bio"": ""#2ecc71"", ""Phys"": ""#3498db""}
 node_colors = []
 node_sizes = []
@@ -9072,14 +9072,14 @@ ax.axis('off')
 plt.tight_layout()
 plt.show()
 ",,,,,,,,5ec8038d26ace7d2,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb,39121883,markdown,fr,689d3a50a57e4d46,"## 10. Exercices
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX.ipynb,39121883,markdown,fr,689d3a50a57e4d46,"## 10. Exercices
 
 Trois exercices pour mettre en pratique les algorithmes. Chaque exercice est un **stub** : à vous de jouer !
 
 ### Exercice 1 — Plus court chemin avec contraintes (≥3 nœuds requis)
 
 Construisez un graphe de réseau de transports en commun (10 stations, arêtes pondérées par temps de trajet en minutes). Calculez le plus court chemin entre deux stations données. Affichez le temps total et le nombre de stations traversées.",,,,,,,,689d3a50a57e4d46,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb,a42f63f3,code,fr,dd88473a860cff9d,"# Exercice 1 — Plus court chemin dans un réseau de transport
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX.ipynb,a42f63f3,code,fr,dd88473a860cff9d,"# Exercice 1 — Plus court chemin dans un réseau de transport
 # TODO : Construisez un graphe de 10 stations de métro avec arêtes pondérées
 #       Calculez le plus court chemin de ""Station_A"" à ""Station_J""
 #       Affichez le temps total et le nombre de stations traversées
@@ -9098,10 +9098,10 @@ def exercice_1_plus_court_chemin():
 # - Appeler exercice_1_plus_court_chemin()
 # - Afficher : ""Chemin : ['Station_A', ..., 'Station_J'], temps : X min, arrêts : N""
 ",,,,,,,,dd88473a860cff9d,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb,e1c6f8fc,markdown,fr,0f91132d8d9b3d12,"### Exercice 2 — Centralité de votre choix sur réseau social
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX.ipynb,e1c6f8fc,markdown,fr,0f91132d8d9b3d12,"### Exercice 2 — Centralité de votre choix sur réseau social
 
 Créez un réseau social d'au moins **15 personnes** réparties en 2-3 communautés, avec quelques liens inter-communautaires. Calculez la **betweenness centrality** et identifiez les 3 nœuds les plus ""broker"".",,,,,,,,0f91132d8d9b3d12,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb,5bd816be,code,fr,3999a2d681554249,"# Exercice 2 — Détection de brokers dans un réseau social
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX.ipynb,5bd816be,code,fr,3999a2d681554249,"# Exercice 2 — Détection de brokers dans un réseau social
 # TODO : Construisez un graphe social de >= 15 nœuds avec 2-3 communautés
 #       Calculez la betweenness centrality
 #       Identifiez les 3 nœuds avec la plus grande betweenness
@@ -9119,10 +9119,10 @@ def exercice_2_brokers_reseau_social():
 # - Appeler exercice_2_brokers_reseau_social()
 # - Afficher : ""Top 3 brokers : [noms], betweenness : [scores]""
 ",,,,,,,,3999a2d681554249,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb,dbdf72b8,markdown,fr,5feedd89b46ca467,"### Exercice 3 — Flot maximum sur un réseau de pipelines
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX.ipynb,dbdf72b8,markdown,fr,5feedd89b46ca467,"### Exercice 3 — Flot maximum sur un réseau de pipelines
 
 Construisez un graphe dirigé représentant un réseau de pipelines (3 sources, 3 destinations, 6 nœuds intermédiaires avec capacités). Calculez le flot maximum total et affichez les arêtes saturées (flot == capacité).",,,,,,,,5feedd89b46ca467,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb,dcc344c4,code,fr,3aee67c61460756d,"# Exercice 3 — Flot max sur réseau de pipelines
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX.ipynb,dcc344c4,code,fr,3aee67c61460756d,"# Exercice 3 — Flot max sur réseau de pipelines
 # TODO : Construisez un DiGraph de 12+ nœuds (3 sources, 3 destinations, intermédiaires)
 #       Calculez le flot maximum entre super-source et super-puits
 #       Listez les arêtes saturées (où flot == capacité)
@@ -9141,7 +9141,7 @@ def exercice_3_flot_pipelines():
 # - Appeler exercice_3_flot_pipelines()
 # - Afficher : ""Flot max : X unités/jour, arêtes saturées : N""
 ",,,,,,,,3aee67c61460756d,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb,fffe7b3b,markdown,fr,61d0c07b515bd32e,"## Conclusion
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX.ipynb,fffe7b3b,markdown,fr,61d0c07b515bd32e,"## Conclusion
 
 Ce notebook a couvert les **briques algorithmiques essentielles** de NetworkX :
 
@@ -9188,7 +9188,7 @@ Papiers fondateurs des algorithmes de graphe embarqués par NetworkX dans ce not
 > **Documentation** : [NetworkX officielle](https://networkx.org/documentation/stable/).
 > **Algorithmes A\* et Floyd-Warshall** : approfondis dans [Search-2-Uninformed](Search-2-Uninformed.ipynb) (BFS, Dijkstra, Bellman-Ford) et [Search-3-Informed](Search-3-Informed.ipynb) (A\*, heuristiques admissibles) — implémentations pédagogiques faites main.
 ",,,,,,,,61d0c07b515bd32e,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb,9aa250ae,code,fr,59d2947c3a284c79,"# Cellule de fermeture — vérifie que tout est en ordre
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX.ipynb,9aa250ae,code,fr,59d2947c3a284c79,"# Cellule de fermeture — vérifie que tout est en ordre
 import networkx as nx
 import matplotlib.pyplot as plt
 import numpy as np
@@ -9198,7 +9198,7 @@ print(f""✓ Matplotlib {plt.matplotlib.__version__} chargé"")
 print(f""✓ NumPy {np.__version__} chargé"")
 print(f""\nCe notebook est prêt. Bon travail sur les exercices !"")
 ",,,,,,,,59d2947c3a284c79,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02c-QuikGraph.ipynb,443fe805,markdown,fr,4ebfbe9ed242888f,"# Search-02c-QuikGraph : bibliotheque de graphes pour .NET
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-16-QuikGraph.ipynb,443fe805,markdown,fr,4ebfbe9ed242888f,"# Search-16-QuikGraph : bibliotheque de graphes pour .NET
 
 
 
@@ -9226,7 +9226,7 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02c-QuikGraph.ipynb,443fe805,m
 
 - Implementer DFS, BFS, Dijkstra et Bellman-Ford sur des problemes non triviaux (cf. Prong B #3801) en utilisant les algorithmes fourbis par QuikGraph.
 
-- Evaluer le **flot maximum** sur un mini-reseau routier, etablir une **table de parite** structurelle avec le notebook Python `Search-02b-NetworkX`.
+- Evaluer le **flot maximum** sur un mini-reseau routier, etablir une **table de parite** structurelle avec le notebook Python `Search-15-NetworkX`.
 
 
 
@@ -9242,7 +9242,7 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02c-QuikGraph.ipynb,443fe805,m
 
 |-----------|---------|
 
-| [Search-02b-NetworkX](Search-02b-NetworkX.ipynb) (parite Python) | [Search-14-WeightedAstar](../Part3-Advanced/Search-14-WeightedAstar.ipynb) |
+| [Search-15-NetworkX](Search-15-NetworkX.ipynb) (parite Python) | [Search-14-WeightedAstar](../Part3-Advanced/Search-14-WeightedAstar.ipynb) |
 
 
 
@@ -9256,7 +9256,7 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02c-QuikGraph.ipynb,443fe805,m
 
 `QuickGraph`, le projet historique de Jonathan ""Peli"" de Halleux (2003), n'est plus maintenu. Trois successeurs se partagent le terrain : **QuikGraph** (fork KeRNeLith, ce notebook), **FastGraph** (moderne, actif) et **Microsoft.Graph** (rare). QuikGraph reste la bibliotheque la plus documentee et la plus aboutie pour les algorithmes classiques : Dijkstra, Bellman-Ford, A*, Edmonds-Karp, k-shortest path. C'est l'equivalent .NET de NetworkX du cote Python, et c'est elle qui permet de fermer la parite entre les deux ecosystemes dans le cadre du Sprint #5082.
 ",,,,,,,,4ebfbe9ed242888f,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02c-QuikGraph.ipynb,27a1da1e,markdown,fr,a7c1e491e746633a,"## 1. La bibliotheque QuikGraph
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-16-QuikGraph.ipynb,27a1da1e,markdown,fr,a7c1e491e746633a,"## 1. La bibliotheque QuikGraph
 
 
 
@@ -9288,7 +9288,7 @@ QuickGraph est ne en 2003 sur CodePlex, repris par la communaute sous le nom `YC
 
 > **Note** : QuikGraph n'embarque pas d'algorithmes de centralite (betweenness, closeness, PageRank). Pour ces metriques, il faut soit les calculer a la main (degré : `graph.AdjacentDegree(v)`), soit brancher une autre bibliotheque. C'est l'un des **verdicts honnetes** a porter dans le body de la PR (cf. parite ci-dessous).
 ",,,,,,,,a7c1e491e746633a,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02c-QuikGraph.ipynb,1e00ea37,code,fr,96c806742b8a0eb7,"// Installation du package NuGet QuikGraph 2.5.0 via la directive #r de .NET Interactive.
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-16-QuikGraph.ipynb,1e00ea37,code,fr,96c806742b8a0eb7,"// Installation du package NuGet QuikGraph 2.5.0 via la directive #r de .NET Interactive.
 
 #r ""nuget: QuikGraph, 2.5.0""
 
@@ -9296,7 +9296,7 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02c-QuikGraph.ipynb,1e00ea37,c
 
 Console.WriteLine(""QuikGraph 2.5.0 charge depuis NuGet."");
 ",,,,,,,,96c806742b8a0eb7,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02c-QuikGraph.ipynb,fd95f8f3,code,fr,5e2cd8647c9943b5,"using QuikGraph;
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-16-QuikGraph.ipynb,fd95f8f3,code,fr,5e2cd8647c9943b5,"using QuikGraph;
 
 using QuikGraph.Algorithms;
 
@@ -9321,7 +9321,7 @@ Console.WriteLine(""  - QuikGraph.Algorithms.ShortestPath : Dijkstra, BellmanFor
 
 Console.WriteLine(""  - QuikGraph.Algorithms.MaximumFlow : MaximumFlowAlgorithm (Edmonds-Karp, Push-Relabel)"");
 ",,,,,,,,5e2cd8647c9943b5,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02c-QuikGraph.ipynb,b95ad098,markdown,fr,1383e712b0e91f08,"## 2. Types de graphes et construction
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-16-QuikGraph.ipynb,b95ad098,markdown,fr,1383e712b0e91f08,"## 2. Types de graphes et construction
 
 
 
@@ -9347,7 +9347,7 @@ QuikGraph distingue trois familles. Le choix depend de la sémantique (oriente v
 
 Le **graphe de Petersen** est le plus petit exemple non trivial qui combine cycles, aretes transversales et n'est ni planaire ni complet. C'est le theatre classique pour tester DFS, BFS, composantes connexes et flot max.
 ",,,,,,,,1383e712b0e91f08,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02c-QuikGraph.ipynb,ab88336c,code,fr,7995eb0657935edd,"// Construction d'un graphe non oriente ""graphe de Petersen"" via AdjacencyGraph<int, Edge<int>>
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-16-QuikGraph.ipynb,ab88336c,code,fr,7995eb0657935edd,"// Construction d'un graphe non oriente ""graphe de Petersen"" via AdjacencyGraph<int, Edge<int>>
 
 // Sommets 0..9 ; aretes : cycle exterieur 0-1-2-3-4-0, cycle interieur 5-6-7-8-9-5, et 5 aretes de liaison 0-5, 1-6, 2-7, 3-8, 4-9.
 
@@ -9393,7 +9393,7 @@ foreach (var v in petersen.Vertices) sommeDegres += petersen.AdjacentDegree(v);
 
 Console.WriteLine($""Somme des degres = {sommeDegres} (attendu : 2 * E = {2 * petersen.EdgeCount})"");
 ",,,,,,,,7995eb0657935edd,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02c-QuikGraph.ipynb,ebd168b8,code,fr,eeb05f7c19885855,"// Pour Dijkstra/Bellman-Ford/flot max, on utilise des aretes typees avec poids.
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-16-QuikGraph.ipynb,ebd168b8,code,fr,eeb05f7c19885855,"// Pour Dijkstra/Bellman-Ford/flot max, on utilise des aretes typees avec poids.
 
 // Edge<TV, TEdgeData> ou SEdge<TV, double> selon l'usage.
 
@@ -9451,7 +9451,7 @@ Console.WriteLine($""Reseau routier : {routier.VertexCount} carrefours, {routier
 
 Console.WriteLine($""Aretes sortantes de A : {routier.OutDegree(""A"")} (vers {string.Join("", "", routier.OutEdges(""A"").Select(e => e.Target))})"");
 ",,,,,,,,eeb05f7c19885855,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02c-QuikGraph.ipynb,03cae750,markdown,fr,2adac746fa2cc0b8,"## 3. Parcours : DFS et BFS
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-16-QuikGraph.ipynb,03cae750,markdown,fr,2adac746fa2cc0b8,"## 3. Parcours : DFS et BFS
 
 
 
@@ -9465,7 +9465,7 @@ QuikGraph fournit deux algorithmes de parcours dans le namespace `QuikGraph.Algo
 
 **Application** : sur le graphe routier `A..F`, on cherche le **plus court chemin en km** entre A et F via Dijkstra (eternel debat : pourquoi pas BFS ? parce que BFS compte des **sauts** et non des **distances** -- avec des poids heterogenes, seul Dijkstra repond correctement).
 ",,,,,,,,2adac746fa2cc0b8,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02c-QuikGraph.ipynb,fa08c327,code,fr,a2e44e246d5dbfbc,"// DFS iteratif sur le graphe de Petersen depuis 0
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-16-QuikGraph.ipynb,fa08c327,code,fr,a2e44e246d5dbfbc,"// DFS iteratif sur le graphe de Petersen depuis 0
 // (implementation a la main car QuikGraph.Algorithms.Search exige IVertexListGraph,
 // qu'UndirectedGraph n'implemente pas directement ; on aurait pu convertir
 // vers AdjacencyGraph via l'extension ToAdjacencyGraph mais l'implementation
@@ -9493,7 +9493,7 @@ while (pileDFS.Count > 0)
 
 Console.WriteLine($""Parcours DFS depuis 0 (ordre de decouverte) : [{string.Join("" -> "", ordreDFS)}]"");
 Console.WriteLine($""Nombre de sommets visites : {ordreDFS.Count} / 10"");",,,,,,,,a2e44e246d5dbfbc,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02c-QuikGraph.ipynb,97c643fe,code,fr,9fbb8fb9769a12d4,"// BFS sur le graphe de Petersen depuis 0 - par etages.
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-16-QuikGraph.ipynb,97c643fe,code,fr,9fbb8fb9769a12d4,"// BFS sur le graphe de Petersen depuis 0 - par etages.
 
 var ordreBFS = new Queue<int>();
 
@@ -9535,7 +9535,7 @@ Console.WriteLine($""BFS depuis 0 : [{string.Join("" -> "", ordreBFS)}]"");
 
 Console.WriteLine($""Distances en sauts : "" + string.Join("", "", distanceBFS.OrderBy(kv => kv.Key).Select(kv => $""{kv.Key}:{kv.Value}"")));
 ",,,,,,,,9fbb8fb9769a12d4,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02c-QuikGraph.ipynb,0fda2fd0,markdown,fr,b25f61612d00c545,"## 4. Plus courts chemins ponderes : Dijkstra et Bellman-Ford
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-16-QuikGraph.ipynb,0fda2fd0,markdown,fr,b25f61612d00c545,"## 4. Plus courts chemins ponderes : Dijkstra et Bellman-Ford
 
 
 
@@ -9545,7 +9545,7 @@ Sur le reseau routier `A..F` avec distances en km, BFS donnerait `A -> B -> D ->
 
 QuikGraph fournit `DijkstraShortestPathAlgorithm` (poids positifs uniquement) et `BellmanFordShortestPathAlgorithm` (cas general, detecte les cycles de poids negatifs). L'API de base expose `GetDistance(vertex) -> double` (ou `TryGetDistance`) ; la reconstruction des chemins s'appuie sur l'observateur canonique `VertexPredecessorRecorderObserver` — la cellule 11 la demontre d'abord par remontee manuelle (condition d'optimalite), la cellule 17 l'utilise ensuite en version canonique.
 ",,,,,,,,b25f61612d00c545,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02c-QuikGraph.ipynb,e6aa4b02,code,fr,ed2bf59a5c5c467a,"// Dijkstra entre A et F sur le reseau routier (ctor 2-args + reconstruction manuelle du chemin).
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-16-QuikGraph.ipynb,e6aa4b02,code,fr,ed2bf59a5c5c467a,"// Dijkstra entre A et F sur le reseau routier (ctor 2-args + reconstruction manuelle du chemin).
 // DEMONSTRATION CONSERVEE (decision #11113) : cette remontee manuelle est gardee pour
 // illustrer la CONDITION D'OPTIMALITE de Dijkstra — pour chaque sommet v, son predecesseur
 // est l'unique voisin u tel que GetDistance(u) + poids(u, v) = GetDistance(v). C'est le seul
@@ -9584,7 +9584,7 @@ foreach (var v in routier.Vertices)
     Console.WriteLine($""  {v} : {dist:F2} km  ({chemin})"");
 }
 ",,,,,,,,ed2bf59a5c5c467a,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02c-QuikGraph.ipynb,ec1a8528,markdown,fr,48666165c5269ff7,"## 5. Centralites (verdict honnete)
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-16-QuikGraph.ipynb,ec1a8528,markdown,fr,48666165c5269ff7,"## 5. Centralites (verdict honnete)
 
 
 
@@ -9606,7 +9606,7 @@ Ce notebook montre ce qui est **calculable en pur QuikGraph** :
 
 Pour les centralites plus elaborees (betweenness/closeness), le code est laisse en exercice (cf. Exo 3 plus bas).
 ",,,,,,,,48666165c5269ff7,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02c-QuikGraph.ipynb,f5fae748,code,fr,15594f6c4cf78f3d,"// Centralite de degre et composantes connexes sur un graphe ""reseau social 8 personnes / 2 communautes"".
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-16-QuikGraph.ipynb,f5fae748,code,fr,15594f6c4cf78f3d,"// Centralite de degre et composantes connexes sur un graphe ""reseau social 8 personnes / 2 communautes"".
 
 
 
@@ -9694,7 +9694,7 @@ foreach (var groupe in composantes)
 
 // Sans le pont, on aurait 2 composantes : exercice de l'Exo 3 ci-dessous.
 ",,,,,,,,15594f6c4cf78f3d,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02c-QuikGraph.ipynb,d8dbaf0a,markdown,fr,5040a501d8de1d29,"## 6. Flot maximum (Edmonds-Karp / Push-Relabel)
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-16-QuikGraph.ipynb,d8dbaf0a,markdown,fr,5040a501d8de1d29,"## 6. Flot maximum (Edmonds-Karp / Push-Relabel)
 
 
 
@@ -9704,7 +9704,7 @@ Le **flot maximum** dans un reseau capacitie est l'un des problemes fondamentaux
 
 **Application** : sur le reseau routier `A..F`, on prend A comme **source** (entrepot) et F comme **puits** (client). Chaque arete a une **capacite** egale au poids en km -- c'est un abus de modelisation pour le notebook (la vraie capacite d'une arete routiere serait un debit), mais le résultat reste **correct** et pedagogique : on cherche le debit max que peut transporter le reseau entre A et F.
 ",,,,,,,,5040a501d8de1d29,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02c-QuikGraph.ipynb,43bbfd4d,code,fr,e603dd26501fdc12,"// Reseau de flot canonique (Cormen et al., chapitre 26) : 4 sommets S, A, B, T.
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-16-QuikGraph.ipynb,43bbfd4d,code,fr,e603dd26501fdc12,"// Reseau de flot canonique (Cormen et al., chapitre 26) : 4 sommets S, A, B, T.
 //   S -> A (10)   A -> T (8)
 //   S -> B (5)    B -> T (10)
 //   A -> B (3)
@@ -9765,18 +9765,18 @@ Console.WriteLine(""Fin cellule flot max."");
 // Cleanup : retirer les aretes residuelles ajoutees pour ne pas polluer le graphe.
 augmentor.RemoveReversedEdges();
 ",,,,,,,,e603dd26501fdc12,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02c-QuikGraph.ipynb,a53b7b57,markdown,fr,d8f969ce20fd2d21,"## 7. Problème non-trivial : réseau routier 5x5 avec terrain hétérogène
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-16-QuikGraph.ipynb,a53b7b57,markdown,fr,d8f969ce20fd2d21,"## 7. Problème non-trivial : réseau routier 5x5 avec terrain hétérogène
 
 
 **Prong B (#3801)** : un notebook qui démontre un moteur/solveur sur un cas trivial où le SOTA équivaut à une baseline ne met pas en valeur la bibliothèque. Ici, on construit un **graphe routier 5x5** (25 carrefours, arêtes Est-Ouest et Nord-Sud) auquel on donne un **coût de terrain hétérogène** (chaque arête tire un coût dans [1,0 ; 3,0] km — voie rapide vs voie lente, déterministe via une graine fixe), puis on applique un **bruit de 30%** (suppression aléatoire de 30% des arêtes, graine fixe).
 
 
-Avec un terrain **uniforme à 1 km**, le plus court chemin en distance pondérée coïnciderait avec le plus court chemin en nombre de sauts : Dijkstra n'apporterait rien que BFS ne fournit déjà (cas dégénéré, équivalent au commit de référence `8905f8845` BFS-vs-A*). Avec un terrain **hétérogène**, minimiser la somme des coûts ≠ minimiser le nombre de sauts — le chemin optimal peut faire un détour par des arêtes bon marché pour éviter une arête chère. C'est la capacité distinctive de Dijkstra que la section met en évidence, en parité avec le notebook Python `Search-02b-NetworkX`.
+Avec un terrain **uniforme à 1 km**, le plus court chemin en distance pondérée coïnciderait avec le plus court chemin en nombre de sauts : Dijkstra n'apporterait rien que BFS ne fournit déjà (cas dégénéré, équivalent au commit de référence `8905f8845` BFS-vs-A*). Avec un terrain **hétérogène**, minimiser la somme des coûts ≠ minimiser le nombre de sauts — le chemin optimal peut faire un détour par des arêtes bon marché pour éviter une arête chère. C'est la capacité distinctive de Dijkstra que la section met en évidence, en parité avec le notebook Python `Search-15-NetworkX`.
 
 
 Pour la **reproductibilité** entre runs, les deux graines sont fixes (`new Random(7)` pour le terrain, `new Random(42)` pour le bruit).
 ",,,,,,,,d8f969ce20fd2d21,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02c-QuikGraph.ipynb,dcb052db,code,fr,dabb992ee918d295,"using QuikGraph.Algorithms.Observers;
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-16-QuikGraph.ipynb,dcb052db,code,fr,dabb992ee918d295,"using QuikGraph.Algorithms.Observers;
 Console.WriteLine(""Debut cellule grille 5x5..."");
 // Reseau routier 5x5 : 25 sommets (0,0)..(4,4). Aretes Est-Ouest + Nord-Sud.
 // Prong B (#3801) : pour que Dijkstra se distingue de BFS, on donne a chaque arete un
@@ -9843,11 +9843,11 @@ else
 }
 Console.WriteLine(""Fin cellule grille 5x5."");
 ",,,,,,,,dabb992ee918d295,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02c-QuikGraph.ipynb,cff33a18,markdown,fr,5dbe49f5a86ac67f,"## 8. Conclusion : table de parite Python NetworkX / .NET QuikGraph
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-16-QuikGraph.ipynb,cff33a18,markdown,fr,5dbe49f5a86ac67f,"## 8. Conclusion : table de parite Python NetworkX / .NET QuikGraph
 
 
 
-Cette table reflete la parite structurelle entre le notebook Python `Search-02b-NetworkX` et ce notebook C#. Les ombres grises marquent les **asymetries** ou l'un des deux ecosystemes est plus riche que l'autre -- c'est le verdict honnete delivre dans le body de la PR.
+Cette table reflete la parite structurelle entre le notebook Python `Search-15-NetworkX` et ce notebook C#. Les ombres grises marquent les **asymetries** ou l'un des deux ecosystemes est plus riche que l'autre -- c'est le verdict honnete delivre dans le body de la PR.
 
 
 
@@ -9895,7 +9895,7 @@ Cette table reflete la parite structurelle entre le notebook Python `Search-02b-
 
 **Resume** : QuikGraph est l'equivalent .NET de NetworkX pour les **chemins, flots et composantes**. Pour les **centralites** et **communautes**, il faut soit implementer a la main (degré, BFS a etages), soit brancher une autre bibliotheque (`FastGraph`, `Microsoft.Graph`, ou calculer la betweenness a partir de Floyd-Warshall).
 ",,,,,,,,5dbe49f5a86ac67f,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02c-QuikGraph.ipynb,069db712,markdown,fr,64ce564aea6479db,"## Exercices
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-16-QuikGraph.ipynb,069db712,markdown,fr,64ce564aea6479db,"## Exercices
 
 
 
@@ -9919,7 +9919,7 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02c-QuikGraph.ipynb,069db712,m
 
 **Indice** : la cle pour lire le chemin est `dijkstra.GetVertexPredecessor(v)`, qui remonte la filiere jusqu'a la source.
 ",,,,,,,,64ce564aea6479db,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02c-QuikGraph.ipynb,54c1c37d,code,fr,9f815fea8f8be4b3,"// Exercice 1 : BFS + Dijkstra sur mini-graphe pondere 3 sommets
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-16-QuikGraph.ipynb,54c1c37d,code,fr,9f815fea8f8be4b3,"// Exercice 1 : BFS + Dijkstra sur mini-graphe pondere 3 sommets
 
 // Indice : penser a creer le graphe en symmetrique (aller-retour).
 
@@ -9927,7 +9927,7 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02c-QuikGraph.ipynb,54c1c37d,c
 
 Console.WriteLine(""Exercice a completer : mini-graphe {1, 2, 3}, aretes symmetriques 1-2:2.0, 2-3:1.0, 1-3:5.0, puis BFS et Dijkstra."");
 ",,,,,,,,9f815fea8f8be4b3,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02c-QuikGraph.ipynb,555705b6,markdown,fr,334c51f5d8f06d1c,"### Exercice 2 : Flot maximum sur un mini-reseau electrique
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-16-QuikGraph.ipynb,555705b6,markdown,fr,334c51f5d8f06d1c,"### Exercice 2 : Flot maximum sur un mini-reseau electrique
 
 **Ennonce** : Modelisez un reseau electrique simplifie du **CaseStudy SmartGrid CC3** (cf. `MyIA.AI.Notebooks/CaseStudies/`) avec 5 noeuds :
 
@@ -9942,13 +9942,13 @@ Aretes (avec capacite en MW) : `P1 -> J1 : 10`, `P1 -> J2 : 5`, `P2 -> J1 : 8`, 
 Lancez `EdmondsKarpMaximumFlowAlgorithm<string, STaggedEdge<string, double>>` entre `P1+P2` (super source) et `C1`. **Indice** : QuikGraph ne supporte pas directement une super-source ; ajoutez un sommet `S` relie a `P1` et `P2` avec capacites infinies (ou très grandes), puis appelez `algo.Compute(""S"", ""C1"")`.
 
 > **Attention API** : comme en section 6, `EdmondsKarpMaximumFlowAlgorithm` exige que le graphe soit augmente de ses aretes residuelles **avant** `Compute`. Instanciez un `ReversedEdgeAugmentorAlgorithm`, appelez `AddReversedEdges()`, puis `Compute` (cf. section 6 pour le patron complet).",,,,,,,,334c51f5d8f06d1c,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02c-QuikGraph.ipynb,50ac6f05,code,fr,f56f20f004d9e8f8,"// Exercice 2 : Flot max sur mini-reseau SmartGrid (5 noeuds, 2 producteurs, 1 client)
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-16-QuikGraph.ipynb,50ac6f05,code,fr,f56f20f004d9e8f8,"// Exercice 2 : Flot max sur mini-reseau SmartGrid (5 noeuds, 2 producteurs, 1 client)
 
 
 
 Console.WriteLine(""Exercice a completer : flot max SmartGrid via QuikGraph MaximumFlowAlgorithm."");
 ",,,,,,,,f56f20f004d9e8f8,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02c-QuikGraph.ipynb,f3568a0c,markdown,fr,afa88cb6115d177b,"### Exercice 3 : Detection de communautes par composantes connexes
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-16-QuikGraph.ipynb,f3568a0c,markdown,fr,afa88cb6115d177b,"### Exercice 3 : Detection de communautes par composantes connexes
 
 
 
@@ -9966,7 +9966,7 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02c-QuikGraph.ipynb,f3568a0c,m
 
 **Indice** : utilisez le patron de la section 5 avec 1 boucle de construction. Pour le defi bonus, en QuikGraph pur : `graph.RemoveEdge(edge)` retire une arete, mais il faut avoir garde les handles quelque part (`var aretes = new List<Edge<T>>(...)`).
 ",,,,,,,,afa88cb6115d177b,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02c-QuikGraph.ipynb,c73812fe,code,fr,061c57fe51644171,"// Exercice 3 : Detection de communautes sur 30 noeuds / 3 communautes
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-16-QuikGraph.ipynb,c73812fe,code,fr,061c57fe51644171,"// Exercice 3 : Detection de communautes sur 30 noeuds / 3 communautes
 
 
 
@@ -27339,12 +27339,12 @@ Les deux approches attaquent **les quatre mêmes instances** (Sphere, Rastrigin,
 **Sphere** (convexe, optimum trivial à l'origine) sert de **sanity check** : les deux GA y retombent vers `f ≈ 0`, ce qui valide le branchement de la librairie. Sur les fonctions plus difficiles, l'écart entre les deux colonnes mesure **l'effet du codage et des opérateurs à budget égal** : le codage continu du from-scratch est naturellement à l'aise sur les vallées étroites (Rosenbrock) et les plateaux (Ackley), tandis que le codage binaire de GeneticSharp y est plus rigide — sans que cela ne le disqualifie (c'est l'encodage canonique des GA historiques, performant sur d'autres familles de problèmes, notamment combinatoires). C'est précisément l'intérêt du pont lib-vs-lib : confronter notre réimplémentation à un point de référence reproductible, fourni par une librairie reconnue, sans avoir à coder les opérateurs soi-même.
 
 > **Parité avec le jumeau Python.** Le notebook Python branche MEALPy (`PSO`, `ABC`, `SA`, `BRO`…) exactement pour la même raison. La Tranche 2 fait pour .NET ce que MEALPy fait pour Python : appeler une librairie de métaheuristiques reconnue plutôt qu'une réimplémentation maison. GeneticSharp est d'ailleurs le socle sur lequel notre `MetaGeneticSharp` (cours avancé, Partie 4) est construite.",,,,,,,,050f1535b083e851,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX-Csharp.ipynb,a5aa157e,markdown,fr,94017113f572cce3,"## Tranche 2 : parité lib-vs-lib via QuikGraph (moteur .NET natif)
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX-Csharp.ipynb,a5aa157e,markdown,fr,94017113f572cce3,"## Tranche 2 : parité lib-vs-lib via QuikGraph (moteur .NET natif)
 
-La **tranche 1** (§1-5.1) a valorisé la réimplémentation pédagogique : `Graph`, BFS/DFS, Dijkstra, centralités et Ford-Fulkerson écrits à la main. Cette **tranche 2** valorise l'autre versant de la parité cross-langage — celui qu'occupe `networkx` côté Python — en invoquant un **moteur .NET de production**, la bibliothèque **QuikGraph** (déjà utilisée par le notebook suivant, `Search-02c-QuikGraph`).
+La **tranche 1** (§1-5.1) a valorisé la réimplémentation pédagogique : `Graph`, BFS/DFS, Dijkstra, centralités et Ford-Fulkerson écrits à la main. Cette **tranche 2** valorise l'autre versant de la parité cross-langage — celui qu'occupe `networkx` côté Python — en invoquant un **moteur .NET de production**, la bibliothèque **QuikGraph** (déjà utilisée par le notebook suivant, `Search-16-QuikGraph`).
 
 L'enjeu n'est pas de remplacer la tranche 1 mais de la **compléter** : on rejoue la même instance concrète (le réseau de 6 villes, mêmes poids) avec le moteur réel, et l'on vérifie que les deux implémentations atteignent les **mêmes réponses**. C'est la parité *lib vs lib* — deux moteurs de production, un par écosystème (Python/`networkx` et .NET/QuikGraph) — que l'owner prend pour modèle nominal (PyMC vs Infer.NET dans la série Probas).",,,,,,,,94017113f572cce3,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX-Csharp.ipynb,3beaef98,code,fr,91d81d29586c39bf,"// Tranche 2 : QuikGraph 2.5.0 (moteur .NET natif) sur la MEME instance que la tranche 1.
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX-Csharp.ipynb,3beaef98,code,fr,91d81d29586c39bf,"// Tranche 2 : QuikGraph 2.5.0 (moteur .NET natif) sur la MEME instance que la tranche 1.
 #r ""nuget: QuikGraph, 2.5.0""
 using QuikGraph;
 using QuikGraph.Algorithms.ShortestPath;
@@ -27389,7 +27389,7 @@ double distF = dijkstra.GetDistance(""F"");
 $""Chemin A -> F (QuikGraph) : {cheminF} = {distF:0.#}"".Display();
 ""Tranche 1 (from-scratch, section 3) : A -> B -> E -> F = 7  ==>  parite lib-vs-lib OK"".Display();
 ",,,,,,,,91d81d29586c39bf,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX-Csharp.ipynb,3c898afd,markdown,fr,25699727894245ae,"### Interprétation : deux implémentations, une seule réponse
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX-Csharp.ipynb,3c898afd,markdown,fr,25699727894245ae,"### Interprétation : deux implémentations, une seule réponse
 
 Le moteur QuikGraph retrouve exactement les distances de la tranche 1 (`dist(A,F) = 7`, chemin `A -> B -> E -> F`) : la parité est **vérifiée chiffre à chiffre**, pas seulement annoncée. C'est tout l'intérêt de garder les deux tranches :
 
@@ -27397,7 +27397,7 @@ Le moteur QuikGraph retrouve exactement les distances de la tranche 1 (`dist(A,F
 - la **tranche 2** délègue au **moteur de production** (`QuikGraph.Algorithms` : Dijkstra, Bellman-Ford, A*, Kruskal, flot maximum Edmonds-Karp) — c'est l'apport ingénieur, le même rôle que `networkx` joue côté Python.
 
 QuikGraph apporte en sus, sans code supplémentaire de notre part, des algorithmes que la tranche 1 n'implémente pas (arbre couvrant minimum de Kruskal, composantes connexes, tri topologique). La parité *lib vs lib* avec le jumeau Python est ainsi atteinte du côté .NET par le moteur natif, tandis que le jumeau Python l'atteint du sien par `networkx`.",,,,,,,,25699727894245ae,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb,d12b8d12,markdown,fr,59e6b616e37e5a76,"### Lecture du résultat — pourquoi A* « gagne » sans tricher
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX.ipynb,d12b8d12,markdown,fr,59e6b616e37e5a76,"### Lecture du résultat — pourquoi A* « gagne » sans tricher
 
 La sortie ci-dessus tranche la question posée en début de section : A* explore **17 nœuds** contre **25 pour Dijkstra** (32 % d'économie), tout en retournant **exactement le même chemin** (coût `5.905`, longueur `6` pour les deux). Ce « Identiques : True » est la propriété qui fait toute la valeur de l'heuristique.
 
@@ -27406,7 +27406,7 @@ La sortie ci-dessus tranche la question posée en début de section : A* explore
 **D'où vient l'économie de 8 nœuds.** Dijkstra est un algorithme *single-source* : il étiquette tous les nœuds du graphe par distance croissante à la source, y compris ceux situés « derrière » la destination ou dans la direction opposée. A* n'étend que les nœuds pour lesquels `coût_déjà_payé + heuristique(estimé_restant)` promet un chemin compétitif : les nœuds qui s'éloignent de la cible voient leur évaluation `f = g + h` grimper et sont repoussés dans la file de priorité. Sur une grille 5×5 parcourue coin à coin, les 8 nœuds économisés sont ceux du quadrant inférieur gauche — inutiles à la recherche, mais que Dijkstra visite quand même.
 
 **Pourquoi ce banc est non trivial (Prong B, #3801).** Sur un graphe à coût uniforme (toutes arêtes de poids 1), l'heuristique euclidienne n'a presque rien à orienter et A* dégénère vers Dijkstra — le cas dégénéré dénoncé dans l'EPIC. Ici, les poids proportionnels à la distance euclidienne **plus** un bruit de ±30 % **plus** 10 % d'arêtes retirées créent un terrain où l'heuristique discrimine réellement : la réduction de 32 % est mesurable et reproductible, pas un artefact. À contraster avec le petit graphe routier de 6 villes de la section 4, où l'économie restait « modeste » (6 nœuds seulement) : c'est sur la grille 5×5 que le bénéfice de l'heuristique devient lisible.",,,,,,,,59e6b616e37e5a76,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb,0c0e7d04,markdown,fr,14419747ca8ec16e,"### Lecture du résultat — popularité et pontage sont orthogonaux
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX.ipynb,0c0e7d04,markdown,fr,14419747ca8ec16e,"### Lecture du résultat — popularité et pontage sont orthogonaux
 
 Le tableau trahit l'enseignement central de cette section : **PageRank et betweenness ne récompensent pas les mêmes chercheurs**. Sur les 10 places des deux top 5, seules deux sont occupées par le même sommet — `Bio_00` (PageRank #5, betweenness #2) et `IA_05` (PageRank #2, betweenness #3). Les huit autres places vont à des chercheurs absents de l'autre classement.
 
@@ -27417,7 +27417,7 @@ Le tableau trahit l'enseignement central de cette section : **PageRank et betwee
 **Pourquoi les passerelles dominent la betweenness.** Les sommets marqués d'un contour noir dans la visualisation sont les 12 extrémités des 6 liaisons inter-communautaires (`liens_inter`). Or **les 5 sommets du top betweenness (`Phys_08`, `Bio_00`, `IA_05`, `Phys_02`, `IA_09`) sont tous des passerelles** : la centralité de pontage détecte mécaniquement la structure communautaire que PageRank, mesure de flux global, lisse. C'est pourquoi une analyse de réseau réaliste **rapporte plusieurs centralités conjointement** plutôt qu'une seule : elles répondent à des questions différentes (« qui est cité ? » contre « qui est irremplaçable au routage ? »). À contraster avec le petit graphe routier de 6 villes de la section 5, où Paris dominait *les quatre* centralités à la fois (Degree, Betweenness, Closeness, PageRank) : sur un graphe petit et dense, les centralités concordent ; sur un graphe réaliste structuré en communautés, elles divergent — et c'est précisément cette divergence qui rend chacune informative.",,,,,,,,14419747ca8ec16e,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed-Csharp.ipynb,07d0e582,markdown,fr,086d8144e10f4897,"## Tranche 2 : parité lib-vs-lib via QuikGraph (moteur .NET natif)
 
-La **tranche 1** a valorisé la réimplémentation pédagogique : BFS, DFS, UCS et IDDFS écrits à la main sur le graphe des 13 villes françaises. Cette **tranche 2** valorise l'autre versant de la parité cross-langage — celui qu'occupe `networkx` côté Python (construction du graphe + parcours) — en invoquant un **moteur .NET de production**, la bibliothèque **QuikGraph** (déjà utilisée par le notebook suivant `Search-02c-QuikGraph` et par le pont `Search-02b-NetworkX`).
+La **tranche 1** a valorisé la réimplémentation pédagogique : BFS, DFS, UCS et IDDFS écrits à la main sur le graphe des 13 villes françaises. Cette **tranche 2** valorise l'autre versant de la parité cross-langage — celui qu'occupe `networkx` côté Python (construction du graphe + parcours) — en invoquant un **moteur .NET de production**, la bibliothèque **QuikGraph** (déjà utilisée par le notebook suivant `Search-16-QuikGraph` et par le pont `Search-15-NetworkX`).
 
 L'enjeu n'est pas de remplacer la tranche 1 mais de la **compléter** : on reconstruit la même instance concrète (les 13 villes, mêmes distances) avec le moteur réel, et l'on vérifie que les parcours BFS/DFS et l'UCS (via Dijkstra) atteignent les **mêmes réponses**. C'est la parité *lib vs lib* — deux moteurs de production, un par écosystème (`networkx` côté Python, QuikGraph côté .NET).
 ",,,,,,,,086d8144e10f4897,,,,,,,,
