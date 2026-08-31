@@ -93,3 +93,27 @@ public static class AgentCancellation
         System.Threading.CancellationToken cancellationToken = default)
         => Task.FromResult($"[LLM] {prompt}");
 }
+
+// Cinquieme terrain fautif (AGENTGUARD005) : variante syntaxique d'
+// AGENTGUARD001, meme defaut semantique. Au lieu de `.Result`, l'agent
+// decompile explicitement la machine a etats de la tache :
+// `tache.GetAwaiter().GetResult()`. Meme consequence en production
+// (deadlock sur un SynchronizationContext), mais un chemin syntaxique
+// distinct qui justifie un analyseur dedie -- AGENTGUARD001 ne regarde
+// que `.Result` / `.Wait()`. Diagnostic attendu sur la derniere ligne.
+public static class AgentSyncOverAsync
+{
+    // Genere par agent "pour eviter un await" : la tache est "synchronisee"
+    // en traversant manuellement la machine a etats. C'est exactement le
+    // defaut que AGENTGUARD005 attrape.
+    public static string ReponseSynchrone(string prompt)
+    {
+        return CallLlmAsync(prompt).GetAwaiter().GetResult();   // AGENTGUARD005
+    }
+
+    private static async Task<string> CallLlmAsync(string prompt)
+    {
+        await Task.Delay(50);
+        return $"[LLM] {prompt}";
+    }
+}

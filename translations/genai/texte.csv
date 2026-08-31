@@ -14106,26 +14106,6 @@ Le dataset a été créé avec succès. Analysons sa structure :
 - **Seed fixe** (`np.random.seed(42)`) : Assure la reproductibilité des résultats
 
 Ce dataset servira de base pour démontrer les capacités d'analyse du Code Interpreter dans les cellules suivantes.",,,,,,,,ebc485c29ba31170,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/7_Code_Interpreter.ipynb,91822051,markdown,fr,f693fd781d846ebe,"### Interprétation des résultats d'analyse
-
-L'assistant a automatiquement :
-
-1. **Chargé le CSV** : Reconnaissance automatique du format et des colonnes
-2. **Calculé les statistiques** : Moyenne, médiane, écart-type sans code manuel
-3. **Agrégé par dimensions** : Totaux par région et par produit avec pandas
-4. **Analysé la tendance** : Comparaison temporelle première/dernière semaine
-
-**Avantages clés** :
-- ✅ **Zéro code manuel** : Simple prompt en langage naturel
-- ✅ **Formatage intelligent** : Résultats structurés et lisibles
-- ✅ **Adaptabilité** : Fonctionne avec n'importe quel CSV similaire
-- ✅ **Explications incluses** : L'assistant interprète les chiffres
-
-**Note importante** : avec un véritable Code Interpreter OpenAI, le code généré par
-le modèle s'exécute dans un sandbox sécurisé et l'utilisateur ne voit que les résultats.
-Dans l'exécution committée ici (mode local fallback), le code pandas/numpy est visible
-dans la cellule source — le comportement observé est donc l'alternative locale, qui
-reproduit fidèlement les résultats qu'aurait produits le Code Interpreter.",,,,,,,,f693fd781d846ebe,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/7_Code_Interpreter.ipynb,ac37b8a0,markdown,fr,75a36fadeb70dea9,"### Téléchargement et visualisation des images
 
 Le Code Interpreter génère les graphiques comme fichiers PNG dans le sandbox. Ces images sont :
@@ -14280,49 +14260,6 @@ Pour une exécution réelle dans le sandbox OpenAI (Code Interpreter), il faut u
 l'API OpenAI directe plutôt que le routage OpenRouter.
 
 **Note importante (sandbox)** : avec un véritable Code Interpreter OpenAI, le code généré par le modèle s'exécute dans un sandbox sécurisé et l'utilisateur ne voit que les résultats. Dans l'exécution committée ici (mode local fallback), le code pandas/numpy est visible dans la cellule source — le comportement observé est donc l'alternative locale, qui reproduit fidèlement les résultats qu'aurait produits le Code Interpreter.",,,,,,,,9812413d64d82c23,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/7_Code_Interpreter.ipynb,7ceae636,markdown,fr,5b8cd786799dc27a,"### Interprétation de la solution
-
-Le système d'équations linéaires a été résolu avec **numpy.linalg.solve()**.
-
-**Processus mathématique** :
-1. Représentation matricielle : `Ax = b`
-   - Matrice A (coefficients) : 3x3
-   - Vecteur b (résultats) : 3x1
-2. Résolution : `x = A⁻¹ × b` (inversion matricielle)
-3. Validation : Vérifier que `Ax = b`
-
-**Applications pratiques** :
-- Économie : Équilibres de marché
-- Physique : Lois de conservation
-- Ingénierie : Circuits électriques, structures
-- Optimisation : Points critiques
-
-**Alternative** : Pour des systèmes plus complexes (non-linéaires), on utilise `scipy.optimize` ou des méthodes itératives.",,,,,,,,5b8cd786799dc27a,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/7_Code_Interpreter.ipynb,41ac62ff,markdown,fr,be79634125d90c11,"### Interprétation des tests statistiques
-
-Les résultats de l'analyse statistique permettent de répondre à plusieurs questions clés :
-
-**1. Test de Shapiro-Wilk (normalité)** :
-- **H0** : Les ventes suivent une distribution normale
-- **Interprétation** : Si p > 0.05 → distribution normale, sinon non-normale
-- **Impact** : Détermine quels tests statistiques sont appropriés
-
-**2. ANOVA (comparaison régions)** :
-- **H0** : Les moyennes de ventes sont identiques entre régions
-- **Interprétation** : Si p < 0.05 → différences significatives entre régions
-- **Usage** : Identifier les régions performantes/sous-performantes
-
-**3. Test du Chi-2 (indépendance)** :
-- **H0** : Région et produit sont indépendants
-- **Interprétation** : Si p < 0.05 → certaines régions préfèrent certains produits
-- **Usage** : Ciblage marketing, gestion des stocks
-
-**4. Corrélation temporelle** :
-- **Coefficient r** : Force et direction de la relation linéaire
-- **Interprétation** : |r| proche de 1 → forte corrélation, proche de 0 → faible
-- **Usage** : Détection de tendances (croissance/déclin)
-
-**Note méthodologique** : Le seuil α = 0.05 (95% de confiance) est standard en sciences sociales. Pour des décisions critiques, utilisez α = 0.01 (99%).",,,,,,,,be79634125d90c11,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/7_Code_Interpreter.ipynb,ceb24535,markdown,fr,f6b8a8344130014e,"## Génération de visualisations
 
 Le Code Interpreter peut créer des graphiques avec matplotlib, seaborn ou plotly. Les images générées sont accessibles via l'API.",,,,,,,,f6b8a8344130014e,,,,,,,,
