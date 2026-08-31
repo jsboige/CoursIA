@@ -59,6 +59,7 @@ La maîtrise des LLMs constitue la pierre angulaire de toute expertise en Géné
 | 10c | `10c_Long_Context_Strategies.ipynb` | Stratégies pour contextes longs : budget de tokens (comptage avec le tokenizer réel), biais de position, map-reduce, prefix caching — quatre mesures sur notre vLLM | 50 min |
 | 10d | `10d_TensorSharp_DotNet_Inference.ipynb` | Pilote diagnostique .NET : TensorSharp CUDA charge Gemma 4 E4B et répond en OpenAI-compatible, mais le contrôle qualitatif détecte une répétition de `<pad>` (`RECOVERABLE-LOCAL`, adoption différée) | 55 min |
 | 10e | `10e_LLamaSharp_DotNet_BakeOff.ipynb` | Bake-off Phase 2 du [#12353](https://github.com/jsboige/CoursIA/issues/12353) : binding .NET de `llama.cpp` 0.27.0, charge Qwen3-4B Q4_K_M en local sur RTX 3080 Ti 16 Go, produit 4 réponses Phase 1 en français avec 0% pad à 14.14 tok/s (vs 99.4% pad TensorSharp) — kernel `.NET Interactive` localement bloqué par AppLocker (escalade user) | 50 min |
+| 10f | `10f_ORTGenAI_DotNet_BakeOff.ipynb` | Phase 3 du bake-off : ONNX Runtime GenAI 0.15.2 charge Qwen3-4B ONNX int4 avec l’EP CUDA prouvée, rejoue les quatre invites communes et tranche le go/no-go par axe face à TensorSharp et LLamaSharp | 45 min |
 | 11 | `11_Quantization.ipynb` | AWQ, GPTQ, llmcompressor, modèles vision, déploiement vLLM | 60 min |
 | 12 | `12_Test_Time_Scaling.ipynb` | Best-of-N, Tree-of-Thoughts (BFS/DFS), Reflexion, routeur adaptatif (cf ICR) | 60 min |
 
