@@ -43,14 +43,14 @@ Le cas paradigmatique est le **modèle hiérarchique à effets aléatoires** : p
 
 La série illustre ce fil rouge sur plusieurs notebooks, chacun sur un cas non-conjugué distinct :
 
-- [PyMC-1-Setup](PyMC-1-Setup.ipynb) — introduction : du Beta-Bernoulli conjugué (où MCMC = prior) à un modèle hiérarchique non-centré sur plusieurs pièces, où le shrinkage devient visible.
+- [PyMC-01-Setup](PyMC-01-Setup.ipynb) — introduction : du Beta-Bernoulli conjugué (où MCMC = prior) à un modèle hiérarchique non-centré sur plusieurs pièces, où le shrinkage devient visible.
 - [PyMC-14-Sequences](PyMC-14-Sequences.ipynb) — HMM à états cachés : la vraisemblance de mélange (`NormalMixture`) marginalise l'assignation discrète pour garder un NUTS pur sur les paramètres continus.
 - [PyMC-1-Utility-Foundations](../DecisionTheory/PyMC/DecPyMC-1-Utility-Foundations.ipynb) — diagnostic multi-sites : un portefeuille de groupes hétérogènes où le partial pooling régularise les estimations à faible effectif.
 - [PyMC-4-Decision-Networks](../DecisionTheory/PyMC/DecPyMC-4-Decision-Networks.ipynb) — états latents : prévalence réelle d'un phénomène observé via un test imparfait (inversion d'état caché, non-conjuguée).
 - [PyMC-6-Expert-Systems](../DecisionTheory/PyMC/DecPyMC-6-Expert-Systems.ipynb) — recette de référence : paramétrisation **non-centrée** (offsets de Neal) qui évite le funnel et stabilise la convergence.
 - [PyMC-12-Modeles-Hierarchiques](PyMC-12-Modeles-Hierarchiques.ipynb) — traitement dédié : partial pooling bayésien sur 8 classes, shrinkage visible (les classes clairsemées se rétractent vers `mu`), comparaison centered vs non-centered et divergence NUTS comme diagnostic géométrique du funnel.
 
-> **Leçon technique récurrente** : sur ces modèles, la **paramétrisation non-centrée** `θ = μ + σ · z` (avec `z ~ Normal(0,1)`) est souvent indispensable. Elle découple l'estimation de la moyenne de celle de la dispersion et évite le *funnel de Neal* — une pathologie géométrique qui piège l'échantillonneur quand la dispersion inter-groupes est faible. Le réflexe naïf « augmenter `target_accept` » **aggrave** alors les divergences ; c'est la reparamétrisation, pas la tolérance, qui débloque la convergence. Voir [PyMC-6-Debugging](PyMC-6-Debugging.ipynb) pour les diagnostics associés.
+> **Leçon technique récurrente** : sur ces modèles, la **paramétrisation non-centrée** `θ = μ + σ · z` (avec `z ~ Normal(0,1)`) est souvent indispensable. Elle découple l'estimation de la moyenne de celle de la dispersion et évite le *funnel de Neal* — une pathologie géométrique qui piège l'échantillonneur quand la dispersion inter-groupes est faible. Le réflexe naïf « augmenter `target_accept` » **aggrave** alors les divergences ; c'est la reparamétrisation, pas la tolérance, qui débloque la convergence. Voir [PyMC-06-Debugging](PyMC-06-Debugging.ipynb) pour les diagnostics associés.
 
 ## Objectifs d'apprentissage
 
@@ -68,19 +68,19 @@ PyMC ne produit pas une prédiction ponctuelle mais une **distribution postérie
 
 ### Postérieurs d'un modèle Normal simple sur les temps de trajet
 
-Le notebook [PyMC-2 — Gaussian Mixtures](PyMC-2-Gaussian-Mixtures.ipynb) introduit l'inférence bayésienne sur un modèle Normal simple. Deux postérieures ArviZ (densité KDE + barre HDI à 94 %) pour les paramètres μ (moyenne) et τ (précision) du modèle : μ ≈ 16 avec HDI [14, 18], τ ≈ 0.081 avec HDI [0.025, 0.14]. La cellule précise (cell[4] output 6) montre ce que le MCMC produit sur un problème jouet de temps de trajet — le vrai mélange de gaussiennes vit dans une cellule ultérieure du même notebook (cell[16] `sigma_components`), ce qui justifie la migration de ce modèle vers un notebook ultérieur de la série.
+Le notebook [PyMC-2 — Gaussian Mixtures](PyMC-02-Gaussian-Mixtures.ipynb) introduit l'inférence bayésienne sur un modèle Normal simple. Deux postérieures ArviZ (densité KDE + barre HDI à 94 %) pour les paramètres μ (moyenne) et τ (précision) du modèle : μ ≈ 16 avec HDI [14, 18], τ ≈ 0.081 avec HDI [0.025, 0.14]. La cellule précise (cell[4] output 6) montre ce que le MCMC produit sur un problème jouet de temps de trajet — le vrai mélange de gaussiennes vit dans une cellule ultérieure du même notebook (cell[16] `sigma_components`), ce qui justifie la migration de ce modèle vers un notebook ultérieur de la série.
 
 <img src="assets/readme/pymc2-gaussian-mixtures.png" width="720" alt="Inférence bayésienne sur les temps de trajet : postérieures de la moyenne (μ) et de la précision (τ) du modèle Normal simple.">
 
 ### Évaluation d'un modèle IRT par courbe ROC
 
-Le notebook [PyMC-7 — IRT](PyMC-7-Skills-IRT.ipynb) construit un modèle de réponse aux items (compétence latente, difficulté, discrimination). L'évaluation binaire « item réussi / échoué » sur l'ensemble de test se visualise par une **courbe ROC** (Receiver Operating Characteristic) : l'AUC (aire sous la courbe) vaut 0.788, soit une discrimination modérée au-dessus du hasard (diagonale pointillée). Cette figure illustre la distinction entre l'objet IRT canonique (courbes ICC, probabilité de bonne réponse vs compétence) et son **évaluation** supervisée (classification binaire des items).
+Le notebook [PyMC-7 — IRT](PyMC-07-Skills-IRT.ipynb) construit un modèle de réponse aux items (compétence latente, difficulté, discrimination). L'évaluation binaire « item réussi / échoué » sur l'ensemble de test se visualise par une **courbe ROC** (Receiver Operating Characteristic) : l'AUC (aire sous la courbe) vaut 0.788, soit une discrimination modérée au-dessus du hasard (diagonale pointillée). Cette figure illustre la distinction entre l'objet IRT canonique (courbes ICC, probabilité de bonne réponse vs compétence) et son **évaluation** supervisée (classification binaire des items).
 
 <img src="assets/readme/pymc5-irt-curves.png" width="480" alt="Évaluation IRT : courbe ROC du modèle sur la prédiction de réussite aux items, AUC=0.788 au-dessus du hasard.">
 
 ### Diagnostic du mélange des chaînes MCMC
 
-Le notebook [PyMC-6 — Debugging](PyMC-6-Debugging.ipynb) traite les pannes de convergence. Sur un modèle hiérarchique 8-pièces (paramétrisation non-centrée), les trace plots des hyperparamètres `hyper_mean` et `hyper_sigma` montrent que les 4 chaînes MCMC se mélangent correctement : la densité postérieure (KDE à gauche) est unimodale et régulière, la trace (à droite) oscille sans drift visible. Ce diagnostic **purement visuel** (KDE + trace) est le premier réflexe avant d'inspecter R-hat et ESS — il détecte en un coup d'œil les chaînes figées ou les divergences.
+Le notebook [PyMC-6 — Debugging](PyMC-06-Debugging.ipynb) traite les pannes de convergence. Sur un modèle hiérarchique 8-pièces (paramétrisation non-centrée), les trace plots des hyperparamètres `hyper_mean` et `hyper_sigma` montrent que les 4 chaînes MCMC se mélangent correctement : la densité postérieure (KDE à gauche) est unimodale et régulière, la trace (à droite) oscille sans drift visible. Ce diagnostic **purement visuel** (KDE + trace) est le premier réflexe avant d'inspecter R-hat et ESS — il détecte en un coup d'œil les chaînes figées ou les divergences.
 
 <img src="assets/readme/pymc13-mcmc-diagnostics.png" width="720" alt="Diagnostics MCMC : vérification visuelle du mélange des chaînes via KDE postérieure et trace plot pour les hyperparamètres.">
 
@@ -118,20 +118,20 @@ Ces corrections sont **éditoriales** (prose, pas de modification des figures su
 
 | # | Notebook | Durée | Concepts |
 |---|----------|-------|----------|
-| 1 | [PyMC-1-Setup](PyMC-1-Setup.ipynb) | 15 min | Installation, Beta-Bernoulli, modèle hiérarchique non-centré |
-| 2 | [PyMC-2-Gaussian-Mixtures](PyMC-2-Gaussian-Mixtures.ipynb) | 50 min | Postérieurs, mélanges, Dirichlet |
-| 3 | [PyMC-3-Factor-Graphs](PyMC-3-Factor-Graphs.ipynb) | 45 min | Inférence discrète, Monty Hall |
-| 4 | [PyMC-4-Bayesian-Networks](PyMC-4-Bayesian-Networks.ipynb) | 55 min | CPT, D-separation, causalité |
-| 5 | [PyMC-7-Skills-IRT](PyMC-7-Skills-IRT.ipynb) | 60 min | IRT, DINA, many-to-many |
-| 6 | [PyMC-8-TrueSkill](PyMC-8-TrueSkill.ipynb) | 55 min | Ranking, online learning, équipes |
-| 7 | [PyMC-9-Classification](PyMC-9-Classification.ipynb) | 50 min | Classification bayésienne, tests A/B, calibration hors échantillon (Brier/AUC/fiabilité) |
+| 1 | [PyMC-01-Setup](PyMC-01-Setup.ipynb) | 15 min | Installation, Beta-Bernoulli, modèle hiérarchique non-centré |
+| 2 | [PyMC-02-Gaussian-Mixtures](PyMC-02-Gaussian-Mixtures.ipynb) | 50 min | Postérieurs, mélanges, Dirichlet |
+| 3 | [PyMC-03-Factor-Graphs](PyMC-03-Factor-Graphs.ipynb) | 45 min | Inférence discrète, Monty Hall |
+| 4 | [PyMC-04-Bayesian-Networks](PyMC-04-Bayesian-Networks.ipynb) | 55 min | CPT, D-separation, causalité |
+| 5 | [PyMC-07-Skills-IRT](PyMC-07-Skills-IRT.ipynb) | 60 min | IRT, DINA, many-to-many |
+| 6 | [PyMC-08-TrueSkill](PyMC-08-TrueSkill.ipynb) | 55 min | Ranking, online learning, équipes |
+| 7 | [PyMC-09-Classification](PyMC-09-Classification.ipynb) | 50 min | Classification bayésienne, tests A/B, calibration hors échantillon (Brier/AUC/fiabilité) |
 | 8 | [PyMC-10-Model-Selection](PyMC-10-Model-Selection.ipynb) | 45 min | Evidence, Bayes factors, ARD |
 | 9 | [PyMC-11-Topic-Models](PyMC-11-Topic-Models.ipynb) | 60 min | LDA, Dirichlet, documents-topics-mots |
 | 10 | [PyMC-13-Crowdsourcing](PyMC-13-Crowdsourcing.ipynb) | 55 min | Workers, communautés, agrégation de labels |
 | 11 | [PyMC-14-Sequences](PyMC-14-Sequences.ipynb) | 65 min | HMM, mélange `NormalMixture`, séries temporelles |
 | 12 | [PyMC-15-Recommenders](PyMC-15-Recommenders.ipynb) | 60 min | Factorisation de matrices, recommandation |
-| 13 | [PyMC-6-Debugging](PyMC-6-Debugging.ipynb) | 45 min | Troubleshooting, diagnostics NUTS, convergence |
-| 14 | [PyMC-5-Causal-Inference](PyMC-5-Causal-Inference.ipynb) | 65 min | do-calculus de Pearl, `pm.do`, backdoor/front-door, paradoxe de Simpson, contrefactuel |
+| 13 | [PyMC-06-Debugging](PyMC-06-Debugging.ipynb) | 45 min | Troubleshooting, diagnostics NUTS, convergence |
+| 14 | [PyMC-05-Causal-Inference](PyMC-05-Causal-Inference.ipynb) | 65 min | do-calculus de Pearl, `pm.do`, backdoor/front-door, paradoxe de Simpson, contrefactuel |
 | 15 | [PyMC-16-Sparse-Gaussian-Process](PyMC-16-Sparse-Gaussian-Process.ipynb) | 75 min | Processus gaussiens (prior sur fonctions), noyau RBF, classification GP logit, frontière non linéaire, length-scale apprise, GP scalable HSGP exécuté (mur $O(N^3)$, budgets de bases, N=1200) |
 | 16 | [PyMC-12-Modeles-Hierarchiques](PyMC-12-Modeles-Hierarchiques.ipynb) | 50 min | Partial pooling, shrinkage, paramétrisation non-centrée, divergences/funnel |
 | 17 | [PyMC-17-Kalman-Filter](PyMC-17-Kalman-Filter.ipynb) | 55 min | Système dynamique linéaire gaussien, récursion de filtrage fermée, value-add MCMC (estimation Q/R/drift) |
@@ -142,7 +142,7 @@ Ces corrections sont **éditoriales** (prose, pas de modification des figures su
 
 > **Numérotation** : la série PyMC est **numérotée 1:1** avec son jumeau C# Infer (PyMC-5 ↔ Infer-5 = inférence causale, PyMC-14 ↔ Infer-14 = séquences, etc.) pour faciliter la comparaison des deux moteurs sur les mêmes modèles. Le sujet de [Infer-10-Thompson-Sampling](../DecisionTheory/DecInfer/DecInfer-10-Thompson-Sampling.ipynb) est, côté Python, **intégré dans** [PyMC-7-Sequential](../DecisionTheory/PyMC/DecPyMC-7-Sequential.ipynb) (section bandits bayésiens MCMC) — d'où l'absence d'un PyMC-21 distinct.
 
-> **Ponts causaux** : [PyMC-5](PyMC-5-Causal-Inference.ipynb) est le maillon **MCMC** d'un pont à quatre paradigmes autour du `do(·)` de Pearl — le jumeau **message passing** en C# [Infer-5](../Infer/Infer-5-Causal-Inference.ipynb) (Infer.NET, EP/VMP), le jumeau symbolique [Tweety-11-Causal](../../SymbolicAI/Tweety/Tweety-11-Causal.ipynb), et la lecture par l'émergence causale [ICT-5](../../IIT/ICT-Series/ICT-5-CausalEmergence.ipynb). Vue d'ensemble : le [README IIT](../../IIT/README.md), section « Ponts causaux : le do-calculus de Pearl à travers les paradigmes ».
+> **Ponts causaux** : [PyMC-5](PyMC-05-Causal-Inference.ipynb) est le maillon **MCMC** d'un pont à quatre paradigmes autour du `do(·)` de Pearl — le jumeau **message passing** en C# [Infer-5](../Infer/Infer-5-Causal-Inference.ipynb) (Infer.NET, EP/VMP), le jumeau symbolique [Tweety-11-Causal](../../SymbolicAI/Tweety/Tweety-11-Causal.ipynb), et la lecture par l'émergence causale [ICT-5](../../IIT/ICT-Series/ICT-5-CausalEmergence.ipynb). Vue d'ensemble : le [README IIT](../../IIT/README.md), section « Ponts causaux : le do-calculus de Pearl à travers les paradigmes ».
 
 ## Progression Pédagogique
 
@@ -198,9 +198,9 @@ jupyter kernelspec list  # doit afficher pymc-env
 
 Notebooks 1-3 (fondations) puis 7-8 (classification/sélection) puis 9-12 (modèles avancés). Ce parcours couvre les modèles les plus utiles en pratique sans passer par la théorie de la décision.
 
-1. [PyMC-1-Setup](PyMC-1-Setup.ipynb) -> premier modèle
-2. [PyMC-2](PyMC-2-Gaussian-Mixtures.ipynb) + [PyMC-3](PyMC-3-Factor-Graphs.ipynb) -> distributions et inférence
-3. [PyMC-9](PyMC-9-Classification.ipynb) + [PyMC-10](PyMC-10-Model-Selection.ipynb) -> classification bayésienne
+1. [PyMC-01-Setup](PyMC-01-Setup.ipynb) -> premier modèle
+2. [PyMC-2](PyMC-02-Gaussian-Mixtures.ipynb) + [PyMC-3](PyMC-03-Factor-Graphs.ipynb) -> distributions et inférence
+3. [PyMC-9](PyMC-09-Classification.ipynb) + [PyMC-10](PyMC-10-Model-Selection.ipynb) -> classification bayésienne
 4. [PyMC-11](PyMC-11-Topic-Models.ipynb) -> [PyMC-15](PyMC-15-Recommenders.ipynb) -> modèles avancés
 
 ### Parcours théorie de la décision (~7h)
@@ -218,7 +218,7 @@ Alterner chaque notebook PyMC avec son équivalent [Infer.NET](../Infer/). Compa
 
 ### Parcours rapide (~2h)
 
-[PyMC-1-Setup](PyMC-1-Setup.ipynb) + [PyMC-4-Bayesian-Networks](PyMC-4-Bayesian-Networks.ipynb) + [PyMC-9-Classification](PyMC-9-Classification.ipynb). Les trois notebooks les plus représentatifs pour une première prise en main.
+[PyMC-01-Setup](PyMC-01-Setup.ipynb) + [PyMC-04-Bayesian-Networks](PyMC-04-Bayesian-Networks.ipynb) + [PyMC-09-Classification](PyMC-09-Classification.ipynb). Les trois notebooks les plus représentatifs pour une première prise en main.
 
 ## FAQ / Troubleshooting
 
@@ -250,7 +250,7 @@ conda install -c conda-forge pymc
 - Augmenter `target_accept` : `pm.sample(target_accept=0.95)` (défaut 0.8)
 - Utiliser `init="advi"` pour une initialisation plus robuste
 - Réduire `draws` et `tune` (ex. 500/500 au lieu de 1000/1000) si la compilation C (PyTensor) est disponible mais le temps de calcul reste prohibitif
-- Consulter [PyMC-6-Debugging](PyMC-6-Debugging.ipynb) pour les diagnostics complets
+- Consulter [PyMC-06-Debugging](PyMC-06-Debugging.ipynb) pour les diagnostics complets
 
 ### ArviZ affiche des divergences
 
@@ -258,7 +258,7 @@ Les divergences indiquent que l'échantillonneur n'a pas exploré correctement c
 
 1. `az.plot_trace(trace)` -> vérifier le mélange des chaînes
 2. `az.summary(trace)` -> vérifier que `r_hat < 1.05` et `ess_bulk > 400`
-3. Reparamétriser le modèle (centrage, log-transform ; paramétrisation centered vs non-centered — voir [PyMC-2-Gaussian-Mixtures](PyMC-2-Gaussian-Mixtures.ipynb) et [PyMC-6-Debugging](PyMC-6-Debugging.ipynb))
+3. Reparamétriser le modèle (centrage, log-transform ; paramétrisation centered vs non-centered — voir [PyMC-02-Gaussian-Mixtures](PyMC-02-Gaussian-Mixtures.ipynb) et [PyMC-06-Debugging](PyMC-06-Debugging.ipynb))
 4. Augmenter le nombre de tirages : `pm.sample(draws=4000, tune=2000)`
 
 ### Erreur "SamplingError: Initial evaluation of model failed"
@@ -311,9 +311,9 @@ Ce port Python est le pendant de la série [Infer.NET](../Infer/) (C# / .NET Int
 
 ### Ce que vous avez appris
 
-Cette série vous a fait passer des **fondamentaux de l'inférence bayésienne** (priors, postérieurs, échantillonnage NUTS avec [PyMC-1-Setup](PyMC-1-Setup.ipynb) à [PyMC-3-Factor-Graphs](PyMC-3-Factor-Graphs.ipynb)) à des **modèles relationnels avancés** (réseaux bayésiens, IRT, TrueSkill, LDA, HMM, recommandation — notebooks 4 à 12), en suivant le même chemin que la série [Infer.NET](../Infer/) mais avec un **moteur d'inférence radicalement différent**. Trois acquis clés :
+Cette série vous a fait passer des **fondamentaux de l'inférence bayésienne** (priors, postérieurs, échantillonnage NUTS avec [PyMC-01-Setup](PyMC-01-Setup.ipynb) à [PyMC-03-Factor-Graphs](PyMC-03-Factor-Graphs.ipynb)) à des **modèles relationnels avancés** (réseaux bayésiens, IRT, TrueSkill, LDA, HMM, recommandation — notebooks 4 à 12), en suivant le même chemin que la série [Infer.NET](../Infer/) mais avec un **moteur d'inférence radicalement différent**. Trois acquis clés :
 
-- **Lire et diagnostiquer une chaîne MCMC** — `pm.sample()` ne suffit pas ; ArviZ (`r_hat < 1.05`, `ess_bulk > 400`, trace plots, divergences) est devenu votre réflexe systématique, et [PyMC-6-Debugging](PyMC-6-Debugging.ipynb) votre référence pour les pannes de convergence.
+- **Lire et diagnostiquer une chaîne MCMC** — `pm.sample()` ne suffit pas ; ArviZ (`r_hat < 1.05`, `ess_bulk > 400`, trace plots, divergences) est devenu votre réflexe systématique, et [PyMC-06-Debugging](PyMC-06-Debugging.ipynb) votre référence pour les pannes de convergence.
 - **Choisir le bon moteur selon le modèle** — vous savez désormais **quand** l'échantillonnage MCMC (PyMC/NUTS, piloté par gradient, flexible sur presque tout modèle continu) est préférable au **message passing** sur graphe de facteurs (Infer.NET/EP, rapide sur les modèles conjugués et structurés), et inversement. Arbitrer entre ces deux familles d'algorithmes est une compétence de praticien.
 - **Relier inférence et décision** — la sous-série [DecisionTheory/PyMC/](../DecisionTheory/PyMC/README.md) (notebooks 1 à 7 : utilité espérée, EVPI/EVSI, MDPs, bandits) ferme la boucle : un posterior n'est pas une fin, c'est l'**input** d'une politique de décision optimale sous incertitude.
 

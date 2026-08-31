@@ -100,7 +100,7 @@ FORGE_API_URL=https://turbo.stable-diffusion-webui-forge.myia.io
 ### ComfyUI Qwen (Édition d'images)
 
 - `01-5-Qwen-Image-Edit.ipynb` - Introduction Qwen
-- `02-1-Qwen-Image-Edit-2509.ipynb` - Édition avancée
+- `01-5b-Qwen-Image-Edit-2509.ipynb` - Édition avancée
 
 **Config requise :**
 

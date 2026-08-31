@@ -181,8 +181,8 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 | 12 | PyMC-2 : Distributions Gaussiennes et Mélanges | BETA | Oui |
 | 13 | PyMC-3 : Graphes de Facteurs et Inference Discrete | BETA | Oui |
 | 14 | PyMC-4 : Reseaux Bayesiens | BETA | Oui |
-| 15 | PyMC-5-Causal-Inference : Inference Causale et… | BETA | Oui |
-| 16 | PyMC-6-Debugging : Troubleshooting et Bonnes Pratiques | BETA | Oui |
+| 15 | PyMC-05-Causal-Inference : Inference Causale et… | BETA | Oui |
+| 16 | PyMC-06-Debugging : Troubleshooting et Bonnes Pratiques | BETA | Oui |
 | 17 | PyMC-7 : Modèles de Competences (IRT et DINA) | BETA | Oui |
 | 18 | PyMC-8 : TrueSkill - Classement et Apprentissage en… | BETA | Oui |
 | 19 | PyMC-9 : Classification Bayesienne et Tests A/B | BETA | Oui |
