@@ -27,6 +27,12 @@
       csharp_sha: c8c9fd270d99996ebb2561726bb6859d70ebcf48
       content_python_sha: d15b8834e7cd5fcfa7a98589d37449a53e9707f9f5e2e24bb443ee510fa503d8
       content_csharp_sha: ded9fd5a567ce787bdf82f7ce86c61ab67c6e9452bba5f08a8d85188483ec883
+    - date: "2026-08-31"
+      by: myia-po-2026:CoursIA
+      python_sha: fe0e978ab44edb2d1c8df7e0cfdbeb8811973dab
+      csharp_sha: bc0a4ea00df9f775af7fc8bf9f0658a7da46110d
+      content_python_sha: 0368fc90594995b2c993ef73c81cd38ffec880b03aca8e0eb2d51248f2c13b29
+      content_csharp_sha: bf37b39d0855b37b871e11c0787483080853d430dde375a9f78c0d2395ed9b85
   known_differences:
     - "Socle commun : raisonnement RDFS (subClassOf, subPropertyOf, inference de hierarchies)."
     - "Lib-vs-lib : C# = `dotNetRDF` (`VDS.RDF.Ontology` OntologyGraph + `VDS.RDF.Query`). Python = `rdflib` + `owlrl` (moteur de closure RDFS/OWL-RL, derive les triplets inferes). Approche legerement differente : C# expose le modele ontologique oriente-objet ; Python deroule la closure de raisonnement explicitement."

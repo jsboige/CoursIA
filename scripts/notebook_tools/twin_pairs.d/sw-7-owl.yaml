@@ -34,6 +34,12 @@
       csharp_sha: f772b4048c0c6227986c830cf89946d10d7aaccd
       content_python_sha: 3eec3895e2617c4cb7e2af7fc1552f365040762bbe7b541c55fab950b30e62c7
       content_csharp_sha: e0fa1a57976b5801ece24c4b48560865c905d8755c9821ddea113ccd7fc6da18
+    - date: "2026-08-31"
+      by: myia-po-2026:CoursIA
+      python_sha: 7687ad78d6e4d6ff9b41509c2973268210339d7d
+      csharp_sha: f8184d5d01a5f9be4bdc1f303469d59808b32c08
+      content_python_sha: 9102c9a36bf61f418d06673a542325064fd4599326eeec43bf602bdc815f04e3
+      content_csharp_sha: 230f905a499ca050382de922fc7ef37ca12d8e7f595e2fc2e91acf92caa34802
   known_differences:
     - "Socle commun : modelisation OWL (classes, proprietes, restrictions, axiomes)."
     - "Lib-vs-lib : C# = `dotNetRDF` (`VDS.RDF.Ontology` : OntologyGraph, OwlReasoner). Python = `owlready2` (API OWL orientee-objet dediee, world/Thing/Property). Deux librairies OWL matures mais aux philosophies differentes : dotNetRDF traite OWL comme une couche sur RDF ; owlready2 est nativement orientee OWL."

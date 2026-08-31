@@ -33,6 +33,12 @@
       csharp_sha: d61ac744c1807390a7625d78dd533ffa0511eea3
       content_python_sha: 988c346b165ddef55e1cd0e7a5f55655d4403abb7fef9fc3dbf359387f2b5f1d
       content_csharp_sha: 176272347fcfa9a9a2bc7c1a1a0fb3944e59bdb045faa1141c0a7b62c8ec6bc9
+    - date: "2026-08-31"
+      by: myia-po-2026:CoursIA
+      python_sha: 5eea8c6c282e893a190e24edb89876b8e3fb553d
+      csharp_sha: a642a5b8066ee7e676a31e60155a8696a30ec1eb
+      content_python_sha: 0ec936021c30b71e7e7bb7686cae81f3b715ded6fb59ca0b216cff0a1a7e6de7
+      content_csharp_sha: f087b9afb60ac16ece37dd7f63a23f036e5d147f4cfb4d90f93c2f1ea339244e
   known_differences:
     - "2026-08-30 : PR #13577 (tranche densite #13410) -- 18 cellules d interpretation markdown ancrees ajoutees cote Python uniquement (593 -> 1455 c/cellule). Le jumeau C# reste a 1070 (lui aussi sous le plancher 1200, a enrichir dans une tranche dediee). Asymetrie PROSE pure : code/outputs byte-identiques des deux cotes, la parite native-both (moteurs rdflib/dotNetRDF sur les memes donnees) est intacte."
     - "Socle commun : serialisation JSON-LD (Linked Data en JSON, W3C) d'un graphe RDF."

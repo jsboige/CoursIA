@@ -34,6 +34,12 @@
       csharp_sha: a8983205a68b6852914317d2797e1aa783f043bb
       content_python_sha: 08b6e5188fb667cd2b3ead0619b4693dea8704a74096a58b207282cd9109c7e5
       content_csharp_sha: 03e945f90e043bc2d648631c3ffd2b7a645009bf2daba67c8a81d2dc2fb22975
+    - date: "2026-08-31"
+      by: myia-po-2026:CoursIA
+      python_sha: d1e0e93e1998c4938daed6ae9fdaf56810de4127
+      csharp_sha: ae14546d972888fd1ea3f7cbb397a60b1c8cac89
+      content_python_sha: 4ebdcd57907eb1510cab44bfd5572776c98926c44ba258bfc8aa4f5589878560
+      content_csharp_sha: fee80087a3b563b11b444af203ce5457434824177e167b9ef5c6b42af9298c96
   known_differences:
     - "2026-08-22 (po-2025) #12365 densite round 2 (#11601) : les DEUX cotes enrichis markdown-only (Python 936 -> 1536 c/cell sur 43 cellules md, CSharp 960 -> 1533 sur 21) -- prose pedagogique miroir ancrée aux outputs reels (mesures Python 7/8/12/37 triplets vs CSharp 7/14/35 : l'ecart 37 vs 35 est documente dans la prose, 2 annotations ex:since de plus cote Python), 16 separateurs --- -> *** cote Python (fix markdown rendering yaml_block_open_no_close 13 -> 0). 0 cellule code touchee, outputs et execution_count byte-identiques -- parite semantique intacte, seuls les content SHA ont bouge."
     - "Socle commun : meta-modelisation RDF-star (triplets sur des triplets, quotes nestees)."

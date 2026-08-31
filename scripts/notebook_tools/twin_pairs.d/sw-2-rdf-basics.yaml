@@ -29,6 +29,12 @@
       csharp_sha: fcea9bfbc914f113a7448e2511941ec09908d787
       content_python_sha: 502e22d84930e75b9716ce37080de094034cb2d0ad8ea4cbf61d0ee9420c05d2
       content_csharp_sha: d2471f19c3459505386a13bb7974735deed73ae2b9c4684db8da68111c197c5d
+    - date: "2026-08-31"
+      by: myia-po-2026:CoursIA
+      python_sha: e531613c7e4170ef1ce4c44df1859cbb09dd8429
+      csharp_sha: 42511b6bc85cfec49ea83682603673e4587c2d61
+      content_python_sha: 5fa306b282a46cdaa634f88e362e954b22e7adf7f386d22d843c98fec3e86fe7
+      content_csharp_sha: 47b991f3705c38f0f0c5adc542d8402e92bf287c1c720430a2a789e5b42a50e3
   known_differences:
     - "Socle pedagogique commun : construction d'un premier graphe RDF (triplets sujet-predicat-objet), namespaces W3C (RDF/RDFS/XSD)."
     - "Lib-vs-lib : C# = `dotNetRDF 3.2.1` (`#r \"nuget: dotNetRDF, 3.2.1\"`, espaces `VDS.RDF` / `VDS.RDF.Parsing` / `VDS.RDF.Writing`). Python = `rdflib` (`from rdflib import Graph, URIRef, Literal, BNode, Namespace` + `rdflib.namespace` RDF/RDFS/XSD/FOAF/DC)."
