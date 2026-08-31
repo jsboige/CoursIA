@@ -268,6 +268,37 @@ def _find_table_blocks(lines):
     return blocks
 
 
+def _build_fence_state(lines):
+    """Return a list ``state[i] = True`` iff line ``i`` (0-indexed) is INSIDE a fenced code block.
+
+    A fence opens at line ``i`` (matches ``FENCE_OPEN_RE``) and stays open until
+    the next line whose opening fence uses the same character (`` ``` `` or ``~~~``).
+    Used by ``detect_md_table_syntax`` to skip pipe-lines that live inside a code
+    block -- GFM does not parse tables inside fences, so a ``| grep | wc`` line in
+    a ``\\`\\`\\`bash`` block is literal prose, not a table continuation. c.770
+    pre-c.771 scanner treated these as orphan continuation rows and produced
+    false-positive ORPHAN_TABLE_ROW findings (reproduced 2026-08-31 by po-2025
+    adjoint on PR #13843).
+    """
+    n = len(lines)
+    state = [False] * n
+    in_fence = False
+    marker = None
+    for i in range(n):
+        if in_fence:
+            state[i] = True
+            m = FENCE_OPEN_RE.match(lines[i])
+            if m and m.group(1)[0] == marker:
+                in_fence = False
+                marker = None
+            continue
+        m = FENCE_OPEN_RE.match(lines[i])
+        if m:
+            in_fence = True
+            marker = m.group(1)[0]
+    return state
+
+
 def _column_count(line):
     """Count GFM table columns in a line.
 
@@ -328,6 +359,7 @@ def detect_md_table_syntax(lines, source_label="line"):
     findings = []
     n = len(lines)
     blocks = _find_table_blocks(lines)
+    fence_state = _build_fence_state(lines)
 
     for blk in blocks:
         rows = blk["rows"]
@@ -456,6 +488,14 @@ def detect_md_table_syntax(lines, source_label="line"):
             j = end_idx + 1
             gap = 0
             while j < n and gap < ORPHAN_LOOKAHEAD:
+                # Skip lines INSIDE fenced code blocks: GFM does not parse tables
+                # inside fences, so a `| grep | wc` line in a ```bash block is
+                # literal prose, not a table continuation. (c.773 -- po-2025
+                # adjoint FP on #13843 reproduced 2026-08-31.)
+                if fence_state[j]:
+                    gap += 1
+                    j += 1
+                    continue
                 if not _has_delimiter_pipe(lines[j]):
                     # A heading between the table and the candidate orphan is a
                     # hard break (the author started a NEW section -> the
