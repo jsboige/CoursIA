@@ -22,7 +22,14 @@
       csharp_sha: 59b99abd31b8eb9cdc1ac1399d4d7eff099903a5
       content_python_sha: dddab5b007203cb73db9a7a6bb64eb31deb4d4da2a3a33ef87fc9ecf19aafe8b
       content_csharp_sha: 3d8aee0a2b8de8c872fd528ff2655bd45a981feb6322edd8679e0b3832e7ee17
+    - date: "2026-08-31"
+      by: myia-ai-01:CoursIA
+      python_sha: e53bf9534297dede40b549d06706ec43a7c902e0
+      csharp_sha: 2feb723adf68258ced22949f71e9eb70070c87b9
+      content_python_sha: dddab5b007203cb73db9a7a6bb64eb31deb4d4da2a3a33ef87fc9ecf19aafe8b
+      content_csharp_sha: bf240ace38f5d9f054a979ed694bb77ff34e84ac79f9353683168205fc830b07
   known_differences:
+    - '2026-08-31 : ATTESTATION UNILATERALE (PR #13659, lane myia-ai-01:CoursIA) -- reparation d''echappements JSON manges dans le markdown du cote C#. CAUSE : dans le .ipynb, la sequence dollar-\bot-dollar ecrite avec UN SEUL antislash est lue par le parseur JSON comme l''echappement \b (backspace, U+0008) ; la source chargee porte un caractere de controle et le notebook rend un dollar-ot-dollar prive de sa commande LaTeX. FIX : doubler l''antislash (\\bot). Le DRIFT est UNILATERAL parce que le DEFAUT l''est : la contrepartie Search-4-LocalSearch.ipynb (Python), 39 cellules markdown, a ete scannee sous controle positif (le litteral defectueux passe a json.loads doit rendre U+0008 -- assertion verifiee avant le scan) et ne porte AUCUN caractere de controle U+0008/U+000B/U+000C. Il n''y a donc rien a reparer de ce cote : l''attestation ne consacre aucune asymetrie de contenu. PORTEE DU DIFF cote repare (comparaison des JSON parses origin/main -> HEAD) : markdown uniquement, 0 cellule code touchee, 0 sortie modifiee, 0 execution_count deplace, 0 cellule ajoutee ou retiree.'
     - "Socle pedagogique commun : metaheuristiques de recherche locale — Hill Climbing (variations steepest/first-improvement + diagnosis plateau/ridge), Simulated Annealing (schema de refroidissement, critere de Metropolis), Tabu Search (liste tabou, memoire a court terme). Comparaison empirique sur N-Reines. Les deux twins implementent les 3 algorithmes from-scratch (parite algorithmique, pas seulement narratif)."
     - "Citations canoniques presentes des deux cotes (audit #8081 po-2023 c.909) : Kirkpatrick/Gelatt/Vecchi 1983 (Simulated Annealing, Science), Glover 1986/1989 (Tabu Search), Russell & Norvig AIMA (cadre local search)."
     - "Idiomes framework : Python = stdlib + numpy/matplotlib (viz des paysages de fitness, courbes de convergence par temperature, 11 imports, 62 cellules avec demos riches N-Reines). C# = pur System.* (System / System.Collections.Generic / System.Linq), 0 NuGet, 2 using, 28 cellules (implementation minimale from-scratch, presentation tabulaire)."
