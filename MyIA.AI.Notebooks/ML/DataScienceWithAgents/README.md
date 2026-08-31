@@ -24,7 +24,7 @@ La formation couvre deux stacks complémentaires :
 
 | Statistique | Valeur |
 |-------------|--------|
-| Notebooks | 33 (7 LangChain + 10 ADK + 2 fondations Python + 12 fondations ML + 2 deep learning) |
+| Notebooks | 41 (7 LangChain + 10 ADK + 2 fondations Python + 20 fondations ML + 10 deep learning) |
 | Kernel | Python 3.11+ |
 | Durée totale | ~7 jours |
 
@@ -80,25 +80,39 @@ DataScienceWithAgents/
 │       ├── 1.2-NumPy.ipynb
 │       └── 1.3-Pandas.ipynb
 │
-├── 02-ML-Cours/                # Fondations ML canoniques (12 notebooks)
+├── 02-ML-Cours/                # Fondations ML canoniques (20 notebooks)
 │   ├── 2.1-Workflow-ML.ipynb
 │   ├── 2.2-Descente-de-gradient.ipynb
 │   ├── 2.3-Regression-lineaire-logistique.ipynb
+│   ├── 2.3b-Naive-Bayes-Generatif.ipynb
+│   ├── 2.3c-Regression-Grande-Dimension.ipynb
+│   ├── 2.3d-Modele-Gaussien-LDA-QDA.ipynb
 │   ├── 2.4-Arbres-Forets-Ensembles.ipynb
 │   ├── 2.5-Biais-Variance-CV-ROC.ipynb
 │   ├── 2.5b-Calibration-Probabilites.ipynb
+│   ├── 2.5c-Equite-Sous-Groupes.ipynb
 │   ├── 2.6-Clustering-KMeans-PCA.ipynb
 │   ├── 2.7-Modeles-Non-Parametriques.ipynb
 │   ├── 2.8-Theorie-PAC.ipynb
 │   ├── 2.8b-Theorie-PAC-Lean.ipynb
 │   ├── 2.8c-Borne-Temoin-Concentration.ipynb
+│   ├── 2.8d-Lean-Novikoff-Convergence.ipynb
 │   ├── 2.9-Grokking-Generalisation.ipynb
 │   ├── 2.10-Optimisation-Hyperparametres.ipynb
+│   ├── 2.12-Donnees-Desequilibrees.ipynb
 │   └── 2.13-Analyse-Erreurs.ipynb
 │
-├── 03-DeepLearning/            # Deep learning from scratch (2 notebooks)
+├── 03-DeepLearning/            # Deep learning from scratch (10 notebooks)
+│   ├── 3.0-Theorie-Information.ipynb
 │   ├── 3.1-Retropropagation.ipynb
-│   └── 3.2-Optimisateurs.ipynb
+│   ├── 3.2-Optimisateurs.ipynb
+│   ├── 3.3-Regularisation.ipynb
+│   ├── 3.4-Attention-Transformer-From-Scratch.ipynb
+│   ├── 3.5-Phenomenes-de-Generalisation.ipynb
+│   ├── 3.6-Modeles-Generatifs.ipynb
+│   ├── 3.6b-Modeles-Generatifs-PyTorch.ipynb
+│   ├── 3.7-Distillation-Maitre-Eleve.ipynb
+│   └── 3.8-Representations-Contrastives.ipynb
 │
 ├── Track1-LangChain/ # Track LangChain (7 labs)
 │   ├── Day1-Foundations/Labs/              # Revision
@@ -121,23 +135,29 @@ DataScienceWithAgents/
 
 ## Fondations ML (02-ML-Cours)
 
-Le socle machine learning canonique avec scikit-learn, posé à la main entre les fondations NumPy/Pandas et les labs agentic — là où scikit-learn n'apparaissait jusqu'ici que comme une séquence magique non expliquée. Douze notebooks (workflow, descente de gradient, régression linéaire/logistique, arbres et ensembles, biais-variance/CV/ROC, calibration des probabilités, clustering/ACP, SVM à noyau/k-NN, théorie PAC/dimension VC, ses deux compagnons formel et concentration, un épilogue 2.9 grokking, puis deux chapitres de praticien — optimisation d'hyperparamètres et analyse d'erreurs), chacun rendant visible un concept-phare et ancrant les articles fondateurs.
+Le socle machine learning canonique avec scikit-learn, posé à la main entre les fondations NumPy/Pandas et les labs agentic — là où scikit-learn n'apparaissait jusqu'ici que comme une séquence magique non expliquée. Vingt notebooks (workflow, descente de gradient, régression linéaire/logistique, son pendant Naive Bayes génératif, la régression en grande dimension p≫n, le modèle gaussien LDA/QDA, arbres et ensembles, biais-variance/CV/ROC, calibration des probabilités, équité par sous-groupes, clustering/ACP, SVM à noyau/k-NN, théorie PAC/dimension VC, ses trois compagnons formel/concentration/perceptron, un épilogue 2.9 grokking, puis trois chapitres de praticien — classes déséquilibrées, optimisation d'hyperparamètres et analyse d'erreurs), chacun rendant visible un concept-phare et ancrant les articles fondateurs.
 
 | Notebook | Sujet | Concept-phare |
 |----------|-------|---------------|
 | [2.1-Workflow-ML](02-ML-Cours/2.1-Workflow-ML.ipynb) | split → fit → predict → évaluer | surapprentissage rendu visible |
 | [2.2-Descente-de-gradient](02-ML-Cours/2.2-Descente-de-gradient.ipynb) | ouvrir la boîte noire de `fit()` | 3 learning rates (lent / bon / divergeant) |
 | [2.3-Regression-lineaire-logistique](02-ML-Cours/2.3-Regression-lineaire-logistique.ipynb) | OLS vs MLE | droite vs sigmoïde |
+| [2.3b-Naive-Bayes-Generatif](02-ML-Cours/2.3b-Naive-Bayes-Generatif.ipynb) | Classifieur génératif : hypothèse d'indépendance conditionnelle par classe | l'hypothèse Naive Bayes explose dès que les features sont corrélées (synthetic-checked) |
+| [2.3c-Regression-Grande-Dimension](02-ML-Cours/2.3c-Regression-Grande-Dimension.ipynb) | p ≫ n : ridge, PCR, PLS | Var ≠ valeur prédictive : PLS gagne à 5 composantes, PCR à 44 |
+| [2.3d-Modele-Gaussien-LDA-QDA](02-ML-Cours/2.3d-Modele-Gaussien-LDA-QDA.ipynb) | Modèle gaussien : LDA vs QDA | l'hypothèse de covariance décide la frontière (droite vs conique) |
 | [2.4-Arbres-Forets-Ensembles](02-ML-Cours/2.4-Arbres-Forets-Ensembles.ipynb) | DecisionTree, RandomForest, GradientBoosting | réduction de variance |
 | [2.5-Biais-Variance-CV-ROC](02-ML-Cours/2.5-Biais-Variance-CV-ROC.ipynb) | biais-variance, validation croisée, ROC/AUC | coût du seuil de décision |
 | [2.5b-Calibration-Probabilites](02-ML-Cours/2.5b-Calibration-Probabilites.ipynb) | calibration des probabilités : reliability diagram, ECE | pourquoi 0.87 n'est pas 87 % de chances |
+| [2.5c-Equite-Sous-Groupes](02-ML-Cours/2.5c-Equite-Sous-Groupes.ipynb) | équité par sous-groupe : parité démographique, equalized odds, post-traitement par seuils (Hardt) | l'accuracy globale ne suffit pas (96,4 % coexiste avec deux groupes à 0,977–0,995 et 0,922–0,957) |
 | [2.6-Clustering-KMeans-PCA](02-ML-Cours/2.6-Clustering-KMeans-PCA.ipynb) | non supervisé : KMeans + ACP | structure retrouvée sans étiquettes |
 | [2.7-Modeles-Non-Parametriques](02-ML-Cours/2.7-Modeles-Non-Parametriques.ipynb) | SVM à noyau et k plus proches voisins | kernel trick (linéaire vs RBF) |
 | [2.8-Theorie-PAC](02-ML-Cours/2.8-Theorie-PAC.ipynb) | théorie PAC : sample complexity, dimension VC | la borne PAC prédit l'empirique |
 | [2.8b-Theorie-PAC-Lean](02-ML-Cours/2.8b-Theorie-PAC-Lean.ipynb) | *Compagnon Lean* (kernel `lean4-wsl`) — la même borne PAC, démontrée | ce que 2.8 constate, le lake le prouve |
 | [2.8c-Borne-Temoin-Concentration](02-ML-Cours/2.8c-Borne-Temoin-Concentration.ipynb) | *Carte transversale + illustrations Python* — Sections 1--3 (reconstruction de la borne, témoin extrémal, Hoeffding bilatérale) sous kernel `coursia-ml-training` | qui porte quoi, et la mesure numérique Python exécutée |
+| [2.8d-Lean-Novikoff-Convergence](02-ML-Cours/2.8d-Lean-Novikoff-Convergence.ipynb) | *Compagnon Lean* (kernel `lean4-wsl`) — Novikoff `n·γ² ≤ R²`, exécuté | le théorème interrogé en direct : `#check` + `#print axioms`, balayage de marge |
 | [2.9-Grokking-Generalisation](02-ML-Cours/2.9-Grokking-Generalisation.ipynb) | *Épilogue* — grokking : la généralisation qui arrive en retard (premier réseau de neurones) | **L'horloge cachée** : embeddings rangés en cercle après le grok (ACP + Fourier) |
 | [2.10-Optimisation-Hyperparametres](02-ML-Cours/2.10-Optimisation-Hyperparametres.ipynb) | méthodologie du réglage : grille, hasard, bayésien (TPE) — et quand s'arrêter | le critère d'arrêt économise la moitié des essais |
+| [2.12-Donnees-Desequilibrees](02-ML-Cours/2.12-Donnees-Desequilibrees.ipynb) | classes déséquilibrées : accuracy vs PR, stratégies de rééchantillonnage, seuillage par coût | la courbe PR dit la vérité quand la ROC flatte (~3 % de positifs) |
 | [2.13-Analyse-Erreurs](02-ML-Cours/2.13-Analyse-Erreurs.ipynb) | le geste du praticien : diagnostiquer un modèle entraîné (tranches, worst-k) | la poche invisible : 67.6% d'erreur sous un score global correct |
 
 Documentation complète : [02-ML-Cours/README.md](02-ML-Cours/README.md)
@@ -148,8 +168,16 @@ Le prolongement direct du socle : là où [2.2](02-ML-Cours/2.2-Descente-de-grad
 
 | Notebook | Sujet | Concept-phare |
 |----------|-------|---------------|
+| [3.0-Theorie-Information](03-DeepLearning/3.0-Theorie-Information.ipynb) | Entropie, cross-entropy et KL from scratch (texte français, classeur MSE vs CE) | la loss qui fait apprendre : CE s'échappe quand MSE reste bloquée (gradient CE/MSE ~51×) |
 | [3.1-Retropropagation](03-DeepLearning/3.1-Retropropagation.ipynb) | Le MLP et la rétropropagation à la main (NumPy pur, sans autograd) | **Le gradient vérifié** (différence finie 1,3e-11 ; parité exacte avec PyTorch ; init nulle = gradient nul) |
 | [3.2-Optimisateurs](03-DeepLearning/3.2-Optimisateurs.ipynb) | Momentum, Adagrad, RMSProp, Adam et schedules, écrits puis validés pas à pas contre `torch.optim` | **La parité exacte** (5 mises à jour identiques à ≤2,2e-16 ; Beale 5 trajectoires ; MLP 3 graines ; schedules : coût en déterministe, gain en bruité) |
+| [3.3-Regularisation](03-DeepLearning/3.3-Regularisation.ipynb) | Dropout, weight decay et early stopping sur un MLP construit pour surapprendre (12 étiquettes fausses) | corriger la variance sans changer le modèle : +5 pts sur la poche mémorisée |
+| [3.4-Attention-Transformer-From-Scratch](03-DeepLearning/3.4-Attention-Transformer-From-Scratch.ipynb) | De l'attention mono-tête lisible au mini-GPT char-level (1,25 M paramètres, *Le Horla*) | l'attention jusqu'au bout, sur CPU (équivalence avec `torch.nn.MultiheadAttention` à 2,38e-07) |
+| [3.5-Phenomenes-de-Generalisation](03-DeepLearning/3.5-Phenomenes-de-Generalisation.ipynb) | Grokking et double descente en NumPy pur, confrontés à la borne PAC du 2.8 | le phénomène sans la boîte noire : mémorisation → transition abrupte, pic au seuil M ≈ n (×5 le creux) |
+| [3.6-Modeles-Generatifs](03-DeepLearning/3.6-Modeles-Generatifs.ipynb) | VAE, GAN et DDPM en NumPy pur sur une cible 2D (cercle de 8 modes) | trois objectifs, trois échecs : VAE moyenne, GAN collapse, diffusion raffine au prix de 100 passes |
+| [3.6b-Modeles-Generatifs-PyTorch](03-DeepLearning/3.6b-Modeles-Generatifs-PyTorch.ipynb) | Versant framework du 3.6 : VAE, GAN, DDPM sur 4 modes 2D (PyTorch CPU) | le compromis qualité/diversité : VAE 4/4, GAN 3/4 (diversité perdue), Diff 4/4 sous-échantillonne |
+| [3.7-Distillation-Maitre-Eleve](03-DeepLearning/3.7-Distillation-Maitre-Eleve.ipynb) | Distillation teacher/student : un maître 8,9× plus gros distille son dark knowledge | le facteur T² vérifié : verdict INCONCLUSIVE au seuil strict (gain net, edge 0,6σ/1,4σ) |
+| [3.8-Representations-Contrastives](03-DeepLearning/3.8-Representations-Contrastives.ipynb) | Pré-entraînement contrastif sur vues continues d'un sac-de-mots (InfoNCE from scratch) | apprendre des représentations sans étiquettes : sonde linéaire 0,432 (chance 0,143 ; supervisé from scratch 0,368) |
 
 Documentation complète : [03-DeepLearning/README.md](03-DeepLearning/README.md)
 
