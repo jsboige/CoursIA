@@ -172,7 +172,7 @@ Les notebooks d'application GA (EdgeDetection, Portfolio — variants PyGAD Pyth
 | App-9 | EdgeDetection | Détection de bords par GA : PyGAD, filtres de convolution |
 | App-10 | Portfolio | Frontière de Pareto : scalarisation, NSGA-II et hypervolume (instance non convexe) |
 | App-11 | Picross | Nonogrammes : speedup 2.78e+24x CP-SAT vs naïve (Etoile 15x15) |
-| App-12 | ConnectFour | Puissance 4 : 5 IA au tournoi (Random, Glouton, Minimax α-β d=4/d=6, MCTS) + framework AIMA |
+| App-14b | ConnectFour | Puissance 4 : 5 IA au tournoi (Random, Glouton, Minimax α-β d=4/d=6, MCTS) + framework AIMA |
 | App-13 | TSP | Voyageur de commerce : SA, GA, ACO, OR-Tools routing |
 | App-14 | ConnectFour-Adversarial | Benchmark adversarial : Minimax vs Alpha-Beta vs MCTS |
 | App-15 | SportsScheduling | Calendrier sportif : contraintes TV, équité, déplacements |
@@ -260,8 +260,8 @@ Problèmes du monde réel adaptés de projets étudiants. Chaque application est
 
 | # | Notebook | Durée | Contenu | Source |
 |---|----------|-------|---------|--------|
-| 1 | [App-12-ConnectFour](Applications/Search/App-12-ConnectFour.html) | ~50 min | Puissance 4 : 5 IA au tournoi (Random, Glouton, Minimax α-β d=4/d=6, MCTS) + framework AIMA | Projet étudiant |
-| 1b | [App-12-ConnectFour-CSharp](Applications/Search/App-12-ConnectFour-CSharp.ipynb) | ~45 min | **Jumeau C#** — Minimax + Alpha-Beta + MCTS (UCB1) + glouton + iterative deepening from-scratch, heuristique de fenêtres + tournoi round-robin, parité #4956 | Jumeau .NET |
+| 1 | [App-14b-ConnectFour](Applications/Search/App-14b-ConnectFour.html) | ~50 min | Puissance 4 : 5 IA au tournoi (Random, Glouton, Minimax α-β d=4/d=6, MCTS) + framework AIMA | Projet étudiant |
+| 1b | [App-14c-ConnectFour-CSharp](Applications/Search/App-14c-ConnectFour-CSharp.ipynb) | ~45 min | **Jumeau C#** — Minimax + Alpha-Beta + MCTS (UCB1) + glouton + iterative deepening from-scratch, heuristique de fenêtres + tournoi round-robin, parité #4956 | Jumeau .NET |
 | 2 | [App-14-ConnectFour-Adversarial](Applications/Search/App-14-ConnectFour-Adversarial.ipynb) | ~45 min | Benchmark adversarial : Minimax, Alpha-Beta, MCTS | Projet étudiant |
 | 2b | [App-14-ConnectFour-Adversarial-CSharp](Applications/Search/App-14-ConnectFour-Adversarial-CSharp.ipynb) | ~40 min | **Jumeau C#** — Minimax + Alpha-Beta (élagage) + MCTS (UCB1) from-scratch, benchmark nœuds + tournoi round-robin, parité #4956 | Jumeau .NET |
 
@@ -312,7 +312,7 @@ Les autres jumeaux C# de la sous-série CSP (N-Queens, GraphColoring, NurseSched
 Part1-Foundations/              Part2-CSP/                  Applications/
 Search-1  StateSpace     ───>  CSP-1  Fundamentals   ───>  App-1 NQueens, App-2 GraphColoring
 Search-2  Uninformed     ───>  CSP-2  Consistency    ───>  App-6 Minesweeper, App-7 Wordle
-Search-3  Informed       ───>  Search-6 Adversarial  ───>  App-12 ConnectFour
+Search-3  Informed       ───>  Search-6 Adversarial  ───>  App-14b ConnectFour
        │                        CSP-3  Advanced      ───>  App-3 NurseScheduling, App-4 JobShop
        │                        CSP-4  Scheduling    ───>  App-3, App-4, App-5 Timetabling
        └──> Search-6 (Adversarial)
@@ -493,8 +493,8 @@ Search/
 │
 ├── Applications/
 │   ├── Search/                            # Applications Search (4 notebooks)
-│   │   ├── App-12-ConnectFour.ipynb
-│   │   ├── App-12-ConnectFour-CSharp.ipynb
+│   │   ├── App-14b-ConnectFour.ipynb
+│   │   ├── App-14c-ConnectFour-CSharp.ipynb
 │   │   ├── App-14-ConnectFour-Adversarial.ipynb
 │   │   └── App-14-ConnectFour-Adversarial-CSharp.ipynb
 │   │
