@@ -16,19 +16,19 @@ Mécanique :
     3. Si les SHAs diffèrent du YAML, lance :
        python scripts/notebook_tools/check_twin_parity.py \\
            --update --pair "<Name>" --by "myia-po-2026:CoursIA-2"
-    4. Le script narrow-update narrow-précis narrow-sur narrow-cette narrow-paire (le
-       `content_sha` reste inchangé si le contenu est byte-identique modulo newline).
+    4. Le script met à jour la paire indiquée (le `content_sha` reste inchangé
+       si le contenu est byte-identique modulo newline).
 
 Sortie :
     - stdout : 1 ligne par paire traitée (DRY-RUN ou UPDATED ou NO-OP)
-    - exit 0 si toutes les paires narrow-passent narrow-check, exit 1 sinon
+    - exit 0 si toutes les paires passent le check de parité, exit 1 sinon
 
 Audit :
-    Le script narrow-applique narrow-en narrow-mode dry-run par défaut. Pour exécuter
-    réellement les --update, passer --apply. Cela évite d'écrire en série 25 YAMLs
+    Le script s'exécute en mode dry-run par défaut. Pour appliquer réellement
+    les --update, passer --apply. Cela évite d'écrire en série 25 YAMLs
     sur une mauvaise hypothèse (e.g. PR #13606 pas encore mergée).
 
-Origine : issue #13616, narrow-po-2026 narrow-applicable CPU-only.
+Origine : issue #13616, lane myia-po-2026:CoursIA-2, livraison CPU-only.
 Voir aussi : .claude/rules/catalog-pr-hygiene.md, scripts/notebook_tools/check_twin_parity.py.
 """
 
@@ -45,34 +45,70 @@ PAIRS_YAML_DIR = Path("scripts/notebook_tools/twin_pairs.d")
 
 
 def get_csharp_files_from_pr(pr_number: int, repo_root: Path) -> list[str]:
-    """Liste les fichiers Csharp.ipynb affectés par PR donnée. Essaie git log d'abord
-    (post-merge), puis gh api (pré-merge)."""
-    # Si PR mergée sur HEAD : git log
-    try:
-        merged = subprocess.run(
-            ["git", "merge-base", "--is-ancestor", str(pr_number), "HEAD"],
-            cwd=repo_root,
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
-        )
-        if merged.returncode == 0:
-            out = subprocess.run(
-                ["git", "log", "--diff-filter=M", "-p", "-m", "--first-parent", "-1",
-                 "--name-only", "HEAD", "--", "*.Csharp.ipynb"],
-                cwd=repo_root,
-                capture_output=True,
-                text=True,
-                encoding="utf-8",
-                errors="replace",
-                check=True,
-            )
-            return sorted(set(line for line in out.stdout.splitlines() if line.endswith("Csharp.ipynb")))
-    except subprocess.CalledProcessError:
-        pass
+    """Liste les fichiers ``*.Csharp.ipynb`` affectés par PR donnée.
 
-    # Sinon : gh api (pagination)
+    Stratégie : on dérive toujours le SHA source (merge_commit_sha si mergée,
+    sinon head.sha) via gh api, puis on l'utilise comme ancêtre valide pour
+    git merge-base. Cela évite la fast-path cassée qui passait le numéro de
+    PR brut à git — git attend un objet (SHA/ref), pas un entier.
+
+    Justification : la branche git-log d'origine utilisait
+    ``git merge-base --is-ancestor <pr_number> HEAD`` qui échoue toujours
+    (rc=128, ``fatal: Not a valid object name <pr_number>``). Le code mort
+    retombait sur gh api, qui marche, mais le chemin rapide n'était jamais
+    emprunté et le pattern était réutilisable par erreur ailleurs. Refactor :
+    passer par gh api systématiquement pour résoudre l'objet SHA.
+
+    Pré-requis : gh CLI authentifié (compte lecture des pulls).
+    """
+    # Étape 1 : résoudre le SHA source de la PR (merge_commit_sha post-merge,
+    # head.sha pré-merge). gh api garantit l'objet SHA.
+    pr_meta = subprocess.run(
+        ["gh", "api", f"repos/jsboige/CoursIA/pulls/{pr_number}"],
+        cwd=repo_root,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
+    if pr_meta.returncode != 0 or not pr_meta.stdout.strip():
+        print(f"WARN: gh api pull/{pr_number} indisponible (rc={pr_meta.returncode}), "
+              f"fallback direct sur /files",
+              file=sys.stderr)
+    else:
+        try:
+            pr_data = json.loads(pr_meta.stdout)
+        except json.JSONDecodeError as e:
+            print(f"WARN: réponse gh api pull/{pr_number} non-JSON ({e}), fallback direct",
+                  file=sys.stderr)
+        else:
+            source_sha = pr_data.get("merge_commit_sha") or pr_data.get("head", {}).get("sha")
+            if source_sha and isinstance(source_sha, str) and len(source_sha) >= 7:
+                # Étape 2 : vérifier que ce SHA est ancêtre de HEAD (post-merge)
+                merged = subprocess.run(
+                    ["git", "merge-base", "--is-ancestor", source_sha, "HEAD"],
+                    cwd=repo_root,
+                    capture_output=True,
+                    text=True,
+                    encoding="utf-8",
+                    errors="replace",
+                )
+                if merged.returncode == 0:
+                    out = subprocess.run(
+                        ["git", "log", "--diff-filter=M", "-p", "-m", "--first-parent", "-1",
+                         "--name-only", "HEAD", "--", "*.Csharp.ipynb"],
+                        cwd=repo_root,
+                        capture_output=True,
+                        text=True,
+                        encoding="utf-8",
+                        errors="replace",
+                        check=True,
+                    )
+                    return sorted(set(line for line in out.stdout.splitlines()
+                                      if line.endswith("Csharp.ipynb")))
+
+    # Fallback : gh api /files (pagination). Aussi chemin nominal quand la PR
+    # n'est pas encore mergée (pre-merge).
     csharp_files: list[str] = []
     page = 1
     while True:
