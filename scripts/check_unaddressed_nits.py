@@ -1177,6 +1177,74 @@ def _block_emitted(body: str) -> bool:
     return False
 
 
+# #13598 — EMISSION informelle d'un LIFT_OVERRIDE_LOGINS. Le cas fondateur
+# (#13550, 2026-08-30T00:37:09Z, myia-ai-01) : « ## [ai-01 ARBITRAGE] La
+# reserve GPU tient. **Ne pas merger sur les verts.** » — coordonne en
+# francais courant, sans glyphe formel ni verdict formel, etait rendu None
+# par classify(). La classe CONCERN_MARKERS suppose un vocabulaire de revue
+# (CHANGES_REQUESTED, BLOCKED, glyphes Hermes) que la plume du coordinateur
+# n'utilise pas quand il EMET un hold.
+#
+# Discrimination ciblee : un seul auteur concerne (LIFT_OVERRIDE_LOGINS,
+# 1 entree aujourd'hui), donc le cout du whack-a-mole est borne. La
+# detection porte sur des INJONctions structurelles (verbe + assertion),
+# pas sur le vocabulaire d'une revue :
+#   - verbe d'injonction explicite (« ne pas merger/fusionner », « hold »,
+#     « bloque », « attend », « wait », « stop », « arr[êe]t », « tant que »)
+#   - PAS un LIFT_MARKER (la phrase EMET, ne leve pas)
+#   - PAS une narration nominale de levee (miroir de la borne `_is_cited`)
+#   - PAS un ARBITRAGE/OVERRIDE (un override EMET une LEVEE, pas une reserve ;
+#     le trappe #11639 reste la voie de levee du coordinateur)
+#
+# Faux positif a surveiller (acceptance #13598 point 2) : un commentaire
+# coordinateur ANODIN post-cutoff (accuse reception, remerciement, « vu »)
+# ne porte aucun verbe d'injonction ni assertion substantive, et reste muet.
+_COORDINATOR_INJUNCTION_RE = re.compile(
+    r"(?i)(?:"
+    r"ne\s+(?:pas\s+)?(?:merger|fusionner)|"
+    r"\bhold\b(?![\s-]+(?:G-VAR|BLOCK|BOT|COMMENT|VERDICT|PR\b|PR-))|"
+    r"\b(?:je\s+)?bloque\b|"
+    r"\b(?:j['e]\s+)?attend[s]?\b(?:\s+le|\s+le\s+run|\s+la|\s+les)?|"
+    r"\bwait\b(?:\s+for|\s+le|\s+la|\s+les)?|"
+    r"\bstop\b|"
+    r"\barre?te[rs]?\b|"
+    r"\btant\s+que\b|"
+    r"sur\s+(?:les?\s+)?verts?|"
+    r"sur\s+(?:le\s+)?hold|"
+    r"pas\s+sur\s+les\s+(?:verts?|ciels?)"
+    r")",
+)
+_COORDINATOR_INJUNCTION_NEGATED_RE = re.compile(
+    r"(?i)\b(?:pas|plus|jamais|aucun)\s+(?:hold|wait|bloque|attend|stop|arr[êe]t)\b",
+)
+
+
+def _coordinator_emission_informal(body: str) -> bool:
+    """#13598 : le coordinateur EMET-il un hold en francais courant ?
+
+    Renvoie True si (a) le body porte une injonction structurelle non
+    negatee, ET (b) le body n'emet ni une LEVEE (LIFT_MARKER present) ni
+    un ARBITRAGE (OVERRIDE pose). Cible : 1 auteur (LIFT_OVERRIDE_LOGINS).
+    """
+    normalised = _unaccent(body)
+    if _COORDINATOR_INJUNCTION_NEGATED_RE.search(normalised):
+        return False
+    if not _COORDINATOR_INJUNCTION_RE.search(normalised):
+        return False
+    # Une levee VIVE neutralise l'injonction (la phrase leve la reserve qu'elle
+    # nommait). Mirror exact de la branche `_block_emitted` : un override qui
+    # nomme l'injonction levee (« BLOCAGE leve ») reste muet.
+    if has_live_lift(normalised):
+        return False
+    # Un [OVERRIDE] pose en tete (arbretage tiers de B.0) EMET une levee,
+    # jamais une reserve — garde-fou de l'override, deja documente en
+    # `_block_emitted` point A.
+    head = normalised[:60].lstrip(" \t*_").upper()
+    if head.startswith("[OVERRIDE]"):
+        return False
+    return True
+
+
 def ts(value: str | None) -> datetime | None:
     if not value:
         return None
@@ -1534,6 +1602,15 @@ def classify(author: str, body: str) -> str | None:
     # sous-chaine (cf `_block_emitted`).
     if _block_emitted(body):
         return "BLOCK"
+    # #13598 — EMISSION informelle d'un LIFT_OVERRIDE_LOGINS : le
+    # coordinateur tient un hold en francais courant (« ne pas merger sur
+    # les verts », « j'attends le run GPU », etc.). Avant : None. Apres :
+    # BOT-CONCERN. Bornee a 1 auteur (cout whack-a-mole minimal) et a un
+    # predicat structurel (verbe d'injonction + pas de levee ni d'override).
+    # Les commentaires anodins (« merci », « vu », « ok ») ne portent aucun
+    # verbe d'injonction et restent muets (acceptance #13598 point 2).
+    if author in LIFT_OVERRIDE_LOGINS and _coordinator_emission_informal(body):
+        return "BOT-CONCERN"
     if has_live_marker(body, (VERDICT_POSITIVE,)):
         return None  # verdict structurel positif rendu : il decide, la prose ne compte plus
     # #11636 : la recherche porte le body nettoye de ses verdicts MENTIONNES —

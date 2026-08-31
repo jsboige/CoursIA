@@ -3222,3 +3222,127 @@ def test_13635_conditionnel_je_leve_masculin_reste_bloquant():
         "myia-ai-01",
         "Une seule chose a changer — corrige la ligne 19 et je leve le concern."
     ) == "BOT-CONCERN"
+
+# ---------------------------------------------------------------------------
+# #13598 - EMISSION informelle d'un LIFT_OVERRIDE_LOGINS
+# ---------------------------------------------------------------------------
+
+
+def test_13598_cas_fondateur_reserve_francais_courant_classifiee() -> None:
+    """#13550 verbatim : « ## [ai-01 ARBITRAGE] La reserve GPU tient. **Ne pas merger sur les verts.** »
+
+    Avant le fix : classify retournait None (classe CONCERN_MARKERS ne couvre
+    pas le francais courant). Apres : BOT-CONCERN - la reserve est signalee.
+    """
+    assert mod.classify(
+        "myia-ai-01",
+        "## [ai-01 ARBITRAGE] La reserve GPU tient. **Ne pas merger sur les verts.**",
+    ) == "BOT-CONCERN"
+
+
+def test_13598_hold_explicite_classifiee() -> None:
+    """Le mot « hold » porte, seul, l'emission."""
+    assert mod.classify("myia-ai-01", "Hold sur cette PR.") == "BOT-CONCERN"
+
+
+def test_13598_attends_avec_objet_classifiee() -> None:
+    """« j'attends le run GPU » est une emission structurelle."""
+    assert mod.classify(
+        "myia-ai-01", "J'attends le run GPU avant de statuer."
+    ) == "BOT-CONCERN"
+
+
+def test_13598_wait_for_run_classifiee() -> None:
+    """L'anglicisme « wait for X » suit le meme schema."""
+    assert mod.classify(
+        "myia-ai-01", "Wait for the ICT-25 rerun."
+    ) == "BOT-CONCERN"
+
+
+def test_13598_hold_nomme_g_var_reste_muet() -> None:
+    """« HOLD G-VAR-2 - ... » est un NOM de verdict (la garde G-VAR-2), pas
+    une injonction. Le lookahead `(?! G-VAR|BLOCK|BOT|COMMENT|VERDICT|PR)`
+    dans `_COORDINATOR_INJUNCTION_RE` filtre les verdict nommes.
+    """
+    assert mod.classify(
+        "myia-ai-01", "**HOLD G-VAR-2 (cap de genre), sur ma propre PR.**"
+    ) is None
+
+
+def test_13598_controle_positif_merci_reste_muet() -> None:
+    """Acceptance #13598 point 2 : un commentaire ANODIN du coordinateur
+    (« merci ») ne doit PAS bloquer. Le predicat requiert un verbe
+    d'injonction ; « merci » n'en porte pas -> None.
+    """
+    assert mod.classify(
+        "myia-ai-01", "Merci pour le heads-up."
+    ) is None
+
+
+def test_13598_controle_positif_vu_je_reviens_reste_muet() -> None:
+    """« Vu, je reviens vers vous » - accuse de reception, pas injonction."""
+    assert mod.classify(
+        "myia-ai-01", "Vu, je reviens vers vous."
+    ) is None
+
+
+def test_13598_controle_positif_ok_je_regarde_reste_muet() -> None:
+    """« OK je regarde » - pas de verbe d'injonction -> muet."""
+    assert mod.classify("myia-ai-01", "OK je regarde") is None
+
+
+def test_13598_controle_positif_lgtm_structurel_reste_muet() -> None:
+    """Un LGTM structurel est une levee (LIFT_MARKER), pas une emission."""
+    assert mod.classify("myia-ai-01", "LGTM structurel.") is None
+
+
+def test_13598_negation_hold_restaure_le_muet() -> None:
+    """« il n'y a aucun hold sur cette PR » est une negation -> pas une
+    emission. Le predicat doit discriminer la semantique, pas la forme.
+    """
+    assert mod.classify(
+        "myia-ai-01", "Il n'y a aucun hold sur cette PR."
+    ) is None
+
+
+def test_13598_injonction_neutralisee_par_levee_vive() -> None:
+    """Une levee VIVE (LIFT_MARKER) dans le meme body neutralise l'injonction :
+    la phrase leve la reserve qu'elle nommait (miroir du pattern `_block_emitted`
+    pour BLOCAGE). « Ne pas merger. Mergé annule le hold. » -> None.
+    """
+    assert mod.classify(
+        "myia-ai-01", "Ne pas merger. **Mergé** annule le hold."
+    ) is None
+
+
+def test_13598_override_pose_reste_muet_arbitrage_tiers() -> None:
+    """Un `[OVERRIDE]` pose en tete (arbretage tiers de B.0, voie de levee
+    du coordinateur) EMET une levee, jamais une reserve - le garde-fou
+    `_block_emitted` point A est transpose ici.
+    """
+    assert mod.classify(
+        "myia-ai-01", "[OVERRIDE] lane myia-ai-01:CoursIA - Merge OK."
+    ) is None
+
+
+def test_13598_hold_par_lane_jsboige_reste_muet() -> None:
+    """La voie est strictement reservee a LIFT_OVERRIDE_LOGINS : une lane
+    qui ecrit « ne pas merger » ne doit PAS declencher le predicat (elle
+    n'a pas l'autorite de tenir un hold a elle seule).
+    """
+    assert mod.classify(
+        "jsboige", "Ne pas merger sur les verts."
+    ) is None
+
+
+def test_13598_hold_par_reviewer_bot_reste_muet() -> None:
+    """Meme predicat pour un reviewer bot : « Hold. » d'un Hermes ne doit
+    pas declencher le predicat LIFT_OVERRIDE_LOGINS (le bot a son propre
+    mecanisme via CONCERN_MARKERS + _block_emitted).
+    """
+    assert mod.classify("clusterManager-Myia", "Hold.") is None
+
+
+def test_13598_body_vide_reste_muet() -> None:
+    """Body vide garde le comportement par defaut de classify (None)."""
+    assert mod.classify("myia-ai-01", "") is None
