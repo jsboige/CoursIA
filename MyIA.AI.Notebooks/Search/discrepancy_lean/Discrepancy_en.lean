@@ -23,6 +23,8 @@ Imports the two modules of tier P0 (issue #12823):
   (arXiv:2508.03961).
 
 State of the proofs and brick breakdown: `FORMAL_STATUS.md`. Companion
-notebook planned: `Search-15-CombinatorialDiscrepancy` (deliverable A of
-issue #12823).
+notebook (deliverable A of issue #12823): delivered, then renumbered --
+see #13771 for its canonical number. The name
+`Search-15-*` was an opportunistic number never retained
+(`Search-15` denotes the NetworkX notebooks).
 -/
