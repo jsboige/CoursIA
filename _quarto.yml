@@ -1127,7 +1127,7 @@ project:
     - "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-03-Tactics-Csharp.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-04-Strings-Regex-Csharp.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-05-Quantifiers-Proofs-Csharp.ipynb"
-    - "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-07-Style-Declaratif-Linq.ipynb"
+    - "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-01b-Style-Declaratif-Linq.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-08-Ordonnancement.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-09-Enigme-Einstein.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-10-Cryptarithmetic.ipynb"
