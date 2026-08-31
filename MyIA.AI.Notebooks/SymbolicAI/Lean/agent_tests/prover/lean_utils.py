@@ -152,6 +152,68 @@ def count_real_sorries(content: str) -> int:
     return len(_SORRY_TOKEN_RE.findall(strip_lean_comments(content)))
 
 
+_TOP_LEVEL_DECL_RE = re.compile(
+    r"^(theorem|lemma|def|abbrev|instance|structure|inductive|class|"
+    r"private|protected|partial|noncomputable|namespace|end|section|open|"
+    r"attribute|@\[|#eval|#check|#print|/--|/-|--|set_option)\b"
+)
+
+
+def stub_theorem_proof(source: str, theorem_name: str) -> str:
+    """Replace the proof of ``theorem_name`` with ``:= by sorry`` (calibration, #1453).
+
+    Calibration targets are committed WITH their approved proof — that proof is
+    the ground truth the prover must reproduce, not a state to preserve at
+    runtime. This stubs the declaration body from its ``:=`` up to the next
+    top-level construct, leaving the statement (signature) intact so the
+    prover attacks exactly the declaration the DEMO config names.
+
+    End-of-proof rule: the first non-blank line at column 0 after the ``:=``
+    line (Lean convention: proof bodies are indented under ``:= by``). This
+    also catches the ``/--`` docstring of the next declaration, so the stub
+    never swallows a sibling's documentation.
+
+    Raises ValueError when the declaration, its ``:=`` or its terminator is
+    not found — a calibration run must fail loud rather than stub the wrong
+    region and report a fake target.
+    """
+    source = _require_str("source", source, allow_empty=False)
+    theorem_name = _require_str("theorem_name", theorem_name, allow_empty=False)
+    lines = source.splitlines(keepends=True)
+
+    decl_re = re.compile(
+        r"^\s*(theorem|lemma|def|abbrev)\s+" + re.escape(theorem_name) + r"\b"
+    )
+    decl_idx = next(
+        (i for i, ln in enumerate(lines) if decl_re.match(ln)), None
+    )
+    if decl_idx is None:
+        raise ValueError(f"declaration {theorem_name!r} not found")
+
+    arrow_idx = None
+    arrow_col = None
+    for j in range(decl_idx, len(lines)):
+        if j > decl_idx and _TOP_LEVEL_DECL_RE.match(lines[j]):
+            raise ValueError(
+                f"no ':=' found in {theorem_name!r} before next declaration"
+            )
+        col = lines[j].find(":=")
+        if col != -1:
+            arrow_idx, arrow_col = j, col
+            break
+    if arrow_idx is None:
+        raise ValueError(f"no ':=' found in {theorem_name!r}")
+
+    end_idx = len(lines)
+    for k in range(arrow_idx + 1, len(lines)):
+        if re.match(r"\S", lines[k]):
+            end_idx = k
+            break
+
+    stub_line = lines[arrow_idx][:arrow_col].rstrip() + " := by sorry\n"
+    return "".join(lines[:arrow_idx] + [stub_line] + lines[end_idx:])
+
+
 # Implicit-sorry detection (Epic #1500, c.1301+209):
 #
 # Tactic strategies like ``apply?`` / ``exact?`` / ``solve_by_elim`` fall back
