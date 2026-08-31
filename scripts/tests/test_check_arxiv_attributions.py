@@ -68,7 +68,10 @@ def _make_registry(tmp: Path, entries: list[dict]) -> Path:
 def _run_check(*args: str, cwd: Path | None = None) -> subprocess.CompletedProcess:
     """Lance check_arxiv_attributions.py et retourne le résultat."""
     cmd = [sys.executable, str(SCRIPT), *args]
-    return subprocess.run(cmd, capture_output=True, text=True, cwd=cwd or REPO_ROOT)
+    return subprocess.run(
+        cmd, capture_output=True, text=True, encoding="utf-8", errors="replace",
+        cwd=cwd or REPO_ROOT,
+    )
 
 
 # ===== 1. Chargement du registre YAML =====
@@ -548,17 +551,10 @@ def test_real_registry_lives_against_main_repo() -> None:
     cause (renommer / mettre à jour cell_index / régénérer depuis les diffs
     des PRs sources). Cf leçon #11145 durcie #12836.
 
-    Skip conditionnel : ce test est désactivé tant que les PRs sources
-    (#12832/#12824/#12838) ne sont pas mergées sur main. Activer via
-    `PYTEST_ENABLE_LIVE_REGISTRY=1` après merge. Cf issue #12939.
+    Skip conditionnel retiré (cf #12939) : les 3 PRs sources
+    (#12832/#12824/#12838) sont MERGED sur main depuis. Le test est désormais
+    actif par défaut ; il échoue franchement si le registre dérive.
     """
-    import os
-    if not os.environ.get("PYTEST_ENABLE_LIVE_REGISTRY"):
-        pytest.skip(
-            "Test désactivé tant que #12832/#12824/#12838 ne sont pas mergées. "
-            "Activer via PYTEST_ENABLE_LIVE_REGISTRY=1 après merge. Cf #12939."
-        )
-
     import yaml
 
     real_reg = REPO_ROOT / "arxiv_attributions_registry.yaml"

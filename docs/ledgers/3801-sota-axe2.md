@@ -372,15 +372,15 @@ Post-c.390 PR #5840 (entry #003 SymbolicLearning audit axe-2), pivot vers substa
 
 | Nb | Cells | Code | EXEC | Err | Stubs C.1 | Kernel | Outils SOTA | Verdict |
 |----|-------|------|------|-----|-----------|--------|-------------|---------|
-| DecInfer-1-Utility-Foundations | 30 | 16 | 16/16 | 0 | 0 | .net-csharp | Microsoft.Infer.NET (Variable<double>, expectations) | **SOTA-OK** |
-| **DecInfer-2-Lean-ExpectedUtility** | 14 | 5 | 5/5 | 0 | 0 | **lean4-wsl** | **Lean 4 formel** (von Neumann–Morgenstern 0-sorry) | **SOTA-OK** |
-| DecInfer-3-Utility-Money | 50 | 22 | 22/22 | 0 | 0 | .net-csharp | Microsoft.Infer.NET + Bernoulli mixtures (Saint-Petersbourg / Friedman-Savage / Arrow-Pratt) | **SOTA-OK** |
-| DecInfer-4-Multi-Attribute | 50 | 23 | 23/23 | 0 | 0 | .net-csharp | Microsoft.Infer.NET + CPLEX/GLPK (LP additives pondérés) | **SOTA-OK** |
-| DecInfer-5-Decision-Networks | 35 | 17 | 17/17 | 0 | 0 | .net-csharp | Microsoft.Infer.NET (influence diagrams Variable<int>) | **SOTA-OK** |
-| DecInfer-6-Value-Information | 38 | 19 | 19/19 | 0 | 0 | .net-csharp | Microsoft.Infer.NET (EVPI/Expected Value of Perfect Information) | **SOTA-OK** |
-| DecInfer-7-Expert-Systems | 32 | 14 | 14/14 | 0 | 0 | .net-csharp | Microsoft.Infer.NET (decision rules + uncertainty propagation) | **SOTA-OK** |
-| DecInfer-8-Sequential | 32 | 14 | 14/14 | 0 | 0 | .net-csharp | Microsoft.Infer.NET (dynamic decision processes backward induction) | **SOTA-OK** |
-| **DecInfer-9-Lean-Gittins** | 25 | 10 | 10/10 | 0 | 0 | **lean4-wsl** | **Lean 4 formel** (Gittins index preuves partielles) | **SOTA-OK** |
+| DecInfer-01-Utility-Foundations | 30 | 16 | 16/16 | 0 | 0 | .net-csharp | Microsoft.Infer.NET (Variable<double>, expectations) | **SOTA-OK** |
+| **DecInfer-02-Lean-ExpectedUtility** | 14 | 5 | 5/5 | 0 | 0 | **lean4-wsl** | **Lean 4 formel** (von Neumann–Morgenstern 0-sorry) | **SOTA-OK** |
+| DecInfer-03-Utility-Money | 50 | 22 | 22/22 | 0 | 0 | .net-csharp | Microsoft.Infer.NET + Bernoulli mixtures (Saint-Petersbourg / Friedman-Savage / Arrow-Pratt) | **SOTA-OK** |
+| DecInfer-04-Multi-Attribute | 50 | 23 | 23/23 | 0 | 0 | .net-csharp | Microsoft.Infer.NET + CPLEX/GLPK (LP additives pondérés) | **SOTA-OK** |
+| DecInfer-05-Decision-Networks | 35 | 17 | 17/17 | 0 | 0 | .net-csharp | Microsoft.Infer.NET (influence diagrams Variable<int>) | **SOTA-OK** |
+| DecInfer-06-Value-Information | 38 | 19 | 19/19 | 0 | 0 | .net-csharp | Microsoft.Infer.NET (EVPI/Expected Value of Perfect Information) | **SOTA-OK** |
+| DecInfer-07-Expert-Systems | 32 | 14 | 14/14 | 0 | 0 | .net-csharp | Microsoft.Infer.NET (decision rules + uncertainty propagation) | **SOTA-OK** |
+| DecInfer-08-Sequential | 32 | 14 | 14/14 | 0 | 0 | .net-csharp | Microsoft.Infer.NET (dynamic decision processes backward induction) | **SOTA-OK** |
+| **DecInfer-09-Lean-Gittins** | 25 | 10 | 10/10 | 0 | 0 | **lean4-wsl** | **Lean 4 formel** (Gittins index preuves partielles) | **SOTA-OK** |
 | DecInfer-10-Thompson-Sampling | 28 | 12 | 12/12 | 0 | 0 | .net-csharp | Microsoft.Infer.NET (Beta-Bernoulli Thompson sampling bayésien) | **SOTA-OK** |
 | DecPyMC-1-Utility-Foundations | 28 | 12 | 12/12 | 0 | 0 | python3 | PyMC + ArviZ (utility curves posteriors) | **SOTA-OK** |
 | DecPyMC-2-Utility-Money | 60 | 28 | 28/28 | 0 | 0 | python3 | PyMC + ArviZ (CARA/CRRA Savage/Friedman) | **SOTA-OK** |
@@ -403,8 +403,8 @@ Post-c.390 PR #5840 (entry #003 SymbolicLearning audit axe-2), pivot vers substa
 
 ### Disclosures honnêtes vérifiées
 
-- (a) `DecInfer-2-Lean-ExpectedUtility.ipynb` = Lean 4 formel companion **0-sorry** pour la direction sound du théorème de représentation d'utilité espérée de von Neumann–Morgenstern (cf cellule [18] Conclusion : "0-sorry pour la direction sound"). La direction completeness (rationalité ⟹ représentation) reste **gated** sur Mathlib4 stabilisation des `ConvexCone` / `BoundedConvexSet`, honest disclosure dans la cellule [4].
-- (b) `DecInfer-9-Lean-Gittins.ipynb` = Lean 4 formel pour Gittins index (cellule [22] Résumé enseignant) : définitions formalisées (BanditArm, BanditProcess), preuves partielles honnêtement disclosées, **état actuel = scaffolding + certitudes BornesSup** (gated sur `lake build` 100%).
+- (a) `DecInfer-02-Lean-ExpectedUtility.ipynb` = Lean 4 formel companion **0-sorry** pour la direction sound du théorème de représentation d'utilité espérée de von Neumann–Morgenstern (cf cellule [18] Conclusion : "0-sorry pour la direction sound"). La direction completeness (rationalité ⟹ représentation) reste **gated** sur Mathlib4 stabilisation des `ConvexCone` / `BoundedConvexSet`, honest disclosure dans la cellule [4].
+- (b) `DecInfer-09-Lean-Gittins.ipynb` = Lean 4 formel pour Gittins index (cellule [22] Résumé enseignant) : définitions formalisées (BanditArm, BanditProcess), preuves partielles honnêtement disclosées, **état actuel = scaffolding + certitudes BornesSup** (gated sur `lake build` 100%).
 - (c) `Do-Calculus-Bridge.ipynb` cellule 5 = commentaire explicite sur advisory dowhy (chemin absolu fuit) — disclosed honnêtement comme **info utile d'identification causale**, pas scrubbé (Stop & Repair respecté, cf [secrets-hygiene.md](../../.claude/rules/secrets-hygiene.md) règle 6 + [[feedback-no-cell-output-scrubbing]]).
 
 **Workaround dégradé** : 0/18 (3 occurrences du mot « workaround » vérifiées = toutes disclosures honnêtes ci-dessus, pas de workaround réel).
@@ -413,14 +413,14 @@ Post-c.390 PR #5840 (entry #003 SymbolicLearning audit axe-2), pivot vers substa
 
 Chaque notebook pose un problème de **théorie de la décision** avancé qui exerce la capacité distinctive du moteur :
 
-- **DecInfer-1/DecPyMC-1** : Utility foundations (axiomes von Neumann–Morgenstern) — courbes d'utilité, concavité/convexité, certainty equivalent
-- **DecInfer-2/DecInfer-9** : Lean 4 formel (preuve sound représentation vNM + Gittins index) — fondation mathématique
-- **DecInfer-3/DecPyMC-2** : Utility of money — Saint-Petersbourg paradoxe, Friedman-Savage, Arrow-Pratt RRA, CARA/CRRA
-- **DecInfer-4/DecPyMC-3** : Multi-attribute utility (MAUT) — pondérations additives, dominance stochastique
-- **DecInfer-5/DecPyMC-4** : Decision networks (influence diagrams) — backward induction sur DAG décision/chance/valeur
-- **DecInfer-6/DecPyMC-5** : Value of information (EVPI) — Expected Value of Perfect Information, EVSI
-- **DecInfer-7/DecPyMC-6** : Expert systems — fusion de jugements experts par pondération bayésienne de précision
-- **DecInfer-8/DecPyMC-7** : Sequential decisions — dynamic programming, Bellman-style backward induction
+- **DecInfer-01/DecPyMC-1** : Utility foundations (axiomes von Neumann–Morgenstern) — courbes d'utilité, concavité/convexité, certainty equivalent
+- **DecInfer-02/DecInfer-09** : Lean 4 formel (preuve sound représentation vNM + Gittins index) — fondation mathématique
+- **DecInfer-03/DecPyMC-2** : Utility of money — Saint-Petersbourg paradoxe, Friedman-Savage, Arrow-Pratt RRA, CARA/CRRA
+- **DecInfer-04/DecPyMC-3** : Multi-attribute utility (MAUT) — pondérations additives, dominance stochastique
+- **DecInfer-05/DecPyMC-4** : Decision networks (influence diagrams) — backward induction sur DAG décision/chance/valeur
+- **DecInfer-06/DecPyMC-5** : Value of information (EVPI) — Expected Value of Perfect Information, EVSI
+- **DecInfer-07/DecPyMC-6** : Expert systems — fusion de jugements experts par pondération bayésienne de précision
+- **DecInfer-08/DecPyMC-7** : Sequential decisions — dynamic programming, Bellman-style backward induction
 - **DecInfer-10** : Thompson Sampling — bandits manchots bayésiens (Beta-Bernoulli conjugué, posterior updating)
 - **Do-Calculus-Bridge** : dowhy (Microsoft) + backdoor adjustment — causal inference Pearl
 
@@ -455,7 +455,7 @@ Couvre 5ᵉ famille du ledger (ML/ML.Net → Tweety → SymbolicLearning → Sem
 | **L289** (anti-doublon temporel) | OK | Entry #005 ≠ entry #001/#002/#003/#004 = substance distincte (DecisionTheory vs ML/ML.Net vs Tweety vs SymbolicLearning vs SemanticWeb) |
 | **L327** (`+N/-0` purement additif) | OK | Modifs = cumul table update (4 lignes remplacées) + entry #005 appendu, 0 ligne supprimée |
 | **L335** (anti-monoculture) | OK | pivot post-c.396 PR #5859 vers substance NEUVE audit axe-2 owner po-2025 strict, pas 11ᵉ+ PR i18n monotone gated, ≠ re-sweep monotone #5780, ≠ clôture admin #5661, ≠ Argumentum PR-A #5721 close c.371+c.393 |
-| **L378 durcie** (G.1 2× audit+commit) | OK | Audit direct G.1 lecture exhaustive 18 nb, 3 disclosures honnêtes vérifiées (Lean DecInfer-2 vNM sound 0-sorry, DecInfer-9 Gittins scaffolding, Do-Calculus-Bridge dowhy advisory), 0 violation C.1, 0 workaround dégradé |
+| **L378 durcie** (G.1 2× audit+commit) | OK | Audit direct G.1 lecture exhaustive 18 nb, 3 disclosures honnêtes vérifiées (Lean DecInfer-02 vNM sound 0-sorry, DecInfer-09 Gittins scaffolding, Do-Calculus-Bridge dowhy advisory), 0 violation C.1, 0 workaround dégradé |
 | **Stop & Repair** (no scrub) | OK | 0 modification de cellule, audit purement consultatif |
 | **SOTA 5 verdicts** | OK | 18/18 SOTA-OK (8 DecInfer Microsoft.Infer.NET, 2 Lean 4 WSL, 7 DecPyMC PyMC+ArviZ, 1 Causal-Bridges dowhy) |
 | **0 parasite CJK** | OK | 4 ranges Unicode scannés (CJK Unified U+4E00-U+9FFF, CJK Ext A U+3400-U+4DBF, Hangul U+AC00-U+D7AF, Fullwidth U+FF00-U+FFEF) = 0/18 .ipynb (notebook audit script python3 = 0/18) |
@@ -497,7 +497,7 @@ Total .ipynb: 18
 
 **Moteurs SOTA cumulés sur 8 entries** : Microsoft.ML.Probabilistic, Microsoft.Infer.NET, PyPhi, Google.OR-Tools, Z3, Microsoft.Automata, Lean 4, PyTorch, OpenAI SDK, NetworkX, python-constraint, AIMA, Choco, Dancing Links, PyGAD, GeneticSharp, simanneal, Mealpy, NumPyro/JAX, regex, matplotlib, Plotly.NET = **22 moteurs SOTA distincts** sur 8 familles du registre axe-2 SOTA.
 
-**Spécificité registre** : entry #008 = première entrée avec **3 kernels différents** (17×.net-csharp + 18×python3 + 1×lean4-wsl = 36/36). Sudoku-19-Lean-Propagation (lake `sudoku_lean/Sudoku.{Basic,ExactCover,Propagation}` + 0 sorry + 2 axiomes `propext, Quot.sound`). Marqueur de la **branche Kernel `leans`** du registre déjà initiée par entry #005 DecisionTheory (2 Lean companions DecInfer-2 + DecInfer-9) — kernel `lean4-wsl` déjà représenté.
+**Spécificité registre** : entry #008 = première entrée avec **3 kernels différents** (17×.net-csharp + 18×python3 + 1×lean4-wsl = 36/36). Sudoku-19-Lean-Propagation (lake `sudoku_lean/Sudoku.{Basic,ExactCover,Propagation}` + 0 sorry + 2 axiomes `propext, Quot.sound`). Marqueur de la **branche Kernel `leans`** du registre déjà initiée par entry #005 DecisionTheory (2 Lean companions DecInfer-02 + DecInfer-09) — kernel `lean4-wsl` déjà représenté.
 
 ## Voir aussi
 
@@ -523,7 +523,7 @@ Famille `MyIA.AI.Notebooks/Probas/Infer/` = 19 notebooks `Infer-{1..19}-*.ipynb`
 | Mentions SOTA API (`Variable`/`VariableArray`/`Range`/`InferenceEngine`/`Bernoulli`/`Gaussian`/`Gamma`/`Beta`/`Dirichlet`) | **3 031 occurrences cumulées** | Regex scan des 20 notebooks — preuve d'usage massif, pas import décoratif |
 | Violations C.1 (`raise NotImplementedError` / `assert False` / `1/0`) | **0** | `grep -nE "raise NotImplementedError\|assert False\|1/0"` sur les 20 nb = 0 résultat |
 | CJK parasites | **0** | 4 ranges Unicode scannés = 0 parasite |
-| Fallback Python/PyMC/Julia | **1 disclosure honnête** | Infer-5 cellules markdown 0/13/36/37 = cross-check pédagogique "cross-validation avec PyMC-4" pointant `../PyMC/PyMC-4-Bayesian-Networks.ipynb` + cell 14 = cellule mixte (Python + Infer.NET côte à côte) — **validation croisée cross-family**, pas un fallback |
+| Fallback Python/PyMC/Julia | **1 disclosure honnête** | Infer-5 cellules markdown 0/13/36/37 = cross-check pédagogique "cross-validation avec PyMC-4" pointant `../PyMC/PyMC-04-Bayesian-Networks.ipynb` + cell 14 = cellule mixte (Python + Infer.NET côte à côte) — **validation croisée cross-family**, pas un fallback |
 | Helper `FactorGraphHelper.cs` | **existe, 274 lignes** | `wc -l FactorGraphHelper.cs` = 274 — wrapper Graphviz légitime (résolution PATH + fallback conda/Program Files, issue #3473) |
 
 ### Findings détaillés
@@ -549,7 +549,7 @@ Famille `MyIA.AI.Notebooks/Probas/Infer/` = 19 notebooks `Infer-{1..19}-*.ipynb`
 
 ### Disclosures honnêtes vérifiées
 
-- (a) `Infer-5-Causal-Inference.ipynb` cellules 0/13/36/37 (markdown) = commentaires pédagogiques "cross-check avec PyMC-4" pointant `../PyMC/PyMC-4-Bayesian-Networks.ipynb`. Cellule 14 (code) contient côte à côte une comparaison `pm.sample()` PyMC et `Variable<bool> cloudySpr = Variable.Bernoulli(0.5)` Infer.NET sur le même réseau bayésien `Cloudy → Sprinkler → WetGrass`. **Le moteur primaire reste Infer.NET** (9 appels `.Infer<>()` avec outputs réels dans ce notebook). Ce n'est **pas** un fallback, c'est une **validation croisée cross-family** — force pédagogique, à discloser honnêtement dans le ledger mais **SOTA-OK (Infer.NET autonome)**.
+- (a) `Infer-5-Causal-Inference.ipynb` cellules 0/13/36/37 (markdown) = commentaires pédagogiques "cross-check avec PyMC-4" pointant `../PyMC/PyMC-04-Bayesian-Networks.ipynb`. Cellule 14 (code) contient côte à côte une comparaison `pm.sample()` PyMC et `Variable<bool> cloudySpr = Variable.Bernoulli(0.5)` Infer.NET sur le même réseau bayésien `Cloudy → Sprinkler → WetGrass`. **Le moteur primaire reste Infer.NET** (9 appels `.Infer<>()` avec outputs réels dans ce notebook). Ce n'est **pas** un fallback, c'est une **validation croisée cross-family** — force pédagogique, à discloser honnêtement dans le ledger mais **SOTA-OK (Infer.NET autonome)**.
 
 **Cross-check double-vérifié** : (1) audit sub-agent a identifié la présence de `PyMC` dans 4 markdown cells + 1 code cell mixt ; (2) vérification firsthand worker via `python -c` confirme ces 5 cellules — claim confirmée.
 
@@ -2227,7 +2227,7 @@ La famille GenAI/Image présente une **architecture bimodale cloud/self-hosted**
 | 01-3-Basic-Image-Operations | OpenAI + diffusers | **SOTA-OK / RECOVERABLE-USER-HAND** |
 | 01-4-Forge-SD-XL-Turbo | Forge (SD WebUI) | **RECOVERABLE-MACHINE** (self-hosted) |
 | 01-5-Qwen-Image-Edit | ComfyUI + Qwen-Image | **RECOVERABLE-MACHINE** |
-| 02-1-Qwen-Image-Edit-2509 | ComfyUI + Qwen | **RECOVERABLE-MACHINE** |
+| 01-5b-Qwen-Image-Edit-2509 | ComfyUI + Qwen | **RECOVERABLE-MACHINE** |
 | 02-2-FLUX-1-Advanced-Generation | diffusers FLUX.1 | **RECOVERABLE-MACHINE** (GPU) |
 | 02-3-Stable-Diffusion-3-5 | diffusers SD3.5 | **RECOVERABLE-MACHINE** |
 | 02-4-Z-Image-Lumina2 | diffusers Lumina2 | **RECOVERABLE-MACHINE** |
@@ -2555,14 +2555,14 @@ Part of #3801, #1621
 
 | Nb | Cells | Code | EXEC | Err | Stubs C.1 | Kernel | Outils SOTA | Verdict |
 |-----|-------|------|------|-----|-----------|--------|-------------|---------|
-| PyMC-1-Setup | 26 | 11 | 11/11 | 0 | 0 (3 ex.) | python3 | Beta-Bernoulli + **hierarchical 6-coin non-centered** (Sec.6) ; NUTS, `az.plot_posterior` | **SOTA-OK** |
-| PyMC-2-Gaussian-Mixtures | 23 | 10 | 10/10 | 0 | 0 (3 ex.) | python3 | `pm.NormalMixture`+`pm.Dirichlet`+`CompoundStep` NUTS+BinaryGibbsMetropolis ; label-switching | **SOTA-OK** |
-| PyMC-3-Factor-Graphs | 18 | 8 | 8/8 | 0 | 0 (3 ex.) | python3 | Murder Mystery (explaining-away) + Monty Hall ; `pm.Categorical`+`CategoricalGibbsMetropolis` | **SOTA-OK** |
-| PyMC-4-Bayesian-Networks | 26 | 11 | 11/11 | 0 | 0 (4 ex.) | python3 | Wet Grass DAG, d-separation, **do-calculus** (P(Cloudy\|do(Rain=1))=0.500 vs obs 0.800, Pearl 2000) | **SOTA-OK** |
-| PyMC-6-Debugging | 43 | 13 | 13/13 | 0 | 0 (3 ex.) | python3 | **Neal funnel + non-centered reparam + NUTS vs ADVI** ; 573 divergences live ; R-hat/ESS (Vehtari 2021) | **SOTA-OK** |
-| PyMC-7-Skills-IRT | 33 | 14 | 14/14 | 0 | 0 (4 ex.) | python3 | IRT 1PL/2PL probit + DINA (AND-gate) ; `pm.math.invprobit`, `sklearn.roc_curve/auc` | **SOTA-OK** |
-| PyMC-8-TrueSkill | 30 | 13 | 13/13 | 0 | 0 (3 ex.) | python3 | Latent-skill Gaussian ranking, `pm.Potential`, online/team/FFA ; EP V(t)/W(t) dérivé Sec.7bis | **SOTA-OK** |
-| PyMC-9-Classification | 22 | 10 | 10/10 | 0 | 0 (3 ex.) | python3 | Probit classifier (Bayes Point Machine) + A/B testing + CTR ; Beta-Binomial (BDA3) | **SOTA-OK** |
+| PyMC-01-Setup | 26 | 11 | 11/11 | 0 | 0 (3 ex.) | python3 | Beta-Bernoulli + **hierarchical 6-coin non-centered** (Sec.6) ; NUTS, `az.plot_posterior` | **SOTA-OK** |
+| PyMC-02-Gaussian-Mixtures | 23 | 10 | 10/10 | 0 | 0 (3 ex.) | python3 | `pm.NormalMixture`+`pm.Dirichlet`+`CompoundStep` NUTS+BinaryGibbsMetropolis ; label-switching | **SOTA-OK** |
+| PyMC-03-Factor-Graphs | 18 | 8 | 8/8 | 0 | 0 (3 ex.) | python3 | Murder Mystery (explaining-away) + Monty Hall ; `pm.Categorical`+`CategoricalGibbsMetropolis` | **SOTA-OK** |
+| PyMC-04-Bayesian-Networks | 26 | 11 | 11/11 | 0 | 0 (4 ex.) | python3 | Wet Grass DAG, d-separation, **do-calculus** (P(Cloudy\|do(Rain=1))=0.500 vs obs 0.800, Pearl 2000) | **SOTA-OK** |
+| PyMC-06-Debugging | 43 | 13 | 13/13 | 0 | 0 (3 ex.) | python3 | **Neal funnel + non-centered reparam + NUTS vs ADVI** ; 573 divergences live ; R-hat/ESS (Vehtari 2021) | **SOTA-OK** |
+| PyMC-07-Skills-IRT | 33 | 14 | 14/14 | 0 | 0 (4 ex.) | python3 | IRT 1PL/2PL probit + DINA (AND-gate) ; `pm.math.invprobit`, `sklearn.roc_curve/auc` | **SOTA-OK** |
+| PyMC-08-TrueSkill | 30 | 13 | 13/13 | 0 | 0 (3 ex.) | python3 | Latent-skill Gaussian ranking, `pm.Potential`, online/team/FFA ; EP V(t)/W(t) dérivé Sec.7bis | **SOTA-OK** |
+| PyMC-09-Classification | 22 | 10 | 10/10 | 0 | 0 (3 ex.) | python3 | Probit classifier (Bayes Point Machine) + A/B testing + CTR ; Beta-Binomial (BDA3) | **SOTA-OK** |
 | PyMC-10-Model-Selection | 35 | 16 | 16/16 | 0 | 0 (3 ex.) | python3 | **WAIC/LOO** (`az.compare`/`az.loo`, `pm.compute_log_likelihood`), ARD, Pareto k | **SOTA-OK** |
 | PyMC-11-Topic-Models | 33 | 15 | 15/15 | 0 | 0 (3 ex.) | python3 | **LDA** (`pm.Dirichlet`/`pm.Multinomial`), symmetry-breaking ; sklearn LDA réf | **SOTA-OK** |
 | PyMC-12-Modeles-Hierarchiques | 23 | 9 | 9/9 | 0 | 0 (3 ex.) | python3 | **Hierarchical partial pooling + shrinkage**, non-centered (`mu+sigma*z`), funnel, MSE no-pool 2.825→hier 0.983 (65%) | **SOTA-OK** |
@@ -2710,11 +2710,11 @@ La série **exerce des capacités d'orchestration agentique distinctives** sans 
 Part of #3801, #1385
 
 
-## Entry #030 — Probas/PyMC-5-Causal-Inference (owner po-2025 strict, c.538)
+## Entry #030 — Probas/PyMC-05-Causal-Inference (owner po-2025 strict, c.538)
 
 | Métrique | Valeur |
 |----------|--------|
-| Famille | `MyIA.AI.Notebooks/Probas/PyMC/PyMC-5-Causal-Inference.ipynb` (1 .ipynb — causalité bayésienne + do-calculus, parité Infer-5-Causal-Inference entry #006) |
+| Famille | `MyIA.AI.Notebooks/Probas/PyMC/PyMC-05-Causal-Inference.ipynb` (1 .ipynb — causalité bayésienne + do-calculus, parité Infer-5-Causal-Inference entry #006) |
 | Kernel | `python3` |
 | Owner-lane | **po-2025 strict** (lane Python bayésienne native ; entry #028 PyMC 1-15 c.411 + Infer-extension #018 PyMC-16..19) |
 | Date audit | 2026-07-16 (c.538) |
@@ -2725,7 +2725,7 @@ Part of #3801, #1385
 
 | Nb | Cells | Code | EXEC | Err | Stubs C.1 | Kernel | Outils SOTA | Verdict |
 |-----|-------|------|------|-----|-----------|--------|-------------|---------|
-| PyMC-5-Causal-Inference | 30 | 14 | 14/14 | 0 | 0 (4 ex.) | python3 | **PyMC `pm.do`/`pm.observe` (Pearl)** + énumération exacte SCM + `pm.sample_prior_predictive` ; 3 niveaux de Pearl | **SOTA-OK** |
+| PyMC-05-Causal-Inference | 30 | 14 | 14/14 | 0 | 0 (4 ex.) | python3 | **PyMC `pm.do`/`pm.observe` (Pearl)** + énumération exacte SCM + `pm.sample_prior_predictive` ; 3 niveaux de Pearl | **SOTA-OK** |
 | **TOTAL** | **30** | **14** | **14/14** | **0** | **0** | python3 | PyMC + ArviZ + NumPy | **SOTA-OK 1/1** |
 
 - **EXEC_PROVED** : 14/14 (100%) — `execution_count != null` sur 14/14 cellules code.
@@ -2747,7 +2747,7 @@ Part of #3801, #1385
 - **Backdoor adjustment** cell 16 : `P(tempete|do(barometre))=0.310` via formule de Somme vs `pm.do` direct → « Les deux méthodes coïncident (0.310 ~ 0.310) : vérification de cohérence. »
 - **Front-door adjustment** cell 18 : smoke→tar→cancer + U genotype non observé, formule front-door restitue `do(X=1)=0.689` = mutilation directe → « la formule front-door restitue l'effet causal. »
 - **Paradoxe de Simpson** cell 20 : `P(Rec|do(Drug))=0.700` vs `P(Rec|do(NoDrug))=0.500` → « le médicament AIDE causalement » (renversement agrégé vs conditionnel démontré).
-- **Cross-check PyMC-4** cell 14 : réseau Sprinkler sous-graphe `Cloudy→Rain`, pointe `../PyMC/PyMC-4-Bayesian-Networks.ipynb` (cross-family validation, pas fallback).
+- **Cross-check PyMC-4** cell 14 : réseau Sprinkler sous-graphe `Cloudy→Rain`, pointe `../PyMC/PyMC-04-Bayesian-Networks.ipynb` (cross-family validation, pas fallback).
 
 ### Prong B — problème non-trivial (DISCRIMINATING)
 
@@ -2776,7 +2776,7 @@ Le do-calculus **est la capacité distinctive** de la causalité — il n'existe
 
 ### Conclusions audit
 
-- **PyMC-5-Causal-Inference = substance causale solide**, 14/14 EXEC_PROVED, PyMC `pm.do`/`pm.observe` (opérateurs Pearl natifs) + énumération exacte cross-validée, Prong-B DISCRIMINATING (do-calculus). **Pas de fix nécessaire** : audit = SOTA-OK, 0 PR de substance.
+- **PyMC-05-Causal-Inference = substance causale solide**, 14/14 EXEC_PROVED, PyMC `pm.do`/`pm.observe` (opérateurs Pearl natifs) + énumération exacte cross-validée, Prong-B DISCRIMINATING (do-calculus). **Pas de fix nécessaire** : audit = SOTA-OK, 0 PR de substance.
 - **Continuité c.538** : greenlight ai-01 (DM `msg-20260716T045341-edgoyo`) pour série PyMC SOTA audit — mais dispatch pointait PyMC-12/18 (déjà #028/#018 SOTA-OK, 4e dispatch stale ce motif) ; **G.1 firsthand** a identifié PyMC-5 comme le **vrai gap non-audité**. R6 anti-monotony : famille probabiliste PyMC (substance) après forensic-docs GameTheory c.537.
 - **Collision-avoidance** : `gh pr list --state all --search` = 0 PR PyMC-5 SOTA en vol ; entry #030 stacked à la suite de #029.
 - **Cumulatif** : entry #030 = **PyMC-5 standalone** (1 nb) → **famille Probas/PyMC COMPLÈTE 15/15** dans le registre (entry #028 14 + entry #018 PyMC-16..19 + entry #030 PyMC-5 = 19 notebooks PyMC couverts). PyMC/ArviZ déjà comptés ; cette entry clôture le gap PyMC-5.

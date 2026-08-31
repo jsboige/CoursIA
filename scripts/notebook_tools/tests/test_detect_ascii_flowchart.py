@@ -533,7 +533,7 @@ class TestUnreadableNotebookSkipped:
 #   c.475 +boxes_inline + table_row exclusion + connector pattern (--|---|):
 #                  23 findings / 18 files (substance LIVREE : 10 fichiers
 #                  supplementaires detectes dont QC-Py-01 LEAN Engine,
-#                  DecInfer-1 utility pipeline, DecInfer-7 system expert,
+#                  DecInfer-01 utility pipeline, DecInfer-07 system expert,
 #                  et 03-Claude-CLI-References comparaison avant/apres).
 # Tous les nouveaux fichiers sont des vrais positifs ou borderline pedagogique
 # (cadres Unicode de comparaison, diagrammes LEAN, pipeline Infer.NET) -- le
@@ -550,7 +550,7 @@ class TestUnreadableNotebookSkipped:
 # d'un caractere de direction.
 #   PR #12637 : 29 findings / 21 files, re-mesure 2026-08-24 sur le merge-ref
 #                  reconstruit (origin/main 0f4b5835fa + conversion Mermaid) :
-#                  la conversion des 3 flowcharts DecInfer-1 / DecInfer-7 /
+#                  la conversion des 3 flowcharts DecInfer-01 / DecInfer-07 /
 #                  DecPyMC-6 retire exactement 1 finding par fichier (aucun
 #                  des 3 n'etait dans les +9 du fix multi-colonnes). Le 20/15
 #                  de la branche originale etait mesure sur un main

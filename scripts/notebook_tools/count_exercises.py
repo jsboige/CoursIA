@@ -160,7 +160,7 @@ SETUP_DIR_RE = re.compile(r"environment", re.IGNORECASE)
 
 #: Purely-Lean notebooks -- rule threshold 0-2.
 #: `Lean-3-Propositions-Proofs`, `GameTheory-11b-Lean-BayesianGamesExt`,
-#: `DecInfer-9-Lean-Gittins`.
+#: `DecInfer-09-Lean-Gittins`.
 LEAN_STEM_RE = re.compile(r"(?:^|[-_])lean(?:$|[-_])", re.IGNORECASE)
 
 #: Legacy material -- rule "Archive / Legacy" row. Matched on DIRECTORY parts

@@ -217,3 +217,77 @@ def test_trappe_tiers_passe_toujours():
             "body": OVERRIDE_BODY}
     res = run([lift], reviews=[HERMES_NIT], pr_author="myia-po-2026")
     assert res["blocked"] is False
+
+
+# --- #13725 : la voie 3 exige un report DELIBERE, pas une mention ------------
+#
+# Le resolveur reel (`gh_issue_created`) etait mort — il interrogeait un champ
+# `isPullRequest` que `gh issue view` n'expose pas, donc toute resolution
+# levait et rendait None. Les tests ci-dessus ne l'ont jamais vu parce qu'ils
+# STUBBENT `issue_created` : ils validaient la mecanique de credit pendant que
+# la voie etait debranchee en production. Reparer le resolveur seul aurait
+# ouvert une trappe silencieuse — 46 des 61 reports alors credites sur les 37
+# PRs ouvertes venaient d'une mention incidente, pas d'un report.
+#
+# Ces tests fixent la frontiere par ses FAUX NEGATIFS : ce que le predicat
+# doit refuser est enonce, pas seulement ce qu'il doit accepter.
+
+
+def _mention(body):
+    return {"author": {"login": "jsboige"}, "createdAt": at(12), "body": body}
+
+
+def test_voie3_mention_incidente_de_regle_ne_leve_pas():
+    """« cf. le defaut #500 » cite une issue reelle, anterieure au merge, par
+    l'auteur de la PR — tout ce que l'ancienne mecanique exigeait. Ce n'est
+    pas un report : aucun nit n'est reporte, l'issue est un renvoi de
+    contexte."""
+    res = run([USER_NIT, _mention("Le comportement rappelle le defaut #500.")],
+              issue_created=resolver(ISSUE_OK))
+    assert res["blocked"] is True
+
+
+def test_voie3_renvoi_de_code_ne_leve_pas():
+    """Un renvoi vers l'issue d'origine d'un bout de code n'eteint rien."""
+    res = run([USER_NIT, _mention("Le garde vient de #500, je l'ai relu.")],
+              issue_created=resolver(ISSUE_OK))
+    assert res["blocked"] is True
+
+
+def test_voie3_marqueur_eloigne_ne_leve_pas():
+    """Le marqueur doit etre PROCHE : « issue de suivi » a propos d'une chose
+    et `#500` a propos d'une autre, separes par un long paragraphe, ne font
+    pas un report — sinon le predicat se contourne en placant le mot n'importe
+    ou dans le commentaire."""
+    loin = ("J'ai ouvert une issue de suivi pour un sujet distinct.\n\n"
+            + ("Remplissage sans rapport. " * 20) + "\n\nPar ailleurs #500.")
+    res = run([USER_NIT, _mention(loin)], issue_created=resolver(ISSUE_OK))
+    assert res["blocked"] is True
+
+
+def test_voie3_forme_canonique_de_b0_leve():
+    """La forme que B.0 nomme — « issue de suivi ouverte et nommee » — leve.
+    C'est celle qu'une lane a employee sur #13618 en se voyant refuser."""
+    res = run([USER_NIT,
+               _mention("J'ouvre l'issue de suivi #500 pour ce point.")],
+              issue_created=resolver(ISSUE_OK))
+    assert res["blocked"] is False
+
+
+def test_voie3_follow_up_anglais_leve():
+    """Le marqueur anglais compte aussi (la flotte redige dans les deux
+    langues). Libelle choisi NEUTRE a dessein : « ... opened before merge »
+    fait classer le commentaire lui-meme comme une reserve par le detecteur
+    de nits, et le test mesurerait alors ce detecteur, pas le predicat."""
+    res = run([USER_NIT, _mention("Follow-up issue #500 est ouverte.")],
+              issue_created=resolver(ISSUE_OK))
+    assert res["blocked"] is False
+
+
+def test_voie3_marqueur_sans_issue_reelle_ne_leve_pas():
+    """Controle croise : le marqueur seul ne suffit pas — l'issue doit exister
+    et preceder le merge. Le predicat de deliberation s'AJOUTE aux bornes
+    existantes, il ne les remplace pas."""
+    res = run([USER_NIT, _mention("J'ouvre l'issue de suivi #500.")],
+              issue_created=resolver(ISSUE_LATE))
+    assert res["blocked"] is True

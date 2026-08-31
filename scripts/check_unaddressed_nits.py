@@ -1201,20 +1201,69 @@ def gh_issue_created(n: int) -> datetime | None:
     immuable, et l'audit retro croise les memes numeros d'une PR a l'autre.
     Un numero de PR ne compte PAS : l'endpoint issues resout aussi les PRs
     (mesure c.705 : `gh issue view <PR> --json createdAt` rend rc=0), d'ou le
-    garde `isPullRequest` — la voie 3 nomme une ISSUE, pas une PR (spec
-    #13495), sinon « rebase de #N fait » serait un report valide.
+    garde issue-vs-PR — la voie 3 nomme une ISSUE, pas une PR (spec #13495),
+    sinon « rebase de #N fait » serait un report valide.
+
+    #13725 — le garde passait par `gh issue view --json isPullRequest`, un
+    champ que `gh issue view` N'EXPOSE PAS (« Unknown JSON field », rc=1).
+    Chaque resolution levait donc, tombait dans le `except` et rendait None :
+    la voie 3 etait MORTE sur tout le depot depuis son cablage. Le refus
+    etait silencieux et indiscernable d'une issue inexistante — une lane
+    employant la forme canonique de B.0 voyait son report refuse sans motif
+    (mesure sur #13618 : #13719 OPEN, nommee par l'auteur de la PR 18 s apres
+    sa creation, resolue None — et #12459/#13608/#13671/#13684/#13686/#13692
+    avec elle, tous existants).
+
+    Le discriminant correct est REST : la representation `issues/{n}` porte
+    la cle `pull_request` UNIQUEMENT pour une PR (mesure : #13719 -> absente,
+    #13618 -> presente), et rend un 404 franc pour un numero inexistant.
     """
     if n not in _ISSUE_CREATED_CACHE:
         try:
-            d = gh_json(["issue", "view", str(n), "--repo", REPO,
-                         "--json", "createdAt,isPullRequest"])
-            if (d or {}).get("isPullRequest"):
+            d = gh_json(["api", "repos/" + REPO + "/issues/" + str(n)])
+            if not isinstance(d, dict) or "pull_request" in d:
                 _ISSUE_CREATED_CACHE[n] = None
             else:
-                _ISSUE_CREATED_CACHE[n] = ts((d or {}).get("createdAt"))
+                _ISSUE_CREATED_CACHE[n] = ts(d.get("created_at"))
         except Exception:
             _ISSUE_CREATED_CACHE[n] = None
     return _ISSUE_CREATED_CACHE[n]
+
+
+# #13725 -- la voie 3 exige un report DELIBERE, pas une mention.
+#
+# La spec de B.0 dit « issue de suivi ouverte et nommee AVANT le merge
+# (reportee sciemment) » : c'est un GESTE, pas une coincidence lexicale.
+# L'implementation d'origine creditait tout `#N` hors citation resolvant en
+# issue -- donc « cf. le defaut #13316 », « Tell c.11145 #13649 », un renvoi
+# de code vers #12319 : autant de reports valides eteignant n'importe quelle
+# reserve anterieure. Le trou etait INVISIBLE tant que `gh_issue_created`
+# levait sur tout (meme incident, cf. sa docstring) : reparer le resolveur
+# SEUL convertissait un gate qui SUR-bloque en trappe qui s'ouvre en
+# silence -- strictement pire, une trappe ne se voit pas.
+#
+# Mesure au moment du fix, sur les 37 PRs ouvertes : 61 reports auraient ete
+# credites par le seul resolveur repare, dont 15 deliberes et **46 par
+# mention incidente** (75 %).
+#
+# Le predicat est lexical et PROCHE : le marqueur de report doit vivre dans
+# la meme ligne que la reference, ou dans les 200 caracteres qui la
+# precedent -- de sorte qu'un commentaire disant « issue de suivi » a propos
+# d'une chose et citant `#N` a propos d'une autre ne credite rien.
+_FOLLOWUP_MARK = re.compile(
+    "issue\\s+de\\s+suivi|issues?\\s+de\\s+report|follow[-\\s]?up|"
+    "report(?:e|\u00e9)e?\\s+sciemment|suivi\\s+ouverte",
+    re.I)
+
+
+def _is_deliberate_followup(stripped: str, pos: int) -> bool:
+    """Le marqueur de report vit-il au voisinage immediat de la reference ?"""
+    line_start = stripped.rfind("\n", 0, pos) + 1
+    line_end = stripped.find("\n", pos)
+    line = stripped[line_start:line_end if line_end != -1 else len(stripped)]
+    if _FOLLOWUP_MARK.search(line):
+        return True
+    return bool(_FOLLOWUP_MARK.search(stripped[max(0, pos - 200):pos]))
 
 
 def collect_followup_lifts(pr_data: dict, cutoff: datetime,
@@ -1259,6 +1308,8 @@ def collect_followup_lifts(pr_data: dict, cutoff: datetime,
         for m in re.finditer(r"#(\d+)", stripped):
             n = int(m.group(1))
             if n == self_ref:
+                continue
+            if not _is_deliberate_followup(stripped, m.start()):
                 continue
             created = issue_created(n)
             if created is not None and created < cutoff:
@@ -2036,10 +2087,28 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
             "body": body,
         })
     # Ce qui suit le dernier commit est le plus a risque (rien ne peut
-    # pretendre l'avoir traite) ; a defaut, la queue -- exactement les
+    # pretendre l'avoir traite) ; s'y ajoute la queue -- exactement les
     # `comments[-3:]` que la regle demande de relire avant `gh pr merge`.
+    #
+    # #13779 -- le repli etait EXCLUSIF (`after_lc or queue`) : des qu'UN
+    # commentaire suivait le dernier commit, toute la queue anterieure
+    # sortait de l'affichage, et l'en-tete imprimait le compte du
+    # SOUS-ENSEMBLE en le presentant comme le total. Mesure sur #13712 :
+    # 5 non evalues, 3 affiches -- et parmi les 2 masques, le
+    # `[ADJOINT PREFLIGHT]` de 19:30:49Z dont le point non traite motivait
+    # le HOLD du coordinateur sur cette PR meme. Masque parce qu'un commit
+    # etait passe apres lui, alors que « un commit pousse apres la remarque
+    # ne la leve PAS a lui seul » (B.0) : sur la seule PR ou l'echappatoire
+    # a servi, elle a cache le commentaire qui justifiait le blocage.
+    #
+    # Les deux mecanismes COMPOSENT au lieu de s'exclure : tout le
+    # post-dernier-commit, PLUS la queue des anterieurs -- que l'existence
+    # du premier n'annule plus. Strict sur-ensemble de l'ancien affichage :
+    # cette borne ne peut que montrer davantage, jamais moins, et ne touche
+    # aucun verdict (`unevaluated` ne participe pas a `blocked`).
     after_lc = [u for u in unevaluated if u["after_last_commit"]]
-    to_read = after_lc or unevaluated[-3:]
+    before_lc = [u for u in unevaluated if not u["after_last_commit"]]
+    to_read = sorted(after_lc + before_lc[-3:], key=lambda u: u["at"] or "")
 
     return {
         "pr": pr_data.get("number"),
@@ -2074,10 +2143,16 @@ def _print_unevaluated(result: dict) -> None:
     rows = result.get("unevaluated") or []
     if not rows:
         return
+    # #13779 : le compte imprime est celui du TOTAL non evalue, pas celui des
+    # lignes affichees -- un organe dont tout le propos est de ne pas certifier
+    # son propre silence ne peut pas sous-declarer ce qu'il n'a pas lu.
+    total = result.get("unevaluated_total") or len(rows)
+    omitted = total - len(rows)
     after = sum(1 for r in rows if r["after_last_commit"])
     tail = f", dont {after} posterieur(s) au dernier commit" if after else ""
+    cut = f" — {len(rows)} affiche(s), {omitted} plus ancien(s) omis" if omitted > 0 else ""
     print()
-    print(f"  --- A RELIRE : {len(rows)} commentaire(s) NON EVALUE(S) par cet organe{tail} ---")
+    print(f"  --- A RELIRE : {total} commentaire(s) NON EVALUE(S) par cet organe{tail}{cut} ---")
     print("  Le verdict ci-dessus ne porte QUE sur les phrases de levee. Ces")
     print("  commentaires n'ont pas ete classes : les lire avant `gh pr merge`.")
     for r in rows:
