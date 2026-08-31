@@ -39,15 +39,15 @@ Les **verdicts de cycle** d'audit et les **décisions de suivi** ne vivent plus 
 | Infer/Infer-17-Kalman-Filter.ipynb | 20 (12+8) | Kalman canonique (1960), pas MBML Chap.15 spécifiquement |
 | Infer/Infer-18-Change-Point.ipynb | 23 (14+9) | Change-point pur, hors-scope MBML |
 | Infer/Infer-19-Survival-Analysis.ipynb | 27 (17+10) | Survie / Weibull / Gamma — MBML Chap.17 (Survival Analysis) hors-cité |
-| PyMC/PyMC-1-Setup.ipynb | 26 (15+11) | « Equivalent Infer.NET : Infer-1-Setup » — attribution interne CoursIA (parité #4956), pas source canonique externe. Couvre le setup PyMC sans pedigree MBML |
-| PyMC/PyMC-2-Gaussian-Mixtures.ipynb | 23 (13+10) | Cycliste / Gaussian mixt — sources canoniques = Bishop PRML §9.2 + §9.2.2 + §10.7 (jumeau PyMC d'Infer-2) ; MBML ne couvre pas ce modèle (Ch.6 = Asthma, Ch.8 = How to Read a Model) |
-| PyMC/PyMC-3-Factor-Graphs.ipynb | 18 (10+8) | « Implémenter le problème Murder Mystery (**MBML Ch.1**) » @ cell 0 (intro Objectifs). **Variante assumée** : 3 suspects Clue/Cluedo (Scarlet/Mustard/Peacock) au lieu de 2 (Auburn/Grey MBML original) — adaptation pédagogique justifiée par l'explaining away |
-| PyMC/PyMC-4-Bayesian-Networks.ipynb | 26 (15+11) | WetGrass/Sprinkler (111 hits) ; « Lauritzen & Spiegelhalter (1988) » — Springer canonique |
-| PyMC/PyMC-5-Causal-Inference.ipynb | 30 (16+14) | Pearl + `pm.do` — do-calculus (MBML Chap.7) non attribué |
-| PyMC/PyMC-6-Debugging.ipynb | 43 (30+13) | Debugging pur MCMC |
-| PyMC/PyMC-7-Skills-IRT.ipynb | 33 (19+14) | IRT (33 hits) ; « Origine de la méthode : Rasch (1960) + Birnbaum (1968) + Lord (1980) + Junker-Sijtsma DINA » — pedigree académique explicite **complet**, mais **0 mention MBML** (mesuré). L'asymétrie notée au c.803 s'est **inversée** depuis #8530 : c'est désormais le jumeau PyMC qui ne relie pas au chapitre MBML Ch.2, pendant qu'Infer-7 le cite |
-| **PyMC/PyMC-8-TrueSkill.ipynb** | 30 (17+13) | **Section 7 bis reproduit explicitement les formules fermées V(t)/W(t)/τ²** + cell 2 cite « Herbrich, Minka & Graepel (2007), TrueSkill(TM): A Bayesian Skill Rating System (NeurIPS / Microsoft Research Cambridge) ». **Substance MBML Ch.3 complète + bonus algorithmique** |
-| PyMC/PyMC-9-Classification.ipynb | 22 (12+10) | « Herbrich » 2 hits (MBML Chap.4 BPM) sans mention explicite |
+| PyMC/PyMC-01-Setup.ipynb | 26 (15+11) | « Equivalent Infer.NET : Infer-1-Setup » — attribution interne CoursIA (parité #4956), pas source canonique externe. Couvre le setup PyMC sans pedigree MBML |
+| PyMC/PyMC-02-Gaussian-Mixtures.ipynb | 23 (13+10) | Cycliste / Gaussian mixt — sources canoniques = Bishop PRML §9.2 + §9.2.2 + §10.7 (jumeau PyMC d'Infer-2) ; MBML ne couvre pas ce modèle (Ch.6 = Asthma, Ch.8 = How to Read a Model) |
+| PyMC/PyMC-03-Factor-Graphs.ipynb | 18 (10+8) | « Implémenter le problème Murder Mystery (**MBML Ch.1**) » @ cell 0 (intro Objectifs). **Variante assumée** : 3 suspects Clue/Cluedo (Scarlet/Mustard/Peacock) au lieu de 2 (Auburn/Grey MBML original) — adaptation pédagogique justifiée par l'explaining away |
+| PyMC/PyMC-04-Bayesian-Networks.ipynb | 26 (15+11) | WetGrass/Sprinkler (111 hits) ; « Lauritzen & Spiegelhalter (1988) » — Springer canonique |
+| PyMC/PyMC-05-Causal-Inference.ipynb | 30 (16+14) | Pearl + `pm.do` — do-calculus (MBML Chap.7) non attribué |
+| PyMC/PyMC-06-Debugging.ipynb | 43 (30+13) | Debugging pur MCMC |
+| PyMC/PyMC-07-Skills-IRT.ipynb | 33 (19+14) | IRT (33 hits) ; « Origine de la méthode : Rasch (1960) + Birnbaum (1968) + Lord (1980) + Junker-Sijtsma DINA » — pedigree académique explicite **complet**, mais **0 mention MBML** (mesuré). L'asymétrie notée au c.803 s'est **inversée** depuis #8530 : c'est désormais le jumeau PyMC qui ne relie pas au chapitre MBML Ch.2, pendant qu'Infer-7 le cite |
+| **PyMC/PyMC-08-TrueSkill.ipynb** | 30 (17+13) | **Section 7 bis reproduit explicitement les formules fermées V(t)/W(t)/τ²** + cell 2 cite « Herbrich, Minka & Graepel (2007), TrueSkill(TM): A Bayesian Skill Rating System (NeurIPS / Microsoft Research Cambridge) ». **Substance MBML Ch.3 complète + bonus algorithmique** |
+| PyMC/PyMC-09-Classification.ipynb | 22 (12+10) | « Herbrich » 2 hits (MBML Chap.4 BPM) sans mention explicite |
 | PyMC/PyMC-10-Model-Selection.ipynb | 35 (19+16) | WAIC/LOO (Vehtari) ; ARD générique |
 | PyMC/PyMC-11-Topic-Models.ipynb | 34 (19+15) | LDA — « Source primaire : Blei, Ng & Jordan (2003) » — source canonique |
 | PyMC/PyMC-12-Modeles-Hierarchiques.ipynb | 23 (14+9) | Pooling partiel — attribution au jumeau Infer-12 uniquement |
