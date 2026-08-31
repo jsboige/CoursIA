@@ -37,15 +37,15 @@ L'objectif du portage (intent original, 2024) : **rendre la série accessible au
 
 | # | Notebook | Concept dominant | Bibliothèque recommandée | Statut sur main (2026-08-07) |
 |---|---|---|---|---|
-| 1 | Setup | Environnement + sanity checks | PyMC | **Absorbé** (`PyMC-1-Setup.ipynb`) |
-| 2 | Gaussian Mixtures | Modèles de mélange | PyMC | **Absorbé** (`PyMC-2-Gaussian-Mixtures.ipynb`) |
-| 3 | Factor Graphs | Message passing, inférence exacte | PyMC | **Absorbé** (`PyMC-3-Factor-Graphs.ipynb`) |
-| 4 | Bayesian Networks | DAG, conditional probability | pgmpy | **Absorbé** (`PyMC-4-Bayesian-Networks.ipynb`, `pgmpy` corespondance) |
-| 5 | Causal Inference | do-calculus, contrefactuels | PyMC + DoWhy | **Absorbé** (`PyMC-5-Causal-Inference.ipynb`) |
-| 6 | Debugging | Diagnostic des chaînes MCMC | PyMC | **Absorbé** (`PyMC-6-Debugging.ipynb`) |
-| 7 | Skills / IRT | Item Response Theory | PyMC | **Absorbé** (`PyMC-7-Skills-IRT.ipynb`) |
-| 8 | TrueSkill | Matchmaking, ratings | PyMC | **Absorbé** (`PyMC-8-TrueSkill.ipynb`) |
-| 9 | Classification | Modèles discriminatifs | PyMC | **Absorbé** (`PyMC-9-Classification.ipynb`) |
+| 1 | Setup | Environnement + sanity checks | PyMC | **Absorbé** (`PyMC-01-Setup.ipynb`) |
+| 2 | Gaussian Mixtures | Modèles de mélange | PyMC | **Absorbé** (`PyMC-02-Gaussian-Mixtures.ipynb`) |
+| 3 | Factor Graphs | Message passing, inférence exacte | PyMC | **Absorbé** (`PyMC-03-Factor-Graphs.ipynb`) |
+| 4 | Bayesian Networks | DAG, conditional probability | pgmpy | **Absorbé** (`PyMC-04-Bayesian-Networks.ipynb`, `pgmpy` corespondance) |
+| 5 | Causal Inference | do-calculus, contrefactuels | PyMC + DoWhy | **Absorbé** (`PyMC-05-Causal-Inference.ipynb`) |
+| 6 | Debugging | Diagnostic des chaînes MCMC | PyMC | **Absorbé** (`PyMC-06-Debugging.ipynb`) |
+| 7 | Skills / IRT | Item Response Theory | PyMC | **Absorbé** (`PyMC-07-Skills-IRT.ipynb`) |
+| 8 | TrueSkill | Matchmaking, ratings | PyMC | **Absorbé** (`PyMC-08-TrueSkill.ipynb`) |
+| 9 | Classification | Modèles discriminatifs | PyMC | **Absorbé** (`PyMC-09-Classification.ipynb`) |
 | 10 | Model Selection | WAIC, LOO, comparaison | PyMC (ArviZ) | **Absorbé** (`PyMC-10-Model-Selection.ipynb`) |
 | 11 | Topic Models (LDA) | Latent Dirichlet Allocation | **NumPyro** | **Absorbé** (`PyMC-11-Topic-Models.ipynb`) |
 | 12 | Modèles Hiérarchiques | Partial pooling | PyMC | **Absorbé** (`PyMC-12-Modeles-Hierarchiques.ipynb`) |
@@ -70,7 +70,7 @@ Si un nouveau portage équivalent était à planifier aujourd'hui, l'estimer à 
 
 | Cible | Pattern | Exemple |
 |---|---|---|
-| Portage direct d'un notebook Infer | `PyMC-{N}-{Title}.ipynb` | `PyMC-2-Gaussian-Mixtures.ipynb` |
+| Portage direct d'un notebook Infer | `PyMC-{N}-{Title}.ipynb` | `PyMC-02-Gaussian-Mixtures.ipynb` |
 | Track Decision Theory | `DecPyMC-{N}-{Title}.ipynb` | `DecPyMC-1-Utility-Foundations.ipynb` |
 | Numéro non-Infer | Préfixe thématique | `Pyro_RSA_Hyperbole.ipynb` |
 

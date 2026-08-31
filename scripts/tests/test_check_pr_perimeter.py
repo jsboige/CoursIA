@@ -23,6 +23,7 @@ from check_pr_perimeter import (  # noqa: E402
     check_assertion,
     extract_baseline_moves,
     extract_perimeter_assertions,
+    extract_perimeter_assertions_with_block,
     extract_perimeter_assertions_with_context,
     format_report,
     is_downgradable_mismatch,
@@ -36,6 +37,7 @@ from check_pr_perimeter import (  # noqa: E402
     _has_strong_scope,
     _is_incidental_assertion,
     _normalize_rest_files,
+    _paragraph_block,
     _paragraph_prefix,
     _word_form_count,
     _word_form_is_indef_non_pr_subject,
@@ -2871,3 +2873,120 @@ def test_13637_partition_exposes_correct_count_for_assertion():
     )
     # A body that states the true (propre) count passes.
     assert check_assertion(propres, "Périmètre : 2 fichiers.") == []
+
+
+# ---------------------------------------------------------------------------
+# #13791 — somme additive au bloc paragraphe + vocabulaire grep + word-form
+# objet de mesure. Fondateurs mesurés : #13736 (deux puces "1 fichier" + une
+# ligne diagnostique word-form) et #13782 ("(grep : 1 fichier)").
+# ---------------------------------------------------------------------------
+
+FOUNDER_13736_BODY = (
+    "## Périmètre\n"
+    "\n"
+    "- 1 fichier modifié (`scripts/ci/check_concurrency_conj.py`, +1/-1)\n"
+    "- 1 fichier de test modifié (`scripts/tests/test_check_concurrency_conj.py`, +37/-0)\n"
+    "- Aucune collision chemin : les PRs parentes ne touchent plus ce fichier.\n"
+)
+FOUNDER_13736_FILES = [
+    {"path": "scripts/ci/check_concurrency_conj.py"},
+    {"path": "scripts/tests/test_check_concurrency_conj.py"},
+]
+# Ligne diagnostique fondatrice (#13736 l.26) : le word-form « un fichier »
+# y désigne les objets d'une comparaison, pas le périmètre.
+FOUNDER_13736_DIAG = (
+    "Tout workflow malformé fait planter l'instrument, et le script échoue "
+    "sur un faux positif (l'instrument ne peut pas distinguer un fichier "
+    "corrompu d'un fichier offensif)."
+)
+# Ligne fondatrice #13782 : « (grep : 1 fichier) » est une mesure du corpus.
+FOUNDER_13782_LINE = (
+    "2.9 est le **seul notebook torch de 02-ML-Cours** (grep : 1 fichier) : "
+    "c'est assumé par le README."
+)
+
+
+def test_13791_additive_block_sum_spans_bullets():
+    """L'énumération additive sur deux puces (1 + 1 = 2) passe quand la
+    confrontation reçoit le bloc paragraphe -- chaque ligne candidate voit
+    la somme du bloc, pas seulement sa ligne."""
+    triple = extract_perimeter_assertions_with_block(FOUNDER_13736_BODY)
+    digit_candidates = [(l, b) for l, _ctx, b in triple if COUNT_CLAIM.search(l)]
+    assert len(digit_candidates) == 2, digit_candidates
+    for line, block in digit_candidates:
+        assert "1 fichier" in line
+        # chaque puce du bloc porte exactement un compte survivant
+        assert sum(_additive_line_sum(ln) for ln in block.splitlines()) == 2
+        assert check_assertion(FOUNDER_13736_FILES, line, block=block) == [], line
+
+
+def test_13791_additive_line_scope_still_fails_without_block():
+    """Sans bloc (mode --assert, candidates de thread), la somme line-scope
+    mismatche 1 vs 2 -- comportement inchangé, c'est le résidu #13791."""
+    assert check_assertion(
+        FOUNDER_13736_FILES, "- 1 fichier modifié (`scripts/ci/check_concurrency_conj.py`, +1/-1)"
+    ) != []
+
+
+def test_13791_block_sum_never_validates_wrong_total():
+    """Contrôle FN local : une somme de bloc ≠ len(files) reste rouge -- le
+    bloc dessert l'énumération exacte, pas n'importe quelle somme."""
+    body = "- 1 fichier a\n- 1 fichier b\n- 1 fichier c\n"
+    files = [{"path": "a"}, {"path": "b"}]
+    triple = extract_perimeter_assertions_with_block(body)
+    for line, _ctx, block in triple:
+        assert check_assertion(files, line, block=block) != [], line
+
+
+def test_13791_grep_antecedent_exempts_corpus_count():
+    """« (grep : 1 fichier) » est une mesure du corpus (#13782) : le compte
+    est incidental, la candidate ne bloque pas (l'architecture #11712 : la
+    détection reste, seule la conséquence bouge -- check_assertion rend le
+    mismatch, `blocking` le rétrograde en signal)."""
+    assert _is_incidental_assertion(FOUNDER_13782_LINE, "") is True
+    cand = Candidate(FOUNDER_13782_LINE, "PR body", "author", "body")
+    assert cand.blocking is False
+
+
+def test_13791_grep_absence_keeps_the_red():
+    """Contrôle FN : sans antécédent de mesure, « 1 fichier modifié » devant
+    une liste de 2 reste rouge -- grep n'a rien desserré d'autre."""
+    files = [{"path": "a.py"}, {"path": "b.py"}]
+    assert check_assertion(files, "1 fichier modifié (`a.py`)") != []
+
+
+def test_13791_word_form_discrimination_verb_exempts():
+    """« distinguer un fichier corrompu d'un fichier offensif » (#13736) :
+    le word-form désigne les objets d'une comparaison, pas le périmètre."""
+    files = [{"path": "scripts/ci/check_concurrency_conj.py"},
+             {"path": "scripts/tests/test_check_concurrency_conj.py"}]
+    assert check_assertion(files, FOUNDER_13736_DIAG) == []
+
+
+def test_13791_word_form_plain_indefinite_still_blocks():
+    """Contrôle FN : « un fichier modifié » sans verbe de discrimination
+    reste confronté (1 vs 2 -> rouge)."""
+    files = [{"path": "a.py"}, {"path": "b.py"}]
+    assert check_assertion(files, "un fichier modifié (`a.py`)") != []
+
+
+def test_13791_paragraph_block_boundaries():
+    """Le bloc paragraphe s'arrête aux lignes vides et aux fences, dans les
+    deux directions."""
+    text = (
+        "avant le vide\n"
+        "\n"
+        "- 1 fichier a\n"
+        "- 1 fichier b\n"
+        "\n"
+        "après le vide\n"
+    )
+    lines = text.splitlines()
+    idx = lines.index("- 1 fichier a")
+    block = _paragraph_block(text, idx)
+    assert "- 1 fichier a" in block and "- 1 fichier b" in block
+    assert "avant le vide" not in block and "après le vide" not in block
+    # fence delimiter en borne inférieure
+    fenced = "- 1 fichier a\n```python\nx = 1\n```\n"
+    idx_f = fenced.splitlines().index("- 1 fichier a")
+    assert "x = 1" not in _paragraph_block(fenced, idx_f)

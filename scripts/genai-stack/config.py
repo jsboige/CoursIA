@@ -206,7 +206,7 @@ NOTEBOOK_SERVICE_MAP = {
     ],
     "qwen": [
         "01-5-Qwen-Image-Edit.ipynb",
-        "02-1-Qwen-Image-Edit-2509.ipynb",
+        "01-5b-Qwen-Image-Edit-2509.ipynb",
     ],
     "zimage": [
         "02-4-Z-Image-Lumina2.ipynb",
