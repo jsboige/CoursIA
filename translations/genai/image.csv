@@ -8532,9 +8532,6 @@ print(""   • Ratios d'aspect"")
 print(""   • Prompt engineering avancé"")
 print(""   • Génération de texte dans les images"")
 print(""\n➡️  Prochain notebook: 02-3-Stable-Diffusion-3-5.ipynb"")",,,,,,,,dfcd049ec3766944,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Stable-Diffusion-3-5.ipynb,7a15abb4,code,fr,d8cfd07b7b0f3965,"# Parameters
-BATCH_MODE = ""true""
-",,,,,,,,d8cfd07b7b0f3965,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Stable-Diffusion-3-5.ipynb,cell-0,markdown,fr,5a800dcb441e2cd1,"**Navigation** : [Index](../../README.md) | [<< Précédent](02-2-FLUX-1-Advanced-Generation.ipynb) | [Suivant >>](02-4-Z-Image-Lumina2.ipynb)
 
 # Stable Diffusion 3.5 - Génération de Pointe
@@ -10413,9 +10410,6 @@ Ce notebook illustre l'orchestration de plusieurs moteurs de generation d'images
 - Implementer un système de scoring automatise (CLIP score, similarite text-image)
 - Paralleliser les appels avec `asyncio` pour reduire le temps d'attente total
 - Sauvegarder les résultats dans un tableau comparatif avec metadonnees (temps, resolution, score)",,,,,,,,ca6cf44b0b8231b1,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/03-Orchestration/03-2-Workflow-Orchestration.ipynb,c9e45ef5,code,fr,d8cfd07b7b0f3965,"# Parameters
-BATCH_MODE = ""true""
-",,,,,,,,d8cfd07b7b0f3965,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/03-Orchestration/03-2-Workflow-Orchestration.ipynb,cell-0,markdown,fr,561f71dd4b0852bb,"**Navigation** : [Index](../../README.md) | [<< Précédent](03-1-Multi-Model-Comparison.ipynb) | [Suivant >>](03-3-Performance-Optimization.ipynb)
 
 # Workflow Orchestration - Chaînage Multi-Modèles
@@ -11548,9 +11542,6 @@ print(""   • Pipelines conditionnels"")
 print(""   • Multi-variations et sélection"")
 print(""   • Retry et gestion d'erreurs"")
 print(""\n➡️  Prochain notebook: 03-3-Performance-Optimization.ipynb"")",,,,,,,,41d479490568bcc9,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/03-Orchestration/03-3-Performance-Optimization.ipynb,f8145450,code,fr,d8cfd07b7b0f3965,"# Parameters
-BATCH_MODE = ""true""
-",,,,,,,,d8cfd07b7b0f3965,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/03-Orchestration/03-3-Performance-Optimization.ipynb,d4fc8cfa,markdown,fr,29d900ef919df3f2,"**Navigation** : [Index](../../README.md) | [<< Précédent](03-2-Workflow-Orchestration.ipynb)
 
 # 🚀 Performance Optimization pour la Génération d'Images
@@ -16679,9 +16670,6 @@ Les étapes suivantes vous guideront pas à pas :
 MyIA.AI.Notebooks/GenAI/Image/04-Applications/04-4-Cross-Stitch-Pattern-Maker-Legacy.ipynb,f8t8qfwlmdl,markdown,fr,01b24a0d7863ee55,"Une fois les dépendances installées, on charge la configuration de l'environnement et on définit l'URL de l'API Stable Diffusion locale. Cette séparation permet de modifier les paramètres de connexion sans toucher au code de traitement.",,,,,,,,01b24a0d7863ee55,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/04-Applications/04-4-Cross-Stitch-Pattern-Maker-Legacy.ipynb,aa3aa989,code,fr,6bc40f3302901ce5,"# Parametres Papermill - JAMAIS modifier ce commentaire
 notebook_mode = ""interactive""  # ""interactive"" ou ""batch""",,,,,,,,6bc40f3302901ce5,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/04-Applications/04-4-Cross-Stitch-Pattern-Maker-Legacy.ipynb,e9392e63,code,fr,d8cfd07b7b0f3965,"# Parameters
-BATCH_MODE = ""true""
-",,,,,,,,d8cfd07b7b0f3965,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/04-Applications/04-4-Cross-Stitch-Pattern-Maker-Legacy.ipynb,53286701,markdown,fr,ad317c2dc01d5116,"### Verification des dependances et chargement des ressources
 
 Les cellules suivantes verifient la presence des bibliotheques requises (Pillow, requests, numpy, etc.), importent les modules necessaires, et chargent le fichier **DMC_colors.json** qui contient les 454 references de fils DMC avec leurs codes couleur RGB. Ce fichier est essentiel pour l'etaape de correspondance couleur/fil qui intervient après la reduction de palette.",,,,,,,,ad317c2dc01d5116,,,,,,,,
