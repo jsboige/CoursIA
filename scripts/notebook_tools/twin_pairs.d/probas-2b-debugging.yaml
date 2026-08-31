@@ -1,8 +1,8 @@
-- name: Probas-6 Debugging
+- name: Probas-2b Debugging
   family: Probas/Infer.NET-PyMC
   python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-06-Debugging.ipynb
-  csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-6-Debugging.ipynb
-  numbering_exception: 'Zero-padding cote Python uniquement PyMC-1..9 -> PyMC-01..09 (renommage #13760) ; jumeau C# Infer-1..9 non concerne, contenu pedagogique inchange.'
+  csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-2b-Debugging-Bonnes-Pratiques.ipynb
+  numbering_exception: 'Renommage #13753 : jumeau C# reclassifie Infer-6-Debugging -> Infer-2b-Debugging-Bonnes-Pratiques (accretion transversale, compagnon sequentiel de Infer-2-Gaussian-Mixtures dans l''arc Infer) ; le jumeau Python reste PyMC-06-Debugging (position 06 dans l''arc PyMC). Divergence deliberee parite-de-role (debogage de modeles probabilistes dans les deux stacks) pas par numero : C# base=2b vs Python base=06.'
   parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Modele nominal lib-vs-lib cite par owner #10382 (\"PyMC vs Infer, 2 moteurs qui brillent\") : C# = Microsoft Infer.NET (Microsoft.ML.Probabilistic, NuGet officiel, native .NET, inférence variationnelle EP/VMP) et Python = PyMC (pip pymc, native Python, NUTS/HMC + ADVI). Chaque cote atteint le moteur SOTA de son ecosysteme probabiliste -- ni pont intermediaire ni reimplementation. Aucune asymetrie de machinerie a corriger. Verifie firsthand : C# Microsoft.ML.Probabilistic refs + execution_count, Python pymc imports."
@@ -52,6 +52,13 @@
       csharp_sha: 7fdd5f18bef74f5071e29926820a34a0e2f056a3
       content_python_sha: c16ea72126e79e1265e2e1e7365de1b674b8e4ed7a8c22118e70fa6f50f52347
       content_csharp_sha: 0012cecae2969a5da38d9b13626d61ba127ef6e2837dc53a5ef9730739cb0f04
+    - date: "2026-08-31"
+      by: myia-po-2027:CoursIA-2
+      reason: "Reclass #13753 : renommage Infer-6-Debugging.ipynb -> Infer-2b-Debugging-Bonnes-Pratiques.ipynb (accretion transversale, compagnon sequentiel de Infer-2). Markdown-only : titre, badge serie (6/19 -> 2b/19), prerequis (-> Infer-2), navlink (-> Infer-2 | Infer-3). Cellules code + sorties byte-identiques vs HEAD (verifie par hash). Jumeau Python NON touche : python_sha + content_python_sha inchanges. Content_csharp_sha bouge car le contenu markdown du notebook a evolue. --update en dernier (#8957), post-commit, apres normalisation outillee."
+      python_sha: e54d23b05e5770c397fbb316f9ab6571663fcc35
+      csharp_sha: d0ed2d83814844a366d9e6bf5b04eb1eededd2b4
+      content_python_sha: c16ea72126e79e1265e2e1e7365de1b674b8e4ed7a8c22118e70fa6f50f52347
+      content_csharp_sha: 060ff81e2e0cbe8dbea460dd48e9bcf4962f8a00b3fa6bb2b3c8fcbb78b653e3
   known_differences:
   - '2026-08-21 (rebaseline asymetrique myia-po-2024:CoursIA-2) : PR #12065 corrige heading_in_list cote C# (Infer-6-Debugging.ipynb, 3 findings) tandis que le jumeau Python (PyMC-06-Debugging.ipynb) etait deja a 0 finding. La convergence unilaterale est legitime (cf ai-01 arbitrage 2026-08-21 15:00Z, DM msg-20260821T130006-lc9u2c) : la parite reelle s''ameliore, elle n''est pas enshrinee. Aucun strip outille en attente (probe banner 0, papermill 0, machine paths 0).'
   - 'Socle pedagogique commun : debugging de modeles probabilistes (diagnostics d''inference) modelise dans les deux stacks.'
