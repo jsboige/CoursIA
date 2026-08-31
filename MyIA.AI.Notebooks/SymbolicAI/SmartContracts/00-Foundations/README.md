@@ -2,9 +2,9 @@
 
 **Navigation** : [Sommaire de la série](../README.md) | [SC-3 Solidity Basics >>](../01-Solidity-Foundation/SC-3-Solidity-Basics.ipynb)
 
-La sous-série d'ouverture des SmartContracts (SC-0 a SC-2) pose les deux socles sur lesquels toute la série reposera : le **pourquoi** (les primitives cryptographiques qui font qu'une blockchain tient) et le **comment** (l'environnement de développement). On commence par remonter aux origines cypherpunk -- hachage, arbres de Merkle, preuve de travail, signatures, tables de hachage distribuées -- pour comprendre *pourquoi* une chaîne est immuable et résistante à la falsification. On installe ensuite **Foundry** (`forge`, `cast`, `anvil`), la trousse à outils de référence, puis on connecte **web3.py** + **py-solc-x** a `anvil` pour compiler, déployer et appeler un premier contrat Solidity entièrement depuis Python.
+La sous-série d'ouverture des SmartContracts (SC-0 a SC-2b) pose les deux socles sur lesquels toute la série reposera : le **pourquoi** (les primitives cryptographiques qui font qu'une blockchain tient) et le **comment** (l'environnement de développement). On commence par remonter aux origines cypherpunk -- hachage, arbres de Merkle, preuve de travail, signatures, tables de hachage distribuées -- pour comprendre *pourquoi* une chaîne est immuable et résistante à la falsification. On installe ensuite **Foundry** (`forge`, `cast`, `anvil`), la trousse à outils de référence, puis on connecte **web3.py** + **py-solc-x** a `anvil` pour compiler, déployer et appeler un premier contrat Solidity entièrement depuis Python. Le compagnon **SC-2b** retourne ensuite le point de vue : au lieu d'un compte unique qui joue tous les rôles, trois acteurs à clé délibèrent par contrat -- et l'on voit une institution produire un résultat litigieux sans violer aucune règle.
 
-A l'issue de cette phase (~2h10), l'environnement est opérationnel et le pattern de compilation/déploiement depuis Python -- réutilise dans tous les notebooks suivants -- est en place. Les notebooks suivants supposent cet environnement installé : Foundry sur le PATH, `web3`/`py-solc-x` disponibles, `anvil` capable de lancer une blockchain locale.
+A l'issue de cette phase (~2h50), l'environnement est opérationnel et le pattern de compilation/déploiement depuis Python -- réutilise dans tous les notebooks suivants -- est en place. Les notebooks suivants supposent cet environnement installé : Foundry sur le PATH, `web3`/`py-solc-x` disponibles, `anvil` capable de lancer une blockchain locale.
 
 ---
 
@@ -15,6 +15,7 @@ A l'issue de cette phase (~2h10), l'environnement est opérationnel et le patter
 | 0 | [SC-0-Cypherpunk-Origins](SC-0-Cypherpunk-Origins.ipynb) | ~60 min | Mouvement cypherpunk, primitives cryptographiques (hash, signatures, PoW), mini-blockchain Python, arbre de Merkle, DHT/Kademlia |
 | 1 | [SC-1-Setup-Foundry](SC-1-Setup-Foundry.ipynb) | ~30 min | Installation Foundry (forge/cast/anvil), vérification Solidity, premier projet, compilation + test d'un contrat simple |
 | 2 | [SC-2-Setup-Web3py](SC-2-Setup-Web3py.ipynb) | ~40 min | web3.py + py-solc-x, connexion a anvil, compiler/déployer/appeler un contrat depuis Python, pattern réutilisable |
+| 2b | [SC-2b-Bac-ASable-Institutionnel](SC-2b-Bac-ASable-Institutionnel.ipynb) | ~40 min | Bac a sable institutionnel : acteurs a cles BIP44, contrat Deliberation (quorum, anti-double-vote, cloture en blocs), journal d'evenements pandas, rejouabilite par mnemonic, echec institutionnel licite |
 
 ---
 
@@ -26,6 +27,7 @@ A l'issue de cette sous-série, vous serez capable de :
 2. **Installer** l'environnement de développement complet (Foundry + web3.py + py-solc-x)
 3. **Compiler, déployer et appeler** un contrat Solidity depuis Python via anvil
 4. **Établir** le pattern de déploiement réutilisable pour les notebooks suivants
+5. **Simuler** une délibération multi-acteurs rejouable (SC-2b) : journal d'événements pandas, empreinte SHA-256, échec institutionnel licite
 
 ---
 
@@ -36,6 +38,7 @@ A l'issue de cette sous-série, vous serez capable de :
 | SC-0 Cypherpunk Origins | Python 3.10+ (`hashlib` stdlib), `pycryptodome` pour les signatures ; aucune connaissance blockchain préalable |
 | SC-1 Setup Foundry | Python 3.10+, curl ou PowerShell, Git |
 | SC-2 Setup Web3py | SC-1 complète (anvil installé), Python 3.10+, `pip install web3 py-solc-x` |
+| SC-2b Bac a sable institutionnel | SC-2 complète (pattern compile-deploy-call), `pip install web3 py-solc-x pandas` |
 
 ---
 
