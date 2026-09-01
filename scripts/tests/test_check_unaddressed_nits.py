@@ -3346,3 +3346,84 @@ def test_13598_hold_par_reviewer_bot_reste_muet() -> None:
 def test_13598_body_vide_reste_muet() -> None:
     """Body vide garde le comportement par defaut de classify (None)."""
     assert mod.classify("myia-ai-01", "") is None
+
+
+
+def test_13912_hold_nominal_mention_sous_hold_user() -> None:
+    """#13912 : "sous hold user" est une MENTION NOMINALE, pas une EMISSION.
+
+    Reproduction directe du FP documente par ai-01 sur #13706 :
+    "Le moteur est sous hold user (#10038)" -- le coord CITE un hold tenu
+    par user via #10038, n'en EMET pas un. Verdict `_hold_match_is_emission`
+    attendu : False.
+    """
+    body = "Le moteur est sous hold user (#10038). translation-sync.yml est sous hold."
+    assert mod._hold_match_is_emission(mod._unaccent(body)) is False
+
+
+def test_13912_hold_nominal_mention_bold_around() -> None:
+    """#13912 : "**sous hold user (#10038)**" -- bold markdown avant `sous`.
+
+    Le 2e commentaire ai-01 sur #13706 utilise **bold** autour de l'expression,
+    donc `sous` est precede d'un `**` (et non d'un whitespace). Le predicat
+    doit accepter ce prefix comme separateur (et non comme partie d'un mot).
+    """
+    body = "le moteur qui ecraserait est **sous hold user (#10038)** : translation-sync.yml a perdu son trigger."
+    assert mod._hold_match_is_emission(mod._unaccent(body)) is False
+
+
+def test_13912_hold_nominal_mention_sur_le_hold() -> None:
+    """#13912 : "sur le hold de ai-01" -- autre MENTION NOMINALE.
+
+    Variante : le mot `sur` precede `le hold` -- c'est une description d'un
+    hold detenu ailleurs, pas une EMISSION du coord. Verdict attendu : False.
+    """
+    body = "Le PR est sur le hold de ai-01 jusqu'a resolution de #10038."
+    assert mod._hold_match_is_emission(mod._unaccent(body)) is False
+
+
+def test_13912_hold_emission_verbe_tenir() -> None:
+    """#13912 contre-positif : "je tiens le hold" -- EMISSION explicite.
+
+    Un verbe d'injonction explicite immediatement voisin de `hold`
+    ("je tiens le hold", "je maintiens le hold") reste une EMISSION.
+    Le predicat doit le reconnaitre MEME si la liste CITERS matche
+    egalement (defense en profondeur).
+    """
+    body = "Je tiens le hold jusqu'a resolution du gate."
+    assert mod._hold_match_is_emission(mod._unaccent(body)) is True
+
+
+def test_13912_hold_emission_maintenir() -> None:
+    """#13912 contre-positif : "maintenir le hold" -- EMISSION explicite."""
+    body = "Je maintiens le hold sur ce PR -- gate rouge non leve."
+    assert mod._hold_match_is_emission(mod._unaccent(body)) is True
+
+
+def test_13912_hold_classify_sous_hold_user_ne_devient_pas_bot_concern() -> None:
+    """#13912 integration : classify(myia-ai-01, 'sous hold user') -> None.
+
+    Avant le patch : classify retournait 'BOT-CONCERN' sur les commentaires
+    ai-01 citant "sous hold user", forcant un faux positif sur #13706.
+    Apres le patch : la mention nominale est neutralisee avant
+    _coordinator_emission_informal, classify retombe sur None (pas de
+    reserve vivante, pas de BOT-CONCERN).
+    """
+    body = (
+        "**HOLD coordinateur** NON. Je CITE le hold user (#10038) pour expliquer "
+        "pourquoi ce PR n'ecrasera pas translation-sync.yml : "
+        "le moteur de regeneration est sous hold user (#10038)."
+    )
+    assert mod.classify("myia-ai-01", body) is None
+
+
+def test_13912_hold_neutralise_negation() -> None:
+    """#13912 : "Pas de hold" -- negation explicite doit rester muette.
+
+    Sanity check : la negation (deja couverte par
+    `_COORDINATOR_INJUNCTION_NEGATED_RE`) doit court-circuiter le predicat
+    sans dependre de la discrimination mention-vs-emission.
+    """
+    body = "Pas de hold sur ce PR, vous pouvez merger."
+    assert mod._hold_match_is_emission(mod._unaccent(body)) is False
+    assert mod.classify("myia-ai-01", body) is None

@@ -1217,6 +1217,71 @@ _COORDINATOR_INJUNCTION_RE = re.compile(
 _COORDINATOR_INJUNCTION_NEGATED_RE = re.compile(
     r"(?i)\b(?:pas|plus|jamais|aucun)\s+(?:hold|wait|bloque|attend|stop|arr[êe]t)\b",
 )
+# #13912 -- le mot `hold` en MENTION NOMINALE d'un hold tenu par un tiers n'est
+# pas une EMISSION. La voie #13598 n'attrape ce cas qu'a demi : le lookahead
+# `(?![\s-]+(?:G-VAR|BLOCK|BOT|COMMENT|VERDICT|PR\b|PR-))` ecarte les NOMS DE
+# VERDICT (« HOLD G-VAR-2 », « HOLD PR-1234 »), pas les mentions descriptives
+# d'un hold detenu ailleurs (« moteur sous hold user (#10038) », cf review
+# ai-01 sur #13706 Le moteur est sous hold user). Le discriminateur est le mot
+# qui precede `hold` : un mot de CITATION_NOMINALE (sous, sur, de, par, en, du,
+# des, le, la, les, ce, cette, un, une, mon, ton, son, notre, votre, leur,
+# « tenir » au passe) introduit une mention ; seul un verbe d'INJONCTION
+# explicite a cote du `hold` (« tient le hold », « maintenir le hold ») EMET.
+# Meme mechanique que `_is_cited` (L883) pour les marqueurs formels, mais avec
+# un CITERS adapte au `hold` en francais courant.
+_HOLD_NOMINAL_MENTION_BEFORE_RE = re.compile(
+    r"(?i)(?:^|[\s,.;:!?\(\[*_])(?:"
+    r"sous|sur(?:plement)?|d['e]|de|du|des|le|la|les|ce|cette|ces|un|une|"
+    r"mon|ton|son|notre|votre|leur|leurs|en|par|avec|sans|n['e]|tenant"
+    r")\s+hold\b",
+)
+_HOLD_EMISSION_VERB_BEFORE_RE = re.compile(
+    r"(?i)(?:^|[\s,.;:!?\(\[*_])(?:tiens|tenir|maintiens|maintenir|poser?|imposer?)\s+(?:le\s+|la\s+|du\s+|des\s+)?hold\b",
+)
+
+
+def _hold_match_is_emission(body: str) -> bool:
+    """#13912 : un `hold` matche par `_COORDINATOR_INJUNCTION_RE` est-il une
+    EMISSION du coordinateur, ou une MENTION NOMINALE d'un hold tiers ?
+
+    Renvoie True si le `hold` est en EMISSION (verbe d'injonction explicite
+    immediatement voisin, ou contexte « tient/maintenir le hold »), False si
+    en MENTION NOMINALE (precede d'un mot de citation descriptive).
+
+    Le defaut documente par ai-01 sur #13706 : « moteur sous hold user »,
+    « il est sous hold user », « Et le moteur qui ecraserait est sous hold
+    user (#10038) » -- toutes des MENTIONS d'un hold tenu par user via #10038,
+    jamais une EMISSION du coordinateur sur cette PR.
+
+    Cas reels :
+    - EMISSION  : « **HOLD coordinateur** » -- le mot est en tete, pas de mot
+                  avant, donc _HOLD_NOMINAL_MENTION_BEFORE_RE ne matche pas,
+                  _HOLD_EMISSION_VERB_BEFORE_RE peut etre absent. Verdict:
+                  EMISSION.
+    - EMISSION  : « Je tiens le hold jusqu'a resolution » -- verbe explicite.
+    - MENTION   : « sous hold user », « sur le hold de #10038 » -- mots de
+                  citation avant.
+    - MENTION   : « le hold tient » -- ambigu ; ici le coord EMET implicitement
+                  qu'il tient le hold, donc EMISSION (verbe « tient » avant).
+
+    Strategie : si AUCUNE mention nominale n'est trouvee, c'est une EMISSION.
+    Si UNE mention nominale est trouvee, c'est une MENTION. On ignore les
+    emissions qui n'ont pas de verbe explicite (le cas « HOLD coordinateur »
+    en tete), parce qu'elles ont toujours le `_COORDINATOR_INJUNCTION_RE`
+    matche par leur glyphe « HOLD G-VAR-2 » que le lookahead ecarte deja --
+    le cas EMISSION qui nous interesse ici est VERBE + hold.
+    """
+    if not _COORDINATOR_INJUNCTION_RE.search(body):
+        return False
+    # Si AUCUNE mention nominale, c'est une emission (verbe d'injonction
+    # autre que hold, ou un hold-EMISSION sans mot de citation avant).
+    if not _HOLD_NOMINAL_MENTION_BEFORE_RE.search(body):
+        return True
+    # Sinon, c'est une mention -- sauf si un verbe d'emission explicite
+    # precede (`je tiens le hold`, `maintenir le hold`).
+    if _HOLD_EMISSION_VERB_BEFORE_RE.search(body):
+        return True
+    return False
 
 
 def _coordinator_emission_informal(body: str) -> bool:
@@ -1228,6 +1293,12 @@ def _coordinator_emission_informal(body: str) -> bool:
     """
     normalised = _unaccent(body)
     if _COORDINATOR_INJUNCTION_NEGATED_RE.search(normalised):
+        return False
+    # #13912 -- sur le mot `hold`, demasquer les MENTIONS NOMINALES d'un hold
+    # tiers (cf review ai-01 sur #13706 : « moteur sous hold user (#10038) »).
+    # Sans cette discrimination, un override qui CITE un hold tenu ailleurs
+    # devient lui-meme une emission, et l'instrument de levee est auto-bloquant.
+    if _COORDINATOR_INJUNCTION_RE.search(normalised) and not _hold_match_is_emission(normalised):
         return False
     if not _COORDINATOR_INJUNCTION_RE.search(normalised):
         return False
