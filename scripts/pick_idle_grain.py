@@ -1954,6 +1954,23 @@ def main(argv: list[str] | None = None) -> int:
                   "ne prouve donc rien sur le plancher G-VAR-1)")
             print()
 
+    # Le mode --json doit dire la MEME chose que la banniere texte. Sans ces
+    # deux cles, un consommateur machine voit `triggered: true` sans pouvoir
+    # distinguer les deux issues opposees : le tirage a-t-il ete RESTREINT aux
+    # genres CONTENU (le garde a mordu, la lane recoit un grain qui tient le
+    # plancher), ou a-t-il ete rendu SANS restriction faute de candidat de
+    # contenu piochable ? Le second cas est un defaut de PROVISIONNEMENT a
+    # ecrire au coordinateur (variation-protocol section 4), et c'est
+    # precisement celui qu'un silence rendrait invisible. Finding NanoClaw
+    # sur #13884, tenue : la forme du payload est stable quel que soit le
+    # chemin, pour qu'une absence de cle ne se lise jamais comme un faux.
+    drought["fell_back"] = drought_fell_back
+    drought["restricted_candidates"] = (
+        len(by_class["grain"]) + len(by_class["umbrella"])
+        if drought.get("triggered") and not args.ignore_drought
+        and not drought_fell_back
+        else None)
+
     picks, claims, claim_conflicts = draw_unclaimed(
         by_class, args, rng, visits, series, issue_to_family)
     withheld.extend(claim_conflicts)
