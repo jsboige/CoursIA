@@ -101,3 +101,81 @@ def test_helper_is_defined_at_module_scope():
     tree = ast.parse((REPO / "scripts" / "pick_idle_grain.py").read_text(encoding="utf-8"))
     top_level = {n.name for n in tree.body if isinstance(n, ast.FunctionDef)}
     assert "_utf8_child_env" in top_level
+
+
+# ---------------------------------------------------------------------------
+# T5-T6 : l'invocation DIRECTE de check_lane_claim.py
+#
+# T1-T4 couvrent le chemin d'appel du picker. Mais lane-claim-protocol.md
+# prescrit d'appeler check_lane_claim.py *directement* avant d'editer -- et ce
+# chemin-la n'a pas de parent pour lui poser PYTHONIOENCODING.
+#
+# Le mode de defaillance y est pire que le crash du picker : une fleche U+2192
+# n'existe pas dans cp1252, donc le print leve UnicodeEncodeError et le script
+# sort en exit 1. Or un exit non-nul se lit, dans la regle, "claim d'une autre
+# lane, ne pas commencer". Un plantage d'encodage se deguisait en verrou.
+# Mesure du 2026-09-01 (Windows FR) : #13614 rendait rc=1 sur ce seul motif.
+# ---------------------------------------------------------------------------
+
+CLAIM_SCRIPT = REPO / "scripts" / "check_lane_claim.py"
+
+# L'idiome d'auto-protection, tel qu'il doit apparaitre en tete de main().
+RECONFIGURE_SNIPPET = (
+    "for _stream in (sys.stdout, sys.stderr):\n"
+    "    if hasattr(_stream, 'reconfigure'):\n"
+    "        _stream.reconfigure(encoding='utf-8', errors='replace')\n"
+)
+ARROW_LINE = "print('verdict -> \u2192 claim perime, deja claim')\n"
+
+
+def _run_under_cp1252(code: str) -> subprocess.CompletedProcess:
+    """Enfant Python dont stdout est un tube force en cp1252.
+
+    Rend le defaut reproductible sur TOUTE plateforme : sans cela le test
+    passerait en CI Linux (UTF-8 par defaut) meme correctif retire.
+    """
+    import os
+
+    env = {**os.environ, "PYTHONIOENCODING": "cp1252", "PYTHONUTF8": "0"}
+    return subprocess.run([sys.executable, "-c", code],
+                          capture_output=True, env=env, timeout=60)
+
+
+def test_t5_check_lane_claim_reconfigures_its_own_streams():
+    """T5 -- main() se protege lui-meme, avant tout parsing d'arguments."""
+    tree = ast.parse(CLAIM_SCRIPT.read_text(encoding="utf-8"))
+    fn = next(n for n in tree.body
+              if isinstance(n, ast.FunctionDef) and n.name == "main")
+
+    calls = [n for n in ast.walk(fn)
+             if isinstance(n, ast.Call)
+             and isinstance(n.func, ast.Attribute)
+             and n.func.attr == "reconfigure"]
+    assert calls, (
+        "main() de check_lane_claim.py ne reconfigure pas ses flux : sous "
+        "Windows FR un verdict portant une fleche sortira en exit 1, que la "
+        "regle lira comme un claim d'une autre lane"
+    )
+    kwargs = {kw.arg for c in calls for kw in c.keywords}
+    assert {"encoding", "errors"} <= kwargs, f"attendu encoding= et errors=, vu {kwargs}"
+
+
+def test_t6_negative_control_the_defect_is_detectable():
+    """T6a -- SANS l'idiome, un flux cp1252 plante bien sur la fleche.
+
+    Controle negatif : si celui-ci passait, T6b ne prouverait rien.
+    """
+    out = _run_under_cp1252(ARROW_LINE)
+    assert out.returncode != 0, (
+        "le controle negatif n'a pas plante : ce test ne peut pas detecter "
+        "le defaut qu'il pretend garder"
+    )
+    assert b"UnicodeEncodeError" in out.stderr
+
+
+def test_t6_the_idiom_actually_repairs_it():
+    """T6b -- AVEC l'idiome, le meme flux rend de l'UTF-8 valide, exit 0."""
+    out = _run_under_cp1252("import sys\n" + RECONFIGURE_SNIPPET + ARROW_LINE)
+    assert out.returncode == 0, out.stderr.decode("utf-8", "replace")
+    out.stdout.decode("utf-8")  # leve UnicodeDecodeError si ce n'est pas de l'UTF-8
+    assert "→" in out.stdout.decode("utf-8")
