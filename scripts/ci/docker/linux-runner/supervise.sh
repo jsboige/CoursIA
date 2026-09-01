@@ -49,6 +49,14 @@ TOOLCACHE_MOUNT="${COURSIA_RUNNER_TOOLCACHE_MOUNT:-/opt/hostedtoolcache}"
 
 mkdir -p "$STATE_DIR"
 
+# Git Bash (MSYS) sous Windows reecrit les arguments de forme /posix/path des
+# appels a docker.exe : -e RUNNER_TOOL_CACHE=/opt/hostedtoolcache devenait
+# "C:/Program Files/Git/opt/hostedtoolcache" dans le conteneur (mesure :
+# docker inspect Config.Env apres le premier demarrage). Ces deux variables
+# sont inertes sous Linux et figent la conversion cote Windows.
+export MSYS_NO_PATHCONV=1
+export MSYS2_ARG_CONV_EXCL='*'
+
 die() { echo "ERREUR: $*" >&2; exit 1; }
 
 fetch_token() {
