@@ -2477,6 +2477,132 @@ def test_13440_founder_negated_diff_still_exempt():
             f"le compte fondateur doit rester exempt : {m.group(0)!r}"
         )
 
+
+# ---------------------------------------------------------------------------
+# #13471 — 2 residus de la fenetre de qualificatif `_count_has_incidental_qualifier`
+# nommes au merge de #13463, laisses ouverts. Les 2 residus partagent la
+# meme fenetre ; le fix unifie dans le predicat (normalisation NFD + lecture
+# 2 mots en OR).
+#
+# Residu 1 -- les formes hybrides accentuees (premier e nu, dernier accentue)
+# ne sont pas normalisees avant match. Issue : « verifié » / « verifiés » ne
+# sont pas reconnus alors que « vérifié » / « vérifiés » / « verifie » /
+# « verifies » le sont (toutes 4 collapent sur la meme cle NFD-stripped).
+#
+# Residu 2 -- la fenetre ne lit que le 1er mot apres le compte. Un compte
+# dont le 2eme mot est incident (mais pas le 1er) reste aveuglant. Issue :
+# « 9 fichiers verifies puis modifies » -- 'puis' n'est pas incident,
+# 'modifies' est un verbe de modif (donc strong scope, hors scope du
+# Residu 2) ; le VRAI trou est « N fichiers puis conformes » / « N fichiers
+# independamment analyses ».
+#
+# Methodologie : les 2 controles positifs sont ecrits en **assertions directes**
+# sur `_count_is_incidental` (verdict blocant). Les FN deliberes et le bare
+# authorial sont des controles non-regression (verdict ne change pas).
+# ---------------------------------------------------------------------------
+def test_13471_residu1_hybrid_accent_recognized():
+    """Le Résidu 1 : « verifié » (premier e nu, dernier accentué) doit etre
+    reconnu au meme titre que « vérifié » / « verifie » / « verifies ». La
+    normalisation NFD fait collapser toutes les variantes sur la meme cle,
+    et la liste close n'a PAS besoin d'etre etendue -- c'est precisement
+    la serie de tranches que l'issue prescrit d'eviter."""
+    # Hybride : premier e nu, dernier accentue (le cas fondateur de l'issue).
+    assert _count_is_incidental("- 9 fichiers verifié puis corriges") is True, (
+        "le Résidu 1 fondateur (verifié hybride) doit etre incident"
+    )
+    # Hybride + participe +2 (verifies hybride).
+    assert _count_is_incidental("- 13 fichiers verifiés avec Papermill") is True, (
+        "le Résidu 1 pluriel (verifiés hybride) doit etre incident"
+    )
+    # Forme deja listee (control non-regression) : ne change pas.
+    assert _count_is_incidental("- 18 fichiers vérifiés sans BOM") is True, (
+        "la forme canonique listee ne change pas de verdict"
+    )
+    # Forme deja listee (control non-regression) : ne change pas.
+    assert _count_is_incidental("- 18 fichiers verifie") is True, (
+        "la forme nue sans accent ne change pas de verdict"
+    )
+
+
+def test_13471_residu2_second_word_incidental_recognized():
+    """Le Résidu 2 : un compte dont le 2eme mot apres le nombre est incident
+    (mais pas le 1er) doit etre reconnu comme incidental. La fenetre pre-
+    existante ne lisait que le 1er mot, ce qui rendait aveuglant « N
+    fichiers <mot-non-incidental> puis conformes » (le 1er mot n'est pas
+    dans INCIDENTAL_QUALIFIERS, le 2eme 'conformes' l'est)."""
+    # Le trou reel fondateur du Résidu 2 : 'puis' n'est pas incident,
+    # 'conformes' l'est -- le 1er-mot-seul rendait False avant le fix.
+    assert _count_is_incidental("- 9 fichiers puis conformes") is True, (
+        "le Résidu 2 fondateur ('puis conformes') doit etre incident"
+    )
+    # Variante : 1er mot adverbial, 2eme participe incident.
+    assert _count_is_incidental(
+        "- 9 fichiers independamment analyses"
+    ) is True, (
+        "le Résidu 2 variante ('independamment analyses') doit etre incident"
+    )
+    # Forme deja couverte avant le fix (control non-regression).
+    assert _count_is_incidental(
+        "- 9 fichiers verifies puis modifies"
+    ) is True, (
+        "la forme 2-mots-incidents ne change pas de verdict"
+    )
+
+
+def test_13471_fn_deliberes_stay_blocking():
+    """Les FN délibérés du fondateur #13440 restent bloquants après le
+    fix : « restaurés » / « re-exécutés » / « touchés » sont des périmètres
+    authentiques dans ce dépôt (campagne accents #2876, tranches MGS,
+    verbes de modification) et HORS de INCIDENTAL_QUALIFIERS. La
+    normalisation NFD ne les ajoute pas par effet de bord."""
+    # restaures (campagne accents #2876) -- perimetre authentique.
+    assert _count_is_incidental(
+        "- 18 fichiers avec accents restaurés"
+    ) is False, (
+        "« restaurés » reste bloquant (campagne accents)"
+    )
+    # re-executés (tranches MGS) -- perimetre authentique.
+    assert _count_is_incidental(
+        "- 13 fichiers re-executés"
+    ) is False, (
+        "« re-executés » reste bloquant (tranches MGS)"
+    )
+    # touchés -- verbe de modification, _has_strong_scope bloque la ligne.
+    assert _count_is_incidental(
+        "- 13 fichiers touchés uniquement"
+    ) is False, (
+        "« touchés » reste bloquant (verbe de modification)"
+    )
+
+
+def test_13471_bare_authorial_preserved():
+    """Le « 25 fichier(s) » sans qualificatif reste auteur (fail-loud
+    préservé) : le 2eme token est la parenthese vide, qui ne contient pas
+    de mot, donc le predicat rend False (pas d'incidental). Le résidu du
+    2-mots-OR ne fait pas fuiter un verdict blanc sur un auteur reel."""
+    assert _count_is_incidental("- 25 fichier(s)") is False, (
+        "le bare authorial reste bloquant (predicate ne doit pas "
+        "lire du vide comme un mot)"
+    )
+    assert _count_is_incidental("- 13 fichiers") is False, (
+        "le compte nu reste bloquant"
+    )
+
+
+def test_13471_founder_negated_diff_still_exempt():
+    """Non-régression fondateur #11775 : « 91 fichiers inchanges sur 2
+    touches » -- la ligne porte « scope » (strong scope word) et est
+    exemptée par negated-diff (91) + locative (2). La normalisation NFD
+    des 2 premiers mots ne doit pas alterer ces exemptions par-compte."""
+    line = "- 91 fichiers inchanges sur 2 touches -- scope delta confirme"
+    matches = list(COUNT_CLAIM.finditer(line))
+    assert matches, "le fondateur doit porter des comptes"
+    for m in matches:
+        assert _count_is_exempt(line, m) is True, (
+            f"le compte fondateur doit rester exempt : {m.group(0)!r}"
+        )
+
+
 def test_12718_hyphenated_scope_does_not_block():
     """#12718: 'in-scope' (hyphenated, descriptive) is NOT a strong-scope
     perimeter label -- `_has_strong_scope` excludes the hyphenated compound,

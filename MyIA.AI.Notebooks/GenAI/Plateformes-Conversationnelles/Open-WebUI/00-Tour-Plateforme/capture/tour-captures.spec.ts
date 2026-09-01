@@ -62,6 +62,13 @@ function sensitiveZones(page: Page): Locator[] {
     page.locator('[data-tour-mask]'), // points de masquage explicites si présents
     page.getByRole('button', { name: /account|compte|profil|profile/i }),
     page.getByText(/@/), // adresses e-mail visibles
+    // Contrôle « Open Terminal (…) » du composer : son libellé porte le nom du
+    // workspace terminal de l'instance (identifiant interne — constaté à
+    // l'audit vision du 2026-08-30). On masque le BOUTON entier : le texte
+    // tronqué vit dans un <span class="truncate"> (150 px) et masquer ce seul
+    // span laissait dépasser le libellé sur les vues où la géométrie diffère.
+    page.getByRole('button', { name: /open terminal/i }),
+    page.getByText(/open terminal|terminal\s*\(/i),
     // Marque / logo de l'instance (identité du tenant) — visible en haut de la
     // sidebar sur toutes les vues authentifiées. Sélecteurs volontairement larges,
     // à CONFIRMER contre l'UI live lors de la génération (revue anti-fuite).
@@ -119,9 +126,18 @@ async function signIn(page: Page): Promise<void> {
 }
 
 test.describe('Tour de la plateforme — captures (compte de capture)', () => {
-  // 1 — page de connexion (avant authentification, champs masqués).
+  // 1 — page de connexion (avant authentification : champs vides, rien de saisi).
   test('01 — page de connexion', async ({ page }) => {
     await page.goto(URL!);
+    // Attendre le rendu du formulaire : une capture immédiate après goto fige
+    // le shell pré-hydratation (résidu de texte « ol » sur fond blanc, sans
+    // aucun champ) — constaté à l'audit vision du 2026-08-30.
+    await page
+      .getByRole('button', { name: /sign in|se connecter|connexion|log in/i })
+      .first()
+      .waitFor({ state: 'visible', timeout: 30_000 })
+      .catch(() => {});
+    await page.waitForTimeout(800);
     await capture(page, '01-connexion.png');
   });
 
@@ -150,6 +166,25 @@ test.describe('Tour de la plateforme — captures (compte de capture)', () => {
       }
 
       // Réponse en cours de streaming sur une invite FICTIVE (aucun contenu réel).
+      // Sélection explicite d'un modèle fonctionnel : le modèle présélectionné
+      // peut être indisponible côté serveur (constat 2026-08-30 : tuteurs à base
+      // MistralAI en erreur « Model not found » sanitizée — base sans ligne DB
+      // = admin-only en v0.11, ET abonnement MistralAI épuisé). Sur l'instance
+      // de capture, « TP Prompt Engineering » est rebasé sur le modèle local.
+      await page.locator('button[id^="model-selector-"]').first().click().catch(() => {});
+      await page.waitForTimeout(400);
+      await page
+        .locator('#model-search-input, [role="listbox"] input')
+        .first()
+        .fill('TP Prompt Engineering')
+        .catch(() => {});
+      await page.waitForTimeout(400);
+      await page
+        .getByRole('option', { name: /tp prompt engineering/i })
+        .first()
+        .click()
+        .catch(() => {});
+      await page.waitForTimeout(600);
       // Sans envoi d'invite, l'écran resterait vide : le fichier serait mal nommé.
       // On saisit une invite neutre dans l'éditeur TipTap (#chat-input requiert
       // keyboard.type, pas fill) puis on capture dès que la réponse de l'assistant
@@ -162,6 +197,28 @@ test.describe('Tour de la plateforme — captures (compte de capture)', () => {
         .first()
         .waitFor({ state: 'visible', timeout: 30_000 })
         .catch(() => {});
+      // Si le modèle « réfléchit » en direct (indicateur « En train de
+      // réfléchir… » de v0.11), attendre d'abord son apparition PUIS sa
+      // disparition — un simple wait hidden passe immédiatement tant que
+      // l'indicateur n'est pas encore rendu, et la capture figerait le seul
+      // indicateur au lieu de la réponse en streaming.
+      const thinking = page
+        .getByText(/en train de r[ée]fl[ée]chir|thinking/i)
+        .first();
+      await thinking.waitFor({ state: 'visible', timeout: 10_000 }).catch(() => {});
+      await thinking.waitFor({ state: 'hidden', timeout: 90_000 }).catch(() => {});
+      await page.waitForTimeout(1500);
+      // Laisser le composer se stabiliser AVANT de capturer : le contrôle
+      // « Open Terminal » de la barre du bas n'apparaît qu'après le rendu de la
+      // réponse — capturer dès l'apparition de la réponse figeait son libellé
+      // NON masqué (race constatée à l'audit vision du 2026-08-30). L'attente
+      // est tolérante : sur une instance sans terminal, elle expire sans bloquer.
+      await page
+        .getByText(/open terminal|terminal\s*\(/i)
+        .first()
+        .waitFor({ state: 'visible', timeout: 5000 })
+        .catch(() => {});
+      await page.waitForTimeout(800);
       await capture(page, '02-chat-streaming.png');
     });
 
@@ -204,18 +261,22 @@ test.describe('Tour de la plateforme — captures (compte de capture)', () => {
       await capture(page, '04-canal.png');
     });
 
-    // 5 — Paramètres personnels.
+    // 5 — Paramètres personnels. Le bouton du menu utilisateur porte le libellé
+    // FR « Menu utilisateur » (pas « account/compte/profil ») et l'entrée
+    // « Réglages » du menu déroulant est un <button>, pas un role=menuitem.
     test('05 — paramètres', async ({ page }) => {
       await page
-        .getByRole('button', { name: /account|compte|profil|profile/i })
+        .getByRole('button', { name: /menu utilisateur|user menu/i })
         .first()
         .click()
         .catch(() => {});
+      await page.waitForTimeout(500);
       await page
-        .getByRole('menuitem', { name: /settings|paramètres/i })
+        .getByRole('button', { name: /r[ée]glages|param[èe]tres|settings/i })
         .first()
         .click()
         .catch(() => {});
+      await page.waitForTimeout(1500);
       await capture(page, '05-parametres.png');
     });
 
@@ -278,8 +339,10 @@ test.describe('Tour de la plateforme — captures (compte de capture)', () => {
       await capture(page, '03-dossier-equipe.png');
     });
 
-    // 5 — mémoire (v0.10) : Menu utilisateur > Réglages > Personnalisation >
-    // Mémoire > Gérer (compte neuf → panneau « Mémoire 0 », aucun souvenir réel).
+    // 5 — mémoire (v0.10) : Menu utilisateur > Réglages > Personnalisation.
+    // Compte neuf → panneau « Saved Memories 0 » (aucun souvenir réel). En v0.11
+    // l'état vide de la section Mémoire est visible sur l'onglet Personnalisation,
+    // sans bouton « Gérer » (l'UX v0.10 qui ouvrait un sous-dialogue a été remplacée).
     test('05 — mémoire (v0.10)', async ({ page }) => {
       await page.goto(URL!);
       await page.waitForLoadState('networkidle').catch(() => {});
@@ -296,23 +359,18 @@ test.describe('Tour de la plateforme — captures (compte de capture)', () => {
         .first()
         .click()
         .catch(() => {});
-      await page.waitForTimeout(1000);
+      await page.waitForTimeout(1200);
       const dialog = page.locator('[role="dialog"], .modal').last();
-      // Onglet Personnalisation → section Mémoire → bouton « Gérer ».
+      // Onglet Personnalisation → section Mémoire (état vide directement visible).
       await dialog
         .getByText(/personnalisation|personalization/i)
         .first()
         .click()
         .catch(() => {});
-      await page.waitForTimeout(800);
-      await dialog
-        .getByRole('button', { name: /g[ée]rer|manage/i })
-        .first()
-        .click()
-        .catch(() => {});
+      await page.waitForTimeout(1200);
       await page
         .getByText(
-          /aucun|les souvenirs|no memories|seront affich/i,
+          /les souvenirs|saved memories|aucun|seront affich/i,
         )
         .first()
         .waitFor({ state: 'visible', timeout: 8000 })

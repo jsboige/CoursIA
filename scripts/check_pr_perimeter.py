@@ -83,6 +83,7 @@ import shutil
 import subprocess
 import sys
 import time
+import unicodedata
 from dataclasses import dataclass, field
 from typing import Optional
 
@@ -552,6 +553,13 @@ STRONG_SCOPE_WORDS = (
 # this PR changes". Closed list measured on the 120-PR corpus; unknown
 # qualifiers stay authorial (a false negative does not signal itself, so the
 # default must fail loud).
+#
+# #13471 : les chaines accentuees sont NFD-strippees avant match (voir
+# `_count_has_incidental_qualifier`). Les entrees canoniques sont stockees
+# telles quelles pour la lisibilite de la liste (un mainteneur voit 'vérifié'
+# et comprend), mais le predicat compare les deux cotes apres strip --
+# donc 'verifié' (hybride 1er e nu / dernier accentué), 'vérifié', 'verifie',
+# 'verifies' collapsent sur la meme cle 'verifie'.
 INCIDENTAL_QUALIFIERS = frozenset({
     "mp3", "wav", "mathlib", "machine-path", "fr", "en", "scratch",
     "restants", "restant", "reste", "restants,", "nouveau", "nouveaux",
@@ -801,28 +809,79 @@ def _has_strong_scope(low: str) -> bool:
     return False
 
 
+def _strip_accents(s: str) -> str:
+    """#13471: NFD decompose + drop combining marks. Both sides of the
+    incidental-qualifier match are run through this so accent variants
+    ('verifié' hybride, 'vérifié', 'verifie') collapse to the same key.
+    Couvre les variantes futures sans nouvelle tranche de liste -- c'est
+    precisement la serie de tranches que ce depot cherche a eviter."""
+    return "".join(
+        ch for ch in unicodedata.normalize("NFD", s)
+        if unicodedata.category(ch) != "Mn"
+    )
+
+
+# #13471: pre-normalized lookup set for incidental qualifier match. We normalize
+# INCIDENTAL_QUALIFIERS once at module load (frozen set of NFD-stripped lower
+# tokens) rather than normalizing per-call -- the set is small (~80 entries)
+# and the predicate runs O(matches_per_line).
+_INCIDENTAL_QUALIFIERS_NFD = frozenset(_strip_accents(w).lower() for w in INCIDENTAL_QUALIFIERS)
+_INCIDENTAL_QUALIFIER_PAIRS_NFD = frozenset(
+    _strip_accents(p).lower() for p in INCIDENTAL_QUALIFIER_PAIRS
+)
+
+
 def _count_has_incidental_qualifier(line: str, m: re.Match) -> bool:
     """#12718: true when the COUNT match `m` is immediately followed by an
     `INCIDENTAL_QUALIFIERS` word (or a qualified two-word pair). A count so
     qualified is a sub-claim ("N fichiers neufs : ... (330 lignes)"), not the
     whole-PR perimeter -- and, unlike an antecedent exemption, it overrides a
     diffstat neighbor on the same line. Extracted from _count_is_exempt so the
-    two callers (per-count exemption, incidental override) share one predicate."""
+    two callers (per-count exemption, incidental override) share one predicate.
+
+    #13471 (2 residus) :
+      - Accent variants : les deux cotes du match passent par NFD-strip, donc
+        'verifié' (hybride, premier e nu / dernier accentue) est reconnu au
+        meme titre que 'vérifié' / 'verifie' / 'verifies' (formes deja
+        listees). Une nouvelle variante accidentee future sera couverte sans
+        nouvelle tranche.
+      - 2 mots en OR : le predicat matche si le PREMIER OU le SECOND des deux
+        premiers mots est dans `INCIDENTAL_QUALIFIERS`. La condition pre-
+        existante (1er mot OU paire exacte `INCIDENTAL_QUALIFIER_PAIRS`)
+        attrapait 'audio generes' mais pas 'puis conformes' -- le 2eme mot
+        'conformes' est dans `INCIDENTAL_QUALIFIERS` mais le 1er ('puis')
+        ne l'est pas, donc le predicat rendait False. Apres le fix, le
+        second mot incident est lu comme un standalone."""
     # #13440: le pluriel parenthetique "(s)" est neutralise avant lecture du
     # qualificatif ("fichier(s) verifies" doit lire "verifies").
     after = PLURAL_PAREN.sub(" ", line[m.end():], count=1)
-    mw = re.match(r"\s+([\wàâäéèêëîïôöùûüçÀÂÄÉÈÊËÎÏÔÖÙÛÜÇ-]+)", after)
-    if mw and mw.group(1).lower() in INCIDENTAL_QUALIFIERS:
-        return True
-    mw2 = re.match(
+    # Le pattern lit **au plus** les 2 premiers mots ; au-dela, les
+    # separateurs (parentheses ouvrantes, backticks, slash) ferment le
+    # token. C'est le pattern d'origine (conservé) -- le predicat ne doit
+    # **pas** traverser les delimiteurs vers des mots eloignes
+    # (anti-regression : '- 1 fichier modifie (`scripts/.../foo.py`, +1/-1)'
+    # matchait 'modifie' puis voyait 'scripts' comme 2eme mot, mais 'scripts'
+    # EST dans la liste ; il faut rester aveugle derriere la parenthese).
+    _WORD_RE = re.compile(
         r"\s+([\wàâäéèêëîïôöùûüçÀÂÄÉÈÊËÎÏÔÖÙÛÜÇ-]+)"
-        r"\s+([\wàâäéèêëîïôöùûüçÀÂÄÉÈÊËÎÏÔÖÙÛÜÇ-]+)",
-        after,
+        r"(?:\s+([\wàâäéèêëîïôöùûüçÀÂÄÉÈÊËÎÏÔÖÙÛÜÇ-]+))?"
     )
-    if mw2:
-        pair = f"{mw2.group(1)} {mw2.group(2)}".lower()
-        if (mw2.group(1).lower() in INCIDENTAL_QUALIFIERS
-                or pair in INCIDENTAL_QUALIFIER_PAIRS):
+    mw = _WORD_RE.match(after)
+    if not mw:
+        return False
+    first_nfd = _strip_accents(mw.group(1)).lower()
+    if first_nfd in _INCIDENTAL_QUALIFIERS_NFD:
+        return True
+    if mw.group(2):
+        # Paire exacte (close-list, formes specifiques type 'audio generes').
+        pair_nfd = f"{first_nfd} {_strip_accents(mw.group(2)).lower()}"
+        if pair_nfd in _INCIDENTAL_QUALIFIER_PAIRS_NFD:
+            return True
+        # #13471 Résidu 2 : 2 mots en OR. Le 2eme mot seul est incident
+        # ('puis conformes' -- 'conformes' est dans la liste single-word mais
+        # 'puis' ne l'est pas).
+        second_nfd = _strip_accents(mw.group(2)).lower()
+        if second_nfd in _INCIDENTAL_QUALIFIERS_NFD:
             return True
     return False
 

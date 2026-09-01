@@ -302,6 +302,12 @@ Les **prochaines étapes** recommandées après ce parcours : explorer les **ép
 
 ## Annexes
 
+### Guides, outillage et validation
+
+- [`tutorials/`](tutorials/README.md) — guides pratiques approfondis (DALL-E 3, GPT-5 image, écosystème OpenRouter, workflows éducatifs) : la vue d'ensemble réutilisable là où les notebooks démontrent pas à pas.
+- [`shared/helpers/`](shared/helpers/README.md) — bibliothèque partagée Python de la série (clients services GenAI, helpers audio/vidéo, tests).
+- [`_research/e2e_quant_validation.ipynb`](_research/e2e_quant_validation.ipynb) — validation bout-en-bout des services quantifiés post-migration (Z-Image vLLM GGUF Q4_KM, Qwen Image Edit Nunchaku INT4, Wan 2.1 T2V) : health check, latence de génération, VRAM GPU. Artefact de référence de la stack, complémentaire à `python scripts/genai-stack/genai.py validate --full`.
+
 ### Démarrage rapide
 
 #### 1. Configuration

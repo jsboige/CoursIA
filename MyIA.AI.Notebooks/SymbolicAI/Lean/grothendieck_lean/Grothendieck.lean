@@ -55,6 +55,8 @@ import Grothendieck.SheafBasics
 import Grothendieck.SheafCohomology.Basic
 import Grothendieck.SheafCohomology.Cech
 import Grothendieck.SheafCohomology.MayerVietoris
+import Grothendieck.SheafCondition
+import Grothendieck.SheafCondition_en
 import Grothendieck.SheafHom
 import Grothendieck.Sheafification
 import Grothendieck.SieveGenerate

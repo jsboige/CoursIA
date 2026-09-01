@@ -38,6 +38,9 @@ import json
 import re
 import subprocess
 import sys
+from typing import Any
+
+from gh_payload_cache import PayloadCache, cache_key
 
 REPO = "jsboige/CoursIA"
 
@@ -156,7 +159,15 @@ def family_of(path: str) -> str:
     return "/".join(parts[:2]) if len(parts) >= 2 else path
 
 
-def fetch_merged(days: int, now: dt.datetime | None = None) -> tuple[list[dict], str | None]:
+def fetch_merged(
+    days: int,
+    now: dt.datetime | None = None,
+    *,
+    cache: PayloadCache | None = None,
+    cache_mode: str = "off",
+    cache_status: dict[str, dict[str, Any]] | None = None,
+    cache_ttl_seconds: float = 60 * 60,
+) -> tuple[list[dict], str | None]:
     """PRs mergees sur la fenetre, avec leurs fichiers.
 
     Le filtre de date est **serveur** (`--search "merged:>=..."`). `gh pr list
@@ -168,17 +179,54 @@ def fetch_merged(days: int, now: dt.datetime | None = None) -> tuple[list[dict],
     """
     now = now or dt.datetime.now(dt.timezone.utc)
     stamp = (now - dt.timedelta(days=days)).strftime("%Y-%m-%dT%H:%M:%S+00:00")
-    try:
+    command = [
+        "gh", "pr", "list", "--repo", REPO, "--state", "merged",
+        "--limit", "400", "--search", "merged:>=" + stamp,
+        "--json", "number,title,body,files,mergedAt",
+    ]
+    identity = [
+        "gh", "pr", "list", "--repo", REPO, "--state", "merged",
+        "--limit", "400", "--window-days", str(days),
+        "--json", "number,title,body,files,mergedAt",
+    ]
+
+    def fetch_raw() -> list[dict]:
         raw = subprocess.run(
-            [
-                "gh", "pr", "list", "--repo", REPO, "--state", "merged",
-                "--limit", "400", "--search", "merged:>=" + stamp,
-                "--json", "number,title,body,files,mergedAt",
-            ],
+            command,
             capture_output=True, text=True, encoding="utf-8", errors="replace",
             check=True, timeout=300,
         ).stdout
-        return json.loads(raw), None
+        return json.loads(raw)
+
+    try:
+        cache_err = None
+        cache_read_status = None
+        if cache is None:
+            prs = fetch_raw()
+        else:
+            result = cache.get_or_fetch(
+                cache_key(REPO, "series", identity),
+                cache_ttl_seconds,
+                fetch_raw,
+                mode=cache_mode,
+            )
+            prs = result.payload
+            cache_read_status = result.status
+            if cache_status is not None:
+                cache_status["series"] = result.as_dict()
+            if result.status == "stale":
+                cache_err = "cache stale apres echec du refresh: {}".format(
+                    result.error or "erreur inconnue"
+                )
+        if cache_read_status in {"hit", "stale"}:
+            prs = [
+                pr for pr in prs
+                if pr.get("mergedAt")
+                and dt.datetime.fromisoformat(
+                    pr["mergedAt"].replace("Z", "+00:00")
+                ) >= now - dt.timedelta(days=days)
+            ]
+        return prs, cache_err
     except (subprocess.CalledProcessError, json.JSONDecodeError,
             subprocess.TimeoutExpired, OSError) as exc:
         return [], "{}: {}".format(type(exc).__name__, exc)
@@ -278,6 +326,11 @@ def saturation(prs: list[dict]) -> tuple[dict[str, dict], dict[int, str]]:
 
 def fetch_series_visits(
     days: int = DEFAULT_WINDOW_DAYS,
+    *,
+    cache: PayloadCache | None = None,
+    cache_mode: str = "off",
+    cache_status: dict[str, dict[str, Any]] | None = None,
+    cache_ttl_seconds: float = 60 * 60,
 ) -> tuple[dict[str, dict], dict[int, str], str | None]:
     """``(zones, issue_to_family, erreur)``.
 
@@ -285,11 +338,17 @@ def fetch_series_visits(
     l'appelant doit dire que la saturation n'a pas ete MESUREE, jamais laisser
     un zero d'absence de mesure se lire comme un zero de saturation.
     """
-    prs, err = fetch_merged(days)
-    if err:
+    prs, err = fetch_merged(
+        days,
+        cache=cache,
+        cache_mode=cache_mode,
+        cache_status=cache_status,
+        cache_ttl_seconds=cache_ttl_seconds,
+    )
+    if err and not prs:
         return {}, {}, err
     zones, i2f = saturation(prs)
-    return zones, i2f, None
+    return zones, i2f, err
 
 
 # --- Polarite d'un grain : EXPANSION vs CONSOLIDATION ---------------------
