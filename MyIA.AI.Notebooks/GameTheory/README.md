@@ -4,9 +4,9 @@
 
 <!-- CATALOG-STATUS
 series: GameTheory
-pedagogical_count: 89
-breakdown: root=82, SocialChoice=7
-maturity: BETA=84, ALPHA=3, DRAFT=2
+pedagogical_count: 91
+breakdown: root=83, SocialChoice=8
+maturity: BETA=86, ALPHA=3, DRAFT=2
 -->
 
 La théorie des jeux est le langage mathématique de la stratégie. Elle modélise les situations où des agents rationnels prennent des décisions dont le résultat dépend des choix des autres : enchères, négociations commerciales, élections, poker, guerre commerciale, allocation de ressources. Cette dualité entre coopération et compétition est omniprésente en économie, en sciences politiques et en informatique (mécanismes de vote, smart contracts, réseaux). Le prix Nobel d'économie a été décerné à des théoriciens des jeux à sept reprises entre 1994 et 2020 — c'est un domaine vivant et influent.
@@ -237,7 +237,7 @@ flowchart TD
 | 6b | [GameTheory-06b-Lean-RepeatedGames](GameTheory-06b-Lean-RepeatedGames.ipynb) | Lean (lecture) | Compagnon **lake** du 6c : les 7 modules noirs de `game_theory_lean` dévoilés par extraction réelle — Stage (PD forcé par le type), Discounting (seuil $\delta^*$ `coop_ge_deviate_iff`), **`grim_trigger_sustains_iff` 0 sorry #4880**, Folk STRETCH (1 sorry assumé, bord réparé), ConeKernel Bondareva-Farkas, infra SocialChoice ; re-mesure visibilité noirs 7→0 (See #11703) | 35 min |
 | 6c | [GameTheory-06c-RepeatedGames-FolkTheorem](GameTheory-06c-RepeatedGames-FolkTheorem.ipynb) | Python | Compagnon **formel** de GT-6 : horizon fini (effondrement par induction arrière), horizon infini, grim trigger, condition $\delta \geq (T-R)/(T-P)$, Folk Theorem (tout paiement IR faisable est SPNE pour $\delta$ assez proche de 1) | 45 min |
 | 6c (C#) | [GameTheory-06c-RepeatedGames-FolkTheorem-Csharp](GameTheory-06c-RepeatedGames-FolkTheorem-Csharp.ipynb) | .NET (C#) | Twin C# du 6c : **grim trigger + tit-for-tat + Folk Theorem from-scratch** (BCL .NET 9, 0 NuGet), série géométrique $\sum \delta^t g = g/(1-\delta)$, condition de crédibilité $\delta^* = (T-R)/(T-P) = 0.5$, comparaison des seuils grim vs TFT ($2/3$), ensemble faisable & IR en ASCII — parité bit-par-bit avec le Python (See #4956) | 45 min |
-| 6d | [GameTheory-06d-Sympathie-vs-Engagement](GameTheory-06d-Sympathie-vs-Engagement.ipynb) | Python | Protocole d'identification du résidu de GT-06c §7d : **statique comparative** sur les gains d'AUTRUI à gains propres byte-identiques (vérifié en code) — pente du taux de coopération ± IC (5 graines), `alpha` estimé **depuis la pente** par MLE (IC profil), contrôles négatifs (sympathie pure rend son alpha / engagement pur rend pente nulle), verdict « non identifié à ce bruit » admis (See #13042) | 35 min |
+| 6d | [GameTheory-06d-Sympathie-vs-Engagement](GameTheory-06d-Sympathie-vs-Engagement.ipynb) | Python | Protocole consolidé d'identification du résidu de GT-06c §7d : statique comparative sur les gains d'autrui à gains propres gelés — pente ± IC, `alpha` par MLE profilée, contrôle IRLS + bootstrap sur graines, engagement pur et bruité à 95 %, cellule discriminante, verdict « non identifié » et trois exercices avec variantes de puissance (See #13042, #13737) | 45 min |
 
 ### Partie 2 : Jeux dynamiques et raisonnement stratégique (Notebooks 7-12)
 
@@ -854,7 +854,7 @@ GameTheory/
 ├── GameTheory-06b-Lean-RepeatedGames.ipynb          # Compagnon lean (lecture) du 6c — lake game_theory_lean dévoilé, visibilité #11703
 ├── GameTheory-06c-RepeatedGames-FolkTheorem.ipynb
 ├── GameTheory-06c-RepeatedGames-FolkTheorem-Csharp.ipynb  #   Jumeau C# — grim trigger/TFT/Folk Theorem from-scratch (parité #4956)
-├── GameTheory-06d-Sympathie-vs-Engagement.ipynb    #   Protocole d'identification du résidu 6c §7d : statique comparative sur les gains d'autrui (pente, alpha mesuré, contrôles négatifs) #13042
+├── GameTheory-06d-Sympathie-vs-Engagement.ipynb    #   Protocole consolidé : MLE + IRLS/bootstrap, engagement pur/bruité, exercices de puissance #13042 #13737
 ├── GameTheory-08c-CombinatorialGames-Python.ipynb
 ├── GameTheory-08c-CombinatorialGames-Csharp.ipynb   #   Jumeau C# — Wythoff/Chomp/périodicité Grundy from-scratch (parité #4956)
 ├── GameTheory-15c-CooperativeGames-Python.ipynb

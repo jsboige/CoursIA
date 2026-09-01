@@ -133,8 +133,20 @@ def _strip_title_hashes(flat: str) -> str:
 # variation-tag-malformed + variation-tag-genre-offlist. It accepts
 # `Grain:`, `Grain `, `Grain\\n\\n`, `Grain :` (space then colon). TIER is the
 # alphabetic word before `/`; GENRE is the token after (letters, digits, _,-).
+#
+# #13633 -- the literal `Grain` is CASE-SENSITIVE (no re.IGNORECASE). A
+# lowercase `grain` in running prose ("est le grain MED/tooling suivant")
+# is a noun, not a key: `re.IGNORECASE` let the phrase arm the extractor and
+# `parse_grain` produced a confident {tier, lane} for a body with NO Grain tag
+# -- the `false` cap verdict (instead of the #9465 `null` "not evaluated")
+# on #13550, whose prose merely DESCRIBED *another* PR's next grain. The 5
+# tolerated forms all capitalise the key (§1 `Grain: T/G` / `**Grain:**` /
+# `## Grain` title), so requiring `Grain` leaves them intact while refusing a
+# bare lowercase token in prose. TIER/GENRE stay case-tolerant via the
+# character classes (`[A-Za-z]`, `[A-Za-z0-9_-]`) -- `light/GUARD` still
+# normalises to LIGHT/guard.
 _GRAIN_FULL_RE = re.compile(
-    r"Grain[:\s]+([A-Za-z]+)\s*/\s*([A-Za-z0-9_-]+)", re.IGNORECASE
+    r"Grain[:\s]+([A-Za-z]+)\s*/\s*([A-Za-z0-9_-]+)"
 )
 
 # `lane` (case-insensitive), optional whitespace, optional colon, whitespace,

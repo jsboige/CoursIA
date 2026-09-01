@@ -838,6 +838,22 @@ class TacticTools:
         # whether the existing stagnation guards cover the new invariant surface.
         self._consecutive_compile_fail: int = 0
         self._fail_streak_threshold: int = 12
+        # #1453 forensic (cycle-99, c.5496938996 findings P2/P3): error-signature
+        # stagnation. The verbatim loop detector keys (tool, args-hash) — different
+        # edit arguments produce different hashes, so it NEVER fires while the
+        # underlying compile error is constant (Voting L338: 6 different edits,
+        # same "1 errors. Reverted." result). The P4 fail-streak compensates on
+        # the pure treadmill but resets on ANY successful build — alternating
+        # [fail x N -> one delta0 compile success] never reaches cap 12 (zai
+        # trace: 14 fails reset by a single delta0 success). Keying on the
+        # normalized error SIGNATURE closes both gaps at once: >= threshold
+        # consecutive fails carrying the SAME (line, message-prefix) signature
+        # is a loop regardless of which edit produced it or what compiled in
+        # between — the streak resets ONLY on signature change, never on build
+        # success.
+        self._last_error_signature: Optional[tuple] = None
+        self._same_error_signature_streak: int = 0
+        self._error_signature_threshold: int = 3
         self._original_file_size: int = 0
         self._original_content: Optional[str] = None
         # Decomposition budget: how many new sorries the agents may introduce
@@ -1323,6 +1339,62 @@ class TacticTools:
         if self._state is not None:
             self._state.consecutive_compile_fail = self._consecutive_compile_fail
 
+    @staticmethod
+    def _error_signature(errors: list) -> Optional[tuple]:
+        """Normalized identity of a build failure: (line, message-prefix) per error.
+
+        Capped at the first 4 errors and the first 60 chars of each message so
+        cosmetic noise (hint positions, timings) cannot mask a repeat. Returns
+        None for an empty list — no errors, no signature.
+        """
+        if not errors:
+            return None
+        return tuple(
+            (e.get("line"), str(e.get("message", ""))[:60]) for e in errors[:4]
+        )
+
+    def _bump_error_signature_streak(self, errors: list) -> int:
+        """Track consecutive build fails carrying the same normalized signature.
+
+        Resets to 1 ONLY when the signature changes — deliberately NOT on build
+        success: the P2 evasion ([fail x N -> delta0 success] alternating) must
+        keep the streak alive, because the same error coming back after an
+        interleaved success is still the same loop (forensic c.5496938996).
+        """
+        sig = self._error_signature(errors)
+        if sig is None:
+            return self._same_error_signature_streak
+        if sig == self._last_error_signature:
+            self._same_error_signature_streak += 1
+        else:
+            self._last_error_signature = sig
+            self._same_error_signature_streak = 1
+        return self._same_error_signature_streak
+
+    def _error_signature_loop_error(self, errors: list) -> Optional[Dict]:
+        """LOOP_DETECTED error dict once the same signature repeats >= threshold.
+
+        Mirrors the BUILD_FAIL_STORM wording: a hard error directing the agent
+        to stop editing this target and change strategy, since distinct edits
+        keep hitting the same compile error.
+        """
+        if not errors or self._same_error_signature_streak < self._error_signature_threshold:
+            return None
+        first = errors[0]
+        return {
+            "error": (
+                f"LOOP_DETECTED: {self._same_error_signature_streak} consecutive "
+                f"build failures with the SAME compile error signature "
+                f"(line {first.get('line')}: {str(first.get('message', ''))[:60]}). "
+                f"Different edits keep hitting this same error — editing further "
+                f"is the same pathology. CHANGE STRATEGY: decompose elsewhere, "
+                f"use an alternative lemma, or submit your best tactic and yield."
+            ),
+            "reverted": True,
+            "errors": errors[:8],
+            "loop_detected": True,
+        }
+
     def _build_fail_storm_guard(self, tool_name: str) -> Optional[str]:
         """Intra-turn entry-guard: stop editing once the fail streak hits the cap.
 
@@ -1494,6 +1566,24 @@ class TacticTools:
         # that fired 14x invisibly on Voting L338. Bump the streak so the
         # workflow / intra-turn guards can finally see a build_check fail storm.
         self._bump_compile_fail()
+        # #1453 forensic (cycle-99, c.5496938996): same normalized error signature
+        # >= 3x is a loop the args-keyed detector cannot see (P3) and that the
+        # P4 streak loses to the delta0-success reset (P2). Fire BEFORE the agent
+        # burns another edit+build+chat cycle on the same error. The revert above
+        # already restored the file, so returning here keeps the same contract as
+        # the generic BUILD FAILED below.
+        self._bump_error_signature_streak(errors)
+        loop_sig_err = self._error_signature_loop_error(errors)
+        if loop_sig_err is not None:
+            if self._trace:
+                self._trace.log(
+                    agent="TacticTools", role="error_signature_loop",
+                    content=(f"LOOP_DETECTED: same compile error signature "
+                             f"{self._same_error_signature_streak}x after {operation}."),
+                    duration_s=0.01,
+                    tool_result=raw_output[:300],
+                )
+            return loop_sig_err
 
         if self._trace:
             self._trace.log(

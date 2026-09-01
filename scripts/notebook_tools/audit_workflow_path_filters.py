@@ -46,8 +46,12 @@ REQUIRED_UNFILTERED_WORKFLOWS: set[str] = {
     # porte leurs organes metadata + le moteur fast-lane.
     "always-on-guards.yml",
     "translation-guard.yml",
-    # Les quatre gardes fusionnes ci-dessus sont DORMANTS depuis #13384
-    # (declencheurs pull_request retires, jobs conserves en reference) :
+    # #14057 (Vague 2 tranche 1) : fusion des trois gardes metadata always-on
+    # (base-not-main-advisory, stale-base-warning, concurrency-conj-guard --
+    # tous dormant) en une seule umbrella non filtree qui porte leurs organes.
+    "always-on-metadata-guards.yml",
+    # Les workflows fusionnes ci-dessus sont DORMANTS (#13384, #14057 :
+    # declencheurs pull_request retires, jobs conserves en reference) :
     # retires de cette liste, ils ne declenchent plus sur les PR.
     # catalog-pr-guard.yml retire par #11012 : le workflow n'a jamais tourne sur
     # une PR (0 run pull_request), c'est catalog-drift.yml qui tient la ligne.
@@ -57,7 +61,6 @@ REQUIRED_UNFILTERED_WORKFLOWS: set[str] = {
     "regression-guard.yml",
     # Advisories bon marche
     "repo-size-advisory.yml",
-    "stale-base-warning.yml",
 }
 
 
