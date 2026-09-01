@@ -51,8 +51,8 @@ ni les contraintes supplémentaires d'App-27.
 Projet 35957711. Téléverser `main.py`, compiler, puis lancer les deux backtests (même compile,
 seul le paramètre change) :
 
-- `sparse-K6-8-10-2015-2026-5bps` — paramètres `{"mode": "sparse", "fee_bps": "5"}`
-- `full-baseline-40assets-2015-2026-5bps` — paramètres `{"mode": "full", "fee_bps": "5"}`
+- `sparse-K6-8-10-2015-2026-5bps-v3` — paramètres `{"mode": "sparse", "fee_bps": "5"}`
+- `full-baseline-40assets-2015-2026-5bps-v3` — paramètres `{"mode": "full", "fee_bps": "5"}`
 
 Période codée en dur : **2015-01-01 → 2026-08-31** (fenêtre figée, reproductible).
 
@@ -63,13 +63,14 @@ walk-forward, trois exercices, comparaison des métriques actives (RMSE, biais, 
 
 ## Métriques de backtest (QC Cloud, 2026-09-01)
 
-Compile `f568fa02c28f86891b09ba483c3dc910-6ac3548de888050a391bd35be5ec2013` (`BuildSuccess`),
-mêmes dates 2015-01-01 → 2026-08-31, mêmes frais 5 bps — seule change la contrainte de cardinalité :
+Compile post-fix `f0bae9eb9f6c939282d0a5bee3550c17-a949cff13b22a93502bd62ec59ac0e0a`
+(`BuildSuccess`, 0 erreur), mêmes dates 2015-01-01 → 2026-08-31, mêmes frais 5 bps —
+seule change la contrainte de cardinalité :
 
 | Indicateur | Sparse (K ∈ {6, 8, 10}) | Full (40 actifs) |
 |---|---|---|
-| Backtest | `sparse-K6-8-10-2015-2026-5bps` | `full-baseline-40assets-2015-2026-5bps` |
-| backtestId | `fb7a8440495b581fed37d6f4cdc4db7d` | `dfdd6fb8a42afb557157e195f70a3941` |
+| Backtest | `sparse-K6-8-10-2015-2026-5bps-v3` | `full-baseline-40assets-2015-2026-5bps-v3` |
+| backtestId | `a9bb668b764d55155f6a074f84627757` | `8e647c58edff52af9836b25b80ff433d` |
 | Ordres | **703** | 1414 |
 | Ratio de Sharpe | 0.611 | **0.698** |
 | CAGR | 17.003 % | **17.258 %** |
