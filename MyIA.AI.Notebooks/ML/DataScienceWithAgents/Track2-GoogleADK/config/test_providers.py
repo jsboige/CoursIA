@@ -40,6 +40,7 @@ ALL_PROVIDERS = [
     ProviderType.GEMINI,
     ProviderType.OPENAI,
     ProviderType.OPENROUTER,
+    ProviderType.QWEN,
     ProviderType.VLLM,
     ProviderType.LMSTUDIO,
 ]
@@ -50,12 +51,13 @@ ALL_PROVIDERS = [
 # --------------------------------------------------------------------------
 
 
-def test_provider_type_has_five_supported_providers():
+def test_provider_type_has_six_supported_providers():
     members = {m.name for m in ProviderType}
     assert members == {
         "GEMINI",
         "OPENAI",
         "OPENROUTER",
+        "QWEN",
         "VLLM",
         "LMSTUDIO",
     }
@@ -73,11 +75,13 @@ def test_provider_type_string_values_are_lowercase_identifiers():
 # --------------------------------------------------------------------------
 
 
-def test_get_defaults_returns_model_and_base_url_for_every_provider():
+def test_get_defaults_returns_model_and_base_url_key_for_every_provider():
     for provider in ALL_PROVIDERS:
         d = ProviderConfig.get_defaults(provider)
         assert "model" in d and isinstance(d["model"], str) and d["model"]
-        assert "base_url" in d and isinstance(d["base_url"], str) and d["base_url"]
+        assert "base_url" in d
+        if provider != ProviderType.QWEN:
+            assert isinstance(d["base_url"], str) and d["base_url"]
 
 
 def test_get_defaults_returns_empty_dict_for_unknown_provider():
@@ -128,13 +132,16 @@ def test_settings_active_provider_is_case_insensitive_in_routing():
 # --------------------------------------------------------------------------
 
 
-@pytest.mark.parametrize("provider_str", ["gemini", "openai", "openrouter", "vllm", "lmstudio"])
+@pytest.mark.parametrize(
+    "provider_str",
+    ["gemini", "openai", "openrouter", "vllm", "lmstudio"],
+)
 def test_get_provider_config_routes_to_correct_provider(provider_str):
     s = Settings(active_provider=provider_str)
     cfg = providers.get_provider_config(s)
     assert cfg.provider == ProviderType(provider_str)
     assert cfg.model  # never empty
-    assert cfg.base_url  # never empty for any provider
+    assert cfg.base_url  # never empty for configured providers
 
 
 def test_get_provider_config_gemini_uses_defaults_base_url():
@@ -158,6 +165,43 @@ def test_get_provider_config_lmstudio_never_sets_api_key():
     cfg = providers.get_provider_config(s)
     assert cfg.api_key is None
     assert cfg.base_url == "http://localhost:1234/v1"
+
+
+def test_get_provider_config_qwen_uses_cloud_names_and_budget():
+    s = Settings(
+        active_provider="qwen",
+        qwen_api_key="configured-test-key",
+        qwen_openai_base_url="https://qwen.example.test/v1",
+    )
+    cfg = providers.get_provider_config(s)
+    assert cfg.provider == ProviderType.QWEN
+    assert cfg.model == "qwen3.6-flash"
+    assert cfg.api_key == "configured-test-key"
+    assert cfg.base_url == "https://qwen.example.test/v1"
+    assert cfg.max_tokens == 512
+
+
+def test_get_provider_config_qwen_rejects_missing_cloud_credentials():
+    s = Settings(
+        active_provider="qwen",
+        qwen_api_key=None,
+        qwen_openai_base_url=None,
+    )
+    with pytest.raises(
+        ValueError,
+        match="QWEN_API_KEY, QWEN_OPENAI_BASE_URL",
+    ):
+        providers.get_provider_config(s)
+
+
+def test_get_provider_config_qwen_enforces_thinking_budget_floor():
+    s = Settings(
+        active_provider="qwen",
+        qwen_api_key="configured-test-key",
+        qwen_openai_base_url="https://qwen.example.test/v1",
+        qwen_max_tokens=32,
+    )
+    assert providers.get_provider_config(s).max_tokens == 256
 
 
 def test_get_provider_config_vllm_base_url_defaults_to_localhost():
@@ -192,6 +236,7 @@ def test_get_litellm_model_openrouter_prefix():
 
 @pytest.mark.parametrize("provider,model,prefix", [
     (ProviderType.OPENAI, "gpt-4o", "openai"),
+    (ProviderType.QWEN, "qwen3.6-flash", "openai"),       # Qwen Cloud uses OpenAI API
     (ProviderType.VLLM, "qwen3.6-35b-a3b", "openai"),      # vLLM uses OpenAI API
     (ProviderType.LMSTUDIO, "local-model", "openai"),       # LM Studio uses OpenAI API
 ])
