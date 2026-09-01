@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Recensement des PRs \`.ipynb\` markdown-only sur une fenetre N jours.
+r"""Recensement des PRs `.ipynb` markdown-only sur une fenetre N jours.
 
 G-VAR-2 / anti-blanchiment de genre (#10290) : mesurer la proportion de PRs
-qui touchent **uniquement** des \`.ipynb\` **avec zero cellule \`code\` modifiee**,
+qui touchent **uniquement** des `.ipynb` **avec zero cellule `code` modifiee**,
 croise avec le genre declare (\`Grain:\` tag dans le body) et la famille du
 path.
 
@@ -144,13 +144,13 @@ def only_notebook(paths: list[str]) -> bool:
 
 
 def zero_code_modif(pr: dict[str, Any]) -> bool:
-    """True iff NO `.ipynb` cell `code` was modified in the diff.
+    r"""True iff NO `.ipynb` cell `code` was modified in the diff.
 
     We use the file-level additions/deletions as a conservative proxy: a file
     with non-zero net additions and zero deletions probably had source change.
     BUT a cell-order-gate-style execution count bump could shift numbers without
     touching code. Better proxy: requires fetching the raw patch and counting
-    \`+ \"source\":\` lines per code cell.
+    `+ "source":` lines per code cell.
 
     For the census MVP, we use a stricter heuristic: ZERO deletions on any
     `.ipynb` AND additions <= EXEC_COUNT_BUMP_THRESHOLD (15 cells) — this

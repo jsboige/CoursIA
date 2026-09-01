@@ -235,7 +235,7 @@ def test_polarity_bracket_tag_does_not_regress_consolidation():
 
 
 def test_polarity_bracket_tag_does_not_match_neutral():
-    """Sanity guard -- un titre neutre sans aucune paire ne doit pas matcher.
+    r"""Sanity guard -- un titre neutre sans aucune paire ne doit pas matcher.
 
     Si le pattern etait trop large (ex. `[\d+\s*/\s*\d+]`), il mangerait
     `4/9` isoles. Le pattern exige un tag texte (non-vide) avant le ratio.

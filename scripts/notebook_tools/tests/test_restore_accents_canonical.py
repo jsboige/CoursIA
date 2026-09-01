@@ -468,7 +468,7 @@ class TestMarkdownCli:
 # 7. faux negatif listes-seules + zone grise FR/EN (delta po-2024 sur #11548)
 # ---------------------------------------------------------------------------
 class TestListOnlySegmentNotFrontmatter:
-    """_YAML_CONT_RE matche aussi les items de liste (`^\s*-\s`) : un segment
+    r"""_YAML_CONT_RE matche aussi les items de liste (`^\s*-\s`) : un segment
     fait uniquement de puces satisfaisait "toutes lignes = cles ou continuations"
     et etait protege comme frontmatter -> 0 cure silencieuse. Un frontmatter
     Slidev reel commence TOUJOURS par une cle : la premiere ligne non vide doit
