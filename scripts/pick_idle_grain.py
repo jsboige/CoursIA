@@ -243,7 +243,24 @@ GENRE_RULES: list[tuple[str, str]] = [
 NOW = dt.datetime.now(dt.timezone.utc)
 
 
-def infer_genre(title: str, labels: list[str]) -> str:
+def infer_genre(title: str, labels: list[str], body: str | None = None) -> str:
+    """Infer the GENRE of an issue from signals.
+
+    Priority order (#13972 acceptance point 1):
+      1. `Grain: <TIER>/<GENRE>` tag in the body, IF parseable. The tag is
+         authoritative (cf variation-protocol.md §1: « Le GENRE est le TYPE
+         DE TRAVAIL, jamais la famille ou vivent les fichiers »). Without
+         this, #10475 happens: body carries `Grain: MED/docs` in its first
+         line, but the title contains "notebook" -- the regex below would
+         infer `notebook-python` and the picker would propose it under a
+         secheresse-CONTENU restriction, defeating the guard.
+      2. Title + labels heuristic (GENRE_RULES, ordre important).
+      3. Fallback `docs` (the historically-safer META default).
+    """
+    if body:
+        tag = parse_grain_tag(body)
+        if tag and tag.get("genre"):
+            return tag["genre"]
     hay = (title + " " + " ".join(labels)).lower()
     for pattern, genre in GENRE_RULES:
         if re.search(pattern, hay):
@@ -310,7 +327,7 @@ def fetch_pool() -> list[dict]:
             "age": age_days(it["createdAt"]),
             "idle": age_days(it["updatedAt"]),
             "updated_at": it["updatedAt"],
-            "genre": infer_genre(title, labels),
+            "genre": infer_genre(title, labels, it.get("body") or ""),
             "body": it.get("body") or "",
             "parent": parent_issue(it.get("body") or ""),
             "polarity": polarity(title, it.get("body") or ""),

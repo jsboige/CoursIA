@@ -427,6 +427,49 @@ def _pr_with_author(n, lane, age_hours, author):
     return pr
 
 
+def test_infer_genre_reads_body_grain_tag_before_title_heuristic_13972():
+    """#13972 acceptance point 1 : si le body porte un tag `Grain: <TIER>/<GENRE>`
+    parseable, il est autoritatif -- le regex sur titre+labels ne doit pas
+    le contredire. Cas concret : #10475 (premiere ligne du body `Grain: MED/docs`)
+    titre `2.11 LASSO - notebook regression notebook-tools ...` -- le regex
+    inferait `notebook-python` (META, jamais du CONTENU), mais le tag Grain
+    dit `docs` (qui EST du CONTENU sous la partition du picker).
+    """
+    body = (
+        "Grain: MED/docs -- lane myia-ai-01:CoursIA\n\n"
+        "## Description\n"
+        "Mon issue avec un titre qui parle de notebook (ne pas se laisser avoir)."
+    )
+    title = "notebook regression sur 2.11 LASSO - notebook-tools harmonisation"
+    labels = ["documentation"]
+    # Le tag Grain MED/docs doit l'emporter sur le regex titre.
+    genre = pig.infer_genre(title, labels, body)
+    assert genre == "docs", (
+        f"le tag Grain du body est autoritatif, attendu 'docs', got {genre!r}. "
+        f"Sans ce contrat, #10475 (et ses semblables) restent classifies "
+        f"META alors que leur auteur a declare CONTENU."
+    )
+
+
+def test_infer_genre_falls_back_to_title_heuristic_when_no_grain_tag():
+    """#13972 controle positif : quand le body ne porte AUCUN tag Grain,
+    le regex sur titre+labels prend le relais (comportement historique).
+    Un titre `notebook Python regression` -> `notebook-python`.
+    """
+    body = (
+        "## Description\n"
+        "Pas de tag Grain ici, juste un titre parlant de notebook."
+    )
+    title = "notebook Python regression Lab3"
+    labels = []
+    genre = pig.infer_genre(title, labels, body)
+    assert genre == "notebook-python", (
+        f"fallback heuristique attendu `notebook-python`, got {genre!r}. "
+        f"Un correctif qui supprime le regex titre sans alternative retrecit "
+        f"dangereusement le vivier."
+    )
+
+
 def test_base_inherited_red_is_not_the_lanes(monkeypatch):
     """#13545 : 11 PRs / 4 lanes accusees pour un seul defaut de main.
 
