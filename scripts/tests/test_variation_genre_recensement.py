@@ -11,6 +11,8 @@ reader on every form the CI guard accepts.
 import os
 import sys
 
+import pytest
+
 # Make scripts/ importable (sibling of tests/), same pattern as test_grain_tag.py
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 

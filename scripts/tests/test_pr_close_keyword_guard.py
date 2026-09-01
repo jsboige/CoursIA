@@ -17,6 +17,8 @@ import json
 import sys
 from pathlib import Path
 
+import pytest
+
 # Make ``scripts/ci`` importable (sibling of ``scripts/tests``).
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "ci"))
 
