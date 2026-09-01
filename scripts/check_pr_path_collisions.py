@@ -551,16 +551,19 @@ def scan_markers(
     return state, failed
 
 
-def post_comment(repo: str, number: int, body: str, dry_run: bool) -> None:
+def post_comment(repo: str, number: int, body: str, dry_run: bool) -> bool:
+    """POST the marker comment on PR ``number``. Returns True iff the write
+    succeeded. A non-zero rc is WARNed, never silently swallowed (#13623).
+    """
     if dry_run:
-        return
+        return True
     with tempfile.NamedTemporaryFile(
         "w", suffix=".md", encoding="utf-8", delete=False
     ) as tf:
         tf.write(body)
         tmp_path = tf.name
     try:
-        subprocess.run(
+        proc = subprocess.run(
             ["gh", "pr", "comment", str(number), "--repo", repo,
              "--body-file", tmp_path],
             capture_output=True, text=True, check=False, encoding="utf-8",
@@ -568,24 +571,34 @@ def post_comment(repo: str, number: int, body: str, dry_run: bool) -> None:
     finally:
         if os.path.exists(tmp_path):
             os.unlink(tmp_path)
+    if proc.returncode != 0:
+        print(
+            f"WARN: write failed for #{number} — rc={proc.returncode}, "
+            f"{(proc.stderr or proc.stdout).strip()[:200]}",
+            file=sys.stderr,
+        )
+        return False
+    return True
 
 
-def edit_comment(repo: str, comment_id: str, body: str, dry_run: bool) -> None:
+def edit_comment(repo: str, number: int, comment_id: str, body: str,
+                 dry_run: bool) -> bool:
     """PATCH the existing marker comment in place (update or retract swap).
 
     ``gh pr comment --edit-last`` is not enough: the marker is not guaranteed
     to be the PR's last comment. The REST id from ``find_marker_entry``
-    addresses the comment directly.
+    addresses the comment directly. Returns True iff the write succeeded; a
+    non-zero rc is WARNed, never silently swallowed (#13623).
     """
     if dry_run:
-        return
+        return True
     with tempfile.NamedTemporaryFile(
         "w", suffix=".json", encoding="utf-8", delete=False
     ) as tf:
         json.dump({"body": body}, tf, ensure_ascii=False)
         tmp_path = tf.name
     try:
-        subprocess.run(
+        proc = subprocess.run(
             ["gh", "api", "--method", "PATCH",
              f"repos/{repo}/issues/comments/{comment_id}",
              "--input", tmp_path],
@@ -594,6 +607,14 @@ def edit_comment(repo: str, comment_id: str, body: str, dry_run: bool) -> None:
     finally:
         if os.path.exists(tmp_path):
             os.unlink(tmp_path)
+    if proc.returncode != 0:
+        print(
+            f"WARN: write failed for #{number} — rc={proc.returncode}, "
+            f"{(proc.stderr or proc.stdout).strip()[:200]}",
+            file=sys.stderr,
+        )
+        return False
+    return True
 
 
 def label_strong_pairs(
@@ -826,18 +847,40 @@ def _cli(argv: list[str] | None = None) -> int:
         ),
         file=sys.stderr,
     )
+    confirmed: dict[str, int] = {}
     for a in plan:
         if a.verb == "none":
             continue
         print(f"  {prefix}{a.verb} #{a.number}", file=sys.stderr)
         if a.verb == "post":
-            post_comment(repo, a.number, a.body, args.dry_run)
+            ok = post_comment(repo, a.number, a.body, args.dry_run)
         else:  # update | retract: both are an in-place PATCH by comment id
-            edit_comment(repo, a.comment_id, a.body, args.dry_run)
+            ok = edit_comment(repo, a.number, a.comment_id, a.body, args.dry_run)
+        if ok:
+            confirmed[a.verb] = confirmed.get(a.verb, 0) + 1
 
     # Label both sides of every strong pair (#13615). In --same-issue-only
     # mode every posted collision is strong; otherwise re-derive the tier.
     label_strong_pairs(repo, result.strong_collisions, args.dry_run)
+
+    if not args.dry_run:
+        print(
+            "writes confirmed: "
+            + " ".join(
+                f"{v}={confirmed.get(v, 0)}" for v in ("post", "update", "retract")
+            ),
+            file=sys.stderr,
+        )
+        attempted = sum(counts.get(v, 0) for v in ("post", "update", "retract"))
+        ok_count = sum(confirmed.get(v, 0) for v in ("post", "update", "retract"))
+        failures = attempted - ok_count
+        if failures:
+            print(
+                "advisory: "
+                f"{failures} write(s) failed -- planned {attempted}, "
+                f"confirmed {ok_count}",
+                file=sys.stderr,
+            )
 
     return 0  # advisory: always green
 

@@ -123,7 +123,7 @@ Suivez le même modèle dans les deux stacks pour comparer les approches :
 | Crowdsourcing | Infer-13 | PyMC-13 | Worker models EP vs MCMC agrégation |
 | Séquences (HMM) | Infer-14 | PyMC-14 | Forward-backward exact (chaîne sans boucle) vs échantillonné |
 | Recommenders | Infer-15 | PyMC-15 | Factorisation bayésienne statique vs MCMC |
-| Debugging | Infer-6 | PyMC-6 | ShowFactorGraph vs trace plot diagnostics |
+| Debugging | Infer-2b | PyMC-6 | ShowFactorGraph vs trace plot diagnostics |
 | Causal Inference | Infer-5 | PyMC-5 | do-calculus message passing vs pm.do MCMC |
 | Modèles hiérarchiques | Infer-12 | PyMC-12 | Pooling partiel, shrinkage EP vs paramétrisation non-centrée NUTS (funnel) |
 
@@ -155,7 +155,7 @@ Pour les étudiants en recherche opérationnelle ou finance :
 
 #### Parcours rapide Python (standalone, ~2h)
 
-Si vous préférez Python au C#, commencez par **PyMC-1-Setup** (introduction standalone en Python, premier modèle Two Coins) puis Pyro_RSA_Hyperbole.ipynb (application à la linguistique pragmatique avec le framework RSA). Infer-101.ipynb est également une introduction standalone, mais en **C#/.NET** (voir la table « Notebooks racine » ci-dessous).
+Si vous préférez Python au C#, commencez par **PyMC-01-Setup** (introduction standalone en Python, premier modèle Two Coins) puis Pyro_RSA_Hyperbole.ipynb (application à la linguistique pragmatique avec le framework RSA). Infer-101.ipynb est également une introduction standalone, mais en **C#/.NET** (voir la table « Notebooks racine » ci-dessous).
 
 #### Parcours PyMC complet (26 notebooks, ~17h)
 
@@ -204,7 +204,7 @@ Deux stacks, un même parcours de 20 modèles : **Infer.NET** (C#, message passi
 |---------|---------------|
 | Juste découvrir la programmation probabiliste | **Infer-101.ipynb** (standalone, 45 min) |
 | Comprendre les graphes de facteurs | **Infer-3** (Monty Hall, Murder Mystery) |
-| Un premier modèle qui marche | **Infer-101** ou **PyMC-1-Setup** |
+| Un premier modèle qui marche | **Infer-101** ou **PyMC-01-Setup** |
 | Application concrète rapide | **Infer-8 TrueSkill** ou **Infer-11 LDA** |
 | Comparer les deux approches | Suivre la table "inférence comparée" ci-dessus |
 | Production data science | **PyMC** (écosystème Python, NUTS, arviz) |
@@ -219,7 +219,7 @@ Probas/
 ├── DoWhy-1-Estimand-et-Intervention.ipynb  # Identification causale : estimand nommé + sensibilité au graphe (Python)
 ├── GeneratedSource/             # Sources Infer.NET compilées (Model0_EP.cs ... Model10_VMP.cs)
 ├── PyMC/                # Port PyMC : bayésien + causal (1-13, dont PyMC-5 causal) + séquences/reco/GP (14-16) + frontières (17-19)
-│   ├── PyMC-1-Setup.ipynb ... PyMC-19-Survival-Analysis.ipynb
+│   ├── PyMC-01-Setup.ipynb ... PyMC-19-Survival-Analysis.ipynb
 │   └── README.md                # Documentation détaillée de la série PyMC
 ├── decision_theory_lean/        # Projet Lake (racine série) : escompte géométrique + théorème de Gittins ; héberge les preuves VNM et Coherence/Dutch Book
 ├── Infer/                       # Corpus bayésien Infer.NET (19 notebooks)
@@ -338,24 +338,24 @@ Port Python des modèles Infer.NET, utilisant l'échantillonnage MCMC (NUTS) au 
 
 | # | Notebook | Sujet |
 |---|----------|-------|
-| 1 | [PyMC-1-Setup](PyMC/PyMC-1-Setup.ipynb) | Configuration PyMC, modèle Beta-Bernoulli, diagnostic de convergence (r_hat, ESS, divergences) |
-| 2 | [PyMC-2-Gaussian-Mixtures](PyMC/PyMC-2-Gaussian-Mixtures.ipynb) | Distributions continues, mélanges gaussiens |
-| 3 | [PyMC-3-Factor-Graphs](PyMC/PyMC-3-Factor-Graphs.ipynb) | Graphes de facteurs, inférence discrète |
+| 1 | [PyMC-01-Setup](PyMC/PyMC-01-Setup.ipynb) | Configuration PyMC, modèle Beta-Bernoulli, diagnostic de convergence (r_hat, ESS, divergences) |
+| 2 | [PyMC-02-Gaussian-Mixtures](PyMC/PyMC-02-Gaussian-Mixtures.ipynb) | Distributions continues, mélanges gaussiens |
+| 3 | [PyMC-03-Factor-Graphs](PyMC/PyMC-03-Factor-Graphs.ipynb) | Graphes de facteurs, inférence discrète |
 
 ### Phase 2 — Modèles classiques (notebooks 4-13, ~9h)
 
 | # | Notebook | Sujet |
 |---|----------|-------|
-| 4 | [PyMC-4-Bayesian-Networks](PyMC/PyMC-4-Bayesian-Networks.ipynb) | Réseaux bayésiens, CPTs |
-| 5 | [PyMC-7-Skills-IRT](PyMC/PyMC-7-Skills-IRT.ipynb) | Item Response Theory, modèles de compétences |
-| 6 | [PyMC-8-TrueSkill](PyMC/PyMC-8-TrueSkill.ipynb) | Classement, TrueSkill |
-| 7 | [PyMC-9-Classification](PyMC/PyMC-9-Classification.ipynb) | Classification bayésienne, calibration mesurée |
+| 4 | [PyMC-04-Bayesian-Networks](PyMC/PyMC-04-Bayesian-Networks.ipynb) | Réseaux bayésiens, CPTs |
+| 5 | [PyMC-07-Skills-IRT](PyMC/PyMC-07-Skills-IRT.ipynb) | Item Response Theory, modèles de compétences |
+| 6 | [PyMC-08-TrueSkill](PyMC/PyMC-08-TrueSkill.ipynb) | Classement, TrueSkill |
+| 7 | [PyMC-09-Classification](PyMC/PyMC-09-Classification.ipynb) | Classification bayésienne, calibration mesurée |
 | 8 | [PyMC-10-Model-Selection](PyMC/PyMC-10-Model-Selection.ipynb) | Sélection de modèles, Bayes Factors |
 | 9 | [PyMC-11-Topic-Models](PyMC/PyMC-11-Topic-Models.ipynb) | LDA, Dirichlet priors |
 | 10 | [PyMC-13-Crowdsourcing](PyMC/PyMC-13-Crowdsourcing.ipynb) | Agrégation de labels, workers, communautés |
 | 11 | [PyMC-14-Sequences](PyMC/PyMC-14-Sequences.ipynb) | HMM, chaînes de Markov cachées, séquences temporelles |
 | 12 | [PyMC-15-Recommenders](PyMC/PyMC-15-Recommenders.ipynb) | Systèmes de recommandation bayésiens, factorisation |
-| 13 | [PyMC-6-Debugging](PyMC/PyMC-6-Debugging.ipynb) | Troubleshooting MCMC, diagnostics NUTS, bonnes pratiques |
+| 13 | [PyMC-06-Debugging](PyMC/PyMC-06-Debugging.ipynb) | Troubleshooting MCMC, diagnostics NUTS, bonnes pratiques |
 
 ### Phase 3 — Théorie de la décision (sous-série DecisionTheory/PyMC/, ~6h)
 
@@ -375,7 +375,7 @@ Port Python des modèles Infer.NET, utilisant l'échantillonnage MCMC (NUTS) au 
 
 | # | Notebook | Sujet |
 |---|----------|-------|
-| 14 | [PyMC-5-Causal-Inference](PyMC/PyMC-5-Causal-Inference.ipynb) | do-calculus de Pearl, `pm.do`, backdoor/front-door, paradoxe de Simpson, contrefactuel |
+| 14 | [PyMC-05-Causal-Inference](PyMC/PyMC-05-Causal-Inference.ipynb) | do-calculus de Pearl, `pm.do`, backdoor/front-door, paradoxe de Simpson, contrefactuel |
 
 ### Phase 5 — Frontières bayésiennes (notebooks 15-19, ~3.5h)
 
@@ -397,7 +397,7 @@ La causalité est traitée à **quatre endroits** du dépôt, chacun avec son mo
 |-------|--------|--------------|
 | [Tweety-11-Causal](../SymbolicAI/Tweety/Tweety-11-Causal.ipynb) | Tweety (.NET, logique) | modèle causal structurel, opérateur `do`, contrefactuels |
 | [Infer-5-Causal-Inference](Infer/Infer-5-Causal-Inference.ipynb) | Infer.NET (message passing) | backdoor, front-door, paradoxe de Simpson, médiation |
-| [PyMC-5-Causal-Inference](PyMC/PyMC-5-Causal-Inference.ipynb) | PyMC (MCMC) | backdoor, front-door, contrefactuel bayésien |
+| [PyMC-05-Causal-Inference](PyMC/PyMC-05-Causal-Inference.ipynb) | PyMC (MCMC) | backdoor, front-door, contrefactuel bayésien |
 | [ICT-5](../IIT/ICT-Series/ICT-5-CausalEmergence.ipynb) · [ICT-6](../IIT/ICT-Series/ICT-6-SortingToTPM-CausalEmergence.ipynb) | PyPhi (CE 2.0) | émergence causale, information effective de Hoel |
 
 Ce que le pont ajoute par rapport aux quatre notebooks pris isolément : la théorie du do-calculus posée une bonne fois, vérifiée sur `dowhy` à effet connu, et la distinction explicite entre **causalité interventionniste** (Pearl) et **émergence causale** (Hoel).
@@ -559,7 +559,7 @@ Chaque notebook de la série Probas utilise un **unique kernel** : `.NET (C#)` p
 
 - Augmentez `target_energy` et `adapt_delta` (défaut 0.8 → essai 0.95).
 - Vérifiez le `R-hat` (devrait être < 1.01 pour toutes les variables).
-- Consultez [PyMC-6-Debugging](PyMC/PyMC-6-Debugging.ipynb) pour des diagnostics détaillés (trace plots, effective sample size, tree depth).
+- Consultez [PyMC-06-Debugging](PyMC/PyMC-06-Debugging.ipynb) pour des diagnostics détaillés (trace plots, effective sample size, tree depth).
 
 ## Ressources
 

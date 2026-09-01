@@ -188,7 +188,7 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 | 50 | Boucle auto-referentielle p_hat (case 2 / Epic #9533) | BETA | Oui |
 | 51 | ICT -- Dissociation saillance / pregnance (case s ⟂ π) | BETA | Oui |
 | 52 | ICT-Life — Substrat de calibration certifié : le Jeu de… | BETA | Oui |
-| 53 | ICT-SAE-Calibration — que reconstruit réellement chaque… | BETA | Non |
+| 53 | ICT-21b-SAECalibration — que reconstruit réellement chaque… | BETA | Non |
 | 54 | Tete-a-tete SAE <-> J-space -- les deux lentilles du… | BETA | Non |
 | 55 | ICT-Synthèse — un seul appareil de mesure, cinq… | BETA | Non |
 
@@ -248,7 +248,7 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 | 14 | Infer-3-Factor-Graphs : Graphes de Facteurs et… | BETA | Oui |
 | 15 | Infer-4-Bayesian-Networks : Reseaux Bayesiens… | BETA | Oui |
 | 16 | Infer-5-Causal-Inference : Inférence Causale et… | BETA | Oui |
-| 17 | Infer-6-Debugging : Troubleshooting et Bonnes Pratiques | BETA | Oui |
+| 17 | Infer-2b-Debugging-Bonnes-Pratiques : Troubleshooting et Bonnes Pratiques | BETA | Oui |
 | 18 | Infer-7-Skills-IRT : Evaluation de Competences et… | BETA | Oui |
 | 19 | Infer-8-TrueSkill : Système de Classement et… | BETA | Oui |
 | 20 | Infer-9-Classification : Classification Bayesienne | BETA | Oui |
@@ -271,8 +271,8 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 | 12 | PyMC-2 : Distributions Gaussiennes et Mélanges | BETA | Oui |
 | 13 | PyMC-3 : Graphes de Facteurs et Inference Discrete | BETA | Oui |
 | 14 | PyMC-4 : Reseaux Bayesiens | BETA | Oui |
-| 15 | PyMC-5-Causal-Inference : Inference Causale et… | BETA | Oui |
-| 16 | PyMC-6-Debugging : Troubleshooting et Bonnes Pratiques | BETA | Oui |
+| 15 | PyMC-05-Causal-Inference : Inference Causale et… | BETA | Oui |
+| 16 | PyMC-06-Debugging : Troubleshooting et Bonnes Pratiques | BETA | Oui |
 | 17 | PyMC-7 : Modèles de Competences (IRT et DINA) | BETA | Oui |
 | 18 | PyMC-8 : TrueSkill - Classement et Apprentissage en… | BETA | Oui |
 | 19 | PyMC-9 : Classification Bayesienne et Tests A/B | BETA | Oui |

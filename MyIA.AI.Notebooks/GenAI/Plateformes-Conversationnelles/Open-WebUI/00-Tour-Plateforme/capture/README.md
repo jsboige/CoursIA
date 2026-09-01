@@ -33,7 +33,12 @@ Les images produites atterrissent dans [`../assets/`](../assets/).
    (sélecteur de modèles, workspace, bases, canaux) sont **sautées** sauf opt-in
    explicite `DEMO_OWUI_CAPTURE_REAL_CONTENT=1` (réservé à une instance à données
    fictives) — la sûreté ne dépend donc pas de la seule relecture a posteriori.
-3. **Masquage** (`mask`) des zones sensibles (identité, e-mail) sur chaque image.
+3. **Masquage** (`mask`) des zones sensibles sur chaque image : identité,
+   e-mail, et **libellés portant un identifiant de ressource interne** — par
+   exemple le contrôle « Open Terminal (…) » du composer, dont le libellé
+   contient le nom du workspace terminal de l'instance : on masque le bouton
+   **entier** (le texte tronqué vit dans un `<span class="truncate">` de 150 px
+   qui, masqué seul, laisse dépasser le libellé selon la vue).
 4. **Revue anti-fuite de chaque PNG en PR** avant fusion — relecture humaine des
    images générées.
 5. **Aucune URL réelle dans l'image** : Playwright capture le *contenu de la page*,

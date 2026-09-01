@@ -212,7 +212,7 @@ Série de **33 notebooks** sur **Lean 4**, proof assistant basé sur la théorie
 | 9 | [Lean-9-SK-Multi-Agents](Lean/Lean-9-SK-Multi-Agents.ipynb) | Python WSL | Semantic Kernel, 5 agents spécialisés, ProofState | 2 |
 | 10 | [Lean-10-LeanDojo](Lean/Lean-10-LeanDojo.ipynb) | Python WSL | LeanDojo, tracing, extraction théorèmes, ML pour theorem proving | 2 |
 | 11 | [Lean-11-TorchLean](Lean/Lean-11-TorchLean.ipynb) | Lean 4 | Vérification formelle de réseaux de neurones | 2 |
-| 11py | [Lean-11-TorchLean-Python](Lean/Lean-11-TorchLean-Python.ipynb) | Python | IBP, certificats de robustesse, vérification | 7 |
+| 11py | [Lean-11b-TorchLean-Python](Lean/Lean-11b-TorchLean-Python.ipynb) | Python | IBP, certificats de robustesse, vérification | 7 |
 | 12 | [Lean-12-Sensitivity-Theorem](Lean/Lean-12-Sensitivity-Theorem.ipynb) | Lean 4 | Port Lean du théorème de sensibilité de Huang (2019), hypercube, signing matrix | 4 |
 | 12b | [Lean-12b-Lean-Sensitivity-Theorem](Lean/Lean-12b-Lean-Sensitivity-Theorem.ipynb) | Python WSL | Companion natif : sources `sensitivity_lean/`, snippets via WSL | 3 |
 | 14 | [Lean-14-Finiteness-Derivatives](Lean/Lean-14-Finiteness-Derivatives.ipynb) | Lean 4 | Finitude des dérivées, formalisation constructive, dépendance sur les réels | 3 |
@@ -265,7 +265,7 @@ La série joue un rôle charnière dans la famille SymbolicAI : elle **consomme*
 | 05 | [Z3-Python-05-Quantifiers-Proofs](SMT/Z3-API/Z3-Python-05-Quantifiers-Proofs.ipynb) · [C#](SMT/Z3-API/Z3-Python-05-Quantifiers-Proofs-Csharp.ipynb) | Python / .NET | Quantificateurs ∀/∃, preuve par instantiation, incomplétude | 3 |
 | 06 | [Z3-Python-06-Advanced-Optimization](SMT/Z3-API/Z3-Python-06-Advanced-Optimization.ipynb) · [C#](SMT/Z3-API/Z3-Python-06-Advanced-Optimization-Csharp.ipynb) | Python / .NET | Optimisation MaxSAT, Optimize(), Pareto | 3 |
 | **Z3-API patterns impératifs (Python)** |   |   |   |   |
-| 07 | [Z3-Python-07-Style-Declaratif-Linq](SMT/Z3-API/Z3-Python-07-Style-Declaratif-Linq.ipynb) | Python | Comparaison style impératif vs LINQ-like avec Z3 Python | 2 |
+| 01b | [Z3-Python-01b-Style-Declaratif-Linq](SMT/Z3-API/Z3-Python-01b-Style-Declaratif-Linq.ipynb) | Python | Comparaison style impératif vs LINQ-like avec Z3 Python | 2 |
 | 08 | [Z3-Python-08-Ordonnancement](SMT/Z3-API/Z3-Python-08-Ordonnancement.ipynb) | Python | Ordonnancement de tâches, précédences, disjonctions | 3 |
 | 09 | [Z3-Python-09-Enigme-Einstein](SMT/Z3-API/Z3-Python-09-Enigme-Einstein.ipynb) | Python | Énigme d'Einstein, 5 maisons, 5 attributs × 5 valeurs | 3 |
 | 10 | [Z3-Python-10-Cryptarithmetic](SMT/Z3-API/Z3-Python-10-Cryptarithmetic.ipynb) | Python | Cryptarithmes SEND+MORE=MONEY, alphamétique | 3 |

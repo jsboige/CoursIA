@@ -44,7 +44,7 @@ operations on the real 1408-node tree.
 
 ``reduction_measure`` (#13573) bridges this module to the Planners series'
 search-space-reduction thesis (``Planners/04-NeuroSymbolic/
-Planners-14-LLM-Space-Reducer.ipynb``): the same structural question -- how
+Planners-10b-LLM-Space-Reducer.ipynb``): the same structural question -- how
 much reading does a guide that decides WHERE to descend save over a
 systematic scan -- answered deterministically on the taxonomy (naive vs
 oracle vs first-child bounds; no LLM call, see the method's docstring).
@@ -448,7 +448,7 @@ class ArgumentumTaxonomy:
     def reduction_measure(self) -> dict:
         """Structural bounds of a guided descent vs a systematic read (#13573).
 
-        Bridge to the Planners-14 thesis ("an LLM that decides WHERE to
+        Bridge to the Planners-10b thesis ("an LLM that decides WHERE to
         descend is a search-space reducer, not a solver"): how much reading
         does a guide save on THIS taxonomy?  Deterministic -- these are
         structural bounds, complementary to (not a substitute for) the

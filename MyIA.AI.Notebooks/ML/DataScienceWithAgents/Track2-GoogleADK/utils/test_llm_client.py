@@ -19,16 +19,15 @@ import sys
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 # Make the Track2-GoogleADK package importable (config/ + utils/ siblings).
 _PKG = Path(__file__).resolve().parent.parent
 if str(_PKG) not in sys.path:
     sys.path.insert(0, str(_PKG))
 
-from config.providers import ProviderConfig, ProviderType  # noqa: E402
-from utils import llm_client  # noqa: E402
-from utils.llm_client import LLMClient, get_client  # noqa: E402
+from config.providers import ProviderConfig, ProviderType
+
+from utils import llm_client
+from utils.llm_client import LLMClient, get_client
 
 
 def _cfg(provider, model=None, api_key=None, base_url=None):
@@ -169,17 +168,9 @@ def test_generate_max_tokens_conditional(mock_completion):
     assert "max_tokens" not in mock_completion.call_args_list[-1].kwargs
 
 
-@pytest.mark.xfail(strict=True, reason="max_tokens=0 swallowed by `if max_tokens:` guard (buggy on main); fixed in po-2025 #7394")
 @patch("utils.llm_client.completion")
 def test_generate_max_tokens_zero_is_forwarded(mock_completion):
-    """REGRESSION PIN: max_tokens=0 is a valid int and must be forwarded.
-
-    The legacy `if max_tokens:` guard treated 0 as falsy and silently dropped
-    it (max_tokens never reached litellm). `if max_tokens is not None:` is the
-    correct guard. xfail(strict=True): currently FAILS on main (xfail = green),
-    will XPASS once the sibling fix lands (po-2025 PR #7394) and flip to
-    strict-failure as a reminder to drop the marker. See #7394.
-    """
+    """max_tokens=0 is a valid int and must reach LiteLLM."""
     mock_completion.return_value = _fake_response("ok")
     client = LLMClient(config=_cfg(ProviderType.OPENAI))
     client.generate("hi", max_tokens=0)

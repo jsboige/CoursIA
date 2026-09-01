@@ -33,14 +33,28 @@ REQUIRED_LABELS = {
     "coursia-ephemeral",
     "coursia-fast-guards",
 }
+# Dedicated label set for the containerized Linux runner (mission #13378,
+# dispatch ai-01 2026-08-31, po-2024): routes ONLY to the Docker container,
+# never to the Windows fast-guards runners -- the distinct label is the
+# routing guarantee (a windows dispatch must not land on Linux).
+LINUX_RUNNER_LABELS = {
+    "self-hosted",
+    "coursia-ephemeral",
+    "coursia-linux",
+}
+DEDICATED_LABEL_SETS = (REQUIRED_LABELS, LINUX_RUNNER_LABELS)
 # Owner-approved additions must cite the lane that owns the runner deployment:
 # - pr-gate-stale-sweep.yml: schedule-mutualized re-aggregation (pre-existing).
 # - windows-self-hosted-tests.yml: workflow_dispatch-ONLY vehicle for the 9
 #   @requires_windows confinement tests (#13063 skip surface), zero fan-out
 #   (#13097), executed on an --ephemeral runner (#12704, po-2024, #13135).
+# - linux-self-hosted-tests.yml: workflow_dispatch-ONLY pilot vehicle for the
+#   containerized Linux runner (#13378, po-2024, dispatch ai-01 2026-08-31),
+#   zero fan-out, --ephemeral inside a capped Docker container.
 SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     "pr-gate-stale-sweep.yml",
     "windows-self-hosted-tests.yml",
+    "linux-self-hosted-tests.yml",
 }
 GITHUB_HOSTED_LABELS = {
     "ubuntu-latest",
@@ -313,8 +327,12 @@ def scan_workflows(workflows_dir: Path = DEFAULT_WORKFLOWS_DIR) -> ScanResult:
                     "runner groups are unavailable for this personal-account repository",
                 ))
 
-            missing = sorted(REQUIRED_LABELS - labels)
-            unexpected = sorted(labels - REQUIRED_LABELS)
+            if any(set(labels) == allowed for allowed in DEDICATED_LABEL_SETS):
+                missing: list[str] = []
+                unexpected: list[str] = []
+            else:
+                missing = sorted(REQUIRED_LABELS - labels)
+                unexpected = sorted(labels - REQUIRED_LABELS)
             if missing or unexpected:
                 detail = []
                 if missing:

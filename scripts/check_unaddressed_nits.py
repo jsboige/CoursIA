@@ -161,8 +161,22 @@ OVERRIDE_LANE = _OVERRIDE_LANE
 # La forme verdict-gras (`**BLOCAGE ...**` en tete de corps) est couverte par
 # _block_emitted (2e branche), pas par ce pattern. La prose descriptive peut
 # suivre sur la meme ligne. Alias anglais `[BLOCK] lane` pour les reviews
-# ecrites en anglais.
-BLOCAGE_LANE = re.compile(r"(?m)^\s*\[(?:BLOCAGE|BLOCK)\]\s+lane\s+\S+")
+# ecrites en anglais. `[HOLD] lane` (#13779) : HOLD est le verbe que
+# variation-protocol.md donne au coordinateur (« HOLD sans remplacement =
+# echec coordinateur ») — entre crochets et en tete de ligne, il est aussi
+# peu ambigu que les deux autres.
+BLOCAGE_LANE = re.compile(r"(?m)^\s*\[(?:BLOCAGE|BLOCK|HOLD)\]\s+lane\s+\S+")
+
+# #13779 — la forme VERDICT du HOLD coordinateur : le corps COMMENCE par HOLD,
+# modulo l'emphase markdown (`**HOLD ...**`) et le titre (`## HOLD ...`). Deux
+# resserrements par rapport a la pose de BLOCAGE (n'importe ou dans les 60
+# premiers chars, casse indifferente), parce que « hold » est un mot ordinaire
+# la ou « blocage » est deja presque toujours un verdict :
+#   - POSITION : tete de corps, pas tete de fenetre — « je ne mets pas de hold
+#     sur cette PR » ne pose rien ;
+#   - CASSE : HOLD majuscule, la forme dans laquelle le protocole et les posts
+#     du coordinateur l'ecrivent — « hold on, je regarde » ne pose rien.
+HOLD_HEAD = re.compile(r"^[\s*_#]*HOLD\b")
 
 # Marqueurs de reserve d'un reviewer bot (le verdict est dans le body, pas l'etat).
 # #12311 — `REQUEST_CHANGES` (verbe, e.g. « [Hermes] Review — REQUEST_CHANGES »)
@@ -1105,6 +1119,21 @@ def has_live_marker(body: str, markers: tuple[str, ...]) -> bool:
     return False
 
 
+def _lift_participle_after(head: str, end: int) -> bool:
+    """Le mot qui SUIT l'occurrence est-il un participe de levee ?
+
+    Miroir post-fenetre de `_is_cited` : « BLOCAGE leve », « HOLD lifted »
+    NOMMENT le blocage pour le clore, ils ne l'emettent pas (mention #11636).
+    """
+    tail = head[end:end + 10].lstrip(" \t:;,.)('\"-—*")
+    word = ""
+    for ch in tail:
+        if not ch.isalpha():
+            break
+        word += ch
+    return word.lower() in ("leve", "levee", "lifted")
+
+
 def _block_emitted(body: str) -> bool:
     """Le coordinateur POSE-t-il un blocage (verdict, jamais une citation) ?
 
@@ -1121,7 +1150,13 @@ def _block_emitted(body: str) -> bool:
           la position du verdict, pas une substring de milieu. La narration
           « pas un blocage » (fixture #11190) vit en section ; l'emission
           aussi. Les negations immediates (« pas de blocage ») restent citees
-          via `_is_cited`.
+          via `_is_cited` ;
+      (c) le verdict `**HOLD ...**` en TETE de corps (#13779). HOLD est le
+          verbe que variation-protocol.md §3 donne au coordinateur (« HOLD
+          sans remplacement = echec coordinateur ») — un gate de merge qui
+          ignore le verbe de l'instrument qui le pilote est aveugle a son
+          propre pilote. Pose plus stricte que (b) — debut de corps ET
+          majuscule, cf HOLD_HEAD — parce que « hold » est un mot ordinaire.
 
     La levée d'un blocage passe par les formes canoniques — LIFT_MARKER
     reconnu (donc classify -> None dans la branche levee, cf `classify`) ou
@@ -1154,6 +1189,9 @@ def _block_emitted(body: str) -> bool:
     uhead = head.upper()
     if head.lstrip(" \t*_").upper().startswith("[OVERRIDE]"):
         return False
+    m_hold = HOLD_HEAD.match(head)
+    if m_hold and not _lift_participle_after(head, m_hold.end()):
+        return True
     for marker in ("BLOCAGE", "BLOCK"):
         pos = 0
         while (i := uhead.find(marker, pos)) != -1:
@@ -1162,13 +1200,7 @@ def _block_emitted(body: str) -> bool:
             if before.isalnum() or before == "_" or before == "[" or after.isalnum() or after == "_":
                 pos = i + len(marker)
                 continue
-            tail = head[i + len(marker):i + len(marker) + 10].lstrip(" \t:;,.)('\"-—*")
-            word = ""
-            for ch in tail:
-                if not ch.isalpha():
-                    break
-                word += ch
-            if word.lower() in ("leve", "levee", "lifted"):
+            if _lift_participle_after(head, i + len(marker)):
                 pos = i + len(marker)
                 continue
             if not _is_cited(normalised[max(0, i - 30):i]):
@@ -2087,10 +2119,28 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
             "body": body,
         })
     # Ce qui suit le dernier commit est le plus a risque (rien ne peut
-    # pretendre l'avoir traite) ; a defaut, la queue -- exactement les
+    # pretendre l'avoir traite) ; s'y ajoute la queue -- exactement les
     # `comments[-3:]` que la regle demande de relire avant `gh pr merge`.
+    #
+    # #13779 -- le repli etait EXCLUSIF (`after_lc or queue`) : des qu'UN
+    # commentaire suivait le dernier commit, toute la queue anterieure
+    # sortait de l'affichage, et l'en-tete imprimait le compte du
+    # SOUS-ENSEMBLE en le presentant comme le total. Mesure sur #13712 :
+    # 5 non evalues, 3 affiches -- et parmi les 2 masques, le
+    # `[ADJOINT PREFLIGHT]` de 19:30:49Z dont le point non traite motivait
+    # le HOLD du coordinateur sur cette PR meme. Masque parce qu'un commit
+    # etait passe apres lui, alors que « un commit pousse apres la remarque
+    # ne la leve PAS a lui seul » (B.0) : sur la seule PR ou l'echappatoire
+    # a servi, elle a cache le commentaire qui justifiait le blocage.
+    #
+    # Les deux mecanismes COMPOSENT au lieu de s'exclure : tout le
+    # post-dernier-commit, PLUS la queue des anterieurs -- que l'existence
+    # du premier n'annule plus. Strict sur-ensemble de l'ancien affichage :
+    # cette borne ne peut que montrer davantage, jamais moins, et ne touche
+    # aucun verdict (`unevaluated` ne participe pas a `blocked`).
     after_lc = [u for u in unevaluated if u["after_last_commit"]]
-    to_read = after_lc or unevaluated[-3:]
+    before_lc = [u for u in unevaluated if not u["after_last_commit"]]
+    to_read = sorted(after_lc + before_lc[-3:], key=lambda u: u["at"] or "")
 
     return {
         "pr": pr_data.get("number"),
@@ -2125,10 +2175,16 @@ def _print_unevaluated(result: dict) -> None:
     rows = result.get("unevaluated") or []
     if not rows:
         return
+    # #13779 : le compte imprime est celui du TOTAL non evalue, pas celui des
+    # lignes affichees -- un organe dont tout le propos est de ne pas certifier
+    # son propre silence ne peut pas sous-declarer ce qu'il n'a pas lu.
+    total = result.get("unevaluated_total") or len(rows)
+    omitted = total - len(rows)
     after = sum(1 for r in rows if r["after_last_commit"])
     tail = f", dont {after} posterieur(s) au dernier commit" if after else ""
+    cut = f" — {len(rows)} affiche(s), {omitted} plus ancien(s) omis" if omitted > 0 else ""
     print()
-    print(f"  --- A RELIRE : {len(rows)} commentaire(s) NON EVALUE(S) par cet organe{tail} ---")
+    print(f"  --- A RELIRE : {total} commentaire(s) NON EVALUE(S) par cet organe{tail}{cut} ---")
     print("  Le verdict ci-dessus ne porte QUE sur les phrases de levee. Ces")
     print("  commentaires n'ont pas ete classes : les lire avant `gh pr merge`.")
     for r in rows:

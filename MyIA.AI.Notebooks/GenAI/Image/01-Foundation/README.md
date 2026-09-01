@@ -24,6 +24,7 @@ Ce module couvre les fondamentaux de la génération d'images par IA : modèles 
 | 3 | [01-3-Basic-Image-Operations](01-3-Basic-Image-Operations.ipynb) | Opérations de base | PIL/OpenCV | 0 |
 | 4 | [01-4-Forge-SD-XL-Turbo](01-4-Forge-SD-XL-Turbo.ipynb) | Stable Diffusion XL Turbo | ComfyUI | Variable |
 | 5 | [01-5-Qwen-Image-Edit](01-5-Qwen-Image-Edit.ipynb) | Introduction Qwen | ComfyUI | ~29GB |
+| 5b | [01-5b-Qwen-Image-Edit-2509](01-5b-Qwen-Image-Edit-2509.ipynb) | Édition avancée Qwen Image Edit 2509 | ComfyUI | ~29GB |
 
 **[01-1](01-1-OpenAI-DALL-E-3.ipynb) — API cloud.** Le point d'entrée le plus immédiat : un prompt, une clé, et gpt-image-1 renvoie un visuel en ~19 s :
 

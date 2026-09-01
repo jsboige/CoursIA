@@ -5,7 +5,8 @@ Chainage des passes v4 (p0..p7) de `MyIA.AI.Notebooks/GenAI/Audio/04-Application
 sur un livre arbitraire. Chaque passe est un module v4 existant avec son
 point d'entree `run()` ; cet orchestrateur les execute dans l'ordre, avec :
 
-- `--book PATH`      : texte source arbitraire (defaut : boule_de_suif_full.txt)
+- `--book PATH`      : texte source arbitraire (defaut : boule_de_suif_full.txt),
+                       plombe dans toute passe lisant SOURCE_TEXT (p0, p1_5, p2)
 - `--dry-run`        : n'appelle AUCUN service externe -- les passes gatees
                        (LLM, TTS, SearXNG) sont planifiees avec leur gate
                        documentee, la segmentation deterministe (p2) s'execute
@@ -137,7 +138,7 @@ def main() -> int:
             continue
         try:
             mod = __import__(p.module, fromlist=["run"])
-            if p.key == "p2":
+            if hasattr(mod, "SOURCE_TEXT"):
                 mod.SOURCE_TEXT = args.book
             out = mod.run()
             print(f"[ OK  ] {p.key:5s} {p.label} -> {getattr(out, 'name', out)}")

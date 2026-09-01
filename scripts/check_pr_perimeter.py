@@ -44,6 +44,13 @@ What it does (issue #11268 acceptance 1-3)
    assertion, so the PR cannot stand merged with one. Baseline moves are
    reported with direction but do not block in this mode (the reviewer
    applies #11268-3 on unjustified loosening; the output names the move).
+6. (#13637) The API's file list is base-tip -> head, so a branch that merged
+   ``main`` gets ``main``'s own changes attributed to it (measured on #13601:
+   04-7 showed ``+2708/-2708`` although the PR did not touch it). Files the
+   head already agrees with main on are subtracted from the effective list
+   and reported separately ("dont M charriés d'une base vieille de X") --
+   the perimeter is the PR's OWN contribution. ``is_pr_own_file`` exposes the
+   predicate for the collision checks that re-implement it by hand.
 
 Exit codes
 ----------
@@ -75,6 +82,8 @@ import re
 import shutil
 import subprocess
 import sys
+import time
+import unicodedata
 from dataclasses import dataclass, field
 from typing import Optional
 
@@ -225,6 +234,41 @@ class Report:
     files: list[dict] = field(default_factory=list)
     moves: list[BaselineMove] = field(default_factory=list)
     problems: list[str] = field(default_factory=list)
+    # #13637: files the API attributes to the PR but that main itself changed
+    # and the branch merged -- NOT the PR's own work. They are subtracted from
+    # `files` (the effective perimeter) and named separately so a cardinal that
+    # changes is explained, not silently masked.
+    carried: Optional["CarriedNote"] = None
+
+
+@dataclass
+class CarriedNote:
+    """#13637: partition of the API file list between the PR's own contribution
+    and files carried from a stale main the branch merged.
+
+    ``propres`` is what the PR actually changes; ``charries`` is what the API
+    reports but the head already agrees with main on. ``base_age_hours`` is the
+    age of the branch's divergence point from main (stale-base indicator, None
+    when unresolvable).
+    """
+
+    propres: list[dict] = field(default_factory=list)
+    charries: list[dict] = field(default_factory=list)
+    base_age_hours: Optional[int] = None
+
+
+def partition_propres(files: list[dict], carried_paths: set[str]) -> tuple[list[dict], list[dict]]:
+    """#13637: partition ``files`` (the API list) into the PR's own contributions
+    and the carried files. Pure -- ``carried_paths`` is the set of paths already
+    classified by the caller (``_classify_carried``). Order-preserving: a
+    rounding of the perimeter reorders nothing, so diff-reading reviewers keep
+    their anchors.
+    """
+    propres: list[dict] = []
+    charries: list[dict] = []
+    for f in files:
+        (charries if f.get("path") in carried_paths else propres).append(f)
+    return propres, charries
 
 
 def extract_baseline_moves(diff_text: str) -> list[BaselineMove]:
@@ -352,7 +396,7 @@ def _count_is_range_enum(line: str, m: re.Match) -> bool:
     return bool(_RANGE_ENUM_TAIL.match(tail if nl < 0 else tail[:nl]))
 
 
-def check_assertion(files: list[dict], assertion: str) -> list[str]:
+def check_assertion(files: list[dict], assertion: str, block: str = "") -> list[str]:
     """Confront a perimeter assertion with the effective file list.
 
     Fence blocks (transcribed commands, L898 proof) are masked out of the
@@ -368,6 +412,15 @@ def check_assertion(files: list[dict], assertion: str) -> list[str]:
     body of a PR that modifies the guard itself is diagnostic corpus
     (bootstrap): its counts describe other PRs and the forms being fixed,
     so the equality confrontation is skipped entirely there.
+
+    #13791: `block` is the assertion's enclosing paragraph BLOCK (prefix +
+    line + contiguous lines below, see _paragraph_block). The additive
+    enumeration (#12103) confronts the sum over the BLOCK when the
+    single-line sum mismatches -- an enumeration spanning two bullets
+    ("- 1 fichier modifie (...)" / "- 1 fichier de test modifie (...)",
+    founder #13736) declares 1 + 1 = 2, and the verdict must not depend on
+    where the author pressed Enter. Safe by the same #12103 construction: a
+    FAIL becomes a PASS only when the block sum is exactly len(files).
     """
     problems: list[str] = []
     guard_self = any(f["path"] in GUARD_SELF_PATHS for f in files)
@@ -405,7 +458,20 @@ def check_assertion(files: list[dict], assertion: str) -> list[str]:
             # that survive the per-count filters instead. Safe by
             # construction: a FAIL becomes a PASS only when the sum is
             # exactly len(files) -- never a new failure.
+            # #13791: the sum spans the enclosing paragraph BLOCK when one
+            # is given -- an additive enumeration lists downward as often as
+            # sideways ("_additive_line_sum est line-scope, la somme additive
+            # meurt au retour a la ligne", founder #13736). Per-count filters
+            # stay per-LINE (each line is classified on its own surface).
             additive = _additive_line_sum(scan_target)
+            if additive != len(files) and block:
+                # the block already contains the candidate line -- replace,
+                # never add (no double count).
+                additive = sum(
+                    _additive_line_sum(ln)
+                    for ln in _fence_mask(block).splitlines()
+                    if ln.strip()
+                )
             if additive != len(files):
                 problems.append(
                     f"l'assertion pretend {claimed} fichier(s), la liste effective en compte {len(files)} : "
@@ -423,7 +489,14 @@ def check_assertion(files: list[dict], assertion: str) -> list[str]:
         # file (routing target, dependency, candidate not chosen) -- not the
         # PR's perimeter. Skip the red; the digit branch never produces this
         # shape so the guard sits here only.
+        # #13791: an indefinite word-form opened by a discrimination verb
+        # ("distinguer un fichier corrompu d'un fichier offensif") names the
+        # objects of a comparison, not the perimeter (founder #13736 l.26).
         if _word_form_is_indef_non_pr_subject(scan_target, files):
+            pass
+        elif _word_form_is_measurement_object(scan_target):
+            pass
+        elif _word_form_is_measurement_result(scan_target, block):
             pass
         else:
             problems.append(
@@ -480,6 +553,13 @@ STRONG_SCOPE_WORDS = (
 # this PR changes". Closed list measured on the 120-PR corpus; unknown
 # qualifiers stay authorial (a false negative does not signal itself, so the
 # default must fail loud).
+#
+# #13471 : les chaines accentuees sont NFD-strippees avant match (voir
+# `_count_has_incidental_qualifier`). Les entrees canoniques sont stockees
+# telles quelles pour la lisibilite de la liste (un mainteneur voit 'vérifié'
+# et comprend), mais le predicat compare les deux cotes apres strip --
+# donc 'verifié' (hybride 1er e nu / dernier accentué), 'vérifié', 'verifie',
+# 'verifies' collapsent sur la meme cle 'verifie'.
 INCIDENTAL_QUALIFIERS = frozenset({
     "mp3", "wav", "mathlib", "machine-path", "fr", "en", "scratch",
     "restants", "restant", "reste", "restants,", "nouveau", "nouveaux",
@@ -629,6 +709,15 @@ HIT_ANTECEDENT = re.compile(r"\b\d+\s*hits?\b", re.IGNORECASE)
 # _count_is_incidental (no scope word, no diffstat neighborhood). The
 # founder case is the asphalt.
 #
+# #13791: grep / git grep / rg added to the closed list -- grep is THE most
+# common measurement verb in this repo's PR bodies ("2.9 est le seul
+# notebook torch de 02-ML-Cours (grep : 1 fichier)", founder #13782), and
+# without it the guard read a corpus count as a perimeter declaration.
+# FN-control measured on the six verdict PRs of #13791: #11956/#12065/
+# #13557/#13685 carry no grep-antecedent line that flips (their blocking
+# counts sit on diffstat/scope-word lines, which stay blocking before this
+# exemption is even consulted).
+#
 # The pattern matches the antecedent ALONE (no count baked in); the count
 # exemption is per-match and uses line[:m.end()] to allow the antecedent to
 # sit anywhere in the run-up to the count (the per-match exemption already
@@ -639,6 +728,8 @@ MEASUREMENT_ANTECEDENT = re.compile(
     r"count_code_sorry(?:\.py)?|"
     r"scan(?:\s+(?:sur|of|on))?|"
     r"mesures?(?:\s+(?:sur|of|on))?|"
+    r"(?:git\s+)?grep(?:\s+(?:sur|of|on|:|--?rn?))?|"
+    r"rg(?:\s+(?:sur|of|on|:))?|"
     r"registry|registre(?:\s+(?:de|of))?|"
     r"check_(?:unaddressed_nits|pr_perimeter|perimeter))\b",
     re.IGNORECASE,
@@ -718,28 +809,79 @@ def _has_strong_scope(low: str) -> bool:
     return False
 
 
+def _strip_accents(s: str) -> str:
+    """#13471: NFD decompose + drop combining marks. Both sides of the
+    incidental-qualifier match are run through this so accent variants
+    ('verifié' hybride, 'vérifié', 'verifie') collapse to the same key.
+    Couvre les variantes futures sans nouvelle tranche de liste -- c'est
+    precisement la serie de tranches que ce depot cherche a eviter."""
+    return "".join(
+        ch for ch in unicodedata.normalize("NFD", s)
+        if unicodedata.category(ch) != "Mn"
+    )
+
+
+# #13471: pre-normalized lookup set for incidental qualifier match. We normalize
+# INCIDENTAL_QUALIFIERS once at module load (frozen set of NFD-stripped lower
+# tokens) rather than normalizing per-call -- the set is small (~80 entries)
+# and the predicate runs O(matches_per_line).
+_INCIDENTAL_QUALIFIERS_NFD = frozenset(_strip_accents(w).lower() for w in INCIDENTAL_QUALIFIERS)
+_INCIDENTAL_QUALIFIER_PAIRS_NFD = frozenset(
+    _strip_accents(p).lower() for p in INCIDENTAL_QUALIFIER_PAIRS
+)
+
+
 def _count_has_incidental_qualifier(line: str, m: re.Match) -> bool:
     """#12718: true when the COUNT match `m` is immediately followed by an
     `INCIDENTAL_QUALIFIERS` word (or a qualified two-word pair). A count so
     qualified is a sub-claim ("N fichiers neufs : ... (330 lignes)"), not the
     whole-PR perimeter -- and, unlike an antecedent exemption, it overrides a
     diffstat neighbor on the same line. Extracted from _count_is_exempt so the
-    two callers (per-count exemption, incidental override) share one predicate."""
+    two callers (per-count exemption, incidental override) share one predicate.
+
+    #13471 (2 residus) :
+      - Accent variants : les deux cotes du match passent par NFD-strip, donc
+        'verifié' (hybride, premier e nu / dernier accentue) est reconnu au
+        meme titre que 'vérifié' / 'verifie' / 'verifies' (formes deja
+        listees). Une nouvelle variante accidentee future sera couverte sans
+        nouvelle tranche.
+      - 2 mots en OR : le predicat matche si le PREMIER OU le SECOND des deux
+        premiers mots est dans `INCIDENTAL_QUALIFIERS`. La condition pre-
+        existante (1er mot OU paire exacte `INCIDENTAL_QUALIFIER_PAIRS`)
+        attrapait 'audio generes' mais pas 'puis conformes' -- le 2eme mot
+        'conformes' est dans `INCIDENTAL_QUALIFIERS` mais le 1er ('puis')
+        ne l'est pas, donc le predicat rendait False. Apres le fix, le
+        second mot incident est lu comme un standalone."""
     # #13440: le pluriel parenthetique "(s)" est neutralise avant lecture du
     # qualificatif ("fichier(s) verifies" doit lire "verifies").
     after = PLURAL_PAREN.sub(" ", line[m.end():], count=1)
-    mw = re.match(r"\s+([\wàâäéèêëîïôöùûüçÀÂÄÉÈÊËÎÏÔÖÙÛÜÇ-]+)", after)
-    if mw and mw.group(1).lower() in INCIDENTAL_QUALIFIERS:
-        return True
-    mw2 = re.match(
+    # Le pattern lit **au plus** les 2 premiers mots ; au-dela, les
+    # separateurs (parentheses ouvrantes, backticks, slash) ferment le
+    # token. C'est le pattern d'origine (conservé) -- le predicat ne doit
+    # **pas** traverser les delimiteurs vers des mots eloignes
+    # (anti-regression : '- 1 fichier modifie (`scripts/.../foo.py`, +1/-1)'
+    # matchait 'modifie' puis voyait 'scripts' comme 2eme mot, mais 'scripts'
+    # EST dans la liste ; il faut rester aveugle derriere la parenthese).
+    _WORD_RE = re.compile(
         r"\s+([\wàâäéèêëîïôöùûüçÀÂÄÉÈÊËÎÏÔÖÙÛÜÇ-]+)"
-        r"\s+([\wàâäéèêëîïôöùûüçÀÂÄÉÈÊËÎÏÔÖÙÛÜÇ-]+)",
-        after,
+        r"(?:\s+([\wàâäéèêëîïôöùûüçÀÂÄÉÈÊËÎÏÔÖÙÛÜÇ-]+))?"
     )
-    if mw2:
-        pair = f"{mw2.group(1)} {mw2.group(2)}".lower()
-        if (mw2.group(1).lower() in INCIDENTAL_QUALIFIERS
-                or pair in INCIDENTAL_QUALIFIER_PAIRS):
+    mw = _WORD_RE.match(after)
+    if not mw:
+        return False
+    first_nfd = _strip_accents(mw.group(1)).lower()
+    if first_nfd in _INCIDENTAL_QUALIFIERS_NFD:
+        return True
+    if mw.group(2):
+        # Paire exacte (close-list, formes specifiques type 'audio generes').
+        pair_nfd = f"{first_nfd} {_strip_accents(mw.group(2)).lower()}"
+        if pair_nfd in _INCIDENTAL_QUALIFIER_PAIRS_NFD:
+            return True
+        # #13471 Résidu 2 : 2 mots en OR. Le 2eme mot seul est incident
+        # ('puis conformes' -- 'conformes' est dans la liste single-word mais
+        # 'puis' ne l'est pas).
+        second_nfd = _strip_accents(mw.group(2)).lower()
+        if second_nfd in _INCIDENTAL_QUALIFIERS_NFD:
             return True
     return False
 
@@ -828,6 +970,66 @@ def _word_form_is_indef_non_pr_subject(text: str, files: list[dict]) -> bool:
         n not in paths_in_files and n not in paths_in_files_basenames
         for n in named_flat
     )
+
+
+# #13791 -- indefinite word-form count opened by a DISCRIMINATION verb. The
+# founder line (#13736 l.26): "le script echoue sur un faux positif
+# (l'instrument ne peut pas distinguer un fichier corrompu d'un fichier
+# offensif)" -- the word-form trigger read "un fichier" as a 1-file perimeter
+# claim against a 2-file list, while the phrase names the OBJECTS OF A
+# COMPARISON the body is making about the instrument. Same family as
+# #11985 forme 4b (bad surface, not bad count) and #13610 (indefinite
+# article + governing verb). Closed verb list; FN-safety mirrors
+# _word_form_is_indef_non_pr_subject: same 80-char window before the article,
+# and a genuine word-form perimeter claim ("un fichier modifie : X.py")
+# never follows a discrimination verb -- the residual risk ("on distingue un
+# fichier modifie") is the deliberate closed-list trade, measured against
+# the #13791 control PRs (none of #11956/#12065/#13557/#13685 carries a
+# discrimination verb before a word-form count).
+_DISCRIMINATION_VERB = re.compile(
+    r"\b(?:distinguer|diff[ée]rencier|discriminer|contraster|opposer|"
+    r"s[ée]parer|comparer)\b",
+    re.IGNORECASE,
+)
+
+
+def _word_form_is_measurement_object(text: str) -> bool:
+    """#13791: True when a word-form count's indefinite article ("un fichier")
+    sits within 80 chars AFTER a discrimination verb -- the phrase names the
+    objects of a comparison (diagnostic prose about what an instrument
+    distinguishes), not the PR's perimeter."""
+    m = _INDEF_ARTICLE.search(text.lower())
+    if m is None:
+        return False
+    return bool(_DISCRIMINATION_VERB.search(text[max(0, m.start() - 80):m.start()]))
+
+
+_MEASUREMENT_RESULT = re.compile(
+    r"\b(?:\d+|aucun(?:e)?)\s+(?:occurrences?|hits?|r[ée]sultats?|matches?)\b",
+    re.IGNORECASE,
+)
+_DEFINITE_WORD_FORM = re.compile(
+    r"\b(?:sur|dans)\s+(?:les|ces)\s+[*_]*"
+    r"(?:deux|trois|quatre|cinq|six|sept|huit|neuf|dix)\s+fichiers?\b",
+    re.IGNORECASE,
+)
+
+
+def _word_form_is_measurement_result(text: str, block: str = "") -> bool:
+    """True when a definite word-form count is the corpus of a measured result.
+
+    The result may sit on the same line or immediately above it in the same
+    paragraph block (soft-wrap invariant). A strong scope word keeps genuine
+    perimeter assertions blocking even when they also mention zero results.
+    """
+    surface = block or text
+    if _has_strong_scope(surface.lower()):
+        return False
+    count = _DEFINITE_WORD_FORM.search(surface)
+    if count is None:
+        return False
+    result = list(_MEASUREMENT_RESULT.finditer(surface, 0, count.start()))
+    return bool(result)
 
 
 def _additive_line_sum(line: str) -> int:
@@ -1145,6 +1347,32 @@ def _paragraph_prefix(text: str, idx: int) -> str:
     return "\n".join(reversed(out))
 
 
+def _paragraph_block(text: str, idx: int) -> str:
+    """#13791: the markdown paragraph CONTAINING line `idx` -- the prefix of
+    `_paragraph_prefix` PLUS the line PLUS the contiguous non-empty lines
+    below it. Same boundaries (blank line, fence delimiter): a block is the
+    maximal run of prose lines an author would read as one unit, which is the
+    unit an additive enumeration spans ("- 1 fichier modifie (...)" /
+    "- 1 fichier de test modifie (...)" on two bullets, founder #13736). The
+    #13335 prefix alone could not see the lines BELOW the candidate -- and an
+    additive enumeration lists downward."""
+    lines = text.splitlines()
+    if not 0 <= idx < len(lines):
+        return ""
+    low, hi = idx, idx
+    while low - 1 >= 0:
+        s = lines[low - 1].strip()
+        if not s or s.startswith("`" * 3) or s.startswith("~" * 3):
+            break
+        low -= 1
+    while hi + 1 < len(lines):
+        s = lines[hi + 1].strip()
+        if not s or s.startswith("`" * 3) or s.startswith("~" * 3):
+            break
+        hi += 1
+    return "\n".join(l.strip() for l in lines[low:hi + 1])
+
+
 def _extract_line_candidates(text: str) -> list[tuple[int, str]]:
     """Index-carrying core of extract_perimeter_assertions: returns
     (line_index, stripped_line) pairs so callers can re-attach body context
@@ -1203,6 +1431,18 @@ def extract_perimeter_assertions_with_context(text: str) -> list[tuple[str, str]
     extract_perimeter_assertions -- only the context differs."""
     return [
         (line, _paragraph_prefix(text, idx))
+        for idx, line in _extract_line_candidates(text)
+    ]
+
+
+def extract_perimeter_assertions_with_block(text: str) -> list[tuple[str, str, str]]:
+    """#13791: candidates paired with (paragraph prefix, enclosing paragraph
+    BLOCK). The block extends the #13335 prefix to the lines BELOW the
+    candidate -- the unit an additive enumeration ("- 1 fichier modifie" /
+    "- 1 fichier de test modifie" on two bullets, founder #13736) spans.
+    Same candidate set; only the carried context differs."""
+    return [
+        (line, _paragraph_prefix(text, idx), _paragraph_block(text, idx))
         for idx, line in _extract_line_candidates(text)
     ]
 
@@ -1307,9 +1547,43 @@ def _format_signal_explanation(candidates: list[Candidate]) -> str:
     )
 
 
-def format_report(report: Report, assertion: Optional[str]) -> str:
+def _render_carried_note(carried: Optional[CarriedNote]) -> list[str]:
+    """#13637 step 1+3: explain the subtracted carried files and surface the
+    stale-base signal. A cardinal that changes must say WHY, not move silently
+    -- otherwise the defect is displaced, not closed. The stale-base note is
+    free signal: API count − propre count is a more direct stale-base indicator
+    than `base-stale-14d`."""
+    if carried is None or not carried.charries:
+        return []
+    m = len(carried.charries)
+    age = carried.base_age_hours
+    if age is not None:
+        age_txt = f"~{age} h" if age < 48 else f"~{age // 24} j"
+        note = f"  — dont {m} charrié(s) d'une base vieille de {age_txt}, non compté(s)"
+    else:
+        note = f"  — dont {m} charrié(s) de main, non compté(s)"
+    lines = [note]
+    lines.append(
+        "  — charrié(s) de main (la tête est déjà d'accord avec main, la PR ne les "
+        "modifie pas) : " + ", ".join(f["path"] for f in carried.charries)
+    )
+    lines.append(
+        "  -> STALE-BASE : l'écart liste API − périmètre propre ("
+        f"{m}) signale une base en retard sur un main actif ; la liste effective "
+        "ci-dessus ne compte que les fichiers que la PR modifie réellement."
+    )
+    return lines
+
+
+def format_report(report: Report, assertion: Optional[str], carried: Optional[CarriedNote] = None) -> str:
+    # Default to the field the report carries; an explicit override lets callers
+    # display a partition they computed themselves (e.g. in tests).
+    if carried is None:
+        carried = report.carried
     lines = []
-    lines.append(f"Périmètre effectif : {len(report.files)} fichier(s)")
+    head = f"Périmètre effectif : {len(report.files)} fichier(s)"
+    lines.append(head)
+    lines.extend(_render_carried_note(carried))
     for f in sorted(report.files, key=lambda x: x["path"]):
         lines.append(f"  {f.get('additions', '?')}+/{f.get('deletions', '?')}-  {f['path']}")
     wf = [f for f in report.files if f["path"].startswith(WORKFLOW_PREFIX)]
@@ -1362,6 +1636,137 @@ def _normalize_rest_files(items: list[dict]) -> list[dict]:
     ]
 
 
+def _branch_ref_exists(ref: str) -> bool:
+    """True when ``ref`` (e.g. ``origin/main``) resolves locally."""
+    proc = subprocess.run(
+        ["git", "rev-parse", "--verify", "--quiet", ref],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+    )
+    return proc.returncode == 0
+
+
+def _pr_head_sha(pr: int) -> Optional[str]:
+    try:
+        return json.loads(_run_gh(["pr", "view", str(pr), "--json", "headRefOid"]))["headRefOid"]
+    except SystemExit:
+        return None
+
+
+def _pr_base_ref(pr: int) -> Optional[str]:
+    try:
+        return json.loads(_run_gh(["pr", "view", str(pr), "--json", "baseRefName"]))["baseRefName"]
+    except SystemExit:
+        return None
+
+
+def _resolve_base_pair(pr: int) -> tuple[Optional[str], Optional[str]]:
+    """Return (head_sha, base_ref) or (None, None). ``base_ref`` is the local
+    ``origin/<baseRefName>``, fetched if the checkout lacks it (a PR runner
+    checks out the merge ref but may not have the base branch fetched)."""
+    head = _pr_head_sha(pr)
+    base = _pr_base_ref(pr)
+    if not head or not base:
+        return None, None
+    ref = f"origin/{base}"
+    if not _branch_ref_exists(ref):
+        subprocess.run(
+            ["git", "fetch", "origin", base],
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
+        )
+        if not _branch_ref_exists(ref):
+            return None, None
+    return head, ref
+
+
+def _base_age_hours(base_ref: str, head: str) -> Optional[int]:
+    """Age in whole hours of the branch's divergence point from main (the
+    merge-base date). None when unresolvable -- the carried note then omits the
+    age rather than inventing one."""
+    mb = subprocess.run(
+        ["git", "merge-base", base_ref, head],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+    )
+    if mb.returncode != 0 or not mb.stdout.strip():
+        return None
+    d = subprocess.run(
+        ["git", "show", "-s", "--format=%ct", mb.stdout.strip()],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+    )
+    if d.returncode != 0 or not d.stdout.strip():
+        return None
+    try:
+        ts = int(d.stdout.strip())
+    except ValueError:
+        return None
+    return max(0, (int(time.time()) - ts)) // 3600
+
+
+def _classify_carried(pr: int, files: list[dict]) -> CarriedNote:
+    """#13637: partition ``files`` (the API list) into the PR's own contribution
+    and the carried files.
+
+    GitHub's ``/pulls/N/files`` diffs the base tip -> head, so a branch that
+    merged ``main`` has ``main``'s own changes attributed to it (#13601: 04-7
+    showed as ``+2708/-2708`` although the PR did not touch it). A file is the
+    PR's OWN work iff the head differs from main on it; ``git diff
+    origin/<base> <head> -- p`` empty => carried.
+
+    Fail-safe: on any resolution failure (base ref unfetchable, head unknown,
+    git error) returns an empty ``charries`` -- no file is ever wrongly
+    excluded, the fallback is the pre-fix behaviour.
+    """
+    if not files:
+        return CarriedNote(propres=files, charries=[], base_age_hours=None)
+    head, base_ref = _resolve_base_pair(pr)
+    if not head:
+        return CarriedNote(propres=files, charries=[], base_age_hours=None)
+    api_paths = sorted({f["path"] for f in files if f.get("path")})
+    if not api_paths:
+        return CarriedNote(propres=files, charries=[], base_age_hours=None)
+    proc = subprocess.run(
+        ["git", "diff", "--name-only", base_ref, head, "--"] + api_paths,
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+    )
+    if proc.returncode != 0:
+        return CarriedNote(propres=files, charries=[], base_age_hours=None)
+    changed = set(proc.stdout.splitlines())
+    carried = set(api_paths) - changed
+    propres, charries = partition_propres(files, carried)
+    return CarriedNote(
+        propres=propres, charries=charries, base_age_hours=_base_age_hours(base_ref, head)
+    )
+
+
+def is_pr_own_file(pr: int, path: str, head: Optional[str] = None, base_ref: str = "origin/main") -> Optional[bool]:
+    """#13637 step 2: the exposed callable predicate.
+
+    True when ``path`` is the PR's OWN contribution (the head differs from main
+    on it); False when carried (the head already agrees with main -- main
+    changed it and the branch merged it); None when the predicate cannot be
+    resolved. This is what collision checks re-implement by hand on
+    ``--json files`` today; call this instead.
+    """
+    if head is None:
+        head = _pr_head_sha(pr)
+    if head is None:
+        return None
+    if not _branch_ref_exists(base_ref):
+        refreshed = _resolve_base_pair(pr)
+        if parsed := refreshed[1]:
+            base_ref = parsed
+        else:
+            return None
+    proc = subprocess.run(
+        ["git", "diff", "--quiet", base_ref, head, "--", path],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+    )
+    if proc.returncode == 1:
+        return True
+    if proc.returncode == 0:
+        return False
+    return None
+
+
 def fetch_report(pr: int) -> Report:
     # ``gh pr view --json files`` caps at 100 entries (single page), so the
     # guard used to confront bodies against a TRUNCATED list on >100-file PRs:
@@ -1376,8 +1781,15 @@ def fetch_report(pr: int) -> Report:
         "api", f"repos/{repo}/pulls/{pr}/files", "--paginate",
     ]))
     files = _normalize_rest_files(items)
+    # #13637: subtract files carried from a stale main the branch merged. The
+    # effective perimeter is the PR's OWN contribution. A cardinal that changes
+    # is explained in the rendered output (see _render_carried_note), not
+    # silently masked.
+    carried = _classify_carried(pr, files)
+    if carried.charries:
+        files = carried.propres
     diff = _run_gh(["pr", "diff", str(pr)])
-    return Report(files=files, moves=extract_baseline_moves(diff))
+    return Report(files=files, moves=extract_baseline_moves(diff), carried=carried)
 
 
 def fetch_review_thread(pr: int) -> list[dict]:
@@ -1465,6 +1877,11 @@ class Candidate:
     # select_candidates from the full body text. Feeds only the
     # MEASUREMENT_ANTECEDENT exemption -- wrap-invariance of the verdict.
     context: str = ""
+    # #13791: enclosing paragraph BLOCK (see _paragraph_block) -- prefix +
+    # line + the contiguous lines below. Feeds only the additive-enumeration
+    # confrontation in check_assertion: an enumeration spanning two bullets
+    # sums across the block, not the single line.
+    block: str = ""
 
     @property
     def blocking(self) -> bool:
@@ -1533,8 +1950,8 @@ def select_candidates(
             if opener is not None:
                 orphan_opener = opener
         body_candidates = [
-            Candidate(text, item["kind"], item["author"], "body", context=ctx)
-            for text, ctx in extract_perimeter_assertions_with_context(body)
+            Candidate(text, item["kind"], item["author"], "body", context=ctx, block=blk)
+            for text, ctx, blk in extract_perimeter_assertions_with_block(body)
         ]
         if n_files is not None and any(
             not _is_incidental_assertion(c.text, c.context)
@@ -1621,7 +2038,7 @@ def main() -> int:
         if body_orphan is not None:
             orphan_opener = body_orphan
         for cand in candidates:
-            for p in check_assertion(report.files, cand.text):
+            for p in check_assertion(report.files, cand.text, block=cand.block):
                 line = f"[{cand.kind} / {cand.author}] {p}"
                 # Every catch stays visible either way -- the detector is not
                 # disarmed, only its consequence is placed where it can be
