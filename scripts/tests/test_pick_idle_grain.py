@@ -552,6 +552,74 @@ def test_repair_json_carries_a_grain_field(monkeypatch, capsys):
     assert "refus" not in payload
 
 
+def test_adjacency_red_advice_replaces_three_generic_gestures(monkeypatch, capsys):
+    """#13967 : quand la cause du rouge est `adjacency`, le picker doit
+    remplacer les trois conseils generiques (`update-branch` / rebase /
+    pousser) par le remede propre : « piocher un grain d'un AUTRE genre,
+    ne PAS retaguer ». Mesure du 2026-09-01 : 13 PRs / 25 rouges
+    mesurables = premiere cause de rouge de la flotte -- les trois
+    gestes generiques sont invariants au predicat et la lane boucle.
+
+    Le test pin le contrat par la sortie (pas de `update-branch`,
+    mention explicite du remede). La fixture ajoute le champ
+    optionnel `is_adjacency=True` au PR rouge -- c'est le point
+    d'entree qu'un futur wrapper autour de
+    `scripts/ci/variation_adjacency_guard.py` remplira pour passer
+    du verdict de l'organe au conseil du picker (le picker n'appelle
+    pas gh par PR rouge -- trop couteux, trop de surface).
+    """
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    pr = _pr(99, "myia-po-2026:CoursIA", 30)
+    pr["is_adjacency"] = True
+    _patch_backlog(monkeypatch, [pr], {99: red})
+    rc = pig.main(["--lane", "myia-po-2026:CoursIA"])
+    out = capsys.readouterr().out
+    assert rc == 0
+    # Le remede propre doit etre present.
+    assert "Piocher un grain d'UN AUTRE genre" in out, (
+        f"le conseil adjacency est absent : {out[-400:]!r}"
+    )
+    assert "Ne PAS retaguer la PR" in out, (
+        "l'interdit de re-tag (protocole variation §2) doit etre rappele"
+    )
+    # Les trois gestes generiques doivent etre ABSENTS : aucun d'eux ne
+    # modifie `genre` ou `prev_genre`, donc aucun ne leve le blocage.
+    assert "gh pr update-branch" not in out, (
+        "`gh pr update-branch` ne leve jamais adjacency (predicat "
+        "invariant au SHA). Sa presence ici ferait perdre un cycle a "
+        "la lane qui suit le conseil."
+    )
+    # L'en-tete Reparation doit toujours etre la (coherence avec le
+    # test existant).
+    assert "GRAIN DU CYCLE" in out
+    assert "#99" in out
+
+
+def test_non_adjacency_red_keeps_three_generic_gestures(monkeypatch, capsys):
+    """#13967 : controle positif du test precedent.
+
+    Un PR rouge pour une cause REPARABLE par push (check FAILURE
+    substance) doit continuer d'afficher les trois gestes generiques.
+    Sans ce controle, la correction pourrait supprimer le conseil pour
+    tout le monde et le test precedent passerait quand meme.
+    """
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    pr = _pr(11, "myia-po-2026:CoursIA", 30)
+    # Pas de champ `is_adjacency` (defaut implicite = False / absent).
+    assert "is_adjacency" not in pr
+    _patch_backlog(monkeypatch, [pr], {11: red})
+    rc = pig.main(["--lane", "myia-po-2026:CoursIA"])
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert "Trois gestes, dans cet ordre" in out
+    assert "gh pr update-branch" in out, (
+        "un PR rouge substance doit conserver le premier geste "
+        "(rejouer les checks sur tete fraiche peut le reparer)"
+    )
+    # Et l'absence du remede adjacency est l'autre moitie du contrat.
+    assert "Piocher un grain d'UN AUTRE genre" not in out
+
+
 def test_a_clean_lane_is_not_sent_to_repair(monkeypatch, capsys):
     """Controle positif des deux precedents.
 
