@@ -30,6 +30,7 @@ Cadre de travail (adapté de Karpathy + ajout user) : ces principes gouvernent *
 | [reference/scripts-reference.md](docs/reference/scripts-reference.md) | Catalogue scripts (notebook CLI, exécution, qualité, maintenance) |
 | [reference/architecture_mcp_roo.md](docs/reference/architecture_mcp_roo.md) | Cycle de vie, logs et diagnostic des serveurs MCP (inventaire des 15 outils roo-state-manager : [HARNESS-OVERVIEW.md](https://github.com/jsboige/roo-extensions/blob/main/docs/harness/HARNESS-OVERVIEW.md) §2) |
 | [reference/regles-vigilance-detail.md](docs/reference/regles-vigilance-detail.md) · [regles-validation-detail.md](docs/reference/regles-validation-detail.md) | Détail G.1-G.9 et H.1-H.7 + incidents |
+| [reference/_archive-convention.md](docs/reference/_archive-convention.md) | Convention `_archive/` (11 emplacements) — modèle ML-Training-Pipeline généralisé, 4 critères d'éligibilité, header per-function |
 | [reference/env-python-reparation.md](docs/reference/env-python-reparation.md) | Réparation env Python (règle F) |
 | [reference/stale-tree-drift-scan.md](docs/reference/stale-tree-drift-scan.md) · [orphan-branch-scan-l576.md](docs/reference/orphan-branch-scan-l576.md) | Scans anti-phantom (drift, branche orpheline) |
 | [lean/](docs/lean/) | Prover iteration history, intractable diagnosis, LLM endpoints, pièges tactiques (propagation d'instance `Decidable`) |

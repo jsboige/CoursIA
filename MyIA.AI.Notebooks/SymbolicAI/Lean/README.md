@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: SymbolicAI-Lean
-pedagogical_count: 49
-breakdown: Lean=49
-maturity: BETA=47, DRAFT=2
+pedagogical_count: 50
+breakdown: Lean=50
+maturity: BETA=48, DRAFT=2
 -->
 
 [← SemanticWeb](../SemanticWeb/README.md) | [↑ SymbolicAI](../README.md) | [Planners →](../Planners/README.md)
@@ -132,7 +132,7 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 
 | # | Notebook | Contenu | Durée |
 |---|----------|---------|-------|
-| 18 | [Lean-18-Search-AStar-Optimality](Lean-18-Search-AStar-Optimality.ipynb) | Optimalité de A* sous heuristique admissible : graphe pondéré ℝ≥0 et coût additif `pathCost`, prédicats `Admissible`/`Consistent`, théorème phare `admissible_implies_optimal` (borne en f), téléscopage `consistent_implies_path_bound` + monotonie de f - companion `search_lean` (lake `Search/`, 0 sorry, registre #3801 prong B) | 35 min |
+| 18 | [Lean-18-Search-AStar-Optimality](../../Search/Part1-Foundations/Lean-18-Search-AStar-Optimality.ipynb) | Optimalité de A* sous heuristique admissible : graphe pondéré ℝ≥0 et coût additif `pathCost`, prédicats `Admissible`/`Consistent`, théorème phare `admissible_implies_optimal` (borne en f), téléscopage `consistent_implies_path_bound` + monotonie de f - companion `search_lean` (lake `Search/`, 0 sorry, registre #3801 prong B) | 35 min |
 
 ### Partie 7 : Digestions de résultats profonds et companions (Sendov, Tao, PFR, MIMO, Galois, ERC-20, calibration, décision, Hopf S⁶)
 
