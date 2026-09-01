@@ -33,7 +33,6 @@ MyIA.AI.Notebooks/
   Probas/          -> Programmation probabiliste (Infer.NET, PyMC, Pyro) + théorie de la décision
   GameTheory/      -> Théorie des jeux, équilibres de Nash, mechanism design, social choice
   IIT/             -> Information intégrée (Tononi, PyPhi) + banc ICT : trajectoires causales, du tri au LLM
-  FallacyDetection/-> Détecter les sophismes : jeu de données réel, taxonomies, interprétabilité SAE
   CaseStudies/     -> Études de cas interdisciplinaires
   SymbolicAI/      -> Raisonnement formel (Lean 4, Tweety, Semantic Web, Smart Contracts, Planners, SMT, Argument Analysis, Symbolic Learning) -- la plus vaste série du dépôt
   GenAI/           -> IA générative (Image, Audio, Video, Texte, Semantic Kernel, Aspire, Vibe Coding) -- l'une des plus vastes séries
@@ -242,6 +241,8 @@ Tout converge dans un fil rouge transverse : le **Texte** structure un script, l
 
 Python | [README détaillé](MyIA.AI.Notebooks/GenAI/README.md)
 
+**[FallacyDetection](MyIA.AI.Notebooks/GenAI/FallacyDetection/README.md) -- reconnaître un sophisme, et savoir pourquoi le modèle l'a reconnu** -- Une série jeune, et volontairement exposée : elle prend un problème que le reste du dépôt aborde par le formalisme -- la détection de sophismes -- et l'attaque cette fois par le modèle de langage, en s'imposant de rendre compte de sa décision. La question directrice n'est pas « le modèle classe-t-il bien ? » mais **« qu'a-t-il appris au juste ? »** : distinguer ce qu'un *fine-tuning* mémorise (le motif de raisonnement « du général au particulier ») de ce qu'un *post-training* sait réemployer sur des cas inédits. Le verdict est arbitré par des autoencodeurs parcimonieux entraînés sur le modèle lui-même -- ce qui fait de cette série le prolongement appliqué de la strate 6 du banc **ICT**, et son critère de succès déclaré : sans SAE disponibles sur au moins trois tailles de modèle, le pivot interprétabilité n'est pas tenu, et l'EPIC l'écrit noir sur blanc plutôt que de reformuler le succès après coup. La vraie difficulté est celle des **données**, et la série la traite en premier plutôt qu'en note de bas de page : un petit corpus d'amorçage, puis deux sources d'une autre échelle -- les corpus académiques annotés et surtout un corpus **synthétique** engendré par le produit cartésien des cartes **Argumentum** (167 scénarios de discours croisés avec 1 408 sophismes). Les deux notebooks en ligne publient un résultat négatif : le [paysage des jeux de données](MyIA.AI.Notebooks/GenAI/FallacyDetection/02_fallacy_datasets_landscape.ipynb) confronte les corpus académiques disponibles en accès réel, l'[écart de couverture taxonomique](MyIA.AI.Notebooks/GenAI/FallacyDetection/03_taxonomy_coverage_gap.ipynb) mesure ce qu'ils couvrent effectivement de la taxonomie Argumentum -- et la réponse est : une petite part, très inégalement répartie. Sous-série de GenAI depuis la tranche 1 de #13581 (2026-08-30) -- voir `docs/notebook-metadata/production-scope.md` pour le périmètre in-scope.
+
 ### QuantConnect -- Trading algorithmique
 
 Peut-on appliquer l'IA aux marchés financiers -- et comment savoir si une stratégie *marche* vraiment, plutôt que d'avoir simplement eu de la chance sur un historique ? Le trading algorithmique génère aujourd'hui plus de la moitié des volumes échangés, et cette série apprend à construire, backtester et déployer ses propres stratégies sur le framework open-source **LEAN** de QuantConnect, utilisé par des milliers de quants professionnels. Son fil conducteur n'est pas la course au rendement : c'est la **discipline d'évaluation** qui sépare un edge réel d'un mirage de backtest -- validation hors échantillon, walk-forward, répétition multi-graine, coûts de transaction réels, tests de significativité. Le cours et les stratégies s'exécutent en backtest et paper trading sur le cloud QuantConnect (free tier), sans capital ; un laboratoire standalone permet en parallèle d'éprouver localement les idées sur des données publiques avant de les porter vers LEAN. Le livre de référence est *Hands-On AI Trading*, de Jared Broad, fondateur de QuantConnect.
@@ -298,16 +299,6 @@ Cette série dialogue avec **Probas** et **GameTheory**, dont elle partage les c
 
 Python | [README détaillé](MyIA.AI.Notebooks/IIT/README.md)
 
-### FallacyDetection -- reconnaître un sophisme, et savoir pourquoi le modèle l'a reconnu
-
-Une série jeune, et volontairement exposée : elle prend un problème que le reste du dépôt aborde par le formalisme -- la détection de sophismes -- et l'attaque cette fois par le modèle de langage, en s'imposant de rendre compte de sa décision. La question directrice n'est pas « le modèle classe-t-il bien ? » mais **« qu'a-t-il appris au juste ? »** : distinguer ce qu'un *fine-tuning* mémorise (le motif de raisonnement « du général au particulier ») de ce qu'un *post-training* sait réemployer sur des cas inédits. Le verdict est arbitré par des autoencodeurs parcimonieux entraînés sur le modèle lui-même -- ce qui fait de cette série le prolongement appliqué de la strate 6 du banc **ICT**, et son critère de succès déclaré : sans SAE disponibles sur au moins trois tailles de modèle, le pivot interprétabilité n'est pas tenu, et l'EPIC l'écrit noir sur blanc plutôt que de reformuler le succès après coup.
-
-La vraie difficulté est celle des **données**, et la série la traite en premier plutôt qu'en note de bas de page. Un petit corpus d'amorçage sert à câbler la chaîne et à la caler sur la taxonomie ; il est trop léger pour entraîner quoi que ce soit, et c'est assumé. La suite passe par deux sources d'une autre échelle : les corpus académiques annotés que l'on peut réellement obtenir, et surtout un corpus **synthétique** engendré par le produit cartésien des cartes **Argumentum** -- 167 scénarios de discours croisés avec 1 408 sophismes -- où chaque exemple naît étiqueté par construction. Fabriquer les données plutôt que les récolter est ici le geste décisif : c'est ce qui donne une couverture uniforme d'une taxonomie que nul corpus naturel n'échantillonne équitablement.
-
-Les deux notebooks en ligne posent précisément ce constat, et tous deux publient un résultat négatif. Le [paysage des jeux de données](MyIA.AI.Notebooks/FallacyDetection/02_fallacy_datasets_landscape.ipynb) confronte les corpus académiques disponibles en accès réel ; l'[écart de couverture taxonomique](MyIA.AI.Notebooks/FallacyDetection/03_taxonomy_coverage_gap.ipynb) mesure ce qu'ils couvrent effectivement de la taxonomie Argumentum -- et la réponse est : une petite part, très inégalement répartie. Documenter cet écart avant d'entamer l'entraînement, plutôt que le découvrir au milieu, est la moitié du travail.
-
-Python | [README détaillé](MyIA.AI.Notebooks/FallacyDetection/README.md)
-
 ### CaseStudies -- Études de cas interdisciplinaires
 
 Que se passe-t-il quand on cesse d'étudier les techniques en silos ? L'IA réelle ne fonctionne presque jamais avec un seul paradigme : un assistant de diagnostic combine des règles symboliques, des modèles probabilistes, de la recherche heuristique et des contraintes formelles. Cette série, conçue comme un devoir intégrateur de fin de cycle, prend trois problèmes métier -- un diagnostic médical, une planification oncologique et un dispatch énergétique -- et y compose plusieurs solveurs en un seul système décisionnel cohérent. Son fil conducteur est l'architecture hybride en couches, et l'idée que l'**ordre de composition** importe autant que les briques elles-mêmes.
@@ -359,7 +350,6 @@ CoursIA/
       projects/                Stratégies backtestées
       ML-Training-Pipeline/    Pipeline DL forecasting
       partner-course-quant-trading/ Projets étudiants
-    FallacyDetection/          Sophismes sur corpus réel (dataset, taxonomies, SAE)
     CaseStudies/               Études de cas interdisciplinaires (Python)
     cross-series/              Applications transverses multi-domaines (Python)
       matching-cv/ socle-metadata-driven/ i18n/
@@ -444,7 +434,7 @@ s'installent directement via leur `requirements.txt`.
 | Argument Analysis | `SymbolicAI/Argument_Analysis/Argument_Analysis_UI_configuration.ipynb` | `install_jdk_portable.py` |
 | IIT | `requirements.txt` | `IIT/scripts/setup_pyphi_env.ps1` |
 | GenAI / Aspire | `GenAI/Aspire/01-Aspire-Orchestration-GenAi.ipynb` | SDK .NET 10 + CLI Aspire (`dotnet tool install -g Aspire.Cli`) ; Docker démarré |
-| FallacyDetection | -- (kernel Python de base) | `scripts/fallacy_detection/extract_jessynoo_fallacy.py` (stdlib seule) |
+| GenAI / FallacyDetection | -- (kernel Python de base) | `scripts/fallacy_detection/extract_jessynoo_fallacy.py` (stdlib seule) |
 | Search / RL / CaseStudies | `requirements.txt` | -- |
 | cross-series | `requirements.txt` | `cross-series/matching-cv/scripts/install_deps.sh` |
 

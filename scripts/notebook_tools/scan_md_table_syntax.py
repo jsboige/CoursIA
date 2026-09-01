@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Source-level lint for GFM markdown table syntax defects.
 
-Detects five pathologies that break table rendering in the GitHub preview
+Detects seven pathologies that break table rendering in the GitHub preview
 (source-level, render-agnostic -- it flags the *convention violation* that
 breaks rendering on at least one common renderer, not a post-render check):
 
@@ -25,6 +25,12 @@ breaks rendering on at least one common renderer, not a post-render check):
     (#12220). Escaping the pipe as ``\\|`` inside the code span is safe on every
     renderer -- this is the actionable fix.
 
+  - **MATH_SPAN_PIPE** (notebooks only): a raw ``|`` inside ``$...$`` within a
+    recognized table row. GitHub's notebook renderer splits cells before math
+    rendering, so ``$|F_B| / |A|$`` creates phantom columns. Regular ``.md``
+    rendering remains out of scope because it handles this notation correctly.
+    The portable notebook fix is pipe-free LaTeX such as ``\\lvert``/``\\rvert``.
+
   - **NO_SEP**: a run of 3+ consecutive ``|``-shaped lines with NO
     ``:?-+:?`` separator row among them. GFM does not recognize the block as a
     table without the separator and renders it as a ``pre`` block instead
@@ -39,6 +45,33 @@ breaks rendering on at least one common renderer, not a post-render check):
   - **NO_BLANK_AFTER**: the symmetric case -- a non-blank, non-heading,
     non-table line immediately follows a table block, merging the next
     paragraph into it.
+
+  - **ORPHAN_TABLE_ROW** (new, c.770 user extension of #10097, 2026-08-31):
+    a pipe-line that appears LATER in the file, AFTER a recognized table
+    block (one that HAS a `|---|`-shaped separator row), separated from it
+    by intervening prose / image (`![...](...)`) / italic / list / fence
+    content. GFM terminates a table at the first non-pipe-line, so any
+    pipe-line appearing AFTER that break is no longer part of the table --
+    it renders as a literal pipe-prefixed paragraph (column alignment is
+    lost, the table effectively ends early).
+    The canonical pattern is a `![image](path)` Figure-extraite block
+    inserted between the header / separator and the remaining data rows
+    (the base scanner catches the symptom -- a NO_SEP block of N orphan
+    rows -- but misses the cause: the orphan is a CONTINUATION of the prior
+    table that lost its header. Actionable fix differs: re-declare the
+    header BEFORE the orphan rows, not add a `|---|` separator).
+    A run-of-1 orphan (single pipe-line after the break) is below the
+    `len(rows) >= 2` floor and is silently skipped by the base scanner.
+    Detected firsthand on `docs/ict/dissociations-matrix.md` L209
+    (`Fermeture du lacet` row) and on
+    `MyIA.AI.Notebooks/IIT/ICT-Series/README.md` L94/L115/L183 (NO_SEP).
+    Detection logic: for each recognized table block, scan forward from
+    the block end through intervening non-pipe content; the FIRST
+    subsequent pipe-line within ORPHAN_LOOKAHEAD lines whose column count
+    matches the header's (or differs by exactly 1, a common off-by-one
+    when authors trim a trailing `|`) raises ORPHAN_TABLE_ROW. The
+    lookahead is bounded so sparse, never-claimed pipe-lines later in the
+    document do not produce noise.
 
 Scope (HORS scope, volontaire):
   - Render aesthetics (column width, padding) -- eye-judgement, not automatable.
@@ -134,6 +167,14 @@ ESCAPED_PIPE_RE = re.compile(r'\\\|')
 # was the dominant false-positive source on the Probas family (~71% of the
 # NO_BLANK findings were ``P(X|Y)`` math pipes). See #10097.
 COND_NOTATION_RE = re.compile(r'[A-Za-z]\([^)]*\|[^)]*\)')
+
+# ORPHAN_TABLE_ROW lookahead bound: how many lines forward from a recognized
+# table block's end we scan for an orphan pipe-line. A bound of 30 covers the
+# `Figure extraite de ...` paragraph (~6 lines) + an empty line + the orphan
+# row, which is the canonical c.770/#10097 pattern; larger values would catch
+# more but risk false positives on legitimately-spaced prose later in the doc
+# (an unrelated `| a | b |` enumeration).
+ORPHAN_LOOKAHEAD = 30
 
 # List-item marker (CommonMark): a line beginning with a bullet (``-``/``*``/
 # ``+``) or an ordered-list marker (``1.``/``1)``) after up to 3 leading spaces.
@@ -233,6 +274,37 @@ def _find_table_blocks(lines):
     return blocks
 
 
+def _build_fence_state(lines):
+    """Return a list ``state[i] = True`` iff line ``i`` (0-indexed) is INSIDE a fenced code block.
+
+    A fence opens at line ``i`` (matches ``FENCE_OPEN_RE``) and stays open until
+    the next line whose opening fence uses the same character (`` ``` `` or ``~~~``).
+    Used by ``detect_md_table_syntax`` to skip pipe-lines that live inside a code
+    block -- GFM does not parse tables inside fences, so a ``| grep | wc`` line in
+    a ``\\`\\`\\`bash`` block is literal prose, not a table continuation. c.770
+    pre-c.771 scanner treated these as orphan continuation rows and produced
+    false-positive ORPHAN_TABLE_ROW findings (reproduced 2026-08-31 by po-2025
+    adjoint on PR #13843).
+    """
+    n = len(lines)
+    state = [False] * n
+    in_fence = False
+    marker = None
+    for i in range(n):
+        if in_fence:
+            state[i] = True
+            m = FENCE_OPEN_RE.match(lines[i])
+            if m and m.group(1)[0] == marker:
+                in_fence = False
+                marker = None
+            continue
+        m = FENCE_OPEN_RE.match(lines[i])
+        if m:
+            in_fence = True
+            marker = m.group(1)[0]
+    return state
+
+
 def _column_count(line):
     """Count GFM table columns in a line.
 
@@ -269,6 +341,30 @@ def _has_bare_pipe_in_code_span(line):
     return False
 
 
+def _has_bare_pipe_in_math_span(line):
+    """True if a real inline-math span holds a raw ``|``.
+
+    ``MATH_SPAN_RE`` can conservatively bridge two currency markers across a cell
+    delimiter (``Input ($/1M) | Output ($/1M)``). A whitespace-padded pipe inside
+    such a match is the table delimiter, not math content, so it remains excluded.
+    Already escaped ``\\|`` forms are safe and excluded too.
+    """
+    for match in MATH_SPAN_RE.finditer(line):
+        span = ESCAPED_PIPE_RE.sub('', match.group(0))
+        for index, char in enumerate(span):
+            if char != '|':
+                continue
+            is_padded_delimiter = (
+                index > 0
+                and index + 1 < len(span)
+                and span[index - 1].isspace()
+                and span[index + 1].isspace()
+            )
+            if not is_padded_delimiter:
+                return True
+    return False
+
+
 def _is_blank(line):
     # A bare blockquote marker ``>`` (optionally followed by whitespace) renders
     # as a blank separator within a blockquote -- it provides the same visual
@@ -283,8 +379,13 @@ def _is_blank(line):
 # Pathology detection on a cell/file's lines
 # ---------------------------------------------------------------------------
 
-def detect_md_table_syntax(lines, source_label="line"):
-    """Detect the 4 pathologies in a list of source lines.
+def detect_md_table_syntax(
+        lines, source_label="line", detect_math_span_pipes=False):
+    """Detect table pathologies in a list of source lines.
+
+    ``detect_math_span_pipes`` is notebook-specific: the notebook renderer splits
+    table cells before rendering inline math, while regular GitHub Markdown renders
+    raw absolute-value bars inside math spans correctly.
 
     Returns a list of findings: dict(pathology, line, detail, snippet).
     `line` is 1-indexed within `lines`. `source_label` is used only for the
@@ -293,6 +394,7 @@ def detect_md_table_syntax(lines, source_label="line"):
     findings = []
     n = len(lines)
     blocks = _find_table_blocks(lines)
+    fence_state = _build_fence_state(lines)
 
     for blk in blocks:
         rows = blk["rows"]
@@ -364,6 +466,18 @@ def detect_md_table_syntax(lines, source_label="line"):
                         ),
                         "snippet": c_line.strip()[:80],
                     })
+                if (detect_math_span_pipes
+                        and _has_bare_pipe_in_math_span(c_line)):
+                    findings.append({
+                        "pathology": "MATH_SPAN_PIPE",
+                        "line": c_lnum,
+                        "detail": (
+                            "pipe brute dans un span mathematique ($...$) d'une "
+                            "cellule de table -> le renderer notebook decoupe la "
+                            "cellule et casse la table ; utiliser \\lvert/\\rvert"
+                        ),
+                        "snippet": c_line.strip()[:80],
+                    })
 
         # --- NO_BLANK_BEFORE: line immediately before the block is prose ---
         # block occupies lines [blk['start'] .. blk['end']] (1-indexed) in the
@@ -402,6 +516,69 @@ def detect_md_table_syntax(lines, source_label="line"):
                     "snippet": nxt.strip()[:80],
                 })
 
+        # --- ORPHAN_TABLE_ROW: pipe-line that LOST its table header ---
+        # For a recognized GFM table (sep present), scan forward from the block
+        # end through intervening non-pipe content (prose / image / italic /
+        # list / fence). The FIRST pipe-line within ORPHAN_LOOKAHEAD lines
+        # whose column count matches the header's (or differs by exactly 1,
+        # a common off-by-one when authors trim a trailing |) is an orphan
+        # continuation row -- it lost its header/separator, so GFM renders
+        # it as literal pipe-prefixed prose. Actionable fix: re-declare the
+        # header BEFORE the orphan rows (do NOT just add a `|---|` -- that
+        # would make the orphans a brand-new table with their own column
+        # count, hiding the realignment the author intended).
+        # See #10097 (c.770 user extension, 2026-08-31).
+        if blk["has_sep"] and sep_idx > 0:
+            header_line = rows[sep_idx - 1][1]
+            header_cols = _column_count(header_line)
+            end_idx = blk["end"]  # 0-indexed of last pipe-line
+            j = end_idx + 1
+            gap = 0
+            while j < n and gap < ORPHAN_LOOKAHEAD:
+                # Skip lines INSIDE fenced code blocks: GFM does not parse tables
+                # inside fences, so a `| grep | wc` line in a ```bash block is
+                # literal prose, not a table continuation. (c.773 -- po-2025
+                # adjoint FP on #13843 reproduced 2026-08-31.)
+                if fence_state[j]:
+                    gap += 1
+                    j += 1
+                    continue
+                if not _has_delimiter_pipe(lines[j]):
+                    # A heading between the table and the candidate orphan is a
+                    # hard break (the author started a NEW section -> the
+                    # pipe-line that follows is the start of a new table, not
+                    # a continuation of the prior one). Without this guard,
+                    # the canonical README pattern (a `Famille | Modules | ...`
+                    # table, then `### Strate 1`, then `| Document | Contenu |`)
+                    # would be misflagged as an orphan.
+                    if HEADING_RE.match(lines[j]):
+                        break
+                    gap += 1
+                    j += 1
+                    continue
+                cand_lnum = j + 1
+                cand_line = lines[j]
+                cand_cols = _column_count(cand_line)
+                # If the candidate is itself a header (followed by a separator
+                # row on the next line), it is the START of a new table, not an
+                # orphan continuation of the prior one. Skip without flagging.
+                if (j + 1) < n and SEP_ROW_RE.match(lines[j + 1].strip()):
+                    break
+                if abs(cand_cols - header_cols) <= 1:
+                    findings.append({
+                        "pathology": "ORPHAN_TABLE_ROW",
+                        "line": cand_lnum,
+                        "detail": (
+                            f"ligne pipe apres break (image/italic/prose) suivant "
+                            f"une table reconnue (header {header_cols} colonnes, "
+                            f"orpheline {cand_cols}) -> rendue comme paragraphe "
+                            f"literal ; re-declarer le header avant cette ligne"
+                        ),
+                        "snippet": cand_line.strip()[:80],
+                    })
+                    break
+                break
+
     findings.sort(key=lambda f: (f["line"], f["pathology"]))
     return findings
 
@@ -422,7 +599,7 @@ def scan_notebook(path):
             continue
         src = cell.get("source", [])
         lines = "".join(src).split("\n") if isinstance(src, list) else src.split("\n")
-        for f in detect_md_table_syntax(lines):
+        for f in detect_md_table_syntax(lines, detect_math_span_pipes=True):
             findings.append({"cell_index": ci, **f})
     return {"path": str(path), "error": None, "findings": findings}
 

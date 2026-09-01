@@ -197,6 +197,34 @@ Le stamp `_work\_tool` (section précédente) persiste à travers ces cycles : l
 
 Diagnostic complet et arbitrage : #13217. Chantier runners : #12704.
 
+## Runner Linux conteneurisé (po-2024, mission #13378)
+
+Le volet Linux du chantier passe par **Docker plutôt que WSL nu** (décision user relayée par ai-01, dispatch 2026-08-31) : isolation (conteneur jetable vs compte Windows sous ACL), éphémérité native (cycle de vie porté par `docker run --rm`, pas de ré-enregistrement à orchestrer côté service), plafonnement ressources par le daemon.
+
+**Contexte** : `scripts/ci/docker/linux-runner/` (Dockerfile — runner 2.336.0 linux-x64 épinglé par SHA-256 officiel, utilisateur non-root, aucun montage hôte ; entrypoint — enregistrement via `ACTIONS_RUNNER_INPUT_*` uniquement, jamais `--token` en argv).
+
+**Lancement cappé** (contraintes user : la machine sert aussi de workstation GPU + interactive — l'hôte prime sur la CI) :
+
+```bash
+TOKEN=$(gh api repos/jsboige/CoursIA/actions/runners/registration-token --jq .token)
+docker run --rm -d --name coursia-linux-runner \
+  --cpus=3 --memory=4g --pids-limit=384 \
+  --security-opt=no-new-privileges \
+  -e ACTIONS_RUNNER_INPUT_TOKEN="$TOKEN" \
+  -e ACTIONS_RUNNER_INPUT_URL=https://github.com/jsboige/CoursIA \
+  -e ACTIONS_RUNNER_INPUT_NAME=myia-po-2024-linux-docker \
+  -e ACTIONS_RUNNER_INPUT_LABELS=self-hosted,coursia-ephemeral,coursia-linux \
+  coursia-linux-runner:2.336.0
+```
+
+Pas de `--gpus` (aucun passthrough GPU, par design). Le runner `--ephemeral` traite **au plus un job** puis se désenregistre et le conteneur `--rm` disparaît : un dispatch = un job = un conteneur. La concurrence est plafonnée à 1 par construction.
+
+**Labels dédiés** : le jeu `{self-hosted, coursia-ephemeral, coursia-linux}` (second jeu admis par `check_self_hosted_runner_policy.py`) route uniquement vers le conteneur — un dispatch Windows ne peut jamais y atterrir, un job Linux ne peut jamais atterrir sur un runner Windows. Mélanger les deux jeux reste une violation (`RUNNER_LABELS`).
+
+**État pilote** : `linux-self-hosted-tests.yml` est dispatch-ONLY (zéro fan-out, pattern #13097) et exécute le guard de policy (`test_check_self_hosted_runner_policy.py`, python pur, aucune écriture hors workspace conteneurisé). Les 93 jobs ubuntu-latest du census #13378 restent sur GitHub-hosted tant que la mesure d'empreinte n'a pas porté l'élargissement — décision coordinateur, pas worker.
+
+Si l'empreinte mesurée pendant un job gêne la workstation (training GPU, sessions interactives), on **réduit les caps ou on arrête**, et on le signale à ai-01.
+
 ## Tranches suivantes, activation partielle
 
 La préparation complète reste découpée :

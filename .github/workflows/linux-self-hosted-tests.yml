@@ -1,0 +1,63 @@
+name: Linux Self-Hosted Tests
+
+# Mission #13378 (dispatch ai-01 2026-08-31) : runner Linux conteneurise sur
+# po-2024. Dispatch-only : ZERO declencheur pull_request/push, donc zero
+# fan-out CI -- pattern #13097 (windows-self-hosted-tests.yml).
+#
+# Cycle de vie : le conteneur porte un runner --ephemeral (AU PLUS UN JOB
+# puis desenregistrement natif). Chaque dispatch consomme l'enregistrement
+# courant : un dispatch, un job, un conteneur. Ne pas dispatcher deux fois
+# de suite sans avoir relance le conteneur (scripts/ci/docker/linux-runner/).
+#
+# Sous-semble pilote volontairement etroit : le guard de policy des runners
+# self-hosted (python pur, aucune ecriture disque, non critique). Les 93
+# jobs ubuntu-latest du census #13378 restent sur GitHub-hosted tant que la
+# mesure d'empreinte n'a pas porte l'elargissement (decision coordinateur).
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  linux-policy-tests:
+    name: Runner policy tests (Linux container)
+    # Garde fork EXPLICITE au niveau job (defense-in-depth, pattern maison).
+    # Le declencheur actuel est workflow_dispatch seul -- un fork ne peut pas
+    # l'emettre -- mais "pas de trigger" est un etat qu'une ligne de YAML
+    # defait : si un declencheur pull_request est ajoute un jour, un evenement
+    # fork est refuse ICI.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    timeout-minutes: 10
+    concurrency:
+      group: linux-self-hosted-policy
+      cancel-in-progress: true
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install test dependencies
+        run: python -m pip install pytest pyyaml
+
+      # Preuve d'identite : ce job doit s'executer DANS le conteneur Linux
+      # (RUNNER_OS=Linux, RUNNER_ARCH=X64), pas sur un runner Windows ou
+      # GitHub-hosted -- sinon la demonstration #13378 est nulle.
+      - name: Identity proof
+        run: |
+          echo "runner.name=$RUNNER_NAME"
+          echo "runner.os=$RUNNER_OS"
+          echo "runner.arch=$RUNNER_ARCH"
+          echo "runner.temp=$RUNNER_TEMP"
+          python --version
+          [ "$RUNNER_OS" = "Linux" ] || { echo "FAIL: RUNNER_OS != Linux"; exit 1; }
+
+      # Guard de policy self-hosted : python pur, non critique, aucune
+      # ecriture hors workspace conteneurise.
+      - name: Run runner-policy tests
+        run: python -m pytest scripts/tests/test_check_self_hosted_runner_policy.py -v

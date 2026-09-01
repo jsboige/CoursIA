@@ -143,7 +143,7 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 | 22 | Planners-10: LLMs pour la Planification | BETA | Non |
 | 23 | Planners-11: Unified Planning | BETA | Oui |
 | 24 | Planners-12: Learning to Plan avec LOOP | BETA | Non |
-| 25 | Planners-14: Le LLM comme reducteur d'espace de… | BETA | Non |
+| 25 | Planners-10b: Le LLM comme reducteur d'espace de… | BETA | Non |
 
 ## SymbolicAI/SMT (45 notebooks)
 
