@@ -18,6 +18,15 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- Tranche 3 (couche ML config AutoML) : paire AutoML figee identique au projet de
+         tests (cadrage 2.2, seule combinaison Restore+build+exec verifiee sur net9.0).
+         Newtonsoft.Json : pin repo 13.0.3, requis par TradingAutoMlModelConfig. -->
+    <PackageReference Include="Microsoft.ML.AutoML" Version="0.24.0-preview.26160.2" />
+    <PackageReference Include="Microsoft.ML" Version="6.0.0-preview.26160.2" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\MyIA.AI.Shared\MyIA.AI.Shared.csproj" />
     <ProjectReference Include="..\MyIA.Trading.Converter\MyIA.Trading.Converter.csproj" />
   </ItemGroup>

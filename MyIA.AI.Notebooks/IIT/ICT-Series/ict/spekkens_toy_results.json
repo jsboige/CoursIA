@@ -1,0 +1,92 @@
+{
+  "case": "case 10 — restriction épistémique ⟂ contextualité (Spekkens toy)",
+  "pre_registration_commit": "82e187e5f",
+  "P1a_no_disturbance": 1.0,
+  "P1b_exact_Y": 0.5,
+  "P1b_exact_Z": 0.5,
+  "P1b_mc_5seeds": {
+    "Y": [
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ],
+    "Z": [
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "P1c_clairvoyant": 1.0,
+  "P2_chsh_toy": {
+    "max_S": 2.0,
+    "n_states": 1820,
+    "n_combos": 9,
+    "argmax_support": [
+      [
+        1,
+        1
+      ],
+      [
+        1,
+        2
+      ],
+      [
+        2,
+        2
+      ],
+      [
+        2,
+        3
+      ]
+    ],
+    "argmax_combo": [
+      "X",
+      "Y",
+      "X",
+      "Z"
+    ]
+  },
+  "P2_qm_reference": {
+    "S_qm": 2.82842712474619,
+    "S_qm_theoretical": 2.8284271247461903
+  },
+  "S1_no_cloning": {
+    "fidelity_per_basis": {
+      "X": 0.3333333333333333,
+      "Y": 0.3333333333333333,
+      "Z": 0.3333333333333333
+    },
+    "best_fidelity": 0.3333333333333333,
+    "clairvoyant_fidelity": 1.0
+  },
+  "verdicts": {
+    "P1": "PASS",
+    "P2": "PASS"
+  },
+  "bands": {
+    "P1a": [
+      0.99,
+      1.01
+    ],
+    "P1b_exact": [
+      0.48,
+      0.52
+    ],
+    "P1c": [
+      0.99,
+      1.01
+    ],
+    "max_S_toy": [
+      1.99,
+      2.01
+    ],
+    "S_qm": [
+      2.82,
+      2.83
+    ]
+  }
+}
