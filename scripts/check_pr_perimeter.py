@@ -396,6 +396,112 @@ def _count_is_range_enum(line: str, m: re.Match) -> bool:
     return bool(_RANGE_ENUM_TAIL.match(tail if nl < 0 else tail[:nl]))
 
 
+# #13946 : nombre « nu » apres verbe de perimetre -- l'ellipse du nom est
+# legittime en francais (« qui en touche 2 ») et en anglais shorthand
+# (« touches 2 », « adds 2 »). Sans cette variante, le perimetre reel
+# (« touche 2 ») n'est pas visible pour le predicat de co-presence.
+_BARE_COUNT_VERBS = (
+    "touche", "touchent", "livré", "livrée", "livres", "livre",
+    "modifie", "modifiés", "modifiée", "modifiees",
+    "ajoute", "ajouté", "ajoutés", "ajoutée",
+    "englobe", "englobent", "concerne", "concernent",
+)
+_BARE_COUNT_AFTER_VERB_RE = re.compile(
+    r"\b(?:" + "|".join(_BARE_COUNT_VERBS) + r")\s+(\d+)\b",
+    re.IGNORECASE,
+)
+
+
+# #13946 : un compte N fichiers est cite POUR ETRE REFUTE quand, sur la meme
+# ligne ou dans le meme bloc de paragraphe, une AUTRE assertion de perimetre
+# explicite (verbe d'action + compte qui matche len(files)) declare le vrai
+# perimetre. Le garde punissait la precaution qu'il devrait recompenser :
+# l'auteur desambigue (cite les comptes hors-scope, declare le perimetre
+# reel), et plus il ecrit d'occurrences du nombre, plus il a de chances de
+# rougir. Le predicat ci-dessous distingue *affirmer* un compte de le *citer
+# pour le nier* en co-presence d'une assertion concurrente du meme paragraphe.
+#
+# Verbe d'action = un mot-cle qui designe ce que la PR livre / modifie /
+# touche, distinct d'un verbe de mention / citation / description.
+_PERIMETER_VERBS = (
+    "touche", "touchent", "livré", "livrée", "livres", "livre",
+    "modifie", "modifiés", "modifiée", "modifiees",
+    "ajoute", "ajouté", "ajoutés", "ajoutée",
+    "perimetre", "périmètre", "perimeter",
+    "scope", "englobe", "englobent", "concerne", "concernent",
+    "edition", "édition",
+)
+_PERIMETER_VERB_RE = re.compile(
+    r"\b(?:" + "|".join(_PERIMETER_VERBS) + r")\b", re.IGNORECASE
+)
+
+
+def _count_concurrent_with_perimeter_claim(
+    line: str, m: re.Match, block: str, file_count: int
+) -> bool:
+    """True when the count `m` is CO-PRESENT on its line (or in the enclosing
+    paragraph block) with a competing perimeter assertion whose numeric value
+    matches `file_count`. Founder #13946 : PR #13856 wrote « 28 fichiers tranche
+    3 » (compte prévisionnel hors-scope) AND « qui en touche 2 » (perimetre
+    reel) on the same line -- the body explicitly named both numbers, the
+    author meant the second, the guard read the first.
+
+    Two sub-cases detected:
+    (a) SAME LINE : a perimeter verb followed (anywhere on the rest of the
+        line) by a count whose value matches `file_count`. The count form
+        can be EITHER « N fichiers » (COUNT_CLAIM) OR « verbe N » (ellipse
+        du nom -- « qui en touche 2 », « touches 2 »). The match `m` is the
+        other count, on the same surface.
+    (b) SAME BLOCK : the enclosing paragraph block contains a perimeter verb
+        followed by a count matching `file_count`. The match `m` is one of
+        multiple counts on a multi-line scope statement.
+
+    Safe by construction : exemption fires only when ANOTHER count on the same
+    line or block matches len(files). A single count whose value already
+    matches len(files) never reaches this branch (claimed == len(files)
+    short-circuits earlier in check_assertion). The only way the exemption
+    triggers is a perimeter assertion that competes with `m` -- exactly the
+    co-presence the issue names.
+    """
+    claimed = int(m.group(1))
+    if claimed == file_count:
+        return False  # m itself already matches; no exemption needed
+    if not _PERIMETER_VERB_RE.search(line):
+        return False  # no perimeter verb on m's line -> nothing competes
+
+    def _has_matching_count_on(surface: str, start_excl: int = -1) -> bool:
+        # (1) « N fichiers » shape -- COUNT_CLAIM matches the named form
+        for other in COUNT_CLAIM.finditer(surface):
+            if other.start() == start_excl:
+                continue
+            if int(other.group(1)) == file_count:
+                return True
+        # (2) bare « verbe N » shape -- _BARE_COUNT_AFTER_VERB_RE matches
+        # the ellipse. The verb is captured IN the regex, so any hit has
+        # the verb present.
+        for other in _BARE_COUNT_AFTER_VERB_RE.finditer(surface):
+            if int(other.group(1)) == file_count:
+                return True
+        return False
+
+    # (a) same line : any other count (named or bare) matches file_count
+    if _has_matching_count_on(line, start_excl=m.start()):
+        return True
+    # (b) same paragraph block : a perimeter verb + matching count on
+    #     ANOTHER line of the block. m's own line is excluded (already
+    #     covered by (a) -- the verb may sit on m's line, with the
+    #     matching count following it).
+    if block:
+        m_line_idx = block.count("\n", 0, block.find(line)) if line in block else -1
+        block_lines = block.splitlines()
+        for idx, bl_line in enumerate(block_lines):
+            if idx == m_line_idx:
+                continue
+            if _PERIMETER_VERB_RE.search(bl_line) and _has_matching_count_on(bl_line):
+                return True
+    return False
+
+
 def check_assertion(files: list[dict], assertion: str, block: str = "") -> list[str]:
     """Confront a perimeter assertion with the effective file list.
 
@@ -446,6 +552,16 @@ def check_assertion(files: list[dict], assertion: str, block: str = "") -> list[
                 if int(mm.group(1)) != 0
                 and not _count_in_citation(scan_target, mm)
                 and not _count_is_range_enum(scan_target, mm)
+                # #13946 : a count cited to be refuted is CO-PRESENT with a
+                # competing perimeter assertion that names len(files). The
+                # filter is content-based, not label-based: the author who
+                # disambiguates by writing "X fichiers (hors scope) qui en
+                # touche Y" deserves the green, not the red. block is the
+                # same enclosing paragraph as the candidate (passed by the
+                # caller's extract_perimeter_assertions_with_block).
+                and not _count_concurrent_with_perimeter_claim(
+                    scan_target, mm, block, len(files)
+                )
             ),
             None,
         )

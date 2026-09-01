@@ -31,6 +31,7 @@ from check_pr_perimeter import (  # noqa: E402
     select_candidates,
     _additive_line_sum,
     _check_unterminated_fence,
+    _count_concurrent_with_perimeter_claim,
     _count_is_exempt,
     _count_is_incidental,
     _fence_line_indices,
@@ -3148,3 +3149,122 @@ def test_13791_paragraph_block_boundaries():
     fenced = "- 1 fichier a\n```python\nx = 1\n```\n"
     idx_f = fenced.splitlines().index("- 1 fichier a")
     assert "x = 1" not in _paragraph_block(fenced, idx_f)
+
+
+# #13946 : un compte N fichiers est cité POUR ÊTRE RÉFUTÉ quand, sur la même
+# ligne ou dans le même bloc de paragraphe, une AUTRE assertion de périmètre
+# explicite (verbe d'action + compte qui matche len(files)) déclare le vrai
+# périmètre. Tests couvrent (a) le scenario fondateur verbatim, (b) la
+# co-presence sur la même ligne sous une autre forme (« perimetre livre N »),
+# (c) la co-presence entre lignes d'un même bloc, (d) le contrôle FN : sans
+# assertion concurrente le compte est confronté normalement.
+
+
+def _first_count_match(line: str, value: str):
+    """Pick the COUNT_CLAIM match whose value equals `value`."""
+    import re as _re
+    pat = _re.compile(r"\b(\d+)\s*(?:fichiers?|files?)\b", _re.IGNORECASE)
+    return next(m for m in pat.finditer(line) if m.group(1) == value)
+
+
+def test_13946_founder_line_exempts_cited_count():
+    """#13856 founder : « 28 fichiers tranche 3 » co-present avec
+    « qui en touche 2 » sur la meme ligne. Le 28 est cite pour etre refute,
+    le 2 est le perimetre reel. Exemption."""
+    line = (
+        "compte « 28 fichiers tranche 3 » sont des constats empiriques "
+        "previsionnels pour les tranches ulterieures (HORS scope PR), "
+        "pas le perimetre livre par cette PR qui en touche 2 (CLAUDE.md "
+        "+ _archive-convention.md)."
+    )
+    m = _first_count_match(line, "28")
+    files = [{"path": "CLAUDE.md"}, {"path": "docs/reference/_archive-convention.md"}]
+    assert _count_concurrent_with_perimeter_claim(line, m, line, len(files)) is True
+
+
+def test_13946_same_line_named_form_exempts():
+    """Co-presence meme ligne sous la forme « perimetre livre N fichiers ». Le 28
+    est hors-scope, le 2 (apres « livre ») est le perimetre reel."""
+    line = "« 28 fichiers » previsionnels, le perimetre livre 2 fichiers"
+    m = _first_count_match(line, "28")
+    files = [{"path": "a.py"}, {"path": "b.py"}]
+    assert _count_concurrent_with_perimeter_claim(line, m, line, len(files)) is True
+
+
+def test_13946_multiline_block_exempts():
+    """Co-presence entre lignes du meme paragraphe : le 28 sur la premiere ligne
+    (avec verbe de perimetre) declare le perimetre reel, le compte 99 sur la
+    deuxieme ligne est le hors-scope."""
+    block = (
+        "Le perimetre livre 28 fichiers dans cette tranche.\n"
+        "Hors scope : 99 fichiers seront touches ulterieurement.\n"
+    )
+    m = _first_count_match(block, "99")
+    files = [{"path": f"f{i}.py"} for i in range(28)]
+    assert _count_concurrent_with_perimeter_claim(block, m, block, len(files)) is True
+
+
+def test_13946_no_concurrent_claim_does_not_exempt():
+    """Controle FN : « 28 fichiers » seul, sans assertion concurrente qui matche
+    len(files), n'est pas exempté. Le predicat laisse passer le compte vers
+    la confrontation (qui rougit)."""
+    line = "Jai modifie 28 fichiers dans cette PR."
+    m = _first_count_match(line, "28")
+    files = [{"path": "a.py"}, {"path": "b.py"}]
+    assert _count_concurrent_with_perimeter_claim(line, m, line, len(files)) is False
+
+
+def test_13946_no_perimeter_verb_does_not_exempt():
+    """Controle FN : pas de verbe de perimetre sur la ligne -> pas d'exemption,
+    meme si plusieurs nombres sont co-presents."""
+    line = "Inventaire : 28 fichiers totaux, 2 dossiers, 11 emplacements."
+    m = _first_count_match(line, "28")
+    files = [{"path": "a.py"}, {"path": "b.py"}]
+    assert _count_concurrent_with_perimeter_claim(line, m, line, len(files)) is False
+
+
+def test_13946_no_other_count_does_not_exempt():
+    """Controle FN : verbe de perimetre present mais AUCUN autre count qui
+    matche len(files) -> pas d'exemption."""
+    line = "Le perimetre livre 5 fichiers (cette PR en touche 7 ailleurs)."
+    # line n'a pas de COUNT_CLAIM (« 5 fichiers » est un count, mais le verbe
+    # est sur la meme ligne ; le predicat regarde si un AUTRE count matche).
+    # On prend le 7 (word-form, pas COUNT_CLAIM). Simulons : seul un compte
+    # « 5 fichiers » matche COUNT_CLAIM, et il matche lui-meme le verbe.
+    # En construisant m=5, on demande si un autre count matche len(files)=5.
+    # Aucun autre -> pas d'exemption.
+    m = _first_count_match(line, "5")
+    files = [{"path": f"f{i}.py"} for i in range(5)]
+    assert _count_concurrent_with_perimeter_claim(line, m, line, len(files)) is False
+
+
+def test_13946_founder_pr_13856_scan_passes():
+    """Integration : `check_pr_perimeter 13856 --scan-thread` rend rc=0
+    apres le fix. Le corps de #13856 a le 28 dans un span «» ET en co-
+    presence avec « qui en touche 2 » -- le fix couvre la classe, le span
+    couvre deja l'instance."""
+    import subprocess
+    proc = subprocess.run(
+        ["python", "scripts/check_pr_perimeter.py", "13856", "--scan-thread"],
+        capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=".",
+    )
+    assert proc.returncode == 0, (
+        f"PR #13856 doit passer apres le fix, a rendu rc={proc.returncode}\n"
+        f"stdout:\n{proc.stdout}\nstderr:\n{proc.stderr}"
+    )
+
+
+def test_13946_tp_pr_13860_still_red():
+    """Non-regression : #13860 (vrai positif : body pretend 2 fichiers,
+    liste effective 0) reste rouge. Le predicat ne s'active que quand UNE
+    AUTRE assertion de perimetre matche len(files), pas quand le body est
+    simplement faux."""
+    import subprocess
+    proc = subprocess.run(
+        ["python", "scripts/check_pr_perimeter.py", "13860", "--scan-thread"],
+        capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=".",
+    )
+    assert proc.returncode == 1, (
+        f"PR #13860 doit rester rouge (vrai positif), a rendu rc={proc.returncode}\n"
+        f"stdout:\n{proc.stdout}"
+    )
