@@ -37,21 +37,21 @@ Provenance des images de `assets/` du parcours « Tour de la plateforme » (Epic
 ## 01-connexion.png
 
 - **Source** : capture Playwright sur instance Open-WebUI **v0.11.0** (tour-captures.spec.ts, scénario « pre-auth login ») — re-capture 2026-08-30, 29 506 octets (formulaire rendu ; la version #4809 figeait le shell pré-rendu).
-- **Description visuelle** (vérifiée vision) : page de connexion **rendue** — titre « Connectez-vous à Formation Pro Open-Webui (Open WebUI) », champs **« E-mail » et « Mot de passe » vides**, bouton « Connexion », lien « Vous n'avez pas de compte ? Inscrivez-vous ». Aucune donnée saisie, aucun compte identifiable.
+- **Description visuelle** : *(vérifiée vision)* page de connexion **rendue** — titre « Connectez-vous à Formation Pro Open-Webui (Open WebUI) », champs **« E-mail » et « Mot de passe » vides**, bouton « Connexion », lien « Vous n'avez pas de compte ? Inscrivez-vous ». Aucune donnée saisie, aucun compte identifiable.
 - **Alt-text (FR)** : Page de connexion Open WebUI v0.11.0 — formulaire vide (E-mail / Mot de passe), aucun identifiant saisi.
 - **Poids** : 28,8 Ko (natif PNG 1440×900)
 
 ## 01-premiere-vue.png
 
 - **Source** : capture Playwright sur Open-WebUI **v0.11.0** (tour-captures.spec.ts, scénario « première vue post-connexion ») — nouvelle figure 2026-08-30, 59 432 octets.
-- **Description visuelle** (vérifiée vision + scan pixel) : écran de chat après authentification — modèle présélectionné « TP Data Analyst Agent » (tuteur), suggestions d'invites, panneau Fichiers du compte neuf (`.bash_logout`, `.bashrc`), toast « Vous êtes désormais connecté. ». Le contrôle « Open Terminal (…) » du composer est **masqué** (boîte magenta — scan pixel vérifié sur sa zone).
+- **Description visuelle** : *(vérifiée vision + scan pixel)* écran de chat après authentification — modèle présélectionné « TP Data Analyst Agent » (tuteur), suggestions d'invites, panneau Fichiers du compte neuf (`.bash_logout`, `.bashrc`), toast « Vous êtes désormais connecté. ». Le contrôle « Open Terminal (…) » du composer est **masqué** (boîte magenta — scan pixel vérifié sur sa zone).
 - **Alt-text (FR)** : Première vue post-connexion de la plateforme Open WebUI v0.11.0 (chat, compte de capture non-admin).
 - **Poids** : 58,0 Ko (natif PNG 1440×900)
 
 ## 02-chat-streaming.png
 
 - **Source** : capture Playwright sur Open-WebUI **v0.11.0** (tour-captures.spec.ts, scénario « réponse en streaming sur invite fictive ») — nouvelle figure 2026-08-30, 138 135 octets (régénérée après correction des défauts 1 et 3).
-- **Description visuelle** (vérifiée vision, transcription à l'aveugle) : réponse de l'assistant **« TP Prompt Engineering »** à l'invite fictive **« Rédige un court poème sur la mer. »** — un court poème (« Sur le sable, le sel s'incruste… ») puis **l'analyse pédagogique du tuteur** (leçon Zero-Shot, rôle et contexte, défi du module 1) : le tuteur ajoute cette analyse par conception. Composer en bas avec le chip du modèle ; zones d'identité masquées (boîtes magenta) ; aucun identifiant, aucune URL, aucun secret (vérifié par transcription à l'aveugle des bandes basse et médiane).
+- **Description visuelle** : *(vérifiée vision, transcription à l'aveugle)* réponse de l'assistant **« TP Prompt Engineering »** à l'invite fictive **« Rédige un court poème sur la mer. »** — un court poème (« Sur le sable, le sel s'incruste… ») puis **l'analyse pédagogique du tuteur** (leçon Zero-Shot, rôle et contexte, défi du module 1) : le tuteur ajoute cette analyse par conception. Composer en bas avec le chip du modèle ; zones d'identité masquées (boîtes magenta) ; aucun identifiant, aucune URL, aucun secret (vérifié par transcription à l'aveugle des bandes basse et médiane).
 - **Note d'incident (2026-08-30)** : la réponse est servie par le **modèle local** (`Local.qwen3.6-35b-a3b`) car l'abonnement MistralAI était épuisé au moment de la capture (erreur 400 « Check your subscription » côté admin, « Model not found » sanitizée côté non-admin) et v0.11 rend les bases sans ligne DB admin-only. Le tuteur « TP Prompt Engineering » de l'instance de capture a été rebasé sur le modèle local pour cette figure (rebasage réversible : base d'origine `MistralAI.mistral-medium-latest`).
 - **Alt-text (FR)** : Réponse du tuteur « TP Prompt Engineering » (Open WebUI v0.11.0) à l'invite fictive « Rédige un court poème sur la mer. » — poème puis analyse de prompt.
 - **Poids** : 134,9 Ko (natif PNG 1440×900)
@@ -59,21 +59,21 @@ Provenance des images de `assets/` du parcours « Tour de la plateforme » (Epic
 ## 03-dossier-equipe.png
 
 - **Source** : capture Playwright sur Open-WebUI **v0.11.0** (tour-captures.spec.ts, scénario « dossier d'équipe v0.10 ») — nouvelle figure 2026-08-30, 57 169 octets.
-- **Description visuelle** (vérifiée vision + scan pixel) : écran de chat, panneau Fichiers du compte neuf avec le champ **« Nom du dossier »** actif (création de dossier), fichiers `.bash_logout` / `.bashrc` / `datasets`. Contrôle « Open Terminal (…) » **masqué** (boîte magenta, scan pixel vérifié).
+- **Description visuelle** : *(vérifiée vision + scan pixel)* écran de chat, panneau Fichiers du compte neuf avec le champ **« Nom du dossier »** actif (création de dossier), fichiers `.bash_logout` / `.bashrc` / `datasets`. Contrôle « Open Terminal (…) » **masqué** (boîte magenta, scan pixel vérifié).
 - **Alt-text (FR)** : Création d'un dossier (« Nom du dossier ») dans le panneau Fichiers, compte neuf — Open WebUI v0.11.0.
 - **Poids** : 55,8 Ko (natif PNG 1440×900)
 
 ## 05-parametres.png
 
 - **Source** : capture Playwright sur Open-WebUI **v0.11.0** (tour-captures.spec.ts, scénario « paramètres personnels ») — nouvelle figure 2026-08-30, 66 550 octets.
-- **Description visuelle** (vérifiée vision) : dialogue **Réglages** ouvert sur l'onglet **« Général »** (thème, langue, prompt système, réglages avancés), bandeau « Vous êtes désormais connecté. », zones d'identité masquées (boîtes magenta sur le coin supérieur et la colonne de droite). Navigation : le bouton du menu utilisateur porte le libellé FR « Menu utilisateur » et l'entrée « Réglages » est un `<button>` (pas un `role=menuitem`).
+- **Description visuelle** : *(vérifiée vision)* dialogue **Réglages** ouvert sur l'onglet **« Général »** (thème, langue, prompt système, réglages avancés), bandeau « Vous êtes désormais connecté. », zones d'identité masquées (boîtes magenta sur le coin supérieur et la colonne de droite). Navigation : le bouton du menu utilisateur porte le libellé FR « Menu utilisateur » et l'entrée « Réglages » est un `<button>` (pas un `role=menuitem`).
 - **Alt-text (FR)** : Dialogue Réglages Open WebUI v0.11.0, onglet Général.
 - **Poids** : 65,0 Ko (natif PNG 1440×900)
 
 ## 05-memoire.png
 
 - **Source** : capture Playwright sur Open-WebUI **v0.11.0** (tour-captures.spec.ts, scénario « mémoire vide sur compte neuf ») — re-capture 2026-08-30, 56 073 octets.
-- **Description visuelle** (vérifiée vision) : onglet **Personnalisation** → section **Mémoire (EXPÉRIMENTAL)**, état vide « **Saved Memories 0** » directement visible. **Évolution UX v0.10 → v0.11** : en v0.11 le panneau mémoire est affiché directement sur l'onglet Personnalisation — le bouton « Gérer » (qui ouvrait la sous-modale « Mémoire 0 » en v0.10.2) **n'existe plus** ; le test a été corrigé en conséquence.
+- **Description visuelle** : *(vérifiée vision)* onglet **Personnalisation** → section **Mémoire (EXPÉRIMENTAL)**, état vide « **Saved Memories 0** » directement visible. **Évolution UX v0.10 → v0.11** : en v0.11 le panneau mémoire est affiché directement sur l'onglet Personnalisation — le bouton « Gérer » (qui ouvrait la sous-modale « Mémoire 0 » en v0.10.2) **n'existe plus** ; le test a été corrigé en conséquence.
 - **Alt-text (FR)** : Onglet Personnalisation > Mémoire (EXPÉRIMENTAL) Open WebUI v0.11.0, état « Saved Memories 0 » sur un compte neuf.
 - **Poids** : 54,8 Ko (natif PNG 1440×900)
 
