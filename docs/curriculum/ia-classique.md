@@ -92,9 +92,9 @@ Algorithmes de recherche classique, satisfaction de contraintes (CSP), résoluti
 | 8 | Search-11b-Métaheuristiques-Deep-Part3 : Artificial Bee… | BETA | Oui |
 | 9 | Search-11b-Métaheuristiques-Deep-Part4 : Benchmark… | BETA | Oui |
 | 10 | Search-11b : Métaheuristiques d'optimisation (C# /… | BETA | Oui |
-| 11 | Search-15 : Théorie des Graphes avec NetworkX (C#) | BETA | Oui |
-| 12 | Search-15-NetworkX : Algorithmes de Graphe avec… | BETA | Oui |
-| 13 | Search-16-QuikGraph : bibliotheque de graphes pour .NET | BETA | Oui |
+| 11 | Search-02b : Théorie des Graphes avec NetworkX (C#) | BETA | Oui |
+| 12 | Search-02b-NetworkX : Algorithmes de Graphe avec… | BETA | Oui |
+| 13 | Search-02c-QuikGraph : bibliotheque de graphes pour .NET | BETA | Oui |
 | 14 | Search-17 — Sélection empirique d'algorithmes : 6… | BETA | Oui |
 | 15 | Search-17 : Minima fallacieux — le paysage de la… | BETA | Oui |
 | 16 | Search-2-Uninformed (C#) : Algorithmes de Recherche Non… | BETA | Oui |
