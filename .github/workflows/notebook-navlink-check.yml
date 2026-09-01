@@ -39,5 +39,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # La jambe Linux conteneurisee n'expose pas de `python` systeme (job
+      # 100021313259, exit 127) : le checker est stdlib-only, mais l'interprete
+      # vient de setup-python, comme dans les dix autres gardes de la tranche 1.
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
       - name: Check notebook navlinks
         run: python scripts/notebook_tools/check_notebook_navlinks.py --check
