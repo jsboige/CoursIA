@@ -14,13 +14,21 @@ name: Base-not-main advisory
 # ADVISORY, never blocking (#10918): label + comment only, the job exits 0
 # regardless. Idempotent: the comment is marker-guarded and updated (not
 # re-posted) on synchronize.
+#
+# DORMANT depuis #14057 (Vague 2 tranche 1, patron #13384) : l'organe
+# pull_request ci-dessous est absorbe par always-on-metadata-guards.yml --
+# un seul workflow, un seul checkout, un seul slot de runner par PR (149
+# runs/fenetre pour ~3 min de travail reel, mesure etape 1 de #14057). Le
+# job est conserve verbatim pour la tracabilite ; le declencheur
+# pull_request est retire. Le verrou #13232 (verdict METADONNEES, jamais de
+# paths:) est porte par l'umbrella, verrouille par
+# scripts/tests/test_base_not_main_no_paths_filter.py.
 
 on:
-  pull_request:
-    types: [opened, reopened, synchronize, edited, ready_for_review]
-    # #12773 tranche 1a + ai-01 decision 2026-08-27 : ce workflow lit UNIQUEMENT
-    # l'API `gh pr` (cf scripts/base_not_main.py:143 -- baseRefName + title), pas
-    # l'arbre. Son verdict depend des METADONNEES de la PR, pas du DIFF.
+  workflow_dispatch:
+    # #12773 tranche 1a + ai-01 decision 2026-08-27 : l'organe lit UNIQUEMENT
+    # l'API `gh pr` (cf scripts/base_not_main.py:143 -- baseRefName + title),
+    # pas l'arbre. Son verdict depend des METADONNEES de la PR, pas du DIFF.
     # Aucune surface de paths: ne le reduit sans le rendre muet sur tout PR
     # qui ne touche pas exactement ces 3 chemins. Surface nominale = toutes
     # les pull_request. Reduction de fan-out via types:/concurrency, pas paths:.

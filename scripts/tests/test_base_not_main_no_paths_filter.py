@@ -1,7 +1,12 @@
 #!/usr/bin/env python3
-"""Lock test for ``.github/workflows/base-not-main-advisory.yml`` (#13232 + #13193).
+"""Lock test for the base-not-main organ (#13232 + #13193 + #14057).
 
-The workflow reads PR-level metadata via the ``gh`` API ONLY
+L'organe vit depuis #14057 (Vague 2 tranche 1, patron #13384) dans
+``.github/workflows/always-on-metadata-guards.yml`` ; le fichier source
+``base-not-main-advisory.yml`` reste DORMANT (declencheur pull_request
+retire, job conserve verbatim pour la tracabilite).
+
+The organ reads PR-level metadata via the ``gh`` API ONLY
 (``scripts/base_not_main.py`` uses ``gh pr view --json baseRefName,title``)
 and never inspects the working tree. Its verdict therefore depends on
 PR METADATA, not the DIFF. Per the criterion ai-01 wrote in #13232:
@@ -12,9 +17,10 @@ PR METADATA, not the DIFF. Per the criterion ai-01 wrote in #13232:
 
 A ``paths:`` filter on a metadonnee-dependant workflow silently turns
 the check into a no-op on the very PRs that need it most: ones that do
-NOT touch the listed files. This test reads the YAML and asserts no
-``paths:`` block is present under ``on.pull_request``. If a future
-editor re-adds one, the test fails.
+NOT touch the listed files. This test reads the UMBRELLA's YAML and
+asserts no ``paths:`` block is present under ``on.pull_request``, and
+that the union trigger types cover the five events the advisory must
+react to. If a future editor re-adds one, the test fails.
 
 Run::
 
@@ -28,7 +34,7 @@ from pathlib import Path
 import yaml
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-WORKFLOW = REPO_ROOT / ".github" / "workflows" / "base-not-main-advisory.yml"
+WORKFLOW = REPO_ROOT / ".github" / "workflows" / "always-on-metadata-guards.yml"
 
 
 def _load_workflow() -> dict:
@@ -55,9 +61,10 @@ def test_no_paths_filter_under_pull_request():
     pr_block = on_block.get("pull_request", {})
 
     assert "paths" not in pr_block, (
-        f"base-not-main-advisory.yml MUST NOT carry paths: under "
+        f"always-on-metadata-guards.yml (umbrella de l'organe base-not-main "
+        f"depuis #14057) MUST NOT carry paths: under "
         f"on.pull_request (decision ai-01 #13232, 2026-08-27). "
-        f"Workflow reads PR METADATA only via gh api (baseRefName, "
+        f"Organ reads PR METADATA only via gh api (baseRefName, "
         f"title). Got: {sorted(pr_block.keys())}"
     )
 

@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: Probas
-pedagogical_count: 65
-breakdown: DecisionTheory=23, Infer=20, PyMC=19, root=3
-maturity: BETA=65
+pedagogical_count: 66
+breakdown: DecisionTheory=24, Infer=20, PyMC=19, root=3
+maturity: BETA=66
 -->
 
 > **À propos des décomptes** : le marqueur `CATALOG-STATUS` ci-dessus est la **source de vérité autoritative** pour les volumes (notebooks par sous-série, maturité). Il est régénéré chaque nuit par le workflow [`catalog-cron.yml`](../../.github/workflows/catalog-cron.yml) à 03:37 UTC sur `main` (commit `[skip ci]` par `github-actions[bot]`). Pour les **décomptes par kernel** (C#/.NET vs Python vs Lean 4) au sein d'une sous-série — c'est-à-dire la répartition **technique** par interpréteur —, ce README reste autoritatif car la décomposition langagière par sous-série n'est pas dans le marqueur agrégé ; cette granularité est documentée ici par lecture directe des `metadata.kernelspec.language` des notebooks (`28 C# + 29 Python + 2 Lean 4 = 59 ✓` au 22/08/2026). Si vous observez un décalage entre ce marqueur et une phrase en prose de ce README, **fiez-vous au marqueur** ; la prose sera ré-alignée manuellement lors du prochain passage.
@@ -297,7 +297,7 @@ Chaque notebook introduit un concept ou modèle spécifique. Le tableau ci-desso
 |----------|--------|---------|-------|
 | [Infer-101](Infer-101.ipynb) | .NET (C#) | Introduction Infer.NET, Two Coins, Cyclist | 1h |
 | [Pyro_RSA_Hyperbole](Pyro_RSA_Hyperbole.ipynb) | Python | Rational Speech Acts, hyperboles | 30 min |
-| [DoWhy-1-Estimand-et-Intervention](DoWhy-1-Estimand-et-Intervention.ipynb) | Python | Estimand causal : backdoor nommé, sensibilité au graphe mesurée, refuters statistiques | 45 min |
+| [DoWhy-1-Estimand-et-Intervention](DecisionTheory/Causal-Bridges/DoWhy-1-Estimand-et-Intervention.ipynb) | Python | Estimand causal : backdoor nommé, sensibilité au graphe mesurée, refuters statistiques | 45 min |
 
 ### Infer-101.ipynb
 
