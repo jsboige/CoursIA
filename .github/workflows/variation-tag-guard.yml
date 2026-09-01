@@ -361,7 +361,7 @@ jobs:
           if [ "$CAP" = "True" ]; then
             gh pr edit "$PR_NUMBER" --add-label variation-light-cap-reached 2>/dev/null || true
             LANE=$(python3 -c "import json; print(json.load(open('/tmp/status.json')).get('lane','?'))" 2>/dev/null || echo "?")
-            CB=$(python3 -c "import json; c=(json.load(open('/tmp/status.json')).get('consumed_by') or {}); print(f\"#{c.get('number','?')} (merge a {c.get('mergedAt','?')})\")" 2>/dev/null || echo "une LIGHT anterieure de cette lane")
+            CB=$(python3 -c "import json; c=(json.load(open('/tmp/status.json')).get('consumed_by') or {}); print(f\"#{c.get('number','?')} (merge a {c.get('mergedAt','?')})\") if c else print('une LIGHT anterieure de cette lane')" 2>/dev/null || echo "une LIGHT anterieure de cette lane")
             # Commentaire idempotent : un marqueur HTML invisible evite le spam
             # a chaque synchronize. On ne poste que si aucun commentaire ne le
             # porte deja.
