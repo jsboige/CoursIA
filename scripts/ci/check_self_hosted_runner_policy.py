@@ -51,10 +51,26 @@ DEDICATED_LABEL_SETS = (REQUIRED_LABELS, LINUX_RUNNER_LABELS)
 # - linux-self-hosted-tests.yml: workflow_dispatch-ONLY pilot vehicle for the
 #   containerized Linux runner (#13378, po-2024, dispatch ai-01 2026-08-31),
 #   zero fan-out, --ephemeral inside a capped Docker container.
+# - tranche 1 (#13378, decision ai-01 2026-09-01, owner myia-po-2024:CoursIA):
+#   pure-Python guards, no secret, no GITHUB_TOKEN use, universal same-repo
+#   guard (#13874) at job level so fork PRs are skipped (pr_gate.py counts
+#   `skipped` as OK). Routed to the containerized Linux leg to relieve the
+#   GitHub-hosted queue. Rollback = revert of the routing PR.
 SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     "pr-gate-stale-sweep.yml",
     "windows-self-hosted-tests.yml",
     "linux-self-hosted-tests.yml",
+    "banner-guard.yml",
+    "solution-leak-guard.yml",
+    "prose-counts-guard.yml",
+    "notebook-interp-positioning.yml",
+    "notebook-cell-source-parses.yml",
+    "cell-order-gate.yml",
+    "pip-leak-guard.yml",
+    "hooks-parity.yml",
+    "notebook-exec-sequence-ratchet.yml",
+    "notebook-navlink-check.yml",
+    "notebook-papermill-ratchet.yml",
 }
 GITHUB_HOSTED_LABELS = {
     "ubuntu-latest",
