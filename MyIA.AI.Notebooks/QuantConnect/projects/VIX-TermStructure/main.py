@@ -1,166 +1,155 @@
 # region imports
 from AlgorithmImports import *
+from collections import deque
 import numpy as np
 # endregion
 
 
 class VIXTermStructureStrategy(QCAlgorithm):
     """
-    VIX Term Structure Strategy v4.1 - Term Structure Ratio + Regime Filter
+    VIX Term Structure Strategy v6.0 - Dual-Signal VRP (eVRP + term structure)
 
-    PRIMARY SIGNAL: VIX3M/VIX contango ratio (true volatility term structure).
-    VIX3M = 93-day VIX index, VIX = 30-day VIX index.
-    Ratio > 1.0 = contango (normal, term structure upward-sloping).
-    Ratio < 1.0 = backwardation (crisis, inverted term structure).
+    Consolidation of QuantConnect research article #21143 "Harvesting the
+    Volatility Risk Premium with a Dual VIX Signal" (Melchin, 2026-08) into
+    the existing VIX-TermStructure project. Replaces the single-signal SVXY
+    mechanism (v2-v5.1, project-documented ceiling Sharpe ~0.05-0.10) with the
+    dual-signal volatility-risk-premium harvest of Zarattini/Aziz/Mele.
 
-    Edge: When VIX3M/VIX > 1.05, the front-month roll yield is ~5%/month.
-    Going long SVXY (short volatility) harvests this roll yield.
+    SIGNAL 1 - eVRP (expected volatility risk premium):
+        eVRP = VIX - eRV30, where eRV30 = rolling std of the last N SPY daily
+        returns (N=10), annualized (sqrt(252) * 100). eVRP > 0 means implied
+        vol overprices realized vol -> short-vol premium available.
 
-    Signal logic:
-    - ENTER: VIX3M/VIX > 1.05 AND VIX < 22 AND VIX < SMA10 (calm regime)
-    - EXIT: VIX3M/VIX < 1.02 OR VIX > 28 OR 10% trailing stop
-    - Reentry: 15-day lockout after stop-out
+    SIGNAL 2 - VIX term structure:
+        VIX < VIX3M = contango (normal regime), VIX > VIX3M = backwardation
+        (stress regime).
+
+    4-state target weight on VIXY (magnitude scales with VIX level):
+        eVRP > 0 + contango   -> short vol full (-VIX/100)
+        eVRP < 0 + contango   -> short vol half (-VIX/100 * 0.5)
+        eVRP < 0 + backward.  -> long vol      (+VIX/100)
+        eVRP > 0 + backward.  -> cash (conflicting signals)
+
+    Remaining capital goes to SPY during short-volatility states only.
+    Execution: 16 minutes before close. Rebalance skipped unless the vol
+    weight changes sign or moves more than 2%.
+
+    Article claim (2016-01..2026-07, blog): Sharpe 0.729 vs SPY 0.582;
+    parameter grid (window 6-14d, eVRP threshold 1-5%) all beat benchmark
+    (0.713-0.773). v6.0 measures that claim on our own harness, dev window
+    2016-2021 and OOS window 2022-2026 reported separately.
 
     Iteration history:
     v2.0: Sharpe -0.97 (VIXY + SVXY, complex rules)
     v3.1: Sharpe -0.27 (SVXY only, VIX level filter)
     v4.0: Sharpe -0.65 (ratio + double-SMA declining filter, too restrictive)
-    v4.1: Sharpe +0.05 (ratio + SMA10 calm filter, 2015 start) <- BEST
+    v4.1: Sharpe +0.05 (ratio + SMA10 calm filter, 2015 start)
     v4.2: Sharpe -0.23 (VIX<18 too tight, too few entries)
     v4.3: Sharpe +0.03 (dynamic sizing, higher MaxDD)
     v5.0: Sharpe -0.10 (SHY 70% + stop 7%, too diluted)
     v5.1: Sharpe -0.13 (position 25%, cash drag kills Sharpe in high-rate env)
+    v6.0: dual-signal eVRP + term structure, VIXY vol-scaled weight (this version)
 
-    Known limitations:
-    - SVXY post-2018 VIXplosion is -0.5x (was -1x), halving contango premium
-    - COVID 2020 and VIXplosion 2018 cause large drawdowns (~35%)
-    - Short-vol strategies are inherently positively skewed return, negative tail
-    - MaxDD 35% is unavoidable without leverage reduction
-    - Reducing position size creates cash drag, lowering Sharpe in high-rate env
-    - Ceiling: Sharpe ~0.05-0.10 is honest for SVXY short-vol 2015-2026
-
-    Pedagogical value:
-    - Demonstrates VIX term structure as a quantifiable signal
-    - Shows how roll yield in VIX futures translates to ETF returns
-    - Illustrates regime-dependent profitability of short-vol strategies
-
-    Ref: Simon & Campasano (2014), Whaley (2009), Volatility as Asset Class
+    Ref: Zarattini, C., Aziz, A., & Mele, A. (2025). "The Volatility Edge: A
+    Dual Approach for VIX ETNs Trading". Swiss Finance Institute Research
+    Paper No. 25-91, SSRN 5316487 (primary source, author order verified
+    firsthand); Melchin, D. (2026) quantconnect.com/research/21143;
+    Simon & Campasano (2014), Whaley (2009) - prior project refs.
     """
 
     def initialize(self):
-        self.set_start_date(2015, 1, 1)
-        self.set_end_date(2024, 12, 31)
+        start = self.get_parameter("start", "2016-01-01")
+        end = self.get_parameter("end", "2026-06-30")
+        sy, sm, sd = (int(x) for x in start.split("-"))
+        ey, em, ed = (int(x) for x in end.split("-"))
+        self.set_start_date(sy, sm, sd)
+        self.set_end_date(ey, em, ed)
         self.set_cash(100000)
         self.set_brokerage_model(BrokerageName.INTERACTIVE_BROKERS_BROKERAGE, AccountType.MARGIN)
 
-        # VIX index (1-month, 30-day implied vol)
+        # VIX index (30-day implied vol) and VIX3M (93-day) - term structure signal
         self.vix = self.add_data(CBOE, "VIX", Resolution.DAILY).symbol
-
-        # VIX3M (3-month VIX, formerly VXV) - term structure signal
         self.vix3m = self.add_data(CBOE, "VIX3M", Resolution.DAILY).symbol
 
-        # SVXY only (no VIXY - permanent decay from contango)
-        self.svxy = self.add_equity("SVXY", Resolution.DAILY).symbol
+        # VIXY = short-term VIX futures ETN (long-vol instrument, shorted when harvesting)
+        self.vixy = self.add_equity("VIXY", Resolution.DAILY).symbol
+        # SPY = eRV30 input + equity overlay for remaining capital
         self.spy = self.add_equity("SPY", Resolution.DAILY).symbol
 
-        # VIX regime indicator - 10d SMA
-        self.vix_sma10 = self.sma(self.vix, 10, Resolution.DAILY)
+        # Dual-signal parameters (article base: 10-day window, sign-only eVRP)
+        self.rv_window = int(self.get_parameter("rv_window", "10"))
+        self.evrp_threshold = float(self.get_parameter("evrp_threshold", "0.0"))
+        self.rebalance_band = 0.02
 
-        # Strategy parameters
-        self.contango_entry = 1.05   # VIX3M/VIX > 1.05 to enter (5% premium)
-        self.contango_exit = 1.02    # VIX3M/VIX < 1.02 to exit (backwardation alert)
-        self.vix_max_entry = 22      # VIX must be below this to enter
-        self.vix_exit = 28           # Force exit on VIX spike
-        self.stop_pct = 0.10         # 10% trailing stop
-        self.position_size = 0.45    # 45% position
-        self.reentry_delay = 15      # 15 days after stop-out
-
-        # State tracking
-        self.trailing_high = 0
-        self.days_since_stop = 999
+        self.spy_closes = deque(maxlen=self.rv_window + 1)
+        self._prev_vol_weight = 0.0
 
         self.schedule.on(
             self.date_rules.every_day("SPY"),
-            self.time_rules.after_market_open("SPY", 60),
-            self._trade
+            self.time_rules.before_market_close("SPY", 16),
+            self._rebalance
         )
 
         self.set_benchmark("SPY")
-        self.set_warm_up(30, Resolution.DAILY)
+        self.set_warm_up(self.rv_window + 5, Resolution.DAILY)
 
-    def _trade(self):
+    def on_data(self, data: Slice):
+        if data.bars.contains_key(self.spy):
+            self.spy_closes.append(data.bars[self.spy].close)
+
+    def _rebalance(self):
         if self.is_warming_up:
             return
-        if not self.vix_sma10.is_ready:
+        if len(self.spy_closes) < self.rv_window + 1:
             return
 
         vix_price = self.securities[self.vix].price
-        if vix_price <= 0:
-            return
-
-        svxy_price = self.securities[self.svxy].price
-        if svxy_price <= 0:
-            return
-
-        # VIX3M/VIX contango ratio (primary term structure signal)
         vix3m_price = self.securities[self.vix3m].price
-        if vix3m_price > 0:
-            contango_ratio = vix3m_price / vix_price
+        if vix_price <= 0 or vix3m_price <= 0:
+            return
+
+        # Signal 1: eVRP = VIX - annualized forecast of 30d realized vol
+        closes = list(self.spy_closes)
+        rets = [closes[i] / closes[i - 1] - 1.0 for i in range(1, len(closes))]
+        erv30 = float(np.std(rets, ddof=1)) * np.sqrt(252.0) * 100.0
+        evrp = vix_price - erv30
+
+        # Signal 2: term structure regime
+        contango = vix_price < vix3m_price
+
+        # 4-state target vol weight
+        if evrp > self.evrp_threshold and contango:
+            vol_weight = -vix_price / 100.0
+        elif evrp < -self.evrp_threshold and contango:
+            vol_weight = -vix_price / 100.0 * 0.5
+        elif evrp < -self.evrp_threshold and not contango:
+            vol_weight = vix_price / 100.0
         else:
-            # VIX3M not available: no entry signal, allow exits to run
-            contango_ratio = 1.0
+            vol_weight = 0.0
 
-        vix_sma10 = self.vix_sma10.current.value
-
-        # --- EXIT LOGIC (priority order) ---
-
-        # 1. Trailing stop (highest priority - tail risk protection)
-        if self.portfolio[self.svxy].invested:
-            if svxy_price > self.trailing_high:
-                self.trailing_high = svxy_price
-            stop_price = self.trailing_high * (1 - self.stop_pct)
-            if svxy_price < stop_price:
-                self.liquidate(self.svxy)
-                self.days_since_stop = 0
-                self.trailing_high = 0
-                self.log(f"STOP: SVXY={svxy_price:.2f}, VIX={vix_price:.1f}, "
-                         f"Ratio={contango_ratio:.3f}")
-                return
-
-        self.days_since_stop += 1
-
-        # 2. VIX spike exit (regime change)
-        if self.portfolio[self.svxy].invested and vix_price > self.vix_exit:
-            self.liquidate(self.svxy)
-            self.trailing_high = 0
-            self.log(f"VIX SPIKE EXIT: VIX={vix_price:.1f}")
+        # Rebalance filter: act only on sign change or > 2% weight move
+        same_sign = np.sign(vol_weight) == np.sign(self._prev_vol_weight)
+        if same_sign and abs(vol_weight - self._prev_vol_weight) <= self.rebalance_band:
             return
 
-        # 3. Backwardation exit (term structure inverted = danger)
-        if self.portfolio[self.svxy].invested and contango_ratio < self.contango_exit:
-            self.liquidate(self.svxy)
-            self.trailing_high = 0
-            self.log(f"BACKWARDATION EXIT: VIX3M/VIX={contango_ratio:.3f}")
-            return
+        # SPY overlay only during short-volatility states
+        spy_weight = 1.0 + vol_weight if vol_weight < 0 else 0.0
 
-        # --- ENTRY LOGIC ---
-        # 1. Term structure in steep contango (VIX3M > 1.05x VIX)
-        in_contango = contango_ratio > self.contango_entry
-        # 2. VIX calm regime: absolute level AND below 10d trend
-        vix_calm = vix_price < self.vix_max_entry and vix_price < vix_sma10
-        # 3. No recent stop-out
-        no_recent_stop = self.days_since_stop > self.reentry_delay
+        if abs(vol_weight) > 0:
+            self.set_holdings(self.vixy, vol_weight)
+        else:
+            self.liquidate(self.vixy)
+        if spy_weight > 0:
+            self.set_holdings(self.spy, spy_weight)
+        else:
+            self.liquidate(self.spy)
 
-        if (not self.portfolio[self.svxy].invested
-                and in_contango
-                and vix_calm
-                and no_recent_stop):
-            self.set_holdings(self.svxy, self.position_size)
-            self.trailing_high = svxy_price
-            self.log(f"ENTER: SVXY={svxy_price:.2f}, VIX={vix_price:.1f}, "
-                     f"VIX3M={vix3m_price:.1f}, Ratio={contango_ratio:.3f}")
+        self._prev_vol_weight = vol_weight
+        self.log(f"REBAL eVRP={evrp:.2f} eRV30={erv30:.2f} VIX={vix_price:.1f} "
+                 f"VIX3M={vix3m_price:.1f} contango={contango} "
+                 f"vol_w={vol_weight:.3f} spy_w={spy_weight:.3f}")
 
     def on_end_of_algorithm(self):
         final = self.portfolio.total_portfolio_value
-        self.log(f"VIX v4.1 FINAL: ${final:,.2f}, "
-                 f"Return={(final-100000)/100000:.2%}")
+        self.log(f"VIX v6.0 FINAL: ${final:,.2f}, "
+                 f"Return={(final - 100000) / 100000:.2%}")

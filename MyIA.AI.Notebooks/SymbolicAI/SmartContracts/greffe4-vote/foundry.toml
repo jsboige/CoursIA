@@ -1,0 +1,12 @@
+[profile.default]
+src = "src"
+out = "out"
+libs = ["lib"]
+remappings = ["forge-std/=lib/forge-std/src/"]
+
+# Fuzz borne pour l'execution en notebook (SC-13) : le fuzzer doit trouver la
+# violation sur le contrat casse en quelques secondes, pas en quelques minutes.
+[invariant]
+runs = 32
+depth = 48
+fail_on_revert = false

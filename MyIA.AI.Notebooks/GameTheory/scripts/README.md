@@ -1,6 +1,6 @@
 # Scripts GameTheory
 
-Ce répertoire contient les scripts de configuration et de validation des kernels utilisés par la série GameTheory : kernel Python WSL pour les notebooks OpenSpiel/CFR (`GameTheory-13`, `GameTheory-17`), et kernel Lean 4 (WSL) pour les notebooks Lean natifs (`-2b`, `-8b`, `-15b`, `SocialChoice/02-Lean-SocialChoice-Formal`).
+Ce répertoire contient les scripts de configuration et de validation des kernels utilisés par la série GameTheory : kernel Python WSL pour les notebooks OpenSpiel/CFR (`GameTheory-13`, `GameTheory-17`), et kernel Lean 4 (WSL) pour les notebooks Lean natifs (`-2b`, `-8b`, `-15b`, `SocialChoice/01b-Lean-SocialChoice-Formal`).
 
 ## Scripts disponibles
 
@@ -115,7 +115,7 @@ Les notebooks Lean natifs sont suffixés `-b` (kernel Lean 4) ; les notebooks Py
 | `GameTheory-15b-Lean-CooperativeGames` | **Lean 4 (WSL)** | Formalisation Shapley (Lean 4) |
 | `GameTheory-15c-CooperativeGames-Python` | Python (Windows) | Miroir Python du calcul Shapley |
 | `GameTheory-17-MultiAgent-RL` | Python (WSL) | OpenSpiel multi-agent RL (idem GT-13, WSL requis) |
-| `SocialChoice/02-Lean-SocialChoice-Formal` | **Lean 4 (WSL)** | Arrow, Sen, électeur médian |
+| `SocialChoice/01b-Lean-SocialChoice-Formal` | **Lean 4 (WSL)** | Arrow, Sen, électeur médian |
 
 ## Troubleshooting
 

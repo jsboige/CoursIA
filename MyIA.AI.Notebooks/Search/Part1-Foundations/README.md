@@ -36,6 +36,9 @@ Cette partie est l'alphabet de toute la série : la formalisation en espace d'é
 | 1 (.NET) | [Search-1-StateSpace (C#)](Search-1-StateSpace-Csharp.html) | .NET (C#) | **Jumeau .NET** : formalisation (S, A, T, G) en C# 9.0 (`SearchProblem` abstrait, `object` comme etat generique), VacuumWorld (8 etats, parcours complet), 8-Puzzle (181 440 etats), RouteFinding — port C# fidèle avec `Dictionary<TKey,TValue>`, tuples nommes (`(char pos, bool gSale, bool dSale)`) | ~40 min |
 | 2 | [Search-2-Uninformed](Search-2-Uninformed.html) | Python 3 | BFS, DFS, UCS, IDDFS : comparaison des algorithmes non informés | ~50 min |
 | 2 (.NET) | [Search-2-Uninformed (C#)](Search-2-Uninformed-Csharp.ipynb) | .NET (C#) | **Jumeau .NET** : BFS (Queue<T>), DFS (Stack<T>), UCS (PriorityQueue<TElement, TPriority>), IDDFS — port C# fidèle sur le graphe des villes françaises + arbre profond 8x3 (ratio BFS/DFS = 156,1×) + BFS bidirectionnel avec reconstruction de coût | ~50 min |
+| 2b | [Search-02b-NetworkX](Search-02b-NetworkX.html) | Python 3 | **Boîte à outils de graphes** `networkx` : `Graph`/`DiGraph`, DFS/BFS, Dijkstra, Bellman-Ford, centralités de degré, composantes connexes, MST, Floyd-Warshall, parité structurelle avec QuikGraph (Search-2c) — matière optionnelle, utile dès la fin de Search-2 | ~1h |
+| 2b (.NET) | [Search-02b-NetworkX (C#)](Search-02b-NetworkX-Csharp.ipynb) | .NET (C#) | **Jumeau .NET** : théorie des graphes from-scratch (`Dictionary` / adjacency list pondérée) — parcours BFS/DFS, plus courts chemins (Dijkstra), centralités, flot maximum (Ford-Fulkerson), exercices (détection de cycles DFS 3 couleurs, A* avec heuristique, communautés Louvain) + tranche 2 QuikGraph (parité lib-vs-lib sur la même instance) — port C# fidèle du notebook Python NetworkX, distinct de Search-2c (QuikGraph, approche library) — parité #4956 | ~1h |
+| 2c | [Search-02c-QuikGraph](Search-02c-QuikGraph.ipynb) | .NET (C#) | Bibliothèque de graphes QuikGraph 2.5.0 (NuGet) : AdjacencyGraph / BidirectionalGraph / UndirectedGraph, DFS/BFS, Dijkstra, Bellman-Ford, centralités de degré, composantes connexes, Edmonds-Karp (flot max), parité avec NetworkX | ~1h |
 | 3 | [Search-3-Informed](Search-3-Informed.ipynb) | Python 3 | A*, Greedy, IDA*, heuristiques admissibles et consistantes | ~50 min |
 | 3 (.NET) | [Search-3-Informed (C#)](Search-3-Informed-Csharp.ipynb) | .NET (C#) | **Jumeau .NET** : Greedy Best-First, A* (`PriorityQueue`), IDA* (iterative deepening, f-limit 791→1055 sur 5 itérations) — port C# fidèle sur le graphe des villes françaises (A* coût 1055 optimal vs Greedy 1210, surcoût 14,7 %, 3 nœuds explorés) + étude admissibilité/consistance sur 8-puzzle | ~50 min |
 | 4 | [Search-4-LocalSearch](Search-4-LocalSearch.html) | Python 3 | Hill Climbing, Simulated Annealing, Tabu Search, paysages de fitness | ~45 min |
@@ -58,18 +61,16 @@ Cette partie est l'alphabet de toute la série : la formalisation en espace d'é
 | 11 | [Search-11-Metaheuristics](Search-11-Metaheuristics.html) | Python 3 | PSO, ABC, SA, BRO avec MEALPy, benchmark comparatif de métaheuristiques | ~1h30 |
 | 11 (.NET) | [Search-11-Metaheuristics (C#)](Search-11-Metaheuristics-Csharp.ipynb) | .NET (C#) | **Jumeau .NET** : PSO (inertie décroissante + clamp velocity), recuit simulé (acceptation Metropolis, pas proportionnel à √(T/T₀)), algorithme génétique (tournoi, croisement arithmétique, mutation gaussienne, élitisme) from-scratch, fonctions de benchmark (Sphere/Rastrigin/Rosenbrock/Ackley), convergence gbest monotone, benchmark comparatif PSO/SA/GA, optimisation de profit (retrouve l'optimum analytique x≈17.14, y≈15.71), TSP par recuit 2-opt — parité #4956, tables texte au lieu de matplotlib | ~1h30 |
 | 11b (.NET) | [Search-11b-Metaheuristiques-Deep](Search-11b-Metaheuristiques-Deep.ipynb) (+ [T2 PSO](Search-11b-Metaheuristiques-Deep-Part2.ipynb), [T3 ABC](Search-11b-Metaheuristiques-Deep-Part3.ipynb), [T4 Benchmark](Search-11b-Metaheuristiques-Deep-Part4.ipynb)) | .NET (C#) | **Déclinaison deep-dive** en 4 volets — un algorithme from-scratch approfondi par tranche : recuit simulé (T1), Particle Swarm Optimization (T2), Artificial Bee Colony (T3), benchmark comparatif capstone (T4). Complète le jumeau 11 (.NET) (survol PSO/SA/GA) par un traitement détaillé algorithme par algorithme | ~4×45 min |
-| 15 | [Search-15-NetworkX](Search-15-NetworkX.html) | Python 3 | Bibliothèque de graphes `networkx` : `Graph`/`DiGraph`, DFS/BFS, Dijkstra, Bellman-Ford, centralités de degré, composantes connexes, MST, Floyd-Warshall, parité structurelle avec QuikGraph (Search-16) | ~1h |
-| 15 (.NET) | [Search-15-NetworkX (C#)](Search-15-NetworkX-Csharp.ipynb) | .NET (C#) | **Jumeau .NET** : théorie des graphes from-scratch (`Dictionary` / adjacency list pondérée) — parcours BFS/DFS, plus courts chemins (Dijkstra), centralités, flot maximum (Ford-Fulkerson), exercices (détection de cycles DFS 3 couleurs, A* avec heuristique, communautés Louvain) — port C# fidèle du notebook Python NetworkX, distinct de Search-16 (QuikGraph, approche library) — parité #4956 | ~1h |
-| 16 | [Search-16-QuikGraph](Search-16-QuikGraph.ipynb) | .NET (C#) | Bibliothèque de graphes QuikGraph 2.5.0 (NuGet) : AdjacencyGraph / BidirectionalGraph / UndirectedGraph, DFS/BFS, Dijkstra, Bellman-Ford, centralités de degré, composantes connexes, Edmonds-Karp (flot max), parité avec NetworkX | ~1h |
 | 17b | [Search-17-Empirical-Algorithm-Selection](Search-17-Empirical-Algorithm-Selection.ipynb) | Python 3 | Distillation du projet L4 EPITA SCIA 2026 (Th. Deguest, PR source #42) : **sélection empirique d'algorithmes** sous protocole commun (timeout 5 s, budget nœuds explicite, métriques uniformes) sur deux terrains — Sudoku (BT naïf/MRV, DLX, CP-SAT, Z3, GA, recuit simulé ; tranche 1) et Puissance 4 (random, minimax, alpha-beta, MCTS ; round-robin double, tranche 2) — front de Pareto qualité-coût, sweep de budget qui **inverse la sélection**, carte problème × paradigme : No Free Lunch mesuré (Rice 1976, Wolpert 1996), écho App-14 | ~1h30 |
 
 ## Progression
 
-Les trois premiers notebooks forment le socle commun — on y apprend à poser un problème, puis à l'explorer systématiquement — et tout le reste s'y greffe. Au-delà, le parcours n'est pas linéaire : quatre branches indépendantes s'ouvrent, à prendre dans l'ordre de vos curiosités :
+Les trois premiers notebooks forment le socle commun — on y apprend à poser un problème, puis à l'explorer systématiquement — et tout le reste s'y greffe. Au-delà, le parcours n'est pas linéaire : cinq branches indépendantes s'ouvrent, à prendre dans l'ordre de vos curiosités :
 
 - **Recherche locale et évolutive** : Search-4 (LocalSearch) puis Search-5 (GeneticAlgorithms) puis Search-11 (Metaheuristics)
 - **Recherche dans les jeux** : Search-3 puis Search-6 (AdversarialSearch) puis Search-7 (MCTS)
 - **Couverture exacte** : Search-2 puis Search-8 (DancingLinks)
+- **Boîte à outils de graphes** : Search-2 puis Search-2b (NetworkX, ou son jumeau C#) puis Search-2c (QuikGraph)
 - **Indépendants** : Search-9 (LinearProgramming, algèbre linéaire requise), Search-09b (SpuriousMinima, sa suite semidéfinie : Search-9 recommandé au préalable), Search-09c (CombinatorialDiscrepancy, relaxation/arrondi — écho du fil optimisation) suivi de son compagnon formel Search-09d (Lean, kernel `lean4-wsl` : Search-09c recommandé au préalable), Search-17b (Empirical-Algorithm-Selection, distillation benchmark cross-paradigmes : aucun prérequis, écho App-14) et Search-10 (SymbolicAutomata, liens avec SymbolicAI/SMT/Z3-Linq2Z3)
 
 ```mermaid
@@ -79,10 +80,12 @@ flowchart LR
     B2["<b>Recherche dans les jeux</b><br/>Search-6 — AdversarialSearch<br/>(Minimax, Alpha-Beta)<br/>Search-7 — MCTS (AlphaGo)"]
     B3["<b>Couverture exacte</b><br/>Search-8 — Dancing Links (Knuth)"]
     B4["<b>Indépendants</b><br/>Search-9 — LinearProgramming<br/>Search-10 — SymbolicAutomata"]
+    B5["<b>Boîte à outils de graphes</b><br/>Search-2b — NetworkX<br/>Search-2c — QuikGraph"]
     SOCLE --> B1
     SOCLE --> B2
     SOCLE --> B3
     SOCLE --> B4
+    SOCLE --> B5
 ```
 
 Les fondamentaux de cette partie (formalisation, backtracking, heuristiques) sont le prérequis de la [Partie 2 (CSP)](../Part2-CSP/README.md).
@@ -99,19 +102,19 @@ Les fondamentaux de cette partie (formalisation, backtracking, heuristiques) son
 | OpenSpiel | Search-7 (MCTS) : requiert WSL ou Linux |
 | `cvxpy` | Search-09b (relaxation SDP, solveur CLARABEL embarqué) |
 | Kernel `lean4-wsl` | Search-09d : kernel Jupyter Lean 4 + miroir local du lake [`discrepancy_lean`](../discrepancy_lean/README.md) (Mathlib 4 via les packages du dépôt) — cf. [`docs/reference/wsl-kernels-detail.md`](../../../docs/reference/wsl-kernels-detail.md) |
-| `QuikGraph 2.5.0` (NuGet) | Search-16 (parité C#) : nécessite .NET Interactive, installable via `dotnet tool install --global Microsoft.dotnet-interactive` |
+| `QuikGraph 2.5.0` (NuGet) | Search-2c (parité C#) : nécessite .NET Interactive, installable via `dotnet tool install --global Microsoft.dotnet-interactive` |
 
 Pour le setup complet, voir le [README de la série Search](../README.md).
 
 ## Bibliothèques : parité Python `networkx` ↔ .NET `QuikGraph`
 
-Le notebook [Search-16-QuikGraph](Search-16-QuikGraph.ipynb) ferme la boucle côté **.NET Interactive** : il offre l'équivalent C# du notebook Python [Search-15-NetworkX](Search-15-NetworkX.html), avec une table de parité structurelle entre les deux écosystèmes. Le notebook Python modélise par exemple un réseau routier 5×5 : les arêtes sont colorées par poids (du jaune au rouge) et le plus court chemin — identique pour Dijkstra et A\* — y est tracé en rouge entre la source (en vert) et la destination (en rouge).
+Le notebook [Search-2c-QuikGraph](Search-02c-QuikGraph.ipynb) ferme la boucle côté **.NET Interactive** : il offre l'équivalent C# du notebook Python [Search-2b-NetworkX](Search-02b-NetworkX.html), avec une table de parité structurelle entre les deux écosystèmes. Le notebook Python modélise par exemple un réseau routier 5×5 : les arêtes sont colorées par poids (du jaune au rouge) et le plus court chemin — identique pour Dijkstra et A\* — y est tracé en rouge entre la source (en vert) et la destination (en rouge).
 
-[![Réseau routier 5×5 : arêtes pondérées colorées, plus court chemin Dijkstra en rouge](assets/readme/search15-networkx.png)](Search-15-NetworkX.html)
+[![Réseau routier 5×5 : arêtes pondérées colorées, plus court chemin Dijkstra en rouge](assets/readme/search02b-networkx.png)](Search-02b-NetworkX.html)
 
 La règle pratique : **QuikGraph 2.5.0** (fork KeRNeLith, NuGet) couvre les algorithmes classiques (DFS, BFS, Dijkstra, Bellman-Ford, A\*, Edmonds-Karp, Tarjan, MST, Floyd-Warshall) et **suffit pour tous les notebooks Search 1-11** si l'on travaille en C# — son **verdict honnête** est qu'il ne fournit pas les centralités élaborées (betweenness, closeness, PageRank) ni la détection de communautés (Louvain), qu'il faut alors implémenter à la main ou brancher une autre bibliothèque.
 
-> **Note de numérotation.** Les **bibliothèques de graphes** portent les numéros **15-16** (`Search-15-NetworkX` en Python, `Search-16-QuikGraph` en .NET), volontairement hors de la plage 1-11 des algorithmes fondamentaux et hors de la plage 12-14 réservée à la [Partie 3](../Part3-Advanced/README.md) (heuristiques avancées : `Search-12-PatternDatabases`, `Search-13-LimitedDiscrepancySearch`, `Search-14-WeightedAstar`). Le suffixe **`b`** (`Search-11b-Metaheuristiques-Deep`, 4 volets) désigne une **déclinaison approfondie** (deep-dive) du même sujet, distincte du jumeau C# canonique qui porte le numéro nu. Chaque numéro (suffixe compris) désigne désormais un notebook unique.
+> **Note de numérotation.** La plage **1-11** porte les algorithmes fondamentaux, la plage **12-14** est réservée à la [Partie 3](../Part3-Advanced/README.md) (heuristiques avancées : `Search-12-PatternDatabases`, `Search-13-LimitedDiscrepancySearch`, `Search-14-WeightedAstar`). Les suffixes **`b`/`c`** rattachent une **accrétion** au numéro de base : `Search-2b-NetworkX` et `Search-2c-QuikGraph` prolongent Search-2 (la boîte à outils de graphes vient se greffer sur la recherche non informée), `Search-11b-Metaheuristiques-Deep` (4 volets) approfondit Search-11. Un suffixe `b` peut désigner une déclinaison approfondie (11b) ou un compagnon de même niveau (2b) — le jumeau C# canonique porte toujours le numéro nu. Chaque numéro (suffixe compris) désigne un notebook unique.
 
 ## Ponts vers les autres séries
 

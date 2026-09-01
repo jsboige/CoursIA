@@ -193,6 +193,9 @@ Algorithmes de recherche classiques, recherche adversariale et métaheuristiques
 |---|----------|-------|---------|-----------|
 | 1 | [Search-1-StateSpace](Part1-Foundations/Search-1-StateSpace.html) | ~40 min | Espaces d'états, formalisation (S, A, T, G), taquin, aspirateur, route | Python basique |
 | 2 | [Search-2-Uninformed](Part1-Foundations/Search-2-Uninformed.html) | ~50 min | BFS, DFS, UCS, IDDFS, comparaison systématique | Search-1 |
+| 2b | [Search-2b-NetworkX](Part1-Foundations/Search-02b-NetworkX.html) | ~1h | `networkx` : `Graph`/`DiGraph`, DFS/BFS, Dijkstra, Bellman-Ford, centralités de degré, MST, Floyd-Warshall | Search-2 |
+| 2b (C#) | [Search-2b-NetworkX-Csharp](Part1-Foundations/Search-02b-NetworkX-Csharp.ipynb) | ~1h | Twin C# du 2b : graphes from-scratch (adjacency list, BFS/DFS, Dijkstra, centralités degré/closeness/betweenness/PageRank, Ford-Fulkerson max-flow) (See #4956) | Search-2, notions C#/.NET |
+| 2c | [Search-2c-QuikGraph](Part1-Foundations/Search-02c-QuikGraph.ipynb) | ~1h | QuikGraph 2.5.0 (.NET, NuGet) : AdjacencyGraph/BidirectionalGraph, DFS/BFS, Dijkstra, Edmonds-Karp (flot max), parité C# ↔ NetworkX | Search-1, notions C#/.NET |
 | 3 | [Search-3-Informed](Part1-Foundations/Search-3-Informed.ipynb) | ~50 min | A*, Greedy, IDA*, heuristiques admissibles et consistantes | Search-2 |
 | 4 | [Search-4-LocalSearch](Part1-Foundations/Search-4-LocalSearch.html) | ~45 min | Hill Climbing, Simulated Annealing, Tabu Search, paysages de fitness | Search-2 |
 | 5 | [Search-5-GeneticAlgorithms](Part1-Foundations/Search-5-GeneticAlgorithms.html) | ~50 min | Sélection, crossover, mutation, DEAP/PyGAD, théorie unifiée | Search-4 |
@@ -205,9 +208,6 @@ Algorithmes de recherche classiques, recherche adversariale et métaheuristiques
 | 9d | [Search-09d-Lean-Discrepancy-Komlos](Part1-Foundations/Search-09d-Lean-Discrepancy-Komlos.ipynb) | ~45min | Compagnon formel : lake `discrepancy_lean` exécuté depuis le kernel `lean4-wsl` — `#check` des conjectures (Komlós, Beck–Fiala, Bansal–Jiang 2025), témoins ±1 énumérés | Search-09c |
 | 10 | [Search-10-SymbolicAutomata](Part1-Foundations/Search-10-SymbolicAutomata.html) | ~2h | DFA/NFA (automata-lib), prédicats Z3, automates symboliques | Search-1, SymbolicAI/SMT/Z3-Linq2Z3 |
 | 11 | [Search-11-Metaheuristics](Part1-Foundations/Search-11-Metaheuristics.html) | ~1h30 | PSO, ABC, SA, BRO avec MEALPy, benchmark comparatif | Search-4, Search-5 |
-| 15 | [Search-15-NetworkX](Part1-Foundations/Search-15-NetworkX.html) | ~1h | `networkx` : `Graph`/`DiGraph`, DFS/BFS, Dijkstra, Bellman-Ford, centralités de degré, MST, Floyd-Warshall | Search-2 |
-| 15 (C#) | [Search-15-NetworkX-Csharp](Part1-Foundations/Search-15-NetworkX-Csharp.ipynb) | ~1h | Twin C# du 15 : graphes from-scratch (adjacency list, BFS/DFS, Dijkstra, centralités degré/closeness/betweenness/PageRank, Ford-Fulkerson max-flow) (See #4956) | Search-2, notions C#/.NET |
-| 16 | [Search-16-QuikGraph](Part1-Foundations/Search-16-QuikGraph.ipynb) | ~1h | QuikGraph 2.5.0 (.NET, NuGet) : AdjacencyGraph/BidirectionalGraph, DFS/BFS, Dijkstra, Edmonds-Karp (flot max), parité C# ↔ NetworkX | Search-1, notions C#/.NET |
 
 ---
 
@@ -350,7 +350,7 @@ Cette série est née **Python d'abord** pour son cœur pédagogique (recherche,
 
 | Sous-série | Cœur pédagogique | Langage | Correspondance dans l'autre langage |
 |-----------|-----------|---------|-------------------------------------|
-| [Part1-Foundations](Part1-Foundations/) | 16 (Search-1 à Search-11, Search-15, Search-16, Search-09b à Search-09d) | Python (14) + Lean (Search-09d) + C# natif (Search-16 QuikGraph) | **12 jumeaux C#** (Search-1 à 11, 15) + déclinaison deep-dive **Search-11b** (Métaheuristiques, 4 volets) |
+| [Part1-Foundations](Part1-Foundations/) | 16 (Search-1 à Search-11, Search-2b, Search-2c, Search-09b à Search-09d) | Python (14) + Lean (Search-09d) + C# natif (Search-2c QuikGraph) | **12 jumeaux C#** (Search-1 à 11, 2b) + déclinaison deep-dive **Search-11b** (Métaheuristiques, 4 volets) |
 | [Part2-CSP](Part2-CSP/) | 9 (CSP-1 à CSP-9) | Python + .NET | **9 binômes complets** — marathon achevé, voir [bilan final](#marathon-epic-4956) |
 | [Part3-Advanced](Part3-Advanced/) | 3 (Search-12 à Search-14) | Python | **3 jumeaux C#** (Search-12/13/14-Csharp) |
 | [Part4-Metaheuristics](Part4-Metaheuristics/) | 22 (MGS-1 à MGS-19 + trilogie MGS-7b/7c/7d) | C# / .NET (natif) | Prolonge Search-5 / Search-11 (Python) sous l'angle ingénierie |
@@ -392,7 +392,7 @@ La parité `.NET ⇄ Python` de la Partie 2 CSP a été portée par un **maratho
 
 Les 9 binômes sont **tous mergés sur `main`** (vérifié disque au 2026-07-07 : `Part2-CSP/CSP-1-Csharp` à `CSP-9-Csharp` présents et gît-trackés). Le verdict SOTA-OK est documenté dans les PRs du marathon (règle [EPIC #3801](https://github.com/jsboige/CoursIA/issues/3801) — vrai outil, pas workaround dégradé) ; les 2 PRs les plus anciennes (CSP-3, CSP-7) ont été livrées avant la formalisation de la règle et n'ont pas de verdict écrit. Équilibre solvers final : **6 Choco via IKVM** (CSP-1/2/3/4/5/7), **2 OR-Tools CP-SAT natif .NET** (CSP-6/8), **1 from-scratch** (CSP-9, algorithme distribué Yokoo 1992).
 
-Au-delà de la Partie 2, le même marathon a livré les jumeaux C# de la **Partie 1** (Search-1 à 11, 15), de la **Partie 3** (Search-12/13/14) et des **20 applications** (dont App-20-SudokuBenchmark, créé directement en binôme) — la parité est complète sur tout le périmètre curriculaire de la série.
+Au-delà de la Partie 2, le même marathon a livré les jumeaux C# de la **Partie 1** (Search-1 à 11, 2b), de la **Partie 3** (Search-12/13/14) et des **20 applications** (dont App-20-SudokuBenchmark, créé directement en binôme) — la parité est complète sur tout le périmètre curriculaire de la série.
 
 ---
 
@@ -458,9 +458,12 @@ Search/
 ├── search_helpers.py                      # Utilitaires partages
 ├── resources/                             # Images et données
 │
-├── Part1-Foundations/                     # Search Fondamental (31 notebooks : 14 Python + 17 C# — 12 jumeaux directs Search-1..11/15 + Search-16 QuikGraph natif + déclinaison Métaheuristiques Search-11b en 4 volets)
+├── Part1-Foundations/                     # Search Fondamental (33 notebooks : 15 Python + 1 Lean + 17 C# — 12 jumeaux directs Search-1..11/2b + Search-2c QuikGraph natif + déclinaison Métaheuristiques Search-11b en 4 volets + Search-09b/09c/09d discrépance)
 │   ├── Search-1-StateSpace.ipynb
 │   ├── Search-2-Uninformed.ipynb
+│   ├── Search-02b-NetworkX.ipynb
+│   ├── Search-02b-NetworkX-Csharp.ipynb   # Twin C# graphes from-scratch (BFS/DFS, Dijkstra, centralités, Ford-Fulkerson) (See #4956)
+│   ├── Search-02c-QuikGraph.ipynb
 │   ├── Search-3-Informed.ipynb
 │   ├── Search-4-LocalSearch.ipynb
 │   ├── Search-5-GeneticAlgorithms.ipynb
@@ -473,9 +476,7 @@ Search/
 │   ├── Search-09d-Lean-Discrepancy-Komlos.ipynb   # Compagnon formel : lake discrepancy_lean via kernel lean4-wsl (#13868)
 │   ├── Search-10-SymbolicAutomata.ipynb
 │   ├── Search-11-Metaheuristics.ipynb
-│   ├── Search-15-NetworkX.ipynb
-│   ├── Search-15-NetworkX-Csharp.ipynb   # Twin C# graphes from-scratch (BFS/DFS, Dijkstra, centralités, Ford-Fulkerson) (See #4956)
-│   └── Search-16-QuikGraph.ipynb
+│   └── Search-17-Empirical-Algorithm-Selection.ipynb
 │
 ├── Part2-CSP/                             # Programmation par Contraintes (18 notebooks : 9 Python + 9 jumeaux C#)
 │   ├── CSP-1-Fundamentals.ipynb
@@ -618,7 +619,7 @@ Audit **disque ↔ CATALOG-STATUS ↔ prose** vérifié firsthand via `git ls-fi
 
 | Sous-série | Fichiers `.ipynb` gît-tracked | Langages | Algorithmes représentatifs |
 | --- | --- | --- | --- |
-| **Part 1 — Fondements** (`Part1-Foundations/`) | **33** (**21 notebooks Python + Lean** : Search-1 → Search-11, 15, 17b, Search-09b, Search-09c + **compagnon Lean Search-09d** (kernel `lean4-wsl`, lake `discrepancy_lean`) + **12 C#** : jumeaux `-Csharp` (Search-1 à 11 et 15) + Search-16 QuikGraph natif + déclinaison deep-dive **Search-11b Métaheuristiques en 4 volets** C# natif, marathon #4956) | Python + Lean 4 + .NET (C#) | StateSpace, BFS/DFS/UCS/IDDFS, A*, Local Search (SA/Tabu), GA, Minimax/Alpha-Beta, MCTS, DLX, LP, Symbolic Automata, métaheuristiques (PSO/ABC/BRO + 160+ MEALPy), NetworkX, QuikGraph, minima fallacieux SDP (Burer–Monteiro), discrépance combinatoire (Beck–Fiala, Bansal–Jiang 2025) et sa formalisation Lean 4 (conjecture de Komlós) |
+| **Part 1 — Fondements** (`Part1-Foundations/`) | **33** (**16 notebooks Python + Lean** : Search-1 → Search-11, Search-2b, 17b, Search-09b, Search-09c + **compagnon Lean Search-09d** (kernel `lean4-wsl`, lake `discrepancy_lean`) + **17 C#** : jumeaux `-Csharp` (Search-1 à 11 et 2b) + Search-2c QuikGraph natif + déclinaison deep-dive **Search-11b Métaheuristiques en 4 volets** C# natif, marathon #4956) | Python + Lean 4 + .NET (C#) | StateSpace, BFS/DFS/UCS/IDDFS, A*, Local Search (SA/Tabu), GA, Minimax/Alpha-Beta, MCTS, DLX, LP, Symbolic Automata, métaheuristiques (PSO/ABC/BRO + 160+ MEALPy), NetworkX, QuikGraph, minima fallacieux SDP (Burer–Monteiro), discrépance combinatoire (Beck–Fiala, Bansal–Jiang 2025) et sa formalisation Lean 4 (conjecture de Komlós) |
 | **Part 2 — Programmation par Contraintes** (`Part2-CSP/`) | **18** (9 Python : CSP-1 → CSP-9 + **9 jumeaux C#**, marathon #4956 achevé) | Python + .NET (C#) | CSP Fundamentals (backtracking), AC-3/FC/MAC, CSP Advanced (AllDifferent/Cumulative/Circuit), Scheduling (Job-Shop/RCPSP/Nurse), Optimization (Bin Packing/Knapsack), Hybridization (LCG/CP+SAT/CP+ML/LLM+CSP), Soft, Temporal (Allen's Interval Algebra), Distributed (Yokoo 1992) |
 | **Part 3 — Recherche heuristique avancée** (`Part3-Advanced/`) | **6** (3 Python : Search-12, 13, 14 + **3 jumeaux C#**) | Python + .NET (C#) | Pattern Databases (Korf & Felner 2002 additives), Limited Discrepancy Search (Harvey & Ginsberg 1995), Weighted A\* (Pohl 1970) — la discrépance combinatoire (ex-Search-17/18) vit désormais en Part 1 (Search-09c + compagnon Lean 09d) |
 | **Part 4 — Métaheuristiques composables** (`Part4-Metaheuristics/`, C# .NET 9, MetaGeneticSharp) | **35** (MGS-1 → MGS-31 : cœur MGS-1..19, **trilogie MGS-7b/7c/7d** de projection N-D des paysages, MGS-17b sélection empirique, et le **volet comparatif vs MEALPY** MGS-20..31 — langage de composition, représentation vs algorithme, duels DE/SA/WOA/EO/FBI/BBPSO/GA vs Mealpy, ScatterSearch par décomposition, synthèse croisée ; tous C# .NET au-dessus de GeneticSharp vendored) | C# / .NET | Composition, Eukaryote, Islands, Compound Metaheuristics, TSP, projection N-D des paysages, Landscape Explorer, Center Bias, Island Synergy, Axis Alignment, Landscape Debias, Island Synergy Found, Landscape Analysis (FDC), Algorithm Selection (No-Free-Lunch), Parameter Control, CEC Banc, Metropolis Reinsertion, duels vs Mealpy |
@@ -636,7 +637,7 @@ Audit **disque ↔ CATALOG-STATUS ↔ prose** vérifié firsthand via `git ls-fi
 
 **Dépendances** (`requirements.txt`) : `numpy`, `matplotlib`, `ortools`, `z3-solver`, `deap`, `pygad`, `mealpy`, `simanneal`, `networkx`, `python-constraint`, `minizinc`, `choco-solver` (Java bridge via JPype), `openai` (LLM+CSP), `semantic-kernel`, `pulp` (LP relaxation Part 1). C# : .NET 9.0 + `Microsoft.dotnet-interactive` (kernel `.net-csharp` enregistré via `dotnet interactive jupyter install`) + GeneticSharp vendored (`MetaGeneticSharp/`) + IKVM 8.15 (CSP-1/3/4/5/7 C# twin bridge).
 
-**Parité .NET ⇄ Python (EPIC #4956 marathon achevé)** : la parité `Python ⇄ C#` est désormais **complète sur tout le périmètre curriculaire** — Part 1 (Search-1 à 11, 15), Part 2 (CSP-1 à CSP-9, **9 binômes sur 9, tous mergés sur `main`**, vérifié disque 2026-07-07), Part 3 (Search-12/13/14) et les 20 applications. Le détail par solver (6 Choco via IKVM, 2 OR-Tools CP-SAT natif .NET, 1 from-scratch Yokoo 1992) et les verdicts SOTA-OK figurent dans le [bilan final du marathon](#marathon-epic-4956) ci-dessus. Seule la [Partie 4](Part4-Metaheuristics/) reste mono-langage, par conception (ingénierie .NET native au-dessus de GeneticSharp).
+**Parité .NET ⇄ Python (EPIC #4956 marathon achevé)** : la parité `Python ⇄ C#` est désormais **complète sur tout le périmètre curriculaire** — Part 1 (Search-1 à 11, 2b), Part 2 (CSP-1 à CSP-9, **9 binômes sur 9, tous mergés sur `main`**, vérifié disque 2026-07-07), Part 3 (Search-12/13/14) et les 20 applications. Le détail par solver (6 Choco via IKVM, 2 OR-Tools CP-SAT natif .NET, 1 from-scratch Yokoo 1992) et les verdicts SOTA-OK figurent dans le [bilan final du marathon](#marathon-epic-4956) ci-dessus. Seule la [Partie 4](Part4-Metaheuristics/) reste mono-langage, par conception (ingénierie .NET native au-dessus de GeneticSharp).
 
 ---
 
