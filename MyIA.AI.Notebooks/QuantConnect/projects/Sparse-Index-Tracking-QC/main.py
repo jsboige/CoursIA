@@ -20,9 +20,10 @@ from scipy.optimize import nnls
 #   - App-27 solves the cardinality problem with OR-Tools CP-SAT over integer
 #     lots: exact optimizer with status/bound/gap (sector caps + turnover
 #     constraint native).
-#   - OR-Tools is NOT available in the QC Cloud Python environment. This
-#     algorithm therefore uses an EXACT ENUMERATION over a correlation-ranked
-#     shortlist: every K-subset of the shortlist is solved exactly (NNLS),
+#   - This QC implementation deliberately uses an EXACT ENUMERATION over a
+#     correlation-ranked shortlist with SciPy NNLS, keeping the cloud algorithm
+#     bounded and directly reproducible. Every K-subset of the shortlist is
+#     solved exactly (NNLS),
 #     so the selection is provably optimal WITHIN the shortlist; the
 #     shortlist ranking itself is a heuristic filter (correlation with the
 #     benchmark on the calibration window). No sector cap, no turnover
@@ -276,7 +277,7 @@ class SparseIndexTrackingAlgorithm(QCAlgorithm):
         if not spy_cols:
             return None
         spy_col = spy_cols[0]
-        asset_cols = [c for c in returns.columns if c is not spy_col]
+        asset_cols = [c for c in returns.columns if c != spy_col]
         if len(asset_cols) < 8:
             return None
         y = returns[spy_col].to_numpy(dtype=float)

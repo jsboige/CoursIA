@@ -29,12 +29,12 @@ Ces patterns sont valides pour TOUTES les strategies. Ne pas les contredire.
 | 14 | **Profit target 50%** pour options (TastyTrade) + VIX band 15-35 | OptionsIncome | OptionsIncome, Options-VGT |
 | 15 | **Fix structural bugs >> academic improvements** | iter5 | Trend-Following, Toutes |
 | 16 | **Cardinalité sparse = économie d'ordres, pas de turnover** : à 5 bps, K≤10 ne bat pas la réplication complète d'un univers réduit déjà corrélé (139.5 vs 58.0 bps cumulés en sim — la concentration fait migrer plus de poids par rebalance). Ne retester que si coûts/ligne élevés, univers large et bruité, ou contrainte exogène. | Sparse-Index-Tracking-QC (issue #14062) | Sparse-Index-Tracking-QC |
-| 16 | **Backtests courts = overfitting** (toujours tester sur max période) | Trend-Following | Trend-Following, OptionsIncome |
-| 17 | **yfinance auto_adjust misleading pour REITs/bonds** | FuturesTrend, RiskParity | FuturesTrend, RiskParity, DualMomentum |
-| 18 | **2-level trailing stop contre-productif sur BTC daily** | Crypto-MultiCanal v18 | Crypto-MultiCanal |
-| 19 | **Diversifier instruments > relâcher seuils** pour augmenter fréquence | TrendFilteredMeanReversion | TrendFilteredMeanReversion |
-| 20 | **MaximumDrawdownPercentPortfolio = INTERDIT** sur multi-stock (liquidation simultanée catastrophique) | Trend-Following v3 | Trend-Following, Toutes |
-| 21 | **ATR stop serré + gates restrictives = whipsaw** (plus de stop-outs, DD pire) | Trend-Following v3b | Trend-Following |
+| 17 | **Backtests courts = overfitting** (toujours tester sur max période) | Trend-Following | Trend-Following, OptionsIncome |
+| 18 | **yfinance auto_adjust misleading pour REITs/bonds** | FuturesTrend, RiskParity | FuturesTrend, RiskParity, DualMomentum |
+| 19 | **2-level trailing stop contre-productif sur BTC daily** | Crypto-MultiCanal v18 | Crypto-MultiCanal |
+| 20 | **Diversifier instruments > relâcher seuils** pour augmenter fréquence | TrendFilteredMeanReversion | TrendFilteredMeanReversion |
+| 21 | **MaximumDrawdownPercentPortfolio = INTERDIT** sur multi-stock (liquidation simultanée catastrophique) | Trend-Following v3 | Trend-Following, Toutes |
+| 22 | **ATR stop serré + gates restrictives = whipsaw** (plus de stop-outs, DD pire) | Trend-Following v3b | Trend-Following |
 
 ---
 
