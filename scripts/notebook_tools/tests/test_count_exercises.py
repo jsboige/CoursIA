@@ -1064,20 +1064,31 @@ class TestCorpusScope:
 
     def test_research_dirs_are_out_of_corpus(self, tmp_path):
         """NON_PEDAGOGICAL_DIRS hold R&D deliverables, not taught series, so
-        their notebooks carry no exercise budget. Locks the FallacyDetection
-        exclusion (#10355 Phase 1 notebooks -- SOTA survey, datasets landscape,
-        taxonomy coverage-gap -- that were falsely flagged sub-threshold) and
-        the existing ML-Training-Pipeline / Research-Executor exclusions."""
+        their notebooks carry no exercise budget. Locks the
+        ML-Training-Pipeline / Research-Executor exclusions (FallacyDetection
+        descended into GenAI/ as tranche 1 of #13581, so its notebooks are now
+        in-corpus and exercised against the standard threshold)."""
         cells = [_md("## Exercice 1"), _code("pass")]
-        for d in ("FallacyDetection", "ML-Training-Pipeline", "Research-Executor"):
+        for d in ("ML-Training-Pipeline", "Research-Executor"):
             _write_nb(tmp_path / d / "some_research.ipynb", cells)
-        for d in ("FallacyDetection", "ML-Training-Pipeline", "Research-Executor"):
+        for d in ("ML-Training-Pipeline", "Research-Executor"):
             nb = tmp_path / d / "some_research.ipynb"
             kind, threshold = _classify(nb, standard_threshold=3, root=tmp_path)
             assert threshold is None, f"{d} should carry no exercise budget"
             assert kind in OUT_OF_CORPUS_KINDS, f"{d} should be out of corpus"
         # iter_pedagogical_notebooks skips the whole excluded directory
         assert {p.name for p in iter_pedagogical_notebooks(tmp_path)} == set()
+
+    def test_genai_fallacydetection_is_in_corpus(self, tmp_path):
+        """Tranche 1 of #13581 moved FallacyDetection under GenAI/. Its
+        notebooks now carry the standard pedagogical budget (not out-of-corpus)
+        and must be exercised against the standard threshold."""
+        cells = [_md("## Exercice 1"), _code("pass"), _md("## Exercice 2"), _code("pass"), _md("## Exercice 3"), _code("pass")]
+        _write_nb(tmp_path / "GenAI" / "FallacyDetection" / "01-taxonomy-intro.ipynb", cells)
+        nb = tmp_path / "GenAI" / "FallacyDetection" / "01-taxonomy-intro.ipynb"
+        kind, threshold = _classify(nb, standard_threshold=3, root=tmp_path)
+        assert kind not in OUT_OF_CORPUS_KINDS, "GenAI/FallacyDetection is now in-corpus (post-#13581 tranche 1)"
+        assert threshold == 3, "GenAI/FallacyDetection carries the standard pedagogical threshold"
 
 
     def test_gate_can_still_fail_positive_control(self, tmp_path):

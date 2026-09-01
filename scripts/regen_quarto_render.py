@@ -83,6 +83,7 @@ NOTEBOOK_SUBTREES = (
     "MyIA.AI.Notebooks/GenAI/Aspire/",           # tranche 15 #10923 (3)
     "MyIA.AI.Notebooks/GenAI/Audio/",            # tranche 15 #10923 (30)
     "MyIA.AI.Notebooks/GenAI/CaseStudies/",      # tranche 15 #10923 (4)
+    "MyIA.AI.Notebooks/GenAI/FallacyDetection/", # tranche 13 #10923 (2, deplace depuis top-level FallacyDetection/ en tranche 1 #13581)
     "MyIA.AI.Notebooks/GenAI/FineTuning/",       # tranche 15 #10923 (5)
     "MyIA.AI.Notebooks/GenAI/Image/",            # tranche 15 #10923 (20)
     "MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/",  # tranche 15 #10923 (23)
@@ -103,7 +104,6 @@ NOTEBOOK_SUBTREES = (
     "MyIA.AI.Notebooks/SymbolicAI/Planners/",          # tranche 6 #10923 (24)
     "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/",  # tranche 6 #10923 (23)
     "MyIA.AI.Notebooks/SymbolicAI/Lean/",             # tranche 13 #10923 (33 notebooks .ipynb pedagogique Lean)
-    "MyIA.AI.Notebooks/FallacyDetection/",            # tranche 13 #10923 (2)
     "MyIA.AI.Notebooks/cross-series/",                # tranche 13 #10923 (1)
 )
 

@@ -6,7 +6,8 @@
 > WordPress de Jordy Meow, comme **presqu'équivalent d'Open WebUI** côté
 > *site de contenu*. La question n'est pas « quel produit choisir en
 > absolu » — les deux ciblent des usages différents — mais « quand l'un
-> est plus adapté que l'autre » pour un projet donné.
+> est plus adapté que l'autre » pour un projet donné. Cible : qui a déjà
+> un WordPress, qui évalue Open WebUI, qui veut voir MCP intégré à un CMS.
 
 ---
 
@@ -32,324 +33,102 @@ d'écran (voir la note de méthode du
 
 ---
 
-## À qui s'adresse ce parcours ?
+## Vue d'ensemble (5 min)
 
-- À toute personne qui **a déjà un site WordPress** et veut y ajouter
-  des fonctionnalités GenAI sans empiler une plateforme séparée.
-- À toute personne qui **évalue Open WebUI** et veut savoir si une
-  alternative WordPress couvre (partiellement) ses besoins.
-- À toute personne curieuse de voir **comment MCP s'intègre nativement
-  dans un CMS** — AI-Engine transforme WordPress en *serveur MCP*, ce
-  qui en fait un terrain pédagogique de choix pour le protocole.
+| Parcours | Format | Où |
+|---|---|---|
+| 1. Tour de l'UI (admin + front) | markdown + captures instance jetable | [00-Tour-Plateforme/](00-Tour-Plateforme/README.md) |
+| 2. Architecture et surface fonctionnelle | markdown | [01-Architecture/](01-Architecture/README.md) |
+| 3. Comparatif OWUI vs AI-Engine | tableau structuré | [02-Comparatif/](02-Comparatif/comparatif-owui-vs-ai-engine.md) |
+| 4. Cas d'usage livresagités | markdown observé | [04-Cas-Usage-livresagites/](04-Cas-Usage-livresagites/livresagites-parcours.md) |
+| 5. Sécurité et méthode | markdown + notebook | [06-Securite-et-Methode/](06-Securite-et-Methode/README.md) |
+| 6. Récit de bout en bout, par l'API | notebooks exécutés | série « par son API » dans [03-Functional/](03-Functional/) |
 
-Aucun prérequis technique pour les sections 1 à 4 ; la section 5
-(MCP server) suppose une familiarité superficielle avec Model Context
-Protocol.
+## Comment lire — 3 portes d'entrée
 
-## Comment lire ce parcours
+- **Vous découvrez AI-Engine** → [00-Tour-Plateforme/](00-Tour-Plateforme/README.md)
+  (l'interface en écrans commentés) puis [01-Architecture/](01-Architecture/README.md).
+- **Vous voulez comparer à Open WebUI** → [02-Comparatif/](02-Comparatif/comparatif-owui-vs-ai-engine.md).
+- **Vous allez l'installer sur un WordPress** → [03-Functional/](03-Functional/)
+  (fonctionnalités par thème), [04-Cas-Usage-livresagites/](04-Cas-Usage-livresagites/livresagites-parcours.md)
+  (le terrain réel) et [06-Securite-et-Methode/](06-Securite-et-Methode/README.md)
+  (la méthode sans-fuite).
 
-Chaque section suit le même rythme :
+Les sections du parcours suivent le même rythme : **ce que c'est**
+(la fonctionnalité en deux phrases), **comment ça marche** (architecture
+et séquence d'appels), **comparaison OWUI** (l'équivalent ou son
+absence), **référence livresagités** (un cas d'usage réel, sans PII).
 
-1. **Ce que c'est** — la fonctionnalité en deux phrases.
-2. **Comment ça marche** — l'architecture et la séquence d'appels.
-3. **Comparaison OWUI** — l'équivalent (ou l'absence d'équivalent) côté
-   Open WebUI.
-4. **Référence livresagités** — un cas d'usage réel, sans PII.
-
-Un fichier complémentaire [`comparatif-owui-vs-ai-engine.md`](02-Comparatif/comparatif-owui-vs-ai-engine.md)
-synthétise les différences fonctionnelles en tableau ; un fichier
-[`livresagites-parcours.md`](04-Cas-Usage-livresagites/livresagites-parcours.md) détaille le cas
-d'usage livresagités bout-en-bout (sans contenu privé).
-
-Un notebook exécutable [`eval-choisir-son-modele.ipynb`](03-Functional/03-5-Multi-Provider/eval-choisir-son-modele.ipynb)
-complète le parcours par la question qu'il laisse ouverte : **quel modèle
-brancher derrière un chatbot public ?** Il teste cinq propriétés
-discriminantes contre n'importe quel endpoint compatible OpenAI — ancrage,
-refus hors-contexte, respect du format, stabilité de langue, discipline
-d'appel d'outil — et remplace « je l'ai essayé, il répond bien » par un
-tableau reproductible. Configuration : copier [`.env.example`](.env.example)
-vers `.env`.
-
-Un second notebook [`ingestion-corpus-long-rag.ipynb`](03-Functional/03-3-RAG-et-Embeddings/ingestion-corpus-long-rag.ipynb)
-traite l'amont du chatbot : **comment découper un catalogue de plusieurs
-ouvrages** (chacun en chapitres) avant de l'indexer. Il compare un chunking
-naïf (taille fixe) à un chunking structuré (par chapitre) et montre que la
-dégradation du retrieval vient du découpage, pas du modèle d'embeddings —
-démontré avec un vectoriseur TF-IDF déterministe, sans clé d'API.
-
-Un troisième notebook [`auditer-un-serveur-mcp.ipynb`](03-Functional/03-4-MCP-Server/auditer-un-serveur-mcp.ipynb)
-est le compagnon exécutable du Parcours 3 (WordPress comme serveur MCP). Il
-convertit en **mesure reproductible** la leçon centrale du dossier — *un
-serveur MCP utile expose les verbes du métier, pas les tables de la base* :
-étant donné le catalogue d'outils d'un serveur, il classe chaque outil en
-CRUD générique ou verbe métier et mesure sa distance au schéma de
-persistance. Le catalogue audité est synthétique (Maison Valmont) ; un
-chemin live optionnel permet de le rejouer sur son propre serveur via `.env`.
-
-Un notebook compagnon [`consommer-vs-exposer-le-mcp.ipynb`](03-Functional/03-4-MCP-Server/consommer-vs-exposer-le-mcp.ipynb)
-traite la confusion la plus fréquente du dossier — *les deux sens du fil MCP*.
-AI-Engine expose WordPress comme serveur MCP **et** consomme des serveurs MCP
-externes (module Orchestration). Le notebook monte les deux côtés sur le même
-fixture synthétique (Maison Valmont) et mesure le **chevauchement
-cross-catalogue** : quand un outil exposé et un outil consommé font la même
-chose, l'agent doit choisir, et le double-écrit devient un risque. Indice de
-Jaccard sur les signatures normalisées `(verbe, cible)` pour distinguer la
-redondance de lecture (tolérable) de la redondance d'écriture (dangereuse).
-
-Un quatrième notebook [`separer-les-environnements-de-vecteurs.ipynb`](03-Functional/03-3-RAG-et-Embeddings/separer-les-environnements-de-vecteurs.ipynb)
-est le compagnon exécutable du Parcours 2 (RAG et piège du
-multi-environnement). Il convertit en **mesures reproductibles** les deux
-défaillances que la prose décrit : étant donné un vector store partitionné
-en six régimes d'accès, il démontre (1) la **fuite cross-environnement**
-— un retrieval émis sans filtre renvoie des chunks d'un régime réservé,
-mesurée par un taux de fuite — et (2) **l'accident de réindexation** —
-`reindexer(..., environnement=None)` écrase silencieusement un corpus
-voisin. Déterministe, numpy, sans clé ni réseau ; fixture synthétique à 100 %
-(Maison Valmont).
-
-Un notebook compagnon [`auditer-un-formulaire-conditionnel.ipynb`](03-Functional/03-2-Forms/auditer-un-formulaire-conditionnel.ipynb)
-traite la feature **AI Forms** — l'une des deux fonctionnalités GenAI cœur
-qui n'avait ni section de parcours ni notebook. Thèse : *un formulaire à
-logique de branchement est une machine à états implicite*. Le notebook
-construit un formulaire de soumission synthétique (Maison Valmont) à champs
-conditionnels et **énumère les chemins terminaux atteignables** : sept
-champs engendrent treize états distincts, dont près des deux tiers
-déclenchent un appel LLM, et un champ déclaré n'est visible sur aucun
-chemin (champ mort). La leçon : le schéma n'est pas le formulaire — les
-trois grandeurs (chemins, coût LLM, champs morts) sont émergentes. stdlib
-pure, aucune clé, aucun réseau.
-
-Un dernier notebook compagnon [`mesurer-la-derive-dun-copilot.ipynb`](03-Functional/03-1-Chatbots/mesurer-la-derive-dun-copilot.ipynb)
-traite le **Copilot Gutenberg** (Parcours 1) — la seconde et dernière
-fonctionnalité GenAI cœur qui restait sans notebook. Thèse : *le gate humain
-à chaque étape ne protège pas de la dérive d'une chaîne*. Les six
-transformations du Copilot (résumé, enhancement, traduction, rewriting,
-image, alt text) ont des effets informationnels distincts — certaines
-ajoutent, d'autres réécrivent, d'autres **détruisent** (résumé, traduction).
-Le notebook modélise chaque transformation comme une fonction vectorielle
-déterministe et mesure le **rappel de l'original** (projection normalisée,
-bornée) après des séquences validées : une chaîne de transformations
-destructrices complémentaires perd environ la moitié du document, quand une
-chaîne de réversibles préserve 100 % — alors que chaque étape, isolément,
-passait le gate. numpy, sans clé ni réseau ; fixture synthétique 100 %.
-
-Un notebook transversal [`auditer-la-conformite-visuelle.ipynb`](06-Securite-et-Methode/auditer-la-conformite-visuelle.ipynb)
-traite non pas une fonctionnalité mais une **classe de défaut** que toutes
-partagent : *le rendu visuel*. Un smoke test structurel (statut 200, balise
-`<main>` non vide, élément d'action présent) passe sur une page dont le rendu
-viole la charte — CTA en bleu Bootstrap, texte sous le seuil de contraste
-WCAG, lien semi-transparent sans affordance de bouton. Le notebook construit
-quatre pages synthétiques (Maison Valmont) portant une violation délibérée
-chacune, écrit trois détecteurs dédiés (contraste WCAG par luminance,
-dominance des primaires, affordance des CTA), et montre que le smoke test est
-aveugle aux trois classes de défauts. C'est la classe *visuelle* du motif « la
-sonde ment » documenté pour la classe *système* dans
-[`verification-verte-systeme-casse.md`](../../../../docs/reference/verification-verte-systeme-casse.md).
-stdlib pur, sans clé ni réseau.
-
-Une série « AI Engine par son API » s'ajoute aux compagnons ci-dessus :
-elle présente le plugin par des notebooks qui **appellent réellement
-l'API** d'une instance jetable dédiée — montage en 5 étapes via
+Les notebooks de la série « par son API » appellent réellement l'API
+d'une instance jetable dédiée (montage en 5 étapes dans
 [`instance-jetable/`](instance-jetable/), corpus synthétique 100 %
-(Maison Valmont), credentials via `.env` jamais commité.
-[`presenter-ai-engine-par-son-api.ipynb`](03-Functional/03-5-Multi-Provider/presenter-ai-engine-par-son-api.ipynb)
-pose le socle : instance, catalogue des routes `mwai/v1`, première
-completion réelle avec compte de tokens.
-[`configurer-chatbots-par-l-api.ipynb`](03-Functional/03-1-Chatbots/configurer-chatbots-par-l-api.ipynb)
-traite les chatbots comme des **documents JSON** — lecture, duplication,
-écriture read-modify-write, interrogation — puis mesure honnêtement ce
-que les instructions d'un persona changent, et ce qu'elles ne changent
-pas.
-[`administrer-les-formulaires-par-l-api.ipynb`](03-Functional/03-2-Forms/administrer-les-formulaires-par-l-api.ipynb)
-montre l'autre style d'API du plugin : le formulaire est un **contenu**
-WordPress (custom post type `mwai_form`, CRUD unitaire, corps
-Gutenberg, rendu public par shortcode) — et mesure la frontière
-gratuite/Pro (du contenu rendu, pas encore des champs).
-[`piloter-wordpress-par-mcp.ipynb`](03-Functional/03-4-MCP-Server/piloter-wordpress-par-mcp.ipynb)
-ouvre la seconde face du plugin : **WordPress comme serveur MCP** —
-endpoint JSON-RPC `mcp/v1/http`, handshake avec négociation de
-version, catalogue de 43 outils à JSON Schema, et de vrais
-`tools/call` (lecture, puis création/suppression d'un article) — la
-frontière d'authentification mesurée à 401 sur chaque méthode.
-[`brancher-plusieurs-providers-par-l-api.ipynb`](03-Functional/03-5-Multi-Provider/brancher-plusieurs-providers-par-l-api.ipynb)
-ouvre la régie des **environnements** : la matrice
-`ai_<usage>_default_env` (chat, vision, images, audio, json,
-embeddings) lue et écrite par l'API, l'interrogation d'un provider
-(catalogue `/ai/models`, poignée de main `/ai/test_connection`), le
-cycle déclarer/basculer/rétablir d'un second environnement — et le
-piège mesuré par accident : `settings/update` **ne met pas à jour, il
-remplace** (démonstration sécurisée par instantané et restauration).
-[`parler-au-chatbot-en-visiteur-par-l-api.ipynb`](03-Functional/03-1-Chatbots/parler-au-chatbot-en-visiteur-par-l-api.ipynb)
-ouvre la troisième face, celle du **navigateur d'un visiteur anonyme**
-(namespace `mwai-ui/v1`) : la page publique du chatbot n'embarque
-aucun jeton (design anti-cache), l'amorçage passe par `start_session`
-(le seul endpoint réellement public), et la conversation par
-`chats/submit` au header `X-WP-Nonce` — frontière 401 mesurée sans le
-nonce, et la nuance : un nonce est un anti-CSRF, pas une
-authentification.
-[`obtenir-des-donnees-structurees-par-l-api.ipynb`](03-Functional/03-1-Chatbots/obtenir-des-donnees-structurees-par-l-api.ipynb)
-ferme la dernière veine « non prouvée » : la route `/ai/json`. L'appel
-à froid échoue sur `The environment is required.` — la route ignore
-structurellement `envId`/`model` et lit la **case json de la matrice
-d'usages**, vide sur une instance custom-only où le repli interne
-`gpt-5-mini` sans environnement ne peut jamais passer la validation.
-Le notebook reproduit l'erreur, remplit la case par read-modify-write
-du bloc complet, obtient du JSON réellement exploitable (catalogue
-Valmont structuré), puis mesure honnêtement la promesse : le **null
-silencieux** du parser PHP (observable ou neutralisé ?) et la nature
-de la contrainte de format — prompt seul ou `response_format` au
-niveau fil, départagée par comparaison directe avec le moteur.
-État initial restauré à l'identique.
-[`autour-du-consent-oauth-du-serveur-mcp.ipynb`](03-Functional/03-4-MCP-Server/autour-du-consent-oauth-du-serveur-mcp.ipynb)
-reprend la question laissée ouverte par le quatrième notebook : comment
-un client tiers se connecte-t-il **sans les clés de l'admin** ? La
-réponse est un serveur d'autorisation OAuth 2.0 embarqué dans les
-mêmes routes `mcp/v1` — deux documents de découverte (RFC 9728 puis
-8414), enregistrement dynamique (RFC 7591, client public sans secret),
-puis l'**escalier des refus** mesuré marche par marche : PKCE exigé
-(RFC 7636), consentement réservé aux administrateurs (un compte editor
-dédié le mesure à 400). Le consentement admin est mécanisé — formulaire
-portant le nonce maison `_mwai_nonce` et refus **par défaut**
-(`action=deny` surchargé par le bouton Approve) — puis code → token
-(PKCE S256, `expires_in` mesuré) → appel MCP réel au bearer délégué.
-Le notebook clôt par le contraste des trois authentifications croisées
-par la série : application password (identité pleine), token OAuth
-(délégation bornée et consentie), nonce visiteur (anti-CSRF sans
-identité), puis révoque son jeton et mesure la mort (401).
-[`interroger-lassistant-de-lediteur-par-l-api.ipynb`](03-Functional/03-1-Chatbots/interroger-lassistant-de-lediteur-par-l-api.ipynb)
-complète le tour des **quatre faces** du plugin — admin, agent,
-visiteur, éditeur — par celle de celui qui écrit : la route
-`mwai-ui/v1/editor/submit` (l'assistant de l'éditeur, la part
-gratuite du Copilot). Le namespace est partagé avec le visiteur, la
-frontière pas : le nonce de `start_session` y prend un 403 mesuré —
-seule la paire cookies de session + nonce `wp_rest` (embarqué dans
-les pages wp-admin) ouvre la route. Le contrat se découvre par les
-refus (aucun arg déclaré ; « Empty message. » nomme `newMessage`),
-la completion réelle rend son `usage` à l'appelant (le prix du
-raisononnement visible), et le champ `actions` vide inscrit la
-frontière gratuite/Pro dans la réponse elle-même : le Copilot payant
-agit sur les blocs, l'assistant gratuit ne retourne que du texte.
-La route est stateless (le tour isolé oublie, le tour qui re-apporte
-`messages` souvient), `envId` est écouté, et un `model` sans
-environnement redonne l'erreur à froid du grain précédent — « The
-environment is required. » : le routeur exige le couple, pas le nom.
-[`donner-une-memoire-ephemere-au-chatbot-par-l-api.ipynb`](03-Functional/03-1-Chatbots/donner-une-memoire-ephemere-au-chatbot-par-l-api.ipynb)
-ouvre la cinquième surface : la famille `mwai-ui/v1/files/*`, celle
-des **pièces jointes** — la mémoire du chatbot au-delà du texte tapé,
-un manuscrit à relire ou un extrait audio. Le trait le plus
-caractéristique y est mesuré par calcul : la fiche du fichier porte
-`created` et `expires`, et la soustraction rend exactement **une
-heure** — les pièces jointes sont éphémères par architecture, pas
-par configuration, et le notebook le démontre à la seconde près.
-Autour de la mesure : le contrat d'upload découvert par refus
-(400 « Purpose is required. » nomme le champ obligatoire), l'URL
-publique servie par la médiathèque WordPress (contenu vérifié octet
-pour octet), la **partition par utilisateur** — table `mwai_files`,
-deux auteurs ne voient ni n'effacent les pièces jointes de l'autre,
-jusqu'aux sessions anonymes qui ont chacune la leur —, le delete par
-refus (400 « No valid files to delete » pour `{id}` : le contrat
-veut `{"files": [refId]}`), et le miroir admin
-`mwai/v1/openai/files/*` où les mêmes fichiers reviennent, augmentés
-de `download` et `finetune`. Le fichier synthétique est détruit en
-fin de parcours — cleanup mesuré, total 0 → 1 → 0.
-[`joindre-un-fichier-au-chatbot-par-l-api.ipynb`](03-Functional/03-1-Chatbots/joindre-un-fichier-au-chatbot-par-l-api.ipynb)
-ferme le dossier pièces jointes par la question qui suit le stockage :
-**comment un fichier téléversé entre-t-il dans une completion ?** La
-réponse mesurée est un drame en trois actes. Acte 1, le contrat mal
-nommé : la route `chats/submit` lit `newFileId`, et un `fileId` envoyé
-à sa place rend un 200 parfaitement silencieux — aucune erreur, le
-fichier n'est même pas regardé (le `purpose` ne bouge pas). Acte 2,
-le texte annoté puis jeté : avec le bon nom, la couche applicative
-traite la pièce jointe (`purpose` → `analysis`, métadonnées de session)
-mais le contenu n'entre jamais dans le prompt — compte de tokens
-identique à un tour sans fichier, canary absent, et le modèle le dit
-honnêtement ; seules les images sont câblées par le moteur chatml.
-Acte 3, l'image réellement vue : un PNG bicolore construit par le
-notebook en stdlib (`struct` + `zlib`, couleurs connues par
-construction et prouvées par re-décodage) est décrit correctement —
-« le rouge et le bleu » — sur un endpoint auto-hébergé compatible
-OpenAI : la frontière du multimodal est le **format de fil**
-(`image_url` base64), pas le provider. Contrôle négatif : la même
-question sans image ne produit aucune couleur.
+« Maison Valmont ») ; configuration par copie de
+[`.env.example`](.env.example) vers `.env` — jamais commité.
 
 ---
 
-## Sections
+## Index par thème
 
-### 1. [Vue d'ensemble](01-Architecture/README.md#vue-densemble)
+### Tour et QA
 
-Ce que c'est, qui l'utilise, pourquoi on en parle à côté d'Open
-WebUI — regroupé dans
-[`01-Architecture/`](01-Architecture/README.md#vue-densemble).
+- [Tour de la plateforme](00-Tour-Plateforme/README.md) — l'interface d'AI-Engine en douze écrans commentés, captures sur instance jetable
+- [QA Playwright-AI-Engine](05-Playwright-AI-Engine/README.md) — ce que l'API ne voit pas : l'interface d'administration défait des écritures REST, et pas toujours
 
-### 2. [Fonctionnalités GenAI cœur](01-Architecture/README.md#fonctionnalités-genai-cœur)
+### Architecture et comparatif
 
-Chatbots, Workspace, Copilot, AI Forms, génération d'image —
-regroupé dans
-[`01-Architecture/`](01-Architecture/README.md#fonctionnalités-genai-cœur).
+- [Vue d'ensemble, fonctionnalités cœur, multi-provider](01-Architecture/README.md) — regroupé depuis la racine
+- [Architecture en modules](01-Architecture/architecture-en-modules.md) — le découpage en modules du plugin
+- [Comparatif OWUI vs AI-Engine](02-Comparatif/comparatif-owui-vs-ai-engine.md) — tableau structuré des fonctionnalités
 
-### 3. [Multi-provider et self-hosting](01-Architecture/README.md#multi-provider-et-self-hosting)
+### Cas d'usage
 
-Neuf providers distants + connecteur auto-hébergé — regroupé dans
-[`01-Architecture/`](01-Architecture/README.md#multi-provider-et-self-hosting).
+- [Parcours livresagités](04-Cas-Usage-livresagites/livresagites-parcours.md) — 88 outils MCP dont 24 métier, six environnements d'embeddings, le terrain d'observation réel
 
-### 4. [RAG et embeddings](03-Functional/03-3-RAG-et-Embeddings/README.md)
+### Fonctionnel — chatbots et assistants
 
-Cinq vector stores, import PDF chunké, trois modes de recherche —
-regroupé dans
-[`03-3-RAG-et-Embeddings/`](03-Functional/03-3-RAG-et-Embeddings/README.md).
+- [configurer-chatbots-par-l-api](03-Functional/03-1-Chatbots/configurer-chatbots-par-l-api.ipynb) — les chatbots sont des documents JSON : lire, dupliquer, écrire (read-modify-write) — et mesurer ce que les instructions d'un persona changent réellement
+- [parler-au-chatbot-en-visiteur](03-Functional/03-1-Chatbots/parler-au-chatbot-en-visiteur-par-l-api.ipynb) — la face navigateur : page sans jeton, `start_session` seul endpoint public, et nonce = anti-CSRF, pas authentification
+- [interroger-lassistant-de-lediteur](03-Functional/03-1-Chatbots/interroger-lassistant-de-lediteur-par-l-api.ipynb) — la face éditeur : nonce `wp_rest`, contrat découvert par les refus, frontière gratuite/Pro inscrite dans la réponse
+- [donner-une-memoire-ephemere](03-Functional/03-1-Chatbots/donner-une-memoire-ephemere-au-chatbot-par-l-api.ipynb) — la famille `files/*` : upload par refus, TTL d'une heure prouvé par soustraction, partition par utilisateur
+- [joindre-un-fichier-au-chatbot](03-Functional/03-1-Chatbots/joindre-un-fichier-au-chatbot-par-l-api.ipynb) — un fichier joint a trois destins : ignoré (200 silencieux), annoté-puis-jeté (tokens à l'appui), réellement vu (l'image bicolore)
+- [mesurer-la-derive-dun-copilot](03-Functional/03-1-Chatbots/mesurer-la-derive-dun-copilot.ipynb) — le gate humain à chaque étape ne protège pas la chaîne : des destructrices complémentaires perdent la moitié du document
+- [obtenir-des-donnees-structurees](03-Functional/03-1-Chatbots/obtenir-des-donnees-structurees-par-l-api.ipynb) — la route `/ai/json` : la case json de la matrice d'usages, son remplissage, le null silencieux du parser
 
-### 5. [MCP server natif](03-Functional/03-4-MCP-Server/README.md)
+### Fonctionnel — formulaires
 
-WordPress serveur MCP permission-aware + consommation de serveurs
-externes — regroupé dans
-[`03-4-MCP-Server/`](03-Functional/03-4-MCP-Server/README.md).
+- [administrer-les-formulaires-par-l-api](03-Functional/03-2-Forms/administrer-les-formulaires-par-l-api.ipynb) — le formulaire est un contenu WordPress (CPT `mwai_form`) : CRUD unitaire, rendu par shortcode, frontière gratuite/Pro mesurée
+- [auditer-un-formulaire-conditionnel](03-Functional/03-2-Forms/auditer-un-formulaire-conditionnel.ipynb) — un formulaire à branchement est une machine à états implicite : sept champs engendrent treize états, coût LLM et champs morts émergents
 
-### 6. [Cas d'usage livresagités](04-Cas-Usage-livresagites/livresagites-parcours.md)
+### Fonctionnel — RAG et embeddings
 
-Le projet WordPress **livresagités** sert de **terrain d'observation
-réel** : une maison d'édition, et non un blog — dépôt de manuscrits,
-comité de lecture, catalogue e-commerce. Le parcours détaille
-l'architecture en modules d'AI-Engine, la séparation du RAG en
-**six environnements d'embeddings** distincts (un contrôle d'accès,
-pas une commodité), et surtout le catalogue MCP réellement exposé :
-**88 outils**, dont 64 natifs génériques et **24 outils métier**. Cet
-écart porte la leçon d'architecture la plus transposable du dossier —
-*un serveur MCP utile expose les verbes du métier, pas les tables de
-la base*.
+- [ingestion-corpus-long-rag](03-Functional/03-3-RAG-et-Embeddings/ingestion-corpus-long-rag.ipynb) — découper un catalogue avant de l'indexer : la dégradation du retrieval vient du chunking, pas de l'embedder
+- [separer-les-environnements-de-vecteurs](03-Functional/03-3-RAG-et-Embeddings/separer-les-environnements-de-vecteurs.ipynb) — fuite cross-environnement et accident de réindexation, mesurés sur un vector store partitionné
 
-Aucun contenu du site n'est reproduit, et le dossier ne contient
-aucune capture d'écran : la
-[note de méthode](04-Cas-Usage-livresagites/livresagites-parcours.md#note-de-méthode--pourquoi-il-ny-a-aucune-capture)
-explique pourquoi une capture de `wp-admin` n'est pas assainissable.
+### Fonctionnel — serveur MCP
+
+- [piloter-wordpress-par-mcp](03-Functional/03-4-MCP-Server/piloter-wordpress-par-mcp.ipynb) — WordPress serveur MCP : handshake JSON-RPC, catalogue à JSON Schema, vrais `tools/call` en écriture
+- [consommer-vs-exposer-le-mcp](03-Functional/03-4-MCP-Server/consommer-vs-exposer-le-mcp.ipynb) — les deux sens du fil : chevauchement cross-catalogue (Jaccard sur verbe, cible), la redondance d'écriture est dangereuse
+- [auditer-un-serveur-mcp](03-Functional/03-4-MCP-Server/auditer-un-serveur-mcp.ipynb) — un serveur MCP utile expose les verbes du métier, pas les tables : classification CRUD/métier + distance au schéma
+- [autour-du-consent-oauth](03-Functional/03-4-MCP-Server/autour-du-consent-oauth-du-serveur-mcp.ipynb) — l'escalier des refus de l'OAuth embarqué : PKCE, consent admin mécanisé, token délégué — puis révocation mesurée
+
+### Fonctionnel — multi-provider
+
+- [presenter-ai-engine-par-son-api](03-Functional/03-5-Multi-Provider/presenter-ai-engine-par-son-api.ipynb) — le socle de la série : instance jetable, catalogue des routes `mwai/v1`, première completion réelle
+- [brancher-plusieurs-providers](03-Functional/03-5-Multi-Provider/brancher-plusieurs-providers-par-l-api.ipynb) — la matrice `ai_<usage>_default_env` lue et écrite — et le piège : `settings/update` ne met pas à jour, il remplace
+- [eval-choisir-son-modele](03-Functional/03-5-Multi-Provider/eval-choisir-son-modele.ipynb) — cinq propriétés discriminantes contre n'importe quel endpoint : « je l'ai essayé, il répond bien » devient un tableau reproductible
+
+### Sécurité et méthode
+
+- [Sécurité et méthode](06-Securite-et-Methode/README.md) — pas de secret dans les supports, posture PII, et le notebook qui mesure ce que le smoke test ne voit pas
 
 ---
 
 ## Sécurité — pas de secret dans les supports
 
-Comme pour le dossier Open-WebUI voisin :
-
-- **Aucun secret exposé** : pas d'URL d'admin, pas de clé d'API, pas
-  de token MCP, pas de credentials WordPress.
-- **Aucune capture d'écran**, ce qui est le moyen le plus sûr de
-  tenir la ligne précédente. Un écran de `wp-admin` expose son
-  contexte — compte connecté, domaines, extensions installées —
-  indépendamment de la page affichée, et une capture retouchée n'est
-  pas vérifiable par le lecteur. La
-  [note de méthode](04-Cas-Usage-livresagites/livresagites-parcours.md#note-de-méthode--pourquoi-il-ny-a-aucune-capture)
-  détaille l'arbitrage et ce qu'illustrer proprement supposerait.
-- **Aucun contenu privé livresagités** : le cas d'usage est décrit à
-  un niveau architectural (structures, comptages, familles d'outils),
-  jamais avec les contenus réels du site — ni texte de manuscrit, ni
-  nom de personne, ni titre d'ouvrage.
-- **Documentation de patterns, pas de credentials** : les exemples
-  PHP dans ce dossier utilisent des *constantes de substitution*
-  (`YOUR_OPENAI_API_KEY`, `YOUR_VECTOR_STORE_ID`), jamais des
-  valeurs réelles.
-
-Les fichiers `.env` réels ne sont jamais commités (`*.env` est
-gitignoré) — seuls les `*.env.example` documentent les variables
-attendues.
+La politique complète — aucun secret exposé, aucune capture d'écran,
+aucun contenu privé livresagités, constantes de substitution dans les
+exemples, `.env` jamais commités — vit dans
+[06-Securite-et-Methode/](06-Securite-et-Methode/README.md).
 
 ---
 
@@ -357,57 +136,9 @@ attendues.
 
 - [Plateformes conversationnelles](../README.md) — point d'entrée de la catégorie
 - [README d'Open-WebUI](../Open-WebUI/README.md) — dossier voisin
-- [Tour OWUI](../Open-WebUI/00-Tour-Plateforme/README.md) — pendant « chat
-  LLM » centré
-- [QA Playwright-OWUI](../Open-WebUI/Playwright-OWUI/README.md) — pendant «
-  assurance qualité » de bout en bout
-- [Tour de la plateforme](00-Tour-Plateforme/README.md) — l'interface
-  d'AI-Engine en douze écrans commentés, captures sur instance jetable
-- [QA Playwright-AI-Engine](05-Playwright-AI-Engine/README.md) — ce que
-  l'API ne voit pas : l'interface d'administration défait des écritures
-  REST, et pas toujours
-- [`comparatif-owui-vs-ai-engine.md`](02-Comparatif/comparatif-owui-vs-ai-engine.md)
-  — tableau structuré
-- [`livresagites-parcours.md`](04-Cas-Usage-livresagites/livresagites-parcours.md) — cas
-  d'usage concret
-- [`eval-choisir-son-modele.ipynb`](03-Functional/03-5-Multi-Provider/eval-choisir-son-modele.ipynb) —
-  banc d'évaluation reproductible, cinq propriétés discriminantes
-- [`ingestion-corpus-long-rag.ipynb`](03-Functional/03-3-RAG-et-Embeddings/ingestion-corpus-long-rag.ipynb) —
-  ingestion RAG d'un corpus long structuré, chunking naïf vs par chapitre
-- [`auditer-un-serveur-mcp.ipynb`](03-Functional/03-4-MCP-Server/auditer-un-serveur-mcp.ipynb) —
-  classifier CRUD générique vs verbes métier, mesurer la distance au schéma
-- [`consommer-vs-exposer-le-mcp.ipynb`](03-Functional/03-4-MCP-Server/consommer-vs-exposer-le-mcp.ipynb) —
-  les deux sens du fil MCP, chevauchement cross-catalogue et risque de double-écrit
-- [`separer-les-environnements-de-vecteurs.ipynb`](03-Functional/03-3-RAG-et-Embeddings/separer-les-environnements-de-vecteurs.ipynb) —
-  fuite cross-environnement et accident de réindexation, mesurés sur un vector store partitionné
-- [`auditer-un-formulaire-conditionnel.ipynb`](03-Functional/03-2-Forms/auditer-un-formulaire-conditionnel.ipynb) —
-  AI Forms conditionnelles comme machine à états, énumération des chemins et champs morts
-- [`mesurer-la-derive-dun-copilot.ipynb`](03-Functional/03-1-Chatbots/mesurer-la-derive-dun-copilot.ipynb) —
-  Copilot Gutenberg : dérive d'une chaîne de transformations, le gate par étape ne protège pas la chaîne
-- [`auditer-la-conformite-visuelle.ipynb`](06-Securite-et-Methode/auditer-la-conformite-visuelle.ipynb) —
-  smoke test structurel vs conformité visuelle : contraste WCAG, primaires Bootstrap, affordance des CTA
-- [`presenter-ai-engine-par-son-api.ipynb`](03-Functional/03-5-Multi-Provider/presenter-ai-engine-par-son-api.ipynb) —
-  socle de la série « par son API » : instance jetable, catalogue des routes, première completion réelle
-- [`configurer-chatbots-par-l-api.ipynb`](03-Functional/03-1-Chatbots/configurer-chatbots-par-l-api.ipynb) —
-  chatbots comme documents JSON : lire, dupliquer, écrire (read-modify-write), interroger deux personas
-- [`administrer-les-formulaires-par-l-api.ipynb`](03-Functional/03-2-Forms/administrer-les-formulaires-par-l-api.ipynb) —
-  formulaires comme contenu : CRUD unitaire, publication, rendu public, frontière gratuite/Pro mesurée
-- [`piloter-wordpress-par-mcp.ipynb`](03-Functional/03-4-MCP-Server/piloter-wordpress-par-mcp.ipynb) —
-  WordPress comme serveur MCP : handshake JSON-RPC, catalogue d'outils, tools/call en lecture et écriture
-- [`brancher-plusieurs-providers-par-l-api.ipynb`](03-Functional/03-5-Multi-Provider/brancher-plusieurs-providers-par-l-api.ipynb) —
-  environnements et matrice d'usages multi-provider : catalogues, connexions, bascules, et le PUT déguisé de settings/update
-- [`parler-au-chatbot-en-visiteur-par-l-api.ipynb`](03-Functional/03-1-Chatbots/parler-au-chatbot-en-visiteur-par-l-api.ipynb) —
-  la face navigateur du visiteur : page sans jetons, session bootstrap, conversation anonyme au nonce
-- [`obtenir-des-donnees-structurees-par-l-api.ipynb`](03-Functional/03-1-Chatbots/obtenir-des-donnees-structurees-par-l-api.ipynb) —
-  sorties JSON structurees : la case json de la matrice d'usages, son remplissage, le null silencieux du parser
-- [`autour-du-consent-oauth-du-serveur-mcp.ipynb`](03-Functional/03-4-MCP-Server/autour-du-consent-oauth-du-serveur-mcp.ipynb) —
-  OAuth embarque du serveur MCP : decouverte, registration dynamique, escalier des refus, consent admin, token PKCE, appel delegue
-- [`interroger-lassistant-de-lediteur-par-l-api.ipynb`](03-Functional/03-1-Chatbots/interroger-lassistant-de-lediteur-par-l-api.ipynb) —
-  la face editeur : assistant de redaction, nonce wp_rest, contrat par refus, usage rendu, actions vides (frontiere gratuite/Pro)
-- [`donner-une-memoire-ephemere-au-chatbot-par-l-api.ipynb`](03-Functional/03-1-Chatbots/donner-une-memoire-ephemere-au-chatbot-par-l-api.ipynb) —
-  la face pieces jointes : upload par refus, TTL d'une heure mesure par soustraction, partition par utilisateur, delete par refus, miroir admin
-- [`joindre-un-fichier-au-chatbot-par-l-api.ipynb`](03-Functional/03-1-Chatbots/joindre-un-fichier-au-chatbot-par-l-api.ipynb) —
-  la consommation des pieces jointes : contrat newFileId, texte annote-puis-jete (tokens a l'appui), image reellement vue sur env custom (controle bicolore)
+- [Tour OWUI](../Open-WebUI/00-Tour-Plateforme/README.md) — pendant « chat LLM » centré
+- [QA Playwright-OWUI](../Open-WebUI/Playwright-OWUI/README.md) — pendant « assurance qualité » de bout en bout
+- [`instance-jetable/`](instance-jetable/) — montage en 5 étapes de l'instance de démo, corpus 100 % synthétique
 - Epic [#4433](https://github.com/jsboige/CoursIA/issues/4433) —
   refonte pédagogique GenAI (ce parcours en est une extension)
 - Issue [#9734](https://github.com/jsboige/CoursIA/issues/9734) —

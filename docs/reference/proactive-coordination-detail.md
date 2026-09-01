@@ -125,3 +125,25 @@ Détail de la R5 « le pool se tire ». La règle porte l'usage et les trois urn
 Tirage pondéré **sans remise** (Efraimidis-Spirakis : clé `u^(1/w)`, top-k). Plus de pondération reproduirait une monoculture avec des étapes en plus : on se limite à ce que les gates du variation-protocol demandent déjà.
 
 **Graine** = `sha256(lane | heure UTC | reroll)`. Deux lanes tirent des candidats différents à la même minute ; une même lane qui relance dans l'heure retrouve son tirage (idempotent, pas de thrash) ; `--reroll N` redistribue. Le genre affiché est **inféré** par regex sur titre+labels : c'est une aide au tri, pas un verdict — l'agent pose le vrai tag `Grain:` lui-même.
+
+### Cache de payloads et filtres factuels (#13920)
+
+Les trois lectures GitHub partageables sont mises en cache **avant dérivation** dans le cache utilisateur, jamais dans le dépôt : pool ouvert (10 min), PRs mergees de la fenêtre d'affluence (15 min), PRs avec fichiers de la saturation de séries (60 min). La clé encode dépôt, schéma, mesure et forme de requête ; les cutoffs temporels exacts restent dans le fetch, tandis que `age`, `idle`, citations et `saturation(prs)` sont recalculés à chaque lecture. Une écriture passe par un fichier temporaire puis `os.replace`; la rétention est bornée. `--cache auto|off|refresh`, `--cache-dir` et `--cache-status` rendent le mécanisme contrôlable. Un fallback stale n'est utilisé qu'après échec du refresh et reste signalé comme **NON MESURÉ** dans les verdicts qui en dépendent.
+
+Le cache ne touche jamais les organes minute-sensitive : garde des PRs rouges, checks/reviews/nits, claims, `recent_delivery`, sécheresse de contenu et écritures de commentaire restent live.
+
+Les rerolls successifs peuvent être remplacés par une requête plus expressive :
+
+```bash
+python scripts/pick_idle_grain.py \
+  --lane myia-po-2025:CoursIA-2 \
+  --prev-genre tooling \
+  --grains 8 --umbrellas 4 \
+  --exclude-issue 13920,13924 \
+  --exclude-label blocked \
+  --min-idle-days 7 \
+  --urns grain,umbrella \
+  --cache-status
+```
+
+Filtres disponibles, tous locaux et combinables : `--exclude-issue` répétable ; `--require-label` (AND) ; `--exclude-label` (ANY) ; bornes inclusives `--min/max-age-days` et `--min/max-idle-days` ; sélection `--urns`. Les comparaisons de labels sont insensibles à la casse. Le funnel attribue chaque exclusion au premier filtre qui la retire et expose en JSON `filters.active`, `filters.excluded`, `filters.funnel`. Un résultat vide nomme le filtre dominant à relâcher : il ne prétend jamais que le pool global est vide. Les filtres de tier/genre sont volontairement absents, car le genre du picker est inféré et n'est pas un verdict.

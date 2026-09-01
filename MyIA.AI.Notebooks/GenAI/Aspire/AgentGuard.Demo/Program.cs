@@ -93,3 +93,63 @@ public static class AgentCancellation
         System.Threading.CancellationToken cancellationToken = default)
         => Task.FromResult($"[LLM] {prompt}");
 }
+
+// Cinquieme terrain fautif (AGENTGUARD005) : variante syntaxique d'
+// AGENTGUARD001, meme defaut semantique. Au lieu de `.Result`, l'agent
+// decompile explicitement la machine a etats de la tache :
+// `tache.GetAwaiter().GetResult()`. Meme consequence en production
+// (deadlock sur un SynchronizationContext), mais un chemin syntaxique
+// distinct qui justifie un analyseur dedie -- AGENTGUARD001 ne regarde
+// que `.Result` / `.Wait()`. Diagnostic attendu sur la derniere ligne.
+public static class AgentSyncOverAsync
+{
+    // Genere par agent "pour eviter un await" : la tache est "synchronisee"
+    // en traversant manuellement la machine a etats. C'est exactement le
+    // defaut que AGENTGUARD005 attrape.
+    public static string ReponseSynchrone(string prompt)
+    {
+        return CallLlmAsync(prompt).GetAwaiter().GetResult();   // AGENTGUARD005
+    }
+
+    private static async Task<string> CallLlmAsync(string prompt)
+    {
+        await Task.Delay(50);
+        return $"[LLM] {prompt}";
+    }
+}
+
+// Sixieme terrain fautif (AGENTGUARD005b) : variante
+// `ConfigureAwait(false).GetAwaiter().GetResult()`, ecappee au filtre
+// semantique d'AGENTGUARD005 (le receiver du GetAwaiter y est de type
+// `ConfiguredTaskAwaitable`, pas `Task`). L'agent genere cette forme en
+// CROYANT que `ConfigureAwait(false)` "rend ca safe". Faux : ConfigureAwait
+// reduit la capture du SynchronizationContext, mais le
+// `.GetAwaiter().GetResult()` BLOQUE TOUJOURS le thread -- le
+// sync-over-async reste entier. C'est precisement la confusion que la
+// regle AGENTGUARD005b doit denoncer. Deux diagnostics attendus : un par
+// ligne fautive (deux formes explicitement testees : `ConfigureAwait(false)`
+// et `ConfigureAwait(true)`).
+public static class AgentSyncOverAsyncConfigureAwait
+{
+    // Forme "rassurante" classique : l'agent a lu sur Stack Overflow que
+    // ConfigureAwait(false) est une bonne pratique et l'a ajoute "pour
+    // etre safe". Le defaut est exactement le meme que la variante
+    // nue -- diagnostic AGENTGUARD005b attendu.
+    public static string ReponseSynchroneSafeFalse(string prompt)
+    {
+        return CallLlmAsync(prompt).ConfigureAwait(false).GetAwaiter().GetResult();   // AGENTGUARD005b
+    }
+
+    // Forme `true` (explicite) -- meme defaut, l'analyseur doit le voir
+    // aussi (le literal n'est pas blanchi : seul compte le pattern).
+    public static string ReponseSynchroneSafeTrue(string prompt)
+    {
+        return CallLlmAsync(prompt).ConfigureAwait(true).GetAwaiter().GetResult();    // AGENTGUARD005b
+    }
+
+    private static async Task<string> CallLlmAsync(string prompt)
+    {
+        await Task.Delay(50);
+        return $"[LLM] {prompt}";
+    }
+}

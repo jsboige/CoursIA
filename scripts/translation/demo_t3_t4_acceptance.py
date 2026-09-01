@@ -104,6 +104,11 @@ def _t4_render_dry(csv_path: Path, notebook: str, lang: str = "en") -> dict:
             "--out",
             os.devnull,
             "--dry-run",
+            # Outil de MESURE : la demo observe les couvertures partielles
+            # (famille finetuning.csv, incident #12850) au lieu de les refuser ;
+            # les gates fail-closed protegent la LIVRAISON, pas le diagnostic.
+            "--min-coverage",
+            "0.0",
         ],
         cwd=REPO_ROOT,
         capture_output=True,
@@ -119,6 +124,10 @@ def _t4_render_dry(csv_path: Path, notebook: str, lang: str = "en") -> dict:
 
 
 def main() -> int:
+    # cp1252 : le rapport JSON porte des U+FFFD (fixtures mojibake reelles) --
+    # sans reconfiguration, le print final crashe sous console Windows.
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     parser = argparse.ArgumentParser(description="Demo T3/T4 acceptance (c.1301+48)")
     parser.add_argument(
         "--csv",

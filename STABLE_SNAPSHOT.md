@@ -47,7 +47,7 @@
 | Notebook | Series | Last commit |
 |----------|--------|-------------|
 | `MyIA.AI.Notebooks/GradeBook.ipynb` | TOP | 2026-03-23 |
-| `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-01-RiskParity-Composite.ipynb` | QuantConnect | 2026-07-12 |
+| `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-03b-RiskParity-Composite.ipynb` | QuantConnect | 2026-07-12 |
 | `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-02-SectorRotation-Momentum.ipynb` | QuantConnect | 2026-07-12 |
 | `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-04-MeanReversion.ipynb` | QuantConnect | 2026-07-12 |
 | `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-05-RegimeSwitching.ipynb` | QuantConnect | 2026-07-12 |

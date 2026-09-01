@@ -27,7 +27,7 @@ NOTEBOOKS_CORE = [
     "Infer-3-Factor-Graphs.ipynb",
     "Infer-4-Bayesian-Networks.ipynb",
     "Infer-7-Skills-IRT.ipynb",
-    "Infer-6-Debugging.ipynb",
+    "Infer-2b-Debugging-Bonnes-Pratiques.ipynb",
     "Infer-9-Classification.ipynb",
     "Infer-8-TrueSkill.ipynb",
     "Infer-11-Topic-Models.ipynb",
@@ -507,6 +507,8 @@ def verify_kernel_available():
             ["jupyter", "kernelspec", "list"],
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="replace",
             check=True
         )
 
@@ -569,6 +571,8 @@ def run_notebook(notebook_name: str, timeout: int = 600, verbose: bool = False) 
             cmd,
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="replace",
             timeout=timeout
         )
 

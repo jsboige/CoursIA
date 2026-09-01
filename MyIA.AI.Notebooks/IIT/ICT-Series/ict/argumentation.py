@@ -40,6 +40,7 @@ notebook (pont SymbolicAI/Tweety-5).
 
 from __future__ import annotations
 
+import re
 from typing import Dict, Iterable, List, Optional, Sequence, Set, Tuple
 
 import numpy as np
@@ -298,6 +299,144 @@ def discourse_irreversibility(P: np.ndarray) -> dict:
     P_rev = time_arrow.reversibilize(P, pi)
     dist = 0.5 * float(np.sum(np.abs(P - P_rev)))
     return {"sigma": float(sigma), "pi": pi, "P_rev_distance": dist}
+
+
+# --------------------------------------------------------------------------- #
+#  Refus de mesurer (tranche temoins #7742) : un refus n'est pas un zero      #
+# --------------------------------------------------------------------------- #
+
+REFUS_CODES = (
+    "ENTREE_VIDE",
+    "AUCUN_ENONCE_CODABLE",
+    "CANAUX_CONTRADICTOIRES",
+    "SOURCE_INDISPONIBLE",
+)
+
+
+class RefusDeMesure(Exception):
+    """Le pipeline refuse de produire une mesure — distingué d'un zéro mesuré.
+
+    Un zéro (ex. ``sigma = 0.0`` sur un débat déterministe à ordre fixe,
+    §5 du notebook) est un **nombre produit par une mesure qui a tourné**.
+    Un refus ne produit **aucun nombre** : l'entrée ne porte pas ce que
+    l'instrument prétend mesurer. Sans ce chemin explicite, une entrée sans
+    contenu propositionnel sortirait un score par construction (graphe vide
+    ou valeur par défaut) et le contrôle négatif serait vide avant d'avoir
+    tourné (arbitrage #7742, tranche témoins).
+    """
+
+    def __init__(self, code: str, raison: str = ""):
+        if code not in REFUS_CODES:
+            raise ValueError(f"code de refus inconnu : {code!r} ({REFUS_CODES})")
+        self.code = code
+        super().__init__(f"[{code}] {raison}")
+
+
+# Signature lexicale minimale d'une langue naturelle : les mots fonctionnels
+# (grammaticaux) couvrent typiquement 35-55 % des tokens d'un texte anglais
+# ordinaire. Une glossolalie (pseudo-langue sans entrée lexicale) en couvre
+# ZERO — par construction, pas par réglage. Liste fermée, ~80 items.
+MOTS_FONCTIONNELS = frozenset("""
+the of and a to in is you that it he was for on are as with his they i at be
+this have from or one had by word but not what all were we when your can said
+there use an each which she do how their if will up other about out many then
+them these so some her would make like him into time has look two more write
+go see no way could my than first been call who its now find long down day did
+get come made may part over new sound take only little work know place year
+live me back give most very after thing our just name good sentence man think
+say great where help through much before line right too mean old any same
+tell boy follow came want show also around form three small set put end does
+another well large must big even such because turn here why ask went men read
+need land different home us move try kind hand picture again change off play
+spell air away animal house point page letter mother answer found study still
+learn should world high every near add food between own below country plant
+""".split())
+
+
+def segmenter_enonces(texte: str) -> List[str]:
+    """Segmentation en énoncés candidats (phrases). Purge : vides, < 2 mots."""
+    brut = [t.strip() for t in re.split(r"[.!?]+", texte)]
+    return [t for t in brut if len(t.split()) >= 2]
+
+
+def couverture_fonctionnels(texte: str) -> float:
+    """Proportion de mots fonctionnels du texte — signature de langue.
+
+    Anglais ordinaire : 0.35-0.55. Glossolalie (pseudo-langue) : 0.0.
+    """
+    mots = re.findall(r"[a-zà-öø-ÿ']+", texte.lower())
+    if not mots:
+        return 0.0
+    return sum(1 for m in mots if m in MOTS_FONCTIONNELS) / len(mots)
+
+
+def est_codable(enonce: str, seuil_fonctionnels: float = 0.15) -> bool:
+    """Test lexical explicite de codabilité propositionnelle.
+
+    Un énoncé candidat est **codable** s'il porte la signature minimale d'une
+    langue naturelle : au moins ``seuil_fonctionnels`` de mots fonctionnels.
+    Ce test ne comprend pas l'énoncé — il ne teste que s'il s'agit de LANGUE.
+    La glossolalie pseudo-allemande échoue mécaniquement (couverture 0) ;
+    l'anglais ordinaire passe avec une marge large (0.35-0.55). Le seuil à
+    0.15 est choisi sous le plancher de l'anglais réel, pas au-dessus du
+    score de la glossolalie : il sépare deux régimes disjoints.
+    """
+    mots = re.findall(r"[a-zà-öø-ÿ']+", enonce.lower())
+    if len(mots) < 3:
+        return False
+    return couverture_fonctionnels(enonce) >= seuil_fonctionnels
+
+
+def enonces_codables(texte: str) -> List[str]:
+    """Chaîne de codage : texte -> énoncés codables, ou REFUS (jamais vide).
+
+    Lève :func:`RefusDeMesure` — ``ENTREE_VIDE`` si le texte est vide,
+    ``AUCUN_ENONCE_CODABLE`` si aucun candidat ne passe le test de langue.
+    Ne retourne JAMAIS une liste vide silencieuse : c'est le chemin de refus
+    qui rend le contrôle négatif du fragment Hynkel informatif.
+    """
+    if not texte or not texte.strip():
+        raise RefusDeMesure("ENTREE_VIDE", "aucun texte en entrée")
+    candidats = segmenter_enonces(texte)
+    codables = [e for e in candidats if est_codable(e)]
+    if not codables:
+        raise RefusDeMesure(
+            "AUCUN_ENONCE_CODABLE",
+            f"{len(candidats)} candidats, 0 codable (signature de langue absente)",
+        )
+    return codables
+
+
+def verdict_canaux(canaux: Dict[str, str]) -> str:
+    """Règle inter-canaux pré-enregistrée (tranche témoins #7742, Hynkel).
+
+    Un matériau dont le canal **principal** est incodable et dont l'autre
+    canal se présente comme sa **traduction** ne se mesure pas : la mesure
+    lirait la traduction, pas le discours. Dans la scène du meeting, le
+    traducteur radio euphémise systématiquement le discours qu'il prétend
+    traduire — les deux canaux se contredisent, et tout nombre sorti sur ce
+    matériau nommerait le canal réellement lu (arbitrage #7742 : « toute
+    sortie non dégénérée nomme le canal réellement lu »).
+
+    ``canaux`` : dict ``{role: texte}`` avec ``role`` parmi
+    ``{"principal", "traduction"}``. Retourne le **verdict** :
+    ``"MESURABLE"`` ou ``"REFUS:CANAUX_CONTRADICTOIRES"``
+    (le détail par canal — notamment ``REFUS:AUCUN_ENONCE_CODABLE`` sur le
+    principal — se lit via :func:`enonces_codables` appelée par canal).
+    """
+    roles = set(canaux)
+    if roles - {"principal", "traduction"}:
+        raise ValueError(f"rôles inconnus : {roles - {'principal', 'traduction'}}")
+    if "principal" not in canaux:
+        raise ValueError("verdict_canaux exige un canal 'principal'")
+    try:
+        enonces_codables(canaux["principal"])
+        principal_codable = True
+    except RefusDeMesure:
+        principal_codable = False
+    if not principal_codable and "traduction" in canaux:
+        return "REFUS:CANAUX_CONTRADICTOIRES"
+    return "MESURABLE"
 
 
 # --------------------------------------------------------------------------- #

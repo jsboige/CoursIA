@@ -9,17 +9,26 @@
 
 ## 1. Ce qui n'est jamais dans ce dépôt
 
-Le dépôt est **public** et ne contient, par construction, **aucune donnée étudiante** :
+Le dépôt est **public** et ne contient, par construction, aucune donnée issue des processus
+privés d'enseignement ou de notation :
 
-- **Copies et rendus** : jamais de travaux, de fichiers soumis, de notebooks d'étudiant.
+- **Copies et rendus privés** : jamais de fichiers soumis, de notebooks d'étudiant ni de
+  contenu provenant d'un espace pédagogique privé.
 - **Notes et appréciations** : aucun relevé, aucune moyenne, aucun commentaire d'évaluation.
-- **Identités** : aucun nom, prénom, adresse e-mail, numéro étudiant, identifiant.
-- **Captures et artifacts nominatifs** : aucune capture d'écran, aucun log, aucune sortie
-  nommant une personne.
+- **Données de cohorte** : aucune liste de classe, adresse e-mail, numéro étudiant ou autre
+  identifiant scolaire.
+- **Captures et artefacts de notation** : aucune capture d'écran, aucun log ni sortie issue
+  des pipelines privés d'évaluation.
 
-Cette règle est vérifiée automatiquement : des gates CI refusent les commits introduisant
-des données étudiantes (`pii_no_output`) et le dépôt est audité pour les secrets en clair
-(`gitleaks`). L'historique public reste consultable.
+Des noms ou pseudonymes peuvent en revanche apparaître lorsqu'ils sont déjà publics et
+nécessaires à l'attribution d'une contribution, d'un projet référencé ou d'une source. Ces
+crédits éditoriaux ne proviennent jamais des données de notation et n'exposent ni résultat
+scolaire ni information de cohorte.
+
+Cette frontière est soutenue automatiquement : les notebooks explicitement déclarés comme
+susceptibles de traiter des données privées (`pii_no_output`) doivent être committés sans
+sorties, et le dépôt est audité pour les secrets en clair (`gitleaks`). L'historique public
+reste consultable.
 
 ## 2. Où vivent les données sensibles
 
@@ -32,14 +41,16 @@ topologie de stockage.
 
 ## 3. Ce qui est public, et pourquoi
 
-Est publiquement exposé **uniquement le moteur générique** de notation
+Le composant public du système de notation est **uniquement son moteur générique**
 ([`GradeBookApp/`](GradeBookApp/)) : configuration, barèmes-types, code de calcul. Il est
-vide de données — utile pédagogiquement (reproductibilité, transparence de la méthode),
-sans risque pour les personnes. La notice de traitement de ce moteur est documentée
-séparément dans [`GradeBookApp/PRIVACY.md`](GradeBookApp/PRIVACY.md).
+vide de copies, notes et données de cohorte — utile pédagogiquement (reproductibilité,
+transparence de la méthode), sans exposer les personnes évaluées. La notice de traitement
+de ce moteur est documentée séparément dans
+[`GradeBookApp/PRIVACY.md`](GradeBookApp/PRIVACY.md).
 
-Tout le reste du dépôt (notebooks, scripts, documentation) est du matériel **pédagogique
-sans données personnelles**.
+Le reste du dépôt (notebooks, scripts, documentation) est du matériel pédagogique public.
+Il peut porter les attributions nécessaires à ses sources et contributions publiques, mais
+aucune donnée provenant des processus privés d'évaluation.
 
 ## 4. Finalité et durée
 

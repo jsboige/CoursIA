@@ -134,7 +134,11 @@ layout: default
 - Odeur, brise, lueur, choc, cri
   -> Vecteur
 
-## Symboles
+---
+layout: default
+---
+
+# Monde du Wumpus : symboles
 
 - A = Agent
 - B = Brise

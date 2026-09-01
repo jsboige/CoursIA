@@ -79,7 +79,7 @@
 | Book Section | Pages | Topic | CoursIA Mapping | Notes |
 |---|---|---|---|---|
 | Corrective AI & Conditional Parameter Optimization | 303-322 | Daily seasonal FX, ETF strategy, unconditional vs conditional optimization | [QC-Py-15-Parameter-Optimization.ipynb](../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-15-Parameter-Optimization.ipynb) | Book uses PredictNow.ai corrective AI; our focus is QC native optimization |
-| Conditional Portfolio Optimization (CPO) | 322-341 | Regime-aware portfolio optimization, ranking, Fama-French | [QC-Py-21-Portfolio-Optimization-ML.ipynb](../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-21-Portfolio-Optimization-ML.ipynb), [QC-Py-Cloud-01-RiskParity-Composite.ipynb](../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-01-RiskParity-Composite.ipynb) | |
+| Conditional Portfolio Optimization (CPO) | 322-341 | Regime-aware portfolio optimization, ranking, Fama-French | [QC-Py-21-Portfolio-Optimization-ML.ipynb](../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-21-Portfolio-Optimization-ML.ipynb), [QC-Py-Cloud-03b-RiskParity-Composite.ipynb](../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-03b-RiskParity-Composite.ipynb) | |
 
 ### Chapter 9: LLMs and Generative AI in Trading
 

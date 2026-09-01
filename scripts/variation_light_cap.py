@@ -477,6 +477,26 @@ _GENRE_ALIASES = {
     "scripts": "tooling",
     "infra": "tooling",
     "csp": "research-code",
+    # #13475 -- the two words the RULE TEXT itself names (variation-protocol
+    # §1 lists `documentation -> docs` among the normalising synonyms) and
+    # the measured LIGHT witness (`LIGHT/prose` on the po-2023:CoursIA-2 day
+    # of 2026-08-29: declared LIGHT, canonicalised to an off-list word, so
+    # it consumed NO light budget). Bare `notebook` is deliberately NOT
+    # aliased: notebook-python/dotnet/lean all exist and guessing between
+    # them would launder a mis-tag -- it stays GENRE-UNKNOWN.
+    "documentation": "docs",
+    "prose": "docs",
+    # #13585 (reserve ai-01) -- `docs-lean` : both segments are valid genres,
+    # so the mechanical single-deletion ladder below cannot decide (`lean`
+    # would win at drop-index 0). The protocol prescribes the head
+    # (« le composé se réduit toujours à sa tête » -- the work is docs ABOUT
+    # lean), so the ambiguous two-genre composites stay table-driven.
+    # `infra-docker` : the genre rides on the ALIASED head (`infra` ->
+    # tooling) and the tail `docker` is opaque -- rescuing the head would
+    # violate the tail-preservation guard of the ladder (the `genai-reexec`
+    # laundering case, #12158), so this form is table-driven too.
+    "docs-lean": "docs",
+    "infra-docker": "tooling",
 }
 
 # Compoments `<famille>-<genre>` always reduce to the head genre (the family
@@ -518,12 +538,36 @@ def canonicalize_genre(genre: str | None) -> str | None:
         return g
     if g in _GENRE_ALIASES:
         return _GENRE_ALIASES[g]
-    # Compound form `<famille>-<genre>` -> head. The head is the LAST
-    # hyphen-separated segment, NOT the first -- `lean-ci` is family=`lean`,
-    # genre=`ci`; `cjk-ci` is family=`cjk`, genre=`ci`; `audit-tooling` is
-    # family=`audit`, genre=`tooling`. The head is `ci` or `tooling`, and
-    # the alias map handles those.
+    # Composite reduction (#13585 reserve ai-01, demande 1) : avant de
+    # conclure GENRE-UNKNOWN, tenter la suppression d'UN segment --
+    # n'importe lequel SAUF LE DERNIER (la queue est le candidat-genre,
+    # #12158 : la sauver en la sacrifiant laverait un mis-tag), de gauche
+    # a droite -- et accepter le premier candidat qui atterrit dans
+    # l'enumeration fermee, directement ou via la table d'alias. Cela
+    # reduit sans ambiguite les formes composees mesurees :
+    #   `research-notebook-python` -> `notebook-python`  (prefixe famille)
+    #   `notebook-genai-python`    -> `notebook-python`  (famille au milieu)
+    #   `pedagogy-prose`           -> `prose` -> alias -> `docs`
+    #   `lean-tooling`             -> `tooling` (drop-index 0 ; meme reponse
+    #                                  que le rsplit historique ci-dessous)
+    # Une suppression qui produit un autre mot hors-table est SAUTEE (jamais
+    # devinee) : `genai-reexec` reste GENRE-UNKNOWN (queue `reexec`
+    # irrecuperable, decision explicite #12158), `notebook-junk` aussi.
     if "-" in g:
+        segs = g.split("-")
+        for i in range(len(segs) - 1):
+            cand = "-".join(segs[:i] + segs[i + 1:])
+            if not cand:
+                continue
+            if cand in GENRES:
+                return cand
+            if cand in _GENRE_ALIASES and _GENRE_ALIASES[cand] in GENRES:
+                return _GENRE_ALIASES[cand]
+        # Compound form `<famille>-<genre>` -> head. The head is the LAST
+        # hyphen-separated segment, NOT the first -- `lean-ci` is family=`lean`,
+        # genre=`ci`; `cjk-ci` is family=`cjk`, genre=`ci`; `audit-tooling` is
+        # family=`audit`, genre=`tooling`. The head is `ci` or `tooling`, and
+        # the alias map handles those.
         head = g.rsplit("-", 1)[-1]
         if head in _GENRE_ALIASES:
             return _GENRE_ALIASES[head]
@@ -539,6 +583,53 @@ def canonicalize_genre(genre: str | None) -> str | None:
 # intentional -- a genre banned from adjacency is, by the same litmus, a
 # genre that counts against the budget.
 LIGHT_GENRES = frozenset({"docs", "readme", "guard", "ledger", "test"})
+
+# #13475 -- the sentinel an UNRESOLVED genre is accounted under. The GENRES
+# enumeration is closed BY INTENTION (variation-protocol §1: the closure is
+# what protects G-VAR-3 from being unreachable by word choice), so a genre
+# that canonicalises outside the enumeration is a mis-tag, never a genre the
+# caps should ignore. It is counted LIGHT (fail-CLOSED: the cap tightens on
+# what the organ cannot read, it does not relax) and grouped under this key
+# so two different unknown words still form one visible GENRE-UNKNOWN run
+# instead of two invisible ones.
+GENRE_UNKNOWN_KEY = "(genre-unknown)"
+
+
+def genre_counts_light(genre: str | None, tier: str | None = None) -> bool:
+    """G-VAR-2/3 LIGHT accounting for a genre token, fail-CLOSED (#13475).
+
+    True when the canonical form lands in `LIGHT_GENRES` OR when it does
+    not resolve into the closed `GENRES` enumeration at all. Before #13475
+    an off-list word returned verbatim from `canonicalize_genre`, escaped
+    the `LIGHT_GENRES` membership test AND stayed in the denominator --
+    exactly backwards: a LIGHT-declared grain with an unknown genre word
+    consumed NO light budget. A mis-tag that counts LIGHT is a false
+    positive the worker contests by re-tagging; a silence that relaxes
+    the cap proves nothing. `None` (no genre readable) is `False` -- the
+    record does not exist upstream, untagged PRs are dropped before this.
+
+    #13585 (reserve ai-01, demande 2) : the fail-CLOSED branch is now
+    TIER-AWARE. An unresolved genre carried by a grain whose DECLARED tier
+    is MED or DEEP no longer consumes the LIGHT budget nor forms a run --
+    the tier is a separately-readable axis and a mis-chosen genre word
+    must not requalify deep work as a throwaway grain. The signal stays
+    (the `unknown_genres` ledger names the word and the retag is asked);
+    only the budget and the run accounting are spared.
+    """
+    if not genre:
+        return False
+    c = canonicalize_genre(genre)
+    if c is None:
+        return False
+    if c in GENRES:
+        return c in LIGHT_GENRES
+    return tier not in ("MED", "DEEP")
+
+
+def genre_resolves(genre: str | None) -> bool:
+    """True when `canonicalize_genre` lands inside the closed enumeration."""
+    c = canonicalize_genre(genre)
+    return c is not None and c in GENRES
 
 
 def effective_genre(body: str | None, labels: list[str]) -> str | None:
@@ -561,9 +652,11 @@ def _candidate_record(merged_prs: list[dict], target_lane: str) -> list[dict]:
     """For each merged PR, return the per-lane per-grain record.
 
     Each record is a dict with {number, lane, tier, genre, canonical_genre,
-    is_light_genre, vein_key, mergedAt} -- the flat shape the signals iterate
-    over. PRs without a readable Grain tag are dropped (unattributed, never
-    counted, same policy as `lane_grains`).
+    genre_resolved, is_light_genre, vein_key, mergedAt} -- the flat shape the
+    signals iterate over. `is_light_genre` is the fail-CLOSED predicate of
+    #13475: an unresolved genre counts LIGHT. PRs without a readable Grain
+    tag are dropped (unattributed, never counted, same policy as
+    `lane_grains`).
     """
     out = []
     for pr in merged_prs:
@@ -574,13 +667,15 @@ def _candidate_record(merged_prs: list[dict], target_lane: str) -> list[dict]:
             continue
         if g["lane"] != target_lane:
             continue
+        tier = effective_tier(body, labels)
         out.append({
             "number": pr.get("number"),
             "lane": g["lane"],
-            "tier": effective_tier(body, labels),
+            "tier": tier,
             "genre": g["genre"],
             "canonical_genre": canonicalize_genre(g["genre"]),
-            "is_light_genre": canonicalize_genre(g["genre"]) in LIGHT_GENRES,
+            "genre_resolved": genre_resolves(g["genre"]),
+            "is_light_genre": genre_counts_light(g["genre"], tier),
             "vein_key": extract_vein_key(pr),
             "mergedAt": pr.get("mergedAt") or "",
         })
@@ -599,10 +694,19 @@ def lane_genre_tally(merged_prs: list[dict], target_lane: str) -> dict:
       * `light_genre` -- grains whose CANONICAL genre is in `LIGHT_GENRES`
         (the new numerator, regardless of declared tier). A declared
         LIGHT/refactor that aliases to nothing in the LIGHT set does NOT
-        contribute; a declared MED/readme DOES contribute.
+        contribute; a declared MED/readme DOES contribute. Since #13475 an
+        UNRESOLVED genre also contributes (fail-CLOSED -- see
+        `genre_counts_light`).
       * `by_genre` -- dict {canonical_genre: count} over the lane's
         tagged grains, sorted by descending count (the histogram that
-        surfaces the GENRE-RUN at a glance).
+        surfaces the GENRE-RUN at a glance). Unresolved genres are
+        excluded from this histogram and reported by `unknown_genres`
+        instead, so off-list words do not spray verbatim keys.
+      * `genre_unknown` -- count of grains whose genre does not resolve
+        into the closed enumeration (#13475: the distinct GENRE-UNKNOWN
+        signal -- "I could not read it" must never read as "not LIGHT").
+      * `unknown_genres` -- dict {verbatim_word: count} of the unresolved
+        genres, so the signal names the words to alias or fix.
       * `cap` -- the G-VAR-2 budget = `max(1, lane_grains // 3)`,
         identical to the existing organ's budget. The genre-cap and the
         tier-cap share the budget: same ratio, two numerators.
@@ -615,17 +719,23 @@ def lane_genre_tally(merged_prs: list[dict], target_lane: str) -> dict:
     light_declared = sum(1 for r in recs if r["tier"] == "LIGHT")
     light_genre = sum(1 for r in recs if r["is_light_genre"])
     by_genre: dict[str, int] = {}
+    unknown_genres: dict[str, int] = {}
     for r in recs:
         cg = r["canonical_genre"]
         if cg is None:
             continue
-        by_genre[cg] = by_genre.get(cg, 0) + 1
+        if r["genre_resolved"]:
+            by_genre[cg] = by_genre.get(cg, 0) + 1
+        else:
+            unknown_genres[cg] = unknown_genres.get(cg, 0) + 1
     return {
         "lane_grains": len(recs),
         "light_declared": light_declared,
         "light_genre": light_genre,
         "cap": light_budget(len(recs)),
         "by_genre": dict(sorted(by_genre.items(), key=lambda kv: (-kv[1], kv[0]))),
+        "genre_unknown": sum(unknown_genres.values()),
+        "unknown_genres": dict(sorted(unknown_genres.items(), key=lambda kv: (-kv[1], kv[0]))),
     }
 
 
@@ -647,6 +757,12 @@ def genre_runs(merged_prs: list[dict], target_lane: str) -> list[dict]:
     "regardless of declared tier" wording of issue #10020 §GENRE-RUN is
     the point: a MED/readme consecutive to a MED/readme is the same
     violation as a LIGHT/readme consecutive to a LIGHT/readme.
+
+    Since #13475 an unresolved genre counts LIGHT and groups under the
+    `GENRE_UNKNOWN_KEY` sentinel, so two consecutive mis-tags with
+    DIFFERENT words (`layout` then `ict`) still form one visible run --
+    before, each sprayed its own verbatim key and neither run reached
+    the count >= 2 threshold.
     """
     recs = _candidate_record(merged_prs, target_lane)
     runs: list[dict] = []
@@ -657,7 +773,7 @@ def genre_runs(merged_prs: list[dict], target_lane: str) -> list[dict]:
             # streak (if any) closes and starts fresh on the next LIGHT-genre.
             current = None
             continue
-        cg = r["canonical_genre"]
+        cg = r["canonical_genre"] if r["genre_resolved"] else GENRE_UNKNOWN_KEY
         if current is not None and current["genre"] == cg:
             current["count"] += 1
             current["numbers"].append(r["number"])

@@ -2147,14 +2147,39 @@ def changeCrossing (c : PDCrossing) : PDCrossing where
   e3 := c.e3
   e4 := c.e2
 
+/-- `changeCrossing` is definitionally equal to `mirrorCrossing` (both swap `e2 ↔ e4`).
+— Epic #2874, Phase 4. -/
+theorem changeCrossing_eq_mirrorCrossing (c : PDCrossing) :
+    changeCrossing c = mirrorCrossing c := rfl
+
+/-- Apply `changeCrossing` to all crossings of a knot. Since `changeCrossing ≡ mirrorCrossing`
+(see `changeCrossing_eq_mirrorCrossing`), this operation coincides definitionally with
+`Knot.mirror`. — Epic #2874, Phase 4. -/
+def Knot.changeCrossingAll (k : Knot) : Knot where
+  diagram := {
+    crossings := k.diagram.crossings.map changeCrossing
+    numEdges := k.diagram.numEdges
+  }
+
+/-- `Knot.changeCrossingAll` coincides definitionally with `Knot.mirror`. — Epic #2874, Phase 4. -/
+theorem changeCrossingAll_eq_mirror (k : Knot) :
+    k.changeCrossingAll = k.mirror := rfl
+
+/-- `changeCrossing` preserves `KnotDiagram.wf`, derived from `mirror_wf_preserves` via the
+definitionally-equal `changeCrossing ≡ mirrorCrossing`. — Epic #2874, Phase 4. -/
+theorem changeCrossing_wf_preserves (k : Knot) (h : k.diagram.wf = true) :
+    k.changeCrossingAll.diagram.wf = true := by
+  rw [changeCrossingAll_eq_mirror]
+  exact mirror_wf_preserves k h
+
 /-- Unknotting number: minimum crossing changes to reach the unknot. -/
 def Knot.unknottingNumber (k : Knot) : Nat := by
   exact sorry
   -- BLOCKED: requires substantial infrastructure not yet in the project:
-  --   1. Crossing change operation on KnotDiagram (changeCrossing exists but no
-  --      well-formedness proof that the result is a valid diagram)
-  --   2. Minimization over equivalence classes (Knot.crossingNumber has same issue)
-  --   3. Reachability in a graph of diagrams
+  --   1. Minimization over equivalence classes (Knot.crossingNumber has same issue)
+  --   2. Reachability in a graph of diagrams
+  --   (The crossing-change operation itself is now justified by `changeCrossing_wf_preserves`,
+  --    derived from `mirror_wf_preserves` — see Epic #2874.)
   -- Phase 4+ target — out of scope for Phase 2
 
 /-! ## 8. Backward transfer (research scaffolding — Epic #2874, Phase 5 PR3)

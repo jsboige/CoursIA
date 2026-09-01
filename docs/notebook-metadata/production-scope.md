@@ -90,7 +90,7 @@ Le détail par notebook suit en strate A ci-dessous : consultation, plus décisi
 
 <!-- MyIA.AI.Notebooks/QuantConnect/Python -->
 - [ ] `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-01-FinBERT-Sentiment.ipynb`
-- [ ] `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-01-RiskParity-Composite.ipynb`
+- [ ] `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-03b-RiskParity-Composite.ipynb`
 - [ ] `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-02-Platform-Fundamentals.ipynb`
 - [ ] `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-02-ML-Classification.ipynb`
 - [ ] `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-02-SectorRotation-Momentum.ipynb`
@@ -139,8 +139,8 @@ Le détail par notebook suit en strate A ci-dessous : consultation, plus décisi
 - [ ] `MyIA.AI.Notebooks/Search/Part1-Foundations/Search-9-LinearProgramming.ipynb`
 - [ ] `MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata.ipynb`
 - [ ] `MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics.ipynb`
-- [ ] `MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX.ipynb`
-- [ ] `MyIA.AI.Notebooks/Search/Part1-Foundations/Search-16-QuikGraph.ipynb`
+- [ ] `MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb`
+- [ ] `MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02c-QuikGraph.ipynb`
 <!-- MyIA.AI.Notebooks/Search/Part2-CSP -->
 - [ ] `MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb`
 - [ ] `MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency.ipynb`
@@ -331,7 +331,7 @@ Chaque série non recensée ci-dessus, et pourquoi (contestable sur l'Epic sans 
 | `Probas/` (Infer.NET) | idem — non rattachée à une des 4 écoles |
 | `GameTheory/` | les preuves Lean associées sont du code (i18n #4980), non des notebooks à signer ; les `.ipynb` ne sont pas cités nommément par le calendrier |
 | `IIT/` (PyPhi) | non rattaché à un cours du calendrier |
-| `RL/`, `CaseStudies/`, `FallacyDetection/`, `cross-series/` | hors des 4 écoles in-scope |
+| `RL/`, `CaseStudies/`, `GenAI/FallacyDetection/`, `cross-series/` | hors des 4 écoles in-scope (FallacyDetection descendu dans GenAI/ via tranche 1 #13581, 2026-08-30) |
 | `QuantConnect/` hors `Python/` (C#, partner-course, ML-Training-Pipeline, projects, kelly_lean) | le cours ECE/partner suit la série Python ; le reste est outillage/projets, non enseigné en cours |
 | `SymbolicAI/Planners/03-Advanced/`, `04-NeuroSymbolic/` | au-delà des 2 sous-séries scoping EPITA-IS (TP = tête de série) |
 | `SymbolicAI/SmartContracts/02-*/` à `06-*/` | idem — scoping EPITA-IS limité à `00-Foundations` + `01-Solidity-Foundation` |

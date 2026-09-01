@@ -395,7 +395,7 @@ def _is_yaml_block_open_no_close(lines, fenced: set[int]) -> bool:
     extends until end-of-document or until the next ``---`` line *anywhere in
     the rendered output*, turning the page into a YAML error or a single
     oversized setext heading. Reproduced 2026-08-18 on
-    ``MyIA.AI.Notebooks/FallacyDetection/02_fallacy_datasets_landscape.ipynb``
+    ``MyIA.AI.Notebooks/GenAI/FallacyDetection/02_fallacy_datasets_landscape.ipynb`` (descended into GenAI/ via tranche 1 of #13581; was ``MyIA.AI.Notebooks/FallacyDetection/`` pre-2026-08-30)
     pre-#11629 (8 cells ``---\\n### Dataset N -- ...``) AND on
     ``SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP.ipynb`` (15 cells
     ``---\\n\\n## Titre`` -- the SECOND outage, 20:27Z, after #11629).
@@ -442,7 +442,7 @@ def _selfcheck() -> int:
 
     #11630 postmortem (ai-01 arbitration, 2026-08-18): BOTH implementations
     calibrated their positive control on the FIRST outage form
-    (``---\\n### Dataset N``, FallacyDetection/02 pre-#11629) and let the
+    (``---\\n### Dataset N``, GenAI/FallacyDetection/02 pre-#11629, formerly under ``MyIA.AI.Notebooks/FallacyDetection/``) and let the
     SECOND form pass -- ``---\\n\\n## Titre`` (SL-8, the notebook that took
     the site down at 20:27Z AFTER #11629). The exemption claiming a blank
     line after ``---`` made it a "thematic break" was the blind spot; the

@@ -305,3 +305,101 @@ def test_controversial_chain_alternation(n):
             f"arg {i} dans controversial_chain({n}) : attendu {expected!r}, "
             f"recu {label[i]!r} (alternance in/out cassee)"
         )
+
+
+# --------------------------------------------------------------------------- #
+#  Gate 14 : refus de mesurer — distingué d'un zéro (tranche témoins #7742)   #
+# --------------------------------------------------------------------------- #
+
+
+def test_refus_entree_vide_distingue_du_zero():
+    """Une entrée vide produit un REFUS, jamais un zéro silencieux.
+
+    Le contrat de l'arbitrage #7742 : zéro mesuré (ex. sigma = 0.0 sur un
+    débat déterministe) et refus de mesurer sont deux objets disjoints. Le
+    premier est un nombre ; le second lève :class:`RefusDeMesure` avec un
+    code. Un pipeline qui retournerait 0.0 sur une entrée vide rendrait le
+    contrôle négatif vide avant d'avoir tourné.
+    """
+    with pytest.raises(arg.RefusDeMesure) as excinfo:
+        arg.enonces_codables("")
+    assert excinfo.value.code == "ENTREE_VIDE"
+    with pytest.raises(arg.RefusDeMesure) as excinfo2:
+        arg.enonces_codables("   \n\t  ")
+    assert excinfo2.value.code == "ENTREE_VIDE"
+
+
+def test_refus_glossolalie_aucun_enonce_codable():
+    """La glossolalie (pseudo-langue sans entrée lexicale) est refusée.
+
+    Un fragment de pseudo-allemand inventé (matériau de test du refuseur,
+    étiqueté « fragment, pas reconstitution » dans le notebook) ne porte
+    aucune signature de langue : 0 mot fonctionnel, donc incodable —
+    MÉCANIQUEMENT, sans liste noire de contenu.
+    """
+    glossolalie = ("Djunkin schpilkov dem hoppen der flussen! "
+                   "Achten schmerzen, blauten krugen. "
+                   "Hoppen fleigen der weltenkrugen?")
+    with pytest.raises(arg.RefusDeMesure) as excinfo:
+        arg.enonces_codables(glossolalie)
+    assert excinfo.value.code == "AUCUN_ENONCE_CODABLE"
+    # et le code lève pour la bonne raison : des candidats existent (>= 2 mots
+    # par segment), aucun ne passe le test de langue.
+    assert "candidats" in str(excinfo.value)
+
+
+def test_refus_pas_zero_et_reciproque():
+    """La distinction refus/zéro se vérifie dans les DEUX sens.
+
+    (a) un AF réel produit sigma = 0.0 (zéro mesuré, honnête, documenté §5) ;
+    (b) une entrée sans contenu propositionnel lève RefusDeMesure — et
+    l'exception ne porte AUCUNE valeur numérique mesurée.
+    """
+    # (a) zéro mesuré : débat déterministe à ordre fixe
+    P, _ = arg.belief_transition_matrix(arg.nixon_diamond(), order=[0, 1])
+    diag = arg.discourse_irreversibility(P)
+    assert diag["sigma"] == 0.0 or diag["sigma"] >= 0.0  # un NOMBRE est sorti
+    # (b) refus : aucun nombre ne sort
+    with pytest.raises(arg.RefusDeMesure):
+        arg.enonces_codables("Schnitzel banana rama fugen")
+    # "Schnitzel banana rama fugen" : 4 mots, 0 fonctionnel -> refus, pas 0.0
+
+
+def test_codable_anglais_ordinaire_passe():
+    """L'anglais ordinaire passe le test de langue avec une marge large.
+
+    Contre-face du gate glossolalie : une phrase anglaise réelle (extrait
+    de test, pas du corpus) doit être codable — sinon le refuseur refuserait
+    tout et ne distinguerait plus rien.
+    """
+    phrases = arg.enonces_codables(
+        "The misery that is now upon us is but the passing of greed. "
+        "The hate of men will pass."
+    )
+    assert len(phrases) >= 2
+    assert all(arg.est_codable(p) for p in phrases)
+
+
+def test_verdict_canaux_traduction_contredit():
+    """Hynkel : canal principal incodable + canal traduction => REFUS global.
+
+    Règle inter-canaux pré-enregistrée : si le canal principal ne porte pas
+    de langue et qu'un canal « traduction » est présent, mesurer lirait la
+    traduction — les deux canaux se contredisent, refus
+    CANAUX_CONTRADICTOIRES. Un canal principal codable, lui, est MESURABLE.
+    """
+    hynkel = {
+        "principal": "Djunkin schpilkov dem hoppen der flussen!",
+        "traduction": "His excellency says something about peace.",
+    }
+    assert arg.verdict_canaux(hynkel) == "REFUS:CANAUX_CONTRADICTOIRES"
+    # sans traduction, le verdict reste MESURABLE (le refus par canal se lit
+    # via enonces_codables, pas via cette règle de cohérence)
+    seul = {"principal": "The hate of men will pass, and dictators die."}
+    assert arg.verdict_canaux(seul) == "MESURABLE"
+
+
+def test_refus_code_inconnu_rejete():
+    """Un code de refus hors enumeration est une erreur de programmation."""
+    with pytest.raises(ValueError):
+        arg.RefusDeMesure("CODE_INCONNU", "test")

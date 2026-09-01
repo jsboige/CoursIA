@@ -188,7 +188,7 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 | 50 | Boucle auto-referentielle p_hat (case 2 / Epic #9533) | BETA | Oui |
 | 51 | ICT -- Dissociation saillance / pregnance (case s ⟂ π) | BETA | Oui |
 | 52 | ICT-Life — Substrat de calibration certifié : le Jeu de… | BETA | Oui |
-| 53 | ICT-SAE-Calibration — que reconstruit réellement chaque… | BETA | Non |
+| 53 | ICT-21b-SAECalibration — que reconstruit réellement chaque… | BETA | Non |
 | 54 | Tete-a-tete SAE <-> J-space -- les deux lentilles du… | BETA | Non |
 | 55 | ICT-Synthèse — un seul appareil de mesure, cinq… | BETA | Non |
 
@@ -248,7 +248,7 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 | 14 | Infer-3-Factor-Graphs : Graphes de Facteurs et… | BETA | Oui |
 | 15 | Infer-4-Bayesian-Networks : Reseaux Bayesiens… | BETA | Oui |
 | 16 | Infer-5-Causal-Inference : Inférence Causale et… | BETA | Oui |
-| 17 | Infer-6-Debugging : Troubleshooting et Bonnes Pratiques | BETA | Oui |
+| 17 | Infer-2b-Debugging-Bonnes-Pratiques : Troubleshooting et Bonnes Pratiques | BETA | Oui |
 | 18 | Infer-7-Skills-IRT : Evaluation de Competences et… | BETA | Oui |
 | 19 | Infer-8-TrueSkill : Système de Classement et… | BETA | Oui |
 | 20 | Infer-9-Classification : Classification Bayesienne | BETA | Oui |

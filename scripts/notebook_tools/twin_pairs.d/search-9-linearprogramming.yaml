@@ -13,6 +13,12 @@
       by: myia-po-2023:CoursIA-2
       python_sha: d1d4f36599e49147f58195e85a475476d269680c
       csharp_sha: a6d7a7a59ded4ba7732054d17a66c5e40bb80c9f
+    - date: "2026-08-31"
+      by: myia-po-2023:CoursIA-2
+      python_sha: d1d4f36599e49147f58195e85a475476d269680c
+      csharp_sha: 68d8dcb2ddb06089b70c594fe87b69d4c9488fb6
+      content_python_sha: c0150bdf9ca0e84485549218ed97a99a23256aa76842b83536da2608ab29a3b1
+      content_csharp_sha: cf104467fb33aad3434ff2b8b53128f2e0f106f01a8efb2fe30c4bda6205fab4
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: |
     Python = PuLP (interface declarative, solveur CBC par defaut) -- vrai SOTA industriel LP/MIP. C# = Google.OrTools (GLOP simplexe pour PL continue, CBC pour PLNE) -- vrai SOTA industriel LP/MIP. Les DEUX cotes branchent un solveur SOTA via une lib native de leur ecosysteme (PuLP MIT-CONTRACT, OrTools Apache-2.0). Parite native-both (lib-vs-lib), parite semantique pedagogique des exercices alignee post-c.913 + #8676 (Transport + multi-depots + melange-industriel + set-cover). Verdict SOTA-OK.

@@ -37,7 +37,7 @@ layout: cover
 
 # Sommaire
 
-<div class="grid grid-cols-2 gap-8 mt-4">
+<div class="grid grid-cols-[1fr_230px_1fr] gap-6 mt-4 items-center">
 <div>
 
 **Qu'est-ce que l'intelligence artificielle ?**<br>
@@ -49,6 +49,12 @@ layout: cover
 **Intelligence symbolique**<br>
 <span class="text-sm text-slate-500">Comment utiliser le raisonnement et les mathématiques ?</span>
 
+</div>
+<div class="flex items-center justify-center">
+  <img src="./images/img_004.png" class="rounded shadow-lg w-full max-h-[390px] object-contain" alt="Couverture AIMA Russell & Norvig" />
+</div>
+<div>
+
 **Intelligence probabiliste**<br>
 <span class="text-sm text-slate-500">Comment agir dans l'incertitude ?</span>
 
@@ -58,9 +64,6 @@ layout: cover
 **Application : le langage naturel**<br>
 <span class="text-sm text-slate-500">Chatbots, LLM, IA générative et agents</span>
 
-</div>
-<div class="flex items-center justify-center">
-  <img src="./images/img_004.png" class="rounded shadow-lg max-h-[430px]" alt="Couverture AIMA Russell & Norvig" />
 </div>
 </div>
 
@@ -108,6 +111,9 @@ layout: section
 
 # Développement (1/2)
 
+<div class="grid grid-cols-[38%_62%] gap-6">
+<div>
+
 **Histoire succincte**
 
 - 1940-70 : Enthousiasme des débuts
@@ -120,11 +126,14 @@ layout: section
   - Robotique, vision
 - 1990s : L'IA devient une science
 
-<img src="./images/img_006.png" class="absolute top-[110px] right-[20px] w-[300px] max-w-full object-contain" alt="Repères historiques" />
-
-<div class="absolute top-[300px] right-[20px] w-[300px] flex gap-4 items-center justify-center">
-  <img src="./images/img_007.jpg" class="h-10 max-w-[45%] object-contain" alt="Logo DARPA" />
-  <img src="./images/img_008.jpg" class="h-8 max-w-[55%] object-contain" alt="Logo ImageNet" />
+</div>
+<div class="flex flex-col items-center justify-center gap-5">
+  <img src="./images/img_006.png" class="w-full max-h-[210px] object-contain" alt="Repères historiques" />
+  <div class="flex w-full gap-8 items-center justify-center">
+    <img src="./images/img_007.jpg" class="h-16 max-w-[35%] object-contain" alt="Logo DARPA" />
+    <img src="./images/img_008.jpg" class="h-12 max-w-[55%] object-contain" alt="Logo ImageNet" />
+  </div>
+</div>
 </div>
 
 > **État de l'art** : voir la slide « Développement (2/2) » pour la chronologie moderne (1997 → 2025).
@@ -153,6 +162,9 @@ layout: section
 
 # Dans la vie de tous les jours
 
+<div class="grid grid-cols-[64%_36%] gap-6 items-center">
+<div>
+
 - **Poste** : reconnaissance des adresses et tri automatique du courrier
 - **Banque** : lecture des chèques, vérification des signatures, évaluation de crédits
 - **Médecine** : diagnostic assiste, prescriptions, suivi et prévention
@@ -163,7 +175,11 @@ layout: section
 - **Image numérique** : détection de visages, mise au point, compression
 - **Jeux** : personnages et adversaires intelligents (NPCs adaptatifs)
 
-<img src="./images/img_013.jpg" class="absolute top-[260px] right-[20px] w-[260px] max-h-[260px] object-contain" alt="Écosystème IoT — objets du quotidien connectés" />
+</div>
+<div class="flex items-center justify-center">
+  <img src="./images/img_013.jpg" class="w-full max-h-[360px] object-contain rounded-lg shadow-lg" alt="Écosystème IoT — objets du quotidien connectés" />
+</div>
+</div>
 
 
 ---
@@ -362,13 +378,18 @@ layout: section
 
 # Agent explorateur
 
+<div class="grid grid-cols-2 gap-8 items-start">
+<div>
 
 **Agent fonde sur des buts**
 
 - Passe du réactif au délibératif
 - Planifie ses actions par exploration
 
-<img src="./images/img_016.png" class="w-[300px] max-w-full max-h-[300px] object-contain" alt="Carte de la Roumanie : Arad, Sibiu, Bucharest et distances routières (exemple canonique AIMA)" />
+<img src="./images/img_016.png" class="w-full max-h-[220px] object-contain" alt="Carte de la Roumanie : Arad, Sibiu, Bucharest et distances routières (exemple canonique AIMA)" />
+
+</div>
+<div>
 
 **Résolution de problèmes**
 
@@ -376,17 +397,20 @@ layout: section
 - Actions ?
 - Représentation ?
 
-<img src="./images/img_017.png" class="absolute top-[110px] right-[20px] w-[300px]" alt="Résolution de problèmes" />
+<img src="./images/img_017.png" class="w-full max-h-[220px] object-contain" alt="Résolution de problèmes" />
+
+</div>
+</div>
 
 ---
 
 
 # Formulation de problèmes
 
+<div class="grid grid-cols-[40%_60%] gap-6">
+<div>
 
 **Itinéraire**
-
-<img src="./images/img_018.png" class="absolute top-[110px] right-[20px] w-[260px] max-h-[220px] object-contain" alt="Plateau de dames avec six pions noirs disposés sur l'échiquier" />
 
 - État initial, test de but
 - Transitions
@@ -394,14 +418,24 @@ layout: section
 - Coût de chemin
 - Solution = Séquence
 
+<img src="./images/img_018.png" class="w-full max-h-[190px] object-contain" alt="Plateau de dames avec six pions noirs disposés sur l'échiquier" />
+
+</div>
+<div>
+
 **Abstractions**
 
 - Assemblage robotique
 - Problèmes jouets
 
-<img src="./images/img_robot_extracted.png" class="absolute top-[345px] right-[20px] w-[380px] max-h-[170px] object-contain" alt="Bras robotique articulé — assemblage robotique" />
-<img src="./images/img_019.png" class="absolute top-[452px] right-[40px] w-[160px]" alt="8-puzzle (état initial mélangé)" />
-<img src="./images/img_021.png" class="absolute top-[452px] right-[210px] w-[160px]" alt="Missionnaires et cannibales" />
+<img src="./images/img_robot_extracted.png" class="w-full max-h-[135px] object-contain" alt="Bras robotique articulé — assemblage robotique" />
+<div class="grid grid-cols-2 gap-4 mt-2">
+  <img src="./images/img_019.png" class="w-full max-h-[115px] object-contain" alt="8-puzzle (état initial mélangé)" />
+  <img src="./images/img_021.png" class="w-full max-h-[115px] object-contain" alt="Missionnaires et cannibales" />
+</div>
+
+</div>
+</div>
 
 
 
@@ -466,9 +500,6 @@ layout: default
 - Bidirectionnelle
 - Ex: Où sont mes clefs ?
 
-<img src="./images/img_025.png" class="w-[300px] max-w-full max-h-[300px] object-contain" alt="Arbres binaires illustrant la recherche en profondeur, nœuds visités en gris foncé" />
-<img src="./images/img_026.png" class="w-[300px] max-w-full max-h-[300px] object-contain" alt="Arbre de recherche dense étalé en motif radial, avec nœuds Départ et But" />
-
 </div>
 
 <div>
@@ -484,6 +515,11 @@ layout: default
 
 </div>
 
+</div>
+
+<div class="grid grid-cols-2 gap-8 mt-4 items-center">
+  <img src="./images/img_025.png" class="w-full max-h-[145px] object-contain" alt="Arbres binaires illustrant la recherche en profondeur, nœuds visités en gris foncé" />
+  <img src="./images/img_026.png" class="w-full max-h-[145px] object-contain" alt="Arbre de recherche dense étalé en motif radial, avec nœuds Départ et But" />
 </div>
 
 
@@ -537,6 +573,7 @@ layout: default
 </div>
 
 
+<div class="grid grid-cols-[60%_40%] gap-6 items-center">
 <div class="dense-list">
 
 - Arbre de jeu
@@ -560,8 +597,10 @@ layout: default
 - Techniques probabilistes (Expectiminimax, Monte-Carlo)
 
 </div>
-
-<img src="./images/img_031.png" class="absolute top-[110px] right-[20px] w-[350px] max-h-[300px] object-contain" alt="Arbre minimax du morpion : niveaux MAX(X) et MIN(O), utilités -1/0/+1" />
+<div class="flex items-center justify-center">
+  <img src="./images/img_031.png" class="w-full max-h-[340px] object-contain" alt="Arbre minimax du morpion : niveaux MAX(X) et MIN(O), utilités -1/0/+1" />
+</div>
+</div>
 
 
 
@@ -1145,7 +1184,7 @@ layout: section
 </div>
 
 
-<div class="grid grid-cols-2 gap-5 -mt-2">
+<div class="grid grid-cols-2 gap-8 -mt-2 items-center">
 <div>
 
 - Matrice de gains
@@ -1154,12 +1193,8 @@ layout: section
 - Purs et mixtes (2n+1)
 - Topologie
 
-<img src="./images/img_070.png" class="w-[300px] max-w-full max-h-[300px] object-contain" alt="Matrice de gains du jeu Ballet/Fight : préférences croisées des deux joueurs, valeurs (2,1) et (1,2)" />
-
-
 </div>
 <div>
-
 
 - Plusieurs manches
 - Forme extensive
@@ -1168,12 +1203,13 @@ layout: section
 - Induction
   - avant/arrière
 
-
-
 <!-- Forme extensive : arbre ou chaque noeud = décision, feuilles = gains -->
 
-
 </div>
+</div>
+
+<div class="flex justify-center mt-2">
+  <img src="./images/img_070.png" class="w-[420px] max-h-[230px] object-contain" alt="Matrice de gains du jeu Ballet/Fight : préférences croisées des deux joueurs, valeurs (2,1) et (1,2)" />
 </div>
 ---
 
@@ -1567,7 +1603,11 @@ layout: section
   - Séquences
   - Transformers, Multi-têtes (2017 : « Attention Is All You Need »)
 - Semi-supervisé, Transfert
-- LLMs : BERT (2018), GPT
+- LLMs : BERT (2018), GPT-1 (2018)
+  - GPT-2 (2019, zero-shot), GPT-3 (2020, in-context few-shot)
+  - T5 (2019, text-to-text unifié)
+- Modèles efficients (2020+)
+  - Reformer, Longformer : attention linéaire ou par fenêtres
 
 <div class="grid grid-cols-3 gap-2 absolute top-[130px] right-[20px] w-[600px]">
 <img src="./images/img_104.png" class="max-h-[150px] w-full object-contain" alt="Deux photos d'une femme lançant un frisbee dans un parc, légendées en anglais" />
@@ -1578,7 +1618,7 @@ layout: section
 <img src="./images/img_109.png" class="max-h-[150px] w-full object-contain" alt="Architecture Transformer encodeur-décodeur avec auto-attention, exemple de traduction du tchèque" />
 </div>
 
-<!-- Transformer : encodeur-decodeur, self-attention multi-tetes, positional encoding -->
+<!-- Transformer : encodeur-decodeur, self-attention multi-tetes, positional encoding. LLMs : GPT-2 (2019) zero-shot, GPT-3 (2020) in-context few-shot, T5 (2019) text-to-text unifie. Modeles efficients 2020+ : Reformer, Longformer. -->
 ---
 
 
@@ -1591,14 +1631,26 @@ layout: section
 - E.g Texte+Image
 - Datasets, Encodeurs
 - Rapprochement des plongements
+  - CLIP (2021, OpenAI) : contraste texte-image sur 400 M de paires
+  - ALIGN, Florence (2021-2022) : variantes industrielles
+- Génération conditionnelle
+  - DALL-E (2022, OpenAI), Imagen (2022, Google)
+  - GPT-4V (2023), Gemini (2023) : compréhension multimodale
 
 **Modèles de diffusion**
 
-- Prédiction d'un bruit (DDPM, 2020)
-- Diffusion latente
-- Autoencodeur Variationnel
+- Prédiction d'un bruit (DDPM, Ho et al. 2020)
+- Diffusion latente (LDM / Stable Diffusion, Rombach et al. 2021-2022)
+  - Espace latent d'un autoencodeur variationnel pré-entraîné
+  - Conditionnement texte (CLIP text encoder) + débruitage U-Net
 - Conditionnement multimodal
-- Mécanisme attentionnel
+- Mécanisme attentionnel (cross-attention Q/K/V)
+
+**Alignement et produit grand public**
+
+- RLHF (2022, InstructGPT) : affinage par retour humain
+- ChatGPT (nov. 2022, OpenAI) : 100 M d'utilisateurs en 2 mois
+- Modèles open-weight : Llama 2 (2023), Mistral, Mixtral (MoE 2023-2024)
 
 <div class="grid grid-cols-2 gap-2 absolute top-[130px] right-[20px] w-[600px]">
 <img src="./images/img_110.png" class="max-h-[190px] w-full object-contain" alt="Trois paires image-légende : rue de Kyoto, aigle en vol, paysage montagneux" />
@@ -1607,7 +1659,7 @@ layout: section
 <img src="./images/img_113.png" class="max-h-[190px] w-full object-contain" alt="U-Net de débruitage latent : encodeur, décodeur, attention croisée Q/K/V, conditionnements et pas de temps" />
 </div>
 
-<!-- Diffusion : bruit gaussien progressif → apprentissage du debruitage inverse -->
+<!-- Multimodaux : CLIP (2021) contraste texte-image, DALL-E (2022), GPT-4V / Gemini (2023). Diffusion latente (LDM / Stable Diffusion, Rombach 2021-2022) : bruit latent + U-Net + cross-attention. Alignement : RLHF (InstructGPT 2022), ChatGPT (nov 2022), Llama 2 / Mistral / Mixtral (2023-2024). -->
 ---
 
 

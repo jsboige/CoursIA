@@ -50,10 +50,10 @@ Le trait distinctif d'Infer.NET : le modèle déclaratif est **compilé** (via R
 |---|----------|-------|----------|
 | 1 | [Infer-1-Setup](Infer-1-Setup.ipynb) | 15 min | Installation, premier modèle |
 | 2 | [Infer-2-Gaussian-Mixtures](Infer-2-Gaussian-Mixtures.ipynb) | 50 min | Postérieurs, mélanges, Dirichlet |
+| 2b | [Infer-2b-Debugging-Bonnes-Pratiques](Infer-2b-Debugging-Bonnes-Pratiques.ipynb) | 45 min | Troubleshooting, diagnostics, algorithmes |
 | 3 | [Infer-3-Factor-Graphs](Infer-3-Factor-Graphs.ipynb) | 45 min | Inférence discrète, Monty Hall |
 | 4 | [Infer-4-Bayesian-Networks](Infer-4-Bayesian-Networks.ipynb) | 55 min | CPT, D-séparation, causalité |
 | 5 | [Infer-5-Causal-Inference](Infer-5-Causal-Inference.ipynb) | 65 min | do-calculus, backdoor/front-door, paradoxe de Simpson |
-| 6 | [Infer-6-Debugging](Infer-6-Debugging.ipynb) | 45 min | Troubleshooting, diagnostics, algorithmes |
 | 7 | [Infer-7-Skills-IRT](Infer-7-Skills-IRT.ipynb) | 60 min | IRT, DINA, many-to-many — *MBML Ch.2* « Assessing People's Skills » |
 | 8 | [Infer-8-TrueSkill](Infer-8-TrueSkill.ipynb) | 55 min | Ranking, online learning, équipes — *MBML Ch.3* « Meeting Your Match » |
 | 9 | [Infer-9-Classification](Infer-9-Classification.ipynb) | 50 min | BPM, régression logistique, A/B, calibration hors échantillon (Brier/AUC/fiabilité) |
@@ -582,9 +582,9 @@ Les notebooks 9-12 couvrent les modèles avancés : topics, crowdsourcing, séqu
 
 ---
 
-## Référence (Notebook 13)
+## Référence (Infer-2b)
 
-### Infer-6 : Debugging et Bonnes Pratiques
+### Infer-2b : Debugging et Bonnes Pratiques
 
 **Durée** : 60 min | **Prérequis** : Tous les notebooks précédents
 
@@ -917,7 +917,7 @@ Infer/
 
 ## FAQ / Troubleshooting
 
-Pour un guide complet, voir [Infer-6-Debugging](Infer-6-Debugging.ipynb).
+Pour un guide complet, voir [Infer-2b-Debugging-Bonnes-Pratiques](Infer-2b-Debugging-Bonnes-Pratiques.ipynb).
 
 | Problème | Solution |
 | --- | --- |

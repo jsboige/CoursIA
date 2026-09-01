@@ -1,6 +1,6 @@
 """Fidelite de reconstruction des SAE Qwen-Scope par taille (Livrable 1, #8236).
 
-Outille le notebook de calibration **ICT-SAE-Calibration** (Phase 0 de #8236) :
+Outille le notebook de calibration **ICT-21b-SAECalibration** (Phase 0 de #8236) :
 avant toute comparaison cross-echelle de forme/dynamique, il faut etablir ce que
 chaque SAE reconstruit effectivement du residual stream a sa profondeur appariee.
 Ce module porte les mesures, toutes GPU-free :

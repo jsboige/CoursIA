@@ -568,20 +568,30 @@ def test_effective_genre_aliases_via_body():
 def test_lane_genre_tally_po2025_day():
     # 16 grains, 5 readme + 2 docs (9986 + 9987 alias) + 4 tooling +
     # 2 notebook-python + 1 refactor + 1 secrets + 1 guard (10010 alias).
-    # light_genre = 5 + 2 + 1 = 8, light_declared = 0, cap = max(1, 16//3) = 5.
+    # light_genre = 5 + 2 + 1 = 8 : `secrets` (MED declare) est hors
+    # enumeration mais ne consomme PLUS le budget depuis la reserve ai-01
+    # sur #13585 (demande 2 : le tier MED declare se lit sans ambiguite,
+    # le mot hors-table va au ledger sans requalifier le grain en LIGHT).
+    # C'etait 9 au premier tour de #13475 (fail-CLOSED inconditionnel).
+    # light_declared = 0, cap = max(1, 16//3) = 5.
     tally = vlc.lane_genre_tally(_PO2025_DAY, _P_2025_C2)
     assert tally["lane_grains"] == 16
     assert tally["light_declared"] == 0
     assert tally["light_genre"] == 8
     assert tally["cap"] == 5
     # The by_genre histogram: readme=5, tooling=4, notebook-python=2,
-    # docs=2 (canonical, including 9987 translation), refactor=1, secrets=1,
-    # guard=1 (canonical, from 10010 lean-ci).
+    # docs=2 (canonical, including 9987 translation), refactor=1,
+    # guard=1 (canonical, from 10010 lean-ci). `secrets` left the
+    # histogram for the separate GENRE-UNKNOWN ledger (#13475).
     assert tally["by_genre"]["readme"] == 5
     assert tally["by_genre"]["tooling"] == 4
     assert tally["by_genre"]["docs"] == 2
     assert tally["by_genre"]["guard"] == 1
     assert tally["by_genre"]["notebook-python"] == 2
+    assert "secrets" not in tally["by_genre"]
+    # The distinct GENRE-UNKNOWN signal: counted apart, word named.
+    assert tally["genre_unknown"] == 1
+    assert tally["unknown_genres"] == {"secrets": 1}
 
 
 def test_genre_runs_po2025_signals_genre_run():
@@ -610,7 +620,9 @@ def test_genre_runs_po2025_signals_genre_run():
 def test_compute_signals_po2025_inflation_and_cap_exceeded():
     # The full panel of signals for the issue's reference case.
     sig = vlc.compute_signals(_PO2025_DAY, _P_2025_C2)
-    # light_genre=8 > light_declared=0 + 1 = 1 -> TIER-INFLATION
+    # light_genre=8 (the MED-declared `secrets` no longer counts since the
+    # ai-01 reserve on #13585, demande 2) > light_declared=0 + 1 = 1
+    # -> TIER-INFLATION
     assert sig["signals"]["TIER-INFLATION"] is True
     # 5 readme consecutive -> GENRE-RUN
     assert sig["signals"]["GENRE-RUN"] is True
@@ -1703,6 +1715,194 @@ def test_genre_unknown_absent_when_no_genre_claimed():
                               candidate_genre=None)
     assert sig["signals"]["GENRE-UNKNOWN"] is False
     assert sig["candidate_genre_unknown_word"] is None
+
+
+# --- #13475 : le vocabulaire GENRE echoue fail-OPEN, cap + adjacence ---------
+#
+# #12158 avait ajoute le SIGNAL GENRE-UNKNOWN (cote candidate) et bouche les
+# alias au cas par cas. Le defaut restant, mesure sur la journee po-2023:CoursIA-2
+# du 2026-08-29 : `canonicalize_genre()` rend le mot inconnu VERBATIM, donc il
+# (a) gonfle le denominateur du budget LIGHT, (b) echappe au numerateur, et
+# (c) rend G-VAR-3 inatteignable par simple choix de mot. Le remede de #13475 :
+# fail-CLOSED -- un genre non resolu COMPTE LIGHT et leve un signal distinct
+# compte a part ; la table s'aligne sur le texte de la regle pour les deux mots
+# nommes (`documentation`, `prose` -> docs) ; `notebook` nu reste inconnu
+# (ambigu entre notebook-python/dotnet/lean -- deviner blanchirait un mis-tag).
+
+_LANE_13475 = "myia-po-2023:CoursIA-2"
+
+
+def test_prose_and_documentation_alias_to_docs():
+    # Le texte de la regle (variation-protocol §1) nomme `documentation -> docs`
+    # parmi les synonymes qui se normalisent ; `prose` est le temoin LIGHT mesure
+    # du 2026-08-29 (declare LIGHT, canonise hors table, budget non consomme).
+    # Controle positif : avant #13475 ces mots rencontraient leur forme verbatim
+    # et le test GENRE-UNKNOWN du dessous les aurait signales -- apres, ils
+    # resolvent silencieusement vers un canonique LIGHT.
+    assert vlc.canonicalize_genre("prose") == "docs"
+    assert vlc.canonicalize_genre("documentation") == "docs"
+    for genre in ("prose", "documentation"):
+        sig = vlc.compute_signals([], _LANE_13475, candidate_genre=genre)
+        assert sig["signals"]["GENRE-UNKNOWN"] is False, genre
+
+
+def test_bare_notebook_is_not_guessed():
+    # `notebook` nu est ambigu (python/dotnet/lean existent tous) : l'issue
+    # tranche -- GENRE-UNKNOWN plutot qu'un alias devine.
+    assert vlc.genre_resolves("notebook") is False
+    sig = vlc.compute_signals([], _LANE_13475, candidate_genre="notebook")
+    assert sig["signals"]["GENRE-UNKNOWN"] is True
+
+
+def test_unknown_genre_counts_light_fail_closed():
+    # LE controle positif de l'issue : un genre invente doit compter LIGHT.
+    # Avant #13475, ce jour-lane rendait light_genre=0 (le mot echappait au
+    # numerateur) TOUT EN grossissant le denominateur (cap passe de 1 a 2) --
+    # exactement a l'envers. Le test echoue sans le correctif.
+    day = [
+        _tag_pr(13401, "LIGHT", "zzz-inexistant", lane=_LANE_13475,
+                at="2026-08-29T09:00:00Z"),
+        _tag_pr(13402, "MED", "notebook-dotnet", lane=_LANE_13475,
+                at="2026-08-29T10:00:00Z"),
+        _tag_pr(13403, "MED", "tooling", lane=_LANE_13475,
+                at="2026-08-29T11:00:00Z"),
+    ]
+    tally = vlc.lane_genre_tally(day, _LANE_13475)
+    assert tally["lane_grains"] == 3
+    assert tally["light_genre"] == 1  # zzz-inexistant compte LIGHT
+    assert tally["genre_unknown"] == 1
+    # Le compose reduit a sa queue avant le verdict hors-table : le mot
+    # signale est le canonise (`inexistant`), preuve du hors-table.
+    assert tally["unknown_genres"] == {"inexistant": 1}
+    assert "inexistant" not in tally["by_genre"]
+
+
+def test_witness_day_prose_consumes_the_light_budget():
+    # Le temoin mesure du body : une PR declaree LIGHT dont le genre `prose`
+    # ne consommait PAS le budget light_genre. Apres #13475, prose -> docs ->
+    # LIGHT : le compte la voit.
+    day = [
+        _tag_pr(13429, "LIGHT", "prose", lane=_LANE_13475,
+                at="2026-08-29T08:00:00Z"),
+        _tag_pr(13430, "MED", "notebook", lane=_LANE_13475,
+                at="2026-08-29T12:00:00Z"),
+        _tag_pr(13431, "MED", "tooling", lane=_LANE_13475,
+                at="2026-08-29T16:00:00Z"),
+    ]
+    tally = vlc.lane_genre_tally(day, _LANE_13475)
+    # light_genre = 1 : la LIGHT/prose EST vue (alias -> docs). Le
+    # MED/notebook nu ne consomme PLUS le budget depuis la reserve ai-01
+    # sur #13585 (demande 2) : un tier MED declare se lit sans ambiguite,
+    # le mot de genre hors-table va au ledger sans requalifier le grain
+    # en LIGHT. C'etait light_genre=2 au premier tour de #13475.
+    assert tally["light_genre"] == 1
+    assert tally["genre_unknown"] == 1  # notebook nu, ledger seulement
+    assert tally["unknown_genres"] == {"notebook": 1}
+
+
+def test_composites_reduce_before_unknown():
+    # Reserve ai-01 sur #13585 (demande 1) : les composes reduisibles ne
+    # sont PAS des GENRE-UNKNOWN. Les six formes mesurees (100 dernieres
+    # PR) font la suite de tests naturelle -- chaque fleche est prescrite
+    # par la table de la reserve.
+    for composite, reduced in [
+        ("notebook-genai-python", "notebook-python"),    # famille au milieu
+        ("research-notebook-python", "notebook-python"), # prefixe famille
+        ("docs-translation", "docs"),                    # alias plein (existant)
+        ("docs-lean", "docs"),                           # deux genres valides -> table
+        ("pedagogy-prose", "docs"),                      # suffixe -> alias prose
+        ("infra-docker", "tooling"),                     # tete aliassee -> table
+    ]:
+        assert vlc.canonicalize_genre(composite) == reduced, composite
+        assert vlc.genre_resolves(composite) is True, composite
+    # Les reductions NON-light ne consomment pas le budget meme en DEEP ;
+    # les reductions docs restent light (c'est l'axe GENRE, independant du
+    # tier declare -- un DEEP/docs compte, par design #10020).
+    assert vlc.genre_counts_light("notebook-genai-python", "DEEP") is False
+    assert vlc.genre_counts_light("infra-docker", "DEEP") is False
+    assert vlc.genre_counts_light("docs-lean", "DEEP") is True
+    # La queue est PRESERVEE : sauver une tete valide en sacrifiant une
+    # queue inconnue laverait un mis-tag (decision #12158, garde du ladder).
+    assert vlc.canonicalize_genre("genai-reexec") == "reexec"
+    assert vlc.genre_resolves("genai-reexec") is False
+
+
+def test_deep_reducible_composite_neither_counts_light_nor_runs():
+    # LE controle negatif demande par la reserve (demande 3) : un grain
+    # DEEP declare avec un compose reducible ne consomme PAS le budget
+    # LIGHT et ne forme PAS de course.
+    day = [
+        _tag_pr(13531, "DEEP", "notebook-genai-python", lane=_LANE_13475,
+                at="2026-08-29T09:00:00Z"),
+        _tag_pr(13532, "DEEP", "research-notebook-python", lane=_LANE_13475,
+                at="2026-08-29T10:00:00Z"),
+    ]
+    tally = vlc.lane_genre_tally(day, _LANE_13475)
+    assert tally["light_genre"] == 0
+    assert tally["genre_unknown"] == 0
+    # Les deux reduisent au meme genre canonique notebook-python (non-LIGHT)
+    assert tally["by_genre"] == {"notebook-python": 2}
+    assert vlc.genre_runs(day, _LANE_13475) == []
+
+
+def test_med_unknown_genre_ledgered_not_light():
+    # Reserve ai-01 demande 2 : le scenario « MED/secrets » -- le tier MED
+    # est declare et lisible, le mot de genre est hors-table. Fail-CLOSED
+    # du SIGNAL (ledger + retag demande), PAS du budget : le grain ne
+    # consomme pas light_genre et ne forme pas de course GENRE-UNKNOWN.
+    day = [
+        _tag_pr(13541, "MED", "secrets", lane=_LANE_13475,
+                at="2026-08-29T09:00:00Z"),
+        _tag_pr(13542, "MED", "notebook-dotnet", lane=_LANE_13475,
+                at="2026-08-29T10:00:00Z"),
+        _tag_pr(13543, "MED", "tooling", lane=_LANE_13475,
+                at="2026-08-29T11:00:00Z"),
+    ]
+    tally = vlc.lane_genre_tally(day, _LANE_13475)
+    assert tally["light_genre"] == 0  # secrets n'est pas compte
+    assert tally["genre_unknown"] == 1  # mais le ledger le nomme
+    assert tally["unknown_genres"] == {"secrets": 1}
+    assert vlc.genre_runs(day, _LANE_13475) == []
+
+
+def test_two_different_unknown_words_form_one_genre_unknown_run():
+    # Deux mis-tags consecutifs de mots DIFFERENTS (`layout` puis `ict`,
+    # tous deux temoins mesures du 2026-08-29) : avant, chacun pulvaisait sa
+    # propre clee verbatim dans genre_runs et aucune course n'atteignait le
+    # seuil count >= 2. Apres, ils groupent sous le sentinel GENRE-UNKNOWN.
+    day = [
+        _tag_pr(12945, "LIGHT", "layout", lane=_LANE_13475,
+                at="2026-08-29T09:00:00Z"),
+        _tag_pr(13009, "LIGHT", "ict", lane=_LANE_13475,
+                at="2026-08-29T10:00:00Z"),
+    ]
+    runs = vlc.genre_runs(day, _LANE_13475)
+    assert runs == [{
+        "genre": vlc.GENRE_UNKNOWN_KEY,
+        "count": 2,
+        "numbers": [12945, 13009],
+    }]
+
+
+def test_canonical_genres_do_not_regress_into_light():
+    # Controle NEGATIF obligatoire (le `KeyError: 'notebook-python'` du
+    # 2026-08-08 documente dans la docstring de canonicalize_genre) : les
+    # formes canoniques composees ne doivent pas basculer en light par
+    # effondrement de la regle compose.
+    for genre in ("notebook-python", "notebook-dotnet", "notebook-lean",
+                  "research-code", "tooling", "lean", "genai", "qc",
+                  "training", "refactor", "slides"):
+        assert vlc.genre_counts_light(genre) is False, genre
+        assert vlc.genre_resolves(genre) is True, genre
+    for genre in ("docs", "readme", "guard", "ledger", "test"):
+        assert vlc.genre_counts_light(genre) is True, genre
+
+
+def test_genre_counts_light_none_is_false():
+    # Pas de genre lisible -> pas d'enregistrement en amont ; la reponse
+    # defensive du predicat est False, pas une exception.
+    assert vlc.genre_counts_light(None) is False
+    assert vlc.genre_counts_light("") is False
 
 
 def _run_check_pr(body_now: str, merged_payload: list[dict]) -> dict:

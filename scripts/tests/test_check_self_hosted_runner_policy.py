@@ -112,6 +112,40 @@ def test_missing_label_is_rejected_in_allowed_workflow(tmp_path):
     assert codes(policy.scan_workflows(tmp_path)) == {"RUNNER_LABELS"}
 
 
+def test_linux_label_set_is_accepted_in_allowlisted_workflow(tmp_path):
+    # Mission #13378: the containerized Linux runner (po-2024) carries its
+    # own dedicated label set -- coursia-linux routes only to the container,
+    # never to the Windows fast-guards runners.
+    write_workflow(tmp_path, "linux-self-hosted-tests", """
+        name: linux
+        on: workflow_dispatch
+        jobs:
+          test:
+            runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+            steps:
+              - run: echo safe
+        """)
+    result = policy.scan_workflows(tmp_path)
+    assert result.violations == []
+    assert result.self_hosted_jobs == 1
+
+
+def test_mixed_linux_and_fast_guards_labels_are_rejected(tmp_path):
+    # Mixing the two dedicated sets must stay a violation: a job eligible
+    # for both the Windows runners and the Linux container would make the
+    # routing guarantee meaningless.
+    write_workflow(tmp_path, "linux-self-hosted-tests", """
+        name: mixed
+        on: workflow_dispatch
+        jobs:
+          test:
+            runs-on: [self-hosted, coursia-ephemeral, coursia-linux, coursia-fast-guards]
+            steps:
+              - run: echo unsafe
+        """)
+    assert codes(policy.scan_workflows(tmp_path)) == {"RUNNER_LABELS"}
+
+
 def test_unexpected_label_is_rejected_in_allowed_workflow(tmp_path):
     write_workflow(tmp_path, "pr-gate-stale-sweep", """
         name: labels
