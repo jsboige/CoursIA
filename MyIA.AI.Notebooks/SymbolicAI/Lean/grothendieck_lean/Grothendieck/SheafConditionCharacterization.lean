@@ -21,7 +21,7 @@ produit-égaliseur** à la définition `Presieve.IsSheaf J P`. La Partie 7
     version « forme égaliseur » de
     `isSeparatedFor_and_exists_isAmalgamation_iff_isSheafFor` (Mathlib) : un
     préfaisceau est un faisceau au sens de l'égaliseur ssi il est séparé et
-    tout famille compatible s'amalgame — la séparation seule garantit
+    toute famille compatible s'amalgame — la séparation seule garantit
     l'unicité, l'existence est précisément ce qu'ajoute la condition de faisceau.
 
 Références :
