@@ -3361,3 +3361,19 @@ def test_14070_position_g_neutralise_pas_mention_negatee_jamais():
         f"Position G a neutralise a tort CHANGES_REQUESTED dans : {body!r}\n"
         f"Stripped result: {stripped!r}"
     )
+
+
+def test_14070_position_g_neutralise_pas_annonce_fix_avec_commit_futur():
+    """#14070 FN-safety (PR #13560 fondateur #13559) : Position G avec un
+    verdict suivi d'une reference a un commit futur (`— commit XXXX`)
+    doit PRESERVER le verdict. Forme : 'Fix review ai-01
+    CHANGES_REQUESTED — commit 06956bd0a.' C'est une **annonce de fix**
+    (le commit reference est futur), pas une **reponse** a un verdict
+    passe. Le verdict doit rester vivant dans le body pour que l'organe
+    le voie comme un nit non leve."""
+    body = "Fix review ai-01 CHANGES_REQUESTED — commit 06956bd0a."
+    assert mod.classify("hermes-bot", body) == "BOT-CONCERN", (
+        f"Position G a neutralise a tort CHANGES_REQUESTED dans : {body!r}\n"
+        f"Le verdict suivi de `— commit XXXX` est une annonce de fix, "
+        f"pas une reponse a un verdict passe."
+    )

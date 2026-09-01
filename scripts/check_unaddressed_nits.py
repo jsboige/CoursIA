@@ -708,11 +708,23 @@ _MENTION_VERDICT_REVIEW_NARRATIVE = re.compile(
 # traitment/...). Les autres verbes de mention gardent leur `\w+` (leur
 # variabilite naturelle est plus large : `corrige`/`corrigea`/`corrigeant`,
 # `fix`/`fixe`/`fixer`, etc.).
+#
+# #13559 fondateur (PR #13560) — ajout d'un **negative lookahead**
+# post-verdict `(?!\s*[—\-]\s+commit\b)` : la phrase « Fix review ai-01
+# CHANGES_REQUESTED — commit 06956bd0a » est une **annonce de fix**
+# (verdict suivi d'une reference a un commit futur), pas une **reponse**
+# a un verdict (qui finit par contexte de reponse : Hermes, date, identifiee,
+# via commit **passe**, ...). Le lookahead distingue les deux : apres le
+# verdict, un `— commit` (= reference future) bloque le match. Les
+# phrases de reponse (les 6 TP c.840 fondateur #13496 + variantes avec
+# Hermes/date/identifiee/...) ne sont pas suivies de `— commit`, donc
+# matchent toujours. c.845 regression fix.
 _MENTION_VERDICT_BARE = re.compile(
     r"(?i)(?:^|[\s,;:(*]|@\S+\s+[—\-]\s+)"
     r"(?:fix(?:ed|ée?e?)?|corrig\w+|suite\s+[àa]|en\s+r[ée]ponse\s+[àa]"
     r"|r[ée]ponse\s+[àa]|lev(?:e|é|ée|er|ons)\b|lift\w*|adress\w+|trait(?:e|é|er)\b|repondu\s+[àa])"
-    r"[^():\n.]{0,40}?(?-i:([A-Z][A-Z_]{3,}))(?![A-Za-z0-9_])")
+    r"[^():\n.]{0,40}?(?-i:([A-Z][A-Z_]{3,}))(?![A-Za-z0-9_])"
+    r"(?!\s*[—\-]\s+commit\b)")
 
 
 def _strip_mentioned_verdicts(body: str) -> str:
