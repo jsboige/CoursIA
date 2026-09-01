@@ -1119,6 +1119,50 @@ def has_live_marker(body: str, markers: tuple[str, ...]) -> bool:
     return False
 
 
+# #13912 -- le chemin `HOLD_HEAD` (#13784) a ete ajoute SANS les deux
+# discriminations que son chemin FRERE `_COORDINATOR_INJUNCTION_RE` portait
+# deja. Un chemin neuf herite des gardes de son jumeau, sinon il rouvre les
+# faux positifs que le jumeau avait fermes -- ce qui est arrive ici deux fois :
+#
+#   (a) VERDICT NOMME. `**HOLD G-VAR-2 (cap de genre)**` NOMME la garde
+#       G-VAR-2, il ne pose rien. Le lookahead
+#       `(?![\s-]+(?:G-VAR|BLOCK|BOT|COMMENT|VERDICT|PR))` de la ligne 1237
+#       ecarte ces noms depuis #13598 ; `HOLD_HEAD` ne l'avait pas.
+#   (b) NEGATION APRES LE LIBELLE. `**HOLD coordinateur** NON.` DENIE un hold.
+#       `_lift_participle_after` ne connait que « leve / levee / lifted », qui
+#       suivent immediatement ; ici la negation suit le LIBELLE, deux mots plus
+#       loin.
+#
+# Les deux resserrements de (b) sont repris de la raison meme qui fait exiger
+# `HOLD` en majuscules dans #13784 -- « hold » est un mot ordinaire :
+#   - MAJUSCULES exigees. `pas` est volontairement ABSENT de la liste : « HOLD
+#     -- ne pas merger » est un hold REEL, et une negation minuscule le
+#     neutraliserait.
+#   - FIN DE CLAUSE exigee. « HOLD: NO merge until X » porte « NO » sans etre
+#     une denegation ; seul un `NON`/`NO` qui CLOT la clause est le verdict.
+_HOLD_NAMED_VERDICT_RE = re.compile(
+    r"^[\s-]+(?:G-VAR|BLOCK|BOT|COMMENT|VERDICT|PR\b|PR-)", re.I
+)
+_HOLD_NEGATED_RE = re.compile(r"^[^.\n]{0,40}?\b(?:NON|NO)\b\s*(?:[.,;!]|$)")
+
+
+def _hold_head_is_emission(head: str, end: int) -> bool:
+    """Le `HOLD` en tete de corps EMET-il un hold, ou en NOMME-t-il un ?
+
+    Miroir de `_is_cited` pour le chemin `HOLD_HEAD` : rend False des que le
+    texte qui suit disqualifie l'occurrence -- levee (delegue a
+    `_lift_participle_after`), verdict nomme (a), denegation (b).
+    """
+    if _lift_participle_after(head, end):
+        return False
+    tail = head[end:]
+    if _HOLD_NAMED_VERDICT_RE.match(tail):
+        return False
+    if _HOLD_NEGATED_RE.match(tail):
+        return False
+    return True
+
+
 def _lift_participle_after(head: str, end: int) -> bool:
     """Le mot qui SUIT l'occurrence est-il un participe de levee ?
 
@@ -1190,7 +1234,7 @@ def _block_emitted(body: str) -> bool:
     if head.lstrip(" \t*_").upper().startswith("[OVERRIDE]"):
         return False
     m_hold = HOLD_HEAD.match(head)
-    if m_hold and not _lift_participle_after(head, m_hold.end()):
+    if m_hold and _hold_head_is_emission(head, m_hold.end()):
         return True
     for marker in ("BLOCAGE", "BLOCK"):
         pos = 0

@@ -3417,6 +3417,32 @@ def test_13912_hold_classify_sous_hold_user_ne_devient_pas_bot_concern() -> None
     assert mod.classify("myia-ai-01", body) is None
 
 
+def test_13912_controles_positifs_hold_reel_bloque_toujours() -> None:
+    """#13912 -- contre-controles du desserrage de `HOLD_HEAD`.
+
+    Le correctif porte sur le chemin `HOLD_HEAD` (#13784) les deux gardes que
+    son chemin FRERE `_COORDINATOR_INJUNCTION_RE` avait deja : le lookahead de
+    verdict nomme (#13598) et la negation. Desserrer un predicat exige de
+    prouver qu'on n'a rien ETEINT -- ces cinq formes sont des holds REELS et
+    doivent continuer de bloquer.
+
+    Les deux resserrements de la negation se lisent dans les cas 2 et 4 :
+      - cas 2 : « ne PAS merger » est un hold reel. `pas` est volontairement
+        absent de la liste de negation, sinon un vrai hold s'auto-neutralise.
+      - cas 4 : « NO merge until X » porte « NO » sans etre une denegation ;
+        seul un `NON`/`NO` qui CLOT la clause est un verdict de denegation.
+    """
+    reels = [
+        "**HOLD** cette PR attend le remplacement nomme.",
+        "HOLD -- ne pas merger avant que le grain de remplacement soit nomme.",
+        "## HOLD lane myia-po-2026:CoursIA -- cap G-VAR-2 atteint.",
+        "**HOLD**: NO merge until the ratchet is green.",
+        "[HOLD] lane myia-po-2023:CoursIA",
+    ]
+    for body in reels:
+        assert mod.classify("myia-ai-01", body) == "BLOCK", body
+
+
 def test_13912_hold_neutralise_negation() -> None:
     """#13912 : "Pas de hold" -- negation explicite doit rester muette.
 
