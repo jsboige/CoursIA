@@ -1113,6 +1113,53 @@ def _has_failed_check(state: dict | None) -> bool:
                for c in contexts)
 
 
+# #13967 -- le marker HTML que le guard G-VAR-3 pose en commentaire PR quand
+# il bloque une PR pour adjacency. Le picker relit ce marker pour DECIDER
+# quel conseil afficher : les "Trois gestes" generiques sont faux pour cette
+# cause (un update-branch / un rebase / une correction de substance ne leve
+# jamais un verdict d'adjacence -- le predicat ne depend d'aucune des trois
+# entrees modifiees par ces gestes, cf issue body). Quand le marker est
+# present, le picker DOIT afficher le remede propre (produire un grain d'un
+# autre genre, jamais retaguer le meme travail) et l'interdit de retag, parce
+# que le conseil generique invite au contournement que le guard existe pour
+# fermer (cf variation-protocol.md §2).
+_ADJACENCY_MARKER = "<!-- vtr-adjacency-block -->"
+
+
+def fetch_adjacency_verdicts(numbers: list[int]) -> dict[int, bool]:
+    """Lit les commentaires PR pour detecter le marker d'adjacence G-VAR-3.
+
+    Rend `{number: True}` quand le marker est present dans **un** commentaire
+    (le guard pose le marker en idempotent, et un seul suffit a signifier le
+    blocage). Rend `{}` (pas d'info) sur PR illisible / reseau mort -- le
+    caller DOIT alors retomber sur les "Trois gestes" generiques (chemin
+    conservateur : un faux negatif d'eligibilite au remede propre est
+    preferable a un faux positif qui dit "fais un autre genre" sans que
+    l'adjacence soit reellement la cause).
+
+    Cout : un appel `gh pr view` par PR. `red_backlog` le borne deja au
+    payload de la lane (1 lot) ; sur la mesure #13967 du 2026-09-01, 6 PRs
+    `myia-po-2026:CoursIA` -- 6 requetes marginales sur un cycle ou le picker
+    fait deja 14 requetes par lane (cf docstring `red_backlog`).
+    """
+    out: dict[int, bool] = {}
+    for n in numbers:
+        try:
+            data = json.loads(subprocess.run(
+                ["gh", "pr", "view", str(n), "--repo", REPO,
+                 "--json", "comments"],
+                capture_output=True, text=True, encoding="utf-8",
+                check=True, timeout=30,
+            ).stdout)
+        except Exception:  # noqa: BLE001 - PR illisible = verdict indisponible, pas une panne bloquante
+            continue
+        for c in (data.get("comments") or []):
+            if _ADJACENCY_MARKER in (c.get("body") or ""):
+                out[n] = True
+                break
+    return out
+
+
 def blocking_causes(state: dict, *, age_hours: float | None = None,
                     saturation_hours: float | None = None,
                     inherited: set[str] | None = None) -> list[str]:
@@ -1446,6 +1493,11 @@ def red_backlog(lane: str, threshold_hours: float,
                         reverse=True)[:16]
         foreign_states = fetch_pr_states([p["number"] for p in sample])
         inherited = impute_base_reds({**states, **foreign_states}, author_by)
+    # #13967 : verdict d'adjacence lu en parallele des etats -- le cout est
+    # marginal (1 appel `gh pr view` par PR de la lane, borne par `mine`) et
+    # l'info sert dans `print_red_assignment` a remplacer le bloc "Trois
+    # gestes" generique par le remede propre (cf docstring `_ADJACENCY_MARKER`).
+    adjacency_by_pr = fetch_adjacency_verdicts([pr["number"] for pr in mine])
     red = []
     for pr in mine:
         state = states.get(pr["number"])
@@ -1472,9 +1524,19 @@ def red_backlog(lane: str, threshold_hours: float,
         if sat_cause:
             causes.append(sat_cause)
         if causes:
-            red.append({"number": pr["number"], "title": pr["title"],
-                        "age_hours": round(age),
-                        "causes": causes})
+            entry = {"number": pr["number"], "title": pr["title"],
+                     "age_hours": round(age),
+                     "causes": causes}
+            # #13967 : flag explicite quand le guard G-VAR-3 a pose le marker
+            # sur cette PR. `print_red_assignment` lit ce flag pour remplacer
+            # le bloc "Trois gestes" par le remede propre a l'adjacence.
+            # `None` (PR illisible) **n'est pas** traite comme absence de
+            # verdict -- c'est "information indisponible", et le caller
+            # retombe sur le conseil generique (chemin conservateur documente
+            # dans `fetch_adjacency_verdicts`).
+            if adjacency_by_pr.get(pr["number"]):
+                entry["adjacency_verdict"] = True
+            red.append(entry)
     red.sort(key=lambda r: -r["age_hours"])
 
     triggers = []
@@ -1681,17 +1743,49 @@ def print_red_assignment(lane: str, backlog: dict, threshold_hours: float) -> No
         for cause in item["causes"]:
             print(f"       {cause}")
     print()
-    print("Trois gestes, dans cet ordre -- le premier repare souvent seul :")
-    print("  1. `gh pr update-branch <N>` : rejoue les checks sur une tete fraiche.")
-    print("     Un rouge peut dater d'AVANT la correction du garde qui l'a produit")
-    print("     (mesure du 2026-08-21 : 5 PRs sur 9 n'avaient rien a corriger).")
-    print("     Dater le garde -- `git log -- <script>` -- avant de conclure.")
-    print("  2. conflits : rebaser sur origin/main, `--force-with-lease` si la lane")
-    print("     est seule sur la branche.")
-    print("  3. corriger la substance, pousser, et REPONDRE par ecrit -- au")
-    print("     CHANGES_REQUESTED comme au nit : un push muet ne leve aucune")
-    print("     remarque. `python scripts/check_unaddressed_nits.py <N>` detaille")
-    print("     chaque point non leve, son auteur et sa surface.")
+    # #13967 : quand AU MOINS une PR rouge porte le verdict d'adjacence
+    # (`adjacency_verdict` pose par `red_backlog` apres lecture du marker
+    # G-VAR-3), les "Trois gestes" generiques sont FAUX : aucun ne leve un
+    # blocage d'adjacence (cf mesure de l'issue -- `update-branch`,
+    # rebase, et correction de substance touchent au diff / a la tete /
+    # au SHA, et le predicat du guard n'en lit aucun). Le remede propre
+    # est de produire un grain d'un AUTRE genre, et le conseil generique
+    # invite au contournement que §2 ferme (retag du meme travail).
+    #
+    # On n'affiche le bloc adjacency que si TOUTES les PRs rouges detectees
+    # sont adjacency (et non un mix) : si une PR est adjacency et une autre
+    # est un rouge substance, le geste 3 (substance) reste valide pour la
+    # seconde, et c'est elle qu'il faut traiter en premier -- sinon le
+    # triage par `sort(key=-age_hours)` de `red` ne tient plus.
+    if red and all(r.get("adjacency_verdict") for r in red):
+        n_adj = len(red)
+        s = "s" if n_adj > 1 else ""
+        print(f"Remede UNIQUEMENT pour ces {n_adj} PR{s} -- le verdict G-VAR-3 "
+              "(adjacency) NE se leve NI par un update-branch, NI par un "
+              "rebase, NI par une correction de substance (le predicat ne "
+              "lit ni le diff, ni la tete, ni le SHA).")
+        print()
+        print("  Chaque merge d'un grain d'un AUTRE genre laisse passer "
+              "exactement une PR de la file. C'est le seul geste qui leve "
+              "le blocage -- produire un grain dont le GENRE differe du "
+              "precedent (`prev:` de la prochaine PR).")
+        print()
+        print("  INTERDIT explicite (variation-protocol.md §2) : retaguer "
+              "le meme travail avec un autre genre est le contournement que "
+              "le guard existe pour fermer -- le `prev:` DOIT pointer un "
+              "merge reel d'un autre genre, pas une renomination.")
+    else:
+        print("Trois gestes, dans cet ordre -- le premier repare souvent seul :")
+        print("  1. `gh pr update-branch <N>` : rejoue les checks sur une tete fraiche.")
+        print("     Un rouge peut dater d'AVANT la correction du garde qui l'a produit")
+        print("     (mesure du 2026-08-21 : 5 PRs sur 9 n'avaient rien a corriger).")
+        print("     Dater le garde -- `git log -- <script>` -- avant de conclure.")
+        print("  2. conflits : rebaser sur origin/main, `--force-with-lease` si la lane")
+        print("     est seule sur la branche.")
+        print("  3. corriger la substance, pousser, et REPONDRE par ecrit -- au")
+        print("     CHANGES_REQUESTED comme au nit : un push muet ne leve aucune")
+        print("     remarque. `python scripts/check_unaddressed_nits.py <N>` detaille")
+        print("     chaque point non leve, son auteur et sa surface.")
     print()
     print_unattributed_blocked(backlog)
     print_base_inherited(backlog)

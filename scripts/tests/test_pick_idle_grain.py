@@ -1322,3 +1322,139 @@ def test_file_saturation_requires_at_least_one_required_check():
         ("advisory opt", "NEUTRAL", False),
     ])
     assert pig.file_saturation_cause(s, 30.0, 24.0) is None
+
+
+# --- #13967 : le picker relit le marker G-VAR-3 pour remplacer le bloc ---
+# --- "Trois gestes" generique par le remede propre a l'adjacence.        ---
+#
+# Cas fondateur documente par ai-01 le 2026-09-01 : sur 25 PRs rouges
+# mesurables ce jour-la, 13 etaient tenues UNIQUEMENT par G-VAR-3
+# (adjacency), et le bloc "Trois gestes" envoyait la lane faire un
+# `update-branch` qui ne leve jamais le verdict du guard. La boucle etait
+# silencieuse : un cycle, deux cycles, la lane voit "trois gestes", elle en
+# applique un, rien ne bouge, elle revient, le meme bloc lui dit la meme
+# chose.
+
+
+def _backlog_with_adjacency(items):
+    """Backlog minimal pour `print_red_assignment` -- les triggers sont
+    positionnes par l'appelant, ici on n'utilise que `red`."""
+    return {"red": items, "triggers": ["aged"], "aged": [],
+            "unattributed_blocked": [], "base_inherited": [],
+            "nits_unavailable": None, "saturation_hours": 24.0}
+
+
+def test_print_red_assignment_replaces_three_gestes_when_all_adjacency(capsys):
+    """#13967 -- controle positif : toutes les PRs rouges portent le verdict
+    d'adjacence, le picker AFFICHE le remede propre et PASSE les "Trois
+    gestes" generiques. Sans ce test, une regression qui retablirait le bloc
+    generique en toutes circonstances serait indiscernable d'un fix casse."""
+    red = [
+        {"number": 13949, "title": "fix perimeter", "age_hours": 24,
+         "causes": ["check requis en echec : PR gate"],
+         "adjacency_verdict": True},
+        {"number": 13951, "title": "fix tooling", "age_hours": 22,
+         "causes": ["check requis en echec : PR gate"],
+         "adjacency_verdict": True},
+    ]
+    pig.print_red_assignment("myia-po-2026:CoursIA",
+                             _backlog_with_adjacency(red), 24.0)
+    out = capsys.readouterr().out
+    # Le bloc "Trois gestes" numerote (geste 1/2/3) est le conseil generique
+    # qu'il faut eviter sur un rouge adjacency -- il FAIT le geste 1
+    # (update-branch). La mention "update-branch" dans le bloc "Remede
+    # UNIQUEMENT" est en revanche CITEE pour dire qu'il NE leve PAS
+    # l'adjacence, et c'est le message utile. C'est la presence du geste 1
+    # NUMEROTE qui signe le bloc generique.
+    assert "1. `gh pr update-branch" not in out, (
+        f"le geste 1 numerote ('gh pr update-branch') ne doit PAS apparaitre "
+        f"quand toutes les PRs sont adjacency. Sortie : {out!r}"
+    )
+    assert "Remede UNIQUEMENT" in out
+    assert "G-VAR-3" in out
+    assert "INTERDIT explicite" in out
+
+
+def test_print_red_assignment_keeps_three_gestes_when_one_pr_is_substance(capsys):
+    """#13967 -- controle positif (mixed case) : si UNE seule PR porte
+    `adjacency_verdict` mais une autre est un rouge substance (FAIL sur un
+    check non lie a l'adjacence), le geste 3 (substance) reste valide pour
+    la seconde, et c'est elle qu'il faut traiter en premier. Le picker
+    garde donc le bloc "Trois gestes" -- la decision est documentee inline
+    dans `print_red_assignment`."""
+    red = [
+        {"number": 13949, "title": "fix perimeter", "age_hours": 24,
+         "causes": ["check requis en echec : PR gate"],
+         "adjacency_verdict": True},
+        {"number": 13961, "title": "fix tests", "age_hours": 30,
+         "causes": ["check requis en echec : PR gate"]},  # substance
+    ]
+    pig.print_red_assignment("myia-po-2026:CoursIA",
+                             _backlog_with_adjacency(red), 24.0)
+    out = capsys.readouterr().out
+    assert "Trois gestes" in out, (
+        f"mixed case (adjacency + substance) doit garder le bloc generique. "
+        f"Sortie : {out!r}"
+    )
+    assert "Remede UNIQUEMENT" not in out
+
+
+def test_print_red_assignment_keeps_three_gestes_when_no_marker(capsys):
+    """#13967 -- non-regression : aucune PR ne porte `adjacency_verdict`,
+    le bloc historique reste inchange."""
+    red = [
+        {"number": 13961, "title": "fix tests", "age_hours": 30,
+         "causes": ["check requis en echec : PR gate"]},
+    ]
+    pig.print_red_assignment("myia-po-2026:CoursIA",
+                             _backlog_with_adjacency(red), 24.0)
+    out = capsys.readouterr().out
+    assert "Trois gestes" in out
+    assert "update-branch" in out  # geste 1 du bloc historique
+    assert "Remede UNIQUEMENT" not in out
+
+
+def test_fetch_adjacency_verdicts_reads_marker_in_comments(monkeypatch):
+    """#13967 -- le marker `<!-- vtr-adjacency-block -->` est dans un
+    commentaire PR (le guard le pose via `gh pr comment`, pas dans le
+    body). Le picker doit le detecter dans la liste de commentaires."""
+    payload = {
+        "comments": [
+            {"author": {"login": "reviewer"}, "body": "lgtm"},
+            {"author": {"login": "github-actions"},
+             "body": "<!-- vtr-adjacency-block -->\nG-VAR-3 : deux grains..."},
+        ]
+    }
+    calls = []
+    def fake_run(cmd, **kwargs):
+        calls.append(cmd)
+        return _FakeCompleted(json.dumps(payload))
+    monkeypatch.setattr(pig.subprocess, "run", fake_run)
+    out = pig.fetch_adjacency_verdicts([13949])
+    assert out == {13949: True}
+    assert len(calls) == 1
+    assert "13949" in calls[0]
+
+
+def test_fetch_adjacency_verdicts_returns_empty_on_no_marker(monkeypatch):
+    """#13967 -- sans marker, la PR n'est pas dans le dict rendu. Le caller
+    (`red_backlog`) ne pose alors pas `adjacency_verdict` sur l'item, et
+    `print_red_assignment` garde le bloc historique."""
+    payload = {"comments": [{"author": {"login": "x"}, "body": "no marker here"}]}
+    monkeypatch.setattr(pig.subprocess, "run",
+                        lambda *a, **k: _FakeCompleted(json.dumps(payload)))
+    out = pig.fetch_adjacency_verdicts([13961])
+    assert out == {}
+
+
+def test_fetch_adjacency_verdicts_swallows_gh_failures_silently(monkeypatch):
+    """#13967 -- un crash `gh` (timeout, reseau) ne leve PAS : le caller
+    retombe sur le bloc generique (chemin conservateur documente dans la
+    docstring). Une levee ici aurait signifie "le picker peut etre tue par
+    une panne reseau", ce qui est exactement ce que les autres helpers
+    evitent deja (cf `unaddressed_review_points`, `red_backlog`)."""
+    def boom(cmd, **kwargs):
+        raise pig.subprocess.TimeoutExpired(cmd, 30)
+    monkeypatch.setattr(pig.subprocess, "run", boom)
+    out = pig.fetch_adjacency_verdicts([13961, 13962])
+    assert out == {}, f"un timeout ne doit pas remonter, got {out!r}"
