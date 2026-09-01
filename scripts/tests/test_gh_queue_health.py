@@ -205,3 +205,118 @@ def test_cli_repo_without_input_rejects(tmp_path: Path) -> None:
     proc = _run()
     assert proc.returncode != 0
     assert "one of the arguments" in proc.stderr or "required" in proc.stderr
+
+
+# ---------------------------------------------------------------------------
+# #13966: 3 advisory defects in PR #13909 review.
+# ---------------------------------------------------------------------------
+
+def test_incident_floor_count_is_named_constant_13966() -> None:
+    """#13966 §1: `verdict()` must reference INCIDENT_FLOOR_COUNT, not the
+    literal `18`. The asymmetry with the named date made the floor invisible
+    when expectations drifted.
+    """
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    # The named constant must exist and equal 18 (the historical CoursIA floor).
+    assert hasattr(mod, "INCIDENT_FLOOR_COUNT")
+    assert mod.INCIDENT_FLOOR_COUNT == 18
+    # The literal `18` must NOT appear in verdict()'s source anymore.
+    import inspect
+    src = inspect.getsource(mod.verdict)
+    assert "18" not in src.replace("INCIDENT_FLOOR_COUNT", ""), (
+        f"verdict() still hardcodes `18` outside INCIDENT_FLOOR_COUNT: {src!r}"
+    )
+
+
+def test_stale_floor_docstring_mentions_conjunction_13966() -> None:
+    """#13966 §2: STALE_FLOOR requires BOTH `ghosts == floor` AND `live == 0`.
+    The original docstring only stated the first half -- a reader expecting
+    'STALE_FLOOR if there are 18 ghosts' would be surprised when a CI surge
+    with live runs classifies as GHOST_RUNS_DETECTED instead.
+    """
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    doc = mod.verdict.__doc__ or ""
+    # The conjunctive condition must be explicit (live == 0 is load-bearing).
+    assert "live == 0" in doc, f"verdict() docstring missing `live == 0`: {doc!r}"
+    # The named constant must replace the bare `18` reference in the prose.
+    assert "INCIDENT_FLOOR_COUNT" in doc
+
+
+def test_stale_floor_with_live_runs_is_ghost_runs_detected_13966() -> None:
+    """#13966 §2 (positive control): the conjunctive condition means 18 ghosts
+    + N live > 0 must classify as GHOST_RUNS_DETECTED, NOT STALE_FLOOR.
+    This is the failure mode the docstring would have hidden.
+    """
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    # The historical 18-floor PLUS a fresh live run = GHOST_RUNS_DETECTED.
+    assert mod.verdict(18, 1, 0) == "GHOST_RUNS_DETECTED"
+    assert mod.verdict(18, 5, 0) == "GHOST_RUNS_DETECTED"
+    # Without live: still STALE_FLOOR (the canonical CoursIA signature).
+    assert mod.verdict(18, 0, 0) == "STALE_FLOOR"
+
+
+def test_replay_incomplete_prior_analysis_yields_non_incomplete_13966(tmp_path: Path) -> None:
+    """#13966 §3: replaying a snapshot whose original verdict was INCOMPLETE
+    yields CLEAN or GHOST_RUNS_DETECTED -- the verdict class changes at
+    replay because load_snapshot cannot resynthesise the parse_failures
+    from the timestamps alone (a missing `created_at` looks identical to
+    an unrecoverable parse failure). This test pins the loss as a
+    documented contract, not a silent bug.
+    """
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    # A prior analysis output with ghosts=18, live=0, parse_failures=2 -> the
+    # original verdict was INCOMPLETE. After load_snapshot + classify_runs,
+    # parse_failures disappears (the synthetic list only carries ghosts and
+    # live with their `created_at`), and classify_runs produces 0 failures.
+    prior_analysis = {
+        "cutoff": "2026-08-20",
+        "verdict": "INCOMPLETE",
+        "counts": {"total": 20, "ghosts": 18, "live": 0, "parse_failures": 2},
+        "snapshot_size": 20,
+        "ghosts": [
+            {"id": i, "name": f"ghost-{i}", "created_at": f"2026-08-19T03:{i:02d}:00Z",
+             "html_url": f"https://gh/ghost/{i}"}
+            for i in range(18)
+        ],
+        "live": [],
+        "parse_failures": [
+            {"id": 901, "reason": "missing created_at"},
+            {"id": 902, "reason": "bad created_at 'not-a-timestamp'"},
+        ],
+    }
+    snapshot = tmp_path / "incomplete.json"
+    snapshot.write_text(json.dumps(prior_analysis), encoding="utf-8")
+
+    raw_runs = mod.load_snapshot(snapshot)
+    classification = mod.classify_runs(
+        raw_runs, dt.datetime(2026, 8, 20, tzinfo=dt.timezone.utc)
+    )
+    # The structural loss: parse_failures count drops from 2 to 0 on replay.
+    assert len(classification["parse_failures"]) == 0
+    # The corollary verdict shift: INCOMPLETE -> STALE_FLOOR (or CLEAN).
+    repl_verdict = mod.verdict(
+        len(classification["ghosts"]),
+        len(classification["live"]),
+        len(classification["parse_failures"]),
+    )
+    assert repl_verdict == "STALE_FLOOR"
+    assert repl_verdict != "INCOMPLETE", (
+        "Replay must NOT reproduce INCOMPLETE because load_snapshot cannot "
+        "resynthesise the original parse failures from timestamps alone. "
+        "This loss is documented in load_snapshot's docstring (#13966)."
+    )
+
+    # The docstring must call the loss out explicitly so a reader comparing
+    # two verdicts through a snapshot does not conclude falsely.
+    assert "INCOMPLETE" in (mod.load_snapshot.__doc__ or "")
+    assert "parse_failures" in (mod.load_snapshot.__doc__ or "")
+    assert "cannot" in (mod.load_snapshot.__doc__ or "").lower() or \
+           "not recoverable" in (mod.load_snapshot.__doc__ or "").lower()

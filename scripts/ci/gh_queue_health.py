@@ -34,6 +34,7 @@ EXIT_BROKEN = 2
 
 PER_PAGE = 100
 INCIDENT_FLOOR_DATE = "2026-08-19"  # origin of the corruption window
+INCIDENT_FLOOR_COUNT = 18          # known constant ghost-floor since that date
 
 
 class InstrumentError(RuntimeError):
@@ -123,22 +124,45 @@ def classify_runs(runs: list[dict], cutoff: datetime) -> dict:
 def verdict(ghosts: int, live: int, parse_failures: int) -> str:
     """`CLEAN` if no ghosts and no parse failures. Otherwise `GHOST_RUNS_DETECTED`.
 
-    `GHOST_RUNS_DETECTED` is the expected verdict on CoursIA itself (the 18
-    ghosts of 2026-08-19). `CLEAN` is expected on repos without historical
-    incidents. `STALE_FLOOR` is reserved for the precise case where the ghost
-    count equals the known incident floor (18) -- useful for surfacing the
-    signature on CoursIA without false-positive alarms on other repos.
+    `GHOST_RUNS_DETECTED` is the expected verdict on CoursIA itself (the
+    INCIDENT_FLOOR_COUNT ghosts since INCIDENT_FLOOR_DATE). `CLEAN` is
+    expected on repos without historical incidents. `STALE_FLOOR` is reserved
+    for the precise case where the ghost count equals the known incident
+    floor AND no live run is queued -- useful for
+    surfacing the signature on CoursIA without false-positive alarms on other
+    repos. The conjunctive `live == 0` is load-bearing: a fresh CI surge
+    that happens to clear INCIDENT_FLOOR_COUNT ghosts would NOT classify as
+    STALE_FLOOR.
     """
     if parse_failures > 0:
         return "INCOMPLETE"
     if ghosts == 0:
         return "CLEAN"
-    if ghosts == 18 and live == 0:
+    if ghosts == INCIDENT_FLOOR_COUNT and live == 0:
         return "STALE_FLOOR"
     return "GHOST_RUNS_DETECTED"
 
 
 def load_snapshot(path: Path) -> list[dict]:
+    """Load a snapshot file and return a list of raw runs.
+
+    Accepted shapes:
+      * a JSON list of runs (raw `gh api` output),
+      * a dict `{"workflow_runs": [...]}`, with optional `{"snapshot": {...}}`
+        envelope,
+      * a prior analysis output (`{"cutoff", "verdict", "counts",
+        "ghosts", "live", "parse_failures"}`). In this case the synthetic
+        list only carries ghosts + live -- the `parse_failures` bucket of
+        the original analysis is **not recoverable** from the timestamps
+        alone (each parse-failure is a missing/bad `created_at`; we cannot
+        distinguish a deliberately-missing-`created_at` ghost from an
+        unrecoverable parse failure without the original raw response).
+        Replaying an INCOMPLETE snapshot therefore yields CLEAN or
+        GHOST_RUNS_DETECTED, NOT INCOMPLETE -- the verdict class changes
+        at replay. This loss is structural, not a bug in this function;
+        it is the unavoidable cost of dropping the raw API response once
+        classify_runs has finished.
+    """
     try:
         value = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
@@ -157,6 +181,8 @@ def load_snapshot(path: Path) -> list[dict]:
     # timeline to recompute. We synthesize a synthetic list whose created_at is
     # not used: the ghosts and live buckets carry the real IDs and timestamps,
     # and classify_runs will reproduce the same partition if cutoff matches.
+    # NOTE: parse_failures from the original analysis are dropped here -- see
+    # docstring above for why.
     if isinstance(value, dict) and "ghosts" in value and "live" in value:
         synthetic: list[dict] = []
         for entry in value.get("ghosts", []) or []:
