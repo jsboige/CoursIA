@@ -595,55 +595,6 @@ def test_same_repository_reusable_workflow_rejects_path_traversal(tmp_path):
     assert "REMOTE_REUSABLE_WORKFLOW" in codes(policy.scan_workflows(tmp_path))
 
 
-def test_missing_trigger_breaks_instrument(tmp_path):
-    write_workflow(tmp_path, "broken-trigger", """
-        name: broken-trigger
-        jobs:
-          test:
-            runs-on: ubuntu-latest
-            steps:
-              - run: echo no-trigger
-        """)
-    result = policy.scan_workflows(tmp_path)
-    assert result.broken == ["broken-trigger.yml: missing on trigger"]
-
-
-def test_empty_runs_on_list_breaks_instrument(tmp_path):
-    write_workflow(tmp_path, "broken-runner", """
-        name: broken-runner
-        on: workflow_dispatch
-        jobs:
-          test:
-            runs-on: []
-            steps:
-              - run: echo no-runner
-        """)
-    result = policy.scan_workflows(tmp_path)
-    assert result.broken == [
-        "broken-runner.yml:test: runs-on list must contain labels"
-    ]
-
-
-def test_missing_jobs_breaks_instrument(tmp_path):
-    write_workflow(tmp_path, "broken-jobs", """
-        name: broken-jobs
-        on: workflow_dispatch
-        """)
-    result = policy.scan_workflows(tmp_path)
-    assert result.broken == ["broken-jobs.yml: missing jobs"]
-
-
-def test_same_repository_reusable_workflow_rejects_path_traversal(tmp_path):
-    write_workflow(tmp_path, "caller", """
-        name: caller
-        on: [pull_request]
-        jobs:
-          test:
-            uses: jsboige/CoursIA/.github/workflows/../evil.yml@main
-        """)
-    assert "REMOTE_REUSABLE_WORKFLOW" in codes(policy.scan_workflows(tmp_path))
-
-
 def test_invalid_yaml_breaks_the_instrument(tmp_path):
     write_workflow(tmp_path, "broken", "on: [pull_request\njobs: [")
     result = policy.scan_workflows(tmp_path)
@@ -684,3 +635,30 @@ def test_missing_runs_on_breaks_instrument_instead_of_silent_skip(tmp_path):
         """)
     result = policy.scan_workflows(tmp_path)
     assert result.broken == ["broken-job.yml:test: missing runs-on"]
+
+
+# #13960 : garde anti-regression sur les doublons de def dans ce fichier.
+# Le defaut fondateur (mesure 2026-09-01) : 4 paires byte-identiques
+# (`test_missing_trigger_breaks_instrument`, `test_empty_runs_on_list_breaks_instrument`,
+# `test_missing_jobs_breaks_instrument`, `test_same_repository_reusable_workflow_rejects_path_traversal`).
+# La 2e definition eclipsait la 1re -- couverture neutre mais piege a evolution
+# (si une copie evolue, la version executee n'est plus celle visible dans l'editeur).
+# Detecte au niveau AST tout doublon de fonction au top-level : aucun nom ne
+# doit apparaitre 2 fois comme def dans ce fichier. Si une re-introduction se
+# produit (par copier-coller, refactor futur, fusion accidentelle), ce test
+# rougit avec le nom et le compte.
+def test_13960_no_duplicate_test_function_definitions() -> None:
+    """#13960 : garde anti-regression doublons de def au top-level."""
+    import ast
+    import pathlib
+    source = pathlib.Path(__file__).read_text(encoding="utf-8")
+    tree = ast.parse(source)
+    seen: dict[str, int] = {}
+    for node in tree.body:
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            seen[node.name] = seen.get(node.name, 0) + 1
+    duplicates = {name: count for name, count in seen.items() if count > 1}
+    assert not duplicates, (
+        f"doublons de def au top-level : {duplicates} "
+        f"(cf #13960 fondateur : la 2e def eclipse la 1re silencieusement)"
+    )
