@@ -12,6 +12,7 @@ Updated: 2026-08-24 — M4 DLinear-vol §C extension ETF (Epic #1454): **NO BEAT
 Updated: 2026-08-23 — backlog à déposer : M15 h=32 NO BEATS (#11468) et barreau ETF direction 9/9 NO BEATS (#11427) absents du header — cf sections respectives
 Updated: 2026-08-24 — Re-validation hors-biais des keepers BTC (issues #11041/#11034/#11036) : M15 `refuted-de-biased` 3/3 (l'edge publié = biais² de HAR, var_ratio > 1 partout) ; M4 confirmé h=1/h=5, INCONCLUSIVE h=10 (p_median 0,0598, var_ratio < 1)
 Updated: 2026-08-24 — M15 LSTM-vol patch persistance biais + slice 2/2 dé-biaisé symétrique (issue #12734): patch livré, run complet dispatché au prochain cycle
+Updated: 2026-09-01 — PatchTST BTC log-RV revalidé contre HAR débiaisé train-only (#14081) : h=1 INCONCLUSIVE, h=5/h=10 NO BEATS ; var_ratio > 1 aux trois horizons
 
 Total checkpoints: 70 (20 legacy ARCHIVED + 50 panier baselines)
 
@@ -279,8 +280,9 @@ sur les séries persistées).
 (ce run) et **ETF SPY/TLT/GLD** (#12695 : 9/9 cellules négatives hors biais), les deux terrains
 log-RV du pipeline ; il est général à la famille M15 (LSTM h=64, window 22) sur la cible log-RV.
 En revanche cette entrée **ne couvre pas** : (1) les autres architectures deep-seq (transformer,
-mamba, PatchTST, iTransformer, MoE régimes, GNN — non re-validées hors biais ; leurs éventuels
-edges restent à décomposer par le même instrument) ; (2) la cible direction/rendement (ladder
+mamba, iTransformer, MoE régimes, GNN — non re-validées hors biais ; leurs éventuels edges
+restent à décomposer par le même instrument). PatchTST est désormais couvert séparément par
+#14081 ci-dessous ; (2) la cible direction/rendement (ladder
 #1409 L4 Decision Transformer, validation XRP DT — cible différente, verdict non touché) ;
 (3) M4 DLinear lui-même, qui **survit** sur BTC (`confirmed` h=1/h=5) mais échoue sur ETF
 (#12695) — l'edge M4 est spécifique au terrain crypto (RV BTC agrège 24 h de bars horaires vs
@@ -294,6 +296,40 @@ uniquement, aucune stratégie dérivée, borne crypto 10 bps non imputée.
   biais uniquement ; décomposition `mse = biais² + var` vérifiée au 1e-12 par seed). Artefacts
   hors repo (`results/` gitignoré) — instrument de persistance : PR #12745.
 - **Verdict §C recentré** : **0/3 BEATS, 0/3 INCONCLUSIVE, 3/3 NO BEATS** — `refuted-de-biased`.
+
+## PatchTST-vol BTC — revalidation hors biais (2026-09-01) — issue #14081
+
+Première revalidation deep-seq hors M15 contre la baseline corrigée issue de #12684/#12734.
+Le harnais `scripts/btc_patchtst.py` réutilise le modèle PatchTST (Nie et al., ICLR 2023), mais
+porte sa propre cible log-RV et son vrai walk-forward expanding : le CLI directionnel historique
+n'appliquait pas réellement son drapeau `--walk-forward`. Le défaut `--device` déclaré deux fois,
+qui faisait échouer ce CLI avant tout entraînement, est corrigé et couvert par un test subprocess.
+
+**Protocole réel** : BTC Bitstamp hourly 2014→2024, 2 278 jours de RV (2018-05-15→2024-08-08),
+SHA-256 `38a4e973955cf9f8527c3096931aa958bfae09580737c909450504b21502c573` ; 5 folds expanding,
+seeds {0,1,7,42}, horizons {1,5,10}, cible = moyenne du log-RV futur. PatchTST borné CPU :
+`seq_len=64`, patch 16, stride 8, `d_model=32`, 4 heads, 1 couche, 10 epochs — 14 145 / 15 045 /
+16 170 paramètres selon l'horizon. Un modèle est ajusté par fold et seed, normalisation et sélection
+du meilleur epoch sur le train uniquement. HAR estime son biais signé sur une queue de calibration
+antérieure au test (`calibrate_bias=True`) : aucun target du bloc test ne calibre sa propre baseline.
+DM porte sur les erreurs recentrées avec `loss_fn="mse"` ; toutes les séries alignées par timestamp
+sont persistées hors dépôt pour recalcul post-hoc.
+
+| Horizon | edge PatchTST vs HAR débiaisé | σ cross-seed | dm_p_median recentré | var_ratio PatchTST/HAR | seeds BEATEN | Verdict |
+|---|---:|---:|---:|---:|---:|---|
+| h=1  | −4,23 %  | 1,32 pt | 0,313  | 1,041 | 0/4 | **INCONCLUSIVE** |
+| h=5  | −16,35 % | 2,38 pt | 0,0366 | 1,159 | 3/4 | **NO BEATS** |
+| h=10 | −22,86 % | 2,76 pt | 0,0253 | 1,220 | 4/4 | **NO BEATS** |
+
+**Biais signés moyens PatchTST / HAR débiaisé** : h=1 −0,00475 / −0,00388 ; h=5 −0,04321 /
+−0,00155 ; h=10 −0,05502 / −0,00242. HAR est effectivement recalé ; l'écart restant vient de la
+variance. PatchTST porte une variance supérieure aux trois horizons (`var_ratio > 1`) et la
+dégradation croît avec l'horizon. Le résultat h=1 ne sépare pas les modèles (4/4 DM inconclusifs) ;
+h=5 et h=10 réfutent l'edge deep-seq, respectivement 3/4 et 4/4 seeds significativement battues.
+
+- **Run** : `python scripts/btc_patchtst.py --device cpu --horizons 1 5 10 --seeds 0 1 7 42 --n-splits 5 --seq-len 64 --patch-len 16 --stride 8 --d-model 32 --n-heads 4 --n-layers 1 --epochs 10 --batch-size 32 --out-json results/btc_patchtst_har_debiased_cpu_20260901.json` — 115,9 s CPU, 12/12 combinaisons, 5 folds chacune.
+- **Vérification** : 12 lignes JSON, 1 890 / 1 870 / 1 845 prédictions alignées par seed selon h ; longueurs erreurs/prédictions/timestamps identiques ; `MSE = biais² + variance` recalculé à tolérance numérique sur chaque ligne.
+- **Verdict §C** : **0/3 BEATS, 1/3 INCONCLUSIVE, 2/3 NO BEATS**. Mesure de prévision uniquement : aucune stratégie de trading ni claim après coûts.
 
 ## M4 DLinear-vol — extension §C ETF (2026-08-23) — Epic #1454
 
