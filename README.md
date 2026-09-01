@@ -42,6 +42,27 @@ MyIA.AI.Notebooks/
 
 Le dépôt rassemble les notebooks pédagogiques, leurs projets Lean 4 compagnons et un corpus de traduction structuré sous `MyIA.AI.Notebooks/`. Le [catalogue généré](COURSE_CATALOG.generated.md) fait foi sur les comptes et statuts par série ; les références Lean et de traduction documentent leurs propres mesures à jour.
 
+### Graphe des prérequis entre séries
+
+Le diagramme ci-dessous encode les liens de prérequis explicites énoncés dans [Parcours recommandés](#parcours-recommandés) — chaque arête y est justifiable par une phrase existante de cette section, aucune relation n'est inventée. IIT et `cross-series` ne figurent pas comme nœuds : la section *Explorer les frontières de recherche* les mentionne sans leur assigner de position de prérequis.
+
+```mermaid
+flowchart LR
+    Search(["Search<br/>algorithmes de recherche"]) --> Sudoku(["Sudoku<br/>résolution multi-paradigme"])
+    Sudoku --> ML(["ML<br/>pipeline supervisé"])
+    ML --> RL(["RL<br/>apprentissage par expérience"])
+    ML --> GenAI(["GenAI<br/>IA générative"])
+    ML --> QuantConnect(["QuantConnect<br/>trading algorithmique"])
+    Probas(["Probas<br/>incertitude & décision"]) --> GameTheory(["GameTheory<br/>agents interactifs"])
+    GameTheory --> RL
+    SymbolicAI(["SymbolicAI<br/>logique, planners, SMT, Lean"]) --> CaseStudies(["CaseStudies<br/>systèmes hybrides"])
+
+    classDef track fill:#f5f5f5,stroke:#333,stroke-width:1px;
+    class Search,Sudoku,ML,RL,Probas,GameTheory,SymbolicAI,CaseStudies,GenAI,QuantConnect track;
+```
+
+Les deux grands itinéraires du dépôt — *« Démarrer sans service externe »* (Search → Sudoku → ML) et *« Raisonner sous incertitude et en interaction »* (Probas → GameTheory → RL) — se rejoignent sur RL, qui hérite des bases algorithmiques (Search) et stratégiques (GameTheory) pour apprendre par expérience. ML se prolonge naturellement vers GenAI et QuantConnect pour le déploiement, tandis que SymbolicAI alimente CaseStudies en briques vérifiables.
+
 ---
 
 ## Parcours recommandés
