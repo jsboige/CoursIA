@@ -657,6 +657,58 @@ _MENTION_VERDICT_REVIEW_NARRATIVE = re.compile(
     r"(?:commit\s+[a-f0-9]+|PR\s*#?\d+|#\d+|pull/\d+)")
 
 
+# #13512 (cf grain) — Position G : verbe de mention + verdict NU dans une
+# fenetre bornee, SANS parenthese obligatoire ni `revue|review` en tete.
+# Cas fondateur (PR #13496) : « @jsboige — reponse au REQUEST_CHANGES Hermes
+# du 2026-08-29T17:33Z sur head `ae88aefc`. » — la forme naturelle d'une
+# reponse a un verdict de reviewer : verbe de mention (`reponse a`/`fix`/
+# `leve`/`corrige`/`traite`/`suite a`/`adresse`), puis le verdict NU (sans
+# parentheses), puis contexte (auteur, date, head SHA). Les positions
+# existantes (A-F) exigent soit des parentheses (A), un titre `##` (B), une
+# prose avec mot-cle inline (C), un verbe de levee + ref pointable (D/E),
+# ou `revue|review` en tete (D-F) — aucune ne couvre cette forme qui est
+# pourtant la plus naturelle.
+#
+# Discrimination vs emission formelle :
+# (1) Le caractere distinctif est la PRESENCE du verbe de MENTION (`reponse a`,
+#     `fix`, `suite a`, `corrige`, `leve`, `adresse`, `traite`, `repondu a`,
+#     `lift`) au lieu du verbe d'EMISSION (`Verdict :`, `Block on`, `declare`,
+#     `reste bloquante`). Le verbe de mention ANNONCE une reponse, le verbe
+#     d'EMISSION pose une reserve : le sens est inverse.
+# (2) La fenetre `[^():\n.]{0,40}?` exclut `:` (donc `Fix : CHANGES_REQUESTED`
+#     ne matche pas — `:` suit immediatement le verbe) et `.` (donc le verdict
+#     doit etre dans la MEME phrase, pas apres une fin de phrase).
+# (3) Verdict `(?-i:[A-Z][A-Z_]{3,})` case-sensitive : pas de capture d'un mot
+#     natural-langue (`commit`, `commit`...) dans la fenetre.
+#
+# Mesure discriminatoire c.840 (corpus de validation) :
+#   TP (match attendu) :
+#     - "@jsboige — reponse au REQUEST_CHANGES Hermes du ..."
+#     - "Voici le fix du CHANGES_REQUESTED pose par Hermes en review."
+#     - "Suite au COMMENT_WITH_CONCERNS du 2026-08-29, voici le diagnostic."
+#     - "Corrige SUSPECT_REGRESSION identifiee sur la branche main."
+#     - "A leve le BLOCKED PR apres validation par ai-01."
+#     - "Repondu au STRUCTURAL_ONLY via le commit 33ef4d6."
+#   FN (ne doit PAS matcher) :
+#     - "CHANGES_REQUESTED: edge case non couvert." (verdict nu en tete)
+#     - "Verdict : CHANGES_REQUESTED sur ce commit." (verdict precede de "Verdict :")
+#     - "Block on CHANGES_REQUESTED jusqu'a validation." (verdict precede de "Block on")
+#     - "Fix : CHANGES_REQUESTED sur le ticket 1234." (`:` suit le verbe)
+#     - "Je declare CHANGES_REQUESTED sur le diff." (verbe d'emission absent de la liste)
+#     - "Le CHANGES_REQUESTED reste bloquante jusqu'a correction." (pas de verbe de mention)
+#
+# La borne 40 chars est calibree pour absorber #13496 (1 char mesuré entre
+# `reponse au` et `REQUEST_CHANGES`) avec une marge de 39 chars. Une borne
+# plus large rouvrirait le risque d'attraper une phrase distincte ; une borne
+# plus etroite echouerait sur des variantes avec contexte immediat (un mot
+# avant le verdict).
+_MENTION_VERDICT_BARE = re.compile(
+    r"(?i)(?:^|[\s,;:(*]|@\S+\s+[—\-]\s+)"
+    r"(?:fix(?:ed|ée?e?)?|corrig\w+|suite\s+[àa]|en\s+r[ée]ponse\s+[àa]"
+    r"|r[ée]ponse\s+[àa]|lev\w+|lift\w*|adress\w+|trait\w+|repondu\s+[àa])"
+    r"[^():\n.]{0,40}?(?-i:([A-Z][A-Z_]{3,}))(?![A-Za-z0-9_])")
+
+
 def _strip_mentioned_verdicts(body: str) -> str:
     """Neutralise les noms de verdict cites en position de mention (#11636, #11744, #11809).
 
@@ -664,7 +716,7 @@ def _strip_mentioned_verdicts(body: str) -> str:
     reste du body sont preserves (les fenetres de `_is_cited` restent
     calibrees sur la vraie position des occurrences survivantes).
     """
-    for pat in (_MENTION_VERDICT, _MENTION_VERDICT_HEADING, _MENTION_VERDICT_INLINE, _MENTION_VERDICT_LIFTED, _MENTION_VERDICT_REVIEW, _MENTION_VERDICT_REVIEW_NARRATIVE):
+    for pat in (_MENTION_VERDICT, _MENTION_VERDICT_HEADING, _MENTION_VERDICT_INLINE, _MENTION_VERDICT_LIFTED, _MENTION_VERDICT_REVIEW, _MENTION_VERDICT_REVIEW_NARRATIVE, _MENTION_VERDICT_BARE):
         body = pat.sub(
             lambda m: m.group(0).replace(m.group(1), " " * len(m.group(1))), body)
     return body
