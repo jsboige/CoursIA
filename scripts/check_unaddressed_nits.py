@@ -702,10 +702,16 @@ _MENTION_VERDICT_REVIEW_NARRATIVE = re.compile(
 # plus large rouvrirait le risque d'attraper une phrase distincte ; une borne
 # plus etroite echouerait sur des variantes avec contexte immediat (un mot
 # avant le verdict).
+# #13512 fondateur — verbes resserres (Hermes demande 2/2, desiderata) :
+# `lev\w+` devient `lev(?:e|é|ée|er|ons)\b` (exclut Levenshtein/lvgl/leve
+# arabe/...) et `trait\w+` devient `trait(?:e|é|er)\b` (exclut trait-/traits/
+# traitment/...). Les autres verbes de mention gardent leur `\w+` (leur
+# variabilite naturelle est plus large : `corrige`/`corrigea`/`corrigeant`,
+# `fix`/`fixe`/`fixer`, etc.).
 _MENTION_VERDICT_BARE = re.compile(
     r"(?i)(?:^|[\s,;:(*]|@\S+\s+[—\-]\s+)"
     r"(?:fix(?:ed|ée?e?)?|corrig\w+|suite\s+[àa]|en\s+r[ée]ponse\s+[àa]"
-    r"|r[ée]ponse\s+[àa]|lev\w+|lift\w*|adress\w+|trait\w+|repondu\s+[àa])"
+    r"|r[ée]ponse\s+[àa]|lev(?:e|é|ée|er|ons)\b|lift\w*|adress\w+|trait(?:e|é|er)\b|repondu\s+[àa])"
     r"[^():\n.]{0,40}?(?-i:([A-Z][A-Z_]{3,}))(?![A-Za-z0-9_])")
 
 
@@ -715,9 +721,54 @@ def _strip_mentioned_verdicts(body: str) -> str:
     Remplace le verdict par des espaces de meme longueur : les offsets du
     reste du body sont preserves (les fenetres de `_is_cited` restent
     calibrees sur la vraie position des occurrences survivantes).
+
+    Position G (#14070) beneficie du garde anti-negation : un match
+    Position G dont la fenetre 15 chars avant/apres contient un token
+    `_LIFT_NEGATION_TOKENS` (`ne...pas`, `plus`, `jamais`, `non`, `aucun`,
+    `sans`, `n'est`, `rien`) est preserve (le verdict reste cite dans
+    le body — l'organe `classify()` peut alors le voir comme un nit non
+    leve). Voie canonique d'application : `_lift_is_negated(window_before,
+    window_after)`, symetrie exacte avec la logique existante sur
+    `_LIFT_MARKERS`. Les 6 autres positions restent en `sub` iso-longueur
+    direct (elles n'ont pas de garde anti-negation homologue — leur
+    discrimination par contexte est suffisante).
     """
-    for pat in (_MENTION_VERDICT, _MENTION_VERDICT_HEADING, _MENTION_VERDICT_INLINE, _MENTION_VERDICT_LIFTED, _MENTION_VERDICT_REVIEW, _MENTION_VERDICT_REVIEW_NARRATIVE, _MENTION_VERDICT_BARE):
+    # Phase 1 : sub iso-longueur pour les 6 patterns historiques (pas de
+    # negation — leur discrimination par contexte est suffisante).
+    for pat in (_MENTION_VERDICT, _MENTION_VERDICT_HEADING, _MENTION_VERDICT_INLINE, _MENTION_VERDICT_LIFTED, _MENTION_VERDICT_REVIEW, _MENTION_VERDICT_REVIEW_NARRATIVE):
         body = pat.sub(
+            lambda m: m.group(0).replace(m.group(1), " " * len(m.group(1))), body)
+    # Phase 2 : Position G avec garde anti-negation (Hermes demande 1/2,
+    # PR #14070). Approche `finditer` car le verdict-match n'est pas en
+    # bord de phrase (la mention `traite le REQUEST_CHANGES` met le
+    # verdict a 10-20 chars du verbe de mention). On cherche un token de
+    # negation n'importe ou dans la window 15 chars avant/apres, avec
+    # strip des separateurs de bord (coherence avec `_lift_is_negated`
+    # qui regarde les bords).
+    # NOTE : on n'utilise PAS `_lift_is_negated` directement ici — ce
+    # helper regarde uniquement les BORDS de la window (le token `pas`
+    # doit finir la window avant OU commencer la window apres). Or
+    # Position G matche la mention `... pas traite le REQUEST_CHANGES`
+    # ou `pas` est AU DEBUT de win_before, pas en bord : helper naturel
+    # mais inadapte. Helper dedie ci-dessous.
+    negates_spans: list[tuple[int, int]] = []
+    for m in _MENTION_VERDICT_BARE.finditer(body):
+        verdict_start = m.start(1)
+        verdict_end = m.end(1)
+        win_before = body[max(0, verdict_start - 15):verdict_start]
+        win_after = body[verdict_end:verdict_end + 15]
+        if _bare_mention_is_negated(win_before, win_after):
+            negates_spans.append((m.start(), m.end()))
+    if negates_spans:
+        def _bare_sub(m: re.Match[str]) -> str:
+            for s, e in negates_spans:
+                if m.start() == s and m.end() == e:
+                    return m.group(0)  # garde le verdict intact (negated)
+            return m.group(0).replace(m.group(1), " " * len(m.group(1)))
+        body = _MENTION_VERDICT_BARE.sub(_bare_sub, body)
+    else:
+        # Aucun negation detectee — fast path iso-longueur comme avant.
+        body = _MENTION_VERDICT_BARE.sub(
             lambda m: m.group(0).replace(m.group(1), " " * len(m.group(1))), body)
     return body
 
@@ -1097,6 +1148,36 @@ def _lift_is_negated(window_before: str, window_after: str) -> bool:
             return True
         # Token apres : match \btok\b en tete de fenetre (apres strip).
         if head.startswith(tok + " ") or head == tok:
+            return True
+    return False
+
+
+def _bare_mention_is_negated(window_before: str, window_after: str) -> bool:
+    """Le verdict Position G est-il dans une negation directe ?
+
+    Variante de `_lift_is_negated` adaptee a Position G (`#14070`) : la
+    mention peut mettre le token de negation N'IMPORTE OU dans la window
+    (ex. « pas traite le REQUEST_CHANGES » met `pas` au DEBUT de la
+    window avant, pas en bord). `_lift_is_negated` regarde les BORDS
+    uniquement (helper naturel pour `_LIFT_MARKERS` ou le token de
+    negation precede/suit immediatement le marqueur). Helper dedie
+    pour Position G : cherche un token `_LIFT_NEGATION_TOKENS` n'importe
+    ou dans la window combinee (avant + apres), avec strip des
+    separateurs de bord.
+
+    Meme semantique que `_lift_is_negated` (meme ensemble de tokens),
+    seule la fenetre de scan change. Symetrie preservee.
+    """
+    combined = (window_before + " " + window_after).lower()
+    combined = _unaccent(combined)
+    # Token de negation entoure de non-alphanumerique (`\b` word boundary
+    # gere implicitement les separateurs ASCII : espace, virgule, point,
+    # point d'interrogation, deux-points, point-virgule, point
+    # d'exclamation, apostrophe droite). Coherent avec le
+    # `rstrip(".,;:!?")` de `_lift_is_negated` — la ponctuation est une
+    # bordure valide de token.
+    for tok in _LIFT_NEGATION_TOKENS:
+        if re.search(rf"\b{re.escape(tok)}\b", combined):
             return True
     return False
 

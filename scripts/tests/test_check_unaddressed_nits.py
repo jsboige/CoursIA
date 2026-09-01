@@ -3326,3 +3326,38 @@ def test_13512_sonde_helper_position_g_retourne_pas_emission_nue():
         f"Position G a capture a tort CHANGES_REQUESTED dans : {body!r}\n"
         f"Stripped result: {stripped!r}"
     )
+
+
+# #14070 — garde anti-negation Position G (Hermes demande 1/2). Le verbe
+# de mention + verdict NU matche, mais la negation directe (`je n'ai pas
+# traite`, `non pas`, `ne...plus`, `jamais leve`) doit PRESERVER le verdict
+# dans le body (le verdict reste cite → classify le voit comme un nit non
+# leve). Sans ce garde, une phrase « Je n'ai pas leve le REQUEST_CHANGES »
+# serait neutralisee a tort (le reviewer pretend l'avoir leve alors qu'il
+# dit explicitement qu'il NE l'a PAS leve).
+
+
+def test_14070_position_g_neutralise_pas_mention_negatee_pas():
+    """#14070 FN-safety : Position G avec negation `pas` (15 chars avant le
+    verdict) doit PRESERVER le verdict dans le body. Le reviewer ecrit
+    qu'il N'A PAS traite le REQUEST_CHANGES — c'est un nit non leve."""
+    body = "Je n'ai pas traite le REQUEST_CHANGES, il reste valable."
+    stripped = mod._strip_mentioned_verdicts(mod._strip_quoted(body))
+    # Le verdict doit rester vivant (Position G aurait capture si on n'avait
+    # pas cable _lift_is_negated sur Position G).
+    assert "REQUEST_CHANGES" in stripped, (
+        f"Position G a neutralise a tort REQUEST_CHANGES dans : {body!r}\n"
+        f"Stripped result: {stripped!r}"
+    )
+
+
+def test_14070_position_g_neutralise_pas_mention_negatee_jamais():
+    """#14070 FN-safety : Position G avec negation `jamais` doit PRESERVER
+    le verdict. Forme naturelle : 'On fix CHANGES_REQUESTED ? Jamais, la CI
+    est rouge.' Le reviewer evoque le verdict sans l'avoir leve."""
+    body = "On fix CHANGES_REQUESTED ? Jamais, la CI est rouge."
+    stripped = mod._strip_mentioned_verdicts(mod._strip_quoted(body))
+    assert "CHANGES_REQUESTED" in stripped, (
+        f"Position G a neutralise a tort CHANGES_REQUESTED dans : {body!r}\n"
+        f"Stripped result: {stripped!r}"
+    )
