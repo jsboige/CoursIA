@@ -15,7 +15,7 @@ project:
     # (regeneree par scripts/regen_quarto_render.py) car Quarto 1.7
     # n'etend pas le glob **/README.md sur les sous-repertoires.
     # Archives et libs vendored EXCLUES (history interne, non pedagogique).
-    # 449 READMEs (racine + arborescence, hors archives).
+    # 450 READMEs (racine + arborescence, hors archives).
     - "README.md"
     - "docker-configurations/docs/README.md"
     - "docker-configurations/notebook-runner/README.md"
@@ -113,6 +113,7 @@ project:
     - "MyIA.AI.Notebooks/GenAI/README.md"
     - "MyIA.AI.Notebooks/GenAI/SemanticKernel/aspire-otel/README.md"
     - "MyIA.AI.Notebooks/GenAI/SemanticKernel/README.md"
+    - "MyIA.AI.Notebooks/GenAI/shared/helpers/README.md"
     - "MyIA.AI.Notebooks/GenAI/Texte/LLMs-Locaux-Serving/README.md"
     - "MyIA.AI.Notebooks/GenAI/Texte/README.md"
     - "MyIA.AI.Notebooks/GenAI/tutorials/README.md"
@@ -468,11 +469,12 @@ project:
     # Notebooks rendus en HTML (EPIC #10921, pilote Search #10923).
     # Liste explicite — globs non etendus en Quarto 1.7.
     # Execution desactivee + echo: true au niveau racine (_quarto.yml).
-    # 727 notebooks (sous-arbres: MyIA.AI.Notebooks/CaseStudies/, MyIA.AI.Notebooks/GameTheory/, MyIA.AI.Notebooks/GenAI/Aspire/, MyIA.AI.Notebooks/GenAI/Audio/, MyIA.AI.Notebooks/GenAI/CaseStudies/, MyIA.AI.Notebooks/GenAI/FallacyDetection/, MyIA.AI.Notebooks/GenAI/FineTuning/, MyIA.AI.Notebooks/GenAI/Image/, MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/, MyIA.AI.Notebooks/GenAI/PostTraining/, MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/, MyIA.AI.Notebooks/GenAI/SemanticKernel/, MyIA.AI.Notebooks/GenAI/Texte/, MyIA.AI.Notebooks/GenAI/Vibe-Coding/, MyIA.AI.Notebooks/GenAI/Video/, MyIA.AI.Notebooks/IIT/, MyIA.AI.Notebooks/ML/, MyIA.AI.Notebooks/Probas/, MyIA.AI.Notebooks/RL/, MyIA.AI.Notebooks/Search/, MyIA.AI.Notebooks/Sudoku/, MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/, MyIA.AI.Notebooks/SymbolicAI/Lean/, MyIA.AI.Notebooks/SymbolicAI/Planners/, MyIA.AI.Notebooks/SymbolicAI/SMT/, MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/, MyIA.AI.Notebooks/SymbolicAI/SmartContracts/, MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/, MyIA.AI.Notebooks/SymbolicAI/Tweety/, MyIA.AI.Notebooks/cross-series/).
+    # 733 notebooks (sous-arbres: MyIA.AI.Notebooks/CaseStudies/, MyIA.AI.Notebooks/GameTheory/, MyIA.AI.Notebooks/GenAI/Aspire/, MyIA.AI.Notebooks/GenAI/Audio/, MyIA.AI.Notebooks/GenAI/CaseStudies/, MyIA.AI.Notebooks/GenAI/FallacyDetection/, MyIA.AI.Notebooks/GenAI/FineTuning/, MyIA.AI.Notebooks/GenAI/Image/, MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/, MyIA.AI.Notebooks/GenAI/PostTraining/, MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/, MyIA.AI.Notebooks/GenAI/SemanticKernel/, MyIA.AI.Notebooks/GenAI/Texte/, MyIA.AI.Notebooks/GenAI/Vibe-Coding/, MyIA.AI.Notebooks/GenAI/Video/, MyIA.AI.Notebooks/IIT/, MyIA.AI.Notebooks/ML/, MyIA.AI.Notebooks/Probas/, MyIA.AI.Notebooks/RL/, MyIA.AI.Notebooks/Search/, MyIA.AI.Notebooks/Sudoku/, MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/, MyIA.AI.Notebooks/SymbolicAI/Lean/, MyIA.AI.Notebooks/SymbolicAI/Planners/, MyIA.AI.Notebooks/SymbolicAI/SMT/, MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/, MyIA.AI.Notebooks/SymbolicAI/SmartContracts/, MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/, MyIA.AI.Notebooks/SymbolicAI/Tweety/, MyIA.AI.Notebooks/cross-series/).
     - "MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb"
     - "MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb"
     - "MyIA.AI.Notebooks/cross-series/socle-metadata-driven/Socle-MetadataDriven-Csharp.ipynb"
     - "MyIA.AI.Notebooks/GameTheory/GameTheory-01-Setup.ipynb"
+    - "MyIA.AI.Notebooks/GameTheory/GameTheory-02-NormalForm-Csharp.ipynb"
     - "MyIA.AI.Notebooks/GameTheory/GameTheory-02-NormalForm.ipynb"
     - "MyIA.AI.Notebooks/GameTheory/GameTheory-03-Topology2x2-Csharp.ipynb"
     - "MyIA.AI.Notebooks/GameTheory/GameTheory-03-Topology2x2.ipynb"
@@ -755,6 +757,7 @@ project:
     - "MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb"
     - "MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.1-Workflow-ML.ipynb"
     - "MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.10-Optimisation-Hyperparametres.ipynb"
+    - "MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.11-Regularisation-Sparse-LASSO.ipynb"
     - "MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.12-Donnees-Desequilibrees.ipynb"
     - "MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.13-Analyse-Erreurs.ipynb"
     - "MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.2-Descente-de-gradient.ipynb"
@@ -913,6 +916,9 @@ project:
     - "MyIA.AI.Notebooks/Search/Applications/Hybrid/App-9-EdgeDetection.ipynb"
     - "MyIA.AI.Notebooks/Search/Applications/Hybrid/App-9b-EdgeDetection-CSharp.ipynb"
     - "MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb"
+    - "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX-Csharp.ipynb"
+    - "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb"
+    - "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02c-QuikGraph.ipynb"
     - "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09b-SpuriousMinima.ipynb"
     - "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09c-CombinatorialDiscrepancy.ipynb"
     - "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09d-Lean-Discrepancy-Komlos.ipynb"
@@ -921,9 +927,10 @@ project:
     - "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-Csharp.ipynb"
     - "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata.ipynb"
     - "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics.ipynb"
-    - "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX.ipynb"
     - "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-17-Empirical-Algorithm-Selection.ipynb"
+    - "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed-Csharp.ipynb"
     - "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb"
+    - "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-3-Informed-Csharp.ipynb"
     - "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-3-Informed.ipynb"
     - "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-4-LocalSearch-Csharp.ipynb"
     - "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-4-LocalSearch.ipynb"
