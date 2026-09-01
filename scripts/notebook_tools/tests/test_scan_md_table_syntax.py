@@ -2,11 +2,12 @@
 syntax defect detector (#10097, sub-issue of #3966).
 
 Tests cover:
-  - the core ``detect_md_table_syntax`` line-list API (the 4 pathologies:
-    COL_MISMATCH, NO_SEP, NO_BLANK_BEFORE, NO_BLANK_AFTER, each positive + clean);
+  - the core ``detect_md_table_syntax`` line-list API and its table pathologies;
   - the GFM-correct column counter (``_column_count``): backtick code spans,
     escaped ``\\|``, inline math ``$...$``, and borderless rows are NOT false
     positives;
+  - notebook-only ``MATH_SPAN_PIPE`` detection with controls for pipe-free LaTeX,
+    escaped conditionals, currency columns, and regular Markdown scope;
   - the fence-aware block grouping (pipes inside ``` blocks are ignored);
   - the notebook / markdown walkers (``scan_notebook`` / ``scan_markdown``);
   - the CLI (``--json`` shape, ``--check`` exit codes, empty-scan exit 2).
@@ -314,6 +315,120 @@ class TestDetectCodeSpanPipe:
         assert [x for x in f if x["pathology"] == "CODE_SPAN_PIPE"] != []
 
 
+class TestDetectMathSpanPipe:
+    """MATH_SPAN_PIPE: raw absolute-value bars break notebook table rendering."""
+
+    def test_raw_pipe_in_math_span_flagged_for_notebooks(self):
+        lines = [
+            "| Objet | Definition | Mesure |",
+            "|---|---|---|",
+            "| $r$ | rapport $|F_B| / |A|$ | ratio |",
+        ]
+        findings = detect_md_table_syntax(
+            lines, detect_math_span_pipes=True)
+        math_findings = [
+            item for item in findings
+            if item["pathology"] == "MATH_SPAN_PIPE"
+        ]
+        assert len(math_findings) == 1
+        assert math_findings[0]["line"] == 3
+        assert [
+            item for item in findings
+            if item["pathology"] == "COL_MISMATCH"
+        ] == []
+
+    def test_pipe_free_latex_not_flagged(self):
+        lines = [
+            "| Objet | Definition | Mesure |",
+            "|---|---|---|",
+            "| $r$ | rapport $\\lvert F_B\\rvert / \\lvert A\\rvert$ | ratio |",
+        ]
+        findings = detect_md_table_syntax(
+            lines, detect_math_span_pipes=True)
+        assert [
+            item for item in findings
+            if item["pathology"] == "MATH_SPAN_PIPE"
+        ] == []
+
+    def test_currency_columns_not_flagged(self):
+        lines = [
+            "| Modele | Cout | Estimation |",
+            "|---|---|---|",
+            "| OpenAI tts-1 | $15.00 | ~$0.75 |",
+        ]
+        findings = detect_md_table_syntax(
+            lines, detect_math_span_pipes=True)
+        assert [
+            item for item in findings
+            if item["pathology"] == "MATH_SPAN_PIPE"
+        ] == []
+
+    def test_currency_header_not_flagged(self):
+        lines = [
+            "| Modele | Input ($/1M tokens) | Output ($/1M tokens) |",
+            "|---|---|---|",
+            "| local | 0 | 0 |",
+        ]
+        findings = detect_md_table_syntax(
+            lines, detect_math_span_pipes=True)
+        assert [
+            item for item in findings
+            if item["pathology"] == "MATH_SPAN_PIPE"
+        ] == []
+
+    def test_escaped_math_pipe_not_flagged(self):
+        lines = [
+            "| Objet | Definition |",
+            "|---|---|",
+            "| politique | $\\pi(a\\|s)$ |",
+        ]
+        findings = detect_md_table_syntax(
+            lines, detect_math_span_pipes=True)
+        assert [
+            item for item in findings
+            if item["pathology"] == "MATH_SPAN_PIPE"
+        ] == []
+
+    def test_regular_markdown_scope_stays_clean(self, tmp_path):
+        path = tmp_path / "table.md"
+        path.write_text(
+            "| Objet | Definition | Mesure |\n"
+            "|---|---|---|\n"
+            "| $r$ | rapport $|F_B| / |A|$ | ratio |\n",
+            encoding="utf-8",
+        )
+        result = scan_markdown(path)
+        assert [
+            item for item in result["findings"]
+            if item["pathology"] == "MATH_SPAN_PIPE"
+        ] == []
+
+    def test_notebook_scope_reports_math_pipe(self, tmp_path):
+        path = tmp_path / "table.ipynb"
+        path.write_text(json.dumps({
+            "cells": [{
+                "cell_type": "markdown",
+                "metadata": {},
+                "source": [
+                    "| Objet | Definition | Mesure |\n",
+                    "|---|---|---|\n",
+                    "| $r$ | rapport $|F_B| / |A|$ | ratio |\n",
+                ],
+            }],
+            "metadata": {},
+            "nbformat": 4,
+            "nbformat_minor": 5,
+        }), encoding="utf-8")
+        result = scan_notebook(path)
+        findings = [
+            item for item in result["findings"]
+            if item["pathology"] == "MATH_SPAN_PIPE"
+        ]
+        assert len(findings) == 1
+        assert findings[0]["cell_index"] == 0
+        assert findings[0]["line"] == 3
+
+
 class TestDetectNoSep:
     def test_three_pipe_lines_no_sep_flagged(self):
         # 3+ pipe-lines, no |---| separator -> GFM renders as <pre>, not a table.
@@ -513,6 +628,86 @@ class TestFindTableBlocks:
         blocks = _find_table_blocks(lines)
         assert len(blocks) == 1
         assert blocks[0]["has_sep"] is True
+
+
+# ---------------------------------------------------------------------------
+# ORPHAN_TABLE_ROW -- fence awareness (c.773, po-2025 adjoint FP on #13843)
+# ---------------------------------------------------------------------------
+
+class TestOrphanTableRowFenceAware:
+    def test_orphan_after_prose_break_still_flagged(self):
+        # Nominal positive case: a pipe-line after an image/italic break IS an
+        # orphan (c.770/c.771 contract). Fix must NOT regress this.
+        lines = [
+            "| A | B |",
+            "|---|---|",
+            "| 1 | 2 |",
+            "",
+            "*Figure extraite de foo.png*",
+            "",
+            "| 3 | 4 |",
+        ]
+        findings = detect_md_table_syntax(lines)
+        assert any(
+            f["pathology"] == "ORPHAN_TABLE_ROW" and f["line"] == 7
+            for f in findings
+        ), f"expected ORPHAN_TABLE_ROW at L7, got {findings}"
+
+    def test_orphan_in_bash_fence_skipped(self):
+        # The c.773 finding: a pipe-line inside a ```bash``` block (e.g. a
+        # pipeline `cat ... | grep ... | wc -l`) is code, not a table
+        # continuation. Must NOT be flagged as ORPHAN_TABLE_ROW.
+        lines = [
+            "| A | B |",
+            "|---|---|",
+            "| 1 | 2 |",
+            "",
+            "```bash",
+            "cat data.txt | grep foo | wc -l",
+            "```",
+            "",
+            "| 3 | 4 |",  # this IS an orphan (after the fence)
+        ]
+        findings = detect_md_table_syntax(lines)
+        # Only the L9 orphan is reported; L6 fence line is silently skipped.
+        orphan_lines = [f["line"] for f in findings if f["pathology"] == "ORPHAN_TABLE_ROW"]
+        assert orphan_lines == [9], (
+            f"expected only orphan at L9 (fence L6 must be skipped), got {orphan_lines}"
+        )
+
+    def test_orphan_blocked_by_heading(self):
+        # A heading between the table and the candidate orphan means a NEW
+        # section; the pipe-line that follows starts a new table, not an
+        # orphan continuation. Pre-existing guard (c.771 HEADING_RE), kept.
+        lines = [
+            "| A | B |",
+            "|---|---|",
+            "| 1 | 2 |",
+            "",
+            "### Strate 1",
+            "| Document | Contenu |",  # start of a new table, not orphan
+        ]
+        findings = detect_md_table_syntax(lines)
+        assert not any(
+            f["pathology"] == "ORPHAN_TABLE_ROW" for f in findings
+        ), f"heading must break orphan scan, got {findings}"
+
+    def test_orphan_blocked_by_redeclared_header(self):
+        # If the candidate is itself followed by a separator row, it is the
+        # start of a NEW table -- pre-existing guard (c.771 SEP_ROW_RE), kept.
+        lines = [
+            "| A | B |",
+            "|---|---|",
+            "| 1 | 2 |",
+            "",
+            "| X | Y |",      # new table starts here
+            "|---|---|",
+            "| 9 | 9 |",
+        ]
+        findings = detect_md_table_syntax(lines)
+        assert not any(
+            f["pathology"] == "ORPHAN_TABLE_ROW" for f in findings
+        ), f"redeclared header must break orphan scan, got {findings}"
 
 
 # ---------------------------------------------------------------------------
