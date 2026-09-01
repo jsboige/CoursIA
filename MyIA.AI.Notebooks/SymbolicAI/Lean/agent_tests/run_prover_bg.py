@@ -15,6 +15,11 @@ Output format (parseable by harvest scripts):
     [BG] TRACE_PATH=<absolute path>
     [BG] TREE_LOCK <path>          (advisory lock taken, See #6790)
     [BG] LOCKED <reason>           (another prover holds the tree -> exit 3)
+    [BG] CALIBRATION_STUB theorem=<name> line=<n>   (#1453 sorry_replacement
+                                   target: approved proof stubbed in place,
+                                   original restored on exit — paired with
+                                   CALIBRATION_RESTORE)
+    [BG] CALIBRATION_RESTORE approved proof restored
     [BG] DO_NOT_TARGET_REDIRECT requested_line=N -> M   (--line hit a DO NOT TARGET region; auto-redirected to CURRENT TARGET)
     [BG] DO_NOT_TARGET_REFUSED requested_line=N ...      (no safe CURRENT TARGET -> exit 4, workflow never launched)
     [BG] EXIT code=<rc>            (always printed, even on exception path)
@@ -66,7 +71,10 @@ from target_guard import (  # noqa: E402
 from prover.config import DEMOS  # noqa: E402
 from prover.provers import MultiAgentSorryProver  # noqa: E402
 from prover.trace import TraceLogger  # noqa: E402
-from prover.lean_utils import count_real_sorries  # noqa: E402  (#9402: real-token counter)
+from prover.lean_utils import (  # noqa: E402  (#9402: real-token counter)
+    count_real_sorries,
+    stub_theorem_proof,
+)
 from prover.tree_lock import (  # noqa: E402
     acquire_tree_lock,
     find_lean_project_root,
@@ -135,6 +143,8 @@ async def main(args: argparse.Namespace) -> int:
     _bg(
         f"PROVIDER reasoning={args.provider} fast={args.local_provider} "
         f"tactic={getattr(args, 'tactic_provider', None) or 'openrouter'} "
+        f"search={getattr(args, 'search_provider', None) or 'p6_routing'} "
+        f"critic={getattr(args, 'critic_provider', None) or 'p6_routing'} "
         f"director={args.director_provider or 'none'} "
         f"max_iter={args.max_iter} workflow_timeout={args.workflow_timeout}s"
     )
@@ -161,6 +171,51 @@ async def main(args: argparse.Namespace) -> int:
 async def _run_locked(
     args: argparse.Namespace, demo: dict, file_target: str
 ) -> int:
+    """Run body under the tree lock, with #1453 calibration preparation.
+
+    A DEMO declaring ``sorry_type: sorry_replacement`` targets scaffolding
+    committed WITH its approved proof — that proof is the ground truth the
+    prover must reproduce, not a state to keep. Without this step the prover's
+    pre-flight counts 0 real sorry, exits ``already_solved`` in 0.1 s and the
+    run reports ``success=True`` with 0 iterations: the whole Conway
+    calibration gradient (DEMOS 39-52) was dead-on-arrival this way (measured
+    firsthand 2026-09-01 on demo 39, #1453).
+
+    The stub is written in place (the tree lock already serialises in-place
+    mutation, #6790) and the original bytes are restored in ``finally`` —
+    bytes I/O, no newline translation.
+    """
+    calibration_target = None
+    if (
+        demo.get("sorry_type") == "sorry_replacement"
+        and demo.get("file")
+        and demo.get("theorem_name")
+        and _peek_sorry_count(demo["file"]) == 0
+    ):
+        target_path = Path(demo["file"])
+        original = target_path.read_bytes()
+        stubbed = stub_theorem_proof(
+            original.decode("utf-8"), demo["theorem_name"]
+        )
+        target_path.write_bytes(stubbed.encode("utf-8"))
+        calibration_target = (target_path, original)
+        _bg(
+            f"CALIBRATION_STUB theorem={demo['theorem_name']} "
+            f"line={demo.get('line')} - approved proof stubbed to sorry, "
+            f"original restored on exit"
+        )
+
+    try:
+        return await _run_calibration_ready(args, demo, file_target)
+    finally:
+        if calibration_target is not None:
+            calibration_target[0].write_bytes(calibration_target[1])
+            _bg("CALIBRATION_RESTORE approved proof restored")
+
+
+async def _run_calibration_ready(
+    args: argparse.Namespace, demo: dict, file_target: str
+) -> int:
     """The original run body, executed while holding the tree lock."""
     pre_sorry = _peek_sorry_count(file_target) if demo.get("file") else None
     if pre_sorry is not None:
@@ -177,6 +232,8 @@ async def _run_locked(
         director_provider=args.director_provider,
         coordinator_provider=getattr(args, "coordinator_provider", None),
         tactic_provider=getattr(args, "tactic_provider", None),
+        search_provider=getattr(args, "search_provider", None),
+        critic_provider=getattr(args, "critic_provider", None),
     )
 
     t0 = time.time()
@@ -202,6 +259,10 @@ async def _run_locked(
 
     _bg(f"RESULT_KEYS {sorted(result.keys())}")
     _bg(f"RESULT_SUCCESS {result.get('success')}")
+    # #1453: success=True with already_solved=True and 0 iterations is a NO-OP
+    # exit, not a proof — make the distinction parseable for harvest scripts
+    # instead of letting every already-solved exit read as a proven target.
+    _bg(f"RESULT_ALREADY_SOLVED {bool(result.get('already_solved'))}")
     _bg(f"RESULT_BEST_SORRY {result.get('best_sorry')}")
     _bg(f"RESULT_ITERATIONS {result.get('iterations')}")
     _bg(f"RESULT_ATTEMPTS {result.get('attempts')}")
@@ -244,6 +305,17 @@ def parse_args() -> argparse.Namespace:
                    help="Provider for TacticAgent (default: openrouter). "
                         "#1289: GLM-5.1 (zai) times out at 1680s on tactic generation; "
                         "GPT-5.5 via openrouter expected ~60-120s.")
+    p.add_argument("--search-provider", default=None,
+                   help="Provider for SearchAgent. #7477 P6 routing sends "
+                        "fast-class agents (Search/Critic) via the p6_routing "
+                        "map, typically to 'local' — --local-provider does not "
+                        "reach them, and on a lane whose local vLLM is "
+                        "unreachable (isolated /24, #9976) every run dies at "
+                        "SearchAgent creation with Missing credentials. This "
+                        "exposes the override the prover class already accepts "
+                        "(measured firsthand on demo 39, #1453).")
+    p.add_argument("--critic-provider", default=None,
+                   help="Provider for CriticAgent (see --search-provider).")
     p.add_argument("--force-lock", action="store_true",
                    help="Break an existing .prover.lock even if its holder "
                         "looks alive or is on a foreign host (WSL<->Windows). "
