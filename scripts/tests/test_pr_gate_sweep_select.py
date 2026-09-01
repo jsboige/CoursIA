@@ -162,11 +162,55 @@ def test_two_gate_legs_and_not_latest_wins(tmp_path):
     assert out.strip() == "107 deadbeef false"
 
 
-def test_other_latest_cancelled_never_greenwashed(tmp_path):
-    """Asymetrie : un cancelled TOUT RECENT sur un autre check n'est pas vert ->
-    abstention (une interruption reelle ne se maquille pas)."""
+def test_other_latest_cancelled_is_candidate(tmp_path):
+    """#13978 -- INVERSION d'acceptance, datee 2026-09-01.
+
+    L'acceptance 5 d'origine (#11862) abstenait sur un `cancelled` frais porte
+    par un AUTRE check, au motif qu'une "interruption reelle ne se maquille
+    pas". Sa premisse -- un cancelled frais est une interruption RARE -- est
+    tombee : sous `cancel-in-progress: true` sur les workflows advisory, c'est
+    l'etat STATIONNAIRE de toute PR ayant recu deux pushes.
+
+    Mesure du sweep 33459621864 (2026-09-01T01:40, 71 PRs ouvertes) : sur 42
+    exclusions nommees, 16 -- 38 % -- tenaient a des `cancelled` SEULS, dont 13
+    au seul advisory `List open-PR path collisions`. Ce meme advisory annule
+    coexiste avec un `PR gate: SUCCESS` sur des PRs MERGEES (#13916, #13860) :
+    le filtre etait strictement plus strict que le gate dont il existe pour
+    re-rendre le verdict.
+
+    L'intention d'origine tient toujours, et c'est pourquoi l'inversion est
+    sure : le sweep ne merge rien -- il RELANCE le gate, qui re-lit l'etat live
+    et conclura FAIL si un constituant est reellement rouge. Le verdict reste
+    rendu par le gate.
+    """
     cancelled_new = ("Hermes review", "completed", "cancelled", "2026-01-01T11:00:00Z")
     out = _run_selector(tmp_path, [_pr(108, [GATE_FAIL, cancelled_new])])
+    assert out.strip() == "108 deadbeef false"
+
+
+def test_other_cancelled_plus_failure_still_abstains(tmp_path):
+    """CONTROLE POSITIF de l'inversion ci-dessus (#13978).
+
+    Sans lui, le correctif serait indiscernable d'un filtre debranche : il faut
+    montrer qu'un `failure` frais exclut TOUJOURS, y compris quand un
+    `cancelled` l'accompagne. Si ce test passe au vert en meme temps que
+    l'inversion, c'est que `red_others` ne filtre plus rien du tout.
+    """
+    cancelled_new = ("Hermes review", "completed", "cancelled", "2026-01-01T11:00:00Z")
+    failure_new = ("Papermill ratchet", "completed", "failure", "2026-01-01T11:00:00Z")
+    out = _run_selector(tmp_path, [_pr(109, [GATE_FAIL, cancelled_new, failure_new])])
+    assert out.strip() == ""
+
+
+def test_other_startup_failure_still_abstains(tmp_path):
+    """#13978 -- l'exemption porte sur UNE conclusion, pas sur le principe.
+
+    `startup_failure` (et toute conclusion future inconnue) doit continuer
+    d'exclure : le correctif ajoute `cancelled` a un ensemble non-bloquant, il
+    ne remplace pas le filtre par une liste blanche de bloquants.
+    """
+    startup = ("Hermes review", "completed", "startup_failure", "2026-01-01T11:00:00Z")
+    out = _run_selector(tmp_path, [_pr(110, [GATE_FAIL, startup])])
     assert out.strip() == ""
 
 
@@ -178,6 +222,11 @@ def test_selector_has_cancelled_in_red_not_green(tmp_path):
     assert m and "cancelled" in m.group(0)
     m = re.search(r'GREEN = \{[^}]*\}', SELECTOR)
     assert m and "cancelled" not in m.group(0)
+    # #13978 : le cote "autres checks" doit exempter `cancelled` EXPLICITEMENT.
+    # Un retour au complement nu de GREEN (`not in GREEN`) re-excluerait 38 %
+    # du pool bloque sans qu'aucun test d'acceptance ne rougisse.
+    assert 'OTHERS_NOT_BLOCKING = GREEN | {"cancelled"}' in SELECTOR
+    assert "not in OTHERS_NOT_BLOCKING" in SELECTOR
 
 
 # --- #11808 : le repli des check-runs par NOM fusionne des workflows homonymes ---

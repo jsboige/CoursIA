@@ -88,7 +88,11 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import grain_tag as gt  # noqa: E402
-from variation_light_cap import LIGHT_GENRES, canonicalize_genre  # noqa: E402
+from variation_light_cap import (  # noqa: E402
+    canonicalize_genre,
+    genre_counts_light,
+    genre_resolves,
+)
 
 
 # --- G-VAR-3 override (#11708) --------------------------------------------
@@ -107,7 +111,14 @@ from variation_light_cap import LIGHT_GENRES, canonicalize_genre  # noqa: E402
 #   * it NAMES the replacement genre the lane takes next, and that genre
 #     DIFFERS from the blocked one -- otherwise the override would waive the
 #     rule while promising to break it again.
-COORDINATOR_LOGINS = frozenset({"myia-ai-01", "jsboige"})
+#
+# #13730 mirror of #13316: `jsboige` is the shared push identity of every
+# lane, not a coordinator. Keeping it here turns the G-VAR-3 ban into a
+# permission the lane can grant itself -- the exact opposite of the
+# non-vacuity clause above. The other organ (`check_unaddressed_nits`,
+# LIFT_OVERRIDE_LOGINS) was hardened by #13316 for the same reason; the
+# adjacency guard was missed. Coordinator identity = `myia-ai-01` only.
+COORDINATOR_LOGINS = frozenset({"myia-ai-01"})
 
 _OVERRIDE_RE = re.compile(
     r"\[\s*G-?VAR-?3\s+OVERRIDE\s*\]"          # the marker
@@ -356,8 +367,23 @@ def check(body: str | None, override: dict | None = None,
         }
 
     # Same genre. The LIGHT set is the absolute ban of §2; a DEEP/MED
-    # domain-core genre is the advisory judgment of §2.
-    if genre in LIGHT_GENRES:
+    # domain-core genre is the advisory judgment of §2. The predicate is
+    # the fail-CLOSED one of #13475 (`genre_counts_light`), TIER-AWARE
+    # since the ai-01 reserve on #13585 (demande 2): an UNRESOLVED genre
+    # (off the closed enumeration) counts LIGHT here too -- before, a
+    # `LIGHT/zzz` twice in a row compared equal but escaped `LIGHT_GENRES`
+    # membership, so the ban never fired on invented words. A grain whose
+    # DECLARED tier is MED/DEEP does not requalify as LIGHT on a genre
+    # word alone: the retag is asked (note GENRE-UNKNOWN below), the ban
+    # is not applied.
+    if genre_counts_light(genre, g.get("tier")):
+        unknown_note = ""
+        if not genre_resolves(genre):
+            unknown_note = (
+                f" GENRE-UNKNOWN: `{genre}` n est pas dans l enumeration "
+                f"fermee (variation-protocol §1) -- retaguez avec un genre "
+                f"canonique, le vocabulaire est ferme par intention."
+            )
         # The adjacency is real. Before failing, ask whether the coordinator
         # has exercised the 24h decision section 3 already grants (#11708).
         if override and override.get("next_genre") \
@@ -418,7 +444,8 @@ def check(body: str | None, override: dict | None = None,
                 f"(§2): piochez un grain d'UN AUTRE genre, ne retaguez pas "
                 f"le meme travail (#11170). Tenu > 24 h : le coordinateur "
                 f"tranche par `[G-VAR-3 OVERRIDE] lane {lane} -- next: "
-                f"<genre>` (section 3), il ne laisse pas vieillir.{hint}{src_note}"
+                f"<genre>` (section 3), il ne laisse pas vieillir."
+                f"{unknown_note}{hint}{src_note}"
             ),
         }
         # `override_rejected` absent du verdict = "aucun marqueur de

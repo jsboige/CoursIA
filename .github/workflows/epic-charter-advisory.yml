@@ -1,0 +1,93 @@
+name: EPIC charter advisory
+
+# La moitie "redaction d'EPIC" du mandat picker (#13420). Le picker regule ce
+# qu'une lane TIRE ; il ne peut rien contre une ombrelle qui n'engendre que de
+# l'expansion -- le desequilibre est deja ecrit dans le corpus d'issues avant
+# qu'aucun tirage n'ait lieu. Cet organe mesure la parite expansion /
+# consolidation des filles DECLAREES de chaque EPIC ouvert.
+#
+# Deux jambes, et une seule fait rougir :
+#   - Jambe A (mesure) : >= 3 filles d'expansion pour ZERO fille de
+#     consolidation -> `PARITE-ABSENTE`. C'est un fait compte, pas un jeu de
+#     motifs : elle porte le code de sortie.
+#   - Jambe B (redaction) : l'EPIC declare-t-il une regle d'arret et son
+#     pendant de consolidation ? Reposant sur des motifs de prose, elle reste
+#     ADVISORY -- un jeu de motifs qui sous-compte ne doit jamais faire rougir
+#     un gate (cf. `handrolled-pattern-set-undercounts-silently`).
+#
+# Mesure du 2026-08-29 sur les 52 EPICs ouverts : 35 mesures, 7 en defaut, 17
+# NON-MESURE (aucune fille ne DECLARE son ascendance) -- et **zero**
+# `PARITE-ABSENTE`. Ce zero est une mesure, pas un angle mort : la jambe A est
+# prouvee detectable par un controle positif synthetique dans
+# `scripts/tests/test_epic_charter.py`, dont la neutralisation fait rougir
+# trois tests.
+#
+# Routage : cette tranche s'arrete au resume de job. L'upsert marker-guarde
+# vers une issue vit dans `pick_idle_grain.upsert_orphans_comment`, dont la
+# generalisation demande d'editer un fichier porteur de deux PRs ouvertes de
+# la meme lane (#13496, #13499) -- un troisieme edit concurrent ne
+# fabriquerait que des conflits. La tranche de routage suit une fois celles-ci
+# mergees ; en dupliquer une seconde implementation ici serait le defaut que
+# l'organe lui-meme documente.
+
+on:
+  schedule:
+    # Hebdomadaire : une charte d'EPIC bouge lentement, un passage quotidien
+    # ne produirait que du bruit identique. Minute off-:00 (anti-stampede),
+    # decalee des balayages 06:17 / 07:23. Lundi 06:41 UTC.
+    - cron: '41 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: read
+  # `fetch_series_visits` recense les PRs mergees pour rattacher chaque EPIC a
+  # sa zone. Sans ce droit la zone sort `NON MESUREE` -- l'organe le DIT au
+  # lieu de rendre un zero d'absence de mesure, mais la colonne serait vide
+  # a chaque passage.
+  pull-requests: read
+
+concurrency:
+  group: epic-charter-advisory
+  cancel-in-progress: false
+
+jobs:
+  charter:
+    name: "Parite expansion / consolidation des EPICs ouverts"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (sparse, scripts only)
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: scripts
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: "Controles positifs de l'organe (avant de croire sa sortie)"
+        run: |
+          python -m pip install --quiet pytest
+          # Un organe dont les controles ne passent pas ne mesure rien de
+          # fiable : on le prouve AVANT de lire son verdict, jamais apres.
+          python -m pytest scripts/tests/test_epic_charter.py -q
+
+      - name: "Audit des chartes (jambe A bloquante, jambe B advisory)"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -o pipefail
+          # `tee` plutot qu'une redirection : la sortie doit rester lisible
+          # dans le log du job ET atterrir dans le resume. Le code de sortie
+          # est celui de python grace a `pipefail`.
+          {
+            echo '## Chartes d EPIC -- parite expansion / consolidation'
+            echo
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          python scripts/check_epic_charter.py 2>&1 \
+            | tee -a "$GITHUB_STEP_SUMMARY"
+          rc=$?
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          exit $rc

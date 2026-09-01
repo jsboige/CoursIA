@@ -21,7 +21,7 @@ Le fil conducteur : le geste de planifier — un état, un but, une séquence d'
 | 10 | [Planners-10-LLM-Planning](Planners-10-LLM-Planning.ipynb) | 50 min | Large Language Models pour la planification : prompting, génération de plans, plan repair ; limites et avantages |
 | 11 | [Planners-11-Unified-Planning](Planners-11-Unified-Planning.ipynb) | 40 min | Interface `unified-planning` : un modèle PDDL, plusieurs solveurs, comparaison croisée des performances |
 | 12 | [Planners-12-LOOP](Planners-12-LOOP.ipynb) | 45 min | Learning to Plan (framework LOOP) : state encoder, policy/value networks, encodage PDDL en tenseurs, 85,8 % de coverage IPC |
-| 14 | [Planners-14-LLM-Space-Reducer](Planners-14-LLM-Space-Reducer.ipynb) | 40 min | Le LLM comme réducteur d'espace de recherche (position aicpp) : mini-DSL sur grilles ARC, trois bras mesurés — exhaustif borné, LLM-direct, LLM-réducteur |
+| 10b | [Planners-10b-LLM-Space-Reducer](Planners-10b-LLM-Space-Reducer.ipynb) | 40 min | Le LLM comme réducteur d'espace de recherche (position aicpp) : mini-DSL sur grilles ARC, trois bras mesurés — exhaustif borné, LLM-direct, LLM-réducteur |
 
 ## Prérequis
 
