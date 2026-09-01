@@ -245,6 +245,11 @@ _APPROVE_RESERVATION_RE = re.compile(
     r")"
 )
 
+# Sentinelle du marqueur ETIQUETE : une valeur inecrivable en prose, pour que la
+# forme « Concern: » soit un marqueur A PART -- relachee en casse et en nombre --
+# sans toucher a la sous-chaine « CONCERNS », qui reste case-sensitive.
+_CONCERN_LABEL = "\x00concern-label"
+
 CONCERN_MARKERS = (
     "COMMENT_WITH_CONCERNS", "CHANGES_REQUESTED", "REQUEST_CHANGES",
     "NEEDS_CHANGES", "CONCERNS",
@@ -307,6 +312,11 @@ CONCERN_MARKERS = CONCERN_MARKERS + SEVERITY_GLYPHS
 # une mention (_strip_quoted), comme tout autre verdict backtinque.
 BLOCK_VERDICTS = ("**BLOCKED**", "BLOCKED  PR")
 CONCERN_MARKERS = CONCERN_MARKERS + BLOCK_VERDICTS
+
+# La forme ETIQUETEE (« Concern: », « Concerns :», « **Concern 2 :** ») rejoint
+# les marqueurs vivants : elle tolere casse et nombre des deux cotes (user comme
+# agents) sans rien devoir a la sous-chaine nue, qui reste case-sensitive.
+CONCERN_MARKERS = CONCERN_MARKERS + (_CONCERN_LABEL,)
 
 # Un commentaire qui ANNONCE la levee ou le merge n'est pas un nit — il en est
 
@@ -1477,6 +1487,39 @@ def has_live_lift(body: str) -> bool:
     return bool(_live_lift_positions(_unaccent(body)))
 
 
+# Marqueurs reconnus par MOTIF plutot que par sous-chaine. La cle est le marqueur
+# du tuple, minuscule et desaccentue (has_live_marker normalise des deux cotes).
+#
+# « CONCERNS » : la sous-chaine nue ne peut pas devenir insensible a la casse sans
+# retourner l'organe contre lui-meme. Mesure sur 588 commentaires (corpus 80 PRs
+# ouvertes + 70 mergees, 2026-09-01) : la seule insensibilite a la casse fait
+# basculer 6 verdicts None -> BOT-CONCERN, et les 6 sont des narrations de LEVEE
+# qui citent le mot en y REPONDANT (« les 2 concerns sont traitees au commit X »,
+# « Reponse a la CONCERN empirique »). Les bloquer serait le miroir exact du
+# defaut que B.0 traque. On retient donc la forme ETIQUETEE en tete de ligne --
+# « Concern: », « concerns :», « **Concern 2 :** », « > CONCERNS : » -- qui est
+# une EMISSION et non une mention, tolere la casse et le nombre des deux cotes,
+# et laisse muettes les six narrations mesurees.
+# Marqueurs dont la casse NE se relache PAS. Deux familles, une raison commune :
+# leur variante de casse est plus rare que les mentions qu'elle attraperait.
+#   - prose : « AVANT merge » est une emphase sur la chronologie dans une
+#     narration de levee Voie 3, pas une reserve (2 cas mesures sur 588).
+#   - « CONCERNS » nu : « les 2 concerns sont traitees », « Reponse a la CONCERN
+#     empirique » sont des REPONSES a une reserve (6 cas mesures). Le relachement
+#     de casse pour ce mot passe par _CONCERN_LABEL ci-dessous, qui exige la
+#     forme etiquetee -- donc une emission, pas une mention.
+_CASE_SENSITIVE_MARKERS = frozenset({
+    "avant merge", "avant de merger", "before merge",
+    "il va falloir", "a nuancer", "à nuancer", "a changer",
+    "CONCERNS",
+})
+
+
+_WORD_BOUNDED_MARKERS = {
+    _CONCERN_LABEL: re.compile(r"(?m)^[\s*_#>\-]*concerns?\s*\d*\s*:"),
+}
+
+
 def has_live_marker(body: str, markers: tuple[str, ...]) -> bool:
     """Marqueur present avec au moins une occurrence NON citee.
 
@@ -1493,9 +1536,28 @@ def has_live_marker(body: str, markers: tuple[str, ...]) -> bool:
     compris), l'occurrence est morte ; le marqueur ne vit que si au moins une
     occurrence survit.
     """
-    normalised = _unaccent(body)
+    raw = _unaccent(body)
+    lowered = raw.lower()
     for marker in markers:
-        m = _unaccent(marker)
+        m = _unaccent(marker).lower()
+        # La casse ne se relache que sur les JETONS de verdict (identifiants
+        # ecrits en capitales par convention, dont les variantes de casse sont
+        # des accidents de frappe). Les marqueurs de PROSE gardent leur forme
+        # litterale : mesure du 2026-09-01 sur 588 commentaires -- relacher la
+        # casse de « avant merge » fait basculer 2 verdicts, et les 2 sont des
+        # narrations de levee Voie 3 (« issue #14030 ouverte AVANT merge »), ou
+        # la majuscule est une EMPHASE sur la chronologie, pas une reserve.
+        if marker in _CASE_SENSITIVE_MARKERS:
+            normalised, m = raw, _unaccent(marker)
+        else:
+            normalised = lowered
+        word_re = _WORD_BOUNDED_MARKERS.get(m)
+        if word_re is not None:
+            for hit in word_re.finditer(normalised):
+                i = hit.start()
+                if not _is_cited(normalised[max(0, i - 30):i]):
+                    return True
+            continue
         start = 0
         while (i := normalised.find(m, start)) != -1:
             if not _is_cited(normalised[max(0, i - 30):i]):
