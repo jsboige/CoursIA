@@ -80,7 +80,7 @@ DataScienceWithAgents/
 │       ├── 1.2-NumPy.ipynb
 │       └── 1.3-Pandas.ipynb
 │
-├── 02-ML-Cours/                # Fondations ML canoniques (20 notebooks)
+├── 02-ML-Cours/                # Fondations ML canoniques (21 notebooks)
 │   ├── 2.1-Workflow-ML.ipynb
 │   ├── 2.2-Descente-de-gradient.ipynb
 │   ├── 2.3-Regression-lineaire-logistique.ipynb
@@ -99,6 +99,7 @@ DataScienceWithAgents/
 │   ├── 2.8d-Lean-Novikoff-Convergence.ipynb
 │   ├── 2.9-Grokking-Generalisation.ipynb
 │   ├── 2.10-Optimisation-Hyperparametres.ipynb
+│   ├── 2.11-Regularisation-Sparse-LASSO.ipynb
 │   ├── 2.12-Donnees-Desequilibrees.ipynb
 │   └── 2.13-Analyse-Erreurs.ipynb
 │
@@ -157,6 +158,7 @@ Le socle machine learning canonique avec scikit-learn, posé à la main entre le
 | [2.8d-Lean-Novikoff-Convergence](02-ML-Cours/2.8d-Lean-Novikoff-Convergence.ipynb) | *Compagnon Lean* (kernel `lean4-wsl`) — Novikoff `n·γ² ≤ R²` exécuté depuis le lake | le théorème interrogé en direct : `#check` + `#print axioms`, dynamique rejouée sur entiers |
 | [2.9-Grokking-Generalisation](02-ML-Cours/2.9-Grokking-Generalisation.ipynb) | *Épilogue* — grokking : la généralisation qui arrive en retard (premier réseau de neurones) | **L'horloge cachée** : embeddings rangés en cercle après le grok (ACP + Fourier) |
 | [2.10-Optimisation-Hyperparametres](02-ML-Cours/2.10-Optimisation-Hyperparametres.ipynb) | méthodologie du réglage : grille, hasard, bayésien (TPE) — et quand s'arrêter | le critère d'arrêt économise la moitié des essais |
+| [2.11-Regularisation-Sparse-LASSO](02-ML-Cours/2.11-Regularisation-Sparse-LASSO.ipynb) | *Régularisation sparse* — LASSO (L1, polyèdre) vs Ridge (L2, boule), coord descent, sélection de λ, ElasticNet sur features corrélées | **la géométrie décide** : polyèdre L1 → sparsity, boule L2 → shrink ; sur ρ > 0.7, ElasticNet stabilise |
 | [2.12-Donnees-Desequilibrees](02-ML-Cours/2.12-Donnees-Desequilibrees.ipynb) | *Classes déséquilibrées* — la métrique qui ment (accuracy vs PR), rééchantillonnage, seuillage par coût | la courbe PR dit la vérité : sur une classe à ~3 %, la ROC flatte, seule l'average precision rend l'arbitrage visible |
 | [2.13-Analyse-Erreurs](02-ML-Cours/2.13-Analyse-Erreurs.ipynb) | le geste du praticien : diagnostiquer un modèle entraîné (tranches, worst-k) | la poche invisible : 67.6% d'erreur sous un score global correct |
 

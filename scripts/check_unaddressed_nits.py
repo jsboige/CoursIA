@@ -161,8 +161,22 @@ OVERRIDE_LANE = _OVERRIDE_LANE
 # La forme verdict-gras (`**BLOCAGE ...**` en tete de corps) est couverte par
 # _block_emitted (2e branche), pas par ce pattern. La prose descriptive peut
 # suivre sur la meme ligne. Alias anglais `[BLOCK] lane` pour les reviews
-# ecrites en anglais.
-BLOCAGE_LANE = re.compile(r"(?m)^\s*\[(?:BLOCAGE|BLOCK)\]\s+lane\s+\S+")
+# ecrites en anglais. `[HOLD] lane` (#13779) : HOLD est le verbe que
+# variation-protocol.md donne au coordinateur (« HOLD sans remplacement =
+# echec coordinateur ») — entre crochets et en tete de ligne, il est aussi
+# peu ambigu que les deux autres.
+BLOCAGE_LANE = re.compile(r"(?m)^\s*\[(?:BLOCAGE|BLOCK|HOLD)\]\s+lane\s+\S+")
+
+# #13779 — la forme VERDICT du HOLD coordinateur : le corps COMMENCE par HOLD,
+# modulo l'emphase markdown (`**HOLD ...**`) et le titre (`## HOLD ...`). Deux
+# resserrements par rapport a la pose de BLOCAGE (n'importe ou dans les 60
+# premiers chars, casse indifferente), parce que « hold » est un mot ordinaire
+# la ou « blocage » est deja presque toujours un verdict :
+#   - POSITION : tete de corps, pas tete de fenetre — « je ne mets pas de hold
+#     sur cette PR » ne pose rien ;
+#   - CASSE : HOLD majuscule, la forme dans laquelle le protocole et les posts
+#     du coordinateur l'ecrivent — « hold on, je regarde » ne pose rien.
+HOLD_HEAD = re.compile(r"^[\s*_#]*HOLD\b")
 
 # Marqueurs de reserve d'un reviewer bot (le verdict est dans le body, pas l'etat).
 # #12311 — `REQUEST_CHANGES` (verbe, e.g. « [Hermes] Review — REQUEST_CHANGES »)
@@ -1105,6 +1119,21 @@ def has_live_marker(body: str, markers: tuple[str, ...]) -> bool:
     return False
 
 
+def _lift_participle_after(head: str, end: int) -> bool:
+    """Le mot qui SUIT l'occurrence est-il un participe de levee ?
+
+    Miroir post-fenetre de `_is_cited` : « BLOCAGE leve », « HOLD lifted »
+    NOMMENT le blocage pour le clore, ils ne l'emettent pas (mention #11636).
+    """
+    tail = head[end:end + 10].lstrip(" \t:;,.)('\"-—*")
+    word = ""
+    for ch in tail:
+        if not ch.isalpha():
+            break
+        word += ch
+    return word.lower() in ("leve", "levee", "lifted")
+
+
 def _block_emitted(body: str) -> bool:
     """Le coordinateur POSE-t-il un blocage (verdict, jamais une citation) ?
 
@@ -1121,7 +1150,13 @@ def _block_emitted(body: str) -> bool:
           la position du verdict, pas une substring de milieu. La narration
           « pas un blocage » (fixture #11190) vit en section ; l'emission
           aussi. Les negations immediates (« pas de blocage ») restent citees
-          via `_is_cited`.
+          via `_is_cited` ;
+      (c) le verdict `**HOLD ...**` en TETE de corps (#13779). HOLD est le
+          verbe que variation-protocol.md §3 donne au coordinateur (« HOLD
+          sans remplacement = echec coordinateur ») — un gate de merge qui
+          ignore le verbe de l'instrument qui le pilote est aveugle a son
+          propre pilote. Pose plus stricte que (b) — debut de corps ET
+          majuscule, cf HOLD_HEAD — parce que « hold » est un mot ordinaire.
 
     La levée d'un blocage passe par les formes canoniques — LIFT_MARKER
     reconnu (donc classify -> None dans la branche levee, cf `classify`) ou
@@ -1154,6 +1189,9 @@ def _block_emitted(body: str) -> bool:
     uhead = head.upper()
     if head.lstrip(" \t*_").upper().startswith("[OVERRIDE]"):
         return False
+    m_hold = HOLD_HEAD.match(head)
+    if m_hold and not _lift_participle_after(head, m_hold.end()):
+        return True
     for marker in ("BLOCAGE", "BLOCK"):
         pos = 0
         while (i := uhead.find(marker, pos)) != -1:
@@ -1162,13 +1200,7 @@ def _block_emitted(body: str) -> bool:
             if before.isalnum() or before == "_" or before == "[" or after.isalnum() or after == "_":
                 pos = i + len(marker)
                 continue
-            tail = head[i + len(marker):i + len(marker) + 10].lstrip(" \t:;,.)('\"-—*")
-            word = ""
-            for ch in tail:
-                if not ch.isalpha():
-                    break
-                word += ch
-            if word.lower() in ("leve", "levee", "lifted"):
+            if _lift_participle_after(head, i + len(marker)):
                 pos = i + len(marker)
                 continue
             if not _is_cited(normalised[max(0, i - 30):i]):
