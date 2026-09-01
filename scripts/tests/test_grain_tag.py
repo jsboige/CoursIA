@@ -112,10 +112,69 @@ def test_grain_word_without_tier_genre_returns_none():
     assert gt.parse_grain_tag("Grain: -- lane myia-po-2023:CoursIA") is None
 
 
+# --- #13633: the bare lowercase token in prose must NOT arm the extractor ---
+#
+# `re.IGNORECASE` on `_GRAIN_FULL_RE` let a lowercase `grain` (a noun in
+# running prose, not a key) match `<TIER>/<GENRE>` after it. The #13550 body
+# carried NO `Grain:` key -- it described ANOTHER PR's next grain: "est le
+# grain MED/tooling suivant" + a signature "Lane myia-po-2027:CoursIA-2".
+# parse_grain composed {'tier': 'MED', 'lane': ...} and the gate returned
+# `cap_reached: false` instead of the #9465 `null` ("not evaluated"). Controls
+# A-E below pin the fix in BOTH directions (A/B -> None; D still parses).
+
+def test_13633_control_a_prose_lowercase_token_with_lane():
+    # A: no key, prose "le grain MED/tooling suivant" + a Lane signature line.
+    # The trigger is the tier/genre TOKEN, but the token is a lowercase noun --
+    # it must NOT arm the extractor. This is the exact #13550 shape.
+    body = (
+        "#13544 (renderer hard gate before rerender) est le grain MED/tooling "
+        "suivant, priorite P1.\n"
+        "Lane myia-po-2027:CoursIA-2 -- c.1331p250"
+    )
+    g = gt.parse_grain_tag(body)
+    assert g is None, f"prose lowercase token must not parse, got {g!r}"
+
+
+def test_13633_control_b_prose_lowercase_token_no_lane():
+    # B: no key, prose ONLY (no Lane line) -> None too.
+    g = gt.parse_grain_tag("est le grain MED/tooling suivant, priorite P1.")
+    assert g is None, f"prose-only must not parse, got {g!r}"
+
+
+def test_13633_control_c_lane_line_alone_is_none():
+    # C: no key, "Lane x:y" line alone -> None. The trigger is the tier/genre
+    # token, NOT the lane line (the lane line alone is no tag at all).
+    g = gt.parse_grain_tag("Lane myia-po-2027:CoursIA-2 -- c.1331p250")
+    assert g is None
+
+
+def test_13633_control_d_real_key_still_parses():
+    # D (positive control): a real capitalised `Grain:` key STILL parses.
+    g = gt.parse_grain_tag("Grain: DEEP/lean - lane myia-ai-01:CoursIA")
+    assert g == {"tier": "DEEP", "genre": "lean", "lane": "myia-ai-01:CoursIA"}
+
+
+def test_13633_control_e_empty_body_is_none():
+    # E (negative control): empty body -> None (already pinned, kept explicit).
+    assert gt.parse_grain_tag("") is None
+    assert gt.parse_grain_tag(None) is None  # type: ignore[arg-type]
+
+
+def test_13633_uppercase_token_at_line_start_is_still_a_key():
+    # The 5 tolerated forms all capitalise the key; the no-colon form
+    # `Grain LIGHT/guard` (capital G) is indistinguishable from prose by
+    # shape alone (space before T/G) -- so capitalisation IS the boundary.
+    # A capitalised key at the start of a line must still parse.
+    g = gt.parse_grain_tag("Grain LIGHT/guard -- lane myia-po-2026:CoursIA")
+    assert g == {"tier": "LIGHT", "genre": "guard", "lane": "myia-po-2026:CoursIA"}
+
+
 def test_tier_uppercased_genre_lowercased():
     # Normalisation preserved: tier canonical upper, genre canonical lower
     # (so the guard's case-statement and G-VAR-3 adjacency compare cleanly).
-    g = gt.parse_grain_tag("grain: light/GUARD -- lane myia-po-2023:CoursIA")
+    # #13633 -- the KEY stays capitalised `Grain:` (a lowercase `grain` in
+    # prose is a noun, not a key); only TIER/GENRE are case-tolerant.
+    g = gt.parse_grain_tag("Grain: light/GUARD -- lane myia-po-2023:CoursIA")
     assert g["tier"] == "LIGHT"
     assert g["genre"] == "guard"
 

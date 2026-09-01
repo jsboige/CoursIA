@@ -91,6 +91,12 @@ def parse_grain(body: str) -> dict | None:
     g = parse_grain_tag(body)
     if g is None:
         return None
+    # #13633 -- a genre-absent tag is NOT a confident tier. The shared reader
+    # always yields a genre (the regex requires `/GENRE`), but the acceptance
+    # criterion is explicit ("un tag dont le genre est absent doit rendre null,
+    # pas un tier"), so guard here rather than rely on the regex invariant.
+    if not g.get("genre"):
+        return None
     return {"tier": g["tier"], "lane": g["lane"]}
 
 
