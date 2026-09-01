@@ -1,0 +1,54 @@
+[
+  {
+    "mode": "conservative",
+    "effective_durations": {
+      "A": [
+        7,
+        3,
+        6,
+        2,
+        8,
+        4,
+        5,
+        3
+      ],
+      "B": [
+        3,
+        8,
+        4,
+        7,
+        4,
+        6,
+        3,
+        6
+      ]
+    },
+    "method": "CP-SAT MMALBP conservative",
+    "status": "OPTIMAL",
+    "objective": 4.0,
+    "best_bound": 4.0,
+    "gap": 0.0,
+    "wall_time": 0.009655799993197434,
+    "valid": true
+  },
+  {
+    "mode": "weighted",
+    "effective_durations": [
+      6,
+      4,
+      6,
+      3,
+      7,
+      4,
+      4,
+      4
+    ],
+    "method": "CP-SAT SALBP-1",
+    "status": "OPTIMAL",
+    "objective": 3.0,
+    "best_bound": 3.0,
+    "gap": 0.0,
+    "wall_time": 0.009980199989513494,
+    "valid": true
+  }
+]
