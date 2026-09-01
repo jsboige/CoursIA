@@ -801,85 +801,105 @@ def test_lane_marker_residues_report_malformed_forms():
     assert gt.lane_marker_residues(clean) == []
 
 
-# --- #13830: workspace with Latin-1 letters used to truncate ---------------
+# --- #13633 : parse_grain_tag rejette un token TIER/GENRE nu en prose ----
 #
-# Founder case: a lane whose workspace carries Latin-1 letters (e.g.
-# `myia-ai-01:LivresAgites`) was truncated to `myia-ai-01:LivresAgit` -- the
-# first non-ASCII byte was eaten by the `[A-Za-z0-9._-]+` class. The cap
-# G-VAR-2 then counted zero grains on the lane that wrote its name correctly.
-# The fix widens the workspace class to `[A-Za-zA...-O...-o...-y0-9._-]+` in
-# BOTH `_LANE_RE` and `_LANE_FALLBACK_RE` (the twin MUST move or the bug
-# re-opens on the fallback only -- the documented founder shape #12145).
+# Cas fondateur documente par ai-01 le 2026-08-30 (PR #13550 fondateur,
+# issue #13631 second cas) : une PR sans cle `Grain:` mais contenant une
+# phrase qui DECRIT un autre grain ("le grain MED/tooling suivant, priorite
+# P1.") etait parsee avec {tier: MED, genre: tooling} -- un vert confiant
+# sur un ZERO tag. Le garde G-VAR-2 recevait alors un tier fantome, le
+# garde G-VAR-3 calculait l'adjacence sur une lane attribuee par accident
+# (ligne de signature `Lane x:y`), et la garde des orphelines perdait la
+# seule PR qui aurait du etre visible.
+#
+# Le correctif ancre `Grain` au debut de la ligne (apres le strip du
+# decoration markdown). Toute phrase ou `Grain` apparait au milieu d'une
+# ligne ne matche plus, et le parse rend `None` comme specifie par #9465.
 
 
-def test_lane_latin1_workspace_not_truncated_primary():
-    """Primary regex: `lane <machine>:<workspace>` body form.
-
-    Pre-fix returned `myia-ai-01:LivresAgit` (lost `es` after the `e`).
-    Post-fix must return the full token with the accented letter intact.
-    """
-    body = "[CLAIMED] #13286 — lane myia-ai-01:LivresAgités 2026-08-23"
-    assert gt.extract_lane(body) == "myia-ai-01:LivresAgités"
-
-
-def test_lane_latin1_workspace_not_truncated_fallback():
-    """Fallback regex: marker-line form, no literal `lane` keyword (#10395).
-
-    The twin regex MUST accept the same shape, otherwise the founder bug
-    (#12145) re-opens on the fallback only -- a class of bug the file
-    explicitly calls out at the `_LANE_FALLBACK_RE` definition site.
-    """
-    line = "[CLAIMED] myia-ai-01:LivresAgités 2026-08-23T00:52Z"
-    assert gt.extract_lane("no lane keyword here", marker_line=line) == "myia-ai-01:LivresAgités"
+def test_13633_prose_describing_other_grain_returns_none():
+    """#13633 -- Cas A fondateur : pas de cle `Grain:`, prose qui parle d'un
+    autre grain + ligne de signature. Avant le fix : parse avec tier+lane
+    fantome. Apres : None."""
+    body = ("le grain MED/tooling suivant, priorite P1.\n"
+            "Lane myia-po-2027:CoursIA-2 -- c.1331p250")
+    assert gt.parse_grain_tag(body) is None
 
 
-def test_lane_latin1_multiple_accented_letters():
-    """Multiple Latin-1 letters in the same workspace word."""
-    line = "[CLAIMED] myia-ai-01:LivresAgitésÉlégants 2026-08-23T00:52Z"
-    assert gt.extract_lane("no lane keyword here", marker_line=line) == "myia-ai-01:LivresAgitésÉlégants"
+def test_13633_prose_alone_with_tier_genre_returns_none():
+    """#13633 -- Cas B : pas de cle, prose seule avec un token TIER/GENRE."""
+    body = "le grain MED/tooling suivant, priorite P1."
+    assert gt.parse_grain_tag(body) is None
 
 
-def test_lane_ascii_workspace_still_truncates_correctly():
-    """Non-regression: an ASCII workspace still returns the same token.
-
-    Mandatory control -- without it, a too-permissive class could swallow
-    the next prose word and the test would still pass.
-    """
-    line = "[CLAIMED] myia-ai-01:LivresAgit 2026-08-23T00:52Z"
-    assert gt.extract_lane("no lane keyword here", marker_line=line) == "myia-ai-01:LivresAgit"
+def test_13633_lane_signature_without_grain_returns_none():
+    """#13633 -- Cas C : pas de cle, ligne de signature seule. Avant le fix :
+    None (deja -- le declencheur etait le token TIER/GENRE, pas la lane).
+    Apres : None (non-regression)."""
+    body = "Lane myia-po-2027:CoursIA-2 -- c.1331p250"
+    assert gt.parse_grain_tag(body) is None
 
 
-def test_lane_latin1_does_not_swallow_prose():
-    """The Latin-1 widening must not extend the token into the next prose word.
-
-    Pre-fix: the class stopped at the first non-ASCII byte (and dropped
-    the rest). Post-fix: the class extends through accented letters but
-    still halts at whitespace and punctuation -- prose after the workspace
-    stays out of the lane token.
-    """
-    body = "[CLAIMED] lane myia-ai-01:LivresAgités a livre trois PRs."
-    assert gt.extract_lane(body) == "myia-ai-01:LivresAgités"
+def test_13633_canonical_grain_tag_still_parses():
+    """#13633 -- Cas D (controle positif) : la cle `Grain: TIER/GENRE` reste
+    parsee comme avant. Si ce test echoue, le fix a casse la voie nominale
+    -- 32/34 PRs mergees le 2026-08-30 portent cette forme en L0."""
+    body = "Grain: DEEP/lean - lane myia-ai-01:CoursIA"
+    g = gt.parse_grain_tag(body)
+    assert g == {"tier": "DEEP", "genre": "lean", "lane": "myia-ai-01:CoursIA"}
 
 
-def test_lane_latin1_hyphenated_workspace_still_works():
-    """Non-regression #13830 must NOT re-introduce the `CoursIA-2` bug.
-
-    The original `[A-Za-z0-9._-]+` class let `CoursIA-2` through; the
-    fix must keep that path open.
-    """
-    body = "Grain: MED/guard - lane myia-po-2024:CoursIA-2 - prev: tooling #13862"
-    assert gt.extract_lane(body) == "myia-po-2024:CoursIA-2"
+def test_13633_empty_body_returns_none():
+    """#13633 -- Cas E (controle negatif) : corps vide -> None."""
+    assert gt.parse_grain_tag("") is None
 
 
-def test_lane_latin1_bare_date_still_rejected():
-    """Non-regression #12719: a bare date immediately after the workspace
-    must NOT be swallowed by the continuation clause. The widening does
-    not touch the `(?!\d{4}-\d{2}-\d{2})` negative lookahead, but the
-    test pins that down explicitly.
-    """
-    line = "[CLAIMED] myia-ai-01:LivresAgités 2026-08-23 — Medical-Chatbot : amorcage batch"
-    # The lane token is the workspace only; the bare date is reported as a
-    # residue but the lane extraction still works.
-    assert gt.extract_lane("no lane keyword here", marker_line=line) == "myia-ai-01:LivresAgités"
-    residues = gt.lane_marker_residues(line)
-    assert any(r.startswith("bare-date:") for r in residues), residues
+def test_13633_tier_genre_in_prose_no_grain_word_returns_none():
+    """#13633 -- extension : un token TIER/GENRE isole en prose SANS le mot
+    'grain' ne matchait pas avant (le token seul ne suffisait pas, il fallait
+    `grain <word>/<word>`). Apres le fix, il NE matche TOUJOURS PAS -- la
+    garde est plus stricte mais pas differente sur ce cas."""
+    body = "voici les notes : MED/tooling, DEEP/lean, LIGHT/guard, tous OK"
+    assert gt.parse_grain_tag(body) is None
+
+
+def test_13633_double_tag_picks_first():
+    """#13633 -- non-regression : un body avec DEUX cles `Grain:` (la premiere
+    est le tag, la seconde une prose qui en parle) ne conserve que la
+    premiere -- comportement historique preserve."""
+    body = ("Grain: DEEP/lean\n\n"
+            "et aussi le grain LIGHT/guard en complement")
+    g = gt.parse_grain_tag(body)
+    assert g == {"tier": "DEEP", "genre": "lean", "lane": None}
+
+
+def test_13633_grain_on_subsequent_line_still_parses():
+    """#13633 -- non-regression : la cle peut apparaitre sur une ligne
+    subsequente (apres une courte prose d'introduction) tant qu'elle est en
+    debut de ligne. La voie L0 stricte n'est pas imposee."""
+    body = ("voici le tag :\n"
+            "Grain: MED/tooling - lane myia-po-2026:CoursIA")
+    g = gt.parse_grain_tag(body)
+    assert g == {"tier": "MED", "genre": "tooling",
+                 "lane": "myia-po-2026:CoursIA"}
+
+
+def test_13633_title_form_hash_grain_next_line_still_parses():
+    """#13633 -- non-regression : la forme toleree `## Grain\\n\\nLIGHT/guard`
+    reste parsee. Le strip `_strip_title_hashes` retire les `##`, laissant
+    `Grain` en debut de ligne -- la nouvelle regex line-anchored matche."""
+    body = "## Grain\n\nLIGHT/guard ... lane myia-po-2023:CoursIA"
+    g = gt.parse_grain_tag(body)
+    assert g == {"tier": "LIGHT", "genre": "guard",
+                 "lane": "myia-po-2023:CoursIA"}
+
+
+def test_13633_list_bullet_grain_still_parses():
+    """#13633 -- non-regression : la forme toleree `- Grain `MED/...`` (founder
+    tag de PR #12530) reste parsee. Le strip `_strip_title_hashes` retire
+    aussi `-` quand il precede un mot-cle reconnu, laissant `Grain` en debut
+    de ligne."""
+    body = "- Grain `MED/genai-video` — lane `myia-po-2023:CoursIA`."
+    g = gt.parse_grain_tag(body)
+    assert g == {"tier": "MED", "genre": "genai-video",
+                 "lane": "myia-po-2023:CoursIA"}
