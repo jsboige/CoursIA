@@ -951,6 +951,14 @@ def run(force: bool = False) -> Path:
     print(f"  Generated: {generated}, Cached: {cached}, Failed: {failed}")
     print(f"  Total duration: {total_duration:.1f}s ({total_duration/60:.1f}min)")
 
+    if generated == 0 and cached == 0 and failed > 0:
+        raise RuntimeError(
+            f"P5 : {failed}/{total} segments en echec, 0 generes — service TTS "
+            "probablement down pendant la passe (cf. 'FishAudio TTS error' dans les "
+            "logs). tts_results.json est conserve pour inspection ; relancer la "
+            "passe apres restauration du service (supprimer tts_results.json)."
+        )
+
     return results_path
 
 

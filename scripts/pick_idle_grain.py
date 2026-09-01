@@ -1351,7 +1351,10 @@ def unaddressed_review_points(numbers: list[int]) -> dict[int, int]:
         try:
             data = nits.gh_json(["pr", "view", str(n), "--repo", REPO,
                                  "--json", nits.FIELDS])
-            result = nits.analyse(data, nits.review_threads(n), now)
+            result = nits.analyse(
+                data, nits.review_threads(n), now,
+                issue_created=nits.gh_issue_created,
+                dismissed_improperly=nits.improper_dismissals(n))
         except Exception:  # noqa: BLE001 - une PR illisible ne bloque pas les autres
             continue
         if result.get("blocked"):
