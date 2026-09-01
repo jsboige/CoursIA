@@ -28,7 +28,7 @@
     "objective": 4.0,
     "best_bound": 4.0,
     "gap": 0.0,
-    "wall_time": 0.009655799993197434,
+    "wall_time": 0.013626700005261227,
     "valid": true
   },
   {
@@ -48,7 +48,7 @@
     "objective": 3.0,
     "best_bound": 3.0,
     "gap": 0.0,
-    "wall_time": 0.009980199989513494,
+    "wall_time": 0.015249199990648776,
     "valid": true
   }
 ]

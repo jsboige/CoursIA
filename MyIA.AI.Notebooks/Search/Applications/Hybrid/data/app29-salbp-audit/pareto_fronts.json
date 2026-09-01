@@ -14,7 +14,7 @@
       "objective": 13.0,
       "best_bound": 13.0,
       "gap": 0.0,
-      "wall_time": 0.012507399995229207,
+      "wall_time": 0.021748499988461845,
       "valid": true
     },
     {
@@ -24,7 +24,7 @@
       "objective": 11.0,
       "best_bound": 11.0,
       "gap": 0.0,
-      "wall_time": 0.018884500008425675,
+      "wall_time": 0.02133719999983441,
       "valid": true
     },
     {
@@ -34,7 +34,7 @@
       "objective": 9.0,
       "best_bound": 9.0,
       "gap": 0.0,
-      "wall_time": 0.02759140000853222,
+      "wall_time": 0.03042329999152571,
       "valid": true
     },
     {
@@ -44,7 +44,7 @@
       "objective": 8.0,
       "best_bound": 8.0,
       "gap": 0.0,
-      "wall_time": 0.04222850000951439,
+      "wall_time": 0.043965100005152635,
       "valid": true
     }
   ],
