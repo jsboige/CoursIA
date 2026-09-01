@@ -742,16 +742,17 @@ class TestComposeReferencedKeys:
 # Portfolio-IBKR-Coinbase-Hybrid/.env). Per-series notebooks whose .env files
 # carry shared SECRET_KEYS (OPENAI_API_KEY, OPENROUTER_API_KEY) lived OUTSIDE
 # TARGET_ENVS, making their drift invisible to ``--check``. The c.10186
-# extension added 5 paths:
+# extension added 5 paths, the #13955 follow-up added a 6th:
 #
 #   - ML/DataScienceWithAgents/AgenticDataScience/.env  (ECE TP series)
+#   - ML/DataScienceWithAgents/Track2-GoogleADK/.env    (Lab11, OPENAI+OPENROUTER, #13955)
 #   - SemanticKernel/.env                               (0-AI-settings + 09-CLR)
 #   - SymbolicAI/SmartContracts/.env                    (Solidity / foundry)
 #   - QuantConnect/.env                                 (LLM summary channel)
 #   - SymbolicAI/SymbolicLearning/.env                  (LLM-assisted proof)
 #
 # The tests below pin three things:
-#   (1) all 5 paths are PRESENT in the module's TARGET_ENVS (a future
+#   (1) all 6 paths are PRESENT in the module's TARGET_ENVS (a future
 #       cleanup that drops one of them is a deliberate, reviewed decision
 #       rather than silent blind-spot regression),
 #   (2) ``sync()`` silently skips a notebook .env that does not exist on
@@ -769,6 +770,7 @@ class TestNotebookTargetEnvs:
         # with the .env path; we match by suffix to be tolerant of any
         # future restructuring of parents above the notebook series).
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/AgenticDataScience/.env",
+        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/.env",
         "MyIA.AI.Notebooks/SemanticKernel/.env",
         "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/.env",
         "MyIA.AI.Notebooks/QuantConnect/.env",
@@ -796,9 +798,9 @@ class TestNotebookTargetEnvs:
                 f"current TARGET_ENVS notebook-side paths: {rels}"
             )
 
-    def test_count_includes_three_legacy_plus_five_new(self):
+    def test_count_includes_three_legacy_plus_six_new(self):
         # Legacy 3 (GenAI/.env, SymbolicAI/Lean/.env,
-        # QuantConnect/projects/Portfolio-IBKR-Coinbase-Hybrid/.env) + 5 new.
+        # QuantConnect/projects/Portfolio-IBKR-Coinbase-Hybrid/.env) + 6 new.
         # The service glob is not enumerated by this test (machine-dependent).
         rels = self._target_env_paths()
         legacy = {
