@@ -21,6 +21,7 @@ OPEN by administrative oversight).
 
 import sys
 import os
+import json
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -193,3 +194,52 @@ def test_ambigu_body_ref_sans_keyword_partage():
     # (issue title: "scripts/check_already_delivered.py preflight cross-check")
     assert r["indirect_merged_prs"] == [9780, 10000, 10500]
     assert r["indirect_credited_prs"] == [], "the keyword filter must reject these"
+
+
+def test_word_boundary_prefix_collision_filtered():
+    """Word-boundary filter : `#1` must NOT match `#10`, `#11`, `#13850` etc.
+
+    The git log --grep="#1" call is SUBSTRING-based on this repo (every commit
+    mentioning #10, #11, ..., #13850 starts with "#1"). Without a post-filter,
+    the source returns thousands of false positives. The word-boundary filter
+    ``(?<![0-9])#1\\b`` keeps only commits where ``#1`` appears as an isolated
+    token — i.e. not as the prefix of ``#10``, ``#11411``, ``#13001``.
+
+    This test drives the REAL ``source_git_log`` (no monkey-patch on it) and
+    patches only ``_run`` to feed canned git output, so the filter logic runs.
+    """
+    import check_already_delivered as mod
+
+    # All 4 commits have `#1` as a SUBSTRING of a longer number → ALL must be
+    # dropped by the word-boundary filter. The commit with "reference #1" in
+    # a textual position is NOT what the substring-based grep returns.
+    canned_git_output = "\n".join([
+        "abc1234 fix(ict,#10): ten",
+        "def1234 fix(ict,#11): eleven",
+        "ghi1234 fix(ict,#11411): eleven-thousand",
+        "jkl1234 fix(ict,#13001): thirteen-thousand-one",
+    ])
+    orig_run = mod._run
+
+    def fake_run(cmd, cwd=None):
+        if cmd and cmd[0] == "git" and any(c.startswith("--grep") for c in cmd):
+            return 0, canned_git_output, ""
+        if cmd and cmd[0] == "gh" and "pr" in cmd and "list" in cmd:
+            return 0, "[]", ""
+        if cmd and cmd[0] == "gh" and "issue" in cmd and "view" in cmd:
+            return 0, json.dumps({"number": 1, "title": "feat: add stiegler", "body": "", "state": "OPEN"}), ""
+        return orig_run(cmd, cwd=cwd)
+
+    mod._run = fake_run
+    try:
+        r = mod.check(1, title="feat: add stiegler or tools")
+    finally:
+        mod._run = orig_run
+    gl = r["sources"]["git_log"]
+    # Without a real `#1` token, the filter drops ALL 4 prefix-only commits.
+    assert gl["count"] == 0, gl["commits"]
+    # raw_count preserves the unfiltered count for forensics.
+    assert gl["raw_count"] == 4, gl
+    # Verdict must drop to NON LIVRÉ (no commit, no PR, no body ref).
+    assert r["verdict"] == "NON LIVRÉ", r
+    assert r["exit_code"] == 0

@@ -89,6 +89,19 @@ def _run(cmd: list[str], cwd: Path | None = None) -> tuple[int, str, str]:
         return 124, "", "timeout"
 
 
+_REF_PATTERN = re.compile(r"(?<![0-9])#(\d+)\b")
+
+
+def _ref_id_to_subject(text: str, issue: int) -> bool:
+    """Word-boundary check : #issue appears as an isolated reference, not as a
+    prefix of a longer number (e.g. `#1` != `#10` != `#13850`). Operates on the
+    commit subject line — the leading ``<sha>`` from ``git log --oneline`` is
+    ignored (no digits follow a SHA alphafragment, so the regex won't false-
+    trigger on it).
+    """
+    return any(m.group(1) == str(issue) for m in _REF_PATTERN.finditer(text))
+
+
 def source_git_log(issue: int) -> dict:
     """Source 1: commits referencing the issue on origin/main.
 
@@ -96,10 +109,21 @@ def source_git_log(issue: int) -> dict:
     issue but use a different reference number (e.g. issue #13850 fixed via
     PR #13824 whose subject mentions #13753) will NOT appear here. This source
     is therefore a *weak* signal — useful for direct references only.
+
+    Word-boundary filter : ``git log --grep="#N"`` is substring-based and matches
+    every commit whose subject CONTAINS ``#N`` (e.g. ``#1`` also matches
+    ``#10``, ``#11`, ..., ``#13850``). We post-filter with a word-boundary regex
+    to keep only commits where ``#issue`` appears as an isolated token.
     """
     rc, out, _ = _run(["git", "log", "origin/main", f"--grep=#{issue}", "--oneline"])
-    commits = [line.strip() for line in out.splitlines() if line.strip()]
-    return {"commits": commits, "count": len(commits), "note": "subject-only"}
+    raw = [line.strip() for line in out.splitlines() if line.strip()]
+    commits = [line for line in raw if _ref_id_to_subject(line, issue)]
+    return {
+        "commits": commits,
+        "count": len(commits),
+        "raw_count": len(raw),
+        "note": "subject-only + word-boundary",
+    }
 
 
 def source_gh_issue_body(issue: int) -> dict:
