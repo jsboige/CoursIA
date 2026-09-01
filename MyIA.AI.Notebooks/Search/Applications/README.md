@@ -252,6 +252,7 @@ Le [App-27-Sparse-Index-Tracking-Walk-Forward](Hybrid/App-27-Sparse-Index-Tracki
 | [Partie 2 : CSP](../Part2-CSP/README.md) | Programmation par contraintes | Solveurs CP-SAT, MiniZinc |
 | [Search (parent)](../README.md) | Vue d'ensemble | Contexte et parcours global |
 | [ML/ML.Net](../../ML/ML.Net/) | App-18 (HyperparameterTuning) | Optimisation bayésienne + GA |
+| [QuantConnect](../../QuantConnect/) | App-27 (Sparse Index Tracking) | Pont vers un futur développement LEAN : données de marché point-in-time, coûts, corporate actions et backtest réellement out-of-sample |
 | [Sudoku](../../Sudoku/) | App-11 (Picross), App-1 (NQueens) | Problèmes combinatoires similaires |
 | [GameTheory](../../GameTheory/) | App-14/14b (ConnectFour) | Jeux à deux joueurs, MCTS |
 
