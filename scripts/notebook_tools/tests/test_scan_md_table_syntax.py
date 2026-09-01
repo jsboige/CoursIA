@@ -2,11 +2,12 @@
 syntax defect detector (#10097, sub-issue of #3966).
 
 Tests cover:
-  - the core ``detect_md_table_syntax`` line-list API (the 4 pathologies:
-    COL_MISMATCH, NO_SEP, NO_BLANK_BEFORE, NO_BLANK_AFTER, each positive + clean);
+  - the core ``detect_md_table_syntax`` line-list API and its table pathologies;
   - the GFM-correct column counter (``_column_count``): backtick code spans,
     escaped ``\\|``, inline math ``$...$``, and borderless rows are NOT false
     positives;
+  - notebook-only ``MATH_SPAN_PIPE`` detection with controls for pipe-free LaTeX,
+    escaped conditionals, currency columns, and regular Markdown scope;
   - the fence-aware block grouping (pipes inside ``` blocks are ignored);
   - the notebook / markdown walkers (``scan_notebook`` / ``scan_markdown``);
   - the CLI (``--json`` shape, ``--check`` exit codes, empty-scan exit 2).
@@ -312,6 +313,120 @@ class TestDetectCodeSpanPipe:
         f = detect_md_table_syntax(lines)
         assert [x for x in f if x["pathology"] == "COL_MISMATCH"] == []
         assert [x for x in f if x["pathology"] == "CODE_SPAN_PIPE"] != []
+
+
+class TestDetectMathSpanPipe:
+    """MATH_SPAN_PIPE: raw absolute-value bars break notebook table rendering."""
+
+    def test_raw_pipe_in_math_span_flagged_for_notebooks(self):
+        lines = [
+            "| Objet | Definition | Mesure |",
+            "|---|---|---|",
+            "| $r$ | rapport $|F_B| / |A|$ | ratio |",
+        ]
+        findings = detect_md_table_syntax(
+            lines, detect_math_span_pipes=True)
+        math_findings = [
+            item for item in findings
+            if item["pathology"] == "MATH_SPAN_PIPE"
+        ]
+        assert len(math_findings) == 1
+        assert math_findings[0]["line"] == 3
+        assert [
+            item for item in findings
+            if item["pathology"] == "COL_MISMATCH"
+        ] == []
+
+    def test_pipe_free_latex_not_flagged(self):
+        lines = [
+            "| Objet | Definition | Mesure |",
+            "|---|---|---|",
+            "| $r$ | rapport $\\lvert F_B\\rvert / \\lvert A\\rvert$ | ratio |",
+        ]
+        findings = detect_md_table_syntax(
+            lines, detect_math_span_pipes=True)
+        assert [
+            item for item in findings
+            if item["pathology"] == "MATH_SPAN_PIPE"
+        ] == []
+
+    def test_currency_columns_not_flagged(self):
+        lines = [
+            "| Modele | Cout | Estimation |",
+            "|---|---|---|",
+            "| OpenAI tts-1 | $15.00 | ~$0.75 |",
+        ]
+        findings = detect_md_table_syntax(
+            lines, detect_math_span_pipes=True)
+        assert [
+            item for item in findings
+            if item["pathology"] == "MATH_SPAN_PIPE"
+        ] == []
+
+    def test_currency_header_not_flagged(self):
+        lines = [
+            "| Modele | Input ($/1M tokens) | Output ($/1M tokens) |",
+            "|---|---|---|",
+            "| local | 0 | 0 |",
+        ]
+        findings = detect_md_table_syntax(
+            lines, detect_math_span_pipes=True)
+        assert [
+            item for item in findings
+            if item["pathology"] == "MATH_SPAN_PIPE"
+        ] == []
+
+    def test_escaped_math_pipe_not_flagged(self):
+        lines = [
+            "| Objet | Definition |",
+            "|---|---|",
+            "| politique | $\\pi(a\\|s)$ |",
+        ]
+        findings = detect_md_table_syntax(
+            lines, detect_math_span_pipes=True)
+        assert [
+            item for item in findings
+            if item["pathology"] == "MATH_SPAN_PIPE"
+        ] == []
+
+    def test_regular_markdown_scope_stays_clean(self, tmp_path):
+        path = tmp_path / "table.md"
+        path.write_text(
+            "| Objet | Definition | Mesure |\n"
+            "|---|---|---|\n"
+            "| $r$ | rapport $|F_B| / |A|$ | ratio |\n",
+            encoding="utf-8",
+        )
+        result = scan_markdown(path)
+        assert [
+            item for item in result["findings"]
+            if item["pathology"] == "MATH_SPAN_PIPE"
+        ] == []
+
+    def test_notebook_scope_reports_math_pipe(self, tmp_path):
+        path = tmp_path / "table.ipynb"
+        path.write_text(json.dumps({
+            "cells": [{
+                "cell_type": "markdown",
+                "metadata": {},
+                "source": [
+                    "| Objet | Definition | Mesure |\n",
+                    "|---|---|---|\n",
+                    "| $r$ | rapport $|F_B| / |A|$ | ratio |\n",
+                ],
+            }],
+            "metadata": {},
+            "nbformat": 4,
+            "nbformat_minor": 5,
+        }), encoding="utf-8")
+        result = scan_notebook(path)
+        findings = [
+            item for item in result["findings"]
+            if item["pathology"] == "MATH_SPAN_PIPE"
+        ]
+        assert len(findings) == 1
+        assert findings[0]["cell_index"] == 0
+        assert findings[0]["line"] == 3
 
 
 class TestDetectNoSep:

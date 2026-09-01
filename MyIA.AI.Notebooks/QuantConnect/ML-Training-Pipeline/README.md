@@ -548,6 +548,31 @@ Résultats : `scripts/results/{l1_tsmom,l2_dual_momentum,l3_trend_long_horizon,l
 - **Historique entraînement** : Courbes de perte par epoch
 - **Seeds** : Données synthétiques utilisent seed=42 ; pour production, configurer `PYTHONHASHSEED` et `torch.manual_seed()`
 
+### Convention de stockage des résultats (#13740)
+
+Trois familles d'artefacts, trois emplacements distincts, **un seul verdict canonique par expérience** :
+
+| Type | Emplacement canonique | Contenu | Exemple |
+|---|---|---|---|
+| **Verdict canonique** | `scripts/results/<exp>/results.json` (+ `seed_significance.json` si multi-seed) | Métriques finales (Sharpe, edge, BEATS/NO BEATS) + per-seed | `scripts/results/m11c_dm_test/results.json`, `scripts/results/baselines_zeroshot/seed_significance.json` |
+| **Poids du modèle** | `checkpoints/<famille>/<timestamp>/` | `model.pt` + `metadata.json` (args, hash, courbe de perte) | `checkpoints/lstm/20260501_123516/metadata.json` |
+| **Logs de run** | `outputs/<run_id>/` (auto-créé) | stdout/stderr, gradients, telemetry GPU | (générés par `shared/gpu_training.py`) |
+
+**Règle d'or** : un répertoire `<exp>/` = une expérience = un verdict. Pas de JSON plats au racine de `scripts/results/`.
+
+#### Dérogations historiques connues (4 fichiers plats à migrer)
+
+Ces 4 fichiers violent la convention (JSON plat à la racine de `scripts/results/` au lieu d'un sous-répertoire `<exp>/`). Ils sont **référencés en dur** par `m4_dlinear_vol_sc_validation.ipynb` (chemins `Path(...)` dans 4 cellules), `scripts/btc_vol.py` (default argparse) et `REGISTRY.md` (commandes `--out-json`). La migration est **non triviale** : déplacer les JSON casserait les consommateurs. Décision : **garder en l'état, flagger ici**, et traiter dans une PR dédiée quand les chemins seront refactorés en `Path(__file__).parent / "<exp>"`.
+
+| Fichier plat | Réf. canonique cible | Statut |
+|---|---|---|
+| `scripts/results/m4_dlinear_vol_btc_sc.json` | `scripts/results/m4_dlinear_vol_btc_sc/results.json` | À migrer (4 consumers) |
+| `scripts/results/m4_dlinear_vol_btc_sc_debiased.json` | idem sous-répertoire `--debias` | À migrer |
+| `scripts/results/m4_dlinear_vol_btc_sc_debiased_recentered.json` | idem `--debias --recentered` | À migrer |
+| `scripts/results/m4_dlinear_vol_btc_sc_mse.json` | `scripts/results/m4_dlinear_vol_btc_sc_mse/results.json` | À migrer (3 consumers) |
+
+Pour les **nouvelles expériences** : appliquer la convention dès la première écriture. Le pipeline de validation (`scripts/validate_training_package.py`) devrait idéalement rejeter les JSON plats au racine — non implémenté à ce jour.
+
 ---
 
 ## Conclusion / Prochaines étapes

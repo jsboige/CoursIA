@@ -48,7 +48,7 @@ Le package `ict/` (installable en mode editable, issue [#8076](https://github.co
 |---------|---------|--------|
 | Tri & morphogenèse | `self_sorting`, `sorting_metrics`, `kin_sorting`, `reaction_diffusion`, `bistable`, `life` | 1-2 |
 | Paysages & précursors | `early_warning`, `spectral`, `scale_free` | 2 |
-| Agentivité & causalité | `agency`, `causal_emergence`, `tpm_estimation`, `multiscale_agency`, `trajectories` | 1-3 |
+| Agentivité & causalité | `agency`, `causal_emergence`, `causal_attribution`, `tpm_estimation`, `multiscale_agency`, `trajectories` | 1-3 |
 | Valence & prégnance | `valence`, `learned_valence`, `pregnance_animat`, `inhibited_action`, `stake` | 3 |
 | Catastrophes & topologie | `catastrophe`, `cech_obstruction`, `feature_dynamics`, `meta_proxy`, `sensitivity`, `proxy_contextuality` | 2-5 |
 | Énergie libre & information | `free_energy`, `active_inference`, `mdl`, `compression`, `epsilon_machine` | 4-5 |
