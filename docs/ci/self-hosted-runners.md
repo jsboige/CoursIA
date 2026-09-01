@@ -1,6 +1,6 @@
 # Préparation des runners GitHub Actions auto-hébergés
 
-Cette page décrit les mesures et les garde-fous du chantier #12704. **État au 2026-08-28 : activation partielle sur po-2024** (runner `fast-guards` live, tool-cache seedé — cf section Provisionnement ; ré-enregistrement sans UAC opérationnel), les autres profils du registre restant en préparation. Le dépôt `jsboige/CoursIA` est public : une PR de fork peut contenir du code non fiable. Toute exécution auto-hébergée reste réservée aux branches du dépôt lui-même, avec une garde YAML explicite en plus des réglages GitHub.
+Cette page décrit les mesures et les garde-fous du chantier #12704. **État au 2026-09-01 : activation partielle sur po-2024, volet Linux non déployé** (runner `fast-guards` live, tool-cache seedé — cf section Provisionnement ; ré-enregistrement sans UAC opérationnel), les autres profils du registre restant en préparation. Le dépôt `jsboige/CoursIA` est public : une PR de fork peut contenir du code non fiable. Toute exécution auto-hébergée reste réservée aux branches du dépôt lui-même, avec une garde YAML explicite en plus des réglages GitHub.
 
 ## Mesurer avant de dimensionner
 
@@ -217,11 +217,38 @@ docker run --rm -d --name coursia-linux-runner \
   coursia-linux-runner:2.336.0
 ```
 
-Pas de `--gpus` (aucun passthrough GPU, par design). Le runner `--ephemeral` traite **au plus un job** puis se désenregistre et le conteneur `--rm` disparaît : un dispatch = un job = un conteneur. La concurrence est plafonnée à 1 par construction.
+Pas de `--gpus` (aucun passthrough GPU, par design). Le runner `--ephemeral` traite **au plus un job** puis se désenregistre et le conteneur `--rm` disparaît : un dispatch = un job = un conteneur.
+
+**Ce cycle mono-job est le facteur limitant nommé par le census #13378** — pas la compatibilité des workflows. Un `docker run` isolé plafonne donc la concurrence à 1, ce qui ne débraye rien : c'est le superviseur ci-dessous qui lève ce plafond.
+
+### Superviseur — le plafond de 1 job se lève par N boucles
+
+`scripts/ci/docker/linux-runner/supervise.sh` (livré 2026-09-01, finalisation du volet laissé en conception). Un slot = une boucle `while` qui relance un conteneur dès que le précédent meurt ; **N slots = N jobs concurrents**. C'est toute la différence entre le conteneur et le service Windows : côté Windows, chaque ré-enregistrement est une tâche planifiée à orchestrer ; ici c'est un `docker run` de plus, gratuit et parallélisable.
+
+```bash
+docker build -t coursia-linux-runner:2.336.0 scripts/ci/docker/linux-runner/
+scripts/ci/docker/linux-runner/supervise.sh start 2   # 2 slots concurrents
+scripts/ci/docker/linux-runner/supervise.sh status
+scripts/ci/docker/linux-runner/supervise.sh stop      # gracieux : les jobs en cours finissent
+```
+
+Trois points de conception qui ne sont pas négociables :
+
+- **La boucle vit sur l'hôte, jamais dans l'image.** Le `registration token` vaut 1 h et est jetable : il en faut un neuf à chaque démarrage de conteneur. Le fetch exige `gh` authentifié avec droit admin sur le dépôt — ces credentials ne descendent jamais dans le conteneur, qui ne reçoit que le token par `-e`, comme l'exige déjà `entrypoint.sh`.
+- **L'arrêt est gracieux par défaut** (sentinel `~/.coursia-runner/stop`) : plus aucun conteneur n'est lancé, mais le job en cours va à son terme. Tuer un job en vol produirait un rouge qui ne veut rien dire.
+- **N appartient à po-2024, pas à ai-01.** Le défaut est 2, volontairement bas. La clause de souveraineté ci-dessous prime sur toute décision d'élargissement.
 
 **Labels dédiés** : le jeu `{self-hosted, coursia-ephemeral, coursia-linux}` (second jeu admis par `check_self_hosted_runner_policy.py`) route uniquement vers le conteneur — un dispatch Windows ne peut jamais y atterrir, un job Linux ne peut jamais atterrir sur un runner Windows. Mélanger les deux jeux reste une violation (`RUNNER_LABELS`).
 
-**État pilote** : `linux-self-hosted-tests.yml` est dispatch-ONLY (zéro fan-out, pattern #13097) et exécute le guard de policy (`test_check_self_hosted_runner_policy.py`, python pur, aucune écriture hors workspace conteneurisé). Les 93 jobs ubuntu-latest du census #13378 restent sur GitHub-hosted tant que la mesure d'empreinte n'a pas porté l'élargissement — décision coordinateur, pas worker.
+**État réel mesuré le 2026-09-01 (po-2024, inventaire GitHub firsthand)** : le registre du dépôt ne contient **qu'un seul runner**, `myia-po-2024-fast-guards`, **Windows**. Aucun runner ne porte le label `coursia-linux` — nulle part. L'image n'a jamais été construite.
+
+Conséquence à écrire noir sur blanc, parce que la version précédente de cette page décrivait la conception comme un état déployé : `linux-self-hosted-tests.yml` (dispatch-ONLY, zéro fan-out, pattern #13097) cible un **label orphelin**. Un dispatch y mettrait le job en file **indéfiniment** — pas d'échec, pas de rouge, une attente muette. Le piège est aujourd'hui dormant (0 run en file, vérifié), il ne l'est plus dès qu'on dispatche.
+
+Le `docker build` + `supervise.sh start` ci-dessus est donc la **précondition** du pilote, pas son prolongement. Tant qu'aucun job n'a rendu la preuve d'identité (`RUNNER_OS = Linux` dans les logs), aucun vert de cette chaîne ne prouve quoi que ce soit — leçon po-2024 du run 33178577527, où l'échec s'était produit *pour la mauvaise raison* (ACE manquante) et aurait pu passer pour un succès de routage.
+
+Les 93 jobs `ubuntu-latest` du census #13378 restent sur GitHub-hosted tant que l'empreinte n'a pas été mesurée sur des jobs réels — décision coordinateur, pas worker.
+
+**Le gestionnaire ne bloque pas.** `manage_self_hosted_runner.py` et `self_hosted_runner_profiles.json` sont Windows-only *par validation* (« must pin an official Windows x64 archive ») : ils ne peuvent pas porter un profil Linux aujourd'hui. Ce n'est pas un blocage — `supervise.sh` fonctionne sans eux, sans aucune PR préalable. Étendre le gestionnaire aux profils Linux est une **PR de suivi**, jamais la condition du débrayage.
 
 Si l'empreinte mesurée pendant un job gêne la workstation (training GPU, sessions interactives), on **réduit les caps ou on arrête**, et on le signale à ai-01.
 
@@ -238,11 +265,14 @@ La préparation complète reste découpée :
 
 État au 2026-08-28 : les tranches 1-3 sont livrées ; la tranche 4 est active sur po-2024 (jobs réels consommés par le pool `coursia-fast-guards`, ex. runs 33092567324 et 33093119578) ; la preuve contrôlée complète (5) et l'extension du pool aux autres machines restent à faire. Chaque extension machine exige le provisionnement Python de la section dédiée avant le premier job.
 
-| Profil du registre | État au 2026-08-28 |
+| Profil du registre | État — inventaire GitHub firsthand du 2026-09-01 |
 |---|---|
-| `myia-po-2023-fast-guards` | en préparation (pas de runner installé) |
-| `myia-po-2024-fast-guards` | **actif** — tool-cache seedé (a2), ré-enregistrement sans UAC, jobs réels consommés |
-| `myia-po-2025-fast-guards` | en préparation (pas de runner installé) |
-| `myia-po-2026-fast-guards` | en préparation (pas de runner installé ; profil vérifié dans le registre) |
+| `myia-po-2023-fast-guards` | en préparation (aucun runner enregistré) |
+| `myia-po-2024-fast-guards` | **actif** — seul runner du dépôt ; Windows ; tool-cache seedé (a2), ré-enregistrement sans UAC, jobs réels consommés |
+| `myia-po-2025-fast-guards` | en préparation (aucun runner enregistré) |
+| `myia-po-2026-fast-guards` | en préparation (aucun runner enregistré ; profil vérifié dans le registre) |
+| `coursia-linux` (conteneur) | **inexistant** — label ciblé par `linux-self-hosted-tests.yml`, aucun runner ne le porte. Image non construite |
+
+La colonne est datée d'une **mesure**, pas d'une intention : le tableau précédent portait « actif » et « en préparation » sans dire ce qui avait été compté, ce qui a laissé lire une conception comme un déploiement.
 
 Le réglage GitHub « Require approval for all outside collaborators » complète la garde YAML ; il ne la remplace jamais (non exposé par l'API `/actions/permissions` — capture à faire côté admin, UI Settings → Actions). L'activation finale reste un geste explicite du user ou du coordinateur, après validation des tranches précédentes.
