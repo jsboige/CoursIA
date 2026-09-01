@@ -85,7 +85,7 @@ Suite à l'audit du 5 mai 2026, voici l'état honnête de chaque notebook. **Auc
 | QC-Py-Cloud-04-RL-DQN-Trading | EXÉCUTÉ | |
 | QC-Py-Cloud-05-MLP-Forecasting | EXÉCUTÉ | |
 | QC-Py-Cloud-05-RegimeSwitching | doc cloud | markdown-only — backtest sur QC Cloud |
-| QC-Py-Cloud-06-VolTargeting | doc cloud | markdown-only — backtest sur QC Cloud |
+| QC-Py-Cloud-13-VolTargeting | doc cloud | markdown-only — backtest sur QC Cloud |
 | QC-Py-Cloud-06-PCA-StatArb | doc cloud | markdown-only — backtest sur QC Cloud |
 | QC-Py-Cloud-07-TemporalCNN | doc cloud | markdown-only — backtest sur QC Cloud |
 | QC-Py-Cloud-08-ValueFactor-ZScore | doc cloud | markdown-only — backtest sur QC Cloud |
@@ -230,7 +230,7 @@ Notebooks de recherche et stratégies exécutées sur QuantConnect Cloud.
 | [QC-Py-Cloud-04-RL-DQN-Trading](QC-Py-Cloud-04-RL-DQN-Trading.ipynb) | RL DQN |
 | [QC-Py-Cloud-05-MLP-Forecasting](QC-Py-Cloud-05-MLP-Forecasting.ipynb) | MLP Forecasting |
 | [QC-Py-Cloud-05-RegimeSwitching](QC-Py-Cloud-05-RegimeSwitching.ipynb) | Régime Switching |
-| [QC-Py-Cloud-06-VolTargeting](QC-Py-Cloud-06-VolTargeting.ipynb) | Volatility Targeting |
+| [QC-Py-Cloud-13-VolTargeting](QC-Py-Cloud-13-VolTargeting.ipynb) | Volatility Targeting |
 | [QC-Py-Cloud-06-PCA-StatArb](QC-Py-Cloud-06-PCA-StatArb.ipynb) | PCA Statistical Arbitrage |
 | [QC-Py-Cloud-07-TemporalCNN](QC-Py-Cloud-07-TemporalCNN.ipynb) | Temporal CNN |
 | [QC-Py-Cloud-08-ValueFactor-ZScore](QC-Py-Cloud-08-ValueFactor-ZScore.ipynb) | Value Factor Z-Score |
