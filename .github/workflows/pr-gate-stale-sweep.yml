@@ -256,8 +256,39 @@ jobs:
                   _diag(p, "unfinished", [
                       f"{k[1]}[run {k[0]}]" for k in unfinished])
                   continue
+              # #13978 -- `cancelled` rentrait ici par le COMPLEMENT de GREEN,
+              # c'est-a-dire du cote meme que le commentaire de RED exempte
+              # explicitement ("It belongs here, on the GATE side only").
+              # L'asymetrie etait declaree, testee, et non implementee de ce
+              # cote. Sous `cancel-in-progress: true` sur les advisory, un
+              # `cancelled` frais n'est plus la "vraie interruption" rare que
+              # supposait l'acceptance 5 : c'est l'etat STATIONNAIRE de toute
+              # PR ayant recu deux pushes.
+              #
+              # Mesure du sweep 33459621864 (2026-09-01T01:40, 71 PRs
+              # inspectees) : sur 42 exclusions nommees, 26 tenaient a un
+              # `failure` reel et 16 -- 38 % -- a des `cancelled` SEULS, dont
+              # 13 au seul advisory `List open-PR path collisions`. Or ce meme
+              # advisory annule coexiste avec un `PR gate: SUCCESS` sur des PRs
+              # MERGEES (#13916, #13860) : le filtre etait strictement plus
+              # strict que le gate dont il existe pour re-rendre le verdict.
+              #
+              # L'intention d'acceptance 5 -- ne pas blanchir une vraie
+              # interruption -- tient toujours, parce que le sweep ne merge
+              # rien : il RELANCE le gate, qui re-lit l'etat live et conclura
+              # FAIL si un constituant est reellement rouge. Le verdict reste
+              # rendu par le gate, jamais par le sweep. Cout d'un faux positif
+              # d'eligibilite : une minute de runner. Cout du faux negatif
+              # actuel : une PR BLOCKED pour toujours, puisque le gate
+              # `cancelled` ne peut pas devenir SUCCESS tout seul.
+              #
+              # Exemption d'une SEULE conclusion, jamais une liste blanche de
+              # bloquants : `startup_failure`, `stale` et toute conclusion
+              # future inconnue continuent d'exclure.
+              OTHERS_NOT_BLOCKING = GREEN | {"cancelled"}
               red_others = [(k, c) for k, c in others
-                            if (c.get("conclusion") or "") not in GREEN]
+                            if (c.get("conclusion") or "")
+                            not in OTHERS_NOT_BLOCKING]
               if red_others:
                   _diag(p, "red", [
                       f"{k[1]}[run {k[0]}]={c.get('conclusion')}"

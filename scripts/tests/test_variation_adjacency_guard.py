@@ -222,7 +222,7 @@ def test_override_genre_outside_the_enum_passes_through():
 def test_last_coordinator_marker_wins():
     ov = vag.parse_override([
         {"author": "myia-po-2026", "body": "[G-VAR-3 OVERRIDE] next: lean"},
-        {"author": "jsboige", "body": "[G-VAR-3 OVERRIDE] next: qc"},
+        {"author": "myia-ai-01", "body": "[G-VAR-3 OVERRIDE] next: qc"},
     ])
     assert ov is not None and ov["next_genre"] == "qc"
     assert vag.check(_BLOCKED, override=ov)["guard_pass"] is True
@@ -338,21 +338,37 @@ def test_well_formed_override_still_lifts_after_12096():
     # so the malformed cases above are provably not passing by accident of
     # a disconnected helper.
     v = vag.check(_BLOCKED, override=_ov(
-        "jsboige", "[G-VAR-3 OVERRIDE] lane myia-po-2026:CoursIA -- next: qc"))
+        "myia-ai-01", "[G-VAR-3 OVERRIDE] lane myia-po-2026:CoursIA -- next: qc"))
     assert v["guard_pass"] is True
     assert v["overridden"] is True
     assert v["override_next"] == "qc"
+
+
+def test_13730_jsboige_is_NOT_a_coordinator_login():
+    # #13730 mirror of #13316: `jsboige` is the shared push identity of
+    # every lane, not a coordinator. A well-formed override authored by
+    # `jsboige` is therefore INVISIBLE to parse_override (worker cannot
+    # self-exempt by section 1 + choice C of #12096), and the gate stays
+    # down. This pins the post-#13316 hardening at the adjacency organ.
+    ov = vag.parse_override([
+        {"author": "jsboige", "body": "[G-VAR-3 OVERRIDE] lane myia-po-2026:CoursIA -- next: qc"},
+    ])
+    assert ov is None  # invisible: shared-identity author is not a coordinator
+    v = vag.check(_BLOCKED, override=ov)
+    assert v["guard_pass"] is False
+    assert v["blocking"] is True
+    assert v["overridden"] is False
 
 
 def test_parse_override_malformed_reasons_distinct():
     # The three malformed clauses produce three DISTINCT reasons -- a single
     # generic "malformed" message would put the diagnosis burden back on the
     # coordinator (#12096: "avec la raison et la forme attendue").
-    r_missing = vag.parse_override([{"author": "jsboige",
+    r_missing = vag.parse_override([{"author": "myia-ai-01",
                                      "body": "[G-VAR-3 OVERRIDE] lane x:y"}])
-    r_offline = vag.parse_override([{"author": "jsboige",
+    r_offline = vag.parse_override([{"author": "myia-ai-01",
                                      "body": "[G-VAR-3 OVERRIDE] lane x:y\nnext: lean"}])
-    r_shape = vag.parse_override([{"author": "jsboige",
+    r_shape = vag.parse_override([{"author": "myia-ai-01",
                                    "body": "[G-VAR-3 OVERRIDE] next: 7days"}])
     assert "manquant" in r_missing["malformed"]
     assert "meme ligne" in r_offline["malformed"]
@@ -449,8 +465,8 @@ def test_13261_malformed_fallback_is_the_MOST_RECENT_rejection():
     # newest-first semantics: the MOST RECENT coordinator rejection is the
     # announced one (its reason is the actionable one).
     ov = vag.parse_override([
-        {"author": "jsboige", "body": "[G-VAR-3 OVERRIDE] lane x:y"},
-        {"author": "jsboige", "body": "[G-VAR-3 OVERRIDE] next: 7days"},
+        {"author": "myia-ai-01", "body": "[G-VAR-3 OVERRIDE] lane x:y"},
+        {"author": "myia-ai-01", "body": "[G-VAR-3 OVERRIDE] next: 7days"},
     ])
     assert ov is not None and "malformed" in ov
     assert "n'est pas un genre" in ov["malformed"]  # the newer, not "manquant"
