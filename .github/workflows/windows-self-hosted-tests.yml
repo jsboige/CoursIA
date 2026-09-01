@@ -51,7 +51,7 @@ jobs:
     # fork est refuse ICI, defense-in-depth qui ne se defe pas d'un clic d'UI.
     # Garde selection : inputs.target == 'confinement' (sinon ce job n'est
     # pas eligible -- un dispatch `target=dotnet` ne planifie que le job .NET).
-    if: (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && inputs.target == 'confinement'
+    if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && inputs.target == 'confinement'
     runs-on: [self-hosted, coursia-ephemeral, coursia-fast-guards]
     timeout-minutes: 15
     concurrency:
@@ -86,7 +86,7 @@ jobs:
     # Garde selection : inputs.target == 'dotnet' (sinon ce job n'est pas
     # eligible -- un dispatch `target=confinement` ne planifie que le job
     # confinement).
-    if: (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && inputs.target == 'dotnet'
+    if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && inputs.target == 'dotnet'
     runs-on: [self-hosted, coursia-ephemeral, coursia-fast-guards]
     timeout-minutes: 20
     # Groupe separe : un dispatch .NET ne doit PAS annuler un dispatch

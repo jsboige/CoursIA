@@ -79,6 +79,17 @@ SAME_REPO_REUSABLE_PATTERN = re.compile(
 SAME_REPO_GUARD = (
     "github.event.pull_request.head.repo.full_name == github.repository"
 )
+# Universal form (#13874): ne s'appuie pas sur la valeur textuelle de
+# github.event_name (qui distingue pull_request de pull_request_target,
+# le second etant le vecteur d'exfiltration classique sur runner public).
+# Teste la presence du champ pull_request + l'identite du repo source,
+# couvrant les deux variantes de declencheur en un seul predicat.
+# Acceptee en plus de la forme directe SAME_REPO_GUARD.
+SAME_REPO_GUARD_UNIVERSAL = (
+    "github.event.pull_request.head.repo.full_name == null "
+    "|| github.event.pull_request.head.repo.full_name == github.repository"
+)
+ACCEPTED_SAME_REPO_GUARDS = frozenset({SAME_REPO_GUARD, SAME_REPO_GUARD_UNIVERSAL})
 DEFAULT_WORKFLOWS_DIR = Path(__file__).resolve().parents[2] / ".github" / "workflows"
 
 
@@ -202,6 +213,68 @@ def _normalise_condition(value: Any) -> str:
     if condition.startswith("${{") and condition.endswith("}}"):
         condition = condition[3:-2].strip()
     return " ".join(condition.split())
+
+
+def _starts_with_accepted_guard(condition: str) -> bool:
+    """True iff ``condition`` leads with one of the accepted same-repo
+    guards, optionally wrapped in parens and optionally followed by `&& ...`
+    selection predicates. The guard must be the LEAD predicate, and any
+    suffix joined by `||` is rejected (the `||` would let the guard fall
+    through). The standalone tests ``test_guard_weakened_by_or_is_rejected``
+    and ``test_universal_guard_weakened_by_or_is_rejected`` verify that
+    `|| always()` is refused.
+    """
+    if not condition:
+        return False
+    # Short-circuit: the whole condition is itself an accepted guard.
+    if condition in ACCEPTED_SAME_REPO_GUARDS:
+        return True
+    lead = condition
+    suffix = ""
+    if lead.startswith("("):
+        depth = 0
+        for idx, ch in enumerate(lead):
+            if ch == "(":
+                depth += 1
+            elif ch == ")":
+                depth -= 1
+                if depth == 0:
+                    lead = lead[: idx + 1]
+                    suffix = condition[idx + 1 :].lstrip()
+                    break
+    else:
+        # Bare form: scan character by character for a top-level ` && `
+        # or ` || ` (4 chars including surrounding spaces). An external
+        # `&&` joining a selection predicate is OK; an external `||` is
+        # rejected because it lets the guard fall through. The internal
+        # `||` of the universal form is captured by the short-circuit
+        # above (whole-condition match), so this branch only fires when
+        # the condition is followed by an external operator.
+        depth = 0
+        i = 0
+        while i < len(lead) - 3:
+            ch = lead[i]
+            if ch == "(":
+                depth += 1
+                i += 1
+                continue
+            if ch == ")":
+                depth -= 1
+                i += 1
+                continue
+            if depth == 0 and lead[i : i + 4] in (" && ", " || "):
+                lead = lead[:i]
+                suffix = condition[i:]
+                break
+            i += 1
+    for accepted in ACCEPTED_SAME_REPO_GUARDS:
+        if lead == accepted or lead == "(" + accepted + ")":
+            if not suffix:
+                return True
+            if suffix.lstrip().startswith("&&"):
+                return True
+            return False
+    return False
 
 
 def scan_workflows(workflows_dir: Path = DEFAULT_WORKFLOWS_DIR) -> ScanResult:
@@ -348,12 +421,16 @@ def scan_workflows(workflows_dir: Path = DEFAULT_WORKFLOWS_DIR) -> ScanResult:
 
             if "pull_request" in triggers:
                 condition = _normalise_condition(job.get("if"))
-                if condition != SAME_REPO_GUARD:
+                # Accept either the bare guard or the guard followed by a
+                # selection predicate (e.g. `&& inputs.target == '...'`)
+                # joined with `&&` -- the guard must be the lead predicate,
+                # never weakened by `||` (cf. test_guard_weakened_by_or_is_rejected).
+                if not _starts_with_accepted_guard(condition):
                     violations.append(Violation(
                         path.name,
                         str(job_name),
                         "SAME_REPO_GUARD",
-                        "pull_request self-hosted job must use the exact same-repo job guard",
+                        "pull_request self-hosted job must lead with the same-repo job guard",
                     ))
 
     return ScanResult(len(paths), jobs_scanned, self_hosted_jobs, violations, broken)

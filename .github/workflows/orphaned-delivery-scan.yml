@@ -56,7 +56,14 @@ jobs:
     # On [closed], restrict to same-repo PRs: fork PRs cannot create an
     # internal base != main orphan and their limited token/fetch access would
     # only produce spurious failures on an advisory job.
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    #
+    # Forme universelle (#13874) : teste la presence du champ pull_request
+    # (null pour schedule et workflow_dispatch, ce qui couvre ces triggers
+    # legitimes) puis l'identite du repo source en un seul predicat. Couvre
+    # pull_request ET pull_request_target d'un coup (le second est le vecteur
+    # d'exfiltration classique sur runner public -- voir le commentaire
+    # equivalent dans linux-self-hosted-tests.yml).
+    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
     steps:
       - name: Checkout (full history, blobless)
         # Partial clone, serie #11843 (workflow 2). The scan interrogates the
