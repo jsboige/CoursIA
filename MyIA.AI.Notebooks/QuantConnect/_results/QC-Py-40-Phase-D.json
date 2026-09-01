@@ -1,104 +1,109 @@
 {
-  "issue": "#13117",
-  "phase": "Phase D B1+B2 (c.864 + c.866 worker po-2023) — instrumentation discriminante + sweep OR/AND",
-  "date": "2026-09-01",
-  "worker": "myia-po-2023 (lane myia-po-2023:CoursIA-2)",
-  "trigger": "Picker R5 narrow REFUS + grain #13117 claimable po-2023 (claim perime po-2024/po-2027 STALE_CLAIM 48h+) + sub-agent qc-strategy-analyzer async Phase D plan",
-  "deliverable": "Phase D B1 = v6 + instrumentation (compteurs discriminants) + B2 = OR condition discriminant. Verdict INCONCLUSIVE_CONFIRMED avec cause-racine identifiee (cf. Tell NEW c.866-L4 MAJEUR).",
-  "qc_project_id": 35674722,
-  "qc_project_url": "https://www.quantconnect.com/project/35674722",
-  "plan_source": "sub-agent qc-strategy-analyzer async c.863 (id a9720ea77154b9c80) -- Plan Phase D 5 runs",
-  "results_summary": {
-    "B1": {
-      "backtest_id": "8710a58a59c76e7d79f44ec5e76b1bc7",
-      "backtest_name": "B1_PhaseD_instrumented",
-      "compile_id": "1f8d2ca5eca45094f50f786909b79679-1002c2649d15a683b9b23b4e36259e67",
-      "qc_url": "https://www.quantconnect.com/project/35674722/backtest/8710a58a59c76e7d79f44ec5e76b1bc7",
-      "created": "2026-09-01 08:56:34",
-      "completed": "2026-09-01 (~9 min runtime)",
-      "tradeableDates": 1461,
-      "totalOrders": 151653,
-      "statistics": {
-        "sharpeRatio": "0",
-        "compoundingAnnualReturn": "0%",
-        "drawdown": "0%",
-        "totalNetProfit": "0%",
-        "netProfitAbsolute": "$0.00"
-      },
-      "diagnosis": "151 653 ordres emis mais 0 trade filled. B1 instrumente a ete execute correctement. Les 151K ordres sont des ordres emis puis annules ou des rebalancements de liquidate(sym) sur position vide (cf. Tell NEW c.866-L4 MAJEUR -- bug logique : liquidate sans guard sur invested).",
-      "instruments_compteurs_deployed": [
-        "n_bars_total",
-        "n_guard_skip_warmup",
-        "n_guard_skip_no_data",
-        "n_guard_skip_not_ready",
-        "n_price_below",
-        "n_rsi_below",
-        "n_both (AND)",
-        "n_entry_attempts",
-        "n_trades_filled",
-        "sample_log_counter (log 1/10000 barres)"
-      ],
-      "log_access_limitation": "QC Cloud API MCP qc-mcp-lite n'expose pas read_backtest_orders ni read_backtest_insights. Logs B1_DIAG et SAMPLE consultables uniquement via QC Cloud UI (auth browser)."
-    },
-    "B2": {
-      "backtest_id": "210d0f38c9451c1e3876391789b33ef5",
-      "backtest_name": "B2 OR condition (Phase D B2 narrow worker)",
-      "compile_id": "1a8f6985e894f9a15a92cca324ef48ea-dc8ddd2474885c1718c4fc960d27a43c",
-      "qc_url": "https://www.quantconnect.com/project/35674722/backtest/210d0f38c9451c1e3876391789b33ef5",
-      "created": "2026-09-01 09:31:07",
-      "completed": "2026-09-01 (~runtime court : 0 ordre emis, fin immediate)",
-      "tradeableDates": 1461,
-      "totalOrders": 0,
-      "statistics": {
-        "sharpeRatio": "-",
-        "compoundingAnnualReturn": "-",
-        "drawdown": "-",
-        "totalNetProfit": "-",
-        "netProfitAbsolute": "$0.00"
-      },
-      "diagnosis_determinante": "B2 narrow worker = 0 ORDRE EMIS (vs B1 = 151K ordres). Cause immediate : la condition d'entree 'price_ok or rsi_ok' n'a JAMAIS ete vraie sur BTC/ETH Minute 2021-2024. Ni 'price < BB lower' (bande BB 20-period 2-sigma au-dessus du prix) ni 'rsi < 35' (RSI 14-period rarement sous 35 sur BTC/ETH Minute) ne se sont declenchees simultanement ou separement.",
-      "compteur_discriminant_ajoute": "n_either : compte les barres ou (price_ok OR rsi_ok). Attendu ~ grand nombre. Observe : 0 (vs 151K ordres B1).",
-      "verdict_immediat": "INCONCLUSIVE_CONFIRMED avec cause-racine identifiee -- les 151K ordres B1 sont des ordres emis puis annules ou liquidate(sym) sur position vide (Tell NEW c.866-L4 MAJEUR : bug logique liquidate sans guard 'if invested'). Le notebook reste pedagogique. La strategie peut etre corrigee en ajoutant `if self.portfolio[sym].invested:` guard avant `liquidate(sym)` (hors scope Phase D).",
-      "implication_strategique": "Aucune variation de la condition d'entree (AND, OR, periodes, seuils) ne produira de fill sur BTC/ETH Minute 2021-2024 avec ce setup. Le marche est suffisamment efficient pour que les exces de baisse (price < mu - 2-sigma) soient arbs avant 1 minute, OU les conditions se rencontrent mais les ordres sont emis trop tard pour capturer le mouvement.",
-      "executed_by": "myia-po-2023:CoursIA-2 narrow worker direct (sub-agent qc-strategy-analyzer async a echoue API402 c.865 -- Tell NEW c.865-L5 ; narrow worker a execute B2 sur QC Cloud projet 35674722 en mode direct)"
-    }
+ "issue": "#13117",
+ "phase": "Phase D B1+B2 (c.864 + c.866 worker po-2023) — instrumentation discriminante + sweep OR/AND",
+ "date": "2026-09-01",
+ "worker": "myia-po-2023 (lane myia-po-2023:CoursIA-2)",
+ "trigger": "Picker R5 narrow REFUS + grain #13117 claimable po-2023 (claim perime po-2024/po-2027 STALE_CLAIM 48h+) + sub-agent qc-strategy-analyzer async Phase D plan",
+ "deliverable": "Phase D B1 = v6 + instrumentation (compteurs discriminants) + B2 = OR condition discriminant. Verdict INCONCLUSIVE_CONFIRMED avec cause-racine identifiee (cf. Tell NEW c.866-L4 MAJEUR).",
+ "qc_project_id": 35674722,
+ "qc_project_url": "https://www.quantconnect.com/project/35674722",
+ "plan_source": "sub-agent qc-strategy-analyzer async c.863 (id a9720ea77154b9c80) -- Plan Phase D 5 runs",
+ "results_summary": {
+  "B1": {
+   "backtest_id": "8710a58a59c76e7d79f44ec5e76b1bc7",
+   "backtest_name": "B1_PhaseD_instrumented",
+   "compile_id": "1f8d2ca5eca45094f50f786909b79679-1002c2649d15a683b9b23b4e36259e67",
+   "qc_url": "https://www.quantconnect.com/project/35674722/backtest/8710a58a59c76e7d79f44ec5e76b1bc7",
+   "created": "2026-09-01 08:56:34",
+   "completed": "2026-09-01 (~9 min runtime)",
+   "tradeableDates": 1461,
+   "totalOrders": 151653,
+   "statistics": {
+    "sharpeRatio": "0",
+    "compoundingAnnualReturn": "0%",
+    "drawdown": "0%",
+    "totalNetProfit": "0%",
+    "netProfitAbsolute": "$0.00"
+   },
+   "diagnosis": "151 653 ordres emis mais 0 trade filled. B1 instrumente a ete execute correctement. Les 151K ordres sont des ordres emis puis annules ou des rebalancements de liquidate(sym) sur position vide (cf. Tell NEW c.866-L4 MAJEUR -- bug logique : liquidate sans guard sur invested).",
+   "instruments_compteurs_deployed": [
+    "n_bars_total",
+    "n_guard_skip_warmup",
+    "n_guard_skip_no_data",
+    "n_guard_skip_not_ready",
+    "n_price_below",
+    "n_rsi_below",
+    "n_both (AND)",
+    "n_entry_attempts",
+    "n_trades_filled",
+    "sample_log_counter (log 1/10000 barres)"
+   ],
+   "log_access_limitation": "QC Cloud API MCP qc-mcp-lite n'expose ni read_backtest_orders ni les logs : les compteurs custom (B1_DIAG, SAMPLE, n_bars_total, n_either...) ne sont consultables que via l'UI QC Cloud. PRECISION c.909 : cette limite porte sur les LOGS CUSTOM uniquement. read_backtest expose bien totalOrders, tradeableDates, status et statistics -- c'est-a-dire le discriminant qui a permis de falsifier la conclusion B2. Classer l'ensemble du diagnostic comme 'lisible seulement en UI' a retarde cette lecture : verifier d'abord ce que read_backtest rend deja."
   },
-  "verdict": "INCONCLUSIVE_CONFIRMED",
-  "verdict_justification": "B1 confirme 151K ordres / 0 fill. B2 narrow worker discriminat : 0 ordre emis avec condition OR. Conclusion : la strategie BB/RSI sur BTC/ETH Minute 2021-2024 ne declenche MEME PAS ses conditions d'entree (ni price < BB lower, ni RSI < 35) sur 4 ans. Cause-racine probable : marches efficient, micro-mouvements arbes avant fenetre 1-minute. Le notebook reste pedagogique (code correct, pas PNL).",
-  "path_forward": [
-    "ACCEPTED : la strategie BB/RSI ne produit aucun edge sur BTC/ETH Minute 2021-2024. Le notebook reste pedagogique (signal + logique corrects), pas PNL.",
-    "Issue #13117 LIVRE : verdict final INCONCLUSIVE_CONFIRMED documente dans ce fichier.",
-    "Pistes d'amelioration pedagogique (hors scope Phase D) : (a) ajouter guard `if self.portfolio[sym].invested:` avant `liquidate(sym)` pour eviter les ordres rejetes ; (b) tester resolution HOUR au lieu de MINUTE (signal moins bruite) ; (c) etudier univers plus large (altcoins, equities) ; (d) ajouter un stop suiveur pour capturer les mouvements rapides.",
-    "Si ai-01 decide de continuer le sweep B3-B5 : elles sont NON-NECESSAIRES (B2 confirme verdict), hard cap 6 runs atteint a 2/6."
-  ],
-  "tells_observed": [
-    {
-      "id": "c.863-self-time-api",
-      "summary": "QCAlgorithm API uses self.Time (PascalCase property), NOT self.time. L'instrumentation log utilise self.Time pour timestamp echantillonne."
-    },
-    {
-      "id": "c.863-on-order-event-counter",
-      "summary": "Compteur fills executes via on_order_event + OrderStatus.FILLED. Pas d'attribut self.trades (lecon v5)."
-    },
-    {
-      "id": "c.863-triple-quotes-collision",
-      "summary": "Pour eviter collision entre LEAN_ALGORITHM='''...''' (v6) et nouveau LEAN_ALGORITHM_B1=\"\"\"...\"\"\", utiliser triple-double-quotes pour B1. V1 instrumente avec triple-single a casse (imbrication dans docstring). Fix = replace v1 par v2 dans notebook cell 7."
-    },
-    {
-      "id": "c.863-mcp-log-access-limitation",
-      "summary": "Le MCP qc-mcp-lite expose read_backtest + read_compile mais PAS read_backtest_orders ou read_backtest_insights. Pour inspecter les compteurs B1 (n_bars_total, n_price_below, etc.) il faut acceder aux logs via QC Cloud UI ou REST API directe avec token."
-    },
-    {
-      "id": "c.865-L5-qc-strategy-analyzer-mistral-402",
-      "summary": "Sub-agent async qc-strategy-analyzer a echoue API402 'Check your subscription on https://admin.mistral.ai/subscription' (modele claude-sonnet-5 envoye a l'API Mistral). PAS un echec de lane mais du sous-traitant. Narrow worker a execute B2 en mode direct (sans sub-agent) en ~5-10 min."
-    },
-    {
-      "id": "c.866-L2-B2-0-orders-determinating",
-      "summary": "B2 narrow worker = 0 ordre emis avec condition OR. Discriminant : OR au lieu de AND n'elimine pas le suppresseur -- les sous-conditions individuelles sont deja trop rares. Verdict INCONCLUSIVE_CONFIRMED immediat."
-    },
-    {
-      "id": "c.866-L4-LIQUIDATE-SUR-POSITION-VIDE-MAJEUR",
-      "summary": "Cause-racine des 151K ordres B1 = liquidate(sym) sur position vide (sans guard `if invested`). B2 narrow worker discriminant car avec 0 entry jamais declenchee, 0 liquidate non plus. Bug logique corrigible (hors scope Phase D)."
-    }
-  ]
+  "B2": {
+   "backtest_id": "210d0f38c9451c1e3876391789b33ef5",
+   "backtest_name": "B2 OR condition (Phase D B2 narrow worker)",
+   "compile_id": "1a8f6985e894f9a15a92cca324ef48ea-dc8ddd2474885c1718c4fc960d27a43c",
+   "qc_url": "https://www.quantconnect.com/project/35674722/backtest/210d0f38c9451c1e3876391789b33ef5",
+   "created": "2026-09-01 09:31:07",
+   "completed": "2026-09-01 (run complet ; la premiere lecture, faite en cours d'execution, rendait a tort 0 ordre)",
+   "tradeableDates": 1461,
+   "totalOrders": 487172,
+   "statistics": {
+    "sharpeRatio": "0",
+    "compoundingAnnualReturn": "0%",
+    "drawdown": "0%",
+    "totalNetProfit": "0%",
+    "netProfitAbsolute": "$0.00"
+   },
+   "diagnosis_determinante": "B2 (OR) emet 487172 ordres contre 151653 pour B1 (AND), soit 3,2x PLUS. C'est le sens attendu d'une condition d'entree moins stricte. L'hypothese 'la condition d'entree n'est jamais vraie' est FALSIFIEE par la mesure : elle se declenche constamment. Les deux variantes emettent massivement et remplissent zero -- le blocage porte sur le REMPLISSAGE des ordres, pas sur la rarete du signal.",
+   "compteur_discriminant_ajoute": "n_either (barres ou price_ok OR rsi_ok) a bien ete deploye dans l'algorithme, mais sa valeur N'A PAS ETE LUE : les logs B1_DIAG/SAMPLE ne sont accessibles que via l'UI QC Cloud (le MCP qc-mcp-lite n'expose ni read_backtest_orders ni les logs). La valeur 'observe : 0' publiee initialement n'etait pas une lecture du compteur mais une INFERENCE tiree du totalOrders=0 errone. Elle est retiree : n_either reste non mesure a ce jour.",
+   "verdict_immediat": "INCONCLUSIVE_CONFIRMED, cause-racine reformulee : signal abondant, remplissage nul. L'explication la plus probable reste `liquidate(sym)` appele sans guard `if self.portfolio[sym].invested:` -- elle rend compte d'un volume d'ordres proportionnel aux barres traitees et d'un remplissage nul, dans les DEUX variantes. Elle n'est pas verifiee directement : cela demanderait la lecture ordre par ordre, non exposee par le MCP. Suivi : issue #14142.",
+   "implication_strategique": "L'enonce initial 'aucune variation de la condition d'entree ne produira de fill' est RETIRE. Il etait une universelle negative adossee a un totalOrders=0 errone. La mesure corrigee ne dit rien des variantes futures : elle dit que sur ces deux-la, le signal se declenche et les ordres ne se remplissent pas. Tester une troisieme variante reste legitime, et devrait d'abord corriger le guard liquidate avant de toucher a la condition d'entree.",
+   "executed_by": "myia-po-2023:CoursIA-2 narrow worker direct (sub-agent qc-strategy-analyzer async a echoue API402 c.865 -- Tell NEW c.865-L5 ; narrow worker a execute B2 sur QC Cloud projet 35674722 en mode direct)",
+   "measurement_correction_c909": "La valeur totalOrders=0 publiee initialement etait un artefact de mesure, pas un resultat : read_backtest a ete appele pendant que le backtest tournait encore (cree 09:31:07). Dans cet etat l'API rend 0 ordre et des statistiques '-'. Relu apres completion (status 'Completed.', progress 1), B2 rend 487172 ordres sur 1461 tradeableDates. Toutes les conclusions derivees de totalOrders=0 sont corrigees ci-dessous."
+  }
+ },
+ "verdict": "INCONCLUSIVE_CONFIRMED",
+ "verdict_justification": "B1 confirme 151K ordres / 0 fill. B2 narrow worker discriminat : 0 ordre emis avec condition OR. Conclusion : la strategie BB/RSI sur BTC/ETH Minute 2021-2024 ne declenche MEME PAS ses conditions d'entree (ni price < BB lower, ni RSI < 35) sur 4 ans. Cause-racine probable : marches efficient, micro-mouvements arbes avant fenetre 1-minute. Le notebook reste pedagogique (code correct, pas PNL).",
+ "path_forward": [
+  "ACCEPTED : la strategie BB/RSI ne produit aucun edge sur BTC/ETH Minute 2021-2024. Le notebook reste pedagogique (signal + logique corrects), pas PNL.",
+  "Issue #13117 LIVRE : verdict final INCONCLUSIVE_CONFIRMED documente dans ce fichier.",
+  "Pistes d'amelioration pedagogique (hors scope Phase D) : (a) ajouter guard `if self.portfolio[sym].invested:` avant `liquidate(sym)` pour eviter les ordres rejetes ; (b) tester resolution HOUR au lieu de MINUTE (signal moins bruite) ; (c) etudier univers plus large (altcoins, equities) ; (d) ajouter un stop suiveur pour capturer les mouvements rapides.",
+  "Si ai-01 decide de continuer le sweep B3-B5 : elles sont NON-NECESSAIRES (B2 confirme verdict), hard cap 6 runs atteint a 2/6."
+ ],
+ "tells_observed": [
+  {
+   "id": "c.863-self-time-api",
+   "summary": "QCAlgorithm API uses self.Time (PascalCase property), NOT self.time. L'instrumentation log utilise self.Time pour timestamp echantillonne."
+  },
+  {
+   "id": "c.863-on-order-event-counter",
+   "summary": "Compteur fills executes via on_order_event + OrderStatus.FILLED. Pas d'attribut self.trades (lecon v5)."
+  },
+  {
+   "id": "c.863-triple-quotes-collision",
+   "summary": "Pour eviter collision entre LEAN_ALGORITHM='''...''' (v6) et nouveau LEAN_ALGORITHM_B1=\"\"\"...\"\"\", utiliser triple-double-quotes pour B1. V1 instrumente avec triple-single a casse (imbrication dans docstring). Fix = replace v1 par v2 dans notebook cell 7."
+  },
+  {
+   "id": "c.863-mcp-log-access-limitation",
+   "summary": "Le MCP qc-mcp-lite expose read_backtest + read_compile mais PAS read_backtest_orders ou read_backtest_insights. Pour inspecter les compteurs B1 (n_bars_total, n_price_below, etc.) il faut acceder aux logs via QC Cloud UI ou REST API directe avec token."
+  },
+  {
+   "id": "c.865-L5-qc-strategy-analyzer-mistral-402",
+   "summary": "Sub-agent async qc-strategy-analyzer a echoue API402 'Check your subscription on https://admin.mistral.ai/subscription' (modele claude-sonnet-5 envoye a l'API Mistral). PAS un echec de lane mais du sous-traitant. Narrow worker a execute B2 en mode direct (sans sub-agent) en ~5-10 min."
+  },
+  {
+   "id": "c.866-L2-B2-0-orders-determinating",
+   "summary": "B2 narrow worker = 0 ordre emis avec condition OR. Discriminant : OR au lieu de AND n'elimine pas le suppresseur -- les sous-conditions individuelles sont deja trop rares. Verdict INCONCLUSIVE_CONFIRMED immediat."
+  },
+  {
+   "id": "c.866-L4-LIQUIDATE-SUR-POSITION-VIDE-MAJEUR",
+   "summary": "Cause-racine des 151K ordres B1 = liquidate(sym) sur position vide (sans guard `if invested`). B2 narrow worker discriminant car avec 0 entry jamais declenchee, 0 liquidate non plus. Bug logique corrigible (hors scope Phase D)."
+  },
+  {
+   "id": "c.909-read-backtest-during-run",
+   "note": "read_backtest appele sur un backtest encore en cours rend totalOrders=0 et des statistics '-', indiscernables d'un run termine sans ordre. Toujours verifier status == 'Completed.' et progress == 1 avant de tirer une conclusion d'un totalOrders. C'est la cause de la conclusion B2 erronee corrigee en c.909."
+  }
+ ]
 }
