@@ -1,7 +1,7 @@
 # `scripts/notebook_tools/_archive/` — convention standardisée
 
 S'applique au sous-dossier `_archive/` de `scripts/notebook_tools/`. Référence parente :
-[`docs/reference/_archive-convention.md`](../../../../docs/reference/_archive-convention.md) (modèle ML-Training-Pipeline généralisé,
+[`docs/reference/_archive-convention.md`](../../../docs/reference/_archive-convention.md) (modèle ML-Training-Pipeline généralisé,
 4 critères d'éligibilité, header disposition per-function).
 
 ## État au 2026-09-01
@@ -42,7 +42,7 @@ référence durable (PR mergée, commit, commentaire dashboard) citée.
 
 ## Voir aussi
 
-- Convention parente : [`docs/reference/_archive-convention.md`](../../../../docs/reference/_archive-convention.md)
+- Convention parente : [`docs/reference/_archive-convention.md`](../../../docs/reference/_archive-convention.md)
 - Claim parent : `#13745` « [consolidation] notebook_tools/ : 92 orphelins sur 152 + fusions sélectives (V3) »
 - Pipeline de détection successor : `scripts/notebook_tools/detect_solution_leaks.py` (PR #12390 + suite)
 
