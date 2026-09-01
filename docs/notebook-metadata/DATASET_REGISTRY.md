@@ -116,8 +116,8 @@ Chaque ligne du registre respecte le schéma :
 
 | Chemin | Taille (B) | SHA256 (16 hex) | Licence | Catégorie | Usage | Card |
 |--------|----------:|-----------------|---------|-----------|-------|------|
-| `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/data/argumentum_fallacies_taxonomy.csv` | 4 069 575 | `3ff86bb20f78bf8…` | ODbL-1.0 | vocabulaire-ontologie | Taxonomie sophismes Argumentum | — |
-| `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/data/argumentum_virtues_taxonomy.csv` | 997 855 | `c5af3145e392339…` | ODbL-1.0 | vocabulaire-ontologie | Taxonomie vertus Argumentum | — |
+| `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/data/argumentum_fallacies_taxonomy.csv` | 4 139 986 | `457ca19a40d5587…` | ODbL-1.0 | vocabulaire-ontologie | Taxonomie sophismes Argumentum | — |
+| `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/data/argumentum_virtues_taxonomy.csv` | 921 641 | `fb3b0bbc5b1e3f2…` | ODbL-1.0 | vocabulaire-ontologie | Taxonomie vertus Argumentum | — |
 
 ### SymbolicAI / SemanticWeb (1)
 
