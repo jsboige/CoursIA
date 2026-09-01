@@ -149,7 +149,7 @@ layout: section
   - 2018 : AlphaZero (échecs, Go, shogi sans connaissances humaines)
   - 2019 : Pluribus (poker), AlphaStar (Starcraft 2)
 - **2020s** : LLMs et IA générative deviennent grand public
-  - GPT-3 (2020), ChatGPT (2022), GPT-4 (2023), Claude 3 (2024)
+  - GPT-3 (2020), ChatGPT (2022), GPT-4 (2023), Claude 3 (2024), GPT-4o (2024), Claude 3.5 Sonnet (2024), Gemini 1.5/2 (2024-2025)
   - Stable Diffusion, Midjourney, DALL-E : génération d'images
   - 2025 : agents IA autonomes, vibe coding, IA multimodale
 
@@ -1601,6 +1601,8 @@ layout: section
   - T5 (2019, text-to-text unifié)
 - Modèles efficients (2020+)
   - Reformer, Longformer : attention linéaire ou par fenêtres
+  - Mamba (2023) et State Space Models : complexité linéaire, alternative aux Transformers pour séquences longues
+  - Hyena, RWKV : mélanges convolutifs et RNN-like pour le même usage
 
 <div class="grid grid-cols-3 gap-4 absolute bottom-[35px] left-[50px] right-[50px]">
 <img src="./images/img_104.png" class="max-h-[135px] w-full object-contain" alt="Deux photos d'une femme lançant un frisbee dans un parc, légendées en anglais" />
@@ -1654,13 +1656,15 @@ layout: section
 - RLHF (2022, InstructGPT) : affinage par retour humain
 - ChatGPT (nov. 2022, OpenAI) : 100 M d'utilisateurs en 2 mois
 - Modèles open-weight : Llama 2 (2023), Mistral, Mixtral (MoE 2023-2024)
+- Générations suivantes : Llama 3 / 3.1 / 4 (2024-2025), DeepSeek-V3 (2024), Qwen2.5 (2024-2025), Gemma 2 (2024)
+- Frontier multimodaux omni : GPT-4o (mai 2024), Claude 3.5 Sonnet (2024), Gemini 1.5 / 2 (2024-2025)
 
 <div class="grid grid-cols-2 gap-4 absolute bottom-[25px] left-[50px] right-[50px]">
 <img src="./images/img_112.png" class="max-h-[100px] w-full object-contain" alt="Chaîne de Markov de diffusion : bruitage progressif de xT vers x0 puis débruitage inverse" />
 <img src="./images/img_113.png" class="max-h-[100px] w-full object-contain" alt="U-Net de débruitage latent : encodeur, décodeur, attention croisée Q/K/V, conditionnements et pas de temps" />
 </div>
 
-<!-- Diffusion latente (LDM / Stable Diffusion, Rombach 2021-2022) : bruit latent + U-Net + cross-attention. Alignement : RLHF (InstructGPT 2022), ChatGPT (nov 2022), Llama 2 / Mistral / Mixtral (2023-2024). -->
+<!-- Diffusion latente (LDM / Stable Diffusion, Rombach 2021-2022) : bruit latent + U-Net + cross-attention. Alignement : RLHF (InstructGPT 2022), ChatGPT (nov 2022), Llama 2 / Mistral / Mixtral (2023-2024). Générations suivantes (2024-2025) : Llama 3 / 4, DeepSeek-V3, Qwen2.5, Gemma 2 ; frontier omni : GPT-4o, Claude 3.5 Sonnet, Gemini 1.5 / 2. -->
 ---
 
 
