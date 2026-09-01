@@ -131,6 +131,7 @@ def call_structured(
     system_prompt: str,
     user_prompt: str,
     context_block: str = "",
+    timeout: int = 120,
 ) -> dict:
     """Call GPT-5.4-mini with JSON Schema structured output and retry logic.
 
@@ -178,6 +179,7 @@ def call_structured(
     last_error: str = ""
 
     for attempt in range(1, _MAX_RETRIES + 1):
+        resp = None
         try:
             payload: dict = {
                 "model": _MODEL,
@@ -192,7 +194,7 @@ def call_structured(
                     "Content-Type": "application/json",
                 },
                 json=payload,
-                timeout=120,
+                timeout=timeout,
             )
             resp.raise_for_status()
 
@@ -205,7 +207,7 @@ def call_structured(
 
         except (requests.RequestException, KeyError, json.JSONDecodeError) as exc:
             detail = ""
-            if hasattr(resp, "text"):
+            if resp is not None and hasattr(resp, "text"):
                 detail = resp.text[:500]
             last_error = f"API/parse error (attempt {attempt}): {exc}\n{detail}"
 
