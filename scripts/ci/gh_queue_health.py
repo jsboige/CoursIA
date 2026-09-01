@@ -34,6 +34,7 @@ EXIT_BROKEN = 2
 
 PER_PAGE = 100
 INCIDENT_FLOOR_DATE = "2026-08-19"  # origin of the corruption window
+INCIDENT_FLOOR_COUNT = 18  # ghost runs stranded by the 2026-08-19 corruption
 
 
 class InstrumentError(RuntimeError):
@@ -126,37 +127,60 @@ def verdict(ghosts: int, live: int, parse_failures: int) -> str:
     `GHOST_RUNS_DETECTED` is the expected verdict on CoursIA itself (the 18
     ghosts of 2026-08-19). `CLEAN` is expected on repos without historical
     incidents. `STALE_FLOOR` is reserved for the precise case where the ghost
-    count equals the known incident floor (18) -- useful for surfacing the
+    count equals `INCIDENT_FLOOR_COUNT` (18) AND the live bucket is empty --
+    the conjunction matters: 18 ghosts WITH new live runs is
+    `GHOST_RUNS_DETECTED` (the floor is being augmented by fresh activity,
+    not just the historical signature). Useful for surfacing the bare
     signature on CoursIA without false-positive alarms on other repos.
     """
     if parse_failures > 0:
         return "INCOMPLETE"
     if ghosts == 0:
         return "CLEAN"
-    if ghosts == 18 and live == 0:
+    if ghosts == INCIDENT_FLOOR_COUNT and live == 0:
         return "STALE_FLOOR"
     return "GHOST_RUNS_DETECTED"
 
 
-def load_snapshot(path: Path) -> list[dict]:
+def load_snapshot(path: Path) -> tuple[list[dict], list[dict]]:
+    """Read a snapshot and return (runs, preserved_parse_failures).
+
+    A snapshot is one of:
+    - a list of raw `workflow_run` dicts (the live API shape),
+    - a dict `{workflow_runs: [...]}`,
+    - a dict `{snapshot: {workflow_runs: [...]}}` envelope,
+    - a prior analysis output `{cutoff, verdict, counts, snapshot_size,
+      ghosts, live, parse_failures}`.
+
+    For raw shapes (the first three), `classify_runs` will re-derive parse
+    failures from the runs themselves -- preserved_parse_failures is empty.
+
+    For a prior analysis output, the `parse_failures` bucket is preserved
+    as-is (it cannot be re-derived from the synthesized runs). Without this
+    propagation, an `INCOMPLETE` snapshot would replay as `CLEAN` or
+    `GHOST_RUNS_DETECTED` -- a verdict class change at replay, which
+    defeats the purpose of replaying a snapshot.
+    """
     try:
         value = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
         raise InstrumentError(f"cannot read snapshot {path}: {exc}") from exc
     if isinstance(value, dict) and "snapshot" in value and isinstance(value["snapshot"], dict):
         if "workflow_runs" in value["snapshot"]:
-            return value["snapshot"]["workflow_runs"]
-        return value["snapshot"].get("runs", [])
+            return value["snapshot"]["workflow_runs"], []
+        return value["snapshot"].get("runs", []), []
     if isinstance(value, list):
-        return value
+        return value, []
     if isinstance(value, dict) and "workflow_runs" in value:
-        return value["workflow_runs"]
+        return value["workflow_runs"], []
     # A prior analysis output looks like {cutoff, verdict, counts, snapshot_size,
     # ghosts, live, parse_failures}. It is already classified, so replaying it
     # through classify_runs is pointless -- but the caller still needs the raw
     # timeline to recompute. We synthesize a synthetic list whose created_at is
     # not used: the ghosts and live buckets carry the real IDs and timestamps,
     # and classify_runs will reproduce the same partition if cutoff matches.
+    # The `parse_failures` bucket is preserved verbatim because it cannot be
+    # re-derived from the synthesized runs.
     if isinstance(value, dict) and "ghosts" in value and "live" in value:
         synthetic: list[dict] = []
         for entry in value.get("ghosts", []) or []:
@@ -165,8 +189,9 @@ def load_snapshot(path: Path) -> list[dict]:
         for entry in value.get("live", []) or []:
             if isinstance(entry, dict) and "created_at" in entry:
                 synthetic.append(entry)
-        if synthetic:
-            return synthetic
+        preserved = list(value.get("parse_failures", []) or [])
+        if synthetic or preserved:
+            return synthetic, preserved
     raise InstrumentError("snapshot must be a list of runs, a dict with workflow_runs, "
                           "a {snapshot: {...}} envelope, or a prior analysis output")
 
@@ -184,10 +209,20 @@ def main(argv: list[str] | None = None) -> int:
     try:
         cutoff = parse_date(args.cutoff)
         if args.input:
-            raw_runs = load_snapshot(args.input)
+            raw_runs, preserved_pf = load_snapshot(args.input)
         else:
             raw_runs = fetch_queued_runs(args.repo)
+            preserved_pf = []
         classification = classify_runs(raw_runs, cutoff)
+        # When the input was a prior analysis output, `classify_runs` cannot
+        # re-derive the parse_failures from the synthesized runs -- they were
+        # never serialized into the synthesized list. Merge the preserved
+        # bucket in so the verdict survives replay unchanged (#13966).
+        if preserved_pf:
+            seen_ids = {pf.get("id") for pf in classification["parse_failures"]}
+            for pf in preserved_pf:
+                if pf.get("id") not in seen_ids:
+                    classification["parse_failures"].append(pf)
         gh_count, lv_count, pf_count = (
             len(classification["ghosts"]),
             len(classification["live"]),
