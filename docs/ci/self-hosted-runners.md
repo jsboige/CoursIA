@@ -1,6 +1,6 @@
 # Préparation des runners GitHub Actions auto-hébergés
 
-Cette page décrit les mesures et les garde-fous du chantier #12704. **État au 2026-09-01 : activation partielle sur po-2024, volet Linux non déployé** (runner `fast-guards` live, tool-cache seedé — cf section Provisionnement ; ré-enregistrement sans UAC opérationnel), les autres profils du registre restant en préparation. Le dépôt `jsboige/CoursIA` est public : une PR de fork peut contenir du code non fiable. Toute exécution auto-hébergée reste réservée aux branches du dépôt lui-même, avec une garde YAML explicite en plus des réglages GitHub.
+Cette page décrit les mesures et les garde-fous du chantier #12704. **État au 2026-09-01 : activation partielle sur po-2024, volet Linux conteneurisé en ligne** (2 slots Docker, preuve d'identité `RUNNER_OS = Linux` rendue — cf section Runner Linux conteneurisé ; runner `fast-guards` live, tool-cache seedé, ré-enregistrement sans UAC opérationnel), les autres profils du registre restant en préparation. Le dépôt `jsboige/CoursIA` est public : une PR de fork peut contenir du code non fiable. Toute exécution auto-hébergée reste réservée aux branches du dépôt lui-même, avec une garde YAML explicite en plus des réglages GitHub.
 
 ## Mesurer avant de dimensionner
 
@@ -240,17 +240,26 @@ Trois points de conception qui ne sont pas négociables :
 
 **Labels dédiés** : le jeu `{self-hosted, coursia-ephemeral, coursia-linux}` (second jeu admis par `check_self_hosted_runner_policy.py`) route uniquement vers le conteneur — un dispatch Windows ne peut jamais y atterrir, un job Linux ne peut jamais atterrir sur un runner Windows. Mélanger les deux jeux reste une violation (`RUNNER_LABELS`).
 
-**État réel mesuré le 2026-09-01 (po-2024, inventaire GitHub firsthand)** : le registre du dépôt ne contient **qu'un seul runner**, `myia-po-2024-fast-guards`, **Windows**. Aucun runner ne porte le label `coursia-linux` — nulle part. L'image n'a jamais été construite.
+**État déployé le 2026-09-01 (po-2024, inventaire GitHub firsthand ~20:27Z)** : 2 slots `myia-po-2024-linux-docker-1/-2` `[online]`, labels `{self-hosted, coursia-ephemeral, coursia-linux}`, image 2.336.0, lancés par `supervise.sh start 2`. **Preuve d'identité rendue** : run 33554804211 — `Runner name: 'myia-po-2024-linux-docker-1'`, `runner.os=Linux`, job 1 m 51 s, conclusion success. Empreinte au repos mesurée sur les deux conteneurs : ~40,5 MiB / 4 GiB chacun, CPU ~0 %, PIDS 14-18. **Empreinte sous charge** (deux jobs organiques concurrents, ~21:55Z) : CPU 113 % et 161 % (cap 300 %), MEM 187 MiB et 498 MiB (cap 4 GiB), PIDS 52 et 50 (cap 384) — la jambe tient N=2 concurrent sans approcher les caps. La boucle de supervision est prouvée : après la mort éphémère du conteneur post-job, ré-enregistrement automatique observé et runners repassés `[online]`.
 
-Conséquence à écrire noir sur blanc, parce que la version précédente de cette page décrivait la conception comme un état déployé : `linux-self-hosted-tests.yml` (dispatch-ONLY, zéro fan-out, pattern #13097) cible un **label orphelin**. Un dispatch y mettrait le job en file **indéfiniment** — pas d'échec, pas de rouge, une attente muette. Le piège est aujourd'hui dormant (0 run en file, vérifié), il ne l'est plus dès qu'on dispatche.
+La leçon qui a fondé cette preuve reste écrite noir sur blanc : cette page a déjà décrit une conception comme un état déployé — l'inventaire du matin même (2026-09-01) montrait un registre à **un seul** runner Windows, label `coursia-linux` orphelin nulle part, image jamais construite. Tant qu'aucun job n'a rendu la preuve d'identité (`RUNNER_OS = Linux` dans les logs), aucun vert de cette chaîne ne prouve quoi que ce soit — leçon po-2024 du run 33178577527, où l'échec s'était produit *pour la mauvaise raison* (ACE manquante) et aurait pu passer pour un succès de routage.
 
-Le `docker build` + `supervise.sh start` ci-dessus est donc la **précondition** du pilote, pas son prolongement. Tant qu'aucun job n'a rendu la preuve d'identité (`RUNNER_OS = Linux` dans les logs), aucun vert de cette chaîne ne prouve quoi que ce soit — leçon po-2024 du run 33178577527, où l'échec s'était produit *pour la mauvaise raison* (ACE manquante) et aurait pu passer pour un succès de routage.
+L'image expose `python` nu (`python-is-python3`) pour les workflows stdlib-only (le `check-navlinks` du job 100021313259 avait échoué `exit 127 "python: not found"` avant cela), et les slots montent le volume `coursia-runner-toolcache` sur `/opt/hostedtoolcache` (`RUNNER_TOOL_CACHE`) pour que les actions `setup-*` ne re-téléchargent pas leurs outils à chaque conteneur éphémère. Après toute modification du Dockerfile : rebuild (même tag), puis roulement des slots — `stop`, `docker kill` des conteneurs vérifiés `busy=false`, `start N`.
 
-Les 93 jobs `ubuntu-latest` du census #13378 restent sur GitHub-hosted tant que l'empreinte n'a pas été mesurée sur des jobs réels — décision coordinateur, pas worker.
+Routage (décision coordinateur) — **tranche 1 portée par #14148 (PR ouverte au 2026-09-01)** : 11 workflows y passent sur les labels `coursia-linux`, sous la règle « allowlist du checker `check_self_hosted_runner_policy.py` + garde universelle de fork/payload + timeout + `permissions: read` ». Tant qu'elle n'est pas mergée, ces workflows restent sur GitHub-hosted. Le reste des 93 jobs `ubuntu-latest` du census #13378 demeure sur GitHub-hosted tant que l'empreinte n'a pas été mesurée sur des jobs réels — l'élargissement (tranche 2, N slots) reste décision coordinateur après 24 h de vert sur la tranche 1.
 
 **Le gestionnaire ne bloque pas.** `manage_self_hosted_runner.py` et `self_hosted_runner_profiles.json` sont Windows-only *par validation* (« must pin an official Windows x64 archive ») : ils ne peuvent pas porter un profil Linux aujourd'hui. Ce n'est pas un blocage — `supervise.sh` fonctionne sans eux, sans aucune PR préalable. Étendre le gestionnaire aux profils Linux est une **PR de suivi**, jamais la condition du débrayage.
 
 Si l'empreinte mesurée pendant un job gêne la workstation (training GPU, sessions interactives), on **réduit les caps ou on arrête**, et on le signale à ai-01.
+
+### Persistance du superviseur — pas encore posée (en attente de go)
+
+`supervise.sh` vit dans une session : si elle meurt, les slots en ligne consomment leur inscription au prochain job et rien ne les relance. Le déploiement durable prévu :
+
+- **voie WSL** : service utilisateur systemd (`systemctl --user`, unit lançant `supervise.sh start 2`) + `loginctl enable-linger <user>` pour survivre aux déconnexions ;
+- **voie Windows** (alternative) : tâche planifiée au logon via `schtasks`, même invocation.
+
+Aucun des deux n'est installé sur po-2024 à date : l'installation d'un mécanisme permanent d'enregistrement est un geste explicite (coordinateur ou user), jamais silencieux.
 
 ## Tranches suivantes, activation partielle
 
@@ -259,7 +268,7 @@ La préparation complète reste découpée :
 1. **Mesure** — instrument de cette page.
 2. **Isolation statique** — scanner fail-closed, allowlist et labels dépôt.
 3. **Cycle de vie local** — gestionnaire, profils, probes et teardown décrits ci-dessus.
-4. **Commutation** — un seul point de bascule et garde `github.event.pull_request.head.repo.full_name == github.repository`; aucun `pull_request_target` auto-hébergé.
+4. **Commutation** — un seul point de bascule et garde **universelle** de fork/payload sur chaque workflow routé : `github.event.pull_request.head.repo.full_name == github.repository` ; aucun `pull_request_target` auto-hébergé. C'est la forme appliquée par #14148 aux 11 workflows de la tranche 1.
 5. **Preuve contrôlée** — autorisation explicite, une exécution légère réussie, contrôle négatif fork/payload (livré : garde #13387, simulation run 33185586681), puis teardown et preuve que l'état initial est restauré.
 6. **Capacité** — le contrôleur ci-dessus ; son test de bout en bout (tâche posée → tick → job consommé → ré-enregistrement observé → tâche retirée) exige une session élevée : c'est la checklist de la session d'activation, le bouton appartient au coordinateur ou au user.
 
@@ -271,7 +280,7 @@ La préparation complète reste découpée :
 | `myia-po-2024-fast-guards` | **actif** — seul runner du dépôt ; Windows ; tool-cache seedé (a2), ré-enregistrement sans UAC, jobs réels consommés |
 | `myia-po-2025-fast-guards` | en préparation (aucun runner enregistré) |
 | `myia-po-2026-fast-guards` | en préparation (aucun runner enregistré ; profil vérifié dans le registre) |
-| `coursia-linux` (conteneur) | **inexistant** — label ciblé par `linux-self-hosted-tests.yml`, aucun runner ne le porte. Image non construite |
+| `coursia-linux` (conteneur) | **en ligne** — 2 slots conteneurisés sur po-2024 (`myia-po-2024-linux-docker-1/-2`), preuve d'identité run 33554804211 (`RUNNER_OS = Linux`) |
 
 La colonne est datée d'une **mesure**, pas d'une intention : le tableau précédent portait « actif » et « en préparation » sans dire ce qui avait été compté, ce qui a laissé lire une conception comme un déploiement.
 
