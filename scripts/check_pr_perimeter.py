@@ -495,6 +495,8 @@ def check_assertion(files: list[dict], assertion: str, block: str = "") -> list[
             pass
         elif _word_form_is_measurement_object(scan_target):
             pass
+        elif _word_form_is_measurement_result(scan_target, block):
+            pass
         else:
             problems.append(
                 f"l'assertion pretend {word_count} fichier(s), la liste effective en compte {len(files)} : "
@@ -941,6 +943,34 @@ def _word_form_is_measurement_object(text: str) -> bool:
     if m is None:
         return False
     return bool(_DISCRIMINATION_VERB.search(text[max(0, m.start() - 80):m.start()]))
+
+
+_MEASUREMENT_RESULT = re.compile(
+    r"\b(?:\d+|aucun(?:e)?)\s+(?:occurrences?|hits?|r[ée]sultats?|matches?)\b",
+    re.IGNORECASE,
+)
+_DEFINITE_WORD_FORM = re.compile(
+    r"\b(?:sur|dans)\s+(?:les|ces)\s+[*_]*"
+    r"(?:deux|trois|quatre|cinq|six|sept|huit|neuf|dix)\s+fichiers?\b",
+    re.IGNORECASE,
+)
+
+
+def _word_form_is_measurement_result(text: str, block: str = "") -> bool:
+    """True when a definite word-form count is the corpus of a measured result.
+
+    The result may sit on the same line or immediately above it in the same
+    paragraph block (soft-wrap invariant). A strong scope word keeps genuine
+    perimeter assertions blocking even when they also mention zero results.
+    """
+    surface = block or text
+    if _has_strong_scope(surface.lower()):
+        return False
+    count = _DEFINITE_WORD_FORM.search(surface)
+    if count is None:
+        return False
+    result = list(_MEASUREMENT_RESULT.finditer(surface, 0, count.start()))
+    return bool(result)
 
 
 def _additive_line_sum(line: str) -> int:

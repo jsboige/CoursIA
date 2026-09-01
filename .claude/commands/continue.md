@@ -1,6 +1,6 @@
 # Continue - Cycle worker
 
-Reprendre le travail sur cette lane : lire les directives coordinateur, choisir la prochaine tache, livrer une PR, reporter. C'est le prompt du cron worker (30 min staggered). **Un worker ne lance JAMAIS `/coordinate`** (lecon #1502) : pas de merge, pas de `gh auth switch`, pas de close d'issue d'autrui.
+Reprendre le travail sur cette lane : lire les directives coordinateur, choisir la prochaine tache, livrer une PR, reporter. C'est le prompt du cron worker (30 min staggered). **Un worker ne lance JAMAIS `/coordinate`** (lecon #1502) : pas de merge, pas de close d'issue d'autrui. **`gh auth switch` est autorise et necessaire** (trousseau gh partage entre workspaces — mandat user 2026-08-31) : la ligne rouge est le merge/close d'autrui, pas le switch lui-meme.
 
 ## Workflow
 
