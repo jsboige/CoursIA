@@ -620,6 +620,86 @@ def test_non_adjacency_red_keeps_three_generic_gestures(monkeypatch, capsys):
     assert "Piocher un grain d'UN AUTRE genre" not in out
 
 
+def _pr_with_body(n: int, lane: str, age_hours: int, body: str) -> dict:
+    """PR rouge avec un corps arbitraire (permet de pinner le tag `Grain:`
+    du test : `_pr` le fige a `MED/guard` pour les tests existants).
+    """
+    created = (pig.NOW - pig.dt.timedelta(hours=age_hours)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return {"number": n, "title": f"pr {n}", "body": body,
+            "createdAt": created, "isDraft": False}
+
+
+def test_adjacency_detected_from_body_when_caller_omits_flag(monkeypatch, capsys):
+    """#13967 (cycle 158) : le picker doit DEDUIRE `is_adjacency` du corps
+    de la PR via `variation_adjacency_guard.check`, pas attendre qu'un
+    caller externe pose le flag. Le bug fondateur : la branche specialisee
+    L1718 etait du code mort (flag jamais pose), donc les 13 PRs
+    mesurees en adjacency recevaient les 3 conseils generiques invariants
+    au predicat.
+    """
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    body = ("Grain: LIGHT/guard -- lane myia-po-2026:CoursIA -- "
+            "prev: LIGHT/guard #13940\n")
+    pr = _pr_with_body(101, "myia-po-2026:CoursIA", 30, body)
+    # Pas de champ `is_adjacency` : on verifie que le picker le deduit.
+    assert "is_adjacency" not in pr
+    _patch_backlog(monkeypatch, [pr], {101: red})
+    rc = pig.main(["--lane", "myia-po-2026:CoursIA"])
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert "Piocher un grain d'UN AUTRE genre" in out, (
+        "le picker doit deduire l'adjacency du corps via l'organe "
+        "variation_adjacency_guard ; le contrat du test existant etait "
+        "que le caller pose le flag, mais aucun caller in-process ne le "
+        "fait (cf #13967)"
+    )
+    assert "gh pr update-branch" not in out
+
+
+def test_adjacency_not_triggered_when_genres_differ_in_body(monkeypatch, capsys):
+    """#13967 controle negatif : un corps `MED/guard` apres `LIGHT/ledger`
+    NE TRIPPE PAS l'organe d'adjacence, donc le picker conserve les
+    trois conseils generiques (le push peut reparer le rouge).
+    """
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    body = ("Grain: MED/guard -- lane myia-po-2026:CoursIA -- "
+            "prev: LIGHT/ledger #13941\n")
+    pr = _pr_with_body(102, "myia-po-2026:CoursIA", 30, body)
+    _patch_backlog(monkeypatch, [pr], {102: red})
+    rc = pig.main(["--lane", "myia-po-2026:CoursIA"])
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert "Trois gestes, dans cet ordre" in out
+    assert "gh pr update-branch" in out, (
+        "genres distincts = pas d'adjacence = conseil generic applicable"
+    )
+    assert "Piocher un grain d'UN AUTRE genre" not in out
+
+
+def test_adjacency_caller_override_still_respected(monkeypatch, capsys):
+    """#13967 preservation du contrat : un caller externe peut toujours
+    poser `is_adjacency=False` pour court-circuiter la deduction par
+    organe. Utile pour les tests pinnes qui ne veulent pas dependre du
+    parseur de tag (cf le test existant L555 qui pose `True`).
+    """
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    # Corps qui TRIPPERAIT l'organe (LIGHT/guard apres LIGHT/guard)...
+    body = ("Grain: LIGHT/guard -- lane myia-po-2026:CoursIA -- "
+            "prev: LIGHT/guard #13942\n")
+    pr = _pr_with_body(103, "myia-po-2026:CoursIA", 30, body)
+    # ...mais le caller force l'override a False.
+    pr["is_adjacency"] = False
+    _patch_backlog(monkeypatch, [pr], {103: red})
+    rc = pig.main(["--lane", "myia-po-2026:CoursIA"])
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert "Trois gestes, dans cet ordre" in out, (
+        "l'override du caller (`is_adjacency=False`) doit primer sur la "
+        "deduction par organe -- le contrat de l'API externe est preserve"
+    )
+    assert "Piocher un grain d'UN AUTRE genre" not in out
+
+
 def test_a_clean_lane_is_not_sent_to_repair(monkeypatch, capsys):
     """Controle positif des deux precedents.
 

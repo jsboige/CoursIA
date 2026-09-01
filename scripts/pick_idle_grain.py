@@ -1224,6 +1224,32 @@ def blocking_causes(state: dict, *, age_hours: float | None = None,
     return causes
 
 
+def _is_adjacency_red(body: str) -> bool:
+    """Verdict LIGHT-genre adjacency pour le corps d'une PR rouge (#13967).
+
+    Pont entre l'organe `scripts/ci/variation_adjacency_guard.py` (verdict
+    G-VAR-3, fail-CLOSED sur `genre == prev_genre` dans la liste LIGHT) et
+    le picker : la branche d'affichage specialisee `print_red_assignment`
+    se declenche SI ET SEULEMENT SI tous les rouges sont detenus par cette
+    cause. Enveloppe tolérante : si l'organe est indisponible (import,
+    panne), on rend False -- les trois conseils generiques restent le
+    fallback sur, jamais un crash de picker.
+    """
+    try:
+        sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent / "ci"))
+        import variation_adjacency_guard as vag  # noqa: PLC0415 - import tardif volontaire
+    except Exception:  # noqa: BLE001 - le picker ne doit jamais casser sur l'organe
+        return False
+    try:
+        verdict = vag.check(body)
+    except Exception:  # noqa: BLE001 - idem : organe optionnel, picker robuste
+        return False
+    # L'organe est fail-CLOSED : blocking=True <=> LIGHT adjacency reelle
+    # (cf docstring `check`). On conserve `adjacent` pour les diagnostics
+    # futurs (DEEP/MED adjacency = advisory, hors branche specialised).
+    return bool(verdict.get("blocking"))
+
+
 def _newest_start_hours(stamps) -> float | None:
     """Age, en heures, du demarrage le PLUS RECENT parmi `stamps` (ISO-8601).
 
@@ -1501,14 +1527,26 @@ def red_backlog(lane: str, threshold_hours: float,
         if sat_cause:
             causes.append(sat_cause)
         if causes:
+            # #13967 : verdict adjacency par organe. La cause ROUGE la plus
+            # frequente (mesure 2026-09-01 = 13/25) etait silencieusement
+            # recouverte par les trois conseils generiques (update-branch /
+            # rebase / pousser) -- invariants au predicat, donc la lane qui
+            # les suit BOUCLE. Le picker dispose deja du corps de la PR
+            # (`pr["body"]` -- porte du `Grain:`), donc on appelle
+            # `variation_adjacency_guard.check` localement : fonction pure,
+            # pas de `gh` round-trip, cout negligible vs les 2 lots GraphQL
+            # dejas payes dans `red_backlog`. On preserve le contrat
+            # d'override (un caller externe peut poser `is_adjacency=False`
+            # pour court-circuiter -- utile pour les tests pinnes qui ne
+            # veulent pas re-parser un body realiste).
+            if "is_adjacency" in pr:
+                is_adj = bool(pr["is_adjacency"])
+            else:
+                is_adj = _is_adjacency_red(pr.get("body") or "")
             red.append({"number": pr["number"], "title": pr["title"],
                         "age_hours": round(age),
                         "causes": causes,
-                        # #13967 : signal optionnel fourni par un caller
-                        # externe (wrapper sur `variation_adjacency_guard`).
-                        # Falsy par defaut pour ne pas changer le contrat
-                        # des 79 tests existants.
-                        "is_adjacency": bool(pr.get("is_adjacency"))})
+                        "is_adjacency": is_adj})
     red.sort(key=lambda r: -r["age_hours"])
 
     triggers = []
