@@ -495,7 +495,6 @@ project:
     - "MyIA.AI.Notebooks/GameTheory/GameTheory-06b-Lean-RepeatedGames.ipynb"
     - "MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem-Csharp.ipynb"
     - "MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem.ipynb"
-    - "MyIA.AI.Notebooks/GameTheory/GameTheory-06d-StatiqueComparative-Sympathie-Engagement.ipynb"
     - "MyIA.AI.Notebooks/GameTheory/GameTheory-06d-Sympathie-vs-Engagement.ipynb"
     - "MyIA.AI.Notebooks/GameTheory/GameTheory-08-CombinatorialGames-Csharp.ipynb"
     - "MyIA.AI.Notebooks/GameTheory/GameTheory-08-CombinatorialGames.ipynb"
