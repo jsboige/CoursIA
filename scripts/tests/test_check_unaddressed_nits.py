@@ -3311,6 +3311,93 @@ def test_13635_conditionnel_je_leve_masculin_reste_bloquant():
         "myia-ai-01",
         "Une seule chose a changer — corrige la ligne 19 et je leve le concern."
     ) == "BOT-CONCERN"
+def test_13938_comment_only_avec_rien_de_bloquant_passe():
+    """#13938 FP fondateur (PR #13935) : un reviewer pose `[Hermes]
+    COMMENT_WITH_CONCERNS` et le corps declare explicitement « rien de
+    bloquant ». L'exemption doit classer la review en ``None`` (comment-only
+    par design, cf #12311) et non en ``BOT-CONCERN``.
+
+    Reproduit le body verbatim de la review jsboige sur #13935 (compte-rendu
+    de checkout local + delta scope + balise explicite de non-blocage).
+    """
+    body = (
+        "[Hermes] COMMENT_WITH_CONCERNS — vérifié en local (checkout de la "
+        "branche), pas juste lu le diff :\n"
+        "- Cibles réelles des 3 liens ajoutés au README : `tutorials/README.md`, "
+        "`shared/helpers/README.md`, `_research/e2e_quant_validation.ipynb`.\n"
+        "- Nav relative corrigée, scope clean, security scan néant.\n"
+        "Delta +18/-2.\n"
+        "Rien de bloquant. (contrainte token : COMMENT only)"
+    )
+    assert mod.classify("jsboige", body) is None
+    # Les helpers unitaires doivent retourner True sur ce body.
+    assert mod._comment_only_prefix(body) is True
+    assert mod._review_explicit_non_blocking(body) is True
+
+
+def test_13938_comment_with_concerns_avec_concerns_substantiels_reste_bloquant():
+    """#13938 FN-safety : `[Hermes] COMMENT_WITH_CONCERNS` + concerns FYI
+    reels (« 2 concerns sur la cellule 12 ») SANS formulation non-bloquante
+    reste un ``BOT-CONCERN``. L'exemption ne s'applique pas par defaut —
+    seul un aveu explicite de non-blocage la declenche.
+
+    Reproduit le pattern du test fondateur l.255-258 (notebook solide + 2
+    concerns FYI).
+    """
+    body = (
+        "[Hermes] **[COMMENT_WITH_CONCERNS]** — notebook solide, 2 concerns FYI "
+        "sur la cellule 12 : la sortie du solver ne couvre pas le cas n=0 ; "
+        "le bloc de test dépend de l'ordre des fixtures."
+    )
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+    assert mod._comment_only_prefix(body) is True
+    assert mod._review_explicit_non_blocking(body) is False
+
+
+def test_13938_changements_requestes_avec_rien_de_bloquant_reste_bloquant():
+    """#13938 FN-safety : un reviewer pose `CHANGES_REQUESTED` et glisse «
+    rien de bloquant » dans le corps. L'exemption NE DOIT PAS s'appliquer
+    (le verdict de blocage strict prime sur la formulation de non-blocage).
+
+    Reproduit le pieges classique : un reviewer tente de baisser le niveau
+    d'un CHANGES_REQUESTED en ajoutant une clause de non-blocage. Le gate
+    doit resister.
+    """
+    body = (
+        "[Hermes] CHANGES_REQUESTED — refactor la cellule 5 pour respecter "
+        "PEP 8. Rien de bloquant, je laisse au choix de l'auteur."
+    )
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+    assert mod._comment_only_prefix(body) is False
+    # La formulation « rien de bloquant » EST bien reconnue (helper OK),
+    # mais le verdict formel CHANGES_REQUESTED bloque l'exemption au
+    # niveau du pipeline.
+    assert mod._review_explicit_non_blocking(body) is True
+
+
+def test_13938_comment_with_concerns_cite_dans_un_autre_commentaire_ne_passe_pas():
+    """#13938 FN-safety : un commentaire qui CITE `[Hermes]
+    COMMENT_WITH_CONCERNS` dans une prose qui refute (« pas de
+    COMMENT_WITH_CONCERNS ici ») NE beneficie PAS de l'exemption — la
+    detection `_is_cited` doit annuler l'occurrence au niveau du helper
+    `_comment_only_prefix`.
+
+    Reproduit le pattern inverse de #12871 : `_strip_mentioned_verdicts`
+    neutralise les verdicts mentionnes, mais `_comment_only_prefix` opere
+    sur le body brut. Un commentaire d'auteur qui enumere les verdicts
+    d'Hermes pour les refuter ne doit pas etre auto-exempte.
+    """
+    body = (
+        "Pour clarifier : il n'y a PAS de COMMENT_WITH_CONCERNS dans cette "
+        "review. Les seuls verdicts emis sont APPROVED et LGTM. Je ne leve "
+        "aucune reserve parce qu'il n'y en a pas."
+    )
+    # Ni verdict emis ni formulation non-bloquante au sens de l'exemption :
+    # le helper de préfixe doit retourner False (l'occurrence est CITEE).
+    assert mod._comment_only_prefix(body) is False
+    # Le body doit classifier None (verdict positif APPROVED/LGTM + aucune
+    # reserve vivante), mais PAS par la voie de l'exemption #13938.
+    assert mod.classify("jsboige", body) is None
 
 
 # --- #13512 -- Position G : verbe de mention + verdict NU (sans parenthese) -
