@@ -3993,3 +3993,138 @@ def test_13951_concern1_glyphe_severite_avec_rien_de_bloquant_ne_passe_pas():
     # Le glyphe est dans CONCERN_MARKERS (cf. PR #12143) :
     assert mod._sole_live_concern_is_comment_prefix(body_glyphe) is False
     assert mod.classify("jsboige", body_glyphe) == "BOT-CONCERN"
+# ---------------------------------------------------------------------------
+# #14130 - Position F : verdict attribue a un tiers sans quote ni crochet.
+# Bug fondateur (#14070, 2026-09-01) : 2 des 3 points non leves sur #14070
+# etaient les commentaires de diagnostic de la lane elle-meme, qui NOMMAIENT
+# le verdict d'un tiers sans le quoter -- le gate les comptait comme reserves
+# vives, et chaque cycle de commentaire AJOUTAIT un point au compte qu'il
+# decrivait. Mesure verbatim issue : "La review Hermes porte un
+# CHANGES_REQUESTED que ma lane ne peut pas lever seule."
+# ---------------------------------------------------------------------------
+
+
+def test_14130_paire_reproduction_rend_none_dans_les_deux_formes() -> None:
+    """#14130 acceptance #1 : la paire reproduction doit rendre `None` dans
+    les deux formes (backtickee et nue). Discrimination : le predicat
+    porte sur **qui parle de quoi**, pas sur la simple presence du nom.
+    """
+    bare = "La review Hermes porte un CHANGES_REQUESTED que ma lane ne peut pas lever seule."
+    backt = "La review Hermes porte un `CHANGES_REQUESTED` que ma lane ne peut pas lever seule."
+    assert mod.classify("jsboige", bare) is None, bare
+    assert mod.classify("jsboige", backt) is None, backt
+
+
+def test_14130_variantes_attribution_verdict_tiers_ne_flagge_pas() -> None:
+    """#14130 : variantes structurelles -- attribution explicite d'un verdict
+    FORMEL a un reviewer/agent tiers. Les formes AVEC article sont neutralisees
+    par `_MENTION_VERDICT_REPORTED` (Position H ; ext. #14185 : verbes
+    conclusifs/declaratifs `conclut`/`declare`).
+    """
+    bodies = [
+        # #14130 fondateur (Position H, verbe porte + article)
+        "La review Hermes porte un CHANGES_REQUESTED sur la cellule 12.",
+        # ext. #14185 : verbes conclusifs/declaratifs + article (rapport de tiers)
+        "La review NanoClaw conclut un SUSPECT_REGRESSION sur le test.",
+        "La review Hermes declare un CHANGES_REQUESTED sur la cellule 12.",
+        # deja couverts par la Position H (verbes descriptifs + article)
+        "Verdict Hermes a rendu COMMENT_WITH_CONCERNS.",
+        "La revue Claude signale un CONCERN dans le diff.",
+    ]
+    for body in bodies:
+        assert mod.classify("jsboige", body) is None, body
+    # Alignement ce6 (Position H) : sans article entre le verbe et le
+    # verdict, la forme est une EMISSION directe, pas un rapport -- elle
+    # reste BOT-CONCERN.
+    emissions = [
+        "La revue Claude mentionne NEEDS_CHANGES dans son rapport.",
+        "Review Hermes a emis REQUEST_CHANGES sur la branche.",
+    ]
+    for body in emissions:
+        assert mod.classify("jsboige", body) == "BOT-CONCERN", body
+
+
+def test_14130_emission_formelle_avec_prefixe_agent_ne_seutralise_pas() -> None:
+    """#14130 contre-positif : un `[Hermes]` (prefixe d'agent) suivi d'un
+    verdict est une EMISSION formelle, couverte par AGENT_PREFIXES -- la
+    Position F doit la laisser intacte (le `(?<!\\[)` borne le non-match).
+    """
+    bodies = [
+        "[Hermes] CHANGES_REQUESTED sur la cellule 12.",
+        "[Hermes] Review — CHANGES_REQUESTED.",
+        "## [Hermes] **[COMMENT_WITH_CONCERNS]** — notebook solide, 2 concerns FYI.",
+        "[NanoClaw] SUSPECT_REGRESSION sur le test.",
+    ]
+    for body in bodies:
+        assert mod.classify("jsboige", body) == "BOT-CONCERN", body
+
+
+def test_14130_reserve_formelle_en_prose_nue_reste_bloquante() -> None:
+    """#14130 contre-positif : une reserve emise directement (sans nom de
+    tiers, sans quote, sans prefixe) reste bloquee. Le discriminant est
+    l'attribution a un tiers -- son absence = emission propre.
+    """
+    bodies = [
+        "CHANGES_REQUESTED: la cellule 12 casse le kernel.",
+        "2 CONCERNS ouverts, non adresses avant merge.",
+        "REQUEST_CHANGES sur la logique de l'exercice 3.",
+        "NEEDS_CHANGES: le test d'integration manque.",
+    ]
+    for body in bodies:
+        assert mod.classify("jsboige", body) == "BOT-CONCERN", body
+
+
+def test_14130_mutation_position_f_neutralisee_rougit_le_test() -> None:
+    """#14130 acceptance #2 (valide par mutation) : si l'extension #14185
+    (verbes conclusifs/declaratifs `conclut`/`declare` de
+    `_MENTION_VERDICT_REPORTED`) est retiree du stripper, la variante
+    conclusive redevient 'BOT-CONCERN' -- preuve que le test depend de
+    l'extension. On recompile le pattern sans les verbes ajoutes, on
+    re-tourne le strip sur la variante, on compare. In-place, sans
+    monkeypatch global (la fonction est appelee par d'autres tests dans
+    la meme run).
+    """
+    variant = "La review NanoClaw conclut un SUSPECT_REGRESSION sur le test."
+    stripped = mod._strip_quoted(variant)
+    # Composant determinant : le pattern REPORTED AVEC l'extension #14185
+    full = mod._MENTION_VERDICT_REPORTED
+    with_ext = full.sub(
+        lambda mm: mm.group(0).replace(mm.group(1), " " * len(mm.group(1))),
+        stripped,
+    )
+    # Sanity : avec l'extension, le verdict est neutralise (espaces)
+    assert "SUSPECT_REGRESSION" not in with_ext, with_ext
+
+    # Reconstruction SANS l'extension (= simule son retrait)
+    mutated = mod.re.compile(full.pattern.replace(
+        "|conclut|concluent|declare|declarent", ""))
+    without_ext = mutated.sub(
+        lambda mm: mm.group(0).replace(mm.group(1), " " * len(mm.group(1))),
+        stripped,
+    )
+    # Sanity : sans l'extension, le verdict reste vivant
+    assert "SUSPECT_REGRESSION" in without_ext, without_ext
+    # Et donc classify re-rougit (CONCERN_MARKERS inclut SUSPECT_REGRESSION)
+    assert mod.has_live_marker(without_ext, mod.CONCERN_MARKERS)
+    # Avec l'extension, classify rend None (sanity inverse -- miroir du test variantes)
+    assert not mod.has_live_marker(with_ext, mod.CONCERN_MARKERS)
+    # Et les longueurs sont preservees (les fenetres `_is_cited` restent calibrees)
+    assert len(with_ext) == len(without_ext)
+
+
+def test_14130_conservation_offsets_sur_strip_quoted() -> None:
+    """#14130 acceptance implicite : le strip preserve les offsets (les
+    fenetres de `_is_cited` restent calibrees sur la vraie position des
+    occurrences survivantes). Verification mecanique : remplacer les
+    matches par des espaces de meme longueur ne change pas la longueur
+    totale de la chaine.
+    """
+    bodies = [
+        "La review Hermes porte un CHANGES_REQUESTED.",
+        "La review Hermes porte un CHANGES_REQUESTED que ma lane ne peut pas lever seule.",
+        "Review Hermes declare un SUSPECT_REGRESSION. Et puis autre chose.",
+        "La review [Hermes] declare un CHANGES_REQUESTED.",  # non match -> pas de strip
+    ]
+    for body in bodies:
+        assert len(mod._strip_mentioned_verdicts(body)) == len(body), body
+
