@@ -21,3 +21,7 @@ mon-premier-projet/lib/
 mon-premier-projet/cache/
 mon-premier-projet/out/
 mon-premier-projet/broadcast/
+
+# greffe4-vote (ICT-Greffe4, #13570): forge-std idem — regenerable via
+# `forge install foundry-rs/forge-std` (cf SC-1/SC-12), non commite
+greffe4-vote/lib/

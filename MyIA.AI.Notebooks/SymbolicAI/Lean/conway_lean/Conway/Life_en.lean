@@ -17,7 +17,7 @@ This file is the FOUNDATIONS module of the Phase 2 tribute (Epic #1647):
 - Predicates `IsStillLife`, `IsOscillator`, `IsSpaceship`
 - Witnesses for the canonical small patterns
   (block, beehive, blinker, toad, beacon, glider)
-- Microproofs verifiable by `native_decide` on list equality
+- Microproofs discharged by `decide` (kernel reduction on `Bool`)
 
 The list representation avoids the `Quot.lift` / `Eq.rec` bottleneck
 that arises when Lean's kernel tries to decide `Finset` equality
@@ -60,7 +60,8 @@ def lexLt (a b : Int × Int) : Bool :=
 
 /-- A grid of Conway's Game of Life: sorted, deduplicated list of live cells.
     We use `List` rather than `Finset` because list equality is decided by
-    structural comparison (no `Quot.lift`), which `native_decide` handles. -/
+    the kernel through structural comparison (no `Quot.lift`), which
+    `decide` discharges without user-supplied `Decidable` synthesis. -/
 abbrev Grid := List (Int × Int)
 
 /-! ## Neighborhood
@@ -156,9 +157,10 @@ def evolve (n : Nat) (g : Grid) : Grid :=
 
 /-! ## Pattern predicates
 
-We define Boolean-valued predicates (returning `Bool`) so that `native_decide`
-can evaluate them by compiling to native code and comparing `Bool` equality.
-No `Decidable` synthesis or `Quot.lift` needed — just `Bool` reduction.
+We define Boolean-valued predicates (returning `Bool`) so that `decide`
+can reduce the statement `b = true` by plain `Bool` evaluation, without
+user-supplied `Decidable` synthesis or `Quot.lift` — the kernel reducer
+elaborates the truth of the returned `Bool` directly.
 -/
 
 /-- A still life: a grid unchanged by one step of evolution. -/
@@ -183,8 +185,8 @@ discovered in the early 1970s by Conway's group at Cambridge and by
 players of the M.I.T. PDP-6/PDP-10 community.
 
 Each pattern is given in sorted lexicographic order so that `step`
-produces a list in the same order, enabling `native_decide` to verify
-equality by structural comparison.
+produces a list in the same order, enabling `decide` to verify
+equality by plain structural `Bool` reduction.
 -/
 
 /-- The **Block**: a 2x2 square. The smallest still life. -/
@@ -213,10 +215,10 @@ def glider : Grid := [(0, 0), (1, 0), (1, 2), (2, 0), (2, 1)]
 /-! ## Microproofs
 
 These are the first formal results of Phase 1: simple verifications of
-classic patterns by `native_decide`. The predicates return `Bool`, so
-`native_decide` compiles the step function to native code, evaluates the
-Boolean expression, and checks it equals `true`. No `Decidable` synthesis
-or `Quot.lift` involved.
+classic patterns by `decide`. The predicates return `Bool`, so the kernel
+reducer elaborates the step function, evaluates the Boolean expression,
+and checks it equals `true`. No `Decidable` synthesis or `Quot.lift`
+involved.
 -/
 
 /-- The Block is a still life: `isStillLife block = true`. -/
