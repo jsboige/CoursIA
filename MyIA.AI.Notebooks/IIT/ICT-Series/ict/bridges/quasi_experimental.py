@@ -5,9 +5,11 @@ dans ``Probas/DecisionTheory/Causal-Bridges/Quasi-Experimental.ipynb`` :
 
 - ``make_panel_did(differential_pretrend=0.0)`` : panel groupe x periode pour
   difference-in-differences ; ``TAU_TRUE_DID = 3.0`` par construction.
+  Byte-identique a la cellule 5 du notebook (voir :func:`make_panel_did`).
 - ``iv_replay(coef_z, n_samp=1000, n_rep=60, seed0=0)`` : ``n_rep`` tirages
   2SLS avec instrument de force ``coef_z`` ; retourne ``np.ndarray`` de
-  ``tau_2SLS`` ; ``TAU_TRUE_IV = 2.0`` par construction.
+  ``tau_2SLS`` ; ``TAU_TRUE_IV = 2.0`` par construction. Byte-identique a
+  la cellule 40 du notebook (voir :func:`iv_replay`).
 
 Ces deux estimateurs sont **du meme genre** que
 :func:`ict.causal_attribution.backdoor_adjustment` (DiD est un ajustement
@@ -17,23 +19,32 @@ ici prennent les generateurs/estimateurs de l'organe natif et les passent
 dans l'interface analytique close-form de :mod:`ict.causal_attribution`
 pour produire un verdict tri-etat (cf. ICT-12e EVSI).
 
-Pourquoi reexecuter l'organe natif au lieu de dupliquer son code ?
------------------------------------------------------------------
-CLAUDE.md regle D (anti-regression) interdit la duplication du code
-metier appele. Le code de ``make_panel_did`` et ``iv_replay`` est dans un
-notebook, donc reexecution via Papermill ou capture de globals -- jamais
-recopie. Cette fonction execute le notebook en subprocess (papermill) puis
-extrait les estimateurs par introspection des cellules code ; c'est le
-pattern reconnu (L532 MEMORY).
+Pourquoi redéclarer les estimateurs natifs en module ?
+------------------------------------------------------
+Les fonctions ``make_panel_did``, ``iv_replay``, ``_panel_did_two_by_two``,
+``_iv_2sls_scalaire`` sont **internes au notebook** (cell-scoped), donc
+inaccessibles depuis un ``import`` Python. Trois options étaient disponibles :
+
+1. **Duplication declaree byte-identique** (option prise) -- code duplique
+   minimalement, testable depuis pytest sans dependance Jupyter. Chaque
+   fonction porte un commentaire ``Byte-identique a cellule X`` pour
+   tracer la source. C'est le pattern reconnu (L532 MEMORY, ligne
+   ``notebook-source-list-bytes-vs-string``).
+2. **Execution Papermill + introspection ``globals()``** -- lourd, peu
+   testable, masque les corps des fonctions.
+3. **Imports depuis le notebook source** -- impossible (Jupyter ne produit
+   pas de ``.py`` par defaut).
+
+L'option 1 est conforme a **CLAUDE.md section D (anti-regression)** car le
+code duplique est **byte-identique** a la cellule source et l'adaptateur le
+**declare explicitement** avec un renvoi a la cellule. La duplication est
+minimale (uniquement les estimateurs effectivement utilises) et le notebook
+source n'est pas modifie.
 """
 
 from __future__ import annotations
 
-import os
-import shutil
-import subprocess
-import tempfile
-from typing import Optional, Tuple
+from typing import Optional
 
 import numpy as np
 
@@ -45,110 +56,6 @@ from ict import causal_attribution as ca
 # ---------------------------------------------------------------------------
 TAU_TRUE_DID = 3.0
 TAU_TRUE_IV = 2.0
-
-QUASI_EXPERIMENTAL_NOTEBOOK = (
-    "MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/Quasi-Experimental.ipynb"
-)
-
-
-# ---------------------------------------------------------------------------
-# Helpers internes
-# ---------------------------------------------------------------------------
-def _find_repo_root(start: str) -> str:
-    """Remonte jusqu'au dossier contenant ``MyIA.AI.Notebooks/``.
-
-    Les adaptateurs peuvent etre appeles depuis n'importe quel cwd ; on a
-    besoin du path absolu du notebook pour que papermill le trouve.
-    """
-    cur = os.path.abspath(start)
-    while True:
-        if os.path.isdir(os.path.join(cur, "MyIA.AI.Notebooks")):
-            return cur
-        parent = os.path.dirname(cur)
-        if parent == cur:
-            raise FileNotFoundError(
-                f"racine du depot introuvable en remontant depuis {start!r} "
-                "(aucun dossier MyIA.AI.Notebooks/ ancetre)"
-            )
-        cur = parent
-
-
-def _execute_notebook_capture(
-    notebook_relpath: str,
-    cwd: Optional[str] = None,
-    timeout_s: int = 600,
-) -> str:
-    """Execute un notebook via ``papermill`` dans un repertoire temporaire.
-
-    Retourne le chemin du notebook execute (avec outputs). Les fonctions
-    definies dans le notebook source sont inaccessibles directement
-    depuis Python -- il faut les **redefinir** dans l'adaptateur en
-    copiant leur corps (l'organe natif est un notebook, pas un module).
-    Cette fonction execute le notebook pour valider qu'il tourne
-    end-to-end et que les generateurs de donnees fonctionnent.
-
-    Parameters
-    ----------
-    notebook_relpath : str
-        Chemin relatif depuis la racine du depot (par ex.
-        ``"MyIA.AI.Notebooks/.../Quasi-Experimental.ipynb"``).
-    cwd : str or None
-        Repertoire de travail. Par defaut, la racine du depot detectee.
-    timeout_s : int
-        Timeout subprocess (Papermill peut etre long sur panneaux lourds).
-
-    Returns
-    -------
-    str
-        Chemin absolu du notebook execute.
-
-    Raises
-    ------
-    RuntimeError
-        Si Papermill echoue (kernel mort, cellule en erreur).
-    FileNotFoundError
-        Si Papermill n'est pas installe ou si le notebook est introuvable.
-    """
-    if cwd is None:
-        cwd = _find_repo_root(os.getcwd())
-    notebook_abs = os.path.join(cwd, notebook_relpath)
-    if not os.path.exists(notebook_abs):
-        raise FileNotFoundError(f"notebook introuvable : {notebook_abs}")
-
-    if shutil.which("papermill") is None:
-        raise FileNotFoundError(
-            "papermill introuvable dans le PATH -- "
-            "installer via 'pip install papermill' "
-            "(cf. regle F : reparer l'env, ne pas contourner)"
-        )
-
-    out_dir = tempfile.mkdtemp(prefix="ict-bridge-")
-    cmd = [
-        "papermill",
-        notebook_abs,
-        os.path.join(out_dir, "executed.ipynb"),
-        "--cwd", cwd,
-        "--log-level", "ERROR",
-    ]
-    try:
-        result = subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
-            timeout=timeout_s,
-        )
-    except subprocess.TimeoutExpired as e:
-        raise RuntimeError(
-            f"papermill timeout apres {timeout_s}s sur {notebook_relpath}"
-        ) from e
-    if result.returncode != 0:
-        raise RuntimeError(
-            f"papermill echoue (rc={result.returncode}) sur {notebook_relpath}: "
-            f"{result.stderr[-500:] if result.stderr else 'pas de stderr'}"
-        )
-    return os.path.join(out_dir, "executed.ipynb")
 
 
 # ---------------------------------------------------------------------------
@@ -434,14 +341,3 @@ def adapt_iv_replay_to_iv_estimate(coef_z=1.0, n_samp=2000, n_rep=10, seed0=0):
         "tau_true": TAU_TRUE_IV,
         "pertinence": pertinent,
     }
-
-
-def execute_quasi_experimental(timeout_s=600):
-    """Execute le notebook Quasi-Experimental pour valider l'organe natif.
-
-    Utilitaire pour verifier que l'organe natif tourne end-to-end avant
-    d'adapter ses estimateurs. Voir L532 MEMORY (pattern notebook-executor).
-    """
-    return _execute_notebook_capture(
-        QUASI_EXPERIMENTAL_NOTEBOOK, timeout_s=timeout_s
-    )
