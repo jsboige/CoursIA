@@ -200,6 +200,7 @@ def fetch_merged(
 
     try:
         cache_err = None
+        cache_read_status = None
         if cache is None:
             prs = fetch_raw()
         else:
@@ -210,13 +211,14 @@ def fetch_merged(
                 mode=cache_mode,
             )
             prs = result.payload
+            cache_read_status = result.status
             if cache_status is not None:
                 cache_status["series"] = result.as_dict()
             if result.status == "stale":
                 cache_err = "cache stale apres echec du refresh: {}".format(
                     result.error or "erreur inconnue"
                 )
-        if cache is not None and result.status in {"hit", "stale"}:
+        if cache_read_status in {"hit", "stale"}:
             prs = [
                 pr for pr in prs
                 if pr.get("mergedAt")

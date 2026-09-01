@@ -28,9 +28,8 @@ def test_cache_key_changes_with_query_and_repository():
 
 
 def test_default_cache_dir_uses_localappdata_on_windows(monkeypatch, tmp_path):
-    monkeypatch.setattr(os, "name", "nt")
     monkeypatch.setenv("LOCALAPPDATA", str(tmp_path))
-    assert default_cache_dir() == tmp_path / "CoursIA" / "cache" / "pick_idle_grain"
+    assert default_cache_dir("nt") == tmp_path / "CoursIA" / "cache" / "pick_idle_grain"
 
 
 def test_miss_then_hit_does_not_refetch(tmp_path):

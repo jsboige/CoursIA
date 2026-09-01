@@ -42,10 +42,11 @@ class CacheResult:
         }
 
 
-def default_cache_dir() -> pathlib.Path:
+def default_cache_dir(platform_name: str | None = None) -> pathlib.Path:
     """Return the platform user-cache location, never a repository path."""
+    platform_name = platform_name or os.name
     local = os.environ.get("LOCALAPPDATA")
-    if os.name == "nt" and local:
+    if platform_name == "nt" and local:
         return pathlib.Path(local) / "CoursIA" / "cache" / "pick_idle_grain"
     xdg = os.environ.get("XDG_CACHE_HOME")
     base = pathlib.Path(xdg) if xdg else pathlib.Path.home() / ".cache"
