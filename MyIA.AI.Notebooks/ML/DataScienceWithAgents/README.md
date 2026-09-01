@@ -94,6 +94,7 @@ DataScienceWithAgents/
 │   ├── 2.8c-Borne-Temoin-Concentration.ipynb
 │   ├── 2.9-Grokking-Generalisation.ipynb
 │   ├── 2.10-Optimisation-Hyperparametres.ipynb
+│   ├── 2.11-Regularisation-Sparse-LASSO.ipynb
 │   └── 2.13-Analyse-Erreurs.ipynb
 │
 ├── 03-DeepLearning/            # Deep learning from scratch (2 notebooks)
@@ -138,6 +139,7 @@ Le socle machine learning canonique avec scikit-learn, posé à la main entre le
 | [2.8c-Borne-Temoin-Concentration](02-ML-Cours/2.8c-Borne-Temoin-Concentration.ipynb) | *Carte transversale + illustrations Python* — Sections 1--3 (reconstruction de la borne, témoin extrémal, Hoeffding bilatérale) sous kernel `coursia-ml-training` | qui porte quoi, et la mesure numérique Python exécutée |
 | [2.9-Grokking-Generalisation](02-ML-Cours/2.9-Grokking-Generalisation.ipynb) | *Épilogue* — grokking : la généralisation qui arrive en retard (premier réseau de neurones) | **L'horloge cachée** : embeddings rangés en cercle après le grok (ACP + Fourier) |
 | [2.10-Optimisation-Hyperparametres](02-ML-Cours/2.10-Optimisation-Hyperparametres.ipynb) | méthodologie du réglage : grille, hasard, bayésien (TPE) — et quand s'arrêter | le critère d'arrêt économise la moitié des essais |
+| [2.11-Regularisation-Sparse-LASSO](02-ML-Cours/2.11-Regularisation-Sparse-LASSO.ipynb) | *Régularisation sparse* — LASSO (L1, polyèdre) vs Ridge (L2, boule), coord descent, sélection de λ, ElasticNet sur features corrélées | **la géométrie décide** : polyèdre L1 → sparsity, boule L2 → shrink ; sur ρ > 0.7, ElasticNet stabilise |
 | [2.13-Analyse-Erreurs](02-ML-Cours/2.13-Analyse-Erreurs.ipynb) | le geste du praticien : diagnostiquer un modèle entraîné (tranches, worst-k) | la poche invisible : 67.6% d'erreur sous un score global correct |
 
 Documentation complète : [02-ML-Cours/README.md](02-ML-Cours/README.md)

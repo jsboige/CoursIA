@@ -2,7 +2,7 @@
 
 import re
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 
 
 # Patterns marking an intentionally-honest sorry (theoretical impossibility,
@@ -150,6 +150,68 @@ def count_real_sorries(content: str) -> int:
     """
     content = _require_str("content", content, allow_empty=True)
     return len(_SORRY_TOKEN_RE.findall(strip_lean_comments(content)))
+
+
+_TOP_LEVEL_DECL_RE = re.compile(
+    r"^(theorem|lemma|def|abbrev|instance|structure|inductive|class|"
+    r"private|protected|partial|noncomputable|namespace|end|section|open|"
+    r"attribute|@\[|#eval|#check|#print|/--|/-|--|set_option)\b"
+)
+
+
+def stub_theorem_proof(source: str, theorem_name: str) -> str:
+    """Replace the proof of ``theorem_name`` with ``:= by sorry`` (calibration, #1453).
+
+    Calibration targets are committed WITH their approved proof — that proof is
+    the ground truth the prover must reproduce, not a state to preserve at
+    runtime. This stubs the declaration body from its ``:=`` up to the next
+    top-level construct, leaving the statement (signature) intact so the
+    prover attacks exactly the declaration the DEMO config names.
+
+    End-of-proof rule: the first non-blank line at column 0 after the ``:=``
+    line (Lean convention: proof bodies are indented under ``:= by``). This
+    also catches the ``/--`` docstring of the next declaration, so the stub
+    never swallows a sibling's documentation.
+
+    Raises ValueError when the declaration, its ``:=`` or its terminator is
+    not found — a calibration run must fail loud rather than stub the wrong
+    region and report a fake target.
+    """
+    source = _require_str("source", source, allow_empty=False)
+    theorem_name = _require_str("theorem_name", theorem_name, allow_empty=False)
+    lines = source.splitlines(keepends=True)
+
+    decl_re = re.compile(
+        r"^\s*(theorem|lemma|def|abbrev)\s+" + re.escape(theorem_name) + r"\b"
+    )
+    decl_idx = next(
+        (i for i, ln in enumerate(lines) if decl_re.match(ln)), None
+    )
+    if decl_idx is None:
+        raise ValueError(f"declaration {theorem_name!r} not found")
+
+    arrow_idx = None
+    arrow_col = None
+    for j in range(decl_idx, len(lines)):
+        if j > decl_idx and _TOP_LEVEL_DECL_RE.match(lines[j]):
+            raise ValueError(
+                f"no ':=' found in {theorem_name!r} before next declaration"
+            )
+        col = lines[j].find(":=")
+        if col != -1:
+            arrow_idx, arrow_col = j, col
+            break
+    if arrow_idx is None:
+        raise ValueError(f"no ':=' found in {theorem_name!r}")
+
+    end_idx = len(lines)
+    for k in range(arrow_idx + 1, len(lines)):
+        if re.match(r"\S", lines[k]):
+            end_idx = k
+            break
+
+    stub_line = lines[arrow_idx][:arrow_col].rstrip() + " := by sorry\n"
+    return "".join(lines[:arrow_idx] + [stub_line] + lines[end_idx:])
 
 
 # Implicit-sorry detection (Epic #1500, c.1301+209):
@@ -416,6 +478,44 @@ _PROBE_UNSOLVED_TOL = 25
 # FX-5c: a lake/lean `error:` line with no `NN:NN:` file position anywhere
 # in it is an infrastructure failure, not an elaboration verdict.
 _UNPOSITIONED_ERROR_LINE_RE = re.compile(r"^\s*error:")
+
+
+def _probe_replaced_lines(
+    lines: List[str], sorry_line: int, probe: str
+) -> List[str]:
+    """Copy of ``lines`` with the sorry at ``sorry_line`` replaced by ``probe``.
+
+    Whole-line replacement (the historical form) is only correct when the
+    sorry sits ALONE on its line (``  sorry``). An INLINE sorry — the
+    single-line idiom ``theorem f : P := by sorry`` (also what the #1453
+    calibration stub writes) — carries the whole declaration on that line:
+    replacing it deletes the theorem and leaves a floating tactic, so every
+    probe in the sequence dies with the same parse error
+    (``unexpected identifier; expected 'lemma'``, measured firsthand on
+    conway_lean Nim.lean demo 39: all 5 probes failed identically and goal
+    extraction silently degraded to the heuristic). Token replacement keeps
+    the declaration and re-seats the probe in its tactic position:
+
+    - ``  sorry``            -> ``  <probe>``            (historical form)
+    - ``theorem f : P := by sorry`` -> ``theorem f : P := by <probe>``
+    - ``theorem f : P := sorry``    -> ``theorem f : P := by <probe>``
+      (a bare ``:= <tactic>`` is a parse error; ``by`` is inserted)
+    - ``· sorry``            -> ``· <probe>``            (bullet position)
+    """
+    raw = lines[sorry_line - 1]
+    code = raw.split("--", 1)[0]
+    m = _SORRY_TOKEN_RE.search(code)
+    if m is None:
+        return list(lines)
+    start, end = m.span()
+    prefix = raw[:start]
+    if prefix.strip() == "":
+        repl = " " * (len(raw) - len(raw.lstrip())) + probe
+    elif prefix.rstrip().endswith(":="):
+        repl = f"{prefix}by {probe}{raw[end:]}"
+    else:
+        repl = f"{prefix}{probe}{raw[end:]}"
+    return lines[:sorry_line - 1] + [repl] + lines[sorry_line:]
 _FILE_POSITION_RE = re.compile(r"\d+:\d+:")
 
 
@@ -501,8 +601,7 @@ def is_true_placeholder_goal(filepath: str, sorry_line: int) -> Tuple[bool, str]
     relative_path = probe_relative_path(filepath, project_dir, "_GoalExtract.lean")
     tmp_path = Path(filepath).parent / "_GoalExtract.lean"
 
-    indent_str = " " * indent
-    new_lines = lines[:sorry_line - 1] + [indent_str + _TRUE_PROBE] + lines[sorry_line:]
+    new_lines = _probe_replaced_lines(lines, sorry_line, _TRUE_PROBE)
     tmp_path.write_text("\n".join(new_lines), encoding="utf-8")
     try:
         probe_result = verifier.verify_project_file(relative_path)
@@ -684,7 +783,6 @@ def get_goal_state(filepath: str, sorry_line: int) -> Optional[str]:
 
     sorry_text = lines[sorry_line - 1]
     indent = len(sorry_text) - len(sorry_text.lstrip())
-    indent_str = " " * indent
 
     # Skip probing for deeply nested sorries — cascade errors make it unreliable
     if indent >= 8:
@@ -712,7 +810,7 @@ def get_goal_state(filepath: str, sorry_line: int) -> Optional[str]:
     ]
 
     for probe in probes:
-        new_lines = lines[:sorry_line - 1] + [indent_str + probe] + lines[sorry_line:]
+        new_lines = _probe_replaced_lines(lines, sorry_line, probe)
         new_content = "\n".join(new_lines)
         tmp_path.write_text(new_content, encoding="utf-8")
 
