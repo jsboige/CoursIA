@@ -83,7 +83,7 @@ Suite à l'audit du 5 mai 2026, voici l'état honnête de chaque notebook. **Auc
 | QC-Py-Cloud-03b-RiskParity-Composite | doc cloud | markdown-only — backtest sur QC Cloud |
 | QC-Py-Cloud-04-MeanReversion | doc cloud | markdown-only — backtest sur QC Cloud |
 | QC-Py-Cloud-05-MLP-Forecasting | EXÉCUTÉ | |
-| QC-Py-Cloud-05-RegimeSwitching | doc cloud | markdown-only — backtest sur QC Cloud |
+| QC-Py-Cloud-11-RegimeSwitching | doc cloud | markdown-only — backtest sur QC Cloud |
 | QC-Py-Cloud-13-VolTargeting | doc cloud | markdown-only — backtest sur QC Cloud |
 | QC-Py-Cloud-06-PCA-StatArb | doc cloud | markdown-only — backtest sur QC Cloud |
 | QC-Py-Cloud-07-TemporalCNN | doc cloud | markdown-only — backtest sur QC Cloud |
@@ -228,7 +228,7 @@ Notebooks de recherche et stratégies exécutées sur QuantConnect Cloud.
 | [QC-Py-Cloud-03b-RiskParity-Composite](QC-Py-Cloud-03b-RiskParity-Composite.ipynb) | Risk Parité composite |
 | [QC-Py-Cloud-04-MeanReversion](QC-Py-Cloud-04-MeanReversion.ipynb) | Mean Reversion |
 | [QC-Py-Cloud-05-MLP-Forecasting](QC-Py-Cloud-05-MLP-Forecasting.ipynb) | MLP Forecasting |
-| [QC-Py-Cloud-05-RegimeSwitching](QC-Py-Cloud-05-RegimeSwitching.ipynb) | Régime Switching |
+| [QC-Py-Cloud-11-RegimeSwitching](QC-Py-Cloud-11-RegimeSwitching.ipynb) | Régime Switching |
 | [QC-Py-Cloud-13-VolTargeting](QC-Py-Cloud-13-VolTargeting.ipynb) | Volatility Targeting |
 | [QC-Py-Cloud-06-PCA-StatArb](QC-Py-Cloud-06-PCA-StatArb.ipynb) | PCA Statistical Arbitrage |
 | [QC-Py-Cloud-07-TemporalCNN](QC-Py-Cloud-07-TemporalCNN.ipynb) | Temporal CNN |
