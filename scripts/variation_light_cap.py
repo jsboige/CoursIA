@@ -870,6 +870,11 @@ def _genre_from_paths(files: list[str] | None) -> str | None:
         heuristic cannot distinguish `lean`/`notebook-python`/`qc`/...,
         so it abstains -- forcing `tooling` here would MISMATCH 12 of 14
         honest code declarations, #10102)
+      * any `*.md` under `docs/ledgers/`         -> None (a ledger canonique
+        md-only under docs/ would otherwise infer `docs` and MISMATCH
+        every honest `ledger` declaration -- the ledger genus lives under
+        the docs/ tree by design, the declared genre does the disambig;
+        abstention mirrors the code-PR abstention above, #13965)
       * any `*.md` under `docs/` or `.claude/`   -> `docs` (prose/rule work)
       * all `*.md` named `README*`               -> `readme`
       * other `*.md`-only diffs                  -> None (cannot classify
@@ -894,6 +899,12 @@ def _genre_from_paths(files: list[str] | None) -> str | None:
         # MISMATCH 12 of 14 honest code declarations (#10102).
         return None
     # md-only diff: classify the prose work.
+    # Ledger canonique (#13965): un ledger md-only sous docs/ledgers/ ne
+    # peut pas etre infere `docs` sans MISMATCHer toute declaration
+    # `ledger` honnete. On s'abstient comme pour un PR code -- l'enonce
+    # declare fait foi, l'heuristique ne peut pas trancher.
+    if any(f.startswith("docs/ledgers/") for f in norm):
+        return None
     if any(f.startswith("docs/") or f.startswith(".claude/") for f in norm):
         return "docs"
     if all(f.rsplit("/", 1)[-1].upper().startswith("README") for f in norm):

@@ -893,6 +893,32 @@ def test_genre_from_paths_non_md_abstains_and_md_classification():
     assert vlc._genre_from_paths(["MyIA.AI.Notebooks/ML/notes.md"]) is None
 
 
+def test_genre_from_paths_ledger_canonique_abstains_13965():
+    """#13965: un ledger canonique md-only sous docs/ledgers/ ne doit PAS
+    inferer `docs` -- sinon le GENRE-MISMATCH frappe systematiquement les
+    declarations `ledger` honnete (le ledger genus vit SOUS docs/ par
+    convention, le declarant ne peut pas l'eviter). L'abstention est le
+    seul signal qui ne cree pas de faux positif neuf.
+
+    Controle positif : un .md sous `docs/` qui n'est PAS un ledger
+    (ex. `docs/reference/x.md`) continue d'inferer `docs` -- le fix est
+    strictement cantonne a `docs/ledgers/`.
+    """
+    # Le ledger canonique : md-only sous docs/ledgers/ -> abstention.
+    assert vlc._genre_from_paths(["docs/ledgers/12204-ict-chantier-1-a2.md"]) is None
+    # Mixe de plusieurs ledgers (cas reel tranche MED/ledger) -> abstention.
+    assert vlc._genre_from_paths([
+        "docs/ledgers/12204-ict-chantier-1-a2.md",
+        "docs/ledgers/12204-ict-chantier-1-a3.md",
+    ]) is None
+    # Controle positif : un .md sous docs/ hors ledgers continue d'inferer `docs`.
+    assert vlc._genre_from_paths(["docs/reference/x.md"]) == "docs"
+    # Controle positif : un .claude/ rule md-only -> `docs` (la branche
+    # docs/.claude/ est preservee hors du chemin `docs/ledgers/` ; on teste
+    # ici SANS ledger pour ne pas declencher l'abstention ajoutee par #13965).
+    assert vlc._genre_from_paths([".claude/rules/git-workflow.md"]) == "docs"
+
+
 def test_signal_genre_mismatch_no_mismatch_10090_harness_rules(tmp_path, capsys):
     # #10090 non-regression: a diff of 3 *.md files, 2 under .claude/ (rule
     # prose) + 1 other, declared `docs`. Per #10102 acceptance, .claude/
