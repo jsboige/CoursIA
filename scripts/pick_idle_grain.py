@@ -254,6 +254,24 @@ def infer_genre(title: str, labels: list[str]) -> str:
     return "docs"
 
 
+def authoritative_genre(body: str) -> str | None:
+    """#13972 : extraire le genre que l'auteur de l'issue a DEClare dans le body.
+
+    Un tag `Grain: TIER/GENRE -- lane ...` dans le body est **autoritatif** :
+    c'est le genre que l'auteur a lui-meme pose, et il prime sur
+    `infer_genre(title, labels)` qui n'infere que du titre (et donc peut
+    declarer `notebook-python` un titre mentionnant `notebook_tools/`).
+
+    Renvoie le genre CANONIQUE (via `canonicalize_genre`), ou None si le
+    body n'a pas de tag `Grain:` lisible. Le retour None signifie «
+    l'auteur n'a rien declare, inferer du titre est acceptable ».
+    """
+    tag = parse_grain_tag(body)
+    if not tag or not tag.get("genre"):
+        return None
+    return canonicalize_genre(tag["genre"])
+
+
 def age_days(created: str) -> int:
     created_dt = dt.datetime.fromisoformat(created.replace("Z", "+00:00"))
     return max(0, (NOW - created_dt).days)
@@ -352,6 +370,14 @@ def fetch_pool(
         labels = [lb["name"] for lb in it.get("labels", [])]
         title = it["title"]
         is_umbrella = "EPIC" in labels or title.upper().lstrip("[").startswith("EPIC")
+        body = it.get("body") or ""
+        # #13972 : le genre que l'AUTEUR de l'issue a declare dans le body
+        # (`Grain: TIER/GENRE -- lane ...`) prime sur l'inference du titre.
+        # Mesure du 2026-09-01 (lane ai-01) : `infer_genre` declarait
+        # `notebook-python` pour des issues `[consolidation] notebook_tools/`
+        # dont le body dit noir sur blanc `Grain: MED/docs` -- le META etait
+        # servi sous restriction CONTENU.
+        declared_genre = authoritative_genre(body)
         pool.append({
             "number": it["number"],
             "title": title,
@@ -360,10 +386,10 @@ def fetch_pool(
             "age": age_days(it["createdAt"]),
             "idle": age_days(it["updatedAt"]),
             "updated_at": it["updatedAt"],
-            "genre": infer_genre(title, labels),
-            "body": it.get("body") or "",
-            "parent": parent_issue(it.get("body") or ""),
-            "polarity": polarity(title, it.get("body") or ""),
+            "genre": declared_genre if declared_genre else infer_genre(title, labels),
+            "body": body,
+            "parent": parent_issue(body),
+            "polarity": polarity(title, body),
             "klass": (
                 "delivered" if "candidate-delivered" in labels
                 else "umbrella" if is_umbrella

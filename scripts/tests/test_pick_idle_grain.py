@@ -1390,3 +1390,112 @@ def test_file_saturation_requires_at_least_one_required_check():
         ("advisory opt", "NEUTRAL", False),
     ])
     assert pig.file_saturation_cause(s, 30.0, 24.0) is None
+
+# ---------------------------------------------------------------------------
+def test_13972_authoritative_genre_returns_docs_when_body_says_docs() -> None:
+    """#13972 : body qui dit Grain: MED/docs -> auteur a declare META.
+
+    Reproduction directe du cas fondateur documente par ai-01 sur #10475 :
+    un titre qui suggere 'notebook' (infer_genre rendrait 'notebook-python',
+    du CONTENU), un body qui dit 'Grain: MED/docs' (du META). Le tag du body
+    est autoritatif : la sortie doit etre 'docs'.
+    """
+    title = "consolider les doublons de MyIA.AI.Notebooks/notebook_tools/"
+    body = (
+        "Grain: MED/docs -- lane myia-po-2026:CoursIA\n"
+        "\n"
+        "## Contexte\n"
+        "Ce grain ne compte pas comme le plat principal (G-VAR-1)."
+    )
+    labels = []
+    inferred = pig.infer_genre(title, labels)
+    declared = pig.authoritative_genre(body)
+    # L inference se trompe (titre contient Notebooks) :
+    assert inferred == "notebook-python", (
+        f"sanity: infer_genre sur le titre doit renvoyer notebook-python, "
+        f"obtenu {inferred!r}"
+    )
+    # Mais le body est autoritatif :
+    assert declared == "docs", (
+        f"authoritative_genre doit renvoyer docs depuis le body, "
+        f"obtenu {declared!r}"
+    )
+
+
+def test_13972_authoritative_genre_returns_none_when_body_has_no_tag() -> None:
+    """#13972 : body sans tag -> None, infer_genre garde la main."""
+    body = (
+        "## Summary\n\n"
+        "Issue ouverte, pas de tag Grain: dans le body.\n"
+        "On laisse infer_genre decider depuis le titre."
+    )
+    assert pig.authoritative_genre(body) is None
+
+
+def test_13972_authoritative_genre_canonicalizes_aliases() -> None:
+    """#13972 : un alias (ex translation) est canonicalise.
+
+    translation -> docs, notebook-genai-python -> notebook-python.
+    """
+    body_translation = "Grain: MED/translation -- lane myia-po-2026:CoursIA"
+    assert pig.authoritative_genre(body_translation) == "docs"
+
+    body_compound = "Grain: DEEP/notebook-genai-python -- lane myia-po-2026:CoursIA"
+    assert pig.authoritative_genre(body_compound) == "notebook-python"
+
+
+def test_13972_authoritative_genre_empty_body_returns_none() -> None:
+    """#13972 : body vide -> None (pas de tag, pas d erreur)."""
+    assert pig.authoritative_genre("") is None
+    # None safe aussi (defense contre les chemins de bord ou le caller passe
+    # directement le body=None sans normaliser en amont).
+    assert pig.authoritative_genre(None) is None
+
+
+def test_13972_pool_genre_prefers_body_over_title(monkeypatch) -> None:
+    """#13972 integration : le pool attribue le genre du body, pas du titre.
+
+    Cas fondateur #10475 : titre 'consolider MyIA.AI.Notebooks/notebook_tools/'
+    ferait infer_genre -> notebook-python (CONTENU), body porte Grain: docs.
+    Le dict du pool doit porter genre: docs pour que la restriction G-VAR-1
+    (CONTENU only) elimine cet item.
+
+    fetch_pool() appelle `gh issue list` en subprocess ; on mock pour
+    injecter un payload shape-compatible.
+    """
+    payload = [
+        {
+            "number": 10475,
+            "title": "consolider MyIA.AI.Notebooks/notebook_tools/ doublons",
+            "labels": [],
+            "createdAt": "2026-08-01T00:00:00Z",
+            "updatedAt": "2026-09-01T00:00:00Z",
+            "body": (
+                "Grain: MED/docs -- lane myia-po-2026:CoursIA\n"
+                "\n"
+                "Ce grain est META, G-VAR-1 : pas le plat principal."
+            ),
+        },
+        {
+            "number": 99999,
+            "title": "reel notebook python content",
+            "labels": [],
+            "createdAt": "2026-08-01T00:00:00Z",
+            "updatedAt": "2026-09-01T00:00:00Z",
+            "body": "Grain: DEEP/notebook-python -- lane myia-po-2026:CoursIA",
+        },
+    ]
+    fake_proc = _FakeCompleted(json.dumps(payload))
+    monkeypatch.setattr(pig.subprocess, "run", lambda *a, **kw: fake_proc)
+    pool = pig.fetch_pool()
+    by_number = {it["number"]: it for it in pool}
+    # #10475 : titre dirait notebook-python, body dit docs -> genre = docs (META)
+    assert by_number[10475]["genre"] == "docs", (
+        f"sanity: titre contient 'notebook_tools', infer_genre rendrait "
+        f"'notebook-python' (CONTENU) ; le body porte 'Grain: MED/docs' "
+        f"qui doit primer. Obtenu: {by_number[10475]['genre']!r}"
+    )
+    # #99999 : titre et body disent notebook-python -> genre = notebook-python (CONTENU)
+    assert by_number[99999]["genre"] == "notebook-python"
+
+
