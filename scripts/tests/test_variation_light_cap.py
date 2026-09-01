@@ -1996,3 +1996,87 @@ def test_light_guard_on_spent_tier_budget_still_caps_13632():
     )
     assert out["tier_cap_reached"] is True
     assert out["cap_reached"] is True
+
+
+# #13965 defaut 1 : un diff md-only sous `docs/ledgers/` (la forme canonique
+# d'une tranche de ledger) inferait `docs` face a une declaration honnete
+# `Grain: MED/ledger` -> GENRE-MISMATCH par construction. Le predicat doit
+# rendre `ledger` pour ce sous-dossier specialise, AVANT le test `docs/`
+# generaliste.
+
+
+def test_13965_genre_from_paths_ledger_canonical():
+    """`docs/ledgers/<file>.md` -> `ledger` (sous-dossier specialise gagne
+    sur son parent `docs/`)."""
+    from variation_light_cap import _genre_from_paths
+    files = ["docs/ledgers/12204-ict-chantier-1-a2.md"]
+    assert _genre_from_paths(files) == "ledger"
+
+
+def test_13965_genre_from_paths_ledger_archive():
+    """`docs/archive/ledgers-reviews/<file>.md` -> `ledger` (archive)."""
+    from variation_light_cap import _genre_from_paths
+    files = ["docs/archive/ledgers-reviews/2026-08-15.md"]
+    assert _genre_from_paths(files) == "ledger"
+
+
+def test_13965_genre_from_paths_docs_other_unchanged():
+    """Controle FN : les autres sous-dossiers `docs/` NON-`ledgers/`
+    continuent de rendre `docs`. La nouvelle branche ne mange pas la
+    portee de `docs/`."""
+    from variation_light_cap import _genre_from_paths
+    assert _genre_from_paths(["docs/reference/claude-code-config.md"]) == "docs"
+    assert _genre_from_paths(["docs/lean/i18n-inventory-cycle-38.md"]) == "docs"
+    assert _genre_from_paths(["docs/README.md".lower().replace("readme.md", "REFERENCE.md")]) in (
+        "docs",
+        None,
+    )
+
+
+def test_13965_genre_mismatch_no_longer_fires_on_canonical_ledger(tmp_path, capsys):
+    """Integration : un PR declare `Grain: MED/ledger` avec un diff md-only
+    sous `docs/ledgers/` ne leve plus GENRE-MISMATCH. Issue #13956 etait
+    le premier cas fondateur ; le fix ferme la classe.
+
+    Le test verifie qu'un PR de ledger md-only declare honnetement ne
+    produit PAS le signal, et qu'un PR md-only declare `guard` SUR le
+    meme sous-dossier le produit ENCORE (controle FN de portee)."""
+    merged_obj = [
+        {"number": 1, "body": "Grain: MED/ledger -- lane myia-po-2023:CoursIA",
+         "mergedAt": "2026-08-08T01:00:00Z"},
+    ]
+    mpath = tmp_path / "merged.json"
+    mpath.write_text(json.dumps(merged_obj), encoding="utf-8")
+    bpath = tmp_path / "body.txt"
+    bpath.write_text(
+        "Grain: MED/ledger -- lane myia-po-2023:CoursIA", encoding="utf-8"
+    )
+    rc = vlc.main([
+        "--replay", str(mpath), "--genre-signals",
+        "--lane", "myia-po-2023:CoursIA",
+        "--body-file", str(bpath),
+        "--files", "docs/ledgers/12204-ict-chantier-1-a2.md",
+    ])
+    out = json.loads(capsys.readouterr().out.strip().splitlines()[-1])
+    assert rc == 0
+    # Inferred = declared = `ledger` -> MISMATCH is False.
+    assert out["signals"]["GENRE-MISMATCH"] is False
+    assert out["inferred_genre_from_paths"] == "ledger"
+    assert out["candidate_genre_canonical"] == "ledger"
+
+    # Controle FN : declare `guard` sur le meme sous-doyer -> mismatch
+    # (le fix ne mange pas les vrais positifs de l'axe docs/).
+    bpath.write_text(
+        "Grain: MED/guard -- lane myia-po-2023:CoursIA", encoding="utf-8"
+    )
+    capsys.readouterr()  # clear
+    vlc.main([
+        "--replay", str(mpath), "--genre-signals",
+        "--lane", "myia-po-2023:CoursIA",
+        "--body-file", str(bpath),
+        "--files", "docs/ledgers/12204-ict-chantier-1-a2.md",
+    ])
+    out = json.loads(capsys.readouterr().out.strip().splitlines()[-1])
+    assert out["signals"]["GENRE-MISMATCH"] is True
+    assert out["inferred_genre_from_paths"] == "ledger"
+    assert out["candidate_genre_canonical"] == "guard"

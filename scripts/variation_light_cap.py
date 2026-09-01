@@ -894,6 +894,17 @@ def _genre_from_paths(files: list[str] | None) -> str | None:
         # MISMATCH 12 of 14 honest code declarations (#10102).
         return None
     # md-only diff: classify the prose work.
+    # #13965 : ledgers canoniques vivent sous `docs/ledgers/` (7 mesures,
+    # plus l'archive `docs/archive/ledgers-reviews/`). Sans branche dediee,
+    # un diff md-only sous `docs/ledgers/` rendait `inferred = "docs"` face
+    # a declaration honnete `Grain: MED/ledger` -- mismatch par construction,
+    # le meme defaut que #10102 pour l'axe code. Le predicat teste `ledger`
+    # AVANT `docs` : un sous-dossier specialise gagne sur son parent, et le
+    # seul ledger declare honnetement ne peut plus mismatcher pour cette
+    # raison. Abstention alternative (None) preservee sur les autres formes
+    # md-only que l'heuristique ne classe pas.
+    if any(f.startswith("docs/ledgers/") or f.startswith("docs/archive/ledgers-reviews/") for f in norm):
+        return "ledger"
     if any(f.startswith("docs/") or f.startswith(".claude/") for f in norm):
         return "docs"
     if all(f.rsplit("/", 1)[-1].upper().startswith("README") for f in norm):
