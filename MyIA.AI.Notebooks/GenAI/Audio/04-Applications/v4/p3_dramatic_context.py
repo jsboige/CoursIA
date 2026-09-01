@@ -174,6 +174,7 @@ def calibrate_scenes(
         system,
         user,
         context_block=context_block,
+        timeout=300,
     )
 
     scene_map = {m["paragraph_id"]: m["act"] for m in result.get("mappings", [])}

@@ -30,7 +30,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 V4_DIR = REPO_ROOT / "MyIA.AI.Notebooks" / "GenAI" / "Audio" / "04-Applications"
-DEFAULT_BOOK = V4_DIR / "boule_de_suif_full.txt"
+DEFAULT_BOOK = V4_DIR.parent / "boule_de_suif_full.txt"
 
 if str(V4_DIR) not in sys.path:
     sys.path.insert(0, str(V4_DIR))
@@ -117,6 +117,16 @@ def main() -> int:
         return 2
 
     window = select_window(args.from_pass, args.to_pass)
+
+    context_path = V4_DIR / "v4" / "outputs" / "narrative_context.json"
+    if any(p.key != "p0" for p in window) and not context_path.exists():
+        print(
+            f"Artefact P0 manquant : {context_path}\n"
+            "Les passes p1_5+ le requierent (context_injector.load_narrative_context, "
+            "sans fallback). Executer p0 (SearXNG requis) ou fournir l'artefact.",
+            file=sys.stderr,
+        )
+        return 2
     print(f"Livre    : {args.book}")
     print(f"Mode     : {'DRY-RUN (aucun service)' if args.dry_run else 'COMPLET'}")
     print(f"Fenetre  : {window[0].key}..{window[-1].key} "
