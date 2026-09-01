@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """c.8257 enrichment script: appends a `**Le pont**` block to markdown cells in
-Lean-18-Search-AStar-Optimality.ipynb (13 markdown cells).
+Search-03e-AStar-Optimality.ipynb (13 markdown cells, ex-Lean-18-Search-AStar-Optimality avant #13841).
 
 Preserves the original `source` list-of-strings format (L935 ★: all but last have `\n`).
 Only modifies targeted cell_ids; all other cells untouched (minimal diff).
@@ -12,7 +12,7 @@ L944 ★★ : atomic Python script with cell_id -> dict.
 import json
 from pathlib import Path
 
-NB_PATH = Path("MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-18-Search-AStar-Optimality.ipynb")
+NB_PATH = Path("MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03e-AStar-Optimality.ipynb")
 
 # For each cell_id: a short appended "Le pont" block.
 APPENDS = {

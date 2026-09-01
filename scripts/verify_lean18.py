@@ -1,9 +1,9 @@
-"""c.8257 verifier: post-enrichment invariants for Lean-18-Search-AStar-Optimality.ipynb."""
+"""c.8257 verifier: post-enrichment invariants for Search-03e-AStar-Optimality.ipynb (ex-Lean-18-Search-AStar-Optimality avant #13841)."""
 import json
 import sys
 from pathlib import Path
 
-NB_PATH = Path("MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-18-Search-AStar-Optimality.ipynb")
+NB_PATH = Path("MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03e-AStar-Optimality.ipynb")
 nb = json.loads(NB_PATH.read_text(encoding="utf-8"))
 
 print(f"Total cells: {len(nb['cells'])}")
