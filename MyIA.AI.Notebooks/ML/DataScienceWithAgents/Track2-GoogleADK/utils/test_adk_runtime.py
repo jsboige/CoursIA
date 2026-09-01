@@ -83,6 +83,20 @@ def test_build_data_agent_uses_public_adk_agent_and_real_tool():
     assert agent.tools[0] is dataset_profile
 
 
+def test_build_agent_supports_distinct_pedagogical_roles():
+    agent = adk_runtime.build_agent(
+        name="planner_agent",
+        description="Planifie une analyse.",
+        instruction="Produis un plan court.",
+        tools=(dataset_profile,),
+        config=_config(),
+    )
+    assert agent.name == "planner_agent"
+    assert agent.description == "Planifie une analyse."
+    assert agent.instruction == "Produis un plan court."
+    assert agent.tools[0] is dataset_profile
+
+
 class _Event:
     def __init__(self, *, final=False, content=None, calls=(), responses=()):
         self._final = final
@@ -150,6 +164,31 @@ def test_run_data_agent_creates_session_and_collects_adk_evidence():
         assert result.tool_calls == ("dataset_profile",)
         assert result.tool_responses == ("dataset_profile",)
         assert result.tool_was_invoked
+        runner.close.assert_awaited_once()
+
+    adk_runtime.asyncio.run(exercise())
+
+
+def test_run_agent_turn_uses_the_supplied_adk_agent():
+    async def exercise():
+        service = MagicMock()
+        service.create_session = AsyncMock()
+        agent = MagicMock(name="planner_agent")
+        _Runner.instances.clear()
+        with (
+            patch.object(adk_runtime, "InMemorySessionService", return_value=service),
+            patch.object(adk_runtime, "Runner", _Runner),
+        ):
+            result = await adk_runtime.run_agent_turn(
+                agent,
+                "Planifie cette analyse",
+                session_id="planner-session",
+            )
+
+        runner = _Runner.instances[0]
+        assert runner.kwargs["agent"] is agent
+        assert runner.run_kwargs["session_id"] == "planner-session"
+        assert result.response_text == "960 cellules"
         runner.close.assert_awaited_once()
 
     adk_runtime.asyncio.run(exercise())
