@@ -40,6 +40,13 @@ CPUS="${COURSIA_RUNNER_CPUS:-3}"
 MEMORY="${COURSIA_RUNNER_MEMORY:-4g}"
 PIDS="${COURSIA_RUNNER_PIDS:-384}"
 
+# Toolcache persistant : sans lui, chaque conteneur ephemere (un par job)
+# re-telechargerait interpretes et outils via les actions setup-*. Le volume
+# nomme survit aux conteneurs ; RUNNER_TOOL_CACHE dit aux actions ou chercher.
+# Sa propriete runner:runner vient du point de montage du Dockerfile.
+TOOLCACHE_VOLUME="${COURSIA_RUNNER_TOOLCACHE_VOLUME:-coursia-runner-toolcache}"
+TOOLCACHE_MOUNT="${COURSIA_RUNNER_TOOLCACHE_MOUNT:-/opt/hostedtoolcache}"
+
 mkdir -p "$STATE_DIR"
 
 die() { echo "ERREUR: $*" >&2; exit 1; }
@@ -70,6 +77,8 @@ slot_loop() {
       --name "$name" \
       --cpus="$CPUS" --memory="$MEMORY" --pids-limit="$PIDS" \
       --security-opt=no-new-privileges \
+      -v "$TOOLCACHE_VOLUME":"$TOOLCACHE_MOUNT" \
+      -e RUNNER_TOOL_CACHE="$TOOLCACHE_MOUNT" \
       -e ACTIONS_RUNNER_INPUT_TOKEN="$token" \
       -e ACTIONS_RUNNER_INPUT_URL="https://github.com/$REPO" \
       -e ACTIONS_RUNNER_INPUT_NAME="$name" \
@@ -91,8 +100,10 @@ cmd_start() {
   docker image inspect "$IMAGE" >/dev/null 2>&1 \
     || die "image $IMAGE absente -- construire d'abord :
     docker build -t $IMAGE scripts/ci/docker/linux-runner/"
+  docker volume create "$TOOLCACHE_VOLUME" >/dev/null \
+    || die "volume $TOOLCACHE_VOLUME impossible a creer -- docker volume create"
   rm -f "$STOP_FILE"
-  echo "demarrage de $n slot(s) ; caps par conteneur : cpus=$CPUS memory=$MEMORY pids=$PIDS"
+  echo "demarrage de $n slot(s) ; caps par conteneur : cpus=$CPUS memory=$MEMORY pids=$PIDS ; toolcache=$TOOLCACHE_VOLUME -> $TOOLCACHE_MOUNT"
   for i in $(seq 1 "$n"); do
     slot_loop "$i" &
     echo "$!" >> "$STATE_DIR/pids"
