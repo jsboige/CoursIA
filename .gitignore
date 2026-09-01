@@ -983,3 +983,19 @@ MyIA.AI.Notebooks/**/cache/
 
 # WSL admin credentials (po-2027 onboarding)
 .secrets/wsl_credentials
+
+# Racine : scratch local et artefacts de training/QA (consolidation V1, #13738)
+# Patterns ANCREES RACINE : ils n'atteignent aucune donnee trackee en sous-repertoire
+# (verifie : 0 fichier tracke en .png/.pt/.log/.jsonl a la racine de main, 0 tracke
+# sous _cache/ ; les modeles .pt QC tracks restent couverts par leurs negations
+# !...pt en l.875-879, scopes disjoints).
+/%SystemDrive%/
+/.tmp_*/
+/*.jsonl
+/*.log
+/*.png
+/*.pt
+# Cache parquet HuggingFace (ex. ML-Training-Pipeline/scripts/results/m12_hf/_cache/, 31 Mo)
+**/_cache/
+# Cache de calcul PyPhi (notebooks IIT)
+/__pyphi_cache__/

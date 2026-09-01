@@ -8,8 +8,8 @@ pool de 140 issues dont 89 creees dans les 7 derniers jours, un worker qui
 scanne le pool ne voit **rien de plus vieux que ~6 jours** -- il repioche
 mecaniquement dans ce que le coordinateur vient de creer, ce qui referme la
 boucle de monoculture que `.claude/rules/variation-protocol.md` cherche a
-ouvrir. Le picker defait la troncature par construction (`--limit 300`, une
-seule requete) et rend la selection *aleatoire ponderee* au lieu de
+ouvrir. Le picker defait la troncature courante par construction (`--limit
+2000`, une seule requete, plafond surveille) et rend la selection *aleatoire ponderee* au lieu de
 *recente-d'abord*.
 
 Il **ne decide pas** du grain. Il tire une poignee de candidats et laisse a
@@ -138,11 +138,13 @@ import datetime as dt
 import hashlib
 import json
 import math
+import os
 import pathlib
 import random
 import re
 import subprocess
 import sys
+from typing import Any
 
 REPO = "jsboige/CoursIA"
 
@@ -173,6 +175,15 @@ from series_saturation import (  # noqa: E402
 # troisieme : deux lecteurs divergents avaient deja rendu 38 % d'une journee
 # de merges invisibles au cap G-VAR-2.
 from grain_tag import parse_grain_tag  # noqa: E402
+from gh_payload_cache import PayloadCache, cache_key  # noqa: E402
+
+# Normalisation CANONIQUE du genre (#10020). Reutilisee, jamais
+# reimplementee : `notebook-genai-python` et `research-notebook-python`
+# se replient tous deux sur `notebook-python` (du CONTENU), et les lire
+# bruts les compterait META -- une lane qui vient de livrer un notebook
+# serait accusee de secheresse. Mesure du 2026-08-31 : la canonicalisation
+# resout 8 des 11 genres hors-enumeration du corpus, dont 2 CONTENU.
+from variation_light_cap import canonicalize_genre  # noqa: E402
 
 # Enumeration CLOSE de variation-protocol.md, partitionnee CONTENU / META.
 CONTENU = {
@@ -259,21 +270,68 @@ def age_days(created: str) -> int:
 # aurait fait tomber en premier etait #1028 (mandat audiobook), #1203, #1206,
 # #1210, #1453, #1454 -- six EPICs de mai, tous vivants.
 POOL_FETCH_LIMIT = 2000
+POOL_CACHE_TTL_SECONDS = 10 * 60
+VISITS_CACHE_TTL_SECONDS = 15 * 60
+SERIES_CACHE_TTL_SECONDS = 60 * 60
 
 
-def fetch_pool() -> list[dict]:
+def _cached_payload(
+    name: str,
+    identity: list[str],
+    fetch: Any,
+    *,
+    cache: PayloadCache | None,
+    cache_mode: str,
+    ttl_seconds: float,
+    cache_status: dict[str, dict[str, Any]] | None,
+) -> Any:
+    """Fetch raw JSON, optionally recording an observable cache decision."""
+    if cache is None:
+        return fetch()
+    result = cache.get_or_fetch(
+        cache_key(REPO, name, identity),
+        ttl_seconds,
+        fetch,
+        mode=cache_mode,
+    )
+    if cache_status is not None:
+        cache_status[name] = result.as_dict()
+    return result.payload
+
+
+def fetch_pool(
+    *,
+    cache: PayloadCache | None = None,
+    cache_mode: str = "off",
+    cache_status: dict[str, dict[str, Any]] | None = None,
+) -> list[dict]:
     """Une seule requete, limite haute -- c'est ce qui defait la troncature.
 
     Le plafond est haut ET surveille : aucun plafond ne se choisit une fois
     pour toutes, et celui-ci se fait franchir en silence par construction.
     """
-    out = subprocess.run(
-        ["gh", "issue", "list", "--repo", REPO, "--state", "open",
-         "--limit", str(POOL_FETCH_LIMIT),
-         "--json", "number,title,labels,body,createdAt,updatedAt"],
-        capture_output=True, text=True, encoding="utf-8", check=True,
-    ).stdout
-    raw = json.loads(out)
+    command = [
+        "gh", "issue", "list", "--repo", REPO, "--state", "open",
+        "--limit", str(POOL_FETCH_LIMIT),
+        "--json", "number,title,labels,body,createdAt,updatedAt",
+    ]
+
+    def fetch_raw() -> list[dict]:
+        out = subprocess.run(
+            command,
+            capture_output=True, text=True, encoding="utf-8", check=True,
+        ).stdout
+        return json.loads(out)
+
+    raw = _cached_payload(
+        "pool",
+        command,
+        fetch_raw,
+        cache=cache,
+        cache_mode=cache_mode,
+        ttl_seconds=POOL_CACHE_TTL_SECONDS,
+        cache_status=cache_status,
+    )
     if len(raw) >= POOL_FETCH_LIMIT:
         # Signature de la troncature : on a recu exactement ce qu'on a demande.
         # Le tirage reste possible et se poursuit -- bloquer la lane serait pire
@@ -330,7 +388,13 @@ VISITS_WINDOW_DAYS = 1
 VISITS_SCALE = 4.0
 
 
-def fetch_visits(days: int = VISITS_WINDOW_DAYS) -> tuple[dict[int, int], str | None]:
+def fetch_visits(
+    days: int = VISITS_WINDOW_DAYS,
+    *,
+    cache: PayloadCache | None = None,
+    cache_mode: str = "off",
+    cache_status: dict[str, dict[str, Any]] | None = None,
+) -> tuple[dict[int, int], str | None]:
     """Combien de PRs mergees par LA FLOTTE citent chaque issue sur la fenetre.
 
     Rend ``(compteur, erreur)``. En cas d'echec, le compteur est vide **et**
@@ -349,24 +413,59 @@ def fetch_visits(days: int = VISITS_WINDOW_DAYS) -> tuple[dict[int, int], str | 
     """
     cutoff = NOW - dt.timedelta(days=days)
     stamp = cutoff.strftime("%Y-%m-%dT%H:%M:%S+00:00")
-    try:
+    command = [
+        "gh", "pr", "list", "--repo", REPO, "--state", "merged",
+        "--limit", "400", "--search", f"merged:>={stamp}",
+        "--json", "number,title,body,mergedAt",
+    ]
+    identity = [
+        "gh", "pr", "list", "--repo", REPO, "--state", "merged",
+        "--limit", "400", "--window-days", str(days),
+        "--json", "number,title,body,mergedAt",
+    ]
+
+    def fetch_raw() -> list[dict]:
         raw = subprocess.run(
-            ["gh", "pr", "list", "--repo", REPO, "--state", "merged",
-             "--limit", "400", "--search", f"merged:>={stamp}",
-             "--json", "number,title,body,mergedAt"],
+            command,
             capture_output=True, text=True, encoding="utf-8", errors="replace",
             check=True, timeout=60,
         ).stdout
-        prs = json.loads(raw)
+        return json.loads(raw)
+
+    try:
+        prs = _cached_payload(
+            "visits",
+            identity,
+            fetch_raw,
+            cache=cache,
+            cache_mode=cache_mode,
+            ttl_seconds=VISITS_CACHE_TTL_SECONDS,
+            cache_status=cache_status,
+        )
     except (subprocess.CalledProcessError, json.JSONDecodeError,
             subprocess.TimeoutExpired, OSError) as exc:
         return {}, f"{type(exc).__name__}: {exc}"
 
+    cache_entry = (cache_status or {}).get("visits") or {}
+    cache_err = None
+    if cache_entry.get("status") == "stale":
+        cache_err = "cache stale apres echec du refresh: " + str(
+            cache_entry.get("error") or "erreur inconnue"
+        )
+
+    if cache_entry.get("status") in {"hit", "stale"}:
+        prs = [
+            pr for pr in prs
+            if pr.get("mergedAt")
+            and dt.datetime.fromisoformat(
+                pr["mergedAt"].replace("Z", "+00:00")
+            ) >= cutoff
+        ]
     counts: dict[int, int] = {}
     for pr in prs:
         for key in cited_issues(pr):
             counts[key] = counts.get(key, 0) + 1
-    return counts, None
+    return counts, cache_err
 
 
 
@@ -384,6 +483,76 @@ def fetch_visits(days: int = VISITS_WINDOW_DAYS) -> tuple[dict[int, int], str | 
 # selection. C'est ce que "revois completement l'organe de pick" demandait --
 # pas de mieux classer, mais de cesser d'etre un simple conseil de classement.
 DWELL_HOURS_DEFAULT = 24.0
+URN_NAMES = {"grain", "umbrella", "delivered"}
+
+
+def _csv_values(groups: list[str] | None) -> list[str]:
+    """Flatten repeatable comma-separated CLI values, ignoring empty fields."""
+    return [
+        value.strip()
+        for group in groups or []
+        for value in group.split(",")
+        if value.strip()
+    ]
+
+
+def filter_candidates(
+    items: list[dict],
+    *,
+    exclude_issues: set[int] | None = None,
+    required_labels: set[str] | None = None,
+    excluded_labels: set[str] | None = None,
+    min_age_days: int | None = None,
+    max_age_days: int | None = None,
+    min_idle_days: int | None = None,
+    max_idle_days: int | None = None,
+    urns: set[str] | None = None,
+) -> tuple[list[dict], dict[str, Any]]:
+    """Apply factual local filters and return an exact exclusion funnel."""
+    exclude_issues = exclude_issues or set()
+    required_labels = {label.casefold() for label in required_labels or set()}
+    excluded_labels = {label.casefold() for label in excluded_labels or set()}
+    urns = urns or set(URN_NAMES)
+    checks = [
+        ("exclude_issue", lambda item, labels: item["number"] in exclude_issues),
+        ("require_label", lambda item, labels: not required_labels.issubset(labels)),
+        ("exclude_label", lambda item, labels: bool(excluded_labels & labels)),
+        ("min_age_days", lambda item, labels: min_age_days is not None
+         and item["age"] < min_age_days),
+        ("max_age_days", lambda item, labels: max_age_days is not None
+         and item["age"] > max_age_days),
+        ("min_idle_days", lambda item, labels: min_idle_days is not None
+         and item["idle"] < min_idle_days),
+        ("max_idle_days", lambda item, labels: max_idle_days is not None
+         and item["idle"] > max_idle_days),
+        ("urns", lambda item, labels: item["klass"] not in urns),
+    ]
+    excluded = {name: 0 for name, _ in checks}
+    examples: dict[str, list[int]] = {name: [] for name, _ in checks}
+    kept = []
+    for item in items:
+        labels = {str(label).casefold() for label in item.get("labels", [])}
+        for name, rejects in checks:
+            if rejects(item, labels):
+                excluded[name] += 1
+                if len(examples[name]) < 5:
+                    examples[name].append(item["number"])
+                break
+        else:
+            kept.append(item)
+    excluded = {name: count for name, count in excluded.items() if count}
+    examples = {name: values for name, values in examples.items() if values}
+    return kept, {
+        "initial": len(items),
+        "final": len(kept),
+        "excluded_total": len(items) - len(kept),
+        "excluded": excluded,
+        "examples": examples,
+        "by_urn": {
+            name: sum(1 for item in kept if item["klass"] == name)
+            for name in sorted(URN_NAMES)
+        },
+    }
 
 # Une issue portant l'une de ces etiquettes se consomme sans delai : le
 # dwell existe pour empecher l'emballement d'audit, pas pour retarder un
@@ -1532,6 +1701,203 @@ def print_red_assignment(lane: str, backlog: dict, threshold_hours: float) -> No
     print("elle ne se prend pas en silence.")
 
 
+
+# --- Secheresse de substance : G-VAR-1 recoit son organe (#13086) ----------
+#
+# Mandat user verbatim (#13086, 2026-08-31) : "JE NE VEUX PLUS JAMAIS DE
+# SESSION IDLE. Je l'ai signalee une bonne dizaine de fois. Tu escalades tout
+# de suite et de la facon la plus ferme possible, et tu prends un deep grain
+# stp."
+#
+# "une bonne dizaine de fois" est le fait qui dicte la forme du remede. La
+# regle existe DEJA en prose a quatre endroits -- proactive-coordination
+# R1/R5/R6/R7, coordinator-discipline R4, variation-protocol G-VAR-1 -- et
+# elle a echoue a chaque fois. En rajouter une cinquieme serait l'echec-
+# pendule que le CLAUDE.md global interdit. Ce qui manquait n'est pas une
+# phrase : c'est un ORGANE.
+#
+# Le defaut precis, mesure : ce module PONDERE deja le genre CONTENU dans
+# `weight()` et le marque d'une etoile a l'affichage -- mais il pondere le
+# CANDIDAT, jamais l'HISTOIRE. Le picker n'a aucune memoire. Une lane qui
+# vient de livrer six grains META recoit exactement le meme tirage qu'une
+# lane qui vient de livrer une preuve Lean. G-VAR-1 exige que le grain-
+# plancher soit DEEP/MED **et** CONTENU ; aucun organe ne l'a jamais mesure.
+# `variation_light_cap.py` n'emet que quatre signaux, tous de comptabilite
+# LIGHT (TIER-INFLATION, GENRE-RUN, CAP-EXCEEDED-BY-GENRE, GENRE-MISMATCH) :
+# une lane qui alterne guard -> tooling -> docs -> test ne declenche JAMAIS
+# GENRE-RUN tout en produisant zero contenu indefiniment. C'est exactement le
+# profil de l'agent que le user a fait escalader.
+#
+# Mesure du 2026-08-31 sur les 400 dernieres PRs mergees (398 taguees, 2 sans
+# tag), genres passes par `canonicalize_genre` :
+#
+#   lane                       merges  contenu  runs sans contenu
+#   myia-po-2025:CoursIA           45       41  [2, 1, 1]        <- la plus saine
+#   myia-po-2024:CoursIA           58       38  [4, 3, 3, 2, ...]
+#   myia-po-2026:CoursIA           73       31  [8, 6, 6, 5, ...]
+#   myia-ai-01:CoursIA             29        2  [16, 8, 3]       <- la pire
+#
+# D'ou le seuil par defaut de 3, qui n'est pas un chiffre d'intuition : la
+# lane la plus saine de la flotte (po-2025:CoursIA, 41 CONTENU sur 45 merges)
+# ne depasse JAMAIS un run de 2. Trois est donc la plus petite valeur qui ne
+# peut pas se declencher sur un comportement demontrablement sain. 71 % de
+# tous les runs mesures sont <= 2 et restent intouches.
+#
+# Le geste, quand le seuil est atteint : le tirage n'est pas refuse -- il est
+# RESTREINT aux genres CONTENU. La lane recoit un grain, toujours ; c'est le
+# "tu prends un deep grain" du mandat, rendu mecanique. La lecon de la forme
+# precedente du garde rouge ("REFUS DE TIRAGE", sortie 2, aucun candidat) est
+# reprise telle quelle : aucune sortie de cet outil n'autorise une lane a ne
+# rien produire.
+
+DROUGHT_RUN_DEFAULT = 3
+
+# Fenetre de lecture. Large : le run se compte sur l'historique de la lane,
+# et une lane peu active peut n'avoir que quelques merges dans 400 PRs de
+# flotte. Le cout est une seule requete, partagee par tout le tirage.
+DROUGHT_FETCH_LIMIT = 400
+
+
+def fetch_merged_grains(limit: int = DROUGHT_FETCH_LIMIT) -> tuple[list[dict], str | None]:
+    """Les PRs mergees recentes, taguees, du plus ANCIEN au plus RECENT.
+
+    Rend `(grains, erreur)`. En cas d'echec de lecture la liste est vide ET
+    l'erreur est nommee : un organe qui ne peut pas mesurer doit le DIRE, pas
+    rendre un zero indiscernable d'une ardoise propre.
+    """
+    try:
+        out = subprocess.run(
+            ["gh", "pr", "list", "--repo", REPO, "--state", "merged",
+             "--limit", str(limit), "--json", "number,body,mergedAt,title"],
+            capture_output=True, text=True, encoding="utf-8", timeout=120)
+    except (OSError, subprocess.SubprocessError) as exc:
+        return [], f"{type(exc).__name__}: {exc}"
+    if out.returncode != 0:
+        return [], (out.stderr or "").strip()[:200] or f"gh exit {out.returncode}"
+    try:
+        data = json.loads(out.stdout or "[]")
+    except json.JSONDecodeError as exc:
+        return [], f"JSON illisible: {exc}"
+    data.sort(key=lambda p: p.get("mergedAt") or "")
+    grains = []
+    for pr in data:
+        tag = parse_grain_tag(pr.get("body") or "")
+        if not tag or not tag.get("lane"):
+            continue
+        raw = (tag.get("genre") or "").strip().lower()
+        grains.append({"number": pr.get("number"),
+                       "title": pr.get("title") or "",
+                       "lane": tag["lane"],
+                       "genre_raw": raw,
+                       "genre": canonicalize_genre(raw),
+                       "mergedAt": pr.get("mergedAt")})
+    return grains, None
+
+
+def substance_drought(lane: str, grains: list[dict], threshold: int,
+                      error: str | None = None) -> dict:
+    """Compte les merges consecutifs de `lane` SANS genre CONTENU.
+
+    Le run se lit depuis le merge le plus recent en remontant, et s'arrete au
+    premier genre CONTENU. Un genre qui ne se resout pas dans l'enumeration
+    close compte NON-CONTENU (fail-CLOSED, meme direction que la politique
+    #13475 de `variation_light_cap.genre_counts_light`) mais il est NOMME
+    dans la sortie : un mis-tag est un faux positif que la lane conteste en
+    re-taguant, alors qu'un silence qui relache le garde ne prouve rien. La
+    surface est bornee et mesuree -- 4 PRs sur 398 (1 %) au 2026-08-31.
+
+    `measured` est False quand la lecture a echoue : le run vaut alors 0 et
+    ne declenche rien, mais l'appelant doit dire qu'il n'a pas mesure.
+    """
+    mine = [g for g in grains if g["lane"] == lane]
+    run: list[dict] = []
+    last_content = None
+    for g in reversed(mine):
+        if g["genre"] in CONTENU:
+            last_content = g
+            break
+        run.append(g)
+    run.reverse()
+    unresolved = [g for g in run
+                  if g["genre"] not in CONTENU and g["genre"] not in META]
+    return {
+        "lane": lane,
+        "measured": error is None,
+        "error": error,
+        "threshold": threshold,
+        "run": len(run),
+        "run_prs": [{"number": g["number"], "genre": g["genre_raw"],
+                     "title": g["title"][:70]} for g in run],
+        "unresolved": [{"number": g["number"], "genre": g["genre_raw"]}
+                       for g in unresolved],
+        "last_content": ({"number": last_content["number"],
+                          "genre": last_content["genre"],
+                          "mergedAt": last_content["mergedAt"]}
+                         if last_content else None),
+        "lane_merges": len(mine),
+        "lane_content": sum(1 for g in mine if g["genre"] in CONTENU),
+        "triggered": error is None and len(run) >= threshold,
+    }
+
+
+def print_drought_banner(d: dict, restricted: int, fell_back: bool) -> None:
+    """L'escalade, "de la facon la plus ferme possible" (mandat #13086)."""
+    bar = "=" * 72
+    print(bar)
+    print(f"SECHERESSE DE SUBSTANCE -- lane {d['lane']} : {d['run']} merges "
+          f"consecutifs sans genre CONTENU (seuil {d['threshold']}).")
+    print(bar)
+    print()
+    print("G-VAR-1 exige que le grain-plancher du cycle soit DEEP ou MED **et**")
+    print("porte un genre de la classe CONTENU. Cette lane ne l'a pas tenu sur")
+    print(f"ses {d['run']} derniers merges :")
+    print()
+    for pr in d["run_prs"]:
+        print(f"  #{pr['number']}  {pr['genre']:<18s} {pr['title']}")
+    print()
+    if d["last_content"]:
+        lc = d["last_content"]
+        print(f"Dernier grain de CONTENU : #{lc['number']} ({lc['genre']}), "
+              f"merge {lc['mergedAt']}.")
+    else:
+        print("Aucun grain de CONTENU dans la fenetre lue : la lane n'a jamais")
+        print("tenu le plancher sur l'historique mesure.")
+    print(f"Sur toute la fenetre : {d['lane_content']} CONTENU / "
+          f"{d['lane_merges']} merges taguees.")
+    print()
+    if d["unresolved"]:
+        print("Genres non resolus dans l'enumeration close (comptes NON-CONTENU,")
+        print("fail-CLOSED) -- si l'un d'eux est du contenu, le re-taguer leve")
+        print("le compte, et c'est la bonne facon de contester :")
+        for u in d["unresolved"]:
+            print(f"  #{u['number']}  genre declare : {u['genre']}")
+        print()
+    print("Mandat user (#13086, verbatim) : \"JE NE VEUX PLUS JAMAIS DE SESSION")
+    print("IDLE. Je l'ai signalee une bonne dizaine de fois. Tu escalades tout de")
+    print("suite et de la facon la plus ferme possible, et tu prends un deep")
+    print("grain stp.\"")
+    print()
+    if fell_back:
+        print("ATTENTION : la restriction aux genres CONTENU ne laissait AUCUN")
+        print("candidat admissible. Le tirage ci-dessous est donc RENDU SANS")
+        print("restriction -- ne rien rendre fabriquerait l'idle que ce garde")
+        print("existe pour empecher. Mais l'absence de grain de contenu piochable")
+        print("est elle-meme un defaut de provisionnement : l'ECRIRE au")
+        print("coordinateur (variation-protocol section 4), ne pas la traverser")
+        print("en silence.")
+    else:
+        print(f"Le tirage ci-dessous est RESTREINT aux genres CONTENU "
+              f"({restricted} candidats). Ce n'est pas un refus : la lane")
+        print("recoit un grain, et ce grain tient le plancher. Prendre un META")
+        print("de plus avant d'avoir casse la sequence, c'est la monoculture")
+        print("que le mandat interdit.")
+    print()
+    print("Echappatoire : si la secheresse n'est pas reparable par cette lane")
+    print("(aucun grain de contenu dans sa capability -- GPU-only, vision-only),")
+    print("l'ECRIRE au coordinateur, puis relancer avec --ignore-drought.")
+    print("Elle se justifie par ecrit, elle ne se prend pas en silence.")
+    print()
+
 def main(argv: list[str] | None = None) -> int:
     # Console Windows cp1252 : un titre d'issue portant un caractere hors table
     # (fleche U+2192 etc.) fait crasher le print en UnicodeEncodeError et perd
@@ -1577,6 +1943,33 @@ def main(argv: list[str] | None = None) -> int:
                          "selection (steer inclus).")
     ap.add_argument("--ignore-red", action="store_true",
                     help="passer outre le garde -- exige une justification ECRITE sur la PR concernee")
+    ap.add_argument("--drought-run", type=int, default=DROUGHT_RUN_DEFAULT,
+                    metavar="N",
+                    help="merges consecutifs sans genre CONTENU a partir "
+                         "desquels le tirage est restreint au CONTENU "
+                         "(defaut %(default)s)")
+    ap.add_argument("--ignore-drought", action="store_true",
+                    help="passe outre la restriction CONTENU. A justifier "
+                         "PAR ECRIT aupres du coordinateur -- elle ne se "
+                         "prend pas en silence.")
+    ap.add_argument("--cache", choices=("auto", "off", "refresh"), default="auto",
+                    help="cache des payloads GitHub partages (defaut auto)")
+    ap.add_argument("--cache-dir", type=pathlib.Path, default=None,
+                    help="repertoire cache explicite (utile aux tests/diagnostics)")
+    ap.add_argument("--cache-status", action="store_true",
+                    help="affiche hit/miss/refresh/stale/bypass en sortie texte")
+    ap.add_argument("--exclude-issue", action="append", default=[], metavar="N[,N...]",
+                    help="ecarte des issues deja refutees ; option repetable")
+    ap.add_argument("--require-label", action="append", default=[], metavar="LABEL[,LABEL...]",
+                    help="exige tous ces labels, sans distinction de casse")
+    ap.add_argument("--exclude-label", action="append", default=[], metavar="LABEL[,LABEL...]",
+                    help="ecarte si au moins un de ces labels est present")
+    ap.add_argument("--min-age-days", type=int, default=None)
+    ap.add_argument("--max-age-days", type=int, default=None)
+    ap.add_argument("--min-idle-days", type=int, default=None)
+    ap.add_argument("--max-idle-days", type=int, default=None)
+    ap.add_argument("--urns", default="grain,umbrella,delivered",
+                    help="urnes admises : grain,umbrella,delivered")
     ap.add_argument("--json", action="store_true", help="sortie machine")
     ap.add_argument("--orphans-report", action="store_true",
                     help="mode rapport : PRs bloquees sans tag Grain lisible, groupees par "
@@ -1590,6 +1983,37 @@ def main(argv: list[str] | None = None) -> int:
         ap.error("--apply-comment n'a de sens qu'avec --orphans-report")
     if not args.lane and not args.orphans_report and args.admissible is None:
         ap.error("--lane est requis (--orphans-report et --admissible s'en dispensent)")
+    for low_name, high_name in (
+        ("min_age_days", "max_age_days"),
+        ("min_idle_days", "max_idle_days"),
+    ):
+        low, high = getattr(args, low_name), getattr(args, high_name)
+        if low is not None and low < 0:
+            ap.error(f"--{low_name.replace('_', '-')} doit etre positif")
+        if high is not None and high < 0:
+            ap.error(f"--{high_name.replace('_', '-')} doit etre positif")
+        if low is not None and high is not None and low > high:
+            ap.error(
+                f"--{low_name.replace('_', '-')} ne peut pas depasser "
+                f"--{high_name.replace('_', '-')}"
+            )
+    try:
+        excluded_issues = {int(value) for value in _csv_values(args.exclude_issue)}
+    except ValueError:
+        ap.error("--exclude-issue attend des numeros separes par des virgules")
+    required_labels = set(_csv_values(args.require_label))
+    excluded_labels = set(_csv_values(args.exclude_label))
+    selected_urns = {value.casefold() for value in _csv_values([args.urns])}
+    invalid_urns = selected_urns - URN_NAMES
+    if not selected_urns or invalid_urns:
+        detail = ", ".join(sorted(invalid_urns)) or "liste vide"
+        ap.error(f"--urns invalide ({detail})")
+
+    effective_cache_mode = args.cache
+    if "PYTEST_CURRENT_TEST" in os.environ and args.cache_dir is None:
+        effective_cache_mode = "off"
+    payload_cache = PayloadCache(args.cache_dir)
+    cache_status: dict[str, dict[str, Any]] = {}
 
     # Mode rapport : le garde rouge (lane) ne concerne pas ce chemin -- la file
     # des orphelines est lane-independante et ce mode ne tire pas de grain.
@@ -1607,9 +2031,28 @@ def main(argv: list[str] | None = None) -> int:
     # et elle doit pouvoir etre posee sur un grain STEERE, chemin par lequel
     # arrive l'essentiel du travail (mesure du 2026-08-29).
     if args.admissible is not None:
-        pool = fetch_pool()
-        series, issue_to_family, series_err = fetch_series_visits()
+        pool = fetch_pool(
+            cache=payload_cache,
+            cache_mode=effective_cache_mode,
+            cache_status=cache_status,
+        )
+        series, issue_to_family, series_err = fetch_series_visits(
+            cache=payload_cache,
+            cache_mode=effective_cache_mode,
+            cache_status=cache_status,
+            cache_ttl_seconds=SERIES_CACHE_TTL_SECONDS,
+        )
         balance = zone_balance(series, issue_to_family, pool)
+        stale = {
+            name: entry for name, entry in cache_status.items()
+            if entry.get("status") == "stale"
+        }
+        if stale:
+            details = ", ".join(
+                f"{name}: {entry.get('error') or 'refresh echoue'}"
+                for name, entry in sorted(stale.items())
+            )
+            print(f"(cache STALE explicite : {details})")
         hit = next((x for x in pool if x["number"] == args.admissible), None)
         if hit is None:
             print(f"#{args.admissible} : absente du pool ouvert "
@@ -1617,8 +2060,12 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         cause = admissibility(hit, balance, issue_to_family, args.dwell_hours)
         if series_err:
-            print(f"(saturation de zone NON MESUREE : {series_err} -- "
-                  "le volet parite n'a PAS ete evalue)")
+            if (cache_status.get("series") or {}).get("status") == "stale":
+                print(f"(saturation FRAICHE NON MESUREE : {series_err} -- "
+                      "parite evaluee sur le payload stale explicitement signale)")
+            else:
+                print(f"(saturation de zone NON MESUREE : {series_err} -- "
+                      "le volet parite n'a PAS ete evalue)")
         print(f"#{hit['number']} {hit['title'][:70]}")
         print(f"  genre {hit['genre']} | polarite {hit['polarity']} | "
               f"age {_hours_old(hit['created_at']):.0f} h")
@@ -1656,9 +2103,22 @@ def main(argv: list[str] | None = None) -> int:
         print(f"(garde rouge indisponible : {backlog['unavailable']} -- tirage rendu sans verification)")
         print()
 
-    pool = fetch_pool()
-    visits, visits_err = fetch_visits()
-    series, issue_to_family, series_err = fetch_series_visits()
+    pool = fetch_pool(
+        cache=payload_cache,
+        cache_mode=effective_cache_mode,
+        cache_status=cache_status,
+    )
+    visits, visits_err = fetch_visits(
+        cache=payload_cache,
+        cache_mode=effective_cache_mode,
+        cache_status=cache_status,
+    )
+    series, issue_to_family, series_err = fetch_series_visits(
+        cache=payload_cache,
+        cache_mode=effective_cache_mode,
+        cache_status=cache_status,
+        cache_ttl_seconds=SERIES_CACHE_TTL_SECONDS,
+    )
     issue_to_family = enrich_parent_families(
         pool, issue_to_family, series)
     balance = zone_balance(series, issue_to_family, pool)
@@ -1680,7 +2140,33 @@ def main(argv: list[str] | None = None) -> int:
             withheld.append((it, cause))
         else:
             admitted.append(it)
-    by_class = {k: [it for it in admitted if it["klass"] == k]
+    filter_active = {
+        "exclude_issue": sorted(excluded_issues),
+        "require_label": sorted(required_labels, key=str.casefold),
+        "exclude_label": sorted(excluded_labels, key=str.casefold),
+        "min_age_days": args.min_age_days,
+        "max_age_days": args.max_age_days,
+        "min_idle_days": args.min_idle_days,
+        "max_idle_days": args.max_idle_days,
+        "urns": sorted(selected_urns),
+    }
+    filtered, filter_funnel = filter_candidates(
+        admitted,
+        exclude_issues=excluded_issues,
+        required_labels=required_labels,
+        excluded_labels=excluded_labels,
+        min_age_days=args.min_age_days,
+        max_age_days=args.max_age_days,
+        min_idle_days=args.min_idle_days,
+        max_idle_days=args.max_idle_days,
+        urns=selected_urns,
+    )
+    filter_funnel.update({
+        "pool_initial": len(pool),
+        "admitted": len(admitted),
+        "admission_withheld": len(pool) - len(admitted),
+    })
+    by_class = {k: [it for it in filtered if it["klass"] == k]
                 for k in ("grain", "umbrella", "delivered")}
 
     # Graine : (lane, heure UTC, reroll). Lanes differentes -> tirages
@@ -1700,6 +2186,63 @@ def main(argv: list[str] | None = None) -> int:
     # l'ecriture. La prevention doit donc vivre en amont, ici -- et elle ne
     # peut pas etre optionnelle : un tirage qui propose une issue tenue par
     # une autre lane FABRIQUE la collision qu'il faudra arbitrer ensuite.
+    # G-VAR-1 recoit son organe (#13086) : le tirage a une MEMOIRE. Une lane
+    # en secheresse de substance ne recoit plus une loterie ou le CONTENU est
+    # seulement mieux pondere -- elle recoit un tirage RESTREINT au CONTENU.
+    # Place APRES le garde rouge (reparer son rouge reste la premiere tache,
+    # mandat user 2026-08-24) et AVANT le tirage, pour la meme raison que lui :
+    # un candidat META deja sous les yeux quand la restriction arrive, c'est
+    # lui qui gagne.
+    drought = {"triggered": False, "measured": False, "run": 0}
+    drought_fell_back = False
+    if args.lane:
+        grains_hist, grains_err = fetch_merged_grains()
+        drought = substance_drought(args.lane, grains_hist, args.drought_run,
+                                    grains_err)
+        if drought["triggered"] and not args.ignore_drought:
+            restricted = {k: [it for it in v if it["genre"] in CONTENU]
+                          for k, v in by_class.items()}
+            # Degradation gracieuse : si la restriction vide les urnes, on rend
+            # le tirage NON restreint plutot que rien. Ne rien rendre
+            # fabriquerait l'idle que ce garde existe pour empecher -- et
+            # l'absence de grain de contenu piochable est un defaut de
+            # provisionnement a ECRIRE, pas un motif de silence.
+            if restricted["grain"] or restricted["umbrella"]:
+                by_class = restricted
+                by_class["delivered"] = []
+            else:
+                drought_fell_back = True
+            if not args.json:
+                print_drought_banner(
+                    drought,
+                    len(by_class["grain"]) + len(by_class["umbrella"]),
+                    drought_fell_back)
+        elif drought["triggered"] and args.ignore_drought and not args.json:
+            print(f"(secheresse de substance ignoree : {drought['run']} merges "
+                  f"sans CONTENU -- justification ecrite attendue)")
+            print()
+        elif not drought["measured"] and not args.json:
+            print(f"(secheresse NON MESUREE : {drought['error']} -- le tirage "
+                  "ne prouve donc rien sur le plancher G-VAR-1)")
+            print()
+
+    # Le mode --json doit dire la MEME chose que la banniere texte. Sans ces
+    # deux cles, un consommateur machine voit `triggered: true` sans pouvoir
+    # distinguer les deux issues opposees : le tirage a-t-il ete RESTREINT aux
+    # genres CONTENU (le garde a mordu, la lane recoit un grain qui tient le
+    # plancher), ou a-t-il ete rendu SANS restriction faute de candidat de
+    # contenu piochable ? Le second cas est un defaut de PROVISIONNEMENT a
+    # ecrire au coordinateur (variation-protocol section 4), et c'est
+    # precisement celui qu'un silence rendrait invisible. Finding NanoClaw
+    # sur #13884, tenue : la forme du payload est stable quel que soit le
+    # chemin, pour qu'une absence de cle ne se lise jamais comme un faux.
+    drought["fell_back"] = drought_fell_back
+    drought["restricted_candidates"] = (
+        len(by_class["grain"]) + len(by_class["umbrella"])
+        if drought.get("triggered") and not args.ignore_drought
+        and not drought_fell_back
+        else None)
+
     picks, claims, claim_conflicts = draw_unclaimed(
         by_class, args, rng, visits, series, issue_to_family)
     withheld.extend(claim_conflicts)
@@ -1729,11 +2272,65 @@ def main(argv: list[str] | None = None) -> int:
                                  key=lambda d: (-d["n"], d["issue"]))[:10],
             "recent_delivery": {str(k): v for k, v in delivery.items()},
             "red_backlog": backlog,
+            "substance_drought": drought,
+            "cache": cache_status,
+            "filters": {
+                "active": filter_active,
+                "excluded": filter_funnel["excluded"],
+                "funnel": filter_funnel,
+            },
         }, ensure_ascii=False, indent=2))
         return 0
 
+    stale_entries = {
+        name: entry
+        for name, entry in cache_status.items()
+        if entry.get("status") == "stale"
+    }
+    if args.cache_status or stale_entries:
+        states = ", ".join(
+            f"{name}={entry.get('status')}"
+            + (f" ({entry.get('error')})" if entry.get("error") else "")
+            for name, entry in sorted(cache_status.items())
+        )
+        print(f"Cache payloads : {states or 'aucune mesure partageable lue'}")
+        if stale_entries:
+            print("!! STALE explicite : payload ancien utilise seulement apres "
+                  "echec du refresh ; ce n'est pas une mesure fraiche.")
+        print()
+    non_default_filters = {
+        key: value
+        for key, value in filter_active.items()
+        if value not in (None, [], sorted(URN_NAMES))
+    }
+    if non_default_filters:
+        details = ", ".join(
+            f"{name}={count}"
+            for name, count in filter_funnel["excluded"].items()
+        ) or "aucune exclusion"
+        print(
+            f"Filtres locaux : {filter_funnel['initial']} admis -> "
+            f"{filter_funnel['final']} candidats ({details})."
+        )
+        if not filtered:
+            dominant = max(
+                filter_funnel["excluded"],
+                key=filter_funnel["excluded"].get,
+                default=None,
+            )
+            if dominant:
+                print(
+                    f"Aucun candidat final : relacher d'abord `{dominant}` "
+                    f"({filter_funnel['excluded'][dominant]} exclusions)."
+                )
+        print()
     if series_err:
-        print(f"(saturation de zone NON MESUREE : {series_err} -- aucun amortissement de serie applique)")
+        if (cache_status.get("series") or {}).get("status") == "stale":
+            print(f"(saturation FRAICHE NON MESUREE : {series_err} -- "
+                  "payload stale explicitement signale et amortissement ancien applique)")
+        else:
+            print(f"(saturation de zone NON MESUREE : {series_err} -- "
+                  "aucun amortissement de serie applique)")
         print()
     else:
         chaudes = [(f, b) for f, b in balance.items()
@@ -1766,8 +2363,9 @@ def main(argv: list[str] | None = None) -> int:
                   "en a aucun, d'en declarer un : une zone chaude sans EPIC "
                   "n'a personne de comptable pour la contrepartie.")
             print()
-    print(f"Pool ouvert : {len(pool)} issues  "
-          f"= {len(by_class['grain'])} grains "
+    print(f"Pool ouvert : {len(pool)} issues.")
+    print(f"Candidats apres admission/filtres : "
+          f"{len(by_class['grain'])} grains "
           f"+ {len(by_class['umbrella'])} umbrella "
           f"+ {len(by_class['delivered'])} candidate-delivered")
     if args.admit_reason:
@@ -1809,7 +2407,9 @@ def main(argv: list[str] | None = None) -> int:
     print("-" * len(header))
     for p in picks:
         mark = "*" if p["genre"] in CONTENU else " "
-        vus = "n/m" if visits_err else str(p.get("visits", 0))
+        visits_stale = (cache_status.get("visits") or {}).get("status") == "stale"
+        vus = (f"~{p.get('visits', 0)}" if visits_stale
+               else "n/m" if visits_err else str(p.get("visits", 0)))
         print(f"{p['klass']:<10} #{p['number']:<7} {p['age']:>4}j {p['idle']:>5}j {vus:>4}  "
               f"{p['genre']:<15}{mark} {p['weight']:>5}  {p['title'][:62]}")
         if p["number"] in claims:
@@ -1842,9 +2442,14 @@ def main(argv: list[str] | None = None) -> int:
     print()
     print_unattributed_blocked(backlog)
     if visits_err:
-        print(f"!! affluence NON MESUREE ({visits_err}) : la colonne `vus` affiche")
-        print("   `n/m` et le tirage n'a PAS amorti les sujets deja frequentes.")
-        print("   Un zero d'absence de mesure n'est pas un zero d'affluence.")
+        if (cache_status.get("visits") or {}).get("status") == "stale":
+            print(f"!! affluence FRAICHE NON MESUREE ({visits_err}) : la colonne")
+            print("   `vus` prefixe les comptes stale par `~`; un amortissement ancien")
+            print("   est applique et ne doit pas etre lu comme une mesure fraiche.")
+        else:
+            print(f"!! affluence NON MESUREE ({visits_err}) : la colonne `vus` affiche")
+            print("   `n/m` et le tirage n'a PAS amorti les sujets deja frequentes.")
+            print("   Un zero d'absence de mesure n'est pas un zero d'affluence.")
         print()
     print("* = genre CONTENU (seul un genre CONTENU en DEEP/MED tient le plancher G-VAR-1).")
     print(f"vus = PRs mergees citant cette issue sur {VISITS_WINDOW_DAYS} j, TOUTES LANES.")

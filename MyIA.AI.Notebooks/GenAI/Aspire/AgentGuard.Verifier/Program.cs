@@ -61,6 +61,7 @@ foreach (var path in args)
             new TaskRunFireAnalyzer(),
             new CancellationTokenPropagationAnalyzer(),
             new SyncOverAsyncAnalyzer(),
+            new SyncOverAsyncConfigureAwaitAnalyzer(),
         ]);
 
     // Les erreurs de compilation empechent le modele semantique de resoudre
@@ -70,11 +71,12 @@ foreach (var path in args)
 
     var ids = new[]
     {
-        TaskResultBlockAnalyzer.DiagnosticId,   // AGENTGUARD001
-        AsyncVoidAnalyzer.DiagnosticId,         // AGENTGUARD002
-        TaskRunFireAnalyzer.DiagnosticId,       // AGENTGUARD003
-        CancellationTokenPropagationAnalyzer.DiagnosticId, // AGENTGUARD004
-        SyncOverAsyncAnalyzer.DiagnosticId,     // AGENTGUARD005
+        TaskResultBlockAnalyzer.DiagnosticId,              // AGENTGUARD001
+        AsyncVoidAnalyzer.DiagnosticId,                    // AGENTGUARD002
+        TaskRunFireAnalyzer.DiagnosticId,                  // AGENTGUARD003
+        CancellationTokenPropagationAnalyzer.DiagnosticId,// AGENTGUARD004
+        SyncOverAsyncAnalyzer.DiagnosticId,                // AGENTGUARD005
+        SyncOverAsyncConfigureAwaitAnalyzer.DiagnosticId,  // AGENTGUARD005b
     };
     var diagnostics = (await withAnalyzers.GetAllDiagnosticsAsync())
         .Where(d => ids.Contains(d.Id))

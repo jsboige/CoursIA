@@ -64,12 +64,12 @@ Script réutilisable (`scratchpad`-style, adapter le path) :
 5. 0 path-leak (scan `C:\Users` / `D:\Dev` / `/home/` / `.conda` dans `outputs[].text`).
 6. 0 C.1 (`raise NotImplementedError` / `assert False` / `1/0` dans le source).
 
-## État de l'audio-roll (2026-06-28)
+## État de l'audio-roll (2026-06-28, révisé 2026-08-30)
 
-5/5 défauts **local-résolvables** livrés. Résiduels = tous non-local :
+5/5 défauts **local-résolvables** livrés. Il restait alors 4 résiduels non-local ; **02-8 en est sorti** le 2026-08-30 :
 - **02-7 YuE** → RECOVERABLE-MACHINE (flash-attn = no Windows wheels → Linux).
 - **02-9 AceStep** → RECOVERABLE-USER-HAND (HF `ACE-Step/ACE-Step` RepositoryNotFound même avec token valide).
-- **02-8 Fish S2 Pro** → RECOVERABLE-USER-HAND (`FISH_AUDIO_API_KEY` gitignored).
+- **02-8 Fish S2 Pro** → **SOTA-OK** depuis le 2026-08-30 (#13114). L'étiquette `RECOVERABLE-USER-HAND` portée ici était **mal établie** : elle cherchait une clé API cloud (`FISH_AUDIO_API_KEY`) alors qu'un **service HTTP self-hosted quantisé était déjà déployé** (`docker-configurations/services/tts-fishaudio/`, BnB NF4 4-bit, port 8197). **Aucune clé n'est requise** — le modèle tourne dans le conteneur.
 - **02-2 XTTS** → DEFERRED (Coqui archived, py ≤ 3.11 + GPU).
 
 Quand un résiduel devient local-débloqué (clé provisionnée, repo HF restauré, machine Linux dispo), ré-appliquer ce pattern.

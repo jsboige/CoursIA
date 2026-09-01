@@ -1603,7 +1603,11 @@ layout: section
   - Séquences
   - Transformers, Multi-têtes (2017 : « Attention Is All You Need »)
 - Semi-supervisé, Transfert
-- LLMs : BERT (2018), GPT
+- LLMs : BERT (2018), GPT-1 (2018)
+  - GPT-2 (2019, zero-shot), GPT-3 (2020, in-context few-shot)
+  - T5 (2019, text-to-text unifié)
+- Modèles efficients (2020+)
+  - Reformer, Longformer : attention linéaire ou par fenêtres
 
 <div class="grid grid-cols-3 gap-2 absolute top-[130px] right-[20px] w-[600px]">
 <img src="./images/img_104.png" class="max-h-[150px] w-full object-contain" alt="Deux photos d'une femme lançant un frisbee dans un parc, légendées en anglais" />
@@ -1614,7 +1618,7 @@ layout: section
 <img src="./images/img_109.png" class="max-h-[150px] w-full object-contain" alt="Architecture Transformer encodeur-décodeur avec auto-attention, exemple de traduction du tchèque" />
 </div>
 
-<!-- Transformer : encodeur-decodeur, self-attention multi-tetes, positional encoding -->
+<!-- Transformer : encodeur-decodeur, self-attention multi-tetes, positional encoding. LLMs : GPT-2 (2019) zero-shot, GPT-3 (2020) in-context few-shot, T5 (2019) text-to-text unifie. Modeles efficients 2020+ : Reformer, Longformer. -->
 ---
 
 
@@ -1627,14 +1631,26 @@ layout: section
 - E.g Texte+Image
 - Datasets, Encodeurs
 - Rapprochement des plongements
+  - CLIP (2021, OpenAI) : contraste texte-image sur 400 M de paires
+  - ALIGN, Florence (2021-2022) : variantes industrielles
+- Génération conditionnelle
+  - DALL-E (2022, OpenAI), Imagen (2022, Google)
+  - GPT-4V (2023), Gemini (2023) : compréhension multimodale
 
 **Modèles de diffusion**
 
-- Prédiction d'un bruit (DDPM, 2020)
-- Diffusion latente
-- Autoencodeur Variationnel
+- Prédiction d'un bruit (DDPM, Ho et al. 2020)
+- Diffusion latente (LDM / Stable Diffusion, Rombach et al. 2021-2022)
+  - Espace latent d'un autoencodeur variationnel pré-entraîné
+  - Conditionnement texte (CLIP text encoder) + débruitage U-Net
 - Conditionnement multimodal
-- Mécanisme attentionnel
+- Mécanisme attentionnel (cross-attention Q/K/V)
+
+**Alignement et produit grand public**
+
+- RLHF (2022, InstructGPT) : affinage par retour humain
+- ChatGPT (nov. 2022, OpenAI) : 100 M d'utilisateurs en 2 mois
+- Modèles open-weight : Llama 2 (2023), Mistral, Mixtral (MoE 2023-2024)
 
 <div class="grid grid-cols-2 gap-2 absolute top-[130px] right-[20px] w-[600px]">
 <img src="./images/img_110.png" class="max-h-[190px] w-full object-contain" alt="Trois paires image-légende : rue de Kyoto, aigle en vol, paysage montagneux" />
@@ -1643,7 +1659,7 @@ layout: section
 <img src="./images/img_113.png" class="max-h-[190px] w-full object-contain" alt="U-Net de débruitage latent : encodeur, décodeur, attention croisée Q/K/V, conditionnements et pas de temps" />
 </div>
 
-<!-- Diffusion : bruit gaussien progressif → apprentissage du debruitage inverse -->
+<!-- Multimodaux : CLIP (2021) contraste texte-image, DALL-E (2022), GPT-4V / Gemini (2023). Diffusion latente (LDM / Stable Diffusion, Rombach 2021-2022) : bruit latent + U-Net + cross-attention. Alignement : RLHF (InstructGPT 2022), ChatGPT (nov 2022), Llama 2 / Mistral / Mixtral (2023-2024). -->
 ---
 
 

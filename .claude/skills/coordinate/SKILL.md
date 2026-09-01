@@ -5,7 +5,7 @@ description: Cycle de coordination ai-01 (coordinateur UNIQUEMENT — jamais sur
 
 # Skill: Coordinate - Cycle coordinateur ai-01
 
-Cycle de coordination du cluster CoursIA. **Reserve au coordinateur ai-01** : un worker ne lance JAMAIS `/coordinate` (lecon #1502 phantom-merger — le cron worker execute `/continue`). Un worker ne merge pas et ne fait pas de `gh auth switch`.
+Cycle de coordination du cluster CoursIA. **Reserve au coordinateur ai-01** : un worker ne lance JAMAIS `/coordinate` (lecon #1502 phantom-merger — le cron worker execute `/continue`). Un worker ne merge pas et ne close pas l'issue d'autrui ; `gh auth switch` est autorise et necessaire (trousseau gh partage entre workspaces — mandat user 2026-08-31) : le switch n'est pas la ligne rouge, le merge/close l'est.
 
 **Target**: `$ARGUMENTS`
 

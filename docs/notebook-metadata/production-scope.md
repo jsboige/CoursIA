@@ -139,8 +139,8 @@ Le détail par notebook suit en strate A ci-dessous : consultation, plus décisi
 - [ ] `MyIA.AI.Notebooks/Search/Part1-Foundations/Search-9-LinearProgramming.ipynb`
 - [ ] `MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata.ipynb`
 - [ ] `MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics.ipynb`
-- [ ] `MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX.ipynb`
-- [ ] `MyIA.AI.Notebooks/Search/Part1-Foundations/Search-16-QuikGraph.ipynb`
+- [ ] `MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb`
+- [ ] `MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02c-QuikGraph.ipynb`
 <!-- MyIA.AI.Notebooks/Search/Part2-CSP -->
 - [ ] `MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb`
 - [ ] `MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency.ipynb`

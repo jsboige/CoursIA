@@ -1,0 +1,6 @@
+# Lean lake caches & build artefacts — couvre tous les lakes de la série GameTheory (EPIC #4365)
+.lake/
+.mathlib-cache/
+*.olean
+*.ilean
+*.trace

@@ -81,11 +81,13 @@ puis l'espace de conversation où tout se passe.
 3. Vous arrivez sur l'écran de chat : une zone de saisie au centre, l'historique
    des conversations à gauche, le sélecteur de modèle en haut.
 
-![Capture pré-authentification d'Open WebUI 0.10.2 : fond blanc cassé uniforme avec, seul élément rendu, un minuscule logo magenta centré (carré stylisé) — pas de champ e-mail, pas de champ mot de passe, pas de bouton « Connexion » à l'écran (capture réalisée avant le rendu du formulaire de connexion).](assets/01-connexion.png)
+![Capture de la page de connexion Open WebUI 0.11.0 : formulaire rendu (champs « E-mail » et « Mot de passe » vides, bouton « Connexion », lien d'inscription) — aucune donnée saisie, aucun compte identifiable (capture vérifiée vision, voir MANIFEST).](assets/01-connexion.png)
 
-*Page de connexion (aucun contenu réel — capture pré-authentification).*
+*Page de connexion (formulaire vide — aucune donnée saisie).*
 
-> 📷 Capture à venir — `01-premiere-vue.png` (écran de chat vide), générée via [`capture/`](capture/).
+> ![Capture de la première vue post-connexion Open WebUI 0.11.0 : l'écran de chat de départ, sur un compte de capture non-admin (aucune donnée d'établissement).](assets/01-premiere-vue.png)
+
+> *Première vue après connexion (compte de capture neuf, aucun contenu réel).*
 
 ---
 
@@ -120,13 +122,14 @@ plus anciens pour rester dans la fenêtre de contexte du modèle, sans qu'on ait
 démarrer une nouvelle conversation. La discussion se prolonge donc sans perdre le
 fil ni provoquer d'erreur de dépassement de contexte.
 
-![Capture écran Open WebUI 0.10.2 du chat en français avec le modèle « z-ai/glm-5 » sélectionné (header gauche, marque magenta masquée) : conversation sur la couleur du ciel visible aux étapes 4-6 (« Le bleu domine / Pourquoi pas violet ? / Pourquoi le ciel est rouge au coucher du soleil ? ») avec gras de mise en valeur et liste numérotée pour l'étape 5, suivie d'une section « Résumé » proposant un encart « Soleil → Atmosphère → Diffusion de Rayleigh → Bleu diffusé → Ciel bleu ! » et d'un texte de synthèse ; barre de saisie « Envoyer un message » en bas.](assets/02-raisonnement-direct.png)
+![Capture Open WebUI 0.11.0 : réponse de l'assistant « TP Prompt Engineering » à l'invite fictive « Rédige un court poème sur la mer. » — un court poème sur la mer, suivi de l'analyse pédagogique du tuteur (leçon Zero-Shot, rôle et contexte, défi du module) ; éditeur de saisie en bas, zones d'identité masquées.](assets/02-chat-streaming.png)
 
-*Raisonnement affiché en direct **(v0.10)** : un modèle « thinking » explicite son
-cheminement pas à pas. Invite fictive, marque latérale masquée.*
+*Réponse d'un tuteur sur une invite fictive (aucun contenu propriétaire) : le
+poème, puis l'analyse de prompt que le tuteur ajoute par conception.*
 
-> 📷 Capture à venir — `02-chat-streaming.png` (réponse en cours de streaming) et
-> `02-selecteur-modele.png` (liste des modèles), masquage du nom d'utilisateur.
+> 📷 Capture à venir — `02-selecteur-modele.png` (liste des modèles) et le
+> raisonnement affiché en direct (« thinking »), qui nécessitent un modèle de
+> raisonnement configuré pour la capture ; masquage du nom d'utilisateur.
 
 ### Exercice 1 — Prendre le chat en main
 
@@ -165,9 +168,13 @@ outils, et constituer des bases de connaissances interrogeables (RAG).
   s'appuie sur le même modèle d'octroi d'accès que les modèles et les bases (voir
   le [modèle RBAC](architecture.md)).
 
+![Capture Open WebUI 0.11.0 d'un dossier d'équipe créé dans la sidebar (compte neuf : aucun dossier réel).](assets/03-dossier-equipe.png)
+
+*Dossier d'équipe partageable **(v0.10)** : on regroupe des conversations et on
+partage le dossier avec un groupe.*
+
 > 📷 Capture à venir — `03-workspace-modele.png`, `03-base-connaissances.png`
-> (données fictives uniquement) ; `03-dossier-equipe.png` pour le partage de
-> dossier *(nouveau — v0.10)*.
+> (données fictives uniquement).
 
 ### Exercice 2 — Créer un assistant RAG
 
@@ -222,12 +229,15 @@ prise de **notes**, historique et recherche des conversations, dossiers, et
   de bêta en v0.10, elle permet par exemple à un tuteur de se rappeler le niveau ou
   les préférences d'un·e étudiant·e sans qu'on ait à les répéter.
 
-![Capture écran Open WebUI 0.10.2 du panneau « Réglages » (sidebar gauche avec Recherche, Général, Interface utilisateur, Personnalisation sélectionné, Audio, Contrôles des données, Compte, À propos) : section « Mémoire » marquée EXPÉRIMENTAL avec toggle vert activé et bouton « Gérer » ; au centre, modale « Mémoire 0 » ouverte avec champ « Rechercher des éléments mémorisés », message « Les souvenirs accessibles par les LLMs seront affichés ici. » (compte neuf = aucun souvenir), boutons « Effacer la mémoire » (désactivé) et « Ajouter un souvenir » (primaire) ; persona « Samantha » visible en header (Défini comme valeur par défaut).](assets/05-memoire.png)
+![Capture écran Open WebUI 0.11.0 de l'onglet Personnalisation des Réglages : section « Mémoire » marquée EXPÉRIMENTAL avec l'état vide « Saved Memories 0 » directement affiché (compte neuf = aucun souvenir) ; en v0.11 le panneau mémoire s'affiche directement sur l'onglet, sans sous-modale « Gérer ».](assets/05-memoire.png)
 
 *Gestion de la mémoire **(v0.10)** : on consulte, ajoute ou supprime chaque
 souvenir depuis *Réglages > Personnalisation*. Compte neuf → mémoire vide.*
 
-> 📷 Capture à venir — `05-parametres.png` (panneau de paramètres, identité masquée).
+> ![Capture du dialogue Réglages Open WebUI 0.11.0 (Menu utilisateur → Réglages), identité masquée.](assets/05-parametres.png)
+
+> *Paramètres personnels : langue, thème et préférences se configurent depuis le
+> menu utilisateur.*
 
 ### Exercice 3 — Personnaliser son espace
 

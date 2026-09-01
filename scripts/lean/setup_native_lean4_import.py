@@ -50,6 +50,7 @@ REPL_TOOLCHAIN_TAGS = {
     "v4.31.0-rc1": "repl-4.31.0-rc1",
     "v4.32.0": "repl-4.32.0",
     "v4.32.1": "repl-4.32.1",
+    "v4.33.1": "repl-4.33.1",
     "v4.34.0-rc1": "repl-4.34.0-rc1",
 }
 # Durable fork of utensil/lean4_jupyter baking the direct-launch patch directly into
@@ -97,6 +98,7 @@ REPL_PY_PATCH = '''    @staticmethod
                    'v4.31.0-rc1': 'repl-4.31.0-rc1',
                    'v4.32.0': 'repl-4.32.0',
                    'v4.32.1': 'repl-4.32.1',
+                   'v4.33.1': 'repl-4.33.1',
                    'v4.34.0-rc1': 'repl-4.34.0-rc1'}
         try:
             tc_file = os.path.join(lake_root, 'lean-toolchain')
@@ -201,7 +203,10 @@ def _reorder_lean_path_drvfs_first(lean_path, elan_root):
 def _wsl(cmd, timeout=120):
     """Run a command inside WSL, return CompletedProcess."""
     full = ["wsl.exe", "-d", WSL_DISTRO, "--", "bash", "-lc", cmd]
-    return subprocess.run(full, capture_output=True, text=True, timeout=timeout)
+    # encoding explicite : la sortie WSL porte de l'unicode Lean (forall, mapsto).
+    # text=True seul decode via la locale -> crash sur hote cp1252 (#12811).
+    return subprocess.run(full, capture_output=True, text=True, timeout=timeout,
+                          encoding="utf-8", errors="replace")
 
 
 def _find_repl_py():

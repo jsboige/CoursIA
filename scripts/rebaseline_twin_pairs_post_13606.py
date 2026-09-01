@@ -11,17 +11,31 @@ affectées via `gh pr diff 13606` (ou, post-merge, via `git log`).
 
 Mécanique :
     Pour chaque paire C# touchée par #13606 :
-    1. Lit le `content_csharp_sha` actuel (calculé via `_content_sha` du script)
-    2. Lit le `csharp_sha` (git blob SHA) actuel
-    3. Si les SHAs diffèrent du YAML, lance :
+    1. Liste les fichiers C# affectés par la PR (post-merge : `git show
+       --first-parent --name-only --format= <merge_sha>` ; pre-merge ou
+       fallback : `gh api /files` paginé). La fast-path `git show
+       --first-parent` capture TOUS les fichiers de la branche fusionnée,
+       ce qui couvre **les trois modes de merge** : squash (1 parent,
+       `--first-parent` no-op), merge-commit (2 parents, le combined-diff
+       par défaut peut être vide — `--first-parent` suit la branche PR) et
+       rebase (1 parent, les fichiers sont déjà dans la branche rebasée).
+       La version antérieure utilisait `--first-parent -1` qui ratait les
+       fichiers antérieurs au dernier commit de la PR. Si la fast-path
+       rend vide malgré tout (corner case), on retombe sur le fallback
+       `gh api /files` paginé plutôt que retourner [] (qui mènerait à
+       l'exit 2 « aucun fichier C# trouvé » avec perte de signal).
+    2. Mappe chaque fichier C# à sa paire dans `twin_pairs.d/*.yaml`.
+    3. Skip si la paire est **déjà alignée** : `csharp_sha` YAML == blob SHA
+       actuel du fichier (`git hash-object`). Évite une re-touch qui pollue
+       le diff git sans valeur ajoutée.
+    4. Pour les paires non-alignées, lance :
        python scripts/notebook_tools/check_twin_parity.py \\
            --update --pair "<Name>" --by "myia-po-2026:CoursIA-2"
-    4. Le script met à jour la paire indiquée (le `content_sha` reste inchangé
-       si le contenu est byte-identique modulo newline).
 
 Sortie :
-    - stdout : 1 ligne par paire traitée (DRY-RUN ou UPDATED ou NO-OP)
-    - exit 0 si toutes les paires passent le check de parité, exit 1 sinon
+    - stdout : 1 ligne par paire traitée (ALREADY ALIGNED, DRY-RUN, UPDATED,
+      NO-OP, ou FAILED).
+    - exit 0 si toutes les paires passent le check de parité, exit 1 sinon.
 
 Audit :
     Le script s'exécute en mode dry-run par défaut. Pour appliquer réellement
@@ -93,9 +107,19 @@ def get_csharp_files_from_pr(pr_number: int, repo_root: Path) -> list[str]:
                     errors="replace",
                 )
                 if merged.returncode == 0:
+                    # PR mergée : extraire les fichiers C# touchés par le merge commit.
+                    # Stratégie : `git show --first-parent --name-only --format=
+                    # <merge_sha>` liste TOUS les fichiers de la branche fusionnée
+                    # (first-parent suit la branche mergée, qui contient les
+                    # commits PR). Le `--first-parent` est **obligatoire** pour les
+                    # merge-commits (parents=2) : sans lui, git show rend un
+                    # combined-diff par défaut, qui peut être vide pour un merge
+                    # pur (sans résolution conflictuelle) — mesuré en review #13859.
+                    # En squash ou rebase, le merge commit a 1 parent, et le
+                    # `--first-parent` est un no-op (la branche = le commit).
                     out = subprocess.run(
-                        ["git", "log", "--diff-filter=M", "-p", "-m", "--first-parent", "-1",
-                         "--name-only", "HEAD", "--", "*.Csharp.ipynb"],
+                        ["git", "show", "--first-parent", "--name-only", "--format=",
+                         source_sha, "--", "*.Csharp.ipynb"],
                         cwd=repo_root,
                         capture_output=True,
                         text=True,
@@ -103,8 +127,17 @@ def get_csharp_files_from_pr(pr_number: int, repo_root: Path) -> list[str]:
                         errors="replace",
                         check=True,
                     )
-                    return sorted(set(line for line in out.stdout.splitlines()
-                                      if line.endswith("Csharp.ipynb")))
+                    files = sorted(set(line for line in out.stdout.splitlines()
+                                       if line.endswith("Csharp.ipynb")))
+                    # Robustesse : si la fast-path rend vide (corner case
+                    # théorique, e.g. merge commit bizarre), on RETOMBE sur le
+                    # fallback gh api /files plutôt que retourner [] et risquer
+                    # l'exit 2 « aucun fichier C# trouvé » avec perte de signal.
+                    if files:
+                        return files
+                    print(f"WARN: git show first-parent a rendu vide pour {source_sha}, "
+                          f"fallback gh api /files",
+                          file=sys.stderr)
 
     # Fallback : gh api /files (pagination). Aussi chemin nominal quand la PR
     # n'est pas encore mergée (pre-merge).
@@ -148,6 +181,61 @@ def load_twin_pairs_registry(yaml_dir: Path) -> dict[str, tuple[Path, str]]:
             if isinstance(entry, dict) and "csharp" in entry and isinstance(entry["csharp"], str):
                 registry[entry["csharp"]] = (yf, entry.get("name", "unknown"))
     return registry
+
+
+def get_yaml_csharp_sha(yaml_path: Path, csharp_rel: str) -> str | None:
+    """Lit le `csharp_sha` (git blob SHA) enregistré pour une paire dans twin_pairs.d/.
+
+    Retourne le SHA ou None si non trouvé / structure inattendue.
+    """
+    import yaml  # type: ignore
+    try:
+        with open(yaml_path) as fh:
+            data = yaml.safe_load(fh)
+    except Exception:
+        return None
+    if not isinstance(data, list):
+        return None
+    for entry in data:
+        if (isinstance(entry, dict)
+                and entry.get("csharp") == csharp_rel
+                and isinstance(entry.get("csharp_sha"), str)):
+            return entry["csharp_sha"]
+    return None
+
+
+def get_current_blob_sha(csharp_rel: str, repo_root: Path) -> str | None:
+    """Calcule le SHA git blob actuel du fichier C# (`git hash-object <path>`).
+
+    Le SHA retourné est ce que `check_twin_parity.py` utilise pour `csharp_sha`.
+    Retourne None si le fichier n'existe pas ou git échoue.
+    """
+    out = subprocess.run(
+        ["git", "hash-object", csharp_rel],
+        cwd=repo_root,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
+    if out.returncode != 0:
+        return None
+    return out.stdout.strip() or None
+
+
+def is_already_rebaselined(yaml_path: Path, csharp_rel: str, repo_root: Path) -> bool:
+    """Vrai si le `csharp_sha` YAML correspond au blob SHA actuel du fichier.
+
+    Évite la re-touch d'une paire déjà alignée (le `check_twin_parity.py --update`
+    ré-écrirait le YAML même quand la valeur est déjà bonne, ce qui pollue le diff).
+    """
+    yaml_sha = get_yaml_csharp_sha(yaml_path, csharp_rel)
+    if yaml_sha is None:
+        return False
+    current_sha = get_current_blob_sha(csharp_rel, repo_root)
+    if current_sha is None:
+        return False
+    return yaml_sha == current_sha
 
 
 def run_update(pair_name: str, lane: str, repo_root: Path) -> bool:
@@ -218,10 +306,17 @@ def main() -> int:
     updated = 0
     noop = 0
     failed = 0
+    already_aligned = 0
     for csf, yf, name in pairs:
         print(f"\n--- Paire : {name}")
         print(f"    YAML : {yf.name}")
         print(f"    C# : {csf}")
+        # Skip si déjà-rebaseliné : csharp_sha YAML == blob SHA actuel.
+        # Évite une re-touch qui pollue le diff git sans valeur ajoutée.
+        if is_already_rebaselined(yf, csf, repo_root):
+            print(f"    ALREADY ALIGNED : csharp_sha YAML = blob SHA actuel → skip")
+            already_aligned += 1
+            continue
         if dry_run:
             print(f"    DRY-RUN : serait traité par `--update --pair \"{name}\" --by {args.lane}`")
             noop += 1
@@ -234,9 +329,10 @@ def main() -> int:
 
     print(f"\n==> Résumé")
     print(f"    {'DRY-RUN' if dry_run else 'UPDATED'} pairs : {updated + noop}")
-    print(f"    Updated pairs  : {updated}")
-    print(f"    Skipped (no-op): {noop}")
-    print(f"    Failed pairs   : {failed}")
+    print(f"    Updated pairs         : {updated}")
+    print(f"    Skipped (no-op)       : {noop}")
+    print(f"    Already aligned (skip): {already_aligned}")
+    print(f"    Failed pairs          : {failed}")
 
     if failed > 0:
         return 1
