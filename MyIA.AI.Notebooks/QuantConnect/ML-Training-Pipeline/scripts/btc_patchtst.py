@@ -2,10 +2,9 @@
 
 Wrapper that reuses existing pipeline modules without modifying them:
 - ``PatchTSTModel`` from ``train_patchtst.py`` (Nie et al., ICLR 2023) -- the
-  CLASS only. The ``train_patchtst`` CLI is deliberately NOT invoked: it
-  carries a duplicate ``--device`` argparse argument and a ``--walk-forward``
-  flag that is accepted but never applied. This module owns its own
-  walk-forward loop instead.
+  CLASS only. The generic CLI targets returns/direction and its
+  ``--walk-forward`` flag does not replace the simple split, so this log-RV
+  revalidation owns an explicit expanding walk-forward loop instead.
 - BTC intraday loader / log-RV primitives: ``intraday_loader``
   (``load_bitstamp_btc``, ``hourly_log_returns``) and ``realized_variance``
   (``daily_realized_variance``, ``realized_variance_to_log``).
