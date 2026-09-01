@@ -2970,6 +2970,38 @@ def test_13791_word_form_plain_indefinite_still_blocks():
     assert check_assertion(files, "un fichier modifié (`a.py`)") != []
 
 
+def test_13791_word_form_measurement_result_exempts():
+    """Un résultat de mesure sur les deux fichiers n'est pas le périmètre."""
+    files = [{"path": f"file-{i}.py"} for i in range(6)]
+    line = (
+        "les anciennes formes `Z3-Python 07`, `Z3-Python-06 >>` et la clé "
+        "baseline `Z3_PYTHON_CLAVIER`: **0 occurrence** sur les **deux fichiers** corrigés"
+    )
+    assert check_assertion(files, line) == []
+
+
+def test_13791_word_form_measurement_result_soft_wrap_exempts():
+    """Le résultat de mesure reste exempté après un retour à la ligne doux."""
+    files = [{"path": f"file-{i}.py"} for i in range(6)]
+    body = "les anciennes formes : **0 occurrence**\nsur les **deux fichiers** corrigés"
+    line, _context, block = extract_perimeter_assertions_with_block(body)[0]
+    assert check_assertion(files, line, block=block) == []
+
+
+def test_13791_digit_scope_with_zero_result_still_blocks():
+    """Contrôle FN : le périmètre chiffré reste rouge malgré zéro résultat."""
+    files = [{"path": "a.py"}, {"path": "b.py"}, {"path": "c.py"}]
+    line = "Périmètre : 2 fichiers twins uniquement, aucune autre modification."
+    assert check_assertion(files, line) != []
+
+
+def test_13791_word_form_scope_with_zero_result_still_blocks():
+    """Contrôle FN : le périmètre en lettres reste rouge malgré zéro résultat."""
+    files = [{"path": "a.py"}, {"path": "b.py"}, {"path": "c.py"}]
+    line = "Périmètre : deux fichiers uniquement, aucune autre modification."
+    assert check_assertion(files, line) != []
+
+
 def test_13791_paragraph_block_boundaries():
     """Le bloc paragraphe s'arrête aux lignes vides et aux fences, dans les
     deux directions."""
