@@ -56,7 +56,19 @@ Une requête à plafond **2000** (troncature surveillée), un tirage pondéré d
 
 ## Leçons ancrées (checks pré-`[DONE]`)
 
-- **L721 ★ — stale-tracker guard.** Avant **tout** claim de « 0 PR / saturated / idle » : `gh pr list --author <self> --state open --json number -q 'length'`. L'omettre produit des états terminaux **faux négatifs** (une session parallèle a peut-être déjà livré).
+- **L721 ★ — stale-tracker guard.** Avant **tout** claim de « 0 PR / saturated / idle » : la requête DOIT interroger le **tag de lane** (la même clé que `pick_idle_grain.py` lit), **PAS** `--author <self>`. Forme canonique (variable shell, robuste Git Bash / PowerShell / CMD) :
+
+  ```bash
+  LANE="<machine:workspace>"  # ex. myia-po-2026:CoursIA
+  gh pr list --state open --limit 100 --json number,title,body \
+    --jq ".[]|select(.body|test(\"lane $LANE\"))|\"#\(.number) \(.title)\""
+  ```
+
+  **Pourquoi pas `--author <self>`** (#13870) : les workers poussent sous le compte `jsboige` partagé, pas sous leur nom de lane -- `--author myia-po-2026` rend **0** alors que la lane porte 25 PRs ouvertes (mesure 2026-09-01, 59 PRs pool). Quatre lanes sur cinq voient `0` de leur propre travail avec la requête prescrite, et une lane a escaladé `[URGENT] HIGH` (`msg-20260831T181622-9fucbh`) en croyant n'avoir rien livré alors qu'elle portait 12 PRs -- exactement l'état terminal faux-négatif que ce garde devait prévenir.
+
+  **Contrôle positif obligatoire** : la requête corrigée se valide par ses **faux négatifs** symétriques -- une lane connue pour avoir N PRs doit en rendre N, pas par le fait qu'elle rende un nombre. Mesure de référence du 2026-09-01 : `myia-po-2026:CoursIA` → 25, `myia-po-2024:CoursIA` → 11, `myia-ai-01:CoursIA` → 9, `myia-po-2027:CoursIA` → 5, `myia-po-2023:CoursIA` → 3 -- toutes non-nulles (la mesure 2026-08-31 de l'issue #13870 incluait `myia-po-2025` à 1 PR qui a depuis été mergée).
+
+  **Repli** : si une PR ne porte **pas** le tag `Grain:` lisible, elle reste invisible aux deux requêtes (tag + author) ; c'est l'angle mort partagé avec `GRAIN-ORPHANS-SWEEP` (#13086). Traiter par le sweep dédié, **pas** en relâchant la requête ici.
 - **L740 ★ — CronList 7-day verify.** Les crons `CronCreate` sont **session-only, auto-expirent à 7 j**. Avant `[DONE]`, vérifier qu'ils vivent encore et **re-armer** — un cron expiré = wakeup mort = lane-idle silencieuse.
 - **L898 ★★★ — collision guard : avant d'ÉCRIRE, pas avant de pousser.** Avant de poser un `[CLAIMED]`, rédiger un steer/verdict, éditer un fichier **ou** `git push` : `git worktree list` + `gh pr list --search head:<branch>` + `gh pr list --search "<mot-clé>"` + `gh pr list --state open --json files` sur le **chemin** visé. Relire l'artefact sur `main` **ne remplace pas** ce check : `main` ne montre pas ce qui est *ouvert*. Coût ~10 s ; coût de l'omission = travail dupliqué et rétractation publique.
 - **L1356 ★★★ — preflight de claim : `--state all`, jamais `--state open` seul (incidents #13562/#13608, corroboré po-2025 sur #12794).** L898 vérifie ce qui est **ouvert** ; une PR **MERGÉE** qui a livré l'issue en rider (référence à un autre numéro, pas de `Closes #N`) est invisible à ce filtre, et l'issue reste OPEN sans PR liée — **« OPEN + zéro PR liée » n'est PAS une preuve de fraîcheur**. Avant tout `[CLAIMED]` : (1) `gh search prs "<N>"` (ou `gh pr list --state all --search "<N>"`) — une PR merged sur le sujet = grain livré ; (2) `ls -d <repo-worktrees>/*<motif>*` — un **worktree orphelin** nommé pour l'issue signale une session antérieure : la compaction efface le souvenir du travail, pas le disque ; inspecter sa branche (`git log -1`) avant de créer quoi que ce soit. Si livré : poster un commentaire `[INFO] candidate-delivered` avec preuve (commit + tests) pour fermeture par le coordinateur — **ne pas réimplémenter, ne pas closer soi-même**.
