@@ -443,7 +443,7 @@ Voir la licence du repository principal.
 
 <!-- CATALOG-STATUS
 series: IIT
-pedagogical_count: 65
-breakdown: ICT-Series=60, root=5
-maturity: BETA=60, DRAFT=5
+pedagogical_count: 69
+breakdown: ICT-Series=64, root=5
+maturity: BETA=62, DRAFT=6, ALPHA=1
 -->
