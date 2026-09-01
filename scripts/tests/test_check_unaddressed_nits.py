@@ -3377,3 +3377,38 @@ def test_14070_position_g_neutralise_pas_annonce_fix_avec_commit_futur():
         f"Le verdict suivi de `— commit XXXX` est une annonce de fix, "
         f"pas une reponse a un verdict passe."
     )
+
+
+def test_14070_position_g_negation_non_pas_encore_bout_en_bout():
+    """#14070 FN-safety, corps VERBATIM de la table Hermes (review
+    2026-09-01T15:34:29Z, demande 1/2). Deux ecarts avec les tests
+    voisins, et c'est pour eux que ce test existe :
+
+    1. Le token de negation est `non` + `pas` (les voisins couvrent `pas`
+       seul et `jamais`). `_LIFT_NEGATION_TOKENS` les porte tous les
+       trois, mais un seul chemin etait exerce par corps.
+    2. L'assertion porte sur `classify()` de bout en bout, pas sur
+       `_strip_mentioned_verdicts` seul : c'est la surface que la table
+       Hermes a mesuree (`None` cote PR vs `BOT-CONCERN` cote main).
+       Un garde cable correctement au niveau du strip mais avale plus
+       bas resterait invisible aux deux voisins.
+    """
+    body = "On fix CHANGES_REQUESTED ? Non, pas encore, la CI est rouge."
+    assert mod.classify("clusterManager-Myia", body) == "BOT-CONCERN", (
+        f"Le verdict est evoque sous negation (`Non, pas encore`) : il "
+        f"n'est PAS leve, l'organe doit le voir vivant. Corps : {body!r}"
+    )
+
+
+def test_14070_position_g_negation_pas_bout_en_bout():
+    """#14070 FN-safety, corps VERBATIM de la table Hermes (ligne 1).
+
+    Jumeau end-to-end de `..._negatee_pas`, qui n'assertait qu'au niveau
+    du strip. La paire prouve que le verdict survit AU STRIP *et* reste
+    visible a `classify()` -- les deux etages, pas seulement le premier.
+    """
+    body = "Je n'ai pas traite le REQUEST_CHANGES, il reste valable."
+    assert mod.classify("clusterManager-Myia", body) == "BOT-CONCERN", (
+        f"Le reviewer dit explicitement N'AVOIR PAS traite le verdict : "
+        f"c'est un nit non leve. Corps : {body!r}"
+    )
