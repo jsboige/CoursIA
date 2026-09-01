@@ -1,0 +1,39 @@
+# Track1-LangChain - Dépendances (cf #13948)
+
+# Manifeste de dependances manquant avant ce grain : un etudiant qui suivait
+# le Track 1 n'avait pas de quoi reconstruire l'environnement sans aller
+# piocher dans Track2-GoogleADK/requirements.txt, qui melange les libs des
+# deux tracks. Ce fichier enonce CE QUE LES 7 LABS UTILISENT reellement
+# (mesure par grep `^(import|from)` sur les 7 notebooks du track, 2026-09-01)
+# et seulement cela -- pas une copie amincie du Track 2.
+
+# Convention de pin : `>=` plancher tolerant (cf note en tete du
+# Track2-GoogleADK/requirements.txt pour la distinction `==` vs `>=`).
+# Aucune lib ici ne merite un pin exact : aucune chaine de compat
+# fine ne traverse ces versions ; les labs dependent uniquement des API
+# stables (pandas/numpy/sklearn) ou des abstractions LangChain (qui
+# pin en interne).
+
+# === LangChain (7 labs, 8/7 references) ===
+# Coeur de chaines et outils agentiques.
+langchain>=0.3.0
+langchain-core>=0.3.0
+langchain-openai>=0.2.0
+langchain-community>=0.3.0
+langchain-experimental>=0.3.0
+
+# Orchestration multi-agents (utilise dans Lab6/Lab7).
+langgraph>=0.2.0
+
+# === Data Science (fondation des labs 1, 4, 5) ===
+pandas>=2.0.0
+numpy>=1.24.0
+scikit-learn>=1.3.0
+
+# === Visualisation ===
+matplotlib>=3.7.0
+seaborn>=0.12.0
+
+# === Jupyter (executable des notebooks) ===
+jupyter>=1.0.0
+ipykernel>=6.0.0
