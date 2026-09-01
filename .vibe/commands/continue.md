@@ -55,7 +55,7 @@ python scripts/pick_idle_grain.py --lane "myia-po-2025:Microsoft VS Code" --prev
   ```bash
   gh pr list --state merged --limit 50 --json body,mergedAt --jq '[.[] | select(.body != null and (.body | contains("myia-po-2025:Microsoft VS Code"))) | {m: .mergedAt, g: (.body | capture("(?m)^Grain:[ \t]*[A-Z]+/(?<g>[a-z-]+)").g // "?")}] | sort_by(.m) | last | if . == null then "(aucun)" else .g end'
   ```
-  Reponse `(aucun)` -> omettre le drapeau.
+  Réponse `(aucun)` ou `?` -> omettre le drapeau : `?` signifie que la lane a été trouvée, mais que son tag `Grain:` n'a pas fourni de genre capturable.
 
 **Interpretation de la sortie JSON :**
 
