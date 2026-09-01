@@ -2,7 +2,7 @@
 
 C'est ici que la série Search se confronte au réel. Les 51 notebooks d'application, pour la plupart adaptés de projets étudiants, prennent les algorithmes des Parties 1 et 2 et les mettent face à des problèmes qui ne se laissent pas faire : planifier les gardes d'un service hospitalier, ordonnancer un atelier, construire un calendrier sportif équitable, router une flotte de véhicules. Trois catégories les organisent — **Search pur** (jeux combinatoires), **CSP** (satisfaction de contraintes) et **Hybride** (combinaisons de solveurs, modèles exacts et métaheuristiques) — et la plupart sont autonomes, avec des pointeurs vers les prérequis pertinents. À cela s'ajoutent les **jumeaux C#** (App-1b, App-2b, App-3b, App-4b, App-5b, App-6-Csharp, App-7b, App-8-Csharp, App-9b, App-10b, App-11b, App-13b, App-14-CSharp, App-14c, App-15b, App-16-CSharp, App-17b, App-18b, App-19-CSharp, App-20b) qui déroulent les mêmes algorithmes *from-scratch* en .NET, en complément des versions Python qui invoquent des solveurs industriels.
 
-Sous-série de **51 notebooks** | **~27h15** | Python 3.10+ (`ortools`, `python-sat`, `deap`, `mealpy`, `minizinc`, `optuna`) ; .NET 9 (`dotnet-interactive`) pour les jumeaux C#
+Sous-série de **52 notebooks** | **~28h40** | Python 3.10+ (`ortools`, `python-sat`, `deap`, `mealpy`, `minizinc`, `optuna`) ; .NET 9 (`dotnet-interactive`) pour les jumeaux C#
 
 ## Pourquoi cette sous-série
 
@@ -32,7 +32,7 @@ Un algorithme compris sur un exemple jouet n'est pas encore un algorithme maîtr
 Applications/
 ├── Search/     # Applications purement Search (4 notebooks : 2 Python + 2 twins C#)
 ├── CSP/        # Applications CSP (30 notebooks : 16 Python + 14 twins C#)
-└── Hybrid/     # Méthodes hybrides / métaheuristiques (17 notebooks : 12 Python + 5 twins C#)
+└── Hybrid/     # Méthodes hybrides / métaheuristiques (18 notebooks : 13 Python + 5 twins C#)
 ```
 
 ```mermaid
@@ -42,7 +42,7 @@ flowchart LR
     P4["<b>Partie 4 — Métaheuristiques</b><br/>SA, GA, ACO, recuit"]
     S["<b>Applications Search</b> (2)<br/>ConnectFour : Minimax,<br/>MCTS, DQN-RL"]
     C["<b>Applications CSP</b> (16 Python)<br/>N-Queens, GraphColoring,<br/>Nurse/JobShop, Minesweeper,<br/>Wordle, Picross, WFC,<br/>Covering Arrays..."]
-    H["<b>Applications Hybrides</b> (10)<br/>EdgeDetection, Portfolio,<br/>TSP, VRP, Hyperparameter,<br/>AlgorithmSelection, PRESENT/SAT,<br/>audit MAPF, enchères WDP/VCG,<br/>index tracking walk-forward"]
+    H["<b>Applications Hybrides</b> (13 Python)<br/>EdgeDetection, Portfolio,<br/>TSP, VRP, Hyperparameter,<br/>AlgorithmSelection, PRESENT/SAT,<br/>MAPF, WDP/VCG, index tracking,<br/>SALBP"]
     P1 --> S
     P2 --> C
     P4 --> H
@@ -153,6 +153,7 @@ Quand l'espace est trop vaste ou l'objectif trop irrégulier pour les méthodes 
 | 10 | [App-24-MAPF-Guarantee-Audit](Hybrid/App-24-MAPF-Guarantee-Audit.ipynb) | ~60 min | MAPF : validateur indépendant, oracle CP-SAT time-expanded, réfutation OD-A*, arrêt CBS au but, audit des garanties ECBS — distillation PrCon G3 (Matteo Atkinson, Paul Witkowski) | Projet étudiant (PrCon PRs #33/#36/#42) |
 | 11 | [App-25-CombinatorialAuctions-WDP-VCG](Hybrid/App-25-CombinatorialAuctions-WDP-VCG.ipynb) | ~60 min | Enchères combinatoires : WDP exact CP-SAT vs force brute, langage XOR, budget global, paiements VCG et audit de leurs garanties, contre-exemple de manipulation sous budget matérialisé, forensics `PRICE_SCALE` sur 18 instances CATS — distillation PrCon J2 (Majerczyk, Chartouni, Wangon-Zekou) | Projet étudiant (PrCon PR #26) |
 | 12 | [App-27-Sparse-Index-Tracking-Walk-Forward](Hybrid/App-27-Sparse-Index-Tracking-Walk-Forward.ipynb) | ~75 min | Sparse index tracking : modèle CP-SAT vérifiable, walk-forward sans fuite et lecture pédagogique des résultats QuantConnect réels — une recherche, deux lectures — distillation PrCon M2 (Godric Bouteloup) | Projet étudiant (PrCon PR #52) |
+| 13 | [App-29-SALBP-AssemblyLineBalancing-Audit](Hybrid/App-29-SALBP-AssemblyLineBalancing-Audit.ipynb) | ~70 min | SALBP-1/2 : CP-SAT, PuLP/CBC et RPW, statuts/incumbents/bornes, identité de benchmark, front Pareto certifié et MMALBP robuste/pondéré — distillation PrCon B1 (Ilias Kalalou, Kaelan Grall) | Projet étudiant (PrCon PR #57) |
 
 ---
 
@@ -223,6 +224,7 @@ Quand l'espace est trop vaste ou l'objectif trop irrégulier pour les méthodes 
 | App-24 MAPF Guarantee Audit | Search-3 (A*), CSP-3/CSP-4, heuristiques admissibles | ortools, pandas, matplotlib |
 | App-25 CombinatorialAuctions-WDP-VCG | CSP-3 (CP-SAT), CSP-5 (optimisation), GameTheory-16 (VCG) | ortools, pandas, matplotlib |
 | App-27 Sparse Index Tracking Walk-Forward | CSP-3 (CP-SAT), CSP-5 (optimisation), App-10 (portefeuille) | ortools, pandas, numpy |
+| App-29 SALBP AssemblyLineBalancing Audit | CSP-3 (CP-SAT), CSP-4 (scheduling), CSP-5 (optimisation) | ortools, pulp, pandas, numpy, matplotlib |
 
 ---
 
@@ -241,6 +243,8 @@ Le [App-25-CombinatorialAuctions-WDP-VCG](Hybrid/App-25-CombinatorialAuctions-WD
 Le [App-26-CoveringArrays-Guarantee-Audit](CSP/App-26-CoveringArrays-Guarantee-Audit.ipynb) distille le projet PrCon H4 de **Valérian Pichot**, *« Covering Arrays »*, PR [PrCon #58](https://github.com/jsboigeEpita/2026-Epita-Programmation-par-Contraintes/pull/58). Sans recopier le générateur étudiant, le notebook reconstruit un oracle indépendant, un set cover CP-SAT exact et deux baselines approchées ; il reproduit surtout le faux verdict d'un validateur qui exige des interactions sémantiquement impossibles, puis le répare par un univers constraint-aware. Provenance : [`CSP/data/app26-covering-arrays-audit/SOURCE.md`](CSP/data/app26-covering-arrays-audit/SOURCE.md).
 
 Le [App-27-Sparse-Index-Tracking-Walk-Forward](Hybrid/App-27-Sparse-Index-Tracking-Walk-Forward.ipynb) distille le projet PrCon M2 de **Godric Bouteloup**, *« Sparse Index Tracking »*, PR [PrCon #52](https://github.com/jsboigeEpita/2026-Epita-Programmation-par-Contraintes/pull/52). Le notebook conserve la modélisation CP-SAT en lots entiers, mais reconstruit l'expérience sur un marché synthétique seedé : cardinalité exacte, turnover entre rebalancements consécutifs, validation indépendante, choix de K avant le test et statut/borne/gap explicites. Il matérialise aussi un protocole contaminé pour montrer qu'un score obtenu après consultation du test est ininterprétable, qu'il paraisse meilleur ou moins bon. Cette lecture de méthode reprend ensuite, sans relancer de recherche de marché, les résultats autoritatifs du projet [Sparse-Index-Tracking-QC](../../QuantConnect/projects/Sparse-Index-Tracking-QC/README.md) intégré par la PR CoursIA [#14068](https://github.com/jsboige/CoursIA/pull/14068) : 703 contre 1 414 ordres, mais pas de domination sparse sur les performances ni sur le turnover. **Une recherche, deux lectures.** Provenance : [`Hybrid/data/app27-sparse-index-tracking/SOURCE.md`](Hybrid/data/app27-sparse-index-tracking/SOURCE.md).
+
+Le [App-29-SALBP-AssemblyLineBalancing-Audit](Hybrid/App-29-SALBP-AssemblyLineBalancing-Audit.ipynb) rend hommage au projet PrCon B1 d'**Ilias Kalalou** et **Kaelan Grall**, *« Équilibrage de chaîne d'assemblage (SALBP) »*, PR [PrCon #57](https://github.com/jsboigeEpita/2026-Epita-Programmation-par-Contraintes/pull/57). Le notebook préserve leur geste central — SALBP-1/2, comparaison CP-SAT/PuLP/RPW, Pareto et multi-modèles — dans une réécriture CoursIA indépendante qui publie statuts, incumbents, bornes, gaps, identité structurelle des instances et validation hors solveur. Aucun code, texte ou figure étudiante n'est copié. Provenance : [`Hybrid/data/app29-salbp-audit/SOURCE.md`](Hybrid/data/app29-salbp-audit/SOURCE.md).
 
 ---
 
@@ -279,6 +283,7 @@ Couverture par application des sources fondatrices mobilisées dans cette sous-s
 | App-25 (CombinatorialAuctions-WDP-VCG) | Rothkopf, M. H., Pekeč, A., & Harstad, R. M. (1998) — « Computationally Combinatorial Auction Design », *Management Science* 44(8) ; Sandholm, T. (2002) — « Algorithm for Optimal Winner Determination in Combinatorial Auctions », *Artificial Intelligence* 135 ; Leyton-Brown, K., Pearson, M., & Shoham, Y. (2000) — « Towards a Universal Test Suite for Combinatorial Auction Design », *EC 2000* (générateur CATS) ; Nisan, N. (2000) — « Bidding and Allocation in Combinatorial Auctions », *EC 2000* (langage XOR) ; Lehmann, D., O'Callaghan, L., & Shoham, Y. (2002) — « Truth Revelation in Approximately Efficient Combinatorial Auctions », *JACM* 49(5) (glouton √m, enchérisseurs single-minded). |
 | App-26 (CoveringArrays Guarantee Audit) | Cohen, D. M., Dalal, S. R., Fredman, M. L., & Patton, G. C. (1997) — « The AETG System: An Approach to Testing Based on Combinatorial Design », *IEEE TSE* 23(7) ; Lei, Y., Kacker, R., Kuhn, D. R., Okun, V., & Lawrence, J. (2007) — « IPOG: A General Strategy for T-Way Software Testing », *ECBS 2007*. |
 | App-27 (Sparse Index Tracking Walk-Forward) | Beasley, J. E., Meade, N., & Chang, T.-J. (2003) — « An Evolutionary Heuristic for the Index Tracking Problem », *European Journal of Operational Research* 148(3) ; Bailey, D. H., Borwein, J. M., López de Prado, M., & Zhu, Q. J. (2014) — « Pseudo-Mathematics and Financial Charlatanism: The Effects of Backtest Overfitting on Out-of-Sample Performance », *Notices of the AMS* 61(5). |
+| App-29 (SALBP Assembly Line Balancing Audit) | Salveson, M. E. (1955) — « The Assembly Line Balancing Problem », *Journal of Industrial Engineering* 6(3) ; Helgeson, W. B., & Birnie, D. P. (1961) — « Assembly Line Balancing Using the Ranked Positional Weight Technique », *Journal of Industrial Engineering* 12(6) ; Scholl, A. (1999) — *Balancing and Sequencing of Assembly Lines*, Physica-Verlag. |
 
 ## Conclusion / Prochaines étapes
 

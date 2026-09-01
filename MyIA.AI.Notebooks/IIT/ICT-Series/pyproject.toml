@@ -36,6 +36,12 @@ dependencies = [
     "numpy>=1.21,<2.0",      # numpy<2.0 (compat pyemd / pyphi)
     "scipy>=0.13.3",         # calcul scientifique
     "matplotlib",            # visualisation (notebooks)
+    "pandas",                # ict.bridges.make_panel_did retourne un DataFrame
+                             # (utilise par ict/tests/test_bridges.py et par
+                             # toute fonction de bridges qui retourne un panel
+                             # groupe x periode ; passage de extras a deps coeur
+                             # pour que `pip install -e .` couvre la suite de
+                             # tests CI sans modifier le workflow -- cf. c.296)
 ]
 
 [project.optional-dependencies]
@@ -48,7 +54,6 @@ llm = [
 ]
 # Dependances utilitaires ponctuelles (1-2 usages a travers la serie).
 extras = [
-    "pandas",
     "sympy",
 ]
 # Suite de tests : `python -m pytest tests/` depuis ICT-Series/.
