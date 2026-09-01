@@ -57,6 +57,8 @@ import Grothendieck.SheafCohomology.Cech
 import Grothendieck.SheafCohomology.MayerVietoris
 import Grothendieck.SheafCondition
 import Grothendieck.SheafCondition_en
+import Grothendieck.SheafConditionCharacterization
+import Grothendieck.SheafConditionCharacterization_en
 import Grothendieck.SheafConditionInvariance
 import Grothendieck.SheafConditionInvariance_en
 import Grothendieck.SheafHom
