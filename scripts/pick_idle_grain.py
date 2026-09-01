@@ -1474,7 +1474,12 @@ def red_backlog(lane: str, threshold_hours: float,
         if causes:
             red.append({"number": pr["number"], "title": pr["title"],
                         "age_hours": round(age),
-                        "causes": causes})
+                        "causes": causes,
+                        # #13967 : signal optionnel fourni par un caller
+                        # externe (wrapper sur `variation_adjacency_guard`).
+                        # Falsy par defaut pour ne pas changer le contrat
+                        # des 79 tests existants.
+                        "is_adjacency": bool(pr.get("is_adjacency"))})
     red.sort(key=lambda r: -r["age_hours"])
 
     triggers = []
@@ -1681,17 +1686,47 @@ def print_red_assignment(lane: str, backlog: dict, threshold_hours: float) -> No
         for cause in item["causes"]:
             print(f"       {cause}")
     print()
-    print("Trois gestes, dans cet ordre -- le premier repare souvent seul :")
-    print("  1. `gh pr update-branch <N>` : rejoue les checks sur une tete fraiche.")
-    print("     Un rouge peut dater d'AVANT la correction du garde qui l'a produit")
-    print("     (mesure du 2026-08-21 : 5 PRs sur 9 n'avaient rien a corriger).")
-    print("     Dater le garde -- `git log -- <script>` -- avant de conclure.")
-    print("  2. conflits : rebaser sur origin/main, `--force-with-lease` si la lane")
-    print("     est seule sur la branche.")
-    print("  3. corriger la substance, pousser, et REPONDRE par ecrit -- au")
-    print("     CHANGES_REQUESTED comme au nit : un push muet ne leve aucune")
-    print("     remarque. `python scripts/check_unaddressed_nits.py <N>` detaille")
-    print("     chaque point non leve, son auteur et sa surface.")
+    if red and all(r.get("is_adjacency") for r in red):
+        # #13967 : quand la cause du rouge est `adjacency` (G-VAR-3, mesure
+        # du 2026-09-01 = 13 PRs / 25 rouges mesurables = premiere cause de
+        # rouge de la flotte), les trois conseils generiques
+        # (`update-branch` / rebase / pousser) sont invariants au predicat
+        # (aucun ne modifie le `prev_genre` ni le `genre` courant), donc
+        # aucun ne leve le blocage. L'organe `variation_adjacency_guard`
+        # produit deja le bon message (« piochez un grain d'UN AUTRE genre,
+        # ne retaguez pas le meme travail ») -- ici on le dit EN CLAIR
+        # pour que la lane ne perde pas son cycle a pousser une PR dont
+        # la cause est ailleurs.
+        print("Cause determinante : `adjacency` (G-VAR-3, organe "
+              "variation_adjacency_guard). Aucun des trois gestes generiques")
+        print("ne leve ce blocage : la cause n'est pas dans le diff, elle est")
+        print("dans le **genre du grain suivant**. Le remede :")
+        print()
+        print("  -> Piocher un grain d'UN AUTRE genre (LIGHT/{guard,ledger,")
+        print("     docs,readme,test} apres un autre grain du meme genre est")
+        print("     un monoculture interdit par le protocole variation §2).")
+        print("  -> Ne PAS retaguer la PR existante -- le re-tag du meme")
+        print("     travail sous un autre genre est l'echappatoire que le")
+        print("     protocole ferme explicitement.")
+        print("  -> Produire un grain frais (DEEP ou MED, ou un CONTENU dans")
+        print("     un genre distinct du precedent merge) : c'est lui qui")
+        print("     decale la file et leve le blocage.")
+        print()
+        print("Mesure du 2026-09-01 : 13 PRs / 25 rouges mesurables tenues par")
+        print("adjacency -- premiere cause de rouge de la flotte, devant")
+        print("`tag_required` (5), `lane_claim` (3), `perimeter` (2).")
+    else:
+        print("Trois gestes, dans cet ordre -- le premier repare souvent seul :")
+        print("  1. `gh pr update-branch <N>` : rejoue les checks sur une tete fraiche.")
+        print("     Un rouge peut dater d'AVANT la correction du garde qui l'a produit")
+        print("     (mesure du 2026-08-21 : 5 PRs sur 9 n'avaient rien a corriger).")
+        print("     Dater le garde -- `git log -- <script>` -- avant de conclure.")
+        print("  2. conflits : rebaser sur origin/main, `--force-with-lease` si la lane")
+        print("     est seule sur la branche.")
+        print("  3. corriger la substance, pousser, et REPONDRE par ecrit -- au")
+        print("     CHANGES_REQUESTED comme au nit : un push muet ne leve aucune")
+        print("     remarque. `python scripts/check_unaddressed_nits.py <N>` detaille")
+        print("     chaque point non leve, son auteur et sa surface.")
     print()
     print_unattributed_blocked(backlog)
     print_base_inherited(backlog)
