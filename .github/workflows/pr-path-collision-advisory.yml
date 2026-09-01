@@ -19,16 +19,33 @@ name: PR path-collision advisory
 # a common cited issue, weak = file only) plus the overlapping paths. Strong
 # pairs additionally get the `pr-overlap` label.
 #
-# The fixed concurrency group + cancel-in-progress keeps the runner famine
-# (#13097) fed: a burst of synchronize events collapses into one scan (the
-# detector is whole-pool and idempotent, the last run covers everything).
+# Trigger changed to `schedule` (#13097 remedy A, measured 2026-08-31). The
+# pull_request trigger + a FIXED concurrency group + cancel-in-progress
+# extinguished the organ exactly when it was most needed: over 228 runs
+# (08-30 12:09Z -> 08-31 19:21Z) it produced 176 `cancelled` for 50 `success`,
+# and during the fleet peak (09Z-16Z on 08-31) 102 runs yielded 2 verdicts --
+# 83 consecutive runs across six hours yielded ZERO. Largest gap between two
+# verdicts: 428 min. A completed scan takes ~2.9 min median while the 10Z hour
+# fired one run every ~2 min: arrivals outran service, so every run died before
+# finishing, and a cancelled run posts no check-run (#13097's own mechanism).
+#
+# The detector needs NO PR context -- it reads open PRs through `gh pr list`
+# (whole-pool, idempotent; its only env dependency is GITHUB_REPOSITORY). So a
+# schedule serves it fully, removes ~228 runs/31h of PR fan-out from the
+# famished hosted pool, and lets each scan run to completion. The concurrency
+# group stays FIXED (one scan at a time is the intent) but no longer cancels
+# what is in flight: with cancel-in-progress false, the running scan finishes
+# and a burst collapses into at most one pending run, which is the behaviour
+# the group was always meant to provide.
 #
 # The organ NEVER blocks: the script always exits 0 and this job has no
 # merge/status gate.
 
 on:
-  pull_request:
-    types: [opened, synchronize]
+  # Off-round minutes: the top of the hour is when every cron in the account
+  # fires at once, which is the queue this organ must stop competing with.
+  schedule:
+    - cron: '7,27,47 * * * *'
   workflow_dispatch:
     inputs:
       dry_run:
@@ -44,7 +61,7 @@ on:
 
 concurrency:
   group: pr-path-collision-advisory
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 permissions:
   contents: read

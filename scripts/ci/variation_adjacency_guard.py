@@ -111,7 +111,14 @@ from variation_light_cap import (  # noqa: E402
 #   * it NAMES the replacement genre the lane takes next, and that genre
 #     DIFFERS from the blocked one -- otherwise the override would waive the
 #     rule while promising to break it again.
-COORDINATOR_LOGINS = frozenset({"myia-ai-01", "jsboige"})
+#
+# #13730 mirror of #13316: `jsboige` is the shared push identity of every
+# lane, not a coordinator. Keeping it here turns the G-VAR-3 ban into a
+# permission the lane can grant itself -- the exact opposite of the
+# non-vacuity clause above. The other organ (`check_unaddressed_nits`,
+# LIFT_OVERRIDE_LOGINS) was hardened by #13316 for the same reason; the
+# adjacency guard was missed. Coordinator identity = `myia-ai-01` only.
+COORDINATOR_LOGINS = frozenset({"myia-ai-01"})
 
 _OVERRIDE_RE = re.compile(
     r"\[\s*G-?VAR-?3\s+OVERRIDE\s*\]"          # the marker
