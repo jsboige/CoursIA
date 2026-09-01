@@ -45,7 +45,7 @@ attributions:
 
   - arxiv_id: "2309.07864"
     notebook: "MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/Day4-Foundations/Lab8-ADK-Introduction.ipynb"
-    cell_index: 31
+    cell_index: 30
     expected_citation: "1. Z. Xi et al., *The Rise and Potential of Large Language Model Based Agents: A Survey*, arXiv:2309.07864, 2023."
     source_pr: "#12824"
     correction: "Survey Xi citation: 2025 -> 2023 (cellule Références, 1re entrée)"

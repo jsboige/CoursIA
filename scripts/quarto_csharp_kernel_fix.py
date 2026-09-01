@@ -56,7 +56,7 @@ def iter_notebooks(root: Path):
 def iter_targets(root: Path, single_path: Path | None):
     """Yield notebook paths to operate on. ``single_path`` (when set) is treated
     as a single-file override — useful for spot-checking one notebook before a
-    bulk run, or for the acceptance test on Search-15-NetworkX-Csharp. Path
+    bulk run, or for the acceptance test on Search-02b-NetworkX-Csharp. Path
     must be inside ``root`` (resolved); otherwise ValueError."""
     if single_path is None:
         yield from iter_notebooks(root)

@@ -250,7 +250,7 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | `HAR-RV-J-Kelly` | `projects/HAR-RV-J-Kelly/` | Volatility / Kelly | **Needs-improvement** | 2709 j. (2018–2025 aligned) ; Sharpe 0.524 ; CAGR 14.08 % ; MaxDD 37.1 % ; PSR 10.69 % ; NP 165.9 % (₮165 831) — décent mais drawdown élevé, edge non significative |
 | `RegimeSwitching` | `projects/RegimeSwitching/` | Régime | **Needs-improvement** | 4593 j. ; Sharpe 0.540 ; CAGR 11.47 % ; MaxDD 33.0 % ; PSR 4.80 % ; NP 627.9 % ($617 405) — long-terme, edge non significative |
 | `TrendStocks-Alpha` | `projects/TrendStocks-Alpha/` | Trend actions | **Needs-improvement** | 2516 j. (post-#2801) ; Sharpe 0.512 ; CAGR 15.73 % ; **MaxDD 39.6 %** (max cohorte) ; PSR 5.58 % ; NP 331.5 % ($340 855) — drawdown élevé, edge non significative |
-| `VIX-TermStructure` | `projects/VIX-TermStructure/` | Vol (VIX term) | **BROKEN** | 4085 j. ; **Sharpe −0.125** (négatif) ; CAGR 2.17 % ; MaxDD 21.5 % ; **PSR 0.18 %** (quasi-nul) — Sharpe négatif, edge nul ; v5.1 Pos 25 % (from 45 %) = amélioration marginale mais insuffisante |
+| `VIX-TermStructure` | `projects/VIX-TermStructure/` | Vol (VIX term) | **Needs-improvement** | v6.0 consolidation #13892 (dual-signal eVRP + terme, article QC 21143 / SSRN 5316487, Zarattini/Aziz/Mele 2025) : dev 2016-2021 **Sharpe 0.886** (PSR 26.5 %) ; **OOS 2022-2026 Sharpe −0.007** (PSR 0.5 %) ; full 2016-2026 **0.526** (PSR 2.0 % — sous le claim article 0.729) ; MaxDD 33-38.5 % — sortie de BROKEN, mécanisme documenté, edge non significative (claim article non répliqué sur notre harnais) ; v5.1 précédent : Sharpe −0.125, PSR 0.18 % |
 
 #### Vérifié (tranche 9, backtests QC Cloud via MCP) (5)
 

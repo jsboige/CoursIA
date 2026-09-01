@@ -1,6 +1,6 @@
 # Continue - Cycle worker
 
-Reprendre le travail sur cette lane : lire les directives coordinateur, choisir la prochaine tache, livrer une PR, reporter. C'est le prompt du cron worker (30 min staggered). **Un worker ne lance JAMAIS `/coordinate`** (lecon #1502) : pas de merge, pas de `gh auth switch`, pas de close d'issue d'autrui.
+Reprendre le travail sur cette lane : lire les directives coordinateur, choisir la prochaine tache, livrer une PR, reporter. C'est le prompt du cron worker (30 min staggered). **Un worker ne lance JAMAIS `/coordinate`** (lecon #1502) : pas de merge, pas de close d'issue d'autrui. **`gh auth switch` est autorise et necessaire** (trousseau gh partage entre workspaces — mandat user 2026-08-31) : la ligne rouge est le merge/close d'autrui, pas le switch lui-meme.
 
 ## Workflow
 
@@ -26,7 +26,7 @@ Reprendre le travail sur cette lane : lire les directives coordinateur, choisir 
 python scripts/pick_idle_grain.py --lane <machine:workspace> --prev-genre <genre du grain precedent>
 ```
 
-**P0 — Reparer SON PROPRE rouge.** Si la commande sort en **code 2**, elle ne tire aucun grain : elle rend la liste des PRs de cette lane **bloquees et ouvertes depuis plus de 24 h**, avec la cause et le geste de reparation. **C'est la tache du cycle**, avant tout grain neuf. La raison est mecanique, pas disciplinaire : une PR rouge ne peut etre reparee **que par sa lane** — le coordinateur ne peut ni rebaser ni corriger a sa place — donc tant que la lane ne revient pas dessus, elle reste ouverte indefiniment pendant que les PRs du jour, elles, mergent. C'est exactement ce qui produit le residu de vieilles PRs.
+**P0 — Reparer SON PROPRE rouge.** La commande rend en **sortie 0** un grain de reparation quand cette lane porte des PRs **bloquees et ouvertes depuis plus de 24 h** : la premiere devient `grain`, la liste complete reste dans `backlog`. **C'est la tache du cycle**, avant tout grain neuf. La raison est mecanique, pas disciplinaire : une PR rouge ne peut etre reparee **que par sa lane** — le coordinateur ne peut ni rebaser ni corriger a sa place — donc tant que la lane ne revient pas dessus, elle reste ouverte indefiniment pendant que les PRs du jour, elles, mergent. C'est exactement ce qui produit le residu de vieilles PRs.
 
 - Une PR reparee **et mergee compte comme le grain livre du cycle** (plancher R1 tenu) : ce n'est pas un a-cote, c'est du travail deja ecrit qu'on porte a son terme.
 - Rouge **non reparable par cette lane** (garde casse sur main, dependance d'une autre PR) : l'**ecrire en commentaire sur la PR**, puis `--ignore-red`. L'echappatoire se justifie par ecrit, elle ne se prend pas en silence.
@@ -36,7 +36,7 @@ python scripts/pick_idle_grain.py --lane <machine:workspace> --prev-genre <genre
 
 **P2 — Travail en cours** : tache `[CLAIMED]` par cette lane non terminee, deep-queue de la lane si posee sur le dashboard.
 
-**P3 — Le tirage** (sortie 0) : les candidats rendus par la commande ci-dessus. Le pool est **tout l'ouvert, cross-lane** — la lane est une etiquette de reporting, pas une frontiere de travail : rien n'est "le turf d'un autre". Poser `[CLAIMED] <#N> — <machine:workspace> <ts>` AVANT d'editer, livrer. Regles completes : [proactive-coordination.md](../rules/proactive-coordination.md) (>=1 PR/wakeup = PLANCHER, variete R6, "rien a faire" avec >0 issues ouvertes = echec de methode).
+**P3 — Le tirage** (sortie 0) : les candidats rendus par la commande ci-dessus. Le pool est **tout l'ouvert, cross-lane** — la lane est une etiquette de reporting, pas une frontiere de travail : rien n'est "le turf d'un autre". Pour eviter plusieurs rerolls couteux, demander davantage de candidats (`--grains`, `--umbrellas`, `--delivered`) et exprimer les faits deja etablis avec `--exclude-issue`, les filtres de labels/age/inactivite ou `--urns`. Le cache borne est automatique ; `--cache refresh` force les trois mesures partageables, `--cache off` diagnostique sans disque, `--cache-status` explique `hit/miss/stale`. Poser `[CLAIMED] <#N> — <machine:workspace> <ts>` AVANT d'editer, livrer. Regles completes : [proactive-coordination.md](../rules/proactive-coordination.md) (>=1 PR/wakeup = PLANCHER, variete R6, "rien a faire" avec >0 issues ouvertes = echec de methode).
 
 ### Phase 3 : Travailler et livrer
 

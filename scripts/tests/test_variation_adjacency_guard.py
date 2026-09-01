@@ -209,17 +209,20 @@ def test_override_genre_outside_the_enum_passes_through():
     # successor is kept verbatim rather than dropping the marker. It still
     # lifts, because what makes an override non-vacuous is that it DIFFERS
     # from the blocking genre, not that it sits in the enum.
+    # (#13475 note: the historical example word `documentation` now resolves
+    # to `docs` through the alias table -- replaced with a word that is
+    # still genuinely outside the enum, which is what this test pins.)
     v = vag.check(_BLOCKED, override=_ov(
         "myia-ai-01",
-        "[G-VAR-3 OVERRIDE] lane myia-po-2026:CoursIA -- next: documentation"))
+        "[G-VAR-3 OVERRIDE] lane myia-po-2026:CoursIA -- next: fictioninedit"))
     assert v["guard_pass"] is True
-    assert v["override_next"] == "documentation"
+    assert v["override_next"] == "fictioninedit"
 
 
 def test_last_coordinator_marker_wins():
     ov = vag.parse_override([
         {"author": "myia-po-2026", "body": "[G-VAR-3 OVERRIDE] next: lean"},
-        {"author": "jsboige", "body": "[G-VAR-3 OVERRIDE] next: qc"},
+        {"author": "myia-ai-01", "body": "[G-VAR-3 OVERRIDE] next: qc"},
     ])
     assert ov is not None and ov["next_genre"] == "qc"
     assert vag.check(_BLOCKED, override=ov)["guard_pass"] is True
@@ -335,21 +338,37 @@ def test_well_formed_override_still_lifts_after_12096():
     # so the malformed cases above are provably not passing by accident of
     # a disconnected helper.
     v = vag.check(_BLOCKED, override=_ov(
-        "jsboige", "[G-VAR-3 OVERRIDE] lane myia-po-2026:CoursIA -- next: qc"))
+        "myia-ai-01", "[G-VAR-3 OVERRIDE] lane myia-po-2026:CoursIA -- next: qc"))
     assert v["guard_pass"] is True
     assert v["overridden"] is True
     assert v["override_next"] == "qc"
+
+
+def test_13730_jsboige_is_NOT_a_coordinator_login():
+    # #13730 mirror of #13316: `jsboige` is the shared push identity of
+    # every lane, not a coordinator. A well-formed override authored by
+    # `jsboige` is therefore INVISIBLE to parse_override (worker cannot
+    # self-exempt by section 1 + choice C of #12096), and the gate stays
+    # down. This pins the post-#13316 hardening at the adjacency organ.
+    ov = vag.parse_override([
+        {"author": "jsboige", "body": "[G-VAR-3 OVERRIDE] lane myia-po-2026:CoursIA -- next: qc"},
+    ])
+    assert ov is None  # invisible: shared-identity author is not a coordinator
+    v = vag.check(_BLOCKED, override=ov)
+    assert v["guard_pass"] is False
+    assert v["blocking"] is True
+    assert v["overridden"] is False
 
 
 def test_parse_override_malformed_reasons_distinct():
     # The three malformed clauses produce three DISTINCT reasons -- a single
     # generic "malformed" message would put the diagnosis burden back on the
     # coordinator (#12096: "avec la raison et la forme attendue").
-    r_missing = vag.parse_override([{"author": "jsboige",
+    r_missing = vag.parse_override([{"author": "myia-ai-01",
                                      "body": "[G-VAR-3 OVERRIDE] lane x:y"}])
-    r_offline = vag.parse_override([{"author": "jsboige",
+    r_offline = vag.parse_override([{"author": "myia-ai-01",
                                      "body": "[G-VAR-3 OVERRIDE] lane x:y\nnext: lean"}])
-    r_shape = vag.parse_override([{"author": "jsboige",
+    r_shape = vag.parse_override([{"author": "myia-ai-01",
                                    "body": "[G-VAR-3 OVERRIDE] next: 7days"}])
     assert "manquant" in r_missing["malformed"]
     assert "meme ligne" in r_offline["malformed"]
@@ -446,8 +465,8 @@ def test_13261_malformed_fallback_is_the_MOST_RECENT_rejection():
     # newest-first semantics: the MOST RECENT coordinator rejection is the
     # announced one (its reason is the actionable one).
     ov = vag.parse_override([
-        {"author": "jsboige", "body": "[G-VAR-3 OVERRIDE] lane x:y"},
-        {"author": "jsboige", "body": "[G-VAR-3 OVERRIDE] next: 7days"},
+        {"author": "myia-ai-01", "body": "[G-VAR-3 OVERRIDE] lane x:y"},
+        {"author": "myia-ai-01", "body": "[G-VAR-3 OVERRIDE] next: 7days"},
     ])
     assert ov is not None and "malformed" in ov
     assert "n'est pas un genre" in ov["malformed"]  # the newer, not "manquant"
@@ -631,3 +650,71 @@ def test_merged_sequence_other_lane_ignored():
     ]
     mp = vag.resolve_merged_prev_genre(merged, "myia-po-2026:CoursIA")
     assert mp == (None, None)
+
+
+# --- #13475 : BLOCK fail-CLOSED sur genre inconnu ----------------------------
+#
+# Le trou G-VAR-3 : deux grains declares avec le MEME mot invente comparaient
+# egaux mais echappaient au test d'appartenance a LIGHT_GENRES -- le verdict
+# tombait ADVISORY (autorise), jamais BLOCK. Le remede : le predicat partage
+# `genre_counts_light` (fail-CLOSED -- un genre non resolu compte LIGHT), et
+# la raison nomme GENRE-UNKNOWN pour que l'auteur sache qu'il retague, pas
+# qu'il dispute une adjacence.
+
+
+def test_repeated_invented_genre_blocks():
+    # Controle positif : avant #13475 ce cas rendait adjacent=True,
+    # blocking=False (advisory). Le ban doit s'appliquer aussi aux mots
+    # inventes -- sinon G-VAR-3 reste contournable par choix de mot.
+    v = vag.check(
+        "Grain: LIGHT/zzz-inexistant -- lane myia-po-2023:CoursIA-2 -- prev: LIGHT/zzz-inexistant #1"
+    )
+    assert v["guard_pass"] is False
+    assert v["blocking"] is True
+    assert v["adjacent"] is True
+    # La raison nomme le hors-table : l'action attendue est le retag, pas la
+    # dispute d'adjacence.
+    assert "GENRE-UNKNOWN" in v["reason"]
+
+
+def test_repeated_prose_now_blocks_through_the_alias():
+    # `prose` -> docs (alignement table/texte de regle, #13475) : deux grains
+    # LIGHT/prose consecutifs = adjacence docs/docs = ban absolu. Avant,
+    # prose restait verbatim hors LIGHT_GENRES -> advisory seulement.
+    v = vag.check(
+        "Grain: LIGHT/prose -- lane myia-po-2023:CoursIA-2 -- prev: LIGHT/prose #1"
+    )
+    assert v["guard_pass"] is False
+    assert v["blocking"] is True
+    assert v["genre"] == "docs"
+    assert v["prev_genre"] == "docs"
+
+
+def test_single_unknown_genre_after_different_prev_still_passes():
+    # Le fail-closed ne transforme pas tout en BLOCK : genres differents ->
+    # pas d'adjacence, PASS (le cas G-VAR-2, cap comptable, attrapera le
+    # mot inconnu de son cote).
+    v = vag.check(
+        "Grain: LIGHT/zzz-inexistant -- lane myia-po-2023:CoursIA-2 -- prev: MED/tooling #1"
+    )
+    assert v["guard_pass"] is True
+    assert v["blocking"] is False
+    assert v["adjacent"] is False
+
+
+def test_med_unknown_genre_same_prev_is_advisory_not_blocking():
+    # Reserve ai-01 sur #13585 (demande 2) : un grain MED declare dont le mot
+    # de genre est hors-table, consecutif au MEME mot hors-table, ne declenche
+    # PAS le ban G-VAR-3 -- le tier MED declare se lit sans ambiguite, le
+    # retag est demande par le ledger GENRE-UNKNOWN, pas par une requalification
+    # en LIGHT. Le cas LIGHT reste bloquant (fail-CLOSED d'origine #13475).
+    body_med = "Grain: MED/secrets -- lane myia-po-2026:CoursIA -- prev: MED/secrets 13540"
+    v = vag.check(body_med)
+    assert v["guard_pass"] is True
+    assert v["blocking"] is False
+    assert v["adjacent"] is True
+    assert "advisory" in v["reason"]
+    body_light = "Grain: LIGHT/secrets -- lane myia-po-2026:CoursIA -- prev: LIGHT/secrets 13540"
+    v2 = vag.check(body_light)
+    assert v2["guard_pass"] is False
+    assert v2["blocking"] is True

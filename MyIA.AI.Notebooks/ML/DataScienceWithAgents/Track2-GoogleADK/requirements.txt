@@ -1,7 +1,7 @@
 # Track2-GoogleADK - Dépendances Multi-Provider
 
 # === Abstraction LLM ===
-litellm>=1.40.0
+litellm==1.93.0
 
 # === LangChain (Track1-LangChain) ===
 langchain>=0.3.0
@@ -11,11 +11,11 @@ langchain-experimental>=0.3.0
 # === Google Gemini ===
 google-generativeai>=0.8.0
 
-# === OpenAI Compatible ===
-openai>=1.0.0
+# === OpenAI Compatible (pin LiteLLM 1.83.14) ===
+openai==2.24.0
 
-# === Google ADK (optionnel, Day 7) ===
-google-adk>=0.3.0
+# === Google ADK (runtime central du Track 2) ===
+google-adk==2.8.0
 
 # === Data Science ===
 pandas>=2.0.0
@@ -37,7 +37,7 @@ duckduckgo-search>=4.0.0
 
 # === Configuration ===
 python-dotenv>=1.0.0
-pydantic>=2.0.0
+pydantic==2.12.5
 pydantic-settings>=2.0.0
 
 # === Jupyter ===
