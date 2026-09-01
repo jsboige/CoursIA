@@ -61,6 +61,8 @@ import Grothendieck.SheafConditionInvariance
 import Grothendieck.SheafConditionInvariance_en
 import Grothendieck.SheafHom
 import Grothendieck.Sheafification
+import Grothendieck.SheafTopologySpectrum
+import Grothendieck.SheafTopologySpectrum_en
 import Grothendieck.SieveGenerate
 import Grothendieck.SieveLattice
 import Grothendieck.SieveOps
