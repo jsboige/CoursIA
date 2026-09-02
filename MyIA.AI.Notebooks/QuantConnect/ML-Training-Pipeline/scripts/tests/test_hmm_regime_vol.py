@@ -30,7 +30,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import hmm_regime_vol  # noqa: E402
 from hmm_regime_vol import (  # noqa: E402
+    _aggregate_debiased_state,
     _dm_centered_mse,
+    _is_beaten,
     _is_beats,
     _mse_decomposition,
     _require_hmmlearn,
@@ -336,6 +338,17 @@ class TestArtefactStaysLean:
             assert "_series" not in row, "the series must not bloat the artefact"
             assert "dm_centered_verdict" in row
 
+        # The published tables carry a "seeds BEATEN (rec.)" column; it has to
+        # be readable back from the artefact, not only recomputable by hand.
+        aggregate = [r for r in payload["results"] if r.get("seed") == "aggregate"]
+        assert aggregate, "an aggregate row is expected"
+        for row in aggregate:
+            assert "n_beaten_seeds_centered" in row
+            n_beats, n_seeds = (int(x) for x in row["n_beats_seeds_centered"].split("/"))
+            n_beaten, n_seeds_b = (int(x) for x in row["n_beaten_seeds_centered"].split("/"))
+            assert n_seeds == n_seeds_b == row["n_seeds"]
+            assert n_beats + n_beaten <= n_seeds, "a seed cannot both win and lose"
+
         frame = pd.read_csv(out_csv)
         assert set(frame.columns) >= {
             "coin", "horizon", "seed", "date", "pred_regime", "pred_classic", "target",
@@ -383,3 +396,148 @@ class TestHmmlearnGuard:
         """The mutation above must be what makes it fire -- not the call itself."""
         assert hmm_regime_vol.GaussianHMM is not None, "hmmlearn absent in this env"
         _require_hmmlearn()  # must not raise
+
+
+# --------------------------------------------------------------------------
+# The aggregated state machine
+#
+# The de-biased leg had three states and none of them was a loss: with no
+# branch for "every seed is BEATEN", the four long-horizon configs published
+# as `NO BEATS` were persisted as `INCONCLUSIVE`. The doc, the REGISTRY and
+# the body said one thing, the executable said another -- and no test held
+# the aggregation, only `_is_beats` and the per-seed legs. These tests pin
+# the four states symmetrically, and each silence is paired with a mutation
+# that changes only the count under test.
+# --------------------------------------------------------------------------
+
+# The published table of docs/M5_HMM_REGIME.md (de-biased leg, 4 seeds):
+# (coin, horizon, n_beats_centered, n_beaten_centered, dm_centered_p_median,
+#  n_beats_raw, published verdict)
+PUBLISHED_DEBIASED = [
+    ("BTC-USD", 1, 3, 0, 1.47e-03, 3, "INCONCLUSIVE"),
+    ("BTC-USD", 5, 0, 4, 6.21e-06, 0, "NO BEATS"),
+    ("BTC-USD", 10, 0, 4, 1.75e-09, 0, "NO BEATS"),
+    ("ETH-USD", 1, 4, 0, 1.14e-05, 4, "BEATS"),
+    ("ETH-USD", 5, 0, 4, 6.16e-04, 0, "NO BEATS"),
+    ("ETH-USD", 10, 0, 4, 4.10e-05, 0, "NO BEATS"),
+]
+
+
+class TestIsBeaten:
+    """The mirror of `TestIsBeats`: a loss must be counted as a loss."""
+
+    def test_beaten_is_a_loss(self):
+        assert _is_beaten("BEATEN BY baseline")
+
+    def test_beats_is_not_a_loss(self):
+        """The token that made `_is_beats` need an exclusion clause."""
+        assert not _is_beaten("BEATS baseline")
+
+    def test_inconclusive_is_not_a_loss(self):
+        assert not _is_beaten("INCONCLUSIVE")
+
+    @pytest.mark.parametrize("sentinel", ["SHAPE_MISMATCH", "INSUFFICIENT_DATA"])
+    def test_sentinels_are_neither_win_nor_loss(self, sentinel):
+        """A refused verdict must not be silently counted on either side."""
+        assert not _is_beats(sentinel)
+        assert not _is_beaten(sentinel)
+
+
+class TestAggregatedDebiasedState:
+    @pytest.mark.parametrize(
+        "coin,horizon,n_beats,n_beaten,p_median,n_beats_raw,published",
+        PUBLISHED_DEBIASED,
+    )
+    def test_reproduces_every_published_verdict(
+        self, coin, horizon, n_beats, n_beaten, p_median, n_beats_raw, published,
+    ):
+        """The executable must reproduce the table the doc publishes.
+
+        This is the defect this class closes: the four `NO BEATS` rows came
+        out of the harness as `INCONCLUSIVE`, so the published verdict was not
+        reproducible from the deliverable that produced it.
+        """
+        assert _aggregate_debiased_state(
+            n_beats_centered=n_beats,
+            n_beaten_centered=n_beaten,
+            n_seeds=4,
+            dm_centered_p_median=p_median,
+            n_beats_raw=n_beats_raw,
+        ) == published
+
+    def test_unanimous_loss_is_no_beats(self):
+        assert _aggregate_debiased_state(
+            n_beats_centered=0, n_beaten_centered=4, n_seeds=4,
+            dm_centered_p_median=1e-04, n_beats_raw=0,
+        ) == "NO BEATS"
+
+    def test_majority_loss_is_not_no_beats(self):
+        """The mandatory negative control: only the count changes.
+
+        3/4 BEATEN is the same configuration as the test above with one seed
+        moved out of the loss column. An exemption that cannot close again is
+        not an exemption -- so the state must fall back to INCONCLUSIVE.
+        """
+        assert _aggregate_debiased_state(
+            n_beats_centered=0, n_beaten_centered=3, n_seeds=4,
+            dm_centered_p_median=1e-04, n_beats_raw=0,
+        ) == "INCONCLUSIVE"
+
+    def test_majority_win_is_not_beats(self):
+        """The symmetric negative control on the winning side."""
+        assert _aggregate_debiased_state(
+            n_beats_centered=3, n_beaten_centered=0, n_seeds=4,
+            dm_centered_p_median=1e-04, n_beats_raw=3,
+        ) == "INCONCLUSIVE"
+
+    def test_refuted_when_the_raw_leg_won_alone(self):
+        """A raw 4/4 win that the precision leg does not confirm."""
+        assert _aggregate_debiased_state(
+            n_beats_centered=2, n_beaten_centered=0, n_seeds=4,
+            dm_centered_p_median=0.30, n_beats_raw=4,
+        ) == "refuted-de-biased"
+
+    def test_no_beats_outranks_refuted_when_both_apply(self):
+        """Precedence, decided once and sealed here.
+
+        A raw 4/4 win whose precision leg significantly REVERSES it satisfies
+        both branches. `NO BEATS` wins: "refuted" says a claim is unconfirmed,
+        the measurement says the model loses, and reporting the weaker of the
+        two would soften a measured loss. The refutation stays visible because
+        the summary row prints the raw verdict beside it.
+        """
+        assert _aggregate_debiased_state(
+            n_beats_centered=0, n_beaten_centered=4, n_seeds=4,
+            dm_centered_p_median=1e-06, n_beats_raw=4,
+        ) == "NO BEATS"
+
+    @pytest.mark.parametrize(
+        "n_beats,n_beaten", [(4, 0), (0, 4)],
+    )
+    def test_insignificant_median_blocks_both_unanimous_states(self, n_beats, n_beaten):
+        """The significance clause applies to the loss exactly as to the win."""
+        state = _aggregate_debiased_state(
+            n_beats_centered=n_beats, n_beaten_centered=n_beaten, n_seeds=4,
+            dm_centered_p_median=0.20, n_beats_raw=0,
+        )
+        assert state == "INCONCLUSIVE"
+
+    def test_zero_seeds_is_not_a_vacuous_unanimity(self):
+        """`0 == 0` must not read as "every seed agreed"."""
+        assert _aggregate_debiased_state(
+            n_beats_centered=0, n_beaten_centered=0, n_seeds=0,
+            dm_centered_p_median=float("nan"), n_beats_raw=0,
+        ) == "INCONCLUSIVE"
+
+    def test_every_state_is_reachable(self):
+        """The four documented states, and no fifth one."""
+        reached = {
+            _aggregate_debiased_state(
+                n_beats_centered=b, n_beaten_centered=n, n_seeds=4,
+                dm_centered_p_median=p, n_beats_raw=r,
+            )
+            for b, n, p, r in [
+                (4, 0, 1e-06, 4), (0, 4, 1e-06, 0), (2, 0, 0.30, 4), (1, 1, 0.30, 0),
+            ]
+        }
+        assert reached == {"BEATS", "NO BEATS", "refuted-de-biased", "INCONCLUSIVE"}

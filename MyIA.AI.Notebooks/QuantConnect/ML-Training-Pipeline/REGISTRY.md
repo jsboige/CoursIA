@@ -421,7 +421,9 @@ CSV hors dépôt, 37 040 lignes pour la grille complète).
 - **Run** : `python scripts/hmm_regime_vol.py --coins BTC-USD ETH-USD --horizons 1 5 10 --seeds 0 7 42 99 --out results/m5_hmm_regime_debiased/results_full.json --dump-series results/m5_hmm_regime_debiased/series_full.csv` — 331,6 s CPU, 24/24 combinaisons, 5 folds chacune, 30 lignes JSON (24 par seed + 6 agrégats).
 - **Vérification** : `MSE = biais² + variance` recalculé par ligne (tolérance 1e-12) ; identité
   `d_brut − d_recentré = biais_a² − biais_b²` vérifiée numériquement (résidu ~1e-17) et scellée en
-  test paramétré ; 22 tests dans `scripts/tests/test_hmm_regime_vol.py`, voisins `test_btc_vol.py` /
+  test paramétré ; les six verdicts publiés ci-dessous sont rejoués depuis la machine d'états agrégée
+  (`_aggregate_debiased_state`), avec contrôles négatifs 3/4 des deux côtés ; 45 tests dans
+  `scripts/tests/test_hmm_regime_vol.py`, voisins `test_btc_vol.py` /
   `test_diebold_mariano.py` / `test_har_model.py` / `test_dlinear_debiased_edge.py` verts (57).
 - **Verdict §C hors biais** : **1/6 BEATS (ETH h=1, `confirmed`), 1/6 INCONCLUSIVE, 4/6 NO BEATS**.
 

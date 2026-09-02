@@ -89,6 +89,65 @@ def _is_beats(verdict: str) -> bool:
     return "BEATS" in verdict and "BEATEN" not in verdict
 
 
+def _is_beaten(verdict: str) -> bool:
+    """True only for `dm_verdict`'s losing verdict ("BEATEN BY baseline").
+
+    The mirror of `_is_beats`. "BEATEN" appears in exactly one of the three
+    strings `dm_verdict` emits, so no exclusion clause is needed here -- but
+    the guard rails of `_is_beats` still apply the other way round: the two
+    sentinel verdicts this module adds ("SHAPE_MISMATCH", "INSUFFICIENT_DATA")
+    contain neither token and are therefore counted as neither win nor loss.
+    """
+    return "BEATEN" in verdict
+
+
+def _aggregate_debiased_state(
+    n_beats_centered: int,
+    n_beaten_centered: int,
+    n_seeds: int,
+    dm_centered_p_median: float,
+    n_beats_raw: int,
+) -> str:
+    """Aggregate the de-biased (precision) leg into one of four states.
+
+    The three-state machine this replaces could not express a loss: with no
+    branch for "every seed is BEATEN", the four long-horizon configs that the
+    doc and REGISTRY publish as `NO BEATS` (4/4 seeds BEATEN on the centered
+    leg) were persisted as `INCONCLUSIVE`. The executable deliverable could
+    not reproduce its own published verdict.
+
+    Precedence, decided once here and sealed by tests:
+
+    1. unanimous BEATS + significant median  -> "BEATS"
+    2. unanimous BEATEN + significant median -> "NO BEATS"
+    3. the RAW leg was unanimous BEATS       -> "refuted-de-biased"
+    4. otherwise                             -> "INCONCLUSIVE"
+
+    `NO BEATS` deliberately outranks `refuted-de-biased` when both apply (a raw
+    win that the precision leg significantly reverses). "Refuted" states that a
+    claim was not confirmed; the measurement in that case says more than that --
+    it says the model loses. Reporting the weaker of the two would soften a
+    measured loss, and the refutation stays legible anyway because every summary
+    row prints the raw and the de-biased verdict side by side.
+
+    The significance clause is redundant under unanimity (each per-seed BEATS /
+    BEATEN already carries p < alpha, so the median of them does too) and is
+    kept explicit only because the pre-existing BEATS branch stated it: an
+    asymmetric pair of conditions would read as a deliberate difference.
+
+    `n_seeds == 0` yields "INCONCLUSIVE" rather than a vacuous unanimity.
+    """
+    if n_seeds <= 0:
+        return "INCONCLUSIVE"
+    if n_beats_centered == n_seeds and dm_centered_p_median < 0.05:
+        return "BEATS"
+    if n_beaten_centered == n_seeds and dm_centered_p_median < 0.05:
+        return "NO BEATS"
+    if n_beats_raw == n_seeds:
+        return "refuted-de-biased"
+    return "INCONCLUSIVE"
+
+
 def _mse_decomposition(errors: np.ndarray) -> dict:
     """Decompose MSE of a forecast into bias^2 + variance on the error support."""
     if errors is None or len(errors) == 0:
@@ -536,6 +595,7 @@ def main(argv: list[str] | None = None) -> None:
             n_seeds = len(seed_results)
             n_beats = sum(1 for r in seed_results if _is_beats(r["dm_verdict"]))
             n_beats_centered = sum(1 for r in seed_results if _is_beats(r["dm_centered_verdict"]))
+            n_beaten_centered = sum(1 for r in seed_results if _is_beaten(r["dm_centered_verdict"]))
             mean_reduction = np.mean([r["mse_reduction_pct"] for r in seed_results])
             mean_reduction_debiased = np.mean(
                 [r["mse_reduction_pct_vs_debiased_classic"] for r in seed_results]
@@ -550,20 +610,31 @@ def main(argv: list[str] | None = None) -> None:
             # The §C conjunction verdict: the edge must survive the precision
             # leg. An edge that only exists against a mis-calibrated baseline
             # is reported as `refuted-de-biased`, the wording #12788 used when
-            # M15 failed this same control -- never quietly downgraded.
-            if n_beats_centered == n_seeds and dm_centered_p_median < 0.05:
-                agg_verdict_centered = "BEATS"
-            elif n_beats == n_seeds:
-                agg_verdict_centered = "refuted-de-biased"
-            else:
-                agg_verdict_centered = "INCONCLUSIVE"
+            # M15 failed this same control -- never quietly downgraded; a leg
+            # on which every seed LOSES is `NO BEATS`, the §C vocabulary.
+            #
+            # `aggregate_verdict` (raw leg) deliberately keeps its two-state
+            # convention: `m5_hmm_regime_research.ipynb` publishes it as "BEATS
+            # exige 4/4 seeds, sinon INCONCLUSIVE" and derives its own DEGRADE
+            # reading from it, so widening it would silently invalidate that
+            # notebook's committed counts (a re-run of the artefact plus a
+            # re-execution of the notebook). Filed as #14388 rather than folded
+            # into a bias-audit PR.
+            agg_verdict_centered = _aggregate_debiased_state(
+                n_beats_centered=n_beats_centered,
+                n_beaten_centered=n_beaten_centered,
+                n_seeds=n_seeds,
+                dm_centered_p_median=dm_centered_p_median,
+                n_beats_raw=n_beats,
+            )
             print(
                 f"    >> AGGREGATE: {n_beats}/{n_seeds} seeds beat classic, "
                 f"mean reduction={mean_reduction:+.1f}%, "
                 f"verdict={agg_verdict}"
             )
             print(
-                f"    >> DE-BIASED: {n_beats_centered}/{n_seeds} seeds beat on the precision leg, "
+                f"    >> DE-BIASED: {n_beats_centered}/{n_seeds} seeds beat "
+                f"({n_beaten_centered}/{n_seeds} beaten) on the precision leg, "
                 f"mean reduction vs de-biased classic={mean_reduction_debiased:+.1f}%, "
                 f"DM-centered p_median={dm_centered_p_median:.2e}, "
                 f"verdict={agg_verdict_centered}"
@@ -580,6 +651,9 @@ def main(argv: list[str] | None = None) -> None:
                 "aggregate_verdict": agg_verdict,
                 # --- de-biased / precision leg (#1454 sub-grain) ------------
                 "n_beats_seeds_centered": f"{n_beats_centered}/{n_seeds}",
+                # The published tables carry a "seeds BEATEN (rec.)" column;
+                # without this field it could not be read back from the artefact.
+                "n_beaten_seeds_centered": f"{n_beaten_centered}/{n_seeds}",
                 "mean_classic_mse_debiased": float(mean_classic_mse_debiased),
                 "mean_reduction_pct_vs_debiased_classic": float(mean_reduction_debiased),
                 "dm_centered_p_median": dm_centered_p_median,

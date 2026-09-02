@@ -51,7 +51,7 @@ Where:
 | File | Role |
 |------|------|
 | `scripts/hmm_regime_vol.py` | HMM regime-switching HAR model + walk-forward runner + instrumentation de biais |
-| `scripts/tests/test_hmm_regime_vol.py` | Tests du contrat de sortie et de la jambe recentrée (22 tests) |
+| `scripts/tests/test_hmm_regime_vol.py` | Tests du contrat de sortie, de la jambe recentrée et de la machine d'états agrégée (45 tests) |
 | `scripts/results/m5_hmm_regime.json` | Full results (609s runtime) |
 | `docs/M5_HMM_REGIME.md` | This document |
 
@@ -110,6 +110,28 @@ recalculées à l'identique et les colonnes ci-dessous s'y ajoutent.
 | ETH-USD | 1  |  +9,6 % |  **+8,7 %** |  2,11 pt | **4,1σ** | 4/4 | 0/4 | 1,14e-05 | **BEATS** |
 | ETH-USD | 5  | −17,9 % | **−23,4 %** |  3,85 pt | 6,1σ | 0/4 | 4/4 | 6,16e-04 | **NO BEATS** |
 | ETH-USD | 10 | −53,0 % | **−66,2 %** | 14,70 pt | 4,5σ | 0/4 | 4/4 | 4,10e-05 | **NO BEATS** |
+
+La colonne « Verdict hors biais » **est** le champ `aggregate_verdict_debiased` de l'artefact JSON, et
+non une lecture faite à la main par-dessus : les six lignes ci-dessus sont rejouées depuis
+`_aggregate_debiased_state` dans `scripts/tests/test_hmm_regime_vol.py`. La machine a quatre états —
+
+| État | Condition | Sens |
+|------|-----------|------|
+| `BEATS` | 4/4 seeds BEATS sur la jambe recentrée **et** `dm_p_median < 0,05` | l'edge survit au contrôle de précision |
+| `NO BEATS` | 4/4 seeds BEATEN **et** `dm_p_median < 0,05` | le modèle perd, significativement |
+| `refuted-de-biased` | la jambe **brute** était 4/4 BEATS, la recentrée ne confirme pas | l'edge n'existait que contre une ligne de base mal calibrée (formulation #12788) |
+| `INCONCLUSIVE` | tout le reste (dont 3/4 d'un côté ou l'autre) | pas d'unanimité |
+
+`NO BEATS` l'emporte sur `refuted-de-biased` quand les deux s'appliquent : « réfuté » dit qu'une
+prétention n'est pas confirmée, la mesure dit que le modèle perd — et la réfutation reste lisible
+puisque chaque ligne imprime le verdict brut à côté du recentré. Le décompte des pertes est persisté
+(`n_beaten_seeds_centered`), donc la colonne « seeds BEATEN (rec.) » se relit depuis l'artefact.
+
+Le champ `aggregate_verdict` (jambe **brute**) garde délibérément sa convention publiée à deux états
+(« BEATS exige 4/4 seeds, sinon INCONCLUSIVE ») : `m5_hmm_regime_research.ipynb` la documente et en
+dérive sa propre lecture `DEGRADE`, qu'un élargissement invaliderait en silence (il faudrait
+re-générer l'artefact puis ré-exécuter le notebook). L'asymétrie est assumée et suivie en **#14388**,
+pas un oubli.
 
 **Rapport de biais signé, par modèle (contrôle §C(7))** — le biais est celui du log-RV OOS :
 
