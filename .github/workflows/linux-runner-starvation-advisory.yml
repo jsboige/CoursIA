@@ -1,0 +1,50 @@
+name: Linux runner starvation advisory
+
+# Organe d'extinction des runners Linux self-hosted (#13378, dispatch ai-01
+# 2026-09-02). Le 2026-09-02 entre ~07:00 et 10:25 UTC, le superviseur de
+# conteneurs de myia-po-2024 est mort silencieusement : 11 des 12 workflows
+# routes sur `coursia-linux` sont bloquants, donc un superviseur mort n'a pas
+# degrade le CI -- il l'a arrete (3 PRs de contenu rouges ~35 h sur ce seul
+# fait). Rien ne le mesurait. Cet observateur existe pour le dire.
+#
+# Pourquoi un schedule DEDIE et ubuntu-latest : il doit survivre a ce qu'il
+# observe -- un observateur qui tournerait sur le label garde mourrait avec
+# lui, et un job du workflow surveille n'est pas un observateur. Le predicat
+# (scripts/ci/check_runner_starvation.py) mesure le SYMPTOME (jobs libelles
+# queued > 15 min SANS aucun in_progress = la file ne drainne pas) avec le
+# seul GITHUB_TOKEN, et l'EXTINCTION directe (zero runner online au label,
+# via le secret read-only RUNNERS_READ_PAT, Administration:read -- incapable
+# de minter un registration-token, par design). Sans PAT, l'organe degrade
+# proprement sur le seul symptome.
+#
+# Advisory PAR CONSTRUCTION : schedule + workflow_dispatch uniquement, jamais
+# pull_request/push -- un run rouge ne peut jamais bloquer une PR. Le nom
+# porte "advisory" (ADVISORY_MARKER, cf pr-gate-sweep-health-advisory.yml).
+# Le cron est a l'offset des sweeps 13,43 pour ne jamais les collider.
+
+on:
+  schedule:
+    - cron: '19,49 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read   # checkout du script
+  actions: read    # lecture des runs/jobs (predicat STARVATION)
+
+concurrency:
+  group: linux-runner-starvation-advisory
+  cancel-in-progress: false
+
+jobs:
+  starve:
+    name: Linux runner starvation advisory
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Measure starvation on coursia-linux
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUNNERS_READ_PAT: ${{ secrets.RUNNERS_READ_PAT }}
+          STARVE_MINUTES: "15"
+        run: python scripts/ci/check_runner_starvation.py
