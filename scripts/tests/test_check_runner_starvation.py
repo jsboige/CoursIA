@@ -162,7 +162,7 @@ def test_starvation_beyond_first_page_is_seen(monkeypatch):
                     _run_row(rid, 0.1 * (rid % 100), now) for rid in range(rs.RUNS_PAGE_SIZE)
                 ]}
             return {"total_count": 102, "workflow_runs": [
-                _run_row(60, 20.0, now), _run_row(61, 21.0, now)
+                _run_row(160, 20.0, now), _run_row(161, 21.0, now)
             ]}
         if "status=in_progress" in url:
             return {"total_count": 0, "workflow_runs": []}
@@ -230,6 +230,96 @@ def test_job_created_at_anchors_age_over_run_created_at(monkeypatch):
     st = rs.fetch_starvation("jsboige/CoursIA", "coursia-linux", 15.0, now=now)
     assert st.starved == []
     assert st.in_progress == []
+
+
+def test_queued_job_inside_in_progress_run_is_seen(monkeypatch):
+    """Falsification du faux negatif mixte (po-2025, 2026-09-02) : un run
+    in_progress dont le job coursia-linux est reste queued. L'ancien filtre
+    classait le job par le statut du RUN -> invisible aux deux passes, verdict
+    OK possible sous extinction ciblee de la jambe Linux."""
+    now = datetime(2026, 9, 2, 12, 0, tzinfo=timezone.utc)
+
+    def fake_gh(args: list[str], token: str | None = None):
+        url = args[0]
+        if "status=queued" in url:
+            return {"total_count": 0, "workflow_runs": []}
+        if "status=in_progress" in url:
+            # Run in_progress (40 min) -- l'autre job (ubuntu) draine, le
+            # job du label attend depuis 30 min : extinction ciblee.
+            return {"total_count": 1, "workflow_runs": [_run_row(90, 40.0, now)]}
+        if "/jobs" in url:
+            return {"jobs": [
+                {"name": "guard-ubuntu", "status": "in_progress",
+                 "labels": ["ubuntu-latest"]},
+                {"name": "guard-linux", "status": "queued",
+                 "labels": ["self-hosted", "coursia-linux"],
+                 "created_at": (now - timedelta(minutes=30)).isoformat()},
+            ]}
+        return None
+
+    monkeypatch.setattr(rs, "_gh_json", fake_gh)
+    st = rs.fetch_starvation("jsboige/CoursIA", "coursia-linux", 15.0, now=now)
+    assert len(st.starved) == 1
+    assert st.starved[0].job_name == "guard-linux"
+    assert st.starved[0].age_min is not None and st.starved[0].age_min > 29
+    assert st.in_progress == []  # le job ubuntu est hors label
+
+
+def test_run_transition_between_passes_replaces_classification(monkeypatch):
+    """Un run qui transite queued -> in_progress entre les deux passes API
+    revient dans les deux listes. Le second passage est le plus frais : son
+    observation REMPLACE la premiere -- un job compte affame puis passe
+    in_progress doit quitter la liste des affames (faux positif sinon), et un
+    job reste queued n'est compte qu'une fois (faux double sinon)."""
+    now = datetime(2026, 9, 2, 12, 0, tzinfo=timezone.utc)
+    # Pass 1 (queued) : le job du label attend depuis 30 min.
+    # Pass 2 (in_progress, plus frais) : le job a demarre.
+    state = {"pass": 0}
+
+    def fake_gh(args: list[str], token: str | None = None):
+        url = args[0]
+        if "status=queued" in url or "status=in_progress" in url:
+            state["pass"] += 1
+            return {"total_count": 1, "workflow_runs": [_run_row(90, 40.0, now)]}
+        if "/jobs" in url:
+            job_status = "queued" if state["pass"] == 1 else "in_progress"
+            return {"jobs": [
+                {"name": "guard", "status": job_status,
+                 "labels": ["self-hosted", "coursia-linux"]},
+            ]}
+        return None
+
+    monkeypatch.setattr(rs, "_gh_json", fake_gh)
+    st = rs.fetch_starvation("jsboige/CoursIA", "coursia-linux", 15.0, now=now)
+    assert st.starved == []
+    assert len(st.in_progress) == 1
+    assert st.in_progress[0].job_name == "guard"
+
+
+def test_job_seen_in_both_passes_is_counted_once(monkeypatch):
+    """Run encore queued au second passage (pas de transition) : le meme job
+    affame ne doit pas etre compte deux fois."""
+    now = datetime(2026, 9, 2, 12, 0, tzinfo=timezone.utc)
+
+    def fake_gh(args: list[str], token: str | None = None):
+        url = args[0]
+        if "status=queued" in url:
+            return {"total_count": 1, "workflow_runs": [_run_row(90, 40.0, now)]}
+        if "status=in_progress" in url:
+            # Transition run-level vue par l'API : le run reparait en
+            # in_progress alors que son job est TOUJOURS queued (attente
+            # runner, besoin needs: long).
+            return {"total_count": 1, "workflow_runs": [_run_row(90, 40.0, now)]}
+        if "/jobs" in url:
+            return {"jobs": [
+                {"name": "guard", "status": "queued",
+                 "labels": ["self-hosted", "coursia-linux"]},
+            ]}
+        return None
+
+    monkeypatch.setattr(rs, "_gh_json", fake_gh)
+    st = rs.fetch_starvation("jsboige/CoursIA", "coursia-linux", 15.0, now=now)
+    assert len(st.starved) == 1
 
 
 def test_unexamined_old_runs_are_noted_not_red():

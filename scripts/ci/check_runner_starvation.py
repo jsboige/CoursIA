@@ -32,7 +32,11 @@ collecte pagine donc jusqu'a WINDOW_MAX_MINUTES (les runs plus vieux sont
 la classe ABANDONNEE, notee sans jamais rougir : rougir dessus serait le
 rouge permanent que la garde anti-FP interdit). L'age d'un job s'ancre sur
 jobs[].created_at (un job debloque tard par needs: a attendu moins que le
-run n'est vieux), avec repli sur run.created_at.
+run n'est vieux), avec repli sur run.created_at. Chaque job est classe par
+SON PROPRE statut sur l'union dedupliquee des runs queued/in_progress : un
+run in_progress peut porter un job du label reste queued (extinction ciblee
+de la jambe Linux pendant que les autres jobs du run progressent) -- le
+classer par le statut du run le rendait invisible aux deux passes.
 
 Le predicat STARVATION ne demande aucun secret ; le predicat EXTINCTION lit
 `/actions/runners` via RUNNERS_READ_PAT (pose 2026-09-02T08:26Z, deliberement
@@ -153,7 +157,19 @@ def fetch_starvation(
     now = now or datetime.now(timezone.utc)
     result = Starvation()
 
-    for status, bucket in (("queued", "starved"), ("in_progress", "in_progress")):
+    # Union dedupliquee des runs queued + in_progress, chaque JOB classe par
+    # SON PROPRE statut (faux negatif reproduit par po-2025, 2026-09-02 : un
+    # run in_progress peut porter un job coursia-linux reste queued --
+    # extinction ciblee de la jambe Linux pendant que les jobs GitHub-hosted
+    # du meme run progressent ; le classer par le statut du RUN le rendait
+    # invisible aux deux passes). Un run peut transiter queued -> in_progress
+    # ENTRE les deux passes : il faut donc re-examiner ses jobs au second
+    # passage -- la dedup vit au niveau JOB (cle run_id+nom), l'observation
+    # la plus recente REMPLACE la precedente (un job compte affame puis passe
+    # in_progress doit quitter la liste des affames, sinon faux positif).
+    seen_runs: set[int] = set()
+    seen_jobs: dict[tuple[int, str], JobRow] = {}
+    for status in ("queued", "in_progress"):
         # Query params inline : `-f` forcerait un POST sur un endpoint GET.
         page = 1
         total: int | None = None
@@ -189,14 +205,18 @@ def fetch_starvation(
                     # Classe ABANDONNEE, pas affamee : hors predicat (rouge
                     # permanent sinon, cf docstring). Comptee, jamais examinee.
                     continue
-                examined += 1
-                jobs = _gh_json([f"repos/{repo}/actions/runs/{run.get('id')}/jobs?filter=latest"])
+                rid = run.get("id")
+                if rid not in seen_runs:
+                    seen_runs.add(rid)
+                    examined += 1
+                jobs = _gh_json([f"repos/{repo}/actions/runs/{rid}/jobs?filter=latest"])
                 if not isinstance(jobs, dict):
                     continue
                 for job in jobs.get("jobs", []):
                     if label not in job.get("labels", []):
                         continue
-                    if job.get("status") != status:
+                    job_status = job.get("status")
+                    if job_status not in ("queued", "in_progress"):
                         continue
                     # Ancrage par JOB : un job debloque tard (needs:, matrice
                     # differree) a attendu moins que le run n'est vieux --
@@ -207,15 +227,24 @@ def fetch_starvation(
                     row = JobRow(
                         workflow=run.get("name", "?"),
                         run_number=run.get("run_number", 0),
-                        run_id=run.get("id", 0),
+                        run_id=rid or 0,
                         job_name=job.get("name", "?"),
-                        status=status,
+                        status=job_status,
                         age_min=age_min,
                     )
-                    if bucket == "in_progress":
+                    key = (rid or 0, row.job_name)
+                    old = seen_jobs.get(key)
+                    if old is not None:
+                        if old in result.starved:
+                            result.starved.remove(old)
+                        if old in result.in_progress:
+                            result.in_progress.remove(old)
+                    seen_jobs[key] = row
+                    if job_status == "queued":
+                        if age_min > starve_minutes:
+                            result.starved.append(row)
+                    else:
                         result.in_progress.append(row)
-                    elif age_min > starve_minutes:
-                        result.starved.append(row)
             if last_page:
                 break
             page += 1
