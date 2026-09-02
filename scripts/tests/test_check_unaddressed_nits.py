@@ -3928,3 +3928,55 @@ def test_14130_mutation_si_pattern_retire_le_test_rougit():
         )
     finally:
         mod._MENTION_VERDICT_REPORTED = saved_reported
+
+
+def test_13951_concern1_corps_contradictoire_avec_marqueur_prose_ne_passe_pas():
+    """#13951 Concern 1 (NanoClaw structural review) : un corps CONTRADICTOIRE
+    pose `[Hermes] COMMENT_WITH_CONCERNS` + rien de bloquant MAIS contient
+    aussi un CONCERN_MARKER prose vivant (avant merge, a changer).
+    L'exemption NE DOIT PAS s'appliquer : un concern prose emis dans la meme
+    review ne doit pas etre ecrase par la phrase de non-blocage.
+
+    Reproduit verbatim le piege identifie par NanoClaw dans la review
+    COMMENTED du 2026-09-02T01:18:42Z :
+    ``[Hermes] COMMENT_WITH_CONCERNS -- fond solide, rien de bloquant. En
+    revanche, corriger le lien mort du README avant merge.``
+    Avant le fix (commit ``fdd589cac``), l'exemption s'appliquait et
+    ``classify`` rendait None -- la phrase rien de bloquant ecrasait le
+    marqueur avant merge (CONCERN_MARKER prose vivant). Apres le fix,
+    ``_sole_live_concern_is_comment_prefix`` detecte le residuel et fait
+    tomber l'exemption, ce qui laisse classify rendre ``BOT-CONCERN``.
+    """
+    body_prose = (
+        "[Hermes] COMMENT_WITH_CONCERNS -- fond solide, rien de bloquant. "
+        "En revanche, corriger le lien mort du README avant merge."
+    )
+    # Les trois pre-conditions de l'exemption sont reunies :
+    assert mod._comment_only_prefix(body_prose) is True
+    assert mod._review_explicit_non_blocking(body_prose) is True
+    # ... MAIS le 4e helper detecte le marqueur prose avant merge :
+    assert mod._sole_live_concern_is_comment_prefix(body_prose) is False
+    # Verdict final : BOT-CONCERN (pas None) -- la phrase de non-blocage n'a
+    # pas ecrase le concern vivant.
+    assert mod.classify("jsboige", body_prose) == "BOT-CONCERN"
+
+
+def test_13951_concern1_glyphe_severite_avec_rien_de_bloquant_ne_passe_pas():
+    """#13951 Concern 1 (NanoClaw) : variante glyphe. Un corps pose
+    `[Hermes] COMMENT_WITH_CONCERNS` + rien de bloquant + glyphe (constat
+    substantiel). L'exemption NE DOIT PAS s'appliquer : un glyphe de
+    severite emis dans la meme review ne doit pas etre ecrase.
+
+    Reproduit la 2e classe de piege listee par NanoClaw dans la review
+    COMMENTED du 2026-09-02T01:18:42Z -- Meme classe pour glyphe (constat
+    substantiel promu, #12143) coexistant avec rien de bloquant.
+    """
+    body_glyphe = (
+        "[Hermes] COMMENT_WITH_CONCERNS -- diff coherent, rien de bloquant.\n"
+        "\U0001F7E1 la cellule 12 merite un refactor (commentaire FYI, hors gate)."
+    )
+    assert mod._comment_only_prefix(body_glyphe) is True
+    assert mod._review_explicit_non_blocking(body_glyphe) is True
+    # Le glyphe est dans CONCERN_MARKERS (cf. PR #12143) :
+    assert mod._sole_live_concern_is_comment_prefix(body_glyphe) is False
+    assert mod.classify("jsboige", body_glyphe) == "BOT-CONCERN"
