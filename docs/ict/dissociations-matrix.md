@@ -468,7 +468,7 @@ Cette case **active** le hook Gómez-Emilsson & Percy comme aiguillon de lecture
 
 #### Exécution c.431 (chantier 6/3) — verdict INCONCLUSIF
 
-Première exécution du protocole ci-dessus, **sans retouche post-hoc** : script [`MyIA.AI.Notebooks/IIT/ICT-Series/ict/kuramoto_boundary.py`](../../MyIA.AI.Notebooks/IIT/ICT-Series/ict/kuramoto_boundary.py), sortie brute [`kuramoto_boundary_results.json`](../../MyIA.AI.Notebooks/IIT/ICT-Series/ict/kuramoto_boundary_results.json), CPU-only, déterministe (5 graines 0/1/7/42/99, numpy seul). Calibration null exécutée **avant** le test principal (anti-HARKing) : σ_Δ = 0.0104 → ε_topo = 0.0052.
+Première exécution du protocole ci-dessus, **sans retouche post-hoc** : script [`MyIA.AI.Notebooks/IIT/ICT-Series/ict/kuramoto_boundary.py`](../../MyIA.AI.Notebooks/IIT/ICT-Series/ict/kuramoto_boundary.py), sortie brute [`kuramoto_boundary_results.json`](../../MyIA.AI.Notebooks/IIT/ICT-Series/ict/results/kuramoto_boundary_results.json), CPU-only, déterministe (5 graines 0/1/7/42/99, numpy seul). Calibration null exécutée **avant** le test principal (anti-HARKing) : σ_Δ = 0.0104 → ε_topo = 0.0052.
 
 | Mesure | Valeur | Cible pré-enregistrée |
 |---|---|---|
