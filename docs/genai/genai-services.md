@@ -128,7 +128,7 @@ Le verdict INTRINSIC pour notre contexte n'est pas un mur infranchissable ; il e
 2. **Licence commerciale UE obtenue** (Art. II dernier § : *« you are welcome to contact us about obtaining a license »*). Demarche *provider-side* dependant de MiniMax.
 3. **Fork communautaire re-licencie** sous licence permissive (hypothese, aucun signal actuel a 2026-08-10).
 
-*Re-verification licence 2026-08-15 (firsthand, LICENSE raw HuggingFace, date 2 aout 2026)* : UE toujours exclue — *"Excluded Territories" means the European Union, the United Kingdom, the Republic of Korea and the United States of America*. Aucun changement. Cote service cloud, la voie video-01 (`/v1/video_generation`) est couverte par le plan (probe 2026-08-10, notebook 04-6) ; la serie H3 reste plan-gated (400 TokenPlan 2013, notebook 04-5 squelette idempotent).
+*Re-verification licence 2026-08-15 (firsthand, LICENSE raw HuggingFace, date 2 aout 2026)* : UE toujours exclue — *"Excluded Territories" means the European Union, the United Kingdom, the Republic of Korea and the United States of America*. Aucun changement. Cote service cloud, la voie video-01 (`/v1/video_generation`) est couverte par le plan (probe 2026-08-10, notebook 04-5b) ; la serie H3 reste plan-gated (400 TokenPlan 2013, notebook 04-5 squelette idempotent).
 
 En attendant, le notebook 02-6 evoluera vers une execution locale reelle des qu'un de ces evenements se materialise — l'architecture ci-dessus est le blueprint ComfyUI a deployer le moment venu.
 
@@ -230,7 +230,7 @@ LOCAL_MODE=false
 
 # ComfyUI
 COMFYUI_API_URL=https://qwen-image-edit.myia.io
-# Hébergement : po-2023 (conteneur comfyui-qwen, RTX 3090, port 8188 — cf. GPU Layout ci-dessous)
+# Hébergement : po-2023 (conteneur comfyui-qwen, GPU0 RTX 3080Ti, port 8188 — cf. GPU Layout ci-dessous)
 COMFYUI_AUTH_TOKEN=<bearer_token_bcrypt>
 
 # OpenAI via OpenRouter
@@ -264,8 +264,8 @@ BATCH_MODE=false
 | tts-kokoro | po-2023 | Kokoro TTS | fp32/fp16 default | ~1-2 GB |
 | musicgen-api | po-2023 | MusicGen-medium | fp16 | ~10 GB |
 | qwen-asr-api | po-2023 | Qwen3-ASR-1.7B | bfloat16 | ~3-4 GB |
-| comfyui-video | HunyuanVideoWrapper | fp16 | varies |
-| whisper-webui | Whisper WebUI | unknown | varies |
+| comfyui-video | po-2023 | HunyuanVideoWrapper | fp16 | varies |
+| whisper-webui | po-2023 | Whisper WebUI | unknown | varies |
 
 ### Idle Management
 
