@@ -520,8 +520,21 @@ _MENTION_VERDICT = re.compile(
 # de remediation qui evoque un verdict anterieur). On preserve le verdict
 # uniquement dans le premier cas. Le tag agent est matche dans les 80 chars
 # entre `##` et le verdict (cf limite d'origine).
+# #13642 -- le garde d'origine `\[[A-Z][A-Za-z_-]{2,40}\]` n'acceptait que les
+# tags UPPERCASE-initial (`[Hermes]`, `[NanoClaw]`, `[Claude]`) : le
+# coordinateur, qui se tag `[ai-01]` / `[ai-01 ARBITRAGE]` (et le compte
+# self-bot `[jsboige]`), est minuscule-initial et echappait au garde -> sa
+# reserve en position de titre etait strippee en MENTION et devenait invisible
+# au gate. Le vocabulaire est CLOS (reutilise tel quel, pas de caractere
+# generique) : la classe symetrique `## [bug] CHANGES_REQUESTED` (categorie de
+# prose, pas un reviewer) doit RESTER une MENTION et rester strippee.
+_AGENT_REVIEWER_TAG = (
+    r"\[(?i:(?:Hermes(?:\s+self-bot)?|NanoClaw|Claude|Review|"
+    r"clusterManager-Myia|ai-01|jsboige|myia-ai-01)\b[^\]]*)\]"
+)
 _MENTION_VERDICT_HEADING = re.compile(
-    r"(?m)^#{1,6}(?![^\n]*\[[A-Z][A-Za-z_-]{2,40}\])[^\n]{0,80}?([A-Z][A-Z_]{2,}[A-Z])(?![A-Za-z0-9_])")
+    r"(?m)^#{1,6}(?![^\n]*" + _AGENT_REVIEWER_TAG + r")[^\n]{0,80}?"
+    r"([A-Z][A-Z_]{2,}[A-Z])(?![A-Za-z0-9_])")
 
 # #11744 — Position B : prose inline. Un verdict est en mention quand un mot-
 # cle de mention (`verdict`, `nit`, `remark`, `previous`, `previous`, `precedent`,

@@ -2080,6 +2080,19 @@ def test_12311_verb_in_heading_preserved_against_strip():
     assert mod.classify("jsboige", body) == "BOT-CONCERN"
 
 
+@pytest.mark.parametrize("body,expected", [
+    ("## [ai-01] CHANGES_REQUESTED (reserve bloquante)", "BOT-CONCERN"),
+    ("## [ai-01] CHANGES_REQUESTED", "BOT-CONCERN"),
+    ("## [ai-01] **BLOCKED**", "BOT-CONCERN"),
+    ("## [ai-01] Reserve — a traiter avant merge :", "BOT-CONCERN"),
+    ("## [ai-01 ARBITRAGE] CHANGES_REQUESTED", "BOT-CONCERN"),
+    ("## [jsboige] CHANGES_REQUESTED", "BOT-CONCERN"),
+    ("## [bug] CHANGES_REQUESTED — le commit ne touche rien", None),
+])
+def test_13642_coordinator_title_verdict_is_emission(body, expected):
+    assert mod.classify("jsboige", body) == expected
+
+
 # ---------------------------------------------------------------------------
 # #12315 -- 4ᵉ reformulation de la classe use-vs-mention : apostrophes droites
 # ASCII ('...') et guillemets droits ASCII ("...") comme delimiters de citation,
