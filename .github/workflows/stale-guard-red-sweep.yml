@@ -69,6 +69,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          # Cone mode (le defaut) n'accepte que des REPERTOIRES : une entree de
+          # fichier fait echouer le checkout (`fatal: ... is not a directory`).
+          # Mesure : en non-cone ces chemins se listent SANS slash initial -- la
+          # forme `/chemin` que suggere l'avertissement de git rend un checkout VIDE.
+          sparse-checkout-cone-mode: false
           sparse-checkout: |
             scripts/check_stale_guard_reds.py
 
