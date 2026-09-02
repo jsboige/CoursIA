@@ -1655,9 +1655,9 @@ layout: section
 
 - RLHF (2022, InstructGPT) : affinage par retour humain
 - ChatGPT (nov. 2022, OpenAI) : 100 M d'utilisateurs en 2 mois
-- Modèles open-weight : Llama 2 (2023), Mistral, Mixtral (MoE 2023-2024)
 - Générations suivantes : Llama 3 / 3.1 / 4 (2024-2025), DeepSeek-V3 (2024), Qwen2.5 (2024-2025), Gemma 2 (2024)
 - Frontier multimodaux omni : GPT-4o (mai 2024), Claude 3.5 Sonnet (2024), Gemini 1.5 / 2 (2024-2025)
+- Modèles open-weight : Llama 2 (2023), Mistral, Mixtral (MoE 2023-2024)
 
 <div class="grid grid-cols-2 gap-4 absolute bottom-[25px] left-[50px] right-[50px]">
 <img src="./images/img_112.png" class="max-h-[100px] w-full object-contain" alt="Chaîne de Markov de diffusion : bruitage progressif de xT vers x0 puis débruitage inverse" />
