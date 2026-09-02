@@ -138,6 +138,25 @@ def test_contrefactuel_individuel_recupere_la_cate():
     assert ecart_lo < -1.0, f"V<0 : ecart {ecart_lo:+.3f} attendu < -1.0"
 
 
+def test_contrefactuel_individuel_ne_polue_pas_le_rng_global():
+    """Le seed pose pour dowhy (API 0.14 sans ``random_state`` injectable)
+    ne doit pas fuiter : l'etat du RNG global de l'appelant est restaure
+    a l'identique apres l'appel (doctrine du module, reserve PR #14305).
+    """
+    df = do.generer_donnees()
+    scm = do.construire_scm(df, degre_y=2)
+    idx_hi, _ = _individus_extremes(df)
+    np.random.seed(1234)
+    etat_avant = np.random.get_state()
+    do.contrefactuel_individuel(scm, df.loc[idx_hi], seed=42)
+    etat_apres = np.random.get_state()
+    assert etat_avant[0] == etat_apres[0]
+    assert np.array_equal(etat_avant[1], etat_apres[1])
+    assert etat_avant[2] == etat_apres[2]
+    assert etat_avant[3] == etat_apres[3]
+    assert etat_avant[4] == etat_apres[4]
+
+
 def test_ecarts_contrefactuels_boucle_row_wise():
     """La decomposition boucle par individu : |ecart| moyen net > 0.5 et
     variance reelle (std > 0.5) sur un sous-echantillon de 60 lignes.

@@ -94,15 +94,25 @@ def contrefactuel_individuel(scm, individu, variable="T", valeur=0.0, seed=42):
     Retourne un DataFrame des tirages (colonnes = variables descendantes)
     ; l'effectif des tirages est fixe par dowhy (API 0.14 : pas de
     ``num_samples`` sur ``counterfactual_samples``).
+
+    ``counterfactual_samples`` (API 0.14) n'expose pas non plus de
+    ``random_state`` injectable : le seed global est pose TEMPORAIREMENT,
+    l'etat du RNG de l'appelant etant sauvegarde puis restaure -- la
+    doctrine du module (aucune dependance au seed global) reste tenue :
+    zero effet de bord sur les tirages ulterieurs de l'appelant.
     """
     if isinstance(individu, pd.Series):
         individu = individu.to_frame().T
-    np.random.seed(seed)
-    return gcm.counterfactual_samples(
-        scm,
-        interventions={variable: lambda _: valeur},
-        observed_data=individu,
-    )
+    etat_rng_appelant = np.random.get_state()
+    try:
+        np.random.seed(seed)
+        return gcm.counterfactual_samples(
+            scm,
+            interventions={variable: lambda _: valeur},
+            observed_data=individu,
+        )
+    finally:
+        np.random.set_state(etat_rng_appelant)
 
 
 def ecarts_contrefactuels(scm, donnees, variable="T", valeur=0.0, seed=42):
