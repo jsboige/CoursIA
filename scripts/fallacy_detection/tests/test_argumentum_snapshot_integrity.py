@@ -35,11 +35,13 @@ CE QUE CHAQUE TEST ATTRAPE
    existent-elles ? Rouge sur l'etat d'avant (AIF_* absentes).
 3. ``test_virtues_families`` -- les libelles de familles sont-ils ceux du
    manifeste ? Rouge sur l'etat d'avant (anciens noms).
-4. ``test_legacy_copy_unified_with_canonical`` -- la troisieme copie historique
-   ``SymbolicAI/data/`` est-elle restee l'octet-presque de la canonique ?
-   Rouge sur l'etat d'avant #13578 : 74 colonnes contre 104, i18n _ar/_es et
-   AIF_* absentes, sans qu'aucun controle par nombre de lignes ne le voie
-   (1408 des deux cotes).
+4. ``test_legacy_copy_removed`` -- la troisieme copie historique
+   ``SymbolicAI/data/`` a-t-elle ete SUPPRIMEE ? Rouge sur la reintroduction :
+   distribuer une copie tierce de la taxonomie reouvre le piege documente
+   en aout 2026 (derive silencieuse de sept semaines, voir #13578/#13619).
+   Avant #13740, le test equivalent etait ``test_legacy_copy_unified_with_canonical``
+   (rouge si divergence). La copie ayant ete retiree, la garde devient
+   "n'existons pas" -- si elle reapparait, c'est deliberement et doit resynchroniser.
 
 QUE FAIRE QUAND C'EST ROUGE
 ---------------------------
@@ -168,29 +170,24 @@ def test_virtues_families():
 LEGACY_COPY = REPO / "MyIA.AI.Notebooks" / "SymbolicAI" / "data" / "argumentum_fallacies_taxonomy.csv"
 
 
-def test_legacy_copy_unified_with_canonical():
-    """La 3e copie historique SymbolicAI/data/ reste l'octet-presque de la canonique.
+def test_legacy_copy_removed():
+    """La 3e copie historique SymbolicAI/data/ a ete supprimee (#13740 V1).
 
-    Divergee pendant sept semaines sans qu'aucun rouge ne la voie : aucun script
-    ni notebook ne la lit (explorer et align pointent sur la canonique), donc
-    sa pourriture etait invisible ET sans consequence aval -- double raison de
-    la laisser fuiter. Unifiee le 30/08 (#13578) ; ce test rend toute nouvelle
-    divergence rouge au lieu de silencieuse. Si l'amont bouge : resynchroniser
-    les DEUX copies dans le meme commit, jamais une seule.
+    Avant #13740, ce test etait ``test_legacy_copy_unified_with_canonical`` :
+    il verifiait que la copie restait byte-identique a la canonique (74 -> 104
+    colonnes en aout 2026, cf #13578). La copie ayant ete supprimee delibement,
+    la garde devient "n'existons pas" -- distribuer une tierce copie reouvre
+    le piege documente en aout 2026 (derive silencieuse de sept semaines,
+    aucun consommateur n'aurait vu la divergence). Si la copie reapparait
+    ulterieurement, c'est une decision explicite qui DOIT resynchroniser
+    depuis la canonique dans le meme commit.
     """
-    assert LEGACY_COPY.exists(), (
-        f"{LEGACY_COPY} a disparu. Si la suppression est deliberee (decision "
-        "documentee de ne plus distribuer la 3e copie), retirer ce test dans "
-        "le meme commit ; sinon le restaurer depuis la canonique."
-    )
-    expected = _manifest()["files"]["argumentum_fallacies_taxonomy.csv"]["blob_sha1"]
-    actual = _git_blob_sha1(LEGACY_COPY)
-    assert actual == expected, (
-        "La copie SymbolicAI/data/argumentum_fallacies_taxonomy.csv a re-diverge "
-        "de la canonique.\n"
-        f"  canonique {expected}\n  copie     {actual}\n"
-        "Verifier la regle -text du .gitattributes couvre bien ce chemin, puis "
-        "recopier la canonique octet pour octet."
+    assert not LEGACY_COPY.exists(), (
+        f"{LEGACY_COPY} est de retour : distribuer une 3e copie de la "
+        "taxonomie reouvre le piege de derive silencieuse documente en "
+        "aout 2026 (#13578). Si la reintroduction est deliberee (nouveau "
+        "contexte de diffusion), resynchroniser depuis la canonique ET "
+        "regenerer le manifeste dans le meme commit."
     )
 
 

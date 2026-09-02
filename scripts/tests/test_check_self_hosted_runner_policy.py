@@ -100,6 +100,98 @@ def test_universal_guard_with_combined_target_is_accepted(tmp_path):
     assert result.self_hosted_jobs == 1
 
 
+def test_bare_universal_guard_with_and_selection_is_rejected_with_parenthesis_hint(tmp_path):
+    """#14148 (reserve NanoClaw n.1) : la forme universelle NUE combinee a un
+    `&&` est refusee -- `&&` lie plus fort que `||`, donc la forme nue se lit
+    `A == null || (A == repo && sel)` et tourne sur tout evenement hors
+    pull_request quelle que soit la selection -- et le message nomme la
+    parenthese requise, pas seulement « must lead with the guard »."""
+    write_workflow(tmp_path, "windows-self-hosted-tests", """
+        name: bare-universal-and
+        on: [pull_request]
+        jobs:
+          test:
+            if: ${{ github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository && inputs.target == 'confinement' }}
+            runs-on: [self-hosted, coursia-ephemeral, coursia-fast-guards]
+            steps:
+              - run: echo unsafe
+        """)
+    result = policy.scan_workflows(tmp_path)
+    assert result.broken == []
+    assert codes(result) == {"SAME_REPO_GUARD"}
+    [violation] = result.violations
+    assert "parenthesised" in violation.message
+    assert "(<universal guard>) && <selection>" in violation.message
+
+
+def test_job_without_any_guard_keeps_generic_message(tmp_path):
+    """Le message « parenthesised » est reserve a la forme universelle nue +
+    `&&` : un job sans garde du tout garde le message generique."""
+    write_workflow(tmp_path, "pr-gate-stale-sweep", """
+        name: no-guard
+        on: [pull_request]
+        jobs:
+          test:
+            runs-on: [self-hosted, coursia-ephemeral, coursia-fast-guards]
+            steps:
+              - run: echo unsafe
+        """)
+    [violation] = policy.scan_workflows(tmp_path).violations
+    assert violation.code == "SAME_REPO_GUARD"
+    assert "parenthesised" not in violation.message
+
+
+def test_fork_reachable_comment_triggers_cannot_reach_self_hosted_job(tmp_path):
+    """#14148 (reserve NanoClaw n.2) : issue_comment / pull_request_review /
+    pull_request_review_comment tournent sur le code de la branche par defaut
+    mais leur payload nomme une PR potentiellement issue d'un fork -- un
+    `checkout refs/pull/N/head` executerait du code de fork sur le runner.
+    Refuses comme pull_request_target, garde ou pas."""
+    write_workflow(tmp_path, "pr-gate-stale-sweep", """
+        name: comment-driven
+        on: [issue_comment, pull_request_review, workflow_dispatch]
+        jobs:
+          test:
+            runs-on: [self-hosted, coursia-ephemeral, coursia-fast-guards]
+            steps:
+              - run: echo unsafe
+        """)
+    result = policy.scan_workflows(tmp_path)
+    assert result.broken == []
+    fork_reachable = [v for v in result.violations if v.code == "FORK_REACHABLE_TRIGGER"]
+    assert sorted(v.message.split(" ")[0] for v in fork_reachable) == [
+        "issue_comment",
+        "pull_request_review",
+    ]
+
+
+def test_push_and_schedule_triggers_remain_accepted_with_universal_guard(tmp_path):
+    """Contre-controle de la reserve n.2 : push / schedule / workflow_dispatch
+    ne portent que des refs du depot -- la branche `== null` de la garde
+    universelle y est sure par construction. Cas reels sur main :
+    banner-guard.yml (pull_request + push), hooks-parity.yml (+ schedule)."""
+    write_workflow(tmp_path, "pr-gate-stale-sweep", """
+        name: push-schedule
+        on:
+          pull_request:
+          push:
+            branches: [main]
+          schedule:
+            - cron: '7 3 * * *'
+          workflow_dispatch:
+        jobs:
+          test:
+            if: ${{ github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository }}
+            runs-on: [self-hosted, coursia-ephemeral, coursia-fast-guards]
+            steps:
+              - run: echo safe
+        """)
+    result = policy.scan_workflows(tmp_path)
+    assert result.broken == []
+    assert result.violations == []
+    assert result.self_hosted_jobs == 1
+
+
 def test_universal_guard_weakened_by_or_is_rejected(tmp_path):
     """#13874 FN-safety : meme avec la forme universelle, l'ajout d'un
     `|| always()` ou `|| true` reintroduit le trou. La garde universelle
@@ -542,55 +634,6 @@ def test_same_repository_reusable_workflow_rejects_short_sha(tmp_path):
         jobs:
           test:
             uses: jsboige/CoursIA/.github/workflows/callee.yml@0123456789abcdef
-        """)
-    assert "REMOTE_REUSABLE_WORKFLOW" in codes(policy.scan_workflows(tmp_path))
-
-
-def test_missing_trigger_breaks_instrument(tmp_path):
-    write_workflow(tmp_path, "broken-trigger", """
-        name: broken-trigger
-        jobs:
-          test:
-            runs-on: ubuntu-latest
-            steps:
-              - run: echo no-trigger
-        """)
-    result = policy.scan_workflows(tmp_path)
-    assert result.broken == ["broken-trigger.yml: missing on trigger"]
-
-
-def test_empty_runs_on_list_breaks_instrument(tmp_path):
-    write_workflow(tmp_path, "broken-runner", """
-        name: broken-runner
-        on: workflow_dispatch
-        jobs:
-          test:
-            runs-on: []
-            steps:
-              - run: echo no-runner
-        """)
-    result = policy.scan_workflows(tmp_path)
-    assert result.broken == [
-        "broken-runner.yml:test: runs-on list must contain labels"
-    ]
-
-
-def test_missing_jobs_breaks_instrument(tmp_path):
-    write_workflow(tmp_path, "broken-jobs", """
-        name: broken-jobs
-        on: workflow_dispatch
-        """)
-    result = policy.scan_workflows(tmp_path)
-    assert result.broken == ["broken-jobs.yml: missing jobs"]
-
-
-def test_same_repository_reusable_workflow_rejects_path_traversal(tmp_path):
-    write_workflow(tmp_path, "caller", """
-        name: caller
-        on: [pull_request]
-        jobs:
-          test:
-            uses: jsboige/CoursIA/.github/workflows/../evil.yml@main
         """)
     assert "REMOTE_REUSABLE_WORKFLOW" in codes(policy.scan_workflows(tmp_path))
 

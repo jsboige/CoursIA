@@ -1,0 +1,142 @@
+{
+ "issue": "#13117",
+ "phase": "Phase D B1+B2 (c.864 + c.866) + Phase E B3 (c.931) -- instrumentation discriminante, sweep OR/AND, puis identification de la cause-racine reelle du remplissage nul (devise de compte)",
+ "date": "2026-09-02",
+ "worker": "myia-po-2023 (lane myia-po-2023:CoursIA-2)",
+ "trigger": "Picker R5 narrow REFUS + grain #13117 claimable po-2023 (claim perime po-2024/po-2027 STALE_CLAIM 48h+) + sub-agent qc-strategy-analyzer async Phase D plan",
+ "deliverable": "Phase D B1 = v6 + instrumentation (compteurs discriminants) + B2 = OR condition discriminant. Verdict INCONCLUSIVE_CONFIRMED avec cause-racine identifiee (cf. Tell NEW c.866-L4 MAJEUR).",
+ "qc_project_id": 35674722,
+ "qc_project_url": "https://www.quantconnect.com/project/35674722",
+ "plan_source": "sub-agent qc-strategy-analyzer async c.863 (id a9720ea77154b9c80) -- Plan Phase D 5 runs",
+ "results_summary": {
+  "B1": {
+   "backtest_id": "8710a58a59c76e7d79f44ec5e76b1bc7",
+   "backtest_name": "B1_PhaseD_instrumented",
+   "compile_id": "1f8d2ca5eca45094f50f786909b79679-1002c2649d15a683b9b23b4e36259e67",
+   "qc_url": "https://www.quantconnect.com/project/35674722/backtest/8710a58a59c76e7d79f44ec5e76b1bc7",
+   "created": "2026-09-01 08:56:34",
+   "completed": "2026-09-01 (~9 min runtime)",
+   "tradeableDates": 1461,
+   "totalOrders": 151653,
+   "statistics": {
+    "sharpeRatio": "0",
+    "compoundingAnnualReturn": "0%",
+    "drawdown": "0%",
+    "totalNetProfit": "0%",
+    "netProfitAbsolute": "$0.00"
+   },
+   "diagnosis": "151 653 ordres emis mais 0 trade filled. B1 instrumente a ete execute correctement. CORRIGE c.931 : l'explication 'rebalancements de liquidate(sym) sur position vide (liquidate sans guard sur invested)' etait FAUSSE. Verification mecanique du source LEAN_ALGORITHM_B1 : les 6 appels liquidate() du notebook sont TOUS gardes par `if self.portfolio[sym].invested:` (lignes 166/172/179, 291/295/300, 414/418/423). Le guard existait deja. La cause reelle est identifiee par B3 (Phase E, c.931) : le compte est finance en USD alors que BTCUSDT/ETHUSDT se reglent en USDT, sur un AccountType.CASH (sans marge) -- chaque ordre d'achat est donc rejete faute de solde USDT. Les 151K ordres sont des `set_holdings` re-emis a chaque barre eligible, puisque la position ne devient jamais `invested`.",
+   "instruments_compteurs_deployed": [
+    "n_bars_total",
+    "n_guard_skip_warmup",
+    "n_guard_skip_no_data",
+    "n_guard_skip_not_ready",
+    "n_price_below",
+    "n_rsi_below",
+    "n_both (AND)",
+    "n_entry_attempts",
+    "n_trades_filled",
+    "sample_log_counter (log 1/10000 barres)"
+   ],
+   "log_access_limitation": "QC Cloud API MCP qc-mcp-lite n'expose ni read_backtest_orders ni les logs : les compteurs custom (B1_DIAG, SAMPLE, n_bars_total, n_either...) ne sont consultables que via l'UI QC Cloud. PRECISION c.909 : cette limite porte sur les LOGS CUSTOM uniquement. read_backtest expose bien totalOrders, tradeableDates, status et statistics -- c'est-a-dire le discriminant qui a permis de falsifier la conclusion B2. Classer l'ensemble du diagnostic comme 'lisible seulement en UI' a retarde cette lecture : verifier d'abord ce que read_backtest rend deja."
+  },
+  "B2": {
+   "backtest_id": "210d0f38c9451c1e3876391789b33ef5",
+   "backtest_name": "B2 OR condition (Phase D B2 narrow worker)",
+   "compile_id": "1a8f6985e894f9a15a92cca324ef48ea-dc8ddd2474885c1718c4fc960d27a43c",
+   "qc_url": "https://www.quantconnect.com/project/35674722/backtest/210d0f38c9451c1e3876391789b33ef5",
+   "created": "2026-09-01 09:31:07",
+   "completed": "2026-09-01 (run complet ; la premiere lecture, faite en cours d'execution, rendait a tort 0 ordre)",
+   "tradeableDates": 1461,
+   "totalOrders": 487172,
+   "statistics": {
+    "sharpeRatio": "0",
+    "compoundingAnnualReturn": "0%",
+    "drawdown": "0%",
+    "totalNetProfit": "0%",
+    "netProfitAbsolute": "$0.00"
+   },
+   "diagnosis_determinante": "B2 (OR) emet 487172 ordres contre 151653 pour B1 (AND), soit 3,2x PLUS. C'est le sens attendu d'une condition d'entree moins stricte. L'hypothese 'la condition d'entree n'est jamais vraie' est FALSIFIEE par la mesure : elle se declenche constamment. Les deux variantes emettent massivement et remplissent zero -- le blocage porte sur le REMPLISSAGE des ordres, pas sur la rarete du signal.",
+   "compteur_discriminant_ajoute": "n_either (barres ou price_ok OR rsi_ok) a bien ete deploye dans l'algorithme, mais sa valeur N'A PAS ETE LUE : les logs B1_DIAG/SAMPLE ne sont accessibles que via l'UI QC Cloud (le MCP qc-mcp-lite n'expose ni read_backtest_orders ni les logs). La valeur 'observe : 0' publiee initialement n'etait pas une lecture du compteur mais une INFERENCE tiree du totalOrders=0 errone. Elle est retiree : n_either reste non mesure a ce jour.",
+   "n_bars_total_non_lu_ui_honesty": "Le discriminant `n_bars_total` declare dans l'instrumentation B1+B2 n'a pas ete lu dans l'UI QC Cloud a ce jour. Tant que sa valeur reste inconnue, la distinction formelle entre (a) 'barres traitees + signal abondant + remplissage nul' et (b) 'barres jamais traitees + run qui n'a rien ingere' reste NON TRANCHEE pour B2. Le compte totalOrders=487172 etabli par l'API post-completion prouve que des ordres ont ete emis (donc on_data a ete appele au moins une fois), mais ne dit pas combien de barres par minute ont ete traitees au total. RECOVERABLE-USER-HAND : lecture UI QC Cloud requise pour clore cette distinction.",
+   "verdict_immediat": "INCONCLUSIVE_CONFIRMED au terme de Phase D, cause-racine reformulee : signal abondant (mesure : 487172 ordres B2 sur 1461 jours, 3,2x AND), remplissage nul (aucun trade filled). CORRIGE c.931 : la cause-racine avancee ici -- `liquidate(sym)` sans guard `if self.portfolio[sym].invested:` -- est FAUSSE ; les 6 liquidate du notebook sont deja gardes (verification mecanique du source, c.931). Elle etait explicitement marquee NON VERIFIEE : la verification l'a infirmee. Cause reelle etablie par B3 (Phase E) : devise de compte USD contre paires reglees en USDT sur AccountType.CASH.",
+   "implication_strategique_reformulee": "L'enonce initial 'aucune variation de la condition d'entree ne produira de fill' est RETIRE. Il etait une universelle negative adossee a un totalOrders=0 errone. La mesure corrigee est FORMULEE COMME HYPOTHESE A PORTEE EXPLICITE (cf. `implication_formulee_hypothese_portee_explicite` au niveau racine du JSON) : sur BTC/ETH Minute 2021-2024 avec ces deux configurations, le signal se declenche massivement et les ordres ne se remplissent pas. La generalisation universelle-negative est NON JUSTIFIEE.",
+   "executed_by": "myia-po-2023:CoursIA-2 narrow worker direct (sub-agent qc-strategy-analyzer async a echoue API402 c.865 -- Tell NEW c.865-L5 ; narrow worker a execute B2 sur QC Cloud projet 35674722 en mode direct)",
+   "measurement_correction_c909": "La valeur totalOrders=0 publiee initialement etait un artefact de mesure, pas un resultat : read_backtest a ete appele pendant que le backtest tournait encore (cree 09:31:07). Dans cet etat l'API rend 0 ordre et des statistiques '-'. Relu apres completion (status 'Completed.', progress 1), B2 rend 487172 ordres sur 1461 tradeableDates. Toutes les conclusions derivees de totalOrders=0 sont corrigees ci-dessous."
+  },
+  "B3": {
+   "backtest_id": "5f4f510b8a6b29b2de7f86f021b4a26f",
+   "backtest_name": "B3_PhaseE_account_currency_USDT",
+   "compile_id": "64238660a8e87a8a5f515e0dced8872b-6c858a8731d0e79e67431f1a2f99b508",
+   "qc_url": "https://www.quantconnect.com/project/35674722/backtest/5f4f510b8a6b29b2de7f86f021b4a26f",
+   "created": "2026-09-02 02:22:29",
+   "completed": "2026-09-02 (status 'Completed.', progress 1 -- verifie AVANT lecture, cf garde c.909)",
+   "tradeableDates": 1461,
+   "totalOrders": 917199,
+   "statistics": {
+    "sharpeRatio": "-2.961",
+    "compoundingAnnualReturn": "-81.382%",
+    "drawdown": "99.900%",
+    "totalNetProfit": "-99.880%",
+    "probabilisticSharpeRatio": "0%",
+    "netProfitAbsolute": "₮-9,986.50"
+   },
+   "variable_unique_changee_vs_B1": "self.set_account_currency('USDT') place AVANT set_cash(10000). Rien d'autre ne change : meme condition d'entree AND, memes indicateurs BB(20,2.0)/RSI(14), meme resolution Minute, meme fee model 0.1%, meme AccountType.CASH.",
+   "hypothese_testee": "Les paires BTCUSDT/ETHUSDT se reglent en USDT. B1/B2 financent le compte en USD (devise LEAN par defaut) et tournent en AccountType.CASH, donc sans marge : un achat BTCUSDT exige un solde USDT, qui est nul. Prediction falsifiable : avec la devise corrigee, des fills apparaissent ; sinon l'hypothese tombe.",
+   "verdict": "HYPOTHESE CONFIRMEE",
+   "preuve": "Deux signaux concordants, tous deux absents de B1 et B2. (1) La devise du P&L bascule de $ a ₮ (USDT) : la configuration a bien pris effet. (2) Les statistiques cessent d'etre nulles -- sharpeRatio -2.961, drawdown 99.900%, totalNetProfit -99.880%, netProfitAbsolute ₮-9,986.50. Un compte qui perd 99,88% de sa valeur a NECESSAIREMENT execute des trades ; B1 et B2 rendaient 0% partout, ce qui est la signature du remplissage nul.",
+   "second_enseignement": "Une fois le remplissage debloque, la strategie ne devient pas rentable -- elle devient ruineuse : 917 199 ordres sur 4 ans, soit ~628 ordres par jour de bourse, a 0,1% de frais par ordre. Le capital passe de ₮10 000 a ₮13,50. Le probleme reel du notebook n'etait donc pas 'la condition d'entree ne se declenche jamais' (elle se declenche constamment) mais un sur-trading massif : `set_holdings` est appele a chaque barre Minute qui satisfait la condition, sans aucun controle de frequence."
+  }
+ },
+ "verdict": "Phase D : INCONCLUSIVE_CONFIRMED (signal abondant, remplissage nul). Phase E : CAUSE-RACINE ETABLIE -- devise de compte USD contre paires USDT sur AccountType.CASH. Corrigee, la strategie remplit (917 199 ordres) et perd 99,88% en frais de sur-trading.",
+ "verdict_justification": "B1 confirme 151 653 ordres emis / 0 fill. B2 (condition OR, narrow worker) discrimine : 487 172 ordres emis / 0 fill sur 1 461 jours BTC/ETH Minute 2021-2024. Soit 3,2x PLUS que B1 (AND), le sens attendu d'une condition d'entree moins stricte. La mesure corrigee (commit 71849ef20, post-completion status='Completed.' progress=1) FALSIFIE l'enonce anterieur 'la condition OR n'a JAMAIS ete vraie' : elle se declenche massivement, les ordres ne se remplissent pas. Cause-racine probable : `liquidate(sym)` appele sans guard `if self.portfolio[sym].invested:` -- elle rend compte d'un volume d'ordres proportionnel aux barres traitees et d'un remplissage nul, dans les DEUX variantes (AND et OR). Cause-racine NON VERIFIEE directement : `read_backtest_orders` non expose par le MCP qc-mcp-lite, et la lecture ordre par ordre necessiterait UI QC Cloud (RECOVERABLE-USER-HAND). Le discriminant `n_bars_total` declare dans l'instrumentation n'a pas ete lu en UI non plus : sa valeur reste non mesuree a ce jour. Tant que `n_bars_total` n'est pas lu, la distinction formelle 'signal abondant + remplissage nul' vs 'barres jamais traitees' reste non tranchee. Le notebook reste pedagogique (code correct, pas PNL).",
+ "implication_formulee_hypothese_portee_explicite": "HYPOTHESE A PORTEE EXPLICITE (non universelle-negative) : sur BTC/ETH Minute 2021-2024, avec ces deux configurations (AND et OR), le signal BB/RSI se declenche massivement et les ordres emis ne se remplissent pas. La generalisation a 'aucune variation ne produira de fill' est NON JUSTIFIEE par cette mesure : (a) la cause-racine candidate (liquidate sans guard) est corrigible en une ligne et changerait completement le verdict ; (b) B3-B5 n'ont pas ete executees -- leur issue est inconnue ; (c) d'autres univers (altcoins, equities, resolutions differentes) pourraient diverger. Tester une troisieme variante legitime exige d'abord le fix du guard liquidate.",
+ "path_forward": [
+  "LIVRE c.931 (Phase E) : cause-racine du remplissage nul etablie par B3 -- devise de compte. L'action (a) prevue en Phase D -- 'ajouter le guard `if self.portfolio[sym].invested:` avant `liquidate(sym)`' -- est SANS OBJET : le guard etait deja present sur les 6 appels.",
+  "LIVRE c.931 : cellules markdown Phase D/E ajoutees au notebook, et ce JSON y est desormais importe au lieu d'etre recopie a la main (concerns 3 et 4 de #14142).",
+  "RESTE OUVERT : le sur-trading. 917 199 ordres pour ₮10 000 de capital est le vrai defaut pedagogique de la strategie. Piste : throttling (une entree par jour maximum), ou passage en resolution Hour, ou un filtre de cooldown apres sortie. C'est un grain distinct, a traiter en PR separee -- il change la strategie, pas le diagnostic.",
+  "RESTE OUVERT : les compteurs custom (n_bars_total, n_either, B1_DIAG) sortent par `Log()`, que le MCP qc-mcp-lite n'expose pas. Leur lecture demande l'interface QC Cloud (RECOVERABLE-USER-HAND). Ils ne sont plus necessaires au diagnostic, mais confirmeraient la cardinalite des barres."
+ ],
+ "tells_observed": [
+  {
+   "id": "c.863-self-time-api",
+   "summary": "QCAlgorithm API uses self.Time (PascalCase property), NOT self.time. L'instrumentation log utilise self.Time pour timestamp echantillonne."
+  },
+  {
+   "id": "c.863-on-order-event-counter",
+   "summary": "Compteur fills executes via on_order_event + OrderStatus.FILLED. Pas d'attribut self.trades (lecon v5)."
+  },
+  {
+   "id": "c.863-triple-quotes-collision",
+   "summary": "Pour eviter collision entre LEAN_ALGORITHM='''...''' (v6) et nouveau LEAN_ALGORITHM_B1=\"\"\"...\"\"\", utiliser triple-double-quotes pour B1. V1 instrumente avec triple-single a casse (imbrication dans docstring). Fix = replace v1 par v2 dans notebook cell 7."
+  },
+  {
+   "id": "c.863-mcp-log-access-limitation",
+   "summary": "Le MCP qc-mcp-lite expose read_backtest + read_compile mais PAS read_backtest_orders ou read_backtest_insights. Pour inspecter les compteurs B1 (n_bars_total, n_price_below, etc.) il faut acceder aux logs via QC Cloud UI ou REST API directe avec token."
+  },
+  {
+   "id": "c.865-L5-qc-strategy-analyzer-mistral-402",
+   "summary": "Sub-agent async qc-strategy-analyzer a echoue API402 'Check your subscription on https://admin.mistral.ai/subscription' (modele claude-sonnet-5 envoye a l'API Mistral). PAS un echec de lane mais du sous-traitant. Narrow worker a execute B2 en mode direct (sans sub-agent) en ~5-10 min."
+  },
+  {
+   "id": "c.866-L2-B2-0-orders-determinating",
+   "summary": "[REFUTE PAR c.909] Observation d'origine conservee pour la trace : \"B2 narrow worker = 0 ordre emis avec condition OR ; les sous-conditions individuelles sont deja trop rares\". Elle reposait sur un read_backtest passe PENDANT l'execution (totalOrders=0 indiscernable d'un run sans ordre). Mesure apres completion (status 'Completed.', progress 1) : B2 rend 487 172 ordres, soit 3,2x les 151 653 de B1 en AND. La condition OR se declenche donc constamment, pas rarement. Le verdict INCONCLUSIVE_CONFIRMED tient, mais sur le motif corrige : signal abondant, remplissage nul."
+  },
+  {
+   "id": "c.866-L4-LIQUIDATE-SUR-POSITION-VIDE-MAJEUR",
+   "summary": "Cause-racine des 151K ordres B1 = liquidate(sym) sur position vide (sans guard `if invested`). Bug logique corrigible (hors scope Phase D ; guard traite en Phase E, issue #14142). [REFUTE PAR c.909] La clause d'origine \"B2 discriminant car avec 0 entry jamais declenchee, 0 liquidate non plus\" est retiree : B2 emet 487 172 ordres. Elle renforce au contraire la cause-racine -- relacher la conjonction AUGMENTE le compte d'ordres sans produire un seul fill."
+  },
+  {
+   "id": "c.909-read-backtest-during-run",
+   "note": "read_backtest appele sur un backtest encore en cours rend totalOrders=0 et des statistics '-', indiscernables d'un run termine sans ordre. Toujours verifier status == 'Completed.' et progress == 1 avant de tirer une conclusion d'un totalOrders. C'est la cause de la conclusion B2 erronee corrigee en c.909."
+  },
+  "Tell c.931 -- une cause-racine explicitement marquee 'probable, NON VERIFIEE' doit etre verifiee avant d'etre reportee dans une issue de suivi comme une tache a executer : #14142 concern 4 demandait de 'corriger le bug liquidate sans guard', bug qui n'existait pas. Le controle coute un grep sur 6 lignes ; l'omettre aurait produit un fix fabrique."
+ ],
+ "cause_racine_etablie_c931": {
+  "cause": "Le compte est finance en USD (`set_cash(10000)` sans `set_account_currency`), alors que BTCUSDT et ETHUSDT se reglent en USDT. En AccountType.CASH (sans marge), LEAN exige le solde de la devise de cotation : il est nul, donc chaque ordre d'achat est rejete.",
+  "pourquoi_le_volume_d_ordres": "La position ne devient jamais `invested`, donc la garde d'entree reste ouverte et `set_holdings` est re-emis a chaque barre eligible. Le compte d'ordres mesure la cardinalite des barres qui satisfont la condition, pas un bug de boucle.",
+  "pourquoi_B2_emet_3_2x_plus": "Coherent : OR est satisfait par strictement plus de barres que AND. Le rapport 487172/151653 = 3,21 mesure le rapport de cardinalite des deux conditions, ce qui confirme la lecture ci-dessus au lieu de la contredire.",
+  "hypothese_ecartee": "`liquidate(sym)` sans guard `if self.portfolio[sym].invested:` -- ECARTEE par verification mecanique du source : les 6 appels liquidate du notebook sont tous gardes. L'hypothese avait ete avancee comme 'probable, non verifiee' ; la verification l'infirme.",
+  "methode": "Une seule variable changee entre B1 et B3 (diff unifie verifie avant upload), pour que la mesure soit un discriminant et non une reecriture."
+ }
+}

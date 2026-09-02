@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import datetime as dt
 import json
 import os
 import sys
@@ -166,7 +167,10 @@ def test_three_shared_payloads_are_reused_without_changing_derivations(
         "number": 14000,
         "title": "perf(picker): cache (#13920)",
         "body": "See #13920",
-        "mergedAt": "2026-09-01T00:00:00Z",
+        # #13386 : fixture mergedAt relatif (NOW - 1h) pour eviter la derive
+        # temporelle -- hardcoder une date absolue ("2026-09-01T00:00:00Z")
+        # faisait sortir la PR de la fenetre de 24 h apres 24h d'horloge.
+        "mergedAt": (pig.NOW - dt.timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M:%SZ"),
     }
     series_pr = {
         **visit_pr,
@@ -222,11 +226,17 @@ def test_three_shared_payloads_are_reused_without_changing_derivations(
 def test_stale_visits_are_used_but_reported_as_unmeasured(monkeypatch, tmp_path):
     now = [100.0]
     cache = PayloadCache(tmp_path, clock=lambda: now[0])
+    # #13386 : fixture mergedAt relatif (NOW - 1h) pour eviter la derive
+    # temporelle -- hardcoder une date absolue ("2026-09-01T00:00:00Z")
+    # faisait sortir la PR de la fenetre de 24 h apres 24h d'horloge,
+    # vidant le compteur `{}` et cassant le test pour toute PR ouverte
+    # apres cette date.
+    _now_dt = pig.NOW - dt.timedelta(hours=1)
     success = _Completed([{
         "number": 14000,
         "title": "See #13920",
         "body": "See #13920",
-        "mergedAt": "2026-09-01T00:00:00Z",
+        "mergedAt": _now_dt.strftime("%Y-%m-%dT%H:%M:%SZ"),
     }])
     monkeypatch.setattr(pig.subprocess, "run", lambda *args, **kwargs: success)
     pig.fetch_visits(cache=cache, cache_mode="auto", cache_status={})

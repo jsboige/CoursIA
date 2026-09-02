@@ -3236,6 +3236,162 @@ def test_13635_conditionnel_je_leve_masculin_reste_bloquant():
         "Une seule chose a changer — corrige la ligne 19 et je leve le concern."
     ) == "BOT-CONCERN"
 
+
+# --- #13512 -- Position G : verbe de mention + verdict NU (sans parenthese) -
+#
+# Cas fondateur PR #13496 : « @jsboige — reponse au REQUEST_CHANGES Hermes
+# du 2026-08-29T17:33Z sur head `ae88aefc` » — la forme naturelle d'une
+# reponse a un verdict de reviewer. Les positions existantes (A-F) exigent
+# soit des parentheses (A), un titre `##` (B), une prose avec mot-cle
+# inline (C), un verbe de levee + ref pointable (D/E), ou `revue|review`
+# en tete (D-F). Aucune ne couvre cette forme sans sur-detection.
+#
+# Discrimination vs emission formelle : la fenetre `[^():\n.]{0,40}?`
+# exclut `:` (donc `Fix : CHANGES_REQUESTED` ne matche pas — `:` suit
+# immediatement le verbe) et `.` (donc le verdict doit etre dans la MEME
+# phrase, pas apres une fin de phrase). Verdict case-sensitive
+# `(?-i:[A-Z][A-Z_]{3,})`.
+
+
+def test_13512_reponse_au_verdict_nu_ne_flagge_pas():
+    """#13512 fondateur PR #13496 : reponse au verdict nu — la mention
+    neutralise le verdict, classify retourne None.
+
+    CE TEST ECHOUE SI Position G n'est pas cablee ou si la fenetre
+    n'absorbe pas le 1-char gap de #13496."""
+    body = (
+        "@jsboige — reponse au REQUEST_CHANGES Hermes du 2026-08-29T17:33Z "
+        "sur head `ae88aefc`. Le diagnostic etait juste, la cause racine "
+        "exacte, et le fix est en place."
+    )
+    assert mod.classify("jsboige", body) is None
+
+
+def test_13512_fix_du_verdict_nu_ne_flagge_pas():
+    """#13512 variante : verbe `fix` + verdict nu — la mention neutralise
+    le verdict, classify retourne None."""
+    body = (
+        "Voici le fix du CHANGES_REQUESTED pose par Hermes en review. "
+        "Diagnostic et commit de remediation en commentaire suivant."
+    )
+    assert mod.classify("jsboige", body) is None
+
+
+def test_13512_suite_au_verdict_nu_ne_flagge_pas():
+    """#13512 variante : verbe `suite a` + verdict nu — la mention neutralise
+    le verdict, classify retourne None."""
+    body = (
+        "Suite au COMMENT_WITH_CONCERNS du 2026-08-29 sur PR #13513, "
+        "voici le diagnostic identifie et le correctif propose."
+    )
+    assert mod.classify("jsboige", body) is None
+
+
+def test_13512_emission_nu_tete_reste_bot_concern():
+    """#13512 CONTROLE NEGATIF : une emission reelle en tete de body
+    (verdict nu sans verbe de mention avant) doit RESTER BOT-CONCERN.
+
+    CE TEST ECHOUE SI Position G capture par exces les emissions directes."""
+    body = "CHANGES_REQUESTED: edge case non couvert dans la branche."
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+def test_13512_verdict_formel_reste_bot_concern():
+    """#13512 CONTROLE NEGATIF : un verdict precede de `Verdict :` (forme
+    d'emission formelle) doit RESTER BOT-CONCERN — le `:` apres `Verdict`
+    fait que la fenetre Position G ne capture pas."""
+    body = "Verdict : CHANGES_REQUESTED sur ce commit. A corriger."
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+def test_13512_fix_colon_emission_reste_bot_concern():
+    """#13512 CONTROLE NEGATIF : `Fix :` (verbe de mention immediatement
+    suivi de `:`) doit RESTER BOT-CONCERN — la fenetre exclut `:` par
+    construction (`[^():\n.]{0,40}?`)."""
+    body = "Fix : CHANGES_REQUESTED sur le ticket 1234. Diagnostic a venir."
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+def test_13512_sonde_helper_position_g_retourne_verdict():
+    """#13512 sonde helper-level : Position G capture bien le verdict nu
+    dans la phrase de #13496 (preuve qu'elle est cablee et la fenetre
+    absorbe le 1-char gap). Suppression de la sonde = la regex ne capture
+    plus, le test fondateur ci-dessus retombe ROUGE."""
+    body = "@user — reponse au REQUEST_CHANGES Hermes du ..."
+    stripped = mod._strip_mentioned_verdicts(mod._strip_quoted(body))
+    # Apres strip, REQUEST_CHANGES doit etre neutralise (espaces de meme
+    # longueur) : `RE` du verdict doit avoir ete remplace par des espaces.
+    assert "REQUEST_CHANGES" not in stripped, (
+        f"Position G n'a pas capture REQUEST_CHANGES dans : {body!r}\n"
+        f"Stripped result: {stripped!r}"
+    )
+
+
+def test_13512_sonde_helper_position_g_retourne_pas_emission_nue():
+    """#13512 sonde helper-level : Position G NE capture PAS un verdict nu
+    en tete (qui est une emission formelle, pas une mention). Suppression
+    de la sonde = le test FN ci-dessus retombe ROUGE (faux positif massif)."""
+    body = "CHANGES_REQUESTED: edge case non couvert."
+    stripped = mod._strip_mentioned_verdicts(mod._strip_quoted(body))
+    # Position G ne capture pas ici (pas de verbe de mention avant) :
+    # le verdict reste vivant dans le body stripé.
+    assert "CHANGES_REQUESTED" in stripped, (
+        f"Position G a capture a tort CHANGES_REQUESTED dans : {body!r}\n"
+        f"Stripped result: {stripped!r}"
+    )
+
+
+# #14070 — garde anti-negation Position G (Hermes demande 1/2). Le verbe
+# de mention + verdict NU matche, mais la negation directe (`je n'ai pas
+# traite`, `non pas`, `ne...plus`, `jamais leve`) doit PRESERVER le verdict
+# dans le body (le verdict reste cite → classify le voit comme un nit non
+# leve). Sans ce garde, une phrase « Je n'ai pas leve le REQUEST_CHANGES »
+# serait neutralisee a tort (le reviewer pretend l'avoir leve alors qu'il
+# dit explicitement qu'il NE l'a PAS leve).
+
+
+def test_14070_position_g_neutralise_pas_mention_negatee_pas():
+    """#14070 FN-safety : Position G avec negation `pas` (15 chars avant le
+    verdict) doit PRESERVER le verdict dans le body. Le reviewer ecrit
+    qu'il N'A PAS traite le REQUEST_CHANGES — c'est un nit non leve."""
+    body = "Je n'ai pas traite le REQUEST_CHANGES, il reste valable."
+    stripped = mod._strip_mentioned_verdicts(mod._strip_quoted(body))
+    # Le verdict doit rester vivant (Position G aurait capture si on n'avait
+    # pas cable _lift_is_negated sur Position G).
+    assert "REQUEST_CHANGES" in stripped, (
+        f"Position G a neutralise a tort REQUEST_CHANGES dans : {body!r}\n"
+        f"Stripped result: {stripped!r}"
+    )
+
+
+def test_14070_position_g_neutralise_pas_mention_negatee_jamais():
+    """#14070 FN-safety : Position G avec negation `jamais` doit PRESERVER
+    le verdict. Forme naturelle : 'On fix CHANGES_REQUESTED ? Jamais, la CI
+    est rouge.' Le reviewer evoque le verdict sans l'avoir leve."""
+    body = "On fix CHANGES_REQUESTED ? Jamais, la CI est rouge."
+    stripped = mod._strip_mentioned_verdicts(mod._strip_quoted(body))
+    assert "CHANGES_REQUESTED" in stripped, (
+        f"Position G a neutralise a tort CHANGES_REQUESTED dans : {body!r}\n"
+        f"Stripped result: {stripped!r}"
+    )
+
+
+def test_14070_position_g_neutralise_pas_annonce_fix_avec_commit_futur():
+    """#14070 FN-safety (PR #13560 fondateur #13559) : Position G avec un
+    verdict suivi d'une reference a un commit futur (`— commit XXXX`)
+    doit PRESERVER le verdict. Forme : 'Fix review ai-01
+    CHANGES_REQUESTED — commit 06956bd0a.' C'est une **annonce de fix**
+    (le commit reference est futur), pas une **reponse** a un verdict
+    passe. Le verdict doit rester vivant dans le body pour que l'organe
+    le voie comme un nit non leve."""
+    body = "Fix review ai-01 CHANGES_REQUESTED — commit 06956bd0a."
+    assert mod.classify("hermes-bot", body) == "BOT-CONCERN", (
+        f"Position G a neutralise a tort CHANGES_REQUESTED dans : {body!r}\n"
+        f"Le verdict suivi de `— commit XXXX` est une annonce de fix, "
+        f"pas une reponse a un verdict passe."
+    )
+
+
 # ---------------------------------------------------------------------------
 # #13598 - EMISSION informelle d'un LIFT_OVERRIDE_LOGINS
 # ---------------------------------------------------------------------------
