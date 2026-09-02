@@ -24,6 +24,7 @@ References:
 
 from __future__ import annotations
 
+import argparse
 import json
 import sys
 import time
@@ -40,10 +41,24 @@ from har_model import HARModel, _make_split_indices
 from intraday_loader import load_binance_eth, load_bitstamp_btc
 from realized_variance import daily_realized_variance, har_lag_features, realized_variance_to_log
 
+_HMMLEARN_MISSING = "hmmlearn not found. Install with: pip install hmmlearn"
+
 try:
     from hmmlearn.hmm import GaussianHMM
-except ImportError:
-    sys.exit("hmmlearn not found. Install with: pip install hmmlearn")
+except ImportError:  # pragma: no cover - only taken where hmmlearn is absent
+    # Deliberately NOT `sys.exit` at import time: this module is imported by
+    # `tests/test_hmm_regime_vol.py`, and a SystemExit raised during pytest
+    # collection aborts the whole session with INTERNALERROR -- taking down
+    # every other suite in the directory, not just this one. The failure is
+    # deferred to the point of use, where it still reports identically for
+    # CLI callers (same message, same exit code).
+    GaussianHMM = None
+
+
+def _require_hmmlearn() -> None:
+    """Fail with the CLI-identical message when hmmlearn is unavailable."""
+    if GaussianHMM is None:
+        sys.exit(_HMMLEARN_MISSING)
 
 
 SEEDS = [0, 7, 42, 99]
@@ -54,8 +69,130 @@ N_HMM_STATES = 2
 RESULTS_DIR = SCRIPTS_DIR / "results"
 
 
+# `_mse_decomposition` and `_dm_centered_mse` are the canonical bias/precision
+# helpers introduced by PR #12742 in `btc_vol.py`. They are duplicated here for
+# the reason `btc_m15.py` states verbatim -- "keep this PR self-contained until
+# a shared module is extracted (TODO post-merge)" -- with one M5-specific
+# reason on top: `btc_vol` imports `dlinear_vol`, which imports `torch` at
+# module level. M5 is HMM + OLS and runs on CPU with no deep-learning stack;
+# importing it for two pure numpy functions would drag torch into a script that
+# does not need it. M5 is now the THIRD duplication site, which is the argument
+# for finally extracting them -- filed separately rather than folded in here.
+def _is_beats(verdict: str) -> bool:
+    """True only for `dm_verdict`'s winning verdict.
+
+    `dm_verdict` emits exactly three strings: "BEATS baseline",
+    "BEATEN BY baseline" and "INCONCLUSIVE". A bare `"BEATS" in verdict`
+    also matches "BEATEN BY baseline" under a substring test on some
+    tokenisations, hence the explicit exclusion kept from the original code.
+    """
+    return "BEATS" in verdict and "BEATEN" not in verdict
+
+
+def _is_beaten(verdict: str) -> bool:
+    """True only for `dm_verdict`'s losing verdict ("BEATEN BY baseline").
+
+    The mirror of `_is_beats`. "BEATEN" appears in exactly one of the three
+    strings `dm_verdict` emits, so no exclusion clause is needed here -- but
+    the guard rails of `_is_beats` still apply the other way round: the two
+    sentinel verdicts this module adds ("SHAPE_MISMATCH", "INSUFFICIENT_DATA")
+    contain neither token and are therefore counted as neither win nor loss.
+    """
+    return "BEATEN" in verdict
+
+
+def _aggregate_debiased_state(
+    n_beats_centered: int,
+    n_beaten_centered: int,
+    n_seeds: int,
+    dm_centered_p_median: float,
+    n_beats_raw: int,
+) -> str:
+    """Aggregate the de-biased (precision) leg into one of four states.
+
+    The three-state machine this replaces could not express a loss: with no
+    branch for "every seed is BEATEN", the four long-horizon configs that the
+    doc and REGISTRY publish as `NO BEATS` (4/4 seeds BEATEN on the centered
+    leg) were persisted as `INCONCLUSIVE`. The executable deliverable could
+    not reproduce its own published verdict.
+
+    Precedence, decided once here and sealed by tests:
+
+    1. unanimous BEATS + significant median  -> "BEATS"
+    2. unanimous BEATEN + significant median -> "NO BEATS"
+    3. the RAW leg was unanimous BEATS       -> "refuted-de-biased"
+    4. otherwise                             -> "INCONCLUSIVE"
+
+    `NO BEATS` deliberately outranks `refuted-de-biased` when both apply (a raw
+    win that the precision leg significantly reverses). "Refuted" states that a
+    claim was not confirmed; the measurement in that case says more than that --
+    it says the model loses. Reporting the weaker of the two would soften a
+    measured loss, and the refutation stays legible anyway because every summary
+    row prints the raw and the de-biased verdict side by side.
+
+    The significance clause is redundant under unanimity (each per-seed BEATS /
+    BEATEN already carries p < alpha, so the median of them does too) and is
+    kept explicit only because the pre-existing BEATS branch stated it: an
+    asymmetric pair of conditions would read as a deliberate difference.
+
+    `n_seeds == 0` yields "INCONCLUSIVE" rather than a vacuous unanimity.
+    """
+    if n_seeds <= 0:
+        return "INCONCLUSIVE"
+    if n_beats_centered == n_seeds and dm_centered_p_median < 0.05:
+        return "BEATS"
+    if n_beaten_centered == n_seeds and dm_centered_p_median < 0.05:
+        return "NO BEATS"
+    if n_beats_raw == n_seeds:
+        return "refuted-de-biased"
+    return "INCONCLUSIVE"
+
+
+def _mse_decomposition(errors: np.ndarray) -> dict:
+    """Decompose MSE of a forecast into bias^2 + variance on the error support."""
+    if errors is None or len(errors) == 0:
+        return {"mse": float("nan"), "bias_sq": float("nan"), "variance": float("nan")}
+    bias = float(np.mean(errors))
+    variance = float(np.var(errors, ddof=0))
+    return {
+        "mse": float(np.mean(errors ** 2)),
+        "bias_sq": bias ** 2,
+        "variance": variance,
+    }
+
+
+def _dm_centered_mse(errors_a: np.ndarray, errors_b: np.ndarray, horizon: int) -> dict:
+    """DM test on errors centered by their own mean, with loss_fn='mse'.
+
+    Centering annihilates the bias component (`mean(e - mean(e)) = 0`), so the
+    resulting `d_mean` measures only the variance differential. The "DM on
+    precision" jambe that #10961 documents is exactly this.
+
+    `loss_fn` stays "mse" on purpose: §C forbids `linear` as the conjunction
+    leg, because on raw signed errors `d_mean = bias_a - bias_b` is blind to
+    dispersion -- it measures the very quantity centering removes.
+    """
+    e_a = np.asarray(errors_a, dtype=float)
+    e_b = np.asarray(errors_b, dtype=float)
+    if e_a.shape != e_b.shape:
+        return {"dm_stat": float("nan"), "dm_pvalue": float("nan"), "dm_verdict": "SHAPE_MISMATCH"}
+    if len(e_a) < 10:
+        return {"dm_stat": float("nan"), "dm_pvalue": float("nan"), "dm_verdict": "INSUFFICIENT_DATA"}
+
+    res = dm_verdict(
+        e_a - np.mean(e_a), e_b - np.mean(e_b), horizon=horizon, loss_fn="mse",
+    )
+    return {
+        "dm_stat": float(res["dm_statistic"]),
+        "dm_pvalue": float(res["p_value"]),
+        "dm_verdict": str(res["verdict"]),
+        "mean_loss_diff": float(res["mean_loss_diff"]),
+    }
+
+
 def fit_hmm_regimes(log_rv_train: np.ndarray, seed: int) -> "GaussianHMM":
     """Fit K-state GaussianHMM on log-RV. State 0 = low vol, state 1 = high vol."""
+    _require_hmmlearn()
     model = GaussianHMM(
         n_components=N_HMM_STATES,
         covariance_type="full",
@@ -248,6 +385,43 @@ def walk_forward_regime_switching(
     classic_errors = classic_preds - truths_arr
     dm = dm_verdict(regime_errors, classic_errors, horizon=horizon)
 
+    # --- Bias instrumentation (#1454 sub-grain; family pattern of #12742/#12745)
+    #
+    # `MSE = bias^2 + variance`. A DM on RAW errors therefore answers "which
+    # model has the lower loss", NOT "which model is more precise": an edge can
+    # be carried entirely by the baseline being miscalibrated. That is not
+    # hypothetical here -- #12745 measured `har_bias_oos = -0.227` on BTC
+    # against the very same classic-HAR baseline this harness compares to, and
+    # the M15 edge did not survive the control (`refuted-de-biased`, #12788).
+    #
+    # Three legs are persisted, and none of them replaces the published one:
+    #   * the signed OOS bias of EACH model (pr-review-discipline §C requires
+    #     the bias report for "modele ET baseline"),
+    #   * the edge recomputed against the DE-BIASED classic HAR, the §C
+    #     interpretation `btc_vol.run_btc_debiased_recentered` uses,
+    #   * `dm_centered_*`, the DM on errors centered by their own mean, whose
+    #     `d_mean` is a pure variance differential -- the leg that says "more
+    #     precise" rather than "better calibrated" (#10961).
+    #
+    # `dm_statistic` / `dm_p_value` / `dm_verdict` keep their original raw-error
+    # meaning so the numbers already published in docs/M5_HMM_REGIME.md stay
+    # reproducible and comparable; the control is ADDED beside them, never
+    # substituted for them.
+    regime_decomp = _mse_decomposition(regime_errors)
+    classic_decomp_raw = _mse_decomposition(classic_errors)
+
+    regime_bias_oos = float(np.mean(regime_errors)) if len(truths_arr) else float("nan")
+    classic_bias_oos = float(np.mean(classic_errors)) if len(truths_arr) else float("nan")
+
+    # De-biased classic HAR: subtract its own OOS bias from its forecasts.
+    # The regime model is left raw -- comparing a raw model to a de-biased
+    # baseline is the strict reading of §C (it can only hurt the model).
+    classic_errors_debiased = classic_errors - classic_bias_oos
+    classic_decomp_debiased = _mse_decomposition(classic_errors_debiased)
+    classic_mse_debiased = classic_decomp_debiased["mse"]
+
+    dm_centered = _dm_centered_mse(regime_errors, classic_errors, horizon=horizon)
+
     return {
         "seed": seed,
         "horizon": horizon,
@@ -261,6 +435,39 @@ def walk_forward_regime_switching(
         "dm_statistic": dm["dm_statistic"],
         "dm_p_value": dm["p_value"],
         "dm_verdict": dm["verdict"],
+        # --- bias report, per model (§C) ------------------------------------
+        "regime_bias_oos": regime_bias_oos,
+        "regime_bias_sq": regime_decomp["bias_sq"],
+        "regime_variance": regime_decomp["variance"],
+        "classic_bias_oos": classic_bias_oos,
+        "classic_bias_sq_raw": classic_decomp_raw["bias_sq"],
+        "classic_variance_raw": classic_decomp_raw["variance"],
+        # --- edge against the DE-BIASED baseline ----------------------------
+        "classic_mse_debiased": classic_mse_debiased,
+        "classic_bias_sq_debiased": classic_decomp_debiased["bias_sq"],
+        "classic_variance_debiased": classic_decomp_debiased["variance"],
+        "classic_bias_share_of_mse": (
+            classic_decomp_raw["bias_sq"] / classic_mse
+            if classic_mse and classic_mse > 0 else float("nan")
+        ),
+        "mse_reduction_pct_vs_debiased_classic": (
+            (classic_mse_debiased - regime_mse) / classic_mse_debiased * 100
+            if classic_mse_debiased and classic_mse_debiased > 0 else float("nan")
+        ),
+        # --- DM on centered errors = variance differential ------------------
+        "dm_centered_stat": dm_centered["dm_stat"],
+        "dm_centered_pvalue": dm_centered["dm_pvalue"],
+        "dm_centered_verdict": dm_centered["dm_verdict"],
+        "dm_centered_mean_loss_diff": dm_centered.get("mean_loss_diff", float("nan")),
+        # Per-observation series, kept OUT of the JSON (see `--dump-series`):
+        # 24 runs x ~1.1k predictions would add ~2 MB to a committed artefact,
+        # and the family's artefacts carry decompositions, not series.
+        "_series": {
+            "dates": [str(pd.Timestamp(d).date()) for d in pred_dates],
+            "regime": [float(x) for x in regime_preds],
+            "classic": [float(x) for x in classic_preds],
+            "target": [float(x) for x in truths_arr],
+        },
     }
 
 
@@ -288,19 +495,49 @@ def load_panel() -> dict[str, pd.Series]:
     return panels
 
 
-def main() -> None:
+def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    """CLI so a single (coin, horizon) cell can be re-validated on its own.
+
+    The full grid is 2 coins x 3 horizons x 4 seeds = 24 walk-forward runs.
+    Re-auditing one published claim (e.g. the ETH h=1 BEATS) does not need the
+    other 20 runs, and forcing them would put a bias re-check out of reach of a
+    worker cycle. Defaults reproduce the original full sweep exactly.
+    """
+    p = argparse.ArgumentParser(description="M5 -- HMM regime-switching HAR vs classic HAR")
+    p.add_argument("--coins", nargs="+", default=None,
+                   help="subset of coins to run (default: every panel that loads)")
+    p.add_argument("--horizons", nargs="+", type=int, default=HORIZONS)
+    p.add_argument("--seeds", nargs="+", type=int, default=SEEDS)
+    p.add_argument("--out", default=None,
+                   help="results JSON path (default: results/m5_hmm_regime.json)")
+    p.add_argument("--dump-series", default=None,
+                   help="also write the per-observation forecast series to this CSV")
+    return p.parse_args(argv)
+
+
+def main(argv: list[str] | None = None) -> None:
+    args = _parse_args(argv)
+    # Fail fast, before loading any data -- same message and exit code as the
+    # former import-time guard.
+    _require_hmmlearn()
+    seeds = list(args.seeds)
+    horizons = list(args.horizons)
+
     print("=" * 70)
     print("M5 -- HMM Regime-Switching HAR vs Classic HAR")
-    print(f"Seeds: {SEEDS}, Horizons: {HORIZONS}, HMM states: {N_HMM_STATES}")
+    print(f"Seeds: {seeds}, Horizons: {horizons}, HMM states: {N_HMM_STATES}")
     print(f"Approach: regime-switching (separate HAR per decoded regime)")
     print("=" * 70)
 
     panels = load_panel()
+    if args.coins:
+        panels = {c: rv for c, rv in panels.items() if c in set(args.coins)}
     if not panels:
         sys.exit("No data loaded, aborting.")
 
     t0 = time.time()
     all_results: list[dict] = []
+    series_rows: list[dict] = []
 
     for coin, rv in panels.items():
         print(f"\n{'=' * 50}")
@@ -318,14 +555,15 @@ def main() -> None:
         print(f"  Low-vol mean log-RV: {log_rv_full[labels_full==0].mean():.4f}")
         print(f"  High-vol mean log-RV: {log_rv_full[labels_full==1].mean():.4f}")
 
-        for horizon in HORIZONS:
+        for horizon in horizons:
             print(f"\n  h={horizon}:")
             seed_results = []
-            for seed in SEEDS:
+            for seed in seeds:
                 t1 = time.time()
                 res = walk_forward_regime_switching(rv, horizon, seed)
                 elapsed = time.time() - t1
-                tag = "**" if "BEATS" in res["dm_verdict"] and "BEATEN" not in res["dm_verdict"] else "  "
+                tag = "**" if _is_beats(res["dm_verdict"]) else "  "
+                ctag = "**" if _is_beats(res["dm_centered_verdict"]) else "  "
                 print(
                     f"    seed={seed:2d}: regime_mse={res['regime_mse']:.4f} "
                     f"classic_mse={res['classic_mse']:.4f} "
@@ -333,27 +571,98 @@ def main() -> None:
                     f"DM p={res['dm_p_value']:.4f} {tag}{res['dm_verdict']}{tag} "
                     f"({elapsed:.1f}s)"
                 )
+                print(
+                    f"              bias: regime={res['regime_bias_oos']:+.4f} "
+                    f"classic={res['classic_bias_oos']:+.4f} "
+                    f"(bias^2 = {res['classic_bias_share_of_mse'] * 100:.1f}% of classic MSE) "
+                    f"| vs de-biased classic: {res['mse_reduction_pct_vs_debiased_classic']:+.1f}% "
+                    f"| DM-centered p={res['dm_centered_pvalue']:.4f} "
+                    f"{ctag}{res['dm_centered_verdict']}{ctag}"
+                )
                 res["coin"] = coin
+                series = res.pop("_series")
+                if args.dump_series:
+                    for d, r_, c_, t_ in zip(
+                        series["dates"], series["regime"], series["classic"], series["target"],
+                    ):
+                        series_rows.append({
+                            "coin": coin, "horizon": horizon, "seed": seed,
+                            "date": d, "pred_regime": r_, "pred_classic": c_, "target": t_,
+                        })
                 all_results.append(res)
                 seed_results.append(res)
 
-            n_beats = sum(1 for r in seed_results if "BEATS" in r["dm_verdict"] and "BEATEN" not in r["dm_verdict"])
+            n_seeds = len(seed_results)
+            n_beats = sum(1 for r in seed_results if _is_beats(r["dm_verdict"]))
+            n_beats_centered = sum(1 for r in seed_results if _is_beats(r["dm_centered_verdict"]))
+            n_beaten_centered = sum(1 for r in seed_results if _is_beaten(r["dm_centered_verdict"]))
             mean_reduction = np.mean([r["mse_reduction_pct"] for r in seed_results])
+            mean_reduction_debiased = np.mean(
+                [r["mse_reduction_pct_vs_debiased_classic"] for r in seed_results]
+            )
+            std_reduction = np.std([r["mse_reduction_pct"] for r in seed_results], ddof=0)
             mean_regime_mse = np.mean([r["regime_mse"] for r in seed_results])
             mean_classic_mse = np.mean([r["classic_mse"] for r in seed_results])
-            agg_verdict = "BEATS" if n_beats == len(SEEDS) else "INCONCLUSIVE"
+            mean_classic_mse_debiased = np.mean([r["classic_mse_debiased"] for r in seed_results])
+            dm_p_median = float(np.median([r["dm_p_value"] for r in seed_results]))
+            dm_centered_p_median = float(np.median([r["dm_centered_pvalue"] for r in seed_results]))
+            agg_verdict = "BEATS" if n_beats == n_seeds else "INCONCLUSIVE"
+            # The §C conjunction verdict: the edge must survive the precision
+            # leg. An edge that only exists against a mis-calibrated baseline
+            # is reported as `refuted-de-biased`, the wording #12788 used when
+            # M15 failed this same control -- never quietly downgraded; a leg
+            # on which every seed LOSES is `NO BEATS`, the §C vocabulary.
+            #
+            # `aggregate_verdict` (raw leg) deliberately keeps its two-state
+            # convention: `m5_hmm_regime_research.ipynb` publishes it as "BEATS
+            # exige 4/4 seeds, sinon INCONCLUSIVE" and derives its own DEGRADE
+            # reading from it, so widening it would silently invalidate that
+            # notebook's committed counts (a re-run of the artefact plus a
+            # re-execution of the notebook). Filed as #14388 rather than folded
+            # into a bias-audit PR.
+            agg_verdict_centered = _aggregate_debiased_state(
+                n_beats_centered=n_beats_centered,
+                n_beaten_centered=n_beaten_centered,
+                n_seeds=n_seeds,
+                dm_centered_p_median=dm_centered_p_median,
+                n_beats_raw=n_beats,
+            )
             print(
-                f"    >> AGGREGATE: {n_beats}/{len(SEEDS)} seeds beat classic, "
+                f"    >> AGGREGATE: {n_beats}/{n_seeds} seeds beat classic, "
                 f"mean reduction={mean_reduction:+.1f}%, "
                 f"verdict={agg_verdict}"
             )
+            print(
+                f"    >> DE-BIASED: {n_beats_centered}/{n_seeds} seeds beat "
+                f"({n_beaten_centered}/{n_seeds} beaten) on the precision leg, "
+                f"mean reduction vs de-biased classic={mean_reduction_debiased:+.1f}%, "
+                f"DM-centered p_median={dm_centered_p_median:.2e}, "
+                f"verdict={agg_verdict_centered}"
+            )
             all_results.append({
                 "coin": coin, "horizon": horizon, "seed": "aggregate",
-                "n_beats_seeds": f"{n_beats}/{len(SEEDS)}",
+                "n_seeds": n_seeds,
+                "n_beats_seeds": f"{n_beats}/{n_seeds}",
                 "mean_regime_mse": float(mean_regime_mse),
                 "mean_classic_mse": float(mean_classic_mse),
                 "mean_reduction_pct": float(mean_reduction),
+                "std_reduction_pct": float(std_reduction),
+                "dm_p_median": dm_p_median,
                 "aggregate_verdict": agg_verdict,
+                # --- de-biased / precision leg (#1454 sub-grain) ------------
+                "n_beats_seeds_centered": f"{n_beats_centered}/{n_seeds}",
+                # The published tables carry a "seeds BEATEN (rec.)" column;
+                # without this field it could not be read back from the artefact.
+                "n_beaten_seeds_centered": f"{n_beaten_centered}/{n_seeds}",
+                "mean_classic_mse_debiased": float(mean_classic_mse_debiased),
+                "mean_reduction_pct_vs_debiased_classic": float(mean_reduction_debiased),
+                "dm_centered_p_median": dm_centered_p_median,
+                "mean_regime_bias_oos": float(np.mean([r["regime_bias_oos"] for r in seed_results])),
+                "mean_classic_bias_oos": float(np.mean([r["classic_bias_oos"] for r in seed_results])),
+                "mean_classic_bias_share_of_mse": float(
+                    np.mean([r["classic_bias_share_of_mse"] for r in seed_results])
+                ),
+                "aggregate_verdict_debiased": agg_verdict_centered,
             })
 
     elapsed_total = time.time() - t0
@@ -362,27 +671,38 @@ def main() -> None:
     print(f"{'=' * 70}")
 
     RESULTS_DIR.mkdir(exist_ok=True)
-    out_path = RESULTS_DIR / "m5_hmm_regime.json"
+    out_path = Path(args.out) if args.out else RESULTS_DIR / "m5_hmm_regime.json"
+    out_path.parent.mkdir(parents=True, exist_ok=True)
     with open(out_path, "w") as f:
         json.dump({
             "experiment": "M5_HMM_REGIME_SWITCHING_HAR",
             "approach": "regime-switching: separate HAR per Viterbi-decoded regime",
             "n_hmm_states": N_HMM_STATES,
-            "seeds": SEEDS,
-            "horizons": HORIZONS,
+            "seeds": seeds,
+            "horizons": horizons,
             "n_splits": N_SPLITS,
             "refit_every": REFIT_EVERY,
+            "loss_fn": "mse",
+            "dm_centered_errors": True,
+            "classic_har_debiased": True,
             "elapsed_seconds": elapsed_total,
             "results": all_results,
         }, f, indent=2, default=str)
     print(f"Results saved to {out_path}")
 
+    if args.dump_series:
+        series_path = Path(args.dump_series)
+        series_path.parent.mkdir(parents=True, exist_ok=True)
+        pd.DataFrame(series_rows).to_csv(series_path, index=False)
+        print(f"Forecast series ({len(series_rows)} rows) saved to {series_path}")
+
     print("\n## M5 HMM Regime-Switching HAR Summary")
-    print("| Coin | h=1 | h=5 | h=10 |")
-    print("|------|-----|-----|------|")
+    header = "| Coin | " + " | ".join(f"h={h}" for h in horizons) + " |"
+    print(header)
+    print("|" + "---|" * (len(horizons) + 1))
     for coin in panels:
         row = f"| {coin} |"
-        for h in HORIZONS:
+        for h in horizons:
             agg = next(
                 (r for r in all_results
                  if r["coin"] == coin and r["horizon"] == h
@@ -390,9 +710,14 @@ def main() -> None:
                 None,
             )
             if agg:
-                v = agg["aggregate_verdict"]
-                red = agg["mean_reduction_pct"]
-                row += f" {v} ({red:+.1f}%) |"
+                # Both verdicts, always: the raw one is what the doc published,
+                # the de-biased one is what §C actually asks. Printing only the
+                # survivor would hide which of the two moved.
+                row += (
+                    f" {agg['aggregate_verdict']} ({agg['mean_reduction_pct']:+.1f}%)"
+                    f" / de-biased {agg['aggregate_verdict_debiased']}"
+                    f" ({agg['mean_reduction_pct_vs_debiased_classic']:+.1f}%) |"
+                )
             else:
                 row += " -- |"
         print(row)

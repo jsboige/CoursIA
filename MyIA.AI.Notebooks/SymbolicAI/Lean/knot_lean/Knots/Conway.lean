@@ -478,6 +478,22 @@ theorem trefoil_ne_unknot_alexander :
   have h2 := congrArg (fun p : Polynomial ℤ => p.coeff 2) h
   simp [Polynomial.coeff_X] at h2
 
+/-- Invariance sous mutation : le mutant du trèfle (fenêtre pleine, r12) a le
+même polynôme d'Alexander que le trèfle — le polynôme d'Alexander est
+invariant par mutation (Conway 1970), et le trèfle étant amphichiral, son
+mutant reste un trèfle. -/
+theorem alexander_trefoilMutant :
+    alexanderPolynomial trefoilMutant = Polynomial.X ^ 2 - Polynomial.X + 1 := by
+  have hp : arcPartition trefoilMutantDiagram = [[1, 2], [3, 4], [5, 6]] := by
+    decide
+  simp only [alexanderPolynomial, alexanderPolynomialAux, trefoilMutant, hp]
+  dsimp [trefoilMutantDiagram, mutateWindow, KleinRot.apply, trefoilDiagram]
+  simp (config := { decide := true })
+  rw [det_two_aux]
+  simp only [Matrix.of_apply]
+  simp (config := { decide := true }) [alexanderEntry]
+  ring
+
 /-- Polynôme d'Alexander trivial du nœud de Conway — contenu classique
 Δ(t) = 1 ; sous la normalisation désignée, le mineur vaut l'unité −t⁶
 (arbitrage de la note de §4 tranché : valeur désignée exacte). -/

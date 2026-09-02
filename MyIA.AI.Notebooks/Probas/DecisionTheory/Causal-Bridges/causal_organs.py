@@ -194,3 +194,64 @@ def iv_replay(
         beta = np.linalg.solve(Xs.T @ Ps @ Xs, Xs.T @ Ps @ y)
         out.append(beta[1])
     return np.array(out)
+
+
+# ---------------------------------------------------------------------------
+# Estimateur DiD 2x2 (cellule 5) -- tranche 3 de #14051
+# ---------------------------------------------------------------------------
+def panel_did_two_by_two(
+    df: pd.DataFrame,
+    group_col: str = "group",
+    period_col: str = "period",
+    y_col: str = "y",
+    n_pre: int = 5,
+) -> float:
+    """Difference-in-differences 2x2 sur un panel groupe x periode.
+
+    Forme fonctionnelle de l'arithmetique de la **cellule 5** de
+    ``Quasi-Experimental.ipynb``, qui calcule les quatre moyennes en ligne :
+
+    .. code-block:: python
+
+        mT_pre  = df_did.query("group == 1 and period < 5").y.mean()
+        mT_post = df_did.query("group == 1 and period >= 5").y.mean()
+        mC_pre  = df_did.query("group == 0 and period < 5").y.mean()
+        mC_post = df_did.query("group == 0 and period >= 5").y.mean()
+        tau_DiD = (mT_post - mT_pre) - (mC_post - mC_pre)
+
+    Le notebook garde volontairement sa forme deroulee : afficher les quatre
+    cellules 2x2 une par une **est** le geste pedagogique (on montre que
+    l'ecart post-seulement melange niveau permanent et effet, la ou la
+    double difference isole l'effet). Ce module en expose la forme
+    appelable, pour les consommateurs programmatiques -- au premier rang
+    desquels ``ict.bridges.quasi_experimental``, dont la verification
+    cross-engine doit observer **cet** estimateur et non une reproduction
+    locale (acceptance 3 de #14051).
+
+    L'accord entre les deux formes est verrouille par un test qui rejoue
+    l'arithmetique ``.query()`` de la cellule et exige l'egalite exacte
+    (``test_bridges_canonical_wiring.py``). Une derive de l'une des deux
+    formes rougit.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Panel portant les colonnes ``group`` (0/1), ``period``, ``y``.
+    group_col, period_col, y_col : str
+        Noms de colonnes, pour les panels qui ne suivent pas la convention.
+    n_pre : int, default 5
+        Nombre de periodes pre-traitement -- la frontiere ``period >= n_pre``
+        separe post de pre.
+
+    Return
+    ------
+    float
+        ``tau_DiD = (T_post - T_pre) - (C_post - C_pre)``.
+    """
+    g1 = df[df[group_col] == 1]
+    g0 = df[df[group_col] == 0]
+    t_post = g1[g1[period_col] >= n_pre][y_col].mean()
+    t_pre = g1[g1[period_col] < n_pre][y_col].mean()
+    c_post = g0[g0[period_col] >= n_pre][y_col].mean()
+    c_pre = g0[g0[period_col] < n_pre][y_col].mean()
+    return float((t_post - t_pre) - (c_post - c_pre))

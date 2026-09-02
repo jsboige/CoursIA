@@ -117,9 +117,9 @@ MyIA.AI.Notebooks/GenAI/
   - [`educational-workflows.md`](../MyIA.AI.Notebooks/GenAI/tutorials/educational-workflows.md) (1400 lignes)
 
 - ✅ Documentation technique (3000+ lignes)
-  - [`INDEX.md`](../MyIA.AI.Notebooks/GenAI/INDEX.md) : Navigation complète (1242 lignes)
+  - [`INDEX.md`](../../MyIA.AI.Notebooks/GenAI/Image/INDEX.md) : Navigation complète (1242 lignes)
   - [`TROUBLESHOOTING.md`](../MyIA.AI.Notebooks/GenAI/TROUBLESHOOTING.md) : Résolution problèmes (1286 lignes)
-  - [`DEPLOYMENT.md`](../MyIA.AI.Notebooks/GenAI/DEPLOYMENT.md) : Guide production (1491 lignes)
+  - [`DEPLOYMENT.md`](../../MyIA.AI.Notebooks/GenAI/Image/DEPLOYMENT.md) : Guide production (1491 lignes)
   - Architecture, standards, intégration (8 docs)
 
 **Qualité** :
@@ -965,7 +965,7 @@ La mission **GenAI Images CoursIA** a **dépassé ses objectifs initiaux** avec 
 ---
 
 **📧 Contact** : genai-team@coursia.ai  
-**📚 Documentation** : [INDEX Complet](../MyIA.AI.Notebooks/GenAI/INDEX.md)  
+**📚 Documentation** : [INDEX Complet](../../MyIA.AI.Notebooks/GenAI/Image/INDEX.md)  
 **🐛 Issues** : [GitHub Issues](https://github.com/coursia/genai/issues)
 
 ---

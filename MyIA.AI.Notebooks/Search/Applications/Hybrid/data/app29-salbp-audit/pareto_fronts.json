@@ -1,0 +1,88 @@
+{
+  "instance": "pareto-line",
+  "certified": true,
+  "range": [
+    4,
+    10
+  ],
+  "upper_bound": "one-task-per-station",
+  "points": [
+    {
+      "stations": 4,
+      "method": "CP-SAT SALBP-2",
+      "status": "OPTIMAL",
+      "objective": 13.0,
+      "best_bound": 13.0,
+      "gap": 0.0,
+      "wall_time": 0.021748499988461845,
+      "valid": true
+    },
+    {
+      "stations": 5,
+      "method": "CP-SAT SALBP-2",
+      "status": "OPTIMAL",
+      "objective": 11.0,
+      "best_bound": 11.0,
+      "gap": 0.0,
+      "wall_time": 0.02133719999983441,
+      "valid": true
+    },
+    {
+      "stations": 6,
+      "method": "CP-SAT SALBP-2",
+      "status": "OPTIMAL",
+      "objective": 9.0,
+      "best_bound": 9.0,
+      "gap": 0.0,
+      "wall_time": 0.03042329999152571,
+      "valid": true
+    },
+    {
+      "stations": 7,
+      "method": "CP-SAT SALBP-2",
+      "status": "OPTIMAL",
+      "objective": 8.0,
+      "best_bound": 8.0,
+      "gap": 0.0,
+      "wall_time": 0.043965100005152635,
+      "valid": true
+    }
+  ],
+  "raw_status": [
+    {
+      "stations": 4,
+      "status": "OPTIMAL",
+      "valid": true
+    },
+    {
+      "stations": 5,
+      "status": "OPTIMAL",
+      "valid": true
+    },
+    {
+      "stations": 6,
+      "status": "OPTIMAL",
+      "valid": true
+    },
+    {
+      "stations": 7,
+      "status": "OPTIMAL",
+      "valid": true
+    },
+    {
+      "stations": 8,
+      "status": "OPTIMAL",
+      "valid": true
+    },
+    {
+      "stations": 9,
+      "status": "OPTIMAL",
+      "valid": true
+    },
+    {
+      "stations": 10,
+      "status": "OPTIMAL",
+      "valid": true
+    }
+  ]
+}

@@ -32,6 +32,14 @@ on:
     - cron: '17 6 * * *'
   pull_request:
     types: [closed]
+    # #10600 tranche 2, filter PAR LA BASE, pas par paths : un orphelin est
+    # par definition une PR mergee dont la base != main -- une PR visee sur
+    # main ne peut PAS orpheliner (son merge atteint main directement). Le
+    # filtre paths propose par #12773 aurait rendu l'alerte precoce aveugle
+    # sur la classe canonique (PRs notebooks vers base feature). Ici la
+    # jambe [closed] ne fire QUE la population a risque (~x20 moins de runs,
+    # zero cecite) ; le sweep quotidien reste l'organe primaire inchange.
+    branches-ignore: [main]
   workflow_dispatch:
     inputs:
       dry_run:
@@ -52,11 +60,24 @@ concurrency:
 jobs:
   sweep:
     name: "Verify merged PRs' mergeCommit reached main (advisory)"
-    runs-on: ubuntu-latest
+    # Routage #14283 tranche 3 (decision ai-01 2026-09-02) : jambe Linux
+    # auto-hebergee. Le `if:` ci-dessous est la garde anti-fork exigee par
+    # scripts/ci/check_self_hosted_runner_policy.py ; un `runs-on` STATIQUE la
+    # rend auditable (une expression dynamique leve DYNAMIC_RUNS_ON).
+    # Les PRs de fork sautent le job -- pr_gate.py compte `skipped` comme OK.
+    # Retour arriere = remettre `runs-on: ubuntu-latest` + retrait de l'allowlist.
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
     # On [closed], restrict to same-repo PRs: fork PRs cannot create an
     # internal base != main orphan and their limited token/fetch access would
     # only produce spurious failures on an advisory job.
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    #
+    # Forme universelle (#13874) : teste la presence du champ pull_request
+    # (null pour schedule et workflow_dispatch, ce qui couvre ces triggers
+    # legitimes) puis l'identite du repo source en un seul predicat. Couvre
+    # pull_request ET pull_request_target d'un coup (le second est le vecteur
+    # d'exfiltration classique sur runner public -- voir le commentaire
+    # equivalent dans linux-self-hosted-tests.yml).
+    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
     steps:
       - name: Checkout (full history, blobless)
         # Partial clone, serie #11843 (workflow 2). The scan interrogates the

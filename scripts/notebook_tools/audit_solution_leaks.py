@@ -1,10 +1,15 @@
 #!/usr/bin/env python3
 """Audit solution leaks in pedagogical notebooks.
 
-Detects 3 patterns per issue #362:
-1. Function body leak: function defined under # Exercice N with >3 lines of logic
-2. Commented-out solution leak: # comment blocks >3 lines with code/data
-3. Pre-resolved cells: # Solution / # Exemple resolu with complete answers
+Detects 5 patterns:
+1. Function body leak (issue #362): function defined under # Exercice N with >3 lines of logic
+2. Commented-out solution leak (issue #362): # comment blocks >3 lines with code/data
+3. Pre-resolved cells (issue #362): # Solution / # Exemple resolu with complete answers
+4. C# candidates (#5179 complement): ``// Exercice`` / ``// Solution`` code cells FLAGged for review
+5. Markdown-borne solutions, class (h) (#14327 / PR #14161): a complete Lean proof
+   protocol written in a MARKDOWN cell in the window of an exercise. All other
+   patterns are conditioned on ``code`` cells, so this shape was structurally
+   invisible to the scanner. Emits FLAG candidates (see pattern 5 regex block).
 """
 
 import argparse
@@ -55,6 +60,43 @@ CSHARP_SOLUTION_MARKER = re.compile(
 CSHARP_STUB_MARKERS = re.compile(
     r'(//\s*TODO|//\s*Indice|//\s*Étape|//\s*Etape|\bpass\b|\breturn\s*;|\breturn\s+null\b)',
     re.IGNORECASE,
+)
+
+# --- Pattern 5 (class (h), #14327 / PR #14161): markdown-borne solutions ---
+# A complete solution written in a MARKDOWN cell in the window of an exercise
+# (fenced ```lean proof protocol, expected output, cost) is invisible to every
+# other pattern here -- they are all conditioned on `code` cells. Like the C#
+# detector above, this emits FLAG candidates for manual review, never an
+# auto-verdict: md cells legitimately carry worked examples and interpretation
+# cells with fenced proofs, so the exemple-vs-leak verdict is a content
+# judgment (exercise-example-labeling rule).
+#
+# Sanctioned pattern (established PR #14161): a final section
+# "Annexe -- solutions des exercices" is the approved home for worked
+# solutions -- every md cell at or after the first annexe header is EXEMPT.
+LEAN_EXERCICE_LINE = re.compile(
+    r'^\s*--\s*(Exercice\s*\d+|TODO\s+etudiant)\b', re.IGNORECASE
+)
+LEAN_FENCE_BLOCK = re.compile(
+    r'```(?:lean|mathlib)\b[^\n]*\n(.*?)```', re.DOTALL | re.IGNORECASE
+)
+# A fenced block counts as a complete proof script when it carries a `:= by`
+# goal AND a closing tactic line solving it. Bare backticked tactic mentions
+# (indices like "Indice : `exact foo h`") are deliberately NOT a trigger:
+# measured 2026-09-02 on main, that shape fires 10x, all legitimate
+# pedagogical indices in exercise headers. Likewise "sortie attendue" alone
+# is NOT a trigger (11 legitimate interpretation cells in the very notebook
+# of the golden set) -- it stays a reported detail, never a verdict.
+LEAN_COMPLETE_PROOF_LINE = re.compile(
+    r'^\s{1,10}(?:exact|simp|simp_all|rw|rewrite|calc|refine|apply|decide|'
+    r'native_decide|omega|ring|linarith|norm_num|aesop|tauto|constructor|'
+    r'induction|rcases|obtain|unfold)\b.*$',
+    re.MULTILINE,
+)
+MD_ANNEXE_HEADER = re.compile(
+    r'^#{1,6}\s*(?:Annexe\b[^\n]*(?:solution|corrig|exercice)'
+    r'|(?:Solution|Corrigé|Corrige)s?\s+des\s+exercices)',
+    re.IGNORECASE | re.MULTILINE,
 )
 # C# language detection: kernelspec language_info.name OR a .net-csharp kernel.
 def _is_csharp_notebook(nb):
@@ -277,6 +319,71 @@ def detect_csharp_leak_candidates(cells):
     return candidates
 
 
+def detect_markdown_solution_candidates(cells):
+    """Pattern 5 (class (h), #14327): FLAG md cells carrying a complete proof
+    protocol in the window of an exercise.
+
+    A md cell is a candidate when it sits within the 3 cells upstream of an
+    exercise anchor (the anchor itself counts when it is the md header cell),
+    is not part of a sanctioned final "Annexe -- solutions des exercices"
+    section, and contains a fenced ```lean``` block holding a complete proof
+    script (a ``:= by`` goal closed by a tactic line). Anchors are md
+    ``### Exercice N`` headers, Python ``# Exercice`` code cells and Lean
+    ``-- Exercice N`` / ``-- TODO etudiant`` code cells (the golden set of
+    PR #14161 uses the Lean form, which no other anchor regex matches).
+
+    Returns FLAG-severity candidates for manual review (see the pattern 5
+    regex block for why this is not an auto-verdict).
+    """
+    anchors = set()
+    for i, cell in enumerate(cells):
+        src = ''.join(cell.get('source', []))
+        if not src:
+            continue
+        if cell['cell_type'] == 'markdown':
+            if EXERCICE_MD_MARKERS.search(src):
+                anchors.add(i)
+        elif cell['cell_type'] == 'code':
+            lines = src.split('\n')
+            if EXERCICE_MARKERS.search(lines[0]):
+                anchors.add(i)
+            elif any(LEAN_EXERCICE_LINE.match(ln) for ln in lines[:3]):
+                anchors.add(i)
+
+    annexe_at = None
+    for i, cell in enumerate(cells):
+        if cell['cell_type'] == 'markdown':
+            if MD_ANNEXE_HEADER.search(''.join(cell.get('source', []))):
+                annexe_at = i
+                break
+
+    candidates = []
+    flagged = set()
+    for k in sorted(anchors):
+        for j in range(max(0, k - 3), k + 1):
+            if j in flagged:
+                continue
+            cell = cells[j]
+            if cell['cell_type'] != 'markdown':
+                continue
+            if annexe_at is not None and j >= annexe_at:
+                continue
+            src = ''.join(cell.get('source', []))
+            for m in LEAN_FENCE_BLOCK.finditer(src):
+                block = m.group(1)
+                if ':= by' in block and LEAN_COMPLETE_PROOF_LINE.search(block):
+                    flagged.add(j)
+                    candidates.append({
+                        'type': 'md_solution_protocol',
+                        'cell_index': j,
+                        'context': f'window_of_anchor_{k}',
+                        'first_line': src.strip().split('\n')[0][:80],
+                        'severity': 'FLAG',
+                    })
+                    break
+    return candidates
+
+
 def audit_notebook(path):
     """Audit a single notebook for solution leaks."""
     try:
@@ -352,6 +459,10 @@ def audit_notebook(path):
     if _is_csharp_notebook(nb):
         all_leaks.extend(detect_csharp_leak_candidates(cells))
 
+    # Pattern 5 (class (h), #14327): md cells carrying complete proof protocols
+    # in the window of an exercise -- FLAG candidates for manual review.
+    all_leaks.extend(detect_markdown_solution_candidates(cells))
+
     return all_leaks
 
 
@@ -368,6 +479,7 @@ def _run_audit():
     total_leaks = {
         'function_body_leak': 0, 'commented_solution_leak': 0, 'preresolved_cell': 0,
         'csharp_exercice_body': 0, 'csharp_preresolved': 0,
+        'md_solution_protocol': 0,
     }
 
     for nb_path in sorted(notebooks):
@@ -422,6 +534,10 @@ def main(argv=None):
     if cs_body or cs_pre:
         print(f"C# candidates (FLAGGED FOR REVIEW, not auto-verdicted): "
               f"csharp_exercice_body={cs_body}, csharp_preresolved={cs_pre}")
+    md_proto = total_leaks.get('md_solution_protocol', 0)
+    if md_proto:
+        print(f"Markdown solution-protocol candidates (FLAGGED FOR REVIEW, not "
+              f"auto-verdicted): md_solution_protocol={md_proto}")
     print()
 
     # Sort by severity (HIGH first). FLAG = C# candidates for manual review.

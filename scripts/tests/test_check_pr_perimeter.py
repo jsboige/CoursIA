@@ -2866,6 +2866,110 @@ def test_13610_predicate_unit_unanimous():
 
 
 # ---------------------------------------------------------------------------
+# #13610 residual (2026-09-02, measured by po-2024) -- the referent is named,
+# but named as a SYMBOL, not as a file. The tail class of _NAMED_FILE_BODY was
+# `[A-Za-z0-9]+`, which excludes the underscore; a dotted symbol was therefore
+# not recognized as a named referent, and the FN-safety branch kept the rouge
+# on the FOUNDING sentence of #13539 itself. The boundary was arbitrary AND
+# invisible: the same code reference passed or rouged on the sole strength of
+# one underscore. The pair below is the proof -- the first test alone would be
+# satisfied by simply disabling the guard, which is why the positive control
+# and the anonymous-referent control are pinned alongside it.
+# ---------------------------------------------------------------------------
+
+# The two rows of the #13610 table, verbatim in shape: same sentence, same
+# referent, one underscore apart.
+_SYMBOL_SHAPE = (
+    "L'upsert vit dans `pick_idle_grain.{symbole}` ; le generaliser "
+    "demanderait d'editer un fichier deja porteur de deux PRs ouvertes "
+    "de la meme lane"
+)
+
+
+def test_13610_symbol_referent_without_underscore_passes():
+    """Table row 1: `pick_idle_grain.upsert` -- passed even before the fix.
+    Pinned so a future tightening of the tail class cannot silently take it
+    back, which would re-open the inversion from the other side."""
+    line = _SYMBOL_SHAPE.format(symbole="upsert")
+    problems = check_assertion(FILES_13610, line)
+    assert problems == [], (
+        "a dotted symbol without underscore must not rouge; got: "
+        + repr(problems)
+    )
+
+
+def test_13610_symbol_referent_with_underscore_passes():
+    """Table row 2: `pick_idle_grain.upsert_orphans` -- ROUGED before the fix,
+    on the sole strength of the underscore. This is the regression the
+    residual names."""
+    line = _SYMBOL_SHAPE.format(symbole="upsert_orphans")
+    problems = check_assertion(FILES_13610, line)
+    assert problems == [], (
+        "a dotted symbol with an underscore must not rouge -- the underscore "
+        "is not a semantic boundary; got: " + repr(problems)
+    )
+
+
+def test_13610_founding_sentence_of_13539_passes():
+    """The sentence of #13539 that founded the whole thread. Its referent was
+    named all along -- named as a symbol. Acceptance line 1 of #13610."""
+    line = _SYMBOL_SHAPE.format(symbole="upsert_orphans_comment")
+    problems = check_assertion(FILES_13610, line)
+    assert problems == [], (
+        "the founding sentence of #13539 must pass the guard; got: "
+        + repr(problems)
+    )
+
+
+def test_13610_symbol_widening_keeps_positive_control_rouge():
+    """Acceptance line 2 of #13610, stated as a PAIR with the three tests
+    above: widening the tail class must NOT extinguish the positive control.
+    A fix that made the symbol cases pass by weakening the guard would pass
+    those three and fail this one -- which is the whole point of pinning it
+    here rather than relying on the older copy elsewhere in the file."""
+    problems = check_assertion(FILES_13610, "Cette PR ne touche qu'un fichier.")
+    assert problems, (
+        "the positive control must still rouge after the widening -- "
+        "3 files in the PR, assertion claims 1"
+    )
+
+
+def test_13610_symbol_widening_keeps_anonymous_referent_rouge():
+    """FN-safety, restated post-widening: widening WHAT counts as a named
+    referent must not turn an ANONYMOUS referent into a named one. #13612's
+    deliberate default-fail-loud on ambiguous shapes is untouched."""
+    line = (
+        "le generaliser demanderait d'editer un fichier deja porteur de "
+        "deux PRs ouvertes"
+    )
+    problems = check_assertion(FILES_13610, line)
+    assert problems, (
+        "an anonymous referent must keep the rouge after the widening"
+    )
+
+
+def test_13610_symbol_predicate_unit_pair():
+    """Direct unit test of the predicate on the two table rows, decoupled from
+    check_assertion so a pipeline change cannot mask a predicate regression --
+    same rationale as test_13610_predicate_unit_unanimous."""
+    files = FILES_13610
+    assert _word_form_is_indef_non_pr_subject(
+        _SYMBOL_SHAPE.format(symbole="upsert"), files
+    ) is True
+    assert _word_form_is_indef_non_pr_subject(
+        _SYMBOL_SHAPE.format(symbole="upsert_orphans"), files
+    ) is True
+    assert _word_form_is_indef_non_pr_subject(
+        _SYMBOL_SHAPE.format(symbole="upsert_orphans_comment"), files
+    ) is True
+    # The widening is about the TAIL of a dotted referent, nothing else:
+    # an anonymous referent stays False.
+    assert _word_form_is_indef_non_pr_subject(
+        "editer un fichier quelque part", files
+    ) is False
+
+
+# ---------------------------------------------------------------------------
 # #13637 -- carried-from-main files. GitHub's /pulls/N/files diffs base-tip ->
 # head, so a branch that merged main gets main's own changes attributed to it
 # (founder #13601: 04-7 showed +2708/-2708 although the PR did not touch it).
@@ -3148,3 +3252,95 @@ def test_13791_paragraph_block_boundaries():
     fenced = "- 1 fichier a\n```python\nx = 1\n```\n"
     idx_f = fenced.splitlines().index("- 1 fichier a")
     assert "x = 1" not in _paragraph_block(fenced, idx_f)
+
+
+# #13946 : un compte annoté `(hors scope PR)` est un constat pour une
+# tranche ultérieure, PAS le périmètre livré. Sans le filtre, le script
+# sélectionne le premier count non nul (« 28 fichiers » dans le fondateur
+# #13856) au lieu du périmètre réel.
+
+
+def test_13946_hors_scope_annotation_excludes_count_from_selection():
+    """#13946 : un « 28 fichiers constatés » dans une ligne annotée
+    `(hors scope PR)` n'est PAS le périmètre. Le compte est ignoré."""
+    files = [{"path": "CLAUDE.md"}, {"path": "docs/reference/_archive-convention.md"}]
+    line = (
+        "- Tranche 3 (hors scope PR) : appliquer à scripts/_archive/ "
+        "(28 fichiers constatés, peut nécessiter split par sous-dossier)."
+    )
+    # Sans le filtre, l'assertion échoue avec 28 ≠ 2.
+    # Avec le filtre, plus aucun count ne survit => "no count" terminal,
+    # PAS un mismatch -- c'est le bon comportement avant le fallback
+    # `touche N` (testé séparément dans test_13946_touche_n_fallback).
+    problems = check_assertion(files, line)
+    assert not any("28 fichier" in p for p in problems), (
+        f"le compte hors-scope 28 doit etre ignore, obtained {problems!r}"
+    )
+
+
+def test_13946_touche_n_fallback_finds_perimeter_in_paragraph():
+    """#13946 : quand le forecast hors-scope est filtré, le périmètre
+    réel via « touche N » dans le MEME paragraphe est détecté."""
+    files = [{"path": "CLAUDE.md"}, {"path": "docs/reference/_archive-convention.md"}]
+    body = (
+        "**Hors scope PR (comptes prévisionnels) :**\n"
+        "- Tranche 3 (hors scope PR) : appliquer à scripts/_archive/ "
+        "(28 fichiers constatés).\n"
+        "\n"
+        "qui en touche 2 (CLAUDE.md + _archive-convention.md)."
+    )
+    line = (
+        "- Tranche 3 (hors scope PR) : appliquer à scripts/_archive/ "
+        "(28 fichiers constatés)."
+    )
+    # Block contains the hors-scope header + this line + the next paragraph.
+    block = body  # body_hint equivalent; the fallback searches block first.
+    problems = check_assertion(files, line, block=block)
+    assert problems == [], (
+        f"le fallback touche N aurait dû trouver le périmètre 2, "
+        f"obtenu {problems!r}"
+    )
+
+
+def test_13946_touche_n_fallback_searches_body_when_block_lacks_it():
+    """#13946 founder case : le périmètre « touche N » est dans une
+    AUTRE paragraphe que la ligne candidate. Le ``body_hint`` (passé
+    par ``--scan-thread``) permet le cross-paragraph scan."""
+    files = [{"path": "CLAUDE.md"}, {"path": "docs/reference/_archive-convention.md"}]
+    line = (
+        "- Tranche 3 (hors scope PR) : appliquer à scripts/_archive/ "
+        "(28 fichiers constatés, peut nécessiter split par sous-dossier)."
+    )
+    body = (
+        "**Hors scope PR (comptes prévisionnels) :**\n"
+        + line + "\n\n"
+        "Les comptes « 28 fichiers » ... pas le périmètre livré par cette PR "
+        "qui en touche 2 (CLAUDE.md + _archive-convention.md)."
+    )
+    # Empty block (cross-paragraph case); body_hint carries the perimeter.
+    problems = check_assertion(files, line, block="", body_hint=body)
+    assert problems == [], (
+        f"fallback body_hint aurait dû trouver « touche 2 », "
+        f"obtenu {problems!r}"
+    )
+
+
+def test_13946_negative_real_perimeter_still_blocks():
+    """#13946 FN-safety : quand le périmètre réel dit bien « N fichiers »
+    dans le body et que le diff diffère, le rouge tient toujours. Le
+    filtre hors-scope ne masque pas un vrai claim."""
+    files = [{"path": "real.py"}, {"path": "extra.py"}]
+    body = (
+        "**Fichiers touchés : 3 fichiers**\n"
+        "- real.py\n"
+        "\n"
+        "(hors scope PR) : 28 fichiers constatés pour la tranche 2."
+    )
+    # Extract the « Fichiers touchés » line as the candidate.
+    candidates = extract_perimeter_assertions(body)
+    line = candidates[0]
+    problems = check_assertion(files, line, body_hint=body)
+    assert any("3 fichier" in p for p in problems), (
+        f"un vrai claim de 3 fichiers doit rester rouge quand 2 diff, "
+        f"obtenu {problems!r}"
+    )

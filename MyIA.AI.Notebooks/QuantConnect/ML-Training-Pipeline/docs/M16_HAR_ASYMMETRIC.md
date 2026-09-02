@@ -1,6 +1,6 @@
 # M16 HAR-RV Asymmetric Semivariance — Andersen-Bollerslev-Diebold-Patton (2007)
 
-**Status:** NO BEATS CLUSTER (Cycle 33, 2026-05-13) — BTC standalone BEATS robuste sur 3 horizons, **mais 1/7 coins seulement = sign-test cluster non-significatif**. Pas de PR M16 standalone — features RV+/RV- à intégrer en ensemble (M17 candidate).
+**Statut cluster historique : NO BEATS** (Cycle 33, 2026-05-13) — 1/7 coins seulement. **Re-test BTC débiaisé (2026-09-02) : 2/3 BEATS, 1/3 INCONCLUSIVE** ; le claim brut 3/3 ne survit pas intégralement.
 
 ## Verdict (G.2 metrics honnêtes — 7-coin full sweep)
 
@@ -124,6 +124,34 @@ Note : les autres coins (LTC/SOL/MATIC/XRP/ADA/DOT) attendent le résultat full 
 4. ☐ **M16-Kelly BTC-only** (optionnel) : utiliser M16 forecast pour un sleeve Kelly **BTC standalone** dans Portfolio Hybride sleeve crypto. Tester si MSE-BEATS BTC se traduit en Sharpe-BEATS net 50bps.
 5. ☐ **Documenter dans BOOK_MAPPING.md Ch05** (Model Choice) — HAR family confirmée comme only consistently winning family sur RV crypto (M2/M11/M12) vs DL (NO BEATS M5-M9-M10). M16 standalone = échec famille HAR (premier).
 6. ☐ **DOT h=5 close à significance (p=0.076)** : retest avec période étendue ou horizons intermédiaires (h=3, h=7) pour confirmer absence d'edge.
+
+## Re-test BTC symétriquement débiaisé (2026-09-02, Epic #1454)
+
+Le sweep historique comparait les MSE de deux prévisionneurs dont les biais OOS différaient. Comme `MSE = biais² + variance`, le re-test calibre désormais **HAR classique et HAR asymétrique selon le même protocole train-only** : queue de calibration de 60 observations, walk-forward expanding 5 folds, refit tous les 22 jours, horizons {1,5,10}, quatre seeds de contrôle {0,7,42,99}, puis DM avec `loss_fn="mse"` sur des séries OOS strictement alignées par date.
+
+| Horizon | MSE HAR débiaisé | MSE asym. débiaisé | edge | biais asym. | biais HAR | DM p médiane | Verdict |
+|---:|---:|---:|---:|---:|---:|---:|---|
+| h=1 | 0,843774 | 0,848154 | −0,52 % | −0,005109 | −0,003880 | 0,244862 | **INCONCLUSIVE** |
+| h=5 | 0,417886 | 0,403593 | +3,42 % | −0,003967 | −0,001552 | 0,011363 | **BEATS** |
+| h=10 | 0,389457 | 0,369614 | +5,10 % | −0,004194 | −0,002419 | 0,005123 | **BEATS** |
+
+Les biais résiduels sont proches de zéro (`biais² ≤ 2,6e-5`) : l'écart restant porte essentiellement sur la variance des erreurs. Le résultat brut était gonflé, surtout aux horizons longs (+23,6 %/+36,7 % → +3,4 %/+5,1 %), mais le signal ne disparaît pas. **Verdict BTC révisé : 2/3 BEATS, 1/3 INCONCLUSIVE, 0/3 NO BEATS.** M16 reste un keeper BTC moyen/long horizon ; h=1 est retiré du claim. Le verdict cluster historique reste `NO BEATS`.
+
+L'OLS est déterministe : les quatre seeds sont bit-identiques et servent de contrôle de reproductibilité. `edge/σ` cross-seed est donc non applicable, pas artificiellement infini. Le notebook `m3_har_asymmetric_semivariance.ipynb` recalcule les MSE depuis les prévisions persistées et porte 8/8 cellules code exécutées.
+
+```bash
+python scripts/har_asymmetric.py \
+  --coins BTC-USD \
+  --horizons 1 5 10 \
+  --seeds 0 7 42 99 \
+  --n-splits 5 \
+  --skip-remote \
+  --debias \
+  --calibration-size 60 \
+  --out-json scripts/results/m16_har_asymmetric_btc_debiased.json
+```
+
+Ce run évalue un **forecast pur**, pas une stratégie : coûts de transaction, Sharpe et drawdown restent hors du verdict. Aucun actif FAANG/Mag7 n'entre dans l'entraînement.
 
 ## References
 

@@ -1366,6 +1366,107 @@ def _path_matches(path: str, patterns: list[str]) -> bool:
     return False
 
 
+def _compute_scope_intersection_paths(
+    my_scope: list[str] | None,
+    claim_scope: list[str] | None,
+    tracked: list[str] | None,
+    limit: int = 25,
+) -> tuple[list[str], bool]:
+    """Return paths matching BOTH the query scope and the claim's scope.
+
+    #14187 -- a `blocked: true` on a wide `--paths` glob is BINARY today: the
+    caller learns WHO blocks but not WHICH files are contested. The lane
+    that owns the contested files is the one that wants to act; the others
+    are free to write freely (their work does not intersect). Materialising
+    the intersection per blocker lets the caller re-scope to lift the block
+    without a dashboard round-trip.
+
+    `my_scope` is the caller's `--paths` glob list (None = epic-wide =
+    intersects all claim scopes). `claim_scope` is the active claim's
+    declared `paths:` (None = epic-wide). `tracked` is the repo's
+    git-ls-files output (None = no walk available; intersection becomes
+    empty, fail-closed the same way `_filter_by_claim_scope` does on a
+    missing tree).
+
+    Returns `(paths, is_complete)`: the list of tracked files matching
+    BOTH sides, and a boolean saying whether the list was TRUNCATED at
+    `limit` (caller should warn on stderr so a lane knows it sees a
+    sample, not the full intersection). Empty list means either side is
+    empty in practice (no tracked files matched both) OR `tracked is
+    None` (no walk possible). Epic-wide on either side = full
+    intersection of the OTHER side against `tracked`.
+    """
+    if tracked is None:
+        return [], False
+    if not my_scope or not claim_scope:
+        # Epic-wide on either side -> no scope intersection to enumerate.
+        # The claim (or the caller) is wildcards-free, so the BLOCKED
+        # verdict stays binary from the file-list perspective.
+        return [], False
+    matches: list[str] = []
+    for path in tracked:
+        if _path_matches(path, my_scope) and _path_matches(path, claim_scope):
+            matches.append(path)
+            if len(matches) > limit:
+                return matches[:-1], True
+    return matches, False
+
+
+def _compute_free_paths(
+    my_scope: list[str] | None,
+    blocking_claims: dict[str, ClaimEvent],
+    tracked: list[str] | None,
+    limit: int = 25,
+) -> tuple[list[str], bool]:
+    """Return paths in `my_scope` that intersect NO active blocker claim.
+
+    #14187 -- the dual of `_compute_scope_intersection_paths`: a lane that
+    sees 3 blockers across 12 files in the scope needs to know which 9 are
+    free, not just which 3 are locked. The list is the FILES THAT THE LANE
+    CAN EDIT WITHOUT WAITING for any blocker to release or re-scope.
+
+    `blocking_claims` is the post-filter `others` dict (already scoped to
+    the caller's `my_scope` by `_filter_by_claim_scope`). Each claim's
+    scope is checked; a path is "free" iff no claim's `_path_matches`
+    says yes. Epic-wide claims (no `paths:`) make the entire `my_scope`
+    non-free, so the function returns `([], False)` when any blocker is
+    epic-wide -- the human verdict "all files blocked" is then exact, not
+    a sample.
+    """
+    if tracked is None:
+        return [], False
+    if not my_scope:
+        return [], False
+    claim_scopes = [ev.get("paths") for ev in blocking_claims.values()]
+    if any(scopes is None for scopes in claim_scopes):
+        # Epic-wide blocker locks the whole `my_scope`.
+        return [], False
+    scoped_claims = [scopes for scopes in claim_scopes if scopes]
+    # Empty blocker set after scope-filter -> the entire `my_scope` is
+    # free. Walk the tracked files (constrained by `my_scope`) and
+    # collect the matches. This is the disjoint case the lane-claim
+    # guard relies on: rc=0 (clear), free_paths = the whole caller scope.
+    if not scoped_claims:
+        free: list[str] = []
+        for path in tracked:
+            if not _path_matches(path, my_scope):
+                continue
+            free.append(path)
+            if len(free) > limit:
+                return free[:-1], True
+        return free, False
+    free: list[str] = []
+    for path in tracked:
+        if not _path_matches(path, my_scope):
+            continue
+        if any(_path_matches(path, scopes) for scopes in scoped_claims):
+            continue
+        free.append(path)
+        if len(free) > limit:
+            return free[:-1], True
+    return free, False
+
+
 # --- formatted output --------------------------------------------------------
 
 _CLAIM_BODY_TMPL = (
@@ -2331,6 +2432,33 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
     else:
         epic_wide_on_umbrella = False
 
+    # #14187 -- per-claim scope intersection with the caller's `--paths`.
+    # Computed once on the FINAL `others` dict (post-stale-filter, post-
+    # scope-filter) so the values surfaced in `active_claims` reflect the
+    # verdict set, not a transient pre-filter state. Returns a list +
+    # truncated-flag tuple so the JSON consumer knows if the list is a
+    # sample (callers on a deep repo may hit the 25-entry cap).
+    scope_intersections: dict[str, tuple[list[str], bool]] = {}
+    for ln, ev in others.items():
+        paths, truncated = _compute_scope_intersection_paths(
+            my_scope, ev.get("paths"), tracked,
+        )
+        scope_intersections[ln] = (paths, truncated)
+    # #14187 -- free-paths (dual of the intersection): the files in the
+    # caller's `--paths` that intersect NO blocker claim. Surfaced when
+    # the caller is scoped (`my_scope` non-empty). On a CLEAR verdict
+    # (no blockers) the entire `my_scope` is free; on BLOCKED the helper
+    # strips the intersect of each blocker. Epic-wide blockers make the
+    # whole `my_scope` non-free (the helper returns `[]`); a single
+    # epic-wide blocker on an umbrella sets `epic_wide_on_umbrella` so
+    # the empty list is correct.
+    free_paths: list[str] = []
+    free_truncated = False
+    if my_scope:
+        free_paths, free_truncated = _compute_free_paths(
+            my_scope, others, tracked,
+        )
+
     summary = {
         "issue": payload.get("number"),
         "title": payload.get("title"),
@@ -2362,6 +2490,29 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
                 "marker": ev.marker,
                 "url": ev.url,
                 "paths": ev.get("paths"),
+                # #14187 -- per-claim scope intersection with the caller's
+                # `--paths`. Lets a lane see WHICH files a blocker claims
+                # (and which it does NOT) without a dashboard round-trip.
+                # Computed AFTER the stale + scope filters so the list
+                # reflects the FINAL blocker set. `[]` when either side
+                # is epic-wide (no glob scope to intersect) or when no
+                # tracked file matched both (`tracked is None`).
+                "scope_intersection_paths": (
+                    scope_intersections.get(ln, ([], False))[0]
+                    if isinstance(scope_intersections.get(ln), tuple)
+                    else scope_intersections.get(ln, [])
+                ),
+                "scope_intersection_truncated": (
+                    scope_intersections.get(ln, ([], False))[1]
+                    if isinstance(scope_intersections.get(ln), tuple)
+                    else False
+                ),
+                "scope_intersection_size": (
+                    len(scope_intersections.get(ln, ([], False))[0])
+                    if isinstance(scope_intersections.get(ln), tuple)
+                    else (len(scope_intersections.get(ln, []))
+                          if scope_intersections.get(ln) else 0)
+                ),
                 # #12320 -- PR reference on a `[DELIVERED]` marker. Surfaced
                 # alongside the rest of the claim fields so a consumer that
                 # reads "my_active_claim: false" can still pull the historical
@@ -2465,6 +2616,31 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
         "composite_single_line_markers": len(composites),
         "composite_single_line_marker_lines": [s["line"] for s in composites],
         "blocked": bool(others),
+        # #14187 -- free-paths counter: files in the caller's `--paths`
+        # that intersect NO blocker. A lane with `--paths 'knot_lean/**'`
+        # blocked by 3 lanes whose scopes intersect 3 of 12 sub-files can
+        # see `free_paths_size` and `intersection_summary` and decide
+        # whether to re-scope (re-run with the 9 free files) or wait.
+        # `free_paths` is the verbatim list (truncated at 25); the
+        # truncated flag warns the caller it sees a sample.
+        "free_paths": free_paths,
+        "free_paths_size": len(free_paths),
+        "free_paths_truncated": free_truncated,
+        # #14187 -- human-readable one-liner, only when caller scoped.
+        # Empty when epic-wide blocker(s) lock the whole scope (no list
+        # to summarise) or when caller did not pass `--paths`. The string
+        # surfaces the contested count and the free count together so a
+        # reader can see at a glance whether the block is partial
+        # (re-scope) or total (wait or release).
+        "intersection_summary": (
+            f"{sum(len(intersection[0]) for intersection in scope_intersections.values())} "
+            f"fichiers bloques / {len(free_paths)} libres dans le scope"
+            if (my_scope and not epic_wide_on_umbrella and not (others and all(
+                ev.get("paths") is None or _claim_scope_effectively_epic_wide(ev)
+                for ev in others.values()
+            )))
+            else ""
+        ),
         # #12322 -- query_scope is the read-mode classifier for THIS call.
         # `EPIC_WIDE_NO_PATHS_DECLARED` means the caller did not pass `--paths`
         # AND did not post an active scoped claim, so we cannot prove
@@ -2623,8 +2799,34 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
             f"#{payload.get('number')}: {who}.\n"
             f"Claimed scopes (marker-line excerpts -- #10395 Variante 2):\n"
             f"{intent_block}\n"
-            f"Do not start -- pick another grain, post a scope-narrowing "
-            f"`[CLAIMED] paths: ...`, or wait for release.",
+            # #14187 -- per-blocker intersection enumeration. On a wide
+            # `--paths` glob the caller may see N blockers but only M
+            # files are actually contested; surfacing the intersection
+            # per blocker (with a truncation warning past 25 entries)
+            # lets the caller re-scope to lift the block without a
+            # dashboard round-trip.
+            + (
+                "\n".join(
+                    f"  - {ln}: scope_intersection_paths = "
+                    f"{paths if not truncated else paths + ['...(truncated)']}"
+                    for ln, (paths, truncated) in scope_intersections.items()
+                    if paths
+                ) + "\n"
+                if scope_intersections and any(p for p, _ in scope_intersections.values())
+                else ""
+            )
+            + (
+                f"\n  Scope intersection: "
+                f"{sum(len(p) for p, _ in scope_intersections.values())} "
+                f"fichier(s) conteste(s) sur l'ensemble du scope. "
+                f"Fichiers libres du scope (hors blockers): "
+                f"{free_paths[:10]}{'...' if len(free_paths) > 10 else ''}"
+                f"{' (truncated at 25)' if free_truncated else ''}\n"
+                if (free_paths or any(p for p, _ in scope_intersections.values()))
+                else ""
+            )
+            + f"Do not start -- pick another grain, post a scope-narrowing "
+              f"`[CLAIMED] paths: ...`, or wait for release.",
             file=sys.stderr,
         )
         # #12905 -- name the dead-scope lock. A blocker whose declared scope
@@ -3191,6 +3393,22 @@ def _run_open_prs_on(
 
 
 def main(argv: list[str] | None = None) -> int:
+    # Windows FR : stdout d'un tube prend locale.getpreferredencoding() =
+    # cp1252. Les verdicts de ce script contiennent des fleches (U+2192) et du
+    # francais accentue -- une fleche n'existe PAS dans cp1252, donc le print
+    # leve UnicodeEncodeError et le script sort en **exit 1**.
+    #
+    # C'est le pire mode de defaillance possible ici : lane-claim-protocol.md
+    # prescrit d'appeler ce script AVANT d'editer, et un exit non-nul s'y lit
+    # "claim d'une autre lane, ne pas commencer". Un plantage d'encodage se
+    # deguisait donc en verrou, et faisait sauter un grain pourtant libre.
+    #
+    # Le parent (pick_idle_grain.py) passe PYTHONIOENCODING=utf-8, mais cela ne
+    # couvre que SON chemin d'appel : l'invocation directe -- celle que la regle
+    # prescrit -- restait exposee. On se protege donc ici, a la source.
+    for _stream in (sys.stdout, sys.stderr):
+        if hasattr(_stream, "reconfigure"):
+            _stream.reconfigure(encoding="utf-8", errors="replace")
     p = argparse.ArgumentParser(
         description=(
             "Lane-claim guard (#9774): check/post [CLAIMED] on an issue before "

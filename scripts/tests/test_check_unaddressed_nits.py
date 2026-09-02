@@ -658,6 +658,94 @@ def test_channel_reflects_origin_surface():
     assert run([], threads=[thread])["blocking"][0]["channel"] == "review"
 
 
+# --- #13609 : alias de persona Hermes/NanoClaw cross-login. La persona
+# reviewer parle sous deux logins (clusterManager-Myia + jsboige self-bot).
+# Quand elle leve SA propre reserve sous l'autre login en portant un
+# marqueur explicite `[Hermes]` / `[NanoClaw]` / `[Hermes self-bot]`, c'est
+# sa levee -- la borne d'auteur stricte #11145/#12836 etait un faux negatif
+# structurel : la reserve restait vivante, et seul un `[OVERRIDE]`
+# coordinateur (coûteux, exige re-verif tierce, ne s'applique pas sur PR
+# lane-coordinateur) pouvait la fermer. Le marqueur est obligatoire :
+# sans lui, jsboige reste l'identite de poussee partagee des lanes (#13316)
+# et rien n'est leve -- une lane ne peut pas s'auto-promeuve en collant
+# le marqueur dans un commentaire ordinaire.
+
+
+def test_persona_alias_cross_login_leves_own_reserve():
+    """#13609 cas fondateur : reserve posee par clusterManager-Myia, levee
+    par un commentaire jsboige marque `[Hermes]` -- c'est la meme persona,
+    la levee est creditee, l'organe rend vert. PR par jsboige (cas le plus
+    frequent : lanes poussent sous jsboige)."""
+    reserve = {
+        "author": {"login": "clusterManager-Myia"},
+        "state": "COMMENTED", "submittedAt": at(10),
+        "body": "[Hermes] - COMMENT_WITH_CONCERNS\nCI catalog-drift FAIL.",
+    }
+    # Le lift doit etre un COMMENTAIRE (pas un verdict BOT) avec phrase de
+    # levee explicite ; le marqueur `[Hermes]` identifie la persona, le corps
+    # ne porte pas le mot CHANGES_REQUESTED (sinon classify le rendrait
+    # BOT-CONCERN et le filtre l'ecarterait avant _lift_eligible).
+    lift = {
+        "author": {"login": "jsboige"}, "createdAt": at(12),
+        "body": ("[Hermes] Je leve le concern -- drift corrige "
+                 "au commit c506d04b."),
+    }
+    res = run([lift], reviews=[reserve])
+    assert res["blocked"] is False
+
+
+def test_persona_alias_lift_without_marker_does_not_leve():
+    """#13609 controle negatif : sans marqueur `[Hermes]`/`[NanoClaw]`/`[Hermes
+    self-bot]`, le commentaire jsboige ne leve pas -- c'est l'identite de
+    poussee partagee des lanes (#13316), l'auteur de la reserve est distinct
+    (clusterManager-Myia), le predicat d'alias ne s'applique pas. La
+    protection #13316 tient."""
+    reserve = {
+        "author": {"login": "clusterManager-Myia"},
+        "state": "COMMENTED", "submittedAt": at(10),
+        "body": "[Hermes] - COMMENT_WITH_CONCERNS\nCI catalog-drift FAIL.",
+    }
+    lift = {
+        "author": {"login": "jsboige"}, "createdAt": at(12),
+        "body": ("Je leve la CHANGES_REQUESTED -- drift corrige "
+                 "au commit c506d04b."),
+    }
+    res = run([lift], reviews=[reserve])
+    assert res["blocked"] is True
+
+
+def test_persona_alias_only_when_reserve_author_is_in_alias_set():
+    """#13609 garde anti-usurpation : l'alias ne s'active que quand
+    `nit_author` est dans `PERSONA_ALIAS_LOGINS` (= clusterManager-Myia).
+    Une lane qui pousserait sous jsboige ne peut pas eteindre la reserve
+    d'un AUTRE reviewer (ex. ai-01) en collant le marqueur `[Hermes]` dans
+    un commentaire ordinaire -- l'alias est bidirectionnel uniquement entre
+    la persona Hermes et son self-bot, pas une cle d'auto-levee."""
+    reserve = {
+        "author": {"login": "myia-ai-01"},
+        "state": "COMMENTED", "submittedAt": at(10),
+        "body": "CHANGES_REQUESTED : notebook non execute.",
+    }
+    lift = {
+        "author": {"login": "jsboige"}, "createdAt": at(12),
+        "body": ("[Hermes] Je leve le concern de ai-01 -- la lane a "
+                 "re-execute, EXEC_PROVED au commit abc."),
+    }
+    res = run([lift], reviews=[reserve])
+    assert res["blocked"] is True
+
+
+def test_persona_alias_lift_override_logins_unchanged():
+    """#13609 controle structurel : `LIFT_OVERRIDE_LOGINS` reste inchange.
+    L'alias de persona NE confere PAS un droit d'override coordinateur : un
+    `[OVERRIDE] lane` sous jsboige ne leve pas (cf ligne de garde dans
+    `_lift_eligible`). La composition des deux decisions #11145 (borne
+    d'auteur) et #13316 (exclusion jsboige) tient, l'alias est strictement
+    une troisieme voie pour le dialogue Hermes <-> Hermes self-bot."""
+    assert "jsboige" not in mod.LIFT_OVERRIDE_LOGINS
+    assert mod.LIFT_OVERRIDE_LOGINS == {"myia-ai-01"}
+
+
 # --- #11201 : le faux negatif « corrige X et je merge ». Le test LIFT_MARKERS
 # passait AVANT toute recherche de reserve, et « je merge » couvre deux sens
 # opposes : « c'est bon, je merge » (annonce, levant) et « Change la ligne 19
@@ -1992,6 +2080,19 @@ def test_12311_verb_in_heading_preserved_against_strip():
     assert mod.classify("jsboige", body) == "BOT-CONCERN"
 
 
+@pytest.mark.parametrize("body,expected", [
+    ("## [ai-01] CHANGES_REQUESTED (reserve bloquante)", "BOT-CONCERN"),
+    ("## [ai-01] CHANGES_REQUESTED", "BOT-CONCERN"),
+    ("## [ai-01] **BLOCKED**", "BOT-CONCERN"),
+    ("## [ai-01] Reserve — a traiter avant merge :", "BOT-CONCERN"),
+    ("## [ai-01 ARBITRAGE] CHANGES_REQUESTED", "BOT-CONCERN"),
+    ("## [jsboige] CHANGES_REQUESTED", "BOT-CONCERN"),
+    ("## [bug] CHANGES_REQUESTED — le commit ne touche rien", None),
+])
+def test_13642_coordinator_title_verdict_is_emission(body, expected):
+    assert mod.classify("jsboige", body) == expected
+
+
 # ---------------------------------------------------------------------------
 # #12315 -- 4ᵉ reformulation de la classe use-vs-mention : apostrophes droites
 # ASCII ('...') et guillemets droits ASCII ("...") comme delimiters de citation,
@@ -3013,6 +3114,7 @@ def test_13622_negation_nest_dans_fenetre_negated_direct():
     assert not mod._lift_is_negated("", ". Je merge.")
 
 
+
 # --- #13639 : levee citant un commit absent de la branche (rembobine) ---
 
 NIT_OID = "f" * 40
@@ -3222,3 +3324,672 @@ def test_13635_conditionnel_je_leve_masculin_reste_bloquant():
         "myia-ai-01",
         "Une seule chose a changer — corrige la ligne 19 et je leve le concern."
     ) == "BOT-CONCERN"
+def test_13938_comment_only_avec_rien_de_bloquant_passe():
+    """#13938 FP fondateur (PR #13935) : un reviewer pose `[Hermes]
+    COMMENT_WITH_CONCERNS` et le corps declare explicitement « rien de
+    bloquant ». L'exemption doit classer la review en ``None`` (comment-only
+    par design, cf #12311) et non en ``BOT-CONCERN``.
+
+    Reproduit le body verbatim de la review jsboige sur #13935 (compte-rendu
+    de checkout local + delta scope + balise explicite de non-blocage).
+    """
+    body = (
+        "[Hermes] COMMENT_WITH_CONCERNS — vérifié en local (checkout de la "
+        "branche), pas juste lu le diff :\n"
+        "- Cibles réelles des 3 liens ajoutés au README : `tutorials/README.md`, "
+        "`shared/helpers/README.md`, `_research/e2e_quant_validation.ipynb`.\n"
+        "- Nav relative corrigée, scope clean, security scan néant.\n"
+        "Delta +18/-2.\n"
+        "Rien de bloquant. (contrainte token : COMMENT only)"
+    )
+    assert mod.classify("jsboige", body) is None
+    # Les helpers unitaires doivent retourner True sur ce body.
+    assert mod._comment_only_prefix(body) is True
+    assert mod._review_explicit_non_blocking(body) is True
+
+
+def test_13938_comment_with_concerns_avec_concerns_substantiels_reste_bloquant():
+    """#13938 FN-safety : `[Hermes] COMMENT_WITH_CONCERNS` + concerns FYI
+    reels (« 2 concerns sur la cellule 12 ») SANS formulation non-bloquante
+    reste un ``BOT-CONCERN``. L'exemption ne s'applique pas par defaut —
+    seul un aveu explicite de non-blocage la declenche.
+
+    Reproduit le pattern du test fondateur l.255-258 (notebook solide + 2
+    concerns FYI).
+    """
+    body = (
+        "[Hermes] **[COMMENT_WITH_CONCERNS]** — notebook solide, 2 concerns FYI "
+        "sur la cellule 12 : la sortie du solver ne couvre pas le cas n=0 ; "
+        "le bloc de test dépend de l'ordre des fixtures."
+    )
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+    assert mod._comment_only_prefix(body) is True
+    assert mod._review_explicit_non_blocking(body) is False
+
+
+def test_13938_changements_requestes_avec_rien_de_bloquant_reste_bloquant():
+    """#13938 FN-safety : un reviewer pose `CHANGES_REQUESTED` et glisse «
+    rien de bloquant » dans le corps. L'exemption NE DOIT PAS s'appliquer
+    (le verdict de blocage strict prime sur la formulation de non-blocage).
+
+    Reproduit le pieges classique : un reviewer tente de baisser le niveau
+    d'un CHANGES_REQUESTED en ajoutant une clause de non-blocage. Le gate
+    doit resister.
+    """
+    body = (
+        "[Hermes] CHANGES_REQUESTED — refactor la cellule 5 pour respecter "
+        "PEP 8. Rien de bloquant, je laisse au choix de l'auteur."
+    )
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+    assert mod._comment_only_prefix(body) is False
+    # La formulation « rien de bloquant » EST bien reconnue (helper OK),
+    # mais le verdict formel CHANGES_REQUESTED bloque l'exemption au
+    # niveau du pipeline.
+    assert mod._review_explicit_non_blocking(body) is True
+
+
+def test_13938_comment_with_concerns_cite_dans_un_autre_commentaire_ne_passe_pas():
+    """#13938 FN-safety : un commentaire qui CITE `[Hermes]
+    COMMENT_WITH_CONCERNS` dans une prose qui refute (« pas de
+    COMMENT_WITH_CONCERNS ici ») NE beneficie PAS de l'exemption — la
+    detection `_is_cited` doit annuler l'occurrence au niveau du helper
+    `_comment_only_prefix`.
+
+    Reproduit le pattern inverse de #12871 : `_strip_mentioned_verdicts`
+    neutralise les verdicts mentionnes, mais `_comment_only_prefix` opere
+    sur le body brut. Un commentaire d'auteur qui enumere les verdicts
+    d'Hermes pour les refuter ne doit pas etre auto-exempte.
+    """
+    body = (
+        "Pour clarifier : il n'y a PAS de COMMENT_WITH_CONCERNS dans cette "
+        "review. Les seuls verdicts emis sont APPROVED et LGTM. Je ne leve "
+        "aucune reserve parce qu'il n'y en a pas."
+    )
+    # Ni verdict emis ni formulation non-bloquante au sens de l'exemption :
+    # le helper de préfixe doit retourner False (l'occurrence est CITEE).
+    assert mod._comment_only_prefix(body) is False
+    # Le body doit classifier None (verdict positif APPROVED/LGTM + aucune
+    # reserve vivante), mais PAS par la voie de l'exemption #13938.
+    assert mod.classify("jsboige", body) is None
+
+
+# --- #13512 -- Position G : verbe de mention + verdict NU (sans parenthese) -
+#
+# Cas fondateur PR #13496 : « @jsboige — reponse au REQUEST_CHANGES Hermes
+# du 2026-08-29T17:33Z sur head `ae88aefc` » — la forme naturelle d'une
+# reponse a un verdict de reviewer. Les positions existantes (A-F) exigent
+# soit des parentheses (A), un titre `##` (B), une prose avec mot-cle
+# inline (C), un verbe de levee + ref pointable (D/E), ou `revue|review`
+# en tete (D-F). Aucune ne couvre cette forme sans sur-detection.
+#
+# Discrimination vs emission formelle : la fenetre `[^():\n.]{0,40}?`
+# exclut `:` (donc `Fix : CHANGES_REQUESTED` ne matche pas — `:` suit
+# immediatement le verbe) et `.` (donc le verdict doit etre dans la MEME
+# phrase, pas apres une fin de phrase). Verdict case-sensitive
+# `(?-i:[A-Z][A-Z_]{3,})`.
+
+
+def test_13512_reponse_au_verdict_nu_ne_flagge_pas():
+    """#13512 fondateur PR #13496 : reponse au verdict nu — la mention
+    neutralise le verdict, classify retourne None.
+
+    CE TEST ECHOUE SI Position G n'est pas cablee ou si la fenetre
+    n'absorbe pas le 1-char gap de #13496."""
+    body = (
+        "@jsboige — reponse au REQUEST_CHANGES Hermes du 2026-08-29T17:33Z "
+        "sur head `ae88aefc`. Le diagnostic etait juste, la cause racine "
+        "exacte, et le fix est en place."
+    )
+    assert mod.classify("jsboige", body) is None
+
+
+def test_13512_fix_du_verdict_nu_ne_flagge_pas():
+    """#13512 variante : verbe `fix` + verdict nu — la mention neutralise
+    le verdict, classify retourne None."""
+    body = (
+        "Voici le fix du CHANGES_REQUESTED pose par Hermes en review. "
+        "Diagnostic et commit de remediation en commentaire suivant."
+    )
+    assert mod.classify("jsboige", body) is None
+
+
+def test_13512_suite_au_verdict_nu_ne_flagge_pas():
+    """#13512 variante : verbe `suite a` + verdict nu — la mention neutralise
+    le verdict, classify retourne None."""
+    body = (
+        "Suite au COMMENT_WITH_CONCERNS du 2026-08-29 sur PR #13513, "
+        "voici le diagnostic identifie et le correctif propose."
+    )
+    assert mod.classify("jsboige", body) is None
+
+
+def test_13512_emission_nu_tete_reste_bot_concern():
+    """#13512 CONTROLE NEGATIF : une emission reelle en tete de body
+    (verdict nu sans verbe de mention avant) doit RESTER BOT-CONCERN.
+
+    CE TEST ECHOUE SI Position G capture par exces les emissions directes."""
+    body = "CHANGES_REQUESTED: edge case non couvert dans la branche."
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+def test_13512_verdict_formel_reste_bot_concern():
+    """#13512 CONTROLE NEGATIF : un verdict precede de `Verdict :` (forme
+    d'emission formelle) doit RESTER BOT-CONCERN — le `:` apres `Verdict`
+    fait que la fenetre Position G ne capture pas."""
+    body = "Verdict : CHANGES_REQUESTED sur ce commit. A corriger."
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+def test_13512_fix_colon_emission_reste_bot_concern():
+    """#13512 CONTROLE NEGATIF : `Fix :` (verbe de mention immediatement
+    suivi de `:`) doit RESTER BOT-CONCERN — la fenetre exclut `:` par
+    construction (`[^():\n.]{0,40}?`)."""
+    body = "Fix : CHANGES_REQUESTED sur le ticket 1234. Diagnostic a venir."
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+def test_13512_sonde_helper_position_g_retourne_verdict():
+    """#13512 sonde helper-level : Position G capture bien le verdict nu
+    dans la phrase de #13496 (preuve qu'elle est cablee et la fenetre
+    absorbe le 1-char gap). Suppression de la sonde = la regex ne capture
+    plus, le test fondateur ci-dessus retombe ROUGE."""
+    body = "@user — reponse au REQUEST_CHANGES Hermes du ..."
+    stripped = mod._strip_mentioned_verdicts(mod._strip_quoted(body))
+    # Apres strip, REQUEST_CHANGES doit etre neutralise (espaces de meme
+    # longueur) : `RE` du verdict doit avoir ete remplace par des espaces.
+    assert "REQUEST_CHANGES" not in stripped, (
+        f"Position G n'a pas capture REQUEST_CHANGES dans : {body!r}\n"
+        f"Stripped result: {stripped!r}"
+    )
+
+
+def test_13512_sonde_helper_position_g_retourne_pas_emission_nue():
+    """#13512 sonde helper-level : Position G NE capture PAS un verdict nu
+    en tete (qui est une emission formelle, pas une mention). Suppression
+    de la sonde = le test FN ci-dessus retombe ROUGE (faux positif massif)."""
+    body = "CHANGES_REQUESTED: edge case non couvert."
+    stripped = mod._strip_mentioned_verdicts(mod._strip_quoted(body))
+    # Position G ne capture pas ici (pas de verbe de mention avant) :
+    # le verdict reste vivant dans le body stripé.
+    assert "CHANGES_REQUESTED" in stripped, (
+        f"Position G a capture a tort CHANGES_REQUESTED dans : {body!r}\n"
+        f"Stripped result: {stripped!r}"
+    )
+
+
+# #14070 — garde anti-negation Position G (Hermes demande 1/2). Le verbe
+# de mention + verdict NU matche, mais la negation directe (`je n'ai pas
+# traite`, `non pas`, `ne...plus`, `jamais leve`) doit PRESERVER le verdict
+# dans le body (le verdict reste cite → classify le voit comme un nit non
+# leve). Sans ce garde, une phrase « Je n'ai pas leve le REQUEST_CHANGES »
+# serait neutralisee a tort (le reviewer pretend l'avoir leve alors qu'il
+# dit explicitement qu'il NE l'a PAS leve).
+
+
+def test_14070_position_g_neutralise_pas_mention_negatee_pas():
+    """#14070 FN-safety : Position G avec negation `pas` (15 chars avant le
+    verdict) doit PRESERVER le verdict dans le body. Le reviewer ecrit
+    qu'il N'A PAS traite le REQUEST_CHANGES — c'est un nit non leve."""
+    body = "Je n'ai pas traite le REQUEST_CHANGES, il reste valable."
+    stripped = mod._strip_mentioned_verdicts(mod._strip_quoted(body))
+    # Le verdict doit rester vivant (Position G aurait capture si on n'avait
+    # pas cable _lift_is_negated sur Position G).
+    assert "REQUEST_CHANGES" in stripped, (
+        f"Position G a neutralise a tort REQUEST_CHANGES dans : {body!r}\n"
+        f"Stripped result: {stripped!r}"
+    )
+
+
+def test_14070_position_g_neutralise_pas_mention_negatee_jamais():
+    """#14070 FN-safety : Position G avec negation `jamais` doit PRESERVER
+    le verdict. Forme naturelle : 'On fix CHANGES_REQUESTED ? Jamais, la CI
+    est rouge.' Le reviewer evoque le verdict sans l'avoir leve."""
+    body = "On fix CHANGES_REQUESTED ? Jamais, la CI est rouge."
+    stripped = mod._strip_mentioned_verdicts(mod._strip_quoted(body))
+    assert "CHANGES_REQUESTED" in stripped, (
+        f"Position G a neutralise a tort CHANGES_REQUESTED dans : {body!r}\n"
+        f"Stripped result: {stripped!r}"
+    )
+
+
+def test_14070_position_g_neutralise_pas_annonce_fix_avec_commit_futur():
+    """#14070 FN-safety (PR #13560 fondateur #13559) : Position G avec un
+    verdict suivi d'une reference a un commit futur (`— commit XXXX`)
+    doit PRESERVER le verdict. Forme : 'Fix review ai-01
+    CHANGES_REQUESTED — commit 06956bd0a.' C'est une **annonce de fix**
+    (le commit reference est futur), pas une **reponse** a un verdict
+    passe. Le verdict doit rester vivant dans le body pour que l'organe
+    le voie comme un nit non leve."""
+    body = "Fix review ai-01 CHANGES_REQUESTED — commit 06956bd0a."
+    assert mod.classify("hermes-bot", body) == "BOT-CONCERN", (
+        f"Position G a neutralise a tort CHANGES_REQUESTED dans : {body!r}\n"
+        f"Le verdict suivi de `— commit XXXX` est une annonce de fix, "
+        f"pas une reponse a un verdict passe."
+    )
+
+
+# ---------------------------------------------------------------------------
+# #13598 - EMISSION informelle d'un LIFT_OVERRIDE_LOGINS
+# ---------------------------------------------------------------------------
+
+
+def test_13598_cas_fondateur_reserve_francais_courant_classifiee() -> None:
+    """#13550 verbatim : « ## [ai-01 ARBITRAGE] La reserve GPU tient. **Ne pas merger sur les verts.** »
+
+    Avant le fix : classify retournait None (classe CONCERN_MARKERS ne couvre
+    pas le francais courant). Apres : BOT-CONCERN - la reserve est signalee.
+    """
+    assert mod.classify(
+        "myia-ai-01",
+        "## [ai-01 ARBITRAGE] La reserve GPU tient. **Ne pas merger sur les verts.**",
+    ) == "BOT-CONCERN"
+
+
+def test_13598_hold_explicite_classifiee() -> None:
+    """Le mot « hold » porte, seul, l'emission."""
+    assert mod.classify("myia-ai-01", "Hold sur cette PR.") == "BOT-CONCERN"
+
+
+def test_13598_attends_avec_objet_classifiee() -> None:
+    """« j'attends le run GPU » est une emission structurelle."""
+    assert mod.classify(
+        "myia-ai-01", "J'attends le run GPU avant de statuer."
+    ) == "BOT-CONCERN"
+
+
+def test_13598_wait_for_run_classifiee() -> None:
+    """L'anglicisme « wait for X » suit le meme schema."""
+    assert mod.classify(
+        "myia-ai-01", "Wait for the ICT-25 rerun."
+    ) == "BOT-CONCERN"
+
+
+def test_13598_hold_nomme_g_var_reste_muet() -> None:
+    """« HOLD G-VAR-2 - ... » est un NOM de verdict (la garde G-VAR-2), pas
+    une injonction. Le lookahead `(?! G-VAR|BLOCK|BOT|COMMENT|VERDICT|PR)`
+    dans `_COORDINATOR_INJUNCTION_RE` filtre les verdict nommes.
+    """
+    assert mod.classify(
+        "myia-ai-01", "**HOLD G-VAR-2 (cap de genre), sur ma propre PR.**"
+    ) is None
+
+
+def test_13598_controle_positif_merci_reste_muet() -> None:
+    """Acceptance #13598 point 2 : un commentaire ANODIN du coordinateur
+    (« merci ») ne doit PAS bloquer. Le predicat requiert un verbe
+    d'injonction ; « merci » n'en porte pas -> None.
+    """
+    assert mod.classify(
+        "myia-ai-01", "Merci pour le heads-up."
+    ) is None
+
+
+def test_13598_controle_positif_vu_je_reviens_reste_muet() -> None:
+    """« Vu, je reviens vers vous » - accuse de reception, pas injonction."""
+    assert mod.classify(
+        "myia-ai-01", "Vu, je reviens vers vous."
+    ) is None
+
+
+def test_13598_controle_positif_ok_je_regarde_reste_muet() -> None:
+    """« OK je regarde » - pas de verbe d'injonction -> muet."""
+    assert mod.classify("myia-ai-01", "OK je regarde") is None
+
+
+def test_13598_controle_positif_lgtm_structurel_reste_muet() -> None:
+    """Un LGTM structurel est une levee (LIFT_MARKER), pas une emission."""
+    assert mod.classify("myia-ai-01", "LGTM structurel.") is None
+
+
+def test_13598_negation_hold_restaure_le_muet() -> None:
+    """« il n'y a aucun hold sur cette PR » est une negation -> pas une
+    emission. Le predicat doit discriminer la semantique, pas la forme.
+    """
+    assert mod.classify(
+        "myia-ai-01", "Il n'y a aucun hold sur cette PR."
+    ) is None
+
+
+def test_13598_injonction_neutralisee_par_levee_vive() -> None:
+    """Une levee VIVE (LIFT_MARKER) dans le meme body neutralise l'injonction :
+    la phrase leve la reserve qu'elle nommait (miroir du pattern `_block_emitted`
+    pour BLOCAGE). « Ne pas merger. Mergé annule le hold. » -> None.
+    """
+    assert mod.classify(
+        "myia-ai-01", "Ne pas merger. **Mergé** annule le hold."
+    ) is None
+
+
+def test_13598_override_pose_reste_muet_arbitrage_tiers() -> None:
+    """Un `[OVERRIDE]` pose en tete (arbretage tiers de B.0, voie de levee
+    du coordinateur) EMET une levee, jamais une reserve - le garde-fou
+    `_block_emitted` point A est transpose ici.
+    """
+    assert mod.classify(
+        "myia-ai-01", "[OVERRIDE] lane myia-ai-01:CoursIA - Merge OK."
+    ) is None
+
+
+def test_13598_hold_par_lane_jsboige_reste_muet() -> None:
+    """La voie est strictement reservee a LIFT_OVERRIDE_LOGINS : une lane
+    qui ecrit « ne pas merger » ne doit PAS declencher le predicat (elle
+    n'a pas l'autorite de tenir un hold a elle seule).
+    """
+    assert mod.classify(
+        "jsboige", "Ne pas merger sur les verts."
+    ) is None
+
+
+def test_13598_hold_par_reviewer_bot_reste_muet() -> None:
+    """Meme predicat pour un reviewer bot : « Hold. » d'un Hermes ne doit
+    pas declencher le predicat LIFT_OVERRIDE_LOGINS (le bot a son propre
+    mecanisme via CONCERN_MARKERS + _block_emitted).
+    """
+    assert mod.classify("clusterManager-Myia", "Hold.") is None
+
+
+def test_13598_body_vide_reste_muet() -> None:
+    """Body vide garde le comportement par defaut de classify (None)."""
+    assert mod.classify("myia-ai-01", "") is None
+
+
+
+def test_13912_hold_nominal_mention_sous_hold_user() -> None:
+    """#13912 : "sous hold user" est une MENTION NOMINALE, pas une EMISSION.
+
+    Reproduction directe du FP documente par ai-01 sur #13706 :
+    "Le moteur est sous hold user (#10038)" -- le coord CITE un hold tenu
+    par user via #10038, n'en EMET pas un. Verdict `_hold_match_is_emission`
+    attendu : False.
+    """
+    body = "Le moteur est sous hold user (#10038). translation-sync.yml est sous hold."
+    assert mod._hold_match_is_emission(mod._unaccent(body)) is False
+
+
+def test_13912_hold_nominal_mention_bold_around() -> None:
+    """#13912 : "**sous hold user (#10038)**" -- bold markdown avant `sous`.
+
+    Le 2e commentaire ai-01 sur #13706 utilise **bold** autour de l'expression,
+    donc `sous` est precede d'un `**` (et non d'un whitespace). Le predicat
+    doit accepter ce prefix comme separateur (et non comme partie d'un mot).
+    """
+    body = "le moteur qui ecraserait est **sous hold user (#10038)** : translation-sync.yml a perdu son trigger."
+    assert mod._hold_match_is_emission(mod._unaccent(body)) is False
+
+
+def test_13912_hold_nominal_mention_sur_le_hold() -> None:
+    """#13912 : "sur le hold de ai-01" -- autre MENTION NOMINALE.
+
+    Variante : le mot `sur` precede `le hold` -- c'est une description d'un
+    hold detenu ailleurs, pas une EMISSION du coord. Verdict attendu : False.
+    """
+    body = "Le PR est sur le hold de ai-01 jusqu'a resolution de #10038."
+    assert mod._hold_match_is_emission(mod._unaccent(body)) is False
+
+
+def test_13912_hold_emission_verbe_tenir() -> None:
+    """#13912 contre-positif : "je tiens le hold" -- EMISSION explicite.
+
+    Un verbe d'injonction explicite immediatement voisin de `hold`
+    ("je tiens le hold", "je maintiens le hold") reste une EMISSION.
+    Le predicat doit le reconnaitre MEME si la liste CITERS matche
+    egalement (defense en profondeur).
+    """
+    body = "Je tiens le hold jusqu'a resolution du gate."
+    assert mod._hold_match_is_emission(mod._unaccent(body)) is True
+
+
+def test_13912_hold_emission_maintenir() -> None:
+    """#13912 contre-positif : "maintenir le hold" -- EMISSION explicite."""
+    body = "Je maintiens le hold sur ce PR -- gate rouge non leve."
+    assert mod._hold_match_is_emission(mod._unaccent(body)) is True
+
+
+def test_13912_hold_classify_sous_hold_user_ne_devient_pas_bot_concern() -> None:
+    """#13912 integration : classify(myia-ai-01, 'sous hold user') -> None.
+
+    Avant le patch : classify retournait 'BOT-CONCERN' sur les commentaires
+    ai-01 citant "sous hold user", forcant un faux positif sur #13706.
+    Apres le patch : la mention nominale est neutralisee avant
+    _coordinator_emission_informal, classify retombe sur None (pas de
+    reserve vivante, pas de BOT-CONCERN).
+    """
+    body = (
+        "**HOLD coordinateur** NON. Je CITE le hold user (#10038) pour expliquer "
+        "pourquoi ce PR n'ecrasera pas translation-sync.yml : "
+        "le moteur de regeneration est sous hold user (#10038)."
+    )
+    assert mod.classify("myia-ai-01", body) is None
+
+
+def test_13912_controles_positifs_hold_reel_bloque_toujours() -> None:
+    """#13912 -- contre-controles du desserrage de `HOLD_HEAD`.
+
+    Le correctif porte sur le chemin `HOLD_HEAD` (#13784) les deux gardes que
+    son chemin FRERE `_COORDINATOR_INJUNCTION_RE` avait deja : le lookahead de
+    verdict nomme (#13598) et la negation. Desserrer un predicat exige de
+    prouver qu'on n'a rien ETEINT -- ces cinq formes sont des holds REELS et
+    doivent continuer de bloquer.
+
+    Les deux resserrements de la negation se lisent dans les cas 2 et 4 :
+      - cas 2 : « ne PAS merger » est un hold reel. `pas` est volontairement
+        absent de la liste de negation, sinon un vrai hold s'auto-neutralise.
+      - cas 4 : « NO merge until X » porte « NO » sans etre une denegation ;
+        seul un `NON`/`NO` qui CLOT la clause est un verdict de denegation.
+    """
+    reels = [
+        "**HOLD** cette PR attend le remplacement nomme.",
+        "HOLD -- ne pas merger avant que le grain de remplacement soit nomme.",
+        "## HOLD lane myia-po-2026:CoursIA -- cap G-VAR-2 atteint.",
+        "**HOLD**: NO merge until the ratchet is green.",
+        "[HOLD] lane myia-po-2023:CoursIA",
+    ]
+    for body in reels:
+        assert mod.classify("myia-ai-01", body) == "BLOCK", body
+
+
+def test_13912_hold_neutralise_negation() -> None:
+    """#13912 : "Pas de hold" -- negation explicite doit rester muette.
+
+    Sanity check : la negation (deja couverte par
+    `_COORDINATOR_INJUNCTION_NEGATED_RE`) doit court-circuiter le predicat
+    sans dependre de la discrimination mention-vs-emission.
+    """
+    body = "Pas de hold sur ce PR, vous pouvez merger."
+    assert mod._hold_match_is_emission(mod._unaccent(body)) is False
+    assert mod.classify("myia-ai-01", body) is None
+
+
+# ============================================================================
+# #14130 — Position H : rapport de verdict ATTRIBUE a un tiers, sans ref pointable
+# ============================================================================
+#
+# Cas fondateur (#14070, 2026-09-02) : « La review Hermes porte un
+# CHANGES_REQUESTED que ma lane ne peut pas lever seule. » -- un rapport de
+# diagnostic sur l'etat d'une review tierce, classe BOT-CONCERN comme s'il
+# emettait la reserve qu'il rapporte. Avant : BOT-CONCERN. Apres : None.
+#
+# Le discriminant est *qui parle du verdict de qui* (rapport d'un verdict de
+# tiers attribue et date vs emission propre) : il exige (1) une attribution a
+# un tiers (Hermes / NanoClaw / ai-01 / jsboige / un nom propre), (2) un verbe
+# DESCRIPTIF (`porte`, `comporte`, `contient`, `mentionne`, `indique`, etc.) --
+# pas un verbe d'EMISSION, (3) pas de declaration de blocage dans la suite de
+# la phrase (`reste bloquante` / `Verdict :` / `Block on`).
+
+
+def test_14130_fp1_reproduction_review_hermes_porte_un_verdict_ne_flagge_pas():
+    """#14130 FP1 -- cas fondateur verbatim : « La review Hermes porte un
+    CHANGES_REQUESTED que ma lane ne peut pas lever seule. ». Avant : BOT-CONCERN.
+    Apres : None (rapport de diagnostic, pas emission)."""
+    body = ("La review Hermes porte un CHANGES_REQUESTED que ma lane ne peut "
+            "pas lever seule.")
+    assert mod.classify("jsboige", body) is None
+
+
+def test_14130_fp2_review_hermes_avec_backticks_ne_flagge_pas():
+    """#14130 FP2 -- backticker est le contournement connu, qui doit continuer
+    de marcher apres le fix (la neutralisation Position A s'applique deja, et
+    Position H est idempotente sur du contenu deja neutralise)."""
+    body = ("La review Hermes porte un `CHANGES_REQUESTED` que ma lane ne peut "
+            "pas lever seule.")
+    assert mod.classify("jsboige", body) is None
+
+
+def test_14130_fp3_revue_avec_preposition_ne_flagge_pas():
+    """#14130 FP3 -- variante avec preposition « la revue de Hermes contient » :
+    doit matcher aussi (la preposition `de` est optionnelle)."""
+    body = ("La revue de Hermes contient un COMMENT_WITH_CONCERNS sur la "
+            "sortie 12 du notebook.")
+    assert mod.classify("jsboige", body) is None
+
+
+def test_14130_fp4_nanoclaw_mentionne_ne_flagge_pas():
+    """#14130 FP4 -- autre reviewer : NanoClaw."""
+    body = ("La review NanoClaw mentionne un SUSPECT_REGRESSION sur la branche "
+            "main qui bloque la CI.")
+    assert mod.classify("jsboige", body) is None
+
+
+def test_14130_fp5_ai_01_avait_emis_ne_flagge_pas():
+    """#14130 FP5 -- variante au passe : « avait emis » est descriptif (rapporte
+    un evenement passe), pas une emission propre."""
+    body = ("La review ai-01 avait emis un STRUCTURAL_ONLY sur la note de "
+            "parite que je dois reprendre.")
+    assert mod.classify("jsboige", body) is None
+
+
+def test_14130_ce1_review_sans_attribution_reste_live():
+    """#14130 CE1 -- CONTROLE NEGATIF : « Cette review CHANGES_REQUESTED
+    reste bloquante » (pas d'attribution, pas de verbe descriptif, declaration
+    de blocage vivante). DOIT RESTER BOT-CONCERN : sans quoi le fix debranche
+    le gate sur le failure mode fondateur de B.0 (#10761, Hermes sans levee
+    reelle, PR mergee avec reserve vivante)."""
+    body = "Cette review CHANGES_REQUESTED reste bloquante."
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+def test_14130_ce2_verdict_nu_en_tete_reste_live():
+    """#14130 CE2 -- CONTROLE NEGATIF : « CHANGES_REQUESTED : edge case non
+    couvert. » (verdict nu, pas de « review X porte », pas d'attribution).
+    DOIT RESTER BOT-CONCERN."""
+    body = "CHANGES_REQUESTED : edge case non couvert."
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+def test_14130_ce3_emission_formelle_Verdict_reste_live():
+    """#14130 CE3 -- CONTROLE NEGATIF : « Verdict : CHANGES_REQUESTED sur ce
+    commit. » (verdict precede de « Verdict : » = emission formelle Hermes).
+    DOIT RESTER BOT-CONCERN (les positions A-H ne touchent pas le canal
+    d'emission)."""
+    body = "Verdict : CHANGES_REQUESTED sur ce commit."
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+def test_14130_ce4_block_on_reste_live():
+    """#14130 CE4 -- CONTROLE NEGATIF : « Block on CHANGES_REQUESTED jusqu'a
+    validation. » (verdict precede de « Block on » = gate hold du coordinateur,
+    classifie BLOCK). DOIT RESTER BLOQUANT (peu importe le label BLOCK /
+    BOT-CONCERN -- le merite de la position H est de NE PAS neutraliser ce
+    verdict)."""
+    body = "Block on CHANGES_REQUESTED jusqu'a validation."
+    result = mod.classify("jsboige", body)
+    assert result in ("BOT-CONCERN", "BLOCK"), (
+        f"Position H ne doit pas neutraliser un gate hold ; result={result!r}"
+    )
+
+
+def test_14130_ce5_reste_bloquante_dans_fenetre_reste_live():
+    """#14130 CE5 -- CONTROLE NEGATIF : « La review Hermes porte un
+    CHANGES_REQUESTED, il reste bloquante. » (attribution OK, verbe descrip. OK,
+    MAIS `reste bloquante` dans la fenetre de phrase -- la garde dure (3)
+    preserve le verdict). DOIT RESTER BOT-CONCERN."""
+    body = ("La review Hermes porte un CHANGES_REQUESTED sur le diff, et la "
+            "reserve reste bloquante.")
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+def test_14130_ce6_verdict_sans_article_reste_live():
+    """#14130 CE6 -- CONTROLE NEGATIF : « La review Hermes indique CHANGES_REQUESTED. »
+    (pas d'article `un/une/le/la` entre le verbe descriptif et le verdict -- la
+    forme la plus directe d'une EMISSION par un reviewer, pas un rapport de
+    mention). DOIT RESTER BOT-CONCERN."""
+    body = "La review Hermes indique CHANGES_REQUESTED sur le diff."
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+def test_14130_mutation_si_pattern_retire_le_test_rougit():
+    """#14130 acceptance 2 -- test de mutation : si Position H est retiree du
+    pipeline `_strip_mentioned_verdicts`, FP1 doit rougir. Verifie par
+    monkey-patching temporaire du registre des patterns mention."""
+    body = ("La review Hermes porte un CHANGES_REQUESTED que ma lane ne peut "
+            "pas lever seule.")
+    # Baseline : avec Position H, le verdict est neutralise
+    assert mod.classify("jsboige", body) is None
+    # Mutation : on retire Position H du pipeline
+    orig = list(mod._strip_mentioned_verdicts.__code__.co_consts)  # placeholder, voir plus bas
+    # Monkey-patch direct : on retire _MENTION_VERDICT_REPORTED de la liste
+    # des patterns dans _strip_mentioned_verdicts en l'excluant.
+    import re
+    # Sauvegarde du registre module-level
+    saved_reported = mod._MENTION_VERDICT_REPORTED
+    try:
+        # Remplace par un pattern qui ne matche jamais
+        mod._MENTION_VERDICT_REPORTED = re.compile(r"(?!)")
+        assert mod.classify("jsboige", body) == "BOT-CONCERN", (
+            "MUTATION FAILED : si Position H est desactive, FP1 doit rougir "
+            "(le verdict doit rester emis)."
+        )
+    finally:
+        mod._MENTION_VERDICT_REPORTED = saved_reported
+
+
+def test_13951_concern1_corps_contradictoire_avec_marqueur_prose_ne_passe_pas():
+    """#13951 Concern 1 (NanoClaw structural review) : un corps CONTRADICTOIRE
+    pose `[Hermes] COMMENT_WITH_CONCERNS` + rien de bloquant MAIS contient
+    aussi un CONCERN_MARKER prose vivant (avant merge, a changer).
+    L'exemption NE DOIT PAS s'appliquer : un concern prose emis dans la meme
+    review ne doit pas etre ecrase par la phrase de non-blocage.
+
+    Reproduit verbatim le piege identifie par NanoClaw dans la review
+    COMMENTED du 2026-09-02T01:18:42Z :
+    ``[Hermes] COMMENT_WITH_CONCERNS -- fond solide, rien de bloquant. En
+    revanche, corriger le lien mort du README avant merge.``
+    Avant le fix (commit ``fdd589cac``), l'exemption s'appliquait et
+    ``classify`` rendait None -- la phrase rien de bloquant ecrasait le
+    marqueur avant merge (CONCERN_MARKER prose vivant). Apres le fix,
+    ``_sole_live_concern_is_comment_prefix`` detecte le residuel et fait
+    tomber l'exemption, ce qui laisse classify rendre ``BOT-CONCERN``.
+    """
+    body_prose = (
+        "[Hermes] COMMENT_WITH_CONCERNS -- fond solide, rien de bloquant. "
+        "En revanche, corriger le lien mort du README avant merge."
+    )
+    # Les trois pre-conditions de l'exemption sont reunies :
+    assert mod._comment_only_prefix(body_prose) is True
+    assert mod._review_explicit_non_blocking(body_prose) is True
+    # ... MAIS le 4e helper detecte le marqueur prose avant merge :
+    assert mod._sole_live_concern_is_comment_prefix(body_prose) is False
+    # Verdict final : BOT-CONCERN (pas None) -- la phrase de non-blocage n'a
+    # pas ecrase le concern vivant.
+    assert mod.classify("jsboige", body_prose) == "BOT-CONCERN"
+
+
+def test_13951_concern1_glyphe_severite_avec_rien_de_bloquant_ne_passe_pas():
+    """#13951 Concern 1 (NanoClaw) : variante glyphe. Un corps pose
+    `[Hermes] COMMENT_WITH_CONCERNS` + rien de bloquant + glyphe (constat
+    substantiel). L'exemption NE DOIT PAS s'appliquer : un glyphe de
+    severite emis dans la meme review ne doit pas etre ecrase.
+
+    Reproduit la 2e classe de piege listee par NanoClaw dans la review
+    COMMENTED du 2026-09-02T01:18:42Z -- Meme classe pour glyphe (constat
+    substantiel promu, #12143) coexistant avec rien de bloquant.
+    """
+    body_glyphe = (
+        "[Hermes] COMMENT_WITH_CONCERNS -- diff coherent, rien de bloquant.\n"
+        "\U0001F7E1 la cellule 12 merite un refactor (commentaire FYI, hors gate)."
+    )
+    assert mod._comment_only_prefix(body_glyphe) is True
+    assert mod._review_explicit_non_blocking(body_glyphe) is True
+    # Le glyphe est dans CONCERN_MARKERS (cf. PR #12143) :
+    assert mod._sole_live_concern_is_comment_prefix(body_glyphe) is False
+    assert mod.classify("jsboige", body_glyphe) == "BOT-CONCERN"

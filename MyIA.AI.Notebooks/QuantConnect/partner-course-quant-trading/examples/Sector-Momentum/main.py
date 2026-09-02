@@ -14,6 +14,10 @@ class SectorDualMomentumStrategy(QCAlgorithm):
         # Recherche grid search: Lookback 180j, VIX threshold 30, Leverage 1.25x
         # Sharpe attendu: 1.04 (vs ~0.5 avant)
         self.set_start_date(2015, 1, 1)
+        # Borne de fin explicite : sans elle, le backtest glisse jusqu'a la date
+        # courante et la periode "2015-2025" annoncee ci-dessus devient fausse
+        # des l'annee suivante (D2, EPIC #9768).
+        self.set_end_date(2025, 1, 1)
         self.set_cash(100000)
         self.set_brokerage_model(BrokerageName.INTERACTIVE_BROKERS_BROKERAGE, AccountType.MARGIN)
         self.settings.minimum_order_margin_portfolio_percentage = 0
