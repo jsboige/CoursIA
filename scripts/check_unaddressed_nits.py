@@ -727,6 +727,68 @@ _MENTION_VERDICT_BARE = re.compile(
     r"(?!\s*[—\-]\s+commit\b)")
 
 
+# #14130 (cf grain) — Position H : rapport de verdict ATTRIBUE a un tiers, sans
+# ref pointable obligatoire. Instance fondatrice (#14070) : « La review Hermes
+# porte un CHANGES_REQUESTED que ma lane ne peut pas lever seule. » — un
+# rapport de diagnostic sur l'etat d'une review tierce, pas une emission
+# propre. Les positions A-G exigent soit une parenthese (A), un titre (B), une
+# ref pointable (C/D/E/F), ou un verbe de mention + verdict (G) ; aucune ne
+# couvre le rapport « la review X porte/comporte/contient/mentionne un
+# VERDICT » qui est pourtant la formulation la plus naturelle d'un diagnostic.
+#
+# Discrimination vs emission formelle :
+# (1) Attribution explicite a un tiers (Hermes / NanoClaw / ai-01 / jsboige /
+#     myia-* / un nom propre) — sans attribution, le verdict est propre
+#     (l'auteur l'emet), la position ne s'applique PAS.
+# (2) Verbe DESCRIPTIF (`porte`, `comporte`, `contient`, `mentionne`,
+#     `indique`, `signale`, `releve`, `contient`, `a emis`, `avait emis`) — un
+#     verbe d'EMISSION (`Verdict :`, `Block on`, `declare`, `reste bloquante`)
+#     n'est PAS descriptif, c'est une emission, la position ne s'applique PAS.
+# (3) Pas de declaration de blocage dans la suite de la phrase (meme garde
+#     dure que Position E, ligne 645 : `reste bloquante` / `Verdict :` / `Block
+#     on`) — sinon le verdict reste emis.
+#
+# Mesure discriminatoire (corpus c.840) :
+#   TP (doit matcher, rendre None) :
+#     - "La review Hermes porte un CHANGES_REQUESTED que ma lane ne peut pas lever seule."
+#     - "La revue ai-01 contient un COMMENT_WITH_CONCERNS sur la sortie 12."
+#     - "La review NanoClaw mentionne un SUSPECT_REGRESSION bloque en CI."
+#     - "La review jsboige avait emis un STRUCTURAL_ONLY sur la note de parite."
+#   FN (ne doit PAS matcher, doit rester BOT-CONCERN) :
+#     - "Cette review CHANGES_REQUESTED reste bloquante." (pas d'attribution, pas de verbe desc.)
+#     - "CHANGES_REQUESTED: edge case non couvert." (verdict nu en tete)
+#     - "Verdict : CHANGES_REQUESTED sur ce commit." (verdict precede de "Verdict :")
+#     - "Block on CHANGES_REQUESTED jusqu'a validation." (verdict precede de "Block on")
+#     - "Je declare CHANGES_REQUESTED sur le diff." (verbe d'emission, pas descriptif)
+#     - "La review CHANGES_REQUESTED reste vive." (verdict sans attribution, bloque)
+_MENTION_VERDICT_REPORTED = re.compile(
+    r"(?i)(?:^|[\s,;:(*])"
+    # (1) determiner optionnel + revue|review
+    r"(?:le|la|les|du|mon|ma|ce|cet|cette|ces|the|my)?\s*"
+    r"(?:revue|review)(?![:.])"
+    # Attribution a un tiers : Hermes / NanoClaw / ai-01 / jsboige / myia-XXX ou
+    # un nom propre ([A-Z][a-z]+) precede de `de|du|des|par` ou simplement place
+    # apres la review. La forme « la review Hermes porte » (sans preposition) est
+    # la plus naturelle, on l'accepte ; « la review de Hermes » aussi.
+    r"\s+(?:de\s+|du\s+|des\s+|par\s+)?"
+    r"(?:Hermes|NanoClaw|jsboige|ai-?01|myia-[a-z0-9-]+|[A-Z][a-z][A-Za-z0-9_-]{0,30})"
+    # (2) verbe DESCRIPTIF (ni METION comme G, ni EMISSION comme Hermes)
+    r"\s+(?:porte|portes|portent|comporte|comportes|comportent"
+    r"|contient|contiens|contiennent|contienta"
+    r"|mentionne|mentionnes|mentionnent"
+    r"|indique|indiques|indiquent"
+    r"|signale|signales|signalent"
+    r"|releve|releves|relevent"
+    r"|a\s+emis|avait\s+emis|avaient\s+emis|ont\s+emis)"
+    r"\s+(?:un|une|le|la|les|des|du)\s+"
+    # Verdict case-sensitive (memes bornes que A-G)
+    r"(?-i:([A-Z][A-Z_]{3,}))(?![A-Za-z0-9_])"
+    # (3) garde dure : pas de declaration de blocage ni d'emission formelle
+    # dans la suite de la phrase (200 chars, meme phrase)
+    r"(?![^.!?\n]{0,200}(?:reste\s+bloquante|reste\s+vive|verdict\s*:|block\s+on))"
+)
+
+
 def _strip_mentioned_verdicts(body: str) -> str:
     """Neutralise les noms de verdict cites en position de mention (#11636, #11744, #11809).
 
@@ -747,7 +809,7 @@ def _strip_mentioned_verdicts(body: str) -> str:
     """
     # Phase 1 : sub iso-longueur pour les 6 patterns historiques (pas de
     # negation — leur discrimination par contexte est suffisante).
-    for pat in (_MENTION_VERDICT, _MENTION_VERDICT_HEADING, _MENTION_VERDICT_INLINE, _MENTION_VERDICT_LIFTED, _MENTION_VERDICT_REVIEW, _MENTION_VERDICT_REVIEW_NARRATIVE):
+    for pat in (_MENTION_VERDICT, _MENTION_VERDICT_HEADING, _MENTION_VERDICT_INLINE, _MENTION_VERDICT_LIFTED, _MENTION_VERDICT_REVIEW, _MENTION_VERDICT_REVIEW_NARRATIVE, _MENTION_VERDICT_REPORTED):
         body = pat.sub(
             lambda m: m.group(0).replace(m.group(1), " " * len(m.group(1))), body)
     # Phase 2 : Position G avec garde anti-negation (Hermes demande 1/2,

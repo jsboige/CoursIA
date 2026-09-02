@@ -3609,3 +3609,146 @@ def test_13912_hold_neutralise_negation() -> None:
     body = "Pas de hold sur ce PR, vous pouvez merger."
     assert mod._hold_match_is_emission(mod._unaccent(body)) is False
     assert mod.classify("myia-ai-01", body) is None
+
+
+# ============================================================================
+# #14130 — Position H : rapport de verdict ATTRIBUE a un tiers, sans ref pointable
+# ============================================================================
+#
+# Cas fondateur (#14070, 2026-09-02) : « La review Hermes porte un
+# CHANGES_REQUESTED que ma lane ne peut pas lever seule. » -- un rapport de
+# diagnostic sur l'etat d'une review tierce, classe BOT-CONCERN comme s'il
+# emettait la reserve qu'il rapporte. Avant : BOT-CONCERN. Apres : None.
+#
+# Le discriminant est *qui parle du verdict de qui* (rapport d'un verdict de
+# tiers attribue et date vs emission propre) : il exige (1) une attribution a
+# un tiers (Hermes / NanoClaw / ai-01 / jsboige / un nom propre), (2) un verbe
+# DESCRIPTIF (`porte`, `comporte`, `contient`, `mentionne`, `indique`, etc.) --
+# pas un verbe d'EMISSION, (3) pas de declaration de blocage dans la suite de
+# la phrase (`reste bloquante` / `Verdict :` / `Block on`).
+
+
+def test_14130_fp1_reproduction_review_hermes_porte_un_verdict_ne_flagge_pas():
+    """#14130 FP1 -- cas fondateur verbatim : « La review Hermes porte un
+    CHANGES_REQUESTED que ma lane ne peut pas lever seule. ». Avant : BOT-CONCERN.
+    Apres : None (rapport de diagnostic, pas emission)."""
+    body = ("La review Hermes porte un CHANGES_REQUESTED que ma lane ne peut "
+            "pas lever seule.")
+    assert mod.classify("jsboige", body) is None
+
+
+def test_14130_fp2_review_hermes_avec_backticks_ne_flagge_pas():
+    """#14130 FP2 -- backticker est le contournement connu, qui doit continuer
+    de marcher apres le fix (la neutralisation Position A s'applique deja, et
+    Position H est idempotente sur du contenu deja neutralise)."""
+    body = ("La review Hermes porte un `CHANGES_REQUESTED` que ma lane ne peut "
+            "pas lever seule.")
+    assert mod.classify("jsboige", body) is None
+
+
+def test_14130_fp3_revue_avec_preposition_ne_flagge_pas():
+    """#14130 FP3 -- variante avec preposition « la revue de Hermes contient » :
+    doit matcher aussi (la preposition `de` est optionnelle)."""
+    body = ("La revue de Hermes contient un COMMENT_WITH_CONCERNS sur la "
+            "sortie 12 du notebook.")
+    assert mod.classify("jsboige", body) is None
+
+
+def test_14130_fp4_nanoclaw_mentionne_ne_flagge_pas():
+    """#14130 FP4 -- autre reviewer : NanoClaw."""
+    body = ("La review NanoClaw mentionne un SUSPECT_REGRESSION sur la branche "
+            "main qui bloque la CI.")
+    assert mod.classify("jsboige", body) is None
+
+
+def test_14130_fp5_ai_01_avait_emis_ne_flagge_pas():
+    """#14130 FP5 -- variante au passe : « avait emis » est descriptif (rapporte
+    un evenement passe), pas une emission propre."""
+    body = ("La review ai-01 avait emis un STRUCTURAL_ONLY sur la note de "
+            "parite que je dois reprendre.")
+    assert mod.classify("jsboige", body) is None
+
+
+def test_14130_ce1_review_sans_attribution_reste_live():
+    """#14130 CE1 -- CONTROLE NEGATIF : « Cette review CHANGES_REQUESTED
+    reste bloquante » (pas d'attribution, pas de verbe descriptif, declaration
+    de blocage vivante). DOIT RESTER BOT-CONCERN : sans quoi le fix debranche
+    le gate sur le failure mode fondateur de B.0 (#10761, Hermes sans levee
+    reelle, PR mergee avec reserve vivante)."""
+    body = "Cette review CHANGES_REQUESTED reste bloquante."
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+def test_14130_ce2_verdict_nu_en_tete_reste_live():
+    """#14130 CE2 -- CONTROLE NEGATIF : « CHANGES_REQUESTED : edge case non
+    couvert. » (verdict nu, pas de « review X porte », pas d'attribution).
+    DOIT RESTER BOT-CONCERN."""
+    body = "CHANGES_REQUESTED : edge case non couvert."
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+def test_14130_ce3_emission_formelle_Verdict_reste_live():
+    """#14130 CE3 -- CONTROLE NEGATIF : « Verdict : CHANGES_REQUESTED sur ce
+    commit. » (verdict precede de « Verdict : » = emission formelle Hermes).
+    DOIT RESTER BOT-CONCERN (les positions A-H ne touchent pas le canal
+    d'emission)."""
+    body = "Verdict : CHANGES_REQUESTED sur ce commit."
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+def test_14130_ce4_block_on_reste_live():
+    """#14130 CE4 -- CONTROLE NEGATIF : « Block on CHANGES_REQUESTED jusqu'a
+    validation. » (verdict precede de « Block on » = gate hold du coordinateur,
+    classifie BLOCK). DOIT RESTER BLOQUANT (peu importe le label BLOCK /
+    BOT-CONCERN -- le merite de la position H est de NE PAS neutraliser ce
+    verdict)."""
+    body = "Block on CHANGES_REQUESTED jusqu'a validation."
+    result = mod.classify("jsboige", body)
+    assert result in ("BOT-CONCERN", "BLOCK"), (
+        f"Position H ne doit pas neutraliser un gate hold ; result={result!r}"
+    )
+
+
+def test_14130_ce5_reste_bloquante_dans_fenetre_reste_live():
+    """#14130 CE5 -- CONTROLE NEGATIF : « La review Hermes porte un
+    CHANGES_REQUESTED, il reste bloquante. » (attribution OK, verbe descrip. OK,
+    MAIS `reste bloquante` dans la fenetre de phrase -- la garde dure (3)
+    preserve le verdict). DOIT RESTER BOT-CONCERN."""
+    body = ("La review Hermes porte un CHANGES_REQUESTED sur le diff, et la "
+            "reserve reste bloquante.")
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+def test_14130_ce6_verdict_sans_article_reste_live():
+    """#14130 CE6 -- CONTROLE NEGATIF : « La review Hermes indique CHANGES_REQUESTED. »
+    (pas d'article `un/une/le/la` entre le verbe descriptif et le verdict -- la
+    forme la plus directe d'une EMISSION par un reviewer, pas un rapport de
+    mention). DOIT RESTER BOT-CONCERN."""
+    body = "La review Hermes indique CHANGES_REQUESTED sur le diff."
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+def test_14130_mutation_si_pattern_retire_le_test_rougit():
+    """#14130 acceptance 2 -- test de mutation : si Position H est retiree du
+    pipeline `_strip_mentioned_verdicts`, FP1 doit rougir. Verifie par
+    monkey-patching temporaire du registre des patterns mention."""
+    body = ("La review Hermes porte un CHANGES_REQUESTED que ma lane ne peut "
+            "pas lever seule.")
+    # Baseline : avec Position H, le verdict est neutralise
+    assert mod.classify("jsboige", body) is None
+    # Mutation : on retire Position H du pipeline
+    orig = list(mod._strip_mentioned_verdicts.__code__.co_consts)  # placeholder, voir plus bas
+    # Monkey-patch direct : on retire _MENTION_VERDICT_REPORTED de la liste
+    # des patterns dans _strip_mentioned_verdicts en l'excluant.
+    import re
+    # Sauvegarde du registre module-level
+    saved_reported = mod._MENTION_VERDICT_REPORTED
+    try:
+        # Remplace par un pattern qui ne matche jamais
+        mod._MENTION_VERDICT_REPORTED = re.compile(r"(?!)")
+        assert mod.classify("jsboige", body) == "BOT-CONCERN", (
+            "MUTATION FAILED : si Position H est desactive, FP1 doit rougir "
+            "(le verdict doit rester emis)."
+        )
+    finally:
+        mod._MENTION_VERDICT_REPORTED = saved_reported
