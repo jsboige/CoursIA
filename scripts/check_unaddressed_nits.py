@@ -1550,43 +1550,88 @@ def gh_json(args: list[str]) -> object:
     return json.loads(out)
 
 
+# #14218 — la voie 3 de B.0 a besoin de 4 conditions, pas 1. Une seule
+# (createdAt avant cutoff) etait verifiee par `gh_issue_created`, ce qui
+# ouvrait la trappe a 3 classes silencieuses : issue fermee qui pointe
+# encore sur la PR, issue ancienne sans rapport, issue qui ne cite pas la
+# PR (le « report » decrit un autre travail). On enrichit le callback
+# pour rendre les 4 jugements : OUVERTE, anterieure au cutoff, posterieure
+# a la reserve, et citant la PR dans son titre ou son corps.
+_ISSUE_INFO_CACHE: dict[int, "IssueInfo | None"] = {}
+# Garde compat : l'ancien nom etait deja importe par d'anciens tests
+# (cf `gh_issue_created` comme pointeur historique). Le callback ci-dessous
+# rend le createdAt isole, comme avant ; la voie 3 utilise desormais
+# `gh_issue_info` directement.
 _ISSUE_CREATED_CACHE: dict[int, datetime | None] = {}
+
+
+class IssueInfo:
+    """Snapshot minimal d'une issue GitHub resolue par voie 3.
+
+    Champs : `state` ('open'/'closed'), `created_at` (tz-aware UTC, ``None``
+    si la cle manque), `title`, `body`. ``None`` est rendu pour un numero
+    qui n'est PAS une issue (PR, 404, payload non-dict) — cf #13725.
+    """
+
+    __slots__ = ("state", "created_at", "title", "body")
+
+    def __init__(self, d: dict):
+        self.state = (d.get("state") or "").lower() or None
+        self.created_at = ts(d.get("created_at"))
+        self.title = d.get("title") or ""
+        self.body = d.get("body") or ""
+
+    @property
+    def is_open(self) -> bool:
+        return self.state == "open"
+
+
+def _gh_fetch_issue(n: int) -> dict | None:
+    """Fetch brut d'une issue, cachee par numero. Retourne None si PR/404/malformed.
+
+    #13725 — la representation REST `issues/{n}` expose `pull_request` pour
+    les PRs (et pas pour les issues), et rend un 404 franc pour un numero
+    inexistant. La cle `pull_request` est donc le discriminant canonique.
+    """
+    if n not in _ISSUE_INFO_CACHE:
+        try:
+            d = gh_json(["api", "repos/" + REPO + "/issues/" + str(n)])
+        except Exception:
+            _ISSUE_INFO_CACHE[n] = None
+            return None
+        if not isinstance(d, dict) or "pull_request" in d:
+            _ISSUE_INFO_CACHE[n] = None
+        else:
+            _ISSUE_INFO_CACHE[n] = IssueInfo(d)
+    return _ISSUE_INFO_CACHE[n]
+
+
+def gh_issue_info(n: int) -> IssueInfo | None:
+    """#14218 — snapshot d'une issue, source des 4 conditions voie 3.
+
+    Renvoie ``None`` si ``n`` n'est pas une issue (PR, 404, payload non-dict).
+    Mêmes garanties de cache que #13725.
+    """
+    return _gh_fetch_issue(n)
 
 
 def gh_issue_created(n: int) -> datetime | None:
     """#13495 — createdAt de l'issue #n, ou None si elle n'existe pas (ou PR).
 
-    Résolution des références de la voie 3 de B.0 (« issue de suivi ouverte et
-    nommée AVANT le merge »). Cache global : le createdAt d'une issue est
-    immuable, et l'audit retro croise les memes numeros d'une PR a l'autre.
-    Un numero de PR ne compte PAS : l'endpoint issues resout aussi les PRs
-    (mesure c.705 : `gh issue view <PR> --json createdAt` rend rc=0), d'ou le
-    garde issue-vs-PR — la voie 3 nomme une ISSUE, pas une PR (spec #13495),
-    sinon « rebase de #N fait » serait un report valide.
+    Compat historique : ``collect_followup_lifts`` lit aujourd'hui le
+    snapshot via ``gh_issue_info``. Ce wrapper reste expose pour les
+    anciens tests d'integration et ne change pas de semantique : il rend
+    ``IssueInfo.created_at`` pour une issue, ``None`` sinon.
 
-    #13725 — le garde passait par `gh issue view --json isPullRequest`, un
-    champ que `gh issue view` N'EXPOSE PAS (« Unknown JSON field », rc=1).
-    Chaque resolution levait donc, tombait dans le `except` et rendait None :
-    la voie 3 etait MORTE sur tout le depot depuis son cablage. Le refus
-    etait silencieux et indiscernable d'une issue inexistante — une lane
-    employant la forme canonique de B.0 voyait son report refuse sans motif
-    (mesure sur #13618 : #13719 OPEN, nommee par l'auteur de la PR 18 s apres
-    sa creation, resolue None — et #12459/#13608/#13671/#13684/#13686/#13692
-    avec elle, tous existants).
-
-    Le discriminant correct est REST : la representation `issues/{n}` porte
-    la cle `pull_request` UNIQUEMENT pour une PR (mesure : #13719 -> absente,
-    #13618 -> presente), et rend un 404 franc pour un numero inexistant.
+    #13725 — le garde passait par ``gh issue view --json isPullRequest``,
+    un champ que ``gh issue view`` N'EXPOSE PAS. Le discriminant correct
+    est REST : ``issues/{n}`` porte la cle ``pull_request`` UNIQUEMENT pour
+    une PR.
     """
-    if n not in _ISSUE_CREATED_CACHE:
-        try:
-            d = gh_json(["api", "repos/" + REPO + "/issues/" + str(n)])
-            if not isinstance(d, dict) or "pull_request" in d:
-                _ISSUE_CREATED_CACHE[n] = None
-            else:
-                _ISSUE_CREATED_CACHE[n] = ts(d.get("created_at"))
-        except Exception:
-            _ISSUE_CREATED_CACHE[n] = None
+    if n in _ISSUE_CREATED_CACHE:
+        return _ISSUE_CREATED_CACHE[n]
+    info = gh_issue_info(n)
+    _ISSUE_CREATED_CACHE[n] = info.created_at if info is not None else None
     return _ISSUE_CREATED_CACHE[n]
 
 
@@ -1626,35 +1671,56 @@ def _is_deliberate_followup(stripped: str, pos: int) -> bool:
     return bool(_FOLLOWUP_MARK.search(stripped[max(0, pos - 200):pos]))
 
 
-def collect_followup_lifts(pr_data: dict, cutoff: datetime,
-                           issue_created=None) -> list[tuple]:
-    """#13495 — voie 3 de B.0 : « issue de suivi ouverte et nommée AVANT le
-    merge (reportée sciemment) ».
+def _issue_references_pr(issue: "IssueInfo", pr_number: int) -> bool:
+    """#14218 condition 4 : l'issue cite le numero de la PR dans son titre OU
+    son corps. Pas une regex stricte (les PRs sont referencees de maniere
+    heterogene : « #14218 », « PR #14218 », « pull/14218 », « PRs #14218 »)
+    mais un test simple : le numero doit apparaitre en mot-borne.
 
-    Un commentaire capable de lever qui NOMME une issue (#N) dans sa prose
-    (hors citation) est un report : il lève un nit antérieur si (a) l'issue
-    existe, (b) son createdAt est antérieur à la décision de merge. C'est la
-    seule voie mécaniquement ouverte à l'AUTEUR de la PR — une phrase de
-    l'auteur ne lève pas la réserve d'un tiers (voie 1 close pour lui,
-    #11145), mais un report nommé avant merge est un geste délibéré que B.0
-    crédite. Mécanique par spec (pas de NLP) : la référence vit hors citation
-    (`_strip_quoted`), comme les LIFT_MARKERs.
-
-    Deux bornes (review c.705 de jsboige, #13563) :
-    - self-ref : le numéro de la PR ELLE-MÊME n'est pas une « issue de
-      suivi » — l'API issues résout un numéro de PR (rc=0, mesuré), donc
-      tout commentaire citant #<cette PR> (« rebase de #N fait ») serait
-      sinon un report valide éteignant tous les nits antérieurs.
-    - nommeur : le report ne compte que s'il émane de l'auteur de la PR ou
-      de l'auteur du nit levé — un bystander citant une issue ancienne
-      quelconque (« ce comportement rappelle #11045 ») n'a pas de lien
-      sémantique avec la réserve (stance #13592, arbitrage po-2024).
-
-    Retourne des couples (instant, nommeur) ; `analyse` applique la borne
-    nommeur par nit. `issue_created=None` coupe la voie — `analyse()` reste
-    pur pour les tests (aucun appel réseau n'y est toléré).
+    Garde anti-self : on cherche la reference seulement si ``pr_number``
+    est distinct de l'issue (defense en profondeur ; `_FOLLOWUP_MARK`
+    pose deja cette borne par `_is_deliberate_followup`).
     """
-    if issue_created is None:
+    needle = r"(?<![A-Za-z0-9_])" + str(pr_number) + r"(?![A-Za-z0-9_])"
+    return bool(re.search(needle, issue.title)) or bool(re.search(needle, issue.body))
+
+
+def collect_followup_lifts(pr_data: dict, cutoff: datetime,
+                           issue_info=None) -> list[tuple]:
+    """#13495 + #14218 — voie 3 de B.0 : « issue de suivi ouverte et nommée
+    AVANT le merge (reportée sciemment) ».
+
+    Conditions verifiees ICI (par collecte, identiques pour toutes les
+    reserves de la PR) :
+
+    1. ``#N`` est une **issue** (le payload GitHub distingue issues/PRs via
+       ``pull_request``, cf #13725).
+    2. ``#N`` est **OUVERTE** au moment du check (la voie 3 perd son sens sur
+       une issue fermee : la suite serait ailleurs, pas en suivi).
+    3. ``#N`` a ete creee **avant le cutoff** (proxy du « avant le merge »,
+       l'invariant ancien).
+    4. La reference est **deliberee** (le `_FOLLOWUP_MARK` la distingue d'une
+       citation de contexte, cf #13725).
+
+    Conditions verifiees LA-BAS (par reserve, dans `analyse`) :
+
+    5. ``#N`` a ete creee **apres** la reserve qu'elle reporte — sinon une
+       issue preexistante sans rapport ferait l'affaire.
+    6. ``#N`` **reference la PR** dans son titre ou son corps — sinon le
+       lien entre report et reserve n'est pas etabli.
+
+    Une phrase de l'auteur de la PR ne leve pas la reserve d'un tiers
+    (voie 1 close pour lui, #11145), mais un report nomme avant merge est
+    un geste delibere que B.0 credite — l'auteur de la PR est explicitement
+    ouvert comme nommeur (borne #13563).
+
+    `issue_info=None` coupe la voie — `analyse()` reste pur pour les tests
+    (aucun appel reseau n'y est tolere). Retourne des tuples
+    ``(instant, nommeur, IssueInfo)`` ; `analyse` applique les conditions
+    5 et 6 par reserve. La PR-resolving-callback retourne ``IssueInfo`` ou
+    ``None`` ; on filtre ``None`` (PR, 404, etc.).
+    """
+    if issue_info is None:
         return []
     out: list[tuple] = []
     self_ref = pr_data.get("number")
@@ -1671,10 +1737,15 @@ def collect_followup_lifts(pr_data: dict, cutoff: datetime,
                 continue
             if not _is_deliberate_followup(stripped, m.start()):
                 continue
-            created = issue_created(n)
-            if created is not None and created < cutoff:
-                out.append((t, (c.get("author") or {}).get("login", "")))
-                break
+            info = issue_info(n)
+            if info is None:
+                continue
+            if not info.is_open:
+                continue  # condition 2
+            if info.created_at is None or not info.created_at < cutoff:
+                continue  # condition 3
+            out.append((t, (c.get("author") or {}).get("login", ""), info))
+            break
     return out
 
 
@@ -2026,12 +2097,13 @@ def _names_author(body: str, author: str) -> bool:
 
 
 def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
-            issue_created=None, dismissed_improperly=None) -> dict:
+            issue_info=None, dismissed_improperly=None) -> dict:
     """cutoff = mergedAt (audit retro) ou now (gate pre-merge)."""
     commits = [ts(c.get("committedDate")) for c in (pr_data.get("commits") or [])]
     commits = [c for c in commits if c]
     last_commit = max(commits) if commits else None
     pr_author = (pr_data.get("author") or {}).get("login", "")
+    pr_number = pr_data.get("number")
 
     # #11145 — borne d'auteur, durcie par #12836 : seule une levee de l'auteur
     # de la reserve compte. #12798 a montre pourquoi PR_AUTHOR n'est pas une
@@ -2163,9 +2235,15 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
                      r.get("body", "")) is None
     ]
     explicit_lifts = [x for x in explicit_lifts if x[0] is not None]
-    # #13495 — voie 3 de B.0 : les commentaires qui NOMMENT une issue de
-    # suivi ouverte avant le cutoff sont des leveries a part entiere.
-    followup_lifts = collect_followup_lifts(pr_data, cutoff, issue_created)
+    # #13495 + #14218 — voie 3 de B.0 : les commentaires qui NOMMENT une
+    # issue de suivi ouverte avant le cutoff sont des leveries a part
+    # entiere. Avant : seul `created < cutoff` etait verifie (condition 2
+    # sur 4 — issue FERMEe, issue ANTERIEURE a la reserve, ou issue qui
+    # ne cite PAS la PR eteignait quand meme des reserves). Apres :
+    # `collect_followup_lifts` filtre OUVERTE + deliberee ; les conditions
+    # 5 (posterieure a la reserve) et 6 (reference la PR dans titre/corps)
+    # sont appliquees par reserve dans les `any(...)` ci-dessous.
+    followup_lifts = collect_followup_lifts(pr_data, cutoff, issue_info)
 
     # #13639 -- passer les levees au crible du SHA rembobine (voir
     # _SHA_CITED ci-dessus pour le pourquoi et l'etroitesse). Inerte sans
@@ -2309,8 +2387,11 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
                       or any(when < t < cutoff
                              and _lift_eligible(lifter, login, lift_body)
                              for (t, lifter, lift_body) in explicit_lifts)
+                      # #14218 conditions 5+6 — voir commentaire `followup_lifts`
                       or any(when < t < cutoff and namer in (login, pr_author)
-                             for (t, namer) in followup_lifts))
+                             and when < info.created_at
+                             and _issue_references_pr(info, pr_number)
+                             for (t, namer, info) in followup_lifts))
             if lifted:
                 continue
         # #13083 — les bornes strictes du blocage. Un blocage ne se leve ni
@@ -2338,7 +2419,9 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
                     # merge est un geste delibere que B.0 credite. Borne
                     # nommeur (c.705) : {auteur du blocage, auteur de la PR}.
                     or any(when < t < cutoff and namer in (login, pr_author)
-                           for (t, namer) in followup_lifts)):
+                           and when < info.created_at
+                           and _issue_references_pr(info, pr_number)
+                           for (t, namer, info) in followup_lifts)):
                 continue
         # #12319 : meme regime pour un nit porte par un commentaire ou une
         # review COMMENTED (dont chaque reserve Hermes, self-review cap).
@@ -2354,7 +2437,9 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
                   for (t, lift_author, lift_body) in explicit_lifts
               ) or _approved_lifts_reserve(login, when, pr_author)
               or any(when < t < cutoff and namer in (login, pr_author)
-                     for (t, namer) in followup_lifts)):
+                     and when < info.created_at
+                     and _issue_references_pr(info, pr_number)
+                     for (t, namer, info) in followup_lifts)):
             continue
         # Un commit poussé après le nit ne le lève PAS à lui seul : sur #10761,
         # le « traitement » était un rebase à 19:41 qui n'adressait aucun des
@@ -2555,7 +2640,7 @@ def gate(pr: int, as_json: bool) -> int:
     merged = ts(data.get("mergedAt"))
     cutoff = merged or datetime.now(timezone.utc)
     result = analyse(data, review_threads(pr), cutoff,
-                     issue_created=gh_issue_created,
+                     issue_info=gh_issue_info,
                      dismissed_improperly=improper_dismissals(pr))
     if as_json:
         print(json.dumps(result, indent=1, ensure_ascii=False))
@@ -2600,7 +2685,7 @@ def audit(limit: int, search: str | None = None) -> int:
         # PRs dont les nits etaient legitiment reportes par issue nommee. Le
         # cache global de gh_issue_created amortit les lookups croises entre PRs.
         if not analyse(p, [], merged,
-                       issue_created=gh_issue_created)["blocked"]:
+                       issue_info=gh_issue_info)["blocked"]:
             continue
         try:
             p["commits"] = gh_json(
@@ -2614,7 +2699,7 @@ def audit(limit: int, search: str | None = None) -> int:
         # a besoin pour trier (« du code a bouge apres le nit » = aller lire le
         # diff avant de conclure). Information de triage, pas critere.
         # Audit retro : on n'interroge pas les threads inline (1 appel GraphQL/PR).
-        res = analyse(p, [], merged, issue_created=gh_issue_created)
+        res = analyse(p, [], merged, issue_info=gh_issue_info)
         if res["blocked"]:
             res["url"] = p.get("url")
             res["merged_at"] = p["mergedAt"]
