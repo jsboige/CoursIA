@@ -23,10 +23,27 @@ ENV DEBIAN_FRONTEND=noninteractive
 # python-is-python3 : les workflows stdlib-only appellent `python` nu
 # (check-navlinks, job 100021313259 : exit 127 "python: not found" alors
 # que python3 etait present).
+# lsb-release : actions/setup-python@v5 avec `cache: pip` appelle
+# `lsb_release -i -r -s` pour construire la cle de cache -- sans lui, le job
+# meurt sur "Unable to locate executable file: lsb_release" APRES avoir installe
+# Python (Scripts Tests (CPU), run 33618470607). zstd : actions/cache et
+# upload-artifact l'utilisent, sinon repli gzip (fonctionne, plus lent).
+# Deliberement PAS sudo : les conteneurs tournent en --security-opt=no-new-
+# privileges, il serait inerte et affaiblirait la posture.
+# PEP 668 : Debian marque son Python systeme `externally-managed`, donc
+# `pip install <x>` est REFUSE la ou il passe sur ubuntu-latest -- un workflow
+# qui fait `import yaml || pip install pyyaml` meurt sur le pip (run
+# 33651913220, Unique Check-Run Names Guard). Le conteneur est jetable : lui
+# rendre le comportement de la machine GitHub-hosted qu'il remplace est le
+# but, pas un risque. python3-yaml en plus, pour que le cas courant n'ait meme
+# pas besoin de pip (pas d'aller-retour reseau).
+ENV PIP_BREAK_SYSTEM_PACKAGES=1
+
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-       ca-certificates curl git jq unzip tar gzip xz-utils python3 python3-pip python-is-python3 \
+       ca-certificates curl git jq unzip tar gzip xz-utils python3 python3-pip python-is-python3 python3-yaml \
        libicu74 \
+       lsb-release zstd wget \
     && rm -rf /var/lib/apt/lists/*
 
 # Tarball runner epingle par SHA-256 (meme discipline que les profils
@@ -44,6 +61,17 @@ RUN echo "${RUNNER_SHA256}  /tmp/runner.tar.gz" | sha256sum -c - \
 RUN useradd -m -u 1001 runner \
     && mkdir -p /home/runner/_work /opt/hostedtoolcache \
     && chown -R runner:runner /opt/runner /home/runner /opt/hostedtoolcache
+
+# gh CLI : requis par les guards metadata (check_pr_perimeter POST sa label
+# via gh ; sans gh, les organs sous `2>/dev/null || true` rendent exit 0 SANS
+# poster -- un vert fabrique, cf #14294). Pin SHA-256 comme le tarball runner.
+ARG GH_VERSION=2.99.0
+ARG GH_SHA256=ed4960225d2833e04a61590d9fa2b5773d147f3aa375459e5466a40c102f3832
+ADD https://github.com/cli/cli/releases/download/v${GH_VERSION}/gh_${GH_VERSION}_linux_amd64.tar.gz /tmp/gh.tar.gz
+RUN echo "${GH_SHA256}  /tmp/gh.tar.gz" | sha256sum -c - \
+    && tar xzf /tmp/gh.tar.gz -C /tmp \
+    && install -m 0755 /tmp/gh_${GH_VERSION}_linux_amd64/bin/gh /usr/local/bin/gh \
+    && rm -rf /tmp/gh.tar.gz /tmp/gh_${GH_VERSION}_linux_amd64
 
 USER runner
 WORKDIR /opt/runner

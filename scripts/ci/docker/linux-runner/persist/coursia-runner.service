@@ -1,0 +1,25 @@
+# Unite systemd de persistance du superviseur de runners Linux CoursIA.
+# Deploiement po-2024 (2026-09-02, mission persistance #13378) : copie de
+# reference -- l'original vit dans la distro Ubuntu de l'hote, sous
+# /etc/systemd/system/coursia-runner.service (systemctl enable --now).
+#
+# Parametres machine : NAME_PREFIX (po-2024 -> myia-po-2024-linux-docker) et
+# N slots (po-2024 -> 4) vivent dans le wrapper coursia-runner-start.sh.
+[Unit]
+Description=CoursIA Linux runners supervisor (docker slots)
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/coursia-runner-start.sh start 4
+ExecStop=/usr/local/bin/coursia-runner-start.sh stop
+Restart=always
+RestartSec=30
+Nice=10
+# ExecStop est gracieux (sentinel supervise.sh) : un job en vol va a son
+# terme, ce qui peut prendre des dizaines de minutes sur un build Lean.
+TimeoutStopSec=900
+
+[Install]
+WantedBy=multi-user.target

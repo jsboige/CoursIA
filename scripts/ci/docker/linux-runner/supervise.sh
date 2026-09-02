@@ -19,7 +19,9 @@
 # et cette clause survit a toute decision d'elargissement (docs/ci/self-hosted-runners.md).
 #
 # USAGE
-#   ./supervise.sh start [N]     # N slots (defaut 2)
+#   ./supervise.sh start [N] [--force]
+#                                  # N slots (defaut 2) ; --force leve
+#                                  # un sentinel STOP_FILE prealable
 #   ./supervise.sh stop          # arret gracieux : pas de nouveau conteneur
 #   ./supervise.sh status
 #
@@ -77,6 +79,21 @@ export MSYS2_ARG_CONV_EXCL='*'
 
 die() { echo "ERREUR: $*" >&2; exit 1; }
 
+# #14259 Defaut 1+3 : compte et liste les PIDs des superviseurs actifs du
+# meme `NAME_PREFIX`. La cle est `PPID==1` : un superviseur est le parent
+# direct d'un slot_loop fork (mesure : PPID 72469 = LE superviseur ;
+# les slot_loop forks heritent de l'argv du superviseur mais leur PPID
+# est 72469, pas 1). Les subshells `$(fetch_token)` ont un PPID
+# transitoire egalement != 1. Le `awk '$3==1'` est donc non cosmetique
+# -- sans lui, un `start 4` rend 5 PIDs et le defense-positif echoue.
+# Sortie : liste espacee de PIDs (vide si aucun superviseur).
+supervisor_pids() {
+  ps -ef 2>/dev/null \
+    | grep '[s]upervise\.sh start' \
+    | awk '$3==1 {print $2}'
+  return 0
+}
+
 fetch_token() {
   # Le registration token vaut 1 h et est jetable : un par demarrage de
   # conteneur. C'est la raison pour laquelle la boucle vit sur l'HOTE et non
@@ -123,6 +140,13 @@ slot_loop() {
 
 cmd_start() {
   local n="${1:-2}"
+  local force=0
+  # #14259 Defaut 2 : `--force` permet de lever un sentinel STOP pose
+  # prealablement (par `cmd_stop`). Sans `--force`, un start en presence
+  # du sentinel est REFUSE pour eviter qu'un operateur (ou un cron)
+  # n'annule un arret gracieux par accident. La portee est la meme
+  # qu'un `rm -f` historique -- seuls les appels explicites passent.
+  [ "${2:-}" = "--force" ] && force=1
   command -v docker >/dev/null || die "docker introuvable"
   command -v gh >/dev/null || die "gh introuvable"
   docker image inspect "$IMAGE" >/dev/null 2>&1 \
@@ -130,6 +154,39 @@ cmd_start() {
     docker build -t $IMAGE scripts/ci/docker/linux-runner/"
   docker volume create "$TOOLCACHE_VOLUME" >/dev/null \
     || die "volume $TOOLCACHE_VOLUME impossible a creer -- docker volume create"
+  # #14259 Defaut 1 : garde d'idempotence. `pgrep` n'existe PAS sous Git
+  # Bash (mesure 2026-09-02 : command-not-found silencieux derriere
+  # `2>/dev/null`). La forme portable utilise `ps -ef` + `awk '$3==1'`
+  # (PPID==1 filtre les slot_loop forks et les subshells `$(...)` qui
+  # heritent de l'argv du parent -- mesure : un `start 4` produit 5
+  # lignes de `ps -ef | grep` mais UN seul superviseur, PPID==1). Si
+  # un superviseur du meme `NAME_PREFIX` est deja actif, on REFUSE et
+  # on nomme les PIDs -- un deuxieme `start` produirait deux boucles
+  # concurrantes portant des copies differentes de l'environnement
+  # (incident po-2024 2026-09-02, plusieurs PRs de contenu bloquees).
+  local existing_pids
+  existing_pids="$(supervisor_pids)"
+  if [ -n "$existing_pids" ]; then
+    die "un superviseur $NAME_PREFIX est deja actif (PID $existing_pids) ;
+utiliser '$0 stop' d'abord, ou relancer sous une machine differente."
+  fi
+  # #14259 Defaut 2 : si le sentinel STOP_FILE est pose, refuser sauf
+  # `--force`. C'est le mecanisme cle qui protege un arret gracieux :
+  # un `stop` pose le sentinel, les boucles existantes ne relancent
+  # plus de conteneur, et un `start` ulterieur NE DOIT PAS effacer
+  # le sentinel sinon le superviseur (s'il survit) reprendrait. Le
+  # seul moyen de re-marcher apres un stop est `--force`, qui dit
+  # explicitement « j'ai conscience que je relance sur un stop en
+  # cours ».
+  if [ -f "$STOP_FILE" ] && [ "$force" -ne 1 ]; then
+    die "sentinel STOP_FILE present ($STOP_FILE) -- un arret gracieux
+est en cours. Attendre la fin des jobs, faire '$0 stop' (no-op si deja
+fait) puis '$0 start', OU relancer avec '$0 start $n --force'."
+  fi
+  # Sur succes, on leve le sentinel -- le superviseur qui demarre prend
+  # la main sur l'etat precedent (Defaut 2 dans son volet `start`
+  # historiquement effacait sans condition ; ici il n'efface que si
+  # on a passe la garde --force).
   rm -f "$STOP_FILE"
   echo "demarrage de $n slot(s) ; caps par conteneur : cpus=$CPUS memory=$MEMORY pids=$PIDS ; toolcache=$TOOLCACHE_VOLUME -> $TOOLCACHE_MOUNT ; cache depot=${WORK_VOLUME_PREFIX}-{1..$n} -> $WORK_MOUNT"
   for i in $(seq 1 "$n"); do
@@ -155,6 +212,25 @@ cmd_stop() {
 }
 
 cmd_status() {
+  echo "== superviseurs actifs =="
+  # #14259 Defaut 3 : compte par PPID==1 (cf supervisor_pids). Un compte
+  # > 1 signale une anomalie (deux superviseurs concurrents portant des
+  # copies differentes de l'environnement -- incident 2026-09-02). On
+  # ixe le format pour qu'un grep ulterieur (alerting, sweep CI)
+  # puisse matcher une ligne `superviseurs actifs : N`.
+  local pids
+  pids="$(supervisor_pids)"
+  if [ -z "$pids" ]; then
+    echo "  superviseurs actifs : 0"
+  else
+    local count
+    count="$(echo "$pids" | wc -l | tr -d ' ')"
+    if [ "$count" -gt 1 ]; then
+      echo "  superviseurs actifs : $count (PID $pids) -- ANOMALIE : >1 superviseur concurrent"
+    else
+      echo "  superviseurs actifs : $count (PID $pids)"
+    fi
+  fi
   echo "== conteneurs runner en cours =="
   docker ps --filter "name=$NAME_PREFIX" --format '  {{.Names}}  {{.Status}}  {{.RunningFor}}' 2>/dev/null || true
   echo "== runners enregistres cote GitHub =="
@@ -165,8 +241,8 @@ cmd_status() {
 }
 
 case "${1:-}" in
-  start)  shift; cmd_start "${1:-2}" ;;
+  start)  shift; cmd_start "${1:-2}" "${2:-}" ;;
   stop)   cmd_stop ;;
   status) cmd_status ;;
-  *) echo "usage: $0 {start [N]|stop|status}"; exit 2 ;;
+  *) echo "usage: $0 {start [N] [--force]|stop|status}"; exit 2 ;;
 esac
