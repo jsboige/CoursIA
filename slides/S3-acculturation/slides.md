@@ -1134,14 +1134,9 @@ layout: section
 
 # Théorie des jeux (1/2)
 
-<div class="grid grid-cols-2 gap-0 -mt-4 -mb-2">
-<div class="bg-orange-700 text-white px-4 py-2 text-base font-bold text-center">Environnement multi-agents</div>
-<div class="bg-slate-800 text-white px-4 py-2 text-base font-bold text-center">Optimisation de stratégies</div>
-</div>
-
-
-<div class="grid grid-cols-2 gap-5 -mt-2">
+<div class="grid grid-cols-2 gap-5 -mt-4">
 <div>
+<div class="bg-orange-700 text-white px-4 py-2 text-base font-bold text-center mb-2">Environnement multi-agents</div>
 
 - Analyse stratégique
 - Interdépendances stratégiques
@@ -1150,24 +1145,20 @@ layout: section
 - Design de mécanisme
   - Quelles règles?
 
-
 </div>
 <div>
-
+<div class="bg-slate-800 text-white px-4 py-2 text-base font-bold text-center mb-2">Optimisation de stratégies</div>
 
 - Solution = profil de stratégies
 - Pures (déterministes)
 - Mixtes (probabilistes)
 - Utilité espérée
 
-<div class="img-grid">
-<img src="./images/img_067.png" class="w-[180px] max-w-full max-h-[300px] object-contain" alt="Matrice du dilemme du prisonnier : se taire/avouer, peines de (-1,-1) à (-8,-8)" />
-<img src="./images/img_068.png" class="w-[180px] max-w-full max-h-[300px] object-contain" alt="Arbre de jeu Stackelberg : Burn/Not Burn, Invade/Concede, Fight/Retreat avec utilités" />
-<img src="./images/img_069.png" class="w-[180px] max-w-full max-h-[300px] object-contain" alt="Arbre de jeu de poker en trois rues : Pre-flop, Flop, Turn avec Fold/Call/Check/Raise" />
-
+<div class="img-grid mt-2 grid grid-cols-3 gap-2">
+<img src="./images/img_067.png" class="w-full max-h-[260px] object-contain" alt="Matrice du dilemme du prisonnier : se taire/avouer, peines de (-1,-1) à (-8,-8)" />
+<img src="./images/img_068.png" class="w-full max-h-[260px] object-contain" alt="Arbre de jeu Stackelberg : Burn/Not Burn, Invade/Concede, Fight/Retreat avec utilités" />
+<img src="./images/img_069.png" class="w-full max-h-[260px] object-contain" alt="Arbre de jeu de poker en trois rues : Pre-flop, Flop, Turn avec Fold/Call/Check/Raise" />
 </div>
-
-
 
 </div>
 </div>
@@ -1177,14 +1168,9 @@ layout: section
 
 # Théorie des jeux (2/2)
 
-<div class="grid grid-cols-2 gap-0 -mt-4 -mb-2">
-<div class="bg-orange-700 text-white px-4 py-2 text-base font-bold text-center">Jeux simultanés</div>
-<div class="bg-slate-800 text-white px-4 py-2 text-base font-bold text-center">Jeux séquentiels</div>
-</div>
-
-
-<div class="grid grid-cols-2 gap-8 -mt-2 items-center">
+<div class="grid grid-cols-2 gap-8 -mt-4">
 <div>
+<div class="bg-orange-700 text-white px-4 py-2 text-base font-bold text-center mb-2">Jeux simultanés</div>
 
 - Matrice de gains
 - Dominance
@@ -1194,6 +1180,7 @@ layout: section
 
 </div>
 <div>
+<div class="bg-slate-800 text-white px-4 py-2 text-base font-bold text-center mb-2">Jeux séquentiels</div>
 
 - Plusieurs manches
 - Forme extensive
@@ -1207,7 +1194,7 @@ layout: section
 </div>
 </div>
 
-<div class="flex justify-center mt-2">
+<div class="flex justify-center mt-4">
   <img src="./images/img_070.png" class="w-[420px] max-h-[230px] object-contain" alt="Matrice de gains du jeu Ballet/Fight : préférences croisées des deux joueurs, valeurs (2,1) et (1,2)" />
 </div>
 ---
@@ -1260,14 +1247,9 @@ layout: section
 
 # Conception de mécanismes
 
-<div class="grid grid-cols-2 gap-0 -mt-4 -mb-2">
-<div class="bg-orange-700 text-white px-4 py-2 text-base font-bold text-center">Concepts</div>
-<div class="bg-slate-800 text-white px-4 py-2 text-base font-bold text-center">Résultats</div>
-</div>
-
-
-<div class="grid grid-cols-2 gap-5 -mt-2">
+<div class="grid grid-cols-2 gap-5 -mt-4">
 <div>
+<div class="bg-orange-700 text-white px-4 py-2 text-base font-bold text-center mb-2">Concepts</div>
 
 - Théorie des jeux inverse
 - Quelles bonnes règles ?
@@ -1276,10 +1258,9 @@ layout: section
   - Mécanismes manipulables
   - Non-stratégiques
 
-
 </div>
 <div>
-
+<div class="bg-slate-800 text-white px-4 py-2 text-base font-bold text-center mb-2">Résultats</div>
 
 - Enchères de Vickrey
 - Tragédie des communs
@@ -1289,12 +1270,10 @@ layout: section
 - Stratégies sociétales
   - Évolution de la confiance
 
-<div class="img-grid">
-<img src="./images/img_075.png" class="w-[180px] max-w-full max-h-[300px] object-contain" alt="Mécanismes institutionnels : acteurs, messages, mécanisme (engrenages), résultat" />
-<img src="./images/img_076.png" class="w-[180px] max-w-full max-h-[300px] object-contain" alt="Jeu itératif du prisonnier avec roue de stratégies : Copycat, Cheater, Cooperator, Grudger, Detective..." />
-
+<div class="img-grid mt-2 flex flex-col gap-2 items-center">
+<img src="./images/img_075.png" class="max-h-[120px] max-w-[300px] object-contain" alt="Mécanismes institutionnels : acteurs, messages, mécanisme (engrenages), résultat" />
+<img src="./images/img_076.png" class="max-h-[120px] max-w-[300px] object-contain" alt="Jeu itératif du prisonnier avec roue de stratégies : Copycat, Cheater, Cooperator, Grudger, Detective..." />
 </div>
-
 
 </div>
 </div>
