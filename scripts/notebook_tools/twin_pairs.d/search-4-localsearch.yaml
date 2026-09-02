@@ -28,6 +28,12 @@
       csharp_sha: 2feb723adf68258ced22949f71e9eb70070c87b9
       content_python_sha: dddab5b007203cb73db9a7a6bb64eb31deb4d4da2a3a33ef87fc9ecf19aafe8b
       content_csharp_sha: bf240ace38f5d9f054a979ed694bb77ff34e84ac79f9353683168205fc830b07
+    - date: "2026-09-01"
+      by: myia-po-2027:CoursIA
+      python_sha: 6211d4343dc10fb0a22e5b6811dfe7c25a1bb768
+      csharp_sha: 17dc92abed5f6b4b1ddfd9960e8d1d51dafb3d78
+      content_python_sha: dddab5b007203cb73db9a7a6bb64eb31deb4d4da2a3a33ef87fc9ecf19aafe8b
+      content_csharp_sha: 74f9300152cb6aebe49afe5ce2e718ab215aa8b31c57f0eac5375811ffebcc8a
   known_differences:
     - '2026-08-31 : ATTESTATION UNILATERALE (PR #13659, lane myia-ai-01:CoursIA) -- reparation d''echappements JSON manges dans le markdown du cote C#. CAUSE : dans le .ipynb, la sequence dollar-\bot-dollar ecrite avec UN SEUL antislash est lue par le parseur JSON comme l''echappement \b (backspace, U+0008) ; la source chargee porte un caractere de controle et le notebook rend un dollar-ot-dollar prive de sa commande LaTeX. FIX : doubler l''antislash (\\bot). Le DRIFT est UNILATERAL parce que le DEFAUT l''est : la contrepartie Search-4-LocalSearch.ipynb (Python), 39 cellules markdown, a ete scannee sous controle positif (le litteral defectueux passe a json.loads doit rendre U+0008 -- assertion verifiee avant le scan) et ne porte AUCUN caractere de controle U+0008/U+000B/U+000C. Il n''y a donc rien a reparer de ce cote : l''attestation ne consacre aucune asymetrie de contenu. PORTEE DU DIFF cote repare (comparaison des JSON parses origin/main -> HEAD) : markdown uniquement, 0 cellule code touchee, 0 sortie modifiee, 0 execution_count deplace, 0 cellule ajoutee ou retiree.'
     - "Socle pedagogique commun : metaheuristiques de recherche locale — Hill Climbing (variations steepest/first-improvement + diagnosis plateau/ridge), Simulated Annealing (schema de refroidissement, critere de Metropolis), Tabu Search (liste tabou, memoire a court terme). Comparaison empirique sur N-Reines. Les deux twins implementent les 3 algorithmes from-scratch (parite algorithmique, pas seulement narratif)."
