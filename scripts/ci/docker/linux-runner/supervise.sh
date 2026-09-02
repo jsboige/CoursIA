@@ -101,10 +101,14 @@ die() { echo "ERREUR: $*" >&2; exit 1; }
 # -- sans lui, un `start 4` rend 5 PIDs et le defense-positif echoue.
 # Sortie : liste espacee de PIDs (vide si aucun superviseur).
 supervisor_pids() {
-  ps -ef 2>/dev/null \
-    | grep '[s]upervise\.sh start' \
-    | awk '$3==1 {print $2}'
-  return 0
+  local me out
+  # #14347 : `$$` = PID du bash principal, stable dans les subshells.
+  # `$PPID` vaut 1 sous systemd (herite du lancement par PID 1 ; bash ne le
+  # recompute pas pour les subshells) -- mesure : self=PPID=1 avec out=mon
+  # propre PID, donc le garde s'auto-matchait et le service crash-loopait.
+  me="$$"
+  out="$(ps -ef 2>/dev/null | grep '[s]upervise\.sh start' | awk -v me="$me" '$2 != me && $3==1 {print $2}')"
+  printf '%s\n' "$out"
 }
 
 fetch_token() {

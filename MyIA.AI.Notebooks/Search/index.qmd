@@ -73,7 +73,7 @@ heuristique **admissible puis consistante** (0 sorry de production, prong-B Epic
 [#3801](https://github.com/jsboige/CoursIA/issues/3801) : terrain pondéré où l'heuristique
 discrimine, pas un cas dégénéré où A\* ≡ BFS). Le companion de la série Search est :
 
-- [Lean-18-Search-AStar-Optimality](Part1-Foundations/Lean-18-Search-AStar-Optimality.ipynb)
+- [Search-03e-AStar-Optimality](Part1-Foundations/Search-03e-AStar-Optimality.ipynb)
   — visite formelle Python de `search_lean`, descente tranche 1
   [#13662](https://github.com/jsboige/CoursIA/issues/13662) depuis
   `SymbolicAI/Lean/`.

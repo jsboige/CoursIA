@@ -13,6 +13,7 @@ Série de notebooks pour la **détection et classification de sophismes** (falla
 | 01 | [01_taxonomy_intro.ipynb](01_taxonomy_intro.ipynb) | Introduction : sophismes formels/informels, taxonomie Argumentum vs taxonomies académiques (≥ 3 exercices) |
 | 02 | [02_fallacy_datasets_landscape.ipynb](02_fallacy_datasets_landscape.ipynb) | Paysage des datasets annotés en accès réel (≥ 3 exercices) |
 | 03 | [03_taxonomy_coverage_gap.ipynb](03_taxonomy_coverage_gap.ipynb) | Écart de couverture taxonomique académique vs Argumentum (≥ 3 exercices) |
+| 04 | [04_coverage_matrix.ipynb](04_coverage_matrix.ipynb) | Matrice de couverture cross-notebooks N×M (sophismes, formalismes, domaines, preuve) + heatmap (≥ 3 exercices) |
 
 ## Chaîne des phases
 

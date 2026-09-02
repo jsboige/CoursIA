@@ -675,6 +675,100 @@ class TestStubClassification:
         """Complete working code is not a stub."""
         assert _is_stub_code(source) is False
 
+    @pytest.mark.parametrize(
+        "source",
+        [
+            # Issue #14212 -- typed-empty return literals were the only
+            # neutral-empty form NOT in STUB_PATTERNS, so a function whose
+            # contract is a list/dict/tuple/numeric/set/string returning its
+            # typed empty value read as multi-line real code and was
+            # under-counted. See auditer-la-conformite-visuelle cells 38/39
+            # vs cell 40: structurally identical stubs, three different counts
+            # (0/0/1) before the patch.
+            "# Exercice 1 : enumerer les primaires avec leur contexte\n"
+            "def detecteur_primaire_contexte(html_str):\n"
+            "    # Parcourir les balises...\n"
+            "    return []\n",
+            "# Exercice 2 : rapport agrege\n"
+            "def rapport_conformite(html_str, charte):\n"
+            "    # Reunir les trois detecteurs...\n"
+            "    return {}\n",
+            "# Exercice 3 : tuple vide\n"
+            "def fn():\n"
+            "    return ()\n",
+            "# Exercice 4 : zero numerique\n"
+            "def fn():\n"
+            "    return 0\n",
+            "# Exercice 5 : set vide\n"
+            "def fn():\n"
+            "    return set()\n",
+            '# Exercice 6 : chaine vide\n'
+            'def fn():\n'
+            '    return ""\n',
+        ],
+    )
+    def test_typed_empty_returns_are_stubs(self, source):
+        """Typed-empty return literals are stubs (issue #14212).
+
+        A function whose contract is a list/dict/tuple/numeric/set/string and
+        that returns the typed empty literal is structurally identical to
+        ``return None`` -- a neutral value that keeps the notebook executable
+        end-to-end while being an obvious TODO marker. ``\b`` boundaries keep
+        the match tight (``return 100`` or ``return False`` are NOT matched).
+        """
+        assert _is_stub_code(source) is True
+
+    @pytest.mark.parametrize(
+        "source",
+        [
+            # Counter-examples (negative control). These return REAL values,
+            # not empty literals, so they must NOT be classified as stubs.
+            "def fn():\n    return 100\n",
+            "def fn():\n    return False\n",
+            "def fn():\n    return [1, 2, 3]\n",
+            'def fn():\n    return {"a": 1}\n',
+            "def fn():\n    return (1,)\n",
+            "def fn():\n    return set([1])\n",
+            'def fn():\n    return "hello"\n',
+        ],
+    )
+    def test_non_empty_returns_are_not_stubs(self, source):
+        """Real return values are NOT stubs (control for #14212)."""
+        assert _is_stub_code(source) is False
+
+    def test_three_typed_stubs_render_three_exercises_issue_14212(self, tmp_path):
+        """Reproduce the auditer-la-conformite-visuelle scenario.
+
+        Before the fix, three structurally identical stubs (return [],
+        return {}, return None) rendered 1/3 in count_exercises_in_notebook.
+        After the fix, they must render 3/3. The notebook has no
+        ``## Exercice N`` headers -- these are detected via the code-cell
+        comment + stub pairing.
+        """
+        nb = _write_nb(
+            tmp_path / "sub" / "audit.ipynb",
+            [
+                _md("# Audit conformite visuelle\n"),
+                _code(
+                    "# Exercice 1 : enumerer les primaires.\n"
+                    "def detecteur_primaire_contexte(html_str):\n"
+                    "    return []\n"
+                ),
+                _code(
+                    "# Exercice 2 : rapport agrege.\n"
+                    "def rapport_conformite(html_str, charte):\n"
+                    "    return {}\n"
+                ),
+                _code(
+                    "# Exercice 3 : le piege du smoke vert.\n"
+                    "def piege_smoke_vert(page):\n"
+                    "    return None\n"
+                ),
+            ],
+        )
+        cnt = count_exercises_in_notebook(nb)
+        assert cnt.count == 3, f"expected 3 exercises, got {cnt.count}"
+
     def test_banned_patterns_still_count_as_exercise_cell(self, tmp_path):
         """C.1 says raise NotImplementedError / assert False / 1/0 are banned,
         but if present they are still stubs (work for the student). The tool

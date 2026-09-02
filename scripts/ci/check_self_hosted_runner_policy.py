@@ -109,13 +109,18 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     # tranche 3c (#14283, meme decision, meme owner) : jobs individuels d'un
     #   workflow dont les autres jobs restent sur ubuntu-latest.
     #   Exclus deliberement : ml-tests (torch retelecharge a chaque run, pas de
-    #   cache persistant), secret-scan/gitleaks (socket Docker), lean-social-
+    #   cache persistant), lean-social-
     #   choice/build (merite un pool a cache Mathlib chaud, cf #14337),
     #   notebook-execution-required/golden-set-execute (execution lourde).
     "bash-syntax-advisory.yml",
     "lean-social-choice.yml",
     "notebook-execution-required.yml",
     "secret-scan.yml",
+    # secret-scan/gitleaks : exclu en 3c pour la socket Docker, LEVE depuis --
+    #   le job scanner n'utilise plus `docker run` mais le binaire epingle
+    #   (meme release, meme ${GITLEAKS_VERSION}), forme deja eprouvee sur ce
+    #   pool par son job positive-controls. La jambe fork reste GitHub-hosted
+    #   sous la forme docker : `gitleaks-fork`.
     # always-on-metadata-guards.yml : routable (triggers pull_request +
     #   workflow_dispatch seulement). Son jumeau always-on-guards.yml ne l'est
     #   PAS -- il porte pull_request_review, classe FORK_REACHABLE (#14294).
