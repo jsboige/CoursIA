@@ -169,9 +169,10 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   gardes routables. Exclus et pourquoi : pr-gate.yml (agregateur qui
     #   poll jusqu'a 28 min -- le router reproduirait la famine mesuree en
     #   #11405), lean-axiom/lean-build (builds Lean sans cache mathlib, cf
-    #   #14337 pools specialises), quarto-pages-deploy (quarto CLI + deploy
-    #   Pages), slides-composition-advisory (playwright --with-deps exige
-    #   root, le conteneur tourne en uid 1001).
+    #   #14337 pools specialises), slides-composition-advisory (playwright
+    #   --with-deps exige root, le conteneur tourne en uid 1001).
+    #   quarto-pages-deploy : jobs build/validate-pr routes en fin de chantier
+    #   (tarball, voir l'entree dediee) ; seul `deploy` reste exclu (Pages/OIDC).
     "bare-cross-dir-load-gate.yml",
     "base-not-main-advisory.yml",
     "concurrency-conj-guard.yml",
@@ -196,6 +197,13 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     "scripts-tests.yml",
     "series-naming-gate.yml",
     "stale-base-warning.yml",
+    # fin de chantier #14283 (feu vert ai-01 2026-09-02) : les jobs
+    #   quarto-pages-deploy `build` et `validate-pr` passent au pool — le
+    #   setup Quarto se fait par tarball auto-contenu (l'action canonique
+    #   exige sudo apt + dpkg, absents de l'image no-new-privileges, mesure
+    #   issuecomment-5516335275). Le job `deploy` RESTE ubuntu-latest :
+    #   deploy-pages + OIDC/env github-pages, question separee.
+    "quarto-pages-deploy.yml",
     "svg-broken-geometry-gate.yml",
     "svg-decimal-comma-gate.yml",
     "svg-empty-display-gate.yml",
