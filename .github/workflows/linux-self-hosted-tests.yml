@@ -41,9 +41,18 @@ jobs:
     # Garde fork EXPLICITE au niveau job (defense-in-depth, pattern maison).
     # Le declencheur actuel est workflow_dispatch seul -- un fork ne peut pas
     # l'emettre -- mais "pas de trigger" est un etat qu'une ligne de YAML
-    # defait : si un declencheur pull_request est ajoute un jour, un evenement
-    # fork est refuse ICI.
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    # defait : si un declencheur pull_request (ou pull_request_target) est
+    # ajoute un jour, un evenement fork est refuse ICI.
+    #
+    # Forme universelle (#13874) : la garde ne s'appuie plus sur la valeur
+    # textuelle de github.event_name (qui distingue pull_request de
+    # pull_request_target -- le second est le vecteur d'exfiltration classique
+    # sur runner self-hosted avec token en ecriture + acces secrets). Elle
+    # teste la presence du champ pull_request (null hors PR) + l'identite du
+    # repo source en un seul predicat, couvrant les deux variantes de
+    # declencheur d'un coup. Un fork (head.repo.full_name != repository) est
+    # refuse que le trigger s'appelle pull_request ou pull_request_target.
+    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
     timeout-minutes: 10
     concurrency:

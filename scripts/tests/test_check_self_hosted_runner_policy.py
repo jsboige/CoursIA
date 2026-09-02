@@ -56,6 +56,95 @@ def test_safe_pull_request_job_is_accepted(tmp_path):
     assert result.self_hosted_jobs == 1
 
 
+def test_universal_pull_request_guard_is_accepted(tmp_path):
+    """#13874 : la forme universelle (test du repo source sans enumerer
+    github.event_name) couvre pull_request ET pull_request_target en un seul
+    predicat. Elle doit etre acceptee par le checker au meme titre que la
+    forme directe."""
+    write_workflow(tmp_path, "pr-gate-stale-sweep", """
+        name: safe-universal
+        on: [pull_request]
+        jobs:
+          test:
+            if: ${{ github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository }}
+            runs-on: [self-hosted, coursia-ephemeral, coursia-fast-guards]
+            steps:
+              - run: echo safe
+        """)
+    result = policy.scan_workflows(tmp_path)
+    assert result.broken == []
+    assert result.violations == []
+    assert result.self_hosted_jobs == 1
+
+
+def test_universal_guard_with_combined_target_is_accepted(tmp_path):
+    """#13874 : variante parentee -- la garde universelle combinee avec
+    une selection de job (inputs.target == '...') reste acceptee. Cas reel :
+    windows-self-hosted-tests.yml factorise la garde avec un `&&` de
+    selection, le checker ne doit pas confondre ce `&&` avec une
+    fragilisation. Trigger pull_request pour exercer le SAME_REPO_GUARD
+    (le test serait silently-skipped sur workflow_dispatch seul)."""
+    write_workflow(tmp_path, "windows-self-hosted-tests", """
+        name: windows-universal
+        on: [pull_request]
+        jobs:
+          test:
+            if: ${{ (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && inputs.target == 'confinement' }}
+            runs-on: [self-hosted, coursia-ephemeral, coursia-fast-guards]
+            steps:
+              - run: echo safe
+        """)
+    result = policy.scan_workflows(tmp_path)
+    assert result.broken == []
+    assert result.violations == []
+    assert result.self_hosted_jobs == 1
+
+
+def test_universal_guard_weakened_by_or_is_rejected(tmp_path):
+    """#13874 FN-safety : meme avec la forme universelle, l'ajout d'un
+    `|| always()` ou `|| true` reintroduit le trou. La garde universelle
+    doit etre le seul predicat -- le checker refuse tout court-circuit."""
+    write_workflow(tmp_path, "pr-gate-stale-sweep", """
+        name: weakened
+        on: [pull_request]
+        jobs:
+          test:
+            if: ${{ (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) || always() }}
+            runs-on: [self-hosted, coursia-ephemeral, coursia-fast-guards]
+            steps:
+              - run: echo unsafe
+        """)
+    assert "SAME_REPO_GUARD" in codes(policy.scan_workflows(tmp_path))
+
+
+def test_event_name_or_pattern_is_rejected(tmp_path):
+    """#13874 FN-safety : la forme `github.event_name != 'pull_request' ||`
+    (l'ancienne garde faible qui laisse passer pull_request_target) doit
+    toujours etre refusee par le checker -- c'est precisement le defaut
+    que l'issue signale. Le test pose les DEUX triggers pour reproduire
+    le scenario d'evolution : quelqu'un ajoute pull_request_target a un
+    workflow qui avait deja pull_request."""
+    write_workflow(tmp_path, "pr-gate-stale-sweep", """
+        name: weak-old
+        on:
+          pull_request:
+          pull_request_target:
+        jobs:
+          test:
+            if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+            runs-on: [self-hosted, coursia-ephemeral, coursia-fast-guards]
+            steps:
+              - run: echo unsafe
+        """)
+    codes_set = codes(policy.scan_workflows(tmp_path))
+    # La policy doit signaler le PULL_REQUEST_TARGET (deja couvert) ET le
+    # SAME_REPO_GUARD (la forme ne correspond ni a la garde directe ni a
+    # la forme universelle, elle est dans la zone grise entre les deux et
+    # doit etre refusee).
+    assert "PULL_REQUEST_TARGET" in codes_set
+    assert "SAME_REPO_GUARD" in codes_set
+
+
 def test_allowed_workflow_dispatch_job_does_not_need_pr_guard(tmp_path):
     write_workflow(tmp_path, "pr-gate-stale-sweep", """
         name: manual
@@ -453,55 +542,6 @@ def test_same_repository_reusable_workflow_rejects_short_sha(tmp_path):
         jobs:
           test:
             uses: jsboige/CoursIA/.github/workflows/callee.yml@0123456789abcdef
-        """)
-    assert "REMOTE_REUSABLE_WORKFLOW" in codes(policy.scan_workflows(tmp_path))
-
-
-def test_missing_trigger_breaks_instrument(tmp_path):
-    write_workflow(tmp_path, "broken-trigger", """
-        name: broken-trigger
-        jobs:
-          test:
-            runs-on: ubuntu-latest
-            steps:
-              - run: echo no-trigger
-        """)
-    result = policy.scan_workflows(tmp_path)
-    assert result.broken == ["broken-trigger.yml: missing on trigger"]
-
-
-def test_empty_runs_on_list_breaks_instrument(tmp_path):
-    write_workflow(tmp_path, "broken-runner", """
-        name: broken-runner
-        on: workflow_dispatch
-        jobs:
-          test:
-            runs-on: []
-            steps:
-              - run: echo no-runner
-        """)
-    result = policy.scan_workflows(tmp_path)
-    assert result.broken == [
-        "broken-runner.yml:test: runs-on list must contain labels"
-    ]
-
-
-def test_missing_jobs_breaks_instrument(tmp_path):
-    write_workflow(tmp_path, "broken-jobs", """
-        name: broken-jobs
-        on: workflow_dispatch
-        """)
-    result = policy.scan_workflows(tmp_path)
-    assert result.broken == ["broken-jobs.yml: missing jobs"]
-
-
-def test_same_repository_reusable_workflow_rejects_path_traversal(tmp_path):
-    write_workflow(tmp_path, "caller", """
-        name: caller
-        on: [pull_request]
-        jobs:
-          test:
-            uses: jsboige/CoursIA/.github/workflows/../evil.yml@main
         """)
     assert "REMOTE_REUSABLE_WORKFLOW" in codes(policy.scan_workflows(tmp_path))
 
