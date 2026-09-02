@@ -246,20 +246,33 @@ La leçon qui a fondé cette preuve reste écrite noir sur blanc : cette page a 
 
 L'image expose `python` nu (`python-is-python3`) pour les workflows stdlib-only (le `check-navlinks` du job 100021313259 avait échoué `exit 127 "python: not found"` avant cela), et les slots montent le volume `coursia-runner-toolcache` sur `/opt/hostedtoolcache` (`RUNNER_TOOL_CACHE`) pour que les actions `setup-*` ne re-téléchargent pas leurs outils à chaque conteneur éphémère. Après toute modification du Dockerfile : rebuild (même tag), puis roulement des slots — `stop`, `docker kill` des conteneurs vérifiés `busy=false`, `start N`.
 
-Routage (décision coordinateur) — **tranche 1 portée par #14148 (PR ouverte au 2026-09-01)** : 11 workflows y passent sur les labels `coursia-linux`, sous la règle « allowlist du checker `check_self_hosted_runner_policy.py` + garde universelle de fork/payload + timeout + `permissions: read` ». Tant qu'elle n'est pas mergée, ces workflows restent sur GitHub-hosted. Le reste des 93 jobs `ubuntu-latest` du census #13378 demeure sur GitHub-hosted tant que l'empreinte n'a pas été mesurée sur des jobs réels — l'élargissement (tranche 2, N slots) reste décision coordinateur après 24 h de vert sur la tranche 1.
+Routage (décision coordinateur) — **tranche 1 portée par #14148, MERGED le 2026-09-02 (merge `9bac9cd5d`)** : 11 workflows passent désormais sur les labels `coursia-linux`, sous la règle « allowlist du checker `check_self_hosted_runner_policy.py` + garde universelle de fork/payload + timeout + `permissions: read` ». Le reste des 93 jobs `ubuntu-latest` du census #13378 demeure sur GitHub-hosted tant que l'empreinte n'a pas été mesurée sur des jobs réels — l'élargissement (tranche 2, N slots) reste décision coordinateur après 24 h de vert sur la tranche 1.
+
+> **Geste d'urgence (écrit le 2026-09-02, po-2024, AVANT d'en avoir besoin).** Si les 11 workflows routés restent **queued indéfiniment** (superviseur mort, plus aucun runner `coursia-linux` `[online]`, le `PR gate` agrégeur ne complète jamais — en particulier si `supervise.sh` tournait dans une session et que la session a expiré, cf. §persistance), le **repli d'urgence** ramène les 11 workflows sur GitHub-hosted en un geste :
+>
+> ```
+> git revert 9bac9cd5d    # revert du merge de #14148 : les 11 workflows repartent sur ubuntu-latest
+> ```
+>
+> **N'est PAS un traitement du fond** : il republie la tranche 1, il ne répare pas la persistance. C'est une sortie de crise, à faire quand le service CI est coupé et que le fix de persistance n'est pas encore en place — après quoi la tranche 1 sera re-routée à nouveau une fois la persistance validée. Le revert est préférable à un `workflow_dispatch` manuel : il restaure l'état antérieur connu, et il est lui-même revertable une fois le superviseur relancé.
 
 **Le gestionnaire ne bloque pas.** `manage_self_hosted_runner.py` et `self_hosted_runner_profiles.json` sont Windows-only *par validation* (« must pin an official Windows x64 archive ») : ils ne peuvent pas porter un profil Linux aujourd'hui. Ce n'est pas un blocage — `supervise.sh` fonctionne sans eux, sans aucune PR préalable. Étendre le gestionnaire aux profils Linux est une **PR de suivi**, jamais la condition du débrayage.
 
 Si l'empreinte mesurée pendant un job gêne la workstation (training GPU, sessions interactives), on **réduit les caps ou on arrête**, et on le signale à ai-01.
 
-### Persistance du superviseur — pas encore posée (en attente de go)
+### Persistance du superviseur — GO granted (2026-09-02), installation en cours, 2 blocages qualifiés
 
-`supervise.sh` vit dans une session : si elle meurt, les slots en ligne consomment leur inscription au prochain job et rien ne les relance. Le déploiement durable prévu :
+`supervise.sh` vit dans une session : si elle meurt, les slots en ligne consomment leur inscription au prochain job et rien ne les relance. Le **GO est accordé** par ai-01 le 2026-09-02 (DM `msg-20260902T071505-emjqar`, suite au merge `9bac9cd5d` qui a armé cette fragilité de session). Déploiement durable prévu :
 
-- **voie WSL** : service utilisateur systemd (`systemctl --user`, unit lançant `supervise.sh start 2`) + `loginctl enable-linger <user>` pour survivre aux déconnexions ;
+- **voie WSL** : service utilisateur systemd (`systemctl --user`, unit lançant `supervise.sh start N`) + `loginctl enable-linger <user>` pour survivre aux déconnexions ;
 - **voie Windows** (alternative) : tâche planifiée au logon via `schtasks`, même invocation.
 
-Aucun des deux n'est installé sur po-2024 à date : l'installation d'un mécanisme permanent d'enregistrement est un geste explicite (coordinateur ou user), jamais silencieux.
+**Qualification firsthand (po-2024, 2026-09-02)** — la voie WSL est viable mais deux blocages sont identifiés avant de basculer le CI live :
+
+1. **`gh` absent du PATH WSL.** `supervise.sh` fait `fetch_token` via `gh api .../registration-token` (droit admin requis). Or `command -v gh` ne rend rien dans la distro Ubuntu (seul `/usr/bin/docker` est présent). Le token qui a lancé `start 2` vit dans la session Windows/Git Bash, pas dans WSL. → **Installer gh dans WSL + l'authentifier** (token créateur de registration-token, distinct du PAT Administration:Read-only qui ne peut pas créer de token) avant la bascule.
+2. **Le state dir `~/.coursia-runner` n'existe pas dans WSL** (`/home/jesse/.coursia-runner` absent) → le superviseur actuel tourne côté Windows. La migration WSL doit rapatrier/pointer les logs, pids et le volume toolcache, ou repartir de zéro dans un répertoire WSL dédié.
+
+Aucun des deux mécanismes n'est installé à date. **L'installation d'un mécanisme permanent d'enregistrement est un geste explicite (coordinateur ou user), jamais silencieux** — et la bascule (systemd + `stop` → `docker kill` vérifiés `busy=false` → `start N`) interrompt brièvement le service des 11 workflows routés : elle se fait en **session dédiée**, pas en fin de cycle. Tant que les deux blocages ci-dessus ne sont pas levés, ne pas toucher au superviseur live.
 
 ## Tranches suivantes, activation partielle
 
