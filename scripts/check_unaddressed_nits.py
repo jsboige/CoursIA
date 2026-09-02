@@ -1089,6 +1089,150 @@ def _formal_concern_precedes_lift(body: str) -> bool:
     )
 
 
+# #13938 — quand un reviewer pose `[Hermes] COMMENT_WITH_CONCERNS` (verdict
+# de pure emission, sans autorite de blocage, cf #12311) ET que le corps de
+# la review declare explicitement que rien n'est bloquant, la review n'est
+# PAS une reserve — c'est un commentaire FYI que la convention « reponse
+# ecrite / thread inline / issue de suivi » (Tell c.589-L1 ★★★ strict)
+# assimile a une APPROVED. Sans cette exemption, l'organe punit la
+# precaution : plus l'auteur desambigue (« rien de bloquant (contrainte
+# token : COMMENT only) »), plus le verdict formel matche CONCERN_MARKERS,
+# plus le preflight rougit. Mesure : PR #13935 (GenAI tranche orphelins,
+# substance OK, 63 checks SUCCESS, scope clean) bloquee sur Hermes
+# COMMENT_WITH_CONCERNS + corps « Rien de bloquant. » — Tell NEW c.840
+# sustained « un detecteur qui matche des phrases doit ignorer les
+# occurrences en position de citation ou de refutation ».
+#
+# Garde STRICTE : l'exemption n'est JAMAIS elargie a CHANGES_REQUESTED /
+# REQUEST_CHANGES / NEEDS_CHANGES / BLOCKED. Ces prefixes-la gardent leur
+# autorite de blocage — seul COMMENT_WITH_CONCERNS est le verdict «
+# comment-only par design » (force a state:COMMENTED par #12311, le seul
+# etat que Hermes self-bot peut poster avec ce label).
+def _comment_only_prefix(body: str) -> bool:
+    """Le verdict formel en tete est-il exclusivement COMMENT_WITH_CONCERNS ?
+
+    On distingue les formes EMISES des formes CITEES (mentionnees dans une
+    prose qui les refute) par la seule fenetre de citation de 30 caracteres
+    de `_is_cited` — la POSITION dans le corps n'est PAS verifiee, et le nom
+    « prefixe » designe l'usage attendu, pas un controle. Le verdict
+    ``[Hermes] COMMENT_WITH_CONCERNS — ...`` compte ; le corps ``pas de
+    COMMENT_WITH_CONCERNS ici`` ne compte pas.
+
+    Rejette si un verdict de blocage strict est aussi emis (CHANGES_REQUESTED,
+    REQUEST_CHANGES, NEEDS_CHANGES, BLOCKED, SUSPECT_*, STRUCTURAL_ONLY).
+    """
+    if not body:
+        return False
+    normalised = _unaccent(body)
+    # Marqueurs de blocage strict : leur presence simultanee a COMMENT_WITH_CONCERNS
+    # annule l'exemption (le reviewer etale les deux = « concerns + change »,
+    # pas un simple « comment only »).
+    blocking_markers = (
+        "CHANGES_REQUESTED", "REQUEST_CHANGES", "NEEDS_CHANGES",
+        "**BLOCKED**", "BLOCKED  PR", "SUSPECT_", "STRUCTURAL_ONLY",
+    )
+    for marker in blocking_markers:
+        if _unaccent(marker) in normalised:
+            # Verifier que l'occurrence n'est pas CITEe (meme logique que
+            # `has_live_marker`, mais inline : on n'a besoin que d'une
+            # occurrence vivante).
+            start = 0
+            while (i := normalised.find(_unaccent(marker), start)) != -1:
+                if not _is_cited(normalised[max(0, i - 30):i]):
+                    return False
+                start = i + 1
+    # COMMENT_WITH_CONCERNS doit etre emis (vivant, non cite).
+    target = _unaccent("COMMENT_WITH_CONCERNS")
+    start = 0
+    while (i := normalised.find(target, start)) != -1:
+        if not _is_cited(normalised[max(0, i - 30):i]):
+            return True
+        start = i + 1
+    return False
+
+
+# Formulations explicites de non-blocage, dans le corps nettoye des verdicts
+# mentionnes (cf `_strip_mentioned_verdicts` + `_strip_quoted` utilises
+# ailleurs dans `classify`). Insensible a la casse et aux accents via
+# `_unaccent`. Compile une seule fois au chargement du module.
+_NON_BLOCKING_PHRASES = tuple(
+    phrase.encode("unicode_escape").decode("ascii").replace(r"\u", r"\u")
+    for phrase in (
+        r"rien de bloquant",
+        r"rien (?:a|à) corriger",
+        r"rien (?:a|à) signaler",
+        r"rien (?:a|à) traiter",
+        r"rien (?:a|à) addresser",
+        r"pas (?:de |d')bloquant",
+        r"pas (?:de |d')blocage",
+        r"aucun bloquant",
+        r"aucun blocage",
+        r"aucune bloque",
+        r"aucune reserve",
+        r"non.?bloquant",
+        r"comment only",
+        r"comment-only",
+        r"no blocker",
+        r"nothing blocking",
+        r"all (?:is |looks )?good",
+        r"tout (?:est )?ok",
+        r"tout (?:est )?bon",
+    )
+)
+_NON_BLOCKING_RE = re.compile(
+    r"(?:" + "|".join(_NON_BLOCKING_PHRASES) + r")",
+    re.IGNORECASE,
+)
+
+
+def _review_explicit_non_blocking(body: str) -> bool:
+    """Le corps NETTOYE des mentions porte-t-il une formulation non-bloquante ?
+
+    Le nettoyage (``_strip_mentioned_verdicts(_strip_quoted(body))``) aligne
+    la surface analysee sur celle utilisee par `has_live_marker` pour
+    CONCERN_MARKERS — une formulation de non-blocage posee dans une citation
+    ou un bloc de code ne doit pas eteindre une reserve vivante.
+    """
+    if not body:
+        return False
+    surface = _strip_mentioned_verdicts(_strip_quoted(body))
+    return bool(_NON_BLOCKING_RE.search(_unaccent(surface)))
+
+
+# #13951 (Concern 1) -- l'exemption ne tient que si le SEUL concern EMIS est le
+# prefixe COMMENT_WITH_CONCERNS lui-meme.
+#
+# `_comment_only_prefix` ne rejette que la famille des verdicts de BLOCAGE
+# STRICT (CHANGES_REQUESTED / REQUEST_CHANGES / NEEDS_CHANGES / BLOCKED /
+# SUSPECT_ / STRUCTURAL_ONLY). Elle est structurellement AVEUGLE aux deux
+# autres familles de `CONCERN_MARKERS` :
+#   (a) la famille PROSE     -- « avant merge », « a changer », « il va falloir »
+#   (b) les GLYPHES de severite -- 🟡 (constat substantiel), 🔴 (bloquant strict)
+#
+# Un corps CONTRADICTOIRE passait donc l'exemption :
+#
+#     [Hermes] COMMENT_WITH_CONCERNS -- relu.
+#     🟡 la cellule 12 est a changer avant merge.
+#     Rien de bloquant par ailleurs.
+#
+# La phrase de non-blocage effacait un marqueur vivant emis dans la MEME
+# review. On retire donc les occurrences de COMMENT_WITH_CONCERNS de la surface
+# nettoyee (sans quoi le marqueur « CONCERNS » qu'il contient se compterait
+# lui-meme) et on exige qu'il ne reste AUCUN concern vivant.
+def _sole_live_concern_is_comment_prefix(body: str) -> bool:
+    """Hors le prefixe CWC, le corps porte-t-il encore un concern VIVANT ?
+
+    Retourne ``True`` quand le prefixe est le seul concern emis (l'exemption
+    peut tenir), ``False`` des qu'un marqueur de prose ou un glyphe de
+    severite survit au nettoyage (l'exemption tombe).
+    """
+    if not body:
+        return False
+    surface = _strip_mentioned_verdicts(_strip_quoted(body))
+    residuel = re.sub("COMMENT_WITH_CONCERNS", " ", surface, flags=re.IGNORECASE)
+    return not has_live_marker(residuel, CONCERN_MARKERS)
+
+
 def _excerpt(body: str) -> str:
     """Tete + queue : le verdict d'un reviewer vit en QUEUE de body.
 
@@ -2111,6 +2255,26 @@ def classify(author: str, body: str) -> str | None:
     # de reserve. Uniquement pour CONCERN_MARKERS et l'etage lift (symetrie
     # #13083 ci-dessus) : VERDICT_POSITIVE garde le body brut.
     live_concern = has_live_marker(_strip_mentioned_verdicts(_strip_quoted(body)), CONCERN_MARKERS)
+    # #13938 — exemption de « comment-only Hermes » : quand un reviewer pose
+    # `[Hermes] COMMENT_WITH_CONCERNS` (verdict de pure emission, force a
+    # state:COMMENTED par #12311) ET que le corps declare explicitement
+    # que rien n'est bloquant, la review n'est PAS une reserve. Convention
+    # Tell c.589-L1 ★★★ strict assimile un tel commentaire a une APPROVED
+    # pour le merge-gate. Garde stricte : l'exemption ne s'applique PAS
+    # aux verdiicts de blocage strict (CHANGES_REQUESTED, REQUEST_CHANGES,
+    # NEEDS_CHANGES, BLOCKED, SUSPECT_*, STRUCTURAL_ONLY) — verifie par
+    # `_comment_only_prefix`. Fuite classee Tell NEW c.840 ★★★ sustained.
+    if (
+        live_concern
+        and _comment_only_prefix(body)
+        and _review_explicit_non_blocking(body)
+        # #13951 Concern 1 : la phrase de non-blocage ne peut pas effacer un
+        # marqueur de prose (« avant merge ») ni un glyphe (🟡) emis dans la
+        # MEME review. L'exemption ne tient que si le prefixe CWC est le SEUL
+        # concern vivant du corps.
+        and _sole_live_concern_is_comment_prefix(body)
+    ):
+        return None
     if not live_concern and _HUMAN_VERDICT_RE.search(body):
         return None  # verdict humain positif (APPROVE / APPROVED / LGTM) SANS reserve vivante : equivalent state:APPROVED
     if not live_concern and has_live_marker(body, POSITIVE_MARKERS):
