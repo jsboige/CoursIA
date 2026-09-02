@@ -658,6 +658,95 @@ def test_channel_reflects_origin_surface():
     assert run([], threads=[thread])["blocking"][0]["channel"] == "review"
 
 
+
+# --- #13609 : alias de persona Hermes/NanoClaw cross-login. La persona
+# reviewer parle sous deux logins (clusterManager-Myia + jsboige self-bot).
+# Quand elle leve SA propre reserve sous l'autre login en portant un
+# marqueur explicite `[Hermes]` / `[NanoClaw]` / `[Hermes self-bot]`, c'est
+# sa levee -- la borne d'auteur stricte #11145/#12836 etait un faux negatif
+# structurel : la reserve restait vivante, et seul un `[OVERRIDE]`
+# coordinateur (coûteux, exige re-verif tierce, ne s'applique pas sur PR
+# lane-coordinateur) pouvait la fermer. Le marqueur est obligatoire :
+# sans lui, jsboige reste l'identite de poussee partagee des lanes (#13316)
+# et rien n'est leve -- une lane ne peut pas s'auto-promeuve en collant
+# le marqueur dans un commentaire ordinaire.
+
+
+def test_persona_alias_cross_login_leves_own_reserve():
+    """#13609 cas fondateur : reserve posee par clusterManager-Myia, levee
+    par un commentaire jsboige marque `[Hermes]` -- c'est la meme persona,
+    la levee est creditee, l'organe rend vert. PR par jsboige (cas le plus
+    frequent : lanes poussent sous jsboige)."""
+    reserve = {
+        "author": {"login": "clusterManager-Myia"},
+        "state": "COMMENTED", "submittedAt": at(10),
+        "body": "[Hermes] - COMMENT_WITH_CONCERNS\nCI catalog-drift FAIL.",
+    }
+    # Le lift doit etre un COMMENTAIRE (pas un verdict BOT) avec phrase de
+    # levee explicite ; le marqueur `[Hermes]` identifie la persona, le corps
+    # ne porte pas le mot CHANGES_REQUESTED (sinon classify le rendrait
+    # BOT-CONCERN et le filtre l'ecarterait avant _lift_eligible).
+    lift = {
+        "author": {"login": "jsboige"}, "createdAt": at(12),
+        "body": ("[Hermes] Je leve le concern -- drift corrige "
+                 "au commit c506d04b."),
+    }
+    res = run([lift], reviews=[reserve])
+    assert res["blocked"] is False
+
+
+def test_persona_alias_lift_without_marker_does_not_leve():
+    """#13609 controle negatif : sans marqueur `[Hermes]`/`[NanoClaw]`/`[Hermes
+    self-bot]`, le commentaire jsboige ne leve pas -- c'est l'identite de
+    poussee partagee des lanes (#13316), l'auteur de la reserve est distinct
+    (clusterManager-Myia), le predicat d'alias ne s'applique pas. La
+    protection #13316 tient."""
+    reserve = {
+        "author": {"login": "clusterManager-Myia"},
+        "state": "COMMENTED", "submittedAt": at(10),
+        "body": "[Hermes] - COMMENT_WITH_CONCERNS\nCI catalog-drift FAIL.",
+    }
+    lift = {
+        "author": {"login": "jsboige"}, "createdAt": at(12),
+        "body": ("Je leve la CHANGES_REQUESTED -- drift corrige "
+                 "au commit c506d04b."),
+    }
+    res = run([lift], reviews=[reserve])
+    assert res["blocked"] is True
+
+
+def test_persona_alias_only_when_reserve_author_is_in_alias_set():
+    """#13609 garde anti-usurpation : l'alias ne s'active que quand
+    `nit_author` est dans `PERSONA_ALIAS_LOGINS` (= clusterManager-Myia).
+    Une lane qui pousserait sous jsboige ne peut pas eteindre la reserve
+    d'un AUTRE reviewer (ex. ai-01) en collant le marqueur `[Hermes]` dans
+    un commentaire ordinaire -- l'alias est bidirectionnel uniquement entre
+    la persona Hermes et son self-bot, pas une cle d'auto-levee."""
+    reserve = {
+        "author": {"login": "myia-ai-01"},
+        "state": "COMMENTED", "submittedAt": at(10),
+        "body": "CHANGES_REQUESTED : notebook non execute.",
+    }
+    lift = {
+        "author": {"login": "jsboige"}, "createdAt": at(12),
+        "body": ("[Hermes] Je leve le concern de ai-01 -- la lane a "
+                 "re-execute, EXEC_PROVED au commit abc."),
+    }
+    res = run([lift], reviews=[reserve])
+    assert res["blocked"] is True
+
+
+def test_persona_alias_lift_override_logins_unchanged():
+    """#13609 controle structurel : `LIFT_OVERRIDE_LOGINS` reste inchange.
+    L'alias de persona NE confere PAS un droit d'override coordinateur : un
+    `[OVERRIDE] lane` sous jsboige ne leve pas (cf ligne de garde dans
+    `_lift_eligible`). La composition des deux decisions #11145 (borne
+    d'auteur) et #13316 (exclusion jsboige) tient, l'alias est strictement
+    une troisieme voie pour le dialogue Hermes <-> Hermes self-bot."""
+    assert "jsboige" not in mod.LIFT_OVERRIDE_LOGINS
+    assert mod.LIFT_OVERRIDE_LOGINS == {"myia-ai-01"}
+
+
 # --- #11201 : le faux negatif « corrige X et je merge ». Le test LIFT_MARKERS
 # passait AVANT toute recherche de reserve, et « je merge » couvre deux sens
 # opposes : « c'est bon, je merge » (annonce, levant) et « Change la ligne 19

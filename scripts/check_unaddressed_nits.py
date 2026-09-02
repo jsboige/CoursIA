@@ -132,6 +132,27 @@ AGENT_PREFIXES = (
 # « overrides » jsboige 02:40/02:41 ; classe #12798, l'auto-levee). L'arbitre
 # tiers de B.0 est la lane coordinateur dediee, et elle seule.
 LIFT_OVERRIDE_LOGINS = {"myia-ai-01"}
+# #13609 -- alias de persona Hermes/NanoClaw cross-login. La persona de
+# reviewer Hermes parle sous DEUX logins -- clusterManager-Myia (reviewer
+# principal) et jsboige (self-bot). Quand elle pose une reserve sous l'un
+# puis leve sous l'autre, sa propre levee n'etait pas creditee par
+# `_lift_eligible` (borne d'auteur stricte #11145 / #12836), et la reserve
+# restait vivante : aucun geste de la lane ne pouvait la lever hors
+# `[OVERRIDE]` coordinateur (coûteux, exige re-verif tierce, ne s'applique
+# pas sur PR lane-coordinateur -- cf #13316). La composition des deux
+# decisions est juste ; seule leur intersection est un faux negatif.
+#
+# On declare donc que les deux logins sont la MEME persona au sens de la
+# borne d'auteur, mais UNIQUEMENT quand le corps du lifter porte un marqueur
+# explicite `[Hermes]` / `[NanoClaw]` / `[Hermes self-bot]`. Sans marqueur,
+# `jsboige` reste l'identite de poussee partagee des lanes (#13316) et un
+# commentaire sans marqueur ne leve rien. LIFT_OVERRIDE_LOGINS reste
+# inchange : un override `[OVERRIDE]` jsboige n'entre pas, alias de persona
+# != droit d'override coordinateur.
+PERSONA_ALIAS_LOGINS = {"clusterManager-Myia"}
+_PERSONA_MARKERS_RE = re.compile(
+    r"(?m)(?:^|\s)\[(?:Hermes|NanoClaw|Hermes self-bot)(?:\s+[^\]]*)?\]"
+)
 # #13030 -- le marqueur doit etre POSE, pas CITE. L'ancien pattern sans
 # ancre matchait n'importe quelle mention dans le corps : le commentaire de
 # la lane #12872 qui DOCUMENTAIT l'option « (b) `[OVERRIDE] lane x` par
@@ -2095,6 +2116,20 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
     def _lift_eligible(lift_author: str, nit_author: str,
                        lift_body: str = "") -> bool:
         if lift_author == nit_author:
+            return True
+        # #13609 -- alias de persona Hermes/NanoClaw cross-login. La persona
+        # parle sous clusterManager-Myia ET jsboige. Quand elle leve SA
+        # propre reserve sous l'autre login, c'est sa levee. Le marqueur
+        # `[Hermes]` / `[NanoClaw]` / `[Hermes self-bot]` dans le corps
+        # identifie la source ; l'autre cote de l'alias est dans
+        # `PERSONA_ALIAS_LOGINS` (= clusterManager-Myia) pour eviter qu'une
+        # lane (qui pousse sous jsboige) s'auto-promeuve en collant le
+        # marqueur dans un commentaire ordinaire. Les deux conditions sont
+        # obligatoires : sans marqueur, jsboige reste l'identite de poussee
+        # partagee des lanes (#13316), rien n'est leve.
+        if (lift_author == "jsboige"
+                and nit_author in PERSONA_ALIAS_LOGINS
+                and _PERSONA_MARKERS_RE.search(lift_body or "")):
             return True
         # #13495 — la trappe coordinateur ci-dessous ne s'ouvre pas pour
         # l'auteur de la PR : sinon la voie 3 (report par issue nommee) serait
