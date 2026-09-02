@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Standalone shade aggregator for Markov Logic Networks (MLN):
+     bundles logics-mln + transitive deps (logics-fol + logics-pcl) from local m2 into one
+     coherent fat-jar. Clones the proven ml (#5207), rpcl (#5204), qbf (#5202),
+     conditional-logics (#5199), and advanced-logics (#5194) recipes (shade aggregator
+     with junit exclusions + IKVM 8.15 target). MLN = Markov Logic Networks combining
+     first-order logic with Markov networks (Richardson & Domingos 2006). Each formula
+     gets a real-valued weight: infinite weight = strict constraint (FOL), finite weight =
+     soft tendency (statistical). Use cases: knowledge base with uncertainty, relational
+     learning, expert systems under noise, fraud/anomaly detection. MLN Csharp PR
+     continues EPIC #4667 beyond Tw-3 (DL/CL/QBF/ML all complete). -->
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>local</groupId>
+  <artifactId>tweety-mln-shade</artifactId>
+  <version>1.30</version>
+  <packaging>jar</packaging>
+  <name>Tweety MLN (Markov Logic Networks) shaded fat-jar (IKVM target)</name>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.tweetyproject.logics</groupId>
+      <artifactId>mln</artifactId>
+      <version>1.30</version>
+      <exclusions>
+        <exclusion>
+          <groupId>junit</groupId>
+          <artifactId>junit</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <finalName>tweety-mln-full-1.30</finalName>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>3.5.3</version>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals><goal>shade</goal></goals>
+            <configuration>
+              <createDependencyReducedPom>false</createDependencyReducedPom>
+              <shadedArtifactAttached>false</shadedArtifactAttached>
+              <transformers>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer"/>
+              </transformers>
+              <filters>
+                <filter>
+                  <artifact>*:*</artifact>
+                  <excludes>
+                    <exclude>META-INF/*.SF</exclude>
+                    <exclude>META-INF/*.DSA</exclude>
+                    <exclude>META-INF/*.RSA</exclude>
+                    <exclude>module-info.class</exclude>
+                  </excludes>
+                </filter>
+              </filters>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

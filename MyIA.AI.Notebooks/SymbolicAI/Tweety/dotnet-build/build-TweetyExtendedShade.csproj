@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <NoWarn>IKVM0101</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="IKVM" Version="8.14.0" />
+    <PackageReference Include="IKVM.MSBuild" Version="8.14.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Placeholder.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <IkvmReference Include="..\libs\org.tweetyproject.tweety-extended-java8-shade.jar">
+      <AssemblyName>org.tweetyproject.tweety-extended</AssemblyName>
+      <AssemblyVersion>1.30.0.0</AssemblyVersion>
+      <AssemblyFileVersion>1.30.0.0</AssemblyFileVersion>
+    </IkvmReference>
+  </ItemGroup>
+</Project>

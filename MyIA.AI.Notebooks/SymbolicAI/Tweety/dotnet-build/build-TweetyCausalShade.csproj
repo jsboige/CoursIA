@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <RestoreAdditionalProjectSources></RestoreAdditionalProjectSources>
+    <NoWarn>IKVM0101</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="IKVM" Version="8.14.0" />
+    <PackageReference Include="IKVM.MSBuild" Version="8.14.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Placeholder.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <!--
+      Tweety causal shade aggregator built from Java 8 source-recompiled
+      classes (commons 1.21 + math 1.21 + logics.commons 1.21 + logics.pl 1.21
+      + arg.dung 1.21 + causal 1.30). Pipeline: javac (release 8) produces
+      bytecode major 52 from sources-extracted/*; jar cf shades all classes
+      into a single JAR; IKVM 8.14 compiles to org.tweetyproject.tweety-causal.dll
+      consumable from Tweety-11-Causal-Csharp.ipynb via #r "libs/<shade>.dll".
+
+      See rebuild-causal.sh at MyIA.AI.Notebooks/SymbolicAI/Tweety/dotnet-build/
+      for the exact build recipe. Output DLL: ~50-80 KB / ~50-80 types.
+
+      Math/examples/* (GurobiTest, TravelingSalesman_solvedWithAntOpt) are
+      excluded from the shade because they depend on Gurobi (commercial) and
+      isula (javadoc-only) — neither is needed by causal.
+
+      Build: bash dotnet-build/rebuild-causal.sh
+      Output: ..\libs\org.tweetyproject.tweety-causal-java8-shade.jar
+      Then: bin\Release\net8.0\org.tweetyproject.tweety-causal.dll
+    -->
+    <IkvmReference Include="..\libs\org.tweetyproject.tweety-causal-java8-shade.jar">
+      <AssemblyName>org.tweetyproject.tweety-causal</AssemblyName>
+      <AssemblyVersion>1.30.0.0</AssemblyVersion>
+      <AssemblyFileVersion>1.30.0.0</AssemblyFileVersion>
+    </IkvmReference>
+  </ItemGroup>
+</Project>
