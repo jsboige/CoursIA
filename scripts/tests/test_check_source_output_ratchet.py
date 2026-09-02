@@ -215,6 +215,45 @@ class TestClassifyCells(unittest.TestCase):
         self.assertEqual([r["verdict"] for r in recs], ["UNPAIRED"])
         self.assertFalse(any(r["regression"] for r in recs))
 
+    def test_insertion_with_ids_does_not_fabricate_stale_pair(self):
+        # #14297: positional pairing fabricated 3/3 STALE_OUTPUT on
+        # enrichment PRs. Two base code cells share byte-identical
+        # outputs (conforming C.1 stubs); a PR inserts an untested stub
+        # between them. With ids, the inserted cell has a fresh id
+        # (UNPAIRED) and the shifted originals pair to their true base
+        # partner (UNCHANGED) - never a fabricated stale pair.
+        base = nb([dict(code("print(1)", OUT_BASE), id="c1"),
+                   dict(code("print(2)", OUT_BASE), id="c2")])
+        head = nb([dict(code("print(1)", OUT_BASE), id="c1"),
+                   dict(code("pass", OUT_BASE), id="c3"),
+                   dict(code("print(2)", OUT_BASE), id="c2")])
+        recs = CSR.classify_cells(base, head)
+        self.assertEqual([r["verdict"] for r in recs],
+                         ["UNCHANGED", "UNPAIRED", "UNCHANGED"])
+        self.assertFalse(any(r["regression"] for r in recs))
+
+    def test_shifted_cells_pair_by_id_after_conforming_insertion(self):
+        # The same insertion with a copied base stub in the middle: the
+        # stub is NEW (fresh id) -> UNPAIRED, the originals keep their id
+        # identity -> UNCHANGED despite the index shift.
+        base = nb([dict(code("print(1)", OUT_BASE), id="c1")])
+        head = nb([dict(code("print(1)", OUT_BASE), id="c1"),
+                   dict(code("print(1)", OUT_BASE), id="c2"),
+                   md("indice")])
+        recs = CSR.classify_cells(base, head)
+        self.assertEqual([r["verdict"] for r in recs],
+                         ["UNCHANGED", "UNPAIRED"])
+        self.assertFalse(any(r["regression"] for r in recs))
+
+    def test_id_pairing_still_flags_real_stale_output(self):
+        # Pairing by id must NOT mask a genuine stale output: same id,
+        # changed source, byte-identical outputs -> STALE_OUTPUT.
+        base = nb([dict(code("print(1)", OUT_BASE), id="c1")])
+        head = nb([dict(code("print(2)", OUT_BASE), id="c1")])
+        recs = CSR.classify_cells(base, head)
+        self.assertEqual(recs[0]["verdict"], "STALE_OUTPUT")
+        self.assertTrue(recs[0]["regression"])
+
 
 class TestNotebookExemptions(unittest.TestCase):
     """validate_pr_notebooks' predicates, reused not duplicated."""

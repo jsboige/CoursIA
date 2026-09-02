@@ -999,3 +999,15 @@ MyIA.AI.Notebooks/**/cache/
 **/_cache/
 # Cache de calcul PyPhi (notebooks IIT)
 /__pyphi_cache__/
+# Etat local machine : untrack V1 consolidation #13739 (copies disque conservees via --cached)
+# Artifacts regenerables : plans/progress/agent-memory Claude, forensics, snapshots CI.
+# NE PAS de-commenter pour .claude/agents|skills|rules|commands (partages, tracks legitimes).
+# NOTE : `MyIA.AI.Notebooks/SymbolicAI/Tweety/dotnet-build/` NON inclus ici -- voir #14269
+# (decision d'infra distincte : dotnet-build/ reference par Tweety/README.md et 8 notebooks C#).
+.claude/PROJECT_MEMORY.md
+.claude/plans/
+.claude/progress/
+.claude/agent-memory/
+.claude/settings.local.json
+scripts/notebook_tools/forensic_results.json
+scripts/ci/snapshots/

@@ -16,7 +16,8 @@ Walk-forward 5-fold x 4 seeds x 3 horizons x 7 coins.
 Diebold-Mariano vs HAR classic (PR #938 baseline).
 
 Usage:
-    python har_asymmetric.py --horizons 1 5 10 --seeds 0 7 42 99 --skip-remote
+    python har_asymmetric.py --coins BTC-USD --horizons 1 5 10 \
+        --seeds 0 7 42 99 --skip-remote --debias --calibration-size 60
     python har_asymmetric.py --horizons 1 5 10 --seeds 0 7 42 99
 """
 
@@ -194,6 +195,41 @@ def _make_split_indices(n: int, n_splits: int) -> list[tuple[int, int, int]]:
     return splits
 
 
+def _fit_asymmetric_with_train_calibration(
+    rv_neg_train: pd.Series,
+    rv_pos_train: pd.Series,
+    rv_train: pd.Series,
+    horizon: int,
+    calibration_size: int,
+) -> tuple[AsymmetricHARModel, float]:
+    """Fit before a train-tail holdout and estimate a signed forecast offset."""
+    calibration_size = min(calibration_size, max(0, len(rv_train) - 60))
+    if calibration_size < max(10, horizon + 1):
+        model = AsymmetricHARModel().fit(rv_neg_train, rv_pos_train, rv_train)
+        return model, 0.0
+
+    fit_end = len(rv_train) - calibration_size
+    model = AsymmetricHARModel().fit(
+        rv_neg_train.iloc[:fit_end],
+        rv_pos_train.iloc[:fit_end],
+        rv_train.iloc[:fit_end],
+    )
+    log_rv = np.log(rv_train.clip(lower=1e-12))
+    errors: list[float] = []
+    for i in range(fit_end, len(rv_train) - horizon):
+        prediction = model.predict_h_step(
+            rv_neg_train.iloc[:i],
+            rv_pos_train.iloc[:i],
+            rv_train.iloc[:i],
+            horizon=horizon,
+        )
+        target = float(log_rv.iloc[i:i + horizon].mean())
+        errors.append(prediction - target)
+
+    bias = float(np.mean(errors)) if errors else 0.0
+    return model, bias
+
+
 def walk_forward_asymmetric_har(
     rv_neg: pd.Series,
     rv_pos: pd.Series,
@@ -202,13 +238,14 @@ def walk_forward_asymmetric_har(
     n_splits: int = 5,
     refit_every: int = 22,
     seed: int = 0,
+    calibrate_bias: bool = False,
+    calibration_size: int = 60,
 ) -> dict:
     """Walk-forward evaluation of asymmetric HAR.
 
     Returns MSE on log-RV scale, forecasts and targets for DM testing.
     """
-    rng = np.random.RandomState(seed)
-
+    # OLS is deterministic; seed is retained to verify exact cross-seed stability.
     rv = rv.dropna().astype(float)
     rv_neg = rv_neg.reindex(rv.index).fillna(0.0).astype(float)
     rv_pos = rv_pos.reindex(rv.index).fillna(0.0).astype(float)
@@ -223,6 +260,7 @@ def walk_forward_asymmetric_har(
     preds: list[float] = []
     truths: list[float] = []
     pred_dates: list[pd.Timestamp] = []
+    initial_calibration_bias_by_fold: list[float] = []
 
     for fold_idx, (train_end, test_start, test_end) in enumerate(splits):
         rv_train = rv.iloc[:train_end]
@@ -231,7 +269,18 @@ def walk_forward_asymmetric_har(
         if len(rv_train) < 60:
             continue
 
-        model = AsymmetricHARModel().fit(rv_neg_train, rv_pos_train, rv_train)
+        if calibrate_bias:
+            model, bias = _fit_asymmetric_with_train_calibration(
+                rv_neg_train,
+                rv_pos_train,
+                rv_train,
+                horizon=horizon,
+                calibration_size=calibration_size,
+            )
+        else:
+            model = AsymmetricHARModel().fit(rv_neg_train, rv_pos_train, rv_train)
+            bias = 0.0
+        initial_calibration_bias_by_fold.append(bias)
 
         for i in range(test_start, test_end - horizon):
             target_window = log_rv.iloc[i:i + horizon].mean()
@@ -240,16 +289,29 @@ def walk_forward_asymmetric_har(
             tail_pos = rv_pos.iloc[:i]
             tail_rv = rv.iloc[:i]
 
-            log_pred = model.predict_h_step(tail_neg, tail_pos, tail_rv, horizon=horizon)
+            log_pred = (
+                model.predict_h_step(tail_neg, tail_pos, tail_rv, horizon=horizon)
+                - bias
+            )
 
             preds.append(log_pred)
             truths.append(float(target_window))
             pred_dates.append(rv.index[i])
 
             if (i - test_start) % refit_every == 0 and i > test_start:
-                model = AsymmetricHARModel().fit(
-                    rv_neg.iloc[:i], rv_pos.iloc[:i], rv.iloc[:i],
-                )
+                if calibrate_bias:
+                    model, bias = _fit_asymmetric_with_train_calibration(
+                        rv_neg.iloc[:i],
+                        rv_pos.iloc[:i],
+                        rv.iloc[:i],
+                        horizon=horizon,
+                        calibration_size=calibration_size,
+                    )
+                else:
+                    model = AsymmetricHARModel().fit(
+                        rv_neg.iloc[:i], rv_pos.iloc[:i], rv.iloc[:i],
+                    )
+                    bias = 0.0
 
     preds_arr = np.asarray(preds)
     truths_arr = np.asarray(truths)
@@ -264,6 +326,9 @@ def walk_forward_asymmetric_har(
         "n_splits": n_splits,
         "n_total_preds": len(preds_arr),
         "aggregate_mse_logrv": aggregate_mse,
+        "calibrate_bias": calibrate_bias,
+        "calibration_size": calibration_size,
+        "initial_calibration_bias_by_fold": initial_calibration_bias_by_fold,
         "forecasts": forecasts,
         "targets": targets,
     }
@@ -302,6 +367,8 @@ def _eval_one_coin(
     seeds: list[int],
     n_splits: int = 5,
     refit_every: int = 22,
+    debias: bool = False,
+    calibration_size: int = 60,
 ) -> list[dict]:
     """Run asymmetric HAR + classic HAR for one coin, all horizons/seeds."""
     rv = daily_realized_variance(hourly_rets)
@@ -324,7 +391,14 @@ def _eval_one_coin(
     for h in horizons:
         # Classic HAR baseline (seed 0 only for baseline reference)
         try:
-            classic_out = walk_forward_har(rv, horizon=h, n_splits=n_splits, refit_every=refit_every)
+            classic_out = walk_forward_har(
+                rv,
+                horizon=h,
+                n_splits=n_splits,
+                refit_every=refit_every,
+                calibrate_bias=debias,
+                calibration_size=calibration_size,
+            )
             classic_mse = classic_out["aggregate_mse_logrv"]
             classic_forecasts = classic_out["forecasts"]
             classic_targets = classic_out["targets"]
@@ -337,16 +411,52 @@ def _eval_one_coin(
             classic_forecasts = None
             classic_targets = None
 
+        if classic_forecasts is None or classic_targets is None:
+            rows.extend({
+                "coin": coin,
+                "horizon": h,
+                "seed": seed,
+                "asym_mse_logrv": float("nan"),
+                "classic_mse_logrv": classic_mse,
+                "dm_verdict": "BASELINE_FAILED",
+            } for seed in seeds)
+            continue
+
         for seed in seeds:
             try:
                 asym_out = walk_forward_asymmetric_har(
-                    rv_neg, rv_pos, rv,
-                    horizon=h, n_splits=n_splits, refit_every=refit_every, seed=seed,
+                    rv_neg,
+                    rv_pos,
+                    rv,
+                    horizon=h,
+                    n_splits=n_splits,
+                    refit_every=refit_every,
+                    seed=seed,
+                    calibrate_bias=debias,
+                    calibration_size=calibration_size,
                 )
-                asym_mse = asym_out["aggregate_mse_logrv"]
                 asym_forecasts = asym_out["forecasts"]
                 asym_targets = asym_out["targets"]
-                asym_errors = (asym_forecasts - asym_targets).dropna().values
+                common_dates = asym_forecasts.index.intersection(asym_targets.index)
+                if classic_forecasts is not None and classic_targets is not None:
+                    common_dates = common_dates.intersection(classic_forecasts.index)
+                    common_dates = common_dates.intersection(classic_targets.index)
+                pred_asym = asym_forecasts.reindex(common_dates).to_numpy(dtype=float)
+                pred_classic = classic_forecasts.reindex(common_dates).to_numpy(dtype=float)
+                pred_target = asym_targets.reindex(common_dates).to_numpy(dtype=float)
+                finite = (
+                    np.isfinite(pred_asym)
+                    & np.isfinite(pred_classic)
+                    & np.isfinite(pred_target)
+                )
+                common_dates = common_dates[finite]
+                pred_asym = pred_asym[finite]
+                pred_classic = pred_classic[finite]
+                pred_target = pred_target[finite]
+                asym_errors = pred_asym - pred_target
+                classic_errors_aligned = pred_classic - pred_target
+                asym_mse = float(np.mean(asym_errors ** 2))
+                classic_mse_aligned = float(np.mean(classic_errors_aligned ** 2))
             except Exception as exc:
                 print(f"  h={h} seed={seed} asym HAR FAILED: {exc}")
                 rows.append({
@@ -358,10 +468,14 @@ def _eval_one_coin(
 
             # DM test: asymmetric vs classic
             dm_info = {}
-            if classic_errors is not None and len(asym_errors) >= 10 and len(classic_errors) >= 10:
-                min_len = min(len(asym_errors), len(classic_errors))
+            if classic_errors is not None and len(asym_errors) >= 10:
                 try:
-                    dm = dm_verdict(asym_errors[:min_len], classic_errors[:min_len], horizon=h)
+                    dm = dm_verdict(
+                        asym_errors,
+                        classic_errors_aligned,
+                        horizon=h,
+                        loss_fn="mse",
+                    )
                     dm_info = {
                         "dm_stat": dm["dm_statistic"],
                         "dm_pvalue": dm["p_value"],
@@ -382,10 +496,23 @@ def _eval_one_coin(
                 "horizon": h,
                 "seed": seed,
                 "n_rv_days": int(len(rv)),
-                "n_predictions": int(asym_out["n_total_preds"]),
+                "n_predictions": int(len(pred_target)),
+                "debias": debias,
+                "calibration_size": calibration_size,
                 "asym_mse_logrv": float(asym_mse),
-                "classic_mse_logrv": float(classic_mse),
-                "mse_reduction_pct": float((classic_mse - asym_mse) / classic_mse * 100) if classic_mse > 0 else float("nan"),
+                "classic_mse_logrv": float(classic_mse_aligned),
+                "mse_reduction_pct": (
+                    float((classic_mse_aligned - asym_mse) / classic_mse_aligned * 100)
+                    if classic_mse_aligned > 0 else float("nan")
+                ),
+                "asym_bias_oos": float(np.mean(asym_errors)),
+                "classic_bias_oos": float(np.mean(classic_errors_aligned)),
+                "asym_error_variance": float(np.var(asym_errors)),
+                "classic_error_variance": float(np.var(classic_errors_aligned)),
+                "pred_dates": [date.strftime("%Y-%m-%d") for date in common_dates],
+                "pred_asym": pred_asym.tolist(),
+                "pred_classic_har": pred_classic.tolist(),
+                "pred_target": pred_target.tolist(),
                 **dm_info,
             })
 
@@ -421,6 +548,16 @@ def aggregate_verdicts(rows: list[dict]) -> list[dict]:
         mean_asym = float(np.nanmean(asym_mses))
         mean_classic = float(np.nanmean(classic_mses))
         std_asym = float(np.nanstd(asym_mses))
+        mse_edges = np.asarray(classic_mses) - np.asarray(asym_mses)
+        mean_edge = float(np.nanmean(mse_edges))
+        std_edge = float(np.nanstd(mse_edges))
+        median_pvalue = float(np.nanmedian(p_values))
+        seed_stable = bool(
+            np.allclose(asym_mses, asym_mses[0], rtol=0.0, atol=1e-12)
+        )
+        edge_sigma = None if seed_stable else (
+            mean_edge / std_edge if std_edge > 0.0 else 0.0
+        )
 
         mean_reduction = (mean_classic - mean_asym) / mean_classic * 100 if mean_classic > 0 else 0.0
 
@@ -430,10 +567,12 @@ def aggregate_verdicts(rows: list[dict]) -> list[dict]:
 
         if n_beaten > 0:
             agg_verdict = "NO BEATS"
-        elif n_beats == n_seeds and std_asym < abs(mean_classic - mean_asym):
+        elif (
+            n_beats == n_seeds
+            and median_pvalue < 0.05
+            and (seed_stable or edge_sigma >= 2.0)
+        ):
             agg_verdict = "BEATS"
-        elif n_beats > 0:
-            agg_verdict = "INCONCLUSIVE"
         else:
             agg_verdict = "INCONCLUSIVE"
 
@@ -445,6 +584,11 @@ def aggregate_verdicts(rows: list[dict]) -> list[dict]:
             "std_asym_mse": std_asym,
             "mean_classic_mse": mean_classic,
             "mean_reduction_pct": mean_reduction,
+            "mean_mse_edge": mean_edge,
+            "std_mse_edge": std_edge,
+            "edge_sigma": edge_sigma,
+            "median_dm_pvalue": median_pvalue,
+            "seed_stable": seed_stable,
             "n_beats": n_beats,
             "n_beaten": n_beaten,
             "n_inconclusive": n_inconclusive,
@@ -463,11 +607,20 @@ def main() -> None:
     parser.add_argument("--refit-every", type=int, default=22)
     parser.add_argument("--skip-remote", action="store_true")
     parser.add_argument("--extra-coins", type=str, nargs="*", default=None)
+    parser.add_argument("--coins", type=str, nargs="*", default=None)
+    parser.add_argument("--debias", action="store_true")
+    parser.add_argument("--calibration-size", type=int, default=60)
     parser.add_argument("--out-json", type=str, default="results/m3_har_asymmetric.json")
     args = parser.parse_args()
 
     t0 = time.time()
     panel = _load_panel(args.skip_remote, extra_coins=args.extra_coins)
+    if args.coins:
+        requested = set(args.coins)
+        missing = sorted(requested.difference(panel))
+        if missing:
+            raise ValueError(f"requested coins unavailable: {missing}")
+        panel = {coin: returns for coin, returns in panel.items() if coin in requested}
 
     all_rows: list[dict] = []
     for coin, rets in panel.items():
@@ -478,6 +631,8 @@ def main() -> None:
             seeds=args.seeds,
             n_splits=args.n_splits,
             refit_every=args.refit_every,
+            debias=args.debias,
+            calibration_size=args.calibration_size,
         )
         all_rows.extend(rows)
 
@@ -501,10 +656,13 @@ def main() -> None:
         "aggregated": agg,
         "elapsed_s": time.time() - t0,
         "config": {
+            "coins": list(panel),
             "horizons": args.horizons,
             "seeds": args.seeds,
             "n_splits": args.n_splits,
             "refit_every": args.refit_every,
+            "debias": args.debias,
+            "calibration_size": args.calibration_size,
         },
     }, indent=2))
     print(f"\n[done] {time.time() - t0:.1f}s -- wrote {out_path}")

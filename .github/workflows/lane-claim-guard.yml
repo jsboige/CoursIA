@@ -55,16 +55,31 @@ jobs:
   # (cf pr-gate.yml, #10045 regle 2).
   check-lane-claim-required:
     name: 'Require no closing-ref against another lane active claim (block on lane collision, #10223)'
-    runs-on: ubuntu-latest
+    # Route vers la jambe Linux auto-hebergee (#13378 tranche 5, decision ai-01
+    # 2026-09-02) : garde Python pur, sans secret. La garde same-repo ci-dessous
+    # saute les PRs de fork (pr_gate.py compte `skipped` comme OK) : aucun code de
+    # fork n'atteint le runner. Retour arriere = revert de la PR.
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
     steps:
       - name: Checkout the lane-claim helper (sparse)
         uses: actions/checkout@v4
         with:
+          # Cone mode (le defaut) n'accepte que des REPERTOIRES : une entree de
+          # fichier fait echouer le checkout (`fatal: ... is not a directory`).
+          # Mesure : en non-cone ces chemins se listent SANS slash initial -- la
+          # forme `/chemin` que suggere l'avertissement de git rend un checkout VIDE.
+          # `pytest.ini` etait fourni IMPLICITEMENT par le cone mode (qui inclut
+          # les fichiers racine) ; en non-cone il doit etre liste, sinon l'etape
+          # pytest ci-dessous tourne sans sa config (`--import-mode importlib`,
+          # markers, filterwarnings).
+          sparse-checkout-cone-mode: false
           sparse-checkout: |
             scripts/ci/lane_claim_required.py
             scripts/check_lane_claim.py
             scripts/grain_tag.py
             scripts/tests/test_check_lane_claim.py
+            pytest.ini
       - name: 'Resolve closing-ref vs other lanes active claims (block on collision)'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -193,13 +208,27 @@ jobs:
   # pattern des autres jobs advisory (exercises-advisory, markdown-table-guard).
   check-lane-claim-advisory:
     name: 'Advisory lane-claim labels (adoption telemetry, non-blocking, #10223)'
-    runs-on: ubuntu-latest
+    # Route vers la jambe Linux auto-hebergee (#13378 tranche 5, decision ai-01
+    # 2026-09-02) : garde Python pur, sans secret. La garde same-repo ci-dessous
+    # saute les PRs de fork (pr_gate.py compte `skipped` comme OK) : aucun code de
+    # fork n'atteint le runner. Retour arriere = revert de la PR.
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
     steps:
       - name: Checkout the lane-claim helper (sparse)
         uses: actions/checkout@v4
         with:
+          # Cone mode (le defaut) n'accepte que des REPERTOIRES : une entree de
+          # fichier fait echouer le checkout (`fatal: ... is not a directory`).
+          # Mesure : en non-cone ces chemins se listent SANS slash initial -- la
+          # forme `/chemin` que suggere l'avertissement de git rend un checkout VIDE.
+          # `emit_dead_scope_warnings.py` est appele par l'etape ci-dessous mais
+          # n'etait pas liste : son absence est avalee par le `|| true`, donc les
+          # annotations dead-scope disparaissaient en silence. Liste-le.
+          sparse-checkout-cone-mode: false
           sparse-checkout: |
             scripts/ci/lane_claim_required.py
+            scripts/ci/emit_dead_scope_warnings.py
             scripts/check_lane_claim.py
             scripts/grain_tag.py
       - name: 'Apply lane-claim advisory labels'
