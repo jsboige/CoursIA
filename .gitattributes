@@ -24,13 +24,6 @@ lake-manifest.json text eol=lf
 # internes d'un script (residus CRLF legacy pre-L268 encore presents sur main).
 # Meme motif que `*.ipynb text eol=lf` / L268.
 translations/**/*.csv text eol=lf
-# Forensic scan output (notebook-tools, c.372) : fichier JSON ecrit par scripts
-# de detection (`forensic-scan.py` / co), tourne regulierement sur Windows via
-# `check_twin_parity` et pipelines CI. Sans regle explicite, un agent Windows
-# peut reintroduire CRLF au prochain write du fichier, et le `catalog-dr drift`
-# detecte un diff byte-level sans substance reelle (meme motif que L268 +
-# twin_pairs.d/*.yaml). `eol=lf` rend l'invariant structurel.
-scripts/notebook_tools/forensic_results.json text eol=lf
 # Quarto site config (#11109) : _quarto.yml est consomme par Quarto CLI (Linux
 # dans CI, local Windows). CRLF le brise silencieusement (parsing YAML + render
 # pages github.io). Meme motif L268.
@@ -72,13 +65,6 @@ scripts/notebook_tools/twin_pairs.d/*.yaml text eol=lf
 # Ne pas "corriger" en `text eol=...` : ce serait re-ouvrir la meme corruption.
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/data/argumentum_*_taxonomy.csv -text
 
-# Troisieme copie historique (SymbolicAI/data/) : unifiee octet pour octet a la
-# canonique le 30/08 (#13578) apres sept semaines de derive silencieuse (74
-# colonnes contre 104 : toute la couche i18n _ar/_es et les AIF_* manquaient).
-# Elle n'a aucun consommateur dans le repo (scripts et notebooks pointent tous
-# sur la canonique) mais reste distribuee : meme regle -text, sinon le prochain
-# checkout re-corrigerait les LF internes et la re-divergence renaîtrait.
-MyIA.AI.Notebooks/SymbolicAI/data/argumentum_*_taxonomy.csv -text
 
 # Meme raisonnement pour les ontologies OWL distillees depuis le meme amont, et
 # meme phenomene mesure : argumentum.owl porte 41 sauts de ligne ISOLES (LF nu)

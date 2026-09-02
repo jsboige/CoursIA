@@ -3148,3 +3148,95 @@ def test_13791_paragraph_block_boundaries():
     fenced = "- 1 fichier a\n```python\nx = 1\n```\n"
     idx_f = fenced.splitlines().index("- 1 fichier a")
     assert "x = 1" not in _paragraph_block(fenced, idx_f)
+
+
+# #13946 : un compte annoté `(hors scope PR)` est un constat pour une
+# tranche ultérieure, PAS le périmètre livré. Sans le filtre, le script
+# sélectionne le premier count non nul (« 28 fichiers » dans le fondateur
+# #13856) au lieu du périmètre réel.
+
+
+def test_13946_hors_scope_annotation_excludes_count_from_selection():
+    """#13946 : un « 28 fichiers constatés » dans une ligne annotée
+    `(hors scope PR)` n'est PAS le périmètre. Le compte est ignoré."""
+    files = [{"path": "CLAUDE.md"}, {"path": "docs/reference/_archive-convention.md"}]
+    line = (
+        "- Tranche 3 (hors scope PR) : appliquer à scripts/_archive/ "
+        "(28 fichiers constatés, peut nécessiter split par sous-dossier)."
+    )
+    # Sans le filtre, l'assertion échoue avec 28 ≠ 2.
+    # Avec le filtre, plus aucun count ne survit => "no count" terminal,
+    # PAS un mismatch -- c'est le bon comportement avant le fallback
+    # `touche N` (testé séparément dans test_13946_touche_n_fallback).
+    problems = check_assertion(files, line)
+    assert not any("28 fichier" in p for p in problems), (
+        f"le compte hors-scope 28 doit etre ignore, obtained {problems!r}"
+    )
+
+
+def test_13946_touche_n_fallback_finds_perimeter_in_paragraph():
+    """#13946 : quand le forecast hors-scope est filtré, le périmètre
+    réel via « touche N » dans le MEME paragraphe est détecté."""
+    files = [{"path": "CLAUDE.md"}, {"path": "docs/reference/_archive-convention.md"}]
+    body = (
+        "**Hors scope PR (comptes prévisionnels) :**\n"
+        "- Tranche 3 (hors scope PR) : appliquer à scripts/_archive/ "
+        "(28 fichiers constatés).\n"
+        "\n"
+        "qui en touche 2 (CLAUDE.md + _archive-convention.md)."
+    )
+    line = (
+        "- Tranche 3 (hors scope PR) : appliquer à scripts/_archive/ "
+        "(28 fichiers constatés)."
+    )
+    # Block contains the hors-scope header + this line + the next paragraph.
+    block = body  # body_hint equivalent; the fallback searches block first.
+    problems = check_assertion(files, line, block=block)
+    assert problems == [], (
+        f"le fallback touche N aurait dû trouver le périmètre 2, "
+        f"obtenu {problems!r}"
+    )
+
+
+def test_13946_touche_n_fallback_searches_body_when_block_lacks_it():
+    """#13946 founder case : le périmètre « touche N » est dans une
+    AUTRE paragraphe que la ligne candidate. Le ``body_hint`` (passé
+    par ``--scan-thread``) permet le cross-paragraph scan."""
+    files = [{"path": "CLAUDE.md"}, {"path": "docs/reference/_archive-convention.md"}]
+    line = (
+        "- Tranche 3 (hors scope PR) : appliquer à scripts/_archive/ "
+        "(28 fichiers constatés, peut nécessiter split par sous-dossier)."
+    )
+    body = (
+        "**Hors scope PR (comptes prévisionnels) :**\n"
+        + line + "\n\n"
+        "Les comptes « 28 fichiers » ... pas le périmètre livré par cette PR "
+        "qui en touche 2 (CLAUDE.md + _archive-convention.md)."
+    )
+    # Empty block (cross-paragraph case); body_hint carries the perimeter.
+    problems = check_assertion(files, line, block="", body_hint=body)
+    assert problems == [], (
+        f"fallback body_hint aurait dû trouver « touche 2 », "
+        f"obtenu {problems!r}"
+    )
+
+
+def test_13946_negative_real_perimeter_still_blocks():
+    """#13946 FN-safety : quand le périmètre réel dit bien « N fichiers »
+    dans le body et que le diff diffère, le rouge tient toujours. Le
+    filtre hors-scope ne masque pas un vrai claim."""
+    files = [{"path": "real.py"}, {"path": "extra.py"}]
+    body = (
+        "**Fichiers touchés : 3 fichiers**\n"
+        "- real.py\n"
+        "\n"
+        "(hors scope PR) : 28 fichiers constatés pour la tranche 2."
+    )
+    # Extract the « Fichiers touchés » line as the candidate.
+    candidates = extract_perimeter_assertions(body)
+    line = candidates[0]
+    problems = check_assertion(files, line, body_hint=body)
+    assert any("3 fichier" in p for p in problems), (
+        f"un vrai claim de 3 fichiers doit rester rouge quand 2 diff, "
+        f"obtenu {problems!r}"
+    )

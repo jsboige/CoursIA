@@ -113,7 +113,7 @@ jobs:
 
           if [ "$fail" -ne 0 ]; then
             echo "" >> "$GITHUB_STEP_SUMMARY"
-            echo "FIX: add a \`**Description visuelle** :\` line per figure entry in the MANIFEST, observing the PNG (`Read` on the .png) and describing its visual content (chart type / axes / colors / disposition), distinct from the notebook's pedagogical subject. See scripts/notebook_tools/extract_readme_figures.py for the canonical schema." >> "$GITHUB_STEP_SUMMARY"
+            echo "FIX: add a \`**Description visuelle** :\` line per figure entry in the MANIFEST, observing the PNG (\`Read\` on the .png) and describing its visual content (chart type / axes / colors / disposition), distinct from the notebook's pedagogical subject. See scripts/notebook_tools/extract_readme_figures.py for the canonical schema." >> "$GITHUB_STEP_SUMMARY"
             exit 1
           fi
           echo "::notice title=Manifest description_visuelle gate::Checked $checked changed MANIFEST.md file(s); all declare description_visuelle per figure."
