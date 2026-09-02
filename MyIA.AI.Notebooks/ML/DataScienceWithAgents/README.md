@@ -24,7 +24,7 @@ La formation couvre deux stacks complémentaires :
 
 | Statistique | Valeur |
 |-------------|--------|
-| Notebooks | 50 (7 LangChain + 10 ADK + 2 fondations Python + 21 fondations ML + 10 deep learning) |
+| Notebooks | 52 (7 LangChain + 10 ADK + 2 fondations Python + 21 fondations ML + 10 deep learning + 2 vision) |
 | Kernel | Python 3.11+ |
 | Durée totale | ~7 jours |
 
@@ -115,6 +115,10 @@ DataScienceWithAgents/
 │   ├── 3.7-Distillation-Maitre-Eleve.ipynb
 │   └── 3.8-Representations-Contrastives.ipynb
 │
+├── 04-Vision/                  # Vision par convolution (2 notebooks)
+│   ├── 4.1-Conv-NumPy-Torch-Allclose.ipynb
+│   └── 4.2-ConvNet-Profonde-Residuelles.ipynb
+│
 ├── Track1-LangChain/ # Track LangChain (7 labs)
 │   ├── Day1-Foundations/Labs/              # Revision
 │   ├── Day2-Document-Agents/Labs/              # Agents RFP et CV
@@ -182,6 +186,17 @@ Le prolongement direct du socle : là où [2.2](02-ML-Cours/2.2-Descente-de-grad
 | [3.8-Representations-Contrastives](03-DeepLearning/3.8-Representations-Contrastives.ipynb) | Pré-entraînement contrastif moderne : vues continues, encodeur MLP et loss InfoNCE from scratch, pont vers skip-gram | **Apprendre des représentations sans étiquettes** : deux vues attirent leurs embeddings, les autres repoussent |
 
 Documentation complète : [03-DeepLearning/README.md](03-DeepLearning/README.md)
+
+## Vision (04-Vision)
+
+Le pont entre le socle profond from-scratch et la vision par convolution : là où la série [03-DeepLearning](03-DeepLearning/README.md) ferme sur les représentations contrastives et la distillation, cette section ouvre la convolution — d'abord avec un neurone convolutif *à la main* (NumPy pur, parité exacte avec `torch.nn.functional.conv2d`), puis avec une ConvNet profonde où la résiduelle devient la condition de faisabilité. La section prépare aussi le transfer learning ResNet (4.3, PR suivante).
+
+| Notebook | Sujet | Concept-phare |
+|----------|-------|---------------|
+| [4.1-Conv-NumPy-Torch-Allclose](04-Vision/4.1-Conv-NumPy-Torch-Allclose.ipynb) | Neurone convolutif from scratch (NumPy) puis parité exacte avec `torch.nn.functional.conv2d` | **La boîte noire ouverte** : 10 convolutions NumPy reproduisent torch à 0.0 près (allclose 1e-12), gradient vérifié |
+| [4.2-ConvNet-Profonde-Residuelles](04-Vision/4.2-ConvNet-Profonde-Residuelles.ipynb) | ConvNet profonde : pourquoi le résiduel devient la condition de faisabilité (ResNet-18 sur CIFAR-10) | **La résiduelle n'est pas un gadget** : sans skip connection, 20 couches == divergence ; avec, accuracy test ≥ baseline |
+
+Documentation complète : [04-Vision/README.md](04-Vision/README.md)
 
 ## Workshop 3 Jours (Track1-LangChain)
 
