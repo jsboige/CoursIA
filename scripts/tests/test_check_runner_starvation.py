@@ -425,3 +425,93 @@ def test_fetch_inventory_auth_failure_returns_unavailable(monkeypatch):
     monkeypatch.setattr(rs, "_gh_json", lambda args, token=None: None)
     inv = rs.fetch_inventory("jsboige/CoursIA", "coursia-linux", token=None)
     assert not inv.available
+
+
+def test_job_queued_then_run_disappears_terminal_is_purged(monkeypatch):
+    """Falsification du residu adjoint (po-2025:CoursIA-2, 2026-09-02 14:24Z) :
+    le run ENTIER devient terminal entre les deux listing queries -- il
+    disparait du snapshot 2 (ni queued ni in_progress), le job du label n'est
+    jamais re-observe et l'entree starved du pass 1 survivait
+    (`starved=[('guard-linux','queued',40.0)]`). La requete directe au run
+    (status=completed) doit purger l'entree -- le snapshot 1 seul n'est plus
+    la derniere observation du job."""
+    now = datetime(2026, 9, 2, 12, 0, tzinfo=timezone.utc)
+
+    def fake_gh(args: list[str], token: str | None = None):
+        url = args[0]
+        if "status=queued" in url:
+            return {"total_count": 1, "workflow_runs": [_run_row(90, 40.0, now)]}
+        if "status=in_progress" in url:
+            # Snapshot 2 : le run 90 a disparu (devenu terminal entre les
+            # deux queries) -- plus ni queued ni in_progress dans ses codes.
+            return {"total_count": 0, "workflow_runs": []}
+        if "/jobs" in url:
+            return {"jobs": [
+                {"id": 9010, "name": "guard-linux", "status": "queued",
+                 "labels": ["self-hosted", "coursia-linux"],
+                 "created_at": (now - timedelta(minutes=40)).isoformat()},
+            ]}
+        if url.endswith("/actions/runs/90"):
+            return {"id": 90, "status": "completed"}
+        return None
+
+    monkeypatch.setattr(rs, "_gh_json", fake_gh)
+    st = rs.fetch_starvation("jsboige/CoursIA", "coursia-linux", 15.0, now=now)
+    assert st.starved == []
+    assert st.in_progress == []
+
+
+def test_job_queued_run_still_queued_direct_preserved(monkeypatch):
+    """Contre-test anti-faux-negatif : la re-verification directe tranche. Un
+    run queued stable (encore queued a la requete directe) GARDE son entree
+    starved -- purger les entrees dont le run n'a pas ete revu au snapshot 2
+    SANS re-verifier rendrait l'organe muet sous vraie file profonde (le run
+    queued stable n'apparait jamais dans le listing in_progress)."""
+    now = datetime(2026, 9, 2, 12, 0, tzinfo=timezone.utc)
+
+    def fake_gh(args: list[str], token: str | None = None):
+        url = args[0]
+        if "status=queued" in url:
+            return {"total_count": 1, "workflow_runs": [_run_row(90, 40.0, now)]}
+        if "status=in_progress" in url:
+            return {"total_count": 0, "workflow_runs": []}
+        if "/jobs" in url:
+            return {"jobs": [
+                {"id": 9011, "name": "guard-linux", "status": "queued",
+                 "labels": ["self-hosted", "coursia-linux"],
+                 "created_at": (now - timedelta(minutes=40)).isoformat()},
+            ]}
+        if url.endswith("/actions/runs/90"):
+            return {"id": 90, "status": "queued"}
+        return None
+
+    monkeypatch.setattr(rs, "_gh_json", fake_gh)
+    st = rs.fetch_starvation("jsboige/CoursIA", "coursia-linux", 15.0, now=now)
+    assert len(st.starved) == 1
+    assert st.starved[0].job_name == "guard-linux"
+
+
+def test_missing_run_after_failed_listing_is_preserved(monkeypatch):
+    """Fail-open : si UN listing a echoue, aucun purgement. Un run invisible
+    par panne d'API n'est pas un run terminal prouve -- seule une re-verite
+    directe reussie le dit. La requete directe doit donc ne JAMAIS etre
+    appelee (le pipeline s'arrete avant)."""
+    now = datetime(2026, 9, 2, 12, 0, tzinfo=timezone.utc)
+
+    def fake_gh(args: list[str], token: str | None = None):
+        url = args[0]
+        if "status=queued" in url:
+            return {"total_count": 1, "workflow_runs": [_run_row(90, 40.0, now)]}
+        if "status=in_progress" in url:
+            return None  # listing echoue : aucune conclusion d'absence
+        if "/jobs" in url:
+            return {"jobs": [
+                {"id": 9012, "name": "guard-linux", "status": "queued",
+                 "labels": ["self-hosted", "coursia-linux"],
+                 "created_at": (now - timedelta(minutes=40)).isoformat()},
+            ]}
+        raise AssertionError("requete directe interdite quand un listing a echoue")
+
+    monkeypatch.setattr(rs, "_gh_json", fake_gh)
+    st = rs.fetch_starvation("jsboige/CoursIA", "coursia-linux", 15.0, now=now)
+    assert len(st.starved) == 1

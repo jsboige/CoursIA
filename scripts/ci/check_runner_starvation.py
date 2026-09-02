@@ -172,6 +172,12 @@ def fetch_starvation(
     # sont reinseres.
     seen_runs: set[int] = set()
     seen_jobs: dict[tuple[int, str], JobRow] = {}
+    # Traçage des listings pour la re-verification du residuel adjoint
+    # (2026-09-02 14:24Z) : un run observe au tour queued mais absent des deux
+    # listings du tour in_progress a pu devenir terminal ENTRE les deux
+    # queries -- sa re-verification directe tranche (voir plus bas).
+    listing_failed: set[str] = set()
+    listing_seen: dict[int, set[str]] = {}
     for status in ("queued", "in_progress"):
         # Query params inline : `-f` forcerait un POST sur un endpoint GET.
         page = 1
@@ -183,6 +189,7 @@ def fetch_starvation(
                  f"&per_page={RUNS_PAGE_SIZE}&page={page}"]
             )
             if not isinstance(runs, dict):
+                listing_failed.add(status)
                 break
             if total is None:
                 raw_total = runs.get("total_count")
@@ -212,6 +219,7 @@ def fetch_starvation(
                 if rid not in seen_runs:
                     seen_runs.add(rid)
                     examined += 1
+                listing_seen.setdefault(rid, set()).add(status)
                 jobs = _gh_json([f"repos/{repo}/actions/runs/{rid}/jobs?filter=latest"])
                 if not isinstance(jobs, dict):
                     continue
@@ -266,6 +274,30 @@ def fetch_starvation(
                 break
         if isinstance(total, int) and total > examined and status not in result.unexamined:
             result.unexamined[status] = total - examined
+
+    # Residuel adjoint (po-2025:CoursIA-2, 2026-09-02 14:24Z) : un run observe
+    # au tour queued qui transite vers un etat terminal ENTRE les deux listing
+    # queries disparait du snapshot 2 -- son job n'est jamais re-observe et
+    # l'entree starved du pass 1 survivait (`starved=[('guard-linux','queued',
+    # 40.0)]`). Re-verification bornee : chaque run vu SEULEMENT au tour queued
+    # et porteur d'une entree vivante est re-interroge directement (une query
+    # run, pas ses jobs) ; `status == completed` purge ses entrees -- semantique
+    # "l'observation la plus recente gagne" -- tout autre statut les conserve.
+    # Fail-open : si UN listing a echoue, aucun purgement (un run invisible par
+    # panne d'API n'est pas un run terminal prouve) ; idem si la query directe
+    # echoue. Un run queued stable, re-verifie puis encore queued, garde son
+    # entree : purger sans re-verifier rendrait l'organe muet sous vraie file
+    # profonde.
+    if not listing_failed:
+        for row in [*result.starved, *result.in_progress]:
+            if listing_seen.get(row.run_id) != {"queued"}:
+                continue
+            run = _gh_json([f"repos/{repo}/actions/runs/{row.run_id}"])
+            if isinstance(run, dict) and run.get("status") == "completed":
+                if row in result.starved:
+                    result.starved.remove(row)
+                if row in result.in_progress:
+                    result.in_progress.remove(row)
     return result
 
 
