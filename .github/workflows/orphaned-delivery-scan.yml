@@ -60,7 +60,13 @@ concurrency:
 jobs:
   sweep:
     name: "Verify merged PRs' mergeCommit reached main (advisory)"
-    runs-on: ubuntu-latest
+    # Routage #14283 tranche 3 (decision ai-01 2026-09-02) : jambe Linux
+    # auto-hebergee. Le `if:` ci-dessous est la garde anti-fork exigee par
+    # scripts/ci/check_self_hosted_runner_policy.py ; un `runs-on` STATIQUE la
+    # rend auditable (une expression dynamique leve DYNAMIC_RUNS_ON).
+    # Les PRs de fork sautent le job -- pr_gate.py compte `skipped` comme OK.
+    # Retour arriere = remettre `runs-on: ubuntu-latest` + retrait de l'allowlist.
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
     # On [closed], restrict to same-repo PRs: fork PRs cannot create an
     # internal base != main orphan and their limited token/fetch access would
     # only produce spurious failures on an advisory job.

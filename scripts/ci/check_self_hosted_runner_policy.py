@@ -78,6 +78,34 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     "notebook-exec-sequence-ratchet.yml",
     "notebook-navlink-check.yml",
     "notebook-papermill-ratchet.yml",
+    # tranche 3b (#14283, meme decision, meme owner) : suite des gardes PR
+    #   pure-Python. Fondue dans la meme PR que 3a -- les scinder aurait produit
+    #   un conflit sur cette meme ancre pour zero benefice de relecture.
+    "markdown-claims-output-advisory.yml",
+    "orphaned-delivery-scan.yml",
+    "quantconnect-notebook-freshness.yml",
+    "scan-md-hierarchy-drift.yml",
+    "slides-composition-pr-relay.yml",
+    "source-output-ratchet.yml",
+    "translation-guard.yml",
+    "unique-check-run-names-guard.yml",
+    "validation-matrix.yml",
+    # tranche 3a (#14283, decision ai-01 2026-09-02, owner myia-ai-01:CoursIA) :
+    #   gardes PR pure-Python, garde same-repo au niveau job, runs-on STATIQUE.
+    #   Exclus deliberement : pr-gate.yml (agregateur qui poll -- il tiendrait le
+    #   slot quil attend), owui-playwright-check.yml (navigateurs hors image),
+    #   always-on-guards.yml (trigger pull_request_review = FORK_REACHABLE).
+    #   Rollback = revert de la PR de routage.
+    "arxiv-attributions-guard.yml",
+    "catalog-drift.yml",
+    "consecutive-code-cells-advisory.yml",
+    "harness-coauthor-guard.yml",
+    "ict-tests.yml",
+    "label-paths-guard.yml",
+    "lean-conway.yml",
+    "lean-i18n-drift.yml",
+    "lean-knot.yml",
+    "manifest-description-visuelle-gate.yml",
 }
 GITHUB_HOSTED_LABELS = {
     "ubuntu-latest",
