@@ -59,9 +59,17 @@ jobs:
     # Sans cette garde, build + validate-PR tournent en double sur PR, et deploy
     # cascadant sur build se fait rejeter par la protection env (refs/pull/.../merge
     # non autorise). #11616 rouge 1.
-    if: github.event_name == 'push'
+    # La garde same-repo MENE (forme universelle #13874, exigee par
+    # check_self_hosted_runner_policy) ; la selection push-only suit en &&.
+    if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && github.event_name == 'push'
     name: Build Quarto site
-    runs-on: ubuntu-latest
+    # Routage #14283 fin de chantier (feu vert ai-01 2026-09-02) : setup
+    # Quarto par tarball auto-contenu (voir le step Set up Quarto). Garde
+    # push-only = jamais de contexte fork ici. runs-on STATIQUE.
+    # Retour arriere = remettre `runs-on: ubuntu-latest` + retrait de
+    # l'allowlist.
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    timeout-minutes: 30
     permissions:
       contents: read
     steps:
@@ -69,15 +77,21 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Quarto
-        uses: quarto-dev/quarto-actions/setup@v2
-        with:
-          # Version alignée sur local (cf. po-2023-c160/c161 Quarto tranches).
-          # Bump 1.7.32 -> 1.10.18 (issue #10968) : le filtre lua 1.7.32 pend sur
-          # les cellules echo:true dont une ligne de source se termine par \n et
-          # suivies d'un output display_data (mini-repro #10968) — corrigé en
-          # 1.10.18 (App-9b rend en 6 s). Les 7 notebooks exclus du pilote par
-          # #10979 redeviennent rendables (NOTEBOOK_EXCLUDE_FILES vidé, #10968).
-          version: 1.10.18
+        # Routage #14283 (feu vert ai-01 2026-09-02) : PAS quarto-dev/quarto-actions/setup@v2 —
+        # elle installe un .deb via `sudo apt -y install`, et l'image du pool self-hosted est
+        # no-new-privileges sans sudo ni dpkg (mesure : issuecomment-5516335275). Le tarball
+        # officiel embarque le MEME binaire sans privilege — ne pas « corriger » vers l'action.
+        # Version epinglee en clair (meme discipline que les pins gitleaks) : un tiers ne doit
+        # pas pouvoir changer notre binaire sans commit chez nous.
+        # 1.10.18 = aligne local (cf. po-2023-c160/c161) ; le filtre lua 1.7.32 pendait sur les
+        # cellules echo:true a source finissant par \n suivies d'un display_data (#10968),
+        # corrige en 1.10.18 (App-9b rend en 6 s ; NOTEBOOK_EXCLUDE_FILES vide, #10979).
+        run: |
+          QUARTO_VERSION=1.10.18
+          curl -fsSL "https://github.com/quarto-dev/quarto-cli/releases/download/v${QUARTO_VERSION}/quarto-${QUARTO_VERSION}-linux-amd64.tar.gz" -o /tmp/quarto.tar.gz
+          tar -xzf /tmp/quarto.tar.gz -C /tmp
+          echo "/tmp/quarto-${QUARTO_VERSION}/bin" >> "$GITHUB_PATH"
+          "/tmp/quarto-${QUARTO_VERSION}/bin/quarto" --version
 
       - name: Regenerate render list
         # _quarto.yml porte une liste render: EXPLICITE des READMEs + notebooks
@@ -176,8 +190,13 @@ jobs:
     # le push, mais sans deploy : juste le rendu + check output. Si le rendu
     # passe en PR, le push sur main passera aussi.
     name: Validate Quarto build (PR)
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
+    # Routage #14283 fin de chantier (feu vert ai-01 2026-09-02) : setup par
+    # tarball (voir le job `build`). Garde anti-fork au niveau job + runs-on
+    # STATIQUE — une expression leverait DYNAMIC_RUNS_ON dans
+    # check_self_hosted_runner_policy.py.
+    if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && github.event_name == 'pull_request'
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    timeout-minutes: 30
     permissions:
       contents: read
       pull-requests: write  # pour poster le commentaire de gate
@@ -189,9 +208,15 @@ jobs:
           filter: blob:none
 
       - name: Set up Quarto
-        uses: quarto-dev/quarto-actions/setup@v2
-        with:
-          version: 1.10.18
+        # Tarball auto-contenu, pas quarto-actions/setup@v2 (.deb + sudo apt,
+        # inapplicable sur l'image no-new-privileges du pool) — voir le job
+        # `build` ci-dessus pour la rationale complete et le pin.
+        run: |
+          QUARTO_VERSION=1.10.18
+          curl -fsSL "https://github.com/quarto-dev/quarto-cli/releases/download/v${QUARTO_VERSION}/quarto-${QUARTO_VERSION}-linux-amd64.tar.gz" -o /tmp/quarto.tar.gz
+          tar -xzf /tmp/quarto.tar.gz -C /tmp
+          echo "/tmp/quarto-${QUARTO_VERSION}/bin" >> "$GITHUB_PATH"
+          "/tmp/quarto-${QUARTO_VERSION}/bin/quarto" --version
 
       - name: Regenerate render list
         run: python scripts/regen_quarto_render.py
