@@ -77,7 +77,16 @@ concurrency:
 jobs:
   always-on-metadata-guards:
     name: "Always-on metadata guards -- 3 organes, 1 checkout"
-    runs-on: ubuntu-latest
+    # Routage HYBRIDE (#14283 tranche 3, decision ai-01 2026-09-02). Les PRs
+    # same-repo -- tout le trafic des lanes -- partent sur la jambe Linux
+    # auto-hebergee ; les PRs de FORK restent sur ubuntu-latest, inchangees.
+    # Aucun code de fork n'atteint nos machines, et aucun garde n'est perdu
+    # pour les forks (contrairement a un `if:` qui les aurait sautes).
+    # C'est ce qui permet de router un job porteur du GITHUB_TOKEN : le token
+    # ne s'execute chez nous qu'avec du code que nous avons ecrit -- le meme
+    # code qui tourne deja sur ces runners depuis la tranche 1.
+    # Retour arriere = remettre `runs-on: ubuntu-latest`.
+    runs-on: ${{ (github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
     timeout-minutes: 10
 
     steps:
