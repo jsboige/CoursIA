@@ -12,8 +12,8 @@ HAR-RV-J regression:
     log(RV_{t+1}) = b0 + b_d*log(RV_t) + b_w*log(RV_w) + b_m*log(RV_m)
                       + b_dj*J_t + b_wj*J_w + b_mj*J_m + e
 
-Walk-forward 5-fold expanding OLS. Requested seeds are reproducibility controls,
-not independent draws: the deterministic model is evaluated once per asset/horizon.
+Walk-forward 5-fold expanding OLS. Requested seed labels are not applicable to
+this deterministic model, which is evaluated once per asset/horizon.
 Kelly cap=1.0 (M11i confirmed cap=3.0 killed by Calmar).
 Sign-test and DM-MSE compare HAR-RV-J with a symmetrically train-calibrated HAR.
 
@@ -63,9 +63,9 @@ from realized_variance import (  # noqa: E402
     realized_variance_to_log,
 )
 
-COINS = ["BTC-USD", "ETH-USD", "SOL-USD", "LTC-USD", "XRP-USD", "ADA-USD", "DOT-USD"]
+COINS = ["BTC-USD", "ETH-USD"]
 HORIZONS = [1, 5, 10]
-SEEDS = [0, 1, 7, 42]
+SEEDS = [0, 7, 42, 99]
 MU_HUANG_TAUCHEN = 0.6  # Huang-Tauchen threshold for jump detection
 KELLY_CAP = 1.0
 MU_WINDOW = 60
@@ -335,13 +335,14 @@ def evaluate_one_combo(
     seed: int,
     oos_strict_year: int | None = None,
 ) -> dict | None:
-    """Run HAR-RV-J vs HAR Classic for one (coin, horizon, seed) combo.
+    """Run HAR-RV-J vs HAR Classic for one asset/horizon unit.
 
-    If oos_strict_year is provided, all data on/after Jan 1st of that year is
-    excluded from training and walk-forward evaluation (held out for separate
-    OOS verdict computed externally).
+    ``seed`` is retained for CLI compatibility and output provenance but does
+    not affect the deterministic OLS fit. If ``oos_strict_year`` is provided,
+    all data on/after January 1 of that year is excluded from training and
+    walk-forward evaluation for a separate external OOS verdict.
     """
-    # OLS is deterministic; seed is retained as an exact reproducibility control.
+    # OLS is deterministic; the seed label is recorded but not consumed.
     hourly_rets = _load_one_coin(coin)
     if oos_strict_year is not None:
         cutoff = pd.Timestamp(f"{oos_strict_year}-01-01", tz=hourly_rets.index.tz)
@@ -519,13 +520,13 @@ def main() -> None:
         "--seeds",
         type=_csv_int_list,
         default=None,
-        help="Comma-separated seeds override (default: 0,1,7,42)",
+        help="Comma-separated seed labels override (default: 0,7,42,99; N/A to OLS)",
     )
     parser.add_argument(
         "--coins",
         type=_csv_list,
         default=None,
-        help="Comma-separated coins override (default: BTC/ETH/SOL/LTC/XRP/ADA/DOT)",
+        help="Comma-separated coins override (default: BTC-USD,ETH-USD)",
     )
     parser.add_argument(
         "--horizons",
@@ -561,7 +562,7 @@ def main() -> None:
     t0 = time.time()
 
     combos: list[dict] = []
-    total = len(coins) * len(horizons) * len(seeds)
+    total_effective = len(coins) * len(horizons)
     done = 0
 
     if args.dry_run:
@@ -580,7 +581,7 @@ def main() -> None:
             if not seeds:
                 continue
             print(
-                f"\n[{done + 1}/{total}] {coin} h={h} "
+                f"\n[{done + 1}/{total_effective}] {coin} h={h} "
                 f"seed={seeds[0]} (deterministic OLS evaluation)",
                 flush=True,
             )
@@ -590,32 +591,35 @@ def main() -> None:
                 seeds[0],
                 oos_strict_year=oos_strict_year,
             )
-            done += len(seeds)
+            done += 1
             if row is None:
                 print("  SKIPPED (insufficient data)", flush=True)
                 continue
 
             combos.append({
                 **row,
-                "seed_values_checked": seeds,
-                "seed_control_mode": "OLS deterministic by construction",
+                "seed_values_requested": seeds,
+                "seed_applicability": "not_applicable_deterministic_ols",
             })
             print(
-                f"  Seed-invariant OLS checked against values {seeds} "
-                f"({done}/{total}); one effective statistical unit",
+                f"  OLS has no stochastic seed input; requested labels {seeds} "
+                "are recorded as non-applicable",
                 flush=True,
             )
 
     elapsed = time.time() - t0
     print(f"\n{'='*60}")
-    print(f"M12 HAR-RV-J sweep complete: {len(combos)}/{total} combos in {elapsed:.0f}s")
+    print(
+        f"M12 HAR-RV-J sweep complete: {len(combos)}/{total_effective} "
+        f"effective units in {elapsed:.0f}s"
+    )
 
     # OLS has no stochastic seed input: each row is one effective unit, while
-    # seed_values_checked records the requested reproducibility controls.
+    # seed_values_requested preserves the non-applicable protocol labels.
     n_combos = len(combos)
     unique_rows = combos
     n_effective = len(unique_rows)
-    n_seed_controls = n_effective * len(seeds)
+    n_seed_controls = 0
     n_hrj_beats_har = sum(
         1
         for row in unique_rows
@@ -651,7 +655,7 @@ def main() -> None:
         dm_p_median = float(np.median(dm_ps))
         dm_diff_median = float(np.median(dm_diffs))
         cross_asset_ratio = edge_mean / edge_std if edge_std > 0 else None
-        seed_stable = all(row["seed_values_checked"] == seeds for row in rows)
+        seeds_applicable = False
         edge_sign_positive = edge_mean > 0
         edge_significance_available = False
         edge_passes = edge_sign_positive and edge_significance_available
@@ -666,11 +670,12 @@ def main() -> None:
             verdict_h = "INCONCLUSIVE"
         per_horizon[horizon] = {
             "n_effective": len(rows),
-            "n_seed_controls": len(rows) * len(seeds),
+            "n_seed_controls": 0,
+            "seed_values_requested": seeds,
+            "seeds_applicable": seeds_applicable,
             "edge_mean_delta_sharpe": edge_mean,
             "edge_std_delta_sharpe_across_assets": edge_std,
             "cross_asset_edge_ratio": cross_asset_ratio,
-            "seed_stable": seed_stable,
             "edge_sign_positive": edge_sign_positive,
             "edge_significance_available": edge_significance_available,
             "edge_passes": edge_passes,
@@ -715,7 +720,7 @@ def main() -> None:
         print(
             f"  h={horizon}: {row['verdict']} | "
             f"edge={row['edge_mean_delta_sharpe']:+.4f} "
-            f"(cross-asset ratio={ratio_text}, seeds stable), "
+            f"(cross-asset ratio={ratio_text}, seeds N/A for OLS), "
             f"DM-MSE p_med={row['dm_mse_p_median']:.4f}, "
             f"loss_diff={row['dm_mse_mean_loss_diff_median']:+.6f}"
         )
@@ -748,7 +753,7 @@ def main() -> None:
         "p_sign": p_sign,
         "baseline": "HAR Classic with train-only bias calibration",
         "candidate": "HAR-RV-J with train-only bias calibration",
-        "seed_role": "exact deterministic reproducibility control",
+        "seed_role": "not applicable: OLS has no stochastic seed input",
         "dm_loss_fn": "mse",
         "median_delta_sharpe": median_delta,
         "per_horizon": per_horizon,
