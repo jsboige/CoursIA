@@ -1645,12 +1645,6 @@ layout: section
 - Conditionnement multimodal
 - Mécanisme attentionnel (cross-attention Q/K/V)
 
-**Alignement et produit grand public**
-
-- RLHF (2022, InstructGPT) : affinage par retour humain
-- ChatGPT (nov. 2022, OpenAI) : 100 M d'utilisateurs en 2 mois
-- Modèles open-weight : Llama 2 (2023), Mistral, Mixtral (MoE 2023-2024)
-
 <div class="grid grid-cols-2 gap-2 absolute top-[130px] right-[20px] w-[600px]">
 <img src="./images/img_110.png" class="max-h-[190px] w-full object-contain" alt="Trois paires image-légende : rue de Kyoto, aigle en vol, paysage montagneux" />
 <img src="./images/img_111.png" class="max-h-[190px] w-full object-contain" alt="CLIP : plongements image et texte comparés, mise à jour des modèles, verdict similaire ou non" />
@@ -1658,8 +1652,23 @@ layout: section
 <img src="./images/img_113.png" class="max-h-[190px] w-full object-contain" alt="U-Net de débruitage latent : encodeur, décodeur, attention croisée Q/K/V, conditionnements et pas de temps" />
 </div>
 
-<!-- Multimodaux : CLIP (2021) contraste texte-image, DALL-E (2022), GPT-4V / Gemini (2023). Diffusion latente (LDM / Stable Diffusion, Rombach 2021-2022) : bruit latent + U-Net + cross-attention. Alignement : RLHF (InstructGPT 2022), ChatGPT (nov 2022), Llama 2 / Mistral / Mixtral (2023-2024). -->
+<!-- Multimodaux : CLIP (2021) contraste texte-image, DALL-E (2022), GPT-4V / Gemini (2023). Diffusion latente (LDM / Stable Diffusion, Rombach 2021-2022) : bruit latent + U-Net + cross-attention. -->
 ---
+
+
+# Extensions 2020+ (2/2)
+
+**Alignement et produit grand public**
+
+- RLHF (2022, InstructGPT) : affinage par retour humain
+- ChatGPT (nov. 2022, OpenAI) : 100 M d'utilisateurs en 2 mois
+- Modèles open-weight : Llama 2 (2023), Mistral, Mixtral (MoE 2023-2024)
+
+<!-- Alignement : RLHF (InstructGPT 2022), ChatGPT (nov 2022), Llama 2 / Mistral / Mixtral (2023-2024). -->
+---
+
+
+
 
 
 
