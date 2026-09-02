@@ -42,6 +42,17 @@ RUN useradd -m -u 1001 runner \
     && mkdir -p /home/runner/_work /opt/hostedtoolcache \
     && chown -R runner:runner /opt/runner /home/runner /opt/hostedtoolcache
 
+# gh CLI : requis par les guards metadata (check_pr_perimeter POST sa label
+# via gh ; sans gh, les organs sous `2>/dev/null || true` rendent exit 0 SANS
+# poster -- un vert fabrique, cf #14294). Pin SHA-256 comme le tarball runner.
+ARG GH_VERSION=2.99.0
+ARG GH_SHA256=ed4960225d2833e04a61590d9fa2b5773d147f3aa375459e5466a40c102f3832
+ADD https://github.com/cli/cli/releases/download/v${GH_VERSION}/gh_${GH_VERSION}_linux_amd64.tar.gz /tmp/gh.tar.gz
+RUN echo "${GH_SHA256}  /tmp/gh.tar.gz" | sha256sum -c - \
+    && tar xzf /tmp/gh.tar.gz -C /tmp \
+    && install -m 0755 /tmp/gh_${GH_VERSION}_linux_amd64/bin/gh /usr/local/bin/gh \
+    && rm -rf /tmp/gh.tar.gz /tmp/gh_${GH_VERSION}_linux_amd64
+
 USER runner
 WORKDIR /opt/runner
 
