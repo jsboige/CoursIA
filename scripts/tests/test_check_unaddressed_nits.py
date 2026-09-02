@@ -1385,7 +1385,7 @@ def test_coord_override_leve_aussi_le_state_changes_requested():
     """La trappe couvre la branche état natif (branche A) comme la branche
     commentaire (branche B) : un CHANGES_REQUESTED d'un reviewer arbitré par
     override écrit se lève aussi."""
-    cr = {"author": {"login": "hermes-bot"},
+    cr = {"author": {"login": "clusterManager-Myia"},
           "state": "CHANGES_REQUESTED", "submittedAt": at(10),
           "body": "CHANGES_REQUESTED: 2 edge cases non couverts."}
     lift = {"author": {"login": "myia-ai-01"}, "createdAt": at(12),
@@ -2338,7 +2338,9 @@ def test_13083_override_lane_leve_le_blocage():
                "body": "[BLOCK] lane myia-po-2023:CoursIA-2 — l'arbre est sale, "
                        "pas de merge tant que le drift n'est pas regle."}
     override = {"author": {"login": "myia-ai-01"}, "createdAt": at(12),
-                "body": OVERRIDE_BODY}
+                "body": "[OVERRIDE] lane myia-ai-01:CoursIA — Le blocage "
+                        "myia-po-2023 est arbitre : arbre nettoye, drift "
+                        "regle, levee prononcee."}
     assert run([blocage, override])["blocked"] is False
 
 
@@ -4499,3 +4501,148 @@ def test_14277_ce2_enum_separateur_rouge_si_b_desactivee():
         )
     finally:
         mod._GLYPH_ENUM_PRECEDER_RE = saved
+# ---------------------------------------------------------------------------
+# #14216 — la levée coordinatrice est scopée PAR RÉSERVE, plus par PR.
+# La trappe #11639 ([OVERRIDE] lane d'un compte de levée) éteignait TOUTES
+# les réserves ouvertes de la PR : sur #14166, la levée légitime par ai-01
+# de SA réserve de collision a emporté la réserve structurelle Hermes de
+# clusterManager-Myia, et la PR serait apparue mergeable si l'organe
+# n'avait pas été relancé APRÈS le post. Le fix : un override ne lève une
+# réserve d'autrui que s'il la NOMME (login de son auteur, ou persona
+# Hermes — la forme historique canonique de #11639). Les fixtures
+# `test_coord_override_leve_aussi_le_state_changes_requested` (login
+# hermes-bot -> clusterManager-Myia) et `test_13083_override_lane_leve_le_
+# blocage` (corps nommant myia-po-2023) ont été mises à la forme scopée :
+# leur INTENT est inchangé, seule la forme du geste passe par le scope.
+# ---------------------------------------------------------------------------
+
+UNSCOPED_OVERRIDE_14216 = (
+    "[OVERRIDE] lane myia-ai-01:CoursIA — Collision à trois PRs arbitrée : "
+    "la survivante est celle-ci, ma réserve est levée."
+)
+
+SCOPED_OVERRIDE_14216 = (
+    "[OVERRIDE] lane myia-ai-01:CoursIA — Collision arbitrée : ma réserve "
+    "est levée, et celle de clusterManager-Myia aussi (Race/Switch corrigé "
+    "par le commit 06956bd0a, vérifié)."
+)
+
+
+def _pr_14216(override_body):
+    """La forme du fondateur #14166 : un BLOCAGE de ai-01 (collision) ET une
+    réserve Hermes (review COMMENTED de clusterManager-Myia) sur une PR
+    worker ; ai-01 arbitre par override. Retourne le verdict de l'organe."""
+    blocage = {"author": {"login": "myia-ai-01"}, "createdAt": at(10),
+               "body": "[BLOCAGE] lane myia-ai-01:CoursIA — collision à "
+                       "trois PRs, arbitrage en cours."}
+    hermes = {"author": {"login": "clusterManager-Myia"},
+              "state": "COMMENTED", "submittedAt": at(11),
+              "body": "[Hermes] COMMENT_WITH_CONCERNS — la prose enseigne "
+                      "Race là où le code définit Switch."}
+    lift = {"author": {"login": "myia-ai-01"}, "createdAt": at(12),
+            "body": override_body}
+    data = {
+        "number": 0, "title": "t", "author": {"login": "myia-po-2025"},
+        "comments": [blocage, lift], "reviews": [hermes],
+        "commits": [{"committedDate": at(9)}],
+    }
+    return mod.analyse(data, [], MERGED)
+
+
+def test_14216_fp1_override_non_scopee_ne_leve_pas_la_reserve_d_autrui():
+    """#14216 contrôle positif (reproduction #14166) : deux réserves, auteurs
+    différents ; l'override NON SCOPÉ de l'auteur de la première ne doit
+    éteindre que la sienne — l'organe rend BLOCKED avec 1 nit restant
+    (celui de clusterManager-Myia), pas OK."""
+    res = _pr_14216(UNSCOPED_OVERRIDE_14216)
+    assert res["blocked"] is True
+    assert len(res["blocking"]) == 1
+    assert res["blocking"][0]["author"] == "clusterManager-Myia"
+
+
+EXCLUSION_OVERRIDE_14216 = (
+    "[OVERRIDE] lane myia-ai-01:CoursIA — Levée de ma propre réserve : la "
+    "collision à trois PRs est arbitrée (#14214), cette PR est le survivant "
+    "nommé. La réserve de clusterManager-Myia n'est pas concernée par cette "
+    "levée."
+)
+
+
+def test_14216_fp2_mention_exclusion_nest_pas_un_scope():
+    """#14216 — la forme EXACTE du corps fondateur de #14166 (avant que
+    l'auteur ne retire le marqueur) : l'override y porte le login du tiers
+    dans une phrase d'EXCLUSION. La nomination seule ne suffit pas — sans
+    phrase de levée affirmative, la réserve d'autrui survit."""
+    res = _pr_14216(EXCLUSION_OVERRIDE_14216)
+    assert res["blocked"] is True
+    assert len(res["blocking"]) == 1
+    assert res["blocking"][0]["author"] == "clusterManager-Myia"
+
+
+def test_14216_vp1_override_scopee_par_login_leve_les_deux():
+    """#14216 contrôle négatif symétrique : l'override QUI NOMME le tiers
+    (login clusterManager-Myia) lève les deux réserves — le scope explicite
+    est la seule porte ouverte vers la réserve d'autrui."""
+    res = _pr_14216(SCOPED_OVERRIDE_14216)
+    assert res["blocked"] is False
+
+
+def test_14216_vp2_forme_historique_persona_hermes_reste_levee():
+    """#14216 critère 4 (l'inverse) : le durcissement ne doit pas rougir les
+    levées scopées déjà postées. La forme canonique historique de #11639 —
+    « Levée de la réserve Hermes » sans login — reste une levée VALIDE pour
+    la réserve de la persona (clusterManager-Myia)."""
+    assert mod._override_scopes_reserve(OVERRIDE_BODY, "clusterManager-Myia")
+    # ... et reste sans effet sur une réserve qu'elle ne nomme pas :
+    assert not mod._override_scopes_reserve(OVERRIDE_BODY, "myia-po-2023")
+
+
+def test_14216_unite_scope_login_persona_et_anonyme():
+    """#14216 — granularité du détecteur de scope, niveau unitaire :
+    login nommé (frontière d'identité), sous-chaîne de login = PAS un nom,
+    auteur inconnu = levable (un scope ne nomme pas ce qui n'a pas de nom)."""
+    body = "Levée des réserves : la mienne et celle de clusterManager-Myia aussi."
+    assert mod._override_scopes_reserve(body, "clusterManager-Myia")
+    assert not mod._override_scopes_reserve(body, "clusterManager-Myia2")
+    assert not mod._override_scopes_reserve(body, "Myia")  # sous-chaîne
+    assert mod._override_scopes_reserve(body, "")          # auteur inconnu
+    # persona : le mot suffit pour les comptes de la persona (avec levee)
+    assert mod._override_scopes_reserve("réserve Hermes levée", "jsboige")
+    assert not mod._override_scopes_reserve("réserve Hermes levée",
+                                            "myia-po-2023")
+    # #14216 fondateur : le nom present dans une phrase d'EXCLUSION n'est
+    # pas un scope (« n'est pas concernée par cette levée » = corps reel de
+    # la levée ai-01 sur #14166 AVANT retrait du marqueur).
+    excl = ("La réserve de clusterManager-Myia n'est pas concernée par "
+            "cette levée.")
+    assert not mod._override_scopes_reserve(excl, "clusterManager-Myia")
+
+
+def test_14216_ignored_overrides_explique_le_scope_manquant():
+    """#14216 — le rouge doit DIRE pourquoi l'override visible n'a rien
+    éteint pour la réserve survivante (même exigence de nomination que
+    #13316/#13495) : sinon un gate rouge « malgré notre override » redevient
+    indistinguable d'un bug du détecteur."""
+    res = _pr_14216(UNSCOPED_OVERRIDE_14216)
+    explained = [o for o in res["ignored_overrides"]
+                 if "#14216" in o["why"]
+                 and "clusterManager-Myia" in o["why"]]
+    assert explained, res["ignored_overrides"]
+
+
+def test_14216_ce1_mutation_scope_toujours_vrai_fp1_rougit(monkeypatch):
+    """#14216 contrôle positif par mutation : désactiver le scope (retour
+    inconditionnel True = sémantique par-PR d'avant le fix) rend la
+    reproduction fp1 VERTE — la preuve que le test mord."""
+    monkeypatch.setattr(mod, "_override_scopes_reserve",
+                        lambda b, a: True)
+    assert _pr_14216(UNSCOPED_OVERRIDE_14216)["blocked"] is False
+
+
+def test_14216_ce2_mutation_scope_toujours_faux_vp1_rougit(monkeypatch):
+    """#14216 contrôle négatif par mutation : un scope qui refuse tout
+    (jamais de levée d'autrui, même nommée) fait rougir vp1 — la porte du
+    scope explicite est bien portée par le détecteur testé."""
+    monkeypatch.setattr(mod, "_override_scopes_reserve",
+                        lambda b, a: False)
+    assert _pr_14216(SCOPED_OVERRIDE_14216)["blocked"] is True

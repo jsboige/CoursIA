@@ -2627,6 +2627,83 @@ def _names_author(body: str, author: str) -> bool:
                      body) is not None
 
 
+# #14216 — langage de LEVEE portee a la reserve nommee (affirmatif). La
+# nomination seule ne suffit pas : le corps fondateur de #14166 portait
+# « la reserve de clusterManager-Myia n'est pas concernee par cette levee »
+# — le nom ETAIT present, dans une phrase d'EXCLUSION.
+_SCOPE_LIFT_RE = re.compile(r"(?i)\blev\w*\b|\blift\w*\b")
+# #14216 — phrase qui nomme la reserve pour l'EXCLURE de la levee. Accents
+# neutralises (le depot ecrit les deux), formes FR d'abord.
+_SCOPE_NEGATION_RE = re.compile(
+    r"(?i)\bn['’]\s*\w+\s+pas\b"
+    r"|\bne\s+(?:\w+\s+){0,3}pas\b"
+    r"|\bpas\s+(?:concerne\w*|leve\w*|lift\w*|inclus\w*|touch\w*)\b"
+    r"|\bhors\s+(?:du\s+|de\s+la\s+)?(?:scope|perimetre|champ)\b"
+    r"|\b(?:exclu\w*|non\s+leve\w*|reste\s+ouverte?)\b"
+    r"|\b(?:not|isn['’]t)\s+(?:concerned|lifted|in\s+scope)\b"
+    r"|\b(?:remains\s+open|out\s+of\s+scope)\b")
+
+
+def _scope_lifted_sentence(body: str, needle_re) -> bool:
+    """Une PHRASE porte-t-elle le nom ET une levee affirmative de la reserve ?
+
+    Phrase = segment entre [.!?\\n]. Pour chaque occurrence du nom (login ou
+    persona), la phrase qui la contient doit porter un mot de levee SANS
+    negation d'exclusion — « je leve aussi la reserve de <login> » scope,
+    « la reserve de <login> n'est pas concernee par cette levee » non.
+    """
+    for m in needle_re.finditer(body):
+        s0 = max(body.rfind(c, 0, m.start()) for c in ".!?\n") + 1
+        ends = [j for j in (body.find(c, m.end()) for c in ".!?\n")
+                if j != -1]
+        s1 = min(ends) if ends else len(body)
+        sent = _unaccent(body[s0:s1]).lower()
+        if _SCOPE_LIFT_RE.search(sent) and not _SCOPE_NEGATION_RE.search(sent):
+            return True
+    return False
+
+
+def _override_scopes_reserve(lift_body: str, nit_author: str) -> bool:
+    """#14216 — un OVERRIDE coordinateur nomme-t-il LA reserve qu'il leve ?
+
+    La trappe #11639 agissait par PR, jamais par reserve : un seul
+    commentaire portant le marqueur eteignait TOUTES les reserves ouvertes,
+    y compris celle d'un tiers que le coordinateur n'a ni legitimite ni
+    intention de lever (#14166 : la levee legitime de sa reserve de
+    collision a emporte la reserve structurelle Hermes, et la PR serait
+    apparue mergeable si l'organe n'avait pas ete relance APRES le post).
+    Un override ne leve desormais une reserve d'AUTRUI que s'il la nomme
+    dans une phrase de levee AFFIRMATIVE — le corps fondateur portait le
+    login dans une phrase d'exclusion (« n'est pas concernee par cette
+    levee ») : le nom seul n'est pas un scope.
+
+    Deux formes reconnues, toutes deux presentes dans l'historique reel :
+
+    1. le login de l'auteur de la reserve — frontiere d'identite de
+       ``_names_author`` (« Levee des reserves : la mienne et celle de
+       clusterManager-Myia aussi ») ;
+    2. le nom de persona — « Levée de la réserve Hermes » (#11639, forme
+       canonique historique) quand l'auteur de la reserve est la persona
+       Hermes/NanoClaw ou le self-bot jsboige qui la porte.
+
+    Les reserves de l'auteur de la levee restent couvertes sans nomination
+    (branche self de ``_lift_eligible``). Un nit d'auteur inconnu (compte
+    supprime) reste levable : un scope ne peut pas nommer ce qui n'a pas
+    de nom.
+    """
+    if not nit_author:
+        return True
+    body = lift_body or ""
+    author_re = re.compile(r"(?<![A-Za-z0-9_.-])" + re.escape(nit_author)
+                           + r"(?![A-Za-z0-9_.-])")
+    if _scope_lifted_sentence(body, author_re):
+        return True
+    if nit_author in PERSONA_ALIAS_LOGINS or nit_author == "jsboige":
+        return _scope_lifted_sentence(
+            body, re.compile(r"(?i)\b(?:hermes|nanoclaw)\b"))
+    return False
+
+
 def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
             issue_info=None, dismissed_improperly=None) -> dict:
     """cutoff = mergedAt (audit retro) ou now (gate pre-merge)."""
@@ -2733,8 +2810,13 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
         # lanes (self-review cap #12319), un override jsboige est
         # indiscernable d'une auto-levee de lane (replay #12737).
         m = OVERRIDE_LANE.search(lift_body or "")
-        return (lift_author in LIFT_OVERRIDE_LOGINS
-                and m is not None)
+        if not (lift_author in LIFT_OVERRIDE_LOGINS and m is not None):
+            return False
+        # #14216 — l'override est scope PAR RESERVE, plus par PR : sans
+        # nomination de la reserve d'autrui (login ou persona Hermes), il ne
+        # leve que les siennes. La trappe reste fermee a l'auteur de la PR
+        # (garde ci-dessus) : le scope n'ouvre pas la porte d'auto-levee.
+        return _override_scopes_reserve(lift_body or "", nit_author)
 
     # Fenetre 2026-08-16 (#11222) : les temps plats ne suffisent pas pour un
     # CHANGES_REQUESTED. Une PHRASE explicite de levee (LIFT_MARKER non
@@ -3040,6 +3122,27 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
         and OVERRIDE_LANE.search(body or "") is not None
         and author in LIFT_OVERRIDE_LOGINS
         and author == pr_author
+    ] + [
+        # #14216 — un override legitime qui ne NOMME pas affirmativement la
+        # reserve qu'il laisse survivre doit etre explique : sans cette ligne,
+        # un gate rouge « malgre notre override » redeviendrait
+        # indistinguable d'un bug du detecteur. La levee n'etait pas refusee,
+        # elle etait trop large — le rouge le dit maintenant.
+        {"author": author, "at": t.isoformat(),
+         "why": (f"override ignoré pour la réserve de « {login} » — il ne la "
+                 "lève pas nommément (#14216 : une levée coordinatrice est "
+                 "scopée par réserve ; la nommer dans une phrase de levée "
+                 "affirmative — « je lève aussi la réserve de <login> » — une "
+                 "mention d'exclusion ne compte pas)")}
+        for (t, author, body) in explicit_lifts
+        if t is not None
+        and OVERRIDE_LANE.search(body or "") is not None
+        and author in LIFT_OVERRIDE_LOGINS
+        and author != pr_author
+        for login in sorted({b.get("author") for b in blocking
+                             if b.get("author") not in ("", author)
+                             and not _override_scopes_reserve(
+                                 body or "", b.get("author") or "")})
     ]
 
     # #13512 -- CE QUE L'ORGANE N'A PAS EVALUE.
