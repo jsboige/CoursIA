@@ -159,6 +159,46 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     "twin-parity-cron.yml",
     "twin-parity-drift-audit.yml",
     "workflow-path-filter-audit.yml",
+
+    # - tranche 5 (#13378/#14283, decision ai-01 2026-09-02) : le solde des
+    #   gardes routables. Exclus et pourquoi : pr-gate.yml (agregateur qui
+    #   poll jusqu'a 28 min -- le router reproduirait la famine mesuree en
+    #   #11405), lean-axiom/lean-build (builds Lean sans cache mathlib, cf
+    #   #14337 pools specialises), quarto-pages-deploy (quarto CLI + deploy
+    #   Pages), slides-composition-advisory (playwright --with-deps exige
+    #   root, le conteneur tourne en uid 1001).
+    "bare-cross-dir-load-gate.yml",
+    "base-not-main-advisory.yml",
+    "concurrency-conj-guard.yml",
+    "degenerate-figure-gate.yml",
+    "docs-link-check.yml",
+    "exercise-leak-ci.yml",
+    "fabricated-output-gate.yml",
+    "fast-lane-shadow.yml",
+    "lane-claim-guard.yml",
+    "linux-runner-starvation-advisory.yml",
+    "markdown-rendering-guard.yml",
+    "markdown-table-guard.yml",
+    "md-content-loss-gate.yml",
+    "ml-tests.yml",
+    "notebook-output-failure-ratchet.yml",
+    "notebook-validation.yml",
+    "owui-playwright-check.yml",
+    "perimeter-review-guard.yml",
+    "pr-gate-rerun.yml",
+    "regression-guard.yml",
+    "render-volume-delta-advisory.yml",
+    "scripts-tests.yml",
+    "series-naming-gate.yml",
+    "stale-base-warning.yml",
+    "svg-broken-geometry-gate.yml",
+    "svg-decimal-comma-gate.yml",
+    "svg-empty-display-gate.yml",
+    "svg-offscreen-flat-gate.yml",
+    "testpaths-coverage-guard.yml",
+    "translation-drift.yml",
+    "translation-sync.yml",
+    "variation-light-genre.yml",
 }
 GITHUB_HOSTED_LABELS = {
     "ubuntu-latest",
