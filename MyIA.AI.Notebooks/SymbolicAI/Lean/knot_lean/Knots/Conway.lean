@@ -187,9 +187,9 @@ Une définition qui n'attraperait ni paire mutante ni contre-exemple serait un
   pleine, rotation r12) est capturée par la définition.
 
 NOTE (limite du témoin canonique) : les diagrammes désignés
-`conwayKnotDiagram` et `kinoshitaTerasakaDiagram` (codes PD KnotInfo) diffèrent
-aux croisements 2, 9 et 11 par un recâblage cyclique des arêtes {10, 12, 22}
-qu'aucune rotation de Klein one-shot n'envoie de l'un sur l'autre.
+`conwayKnotDiagram` et `kinoshitaTerasakaDiagram` (codes PD census corrigés,
+cf. §2) partagent leurs cinq premiers croisements et diffèrent aux
+croisements 6 à 11 — aucun envoi one-shot ne les superpose.
 `AreMutants conwayKnot kinoshitaTerasakaKnot` exigera un diagramme
 intermédiaire (isotopie de Reidemeister) — sous-grain ultérieur.
 -/
@@ -228,24 +228,47 @@ theorem areMutants_trefoil_mutant : AreMutants trefoil trefoilMutant :=
 Polynôme d'Alexander trivial. Topologiquement slice (Freedman).
 Non slice lisse (Piccirillo 2018).
 
-Code PD issu de KnotInfo.
+Code PD du census KnotInfo (généré par spherogram 2.4.1), **corrigé** : le
+code commité par #12892 n'était pas connexe — son croisement 11
+`⟨21, 22, 22, 21⟩` n'utilisait que les arêtes {21, 22}, composante isolée du
+reste du diagramme, et l'arête 19 apparaissait deux fois dans son propre
+croisement `⟨19, 14, 20, 19⟩`. Le contrôle `wf` (étiquettes dans [1, 22],
+chacune exactement deux fois) ne voit pas la connexité : le défaut passait.
+Conséquence mesurée : la ligne du croisement 11 était entièrement nulle dans
+le mineur désigné → déterminant 0, et l'énoncé `conway_trivial_alexander`
+d'origine (`= 1`) était faux sous la normalisation désignée. Les tuples
+ci-dessous sont la rotation (t₁, t₂, t₃, t₀) des tuples census, telle que le
+brin passant-dessus occupe les positions (e2, e4) de la convention du présent
+fichier. Cible désignée vérifiée (sonde Python fidèle à la construction,
+validée sur 3₁/4₁/5₁) : mineur = −t⁶, une unité — Δ = 1 au sens classique.
 -/
 
 def conwayKnotDiagram : KnotDiagram where
   crossings := [
-    ⟨1, 8, 2, 9⟩,
-    ⟨3, 12, 4, 1⟩,
-    ⟨5, 16, 6, 11⟩,
-    ⟨7, 2, 8, 3⟩,
-    ⟨9, 18, 10, 5⟩,
-    ⟨11, 4, 12, 13⟩,
-    ⟨13, 20, 14, 7⟩,
-    ⟨15, 6, 16, 17⟩,
-    ⟨17, 10, 18, 15⟩,
-    ⟨19, 14, 20, 19⟩,
-    ⟨21, 22, 22, 21⟩
+    ⟨1, 4, 22, 3⟩,
+    ⟨7, 2, 6, 1⟩,
+    ⟨3, 8, 2, 7⟩,
+    ⟨4, 12, 5, 11⟩,
+    ⟨12, 6, 13, 5⟩,
+    ⟨16, 9, 15, 8⟩,
+    ⟨9, 21, 10, 20⟩,
+    ⟨17, 11, 18, 10⟩,
+    ⟨13, 19, 14, 18⟩,
+    ⟨19, 15, 20, 14⟩,
+    ⟨22, 17, 21, 16⟩
   ]
   numEdges := 22
+
+/-- Contrôle : le code corrigé est bien formé au sens `wf` (chaque étiquette
+de [1, 22] exactement deux fois). Le code non connexe précédent passait
+aussi ce contrôle — c'est le contrôle d'arcs qui distingue. -/
+theorem conway_wf : conwayKnotDiagram.wf = true := by
+  decide
+
+/-- Contrôle : la partition d'arcs du code corrigé — 11 arcs couvrant les 22
+arêtes, condition de non-dégénérescence du mineur d'Alexander (le code non
+connexe précédent produisait un arc isolé {21, 22} absorbé par la colonne
+éliminée du mineur désigné). Énoncé en §4 (`conway_arcPartition`). -/
 
 def conwayKnot : Knot where
   diagram := conwayKnotDiagram
@@ -255,23 +278,37 @@ def conwayKnot : Knot where
 Également 11 croisements. Partage le polynôme d'Alexander trivial avec 11n34.
 EST slice lisse (borde un disque dans B⁴).
 Mutant du nœud de Conway.
+
+Code PD census corrigé comme en §2 (le code précédent était connexe mais
+portait des arêtes répétées intra-croisement aux croisements 10 et 11 —
+`⟨19, 14, 20, 19⟩` et `⟨21, 12, 22, 21⟩` — donnant un mineur désigné non
+unitaire de degré 7, faux pour Δ = 1). Même rotation (t₁, t₂, t₃, t₀).
+Cible désignée vérifiée : mineur = t⁵, une unité.
 -/
 
 def kinoshitaTerasakaDiagram : KnotDiagram where
   crossings := [
-    ⟨1, 8, 2, 9⟩,
-    ⟨3, 10, 4, 1⟩,
-    ⟨5, 16, 6, 11⟩,
-    ⟨7, 2, 8, 3⟩,
-    ⟨9, 18, 10, 5⟩,
-    ⟨11, 4, 12, 13⟩,
-    ⟨13, 20, 14, 7⟩,
-    ⟨15, 6, 16, 17⟩,
-    ⟨17, 22, 18, 15⟩,
-    ⟨19, 14, 20, 19⟩,
-    ⟨21, 12, 22, 21⟩
+    ⟨1, 4, 22, 3⟩,
+    ⟨7, 2, 6, 1⟩,
+    ⟨3, 8, 2, 7⟩,
+    ⟨4, 12, 5, 11⟩,
+    ⟨12, 6, 13, 5⟩,
+    ⟨17, 9, 18, 8⟩,
+    ⟨9, 15, 10, 14⟩,
+    ⟨20, 11, 19, 10⟩,
+    ⟨14, 19, 13, 18⟩,
+    ⟨15, 21, 16, 20⟩,
+    ⟨21, 17, 22, 16⟩
   ]
   numEdges := 22
+
+/-- Contrôle `wf` du code KT corrigé (cf. `conway_wf`). -/
+theorem kinoshitaTerasaka_wf : kinoshitaTerasakaDiagram.wf = true := by
+  decide
+
+/-- Contrôle : partition d'arcs du code KT corrigé — 11 arcs, même structure
+que Conway aux croisements 1-5 (arcs partagés), divergente au-delà. Énoncé
+en §4 (`kinoshitaTerasaka_arcPartition`). -/
 
 def kinoshitaTerasakaKnot : Knot where
   diagram := kinoshitaTerasakaDiagram
@@ -314,6 +351,25 @@ def arcPartition (d : KnotDiagram) : List (List Nat) :=
   let singles := (List.range d.numEdges).map (fun i => [i + 1])
   let pairs := d.crossings.map (fun c => (c.e2, c.e4))
   pairs.foldl (fun P p => mergePair P p.1 p.2) singles
+
+/-- Contrôle : la partition d'arcs du code Conway corrigé — 11 arcs couvrant
+les 22 arêtes (condition de non-dégénérescence du mineur d'Alexander : la
+garde `arcs'.length = rest.length + 1` de `alexanderPolynomialAux` passe).
+Le code non connexe précédent produisait un arc isolé {21, 22} absorbé par
+la colonne éliminée du mineur désigné → déterminant 0. -/
+theorem conway_arcPartition :
+    arcPartition conwayKnotDiagram =
+      [[13], [22], [3, 4], [1, 2], [5, 6], [9, 7, 8], [20, 21], [10, 11, 12],
+       [18, 19], [14, 15], [16, 17]] := by
+  decide
+
+/-- Contrôle : partition d'arcs du code KT corrigé — 11 arcs, structure
+partagée avec Conway sur les croisements 1-5, divergente au-delà. -/
+theorem kinoshitaTerasaka_arcPartition :
+    arcPartition kinoshitaTerasakaDiagram =
+      [[13], [22], [3, 4], [1, 2], [5, 6], [9, 7, 8], [14, 15], [10, 11, 12],
+       [18, 19], [20, 21], [16, 17]] := by
+  decide
 
 /-- Entrée de la matrice d'Alexander : ligne du croisement `c`, colonne de
 l'arc `C`. Convention positive (Fox de la relation de Wirtinger) : `+t`
@@ -358,11 +414,14 @@ noncomputable def alexanderPolynomialAux (d : KnotDiagram) : AlexanderPoly :=
 Référence : Alexander (1928), Topological invariants of knots and links.
 
 NOTE (normalisation vs consommateurs) : les théorèmes `conway_trivial_alexander`
-et `KT_trivial_alexander` ci-dessous portent l'énoncé classique `Δ = 1`. Sous
-la normalisation désignée, le mineur du diagramme 11n34/11n42 peut valoir
-`±t^k` (unité fois 1) : si le calcul le confirme, l'ajustement de ces énoncés
-à la normalisation désignée est un arbitrage de tranche ultérieure — les
-preuves restent `sorry` et les énoncés ne sont pas modifiés ici. -/
+et `KT_trivial_alexander` ci-dessous portent le contenu classique `Δ = 1`.
+Sous la normalisation désignée, le mineur du diagramme vaut une **unité**
+`±t^k` (unité fois 1). L'arbitrage différé par la note d'origine est tranché :
+le calcul (sonde Python fidèle à la construction, codes census corrigés §2-§3)
+donne −t⁶ pour 11n34 et t⁵ pour 11n42 — les énoncés portent désormais la
+valeur désignée exacte, une unité étant l'incarnation normalisée de Δ = 1.
+Les preuves (déterminant kernel 10×10 sur ℤ[t]) restent `sorry`, sur des
+énoncés désormais vrais. -/
 noncomputable def alexanderPolynomial (k : Knot) : AlexanderPoly := alexanderPolynomialAux k.diagram
 
 /-! #### Contrôles : la définition discrimine
@@ -419,17 +478,40 @@ theorem trefoil_ne_unknot_alexander :
   have h2 := congrArg (fun p : Polynomial ℤ => p.coeff 2) h
   simp [Polynomial.coeff_X] at h2
 
-theorem conway_trivial_alexander :
-    alexanderPolynomial conwayKnot = 1 := by
-  exact sorry
-  -- Reference: standard computation. Δ_{11n34}(t) = 1.
-  -- Phase 4+ target
+/-- Invariance sous mutation : le mutant du trèfle (fenêtre pleine, r12) a le
+même polynôme d'Alexander que le trèfle — le polynôme d'Alexander est
+invariant par mutation (Conway 1970), et le trèfle étant amphichiral, son
+mutant reste un trèfle. -/
+theorem alexander_trefoilMutant :
+    alexanderPolynomial trefoilMutant = Polynomial.X ^ 2 - Polynomial.X + 1 := by
+  have hp : arcPartition trefoilMutantDiagram = [[1, 2], [3, 4], [5, 6]] := by
+    decide
+  simp only [alexanderPolynomial, alexanderPolynomialAux, trefoilMutant, hp]
+  dsimp [trefoilMutantDiagram, mutateWindow, KleinRot.apply, trefoilDiagram]
+  simp (config := { decide := true })
+  rw [det_two_aux]
+  simp only [Matrix.of_apply]
+  simp (config := { decide := true }) [alexanderEntry]
+  ring
 
-theorem KT_trivial_alexander :
-    alexanderPolynomial kinoshitaTerasakaKnot = 1 := by
+/-- Polynôme d'Alexander trivial du nœud de Conway — contenu classique
+Δ(t) = 1 ; sous la normalisation désignée, le mineur vaut l'unité −t⁶
+(arbitrage de la note de §4 tranché : valeur désignée exacte). -/
+theorem conway_trivial_alexander :
+    alexanderPolynomial conwayKnot = -(Polynomial.X ^ 6) := by
   exact sorry
-  -- Reference: standard computation. Δ_{11n42}(t) = 1.
-  -- Phase 4+ target
+  -- Target verified externally (census PD code spherogram 2.4.1, rotation
+  -- (e2,e4)=over-strand; probe validated on 3_1/4_1/5_1): minor = -t^6, a unit.
+  -- Proof: kernel determinant of the 10x10 sparse matrix over Z[t] -- follow-up tranche.
+
+/-- Polynôme d'Alexander trivial du nœud de Kinoshita-Terasaka — contenu
+classique Δ(t) = 1 ; sous la normalisation désignée, le mineur vaut
+l'unité t⁵. -/
+theorem KT_trivial_alexander :
+    alexanderPolynomial kinoshitaTerasakaKnot = Polynomial.X ^ 5 := by
+  exact sorry
+  -- Target verified externally (same probe): minor = t^5, a unit.
+  -- Proof: kernel determinant 10x10 -- follow-up tranche.
 
 /-! ## 5. Nœuds slice
 

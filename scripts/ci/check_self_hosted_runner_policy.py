@@ -6,7 +6,14 @@ execute untrusted code next to the cluster's credentials. This scanner therefore
 fails closed: every self-hosted job must belong to an explicitly allowed
 workflow, use the exact dedicated label set, and avoid runner groups (unavailable
 for this personal-account repository). Every pull_request job must also carry
-the exact same-repository guard. Dynamic ``runs-on`` expressions are rejected
+the exact same-repository guard. A self-hosted job is gated on a trigger
+allowlist (pull_request, push, schedule, workflow_dispatch): these only run
+repository-owned refs, and are checked for the same-repo guard when
+pull_request is present. Any other trigger is rejected fail-closed -- the
+known-dangerous ones carry specific codes (pull_request_target, workflow_run,
+issue_comment, pull_request_review, pull_request_review_comment), and anything
+unlisted (e.g. check_run / check_suite, whose payload can name a fork pull
+request) is refused by default. Dynamic ``runs-on`` expressions are rejected
 because their target cannot be proved statically.
 
 Exit codes:
@@ -51,10 +58,26 @@ DEDICATED_LABEL_SETS = (REQUIRED_LABELS, LINUX_RUNNER_LABELS)
 # - linux-self-hosted-tests.yml: workflow_dispatch-ONLY pilot vehicle for the
 #   containerized Linux runner (#13378, po-2024, dispatch ai-01 2026-08-31),
 #   zero fan-out, --ephemeral inside a capped Docker container.
+# - tranche 1 (#13378, decision ai-01 2026-09-01, owner myia-po-2024:CoursIA):
+#   pure-Python guards, no secret, no GITHUB_TOKEN use, universal same-repo
+#   guard (#13874) at job level so fork PRs are skipped (pr_gate.py counts
+#   `skipped` as OK). Routed to the containerized Linux leg to relieve the
+#   GitHub-hosted queue. Rollback = revert of the routing PR.
 SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     "pr-gate-stale-sweep.yml",
     "windows-self-hosted-tests.yml",
     "linux-self-hosted-tests.yml",
+    "banner-guard.yml",
+    "solution-leak-guard.yml",
+    "prose-counts-guard.yml",
+    "notebook-interp-positioning.yml",
+    "notebook-cell-source-parses.yml",
+    "cell-order-gate.yml",
+    "pip-leak-guard.yml",
+    "hooks-parity.yml",
+    "notebook-exec-sequence-ratchet.yml",
+    "notebook-navlink-check.yml",
+    "notebook-papermill-ratchet.yml",
 }
 GITHUB_HOSTED_LABELS = {
     "ubuntu-latest",
@@ -79,6 +102,45 @@ SAME_REPO_REUSABLE_PATTERN = re.compile(
 SAME_REPO_GUARD = (
     "github.event.pull_request.head.repo.full_name == github.repository"
 )
+# Universal form (#13874): ne s'appuie pas sur la valeur textuelle de
+# github.event_name (qui distingue pull_request de pull_request_target,
+# le second etant le vecteur d'exfiltration classique sur runner public).
+# Teste la presence du champ pull_request + l'identite du repo source,
+# couvrant les deux variantes de declencheur en un seul predicat.
+# Acceptee en plus de la forme directe SAME_REPO_GUARD.
+SAME_REPO_GUARD_UNIVERSAL = (
+    "github.event.pull_request.head.repo.full_name == null "
+    "|| github.event.pull_request.head.repo.full_name == github.repository"
+)
+ACCEPTED_SAME_REPO_GUARDS = frozenset({SAME_REPO_GUARD, SAME_REPO_GUARD_UNIVERSAL})
+# Evenements dont le code de workflow vient de la branche par defaut mais dont
+# le payload nomme une pull request potentiellement issue d'un fork : un job
+# peut faire `checkout refs/pull/N/head` et executer du code de fork sur le
+# runner. Refuses sur self-hosted au meme titre que pull_request_target
+# (#14148, reserve NanoClaw n.2). A l'inverse, push / schedule /
+# workflow_dispatch ne portent que des refs du depot : la branche `== null`
+# de la garde universelle y est sure par construction, pas par accident.
+FORK_REACHABLE_TRIGGERS = frozenset({
+    "issue_comment",
+    "pull_request_review",
+    "pull_request_review_comment",
+})
+# Safe triggers for a self-hosted job (#14201, tranche 2). push, schedule and
+# workflow_dispatch only run repository-owned refs, so the `== null` branch of
+# the universal guard is safe there by construction (NanoClaw concern 2,
+# measured on the routed workflows: banner-guard.yml / notebook-cell-source-
+# parses.yml / hooks-parity.yml rely on push / schedule). pull_request is safe
+# only WITH the same-repo guard (enforced above). Everything else is rejected
+# fail-closed: a denylist alone (the FORK_REACHABLE_TRIGGERS form of #14148) is
+# fail-OPEN on any trigger we have not enumerated -- check_run / check_suite,
+# whose payloads carry pull_requests[], and any future GitHub event that does
+# the same. Default-deny is the form that does not perish with each new event.
+SAFE_SELF_HOSTED_TRIGGERS = frozenset({
+    "pull_request",
+    "push",
+    "schedule",
+    "workflow_dispatch",
+})
 DEFAULT_WORKFLOWS_DIR = Path(__file__).resolve().parents[2] / ".github" / "workflows"
 
 
@@ -204,6 +266,93 @@ def _normalise_condition(value: Any) -> str:
     return " ".join(condition.split())
 
 
+def _starts_with_accepted_guard(condition: str) -> bool:
+    """True iff ``condition`` leads with one of the accepted same-repo
+    guards, optionally followed by `&& ...` selection predicates. The guard
+    must be the LEAD predicate, and any suffix joined by `||` is rejected
+    (the `||` would let the guard fall through). The standalone tests
+    ``test_guard_weakened_by_or_is_rejected`` and
+    ``test_universal_guard_weakened_by_or_is_rejected`` verify that
+    `|| always()` is refused.
+
+    Parentheses: the direct guard may be bare or wrapped. The UNIVERSAL guard
+    carries an internal `||`, so it is accepted bare only when it is the whole
+    condition; combined with `&& ...` it MUST be wrapped --
+    `(<universal>) && <selection>`. This is not a parser limitation to work
+    around: in GitHub expressions `&&` binds tighter than `||`, so the bare
+    form reads `A == null || (A == repo && sel)` and runs the job on every
+    non-pull_request event regardless of the selection. The bare scan below
+    splits at the first top-level operator (the internal `||`) and rejects;
+    ``_guard_violation_message`` names the required parentheses
+    (#14148, NanoClaw concern 1).
+    """
+    if not condition:
+        return False
+    # Short-circuit: the whole condition is itself an accepted guard.
+    if condition in ACCEPTED_SAME_REPO_GUARDS:
+        return True
+    lead = condition
+    suffix = ""
+    if lead.startswith("("):
+        depth = 0
+        for idx, ch in enumerate(lead):
+            if ch == "(":
+                depth += 1
+            elif ch == ")":
+                depth -= 1
+                if depth == 0:
+                    lead = lead[: idx + 1]
+                    suffix = condition[idx + 1 :].lstrip()
+                    break
+    else:
+        # Bare form: scan character by character for a top-level ` && `
+        # or ` || ` (4 chars including surrounding spaces). An external
+        # `&&` joining a selection predicate is OK; an external `||` is
+        # rejected because it lets the guard fall through. The internal
+        # `||` of the universal form is captured by the short-circuit
+        # above (whole-condition match), so this branch only fires when
+        # the condition is followed by an external operator.
+        depth = 0
+        i = 0
+        while i < len(lead) - 3:
+            ch = lead[i]
+            if ch == "(":
+                depth += 1
+                i += 1
+                continue
+            if ch == ")":
+                depth -= 1
+                i += 1
+                continue
+            if depth == 0 and lead[i : i + 4] in (" && ", " || "):
+                lead = lead[:i]
+                suffix = condition[i:]
+                break
+            i += 1
+    for accepted in ACCEPTED_SAME_REPO_GUARDS:
+        if lead == accepted or lead == "(" + accepted + ")":
+            if not suffix:
+                return True
+            if suffix.lstrip().startswith("&&"):
+                return True
+            return False
+    return False
+
+
+def _guard_violation_message(condition: str) -> str:
+    """Name the exact defect: a bare universal guard followed by `&&` is the
+    one rejection whose fix is not "add the guard" but "add parentheses"."""
+    if condition.startswith(SAME_REPO_GUARD_UNIVERSAL):
+        tail = condition[len(SAME_REPO_GUARD_UNIVERSAL):].lstrip()
+        if tail.startswith("&&"):
+            return (
+                "universal same-repo guard combined with `&&` must be parenthesised: "
+                "`(<universal guard>) && <selection>` -- `&&` binds tighter than `||`, "
+                "so the bare form bypasses the selection outside pull_request context"
+            )
+    return "pull_request self-hosted job must lead with the same-repo job guard"
+
+
 def scan_workflows(workflows_dir: Path = DEFAULT_WORKFLOWS_DIR) -> ScanResult:
     yaml = _load_yaml()
     if yaml is None:
@@ -310,6 +459,35 @@ def scan_workflows(workflows_dir: Path = DEFAULT_WORKFLOWS_DIR) -> ScanResult:
                     "REUSABLE_SELF_HOSTED",
                     "self-hosted jobs must not hide inside reusable workflows",
                 ))
+            for trigger in sorted(FORK_REACHABLE_TRIGGERS & triggers):
+                violations.append(Violation(
+                    path.name,
+                    str(job_name),
+                    "FORK_REACHABLE_TRIGGER",
+                    f"{trigger} can check out a fork pull request and must never "
+                    "reach a self-hosted runner",
+                ))
+            # Fail-closed default deny (#14201, tranche 2). The known-dangerous
+            # triggers above carry specific codes; ANY other trigger outside the
+            # safe set is refused by default. A denylist alone (the #14148
+            # FORK_REACHABLE_TRIGGERS form) is fail-OPEN on anything unlisted.
+            known_unsafe = FORK_REACHABLE_TRIGGERS | {
+                "pull_request_target",
+                "workflow_run",
+                "workflow_call",
+            }
+            unknown_unsafe = sorted(
+                triggers - SAFE_SELF_HOSTED_TRIGGERS - known_unsafe
+            )
+            if unknown_unsafe:
+                violations.append(Violation(
+                    path.name,
+                    str(job_name),
+                    "UNSAFE_TRIGGER",
+                    "self-hosted job is gated on a trigger outside the safe set "
+                    "(pull_request, push, schedule, workflow_dispatch): "
+                    + ", ".join(unknown_unsafe),
+                ))
 
             if path.name not in SELF_HOSTED_WORKFLOW_ALLOWLIST:
                 violations.append(Violation(
@@ -348,12 +526,16 @@ def scan_workflows(workflows_dir: Path = DEFAULT_WORKFLOWS_DIR) -> ScanResult:
 
             if "pull_request" in triggers:
                 condition = _normalise_condition(job.get("if"))
-                if condition != SAME_REPO_GUARD:
+                # Accept either the bare guard or the guard followed by a
+                # selection predicate (e.g. `&& inputs.target == '...'`)
+                # joined with `&&` -- the guard must be the lead predicate,
+                # never weakened by `||` (cf. test_guard_weakened_by_or_is_rejected).
+                if not _starts_with_accepted_guard(condition):
                     violations.append(Violation(
                         path.name,
                         str(job_name),
                         "SAME_REPO_GUARD",
-                        "pull_request self-hosted job must use the exact same-repo job guard",
+                        _guard_violation_message(condition),
                     ))
 
     return ScanResult(len(paths), jobs_scanned, self_hosted_jobs, violations, broken)

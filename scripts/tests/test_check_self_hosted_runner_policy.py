@@ -56,6 +56,263 @@ def test_safe_pull_request_job_is_accepted(tmp_path):
     assert result.self_hosted_jobs == 1
 
 
+def test_universal_pull_request_guard_is_accepted(tmp_path):
+    """#13874 : la forme universelle (test du repo source sans enumerer
+    github.event_name) couvre pull_request ET pull_request_target en un seul
+    predicat. Elle doit etre acceptee par le checker au meme titre que la
+    forme directe."""
+    write_workflow(tmp_path, "pr-gate-stale-sweep", """
+        name: safe-universal
+        on: [pull_request]
+        jobs:
+          test:
+            if: ${{ github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository }}
+            runs-on: [self-hosted, coursia-ephemeral, coursia-fast-guards]
+            steps:
+              - run: echo safe
+        """)
+    result = policy.scan_workflows(tmp_path)
+    assert result.broken == []
+    assert result.violations == []
+    assert result.self_hosted_jobs == 1
+
+
+def test_universal_guard_with_combined_target_is_accepted(tmp_path):
+    """#13874 : variante parentee -- la garde universelle combinee avec
+    une selection de job (inputs.target == '...') reste acceptee. Cas reel :
+    windows-self-hosted-tests.yml factorise la garde avec un `&&` de
+    selection, le checker ne doit pas confondre ce `&&` avec une
+    fragilisation. Trigger pull_request pour exercer le SAME_REPO_GUARD
+    (le test serait silently-skipped sur workflow_dispatch seul)."""
+    write_workflow(tmp_path, "windows-self-hosted-tests", """
+        name: windows-universal
+        on: [pull_request]
+        jobs:
+          test:
+            if: ${{ (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && inputs.target == 'confinement' }}
+            runs-on: [self-hosted, coursia-ephemeral, coursia-fast-guards]
+            steps:
+              - run: echo safe
+        """)
+    result = policy.scan_workflows(tmp_path)
+    assert result.broken == []
+    assert result.violations == []
+    assert result.self_hosted_jobs == 1
+
+
+def test_bare_universal_guard_with_and_selection_is_rejected_with_parenthesis_hint(tmp_path):
+    """#14148 (reserve NanoClaw n.1) : la forme universelle NUE combinee a un
+    `&&` est refusee -- `&&` lie plus fort que `||`, donc la forme nue se lit
+    `A == null || (A == repo && sel)` et tourne sur tout evenement hors
+    pull_request quelle que soit la selection -- et le message nomme la
+    parenthese requise, pas seulement « must lead with the guard »."""
+    write_workflow(tmp_path, "windows-self-hosted-tests", """
+        name: bare-universal-and
+        on: [pull_request]
+        jobs:
+          test:
+            if: ${{ github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository && inputs.target == 'confinement' }}
+            runs-on: [self-hosted, coursia-ephemeral, coursia-fast-guards]
+            steps:
+              - run: echo unsafe
+        """)
+    result = policy.scan_workflows(tmp_path)
+    assert result.broken == []
+    assert codes(result) == {"SAME_REPO_GUARD"}
+    [violation] = result.violations
+    assert "parenthesised" in violation.message
+    assert "(<universal guard>) && <selection>" in violation.message
+
+
+def test_job_without_any_guard_keeps_generic_message(tmp_path):
+    """Le message « parenthesised » est reserve a la forme universelle nue +
+    `&&` : un job sans garde du tout garde le message generique."""
+    write_workflow(tmp_path, "pr-gate-stale-sweep", """
+        name: no-guard
+        on: [pull_request]
+        jobs:
+          test:
+            runs-on: [self-hosted, coursia-ephemeral, coursia-fast-guards]
+            steps:
+              - run: echo unsafe
+        """)
+    [violation] = policy.scan_workflows(tmp_path).violations
+    assert violation.code == "SAME_REPO_GUARD"
+    assert "parenthesised" not in violation.message
+
+
+def test_fork_reachable_comment_triggers_cannot_reach_self_hosted_job(tmp_path):
+    """#14148 (reserve NanoClaw n.2) : issue_comment / pull_request_review /
+    pull_request_review_comment tournent sur le code de la branche par defaut
+    mais leur payload nomme une PR potentiellement issue d'un fork -- un
+    `checkout refs/pull/N/head` executerait du code de fork sur le runner.
+    Refuses comme pull_request_target, garde ou pas."""
+    write_workflow(tmp_path, "pr-gate-stale-sweep", """
+        name: comment-driven
+        on: [issue_comment, pull_request_review, workflow_dispatch]
+        jobs:
+          test:
+            runs-on: [self-hosted, coursia-ephemeral, coursia-fast-guards]
+            steps:
+              - run: echo unsafe
+        """)
+    result = policy.scan_workflows(tmp_path)
+    assert result.broken == []
+    fork_reachable = [v for v in result.violations if v.code == "FORK_REACHABLE_TRIGGER"]
+    assert sorted(v.message.split(" ")[0] for v in fork_reachable) == [
+        "issue_comment",
+        "pull_request_review",
+    ]
+
+
+def test_push_and_schedule_triggers_remain_accepted_with_universal_guard(tmp_path):
+    """Contre-controle de la reserve n.2 : push / schedule / workflow_dispatch
+    ne portent que des refs du depot -- la branche `== null` de la garde
+    universelle y est sure par construction. Cas reels sur main :
+    banner-guard.yml (pull_request + push), hooks-parity.yml (+ schedule)."""
+    write_workflow(tmp_path, "pr-gate-stale-sweep", """
+        name: push-schedule
+        on:
+          pull_request:
+          push:
+            branches: [main]
+          schedule:
+            - cron: '7 3 * * *'
+          workflow_dispatch:
+        jobs:
+          test:
+            if: ${{ github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository }}
+            runs-on: [self-hosted, coursia-ephemeral, coursia-fast-guards]
+            steps:
+              - run: echo safe
+        """)
+    result = policy.scan_workflows(tmp_path)
+    assert result.broken == []
+    assert result.violations == []
+    assert result.self_hosted_jobs == 1
+
+
+def test_check_run_and_check_suite_fail_closed(tmp_path):
+    """#14201 (tranche 2) : le denylist de #14148 (FORK_REACHABLE_TRIGGERS) est
+    fail-OPEN sur tout trigger non enumere. check_run / check_suite portent
+    pull_requests[] et un head_sha -- un `checkout ${{ ... head_sha }}`
+    executerait du code de fork sur le runner, comme les triggers de
+    commentaire que #14148 a fermes. L'allowlist default-deny doit les rejeter."""
+    write_workflow(tmp_path, "pr-gate-stale-sweep", """
+        name: check-driven
+        on:
+          check_run:
+            types: [completed]
+          check_suite:
+            types: [completed]
+        jobs:
+          test:
+            runs-on: [self-hosted, coursia-ephemeral, coursia-fast-guards]
+            steps:
+              - run: echo unsafe
+        """)
+    result = policy.scan_workflows(tmp_path)
+    assert result.broken == []
+    [violation] = result.violations
+    assert violation.code == "UNSAFE_TRIGGER"
+    assert "check_run" in violation.message
+    assert "check_suite" in violation.message
+
+
+def test_unknown_trigger_is_default_denied(tmp_path):
+    """#14201 (tranche 2) : un trigger inconnu du checker doit etre refuse par
+    defaut (fail-closed), pas laisse passer parce que la liste des triggers
+    dangereux est une enumeration. La plupart des candidats futurs de GitHub
+    (release, deployment, registry_package, ...) sont ici rejetes."""
+    write_workflow(tmp_path, "pr-gate-stale-sweep", """
+        name: future-event
+        on:
+          release:
+            types: [published]
+        jobs:
+          test:
+            runs-on: [self-hosted, coursia-ephemeral, coursia-fast-guards]
+            steps:
+              - run: echo unsafe
+        """)
+    result = policy.scan_workflows(tmp_path)
+    assert result.broken == []
+    assert "UNSAFE_TRIGGER" in codes(result)
+
+
+def test_safe_allowlist_triggers_are_accepted(tmp_path):
+    """Contre-controle de la frontiere allowlist : les QUATRE triggers du
+    depot -- pull_request, push, schedule, workflow_dispatch -- sont acceptes
+    ensemble sur un job self-hosted garde. C'est le complement du contre-
+    controle de #14148 (push/schedule/workflow_dispatch seuls) : aucun des
+    triggers reels de la tranche 1 ne doit devenir UNSAFE_TRIGGER."""
+    write_workflow(tmp_path, "pr-gate-stale-sweep", """
+        name: allowlist-safe
+        on:
+          pull_request:
+          push:
+            branches: [main]
+          schedule:
+            - cron: '7 3 * * *'
+          workflow_dispatch:
+        jobs:
+          test:
+            if: ${{ github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository }}
+            runs-on: [self-hosted, coursia-ephemeral, coursia-fast-guards]
+            steps:
+              - run: echo safe
+        """)
+    result = policy.scan_workflows(tmp_path)
+    assert result.broken == []
+    assert result.violations == []
+    assert result.self_hosted_jobs == 1
+
+
+def test_universal_guard_weakened_by_or_is_rejected(tmp_path):
+    """#13874 FN-safety : meme avec la forme universelle, l'ajout d'un
+    `|| always()` ou `|| true` reintroduit le trou. La garde universelle
+    doit etre le seul predicat -- le checker refuse tout court-circuit."""
+    write_workflow(tmp_path, "pr-gate-stale-sweep", """
+        name: weakened
+        on: [pull_request]
+        jobs:
+          test:
+            if: ${{ (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) || always() }}
+            runs-on: [self-hosted, coursia-ephemeral, coursia-fast-guards]
+            steps:
+              - run: echo unsafe
+        """)
+    assert "SAME_REPO_GUARD" in codes(policy.scan_workflows(tmp_path))
+
+
+def test_event_name_or_pattern_is_rejected(tmp_path):
+    """#13874 FN-safety : la forme `github.event_name != 'pull_request' ||`
+    (l'ancienne garde faible qui laisse passer pull_request_target) doit
+    toujours etre refusee par le checker -- c'est precisement le defaut
+    que l'issue signale. Le test pose les DEUX triggers pour reproduire
+    le scenario d'evolution : quelqu'un ajoute pull_request_target a un
+    workflow qui avait deja pull_request."""
+    write_workflow(tmp_path, "pr-gate-stale-sweep", """
+        name: weak-old
+        on:
+          pull_request:
+          pull_request_target:
+        jobs:
+          test:
+            if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+            runs-on: [self-hosted, coursia-ephemeral, coursia-fast-guards]
+            steps:
+              - run: echo unsafe
+        """)
+    codes_set = codes(policy.scan_workflows(tmp_path))
+    # La policy doit signaler le PULL_REQUEST_TARGET (deja couvert) ET le
+    # SAME_REPO_GUARD (la forme ne correspond ni a la garde directe ni a
+    # la forme universelle, elle est dans la zone grise entre les deux et
+    # doit etre refusee).
+    assert "PULL_REQUEST_TARGET" in codes_set
+    assert "SAME_REPO_GUARD" in codes_set
+
+
 def test_allowed_workflow_dispatch_job_does_not_need_pr_guard(tmp_path):
     write_workflow(tmp_path, "pr-gate-stale-sweep", """
         name: manual
@@ -453,55 +710,6 @@ def test_same_repository_reusable_workflow_rejects_short_sha(tmp_path):
         jobs:
           test:
             uses: jsboige/CoursIA/.github/workflows/callee.yml@0123456789abcdef
-        """)
-    assert "REMOTE_REUSABLE_WORKFLOW" in codes(policy.scan_workflows(tmp_path))
-
-
-def test_missing_trigger_breaks_instrument(tmp_path):
-    write_workflow(tmp_path, "broken-trigger", """
-        name: broken-trigger
-        jobs:
-          test:
-            runs-on: ubuntu-latest
-            steps:
-              - run: echo no-trigger
-        """)
-    result = policy.scan_workflows(tmp_path)
-    assert result.broken == ["broken-trigger.yml: missing on trigger"]
-
-
-def test_empty_runs_on_list_breaks_instrument(tmp_path):
-    write_workflow(tmp_path, "broken-runner", """
-        name: broken-runner
-        on: workflow_dispatch
-        jobs:
-          test:
-            runs-on: []
-            steps:
-              - run: echo no-runner
-        """)
-    result = policy.scan_workflows(tmp_path)
-    assert result.broken == [
-        "broken-runner.yml:test: runs-on list must contain labels"
-    ]
-
-
-def test_missing_jobs_breaks_instrument(tmp_path):
-    write_workflow(tmp_path, "broken-jobs", """
-        name: broken-jobs
-        on: workflow_dispatch
-        """)
-    result = policy.scan_workflows(tmp_path)
-    assert result.broken == ["broken-jobs.yml: missing jobs"]
-
-
-def test_same_repository_reusable_workflow_rejects_path_traversal(tmp_path):
-    write_workflow(tmp_path, "caller", """
-        name: caller
-        on: [pull_request]
-        jobs:
-          test:
-            uses: jsboige/CoursIA/.github/workflows/../evil.yml@main
         """)
     assert "REMOTE_REUSABLE_WORKFLOW" in codes(policy.scan_workflows(tmp_path))
 

@@ -20,6 +20,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from lean_kernel_check import (  # noqa: E402
+    CORRECT_PY_WRAPPER,
+    candidate_kernel_json_paths,
     inspect_kernel_wrapper,
     inspect_wrapper_content_drift,
     wsl_to_unc,
@@ -65,6 +67,72 @@ def test_missing_file_is_warning():
     missing = Path(tempfile.gettempdir()) / "definitely-not-a-kernel-1618" / "kernel.json"
     status, message = inspect_kernel_wrapper("lean4-wsl", kernel_json_path=missing)
     assert status == "warning", message
+
+
+def test_candidate_paths_return_path_objects():
+    paths = candidate_kernel_json_paths("lean4-wsl")
+    assert paths
+    assert all(isinstance(path, Path) for path in paths)
+
+
+def test_candidate_paths_include_appdata(monkeypatch):
+    monkeypatch.setenv("APPDATA", r"C:\fake\appdata")
+    paths = candidate_kernel_json_paths("lean4-wsl")
+    assert len([path for path in paths if "fake" in str(path)]) == 1
+
+
+def test_candidate_paths_without_appdata(monkeypatch):
+    monkeypatch.delenv("APPDATA", raising=False)
+    paths = candidate_kernel_json_paths("lean4-wsl")
+    assert all("appdata" not in str(path).lower() for path in paths)
+
+
+def test_python_wrapper_fqdn_is_ok():
+    with tempfile.TemporaryDirectory() as tmp:
+        kj = _write_kernel_json(tmp, [
+            "/usr/bin/python3", f"/home/user/{CORRECT_PY_WRAPPER}",
+            "{connection_file}",
+        ])
+        status, message = inspect_kernel_wrapper(
+            "lean4-wsl", kernel_json_path=kj
+        )
+        assert status == "ok", message
+
+
+def test_malformed_json_is_warning():
+    with tempfile.TemporaryDirectory() as tmp:
+        kj = Path(tmp) / "kernel.json"
+        kj.write_text("{invalid json!!!", encoding="utf-8")
+        status, message = inspect_kernel_wrapper(
+            "lean4-wsl", kernel_json_path=kj
+        )
+        assert status == "warning", message
+        assert "erreur lecture" in message
+
+
+def test_empty_kernel_json_is_warning():
+    with tempfile.TemporaryDirectory() as tmp:
+        kj = Path(tmp) / "kernel.json"
+        kj.write_text("{}", encoding="utf-8")
+        status, message = inspect_kernel_wrapper(
+            "lean4-wsl", kernel_json_path=kj
+        )
+        assert status == "warning", message
+        assert "inconnu" in message
+
+
+def test_cli_missing_kernel():
+    import subprocess
+
+    result = subprocess.run(
+        [sys.executable, "-m", "lean_kernel_check", "--kernel",
+         "nonexistent-test"],
+        capture_output=True,
+        text=True,
+        cwd=str(Path(__file__).resolve().parent.parent),
+    )
+    assert result.returncode == 1
+    assert "WARNING" in result.stdout or "aucun" in result.stdout
 
 
 # --- Content drift guard (#13180) ---
@@ -155,6 +223,10 @@ def _run_all():
         test_python_wrapper_is_ok,
         test_unknown_wrapper_is_warning,
         test_missing_file_is_warning,
+        test_candidate_paths_return_path_objects,
+        test_python_wrapper_fqdn_is_ok,
+        test_malformed_json_is_warning,
+        test_empty_kernel_json_is_warning,
         test_wsl_to_unc_translation,
         test_drift_ok_when_deployed_matches_repo,
         test_drift_warning_when_deployed_differs,

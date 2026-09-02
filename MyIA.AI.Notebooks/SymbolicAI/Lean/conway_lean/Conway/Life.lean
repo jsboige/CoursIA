@@ -17,7 +17,7 @@ Ce fichier est le module **FONDATIONS** de l'hommage Phase 2 (Epic #1647) :
 - Predicats `IsStillLife`, `IsOscillator`, `IsSpaceship`
 - Temoins pour les patterns canoniques petits
   (block, beehive, blinker, toad, beacon, glider)
-- Micro-preuves verifiables par `native_decide` sur egalite de liste
+- Micro-preuvres verifiees par `decide` (reduit par le noyau sur `Bool`)
 
 La representation par liste evite le goulot d'etranglement `Quot.lift` /
 `Eq.rec` qui survient quand le noyau Lean essaie de decider l'egalite de
@@ -61,8 +61,9 @@ def lexLt (a b : Int × Int) : Bool :=
 
 /-- Une grille du Jeu de la Vie de Conway : liste triee et dedupliquee de
     cellules vivantes. Nous utilisons `List` plutot que `Finset` car
-    l'egalite de liste est decidee par comparaison structurelle (pas de
-    `Quot.lift`), ce que `native_decide` sait traiter. -/
+    l'egalite de liste est decidee par le noyau par comparaison
+    structurelle (pas de `Quot.lift`), ce que `decide` traite sans
+    synthese de `Decidable` utilisateur. -/
 abbrev Grid := List (Int × Int)
 
 /-! ## Voisinage
@@ -164,9 +165,9 @@ def evolve (n : Nat) (g : Grid) : Grid :=
 /-! ## Predicats de patterns
 
 Nous definissons des predicats a valeur booleenne (renvoyant `Bool`) pour
-que `native_decide` puisse les evaluer en compilant vers le code natif et
-en comparant l'egalite de `Bool`. Pas de synthese de `Decidable` ni de
-`Quot.lift` necessaire — juste une reduction de `Bool`.
+que `decide` puisse reduire l'enonce `b = true` par simple evaluation de
+`Bool`, sans synthese de `Decidable` ni de `Quot.lift` utilisateur — le
+reducteur du noyau elabore directement la verite du `Bool` retourne.
 -/
 
 /-- Une vie immobile : une grille inchangee par une etape d'evolution. -/
@@ -191,8 +192,8 @@ decouverts au debut des annees 1970 par le groupe de Conway a Cambridge et
 par les joueurs de la communaute M.I.T. PDP-6/PDP-10.
 
 Chaque pattern est donne dans l'ordre lexicographique trie de sorte que
-`step` produise une liste dans le meme ordre, ce qui permet a
-`native_decide` de verifier l'egalite par comparaison structurelle.
+`step` produise une liste dans le meme ordre, ce qui permet a `decide`
+de verifier l'egalite par simple reduction structurelle du `Bool`.
 -/
 
 /-- Le **Block** : un carre 2x2. La plus petite vie immobile. -/
@@ -221,10 +222,10 @@ def glider : Grid := [(0, 0), (1, 0), (1, 2), (2, 0), (2, 1)]
 /-! ## Micro-preuves
 
 Voici les premiers resultats formels de la Phase 1 : verifications simples
-de patterns classiques par `native_decide`. Les predicats renvoient `Bool`,
-donc `native_decide` compile la fonction d'etape en code natif, evalue
-l'expression booleenne et verifie qu'elle egale `true`. Pas de synthese de
-`Decidable` ni de `Quot.lift` implique.
+de patterns classiques par `decide`. Les predicats renvoient `Bool`,
+donc le reducteur du noyau elabore la fonction d'etape, evalue
+l'expression booleenne et verifie qu'elle egale `true`. Pas de synthese
+de `Decidable` ni de `Quot.lift` implique.
 -/
 
 /-- Le Block est une vie immobile : `isStillLife block = true`. -/
