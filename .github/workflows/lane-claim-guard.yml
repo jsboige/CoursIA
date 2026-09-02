@@ -55,7 +55,12 @@ jobs:
   # (cf pr-gate.yml, #10045 regle 2).
   check-lane-claim-required:
     name: 'Require no closing-ref against another lane active claim (block on lane collision, #10223)'
-    runs-on: ubuntu-latest
+    # Route vers la jambe Linux auto-hebergee (#13378 tranche 5, decision ai-01
+    # 2026-09-02) : garde Python pur, sans secret. La garde same-repo ci-dessous
+    # saute les PRs de fork (pr_gate.py compte `skipped` comme OK) : aucun code de
+    # fork n'atteint le runner. Retour arriere = revert de la PR.
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
     steps:
       - name: Checkout the lane-claim helper (sparse)
         uses: actions/checkout@v4
@@ -193,7 +198,12 @@ jobs:
   # pattern des autres jobs advisory (exercises-advisory, markdown-table-guard).
   check-lane-claim-advisory:
     name: 'Advisory lane-claim labels (adoption telemetry, non-blocking, #10223)'
-    runs-on: ubuntu-latest
+    # Route vers la jambe Linux auto-hebergee (#13378 tranche 5, decision ai-01
+    # 2026-09-02) : garde Python pur, sans secret. La garde same-repo ci-dessous
+    # saute les PRs de fork (pr_gate.py compte `skipped` comme OK) : aucun code de
+    # fork n'atteint le runner. Retour arriere = revert de la PR.
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
     steps:
       - name: Checkout the lane-claim helper (sparse)
         uses: actions/checkout@v4
