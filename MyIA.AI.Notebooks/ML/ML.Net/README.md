@@ -13,7 +13,7 @@ ML.NET — la bibliothèque open-source de Microsoft — apporte le machine lear
 
 > **Jumeaux de parité (C# ⇄ Python/scikit-learn).** Plusieurs notebooks de cette série disposent d'un **jumeau Python** co-localisé (`*-Python.ipynb`) qui couvre le **même concept pédagogique** avec les outils canoniques de l'écosystème Python (scikit-learn, statsmodels) — un contrepoint direct au pipeline ML.NET. Dès l'introduction ([ML-1-Python](ML-1-Introduction-Python.ipynb)), le même workflow (régression, classification) se code en quelques lignes de scikit-learn. Là où ML.NET `RandomizedPca` détecte les anomalies, le jumeau utilise `sklearn.PCA` + erreur de reconstruction ; là où `ForecastBySsa` prévoit les séries temporelles, le jumeau emploie `statsmodels` STL + SARIMA ; là où `MatrixFactorization` recommande, le jumeau applique `NMF`. Cette parité permet de voir qu'un **même problème** se modélise idiomatiquement dans deux écosystèmes, et que les concepts (résidu de reconstruction, facteurs latents, décomposition tendance/saisonnalité) sont universels — seuls les outils diffèrent. Les jumeaux sont signalés dans les tables des notebooks ci-dessous.
 
-Le parcours va du premier pipeline (ML-1) jusqu'à une application complète : préparation des données et feature engineering (ML-2), entraînement et AutoML (ML-3), évaluation rigoureuse par cross-validation et importance des variables (ML-4), puis les fonctionnalités avancées — prévision de séries temporelles par SSA (ML-5), interopérabilité ONNX (ML-6), systèmes de recommandation (ML-7), clustering non-supervisé par K-Means (ML-8) et détection d'anomalies par Randomized PCA (ML-9) — avant un TP capstone qui marie ML.NET et la régression bayésienne d'Infer.NET.
+Le parcours va du premier pipeline (ML-1) jusqu'à une application complète : préparation des données et feature engineering (ML-2), entraînement et AutoML (ML-3), évaluation rigoureuse par cross-validation et importance des variables (ML-4), puis les fonctionnalités avancées — prévision de séries temporelles par SSA (ML-5), interopérabilité ONNX (ML-6), systèmes de recommandation (ML-7), clustering non-supervisé par K-Means (ML-8) et détection d'anomalies par Randomized PCA (ML-9), puis l'introspection critique des benchmarks de détection d'anomalies (ML-10) — avant un TP capstone qui marie ML.NET et la régression bayésienne d'Infer.NET.
 
 > **À qui s'adresse cette série** : développeurs C#/.NET découvrant le Machine Learning, équipes enterprise souhaitant intégrer du ML sans sortir de leur stack .NET, ou data scientists souhaitant servir des modèles en production dans des applications C#. Aucun prérequis en statistiques avancées — les concepts sont introduits progressivement dans chaque notebook.
 
@@ -38,7 +38,7 @@ Le parcours va du premier pipeline (ML-1) jusqu'à une application complète : p
 | 3 | [ML-3-Entrainement&AutoML](ML-3-Entrainement&AutoML.ipynb) | SDCA, LightGBM, AutoML · *jumeau [Python](ML-3-Entrainement-Python.ipynb)* | 45-60 min |
 | 4 | [ML-4-Evaluation](ML-4-Evaluation.ipynb) | Cross-validation, métriques, PFI · *jumeau [Python](ML-4-Evaluation-Python.ipynb)* | 40-50 min |
 
-### Fonctionnalités avancées (ML-5 à ML-9)
+### Fonctionnalités avancées (ML-5 à ML-10)
 
 | # | Notebook | Contenu | Jumeau Python (scikit-learn / statsmodels) | Durée |
 |---|----------|---------|------------------------------------------|-------|
@@ -48,6 +48,7 @@ Le parcours va du premier pipeline (ML-1) jusqu'à une application complète : p
 | 7 | [ML-7-Recommendation](ML-7-Recommendation.ipynb) | **Recommandation** : Matrix Factorization, collaborative filtering | [ML-7-Python](ML-7-Recommendation-Python.ipynb) — NMF | 45-60 min |
 | 8 | [ML-8-Clustering](ML-8-Clustering.ipynb) | **Clustering non-supervisé** : K-Means, segmentation RFM, méthode du coude | [ML-8-Python](ML-8-Clustering-Python.ipynb) — KMeans scikit-learn + méthode du coude | 45-60 min |
 | 9 | [ML-9-Anomaly-Detection](ML-9-Anomaly-Detection.ipynb) | **Détection d'anomalies** : Randomized PCA, AUC, seuil de décision | [ML-9-Python](ML-9-Anomaly-Detection-Python.ipynb) — PCA + erreur de reconstruction | 45-60 min |
+| 10 | [ML-10-TSAD-Benchmark-Flaws](ML-10-TSAD-Benchmark-Flaws-Python.ipynb) | **Introspection des benchmarks** : pourquoi un détecteur de 1924 (SPC `M+3σ`) bat un auto-encodeur, les 4 pièges de Wu & Keogh, UCR Archive | *standalone Python (scikit-learn — anti-dote aux benchmarks triviaux)* | 45-60 min |
 
 ### TP Pratique
 
@@ -70,7 +71,7 @@ Le notebook 3 introduit l'entraînement proprement dit. Vous découvrirez SDCA (
 
 Le notebook 4 est le plus dense (87 cellules) et le plus crucial : évaluation rigoureuse. Vous apprendrez à mesurer un modèle avec R², MAE, RMSE, à utiliser la validation croisée pour estimer la généralisation, et à expliquer les prédictions avec la Permutation Feature Importance (PFI) et le Feature Contribution Calculation (FCC). Ce notebook transforme un "modèle qui marche" en un modèle que vous comprenez et pouvez justifier.
 
-### Phase 2 : Fonctionnalités avancées (ML-5 à ML-9, ~2h30)
+### Phase 2 : Fonctionnalités avancées (ML-5 à ML-10, ~3h30)
 
 Le notebook 5 aborde les séries temporelles avec `ForecastBySsa` (Singular Spectrum Analysis), un algorithme qui détecte automatiquement les tendances et saisonnalités. Vous travaillerez sur un dataset de ventes quotidiennes, apprendrez à détecter des anomalies par écart à la moyenne mobile, à quantifier l'incertitude via les intervalles de confiance, et à comparer plusieurs configurations de prévision. Ce notebook est directement applicable à la prévision de ventes, de charge serveur, ou de demande produit.
 
@@ -89,7 +90,7 @@ Le notebook 6 présente l'interopérabilité ONNX — le pont entre l'écosystè
 
 Le notebook 7 explore les systèmes de recommandation — un domaine où ML.NET brille vraiment en production. Vous implémenterez la factorisation matricielle (collaborative filtering), apprendrez à générer des recommendations Top-N, à mesurer la qualité avec Precision@K et NDCG, et à gérer le "cold start problem" (nouveaux utilisateurs ou items sans historique). Deux exemples concrets : recommandation de films et recommandation e-commerce.
 
-Les notebooks 8 et 9 couvrent l'apprentissage **non-supervisé**. Le notebook 8 (K-Means) partitionne les clients en segments naturels sans étiquettes, via la distance euclidienne — il illustre pourquoi la normalisation y est indispensable. Le notebook 9 (Randomized PCA) répond à une question différente : étant donné un régime de fonctionnement normal, quels points s'en écartent assez pour être des anomalies ? Le cas d'usage est la **maintenance prédictive** (capteurs industriels), et l'accent est mis sur le choix du **seuil de décision** (compromis détection / fausse alarme) — une problématique opérationnelle qui n'apparaît ni en classification (ML-3) ni en clustering (ML-8).
+Les notebooks 8 et 9 couvrent l'apprentissage **non-supervisé**. Le notebook 8 (K-Means) partitionne les clients en segments naturels sans étiquettes, via la distance euclidienne — il illustre pourquoi la normalisation y est indispensable. Le notebook 9 (Randomized PCA) répond à une question différente : étant donné un régime de fonctionnement normal, quels points s'en écartent assez pour être des anomalies ? Le cas d'usage est la **maintenance prédictive** (capteurs industriels), et l'accent est mis sur le choix du **seuil de décision** (compromis détection / fausse alarme) — une problématique opérationnelle qui n'apparaît ni en classification (ML-3) ni en clustering (ML-8). Le notebook 10 ([ML-10-TSAD-Benchmark-Flaws](ML-10-TSAD-Benchmark-Flaws-Python.ipynb)) pousse la critique plus loin : il montre qu'un détecteur de **1924** (Statistical Process Control, `M+3σ`) bat un auto-encodeur sur un benchmark trivial, identifie les **4 pièges** que Wu & Keogh (2020) imputent aux benchmarks de détection d'anomalies, puis bascule sur l'**UCR Archive** — le benchmark honnête où les méthodes simples échouent enfin. C'est le chaînon entre ML-9 et le Matrix Profile.
 
 ![Clustering K-Means sur données RFM — vérité terrain (Dormants/Réguliers/VIP) à gauche, clusters retrouvés par K-Means à droite](assets/readme/ml-clustering.png)
 *Figure extraite du jumeau Python ML-8-Clustering-Python (cellule 12, output 0). Deux panneaux côte-à-côte : à gauche la vérité terrain (générée par mixture gaussienne puis cachée à l'algorithme), à droite les clusters retrouvés par K-Means (K=3). Les axes sont Frequency (achats/mois, 0-30) × Monetary (EUR, 0-700). Les trois segments Dormants (rouge, <5 achats/mois, <100 EUR), Réguliers (vert, 5-15 achats, 100-300 EUR), VIP (bleu, 15+ achats, 300+ EUR) sont correctement identifiés — limitation illustrative assumée : la figure documente la capacité distinctive de K-Means à retrouver une partition linéairement séparable dans l'espace RFM normalisé, pas les cas réels où les segments se chevauchent ou ne sont pas gaussiens (voir cellules 13-18 du notebook pour les limites et les métriques Davies-Bouldin / silhouette).*
@@ -229,6 +230,18 @@ Avoir une intuition de ces concepts aidera, mais ils sont **expliqués dans les 
 | Évaluation | `AreaUnderRocCurve` (AUC), `DetectionRateAtFalsePositiveCount` |
 | Seuil de décision | Trade-off TPR (détection) vs FPR (fausse alarme) |
 
+### ML-10-TSAD-Benchmark-Flaws-Python
+
+| Section | Contenu |
+|---------|---------|
+| SPC (1924) | Baseline Statistical Process Control : `|x - mean| > 3*std` en une ligne |
+| Auto-encodeur | Reconstruction de fenêtres (`MLPRegressor`) — perd face à SPC sur un benchmark trivial |
+| Piège 1 — trivialité | Un algorithme centenaire résout le benchmark → rien de difficile |
+| Piège 2 — densité | Anomalie < 1 % (réaliste) vs > 50 % (benchmarks défaillants, Wu & Keogh) |
+| Piège 3 — étiquettes | Décaler la GT fait chuter l'AUC du même détecteur |
+| Piège 4 — run-to-failure | « Prédire la fin » gagne sans détecter si l'anomalie est tardive |
+| UCR Archive | Benchmark honnête (anomalies variées, densité réaliste) où SPC échoue enfin |
+
 ## Dataset
 
 | Fichier          | Description                                                  |
@@ -309,6 +322,8 @@ ML-7-Recommendation (systèmes de recommandation)
 ML-8-Clustering (clustering non-supervisé)
     |
 ML-9-Anomaly-Detection (détection d'anomalies)
+    |
+ML-10-TSAD-Benchmark-Flaws (introspection des benchmarks)
 ```
 
 **Note** : Les notebooks ML-5, ML-6, ML-7 présentent les fonctionnalités récentes de ML.NET (2024-2025) et sont conçus comme références pédagogiques. Certains exemples nécessitent des modèles ou services externes pour une exécution complète.
