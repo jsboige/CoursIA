@@ -65,7 +65,13 @@ concurrency:
 jobs:
   render-scan:
     name: "markdown-rendering guard (main-repo notebooks)"
-    runs-on: ubuntu-latest
+    # Route vers la jambe Linux auto-hebergee (#14283 tranche 2, decision ai-01
+    # 2026-09-02) : garde Python pur, sans secret ni usage du GITHUB_TOKEN, sans
+    # action tierce ni docker -- meme barreau d'eligibilite que la tranche 1. La
+    # garde same-repo ci-dessous saute les PRs de fork (pr_gate.py compte `skipped`
+    # comme OK) : aucun code de fork n'atteint le runner. Retour arriere = revert.
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
     timeout-minutes: 10
 
     steps:
