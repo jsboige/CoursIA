@@ -360,25 +360,6 @@ STUB_PATTERNS = [
     # `display("Exercice 2 a completer ...")` with no `// TODO`/`// Indice`).
     re.compile(r'(?:Console\.WriteLine|display)\(\$?["\']Exercice', re.IGNORECASE),
     re.compile(r"^\s*result\s*=\s*None\b", re.MULTILINE | re.IGNORECASE),
-    # Typed-empty return literals (#14212): the canonical ``return None`` was
-    # the only neutral-empty marker, so a function whose contract is a list /
-    # dict / tuple / numeric / set / string and that returns the typed empty
-    # literal (``return []``, ``return {}``, ``return ()``, ``return 0``,
-    # ``return set()``, ``return ""``) read as 'multi-line real code' to the
-    # stub gate and was under-counted. Example: ``auditer-la-conformite-visuelle``
-    # cell 38/39 (`return []` / `return {}`) escaped the gate while cell 40
-    # (`return None`) was caught -- three structurally identical stubs rendered
-    # 1/3. ``\b`` boundaries keep the match tight: ``return 100`` or
-    # ``return False`` are NOT matched (those are real values, not empty).
-    # ``return ""`` is rare enough that it is included for symmetry; pedagogically
-    # it is the string-equivalent of `return None` -- keeps the notebook
-    # executable end-to-end while being an obvious TODO marker.
-    re.compile(r"\breturn\s+\[\]"),
-    re.compile(r"\breturn\s+\{\}"),
-    re.compile(r"\breturn\s+\(\)"),
-    re.compile(r"\breturn\s+0\b"),
-    re.compile(r"\breturn\s+set\(\)"),
-    re.compile(r'\breturn\s+""'),
     re.compile(r"^\s*raise\s+NotImplementedError", re.MULTILINE),
     re.compile(r"^\s*assert\s+False\b", re.MULTILINE),
     # "a completer" / "to complete" LINE-COMMENT stub markers. A scaffolded
