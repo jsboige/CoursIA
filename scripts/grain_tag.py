@@ -184,10 +184,39 @@ _GRAIN_FULL_RE = re.compile(
 # rejected by the `(?![:@])` guard; only the BARE date passes. The negative
 # lookahead below refuses the bare-date form as a continuation while keeping
 # every legitimate one (a workspace word never starts `NNNN-NN-NN`).
+#
+# #13830 -- the workspace name and its continuation words now admit Latin-1
+# letters (`myia-ai-01:LivresAgités`, the real `myia-ai-01:LivresAgités Épisode`
+# line) so a lane that writes its name with accents is counted instead of
+# truncated to zero grain. The three guards (`(?-i:[A-Z0-9])` case-sensitive
+# initial, `(?!\d{4}-\d{2}-\d{2})` bare-date, `(?![:@])` URL/timestamp) all
+# survive: the uppercase class is widened to ASCII upper + accented uppercase
+# (`À-ÖØ-Þ` = Latin-1 Supplement, the cluster's only observed accents), and the
+# body class widens to the corresponding lowercase range (`à-öø-ÿ` + ſ) so the
+# maximal-munch `(?![A-Za-z0-9._À-ſ-])` keeps working with the new characters.
+# Tested in `test_lane_workspace_accented` + the existing #12145 / #12719 set.
 _LANE_RE = re.compile(
     r"lane\s*:?\s+"
-    r"([A-Za-z0-9._-]+:[A-Za-z0-9._-]+"
-    r"(?:[ \t]+(?!\d{4}-\d{2}-\d{2})(?-i:[A-Z0-9])[A-Za-z0-9._-]*(?![A-Za-z0-9._-])(?![:@])){0,3})",
+    # #13830 V2 -- union of #13869 (full Latin-1 + Latin Extended-A `À-ſ`)
+    # and #13899 (narrow Latin-1 `À-ÖØ-öø-ÿ` -- U+00C0-U+00FF skipping the
+    # two non-letter symbols `×` U+00D7 and `÷` U+00F7). The narrow class
+    # (#13899) is on main; #13830 widens it with `Ā-ſ` (U+0100-U+017F,
+    # i.e. Latin Extended-A) to cover workspace names containing Ł, ő, ā,
+    # etc., without ever re-crossing a non-letter symbol: the `Ā-ſ` segment
+    # begins at U+0100, immediately after `÷` U+00F7. The resulting class
+    # `À-ÖØ-öø-ÿĀ-ſ` admits every Latin-1 + Latin Extended-A letter while
+    # keeping both `×` and `÷` outside the token (verified empirically in
+    # the comparative comment on #13869 -- union has zero non-letter
+    # false positives and 128/128 Latin Extended-A coverage).
+    # Body class widens to the corresponding lowercase range
+    # (`à-öø-ÿā-ſ`) so the maximal-munch `(?![A-Za-z0-9._À-ÖØ-öø-ÿĀ-ſ-])`
+    # keeps working with the new characters. The upper-case-initial
+    # constraint on continuation words (`(?-i:[A-Z0-9À-ÖØ-ÞĀ-ſ])`) widens
+    # identically so prose from being swallowed is preserved. Tested in
+    # `test_lane_workspace_accented` + the existing #12145 / #12719 set
+    # + the #13869 comparative table (LivresAgités / Cours×IA / Łódź).
+    r"([A-Za-z0-9._-]+:[A-Za-zÀ-ÖØ-öø-ÿĀ-ſ0-9._-]+"
+    r"(?:[ \t]+(?!\d{4}-\d{2}-\d{2})(?-i:[A-Z0-9À-ÖØ-ÞĀ-ſ])[A-Za-z0-9._À-ÖØ-öø-ÿĀ-ſ-]*(?![A-Za-z0-9._À-ÖØ-öø-ÿĀ-ſ-])(?![:@])){0,3})",
     re.IGNORECASE,
 )
 
@@ -216,9 +245,22 @@ _LANE_RE = re.compile(
 # malformed markers of the founder night carried NO `lane` keyword, so it is
 # THIS regex that swallowed `2026-08-23` into the lane token. The sibling
 # moves with the fix.
+#
+# #13830 -- the accent tolerance added to `_LANE_RE` applies here too:
+# the fallback lane token for marker comments that omit `lane` must accept the
+# same workspace names. Same widening of body class and continuation initial.
 _LANE_FALLBACK_RE = re.compile(
-    r"\b(myia-[A-Za-z0-9._-]+:[A-Za-z][A-Za-z0-9._-]*"
-    r"(?:[ \t]+(?!\d{4}-\d{2}-\d{2})[A-Z0-9][A-Za-z0-9._-]*(?![A-Za-z0-9._-])(?![:@])){0,3})"
+    # #13830 V2 -- twin of `_LANE_RE`: the workspace class widens from
+    # `[A-Za-z][A-Za-z0-9._-]*` to `[A-Za-zÀ-ÖØ-öø-ÿĀ-ſ][A-Za-zÀ-ÖØ-öø-ÿĀ-ſ0-9._-]*`
+    # (Latin-1 letters U+00C0-U+00FF + Latin Extended-A U+0100-U+017F added)
+    # so a workspace with accented letters (e.g. `LivresAgités`, `Łódź`)
+    # stops truncating at the first non-letter byte. Casse-sensible here
+    # (`re.IGNORECASE` absent on this branch), so `[A-Z]` keeps meaning
+    # upper case ASCII only; the additional ranges are closed in U+017F.
+    # The twin MUST move with the primary or the founder's class of bug
+    # (#12145) re-opens on the fallback only.
+    r"\b(myia-[A-Za-z0-9._-]+:[A-Za-zÀ-ÖØ-öø-ÿĀ-ſ][A-Za-zÀ-ÖØ-öø-ÿĀ-ſ0-9._-]*"
+    r"(?:[ \t]+(?!\d{4}-\d{2}-\d{2})(?-i:[A-Z0-9À-ÖØ-ÞĀ-ſ])[A-Za-z0-9._À-ÖØ-öø-ÿĀ-ſ-]*(?![A-Za-z0-9._À-ÖØ-öø-ÿĀ-ſ-])(?![:@])){0,3})"
 )
 
 # `prev` (case-insensitive), optional colon, whitespace, then the SAME

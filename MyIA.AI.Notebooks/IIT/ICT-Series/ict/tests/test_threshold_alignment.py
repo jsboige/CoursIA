@@ -26,7 +26,7 @@ from ict.threshold_alignment import (
 )
 
 RESULTS_PATH = Path(__file__).resolve().parent.parent / (
-    "threshold_alignment_results.json"
+    "results/threshold_alignment_results.json"
 )
 
 

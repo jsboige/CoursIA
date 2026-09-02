@@ -45,7 +45,14 @@
       csharp_sha: 556dc0e05867c09834cbae74a1892ca780bceac8
       content_python_sha: e413e3bc5da8c47f2f2f03a8169bc96c73506723bacc1f8c7da53a4449bf1119
       content_csharp_sha: b9149a63924e4e645534c78fa4a195ee51bb1569d278074a33a0ddbd5fcc755f
+    - date: "2026-09-02"
+      by: myia-po-2027:CoursIA
+      python_sha: 46906eee5801fd85010b5a835fbafafe09cd453a
+      csharp_sha: 556dc0e05867c09834cbae74a1892ca780bceac8
+      content_python_sha: 5cfb106fd53a7889213d4f622171d9083277351233920fdddb8929276e05857e
+      content_csharp_sha: b9149a63924e4e645534c78fa4a195ee51bb1569d278074a33a0ddbd5fcc755f
   known_differences:
+    - "2026-09-02 (grain hr-separateurs famille Sudoku, myia-po-2027:CoursIA) : conversion des separateurs markdown --- vers *** via fix_hr_separator.py (incident #11451 : un --- seul ouvre un bloc YAML Pandoc et casse quarto render) -- jumeau Python seul (2 separateurs). Cellules markdown uniquement, aucune source de code ni output modifiee, pas de re-exec (C.2 exception markdown-only). Les blob et content SHAs deplaces dans l audit ci-dessus sont des artefacts de cette conversion markdown (le content_sha hashe le JSON canonique des cellules), pas une divergence pedagogique."
     - "Socle pedagogique commun : resolution de Sudoku par SMT (Satisfiability Modulo Theories) avec le vrai solveur Z3 (Microsoft Research) -- modelisation des contraintes Sudoku comme formules logiques (BitVec, contraintes all-different sur lignes/colonnes/carres), resolution par le solveur SMT. Les deux cotes utilisent le VRAI Z3 SOTA (meme moteur sous-jacent), meme cas d'application (Sudoku). Les deux couvrent Z3, z3, BitVec, Solver."
     - "Divergence de binding : le C# accede a Z3 via Microsoft.Z3 (NuGet, bindings .NET natifs, 19 cellules code) ; le Python accede a Z3 via pyz3 (import z3, bindings Python, 11 cellules). C'est le meme solveur Z3 avec deux bindings idiomatiques -- c'est la definition meme de parity_level semantic (meme moteur, API idiomatique differente). Note : le Python reference aussi ortools (OR-Tools, alternative CP-SAT) en complement."
     - "Idiomes framework : C# = Microsoft.Z3 (NuGet) + System.*, 19 cellules code ; Python = pyz3 + ortools, 11 cellules code. Vrai Z3 SMT solver des deux cotes (SOTA veritable, pas de workaround), bindings langage differents."
