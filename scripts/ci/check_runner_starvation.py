@@ -164,9 +164,12 @@ def fetch_starvation(
     # du meme run progressent ; le classer par le statut du RUN le rendait
     # invisible aux deux passes). Un run peut transiter queued -> in_progress
     # ENTRE les deux passes : il faut donc re-examiner ses jobs au second
-    # passage -- la dedup vit au niveau JOB (cle run_id+nom), l'observation
-    # la plus recente REMPLACE la precedente (un job compte affame puis passe
-    # in_progress doit quitter la liste des affames, sinon faux positif).
+    # passage -- la dedup vit au niveau JOB (cle run_id+job.id, repli nom),
+    # l'observation la plus recente REMPLACE TOUTE observation anterieure, y
+    # compris vers un etat terminal : un job vu queued puis completed au
+    # second passage quitte la liste des affames (sinon faux positif apres
+    # drain, repro adjoint 2026-09-02 11:23Z) ; seuls queued/in_progress
+    # sont reinseres.
     seen_runs: set[int] = set()
     seen_jobs: dict[tuple[int, str], JobRow] = {}
     for status in ("queued", "in_progress"):
@@ -215,6 +218,19 @@ def fetch_starvation(
                 for job in jobs.get("jobs", []):
                     if label not in job.get("labels", []):
                         continue
+                    # Retrait AVANT filtration terminale : toute observation
+                    # d'un job du label retire sa classification anterieure.
+                    # Sans ce retrait un job vu queued au 1er passage puis
+                    # completed/cancelled au 2eme resterait artificiellement
+                    # starved apres drain (repro adjoint po-2025, 11:23Z).
+                    # Cle stable : job.id, repli documente sur job.name.
+                    key = (rid or 0, job.get("id") if job.get("id") is not None else job.get("name") or "?")
+                    old = seen_jobs.pop(key, None)
+                    if old is not None:
+                        if old in result.starved:
+                            result.starved.remove(old)
+                        if old in result.in_progress:
+                            result.in_progress.remove(old)
                     job_status = job.get("status")
                     if job_status not in ("queued", "in_progress"):
                         continue
@@ -232,13 +248,6 @@ def fetch_starvation(
                         status=job_status,
                         age_min=age_min,
                     )
-                    key = (rid or 0, row.job_name)
-                    old = seen_jobs.get(key)
-                    if old is not None:
-                        if old in result.starved:
-                            result.starved.remove(old)
-                        if old in result.in_progress:
-                            result.in_progress.remove(old)
                     seen_jobs[key] = row
                     if job_status == "queued":
                         if age_min > starve_minutes:

@@ -322,6 +322,77 @@ def test_job_seen_in_both_passes_is_counted_once(monkeypatch):
     assert len(st.starved) == 1
 
 
+def test_job_queued_then_completed_leaves_starved(monkeypatch):
+    """Falsification du residu adjoint (po-2025, 2026-09-02 11:23Z) : un job
+    observe queued au premier passage puis completed au second (un autre job
+    du run a demarre, le run est passe in_progress) doit QUITTER la liste
+    des affames -- l'ancien filtre terminal continuait avant le retrait de
+    l'ancienne classification, et le job restait artificiellement starved
+    apres drain (faux positif rouge)."""
+    now = datetime(2026, 9, 2, 12, 0, tzinfo=timezone.utc)
+    state = {"pass": 0}
+
+    def fake_gh(args: list[str], token: str | None = None):
+        url = args[0]
+        if "status=queued" in url or "status=in_progress" in url:
+            state["pass"] += 1
+            return {"total_count": 1, "workflow_runs": [_run_row(90, 40.0, now)]}
+        if "/jobs" in url:
+            job_status = "queued" if state["pass"] == 1 else "completed"
+            jobs = [
+                {"id": 9001, "name": "guard-ubuntu", "status": "in_progress",
+                 "labels": ["ubuntu-latest"]},
+            ]
+            if state["pass"] == 2:
+                # Le job du label a termine pile entre les deux passes : le
+                # run est in_progress (l'autre job tourne encore).
+                jobs.append({"id": 9002, "name": "guard-linux", "status": "completed",
+                             "labels": ["self-hosted", "coursia-linux"]})
+            else:
+                jobs.append({"id": 9002, "name": "guard-linux", "status": "queued",
+                             "labels": ["self-hosted", "coursia-linux"],
+                             "created_at": (now - timedelta(minutes=40)).isoformat()})
+            return {"jobs": jobs}
+        return None
+
+    monkeypatch.setattr(rs, "_gh_json", fake_gh)
+    st = rs.fetch_starvation("jsboige/CoursIA", "coursia-linux", 15.0, now=now)
+    assert st.starved == []
+    assert st.in_progress == []
+
+
+def test_job_queued_then_cancelled_leaves_starved(monkeypatch):
+    """Meme transition vers cancelled : la classification anterieure doit
+    etre retiree des que le job est revu, sans reinsertion terminale."""
+    now = datetime(2026, 9, 2, 12, 0, tzinfo=timezone.utc)
+    state = {"pass": 0}
+
+    def fake_gh(args: list[str], token: str | None = None):
+        url = args[0]
+        if "status=queued" in url or "status=in_progress" in url:
+            state["pass"] += 1
+            return {"total_count": 1, "workflow_runs": [_run_row(90, 40.0, now)]}
+        if "/jobs" in url:
+            jobs = [
+                {"id": 9003, "name": "guard-ubuntu", "status": "in_progress",
+                 "labels": ["ubuntu-latest"]},
+            ]
+            if state["pass"] == 2:
+                jobs.append({"id": 9004, "name": "guard-linux", "status": "cancelled",
+                             "labels": ["self-hosted", "coursia-linux"]})
+            else:
+                jobs.append({"id": 9004, "name": "guard-linux", "status": "queued",
+                             "labels": ["self-hosted", "coursia-linux"],
+                             "created_at": (now - timedelta(minutes=40)).isoformat()})
+            return {"jobs": jobs}
+        return None
+
+    monkeypatch.setattr(rs, "_gh_json", fake_gh)
+    st = rs.fetch_starvation("jsboige/CoursIA", "coursia-linux", 15.0, now=now)
+    assert st.starved == []
+    assert st.in_progress == []
+
+
 def test_unexamined_old_runs_are_noted_not_red():
     """Le reliquat abandonne ne rend JAMAIS l'organe rouge -- sinon rouge
     permanent sur les runs a 14 jours, le mode d'echec que la garde anti-FP
