@@ -121,6 +121,44 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   PAS -- il porte pull_request_review, classe FORK_REACHABLE (#14294).
     "always-on-metadata-guards.yml",
     "twin-parity.yml",
+    # tranche 4 (#14283, meme decision, meme owner) : balayages cron pur-Python.
+    #   Declencheur `schedule` seul -- pas de contexte pull_request, donc aucune
+    #   garde same-repo requise. 33 creneaux distincts, au plus 2 simultanes
+    #   (mesure 2026-09-02) : ils ne peuvent pas affamer les gardes de PR.
+    #   Exclus : markdown-table-guard / render-volume-delta-advisory (lourds),
+    #   slides-composition-advisory (navigateurs hors image).
+    "ascii-flowchart-advisory.yml",
+    "candidate-delivered-advisory.yml",
+    "catalog-cron.yml",
+    "check-resync-only.yml",
+    "cjk-residue-advisory.yml",
+    "degraded-mode-advisory.yml",
+    "detect-dup-selftest.yml",
+    "dotnet-nuget-block-advisory.yml",
+    "epic-charter-advisory.yml",
+    "epic-neglect-sweep.yml",
+    "exercises-advisory.yml",
+    "grain-orphans-sweep.yml",
+    "h1-hygiene-advisory.yml",
+    "leaky-fixture-sweep.yml",
+    "machine-dep-timing-advisory.yml",
+    "machine-dep-timing-inventory.yml",
+    "orphan-branch-scan.yml",
+    "outputs-text-fragmentation-advisory.yml",
+    "pedagogy-density-advisory.yml",
+    "pr-gate-missing-advisory.yml",
+    "pr-gate-sweep-health-advisory.yml",
+    "pr-path-collision-advisory.yml",
+    "qc-research-monitor.yml",
+    "repo-size-advisory.yml",
+    "review-coverage-advisory.yml",
+    "slides-build-advisory.yml",
+    "slow-lane.yml",
+    "stale-guard-red-sweep.yml",
+    "translation-parity.yml",
+    "twin-parity-cron.yml",
+    "twin-parity-drift-audit.yml",
+    "workflow-path-filter-audit.yml",
 }
 GITHUB_HOSTED_LABELS = {
     "ubuntu-latest",
