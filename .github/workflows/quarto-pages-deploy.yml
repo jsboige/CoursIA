@@ -39,6 +39,9 @@ on:
       - "MyIA.AI.Notebooks/**/_output.ipynb"
       - "MyIA.AI.Notebooks/**/README.md"
       - "docs/**"
+      # Auto-couverture : une PR qui ne touche QUE ce workflow doit quand meme
+      # emettre l'evenement pull_request (asymetrie push/pull_request, #14391).
+      - ".github/workflows/quarto-pages-deploy.yml"
       - "scripts/quarto_yaml_safe.py"
   workflow_dispatch:
 
