@@ -554,6 +554,16 @@ def scan_markers(
 def post_comment(repo: str, number: int, body: str, dry_run: bool) -> bool:
     """POST the marker comment on PR ``number``. Returns True iff the write
     succeeded. A non-zero rc is WARNed, never silently swallowed (#13623).
+
+    Goes through the REST endpoint rather than ``gh pr comment`` (#14236).
+    Measured on run 33597345910 (2026-09-02): ``gh pr comment`` returned
+    ``Not Found (HTTP 404)`` for 30 of 33 planned writes, on OPEN PRs, in the
+    same job where ``gh pr edit --add-label`` wrote successfully with the same
+    token -- so the token had write access and the numbers were valid. The
+    GraphQL path ``gh pr comment`` takes reports a missing permission as
+    ``NOT_FOUND`` rather than ``403``, which is what made the failure
+    unreadable. REST returns the real status code, so if this still fails the
+    next log names the actual cause instead of masking it.
     """
     if dry_run:
         return True
@@ -564,8 +574,9 @@ def post_comment(repo: str, number: int, body: str, dry_run: bool) -> bool:
         tmp_path = tf.name
     try:
         proc = subprocess.run(
-            ["gh", "pr", "comment", str(number), "--repo", repo,
-             "--body-file", tmp_path],
+            ["gh", "api", "--method", "POST",
+             f"repos/{repo}/issues/{number}/comments",
+             "-f", f"body=@{tmp_path}"],
             capture_output=True, text=True, check=False, encoding="utf-8",
         )
     finally:
@@ -791,6 +802,17 @@ def _cli(argv: list[str] | None = None) -> int:
     ap.add_argument("--same-issue-only", action="store_true",
                     help="post only STRONG-tier collisions (both PRs cite a "
                          "common issue in title or body)")
+    ap.add_argument(
+        "--fail-on-write-loss", action="store_true",
+        help=(
+            "Exit non-zero when confirmed writes fall short of planned ones. "
+            "The organ still blocks nothing -- it runs on schedule only, is "
+            "absent from the required set and from the PR gate roster -- but "
+            "a red run is the one signal a muted organ cannot produce on its "
+            "own. Without it, 30 failed writes out of 33 concluded `success` "
+            "(#14236), and a green run reads as `nothing to report`."
+        ),
+    )
     ap.add_argument("--self-test", action="store_true",
                     help="run the offline control suite; exit 2 if any fails")
     args = ap.parse_args(argv)
@@ -875,14 +897,18 @@ def _cli(argv: list[str] | None = None) -> int:
         ok_count = sum(confirmed.get(v, 0) for v in ("post", "update", "retract"))
         failures = attempted - ok_count
         if failures:
-            print(
-                "advisory: "
+            msg = (
                 f"{failures} write(s) failed -- planned {attempted}, "
-                f"confirmed {ok_count}",
-                file=sys.stderr,
+                f"confirmed {ok_count}"
             )
+            print(f"advisory: {msg}", file=sys.stderr)
+            # An annotation surfaces the loss on the run page itself, where a
+            # `success` conclusion would otherwise be the only thing visible.
+            print(f"::error title=collision organ mute::{msg}", file=sys.stdout)
+            if args.fail_on_write_loss:
+                return 1
 
-    return 0  # advisory: always green
+    return 0  # advisory on the merge path: blocks no PR, gates no check
 
 
 if __name__ == "__main__":

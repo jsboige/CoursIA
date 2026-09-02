@@ -40,7 +40,14 @@
       csharp_sha: d694e666492052acd9cea0b616f7ecb8c9cb110d
       content_python_sha: bfbf0439da28b8ce73b0edabb79e1e7df48f8196725641b3c18fd0b5ac4b5cd4
       content_csharp_sha: d97bd73dcb18398ba74a50d71affb70f27039456e0ad7dcfc9033d553302358c
+    - date: "2026-09-02"
+      by: myia-po-2027:CoursIA
+      python_sha: 8554d2cb9b268f2cd0c03d2652b7477f22869a4f
+      csharp_sha: 7276a4680a9fd43cd1b2aeb84390e3441f510243
+      content_python_sha: bfbf0439da28b8ce73b0edabb79e1e7df48f8196725641b3c18fd0b5ac4b5cd4
+      content_csharp_sha: 6b74947753cb29d85f6a78d64dda07f90c7ba1b8169ca798340eac7d6222e87d
   known_differences:
+    - "2026-09-02 (PR #14266, myia-po-2027:CoursIA) : normalisation nbformat du champ source string->liste (tranche Sudoku de #14209) -- forme seule, jumeau C# seul (Python non touche). Contenu rejoint byte-identique (digest sha1 par cellule, 0 divergence), outputs/execution_count/nb de cellules inchanges, pas de re-exec (C.3). Les blob SHAs et content SHAs deplaces dans l audit ci-dessus sont des artefacts de forme (le content_sha hashe la structure JSON des cellules, forme du champ source incluse), pas une divergence pedagogique."
     - "Rebaseline 2026-08-14 : cote C# deplace par drain wallclock #9434 / PR #10874 (remplacement des timings machine-dependants en ms par des ordres de grandeur dans le markdown). Parite semantique inchangee (cellules code byte-identiques, aucune sortie, aucun exec_count touche) ; cote Python non modifie. Attestation = nouveau blob SHA du cote C#."
     - "Socle pedagogique commun : solveur de Sudoku de Peter Norvig (combinaison de constraint propagation + search) -- fonctions assign (assigner une valeur en eliminant des candidats) et eliminate (propager les contraintes via les unites/peers), backtracking search quand la propagation seule ne suffit pas. Meme algorithme (Norvig's solver), meme cas canonique (Sudoku). Les deux couvrent backtracking, Norvig, eliminate, assign."
     - "Implementation from scratch des deux cotes (NI lib dediee C# NI framework Python) : le C# est pur stdlib System.* (0 NuGet, 15 cellules code) ; le Python est aussi pur stdlib (0 numpy, 12 cellules code). C'est la paire la plus proche d'une traduction native : les deux codent assign/eliminate/search manuellement selon l'algorithme de Norvig. Mais les 2 implementations restent independantes (idiomes langage : dict/sets cote Python vs Dictionary/HashSet cote C#), d'ou parity_level semantic et non native-both."

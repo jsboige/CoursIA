@@ -1,0 +1,3 @@
+# Runtime gh CLI artifact spilled by the runner stack (device-id, regenerable) --
+# written into this dir during container/job cycles; never commit.
+.local/
