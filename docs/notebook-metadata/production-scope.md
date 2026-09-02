@@ -99,7 +99,7 @@ Le détail par notebook suit en strate A ci-dessous : consultation, plus décisi
 - [ ] `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-03-Risk-Parity.ipynb`
 - [ ] `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-04-Research-Workflow.ipynb`
 - [ ] `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-04-MeanReversion.ipynb`
-- [ ] `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-04-RL-DQN-Trading.ipynb`
+- [ ] `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-10-RL-DQN-Trading.ipynb`
 - [ ] `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-05-Universe-Selection.ipynb`
 - [ ] `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-05-MLP-Forecasting.ipynb`
 - [ ] `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-05-RegimeSwitching.ipynb`
@@ -139,8 +139,8 @@ Le détail par notebook suit en strate A ci-dessous : consultation, plus décisi
 - [ ] `MyIA.AI.Notebooks/Search/Part1-Foundations/Search-9-LinearProgramming.ipynb`
 - [ ] `MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata.ipynb`
 - [ ] `MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics.ipynb`
-- [ ] `MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX.ipynb`
-- [ ] `MyIA.AI.Notebooks/Search/Part1-Foundations/Search-16-QuikGraph.ipynb`
+- [ ] `MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb`
+- [ ] `MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02c-QuikGraph.ipynb`
 <!-- MyIA.AI.Notebooks/Search/Part2-CSP -->
 - [ ] `MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb`
 - [ ] `MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency.ipynb`

@@ -142,7 +142,7 @@ Pour les approches combinées apprentissage profond + symbolique :
 | Optimisation de scheduling | **Planners-7-OR-Tools** |
 | Planification hiérarchique | **Planners-9-HTN** (SHOP2, decomposition) |
 | Frontière LLM + IA | **Planners-10-LLM-Planning** |
-| LLM qui réduit l'espace de recherche | **Planners-14-LLM-Space-Reducer** |
+| LLM qui réduit l'espace de recherche | **Planners-10b-LLM-Space-Reducer** |
 | Approche neuro-symbolique avancée | **Planners-12-LOOP** (85.8% IPC coverage) |
 | Comparer tous les solveurs (satisfaction) | **Planners-11-Unified-Planning** |
 | Comparer satisfaction **vs** optimisation (`MinimizeActionCosts`) | **Planners-11-Unified-Planning** ([#7592](https://github.com/jsboige/CoursIA/pull/7592)) |
@@ -198,7 +198,8 @@ SymbolicAI/Planners/
 │   ├── Planners-10-LLM-Planning.ipynb   # LLM + Planning
 │   ├── Planners-11-Unified-Planning.ipynb # Interface unifiée
 │   ├── Planners-12-LOOP.ipynb           # Learning to Plan
-│   └── Planners-14-LLM-Space-Reducer.ipynb # LLM reducteur d'espace (position aicpp)
+│   ├── Planners-10-LLM-Planning.ipynb (pre-requis)
+│   └── Planners-10b-LLM-Space-Reducer.ipynb # LLM reducteur d'espace (position aicpp)
 ├── planning_lean/                        # Projet Lake Lean 4 (preuve formelle 0-sorry de l'admissibilité de la relaxation h+ <= h*, cf Planners-5b)
 │   ├── README.md                          # Documentation du lake (FR)
 │   ├── Planning.en.md                     # Companion EN (i18n tranche 8, #5013)
@@ -287,7 +288,7 @@ Chaque notebook introduit un concept ou modèle spécifique. Le tableau ci-desso
 | 10 | [Planners-10-LLM-Planning](04-NeuroSymbolic/Planners-10-LLM-Planning.ipynb) | Python | LLMs pour la planification, prompting, plan repair | 50 min |
 | 11 | [Planners-11-Unified-Planning](04-NeuroSymbolic/Planners-11-Unified-Planning.ipynb) | Python | Interface unifiée, multi-solveurs, comparaisons | 40 min |
 | 12 | [Planners-12-LOOP](04-NeuroSymbolic/Planners-12-LOOP.ipynb) | Python | Learning to Plan, modèles neuronaux pour heuristiques | 45 min |
-| 14 | [Planners-14-LLM-Space-Reducer](04-NeuroSymbolic/Planners-14-LLM-Space-Reducer.ipynb) | Python | Le LLM comme réducteur d'espace de recherche : mini-DSL ARC, trois bras mesurés (exhaustif borné, LLM-direct, LLM-réducteur, position aicpp) | 40 min |
+| 10b | [Planners-10b-LLM-Space-Reducer](04-NeuroSymbolic/Planners-10b-LLM-Space-Reducer.ipynb) | Python | Le LLM comme réducteur d'espace de recherche : mini-DSL ARC, trois bras mesurés (exhaustif borné, LLM-direct, LLM-réducteur, position aicpp) | 40 min |
 
 ---
 

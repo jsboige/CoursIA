@@ -81,7 +81,7 @@ def _run_selector_both(tmp_path, rows):
     return out
 
 
-def _pr(number, checks, sha="deadbeef", fork=False):
+def _pr(number, checks, sha="deadbeef", fork=False, workflows=None):
     """checks = tuples (name, status, conclusion, started_at[, run_id]).
 
     Sans 5e element, la fixture ne porte pas de details_url : le selecteur
@@ -99,7 +99,10 @@ def _pr(number, checks, sha="deadbeef", fork=False):
                 f"{ch[4]}/job/96158568958"
             )
         rows.append(row)
-    return {"number": number, "sha": sha, "fork": fork, "checks": rows}
+    row_out = {"number": number, "sha": sha, "fork": fork, "checks": rows}
+    if workflows:
+        row_out["workflows"] = {str(k): v for k, v in workflows.items()}
+    return row_out
 
 
 GATE_OK = ("PR gate", "completed", "success", "2026-01-01T10:00:00Z")
@@ -162,11 +165,55 @@ def test_two_gate_legs_and_not_latest_wins(tmp_path):
     assert out.strip() == "107 deadbeef false"
 
 
-def test_other_latest_cancelled_never_greenwashed(tmp_path):
-    """Asymetrie : un cancelled TOUT RECENT sur un autre check n'est pas vert ->
-    abstention (une interruption reelle ne se maquille pas)."""
+def test_other_latest_cancelled_is_candidate(tmp_path):
+    """#13978 -- INVERSION d'acceptance, datee 2026-09-01.
+
+    L'acceptance 5 d'origine (#11862) abstenait sur un `cancelled` frais porte
+    par un AUTRE check, au motif qu'une "interruption reelle ne se maquille
+    pas". Sa premisse -- un cancelled frais est une interruption RARE -- est
+    tombee : sous `cancel-in-progress: true` sur les workflows advisory, c'est
+    l'etat STATIONNAIRE de toute PR ayant recu deux pushes.
+
+    Mesure du sweep 33459621864 (2026-09-01T01:40, 71 PRs ouvertes) : sur 42
+    exclusions nommees, 16 -- 38 % -- tenaient a des `cancelled` SEULS, dont 13
+    au seul advisory `List open-PR path collisions`. Ce meme advisory annule
+    coexiste avec un `PR gate: SUCCESS` sur des PRs MERGEES (#13916, #13860) :
+    le filtre etait strictement plus strict que le gate dont il existe pour
+    re-rendre le verdict.
+
+    L'intention d'origine tient toujours, et c'est pourquoi l'inversion est
+    sure : le sweep ne merge rien -- il RELANCE le gate, qui re-lit l'etat live
+    et conclura FAIL si un constituant est reellement rouge. Le verdict reste
+    rendu par le gate.
+    """
     cancelled_new = ("Hermes review", "completed", "cancelled", "2026-01-01T11:00:00Z")
     out = _run_selector(tmp_path, [_pr(108, [GATE_FAIL, cancelled_new])])
+    assert out.strip() == "108 deadbeef false"
+
+
+def test_other_cancelled_plus_failure_still_abstains(tmp_path):
+    """CONTROLE POSITIF de l'inversion ci-dessus (#13978).
+
+    Sans lui, le correctif serait indiscernable d'un filtre debranche : il faut
+    montrer qu'un `failure` frais exclut TOUJOURS, y compris quand un
+    `cancelled` l'accompagne. Si ce test passe au vert en meme temps que
+    l'inversion, c'est que `red_others` ne filtre plus rien du tout.
+    """
+    cancelled_new = ("Hermes review", "completed", "cancelled", "2026-01-01T11:00:00Z")
+    failure_new = ("Papermill ratchet", "completed", "failure", "2026-01-01T11:00:00Z")
+    out = _run_selector(tmp_path, [_pr(109, [GATE_FAIL, cancelled_new, failure_new])])
+    assert out.strip() == ""
+
+
+def test_other_startup_failure_still_abstains(tmp_path):
+    """#13978 -- l'exemption porte sur UNE conclusion, pas sur le principe.
+
+    `startup_failure` (et toute conclusion future inconnue) doit continuer
+    d'exclure : le correctif ajoute `cancelled` a un ensemble non-bloquant, il
+    ne remplace pas le filtre par une liste blanche de bloquants.
+    """
+    startup = ("Hermes review", "completed", "startup_failure", "2026-01-01T11:00:00Z")
+    out = _run_selector(tmp_path, [_pr(110, [GATE_FAIL, startup])])
     assert out.strip() == ""
 
 
@@ -178,6 +225,11 @@ def test_selector_has_cancelled_in_red_not_green(tmp_path):
     assert m and "cancelled" in m.group(0)
     m = re.search(r'GREEN = \{[^}]*\}', SELECTOR)
     assert m and "cancelled" not in m.group(0)
+    # #13978 : le cote "autres checks" doit exempter `cancelled` EXPLICITEMENT.
+    # Un retour au complement nu de GREEN (`not in GREEN`) re-excluerait 38 %
+    # du pool bloque sans qu'aucun test d'acceptance ne rougisse.
+    assert 'OTHERS_NOT_BLOCKING = GREEN | {"cancelled"}' in SELECTOR
+    assert "not in OTHERS_NOT_BLOCKING" in SELECTOR
 
 
 # --- #11808 : le repli des check-runs par NOM fusionne des workflows homonymes ---
@@ -253,3 +305,47 @@ def test_excluded_incomplete_pr_names_its_blocking_check(tmp_path):
     assert proc.stdout.strip() == ""
     assert "#112" in proc.stderr
     assert "unfinished" in proc.stderr
+
+
+def test_same_workflow_twin_runs_green_supersedes_red(tmp_path):
+    """Defaut mesure le 2026-09-01 : un MEME workflow produit DEUX runs sur un
+    MEME SHA parce qu'il tire sur deux evenements (`pull_request` et
+    `pull_request_review`) -- deux run_id, pas un rerun. Le repli par
+    (run_id, name) les garde separes, la failure superseded survit, et le
+    sweep exclut la PR a chaque passage (`red gate, kept out`).
+
+    Cas reel : #13869, SHA d207b5e15 -- run 33432764140 (`pull_request`)
+    failure 20:05:20Z, run 33435266510 (`pull_request_review`) success
+    20:20:51Z. `pr_gate.py` replie par NOM (latest-wins) et voit du vert ;
+    le sweep voyait du rouge. 23 des 77 PRs ouvertes (30 %) etaient gelees.
+
+    Falsification : ce test echoue sur le repli par (run_id, name).
+    """
+    guard_old = ("Always-on guards", "completed", "failure",
+                 "2026-01-01T09:00:00Z", 33432764140)
+    guard_new = ("Always-on guards", "completed", "success",
+                 "2026-01-01T09:15:00Z", 33435266510)
+    out = _run_selector(tmp_path, [_pr(
+        113, [GATE_FAIL, guard_old, guard_new],
+        workflows={33432764140: 555, 33435266510: 555},
+    )])
+    assert out.strip() == "113 deadbeef false"
+
+
+def test_distinct_workflows_same_name_still_separate(tmp_path):
+    """Controle positif de non-regression #11808 : deux workflows DIFFERENTS
+    (workflow_id 555 et 777) portant le meme nom de job ne fusionnent pas --
+    le vert du second n'efface pas le rouge du premier, la PR reste dehors.
+
+    C'est ce que la clef (workflow_id, name) preserve et qu'un repli par nom
+    seul perdrait.
+    """
+    ratchet_red = ("Ratchet (base vs PR)", "completed", "failure",
+                   "2026-01-01T09:00:00Z", 900)
+    ratchet_green = ("Ratchet (base vs PR)", "completed", "success",
+                     "2026-01-01T09:15:00Z", 901)
+    out = _run_selector(tmp_path, [_pr(
+        114, [GATE_FAIL, ratchet_red, ratchet_green],
+        workflows={900: 555, 901: 777},
+    )])
+    assert out.strip() == ""

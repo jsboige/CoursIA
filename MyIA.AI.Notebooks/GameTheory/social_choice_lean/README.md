@@ -186,7 +186,7 @@ social_choice_lean/                     (tombstone documentaire — plus un lake
     └── SortedListCounting.lean      # Lemmes de comptage médian (noyau du median voter)
 ```
 
-Le projet `social_choice_lean_peters/` (adjacent) contient un projet Lake séparé qui importe DominikPeters/SocialChoiceLean en dépendance. Il sert de vérification de build et de référence pour le notebook [SC-02](../SocialChoice/02-Lean-SocialChoice-Formal.ipynb) (qui inclut un tour du code `social_choice_lean`).
+Le projet `social_choice_lean_peters/` (adjacent) contient un projet Lake séparé qui importe DominikPeters/SocialChoiceLean en dépendance. Il sert de vérification de build et de référence pour le notebook [SC-02](../SocialChoice/01b-Lean-SocialChoice-Formal.ipynb) (qui inclut un tour du code `social_choice_lean`).
 
 ## Choix de design
 
@@ -257,7 +257,7 @@ lake build SocialChoice # compile les 7 modules absorbés (0 sorry)
 
 Ces formalisations Lean sont les bases théoriques pour les notebooks de la sous-série `SocialChoice/` :
 
-- [`02-Lean-SocialChoice-Formal.ipynb`](../SocialChoice/02-Lean-SocialChoice-Formal.ipynb) : applications pratiques des formalisations (kernel Lean 4)
+- [`01b-Lean-SocialChoice-Formal.ipynb`](../SocialChoice/01b-Lean-SocialChoice-Formal.ipynb) : applications pratiques des formalisations (kernel Lean 4)
 - [`03-Voting-Methods.ipynb`](../SocialChoice/03-Voting-Methods.ipynb) : simulations numériques des méthodes de vote (Python)
 - Le tour des résultats de DominikPeters/SocialChoiceLean — backend [`social_choice_lean_peters/`](../social_choice_lean_peters/) (notebook compagnon prévu, pas encore créé)
 
@@ -316,5 +316,5 @@ bidirectionnel implique l'unidirectionnel).
 - **Référence externe** : [`DominikPeters/SocialChoiceLean`](https://github.com/DominikPeters/SocialChoiceLean)
   (Gibbard-Satterthwaite, 15+ règles de vote, framework `LinearOrder` strict) —
   comparé dans la section « Différences de framework » ci-dessus.
-- **Série** : notebooks [`GameTheory`](../README.md) — [SC-02](../SocialChoice/02-Lean-SocialChoice-Formal.ipynb) (preuve formelle Lean, inclut le tour de `social_choice_lean`),
+- **Série** : notebooks [`GameTheory`](../README.md) — [SC-02](../SocialChoice/01b-Lean-SocialChoice-Formal.ipynb) (preuve formelle Lean, inclut le tour de `social_choice_lean`),
   [SC-03](../SocialChoice/03-Voting-Methods.ipynb) (simulations Python).

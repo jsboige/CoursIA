@@ -23,7 +23,7 @@ d'entrée curaté vers :
 
 ## La trajectoire
 
-Les **60 modules leaf** (0 `sorry`, 0 axiome ajouté) tracent un chemin cohérent,
+Les **61 modules leaf** (0 `sorry`, 0 axiome ajouté) tracent un chemin cohérent,
 du site brut jusqu'à la cohomologie :
 
 ```mermaid
@@ -95,13 +95,13 @@ treillis des topologies. Une troisième veine s'ouvre avec `Classifier.lean` (Pa
 
 ## Structure du code
 
-La formalisation couvre **60 modules leaf** + **1 umbrella** `Grothendieck.lean`
+La formalisation couvre **61 modules leaf** + **1 umbrella** `Grothendieck.lean`
 (imports-only, bilingue inline FR/EN). Les trois sous-modules de
 `SheafCohomology/` sont les Parties 20, 22 et 23 du tableau.
 
 | Partie | Fichier | `_en` | Contenu | Lignes |
 |--------|---------|-------|---------|--------|
-| racine | `Grothendieck.lean` | (bilingue inline) | **Racine umbrella** (imports-only + doctring bilingue FR/EN) ; importe **les 60 leaf FR** + 11 siblings `_en` (couverture FR complète via umbrella ; les 60 siblings EN sont compilés par les `globs` du lakefile, l'umbrella n'importe pas tous les `_en` ; `ExceptionalDirect` importé c.2026-08-15, fermeture #11286) | 261 |
+| racine | `Grothendieck.lean` | (bilingue inline) | **Racine umbrella** (imports-only + doctring bilingue FR/EN) ; importe **les 61 leaf FR** + 12 siblings `_en` (couverture FR complète via umbrella ; les 61 siblings EN sont compilés par les `globs` du lakefile, l'umbrella n'importe pas tous les `_en` ; `ExceptionalDirect` importé c.2026-08-15, fermeture #11286) | 263 |
 | 1 | `Grothendieck/CategoryAndSites.lean` | `CategoryAndSites_en.lean` | Cribles, topologies de Grothendieck (triviale/discrète/dense), trois axiomes | 243 |
 | 2 | `Grothendieck/SchemesTour.lean` | `SchemesTour_en.lean` | Type des schémas, foncteur Spec, Γ, `homeoOfIso`, pleinement fidèle | 196 |
 | 3 | `Grothendieck/ZariskiSite.lean` | `ZariskiSite_en.lean` | Prétopologie de Zariski, théorème-pont `zariskiTopology_eq`, sous-canonique | 139 |
@@ -161,6 +161,7 @@ La formalisation couvre **60 modules leaf** + **1 umbrella** `Grothendieck.lean`
 | 60 | `Grothendieck/TopologyDictionary.lean` | `TopologyDictionary_en.lean` | **Le dictionnaire Grothendieck ↔ Lawvere–Tierney** : la clôture `jClosure J S = {f | S.pullback f ∈ J}` (sens J → j, `grothendieckToLawvereTierney`), les cribles denses `j S = ⊤` (sens j → J, `lawvereTierneyToGrothendieck`), pont central `covering_iff_jClosure`, et les **deux round-trips** inverses — la frontière déclarée ouverte par la Partie 59 (« exige un opérateur absent de Mathlib v4.32.1 ») est fermée en le construisant depuis les axiomes bruts (Partie 60 de #2159) | 330 |
 | 61 | `Grothendieck/SitesComparison.lean` | `SitesComparison_en.lean` | **Foncteurs continus et lemme de comparaison** : le pont préfaisceau→faisceau (`sheafPushforwardContinuous`), fonctorialité (identité, composition — miroir faisceau de `pullback_pullback`), et l'adjonction induite sur les catégories de faisceaux `adjunction_sheafPushforwardContinuous` (**SGA 4 III.1.6**) — les adjonctions descendent aux faisceaux sans sheafification explicite (Partie 61 de #2159) | 158 |
 | 62 | `Grothendieck/PlusConstruction.lean` | `PlusConstruction_en.lean` | **La construction Plus** : l'ingrédient constructif de la sheafification en deux passes (SGA 4 II.3) — fonctorialité (`plusFunctor`), flèche canonique `toPlus` (naturalité), identité clé `(P ⟶ P⁺)⁺ = P⁺ ⟶ P⁺⁺`, point fixe des faisceaux (`isoToPlus`), propriété universelle du relevé (`plusLift`/`plusLift_unique`/`plus_hom_ext`) (Partie 62 de #2159) | 196 |
+| 63 | `Grothendieck/SheafCondition.lean` | `SheafCondition_en.lean` | **La condition de faisceau produit-égaliseur** : reformulation de `Presheaf.IsSheaf J P` comme diagramme égaliseur `P(X) → ∏ᵢ P(U_i) ⇉ ∏ᵢⱼ P(U_i ×_X U_j)` — forme cribles (`sheaf_iff_equalizer_sieve`), forme familles d'arrows sous `HasPullbacks C` (`sheaf_iff_equalizer_arrows`, Stacks 00VM), pont prétopologie (`sheaf_pretopology_iff`, Stacks 00VL, SGA 4 II.1) (Partie 63 de #2159) | 129 |
 
 *La colonne `Lignes` compte le **fichier FR seul** ; le sibling `_en` ajoute
 approximativement autant.*
@@ -168,10 +169,10 @@ approximativement autant.*
 ## Build & état
 
 - **Toolchain** : `leanprover/lean4:v4.32.1`
-- **Build** : `lake build` (WSL requis). La cible défaut (`globs := #[`Grothendieck.*]` du `lakefile.lean`) compile **tous** les modules FR et `_en`. Dernier build vérifié : 2026-08-28, « Build completed successfully » (merge Partie 60 + Parties 61-62, PR #12718) ; la structure compte 60 leaf + 60 siblings `_en` + 1 umbrella (Parties 55a-c, 58-62 de #2159 — classifieur, Lawvere–Tierney, dictionnaire, foncteurs continus/lemme de comparaison, construction Plus ; sous-dossier `SheafCohomology/` inclus).
+- **Build** : `lake build` (WSL requis). La cible défaut (`globs := #[`Grothendieck.*]` du `lakefile.lean`) compile **tous** les modules FR et `_en`. Dernier build vérifié : 2026-08-28, « Build completed successfully » (merge Partie 60 + Parties 61-62, PR #12718) ; la structure compte 61 leaf + 61 siblings `_en` + 1 umbrella (Parties 55a-c, 58-63 de #2159 — classifieur, Lawvere–Tierney, dictionnaire, foncteurs continus/lemme de comparaison, construction Plus, condition de faisceau produit-égaliseur ; sous-dossier `SheafCohomology/` inclus).
 - **Preuves** : **0 `sorry`, 0 axiome ajouté** — tous les modules sont complets à la création. (Un `grep sorry` naïf matche des mentions en prose dans les docstrings bilingues, notamment deux dans `ExceptionalDirect.lean` ; la CI compte en mode `real` — après strip des commentaires — et vaut 0.)
 - **Dépendances** : Mathlib 4 (via `lakefile.lean`)
-- **i18n** (EPIC #4980, convention Option A ratifiée 2026-07-04) : couverture bilingue complète — **61 fichiers FR** (1 umbrella + 60 leaf canoniques) et **60 siblings `_en.lean`**, ratio 1:1 intégral (le gap historique `PullbackFunctor.lean` sans `_en` est comblé : `PullbackFunctor_en.lean` présent sur disque ; c.2026-08-18, l'audit §E de la Partie 56 l'a constaté — la prose antérieure le disant manquant était périmée). Namespaces `_en` anti-collision, contenu non-docstring byte-identique, vérifiable par CI. L'umbrella est bilingue inline *by design* (FR canonique d'abord, EN en miroir dans le même fichier). **[`README.en.md`](./README.en.md)** est le miroir EN du présent fichier. Hors-scope : `.lake/packages/`, libs vendored.
+- **i18n** (EPIC #4980, convention Option A ratifiée 2026-07-04) : couverture bilingue complète — **62 fichiers FR** (1 umbrella + 61 leaf canoniques) et **61 siblings `_en.lean`**, ratio 1:1 intégral (le gap historique `PullbackFunctor.lean` sans `_en` est comblé : `PullbackFunctor_en.lean` présent sur disque ; c.2026-08-18, l'audit §E de la Partie 56 l'a constaté — la prose antérieure le disant manquant était périmée). Namespaces `_en` anti-collision, contenu non-docstring byte-identique, vérifiable par CI. L'umbrella est bilingue inline *by design* (FR canonique d'abord, EN en miroir dans le même fichier). **[`README.en.md`](./README.en.md)** est le miroir EN du présent fichier. Hors-scope : `.lake/packages/`, libs vendored.
 
 *Note de cohérence* : couverture 1:1 intégrale — 60 leaf FR canoniques et 60 siblings `_en` (le gap `PullbackFunctor` sans `_en`, nommé dans une version antérieure de cette note, est comblé sur disque). Le `globs` du lakefile auto-découvre tous les modules présents, FR comme `_en`.
 

@@ -83,6 +83,7 @@ import shutil
 import subprocess
 import sys
 import time
+import unicodedata
 from dataclasses import dataclass, field
 from typing import Optional
 
@@ -367,6 +368,20 @@ def _fence_mask(text: str) -> str:
 _GUILLEMET_SPAN = re.compile(r"«[^«»\n]*»")
 _INLINE_CODE_SPAN = re.compile(r"(?<!`)`[^`\n]+`(?!`)")
 _RANGE_ENUM_TAIL = re.compile(r"^\s*`[^`\n]+`\s*[-–—]\s*`[^`\n]+`")
+# #13946 : un compte annote `(hors scope PR)` ou `(hors scope)` /
+# `(hors perimetre)` sur la meme ligne est un constat empirique pour une
+# tranche ulterieure, PAS le perimetre livre par la PR courante. Pattern
+# documente dans le founder #13856 (« Tranche 3 (hors scope PR) : ... (28
+# fichiers constatés) ») : l'auteur marque explicitement le compte comme
+# hors scope PR et le predicat COUNT_CLAIM le selectionne quand meme comme
+# le perimetre. On eteint la selection pour eviter le faux positif sans
+# toucher au scope "fichiers touches" -- qui est la revendication
+# perimetrique reelle (cf. test_out_of_scope_annotation_does_not_mask_real_perimeter).
+_OUT_OF_SCOPE_LINE = re.compile(
+    r"\(\s*(?:HORS|hors)\s+scope(?:\s+PR)?\s*\)|\(\s*(?:HORS|hors)\s+perimetre\s*\)|"
+    r"\bprevisionnels?\b|\btranche\s+ulterieure\b",
+    re.IGNORECASE,
+)
 # #12201 bootstrap : le body d'une PR qui modifie le garde lui-meme est un
 # corpus diagnostique -- il cite obligatoirement des comptes d'exemple, des
 # controles FN et les perimetres des PRs fondatrices. La confrontation
@@ -395,7 +410,75 @@ def _count_is_range_enum(line: str, m: re.Match) -> bool:
     return bool(_RANGE_ENUM_TAIL.match(tail if nl < 0 else tail[:nl]))
 
 
-def check_assertion(files: list[dict], assertion: str, block: str = "") -> list[str]:
+def _count_is_out_of_scope_annotation(body: str, m: re.Match) -> bool:
+    """#13946 : True when the line containing the count also carries an
+    explicit hors-scope annotation -- the count is a forecast for a later
+    tranche, not this PR's perimeter. Founder: PR #13856 body wrote
+    `Tranche 3 (hors scope PR) : ... (28 fichiers constatés, ...)`, marking
+    the scope explicitly; the predictor still picked `28` as the perimeter
+    and FAIL'd the PR even though the body also said `Fichiers touchés : 2`.
+    Accepts the full body (not just the line) -- locate the line first, then
+    pattern-match within it. Same shape as ``_count_in_citation``.
+    """
+    line_start = body.rfind("\n", 0, m.start()) + 1
+    line_end = body.find("\n", m.end())
+    if line_end < 0:
+        line_end = len(body)
+    line = body[line_start:line_end]
+    return bool(_OUT_OF_SCOPE_LINE.search(line))
+
+
+# #13946 fallback : enumeration verb « touche N » / « toucher N » /
+# « touches N » (FR + EN) followed by an optional space + opening paren or
+# end-of-line. Matches the FIRST occurrence; subsequent occurrences on later
+# lines are irrelevant (the body has one perimeter). A faux-match on
+# compound « re-touche » / « retouche » is avoided by requiring a word
+# boundary before the verb.
+_TOUCHE_N = re.compile(
+    r"\b(?:touche|to[uû]che|toucher|touchez|touched|touches|touch)\s+(\d+)",
+    re.IGNORECASE,
+)
+
+
+def _first_touche_n(body: str):
+    """#13946 fallback : return a fake re.Match whose group(1) is the digit
+    and whose start/end wrap the digit, when the body declares its
+    perimeter via « touche N (...) ». Returns None when no such form
+    exists. Used by ``check_assertion`` only when COUNT_CLAIM falls through
+    after the hors-scope filter -- founder #13856 makes this the single
+    case where the perimeter is asserted in prose, not via "N fichiers".
+    """
+    mm = _TOUCHE_N.search(body)
+    if mm is None:
+        return None
+    digit_start = mm.start(1)
+    digit_end = mm.end(1)
+
+    class _DigitMatch:
+        def __init__(self, s: int, e: int, n: str) -> None:
+            self._s = s
+            self._e = e
+            self._n = n
+
+        def group(self, idx: int = 0) -> str:
+            if idx == 0:
+                return self._n
+            if idx == 1:
+                return self._n
+            raise IndexError(idx)
+
+        def start(self, idx: int = 0) -> int:  # noqa: ARG002 -- mirror re.Match
+            return self._s
+
+        def end(self, idx: int = 0) -> int:  # noqa: ARG002 -- mirror re.Match
+            return self._e
+
+    return _DigitMatch(digit_start, digit_end, mm.group(1))
+
+
+def check_assertion(
+    files: list[dict], assertion: str, block: str = "", body_hint: str = ""
+) -> list[str]:
     """Confront a perimeter assertion with the effective file list.
 
     Fence blocks (transcribed commands, L898 proof) are masked out of the
@@ -445,9 +528,31 @@ def check_assertion(files: list[dict], assertion: str, block: str = "") -> list[
                 if int(mm.group(1)) != 0
                 and not _count_in_citation(scan_target, mm)
                 and not _count_is_range_enum(scan_target, mm)
+                and not _count_is_out_of_scope_annotation(scan_target, mm)
             ),
             None,
         )
+        # #13946 fallback : when no "N fichiers" form survives the
+        # per-count filters (typically because the body disambiguates by
+        # naming the forecast counts explicitly as hors-scope PR), look for
+        # the enumeration pattern « touche N (...) » / « toucher N (...) »
+        # / « touches N (...) » -- the author's positive assertion that
+        # THIS PR touches N files, often followed by the file list in
+        # parens. Founder #13856 body wrote « ... pas le périmètre livré
+        # par cette PR qui en touche 2 (CLAUDE.md + _archive-convention.md). »
+        # ; without this fallback the script reports "no count" after
+        # filtering the hors-scope 28-fichiers forecast, but the body DID
+        # declare its perimeter. Search order: ``block`` (the candidate's
+        # enclosing paragraph -- usually sufficient), then ``body_hint``
+        # (the whole PR body, used by ``--scan-thread`` when the perimeter
+        # verb is in a different paragraph from the hors-scope forecast --
+        # founder #13856). The verb shape is anchored enough that body-
+        # wide search is safe (no overlap with the COUNT_CLAIM vocabulary).
+        if count_claim is None:
+            if block:
+                count_claim = _first_touche_n(block)
+            if count_claim is None and body_hint:
+                count_claim = _first_touche_n(body_hint)
     if count_claim:
         claimed = int(count_claim.group(1))
         if claimed != len(files):
@@ -494,6 +599,8 @@ def check_assertion(files: list[dict], assertion: str, block: str = "") -> list[
         if _word_form_is_indef_non_pr_subject(scan_target, files):
             pass
         elif _word_form_is_measurement_object(scan_target):
+            pass
+        elif _word_form_is_measurement_result(scan_target, block):
             pass
         else:
             problems.append(
@@ -550,6 +657,13 @@ STRONG_SCOPE_WORDS = (
 # this PR changes". Closed list measured on the 120-PR corpus; unknown
 # qualifiers stay authorial (a false negative does not signal itself, so the
 # default must fail loud).
+#
+# #13471 : les chaines accentuees sont NFD-strippees avant match (voir
+# `_count_has_incidental_qualifier`). Les entrees canoniques sont stockees
+# telles quelles pour la lisibilite de la liste (un mainteneur voit 'vérifié'
+# et comprend), mais le predicat compare les deux cotes apres strip --
+# donc 'verifié' (hybride 1er e nu / dernier accentué), 'vérifié', 'verifie',
+# 'verifies' collapsent sur la meme cle 'verifie'.
 INCIDENTAL_QUALIFIERS = frozenset({
     "mp3", "wav", "mathlib", "machine-path", "fr", "en", "scratch",
     "restants", "restant", "reste", "restants,", "nouveau", "nouveaux",
@@ -799,28 +913,79 @@ def _has_strong_scope(low: str) -> bool:
     return False
 
 
+def _strip_accents(s: str) -> str:
+    """#13471: NFD decompose + drop combining marks. Both sides of the
+    incidental-qualifier match are run through this so accent variants
+    ('verifié' hybride, 'vérifié', 'verifie') collapse to the same key.
+    Couvre les variantes futures sans nouvelle tranche de liste -- c'est
+    precisement la serie de tranches que ce depot cherche a eviter."""
+    return "".join(
+        ch for ch in unicodedata.normalize("NFD", s)
+        if unicodedata.category(ch) != "Mn"
+    )
+
+
+# #13471: pre-normalized lookup set for incidental qualifier match. We normalize
+# INCIDENTAL_QUALIFIERS once at module load (frozen set of NFD-stripped lower
+# tokens) rather than normalizing per-call -- the set is small (~80 entries)
+# and the predicate runs O(matches_per_line).
+_INCIDENTAL_QUALIFIERS_NFD = frozenset(_strip_accents(w).lower() for w in INCIDENTAL_QUALIFIERS)
+_INCIDENTAL_QUALIFIER_PAIRS_NFD = frozenset(
+    _strip_accents(p).lower() for p in INCIDENTAL_QUALIFIER_PAIRS
+)
+
+
 def _count_has_incidental_qualifier(line: str, m: re.Match) -> bool:
     """#12718: true when the COUNT match `m` is immediately followed by an
     `INCIDENTAL_QUALIFIERS` word (or a qualified two-word pair). A count so
     qualified is a sub-claim ("N fichiers neufs : ... (330 lignes)"), not the
     whole-PR perimeter -- and, unlike an antecedent exemption, it overrides a
     diffstat neighbor on the same line. Extracted from _count_is_exempt so the
-    two callers (per-count exemption, incidental override) share one predicate."""
+    two callers (per-count exemption, incidental override) share one predicate.
+
+    #13471 (2 residus) :
+      - Accent variants : les deux cotes du match passent par NFD-strip, donc
+        'verifié' (hybride, premier e nu / dernier accentue) est reconnu au
+        meme titre que 'vérifié' / 'verifie' / 'verifies' (formes deja
+        listees). Une nouvelle variante accidentee future sera couverte sans
+        nouvelle tranche.
+      - 2 mots en OR : le predicat matche si le PREMIER OU le SECOND des deux
+        premiers mots est dans `INCIDENTAL_QUALIFIERS`. La condition pre-
+        existante (1er mot OU paire exacte `INCIDENTAL_QUALIFIER_PAIRS`)
+        attrapait 'audio generes' mais pas 'puis conformes' -- le 2eme mot
+        'conformes' est dans `INCIDENTAL_QUALIFIERS` mais le 1er ('puis')
+        ne l'est pas, donc le predicat rendait False. Apres le fix, le
+        second mot incident est lu comme un standalone."""
     # #13440: le pluriel parenthetique "(s)" est neutralise avant lecture du
     # qualificatif ("fichier(s) verifies" doit lire "verifies").
     after = PLURAL_PAREN.sub(" ", line[m.end():], count=1)
-    mw = re.match(r"\s+([\wàâäéèêëîïôöùûüçÀÂÄÉÈÊËÎÏÔÖÙÛÜÇ-]+)", after)
-    if mw and mw.group(1).lower() in INCIDENTAL_QUALIFIERS:
-        return True
-    mw2 = re.match(
+    # Le pattern lit **au plus** les 2 premiers mots ; au-dela, les
+    # separateurs (parentheses ouvrantes, backticks, slash) ferment le
+    # token. C'est le pattern d'origine (conservé) -- le predicat ne doit
+    # **pas** traverser les delimiteurs vers des mots eloignes
+    # (anti-regression : '- 1 fichier modifie (`scripts/.../foo.py`, +1/-1)'
+    # matchait 'modifie' puis voyait 'scripts' comme 2eme mot, mais 'scripts'
+    # EST dans la liste ; il faut rester aveugle derriere la parenthese).
+    _WORD_RE = re.compile(
         r"\s+([\wàâäéèêëîïôöùûüçÀÂÄÉÈÊËÎÏÔÖÙÛÜÇ-]+)"
-        r"\s+([\wàâäéèêëîïôöùûüçÀÂÄÉÈÊËÎÏÔÖÙÛÜÇ-]+)",
-        after,
+        r"(?:\s+([\wàâäéèêëîïôöùûüçÀÂÄÉÈÊËÎÏÔÖÙÛÜÇ-]+))?"
     )
-    if mw2:
-        pair = f"{mw2.group(1)} {mw2.group(2)}".lower()
-        if (mw2.group(1).lower() in INCIDENTAL_QUALIFIERS
-                or pair in INCIDENTAL_QUALIFIER_PAIRS):
+    mw = _WORD_RE.match(after)
+    if not mw:
+        return False
+    first_nfd = _strip_accents(mw.group(1)).lower()
+    if first_nfd in _INCIDENTAL_QUALIFIERS_NFD:
+        return True
+    if mw.group(2):
+        # Paire exacte (close-list, formes specifiques type 'audio generes').
+        pair_nfd = f"{first_nfd} {_strip_accents(mw.group(2)).lower()}"
+        if pair_nfd in _INCIDENTAL_QUALIFIER_PAIRS_NFD:
+            return True
+        # #13471 Résidu 2 : 2 mots en OR. Le 2eme mot seul est incident
+        # ('puis conformes' -- 'conformes' est dans la liste single-word mais
+        # 'puis' ne l'est pas).
+        second_nfd = _strip_accents(mw.group(2)).lower()
+        if second_nfd in _INCIDENTAL_QUALIFIERS_NFD:
             return True
     return False
 
@@ -943,6 +1108,34 @@ def _word_form_is_measurement_object(text: str) -> bool:
     return bool(_DISCRIMINATION_VERB.search(text[max(0, m.start() - 80):m.start()]))
 
 
+_MEASUREMENT_RESULT = re.compile(
+    r"\b(?:\d+|aucun(?:e)?)\s+(?:occurrences?|hits?|r[ée]sultats?|matches?)\b",
+    re.IGNORECASE,
+)
+_DEFINITE_WORD_FORM = re.compile(
+    r"\b(?:sur|dans)\s+(?:les|ces)\s+[*_]*"
+    r"(?:deux|trois|quatre|cinq|six|sept|huit|neuf|dix)\s+fichiers?\b",
+    re.IGNORECASE,
+)
+
+
+def _word_form_is_measurement_result(text: str, block: str = "") -> bool:
+    """True when a definite word-form count is the corpus of a measured result.
+
+    The result may sit on the same line or immediately above it in the same
+    paragraph block (soft-wrap invariant). A strong scope word keeps genuine
+    perimeter assertions blocking even when they also mention zero results.
+    """
+    surface = block or text
+    if _has_strong_scope(surface.lower()):
+        return False
+    count = _DEFINITE_WORD_FORM.search(surface)
+    if count is None:
+        return False
+    result = list(_MEASUREMENT_RESULT.finditer(surface, 0, count.start()))
+    return bool(result)
+
+
 def _additive_line_sum(line: str) -> int:
     """#12103: sum of the line's COUNT_CLAIM values that survive the per-count
     filters. An additive enumeration -- "1 fichier modifie, 1 fichier ajoute" --
@@ -958,6 +1151,7 @@ def _additive_line_sum(line: str) -> int:
         if not _count_is_exempt(line, m)
         and not _count_in_citation(line, m)
         and not _count_is_range_enum(line, m)
+        and not _count_is_out_of_scope_annotation(line, m)
     )
 
 
@@ -1793,6 +1987,14 @@ class Candidate:
     # confrontation in check_assertion: an enumeration spanning two bullets
     # sums across the block, not the single line.
     block: str = ""
+    # #13946: the full body text -- the hors-scope forecast line and the
+    # positive perimeter declaration can sit in DIFFERENT paragraphs (the
+    # forecast annotates « (hors scope PR) », the perimeter names
+    # « touche N » elsewhere), and the block is then useless for the
+    # cross-paragraph scan. Filled by select_candidates when given
+    # ``n_files``; consumed only by the ``_first_touche_n`` fallback
+    # inside check_assertion.
+    body_text: str = ""
 
     @property
     def blocking(self) -> bool:
@@ -1861,7 +2063,10 @@ def select_candidates(
             if opener is not None:
                 orphan_opener = opener
         body_candidates = [
-            Candidate(text, item["kind"], item["author"], "body", context=ctx, block=blk)
+            Candidate(
+                text, item["kind"], item["author"], "body",
+                context=ctx, block=blk, body_text=body,
+            )
             for text, ctx, blk in extract_perimeter_assertions_with_block(body)
         ]
         if n_files is not None and any(
@@ -1949,7 +2154,15 @@ def main() -> int:
         if body_orphan is not None:
             orphan_opener = body_orphan
         for cand in candidates:
-            for p in check_assertion(report.files, cand.text, block=cand.block):
+            # #13946: pass the candidate's full body text as ``body_hint``
+            # so the « touche N » fallback can search across paragraphs --
+            # the perimeter declaration often sits in a SEPARATE paragraph
+            # from the hors-scope forecast the body uses to disambiguate.
+            # The fallback is only consulted when COUNT_CLAIM + word-form
+            # fall through after the hors-scope filter.
+            for p in check_assertion(
+                report.files, cand.text, block=cand.block, body_hint=cand.body_text
+            ):
                 line = f"[{cand.kind} / {cand.author}] {p}"
                 # Every catch stays visible either way -- the detector is not
                 # disarmed, only its consequence is placed where it can be

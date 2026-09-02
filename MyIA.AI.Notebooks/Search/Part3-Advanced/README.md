@@ -79,7 +79,7 @@ Le véritable enseignement est un **réflexe de dosage mémoire/temps** : pour l
 ### Prochaines étapes
 
 - **Lâcher l'optimalité, gagner en scalabilité** : la [Partie 4 (métaheuristiques composables)](../Part4-Metaheuristics/README.md) abandonne la garantie d'optimalité pour traiter des espaces où même une PDB serait prohibitif — recuit simulé, algorithmes génétiques, optimisation par essaim, composés en bibliothèque (.NET GeneticSharp).
-- **L'équilibrage garanti au lieu du chemin optimal** : [Search-09c (discrépance combinatoire)](../Part1-Foundations/Search-09c-CombinatorialDiscrepancy.ipynb) change d'objet — colorier ±1 pour équilibrer des sommes — et mène jusqu'à la frontière 2025 (Bansal–Jiang) ; son jumeau formel (lake `discrepancy_lean/`, a venir — #12823) creusera la noix Beck–Fiala en Lean 4.
+- **L'équilibrage garanti au lieu du chemin optimal** : [Search-09c (discrépance combinatoire)](../Part1-Foundations/Search-09c-CombinatorialDiscrepancy.ipynb) change d'objet — colorier ±1 pour équilibrer des sommes — et mène jusqu'à la frontière 2025 (Bansal–Jiang) ; son compagnon formel [Search-09d (Lean)](../Part1-Foundations/Search-09d-Lean-Discrepancy-Komlos.ipynb) creuse la noix côté preuve : le lake `discrepancy_lean` (#12823) exécuté depuis le kernel Lean 4.
 - **Retour aux fondations** : après avoir vu la puissance d'une heuristique informée, reprendre [Search-3 (Informed)](../Part1-Foundations/Search-3-Informed.ipynb) — IDA\* + Manhattan y apparaît comme le cas de base dont les PDB sont l'aboutissement.
 - **La série dans son ensemble** : le [sommaire Search](../README.md) cartographie les quatre parties — celle-ci est la charnière entre les heuristiques fondatrices (Partie 1) et les métaheuristiques approchées (Partie 4).
 

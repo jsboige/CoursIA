@@ -4,9 +4,9 @@
 
 <!-- CATALOG-STATUS
 series: RL
-pedagogical_count: 23
-breakdown: root=23
-maturity: BETA=23
+pedagogical_count: 24
+breakdown: root=24
+maturity: BETA=23, DRAFT=1
 -->
 
 > **Note éditoriale (counts)** : Le marqueur `CATALOG-STATUS` ci-dessus est autoritatif pour le compte agrégé (17 notebooks canoniques). Pour la **décomposition langagière par kernel** (`metadata.kernelspec.language`), ce README reste autoritatif car la granularité kernel n'est pas dans le marqueur agrégé ; elle est documentée ici par lecture directe des kernelspecs au 10/07/2026 :
@@ -65,7 +65,8 @@ Les sous-séries [`rlpt_*`](.) et [GenAI/PostTraining](../GenAI/PostTraining/REA
 | « Le reward hacking est-il un attracteur spontané sur petit modèle ? Comment l'inoculer ? » | [`rlpt_3`](rlpt_3_reward_hacking.html) | Cas clinique minimal : 3 voies pour tenter de déclencher le hack, inoculation comme variable expérimentale, verdict reproductible (seed fixée). |
 | « DPO offline vs GRPO online à budget égal — qui gagne ? » | [`rlpt_4`](rlpt_4_dpo_vs_ppo.html) | Comparaison à budget 40 steps, préférences auto-fabriquées, verdict multi-seed {42,0,1,7} honnête Diebold-Mariano, dispersion inter-seed documentée. |
 | « GRPO + RLVR sur un vrai LLM, avec `trl` + reward vérifiable + détecteurs Goodhart en ligne ? » | [PT-11a](../GenAI/PostTraining/PT_11_grpo_qwen35_rlvr.ipynb), [PT-11b](../GenAI/PostTraining/PT_11_grpo_qwen_rlvr_on_verifiers.html) | La chaîne *SOTA 2024-2025* appliquée : `trl.GRPOTrainer` + Qwen3.5-0.8B QLoRA 4-bit + Z3/SymPy vérificateur + `rewardspy.watch_trl` en ligne. |
-| « Quels sont les 6 détecteurs statistiques du reward hacking ? » | [PT-07](../GenAI/PostTraining/PT_07_rewardspy_reward_hacking.ipynb) | Le catalogue `rewardspy.detectors` (Component Dominance, Length Drift, etc.). Outil — `rlpt_3` est le cas d'usage. || « InoculationRL complet, panel persona × reward hackable, la réplique poids du capstone ? » | [#5105 ICT-25](https://github.com/jsboige/CoursIA/issues/5105) | Capstone final, **distinct** de `rlpt_3` (qui en est la version compacte). |
+| « Quels sont les 6 détecteurs statistiques du reward hacking ? » | [PT-07](../GenAI/PostTraining/PT_07_rewardspy_reward_hacking.ipynb) | Le catalogue `rewardspy.detectors` (Component Dominance, Length Drift, etc.). Outil — `rlpt_3` est le cas d'usage. |
+| « InoculationRL complet, panel persona × reward hackable, la réplique poids du capstone ? » | [#5105 ICT-25](https://github.com/jsboige/CoursIA/issues/5105) | Capstone final, **distinct** de `rlpt_3` (qui en est la version compacte). |
 
 **Une phrase à retenir** : `rlpt_*` = *la mécanique, en petit, sans framework* (from scratch, CPU/char-level ou Qwen3.5-0.8B sans la pile `trl` complète — on voit chaque rollout et chaque gradient) ; `GenAI/PostTraining` = *la chaîne réelle, à l'échelle* (`trl`, vrai LLM, solveur vérifiable, multi-seed, détecteurs Goodhart). Si votre question porte sur **pourquoi** un algorithme fonctionne, ouvrez `rlpt_*`. Si votre question porte sur **comment le déployer en SOTA 2025**, ouvrez `PT_*`.
 
@@ -578,6 +579,7 @@ Plusieurs notebooks de cette série annoncent un « pont RLHF » (notebook 9 sur
 | Biais du shaping naïf = reward hacking ([rl_10](rl_10_reward_shaping.html)) | Goodhart / overoptimisation du reward model — [PT-07](../GenAI/PostTraining/PT_07_rewardspy_reward_hacking.ipynb) |
 | Policy gradient / PPO ([rl_6c](rl_6c_ppo_from_scratch.html)) | PPO-RLHF et son successeur GRPO — [PT-04](../GenAI/PostTraining/PT_04_grpo_deepseek_r1.ipynb) |
 | MDP, value/Q ([rl_5](rl_5_mdp_dp_qlearning.html)) | Socle policy/value réutilisé par tout post-training — [GenAI/PostTraining](../GenAI/PostTraining/README.md) |
+
 En résumé : **DPO** (Direct Preference Optimization) est l'aboutissement direct de la ligne offline RL + contrainte de support + preference learning tracée par les notebooks 9 et 10. Pour le voir tourner sur de vrais LLM, suivre [GenAI/PostTraining](../GenAI/PostTraining/README.md) puis [GenAI/FineTuning](../GenAI/FineTuning/README.md).
 
 ---

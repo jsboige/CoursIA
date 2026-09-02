@@ -1,7 +1,6 @@
 ---
 theme: ../theme-ia101
 title: "Intelligence Artificielle - Acculturation"
-<!-- c.655 retrigger: amend trivial doc to re-trigger PR gate (Tell c.649-L2 ★). Substance intacte. -->
 info: IA 101 - Panorama complet de l'intelligence artificielle
 paginate: true
 drawings:
@@ -1603,7 +1602,11 @@ layout: section
   - Séquences
   - Transformers, Multi-têtes (2017 : « Attention Is All You Need »)
 - Semi-supervisé, Transfert
-- LLMs : BERT (2018), GPT
+- LLMs : BERT (2018), GPT-1 (2018)
+  - GPT-2 (2019, zero-shot), GPT-3 (2020, in-context few-shot)
+  - T5 (2019, text-to-text unifié)
+- Modèles efficients (2020+)
+  - Reformer, Longformer : attention linéaire ou par fenêtres
 
 <div class="grid grid-cols-3 gap-2 absolute top-[130px] right-[20px] w-[600px]">
 <img src="./images/img_104.png" class="max-h-[150px] w-full object-contain" alt="Deux photos d'une femme lançant un frisbee dans un parc, légendées en anglais" />
@@ -1614,7 +1617,7 @@ layout: section
 <img src="./images/img_109.png" class="max-h-[150px] w-full object-contain" alt="Architecture Transformer encodeur-décodeur avec auto-attention, exemple de traduction du tchèque" />
 </div>
 
-<!-- Transformer : encodeur-decodeur, self-attention multi-tetes, positional encoding -->
+<!-- Transformer : encodeur-decodeur, self-attention multi-tetes, positional encoding. LLMs : GPT-2 (2019) zero-shot, GPT-3 (2020) in-context few-shot, T5 (2019) text-to-text unifie. Modeles efficients 2020+ : Reformer, Longformer. -->
 ---
 
 
@@ -1627,14 +1630,26 @@ layout: section
 - E.g Texte+Image
 - Datasets, Encodeurs
 - Rapprochement des plongements
+  - CLIP (2021, OpenAI) : contraste texte-image sur 400 M de paires
+  - ALIGN, Florence (2021-2022) : variantes industrielles
+- Génération conditionnelle
+  - DALL-E (2022, OpenAI), Imagen (2022, Google)
+  - GPT-4V (2023), Gemini (2023) : compréhension multimodale
 
 **Modèles de diffusion**
 
-- Prédiction d'un bruit (DDPM, 2020)
-- Diffusion latente
-- Autoencodeur Variationnel
+- Prédiction d'un bruit (DDPM, Ho et al. 2020)
+- Diffusion latente (LDM / Stable Diffusion, Rombach et al. 2021-2022)
+  - Espace latent d'un autoencodeur variationnel pré-entraîné
+  - Conditionnement texte (CLIP text encoder) + débruitage U-Net
 - Conditionnement multimodal
-- Mécanisme attentionnel
+- Mécanisme attentionnel (cross-attention Q/K/V)
+
+**Alignement et produit grand public**
+
+- RLHF (2022, InstructGPT) : affinage par retour humain
+- ChatGPT (nov. 2022, OpenAI) : 100 M d'utilisateurs en 2 mois
+- Modèles open-weight : Llama 2 (2023), Mistral, Mixtral (MoE 2023-2024)
 
 <div class="grid grid-cols-2 gap-2 absolute top-[130px] right-[20px] w-[600px]">
 <img src="./images/img_110.png" class="max-h-[190px] w-full object-contain" alt="Trois paires image-légende : rue de Kyoto, aigle en vol, paysage montagneux" />
@@ -1643,7 +1658,7 @@ layout: section
 <img src="./images/img_113.png" class="max-h-[190px] w-full object-contain" alt="U-Net de débruitage latent : encodeur, décodeur, attention croisée Q/K/V, conditionnements et pas de temps" />
 </div>
 
-<!-- Diffusion : bruit gaussien progressif → apprentissage du debruitage inverse -->
+<!-- Multimodaux : CLIP (2021) contraste texte-image, DALL-E (2022), GPT-4V / Gemini (2023). Diffusion latente (LDM / Stable Diffusion, Rombach 2021-2022) : bruit latent + U-Net + cross-attention. Alignement : RLHF (InstructGPT 2022), ChatGPT (nov 2022), Llama 2 / Mistral / Mixtral (2023-2024). -->
 ---
 
 
@@ -1769,6 +1784,7 @@ layout: section
   - + traitement requêtes
   - + score  résultats
 
+<img src="./images/img_122.png" class="w-full max-w-[400px] mx-auto max-h-[76px] object-contain mt-4" alt="Formule de probabilité jointe d'une séquence par chaîne de Markov : produit des P(ci | ci-2:i-1)" />
 
 </div>
 <div>
@@ -1781,16 +1797,29 @@ layout: section
   - Extraction d'ontologie
   - Machine reading
 
-<div class="img-grid">
-<img src="./images/img_122.png" class="w-[180px] max-w-full max-h-[300px] object-contain" alt="Formule de probabilité jointe d'une séquence par chaîne de Markov : produit des P(ci | ci-2:i-1)" />
-<img src="./images/img_123.png" class="w-[180px] max-w-full max-h-[300px] object-contain" alt="Trois pictogrammes de sentiment : positif (pouce levé vert), neutre (main jaune), négatif (pouce rouge)" />
-<img src="./images/img_124.png" class="w-[180px] max-w-full max-h-[300px] object-contain" alt="Diagramme de Venn des tâches NLP et NLU avec listes de problèmes couverts" />
-
-</div>
+<img src="./images/img_123.png" class="w-full max-w-[240px] mx-auto max-h-[96px] object-contain mt-6" alt="Trois pictogrammes de sentiment : positif (pouce levé vert), neutre (main jaune), négatif (pouce rouge)" />
 
 
 </div>
 </div>
+---
+
+
+
+# NLP et NLU : la carte des tâches
+
+
+
+<img src="./images/img_124.png" class="w-full max-h-[372px] object-contain mt-2" alt="Diagramme de Venn des tâches du TAL : l'ensemble NLP contient catégorisation de texte, analyse syntaxique, étiquetage morpho-syntaxique (POS), reconnaissance d'entités nommées (NER), résolution de coréférences et traduction automatique ; le sous-ensemble NLU contient extraction de relations, résumé, analyse sémantique, paraphrase et inférence en langue naturelle, question-réponse, analyse de sentiments et agents de dialogue" />
+
+<div class="text-center text-sm opacity-75 mt-4">
+
+Le <strong>NLU</strong> est un sous-ensemble du <strong>NLP</strong> : les tâches de la zone verte supposent une représentation du <em>sens</em>, celles de la zone bleue seule s'en passent.
+
+</div>
+
+
+
 ---
 
 
@@ -2417,7 +2446,7 @@ problèmes, et ils se résolvent avec les mêmes objets.
 | Une **file de travail** par poste, jamais vide | Plan de charge |
 | Un **jeton de réservation** posé sur la tâche | « Qui fait quoi » — anti-doublon |
 | Une **revue obligatoire** avant intégration | Contrôle, double signature |
-| Des **règles écrites** (26) plutôt que des consignes orales | Procédures |
+| Des **règles écrites** plutôt que des consignes orales | Procédures |
 
 Aucun de ces objets n'a été conçu pour l'IA : ce sont ceux d'une direction
 des opérations, transposés tels quels.
@@ -2567,7 +2596,8 @@ Et son corollaire, plus dur à admettre :
 </div>
 </div>
 
-> Un harnais de règles écrit, chargé automatiquement à chaque session. La
+> Un harnais de règles écrit, chargé automatiquement à chaque session — la
+> plupart immédiatement, certaines à la demande selon le contexte. La
 > documentation qui n'est pas chargée n'existe pas.
 
 

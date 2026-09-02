@@ -302,6 +302,12 @@ Les **prochaines étapes** recommandées après ce parcours : explorer les **ép
 
 ## Annexes
 
+### Guides, outillage et validation
+
+- [`tutorials/`](tutorials/README.md) — guides pratiques approfondis (DALL-E 3, GPT-5 image, écosystème OpenRouter, workflows éducatifs) : la vue d'ensemble réutilisable là où les notebooks démontrent pas à pas.
+- [`shared/helpers/`](shared/helpers/README.md) — bibliothèque partagée Python de la série (clients services GenAI, helpers audio/vidéo, tests).
+- [`_research/e2e_quant_validation.ipynb`](_research/e2e_quant_validation.ipynb) — validation bout-en-bout des services quantifiés post-migration (Z-Image vLLM GGUF Q4_KM, Qwen Image Edit Nunchaku INT4, Wan 2.1 T2V) : health check, latence de génération, VRAM GPU. Artefact de référence de la stack, complémentaire à `python scripts/genai-stack/genai.py validate --full`.
+
 ### Démarrage rapide
 
 #### 1. Configuration
@@ -375,11 +381,18 @@ Les notebooks GenAI exposent trois familles d'**outils d'infrastructure** que le
 
 > **À propos des décomptes** : le marqueur `CATALOG-STATUS` en fin de fichier est la **source de vérité autoritative** pour les volumes (notebooks par sous-série, maturité). Il est régénéré chaque nuit par le workflow [`catalog-cron.yml`](../../.github/workflows/catalog-cron.yml) à 03:37 UTC sur `main` (commit `[skip ci]` par `github-actions[bot]`). Si vous observez un décalage entre ce marqueur et une phrase en prose de ce README — par exemple si une sous-série a reçu de nouveaux notebooks mergés après la dernière régénération —, **fiez-vous au marqueur** ; la prose sera ré-alignée manuellement lors du prochain passage.
 
+### Ressources complémentaires
+
+Deux sous-dossiers complètent la série sans être des notebooks :
+
+- **[tutorials/](tutorials/README.md)** — guides pratiques transverses (écosystème OpenRouter, prompt engineering DALL-E 3, workflows pédagogiques, accessibilité GPT-5 multimodal). Quatre guides approfondissent un fournisseur ou un cas d'usage qui déborde d'une seule modalité. À consulter en parallèle d'un notebook quand on cherche un éclairage transverse.
+- **[_research/](_research/)** — documents de recherche bruts en cours de maturation (gate Phase 3-5 de l'Epic ICT). Non destiné à un parcours étudiant ; citer depuis les notebooks qui les exploitent (ex. `FallacyDetection/02_fallacy_datasets_landscape.ipynb` pour l'inventaire SAE Qwen3.5).
+
 ---
 
 <!-- CATALOG-STATUS
 series: GenAI
-pedagogical_count: 202
-breakdown: Audio=32, Texte=29, Plateformes-Conversationnelles=28, Video=21, SemanticKernel=20, Image=17, PostTraining=16, Vibe-Coding=8, 00-GenAI-Environment=6, Aspire=6, FineTuning=6, RAG-et-Memoire-Semantique=6, CaseStudies=4, CopilotSDK=1, EFCore=1, root=1
-maturity: BETA=168, ALPHA=18, DRAFT=13, TEMPLATE=3
+pedagogical_count: 213
+breakdown: Audio=32, Texte=30, Plateformes-Conversationnelles=28, Video=22, SemanticKernel=20, Image=17, PostTraining=16, RAG-et-Memoire-Semantique=10, Vibe-Coding=8, Aspire=7, FineTuning=7, 00-GenAI-Environment=6, CaseStudies=5, FallacyDetection=3, CopilotSDK=1, EFCore=1
+maturity: BETA=176, ALPHA=21, DRAFT=13, TEMPLATE=3
 -->

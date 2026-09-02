@@ -133,8 +133,20 @@ def _strip_title_hashes(flat: str) -> str:
 # variation-tag-malformed + variation-tag-genre-offlist. It accepts
 # `Grain:`, `Grain `, `Grain\\n\\n`, `Grain :` (space then colon). TIER is the
 # alphabetic word before `/`; GENRE is the token after (letters, digits, _,-).
+#
+# #13633 -- the literal `Grain` is CASE-SENSITIVE (no re.IGNORECASE). A
+# lowercase `grain` in running prose ("est le grain MED/tooling suivant")
+# is a noun, not a key: `re.IGNORECASE` let the phrase arm the extractor and
+# `parse_grain` produced a confident {tier, lane} for a body with NO Grain tag
+# -- the `false` cap verdict (instead of the #9465 `null` "not evaluated")
+# on #13550, whose prose merely DESCRIBED *another* PR's next grain. The 5
+# tolerated forms all capitalise the key (§1 `Grain: T/G` / `**Grain:**` /
+# `## Grain` title), so requiring `Grain` leaves them intact while refusing a
+# bare lowercase token in prose. TIER/GENRE stay case-tolerant via the
+# character classes (`[A-Za-z]`, `[A-Za-z0-9_-]`) -- `light/GUARD` still
+# normalises to LIGHT/guard.
 _GRAIN_FULL_RE = re.compile(
-    r"Grain[:\s]+([A-Za-z]+)\s*/\s*([A-Za-z0-9_-]+)", re.IGNORECASE
+    r"Grain[:\s]+([A-Za-z]+)\s*/\s*([A-Za-z0-9_-]+)"
 )
 
 # `lane` (case-insensitive), optional whitespace, optional colon, whitespace,
@@ -174,7 +186,19 @@ _GRAIN_FULL_RE = re.compile(
 # every legitimate one (a workspace word never starts `NNNN-NN-NN`).
 _LANE_RE = re.compile(
     r"lane\s*:?\s+"
-    r"([A-Za-z0-9._-]+:[A-Za-z0-9._-]+"
+    # #13830 -- the workspace class widens from `[A-Za-z0-9._-]+` to
+    # `[A-Za-zÀ-ÖØ-öø-ÿ0-9._-]+` (Latin-1 letter range U+00C0-U+00FF
+    # added) so a workspace with Latin-1 letters (e.g. `LivresAgités`)
+    # stops truncating at the first non-ASCII byte. Digits, underscore,
+    # hyphen, period are all preserved so `CoursIA-2` and similar survive.
+    # The machine slug keeps its ASCII-only class (`myia-<slug>` -- no
+    # legitimate machine ID carries Latin-1 letters), so the fix is scoped
+    # to the workspace token (after the colon). The upper-case-initial
+    # constraint on continuation words (`(?-i:[A-Z0-9])`) keeps prose from
+    # being swallowed, and the bare-date + colon/URL guards below are
+    # unchanged. The twin `_LANE_FALLBACK_RE` MUST move with the primary
+    # or the founder's class of bug (#12145) re-opens on the fallback only.
+    r"([A-Za-z0-9._-]+:[A-Za-zÀ-ÖØ-öø-ÿ0-9._-]+"
     r"(?:[ \t]+(?!\d{4}-\d{2}-\d{2})(?-i:[A-Z0-9])[A-Za-z0-9._-]*(?![A-Za-z0-9._-])(?![:@])){0,3})",
     re.IGNORECASE,
 )
@@ -205,7 +229,15 @@ _LANE_RE = re.compile(
 # THIS regex that swallowed `2026-08-23` into the lane token. The sibling
 # moves with the fix.
 _LANE_FALLBACK_RE = re.compile(
-    r"\b(myia-[A-Za-z0-9._-]+:[A-Za-z][A-Za-z0-9._-]*"
+    # #13830 -- twin of `_LANE_RE`: the workspace class widens from
+    # `[A-Za-z][A-Za-z0-9._-]*` to `[A-Za-zÀ-ÖØ-öø-ÿ][A-Za-zÀ-ÖØ-öø-ÿ0-9._-]*`
+    # (Latin-1 letter range U+00C0-U+00FF added) so a workspace with Latin-1
+    # letters (e.g. `LivresAgités`) stops truncating at the first non-ASCII
+    # byte. Casse-sensible here (`re.IGNORECASE` absent on this branch), so
+    # `[A-Z]` keeps meaning upper case ASCII only; the additional range is
+    # closed in U+00FF. The twin MUST move with the primary or the founder's
+    # class of bug (#12145) re-opens on the fallback only.
+    r"\b(myia-[A-Za-z0-9._-]+:[A-Za-zÀ-ÖØ-öø-ÿ][A-Za-zÀ-ÖØ-öø-ÿ0-9._-]*"
     r"(?:[ \t]+(?!\d{4}-\d{2}-\d{2})[A-Z0-9][A-Za-z0-9._-]*(?![A-Za-z0-9._-])(?![:@])){0,3})"
 )
 
