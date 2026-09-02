@@ -29,6 +29,8 @@ from check_machine_dep_timing import (  # noqa: E402
     _is_section_number,
     _is_unit_conversion,
     _is_code_constant_translation,
+    _parse_numbers,
+    _values_close,
     _repo_root,
     PROTOCOL_KEYWORDS,
     CONTENT_DURATION_CONSTRAINT_RE,
@@ -1211,3 +1213,221 @@ def test_symbolicai_fp_pipeline_end_to_end() -> None:
         )
     finally:
         nb.unlink()
+
+
+# --------------------------------------------------------------------------- #
+#  Provenance (#9434) -- opt-in, valide par ses FAUX NEGATIFS
+# --------------------------------------------------------------------------- #
+# Un motif de detection se valide par les formes qu'il DOIT attraper, pas par
+# ses hits (cf. anti-regression.md : le jeu de motifs ecrit a la main sous-compte
+# en silence). Les cinq formes ci-dessous sont celles qui ont fait echouer deux
+# versions successives de l'instrument pendant la calibration du 2026-09-02 :
+# arrondi, zero final, conversion d'unite, derivation, constante declaree.
+def _code_cell_with_outputs(source: str, outputs: list[dict]) -> dict:
+    """Cellule code portant des sorties (le detecteur ne les LIT que sous
+    ``provenance=True`` -- la passe 1 continue de les ignorer)."""
+    return {"cell_type": "code", "metadata": {}, "source": [source],
+            "outputs": outputs}
+
+
+def _stream(text: str) -> dict:
+    return {"output_type": "stream", "name": "stdout", "text": [text]}
+
+
+def _nb_in(directory: Path, cells: list[dict]) -> Path:
+    """Ecrit le notebook DANS un repertoire donne (necessaire pour COMP :
+    la provenance compagnon depend du voisinage sur disque)."""
+    p = directory / "nb.ipynb"
+    p.write_text(
+        json.dumps({"cells": cells, "metadata": {}, "nbformat": 4,
+                    "nbformat_minor": 5}, ensure_ascii=False),
+        encoding="utf-8",
+    )
+    return p
+
+
+def _provenances(findings: list[dict]) -> list[str]:
+    return [f.get("provenance") for f in findings]
+
+
+def test_provenance_absent_by_default() -> None:
+    """Sans ``provenance=True``, AUCUN finding ne porte la cle.
+
+    C'est la garantie de non-regression : les trois consommateurs mesures
+    (2 workflows CI + measure_residual_machine_dep.py) lisent la sortie par
+    defaut, qui doit rester inchangee.
+    """
+    nb = _make_nb([_md_cell("L'entrainement a pris 47 minutes.")])
+    try:
+        findings = _scan_notebook(nb)
+        assert findings, "le controle positif doit produire un finding"
+        assert all("provenance" not in f for f in findings)
+    finally:
+        nb.unlink()
+
+
+def test_provenance_out_on_rounded_french_decimal() -> None:
+    """« 2,97 s » lit une sortie valant 2.9682 -> OUT.
+
+    Double piege : la virgule decimale francaise ET l'arrondi. Une comparaison
+    exacte, ou une normalisation qui SUPPRIME la virgule (« 0,041 » -> 41),
+    manque ce cas -- c'est l'erreur qu'a faite la premiere version.
+    """
+    nb = _make_nb([
+        _code_cell_with_outputs("bench()", [_stream("owlrl 2.9682 8005\n")]),
+        _md_cell("Le raisonneur owlrl met 2,97 s sur ce graphe."),
+    ])
+    try:
+        findings = _scan_notebook(nb, provenance=True)
+        assert _provenances(findings) == ["OUT"], findings
+    finally:
+        nb.unlink()
+
+
+def test_provenance_out_on_trailing_zero() -> None:
+    """« 0,041 s » lit une sortie valant 0.0410 -> OUT (zero final tronque)."""
+    nb = _make_nb([
+        _code_cell_with_outputs("bench()", [_stream("reasonable 0.0410 939\n")]),
+        _md_cell("reasonable descend a 0,041 s sur le meme graphe."),
+    ])
+    try:
+        findings = _scan_notebook(nb, provenance=True)
+        assert _provenances(findings) == ["OUT"], findings
+    finally:
+        nb.unlink()
+
+
+def test_provenance_out_on_unit_conversion() -> None:
+    """« 60 ms » lit une sortie exprimee en SECONDES (0.0587) -> OUT.
+
+    La prose convertit ; l'instrument doit reconnaitre l'echelle, sinon il
+    accuse de fabrication une lecture parfaitement fidele.
+    """
+    nb = _make_nb([
+        _code_cell_with_outputs("t()", [_stream("elapsed 0.0587\n")]),
+        _md_cell("L'appel prend 60 ms sur cette machine."),
+    ])
+    try:
+        findings = _scan_notebook(nb, provenance=True)
+        assert _provenances(findings) == ["OUT"], findings
+    finally:
+        nb.unlink()
+
+
+def test_provenance_der_on_ratio_of_outputs() -> None:
+    """Un FACTEUR (2.9682 / 0.0410 ~= 72) est une lecture, pas une affirmation.
+
+    Le nombre n'apparait dans aucune sortie : il se DEDUIT de deux d'entre
+    elles. Sans la passe DER, ce cas serait compte comme fabrique.
+    """
+    nb = _make_nb([
+        _code_cell_with_outputs(
+            "bench()", [_stream("owlrl 2.9682\nreasonable 0.0410\n")]),
+        _md_cell("Le facteur mesure vaut 72 s ici."),
+    ])
+    try:
+        findings = _scan_notebook(nb, provenance=True)
+        assert _provenances(findings) == ["DER"], findings
+    finally:
+        nb.unlink()
+
+
+def test_provenance_src_on_code_constant() -> None:
+    """« 500 ms » cite un ``Thread.Sleep(500)`` du notebook -> SRC.
+
+    Une constante DECLAREE est une specification : elle ne derive pas de la
+    machine et ne changera pas a la prochaine execution.
+    """
+    nb = _make_nb([
+        _code_cell("Thread.Sleep(500);"),
+        _md_cell("Chaque etape marque une pause de 500 ms."),
+    ])
+    try:
+        findings = _scan_notebook(nb, provenance=True)
+        assert _provenances(findings) == ["SRC"], findings
+    finally:
+        nb.unlink()
+
+
+def test_provenance_comp_on_companion_file(tmp_path: Path) -> None:
+    """Une constante d'un fichier COMPAGNON pilote par le notebook -> COMP.
+
+    Ce chemin n'est exerce par AUCUN notebook du depot au 2026-09-02 (mesure :
+    ``COMP=0`` sur les 288 findings wallclock) : sans ce test, il serait du
+    code non couvert qui se degraderait en silence.
+    """
+    (tmp_path / "Program.cs").write_text(
+        "class P { static void Main() { Thread.Sleep(1500); } }",
+        encoding="utf-8",
+    )
+    nb = _nb_in(tmp_path, [
+        _code_cell_with_outputs("run_demo()", [_stream("done\n")]),
+        _md_cell("Le programme de demo attend 1500 ms entre deux etapes."),
+    ])
+    findings = _scan_notebook(nb, provenance=True)
+    assert _provenances(findings) == ["COMP"], findings
+
+
+def test_provenance_unbacked_on_fabricated_value() -> None:
+    """CONTROLE NEGATIF : un nombre porte par RIEN reste ``unbacked``.
+
+    Une sonde se valide par son negatif (sinon elle classe tout en legitime et
+    parait excellente). Ici 47 n'est ni dans les sorties, ni dans le code, ni
+    dans un compagnon.
+    """
+    nb = _make_nb([
+        _code_cell_with_outputs("train()", [_stream("done\n")]),
+        _md_cell("L'entrainement a pris 47 minutes."),
+    ])
+    try:
+        findings = _scan_notebook(nb, provenance=True)
+        assert _provenances(findings) == ["unbacked"], findings
+    finally:
+        nb.unlink()
+
+
+def test_provenance_does_not_change_categories() -> None:
+    """La provenance est ORTHOGONALE a la classification.
+
+    Meme notebook, deux invocations : les categories doivent etre identiques.
+    Un instrument qui reclasserait en annotant melangerait deux questions
+    distinctes -- « quelle sorte de nombre ? » et « d'ou vient-il ? ».
+    """
+    cells = [
+        _code_cell_with_outputs("bench()", [_stream("owlrl 2.9682\n")]),
+        _md_cell("Le raisonneur owlrl met 2,97 s sur ce graphe."),
+        _md_cell("La moyenne ajustee est de 15.07 min."),
+        _md_cell("L'entrainement a pris 47 minutes."),
+    ]
+    nb = _make_nb(cells)
+    try:
+        plain = [(f["cell_index"], f["snippet"], f["category"])
+                 for f in _scan_notebook(nb)]
+        annotated = [(f["cell_index"], f["snippet"], f["category"])
+                     for f in _scan_notebook(nb, provenance=True)]
+        assert plain == annotated, (plain, annotated)
+    finally:
+        nb.unlink()
+
+
+def test_parse_numbers_handles_french_comma() -> None:
+    """« 0,041 » vaut 0.041 -- pas 41.
+
+    Test unitaire du defaut exact qui a fausse la premiere calibration : une
+    normalisation par suppression de la virgule multipliait la valeur par 1000.
+    """
+    assert _parse_numbers("0,041 s") == [0.041]
+    assert _parse_numbers("2,97") == [2.97]
+    assert _parse_numbers("2.97") == [2.97]
+
+
+def test_values_close_rejects_unrelated_magnitudes() -> None:
+    """CONTROLE NEGATIF du comparateur : 47 ne « matche » pas 2.9682.
+
+    Sans ce garde-fou, une tolerance trop large rendrait tout legitime et le
+    residu ``unbacked`` tomberait a zero pour de mauvaises raisons.
+    """
+    assert _values_close(2.97, 2.9682)          # arrondi
+    assert _values_close(60.0, 0.0587)          # s -> ms
+    assert not _values_close(47.0, 2.9682)
+    assert not _values_close(47.0, 0.0410)
