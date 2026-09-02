@@ -64,6 +64,7 @@ Agents are auto-discovered by Claude Code. Each has YAML frontmatter with model,
 | `proactive-coordination` | plancher 1 PR/wakeup, pool global, picker, never-idle, L721/L740/L898 |
 | `user-blocker-signaling` | anti-dilution des bloqueurs user |
 | `harness-hygiene` | 3 tiers harnais / docs / dashboard |
+| `bibliography-hygiene` | publications utilisées archivées sur le GDrive canonique, jamais dans Git |
 | `catalog-pr-hygiene` | le catalogue appartient à l'automatisation |
 | `model-delegation` | modèle explicite obligatoire, routage vision |
 | `three-exercises-per-notebook` | richesse pédagogique |
