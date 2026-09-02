@@ -78,6 +78,49 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     "notebook-exec-sequence-ratchet.yml",
     "notebook-navlink-check.yml",
     "notebook-papermill-ratchet.yml",
+    # tranche 3b (#14283, meme decision, meme owner) : suite des gardes PR
+    #   pure-Python. Fondue dans la meme PR que 3a -- les scinder aurait produit
+    #   un conflit sur cette meme ancre pour zero benefice de relecture.
+    "markdown-claims-output-advisory.yml",
+    "orphaned-delivery-scan.yml",
+    "quantconnect-notebook-freshness.yml",
+    "scan-md-hierarchy-drift.yml",
+    "slides-composition-pr-relay.yml",
+    "source-output-ratchet.yml",
+    "translation-guard.yml",
+    "unique-check-run-names-guard.yml",
+    "validation-matrix.yml",
+    # tranche 3a (#14283, decision ai-01 2026-09-02, owner myia-ai-01:CoursIA) :
+    #   gardes PR pure-Python, garde same-repo au niveau job, runs-on STATIQUE.
+    #   Exclus deliberement : pr-gate.yml (agregateur qui poll -- il tiendrait le
+    #   slot quil attend), owui-playwright-check.yml (navigateurs hors image),
+    #   always-on-guards.yml (trigger pull_request_review = FORK_REACHABLE).
+    #   Rollback = revert de la PR de routage.
+    "arxiv-attributions-guard.yml",
+    "catalog-drift.yml",
+    "consecutive-code-cells-advisory.yml",
+    "harness-coauthor-guard.yml",
+    "ict-tests.yml",
+    "label-paths-guard.yml",
+    "lean-conway.yml",
+    "lean-i18n-drift.yml",
+    "lean-knot.yml",
+    "manifest-description-visuelle-gate.yml",
+    # tranche 3c (#14283, meme decision, meme owner) : jobs individuels d'un
+    #   workflow dont les autres jobs restent sur ubuntu-latest.
+    #   Exclus deliberement : ml-tests (torch retelecharge a chaque run, pas de
+    #   cache persistant), secret-scan/gitleaks (socket Docker), lean-social-
+    #   choice/build (merite un pool a cache Mathlib chaud, cf #14337),
+    #   notebook-execution-required/golden-set-execute (execution lourde).
+    "bash-syntax-advisory.yml",
+    "lean-social-choice.yml",
+    "notebook-execution-required.yml",
+    "secret-scan.yml",
+    # always-on-metadata-guards.yml : routable (triggers pull_request +
+    #   workflow_dispatch seulement). Son jumeau always-on-guards.yml ne l'est
+    #   PAS -- il porte pull_request_review, classe FORK_REACHABLE (#14294).
+    "always-on-metadata-guards.yml",
+    "twin-parity.yml",
 }
 GITHUB_HOSTED_LABELS = {
     "ubuntu-latest",
