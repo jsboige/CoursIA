@@ -316,13 +316,33 @@ Référence : Fox (1962), A quick trip through knot theory ; Adams, *The Knot Bo
 | [prathamesh-t/Tangle-Isabelle](https://github.com/prathamesh-t/Tangle-Isabelle) | Tangles en Isabelle/HOL | Référence de design |
 | [Mathlib](https://github.com/leanprover-community/mathlib4) | Polynômes, catégories, topologie partielle | Dépendance Lake |
 
-## Notebook pédagogique
+## Place dans l'écosystème — nouveauté réelle (digestion #13106, point 3)
 
-`Lean-17-Knots-a-Conway-and-Proofs.ipynb` (dans `SymbolicAI/Lean/`) :
-- Visualisations Python des nœuds (trèfle, Conway, Kinoshita-Terasaka)
-- Histoire de la preuve Piccirillo (doctorante, 1 semaine, 50 ans d'attente)
-- Résultat Lidman comme cas d'étude « preuve courte mais profonde »
-- Perspective de formalisation Lean (pourquoi c'est loin, ce qu'il manque)
+Ce que ce lake apporte que ses dépendances **n'ont pas** :
+
+- **Mathlib** (toolchain v4.32.1) ne fournit **aucun module de théorie des nœuds** — aucune entrée `Knot`/`Braid`/`Link` au top-level de l'arbre `Mathlib/` (mesuré 2026-08-31). Ni PD-codes, ni moves de Reidemeister, ni invariants de colorabilité : tout ce vocabulaire est défini ici, dans `Knots/Basic.lean`.
+- **[shua/leanknot](https://github.com/shua/leanknot)** couvre bricks/walls, tangles, braids — pas les invariants de colorabilité ni leur transfert sous les moves.
+- **[Tangle-Isabelle](https://github.com/prathamesh-t/Tangle-Isabelle)** (Prathamesh 2015) formalise en Isabelle/HOL, pas en Lean 4 ; cité comme référence de design, non consommable dans notre toolchain.
+
+Les apports **originaux** du portage (formels et méthodologiques, pas mathématiques — les priorités mathématiques appartiennent à Fox, Reidemeister, Piccirillo, Freedman, Lidman, cf Références) :
+
+1. La **bi-implication R1 connectée** du transfert de 3-colorabilité (#3000 + #3124/#11227) — à notre connaissance la première formalisation Lean de ce transfert sous modèle connecté.
+2. Les **murs nommés** (`r2_append_only_wall`, `r3_determined_wall`, #11276) : des preuves formelles que l'énoncé cible est **faux** sous le modèle courant — le pattern « réfuter avant de prouver », opposé au scaffolding passif.
+3. Le protocole **validation exhaustive brute-force AVANT énoncé** (R1 : 2526 diagrammes ; R2 : #11467 ; R3 : #11486), devenu le standard de la track #2874.
+
+## Raccord au corpus et transmission (digestion #13106, points 9-10)
+
+Trois notebooks dans `SymbolicAI/Lean/` assurent la transmission, par niveau :
+
+| Notebook | Rôle | Transmission |
+|---|---|---|
+| `Lean-17-Knots-a-Conway-and-Proofs.ipynb` | Histoire et visualisations Python (trèfle, Conway, Kinoshita-Terasaka) ; preuve Piccirillo (doctorante, 1 semaine, 50 ans d'attente) ; Lidman comme « preuve courte mais profonde » | Visualisations + récit, zéro prérequis Lean |
+| `Lean-17b-Knots-Invariants-Companion.ipynb` | Companion exécutable : PD-codes, moves de Reidemeister, tricolorité de Fox — 5 exercices, exemples calculés | Exemples calculés + exercices |
+| `Lean-17c-Knots-Companion-Formel.ipynb` | Companion formel : modules du lake non couverts par 17b, murs R2/R3, miroir i18n | Pont direct vers le code Lean |
+
+**Prérequis** : aucun pour 17-a ; PD-codes élémentaires pour 17-b ; Lean 4 de base (tactiques, structures) pour 17-c.
+
+**Revue humaine — état honnête** : à ce jour, le lake a été revu par les organes bots (Hermes, proof-integrity CI) et mergé par le coordinateur, mais **aucune revue humaine nommée du lake entier** n'a eu lieu. C'est une limite déclarée de la présente digestion (grille #13106 point 10) : la revue humaine reste à faire et à inscrire ici le moment venu.
 
 ## Références
 
@@ -397,7 +417,13 @@ théorème Reidemeister ↔ isotopie ambiante — restent du **scaffolding
 permanent** : ils excèdent la portée actuelle de Mathlib (topologie PL des
 3-variétés, Heegaard-Floer).
 
-### Leçons méthodologiques
+### Leçons méthodologiques — chemin de découverte vs reconstruction
+
+Ce qui suit est le **chemin de découverte** — l'ordre dans lequel les obstacles
+ont été rencontrés et compris — distingué de la **reconstruction finale** que
+donnent les PRs mergées et l'ordre du code : chaque re-modélisation ci-dessous
+a d'abord été *réfutée* avant d'être corrigée, et cet ordre des échecs ne se
+lit dans aucun diff (digestion #13106, point 7).
 
 La trajectoire Phase 5 illustre le pattern « *intractable* = énoncé faux » (cf.
 `conway_lean` P4) : avant de prouver, **vérifier par contre-exemple certifié** que

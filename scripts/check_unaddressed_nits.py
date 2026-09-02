@@ -657,15 +657,130 @@ _MENTION_VERDICT_REVIEW_NARRATIVE = re.compile(
     r"(?:commit\s+[a-f0-9]+|PR\s*#?\d+|#\d+|pull/\d+)")
 
 
+# #13512 (cf grain) — Position G : verbe de mention + verdict NU dans une
+# fenetre bornee, SANS parenthese obligatoire ni `revue|review` en tete.
+# Cas fondateur (PR #13496) : « @jsboige — reponse au REQUEST_CHANGES Hermes
+# du 2026-08-29T17:33Z sur head `ae88aefc`. » — la forme naturelle d'une
+# reponse a un verdict de reviewer : verbe de mention (`reponse a`/`fix`/
+# `leve`/`corrige`/`traite`/`suite a`/`adresse`), puis le verdict NU (sans
+# parentheses), puis contexte (auteur, date, head SHA). Les positions
+# existantes (A-F) exigent soit des parentheses (A), un titre `##` (B), une
+# prose avec mot-cle inline (C), un verbe de levee + ref pointable (D/E),
+# ou `revue|review` en tete (D-F) — aucune ne couvre cette forme qui est
+# pourtant la plus naturelle.
+#
+# Discrimination vs emission formelle :
+# (1) Le caractere distinctif est la PRESENCE du verbe de MENTION (`reponse a`,
+#     `fix`, `suite a`, `corrige`, `leve`, `adresse`, `traite`, `repondu a`,
+#     `lift`) au lieu du verbe d'EMISSION (`Verdict :`, `Block on`, `declare`,
+#     `reste bloquante`). Le verbe de mention ANNONCE une reponse, le verbe
+#     d'EMISSION pose une reserve : le sens est inverse.
+# (2) La fenetre `[^():\n.]{0,40}?` exclut `:` (donc `Fix : CHANGES_REQUESTED`
+#     ne matche pas — `:` suit immediatement le verbe) et `.` (donc le verdict
+#     doit etre dans la MEME phrase, pas apres une fin de phrase).
+# (3) Verdict `(?-i:[A-Z][A-Z_]{3,})` case-sensitive : pas de capture d'un mot
+#     natural-langue (`commit`, `commit`...) dans la fenetre.
+#
+# Mesure discriminatoire c.840 (corpus de validation) :
+#   TP (match attendu) :
+#     - "@jsboige — reponse au REQUEST_CHANGES Hermes du ..."
+#     - "Voici le fix du CHANGES_REQUESTED pose par Hermes en review."
+#     - "Suite au COMMENT_WITH_CONCERNS du 2026-08-29, voici le diagnostic."
+#     - "Corrige SUSPECT_REGRESSION identifiee sur la branche main."
+#     - "A leve le BLOCKED PR apres validation par ai-01."
+#     - "Repondu au STRUCTURAL_ONLY via le commit 33ef4d6."
+#   FN (ne doit PAS matcher) :
+#     - "CHANGES_REQUESTED: edge case non couvert." (verdict nu en tete)
+#     - "Verdict : CHANGES_REQUESTED sur ce commit." (verdict precede de "Verdict :")
+#     - "Block on CHANGES_REQUESTED jusqu'a validation." (verdict precede de "Block on")
+#     - "Fix : CHANGES_REQUESTED sur le ticket 1234." (`:` suit le verbe)
+#     - "Je declare CHANGES_REQUESTED sur le diff." (verbe d'emission absent de la liste)
+#     - "Le CHANGES_REQUESTED reste bloquante jusqu'a correction." (pas de verbe de mention)
+#
+# La borne 40 chars est calibree pour absorber #13496 (1 char mesuré entre
+# `reponse au` et `REQUEST_CHANGES`) avec une marge de 39 chars. Une borne
+# plus large rouvrirait le risque d'attraper une phrase distincte ; une borne
+# plus etroite echouerait sur des variantes avec contexte immediat (un mot
+# avant le verdict).
+# #13512 fondateur — verbes resserres (Hermes demande 2/2, desiderata) :
+# `lev\w+` devient `lev(?:e|é|ée|er|ons)\b` (exclut Levenshtein/lvgl/leve
+# arabe/...) et `trait\w+` devient `trait(?:e|é|er)\b` (exclut trait-/traits/
+# traitment/...). Les autres verbes de mention gardent leur `\w+` (leur
+# variabilite naturelle est plus large : `corrige`/`corrigea`/`corrigeant`,
+# `fix`/`fixe`/`fixer`, etc.).
+#
+# #13559 fondateur (PR #13560) — ajout d'un **negative lookahead**
+# post-verdict `(?!\s*[—\-]\s+commit\b)` : la phrase « Fix review ai-01
+# CHANGES_REQUESTED — commit 06956bd0a » est une **annonce de fix**
+# (verdict suivi d'une reference a un commit futur), pas une **reponse**
+# a un verdict (qui finit par contexte de reponse : Hermes, date, identifiee,
+# via commit **passe**, ...). Le lookahead distingue les deux : apres le
+# verdict, un `— commit` (= reference future) bloque le match. Les
+# phrases de reponse (les 6 TP c.840 fondateur #13496 + variantes avec
+# Hermes/date/identifiee/...) ne sont pas suivies de `— commit`, donc
+# matchent toujours. c.845 regression fix.
+_MENTION_VERDICT_BARE = re.compile(
+    r"(?i)(?:^|[\s,;:(*]|@\S+\s+[—\-]\s+)"
+    r"(?:fix(?:ed|ée?e?)?|corrig\w+|suite\s+[àa]|en\s+r[ée]ponse\s+[àa]"
+    r"|r[ée]ponse\s+[àa]|lev(?:e|é|ée|er|ons)\b|lift\w*|adress\w+|trait(?:e|é|er)\b|repondu\s+[àa])"
+    r"[^():\n.]{0,40}?(?-i:([A-Z][A-Z_]{3,}))(?![A-Za-z0-9_])"
+    r"(?!\s*[—\-]\s+commit\b)")
+
+
 def _strip_mentioned_verdicts(body: str) -> str:
     """Neutralise les noms de verdict cites en position de mention (#11636, #11744, #11809).
 
     Remplace le verdict par des espaces de meme longueur : les offsets du
     reste du body sont preserves (les fenetres de `_is_cited` restent
     calibrees sur la vraie position des occurrences survivantes).
+
+    Position G (#14070) beneficie du garde anti-negation : un match
+    Position G dont la fenetre 15 chars avant/apres contient un token
+    `_LIFT_NEGATION_TOKENS` (`ne...pas`, `plus`, `jamais`, `non`, `aucun`,
+    `sans`, `n'est`, `rien`) est preserve (le verdict reste cite dans
+    le body — l'organe `classify()` peut alors le voir comme un nit non
+    leve). Voie canonique d'application : `_lift_is_negated(window_before,
+    window_after)`, symetrie exacte avec la logique existante sur
+    `_LIFT_MARKERS`. Les 6 autres positions restent en `sub` iso-longueur
+    direct (elles n'ont pas de garde anti-negation homologue — leur
+    discrimination par contexte est suffisante).
     """
+    # Phase 1 : sub iso-longueur pour les 6 patterns historiques (pas de
+    # negation — leur discrimination par contexte est suffisante).
     for pat in (_MENTION_VERDICT, _MENTION_VERDICT_HEADING, _MENTION_VERDICT_INLINE, _MENTION_VERDICT_LIFTED, _MENTION_VERDICT_REVIEW, _MENTION_VERDICT_REVIEW_NARRATIVE):
         body = pat.sub(
+            lambda m: m.group(0).replace(m.group(1), " " * len(m.group(1))), body)
+    # Phase 2 : Position G avec garde anti-negation (Hermes demande 1/2,
+    # PR #14070). Approche `finditer` car le verdict-match n'est pas en
+    # bord de phrase (la mention `traite le REQUEST_CHANGES` met le
+    # verdict a 10-20 chars du verbe de mention). On cherche un token de
+    # negation n'importe ou dans la window 15 chars avant/apres, avec
+    # strip des separateurs de bord (coherence avec `_lift_is_negated`
+    # qui regarde les bords).
+    # NOTE : on n'utilise PAS `_lift_is_negated` directement ici — ce
+    # helper regarde uniquement les BORDS de la window (le token `pas`
+    # doit finir la window avant OU commencer la window apres). Or
+    # Position G matche la mention `... pas traite le REQUEST_CHANGES`
+    # ou `pas` est AU DEBUT de win_before, pas en bord : helper naturel
+    # mais inadapte. Helper dedie ci-dessous.
+    negates_spans: list[tuple[int, int]] = []
+    for m in _MENTION_VERDICT_BARE.finditer(body):
+        verdict_start = m.start(1)
+        verdict_end = m.end(1)
+        win_before = body[max(0, verdict_start - 15):verdict_start]
+        win_after = body[verdict_end:verdict_end + 15]
+        if _bare_mention_is_negated(win_before, win_after):
+            negates_spans.append((m.start(), m.end()))
+    if negates_spans:
+        def _bare_sub(m: re.Match[str]) -> str:
+            for s, e in negates_spans:
+                if m.start() == s and m.end() == e:
+                    return m.group(0)  # garde le verdict intact (negated)
+            return m.group(0).replace(m.group(1), " " * len(m.group(1)))
+        body = _MENTION_VERDICT_BARE.sub(_bare_sub, body)
+    else:
+        # Aucun negation detectee — fast path iso-longueur comme avant.
+        body = _MENTION_VERDICT_BARE.sub(
             lambda m: m.group(0).replace(m.group(1), " " * len(m.group(1))), body)
     return body
 
@@ -1049,6 +1164,36 @@ def _lift_is_negated(window_before: str, window_after: str) -> bool:
     return False
 
 
+def _bare_mention_is_negated(window_before: str, window_after: str) -> bool:
+    """Le verdict Position G est-il dans une negation directe ?
+
+    Variante de `_lift_is_negated` adaptee a Position G (`#14070`) : la
+    mention peut mettre le token de negation N'IMPORTE OU dans la window
+    (ex. « pas traite le REQUEST_CHANGES » met `pas` au DEBUT de la
+    window avant, pas en bord). `_lift_is_negated` regarde les BORDS
+    uniquement (helper naturel pour `_LIFT_MARKERS` ou le token de
+    negation precede/suit immediatement le marqueur). Helper dedie
+    pour Position G : cherche un token `_LIFT_NEGATION_TOKENS` n'importe
+    ou dans la window combinee (avant + apres), avec strip des
+    separateurs de bord.
+
+    Meme semantique que `_lift_is_negated` (meme ensemble de tokens),
+    seule la fenetre de scan change. Symetrie preservee.
+    """
+    combined = (window_before + " " + window_after).lower()
+    combined = _unaccent(combined)
+    # Token de negation entoure de non-alphanumerique (`\b` word boundary
+    # gere implicitement les separateurs ASCII : espace, virgule, point,
+    # point d'interrogation, deux-points, point-virgule, point
+    # d'exclamation, apostrophe droite). Coherent avec le
+    # `rstrip(".,;:!?")` de `_lift_is_negated` — la ponctuation est une
+    # bordure valide de token.
+    for tok in _LIFT_NEGATION_TOKENS:
+        if re.search(rf"\b{re.escape(tok)}\b", combined):
+            return True
+    return False
+
+
 def _live_lift_positions(normalised: str) -> list[int]:
     """Positions des occurrences de LIFT_MARKERS NON narrées ET NON niées.
 
@@ -1117,6 +1262,50 @@ def has_live_marker(body: str, markers: tuple[str, ...]) -> bool:
                 return True
             start = i + 1
     return False
+
+
+# #13912 -- le chemin `HOLD_HEAD` (#13784) a ete ajoute SANS les deux
+# discriminations que son chemin FRERE `_COORDINATOR_INJUNCTION_RE` portait
+# deja. Un chemin neuf herite des gardes de son jumeau, sinon il rouvre les
+# faux positifs que le jumeau avait fermes -- ce qui est arrive ici deux fois :
+#
+#   (a) VERDICT NOMME. `**HOLD G-VAR-2 (cap de genre)**` NOMME la garde
+#       G-VAR-2, il ne pose rien. Le lookahead
+#       `(?![\s-]+(?:G-VAR|BLOCK|BOT|COMMENT|VERDICT|PR))` de la ligne 1237
+#       ecarte ces noms depuis #13598 ; `HOLD_HEAD` ne l'avait pas.
+#   (b) NEGATION APRES LE LIBELLE. `**HOLD coordinateur** NON.` DENIE un hold.
+#       `_lift_participle_after` ne connait que « leve / levee / lifted », qui
+#       suivent immediatement ; ici la negation suit le LIBELLE, deux mots plus
+#       loin.
+#
+# Les deux resserrements de (b) sont repris de la raison meme qui fait exiger
+# `HOLD` en majuscules dans #13784 -- « hold » est un mot ordinaire :
+#   - MAJUSCULES exigees. `pas` est volontairement ABSENT de la liste : « HOLD
+#     -- ne pas merger » est un hold REEL, et une negation minuscule le
+#     neutraliserait.
+#   - FIN DE CLAUSE exigee. « HOLD: NO merge until X » porte « NO » sans etre
+#     une denegation ; seul un `NON`/`NO` qui CLOT la clause est le verdict.
+_HOLD_NAMED_VERDICT_RE = re.compile(
+    r"^[\s-]+(?:G-VAR|BLOCK|BOT|COMMENT|VERDICT|PR\b|PR-)", re.I
+)
+_HOLD_NEGATED_RE = re.compile(r"^[^.\n]{0,40}?\b(?:NON|NO)\b\s*(?:[.,;!]|$)")
+
+
+def _hold_head_is_emission(head: str, end: int) -> bool:
+    """Le `HOLD` en tete de corps EMET-il un hold, ou en NOMME-t-il un ?
+
+    Miroir de `_is_cited` pour le chemin `HOLD_HEAD` : rend False des que le
+    texte qui suit disqualifie l'occurrence -- levee (delegue a
+    `_lift_participle_after`), verdict nomme (a), denegation (b).
+    """
+    if _lift_participle_after(head, end):
+        return False
+    tail = head[end:]
+    if _HOLD_NAMED_VERDICT_RE.match(tail):
+        return False
+    if _HOLD_NEGATED_RE.match(tail):
+        return False
+    return True
 
 
 def _lift_participle_after(head: str, end: int) -> bool:
@@ -1190,7 +1379,7 @@ def _block_emitted(body: str) -> bool:
     if head.lstrip(" \t*_").upper().startswith("[OVERRIDE]"):
         return False
     m_hold = HOLD_HEAD.match(head)
-    if m_hold and not _lift_participle_after(head, m_hold.end()):
+    if m_hold and _hold_head_is_emission(head, m_hold.end()):
         return True
     for marker in ("BLOCAGE", "BLOCK"):
         pos = 0
@@ -1207,6 +1396,145 @@ def _block_emitted(body: str) -> bool:
                 return True
             pos = i + len(marker)
     return False
+
+
+# #13598 — EMISSION informelle d'un LIFT_OVERRIDE_LOGINS. Le cas fondateur
+# (#13550, 2026-08-30T00:37:09Z, myia-ai-01) : « ## [ai-01 ARBITRAGE] La
+# reserve GPU tient. **Ne pas merger sur les verts.** » — coordonne en
+# francais courant, sans glyphe formel ni verdict formel, etait rendu None
+# par classify(). La classe CONCERN_MARKERS suppose un vocabulaire de revue
+# (CHANGES_REQUESTED, BLOCKED, glyphes Hermes) que la plume du coordinateur
+# n'utilise pas quand il EMET un hold.
+#
+# Discrimination ciblee : un seul auteur concerne (LIFT_OVERRIDE_LOGINS,
+# 1 entree aujourd'hui), donc le cout du whack-a-mole est borne. La
+# detection porte sur des INJONctions structurelles (verbe + assertion),
+# pas sur le vocabulaire d'une revue :
+#   - verbe d'injonction explicite (« ne pas merger/fusionner », « hold »,
+#     « bloque », « attend », « wait », « stop », « arr[êe]t », « tant que »)
+#   - PAS un LIFT_MARKER (la phrase EMET, ne leve pas)
+#   - PAS une narration nominale de levee (miroir de la borne `_is_cited`)
+#   - PAS un ARBITRAGE/OVERRIDE (un override EMET une LEVEE, pas une reserve ;
+#     le trappe #11639 reste la voie de levee du coordinateur)
+#
+# Faux positif a surveiller (acceptance #13598 point 2) : un commentaire
+# coordinateur ANODIN post-cutoff (accuse reception, remerciement, « vu »)
+# ne porte aucun verbe d'injonction ni assertion substantive, et reste muet.
+_COORDINATOR_INJUNCTION_RE = re.compile(
+    r"(?i)(?:"
+    r"ne\s+(?:pas\s+)?(?:merger|fusionner)|"
+    r"\bhold\b(?![\s-]+(?:G-VAR|BLOCK|BOT|COMMENT|VERDICT|PR\b|PR-))|"
+    r"\b(?:je\s+)?bloque\b|"
+    r"\b(?:j['e]\s+)?attend[s]?\b(?:\s+le|\s+le\s+run|\s+la|\s+les)?|"
+    r"\bwait\b(?:\s+for|\s+le|\s+la|\s+les)?|"
+    r"\bstop\b|"
+    r"\barre?te[rs]?\b|"
+    r"\btant\s+que\b|"
+    r"sur\s+(?:les?\s+)?verts?|"
+    r"sur\s+(?:le\s+)?hold|"
+    r"pas\s+sur\s+les\s+(?:verts?|ciels?)"
+    r")",
+)
+_COORDINATOR_INJUNCTION_NEGATED_RE = re.compile(
+    r"(?i)\b(?:pas|plus|jamais|aucun)\s+(?:hold|wait|bloque|attend|stop|arr[êe]t)\b",
+)
+# #13912 -- le mot `hold` en MENTION NOMINALE d'un hold tenu par un tiers n'est
+# pas une EMISSION. La voie #13598 n'attrape ce cas qu'a demi : le lookahead
+# `(?![\s-]+(?:G-VAR|BLOCK|BOT|COMMENT|VERDICT|PR\b|PR-))` ecarte les NOMS DE
+# VERDICT (« HOLD G-VAR-2 », « HOLD PR-1234 »), pas les mentions descriptives
+# d'un hold detenu ailleurs (« moteur sous hold user (#10038) », cf review
+# ai-01 sur #13706 Le moteur est sous hold user). Le discriminateur est le mot
+# qui precede `hold` : un mot de CITATION_NOMINALE (sous, sur, de, par, en, du,
+# des, le, la, les, ce, cette, un, une, mon, ton, son, notre, votre, leur,
+# « tenir » au passe) introduit une mention ; seul un verbe d'INJONCTION
+# explicite a cote du `hold` (« tient le hold », « maintenir le hold ») EMET.
+# Meme mechanique que `_is_cited` (L883) pour les marqueurs formels, mais avec
+# un CITERS adapte au `hold` en francais courant.
+_HOLD_NOMINAL_MENTION_BEFORE_RE = re.compile(
+    r"(?i)(?:^|[\s,.;:!?\(\[*_])(?:"
+    r"sous|sur(?:plement)?|d['e]|de|du|des|le|la|les|ce|cette|ces|un|une|"
+    r"mon|ton|son|notre|votre|leur|leurs|en|par|avec|sans|n['e]|tenant"
+    r")\s+hold\b",
+)
+_HOLD_EMISSION_VERB_BEFORE_RE = re.compile(
+    r"(?i)(?:^|[\s,.;:!?\(\[*_])(?:tiens|tenir|maintiens|maintenir|poser?|imposer?)\s+(?:le\s+|la\s+|du\s+|des\s+)?hold\b",
+)
+
+
+def _hold_match_is_emission(body: str) -> bool:
+    """#13912 : un `hold` matche par `_COORDINATOR_INJUNCTION_RE` est-il une
+    EMISSION du coordinateur, ou une MENTION NOMINALE d'un hold tiers ?
+
+    Renvoie True si le `hold` est en EMISSION (verbe d'injonction explicite
+    immediatement voisin, ou contexte « tient/maintenir le hold »), False si
+    en MENTION NOMINALE (precede d'un mot de citation descriptive).
+
+    Le defaut documente par ai-01 sur #13706 : « moteur sous hold user »,
+    « il est sous hold user », « Et le moteur qui ecraserait est sous hold
+    user (#10038) » -- toutes des MENTIONS d'un hold tenu par user via #10038,
+    jamais une EMISSION du coordinateur sur cette PR.
+
+    Cas reels :
+    - EMISSION  : « **HOLD coordinateur** » -- le mot est en tete, pas de mot
+                  avant, donc _HOLD_NOMINAL_MENTION_BEFORE_RE ne matche pas,
+                  _HOLD_EMISSION_VERB_BEFORE_RE peut etre absent. Verdict:
+                  EMISSION.
+    - EMISSION  : « Je tiens le hold jusqu'a resolution » -- verbe explicite.
+    - MENTION   : « sous hold user », « sur le hold de #10038 » -- mots de
+                  citation avant.
+    - MENTION   : « le hold tient » -- ambigu ; ici le coord EMET implicitement
+                  qu'il tient le hold, donc EMISSION (verbe « tient » avant).
+
+    Strategie : si AUCUNE mention nominale n'est trouvee, c'est une EMISSION.
+    Si UNE mention nominale est trouvee, c'est une MENTION. On ignore les
+    emissions qui n'ont pas de verbe explicite (le cas « HOLD coordinateur »
+    en tete), parce qu'elles ont toujours le `_COORDINATOR_INJUNCTION_RE`
+    matche par leur glyphe « HOLD G-VAR-2 » que le lookahead ecarte deja --
+    le cas EMISSION qui nous interesse ici est VERBE + hold.
+    """
+    if not _COORDINATOR_INJUNCTION_RE.search(body):
+        return False
+    # Si AUCUNE mention nominale, c'est une emission (verbe d'injonction
+    # autre que hold, ou un hold-EMISSION sans mot de citation avant).
+    if not _HOLD_NOMINAL_MENTION_BEFORE_RE.search(body):
+        return True
+    # Sinon, c'est une mention -- sauf si un verbe d'emission explicite
+    # precede (`je tiens le hold`, `maintenir le hold`).
+    if _HOLD_EMISSION_VERB_BEFORE_RE.search(body):
+        return True
+    return False
+
+
+def _coordinator_emission_informal(body: str) -> bool:
+    """#13598 : le coordinateur EMET-il un hold en francais courant ?
+
+    Renvoie True si (a) le body porte une injonction structurelle non
+    negatee, ET (b) le body n'emet ni une LEVEE (LIFT_MARKER present) ni
+    un ARBITRAGE (OVERRIDE pose). Cible : 1 auteur (LIFT_OVERRIDE_LOGINS).
+    """
+    normalised = _unaccent(body)
+    if _COORDINATOR_INJUNCTION_NEGATED_RE.search(normalised):
+        return False
+    # #13912 -- sur le mot `hold`, demasquer les MENTIONS NOMINALES d'un hold
+    # tiers (cf review ai-01 sur #13706 : « moteur sous hold user (#10038) »).
+    # Sans cette discrimination, un override qui CITE un hold tenu ailleurs
+    # devient lui-meme une emission, et l'instrument de levee est auto-bloquant.
+    if _COORDINATOR_INJUNCTION_RE.search(normalised) and not _hold_match_is_emission(normalised):
+        return False
+    if not _COORDINATOR_INJUNCTION_RE.search(normalised):
+        return False
+    # Une levee VIVE neutralise l'injonction (la phrase leve la reserve qu'elle
+    # nommait). Mirror exact de la branche `_block_emitted` : un override qui
+    # nomme l'injonction levee (« BLOCAGE leve ») reste muet.
+    if has_live_lift(normalised):
+        return False
+    # Un [OVERRIDE] pose en tete (arbretage tiers de B.0) EMET une levee,
+    # jamais une reserve — garde-fou de l'override, deja documente en
+    # `_block_emitted` point A.
+    head = normalised[:60].lstrip(" \t*_").upper()
+    if head.startswith("[OVERRIDE]"):
+        return False
+    return True
 
 
 def ts(value: str | None) -> datetime | None:
@@ -1566,6 +1894,15 @@ def classify(author: str, body: str) -> str | None:
     # sous-chaine (cf `_block_emitted`).
     if _block_emitted(body):
         return "BLOCK"
+    # #13598 — EMISSION informelle d'un LIFT_OVERRIDE_LOGINS : le
+    # coordinateur tient un hold en francais courant (« ne pas merger sur
+    # les verts », « j'attends le run GPU », etc.). Avant : None. Apres :
+    # BOT-CONCERN. Bornee a 1 auteur (cout whack-a-mole minimal) et a un
+    # predicat structurel (verbe d'injonction + pas de levee ni d'override).
+    # Les commentaires anodins (« merci », « vu », « ok ») ne portent aucun
+    # verbe d'injonction et restent muets (acceptance #13598 point 2).
+    if author in LIFT_OVERRIDE_LOGINS and _coordinator_emission_informal(body):
+        return "BOT-CONCERN"
     if has_live_marker(body, (VERDICT_POSITIVE,)):
         return None  # verdict structurel positif rendu : il decide, la prose ne compte plus
     # #11636 : la recherche porte le body nettoye de ses verdicts MENTIONNES —

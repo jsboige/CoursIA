@@ -1,7 +1,6 @@
 ---
 theme: ../theme-ia101
 title: "Intelligence Artificielle - Acculturation"
-<!-- c.655 retrigger: amend trivial doc to re-trigger PR gate (Tell c.649-L2 ★). Substance intacte. -->
 info: IA 101 - Panorama complet de l'intelligence artificielle
 paginate: true
 drawings:
@@ -1785,6 +1784,7 @@ layout: section
   - + traitement requêtes
   - + score  résultats
 
+<img src="./images/img_122.png" class="w-full max-w-[400px] mx-auto max-h-[76px] object-contain mt-4" alt="Formule de probabilité jointe d'une séquence par chaîne de Markov : produit des P(ci | ci-2:i-1)" />
 
 </div>
 <div>
@@ -1797,16 +1797,29 @@ layout: section
   - Extraction d'ontologie
   - Machine reading
 
-<div class="img-grid">
-<img src="./images/img_122.png" class="w-[180px] max-w-full max-h-[300px] object-contain" alt="Formule de probabilité jointe d'une séquence par chaîne de Markov : produit des P(ci | ci-2:i-1)" />
-<img src="./images/img_123.png" class="w-[180px] max-w-full max-h-[300px] object-contain" alt="Trois pictogrammes de sentiment : positif (pouce levé vert), neutre (main jaune), négatif (pouce rouge)" />
-<img src="./images/img_124.png" class="w-[180px] max-w-full max-h-[300px] object-contain" alt="Diagramme de Venn des tâches NLP et NLU avec listes de problèmes couverts" />
-
-</div>
+<img src="./images/img_123.png" class="w-full max-w-[240px] mx-auto max-h-[96px] object-contain mt-6" alt="Trois pictogrammes de sentiment : positif (pouce levé vert), neutre (main jaune), négatif (pouce rouge)" />
 
 
 </div>
 </div>
+---
+
+
+
+# NLP et NLU : la carte des tâches
+
+
+
+<img src="./images/img_124.png" class="w-full max-h-[372px] object-contain mt-2" alt="Diagramme de Venn des tâches du TAL : l'ensemble NLP contient catégorisation de texte, analyse syntaxique, étiquetage morpho-syntaxique (POS), reconnaissance d'entités nommées (NER), résolution de coréférences et traduction automatique ; le sous-ensemble NLU contient extraction de relations, résumé, analyse sémantique, paraphrase et inférence en langue naturelle, question-réponse, analyse de sentiments et agents de dialogue" />
+
+<div class="text-center text-sm opacity-75 mt-4">
+
+Le <strong>NLU</strong> est un sous-ensemble du <strong>NLP</strong> : les tâches de la zone verte supposent une représentation du <em>sens</em>, celles de la zone bleue seule s'en passent.
+
+</div>
+
+
+
 ---
 
 
@@ -2433,7 +2446,7 @@ problèmes, et ils se résolvent avec les mêmes objets.
 | Une **file de travail** par poste, jamais vide | Plan de charge |
 | Un **jeton de réservation** posé sur la tâche | « Qui fait quoi » — anti-doublon |
 | Une **revue obligatoire** avant intégration | Contrôle, double signature |
-| Des **règles écrites** (26) plutôt que des consignes orales | Procédures |
+| Des **règles écrites** plutôt que des consignes orales | Procédures |
 
 Aucun de ces objets n'a été conçu pour l'IA : ce sont ceux d'une direction
 des opérations, transposés tels quels.
@@ -2583,7 +2596,8 @@ Et son corollaire, plus dur à admettre :
 </div>
 </div>
 
-> Un harnais de règles écrit, chargé automatiquement à chaque session. La
+> Un harnais de règles écrit, chargé automatiquement à chaque session — la
+> plupart immédiatement, certaines à la demande selon le contexte. La
 > documentation qui n'est pas chargée n'existe pas.
 
 

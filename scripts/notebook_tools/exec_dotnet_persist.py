@@ -1,205 +1,62 @@
 #!/usr/bin/env python3
-"""Execute .NET/C# notebooks cell-by-cell and persist outputs to disk."""
+"""Compatibility wrapper around the canonical .NET notebook executor.
+
+New callers should use ``dotnet_executor.py`` directly. This module preserves
+its historical positional CLI and ``execute_and_persist`` tuple return value.
+"""
 
 import json
 import sys
-import time
-import base64
 from pathlib import Path
 
 from _papermill_meta import strip_stale_papermill_metadata
+from dotnet_executor import execute_notebook, split_text_lines
+
+
+_LEGACY_MIME_TYPES = ("text/plain", "text/html", "image/svg+xml")
 
 
 def _save_executed(nb: dict, path: Path) -> None:
-    """Ecrit le notebook execute en retirant un bloc papermill perime (#12722).
+    """Persist a notebook after removing stale Papermill metadata.
 
-    Fonction separee pour etre testable sans kernel .NET : c'est le point
-    d'ecriture de cet executeur, le strip doit y vivre.
+    Kept as a public compatibility helper for callers and unit tests that use
+    the historical write boundary without starting a kernel.
     """
     strip_stale_papermill_metadata(nb)
-    with open(path, 'w', encoding='utf-8') as f:
-        json.dump(nb, f, indent=1, ensure_ascii=False)
+    with open(path, "w", encoding="utf-8") as handle:
+        json.dump(nb, handle, indent=1, ensure_ascii=False)
 
 
 def execute_and_persist(notebook_path: str, timeout_per_cell: int = 120):
-    """Execute a .NET notebook cell-by-cell and write outputs back."""
-    import jupyter_client
-
+    """Execute through the canonical engine and return ``(executed, errors)``."""
     path = Path(notebook_path)
-    with open(path, 'r', encoding='utf-8') as f:
-        nb = json.load(f)
+    with open(path, "r", encoding="utf-8") as handle:
+        nb = json.load(handle)
 
-    kernel_name = nb.get('metadata', {}).get('kernelspec', {}).get('name', '.net-csharp')
+    kernel_name = nb.get("metadata", {}).get("kernelspec", {}).get(
+        "name", ".net-csharp"
+    )
     print(f"Executing {path.name} (kernel={kernel_name})")
 
-    km = jupyter_client.KernelManager(kernel_name=kernel_name)
-    km.start_kernel()
-    kc = km.client()
-    kc.start_channels()
-    kc.wait_for_ready(timeout=120)
-    print(f"  Kernel ready")
-
-    nb_dir = str(path.parent)
-    if '.net' in kernel_name:
-        kc.execute(f'System.IO.Directory.SetCurrentDirectory(@"{nb_dir}")')
-        _wait_idle(kc, timeout=15)
-
-    cells = nb['cells']
-    executed = 0
-    errors = 0
-
-    for i, cell in enumerate(cells):
-        if cell.get('cell_type') != 'code':
-            continue
-
-        source = ''.join(cell.get('source', []))
-        if not source.strip():
-            continue
-
-        cell['outputs'] = []
-        executed += 1
-        # Assign cell-level execution_count (C.2: every executed code cell needs a
-        # coherent int). Previously omitted, so re-exec left counts stale / None.
-        cell['execution_count'] = executed
-        print(f"  Cell {i}: ", end='', flush=True)
-        t0 = time.time()
-
-        try:
-            # Attribute iopub messages strictly to THIS execute: .NET Interactive
-            # flushes display() outputs asynchronously, sometimes AFTER the kernel
-            # reports idle. Without the parent msg_id filter those late messages
-            # were captured by the NEXT cell's loop (output misattribution).
-            msg_id = kc.execute(source)
-            outputs = []
-            while True:
-                try:
-                    msg = kc.get_iopub_msg(timeout=timeout_per_cell)
-                    if msg.get('parent_header', {}).get('msg_id') != msg_id:
-                        continue
-                    msg_type = msg['msg_type']
-                    content = msg.get('content', {})
-
-                    if msg_type == 'stream':
-                        text = content.get('text', '')
-                        outputs.append({
-                            'output_type': 'stream',
-                            'name': content.get('name', 'stdout'),
-                            'text': _split_lines(text)
-                        })
-                    elif msg_type == 'execute_result':
-                        data = content.get('data', {})
-                        out = {
-                            'output_type': 'execute_result',
-                            'metadata': {},
-                            'data': {},
-                            'execution_count': content.get('execution_count', executed)
-                        }
-                        if 'text/plain' in data:
-                            out['data']['text/plain'] = _split_lines(data['text/plain'])
-                        if 'text/html' in data:
-                            out['data']['text/html'] = _split_lines(data['text/html'])
-                        if 'image/svg+xml' in data:
-                            out['data']['image/svg+xml'] = _split_lines(data['image/svg+xml'])
-                        outputs.append(out)
-                    elif msg_type == 'display_data':
-                        data = content.get('data', {})
-                        out = {'output_type': 'display_data', 'metadata': {}, 'data': {}}
-                        if 'text/plain' in data:
-                            out['data']['text/plain'] = _split_lines(data['text/plain'])
-                        if 'text/html' in data:
-                            out['data']['text/html'] = _split_lines(data['text/html'])
-                        if 'image/svg+xml' in data:
-                            out['data']['image/svg+xml'] = _split_lines(data['image/svg+xml'])
-                        outputs.append(out)
-                    elif msg_type == 'error':
-                        ename = content.get('ename', 'Error')
-                        evalue = content.get('evalue', '')
-                        traceback = content.get('traceback', [])
-                        outputs.append({
-                            'output_type': 'error',
-                            'ename': ename,
-                            'evalue': evalue,
-                            'traceback': traceback
-                        })
-                        errors += 1
-                    elif msg_type == 'status' and content.get('execution_state') == 'idle':
-                        # Grace drain: late display outputs of this same execute
-                        # can still arrive just after idle (async flush).
-                        import queue as _queue
-                        grace_deadline = time.time() + 2.0
-                        while time.time() < grace_deadline:
-                            try:
-                                late = kc.get_iopub_msg(timeout=0.3)
-                            except _queue.Empty:
-                                break
-                            if late.get('parent_header', {}).get('msg_id') != msg_id:
-                                continue
-                            ltype = late['msg_type']
-                            lcontent = late.get('content', {})
-                            if ltype == 'display_data' or ltype == 'execute_result':
-                                data = lcontent.get('data', {})
-                                out = {'output_type': ltype, 'metadata': {}, 'data': {}}
-                                if ltype == 'execute_result':
-                                    out['execution_count'] = lcontent.get('execution_count', executed)
-                                for mime in ('text/plain', 'text/html', 'image/svg+xml'):
-                                    if mime in data:
-                                        out['data'][mime] = _split_lines(data[mime])
-                                outputs.append(out)
-                        break
-                except Exception as e:
-                    if 'timeout' in str(e).lower():
-                        outputs.append({
-                            'output_type': 'error',
-                            'ename': 'TimeoutError',
-                            'evalue': f'Timeout after {timeout_per_cell}s',
-                            'traceback': []
-                        })
-                        errors += 1
-                    break
-
-            cell['outputs'] = outputs
-            elapsed = time.time() - t0
-            status = 'OK' if not any(o.get('output_type') == 'error' for o in outputs) else 'ERR'
-            print(f"{status} ({elapsed:.1f}s, {len(outputs)} outputs)")
-
-        except Exception as e:
-            errors += 1
-            cell['outputs'] = [{
-                'output_type': 'error',
-                'ename': type(e).__name__,
-                'evalue': str(e),
-                'traceback': []
-            }]
-            print(f"EXCEPTION: {e}")
-
-    kc.stop_channels()
-    km.shutdown_kernel(now=True)
-
-    _save_executed(nb, path)
-
-    print(f"  Done: {executed} cells executed, {errors} errors, saved to {path.name}")
-    return executed, errors
-
-
-def _wait_idle(kc, timeout=10):
-    """Wait for kernel idle state."""
-    deadline = time.time() + timeout
-    while time.time() < deadline:
-        try:
-            msg = kc.get_iopub_msg(timeout=2)
-            if msg['msg_type'] == 'status' and msg['content'].get('execution_state') == 'idle':
-                return
-        except Exception:
-            pass
+    stats = execute_notebook(
+        path,
+        kernel_name=kernel_name,
+        cell_timeout=timeout_per_cell,
+        ready_timeout=120,
+        skip_empty_code_cells=True,
+        text_as_lines=True,
+        allowed_mime_types=_LEGACY_MIME_TYPES,
+        idle_grace=2.0,
+    )
+    return stats["executed"], stats["errors"]
 
 
 def _split_lines(text):
-    """Split text into list of lines (nbformat convention)."""
-    lines = text.split('\n')
-    return [l + '\n' for l in lines[:-1]] + ([lines[-1]] if lines[-1] else [])
+    """Preserve the historical helper name for downstream imports."""
+    return split_text_lines(text)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Usage: python exec_dotnet_persist.py <notebook.ipynb> [timeout]")
         sys.exit(1)

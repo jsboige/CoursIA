@@ -4,10 +4,25 @@ name: Linux Self-Hosted Tests
 # po-2024. Dispatch-only : ZERO declencheur pull_request/push, donc zero
 # fan-out CI -- pattern #13097 (windows-self-hosted-tests.yml).
 #
+# PRECONDITION -- A LIRE AVANT TOUT DISPATCH (mesure du 2026-09-01) :
+# AUCUN runner ne porte aujourd'hui le label `coursia-linux`. Le registre du
+# depot contient un seul runner, `myia-po-2024-fast-guards`, qui est WINDOWS.
+# Dispatcher ce workflow maintenant met le job en file INDEFINIMENT -- pas
+# d'echec, pas de rouge, une attente muette qu'aucun timeout ne coupe
+# (timeout-minutes ne court qu'a partir du DEMARRAGE du job).
+#
+# Pour l'activer, sur po-2024 :
+#   docker build -t coursia-linux-runner:2.336.0 scripts/ci/docker/linux-runner/
+#   scripts/ci/docker/linux-runner/supervise.sh start 2
+# Verifier AVANT de dispatcher :
+#   gh api repos/jsboige/CoursIA/actions/runners #     --jq '.runners[]|select([.labels[].name]|index("coursia-linux"))|.name'
+# Sortie vide = ne pas dispatcher.
+#
 # Cycle de vie : le conteneur porte un runner --ephemeral (AU PLUS UN JOB
-# puis desenregistrement natif). Chaque dispatch consomme l'enregistrement
-# courant : un dispatch, un job, un conteneur. Ne pas dispatcher deux fois
-# de suite sans avoir relance le conteneur (scripts/ci/docker/linux-runner/).
+# puis desenregistrement natif). Un dispatch = un job = un conteneur. Le
+# superviseur relance un conteneur des que le precedent meurt : N boucles
+# = N jobs concurrents, ce qui est ce qui leve le plafond de 1 nomme par le
+# census #13378 comme LE facteur limitant.
 #
 # Sous-semble pilote volontairement etroit : le guard de policy des runners
 # self-hosted (python pur, aucune ecriture disque, non critique). Les 93
@@ -26,9 +41,18 @@ jobs:
     # Garde fork EXPLICITE au niveau job (defense-in-depth, pattern maison).
     # Le declencheur actuel est workflow_dispatch seul -- un fork ne peut pas
     # l'emettre -- mais "pas de trigger" est un etat qu'une ligne de YAML
-    # defait : si un declencheur pull_request est ajoute un jour, un evenement
-    # fork est refuse ICI.
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    # defait : si un declencheur pull_request (ou pull_request_target) est
+    # ajoute un jour, un evenement fork est refuse ICI.
+    #
+    # Forme universelle (#13874) : la garde ne s'appuie plus sur la valeur
+    # textuelle de github.event_name (qui distingue pull_request de
+    # pull_request_target -- le second est le vecteur d'exfiltration classique
+    # sur runner self-hosted avec token en ecriture + acces secrets). Elle
+    # teste la presence du champ pull_request (null hors PR) + l'identite du
+    # repo source en un seul predicat, couvrant les deux variantes de
+    # declencheur d'un coup. Un fork (head.repo.full_name != repository) est
+    # refuse que le trigger s'appelle pull_request ou pull_request_target.
+    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
     timeout-minutes: 10
     concurrency:

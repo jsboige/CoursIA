@@ -1,11 +1,14 @@
 """Tests for exec_dotnet_persist.py — _split_lines helper."""
 
+import json
 import sys
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
+import exec_dotnet_persist
 from exec_dotnet_persist import _split_lines
 
 
@@ -50,3 +53,39 @@ class TestSplitLines:
         for line in result[:-1]:
             assert line.endswith("\n")
         assert not result[-1].endswith("\n")
+
+
+class TestCompatibilityWrapper:
+    def test_delegates_to_canonical_executor_with_legacy_options(self, tmp_path):
+        path = tmp_path / "legacy.ipynb"
+        path.write_text(json.dumps({
+            "cells": [],
+            "metadata": {"kernelspec": {"name": ".net-fsharp"}},
+        }), encoding="utf-8")
+
+        with patch.object(exec_dotnet_persist, "execute_notebook") as execute:
+            execute.return_value = {"executed": 4, "errors": 1}
+            result = exec_dotnet_persist.execute_and_persist(str(path), 45)
+
+        assert result == (4, 1)
+        execute.assert_called_once_with(
+            path,
+            kernel_name=".net-fsharp",
+            cell_timeout=45,
+            ready_timeout=120,
+            skip_empty_code_cells=True,
+            text_as_lines=True,
+            allowed_mime_types=("text/plain", "text/html", "image/svg+xml"),
+            idle_grace=2.0,
+        )
+
+    def test_kernel_defaults_when_metadata_is_absent(self, tmp_path):
+        path = tmp_path / "default.ipynb"
+        path.write_text(json.dumps({"cells": [], "metadata": {}}),
+                        encoding="utf-8")
+
+        with patch.object(exec_dotnet_persist, "execute_notebook") as execute:
+            execute.return_value = {"executed": 0, "errors": 0}
+            exec_dotnet_persist.execute_and_persist(str(path))
+
+        assert execute.call_args.kwargs["kernel_name"] == ".net-csharp"

@@ -112,10 +112,69 @@ def test_grain_word_without_tier_genre_returns_none():
     assert gt.parse_grain_tag("Grain: -- lane myia-po-2023:CoursIA") is None
 
 
+# --- #13633: the bare lowercase token in prose must NOT arm the extractor ---
+#
+# `re.IGNORECASE` on `_GRAIN_FULL_RE` let a lowercase `grain` (a noun in
+# running prose, not a key) match `<TIER>/<GENRE>` after it. The #13550 body
+# carried NO `Grain:` key -- it described ANOTHER PR's next grain: "est le
+# grain MED/tooling suivant" + a signature "Lane myia-po-2027:CoursIA-2".
+# parse_grain composed {'tier': 'MED', 'lane': ...} and the gate returned
+# `cap_reached: false` instead of the #9465 `null` ("not evaluated"). Controls
+# A-E below pin the fix in BOTH directions (A/B -> None; D still parses).
+
+def test_13633_control_a_prose_lowercase_token_with_lane():
+    # A: no key, prose "le grain MED/tooling suivant" + a Lane signature line.
+    # The trigger is the tier/genre TOKEN, but the token is a lowercase noun --
+    # it must NOT arm the extractor. This is the exact #13550 shape.
+    body = (
+        "#13544 (renderer hard gate before rerender) est le grain MED/tooling "
+        "suivant, priorite P1.\n"
+        "Lane myia-po-2027:CoursIA-2 -- c.1331p250"
+    )
+    g = gt.parse_grain_tag(body)
+    assert g is None, f"prose lowercase token must not parse, got {g!r}"
+
+
+def test_13633_control_b_prose_lowercase_token_no_lane():
+    # B: no key, prose ONLY (no Lane line) -> None too.
+    g = gt.parse_grain_tag("est le grain MED/tooling suivant, priorite P1.")
+    assert g is None, f"prose-only must not parse, got {g!r}"
+
+
+def test_13633_control_c_lane_line_alone_is_none():
+    # C: no key, "Lane x:y" line alone -> None. The trigger is the tier/genre
+    # token, NOT the lane line (the lane line alone is no tag at all).
+    g = gt.parse_grain_tag("Lane myia-po-2027:CoursIA-2 -- c.1331p250")
+    assert g is None
+
+
+def test_13633_control_d_real_key_still_parses():
+    # D (positive control): a real capitalised `Grain:` key STILL parses.
+    g = gt.parse_grain_tag("Grain: DEEP/lean - lane myia-ai-01:CoursIA")
+    assert g == {"tier": "DEEP", "genre": "lean", "lane": "myia-ai-01:CoursIA"}
+
+
+def test_13633_control_e_empty_body_is_none():
+    # E (negative control): empty body -> None (already pinned, kept explicit).
+    assert gt.parse_grain_tag("") is None
+    assert gt.parse_grain_tag(None) is None  # type: ignore[arg-type]
+
+
+def test_13633_uppercase_token_at_line_start_is_still_a_key():
+    # The 5 tolerated forms all capitalise the key; the no-colon form
+    # `Grain LIGHT/guard` (capital G) is indistinguishable from prose by
+    # shape alone (space before T/G) -- so capitalisation IS the boundary.
+    # A capitalised key at the start of a line must still parse.
+    g = gt.parse_grain_tag("Grain LIGHT/guard -- lane myia-po-2026:CoursIA")
+    assert g == {"tier": "LIGHT", "genre": "guard", "lane": "myia-po-2026:CoursIA"}
+
+
 def test_tier_uppercased_genre_lowercased():
     # Normalisation preserved: tier canonical upper, genre canonical lower
     # (so the guard's case-statement and G-VAR-3 adjacency compare cleanly).
-    g = gt.parse_grain_tag("grain: light/GUARD -- lane myia-po-2023:CoursIA")
+    # #13633 -- the KEY stays capitalised `Grain:` (a lowercase `grain` in
+    # prose is a noun, not a key); only TIER/GENRE are case-tolerant.
+    g = gt.parse_grain_tag("Grain: light/GUARD -- lane myia-po-2023:CoursIA")
     assert g["tier"] == "LIGHT"
     assert g["genre"] == "guard"
 
@@ -740,3 +799,87 @@ def test_lane_marker_residues_report_malformed_forms():
     # A clean marker carries no residue.
     clean = "[CLAIMED] lane myia-po-2023:CoursIA -- paths: foo.py"
     assert gt.lane_marker_residues(clean) == []
+
+
+# --- #13830: workspace with Latin-1 letters used to truncate ---------------
+#
+# Founder case: a lane whose workspace carries Latin-1 letters (e.g.
+# `myia-ai-01:LivresAgites`) was truncated to `myia-ai-01:LivresAgit` -- the
+# first non-ASCII byte was eaten by the `[A-Za-z0-9._-]+` class. The cap
+# G-VAR-2 then counted zero grains on the lane that wrote its name correctly.
+# The fix widens the workspace class to `[A-Za-zA...-O...-o...-y0-9._-]+` in
+# BOTH `_LANE_RE` and `_LANE_FALLBACK_RE` (the twin MUST move or the bug
+# re-opens on the fallback only -- the documented founder shape #12145).
+
+
+def test_lane_latin1_workspace_not_truncated_primary():
+    """Primary regex: `lane <machine>:<workspace>` body form.
+
+    Pre-fix returned `myia-ai-01:LivresAgit` (lost `es` after the `e`).
+    Post-fix must return the full token with the accented letter intact.
+    """
+    body = "[CLAIMED] #13286 — lane myia-ai-01:LivresAgités 2026-08-23"
+    assert gt.extract_lane(body) == "myia-ai-01:LivresAgités"
+
+
+def test_lane_latin1_workspace_not_truncated_fallback():
+    """Fallback regex: marker-line form, no literal `lane` keyword (#10395).
+
+    The twin regex MUST accept the same shape, otherwise the founder bug
+    (#12145) re-opens on the fallback only -- a class of bug the file
+    explicitly calls out at the `_LANE_FALLBACK_RE` definition site.
+    """
+    line = "[CLAIMED] myia-ai-01:LivresAgités 2026-08-23T00:52Z"
+    assert gt.extract_lane("no lane keyword here", marker_line=line) == "myia-ai-01:LivresAgités"
+
+
+def test_lane_latin1_multiple_accented_letters():
+    """Multiple Latin-1 letters in the same workspace word."""
+    line = "[CLAIMED] myia-ai-01:LivresAgitésÉlégants 2026-08-23T00:52Z"
+    assert gt.extract_lane("no lane keyword here", marker_line=line) == "myia-ai-01:LivresAgitésÉlégants"
+
+
+def test_lane_ascii_workspace_still_truncates_correctly():
+    """Non-regression: an ASCII workspace still returns the same token.
+
+    Mandatory control -- without it, a too-permissive class could swallow
+    the next prose word and the test would still pass.
+    """
+    line = "[CLAIMED] myia-ai-01:LivresAgit 2026-08-23T00:52Z"
+    assert gt.extract_lane("no lane keyword here", marker_line=line) == "myia-ai-01:LivresAgit"
+
+
+def test_lane_latin1_does_not_swallow_prose():
+    """The Latin-1 widening must not extend the token into the next prose word.
+
+    Pre-fix: the class stopped at the first non-ASCII byte (and dropped
+    the rest). Post-fix: the class extends through accented letters but
+    still halts at whitespace and punctuation -- prose after the workspace
+    stays out of the lane token.
+    """
+    body = "[CLAIMED] lane myia-ai-01:LivresAgités a livre trois PRs."
+    assert gt.extract_lane(body) == "myia-ai-01:LivresAgités"
+
+
+def test_lane_latin1_hyphenated_workspace_still_works():
+    """Non-regression #13830 must NOT re-introduce the `CoursIA-2` bug.
+
+    The original `[A-Za-z0-9._-]+` class let `CoursIA-2` through; the
+    fix must keep that path open.
+    """
+    body = "Grain: MED/guard - lane myia-po-2024:CoursIA-2 - prev: tooling #13862"
+    assert gt.extract_lane(body) == "myia-po-2024:CoursIA-2"
+
+
+def test_lane_latin1_bare_date_still_rejected():
+    """Non-regression #12719: a bare date immediately after the workspace
+    must NOT be swallowed by the continuation clause. The widening does
+    not touch the `(?!\d{4}-\d{2}-\d{2})` negative lookahead, but the
+    test pins that down explicitly.
+    """
+    line = "[CLAIMED] myia-ai-01:LivresAgités 2026-08-23 — Medical-Chatbot : amorcage batch"
+    # The lane token is the workspace only; the bare date is reported as a
+    # residue but the lane extraction still works.
+    assert gt.extract_lane("no lane keyword here", marker_line=line) == "myia-ai-01:LivresAgités"
+    residues = gt.lane_marker_residues(line)
+    assert any(r.startswith("bare-date:") for r in residues), residues
