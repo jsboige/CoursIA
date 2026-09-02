@@ -3,7 +3,7 @@
 <!-- CATALOG-STATUS
 series: Probas
 pedagogical_count: 66
-breakdown: DecisionTheory=24, Infer=20, PyMC=19, root=3
+breakdown: DecisionTheory=25, Infer=20, PyMC=19, root=2
 maturity: BETA=66
 -->
 
