@@ -6,12 +6,15 @@ execute untrusted code next to the cluster's credentials. This scanner therefore
 fails closed: every self-hosted job must belong to an explicitly allowed
 workflow, use the exact dedicated label set, and avoid runner groups (unavailable
 for this personal-account repository). Every pull_request job must also carry
-the exact same-repository guard. Triggers whose payload can name a fork pull
-request (pull_request_target, workflow_run, issue_comment, pull_request_review,
-pull_request_review_comment) never reach a self-hosted job, whatever the guard
-says; push / schedule / workflow_dispatch only run repository-owned refs and are
-accepted. Dynamic ``runs-on`` expressions are rejected because their target
-cannot be proved statically.
+the exact same-repository guard. A self-hosted job is gated on a trigger
+allowlist (pull_request, push, schedule, workflow_dispatch): these only run
+repository-owned refs, and are checked for the same-repo guard when
+pull_request is present. Any other trigger is rejected fail-closed -- the
+known-dangerous ones carry specific codes (pull_request_target, workflow_run,
+issue_comment, pull_request_review, pull_request_review_comment), and anything
+unlisted (e.g. check_run / check_suite, whose payload can name a fork pull
+request) is refused by default. Dynamic ``runs-on`` expressions are rejected
+because their target cannot be proved statically.
 
 Exit codes:
   0  policy satisfied (including the explicit baseline of zero self-hosted jobs)
@@ -75,6 +78,49 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     "notebook-exec-sequence-ratchet.yml",
     "notebook-navlink-check.yml",
     "notebook-papermill-ratchet.yml",
+    # tranche 3b (#14283, meme decision, meme owner) : suite des gardes PR
+    #   pure-Python. Fondue dans la meme PR que 3a -- les scinder aurait produit
+    #   un conflit sur cette meme ancre pour zero benefice de relecture.
+    "markdown-claims-output-advisory.yml",
+    "orphaned-delivery-scan.yml",
+    "quantconnect-notebook-freshness.yml",
+    "scan-md-hierarchy-drift.yml",
+    "slides-composition-pr-relay.yml",
+    "source-output-ratchet.yml",
+    "translation-guard.yml",
+    "unique-check-run-names-guard.yml",
+    "validation-matrix.yml",
+    # tranche 3a (#14283, decision ai-01 2026-09-02, owner myia-ai-01:CoursIA) :
+    #   gardes PR pure-Python, garde same-repo au niveau job, runs-on STATIQUE.
+    #   Exclus deliberement : pr-gate.yml (agregateur qui poll -- il tiendrait le
+    #   slot quil attend), owui-playwright-check.yml (navigateurs hors image),
+    #   always-on-guards.yml (trigger pull_request_review = FORK_REACHABLE).
+    #   Rollback = revert de la PR de routage.
+    "arxiv-attributions-guard.yml",
+    "catalog-drift.yml",
+    "consecutive-code-cells-advisory.yml",
+    "harness-coauthor-guard.yml",
+    "ict-tests.yml",
+    "label-paths-guard.yml",
+    "lean-conway.yml",
+    "lean-i18n-drift.yml",
+    "lean-knot.yml",
+    "manifest-description-visuelle-gate.yml",
+    # tranche 3c (#14283, meme decision, meme owner) : jobs individuels d'un
+    #   workflow dont les autres jobs restent sur ubuntu-latest.
+    #   Exclus deliberement : ml-tests (torch retelecharge a chaque run, pas de
+    #   cache persistant), secret-scan/gitleaks (socket Docker), lean-social-
+    #   choice/build (merite un pool a cache Mathlib chaud, cf #14337),
+    #   notebook-execution-required/golden-set-execute (execution lourde).
+    "bash-syntax-advisory.yml",
+    "lean-social-choice.yml",
+    "notebook-execution-required.yml",
+    "secret-scan.yml",
+    # always-on-metadata-guards.yml : routable (triggers pull_request +
+    #   workflow_dispatch seulement). Son jumeau always-on-guards.yml ne l'est
+    #   PAS -- il porte pull_request_review, classe FORK_REACHABLE (#14294).
+    "always-on-metadata-guards.yml",
+    "twin-parity.yml",
 }
 GITHUB_HOSTED_LABELS = {
     "ubuntu-latest",
@@ -121,6 +167,22 @@ FORK_REACHABLE_TRIGGERS = frozenset({
     "issue_comment",
     "pull_request_review",
     "pull_request_review_comment",
+})
+# Safe triggers for a self-hosted job (#14201, tranche 2). push, schedule and
+# workflow_dispatch only run repository-owned refs, so the `== null` branch of
+# the universal guard is safe there by construction (NanoClaw concern 2,
+# measured on the routed workflows: banner-guard.yml / notebook-cell-source-
+# parses.yml / hooks-parity.yml rely on push / schedule). pull_request is safe
+# only WITH the same-repo guard (enforced above). Everything else is rejected
+# fail-closed: a denylist alone (the FORK_REACHABLE_TRIGGERS form of #14148) is
+# fail-OPEN on any trigger we have not enumerated -- check_run / check_suite,
+# whose payloads carry pull_requests[], and any future GitHub event that does
+# the same. Default-deny is the form that does not perish with each new event.
+SAFE_SELF_HOSTED_TRIGGERS = frozenset({
+    "pull_request",
+    "push",
+    "schedule",
+    "workflow_dispatch",
 })
 DEFAULT_WORKFLOWS_DIR = Path(__file__).resolve().parents[2] / ".github" / "workflows"
 
@@ -447,6 +509,27 @@ def scan_workflows(workflows_dir: Path = DEFAULT_WORKFLOWS_DIR) -> ScanResult:
                     "FORK_REACHABLE_TRIGGER",
                     f"{trigger} can check out a fork pull request and must never "
                     "reach a self-hosted runner",
+                ))
+            # Fail-closed default deny (#14201, tranche 2). The known-dangerous
+            # triggers above carry specific codes; ANY other trigger outside the
+            # safe set is refused by default. A denylist alone (the #14148
+            # FORK_REACHABLE_TRIGGERS form) is fail-OPEN on anything unlisted.
+            known_unsafe = FORK_REACHABLE_TRIGGERS | {
+                "pull_request_target",
+                "workflow_run",
+                "workflow_call",
+            }
+            unknown_unsafe = sorted(
+                triggers - SAFE_SELF_HOSTED_TRIGGERS - known_unsafe
+            )
+            if unknown_unsafe:
+                violations.append(Violation(
+                    path.name,
+                    str(job_name),
+                    "UNSAFE_TRIGGER",
+                    "self-hosted job is gated on a trigger outside the safe set "
+                    "(pull_request, push, schedule, workflow_dispatch): "
+                    + ", ".join(unknown_unsafe),
                 ))
 
             if path.name not in SELF_HOSTED_WORKFLOW_ALLOWLIST:

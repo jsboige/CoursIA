@@ -132,6 +132,27 @@ AGENT_PREFIXES = (
 # « overrides » jsboige 02:40/02:41 ; classe #12798, l'auto-levee). L'arbitre
 # tiers de B.0 est la lane coordinateur dediee, et elle seule.
 LIFT_OVERRIDE_LOGINS = {"myia-ai-01"}
+# #13609 -- alias de persona Hermes/NanoClaw cross-login. La persona de
+# reviewer Hermes parle sous DEUX logins -- clusterManager-Myia (reviewer
+# principal) et jsboige (self-bot). Quand elle pose une reserve sous l'un
+# puis leve sous l'autre, sa propre levee n'etait pas creditee par
+# `_lift_eligible` (borne d'auteur stricte #11145 / #12836), et la reserve
+# restait vivante : aucun geste de la lane ne pouvait la lever hors
+# `[OVERRIDE]` coordinateur (coûteux, exige re-verif tierce, ne s'applique
+# pas sur PR lane-coordinateur -- cf #13316). La composition des deux
+# decisions est juste ; seule leur intersection est un faux negatif.
+#
+# On declare donc que les deux logins sont la MEME persona au sens de la
+# borne d'auteur, mais UNIQUEMENT quand le corps du lifter porte un marqueur
+# explicite `[Hermes]` / `[NanoClaw]` / `[Hermes self-bot]`. Sans marqueur,
+# `jsboige` reste l'identite de poussee partagee des lanes (#13316) et un
+# commentaire sans marqueur ne leve rien. LIFT_OVERRIDE_LOGINS reste
+# inchange : un override `[OVERRIDE]` jsboige n'entre pas, alias de persona
+# != droit d'override coordinateur.
+PERSONA_ALIAS_LOGINS = {"clusterManager-Myia"}
+_PERSONA_MARKERS_RE = re.compile(
+    r"(?m)(?:^|\s)\[(?:Hermes|NanoClaw|Hermes self-bot)(?:\s+[^\]]*)?\]"
+)
 # #13030 -- le marqueur doit etre POSE, pas CITE. L'ancien pattern sans
 # ancre matchait n'importe quelle mention dans le corps : le commentaire de
 # la lane #12872 qui DOCUMENTAIT l'option « (b) `[OVERRIDE] lane x` par
@@ -727,6 +748,68 @@ _MENTION_VERDICT_BARE = re.compile(
     r"(?!\s*[—\-]\s+commit\b)")
 
 
+# #14130 (cf grain) — Position H : rapport de verdict ATTRIBUE a un tiers, sans
+# ref pointable obligatoire. Instance fondatrice (#14070) : « La review Hermes
+# porte un CHANGES_REQUESTED que ma lane ne peut pas lever seule. » — un
+# rapport de diagnostic sur l'etat d'une review tierce, pas une emission
+# propre. Les positions A-G exigent soit une parenthese (A), un titre (B), une
+# ref pointable (C/D/E/F), ou un verbe de mention + verdict (G) ; aucune ne
+# couvre le rapport « la review X porte/comporte/contient/mentionne un
+# VERDICT » qui est pourtant la formulation la plus naturelle d'un diagnostic.
+#
+# Discrimination vs emission formelle :
+# (1) Attribution explicite a un tiers (Hermes / NanoClaw / ai-01 / jsboige /
+#     myia-* / un nom propre) — sans attribution, le verdict est propre
+#     (l'auteur l'emet), la position ne s'applique PAS.
+# (2) Verbe DESCRIPTIF (`porte`, `comporte`, `contient`, `mentionne`,
+#     `indique`, `signale`, `releve`, `contient`, `a emis`, `avait emis`) — un
+#     verbe d'EMISSION (`Verdict :`, `Block on`, `declare`, `reste bloquante`)
+#     n'est PAS descriptif, c'est une emission, la position ne s'applique PAS.
+# (3) Pas de declaration de blocage dans la suite de la phrase (meme garde
+#     dure que Position E, ligne 645 : `reste bloquante` / `Verdict :` / `Block
+#     on`) — sinon le verdict reste emis.
+#
+# Mesure discriminatoire (corpus c.840) :
+#   TP (doit matcher, rendre None) :
+#     - "La review Hermes porte un CHANGES_REQUESTED que ma lane ne peut pas lever seule."
+#     - "La revue ai-01 contient un COMMENT_WITH_CONCERNS sur la sortie 12."
+#     - "La review NanoClaw mentionne un SUSPECT_REGRESSION bloque en CI."
+#     - "La review jsboige avait emis un STRUCTURAL_ONLY sur la note de parite."
+#   FN (ne doit PAS matcher, doit rester BOT-CONCERN) :
+#     - "Cette review CHANGES_REQUESTED reste bloquante." (pas d'attribution, pas de verbe desc.)
+#     - "CHANGES_REQUESTED: edge case non couvert." (verdict nu en tete)
+#     - "Verdict : CHANGES_REQUESTED sur ce commit." (verdict precede de "Verdict :")
+#     - "Block on CHANGES_REQUESTED jusqu'a validation." (verdict precede de "Block on")
+#     - "Je declare CHANGES_REQUESTED sur le diff." (verbe d'emission, pas descriptif)
+#     - "La review CHANGES_REQUESTED reste vive." (verdict sans attribution, bloque)
+_MENTION_VERDICT_REPORTED = re.compile(
+    r"(?i)(?:^|[\s,;:(*])"
+    # (1) determiner optionnel + revue|review
+    r"(?:le|la|les|du|mon|ma|ce|cet|cette|ces|the|my)?\s*"
+    r"(?:revue|review)(?![:.])"
+    # Attribution a un tiers : Hermes / NanoClaw / ai-01 / jsboige / myia-XXX ou
+    # un nom propre ([A-Z][a-z]+) precede de `de|du|des|par` ou simplement place
+    # apres la review. La forme « la review Hermes porte » (sans preposition) est
+    # la plus naturelle, on l'accepte ; « la review de Hermes » aussi.
+    r"\s+(?:de\s+|du\s+|des\s+|par\s+)?"
+    r"(?:Hermes|NanoClaw|jsboige|ai-?01|myia-[a-z0-9-]+|[A-Z][a-z][A-Za-z0-9_-]{0,30})"
+    # (2) verbe DESCRIPTIF (ni METION comme G, ni EMISSION comme Hermes)
+    r"\s+(?:porte|portes|portent|comporte|comportes|comportent"
+    r"|contient|contiens|contiennent|contienta"
+    r"|mentionne|mentionnes|mentionnent"
+    r"|indique|indiques|indiquent"
+    r"|signale|signales|signalent"
+    r"|releve|releves|relevent"
+    r"|a\s+emis|avait\s+emis|avaient\s+emis|ont\s+emis)"
+    r"\s+(?:un|une|le|la|les|des|du)\s+"
+    # Verdict case-sensitive (memes bornes que A-G)
+    r"(?-i:([A-Z][A-Z_]{3,}))(?![A-Za-z0-9_])"
+    # (3) garde dure : pas de declaration de blocage ni d'emission formelle
+    # dans la suite de la phrase (200 chars, meme phrase)
+    r"(?![^.!?\n]{0,200}(?:reste\s+bloquante|reste\s+vive|verdict\s*:|block\s+on))"
+)
+
+
 def _strip_mentioned_verdicts(body: str) -> str:
     """Neutralise les noms de verdict cites en position de mention (#11636, #11744, #11809).
 
@@ -747,7 +830,7 @@ def _strip_mentioned_verdicts(body: str) -> str:
     """
     # Phase 1 : sub iso-longueur pour les 6 patterns historiques (pas de
     # negation — leur discrimination par contexte est suffisante).
-    for pat in (_MENTION_VERDICT, _MENTION_VERDICT_HEADING, _MENTION_VERDICT_INLINE, _MENTION_VERDICT_LIFTED, _MENTION_VERDICT_REVIEW, _MENTION_VERDICT_REVIEW_NARRATIVE):
+    for pat in (_MENTION_VERDICT, _MENTION_VERDICT_HEADING, _MENTION_VERDICT_INLINE, _MENTION_VERDICT_LIFTED, _MENTION_VERDICT_REVIEW, _MENTION_VERDICT_REVIEW_NARRATIVE, _MENTION_VERDICT_REPORTED):
         body = pat.sub(
             lambda m: m.group(0).replace(m.group(1), " " * len(m.group(1))), body)
     # Phase 2 : Position G avec garde anti-negation (Hermes demande 1/2,
@@ -1550,43 +1633,88 @@ def gh_json(args: list[str]) -> object:
     return json.loads(out)
 
 
+# #14218 — la voie 3 de B.0 a besoin de 4 conditions, pas 1. Une seule
+# (createdAt avant cutoff) etait verifiee par `gh_issue_created`, ce qui
+# ouvrait la trappe a 3 classes silencieuses : issue fermee qui pointe
+# encore sur la PR, issue ancienne sans rapport, issue qui ne cite pas la
+# PR (le « report » decrit un autre travail). On enrichit le callback
+# pour rendre les 4 jugements : OUVERTE, anterieure au cutoff, posterieure
+# a la reserve, et citant la PR dans son titre ou son corps.
+_ISSUE_INFO_CACHE: dict[int, "IssueInfo | None"] = {}
+# Garde compat : l'ancien nom etait deja importe par d'anciens tests
+# (cf `gh_issue_created` comme pointeur historique). Le callback ci-dessous
+# rend le createdAt isole, comme avant ; la voie 3 utilise desormais
+# `gh_issue_info` directement.
 _ISSUE_CREATED_CACHE: dict[int, datetime | None] = {}
+
+
+class IssueInfo:
+    """Snapshot minimal d'une issue GitHub resolue par voie 3.
+
+    Champs : `state` ('open'/'closed'), `created_at` (tz-aware UTC, ``None``
+    si la cle manque), `title`, `body`. ``None`` est rendu pour un numero
+    qui n'est PAS une issue (PR, 404, payload non-dict) — cf #13725.
+    """
+
+    __slots__ = ("state", "created_at", "title", "body")
+
+    def __init__(self, d: dict):
+        self.state = (d.get("state") or "").lower() or None
+        self.created_at = ts(d.get("created_at"))
+        self.title = d.get("title") or ""
+        self.body = d.get("body") or ""
+
+    @property
+    def is_open(self) -> bool:
+        return self.state == "open"
+
+
+def _gh_fetch_issue(n: int) -> dict | None:
+    """Fetch brut d'une issue, cachee par numero. Retourne None si PR/404/malformed.
+
+    #13725 — la representation REST `issues/{n}` expose `pull_request` pour
+    les PRs (et pas pour les issues), et rend un 404 franc pour un numero
+    inexistant. La cle `pull_request` est donc le discriminant canonique.
+    """
+    if n not in _ISSUE_INFO_CACHE:
+        try:
+            d = gh_json(["api", "repos/" + REPO + "/issues/" + str(n)])
+        except Exception:
+            _ISSUE_INFO_CACHE[n] = None
+            return None
+        if not isinstance(d, dict) or "pull_request" in d:
+            _ISSUE_INFO_CACHE[n] = None
+        else:
+            _ISSUE_INFO_CACHE[n] = IssueInfo(d)
+    return _ISSUE_INFO_CACHE[n]
+
+
+def gh_issue_info(n: int) -> IssueInfo | None:
+    """#14218 — snapshot d'une issue, source des 4 conditions voie 3.
+
+    Renvoie ``None`` si ``n`` n'est pas une issue (PR, 404, payload non-dict).
+    Mêmes garanties de cache que #13725.
+    """
+    return _gh_fetch_issue(n)
 
 
 def gh_issue_created(n: int) -> datetime | None:
     """#13495 — createdAt de l'issue #n, ou None si elle n'existe pas (ou PR).
 
-    Résolution des références de la voie 3 de B.0 (« issue de suivi ouverte et
-    nommée AVANT le merge »). Cache global : le createdAt d'une issue est
-    immuable, et l'audit retro croise les memes numeros d'une PR a l'autre.
-    Un numero de PR ne compte PAS : l'endpoint issues resout aussi les PRs
-    (mesure c.705 : `gh issue view <PR> --json createdAt` rend rc=0), d'ou le
-    garde issue-vs-PR — la voie 3 nomme une ISSUE, pas une PR (spec #13495),
-    sinon « rebase de #N fait » serait un report valide.
+    Compat historique : ``collect_followup_lifts`` lit aujourd'hui le
+    snapshot via ``gh_issue_info``. Ce wrapper reste expose pour les
+    anciens tests d'integration et ne change pas de semantique : il rend
+    ``IssueInfo.created_at`` pour une issue, ``None`` sinon.
 
-    #13725 — le garde passait par `gh issue view --json isPullRequest`, un
-    champ que `gh issue view` N'EXPOSE PAS (« Unknown JSON field », rc=1).
-    Chaque resolution levait donc, tombait dans le `except` et rendait None :
-    la voie 3 etait MORTE sur tout le depot depuis son cablage. Le refus
-    etait silencieux et indiscernable d'une issue inexistante — une lane
-    employant la forme canonique de B.0 voyait son report refuse sans motif
-    (mesure sur #13618 : #13719 OPEN, nommee par l'auteur de la PR 18 s apres
-    sa creation, resolue None — et #12459/#13608/#13671/#13684/#13686/#13692
-    avec elle, tous existants).
-
-    Le discriminant correct est REST : la representation `issues/{n}` porte
-    la cle `pull_request` UNIQUEMENT pour une PR (mesure : #13719 -> absente,
-    #13618 -> presente), et rend un 404 franc pour un numero inexistant.
+    #13725 — le garde passait par ``gh issue view --json isPullRequest``,
+    un champ que ``gh issue view`` N'EXPOSE PAS. Le discriminant correct
+    est REST : ``issues/{n}`` porte la cle ``pull_request`` UNIQUEMENT pour
+    une PR.
     """
-    if n not in _ISSUE_CREATED_CACHE:
-        try:
-            d = gh_json(["api", "repos/" + REPO + "/issues/" + str(n)])
-            if not isinstance(d, dict) or "pull_request" in d:
-                _ISSUE_CREATED_CACHE[n] = None
-            else:
-                _ISSUE_CREATED_CACHE[n] = ts(d.get("created_at"))
-        except Exception:
-            _ISSUE_CREATED_CACHE[n] = None
+    if n in _ISSUE_CREATED_CACHE:
+        return _ISSUE_CREATED_CACHE[n]
+    info = gh_issue_info(n)
+    _ISSUE_CREATED_CACHE[n] = info.created_at if info is not None else None
     return _ISSUE_CREATED_CACHE[n]
 
 
@@ -1626,35 +1754,56 @@ def _is_deliberate_followup(stripped: str, pos: int) -> bool:
     return bool(_FOLLOWUP_MARK.search(stripped[max(0, pos - 200):pos]))
 
 
-def collect_followup_lifts(pr_data: dict, cutoff: datetime,
-                           issue_created=None) -> list[tuple]:
-    """#13495 — voie 3 de B.0 : « issue de suivi ouverte et nommée AVANT le
-    merge (reportée sciemment) ».
+def _issue_references_pr(issue: "IssueInfo", pr_number: int) -> bool:
+    """#14218 condition 4 : l'issue cite le numero de la PR dans son titre OU
+    son corps. Pas une regex stricte (les PRs sont referencees de maniere
+    heterogene : « #14218 », « PR #14218 », « pull/14218 », « PRs #14218 »)
+    mais un test simple : le numero doit apparaitre en mot-borne.
 
-    Un commentaire capable de lever qui NOMME une issue (#N) dans sa prose
-    (hors citation) est un report : il lève un nit antérieur si (a) l'issue
-    existe, (b) son createdAt est antérieur à la décision de merge. C'est la
-    seule voie mécaniquement ouverte à l'AUTEUR de la PR — une phrase de
-    l'auteur ne lève pas la réserve d'un tiers (voie 1 close pour lui,
-    #11145), mais un report nommé avant merge est un geste délibéré que B.0
-    crédite. Mécanique par spec (pas de NLP) : la référence vit hors citation
-    (`_strip_quoted`), comme les LIFT_MARKERs.
-
-    Deux bornes (review c.705 de jsboige, #13563) :
-    - self-ref : le numéro de la PR ELLE-MÊME n'est pas une « issue de
-      suivi » — l'API issues résout un numéro de PR (rc=0, mesuré), donc
-      tout commentaire citant #<cette PR> (« rebase de #N fait ») serait
-      sinon un report valide éteignant tous les nits antérieurs.
-    - nommeur : le report ne compte que s'il émane de l'auteur de la PR ou
-      de l'auteur du nit levé — un bystander citant une issue ancienne
-      quelconque (« ce comportement rappelle #11045 ») n'a pas de lien
-      sémantique avec la réserve (stance #13592, arbitrage po-2024).
-
-    Retourne des couples (instant, nommeur) ; `analyse` applique la borne
-    nommeur par nit. `issue_created=None` coupe la voie — `analyse()` reste
-    pur pour les tests (aucun appel réseau n'y est toléré).
+    Garde anti-self : on cherche la reference seulement si ``pr_number``
+    est distinct de l'issue (defense en profondeur ; `_FOLLOWUP_MARK`
+    pose deja cette borne par `_is_deliberate_followup`).
     """
-    if issue_created is None:
+    needle = r"(?<![A-Za-z0-9_])" + str(pr_number) + r"(?![A-Za-z0-9_])"
+    return bool(re.search(needle, issue.title)) or bool(re.search(needle, issue.body))
+
+
+def collect_followup_lifts(pr_data: dict, cutoff: datetime,
+                           issue_info=None) -> list[tuple]:
+    """#13495 + #14218 — voie 3 de B.0 : « issue de suivi ouverte et nommée
+    AVANT le merge (reportée sciemment) ».
+
+    Conditions verifiees ICI (par collecte, identiques pour toutes les
+    reserves de la PR) :
+
+    1. ``#N`` est une **issue** (le payload GitHub distingue issues/PRs via
+       ``pull_request``, cf #13725).
+    2. ``#N`` est **OUVERTE** au moment du check (la voie 3 perd son sens sur
+       une issue fermee : la suite serait ailleurs, pas en suivi).
+    3. ``#N`` a ete creee **avant le cutoff** (proxy du « avant le merge »,
+       l'invariant ancien).
+    4. La reference est **deliberee** (le `_FOLLOWUP_MARK` la distingue d'une
+       citation de contexte, cf #13725).
+
+    Conditions verifiees LA-BAS (par reserve, dans `analyse`) :
+
+    5. ``#N`` a ete creee **apres** la reserve qu'elle reporte — sinon une
+       issue preexistante sans rapport ferait l'affaire.
+    6. ``#N`` **reference la PR** dans son titre ou son corps — sinon le
+       lien entre report et reserve n'est pas etabli.
+
+    Une phrase de l'auteur de la PR ne leve pas la reserve d'un tiers
+    (voie 1 close pour lui, #11145), mais un report nomme avant merge est
+    un geste delibere que B.0 credite — l'auteur de la PR est explicitement
+    ouvert comme nommeur (borne #13563).
+
+    `issue_info=None` coupe la voie — `analyse()` reste pur pour les tests
+    (aucun appel reseau n'y est tolere). Retourne des tuples
+    ``(instant, nommeur, IssueInfo)`` ; `analyse` applique les conditions
+    5 et 6 par reserve. La PR-resolving-callback retourne ``IssueInfo`` ou
+    ``None`` ; on filtre ``None`` (PR, 404, etc.).
+    """
+    if issue_info is None:
         return []
     out: list[tuple] = []
     self_ref = pr_data.get("number")
@@ -1671,10 +1820,15 @@ def collect_followup_lifts(pr_data: dict, cutoff: datetime,
                 continue
             if not _is_deliberate_followup(stripped, m.start()):
                 continue
-            created = issue_created(n)
-            if created is not None and created < cutoff:
-                out.append((t, (c.get("author") or {}).get("login", "")))
-                break
+            info = issue_info(n)
+            if info is None:
+                continue
+            if not info.is_open:
+                continue  # condition 2
+            if info.created_at is None or not info.created_at < cutoff:
+                continue  # condition 3
+            out.append((t, (c.get("author") or {}).get("login", ""), info))
+            break
     return out
 
 
@@ -2026,12 +2180,13 @@ def _names_author(body: str, author: str) -> bool:
 
 
 def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
-            issue_created=None, dismissed_improperly=None) -> dict:
+            issue_info=None, dismissed_improperly=None) -> dict:
     """cutoff = mergedAt (audit retro) ou now (gate pre-merge)."""
     commits = [ts(c.get("committedDate")) for c in (pr_data.get("commits") or [])]
     commits = [c for c in commits if c]
     last_commit = max(commits) if commits else None
     pr_author = (pr_data.get("author") or {}).get("login", "")
+    pr_number = pr_data.get("number")
 
     # #11145 — borne d'auteur, durcie par #12836 : seule une levee de l'auteur
     # de la reserve compte. #12798 a montre pourquoi PR_AUTHOR n'est pas une
@@ -2095,6 +2250,20 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
     def _lift_eligible(lift_author: str, nit_author: str,
                        lift_body: str = "") -> bool:
         if lift_author == nit_author:
+            return True
+        # #13609 -- alias de persona Hermes/NanoClaw cross-login. La persona
+        # parle sous clusterManager-Myia ET jsboige. Quand elle leve SA
+        # propre reserve sous l'autre login, c'est sa levee. Le marqueur
+        # `[Hermes]` / `[NanoClaw]` / `[Hermes self-bot]` dans le corps
+        # identifie la source ; l'autre cote de l'alias est dans
+        # `PERSONA_ALIAS_LOGINS` (= clusterManager-Myia) pour eviter qu'une
+        # lane (qui pousse sous jsboige) s'auto-promeuve en collant le
+        # marqueur dans un commentaire ordinaire. Les deux conditions sont
+        # obligatoires : sans marqueur, jsboige reste l'identite de poussee
+        # partagee des lanes (#13316), rien n'est leve.
+        if (lift_author == "jsboige"
+                and nit_author in PERSONA_ALIAS_LOGINS
+                and _PERSONA_MARKERS_RE.search(lift_body or "")):
             return True
         # #13495 — la trappe coordinateur ci-dessous ne s'ouvre pas pour
         # l'auteur de la PR : sinon la voie 3 (report par issue nommee) serait
@@ -2163,9 +2332,15 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
                      r.get("body", "")) is None
     ]
     explicit_lifts = [x for x in explicit_lifts if x[0] is not None]
-    # #13495 — voie 3 de B.0 : les commentaires qui NOMMENT une issue de
-    # suivi ouverte avant le cutoff sont des leveries a part entiere.
-    followup_lifts = collect_followup_lifts(pr_data, cutoff, issue_created)
+    # #13495 + #14218 — voie 3 de B.0 : les commentaires qui NOMMENT une
+    # issue de suivi ouverte avant le cutoff sont des leveries a part
+    # entiere. Avant : seul `created < cutoff` etait verifie (condition 2
+    # sur 4 — issue FERMEe, issue ANTERIEURE a la reserve, ou issue qui
+    # ne cite PAS la PR eteignait quand meme des reserves). Apres :
+    # `collect_followup_lifts` filtre OUVERTE + deliberee ; les conditions
+    # 5 (posterieure a la reserve) et 6 (reference la PR dans titre/corps)
+    # sont appliquees par reserve dans les `any(...)` ci-dessous.
+    followup_lifts = collect_followup_lifts(pr_data, cutoff, issue_info)
 
     # #13639 -- passer les levees au crible du SHA rembobine (voir
     # _SHA_CITED ci-dessus pour le pourquoi et l'etroitesse). Inerte sans
@@ -2309,8 +2484,11 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
                       or any(when < t < cutoff
                              and _lift_eligible(lifter, login, lift_body)
                              for (t, lifter, lift_body) in explicit_lifts)
+                      # #14218 conditions 5+6 — voir commentaire `followup_lifts`
                       or any(when < t < cutoff and namer in (login, pr_author)
-                             for (t, namer) in followup_lifts))
+                             and when < info.created_at
+                             and _issue_references_pr(info, pr_number)
+                             for (t, namer, info) in followup_lifts))
             if lifted:
                 continue
         # #13083 — les bornes strictes du blocage. Un blocage ne se leve ni
@@ -2338,7 +2516,9 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
                     # merge est un geste delibere que B.0 credite. Borne
                     # nommeur (c.705) : {auteur du blocage, auteur de la PR}.
                     or any(when < t < cutoff and namer in (login, pr_author)
-                           for (t, namer) in followup_lifts)):
+                           and when < info.created_at
+                           and _issue_references_pr(info, pr_number)
+                           for (t, namer, info) in followup_lifts)):
                 continue
         # #12319 : meme regime pour un nit porte par un commentaire ou une
         # review COMMENTED (dont chaque reserve Hermes, self-review cap).
@@ -2354,7 +2534,9 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
                   for (t, lift_author, lift_body) in explicit_lifts
               ) or _approved_lifts_reserve(login, when, pr_author)
               or any(when < t < cutoff and namer in (login, pr_author)
-                     for (t, namer) in followup_lifts)):
+                     and when < info.created_at
+                     and _issue_references_pr(info, pr_number)
+                     for (t, namer, info) in followup_lifts)):
             continue
         # Un commit poussé après le nit ne le lève PAS à lui seul : sur #10761,
         # le « traitement » était un rebase à 19:41 qui n'adressait aucun des
@@ -2555,7 +2737,7 @@ def gate(pr: int, as_json: bool) -> int:
     merged = ts(data.get("mergedAt"))
     cutoff = merged or datetime.now(timezone.utc)
     result = analyse(data, review_threads(pr), cutoff,
-                     issue_created=gh_issue_created,
+                     issue_info=gh_issue_info,
                      dismissed_improperly=improper_dismissals(pr))
     if as_json:
         print(json.dumps(result, indent=1, ensure_ascii=False))
@@ -2600,7 +2782,7 @@ def audit(limit: int, search: str | None = None) -> int:
         # PRs dont les nits etaient legitiment reportes par issue nommee. Le
         # cache global de gh_issue_created amortit les lookups croises entre PRs.
         if not analyse(p, [], merged,
-                       issue_created=gh_issue_created)["blocked"]:
+                       issue_info=gh_issue_info)["blocked"]:
             continue
         try:
             p["commits"] = gh_json(
@@ -2614,7 +2796,7 @@ def audit(limit: int, search: str | None = None) -> int:
         # a besoin pour trier (« du code a bouge apres le nit » = aller lire le
         # diff avant de conclure). Information de triage, pas critere.
         # Audit retro : on n'interroge pas les threads inline (1 appel GraphQL/PR).
-        res = analyse(p, [], merged, issue_created=gh_issue_created)
+        res = analyse(p, [], merged, issue_info=gh_issue_info)
         if res["blocked"]:
             res["url"] = p.get("url")
             res["merged_at"] = p["mergedAt"]
