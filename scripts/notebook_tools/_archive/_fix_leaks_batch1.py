@@ -1,3 +1,14 @@
+# Archive header (standard _archive convention, 2026-08, docs/reference/_archive-convention.md)
+# - Date archived     : 2026-09-01
+# - Superseded by     : none (closed dead-end — batch 1 of #1205, batch 2+ via PRs #8407, #10049, #10004, #8294, #8900, etc.)
+# - Verdict recorded in : PR `0cd10575d` "fix(search): relabel 70 solution leaks as Exemple guide (#1205 Batch 1)"
+#                         + dashboard comment (link in #13745 issue thread)
+#
+# Per-function disposition :
+# - find_markdown_header_cell() : kept as reference; no successor (logic absorbed by `detect_solution_leaks.py` gate)
+# - fix_section_headers()        : abandoned — superseded by gate-based detection (PR #8407+), no longer reachable
+# - fix_notebook()               : abandoned — one-shot terminated, the 27 notebooks affected are now stubbed
+# - main()                       : abandoned — one-shot driver, no consumer; kept verbatim for forensic replay
 """Batch fix Search series solution leaks — Issue #1205 Batch 1.
 
 Strategy: For each HIGH leak detected by detect_solution_leaks.py:

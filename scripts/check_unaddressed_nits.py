@@ -657,15 +657,130 @@ _MENTION_VERDICT_REVIEW_NARRATIVE = re.compile(
     r"(?:commit\s+[a-f0-9]+|PR\s*#?\d+|#\d+|pull/\d+)")
 
 
+# #13512 (cf grain) — Position G : verbe de mention + verdict NU dans une
+# fenetre bornee, SANS parenthese obligatoire ni `revue|review` en tete.
+# Cas fondateur (PR #13496) : « @jsboige — reponse au REQUEST_CHANGES Hermes
+# du 2026-08-29T17:33Z sur head `ae88aefc`. » — la forme naturelle d'une
+# reponse a un verdict de reviewer : verbe de mention (`reponse a`/`fix`/
+# `leve`/`corrige`/`traite`/`suite a`/`adresse`), puis le verdict NU (sans
+# parentheses), puis contexte (auteur, date, head SHA). Les positions
+# existantes (A-F) exigent soit des parentheses (A), un titre `##` (B), une
+# prose avec mot-cle inline (C), un verbe de levee + ref pointable (D/E),
+# ou `revue|review` en tete (D-F) — aucune ne couvre cette forme qui est
+# pourtant la plus naturelle.
+#
+# Discrimination vs emission formelle :
+# (1) Le caractere distinctif est la PRESENCE du verbe de MENTION (`reponse a`,
+#     `fix`, `suite a`, `corrige`, `leve`, `adresse`, `traite`, `repondu a`,
+#     `lift`) au lieu du verbe d'EMISSION (`Verdict :`, `Block on`, `declare`,
+#     `reste bloquante`). Le verbe de mention ANNONCE une reponse, le verbe
+#     d'EMISSION pose une reserve : le sens est inverse.
+# (2) La fenetre `[^():\n.]{0,40}?` exclut `:` (donc `Fix : CHANGES_REQUESTED`
+#     ne matche pas — `:` suit immediatement le verbe) et `.` (donc le verdict
+#     doit etre dans la MEME phrase, pas apres une fin de phrase).
+# (3) Verdict `(?-i:[A-Z][A-Z_]{3,})` case-sensitive : pas de capture d'un mot
+#     natural-langue (`commit`, `commit`...) dans la fenetre.
+#
+# Mesure discriminatoire c.840 (corpus de validation) :
+#   TP (match attendu) :
+#     - "@jsboige — reponse au REQUEST_CHANGES Hermes du ..."
+#     - "Voici le fix du CHANGES_REQUESTED pose par Hermes en review."
+#     - "Suite au COMMENT_WITH_CONCERNS du 2026-08-29, voici le diagnostic."
+#     - "Corrige SUSPECT_REGRESSION identifiee sur la branche main."
+#     - "A leve le BLOCKED PR apres validation par ai-01."
+#     - "Repondu au STRUCTURAL_ONLY via le commit 33ef4d6."
+#   FN (ne doit PAS matcher) :
+#     - "CHANGES_REQUESTED: edge case non couvert." (verdict nu en tete)
+#     - "Verdict : CHANGES_REQUESTED sur ce commit." (verdict precede de "Verdict :")
+#     - "Block on CHANGES_REQUESTED jusqu'a validation." (verdict precede de "Block on")
+#     - "Fix : CHANGES_REQUESTED sur le ticket 1234." (`:` suit le verbe)
+#     - "Je declare CHANGES_REQUESTED sur le diff." (verbe d'emission absent de la liste)
+#     - "Le CHANGES_REQUESTED reste bloquante jusqu'a correction." (pas de verbe de mention)
+#
+# La borne 40 chars est calibree pour absorber #13496 (1 char mesuré entre
+# `reponse au` et `REQUEST_CHANGES`) avec une marge de 39 chars. Une borne
+# plus large rouvrirait le risque d'attraper une phrase distincte ; une borne
+# plus etroite echouerait sur des variantes avec contexte immediat (un mot
+# avant le verdict).
+# #13512 fondateur — verbes resserres (Hermes demande 2/2, desiderata) :
+# `lev\w+` devient `lev(?:e|é|ée|er|ons)\b` (exclut Levenshtein/lvgl/leve
+# arabe/...) et `trait\w+` devient `trait(?:e|é|er)\b` (exclut trait-/traits/
+# traitment/...). Les autres verbes de mention gardent leur `\w+` (leur
+# variabilite naturelle est plus large : `corrige`/`corrigea`/`corrigeant`,
+# `fix`/`fixe`/`fixer`, etc.).
+#
+# #13559 fondateur (PR #13560) — ajout d'un **negative lookahead**
+# post-verdict `(?!\s*[—\-]\s+commit\b)` : la phrase « Fix review ai-01
+# CHANGES_REQUESTED — commit 06956bd0a » est une **annonce de fix**
+# (verdict suivi d'une reference a un commit futur), pas une **reponse**
+# a un verdict (qui finit par contexte de reponse : Hermes, date, identifiee,
+# via commit **passe**, ...). Le lookahead distingue les deux : apres le
+# verdict, un `— commit` (= reference future) bloque le match. Les
+# phrases de reponse (les 6 TP c.840 fondateur #13496 + variantes avec
+# Hermes/date/identifiee/...) ne sont pas suivies de `— commit`, donc
+# matchent toujours. c.845 regression fix.
+_MENTION_VERDICT_BARE = re.compile(
+    r"(?i)(?:^|[\s,;:(*]|@\S+\s+[—\-]\s+)"
+    r"(?:fix(?:ed|ée?e?)?|corrig\w+|suite\s+[àa]|en\s+r[ée]ponse\s+[àa]"
+    r"|r[ée]ponse\s+[àa]|lev(?:e|é|ée|er|ons)\b|lift\w*|adress\w+|trait(?:e|é|er)\b|repondu\s+[àa])"
+    r"[^():\n.]{0,40}?(?-i:([A-Z][A-Z_]{3,}))(?![A-Za-z0-9_])"
+    r"(?!\s*[—\-]\s+commit\b)")
+
+
 def _strip_mentioned_verdicts(body: str) -> str:
     """Neutralise les noms de verdict cites en position de mention (#11636, #11744, #11809).
 
     Remplace le verdict par des espaces de meme longueur : les offsets du
     reste du body sont preserves (les fenetres de `_is_cited` restent
     calibrees sur la vraie position des occurrences survivantes).
+
+    Position G (#14070) beneficie du garde anti-negation : un match
+    Position G dont la fenetre 15 chars avant/apres contient un token
+    `_LIFT_NEGATION_TOKENS` (`ne...pas`, `plus`, `jamais`, `non`, `aucun`,
+    `sans`, `n'est`, `rien`) est preserve (le verdict reste cite dans
+    le body — l'organe `classify()` peut alors le voir comme un nit non
+    leve). Voie canonique d'application : `_lift_is_negated(window_before,
+    window_after)`, symetrie exacte avec la logique existante sur
+    `_LIFT_MARKERS`. Les 6 autres positions restent en `sub` iso-longueur
+    direct (elles n'ont pas de garde anti-negation homologue — leur
+    discrimination par contexte est suffisante).
     """
+    # Phase 1 : sub iso-longueur pour les 6 patterns historiques (pas de
+    # negation — leur discrimination par contexte est suffisante).
     for pat in (_MENTION_VERDICT, _MENTION_VERDICT_HEADING, _MENTION_VERDICT_INLINE, _MENTION_VERDICT_LIFTED, _MENTION_VERDICT_REVIEW, _MENTION_VERDICT_REVIEW_NARRATIVE):
         body = pat.sub(
+            lambda m: m.group(0).replace(m.group(1), " " * len(m.group(1))), body)
+    # Phase 2 : Position G avec garde anti-negation (Hermes demande 1/2,
+    # PR #14070). Approche `finditer` car le verdict-match n'est pas en
+    # bord de phrase (la mention `traite le REQUEST_CHANGES` met le
+    # verdict a 10-20 chars du verbe de mention). On cherche un token de
+    # negation n'importe ou dans la window 15 chars avant/apres, avec
+    # strip des separateurs de bord (coherence avec `_lift_is_negated`
+    # qui regarde les bords).
+    # NOTE : on n'utilise PAS `_lift_is_negated` directement ici — ce
+    # helper regarde uniquement les BORDS de la window (le token `pas`
+    # doit finir la window avant OU commencer la window apres). Or
+    # Position G matche la mention `... pas traite le REQUEST_CHANGES`
+    # ou `pas` est AU DEBUT de win_before, pas en bord : helper naturel
+    # mais inadapte. Helper dedie ci-dessous.
+    negates_spans: list[tuple[int, int]] = []
+    for m in _MENTION_VERDICT_BARE.finditer(body):
+        verdict_start = m.start(1)
+        verdict_end = m.end(1)
+        win_before = body[max(0, verdict_start - 15):verdict_start]
+        win_after = body[verdict_end:verdict_end + 15]
+        if _bare_mention_is_negated(win_before, win_after):
+            negates_spans.append((m.start(), m.end()))
+    if negates_spans:
+        def _bare_sub(m: re.Match[str]) -> str:
+            for s, e in negates_spans:
+                if m.start() == s and m.end() == e:
+                    return m.group(0)  # garde le verdict intact (negated)
+            return m.group(0).replace(m.group(1), " " * len(m.group(1)))
+        body = _MENTION_VERDICT_BARE.sub(_bare_sub, body)
+    else:
+        # Aucun negation detectee — fast path iso-longueur comme avant.
+        body = _MENTION_VERDICT_BARE.sub(
             lambda m: m.group(0).replace(m.group(1), " " * len(m.group(1))), body)
     return body
 
@@ -1045,6 +1160,36 @@ def _lift_is_negated(window_before: str, window_after: str) -> bool:
             return True
         # Token apres : match \btok\b en tete de fenetre (apres strip).
         if head.startswith(tok + " ") or head == tok:
+            return True
+    return False
+
+
+def _bare_mention_is_negated(window_before: str, window_after: str) -> bool:
+    """Le verdict Position G est-il dans une negation directe ?
+
+    Variante de `_lift_is_negated` adaptee a Position G (`#14070`) : la
+    mention peut mettre le token de negation N'IMPORTE OU dans la window
+    (ex. « pas traite le REQUEST_CHANGES » met `pas` au DEBUT de la
+    window avant, pas en bord). `_lift_is_negated` regarde les BORDS
+    uniquement (helper naturel pour `_LIFT_MARKERS` ou le token de
+    negation precede/suit immediatement le marqueur). Helper dedie
+    pour Position G : cherche un token `_LIFT_NEGATION_TOKENS` n'importe
+    ou dans la window combinee (avant + apres), avec strip des
+    separateurs de bord.
+
+    Meme semantique que `_lift_is_negated` (meme ensemble de tokens),
+    seule la fenetre de scan change. Symetrie preservee.
+    """
+    combined = (window_before + " " + window_after).lower()
+    combined = _unaccent(combined)
+    # Token de negation entoure de non-alphanumerique (`\b` word boundary
+    # gere implicitement les separateurs ASCII : espace, virgule, point,
+    # point d'interrogation, deux-points, point-virgule, point
+    # d'exclamation, apostrophe droite). Coherent avec le
+    # `rstrip(".,;:!?")` de `_lift_is_negated` — la ponctuation est une
+    # bordure valide de token.
+    for tok in _LIFT_NEGATION_TOKENS:
+        if re.search(rf"\b{re.escape(tok)}\b", combined):
             return True
     return False
 

@@ -24,13 +24,6 @@ lake-manifest.json text eol=lf
 # internes d'un script (residus CRLF legacy pre-L268 encore presents sur main).
 # Meme motif que `*.ipynb text eol=lf` / L268.
 translations/**/*.csv text eol=lf
-# Forensic scan output (notebook-tools, c.372) : fichier JSON ecrit par scripts
-# de detection (`forensic-scan.py` / co), tourne regulierement sur Windows via
-# `check_twin_parity` et pipelines CI. Sans regle explicite, un agent Windows
-# peut reintroduire CRLF au prochain write du fichier, et le `catalog-dr drift`
-# detecte un diff byte-level sans substance reelle (meme motif que L268 +
-# twin_pairs.d/*.yaml). `eol=lf` rend l'invariant structurel.
-scripts/notebook_tools/forensic_results.json text eol=lf
 # Quarto site config (#11109) : _quarto.yml est consomme par Quarto CLI (Linux
 # dans CI, local Windows). CRLF le brise silencieusement (parsing YAML + render
 # pages github.io). Meme motif L268.
