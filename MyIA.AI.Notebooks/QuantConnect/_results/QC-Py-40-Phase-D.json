@@ -97,11 +97,11 @@
   },
   {
    "id": "c.866-L2-B2-0-orders-determinating",
-   "summary": "B2 narrow worker = 0 ordre emis avec condition OR. Discriminant : OR au lieu de AND n'elimine pas le suppresseur -- les sous-conditions individuelles sont deja trop rares. Verdict INCONCLUSIVE_CONFIRMED immediat."
+   "summary": "[REFUTE PAR c.909] Observation d'origine conservee pour la trace : \"B2 narrow worker = 0 ordre emis avec condition OR ; les sous-conditions individuelles sont deja trop rares\". Elle reposait sur un read_backtest passe PENDANT l'execution (totalOrders=0 indiscernable d'un run sans ordre). Mesure apres completion (status 'Completed.', progress 1) : B2 rend 487 172 ordres, soit 3,2x les 151 653 de B1 en AND. La condition OR se declenche donc constamment, pas rarement. Le verdict INCONCLUSIVE_CONFIRMED tient, mais sur le motif corrige : signal abondant, remplissage nul."
   },
   {
    "id": "c.866-L4-LIQUIDATE-SUR-POSITION-VIDE-MAJEUR",
-   "summary": "Cause-racine des 151K ordres B1 = liquidate(sym) sur position vide (sans guard `if invested`). B2 narrow worker discriminant car avec 0 entry jamais declenchee, 0 liquidate non plus. Bug logique corrigible (hors scope Phase D)."
+   "summary": "Cause-racine des 151K ordres B1 = liquidate(sym) sur position vide (sans guard `if invested`). Bug logique corrigible (hors scope Phase D ; guard traite en Phase E, issue #14142). [REFUTE PAR c.909] La clause d'origine \"B2 discriminant car avec 0 entry jamais declenchee, 0 liquidate non plus\" est retiree : B2 emet 487 172 ordres. Elle renforce au contraire la cause-racine -- relacher la conjonction AUGMENTE le compte d'ordres sans produire un seul fill."
   },
   {
    "id": "c.909-read-backtest-during-run",
