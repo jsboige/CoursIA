@@ -1599,10 +1599,8 @@ layout: section
 - LLMs : BERT (2018), GPT-1 (2018)
   - GPT-2 (2019, zero-shot), GPT-3 (2020, in-context few-shot)
   - T5 (2019, text-to-text unifié)
-- Modèles efficients (2020+)
-  - Reformer, Longformer : attention linéaire ou par fenêtres
-  - Mamba (2023) et State Space Models : complexité linéaire, alternative aux Transformers pour séquences longues
-  - Hyena, RWKV : mélanges convolutifs et RNN-like pour le même usage
+- Modèles efficients (2020+) : attention linéaire, convolutions, RNN
+  - Reformer, Longformer (2020), Mamba / SSM, Hyena, RWKV (2023)
 
 <div class="grid grid-cols-3 gap-4 absolute bottom-[35px] left-[50px] right-[50px]">
 <img src="./images/img_104.png" class="max-h-[135px] w-full object-contain" alt="Deux photos d'une femme lançant un frisbee dans un parc, légendées en anglais" />
@@ -1610,7 +1608,7 @@ layout: section
 <img src="./images/img_109.png" class="max-h-[135px] w-full object-contain" alt="Architecture Transformer encodeur-décodeur avec auto-attention, exemple de traduction du tchèque" />
 </div>
 
-<!-- Transformer : encodeur-decodeur, self-attention multi-tetes, positional encoding. LLMs : GPT-2 (2019) zero-shot, GPT-3 (2020) in-context few-shot, T5 (2019) text-to-text unifie. Modeles efficients 2020+ : Reformer, Longformer. -->
+<!-- Transformer : encodeur-decodeur, self-attention multi-tetes, positional encoding. LLMs : GPT-2 (2019) zero-shot, GPT-3 (2020) in-context few-shot, T5 (2019) text-to-text unifie. Modeles efficients 2020+ : Reformer et Longformer (attention lineaire ou par fenetres), puis Mamba et les State Space Models, Hyena, RWKV (2023) -- complexite lineaire sur sequences longues. -->
 ---
 
 
@@ -1639,7 +1637,7 @@ layout: section
 
 
 
-# Extensions 2020+ — diffusion et alignement
+# Extensions 2020+ — diffusion
 
 
 **Modèles de diffusion**
@@ -1651,20 +1649,26 @@ layout: section
 - Conditionnement multimodal
 - Mécanisme attentionnel (cross-attention Q/K/V)
 
-**Alignement et produit grand public**
-
-- RLHF (2022, InstructGPT) : affinage par retour humain
-- ChatGPT (nov. 2022, OpenAI) : 100 M d'utilisateurs en 2 mois
-- Générations suivantes : Llama 3 / 3.1 / 4 (2024-2025), DeepSeek-V3 (2024), Qwen2.5 (2024-2025), Gemma 2 (2024)
-- Frontier multimodaux omni : GPT-4o (mai 2024), Claude 3.5 Sonnet (2024), Gemini 1.5 / 2 (2024-2025)
-- Modèles open-weight : Llama 2 (2023), Mistral, Mixtral (MoE 2023-2024)
-
 <div class="grid grid-cols-2 gap-4 absolute bottom-[25px] left-[50px] right-[50px]">
 <img src="./images/img_112.png" class="max-h-[100px] w-full object-contain" alt="Chaîne de Markov de diffusion : bruitage progressif de xT vers x0 puis débruitage inverse" />
 <img src="./images/img_113.png" class="max-h-[100px] w-full object-contain" alt="U-Net de débruitage latent : encodeur, décodeur, attention croisée Q/K/V, conditionnements et pas de temps" />
 </div>
 
-<!-- Diffusion latente (LDM / Stable Diffusion, Rombach 2021-2022) : bruit latent + U-Net + cross-attention. Alignement : RLHF (InstructGPT 2022), ChatGPT (nov 2022), Llama 2 / Mistral / Mixtral (2023-2024). Générations suivantes (2024-2025) : Llama 3 / 4, DeepSeek-V3, Qwen2.5, Gemma 2 ; frontier omni : GPT-4o, Claude 3.5 Sonnet, Gemini 1.5 / 2. -->
+<!-- Diffusion latente (LDM / Stable Diffusion, Rombach 2021-2022) : espace latent d'un VAE pre-entraine, debruitage U-Net, conditionnement texte par l'encodeur CLIP, cross-attention Q/K/V. -->
+---
+
+
+
+# Extensions 2020+ — alignement et produit grand public
+
+
+- RLHF (2022, InstructGPT) : affinage par retour humain
+- ChatGPT (nov. 2022, OpenAI) : 100 M d'utilisateurs en 2 mois
+- Modèles open-weight : Llama 2 (2023), Mistral, Mixtral (MoE 2023-2024)
+- Générations suivantes (2024-2025) : Llama 3 / 3.1 / 4, DeepSeek-V3, Qwen2.5, Gemma 2
+- Frontier multimodaux omni : GPT-4o (2024), Claude 3.5 Sonnet, Gemini 1.5 / 2
+
+<!-- Alignement : RLHF (InstructGPT 2022) puis ChatGPT (nov 2022, 100 M d'utilisateurs en 2 mois). Open-weight : Llama 2, Mistral, Mixtral (2023-2024). Generations suivantes 2024-2025 : Llama 3 / 3.1 / 4, DeepSeek-V3, Qwen2.5, Gemma 2. Frontier multimodaux omni : GPT-4o, Claude 3.5 Sonnet, Gemini 1.5 / 2. -->
 ---
 
 
