@@ -51,10 +51,20 @@ def _extract_selector() -> str:
     ce qui est teste est ce que GitHub rend, convention test_workflow_expression_escapes)."""
     with open(WORKFLOW, encoding="utf-8") as f:
         doc = yaml.safe_load(f)
-    run = doc["jobs"]["sweep"]["steps"][0]["run"]
-    m = re.search(r"python - <<'PY'[^\n]*\n(.*?)\nPY\n", run, re.S)
-    assert m, "heredoc python introuvable dans pr-gate-stale-sweep.yml"
-    return m.group(1)
+    # Le heredoc est localise par contenu, pas par index : une etape
+    # d'amorcage (bootstrap gh, #14267) precede desormais le selecteur sans
+    # que ce contrat doive bouger.
+    for step in doc["jobs"]["sweep"]["steps"]:
+        m = re.search(
+            r"python - <<'PY'[^\n]*\n(.*?)\nPY\n",
+            str(step.get("run", "")),
+            re.S,
+        )
+        if m:
+            return m.group(1)
+    raise AssertionError(
+        "heredoc python introuvable dans pr-gate-stale-sweep.yml"
+    )
 
 
 SELECTOR = _extract_selector()
