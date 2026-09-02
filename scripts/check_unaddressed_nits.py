@@ -520,8 +520,21 @@ _MENTION_VERDICT = re.compile(
 # de remediation qui evoque un verdict anterieur). On preserve le verdict
 # uniquement dans le premier cas. Le tag agent est matche dans les 80 chars
 # entre `##` et le verdict (cf limite d'origine).
+# #13642 -- le garde d'origine `\[[A-Z][A-Za-z_-]{2,40}\]` n'acceptait que les
+# tags UPPERCASE-initial (`[Hermes]`, `[NanoClaw]`, `[Claude]`) : le
+# coordinateur, qui se tag `[ai-01]` / `[ai-01 ARBITRAGE]` (et le compte
+# self-bot `[jsboige]`), est minuscule-initial et echappait au garde -> sa
+# reserve en position de titre etait strippee en MENTION et devenait invisible
+# au gate. Le vocabulaire est CLOS (reutilise tel quel, pas de caractere
+# generique) : la classe symetrique `## [bug] CHANGES_REQUESTED` (categorie de
+# prose, pas un reviewer) doit RESTER une MENTION et rester strippee.
+_AGENT_REVIEWER_TAG = (
+    r"\[(?i:(?:Hermes(?:\s+self-bot)?|NanoClaw|Claude|Review|"
+    r"clusterManager-Myia|ai-01|jsboige|myia-ai-01)\b[^\]]*)\]"
+)
 _MENTION_VERDICT_HEADING = re.compile(
-    r"(?m)^#{1,6}(?![^\n]*\[[A-Z][A-Za-z_-]{2,40}\])[^\n]{0,80}?([A-Z][A-Z_]{2,}[A-Z])(?![A-Za-z0-9_])")
+    r"(?m)^#{1,6}(?![^\n]*" + _AGENT_REVIEWER_TAG + r")[^\n]{0,80}?"
+    r"([A-Z][A-Z_]{2,}[A-Z])(?![A-Za-z0-9_])")
 
 # #11744 — Position B : prose inline. Un verdict est en mention quand un mot-
 # cle de mention (`verdict`, `nit`, `remark`, `previous`, `previous`, `precedent`,
@@ -1611,12 +1624,46 @@ def _coordinator_emission_informal(body: str) -> bool:
     # nomme l'injonction levee (« BLOCAGE leve ») reste muet.
     if has_live_lift(normalised):
         return False
+    # #14089 -- chemin different : l'injonction peut etre ANNONCEE puis LEVEE
+    # dans la meme phrase, sans LIFT_MARKER (qui exige la graphie complete
+    # « levee »). Cas fondateur : « HOLD leve -- le remplacement est nomme,
+    # vous pouvez merger. » -- la voie _block_emitted reconnait le motif via
+    # `_lift_participle_after` (leve / levee / lifted post-marker), mais la
+    # voie `_coordinator_emission_informal` n'en herite pas : elle conclut a
+    # une emission et classifie BOT-CONCERN, donc la PR que le commentaire
+    # vient de DEBLOQUER reste BLOQUEE. Meme classe de defaut que celle
+    # corrigee dans #13912 : un chemin qui n'a pas herite de la garde de
+    # son jumeau. On ajoute ici le MEME test post-marker que porte
+    # `_block_emitted` (point B), sur l'INJONCTION structurellement matchee
+    # (toutes les positions), pas seulement sur le head. Si TOUTES les
+    # injonctions sont suivies d'un participe de levee, c'est une levee.
+    if _every_injunction_followed_by_lift(normalised):
+        return False
     # Un [OVERRIDE] pose en tete (arbretage tiers de B.0) EMET une levee,
     # jamais une reserve — garde-fou de l'override, deja documente en
     # `_block_emitted` point A.
     head = normalised[:60].lstrip(" \t*_").upper()
     if head.startswith("[OVERRIDE]"):
         return False
+    return True
+
+
+def _every_injunction_followed_by_lift(normalised: str) -> bool:
+    """#14089 : toute occurrence d'injonction structurelle est-elle suivie
+    d'un participe de levee (`leve` / `levee` / `lifted`) ?
+
+    Renvoie True si le body NE porte aucune injonction (defaut : pas une
+    levee) OU si chaque occurrence matchee par `_COORDINATOR_INJUNCTION_RE`
+    est immediatement suivie d'un participe de levee (miroir de la borne
+    `_lift_participle_after` que porte `_block_emitted` point B).
+    """
+    matches = list(_COORDINATOR_INJUNCTION_RE.finditer(normalised))
+    if not matches:
+        return False
+    for m in matches:
+        end = m.end()
+        if not _lift_participle_after(normalised, end):
+            return False
     return True
 
 
