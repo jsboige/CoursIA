@@ -151,7 +151,7 @@ LIFT_OVERRIDE_LOGINS = {"myia-ai-01"}
 # != droit d'override coordinateur.
 PERSONA_ALIAS_LOGINS = {"clusterManager-Myia"}
 _PERSONA_MARKERS_RE = re.compile(
-    r"(?m)(?:^|\s)\[(?:Hermes|NanoClaw|Hermes self-bot)(?:\s+[^\]]*)?\]"
+    r"(?m)^[#>*+\-\s]*\*{0,2}\[(?:Hermes|NanoClaw|Hermes self-bot)(?:[\s,][^\]]*)?\]"
 )
 # #13030 -- le marqueur doit etre POSE, pas CITE. L'ancien pattern sans
 # ancre matchait n'importe quelle mention dans le corps : le commentaire de

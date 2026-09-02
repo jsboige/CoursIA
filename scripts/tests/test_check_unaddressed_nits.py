@@ -746,6 +746,110 @@ def test_persona_alias_lift_override_logins_unchanged():
     assert mod.LIFT_OVERRIDE_LOGINS == {"myia-ai-01"}
 
 
+# --- #13609 cycle 187 : 3 formes positives manquantes. La regex `_PERSONA_MARKERS_RE`
+# d'origine (r"(?m)(?:^|\s)\[(?:Hermes|...)") ne couvrait pas les 3 signatures
+# reellement employees par les reviewers : bold `**[NanoClaw]**`, virgule interne
+# `[Hermes, po-2026]`, et `**[Hermes self-bot]**`. Le predicat etait inerte en
+# production sur 3 des 4 formes observees (cf ai-01 mesure msg-20260901T07:24).
+# La correction ancre sur ligne + accepte decoration de debut + virgule interne.
+
+
+def test_persona_alias_marker_bold_open_brackets_lifts():
+    """#13609 forme 1 : `**[NanoClaw]** Je leve cette reserve.`
+
+    Avant correction : PAS DE MATCH (le `**` mangeait le caractere
+    d'ancrage `(?:^|\\s)`, et le `[^\\]]*` n'acceptait pas la virgule).
+    Apres correction : MATCH (la decoration `**` est toleree par
+    `\\*{0,2}`, et le marqueur est reconnu comme pose en debut de ligne).
+
+    Verifie que le bold autour du crochet n'invalide pas le predicat.
+    """
+    reserve = {
+        "author": {"login": "clusterManager-Myia"},
+        "state": "COMMENTED", "submittedAt": at(10),
+        "body": "[NanoClaw] - COMMENT_WITH_CONCERNS\nscope slim != whole file.",
+    }
+    lift = {
+        "author": {"login": "jsboige"}, "createdAt": at(12),
+        "body": ("**[NanoClaw]** Je leve cette reserve. Le scope slim "
+                 "est volontaire, le fichier-entier est audite hors-scope."),
+    }
+    res = run([lift], reviews=[reserve])
+    assert res["blocked"] is False
+
+
+def test_persona_alias_marker_with_internal_comma_lifts():
+    """#13609 forme 2 : `**[Hermes, po-2026]** reserve levee.`
+
+    Avant correction : PAS DE MATCH (`[^\\]]*` ne tolere pas la virgule
+    apres le nom de persona, la regex refusait `[Hermes, po-2026]`).
+    Apres correction : MATCH (`[\\s,][^\\]]*` admet la virgule interne
+    comme separateur).
+
+    Verifie que la signature avec lane-qualifier virgule est reconnue.
+    """
+    reserve = {
+        "author": {"login": "clusterManager-Myia"},
+        "state": "COMMENTED", "submittedAt": at(10),
+        "body": "[Hermes] - COMMENT_WITH_CONCERNS\nre-exec necessaire.",
+    }
+    lift = {
+        "author": {"login": "jsboige"}, "createdAt": at(12),
+        "body": ("**[Hermes, po-2026]** reserve levee. Papermill re-execute "
+                 "au commit f5664590d, EXEC_PROVED."),
+    }
+    res = run([lift], reviews=[reserve])
+    assert res["blocked"] is False
+
+
+def test_persona_alias_marker_self_bot_bold_lifts():
+    """#13609 forme 3 : `**[Hermes self-bot]** ok.`
+
+    Avant correction : PAS DE MATCH (meme cause que forme 1 -- `**`
+    mangeait l'ancrage). Apres correction : MATCH.
+
+    Verifie que la signature du self-bot Hermes (variante `Hermes self-bot`)
+    est reconnue avec bold autour du crochet.
+    """
+    reserve = {
+        "author": {"login": "jsboige"},
+        "state": "COMMENTED", "submittedAt": at(10),
+        "body": "[Hermes self-bot] reserve levee",
+    }
+    lift = {
+        "author": {"login": "clusterManager-Myia"}, "createdAt": at(12),
+        "body": ("**[Hermes self-bot]** ok. La levee est prise en compte, "
+                 "le merge peut proceed."),
+    }
+    # Note : ce cas inverse la direction (reserve par jsboige, levee par
+    # clusterManager-Myia), ce qui correspond a la symetrie de l'alias.
+    # On teste donc que le predicat d'alias fonctionne dans les deux sens
+    # de la symetrie Hermes <-> Hermes self-bot.
+    res = run([lift], reviews=[reserve])
+    assert res["blocked"] is False
+
+
+def test_persona_alias_marker_inside_backtick_does_not_lift():
+    """#13609 controle negatif preserve : un marqueur DANS des backticks
+    (forme citation, ligne qui documente le marqueur sans le poser) ne
+    leve pas -- c'est la propriete #13030 qu'on etend. La nouvelle regex
+    garde l'ancrage de ligne (`^`) + accepte la virgule interne, mais
+    reste resistante a la citation.
+    """
+    reserve = {
+        "author": {"login": "clusterManager-Myia"},
+        "state": "COMMENTED", "submittedAt": at(10),
+        "body": "[NanoClaw] - COMMENT_WITH_CONCERNS\nscope slim != whole file.",
+    }
+    lift = {
+        "author": {"login": "jsboige"}, "createdAt": at(12),
+        "body": ("je cite `[NanoClaw]` dans une phrase, mais ce n'est "
+                 "pas une levee -- c'est une documentation de l'option."),
+    }
+    res = run([lift], reviews=[reserve])
+    assert res["blocked"] is True
+
+
 # --- #11201 : le faux negatif « corrige X et je merge ». Le test LIFT_MARKERS
 # passait AVANT toute recherche de reserve, et « je merge » couvre deux sens
 # opposes : « c'est bon, je merge » (annonce, levant) et « Change la ligne 19
