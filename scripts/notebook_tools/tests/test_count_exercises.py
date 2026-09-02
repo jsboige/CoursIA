@@ -782,6 +782,90 @@ class TestStubClassification:
         result = count_exercises_in_notebook(nb)
         assert result.count == 1
 
+    def test_empty_return_stub_forms_are_recognized(self):
+        """Empty-typed returns (`return []`, `return {}`, `return ()`,
+        `return 0`, `return set()`, `return ""`) are the pedagogically-correct
+        stub for a function that promises a list/dict/tuple/num/str/set, but
+        ONLY `return None` was in STUB_PATTERNS (issue #14212). A COMPACT cell
+        whose last effective statement is one of these is a stub.
+        """
+        compact_stubs = [
+            "def f():\n    # completer\n    return []\n",
+            "def f():\n    return {}\n",
+            "def f():\n    return ()\n",
+            "def f():\n    return 0\n",
+            "def f():\n    return set()\n",
+            'def f():\n    return ""\n',
+            "def f():\n    return ''\n",
+        ]
+        for src in compact_stubs:
+            assert _is_stub_code(src) is True, src
+
+    def test_empty_return_inside_worked_example_is_not_a_stub(self):
+        """A `return []` / `return 0` buried in a multi-line WORKED example is a
+        real computed answer (an empty neighbor list, an MST base case, a
+        `return float('inf')` sentinel), NOT a stub marker. It must not be
+        counted. Without this guard a substring `\\breturn\\s+\\[\\]` over the
+        whole source over-counted Search-3-Informed (cells 4/65 were already
+        complete frameworks/demos).
+        """
+        worked_examples = [
+            # A fully-written search framework class, `return []` is one line.
+            "class Node:\n"
+            "    def __init__(self, state, path_cost=0, h=0):\n"
+            "        self.state = state\n"
+            "        self.path_cost = path_cost\n"
+            "        self.h = h\n"
+            "    def children(self):\n"
+            "        return []\n"
+            "    def path_cost_plus_h(self):\n"
+            "        return self.path_cost + self.h\n"
+            "    def inf(self):\n"
+            "        return float('inf')\n"
+            "print('Framework de recherche informee pret.')\n",
+            # An MST heuristic with a legitimate numeric base case.
+            "def mst_cost_prim(nodes, graph):\n"
+            "    if len(nodes) <= 1:\n"
+            "        return 0\n"
+            "    nodes = list(nodes)\n"
+            "    cost = 0\n"
+            "    return cost\n",
+        ]
+        for src in worked_examples:
+            assert _is_stub_code(src) is False, src
+
+    def test_positive_control_three_exercise_cells_count_as_three(self, tmp_path):
+        """Acceptance criterion (#14212): a notebook with three exercise stub
+        cells (markdown Exercice header + `return []` / `return {}` /
+        `return None`) counts 3, not 1. Mirrors the real
+        auditer-la-conformite-visuelle.ipynb cells 38/39/40.
+        """
+        nb = _write_nb(
+            tmp_path / "auditer.ipynb",
+            [
+                _md("### Exercice 1 : Enumerer les primaires avec leur contexte\n"),
+                _code(
+                    "def detecteur_primaire_contexte(html_str):\n"
+                    "    # Parcourir les balises, ...\n"
+                    "    return []\n"
+                ),
+                _md("### Exercice 2 : Rapport agrege.\n"),
+                _code(
+                    "def rapport_conformite(html_str, charte):\n"
+                    "    # Reunir les trois detecteurs...\n"
+                    "    return {}\n"
+                ),
+                _md("### Exercice 3 : Le piege du smoke vert.\n"),
+                _code(
+                    "def piege_smoke_vert(page):\n"
+                    "    # On suppose deja que...\n"
+                    "    return None\n"
+                ),
+            ],
+        )
+        result = count_exercises_in_notebook(nb)
+        assert result.count == 3
+
 
 # ---------------------------------------------------------------------------
 # Evidence fields

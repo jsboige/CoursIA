@@ -12,7 +12,11 @@ passaient donc au vert en comparant ``ict.causal_attribution`` a une
 reproduction de l'organe natif, et non a l'organe natif. Un changement
 d'estimateur dans ``Quasi-Experimental.ipynb`` les aurait laisses verts.
 
-Les gates W1-W6 ci-dessous ferment exactement cet angle mort.
+Les gates W1-W7 ferment exactement cet angle mort pour ``quasi_experimental``.
+Les gates W8-W12 font de meme pour ``pymc_enumerate``, cable sur
+``pymc_causal_organs`` (PR #14133) par la tranche 4 de #14051 : jusque-la, ce
+second pont detenait encore des reproductions byte-identiques des cellules 5
+et 20 de ``PyMC-05-Causal-Inference.ipynb``.
 
 Note de conception -- pourquoi l'IDENTITE et non un ``monkeypatch``
 -------------------------------------------------------------------
@@ -42,12 +46,17 @@ _ROOT = os.path.dirname(_HERE)
 if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
 
+from ict.bridges import pymc_enumerate as pe  # noqa: E402
 from ict.bridges import quasi_experimental as qe  # noqa: E402
 
 # `causal_organs` est rendu importable par le bootstrap sys.path de
 # `quasi_experimental` lui-meme : l'importer ICI apres coup verifie, en
 # passant, que ce bootstrap fonctionne hors du module qui le pose.
 import causal_organs as co  # noqa: E402
+
+# Idem pour l'organe PyMC : le bootstrap sys.path est pose par
+# `pymc_enumerate` lui-meme.
+import pymc_causal_organs as pco  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
@@ -155,3 +164,82 @@ def test_adapter_did_equals_the_canonical_pipeline():
             f"pretrend={pretrend} : l'adaptateur ne publie pas la sortie de "
             "l'organe canonique"
         )
+
+
+# ---------------------------------------------------------------------------
+#  W8-W10 : identite d'objet cote PyMC -- le pont ne detient aucune copie     #
+# ---------------------------------------------------------------------------
+@pytest.mark.parametrize("name", ["enumerate_scm", "p_y_given_m_x"])
+def test_pymc_bridge_exposes_the_canonical_object_itself(name):
+    """W8-W9 -- ``pe.<f>`` EST ``pymc_causal_organs.<f>``.
+
+    Symetrique de W1-W3. Gate falsifiable : re-coller un
+    ``def enumerate_scm(...)`` dans ``pymc_enumerate.py`` rebind le nom sur un
+    objet local et rougit immediatement.
+    """
+    bridged = getattr(pe, name)
+    canonical = getattr(pco, name)
+    assert bridged is canonical, (
+        f"{name} : le pont PyMC expose un objet distinct du module canonique -- "
+        "une copie a probablement ete reintroduite"
+    )
+
+
+def test_pymc_front_door_scm_is_the_canonical_table():
+    """W10 -- ``FRONT_DOOR_SCM`` est un ALIAS de ``FRONT_SCM``, pas une copie.
+
+    Le SCM est une **donnee**, pas une fonction : une copie des CPT ne se voit
+    ni dans ``__module__`` ni dans un ``def``. C'est donc le seul gate qui
+    puisse l'attraper. Il compte : les quatre CPT de la cellule 20 sont
+    precisement ce que la verification cross-engine suppose partage.
+    """
+    assert pe.FRONT_DOOR_SCM is pco.FRONT_SCM, (
+        "FRONT_DOOR_SCM a ete redeclare : une derive des CPT du notebook ne se "
+        "propagerait plus au pont"
+    )
+
+
+# ---------------------------------------------------------------------------
+#  W11 : provenance declaree cote PyMC                                        #
+# ---------------------------------------------------------------------------
+@pytest.mark.parametrize("name", ["enumerate_scm", "p_y_given_m_x"])
+def test_pymc_bridged_callables_declare_the_canonical_module(name):
+    """W11 -- ``__module__`` nomme ``pymc_causal_organs``."""
+    assert getattr(pe, name).__module__ == "pymc_causal_organs"
+
+
+# ---------------------------------------------------------------------------
+#  W12 : aucune redefinition residuelle dans la source du pont PyMC           #
+# ---------------------------------------------------------------------------
+def test_pymc_bridge_source_defines_no_organ_of_its_own():
+    """W12 -- la source du pont ne (re)definit aucun organe natif.
+
+    Les seuls ``def`` legitimes ici sont les compositions propres au pont
+    (``do_direct_*``, ``observational_*``, ``front_door_estimate``,
+    ``_sample_from_scm``, ``adapt_*``) : elles ne vivent dans aucune cellule
+    de PyMC-05 et n'ont donc pas d'organe canonique a importer.
+    """
+    import inspect
+    import re
+
+    src = inspect.getsource(pe)
+    for name in ("enumerate_scm", "p_y_given_m_x"):
+        motif = re.compile(r"^\s*def %s\s*\(" % re.escape(name), re.M)
+
+        # Controle positif : un motif valide par ses seuls hits peut ne rien
+        # attraper. On verifie d'abord qu'il attrape la forme qu'il cible,
+        # et qu'il laisse passer un helper dont le nom la PREFIXE (le pont en
+        # detient un : `_p_y_front` -- et, avant lui, un `..._native` qu'un
+        # simple `in` faisait rougir a tort).
+        assert motif.search("def %s(a, b):" % name)
+        assert motif.search("    def %s (a, b):" % name)
+        assert not motif.search("def %s_native(a, b):" % name)
+
+        assert not motif.search(src), (
+            f"def {name}(...) redefini dans le pont PyMC : l'organe natif doit "
+            "etre importe depuis pymc_causal_organs, pas reimplemente"
+        )
+    assert "FRONT_DOOR_SCM: List" not in src, (
+        "FRONT_DOOR_SCM redeclare comme table litterale au lieu d'aliaser "
+        "pymc_causal_organs.FRONT_SCM"
+    )

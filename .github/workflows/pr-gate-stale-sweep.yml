@@ -92,9 +92,13 @@ on:
     # them. Matching the cadence to the observed service time is what stops the
     # sweeps killing each other.
     #
-    # This does NOT fix the queue wait. The final timing step below measures the
-    # run-created -> job-started queue separately from observed execution time;
-    # #12728 requires that evidence before any further cadence or runner change.
+    # This does NOT fix the queue wait BY ITSELF. The cadence change stopped the
+    # sweeps killing each other; the wait itself is addressed by routing this
+    # job to the dedicated coursia-linux pool (see runs-on). The final timing
+    # step below keeps measuring the run-created -> job-started queue separately
+    # from observed execution time: #12728's acceptance is read on THAT step,
+    # post-routing (expected: queue collapses from ~6000-8000 s to near zero;
+    # cancellations from 19/30 to ~0).
     - cron: '7 * * * *'
   workflow_dispatch:
     inputs:
@@ -119,9 +123,52 @@ concurrency:
 jobs:
   sweep:
     name: Re-aggregate stale PR gate verdicts
-    runs-on: ubuntu-latest
+    # Routed to the self-hosted Linux pool (#14201 PART 2, #12728 acceptance) :
+    # this sweep is a 2-minute job that waited 1.6-2.2 h for a GitHub-hosted
+    # slot (98-99 % queue, measured on 30 runs, see #12728) and was cancelled
+    # 19/30 by its own successor -- the organ went quiet precisely under the
+    # congestion it exists to absorb. The coursia-linux pool is dedicated
+    # capacity (mandat user : consommer les runs conteneurises, ce sont les
+    # GitHub-hosted qui coutent), so the queue wait collapses at the source.
+    # Coupling assumed: a dead supervisor now starves this sweep too -- covered
+    # by TWO independent observers, linux-runner-starvation-advisory.yml
+    # (#14263, extinction/starvation) and pr-gate-sweep-health-advisory.yml
+    # (last successful sweep > 1 h, runs on ubuntu-latest so it survives what
+    # it watches).
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
     timeout-minutes: 15
     steps:
+      - name: Bootstrap gh into the persistent toolcache
+        # The coursia-linux image (#14171: ubuntu:24.04 + python3/jq/curl/git)
+        # deliberately does not ship gh, and this sweep is gh-driven. The
+        # binary is installed ONCE into the toolcache volume: the volume
+        # persists across ephemeral containers -- that is its purpose -- so
+        # every sweep after the first reuses it. No setup-python / pip here on
+        # purpose either: the image's python3 suffices, which keeps this sweep
+        # immune to the RUNNER_TOOL_CACHE bug class that broke Python tooling
+        # on mangled generations (2026-09-02) -- the bootstrap hardcodes the
+        # mount point and its worst case is a re-download, never a break.
+        env:
+          GH_BOOTSTRAP_VERSION: "2.80.0"
+        run: |
+          set -uo pipefail
+          if command -v gh >/dev/null 2>&1; then
+            echo "[gh] preinstalled on this runner"
+            gh --version
+            exit 0
+          fi
+          GH_BIN="/opt/hostedtoolcache/bin/gh"
+          if [ ! -x "$GH_BIN" ]; then
+            VER="${GH_BOOTSTRAP_VERSION}"
+            echo "[gh] bootstrapping v${VER} into toolcache (one-time, cached for every later sweep)"
+            curl -fsSL "https://github.com/cli/cli/releases/download/v${VER}/gh_${VER}_linux_amd64.tar.gz" -o /tmp/gh.tgz
+            tar -xzf /tmp/gh.tgz -C /tmp
+            mkdir -p /opt/hostedtoolcache/bin
+            mv "/tmp/gh_${VER}_linux_amd64/bin/gh" "$GH_BIN"
+          fi
+          echo "/opt/hostedtoolcache/bin" >> "$GITHUB_PATH"
+          "$GH_BIN" --version
+
       # No checkout / setup-python / pip here on purpose. This sweep no longer
       # runs `pr_gate.py`: it re-runs the original workflow run (see the note in
       # the re-aggregation step). That removes ~40 s of runner time per sweep,
