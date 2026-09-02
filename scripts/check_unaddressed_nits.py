@@ -1611,12 +1611,46 @@ def _coordinator_emission_informal(body: str) -> bool:
     # nomme l'injonction levee (« BLOCAGE leve ») reste muet.
     if has_live_lift(normalised):
         return False
+    # #14089 -- chemin different : l'injonction peut etre ANNONCEE puis LEVEE
+    # dans la meme phrase, sans LIFT_MARKER (qui exige la graphie complete
+    # « levee »). Cas fondateur : « HOLD leve -- le remplacement est nomme,
+    # vous pouvez merger. » -- la voie _block_emitted reconnait le motif via
+    # `_lift_participle_after` (leve / levee / lifted post-marker), mais la
+    # voie `_coordinator_emission_informal` n'en herite pas : elle conclut a
+    # une emission et classifie BOT-CONCERN, donc la PR que le commentaire
+    # vient de DEBLOQUER reste BLOQUEE. Meme classe de defaut que celle
+    # corrigee dans #13912 : un chemin qui n'a pas herite de la garde de
+    # son jumeau. On ajoute ici le MEME test post-marker que porte
+    # `_block_emitted` (point B), sur l'INJONCTION structurellement matchee
+    # (toutes les positions), pas seulement sur le head. Si TOUTES les
+    # injonctions sont suivies d'un participe de levee, c'est une levee.
+    if _every_injunction_followed_by_lift(normalised):
+        return False
     # Un [OVERRIDE] pose en tete (arbretage tiers de B.0) EMET une levee,
     # jamais une reserve — garde-fou de l'override, deja documente en
     # `_block_emitted` point A.
     head = normalised[:60].lstrip(" \t*_").upper()
     if head.startswith("[OVERRIDE]"):
         return False
+    return True
+
+
+def _every_injunction_followed_by_lift(normalised: str) -> bool:
+    """#14089 : toute occurrence d'injonction structurelle est-elle suivie
+    d'un participe de levee (`leve` / `levee` / `lifted`) ?
+
+    Renvoie True si le body NE porte aucune injonction (defaut : pas une
+    levee) OU si chaque occurrence matchee par `_COORDINATOR_INJUNCTION_RE`
+    est immediatement suivie d'un participe de levee (miroir de la borne
+    `_lift_participle_after` que porte `_block_emitted` point B).
+    """
+    matches = list(_COORDINATOR_INJUNCTION_RE.finditer(normalised))
+    if not matches:
+        return False
+    for m in matches:
+        end = m.end()
+        if not _lift_participle_after(normalised, end):
+            return False
     return True
 
 
