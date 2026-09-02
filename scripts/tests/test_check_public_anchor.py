@@ -166,12 +166,15 @@ def test_build_reference_graph_empty():
     meme si la fonction etait vide / ne touchait pas `d.refs`. La forme
     de retour + l'invariant sur l'entree vide ferment cette trappe.
     """
-    out = cpa.build_reference_graph([])
+    decls: list = []
+    out = cpa.build_reference_graph(decls)
     # Forme : None en retour, graphe vide (pas d'effet de bord).
     assert out is None
     # Invariant : pas de refs injectees sur une liste vide (la fonction
-    # n'a rien a annoter).
-    assert [] == []  # l'entree est restee vide, par reference
+    # n'a rien a annoter). Assertion sur la variable nommee : muter
+    # l'entree (par ex. y append un decl fantome) ferait rougir -- la
+    # forme precedente `assert [] == []` ne pouvait jamais echouer.
+    assert decls == []
 
 
 def test_build_reference_graph_positive_control():
