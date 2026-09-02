@@ -230,7 +230,7 @@ LOCAL_MODE=false
 
 # ComfyUI
 COMFYUI_API_URL=https://qwen-image-edit.myia.io
-# Hébergement : po-2023 (conteneur comfyui-qwen, GPU0 RTX 3080Ti, port 8188 — cf. GPU Layout ci-dessous)
+# Hébergement : po-2023 (conteneur comfyui-qwen, RTX 3090 24 GB, port 8188)
 COMFYUI_AUTH_TOKEN=<bearer_token_bcrypt>
 
 # OpenAI via OpenRouter
