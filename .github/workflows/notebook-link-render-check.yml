@@ -1,0 +1,148 @@
+name: notebook-link-render-check
+
+# EPIC #10921 — surface l'etat des liens .ipynb dans les READMEs de series.
+#
+# Mode advisory : exit 0 en TOUTE circonstance, le signal est porte par un
+# label (delta signe sur les READMEs touches par la PR). Bloquer le merge sur
+# ce label releve de la politique de la lane, pas du CI -- la correction en
+# volume (2096 liens) est deliberement hors scope (cf. PR body, G.4).
+#
+# Pourquoi advisory :
+# * Le constat mesurable au depot est 100 % BRUT (2096/2096, mesure au cycle
+#   c.891 / HEAD 2e28c2a05). Cause racine = `_quarto.yml` `notebook-preview:
+#   false` (Quarto ne genere AUCUN `.html` sibling). Une garde bloquante
+#   fermerait systematiquement toute PR touchant un README de serie jusqu'a
+#   la decision strategique (bascule `notebook-preview: true` vs URLs GitHub
+#   blob viewer) -- cette decision est **exterieure** a cette PR.
+# * Ce workflow est un **instrument** : il signale l'evolution par-PR (delta
+#   sur les READMEs modifies), pas la jauge depot-entier. La jauge vit dans
+#   le commentaire de mesure cycle c.891 sur l'EPIC #10921.
+#
+# Format du label : `notebook-link-render-delta: +/-N (M readmes)` -- delta
+# signe du nombre de liens BRUT introduits (+) ou draines (-) par les
+# READMEs modifies par la PR vs main (merge-base). 0 readmes = PR sans
+# README de serie ; delta 0 = PR neutre.
+
+on:
+  pull_request:
+    paths:
+      - 'MyIA.AI.Notebooks/**/README.md'
+      - 'scripts/notebook_tools/check_notebook_link_render.py'
+      - '.github/workflows/notebook-link-render-check.yml'
+  workflow_dispatch: {}
+
+concurrency:
+  group: notebook-link-render-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check-link-render:
+    name: check_notebook_link_render.py (advisory)
+    # Routage #14283 tranche 4 : balayage Python pur, stdlib-only.
+    # Declencheur pull_request : on garde la garde same-repo (un PR de fork
+    # n'atteint jamais le runner ephemere auto-heberge ; aucun code de fork
+    # n'est execute cote workflow).
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    permissions:
+      pull-requests: write
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          filter: blob:none
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Compute delta on PR READMEs vs main
+        id: scan
+        run: |
+          set +e
+          MERGE_BASE=$(git merge-base origin/main HEAD)
+          # Liste des READMEs de serie modifies par la PR (filtre paths du trigger).
+          mapfile -t PR_READMES < <(git diff --name-only --diff-filter=d "$MERGE_BASE" HEAD -- 'MyIA.AI.Notebooks/**/README.md' | sort -u)
+          n_readmes=${#PR_READMES[@]}
+          pr_brut=0; main_brut=0
+          for readme in "${PR_READMES[@]}"; do
+            [ -z "$readme" ] && continue
+            # Le parent du README dans le repo (le checker a besoin du VRAI chemin
+            # pour resoudre les liens .ipynb relatifs -- le dump dans /tmp casse
+            # la resolution par defaut, d'ou --link-root).
+            readme_dir="$(dirname "$readme")"
+            # Version PR (HEAD).
+            if git show "HEAD:$readme" > /tmp/_pr_readme.md 2>/dev/null; then
+              p=$(cd /tmp && python "$GITHUB_WORKSPACE/scripts/notebook_tools/check_notebook_link_render.py" --tracked-only --json /tmp/_pr_readme.md --link-root "$GITHUB_WORKSPACE/$readme_dir" 2>/dev/null \
+                | python -c "import json,sys; print(json.load(sys.stdin)['summary']['totals']['BRUT'])" 2>/dev/null || echo 0)
+              pr_brut=$((pr_brut + p))
+            fi
+            # Version main (merge-base).
+            if git show "$MERGE_BASE:$readme" > /tmp/_main_readme.md 2>/dev/null; then
+              m=$(cd /tmp && python "$GITHUB_WORKSPACE/scripts/notebook_tools/check_notebook_link_render.py" --tracked-only --json /tmp/_main_readme.md --link-root "$GITHUB_WORKSPACE/$readme_dir" 2>/dev/null \
+                | python -c "import json,sys; print(json.load(sys.stdin)['summary']['totals']['BRUT'])" 2>/dev/null || echo 0)
+              main_brut=$((main_brut + m))
+            fi
+          done
+          delta=$((pr_brut - main_brut))
+          if [ "$delta" -gt 0 ]; then delta_sign="+"; else delta_sign=""; fi
+          echo "PR READMEs scanned: $n_readmes | PR BRUT: $pr_brut | main BRUT: $main_brut | delta: ${delta_sign}${delta}"
+          echo "delta_brut=$delta" >> "$GITHUB_OUTPUT"
+          echo "delta_sign=$delta_sign" >> "$GITHUB_OUTPUT"
+          echo "pr_readmes=$n_readmes" >> "$GITHUB_OUTPUT"
+          set -e
+
+      - name: Apply signal label (advisory)
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Label delta signe (jamais bloquant) sur la PR -- ce que la PR a
+            // reellement modifie (N readmes scannes, +/- BRUT).
+            const delta = '${{ steps.scan.outputs.delta_brut }}';
+            const deltaSign = '${{ steps.scan.outputs.delta_sign }}';
+            const prReadmes = '${{ steps.scan.outputs.pr_readmes }}';
+            const deltaLabel = `notebook-link-render-delta: ${deltaSign}${delta} (${prReadmes} readmes)`;
+
+            // Cleanup des anciens labels notebook-link-render-* de runs precedents.
+            let existing = [];
+            try {
+              const { data } = await github.rest.issues.listLabelsOnIssue({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+              });
+              existing = data;
+            } catch (e) {
+              core.warning(`listLabelsOnIssue failed: ${e.message}`);
+            }
+            const toRemove = existing
+              .filter(l => l.name && l.name.startsWith('notebook-link-render-'))
+              .map(l => l.name);
+            for (const name of toRemove) {
+              try {
+                await github.rest.issues.removeLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.issue.number,
+                  name,
+                });
+              } catch (e) {
+                core.info(`removeLabel ${name} ignored: ${e.status || e.message}`);
+              }
+            }
+
+            // Poser le label delta. Si le label n'existe pas encore dans le
+            // repo (premiere utilisation), on ne fait pas crasher le job
+            // advisory -- warning, pas error.
+            try {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                labels: [deltaLabel],
+              });
+            } catch (e) {
+              core.warning(`addLabels "${deltaLabel}" failed (label may not exist yet): ${e.message}`);
+            }
+            core.info(`Advisory label set: ${deltaLabel}`);
