@@ -74,8 +74,7 @@ jobs:
               basef="$tmp/base.ipynb"
               git show "$BASE:$nb" > "$basef" 2>/dev/null || basef="NONE"
             fi
-            out=$(python scripts/notebook_tools/enrich_quality_ci.py --base "$basef" --head "$nb")
-            rc=$?
+            out=$(python scripts/notebook_tools/enrich_quality_ci.py --base "$basef" --head "$nb") && rc=0 || rc=$?
             if [ $rc -ne 0 ]; then
               echo "::error title=Enrich-quality regression::$nb introduces new HIGH enrich-quality finding(s)."
               echo "$out"
