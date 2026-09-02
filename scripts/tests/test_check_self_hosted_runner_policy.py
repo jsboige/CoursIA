@@ -595,55 +595,6 @@ def test_same_repository_reusable_workflow_rejects_path_traversal(tmp_path):
     assert "REMOTE_REUSABLE_WORKFLOW" in codes(policy.scan_workflows(tmp_path))
 
 
-def test_missing_trigger_breaks_instrument(tmp_path):
-    write_workflow(tmp_path, "broken-trigger", """
-        name: broken-trigger
-        jobs:
-          test:
-            runs-on: ubuntu-latest
-            steps:
-              - run: echo no-trigger
-        """)
-    result = policy.scan_workflows(tmp_path)
-    assert result.broken == ["broken-trigger.yml: missing on trigger"]
-
-
-def test_empty_runs_on_list_breaks_instrument(tmp_path):
-    write_workflow(tmp_path, "broken-runner", """
-        name: broken-runner
-        on: workflow_dispatch
-        jobs:
-          test:
-            runs-on: []
-            steps:
-              - run: echo no-runner
-        """)
-    result = policy.scan_workflows(tmp_path)
-    assert result.broken == [
-        "broken-runner.yml:test: runs-on list must contain labels"
-    ]
-
-
-def test_missing_jobs_breaks_instrument(tmp_path):
-    write_workflow(tmp_path, "broken-jobs", """
-        name: broken-jobs
-        on: workflow_dispatch
-        """)
-    result = policy.scan_workflows(tmp_path)
-    assert result.broken == ["broken-jobs.yml: missing jobs"]
-
-
-def test_same_repository_reusable_workflow_rejects_path_traversal(tmp_path):
-    write_workflow(tmp_path, "caller", """
-        name: caller
-        on: [pull_request]
-        jobs:
-          test:
-            uses: jsboige/CoursIA/.github/workflows/../evil.yml@main
-        """)
-    assert "REMOTE_REUSABLE_WORKFLOW" in codes(policy.scan_workflows(tmp_path))
-
-
 def test_invalid_yaml_breaks_the_instrument(tmp_path):
     write_workflow(tmp_path, "broken", "on: [pull_request\njobs: [")
     result = policy.scan_workflows(tmp_path)

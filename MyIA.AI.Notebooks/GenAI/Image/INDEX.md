@@ -1,7 +1,7 @@
 # 📑 INDEX COMPLET - GenAI Images Ecosystem CoursIA
 
 > **Guide de navigation complet de l'écosystème GenAI Images**  
-> Production-ready | 18 Notebooks | APIs Externes | Documentation Complète
+> Production-ready | 20 Notebooks | APIs Externes | Documentation Complète
 
 ---
 
@@ -41,9 +41,9 @@ L'écosystème **GenAI Images CoursIA** est une plateforme modulaire complète p
 
 | Métrique | Valeur |
 |----------|--------|
-| **Notebooks totaux** | 18 |
+| **Notebooks totaux** | 20 |
 | **Tutoriels complets** | 4 (8500+ lignes) |
-| **Exemples sectoriels** | 4 domaines |
+| **Exemples sectoriels** | 3 domaines |
 | **APIs configurées** | 3 (OpenAI, OpenRouter, GPT-5) |
 | **Niveaux formation** | 4 (00-04) |
 | **Documentation** | 15+ documents |
@@ -106,48 +106,55 @@ print(f"✅ Image générée: {response.data[0].url}")
 ```
 MyIA.AI.Notebooks/GenAI/
 │
-├── 00-GenAI-Environment/          # 🟢 Setup & Configuration
+├── 00-GenAI-Environment/             # 🟢 Setup & Configuration (prérequis, hors Image/)
 │   ├── 00-1-Environment-Setup.ipynb
 │   ├── 00-2-Docker-Services-Management.ipynb
 │   ├── 00-3-API-Endpoints-Configuration.ipynb
 │   └── 00-4-Environment-Validation.ipynb
 │
-├── 01-Images-Foundation/          # 🟢 Fondamentaux
-│   ├── 01-1-OpenAI-DALL-E-3.ipynb
-│   ├── 01-2-GPT-5-Image-Generation.ipynb
-│   ├── 01-3-Basic-Image-Operations.ipynb
-│   └── 01-5b-Qwen-Image-Edit-2509.ipynb
-├── 02-Images-Advanced/            # 🟠 Avancé (Docker)
-│   ├── 02-2-FLUX-1-Advanced-Generation.ipynb
-│   └── 02-3-Stable-Diffusion-3-5.ipynb
+├── tutorials/                        # 📚 Guides — dupliqués dans Image/tutorials/ (cf. #13581 T3)
 │
-├── 03-Images-Orchestration/       # 🔴 Orchestration (Docker)
-│   ├── 03-1-Multi-Model-Comparison.ipynb
-│   ├── 03-2-Workflow-Orchestration.ipynb
-│   └── 03-3-Performance-Optimization.ipynb
-│
-├── 04-Images-Applications/        # 🔴 Applications Métier
-│   ├── 04-1-Educational-Content-Generation.ipynb
-│   ├── 04-2-Creative-Workflows.ipynb
-│   └── 04-3-Production-Integration.ipynb
-│
-├── tutorials/                     # 📚 Guides Complets
-│   ├── dalle3-complete-guide.md
-│   ├── gpt5-image-analysis-guide.md
-│   ├── openrouter-ecosystem-guide.md
-│   └── educational-workflows.md
-│
-├── examples/                      # 🎯 Exemples Sectoriels
-│   ├── science-diagrams.ipynb
-│   ├── history-geography.ipynb
-│   ├── literature-visual.ipynb
-│   └── mathematics-physics.ipynb
-│
-└── docs/                          # 📖 Documentation Technique
-    ├── architecture.md
-    ├── deployment-guide.md
-    ├── development-standards.md
-    └── integration-procedures.md
+└── Image/                            # 🖼️ Écosystème Images — racine de ce document
+    │
+    ├── 01-Foundation/                # 🟢 Fondamentaux
+    │   ├── 01-1-OpenAI-DALL-E-3.ipynb
+    │   ├── 01-2-GPT-5-Image-Generation.ipynb
+    │   ├── 01-3-Basic-Image-Operations.ipynb
+    │   ├── 01-4-Forge-SD-XL-Turbo.ipynb
+    │   ├── 01-5-Qwen-Image-Edit.ipynb
+    │   └── 01-5b-Qwen-Image-Edit-2509.ipynb
+    │
+    ├── 02-Advanced/                  # 🟠 Avancé (Docker)
+    │   ├── 02-2-FLUX-1-Advanced-Generation.ipynb
+    │   ├── 02-3-Stable-Diffusion-3-5.ipynb
+    │   ├── 02-4-Z-Image-Lumina2.ipynb
+    │   └── 02-5-Bonsai-Image-Ternary.ipynb
+    │
+    ├── 03-Orchestration/             # 🔴 Orchestration (Docker)
+    │   ├── 03-1-Multi-Model-Comparison.ipynb
+    │   ├── 03-2-Workflow-Orchestration.ipynb
+    │   └── 03-3-Performance-Optimization.ipynb
+    │
+    ├── 04-Applications/              # 🔴 Applications Métier
+    │   ├── 04-1-Educational-Content-Generation.ipynb
+    │   ├── 04-2-Creative-Workflows.ipynb
+    │   ├── 04-3-Production-Integration.ipynb
+    │   └── 04-4-Cross-Stitch-Pattern-Maker-Legacy.ipynb
+    │
+    ├── examples/                     # 🎯 Exemples Sectoriels
+    │   ├── science-diagrams.ipynb
+    │   ├── history-geography.ipynb
+    │   └── literature-visual.ipynb
+    │
+    ├── tutorials/                    # 📚 Guides Complets (copie locale)
+    │   ├── dalle3-complete-guide.md
+    │   ├── gpt5-image-analysis-guide.md
+    │   ├── openrouter-ecosystem-guide.md
+    │   └── educational-workflows.md
+    │
+    ├── INDEX.md                      # 📑 Ce document
+    ├── DEPLOYMENT.md                 # 🚀 Guide production
+    └── README.md
 ```
 
 ---
@@ -175,6 +182,8 @@ MyIA.AI.Notebooks/GenAI/
 | **01-1-OpenAI-DALL-E-3** | DALL-E 3 | 2h | ⭐ | Génération images haute qualité |
 | **01-2-GPT-5-Image-Generation** | GPT-5 Vision | 2h | ⭐ | Analyse multimodale avancée |
 | **01-3-Basic-Image-Operations** | PIL/OpenCV | 1h30 | ⭐ | Manipulation images basique |
+| **01-4-Forge-SD-XL-Turbo** | SD XL Turbo (Forge) | — | ⭐ | Génération locale via Stable Diffusion Forge |
+| **01-5-Qwen-Image-Edit** | Qwen-Image-Edit 2.5 | — | ⭐ | Génération et édition via API ComfyUI |
 
 **Compétences Acquises** :
 - ✅ Prompt engineering images
@@ -191,6 +200,8 @@ MyIA.AI.Notebooks/GenAI/
 | **01-5b-Qwen-Image-Edit-2509** | Qwen 2.5 | 3h | ⭐⭐ | ✅ Requis |
 | **02-2-FLUX-1-Advanced-Generation** | FLUX.1 | 3h | ⭐⭐ | ✅ Requis |
 | **02-3-Stable-Diffusion-3-5** | SD 3.5 | 3h | ⭐⭐ | ✅ Requis |
+| **02-4-Z-Image-Lumina2** | Z-Image (Lumina-2) | — | ⭐⭐ | ✅ Requis (ComfyUI) |
+| **02-5-Bonsai-Image-Ternary** | Bonsai-Image (1.58-bit) | — | ⭐⭐ | ✅ Requis (quantization ternaire) |
 
 **Status** : 🚧 Infrastructure Docker en cours de déploiement (agent parallèle)
 
@@ -227,6 +238,7 @@ MyIA.AI.Notebooks/GenAI/
 | **04-1-Educational-Content-Generation** | Contenu pédagogique | 3h | ⭐⭐⭐ | ✅ Production |
 | **04-2-Creative-Workflows** | Workflows créatifs | 3h | ⭐⭐⭐ | ✅ Production |
 | **04-3-Production-Integration** | Intégration systèmes | 2h30 | ⭐⭐⭐ | ✅ Production |
+| **04-4-Cross-Stitch-Pattern-Maker-Legacy** | Patron de point de croix | — | ⭐⭐⭐ | ✅ Production (legacy) |
 
 **Status APIs Externes** : ✅ 100% Opérationnel
 
@@ -243,7 +255,7 @@ MyIA.AI.Notebooks/GenAI/
 ### Tutoriels Complets (1000-1600 lignes)
 
 #### 1. **DALL-E 3 Complete Guide** 📘
-**Fichier** : [`tutorials/dalle3-complete-guide.md`](tutorials/dalle3-complete-guide.md)  
+**Fichier** : [`tutorials/dalle3-complete-guide.md`](../tutorials/dalle3-complete-guide.md)  
 **Temps lecture** : 30min | **Niveau** : Débutant → Intermédiaire
 
 **Sections Principales** :
@@ -261,7 +273,7 @@ MyIA.AI.Notebooks/GenAI/
 ---
 
 #### 2. **GPT-5 Image Analysis Guide** 📙
-**Fichier** : [`tutorials/gpt5-image-analysis-guide.md`](tutorials/gpt5-image-analysis-guide.md)  
+**Fichier** : [`tutorials/gpt5-image-analysis-guide.md`](../tutorials/gpt5-image-analysis-guide.md)  
 **Temps lecture** : 35min | **Niveau** : Intermédiaire
 
 **Sections Principales** :
@@ -280,7 +292,7 @@ MyIA.AI.Notebooks/GenAI/
 ---
 
 #### 3. **OpenRouter Ecosystem Guide** 📗
-**Fichier** : [`tutorials/openrouter-ecosystem-guide.md`](tutorials/openrouter-ecosystem-guide.md)  
+**Fichier** : [`tutorials/openrouter-ecosystem-guide.md`](../tutorials/openrouter-ecosystem-guide.md)  
 **Temps lecture** : 40min | **Niveau** : Intermédiaire → Avancé
 
 **Sections Principales** :
@@ -299,7 +311,7 @@ MyIA.AI.Notebooks/GenAI/
 ---
 
 #### 4. **Educational Workflows Tutorial** 📕
-**Fichier** : [`tutorials/educational-workflows.md`](tutorials/educational-workflows.md)  
+**Fichier** : [`tutorials/educational-workflows.md`](../tutorials/educational-workflows.md)  
 **Temps lecture** : 45min | **Niveau** : Avancé
 
 **Sections Principales** :
@@ -322,7 +334,7 @@ MyIA.AI.Notebooks/GenAI/
 ### Exemples Prêts-à-l'Emploi
 
 #### 1. **Science Diagrams** 🔬
-**Fichier** : [`Image/examples/science-diagrams.ipynb`](Image/examples/science-diagrams.ipynb)
+**Fichier** : [`Image/examples/science-diagrams.ipynb`](examples/science-diagrams.ipynb)
 
 **Applications** :
 - Diagrammes cellule végétale/animale
@@ -336,7 +348,7 @@ MyIA.AI.Notebooks/GenAI/
 ---
 
 #### 2. **History & Geography** 🗺️
-**Fichier** : [`Image/examples/history-geography.ipynb`](Image/examples/history-geography.ipynb)
+**Fichier** : [`Image/examples/history-geography.ipynb`](examples/history-geography.ipynb)
 
 **Applications** :
 - Reconstitutions événements historiques
@@ -350,7 +362,7 @@ MyIA.AI.Notebooks/GenAI/
 ---
 
 #### 3. **Literature & Visual Arts** 📖
-**Fichier** : [`Image/examples/literature-visual.ipynb`](Image/examples/literature-visual.ipynb)
+**Fichier** : [`Image/examples/literature-visual.ipynb`](examples/literature-visual.ipynb)
 
 **Applications** :
 - Illustrations scènes littéraires
@@ -518,13 +530,12 @@ MyIA.AI.Notebooks/GenAI/
 4. `examples/science-diagrams.ipynb`
 5. `examples/history-geography.ipynb`
 6. `examples/literature-visual.ipynb`
-7. `examples/mathematics-physics.ipynb`
 
 **Module 3 : Production Cours (4h)**
-8. Templates réutilisables par discipline
-9. Génération par lots de supports complets
-10. Quality assurance pédagogique
-11. Accessibilité et inclusivité
+7. Templates réutilisables par discipline
+8. Génération par lots de supports complets
+9. Quality assurance pédagogique
+10. Accessibilité et inclusivité
 
 **Livrables** :
 - ✅ Pack visuels pour 1 cours complet
@@ -684,7 +695,7 @@ print("✅ OpenAI API opérationnelle")
 
 **Documentation** :
 - [OpenAI Images API](https://platform.openai.com/docs/guides/images)
-- Tutorial : [`dalle3-complete-guide.md`](tutorials/dalle3-complete-guide.md)
+- Tutorial : [`dalle3-complete-guide.md`](../tutorials/dalle3-complete-guide.md)
 
 ---
 
@@ -722,7 +733,7 @@ print("✅ OpenRouter API opérationnelle")
 
 **Documentation** :
 - [OpenRouter Docs](https://openrouter.ai/docs)
-- Tutorial : [`openrouter-ecosystem-guide.md`](tutorials/openrouter-ecosystem-guide.md)
+- Tutorial : [`openrouter-ecosystem-guide.md`](../tutorials/openrouter-ecosystem-guide.md)
 
 ---
 
@@ -788,10 +799,10 @@ execute_notebook(
 
 ## Documentation Technique
 
-- [docs/genai/genai-services.md](../../docs/genai/genai-services.md) — Architecture services GenAI, GPU, modèles, configurations Docker
-- [TROUBLESHOOTING.md (archive)](../../docs/archive/suivis/genai-image/TROUBLESHOOTING.md) — Resolution problemes courants, erreurs APIs, scripts diagnostiques
+- [docs/genai/genai-services.md](../../../docs/genai/genai-services.md) — Architecture services GenAI, GPU, modèles, configurations Docker
+- [TROUBLESHOOTING.md (archive)](../../../docs/archive/suivis/genai-image/TROUBLESHOOTING.md) — Resolution problemes courants, erreurs APIs, scripts diagnostiques
 
-> Historique des investigations (phases 12a/29/30/31 ComfyUI-Qwen) : archive dans [docs/archive/suivis/genai-image/](../../docs/archive/suivis/genai-image/)
+> Historique des investigations (phases 12a/29/30/31 ComfyUI-Qwen) : archive dans [docs/archive/suivis/genai-image/](../../../docs/archive/suivis/genai-image/)
 
 ---
 
@@ -799,7 +810,7 @@ execute_notebook(
 
 ### Accès Rapide
 
-**Guide Complet** : [`TROUBLESHOOTING.md` (archive)](../../docs/archive/suivis/genai-image/TROUBLESHOOTING.md)
+**Guide Complet** : [`TROUBLESHOOTING.md` (archive)](../../../docs/archive/suivis/genai-image/TROUBLESHOOTING.md)
 
 ### Problèmes Fréquents
 
@@ -907,7 +918,7 @@ img.save('optimized.png')
 **R:** Jusqu'à 10 images en contexte unique avec 200K tokens context window.
 
 **Q: Comment optimiser les coûts ?**  
-**R:** Voir tutorial [`openrouter-ecosystem-guide.md`](tutorials/openrouter-ecosystem-guide.md) section cost optimization.
+**R:** Voir tutorial [`openrouter-ecosystem-guide.md`](../tutorials/openrouter-ecosystem-guide.md) section cost optimization.
 
 **Q: Peut-on fine-tuner DALL-E 3 ?**  
 **R:** Non directement, mais techniques prompt engineering très efficaces. Pour fine-tuning custom, voir niveau 02 (FLUX.1, SD 3.5).
@@ -920,7 +931,7 @@ img.save('optimized.png')
 **R:** Sciences, Histoire, Géographie, Littérature, Mathématiques, Physique. Voir [`examples/`](examples/).
 
 **Q: Accessibilité pour élèves handicapés ?**  
-**R:** Oui, génération automatique alt-text via GPT-5. Voir tutorial [`educational-workflows.md`](tutorials/educational-workflows.md).
+**R:** Oui, génération automatique alt-text via GPT-5. Voir tutorial [`educational-workflows.md`](../tutorials/educational-workflows.md).
 
 **Q: Peut-on générer QCM automatiquement ?**  
 **R:** Oui ! Voir `04-1-Educational-Content-Generation.ipynb` section "Visual Assessments".
@@ -936,8 +947,8 @@ img.save('optimized.png')
 
 1. **Configuration** : Suivre [Quick Start](#quick-start)
 2. **Premier Notebook** : `01-1-OpenAI-DALL-E-3.ipynb`
-3. **Tutorial** : Lire [`dalle3-complete-guide.md`](tutorials/dalle3-complete-guide.md)
-4. **Exemple** : Exécuter [`Image/examples/science-diagrams.ipynb`](Image/examples/science-diagrams.ipynb)
+3. **Tutorial** : Lire [`dalle3-complete-guide.md`](../tutorials/dalle3-complete-guide.md)
+4. **Exemple** : Exécuter [`Image/examples/science-diagrams.ipynb`](examples/science-diagrams.ipynb)
 
 ### Parcours Recommandé
 
@@ -965,7 +976,7 @@ img.save('optimized.png')
 
 ### Contributions
 
-Contributions welcomes ! Voir [`CONTRIBUTING.md`](../../CONTRIBUTING.md)
+Contributions welcomes ! Voir [`CONTRIBUTING.md`](../../../CONTRIBUTING.md)
 
 ---
 
@@ -977,13 +988,13 @@ Serie pedagogique pour apprendre Playwright en testant une application GenAI ré
 
 | Module | Nom | Duree | Niveau | Tests |
 |--------|-----|-------|--------|-------|
-| 01 | [Decouverte](Plateformes-Conversationnelles/Open-WebUI/Playwright-OWUI/01-decouverte/) | 2-3h | Debutant | 4 |
-| 02 | [Navigation & Auth](Plateformes-Conversationnelles/Open-WebUI/Playwright-OWUI/02-navigation-authentification/) | 2-3h | Debutant+ | 8 |
-| 03 | [Chat & Streaming](Plateformes-Conversationnelles/Open-WebUI/Playwright-OWUI/03-chat-streaming/) | 3h | Intermediaire | 7 |
-| 04 | [RAG, MCP & Avances](Plateformes-Conversationnelles/Open-WebUI/Playwright-OWUI/04-rag-tools-avances/) | 3h | Intermediaire+ | 7 |
-| 05 | [Multi-tenant & CI/CD](Plateformes-Conversationnelles/Open-WebUI/Playwright-OWUI/05-multi-tenant-ci/) | 3-4h | Expert | 8 |
+| 01 | [Decouverte](../Plateformes-Conversationnelles/Open-WebUI/Playwright-OWUI/01-decouverte/) | 2-3h | Debutant | 4 |
+| 02 | [Navigation & Auth](../Plateformes-Conversationnelles/Open-WebUI/Playwright-OWUI/02-navigation-authentification/) | 2-3h | Debutant+ | 8 |
+| 03 | [Chat & Streaming](../Plateformes-Conversationnelles/Open-WebUI/Playwright-OWUI/03-chat-streaming/) | 3h | Intermediaire | 7 |
+| 04 | [RAG, MCP & Avances](../Plateformes-Conversationnelles/Open-WebUI/Playwright-OWUI/04-rag-tools-avances/) | 3h | Intermediaire+ | 7 |
+| 05 | [Multi-tenant & CI/CD](../Plateformes-Conversationnelles/Open-WebUI/Playwright-OWUI/05-multi-tenant-ci/) | 3-4h | Expert | 8 |
 
-[README Playwright-OWUI](Plateformes-Conversationnelles/Open-WebUI/Playwright-OWUI/README.md)
+[README Playwright-OWUI](../Plateformes-Conversationnelles/Open-WebUI/Playwright-OWUI/README.md)
 
 ---
 
