@@ -78,6 +78,18 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     "notebook-exec-sequence-ratchet.yml",
     "notebook-navlink-check.yml",
     "notebook-papermill-ratchet.yml",
+    # tranche 3b (#14283, meme decision, meme owner) : suite des gardes PR
+    #   pure-Python. Fondue dans la meme PR que 3a -- les scinder aurait produit
+    #   un conflit sur cette meme ancre pour zero benefice de relecture.
+    "markdown-claims-output-advisory.yml",
+    "orphaned-delivery-scan.yml",
+    "quantconnect-notebook-freshness.yml",
+    "scan-md-hierarchy-drift.yml",
+    "slides-composition-pr-relay.yml",
+    "source-output-ratchet.yml",
+    "translation-guard.yml",
+    "unique-check-run-names-guard.yml",
+    "validation-matrix.yml",
     # tranche 3a (#14283, decision ai-01 2026-09-02, owner myia-ai-01:CoursIA) :
     #   gardes PR pure-Python, garde same-repo au niveau job, runs-on STATIQUE.
     #   Exclus deliberement : pr-gate.yml (agregateur qui poll -- il tiendrait le
