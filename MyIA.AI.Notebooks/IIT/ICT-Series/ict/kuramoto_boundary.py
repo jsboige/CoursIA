@@ -437,7 +437,8 @@ def run_protocol() -> Dict[str, Any]:
 
 def main() -> None:
     results = run_protocol()
-    out = Path(__file__).with_name("kuramoto_boundary_results.json")
+    out = Path(__file__).parent / "results" / "kuramoto_boundary_results.json"
+    out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(results, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
     sb = results["scoreboard"]
