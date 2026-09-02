@@ -106,6 +106,21 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     "lean-i18n-drift.yml",
     "lean-knot.yml",
     "manifest-description-visuelle-gate.yml",
+    # tranche 3c (#14283, meme decision, meme owner) : jobs individuels d'un
+    #   workflow dont les autres jobs restent sur ubuntu-latest.
+    #   Exclus deliberement : ml-tests (torch retelecharge a chaque run, pas de
+    #   cache persistant), secret-scan/gitleaks (socket Docker), lean-social-
+    #   choice/build (merite un pool a cache Mathlib chaud, cf #14337),
+    #   notebook-execution-required/golden-set-execute (execution lourde).
+    "bash-syntax-advisory.yml",
+    "lean-social-choice.yml",
+    "notebook-execution-required.yml",
+    "secret-scan.yml",
+    # always-on-metadata-guards.yml : routable (triggers pull_request +
+    #   workflow_dispatch seulement). Son jumeau always-on-guards.yml ne l'est
+    #   PAS -- il porte pull_request_review, classe FORK_REACHABLE (#14294).
+    "always-on-metadata-guards.yml",
+    "twin-parity.yml",
 }
 GITHUB_HOSTED_LABELS = {
     "ubuntu-latest",

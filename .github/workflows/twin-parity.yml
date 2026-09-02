@@ -60,7 +60,12 @@ concurrency:
 jobs:
   twin-parity:
     name: "Twin parity audit (#8057)"
-    runs-on: ubuntu-latest
+    # Routage #14283 tranche 3c (ai-01 2026-09-02) : jambe Linux auto-hebergee.
+    # Garde anti-fork au niveau job + runs-on STATIQUE (une expression leverait
+    # DYNAMIC_RUNS_ON dans check_self_hosted_runner_policy.py).
+    # Retour arriere = remettre `runs-on: ubuntu-latest` + retrait de l'allowlist.
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
 
     steps:
       - name: Checkout PR
@@ -176,7 +181,12 @@ jobs:
     # `exit 1` au lieu de `echo "::warning..."`. Cf twin-parity-drift-audit
     # pour le precedent advisory-then-blocking.
     name: "Twin parity SHA mismatch (#9399 volet b, advisory)"
-    runs-on: ubuntu-latest
+    # Routage #14283 tranche 3c (ai-01 2026-09-02) : jambe Linux auto-hebergee.
+    # Garde anti-fork au niveau job + runs-on STATIQUE (une expression leverait
+    # DYNAMIC_RUNS_ON dans check_self_hosted_runner_policy.py).
+    # Retour arriere = remettre `runs-on: ubuntu-latest` + retrait de l'allowlist.
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
 
     steps:
       - name: Checkout PR
