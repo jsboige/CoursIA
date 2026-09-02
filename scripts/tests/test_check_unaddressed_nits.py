@@ -658,6 +658,94 @@ def test_channel_reflects_origin_surface():
     assert run([], threads=[thread])["blocking"][0]["channel"] == "review"
 
 
+# --- #13609 : alias de persona Hermes/NanoClaw cross-login. La persona
+# reviewer parle sous deux logins (clusterManager-Myia + jsboige self-bot).
+# Quand elle leve SA propre reserve sous l'autre login en portant un
+# marqueur explicite `[Hermes]` / `[NanoClaw]` / `[Hermes self-bot]`, c'est
+# sa levee -- la borne d'auteur stricte #11145/#12836 etait un faux negatif
+# structurel : la reserve restait vivante, et seul un `[OVERRIDE]`
+# coordinateur (coûteux, exige re-verif tierce, ne s'applique pas sur PR
+# lane-coordinateur) pouvait la fermer. Le marqueur est obligatoire :
+# sans lui, jsboige reste l'identite de poussee partagee des lanes (#13316)
+# et rien n'est leve -- une lane ne peut pas s'auto-promeuve en collant
+# le marqueur dans un commentaire ordinaire.
+
+
+def test_persona_alias_cross_login_leves_own_reserve():
+    """#13609 cas fondateur : reserve posee par clusterManager-Myia, levee
+    par un commentaire jsboige marque `[Hermes]` -- c'est la meme persona,
+    la levee est creditee, l'organe rend vert. PR par jsboige (cas le plus
+    frequent : lanes poussent sous jsboige)."""
+    reserve = {
+        "author": {"login": "clusterManager-Myia"},
+        "state": "COMMENTED", "submittedAt": at(10),
+        "body": "[Hermes] - COMMENT_WITH_CONCERNS\nCI catalog-drift FAIL.",
+    }
+    # Le lift doit etre un COMMENTAIRE (pas un verdict BOT) avec phrase de
+    # levee explicite ; le marqueur `[Hermes]` identifie la persona, le corps
+    # ne porte pas le mot CHANGES_REQUESTED (sinon classify le rendrait
+    # BOT-CONCERN et le filtre l'ecarterait avant _lift_eligible).
+    lift = {
+        "author": {"login": "jsboige"}, "createdAt": at(12),
+        "body": ("[Hermes] Je leve le concern -- drift corrige "
+                 "au commit c506d04b."),
+    }
+    res = run([lift], reviews=[reserve])
+    assert res["blocked"] is False
+
+
+def test_persona_alias_lift_without_marker_does_not_leve():
+    """#13609 controle negatif : sans marqueur `[Hermes]`/`[NanoClaw]`/`[Hermes
+    self-bot]`, le commentaire jsboige ne leve pas -- c'est l'identite de
+    poussee partagee des lanes (#13316), l'auteur de la reserve est distinct
+    (clusterManager-Myia), le predicat d'alias ne s'applique pas. La
+    protection #13316 tient."""
+    reserve = {
+        "author": {"login": "clusterManager-Myia"},
+        "state": "COMMENTED", "submittedAt": at(10),
+        "body": "[Hermes] - COMMENT_WITH_CONCERNS\nCI catalog-drift FAIL.",
+    }
+    lift = {
+        "author": {"login": "jsboige"}, "createdAt": at(12),
+        "body": ("Je leve la CHANGES_REQUESTED -- drift corrige "
+                 "au commit c506d04b."),
+    }
+    res = run([lift], reviews=[reserve])
+    assert res["blocked"] is True
+
+
+def test_persona_alias_only_when_reserve_author_is_in_alias_set():
+    """#13609 garde anti-usurpation : l'alias ne s'active que quand
+    `nit_author` est dans `PERSONA_ALIAS_LOGINS` (= clusterManager-Myia).
+    Une lane qui pousserait sous jsboige ne peut pas eteindre la reserve
+    d'un AUTRE reviewer (ex. ai-01) en collant le marqueur `[Hermes]` dans
+    un commentaire ordinaire -- l'alias est bidirectionnel uniquement entre
+    la persona Hermes et son self-bot, pas une cle d'auto-levee."""
+    reserve = {
+        "author": {"login": "myia-ai-01"},
+        "state": "COMMENTED", "submittedAt": at(10),
+        "body": "CHANGES_REQUESTED : notebook non execute.",
+    }
+    lift = {
+        "author": {"login": "jsboige"}, "createdAt": at(12),
+        "body": ("[Hermes] Je leve le concern de ai-01 -- la lane a "
+                 "re-execute, EXEC_PROVED au commit abc."),
+    }
+    res = run([lift], reviews=[reserve])
+    assert res["blocked"] is True
+
+
+def test_persona_alias_lift_override_logins_unchanged():
+    """#13609 controle structurel : `LIFT_OVERRIDE_LOGINS` reste inchange.
+    L'alias de persona NE confere PAS un droit d'override coordinateur : un
+    `[OVERRIDE] lane` sous jsboige ne leve pas (cf ligne de garde dans
+    `_lift_eligible`). La composition des deux decisions #11145 (borne
+    d'auteur) et #13316 (exclusion jsboige) tient, l'alias est strictement
+    une troisieme voie pour le dialogue Hermes <-> Hermes self-bot."""
+    assert "jsboige" not in mod.LIFT_OVERRIDE_LOGINS
+    assert mod.LIFT_OVERRIDE_LOGINS == {"myia-ai-01"}
+
+
 # --- #11201 : le faux negatif « corrige X et je merge ». Le test LIFT_MARKERS
 # passait AVANT toute recherche de reserve, et « je merge » couvre deux sens
 # opposes : « c'est bon, je merge » (annonce, levant) et « Change la ligne 19
@@ -1992,6 +2080,19 @@ def test_12311_verb_in_heading_preserved_against_strip():
     assert mod.classify("jsboige", body) == "BOT-CONCERN"
 
 
+@pytest.mark.parametrize("body,expected", [
+    ("## [ai-01] CHANGES_REQUESTED (reserve bloquante)", "BOT-CONCERN"),
+    ("## [ai-01] CHANGES_REQUESTED", "BOT-CONCERN"),
+    ("## [ai-01] **BLOCKED**", "BOT-CONCERN"),
+    ("## [ai-01] Reserve — a traiter avant merge :", "BOT-CONCERN"),
+    ("## [ai-01 ARBITRAGE] CHANGES_REQUESTED", "BOT-CONCERN"),
+    ("## [jsboige] CHANGES_REQUESTED", "BOT-CONCERN"),
+    ("## [bug] CHANGES_REQUESTED — le commit ne touche rien", None),
+])
+def test_13642_coordinator_title_verdict_is_emission(body, expected):
+    assert mod.classify("jsboige", body) == expected
+
+
 # ---------------------------------------------------------------------------
 # #12315 -- 4ᵉ reformulation de la classe use-vs-mention : apostrophes droites
 # ASCII ('...') et guillemets droits ASCII ("...") comme delimiters de citation,
@@ -3013,6 +3114,7 @@ def test_13622_negation_nest_dans_fenetre_negated_direct():
     assert not mod._lift_is_negated("", ". Je merge.")
 
 
+
 # --- #13639 : levee citant un commit absent de la branche (rembobine) ---
 
 NIT_OID = "f" * 40
@@ -3222,6 +3324,93 @@ def test_13635_conditionnel_je_leve_masculin_reste_bloquant():
         "myia-ai-01",
         "Une seule chose a changer — corrige la ligne 19 et je leve le concern."
     ) == "BOT-CONCERN"
+def test_13938_comment_only_avec_rien_de_bloquant_passe():
+    """#13938 FP fondateur (PR #13935) : un reviewer pose `[Hermes]
+    COMMENT_WITH_CONCERNS` et le corps declare explicitement « rien de
+    bloquant ». L'exemption doit classer la review en ``None`` (comment-only
+    par design, cf #12311) et non en ``BOT-CONCERN``.
+
+    Reproduit le body verbatim de la review jsboige sur #13935 (compte-rendu
+    de checkout local + delta scope + balise explicite de non-blocage).
+    """
+    body = (
+        "[Hermes] COMMENT_WITH_CONCERNS — vérifié en local (checkout de la "
+        "branche), pas juste lu le diff :\n"
+        "- Cibles réelles des 3 liens ajoutés au README : `tutorials/README.md`, "
+        "`shared/helpers/README.md`, `_research/e2e_quant_validation.ipynb`.\n"
+        "- Nav relative corrigée, scope clean, security scan néant.\n"
+        "Delta +18/-2.\n"
+        "Rien de bloquant. (contrainte token : COMMENT only)"
+    )
+    assert mod.classify("jsboige", body) is None
+    # Les helpers unitaires doivent retourner True sur ce body.
+    assert mod._comment_only_prefix(body) is True
+    assert mod._review_explicit_non_blocking(body) is True
+
+
+def test_13938_comment_with_concerns_avec_concerns_substantiels_reste_bloquant():
+    """#13938 FN-safety : `[Hermes] COMMENT_WITH_CONCERNS` + concerns FYI
+    reels (« 2 concerns sur la cellule 12 ») SANS formulation non-bloquante
+    reste un ``BOT-CONCERN``. L'exemption ne s'applique pas par defaut —
+    seul un aveu explicite de non-blocage la declenche.
+
+    Reproduit le pattern du test fondateur l.255-258 (notebook solide + 2
+    concerns FYI).
+    """
+    body = (
+        "[Hermes] **[COMMENT_WITH_CONCERNS]** — notebook solide, 2 concerns FYI "
+        "sur la cellule 12 : la sortie du solver ne couvre pas le cas n=0 ; "
+        "le bloc de test dépend de l'ordre des fixtures."
+    )
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+    assert mod._comment_only_prefix(body) is True
+    assert mod._review_explicit_non_blocking(body) is False
+
+
+def test_13938_changements_requestes_avec_rien_de_bloquant_reste_bloquant():
+    """#13938 FN-safety : un reviewer pose `CHANGES_REQUESTED` et glisse «
+    rien de bloquant » dans le corps. L'exemption NE DOIT PAS s'appliquer
+    (le verdict de blocage strict prime sur la formulation de non-blocage).
+
+    Reproduit le pieges classique : un reviewer tente de baisser le niveau
+    d'un CHANGES_REQUESTED en ajoutant une clause de non-blocage. Le gate
+    doit resister.
+    """
+    body = (
+        "[Hermes] CHANGES_REQUESTED — refactor la cellule 5 pour respecter "
+        "PEP 8. Rien de bloquant, je laisse au choix de l'auteur."
+    )
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+    assert mod._comment_only_prefix(body) is False
+    # La formulation « rien de bloquant » EST bien reconnue (helper OK),
+    # mais le verdict formel CHANGES_REQUESTED bloque l'exemption au
+    # niveau du pipeline.
+    assert mod._review_explicit_non_blocking(body) is True
+
+
+def test_13938_comment_with_concerns_cite_dans_un_autre_commentaire_ne_passe_pas():
+    """#13938 FN-safety : un commentaire qui CITE `[Hermes]
+    COMMENT_WITH_CONCERNS` dans une prose qui refute (« pas de
+    COMMENT_WITH_CONCERNS ici ») NE beneficie PAS de l'exemption — la
+    detection `_is_cited` doit annuler l'occurrence au niveau du helper
+    `_comment_only_prefix`.
+
+    Reproduit le pattern inverse de #12871 : `_strip_mentioned_verdicts`
+    neutralise les verdicts mentionnes, mais `_comment_only_prefix` opere
+    sur le body brut. Un commentaire d'auteur qui enumere les verdicts
+    d'Hermes pour les refuter ne doit pas etre auto-exempte.
+    """
+    body = (
+        "Pour clarifier : il n'y a PAS de COMMENT_WITH_CONCERNS dans cette "
+        "review. Les seuls verdicts emis sont APPROVED et LGTM. Je ne leve "
+        "aucune reserve parce qu'il n'y en a pas."
+    )
+    # Ni verdict emis ni formulation non-bloquante au sens de l'exemption :
+    # le helper de préfixe doit retourner False (l'occurrence est CITEE).
+    assert mod._comment_only_prefix(body) is False
+    # Le body doit classifier None (verdict positif APPROVED/LGTM + aucune
+    # reserve vivante), mais PAS par la voie de l'exemption #13938.
+    assert mod.classify("jsboige", body) is None
 
 
 # --- #13512 -- Position G : verbe de mention + verdict NU (sans parenthese) -
@@ -3752,3 +3941,55 @@ def test_14130_mutation_si_pattern_retire_le_test_rougit():
         )
     finally:
         mod._MENTION_VERDICT_REPORTED = saved_reported
+
+
+def test_13951_concern1_corps_contradictoire_avec_marqueur_prose_ne_passe_pas():
+    """#13951 Concern 1 (NanoClaw structural review) : un corps CONTRADICTOIRE
+    pose `[Hermes] COMMENT_WITH_CONCERNS` + rien de bloquant MAIS contient
+    aussi un CONCERN_MARKER prose vivant (avant merge, a changer).
+    L'exemption NE DOIT PAS s'appliquer : un concern prose emis dans la meme
+    review ne doit pas etre ecrase par la phrase de non-blocage.
+
+    Reproduit verbatim le piege identifie par NanoClaw dans la review
+    COMMENTED du 2026-09-02T01:18:42Z :
+    ``[Hermes] COMMENT_WITH_CONCERNS -- fond solide, rien de bloquant. En
+    revanche, corriger le lien mort du README avant merge.``
+    Avant le fix (commit ``fdd589cac``), l'exemption s'appliquait et
+    ``classify`` rendait None -- la phrase rien de bloquant ecrasait le
+    marqueur avant merge (CONCERN_MARKER prose vivant). Apres le fix,
+    ``_sole_live_concern_is_comment_prefix`` detecte le residuel et fait
+    tomber l'exemption, ce qui laisse classify rendre ``BOT-CONCERN``.
+    """
+    body_prose = (
+        "[Hermes] COMMENT_WITH_CONCERNS -- fond solide, rien de bloquant. "
+        "En revanche, corriger le lien mort du README avant merge."
+    )
+    # Les trois pre-conditions de l'exemption sont reunies :
+    assert mod._comment_only_prefix(body_prose) is True
+    assert mod._review_explicit_non_blocking(body_prose) is True
+    # ... MAIS le 4e helper detecte le marqueur prose avant merge :
+    assert mod._sole_live_concern_is_comment_prefix(body_prose) is False
+    # Verdict final : BOT-CONCERN (pas None) -- la phrase de non-blocage n'a
+    # pas ecrase le concern vivant.
+    assert mod.classify("jsboige", body_prose) == "BOT-CONCERN"
+
+
+def test_13951_concern1_glyphe_severite_avec_rien_de_bloquant_ne_passe_pas():
+    """#13951 Concern 1 (NanoClaw) : variante glyphe. Un corps pose
+    `[Hermes] COMMENT_WITH_CONCERNS` + rien de bloquant + glyphe (constat
+    substantiel). L'exemption NE DOIT PAS s'appliquer : un glyphe de
+    severite emis dans la meme review ne doit pas etre ecrase.
+
+    Reproduit la 2e classe de piege listee par NanoClaw dans la review
+    COMMENTED du 2026-09-02T01:18:42Z -- Meme classe pour glyphe (constat
+    substantiel promu, #12143) coexistant avec rien de bloquant.
+    """
+    body_glyphe = (
+        "[Hermes] COMMENT_WITH_CONCERNS -- diff coherent, rien de bloquant.\n"
+        "\U0001F7E1 la cellule 12 merite un refactor (commentaire FYI, hors gate)."
+    )
+    assert mod._comment_only_prefix(body_glyphe) is True
+    assert mod._review_explicit_non_blocking(body_glyphe) is True
+    # Le glyphe est dans CONCERN_MARKERS (cf. PR #12143) :
+    assert mod._sole_live_concern_is_comment_prefix(body_glyphe) is False
+    assert mod.classify("jsboige", body_glyphe) == "BOT-CONCERN"

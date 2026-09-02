@@ -45,7 +45,12 @@ concurrency:
 jobs:
   sweep:
     name: "Scan orphaned branch deliverables (advisory)"
-    runs-on: ubuntu-latest
+    # Routage #14283 tranche 4 (ai-01 2026-09-02) : balayage cron pur-Python.
+    # Declencheur `schedule` uniquement -- il ne tourne que sur la branche par
+    # defaut, donc aucun code de fork ne peut l'atteindre et aucune garde
+    # same-repo n'est requise (cf en-tete de check_self_hosted_runner_policy.py).
+    # Retour arriere = remettre `runs-on: ubuntu-latest` + retrait de l'allowlist.
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
     steps:
       - name: Checkout (full history)
         uses: actions/checkout@v4

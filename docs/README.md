@@ -14,6 +14,7 @@ Fichiers présents directement à la racine du répertoire `docs/`. Triage initi
 | [magnifica-humanitas-dialogue.md](magnifica-humanitas-dialogue.md) | **nouveau** (2026-08-17) | Dialogue avec l'encyclique *Magnifica Humanitas* (Léon XIV, 2026) — le programme du dépôt confronté, § par §, aux appels du texte (vérification comme bien commun, désarmement, choix social, écologie, éducation) ; tensions conservées. #11359 |
 | [leiden-declaration-position.md](leiden-declaration-position.md) | **nouveau** (2026-08-26) | Positionnement de CoursIA face à la Déclaration de Leiden sur l’IA et les mathématiques : principes confrontés aux artefacts, lacunes nommées, engagements mesurables et tensions conservées. #13105 |
 | [PARCOURS.md](PARCOURS.md) | **KEEP** | Schéma maturité 3 axes (éditorial / reproductibilité / revue scientifique) — décompose le `maturity` monolithique du catalogue (5 valeurs mélangées) en 3 préoccupations orthogonales auditables indépendamment. ACCEPTÉ 2026-07-23, pilote c.763 critères 1-3. Linked #8051. 110 lignes. Triage #7422 (c.911, po-2023) |
+| [data-policy.md](data-policy.md) | **nouveau** (2026-09-02) | Politique de données (cadrage) : 4 catégories (curée / brute téléchargeable + fetch / checkpoint documenté / trace régénérable) + arbitrage par cas. Tell c.745-L2 narrow assumé c.868, lane po-2024:CoursIA-2. #13742 |
 
 ## Référence (docs/reference/)
 
