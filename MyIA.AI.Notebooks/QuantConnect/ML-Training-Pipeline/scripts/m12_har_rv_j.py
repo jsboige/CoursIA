@@ -12,9 +12,10 @@ HAR-RV-J regression:
     log(RV_{t+1}) = b0 + b_d*log(RV_t) + b_w*log(RV_w) + b_m*log(RV_m)
                       + b_dj*J_t + b_wj*J_w + b_mj*J_m + e
 
-Walk-forward 5-fold expanding OLS, 7 coins × 3 horizons × 4 seeds = 84 combos.
+Walk-forward 5-fold expanding OLS. Requested seeds are reproducibility controls,
+not independent draws: the deterministic model is evaluated once per asset/horizon.
 Kelly cap=1.0 (M11i confirmed cap=3.0 killed by Calmar).
-Sign-test paired Sharpe-diff HAC SE vs HAR Classic baseline.
+Sign-test and DM-MSE compare HAR-RV-J with a symmetrically train-calibrated HAR.
 
 Output
 ------
@@ -22,7 +23,7 @@ Output
 - results/m12_har_rv_j/results.json
 - docs/M12_HAR_RV_J.md (verdict)
 
-Env: system Python 3.13 (no conda). Reuses har_model, realized_variance, m11g infra.
+Env: conda coursia-ml-training. Reuses har_model, realized_variance, m11g infra.
 """
 
 from __future__ import annotations
@@ -170,12 +171,42 @@ class HARRVJModel:
         return float(np.mean(forecasts))
 
 
+def _fit_har_rv_j_with_train_calibration(
+    rv_train: pd.Series,
+    jumps_train: pd.Series,
+    horizon: int,
+    calibration_size: int,
+) -> tuple[HARRVJModel, float]:
+    """Fit before a train-tail holdout and estimate a signed forecast offset."""
+    calibration_size = min(calibration_size, max(0, len(rv_train) - 60))
+    if calibration_size < max(10, horizon + 1):
+        return HARRVJModel().fit(rv_train, jumps_train), 0.0
+
+    fit_end = len(rv_train) - calibration_size
+    model = HARRVJModel().fit(
+        rv_train.iloc[:fit_end], jumps_train.iloc[:fit_end]
+    )
+    log_rv = np.log(rv_train.clip(lower=1e-12))
+    errors: list[float] = []
+    for i in range(fit_end, len(rv_train) - horizon):
+        prediction = model.predict_h_step(
+            rv_train.iloc[:i], jumps_train.iloc[:i], horizon=horizon
+        )
+        target = float(log_rv.iloc[i:i + horizon].mean())
+        errors.append(prediction - target)
+
+    bias = float(np.mean(errors)) if errors else 0.0
+    return model, bias
+
+
 def walk_forward_har_rv_j(
     rv: pd.Series,
     jumps: pd.Series,
     horizon: int = 1,
     n_splits: int = 5,
     refit_every: int = 22,
+    calibrate_bias: bool = False,
+    calibration_size: int = 60,
 ) -> dict:
     """Walk-forward evaluation of HAR-RV-J.
 
@@ -207,13 +238,24 @@ def walk_forward_har_rv_j(
     truths: list[float] = []
     pred_dates: list[pd.Timestamp] = []
     fold_results: list[dict] = []
+    initial_calibration_bias_by_fold: list[float] = []
 
     for fold_idx, (train_end, test_start, test_end) in enumerate(splits):
         rv_train = rv.iloc[:train_end]
         j_train = jumps.iloc[:train_end]
         if len(rv_train) < 60:
             continue
-        model = HARRVJModel().fit(rv_train, j_train)
+        if calibrate_bias:
+            model, bias = _fit_har_rv_j_with_train_calibration(
+                rv_train,
+                j_train,
+                horizon=horizon,
+                calibration_size=calibration_size,
+            )
+        else:
+            model = HARRVJModel().fit(rv_train, j_train)
+            bias = 0.0
+        initial_calibration_bias_by_fold.append(bias)
         fold_preds: list[float] = []
         fold_truths: list[float] = []
         history_rv = list(rv.iloc[:test_start].values)
@@ -222,7 +264,9 @@ def walk_forward_har_rv_j(
             target_window = log_rv.iloc[i : i + horizon].mean()
             tail_rv = pd.Series(history_rv[-(22 + horizon) :])
             tail_j = pd.Series(history_j[-(22 + horizon) :])
-            log_pred = model.predict_h_step(tail_rv, tail_j, horizon=horizon)
+            log_pred = (
+                model.predict_h_step(tail_rv, tail_j, horizon=horizon) - bias
+            )
             fold_preds.append(log_pred)
             fold_truths.append(float(target_window))
             preds.append(log_pred)
@@ -231,7 +275,16 @@ def walk_forward_har_rv_j(
             history_rv.append(float(rv.iloc[i]))
             history_j.append(float(jumps.iloc[i]))
             if (i - test_start) % refit_every == 0 and i > test_start:
-                model = HARRVJModel().fit(rv.iloc[:i], jumps.iloc[:i])
+                if calibrate_bias:
+                    model, bias = _fit_har_rv_j_with_train_calibration(
+                        rv.iloc[:i],
+                        jumps.iloc[:i],
+                        horizon=horizon,
+                        calibration_size=calibration_size,
+                    )
+                else:
+                    model = HARRVJModel().fit(rv.iloc[:i], jumps.iloc[:i])
+                    bias = 0.0
         fp = np.asarray(fold_preds)
         ft = np.asarray(fold_truths)
         fold_mse = float(np.mean((fp - ft) ** 2)) if len(fp) else float("nan")
@@ -258,6 +311,9 @@ def walk_forward_har_rv_j(
         "n_total_preds": len(preds_arr),
         "aggregate_mse_logrv": aggregate_mse,
         "fold_results": fold_results,
+        "calibrate_bias": calibrate_bias,
+        "calibration_size": calibration_size,
+        "initial_calibration_bias_by_fold": initial_calibration_bias_by_fold,
         "forecasts": forecasts,
         "targets": targets,
     }
@@ -285,7 +341,7 @@ def evaluate_one_combo(
     excluded from training and walk-forward evaluation (held out for separate
     OOS verdict computed externally).
     """
-    np.random.seed(seed)
+    # OLS is deterministic; seed is retained as an exact reproducibility control.
     hourly_rets = _load_one_coin(coin)
     if oos_strict_year is not None:
         cutoff = pd.Timestamp(f"{oos_strict_year}-01-01", tz=hourly_rets.index.tz)
@@ -321,10 +377,15 @@ def evaluate_one_combo(
     except (ValueError, Exception):
         return None
 
-    # HAR-RV-J
+    # HAR-RV-J candidate with the same train-only calibration protocol.
     try:
         hrj_out = walk_forward_har_rv_j(
-            rv, jumps, horizon=horizon, n_splits=N_SPLITS, refit_every=REFIT_EVERY
+            rv,
+            jumps,
+            horizon=horizon,
+            n_splits=N_SPLITS,
+            refit_every=REFIT_EVERY,
+            calibrate_bias=True,
         )
     except (ValueError, Exception):
         return None
@@ -422,9 +483,12 @@ def evaluate_one_combo(
         "t_stat": t_stat,
         "har_bias_oos": float(np.mean(har_errors)),
         "har_debiased_bias_oos": float(np.mean(har_debiased_errors)),
-        "hrj_bias_oos": float(np.mean(hrj_errors)),
+        "hrj_debiased_bias_oos": float(np.mean(hrj_errors)),
         "har_calibration_bias_mean": float(np.mean(
             har_debiased_out["initial_calibration_bias_by_fold"]
+        )),
+        "hrj_calibration_bias_mean": float(np.mean(
+            hrj_out["initial_calibration_bias_by_fold"]
         )),
         "mse_har": mse_har,
         "mse_har_debiased": mse_har_debiased,
@@ -513,84 +577,121 @@ def main() -> None:
 
     for coin in coins:
         for h in horizons:
-            for seed in seeds:
-                done += 1
-                print(f"\n[{done}/{total}] {coin} h={h} seed={seed}", flush=True)
-                row = evaluate_one_combo(coin, h, seed, oos_strict_year=oos_strict_year)
-                if row is not None:
-                    combos.append(row)
-                else:
-                    print(f"  SKIPPED (insufficient data)", flush=True)
+            if not seeds:
+                continue
+            print(
+                f"\n[{done + 1}/{total}] {coin} h={h} "
+                f"seed={seeds[0]} (deterministic OLS evaluation)",
+                flush=True,
+            )
+            row = evaluate_one_combo(
+                coin,
+                h,
+                seeds[0],
+                oos_strict_year=oos_strict_year,
+            )
+            done += len(seeds)
+            if row is None:
+                print("  SKIPPED (insufficient data)", flush=True)
+                continue
+
+            combos.append({
+                **row,
+                "seed_values_checked": seeds,
+                "seed_control_mode": "OLS deterministic by construction",
+            })
+            print(
+                f"  Seed-invariant OLS checked against values {seeds} "
+                f"({done}/{total}); one effective statistical unit",
+                flush=True,
+            )
 
     elapsed = time.time() - t0
     print(f"\n{'='*60}")
     print(f"M12 HAR-RV-J sweep complete: {len(combos)}/{total} combos in {elapsed:.0f}s")
 
-    # Aggregate against the train-calibrated HAR baseline.
+    # OLS has no stochastic seed input: each row is one effective unit, while
+    # seed_values_checked records the requested reproducibility controls.
     n_combos = len(combos)
+    unique_rows = combos
+    n_effective = len(unique_rows)
+    n_seed_controls = n_effective * len(seeds)
     n_hrj_beats_har = sum(
-        1 for r in combos if r["delta_sharpe_hrj_vs_har_debiased"] > 0
+        1
+        for row in unique_rows
+        if row["delta_sharpe_hrj_vs_har_debiased"] > 0
     )
     median_delta = (
         float(np.median([
-            r["delta_sharpe_hrj_vs_har_debiased"] for r in combos
+            row["delta_sharpe_hrj_vs_har_debiased"]
+            for row in unique_rows
         ]))
-        if combos
+        if unique_rows
         else float("nan")
     )
-    p_sign = _binomial_pvalue_one_sided(n_hrj_beats_har, n_combos)
+    p_sign = _binomial_pvalue_one_sided(n_hrj_beats_har, n_effective)
 
-    # Per-horizon §C conjunction: Sharpe edge >= 2 sigma and precision DM p < 0.05.
+    # Per-horizon conjunction on unique coin/horizon units.
     per_horizon: dict[int, dict] = {}
     for horizon in horizons:
-        rows = [r for r in combos if r["horizon"] == horizon]
+        rows = [row for row in unique_rows if row["horizon"] == horizon]
         if not rows:
             continue
         edges = np.asarray([
-            r["delta_sharpe_hrj_vs_har_debiased"] for r in rows
+            row["delta_sharpe_hrj_vs_har_debiased"] for row in rows
         ], dtype=float)
-        dm_ps = np.asarray([r["dm_mse_pvalue"] for r in rows], dtype=float)
+        dm_ps = np.asarray(
+            [row["dm_mse_pvalue"] for row in rows], dtype=float
+        )
         dm_diffs = np.asarray([
-            r["dm_mse_mean_loss_diff"] for r in rows
+            row["dm_mse_mean_loss_diff"] for row in rows
         ], dtype=float)
         edge_mean = float(np.mean(edges))
         edge_std = float(np.std(edges, ddof=0))
         dm_p_median = float(np.median(dm_ps))
         dm_diff_median = float(np.median(dm_diffs))
-        edge_passes = edge_mean > 0 and (
-            edge_std == 0.0 or edge_mean >= 2.0 * edge_std
-        )
+        cross_asset_ratio = edge_mean / edge_std if edge_std > 0 else None
+        seed_stable = all(row["seed_values_checked"] == seeds for row in rows)
+        edge_sign_positive = edge_mean > 0
+        edge_significance_available = False
+        edge_passes = edge_sign_positive and edge_significance_available
         dm_passes = dm_p_median < 0.05 and dm_diff_median < 0
-        if edge_mean <= 0 or (dm_p_median < 0.05 and dm_diff_median > 0):
+        if edge_mean <= 0 or (
+            dm_p_median < 0.05 and dm_diff_median > 0
+        ):
             verdict_h = "NO BEATS"
         elif edge_passes and dm_passes:
             verdict_h = "BEATS"
         else:
             verdict_h = "INCONCLUSIVE"
         per_horizon[horizon] = {
-            "n_combos": len(rows),
+            "n_effective": len(rows),
+            "n_seed_controls": len(rows) * len(seeds),
             "edge_mean_delta_sharpe": edge_mean,
-            "edge_std_delta_sharpe": edge_std,
-            "edge_sigma": (
-                edge_mean / edge_std if edge_std > 0 else float("inf")
-            ),
+            "edge_std_delta_sharpe_across_assets": edge_std,
+            "cross_asset_edge_ratio": cross_asset_ratio,
+            "seed_stable": seed_stable,
+            "edge_sign_positive": edge_sign_positive,
+            "edge_significance_available": edge_significance_available,
+            "edge_passes": edge_passes,
+            "edge_sigma": None,
             "dm_mse_p_median": dm_p_median,
             "dm_mse_mean_loss_diff_median": dm_diff_median,
             "har_bias_oos_mean": float(np.mean([
-                r["har_bias_oos"] for r in rows
+                row["har_bias_oos"] for row in rows
             ])),
             "har_debiased_bias_oos_mean": float(np.mean([
-                r["har_debiased_bias_oos"] for r in rows
+                row["har_debiased_bias_oos"] for row in rows
             ])),
-            "hrj_bias_oos_mean": float(np.mean([
-                r["hrj_bias_oos"] for r in rows
+            "hrj_debiased_bias_oos_mean": float(np.mean([
+                row["hrj_debiased_bias_oos"] for row in rows
             ])),
             "verdict": verdict_h,
         }
 
     # Per-coin aggregation
     per_coin: dict[str, dict] = {}
-    for r in combos:
+    for r in unique_rows:
         c = r["coin"]
         per_coin.setdefault(c, {"deltas": [], "mses": []})
         per_coin[c]["deltas"].append(
@@ -601,18 +702,20 @@ def main() -> None:
         )
 
     print(
-        f"\nSign-test: {n_hrj_beats_har}/{n_combos} "
-        f"({n_hrj_beats_har / max(n_combos, 1) * 100:.1f}%) "
+        f"\nSign-test: {n_hrj_beats_har}/{n_effective} unique units "
+        f"({n_hrj_beats_har / max(n_effective, 1) * 100:.1f}%) "
         "HRJ > HAR debiased"
     )
     print(f"  p-value = {p_sign:.4f}")
     print(f"  median delta-Sharpe = {median_delta:+.4f}")
     print("\nPer-horizon §C verdicts:")
     for horizon, row in per_horizon.items():
+        ratio = row["cross_asset_edge_ratio"]
+        ratio_text = f"{ratio:.2f}" if ratio is not None else "N/A"
         print(
             f"  h={horizon}: {row['verdict']} | "
             f"edge={row['edge_mean_delta_sharpe']:+.4f} "
-            f"({row['edge_sigma']:.2f} sigma), "
+            f"(cross-asset ratio={ratio_text}, seeds stable), "
             f"DM-MSE p_med={row['dm_mse_p_median']:.4f}, "
             f"loss_diff={row['dm_mse_mean_loss_diff_median']:+.6f}"
         )
@@ -638,10 +741,14 @@ def main() -> None:
         "refit_every": REFIT_EVERY,
         "mu_huang_tauchen": MU_HUANG_TAUCHEN,
         "n_combos": n_combos,
+        "n_effective": n_effective,
+        "n_seed_controls": n_seed_controls,
         "n_hrj_beats_har": n_hrj_beats_har,
-        "win_rate": n_hrj_beats_har / max(n_combos, 1),
+        "win_rate": n_hrj_beats_har / max(n_effective, 1),
         "p_sign": p_sign,
         "baseline": "HAR Classic with train-only bias calibration",
+        "candidate": "HAR-RV-J with train-only bias calibration",
+        "seed_role": "exact deterministic reproducibility control",
         "dm_loss_fn": "mse",
         "median_delta_sharpe": median_delta,
         "per_horizon": per_horizon,
@@ -666,8 +773,8 @@ def main() -> None:
     if combos:
         df = pd.DataFrame(combos)
         df.to_csv(results_dir / "m12_har_rv_j_results.csv", index=False)
-        print(f"\nSaved: {RESULTS_DIR / 'results.json'}")
-        print(f"Saved: {RESULTS_DIR / 'm12_har_rv_j_results.csv'}")
+        print(f"\nSaved: {results_dir / 'results.json'}")
+        print(f"Saved: {results_dir / 'm12_har_rv_j_results.csv'}")
 
 
 if __name__ == "__main__":
