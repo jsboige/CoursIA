@@ -31,6 +31,7 @@ from check_machine_dep_timing import (  # noqa: E402
     _is_code_constant_translation,
     _parse_numbers,
     _values_close,
+    _COMPANION_CACHE,
     _repo_root,
     PROTOCOL_KEYWORDS,
     CONTENT_DURATION_CONSTRAINT_RE,
@@ -1223,6 +1224,27 @@ def test_symbolicai_fp_pipeline_end_to_end() -> None:
 # en silence). Les cinq formes ci-dessous sont celles qui ont fait echouer deux
 # versions successives de l'instrument pendant la calibration du 2026-09-02 :
 # arrondi, zero final, conversion d'unite, derivation, constante declaree.
+#
+# TOUS ces tests ecrivent leur notebook dans un `tmp_path` ISOLE, et ce n'est
+# pas de la coquetterie : `_companion_values` scanne RECURSIVEMENT le repertoire
+# du notebook. Une premiere version ecrivait dans le repertoire temporaire
+# SYSTEME (via `_make_nb`) ; le controle negatif y passait en local par CHANCE
+# -- 1985 nombres etrangers ramasses, aucun proche de 47 -- et echouait sur le
+# runner CI, dont le voisinage portait une valeur a moins de 5 % (mesure du
+# 2026-09-02, run 33604926776). Un controle negatif dont le verdict depend du
+# contenu de /tmp n'est pas un controle.
+@pytest.fixture(autouse=True)
+def _clear_companion_cache():
+    """Vide le cache compagnon entre les tests.
+
+    C'est un global indexe par repertoire : le vider garantit qu'aucun ordre
+    d'execution ne peut porter le resultat d'un test dans un autre.
+    """
+    _COMPANION_CACHE.clear()
+    yield
+    _COMPANION_CACHE.clear()
+
+
 def _code_cell_with_outputs(source: str, outputs: list[dict]) -> dict:
     """Cellule code portant des sorties (le detecteur ne les LIT que sous
     ``provenance=True`` -- la passe 1 continue de les ignorer)."""
@@ -1235,8 +1257,11 @@ def _stream(text: str) -> dict:
 
 
 def _nb_in(directory: Path, cells: list[dict]) -> Path:
-    """Ecrit le notebook DANS un repertoire donne (necessaire pour COMP :
-    la provenance compagnon depend du voisinage sur disque)."""
+    """Ecrit le notebook dans un repertoire ISOLE et renvoie son Path.
+
+    L'isolation porte le sens de toute assertion de provenance : le voisinage
+    du fichier fait partie de l'entree de ``_companion_values``.
+    """
     p = directory / "nb.ipynb"
     p.write_text(
         json.dumps({"cells": cells, "metadata": {}, "nbformat": 4,
@@ -1250,103 +1275,85 @@ def _provenances(findings: list[dict]) -> list[str]:
     return [f.get("provenance") for f in findings]
 
 
-def test_provenance_absent_by_default() -> None:
+def test_provenance_absent_by_default(tmp_path: Path) -> None:
     """Sans ``provenance=True``, AUCUN finding ne porte la cle.
 
     C'est la garantie de non-regression : les trois consommateurs mesures
     (2 workflows CI + measure_residual_machine_dep.py) lisent la sortie par
     defaut, qui doit rester inchangee.
     """
-    nb = _make_nb([_md_cell("L'entrainement a pris 47 minutes.")])
-    try:
-        findings = _scan_notebook(nb)
-        assert findings, "le controle positif doit produire un finding"
-        assert all("provenance" not in f for f in findings)
-    finally:
-        nb.unlink()
+    nb = _nb_in(tmp_path, [_md_cell("L'entrainement a pris 47 minutes.")])
+    findings = _scan_notebook(nb)
+    assert findings, "le controle positif doit produire un finding"
+    assert all("provenance" not in f for f in findings)
 
 
-def test_provenance_out_on_rounded_french_decimal() -> None:
+def test_provenance_out_on_rounded_french_decimal(tmp_path: Path) -> None:
     """« 2,97 s » lit une sortie valant 2.9682 -> OUT.
 
     Double piege : la virgule decimale francaise ET l'arrondi. Une comparaison
     exacte, ou une normalisation qui SUPPRIME la virgule (« 0,041 » -> 41),
     manque ce cas -- c'est l'erreur qu'a faite la premiere version.
     """
-    nb = _make_nb([
+    nb = _nb_in(tmp_path, [
         _code_cell_with_outputs("bench()", [_stream("owlrl 2.9682 8005\n")]),
         _md_cell("Le raisonneur owlrl met 2,97 s sur ce graphe."),
     ])
-    try:
-        findings = _scan_notebook(nb, provenance=True)
-        assert _provenances(findings) == ["OUT"], findings
-    finally:
-        nb.unlink()
+    findings = _scan_notebook(nb, provenance=True)
+    assert _provenances(findings) == ["OUT"], findings
 
 
-def test_provenance_out_on_trailing_zero() -> None:
+def test_provenance_out_on_trailing_zero(tmp_path: Path) -> None:
     """« 0,041 s » lit une sortie valant 0.0410 -> OUT (zero final tronque)."""
-    nb = _make_nb([
+    nb = _nb_in(tmp_path, [
         _code_cell_with_outputs("bench()", [_stream("reasonable 0.0410 939\n")]),
         _md_cell("reasonable descend a 0,041 s sur le meme graphe."),
     ])
-    try:
-        findings = _scan_notebook(nb, provenance=True)
-        assert _provenances(findings) == ["OUT"], findings
-    finally:
-        nb.unlink()
+    findings = _scan_notebook(nb, provenance=True)
+    assert _provenances(findings) == ["OUT"], findings
 
 
-def test_provenance_out_on_unit_conversion() -> None:
+def test_provenance_out_on_unit_conversion(tmp_path: Path) -> None:
     """« 60 ms » lit une sortie exprimee en SECONDES (0.0587) -> OUT.
 
     La prose convertit ; l'instrument doit reconnaitre l'echelle, sinon il
     accuse de fabrication une lecture parfaitement fidele.
     """
-    nb = _make_nb([
+    nb = _nb_in(tmp_path, [
         _code_cell_with_outputs("t()", [_stream("elapsed 0.0587\n")]),
         _md_cell("L'appel prend 60 ms sur cette machine."),
     ])
-    try:
-        findings = _scan_notebook(nb, provenance=True)
-        assert _provenances(findings) == ["OUT"], findings
-    finally:
-        nb.unlink()
+    findings = _scan_notebook(nb, provenance=True)
+    assert _provenances(findings) == ["OUT"], findings
 
 
-def test_provenance_der_on_ratio_of_outputs() -> None:
+def test_provenance_der_on_ratio_of_outputs(tmp_path: Path) -> None:
     """Un FACTEUR (2.9682 / 0.0410 ~= 72) est une lecture, pas une affirmation.
 
     Le nombre n'apparait dans aucune sortie : il se DEDUIT de deux d'entre
     elles. Sans la passe DER, ce cas serait compte comme fabrique.
     """
-    nb = _make_nb([
+    nb = _nb_in(tmp_path, [
         _code_cell_with_outputs(
             "bench()", [_stream("owlrl 2.9682\nreasonable 0.0410\n")]),
         _md_cell("Le facteur mesure vaut 72 s ici."),
     ])
-    try:
-        findings = _scan_notebook(nb, provenance=True)
-        assert _provenances(findings) == ["DER"], findings
-    finally:
-        nb.unlink()
+    findings = _scan_notebook(nb, provenance=True)
+    assert _provenances(findings) == ["DER"], findings
 
 
-def test_provenance_src_on_code_constant() -> None:
+def test_provenance_src_on_code_constant(tmp_path: Path) -> None:
     """« 500 ms » cite un ``Thread.Sleep(500)`` du notebook -> SRC.
 
     Une constante DECLAREE est une specification : elle ne derive pas de la
     machine et ne changera pas a la prochaine execution.
     """
-    nb = _make_nb([
+    nb = _nb_in(tmp_path, [
         _code_cell("Thread.Sleep(500);"),
         _md_cell("Chaque etape marque une pause de 500 ms."),
     ])
-    try:
-        findings = _scan_notebook(nb, provenance=True)
-        assert _provenances(findings) == ["SRC"], findings
-    finally:
-        nb.unlink()
+    findings = _scan_notebook(nb, provenance=True)
+    assert _provenances(findings) == ["SRC"], findings
 
 
 def test_provenance_comp_on_companion_file(tmp_path: Path) -> None:
@@ -1368,46 +1375,67 @@ def test_provenance_comp_on_companion_file(tmp_path: Path) -> None:
     assert _provenances(findings) == ["COMP"], findings
 
 
-def test_provenance_unbacked_on_fabricated_value() -> None:
+def test_provenance_comp_presuppose_un_repertoire_cure(tmp_path: Path) -> None:
+    """COMP suppose un repertoire CURE -- et cette limite est pinnee ici.
+
+    ``_companion_values`` tient pour compagnon tout fichier du sous-arbre du
+    notebook. Dans le depot c'est la semantique voulue (un notebook et le
+    ``Program.cs`` qu'il pilote vivent ensemble) ; dans un repertoire non cure
+    c'est un FABRICANT de verdicts positifs -- il retire des lignes du residu
+    ``unbacked`` sans qu'aucune specification ne porte reellement le nombre.
+
+    Mesure : un voisin etranger portant 46.9 suffit a faire passer « 47
+    minutes » de ``unbacked`` a ``COMP`` (46.9 est a moins de 5 %). C'est le
+    mecanisme exact qui a fait echouer ce fichier en CI le 2026-09-02.
+
+    Ce test ne condamne pas le comportement : il le rend VISIBLE, pour que
+    personne ne lise ``COMP`` comme une preuve plus forte qu'elle ne l'est.
+    """
+    (tmp_path / "voisin_sans_rapport.json").write_text(
+        json.dumps({"seuils": [12, 46.9, 300]}), encoding="utf-8",
+    )
+    nb = _nb_in(tmp_path, [
+        _code_cell_with_outputs("train()", [_stream("done\n")]),
+        _md_cell("L'entrainement a pris 47 minutes."),
+    ])
+    findings = _scan_notebook(nb, provenance=True)
+    assert _provenances(findings) == ["COMP"], findings
+
+
+def test_provenance_unbacked_on_fabricated_value(tmp_path: Path) -> None:
     """CONTROLE NEGATIF : un nombre porte par RIEN reste ``unbacked``.
 
     Une sonde se valide par son negatif (sinon elle classe tout en legitime et
     parait excellente). Ici 47 n'est ni dans les sorties, ni dans le code, ni
-    dans un compagnon.
+    dans un compagnon -- et le repertoire ne porte AUCUN autre fichier, ce qui
+    est la condition sans laquelle l'assertion ne mesure rien.
     """
-    nb = _make_nb([
+    nb = _nb_in(tmp_path, [
         _code_cell_with_outputs("train()", [_stream("done\n")]),
         _md_cell("L'entrainement a pris 47 minutes."),
     ])
-    try:
-        findings = _scan_notebook(nb, provenance=True)
-        assert _provenances(findings) == ["unbacked"], findings
-    finally:
-        nb.unlink()
+    findings = _scan_notebook(nb, provenance=True)
+    assert _provenances(findings) == ["unbacked"], findings
 
 
-def test_provenance_does_not_change_categories() -> None:
+def test_provenance_does_not_change_categories(tmp_path: Path) -> None:
     """La provenance est ORTHOGONALE a la classification.
 
     Meme notebook, deux invocations : les categories doivent etre identiques.
     Un instrument qui reclasserait en annotant melangerait deux questions
     distinctes -- « quelle sorte de nombre ? » et « d'ou vient-il ? ».
     """
-    cells = [
+    nb = _nb_in(tmp_path, [
         _code_cell_with_outputs("bench()", [_stream("owlrl 2.9682\n")]),
         _md_cell("Le raisonneur owlrl met 2,97 s sur ce graphe."),
         _md_cell("La moyenne ajustee est de 15.07 min."),
         _md_cell("L'entrainement a pris 47 minutes."),
-    ]
-    nb = _make_nb(cells)
-    try:
-        plain = [(f["cell_index"], f["snippet"], f["category"])
-                 for f in _scan_notebook(nb)]
-        annotated = [(f["cell_index"], f["snippet"], f["category"])
-                     for f in _scan_notebook(nb, provenance=True)]
-        assert plain == annotated, (plain, annotated)
-    finally:
-        nb.unlink()
+    ])
+    plain = [(f["cell_index"], f["snippet"], f["category"])
+             for f in _scan_notebook(nb)]
+    annotated = [(f["cell_index"], f["snippet"], f["category"])
+                 for f in _scan_notebook(nb, provenance=True)]
+    assert plain == annotated, (plain, annotated)
 
 
 def test_parse_numbers_handles_french_comma() -> None:
