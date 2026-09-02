@@ -32,6 +32,14 @@ on:
     - cron: '17 6 * * *'
   pull_request:
     types: [closed]
+    # #10600 tranche 2, filter PAR LA BASE, pas par paths : un orphelin est
+    # par definition une PR mergee dont la base != main -- une PR visee sur
+    # main ne peut PAS orpheliner (son merge atteint main directement). Le
+    # filtre paths propose par #12773 aurait rendu l'alerte precoce aveugle
+    # sur la classe canonique (PRs notebooks vers base feature). Ici la
+    # jambe [closed] ne fire QUE la population a risque (~x20 moins de runs,
+    # zero cecite) ; le sweep quotidien reste l'organe primaire inchange.
+    branches-ignore: [main]
   workflow_dispatch:
     inputs:
       dry_run:

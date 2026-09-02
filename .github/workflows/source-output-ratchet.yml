@@ -34,6 +34,14 @@ name: Source-Output Ratchet
 on:
   pull_request:
     branches: [ main ]
+    # #10600 tranche 2: the ratchet only has something to diff when a
+    # notebook changed -- a PR without .ipynb made it pay a full-history
+    # checkout + python setup to render "no changed notebooks". Script and
+    # workflow self-cover included.
+    paths:
+      - '**/*.ipynb'
+      - 'scripts/notebook_tools/check_source_output_ratchet.py'
+      - '.github/workflows/source-output-ratchet.yml'
   workflow_dispatch:
 
 permissions:
