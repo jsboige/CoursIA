@@ -50,8 +50,9 @@ ne se recalculent pas a l'execution) :
                     (« 140 lignes », « 224 notebooks »). Derive a chaque commit.
   - ``machine``    (#9434) : duree absolue machine-dependante (« 24-127 ms »,
                     « ~530 ms », « 1.9 s »). Derive avec la charge machine.
-  - ``env``        (#9434) : version de librairie/ecosystem figee en prose
-                    (« NumPy 2.4.2 », « Mathlib v4.31.0-rc1 »). Derive quand
+  - ``env``        (#9434) : version de librairie / ecosystem / interprete
+                    figee en prose (« NumPy 2.4.2 », « Python 3.13.3 », ligne
+                    de tableau « | numpy | 2.2.6 | »). Derive quand
                     l'environnement monte de version -- doit etre tenu par le
                     fichier d'environnement (toolchain, requirements), pas la prose.
   - ``stochastic`` (#9434) : valeur a flotant non reproductible (« fitness 41.71 »)
@@ -160,20 +161,32 @@ MACHINE_RE = re.compile(
 )
 
 # ----------------------------------------------------------------------------
-# Classe « env » (#9434) -- versions de librairie/ecosystem figees en prose
+# Classe « env » (#9434) -- versions de librairie / ecosystem / interprete
 # ----------------------------------------------------------------------------
 # Formes attrapees : « NumPy 2.4.2 », « JAX 0.4 », « Mathlib v4.31.0-rc1 »,
 # « PyTorch 2.1.0 ». Une version en prose derive quand l'env monte ; elle doit
 # etre portee par le fichier d'environnement (lean-toolchain, requirements,
-# .csproj), pas par la prose. Liste curee des libs presentes dans le depot.
+# .csproj), pas par la prose. Liste curee des libs presentes dans le depot,
+# interprete « Python » compris : sa version est une mesure env au meme titre.
+#
+# Note fix (#14314) : le separateur nom/version ne se limite plus a l'espace
+# simple. Le critere 2 de #9434 (tableaux de regression env) presente la forme
+# « | numpy | 2.2.6 | » : nom et version separes par « | », spans code
+# « `numpy` `2.2.6` » compris (le nom ET la version peuvent etre trenchés).
+# Le separateur tolere tout melange espace/pipeline/backtick -- c'est la forme
+# reelle d'une ligne de tableau markdown. Un FP residuel (ligne de statistiques
+# « | numpy | 2.2.6 | 0.1 | » voisine) est advisory, l'arbitrage est humain.
+# Garde anti-FP (le mot le plus courant de la liste) : « X.Y (fois|×) » est un
+# multiplicateur, pas une version citee -- « Python 2.5 fois plus rapide » ne
+# doit pas matcher comme version d'interpreteur.
 ENV_LIBS = (
     r"NumPy|Pandas|PyTorch|TensorFlow|Keras|scikit-learn|sklearn|SciPy|"
     r"Transformers|LangChain|spaCy|OpenCV|cv2|Matplotlib|Seaborn|NetworkX|"
     r"SymPy|PyMC|ArviZ|Statsmodels|XGBoost|LightGBM|ONNX|vLLM|fastembed|"
-    r"jpype|Tweety|OpenSpiel|SemanticKernel|Mathlib|JAX|PyPhi|pyphi"
+    r"jpype|Tweety|OpenSpiel|SemanticKernel|Mathlib|JAX|PyPhi|pyphi|Python"
 )
 ENV_RE = re.compile(
-    r"\b(?:" + ENV_LIBS + r")\s+v?\d+(?:\.\d+){1,3}\b",
+    r"\b(?:" + ENV_LIBS + r")[|`\s]+v?\d+(?:\.\d+){1,3}(?!\s*(?:fois\b|×))\b",
     re.IGNORECASE,
 )
 
