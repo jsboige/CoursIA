@@ -20,10 +20,18 @@ ENV DEBIAN_FRONTEND=noninteractive
 # python-is-python3 : les workflows stdlib-only appellent `python` nu
 # (check-navlinks, job 100021313259 : exit 127 "python: not found" alors
 # que python3 etait present).
+# lsb-release : actions/setup-python@v5 avec `cache: pip` appelle
+# `lsb_release -i -r -s` pour construire la cle de cache -- sans lui, le job
+# meurt sur "Unable to locate executable file: lsb_release" APRES avoir installe
+# Python (Scripts Tests (CPU), run 33618470607). zstd : actions/cache et
+# upload-artifact l'utilisent, sinon repli gzip (fonctionne, plus lent).
+# Deliberement PAS sudo : les conteneurs tournent en --security-opt=no-new-
+# privileges, il serait inerte et affaiblirait la posture.
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
        ca-certificates curl git jq unzip tar gzip xz-utils python3 python3-pip python-is-python3 \
        libicu74 \
+       lsb-release zstd wget \
     && rm -rf /var/lib/apt/lists/*
 
 # Tarball runner epingle par SHA-256 (meme discipline que les profils
