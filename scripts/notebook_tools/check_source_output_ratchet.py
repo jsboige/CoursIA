@@ -49,11 +49,13 @@ An optional notebook qualifier disambiguates multi-notebook PRs:
 
 A bare ``[12]`` matches any notebook of the PR.
 
-Index pairing caveat: cells are paired by position over the full cell
-list. An insertion shifts later indices; a shifted code cell then
-compares against a different base cell, which can fabricate a
-source-changed/outputs-identical pair. Rare, visible in the diff, and
-liftable through the body door - a re-execution also dissolves it.
+Cell pairing: code cells pair by their nbformat ``id`` when the base
+notebook carries ids, so inserted cells (fresh ids, unpaired) or shifted
+cells (stable ids, paired to their real base partner) no longer
+fabricate source-changed/outputs-identical pairs on enrichment PRs
+(#14297). Legacy notebooks whose base carries no id pair by position
+over the full cell list, as before - an insertion there still shifts
+later indices, and the body door lifts any residual pair.
 
 Usage:
     python check_source_output_ratchet.py <base-ref> [--json] [--body-file F]
@@ -198,11 +200,26 @@ def classify_cells(base_nb, head_nb):
     """
     base_cells = base_nb.get("cells", [])
     head_cells = head_nb.get("cells", [])
+    # nbformat 4.5+ stamps every cell with a stable `id`: pair by id so an
+    # insertion shifts indices but never the pairing itself (#14297 - the
+    # positional pairing fabricated 3/3 STALE_OUTPUT on enrichment PRs).
+    # Legacy notebooks whose base carries no id keep the positional
+    # pairing, and a head cell with a fresh id (inserted) has no partner.
+    base_by_id = {c.get("id"): c for c in base_cells if c.get("id")}
+    use_ids = bool(base_by_id)
     records = []
     for i, hcell in enumerate(head_cells):
         if hcell.get("cell_type") != "code":
             continue
-        bcell = base_cells[i] if i < len(base_cells) else None
+        bcell = None
+        if use_ids:
+            hid = hcell.get("id")
+            if hid and hid in base_by_id:
+                bcell = base_by_id[hid]
+            elif not hid:
+                bcell = base_cells[i] if i < len(base_cells) else None
+        else:
+            bcell = base_cells[i] if i < len(base_cells) else None
         if bcell is None or bcell.get("cell_type") != "code":
             records.append({"index": i, "verdict": "UNPAIRED",
                             "regression": False})

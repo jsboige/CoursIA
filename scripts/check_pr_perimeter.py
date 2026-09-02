@@ -717,10 +717,25 @@ _EDIT_VERB = re.compile(
     r"\b(?:editer|modifier|toucher|ouvrir|créer|creer|ajouter|changer|mettre\s+à\s+jour|mettre\s+a\s+jour|update|edit|modify|touch|open|create|add|change)\b",
     re.IGNORECASE,
 )
-# A named file as it would appear in a body: backticked path, bare basename
+# A named referent as it would appear in a body: backticked path, backticked
+# DOTTED SYMBOL (`pick_idle_grain.upsert_orphans_comment`), bare basename
 # (.py/.cs/.yml/.json/.md/.ipynb/.sh), or a known scripts/<x>.py shape.
+#
+# #13610 residual (measured 2026-09-02, po-2024): the tail class was
+# `[A-Za-z0-9]+`, which excludes the underscore. A dotted symbol -- the most
+# common way a French technical body points at code -- was therefore NOT a
+# named referent, and the FN-safety branch kept the rouge on the FOUNDING
+# sentence of #13539, whose referent was named but named as a SYMBOL:
+#   « L'upsert vit dans `pick_idle_grain.upsert_orphans_comment` ; le
+#     generaliser demanderait d'editer un fichier deja porteur de deux PRs »
+# The boundary this drew was arbitrary AND invisible: `pick_idle_grain.upsert`
+# passed while `pick_idle_grain.upsert_orphans` rouged, on the sole strength
+# of one underscore -- two spellings of the same code reference, opposite
+# verdicts. Widening the tail to `\w+` removes the inversion. It does NOT
+# touch the deliberate FN-safety choice of #13612: an ANONYMOUS referent
+# ("editer un fichier", nothing named on the line) still keeps the rouge.
 _NAMED_FILE_BODY = re.compile(
-    r"(?:`([^`]+\.[A-Za-z0-9]+)`|"  # backticked: `pick_idle_grain.py`
+    r"(?:`([^`]+\.\w+)`|"  # backticked: `pick_idle_grain.py`, `mod.fn_name`
     r"\b([\w./-]+\.(?:py|cs|yml|yaml|json|md|ipynb|ts|js|sh|toml|cfg|ini))\b)"  # bare basename
 )
 # A cited threshold ("< 15 fichiers", ">= 10 fichiers") quotes a rule, it does

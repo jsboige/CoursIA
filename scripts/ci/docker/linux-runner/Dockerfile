@@ -8,7 +8,10 @@
 #
 # Isolation : utilisateur non-root, no-new-privileges au lancement, AUCUN
 # passthrough GPU (contrainte user : la machine sert aussi de workstation
-# GPU), work dir interne au conteneur (aucun montage hote).
+# GPU). Work dir sur volume nomme PAR SLOT (persistant, #14285 -- cache de
+# depot, jamais un bind hote) : sur grace UNIQUEMENT parce qu'aucun code de
+# fork n'atteint ces runners ; retirer la persistance avant tout trigger
+# pull_request. Cf supervise.sh et docs/ci/self-hosted-runners.md.
 
 FROM ubuntu:24.04
 

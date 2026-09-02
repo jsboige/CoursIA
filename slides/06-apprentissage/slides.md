@@ -177,7 +177,7 @@ layout: dense
 - Exemple pour le restaurant
 - La classification est positive ou négative
 
-<!-- Image: images/img_004.png -->
+<img src="./images/img_004.png" alt="Table des 12 exemples du restaurant : attributs d'entree et but Attendre" style="display:block; margin:10px auto; max-width:100%;" width="656">
 
 
 ---
@@ -190,7 +190,7 @@ layout: dense
 - But  (Chemin1 ∨ Chemin2 ∨ Chemin3)
 - Exemple du restaurant:
 
-<!-- Image: images/img_005.png -->
+<img src="./images/img_005.png" alt="Arbre de decision du restaurant : Clients, AttenteEstimee, Faim, Reservation" style="display:block; margin:10px auto; max-width:100%;" width="422">
 
 <!-- Frontiere de decision : arbre = decoupage orthogonal, foret = ensemble lisse -->
 
@@ -207,7 +207,7 @@ layout: dense
 - un chemin pour chaque exemple, mais il ne généralisera pas
 - On préfère un arbre plus compact
 
-<!-- Image: images/img_006.png -->
+<img src="./images/img_006.png" alt="Table de verite de A xor B et l'arbre de decision equivalent" style="display:block; margin:10px auto; max-width:100%;" width="628">
 
 
 ---
@@ -238,7 +238,7 @@ layout: dense
 - But: trouver un petit arbre consistant avec les exemples
 - Idée: choisir (récursivement) l’attribut le plus important comme racine de l’arbre (du sous arbre)
 
-<!-- Image: images/img_007.png -->
+<img src="./images/img_007.png" alt="Pseudocode APPRENTISSAGE-ARBRE-DECISION (AIMA)" style="display:block; margin:10px auto; max-width:100%;" width="762">
 
 
 ---
@@ -249,7 +249,7 @@ layout: dense
 - Idée: un bon attribut  divise les exemples en sous-ensembles discriminants (positifs ou négatifs)
 - Clients ? Est un meilleur choix
 
-<!-- Image: images/img_008.png -->
+<img src="./images/img_008.png" alt="Deux splits compares : Clients separe mieux les exemples que Type" style="display:block; margin:10px auto; max-width:100%;" width="900">
 
 
 ---
@@ -328,7 +328,7 @@ layout: dense
 - Substantiellement plus simple que l’arbre « naturel »
 - Une hypothèse plus complexe n’est pas requise par les données
 
-<!-- Image: images/img_010.png -->
+<img src="./images/img_010.png" alt="Arbre appris sur les 12 exemples du restaurant" style="display:block; margin:10px auto; max-width:100%;" width="482">
 
 
 ---
@@ -648,7 +648,7 @@ layout: section
 - Fonction de decision : f(x) = sign(w . x + b)
 - Limite : ne fonctionne que si les données sont lineairement separables
 
-<!-- Image: images/img_021.png -->
+<img src="./images/img_021.png" alt="Nuage a deux classes et frontiere de decision lineaire d'erreur minimale" style="display:block; margin:10px auto; max-width:100%;" width="372">
 
 
 ---
@@ -660,7 +660,7 @@ layout: section
 - Frontiere de decision lisse, interpretable, rapide a entrainer
 - Base des classificateurs lineaires modernes
 
-<!-- Image: images/img_022.png -->
+<img src="./images/img_022.png" alt="Seuil abrupt, sigmoide, et surface logistique en deux dimensions" style="display:block; margin:10px auto; max-width:100%;" width="900">
 
 <!-- Regression : lineaire = droite, polynomiale = courbe, risque de surapprentissage -->
 
@@ -762,7 +762,7 @@ layout: two-cols
 - Mise a jour des poids : W_j ← W_j - alpha * dE/dW_j
 - Permet d'entrainer des réseaux multi-couches (invention cle du deep learning)
 
-<!-- Image: images/img_031.png -->
+<img src="./images/img_031.png" alt="Pseudocode BACK-PROP-LEARNING (AIMA)" style="display:block; margin:10px auto; max-width:100%;" width="326">
 
 
 ---
@@ -1350,7 +1350,7 @@ $$y_i(w \cdot x_i + b) \geq 1 \quad \forall i$$
 
 <!-- SVM : hyperplan optimal, vecteurs supports sur la marge maximale -->
 
-<!-- Image: images/img_086.png -->
+<img src="./images/img_086.png" alt="Astuce du noyau : donnees non separables projetees en surface de decision" style="display:block; margin:10px auto; max-width:100%;" width="526">
 </div>
 ---
 
@@ -2236,7 +2236,7 @@ layout: dense
 ---
 
 
-<!-- Image: images/img_136.png -->
+<img src="./images/img_136.png" alt="Fiche recapitulative AlphaGo Zero : self-play, reseau, MCTS" style="display:block; margin:10px auto; max-width:100%;" width="555">
 
 
 ---

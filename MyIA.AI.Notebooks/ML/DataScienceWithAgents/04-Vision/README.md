@@ -16,7 +16,7 @@ Cette série suit la **même discipline que 03** : *from scratch PUIS framework,
 |----------|-------|---------------|------------|
 | [4.1 — Le neurone convolutif from scratch](4.1-Conv-NumPy-Torch-Allclose.ipynb) | Conv2d NumPy pur (single + multi-canal), gradient vérifié par différence finie, parité epsilon machine avec `torch.nn.Conv2d`, pooling et invariance par translation | **La convolution n'est pas magique** : un produit scalaire local, partagé spatialement, parité NumPy/torch à epsilon machine | gradient analytique vs numérique : écart max 1e-10 ; multi-canal (3 in, 4 out) float64 : 5,33e-15 ; float32 : 1,91e-06 (précision BLAS CPU) ; invariance par translation mesurée pixel-à-pixel sur image réelle |
 | [4.2 — ConvNet profonde : pourquoi les résiduelles](4.2-ConvNet-Profonde-Residuelles.ipynb) | 20 conv2d empilées nues (effondrement du gradient), skip naïf (gradient réparé mais passe avant qui dérive), bloc pré-norme (les deux réparés), même protocole transposé à 20 blocs d'attention, puis accuracy CIFAR-10 sur 3 graines | **Le skip-connection n'est pas un détail architectural** : c'est le mécanisme qui rend les réseaux profonds entraînables. **C'est le même bloc que l'attention pré-norme dans [3.4](../03-DeepLearning/3.4-Attention-Transformer-From-Scratch.ipynb)** | rapport de gradients `g_0/g_19` : `plain` 2,16e-08 contre `prenorm` 1,01 ; effondrement exponentiel en la profondeur (D = 4 → 28 : 1,47e-01 → 2,02e-12) ; `res_naif` répare le gradient mais `|h|` dérive d'un facteur 88 et la perte initiale monte à 17,4 au lieu de `ln 5` ; attention nue : rapport **plat** (0,92) alors que `|h|` est divisé par 2,1e+07 ; CIFAR-10 (5 classes, 3 graines) : `prenorm` 62,0 % ± 2,8 contre `plain` 34,0 % ± 10,0, soit +28,0 points pour un bruit de ±10,4 (rapport 2,7) |
-| 4.3 — Transfer learning ResNet *(PR suivante, voir feuille de route)* | Charger ResNet18 pré-entraîné ImageNet, remplacer la tête, fine-tuner sur un petit dataset français | **Le feature extractor pré-entraîné est réutilisable** : gelé (frozen) ou fine-tuné, sur combien de paramètres et combien d'epochs ? | ResNet18 backbone gelé : 11,2 M params (98,6 % du total) ; accuracy val sous-ensemble FR (10 classes) ; comparaison frozen vs fine-tuned (3 seeds, DM-test) |
+| [4.3 — Transfer learning : réutiliser un ResNet18 pré-entraîné](4.3-TransferLearning-ResNet.ipynb) | Charger ResNet18 pré-entraîné ImageNet, greffer une tête (5 130 params), comparer gelé vs fine-tuné sur EuroSAT (Sentinel-2, 10 classes d'occupation du sol, 80+30 imgs/classe), 3 graines appariées + test de permutation des signes | **Le feature extractor pré-entraîné est réutilisable — et le prix de ne pas l'adapter se mesure** : le gelé fait déjà ~89 % ; le fine-tuné ajoute ~6 points, mais seulement avec un taux décroissant (à taux constants, l'optimiseur oscille et finit sous le gelé) | backbone gelé 11,18 M params (99,95 % du réseau) ; gelé 89,3 % ± 1,3 (5 130 params entraînés) vs fine-tuné 95,6 % ± 0,8 (Adam différencié 3e-4/3e-3, décroissance x0,3/époque, batch 64, 5 époques) ; écart apparié +6,2 pts sur 3 graines (rapport signal/bruit 3,2, p = 0,250 au test de permutation — plancher 0,125 à n = 3) |
 
 ## Prérequis
 
@@ -30,7 +30,7 @@ Cette série suit la **même discipline que 03** : *from scratch PUIS framework,
 pip install numpy matplotlib torch torchvision pillow
 ```
 
-L'entraînement des deux notebooks concernés (4.2 et 4.3) reste **borné CPU** (sous-ensembles CIFAR-10 et dataset FR, < 10 min/notebook). Les seuils d'entraînement sont calibrés pour la démonstration pédagogique, pas pour la performance ImageNet — voir les notebooks pour les budgets exacts par époque et par taille de sous-ensemble. Mesure sur 4.2 : exécution complète des 48 cellules en 2 min 20 s sur CPU.
+L'entraînement des deux notebooks concernés (4.2 et 4.3) reste **borné CPU** (sous-ensemble CIFAR-10 pour 4.2 ; EuroSAT ~94 Mo au premier run pour 4.3 — cache partagé `~/.cache/coursia-datasets` ; < 10 min/notebook). Les seuils d'entraînement sont calibrés pour la démonstration pédagogique, pas pour la performance ImageNet — voir les notebooks pour les budgets exacts par époque et par taille de sous-ensemble. Mesure sur 4.2 : exécution complète des 48 cellules en 2 min 20 s sur CPU ; mesure sur 4.3 : exécution complète des 35 cellules en 6 min 29 s sur CPU (dont 4 min 45 s d'entraînements).
 
 ## Lien avec les autres séries
 
@@ -41,7 +41,7 @@ L'entraînement des deux notebooks concernés (4.2 et 4.3) reste **borné CPU** 
 
 L'Epic #12422 *« Série Vision 04 (à décider) — Évolution des architectures CNN »* est livrée par cette série :
 - 4.1 — [le neurone convolutif from scratch](4.1-Conv-NumPy-Torch-Allclose.ipynb) (livré)
-- 4.2 — [pourquoi la profondeur échoue sans résiduelles](4.2-ConvNet-Profonde-Residuelles.ipynb) (cette PR)
-- 4.3 — transfer learning ResNet (PR suivante)
+- 4.2 — [pourquoi la profondeur échoue sans résiduelles](4.2-ConvNet-Profonde-Residuelles.ipynb) (livré)
+- 4.3 — [transfer learning ResNet](4.3-TransferLearning-ResNet.ipynb) (cette PR)
 
 Chaque notebook est atomique (1 sujet vérifiable, < 3000 lignes, ≤ 15 fichiers), avec outputs commités (C.2) et ≥ 3 exercices par notebook (C.1, jamais `raise NotImplementedError`).

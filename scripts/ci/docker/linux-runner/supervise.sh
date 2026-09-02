@@ -49,6 +49,24 @@ PIDS="${COURSIA_RUNNER_PIDS:-384}"
 TOOLCACHE_VOLUME="${COURSIA_RUNNER_TOOLCACHE_VOLUME:-coursia-runner-toolcache}"
 TOOLCACHE_MOUNT="${COURSIA_RUNNER_TOOLCACHE_MOUNT:-/opt/hostedtoolcache}"
 
+# Cache de depot persistant, PAR SLOT (#14285) : --rm detruit /home/runner/_work
+# avec le conteneur, donc actions/checkout re-clonait le depot ENTIER (3,54 GiB,
+# 228 683 objets) a chaque job -- mesure #14285 : checkout 80-148 s contre
+# 40-51 s sur ubuntu-latest, ~97 % du temps du job. Le volume nomme survit au
+# conteneur ; checkout y trouve un clone existant et fait un git fetch
+# incremental (son clean par defaut nettoie l'arbre entre jobs). Un volume PAR
+# SLOT, jamais partage : deux jobs concurrents sur le meme _work se battraient
+# sur le meme .git. Cout disque ~4 GiB par slot.
+#
+# GARDE LIEE (ne jamais dissocier) : la persistance de _work est acceptable
+# UNIQUEMENT parce qu'aucun code de fork n'atteint ces runners (garde fork
+# universelle + aucun trigger pull_request, cf linux-self-hosted-tests.yml ;
+# ~95 forks etudiants). Un job voit les restes du precedent. Si cette garde
+# saute un jour, ce volume devient un vecteur -- retirer la persistance AVANT
+# d'ouvrir le runner aux forks.
+WORK_VOLUME_PREFIX="${COURSIA_RUNNER_WORK_VOLUME_PREFIX:-coursia-runner-work}"
+WORK_MOUNT="${COURSIA_RUNNER_WORK_MOUNT:-/home/runner/_work}"
+
 mkdir -p "$STATE_DIR"
 
 # Git Bash (MSYS) sous Windows reecrit les arguments de forme /posix/path des
@@ -70,10 +88,14 @@ die() { echo "ERREUR: $*" >&2; exit 1; }
 # -- sans lui, un `start 4` rend 5 PIDs et le defense-positif echoue.
 # Sortie : liste espacee de PIDs (vide si aucun superviseur).
 supervisor_pids() {
-  ps -ef 2>/dev/null \
-    | grep '[s]upervise\.sh start' \
-    | awk '$3==1 {print $2}'
-  return 0
+  local me out
+  # #14347 : `$$` = PID du bash principal, stable dans les subshells.
+  # `$PPID` vaut 1 sous systemd (herite du lancement par PID 1 ; bash ne le
+  # recompute pas pour les subshells) -- mesure : self=PPID=1 avec out=mon
+  # propre PID, donc le garde s'auto-matchait et le service crash-loopait.
+  me="$$"
+  out="$(ps -ef 2>/dev/null | grep '[s]upervise\.sh start' | awk -v me="$me" '$2 != me && $3==1 {print $2}')"
+  printf '%s\n' "$out"
 }
 
 fetch_token() {
@@ -97,12 +119,14 @@ slot_loop() {
       continue
     fi
     # --rm : le conteneur disparait avec le job. --ephemeral (dans l'entrypoint)
-    # desenregistre le runner cote GitHub. Un cycle = un job, proprement.
+    # desenregistre le runner cote GitHub. Un cycle = un job, proprement --
+    # mais le cache de depot (volume par slot) survit au conteneur (#14285).
     docker run --rm \
       --name "$name" \
       --cpus="$CPUS" --memory="$MEMORY" --pids-limit="$PIDS" \
       --security-opt=no-new-privileges \
       -v "$TOOLCACHE_VOLUME":"$TOOLCACHE_MOUNT" \
+      -v "${WORK_VOLUME_PREFIX}-${slot}":"$WORK_MOUNT" \
       -e RUNNER_TOOL_CACHE="$TOOLCACHE_MOUNT" \
       -e ACTIONS_RUNNER_INPUT_TOKEN="$token" \
       -e ACTIONS_RUNNER_INPUT_URL="https://github.com/$REPO" \
@@ -168,8 +192,12 @@ fait) puis '$0 start', OU relancer avec '$0 start $n --force'."
   # historiquement effacait sans condition ; ici il n'efface que si
   # on a passe la garde --force).
   rm -f "$STOP_FILE"
-  echo "demarrage de $n slot(s) ; caps par conteneur : cpus=$CPUS memory=$MEMORY pids=$PIDS ; toolcache=$TOOLCACHE_VOLUME -> $TOOLCACHE_MOUNT"
+  echo "demarrage de $n slot(s) ; caps par conteneur : cpus=$CPUS memory=$MEMORY pids=$PIDS ; toolcache=$TOOLCACHE_VOLUME -> $TOOLCACHE_MOUNT ; cache depot=${WORK_VOLUME_PREFIX}-{1..$n} -> $WORK_MOUNT"
   for i in $(seq 1 "$n"); do
+    # Volume de cache de depot par slot : cree ici pour echouer tot avec un
+    # message clair (docker run -v creerait le volume tout seul, mais muet).
+    docker volume create "${WORK_VOLUME_PREFIX}-${i}" >/dev/null \
+      || die "volume ${WORK_VOLUME_PREFIX}-${i} impossible a creer -- docker volume create"
     slot_loop "$i" &
     echo "$!" >> "$STATE_DIR/pids"
   done

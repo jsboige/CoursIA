@@ -520,8 +520,21 @@ _MENTION_VERDICT = re.compile(
 # de remediation qui evoque un verdict anterieur). On preserve le verdict
 # uniquement dans le premier cas. Le tag agent est matche dans les 80 chars
 # entre `##` et le verdict (cf limite d'origine).
+# #13642 -- le garde d'origine `\[[A-Z][A-Za-z_-]{2,40}\]` n'acceptait que les
+# tags UPPERCASE-initial (`[Hermes]`, `[NanoClaw]`, `[Claude]`) : le
+# coordinateur, qui se tag `[ai-01]` / `[ai-01 ARBITRAGE]` (et le compte
+# self-bot `[jsboige]`), est minuscule-initial et echappait au garde -> sa
+# reserve en position de titre etait strippee en MENTION et devenait invisible
+# au gate. Le vocabulaire est CLOS (reutilise tel quel, pas de caractere
+# generique) : la classe symetrique `## [bug] CHANGES_REQUESTED` (categorie de
+# prose, pas un reviewer) doit RESTER une MENTION et rester strippee.
+_AGENT_REVIEWER_TAG = (
+    r"\[(?i:(?:Hermes(?:\s+self-bot)?|NanoClaw|Claude|Review|"
+    r"clusterManager-Myia|ai-01|jsboige|myia-ai-01)\b[^\]]*)\]"
+)
 _MENTION_VERDICT_HEADING = re.compile(
-    r"(?m)^#{1,6}(?![^\n]*\[[A-Z][A-Za-z_-]{2,40}\])[^\n]{0,80}?([A-Z][A-Z_]{2,}[A-Z])(?![A-Za-z0-9_])")
+    r"(?m)^#{1,6}(?![^\n]*" + _AGENT_REVIEWER_TAG + r")[^\n]{0,80}?"
+    r"([A-Z][A-Z_]{2,}[A-Z])(?![A-Za-z0-9_])")
 
 # #11744 — Position B : prose inline. Un verdict est en mention quand un mot-
 # cle de mention (`verdict`, `nit`, `remark`, `previous`, `previous`, `precedent`,
@@ -1076,6 +1089,150 @@ def _formal_concern_precedes_lift(body: str) -> bool:
     )
 
 
+# #13938 — quand un reviewer pose `[Hermes] COMMENT_WITH_CONCERNS` (verdict
+# de pure emission, sans autorite de blocage, cf #12311) ET que le corps de
+# la review declare explicitement que rien n'est bloquant, la review n'est
+# PAS une reserve — c'est un commentaire FYI que la convention « reponse
+# ecrite / thread inline / issue de suivi » (Tell c.589-L1 ★★★ strict)
+# assimile a une APPROVED. Sans cette exemption, l'organe punit la
+# precaution : plus l'auteur desambigue (« rien de bloquant (contrainte
+# token : COMMENT only) »), plus le verdict formel matche CONCERN_MARKERS,
+# plus le preflight rougit. Mesure : PR #13935 (GenAI tranche orphelins,
+# substance OK, 63 checks SUCCESS, scope clean) bloquee sur Hermes
+# COMMENT_WITH_CONCERNS + corps « Rien de bloquant. » — Tell NEW c.840
+# sustained « un detecteur qui matche des phrases doit ignorer les
+# occurrences en position de citation ou de refutation ».
+#
+# Garde STRICTE : l'exemption n'est JAMAIS elargie a CHANGES_REQUESTED /
+# REQUEST_CHANGES / NEEDS_CHANGES / BLOCKED. Ces prefixes-la gardent leur
+# autorite de blocage — seul COMMENT_WITH_CONCERNS est le verdict «
+# comment-only par design » (force a state:COMMENTED par #12311, le seul
+# etat que Hermes self-bot peut poster avec ce label).
+def _comment_only_prefix(body: str) -> bool:
+    """Le verdict formel en tete est-il exclusivement COMMENT_WITH_CONCERNS ?
+
+    On distingue les formes EMISES des formes CITEES (mentionnees dans une
+    prose qui les refute) par la seule fenetre de citation de 30 caracteres
+    de `_is_cited` — la POSITION dans le corps n'est PAS verifiee, et le nom
+    « prefixe » designe l'usage attendu, pas un controle. Le verdict
+    ``[Hermes] COMMENT_WITH_CONCERNS — ...`` compte ; le corps ``pas de
+    COMMENT_WITH_CONCERNS ici`` ne compte pas.
+
+    Rejette si un verdict de blocage strict est aussi emis (CHANGES_REQUESTED,
+    REQUEST_CHANGES, NEEDS_CHANGES, BLOCKED, SUSPECT_*, STRUCTURAL_ONLY).
+    """
+    if not body:
+        return False
+    normalised = _unaccent(body)
+    # Marqueurs de blocage strict : leur presence simultanee a COMMENT_WITH_CONCERNS
+    # annule l'exemption (le reviewer etale les deux = « concerns + change »,
+    # pas un simple « comment only »).
+    blocking_markers = (
+        "CHANGES_REQUESTED", "REQUEST_CHANGES", "NEEDS_CHANGES",
+        "**BLOCKED**", "BLOCKED  PR", "SUSPECT_", "STRUCTURAL_ONLY",
+    )
+    for marker in blocking_markers:
+        if _unaccent(marker) in normalised:
+            # Verifier que l'occurrence n'est pas CITEe (meme logique que
+            # `has_live_marker`, mais inline : on n'a besoin que d'une
+            # occurrence vivante).
+            start = 0
+            while (i := normalised.find(_unaccent(marker), start)) != -1:
+                if not _is_cited(normalised[max(0, i - 30):i]):
+                    return False
+                start = i + 1
+    # COMMENT_WITH_CONCERNS doit etre emis (vivant, non cite).
+    target = _unaccent("COMMENT_WITH_CONCERNS")
+    start = 0
+    while (i := normalised.find(target, start)) != -1:
+        if not _is_cited(normalised[max(0, i - 30):i]):
+            return True
+        start = i + 1
+    return False
+
+
+# Formulations explicites de non-blocage, dans le corps nettoye des verdicts
+# mentionnes (cf `_strip_mentioned_verdicts` + `_strip_quoted` utilises
+# ailleurs dans `classify`). Insensible a la casse et aux accents via
+# `_unaccent`. Compile une seule fois au chargement du module.
+_NON_BLOCKING_PHRASES = tuple(
+    phrase.encode("unicode_escape").decode("ascii").replace(r"\u", r"\u")
+    for phrase in (
+        r"rien de bloquant",
+        r"rien (?:a|à) corriger",
+        r"rien (?:a|à) signaler",
+        r"rien (?:a|à) traiter",
+        r"rien (?:a|à) addresser",
+        r"pas (?:de |d')bloquant",
+        r"pas (?:de |d')blocage",
+        r"aucun bloquant",
+        r"aucun blocage",
+        r"aucune bloque",
+        r"aucune reserve",
+        r"non.?bloquant",
+        r"comment only",
+        r"comment-only",
+        r"no blocker",
+        r"nothing blocking",
+        r"all (?:is |looks )?good",
+        r"tout (?:est )?ok",
+        r"tout (?:est )?bon",
+    )
+)
+_NON_BLOCKING_RE = re.compile(
+    r"(?:" + "|".join(_NON_BLOCKING_PHRASES) + r")",
+    re.IGNORECASE,
+)
+
+
+def _review_explicit_non_blocking(body: str) -> bool:
+    """Le corps NETTOYE des mentions porte-t-il une formulation non-bloquante ?
+
+    Le nettoyage (``_strip_mentioned_verdicts(_strip_quoted(body))``) aligne
+    la surface analysee sur celle utilisee par `has_live_marker` pour
+    CONCERN_MARKERS — une formulation de non-blocage posee dans une citation
+    ou un bloc de code ne doit pas eteindre une reserve vivante.
+    """
+    if not body:
+        return False
+    surface = _strip_mentioned_verdicts(_strip_quoted(body))
+    return bool(_NON_BLOCKING_RE.search(_unaccent(surface)))
+
+
+# #13951 (Concern 1) -- l'exemption ne tient que si le SEUL concern EMIS est le
+# prefixe COMMENT_WITH_CONCERNS lui-meme.
+#
+# `_comment_only_prefix` ne rejette que la famille des verdicts de BLOCAGE
+# STRICT (CHANGES_REQUESTED / REQUEST_CHANGES / NEEDS_CHANGES / BLOCKED /
+# SUSPECT_ / STRUCTURAL_ONLY). Elle est structurellement AVEUGLE aux deux
+# autres familles de `CONCERN_MARKERS` :
+#   (a) la famille PROSE     -- « avant merge », « a changer », « il va falloir »
+#   (b) les GLYPHES de severite -- 🟡 (constat substantiel), 🔴 (bloquant strict)
+#
+# Un corps CONTRADICTOIRE passait donc l'exemption :
+#
+#     [Hermes] COMMENT_WITH_CONCERNS -- relu.
+#     🟡 la cellule 12 est a changer avant merge.
+#     Rien de bloquant par ailleurs.
+#
+# La phrase de non-blocage effacait un marqueur vivant emis dans la MEME
+# review. On retire donc les occurrences de COMMENT_WITH_CONCERNS de la surface
+# nettoyee (sans quoi le marqueur « CONCERNS » qu'il contient se compterait
+# lui-meme) et on exige qu'il ne reste AUCUN concern vivant.
+def _sole_live_concern_is_comment_prefix(body: str) -> bool:
+    """Hors le prefixe CWC, le corps porte-t-il encore un concern VIVANT ?
+
+    Retourne ``True`` quand le prefixe est le seul concern emis (l'exemption
+    peut tenir), ``False`` des qu'un marqueur de prose ou un glyphe de
+    severite survit au nettoyage (l'exemption tombe).
+    """
+    if not body:
+        return False
+    surface = _strip_mentioned_verdicts(_strip_quoted(body))
+    residuel = re.sub("COMMENT_WITH_CONCERNS", " ", surface, flags=re.IGNORECASE)
+    return not has_live_marker(residuel, CONCERN_MARKERS)
+
+
 def _excerpt(body: str) -> str:
     """Tete + queue : le verdict d'un reviewer vit en QUEUE de body.
 
@@ -1611,12 +1768,46 @@ def _coordinator_emission_informal(body: str) -> bool:
     # nomme l'injonction levee (« BLOCAGE leve ») reste muet.
     if has_live_lift(normalised):
         return False
+    # #14089 -- chemin different : l'injonction peut etre ANNONCEE puis LEVEE
+    # dans la meme phrase, sans LIFT_MARKER (qui exige la graphie complete
+    # « levee »). Cas fondateur : « HOLD leve -- le remplacement est nomme,
+    # vous pouvez merger. » -- la voie _block_emitted reconnait le motif via
+    # `_lift_participle_after` (leve / levee / lifted post-marker), mais la
+    # voie `_coordinator_emission_informal` n'en herite pas : elle conclut a
+    # une emission et classifie BOT-CONCERN, donc la PR que le commentaire
+    # vient de DEBLOQUER reste BLOQUEE. Meme classe de defaut que celle
+    # corrigee dans #13912 : un chemin qui n'a pas herite de la garde de
+    # son jumeau. On ajoute ici le MEME test post-marker que porte
+    # `_block_emitted` (point B), sur l'INJONCTION structurellement matchee
+    # (toutes les positions), pas seulement sur le head. Si TOUTES les
+    # injonctions sont suivies d'un participe de levee, c'est une levee.
+    if _every_injunction_followed_by_lift(normalised):
+        return False
     # Un [OVERRIDE] pose en tete (arbretage tiers de B.0) EMET une levee,
     # jamais une reserve — garde-fou de l'override, deja documente en
     # `_block_emitted` point A.
     head = normalised[:60].lstrip(" \t*_").upper()
     if head.startswith("[OVERRIDE]"):
         return False
+    return True
+
+
+def _every_injunction_followed_by_lift(normalised: str) -> bool:
+    """#14089 : toute occurrence d'injonction structurelle est-elle suivie
+    d'un participe de levee (`leve` / `levee` / `lifted`) ?
+
+    Renvoie True si le body NE porte aucune injonction (defaut : pas une
+    levee) OU si chaque occurrence matchee par `_COORDINATOR_INJUNCTION_RE`
+    est immediatement suivie d'un participe de levee (miroir de la borne
+    `_lift_participle_after` que porte `_block_emitted` point B).
+    """
+    matches = list(_COORDINATOR_INJUNCTION_RE.finditer(normalised))
+    if not matches:
+        return False
+    for m in matches:
+        end = m.end()
+        if not _lift_participle_after(normalised, end):
+            return False
     return True
 
 
@@ -2064,6 +2255,26 @@ def classify(author: str, body: str) -> str | None:
     # de reserve. Uniquement pour CONCERN_MARKERS et l'etage lift (symetrie
     # #13083 ci-dessus) : VERDICT_POSITIVE garde le body brut.
     live_concern = has_live_marker(_strip_mentioned_verdicts(_strip_quoted(body)), CONCERN_MARKERS)
+    # #13938 — exemption de « comment-only Hermes » : quand un reviewer pose
+    # `[Hermes] COMMENT_WITH_CONCERNS` (verdict de pure emission, force a
+    # state:COMMENTED par #12311) ET que le corps declare explicitement
+    # que rien n'est bloquant, la review n'est PAS une reserve. Convention
+    # Tell c.589-L1 ★★★ strict assimile un tel commentaire a une APPROVED
+    # pour le merge-gate. Garde stricte : l'exemption ne s'applique PAS
+    # aux verdiicts de blocage strict (CHANGES_REQUESTED, REQUEST_CHANGES,
+    # NEEDS_CHANGES, BLOCKED, SUSPECT_*, STRUCTURAL_ONLY) — verifie par
+    # `_comment_only_prefix`. Fuite classee Tell NEW c.840 ★★★ sustained.
+    if (
+        live_concern
+        and _comment_only_prefix(body)
+        and _review_explicit_non_blocking(body)
+        # #13951 Concern 1 : la phrase de non-blocage ne peut pas effacer un
+        # marqueur de prose (« avant merge ») ni un glyphe (🟡) emis dans la
+        # MEME review. L'exemption ne tient que si le prefixe CWC est le SEUL
+        # concern vivant du corps.
+        and _sole_live_concern_is_comment_prefix(body)
+    ):
+        return None
     if not live_concern and _HUMAN_VERDICT_RE.search(body):
         return None  # verdict humain positif (APPROVE / APPROVED / LGTM) SANS reserve vivante : equivalent state:APPROVED
     if not live_concern and has_live_marker(body, POSITIVE_MARKERS):

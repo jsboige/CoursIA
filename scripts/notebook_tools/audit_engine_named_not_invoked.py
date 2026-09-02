@@ -194,13 +194,12 @@ class SurfaceHits:
     simulation_hits: List[Tuple[int, str]] = field(default_factory=list)
 
 
-def _strip_comments(src: str) -> str:
-    """Retire les commentaires `#` et les docstrings pour le scan wiring/proof.
+def _strip_comments_and_strings(src: str) -> str:
+    """Retire commentaires, docstrings, et chaines de caracteres pour le scan wiring.
 
-    Un match dans un commentaire n'est pas une preuve d'invocation -- c'est
-    juste une mention discursive. On garde les chaines de caracteres
-    (print("openai...")) parce qu'elles peuvent etre des appels caches,
-    mais on retire les commentaires Python purs.
+    Un match dans un commentaire OU dans une string n'est pas une preuve
+    d'invocation SDK -- c'est une mention discursive ou un exemple pedagogique.
+    On garde uniquement le code actif (appels reels, imports reels).
     """
     lines = src.split("\n")
     out = []
@@ -208,19 +207,38 @@ def _strip_comments(src: str) -> str:
         stripped = line.lstrip()
         if stripped.startswith("#"):
             continue
-        # Retrait d'un commentaire en milieu de ligne (apres du code)
-        # Heuristique : `#` non precede d'un caractere alphanumerique (donc pas dans une string)
-        # Simplification : on retire tout apres le premier `#` qui n'est pas dans une string.
-        # Les strings simples avec `#` (`"#hashtag"`) ne sont pas affectees par notre regex wiring
-        # (qui cherche `google.adk` etc.), donc cette approximation suffit.
-        in_str = False
-        for i, c in enumerate(line):
-            if c == '"' or c == "'":
-                in_str = not in_str
-            elif c == "#" and not in_str:
-                line = line[:i]
+        # Parse caractere par caractere pour reperer les commentaires et strings.
+        in_str = None  # None si hors string, '"' ou "'" sinon
+        new_line_chars = []
+        i = 0
+        while i < len(line):
+            c = line[i]
+            if in_str:
+                if c == in_str:
+                    in_str = None
+                new_line_chars.append(c) if False else None  # on jette le contenu des strings
+                i += 1
+            elif c == "#":
+                # Commentaire in-line : on tronque
                 break
-        out.append(line)
+            elif c == '"' or c == "'":
+                in_str = c
+                # On remplace le contenu de la string par des espaces (preserve positions pour l'erreur)
+                new_line_chars.append(c)
+                # Skip le contenu de la string
+                j = i + 1
+                while j < len(line) and line[j] != in_str:
+                    if line[j] == "\\" and j + 1 < len(line):
+                        j += 2
+                    else:
+                        j += 1
+                # Ajouter des espaces a la place du contenu
+                new_line_chars.append(" " * (j - i - 1))
+                i = j + 1 if j < len(line) else j
+            else:
+                new_line_chars.append(c)
+                i += 1
+        out.append("".join(new_line_chars))
     return "\n".join(out)
 
 
@@ -233,7 +251,7 @@ def _scan_engine(notebook: dict, spec: EngineSpec) -> SurfaceHits:
         out_text = _cell_output_text(cell) if ctype == "code" else ""
         # Code sans commentaires : utilise pour wiring (un import dans un
         # commentaire n'est pas un import reel).
-        code_clean = _strip_comments(src) if ctype == "code" else ""
+        code_clean = _strip_comments_and_strings(src) if ctype == "code" else ""
 
         # --- claim : markdown prose ---
         if ctype == "markdown":
@@ -363,10 +381,14 @@ def classify_notebook(
             verdict = "ENGINE_EXEC_PROVED"
         elif disclosed and (siblings is None or _detect_disclosed_sequence(notebook_path, spec, hits, siblings) is True):
             verdict = "DISCLOSED_SEQUENCE_PROVED"
+        elif has_simulation:
+            # Simulation detectee : un import SDK + un output simule = le wiring
+            # est cosmétique, le moteur reel n'est pas invoqué. Prend precedence
+            # sur WIRING_ONLY car le verdict `SIMULATED_TERMINAL` est plus
+            # informatif pour le lecteur (cycle 93 feedback).
+            verdict = "SIMULATED_TERMINAL"
         elif has_wiring and not has_proof:
             verdict = "WIRING_ONLY"
-        elif has_simulation:
-            verdict = "SIMULATED_TERMINAL"
         elif not has_wiring:
             verdict = "NAMED_NOT_INVOKED"
         else:

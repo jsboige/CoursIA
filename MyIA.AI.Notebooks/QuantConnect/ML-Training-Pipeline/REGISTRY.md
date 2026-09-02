@@ -13,8 +13,32 @@ Updated: 2026-08-23 — backlog à déposer : M15 h=32 NO BEATS (#11468) et barr
 Updated: 2026-08-24 — Re-validation hors-biais des keepers BTC (issues #11041/#11034/#11036) : M15 `refuted-de-biased` 3/3 (l'edge publié = biais² de HAR, var_ratio > 1 partout) ; M4 confirmé h=1/h=5, INCONCLUSIVE h=10 (p_median 0,0598, var_ratio < 1)
 Updated: 2026-08-24 — M15 LSTM-vol patch persistance biais + slice 2/2 dé-biaisé symétrique (issue #12734): patch livré, run complet dispatché au prochain cycle
 Updated: 2026-09-01 — PatchTST BTC log-RV revalidé contre HAR débiaisé train-only (#14081) : h=1 INCONCLUSIVE, h=5/h=10 NO BEATS ; var_ratio > 1 aux trois horizons
+Updated: 2026-09-02 — M16 HAR asymétrique BTC revalidé contre HAR débiaisé train-only (#1454) : h=1 INCONCLUSIVE, h=5/h=10 BEATS ; verdict brut 3/3 réfuté
 
 Total checkpoints: 70 (20 legacy ARCHIVED + 50 panier baselines)
+
+## M16 HAR asymétrique — re-test débiaisé BTC (2026-09-02) — Epic #1454
+
+Le keeper historique M16 annonçait **3/3 BEATS** sur BTC face à HAR classique brut. Le re-test applique
+la même calibration train-only de 60 observations aux deux modèles, persiste leurs prévisions OOS sur
+les mêmes dates et évalue `dm_verdict(..., loss_fn="mse")`. Walk-forward expanding 5 folds, horizons
+{1,5,10}, quatre seeds {0,7,42,99}. OLS étant déterministe, les seeds sont bit-identiques : `edge/σ`
+cross-seed est **non applicable**, pas artificiellement infini.
+
+| Horizon | MSE HAR débiaisé | MSE asym. débiaisé | edge | biais asym. | biais HAR | dm_p_median | Verdict |
+|---:|---:|---:|---:|---:|---:|---:|---|
+| h=1 | 0,843774 | 0,848154 | −0,52 % | −0,005109 | −0,003880 | 0,244862 | **INCONCLUSIVE** |
+| h=5 | 0,417886 | 0,403593 | +3,42 % | −0,003967 | −0,001552 | 0,011363 | **BEATS** |
+| h=10 | 0,389457 | 0,369614 | +5,10 % | −0,004194 | −0,002419 | 0,005123 | **BEATS** |
+
+**Décomposition `MSE = biais² + variance`** : les biais résiduels sont proches de zéro (biais² ≤ 2,6e-5),
+donc l'écart restant porte essentiellement sur la variance. Le résultat brut était gonflé, surtout aux
+horizons longs (+23,6 %/+36,7 % → +3,4 %/+5,1 %), mais le signal ne disparaît pas : **2/3 BEATS,
+1/3 INCONCLUSIVE, 0/3 NO BEATS**. M16 BTC reste un keeper moyen/long horizon ; h=1 est retiré du claim.
+
+- **Run** : `python scripts/har_asymmetric.py --coins BTC-USD --horizons 1 5 10 --seeds 0 7 42 99 --n-splits 5 --skip-remote --debias --calibration-size 60 --out-json scripts/results/m16_har_asymmetric_btc_debiased.json`
+- **Notebook** : `m3_har_asymmetric_semivariance.ipynb`, 8/8 cellules code exécutées, recalcul indépendant depuis les séries persistées
+- **Coûts** : non applicables au verdict de forecast pur ; aucun claim Sharpe/P&L
 
 ## M4 DLinear-vol — entrée §C (2026-08-14) — issue #10908
 
