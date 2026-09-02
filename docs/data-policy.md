@@ -2,7 +2,7 @@
 
 > Statut : **cadrage**, pas une doctrine exécutable. Chaque cas concret appelle un arbitrage dans la matrice §3. Réf. ticket **#13742**.
 
-Ce document fixe les 4 catégories sous lesquelles ranger tout artefact « donnée / binaire / dataset / trace / checkpoint » qui se présente à un commit. Il ne décide pas *à la place* des contributeurs : il leur donne une grille. Le verdict final reste un arbitrage par ligne, versionné dans la PR qui modifie l'arborescence.
+Ce document fixe les 4 catégories sous lesquelles ranger tout artefact **de donnée** — dataset, état de modèle, sortie d'exécution — qui se présente à un commit. Les binaires natifs **runtime** (DLL de dépendance consommées par le code) ne sont pas des données : ils sont arbitrés comme **exception native documentée** (§2.5), pas rangés dans une catégorie. Il ne décide pas *à la place* des contributeurs : il leur donne une grille. Le verdict final reste un arbitrage par ligne, versionné dans la PR qui modifie l'arborescence.
 
 ## 1. Quatre catégories
 
@@ -10,8 +10,8 @@ Ce document fixe les 4 catégories sous lesquelles ranger tout artefact « donn�
 |---|---|---|
 | **Curée** | Donnée _déjà_ triée pour servir la pédagogie : sous-échantillon, équilibré, documenté (origine, licence, cardinal). | **OK** dans le repo, fichier versionné normalement, avec un `*.md` adjacent (cardinal + source + licence). |
 | **Brute téléchargeable** | Donnée source externe, potentiellement lourde (>= 1 Mo ou > 5 000 lignes). Régénérable par fetch script. | **gitignorer** + fournir un script `fetch_<dataset>.py` qui la (re)construit ; commit = scripts + petit échantillon-témoin en clair (≤ 200 lignes, pour démo). |
-| **Checkpoint** | État de modèle ML (poids `.pt`, `.h5`, `.safetensors`, etc.) produit par un entraînement reproductible. | **Exception documentée** : tracked en gitignore par défaut ; si l'entraînement n'est PAS reproductible et le checkpoint est nécessaire à l'exécution du notebook, **git-LFS** ou un lien de téléchargement externe tracé dans le notebook. |
-| **Trace** | Sortie d'exécution (logs, `.npz` d'activations, `.json` de résultats, profiling). | **Régénérable** : `gitignorer` + une cellule `notebook_utils.regenerate(...)` qui la reconstruit, gardée sous contrôle versionné. Garder au plus 1 sample de référence en clair, pour les diffs visuels. |
+| **Checkpoint** | État de modèle ML (poids `.pt`, `.h5`, `.safetensors`, etc.) produit par un entraînement reproductible. | **Exception documentée** : ignoré par défaut ; si l'entraînement n'est PAS reproductible et le checkpoint est nécessaire à l'exécution du notebook, **git-LFS** ou un lien de téléchargement externe tracé dans le notebook. |
+| **Trace** | Sortie d'exécution (logs, `.npz` d'activations, `.json` de résultats, profiling). | **Régénérable** : `gitignorer` + une cellule ou un script de régénération documenté qui la reconstruit, gardé sous contrôle versionné. Garder au plus 1 sample de référence en clair, pour les diffs visuels. |
 
 ## 2. Critères de décision par catégorie
 
@@ -21,7 +21,7 @@ Pour trancher un cas nouveau, **dans cet ordre** :
 2. **La donnée est-elle régénérable par un script qui tient en ≤ 200 lignes ?** Si oui → **brute téléchargeable** + script de fetch.
 3. **La donnée est-elle un état de modèle, ou un artefact dont la perte prive un notebook d'exécution ?** → **checkpoint** + exception documentée.
 4. **La donnée est-elle un sous-produit d'exécution (log, activation, profilage) ?** → **trace** + gitignore + cellule regenerate.
-5. **Aucune des 4 ne tient ?** → **escalader** sur l'issue parent du ticket : créer une exception 5ᵉ catégorie par PR documentée (pas en silence).
+5. **Binaire natif runtime** (DLL de dépendance, consommée par le code) → **exception native documentée** : KEEP avec justification de référencement (csproj / appel dans le code), sans catégorie. Tout autre cas qu'aucune des 4 ne couvre → **escalader** sur l'issue parent du ticket : créer une exception 5ᵉ catégorie par PR documentée (pas en silence).
 
 ## 3. Arbitrage par cas concret (état first-hand)
 
@@ -31,10 +31,10 @@ Tell c.745-L2 + c.854-L4 strict — vérifications firsthand c.868 (po-2024):
 
 | Binaire / dataset | Taille | Verdict | Justification first-hand |
 |---|---:|---|---|
-| `MyIA.Trading.Converter/7z-x64.dll` | 3,1 Mo | **RÉFÉRENCÉ — KEEP** | Référencé par `MyIA.Trading.Converter.csproj:30` (`<Content Include="7z-x64.dll">`) ET `CompressionHelper.cs:281-282` (fallback `ConfigurationManager.AppSettings["7zLocation"]` quand SharpCompress ne suffit pas). Suppression casserait la compilation du module C#. |
-| `MyIA.Trading.Converter/7z-x86.dll` | 2,7 Mo | **RÉFÉRENCÉ — KEEP** | Idem, fallback 32 bits via `Environment.Is64BitProcess`. |
-| `QuantConnect/Python/transformer_checkpoint.pt` | 42 Mo | **EXCEPTION — à documenter** | Tracké via exception gitignore l.875 (à vérifier visuellement `MyIA.AI.Notebooks/QuantConnect/.gitignore`). Pas un `_best` — checkpoint daté. **Action proposée** : vérifier que le notebook qui le consomme documente l'origine (entraînement référencé) ; sinon basculer vers le `_best` correspondant. |
-| `ML/ML.Net/taxi-fare.csv` | 24 Mo | **CURÉE — KEEP** | Dataset pédagogique ML.NET, documenté dans le notebook qui le consomme. Cardinal raisonnable (NYC Taxi, sous-échantillon). Licence d'origine New York City TLC Terms of Use. **À ajouter** : `data-policy.md` cité explicitement par le notebook (lien). |
+| `MyIA.Trading.Converter/7z-x64.dll` | 3,1 Mo | **EXCEPTION NATIVE — KEEP** (§2.5) | Référencé par `MyIA.Trading.Converter.csproj:30` (`<Content Include="7z-x64.dll">`) ET `CompressionHelper.cs:281-282` (fallback `ConfigurationManager.AppSettings["7zLocation"]` quand SharpCompress ne suffit pas). Suppression casserait la compilation du module C#. |
+| `MyIA.Trading.Converter/7z-x86.dll` | 2,7 Mo | **EXCEPTION NATIVE — KEEP** (§2.5) | Idem, fallback 32 bits via `Environment.Is64BitProcess`. |
+| `QuantConnect/Python/transformer_checkpoint.pt` | 42 Mo | **CHECKPOINT — LFS EXISTANT** | Tracké via **Git LFS** : pointeur de 133 octets (`size 43541550`, `git check-attr` → filter/diff/merge=lfs), vérifié firsthand. Exceptions gitignore dans **les deux** fichiers : racine `.gitignore:876` (`!MyIA.AI.Notebooks/QuantConnect/Python/transformer_checkpoint.pt`) et `MyIA.AI.Notebooks/QuantConnect/.gitignore:73` (`!Python/transformer_checkpoint.pt`, forme relative). Pas un `_best` — checkpoint daté. **Reste à vérifier** : que le notebook qui le consomme documente la provenance (entraînement référencé / geste de reproduction) ; sinon basculer vers le `_best` correspondant. |
+| `ML/ML.Net/taxi-fare.csv` | 24 Mo (non tracké) | **NON-TRACKED — geste requis** | Introuvable dans `origin/main` (`git ls-tree -r` : aucun fichier `*taxi*`). Le registre canonique [`docs/notebook-metadata/DATASET_REGISTRY.md`](notebook-metadata/DATASET_REGISTRY.md) le classe **NON-TRACKED / hors registre** : présent localement comme artefact ~25 Mo non committé, référencé par les notebooks ML-2/ML-4, non reproductible par fork. La mesure « 24 Mo CURÉE — KEEP » de la version initiale mesurait l'artefact local, pas un fichier du dépôt. **Geste** : issue dédiée — committer un sous-échantillon ≤ 5 Mo avec `fetch_taxi_fare.py`, ou retirer la référence des notebooks (le registre tranche : « soit commit, soit supprimer la référence »). |
 
 ### Cas **à re-vérifier** (rappel, hors scope de ce grain)
 
