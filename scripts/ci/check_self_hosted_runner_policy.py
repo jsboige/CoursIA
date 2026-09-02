@@ -116,6 +116,10 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     "lean-social-choice.yml",
     "notebook-execution-required.yml",
     "secret-scan.yml",
+    # always-on-metadata-guards.yml : routable (triggers pull_request +
+    #   workflow_dispatch seulement). Son jumeau always-on-guards.yml ne l'est
+    #   PAS -- il porte pull_request_review, classe FORK_REACHABLE (#14294).
+    "always-on-metadata-guards.yml",
     "twin-parity.yml",
 }
 GITHUB_HOSTED_LABELS = {
