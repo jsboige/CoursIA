@@ -38,8 +38,10 @@ name: PR path-collision advisory
 # and a burst collapses into at most one pending run, which is the behaviour
 # the group was always meant to provide.
 #
-# The organ NEVER blocks: the script always exits 0 and this job has no
-# merge/status gate.
+# The organ NEVER blocks a pull request: this job has no merge/status gate,
+# is absent from the required set and from the PR gate roster. Its own run,
+# however, goes red when writes are lost (#14236, --fail-on-write-loss) --
+# a muted organ has no other way to say that it is mute.
 
 on:
   # Off-round minutes: the top of the hour is when every cron in the account
@@ -92,4 +94,11 @@ jobs:
           [ "$DRY_RUN" = "true" ] && ARGS="$ARGS --dry-run"
           [ "$SAME_ISSUE_ONLY" = "true" ] && ARGS="$ARGS --same-issue-only"
           python scripts/check_pr_path_collisions.py --self-test
-          python scripts/check_pr_path_collisions.py $ARGS
+          # --fail-on-write-loss (#14236): this organ posts nothing on the
+          # merge path -- it is schedule-only, absent from the required set
+          # and from the PR gate roster -- so a red run here blocks no PR. It
+          # is, however, the only signal a muted organ cannot emit about
+          # itself: on run 33597345910 it wrote 3 of 33 planned verdicts and
+          # still concluded `success`, and a green run reads as "nothing to
+          # report" rather than "could not report".
+          python scripts/check_pr_path_collisions.py $ARGS --fail-on-write-loss
