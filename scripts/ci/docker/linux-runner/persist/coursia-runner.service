@@ -4,7 +4,8 @@
 # /etc/systemd/system/coursia-runner.service (systemctl enable --now).
 #
 # Parametres machine : NAME_PREFIX (po-2024 -> myia-po-2024-linux-docker) et
-# N slots (po-2024 -> 4) vivent dans le wrapper coursia-runner-start.sh.
+# N slots (po-2024 -> 8, dispatch capacite #14288 2026-09-02) vivent dans le
+# wrapper coursia-runner-start.sh (N porte par l'argument ExecStart).
 [Unit]
 Description=CoursIA Linux runners supervisor (docker slots)
 # Wants= au lieu de Requires= (cf #14347 item 2, reserve Hermes sur #14341) :
@@ -17,7 +18,7 @@ After=docker.service
 
 [Service]
 Type=simple
-ExecStart=/usr/local/bin/coursia-runner-start.sh start 4
+ExecStart=/usr/local/bin/coursia-runner-start.sh start 8
 ExecStop=/usr/local/bin/coursia-runner-start.sh stop
 Restart=always
 RestartSec=30
