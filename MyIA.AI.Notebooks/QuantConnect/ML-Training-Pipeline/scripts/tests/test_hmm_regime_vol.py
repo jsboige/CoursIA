@@ -28,10 +28,12 @@ import pytest
 # Make the parent directory importable.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+import hmm_regime_vol  # noqa: E402
 from hmm_regime_vol import (  # noqa: E402
     _dm_centered_mse,
     _is_beats,
     _mse_decomposition,
+    _require_hmmlearn,
     walk_forward_regime_switching,
 )
 
@@ -339,3 +341,45 @@ class TestArtefactStaysLean:
             "coin", "horizon", "seed", "date", "pred_regime", "pred_classic", "target",
         }
         assert len(frame) == per_seed[0]["n_preds"]
+
+
+# --------------------------------------------------------------------------
+# The optional-dependency guard
+#
+# `hmm_regime_vol` used to `sys.exit(...)` at import time when hmmlearn was
+# absent. Importing it from a test module then raised SystemExit during pytest
+# COLLECTION, which aborts the entire session with INTERNALERROR -- every other
+# suite in this directory dies with it, and the log blames a stack of pytest
+# internals rather than the missing package. These two tests pin the repaired
+# contract: importing is safe, using without the dependency is not.
+# --------------------------------------------------------------------------
+
+class TestHmmlearnGuard:
+    def test_import_does_not_abort_collection(self):
+        """The module is importable. Reaching this line is the assertion.
+
+        If `hmm_regime_vol` regressed to an import-time `sys.exit`, this file
+        could not be collected at all and the failure would surface as an
+        INTERNALERROR, not as a red test.
+        """
+        assert hmm_regime_vol.__name__ == "hmm_regime_vol"
+
+    def test_guard_still_exits_when_dependency_is_absent(self, monkeypatch):
+        """Deferring the failure must not SILENCE it.
+
+        Simulates the absent dependency and asserts the guard still stops the
+        run with the same message the import-time exit used to print.
+        """
+        monkeypatch.setattr(hmm_regime_vol, "GaussianHMM", None)
+        with pytest.raises(SystemExit) as excinfo:
+            _require_hmmlearn()
+        assert "hmmlearn not found" in str(excinfo.value)
+
+        # ... and reaches CLI callers before any data is loaded.
+        with pytest.raises(SystemExit):
+            hmm_regime_vol.main(["--coins", "BTC-USD", "--horizons", "1", "--seeds", "0"])
+
+    def test_guard_is_transparent_when_dependency_is_present(self):
+        """The mutation above must be what makes it fire -- not the call itself."""
+        assert hmm_regime_vol.GaussianHMM is not None, "hmmlearn absent in this env"
+        _require_hmmlearn()  # must not raise

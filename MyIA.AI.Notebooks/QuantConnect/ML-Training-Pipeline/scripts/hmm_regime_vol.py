@@ -41,10 +41,24 @@ from har_model import HARModel, _make_split_indices
 from intraday_loader import load_binance_eth, load_bitstamp_btc
 from realized_variance import daily_realized_variance, har_lag_features, realized_variance_to_log
 
+_HMMLEARN_MISSING = "hmmlearn not found. Install with: pip install hmmlearn"
+
 try:
     from hmmlearn.hmm import GaussianHMM
-except ImportError:
-    sys.exit("hmmlearn not found. Install with: pip install hmmlearn")
+except ImportError:  # pragma: no cover - only taken where hmmlearn is absent
+    # Deliberately NOT `sys.exit` at import time: this module is imported by
+    # `tests/test_hmm_regime_vol.py`, and a SystemExit raised during pytest
+    # collection aborts the whole session with INTERNALERROR -- taking down
+    # every other suite in the directory, not just this one. The failure is
+    # deferred to the point of use, where it still reports identically for
+    # CLI callers (same message, same exit code).
+    GaussianHMM = None
+
+
+def _require_hmmlearn() -> None:
+    """Fail with the CLI-identical message when hmmlearn is unavailable."""
+    if GaussianHMM is None:
+        sys.exit(_HMMLEARN_MISSING)
 
 
 SEEDS = [0, 7, 42, 99]
@@ -119,6 +133,7 @@ def _dm_centered_mse(errors_a: np.ndarray, errors_b: np.ndarray, horizon: int) -
 
 def fit_hmm_regimes(log_rv_train: np.ndarray, seed: int) -> "GaussianHMM":
     """Fit K-state GaussianHMM on log-RV. State 0 = low vol, state 1 = high vol."""
+    _require_hmmlearn()
     model = GaussianHMM(
         n_components=N_HMM_STATES,
         covariance_type="full",
@@ -443,6 +458,9 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 def main(argv: list[str] | None = None) -> None:
     args = _parse_args(argv)
+    # Fail fast, before loading any data -- same message and exit code as the
+    # former import-time guard.
+    _require_hmmlearn()
     seeds = list(args.seeds)
     horizons = list(args.horizons)
 
