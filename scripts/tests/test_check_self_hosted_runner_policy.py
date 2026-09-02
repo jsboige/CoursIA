@@ -192,6 +192,82 @@ def test_push_and_schedule_triggers_remain_accepted_with_universal_guard(tmp_pat
     assert result.self_hosted_jobs == 1
 
 
+def test_check_run_and_check_suite_fail_closed(tmp_path):
+    """#14201 (tranche 2) : le denylist de #14148 (FORK_REACHABLE_TRIGGERS) est
+    fail-OPEN sur tout trigger non enumere. check_run / check_suite portent
+    pull_requests[] et un head_sha -- un `checkout ${{ ... head_sha }}`
+    executerait du code de fork sur le runner, comme les triggers de
+    commentaire que #14148 a fermes. L'allowlist default-deny doit les rejeter."""
+    write_workflow(tmp_path, "pr-gate-stale-sweep", """
+        name: check-driven
+        on:
+          check_run:
+            types: [completed]
+          check_suite:
+            types: [completed]
+        jobs:
+          test:
+            runs-on: [self-hosted, coursia-ephemeral, coursia-fast-guards]
+            steps:
+              - run: echo unsafe
+        """)
+    result = policy.scan_workflows(tmp_path)
+    assert result.broken == []
+    [violation] = result.violations
+    assert violation.code == "UNSAFE_TRIGGER"
+    assert "check_run" in violation.message
+    assert "check_suite" in violation.message
+
+
+def test_unknown_trigger_is_default_denied(tmp_path):
+    """#14201 (tranche 2) : un trigger inconnu du checker doit etre refuse par
+    defaut (fail-closed), pas laisse passer parce que la liste des triggers
+    dangereux est une enumeration. La plupart des candidats futurs de GitHub
+    (release, deployment, registry_package, ...) sont ici rejetes."""
+    write_workflow(tmp_path, "pr-gate-stale-sweep", """
+        name: future-event
+        on:
+          release:
+            types: [published]
+        jobs:
+          test:
+            runs-on: [self-hosted, coursia-ephemeral, coursia-fast-guards]
+            steps:
+              - run: echo unsafe
+        """)
+    result = policy.scan_workflows(tmp_path)
+    assert result.broken == []
+    assert "UNSAFE_TRIGGER" in codes(result)
+
+
+def test_safe_allowlist_triggers_are_accepted(tmp_path):
+    """Contre-controle de la frontiere allowlist : les QUATRE triggers du
+    depot -- pull_request, push, schedule, workflow_dispatch -- sont acceptes
+    ensemble sur un job self-hosted garde. C'est le complement du contre-
+    controle de #14148 (push/schedule/workflow_dispatch seuls) : aucun des
+    triggers reels de la tranche 1 ne doit devenir UNSAFE_TRIGGER."""
+    write_workflow(tmp_path, "pr-gate-stale-sweep", """
+        name: allowlist-safe
+        on:
+          pull_request:
+          push:
+            branches: [main]
+          schedule:
+            - cron: '7 3 * * *'
+          workflow_dispatch:
+        jobs:
+          test:
+            if: ${{ github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository }}
+            runs-on: [self-hosted, coursia-ephemeral, coursia-fast-guards]
+            steps:
+              - run: echo safe
+        """)
+    result = policy.scan_workflows(tmp_path)
+    assert result.broken == []
+    assert result.violations == []
+    assert result.self_hosted_jobs == 1
+
+
 def test_universal_guard_weakened_by_or_is_rejected(tmp_path):
     """#13874 FN-safety : meme avec la forme universelle, l'ajout d'un
     `|| always()` ou `|| true` reintroduit le trou. La garde universelle

@@ -15,6 +15,8 @@ the verdicts measured firsthand on the #10466 sample:
 import sys
 import os
 
+import pytest
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from candidate_delivered import classify, is_epic, _parse_cross_ref_events  # noqa: E402
