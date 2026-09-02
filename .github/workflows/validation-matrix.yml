@@ -11,6 +11,10 @@ on:
     paths:
       - '**.ipynb'
       - 'scripts/validation/**'
+  # Manual revalidate after a merge batch (issue #13861):
+  # `cancel-in-progress` cancels each PR's run on the next push, leaving the
+  # final tree of a merge batch un-revalidated. `workflow_dispatch` is the
+  # only way to revalidate the final tree without an empty commit.
   workflow_dispatch:
     inputs:
       family:
