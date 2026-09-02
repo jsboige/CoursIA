@@ -7,7 +7,12 @@
 # N slots (po-2024 -> 4) vivent dans le wrapper coursia-runner-start.sh.
 [Unit]
 Description=CoursIA Linux runners supervisor (docker slots)
-Requires=docker.service
+# Wants= au lieu de Requires= (cf #14347 item 2, reserve Hermes sur #14341) :
+# un docker.service en echec au boot DOIT retarder le service et le maintenir
+# en retry (Restart=always), pas le faire sortir de la liste des unites.
+# Le superviseur est resilient par conception : sa boucle de slots retente
+# docker toutes les 15 s, et le holder reprend au prochain logon.
+Wants=docker.service
 After=docker.service
 
 [Service]
