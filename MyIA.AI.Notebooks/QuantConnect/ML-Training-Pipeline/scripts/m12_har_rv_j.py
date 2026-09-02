@@ -39,6 +39,7 @@ import pandas as pd
 SCRIPT_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(SCRIPT_DIR))
 
+from dm_test import dm_verdict  # noqa: E402
 from har_model import HARModel, walk_forward_har  # noqa: E402
 from intraday_loader import (  # noqa: E402
     hourly_log_returns,
@@ -302,9 +303,21 @@ def evaluate_one_combo(
     rv = rv.loc[common_idx]
     jumps = jumps.loc[common_idx]
 
-    # HAR Classic baseline
+    # HAR Classic baseline, raw and calibrated on train-only residuals.
     try:
-        har_out = walk_forward_har(rv, horizon=horizon, n_splits=N_SPLITS, refit_every=REFIT_EVERY)
+        har_out = walk_forward_har(
+            rv,
+            horizon=horizon,
+            n_splits=N_SPLITS,
+            refit_every=REFIT_EVERY,
+        )
+        har_debiased_out = walk_forward_har(
+            rv,
+            horizon=horizon,
+            n_splits=N_SPLITS,
+            refit_every=REFIT_EVERY,
+            calibrate_bias=True,
+        )
     except (ValueError, Exception):
         return None
 
@@ -317,11 +330,13 @@ def evaluate_one_combo(
         return None
 
     har_fc = har_out["forecasts"]
+    har_debiased_fc = har_debiased_out["forecasts"]
     hrj_fc = hrj_out["forecasts"]
-    common_fc_idx = har_fc.index.intersection(hrj_fc.index)
+    common_fc_idx = har_fc.index.intersection(har_debiased_fc.index).intersection(hrj_fc.index)
     if len(common_fc_idx) < 30:
         return None
     har_fc = har_fc.loc[common_fc_idx]
+    har_debiased_fc = har_debiased_fc.loc[common_fc_idx]
     hrj_fc = hrj_fc.loc[common_fc_idx]
 
     # Daily close returns
@@ -331,54 +346,94 @@ def evaluate_one_combo(
     if len(daily_rets) < 30:
         return None
     har_fc = har_fc.reindex(daily_rets.index)
+    har_debiased_fc = har_debiased_fc.reindex(daily_rets.index)
     hrj_fc = hrj_fc.reindex(daily_rets.index)
 
     # Kelly weights for each model
     har_pair = _kelly_weights_and_returns(daily_rets, har_fc, MU_WINDOW, KELLY_CAP)
+    har_debiased_pair = _kelly_weights_and_returns(
+        daily_rets, har_debiased_fc, MU_WINDOW, KELLY_CAP
+    )
     hrj_pair = _kelly_weights_and_returns(daily_rets, hrj_fc, MU_WINDOW, KELLY_CAP)
-    if har_pair is None or hrj_pair is None:
+    if har_pair is None or har_debiased_pair is None or hrj_pair is None:
         return None
     har_w, r = har_pair
+    har_debiased_w, _ = har_debiased_pair
     hrj_w, _ = hrj_pair
     if len(r) < 50:
         return None
 
     # Net returns at FEE_BPS
     har_net = _net_at_fee(har_w, r, FEE_BPS)
+    har_debiased_net = _net_at_fee(har_debiased_w, r, FEE_BPS)
     hrj_net = _net_at_fee(hrj_w, r, FEE_BPS)
     bh_net = r.copy()
 
     # Sharpe
     sharpe_har = _sharpe_ann(har_net)
+    sharpe_har_debiased = _sharpe_ann(har_debiased_net)
     sharpe_hrj = _sharpe_ann(hrj_net)
     sharpe_bh = _sharpe_ann(bh_net)
     delta_sharpe_hrj_vs_har = sharpe_hrj - sharpe_har
+    delta_sharpe_hrj_vs_har_debiased = sharpe_hrj - sharpe_har_debiased
 
-    # LW2008 paired Sharpe-diff SE
-    _, _, _, se = ledoit_wolf_sharpe_diff_se(hrj_net, har_net)
-    t_stat = delta_sharpe_hrj_vs_har / se if isinstance(se, float) and se > 1e-12 else float("nan")
+    # LW2008 paired Sharpe-diff SE against the debiased baseline.
+    _, _, _, se = ledoit_wolf_sharpe_diff_se(hrj_net, har_debiased_net)
+    t_stat = (
+        delta_sharpe_hrj_vs_har_debiased / se
+        if isinstance(se, float) and se > 1e-12
+        else float("nan")
+    )
 
-    # MSE comparison on log-RV
+    # Precision comparison on log-RV against the train-calibrated HAR baseline.
     target = har_out["targets"].reindex(common_fc_idx).dropna()
     har_pred_aligned = har_fc.reindex(target.index)
+    har_debiased_pred_aligned = har_debiased_fc.reindex(target.index)
     hrj_pred_aligned = hrj_fc.reindex(target.index)
-    mse_har = float(np.mean((har_pred_aligned - target) ** 2))
-    mse_hrj = float(np.mean((hrj_pred_aligned - target) ** 2))
-    mse_reduction_pct = (mse_hrj - mse_har) / mse_har * 100 if mse_har > 0 else float("nan")
+    har_errors = (har_pred_aligned - target).to_numpy(dtype=float)
+    har_debiased_errors = (har_debiased_pred_aligned - target).to_numpy(dtype=float)
+    hrj_errors = (hrj_pred_aligned - target).to_numpy(dtype=float)
+    mse_har = float(np.mean(har_errors ** 2))
+    mse_har_debiased = float(np.mean(har_debiased_errors ** 2))
+    mse_hrj = float(np.mean(hrj_errors ** 2))
+    mse_reduction_pct = (
+        (mse_har_debiased - mse_hrj) / mse_har_debiased * 100
+        if mse_har_debiased > 0
+        else float("nan")
+    )
+    dm_mse = dm_verdict(
+        hrj_errors,
+        har_debiased_errors,
+        horizon=horizon,
+        loss_fn="mse",
+    )
 
     return {
         "coin": coin,
         "horizon": horizon,
         "seed": seed,
         "sharpe_har": sharpe_har,
+        "sharpe_har_debiased": sharpe_har_debiased,
         "sharpe_hrj": sharpe_hrj,
         "sharpe_bh": sharpe_bh,
         "delta_sharpe_hrj_vs_har": delta_sharpe_hrj_vs_har,
+        "delta_sharpe_hrj_vs_har_debiased": delta_sharpe_hrj_vs_har_debiased,
         "lw_se": se,
         "t_stat": t_stat,
+        "har_bias_oos": float(np.mean(har_errors)),
+        "har_debiased_bias_oos": float(np.mean(har_debiased_errors)),
+        "hrj_bias_oos": float(np.mean(hrj_errors)),
+        "har_calibration_bias_mean": float(np.mean(
+            har_debiased_out["initial_calibration_bias_by_fold"]
+        )),
         "mse_har": mse_har,
+        "mse_har_debiased": mse_har_debiased,
         "mse_hrj": mse_hrj,
-        "mse_reduction_pct": mse_reduction_pct,
+        "mse_reduction_pct_vs_debiased_har": mse_reduction_pct,
+        "dm_mse_stat": float(dm_mse["dm_statistic"]),
+        "dm_mse_pvalue": float(dm_mse["p_value"]),
+        "dm_mse_mean_loss_diff": float(dm_mse["mean_loss_diff"]),
+        "dm_mse_verdict": str(dm_mse["verdict"]),
         "n_obs": len(r),
         "hrj_preds": len(hrj_fc),
         "har_preds": len(har_fc),
@@ -471,41 +526,106 @@ def main() -> None:
     print(f"\n{'='*60}")
     print(f"M12 HAR-RV-J sweep complete: {len(combos)}/{total} combos in {elapsed:.0f}s")
 
-    # Aggregate sign-test
+    # Aggregate against the train-calibrated HAR baseline.
     n_combos = len(combos)
-    n_hrj_beats_har = sum(1 for r in combos if r["delta_sharpe_hrj_vs_har"] > 0)
-    median_delta = float(np.median([r["delta_sharpe_hrj_vs_har"] for r in combos])) if combos else float("nan")
+    n_hrj_beats_har = sum(
+        1 for r in combos if r["delta_sharpe_hrj_vs_har_debiased"] > 0
+    )
+    median_delta = (
+        float(np.median([
+            r["delta_sharpe_hrj_vs_har_debiased"] for r in combos
+        ]))
+        if combos
+        else float("nan")
+    )
     p_sign = _binomial_pvalue_one_sided(n_hrj_beats_har, n_combos)
+
+    # Per-horizon §C conjunction: Sharpe edge >= 2 sigma and precision DM p < 0.05.
+    per_horizon: dict[int, dict] = {}
+    for horizon in horizons:
+        rows = [r for r in combos if r["horizon"] == horizon]
+        if not rows:
+            continue
+        edges = np.asarray([
+            r["delta_sharpe_hrj_vs_har_debiased"] for r in rows
+        ], dtype=float)
+        dm_ps = np.asarray([r["dm_mse_pvalue"] for r in rows], dtype=float)
+        dm_diffs = np.asarray([
+            r["dm_mse_mean_loss_diff"] for r in rows
+        ], dtype=float)
+        edge_mean = float(np.mean(edges))
+        edge_std = float(np.std(edges, ddof=0))
+        dm_p_median = float(np.median(dm_ps))
+        dm_diff_median = float(np.median(dm_diffs))
+        edge_passes = edge_mean > 0 and (
+            edge_std == 0.0 or edge_mean >= 2.0 * edge_std
+        )
+        dm_passes = dm_p_median < 0.05 and dm_diff_median < 0
+        if edge_mean <= 0 or (dm_p_median < 0.05 and dm_diff_median > 0):
+            verdict_h = "NO BEATS"
+        elif edge_passes and dm_passes:
+            verdict_h = "BEATS"
+        else:
+            verdict_h = "INCONCLUSIVE"
+        per_horizon[horizon] = {
+            "n_combos": len(rows),
+            "edge_mean_delta_sharpe": edge_mean,
+            "edge_std_delta_sharpe": edge_std,
+            "edge_sigma": (
+                edge_mean / edge_std if edge_std > 0 else float("inf")
+            ),
+            "dm_mse_p_median": dm_p_median,
+            "dm_mse_mean_loss_diff_median": dm_diff_median,
+            "har_bias_oos_mean": float(np.mean([
+                r["har_bias_oos"] for r in rows
+            ])),
+            "har_debiased_bias_oos_mean": float(np.mean([
+                r["har_debiased_bias_oos"] for r in rows
+            ])),
+            "hrj_bias_oos_mean": float(np.mean([
+                r["hrj_bias_oos"] for r in rows
+            ])),
+            "verdict": verdict_h,
+        }
 
     # Per-coin aggregation
     per_coin: dict[str, dict] = {}
     for r in combos:
         c = r["coin"]
         per_coin.setdefault(c, {"deltas": [], "mses": []})
-        per_coin[c]["deltas"].append(r["delta_sharpe_hrj_vs_har"])
-        per_coin[c]["mses"].append(r["mse_reduction_pct"])
+        per_coin[c]["deltas"].append(
+            r["delta_sharpe_hrj_vs_har_debiased"]
+        )
+        per_coin[c]["mses"].append(
+            r["mse_reduction_pct_vs_debiased_har"]
+        )
 
-    print(f"\nSign-test: {n_hrj_beats_har}/{n_combos} ({n_hrj_beats_har/n_combos*100:.1f}%) HRJ>har")
+    print(
+        f"\nSign-test: {n_hrj_beats_har}/{n_combos} "
+        f"({n_hrj_beats_har / max(n_combos, 1) * 100:.1f}%) "
+        "HRJ > HAR debiased"
+    )
     print(f"  p-value = {p_sign:.4f}")
     print(f"  median delta-Sharpe = {median_delta:+.4f}")
-    print(f"\nPer-coin median delta-Sharpe:")
-    for c in coins:
-        if c in per_coin:
-            med = float(np.median(per_coin[c]["deltas"]))
-            med_mse = float(np.median(per_coin[c]["mses"]))
-            n_beats = sum(1 for d in per_coin[c]["deltas"] if d > 0)
-            n_total = len(per_coin[c]["deltas"])
-            print(f"  {c}: {med:+.4f} (MSE {med_mse:+.1f}%, beats {n_beats}/{n_total})")
+    print("\nPer-horizon §C verdicts:")
+    for horizon, row in per_horizon.items():
+        print(
+            f"  h={horizon}: {row['verdict']} | "
+            f"edge={row['edge_mean_delta_sharpe']:+.4f} "
+            f"({row['edge_sigma']:.2f} sigma), "
+            f"DM-MSE p_med={row['dm_mse_p_median']:.4f}, "
+            f"loss_diff={row['dm_mse_mean_loss_diff_median']:+.6f}"
+        )
 
-    # Verdict
-    if p_sign < 0.05 and n_hrj_beats_har / max(n_combos, 1) >= 0.60:
+    verdicts = [row["verdict"] for row in per_horizon.values()]
+    if verdicts and all(v == "BEATS" for v in verdicts):
         verdict = "BEATS"
-    elif p_sign < 0.10 and n_hrj_beats_har / max(n_combos, 1) >= 0.55:
-        verdict = "INCONCLUSIVE"
-    else:
+    elif verdicts and all(v == "NO BEATS" for v in verdicts):
         verdict = "NO BEATS"
+    else:
+        verdict = "INCONCLUSIVE"
 
-    print(f"\nVERDICT: {verdict} (p={p_sign:.4f}, win_rate={n_hrj_beats_har/n_combos*100:.1f}%)")
+    print(f"\nVERDICT: {verdict} ({', '.join(verdicts)})")
 
     # Save
     results = {
@@ -521,7 +641,10 @@ def main() -> None:
         "n_hrj_beats_har": n_hrj_beats_har,
         "win_rate": n_hrj_beats_har / max(n_combos, 1),
         "p_sign": p_sign,
+        "baseline": "HAR Classic with train-only bias calibration",
+        "dm_loss_fn": "mse",
         "median_delta_sharpe": median_delta,
+        "per_horizon": per_horizon,
         "verdict": verdict,
         "elapsed_s": elapsed,
         "combos": combos,
