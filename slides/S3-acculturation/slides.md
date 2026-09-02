@@ -2446,7 +2446,7 @@ problèmes, et ils se résolvent avec les mêmes objets.
 | Une **file de travail** par poste, jamais vide | Plan de charge |
 | Un **jeton de réservation** posé sur la tâche | « Qui fait quoi » — anti-doublon |
 | Une **revue obligatoire** avant intégration | Contrôle, double signature |
-| Des **règles écrites** (26) plutôt que des consignes orales | Procédures |
+| Des **règles écrites** plutôt que des consignes orales | Procédures |
 
 Aucun de ces objets n'a été conçu pour l'IA : ce sont ceux d'une direction
 des opérations, transposés tels quels.
@@ -2596,7 +2596,8 @@ Et son corollaire, plus dur à admettre :
 </div>
 </div>
 
-> Un harnais de règles écrit, chargé automatiquement à chaque session. La
+> Un harnais de règles écrit, chargé automatiquement à chaque session — la
+> plupart immédiatement, certaines à la demande selon le contexte. La
 > documentation qui n'est pas chargée n'existe pas.
 
 
