@@ -17,6 +17,7 @@ from audit_solution_leaks import (
     detect_commented_solution_leak,
     detect_csharp_leak_candidates,
     detect_function_body_leak,
+    detect_markdown_solution_candidates,
     detect_preresolved_cells,
     get_cells_after_exercice_md,
 )
@@ -686,3 +687,153 @@ class TestCSharpLeakCandidates:
         assert csharp_types == set(), (
             "C# layer must NOT run on a Python-kernel notebook"
         )
+
+
+# ---------------------------------------------------------------------------
+# detect_markdown_solution_candidates (pattern 5, class (h), #14327)
+# ---------------------------------------------------------------------------
+
+def _md_protocol_cell(title):
+    """Markdown exercise-header cell carrying the full proof protocol in a
+    fenced lean block -- the class (h) anatomy measured on PR #14161
+    (pre-fix SHA 016fbd4410, SL-1b-LogicalLearning-Lean-Native)."""
+    return _md_cell(
+        f"### {title}\n\n"
+        "**Le protocole de preuve** :\n\n"
+        "```lean\n"
+        "theorem exo_self_zero :\n"
+        "    PacLearning.trueError Dcoin (fun _ => true) (fun _ => true) = 0 := by\n"
+        "  exact PacLearning.trueError_self Dcoin (fun _ => true)\n"
+        "```\n\n"
+        "**Sortie attendue** : signature propre, sans sorry.\n"
+    )
+
+
+def _lean_stub_code_cell(n):
+    """Lean exercise stub code cell -- the golden-set anchor form
+    (`-- Exercice N` / `-- TODO etudiant`, invisible to EXERCICE_MARKERS)."""
+    return _code_cell(
+        f"-- Exercice {n} : a completer\n"
+        "-- TODO etudiant\n"
+        "theorem exo_self_zero :\n"
+        "    PacLearning.trueError Dcoin (fun _ => true) (fun _ => true) = 0 := by\n"
+        "  sorry\n"
+    )
+
+
+class TestDetectMarkdownSolutionCandidates:
+    def test_golden_set_prefix_structure_flags_all_three(self):
+        """Golden set (PR #14161 pre-fix, SHA 016fbd4410): the 3 md header
+        cells carrying the complete proof protocol before `-- TODO etudiant`
+        code cells MUST be flagged -- this exact shape was structurally
+        invisible to the scanner before pattern 5."""
+        cells = [
+            _md_cell("## Exercices\n\nIntro, bareme, conventions C.1."),
+            _md_protocol_cell("Exercice 1 : erreur nulle contre soi-meme"),
+            _lean_stub_code_cell(1),
+            _md_protocol_cell("Exercice 2 : la masse des echantillons vaut un"),
+            _lean_stub_code_cell(2),
+            _md_protocol_cell("Exercice 3 : symetrie du desaccord"),
+            _lean_stub_code_cell(3),
+            _md_cell("## Conclusion"),
+        ]
+        candidates = detect_markdown_solution_candidates(cells)
+        assert len(candidates) == 3
+        assert all(c["type"] == "md_solution_protocol" for c in candidates)
+        # FLAG = candidate for manual review, not an auto-verdict.
+        assert all(c["severity"] == "FLAG" for c in candidates)
+        assert [c["cell_index"] for c in candidates] == [1, 3, 5]
+
+    def test_postfix_annexe_structure_is_exempt(self):
+        """Sanctioned pattern (PR #14161 fix, commit 98bc201d3): cleaned
+        exercise headers + a final 'Annexe -- solutions des exercices'
+        carrying the protocols -> ZERO flags."""
+        cells = [
+            _md_cell("## Exercices"),
+            _md_cell("### Exercice 1 : erreur nulle contre soi-meme\n\n"
+                     "Prouver l'egalite. Indice : `PacLearning.trueError_self`."),
+            _lean_stub_code_cell(1),
+            _md_cell("## Conclusion"),
+            _md_cell("## Annexe — solutions des exercices\n\n"
+                     "**Le protocole de preuve** :\n\n"
+                     "```lean\n"
+                     "theorem exo_self_zero :\n"
+                     "    PacLearning.trueError Dcoin (fun _ => true) "
+                     "(fun _ => true) = 0 := by\n"
+                     "  exact PacLearning.trueError_self Dcoin (fun _ => true)\n"
+                     "```\n"),
+        ]
+        candidates = detect_markdown_solution_candidates(cells)
+        assert candidates == [], (
+            "Annexe section is the sanctioned home for solutions -- exempt"
+        )
+
+    def test_inline_indice_is_not_flagged(self):
+        """A backticked tactic mention in an exercise header is a legitimate
+        pedagogical indice, NOT a leak -- measured 10 FPs of this shape on
+        main (2026-09-02), all legitimate."""
+        cells = [
+            _md_cell("### Exercice 2 : prouver une identite\n\n"
+                     "Indice : `exact theorem_x h` termine le but."),
+            _code_cell("-- TODO etudiant\ntheorem t : p := by\n  sorry\n"),
+        ]
+        assert detect_markdown_solution_candidates(cells) == []
+
+    def test_fence_without_complete_proof_is_not_flagged(self):
+        """A fenced lean block showing definitions/signatures (interpretation
+        cell) without a `:= by` goal closed by a tactic is not a proof
+        protocol -- interpretation cells legitimately carry such fences."""
+        cells = [
+            _md_cell("**Lecture du theoreme** :\n\n"
+                     "```lean\n"
+                     "theorem trueError_self (D : Distribution X) (h : Hypothesis X) :\n"
+                     "    trueError D h h = 0\n"
+                     "```\n\n"
+                     "**Sortie attendue** : la signature du #check."),
+            _code_cell("-- TODO etudiant\ntheorem t : p := by\n  sorry\n"),
+        ]
+        assert detect_markdown_solution_candidates(cells) == []
+
+    def test_window_is_bounded_to_three_cells_upstream(self):
+        """A proof-protocol md cell more than 3 cells before the exercise
+        anchor belongs to another section, not the exercise window."""
+        cells = [
+            _md_protocol_cell("Exemple guide : demonstration complete"),
+            _md_cell("Prose de transition."),
+            _md_cell("Prose de transition."),
+            _md_cell("Prose de transition."),
+            _md_cell("### Exercice 1 : a faire"),
+            _lean_stub_code_cell(1),
+        ]
+        assert detect_markdown_solution_candidates(cells) == []
+
+    def test_python_code_cell_anchor(self):
+        """A Python `# Exercice` code cell is an anchor: the md protocol cell
+        directly upstream falls in its window."""
+        cells = [
+            _md_protocol_cell("Rappel de la solution attendue"),
+            _code_cell("# Exercice 1 : a completer\n"
+                       "# TODO etudiant\n"
+                       "def exo():\n"
+                       "    pass\n"),
+        ]
+        candidates = detect_markdown_solution_candidates(cells)
+        assert len(candidates) == 1
+        assert candidates[0]["cell_index"] == 0
+
+    def test_audit_notebook_runs_pattern5(self, tmp_path):
+        """Integration: audit_notebook surfaces md_solution_protocol findings
+        (the pre-fix detector returned [] for this notebook -- its silence
+        was not a verdict)."""
+        nb = {
+            "cells": [
+                _md_protocol_cell("Exercice 1 : erreur nulle contre soi-meme"),
+                _lean_stub_code_cell(1),
+            ],
+            "metadata": {"kernelspec": {"name": "lean4"}},
+        }
+        path = _write_nb(tmp_path, nb)
+        leaks = audit_notebook(path)
+        md_leaks = [l for l in leaks if l["type"] == "md_solution_protocol"]
+        assert len(md_leaks) == 1
+        assert md_leaks[0]["severity"] == "FLAG"
