@@ -27,9 +27,18 @@ ENV DEBIAN_FRONTEND=noninteractive
 # upload-artifact l'utilisent, sinon repli gzip (fonctionne, plus lent).
 # Deliberement PAS sudo : les conteneurs tournent en --security-opt=no-new-
 # privileges, il serait inerte et affaiblirait la posture.
+# PEP 668 : Debian marque son Python systeme `externally-managed`, donc
+# `pip install <x>` est REFUSE la ou il passe sur ubuntu-latest -- un workflow
+# qui fait `import yaml || pip install pyyaml` meurt sur le pip (run
+# 33651913220, Unique Check-Run Names Guard). Le conteneur est jetable : lui
+# rendre le comportement de la machine GitHub-hosted qu'il remplace est le
+# but, pas un risque. python3-yaml en plus, pour que le cas courant n'ait meme
+# pas besoin de pip (pas d'aller-retour reseau).
+ENV PIP_BREAK_SYSTEM_PACKAGES=1
+
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-       ca-certificates curl git jq unzip tar gzip xz-utils python3 python3-pip python-is-python3 \
+       ca-certificates curl git jq unzip tar gzip xz-utils python3 python3-pip python-is-python3 python3-yaml \
        libicu74 \
        lsb-release zstd wget \
     && rm -rf /var/lib/apt/lists/*
