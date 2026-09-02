@@ -1,7 +1,6 @@
 ---
 theme: ../theme-ia101
 title: "Intelligence Artificielle - Acculturation"
-<!-- c.655 retrigger: amend trivial doc to re-trigger PR gate (Tell c.649-L2 ★). Substance intacte. -->
 info: IA 101 - Panorama complet de l'intelligence artificielle
 paginate: true
 drawings:
