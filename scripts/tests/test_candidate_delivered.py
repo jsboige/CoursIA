@@ -19,7 +19,14 @@ import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from candidate_delivered import classify, is_epic, _parse_cross_ref_events  # noqa: E402
+from candidate_delivered import (  # noqa: E402
+    classify,
+    is_epic,
+    human_retraction,
+    _is_bot,
+    _parse_cross_ref_events,
+    _parse_label_events,
+)
 
 
 def _issue(title="x", labels=None, created_at="2026-08-01T00:00:00Z", comments=None):
@@ -181,6 +188,163 @@ def test_parse_cross_ref_events_empty_when_no_source_number():
     events = [{"event": "cross-referenced", "source": {"issue": {}}}]
     assert _parse_cross_ref_events(events) == []
     assert _parse_cross_ref_events(None) == []
+
+
+
+
+# ---------------------------------------------------------------------------
+# #14307 -- a human retraction is a verdict, and it sticks.
+#
+# These fixtures are written to be validated by their FALSE NEGATIVES, not by
+# their hits: the two that matter are the ones a naive "was it ever unlabeled?"
+# predicate gets wrong in silence -- a bot self-retraction (which must stay
+# revisable) and a human who re-poses the label (which must hand control back).
+# ---------------------------------------------------------------------------
+
+def _lab(event, actor, created_at):
+    return {"event": event, "actor": actor, "created_at": created_at}
+
+
+# The shape measured on #10038 / #11601 / #10475: bot poses, human removes with
+# a written verdict, a later merge cites the issue, bot poses again.
+_BOT = "github-actions[bot]"
+_DELIVERED_SILENT = [{"pr_number": 13939, "merged_at": "2026-09-02T08:51:58Z"}]
+
+
+def test_human_retraction_sticks_over_a_later_merge():
+    # Without the memory this is a textbook "candidate": merged PR, no comment
+    # after it. #10038 went round this loop three times.
+    issue = _issue(title="i18n notebooks : T4 renderer + CI autonome")
+    events = [
+        _lab("labeled", _BOT, "2026-08-30T06:01:00Z"),
+        _lab("unlabeled", "jsboige", "2026-08-31T05:25:49Z"),
+        _lab("labeled", _BOT, "2026-09-02T10:28:58Z"),
+    ]
+    verdict, why = classify(issue, _DELIVERED_SILENT, events)
+    assert verdict == "retracted"
+    assert "jsboige" in why and "2026-08-31" in why
+
+
+def test_bot_self_retraction_does_not_stick():
+    # FALSE NEGATIVE #1. The sweep retracts its own label when an issue becomes
+    # active or in_flight (#11100). That is hysteresis, not a verdict: the next
+    # run must be free to re-pose. Measured on #12100, #11985, #12389.
+    issue = _issue(title="ordinary leaf issue")
+    events = [
+        _lab("labeled", _BOT, "2026-08-23T07:10:00Z"),
+        _lab("unlabeled", _BOT, "2026-09-01T06:10:00Z"),
+    ]
+    assert classify(issue, _DELIVERED_SILENT, events)[0] == "candidate"
+
+
+def test_human_relabel_hands_control_back():
+    # FALSE NEGATIVE #2. The escape hatch: a human who re-poses the label by
+    # hand makes their own `labeled` the latest human event, so the sweep
+    # resumes normal service instead of being locked out forever.
+    issue = _issue(title="ordinary leaf issue")
+    events = [
+        _lab("labeled", _BOT, "2026-08-13T06:10:00Z"),
+        _lab("unlabeled", "jsboige", "2026-08-16T08:36:00Z"),
+        _lab("labeled", "jsboige", "2026-08-20T09:00:00Z"),
+    ]
+    assert classify(issue, _DELIVERED_SILENT, events)[0] == "candidate"
+
+
+def test_worker_login_counts_as_human():
+    # Retractions come from lane logins too (#13107 was retracted by
+    # myia-po-2023). Only a "...[bot]" suffix marks a non-verdict.
+    issue = _issue(title="ordinary leaf issue")
+    events = [_lab("unlabeled", "myia-po-2023", "2026-08-30T19:41:00Z")]
+    assert classify(issue, _DELIVERED_SILENT, events)[0] == "retracted"
+
+
+def test_no_label_events_is_unaffected():
+    # Backward compatibility: the parameter defaults to None ("not consulted"),
+    # and an empty history is not a retraction.
+    issue = _issue(title="ordinary leaf issue")
+    assert classify(issue, _DELIVERED_SILENT)[0] == "candidate"
+    assert classify(issue, _DELIVERED_SILENT, [])[0] == "candidate"
+    assert classify(issue, _DELIVERED_SILENT, None)[0] == "candidate"
+
+
+def test_retraction_pre_empts_in_flight():
+    # Precedence: a standing human verdict is not evidence about delivery, so
+    # it is answered before the reference heuristics. Both paths yield "no
+    # label", but the printed verdict must name the human decision.
+    issue = _issue(title="ordinary leaf issue")
+    refs = [{"pr_number": 999, "merged_at": None, "is_pr": True, "state": "open"}]
+    events = [_lab("unlabeled", "jsboige", "2026-08-31T05:25:49Z")]
+    assert classify(issue, refs, events)[0] == "retracted"
+
+
+def test_epic_still_wins_over_retraction():
+    # An EPIC is a structural exclusion, unaffected by label history.
+    issue = _issue(title="[EPIC] rollout multi-phase")
+    events = [_lab("unlabeled", "jsboige", "2026-08-31T05:25:49Z")]
+    assert classify(issue, _DELIVERED_SILENT, events)[0] == "epic"
+
+
+def test_unknown_actor_is_treated_as_human():
+    # Fail towards preserving a verdict: an unreadable actor must not silently
+    # downgrade a removal into revisable hysteresis.
+    issue = _issue(title="ordinary leaf issue")
+    events = [_lab("unlabeled", "", "2026-08-31T05:25:49Z")]
+    assert classify(issue, _DELIVERED_SILENT, events)[0] == "retracted"
+
+
+def test_is_bot_recognises_app_logins():
+    assert _is_bot("github-actions[bot]")
+    assert _is_bot("dependabot[bot]")
+    assert not _is_bot("jsboige")
+    assert not _is_bot("myia-po-2023")
+    assert not _is_bot("")
+
+
+def test_human_retraction_orders_by_timestamp_not_position():
+    # The timeline arrives chronologically, but the predicate must not depend
+    # on it: order the human events by their own timestamps.
+    out_of_order = [
+        _lab("labeled", "jsboige", "2026-08-20T09:00:00Z"),
+        _lab("unlabeled", "jsboige", "2026-08-16T08:36:00Z"),
+    ]
+    assert human_retraction(out_of_order) is None
+    assert human_retraction([]) is None
+    assert human_retraction(None) is None
+
+
+def test_parse_label_events_filters_other_labels_and_events():
+    raw = [
+        {"event": "labeled", "label": {"name": "candidate-delivered"},
+         "actor": {"login": _BOT}, "created_at": "2026-08-30T06:01:00Z"},
+        {"event": "unlabeled", "label": {"name": "base-stale-14d"},
+         "actor": {"login": "jsboige"}, "created_at": "2026-08-30T07:00:00Z"},
+        {"event": "cross-referenced", "created_at": "2026-08-30T08:00:00Z"},
+        {"event": "labeled", "actor": {"login": _BOT},
+         "created_at": "2026-08-30T09:00:00Z"},  # no label payload -> dropped
+        {"event": "unlabeled", "label": {"name": "candidate-delivered"},
+         "actor": None, "created_at": "2026-08-31T05:25:49Z"},
+    ]
+    got = _parse_label_events(raw, "candidate-delivered")
+    assert [(e["event"], e["actor"]) for e in got] == [
+        ("labeled", _BOT), ("unlabeled", "")]
+    assert _parse_label_events([], "candidate-delivered") == []
+    assert _parse_label_events(None, "candidate-delivered") == []
+
+
+def test_parse_label_events_feeds_classify_retracted():
+    # End-to-end over the pure pair, as _parse_cross_ref_events is tested above:
+    # a raw timeline slice reproduces the #10038 verdict without any network.
+    raw = [
+        {"event": "labeled", "label": {"name": "candidate-delivered"},
+         "actor": {"login": _BOT}, "created_at": "2026-08-30T06:01:00Z"},
+        {"event": "unlabeled", "label": {"name": "candidate-delivered"},
+         "actor": {"login": "jsboige"}, "created_at": "2026-08-31T05:25:49Z"},
+        {"event": "labeled", "label": {"name": "candidate-delivered"},
+         "actor": {"login": _BOT}, "created_at": "2026-09-02T10:28:58Z"},
+    ]
+    events = _parse_label_events(raw, "candidate-delivered")
+    verdict, _ = classify(_issue(), _DELIVERED_SILENT, events)
+    assert verdict == "retracted"
 
 
 if __name__ == "__main__":
