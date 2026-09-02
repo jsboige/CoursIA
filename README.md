@@ -42,6 +42,21 @@ MyIA.AI.Notebooks/
 
 Le dépôt rassemble les notebooks pédagogiques, leurs projets Lean 4 compagnons et un corpus de traduction structuré sous `MyIA.AI.Notebooks/`. Le [catalogue généré](COURSE_CATALOG.generated.md) fait foi sur les comptes et statuts par série ; les références Lean et de traduction documentent leurs propres mesures à jour.
 
+Le graphe ci-dessous encode les **prérequis entre séries** déjà énoncés en prose dans « Parcours recommandés » : chaque arête cite la phrase qui la motive dans la section suivante.
+
+```mermaid
+flowchart LR
+  Search --> Sudoku
+  Sudoku --> ML
+  ML --> GenAI
+  ML --> QuantConnect
+  Probas --> GameTheory
+  GameTheory --> RL
+  SymbolicAI --> CaseStudies
+```
+
+**Séries sans prérequis nommés** (orphelines explicites, à ne pas relier silencieusement) : `IIT` (recherche autonome sur la conscience et l'émergence causale, cf. section « Explorer les frontières de recherche »), `cross-series` (applications transverses, agrègent les briques des autres séries sans en dépendre à un point d'entrée unique). Les références Lean 4 et les projets QuantConnect vivent sous leurs séries respectives et n'apparaissent pas comme nœuds propres.
+
 ---
 
 ## Parcours recommandés
