@@ -20,9 +20,9 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 
 | Métrique | Valeur |
 |----------|--------|
-| Notebooks | 255 |
+| Notebooks | 257 |
 | PRODUCTION | 0 |
-| BETA | 249 |
+| BETA | 251 |
 | ALPHA | 6 |
 
 ## SymbolicAI (1 notebooks)
@@ -47,7 +47,7 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 | 10 | Argument_Analysis_Agentic-5-jtms : Truth Maintenance… | BETA | Oui |
 | 11 | ArgumentProfile : la fiche d'identite… | BETA | Oui |
 | 12 | Argumentum : la carte de sophisme, du nœud de taxonomie… | BETA | Oui |
-| 13 | Instrument G_t^arg -> G_{t+1}^arg — graphes… | BETA | Oui |
+| 13 | Graphes d'argumentation datés — l'instrument $G_t^{arg}… | BETA | Oui |
 | 14 | Argumentation abstraite de Dung — sémantiques grounded,… | BETA | Oui |
 | 15 | Analyse Rhétorique Collaborative par Agents IA -… | BETA | Non |
 | 16 | Routage multi-backend : decider ou echouer bruyamment | BETA | Oui |
@@ -63,14 +63,14 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 | 26 | Argument_Analysis — Argumentation basée sur les valeurs… | BETA | Oui |
 | 27 | I2 - Génération de contre-arguments par raisonnement… | BETA | Oui |
 
-## SymbolicAI/Lean (47 notebooks)
+## SymbolicAI/Lean (48 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | Lean 4 - Installation et Configuration | BETA | Non |
 | 2 | Lean 10 : LeanDojo - ML/LLM Theorem Proving | BETA | Non |
-| 3 | Lean 11b - TorchLean : Implémentation Python des… | BETA | Non |
-| 4 | Lean 11 - TorchLean : Réseaux de Neurones Formellement… | BETA | Non |
+| 3 | Lean 11 - TorchLean : Réseaux de Neurones Formellement… | BETA | Non |
+| 4 | Lean 11b - TorchLean : Implémentation Python des… | BETA | Non |
 | 5 | Lean-12 : Le Theoreme de Sensibilite (Huang 2019) | BETA | Non |
 | 6 | Lean-12b — Théorème de Sensibilité de Huang (companion… | BETA | Non |
 | 7 | Lean-13 : Le Theoreme de Kochen-Specker (Cabello 18… | BETA | Non |
@@ -107,13 +107,14 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 | 38 | Lean-28 : Hommage à James R. Munkres — le cours 18.901… | BETA | Non |
 | 39 | Lean-29 : coloration d'arêtes et conjecture de Tutte —… | BETA | Non |
 | 40 | Lean 3 - Propositions et Preuves | BETA | Non |
-| 41 | Lean 4 - Quantificateurs et Logique du Premier Ordre | BETA | Non |
-| 42 | Lean 5 - Mode Tactique | BETA | Non |
-| 43 | Lean 6 - Mathlib4 : La Bibliotheque Mathematique | BETA | Non |
-| 44 | Lean 7 - Integration des LLMs pour l'Assistance aux… | BETA | Non |
-| 45 | Lean 7b - Exemples Progressifs et Benchmarks | BETA | Non |
-| 46 | Lean 8 - Agents Autonomes pour Demonstration de… | BETA | Non |
-| 47 | Lean 9 : Multi-Agents avec Semantic Kernel | BETA | Non |
+| 41 | Lean-30 : Le problème de Hopf sur S⁶ — digestion d'une… | BETA | Non |
+| 42 | Lean 4 - Quantificateurs et Logique du Premier Ordre | BETA | Non |
+| 43 | Lean 5 - Mode Tactique | BETA | Non |
+| 44 | Lean 6 - Mathlib4 : La Bibliotheque Mathematique | BETA | Non |
+| 45 | Lean 7 - Integration des LLMs pour l'Assistance aux… | BETA | Non |
+| 46 | Lean 7b - Exemples Progressifs et Benchmarks | BETA | Non |
+| 47 | Lean 8 - Agents Autonomes pour Demonstration de… | BETA | Non |
+| 48 | Lean 9 : Multi-Agents avec Semantic Kernel | BETA | Non |
 
 ## SymbolicAI/Planners (25 notebooks)
 
@@ -141,9 +142,9 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 | 20 | Planners-9-HTN (C#) | BETA | Oui |
 | 21 | Planners-9-HTN - Planification Hiérarchique | BETA | Oui |
 | 22 | Planners-10: LLMs pour la Planification | BETA | Non |
-| 23 | Planners-11: Unified Planning | BETA | Oui |
-| 24 | Planners-12: Learning to Plan avec LOOP | BETA | Non |
-| 25 | Planners-14: Le LLM comme reducteur d'espace de… | BETA | Non |
+| 23 | Planners-10b: Le LLM comme reducteur d'espace de… | BETA | Non |
+| 24 | Planners-11: Unified Planning | BETA | Oui |
+| 25 | Planners-12: Learning to Plan avec LOOP | BETA | Non |
 
 ## SymbolicAI/SMT (45 notebooks)
 
@@ -151,17 +152,17 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 |---|----------|----------|------------|
 | 1 | Z3 (C# / .NET) — Introduction au solveur SMT | BETA | Oui |
 | 2 | Z3-Python 01 — Introduction a la resolution de… | BETA | Oui |
-| 3 | Z3 (C# / .NET) — Sudoku par contraintes | BETA | Oui |
-| 4 | Z3-Python 02 — Sudoku comme problème de satisfaction de… | BETA | Oui |
-| 5 | Z3 (C# / .NET) — Tactiques, théories BitVec et Array | BETA | Oui |
-| 6 | Z3-Python 03 — Tactiques et théories | BETA | Oui |
-| 7 | Z3 (C# / .NET) — Théorie des chaînes et expressions… | BETA | Oui |
-| 8 | Z3-Python 04 — Chaînes de caractères et expressions… | BETA | Oui |
-| 9 | Z3 (C# / .NET) — Quantificateurs et preuves par… | BETA | Oui |
-| 10 | Z3-Python 05 — Quantificateurs et preuves formelles | BETA | Oui |
-| 11 | Z3-Python 06 -- Optimisation avancee (twin C#) | BETA | Oui |
-| 12 | Z3-Python 06 — Optimisation avancee | BETA | Oui |
-| 13 | Z3-Python 07 — Du style declaratif LINQ au solveur Z3… | BETA | Oui |
+| 3 | Z3-Python 01b — Du style declaratif LINQ au solveur Z3… | BETA | Oui |
+| 4 | Z3 (C# / .NET) — Sudoku par contraintes | BETA | Oui |
+| 5 | Z3-Python 02 — Sudoku comme problème de satisfaction de… | BETA | Oui |
+| 6 | Z3 (C# / .NET) — Tactiques, théories BitVec et Array | BETA | Oui |
+| 7 | Z3-Python 03 — Tactiques et théories | BETA | Oui |
+| 8 | Z3 (C# / .NET) — Théorie des chaînes et expressions… | BETA | Oui |
+| 9 | Z3-Python 04 — Chaînes de caractères et expressions… | BETA | Oui |
+| 10 | Z3 (C# / .NET) — Quantificateurs et preuves par… | BETA | Oui |
+| 11 | Z3-Python 05 — Quantificateurs et preuves formelles | BETA | Oui |
+| 12 | Z3-Python 06 -- Optimisation avancee (twin C#) | BETA | Oui |
+| 13 | Z3-Python 06 — Optimisation avancee | BETA | Oui |
 | 14 | Z3-Python-08 : Ordonnancement de tâches (Job-Shop… | BETA | Oui |
 | 15 | Z3-Python-09 : L'enigme d'Einstein (Zebra puzzle) | BETA | Oui |
 | 16 | 10. Cryptarithmes (SEND + MORE = MONEY) | BETA | Oui |
@@ -287,7 +288,7 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 | 20 | SL-8 - ILP Moderne et Knowledge Graphs | BETA | Oui |
 | 21 | SL-9 - LLMs et Apprentissage Symbolique : Generation et… | BETA | Non |
 
-## SymbolicAI/Tweety (33 notebooks)
+## SymbolicAI/Tweety (34 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -313,14 +314,15 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 | 20 | Tweety-5 : Argumentation Abstraite de Dung (C# / .NET)… | BETA | Oui |
 | 21 | Argumentation Abstraite (Dung) | BETA | Oui |
 | 22 | Tweety-5b — Théorie de l'argumentation de Dung… | BETA | Non |
-| 23 | Tweety-6 — Argumentation structuree (twin C# / .NET… | BETA | Oui |
-| 24 | Argumentation Structuree | BETA | Oui |
-| 25 | Tweety-7a : Frameworks d'Argumentation Etendus (C#) | BETA | Oui |
-| 26 | Frameworks d'Argumentation Étendus | BETA | Oui |
-| 27 | Tweety-7b - Ranking Probabilistic Conditional Logic en… | BETA | Oui |
-| 28 | Sémantiques de Classement et Argumentation Probabiliste | BETA | Oui |
-| 29 | Dialogues Multi-Agents Argumentatifs (twin C#) | BETA | Oui |
-| 30 | Dialogues Multi-Agents Argumentatifs | BETA | Oui |
-| 31 | Préférences et Théorie du Vote en C# / .NET (port natif… | ALPHA | Oui |
-| 32 | Préférences et Théorie du Vote | ALPHA | Oui |
-| 33 | Tweety .NET - Probe Phase 1 axe 2 : initialisation du… | BETA | Oui |
+| 23 | Tweety-5d — Synthèse certifiée d'extensions stables :… | BETA | Non |
+| 24 | Tweety-6 — Argumentation structuree (twin C# / .NET… | BETA | Oui |
+| 25 | Argumentation Structuree | BETA | Oui |
+| 26 | Tweety-7a : Frameworks d'Argumentation Etendus (C#) | BETA | Oui |
+| 27 | Frameworks d'Argumentation Étendus | BETA | Oui |
+| 28 | Tweety-7b - Ranking Probabilistic Conditional Logic en… | BETA | Oui |
+| 29 | Sémantiques de Classement et Argumentation Probabiliste | BETA | Oui |
+| 30 | Dialogues Multi-Agents Argumentatifs (twin C#) | BETA | Oui |
+| 31 | Dialogues Multi-Agents Argumentatifs | BETA | Oui |
+| 32 | Préférences et Théorie du Vote en C# / .NET (port natif… | ALPHA | Oui |
+| 33 | Préférences et Théorie du Vote | ALPHA | Oui |
+| 34 | Tweety .NET - Probe Phase 1 axe 2 : initialisation du… | BETA | Oui |

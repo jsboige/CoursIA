@@ -411,6 +411,24 @@ def test_untagged_body_is_unassessable_not_false(tmp_path, capsys):
     assert "unassessable" in res["reason"]
 
 
+def test_prose_lowercase_token_cap_reached_null_not_false(tmp_path, capsys):
+    # #13633 -- the exact #13550 defect: a body carrying NO `Grain:` key but a
+    # lowercase noun phrase "le grain MED/tooling suivant" plus a Lane signature
+    # line used to arm parse_grain into {'tier': 'MED', 'lane': ...}, and the
+    # gate returned `cap_reached: false` ("not LIGHT (effective MED)") -- the
+    # green that #9465's `null` exists to prevent. It must be the third state.
+    body = (
+        "#13544 (renderer hard gate before rerender) est le grain MED/tooling "
+        "suivant, priorite P1.\n"
+        "Lane myia-po-2027:CoursIA-2 -- c.1331p250"
+    )
+    rc, res = _check_pr(tmp_path, [], body, capsys=capsys)
+    assert rc == 0
+    assert res["cap_reached"] is None    # NOT False -- nothing was evaluated
+    assert "unassessable" in res["reason"]
+    assert "MED" not in res.get("reason", "")  # tier must not be read from prose
+
+
 def test_light_without_lane_is_unassessable(tmp_path, capsys):
     # Tier known, but the budget is per-lane: no lane -> no denominator.
     rc, res = _check_pr(tmp_path, [], "Grain: LIGHT/guard -- no lane here", capsys=capsys)
@@ -891,6 +909,32 @@ def test_genre_from_paths_non_md_abstains_and_md_classification():
     assert vlc._genre_from_paths(["README.md"]) == "readme"
     # md-only elsewhere, non-readme -> abstain (cannot classify confidently).
     assert vlc._genre_from_paths(["MyIA.AI.Notebooks/ML/notes.md"]) is None
+
+
+def test_genre_from_paths_ledger_canonique_abstains_13965():
+    """#13965: un ledger canonique md-only sous docs/ledgers/ ne doit PAS
+    inferer `docs` -- sinon le GENRE-MISMATCH frappe systematiquement les
+    declarations `ledger` honnete (le ledger genus vit SOUS docs/ par
+    convention, le declarant ne peut pas l'eviter). L'abstention est le
+    seul signal qui ne cree pas de faux positif neuf.
+
+    Controle positif : un .md sous `docs/` qui n'est PAS un ledger
+    (ex. `docs/reference/x.md`) continue d'inferer `docs` -- le fix est
+    strictement cantonne a `docs/ledgers/`.
+    """
+    # Le ledger canonique : md-only sous docs/ledgers/ -> abstention.
+    assert vlc._genre_from_paths(["docs/ledgers/12204-ict-chantier-1-a2.md"]) is None
+    # Mixe de plusieurs ledgers (cas reel tranche MED/ledger) -> abstention.
+    assert vlc._genre_from_paths([
+        "docs/ledgers/12204-ict-chantier-1-a2.md",
+        "docs/ledgers/12204-ict-chantier-1-a3.md",
+    ]) is None
+    # Controle positif : un .md sous docs/ hors ledgers continue d'inferer `docs`.
+    assert vlc._genre_from_paths(["docs/reference/x.md"]) == "docs"
+    # Controle positif : un .claude/ rule md-only -> `docs` (la branche
+    # docs/.claude/ est preservee hors du chemin `docs/ledgers/` ; on teste
+    # ici SANS ledger pour ne pas declencher l'abstention ajoutee par #13965).
+    assert vlc._genre_from_paths([".claude/rules/git-workflow.md"]) == "docs"
 
 
 def test_signal_genre_mismatch_no_mismatch_10090_harness_rules(tmp_path, capsys):

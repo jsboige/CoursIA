@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Source-level lint for GFM markdown table syntax defects.
 
-Detects five pathologies that break table rendering in the GitHub preview
+Detects seven pathologies that break table rendering in the GitHub preview
 (source-level, render-agnostic -- it flags the *convention violation* that
 breaks rendering on at least one common renderer, not a post-render check):
 
@@ -24,6 +24,12 @@ breaks rendering on at least one common renderer, not a post-render check):
     literal pipes + ``\n``). Confirmed on 2.8c-Borne-Temoin-Concentration cell[12]
     (#12220). Escaping the pipe as ``\\|`` inside the code span is safe on every
     renderer -- this is the actionable fix.
+
+  - **MATH_SPAN_PIPE** (notebooks only): a raw ``|`` inside ``$...$`` within a
+    recognized table row. GitHub's notebook renderer splits cells before math
+    rendering, so ``$|F_B| / |A|$`` creates phantom columns. Regular ``.md``
+    rendering remains out of scope because it handles this notation correctly.
+    The portable notebook fix is pipe-free LaTeX such as ``\\lvert``/``\\rvert``.
 
   - **NO_SEP**: a run of 3+ consecutive ``|``-shaped lines with NO
     ``:?-+:?`` separator row among them. GFM does not recognize the block as a
@@ -335,6 +341,30 @@ def _has_bare_pipe_in_code_span(line):
     return False
 
 
+def _has_bare_pipe_in_math_span(line):
+    """True if a real inline-math span holds a raw ``|``.
+
+    ``MATH_SPAN_RE`` can conservatively bridge two currency markers across a cell
+    delimiter (``Input ($/1M) | Output ($/1M)``). A whitespace-padded pipe inside
+    such a match is the table delimiter, not math content, so it remains excluded.
+    Already escaped ``\\|`` forms are safe and excluded too.
+    """
+    for match in MATH_SPAN_RE.finditer(line):
+        span = ESCAPED_PIPE_RE.sub('', match.group(0))
+        for index, char in enumerate(span):
+            if char != '|':
+                continue
+            is_padded_delimiter = (
+                index > 0
+                and index + 1 < len(span)
+                and span[index - 1].isspace()
+                and span[index + 1].isspace()
+            )
+            if not is_padded_delimiter:
+                return True
+    return False
+
+
 def _is_blank(line):
     # A bare blockquote marker ``>`` (optionally followed by whitespace) renders
     # as a blank separator within a blockquote -- it provides the same visual
@@ -349,8 +379,13 @@ def _is_blank(line):
 # Pathology detection on a cell/file's lines
 # ---------------------------------------------------------------------------
 
-def detect_md_table_syntax(lines, source_label="line"):
-    """Detect the 4 pathologies in a list of source lines.
+def detect_md_table_syntax(
+        lines, source_label="line", detect_math_span_pipes=False):
+    """Detect table pathologies in a list of source lines.
+
+    ``detect_math_span_pipes`` is notebook-specific: the notebook renderer splits
+    table cells before rendering inline math, while regular GitHub Markdown renders
+    raw absolute-value bars inside math spans correctly.
 
     Returns a list of findings: dict(pathology, line, detail, snippet).
     `line` is 1-indexed within `lines`. `source_label` is used only for the
@@ -428,6 +463,18 @@ def detect_md_table_syntax(lines, source_label="line"):
                             "pipe brute dans un code span (``...``) d'une cellule "
                             "de table -> le renderer notebook decoupe la cellule "
                             "et casse la table ; echapper en '\\|'"
+                        ),
+                        "snippet": c_line.strip()[:80],
+                    })
+                if (detect_math_span_pipes
+                        and _has_bare_pipe_in_math_span(c_line)):
+                    findings.append({
+                        "pathology": "MATH_SPAN_PIPE",
+                        "line": c_lnum,
+                        "detail": (
+                            "pipe brute dans un span mathematique ($...$) d'une "
+                            "cellule de table -> le renderer notebook decoupe la "
+                            "cellule et casse la table ; utiliser \\lvert/\\rvert"
                         ),
                         "snippet": c_line.strip()[:80],
                     })
@@ -552,7 +599,7 @@ def scan_notebook(path):
             continue
         src = cell.get("source", [])
         lines = "".join(src).split("\n") if isinstance(src, list) else src.split("\n")
-        for f in detect_md_table_syntax(lines):
+        for f in detect_md_table_syntax(lines, detect_math_span_pipes=True):
             findings.append({"cell_index": ci, **f})
     return {"path": str(path), "error": None, "findings": findings}
 

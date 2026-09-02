@@ -56,6 +56,12 @@
       csharp_sha: 81c727dcd82f2344d3bf783a31f65f3dc970e4ff
       content_python_sha: 974d07532317c1dd4b9463b4990a66d50094b53572a317d69d2de5185a0b7515
       content_csharp_sha: 5d2b8d0dc0e83e679ffefc1ce047a17dfc36ffd2090afa272a086723136274f8
+    - date: "2026-08-31"
+      by: myia-po-2023:CoursIA-2
+      python_sha: 8995a777817fbf2395d46f8b45081bfe5574c665
+      csharp_sha: 7d2db89b1cb6146d80ce7450ba61a8f7ad5c11f4
+      content_python_sha: 3cc381796e3e07a782b300ff42bd819eb74bafa5a472c3d30004b1aece0d1287
+      content_csharp_sha: 68baf20446bce9fd6b867395086d78eca7f2b39220bb7f896d83cee0d0c54155
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Paire DOUBLE-FACE SOTA : Annexe SAT double-face (2026-08-20, axe 5 PythonNet #10382, atterrie sur main) : les DEUX jumeaux encodent l existence d une SWF Pareto+IIA+non-dictature en CNF (216 profils, 1296 litteraux, 36453 clauses) et resoluent NATIVEMENT via pysat (Glucose3/MiniSat22/CaDiCaL103 -> UNSAT x3, frontiere |A|=2 SAT) cote Python, par pont PythonNet 3.1.0 cote C# -- instance et verdicts identiques. Le socle (Arrow 1951, 3 axiomes, Geanakoplos 2005) est preserve. Reprise post-merge (2026-08-22, tranche Geanakoplos, #10382) : le C# porte desormais AUSSI la preuve Geanakoplos complete -- 2.1/2.2/2.3 demos construites, 2.3-bis test exhaustif (216 profils, pivot RECALCULE par profil, durcissement du test stochastique Python ; Borda 58/216 non-concordances, pivots V1=189/V2=27/V0=0, Dictatoriale 0/216), 2.4 theoreme final (quotes Arrow.lean aux lignes mesurees 691/710/288/418/603, 714 lignes, 0 sorry code), synthese visuelle ScottPlot 5.0.55 (meme verdicts et codes couleur que matplotlib). Asymetries residuelles ASSUMEES = idiomes de demonstration : Python stochastique+matplotlib vs C# exhaustif+BCL/ScottPlot. parity_level: semantic preserve."
 

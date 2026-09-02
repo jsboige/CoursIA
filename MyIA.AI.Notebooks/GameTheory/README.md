@@ -4,16 +4,16 @@
 
 <!-- CATALOG-STATUS
 series: GameTheory
-pedagogical_count: 89
-breakdown: root=82, SocialChoice=7
-maturity: BETA=84, ALPHA=3, DRAFT=2
+pedagogical_count: 91
+breakdown: root=83, SocialChoice=8
+maturity: BETA=86, ALPHA=3, DRAFT=2
 -->
 
 La théorie des jeux est le langage mathématique de la stratégie. Elle modélise les situations où des agents rationnels prennent des décisions dont le résultat dépend des choix des autres : enchères, négociations commerciales, élections, poker, guerre commerciale, allocation de ressources. Cette dualité entre coopération et compétition est omniprésente en économie, en sciences politiques et en informatique (mécanismes de vote, smart contracts, réseaux). Le prix Nobel d'économie a été décerné à des théoriciens des jeux à sept reprises entre 1994 et 2020 — c'est un domaine vivant et influent.
 
 Cette série vous forme sur deux axes complémentaires. Le premier est **pratique** : simuler des jeux avec Nashpy et OpenSpiel, calculer des équilibres de Nash, organiser des tournois itératifs (dilemme du prisonnier, Axelrod), et explorer les algorithmes modernes (CFR, Deep CFR). Le second est **formel** : prouver des résultats en Lean 4 — existence de Nash (Brouwer/Kakutani), théorème d'Arrow, valeur de Shapley. À la fin, vous maîtriserez aussi bien la théorie des jeux coopératifs (Shapley, Core) que non-coopératifs (Nash, SPE), et vous saurez formaliser ces résultats dans un assistant de preuve.
 
-**À qui s'adresse cette série** : étudiants en économie, informatique et mathématiques appliquées. Le fil Python s'exécute nativement avec Nashpy, NumPy, SciPy et Z3 ; seuls GT-13 et GT-17 demandent l'environnement WSL OpenSpiel. Les side tracks Lean (`2b`, `4b`, `5b`, `8b`, `8d`, `11b`, `15b`, `17c`) utilisent le kernel Lean 4 sous WSL ; les side tracks `c` restent des notebooks Python natifs. Aucun prérequis en théorie des jeux : les concepts sont introduits progressivement depuis les matrices de gains. Une familiarité avec l'algèbre linéaire et les probabilités de base est utile.
+**À qui s'adresse cette série** : étudiants en économie, informatique et mathématiques appliquées. Le fil Python s'exécute nativement avec Nashpy, NumPy, SciPy et Z3 ; seuls GT-13 et GT-17 demandent l'environnement WSL OpenSpiel. Les side tracks Lean (`2b`, `4b`, `5b`, `8b`, `8d`, `11b`, `15b`, `17c`, `17d`) utilisent le kernel Lean 4 sous WSL ; les side tracks `c` restent des notebooks Python natifs. Aucun prérequis en théorie des jeux : les concepts sont introduits progressivement depuis les matrices de gains. Une familiarité avec l'algèbre linéaire et les probabilités de base est utile.
 
 ## Pourquoi cette série
 
@@ -67,7 +67,7 @@ La Phase 2 enrichit le modèle avec le temps et l'incertitude. Les notebooks 7-9
 
 ### Phase 3 : Frontières — algorithmes, coopération, mécanismes (Notebooks 13-17 + sous-série SocialChoice + side tracks b/c, ~10h30)
 
-La Phase 3 couvre les sujets avancés et les applications. Le notebook 13 (CFR) introduit Counterfactual Regret Minimization et ses variantes (MCCFR, Deep CFR), au cœur du poker AI moderne. Le notebook 14 (Differential Games) explore les jeux continus (Stackelberg, boucle ouverte/fermée). Les notebooks 15-15b-15c couvrent la théorie coopérative : valeur de Shapley (avec axiomes formels en Lean), Core, Bondareva-Shapley. Le notebook 16 et la sous-série [SocialChoice/](SocialChoice/) constituent le bloc le plus riche : design de mécanismes (révélation, VCG), choix social (Arrow, Gibbard-Satterthwaite, Sen en Lean), et encodage SAT/Z3 des impossibilités. Le notebook 17 (Multi-Agent RL) relie la théorie des jeux à l'apprentissage par renforcement (NFSP, PSRO, AlphaZero). Le companion **17b** (Asymmetric-Information, EPIC #12844) traite l'information asymétrique dans sa forme actuarielle : les quatre modèles fondateurs d'Akerlof (point fixe de participation, marché des citrons), Spence (signal coûteux), Rothschild-Stiglitz (screening assurantiel) et Wilson/Miyazaki (règle anticipative bornée). Son extension formelle **17c** (Lean-Lemons-Certificat) exécute en direct le certificat du lake `asymmetric_information_lean` : seuil de pooling exact (`poolingTenable_iff_cross`), monotonie, clôture axiomatique minimale — et rejoue la spirale de prix d'Akerlof dans le langage même du certificat. Les trois figures suivantes échantillonnent cette phase : l'apprentissage d'un équilibre en information imparfaite (CFR), la stabilité coopérative (Core et Shapley), et la convergence d'agents en auto-apprentissage.
+La Phase 3 couvre les sujets avancés et les applications. Le notebook 13 (CFR) introduit Counterfactual Regret Minimization et ses variantes (MCCFR, Deep CFR), au cœur du poker AI moderne. Le notebook 14 (Differential Games) explore les jeux continus (Stackelberg, boucle ouverte/fermée). Les notebooks 15-15b-15c couvrent la théorie coopérative : valeur de Shapley (avec axiomes formels en Lean), Core, Bondareva-Shapley. Le notebook 16 et la sous-série [SocialChoice/](SocialChoice/) constituent le bloc le plus riche : design de mécanismes (révélation, VCG), choix social (Arrow, Gibbard-Satterthwaite, Sen en Lean), et encodage SAT/Z3 des impossibilités. Le notebook 17 (Multi-Agent RL) relie la théorie des jeux à l'apprentissage par renforcement (NFSP, PSRO, AlphaZero). Le companion **17b** (Asymmetric-Information, EPIC #12844) traite l'information asymétrique dans sa forme actuarielle : les quatre modèles fondateurs d'Akerlof (point fixe de participation, marché des citrons), Spence (signal coûteux), Rothschild-Stiglitz (screening assurantiel) et Wilson/Miyazaki (règle anticipative bornée). Son extension formelle **17c** (Lean-Lemons-Certificat) exécute en direct le certificat du lake `asymmetric_information_lean` : seuil de pooling exact (`poolingTenable_iff_cross`), monotonie, clôture axiomatique minimale — et rejoue la spirale de prix d'Akerlof dans le langage même du certificat. Son jumeau **17d** (Lean-Screening-Signaling) exécute les quatre autres modules du lake : non-existence Rothschild-Stiglitz par cream-skimming (`cream_skim_breaks_nash`), bornes de l'intervalle séparateur de Spence et minimalité de Riley, trame 0/1/plusieurs des équilibres anticipatoires de Wilson-Miyazaki, et pont bayésien certifié (`bridgeStrategy_isBNE`, `decide`) vers le lake amont `lean_game_defs_ext`. Les trois figures suivantes échantillonnent cette phase : l'apprentissage d'un équilibre en information imparfaite (CFR), la stabilité coopérative (Core et Shapley), et la convergence d'agents en auto-apprentissage.
 
 ![CFR sur le poker de Kuhn : à gauche la valeur du jeu converge vers le Nash −0,0556 en 10 000 itérations, à droite les probabilités de mise par carte (J/Q/K) rejoignent le Nash théorique (étoiles).](assets/readme/gt13-cfr.png)
 
@@ -168,6 +168,7 @@ Si vous venez d'un métier de l'assurance, de la banque ou de la régulation et 
 3. **16** (MechanismDesign) : principe de révélation, VCG — la conception d'un contrat sous contrainte d'incitation (~65 min)
 4. **17b** (Asymmetric-Information) : les quatre modèles fondateurs — **Akerlof** (contre-sélection, marché des citrons), **Spence** (signal coûteux), **Rothschild-Stiglitz** (screening assurantiel), **Wilson/Miyazaki** (règle anticipative bornée) (~1h30)
 5. **17c** (Lean-Lemons-Certificat) : le certificat formel du lake `asymmetric_information_lean` exécuté en direct — falaise du seuil de pooling à π = 75 % décidée, monotonie, spirale de prix des trois régimes (~45 min)
+6. **17d** (Lean-Screening-Signaling) : les quatre autres modules du même lake exécutés nativement — `cream_skim_breaks_nash` (non-existence RS), bornes de l'intervalle séparateur et minimalité de Riley, trame 0/1/plusieurs de Wilson-Miyazaki, pont `isBNE` vers le lake amont (~45 min)
 
 Ce parcours se lit sans imposer les phases 1-3 complètes : le notebook 11 introduit seul la notion de type privé, et 17b s'appuie principalement sur cette intuition bayésienne. À l'issue, vous saurez reconnaître et classifier un problème de tarification en information asymétrique — et pourquoi un marché peut s'effondrer en « marché des citrons ».
 
@@ -196,7 +197,7 @@ flowchart TD
         P3["<b>Phase 3</b><br/>Notebooks 13-17<br/>frontières : CFR, mécanismes, RL"]
         P1 --> P2 --> P3
     end
-    LEAN["<b>Fil transversal Lean (b)</b><br/>2b · 4b · 5b · 8b · 8d · 11b · 15b · 17c<br/>preuve formelle des grands théorèmes"]
+    LEAN["<b>Fil transversal Lean (b)</b><br/>2b · 4b · 5b · 8b · 8d · 11b · 15b · 17c · 17d<br/>preuve formelle des grands théorèmes"]
     PYC["<b>Fil transversal Python (c)</b><br/>4c · 6c · 8c · 15c<br/>variantes &amp; visualisations"]
     SC["<b>Sous-série SocialChoice</b><br/>SC-01 → SC-04<br/>Arrow · Sen · vote · SAT/Z3"]
     FIL -.->|"formalise"| LEAN
@@ -236,7 +237,7 @@ flowchart TD
 | 6b | [GameTheory-06b-Lean-RepeatedGames](GameTheory-06b-Lean-RepeatedGames.ipynb) | Lean (lecture) | Compagnon **lake** du 6c : les 7 modules noirs de `game_theory_lean` dévoilés par extraction réelle — Stage (PD forcé par le type), Discounting (seuil $\delta^*$ `coop_ge_deviate_iff`), **`grim_trigger_sustains_iff` 0 sorry #4880**, Folk STRETCH (1 sorry assumé, bord réparé), ConeKernel Bondareva-Farkas, infra SocialChoice ; re-mesure visibilité noirs 7→0 (See #11703) | 35 min |
 | 6c | [GameTheory-06c-RepeatedGames-FolkTheorem](GameTheory-06c-RepeatedGames-FolkTheorem.ipynb) | Python | Compagnon **formel** de GT-6 : horizon fini (effondrement par induction arrière), horizon infini, grim trigger, condition $\delta \geq (T-R)/(T-P)$, Folk Theorem (tout paiement IR faisable est SPNE pour $\delta$ assez proche de 1) | 45 min |
 | 6c (C#) | [GameTheory-06c-RepeatedGames-FolkTheorem-Csharp](GameTheory-06c-RepeatedGames-FolkTheorem-Csharp.ipynb) | .NET (C#) | Twin C# du 6c : **grim trigger + tit-for-tat + Folk Theorem from-scratch** (BCL .NET 9, 0 NuGet), série géométrique $\sum \delta^t g = g/(1-\delta)$, condition de crédibilité $\delta^* = (T-R)/(T-P) = 0.5$, comparaison des seuils grim vs TFT ($2/3$), ensemble faisable & IR en ASCII — parité bit-par-bit avec le Python (See #4956) | 45 min |
-| 6d | [GameTheory-06d-Sympathie-vs-Engagement](GameTheory-06d-Sympathie-vs-Engagement.ipynb) | Python | Protocole d'identification du résidu de GT-06c §7d : **statique comparative** sur les gains d'AUTRUI à gains propres byte-identiques (vérifié en code) — pente du taux de coopération ± IC (5 graines), `alpha` estimé **depuis la pente** par MLE (IC profil), contrôles négatifs (sympathie pure rend son alpha / engagement pur rend pente nulle), verdict « non identifié à ce bruit » admis (See #13042) | 35 min |
+| 6d | [GameTheory-06d-Sympathie-vs-Engagement](GameTheory-06d-Sympathie-vs-Engagement.ipynb) | Python | Protocole consolidé d'identification du résidu de GT-06c §7d : statique comparative sur les gains d'autrui à gains propres gelés — pente ± IC, `alpha` par MLE profilée, contrôle IRLS + bootstrap sur graines, engagement pur et bruité à 95 %, cellule discriminante, verdict « non identifié » et trois exercices avec variantes de puissance (See #13042, #13737) | 45 min |
 
 ### Partie 2 : Jeux dynamiques et raisonnement stratégique (Notebooks 7-12)
 
@@ -284,7 +285,7 @@ flowchart TD
 | 16d | [GameTheory-16d-Echange-de-Reins](GameTheory-16d-Echange-de-Reins.ipynb) | Python | L'échange de reins : de la valeur humaine à l'état institutionnel — graphe de compatibilité, cycles vs chaînes (donneurs altruistes), arbitrage cardinalité/équité dissocié par le code, pont cross-domain vers les lakes Lean | 35 min |
 | SC-01 | [SocialChoice/01-Arrow-Impossibility-Theorem](SocialChoice/01-Arrow-Impossibility-Theorem.ipynb) | Python | Arrow : preuve formelle vs simulation | 45 min |
 | SC-01 (C#) | [SocialChoice/01-Arrow-Impossibility-Theorem-Csharp](SocialChoice/01-Arrow-Impossibility-Theorem-Csharp.ipynb) | .NET (C#) | Twin C# du SC-01 : **théorème d'Arrow from-scratch** (BCL .NET 9, 0 NuGet), preuve déterministe par énumération des profils de préférences (See #4956) | 45 min |
-| SC-02 | [SocialChoice/02-Lean-SocialChoice-Formal](SocialChoice/02-Lean-SocialChoice-Formal.ipynb) | Lean 4 + Python | Arrow, Sen, Électeur Médian, tour Peters | 70 min |
+| SC-02 | [SocialChoice/01b-Lean-SocialChoice-Formal](SocialChoice/01b-Lean-SocialChoice-Formal.ipynb) | Lean 4 + Python | Arrow, Sen, Électeur Médian, tour Peters | 70 min |
 | SC-03 | [SocialChoice/03-Voting-Methods](SocialChoice/03-Voting-Methods.ipynb) | Python | Condorcet, Borda, Copeland, modèle Downs | 45 min |
 | SC-03 (C#) | [SocialChoice/03-Voting-Methods-Csharp](SocialChoice/03-Voting-Methods-Csharp.ipynb) | .NET (C#) | Twin C# du SC-03 : **Plurality/Borda/Copeland/Condorcet/IRV from-scratch** (BCL .NET 9, 0 NuGet), paradoxe de Condorcet (cycle A>B>C), théorème d'Arrow (violation IIA démontrée déterministement), théorème de l'électeur median (See #4956) | 45 min |
 | SC-04 | [SocialChoice/04-Computational-Aggregation-SAT-Z3](SocialChoice/04-Computational-Aggregation-SAT-Z3.ipynb) | Python | Arrow encodé en SAT + Z3, UNSAT, relaxation | 60 min |
@@ -294,6 +295,7 @@ flowchart TD
 | 17 (C#) | [GameTheory-17-MultiAgent-RL-Csharp](GameTheory-17-MultiAgent-RL-Csharp.ipynb) | .NET (C#) | Twin C# du 17 : **Self-Play naif (cycle R-P-S)**, **Fictitious Play** (BR vs frequence empirique, convergence Robinson 1951), **exploitabilite**, **NFSP table-based** (Q-values + memoire, caveat convergence G.1), **PSRO** (population + meta-Nash) from-scratch, BCL .NET 9, **courbes d'exploitabilite SVG inline** (Self-Play naif oscille, FP -> 0 Robinson 1951, NFSP chute puis plafonne) via `SvgChartHelper.Overlay` zero-CDN [#6855] (See #4956) | 50 min |
 | 17b | [GameTheory-17b-Asymmetric-Information](GameTheory-17b-Asymmetric-Information.ipynb) | Python | Information asymétrique : **Akerlof** (point fixe de participation à prix unique, marché des citrons), **Spence** (signal coûteux), **Rothschild-Stiglitz** (screening assurantiel), **Wilson/Miyazaki** (règle anticipative bornée) — 9 exercices, EPIC #12844 | 1h30 |
 | 17c | [GameTheory-17c-Lean-Lemons-Certificat](GameTheory-17c-Lean-Lemons-Certificat.ipynb) | Lean 4 (WSL) | Companion **natif** du lake `asymmetric_information_lean` : certificat d'Akerlof exécuté en direct — `poolingTenable_iff_cross` (seuil exact par produit croisé), `poolingTenable_mono` (plancher), `#print axioms` (`[propext, Quot.sound]`), balayage du prior (falaise à π = 75 %) et spirale de prix des trois régimes (pooling / lemons-only / no-trade) — 3 exercices (#13200) | 45 min |
+| 17d | [GameTheory-17d-Lean-Screening-Signaling](GameTheory-17d-Lean-Screening-Signaling.ipynb) | Lean 4 (WSL) | Companion **natif** du lake `asymmetric_information_lean` : les quatre modules restants exécutés — Screening RS (`cream_skim_breaks_nash`, témoin chiffré −500/−5500/10000), Signaling Spence (bornes IC, intervalle [3,6], minimalité de Riley), MiyazakiWilson (trame 0/1/plusieurs, invariance −2000→−6000 vs −2500→+500), BayesianLink (`bridgeStrategy_isBNE` par `decide`) — 3 exercices (#13854) | 45 min |
 
 ### Partie 4 : Strate 7 — extensions du vocabulaire stratégique (notebooks 18+)
 
@@ -369,6 +371,7 @@ Chaque notebook introduit un concept ou un modèle spécifique. Le tableau ci-de
 | 17 | MultiAgent-RL | NFSP, PSRO, AlphaZero intro, lien vers RL |
 | 17b | Asymmetric-Information | Les 4 modèles fondateurs de l'information asymétrique : Akerlof (marché des citrons), Spence (signal coûteux), Rothschild-Stiglitz (screening assurantiel), Wilson/Miyazaki (règle anticipative) |
 | 17c | Lean-Lemons-Certificat | Le certificat Lean du lake `asymmetric_information_lean` exécuté : seuil de pooling exact, monotonie, spirale de prix Akerlof |
+| 17d | Lean-Screening-Signaling | Les quatre autres modules du lake exécutés : screening RS, signal Spence/Riley, équilibres anticipatoires Wilson-Miyazaki, pont bayésien `isBNE` |
 | 18 | Open-Games-et-Lentilles | Représentation locale et rétroaction sur le contexte global |
 | 19 | Abstraction-a-Dette | Dette d'abstraction rendue mesurable plutôt que laissée implicite |
 | 20 | Commitment-Stackelberg | La performativité sans mystère : l'engagement contraignant transforme la meilleure réponse d'autrui (seuil de crédibilité s\* mesuré) |
@@ -393,6 +396,7 @@ Chaque notebook introduit un concept ou un modèle spécifique. Le tableau ci-de
 | 15b | Lean-CooperativeGames | Axiomes Shapley formels, Core, Bondareva-Shapley |
 | 8d | Lean-CGT-Native | CGT exécutée depuis la bibliothèque canonique post-Mathlib (`conway_cgt_lean`) |
 | 17c | Lean-Lemons-Certificat | Certificat Akerlof du lake `asymmetric_information_lean` exécuté (`#check`, `decide`, `#print axioms`), seuil de pooling exact + spirale de prix |
+| 17d | Lean-Screening-Signaling | Screening Rothschild-Stiglitz, signal Spence/Riley, équilibres anticipatoires Miyazaki-Wilson et pont bayésien du lake `asymmetric_information_lean` exécutés nativement (`#check`, `#eval`, `decide`) |
 
 ### Side tracks Python (approfondissement)
 
@@ -836,7 +840,7 @@ GameTheory/
 ├── GameTheory-16-MechanismDesign-Csharp.ipynb      # Jumeau C# — Vickrey + VCG (Clarke) + Gale-Shapley + double auction (marathon #4956)
 ├── GameTheory-17-MultiAgent-RL.ipynb
 ├── GameTheory-17-MultiAgent-RL-Csharp.ipynb        # Jumeau C# — Self-Play, FP, NFSP, PSRO
-├── GameTheory-02b-Lean-Definitions.ipynb            # Side tracks b — formalisation Lean 4 (8 notebooks : 2b, 4b, 5b, 8b, 8d, 11b, 15b, 17c)
+├── GameTheory-02b-Lean-Definitions.ipynb            # Side tracks b — formalisation Lean 4 (9 notebooks : 2b, 4b, 5b, 8b, 8d, 11b, 15b, 17c, 17d)
 ├── GameTheory-04b-Lean-NashExistence.ipynb
 ├── GameTheory-05b-Lean-Minimax.ipynb
 ├── GameTheory-08b-Lean-CombinatorialGames.ipynb
@@ -844,12 +848,13 @@ GameTheory/
 ├── GameTheory-08d-Lean-CGT-Native.ipynb
 ├── GameTheory-15b-Lean-CooperativeGames.ipynb
 ├── GameTheory-17c-Lean-Lemons-Certificat.ipynb       # Companion natif du lake asymmetric_information_lean
+├── GameTheory-17d-Lean-Screening-Signaling.ipynb     # Les 4 autres modules du lake exécutés — visibilité #11703
 ├── GameTheory-04c-NashExistence-Python.ipynb        # Side tracks c — approfondissement (Python 4c, 6c, 6d, 8c, 15c)
 ├── GameTheory-04c-NashExistence-Csharp.ipynb        #   Jumeau C# (.NET Interactive) — Brouwer point fixe + Matching Pennies (parité #4956)
 ├── GameTheory-06b-Lean-RepeatedGames.ipynb          # Compagnon lean (lecture) du 6c — lake game_theory_lean dévoilé, visibilité #11703
 ├── GameTheory-06c-RepeatedGames-FolkTheorem.ipynb
 ├── GameTheory-06c-RepeatedGames-FolkTheorem-Csharp.ipynb  #   Jumeau C# — grim trigger/TFT/Folk Theorem from-scratch (parité #4956)
-├── GameTheory-06d-Sympathie-vs-Engagement.ipynb    #   Protocole d'identification du résidu 6c §7d : statique comparative sur les gains d'autrui (pente, alpha mesuré, contrôles négatifs) #13042
+├── GameTheory-06d-Sympathie-vs-Engagement.ipynb    #   Protocole consolidé : MLE + IRLS/bootstrap, engagement pur/bruité, exercices de puissance #13042 #13737
 ├── GameTheory-08c-CombinatorialGames-Python.ipynb
 ├── GameTheory-08c-CombinatorialGames-Csharp.ipynb   #   Jumeau C# — Wythoff/Chomp/périodicité Grundy from-scratch (parité #4956)
 ├── GameTheory-15c-CooperativeGames-Python.ipynb
@@ -869,7 +874,7 @@ GameTheory/
 ├── SocialChoice/                                   # Sous-série Choix Social (8 notebooks : 5 pères Python/Lean + 3 twins C#, parité #4956)
 │   ├── 01-Arrow-Impossibility-Theorem.ipynb
 │   ├── 01-Arrow-Impossibility-Theorem-Csharp.ipynb
-│   ├── 02-Lean-SocialChoice-Formal.ipynb
+│   ├── 01b-Lean-SocialChoice-Formal.ipynb
 │   ├── 03-Voting-Methods.ipynb
 │   ├── 03-Voting-Methods-Csharp.ipynb
 │   ├── 04-Computational-Aggregation-SAT-Z3.ipynb

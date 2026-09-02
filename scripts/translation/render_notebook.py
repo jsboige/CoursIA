@@ -17,9 +17,10 @@ CLI usage
 The output language's column in the CSV (``text_<lang>``) supplies the
 translated prose. Empty cells fall back to the FR source (never a blank cell,
 never a placeholder). Cells in the CSV that are absent from the notebook
-(orphan ``cell_id``) raise a warning and are kept in a sidecar ``.stale`` file
-rather than silently dropped. Conversely, cells in the notebook that are absent
-from the CSV keep their FR text (with a debug-level note when ``--verbose``).
+(orphan ``cell_id``) REFUSE the render outright (#13544 §3) : a CSV row whose
+``cell_id`` matches no notebook cell is never benign, it is a source
+desynchronisation. Conversely, cells in the notebook that are absent from
+the CSV keep their FR text (with a debug-level note when ``--verbose``).
 
 The three invariants (issue #10039, also mandated by #10038 §3) :
 
@@ -135,6 +136,10 @@ def render(
     dry_run: bool = False,
     verbose: bool = False,
     require_translated: bool = False,
+    min_coverage: float = 1.0,
+    # deprecated no-op : le refus orphelin est inconditionnel (#13544 §3) ;
+    # le parametre survit pour la compatibilite CLI (translation-sync.yml
+    # passe --fail-on-stale) et les appelants kwargs existants.
     fail_on_stale: bool = False,
 ) -> RenderResult:
     """Render the notebook at ``nb_path`` to ``out_path`` in language ``lang``.
@@ -148,6 +153,28 @@ def render(
     preserved bit-for-bit : ``nbformat``, ``metadata`` (sans
     ``metadata.papermill``), cell order, ``cell_id``, and code cells' ``source``
     + ``outputs`` + ``execution_count``.
+
+    Guardrails (issue #13544) :
+
+    * ``require_translated=True`` refuses a render with 0 translated cells
+      (FR-clone guard, #10349). Always off by default to preserve the
+      re-render idempotent contract.
+    * ``min_coverage=<float>`` (0.0-1.0, default 1.0) refuses when the
+      fraction of translated markdown cells is below the threshold. The
+      default is fail-closed : a partial render must be explicitly requested
+      by lowering the flag (#13544 §2). A notebook with 0 markdown cells is
+      treated as full coverage (1.0) — the gate has nothing to enforce.
+    * orphan ``cell_id`` s (CSV rows whose id matches no notebook cell)
+      refuse the render unconditionally -- no flag disables it. Such an
+      orphan signals a source desynchronisation (the CSV row references a
+      cell the notebook no longer has) and never silently produces a render
+      (#13544 : a missing ``cell_id`` is never benign).
+
+    Both gates sit BEFORE the atomic write so no partial / clone file
+    reaches disk. The coverage gate is fail-closed by default and the
+    orphan gate is unconditional : the permissive behaviour that produced
+    the #12850 artefacts no longer exists in this engine. Issue #13544 §3 :
+    the gates are structural, not advisory.
     """
     if not nb_path.exists():
         raise FileNotFoundError(f"Notebook introuvable : {nb_path}")
@@ -237,16 +264,43 @@ def render(
             f"Refus d'ecrire un clone FR verbatim."
         )
 
-    # Guardrail (#13546) : refuse a render whose CSV carried orphan cell_ids.
-    # Default off preserves the WARN + .stale sidecar contract ; opt-in pour le
-    # moteur de livraison (translation-sync) afin qu'une ligne CSV pointant une
-    # cellule supprimee bloque le pipeline au lieu de passer inapercue.
-    if fail_on_stale and orphan_keys:
+    # Gate #13544 §3 — seuil de couverture, fail-closed par defaut (1.0).
+    # Justification du defaut : 1.0 est la seule borne non arbitraire -- les
+    # deux artefacts de l'incident (#12850) mesuraient 51 % et 57 %, et toute
+    # valeur intermediaire legitimerait un rendu partiel non demande. Une
+    # couverture partielle declaree passe par un --min-coverage explicite
+    # (#13544 §2 : livrer en declarant explicitement la couverture partielle).
+    if not 0.0 <= min_coverage <= 1.0:
         raise ValueError(
-            f"--fail-on-stale : {len(orphan_keys)} ligne(s) CSV orpheline(s) "
-            f"(cell_id absent du notebook source, lang={lang}, {csv_path.name}) : "
-            f"{', '.join(orphan_keys[:8])}"
-            f"{'...' if len(orphan_keys) > 8 else ''}. Purger le CSV ou re-extraire."
+            f"--min-coverage doit etre dans [0.0, 1.0], "
+            f"recu : {min_coverage!r}"
+        )
+    if stats.n_md_cells > 0:
+        coverage = stats.n_translated / stats.n_md_cells
+    else:
+        coverage = 1.0  # a notebook without markdown has no defect to enforce
+    if coverage < min_coverage:
+        raise ValueError(
+            f"--min-coverage {min_coverage:.2f} non atteint : "
+            f"couverture = {coverage:.2%} "
+            f"({stats.n_translated}/{stats.n_md_cells}, "
+            f"lang={lang}, {csv_path.name}). "
+            f"Par defaut le moteur refuse le rendu partiel ; une livraison "
+            f"partielle declaree exige un --min-coverage explicite (#13544 §2)."
+        )
+
+    # Gate #13544 §3 — orphelins inconditionnels : un cell_id du CSV absent du
+    # notebook n'est jamais benin (desalignement de source). Aucun flag ne le
+    # desactive : la correction est le CSV, pas une option. (Supersede le
+    # guardrail opt-in #13546 : --fail-on-stale est un no-op deprecie.)
+    if stats.n_orphan_keys > 0:
+        sample = ", ".join(orphan_keys[:5])
+        raise ValueError(
+            f"orphelin(s) CSV : {stats.n_orphan_keys} cle(s) sans cellule "
+            f"correspondante dans le notebook "
+            f"(lang={lang}, {csv_path.name}). "
+            f"Premier(s) : [{sample}{'...' if len(orphan_keys) > 5 else ''}]. "
+            f"Refus inconditionnel -- resynchroniser le CSV plutot que de rendre."
         )
 
     if not dry_run and out_path is not None:
@@ -256,14 +310,6 @@ def render(
         tmp_path = out_path.with_suffix(out_path.suffix + ".tmp")
         tmp_path.write_text(json.dumps(out_nb, ensure_ascii=False, indent=1), encoding="utf-8")
         tmp_path.replace(out_path)
-
-    if orphan_keys and not dry_run and out_path is not None:
-        stale_path = out_path.with_suffix(out_path.suffix + ".stale")
-        stale_path.write_text(
-            "\n".join(orphan_keys) + "\n", encoding="utf-8"
-        )
-        if verbose:
-            print(f"  WARN: {len(orphan_keys)} orphan CSV key(s) -> {stale_path.name}")
 
     return RenderResult(
         out_path=out_path if not dry_run else None,
@@ -324,10 +370,18 @@ def main(argv: Optional[List[str]] = None) -> int:
              "the FR-placeholder re-render contract (#10039 criterion 3).",
     )
     p.add_argument(
+        "--min-coverage", type=float, default=1.0,
+        help="Refuse a render whose translated markdown fraction is below the "
+             "threshold (0.0-1.0, #13544 §3). Default 1.0 (fail-closed) : a "
+             "partial render must be explicitly requested by lowering this "
+             "flag (#13544 §2). When 0 markdown cells are present the gate "
+             "is bypassed (no defect to enforce).",
+    )
+    p.add_argument(
         "--fail-on-stale", action="store_true",
-        help="Refuse a render whose CSV carried orphan cell_ids (rows pointing "
-             "at cells absent from the source notebook, #13546). Default off: "
-             "WARN + .stale sidecar.",
+        help="Deprecated no-op (kept for translation-sync.yml compatibility) : "
+             "orphan CSV rows now refuse the render unconditionally "
+             "(#13544 §3, supersedes the #13546 opt-in).",
     )
     args = p.parse_args(argv)
 
@@ -344,6 +398,7 @@ def main(argv: Optional[List[str]] = None) -> int:
             dry_run=dry_run,
             verbose=args.verbose,
             require_translated=args.require_translated,
+            min_coverage=args.min_coverage,
             fail_on_stale=args.fail_on_stale,
         )
     except (FileNotFoundError, ValueError) as exc:

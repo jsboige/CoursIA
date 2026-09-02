@@ -314,6 +314,10 @@ METADATA_DEPENDENT_GUARDS = {
     # non-filtree (un `paths:` desermerait tag, light-cap, genre-signals et
     # lane-claim d'un seul geste).
     ".github/workflows/always-on-guards.yml": "porte les organes metadata des cinq gardes fusionnes (#13384)",
+    # #14057 (Vague 2 tranche 1) : l'umbrella porte l'organe base-not-main
+    # (lit baseRefName, metadonnee) -- c'est SA surface pull_request qui doit
+    # rester non-filtree.
+    ".github/workflows/always-on-metadata-guards.yml": "porte l'organe base-not-main (lit baseRefName, metadonnee) (#14057)",
     ".github/workflows/variation-tag-guard.yml": "lit le tag Grain: du body",
     ".github/workflows/variation-light-genre.yml": "lit le tag Grain: du body",
     ".github/workflows/base-not-main-advisory.yml": "lit baseRefName (metadonnee)",

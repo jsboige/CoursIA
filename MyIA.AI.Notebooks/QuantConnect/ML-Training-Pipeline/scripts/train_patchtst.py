@@ -416,7 +416,6 @@ def main():
         "--indicators", nargs="+", default=None,
         help="Specific indicators to use (overrides --advanced)",
     )
-    parser.add_argument("--device", default=None, help="Force device (cpu/cuda)")
     args = parser.parse_args()
 
     # Seeds

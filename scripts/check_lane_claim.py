@@ -3191,6 +3191,22 @@ def _run_open_prs_on(
 
 
 def main(argv: list[str] | None = None) -> int:
+    # Windows FR : stdout d'un tube prend locale.getpreferredencoding() =
+    # cp1252. Les verdicts de ce script contiennent des fleches (U+2192) et du
+    # francais accentue -- une fleche n'existe PAS dans cp1252, donc le print
+    # leve UnicodeEncodeError et le script sort en **exit 1**.
+    #
+    # C'est le pire mode de defaillance possible ici : lane-claim-protocol.md
+    # prescrit d'appeler ce script AVANT d'editer, et un exit non-nul s'y lit
+    # "claim d'une autre lane, ne pas commencer". Un plantage d'encodage se
+    # deguisait donc en verrou, et faisait sauter un grain pourtant libre.
+    #
+    # Le parent (pick_idle_grain.py) passe PYTHONIOENCODING=utf-8, mais cela ne
+    # couvre que SON chemin d'appel : l'invocation directe -- celle que la regle
+    # prescrit -- restait exposee. On se protege donc ici, a la source.
+    for _stream in (sys.stdout, sys.stderr):
+        if hasattr(_stream, "reconfigure"):
+            _stream.reconfigure(encoding="utf-8", errors="replace")
     p = argparse.ArgumentParser(
         description=(
             "Lane-claim guard (#9774): check/post [CLAIMED] on an issue before "
