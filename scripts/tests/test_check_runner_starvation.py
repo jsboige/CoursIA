@@ -129,10 +129,118 @@ def test_fetch_starvation_filters_by_label_and_status(monkeypatch):
         return None
 
     monkeypatch.setattr(rs, "_gh_json", fake_gh)
-    st = rs.fetch_starvation("jsboige/CoursIA", "coursia-linux", 15.0, 30, now=now)
+    st = rs.fetch_starvation("jsboige/CoursIA", "coursia-linux", 15.0, now=now)
     assert len(st.starved) == 1
     assert st.starved[0].job_name == "guard-on-label"
     assert st.starved[0].age_min is not None and st.starved[0].age_min > 39
+
+
+# --- FENETRE D'EXAMEN (correctif fail-open, signalement po-2025 2026-09-02) --
+
+def _run_row(rid: int, age_min: float, now: datetime, name: str = "Guard X"):
+    return {"id": rid, "name": name, "run_number": rid,
+            "created_at": (now - timedelta(minutes=age_min)).isoformat()}
+
+
+def test_starvation_beyond_first_page_is_seen(monkeypatch):
+    """Le test de falsification du fail-open : l'affame vit en page 2, la
+    page 1 n'a que des runs trop jeunes pour starver. L'ancien cap=30 lisait
+    exactement la page 1 -> 0 affame, mesure du jour : 34 runs >15 min en
+    pages 6-7, tous invisibles."""
+    now = datetime(2026, 9, 2, 12, 0, tzinfo=timezone.utc)
+
+    def fake_gh(args: list[str], token: str | None = None):
+        url = args[0]
+        if "status=queued" in url:
+            # Pas de substring match : "page=1" est un prefixe de
+            # "per_page=100" -- parser le numero de page reellement demande.
+            page = int(url.rsplit("page=", 1)[1])
+            if page == 1:
+                # Une vraie page 1 porte RUNS_PAGE_SIZE runs, tous trop
+                # jeunes pour starver -- c'est le piege du fail-open.
+                return {"total_count": 102, "workflow_runs": [
+                    _run_row(rid, 0.1 * (rid % 100), now) for rid in range(rs.RUNS_PAGE_SIZE)
+                ]}
+            return {"total_count": 102, "workflow_runs": [
+                _run_row(60, 20.0, now), _run_row(61, 21.0, now)
+            ]}
+        if "status=in_progress" in url:
+            return {"total_count": 0, "workflow_runs": []}
+        if "/jobs" in url:
+            return {"jobs": [
+                {"name": "guard", "status": "queued",
+                 "labels": ["self-hosted", "coursia-linux"]},
+            ]}
+        return None
+
+    monkeypatch.setattr(rs, "_gh_json", fake_gh)
+    st = rs.fetch_starvation("jsboige/CoursIA", "coursia-linux", 15.0, now=now)
+    # Page 2 examinee : les deux affames (20 et 21 min) sont VUS.
+    assert len(st.starved) == 2
+    assert all(r.age_min is not None and r.age_min >= 20 for r in st.starved)
+    assert st.unexamined == {}
+
+
+def test_pagination_stops_when_page_older_than_window(monkeypatch):
+    """Le plus recent de la page 1 depasse deja la fenetre : aucun run
+    examine, aucune deuxieme page demandee, le reliquat est compte comme
+    classe ABANDONNEE (information, pas rouge)."""
+    now = datetime(2026, 9, 2, 12, 0, tzinfo=timezone.utc)
+    pages_fetched: list[int] = []
+
+    def fake_gh(args: list[str], token: str | None = None):
+        url = args[0]
+        if "status=queued" in url:
+            pages_fetched.append(1 if "page=1" in url else 2)
+            # total_count annonce 20576 min d'abandonnes (mesure du jour).
+            return {"total_count": 188, "workflow_runs": [
+                _run_row(70, 20576.0, now), _run_row(71, 20600.0, now),
+            ]}
+        if "status=in_progress" in url:
+            return {"total_count": 0, "workflow_runs": []}
+        raise AssertionError("aucune requete /jobs attendue (rien in-window)")
+
+    monkeypatch.setattr(rs, "_gh_json", fake_gh)
+    st = rs.fetch_starvation("jsboige/CoursIA", "coursia-linux", 15.0, now=now)
+    assert st.starved == []
+    assert st.unexamined.get("queued") == 188
+    assert pages_fetched == [1]  # pas de page 2 : arret premature borne
+
+
+def test_job_created_at_anchors_age_over_run_created_at(monkeypatch):
+    """Un job debloque tard (needs:) n'a attendu que 2 min meme si le run a
+    40 min : l'age run serait un faux positif, sens inverse du fail-open."""
+    now = datetime(2026, 9, 2, 12, 0, tzinfo=timezone.utc)
+
+    def fake_gh(args: list[str], token: str | None = None):
+        url = args[0]
+        if "status=queued" in url:
+            return {"total_count": 1, "workflow_runs": [_run_row(80, 40.0, now)]}
+        if "status=in_progress" in url:
+            return {"total_count": 0, "workflow_runs": []}
+        if "/jobs" in url:
+            return {"jobs": [
+                {"name": "guard", "status": "queued",
+                 "labels": ["self-hosted", "coursia-linux"],
+                 "created_at": (now - timedelta(minutes=2)).isoformat()},
+            ]}
+        return None
+
+    monkeypatch.setattr(rs, "_gh_json", fake_gh)
+    st = rs.fetch_starvation("jsboige/CoursIA", "coursia-linux", 15.0, now=now)
+    assert st.starved == []
+    assert st.in_progress == []
+
+
+def test_unexamined_old_runs_are_noted_not_red():
+    """Le reliquat abandonne ne rend JAMAIS l'organe rouge -- sinon rouge
+    permanent sur les runs a 14 jours, le mode d'echec que la garde anti-FP
+    du body interdit."""
+    st = rs.Starvation(unexamined={"queued": 34})
+    v = rs.evaluate(inventory(["a", "b", "c", "d"]), st, 2)
+    assert v.status == "OK"
+    assert any("34" in n and "ABANDONNEE" in n for n in v.notes)
+    assert v.errors == []
 
 
 def test_fetch_inventory_sorts_online_offline(monkeypatch):

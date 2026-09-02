@@ -23,6 +23,17 @@ l'ordre de fiabilite :
     extinction -- le garde ne rougit pas sur le backlog sain, sinon il serait
     rouge permanent et apprendrait a etre ignore.
 
+FENETRE D'EXAMEN (correctif fail-open, signe par po-2025 / relais CoursIA-2,
+2026-09-02) : l'API rend les runs du plus recent au plus ancien. Une lecture
+cappee aux N premiers rend exactement ceux qui n'ont pas eu le temps de
+starver -- mesure du jour : 34 runs queued > 15 min, tous en pages 6-7,
+tous invisibles au cap=30 (dont des runs abandonnes a ~14 jours). La
+collecte pagine donc jusqu'a WINDOW_MAX_MINUTES (les runs plus vieux sont
+la classe ABANDONNEE, notee sans jamais rougir : rougir dessus serait le
+rouge permanent que la garde anti-FP interdit). L'age d'un job s'ancre sur
+jobs[].created_at (un job debloque tard par needs: a attendu moins que le
+run n'est vieux), avec repli sur run.created_at.
+
 Le predicat STARVATION ne demande aucun secret ; le predicat EXTINCTION lit
 `/actions/runners` via RUNNERS_READ_PAT (pose 2026-09-02T08:26Z, deliberement
 read-only : incapable de minter un registration-token). Sans PAT, l'organe
@@ -48,7 +59,8 @@ DEFAULT_REPO = "jsboige/CoursIA"
 DEFAULT_LABEL = "coursia-linux"
 DEFAULT_STARVE_MINUTES = 15.0
 DEFAULT_WARN_FLOOR = 2
-DEFAULT_RUNS_CAP = 30
+DEFAULT_WINDOW_MAX_MINUTES = 360.0
+RUNS_PAGE_SIZE = 100
 
 
 def _gh_json(args: list[str], token: str | None = None) -> object | None:
@@ -113,6 +125,9 @@ class JobRow:
 class Starvation:
     starved: list[JobRow] = field(default_factory=list)
     in_progress: list[JobRow] = field(default_factory=list)
+    # runs non examines car plus vieux que la fenetre (classe abandonnee) :
+    # comptes d'information, jamais un rouge -- cf docstring.
+    unexamined: dict[str, int] = field(default_factory=dict)
 
 
 def fetch_inventory(repo: str, label: str, token: str | None) -> RunnerInventory:
@@ -128,40 +143,91 @@ def fetch_inventory(repo: str, label: str, token: str | None) -> RunnerInventory
     return inv
 
 
-def fetch_starvation(repo: str, label: str, starve_minutes: float, cap: int, now: datetime | None = None) -> Starvation:
+def fetch_starvation(
+    repo: str,
+    label: str,
+    starve_minutes: float,
+    window_max_minutes: float = DEFAULT_WINDOW_MAX_MINUTES,
+    now: datetime | None = None,
+) -> Starvation:
     now = now or datetime.now(timezone.utc)
     result = Starvation()
 
     for status, bucket in (("queued", "starved"), ("in_progress", "in_progress")):
         # Query params inline : `-f` forcerait un POST sur un endpoint GET.
-        runs = _gh_json([f"repos/{repo}/actions/runs?status={status}&per_page={cap}"])
-        if not isinstance(runs, dict):
-            continue
-        for run in runs.get("workflow_runs", []):
-            created = _parse_iso(run.get("created_at"))
-            if created is None:
-                continue
-            jobs = _gh_json([f"repos/{repo}/actions/runs/{run.get('id')}/jobs?filter=latest"])
-            if not isinstance(jobs, dict):
-                continue
-            for job in jobs.get("jobs", []):
-                if label not in job.get("labels", []):
+        page = 1
+        total: int | None = None
+        examined = 0
+        while True:
+            runs = _gh_json(
+                [f"repos/{repo}/actions/runs?status={status}"
+                 f"&per_page={RUNS_PAGE_SIZE}&page={page}"]
+            )
+            if not isinstance(runs, dict):
+                break
+            if total is None:
+                raw_total = runs.get("total_count")
+                if isinstance(raw_total, int):
+                    total = raw_total
+            workflow_runs = runs.get("workflow_runs", [])
+            if not workflow_runs:
+                break
+            # Pages triees du plus recent au plus ancien : des que le PLUS
+            # RECENT de la page depasse la fenetre, toutes les suivantes sont
+            # plus vieilles -- arret premature, le cout reste borne par la
+            # fenetre et non par la profondeur de la file.
+            newest = _parse_iso(workflow_runs[0].get("created_at"))
+            if newest is not None and (now - newest).total_seconds() / 60.0 > window_max_minutes:
+                break
+            last_page = len(workflow_runs) < RUNS_PAGE_SIZE
+            for run in workflow_runs:
+                created = _parse_iso(run.get("created_at"))
+                if created is None:
                     continue
-                if job.get("status") != status:
+                run_age = (now - created).total_seconds() / 60.0
+                if run_age > window_max_minutes:
+                    # Classe ABANDONNEE, pas affamee : hors predicat (rouge
+                    # permanent sinon, cf docstring). Comptee, jamais examinee.
                     continue
-                age_min = (now - created).total_seconds() / 60.0
-                row = JobRow(
-                    workflow=run.get("name", "?"),
-                    run_number=run.get("run_number", 0),
-                    run_id=run.get("id", 0),
-                    job_name=job.get("name", "?"),
-                    status=status,
-                    age_min=age_min,
+                examined += 1
+                jobs = _gh_json([f"repos/{repo}/actions/runs/{run.get('id')}/jobs?filter=latest"])
+                if not isinstance(jobs, dict):
+                    continue
+                for job in jobs.get("jobs", []):
+                    if label not in job.get("labels", []):
+                        continue
+                    if job.get("status") != status:
+                        continue
+                    # Ancrage par JOB : un job debloque tard (needs:, matrice
+                    # differree) a attendu moins que le run n'est vieux --
+                    # l'age run serait un faux positif, sens inverse du
+                    # fail-open de la fenetre.
+                    anchor = _parse_iso(job.get("created_at")) or created
+                    age_min = (now - anchor).total_seconds() / 60.0
+                    row = JobRow(
+                        workflow=run.get("name", "?"),
+                        run_number=run.get("run_number", 0),
+                        run_id=run.get("id", 0),
+                        job_name=job.get("name", "?"),
+                        status=status,
+                        age_min=age_min,
+                    )
+                    if bucket == "in_progress":
+                        result.in_progress.append(row)
+                    elif age_min > starve_minutes:
+                        result.starved.append(row)
+            if last_page:
+                break
+            page += 1
+            # Garde cout : au-dela de 20 pages (2000 runs) dans la fenetre,
+            # la file est un incident de profondeur, pas de pagination.
+            if page > 20:
+                result.unexamined[status] = max(
+                    (total or examined) - examined, 0
                 )
-                if bucket == "in_progress":
-                    result.in_progress.append(row)
-                elif age_min > starve_minutes:
-                    result.starved.append(row)
+                break
+        if isinstance(total, int) and total > examined and status not in result.unexamined:
+            result.unexamined[status] = total - examined
     return result
 
 
@@ -192,6 +258,14 @@ def evaluate(inv: RunnerInventory, st: Starvation, warn_floor: int) -> Verdict:
     else:
         v.notes.append(f"inventaire non lisible ({getattr(inv, 'reason', '')}) -- garde sur le seul symptome")
 
+    unq = st.unexamined.get("queued", 0)
+    if unq:
+        v.notes.append(
+            f"{unq} run(s) queued plus vieux que la fenetre d'examen -- classe "
+            f"ABANDONNEE (hygiene de file), pas extinction : hors predicat, "
+            f"jamais un rouge. Cf pr-gate-stale-sweep / cancel-organs."
+        )
+
     if st.starved and not st.in_progress:
         oldest = max(r.age_min or 0 for r in st.starved)
         v.errors.append(
@@ -220,13 +294,19 @@ def main() -> int:
     ap.add_argument("--starve-minutes", type=float,
                     default=float(os.environ.get("STARVE_MINUTES", DEFAULT_STARVE_MINUTES)))
     ap.add_argument("--warn-floor", type=int, default=DEFAULT_WARN_FLOOR)
-    ap.add_argument("--runs-cap", type=int, default=DEFAULT_RUNS_CAP)
+    ap.add_argument("--window-max-minutes", type=float,
+                    default=float(os.environ.get("WINDOW_MAX_MINUTES", DEFAULT_WINDOW_MAX_MINUTES)),
+                    help="fenetre d'examen ; les runs queued plus vieux sont "
+                         "la classe ABANDONNEE, notes sans rouge")
     ap.add_argument("--json", action="store_true", help="sortie JSON du verdict")
     args = ap.parse_args()
 
     token = os.environ.get("RUNNERS_READ_PAT") or None
     inv = fetch_inventory(args.repo, args.label, token)
-    st = fetch_starvation(args.repo, args.label, args.starve_minutes, args.runs_cap)
+    st = fetch_starvation(
+        args.repo, args.label, args.starve_minutes,
+        window_max_minutes=args.window_max_minutes,
+    )
     v = evaluate(inv, st, args.warn_floor)
 
     payload = {
@@ -238,6 +318,7 @@ def main() -> int:
         "offline_runners": inv.offline if inv.available else None,
         "starved_jobs": [r.__dict__ for r in st.starved],
         "in_progress_jobs": len(st.in_progress),
+        "unexamined_runs": st.unexamined,
     }
     if args.json:
         print(json.dumps(payload, ensure_ascii=False, indent=2))

@@ -47,4 +47,5 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           RUNNERS_READ_PAT: ${{ secrets.RUNNERS_READ_PAT }}
           STARVE_MINUTES: "15"
+          WINDOW_MAX_MINUTES: "360"
         run: python scripts/ci/check_runner_starvation.py
