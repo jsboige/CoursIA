@@ -243,6 +243,41 @@ def test_execution_count_increments_across_cells(tmp_path, _patch_kernelmanager)
     assert [c["execution_count"] for c in cells] == [1, 2, 3]
 
 
+def test_legacy_options_skip_empty_and_normalize_outputs(
+        tmp_path, _patch_kernelmanager):
+    nb = _write_nb(tmp_path / "n.ipynb", [
+        _code_cell("  \n"),
+        _code_cell("display(42)"),
+    ])
+    _, kc = _patch_kernelmanager([[
+        _msg("stream", parent="msg-1", name="stdout", text="a\nb"),
+        _msg("execute_result", parent="msg-1", execution_count=7,
+             data={"text/plain": "42\n", "application/json": {"x": 1}}),
+        _msg("status", parent="msg-1", execution_state="idle"),
+        _msg("display_data", parent="msg-1",
+             data={"text/html": "<b>x</b>\n"}),
+    ]])
+
+    stats = dotnet_executor.execute_notebook(
+        nb,
+        skip_empty_code_cells=True,
+        text_as_lines=True,
+        allowed_mime_types=("text/plain", "text/html", "image/svg+xml"),
+        idle_grace=2.0,
+    )
+
+    assert stats["total"] == 1
+    assert stats["executed"] == 1
+    cells = json.loads(nb.read_text(encoding="utf-8"))["cells"]
+    assert cells[0]["execution_count"] is None
+    outputs = cells[1]["outputs"]
+    assert outputs[0]["text"] == ["a\n", "b"]
+    assert outputs[1]["data"] == {"text/plain": ["42\n"]}
+    assert outputs[1]["execution_count"] == 7
+    assert outputs[2]["data"] == {"text/html": ["<b>x</b>\n"]}
+    kc.wait_for_ready.assert_called_once_with(timeout=120)
+
+
 def test_timeout_interrupt_ignored_aborts_run(tmp_path, _patch_kernelmanager):
     """Timeout + interrupt not honored (kernel never idle) -> ABORT the run.
 

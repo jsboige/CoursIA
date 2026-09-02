@@ -19,7 +19,7 @@ Les scripts `scripts/fix_*.py` / `scripts/recycle_*.py` à la racine sont des on
 |--------|-------|
 | `wsl_papermill.py` | **Papermill INSIDE WSL** pour kernels GameTheory/Lean Python (`execute` / `batch` / `check-env`) — cf [.claude/rules/wsl-kernels.md](../../.claude/rules/wsl-kernels.md) |
 | `batch_reexecute.py` | Re-exécution Papermill en lot |
-| `dotnet_executor.py`, `exec_dotnet_persist.py`, `exec_single_cell.py` | Exécution .NET Interactive (cell-by-cell, kernel persistant) |
+| `dotnet_executor.py`, `exec_dotnet_persist.py`, `exec_single_cell.py` | Exécution .NET Interactive : moteur cell-by-cell canonique (`dotnet_executor.py`), wrapper CLI historique (`exec_dotnet_persist.py`) et exécution ciblée |
 | `execute_qcpy_docker.py`, `qc_quantbook_execute.py` | Exécution QuantConnect (Quantbooks via Docker/QC Cloud) |
 | `_exec_bdd_csharp.py` | Exécution C# BDD interne |
 
