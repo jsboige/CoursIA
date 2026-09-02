@@ -244,7 +244,14 @@ Trois points de conception qui ne sont pas négociables :
 
 La leçon qui a fondé cette preuve reste écrite noir sur blanc : cette page a déjà décrit une conception comme un état déployé — l'inventaire du matin même (2026-09-01) montrait un registre à **un seul** runner Windows, label `coursia-linux` orphelin nulle part, image jamais construite. Tant qu'aucun job n'a rendu la preuve d'identité (`RUNNER_OS = Linux` dans les logs), aucun vert de cette chaîne ne prouve quoi que ce soit — leçon po-2024 du run 33178577527, où l'échec s'était produit *pour la mauvaise raison* (ACE manquante) et aurait pu passer pour un succès de routage.
 
-L'image expose `python` nu (`python-is-python3`) pour les workflows stdlib-only (le `check-navlinks` du job 100021313259 avait échoué `exit 127 "python: not found"` avant cela), et les slots montent le volume `coursia-runner-toolcache` sur `/opt/hostedtoolcache` (`RUNNER_TOOL_CACHE`) pour que les actions `setup-*` ne re-téléchargent pas leurs outils à chaque conteneur éphémère. Après toute modification du Dockerfile : rebuild (même tag), puis roulement des slots — `stop`, `docker kill` des conteneurs vérifiés `busy=false`, `start N`.
+L'image expose `python` nu (`python-is-python3`) pour les workflows stdlib-only (le `check-navlinks` du job 100021313259 avait échoué `exit 127 "python: not found"` avant cela), et les slots montent le volume `coursia-runner-toolcache` sur `/opt/hostedtoolcache` (`RUNNER_TOOL_CACHE`) pour que les actions `setup-*` ne re-téléchargent pas leurs outils à chaque conteneur éphémère. Après toute modification du Dockerfile : rebuild (même tag), puis roulement des slots — `docker kill` des conteneurs vérifiés `busy=false` (la boucle relance sur la nouvelle image ; les slots occupés se soignent seuls au tour suivant). **Le check `busy=false` échoue en silence par deux chemins mesurés** : `jq` est absent de l'hôte Ubuntu (il vit dans l'image), et `gh api` ne supporte pas `--arg`. Forme canonique — côté Windows (gh embarque jq), nom littéral interpolé, **fail-closed** :
+
+```bash
+busy=$(gh api repos/jsboige/CoursIA/actions/runners --jq ".runners[] | select(.name==\"$name\") | .busy")
+rc=$?; [ $rc -eq 0 ] && [ -n "$busy" ] || { echo "check FAILED rc=$rc busy='$busy'"; exit 1; }
+```
+
+Re-vérifier **par slot juste avant chaque kill** : un job peut être pris entre l'inventaire et le geste. Un `busy` vide capturé sans contrôle de `rc` n'est pas une vérification — l'égalité `!= "true"` passe et le kill part non vérifié.
 
 Routage (décision coordinateur) — **tranche 1 portée par #14148 (PR ouverte au 2026-09-01)** : 11 workflows y passent sur les labels `coursia-linux`, sous la règle « allowlist du checker `check_self_hosted_runner_policy.py` + garde universelle de fork/payload + timeout + `permissions: read` ». Tant qu'elle n'est pas mergée, ces workflows restent sur GitHub-hosted. Le reste des 93 jobs `ubuntu-latest` du census #13378 demeure sur GitHub-hosted tant que l'empreinte n'a pas été mesurée sur des jobs réels — l'élargissement (tranche 2, N slots) reste décision coordinateur après 24 h de vert sur la tranche 1.
 
