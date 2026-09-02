@@ -670,8 +670,8 @@ layout: two-cols
 ::right::
 
 
-<img src="./images/img_025.png" width="380">
-<img src="./images/img_026.png" width="380">
+<img src="./images/img_025.png" width="240">
+<img src="./images/img_026.png" width="250">
 
 
 
@@ -1510,9 +1510,9 @@ layout: two-cols
 ::right::
 
 
-<img src="./images/img_085.png" width="420">
-<img src="./images/img_086.png" width="420">
-<img src="./images/img_087.png" width="420">
+<img src="./images/img_085.png" width="270">
+<img src="./images/img_086.png" width="270">
+<img src="./images/img_087.png" width="270">
 
 
 
