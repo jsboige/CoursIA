@@ -78,6 +78,127 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     "notebook-exec-sequence-ratchet.yml",
     "notebook-navlink-check.yml",
     "notebook-papermill-ratchet.yml",
+    # tranche 3b (#14283, meme decision, meme owner) : suite des gardes PR
+    #   pure-Python. Fondue dans la meme PR que 3a -- les scinder aurait produit
+    #   un conflit sur cette meme ancre pour zero benefice de relecture.
+    "markdown-claims-output-advisory.yml",
+    "orphaned-delivery-scan.yml",
+    "quantconnect-notebook-freshness.yml",
+    "scan-md-hierarchy-drift.yml",
+    "slides-composition-pr-relay.yml",
+    "source-output-ratchet.yml",
+    "translation-guard.yml",
+    "unique-check-run-names-guard.yml",
+    "validation-matrix.yml",
+    # tranche 3a (#14283, decision ai-01 2026-09-02, owner myia-ai-01:CoursIA) :
+    #   gardes PR pure-Python, garde same-repo au niveau job, runs-on STATIQUE.
+    #   Exclus deliberement : pr-gate.yml (agregateur qui poll -- il tiendrait le
+    #   slot quil attend), owui-playwright-check.yml (navigateurs hors image),
+    #   always-on-guards.yml (trigger pull_request_review = FORK_REACHABLE).
+    #   Rollback = revert de la PR de routage.
+    "arxiv-attributions-guard.yml",
+    "catalog-drift.yml",
+    "consecutive-code-cells-advisory.yml",
+    "harness-coauthor-guard.yml",
+    "ict-tests.yml",
+    "label-paths-guard.yml",
+    "lean-conway.yml",
+    "lean-i18n-drift.yml",
+    "lean-knot.yml",
+    "manifest-description-visuelle-gate.yml",
+    # tranche 3c (#14283, meme decision, meme owner) : jobs individuels d'un
+    #   workflow dont les autres jobs restent sur ubuntu-latest.
+    #   Exclus deliberement : ml-tests (torch retelecharge a chaque run, pas de
+    #   cache persistant), secret-scan/gitleaks (socket Docker), lean-social-
+    #   choice/build (merite un pool a cache Mathlib chaud, cf #14337),
+    #   notebook-execution-required/golden-set-execute (execution lourde).
+    "bash-syntax-advisory.yml",
+    "lean-social-choice.yml",
+    "notebook-execution-required.yml",
+    "secret-scan.yml",
+    # always-on-metadata-guards.yml : routable (triggers pull_request +
+    #   workflow_dispatch seulement). Son jumeau always-on-guards.yml ne l'est
+    #   PAS -- il porte pull_request_review, classe FORK_REACHABLE (#14294).
+    "always-on-metadata-guards.yml",
+    "twin-parity.yml",
+    # tranche 4 (#14283, meme decision, meme owner) : balayages cron pur-Python.
+    #   Declencheur `schedule` seul -- pas de contexte pull_request, donc aucune
+    #   garde same-repo requise. 33 creneaux distincts, au plus 2 simultanes
+    #   (mesure 2026-09-02) : ils ne peuvent pas affamer les gardes de PR.
+    #   Exclus : markdown-table-guard / render-volume-delta-advisory (lourds),
+    #   slides-composition-advisory (navigateurs hors image).
+    "ascii-flowchart-advisory.yml",
+    "candidate-delivered-advisory.yml",
+    "catalog-cron.yml",
+    "check-resync-only.yml",
+    "cjk-residue-advisory.yml",
+    "degraded-mode-advisory.yml",
+    "detect-dup-selftest.yml",
+    "dotnet-nuget-block-advisory.yml",
+    "epic-charter-advisory.yml",
+    "epic-neglect-sweep.yml",
+    "exercises-advisory.yml",
+    "grain-orphans-sweep.yml",
+    "h1-hygiene-advisory.yml",
+    "leaky-fixture-sweep.yml",
+    "machine-dep-timing-advisory.yml",
+    "machine-dep-timing-inventory.yml",
+    "orphan-branch-scan.yml",
+    "outputs-text-fragmentation-advisory.yml",
+    "pedagogy-density-advisory.yml",
+    "pr-gate-missing-advisory.yml",
+    "pr-gate-sweep-health-advisory.yml",
+    "pr-path-collision-advisory.yml",
+    "qc-research-monitor.yml",
+    "repo-size-advisory.yml",
+    "review-coverage-advisory.yml",
+    "slides-build-advisory.yml",
+    "slow-lane.yml",
+    "stale-guard-red-sweep.yml",
+    "translation-parity.yml",
+    "twin-parity-cron.yml",
+    "twin-parity-drift-audit.yml",
+    "workflow-path-filter-audit.yml",
+
+    # - tranche 5 (#13378/#14283, decision ai-01 2026-09-02) : le solde des
+    #   gardes routables. Exclus et pourquoi : pr-gate.yml (agregateur qui
+    #   poll jusqu'a 28 min -- le router reproduirait la famine mesuree en
+    #   #11405), lean-axiom/lean-build (builds Lean sans cache mathlib, cf
+    #   #14337 pools specialises), quarto-pages-deploy (quarto CLI + deploy
+    #   Pages), slides-composition-advisory (playwright --with-deps exige
+    #   root, le conteneur tourne en uid 1001).
+    "bare-cross-dir-load-gate.yml",
+    "base-not-main-advisory.yml",
+    "concurrency-conj-guard.yml",
+    "degenerate-figure-gate.yml",
+    "docs-link-check.yml",
+    "exercise-leak-ci.yml",
+    "fabricated-output-gate.yml",
+    "fast-lane-shadow.yml",
+    "lane-claim-guard.yml",
+    "linux-runner-starvation-advisory.yml",
+    "markdown-rendering-guard.yml",
+    "markdown-table-guard.yml",
+    "md-content-loss-gate.yml",
+    "ml-tests.yml",
+    "notebook-output-failure-ratchet.yml",
+    "notebook-validation.yml",
+    "owui-playwright-check.yml",
+    "perimeter-review-guard.yml",
+    "pr-gate-rerun.yml",
+    "regression-guard.yml",
+    "render-volume-delta-advisory.yml",
+    "scripts-tests.yml",
+    "series-naming-gate.yml",
+    "stale-base-warning.yml",
+    "svg-broken-geometry-gate.yml",
+    "svg-decimal-comma-gate.yml",
+    "svg-empty-display-gate.yml",
+    "svg-offscreen-flat-gate.yml",
+    "testpaths-coverage-guard.yml",
+    "translation-drift.yml",
+    "translation-sync.yml",
+    "variation-light-genre.yml",
 }
 GITHUB_HOSTED_LABELS = {
     "ubuntu-latest",

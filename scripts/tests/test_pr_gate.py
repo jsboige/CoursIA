@@ -910,7 +910,11 @@ def test_derive_always_on_reads_real_workflows_and_excludes_self():
     includes the gate's own job. Run against the live .github/workflows.
     """
     jobs = pr_gate.derive_always_on_jobs()
-    assert len(jobs) >= 6, "expected at least the catalog/secret/regression/" \
+    # #12773 tranche 2b made Source-Output Ratchet path-filtered, dropping the
+    # roster from 6 to 5.  5 is the floor for THIS roster; the assertion exists
+    # to trip on decay to "no always-on jobs at all" (partial delivery, #9858),
+    # so a future tranche shrinking it further must update this number too.
+    assert len(jobs) >= 5, "expected at least the catalog/secret/regression/" \
         "stale-base/variation always-on jobs from the real repo"
     assert all(pr_gate.DEFAULT_SELF_NAME not in j for j in jobs), \
         "the gate must never canary itself"

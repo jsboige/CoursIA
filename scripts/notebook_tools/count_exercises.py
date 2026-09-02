@@ -360,6 +360,25 @@ STUB_PATTERNS = [
     # `display("Exercice 2 a completer ...")` with no `// TODO`/`// Indice`).
     re.compile(r'(?:Console\.WriteLine|display)\(\$?["\']Exercice', re.IGNORECASE),
     re.compile(r"^\s*result\s*=\s*None\b", re.MULTILINE | re.IGNORECASE),
+    # Typed-empty return literals (#14212): the canonical ``return None`` was
+    # the only neutral-empty marker, so a function whose contract is a list /
+    # dict / tuple / numeric / set / string and that returns the typed empty
+    # literal (``return []``, ``return {}``, ``return ()``, ``return 0``,
+    # ``return set()``, ``return ""``) read as 'multi-line real code' to the
+    # stub gate and was under-counted. Example: ``auditer-la-conformite-visuelle``
+    # cell 38/39 (`return []` / `return {}`) escaped the gate while cell 40
+    # (`return None`) was caught -- three structurally identical stubs rendered
+    # 1/3. ``\b`` boundaries keep the match tight: ``return 100`` or
+    # ``return False`` are NOT matched (those are real values, not empty).
+    # ``return ""`` is rare enough that it is included for symmetry; pedagogically
+    # it is the string-equivalent of `return None` -- keeps the notebook
+    # executable end-to-end while being an obvious TODO marker.
+    re.compile(r"\breturn\s+\[\]"),
+    re.compile(r"\breturn\s+\{\}"),
+    re.compile(r"\breturn\s+\(\)"),
+    re.compile(r"\breturn\s+0\b"),
+    re.compile(r"\breturn\s+set\(\)"),
+    re.compile(r'\breturn\s+""'),
     re.compile(r"^\s*raise\s+NotImplementedError", re.MULTILINE),
     re.compile(r"^\s*assert\s+False\b", re.MULTILINE),
     # "a completer" / "to complete" LINE-COMMENT stub markers. A scaffolded
@@ -377,6 +396,27 @@ STUB_PATTERNS = [
         r"^\s*(?:#|//|--)\s*\(?[ \t]*(?:a compl[eé]ter|to complete)\b",
         re.IGNORECASE | re.MULTILINE,
     ),
+]
+
+# Standalone empty-typed returns -- `return []`, `return {}`, `return ()`,
+# `return 0`, `return set()`, `return ""`. These are the pedagogically-correct
+# stub for a function that promises a list/dict/tuple/num/str/set: executable
+# end-to-end AND type-coherent, where `return None` is not (issue #14212,
+# auditer-la-conformite-visuelle was read as 1 exercise where it carries 3).
+# Unlike the STUB_PATTERNS above, a bare `return []` is NOT only a stub marker:
+# inside a worked example it is a real computed answer (an empty neighbor list,
+# an MST base case `return 0`, `return float('inf')`, ...). So these are applied
+# by _is_stub_code ONLY to the LAST effective statement of a COMPACT cell --
+# not as a substring match over the whole source (which would over-count
+# multi-line examples carrying a mid-cell `return []` / `return 0`).
+EMPTY_RETURN_PATTERNS = [
+    re.compile(r"\breturn\s+\[\](?!\w)"),
+    re.compile(r"\breturn\s+\{\}(?!\w)"),
+    re.compile(r"\breturn\s+\(\)(?!\w)"),
+    re.compile(r"\breturn\s+0\b(?!\.\d)"),
+    re.compile(r"\breturn\s+set\(\)(?!\w)"),
+    re.compile(r'\breturn\s+""(?!\w)'),
+    re.compile(r"\breturn\s+''(?!\w)"),
 ]
 
 
@@ -458,6 +498,18 @@ def _is_stub_code(source: str) -> bool:
         if not ln.startswith("import ") and not ln.startswith("from ")
         and not ln.startswith("using ")
     ]
+    # A COMPACT helper cell whose LAST effective statement is an empty-typed
+    # return is a stub: a function signature + a few comments + `return []`
+    # is an exercise skeleton, not a solution (issue #14212). We only test the
+    # last effective line (not the whole source), so a `return []` / `return 0`
+    # buried in a multi-line worked example -- the empty-neighbor-list case, an
+    # MST base case, a `return float('inf')` sentinel -- is NOT misread as a
+    # stub. The 4-line cap keeps a real micro-method (`return 0` as a computed
+    # result) from being swept in while still catching the idiomatic stub shape.
+    if code_lines and len(code_lines) <= 4:
+        for pat in EMPTY_RETURN_PATTERNS:
+            if pat.search(code_lines[-1]):
+                return True
     return len(code_lines) <= 1
 
 

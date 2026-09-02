@@ -35,6 +35,29 @@ Toute modification d'une stratégie QC (main.py, paramètres, périodes) **DOIT*
 
 **Changer une date ou un paramètre sans backtest = travail invalide.**
 
+### Mesures post-backtest : gates minimaux (`read_backtest` post-completion, #14142)
+
+`read_backtest` appelé **pendant qu'un backtest tourne encore** rend `totalOrders: 0` et des `statistics` à `"-"` / `"0%"` / `"$0.00"` — un état **indiscernable d'un run terminé sans aucun ordre**. Incident fondateur (PR #14012, 2026-09-01) : la conclusion « la condition OR n'a JAMAIS été vraie sur 1 461 jours BTC/ETH minute » a été publiée sur un `totalOrders=0` lu en cours d'exécution ; la relecture **post-completion** (commit `71849ef20`) a trouvé **487 172 ordres** — la conclusion inverse.
+
+**Garde obligatoire avant de citer `totalOrders` ou `statistics`** (invariant cross-lane, tout `read_backtest` cité dans une PR/issue/JSON la porte) :
+
+```python
+result = read_backtest(project_id=..., backtest_id=...)
+
+# GARDE : tant que le backtest n'a pas termine, totalOrders=0 et statistics="-"
+# sont des artefacts d'etat, pas des mesures.
+assert result["status"] == "Completed.", \
+    f"backtest pas termine : status={result['status']!r}"
+assert result["progress"] == 1, \
+    f"progress != 1 : progress={result['progress']!r}"
+
+# Ici seulement, totalOrders / statistics sont fiables.
+```
+
+**Seconde cause de « remplissage nul » à écarter avant toute conclusion stratégique** : la devise de compte (#14215). Sur `AccountType.CASH`, LEAN exige le solde de la **devise de cotation** ; un compte financé en USD qui négocie des paires USDT (`BTCUSDT`/`ETHUSDT`) voit chaque achat rejeté — 0 fill, quelle que soit la condition d'entrée. Le backtest de contrôle B3 (une seule variable changée : `set_account_currency("USDT")` avant `set_cash`) est passé de 0 ordre à **917 199 ordres** (net −99,88 %) — preuve que le « signal absent » était un compte dans la mauvaise devise. Un verdict « aucun remplissement » sur paires crypto DOIT donc vérifier devise de cotation ↔ devise de compte avant d'inférer quoi que ce soit sur la stratégie.
+
+Ces deux gates se vérifient **en session via le MCP** (snippet ci-dessus à coller dans l'appel) — pas via un script REST direct, interdit par la règle d'accès ci-dessous.
+
 ### Convention `SetEndDate` — fenêtre figée vs flottante (mécanisme D2, #9768)
 
 L'absence d'un appel `SetEndDate` (Python : `self.set_end_date(...)`) **n'est pas toujours un défaut** : elle ouvre la fenêtre de backtest à la date courante, ce qui est un comportement légitime **selon le type de notebook**. La classification (audit #9772 Phase 0) distingue deux régimes :
