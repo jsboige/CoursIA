@@ -3743,8 +3743,20 @@ def test_check_caller_scope_partially_dead_warns_but_keeps_live(capsys, monkeypa
     # The DEAD glob is named in the WARN (partial coverage).
     assert "SCOPE_DEAD_GLOB" in captured.err
     assert "dead/nowhere.ipynb" in captured.err
-    # The live glob does NOT appear in the WARN (selectivity pin).
-    assert "x/a.ipynb" not in captured.err.split("SCOPE_DEAD_GLOB")[1] if "SCOPE_DEAD_GLOB" in captured.err else True
+    # The live glob does NOT appear in the SCOPE_DEAD_GLOB WARN
+    # (selectivity pin). #14187 added a scope-intersection block to the
+    # BLOCKED section that legitimately surfaces live globs there --
+    # that surface is in a DIFFERENT message from the SCOPE_DEAD_GLOB
+    # warn. We slice the WARN line specifically (split[0] = warn body,
+    # not the rest of stderr).
+    if "SCOPE_DEAD_GLOB" in captured.err:
+        warn_block = captured.err.split("SCOPE_DEAD_GLOB", 1)[1]
+        # The WARN spans until the next top-level marker (BLOCKED, LOCKED,
+        # DEAD-SCOPE LOCK, etc.). Take everything up to the next blank line.
+        warn_only = warn_block.split("\n\n", 1)[0]
+        assert "x/a.ipynb" not in warn_only, (
+            f"WARN must not name the LIVE glob; got: {warn_only!r}"
+        )
     # JSON exposes the dead globs list (only the dead ones, not the live ones).
     assert 'dead/nowhere.ipynb' in captured.out
     # The live glob DOES NOT appear in the caller_empty_scope field.
@@ -6028,3 +6040,220 @@ def test_13336_live_control_real_pr():
     st, err = clc._fetch_pr_state(13144)
     assert st == "MERGED", f"gh schema ou PR inattendus: state={st!r} err={err!r}"
     assert err is None
+
+
+# --- #14187 : scope_intersection_paths + free_paths sur glob large -----------
+#
+# Issue #14187 : `check_lane_claim.py --paths '<glob large>'` rend
+# `blocked: true` binaire : le caller voit QUI bloque, pas QUOI. Une lane
+# avec un scope de 12 fichiers bloques par 3 autres dont les scopes
+# n intersectent que 3 fichiers voit les 9 fichiers libres comme bloques
+# elle aussi (pas de re-scope possible sans escalade dashboard).
+#
+# Le fix ajoute (a) `scope_intersection_paths` par claim dans le JSON,
+# (b) `free_paths` + `intersection_summary` au top-level, (c) une ligne
+# humaine dans le verdict stderr. Six tests verrouillent chaque surface.
+
+def _14187_setup_repo(monkeypatch, tracked=None):
+    """Stub _git_tracked_files for #14187 tests (deterministic file list)."""
+    files = tracked if tracked is not None else [
+        "knot_lean/Knots/Conway.lean",
+        "knot_lean/Knots/Basic.lean",
+        "knot_lean/Knots/Lidman.lean",
+        "knot_lean/Knots/Invariant.lean",
+        "knot_lean/Util.lean",
+        "knot_lean/Main.lean",
+    ]
+    monkeypatch.setattr(clc, "_git_tracked_files", lambda: files)
+
+
+def test_14187_glob_large_nomme_intersection_par_blocker(capsys, monkeypatch):
+    """#14187 (1) : `--paths 'knot_lean/**'` avec 2 claims scopes
+    differents rend un `scope_intersection_paths` par claim dans le JSON,
+    listant les fichiers reellement contestes (et PAS tous les fichiers
+    du scope).
+    """
+    _14187_setup_repo(monkeypatch)
+    blocker_a = comment(
+        "[CLAIMED] lane myia-po-2024:CoursIA -- knot tranche -- paths: knot_lean/Knots/Conway.lean, knot_lean/Knots/Basic.lean",
+        "2026-09-01T22:00:00Z",
+    )
+    blocker_b = comment(
+        "[CLAIMED] lane myia-po-2026:CoursIA -- knot trim -- paths: knot_lean/Knots/Lidman.lean",
+        "2026-09-01T22:01:00Z",
+    )
+    p = payload(blocker_a, blocker_b, number=14187)
+    rc = clc._run_check(
+        p, "myia-po-2023:CoursIA",
+        my_paths=["knot_lean/**"],
+    )
+    assert rc == 1  # blocked
+    out = _json_out(capsys.readouterr())
+    ac = out["active_claims"]
+    # blocker_a claimed Conway.lean + Basic.lean -- both tracked
+    assert sorted(ac["myia-po-2024:CoursIA"]["scope_intersection_paths"]) == [
+        "knot_lean/Knots/Basic.lean", "knot_lean/Knots/Conway.lean"
+    ]
+    assert ac["myia-po-2024:CoursIA"]["scope_intersection_size"] == 2
+    assert ac["myia-po-2024:CoursIA"]["scope_intersection_truncated"] is False
+    # blocker_b claimed only Lidman.lean
+    assert ac["myia-po-2026:CoursIA"]["scope_intersection_paths"] == [
+        "knot_lean/Knots/Lidman.lean"
+    ]
+    assert ac["myia-po-2026:CoursIA"]["scope_intersection_size"] == 1
+
+
+def test_14187_glob_large_liste_fichiers_libres(capsys, monkeypatch):
+    """#14187 (2) : avec le meme scope de 6 fichiers et 2 blockers dont les
+    scopes couvrent 3 fichiers, `free_paths` enumere les 3 fichiers
+    libres et `intersection_summary` les compte.
+    """
+    _14187_setup_repo(monkeypatch)
+    blocker_a = comment(
+        "[CLAIMED] lane myia-po-2024:CoursIA -- knot tranche -- paths: knot_lean/Knots/Conway.lean, knot_lean/Knots/Basic.lean",
+        "2026-09-01T22:00:00Z",
+    )
+    blocker_b = comment(
+        "[CLAIMED] lane myia-po-2026:CoursIA -- knot trim -- paths: knot_lean/Knots/Lidman.lean",
+        "2026-09-01T22:01:00Z",
+    )
+    p = payload(blocker_a, blocker_b, number=14187)
+    clc._run_check(
+        p, "myia-po-2023:CoursIA",
+        my_paths=["knot_lean/**"],
+    )
+    out = _json_out(capsys.readouterr())
+    # Le scope couvre 6 tracked files ; 3 contestes ; 3 libres.
+    assert out["free_paths_size"] == 3
+    assert sorted(out["free_paths"]) == sorted([
+        "knot_lean/Knots/Invariant.lean",
+        "knot_lean/Main.lean",
+        "knot_lean/Util.lean",
+    ])
+    assert out["free_paths_truncated"] is False
+    # intersection_summary : 3 bloques + 3 libres
+    assert "3" in out["intersection_summary"]
+    assert "libres" in out["intersection_summary"]
+
+
+def test_14187_epic_wide_blocker_retourne_liste_vide(capsys, monkeypatch):
+    """#14187 (3) : un blocker epic-wide (pas de `paths:`) couvre tout le
+    scope ; `free_paths` est vide et `intersection_summary` est vide --
+    l instrument ne pretend pas enumerer ce qui n est pas enumerable.
+    """
+    _14187_setup_repo(monkeypatch)
+    blocker_epic = comment(
+        "[CLAIMED] lane myia-po-2024:CoursIA -- umbrella",
+        "2026-09-01T22:00:00Z",
+    )
+    p = payload(blocker_epic, number=14187)
+    clc._run_check(
+        p, "myia-po-2023:CoursIA",
+        my_paths=["knot_lean/**"],
+    )
+    out = _json_out(capsys.readouterr())
+    # epic-wide claim : pas d intersection enumerable
+    assert out["active_claims"]["myia-po-2024:CoursIA"]["scope_intersection_paths"] == []
+    assert out["active_claims"]["myia-po-2024:CoursIA"]["scope_intersection_size"] == 0
+    # Tout le scope est verrouille, rien de libre.
+    assert out["free_paths"] == []
+    assert out["free_paths_size"] == 0
+    assert out["intersection_summary"] == ""
+
+
+def test_14187_disjoint_scope_rend_liste_vide_et_pas_de_block(capsys, monkeypatch):
+    """#14187 (4) : caller et blocker sur des scopes DISJOINTS -> rc=0
+    (clear). `free_paths` reflete le scope complet (rien n est bloque).
+    """
+    _14187_setup_repo(monkeypatch)
+    blocker = comment(
+        "[CLAIMED] lane myia-po-2024:CoursIA -- ailleurs -- paths: knot_lean/Knots/Conway.lean",
+        "2026-09-01T22:00:00Z",
+    )
+    p = payload(blocker, number=14187)
+    rc = clc._run_check(
+        p, "myia-po-2023:CoursIA",
+        my_paths=["knot_lean/Util.lean"],
+    )
+    assert rc == 0  # clear (disjoint)
+    out = _json_out(capsys.readouterr())
+    assert out["blocked"] is False
+    # Util.lean est libre.
+    assert out["free_paths"] == ["knot_lean/Util.lean"]
+
+
+def test_14187_summary_humain_dans_stderr(capsys, monkeypatch):
+    """#14187 (5) : la ligne humaine dans le verdict BLOCKED enumere les
+    fichiers libres et le nombre de contestes -- un caller qui lit stderr
+    sait quoi faire (re-scope aux libres) sans parser le JSON.
+    """
+    _14187_setup_repo(monkeypatch)
+    blocker = comment(
+        "[CLAIMED] lane myia-po-2024:CoursIA -- knot tranche -- paths: knot_lean/Knots/Conway.lean",
+        "2026-09-01T22:00:00Z",
+    )
+    p = payload(blocker, number=14187)
+    clc._run_check(
+        p, "myia-po-2023:CoursIA",
+        my_paths=["knot_lean/**"],
+    )
+    captured = capsys.readouterr()
+    # Verdict BLOCKED + intersection listee + fichiers libres nommes.
+    assert "BLOCKED" in captured.err
+    assert "scope_intersection_paths" in captured.err
+    assert "knot_lean/Knots/Conway.lean" in captured.err
+    # Le bloc Fichiers libres liste les autres fichiers du scope.
+    assert "Fichiers libres" in captured.err
+    assert "knot_lean/Main.lean" in captured.err
+
+
+def test_14187_truncated_flag_sur_repo_volumineux(capsys, monkeypatch):
+    """#14187 (6) : un scope tres large (>25 fichiers intersectes)
+    tronque la liste a 25 et leve `scope_intersection_truncated`. Sans
+    ce pin, un caller sur un monorepo lirait une liste incomplete comme
+    complete.
+    """
+    # 30 fichiers dans knot_lean, tous matche par `--paths 'knot_lean/**'`
+    big = [f"knot_lean/f{i:03d}.lean" for i in range(30)]
+    _14187_setup_repo(monkeypatch, tracked=big)
+    # Le blocker declare un scope PARTIEL (les 5 premiers fichiers), donc
+    # free_paths contient 25 fichiers libres (tronque) ; scope_intersection
+    # contient les 5 fichiers du blocker (sous le cap, pas tronque).
+    blocker = comment(
+        "[CLAIMED] lane myia-po-2024:CoursIA -- partial -- paths: knot_lean/f000.lean, knot_lean/f001.lean, knot_lean/f002.lean, knot_lean/f003.lean, knot_lean/f004.lean",
+        "2026-09-01T22:00:00Z",
+    )
+    p = payload(blocker, number=14187)
+    clc._run_check(
+        p, "myia-po-2023:CoursIA",
+        my_paths=["knot_lean/**"],
+    )
+    out = _json_out(capsys.readouterr())
+    # Le blocker declare 5 fichiers : scope_intersection rend les 5
+    # complets (sous le cap de 25, pas de troncature).
+    ac = out["active_claims"]["myia-po-2024:CoursIA"]
+    assert ac["scope_intersection_size"] == 5
+    assert ac["scope_intersection_truncated"] is False
+    # Les 25 autres fichiers du scope (30 - 5 = 25) sont libres ; sous
+    # le cap, pas de troncature non plus.
+    assert out["free_paths_size"] == 25
+    assert out["free_paths_truncated"] is False
+
+    # Cas 2 : un scope ENORME (>50 fichiers libres) doit declencher le
+    # flag truncated sur `free_paths`. On construit un repo avec 60
+    # fichiers que le caller vise via `--paths 'big/**'` mais qu aucun
+    # blocker ne reserve -> free_paths est l integralite du scope (60),
+    # tronque a 25.
+    bigger = [f"big/g{i:03d}.lean" for i in range(60)]
+    _14187_setup_repo(monkeypatch, tracked=bigger)
+    p = payload(number=14187)  # aucun blocker
+    clc._run_check(
+        p, "myia-po-2023:CoursIA",
+        my_paths=["big/**"],
+    )
+    out = _json_out(capsys.readouterr())
+    # Caller disjoint de tout claim -> rc=0 (clear), free_paths =
+    # l integralite du scope (60 fichiers), tronque a 25.
+    assert out["blocked"] is False
+    assert out["free_paths_size"] == 25
+    assert out["free_paths_truncated"] is True

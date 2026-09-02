@@ -13,8 +13,33 @@ Updated: 2026-08-23 — backlog à déposer : M15 h=32 NO BEATS (#11468) et barr
 Updated: 2026-08-24 — Re-validation hors-biais des keepers BTC (issues #11041/#11034/#11036) : M15 `refuted-de-biased` 3/3 (l'edge publié = biais² de HAR, var_ratio > 1 partout) ; M4 confirmé h=1/h=5, INCONCLUSIVE h=10 (p_median 0,0598, var_ratio < 1)
 Updated: 2026-08-24 — M15 LSTM-vol patch persistance biais + slice 2/2 dé-biaisé symétrique (issue #12734): patch livré, run complet dispatché au prochain cycle
 Updated: 2026-09-01 — PatchTST BTC log-RV revalidé contre HAR débiaisé train-only (#14081) : h=1 INCONCLUSIVE, h=5/h=10 NO BEATS ; var_ratio > 1 aux trois horizons
+Updated: 2026-09-02 — M16 HAR asymétrique BTC revalidé contre HAR débiaisé train-only (#1454) : h=1 INCONCLUSIVE, h=5/h=10 BEATS ; verdict brut 3/3 réfuté
+Updated: 2026-09-02 — M5 HMM regime-switching HAR, première entrée + revalidation hors biais (Epic #1454) : ETH h=1 **BEATS confirmé** (+8,7 % hors biais, 4/4 seeds, 4,1σ) ; BTC h=1 s'effondre de +7,0 % à +1,3 % (~82 % de l'edge était le biais de HAR) ; 4/6 NO BEATS
 
 Total checkpoints: 70 (20 legacy ARCHIVED + 50 panier baselines)
+
+## M16 HAR asymétrique — re-test débiaisé BTC (2026-09-02) — Epic #1454
+
+Le keeper historique M16 annonçait **3/3 BEATS** sur BTC face à HAR classique brut. Le re-test applique
+la même calibration train-only de 60 observations aux deux modèles, persiste leurs prévisions OOS sur
+les mêmes dates et évalue `dm_verdict(..., loss_fn="mse")`. Walk-forward expanding 5 folds, horizons
+{1,5,10}, quatre seeds {0,7,42,99}. OLS étant déterministe, les seeds sont bit-identiques : `edge/σ`
+cross-seed est **non applicable**, pas artificiellement infini.
+
+| Horizon | MSE HAR débiaisé | MSE asym. débiaisé | edge | biais asym. | biais HAR | dm_p_median | Verdict |
+|---:|---:|---:|---:|---:|---:|---:|---|
+| h=1 | 0,843774 | 0,848154 | −0,52 % | −0,005109 | −0,003880 | 0,244862 | **INCONCLUSIVE** |
+| h=5 | 0,417886 | 0,403593 | +3,42 % | −0,003967 | −0,001552 | 0,011363 | **BEATS** |
+| h=10 | 0,389457 | 0,369614 | +5,10 % | −0,004194 | −0,002419 | 0,005123 | **BEATS** |
+
+**Décomposition `MSE = biais² + variance`** : les biais résiduels sont proches de zéro (biais² ≤ 2,6e-5),
+donc l'écart restant porte essentiellement sur la variance. Le résultat brut était gonflé, surtout aux
+horizons longs (+23,6 %/+36,7 % → +3,4 %/+5,1 %), mais le signal ne disparaît pas : **2/3 BEATS,
+1/3 INCONCLUSIVE, 0/3 NO BEATS**. M16 BTC reste un keeper moyen/long horizon ; h=1 est retiré du claim.
+
+- **Run** : `python scripts/har_asymmetric.py --coins BTC-USD --horizons 1 5 10 --seeds 0 7 42 99 --n-splits 5 --skip-remote --debias --calibration-size 60 --out-json scripts/results/m16_har_asymmetric_btc_debiased.json`
+- **Notebook** : `m3_har_asymmetric_semivariance.ipynb`, 8/8 cellules code exécutées, recalcul indépendant depuis les séries persistées
+- **Coûts** : non applicables au verdict de forecast pur ; aucun claim Sharpe/P&L
 
 ## M4 DLinear-vol — entrée §C (2026-08-14) — issue #10908
 
@@ -330,6 +355,77 @@ h=5 et h=10 réfutent l'edge deep-seq, respectivement 3/4 et 4/4 seeds significa
 - **Run** : `python scripts/btc_patchtst.py --device cpu --horizons 1 5 10 --seeds 0 1 7 42 --n-splits 5 --seq-len 64 --patch-len 16 --stride 8 --d-model 32 --n-heads 4 --n-layers 1 --epochs 10 --batch-size 32 --out-json results/btc_patchtst_har_debiased_cpu_20260901.json` — 115,9 s CPU, 12/12 combinaisons, 5 folds chacune.
 - **Vérification** : 12 lignes JSON, 1 890 / 1 870 / 1 845 prédictions alignées par seed selon h ; longueurs erreurs/prédictions/timestamps identiques ; `MSE = biais² + variance` recalculé à tolérance numérique sur chaque ligne.
 - **Verdict §C** : **0/3 BEATS, 1/3 INCONCLUSIVE, 2/3 NO BEATS**. Mesure de prévision uniquement : aucune stratégie de trading ni claim après coûts.
+
+## M5 HMM regime-switching HAR — entrée §C + revalidation hors biais (2026-09-02) — Epic #1454
+
+Première entrée REGISTRY de M5 : le modèle était documenté (`docs/M5_HMM_REGIME.md`, Cycle 25) et
+portait un **BEATS vivant** (`ETH-USD h=1`, +9,6 %, 4/4 seeds) qu'aucun rapport de biais n'avait
+audité — le document ne contenait aucune occurrence de `bias`/`biais`/`recentr`/`debias`, et M5
+n'apparaissait pas ici. Le harnais ne persistait que des MSE agrégés : le verdict publié était
+**invalidable post-hoc sans ré-entraînement**, exactement le constat que #12745 avait levé sur M4/M15.
+
+**Protocole réel** : BTC Bitstamp hourly, 2 278 jours de RV (2018-05-15→2024-08-08) ; ETH Binance
+hourly, 1 495 jours (2019-10-21→2023-12-14). HAR à régimes = HMM gaussien K=2 (hmmlearn, Viterbi sur
+log-RV) + OLS à 8 coefficients (4 base + 4 termes d'interaction `I(regime=high)`) ; baseline = HAR
+classique Corsi 3 paramètres. Walk-forward 5 folds expanding, refit tous les 22 jours, seeds
+{0,7,42,99}, horizons {1,5,10} — 24 combinaisons, 331,6 s CPU (ni GPU ni réseau : HMM + OLS).
+DM HAC `loss_fn="mse"`. La jambe hors biais recentre les erreurs **des deux côtés**
+(`e − mean(e)`) et compare aussi l'edge contre une baseline dé-biaisée. Les jambes brutes publiées en
+Cycle 25 sont recalculées à l'identique et **non modifiées**.
+
+| Coin | h | edge brut | edge vs classic dé-biaisée | σ cross-seed | edge/σ | dm_p_median (rec.) | seeds BEATS / BEATEN (rec.) | Verdict hors biais |
+|---|---:|---:|---:|---:|---:|---:|:---:|---|
+| BTC-USD | 1  |  +7,0 % |  **+1,3 %** |  4,04 pt | **0,3σ** | 1,47e-03 | 3/4 · 0/4 | **INCONCLUSIVE** |
+| BTC-USD | 5  | −11,1 % | **−43,5 %** |  9,37 pt | 4,6σ | 6,21e-06 | 0/4 · 4/4 | **NO BEATS** |
+| BTC-USD | 10 | −28,3 % | **−99,0 %** | 21,18 pt | 4,7σ | 1,75e-09 | 0/4 · 4/4 | **NO BEATS** |
+| ETH-USD | 1  |  +9,6 % |  **+8,7 %** |  2,11 pt | **4,1σ** | 1,14e-05 | 4/4 · 0/4 | **BEATS** |
+| ETH-USD | 5  | −17,9 % | **−23,4 %** |  3,85 pt | 6,1σ | 6,16e-04 | 0/4 · 4/4 | **NO BEATS** |
+| ETH-USD | 10 | −53,0 % | **−66,2 %** | 14,70 pt | 4,5σ | 4,10e-05 | 0/4 · 4/4 | **NO BEATS** |
+
+**Rapport de biais signé (contrôle §C(7))** — régime / classic, biais² de la baseline en part de son
+MSE : BTC −0,1811/−0,2266 (**5,8 %**), −0,2728/−0,3432 (**22,6 %**), −0,3624/−0,4502 (**35,5 %**) ;
+ETH −0,0718/−0,0810 (**1,0 %**), −0,1091/−0,1290 (**4,5 %**), −0,1519/−0,1727 (**8,0 %**) — h=1/5/10.
+Les deux modèles sous-prévoient le log-RV ; la part de biais de la baseline croît avec l'horizon.
+
+**Lecture — le seul BEATS de M5 survit, et l'échec voisin change de cause.** `ETH h=1` ne perd que
+0,9 pt au dé-biaisage (+9,6 → +8,7 %) et satisfait la conjonction §C complète (4/4 seeds sur la jambe
+de précision, `dm_p_median` 1,14e-05, **4,1σ ≥ 2σ**) : c'est une vraie réduction de variance, pas la
+miscalibration de la baseline. Le contraste avec M15 est net — même instrument, verdict opposé
+(`refuted-de-biased` 3/3, #11041). En revanche `BTC h=1` s'effondre de +7,0 % à **+1,3 %** : **~82 %
+de son edge apparent était le biais de la HAR BTC**, dont le biais² pèse 5,8 % du MSE. Le verdict brut
+disait déjà INCONCLUSIVE mais l'imputait à la graine 7 ; hors biais, l'edge vaut **0,3σ** de la
+dispersion cross-seed — l'effet n'existe pas, il n'est pas seulement instable. Enfin, dé-biaiser la
+baseline **aggrave** les quatre configs longues (BTC h=10 : −28,3 → −99,0 %) : le biais de la HAR
+masquait l'ampleur de la dégradation. La conclusion d'origine « nuisible à h≥5 » est renforcée.
+
+**L'asymétrie BTC/ETH à h=1 appartient à la baseline, pas au modèle.** Même modèle, même instrument :
+la HAR BTC porte 5,8 % de biais², la HAR ETH 1,0 % — d'où 82 % de biais dans l'edge BTC contre 9 %
+dans l'edge ETH. Toute lecture cross-coin de M5 qui ignore cette colonne compare des baselines de
+qualité différente.
+
+**Comparabilité M4/M5 — même objet de baseline.** `hmm_regime_vol.py` et la chaîne
+`btc_vol.py → dlinear_vol.py` importent le même `har_model.HARModel` (définition unique). Le biais OOS
+BTC mesuré ici est **bit-identique** à `har_bias_oos` de l'artefact #12745 (−0,2265869503892514 /
+−0,34317822065868814 / −0,45022101989096786 pour h=1/5/10, 17 chiffres). Ce n'est **pas** une
+corroboration indépendante — c'est le même calcul appelé depuis deux harnais — mais cela vérifie le
+câblage de l'instrumentation ajoutée ici et rend les edges M4 et M5 directement comparables sur BTC.
+
+**Portée — ce que cette entrée ne couvre PAS** : (1) verdict de **prévision** (MSE log-RV)
+uniquement — aucune stratégie de vol-timing dérivée, aucun coût de transaction imputé ; (2) K=2
+états seulement (K≥3 non testé) ; (3) le défaut structurel noté en Cycle 25 — la prévision itérative
+à h pas utilise un **unique** indicateur de régime pour tous les pas — est inchangé et reste
+l'explication la plus plausible de la dégradation aux horizons longs, mais n'est pas isolé
+expérimentalement ici ; (4) les séries alignées ne sont pas versionnées (option `--dump-series`,
+CSV hors dépôt, 37 040 lignes pour la grille complète).
+
+- **Run** : `python scripts/hmm_regime_vol.py --coins BTC-USD ETH-USD --horizons 1 5 10 --seeds 0 7 42 99 --out results/m5_hmm_regime_debiased/results_full.json --dump-series results/m5_hmm_regime_debiased/series_full.csv` — 331,6 s CPU, 24/24 combinaisons, 5 folds chacune, 30 lignes JSON (24 par seed + 6 agrégats).
+- **Vérification** : `MSE = biais² + variance` recalculé par ligne (tolérance 1e-12) ; identité
+  `d_brut − d_recentré = biais_a² − biais_b²` vérifiée numériquement (résidu ~1e-17) et scellée en
+  test paramétré ; les six verdicts publiés ci-dessous sont rejoués depuis la machine d'états agrégée
+  (`_aggregate_debiased_state`), avec contrôles négatifs 3/4 des deux côtés ; 45 tests dans
+  `scripts/tests/test_hmm_regime_vol.py`, voisins `test_btc_vol.py` /
+  `test_diebold_mariano.py` / `test_har_model.py` / `test_dlinear_debiased_edge.py` verts (57).
+- **Verdict §C hors biais** : **1/6 BEATS (ETH h=1, `confirmed`), 1/6 INCONCLUSIVE, 4/6 NO BEATS**.
 
 ## M4 DLinear-vol — extension §C ETF (2026-08-23) — Epic #1454
 
