@@ -1,0 +1,102 @@
+name: Leaky Fixture Sweep (date-window)
+
+# Advisory detector for the date-bomb defect class that reddened main at
+# 2026-09-02T00:24Z (picker, #14206): a test fixture pinning an ABSOLUTE date
+# (e.g. mergedAt: "2026-09-01T00:00:00Z") while its module derives a sliding
+# window from the REAL clock (NOW - timedelta(days=1)). On the next calendar
+# boundary the fixture falls out of the window and the test fails, breaking
+# main for the whole fleet with no push, no review, no guard able to catch it.
+#
+# The organ proves the class by doing the thing that breaks it: advance the
+# clock (libfaketime) and run the clock-windowed test surface. A test that
+# survives +8d/+31d is not a bomb; one that fails IS, and needs triage (make
+# the fixture relative to NOW, or justify the absolute date on the issue).
+#
+# Advisory BY CONSTRUCTION: schedule- + dispatch-only, never on
+# pull_request/push, so a red run can never block a PR on an unrelated diff —
+# the exact failure mode #14206 is built to avoid. A red run here means a real
+# date-window fixture exists and must be triaged.
+#
+# Scope: the date-windowed test files only (not the full suite), for two
+# reasons honored firsthand (2026-09-02, po-2024):
+#   (1) scripts/audit/tests + scripts/quantconnect/tests are CI-EXCLUDED from
+#       scripts-tests.yml (#2037/#2871): their suites need yfinance, external
+#       data files or an OpenAI key at collection. Targeting the individual
+#       hermetic file (not the directory) keeps collection clean (verified:
+#       test_nit_lift_authorship.py + test_audit_projects.py collect with
+#       pytest alone).
+#   (2) the full scripts/tests suite bails at import (test_check_workflow_
+#       label_paths.py triggers sys.exit(2) at load), which would mask the
+#       date-bomb signal in collection-noise. The date-windowed surface re-
+#       scopes the sweep to the files that actually derive windows from NOW.
+#
+# The candidate list below comes from the #14206 table (date-fragile files
+# identified by their pinned absolute dates). Sweeping them daily catches a
+# REGRESSION (future change re-introducing a bomb) without the collection
+# noise of the full suite. A new date-fragile file should be added here when
+# a new date-window test lands.
+
+on:
+  schedule:
+    # Daily, off-:00 minute (avoid the :00/:30 API spike).
+    - cron: '43 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: leaky-fixture-sweep
+  cancel-in-progress: false
+
+jobs:
+  sweep:
+    name: Date-window sweep
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+
+      - name: Install pytest + libfaketime
+        run: |
+          python -m pip install --quiet pytest
+          sudo apt-get update
+          sudo apt-get install --yes libfaketime
+
+      # The date-windowed surface. Each file is a single target so collection
+      # stays hermetic (no sibling deps). 189 tests green on main under both
+      # horizons (validated 2026-09-02, po-2024).
+      # Native FAKETIME offset format (+8d, +31d): passed through the wrapper
+      # verbatim. Matches the validated evidence (2026-09-02: both horizons
+      # green, 189 tests).
+      - name: Sweep clock-windowed surface at +8 days
+        run: |
+          faketime '+8d' python -m pytest \
+            scripts/tests/test_pick_idle_grain.py \
+            scripts/tests/test_pick_idle_grain_cache.py \
+            scripts/tests/test_pick_nanoclaw_concerns.py \
+            scripts/tests/test_pick_claim_filter.py \
+            scripts/tests/test_substance_drought.py \
+            scripts/tests/test_coordination_budget.py \
+            scripts/audit/tests/test_nit_lift_authorship.py \
+            scripts/quantconnect/tests/test_audit_projects.py \
+            --tb=short -q
+
+      - name: Sweep clock-windowed surface at +31 days
+        run: |
+          faketime '+31d' python -m pytest \
+            scripts/tests/test_pick_idle_grain.py \
+            scripts/tests/test_pick_idle_grain_cache.py \
+            scripts/tests/test_pick_nanoclaw_concerns.py \
+            scripts/tests/test_pick_claim_filter.py \
+            scripts/tests/test_substance_drought.py \
+            scripts/tests/test_coordination_budget.py \
+            scripts/audit/tests/test_nit_lift_authorship.py \
+            scripts/quantconnect/tests/test_audit_projects.py \
+            --tb=short -q
