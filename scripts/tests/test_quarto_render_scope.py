@@ -15,9 +15,12 @@ the tuple would not raise -- it would just return a smaller, cleaner-looking
 scope), and ``restrict_yaml`` is asserted to preserve the project's other keys
 and the whole tail of the file byte-for-byte.
 
-Tests are CPU-only / hermetic: no ``git``, no I/O, no repo checkout needed --
-``decide`` and ``restrict_yaml`` are pure, and the changed-file rows are
-hand-built.
+Tests are CPU-only: no ``git``, no subprocess -- ``decide`` and
+``restrict_yaml`` are pure and the changed-file rows are hand-built. One
+exception, and it is deliberate: ``test_every_glob_in_the_real_render_list_is
+_representable`` reads the repo's own ``_quarto.yml``. A fixture cannot catch
+someone adding an entry this module's glob translator would silently
+under-match, and under-matching is the failure mode above.
 """
 from __future__ import annotations
 
@@ -191,3 +194,125 @@ def test_restrict_yaml_drops_the_original_comments_with_the_entries():
     assert "# Landing pages" not in out
     assert "# Notebooks" not in out
     assert "SCOPED to this PR" in out
+
+
+# ---------------------------------------------------------------------------
+# glob entries
+#
+# The real list carries `*.qmd`, covering index.qmd and parcours.qmd -- the two
+# root landing pages. An exact-string intersection matched neither: a PR
+# editing index.qmd fell through to `empty`, skipped the render step, and
+# reported success having built nothing. These pin the fix.
+# ---------------------------------------------------------------------------
+
+YML_GLOB = """project:
+  type: site
+  render:
+    - "*.qmd"
+    - "docs/**/*.md"
+    - "README.md"
+
+site:
+  title: "CoursIA"
+"""
+
+ENTRIES_GLOB = ["*.qmd", "docs/**/*.md", "README.md"]
+
+
+def test_render_list_entries_reads_glob_entries_verbatim():
+    assert qrs.render_list_entries(YML_GLOB) == ENTRIES_GLOB
+
+
+def test_glob_entry_selects_the_document_it_covers():
+    mode, files, _ = qrs.decide([("M", "index.qmd")], ENTRIES_GLOB)
+    assert mode == "scoped"
+    assert files == ["index.qmd"]
+
+
+def test_single_star_does_not_cross_a_path_separator():
+    """`*.qmd` is root-only -- matching `sub/deep.qmd` would render too much."""
+    assert qrs.decide([("M", "sub/deep.qmd")], ENTRIES_GLOB)[0] == "empty"
+
+
+def test_double_star_does_cross_path_separators():
+    _, files, _ = qrs.decide([("M", "docs/a/b/guide.md")], ENTRIES_GLOB)
+    assert files == ["docs/a/b/guide.md"]
+
+
+def test_deleting_a_glob_covered_document_forces_full():
+    """The deletion check must see through globs too, or link rot ships."""
+    mode, _, reason = qrs.decide([("D", "parcours.qmd")], ENTRIES_GLOB)
+    assert mode == "full"
+    assert "link integrity" in reason
+
+
+def test_glob_expansion_keeps_list_order_and_dedupes():
+    rows = [("M", "README.md"), ("M", "parcours.qmd"), ("M", "index.qmd")]
+    _, files, _ = qrs.decide(rows, ENTRIES_GLOB)
+    assert files == ["index.qmd", "parcours.qmd", "README.md"]
+
+
+def test_unrepresentable_glob_falls_back_to_full_never_to_a_narrow_scope():
+    """Under-matching is the dangerous direction: refuse to guess."""
+    mode, _, reason = qrs.decide([("M", "README.md")], ["data-[0-9].qmd", "README.md"])
+    assert mode == "full"
+    assert "unsupported glob" in reason
+
+
+def test_every_glob_in_the_real_render_list_is_representable():
+    """Guards the production list against an entry the translator would miss."""
+    entries = qrs.render_list_entries(qrs.QUARTO_YML.read_text(encoding="utf-8"))
+    assert entries, "the repo's _quarto.yml must carry a render list"
+    unrepresentable = [e for e in entries
+                       if qrs.is_glob(e) and qrs.glob_to_regex(e) is None]
+    assert unrepresentable == []
+
+
+# ---------------------------------------------------------------------------
+# CI machinery -> smoke set
+#
+# Positive control on the remedy: without this exemption, THIS script's own PR
+# is classified `full` by its own rule and dies on the 60-min ceiling it exists
+# to avoid.
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize("path", list(qrs.CI_MACHINERY))
+def test_ci_machinery_alone_renders_a_smoke_set_not_nothing_and_not_everything(path):
+    mode, files, _ = qrs.decide([("M", path)], ENTRIES)
+    assert mode == "scoped", path
+    assert files, "a machinery-only PR must still exercise the render step"
+    assert set(files) <= set(qrs.SMOKE_DOCUMENTS)
+
+
+def test_this_prs_own_change_set_is_not_a_full_render():
+    """The exact rows of the PR introducing this file."""
+    rows = [("M", ".github/workflows/quarto-pages-deploy.yml"),
+            ("M", "scripts/quarto_render_scope.py"),
+            ("M", "scripts/tests/test_quarto_render_scope.py")]
+    mode, files, _ = qrs.decide(rows, ENTRIES)
+    assert mode == "scoped"
+    assert files == ["index.qmd", "README.md"]
+
+
+def test_smoke_yields_to_real_changed_documents():
+    """The smoke set is a floor for an empty selection, never an addition."""
+    rows = [("M", ".github/workflows/quarto-pages-deploy.yml"),
+            ("M", "MyIA.AI.Notebooks/Search/Search-3.ipynb")]
+    _, files, _ = qrs.decide(rows, ENTRIES)
+    assert files == ["MyIA.AI.Notebooks/Search/Search-3.ipynb"]
+
+
+def test_notebook_rewriting_scripts_still_force_full():
+    """The exemption is for scripts that SELECT, never for those that REWRITE.
+
+    Both live under `scripts/quarto_`; only this one is exempt.
+    """
+    assert qrs.decide([("M", "scripts/quarto_yaml_safe.py")], ENTRIES)[0] == "full"
+    assert qrs.decide([("M", "scripts/quarto_render_scope.py")], ENTRIES)[0] == "scoped"
+
+
+def test_smoke_documents_are_covered_by_the_real_render_list():
+    """A smoke document Quarto would not render makes the floor a no-op."""
+    entries = qrs.render_list_entries(qrs.QUARTO_YML.read_text(encoding="utf-8"))
+    _, files, _ = qrs.decide([("M", ".github/workflows/quarto-pages-deploy.yml")], entries)
+    assert sorted(files) == sorted(qrs.SMOKE_DOCUMENTS)
