@@ -5,6 +5,19 @@ Converts student solutions to labeled "Exemple" cells and creates
 new exercise stubs with proper TODO markers.
 """
 
+# Archive header (standard _archive convention, 2026-08)
+# - Date archived : 2026-08-06
+# - Superseded by : none (closed dead-end) — mission fulfilled in PR #453,
+#   then legitimately superseded by student TP #601 and later lib-vs-lib reworks
+# - Verdict recorded in : PR #453 (cc4f86d55, issue #420), PR #601
+#   (86684a3ed), PRs #11789/#11797, PR #9580 (archive)
+#
+# Per-function disposition :
+# - fix_csp1() : transformation applied then superseded by student TP #601;
+#   retained as a record of the pre-TP state
+# - fix_csp2() : transformation applied then superseded by student TP #601;
+#   retained as a record of the pre-TP state
+
 import json
 import sys
 
