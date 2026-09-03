@@ -49,49 +49,7 @@ from dlinear_vol import (  # noqa: E402
     walk_forward_har,
     walk_forward_dlinear,
 )
-
-
-def _mse_decomposition(errors: np.ndarray) -> dict:
-    """Decompose MSE of a forecast into bias^2 + variance on the error support."""
-    if errors is None or len(errors) == 0:
-        return {"mse": float("nan"), "bias_sq": float("nan"), "variance": float("nan")}
-    bias = float(np.mean(errors))
-    variance = float(np.var(errors, ddof=0))
-    return {
-        "mse": float(np.mean(errors ** 2)),
-        "bias_sq": bias ** 2,
-        "variance": variance,
-    }
-
-
-def _dm_centered_mse(
-    errors_a: np.ndarray, errors_b: np.ndarray, horizon: int
-) -> dict:
-    """DM test on errors centered by their own mean, with loss_fn='mse'.
-
-    Centering annihilates the bias component (`mean(e_a - mean(e_a)) = 0`),
-    so the resulting `d_mean` measures only the variance differential. The
-    "DM on precision" jambe that #10961 documents is exactly this.
-    """
-    from dm_test import dm_verdict as dm_verdict_fn
-
-    e_a = np.asarray(errors_a, dtype=float)
-    e_b = np.asarray(errors_b, dtype=float)
-    if e_a.shape != e_b.shape:
-        return {"dm_stat": float("nan"), "dm_pvalue": float("nan"), "dm_verdict": "SHAPE_MISMATCH"}
-    n = len(e_a)
-    if n < 10:
-        return {"dm_stat": float("nan"), "dm_pvalue": float("nan"), "dm_verdict": "INSUFFICIENT_DATA"}
-
-    centered_a = e_a - np.mean(e_a)
-    centered_b = e_b - np.mean(e_b)
-    res = dm_verdict_fn(centered_a, centered_b, horizon=horizon, loss_fn="mse")
-    return {
-        "dm_stat": float(res["dm_statistic"]),
-        "dm_pvalue": float(res["p_value"]),
-        "dm_verdict": str(res["verdict"]),
-        "mean_loss_diff": float(res["mean_loss_diff"]),
-    }
+from bias_metrics import _dm_centered_mse, _mse_decomposition  # noqa: E402
 
 
 def _dm_uncentered_mse(
