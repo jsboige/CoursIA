@@ -62,10 +62,14 @@ jobs:
   pedagogy-density-advisory:
     name: "Pedagogy density >= 1200 c/cell advisory (label, non-blocking)"
     # Routage #14283 tranche 4 (ai-01 2026-09-02) : balayage cron pur-Python.
-    # Declencheur `schedule` uniquement -- il ne tourne que sur la branche par
-    # defaut, donc aucun code de fork ne peut l'atteindre et aucune garde
-    # same-repo n'est requise (cf en-tete de check_self_hosted_runner_policy.py).
-    # Retour arriere = remettre `runs-on: ubuntu-latest` + retrait de l'allowlist.
+    # Declencheur `schedule` (et `workflow_dispatch`) uniquement -- l'en-tete
+    # l'annonçait déjà, mais le job n'avait pas de garde `if:` et tournait
+    # donc aussi sur `push` et `pull_request`. Sur `pull_request` en particulier,
+    # le job s'executait sur self-hosted runner avec un payload fork PR --
+    # @NanoClaw (concern de politique isolement #12704) demande la restriction.
+    # La condition `if:` explicite retablit la portee cron pur + dispatch.
+    # Retour arriere = retirer la ligne `if:`.
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
 
     steps:
