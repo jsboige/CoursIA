@@ -48,6 +48,7 @@ on:
     paths:
       - 'scripts/notebook_tools/pedagogy_density_baseline.json'
       - 'MyIA.AI.Notebooks/**'
+      - '.github/workflows/pedagogy-density-advisory.yml'   # self-cover (#8822)
   workflow_dispatch: {}
 permissions:
   contents: read
