@@ -570,7 +570,7 @@ Le hub Search alignait une riche prose sur la double approche *exploration syst�
 | Famille | Lake phare | Théorème / brique | Branchement notebook |
 |---------|-----------|-------------------|----------------------|
 | Search / Part 1 | `search_lean` (#4048) | A\* admissibilité → optimalité (P1) | [Search-3-Informed](Part1-Foundations/Search-3-Informed.ipynb) (A\*, heuristique admissible) |
-| Search / Part 1 | `search_lean` | A\* consistance d'heuristique (P2) + relaxation pondérée | [Search-03d-WeightedAstar](Part1-Foundations/Search-03d-WeightedAstar.html) (Weighted A\*, Pohl 1970) |
+| Search / Part 1 | `search_lean` | A\* consistance d'heuristique (P2) + relaxation pondérée | [Search-03d-WeightedAstar](Part1-Foundations/Search-03d-WeightedAstar.ipynb) (Weighted A\*, Pohl 1970) |
 | Search / Part 1 | `search_lean` | Pattern DB additives (Korf & Felner 2002) | [Search-03b-PatternDatabases](Part1-Foundations/Search-03b-PatternDatabases.ipynb) |
 | ML | `learning_theory_lean` (#5054) | Novikoff perceptron 0 sorry #4140 | [`Perceptron.lean`](../ML/learning_theory_lean/Perceptron/Perceptron.lean) (lake, pas notebook pédagogique) |
 | Probas | `decision_theory_lean` (#5053) | Concentration uniforme + Hoeffding (PAC iter-2) | [Infer-3-Factor-Graphs](../Probas/Infer/Infer-3-Factor-Graphs.ipynb) (factor graphs + PAC) |
