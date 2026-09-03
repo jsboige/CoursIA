@@ -1,0 +1,185 @@
+name: Markdown deaccent advisory
+
+# Source d'identite byte-a-byte pour la garde absorbee par fast-lane-shadow
+# (#14325, registre TRANCHE6). Ce workflow garde sa forme originelle
+# (workflow_dispatch + per-PR paths) pour que
+# `check_absorbed_check_run_identity.py` puisse verifier l'identite du nom
+# de check-run rendu par rapport au `Guard.name` du registre ; il sert aussi
+# de cible de re-run manuel sur main apres une panne CI.
+#
+# Pourquoi le moteur fast-lane (et non un workflow dedie par-PR) :
+#   - 46 workflows clonaient le repo (2,1 Go) pour ~3 min de travail reel
+#     (mesure #11835, 2026-08-19). Le fast-lane paie UN checkout et enchaine
+#     les analyses, en emettant un check-run nomme par garde absorbe
+#     (`scripts/ci/fast_lane.py --shadow`).
+#   - Cette garde beneficie donc du meme slot runner que les 22 autres
+#     gardes absorbees (TRANCHE1-5), et son verdict visible sur la PR est
+#     preserve via l'API Checks.
+#
+# Forme (TRANCHE6) :
+#   - **Advisory**, jamais bloquant. La consigne du body #14325 est explicite
+#     ("Brancher les deux detecteurs en advisory par-PR") : la prose markdown
+#     de main porte une dette existante (cf 37 286 candidats repo-wide, mesure
+#     #14064), et le cablage doit SURFACER les introductions sans faire
+#     rougir une PR sur de la dette heritee.
+#   - `warn_rc=(2,)` dans le registre : le detecteur rend exit 2 sur
+#     `--fail-on-findings` ; fast-lane agrege ce rc en succes dans le verdict
+#     final et conserve la sortie stdout (qui nomme les cellules) pour
+#     audit.
+#   - Pas de scan repo-wide : `iterates_paths=True` sur
+#     `MyIA.AI.Notebooks/**/*.ipynb` execute le detecteur UNE FOIS PAR
+#     notebook touche par la PR (modele TRANCHE4 md-content-loss).
+#
+# Detecteur durci (post-#14064) :
+#   `scripts/notebook_tools/detect_markdown_deaccent.py` (PR #14248
+#   MERGED 2026-09-XX). Trois points qui le distinguent de
+#   `detect_accent_stripping.py` :
+#   1. Listes d'exclusion closes des homographes legitimes (`des`, `sur`,
+#      `mesure`, `cote`, `tache`, ...) et des cognats anglais
+#      (`inference`, `decision`, ...). Le pic de FP historique
+#      (16 % des candidats) est sorti de l'auto-bucket.
+#   2. Gate FR/EN prose : seuls les notebooks a prose francaise dominante
+#      sont analyses (les autres sont skippes avec `language=en`).
+#   3. Code inline / blocs fences / maths ignores.
+#   Acceptance par **faux negatifs** (regle explicite #14064) : 8 tests
+#   pytest couvrent `theoreme`/`etat`/`donnees`... (doivent etre attrapes)
+#   et `des`/`sur`/`mesure` (ne doivent jamais l'etre en auto).
+#
+# Wiring : `scripts/ci/fast_lane_registry.py :: TRANCHE6`.
+# Identite : `Guard.name == job.name` (cf check_absorbed_check_run_identity.py).
+# Tests : ce workflow n'est pas appele par le runner -- son nom sert de cible
+# a la garde absorbee. Le `workflow_dispatch` reste pour le re-run manuel.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: markdown-deaccent-advisory-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  markdown-deaccent-advisory:
+    name: "Markdown deaccent advisory (per-notebook, label, non-blocking)"
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    if: github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Advisory check on modified notebooks
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+          LABEL_DEACCENT: markdown-deaccent-candidates
+          LABEL_DEACCENT_BLOCKED: markdown-deaccent-blocked-language
+        run: |
+          set -uo pipefail
+
+          # Per-PR scope : on n'analyse QUE les notebooks modifies par la PR
+          # (jamais un scan repo-wide, modele consecutive-code-cells-advisory
+          # + TRANCHE4 md-content-loss).
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "::notice::Manual dispatch -- no diff to compute. Run \`python scripts/notebook_tools/detect_markdown_deaccent.py --json --fail-on-findings <notebook>\` against a single notebook for ad-hoc verification."
+            exit 0
+          fi
+
+          CHANGED=$(git diff --name-only --diff-filter=d "$BASE...$HEAD" -- '*.ipynb' \
+            | grep -v $'\r$' || true)
+          COUNT=$(echo "$CHANGED" | grep -c . || true)
+          echo "Modified *.ipynb in this PR: $COUNT"
+
+          # Le cablage est observe (#14325) sur `detect_markdown_deaccent.py`
+          # (version durcie post-#14064), pas sur `detect_accent_stripping.py`
+          # (l'ancien, plus strict et plus FP-prone). Sortie par-defaut du
+          # detecteur = lisible humain ; le rc=2 sur `--fail-on-findings`
+          # signale une desaccentuation auto sans bloquer la lane.
+          if [ "$COUNT" -eq 0 ]; then
+            echo "No modified notebooks -- clean."
+            gh pr edit "$PR_NUMBER" --remove-label "$LABEL_DEACCENT" 2>/dev/null || true
+            gh pr edit "$PR_NUMBER" --remove-label "$LABEL_DEACCENT_BLOCKED" 2>/dev/null || true
+            exit 0
+          fi
+
+          ensure_label() {
+            gh label create "$1" --description "$2" --color "$3" --force 2>/dev/null || true
+          }
+          set_label() { gh pr edit "$PR_NUMBER" --add-label "$1" || true; }
+          unset_label() { gh pr edit "$PR_NUMBER" --remove-label "$1" 2>/dev/null || true; }
+
+          ensure_label "$LABEL_DEACCENT" \
+            "Un notebook modifie introduit une desaccentuation auto-flaggee (#14325, registre TRANCHE6)" "C4A64C"
+          ensure_label "$LABEL_DEACCENT_BLOCKED" \
+            "Un notebook modifie est a prose non francaise et n'est pas analyse (#14325)" "BFD4F2"
+
+          ANY_AUTO=0
+          ANY_BLOCKED=0
+          echo "" > /tmp/deaccent-summary.md
+          echo "## Markdown deaccent advisory" > "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          while IFS= read -r nb; do
+            [ -z "$nb" ] && continue
+            [ -f "$nb" ] || continue
+            # Le detecteur rend rc=2 sur `--fail-on-findings` quand une forme
+            # auto est introduite ; on capture la sortie dans tous les cas pour
+            # distinguer les 4 cas (clean / blocked-language / candidates /
+            # error).
+            out=$(python scripts/notebook_tools/detect_markdown_deaccent.py \
+                    --json --fail-on-findings "$nb" 2>&1) && rc=0 || rc=$?
+            if [ "$rc" -eq 0 ]; then
+              continue
+            elif [ "$rc" -eq 2 ]; then
+              ANY_AUTO=1
+              echo "<details><summary><code>$nb</code> -- auto-flagged</summary>" >> "$GITHUB_STEP_SUMMARY"
+              echo "" >> "$GITHUB_STEPUMMARY"
+              echo '```json' >> "$GITHUB_STEP_SUMMARY"
+              echo "$out" >> "$GITHUB_STEP_SUMMARY"
+              echo '```' >> "$GITHUB_STEP_SUMMARY"
+              echo "</details>" >> "$GITHUB_STEP_SUMMARY"
+              echo "::notice title=Markdown deaccent advisory::$nb introduit des candidats auto ; voir resume."
+            elif [ "$rc" -eq 1 ]; then
+              # rc=1 = vacuous scan / fichier non trouve. Traite comme
+              # "non applicable" sans bloquer.
+              echo "::warning::$nb -- vacuous scan ou fichier introuvable, ignore."
+              continue
+            else
+              # rc inattendu : on le remonte comme ERROR pour ne pas avaluer
+              # un detecteur casse. C'est l'anti-auto-desarmement analogue a
+              # md-content-loss (cf #8655/#8656) : mieux vaut rougir sur un
+              # trouble inconnu que laisser un detecteur casse produire un
+              # vert par silence.
+              echo "::error title=Markdown deaccent advisory::$nb -- rc inattendu $rc, detecteur possiblement casse."
+              ANY_BLOCKED=1
+            fi
+          done <<< "$CHANGED"
+
+          if [ "$ANY_AUTO" -gt 0 ]; then
+            set_label "$LABEL_DEACCENT"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "FIX: un ou plusieurs notebooks introduisent des candidats auto de desaccentuation (cf #14325, registre TRANCHE6). Voir le detail par notebook ci-dessus. La relecture peut justifier la forme nue (code, citation verbatim, libelle de figure) ou demander une cure locale." >> "$GITHUB_STEP_SUMMARY"
+          else
+            unset_label "$LABEL_DEACCENT"
+            echo "RESULT: aucune desaccentuation auto introduite par cette PR (advisory)." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          if [ "$ANY_BLOCKED" -gt 0 ]; then
+            set_label "$LABEL_DEACCENT_BLOCKED"
+          else
+            unset_label "$LABEL_DEACCENT_BLOCKED"
+          fi
+
+          # Advisory = exit 0 toujours (modele #12797 consecutive-code-cells).
+          exit 0
