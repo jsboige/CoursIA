@@ -77,48 +77,42 @@ from pathlib import Path
 #     recognised key word -- see `_strip_title_hashes` below.
 _NOISE = str.maketrans({"*": "", "`": "", ">": ""})
 
-# Words that, when they appear at the start of a line after one or more `#`,
-# justify stripping the title hashes. Anything else (an `#` mid-line, an
-# `#` in `Quoi: fix #9861`) is preserved.
+# Words that, when they appear at the start of a line after one or more `#`
+# or a single `-`, justify stripping the line-leading decoration. Anything
+# else (a `-` mid-line, an `#` in `Quoi: fix #9861`) is preserved.
 _TITLE_HASH_WORDS = ("Grain", "Quoi", "Preuve", "Perimetre", "Lane")
-# Compiled once: `^#+\s*<word>\b` in multiline mode. The lookahead
-# `(?=...)` does NOT consume the key word -- it only confirms the line
-# looks like a title, then `_strip_title_hashes` cuts the line BEFORE
+# Compiled once: `^[ \t]*(-|#+)\s*(?=<word>\b)` in multiline mode. The
+# lookahead `(?=...)` does NOT consume the key word -- it only confirms the
+# line looks like a title, then `_strip_title_hashes` cuts the line BEFORE
 # the key word so the regex (`_GRAIN_FULL_RE` etc.) still sees it.
-# Without the lookahead, `m.end()` would be AFTER the key word and the
-# strip would delete the tag itself, breaking the title-form tests.
 _TITLE_LINE_RE = re.compile(
-    r"^[ \t]*#+\s*(?=" + "|".join(_TITLE_HASH_WORDS) + r")\b",
+    r"^[ \t]*(?:-|\#+)\s*(?=" + "|".join(_TITLE_HASH_WORDS) + r")\b",
     re.IGNORECASE | re.MULTILINE,
 )
 
 
 def _strip_title_hashes(flat: str) -> str:
-    """Strip line-leading `##` only on lines that begin with a recognised key.
+    """Strip line-leading markdown decoration only on lines that begin with a
+    recognised key.
 
-    Splitting into lines is cheap and gives us byte-level control: a line
-    that starts with `#` followed by `Grain` / `Quoi` / `Preuve` / `Perimetre`
-    / `Lane` has its `#` chars removed (the KEY WORD IS PRESERVED -- the
-    earlier prototype deleted the key too, which broke `## Grain` lookup
-    for tests `test_title_form_hash_grain_next_line` / `_h3_grain`); every
-    other line is kept intact, including `#` in the middle (issue references,
-    code spans, etc.).
+    Splitting into lines is cheap and gives us byte-level control. Three
+    decorations are stripped on key lines:
+
+      * `## Grain` / `### Quoi: ...` -- the title-hash form (#9485).
+      * `- Grain \`MED/...\`` -- a Markdown list bullet, observed in the
+        founder tag of PR #12530 (#12719). Without this strip the new
+        line-anchored `_GRAIN_FULL_RE` (added by #13633) would not see the
+        tag -- the bullet stands BEFORE the key word.
+
+    Other lines are kept intact: a `-` mid-line (em-dash separator in
+    prose), `#` mid-line (`#9861`), backticks inside a value. The KEY WORD
+    is preserved by construction (lookahead in the regex, cut at
+    `m.end()`).
     """
     out_lines = []
     for line in flat.splitlines():
         m = _TITLE_LINE_RE.match(line)
         if m:
-            # Drop ONLY the leading whitespace + `#` chars + whitespace
-            # between them, KEEP the recognised key word. Concretely:
-            # `## Grain` -> `Grain` ; `### Quoi: ...` -> `Quoi: ...`.
-            # The `\s*` after the `#` group (in the regex) consumes the
-            # leading whitespace before the key word; the key word itself
-            # is matched but NOT consumed (lookahead via the alternation:
-            # we use the END of the key word -- `m.end()` -- as the cut).
-            # But the regex above consumes the whitespace before the key,
-            # not the key itself. So `m.end()` is the position right after
-            # the leading whitespace, which is exactly the start of the
-            # key word -- exactly what we want to keep.
             out_lines.append(line[m.end():])
         else:
             out_lines.append(line)
@@ -126,27 +120,30 @@ def _strip_title_hashes(flat: str) -> str:
 
 # --- extraction -------------------------------------------------------------
 
-# `Grain` then a REQUIRED separator (colon and/or whitespace, incl. newlines),
-# then TIER / GENRE. `[:\\s]+` (one-or-more, #11771) keeps the whole #9485
-# tolerance while refusing a ZERO-width separator: with `*`, the word
-# `Graine` matched as `Grain` + `e / Tag` and a conformant PR was labelled
-# variation-tag-malformed + variation-tag-genre-offlist. It accepts
-# `Grain:`, `Grain `, `Grain\\n\\n`, `Grain :` (space then colon). TIER is the
-# alphabetic word before `/`; GENRE is the token after (letters, digits, _,-).
+# `Grain` (line-anchored after the global markdown-noise strip and the
+# title-hash strip) then a REQUIRED separator (colon and/or whitespace,
+# incl. newlines), then TIER / GENRE. `[:\\s]+` (one-or-more, #11771) keeps
+# the whole #9485 tolerance while refusing a ZERO-width separator: with `*`,
+# the word `Graine` matched as `Grain` + `e / Tag` and a conformant PR was
+# labelled variation-tag-malformed + variation-tag-genre-offlist. It accepts
+# `Grain:`, `Grain `, `Grain\\n\\n`, `Grain :` (space then colon). TIER is
+# the alphabetic word before `/`; GENRE is the token after (letters, digits,
+# _,-).
 #
-# #13633 -- the literal `Grain` is CASE-SENSITIVE (no re.IGNORECASE). A
-# lowercase `grain` in running prose ("est le grain MED/tooling suivant")
-# is a noun, not a key: `re.IGNORECASE` let the phrase arm the extractor and
-# `parse_grain` produced a confident {tier, lane} for a body with NO Grain tag
-# -- the `false` cap verdict (instead of the #9465 `null` "not evaluated")
-# on #13550, whose prose merely DESCRIBED *another* PR's next grain. The 5
-# tolerated forms all capitalise the key (§1 `Grain: T/G` / `**Grain:**` /
-# `## Grain` title), so requiring `Grain` leaves them intact while refusing a
-# bare lowercase token in prose. TIER/GENRE stay case-tolerant via the
-# character classes (`[A-Za-z]`, `[A-Za-z0-9_-]`) -- `light/GUARD` still
-# normalises to LIGHT/guard.
+# #13633 -- `^Grain` (with `re.MULTILINE`) rejects a token TIER/GENRE
+# preceded by prose -- a body that *describes* another grain in plain text
+# ("le grain MED/tooling suivant") was parsed as if it carried the tag,
+# yielding a confident but wrong attribution. The body MUST lead the line
+# with the tag (the canonical form is "Grain: TIER/GENRE ..." in L0; the
+# tolerated variants from the docstring above all share this invariant --
+# `**Grain:**`, `` `Grain` ``, `**Grain**`, and `## Grain\n\n<TIER>/<GENRE>`
+# all become "Grain" at the start of a line once the markdown noise is
+# stripped). Measured on 34 open PRs (2026-08-30): 0/34 hit the previous
+# `null` path that #9465 had been introduced to make visible -- every PR
+# without a tag got a confident parse instead.
 _GRAIN_FULL_RE = re.compile(
-    r"Grain[:\s]+([A-Za-z]+)\s*/\s*([A-Za-z0-9_-]+)"
+    r"^Grain[:\s]+([A-Za-z]+)\s*/\s*([A-Za-z0-9_-]+)",
+    re.IGNORECASE | re.MULTILINE,
 )
 
 # `lane` (case-insensitive), optional whitespace, optional colon, whitespace,
