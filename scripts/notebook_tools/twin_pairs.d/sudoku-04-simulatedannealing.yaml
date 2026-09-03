@@ -58,7 +58,14 @@
       csharp_sha: e3c41d14b6bd46e531d079de08efda171a7b3ab4
       content_python_sha: b5821a8d5d05b6a4ce1223725d44947aaf20e4b703db42131562d95270178d8d
       content_csharp_sha: d1b0bcf2379b7162b3be50594095bfd991b03400578f4d48ab355cfd74688d6b
+    - date: "2026-09-02"
+      by: myia-po-2027:CoursIA
+      python_sha: 74be88258d13f600860d1acd204280711e7117c6
+      csharp_sha: e3c41d14b6bd46e531d079de08efda171a7b3ab4
+      content_python_sha: 3ae551957b7553ca073918fbe9435618757ab5ef5c2de1d2c9d9a25f9dff3fed
+      content_csharp_sha: d1b0bcf2379b7162b3be50594095bfd991b03400578f4d48ab355cfd74688d6b
   known_differences:
+    - "2026-09-02 (PR #14266, myia-po-2027:CoursIA) : normalisation nbformat du champ source string->liste (tranche Sudoku de #14209) -- forme seule, jumeau Python seul (C# non touche). Contenu rejoint byte-identique (digest sha1 par cellule, 0 divergence), outputs/execution_count/nb de cellules inchanges, pas de re-exec (C.3). Les blob SHAs et content SHAs deplaces dans l audit ci-dessus sont des artefacts de forme (le content_sha hashe la structure JSON des cellules, forme du champ source incluse), pas une divergence pedagogique."
     - "Socle pedagogique commun : recuit simule (Simulated Annealing) applique au Sudoku -- schema de refroidissement, temperature decroissante, acceptation de Metropolis, voisinage par mutation locale. Tranche 1 (C# from scratch, sections 3-8) et le jumeau Python enseignent le meme algorithme."
     - "Lib-vs-lib native-both (mandat #10382) : chaque cote atteint un moteur metaheuristique de production de son ecosysteme. Python : framework 'simanneal' (l'etudiant sous-classe Annealer, herite de l'infrastructure temperature/voisinage/Metropolis) -- from simanneal import Annealer, classe SudokuAnnealer(Annealer). C# : librairie 'GeneticSharp' (Tranche 2, section 9) -- le solver SudokuGeneticSharpSolver branche un chromosome a permutation de ligne + operateurs custom (mutation echange intra-ligne, crossover OX par ligne) sur l'infrastructure Population/GeneticAlgorithm/EliteSelection/TplTaskExecutor de GeneticSharp. Les deux cotes deleguent le MOTEUR a une lib de production et se concentrent sur le probleme (encodage, voisinage/fitness)."
     - "Asymetrie d'algorithme documentee : le moteur Python (simanneal) est un framework de recuit simule ; le moteur C# (GeneticSharp) est un framework d'algorithme genetique. Les deux sont des moteurs metaheuristiques de production, mais de familles differentes (trajectoire unique + bruit thermique vs population + operateurs stochastiques). La Tranche 2 C# exploite cette difference pour comparer SA vs GA sur le meme Sudoku (SA 3/3 Easy > GA 2/3 Easy -- la structure de contraintes du Sudoku favorise la recherche locale stochastique, resultat etabli). C'est le cas mealpy-vs-MetaGeneticSharp du mandat metaheuristiques user : Python a un framework metaheuristique, .NET a le sien (GeneticSharp)."

@@ -1000,6 +1000,20 @@ MyIA.AI.Notebooks/**/cache/
 # Cache de calcul PyPhi (notebooks IIT)
 /__pyphi_cache__/
 
+# Etat local machine : untrack V1 consolidation #13739 (copies disque conservees via --cached)
+# Artifacts regenerables : plans/progress/agent-memory Claude, forensics, snapshots CI.
+# NE PAS de-commenter pour .claude/agents|skills|rules|commands (partages, tracks legitimes).
+# NOTE : `MyIA.AI.Notebooks/SymbolicAI/Tweety/dotnet-build/` NON inclus ici -- voir #14269
+# (decision d'infra distincte : dotnet-build/ reference par Tweety/README.md et 8 notebooks C#).
+.claude/PROJECT_MEMORY.md
+.claude/plans/
+.claude/progress/
+.claude/agent-memory/
+.claude/settings.local.json
+scripts/notebook_tools/forensic_results.json
+scripts/ci/snapshots/
+
+
 # PT-11c RLVR training scratch (issue #13871) : le notebook ecrit `seed_*/`
 # (checkpoints LoRA + trainer state, ~Mo/seed) sous ce sous-repertoire a chaque
 # run. Le `pt11c_per_seed_metrics.jsonl` re-generable reste a cote (tracke dans
@@ -1007,3 +1021,4 @@ MyIA.AI.Notebooks/**/cache/
 # uniquement : hors de ce scope, le nom `pt11c_multiseed_output` est trop generique
 # pour risquer un ignore non-intentionnel.
 MyIA.AI.Notebooks/GenAI/PostTraining/_measurements/pt11c_multiseed_output/
+

@@ -238,7 +238,7 @@ def no_cloning_fixed_basis() -> dict:
 # ── Orchestration ──
 
 BASE_DIR = Path(__file__).parent
-RESULTS_PATH = BASE_DIR / "spekkens_toy_results.json"
+RESULTS_PATH = BASE_DIR / "results" / "spekkens_toy_results.json"
 
 BANDS = {
     "P1a": (0.99, 1.01),
@@ -283,6 +283,7 @@ def run() -> dict:
     results["verdicts"] = {"P1": verdict_p1, "P2": verdict_p2}
     results["bands"] = BANDS
 
+    RESULTS_PATH.parent.mkdir(parents=True, exist_ok=True)
     RESULTS_PATH.write_text(
         json.dumps(results, indent=2, ensure_ascii=False), encoding="utf-8"
     )
