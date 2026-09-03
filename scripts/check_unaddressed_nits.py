@@ -832,6 +832,167 @@ _MENTION_VERDICT_REPORTED = re.compile(
 )
 
 
+# #14199 (cf grain) — Position I : `avant merge` en position de mention (FP).
+# Le marqueur `avant merge` est dans CONCERN_MARKERS comme signal d'un nit
+# redige a la main, MAIS trois formes mesurees 2026-09-02 le portent en
+# mention pure (pas en emission) :
+#
+#   1. **Qualifieur explicite non-bloquant** : « Concern (non bloquant) :
+#      <details> à confirmer avant merge. Ball merge : <delegate>. » — le
+#      qualifieur parenthese neutralise le nit, et le `Ball merge :` delegue
+#      ailleurs. (PR #13537 fondateur.)
+#
+#   2. **Narration de verification prealable** : « Verifié de mon côté
+#      avant merge : mergeStateStatus CLEAN, 0 check rouge. » — l'auteur
+#      DECRIT un check qu'il a fait, pas un nit qu'il pose. (PR #13498
+#      fondateur.)
+#
+#   3. **Formule de la voie B.0** : « levee par **issue de suivi ouverte
+#      avant merge** (#N) » / « par la voie B.0 ... avant merge » — la
+#      prose NOMME le mecanisme de levee B.0, elle ne pose pas un nit.
+#      (PR #13860 fondateur.)
+#
+# Les Positions A-H utilisent toutes un verdict formel comme discriminant
+# (`CHANGES_REQUESTED`, etc.). Position I est differente : la cible n'est
+# pas un verdict mais le marqueur temporel `avant merge` lui-meme, qui est
+# un CONCERN_MARKER a part entiere (L231). On ne peut donc pas utiliser
+# la voie iso-longueur existante des verdicts — on neutralise directement
+# le token `avant [le/la/l'] merge` (remplacement par espaces) dans les
+# trois contextes mentionnes.
+#
+# Discrimination vs VP — ce qui doit rester bloquant :
+#   - « A relire par ai-01 avant merge » (#13800 VP) : verbe ACTIONNEL
+#     (`à relire`) deleguant une intervention — pas une verification
+#     passee ni une delegation de merge.
+#   - « a verifier avant merge » / « à corriger avant merge » : verbe
+#     IMPERATIF a l'infinitif — l'auteur demande une action.
+#   - « Concern (bloquant) a confirmer avant merge » : qualifieur
+#     `(bloquant)`/`(urgent)` n'est PAS couvert par la liste (a) — il
+#     reste un nit vivant.
+#
+# 7 sous-patterns (un par contexte FP, exactitude isolee ; review NanoClaw
+# #14322 minor : compteur corrige) :
+
+_MENTION_AVANT_MERGE_QUALIFIER = re.compile(
+    r"(?i)"
+    # Qualifieur explicite entre parentheses (200 chars gap)
+    r"\((?:non[\s-]+(?:bloquant|bloquante|bloquants|bloquantes|blocker)"
+    r"|mineur(?:s)?|optionnel(?:le)?s?|optiona(?:l|ux|les)?"
+    r"|advisory|info(?:rmation)?(?:s|nel)?)\)"
+    # Gap intra-phrase : point exclu (review NanoClaw #14322 concern 1) --
+    # un aparte benin dans une phrase precedente ne neutralise pas un nit
+    # VIVANT de la phrase suivante.
+    r"[^.!?\n]{0,200}?"
+    r"\bavant(?:\s+(?:le|la|l[\\']))?\s+merge\b"
+)
+
+_MENTION_AVANT_MERGE_VERIFIED = re.compile(
+    r"(?i)"
+    # Verbe de verification au passe compose / past participle (FR + EN)
+    # suivi de 'de mon cote' / 'côté' optionnel, puis 'avant merge' (60 chars gap)
+    r"(?:"
+    # FR past p. (avec ou sans accent)
+    r"v[éèe]rifi(?:[éèe]s?|e|ée|és|ées|er)?"
+    r"|confirm(?:[éèe]s?|e|ée|és|ées|er)?"
+    r"|contr[ôo]l(?:[éèe]s?|e|ée|és|ées|er)?"
+    r")"
+    r"\s+(?:de\s+(?:mon|ma|notre|leur)\s+)?c[ôo]t[éèe]?"
+    r"[^.!?\n]{0,20}?"
+    r"\bavant(?:\s+(?:le|la|l[\\']))?\s+merge\b"
+)
+
+_MENTION_AVANT_MERGE_VERIFIED_EN = re.compile(
+    r"(?i)"
+    # EN past participle (verified, checked, confirmed) + auteur optionnel
+    r"\b(?:verified|check(?:ed|ée?s?)|confirm(?:ed|ée?s?))\b"
+    r"(?:\s+(?:par|by|via)\s+\S+)?"
+    r"[^.!?\n]{0,40}?"
+    r"\bavant(?:\s+(?:le|la|l[\\']))?\s+merge\b"
+)
+
+_MENTION_AVANT_MERGE_PAST_PRECEDED = re.compile(
+    r"(?i)"
+    # Past p. immediatement avant 'avant merge' (3 chars gap max, allow space/punct)
+    r"(?:"
+    r"v[éèe]rifi(?:é|ée|és|ées)"
+    r"|confirm(?:é|ée|és|ées)"
+    r"|contr[ôo]l(?:é|ée|és|ées)"
+    r"|verified"
+    r"|check(?:ed)"
+    r"|confirm(?:ed)"
+    r")"
+    r"[\s,;:.\\-]{0,3}"
+    r"\bavant(?:\s+(?:le|la|l[\\']))?\s+merge\b"
+)
+
+_MENTION_AVANT_MERGE_PREFLIGHT = re.compile(
+    r"(?i)"
+    # Preflight / pre-flight check passe
+    r"(?:pre[\s-]?flight|preflight)\s+(?:check|verified|passed|ok)"
+    r"[^.!?\n]{0,20}?"
+    r"\bavant(?:\s+(?:le|la|l[\\']))?\s+merge\b"
+)
+
+_MENTION_AVANT_MERGE_B0 = re.compile(
+    r"(?i)"
+    # Formule B.0 : 'issue de suivi ouverte ... avant merge' / 'voie B.N ... avant merge'
+    r"(?:issue\s+de\s+suivi\s+(?:ouverte|ouvert|opened|open)"
+    r"|voie\s+B\.\d+)"
+    r"[^.!?\n]{0,80}?"
+    r"\bavant(?:\s+(?:le|la|l[\\']))?\s+merge\b"
+)
+
+_MENTION_AVANT_MERGE_BALL = re.compile(
+    r"(?i)"
+    # 'avant merge' suivi de '. Ball merge : <delegate>' (delegation pattern)
+    r"\bavant(?:\s+(?:le|la|l[\\']))?\s+merge\b"
+    r"[^.!?\n]{0,30}?"
+    r"\.\s*Ball\s+merge\s*:"
+)
+
+_MENTION_AVANT_MERGE_PATTERNS = (
+    _MENTION_AVANT_MERGE_QUALIFIER,
+    _MENTION_AVANT_MERGE_VERIFIED,
+    _MENTION_AVANT_MERGE_VERIFIED_EN,
+    _MENTION_AVANT_MERGE_PAST_PRECEDED,
+    _MENTION_AVANT_MERGE_PREFLIGHT,
+    _MENTION_AVANT_MERGE_B0,
+    _MENTION_AVANT_MERGE_BALL,
+)
+
+
+def _strip_avant_merge_mention(body: str) -> str:
+    """Neutralise `avant merge` en position de mention (Position I, #14199).
+
+    Remplace le token `avant [le/la/l'] merge` par des espaces de meme longueur :
+    les offsets du reste du body sont preserves, comme les autres strips.
+
+    Cible : `avant merge` est un CONCERN_MARKER (L231) qui peut etre en
+    mention (4 formes mesurees : qualifieur explicite non-bloquant, narration
+    de verification passee, formule de la voie B.0, delegation Ball merge ;
+    review NanoClaw #14322 minor : compteur corrige).
+    Sans cette neutralisation, ces mentions sont classee BOT-CONCERN (FP).
+
+    Anti-regression (acceptance #14199) :
+    - 3 PR mesurees en FP doivent etre neutralisees : #13537 / #13498 / #13860
+    - 7 VP de la fenetre 2026-08-25..2026-09-01 doivent rester signales :
+      #13921, #13800, #13789, #13667, #13542, #13386, #13370.
+      En particulier #13800 « A relire par ai-01 avant merge. Aucune action »
+      ne matche aucun sous-pattern — verbe actionnel deleguant, pas une
+      verification passee ni une delegation Ball merge.
+    """
+    for pat in _MENTION_AVANT_MERGE_PATTERNS:
+        # Le token cible est le `avant [le/la/l'] merge` (non capture, neutralise integralement)
+        # La longueur du token est variable (`avant merge` = 11, `avant le merge` = 14, etc.)
+        body = pat.sub(
+            lambda m: re.sub(r"\bavant(?:\s+(?:le|la|l[\\']))?\s+merge\b",
+                             lambda mm: " " * (mm.end() - mm.start()),
+                             m.group(0)),
+            body,
+        )
+    return body
+
+
 def _strip_mentioned_verdicts(body: str) -> str:
     """Neutralise les noms de verdict cites en position de mention (#11636, #11744, #11809).
 
@@ -855,6 +1016,13 @@ def _strip_mentioned_verdicts(body: str) -> str:
     for pat in (_MENTION_VERDICT, _MENTION_VERDICT_HEADING, _MENTION_VERDICT_INLINE, _MENTION_VERDICT_LIFTED, _MENTION_VERDICT_REVIEW, _MENTION_VERDICT_REVIEW_NARRATIVE, _MENTION_VERDICT_REPORTED):
         body = pat.sub(
             lambda m: m.group(0).replace(m.group(1), " " * len(m.group(1))), body)
+    # Phase 1b : Position I — neutralise `avant [le/la/l'] merge` en position
+    # de mention (#14199). Cible differente des autres positions : ce n'est
+    # pas un verdict formel mais un token CONCERN_MARKER (`avant merge`)
+    # qui peut apparaitre en mention (qualifieur explicite / verification
+    # passee / formule B.0 / delegation Ball merge). Voir
+    # `_strip_avant_merge_mention` pour la justification des 7 sous-patterns.
+    body = _strip_avant_merge_mention(body)
     # Phase 2 : Position G avec garde anti-negation (Hermes demande 1/2,
     # PR #14070). Approche `finditer` car le verdict-match n'est pas en
     # bord de phrase (la mention `traite le REQUEST_CHANGES` met le
