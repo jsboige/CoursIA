@@ -207,10 +207,24 @@ class TestClassifyCells(unittest.TestCase):
         self.assertEqual(recs[-1]["index"], 26)
 
     def test_inserted_cell_is_unpaired_not_stale(self):
-        # A cell inserted before a code cell shifts it: no base partner at
-        # that index -> UNPAIRED (clean), never a fabricated stale pair.
+        # A cell inserted before a code cell shifts it. Without ids, the
+        # legacy content pairing (#14297 fallback) pairs the moved
+        # UNMODIFIED cell with its own base copy -> UNCHANGED (clean),
+        # never a fabricated stale pair. Same semantics as the id branch
+        # in test_shifted_cells_pair_by_id_after_conforming_insertion.
         base = nb([code("print(1)", OUT_BASE)])
         head = nb([md("nouveau"), code("print(1)", OUT_BASE)])
+        recs = CSR.classify_cells(base, head)
+        self.assertEqual([r["verdict"] for r in recs], ["UNCHANGED"])
+        self.assertFalse(any(r["regression"] for r in recs))
+
+    def test_new_legacy_cell_matching_nothing_stays_unpaired(self):
+        # A genuinely NEW code cell (no exact, no fuzzy base partner)
+        # stays UNPAIRED - content pairing must not fabricate pairs any
+        # more than positional pairing fabricated stale ones.
+        base = nb([code("print(1)", OUT_BASE)])
+        head = nb([md("nouveau"),
+                   code("import numpy as np\narr = np.zeros(3)", OUT_BASE)])
         recs = CSR.classify_cells(base, head)
         self.assertEqual([r["verdict"] for r in recs], ["UNPAIRED"])
         self.assertFalse(any(r["regression"] for r in recs))
@@ -253,6 +267,61 @@ class TestClassifyCells(unittest.TestCase):
         recs = CSR.classify_cells(base, head)
         self.assertEqual(recs[0]["verdict"], "STALE_OUTPUT")
         self.assertTrue(recs[0]["regression"])
+
+
+class TestLegacyContentPairing(unittest.TestCase):
+    """#14297 residual tranche: no-id bases pair by content, not position.
+
+    The three measured FPs were legacy-style notebooks where an enrichment
+    insertion shifted cells that positional pairing then confronted with
+    UNRELATED C.1 stubs whose uniform outputs are byte-identical. Id
+    pairing (#14319) covers nbformat 4.5+ bases; this class pins the
+    content fallback that covers the rest, including the two negative
+    controls the issue's acceptance demands.
+    """
+
+    def test_moved_only_cell_is_unchanged(self):
+        # Acceptance §3, first control: a cell only MOVED by an insertion
+        # above (the exact #14297 scenario - distinct stubs, identical
+        # outputs) -> UNCHANGED, never a fabricated STALE_OUTPUT.
+        stub_a = code("# Exercice 1\nprint('Exercice a completer')",
+                      OUT_BASE)
+        stub_b = code("# Exercice 3\nprint('Exercice a completer')",
+                      OUT_BASE)
+        base = nb([stub_a, stub_b])
+        head = nb([md("## Lecture du resultat"), stub_a, stub_b])
+        recs = CSR.classify_cells(base, head)
+        self.assertEqual([r["verdict"] for r in recs],
+                         ["UNCHANGED", "UNCHANGED"])
+        self.assertFalse(any(r["regression"] for r in recs))
+
+    def test_moved_and_modified_cell_is_stale(self):
+        # Acceptance §3, second control: without it, the content fallback
+        # would be indistinguishable from disarming the guard - a cell
+        # MOVED AND MODIFIED must still confront its own base version.
+        base = nb([code("resultat = 40 + 2\nprint(resultat)", OUT_BASE)])
+        head = nb([md("## Introduction"),
+                   code("resultat = 41 + 1  # reformule\nprint(resultat)",
+                        OUT_BASE)])
+        recs = CSR.classify_cells(base, head)
+        self.assertEqual([r["verdict"] for r in recs], ["STALE_OUTPUT"])
+        self.assertTrue(all(r["regression"] for r in recs))
+
+    def test_modified_cell_pairs_to_own_base_desident_sibling(self):
+        # The FP-residual guard: when a modified stub and an untouched
+        # sibling stub share byte-identical outputs, the exact pass must
+        # consume the untouched one first, and the fuzzy pass must send
+        # the MODIFIED cell to its own base version (TRUE stale), not to
+        # the sibling (fabricated pair).
+        ex1 = "# Exercice 1\n# TODO\nprint('Exercice a completer')"
+        ex3 = "# Exercice 3\n# TODO\nprint('Exercice a completer')"
+        base = nb([code(ex1, OUT_BASE), code(ex3, OUT_BASE)])
+        head = nb([code(ex3, OUT_BASE),
+                   code(ex1 + "\n# indice: voir section 2", OUT_BASE)])
+        recs = CSR.classify_cells(base, head)
+        self.assertEqual([r["verdict"] for r in recs],
+                         ["UNCHANGED", "STALE_OUTPUT"])
+        self.assertTrue(recs[1]["regression"])
 
 
 class TestNotebookExemptions(unittest.TestCase):

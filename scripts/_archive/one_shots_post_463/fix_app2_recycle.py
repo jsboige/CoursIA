@@ -4,6 +4,16 @@ Fix App-2-GraphColoring: Recycle student solutions into Exemple resolu + new stu
 Issue #463: Recyclage solutions etudiants CSP Applications.
 """
 
+# Archive header (standard _archive convention, 2026-08)
+# - Date archived : 2026-08-06
+# - Superseded by : none (one-shot fulfilled) — output lives in
+#   MyIA.AI.Notebooks/Search/Applications/CSP/App-2-GraphColoring.ipynb
+# - Verdict recorded in : PR #477 (c8f95b233, 2026-04-22), PR #9580
+#
+# Per-function disposition :
+# - fix_app2() : transformation applied in PR #477; resolved examples and
+#   replacement exercise stubs were verified on main in 2026-09
+
 import json
 
 
