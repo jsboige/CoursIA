@@ -155,7 +155,10 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     "orphan-branch-scan.yml",
     "outputs-text-fragmentation-advisory.yml",
     "pedagogy-density-advisory.yml",
-    "pr-gate-missing-advisory.yml",
+    # pr-gate-missing-advisory.yml : supprime par #14477 -- sa detection est
+    # repliee comme etape du sweep ci-dessous (design-gate ai-01 : "meme
+    # population, meme requete ; seule la branche de remediation differe.
+    # Ne pas creer un troisieme organe").
     "pr-gate-sweep-health-advisory.yml",
     "pr-path-collision-advisory.yml",
     "qc-research-monitor.yml",
