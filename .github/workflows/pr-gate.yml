@@ -112,7 +112,32 @@ jobs:
     # concludes CANCELLED (sweep-recoverable) instead of FAILURE (a red
     # lie). The runner-killed case this ceiling prevents is different: no
     # verdict is printed at all, which stays worth avoiding.
-    timeout-minutes: 35
+    # #14283/#14412: re-measured 2026-09-03 over the 116 completed Quarto
+    # Pages Deploy runs since the self-hosted pool switch. The #11770
+    # calibration is stale -- it was taken on ubuntu-latest, and the
+    # self-hosted pool sits a tier slower: 30 of those 116 runs (26%) exceed
+    # 28 min from run creation, so the bounded wait now expires BELOW the
+    # distribution it was sized to clear. The numbers are right-censored:
+    # Quarto's own 30-min ceiling killed 27 of the 69 runs that were not
+    # concurrency-cancelled (39%), so their true durations are unknown and
+    # any observed p75 is a floor, not a measurement -- the 42 successes
+    # (median 24.9 min, p75 26.4 min) are conditional on surviving that
+    # ceiling, hence biased low. #14412 raises Quarto's ceiling to 60 min,
+    # and raising it ALONE does nothing while this aggregator self-cancels at
+    # 28 waiting for it. Measured on this very PR, both runs from the same
+    # push at 02:34:55Z: PR gate cancelled at 29m23s (03:04:18Z) while its
+    # own Quarto run went on to SUCCEED at 33m10s (03:08:05Z). That is the
+    # whole defect in one pair of timestamps -- the raised Quarto ceiling
+    # worked (under the old 30-min cut that run would have been killed), and
+    # the aggregator threw the PR away 3m47s before the evidence arrived,
+    # because the gate that waits for Quarto carried the same stale ceiling
+    # as the job it waits on. 45 covers the censored mass that sat just above
+    # the old 30-min cut -- and the one uncensored post-fix observation we
+    # have, 33m10s, sits ~12 min inside it -- without widening the budget to
+    # Quarto's full 60; the genuine tail stays on the STARVED -> self-cancel
+    # path (#13510). Worth re-measuring once more uncensored data exists
+    # under the 60-min ceiling.
+    timeout-minutes: 52
     steps:
       - uses: actions/checkout@v4
 
@@ -153,7 +178,7 @@ jobs:
             --repo "${{ github.repository }}" \
             --sha "${{ github.event.pull_request.head.sha || github.sha }}" \
             --self-name "PR gate" \
-            --timeout-min 28 \
+            --timeout-min 45 \
             --poll-sec 30 \
             --settle-polls 2 \
             $IS_FORK_ARG
