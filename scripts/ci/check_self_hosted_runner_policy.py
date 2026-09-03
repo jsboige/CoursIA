@@ -171,7 +171,7 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
 
     # - tranche 5 (#13378/#14283, decision ai-01 2026-09-02) : le solde des
     #   gardes routables. Exclus et pourquoi : pr-gate.yml (agregateur qui
-    #   poll jusqu'a 28 min -- le router reproduirait la famine mesuree en
+    #   poll jusqu'a 45 min -- le router reproduirait la famine mesuree en
     #   #11405), lean-axiom/lean-build (builds Lean sans cache mathlib, cf
     #   #14337 pools specialises), slides-composition-advisory (playwright
     #   --with-deps exige root, le conteneur tourne en uid 1001).
@@ -216,6 +216,16 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     "translation-drift.yml",
     "translation-sync.yml",
     "variation-light-genre.yml",
+    # tranche 6 (c.903, owner myia-po-2026:CoursIA-2) : garde advisory pur-Python
+    #   declenchee sur pull_request filtrant les `MyIA.AI.Notebooks/**/README.md`,
+    #   scan delta-PR vs main (merge-base), pose un label signe (jamais exit != 0).
+    #   Meme profil que machine-dep-timing-advisory / pr-path-collision-advisory /
+    #   exercises-advisory / catalog-drift : stdlib-only, lecture seule du repo,
+    #   aucun GITHUB_TOKEN cote job. Le job porte la garde universelle parenthe-
+    #   seee (cf. test_universal_guard_with_combined_target_is_accepted, #13874)
+    #   pour les forks PRs qui se font skipper proprement par pr_gate.
+    #   Rollback = revert de cette PR (l'entree disparait de l'allowlist).
+    "notebook-link-render-check.yml",
 }
 GITHUB_HOSTED_LABELS = {
     "ubuntu-latest",
