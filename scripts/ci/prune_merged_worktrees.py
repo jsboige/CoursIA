@@ -315,12 +315,25 @@ def lookup_pr_for_branch(branch: str) -> Optional[dict]:
     return rows[0]
 
 
+def _normalize_subject(s: str) -> str:
+    """Sujet/titre normalise : casse bassee, espaces collapses, suffixe (#N) retire."""
+    s = re.sub(r"\(#\d+\)\s*$", "", s.strip())
+    return re.sub(r"\s+", " ", s).strip().lower()
+
+
 def lookup_pr_for_detached_head(wt_path: str) -> Optional[dict]:
     """Verdict par contenu pour HEAD detaché : sujet de commit = titre PR ?
 
     Le squash-merge efface l'ascendance, donc `git merge-base --is-ancestor`
-    ne marche pas. On cherche dans les messages de commit du HEAD du
-    worktree un motif qui ressemble a un titre de PR recente.
+    ne marche pas. Mais il produit un sujet de squash au format
+    ``<titre de PR> (#N)`` (#14476) :
+
+    1. un sujet finissant par ``(#N)`` resout la PR par son NUMERO --
+       sans liste tronquee des 50 recentes, sans heuristique ;
+    2. a defaut, EGALITE du sujet normalise avec le titre de PR normalise
+       (jamais une intersection de jetons : un mot du domaine partage par
+       hasard -- notebook, guard, training -- suffisait a tout attribuer) ;
+    3. sinon None -> no_pr_match -> REFUSE (fail-closed).
     """
     log_proc = run_git(
         wt_path, "log", "HEAD", "--format=%s", "-n", "20", check=False
@@ -331,7 +344,23 @@ def lookup_pr_for_detached_head(wt_path: str) -> Optional[dict]:
     if not subjects:
         return None
 
-    # Match contre titres PR recents (limite 50) pour eviter explosion
+    # 1. Resolution par numero extrait du sujet (le format du squash-merge)
+    for subj in subjects:
+        m = re.search(r"\(#(\d+)\)$", subj)
+        if not m:
+            continue
+        view_proc = run_gh(
+            "pr", "view", m.group(1),
+            "--json", "number,state,url,title", check=False,
+        )
+        if view_proc.returncode != 0:
+            continue
+        try:
+            return json.loads(view_proc.stdout)
+        except json.JSONDecodeError:
+            continue
+
+    # 2. Fallback : egalite stricte du sujet normalise vs titres recents
     pr_proc = run_gh(
         "pr", "list", "--state", "all", "--limit", "50",
         "--json", "number,state,url,title",
@@ -344,17 +373,10 @@ def lookup_pr_for_detached_head(wt_path: str) -> Optional[dict]:
     except json.JSONDecodeError:
         return None
 
-    # Heuristique : on prend la 1ere PR dont un mot-clé du titre matche un
-    # mot du commit subject. Conservateur : on exige au moins 4 chars
-    # communs, ce qui limite les faux positifs sur "fix", "test", etc.
+    subj_norms = {_normalize_subject(s) for s in subjects}
     for pr in prs:
-        title_tokens = {
-            t.lower() for t in re.findall(r"[A-Za-z0-9-]{4,}", pr["title"])
-        }
-        for subj in subjects:
-            subj_tokens = {t.lower() for t in re.findall(r"[A-Za-z0-9-]{4,}", subj)}
-            if title_tokens & subj_tokens:
-                return pr
+        if _normalize_subject(pr["title"]) in subj_norms:
+            return pr
     return None
 
 

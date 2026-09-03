@@ -306,3 +306,130 @@ class TestEndToEnd:
         assert proc.returncode != 2, f"stderr: {proc.stderr}"
         # Au moins 1 ligne REFUSE dans la sortie (le run reel)
         assert "REFUSE" in proc.stdout or "applied=0" in proc.stdout
+
+
+# ---------------------------------------------------------------------------
+# lookup_pr_for_detached_head -- resolution par numero puis egalite (#14476)
+# ---------------------------------------------------------------------------
+
+class TestDetachedHeadLookup:
+    """Le predicat d'intersection de jetons attribuait n'importe quelle PR
+    recente partageant UN mot du domaine (notebook, guard, training) a un
+    worktree HEAD detache -> retraits destructeurs faux. Contrat #14476 :
+
+    1. sujet en "(#N)" -> resolution par NUMERO (gh pr view), la liste des
+       50 recentes n'est meme pas consultee ;
+    2. sinon EGALITE du sujet normalise avec le titre de PR (le suffixe
+       "(#N)" est retire de la normalisation) ;
+    3. sinon None (no_pr_match -> REFUSE, fail-closed).
+    """
+
+    @staticmethod
+    def _fake_procs(subjects, pr_view=None, pr_list=None):
+        """Fakes pour run_git (log sujets) et run_gh (pr view / pr list)."""
+        import subprocess as sp
+
+        calls = {"view": [], "list": 0}
+
+        def fake_run_git(cwd, *args, check=True):
+            assert args[:2] == ("log", "HEAD")
+            return sp.CompletedProcess(args, 0, stdout="\n".join(subjects))
+
+        def fake_run_gh(*args, check=True):
+            if args[1] == "view":
+                calls["view"].append(args[2])
+                if pr_view is None:
+                    return sp.CompletedProcess(args, 1, stdout="")
+                return sp.CompletedProcess(
+                    args, 0, stdout=json.dumps(pr_view))
+            calls["list"] += 1
+            if pr_list is None:
+                return sp.CompletedProcess(args, 1, stdout="")
+            return sp.CompletedProcess(
+                args, 0, stdout=json.dumps(pr_list))
+
+        return fake_run_git, fake_run_gh, calls
+
+    def test_resolution_par_numero_sans_consulter_la_liste(self, monkeypatch):
+        """Un sujet de squash "titre (#N)" resout par numero : la PR est
+        ramenee par gh pr view N, la liste des 50 n'est JAMAIS appelee."""
+        fg, fgh, calls = self._fake_procs(
+            subjects=["fix(ml,#14470): L1 graines vivantes (#14496)",
+                      "intermediate commit subject"],
+            pr_view={"number": 14496, "state": "MERGED",
+                     "url": "https://github.com/x/y/pull/14496",
+                     "title": "fix(ml,#14470): L1 graines vivantes"},
+        )
+        monkeypatch.setattr(pmw, "run_git", fg)
+        monkeypatch.setattr(pmw, "run_gh", fgh)
+        pr = pmw.lookup_pr_for_detached_head("C:/fake/wt")
+        assert pr is not None and pr["number"] == 14496 and pr["state"] == "MERGED"
+        assert calls["view"] == ["14496"]
+        assert calls["list"] == 0
+
+    def test_faux_positif_mot_courant_refuse(self, monkeypatch):
+        """CONTROLE POSITIF DU FAUX POSITIF (#14476) : un worktree dont les
+        sujets partagent seulement un mot du domaine ("notebook", "fix"...)
+        avec une PR recente ouverte N'EST PAS attribue -- l'ancienne
+        heuristique d'intersection rendait la PR ici."""
+        fg, fgh, calls = self._fake_procs(
+            subjects=["enrich(sw): notebook density pass",
+                      "fix navlinks in notebook"],
+            pr_list=[{"number": 14472, "state": "OPEN",
+                      "url": "https://github.com/x/y/pull/14472",
+                      "title": "Enrich Planners-8-Temporal-Csharp notebook density"},
+                     {"number": 14474, "state": "MERGED",
+                      "url": "https://github.com/x/y/pull/14474",
+                      "title": "fix(ml): notebook guard training"}],
+        )
+        monkeypatch.setattr(pmw, "run_git", fg)
+        monkeypatch.setattr(pmw, "run_gh", fgh)
+        assert pmw.lookup_pr_for_detached_head("C:/fake/wt") is None
+
+    def test_egalite_sujet_normalise_en_fallback(self, monkeypatch):
+        """Sans (#N) : casse et espaces normalises, le sujet DOIT etre le
+        titre de la PR a l'identique pres de la normalisation."""
+        fg, fgh, _ = self._fake_procs(
+            subjects=["Fix   ML: L1 graines vivantes"],
+            pr_list=[{"number": 14496, "state": "MERGED",
+                      "url": "https://github.com/x/y/pull/14496",
+                      "title": "fix ml: L1 graines vivantes"},
+                     {"number": 14000, "state": "MERGED",
+                      "url": "https://github.com/x/y/pull/14000",
+                      "title": "autre chose"}],
+        )
+        monkeypatch.setattr(pmw, "run_git", fg)
+        monkeypatch.setattr(pmw, "run_gh", fgh)
+        pr = pmw.lookup_pr_for_detached_head("C:/fake/wt")
+        assert pr is not None and pr["number"] == 14496
+
+    def test_suffixe_numero_retire_de_l_egalite(self, monkeypatch):
+        """Sujet "titre (#N)" mais la PR N n'existe plus (gh pr view echoue) :
+        le fallback d'egalite doit matcher le titre SANS le suffixe."""
+        fg, fgh, _ = self._fake_procs(
+            subjects=["fix(ml): L1 graines vivantes (#99999)"],
+            pr_list=[{"number": 14496, "state": "MERGED",
+                      "url": "https://github.com/x/y/pull/14496",
+                      "title": "fix(ml): L1 graines vivantes"}],
+        )
+        monkeypatch.setattr(pmw, "run_git", fg)
+        monkeypatch.setattr(pmw, "run_gh", fgh)
+        pr = pmw.lookup_pr_for_detached_head("C:/fake/wt")
+        assert pr is not None and pr["number"] == 14496
+
+    def test_fail_closed_sans_correspondance(self, monkeypatch):
+        """Aucun sujet en (#N), aucun titre egal -> None -> no_pr_match ->
+        REFUSE (le defaut safe)."""
+        fg, fgh, _ = self._fake_procs(
+            subjects=["commit sans rapport"],
+            pr_list=[{"number": 14472, "state": "MERGED",
+                      "url": "https://github.com/x/y/pull/14472",
+                      "title": "titre totalement different"}],
+        )
+        monkeypatch.setattr(pmw, "run_git", fg)
+        monkeypatch.setattr(pmw, "run_gh", fgh)
+        assert pmw.lookup_pr_for_detached_head("C:/fake/wt") is None
+
+    def test_normalize_subject(self):
+        assert pmw._normalize_subject("Fix  X (#123) ") == "fix x"
+        assert pmw._normalize_subject("Fix X (#123)") != "fix x (#123)"
