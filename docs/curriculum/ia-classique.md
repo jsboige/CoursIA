@@ -142,16 +142,16 @@ Algorithmes de recherche classique, satisfaction de contraintes (CSP), résoluti
 | 16 | CSP-9-Distributed | BETA | Oui |
 | 17 | CSP-9-Distributed : CSP Distribués (DisCSP) | BETA | Oui |
 
-## Search/Part3-Advanced (6 notebooks)
+## Search/Part1-Foundations (accrétions avancées, ex-Partie 3)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
-| 1 | Search-12 (C#) — Bases de données de motifs (Pattern… | BETA | Oui |
-| 2 | Search-12 — Bases de données de motifs (Pattern… | BETA | Oui |
-| 3 | Search-13 (C#) — Recherche à écart limité (Limited… | BETA | Oui |
-| 4 | Search-13 — Recherche à écart limité (Limited… | BETA | Oui |
-| 5 | Search-14 (C#) — Weighted A\* : recherche à… | BETA | Oui |
-| 6 | Search-14 — Weighted A\* : recherche à sous-optimalité… | BETA | Oui |
+| 1 | Search-03b (C#) — Bases de données de motifs (Pattern… | BETA | Oui |
+| 2 | Search-03b — Bases de données de motifs (Pattern… | BETA | Oui |
+| 3 | Search-03c (C#) — Recherche à écart limité (Limited… | BETA | Oui |
+| 4 | Search-03c — Recherche à écart limité (Limited… | BETA | Oui |
+| 5 | Search-03d (C#) — Weighted A\* : recherche à… | BETA | Oui |
+| 6 | Search-03d — Weighted A\* : recherche à sous-optimalité… | BETA | Oui |
 
 ## Search/Part4-Metaheuristics (21 notebooks)
 

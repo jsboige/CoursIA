@@ -325,7 +325,7 @@ Chaque série non recensée ci-dessus, et pourquoi (contestable sur l'Epic sans 
 | Série | Pourquoi hors périmètre v1 |
 |-------|----------------------------|
 | `ML/` (ML.NET) | cursus .NET non rattaché aux 4 écoles in-scope ; le ML enseigné passe par QC-Py (ECE) et GenAI (EPF) |
-| `Search/Part3-Advanced/`, `Search/Part4-Metaheuristics/` | au-delà du programme PrCon — Part1+Part2 couvrent le cours référencé |
+| `Search/Part4-Metaheuristics/` | au-delà du programme PrCon — Part1+Part2 couvrent le cours référencé |
 | `Search/Applications/`, `Search/MetaGeneticSharp/` | applications dérivées non citées par le calendrier des cours |
 | `Sudoku/` | série .NET autonome, non rattachée à un cours du calendrier |
 | `Probas/` (Infer.NET) | idem — non rattachée à une des 4 écoles |
