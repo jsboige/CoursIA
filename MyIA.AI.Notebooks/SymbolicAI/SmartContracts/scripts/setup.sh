@@ -146,8 +146,16 @@ for dep in $FOUNDRY_DEPS; do
         echo "  [OK] $name already installed"
     else
         cd "$FOUNDRY_LIB"
-        forge install --no-git "$dep" 2>&1 | tail -1
-        echo "  [OK] $name installed ($dep)"
+        # No pipe on forge install: under `set -e` a pipeline exits with the status
+        # of its LAST command, so `| tail` would swallow the failure and the script
+        # would print [OK] for a library that was never installed.
+        if out=$(forge install --no-git "$dep" 2>&1); then
+            echo "  [OK] $name installed ($dep)"
+        else
+            echo "  [FAIL] forge install $dep"
+            echo "$out" | tail -5
+            exit 1
+        fi
     fi
 done
 cd "$SC_DIR"
