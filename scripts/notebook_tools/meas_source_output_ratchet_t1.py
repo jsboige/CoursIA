@@ -13,7 +13,7 @@ laisse 5-10 cas echantillon a la revue humaine pour calibrage.
 
 Usage :
     python scripts/notebook_tools/meas_source_output_ratchet_t1.py \
-        --out-dir .claude/projects/ --branch origin/main \
+        --out-dir .claude/agent-memory-local/ --branch origin/main \
         --window-commits 50 200 600
 """
 
