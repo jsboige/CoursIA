@@ -22,6 +22,13 @@
       csharp_sha: d9b84f34b00f68039f500f42cbe354684ee8b8b6
       content_python_sha: 5987578811b52065f3590de667a2b537865694536b85274c2105cb21b101ff02
       content_csharp_sha: d943d8dd651ab5dc8883560c0cb99ddbcedb445eee60f4ac08a5e206a303a5a6
+    - date: "2026-09-03"
+      by: myia-po-2026:CoursIA
+      python_sha: 91c69994024084bea93a0823230255624b828ce1
+      csharp_sha: b6766929477ff6bc19fc4fb411f8db022504f5ad
+      content_python_sha: 5987578811b52065f3590de667a2b537865694536b85274c2105cb21b101ff02
+      content_csharp_sha: 9a390d7639de119c388942fc2d59d8672318d1666a987541c3b6b77e0df515a7
+      reason: "Re-attestation apres PR #14113 (SW-3 C# density enrich #13410) : markdown-only — 4 nouvelles cellules md (31->35), 0 changement de cellule code ; signature sha256 des (source, execution_count, outputs) des 20 cellules code byte-identique base->HEAD (b02bc8424b40c621). Jumeau Python SW-3b non touche (python_sha inchange). parity_level native-both (dotNetRDF/rdflib) intacte — l'enrichissement de prose ne touche ni le code ni les outputs."
   known_differences:
     - "Socle commun : parcours de graphe RDF, iteration des triplets, gestionnaires de parsing (handlers)."
     - "Lib-vs-lib : C# = `dotNetRDF` (`VDS.RDF.Parsing.Handlers`, iterate via `Graph.Triples`). Python = `rdflib` (`rdflib.collection`, `rdflib.parser`, iteration via `graph` set semantics)."
