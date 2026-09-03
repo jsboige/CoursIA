@@ -54,16 +54,33 @@ python scripts/secrets/render_envs.py --check
 | Hubs / git | `CIVITAI_TOKEN`, `GITHUB_TOKEN` = `GITHUB_ACCESS_TOKEN` | services + notebooks | Oui |
 | Client API keys (server↔client) | `WHISPER_API_KEY`, `VLLM_API_KEY`, `TTS_API_KEY`, `QWEN_ASR_API_KEY`, `MUSICGEN_API_KEY`, `DEMUCS_API_KEY`, `FUNASR_API_KEY` | 1 service + notebooks | Moyen |
 | Qdrant vector DB (client) | `QDRANT_API_KEY` | notebooks RAG / SemanticKernel / Argument_Analysis | Moyen (flip serveur = op inter-repo roo-extensions) |
-| Tokens client ComfyUI | `COMFYUI_VIDEO_TOKEN`, `COMFYUI_API_TOKEN` | notebooks → services ComfyUI | Moyen |
+| Tokens client ComfyUI | `COMFYUI_VIDEO_TOKEN`, `COMFYUI_API_TOKEN` = `COMFYUI_AUTH_TOKEN` | notebooks → services ComfyUI | Moyen |
 | Session | `SECRET_KEY` | 1 service | Oui |
 
-**Alias :** `HF_TOKEN`/`HUGGINGFACE_TOKEN` et `GITHUB_TOKEN`/`GITHUB_ACCESS_TOKEN` désignent le MÊME secret sous deux noms (services vs notebooks). Le bootstrap vérifie leur cohérence (abort si divergence).
+**Alias :** `HF_TOKEN`/`HUGGINGFACE_TOKEN`, `GITHUB_TOKEN`/`GITHUB_ACCESS_TOKEN` et `COMFYUI_API_TOKEN`/`COMFYUI_AUTH_TOKEN` désignent le MÊME secret sous deux noms (services vs notebooks). Le bootstrap vérifie leur cohérence (abort si divergence).
 
 **L'alias ne fabrique PAS le nom manquant — les deux doivent être écrits dans `master.env`.** `ALIASES` (render_envs.py) déclare la paire ; il ne dérive pas `HF_TOKEN` d'un `HUGGINGFACE_TOKEN` présent seul. Un `master.env` qui ne porte qu'un des deux noms laisse l'autre dans la liste `declared SECRET keys are absent from master.env (left untouched in services)` de `--check`, et **aucun consommateur ne le reçoit** — alors que le token existe et est valide. Mesuré le 2026-08-15 : `HUGGINGFACE_TOKEN` présent + `HF_TOKEN` absent, pour **655 sites de code lisant `HF_TOKEN`** contre 144 lisant `HUGGINGFACE_TOKEN`. Remède : écrire les deux lignes dans `master.env`, puis `render_envs.py`.
 
 **`sync()` rafraîchit, il n'insère pas.** Une clé absente d'un `.env` cible n'y est pas ajoutée par le render : seules les clés **déjà déclarées** y sont réécrites depuis master (le gap-fill n'existe que pour un service *sans* `.env`, à partir des `${KEY}` de sa compose). Pour un `.env` côté notebooks (pas de compose), déclarer la ligne vide `CLE=` puis lancer le render.
 
 **Un 403 sur un repo *gated* n'est pas un défaut de token.** Discriminer avant d'escalader — repo non-gated **avec** token → `206` (le token lit) ; repo gated **sans** token → `401` ; repo gated **avec** token → `403` = authentifié mais non autorisé, c'est-à-dire licence non acceptée par le compte porteur **ou** scope « read gated repos » absent du token fine-grained. Les deux se règlent sur huggingface.co, pas dans `master.env`.
+
+### ComfyUI-Login (comfyui-qwen) — source unique du credential API (#14382)
+
+Le middleware ComfyUI-Login valide le bearer **littéralement contre le fichier bind-mounté** `.secrets/qwen-api-user.token` (60 caractères, forme `$2b$` bcrypt — le hash *est* le token partagé). Avant #14382, le compose interpolait des noms que `render_envs.py` ne gérait pas (`COMFYUI_BEARER_TOKEN`, `COMFYUI_RAW_TOKEN`) : sur un `.env` rendu par le seul render, ils résolvent **vide** (mesure #14382) ; là où `auth_manager.py` les avait écrits, ce sont des copies non gérées qui dérivent à la prochaine rotation (pattern incident #6901). Le sidecar idle-monitor recevait en outre `COMFYUI_RAW_TOKEN` (le mot de passe formulaire, pas le bearer) → ses polls d'activité prenaient 401.
+
+Le câblage depuis #14382 ne fait plus dériver — et ne passe **jamais** par l'interpolation d'env du compose : docker compose **interprète les `$` des valeurs** (le bcrypt `$2b$12$Iv…` devient un token tronqué 60c → 57c, mesuré en conteneur). Le credential passe par le **fichier** (les fichiers bind-mountés ne sont pas interpolés) :
+
+| Consommateur | Voie |
+|---|---|
+| middleware ComfyUI-Login (`entrypoint.sh`) | fichier bind-mounté `.secrets/qwen-api-user.token` (déjà le chemin privilégié) |
+| `workspace/install_comfyui.sh` → `ComfyUI-Login/PASSWORD` | `cp` du fichier monté (l'`echo` de l'env compose écrivait un token tronqué) |
+| sidecar `idle-monitor` (poll `/system_stats`) | fichier bind-mounté `/secrets/qwen-api-user.token`, lu en fallback par `comfyui_idle_monitor.py` |
+| notebooks GenAI (`os.getenv("COMFYUI_AUTH_TOKEN") or os.getenv("COMFYUI_API_TOKEN")`, flip #16) | `GenAI/.env`, les deux noms gérés master (alias `COMFYUI_AUTH_TOKEN` = `COMFYUI_API_TOKEN`) |
+
+**Rotation du credential comfyui-qwen** : éditer `COMFYUI_API_TOKEN` **et** `COMFYUI_AUTH_TOKEN` dans `master.env` (même valeur), régénérer `.secrets/qwen-api-user.token` avec cette valeur, `render_envs.py`, puis **recréer** le container (`docker compose up -d` — un `restart` ne relit ni les montages ni l'env d'interpolation ; cf règle du restart ci-dessous pour `COMFYUI_PASSWORD`).
+
+`COMFYUI_RAW_TOKEN` (le mot de passe en clair avant hash, utile seulement au login formulaire `COMFYUI_USERNAME`/`COMFYUI_PASSWORD`) **ne transite plus par aucun `.env` géré** — la forme brute ne doit pas vivre dans les `.env` (seule la forme hashée y circule). `auth_manager.py` n'écrit plus `COMFYUI_BEARER_TOKEN`/`COMFYUI_RAW_TOKEN` dans les `.env`.
 
 ### Qdrant — convention client vs serveur (cross-repo)
 

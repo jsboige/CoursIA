@@ -5,10 +5,11 @@ same family of baselines was measured at `har_bias_oos = -0.227` in #12745, and
 `MSE = bias^2 + variance` means a raw-error DM cannot tell a precision win from
 a calibration artefact. This module tests the control that separates them.
 
-The pure helpers `_mse_decomposition` / `_dm_centered_mse` also have coverage in
-`test_btc_vol.py` (they originate there, PR #12742). What is tested HERE is what
-those tests cannot cover: that the control actually DISCRIMINATES, and that the
-M5 return contract carries it.
+The pure helpers `_mse_decomposition` / `_dm_centered_mse` live in
+`bias_metrics.py` (extracted from `btc_vol.py`, issue #14363) and also have
+coverage in `test_btc_vol.py`. What is tested HERE is what those tests cannot
+cover: that the control actually DISCRIMINATES, and that the M5 return
+contract carries it.
 
 Validation shape (Tell c.856-L1): every silence is paired with a mutation that
 changes only the property under test and must make the control speak. A control
@@ -31,12 +32,14 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import hmm_regime_vol  # noqa: E402
 from hmm_regime_vol import (  # noqa: E402
     _aggregate_debiased_state,
-    _dm_centered_mse,
     _is_beaten,
     _is_beats,
-    _mse_decomposition,
     _require_hmmlearn,
     walk_forward_regime_switching,
+)
+from bias_metrics import (  # noqa: E402
+    _dm_centered_mse,
+    _mse_decomposition,
 )
 
 
