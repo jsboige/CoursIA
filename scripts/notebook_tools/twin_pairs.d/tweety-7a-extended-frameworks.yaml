@@ -79,6 +79,13 @@
       csharp_sha: ac5f879662170240f68a0d34831bed3ccb7e07cd
       content_python_sha: 23231ed062cb3a39f85805af0f75dffbe0360e014d3a08b065dc25d9c9200c5a
       content_csharp_sha: e8cf72fcb64e4e68240acb557f5bfd248114fc25a916e4628cb57f87a76062f9
+    - date: "2026-09-03"
+      by: myia-po-2026:CoursIA
+      python_sha: 441c75f29d4859fad011031a16403ddc58eab085
+      csharp_sha: 480a295a01c682c66f334fadb7647ca3b91cc38d
+      content_python_sha: d08b58f8fc1667126e96552f3674b53985396b54677543b7e6c39553121d8c0e
+      content_csharp_sha: 22ad2007898b8e32b52c6f6b28c4086b281457c794bebc32549e127a8bf1dccb
+      reason: "Re-attestation apres PR #14220 (#14211) : markdown-only — la Note-de-parite cross-langage (cell md idx 36) du jumeau Python decrivait le C# avec des chiffres anterieurs a la tranche 2 IKVM (#10381) ; prose recalee sur l'etat mesure (34 cells/17 code/14 refs IKVM). 0 changement de cellule code : signature sha256 des (source, execution_count, outputs) des 12 cellules code byte-identique base->HEAD (886b395a15feab86), md count 26->26. Cote C# non touche. parity_level semantic intacte — la correction REND la note conforme a la parite reelle."
   known_differences:
     - "Socle commun : frameworks d'argumentation etendus (bipolaire, valeur-based) via TweetyProject."
     - "Lib-vs-lib : C# via IKVM (helpers `#!import` chargeant les DLL TweetyProject traduites). Python via JPype (`from java.util import HashSet, Set as JavaSet`). Meme moteur Java."
