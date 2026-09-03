@@ -26,6 +26,7 @@ from bias_metrics import (  # noqa: E402
 )
 from btc_vol import (  # noqa: E402
     _dm_uncentered_mse,
+    aggregate_verdicts_recentered,
 )
 
 
@@ -225,3 +226,72 @@ class TestTwoLegsDiscriminate:
             _dm_uncentered_mse(np.zeros(5), np.zeros(5), horizon=1)["dm_verdict"]
             == "INSUFFICIENT_DATA"
         )
+
+
+def _agg_row(h: int, seed: int, dm_centered_p: float, dm_unc_p: float) -> dict:
+    """Minimal row accepted by `aggregate_verdicts_recentered` (#14390)."""
+    return {
+        "coin": "BTC",
+        "horizon": h,
+        "seed": seed,
+        "mse_reduction_pct_vs_debiased_har": 10.0,
+        "dlinear_variance": 0.8,
+        "har_variance_debiased": 1.0,
+        "har_bias_oos": 0.05,
+        "dlinear_mse_logrv": 0.75,
+        "har_mse_logrv_raw": 0.89,
+        "har_mse_logrv_debiased": 0.84,
+        "dm_centered_pvalue": dm_centered_p,
+        "dm_centered_verdict": "BEATS baseline",
+        "dm_uncentered_vs_har_raw_pvalue": dm_unc_p,
+        "dm_uncentered_vs_har_raw_verdict": "BEATS baseline",
+    }
+
+
+class TestAggregateVerdictsRecentered:
+    """#14390: the uncentered sanity leg must live in `aggregated`, not only per row.
+
+    The #14362 defect was exactly a silent absence -- the sanity leg existed
+    per row but nothing summarized or confronted it. These tests fail if the
+    aggregated field disappears again.
+    """
+
+    def test_uncentered_p_median_present_in_every_aggregate(self):
+        rows = [
+            _agg_row(1, 0, 1e-9, 0.0),
+            _agg_row(1, 7, 2e-9, 0.0),
+            _agg_row(5, 0, 3e-9, 1.0e-10),
+            _agg_row(5, 7, 4e-9, 2.0e-10),
+        ]
+        agg = aggregate_verdicts_recentered(rows)
+        assert len(agg) == 2
+        for entry in agg:
+            assert "dm_uncentered_vs_har_raw_p_median" in entry
+
+    def test_uncentered_p_median_is_the_same_seeds_median(self):
+        # median([0.0, 0.0]) = 0.0 ; median([1e-10, 2e-10]) = 1.5e-10
+        rows = [
+            _agg_row(1, 0, 1e-9, 0.0),
+            _agg_row(1, 7, 2e-9, 0.0),
+            _agg_row(5, 0, 3e-9, 1.0e-10),
+            _agg_row(5, 7, 4e-9, 2.0e-10),
+        ]
+        agg = {e["horizon"]: e for e in aggregate_verdicts_recentered(rows)}
+        assert agg[1]["dm_uncentered_vs_har_raw_p_median"] == pytest.approx(0.0, abs=0.0)
+        assert agg[5]["dm_uncentered_vs_har_raw_p_median"] == pytest.approx(1.5e-10)
+        # Same seeds as the centered median: recomputed independently below.
+        assert agg[1]["dm_centered_p_median"] == pytest.approx(1.5e-9)
+
+    def test_legs_cannot_silently_collapse_at_the_aggregate_surface(self):
+        # If the two legs ever return the same statistic again (#14362), the
+        # aggregated medians coincide -- the fixture keeps them distinct so a
+        # future collapse flips this assertion.
+        rows = [_agg_row(10, s, 1e-9 + s * 1e-12, 1e-8 + s * 1e-10) for s in (0, 7, 42, 99)]
+        agg = aggregate_verdicts_recentered(rows)[0]
+        assert agg["dm_centered_p_median"] != agg["dm_uncentered_vs_har_raw_p_median"]
+
+    def test_field_position_is_next_to_centered_median(self):
+        rows = [_agg_row(1, s, 1e-9, 1e-7) for s in (0, 7)]
+        entry = aggregate_verdicts_recentered(rows)[0]
+        keys = list(entry)
+        assert keys.index("dm_uncentered_vs_har_raw_p_median") == keys.index("dm_centered_p_median") + 1
