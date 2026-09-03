@@ -171,7 +171,7 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
 
     # - tranche 5 (#13378/#14283, decision ai-01 2026-09-02) : le solde des
     #   gardes routables. Exclus et pourquoi : pr-gate.yml (agregateur qui
-    #   poll jusqu'a 28 min -- le router reproduirait la famine mesuree en
+    #   poll jusqu'a 45 min -- le router reproduirait la famine mesuree en
     #   #11405), lean-axiom/lean-build (builds Lean sans cache mathlib, cf
     #   #14337 pools specialises), slides-composition-advisory (playwright
     #   --with-deps exige root, le conteneur tourne en uid 1001).
