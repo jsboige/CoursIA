@@ -133,6 +133,14 @@ git diff --stat <notebook_path>
 
 Suivre le plan d'enrichissement en inserant du BAS vers le HAUT pour eviter le decalage des indices.
 
+## REGLE CRITIQUE : Ancres `code[N]` resolues au HEAD (rule C.7)
+
+**Toute ancre `code[N]` ecrite dans le markdown enrichi designe la N-ieme cellule CODE (0-based) dans l'etat FINAL du notebook, apres toutes les insertions.**
+
+- JAMAIS d'ancre calculee contre le layout de `main` ou d'un etat intermediaire : les insertions markdown declalent les indices, et une ancre non rebasee atterrit sur du markdown (vague enrich : 5/8 ancres fausses sur #14161, 12/13 sur #14166).
+- Si le contenu cite la sortie d'une cellule (nombre, signature, nom d'entite), verifier AVANT commit que la cellule cible au HEAD produit bien cette valeur — une entite renommee (`Race` pour `Switch`) ou un nombre absent de l'output = contenu faux.
+- Validation pre-commit OBLIGATOIRE : `python scripts/notebook_tools/scan_enrich_quality.py <nb> --base <base.ipynb>` → 0 finding HIGH.
+
 ## REGLE CRITIQUE : Choix de la cellule de reference
 
 **Principe** : `edit_mode="insert"` insere la nouvelle cellule **IMMEDIATEMENT APRES** la cellule reference.
@@ -233,6 +241,14 @@ git diff --stat <notebook_path>
 
 # Verifier la sequence finale
 python scripts/notebook_tools/notebook_helpers.py sequence <notebook_path> 0 30
+```
+
+### Verification qualite enrich (OBLIGATOIRE, rule C.7)
+
+```bash
+# Contre la base : ancres, accents, survie des lignes, hrefs, solutions, fantomes
+python scripts/notebook_tools/scan_enrich_quality.py <notebook_path> --base <fichier_base.ipynb>
+# 0 finding HIGH requis avant commit
 ```
 
 **CRITERES** :
