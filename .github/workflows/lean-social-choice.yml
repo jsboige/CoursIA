@@ -62,7 +62,12 @@ jobs:
   #     name "Proof integrity" finally means what B.3 says it means.
   certified-no-sorry:
     name: "Certified modules: no code sorry (SocialChoice)"
-    runs-on: ubuntu-latest
+    # Routage #14283 tranche 3c (ai-01 2026-09-02) : jambe Linux auto-hebergee.
+    # Garde anti-fork au niveau job + runs-on STATIQUE (une expression leverait
+    # DYNAMIC_RUNS_ON dans check_self_hosted_runner_policy.py).
+    # Retour arriere = remettre `runs-on: ubuntu-latest` + retrait de l'allowlist.
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
 
     steps:
     - uses: actions/checkout@v4

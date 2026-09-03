@@ -12,6 +12,7 @@
 |----------|-------|----------|
 | [Do-Calculus-Bridge](Do-Calculus-Bridge.ipynb) | ~55 min | Échelle de Pearl, trois règles du do-calculus, critères *backdoor* / *front-door* exécutés avec `dowhy`, Pearl (intervention) vs Hoel (émergence causale) |
 | [DoWhy-1 — Exiger un estimand](DoWhy-1-Estimand-et-Intervention.ipynb) | ~45 min | Identification causale **nommée** via `dowhy` (backdoor, front-door, instrumentale) sur un cas complet ; sensibilité au graphe **mesurée** quand une hypothèse saute |
+| [DoWhy-2 — Le contrefactuel individuel](DoWhy-2-Contrefactuel-Individuel.ipynb) | ~40 min | Troisième échelon de Pearl : `dowhy.gcm` (abduction-action-prédiction) sur **un individu** ; l'effet moyen nul cache une CATE linéaire ±3 ; fragilité du chiffre individuel à la spécification du mécanisme |
 | [Quasi-Experimental](Quasi-Experimental.ipynb) | ~50 min | Méthodes quasi-expérimentales (DiD, contrôle synthétique, RDD, variables instrumentales) sur données réalistes ; estimands et hypothèses d'identification explicités |
 
 **Prérequis** : probabilités conditionnelles, graphes orientés acycliques (DAG), notions d'inférence bayésienne. Une lecture préalable de l'un des quatre notebooks de la constellation (ci-dessous) rend le pont plus concret.
@@ -44,3 +45,9 @@ Le notebook suit la convention du dépôt (stubs à compléter, sans erreur volo
 1. **Ajouter un second confondeur à la backdoor** — étendre l'ensemble d'ajustement à `{aptitude, motivation}`.
 2. **Rompre le critère front-door** — ajouter un chemin direct qui contourne le médiateur et vérifier que l'identification front-door échoue.
 3. **Comparer effet naïf et effet ajusté** — générer un nouveau jeu à effet vrai connu, mesurer l'écart dû au confondeur.
+
+Exercices de DoWhy-2 :
+
+1. **Le contrefactuel inverse** — pour un étudiant non traité à `V > 0`, estimer son `Y` sous `T := 1` et comparer à son observation : aurait-il gagné au mentorat ?
+2. **La CATE par sous-groupe** — déduire de la série d'écarts individuels l'effet moyen pour `V > 0.5` vs `V < -0.5`, interpréter le signe.
+3. **La méthode survit-elle au tirage ?** — re-générer le monde (`seed=7`), refitter, re-mesurer moyenne et écart-type des écarts : la structure doit survivre, pas les individus.

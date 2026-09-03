@@ -36,9 +36,16 @@
     csharp_sha: d93acdd6adb3fed78810670f797af106034c7b46
     content_python_sha: 396cff47d5be493bbb2dc2b45b3f38f91b9c075e3ecb47168be821d185aece7c
     content_csharp_sha: 9e6877b812509bedede7147e4cc3ff1983f4d7ce33fce897594a80cdfff22fbc
+  - date: "2026-09-02"
+    by: myia-po-2027:CoursIA
+    python_sha: a035a981f15ee077cda720d15547ecc1092639ac
+    csharp_sha: d93acdd6adb3fed78810670f797af106034c7b46
+    content_python_sha: 4494a4a9711e93534ec8b83504bccfac9ec23b2a18ce9b55e80727c9feb9616d
+    content_csharp_sha: 9e6877b812509bedede7147e4cc3ff1983f4d7ce33fce897594a80cdfff22fbc
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: 'Python = collections + math + matplotlib + numpy + random (Counter/typing, viz matplotlib, logique deductive + feedback, theorie de l''information, 21 cellules code). C# = BCL pure (System.IO + System.Collections.Generic + Microsoft.DotNet.Interactive.Formatting, 0 NuGet, from-scratch, 19 cellules code). Verdict SOTA-OK (flip 2026-08-22, c.1301+335, myia-po-2025:CoursIA-2, issue #10382) : mislabel corrigige -- la reason anterieure disait elle-meme ''pas de SOTA lib requise pour ce chapitre (les deux cotes implement from-scratch)'', ce qui contredit le verdict RECOVERABLE-LOCAL (qui signifie ''installable, pas installe''). Verifie firsthand : imports Python = stdlib + numpy/matplotlib viz uniquement, imports C# = System.* uniquement, aucun moteur tiers des deux cotes. Le chapitre (Wordle, theorie de l''information + feedback deductif) n''a pas de solveur tiers applicable -- from-scratch assumé pedagogiquement des deux cotes, precedent GT-15 (PR #12312). L''asymetrie residuelle (viz matplotlib cote Python, format texte cote C#) est mineure et documentee. parity_level: semantic preserve.'
   known_differences:
+  - "2026-09-02 (myia-po-2027:CoursIA, PR #14009) : enrichissement pedagogique App-7-Wordle -- 8 cellules markdown de lecture ancrees sur les outputs de code existants (densite 1009->1347 c/cell), code byte-identique (0 cellule code modifiee, pas de re-exec des sources). Blob et content SHAs deplaces = artefacts de la prose marquee (le content_sha hashe le JSON canonique des cellules), pas une divergence pedagogique."
   - 'Socle pedagogique commun : Wordle (logique deductive + feedback, theorie de l''information) comme application canonique. Les deux twins couvrent le meme socle theorique (formulation variables/domaines/contraintes, resolution, experimentation) avec parite semantique sur les concepts cibles.'
   - 'Idiomes framework : Python = Counter/typing + matplotlib viz ; C# = System.IO + Microsoft.DotNet.Interactive formatting.'
   - 'Asymetrie pedagogique : Python met l''accent sur le solveur SOTA (OR-Tools CP-SAT / library specialisee) + visualisation matplotlib + experimentation comparative ; le C# demontre l''implementation from-scratch en BCL pure (ou binding NuGet du meme solver pour App-8/10/15), presentation compacte. Meme socle theorique, leviers de demonstration differents.'
