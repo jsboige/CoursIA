@@ -117,3 +117,14 @@ Le patron existe deja dans le depot, avec sa convention de nommage : `Lean-12` /
 
 - « quand c'est possible » et « fais au mieux » sont dans le mandat : un compagnon Lean n'est pas un gate de merge. Un notebook Python seul reste mergeable — c'est le **defaut cible** qui change, pas le seuil de refus.
 - Un lake enrichi sans qu'aucun notebook ne cite les modules ajoutes est le vrai defaut : **c'est la visibilite du travail formel qui disparait**, mesuree a 13-20 % de declarations citees et **97 modules sur 177 invisibles** (2026-08-19). Suivi : **EPIC #11703**.
+
+## Ancrage `code[N]` : resoudre au HEAD, pas au MAIN (rule C.7)
+
+**Vague enrich #13410 (roo-extensions #3374).** Un pointeur `code[N]` ecrit dans le markdown doit designer la cellule qu'il vise **dans l'etat final de la branche (HEAD)**, apres toutes les insertions — jamais dans la mise en page de `main` depuis laquelle le generateur a travaille.
+
+- **Convention unique** : `code[N]` = la **N-ieme cellule CODE**, comptee a partir de 0, **au HEAD**. Pas d'index absolu de cellule, pas de mix des deux espaces (#14111 et #14117 utilisaient des sens opposes ; #14161 a ecrit contre le layout absolu de MAIN et 5/8 pointeurs atterrissaient sur du markdown ; #14166 melait les deux espaces — 12 ancres sur 13 fausses au head).
+- **Rebasage post-insertion** : les insertions markdown declalent tout ce qui suit. Generer les ancres **apres** avoir insere toutes les cellules (ou re-verifier chaque ancre contre le layout final). Les insertions BAS→HAUT changent les indices au-dessus, pas en dessous — recalculer systematiquement.
+- **Fidelite ancre-contenu (C.4 etendu)** : une ancre `code[N]` qui cite un nombre, une signature ou une entite (`Switch`, pas `Race`) doit verifier son contenu contre la **sortie reelle** de la cellule cible au HEAD. Une entite nommee dans un bloc de code du markdown doit exister dans le code ou les sorties du notebook.
+- **Validation pre-commit** : `python scripts/notebook_tools/scan_enrich_quality.py <nb> --base <base.ipynb>` — 0 finding HIGH. Le gate CI `Enrich-quality gate` rejette la PR sur toute **regression** HIGH (ancres hors-head, perte d'accents ≥ 60 %, reecriture < 25 % de survie, href 404, entite fantome, solution complete devant un exercice TODO).
+
+See #13410 (commentaires 2026-09-01 19:36Z / 20:19Z), roo-extensions #3374.
