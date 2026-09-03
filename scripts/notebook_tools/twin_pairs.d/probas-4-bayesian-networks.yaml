@@ -46,6 +46,12 @@
       csharp_sha: b05e9704a87010371cc0e00dcd514d8797a7261e
       content_python_sha: 994a50309f9c1222191b3f6469c2ade1e9286808f7a2d11de9876b5051bb0f93
       content_csharp_sha: cded8f08b018b789d6db95154c3cad5181bbe7e48244f17af11560ebb5c266d7
+    - date: "2026-09-03"
+      by: myia-po-2026:CoursIA
+      python_sha: 1c5d274e7a6c5ab87c2185f833578f65be4a99fc
+      csharp_sha: b05e9704a87010371cc0e00dcd514d8797a7261e
+      content_python_sha: 4b17263893e27997ebc88fa4cce4b8ad2cd5e115e104bdeeccb8612f9cd2097f
+      content_csharp_sha: cded8f08b018b789d6db95154c3cad5181bbe7e48244f17af11560ebb5c266d7
   known_differences:
   - 'Socle pedagogique commun : reseaux bayesiens (DAG de dependances conditionnelles) modelise dans les deux stacks.'
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
