@@ -171,7 +171,7 @@ Deep Learning pour séries temporelles : LSTM, Transformers, PatchTST/iTransform
 | # | Notebook | Durée | Contenu |
 |---|----------|-------|---------|
 | 22 | [QC-Py-22-Deep-Learning-LSTM](Python/QC-Py-22-Deep-Learning-LSTM.ipynb) | 90 min | LSTM time series, TensorFlow/Keras, CPU-first |
-| 23 | [QC-Py-23-Attention-Transformers](Python/QC-Py-23-Attention-Transformers.ipynb) | 90 min | Transformer architecture, multi-head attention, temporal fusion |
+| 23 | [QC-Py-23-State-Space-Models](Python/QC-Py-23-State-Space-Models.ipynb) | 90 min | State Space Models (S4, Mamba) pour séries temporelles |
 | 23b | [QC-Py-23b-PatchTST-iTransformer](Python/QC-Py-23b-PatchTST-iTransformer.ipynb) | 90 min | PatchTST patching, iTransformer inverted axes, prévision financière |
 | 24 | [QC-Py-24-Autoencoders-Anomaly](Python/QC-Py-24-Autoencoders-Anomaly.ipynb) | 75 min | Autoencoders pour détection anomalies, regime change |
 

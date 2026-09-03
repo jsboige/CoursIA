@@ -29,6 +29,12 @@ MODES
   --check     report drift only (any service .env whose value for a
               SECRET key differs from master), exit 1 on drift. Use as a
               CI / pre-commit gate.
+  --strict    exit 1 when a SECRET key declared in SECRET_KEYS is absent
+              from master.env (so a CI can distinguish "in sync" from
+              "in sync on what I watch" -- a declared key that drifts can
+              only drift if master actually serves it, #14373). Combines
+              with --check. Without --strict, --check stays exit 0 on a
+              declared-but-absent key and only NAMES it.
   --bootstrap ONE-SHOT: scan existing .env files, extract SECRET values,
               write master.env (first-seen value per key; conflicts
               reported). Use only to initialize master.env from a legacy
@@ -161,8 +167,12 @@ SECRET_KEYS: frozenset[str] = frozenset({
     "QDRANT_API_KEY",
     # OWUI native API (NB-20, #417) + TTS multi-voice gateway (#16, po-2023)
     "OWUI_API_KEY", "TTS_GATEWAY_API_KEY",
-    # ComfyUI client tokens (notebook client <-> service must agree)
-    "COMFYUI_VIDEO_TOKEN", "COMFYUI_API_TOKEN",
+    # ComfyUI client tokens (notebook client <-> service must agree).
+    # COMFYUI_AUTH_TOKEN is the canonical notebook-client name (#16 flip:
+    # notebooks read ``os.getenv("COMFYUI_AUTH_TOKEN") or os.getenv("COMFYUI_API_TOKEN")``).
+    # Aliased to COMFYUI_API_TOKEN -- both names carry the credential the
+    # ComfyUI-Login middleware validates (bind-mounted token file, #14382).
+    "COMFYUI_VIDEO_TOKEN", "COMFYUI_API_TOKEN", "COMFYUI_AUTH_TOKEN",
     # ComfyUI-Video web login password (user decision #10985, 2026-08-20):
     # centralized in master.env under an INSTANCE-SCOPED name -- plain
     # COMFYUI_PASSWORD must NOT enter SECRET_KEYS because comfyui-qwen carries
@@ -203,6 +213,11 @@ ALIASES: dict[str, str] = {
     # ``QWEN_API_USER_TOKEN`` in legacy code paths). Both names MUST
     # carry the same value; bootstrap enforces this on first sync. #10265.
     "QWEN_API_USER_TOKEN": "QWEN_API_TOKEN",
+    # ComfyUI-Login bearer, notebook-client canonical name (#14382): notebooks
+    # read COMFYUI_AUTH_TOKEN first; must equal COMFYUI_API_TOKEN (the
+    # credential the middleware validates). A stale non-empty AUTH_TOKEN
+    # shadows the correct API_TOKEN in the ``or`` fallback chain -> 401.
+    "COMFYUI_AUTH_TOKEN": "COMFYUI_API_TOKEN",
 }
 
 
@@ -341,12 +356,13 @@ def bootstrap() -> int:
 # --------------------------------------------------------------------------- #
 # sync: propagate master.env -> every .env
 # --------------------------------------------------------------------------- #
-def sync(check_only: bool) -> int:
+def sync(check_only: bool, strict: bool = False) -> int:
     if not MASTER_ENV.exists():
         print(f"[X] {MASTER_ENV} not found. Run with --bootstrap first.")
         return 1
     master = read_env(MASTER_ENV)
     missing_in_master = SECRET_KEYS - master.keys()
+    propagated = len(master)
     if missing_in_master:
         print(f"[!] {len(missing_in_master)} declared SECRET keys are absent from "
               f"master.env (left untouched in services): {sorted(missing_in_master)}")
@@ -390,8 +406,16 @@ def sync(check_only: bool) -> int:
         print("\n[i] Restart impacted containers (ComfyUI-Login hashes regen at restart).")
         return 0
 
-    print(f"[OK] All {len(TARGET_ENVS)} target .env in sync with master.env "
-          f"({len(master)} secret keys). No drift.")
+    if missing_in_master:
+        print(f"[OK] All {len(TARGET_ENVS)} target .env in sync with master.env "
+              f"within the {propagated} propagated key(s). "
+              f"{len(missing_in_master)} declared secret key(s) are OUT OF SCOPE "
+              f"(absent from master.env): {sorted(missing_in_master)}.")
+    else:
+        print(f"[OK] All {len(TARGET_ENVS)} target .env in sync with master.env "
+              f"({len(master)} secret keys). No drift.")
+    if strict and missing_in_master:
+        return 1
     return 0
 
 
@@ -528,6 +552,9 @@ def main() -> int:
                       help="auto-create .env for service dirs that have a "
                            "docker-compose.yml but no .env (closes the "
                            "--check blind spot, cf #9351)")
+    p.add_argument("--strict", action="store_true",
+                   help="exit 1 if a declared SECRET key is absent from "
+                        "master.env (CI gate, #14373)")
     args = p.parse_args()
     if args.bootstrap:
         return bootstrap()
@@ -536,7 +563,7 @@ def main() -> int:
         # successful no-op, list on writes. Map None -> 1 (cannot run),
         # otherwise -> 0 (success regardless of whether anything was written).
         return 1 if bootstrap_missing_envs() is None else 0
-    return sync(check_only=args.check)
+    return sync(check_only=args.check, strict=args.strict)
 
 
 if __name__ == "__main__":

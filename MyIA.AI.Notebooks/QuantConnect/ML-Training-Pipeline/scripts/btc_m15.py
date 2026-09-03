@@ -14,10 +14,8 @@ wrapper runs the SHAPE of the analysis — single combo (1 horizon × 1
 seed) — to validate the pipeline end-to-end. The full re-run is
 dispatched to the next cycle (see PR body for the command + acceptance).
 
-Helpers `_mse_decomposition` and `_dm_centered_mse` are duplicated from
-`btc_vol.py` (PR #12742) for the same reason PR #12742 needed them in
-isolation: keep this PR self-contained until a shared module is
-extracted (TODO post-merge).
+Helpers `_mse_decomposition` and `_dm_centered_mse` now live in
+`bias_metrics.py`, extracted from `btc_vol.py` (issue #14363).
 """
 from __future__ import annotations
 
@@ -31,49 +29,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-# --- helpers duplicated from btc_vol.py (slice 1/2 PR #12742) -----------
-
-
-def _mse_decomposition(errors: np.ndarray) -> dict:
-    """Decompose MSE of a forecast into bias^2 + variance on the error support."""
-    if errors is None or len(errors) == 0:
-        return {"mse": float("nan"), "bias_sq": float("nan"), "variance": float("nan")}
-    bias = float(np.mean(errors))
-    variance = float(np.var(errors, ddof=0))
-    return {
-        "mse": float(np.mean(errors ** 2)),
-        "bias_sq": bias ** 2,
-        "variance": variance,
-    }
-
-
-def _dm_centered_mse(
-    errors_a: np.ndarray, errors_b: np.ndarray, horizon: int
-) -> dict:
-    """DM test on errors centered by their own mean, with loss_fn='mse'."""
-    try:
-        from dm_test import dm_verdict as dm_verdict_fn
-    except ImportError:
-        return {"dm_stat": float("nan"), "dm_pvalue": float("nan"),
-                "dm_verdict": "DM_TEST_UNAVAILABLE", "mean_loss_diff": float("nan")}
-
-    e_a = np.asarray(errors_a, dtype=float)
-    e_b = np.asarray(errors_b, dtype=float)
-    if e_a.shape != e_b.shape:
-        return {"dm_stat": float("nan"), "dm_pvalue": float("nan"), "dm_verdict": "SHAPE_MISMATCH"}
-    n = len(e_a)
-    if n < 10:
-        return {"dm_stat": float("nan"), "dm_pvalue": float("nan"), "dm_verdict": "INSUFFICIENT_DATA"}
-
-    centered_a = e_a - np.mean(e_a)
-    centered_b = e_b - np.mean(e_b)
-    res = dm_verdict_fn(centered_a, centered_b, horizon=horizon, loss_fn="mse")
-    return {
-        "dm_stat": float(res["dm_statistic"]),
-        "dm_pvalue": float(res["p_value"]),
-        "dm_verdict": str(res["verdict"]),
-        "mean_loss_diff": float(res["mean_loss_diff"]),
-    }
+from bias_metrics import _dm_centered_mse, _mse_decomposition  # noqa: E402
 
 
 # --- main analysis --------------------------------------------------------
@@ -227,7 +183,7 @@ def run_smoke(
         "--loss-fn", loss_fn,
     ]
     print(f"[btc_m15] running: {' '.join(cmd)}")
-    proc = subprocess.run(cmd, capture_output=True, text=True)
+    proc = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
     print(proc.stdout[-2000:] if proc.stdout else "")
     if proc.returncode != 0:
         print(f"[btc_m15] FAILED (rc={proc.returncode}): {proc.stderr[-1000:]}")
