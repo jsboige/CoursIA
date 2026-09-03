@@ -63,7 +63,7 @@ Suite à l'audit du 5 mai 2026, voici l'état honnête de chaque notebook. **Auc
 | QC-Py-20-ML-Regression-Prediction | NON EXÉCUTÉ | |
 | QC-Py-21-Portfolio-Optimization-ML | NON EXÉCUTÉ | |
 | QC-Py-22-Deep-Learning-LSTM | NON EXÉCUTÉ | |
-| QC-Py-23-Attention-Transformers | EXÉCUTÉ | |
+| QC-Py-23-State-Space-Models | EXÉCUTÉ | |
 | QC-Py-23b-PatchTST-iTransformer | EXÉCUTÉ | |
 | QC-Py-24-Autoencoders-Anomaly | EXÉCUTÉ | |
 | QC-Py-25-Reinforcement-Learning | EXÉCUTÉ | |
@@ -180,7 +180,7 @@ Chaque notebook de la série rend visible un geste quantitatif distinct, dans un
 | [QC-Py-20-ML-Regression-Prediction](QC-Py-20-ML-Regression-Prediction.ipynb) | Régression, prédiction de prix |
 | [QC-Py-21-Portfolio-Optimization-ML](QC-Py-21-Portfolio-Optimization-ML.ipynb) | Optimisation ML de portefeuille |
 | [QC-Py-22-Deep-Learning-LSTM](QC-Py-22-Deep-Learning-LSTM.ipynb) | Réseaux LSTM pour séries temporelles |
-| [QC-Py-23-Attention-Transformers](QC-Py-23-Attention-Transformers.ipynb) | Transformers, attention mechanism |
+| [QC-Py-23-State-Space-Models](QC-Py-23-State-Space-Models.ipynb) | State Space Models (S4/Mamba) pour séries temporelles |
 | [QC-Py-23b-PatchTST-iTransformer](QC-Py-23b-PatchTST-iTransformer.ipynb) | PatchTST, iTransformer — transformers spécialisés séries temporelles |
 | [QC-Py-24-Autoencoders-Anomaly](QC-Py-24-Autoencoders-Anomaly.ipynb) | Détection d'anomalies, autoencodeurs |
 | [QC-Py-25-Reinforcement-Learning](QC-Py-25-Reinforcement-Learning.ipynb) | RL, DQN, environnement trading |

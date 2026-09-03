@@ -231,7 +231,7 @@ l'Epic) ; un dossier de revue est alors préparé (T2).*
 
 <!-- MyIA.AI.Notebooks/QuantConnect/Python -->
 - [ ] `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-22-Deep-Learning-LSTM.ipynb`
-- [ ] `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-Attention-Transformers.ipynb`
+- [ ] `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-State-Space-Models.ipynb`
 - [ ] `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-24-Autoencoders-Anomaly.ipynb`
 - [ ] `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-25-Reinforcement-Learning.ipynb`
 - [ ] `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-26-LLM-Trading-Signals.ipynb`
