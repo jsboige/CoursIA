@@ -4,6 +4,18 @@ Fix App-1-NQueens: recycle student solutions into Exemple cells + new stubs.
 Part of Issue #463: recyclage App-1..App-11.
 """
 
+# Archive header (standard _archive convention, 2026-08)
+# - Date archived : 2026-08-06
+# - Superseded by : none (one-shot fulfilled) — output lives in
+#   MyIA.AI.Notebooks/Search/Applications/CSP/App-1-NQueens.ipynb
+# - Verdict recorded in : PR #480 (a398145d9, 2026-04-22), PR #9580
+#
+# Per-function disposition :
+# - cell_code() : kept as reference; no successor (local cell factory)
+# - cell_md() : kept as reference; no successor (local cell factory)
+# - fix_app1() : transformation applied in PR #480; the three resolved examples
+#   and three replacement exercise stubs were verified on main in 2026-09
+
 import json
 
 

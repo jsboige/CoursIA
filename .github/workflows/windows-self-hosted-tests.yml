@@ -107,8 +107,16 @@ jobs:
           Write-Output "runner.arch=$env:RUNNER_ARCH"
           Write-Output "runner.temp=$env:RUNNER_TEMP"
           dotnet --info | Out-String | Write-Output
-          python --version
-          python -m pip --version
+          # Sonde python non fatale : ce job .NET n'exécute pas python (pas de
+          # setup-python ici, contrairement au job confinement). Sur le runner
+          # fast-guards, python est absent du PATH -- l'identité le CAPTURE
+          # (run 33720594511 : la sonde fatale tuait le job avant restore).
+          if (Get-Command python -ErrorAction SilentlyContinue) {
+            python --version
+            python -m pip --version
+          } else {
+            Write-Output "python: absent du PATH (non requis par ce job .NET)"
+          }
 
       - name: Set up .NET 9
         uses: actions/setup-dotnet@v4

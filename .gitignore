@@ -999,6 +999,7 @@ MyIA.AI.Notebooks/**/cache/
 **/_cache/
 # Cache de calcul PyPhi (notebooks IIT)
 /__pyphi_cache__/
+
 # Etat local machine : untrack V1 consolidation #13739 (copies disque conservees via --cached)
 # Artifacts regenerables : plans/progress/agent-memory Claude, forensics, snapshots CI.
 # NE PAS de-commenter pour .claude/agents|skills|rules|commands (partages, tracks legitimes).
@@ -1011,3 +1012,13 @@ MyIA.AI.Notebooks/**/cache/
 .claude/settings.local.json
 scripts/notebook_tools/forensic_results.json
 scripts/ci/snapshots/
+
+
+# PT-11c RLVR training scratch (issue #13871) : le notebook ecrit `seed_*/`
+# (checkpoints LoRA + trainer state, ~Mo/seed) sous ce sous-repertoire a chaque
+# run. Le `pt11c_per_seed_metrics.jsonl` re-generable reste a cote (tracke dans
+# _measurements/, voir commit #13738 e30dd5c72). Pattern ancre dans _measurements/
+# uniquement : hors de ce scope, le nom `pt11c_multiseed_output` est trop generique
+# pour risquer un ignore non-intentionnel.
+MyIA.AI.Notebooks/GenAI/PostTraining/_measurements/pt11c_multiseed_output/
+

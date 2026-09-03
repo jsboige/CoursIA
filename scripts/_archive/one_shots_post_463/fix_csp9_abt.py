@@ -19,6 +19,18 @@ Cells modified:
 Outputs are NOT cleared here ; Papermill will refresh them on re-execution.
 """
 
+# Archive header (standard _archive convention, 2026-08)
+# - Date archived : 2026-08-06
+# - Superseded by : none (one-shot fulfilled) — output lives in
+#   MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb
+# - Verdict recorded in : d45c05dda (2026-04-28; attributed to PR #578 by
+#   follow-up d4ee281aa and the archive record), PR #9580
+#
+# Per-function disposition :
+# - to_list() : kept as reference; no successor (local source-format helper)
+# - main() : id-based patcher whose ABT/AWC and benchmark rewrites landed in
+#   CSP-9-Distributed.ipynb at d45c05dda and were verified on main in 2026-09
+
 import json
 import sys
 from pathlib import Path

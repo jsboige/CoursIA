@@ -698,103 +698,6 @@ def test_lane_workspace_with_spaces_paren_annotation():
     assert g == "myia-po-2025:Microsoft VS Code"
 
 
-# --- #13830: workspace name containing Latin-1 accented letters --------------
-#
-# `myia-ai-01:LivresAgités` is a real cluster lane that writes its name with
-# accents (the `é` of `Agités` + the `É` of `Épisode`). `_LANE_RE` was
-# ASCII-only and truncated the token at `LivresAgit`, making the lane read
-# DIFFERENT FROM ITSELF in `check_lane_claim` (the same failure mode as #12145
-# spaces). Three PRs merged on that lane before the cap started seeing them
-# (#13286, #13415, #13575). The widening to Latin-1 (U+00C0-U+017F) accepts
-# every observed accented uppercase and lowercase, keeps the existing
-# case-sensitive initial guard (`(?-i:[A-Z0-9]...)`), and survives the date and
-# URL/timestamp negative lookaheads.
-
-def test_lane_workspace_accented():
-    # The control case from #13830: a workspace with a single accented letter.
-    g = gt.extract_lane("[CLAIMED] lane myia-ai-01:LivresAgités -- paths: a/**")
-    assert g == "myia-ai-01:LivresAgités"
-
-
-def test_lane_workspace_accented_no_annotation():
-    g = gt.extract_lane("[CLAIMED] lane myia-ai-01:LivresAgités")
-    assert g == "myia-ai-01:LivresAgités"
-
-
-def test_lane_workspace_accented_continuation_uppercase():
-    # Continuation starts with accented uppercase (`Épisode`) -- the upper-class
-    # widening (`À-ÖØ-Þ`) lets the case-sensitive initial guard pass without
-    # swallowing lowercase running prose ("lane myia-x:W and it works").
-    g = gt.extract_lane("[CLAIMED] lane myia-ai-01:LivresAgités Épisode -- paths")
-    assert g == "myia-ai-01:LivresAgités Épisode"
-
-
-def test_lane_workspace_accented_fallback():
-    # The same widening must apply to the fallback regex (#10395) -- a marker
-    # comment that omits the literal `lane` keyword still carries the
-    # `<machine>:<workspace>` token, which the cap counts.
-    line = "[CLAIMED] myia-ai-01:LivresAgités -- paths: a/**"
-    assert gt.extract_lane("no lane keyword here", marker_line=line) == "myia-ai-01:LivresAgités"
-
-
-def test_lane_workspace_accented_survives_date_guard():
-    # Accented workspace followed by a bare date -- the date lookahead refuses
-    # the date, the lane token survives intact. Mirrors
-    # `test_lane_spaces_workspace_survives_date_guard` (#12719-2) for accents.
-    line = "[CLAIMED] lane myia-ai-01:LivresAgités 2026-08-23"
-    assert gt.extract_lane(line, marker_line=line) == "myia-ai-01:LivresAgités"
-
-
-def test_lane_workspace_accented_does_not_swallow_prose():
-    # The accent widening must not lower the prose guard. A lowercase French
-    # article after the lane is still rejected (case-sensitive initial).
-    assert gt.extract_lane("lane myia-ai-01:LivresAgités et la suite") == "myia-ai-01:LivresAgités"
-
-
-# --- #13830 V2: union of #13869 (Latin Ext-A `Ā-ſ`) and #13899 (`À-ÖØ-öø-ÿ`)
-# Empirical coverage from the comparative table on #13869:
-#   LivresAgités    True (Latin-1 é, É)
-#   Cours×IA        False (U+00D7 MULTIPLICATION SIGN -- not a letter)
-#   Łódź            True (Latin Extended-A U+00B7 ł / U+00F3 ó)
-# The union `À-ÖØ-öø-ÿĀ-ſ` admits every Latin-1 + Latin Extended-A letter
-# while keeping both × (U+00D7) and ÷ (U+00F7) outside the token.
-
-
-def test_lane_workspace_latin_extended_a_lodz():
-    # Łódź : Ł (U+0141) is in Latin Extended-A, ó (U+00F3) is in Latin-1.
-    # The union class admits both, so the workspace token survives intact.
-    g = gt.extract_lane("[CLAIMED] lane myia-ai-01:Łódź -- paths: a/**")
-    assert g == "myia-ai-01:Łódź"
-
-
-def test_lane_workspace_rejects_multiplication_sign():
-    # U+00D7 (×) is NOT a letter; the union class skips it (U+00D7 sits in
-    # the gap between Ö and Ø of `À-ÖØ-öø-ÿ`, before `Ā-ſ`). The token
-    # truncates at × as expected.
-    g = gt.extract_lane("[CLAIMED] lane myia-x:Cours×IA -- paths: a/**")
-    assert g == "myia-x:Cours", "× (U+00D7) must not be admitted as a letter"
-
-
-def test_lane_workspace_rejects_division_sign():
-    # U+00F7 (÷) is NOT a letter; the union class skips it (U+00F7 sits in
-    # the gap between ö and ø of `à-öø-ÿ`, before `Ā-ſ`). The token
-    # truncates at ÷ as expected.
-    g = gt.extract_lane("[CLAIMED] lane myia-x:A÷B -- paths: a/**")
-    assert g == "myia-x:A", "÷ (U+00F7) must not be admitted as a letter"
-
-
-def test_lane_fallback_latin_extended_a_lodz():
-    # Twin test for `_LANE_FALLBACK_RE` (no `lane` keyword in the comment).
-    line = "[CLAIMED] myia-ai-01:Łódź -- paths: a/**"
-    assert gt.extract_lane("no lane keyword here", marker_line=line) == "myia-ai-01:Łódź"
-
-
-def test_lane_ascii_control_unchanged():
-    # Non-regression: ASCII control case from the founder test suite.
-    g = gt.extract_lane("[CLAIMED] lane myia-po-2026:CoursIA -- paths: a/**")
-    assert g == "myia-po-2026:CoursIA"
-
-
 def test_lane_hyphenated_workspace_unchanged():
     # The non-regression that matters most: the hyphen inside `CoursIA-2` must
     # stay part of the name, never be read as the start of an annotation.
@@ -980,3 +883,195 @@ def test_lane_latin1_bare_date_still_rejected():
     assert gt.extract_lane("no lane keyword here", marker_line=line) == "myia-ai-01:LivresAgités"
     residues = gt.lane_marker_residues(line)
     assert any(r.startswith("bare-date:") for r in residues), residues
+
+
+# --- #13633 : parse_grain_tag rejette un token TIER/GENRE nu en prose ----
+#
+# Cas fondateur documente par ai-01 le 2026-08-30 (PR #13550 fondateur,
+# issue #13631 second cas) : une PR sans cle `Grain:` mais contenant une
+# phrase qui DECRIT un autre grain ("le grain MED/tooling suivant, priorite
+# P1.") etait parsee avec {tier: MED, genre: tooling} -- un vert confiant
+# sur un ZERO tag. Le garde G-VAR-2 recevait alors un tier fantome, le
+# garde G-VAR-3 calculait l'adjacence sur une lane attribuee par accident
+# (ligne de signature `Lane x:y`), et la garde des orphelines perdait la
+# seule PR qui aurait du etre visible.
+#
+# Le correctif ancre `Grain` au debut de la ligne (apres le strip du
+# decoration markdown). Toute phrase ou `Grain` apparait au milieu d'une
+# ligne ne matche plus, et le parse rend `None` comme specifie par #9465.
+
+
+def test_13633_prose_describing_other_grain_returns_none():
+    """#13633 -- Cas A fondateur : pas de cle `Grain:`, prose qui parle d'un
+    autre grain + ligne de signature. Avant le fix : parse avec tier+lane
+    fantome. Apres : None."""
+    body = ("le grain MED/tooling suivant, priorite P1.\n"
+            "Lane myia-po-2027:CoursIA-2 -- c.1331p250")
+    assert gt.parse_grain_tag(body) is None
+
+
+def test_13633_prose_alone_with_tier_genre_returns_none():
+    """#13633 -- Cas B : pas de cle, prose seule avec un token TIER/GENRE."""
+    body = "le grain MED/tooling suivant, priorite P1."
+    assert gt.parse_grain_tag(body) is None
+
+
+def test_13633_lane_signature_without_grain_returns_none():
+    """#13633 -- Cas C : pas de cle, ligne de signature seule. Avant le fix :
+    None (deja -- le declencheur etait le token TIER/GENRE, pas la lane).
+    Apres : None (non-regression)."""
+    body = "Lane myia-po-2027:CoursIA-2 -- c.1331p250"
+    assert gt.parse_grain_tag(body) is None
+
+
+def test_13633_canonical_grain_tag_still_parses():
+    """#13633 -- Cas D (controle positif) : la cle `Grain: TIER/GENRE` reste
+    parsee comme avant. Si ce test echoue, le fix a casse la voie nominale
+    -- 32/34 PRs mergees le 2026-08-30 portent cette forme en L0."""
+    body = "Grain: DEEP/lean - lane myia-ai-01:CoursIA"
+    g = gt.parse_grain_tag(body)
+    assert g == {"tier": "DEEP", "genre": "lean", "lane": "myia-ai-01:CoursIA"}
+
+
+def test_13633_empty_body_returns_none():
+    """#13633 -- Cas E (controle negatif) : corps vide -> None."""
+    assert gt.parse_grain_tag("") is None
+
+
+def test_13633_tier_genre_in_prose_no_grain_word_returns_none():
+    """#13633 -- extension : un token TIER/GENRE isole en prose SANS le mot
+    'grain' ne matchait pas avant (le token seul ne suffisait pas, il fallait
+    `grain <word>/<word>`). Apres le fix, il NE matche TOUJOURS PAS -- la
+    garde est plus stricte mais pas differente sur ce cas."""
+    body = "voici les notes : MED/tooling, DEEP/lean, LIGHT/guard, tous OK"
+    assert gt.parse_grain_tag(body) is None
+
+
+def test_13633_double_tag_picks_first():
+    """#13633 -- non-regression : un body avec DEUX cles `Grain:` (la premiere
+    est le tag, la seconde une prose qui en parle) ne conserve que la
+    premiere -- comportement historique preserve."""
+    body = ("Grain: DEEP/lean\n\n"
+            "et aussi le grain LIGHT/guard en complement")
+    g = gt.parse_grain_tag(body)
+    assert g == {"tier": "DEEP", "genre": "lean", "lane": None}
+
+
+def test_13633_grain_on_subsequent_line_still_parses():
+    """#13633 -- non-regression : la cle peut apparaitre sur une ligne
+    subsequente (apres une courte prose d'introduction) tant qu'elle est en
+    debut de ligne. La voie L0 stricte n'est pas imposee."""
+    body = ("voici le tag :\n"
+            "Grain: MED/tooling - lane myia-po-2026:CoursIA")
+    g = gt.parse_grain_tag(body)
+    assert g == {"tier": "MED", "genre": "tooling",
+                 "lane": "myia-po-2026:CoursIA"}
+
+
+def test_13633_title_form_hash_grain_next_line_still_parses():
+    """#13633 -- non-regression : la forme toleree `## Grain\\n\\nLIGHT/guard`
+    reste parsee. Le strip `_strip_title_hashes` retire les `##`, laissant
+    `Grain` en debut de ligne -- la nouvelle regex line-anchored matche."""
+    body = "## Grain\n\nLIGHT/guard ... lane myia-po-2023:CoursIA"
+    g = gt.parse_grain_tag(body)
+    assert g == {"tier": "LIGHT", "genre": "guard",
+                 "lane": "myia-po-2023:CoursIA"}
+
+
+def test_13633_list_bullet_grain_still_parses():
+    """#13633 -- non-regression : la forme toleree `- Grain `MED/...`` (founder
+    tag de PR #12530) reste parsee. Le strip `_strip_title_hashes` retire
+    aussi `-` quand il precede un mot-cle reconnu, laissant `Grain` en debut
+    de ligne."""
+    body = "- Grain `MED/genai-video` — lane `myia-po-2023:CoursIA`."
+    g = gt.parse_grain_tag(body)
+    assert g == {"tier": "MED", "genre": "genai-video",
+                 "lane": "myia-po-2023:CoursIA"}
+
+# --- Latin-1 lane coverage (main #13830/#13899, re-applied post-rebase) ---
+
+def test_lane_workspace_accented():
+    # The control case from #13830: a workspace with a single accented letter.
+    g = gt.extract_lane("[CLAIMED] lane myia-ai-01:LivresAgités -- paths: a/**")
+    assert g == "myia-ai-01:LivresAgités"
+
+
+def test_lane_workspace_accented_no_annotation():
+    g = gt.extract_lane("[CLAIMED] lane myia-ai-01:LivresAgités")
+    assert g == "myia-ai-01:LivresAgités"
+
+
+def test_lane_workspace_accented_continuation_uppercase():
+    # Continuation starts with accented uppercase (`Épisode`) -- the upper-class
+    # widening (`À-ÖØ-Þ`) lets the case-sensitive initial guard pass without
+    # swallowing lowercase running prose ("lane myia-x:W and it works").
+    g = gt.extract_lane("[CLAIMED] lane myia-ai-01:LivresAgités Épisode -- paths")
+    assert g == "myia-ai-01:LivresAgités Épisode"
+
+
+def test_lane_workspace_accented_fallback():
+    # The same widening must apply to the fallback regex (#10395) -- a marker
+    # comment that omits the literal `lane` keyword still carries the
+    # `<machine>:<workspace>` token, which the cap counts.
+    line = "[CLAIMED] myia-ai-01:LivresAgités -- paths: a/**"
+    assert gt.extract_lane("no lane keyword here", marker_line=line) == "myia-ai-01:LivresAgités"
+
+
+def test_lane_workspace_accented_survives_date_guard():
+    # Accented workspace followed by a bare date -- the date lookahead refuses
+    # the date, the lane token survives intact. Mirrors
+    # `test_lane_spaces_workspace_survives_date_guard` (#12719-2) for accents.
+    line = "[CLAIMED] lane myia-ai-01:LivresAgités 2026-08-23"
+    assert gt.extract_lane(line, marker_line=line) == "myia-ai-01:LivresAgités"
+
+
+def test_lane_workspace_accented_does_not_swallow_prose():
+    # The accent widening must not lower the prose guard. A lowercase French
+    # article after the lane is still rejected (case-sensitive initial).
+    assert gt.extract_lane("lane myia-ai-01:LivresAgités et la suite") == "myia-ai-01:LivresAgités"
+
+
+# --- #13830 V2: union of #13869 (Latin Ext-A `Ā-ſ`) and #13899 (`À-ÖØ-öø-ÿ`)
+# Empirical coverage from the comparative table on #13869:
+#   LivresAgités    True (Latin-1 é, É)
+#   Cours×IA        False (U+00D7 MULTIPLICATION SIGN -- not a letter)
+#   Łódź            True (Latin Extended-A U+00B7 ł / U+00F3 ó)
+# The union `À-ÖØ-öø-ÿĀ-ſ` admits every Latin-1 + Latin Extended-A letter
+# while keeping both × (U+00D7) and ÷ (U+00F7) outside the token.
+
+
+def test_lane_workspace_latin_extended_a_lodz():
+    # Łódź : Ł (U+0141) is in Latin Extended-A, ó (U+00F3) is in Latin-1.
+    # The union class admits both, so the workspace token survives intact.
+    g = gt.extract_lane("[CLAIMED] lane myia-ai-01:Łódź -- paths: a/**")
+    assert g == "myia-ai-01:Łódź"
+
+
+def test_lane_workspace_rejects_multiplication_sign():
+    # U+00D7 (×) is NOT a letter; the union class skips it (U+00D7 sits in
+    # the gap between Ö and Ø of `À-ÖØ-öø-ÿ`, before `Ā-ſ`). The token
+    # truncates at × as expected.
+    g = gt.extract_lane("[CLAIMED] lane myia-x:Cours×IA -- paths: a/**")
+    assert g == "myia-x:Cours", "× (U+00D7) must not be admitted as a letter"
+
+
+def test_lane_workspace_rejects_division_sign():
+    # U+00F7 (÷) is NOT a letter; the union class skips it (U+00F7 sits in
+    # the gap between ö and ø of `à-öø-ÿ`, before `Ā-ſ`). The token
+    # truncates at ÷ as expected.
+    g = gt.extract_lane("[CLAIMED] lane myia-x:A÷B -- paths: a/**")
+    assert g == "myia-x:A", "÷ (U+00F7) must not be admitted as a letter"
+
+
+def test_lane_fallback_latin_extended_a_lodz():
+    # Twin test for `_LANE_FALLBACK_RE` (no `lane` keyword in the comment).
+    line = "[CLAIMED] myia-ai-01:Łódź -- paths: a/**"
+    assert gt.extract_lane("no lane keyword here", marker_line=line) == "myia-ai-01:Łódź"
+
+
+def test_lane_ascii_control_unchanged():
+    # Non-regression: ASCII control case from the founder test suite.
+    g = gt.extract_lane("[CLAIMED] lane myia-po-2026:CoursIA -- paths: a/**")
+    assert g == "myia-po-2026:CoursIA"
+
+

@@ -49,29 +49,22 @@ from dlinear_vol import (  # noqa: E402
     walk_forward_har,
     walk_forward_dlinear,
 )
+from bias_metrics import _dm_centered_mse, _mse_decomposition  # noqa: E402
 
 
-def _mse_decomposition(errors: np.ndarray) -> dict:
-    """Decompose MSE of a forecast into bias^2 + variance on the error support."""
-    if errors is None or len(errors) == 0:
-        return {"mse": float("nan"), "bias_sq": float("nan"), "variance": float("nan")}
-    bias = float(np.mean(errors))
-    variance = float(np.var(errors, ddof=0))
-    return {
-        "mse": float(np.mean(errors ** 2)),
-        "bias_sq": bias ** 2,
-        "variance": variance,
-    }
-
-
-def _dm_centered_mse(
+def _dm_uncentered_mse(
     errors_a: np.ndarray, errors_b: np.ndarray, horizon: int
 ) -> dict:
-    """DM test on errors centered by their own mean, with loss_fn='mse'.
+    """DM test on RAW (non-centered) errors, with loss_fn='mse'.
 
-    Centering annihilates the bias component (`mean(e_a - mean(e_a)) = 0`),
-    so the resulting `d_mean` measures only the variance differential. The
-    "DM on precision" jambe that #10961 documents is exactly this.
+    This is the sanity leg reproducing the #11011 keeper measure: the MSE
+    differential on untouched errors, bias included. It is deliberately NOT
+    `_dm_centered_mse`: centering subtracts each series' own mean, which
+    annihilates any constant offset between two error series. Since the
+    de-biased HAR errors differ from the raw ones by exactly the constant
+    `har_bias_oos`, routing this leg through the centered helper makes it
+    return the *same* statistic as the verdict leg -- a control that cannot
+    go red (#14362). Same return shape as `_dm_centered_mse`.
     """
     from dm_test import dm_verdict as dm_verdict_fn
 
@@ -83,9 +76,7 @@ def _dm_centered_mse(
     if n < 10:
         return {"dm_stat": float("nan"), "dm_pvalue": float("nan"), "dm_verdict": "INSUFFICIENT_DATA"}
 
-    centered_a = e_a - np.mean(e_a)
-    centered_b = e_b - np.mean(e_b)
-    res = dm_verdict_fn(centered_a, centered_b, horizon=horizon, loss_fn="mse")
+    res = dm_verdict_fn(e_a, e_b, horizon=horizon, loss_fn="mse")
     return {
         "dm_stat": float(res["dm_statistic"]),
         "dm_pvalue": float(res["p_value"]),
@@ -156,12 +147,18 @@ def run_btc_debiased_recentered(
 
             dl_decomp = _mse_decomposition(dl_errors)
 
-            # DM on centered errors (variance differential) -- HAR DEBIASED.
+            # Verdict leg: DM on CENTERED errors (variance differential),
+            # DLinear raw vs HAR DEBIASED. This is the jambe that carries §C.
             min_len = min(len(dl_errors), len(har_errors_debiased))
             dm_centered = _dm_centered_mse(
                 dl_errors[:min_len], har_errors_debiased[:min_len], horizon=h
             )
-            dm_raw = _dm_centered_mse(
+            # Sanity leg: DM NON centered, DLinear raw vs HAR RAW -- the #11011
+            # keeper measure. It must NOT be routed through `_dm_centered_mse`:
+            # `har_errors_debiased = har_errors - har_bias_oos` differs from
+            # `har_errors` by a constant, and centering annihilates exactly that
+            # constant, so both legs would return the same statistic (see #14362).
+            dm_uncentered = _dm_uncentered_mse(
                 dl_errors[:min_len], har_errors[:min_len], horizon=h
             )
 
@@ -190,9 +187,12 @@ def run_btc_debiased_recentered(
                 "dm_centered_pvalue": dm_centered["dm_pvalue"],
                 "dm_centered_verdict": dm_centered["dm_verdict"],
                 "dm_centered_mean_loss_diff": dm_centered.get("mean_loss_diff", float("nan")),
-                "dm_raw_stat": dm_raw["dm_stat"],
-                "dm_raw_pvalue": dm_raw["dm_pvalue"],
-                "dm_raw_verdict": dm_raw["dm_verdict"],
+                "dm_uncentered_vs_har_raw_stat": dm_uncentered["dm_stat"],
+                "dm_uncentered_vs_har_raw_pvalue": dm_uncentered["dm_pvalue"],
+                "dm_uncentered_vs_har_raw_verdict": dm_uncentered["dm_verdict"],
+                "dm_uncentered_vs_har_raw_mean_loss_diff": dm_uncentered.get(
+                    "mean_loss_diff", float("nan")
+                ),
                 "n_predictions": int(dl_out["n_total_preds"]),
                 "n_rv_days": int(len(rv)),
             })
