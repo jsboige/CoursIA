@@ -29,6 +29,12 @@ MODES
   --check     report drift only (any service .env whose value for a
               SECRET key differs from master), exit 1 on drift. Use as a
               CI / pre-commit gate.
+  --strict    exit 1 when a SECRET key declared in SECRET_KEYS is absent
+              from master.env (so a CI can distinguish "in sync" from
+              "in sync on what I watch" -- a declared key that drifts can
+              only drift if master actually serves it, #14373). Combines
+              with --check. Without --strict, --check stays exit 0 on a
+              declared-but-absent key and only NAMES it.
   --bootstrap ONE-SHOT: scan existing .env files, extract SECRET values,
               write master.env (first-seen value per key; conflicts
               reported). Use only to initialize master.env from a legacy
@@ -341,12 +347,13 @@ def bootstrap() -> int:
 # --------------------------------------------------------------------------- #
 # sync: propagate master.env -> every .env
 # --------------------------------------------------------------------------- #
-def sync(check_only: bool) -> int:
+def sync(check_only: bool, strict: bool = False) -> int:
     if not MASTER_ENV.exists():
         print(f"[X] {MASTER_ENV} not found. Run with --bootstrap first.")
         return 1
     master = read_env(MASTER_ENV)
     missing_in_master = SECRET_KEYS - master.keys()
+    propagated = len(master)
     if missing_in_master:
         print(f"[!] {len(missing_in_master)} declared SECRET keys are absent from "
               f"master.env (left untouched in services): {sorted(missing_in_master)}")
@@ -390,8 +397,16 @@ def sync(check_only: bool) -> int:
         print("\n[i] Restart impacted containers (ComfyUI-Login hashes regen at restart).")
         return 0
 
-    print(f"[OK] All {len(TARGET_ENVS)} target .env in sync with master.env "
-          f"({len(master)} secret keys). No drift.")
+    if missing_in_master:
+        print(f"[OK] All {len(TARGET_ENVS)} target .env in sync with master.env "
+              f"within the {propagated} propagated key(s). "
+              f"{len(missing_in_master)} declared secret key(s) are OUT OF SCOPE "
+              f"(absent from master.env): {sorted(missing_in_master)}.")
+    else:
+        print(f"[OK] All {len(TARGET_ENVS)} target .env in sync with master.env "
+              f"({len(master)} secret keys). No drift.")
+    if strict and missing_in_master:
+        return 1
     return 0
 
 
@@ -528,6 +543,9 @@ def main() -> int:
                       help="auto-create .env for service dirs that have a "
                            "docker-compose.yml but no .env (closes the "
                            "--check blind spot, cf #9351)")
+    p.add_argument("--strict", action="store_true",
+                   help="exit 1 if a declared SECRET key is absent from "
+                        "master.env (CI gate, #14373)")
     args = p.parse_args()
     if args.bootstrap:
         return bootstrap()
@@ -536,7 +554,7 @@ def main() -> int:
         # successful no-op, list on writes. Map None -> 1 (cannot run),
         # otherwise -> 0 (success regardless of whether anything was written).
         return 1 if bootstrap_missing_envs() is None else 0
-    return sync(check_only=args.check)
+    return sync(check_only=args.check, strict=args.strict)
 
 
 if __name__ == "__main__":
