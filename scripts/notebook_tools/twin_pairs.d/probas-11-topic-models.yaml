@@ -55,6 +55,12 @@
       csharp_sha: 7af374eb918b00f10fe04235129686c8c33489bb
       content_python_sha: e6f39229260ffb51df9e53b1810ab69600d50b43744fb4beb22b7a3515245583
       content_csharp_sha: ee506edb243dbd1576686bf38a670347eb8ad6018ec0760c96948194e94716ea
+    - date: "2026-09-03"
+      by: myia-po-2026:CoursIA
+      python_sha: f8be10e49451cb255915dd79985be125721107dd
+      csharp_sha: 7af374eb918b00f10fe04235129686c8c33489bb
+      content_python_sha: b18605367ff2cd0a6ae5a741a8ae1a26f522aabf49a94bc332e8eb92f8875838
+      content_csharp_sha: ee506edb243dbd1576686bf38a670347eb8ad6018ec0760c96948194e94716ea
   known_differences:
   - 'Socle pedagogique commun : modeles de topics (LDA / allocation de Dirichlet) modelise dans les deux stacks.'
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
