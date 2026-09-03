@@ -28,6 +28,12 @@
       csharp_sha: badb7ba30e145498996a823e9d2b69e8fb31ea1a
       content_python_sha: ecd3798935d81f107d9318130f2c68e29e483b8f6ab06bae62668ee9621a9151
       content_csharp_sha: 38238ddf5cbe7c38ee7dbd223bceb742dd35aff85828528be5dc111ee9725bfa
+    - date: "2026-09-02"
+      by: myia-po-2023:CoursIA
+      python_sha: 98c13304b83c09ff521ccbb3e42c20df4a117e14
+      csharp_sha: 0aa813e2da6ef0fa5afac9ad7e98d557cc2d9dd4
+      content_python_sha: 0694e285f5ca044c3aaf81caaf973739652e75bcb8a993107f6b2874515c99f9
+      content_csharp_sha: b52736f474751642d6afac107f15c3b7d83ce6a8e33d962895c61948381e6d62
   known_differences:
     - "2026-08-15 : correction d'auteurs falsifies (issue #11044, tranche W3C SPARQL / ML.NET KDD) — citations remises a leurs auteurs reels (Amizadeh S., DOI KDD, Protocol et al., etc.), markdown-only, aucun changement d'engine/outputs. Parite semantique conservee ; rebaseline content SHA (re-audit 2026-08-15, myia-po-2026:CoursIA-2)."
     - "Socle pedagogique commun : regression lineaire (R2, MAE) + regression logistique (accuracy, ROC-AUC). Dataset : prediction de prix / classification binaire."

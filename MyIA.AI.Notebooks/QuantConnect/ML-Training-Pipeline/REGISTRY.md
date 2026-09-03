@@ -172,9 +172,39 @@ est **2/3 BEATS, 1/3 INCONCLUSIVE, 0/3 NO BEATS** — mesurable, défendable, et
 que les 3/3 BEATS de la mse asymétrique. M4 BTC keeper reste défendable : 2 horizons
 passent la conjonction, le 3ᵉ est statistiquement insuffisant (pas un échec).
 
-- **Run** : `python scripts/btc_vol.py --horizons 1 5 10 --seeds 0 7 42 99 --epochs 50 --out-json scripts/results/m4_dlinear_vol_btc_sc_debiased_recentered.json` (1786,9 s ≈ 30 min CPU, 12 combos)
+- **Run** : `python scripts/btc_vol.py --horizons 1 5 10 --seeds 0 7 42 99 --epochs 50 --out-json scripts/results/m4_dlinear_vol_btc_sc_debiased_recentered.json` (1776,4 s ≈ 30 min CPU, 12 combos — artefact régénéré par #14362, cf. correction ci-dessous ; le run initial #12734 mesurait 1786,9 s)
 - **Notebook** : section 9 de `m4_dlinear_vol_sc_validation.ipynb` (recalcul indépendant de la conjonction recentrée, décomposition biais²+variance, outputs C.2)
 - **Verdict §C recentré** : **2/3 BEATS, 0/3 NO BEATS, 1/3 INCONCLUSIVE** (vs 3/3 BEATS mse asymétrique #11011 — la symétrie du dé-biaisage **réduit** l'edge sur h longs, ne le fabrique pas)
+
+**Correction #14362 (2026-09-02) — la jambe de sanité était silencieusement recentrée.** L'entrée
+ci-dessus décrit une seconde jambe DM « RAW » censée reproduire le keeper #11011 sur pertes
+brutes. Elle passait par `_dm_centered_mse`, comme la jambe de verdict. Or les deux séries HAR ne
+diffèrent que d'une **constante** (`har_errors_debiased = har_errors − har_bias_oos`) et le
+recentrage par la moyenne propre l'annule exactement — les deux jambes rendaient le **même
+nombre**, bit-identiques sur **12 lignes sur 12** de l'artefact publié. Ses p-médianes
+(1,545e-09 / 9,660e-05 / 1,021e-01) reproduisaient `dm_centered_p_median`, pas le keeper ; à h=10
+elle affichait `INCONCLUSIVE` là où le keeper qu'elle devait retrouver publie **BEATS** à
+p = 2,39e-09. Un contrôle qui suit la mauvaise cible n'en est pas un.
+
+Après correction (champ renommé `dm_uncentered_vs_har_raw_*`, DM **non centré** sur erreurs
+intactes), artefact régénéré à configuration identique — la jambe **retrouve** le keeper :
+
+| h | jambe corrigée p_median | keeper #11011 publié | verdicts |
+|---|---|---|---|
+| 1  | **0,000e+00** | 0,00e+00 | BEATS 4/4 |
+| 5  | 1,435e-10 | 2,25e-10 | BEATS 4/4 |
+| 10 | 3,083e-09 | 2,39e-09 | **BEATS 4/4** (était INCONCLUSIVE) |
+
+L'accord est **de rang de grandeur et de verdict, pas bit-à-bit** sur h=5/h=10 (facteur < 2) : le
+keeper provient d'un entraînement DLinear distinct, les erreurs du modèle ne sont pas les mêmes
+séries. C'est l'accord attendu d'une reproduction indépendante, pas d'un rejeu.
+
+**Ce que la correction ne change pas** : `dm_centered_stat` revient **bit-identique sur 12/12
+lignes** (Δ max = 0,000e+00) sur le run régénéré — le défaut portait sur un champ de **diagnostic**,
+jamais sur la conjonction §C. Le **verdict §C recentré reste 2/3 BEATS, 1/3 INCONCLUSIVE**, et M15
+reste `refuted-de-biased` 3/3. Ce qui était perdu, c'est la capacité de le contrôler. Le champ n'est
+agrégé nulle part (`aggregated` ne porte que `dm_centered_p_median`) — c'est ce qui a laissé le
+défaut invisible ; suivi en **#14390**.
 
 **Confirmation indépendante #11036 (re-validation ai-01, lane #1454, 2026-08-24)** : re-validation
 sur les séries du run mse #11011 persistées par combo (M4 déterministe, CPU) — MSE/DM
