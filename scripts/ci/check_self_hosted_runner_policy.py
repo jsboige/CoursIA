@@ -64,6 +64,10 @@ DEDICATED_LABEL_SETS = (REQUIRED_LABELS, LINUX_RUNNER_LABELS)
 #   `skipped` as OK). Routed to the containerized Linux leg to relieve the
 #   GitHub-hosted queue. Rollback = revert of the routing PR.
 SELF_HOSTED_WORKFLOW_ALLOWLIST = {
+    # tranche 3d (#14283) : premier consommateur GitHub-hosted du depot une
+    # fois secret-scan bascule -- 2650 runs same-repo du 2026-08-28 au
+    # 2026-09-02, timeout 25 min, aucun filtre `paths:`.
+    "always-on-guards.yml",
     "pr-gate-stale-sweep.yml",
     "windows-self-hosted-tests.yml",
     "linux-self-hosted-tests.yml",
@@ -167,7 +171,7 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
 
     # - tranche 5 (#13378/#14283, decision ai-01 2026-09-02) : le solde des
     #   gardes routables. Exclus et pourquoi : pr-gate.yml (agregateur qui
-    #   poll jusqu'a 28 min -- le router reproduirait la famine mesuree en
+    #   poll jusqu'a 45 min -- le router reproduirait la famine mesuree en
     #   #11405), lean-axiom/lean-build (builds Lean sans cache mathlib, cf
     #   #14337 pools specialises), slides-composition-advisory (playwright
     #   --with-deps exige root, le conteneur tourne en uid 1001).
