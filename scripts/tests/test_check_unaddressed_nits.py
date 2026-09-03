@@ -4301,7 +4301,13 @@ def test_14199_remesure_7_vp_window_reste_bloquant():
     pour chaque PR. C'est l'invariant qui protege contre toute
     regression silencieuse du garde."""
     import json
+    import shutil
     import subprocess
+    if shutil.which("gh") is None or subprocess.run(
+            ["gh", "auth", "status"], capture_output=True).returncode != 0:
+        pytest.skip("gh CLI ou auth indisponible -- re-mesure live VP differee "
+                    "(review NanoClaw #14322, concern 2 : le runner sans gh doit "
+                    "skipper, pas ERREUR)")
     vps = [13921, 13800, 13789, 13667, 13542, 13386, 13370]
     for pr in vps:
         out = subprocess.check_output(
@@ -4349,3 +4355,22 @@ def test_14199_remesure_3_fp_window_neutralise():
             f"FP #{pr} doit etre neutralise (classify=None) apres le fix, "
             f"got {result!r} pour body={body[:60]!r}"
         )
+
+
+def test_14199_concern1_aparte_phrase_precedente_neutralise_pas_le_vp():
+    """Review NanoClaw #14322 concern 1 -- le gap du sous-pattern (a)
+    QUALIFIER franchissait les frontieres de phrase : un aparte benin
+    "(mineur)" dans une phrase precedente neutralisait un nit VIVANT
+    "avant merge" de la phrase SUIVANTE. Le point est desormais exclu
+    du gap ([^.!?\n]) : ce corps doit rester BOT-CONCERN."""
+    body = ("Le point precedent (mineur) est clos sans suite. "
+            "Reserve bloquante : a corriger avant merge par le lane.")
+    assert mod.classify("clusterManager-Myia", body) == "BOT-CONCERN"
+
+
+def test_14199_concern1_gap_intra_phrase_fp1_couvert_toujours_neutralise():
+    """Le resserrement du gap ne doit pas casser le FP fondateur : un
+    qualifieur dans la MEME phrase que le token reste neutralise."""
+    body = ("Le point souleve (mineur) sera traite par la passe de "
+            "nettoyage avant merge, pas ici.")
+    assert mod.classify("clusterManager-Myia", body) != "BOT-CONCERN"

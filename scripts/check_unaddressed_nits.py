@@ -870,7 +870,8 @@ _MENTION_VERDICT_REPORTED = re.compile(
 #     `(bloquant)`/`(urgent)` n'est PAS couvert par la liste (a) — il
 #     reste un nit vivant.
 #
-# 4 sous-patterns (un par contexte FP, exactitude isolee) :
+# 7 sous-patterns (un par contexte FP, exactitude isolee ; review NanoClaw
+# #14322 minor : compteur corrige) :
 
 _MENTION_AVANT_MERGE_QUALIFIER = re.compile(
     r"(?i)"
@@ -878,8 +879,10 @@ _MENTION_AVANT_MERGE_QUALIFIER = re.compile(
     r"\((?:non[\s-]+(?:bloquant|bloquante|bloquants|bloquantes|blocker)"
     r"|mineur(?:s)?|optionnel(?:le)?s?|optiona(?:l|ux|les)?"
     r"|advisory|info(?:rmation)?(?:s|nel)?)\)"
-    # Gap toleré : autorise les points et ellipsis dans la phrase qui suit
-    r"[^!?\n]{0,200}?"
+    # Gap intra-phrase : point exclu (review NanoClaw #14322 concern 1) --
+    # un aparte benin dans une phrase precedente ne neutralise pas un nit
+    # VIVANT de la phrase suivante.
+    r"[^.!?\n]{0,200}?"
     r"\bavant(?:\s+(?:le|la|l[\\']))?\s+merge\b"
 )
 
@@ -965,8 +968,9 @@ def _strip_avant_merge_mention(body: str) -> str:
     les offsets du reste du body sont preserves, comme les autres strips.
 
     Cible : `avant merge` est un CONCERN_MARKER (L231) qui peut etre en
-    mention (3 formes mesurees : qualifieur explicite non-bloquant, narration
-    de verification passee, formule de la voie B.0, delegation Ball merge).
+    mention (4 formes mesurees : qualifieur explicite non-bloquant, narration
+    de verification passee, formule de la voie B.0, delegation Ball merge ;
+    review NanoClaw #14322 minor : compteur corrige).
     Sans cette neutralisation, ces mentions sont classee BOT-CONCERN (FP).
 
     Anti-regression (acceptance #14199) :
