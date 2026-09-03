@@ -11,6 +11,7 @@ keyword.
 Run:
     python -m pytest scripts/tests/test_variation_prev_guard.py
 """
+import json
 import sys
 from pathlib import Path
 
@@ -292,3 +293,155 @@ def test_prev_invalid_check_unaffected_by_existing_close_keyword_tests():
     assert any(h["genre"] == "fix" for h in v["hits"]["body"])
     # PREV-SELF is NOT flagged (current_pr=200, prev=#100, distinct).
     assert not any(h["kind"] == "prev-self" for h in v["hits"]["prev_invalid"])
+
+
+# ---------------------------------------------------------------------------
+# resolve_prev_targets -- the half of #13475 that had no test, and was wrong.
+#
+# The workflow used to ask `gh pr view N --json state,merged`. `merged` is not
+# a field this `gh` exposes, so the call failed for EVERY target, fell through
+# to `gh issue view` (which answers for pull requests too), and returned
+# `kind="issue"` for every PR -- making `prev-not-pr` fire on 100 % of PRs,
+# this one included (#13922 blocked on `prev-not-pr -> [14225]`, while #14225
+# is a PR merged at 2026-09-03T10:28:59Z).
+#
+# `FakeGh` replays the three classes measured on this repo on 2026-09-03.
+# Every test below is a positive control: each asserts a DIFFERENT verdict, so
+# a resolver that collapses the classes (which is exactly what the defect did)
+# cannot pass them all.
+# ---------------------------------------------------------------------------
+
+class _Completed:
+    def __init__(self, returncode, stdout="", stderr=""):
+        self.returncode = returncode
+        self.stdout = stdout
+        self.stderr = stderr
+
+
+class FakeGh:
+    """Replay `gh` for a fixed world of numbers, faithful to the real CLI.
+
+    `world` maps a number to `("pr", "MERGED")`, `("pr", "OPEN")`, or
+    `("issue", "OPEN")`. Two real behaviours are reproduced because both
+    matter to the resolver's correctness:
+
+      * an **unknown --json field** makes `gh pr view` exit 1 with
+        `Unknown JSON field: "<name>"` -- this is what killed the original;
+      * `gh issue view` **succeeds on pull requests**, so it can never be
+        the discriminant between the two kinds.
+    """
+
+    #: fields this fake `gh pr view` knows about (mirrors the real one).
+    PR_FIELDS = {"state", "number", "title", "mergedAt"}
+
+    def __init__(self, world):
+        self.world = world
+        self.calls = []
+
+    def __call__(self, argv, capture_output=True, text=True, timeout=None):
+        self.calls.append(list(argv))
+        _gh, verb, _view, number, _json_flag, fields = argv[:6]
+        n = int(number)
+        requested = set(fields.split(","))
+        kind, state = self.world.get(n, (None, None))
+        if verb == "pr":
+            unknown = requested - self.PR_FIELDS
+            if unknown:
+                return _Completed(1, "", 'Unknown JSON field: "%s"\n'
+                                  % sorted(unknown)[0])
+            if kind != "pr":
+                return _Completed(
+                    1, "",
+                    "GraphQL: Could not resolve to a PullRequest with the "
+                    "number of %d. (repository.pullRequest)\n" % n)
+            return _Completed(0, json.dumps({"state": state}))
+        # `gh issue view` answers for issues AND pull requests.
+        if kind is None:
+            return _Completed(1, "", "GraphQL: Could not resolve to an "
+                                     "Issue with the number of %d.\n" % n)
+        return _Completed(0, json.dumps({"state": state}))
+
+
+WORLD = {14225: ("pr", "MERGED"),      # merged PR   -> the #13922 witness
+         13922: ("pr", "OPEN"),        # open PR
+         14513: ("issue", "OPEN")}     # issue
+
+
+def test_resolve_prev_targets_merged_pr_is_a_merged_pr():
+    gh = FakeGh(WORLD)
+    assert vpg.resolve_prev_targets([14225], runner=gh) == {
+        "14225": {"kind": "pr", "merged": True}}
+    # PR-first ordering: the issue endpoint is never consulted for a PR.
+    assert [c[1] for c in gh.calls] == ["pr"]
+
+
+def test_resolve_prev_targets_open_pr_is_a_pr_not_merged():
+    assert vpg.resolve_prev_targets([13922], runner=FakeGh(WORLD)) == {
+        "13922": {"kind": "pr", "merged": False}}
+
+
+def test_resolve_prev_targets_issue_is_an_issue():
+    gh = FakeGh(WORLD)
+    assert vpg.resolve_prev_targets([14513], runner=gh) == {
+        "14513": {"kind": "issue"}}
+    # Both endpoints were tried, in that order.
+    assert [c[1] for c in gh.calls] == ["pr", "issue"]
+
+
+def test_resolve_prev_targets_unresolvable_target_is_omitted():
+    # Neither endpoint resolves -> absent from the dict -> validate_prev_targets
+    # abstains. A lookup failure must never become an accusation.
+    assert vpg.resolve_prev_targets([999999], runner=FakeGh(WORLD)) == {}
+
+
+def test_issue_view_alone_cannot_discriminate_a_pr_from_an_issue():
+    # Pins WHY the resolver must call `gh pr view` first: the issue endpoint
+    # answers identically for #14225 (a PR) and #14513 (an issue). Any future
+    # rewrite that reorders the two calls fails here.
+    gh = FakeGh(WORLD)
+    pr_answer = gh(["gh", "issue", "view", "14225", "--json", "state"])
+    issue_answer = gh(["gh", "issue", "view", "14513", "--json", "state"])
+    assert pr_answer.returncode == issue_answer.returncode == 0
+    assert "state" in json.loads(pr_answer.stdout)
+    assert "state" in json.loads(issue_answer.stdout)
+
+
+def test_original_state_merged_field_set_misclassifies_a_merged_pr():
+    r"""The defect, reproduced -- and the reason this test file exists.
+
+    This replays the ORIGINAL algorithm verbatim (ask for ``state,merged``,
+    accept the payload only if it carries a ``merged`` key, else fall back to
+    ``gh issue view``) against the same fake `gh`. It returns ``issue`` for
+    #14225 -- a PR merged at 2026-09-03T10:28:59Z -- which is precisely the
+    verdict that blocked #13922 on ``prev-not-pr -> [14225]``.
+
+    Kept as an executable record: it fails the moment someone reintroduces a
+    non-existent field into the query.
+    """
+    gh = FakeGh(WORLD)
+
+    def original_algorithm(n):
+        pr = gh(["gh", "pr", "view", str(n), "--json", "state,merged"])
+        if pr.returncode == 0:
+            payload = json.loads(pr.stdout)
+            if "merged" in payload:
+                return {"kind": "pr", "merged": bool(payload["merged"])}
+        issue = gh(["gh", "issue", "view", str(n), "--json", "state"])
+        if issue.returncode == 0 and "state" in json.loads(issue.stdout):
+            return {"kind": "issue"}
+        return None
+
+    assert original_algorithm(14225) == {"kind": "issue"}          # the defect
+    assert vpg.resolve_prev_targets([14225], runner=FakeGh(WORLD)) == {
+        "14225": {"kind": "pr", "merged": True}}                   # the repair
+
+
+def test_check_passes_on_a_prev_pointing_at_a_resolved_merged_pr():
+    # End-to-end shape of the #13922 tag once the resolver is correct.
+    body = ("Grain: MED/guard -- lane myia-po-2026:CoursIA -- "
+            "prev: LIGHT/cleanup #14225")
+    targets = vpg.resolve_prev_targets(
+        vpg.find_prev_target_pr_numbers(body), runner=FakeGh(WORLD))
+    v = vpg.check(body, current_pr=13922, prev_targets=targets)
+    assert v["hits"]["prev_invalid"] == []
+    assert v["guard_pass"] is True

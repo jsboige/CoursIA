@@ -401,6 +401,80 @@ def _read_prev_targets_file(path: str) -> dict[str, dict]:
     return out
 
 
+def resolve_prev_targets(
+    target_prs: "list[int]",
+    runner=None,
+    timeout: int = 15,
+) -> "dict[str, dict]":
+    r"""Resolve each `prev:` target to ``{"kind": "pr"|"issue", "merged": bool}``.
+
+    This is the half of #13475 that used to live in a heredoc inside
+    ``always-on-guards.yml``, where no test could reach it -- and it was
+    wrong. The heredoc asked for ``gh pr view N --json state,merged``;
+    ``merged`` is **not a field this `gh` exposes**, so the call exited
+    non-zero for *every* target, fell through to ``gh issue view``, and
+    classified **every PR as an issue**. `prev-not-pr` therefore fired on
+    100 % of PRs, including the one shipping the guard: #13922 was blocked
+    on ``prev-not-pr -> [14225]`` while #14225 is a PR merged at
+    2026-09-03T10:28:59Z.
+
+    The discriminant is the **exit status of `gh pr view`**, not a field of
+    its payload. Measured on this repo (2026-09-03), which is also what
+    ``test_resolve_prev_targets_*`` replays:
+
+    ==========  ==========================  ==========================
+    number      ``gh pr view --json state``  ``gh issue view --json state``
+    ==========  ==========================  ==========================
+    #14225 PR   rc=0, ``MERGED``             rc=0, ``MERGED``
+    #13922 PR   rc=0, ``OPEN``               rc=0, ``OPEN``
+    #14513 iss  rc!=0, *Could not resolve*   rc=0, ``OPEN``
+    ==========  ==========================  ==========================
+
+    Note the middle column is the only one that separates the classes:
+    ``gh issue view`` answers for pull requests too, so it can never be the
+    test. Any future rewrite must keep PR-first ordering.
+
+    ``runner`` defaults to ``subprocess.run`` and exists so a test can
+    inject the table above without a network. A target that neither call
+    resolves is **omitted** from the result -- ``validate_prev_targets``
+    then abstains on it (FN-safety).
+    """
+    if runner is None:  # pragma: no cover - trivial default
+        import subprocess
+        runner = subprocess.run
+
+    out: "dict[str, dict]" = {}
+    for n in sorted(set(target_prs)):
+        pr = runner(["gh", "pr", "view", str(n), "--json", "state"],
+                    capture_output=True, text=True, timeout=timeout)
+        if getattr(pr, "returncode", 1) == 0:
+            state = _json_field(pr.stdout, "state")
+            if state:
+                out[str(n)] = {"kind": "pr",
+                               "merged": state.upper() == "MERGED"}
+                continue
+        issue = runner(["gh", "issue", "view", str(n), "--json", "state"],
+                       capture_output=True, text=True, timeout=timeout)
+        if getattr(issue, "returncode", 1) == 0:
+            if _json_field(issue.stdout, "state"):
+                out[str(n)] = {"kind": "issue"}
+                continue
+        # neither resolved -> omitted -> the gate abstains on this target
+    return out
+
+
+def _json_field(raw: "str | None", field: str) -> "str | None":
+    """Return ``field`` from a JSON object payload, or None if unreadable."""
+    try:
+        data = json.loads(raw or "")
+    except (json.JSONDecodeError, TypeError):
+        return None
+    if not isinstance(data, dict):
+        return None
+    value = data.get(field)
+    return value if isinstance(value, str) else None
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description=__doc__.split("\n", 1)[0])
     p.add_argument("--body-file", metavar="FILE", required=True,
@@ -415,6 +489,10 @@ def main(argv: list[str] | None = None) -> int:
                         "{str(pr_number): {kind, merged}} for each cited "
                         "`prev:` reference (required for PREV-NOT-MERGED "
                         "and PREV-NOT-PR)")
+    p.add_argument("--resolve-targets", action="store_true",
+                   help="resolve each cited `prev:` reference with `gh` "
+                        "instead of (or in addition to) --prev-targets-file; "
+                        "entries already present in the file win")
     args = p.parse_args(argv)
 
     try:
@@ -430,6 +508,22 @@ def main(argv: list[str] | None = None) -> int:
     commits = _read_commits_file(args.commits_file) if args.commits_file else []
     prev_targets = (_read_prev_targets_file(args.prev_targets_file)
                     if args.prev_targets_file else {})
+
+    if args.resolve_targets:
+        cited = set(find_prev_target_pr_numbers(body))
+        for msg in commits:
+            cited.update(find_prev_target_pr_numbers(msg))
+        missing = [n for n in sorted(cited) if str(n) not in prev_targets]
+        if missing:
+            try:
+                prev_targets = {**resolve_prev_targets(missing),
+                                **prev_targets}
+            except Exception as e:  # network, gh absent, timeout
+                # Unresolved -> absent from the dict -> the gate abstains on
+                # those targets (FN-safety). Never turn a lookup failure into
+                # an accusation: that is the defect this flag repairs.
+                print(f"prev-target resolution failed ({e}); "
+                      "abstaining on invariants 2/3", file=sys.stderr)
 
     verdict = check(body, commits,
                     current_pr=args.current_pr,
