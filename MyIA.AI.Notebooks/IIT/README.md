@@ -28,10 +28,10 @@ Le premier notebook couvre le spectre fondamental : construction de graphes caus
 
 | # | Notebook | Contenu | Durée |
 |---|----------|---------|-------|
-| 1 | [IIT-1-IntroToPyPhi](IIT-1-IntroToPyPhi.ipynb) | Réseau XOR 3-nœuds : TPM, calcul de Φ, CES, états inaccessibles, causation, complexe majeur | 60-90 min |
-| 2 | [IIT-2-AdvancedTopics](IIT-2-AdvancedTopics.ipynb) | MIP et bipartitions, répertoires cause-effet, MICE, big Φ sur réseau 4-nœuds, coarse-graining | 60-90 min |
-| 3 | [IIT-3-CoarseGrainingMacroPhi](IIT-3-CoarseGrainingMacroPhi.ipynb) | Module `pyphi.macro` : information efficace (Hoel), énumération des regroupements, comparaison Φ micro/macro, causal emergence | 45-60 min |
-| 4 | [IIT-4-Le-Probleme-de-Frontiere](IIT-4-Le-Probleme-de-Frontiere.ipynb) | Le problème de frontière : faire varier le découpage du même substrat, maximiseur de Φ, complexe majeur (`major_complex`), double dissociation Φ vs EI | 45-60 min |
+| 1 | [IIT-01-IntroToPyPhi](IIT-01-IntroToPyPhi.ipynb) | Réseau XOR 3-nœuds : TPM, calcul de Φ, CES, états inaccessibles, causation, complexe majeur | 60-90 min |
+| 2 | [IIT-02-AdvancedTopics](IIT-02-AdvancedTopics.ipynb) | MIP et bipartitions, répertoires cause-effet, MICE, big Φ sur réseau 4-nœuds, coarse-graining | 60-90 min |
+| 3 | [IIT-03-CoarseGrainingMacroPhi](IIT-03-CoarseGrainingMacroPhi.ipynb) | Module `pyphi.macro` : information efficace (Hoel), énumération des regroupements, comparaison Φ micro/macro, causal emergence | 45-60 min |
+| 4 | [IIT-04-Le-Probleme-de-Frontiere](IIT-04-Le-Probleme-de-Frontiere.ipynb) | Le problème de frontière : faire varier le découpage du même substrat, maximiseur de Φ, complexe majeur (`major_complex`), double dissociation Φ vs EI | 45-60 min |
 
 ## Parcours recommandés
 
@@ -154,7 +154,7 @@ flowchart TD
 
 ## Contenu détaillé
 
-### IIT-1-IntroToPyPhi.ipynb
+### IIT-01-IntroToPyPhi.ipynb
 
 | Section | Contenu |
 |---------|---------|
@@ -168,7 +168,7 @@ flowchart TD
 | Causation actuelle | Liens causaux d'une transition (`account`), mécanisme d'un concept |
 | Macro-sous-systèmes | Coarse-graining, blackboxing (section conceptuelle) |
 
-### IIT-2-AdvancedTopics.ipynb
+### IIT-02-AdvancedTopics.ipynb
 
 | Section | Contenu |
 |---------|---------|
@@ -181,7 +181,7 @@ flowchart TD
 | Performance | Timing du calcul de CES, module `pyphi.macro` |
 | IIT 4.0 | Concept-Style SIA, limites computationnelles, débats |
 
-### IIT-3-CoarseGrainingMacroPhi.ipynb
+### IIT-03-CoarseGrainingMacroPhi.ipynb
 
 | Section | Contenu |
 |---------|---------|
@@ -192,7 +192,7 @@ flowchart TD
 | Comparaison micro/macro | $\Phi$ macro vs $\Phi$ micro, interprétation honnête de l'emergence |
 | Causal emergence | Hoel 2013 : pourquoi l'emergence positive n'est ni automatique ni garantie |
 
-### IIT-4-Le-Probleme-de-Frontiere.ipynb
+### IIT-04-Le-Probleme-de-Frontiere.ipynb
 
 | Section | Contenu |
 |---------|---------|
@@ -305,10 +305,10 @@ IIT propose un changement de regard radical : ne plus demander « qu'est-ce que 
 
 ```
 IIT/
-├── IIT-1-IntroToPyPhi.ipynb           # Notebook 1 : introduction
-├── IIT-2-AdvancedTopics.ipynb         # Notebook 2 : sujets avances
-├── IIT-3-CoarseGrainingMacroPhi.ipynb # Notebook 3 : coarse-graining & échelle du Φ
-├── IIT-4-Le-Probleme-de-Frontiere.ipynb # Notebook 4 : qui décide des bords — Φ vs EI selon la frontière
+├── IIT-01-IntroToPyPhi.ipynb           # Notebook 1 : introduction
+├── IIT-02-AdvancedTopics.ipynb         # Notebook 2 : sujets avances
+├── IIT-03-CoarseGrainingMacroPhi.ipynb # Notebook 3 : coarse-graining & échelle du Φ
+├── IIT-04-Le-Probleme-de-Frontiere.ipynb # Notebook 4 : qui décide des bords — Φ vs EI selon la frontière
 ├── ICT-Series/                 # Extension expérimentale ICT (Epic #4588) — voir son README
 │   ├── ICT-0-Framing.md        # Cadrage de la série ICT
 │   ├── ICT-0-Annexe-IntegratedComplexityTheory.md  # Annexe théorique (complexité intégrée)
