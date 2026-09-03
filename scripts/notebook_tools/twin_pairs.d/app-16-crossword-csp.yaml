@@ -20,6 +20,13 @@
       csharp_sha: b11d4b644822042d6fd815a4b497a6a818a7f025
       content_python_sha: d081a160111fa93aba8c24c288d713b51547167a83232d6687e8a9da6d6b9d2e
       content_csharp_sha: d907f3d29190e7c73fcbeaff09749bc83dd432cb7680309e0d9c6c09a759e7ed
+    - date: "2026-09-03"
+      by: myia-po-2026:CoursIA
+      python_sha: 545e286364ec3fafa8f68bef6e998b3cfc500dd3
+      csharp_sha: b11d4b644822042d6fd815a4b497a6a818a7f025
+      content_python_sha: d0127ea15e15a4a5cbad5b47b3fea6ec4a91ca3395bf6037f9d5ef26b20f2fdd
+      content_csharp_sha: d907f3d29190e7c73fcbeaff09749bc83dd432cb7680309e0d9c6c09a759e7ed
+      reason: "Re-attestation apres PR #14134 (App-16 Crossword CSP enrich Python) : markdown-only — 5 nouvelles cellules md (16->21), 0 changement de cellule code ; signature sha256 des (source, execution_count, outputs) des 12 cellules code byte-identique base->HEAD (0ccd53430085da89). Cote C# App-16-Crossword-CSP-Csharp.ipynb non touche. parity_level native-both intacte."
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Python = OR-Tools CP-SAT (cp_model + AddElement/inter constraints, dataclass) + numpy + matplotlib (11 cellules code). C# = Google.OrTools.Sat (NuGet, C# binding du MEME engine OR-Tools CP-SAT 9.11) + Tranche 1 from-scratch BCL pure (System.Linq/Text, 0 NuGet) PRESERVEE (12 cellules code). Verdict SOTA-OK (lib-vs-lib native-both) : les deux cotes invoquent le MEME moteur CP-SAT 9.11 (ortools.sat.python.cp_model <-> Google.OrTools.Sat.CpModel). Prong-B (#3801) : hierarchie sur grids 15x15 -- exact SOLUTION_OPTIMAL, backtracking from-scratch timeout sur les grands grilles -- discrimination mesuree. Tranche 1 from-scratch preservee intacte (byte-identique a main). Python met l'accent sur SOTA + viz matplotlib + experimentation comparative ; C# demontre from-scratch + binding NuGet. parity_level: native-both preserve."
   known_differences:
