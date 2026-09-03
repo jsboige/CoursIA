@@ -4128,3 +4128,374 @@ def test_14130_conservation_offsets_sur_strip_quoted() -> None:
     for body in bodies:
         assert len(mod._strip_mentioned_verdicts(body)) == len(body), body
 
+
+# --- Position I (#14199) : tests re-appliques post-rebase (main a absorbe #14185) ---
+
+
+def test_14199_fp1_qualifier_non_bloquant_neutralise():
+    """#14199 FP1 -- « Concern (non bloquant) : <details> à confirmer avant
+    merge. Ball merge : <delegate>. » (PR #13537 fondateur). Le qualifieur
+    `(non bloquant)` neutralise le `avant merge` en mention. Position I
+    sous-pattern (a) qualifier. Doit rendre None (avant merge neutralise)."""
+    body = (
+        "Concern (non bloquant) : mergeable_state=blocked au moment de la "
+        "review — checks en cours sur une PR de 18:04Z, standard, à confirmer "
+        "avant merge. Ball merge : Emerjesse."
+    )
+    assert mod.classify("jsboige", body) is None, (
+        f"FP1 devrait etre neutralise (qualifier non bloquant), "
+        f"got {mod.classify('jsboige', body)!r}"
+    )
+
+
+
+def test_14199_fp1_minimal_qualifier_mineur_neutralise():
+    """#14199 FP1 minimal -- `(mineur) avant merge` (sous-pattern a, sans Ball
+    merge). Doit rendre None."""
+    body = "(mineur) à revoir avant merge."
+    assert mod.classify("jsboige", body) is None
+
+
+
+def test_14199_fp2_verification_passee_neutralise():
+    """#14199 FP2 -- « Verifie de mon cote avant merge : CLEAN » (PR #13498
+    fondateur). Position I sous-pattern (b) FR past p. + de mon cote. Doit
+    rendre None."""
+    body = (
+        "Diagnostic du rouge adjacency : guard succede a guard. "
+        "Verifie de mon cote avant merge : mergeStateStatus CLEAN, 0 check "
+        "rouge sur les 50 jobs."
+    )
+    assert mod.classify("jsboige", body) is None, (
+        f"FP2 devrait etre neutralise (verification passee), "
+        f"got {mod.classify('jsboige', body)!r}"
+    )
+
+
+
+def test_14199_fp2_en_verified_neutralise():
+    """#14199 FP2 EN -- « Verified by ai-01 avant merge » (sous-pattern b2).
+    Doit rendre None."""
+    body = "Verified by ai-01 locally avant merge. CI green."
+    assert mod.classify("jsboige", body) is None
+
+
+
+def test_14199_fp3_formule_b0_neutralise():
+    """#14199 FP3 -- « levee par **issue de suivi ouverte avant merge**
+    (#13929) » (PR #13860 fondateur). Position I sous-pattern (c) formule
+    B.0. Doit rendre None."""
+    body = (
+        "La nit user est levee par **issue de suivi ouverte avant merge** "
+        "(#13929), et — mieux — deja livree par #13932, qui mesure 4 "
+        "alternatives x 2 voters au lieu d extrapoler. C est la voie 3 "
+        "de B.0 appliquee correctement."
+    )
+    assert mod.classify("myia-ai-01", body) is None, (
+        f"FP3 devrait etre neutralise (formule B.0), "
+        f"got {mod.classify('myia-ai-01', body)!r}"
+    )
+
+
+
+def test_14199_fp3_voie_b0_verbatim_neutralise():
+    """#14199 FP3 variante -- « voie B.0 « issue de suivi ouverte et nommee
+    AVANT LE MERGE » » (PR #13498 verbatim). Sous-pattern (c) avec AVANT LE
+    MERGE (optionnel article). Doit rendre None."""
+    body = (
+        "Passe de merge ai-01 — le concern NanoClaw est traite par la voie "
+        "B.0 « issue de suivi ouverte et nommee AVANT LE MERGE »."
+    )
+    assert mod.classify("jsboige", body) is None, (
+        f"FP3 (voie B.0 verbatim) devrait etre neutralise, "
+        f"got {mod.classify('jsboige', body)!r}"
+    )
+
+
+
+def test_14199_fp4_ball_merge_delegation_neutralise():
+    """#14199 FP4 -- « a confirmer avant merge. Ball merge : X. » (sous-pattern
+    d, delegation Ball merge APRES avant merge). Doit rendre None."""
+    body = (
+        "Action requise : a confirmer avant merge. Ball merge : ai-01."
+    )
+    assert mod.classify("jsboige", body) is None
+
+
+
+def test_14199_vp13800_a_relire_reste_bloquant():
+    """#14199 VP -- « A relire par ai-01 avant merge. Aucune action. » (PR
+    #13800). Verbe ACTIONNEL (`à relire`) deleguant une intervention, pas une
+    #verification passee ni une delegation Ball merge. Aucun sous-pattern de
+    Position I ne matche. Doit RESTER BOT-CONCERN."""
+    body = (
+        "[po-2023] cycle 2026-08-31 — etat final, les 2 concerns Hermes "
+        "sont traites. Le residuel est une lecture manuelle ai-01. Marquee "
+        "NON EVALUEE — a relire. A relire par ai-01 avant merge. Aucune "
+        "action lane supplementaire possible."
+    )
+    assert mod.classify("jsboige", body) == "BOT-CONCERN", (
+        f"VP #13800 doit rester BOT-CONCERN (verbe actionnel a relire), "
+        f"got {mod.classify('jsboige', body)!r}"
+    )
+
+
+
+def test_14199_vp_imperatif_infinitif_reste_bloquant():
+    """#14199 VP -- « a verifier avant merge » (verbe IMPERATIF a l'infinitif,
+    pas un past p.). Doit RESTER BOT-CONCERN."""
+    body = "Priere de bien vouloir a verifier avant merge."
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+
+def test_14199_vp_a_confirmer_no_qualifier_reste_bloquant():
+    """#14199 VP -- « a confirmer avant merge » (sans qualifieur, sans Ball
+    merge, sans verification passee). Doit RESTER BOT-CONCERN."""
+    body = "Action obligatoire : a confirmer avant merge."
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+
+def test_14199_vp_qualifier_bloquant_reste_bloquant():
+    """#14199 VP -- « Concern (bloquant) : ... avant merge » (qualifier
+    BLOQUANT, pas couvert par sous-pattern a). Doit RESTER BOT-CONCERN."""
+    body = "Concern (bloquant) : le kernel WSL est casse, a confirmer avant merge."
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+
+def test_14199_ce1_mutation_position_i_desactivee_fp1_rougit():
+    """#14199 mutation -- si Position I est desactivee, FP1 doit rougir
+    (le `avant merge` reste emis et le commentaire est classe BOT-CONCERN).
+    Verifie par monkey-patching de `_strip_avant_merge_mention` (no-op)."""
+    body = (
+        "Concern (non bloquant) : mergeable_state=blocked, a confirmer "
+        "avant merge. Ball merge : Emerjesse."
+    )
+    # Baseline : avec Position I, FP1 est neutralise
+    assert mod.classify("jsboige", body) is None
+    # Mutation : monkey-patch de _strip_avant_merge_mention en no-op
+    orig = mod._strip_avant_merge_mention
+    try:
+        mod._strip_avant_merge_mention = lambda body: body
+        assert mod.classify("jsboige", body) == "BOT-CONCERN", (
+            "MUTATION FAILED : si Position I est desactivee, FP1 doit "
+            "rougir (le `avant merge` reste emis, le commentaire passe "
+            "BOT-CONCERN)."
+        )
+    finally:
+        mod._strip_avant_merge_mention = orig
+
+
+
+def test_14199_remesure_7_vp_window_reste_bloquant():
+    """#14199 acceptance -- re-mesure des 7 VP de la fenetre merged:2026-
+    08-25..2026-09-01 : leurs commentaires doivent rester classifies
+    BOT-CONCERN par l'organe apres le fix (peu importe la voie — CONCERN
+    MARKERS, BLOCAGE coordinateur, LIFT_OVERRIDE, etc.). Si une seule
+    regression, le fix est insuffisant.
+
+    Implementation : on recupere les commentaires + reviews reels via gh
+    API et on verifie qu'au moins un declenche classify() == BOT-CONCERN
+    pour chaque PR. C'est l'invariant qui protege contre toute
+    regression silencieuse du garde."""
+    import json
+    import shutil
+    import subprocess
+    if shutil.which("gh") is None or subprocess.run(
+            ["gh", "auth", "status"], capture_output=True).returncode != 0:
+        pytest.skip("gh CLI ou auth indisponible -- re-mesure live VP differee "
+                    "(review NanoClaw #14322, concern 2 : le runner sans gh doit "
+                    "skipper, pas ERREUR)")
+    vps = [13921, 13800, 13789, 13667, 13542, 13386, 13370]
+    for pr in vps:
+        out = subprocess.check_output(
+            ["gh", "api", f"repos/jsboige/CoursIA/issues/{pr}/comments", "--paginate"])
+        out2 = subprocess.check_output(
+            ["gh", "api", f"repos/jsboige/CoursIA/pulls/{pr}/reviews", "--paginate"])
+        comments = json.loads(out)
+        reviews = json.loads(out2)
+        blocking_count = 0
+        for c in comments:
+            if mod.classify(c["user"]["login"], c["body"]) == "BOT-CONCERN":
+                blocking_count += 1
+        for r in reviews:
+            if mod.classify(r["user"]["login"], r.get("body", "")) == "BOT-CONCERN":
+                blocking_count += 1
+        assert blocking_count > 0, (
+            f"VP #{pr} doit avoir au moins 1 commentaire/review classifie "
+            f"BOT-CONCERN apres le fix (regression silencieuse), "
+            f"got {blocking_count}"
+        )
+
+
+
+def test_14199_remesure_3_fp_window_neutralise():
+    """#14199 acceptance -- re-mesure des 3 FP de la fenetre merged:2026-
+    08-25..2026-09-01 : ils doivent etre neutralises (classify() = None)
+    apres le fix. Si un seul reste BOT-CONCERN, le fix est insuffisant."""
+    fps = [
+        ("13537", "clusterManager-Myia",
+         "Concern (non bloquant) : mergeable_state=blocked au moment de "
+         "la review — checks en cours sur une PR de 18:04Z, standard, a "
+         "confirmer avant merge. Ball merge : Emerjesse."),
+        ("13498", "jsboige",
+         "Passe de merge ai-01 — le concern NanoClaw est traite par la "
+         "voie B.0 « issue de suivi ouverte et nommee AVANT LE MERGE ». "
+         "Verifie de mon cote avant merge : mergeStateStatus CLEAN."),
+        ("13860", "myia-ai-01",
+         "La nit user est levee par **issue de suivi ouverte avant "
+         "merge** (#13929), et — mieux — deja livree par #13932. "
+         "C est la voie 3 de B.0 appliquee correctement."),
+    ]
+    for pr, author, body in fps:
+        result = mod.classify(author, body)
+        assert result is None, (
+            f"FP #{pr} doit etre neutralise (classify=None) apres le fix, "
+            f"got {result!r} pour body={body[:60]!r}"
+        )
+
+
+def test_14199_concern1_aparte_phrase_precedente_neutralise_pas_le_vp():
+    """Review NanoClaw #14322 concern 1 -- le gap du sous-pattern (a)
+    QUALIFIER franchissait les frontieres de phrase : un aparte benin
+    "(mineur)" dans une phrase precedente neutralisait un nit VIVANT
+    "avant merge" de la phrase SUIVANTE. Le point est desormais exclu
+    du gap ([^.!?\n]) : ce corps doit rester BOT-CONCERN."""
+    body = ("Le point precedent (mineur) est clos sans suite. "
+            "Reserve bloquante : a corriger avant merge par le lane.")
+    assert mod.classify("clusterManager-Myia", body) == "BOT-CONCERN"
+
+
+def test_14199_concern1_gap_intra_phrase_fp1_couvert_toujours_neutralise():
+    """Le resserrement du gap ne doit pas casser le FP fondateur : un
+    qualifieur dans la MEME phrase que le token reste neutralise."""
+    body = ("Le point souleve (mineur) sera traite par la passe de "
+            "nettoyage avant merge, pas ici.")
+    assert mod.classify("clusterManager-Myia", body) != "BOT-CONCERN"
+
+
+# ============================================================================
+# #14277 — Position J : glyphe de sévérité en position de mention
+# ============================================================================
+# Fondateurs mesurés (sweep 264 corps / 61 PRs, fenêtre 2026-08-23..2026-09-02,
+# différentiel old-vs-new : exactement 3 diffs = les 3 FP, 261 corps inchangés) :
+#   FP1 #13951 c.869 (issuecomment-5506801880) : « variante glyphe 🟡. »
+#   FP2 #13951 c.872 (issuecomment-5507737699) : « 2 cas (prose
+#        contradictoire + glyphe 🟡) ajoutes. »
+#   FP3 #13951 c.870 (issuecomment-5503423343) : « glyphes de severite (🟡
+#        ..., 🔴 ...) » + formes résiduelles : énumération « (prose, 🟡, 🔴,
+#        + controle) » et cellules tableau « **CWC + 🟡** ».
+# VP d'émission (doivent rester BOT-CONCERN) : #12059 « **🟡 FINDING — »,
+# #12083 « LGTM structural / 🟡 », glyphe en tête de ligne.
+
+# --- Position J (#14277) : tests re-appliques post-rebase (main a absorbe #14322) ---
+
+
+def test_14277_fp1_meta_nom_glyphe_neutralise():
+    body = ("2. **2 tests manquants** que NanoClaw a explicitement demandés —\n"
+            "   - variante glyphe 🟡.\n"
+            "3. **Vérification first-hand (avant commit)** : OK.")
+    assert mod.classify("jsboige", body) is None
+
+
+
+def test_14277_fp2_meta_nom_parentheses_neutralise():
+    body = ("- Tests : 2 cas (prose contradictoire + glyphe 🟡) ajoutes.\n"
+            "6/6 PASSED en local.")
+    assert mod.classify("jsboige", body) is None
+
+
+
+def test_14277_fp3_enumeration_double_glyphe_neutralise():
+    body = ("Deux surfaces : la **prose** (commentaire Hermes) et les "
+            "**glyphes de severite** (🟡 constat substantiel #12059, "
+            "🔴 bloquant).")
+    assert mod.classify("jsboige", body) is None
+
+
+
+def test_14277_fp3bis_enum_items_separateurs_neutralise():
+    # Formes résiduelles de FP3 : glyphe item d'énumération (séparateur `,`)
+    # et cellule de tableau (séparateur `+`), sans méta-nom sur la ligne.
+    body = ("- 4 tests ajoutes (prose, 🟡, 🔴, + controle positif) verbatim.\n"
+            "| 4 | **CWC + 🟡** | OK |")
+    assert mod.classify("jsboige", body) is None
+
+
+
+def test_14277_contretemoin_sans_marqueurs_reste_none():
+    # Acceptance #14277 : le contre-mesure c.871 (paraphrase SANS aucun
+    # marqueur verbatim) doit rester None (déjà correct avant le fix).
+    body = ("## Cycle c.871 — état post-merge avec main, 2 points de revue "
+            "toujours présents, lane irréductible.\n"
+            "Tête de branche 15e478afe. mergeable: MERGEABLE. 6/6 PASSED.")
+    assert mod.classify("jsboige", body) is None
+
+
+
+def test_14277_vp12059_emission_tete_de_ligne_reste_bloquant():
+    # VP fondateur #12059 : en-tête de verdict, glyphe en tête de ligne,
+    # jamais précédé d'un méta-nom ni d'un séparateur d'énumération.
+    body = ("**[NanoClaw]** structural review.\n"
+            "**LGTM structural + 1 FINDING.**\n"
+            "**🟡 FINDING — les 5 hyperparametres enseignes par la nouvelle "
+            "md#19 contredisent le run mesure (cf tableau).**")
+    assert mod.classify("clusterManager-Myia", body) == "BOT-CONCERN"
+
+
+
+def test_14277_vp12083_lgtm_scoped_slash_reste_bloquant():
+    # VP #12083 : « LGTM structural / 🟡 ... » — le séparateur `/` est
+    # délibérément EXCLU du set d'énumération (B) : ce glyphe est une
+    # émission scopée, pas un item de liste.
+    body = "LGTM structural / 🟡 SPY 6/8 contredit par le walk-forward."
+    assert mod.classify("clusterManager-Myia", body) == "BOT-CONCERN"
+
+
+
+def test_14277_vp_meta_nom_apres_glyphe_reste_bloquant():
+    # Un méta-nom APRÈS le glyphe n'en fait pas une mention : c'est une
+    # émission avec parenthèse explicative.
+    body = "🟡 — constat substantiel (cf glyphe)"
+    assert mod.classify("clusterManager-Myia", body) == "BOT-CONCERN"
+
+
+
+def test_14277_vp_ligne_suivante_sans_meta_nom_reste_bloquant():
+    # Le méta-nom sur la ligne PRÉCÉDENTE ne ouvre pas la mention : la
+    # portée est la ligne, pas le paragraphe.
+    body = "Le glyphe de severite :\n🟡 FINDING — hyperparametres contredits."
+    assert mod.classify("clusterManager-Myia", body) == "BOT-CONCERN"
+
+
+
+def test_14277_ce1_mutation_position_j_desactivee_fp1_rougit():
+    # Contrôle positif : sans Position J, FP1 doit rougir (BOT-CONCERN).
+    saved = mod._strip_glyphe_mentions
+    mod._strip_glyphe_mentions = lambda b: b
+    try:
+        body = ("- variante glyphe 🟡.\nVérification OK.")
+        assert mod.classify("jsboige", body) == "BOT-CONCERN", (
+            "MUTATION FAILED : si Position J est desactivee, FP1 doit "
+            "rougir (le glyphe mentionné doit rester un marqueur vivant)."
+        )
+    finally:
+        mod._strip_glyphe_mentions = saved
+
+
+
+def test_14277_ce2_enum_separateur_rouge_si_b_desactivee():
+    # Contrôle positif règle B : sans le séparateur d'énumération, la forme
+    # résiduelle FP3 (item de liste sans méta-nom) doit rougir.
+    saved = mod._GLYPH_ENUM_PRECEDER_RE
+    mod._GLYPH_ENUM_PRECEDER_RE = __import__("re").compile(r"(?!x)x")
+    try:
+        body = "- 4 tests ajoutes (prose, 🟡, controle positif)."
+        assert mod.classify("jsboige", body) == "BOT-CONCERN", (
+            "MUTATION FAILED : sans la règle B (séparateur énumération), "
+            "la forme item-de-liste doit rougir."
+        )
+    finally:
+        mod._GLYPH_ENUM_PRECEDER_RE = saved
