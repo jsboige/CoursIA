@@ -71,7 +71,7 @@ PRs testent. Les deux suites sont **complémentaires**, pas concurrentes.
 | #79 lire la valeur d'un champ de collection | `solutions/Z3.Linq/Environment.cs:12` (`CollectionHandling`) | `DIVERGENT` |
 | #80 relire un float en float | `solutions/Z3.Linq/Theorem.cs:858-865` (chemin de lecture) | `DIVERGENT` |
 | #81 lire l'élément décimal sélectionné | `solutions/Z3.Linq.Tests/RationalExactTests.cs` | `DIVERGENT` |
-| #84 relire un DateTime en UTC | `solutions/Z3.Linq/ExpressionVisitor.cs:867-868` | `DIVERGENT` |
+| **#84 relire un DateTime en UTC** | `solutions/Z3.Linq/Theorem.cs:668, 904` (`FromFileTime`) | **`DIVERGENT` — défaut vivant, voir ci-dessous** |
 | **#86 satisfiabilité rapportée séparément** | `solutions/Z3.Linq/Explanation.cs:59` (`IsSatisfiable`) | **`DIVERGENT`** |
 | #88 symboles `short` et `enum` | — | `NOUVEAU-POUR-NOUS` |
 | #90 collections aux mêmes sortes que les scalaires | `solutions/Z3.Linq/Environment.cs:12` | `DIVERGENT` |
@@ -114,9 +114,12 @@ sortes, tests, build) ; nous avons construit des **capacités de modélisation**
 qui rend G3 décidable, et il pointe vers « suivre l'amont sur le noyau, garder nos capacités » plutôt que
 vers un choix binaire suivre/diverger.
 
-## Un défaut vivant, trouvé en mesurant (#95)
+## Deux défauts vivants, trouvés en mesurant (#95 et #84)
 
-L'amont ne fait pas que changer un encodage : il en donne la raison, et elle nous vise.
+L'amont ne fait pas que changer un encodage : il en donne la raison, et elle nous vise. En vérifiant nos
+deux côtés du même aller-retour, il s'est avéré que **les deux moitiés** sont atteintes.
+
+**#95 — l'écriture ne couvre pas les dates antérieures à 1601.**
 
 ```
 -  return context.MkInt(((DateTime)val).ToFileTimeUtc());
@@ -125,13 +128,36 @@ L'amont ne fait pas que changer un encodage : il en donne la raison, et elle nou
 +  return context.MkInt(ToUtcTicks((DateTime)val));
 ```
 
-Notre fork exécute **exactement** la ligne retirée, à `solutions/Z3.Linq/ExpressionVisitor.cs:868`. Notre
-fork ne peut donc aujourd'hui **ni encoder ni relire une date antérieure à 1601** — silencieusement. Ce
-n'est pas une divergence de style, c'est un défaut de domaine que nous portons.
+Notre fork exécute **exactement** la ligne retirée, à `solutions/Z3.Linq/ExpressionVisitor.cs:868`.
+Mesuré firsthand sur ce runtime : `DateTime(1600,1,1).ToFileTimeUtc()` **lève**
+`ArgumentOutOfRangeException`, `DateTime(1601,1,1)` passe.
 
-Non corrigé ici : #14169 interdit de toucher au fork tant que G1 n'est pas rendu et que les PRs amont ne
-sont pas atterries. **Le correctif se prend en aval de G3** ; le constat est consigné pour que la décision
-le voie.
+**#84 — la relecture est asymétrique, et se cache sur une machine en UTC.** Celui-ci n'était pas dans
+l'inventaire de départ : il est apparu en suivant le chemin de lecture. L'écriture est en UTC
+(`ToFileTimeUtc`), la lecture ne l'est pas — `solutions/Z3.Linq/Theorem.cs:668` et `:904` appellent
+`DateTime.FromFileTime`, qui rend une date **locale**, là où le pendant correct est `FromFileTimeUtc`.
+
+Mesuré firsthand, machine à UTC+1 :
+
+```
+input                     2026-01-15T12:00:00Z        (Kind = Utc)
+FromFileTime       ->     2026-01-15T13:00:00+01:00   (Kind = Local)
+back == input             False        <- ce que teste un aller-retour de modele
+back.Ticks - input.Ticks  1 h
+```
+
+L'instant est préservé, mais les `Ticks` sont décalés du fuseau et `DateTime.Equals` ignore le `Kind` :
+un modèle contraint sur `12:00 UTC` restitue `13:00`. **Le décalage vaut le fuseau de la machine** — sur
+un runner en UTC il vaut zéro et le défaut est invisible. C'est le profil d'un défaut qui passe la CI et
+casse chez l'utilisateur.
+
+**Aucun des deux n'est corrigé ici** : #14169 interdit de toucher au fork tant que G1 n'est pas rendu et
+que les PRs amont ne sont pas atterries. Le correctif se prend en aval de G3 ; les deux constats sont
+tracés en **#14445**, avec leurs mesures et une acceptance qui exige un test échouant-avant sous un fuseau
+non-UTC (un test qui compare `ToUniversalTime()` passe déjà aujourd'hui — il ne mesure pas le défaut).
+
+**Portée** : aucun des 18 notebooks de `SMT/Z3-Linq2Z3/` ne mentionne `DateTime`, et la suite de tests du
+fork n'en couvre aucun cas. Les deux défauts sont **latents** — aucune sortie committée n'est fausse.
 
 ## Convergence indépendante (#77)
 
@@ -170,6 +196,10 @@ la cause à surveiller.
   ajoutées/retirées) pour les 39 PRs, et **au niveau du diff** pour les quatre rangées décisives
   (#77, #86, #95, #99) uniquement. Les verdicts `DIVERGENT` des autres rangées disent « même zone,
   conception différente », **pas** « j'ai relu les 39 diffs ligne à ligne ».
+- **La rangée #84 est une exception à cette portée, dans l'autre sens** : son diff amont n'a pas été lu.
+  Le défaut qu'elle nomme a été établi **de notre côté seulement** — chemin de lecture suivi jusqu'à
+  `Theorem.cs:668/904`, puis aller-retour mesuré sur le runtime. Le verdict tient donc sur notre mesure,
+  et le rapprochement avec #84 sur son titre. Si #84 traitait en fait autre chose, notre défaut reste.
 - Aucune PR amont n'est **mergée** : les 39 sont OPEN. Un verdict peut donc changer si le mainteneur
   révise avant merge.
 - Les PRs amont fermées ou mergées avant #44 (historique 2024) sont hors mesure.
