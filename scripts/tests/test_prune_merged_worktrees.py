@@ -194,6 +194,56 @@ class TestDecisionContract:
 
 
 # ---------------------------------------------------------------------------
+# same_worktree_path -- le drapeau is_current se CALCULE
+# ---------------------------------------------------------------------------
+
+
+class TestSameWorktreePath:
+    r"""`test_skip_current` ne pinne que l'AVAL du drapeau, jamais son calcul.
+
+    Le drapeau etait `wt_path == current_path`, entre deux ecritures
+    differentes du meme chemin : `git worktree list --porcelain` rend des
+    slash avant, `Path(cwd).resolve()` rend la forme native (antislash sous
+    Windows). L'egalite ne pouvait donc jamais etre vraie sur Windows, et
+    `SKIP_CURRENT` etait inatteignable -- mesure du 2026-09-03 sur ai-01,
+    64 worktrees, `skipped=0` meme lance depuis un worktree dont la PR est
+    MERGED, c'est-a-dire un `--apply` qui aurait tente `worktree remove`
+    sur son propre repertoire courant.
+    """
+
+    def test_separator_mismatch_is_the_same_worktree(self, tmp_path):
+        native = str(tmp_path)
+        porcelain = native.replace(os.sep, "/")
+        if os.sep != "/":
+            # Controle positif : sans ca, le test passerait sur une paire
+            # identique et ne mesurerait rien du defaut qu'il pinne.
+            assert porcelain != native, "le cas teste ne se reproduit pas ici"
+        assert pmw.same_worktree_path(porcelain, native) is True
+
+    def test_trailing_separator_is_the_same_worktree(self, tmp_path):
+        assert pmw.same_worktree_path(str(tmp_path) + "/", str(tmp_path)) is True
+
+    def test_distinct_worktrees_are_not_current(self, tmp_path):
+        a = tmp_path / "wt-a"
+        b = tmp_path / "wt-b"
+        a.mkdir()
+        b.mkdir()
+        assert pmw.same_worktree_path(str(a), str(b)) is False
+
+    def test_get_worktree_info_uses_the_comparison(self, monkeypatch, tmp_path):
+        """Pinne le CABLAGE : un retour a `==` en l.284 doit rougir ici."""
+        class _Proc:
+            returncode = 0
+            stdout = ""
+
+        monkeypatch.setattr(pmw, "run_git", lambda *a, **k: _Proc())
+        native = str(tmp_path)
+        porcelain = native.replace(os.sep, "/")
+        info = pmw.get_worktree_info(porcelain, native)
+        assert info["is_current"] is True
+
+
+# ---------------------------------------------------------------------------
 # Tests lookup_pr_for_detached_head (#14476) -- anti faux-positifs
 # ---------------------------------------------------------------------------
 
