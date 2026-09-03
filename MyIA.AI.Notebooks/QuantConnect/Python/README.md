@@ -77,7 +77,7 @@ Suite à l'audit du 5 mai 2026, voici l'état honnête de chaque notebook. **Auc
 | QC-Py-41-PaperTrading-IBKR | EXÉCUTÉ | |
 | QC-Py-Cloud-01-FinBERT-Sentiment | EXÉCUTÉ | |
 | QC-Py-Cloud-02-ML-Classification | EXÉCUTÉ | |
-| QC-Py-Cloud-02-SectorRotation-Momentum | doc cloud | markdown-only — backtest sur QC Cloud |
+| QC-Py-Cloud-12-SectorRotation-Momentum | doc cloud | markdown-only — backtest sur QC Cloud |
 | QC-Py-Cloud-03-DualMomentum | doc cloud | markdown-only — backtest sur QC Cloud |
 | QC-Py-Cloud-03-Risk-Parity | EXÉCUTÉ | |
 | QC-Py-Cloud-03b-RiskParity-Composite | doc cloud | markdown-only — backtest sur QC Cloud |
@@ -90,6 +90,7 @@ Suite à l'audit du 5 mai 2026, voici l'état honnête de chaque notebook. **Auc
 | QC-Py-Cloud-08-ValueFactor-ZScore | doc cloud | markdown-only — backtest sur QC Cloud |
 | QC-Py-Cloud-09-OptionWheel | doc cloud | markdown-only — backtest sur QC Cloud |
 | QC-Py-Cloud-10-RL-DQN-Trading | EXÉCUTÉ | |
+| QC-Py-Cloud-12-SectorRotation-Momentum | EXÉCUTÉ | |
 | QC-Py-33-RL-PPO-Trading | EXÉCUTÉ | |
 | QC-Py-34-RL-SAC-A2C-Trading | EXÉCUTÉ | |
 | QC-Py-35-RL-Portfolio-Construction | EXÉCUTÉ | |
@@ -222,7 +223,7 @@ Notebooks de recherche et stratégies exécutées sur QuantConnect Cloud.
 |----------|-----------|
 | [QC-Py-Cloud-01-FinBERT-Sentiment](QC-Py-Cloud-01-FinBERT-Sentiment.ipynb) | NLP FinBERT sentiment |
 | [QC-Py-Cloud-02-ML-Classification](QC-Py-Cloud-02-ML-Classification.ipynb) | ML classification |
-| [QC-Py-Cloud-02-SectorRotation-Momentum](QC-Py-Cloud-02-SectorRotation-Momentum.ipynb) | Rotation sectorielle |
+| [QC-Py-Cloud-12-SectorRotation-Momentum](QC-Py-Cloud-12-SectorRotation-Momentum.ipynb) | Rotation sectorielle |
 | [QC-Py-Cloud-03-DualMomentum](QC-Py-Cloud-03-DualMomentum.ipynb) | Dual Momentum |
 | [QC-Py-Cloud-03-Risk-Parity](QC-Py-Cloud-03-Risk-Parity.ipynb) | Risk Parité |
 | [QC-Py-Cloud-03b-RiskParity-Composite](QC-Py-Cloud-03b-RiskParity-Composite.ipynb) | Risk Parité composite |
@@ -235,6 +236,7 @@ Notebooks de recherche et stratégies exécutées sur QuantConnect Cloud.
 | [QC-Py-Cloud-08-ValueFactor-ZScore](QC-Py-Cloud-08-ValueFactor-ZScore.ipynb) | Value Factor Z-Score |
 | [QC-Py-Cloud-09-OptionWheel](QC-Py-Cloud-09-OptionWheel.ipynb) | Option Wheel (risk education) |
 | [QC-Py-Cloud-10-RL-DQN-Trading](QC-Py-Cloud-10-RL-DQN-Trading.ipynb) | RL DQN (advanced) |
+| [QC-Py-Cloud-12-SectorRotation-Momentum](QC-Py-Cloud-12-SectorRotation-Momentum.ipynb) | Sector Rotation & Multi-Asset Momentum |
 
 ## Utilitaires
 
