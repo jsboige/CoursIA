@@ -72,7 +72,11 @@ jobs:
     # Retour arriere = remettre `runs-on: ubuntu-latest` + retrait de
     # l'allowlist.
     runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
-    timeout-minutes: 30
+    # 60 et non 30 depuis #14283 : le meme rendu prend 19-24 min sur
+    # `ubuntu-latest` et 25-31 min sur le pool auto-heberge. Le plafond de 30
+    # etait calibre sur la machine d'avant la bascule ; apres elle, il tombe
+    # AU MILIEU de la distribution et coupe le job a 30 min 19 s.
+    timeout-minutes: 60
     permissions:
       contents: read
     steps:
@@ -199,7 +203,11 @@ jobs:
     # check_self_hosted_runner_policy.py.
     if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && github.event_name == 'pull_request'
     runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
-    timeout-minutes: 30
+    # 60 et non 30 depuis #14283 : le meme rendu prend 19-24 min sur
+    # `ubuntu-latest` et 25-31 min sur le pool auto-heberge. Le plafond de 30
+    # etait calibre sur la machine d'avant la bascule ; apres elle, il tombe
+    # AU MILIEU de la distribution et coupe le job a 30 min 19 s.
+    timeout-minutes: 60
     permissions:
       contents: read
       pull-requests: write  # pour poster le commentaire de gate
