@@ -144,7 +144,7 @@ jobs:
             elif [ "$rc" -eq 2 ]; then
               ANY_AUTO=1
               echo "<details><summary><code>$nb</code> -- auto-flagged</summary>" >> "$GITHUB_STEP_SUMMARY"
-              echo "" >> "$GITHUB_STEPUMMARY"
+              echo "" >> "$GITHUB_STEP_SUMMARY"
               echo '```json' >> "$GITHUB_STEP_SUMMARY"
               echo "$out" >> "$GITHUB_STEP_SUMMARY"
               echo '```' >> "$GITHUB_STEP_SUMMARY"
@@ -156,7 +156,7 @@ jobs:
               echo "::warning::$nb -- vacuous scan ou fichier introuvable, ignore."
               continue
             else
-              # rc inattendu : on le remonte comme ERROR pour ne pas avaluer
+              # rc inattendu : on le remonte comme ERROR pour ne pas avaler
               # un detecteur casse. C'est l'anti-auto-desarmement analogue a
               # md-content-loss (cf #8655/#8656) : mieux vaut rougir sur un
               # trouble inconnu que laisser un detecteur casse produire un
