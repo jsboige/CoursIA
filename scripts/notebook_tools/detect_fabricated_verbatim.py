@@ -190,6 +190,29 @@ PATH_LIKE_RE = re.compile(r"://|\.ipynb\b|\.py\b|\.lean\b|^\s*/")
 MIN_PROBE_CHARS = 12
 PROBE_BOUNDARY = re.compile(r"[\s,;()\[\]{}]+")
 
+# Voie COURTE pour les citations qui ne contiennent aucun token >= MIN_PROBE_CHARS
+# mais portent un litteral discriminant (valeur numerique / booleen). Sans cette
+# voie, le defaut fondateur de #14324 (PR #14105 cite `1.213061` quand la sortie
+# rend `0.270671`) n'est pas attrapable -- `1.213061` fait 7 chars, inferieur au
+# seuil. Tournee en PARALLELE de la voie probe (cf commentaire de la voie 2 dans
+# `_scan_notebook`) : une prose partageant un mot commun avec la sortie peut
+# declencher un hit probe >= 1 meme quand le litteral discriminant est invente.
+# Pattern stricte : nombre signe optionnel + au moins un chiffre, ou booleen
+# case-insensitive ; on exige une frontiere non-identifiant de chaque cote
+# (anti collision avec `isJVMStarted`, `vec42` etc.).
+# Match option 1 : un nombre signe optionnel (avec eventuel suffixe
+# exponentiel). On exige des bornes **non-alphanum** strictes des DEUX
+# cotes (avant ET apres) -- sinon Python regex matche le `2` dans `vec42`
+# ou le `8` dans `S8` parce que `\b` considere les chiffres comme
+# word-chars (= word boundary seulement entre word et non-word, pas entre
+# alpha et digit). Le test `(?<![A-Za-z0-9_])` (devant) + `(?![A-Za-z0-9_])`
+# (apres) -- le `--` final est une forme pratique : un chiffre ne peut
+# JAMAIS etre precede d'un identifiant (sinon il en fait partie), idem
+# apres. Option 2 : booleen Python case-insensitive, meme protection.
+LITERAL_RE = re.compile(
+    r"(?<![A-Za-z0-9_])(?:[-+]?\d+(?:[.,]\d+)?(?:[eE][-+]?\d+)?|[Tt]rue|[Ff]alse)(?![A-Za-z0-9_])"
+)
+
 
 def _load_notebook(path: Path) -> dict | None:
     """Charge un .ipynb en tolerant les erreurs triviales (NotJSON, vide)."""
@@ -249,8 +272,11 @@ def _normalize(text: str) -> str:
     text = re.sub(r"^\s*(?:raw\s+output\s*[:\-]?\s*)", "", text, flags=re.IGNORECASE)
     # Collapse whitespace
     text = re.sub(r"\s+", " ", text)
-    # Strip zero-width / BOM
-    text = text.replace("", "").replace("﻿", "").replace("", "")
+    # Strip zero-width / BOM. La version initiale avait 2 `` `` `` no-op
+    # (chaine vide) -- ces caracteres n'ont pas voyagé. On liste
+    # explicitement les codepoints zero-width + le BOM U+FEFF.
+    for zw in ("", "‌", "‍", "﻿"):
+        text = text.replace(zw, "")
     return text.strip()
 
 
@@ -274,13 +300,13 @@ def _resolve_code_target(cells: list, anchor_cell_idx: int, code_n: int | None,
             return code_idxs[code_n - 1]
         return None
 
-    if direction in ("ci-dessus", "ci-dessus", "ci-dessus"):
+    if direction in ("ci-dessus", "ci‑dessus", "ci­dessus"):
         for i in range(anchor_cell_idx - 1, -1, -1):
             if cells[i].get("cell_type") == "code":
                 return i
         return None
 
-    if direction in ("ci-dessous", "ci-dessous", "ci-dessous"):
+    if direction in ("ci-dessous", "ci‑dessous", "ci­dessous"):
         for i in range(anchor_cell_idx + 1, len(cells)):
             if cells[i].get("cell_type") == "code":
                 return i
@@ -463,11 +489,62 @@ def _scan_notebook(path: Path, threshold: int = 1) -> dict:
                 normalized = _normalize(outputs_text)
                 if not normalized:
                     continue
+                # Voie 1 -- probe >= MIN_PROBE_CHARS (le gate anti-FP classique
+                # sur prose longue). Si elle donne un verdict de HITS < threshold,
+                # on declare la fabrication sans regarder les litteraux.
                 probes = _find_probes_in_fragment(c["fragment"])
-                if not probes:
+                if probes:
+                    hits = sum(1 for p in probes if p in normalized)
+                    if hits < threshold:
+                        findings.append({
+                            "kind": "fabricated_verbatim",
+                            "notebook": str(path),
+                            "markdown_cell_idx": idx,
+                            "code_cell_idx": target_idx,
+                            "fragment": c["fragment"][:200],
+                            "probes_unchecked": probes,
+                            "hits_in_output": hits,
+                            "match_mode": "probe",
+                            "hint": "anchor={}".format(
+                                "code[{}]".format(a["code_n"])
+                                if a["code_n"] is not None
+                                else a["direction"] or "raw_output"
+                            ),
+                        })
+                        continue
+                # Voie 2 -- litteral discriminant. Tournee en PARALLELE de la
+                # voie probe, pas en fallback try-first : un fragment de prose
+                # pedagogique peut partager un mot commun (ex. `operationnelle`)
+                # avec la sortie reelle, donc la voie probe rend hit >= 1
+                # quand la fabrication ne porte que sur le BOOLEEN / nombre.
+                # C'est le cas fondateur de #14324 (PR #14105 cite `1.213061`
+                # alors que la sortie rend `0.2706705664732254`) et reproduit
+                # explicitement dans le DM #14486 (cas A `False` vs `True`,
+                # cas B `1.213061` vs `0.884219`). On extrait litteraux
+                # discriminants, et si au moins un est absent de la sortie
+                # normalisee, on declare la fabrication. Securite anti-FP :
+                # on EXCLUT les fragments de forme `name=value` (assignations,
+                # references de parametres) qui ne sont pas des claims de
+                # sortie -- cf App-1-NQueens.ipynb cite `time_limit_s=60`
+                # comme parametre interne, pas comme sortie. Idem pour les
+                # fragments purement operateurs (`a == b`, `--flag=value`).
+                # Le gating `=` couvre ce cas : le format `name = value`
+                # decrit le code, pas une sortie.
+                if "=" in c["fragment"] and not re.search(r"[<>!]=" , c["fragment"]):
+                    # Présence d'un `=` pur (pas `==`/`!=`/`<=`/`>=`) -- le
+                    # fragment est tres probablement une assignation ou une
+                    # reference parametre, pas un verbatim de sortie. On
+                    # verifie s'il precede un `:` style `label: value` ; sinon
+                    # on considere que c'est du code et on SKIP la voie 2.
+                    # Cas special : les fragments de la forme `key: value`
+                    # (case A `JVM operationnelle : False`) n'ont pas de `=`,
+                    # donc ce guard ne les affecte pas.
                     continue
-                hits = sum(1 for p in probes if p in normalized)
-                if hits < threshold:
+                literals = LITERAL_RE.findall(c["fragment"])
+                if not literals:
+                    continue
+                missing = [lit for lit in literals if lit not in normalized]
+                if missing:
                     findings.append({
                         "kind": "fabricated_verbatim",
                         "notebook": str(path),
@@ -475,7 +552,10 @@ def _scan_notebook(path: Path, threshold: int = 1) -> dict:
                         "code_cell_idx": target_idx,
                         "fragment": c["fragment"][:200],
                         "probes_unchecked": probes,
-                        "hits_in_output": hits,
+                        "literals_checked": literals,
+                        "literals_missing": missing,
+                        "hits_in_output": len(literals) - len(missing),
+                        "match_mode": "literal",
                         "hint": "anchor={}".format(
                             "code[{}]".format(a["code_n"])
                             if a["code_n"] is not None

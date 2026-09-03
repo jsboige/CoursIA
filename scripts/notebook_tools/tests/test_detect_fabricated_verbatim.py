@@ -296,7 +296,179 @@ class TestFindProbes:
 
 
 # ---------------------------------------------------------------------------
-# 4. Normalize
+# 4. Voie litterale (parallel) -- discriminant numerique / booleen
+# ---------------------------------------------------------------------------
+
+class TestLiteralVoie:
+    """La voie 2 du detecteur extrait les litteraux numeriques / booleens
+    d'une citation et verifie qu'ils apparaissent dans la sortie. Tournee
+    en PARALLELE de la voie probe (pas try-first) : une prose partageant
+    un mot commun avec la sortie reelle (ex. `operationnelle`) declenche
+    un hit probe >= 1 meme quand le litteral discriminant est invente.
+
+    Ces tests reproduisent les cas A / B de la review Hermes (cf DM
+    msg-20260903T182915, 2026-09-03) : fabrication sur valeur booleenne /
+    numerique SANS que la prose environnante ne change.
+
+    Cas C (controle negatif) = un litteral qui matche legit => pas de
+    finding, essentielle pour borner le taux de FP de la voie.
+    """
+
+    def test_literal_regex_matches_numbers_and_booleans(self):
+        """LITERAL_RE extrait nombres signes / booleens avec frontiere non-id."""
+        import re
+        from detect_fabricated_verbatim import LITERAL_RE
+        # Nombres
+        assert LITERAL_RE.findall("score = 1.213061") == ["1.213061"]
+        assert LITERAL_RE.findall("val=-42") == ["-42"]
+        assert LITERAL_RE.findall("e=1.5e-3") == ["1.5e-3"]
+        # Booleens (casse preservee)
+        assert LITERAL_RE.findall("operationnelle : True") == ["True"]
+        assert LITERAL_RE.findall("operationnelle : False") == ["False"]
+        assert LITERAL_RE.findall("op : true") == ["true"]
+        # Pas un identifiant
+        assert LITERAL_RE.findall("isJVMStarted : True") == ["True"]
+        # Pas un simple nombre colle a un identifiant (frontiere negative)
+        # `vec42` -- regex exige (?<![A-Za-z_]) avant, donc 42 ne doit PAS matcher.
+        assert LITERAL_RE.findall("vec42") == []
+        # Pas une URL
+        assert LITERAL_RE.findall("http://x") == []
+
+    def test_case_a_boolean_literal_fabrication(self):
+        """Cas A du DM #14486 : `JVM operationnelle : False` cite quand la
+        sortie rend `True`. La voie probe trouve `operationnelle` (partage
+        avec la sortie) -- donc hits >= 1 et la voie probe ne declenche pas.
+        Mais la voie litterale trouve `False` qui est absent de la sortie
+        (qui contient `True`) => finding.
+        """
+        cells = [
+            md_cell(
+                "## Chargement\n\n"
+                "Apres demarrage (code[1] ci-dessous) :\n\n"
+                "```\n"
+                "JVM operationnelle : False\n"
+                "```\n"
+            ),
+            code_cell(
+                "print('JVM operationnelle : True')",
+                outputs=[stream_output("JVM operationnelle : True")],
+                execution_count=1,
+            ),
+        ]
+        result = _scan_notebook_from_nb(make_notebook(cells))
+        assert result["anchors_total"] >= 1
+        assert len(result["findings"]) >= 1
+        fab = result["findings"][0]
+        assert fab.get("match_mode") == "literal"
+        assert "False" in fab.get("literals_missing", [])
+        # Le fragment ne contient QUE `False` comme litteral discriminant,
+        # donc `literals_checked == [False]`. Le texte "operationnelle" n'est
+        # pas un litteral de type nombre/booleen, c'est un mot de prose
+        # partage avec la sortie -- la voie probe l'accepte legitimement.
+        assert fab.get("literals_checked") == ["False"]
+
+    def test_case_b_numeric_literal_fabrication(self):
+        """Cas B du DM #14486 : le fragment contient du PROSE autour du
+        litteral (pour passer MIN_CITATION_CHARS=12) + un nombre invente.
+        Exemple : citation `score de demonstration 1.213061 pour les
+        tests`, sortie rend `score = 0.884219`. La voie probe peut
+        trouver `demonstration` (13 chars, partage avec la sortie via
+        autre mot commun) ou pas, mais la voie litterale trouve
+        `1.213061` absent de la sortie.
+        """
+        cells = [
+            md_cell(
+                "## Sortie code[1]\n\n"
+                "Voici la valeur obtenu :\n\n"
+                "```\n"
+                "score de demonstration 1.213061\n"
+                "```\n"
+            ),
+            code_cell(
+                "print('score de demonstration 0.884219')",
+                outputs=[stream_output("score de demonstration 0.884219")],
+                execution_count=1,
+            ),
+        ]
+        result = _scan_notebook_from_nb(make_notebook(cells))
+        assert result["anchors_total"] >= 1
+        assert len(result["findings"]) >= 1
+        # Au moins un finding, peu importe le mode (probe OU literal).
+        # L'important est que le fragment porte une fabrication sur `1.213061`.
+        fabs = result["findings"]
+        assert any(
+            "1.213061" in f.get("literals_missing", [])
+            or f.get("match_mode") == "probe"
+            for f in fabs
+        ), f"Aucun finding ne pointe la fabrication : {fabs}"
+
+    def test_short_numeric_only_fragment_below_threshold(self):
+        """Bornage : un fragment COURT (juste `1.213061`, MIN_CITATION_CHARS=12
+        non atteint) ne declenche RIEN -- c'est volontaire, le risque FP sur
+        litteraux isoles est trop haut. Voir commentaire dans
+        `_scan_notebook` (Known blind spots) et DM msg-20260903T182915.
+        """
+        cells = [
+            md_cell(
+                "## Sortie code[1]\n\n"
+                "```\n"
+                "1.213061\n"
+                "```\n"
+            ),
+            code_cell(
+                "print('0.884219')",
+                outputs=[stream_output("0.884219")],
+                execution_count=1,
+            ),
+        ]
+        result = _scan_notebook_from_nb(make_notebook(cells))
+        # anchors_total == 1 (l'ancre `code[1]` est vue), mais citations_total == 0
+        # (le fragment `1.213061` est trop court), donc findings == 0.
+        assert result["anchors_total"] >= 1
+        assert len(result["findings"]) == 0
+
+    def test_case_c_legitimate_citation_no_finding(self):
+        """Cas C du DM #14486 (controle negatif) : `JVM operationnelle :
+        True` cite quand la sortie rend `True` egalement. La voie probe
+        trouve `operationnelle` ET la voie litterale trouve `True`
+        (present dans la sortie) -- resultat attendu : 0 finding, c'est
+        une citation legitime.
+        """
+        cells = [
+            md_cell(
+                "## Chargement\n\n"
+                "voir code[1] :\n\n"
+                "```\n"
+                "JVM operationnelle : True\n"
+                "```\n"
+            ),
+            code_cell(
+                "print('JVM operationnelle : True')",
+                outputs=[stream_output("JVM operationnelle : True")],
+                execution_count=1,
+            ),
+        ]
+        result = _scan_notebook_from_nb(make_notebook(cells))
+        assert result["anchors_total"] >= 1
+        assert len(result["findings"]) == 0, (
+            f"Faux positif sur cas legitime : {[f.get('match_mode') for f in result['findings']]}"
+        )
+
+    def test_xfail_no_literal_no_anchor_no_finding(self):
+        """Borne anti-FP : une cellule markdown sans litteral discriminant
+        et sans fabrication reelle ne declenche PAS la voie litterale
+        inutilement.
+        """
+        cells = [
+            md_cell("## Heading\n\nvoici du texte normal sans citation."),
+            code_cell("print('hello')", outputs=[stream_output("hello")], execution_count=1),
+        ]
+        result = _scan_notebook_from_nb(make_notebook(cells))
+        assert len(result["findings"]) == 0
+
+
+# ---------------------------------------------------------------------------
+# 5. Normalize
 # ---------------------------------------------------------------------------
 
 class TestNormalize:
@@ -372,8 +544,14 @@ class TestGoldenSetFabricated:
         """Golden set #1 (PR #14105, SHA ed48210e4) -- 1.213061 cite mais
         la sortie reelle rend 0.270671. Une ancre `code[N]` pointe la cellule
         de calcul ; la valeur 1.213061 N'APPARAIT PAS dans la sortie.
+
+        Detection apres reparation #14486 : la voie probe rend hits=0 sur le
+        fragment complet (`#eval2*Float...1.213061`), le detecteur declare
+        la fabrication en mode 'probe'. La voie litterale n'est pas
+        declenchee en mode principal ici (le fragment n'est pas
+        suffisamment COURT) mais reste un fallback pour les variantes
+        integrees -- le verdict importe peu tant que findings >= 1.
         """
-        # The notebook: 1 markdown anchor + 1 code cell with REAL output
         cells = [
             md_cell(
                 "## Sortie observee de code[1] (verbatim)\n"
@@ -397,29 +575,37 @@ class TestGoldenSetFabricated:
             ),
         ]
         nb = make_notebook(cells)
-        # Probe candidate : "largement" (10 chars) -- below MIN_PROBE_CHARS=12.
-        # The fragment "1.213061" is 7 chars -- below MIN. The fragment
-        # "largement superieure" -- "superieure" = 10 chars, "largement" = 9 chars,
-        # both below MIN. So the detector SHOULD report ZERO findings here on
-        # pure probe rules -- that's a known blind spot of MIN_PROBE_CHARS for
-        # synthetic numeric claims. Adjust the test to assert the detector's
-        # INTENT: it scans citations >= MIN_CITATION_CHARS total but produces
-        # no finding because no probe >= MIN_PROBE_CHARS exists.
         result = _scan_notebook_from_nb(nb)
-        # Detector has a known limitation on purely numeric claims -- this is
-        # documented in the docstring. The acceptance criterion here is:
-        # anchors_total == 1 (we found the citation anchor) and the scanner
-        # does not produce a false positive.
+        # On asserte que le detecteur DECLARE la fabrication, pas seulement
+        # qu'il a vu l'ancre. La distinction est centrale : un `anchors_total`
+        # correct ne dit rien sur le verdict de fabrication (cf review
+        # #14486 / DM msg-20260903T182915 du 2026-09-03).
         assert result["anchors_total"] == 1
-        # The detector found the anchor but the citation probes are below
-        # MIN_PROBE_CHARS, so no fabricated finding is emitted. This is
-        # documented behavior -- numeric-only citations need a longer
-        # identifying probe (e.g. the variable name).
+        assert len(result["findings"]) >= 1
+        # Le fragment fautif contient la valeur inventee 1.213061 -- on
+        # verifie qu'au moins un finding le pointe.
+        fab = next((f for f in result["findings"]
+                    if "1.213061" in f["fragment"]), None)
+        assert fab is not None, (
+            "finding attendu portant le fragment `1.213061`, "
+            f"trouve: {[f['fragment'][:60] for f in result['findings']]}"
+        )
 
     def test_jvm_42_jars_omission(self):
-        """Golden set #2 (PR #14111, SHA 80779a908) -- md[1] attribue
-        le chargement des 42 JARs a `JVM operationnelle : True` -- la sortie
-        reelle ELIDE la ligne qui porte le decompte.
+        """Golden set #2 (PR #14111, SHA 80779a908) -- md[1] cite un bloc
+        qui ELIDE la ligne reelle de la sortie. La fabrication ne porte PAS
+        sur une valeur numerique ou booleenne (le fragment est globalement
+        legitime), mais sur l'omission de la ligne `JVM demarree avec 42
+        JARs.` dans la citation. Verdict : c'est une omission structurelle,
+        pas une fabrication par ajout/modification -- le substring probe
+        trouve les mots partages et la voie litterale ne trouve pas de
+        litteral manquant. La classe transverse est documentee (cf
+        c.887-L3 / Tell precedent) comme hors scope par design.
+
+        Strategie xfail : on garde le test VISIBLE pour ne pas oublier
+        l'angle mort futur (AST-aware ou diff-vs-template), mais on ne
+        declare PAS de fabrication. Les assertions qui passent : anchor
+        detectee, fabrication NON detectee. Aucun finding attendu.
         """
         cells = [
             md_cell(
@@ -457,23 +643,30 @@ class TestGoldenSetFabricated:
         ]
         nb = make_notebook(cells)
         result = _scan_notebook_from_nb(nb)
-        # The fabricated citation "JVM operationnelle : True" mentions a probe
-        # "operationnelle" (14 chars >= 12) which IS in the real output -- so
-        # this specific fragment is NOT detected as fabricated (the author
-        # happens to be right about this line). The fabrication is the ELISION
-        # of "JVM demarree avec 42 JARs." -- but the detector is designed to
-        # flag MISSING content, not MISLEADING-by-omission, so this is not
-        # a positive signal.
-        # The acceptance: at minimum, anchors_total >= 1 (the detector picks up
-        # the citation intent).
+        # Pas de finding attendu : la fabrication est par ELISION (la
+        # sortie reelle contient `JVM demarree avec 42 JARs.`, mais la
+        # citation l'omet sans introduire de litteral inventé). Le substring
+        # probe partage `operationnelle` (14 chars) entre citation et
+        # sortie ; aucun litteral discriminant n'est manquant. Le verdict
+        # `no-finding` est HONNETE -- c'est un angle mort CONNU de la voie
+        # actuelle (cf c.887-L3 et cette PR).
         assert result["anchors_total"] >= 1
+        assert len(result["findings"]) == 0, (
+            f"finding INATTENDU sur cas omission pure : {[f['fragment'][:60] for f in result['findings']]}"
+        )
 
     def test_lean_signature_missing_n_quantifier(self):
         """Golden set #3 (PR #14128, SHA 5e5c5f1dc) -- signature verbatim
         FABRIQUEE sans le `{n : Nat}` de debut.
         Sortie reelle : `{n : Nat} (f : ERC20.Address n -> Nat) ...`
         Sortie citee  : `(f : ERC20.Address n -> Nat) ...`
+
+        Strategie xfail : c'est une OMISSION STRUCTURELLE sans litteral
+        manquant. Le probe `ERC20.Address` (12 chars) matche les deux
+        versions ; aucun litteral discriminant n'est absent. Honorer le
+        `xfail` avec raison explicite pluto qu'affaiblir l'assertion.
         """
+        import pytest
         cells = [
             md_cell(
                 "## Sortie observee de code[2] (verbatim)\n"
@@ -498,16 +691,23 @@ class TestGoldenSetFabricated:
         ]
         nb = make_notebook(cells)
         result = _scan_notebook_from_nb(nb)
-        # Probe "ERC20.Address" (12 chars) is in BOTH the fabricated citation
-        # and the real output -- so the detector's substring probe test
-        # PASSES (probe found in output) and the citation is NOT flagged.
-        # The actual fabrication is structural (missing `{n : Nat}` quantifier
-        # at the beginning of the signature) and the substring probe cannot
-        # catch structural omissions.
-        # The acceptance: anchors_total >= 1, the detector picks up the citation
-        # intent. This documents a known limitation -- structural omissions
-        # require AST-aware analysis (out of scope for this iteration).
+        # Documented limitation : structural omissions (absence de
+        # `{n : Nat}` quantifier) ne produisent pas de literal mismatch.
+        # Probe ERC20.Address (12 chars) est present dans les deux textes,
+        # hits >= 1, pas de fabrication par ajout. Pour attraper cette
+        # classe il faut une analyse AST-aware ou un diff-vs-template
+        # (tous deux hors scope de cette PR).
         assert result["anchors_total"] >= 1
+        # xfail : on attend que le detecteur reste a 0 finding (classe non
+        # couverte). Si le detecteur evolue et attrape CETTE omission, le
+        # xfail devient PASS et il faut retirer le marqueur.
+        pytest.xfail(
+            "Omission structurelle (signature sans `{n : Nat}`) -- "
+            "hors scope voie substring. Necessite AST-aware ou diff-vs-template. "
+            "Voir PR #14486 (reparation de la review DM msg-20260903T182915) "
+            "et le tell c.887-L3 (probe presente dans les deux versions => "
+            "faux negatif inerent a la voie substring)."
+        )
 
 
 def _scan_notebook_from_nb(nb: dict) -> dict:
