@@ -78,7 +78,7 @@ Suite à l'audit du 5 mai 2026, voici l'état honnête de chaque notebook. **Auc
 | QC-Py-Cloud-01-FinBERT-Sentiment | EXÉCUTÉ | |
 | QC-Py-Cloud-02-ML-Classification | EXÉCUTÉ | |
 | QC-Py-Cloud-12-SectorRotation-Momentum | doc cloud | markdown-only — backtest sur QC Cloud |
-| QC-Py-Cloud-03-DualMomentum | doc cloud | markdown-only — backtest sur QC Cloud |
+| QC-Py-Cloud-14-DualMomentum | doc cloud | markdown-only — backtest sur QC Cloud |
 | QC-Py-Cloud-03-Risk-Parity | EXÉCUTÉ | |
 | QC-Py-Cloud-03b-RiskParity-Composite | doc cloud | markdown-only — backtest sur QC Cloud |
 | QC-Py-Cloud-04-MeanReversion | doc cloud | markdown-only — backtest sur QC Cloud |
@@ -224,7 +224,7 @@ Notebooks de recherche et stratégies exécutées sur QuantConnect Cloud.
 | [QC-Py-Cloud-01-FinBERT-Sentiment](QC-Py-Cloud-01-FinBERT-Sentiment.ipynb) | NLP FinBERT sentiment |
 | [QC-Py-Cloud-02-ML-Classification](QC-Py-Cloud-02-ML-Classification.ipynb) | ML classification |
 | [QC-Py-Cloud-12-SectorRotation-Momentum](QC-Py-Cloud-12-SectorRotation-Momentum.ipynb) | Rotation sectorielle |
-| [QC-Py-Cloud-03-DualMomentum](QC-Py-Cloud-03-DualMomentum.ipynb) | Dual Momentum |
+| [QC-Py-Cloud-14-DualMomentum](QC-Py-Cloud-14-DualMomentum.ipynb) | Dual Momentum |
 | [QC-Py-Cloud-03-Risk-Parity](QC-Py-Cloud-03-Risk-Parity.ipynb) | Risk Parité |
 | [QC-Py-Cloud-03b-RiskParity-Composite](QC-Py-Cloud-03b-RiskParity-Composite.ipynb) | Risk Parité composite |
 | [QC-Py-Cloud-04-MeanReversion](QC-Py-Cloud-04-MeanReversion.ipynb) | Mean Reversion |
