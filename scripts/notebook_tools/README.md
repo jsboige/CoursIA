@@ -533,11 +533,15 @@ Sortie = dashboard RooSync / artefacts CI, JAMAIS dans le repo.
 - `audit_c1_c3.py` : audit structurel conformite C.1 (pas d'erreur
   volontaire) + C.3 (scope re-exec). Verdict par notebook.
 - `audit_solution_leaks.py` : audit fuite solution pedagogique (#362,
-  Planners de-leak #4970/#1344) — 3 patterns detectes : function body
-  leak (>3 lignes logique sous `# Exercice N`), commented-out solution
-  leak (`#` blocks >3 lignes code/data), pre-resolved cells (`# Solution`
-  / `# Exemple resolu` reponse complete). Sortie = JSON par notebook +
-  rapport agrege `audit_solution_leaks_results.json`.
+  Planners de-leak #4970/#1344, classe (h) markdown #14327) — 5 patterns
+  detectes : function body leak (>3 lignes logique sous `# Exercice N`),
+  commented-out solution leak (`#` blocks >3 lignes code/data), pre-resolved
+  cells (`# Solution` / `# Exemple resolu` reponse complete), candidats C#
+  `// Exercice` / `// Solution` (FLAG, revue manuelle), protocole de preuve
+  complet dans une cellule markdown en fenetre d'exercice (FLAG, classe (h)
+  PR #14161 — l'annexe finale « solutions des exercices » est exoneree).
+  Sortie = JSON par notebook + rapport agrege
+  `audit_solution_leaks_results.json`.
 - `regression_scan.py` : scan cluster des symbols touches dans un diff
   vs reste du depot (regle B.5 anti-regression).
 - `forensic_scan.py` : scanner forensics pour audit automatise (avec

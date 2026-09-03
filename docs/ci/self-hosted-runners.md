@@ -244,7 +244,18 @@ Trois points de conception qui ne sont pas négociables :
 
 La leçon qui a fondé cette preuve reste écrite noir sur blanc : cette page a déjà décrit une conception comme un état déployé — l'inventaire du matin même (2026-09-01) montrait un registre à **un seul** runner Windows, label `coursia-linux` orphelin nulle part, image jamais construite. Tant qu'aucun job n'a rendu la preuve d'identité (`RUNNER_OS = Linux` dans les logs), aucun vert de cette chaîne ne prouve quoi que ce soit — leçon po-2024 du run 33178577527, où l'échec s'était produit *pour la mauvaise raison* (ACE manquante) et aurait pu passer pour un succès de routage.
 
-L'image expose `python` nu (`python-is-python3`) pour les workflows stdlib-only (le `check-navlinks` du job 100021313259 avait échoué `exit 127 "python: not found"` avant cela), et les slots montent le volume `coursia-runner-toolcache` sur `/opt/hostedtoolcache` (`RUNNER_TOOL_CACHE`) pour que les actions `setup-*` ne re-téléchargent pas leurs outils à chaque conteneur éphémère. Après toute modification du Dockerfile : rebuild (même tag), puis roulement des slots — `stop`, `docker kill` des conteneurs vérifiés `busy=false`, `start N`.
+L'image expose `python` nu (`python-is-python3`) pour les workflows stdlib-only (le `check-navlinks` du job 100021313259 avait échoué `exit 127 "python: not found"` avant cela), et les slots montent le volume `coursia-runner-toolcache` sur `/opt/hostedtoolcache` (`RUNNER_TOOL_CACHE`) pour que les actions `setup-*` ne re-téléchargent pas leurs outils à chaque conteneur éphémère. Après toute modification du Dockerfile : rebuild (même tag), puis roulement des slots — `docker kill` des conteneurs vérifiés `busy=false` (la boucle relance sur la nouvelle image ; les slots occupés se soignent seuls au tour suivant). **Le check `busy=false` échoue en silence par deux chemins mesurés** : `jq` est absent de l'hôte Ubuntu (il vit dans l'image), et `gh api` ne supporte pas `--arg`. Forme canonique — côté Windows (gh embarque jq), nom littéral interpolé, **fail-closed** :
+
+```bash
+busy=$(gh api repos/jsboige/CoursIA/actions/runners --jq ".runners[] | select(.name==\"$name\") | .busy")
+rc=$?; [ $rc -eq 0 ] && [ -n "$busy" ] || { echo "check FAILED rc=$rc busy='$busy'"; exit 1; }
+```
+
+Re-vérifier **par slot juste avant chaque kill** : un job peut être pris entre l'inventaire et le geste. Un `busy` vide capturé sans contrôle de `rc` n'est pas une vérification — l'égalité `!= "true"` passe et le kill part non vérifié.
+
+**Cache de dépôt persistant (#14285, 2026-09-02)** : chaque slot monte en plus un volume dédié `coursia-runner-work-<slot>` sur `/home/runner/_work`. Sans lui, `--rm` détruisait le clone avec le conteneur et `actions/checkout` re-clonait le dépôt **entier à chaque job** — mesure #14285 : checkout 80-148 s (contre 40-51 s sur `ubuntu-latest`), ~97 % du temps du job, pour un pack de 3,54 GiB. Avec le volume, checkout trouve un clone existant et fait un `git fetch` incrémental ; son `clean` par défaut nettoie l'arbre entre jobs. Un volume **par slot** (jamais partagé : deux jobs concurrents se battraient sur le même `.git`), ~4 GiB par slot sur le disque hôte. **Contrôle d'acceptance** : le premier job après création du volume paie encore le clone complet (attendu) ; si le **second** job paie le même prix, le volume n'est pas pris en compte et le correctif est inerte. **Garde liée** : la persistance de `_work` n'est sûre que tant qu'aucun code de fork n'atteint ces runners (~95 forks étudiants) — si la garde fork saute, ce volume devient un vecteur inter-jobs et la persistance doit être retirée **avant** d'ouvrir un trigger `pull_request`.
+
+**Pool d'attente PR-gate — `waiters [N]` (#13363, 2026-09-02)** : le PR gate agrège jusqu'à 35 min en polling, occupant un slot d'exécution pendant que les jobs réels attendent derrière. `supervise.sh waiters [N]` (défaut 24) lance N slots sur le label dédié `{self-hosted, coursia-waiter}` — **jamais `coursia-linux`**, aucun job d'exécution ne doit leur atterrir (aucun workflow ne demande ce label aujourd'hui ; la bascule du gate dessus est l'item B, ai-01). Caps volontairement légers (1 cpu / 1g / 128 pids), pas de volume toolcache/_work : un slot d'attente ne coûte rien, il sur-provisionne le gate par design. L'organe d'extinction #13378 compte par label `coursia-linux` : les waiters lui restent invisibles (les offline de la famille n'y figurent pas). Registre : ~24 runners de plus (le plafond de runners par dépôt GitHub peut refuser l'enregistrement au-delà de la limite du plan — mesurer le compte réel à l'acceptance post-déploy). Roll : `stop` → `waiters 24` → ai-01 bascule le gate.
 
 Routage (décision coordinateur) — **tranche 1 portée par #14148 (PR ouverte au 2026-09-01)** : 11 workflows y passent sur les labels `coursia-linux`, sous la règle « allowlist du checker `check_self_hosted_runner_policy.py` + garde universelle de fork/payload + timeout + `permissions: read` ». Tant qu'elle n'est pas mergée, ces workflows restent sur GitHub-hosted. Le reste des 93 jobs `ubuntu-latest` du census #13378 demeure sur GitHub-hosted tant que l'empreinte n'a pas été mesurée sur des jobs réels — l'élargissement (tranche 2, N slots) reste décision coordinateur après 24 h de vert sur la tranche 1.
 
@@ -252,14 +263,24 @@ Routage (décision coordinateur) — **tranche 1 portée par #14148 (PR ouverte 
 
 Si l'empreinte mesurée pendant un job gêne la workstation (training GPU, sessions interactives), on **réduit les caps ou on arrête**, et on le signale à ai-01.
 
-### Persistance du superviseur — pas encore posée (en attente de go)
+### Persistance du superviseur — déployée sur po-2024 (systemd dans Ubuntu + holder WSL)
 
-`supervise.sh` vit dans une session : si elle meurt, les slots en ligne consomment leur inscription au prochain job et rien ne les relance. Le déploiement durable prévu :
+`supervise.sh` vit dans une session : si elle meurt, les slots en ligne consomment leur inscription au prochain job et rien ne les relance. Le déploiement durable est **posé et mesuré sur po-2024** (2026-09-02, mandat user « Il faut du persistant !!! ») : les slots ont quitté Docker Desktop pour la distro **Ubuntu sous systemd**, et le réveil de la distro est **tenu** par un processus holder Windows. Copies de référence committées dans `scripts/ci/docker/linux-runner/persist/`.
 
-- **voie WSL** : service utilisateur systemd (`systemctl --user`, unit lançant `supervise.sh start 2`) + `loginctl enable-linger <user>` pour survivre aux déconnexions ;
-- **voie Windows** (alternative) : tâche planifiée au logon via `schtasks`, même invocation.
+**Architecture (3 étages)** :
 
-Aucun des deux n'est installé sur po-2024 à date : l'installation d'un mécanisme permanent d'enregistrement est un geste explicite (coordinateur ou user), jamais silencieux.
+1. **Étage Linux (systemd)** — la distro Ubuntu tourne avec systemd en PID 1. `docker-ce` (pas Docker Desktop) est épinglé sur `/var/run/docker-ce.sock` via un drop-in `docker.service.d/coursia-socket.conf`. L'unité système `coursia-runner.service` (`Requires=docker.service`, `Restart=always`, `TimeoutStopSec=900`) exécute le wrapper `/usr/local/bin/coursia-runner-start.sh start 4` : il relit le token admin GitHub à **chaque invocation** depuis `master.env` côté Windows (`/mnt/c/...` via `sed` + `tr -d '\r'` — un CRLF tuerait la valeur ; le token ne vit jamais dans la distro ni dans un argv), exporte `DOCKER_HOST`/`GH_TOKEN`/`COURSIA_RUNNER_STATE_DIR=/var/lib/coursia-runner`, puis `exec supervise.sh start N`. `ExecStop` passe par l'arrêt gracieux (sentinel) : un job en vol va à son terme.
+2. **Étage pont (tâche planifiée)** — `CoursIA-LinuxRunners` (`InteractiveToken`, `LeastPrivilege`, logon) exécute `launch-runner.sh` : il ne fait rien lui-même, il invoque le holder et rend son rc.
+3. **Étage holder (la pièce non négociable)** — `hold-runner.ps1` spawn un processus `wsl.exe` **détaché** qui exécute `systemctl start coursia-runner.service && exec sleep infinity`. Tant que ce processus vit, une session client WSL existe et **la distro ne peut pas être reapée**.
+
+**Pourquoi le holder est obligatoire — mesure décisive du 2026-09-02** : un appel `wsl.exe` one-shot ne suffit **jamais**. Séquence mesurée : 4 slots `[online]` → sortie du dernier client wsl → **moins de 3 minutes plus tard, distro morte** (`wsl -l --running` : Ubuntu absente ; GitHub : `online: 0`) — avec systemd en PID 1, le service actif et les conteneurs lancés. WSL reape la distro au départ du dernier client, quel que soit son état interne. Ce constat **unifie** tous les échecs de réveil one-shot observés : le pont logon qui « rend rc=0 » sans jamais remonter les slots, et la tâche S4U d'un autre hôte « rc=0 sans rien démarrer » — le rc=0 dit que la demande a été acceptée, pas que la distro a survécu au client. `wsl -l --running` (listage pur, qui ne réveille pas les distros) est le seul instrument de liveness qui ne confonde pas la mesure.
+
+**Mesures d'appoint** :
+
+- **Guerre de flap name-replace** : enregistrer un runner sous un nom existant **remplace** l'entrée (« Successfully replaced the runner »). Deux superviseurs sur les mêmes noms → boucle auto-entretenue `Error: Conflict / Retrying until reconnected` (cadence ~2 min < TTL session ~3 min : ça ne converge jamais). Correctif mesuré : arrêt complet **~5 min** (purger TOUTES les sessions), puis start unique → 4/4 online en 20 s. Corollaire : la bascule Docker Desktop → Ubuntu **remplace** les entrées, elle ne les duplique pas.
+- **S4U exige l'élévation** : `Register-ScheduledTask -LogonType S4U` est refusé sans admin (« Accès refusé », même `RunLevel Limited`). La tâche boot `CoursIA-LinuxRunners-Boot` (S4U + `AtStartup`, script prêt) attend **un clic UAC** du user — le pont logon couvre le cas nominal en attendant. Limite connue du pont `InteractiveToken` : le holder meurt à la fermeture de session ; la tâche S4U boot la relance avant le logon.
+
+**Recette de réplication** (un autre worker) : installer docker-ce dans la distro + drop-in socket → poser le wrapper et l'unité (`persist/coursia-runner-start.sh`, `persist/coursia-runner.service`, en adaptant `NAME_PREFIX` et N) → `systemctl enable --now coursia-runner` → créer la tâche logon qui appelle `persist/launch-runner.sh` (elle appelle le holder local) → valider par le protocole de mesure ci-dessus (tuer la distro, déclencher la tâche, **attendre 3+ min sans aucun appel wsl**, puis lister). L'installation d'un mécanisme permanent d'enregistrement reste un geste explicite (coordinateur ou user), jamais silencieux.
 
 ## Tranches suivantes, activation partielle
 
@@ -280,7 +301,7 @@ La préparation complète reste découpée :
 | `myia-po-2024-fast-guards` | **actif** — seul runner du dépôt ; Windows ; tool-cache seedé (a2), ré-enregistrement sans UAC, jobs réels consommés |
 | `myia-po-2025-fast-guards` | en préparation (aucun runner enregistré) |
 | `myia-po-2026-fast-guards` | en préparation (aucun runner enregistré ; profil vérifié dans le registre) |
-| `coursia-linux` (conteneur) | **en ligne** — 2 slots conteneurisés sur po-2024 (`myia-po-2024-linux-docker-1/-2`), preuve d'identité run 33554804211 (`RUNNER_OS = Linux`) |
+| `coursia-linux` (conteneur) | **en ligne + persistant** — 4 slots conteneurisés sur po-2024 (`myia-po-2024-linux-docker-1..4`) sous systemd dans Ubuntu (holder WSL, cf section Persistance), preuve d'identité run 33554804211 (`RUNNER_OS = Linux`) |
 
 La colonne est datée d'une **mesure**, pas d'une intention : le tableau précédent portait « actif » et « en préparation » sans dire ce qui avait été compté, ce qui a laissé lire une conception comme un déploiement.
 

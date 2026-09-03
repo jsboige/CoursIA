@@ -51,7 +51,12 @@ concurrency:
 jobs:
   detect-changes:
     name: Detect notebook changes
-    runs-on: ubuntu-latest
+    # Routage #14283 tranche 3c (ai-01 2026-09-02) : jambe Linux auto-hebergee.
+    # Garde anti-fork au niveau job + runs-on STATIQUE (une expression leverait
+    # DYNAMIC_RUNS_ON dans check_self_hosted_runner_policy.py).
+    # Retour arriere = remettre `runs-on: ubuntu-latest` + retrait de l'allowlist.
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
     outputs:
       notebooks: ${{ steps.detect.outputs.notebooks }}
       has_notebooks: ${{ steps.detect.outputs.has_notebooks }}
@@ -90,9 +95,13 @@ jobs:
 
   validate-static:
     name: Static validation (H.1/H.3/C.1)
-    runs-on: ubuntu-latest
+    # Routage #14283 tranche 3c (ai-01 2026-09-02) : jambe Linux auto-hebergee.
+    # Garde anti-fork au niveau job + runs-on STATIQUE (une expression leverait
+    # DYNAMIC_RUNS_ON dans check_self_hosted_runner_policy.py).
+    # Retour arriere = remettre `runs-on: ubuntu-latest` + retrait de l'allowlist.
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
     needs: detect-changes
-    if: needs.detect-changes.outputs.has_notebooks > 0
+    if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && needs.detect-changes.outputs.has_notebooks > 0
 
     steps:
       - uses: actions/checkout@v4
@@ -219,11 +228,18 @@ jobs:
   # A broken notebook makes this job RED, then GREEN once repaired.
   golden-set-execute:
     name: Golden-set execution (H.7 P3)
-    runs-on: ubuntu-latest
+    # Routage #14283 fin de chantier (ai-01 dispatch 2026-09-02, item 1) :
+    # dernier job trivialement migrable — setup-python (toolcache monte) et
+    # github-script (node embarque du runner) sont servis par l'image.
+    # Garde anti-fork au niveau job + runs-on STATIQUE (une expression leverait
+    # DYNAMIC_RUNS_ON dans check_self_hosted_runner_policy.py).
+    # Retour arriere = remettre `runs-on: ubuntu-latest` + retrait de l'allowlist.
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
     # Independent of notebook-change detection: the golden-set is a FIXED
     # certified core, re-executed whenever the manifest/lockfile/workflow
-    # change (PR + main push) or on manual dispatch. No `if:` needed — the
-    # workflow triggers above already gate this job's execution.
+    # change (PR + main push) or on manual dispatch. The trigger paths above
+    # already gate this job's execution; the if: only carries the fork guard.
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4

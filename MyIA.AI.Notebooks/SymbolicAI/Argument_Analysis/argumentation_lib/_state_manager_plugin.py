@@ -2,11 +2,16 @@
 # the 2025-Epita-Intelligence-Symbolique project
 # (https://github.com/jsboigeEpita/2025-Epita-Intelligence-Symbolique),
 # Copyright (c) 2025 jsboigeEpita, MIT License.
-# Source commit: see NOTICE-EPITA at the root of this directory.
+# Source commit: 9834462 (clusterManager LGTM SHA, vendor faa10e74f,
+# PRs #2137/#2856) -- See NOTICE-EPITA.
 #
-# Verbatim integrity: file content above this header is byte-for-byte identical
+# Verbatim integrity: file content below this header is byte-for-byte identical
 # to the upstream source at the cited commit. No CoursIA modification
 # (downstream consumers wrap or extend, never replace the verbatim block).
+# Note: the upstream copy is **partial** (See NOTICE-EPITA, section "Partial
+# copies" + issue #14026): the `record_designation` trace-writing companion
+# of `designate_next_agent` is missing (deliberate perimeter; `designate_next_agent`
+# crossed, its pair did not -- the pair is a contract, see NOTICE-EPITA).
 # core/state_manager_plugin.py
 import json
 from typing import Dict, List, Any, Optional
