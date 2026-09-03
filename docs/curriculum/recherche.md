@@ -20,9 +20,9 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 
 | Métrique | Valeur |
 |----------|--------|
-| Notebooks | 241 |
+| Notebooks | 242 |
 | PRODUCTION | 0 |
-| BETA | 237 |
+| BETA | 238 |
 | ALPHA | 4 |
 
 ## GameTheory (81 notebooks)
@@ -57,50 +57,50 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 | 26 | GameTheory-06-EvolutionTrust | BETA | Oui |
 | 27 | GameTheory-6c (C#) : Jeux Répétés et Théorème Folk | BETA | Oui |
 | 28 | GameTheory-6c : Jeux Répétés et Théorème Folk (Folk… | BETA | Oui |
-| 29 | GameTheory-6d : Statique comparative — séparer… | BETA | Oui |
-| 30 | GameTheory-6d : Sympathie contre Engagement — la… | BETA | Oui |
-| 31 | GameTheory-07-ExtensiveForm (Twin C#) | BETA | Oui |
-| 32 | GameTheory-07-ExtensiveForm | BETA | Oui |
-| 33 | GameTheory-08-CombinatorialGames (C#) | BETA | Oui |
-| 34 | GameTheory 8 - Jeux Combinatoires | BETA | Oui |
-| 35 | GameTheory 8b - Jeux Combinatoires en Lean | BETA | Non |
+| 29 | GameTheory-06d : Sympathie contre Engagement — la… | BETA | Oui |
+| 30 | GameTheory-07-ExtensiveForm (Twin C#) | BETA | Oui |
+| 31 | GameTheory-07-ExtensiveForm | BETA | Oui |
+| 32 | GameTheory-08-CombinatorialGames (C#) | BETA | Oui |
+| 33 | GameTheory 8 - Jeux Combinatoires | BETA | Oui |
+| 34 | GameTheory 8b - Jeux Combinatoires en Lean | BETA | Non |
+| 35 | GameTheory 8c - Jeux Combinatoires : Approfondissement… | BETA | Oui |
 | 36 | GameTheory 8c - Jeux Combinatoires : Approfondissement… | BETA | Oui |
-| 37 | GameTheory 8c - Jeux Combinatoires : Approfondissement… | BETA | Oui |
-| 38 | GameTheory 8d - Combinatorial Games natif : le lake… | BETA | Non |
-| 39 | GameTheory-09-BackwardInduction (C#) | BETA | Oui |
-| 40 | GameTheory-09-BackwardInduction | BETA | Oui |
-| 41 | Stackelberg : la performativité sans mystère | BETA | Oui |
-| 42 | GameTheory-09c : Stackelberg Security Game —… | BETA | Oui |
-| 43 | GameTheory-10 — Équilibres Parfaits de Sous-Jeux et… | BETA | Oui |
-| 44 | GameTheory-10-ForwardInduction-SPE | BETA | Oui |
-| 45 | GameTheory-11-BayesianGames-Csharp | BETA | Oui |
-| 46 | GameTheory-11-BayesianGames | BETA | Oui |
-| 47 | GameTheory-11b — Jeux Bayésiens en Lean 4 (companion) | BETA | Non |
-| 48 | GameTheory-12 — Jeux de Réputation (twin C# du notebook… | BETA | Oui |
-| 49 | GameTheory-12-ReputationGames | BETA | Oui |
-| 50 | GameTheory-13 : Jeux a Information Imparfaite et CFR… | BETA | Oui |
-| 51 | GameTheory-13 : Jeux a Information Imparfaite et CFR | BETA | Non |
-| 52 | GameTheory-13b : Safe Subgame Solving -- quand le… | BETA | Oui |
-| 53 | GameTheory-13c : Safe Subgame Solving en C# — le twin… | BETA | Oui |
-| 54 | GameTheory-13d : Optimistic Counterfactual Regret… | BETA | Oui |
+| 37 | GameTheory 8d - Combinatorial Games natif : le lake… | BETA | Non |
+| 38 | GameTheory-09-BackwardInduction (C#) | BETA | Oui |
+| 39 | GameTheory-09-BackwardInduction | BETA | Oui |
+| 40 | Stackelberg : la performativité sans mystère | BETA | Oui |
+| 41 | GameTheory-09c : Stackelberg Security Game —… | BETA | Oui |
+| 42 | GameTheory-10 — Équilibres Parfaits de Sous-Jeux et… | BETA | Oui |
+| 43 | GameTheory-10-ForwardInduction-SPE | BETA | Oui |
+| 44 | GameTheory-11-BayesianGames-Csharp | BETA | Oui |
+| 45 | GameTheory-11-BayesianGames | BETA | Oui |
+| 46 | GameTheory-11b — Jeux Bayésiens en Lean 4 (companion) | BETA | Non |
+| 47 | GameTheory-12 — Jeux de Réputation (twin C# du notebook… | BETA | Oui |
+| 48 | GameTheory-12-ReputationGames | BETA | Oui |
+| 49 | GameTheory-13 : Jeux a Information Imparfaite et CFR… | BETA | Oui |
+| 50 | GameTheory-13 : Jeux a Information Imparfaite et CFR | BETA | Non |
+| 51 | GameTheory-13b : Safe Subgame Solving -- quand le… | BETA | Oui |
+| 52 | GameTheory-13c : Safe Subgame Solving en C# — le twin… | BETA | Oui |
+| 53 | GameTheory-13d : Optimistic Counterfactual Regret… | BETA | Oui |
+| 54 | GameTheory-14 : Jeux Differentiels et Equilibres de… | BETA | Oui |
 | 55 | GameTheory-14 : Jeux Differentiels et Equilibres de… | BETA | Oui |
-| 56 | GameTheory-14 : Jeux Differentiels et Equilibres de… | BETA | Oui |
-| 57 | GameTheory-15 — Jeux Coopératifs (Twin C#) | BETA | Oui |
-| 58 | GameTheory-15-CooperativeGames | BETA | Oui |
-| 59 | GameTheory 15b - Jeux Cooperatifs en Lean :… | BETA | Non |
-| 60 | GameTheory 15c - Jeux Cooperatifs (C# / .NET) | BETA | Oui |
-| 61 | GameTheory 15c - Jeux Cooperatifs Lean (Python) | BETA | Oui |
-| 62 | GameTheory 15d - La decomposition de Mobius sur le… | BETA | Oui |
-| 63 | GameTheory-16-MechanismDesign (C#) | BETA | Oui |
-| 64 | GameTheory-16 : Théorie des Mécanismes et Principe de… | BETA | Oui |
-| 65 | GameTheory-16b : Automated Mechanism Design (AMD) | BETA | Oui |
-| 66 | GameTheory-16c : La dimension paiement que le designer… | BETA | Oui |
-| 67 | GameTheory-16d — L'echange de reins : de la valeur… | BETA | Oui |
-| 68 | GameTheory-17 (C#) : Multi-Agent Reinforcement Learning… | BETA | Oui |
-| 69 | GameTheory-17 : Apprentissage par Renforcement… | BETA | Oui |
-| 70 | Information asymétrique : types privés, antisélection… | BETA | Oui |
-| 71 | Le marché des lemons : le certificat formel exécuté | BETA | Non |
-| 72 | Du marché au bilan : le pont théorie des jeux théorie… | BETA | Oui |
+| 56 | GameTheory-15 — Jeux Coopératifs (Twin C#) | BETA | Oui |
+| 57 | GameTheory-15-CooperativeGames | BETA | Oui |
+| 58 | GameTheory 15b - Jeux Cooperatifs en Lean :… | BETA | Non |
+| 59 | GameTheory 15c - Jeux Cooperatifs (C# / .NET) | BETA | Oui |
+| 60 | GameTheory 15c - Jeux Cooperatifs Lean (Python) | BETA | Oui |
+| 61 | GameTheory 15d - La decomposition de Mobius sur le… | BETA | Oui |
+| 62 | GameTheory-16-MechanismDesign (C#) | BETA | Oui |
+| 63 | GameTheory-16 : Théorie des Mécanismes et Principe de… | BETA | Oui |
+| 64 | GameTheory-16b : Automated Mechanism Design (AMD) | BETA | Oui |
+| 65 | GameTheory-16c : La dimension paiement que le designer… | BETA | Oui |
+| 66 | GameTheory-16d — L'echange de reins : de la valeur… | BETA | Oui |
+| 67 | GameTheory-17 (C#) : Multi-Agent Reinforcement Learning… | BETA | Oui |
+| 68 | GameTheory-17 : Apprentissage par Renforcement… | BETA | Oui |
+| 69 | Information asymétrique : types privés, antisélection… | BETA | Oui |
+| 70 | Le marché des lemons : le certificat formel exécuté | BETA | Non |
+| 71 | Du marché au bilan : le pont théorie des jeux théorie… | BETA | Oui |
+| 72 | Screening, signal et anticipation : les trois réponses… | BETA | Non |
 | 73 | GameTheory-18 : Open Games et Lentilles -- la… | BETA | Oui |
 | 74 | GameTheory-18b : Casser la composition — où la… | BETA | Oui |
 | 75 | GameTheory-19 : L'abstraction a dette mesurable | BETA | Oui |
@@ -134,7 +134,7 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 | 4 | IIT-4. Le problème de frontière — qui décide où sont… | BETA | Oui |
 | 5 | IIT-5. Les lentilles de conscience comme bancs de… | BETA | Oui |
 
-## IIT/ICT-Series (58 notebooks)
+## IIT/ICT-Series (59 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -193,46 +193,47 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 | 53 | ICT — Substrat argumentation : trajectoires de croyance… | BETA | Oui |
 | 54 | Boucle auto-referentielle p_hat (case 2 / Epic #9533) | BETA | Oui |
 | 55 | ICT -- Dissociation saillance / pregnance (case s ⟂ π) | BETA | Oui |
-| 56 | ICT-Life — Substrat de calibration certifié : le Jeu de… | BETA | Oui |
-| 57 | Tete-a-tete SAE <-> J-space -- les deux lentilles du… | BETA | Non |
-| 58 | ICT-Synthèse — un seul appareil de mesure, cinq… | BETA | Non |
+| 56 | ICT-Greffe4 — Le vote argumenté sur chaîne : fermer la… | BETA | Oui |
+| 57 | ICT-Life — Substrat de calibration certifié : le Jeu de… | BETA | Oui |
+| 58 | Tete-a-tete SAE <-> J-space -- les deux lentilles du… | BETA | Non |
+| 59 | ICT-Synthèse — un seul appareil de mesure, cinq… | BETA | Non |
 
-## Probas (3 notebooks)
+## Probas (2 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
-| 1 | DoWhy-1 — Exiger un estimand : l'identification causale… | BETA | Oui |
-| 2 | Infer-101 : Introduction a Infer.NET | BETA | Oui |
-| 3 | Le Framework Rational Speech Act (RSA) | BETA | Oui |
+| 1 | Infer-101 : Introduction a Infer.NET | BETA | Oui |
+| 2 | Le Framework Rational Speech Act (RSA) | BETA | Oui |
 
-## Probas/DecisionTheory (24 notebooks)
+## Probas/DecisionTheory (25 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | Du graphe causal au do-calculus — le pont entre les… | BETA | Oui |
-| 2 | Méthodes quasi-expérimentales — identifier l'effet… | BETA | Oui |
-| 3 | DecInfer-01-Utility-Foundations : Axiomes et Fondements | BETA | Oui |
-| 4 | DecInfer-02-Théorème de représentation de von… | BETA | Oui |
-| 5 | DecInfer-03-Utility-Money : Utilite de l'Argent et… | BETA | Oui |
-| 6 | DecInfer-04-Multi-Attribute : Utilite Multi-Attributs | BETA | Oui |
-| 7 | DecInfer-05-Decision-Networks : Reseaux de Decision | BETA | Oui |
-| 8 | DecInfer-06-Value-Information : Valeur de l'Information | BETA | Oui |
-| 9 | DecInfer-07-Expert-Systems : Decisions Robustes et… | BETA | Oui |
-| 10 | DecInfer-08-Sequential : MDPs, Bandits et POMDPs | BETA | Oui |
-| 11 | DecInfer-09-Preuves formelles — Indice de Gittins | BETA | Oui |
-| 12 | DecInfer-10-Thompson-Sampling : Bandits bayesiens par… | BETA | Oui |
-| 13 | DecPyMC-1-Utility-Foundations : Axiomes et Fondements | BETA | Oui |
-| 14 | DecPyMC-10 : Ruine et capital — le processus de… | BETA | Oui |
-| 15 | DecPyMC-11 — Valeur de l'Information en Souscription | BETA | Oui |
-| 16 | DecPyMC-12 — Fréquence × sévérité hiérarchique : le… | BETA | Oui |
-| 17 | DecPyMC-2-Utility-Money : Utilite de l'Argent et… | BETA | Oui |
-| 18 | DecPyMC-3-Multi-Attribute : Utilite Multi-Attributs | BETA | Oui |
-| 19 | DecPyMC-4-Decision-Networks : Reseaux de Decision | BETA | Oui |
-| 20 | DecPyMC-5-Valeur de l'Information | BETA | Oui |
-| 21 | DecPyMC-6-Systèmes Experts et Decisions Robustes | BETA | Oui |
-| 22 | DecPyMC-7-MDPs, Bandits et POMDPs | BETA | Oui |
-| 23 | DecPyMC-8 — Crédibilité actuarielle de Bühlmann–Straub… | BETA | Oui |
-| 24 | DecPyMC-9 : Du risque à la prime — prime pure,… | BETA | Oui |
+| 2 | DoWhy-1 — Exiger un estimand : l'identification causale… | BETA | Oui |
+| 3 | Méthodes quasi-expérimentales — identifier l'effet… | BETA | Oui |
+| 4 | DecInfer-01-Utility-Foundations : Axiomes et Fondements | BETA | Oui |
+| 5 | DecInfer-02-Théorème de représentation de von… | BETA | Oui |
+| 6 | DecInfer-03-Utility-Money : Utilite de l'Argent et… | BETA | Oui |
+| 7 | DecInfer-04-Multi-Attribute : Utilite Multi-Attributs | BETA | Oui |
+| 8 | DecInfer-05-Decision-Networks : Reseaux de Decision | BETA | Oui |
+| 9 | DecInfer-06-Value-Information : Valeur de l'Information | BETA | Oui |
+| 10 | DecInfer-07-Expert-Systems : Decisions Robustes et… | BETA | Oui |
+| 11 | DecInfer-08-Sequential : MDPs, Bandits et POMDPs | BETA | Oui |
+| 12 | DecInfer-09-Preuves formelles — Indice de Gittins | BETA | Oui |
+| 13 | DecInfer-10-Thompson-Sampling : Bandits bayesiens par… | BETA | Oui |
+| 14 | DecPyMC-1-Utility-Foundations : Axiomes et Fondements | BETA | Oui |
+| 15 | DecPyMC-10 : Ruine et capital — le processus de… | BETA | Oui |
+| 16 | DecPyMC-11 — Valeur de l'Information en Souscription | BETA | Oui |
+| 17 | DecPyMC-12 — Fréquence × sévérité hiérarchique : le… | BETA | Oui |
+| 18 | DecPyMC-2-Utility-Money : Utilite de l'Argent et… | BETA | Oui |
+| 19 | DecPyMC-3-Multi-Attribute : Utilite Multi-Attributs | BETA | Oui |
+| 20 | DecPyMC-4-Decision-Networks : Reseaux de Decision | BETA | Oui |
+| 21 | DecPyMC-5-Valeur de l'Information | BETA | Oui |
+| 22 | DecPyMC-6-Systèmes Experts et Decisions Robustes | BETA | Oui |
+| 23 | DecPyMC-7-MDPs, Bandits et POMDPs | BETA | Oui |
+| 24 | DecPyMC-8 — Crédibilité actuarielle de Bühlmann–Straub… | BETA | Oui |
+| 25 | DecPyMC-9 : Du risque à la prime — prime pure,… | BETA | Oui |
 
 ## Probas/Infer (20 notebooks)
 

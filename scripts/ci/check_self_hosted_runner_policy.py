@@ -64,6 +64,10 @@ DEDICATED_LABEL_SETS = (REQUIRED_LABELS, LINUX_RUNNER_LABELS)
 #   `skipped` as OK). Routed to the containerized Linux leg to relieve the
 #   GitHub-hosted queue. Rollback = revert of the routing PR.
 SELF_HOSTED_WORKFLOW_ALLOWLIST = {
+    # tranche 3d (#14283) : premier consommateur GitHub-hosted du depot une
+    # fois secret-scan bascule -- 2650 runs same-repo du 2026-08-28 au
+    # 2026-09-02, timeout 25 min, aucun filtre `paths:`.
+    "always-on-guards.yml",
     "pr-gate-stale-sweep.yml",
     "windows-self-hosted-tests.yml",
     "linux-self-hosted-tests.yml",
@@ -109,13 +113,18 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     # tranche 3c (#14283, meme decision, meme owner) : jobs individuels d'un
     #   workflow dont les autres jobs restent sur ubuntu-latest.
     #   Exclus deliberement : ml-tests (torch retelecharge a chaque run, pas de
-    #   cache persistant), secret-scan/gitleaks (socket Docker), lean-social-
+    #   cache persistant), lean-social-
     #   choice/build (merite un pool a cache Mathlib chaud, cf #14337),
     #   notebook-execution-required/golden-set-execute (execution lourde).
     "bash-syntax-advisory.yml",
     "lean-social-choice.yml",
     "notebook-execution-required.yml",
     "secret-scan.yml",
+    # secret-scan/gitleaks : exclu en 3c pour la socket Docker, LEVE depuis --
+    #   le job scanner n'utilise plus `docker run` mais le binaire epingle
+    #   (meme release, meme ${GITLEAKS_VERSION}), forme deja eprouvee sur ce
+    #   pool par son job positive-controls. La jambe fork reste GitHub-hosted
+    #   sous la forme docker : `gitleaks-fork`.
     # always-on-metadata-guards.yml : routable (triggers pull_request +
     #   workflow_dispatch seulement). Son jumeau always-on-guards.yml ne l'est
     #   PAS -- il porte pull_request_review, classe FORK_REACHABLE (#14294).
@@ -162,11 +171,12 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
 
     # - tranche 5 (#13378/#14283, decision ai-01 2026-09-02) : le solde des
     #   gardes routables. Exclus et pourquoi : pr-gate.yml (agregateur qui
-    #   poll jusqu'a 28 min -- le router reproduirait la famine mesuree en
+    #   poll jusqu'a 45 min -- le router reproduirait la famine mesuree en
     #   #11405), lean-axiom/lean-build (builds Lean sans cache mathlib, cf
-    #   #14337 pools specialises), quarto-pages-deploy (quarto CLI + deploy
-    #   Pages), slides-composition-advisory (playwright --with-deps exige
-    #   root, le conteneur tourne en uid 1001).
+    #   #14337 pools specialises), slides-composition-advisory (playwright
+    #   --with-deps exige root, le conteneur tourne en uid 1001).
+    #   quarto-pages-deploy : jobs build/validate-pr routes en fin de chantier
+    #   (tarball, voir l'entree dediee) ; seul `deploy` reste exclu (Pages/OIDC).
     "bare-cross-dir-load-gate.yml",
     "base-not-main-advisory.yml",
     "concurrency-conj-guard.yml",
@@ -191,6 +201,13 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     "scripts-tests.yml",
     "series-naming-gate.yml",
     "stale-base-warning.yml",
+    # fin de chantier #14283 (feu vert ai-01 2026-09-02) : les jobs
+    #   quarto-pages-deploy `build` et `validate-pr` passent au pool — le
+    #   setup Quarto se fait par tarball auto-contenu (l'action canonique
+    #   exige sudo apt + dpkg, absents de l'image no-new-privileges, mesure
+    #   issuecomment-5516335275). Le job `deploy` RESTE ubuntu-latest :
+    #   deploy-pages + OIDC/env github-pages, question separee.
+    "quarto-pages-deploy.yml",
     "svg-broken-geometry-gate.yml",
     "svg-decimal-comma-gate.yml",
     "svg-empty-display-gate.yml",
@@ -199,6 +216,16 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     "translation-drift.yml",
     "translation-sync.yml",
     "variation-light-genre.yml",
+    # tranche 6 (c.903, owner myia-po-2026:CoursIA-2) : garde advisory pur-Python
+    #   declenchee sur pull_request filtrant les `MyIA.AI.Notebooks/**/README.md`,
+    #   scan delta-PR vs main (merge-base), pose un label signe (jamais exit != 0).
+    #   Meme profil que machine-dep-timing-advisory / pr-path-collision-advisory /
+    #   exercises-advisory / catalog-drift : stdlib-only, lecture seule du repo,
+    #   aucun GITHUB_TOKEN cote job. Le job porte la garde universelle parenthe-
+    #   seee (cf. test_universal_guard_with_combined_target_is_accepted, #13874)
+    #   pour les forks PRs qui se font skipper proprement par pr_gate.
+    #   Rollback = revert de cette PR (l'entree disparait de l'allowlist).
+    "notebook-link-render-check.yml",
 }
 GITHUB_HOSTED_LABELS = {
     "ubuntu-latest",

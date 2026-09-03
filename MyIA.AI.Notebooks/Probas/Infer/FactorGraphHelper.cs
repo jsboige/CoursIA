@@ -115,7 +115,11 @@ public static class FactorGraphHelper
 
     /// <summary>
     /// Retourne le HTML pour afficher le dernier fichier SVG genere par Infer.NET
-    /// Usage: display(HTML(FactorGraphHelper.GetLatestFactorGraphHtml()))
+    /// Usage: FactorGraphHelper.GetLatestFactorGraphHtml().DisplayAs("text/html")
+    /// display(HTML(...)) lie IHtmlContent, type porte par un assemblage compile
+    /// contre Microsoft.AspNetCore.Html.Abstractions 2.x : chaque cellule qui
+    /// l'emploie declenche un CS1701. DisplayAs ne prend qu'une chaine et un
+    /// type MIME, et rend le meme SVG sans le div d'enrobage (cf #14122).
     /// </summary>
     public static string GetLatestFactorGraphHtml(int maxWidth = 800)
     {
