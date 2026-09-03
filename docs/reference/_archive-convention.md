@@ -79,7 +79,7 @@ Exception : si un dossier `_archive/` ne contient que des **données** (pas de s
 | `MyIA.AI.Notebooks/SymbolicAI/Planners/_archive/` | ❌ | tranche 4 |
 | `MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/_archive/` | ❌ | tranche 4 |
 | `MyIA.AI.Notebooks/SymbolicAI/Tweety/scripts/_archive/` | ❌ | tranche 4 |
-| `scripts/_archive/` | ❌ | tranche 2 (3 sous-dossiers constatés au 2026-08) — **hors scope PR actuelle** |
+| `scripts/_archive/` | partiel | tranche 2A : `one_shots_post_463/` conforme ; `one_shot_fixes/` et `recycle_csp/` restent à standardiser |
 | `scripts/genai-stack/_archive/` | ❌ | tranche 3 (28 fichiers constatés au 2026-08, peut nécessiter split) — **hors scope PR actuelle** |
 | `scripts/sudoku/_archive/` | ❌ | tranche 4 |
 | `slides/S4-trading-algorithmique/_archive/` | ❌ | tranche 4 |

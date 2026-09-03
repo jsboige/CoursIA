@@ -1,90 +1,97 @@
 # Archive — one-shots post-#463 (item 4-bis #9535)
 
 **Date d'archivage** : 2026-08-06
-**Décision** : `chore(repo,#9535): archive 10 one-shots post-#463 (item 4-bis)`
-**PR** : [#TBD après push](https://github.com/jsboige/CoursIA/pull/TBD)
-**PR sœur** : [#9575](https://github.com/jsboige/CoursIA/pull/9575) (item 4 partial, recycle_csp* 7f/1902L)
 
-## Contexte
+**Décision d'archivage** : [PR #9580](https://github.com/jsboige/CoursIA/pull/9580)
 
-Issue #9535 item 4 propose d'archiver les **one-shots** de `scripts/` racine dont la mission est remplie.
-**PR #9575** (item 4 partial, mergeable 2026-08-06) a archivé la famille `recycle_csp3-9.py` (7 fichiers, 1902 LOC) issue de l'EPIC #463 (CSP/App recyclage).
+**PR sœur** : [#9575](https://github.com/jsboige/CoursIA/pull/9575) (`recycle_csp3-9.py`)
 
-Cette PR sœur (item 4-bis) archive les **10 autres one-shots post-#463** identifiés par `git ls-files scripts/` :
+## Registre de disposition
 
-| Fichier | LOC | Date création | Mission |
-|---|---:|---|---|
-| `fix_app1_recycle.py` | 364 | 2026-04-22 | recyclage App-1-NQueens (PR #480) |
-| `fix_app2_recycle.py` | 223 | 2026-04-22 | recyclage App-2-GraphColoring (PR #480) |
-| `fix_app3_recycle.py` | 197 | 2026-04-22 | recyclage App-3-... (PR #480) |
-| `fix_app5_recycle.py` | 78 | 2026-04-22 | recyclage App-5-... (PR #480) |
-| `fix_app6_recycle.py` | 313 | 2026-04-22 | recyclage App-6-Minesweeper (PR #480) |
-| `fix_app11_recycle.py` | 157 | 2026-04-22 | recyclage App-11-... (PR #480) |
-| `fix_csp9_abt.py` | 655 | 2026-05-.. | correctif ABT/AWC implementation CSP-9 |
-| `fix_csp9_stale_markdown.py` | 193 | 2026-05-.. | markdown sync post-correction ABT/AWC (suivi PR #578) |
-| `fix_issue_420.py` | 319 | 2026-04-22 | recyclage CSP-1/CSP-2 stubs (issue #420) |
-| `create_nb8.py` | 498 | 2026-.. | création notebook GameTheory-08-CombinatorialGames (issue #910) |
-| **Total** | **2997** | | |
+Les dix scripts sont des migrations ponctuelles dont la sortie a été incorporée
+dans les notebooks cibles. Ils sont conservés pour la traçabilité historique,
+pas pour être importés ou rejoués. Chaque fichier porte désormais le détail de
+disposition de ses fonctions selon la
+[convention `_archive/`](../../../docs/reference/_archive-convention.md).
 
-## Justification d'archivage (vs suppression)
+| Script | Verdict | Superseded by | Verdict recorded in |
+|---|---|---|---|
+| `create_nb8.py` | MISSION FULFILLED (2026-01-31) | sortie : `GameTheory-08-CombinatorialGames.ipynb` | `3fb947748`, PR #911, PR #9580, PR #12241 |
+| `fix_app1_recycle.py` | MISSION FULFILLED (2026-04-22) | sortie : `App-1-NQueens.ipynb` | PR #480 (`a398145d9`), PR #9580 |
+| `fix_app2_recycle.py` | MISSION FULFILLED (2026-04-22) | sortie : `App-2-GraphColoring.ipynb` | PR #477 (`c8f95b233`), PR #9580 |
+| `fix_app3_recycle.py` | MISSION FULFILLED (2026-04-22) | sortie : `App-3-NurseScheduling.ipynb` | PR #468 (`23b98f3de`), PR #9580 |
+| `fix_app5_recycle.py` | MISSION FULFILLED (2026-04-22) | sortie : `App-5-Timetabling.ipynb` | PR #482 (`24ecee8ad`), PR #9580 |
+| `fix_app6_recycle.py` | MISSION FULFILLED (2026-04-22) | sortie : `App-6-Minesweeper.ipynb` | PR #478 (`3cfd8dd68`), PR #9580 |
+| `fix_app11_recycle.py` | MISSION FULFILLED (2026-04-22) | sortie : `App-11-Picross.ipynb` | PR #476 (`49fb3d5a6`), PR #9580 |
+| `fix_csp9_abt.py` | MISSION FULFILLED (2026-04-28) | sortie : code et interprétations de `CSP-9-Distributed.ipynb` | `d45c05dda` (attribué à PR #578 par le suivi `d4ee281aa`), PR #9580 |
+| `fix_csp9_stale_markdown.py` | MISSION FULFILLED (2026-04-28) | sortie : cellules `f7e21456`, `070a53e6`, `8f050be3` de `CSP-9-Distributed.ipynb` | `d4ee281aa`, PR #9580 |
+| `fix_issue_420.py` | FULFILLED puis SUPERSEDED | none — closed dead-end après le TP étudiant #601 et les reprises lib-vs-lib | PR #453 (`cc4f86d55`), PR #601, PRs #11789/#11797, PR #9580 |
 
-Discipline **« Consolider ≠ Archiver »** (CLAUDE.md global) :
-1. **ANALYZE** : chaque script = un one-shot dont la mission a été vérifiée remplie.
-2. **MERGE** : la fonctionnalité a été mergée dans les notebooks cibles (App-1..11, CSP-1/2/9, GameTheory-8). 0 call-site repo-wide (grep `MyIA.AI.Notebooks/ scripts/ docs/ .github/ .claude/`).
-3. **ARCHIVE** : `git mv` vers `scripts/_archive/one_shots_post_463/` (cf #9575 sister PR pour `recycle_csp` → `scripts/_archive/recycle_csp/`). Historique git 100% préservé (chacun des 10 fichiers a **exactement 1 commit** sur origin/main).
+Les chemins complets des sorties figurent dans les headers des scripts afin que
+le registre reste lisible sans alourdir cette table.
+
+## Analyse et préservation
+
+L'issue #9535 item 4 a archivé les one-shots de `scripts/` racine dont la
+mission était remplie. PR #9575 a traité la famille `recycle_csp3-9.py`; PR
+#9580 a déplacé les dix scripts ci-dessus via `git mv`, préservant leur
+historique.
+
+L'audit per-function de 2026-09 a vérifié les points suivants :
+
+1. **Chaque fonction a une disposition.** Les helpers locaux restent conservés
+   comme référence ; les fonctions de migration pointent vers le notebook ou
+   les cellules qui ont reçu leur résultat.
+2. **Les sorties sont présentes.** Les marqueurs des migrations App-1/2/3/5/6/11
+   sont encore visibles dans les notebooks actuels. Les réécritures ABT/AWC et
+   les trois cellules markdown de CSP-9 sont également présentes.
+3. **Le cas #420 est explicitement historique.** La transformation a bien été
+   appliquée par PR #453, puis son résultat a été légitimement remplacé par le
+   TP étudiant #601 et les reprises lib-vs-lib #11789/#11797. Le script est un
+   témoin du pré-TP, pas un successeur actif.
+4. **Aucun import actif.** Les seuls renvois textuels vers `fix_issue_420.py`
+   viennent de deux scripts eux-mêmes archivés sous `recycle_csp/`.
+5. **Aucune entrée au catalogue d'outils.** Aucun de ces dix fichiers n'est
+   référencé par `docs/reference/scripts-reference.md`.
+
+L'audit a aussi corrigé deux affirmations trop larges du README initial : les six
+scripts App ne relevaient pas tous de PR #480, et `create_nb8.py` a quatre
+commits dans son histoire (création, déplacement, archivage, puis zero-padding),
+pas un seul.
 
 ## Pourquoi archiver plutôt que supprimer
 
-- **Préservation historique** : `git log --follow` doit pouvoir retrouver le source d'un commit de 2026-04-22 (anti-régression). Archive = supprimer-de-la-racine-mais-préserver-trace.
-- **Référence future** : un audit ultérieur peut avoir besoin de comparer la version pré-fix d'un notebook avec le post-fix (le script archive contient la transformation).
-- **Convention disciple** : `Consolider ≠ Archiver` (CLAUDE.md global) — on archive le outillage mort, on ne le rm pas.
-- **Sister pattern** : analogue exact à #9575 (`recycle_csp3-9.py` archivés 2026-08-06). Mêmes conventions, même canal, même gitignore (l'archive n'est PAS gitignored — elle reste trackée).
+- **Préservation historique** : `git log --follow` retrouve le source et les
+  transformations d'origine.
+- **Auditabilité** : les scripts montrent exactement comment les notebooks ont
+  été mutés lors des migrations ponctuelles.
+- **Non-réactivation implicite** : l'archive reste un snapshot ; toute reprise
+  passe par une issue et un `git mv` vers un emplacement actif.
 
-## Preuves G.9 (firsthand)
+## Hors scope volontairement non archivé
 
-1. **Call-sites repo-wide = 0** pour 8/10 fichiers :
-   ```
-   grep -rln "<nom_fichier>" --include="*.py" --include="*.ipynb" --include="*.md" \
-     --include="*.yml" --include="*.json" MyIA.AI.Notebooks/ scripts/ docs/ .github/ .claude/
-   → 0 résultats hors les fichiers eux-mêmes
-   ```
-   Exceptions : `fix_issue_420.py` est référencé dans `scripts/recycle_csp3.py` + `recycle_csp4.py` (cross-ref textuel dans le code source). Mais ces 2 fichiers viennent juste d'être archivés (#9575 sister PR) → lien archive → archive, OK.
+| Fichier | Raison |
+|---|---|
+| `scripts/extract_pptx_titles.py` | outil actif, documenté et testé |
+| `scripts/extract_slidev_titles.py` | outil actif, documenté et testé |
 
-2. **scripts-reference.md** : 0 mention des 10 fichiers archive candidats (les `extract_*` mentionnés dans le catalogue ne sont **PAS** dans cette PR — outils actifs, hors scope).
+Ces deux helpers restent à la racine `scripts/`; ils ne sont pas des one-shots.
 
-3. **Historique Git 1 commit/fichier** : chaque archive candidat a exactement 1 commit upstream (vérifié `git log origin/main -- <fichier>`).
+## Références
 
-4. **Mission remplie** :
-   - **App-1..11** : PR #480 MERGED 2026-04-22 (cf `fix(app-1): recyclage solutions etudiants + stubs TODO (#463) (#480)`).
-   - **CSP-9 ABT** : `fix(csp-9): correct ABT/AWC implementation` MERGED antérieurement.
-   - **CSP-9 markdown** : `fix(csp-9): sync 3 markdown cells post-ABT/AWC fix` (suivi PR #578).
-   - **CSP-1/2 (#420)** : PR antérieure MERGED.
-   - **GameTheory-8** : notebooks `GameTheory-08-CombinatorialGames.ipynb` + `GameTheory-08b-Lean-CombinatorialGames.ipynb` + `GameTheory-08c-CombinatorialGames-Csharp.ipynb` + `GameTheory-08c-CombinatorialGames-Python.ipynb` existent tous sur main. Le script `create_nb8.py` a fait son travail.
+- #9535 — Epic de nettoyage du dépôt (item 4-bis)
+- PR #9580 — archivage des dix scripts de ce dossier
+- PR #9575 — archive sœur `recycle_csp/`
+- #463 — recyclage CSP/App
+- #420 — correction des stubs CSP-1/CSP-2
+- #910 — nettoyage ayant déplacé `create_nb8.py` vers `scripts/`
+- #13749 — standardisation des dossiers `_archive/`
+- `docs/reference/_archive-convention.md` — standard README + headers per-function
 
-## Hors scope (volontairement NON archivés)
+## Convention de réactivation
 
-| Fichier | LOC | Raison |
-|---|---:|---|
-| `scripts/extract_pptx_titles.py` | 59 | OUTIL ACTIF — référencé `docs/reference/scripts-reference.md` L200 + 5 fichiers de tests (notebook_tools/tests/, scripts/tests/) |
-| `scripts/extract_slidev_titles.py` | 88 | OUTIL ACTIF — idem, 5 fichiers de tests |
+Tout futur agent qui rencontre un fichier dans ce dossier doit :
 
-Ces 2 outils sont des **helpers outillés** (CLAUDE.md global « un script dédié existe ») et restent à la racine `scripts/`. Pas des one-shots.
-
-## Liens
-
-- **#9535** — Epic cleanup repo pérenne (item 4-bis partial)
-- **#9575** — PR sœur wakeup 39 : archive `recycle_csp*` 7f/1902L
-- **#463** — Issue source : « CSP/App recyclage »
-- **PR #480** — `fix(app-1): recyclage solutions etudiants + stubs TODO (#463)`
-- **PR #578** — `fix(csp-9): correct ABT/AWC implementation`
-- **#910** — Issue source : « repository cleanup — debris »
-- CLAUDE.md global — « Consolider ≠ Archiver » : ANALYZE → MERGE → ARCHIVE avec header date + superseded-by + merged features
-- `.claude/rules/harness-hygiene.md` — 3 tiers d'info ; status = dashboard, pas repo
-- `.claude/rules/catalog-pr-hygiene.md` — R3 atomique <3000L / <15 fichiers
-
-## Convention de référence
-
-Tout futur agent qui tombe sur un fichier dans `scripts/_archive/` doit :
-1. **Vérifier `git log --follow`** pour comprendre la mission d'origine (historique préservé).
-2. **NE PAS réactiver** sans issue dédiée (l'archive est un snapshot, pas un outil).
-3. **Si l'outil est réactivé** : le **sortir** de `_archive/` via `git mv` + PR dédiée avec justification.
+1. lire son header et `git log --follow` ;
+2. ne pas le réactiver sans issue dédiée ;
+3. le sortir de `_archive/` par `git mv` dans une PR justifiant son nouveau rôle.
