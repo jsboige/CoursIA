@@ -973,8 +973,111 @@ _MENTION_AVANT_MERGE_PATTERNS = (
 )
 
 
+# #13083 instance 3 — Position I' : `avant merge` en TETE de corps (titre),
+# sans verbe actionnel ni qualifieur bloquant dans la meme ligne de titre.
+# Le commentaire fondateur est du 2026-08-26T08:11:21Z sur #13083 : un
+# compte-rendu d'audit ai-01 intitule « **Audit ai-01 avant merge** » etait
+# classe BOT-CONCERN par `classify()`, bloquant la PR sur l'absence de
+# reserve de l'auteur. Les 7 sous-patterns Position I (#14199) ne matchent
+# pas : aucun qualifieur `(non bloquant)`, aucune verification passee
+# (verifie/confirme/...), aucune formule B.0 (« issue de suivi ouverte
+# avant merge »), aucune delegation Ball merge. Le `avant merge` en tete
+# de corps est un **localisateur temporel pur** (« rapport a poser avant
+# merge ») — pas un verdict.
+#
+# Discriminant vs VP : un titre qui contient `avant merge` ET un verbe
+# d'action ou un qualifieur bloquant reste un nit (cf VP #13800 « A relire
+# par ai-01 avant merge », VP « a verifier avant merge », VP « Concern
+# (bloquant) : ... avant merge »). Les VPs ont TOUS un verbe actionnel /
+# imperatif / qualifieur `(bloquant)`/`(urgent)` dans la meme ligne.
+#
+# Mesure : 1 PR FP (#12627 fondateur verbatim, commentaire 5422425135,
+# 2026-08-26), 0 PR VP nouveau (les 7 VP Position I ont tous le verbe
+# actionnel qui les garde vivants hors tete de corps, et la fenetre
+# 2026-08-25..2026-09-02 ne montre aucun titre sans verbe actionnel).
+#
+# Architecture : sous-pattern (h) AJOUTE a `_MENTION_AVANT_MERGE_PATTERNS`,
+# meme strategie de strip iso-longueur que les autres positions. Le
+# sous-pattern matche UNIQUEMENT quand la ligne de titre (entre le debut
+# du body et la premiere fin de ligne) contient `avant merge` ET NE
+# contient PAS de verbe actionnel/imperatif ni de qualifieur bloquant.
+_MENTION_AVANT_MERGE_HEAD_NEUTRAL = re.compile(
+    r"(?im)"
+    # Debut de body (apres strip du lstrip) : la premiere ligne.
+    r"^"
+    # La ligne peut etre precede de decoration markdown (`**`, `#`, `__`,
+    # `### `, etc.) -- on accepte tout prefixe non-alphanumerique. La
+    # limite `[^.\n]*?` empeche le saut a une ligne suivante.
+    r"[^.\n]*?"
+    # Le token `avant [le/la/l'] merge` ou `before merge` EN FIN de ligne de
+    # titre (espaces optionnels avant, decoration markdown optionnelle,
+    # puis fin de ligne / fin de body). Le lookahead plutot que `$` capture
+    # correctement la fin de body sans exiger un `\n` final (en re.MULTILINE
+    # `$` matche aussi les `\n`, mais `re.search` ne garantit pas la presence
+    # du `\n` final du body).
+    r"\b(?:avant(?:\s+(?:le|la|l[\\']))?|before)\s+merge\b"
+    r"(?=\s*[.*_~`:]*\s*(?:\n|\Z))"
+)
+
+
+def _is_action_verb_heading(heading_line: str) -> bool:
+    """Une ligne de titre porte-t-elle un verbe actionnel ou un qualifieur bloquant ?
+
+    Discriminant du sous-pattern (h) : si la ligne contient un marqueur
+    d'action imperative ou un qualifieur (bloquant)/(urgent), le `avant
+    merge` est un verdict (cf VPs Position I). Sinon, c'est un localisateur
+    temporel pur (#13083 instance 3, FP #12627 fondateur).
+
+    Le test se fait sur la ligne TOTALE (apres strip des decorations
+    markdown `**`/`#`/`_`), pas seulement sur les mots autour de `avant
+    merge` — un qualifieur en debut de titre (« Concern (bloquant) :
+    <details> a confirmer avant merge ») doit garder le nit vivant.
+    """
+    cleaned = re.sub(r"[*_~`#]+", " ", heading_line).lower()
+    cleaned = re.sub(r"\s+", " ", cleaned).strip()
+    if not cleaned:
+        return False
+    # (a) Verbes d'action a l'infinitif / imperatif qui PRECEDENT `avant merge`
+    # dans le meme titre. Liste bornee : 7 VP mesures (#14199) + EN imperatifs
+    # (test #14199 corpus ajoute `must fix before merge` fondateur #590/#594).
+    # Ajouter un verbe exige la meme procedure (mesure + sign-off) : aucun
+    # elargissement opportuniste.
+    if re.search(
+        r"(?i)(?:[àa]\s+(?:relire|revoir|v[ée]rifier|corriger|confirmer|"
+        r"traiter|adresser|regarder|relancer|confirmer|compl[ée]ter|"
+        r"solutionner)|pri[èe]re\s+de\s+bien\s+vouloir|action\s+obligatoire|"
+        r"action\s+requise|"
+        # EN : `must fix`, `must change`, `must check`, `must address`,
+        # `must verify`, `must resolve`. Sans `must` (juste `fix` ou `check`),
+        # le mot reste ambigu (un substantif dans un titre -- `Fix check
+        # before merge` n'a pas de verbe). Couverture EN miroir de la FR.
+        r"must\s+(?:fix|change|check|address|verify|resolve|review|"
+        r"rebase|re-execute|revisit|confirm|complete|solve))",
+        cleaned,
+    ):
+        return True
+    # (b) Qualifieur bloquant / urgent / non-couvert par Position I (a)
+    if re.search(
+        r"(?i)\((?:bloquant|bloquante|urgent|critique|important|prioritaire|"
+        r"action\s+requise|breaking|major)\)",
+        cleaned,
+    ):
+        return True
+    # (c) Headings de pure emission formelle (verdict-prefix) — un titre qui
+    # debute par un verdict ne peut pas etre un localisateur temporel pur
+    # (meme raisonnement que `_block_emitted` Position I (b)).
+    if re.match(
+        r"(?i)\s*(?:reserve|r[ée]serve|nit|blocking|hold|bloquant|"
+        r"changement?s?\s+requis|attention|warning|caution)",
+        cleaned,
+    ):
+        return True
+    return False
+
+
 def _strip_avant_merge_mention(body: str) -> str:
-    """Neutralise `avant merge` en position de mention (Position I, #14199).
+    """Neutralise `avant merge` en position de mention (Position I, #14199)
+    et en position de TETE de corps / titre (Position I', #13083 instance 3).
 
     Remplace le token `avant [le/la/l'] merge` par des espaces de meme longueur :
     les offsets du reste du body sont preserves, comme les autres strips.
@@ -982,8 +1085,13 @@ def _strip_avant_merge_mention(body: str) -> str:
     Cible : `avant merge` est un CONCERN_MARKER (L231) qui peut etre en
     mention (4 formes mesurees : qualifieur explicite non-bloquant, narration
     de verification passee, formule de la voie B.0, delegation Ball merge ;
-    review NanoClaw #14322 minor : compteur corrige).
-    Sans cette neutralisation, ces mentions sont classee BOT-CONCERN (FP).
+    review NanoClaw #14322 minor : compteur corrige). Sans cette
+    neutralisation, ces mentions sont classee BOT-CONCERN (FP).
+    Position I' (#13083 instance 3, 2026-08-26T08:11:21Z sur #12627) : un
+    localisateur temporel pur en tete de corps (« **Audit ai-01 avant
+    merge** » dans un rapport de gate) etait classe BOT-CONCERN a tort,
+    les 7 sous-patterns Position I ne matchant pas (aucun qualifieur /
+    verification passee / formule B.0 / Ball merge).
 
     Anti-regression (acceptance #14199) :
     - 3 PR mesurees en FP doivent etre neutralisees : #13537 / #13498 / #13860
@@ -992,6 +1100,14 @@ def _strip_avant_merge_mention(body: str) -> str:
       En particulier #13800 « A relire par ai-01 avant merge. Aucune action »
       ne matche aucun sous-pattern — verbe actionnel deleguant, pas une
       verification passee ni une delegation Ball merge.
+
+    Anti-regression (acceptance #13083 instance 3, present fix) :
+    - 1 PR FP #12627 fondateur (commentaire 5422425135, 2026-08-26T08:11:21Z)
+      doit etre neutralisee : « **Audit ai-01 avant merge** » + prose
+      descriptive (verdict qui DECRIT un check passe, pas un nit).
+    - VP garde-eux : tout titre contenant un verbe actionnel (`a relire`,
+      `a verifier`, `a corriger`, `a confirmer`, ...) ou un qualifieur
+      `(bloquant)` / `(urgent)` doit RESTER BOT-CONCERN.
     """
     for pat in _MENTION_AVANT_MERGE_PATTERNS:
         # Le token cible est le `avant [le/la/l'] merge` (non capture, neutralise integralement)
@@ -1002,6 +1118,26 @@ def _strip_avant_merge_mention(body: str) -> str:
                              m.group(0)),
             body,
         )
+    # Phase Position I' (#13083 instance 3) : `avant [le/la/l'] merge` /
+    # `before merge` en TETE de corps, titre sans verbe actionnel ni
+    # qualifieur bloquant. Le strip est post-Position I pour beneficier du
+    # strip anterieur, mais il est distinct : il neutralise une occurrence
+    # de tete qui n'aurait pas ete atteinte par les 7 sous-patterns en
+    # milieu de phrase.
+    body = _MENTION_AVANT_MERGE_HEAD_NEUTRAL.sub(
+        lambda m: (
+            # Garde-fou : si la ligne de titre porte un verbe actionnel /
+            # qualifieur bloquant, NE PAS neutraliser (VP).
+            re.sub(
+                r"\b(?:avant(?:\s+(?:le|la|l[\\']))?|before)\s+merge\b",
+                lambda mm: " " * (mm.end() - mm.start())
+                if not _is_action_verb_heading(m.group(0))
+                else mm.group(0),
+                m.group(0),
+            )
+        ),
+        body,
+    )
     return body
 
 
