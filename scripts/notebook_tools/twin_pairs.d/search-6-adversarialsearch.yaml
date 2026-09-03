@@ -26,6 +26,12 @@
     csharp_sha: a1d30fc3fabf281b7f7297e79718c7a63c2c1de4
     content_python_sha: 773ac22b23913c6fe1b6e4215f8e45a261b17e922694ce9830f93bd94fad3eea
     content_csharp_sha: 7a7860990ddbaea6bbe17c1d17c72526a8cfec74a74edfc124fd78451fc52ec4
+  - date: "2026-09-03"
+    by: myia-po-2025:CoursIA
+    python_sha: bc5ce36414528872f873fd1181e12f4e3abe6716
+    csharp_sha: f70926fc62cc6c9ee92e4e6b5576239eab2d8590
+    content_python_sha: 773ac22b23913c6fe1b6e4215f8e45a261b17e922694ce9830f93bd94fad3eea
+    content_csharp_sha: bca1f9c4bcb8b84909ec8f3b2c00412640e4865b9be93bedfc65259175a8db92
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: 'Python = numpy/matplotlib + dict/list from-scratch (minimax, alpha-beta, transposition table). C# = BCL (System.Collections.Generic Dictionary/Stack pour l''arbre de jeu, 0 NuGet). Verdict SOTA-OK (flip 2026-08-22, c.1301+335, myia-po-2025:CoursIA-2, issue #10382) : mislabel corrigige -- la reason anterieure concluat ''no third-party solver invoked, no SOTA bridge applicable (minimax is the sujet)'', qui contredit RECOVERABLE-LOCAL. Verifie firsthand : 9 imports Python / 4 using C#, aucun moteur tiers des deux cotes. Le coeur algorithmique (minimax, alpha-beta, iterative deepening) EST le sujet pedagogique -- il n''existe pas de lib de reference pour l''arbre de jeu adversarial dans un des deux ecosystemes que le chapitre devrait invoquer. From-scratch assumé des deux cotes, precedent GT-15 (PR #12312). parity_level preserve.'
   known_differences:
