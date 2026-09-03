@@ -385,6 +385,11 @@ Passé la strate 3, la numérotation linéaire `ICT-N` a cessé d'être un ordre
 s'est déployé sur **deux axes** qu'il faut lire ensemble. Les rendre explicites lève le flou de « la
 strate d'un notebook » — deux structures différentes étaient projetées sur une seule échelle.
 
+**Cette section est la source de vérité unique pour les strates** ([#13908](https://github.com/jsboige/CoursIA/issues/13908)) : le tableau ci-dessous fait foi, et
+toute autre carte du dépôt — au premier chef celle du [README de la série](README.md) — s'y aligne
+au lieu d'en proposer une variante. Les deux cartes avaient divergé précisément parce qu'aucune
+n'était nommée comme la référence.
+
 ### Axe vertical — les substrats (strates)
 
 L'échelle des substrats sur lesquels on mesure $\Phi$ / $F$ / $K$ et la flèche du temps, du plus
@@ -436,6 +441,70 @@ strate.
 Une **jambe** (C1-C5) est une expérience *sur* une strate ; une **dimension** (D1-D3) cadre l'horizon
 des strates hautes (S6/S7). La **matrice de dissociations** (#7734) lit chaque *claim* à
 l'intersection des deux axes.
+
+### Les trois divergences tranchées (#13908)
+
+Deux cartes des strates coexistaient — celle-ci et celle du [README de la série](README.md) — et
+elles divergeaient sur trois points. Les voici tranchées, avec la raison. Sous la clause **zéro
+renumérotation** : aucun numéro `ICT-N` ne bouge, seules des étiquettes de strate sont corrigées.
+
+**1. Frontière S4 / S5 — le tableau ci-dessus l'emporte.** Le README rattachait ICT-15 → ICT-25 à une
+seule « strate 5 » (théorie fondatrice *et* LLM). Or l'axe vertical est celui des **substrats** :
+ICT-16 → ICT-20 (identité MDL, $\epsilon$-machine, flèche du temps, budget, enjeu) se mesurent hors
+LLM et relèvent de **S4**, tandis que **S5 commence à ICT-21** (SAE), là où le substrat *est* un
+transformer entraîné. **ICT-17b (grokking) est la charnière** S4→S5, pas une strate pleine (#7735).
+Ce qui tranche est que le critère est écrit — « du plus transparent au plus opaque » — et que l'autre
+carte n'en proposait aucun.
+
+**2. « Strate 6 = Thom » n'est pas une strate : c'est un socle transverse.** Le README la décrit
+lui-même comme « un socle théorique transverse », et sa propre table des matières ne contient
+**aucune** section « Strate 6 » — elle titre `## Socle théorique transverse — distillation Thom
+1991`. La sémiophysique irrigue ICT-10, ICT-13 et les jambes C3/C4, et **ne porte aucun notebook en
+propre** : un barreau de l'axe vertical est un substrat *sur lequel on mesure*, Thom est un outil de
+lecture. La **strate 6 reste donc celle du tableau — l'argumentation** (graine #7289), non livrée,
+avec C3 et C4 pour pattes.
+
+**3. « Strate 7 = ICT-26 → ICT-30 » est en réalité la dimension D2, livrée.** La correspondance avec
+l'énoncé de D2 (#7746) est terme à terme, dans l'ordre :
+
+| D2 — « cinq expériences du jeu évolutif » | notebook livré | lettre au README |
+|---|---|---|
+| vocabulaire fixe | [ICT-26-SignalingConvention](ICT-26-SignalingConvention.ipynb) | A — convention |
+| invention de symboles | [ICT-27-SymbolInvention](ICT-27-SymbolInvention.ipynb) | B — invention |
+| seuil $\rho_c$ | [ICT-28-CollectiveAdoption](ICT-28-CollectiveAdoption.ipynb) | C — adoption |
+| inoculation | [ICT-29-ConceptInoculation](ICT-29-ConceptInoculation.ipynb) | D — inoculation |
+| inhibition de l'innovation | [ICT-30-InhibitedInvention](ICT-30-InhibitedInvention.ipynb) | E — inhibition |
+
+Le README **cite déjà #7746** comme Epic de sa « strate 7 » : les deux cartes s'accordaient donc sur
+l'objet et divergeaient seulement sur son axe. Ces cinq notebooks sont des **pattes, pas des
+barreaux**. La **strate 7 reste celle du tableau — les freebits d'ordre 2 et la réversibilité
+agentique** (#7745), que D1 cadre et que D2 alimente ; elle n'est pas livrée par ICT-26 → ICT-30.
+
+Les divergences 2 et 3 avaient la **même cause** : un objet transverse projeté sur l'axe vertical.
+C'est exactement le flou que cette section existe pour lever — et c'est pourquoi aucune des deux ne
+demande de renumérotation. Il suffit de rendre chaque objet à son axe.
+
+### Ce que cette carte ne place pas encore : le substrat « Jeu de la Vie certifié »
+
+Cinq documents issus de la phase #5726 ne figurent sur **aucun** des deux axes. Le README en range
+quatre « hors séquence numérotée », ce qui les sort de la carte sans les y placer, et ICT-34
+n'apparaissait jusqu'ici dans aucune des deux cartes. Leur nature se lit pourtant sans ambiguïté :
+
+| Document | Nature | Axe |
+|---|---|---|
+| [ICT-Life-SubstratCertifie](ICT-Life-SubstratCertifie.ipynb) | calibration du substrat GOL (B3/S23, correction certifiée en Lean) | vertical — substrat |
+| [ICT-32-StratificationCausaleLife](ICT-32-StratificationCausaleLife.ipynb) | apportionment de Hoel **sur** ce substrat | vertical — substrat |
+| [ICT-33-SoupCollisions](ICT-33-SoupCollisions.ipynb) | ensembles ouverts et bruit macro **sur** ce substrat | vertical — substrat |
+| [ICT-31-ContrasteTroisSubstrats](ICT-31-ContrasteTroisSubstrats.ipynb) | contraste mesuré **entre** bistable, Gray-Scott et GOL | transverse — cross-substrat |
+| [ICT-34-BancRecollementLectures](ICT-34-BancRecollementLectures.ipynb) | banc de recollement de quatre lectures, un seul verdict | transverse — cross-substrat |
+
+**Les deux derniers sont des pattes**, par le critère même de la divergence 3 : ils portent sur
+plusieurs substrats à la fois. **Les trois premiers appellent un barreau**, et ce barreau n'est
+**pas** tranché ici. La raison est de méthode : l'échelle est ordonnée « du plus transparent au plus
+opaque », or un automate cellulaire déterministe dont la correction est certifiée en Lean est le
+substrat **le plus transparent de toute la série**. L'y insérer demande de décider s'il précède S1 ou
+s'il constitue une entrée latérale — un déplacement d'étiquettes qui excède les trois divergences
+arbitrées ici, et qu'il vaut mieux nommer comme **question ouverte** que trancher en passant.
 
 ## Feuille de route des notebooks
 

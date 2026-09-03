@@ -381,11 +381,18 @@ Les notebooks GenAI exposent trois familles d'**outils d'infrastructure** que le
 
 > **À propos des décomptes** : le marqueur `CATALOG-STATUS` en fin de fichier est la **source de vérité autoritative** pour les volumes (notebooks par sous-série, maturité). Il est régénéré chaque nuit par le workflow [`catalog-cron.yml`](../../.github/workflows/catalog-cron.yml) à 03:37 UTC sur `main` (commit `[skip ci]` par `github-actions[bot]`). Si vous observez un décalage entre ce marqueur et une phrase en prose de ce README — par exemple si une sous-série a reçu de nouveaux notebooks mergés après la dernière régénération —, **fiez-vous au marqueur** ; la prose sera ré-alignée manuellement lors du prochain passage.
 
+### Ressources complémentaires
+
+Deux sous-dossiers complètent la série sans être des notebooks :
+
+- **[tutorials/](tutorials/README.md)** — guides pratiques transverses (écosystème OpenRouter, prompt engineering DALL-E 3, workflows pédagogiques, accessibilité GPT-5 multimodal). Quatre guides approfondissent un fournisseur ou un cas d'usage qui déborde d'une seule modalité. À consulter en parallèle d'un notebook quand on cherche un éclairage transverse.
+- **[_research/](_research/)** — documents de recherche bruts en cours de maturation (gate Phase 3-5 de l'Epic ICT). Non destiné à un parcours étudiant ; citer depuis les notebooks qui les exploitent (ex. `FallacyDetection/02_fallacy_datasets_landscape.ipynb` pour l'inventaire SAE Qwen3.5).
+
 ---
 
 <!-- CATALOG-STATUS
 series: GenAI
-pedagogical_count: 213
-breakdown: Audio=32, Texte=30, Plateformes-Conversationnelles=28, Video=22, SemanticKernel=20, Image=17, PostTraining=16, RAG-et-Memoire-Semantique=10, Vibe-Coding=8, Aspire=7, FineTuning=7, 00-GenAI-Environment=6, CaseStudies=5, FallacyDetection=3, CopilotSDK=1, EFCore=1
-maturity: BETA=176, ALPHA=21, DRAFT=13, TEMPLATE=3
+pedagogical_count: 214
+breakdown: Audio=32, Texte=30, Plateformes-Conversationnelles=28, Video=22, SemanticKernel=20, Image=17, PostTraining=16, RAG-et-Memoire-Semantique=10, Aspire=8, Vibe-Coding=8, FineTuning=7, 00-GenAI-Environment=6, CaseStudies=5, FallacyDetection=3, CopilotSDK=1, EFCore=1
+maturity: BETA=179, ALPHA=20, DRAFT=12, TEMPLATE=3
 -->

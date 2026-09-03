@@ -227,6 +227,54 @@ def test_env_re_spares_library_without_version():
     assert cqc.ENV_RE.search("NumPy 2") is None
 
 
+def test_env_re_flags_table_and_backtick_forms():
+    """Le critere 2 de #9434 presente les versions de lib en tableau markdown
+    (« | numpy | 2.2.6 | Tirages gaussiens | ») : nom et version separes par
+    « | », non par un espace simple. ENV_RE etait aveugle a cette forme (#14314)
+    -- le guard rendait [OK] avant ET apres le drainage du critere 2. Les spans
+    code (`` ` ``) autour du nom et/ou de la version sont tires aussi."""
+    for snippet in ["| numpy | 2.2.6 |",
+                    "| numpy | 2.2.6 | Tirages gaussiens |",
+                    "| Mathlib | v4.31.0-rc1 |",
+                    "`numpy` 2.2.6",
+                    "`numpy` `2.2.6`",
+                    "NumPy `2.4.2`",
+                    "`numpy` | `2.2.6` |"]:
+        assert cqc.ENV_RE.search(snippet) is not None, (
+            f"devrait flagger la version en forme table/spans {snippet!r}"
+        )
+    m = cqc.ENV_RE.search("| numpy | 2.2.6 | Tirages gaussiens |")
+    assert m.group(0) == "numpy | 2.2.6"
+
+
+def test_env_re_flags_interpreter_version():
+    """L'interpreteur Python porte une version au meme titre qu'une lib :
+    « Python 3.13.3 » en prose est une mesure env figee (#14314). Meme seuil
+    que les libs : le couple majeure.mineure est requis, « Python 3 » seul
+    (adjectif/prefixe) suffit pas."""
+    for snippet in ["Python 3.13.3", "environnement Python 3.13",
+                    "python 3.12.2", "| Python | 3.13.3 |"]:
+        assert cqc.ENV_RE.search(snippet) is not None, (
+            f"devrait flagger la version d'interpreteur {snippet!r}"
+        )
+    for snippet in ["Python 3", "Nous codons en Python depuis 2019",
+                    "Python est un langage interprete"]:
+        assert cqc.ENV_RE.search(snippet) is None, (
+            f"ne doit PAS flagger {snippet!r} (pas de version citee)"
+        )
+
+
+def test_env_re_spares_multiplier_reading():
+    """Garde anti-FP du mot le plus courant de la liste : « X.Y fois/× » est un
+    multiplicateur, pas une version d'interpreteur citee. Une version reelle
+    reste capturee sur la meme ligne."""
+    for snippet in ["Python 2.5 fois plus rapide", "Python 2.5× plus rapide"]:
+        assert cqc.ENV_RE.search(snippet) is None, (
+            f"ne doit PAS lire « fois » comme une version {snippet!r}"
+        )
+    assert cqc.ENV_RE.search("NumPy 2.4.2, Python 3.13.3") is not None
+
+
 # --------------------------------------------------------------------------- #
 #  Classe stochastic : co-occurrence mot-clef + nombre (meme ligne)
 # --------------------------------------------------------------------------- #

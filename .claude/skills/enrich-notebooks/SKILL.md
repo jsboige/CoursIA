@@ -68,5 +68,13 @@ Task(
 ## After Enrichment
 
 - Verify with `git diff` (expect more insertions than deletions)
+- **Run the enrich-quality scanner (rule C.7, mandatory)**:
+  ```bash
+  git show origin/main:<nb-path> > /tmp/base.ipynb
+  python scripts/notebook_tools/scan_enrich_quality.py <nb-path> --base /tmp/base.ipynb
+  # 0 HIGH finding before commit: anchors must resolve at HEAD (code[N] =
+  # N-th CODE cell, 0-based, final layout), accents must survive, hrefs must
+  # resolve, no phantom entities, no worked solution before a TODO exercise.
+  ```
 - Consider running `/cleanup-notebooks` to fix any positioning issues
 - Update MEMORY.md with lessons learned about positioning accuracy

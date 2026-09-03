@@ -368,6 +368,20 @@ def _fence_mask(text: str) -> str:
 _GUILLEMET_SPAN = re.compile(r"«[^«»\n]*»")
 _INLINE_CODE_SPAN = re.compile(r"(?<!`)`[^`\n]+`(?!`)")
 _RANGE_ENUM_TAIL = re.compile(r"^\s*`[^`\n]+`\s*[-–—]\s*`[^`\n]+`")
+# #13946 : un compte annote `(hors scope PR)` ou `(hors scope)` /
+# `(hors perimetre)` sur la meme ligne est un constat empirique pour une
+# tranche ulterieure, PAS le perimetre livre par la PR courante. Pattern
+# documente dans le founder #13856 (« Tranche 3 (hors scope PR) : ... (28
+# fichiers constatés) ») : l'auteur marque explicitement le compte comme
+# hors scope PR et le predicat COUNT_CLAIM le selectionne quand meme comme
+# le perimetre. On eteint la selection pour eviter le faux positif sans
+# toucher au scope "fichiers touches" -- qui est la revendication
+# perimetrique reelle (cf. test_out_of_scope_annotation_does_not_mask_real_perimeter).
+_OUT_OF_SCOPE_LINE = re.compile(
+    r"\(\s*(?:HORS|hors)\s+scope(?:\s+PR)?\s*\)|\(\s*(?:HORS|hors)\s+perimetre\s*\)|"
+    r"\bprevisionnels?\b|\btranche\s+ulterieure\b",
+    re.IGNORECASE,
+)
 # #12201 bootstrap : le body d'une PR qui modifie le garde lui-meme est un
 # corpus diagnostique -- il cite obligatoirement des comptes d'exemple, des
 # controles FN et les perimetres des PRs fondatrices. La confrontation
@@ -396,7 +410,75 @@ def _count_is_range_enum(line: str, m: re.Match) -> bool:
     return bool(_RANGE_ENUM_TAIL.match(tail if nl < 0 else tail[:nl]))
 
 
-def check_assertion(files: list[dict], assertion: str, block: str = "") -> list[str]:
+def _count_is_out_of_scope_annotation(body: str, m: re.Match) -> bool:
+    """#13946 : True when the line containing the count also carries an
+    explicit hors-scope annotation -- the count is a forecast for a later
+    tranche, not this PR's perimeter. Founder: PR #13856 body wrote
+    `Tranche 3 (hors scope PR) : ... (28 fichiers constatés, ...)`, marking
+    the scope explicitly; the predictor still picked `28` as the perimeter
+    and FAIL'd the PR even though the body also said `Fichiers touchés : 2`.
+    Accepts the full body (not just the line) -- locate the line first, then
+    pattern-match within it. Same shape as ``_count_in_citation``.
+    """
+    line_start = body.rfind("\n", 0, m.start()) + 1
+    line_end = body.find("\n", m.end())
+    if line_end < 0:
+        line_end = len(body)
+    line = body[line_start:line_end]
+    return bool(_OUT_OF_SCOPE_LINE.search(line))
+
+
+# #13946 fallback : enumeration verb « touche N » / « toucher N » /
+# « touches N » (FR + EN) followed by an optional space + opening paren or
+# end-of-line. Matches the FIRST occurrence; subsequent occurrences on later
+# lines are irrelevant (the body has one perimeter). A faux-match on
+# compound « re-touche » / « retouche » is avoided by requiring a word
+# boundary before the verb.
+_TOUCHE_N = re.compile(
+    r"\b(?:touche|to[uû]che|toucher|touchez|touched|touches|touch)\s+(\d+)",
+    re.IGNORECASE,
+)
+
+
+def _first_touche_n(body: str):
+    """#13946 fallback : return a fake re.Match whose group(1) is the digit
+    and whose start/end wrap the digit, when the body declares its
+    perimeter via « touche N (...) ». Returns None when no such form
+    exists. Used by ``check_assertion`` only when COUNT_CLAIM falls through
+    after the hors-scope filter -- founder #13856 makes this the single
+    case where the perimeter is asserted in prose, not via "N fichiers".
+    """
+    mm = _TOUCHE_N.search(body)
+    if mm is None:
+        return None
+    digit_start = mm.start(1)
+    digit_end = mm.end(1)
+
+    class _DigitMatch:
+        def __init__(self, s: int, e: int, n: str) -> None:
+            self._s = s
+            self._e = e
+            self._n = n
+
+        def group(self, idx: int = 0) -> str:
+            if idx == 0:
+                return self._n
+            if idx == 1:
+                return self._n
+            raise IndexError(idx)
+
+        def start(self, idx: int = 0) -> int:  # noqa: ARG002 -- mirror re.Match
+            return self._s
+
+        def end(self, idx: int = 0) -> int:  # noqa: ARG002 -- mirror re.Match
+            return self._e
+
+    return _DigitMatch(digit_start, digit_end, mm.group(1))
+
+
+def check_assertion(
+    files: list[dict], assertion: str, block: str = "", body_hint: str = ""
+) -> list[str]:
     """Confront a perimeter assertion with the effective file list.
 
     Fence blocks (transcribed commands, L898 proof) are masked out of the
@@ -446,9 +528,31 @@ def check_assertion(files: list[dict], assertion: str, block: str = "") -> list[
                 if int(mm.group(1)) != 0
                 and not _count_in_citation(scan_target, mm)
                 and not _count_is_range_enum(scan_target, mm)
+                and not _count_is_out_of_scope_annotation(scan_target, mm)
             ),
             None,
         )
+        # #13946 fallback : when no "N fichiers" form survives the
+        # per-count filters (typically because the body disambiguates by
+        # naming the forecast counts explicitly as hors-scope PR), look for
+        # the enumeration pattern « touche N (...) » / « toucher N (...) »
+        # / « touches N (...) » -- the author's positive assertion that
+        # THIS PR touches N files, often followed by the file list in
+        # parens. Founder #13856 body wrote « ... pas le périmètre livré
+        # par cette PR qui en touche 2 (CLAUDE.md + _archive-convention.md). »
+        # ; without this fallback the script reports "no count" after
+        # filtering the hors-scope 28-fichiers forecast, but the body DID
+        # declare its perimeter. Search order: ``block`` (the candidate's
+        # enclosing paragraph -- usually sufficient), then ``body_hint``
+        # (the whole PR body, used by ``--scan-thread`` when the perimeter
+        # verb is in a different paragraph from the hors-scope forecast --
+        # founder #13856). The verb shape is anchored enough that body-
+        # wide search is safe (no overlap with the COUNT_CLAIM vocabulary).
+        if count_claim is None:
+            if block:
+                count_claim = _first_touche_n(block)
+            if count_claim is None and body_hint:
+                count_claim = _first_touche_n(body_hint)
     if count_claim:
         claimed = int(count_claim.group(1))
         if claimed != len(files):
@@ -613,10 +717,25 @@ _EDIT_VERB = re.compile(
     r"\b(?:editer|modifier|toucher|ouvrir|créer|creer|ajouter|changer|mettre\s+à\s+jour|mettre\s+a\s+jour|update|edit|modify|touch|open|create|add|change)\b",
     re.IGNORECASE,
 )
-# A named file as it would appear in a body: backticked path, bare basename
+# A named referent as it would appear in a body: backticked path, backticked
+# DOTTED SYMBOL (`pick_idle_grain.upsert_orphans_comment`), bare basename
 # (.py/.cs/.yml/.json/.md/.ipynb/.sh), or a known scripts/<x>.py shape.
+#
+# #13610 residual (measured 2026-09-02, po-2024): the tail class was
+# `[A-Za-z0-9]+`, which excludes the underscore. A dotted symbol -- the most
+# common way a French technical body points at code -- was therefore NOT a
+# named referent, and the FN-safety branch kept the rouge on the FOUNDING
+# sentence of #13539, whose referent was named but named as a SYMBOL:
+#   « L'upsert vit dans `pick_idle_grain.upsert_orphans_comment` ; le
+#     generaliser demanderait d'editer un fichier deja porteur de deux PRs »
+# The boundary this drew was arbitrary AND invisible: `pick_idle_grain.upsert`
+# passed while `pick_idle_grain.upsert_orphans` rouged, on the sole strength
+# of one underscore -- two spellings of the same code reference, opposite
+# verdicts. Widening the tail to `\w+` removes the inversion. It does NOT
+# touch the deliberate FN-safety choice of #13612: an ANONYMOUS referent
+# ("editer un fichier", nothing named on the line) still keeps the rouge.
 _NAMED_FILE_BODY = re.compile(
-    r"(?:`([^`]+\.[A-Za-z0-9]+)`|"  # backticked: `pick_idle_grain.py`
+    r"(?:`([^`]+\.\w+)`|"  # backticked: `pick_idle_grain.py`, `mod.fn_name`
     r"\b([\w./-]+\.(?:py|cs|yml|yaml|json|md|ipynb|ts|js|sh|toml|cfg|ini))\b)"  # bare basename
 )
 # A cited threshold ("< 15 fichiers", ">= 10 fichiers") quotes a rule, it does
@@ -1047,6 +1166,7 @@ def _additive_line_sum(line: str) -> int:
         if not _count_is_exempt(line, m)
         and not _count_in_citation(line, m)
         and not _count_is_range_enum(line, m)
+        and not _count_is_out_of_scope_annotation(line, m)
     )
 
 
@@ -1882,6 +2002,14 @@ class Candidate:
     # confrontation in check_assertion: an enumeration spanning two bullets
     # sums across the block, not the single line.
     block: str = ""
+    # #13946: the full body text -- the hors-scope forecast line and the
+    # positive perimeter declaration can sit in DIFFERENT paragraphs (the
+    # forecast annotates « (hors scope PR) », the perimeter names
+    # « touche N » elsewhere), and the block is then useless for the
+    # cross-paragraph scan. Filled by select_candidates when given
+    # ``n_files``; consumed only by the ``_first_touche_n`` fallback
+    # inside check_assertion.
+    body_text: str = ""
 
     @property
     def blocking(self) -> bool:
@@ -1950,7 +2078,10 @@ def select_candidates(
             if opener is not None:
                 orphan_opener = opener
         body_candidates = [
-            Candidate(text, item["kind"], item["author"], "body", context=ctx, block=blk)
+            Candidate(
+                text, item["kind"], item["author"], "body",
+                context=ctx, block=blk, body_text=body,
+            )
             for text, ctx, blk in extract_perimeter_assertions_with_block(body)
         ]
         if n_files is not None and any(
@@ -2038,7 +2169,15 @@ def main() -> int:
         if body_orphan is not None:
             orphan_opener = body_orphan
         for cand in candidates:
-            for p in check_assertion(report.files, cand.text, block=cand.block):
+            # #13946: pass the candidate's full body text as ``body_hint``
+            # so the « touche N » fallback can search across paragraphs --
+            # the perimeter declaration often sits in a SEPARATE paragraph
+            # from the hors-scope forecast the body uses to disambiguate.
+            # The fallback is only consulted when COUNT_CLAIM + word-form
+            # fall through after the hors-scope filter.
+            for p in check_assertion(
+                report.files, cand.text, block=cand.block, body_hint=cand.body_text
+            ):
                 line = f"[{cand.kind} / {cand.author}] {p}"
                 # Every catch stays visible either way -- the detector is not
                 # disarmed, only its consequence is placed where it can be

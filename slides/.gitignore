@@ -3,3 +3,14 @@ dist/
 # Aggregated PDF exports — regenerable via `npx slidev export`; the canonical
 # audit renders live per-deck under <deck>/pptx-reference/. Do not re-commit.
 _pdfs/
+
+# Calage audit renders — non-commit proof bundles (slide-renders-{before,after}/
+# are PR-description-only artefacts, regenerable via slides/render-*.js).
+slide-renders/
+slide-renders-before/
+slide-renders-after/
+slide-renders-fix*/
+slide-renders-final/
+render-*.js
+render_one.js
+render_slides.js
