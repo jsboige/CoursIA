@@ -31,14 +31,16 @@ natifs, faute de cible importable. L'etat reel, adaptateur par adaptateur :
   et que le notebook lui-meme consomme (PR #14076, #14092). Verrouille par
   ``ict/tests/test_bridges_canonical_wiring.py`` : identite d'objet,
   ``__module__``, absence de redefinition dans la source.
-- :mod:`~ict.bridges.pymc_enumerate` -- **copies declarees, encore**. Detient
-  toujours des reproductions byte-identiques de ``enumerate_scm`` (cellule 5)
-  et ``p_y_given_m_x`` (cellule 20) de ``PyMC-05-Causal-Inference.ipynb``. La
-  cible importable ``pymc_causal_organs.py`` est portee par la PR #14133 ; le
-  cablage suivra son merge. Tant que ce point n'est pas ferme, la verification
-  cross-engine de cet adaptateur compare ``ict.causal_attribution`` a une
-  reproduction de l'organe, et non a l'organe -- un changement d'estimateur
-  dans PyMC-05 la laisserait verte.
+- :mod:`~ict.bridges.pymc_enumerate` -- **cablage canonique**. Importe
+  ``enumerate_scm`` (cellule 5), ``p_y_given_m_x`` et ``FRONT_SCM``
+  (cellule 20) depuis ``pymc_causal_organs``, le module qui vit a cote de
+  ``PyMC-05-Causal-Inference.ipynb`` (PR #14133, mergee). ``FRONT_DOOR_SCM``
+  survit comme **alias** du meme objet : c'est le nom que consomme
+  ``ict/tests/test_bridges.py``. Verrouille par les memes gates que
+  l'adaptateur ci-dessus (identite d'objet, ``__module__``, absence de
+  redefinition dans la source), plus un gate propre au SCM -- une table de
+  CPT recopiee ne se voit ni dans un ``def`` ni dans ``__module__``, donc
+  seule l'identite d'objet peut l'attraper.
 
 Inventaire des estimateurs exposes par organe natif (mesure c.293) :
 

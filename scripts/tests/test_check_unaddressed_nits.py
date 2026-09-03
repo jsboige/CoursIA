@@ -658,6 +658,94 @@ def test_channel_reflects_origin_surface():
     assert run([], threads=[thread])["blocking"][0]["channel"] == "review"
 
 
+# --- #13609 : alias de persona Hermes/NanoClaw cross-login. La persona
+# reviewer parle sous deux logins (clusterManager-Myia + jsboige self-bot).
+# Quand elle leve SA propre reserve sous l'autre login en portant un
+# marqueur explicite `[Hermes]` / `[NanoClaw]` / `[Hermes self-bot]`, c'est
+# sa levee -- la borne d'auteur stricte #11145/#12836 etait un faux negatif
+# structurel : la reserve restait vivante, et seul un `[OVERRIDE]`
+# coordinateur (coûteux, exige re-verif tierce, ne s'applique pas sur PR
+# lane-coordinateur) pouvait la fermer. Le marqueur est obligatoire :
+# sans lui, jsboige reste l'identite de poussee partagee des lanes (#13316)
+# et rien n'est leve -- une lane ne peut pas s'auto-promeuve en collant
+# le marqueur dans un commentaire ordinaire.
+
+
+def test_persona_alias_cross_login_leves_own_reserve():
+    """#13609 cas fondateur : reserve posee par clusterManager-Myia, levee
+    par un commentaire jsboige marque `[Hermes]` -- c'est la meme persona,
+    la levee est creditee, l'organe rend vert. PR par jsboige (cas le plus
+    frequent : lanes poussent sous jsboige)."""
+    reserve = {
+        "author": {"login": "clusterManager-Myia"},
+        "state": "COMMENTED", "submittedAt": at(10),
+        "body": "[Hermes] - COMMENT_WITH_CONCERNS\nCI catalog-drift FAIL.",
+    }
+    # Le lift doit etre un COMMENTAIRE (pas un verdict BOT) avec phrase de
+    # levee explicite ; le marqueur `[Hermes]` identifie la persona, le corps
+    # ne porte pas le mot CHANGES_REQUESTED (sinon classify le rendrait
+    # BOT-CONCERN et le filtre l'ecarterait avant _lift_eligible).
+    lift = {
+        "author": {"login": "jsboige"}, "createdAt": at(12),
+        "body": ("[Hermes] Je leve le concern -- drift corrige "
+                 "au commit c506d04b."),
+    }
+    res = run([lift], reviews=[reserve])
+    assert res["blocked"] is False
+
+
+def test_persona_alias_lift_without_marker_does_not_leve():
+    """#13609 controle negatif : sans marqueur `[Hermes]`/`[NanoClaw]`/`[Hermes
+    self-bot]`, le commentaire jsboige ne leve pas -- c'est l'identite de
+    poussee partagee des lanes (#13316), l'auteur de la reserve est distinct
+    (clusterManager-Myia), le predicat d'alias ne s'applique pas. La
+    protection #13316 tient."""
+    reserve = {
+        "author": {"login": "clusterManager-Myia"},
+        "state": "COMMENTED", "submittedAt": at(10),
+        "body": "[Hermes] - COMMENT_WITH_CONCERNS\nCI catalog-drift FAIL.",
+    }
+    lift = {
+        "author": {"login": "jsboige"}, "createdAt": at(12),
+        "body": ("Je leve la CHANGES_REQUESTED -- drift corrige "
+                 "au commit c506d04b."),
+    }
+    res = run([lift], reviews=[reserve])
+    assert res["blocked"] is True
+
+
+def test_persona_alias_only_when_reserve_author_is_in_alias_set():
+    """#13609 garde anti-usurpation : l'alias ne s'active que quand
+    `nit_author` est dans `PERSONA_ALIAS_LOGINS` (= clusterManager-Myia).
+    Une lane qui pousserait sous jsboige ne peut pas eteindre la reserve
+    d'un AUTRE reviewer (ex. ai-01) en collant le marqueur `[Hermes]` dans
+    un commentaire ordinaire -- l'alias est bidirectionnel uniquement entre
+    la persona Hermes et son self-bot, pas une cle d'auto-levee."""
+    reserve = {
+        "author": {"login": "myia-ai-01"},
+        "state": "COMMENTED", "submittedAt": at(10),
+        "body": "CHANGES_REQUESTED : notebook non execute.",
+    }
+    lift = {
+        "author": {"login": "jsboige"}, "createdAt": at(12),
+        "body": ("[Hermes] Je leve le concern de ai-01 -- la lane a "
+                 "re-execute, EXEC_PROVED au commit abc."),
+    }
+    res = run([lift], reviews=[reserve])
+    assert res["blocked"] is True
+
+
+def test_persona_alias_lift_override_logins_unchanged():
+    """#13609 controle structurel : `LIFT_OVERRIDE_LOGINS` reste inchange.
+    L'alias de persona NE confere PAS un droit d'override coordinateur : un
+    `[OVERRIDE] lane` sous jsboige ne leve pas (cf ligne de garde dans
+    `_lift_eligible`). La composition des deux decisions #11145 (borne
+    d'auteur) et #13316 (exclusion jsboige) tient, l'alias est strictement
+    une troisieme voie pour le dialogue Hermes <-> Hermes self-bot."""
+    assert "jsboige" not in mod.LIFT_OVERRIDE_LOGINS
+    assert mod.LIFT_OVERRIDE_LOGINS == {"myia-ai-01"}
+
+
 # --- #11201 : le faux negatif « corrige X et je merge ». Le test LIFT_MARKERS
 # passait AVANT toute recherche de reserve, et « je merge » couvre deux sens
 # opposes : « c'est bon, je merge » (annonce, levant) et « Change la ligne 19
@@ -1992,6 +2080,19 @@ def test_12311_verb_in_heading_preserved_against_strip():
     assert mod.classify("jsboige", body) == "BOT-CONCERN"
 
 
+@pytest.mark.parametrize("body,expected", [
+    ("## [ai-01] CHANGES_REQUESTED (reserve bloquante)", "BOT-CONCERN"),
+    ("## [ai-01] CHANGES_REQUESTED", "BOT-CONCERN"),
+    ("## [ai-01] **BLOCKED**", "BOT-CONCERN"),
+    ("## [ai-01] Reserve — a traiter avant merge :", "BOT-CONCERN"),
+    ("## [ai-01 ARBITRAGE] CHANGES_REQUESTED", "BOT-CONCERN"),
+    ("## [jsboige] CHANGES_REQUESTED", "BOT-CONCERN"),
+    ("## [bug] CHANGES_REQUESTED — le commit ne touche rien", None),
+])
+def test_13642_coordinator_title_verdict_is_emission(body, expected):
+    assert mod.classify("jsboige", body) == expected
+
+
 # ---------------------------------------------------------------------------
 # #12315 -- 4ᵉ reformulation de la classe use-vs-mention : apostrophes droites
 # ASCII ('...') et guillemets droits ASCII ("...") comme delimiters de citation,
@@ -3013,6 +3114,7 @@ def test_13622_negation_nest_dans_fenetre_negated_direct():
     assert not mod._lift_is_negated("", ". Je merge.")
 
 
+
 # --- #13639 : levee citant un commit absent de la branche (rembobine) ---
 
 NIT_OID = "f" * 40
@@ -3222,6 +3324,93 @@ def test_13635_conditionnel_je_leve_masculin_reste_bloquant():
         "myia-ai-01",
         "Une seule chose a changer — corrige la ligne 19 et je leve le concern."
     ) == "BOT-CONCERN"
+def test_13938_comment_only_avec_rien_de_bloquant_passe():
+    """#13938 FP fondateur (PR #13935) : un reviewer pose `[Hermes]
+    COMMENT_WITH_CONCERNS` et le corps declare explicitement « rien de
+    bloquant ». L'exemption doit classer la review en ``None`` (comment-only
+    par design, cf #12311) et non en ``BOT-CONCERN``.
+
+    Reproduit le body verbatim de la review jsboige sur #13935 (compte-rendu
+    de checkout local + delta scope + balise explicite de non-blocage).
+    """
+    body = (
+        "[Hermes] COMMENT_WITH_CONCERNS — vérifié en local (checkout de la "
+        "branche), pas juste lu le diff :\n"
+        "- Cibles réelles des 3 liens ajoutés au README : `tutorials/README.md`, "
+        "`shared/helpers/README.md`, `_research/e2e_quant_validation.ipynb`.\n"
+        "- Nav relative corrigée, scope clean, security scan néant.\n"
+        "Delta +18/-2.\n"
+        "Rien de bloquant. (contrainte token : COMMENT only)"
+    )
+    assert mod.classify("jsboige", body) is None
+    # Les helpers unitaires doivent retourner True sur ce body.
+    assert mod._comment_only_prefix(body) is True
+    assert mod._review_explicit_non_blocking(body) is True
+
+
+def test_13938_comment_with_concerns_avec_concerns_substantiels_reste_bloquant():
+    """#13938 FN-safety : `[Hermes] COMMENT_WITH_CONCERNS` + concerns FYI
+    reels (« 2 concerns sur la cellule 12 ») SANS formulation non-bloquante
+    reste un ``BOT-CONCERN``. L'exemption ne s'applique pas par defaut —
+    seul un aveu explicite de non-blocage la declenche.
+
+    Reproduit le pattern du test fondateur l.255-258 (notebook solide + 2
+    concerns FYI).
+    """
+    body = (
+        "[Hermes] **[COMMENT_WITH_CONCERNS]** — notebook solide, 2 concerns FYI "
+        "sur la cellule 12 : la sortie du solver ne couvre pas le cas n=0 ; "
+        "le bloc de test dépend de l'ordre des fixtures."
+    )
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+    assert mod._comment_only_prefix(body) is True
+    assert mod._review_explicit_non_blocking(body) is False
+
+
+def test_13938_changements_requestes_avec_rien_de_bloquant_reste_bloquant():
+    """#13938 FN-safety : un reviewer pose `CHANGES_REQUESTED` et glisse «
+    rien de bloquant » dans le corps. L'exemption NE DOIT PAS s'appliquer
+    (le verdict de blocage strict prime sur la formulation de non-blocage).
+
+    Reproduit le pieges classique : un reviewer tente de baisser le niveau
+    d'un CHANGES_REQUESTED en ajoutant une clause de non-blocage. Le gate
+    doit resister.
+    """
+    body = (
+        "[Hermes] CHANGES_REQUESTED — refactor la cellule 5 pour respecter "
+        "PEP 8. Rien de bloquant, je laisse au choix de l'auteur."
+    )
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+    assert mod._comment_only_prefix(body) is False
+    # La formulation « rien de bloquant » EST bien reconnue (helper OK),
+    # mais le verdict formel CHANGES_REQUESTED bloque l'exemption au
+    # niveau du pipeline.
+    assert mod._review_explicit_non_blocking(body) is True
+
+
+def test_13938_comment_with_concerns_cite_dans_un_autre_commentaire_ne_passe_pas():
+    """#13938 FN-safety : un commentaire qui CITE `[Hermes]
+    COMMENT_WITH_CONCERNS` dans une prose qui refute (« pas de
+    COMMENT_WITH_CONCERNS ici ») NE beneficie PAS de l'exemption — la
+    detection `_is_cited` doit annuler l'occurrence au niveau du helper
+    `_comment_only_prefix`.
+
+    Reproduit le pattern inverse de #12871 : `_strip_mentioned_verdicts`
+    neutralise les verdicts mentionnes, mais `_comment_only_prefix` opere
+    sur le body brut. Un commentaire d'auteur qui enumere les verdicts
+    d'Hermes pour les refuter ne doit pas etre auto-exempte.
+    """
+    body = (
+        "Pour clarifier : il n'y a PAS de COMMENT_WITH_CONCERNS dans cette "
+        "review. Les seuls verdicts emis sont APPROVED et LGTM. Je ne leve "
+        "aucune reserve parce qu'il n'y en a pas."
+    )
+    # Ni verdict emis ni formulation non-bloquante au sens de l'exemption :
+    # le helper de préfixe doit retourner False (l'occurrence est CITEE).
+    assert mod._comment_only_prefix(body) is False
+    # Le body doit classifier None (verdict positif APPROVED/LGTM + aucune
+    # reserve vivante), mais PAS par la voie de l'exemption #13938.
+    assert mod.classify("jsboige", body) is None
 
 
 # --- #13512 -- Position G : verbe de mention + verdict NU (sans parenthese) -
@@ -3752,3 +3941,623 @@ def test_14130_mutation_si_pattern_retire_le_test_rougit():
         )
     finally:
         mod._MENTION_VERDICT_REPORTED = saved_reported
+
+
+def test_13951_concern1_corps_contradictoire_avec_marqueur_prose_ne_passe_pas():
+    """#13951 Concern 1 (NanoClaw structural review) : un corps CONTRADICTOIRE
+    pose `[Hermes] COMMENT_WITH_CONCERNS` + rien de bloquant MAIS contient
+    aussi un CONCERN_MARKER prose vivant (avant merge, a changer).
+    L'exemption NE DOIT PAS s'appliquer : un concern prose emis dans la meme
+    review ne doit pas etre ecrase par la phrase de non-blocage.
+
+    Reproduit verbatim le piege identifie par NanoClaw dans la review
+    COMMENTED du 2026-09-02T01:18:42Z :
+    ``[Hermes] COMMENT_WITH_CONCERNS -- fond solide, rien de bloquant. En
+    revanche, corriger le lien mort du README avant merge.``
+    Avant le fix (commit ``fdd589cac``), l'exemption s'appliquait et
+    ``classify`` rendait None -- la phrase rien de bloquant ecrasait le
+    marqueur avant merge (CONCERN_MARKER prose vivant). Apres le fix,
+    ``_sole_live_concern_is_comment_prefix`` detecte le residuel et fait
+    tomber l'exemption, ce qui laisse classify rendre ``BOT-CONCERN``.
+    """
+    body_prose = (
+        "[Hermes] COMMENT_WITH_CONCERNS -- fond solide, rien de bloquant. "
+        "En revanche, corriger le lien mort du README avant merge."
+    )
+    # Les trois pre-conditions de l'exemption sont reunies :
+    assert mod._comment_only_prefix(body_prose) is True
+    assert mod._review_explicit_non_blocking(body_prose) is True
+    # ... MAIS le 4e helper detecte le marqueur prose avant merge :
+    assert mod._sole_live_concern_is_comment_prefix(body_prose) is False
+    # Verdict final : BOT-CONCERN (pas None) -- la phrase de non-blocage n'a
+    # pas ecrase le concern vivant.
+    assert mod.classify("jsboige", body_prose) == "BOT-CONCERN"
+
+
+def test_13951_concern1_glyphe_severite_avec_rien_de_bloquant_ne_passe_pas():
+    """#13951 Concern 1 (NanoClaw) : variante glyphe. Un corps pose
+    `[Hermes] COMMENT_WITH_CONCERNS` + rien de bloquant + glyphe (constat
+    substantiel). L'exemption NE DOIT PAS s'appliquer : un glyphe de
+    severite emis dans la meme review ne doit pas etre ecrase.
+
+    Reproduit la 2e classe de piege listee par NanoClaw dans la review
+    COMMENTED du 2026-09-02T01:18:42Z -- Meme classe pour glyphe (constat
+    substantiel promu, #12143) coexistant avec rien de bloquant.
+    """
+    body_glyphe = (
+        "[Hermes] COMMENT_WITH_CONCERNS -- diff coherent, rien de bloquant.\n"
+        "\U0001F7E1 la cellule 12 merite un refactor (commentaire FYI, hors gate)."
+    )
+    assert mod._comment_only_prefix(body_glyphe) is True
+    assert mod._review_explicit_non_blocking(body_glyphe) is True
+    # Le glyphe est dans CONCERN_MARKERS (cf. PR #12143) :
+    assert mod._sole_live_concern_is_comment_prefix(body_glyphe) is False
+    assert mod.classify("jsboige", body_glyphe) == "BOT-CONCERN"
+# ---------------------------------------------------------------------------
+# Forme ETIQUETEE « Concern: » -- casse et nombre relaches (mandat user
+# 2026-09-01). Le user posait ses remarques en francais nu, sans marqueur : ses
+# commentaires etaient classes None, donc invisibles au merge-gate. Il propose
+# d'adopter « Concern: » ; le present bloc rend cette proposition vraie, pour
+# lui ET pour les agents, dont la casse varie aussi.
+# ---------------------------------------------------------------------------
+
+def test_concern_label_singulier_toute_casse_est_une_reserve():
+    for body in (
+        "Concern: ce travail devrait etre distille dans la serie QC.",
+        "concern : a distiller dans la serie QC.",
+        "CONCERN : a distiller dans la serie QC.",
+        "Concerns: deux points a revoir.",
+        "**Concern 2 :** le scope ne colle pas.",
+        "> Concern: revoir le perimetre.",
+        "Bonjour,\n\nConcern: revoir le perimetre.",
+    ):
+        assert mod.classify("jsboige", body) == "BOT-CONCERN", body
+
+
+def test_concern_narration_de_levee_ne_bloque_pas():
+    """Les 6 faux positifs mesures le 2026-09-01 sur 588 commentaires reels.
+
+    Tous CITENT le mot en REPONDANT a une reserve : les bloquer serait le
+    miroir exact du defaut que B.0 traque. Seule la forme etiquetee en tete de
+    ligne est une emission ; « les 2 concerns sont traitees » n'en est pas une.
+    """
+    for body in (
+        "Levee explicite : les 2 concerns Hermes sont adressee au commit 97e970c6.",
+        "Reponse a la CONCERN empirique (review jsboige).",
+        "Les concerns 1, 2 et 3 sont leves au commit b0d5eb59.",
+    ):
+        assert mod.classify("jsboige", body) is None, body
+
+
+def test_concern_ne_matche_pas_le_francais_courant():
+    """« concerne », « concernant », « concernes » ne sont pas des reserves."""
+    for body in (
+        "Ce commit concerne la serie QC.",
+        "Concernant la serie QC, tout est bon. LGTM",
+        "Cela ne concerne pas cette PR.",
+    ):
+        assert mod.classify("jsboige", body) is None, body
+
+
+def test_jeton_de_verdict_tolere_la_casse():
+    """Un agent qui ecrit le jeton en casse mixte emet le meme verdict."""
+    assert mod.classify("jsboige", "Comment_With_Concerns : deux reserves.") == "BOT-CONCERN"
+
+
+def test_prose_marker_reste_case_sensitive():
+    """« AVANT merge » en emphase narre une levee Voie 3 -- 2 cas mesures.
+
+    Relacher la casse de la prose retournerait l'organe contre les levees
+    qu'il doit reconnaitre.
+    """
+    assert mod.classify(
+        "jsboige",
+        "Voie 3 B.0 : issue #14030 ouverte AVANT merge, body amende.",
+    ) is None
+
+
+# #14130 - Position F : verdict attribue a un tiers sans quote ni crochet.
+# Bug fondateur (#14070, 2026-09-01) : 2 des 3 points non leves sur #14070
+# etaient les commentaires de diagnostic de la lane elle-meme, qui NOMMAIENT
+# le verdict d'un tiers sans le quoter -- le gate les comptait comme reserves
+# vives, et chaque cycle de commentaire AJOUTAIT un point au compte qu'il
+# decrivait. Mesure verbatim issue : "La review Hermes porte un
+# CHANGES_REQUESTED que ma lane ne peut pas lever seule."
+# ---------------------------------------------------------------------------
+
+
+def test_14130_paire_reproduction_rend_none_dans_les_deux_formes() -> None:
+    """#14130 acceptance #1 : la paire reproduction doit rendre `None` dans
+    les deux formes (backtickee et nue). Discrimination : le predicat
+    porte sur **qui parle de quoi**, pas sur la simple presence du nom.
+    """
+    bare = "La review Hermes porte un CHANGES_REQUESTED que ma lane ne peut pas lever seule."
+    backt = "La review Hermes porte un `CHANGES_REQUESTED` que ma lane ne peut pas lever seule."
+    assert mod.classify("jsboige", bare) is None, bare
+    assert mod.classify("jsboige", backt) is None, backt
+
+
+def test_14130_variantes_attribution_verdict_tiers_ne_flagge_pas() -> None:
+    """#14130 : variantes structurelles -- attribution explicite d'un verdict
+    FORMEL a un reviewer/agent tiers. Les formes AVEC article sont neutralisees
+    par `_MENTION_VERDICT_REPORTED` (Position H ; ext. #14185 : verbes
+    conclusifs/declaratifs `conclut`/`declare`).
+    """
+    bodies = [
+        # #14130 fondateur (Position H, verbe porte + article)
+        "La review Hermes porte un CHANGES_REQUESTED sur la cellule 12.",
+        # ext. #14185 : verbes conclusifs/declaratifs + article (rapport de tiers)
+        "La review NanoClaw conclut un SUSPECT_REGRESSION sur le test.",
+        "La review Hermes declare un CHANGES_REQUESTED sur la cellule 12.",
+        # deja couverts par la Position H (verbes descriptifs + article)
+        "Verdict Hermes a rendu COMMENT_WITH_CONCERNS.",
+        "La revue Claude signale un CONCERN dans le diff.",
+    ]
+    for body in bodies:
+        assert mod.classify("jsboige", body) is None, body
+    # Alignement ce6 (Position H) : sans article entre le verbe et le
+    # verdict, la forme est une EMISSION directe, pas un rapport -- elle
+    # reste BOT-CONCERN.
+    emissions = [
+        "La revue Claude mentionne NEEDS_CHANGES dans son rapport.",
+        "Review Hermes a emis REQUEST_CHANGES sur la branche.",
+    ]
+    for body in emissions:
+        assert mod.classify("jsboige", body) == "BOT-CONCERN", body
+
+
+def test_14130_emission_formelle_avec_prefixe_agent_ne_seutralise_pas() -> None:
+    """#14130 contre-positif : un `[Hermes]` (prefixe d'agent) suivi d'un
+    verdict est une EMISSION formelle, couverte par AGENT_PREFIXES -- la
+    Position F doit la laisser intacte (le `(?<!\\[)` borne le non-match).
+    """
+    bodies = [
+        "[Hermes] CHANGES_REQUESTED sur la cellule 12.",
+        "[Hermes] Review — CHANGES_REQUESTED.",
+        "## [Hermes] **[COMMENT_WITH_CONCERNS]** — notebook solide, 2 concerns FYI.",
+        "[NanoClaw] SUSPECT_REGRESSION sur le test.",
+    ]
+    for body in bodies:
+        assert mod.classify("jsboige", body) == "BOT-CONCERN", body
+
+
+def test_14130_reserve_formelle_en_prose_nue_reste_bloquante() -> None:
+    """#14130 contre-positif : une reserve emise directement (sans nom de
+    tiers, sans quote, sans prefixe) reste bloquee. Le discriminant est
+    l'attribution a un tiers -- son absence = emission propre.
+    """
+    bodies = [
+        "CHANGES_REQUESTED: la cellule 12 casse le kernel.",
+        "2 CONCERNS ouverts, non adresses avant merge.",
+        "REQUEST_CHANGES sur la logique de l'exercice 3.",
+        "NEEDS_CHANGES: le test d'integration manque.",
+    ]
+    for body in bodies:
+        assert mod.classify("jsboige", body) == "BOT-CONCERN", body
+
+
+def test_14130_mutation_position_f_neutralisee_rougit_le_test() -> None:
+    """#14130 acceptance #2 (valide par mutation) : si l'extension #14185
+    (verbes conclusifs/declaratifs `conclut`/`declare` de
+    `_MENTION_VERDICT_REPORTED`) est retiree du stripper, la variante
+    conclusive redevient 'BOT-CONCERN' -- preuve que le test depend de
+    l'extension. On recompile le pattern sans les verbes ajoutes, on
+    re-tourne le strip sur la variante, on compare. In-place, sans
+    monkeypatch global (la fonction est appelee par d'autres tests dans
+    la meme run).
+    """
+    variant = "La review NanoClaw conclut un SUSPECT_REGRESSION sur le test."
+    stripped = mod._strip_quoted(variant)
+    # Composant determinant : le pattern REPORTED AVEC l'extension #14185
+    full = mod._MENTION_VERDICT_REPORTED
+    with_ext = full.sub(
+        lambda mm: mm.group(0).replace(mm.group(1), " " * len(mm.group(1))),
+        stripped,
+    )
+    # Sanity : avec l'extension, le verdict est neutralise (espaces)
+    assert "SUSPECT_REGRESSION" not in with_ext, with_ext
+
+    # Reconstruction SANS l'extension (= simule son retrait)
+    mutated = mod.re.compile(full.pattern.replace(
+        "|conclut|concluent|declare|declarent", ""))
+    without_ext = mutated.sub(
+        lambda mm: mm.group(0).replace(mm.group(1), " " * len(mm.group(1))),
+        stripped,
+    )
+    # Sanity : sans l'extension, le verdict reste vivant
+    assert "SUSPECT_REGRESSION" in without_ext, without_ext
+    # Et donc classify re-rougit (CONCERN_MARKERS inclut SUSPECT_REGRESSION)
+    assert mod.has_live_marker(without_ext, mod.CONCERN_MARKERS)
+    # Avec l'extension, classify rend None (sanity inverse -- miroir du test variantes)
+    assert not mod.has_live_marker(with_ext, mod.CONCERN_MARKERS)
+    # Et les longueurs sont preservees (les fenetres `_is_cited` restent calibrees)
+    assert len(with_ext) == len(without_ext)
+
+
+def test_14130_conservation_offsets_sur_strip_quoted() -> None:
+    """#14130 acceptance implicite : le strip preserve les offsets (les
+    fenetres de `_is_cited` restent calibrees sur la vraie position des
+    occurrences survivantes). Verification mecanique : remplacer les
+    matches par des espaces de meme longueur ne change pas la longueur
+    totale de la chaine.
+    """
+    bodies = [
+        "La review Hermes porte un CHANGES_REQUESTED.",
+        "La review Hermes porte un CHANGES_REQUESTED que ma lane ne peut pas lever seule.",
+        "Review Hermes declare un SUSPECT_REGRESSION. Et puis autre chose.",
+        "La review [Hermes] declare un CHANGES_REQUESTED.",  # non match -> pas de strip
+    ]
+    for body in bodies:
+        assert len(mod._strip_mentioned_verdicts(body)) == len(body), body
+
+
+# --- Position I (#14199) : tests re-appliques post-rebase (main a absorbe #14185) ---
+
+
+def test_14199_fp1_qualifier_non_bloquant_neutralise():
+    """#14199 FP1 -- « Concern (non bloquant) : <details> à confirmer avant
+    merge. Ball merge : <delegate>. » (PR #13537 fondateur). Le qualifieur
+    `(non bloquant)` neutralise le `avant merge` en mention. Position I
+    sous-pattern (a) qualifier. Doit rendre None (avant merge neutralise)."""
+    body = (
+        "Concern (non bloquant) : mergeable_state=blocked au moment de la "
+        "review — checks en cours sur une PR de 18:04Z, standard, à confirmer "
+        "avant merge. Ball merge : Emerjesse."
+    )
+    assert mod.classify("jsboige", body) is None, (
+        f"FP1 devrait etre neutralise (qualifier non bloquant), "
+        f"got {mod.classify('jsboige', body)!r}"
+    )
+
+
+
+def test_14199_fp1_minimal_qualifier_mineur_neutralise():
+    """#14199 FP1 minimal -- `(mineur) avant merge` (sous-pattern a, sans Ball
+    merge). Doit rendre None."""
+    body = "(mineur) à revoir avant merge."
+    assert mod.classify("jsboige", body) is None
+
+
+
+def test_14199_fp2_verification_passee_neutralise():
+    """#14199 FP2 -- « Verifie de mon cote avant merge : CLEAN » (PR #13498
+    fondateur). Position I sous-pattern (b) FR past p. + de mon cote. Doit
+    rendre None."""
+    body = (
+        "Diagnostic du rouge adjacency : guard succede a guard. "
+        "Verifie de mon cote avant merge : mergeStateStatus CLEAN, 0 check "
+        "rouge sur les 50 jobs."
+    )
+    assert mod.classify("jsboige", body) is None, (
+        f"FP2 devrait etre neutralise (verification passee), "
+        f"got {mod.classify('jsboige', body)!r}"
+    )
+
+
+
+def test_14199_fp2_en_verified_neutralise():
+    """#14199 FP2 EN -- « Verified by ai-01 avant merge » (sous-pattern b2).
+    Doit rendre None."""
+    body = "Verified by ai-01 locally avant merge. CI green."
+    assert mod.classify("jsboige", body) is None
+
+
+
+def test_14199_fp3_formule_b0_neutralise():
+    """#14199 FP3 -- « levee par **issue de suivi ouverte avant merge**
+    (#13929) » (PR #13860 fondateur). Position I sous-pattern (c) formule
+    B.0. Doit rendre None."""
+    body = (
+        "La nit user est levee par **issue de suivi ouverte avant merge** "
+        "(#13929), et — mieux — deja livree par #13932, qui mesure 4 "
+        "alternatives x 2 voters au lieu d extrapoler. C est la voie 3 "
+        "de B.0 appliquee correctement."
+    )
+    assert mod.classify("myia-ai-01", body) is None, (
+        f"FP3 devrait etre neutralise (formule B.0), "
+        f"got {mod.classify('myia-ai-01', body)!r}"
+    )
+
+
+
+def test_14199_fp3_voie_b0_verbatim_neutralise():
+    """#14199 FP3 variante -- « voie B.0 « issue de suivi ouverte et nommee
+    AVANT LE MERGE » » (PR #13498 verbatim). Sous-pattern (c) avec AVANT LE
+    MERGE (optionnel article). Doit rendre None."""
+    body = (
+        "Passe de merge ai-01 — le concern NanoClaw est traite par la voie "
+        "B.0 « issue de suivi ouverte et nommee AVANT LE MERGE »."
+    )
+    assert mod.classify("jsboige", body) is None, (
+        f"FP3 (voie B.0 verbatim) devrait etre neutralise, "
+        f"got {mod.classify('jsboige', body)!r}"
+    )
+
+
+
+def test_14199_fp4_ball_merge_delegation_neutralise():
+    """#14199 FP4 -- « a confirmer avant merge. Ball merge : X. » (sous-pattern
+    d, delegation Ball merge APRES avant merge). Doit rendre None."""
+    body = (
+        "Action requise : a confirmer avant merge. Ball merge : ai-01."
+    )
+    assert mod.classify("jsboige", body) is None
+
+
+
+def test_14199_vp13800_a_relire_reste_bloquant():
+    """#14199 VP -- « A relire par ai-01 avant merge. Aucune action. » (PR
+    #13800). Verbe ACTIONNEL (`à relire`) deleguant une intervention, pas une
+    #verification passee ni une delegation Ball merge. Aucun sous-pattern de
+    Position I ne matche. Doit RESTER BOT-CONCERN."""
+    body = (
+        "[po-2023] cycle 2026-08-31 — etat final, les 2 concerns Hermes "
+        "sont traites. Le residuel est une lecture manuelle ai-01. Marquee "
+        "NON EVALUEE — a relire. A relire par ai-01 avant merge. Aucune "
+        "action lane supplementaire possible."
+    )
+    assert mod.classify("jsboige", body) == "BOT-CONCERN", (
+        f"VP #13800 doit rester BOT-CONCERN (verbe actionnel a relire), "
+        f"got {mod.classify('jsboige', body)!r}"
+    )
+
+
+
+def test_14199_vp_imperatif_infinitif_reste_bloquant():
+    """#14199 VP -- « a verifier avant merge » (verbe IMPERATIF a l'infinitif,
+    pas un past p.). Doit RESTER BOT-CONCERN."""
+    body = "Priere de bien vouloir a verifier avant merge."
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+
+def test_14199_vp_a_confirmer_no_qualifier_reste_bloquant():
+    """#14199 VP -- « a confirmer avant merge » (sans qualifieur, sans Ball
+    merge, sans verification passee). Doit RESTER BOT-CONCERN."""
+    body = "Action obligatoire : a confirmer avant merge."
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+
+def test_14199_vp_qualifier_bloquant_reste_bloquant():
+    """#14199 VP -- « Concern (bloquant) : ... avant merge » (qualifier
+    BLOQUANT, pas couvert par sous-pattern a). Doit RESTER BOT-CONCERN."""
+    body = "Concern (bloquant) : le kernel WSL est casse, a confirmer avant merge."
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+
+def test_14199_ce1_mutation_position_i_desactivee_fp1_rougit():
+    """#14199 mutation -- si Position I est desactivee, FP1 doit rougir
+    (le `avant merge` reste emis et le commentaire est classe BOT-CONCERN).
+    Verifie par monkey-patching de `_strip_avant_merge_mention` (no-op)."""
+    body = (
+        "Concern (non bloquant) : mergeable_state=blocked, a confirmer "
+        "avant merge. Ball merge : Emerjesse."
+    )
+    # Baseline : avec Position I, FP1 est neutralise
+    assert mod.classify("jsboige", body) is None
+    # Mutation : monkey-patch de _strip_avant_merge_mention en no-op
+    orig = mod._strip_avant_merge_mention
+    try:
+        mod._strip_avant_merge_mention = lambda body: body
+        assert mod.classify("jsboige", body) == "BOT-CONCERN", (
+            "MUTATION FAILED : si Position I est desactivee, FP1 doit "
+            "rougir (le `avant merge` reste emis, le commentaire passe "
+            "BOT-CONCERN)."
+        )
+    finally:
+        mod._strip_avant_merge_mention = orig
+
+
+
+def test_14199_remesure_7_vp_window_reste_bloquant():
+    """#14199 acceptance -- re-mesure des 7 VP de la fenetre merged:2026-
+    08-25..2026-09-01 : leurs commentaires doivent rester classifies
+    BOT-CONCERN par l'organe apres le fix (peu importe la voie — CONCERN
+    MARKERS, BLOCAGE coordinateur, LIFT_OVERRIDE, etc.). Si une seule
+    regression, le fix est insuffisant.
+
+    Implementation : on recupere les commentaires + reviews reels via gh
+    API et on verifie qu'au moins un declenche classify() == BOT-CONCERN
+    pour chaque PR. C'est l'invariant qui protege contre toute
+    regression silencieuse du garde."""
+    import json
+    import shutil
+    import subprocess
+    if shutil.which("gh") is None or subprocess.run(
+            ["gh", "auth", "status"], capture_output=True).returncode != 0:
+        pytest.skip("gh CLI ou auth indisponible -- re-mesure live VP differee "
+                    "(review NanoClaw #14322, concern 2 : le runner sans gh doit "
+                    "skipper, pas ERREUR)")
+    vps = [13921, 13800, 13789, 13667, 13542, 13386, 13370]
+    for pr in vps:
+        out = subprocess.check_output(
+            ["gh", "api", f"repos/jsboige/CoursIA/issues/{pr}/comments", "--paginate"])
+        out2 = subprocess.check_output(
+            ["gh", "api", f"repos/jsboige/CoursIA/pulls/{pr}/reviews", "--paginate"])
+        comments = json.loads(out)
+        reviews = json.loads(out2)
+        blocking_count = 0
+        for c in comments:
+            if mod.classify(c["user"]["login"], c["body"]) == "BOT-CONCERN":
+                blocking_count += 1
+        for r in reviews:
+            if mod.classify(r["user"]["login"], r.get("body", "")) == "BOT-CONCERN":
+                blocking_count += 1
+        assert blocking_count > 0, (
+            f"VP #{pr} doit avoir au moins 1 commentaire/review classifie "
+            f"BOT-CONCERN apres le fix (regression silencieuse), "
+            f"got {blocking_count}"
+        )
+
+
+
+def test_14199_remesure_3_fp_window_neutralise():
+    """#14199 acceptance -- re-mesure des 3 FP de la fenetre merged:2026-
+    08-25..2026-09-01 : ils doivent etre neutralises (classify() = None)
+    apres le fix. Si un seul reste BOT-CONCERN, le fix est insuffisant."""
+    fps = [
+        ("13537", "clusterManager-Myia",
+         "Concern (non bloquant) : mergeable_state=blocked au moment de "
+         "la review — checks en cours sur une PR de 18:04Z, standard, a "
+         "confirmer avant merge. Ball merge : Emerjesse."),
+        ("13498", "jsboige",
+         "Passe de merge ai-01 — le concern NanoClaw est traite par la "
+         "voie B.0 « issue de suivi ouverte et nommee AVANT LE MERGE ». "
+         "Verifie de mon cote avant merge : mergeStateStatus CLEAN."),
+        ("13860", "myia-ai-01",
+         "La nit user est levee par **issue de suivi ouverte avant "
+         "merge** (#13929), et — mieux — deja livree par #13932. "
+         "C est la voie 3 de B.0 appliquee correctement."),
+    ]
+    for pr, author, body in fps:
+        result = mod.classify(author, body)
+        assert result is None, (
+            f"FP #{pr} doit etre neutralise (classify=None) apres le fix, "
+            f"got {result!r} pour body={body[:60]!r}"
+        )
+
+
+def test_14199_concern1_aparte_phrase_precedente_neutralise_pas_le_vp():
+    """Review NanoClaw #14322 concern 1 -- le gap du sous-pattern (a)
+    QUALIFIER franchissait les frontieres de phrase : un aparte benin
+    "(mineur)" dans une phrase precedente neutralisait un nit VIVANT
+    "avant merge" de la phrase SUIVANTE. Le point est desormais exclu
+    du gap ([^.!?\n]) : ce corps doit rester BOT-CONCERN."""
+    body = ("Le point precedent (mineur) est clos sans suite. "
+            "Reserve bloquante : a corriger avant merge par le lane.")
+    assert mod.classify("clusterManager-Myia", body) == "BOT-CONCERN"
+
+
+def test_14199_concern1_gap_intra_phrase_fp1_couvert_toujours_neutralise():
+    """Le resserrement du gap ne doit pas casser le FP fondateur : un
+    qualifieur dans la MEME phrase que le token reste neutralise."""
+    body = ("Le point souleve (mineur) sera traite par la passe de "
+            "nettoyage avant merge, pas ici.")
+    assert mod.classify("clusterManager-Myia", body) != "BOT-CONCERN"
+
+
+# ============================================================================
+# #14277 — Position J : glyphe de sévérité en position de mention
+# ============================================================================
+# Fondateurs mesurés (sweep 264 corps / 61 PRs, fenêtre 2026-08-23..2026-09-02,
+# différentiel old-vs-new : exactement 3 diffs = les 3 FP, 261 corps inchangés) :
+#   FP1 #13951 c.869 (issuecomment-5506801880) : « variante glyphe 🟡. »
+#   FP2 #13951 c.872 (issuecomment-5507737699) : « 2 cas (prose
+#        contradictoire + glyphe 🟡) ajoutes. »
+#   FP3 #13951 c.870 (issuecomment-5503423343) : « glyphes de severite (🟡
+#        ..., 🔴 ...) » + formes résiduelles : énumération « (prose, 🟡, 🔴,
+#        + controle) » et cellules tableau « **CWC + 🟡** ».
+# VP d'émission (doivent rester BOT-CONCERN) : #12059 « **🟡 FINDING — »,
+# #12083 « LGTM structural / 🟡 », glyphe en tête de ligne.
+
+# --- Position J (#14277) : tests re-appliques post-rebase (main a absorbe #14322) ---
+
+
+def test_14277_fp1_meta_nom_glyphe_neutralise():
+    body = ("2. **2 tests manquants** que NanoClaw a explicitement demandés —\n"
+            "   - variante glyphe 🟡.\n"
+            "3. **Vérification first-hand (avant commit)** : OK.")
+    assert mod.classify("jsboige", body) is None
+
+
+
+def test_14277_fp2_meta_nom_parentheses_neutralise():
+    body = ("- Tests : 2 cas (prose contradictoire + glyphe 🟡) ajoutes.\n"
+            "6/6 PASSED en local.")
+    assert mod.classify("jsboige", body) is None
+
+
+
+def test_14277_fp3_enumeration_double_glyphe_neutralise():
+    body = ("Deux surfaces : la **prose** (commentaire Hermes) et les "
+            "**glyphes de severite** (🟡 constat substantiel #12059, "
+            "🔴 bloquant).")
+    assert mod.classify("jsboige", body) is None
+
+
+
+def test_14277_fp3bis_enum_items_separateurs_neutralise():
+    # Formes résiduelles de FP3 : glyphe item d'énumération (séparateur `,`)
+    # et cellule de tableau (séparateur `+`), sans méta-nom sur la ligne.
+    body = ("- 4 tests ajoutes (prose, 🟡, 🔴, + controle positif) verbatim.\n"
+            "| 4 | **CWC + 🟡** | OK |")
+    assert mod.classify("jsboige", body) is None
+
+
+
+def test_14277_contretemoin_sans_marqueurs_reste_none():
+    # Acceptance #14277 : le contre-mesure c.871 (paraphrase SANS aucun
+    # marqueur verbatim) doit rester None (déjà correct avant le fix).
+    body = ("## Cycle c.871 — état post-merge avec main, 2 points de revue "
+            "toujours présents, lane irréductible.\n"
+            "Tête de branche 15e478afe. mergeable: MERGEABLE. 6/6 PASSED.")
+    assert mod.classify("jsboige", body) is None
+
+
+
+def test_14277_vp12059_emission_tete_de_ligne_reste_bloquant():
+    # VP fondateur #12059 : en-tête de verdict, glyphe en tête de ligne,
+    # jamais précédé d'un méta-nom ni d'un séparateur d'énumération.
+    body = ("**[NanoClaw]** structural review.\n"
+            "**LGTM structural + 1 FINDING.**\n"
+            "**🟡 FINDING — les 5 hyperparametres enseignes par la nouvelle "
+            "md#19 contredisent le run mesure (cf tableau).**")
+    assert mod.classify("clusterManager-Myia", body) == "BOT-CONCERN"
+
+
+
+def test_14277_vp12083_lgtm_scoped_slash_reste_bloquant():
+    # VP #12083 : « LGTM structural / 🟡 ... » — le séparateur `/` est
+    # délibérément EXCLU du set d'énumération (B) : ce glyphe est une
+    # émission scopée, pas un item de liste.
+    body = "LGTM structural / 🟡 SPY 6/8 contredit par le walk-forward."
+    assert mod.classify("clusterManager-Myia", body) == "BOT-CONCERN"
+
+
+
+def test_14277_vp_meta_nom_apres_glyphe_reste_bloquant():
+    # Un méta-nom APRÈS le glyphe n'en fait pas une mention : c'est une
+    # émission avec parenthèse explicative.
+    body = "🟡 — constat substantiel (cf glyphe)"
+    assert mod.classify("clusterManager-Myia", body) == "BOT-CONCERN"
+
+
+
+def test_14277_vp_ligne_suivante_sans_meta_nom_reste_bloquant():
+    # Le méta-nom sur la ligne PRÉCÉDENTE ne ouvre pas la mention : la
+    # portée est la ligne, pas le paragraphe.
+    body = "Le glyphe de severite :\n🟡 FINDING — hyperparametres contredits."
+    assert mod.classify("clusterManager-Myia", body) == "BOT-CONCERN"
+
+
+
+def test_14277_ce1_mutation_position_j_desactivee_fp1_rougit():
+    # Contrôle positif : sans Position J, FP1 doit rougir (BOT-CONCERN).
+    saved = mod._strip_glyphe_mentions
+    mod._strip_glyphe_mentions = lambda b: b
+    try:
+        body = ("- variante glyphe 🟡.\nVérification OK.")
+        assert mod.classify("jsboige", body) == "BOT-CONCERN", (
+            "MUTATION FAILED : si Position J est desactivee, FP1 doit "
+            "rougir (le glyphe mentionné doit rester un marqueur vivant)."
+        )
+    finally:
+        mod._strip_glyphe_mentions = saved
+
+
+
+def test_14277_ce2_enum_separateur_rouge_si_b_desactivee():
+    # Contrôle positif règle B : sans le séparateur d'énumération, la forme
+    # résiduelle FP3 (item de liste sans méta-nom) doit rougir.
+    saved = mod._GLYPH_ENUM_PRECEDER_RE
+    mod._GLYPH_ENUM_PRECEDER_RE = __import__("re").compile(r"(?!x)x")
+    try:
+        body = "- 4 tests ajoutes (prose, 🟡, controle positif)."
+        assert mod.classify("jsboige", body) == "BOT-CONCERN", (
+            "MUTATION FAILED : sans la règle B (séparateur énumération), "
+            "la forme item-de-liste doit rougir."
+        )
+    finally:
+        mod._GLYPH_ENUM_PRECEDER_RE = saved

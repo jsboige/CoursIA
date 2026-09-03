@@ -6,9 +6,12 @@
 # designation backfill + pipeline cap (#1334 phase 3/3) (#1345)".
 # Verbatim import rationale: see NOTICE-EPITA at the root of this directory.
 #
-# Verbatim integrity: file content above this header is byte-for-byte identical
+# Verbatim integrity: file content below this header is byte-for-byte identical
 # to the upstream source at the cited commit. No CoursIA modification
 # (downstream consumers wrap or extend, never replace the verbatim block).
+# Note: the upstream copy is **partial** (See NOTICE-EPITA, section "Partial
+# copies" + issue #14026): 8 CoursIA-only lines, 370 upstream lines absent
+# (designation machinery -- deliberate perimeter of EPIC #4960, not a drift).
 # core/shared_state.py
 import json
 from dataclasses import dataclass, field

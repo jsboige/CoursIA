@@ -45,10 +45,14 @@ concurrency:
 jobs:
   signal:
     name: "Flag PR targeting a non-main base (advisory)"
-    runs-on: ubuntu-latest
+    # Route vers la jambe Linux auto-hebergee (#13378 tranche 5, decision ai-01
+    # 2026-09-02) : garde Python pur, sans secret. La garde same-repo ci-dessous
+    # saute les PRs de fork (pr_gate.py compte `skipped` comme OK) : aucun code de
+    # fork n'atteint le runner. Retour arriere = revert de la PR.
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
     # Skip the runner entirely for the ~95% of PRs whose base is main. The
     # event's OWN base ref drives the guard (not whatever main is at run time).
-    if: github.event.pull_request.base.ref != 'main'
+    if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && github.event.pull_request.base.ref != 'main'
     steps:
       - name: Checkout
         uses: actions/checkout@v4

@@ -45,7 +45,14 @@
       csharp_sha: 6b6f0a035dd366be7cf55dbc9f8d3018f1454627
       content_python_sha: 23015d820c41474015686df2029bfc7261472199b1617c94e7df2bf4b64769de
       content_csharp_sha: c461229e5c91ab19b7d9f1d34aae4947a80c3e1a2d9e965d237795c0d721057a
+    - date: "2026-09-02"
+      by: myia-po-2027:CoursIA
+      python_sha: 121141dc5ac45d7ad6888209afe672e31dd15002
+      csharp_sha: 17aecdf0848db10e216746e35f9fa94d0f023f77
+      content_python_sha: 5852697fc3e7d89d6562986ead057f32859f5095f3aa1202f35ecf1b110ea67b
+      content_csharp_sha: e68fe4eba7def9d7f78aa2a55d25acf9e6999493c06f8c485ab767458234fcf4
   known_differences:
+    - "2026-09-02 (PR #14266, myia-po-2027:CoursIA) : normalisation nbformat du champ source string->liste (tranche Sudoku de #14209) -- forme seule, les DEUX jumeaux (Python + C#). Contenu rejoint byte-identique (digest sha1 par cellule, 0 divergence), outputs/execution_count/nb de cellules inchanges, pas de re-exec (C.3). Les blob SHAs et content SHAs deplaces dans l audit ci-dessus sont des artefacts de forme (le content_sha hashe la structure JSON des cellules, forme du champ source incluse), pas une divergence pedagogique."
     - "Rebaseline 2026-08-14 : cote Python deplace par drain wallclock #9434 / PR #10874 (remplacement des timings machine-dependants en ms par des ordres de grandeur dans le markdown). Parite semantique inchangee (cellules code byte-identiques, aucune sortie, aucun exec_count touche) ; cote C# non modifie. Attestation = nouveau blob SHA du cote Python."
     - "Socle pedagogique commun : algorithme genetique (GA) applique au Sudoku -- population d'individus, selection, crossover, mutation, fonction de fitness (nombre de conflits). Meme concept evolutionnaire, meme cas d'application (resolution/amelioration d'une grille de Sudoku). Les deux exposent les memes primitives : Population, Crossover, Mutation, GeneticAlgorithm."
     - "Divergence d'implementation : le C# delegue a la lib GeneticSharp (NuGet, expose GeneticAlgorithm/Population/Crossover/Mutation au niveau framework) ; le Python implemente le GA from scratch sur numpy (Population/Crossover/Mutation codes a la main, fitness a base de conflits). Meme paradigme genetique, deux niveaux d'abstraction : framework SOTA cote C# vs reconstruction pedagogique a la main cote Python."

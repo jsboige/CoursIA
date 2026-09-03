@@ -307,6 +307,82 @@ def unattributed(merged_prs: list[dict]) -> list[dict]:
     return [pr for pr in merged_prs if _lane_of(pr) is None]
 
 
+def prev_lane_mismatches(merged_prs: list[dict]) -> list[dict]:
+    """Witness (#13383): PRs whose `prev:` cites a PR of a DIFFERENT lane.
+
+    `prev:` documents "le grain precedent DE LA LANE" (variation-protocol §1),
+    so the cited PR must carry the SAME lane by construction. When it does
+    not, exactly one of the two tags is mis-attributed -- and the gate cannot
+    see it: #10045 blocks a lane that is ABSENT, never one that is WRONG.
+    That hole is what #13383 measured (8 PRs whose `lane` was the tagger's,
+    not the producer's); case #13350 is the mechanically visible instance --
+    it chained `prev:` onto #13349, a PR of po-2027.
+
+    Deliberately NOT a guess. Three silences, each because the alternative
+    would be to invent an attribution:
+
+      * the PR itself carries no readable lane -> `unattributed()` reports it;
+      * the cited PR is OUTSIDE the loaded set (another day, another page)
+        -- its lane is unknown here, and unknown is not mismatched;
+      * the cited PR carries no lane of its own.
+
+    KNOWN BLIND SPOT -- it sees the BOUNDARY of a mis-tagged run, not its
+    interior. When several consecutive PRs carry the same wrong lane AND chain
+    `prev:` onto each other, the pairs agree and the witness stays silent;
+    only the pair that crosses back into a correctly-tagged PR shows. Measured
+    on the #13383 set itself (2026-09-02, real GitHub bodies): #13371 -> #13369
+    and #13373 -> #13371 are both invisible, because the correction moved both
+    ends together. So a null result bounds the DAMAGE, it never proves the tags
+    are right; `unattributed()` and a human reading of the run remain the other
+    two organs.
+
+    Pure and offline: it reads only the bodies already loaded, so it adds no
+    `gh` call and cannot spend quota -- the organ never touches the network
+    (`_load` reads the JSON the workflow wrote).
+
+    Measured when introduced (2026-09-02): silent over 80 consecutive merged
+    PRs (#14075..#14342, 79 lane-tagged) -- it is not a noise generator; and it
+    finds 2 live residuals in the #13383 window that the manual pass left
+    behind, #13350 (po-2026:CoursIA -> prev #13349 of po-2027:CoursIA-2) and
+    #13369 (po-2026:CoursIA -> prev #13370 of ai-01:CoursIA).
+
+    Returns one entry per mismatch: `{number, lane, prev_number, prev_lane}`.
+    """
+    by_number = {
+        pr["number"]: pr
+        for pr in merged_prs
+        if isinstance(pr.get("number"), int)
+    }
+
+    out: list[dict] = []
+    for pr in merged_prs:
+        lane = _lane_of(pr)
+        if lane is None:
+            continue
+        m = _PREV_CLAUSE_RE.search(pr.get("body", "") or "")
+        if not m:
+            continue
+        prev_number = int(m.group(1))
+        if prev_number == pr.get("number"):
+            # A tag citing itself is a typo, not an adjacency claim between
+            # two lanes -- nothing to compare, and flagging it here would
+            # report a lane mismatch that does not exist.
+            continue
+        prev = by_number.get(prev_number)
+        if prev is None:
+            continue
+        prev_lane = _lane_of(prev)
+        if prev_lane is None or prev_lane == lane:
+            continue
+        out.append({
+            "number": pr.get("number"),
+            "lane": lane,
+            "prev_number": prev_number,
+            "prev_lane": prev_lane,
+        })
+    return out
+
+
 def lane_grains(merged_prs: list[dict], target_lane: str) -> list[dict]:
     """Every merged PR attributed to `target_lane`, ANY tier.
 
@@ -959,6 +1035,17 @@ def compute_signals(
                                     defect the axis catches). The list of
                                     veins is returned for the workflow to
                                     label, the same posture as `long_runs`.
+      * `PREV-LANE-MISMATCH`     -- `prev_lane_mismatches()` found, among the
+                                    merged set, a PR of `target_lane` whose
+                                    `prev:` cites a PR carrying a DIFFERENT
+                                    lane (#13383). `prev:` is the lane's own
+                                    adjacency, so the two lanes must agree;
+                                    when they do not, one of the two tags is
+                                    mis-attributed. Complementary to #10045,
+                                    which blocks an ABSENT lane and is blind
+                                    to a WRONG one. Advisory: the organ says
+                                    the pair is inconsistent, never which of
+                                    the two to believe.
 
     Three of the four aggregate signals (TIER-INFLATION, GENRE-RUN,
     CAP-EXCEEDED-BY-GENRE) are LANE-DAY aggregates: they are True when the
@@ -1021,6 +1108,17 @@ def compute_signals(
     # itself rides along in `candidate_genre_unknown_word`.
     genre_unknown = can_canon is not None and can_canon not in GENRES
 
+    # PREV-LANE-MISMATCH (#13383): the adjacency field contradicts the lane
+    # field. Scoped to `target_lane` -- the mis-attributed PR declares THIS
+    # lane, so this is the audit that must see it; posing another lane's
+    # defect here would misattribute it a second time. Advisory, never
+    # blocking: which of the two tags is wrong is a coordinator call
+    # (variation-protocol §3, "re-qualifier le tag soi-meme"), not something
+    # the organ can decide from the bodies alone.
+    prev_mismatches = [
+        m for m in prev_lane_mismatches(merged_prs) if m["lane"] == target_lane
+    ]
+
     return {
         "lane": target_lane,
         "tally": tally,
@@ -1032,9 +1130,11 @@ def compute_signals(
             "GENRE-MISMATCH": genre_mismatch,
             "VEIN-RUN": bool(vein_list),
             "GENRE-UNKNOWN": genre_unknown,
+            "PREV-LANE-MISMATCH": bool(prev_mismatches),
         },
         "long_runs": long_runs,
         "vein_runs": vein_list,
+        "prev_lane_mismatches": prev_mismatches,
         "inferred_genre_from_paths": inferred,
         "candidate_genre_canonical": can_canon,
         "candidate_genre_unknown_word": can_canon if genre_unknown else None,
