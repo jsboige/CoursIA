@@ -232,26 +232,75 @@ jobs:
       - name: Regenerate render list
         run: python scripts/regen_quarto_render.py
 
+      - name: Scope render list to this PR's changed documents
+        # #14429 : la jambe PR rendait le site ENTIER (1192 entrees, sans cache
+        # -- `_freeze/` n'est pas tracke) alors que son objet declare est etroit
+        # (« bloque les PR qui etendent _quarto.yml / ajoutent un notebook /
+        # modifient une cellule markdown d'un notebook rendu »). Mesure sur
+        # #14225, run 33714385365 : 25 min de file, puis le rendu tourne
+        # 3180 s (53 min) et le plafond de 60 le tue -- pendant que le `PR gate`
+        # s'etait deja auto-annule a 45 min faute de verdict (#13510). Une
+        # verification requise qui ne peut pas conclure, et un slot auto-heberge
+        # tenu une heure sur un parc mesure a 19/22 occupes : c'est la famine
+        # elle-meme, que relever les plafonds (#14412) ne fait qu'entretenir.
+        #
+        # Le script reduit `project.render` aux documents que la PR touche
+        # reellement. Mesure sur les 7 PR Quarto en vol le 2026-09-03 :
+        # 1192 -> 1 ou 2 entrees pour six d'entre elles, et 0 pour la septieme
+        # (#14131, qui payait un rendu complet pour zero document rendu).
+        # Biais volontairement conservateur : config projet, theme, scripts de
+        # pre-traitement ou SUPPRESSION d'un document rendu => rendu COMPLET.
+        id: scope
+        run: |
+          python scripts/quarto_render_scope.py \
+            --base "${{ github.event.pull_request.base.sha }}" \
+            --head "${{ github.event.pull_request.head.sha }}" \
+            --apply --github-output
+
       - name: Normalize .NET kernel language for Quarto (C# -> csharp)
+        if: steps.scope.outputs.mode != 'empty'
         run: python scripts/quarto_csharp_kernel_fix.py apply
 
       - name: Escape YAML-ambiguous `---` separators (issue #11611)
+        if: steps.scope.outputs.mode != 'empty'
         run: python scripts/quarto_yaml_safe.py apply
 
       - name: Render Quarto site (PR check)
+        # Commande inchangee : c'est la LISTE qui a ete restreinte au-dessus,
+        # donc le rendu reste un rendu de projet normal (meme _quarto.yml, meme
+        # contexte, memes pre-traitements) -- seul son cardinal change.
+        # `quarto render` SANS argument de fichier rend tout ce que la liste
+        # porte : c'est pourquoi le mode `empty` saute le step au lieu de lancer
+        # un rendu sur une liste vide, qui rendrait le site entier.
+        if: steps.scope.outputs.mode != 'empty'
         run: quarto render --to html
 
       - name: Restore kernel language (hygiene)
+        if: steps.scope.outputs.mode != 'empty'
         run: python scripts/quarto_csharp_kernel_fix.py restore
 
       - name: Restore YAML-safe separators
+        if: steps.scope.outputs.mode != 'empty'
         run: python scripts/quarto_yaml_safe.py restore
 
       - name: Check output
         run: |
+          MODE="${{ steps.scope.outputs.mode }}"
+          if [ "$MODE" = "empty" ]; then
+            echo "Aucun document rendu n'a change dans cette PR : rien a valider."
+            echo "(La liste de rendu compte ${{ steps.scope.outputs.total }} entrees, 0 touchee.)"
+            exit 0
+          fi
           test -d _site || (echo "::error::_site/ absent après quarto render" && exit 1)
-          test -f _site/index.html || (echo "::error::_site/index.html absent" && exit 1)
-          echo "_site/ présent avec $(find _site -type f | wc -l) fichiers"
+          # `index.html` n'existe qu'en rendu COMPLET : en mode scope, la liste
+          # ne porte que les documents changes. Exiger index.html partout ferait
+          # echouer tout rendu scope -- rouge sur un rendu pourtant reussi.
+          if [ "$MODE" = "full" ]; then
+            test -f _site/index.html || (echo "::error::_site/index.html absent" && exit 1)
+          fi
+          RENDERED=$(find _site -name '*.html' -type f | wc -l)
+          test "$RENDERED" -ge 1 || (echo "::error::aucun .html produit par le rendu" && exit 1)
+          echo "_site/ présent avec $(find _site -type f | wc -l) fichiers ($RENDERED .html, mode=$MODE)"
 
       - name: Comment PR with summary
         # Resumé court : nombre de fichiers + diff notebooks si pertinent.
