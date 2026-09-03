@@ -741,12 +741,38 @@ def test_pull_request_trigger_includes_edited_type():
     )
 
 
+def _read_review_trigger_workflow() -> str:
+    """Read the workflow that carries the ``pull_request_review`` trigger.
+
+    #14283 : always-on-guards.yml a bascule sur le pool auto-heberge, et
+    `check_self_hosted_runner_policy.py` evalue les declencheurs au niveau
+    du FICHIER, pas du job -- un `pull_request_review` (fork-reachable)
+    n'importe ou dans le fichier rend TOUT le fichier inadmissible au pool.
+    Le declencheur a donc ete rendu a perimeter-review-guard.yml, qui reste
+    sur GitHub-hosted. Les deux surfaces ne se doublent pas : always-on-guards
+    ne garde que `pull_request`, perimeter-review-guard que
+    `pull_request_review` -- c'est la condition que l'en-tete de ce dernier
+    posait deja (« NE PAS reinscrire pull_request/pull_request_review ici sans
+    retirer l'organe perimeter d'always-on-guards »).
+
+    L'invariant teste est inchange : `types: [submitted, edited]` doit rester
+    declare, ou une review corrigee ne re-declenche pas le gate.
+    """
+    here = pathlib.Path(__file__).resolve()
+    repo_root = here.parents[2]
+    wf = repo_root / ".github" / "workflows" / "perimeter-review-guard.yml"
+    return wf.read_text(encoding="utf-8")
+
+
 def test_pull_request_review_trigger_includes_edited_type():
     """Sibling invariant — the review trigger already had ``edited`` from the
     start (c.342 acceptance), so this test pins that property against
     accidental regression when editing the workflow.
+
+    Depuis #14283 le declencheur vit dans perimeter-review-guard.yml (cf
+    ``_read_review_trigger_workflow``) ; l'invariant, lui, ne bouge pas.
     """
-    text = _read_perimeter_workflow()
+    text = _read_review_trigger_workflow()
     import re
     rv_block = re.search(
         r"^  pull_request_review:\s*\n((?:    [^\n]*\n)+)", text, re.MULTILINE
