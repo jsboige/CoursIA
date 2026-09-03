@@ -1659,16 +1659,28 @@ layout: section
 
 
 
-# Extensions 2020+ — alignement et produit grand public
+# Extensions 2020+ — alignement et produit grand public (1/2)
 
+
+**Alignement par retour humain**
 
 - RLHF (2022, InstructGPT) : affinage par retour humain
 - ChatGPT (nov. 2022, OpenAI) : 100 M d'utilisateurs en 2 mois
-- Modèles open-weight : Llama 2 (2023), Mistral, Mixtral (MoE 2023-2024)
+
+<!-- Alignement : RLHF (InstructGPT 2022) puis ChatGPT (nov 2022, 100 M d'utilisateurs en 2 mois). -->
+---
+
+
+# Extensions 2020+ — alignement et produit grand public (2/2)
+
+
+**Modèles ouverts et frontier**
+
+- Open-weight : Llama 2 (2023), Mistral, Mixtral (MoE 2023-2024)
 - Générations suivantes (2024-2025) : Llama 3 / 3.1 / 4, DeepSeek-V3, Qwen2.5, Gemma 2
 - Frontier multimodaux omni : GPT-4o (2024), Claude 3.5 Sonnet, Gemini 1.5 / 2
 
-<!-- Alignement : RLHF (InstructGPT 2022) puis ChatGPT (nov 2022, 100 M d'utilisateurs en 2 mois). Open-weight : Llama 2, Mistral, Mixtral (2023-2024). Generations suivantes 2024-2025 : Llama 3 / 3.1 / 4, DeepSeek-V3, Qwen2.5, Gemma 2. Frontier multimodaux omni : GPT-4o, Claude 3.5 Sonnet, Gemini 1.5 / 2. -->
+<!-- Open-weight : Llama 2, Mistral, Mixtral (2023-2024). Generations suivantes 2024-2025 : Llama 3 / 3.1 / 4, DeepSeek-V3, Qwen2.5, Gemma 2. Frontier multimodaux omni : GPT-4o, Claude 3.5 Sonnet, Gemini 1.5 / 2. -->
 ---
 
 
