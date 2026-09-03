@@ -95,7 +95,7 @@ Le détail par notebook suit en strate A ci-dessous : consultation, plus décisi
 - [ ] `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-02-ML-Classification.ipynb`
 - [ ] `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-02-SectorRotation-Momentum.ipynb`
 - [ ] `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-03-Data-Management.ipynb`
-- [ ] `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-03-DualMomentum.ipynb`
+- [ ] `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-14-DualMomentum.ipynb`
 - [ ] `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-03-Risk-Parity.ipynb`
 - [ ] `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-04-Research-Workflow.ipynb`
 - [ ] `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-04-MeanReversion.ipynb`
