@@ -46,6 +46,13 @@
       csharp_sha: b05e9704a87010371cc0e00dcd514d8797a7261e
       content_python_sha: 994a50309f9c1222191b3f6469c2ade1e9286808f7a2d11de9876b5051bb0f93
       content_csharp_sha: cded8f08b018b789d6db95154c3cad5181bbe7e48244f17af11560ebb5c266d7
+    - date: "2026-09-03"
+      by: myia-po-2023:CoursIA-2
+      reason: "Rebaseline twin parity pour repair PR #14401 (fix Infer-4 CS1701 -> DisplayAs). Migration display(HTML(...)) -> GetLatestFactorGraphHtml().DisplayAs('text/html') : 5 cellules touchees, correspondances exactes 1:1, suppression des 5 warnings stderr CS1701 (Microsoft.AspNetCore.Html.Abstractions 2.2.0.0 -> 9.0.0.0). DRIFT unilatéral côté C# uniquement, python_sha + content_python_sha inchangés, parité sémantique préservée. PR #14401 vérifiée par Hermes (review follow-up série #14122)."
+      python_sha: 96fb976813a4c55853b6ec532a7cfee1edb38f7d
+      csharp_sha: 7ef2d50f2dcddfb3024681fbc29090726fc2b820
+      content_python_sha: 994a50309f9c1222191b3f6469c2ade1e9286808f7a2d11de9876b5051bb0f93
+      content_csharp_sha: ba77fc9181856b651a433cca726ef3c461b2c9369628f3068b7db92bf2a25879
   known_differences:
   - 'Socle pedagogique commun : reseaux bayesiens (DAG de dependances conditionnelles) modelise dans les deux stacks.'
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
