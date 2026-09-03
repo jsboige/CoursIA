@@ -15,6 +15,18 @@ PrivateConstraint.evaluate / _real_evaluate placeholders are documented scope
 limitations, not algorithmic bugs.
 """
 
+# Archive header (standard _archive convention, 2026-08)
+# - Date archived : 2026-08-06
+# - Superseded by : none (one-shot fulfilled) — output lives in cells
+#   f7e21456, 070a53e6 and 8f050be3 of CSP-9-Distributed.ipynb
+# - Verdict recorded in : d4ee281aa (2026-04-28 follow-up to PR #578),
+#   PR #9580
+#
+# Per-function disposition :
+# - to_list() : kept as reference; no successor (local source-format helper)
+# - main() : markdown synchronization applied at d4ee281aa; all three cell ids
+#   were verified present on main in 2026-09
+
 import json
 from pathlib import Path
 
