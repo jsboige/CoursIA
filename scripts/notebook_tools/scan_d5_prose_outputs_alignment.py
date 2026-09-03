@@ -945,6 +945,47 @@ def _distinct_levels(values: list[float], tol: float = RELATIVE_TOLERANCE) -> in
     return count
 
 
+# #14222 -- `MISSING_FROM_PROSE_ENUMERATION` choisit l'orphelin par *appartenance
+# au niveau output*, pas par distance relative maximale a l'enumeration prose
+# (la formulation originale `max(dist)` laissait `0,6875` invisible : il est
+# proche de 0,19 et de 1,875, donc il ne gagne jamais le maximum, et la garde
+# ne le nomme pas). Cette variante rend la liste des REPRESENTANTS (premiere
+# valeur de chaque groupe de tolerance) ; le predicat devient : « un representant
+# output sans correspondance dans l'enumeration prose a la tolerance du
+# groupement ». Pour ICT-1 (pre-fix) : representants = [0,1875 ; 0,6875 ; 2,3125],
+# enumeration = [0,19 ; 2,31], orphelin = 0,6875. Pour ICT-1 (post-fix) :
+# enumeration = [0,19 ; 0,69 ; 2,31], tous representants sont couverts -> 0 orphelin.
+#
+# Borne assumee : la tolerance utilisee pour le groupement est la meme que celle
+# du test d'appartenance. Si elle divergeait, on retomberait dans la classe de
+# defaut fondateur (un representant couvre un niveau prose a 6% alors qu'un
+# autre a 4% -- le second serait orphelin a tort). On garde la tolerance unique.
+
+
+def _distinct_level_values(values: list[float],
+                            tol: float = RELATIVE_TOLERANCE) -> list[float]:
+    """Liste des representants des niveaux distincts (le 1er de chaque groupe).
+
+    Ordre croissant. Vide si `values` vide. Meme algorithme que
+    `_distinct_levels`, mais on garde le representant au lieu du compteur.
+
+    Note: par convention, le representant est la valeur du groupe qui est la
+    plus PROCHE d'une autre donnee reelle (la mediane du groupe, dans la
+    majorite des cas -- c'est la 1re valeur rencontree apres le tri).
+    """
+    if not values:
+        return []
+    s = sorted(values)
+    reps: list[float] = [s[0]]
+    for v in s[1:]:
+        base = max(abs(reps[-1]), abs(v))
+        if base == 0:
+            continue  # 0 == 0 -> meme groupe
+        if abs(v - reps[-1]) / base > tol:
+            reps.append(v)
+    return reps
+
+
 def analyze_notebook(path: str | os.PathLike) -> NotebookAlignment:
     """Analyse l'alignement prose <-> outputs pour un notebook."""
     p = Path(path)
@@ -1037,8 +1078,31 @@ def analyze_notebook(path: str | os.PathLike) -> NotebookAlignment:
     # Tour 2 : MISSING_FROM_PROSE_ENUMERATION (#9416).
     # Pour chaque cellule markdown qui annonce une énumération de N niveaux,
     # compare N au nombre de niveaux distincts dans output_vals.
+    #
+    # #14222 — discrimination cassée. La formulation initiale choisissait
+    # l'orphelin par `max(dist_relative_a_enum)`, ce qui laissait
+    # silencieusement de cote les valeurs de niveau output PROCHES d'un
+    # niveau prose sans etre couvertes par lui (`0,6875` proche de `0,19`
+    # et de `1,875` ne gagne jamais le maximum, donc le verdict reste muet
+    # sur le cas fondateur ICT-1 ; la garde nommait `1,2` puis `14,0`,
+    # les deux fantaisistes, jamais `0,6875`). Le defaut fondateur
+    # attendu par l'acceptance #14222 : sur les deux revisions d'ICT-1
+    # encadrant `7de14792c`, le verdict doit differer, et l'orphelin
+    # du cote pre-fix doit valoir `0,6875`.
+    #
+    # Discrimination correcte : on choisit l'orphelin par APPARTENANCE au
+    # niveau output. Un representant output (1re valeur de chaque groupe
+    # de tolerance) est orphelin s'il n'a aucune valeur prose dans son
+    # voisinage (meme tolerance que le groupement). Pour ICT-1 (pre-fix) :
+    # representants outputs = [0,1875 ; 0,6875 ; 2,3125], enumeration prose
+    # = [0,19 ; 2,31] -> 0,1875 couvert (1% de 0,19), 0,6875 NON couvert
+    # (72% de 0,19 et 73% de 2,31), 2,3125 couvert (0,1% de 2,31) ->
+    # orphelin = 0,6875. Pour ICT-1 (post-fix) : enumeration = [0,19 ;
+    # 0,69 ; 2,31] -> les 3 representants trouvaient une prose proche ->
+    # pas de finding.
     if output_vals:
-        output_levels = _distinct_levels(output_vals)
+        output_reps = _distinct_level_values(output_vals)
+        output_levels = len(output_reps)
         for cell_idx, text, nums in prose_vals_per_cell:
             enum = _detect_prose_enumeration(text)
             if not enum:
@@ -1046,18 +1110,23 @@ def analyze_notebook(path: str | os.PathLike) -> NotebookAlignment:
             prose_levels = _distinct_levels(enum)
             if prose_levels == 0 or output_levels <= prose_levels:
                 continue
-            # Trouve la valeur output « orpheline » la plus loin de la liste prose.
+            # Trouve le representant output non couvert par l'enumeration prose.
             orphan = None
             orphan_dist = -1.0
-            for ov in output_vals:
-                closest_p = min(enum, key=lambda p: abs(p - ov))
-                base = max(abs(closest_p), abs(ov))
+            for rep in output_reps:
+                closest_p = min(enum, key=lambda p: abs(p - rep))
+                base = max(abs(closest_p), abs(rep))
                 if base == 0:
+                    # Represente 0 couvert par une prose 0 -> match, pas orphelin.
                     continue
-                dist = abs(ov - closest_p) / base
+                dist = abs(rep - closest_p) / base
+                if dist <= RELATIVE_TOLERANCE:
+                    continue  # ce representant a une prose proche -> couvert
                 if dist > orphan_dist:
                     orphan_dist = dist
-                    orphan = ov
+                    orphan = rep
+            if orphan is None:
+                continue  # tous les representants sont couverts -> RAS
             snippet = text.strip().splitlines()
             snippet = next((ln.strip() for ln in snippet if ln.strip()), "")[:120]
             findings.append(AlignmentFinding(
@@ -1067,12 +1136,15 @@ def analyze_notebook(path: str | os.PathLike) -> NotebookAlignment:
                 category="MISSING_FROM_PROSE_ENUMERATION",
                 prose_text=snippet,
                 prose_number=float(prose_levels),
-                closest_output_number=orphan if orphan is not None else None,
+                closest_output_number=orphan,
                 tolerance_used="enumeration-vs-outputs",
                 details=(
                     f"prose enumere {prose_levels} niveaux distincts, "
                     f"outputs exhibent {output_levels} niveaux distincts "
-                    f"(orphan={orphan:.4g}, dist={orphan_dist:.1%})"
+                    f"({len(output_reps)} representants: "
+                    f"{', '.join(f'{r:.4g}' for r in output_reps)}) "
+                    f"-- orphelin {orphan:.4g} non couvert "
+                    f"(min dist prose = {orphan_dist:.1%}, > tol {RELATIVE_TOLERANCE:.0%})"
                 ),
             ))
     return NotebookAlignment(
@@ -1206,32 +1278,48 @@ def main(argv: Iterable[str] | None = None) -> int:
         if args.limit > 0:
             results = results[:args.limit]
     if args.json_out:
-        Path(args.json_out).write_text(json.dumps([
-            {
-                "path": r.path,
-                "total_findings": r.total_findings,
-                "n_prose_numbers": r.n_prose_numbers,
-                "n_output_numbers": r.n_output_numbers,
-                "n_markdown_cells": r.n_markdown_cells,
-                "n_code_cells": r.n_code_cells,
-                "findings": [
-                    {
-                        "cell_index": f.cell_index,
-                        "category": f.category,
-                        "prose_number": f.prose_number,
-                        "closest_output_number": f.closest_output_number,
-                        "prose_text": f.prose_text,
-                    }
-                    for f in r.findings
-                ],
-                "error": r.error,
-            }
-            for r in results
-        ], indent=2, ensure_ascii=False), encoding="utf-8")
+        _dump_json(results, args.json_out)
     print(render_text_report(results))
     if args.check and any(r.is_pathological for r in results):
         return 1
     return 0
+
+
+def _dump_json(results: list, json_out: str) -> None:
+    """Serialise la liste des `NotebookAlignment` au format JSON prevu par
+    `--json-out`. Helper isole du CLI pour permettre les tests directs
+    (cf `TestJsonOutDetails`, #14222)."""
+    Path(json_out).write_text(json.dumps([
+        {
+            "path": r.path,
+            "total_findings": r.total_findings,
+            "n_prose_numbers": r.n_prose_numbers,
+            "n_output_numbers": r.n_output_numbers,
+            "n_markdown_cells": r.n_markdown_cells,
+            "n_code_cells": r.n_code_cells,
+            "findings": [
+                {
+                    "cell_index": f.cell_index,
+                    "cell_kind": f.cell_kind,
+                    "category": f.category,
+                    "prose_number": f.prose_number,
+                    "closest_output_number": f.closest_output_number,
+                    "prose_text": f.prose_text,
+                    # #14222 -- `--json-out` ne serialisait PAS `details`
+                    # (ni `tolerance_used`, ni `cell_kind`), ce qui obligeait
+                    # a re-invoquer `analyze_notebook` pour trier. Champs
+                    # completes maintenant -- le test d'acceptance a besoin
+                    # de `details` (porte l'orphelin a la tolerance pres) et
+                    # de `tolerance_used` (porte la regle appliquee).
+                    "tolerance_used": f.tolerance_used,
+                    "details": f.details,
+                }
+                for f in r.findings
+            ],
+            "error": r.error,
+        }
+        for r in results
+    ], indent=2, ensure_ascii=False), encoding="utf-8")
 
 
 if __name__ == "__main__":

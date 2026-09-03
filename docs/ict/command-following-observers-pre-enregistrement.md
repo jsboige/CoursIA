@@ -73,6 +73,6 @@ La tranche suivante, dans un commit distinct, portera :
 
 - `MyIA.AI.Notebooks/IIT/ICT-Series/ict/command_following_observers.py` ;
 - `MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests/test_command_following_observers.py` ;
-- `MyIA.AI.Notebooks/IIT/ICT-Series/ict/command_following_observers_results.json`.
+- `MyIA.AI.Notebooks/IIT/ICT-Series/ict/results/command_following_observers_results.json`.
 
 Aucun notebook ni sortie de cellule n'est modifié. Le registre [`dissociations-matrix.md`](dissociations-matrix.md) reste hors scope pour éviter les claims périmés qui le couvrent encore ; le résultat pourra y être relié par une tranche ultérieure de sa lane propriétaire.

@@ -100,6 +100,174 @@ def test_universal_guard_with_combined_target_is_accepted(tmp_path):
     assert result.self_hosted_jobs == 1
 
 
+def test_bare_universal_guard_with_and_selection_is_rejected_with_parenthesis_hint(tmp_path):
+    """#14148 (reserve NanoClaw n.1) : la forme universelle NUE combinee a un
+    `&&` est refusee -- `&&` lie plus fort que `||`, donc la forme nue se lit
+    `A == null || (A == repo && sel)` et tourne sur tout evenement hors
+    pull_request quelle que soit la selection -- et le message nomme la
+    parenthese requise, pas seulement « must lead with the guard »."""
+    write_workflow(tmp_path, "windows-self-hosted-tests", """
+        name: bare-universal-and
+        on: [pull_request]
+        jobs:
+          test:
+            if: ${{ github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository && inputs.target == 'confinement' }}
+            runs-on: [self-hosted, coursia-ephemeral, coursia-fast-guards]
+            steps:
+              - run: echo unsafe
+        """)
+    result = policy.scan_workflows(tmp_path)
+    assert result.broken == []
+    assert codes(result) == {"SAME_REPO_GUARD"}
+    [violation] = result.violations
+    assert "parenthesised" in violation.message
+    assert "(<universal guard>) && <selection>" in violation.message
+
+
+def test_job_without_any_guard_keeps_generic_message(tmp_path):
+    """Le message « parenthesised » est reserve a la forme universelle nue +
+    `&&` : un job sans garde du tout garde le message generique."""
+    write_workflow(tmp_path, "pr-gate-stale-sweep", """
+        name: no-guard
+        on: [pull_request]
+        jobs:
+          test:
+            runs-on: [self-hosted, coursia-ephemeral, coursia-fast-guards]
+            steps:
+              - run: echo unsafe
+        """)
+    [violation] = policy.scan_workflows(tmp_path).violations
+    assert violation.code == "SAME_REPO_GUARD"
+    assert "parenthesised" not in violation.message
+
+
+def test_fork_reachable_comment_triggers_cannot_reach_self_hosted_job(tmp_path):
+    """#14148 (reserve NanoClaw n.2) : issue_comment / pull_request_review /
+    pull_request_review_comment tournent sur le code de la branche par defaut
+    mais leur payload nomme une PR potentiellement issue d'un fork -- un
+    `checkout refs/pull/N/head` executerait du code de fork sur le runner.
+    Refuses comme pull_request_target, garde ou pas."""
+    write_workflow(tmp_path, "pr-gate-stale-sweep", """
+        name: comment-driven
+        on: [issue_comment, pull_request_review, workflow_dispatch]
+        jobs:
+          test:
+            runs-on: [self-hosted, coursia-ephemeral, coursia-fast-guards]
+            steps:
+              - run: echo unsafe
+        """)
+    result = policy.scan_workflows(tmp_path)
+    assert result.broken == []
+    fork_reachable = [v for v in result.violations if v.code == "FORK_REACHABLE_TRIGGER"]
+    assert sorted(v.message.split(" ")[0] for v in fork_reachable) == [
+        "issue_comment",
+        "pull_request_review",
+    ]
+
+
+def test_push_and_schedule_triggers_remain_accepted_with_universal_guard(tmp_path):
+    """Contre-controle de la reserve n.2 : push / schedule / workflow_dispatch
+    ne portent que des refs du depot -- la branche `== null` de la garde
+    universelle y est sure par construction. Cas reels sur main :
+    banner-guard.yml (pull_request + push), hooks-parity.yml (+ schedule)."""
+    write_workflow(tmp_path, "pr-gate-stale-sweep", """
+        name: push-schedule
+        on:
+          pull_request:
+          push:
+            branches: [main]
+          schedule:
+            - cron: '7 3 * * *'
+          workflow_dispatch:
+        jobs:
+          test:
+            if: ${{ github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository }}
+            runs-on: [self-hosted, coursia-ephemeral, coursia-fast-guards]
+            steps:
+              - run: echo safe
+        """)
+    result = policy.scan_workflows(tmp_path)
+    assert result.broken == []
+    assert result.violations == []
+    assert result.self_hosted_jobs == 1
+
+
+def test_check_run_and_check_suite_fail_closed(tmp_path):
+    """#14201 (tranche 2) : le denylist de #14148 (FORK_REACHABLE_TRIGGERS) est
+    fail-OPEN sur tout trigger non enumere. check_run / check_suite portent
+    pull_requests[] et un head_sha -- un `checkout ${{ ... head_sha }}`
+    executerait du code de fork sur le runner, comme les triggers de
+    commentaire que #14148 a fermes. L'allowlist default-deny doit les rejeter."""
+    write_workflow(tmp_path, "pr-gate-stale-sweep", """
+        name: check-driven
+        on:
+          check_run:
+            types: [completed]
+          check_suite:
+            types: [completed]
+        jobs:
+          test:
+            runs-on: [self-hosted, coursia-ephemeral, coursia-fast-guards]
+            steps:
+              - run: echo unsafe
+        """)
+    result = policy.scan_workflows(tmp_path)
+    assert result.broken == []
+    [violation] = result.violations
+    assert violation.code == "UNSAFE_TRIGGER"
+    assert "check_run" in violation.message
+    assert "check_suite" in violation.message
+
+
+def test_unknown_trigger_is_default_denied(tmp_path):
+    """#14201 (tranche 2) : un trigger inconnu du checker doit etre refuse par
+    defaut (fail-closed), pas laisse passer parce que la liste des triggers
+    dangereux est une enumeration. La plupart des candidats futurs de GitHub
+    (release, deployment, registry_package, ...) sont ici rejetes."""
+    write_workflow(tmp_path, "pr-gate-stale-sweep", """
+        name: future-event
+        on:
+          release:
+            types: [published]
+        jobs:
+          test:
+            runs-on: [self-hosted, coursia-ephemeral, coursia-fast-guards]
+            steps:
+              - run: echo unsafe
+        """)
+    result = policy.scan_workflows(tmp_path)
+    assert result.broken == []
+    assert "UNSAFE_TRIGGER" in codes(result)
+
+
+def test_safe_allowlist_triggers_are_accepted(tmp_path):
+    """Contre-controle de la frontiere allowlist : les QUATRE triggers du
+    depot -- pull_request, push, schedule, workflow_dispatch -- sont acceptes
+    ensemble sur un job self-hosted garde. C'est le complement du contre-
+    controle de #14148 (push/schedule/workflow_dispatch seuls) : aucun des
+    triggers reels de la tranche 1 ne doit devenir UNSAFE_TRIGGER."""
+    write_workflow(tmp_path, "pr-gate-stale-sweep", """
+        name: allowlist-safe
+        on:
+          pull_request:
+          push:
+            branches: [main]
+          schedule:
+            - cron: '7 3 * * *'
+          workflow_dispatch:
+        jobs:
+          test:
+            if: ${{ github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository }}
+            runs-on: [self-hosted, coursia-ephemeral, coursia-fast-guards]
+            steps:
+              - run: echo safe
+        """)
+    result = policy.scan_workflows(tmp_path)
+    assert result.broken == []
+    assert result.violations == []
+    assert result.self_hosted_jobs == 1
+
+
 def test_universal_guard_weakened_by_or_is_rejected(tmp_path):
     """#13874 FN-safety : meme avec la forme universelle, l'ajout d'un
     `|| always()` ou `|| true` reintroduit le trou. La garde universelle
@@ -635,3 +803,30 @@ def test_missing_runs_on_breaks_instrument_instead_of_silent_skip(tmp_path):
         """)
     result = policy.scan_workflows(tmp_path)
     assert result.broken == ["broken-job.yml:test: missing runs-on"]
+
+
+# #13960 : garde anti-regression sur les doublons de def dans ce fichier.
+# Le defaut fondateur (mesure 2026-09-01) : 4 paires byte-identiques
+# (`test_missing_trigger_breaks_instrument`, `test_empty_runs_on_list_breaks_instrument`,
+# `test_missing_jobs_breaks_instrument`, `test_same_repository_reusable_workflow_rejects_path_traversal`).
+# La 2e definition eclipsait la 1re -- couverture neutre mais piege a evolution
+# (si une copie evolue, la version executee n'est plus celle visible dans l'editeur).
+# Detecte au niveau AST tout doublon de fonction au top-level : aucun nom ne
+# doit apparaitre 2 fois comme def dans ce fichier. Si une re-introduction se
+# produit (par copier-coller, refactor futur, fusion accidentelle), ce test
+# rougit avec le nom et le compte.
+def test_13960_no_duplicate_test_function_definitions() -> None:
+    """#13960 : garde anti-regression doublons de def au top-level."""
+    import ast
+    import pathlib
+    source = pathlib.Path(__file__).read_text(encoding="utf-8")
+    tree = ast.parse(source)
+    seen: dict[str, int] = {}
+    for node in tree.body:
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            seen[node.name] = seen.get(node.name, 0) + 1
+    duplicates = {name: count for name, count in seen.items() if count > 1}
+    assert not duplicates, (
+        f"doublons de def au top-level : {duplicates} "
+        f"(cf #13960 fondateur : la 2e def eclipse la 1re silencieusement)"
+    )
