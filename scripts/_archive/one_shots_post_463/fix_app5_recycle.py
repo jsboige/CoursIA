@@ -5,6 +5,16 @@ Part of Issue #463: recyclage App-1..App-11.
 Only Ex1 needs recycling; Ex2 and Ex3 are already stubs.
 """
 
+# Archive header (standard _archive convention, 2026-08)
+# - Date archived : 2026-08-06
+# - Superseded by : none (one-shot fulfilled) — output lives in
+#   MyIA.AI.Notebooks/Search/Applications/CSP/App-5-Timetabling.ipynb
+# - Verdict recorded in : PR #482 (24ecee8ad, 2026-04-22), PR #9580
+#
+# Per-function disposition :
+# - fix_app5() : transformation applied in PR #482; resolved example and
+#   replacement exercise stub were verified on main in 2026-09
+
 import json
 
 
