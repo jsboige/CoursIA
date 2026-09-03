@@ -64,6 +64,10 @@ DEDICATED_LABEL_SETS = (REQUIRED_LABELS, LINUX_RUNNER_LABELS)
 #   `skipped` as OK). Routed to the containerized Linux leg to relieve the
 #   GitHub-hosted queue. Rollback = revert of the routing PR.
 SELF_HOSTED_WORKFLOW_ALLOWLIST = {
+    # tranche 3d (#14283) : premier consommateur GitHub-hosted du depot une
+    # fois secret-scan bascule -- 2650 runs same-repo du 2026-08-28 au
+    # 2026-09-02, timeout 25 min, aucun filtre `paths:`.
+    "always-on-guards.yml",
     "pr-gate-stale-sweep.yml",
     "windows-self-hosted-tests.yml",
     "linux-self-hosted-tests.yml",
