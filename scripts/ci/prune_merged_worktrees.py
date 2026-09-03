@@ -222,6 +222,39 @@ def is_source_dirty(path: str) -> bool:
     return any(p.endswith(ext) for ext in SOURCE_EXTENSIONS)
 
 
+def same_worktree_path(a: str, b: str) -> bool:
+    """Deux chemins de worktree designent-ils le meme repertoire ?
+
+    Les deux cotes de la comparaison `is_current` viennent de sources qui
+    n'ecrivent PAS les chemins de la meme facon :
+
+    - `git worktree list --porcelain` rend toujours des slash avant
+      (`D:/CoursIA/.worktrees/x`), y compris sur Windows ;
+    - `Path(cwd).resolve()` rend la forme native, donc a antislash sur
+      Windows (`D:` + separateur natif + `CoursIA` + ...).
+
+    Une egalite de chaines entre ces deux formes est donc **toujours fausse
+    sur Windows** : `SKIP_CURRENT` etait inatteignable. Mesure du 2026-09-03
+    sur ai-01 (64 worktrees) : `skipped=0` meme en lancant le script depuis
+    `.worktrees/ai01-gate-current`, dont la PR #14459 est MERGED -- ce
+    worktree etait donc programme `WOULD REMOVE`, c'est-a-dire que `--apply`
+    aurait tente `git worktree remove` sur le repertoire courant du process.
+
+    Ce garde n'est pas fail-closed : il ne refuse pas trop, il ne refuse
+    jamais. La comparaison se fait donc sur les chemins **resolus**, et
+    `Path.__eq__` est insensible a la casse sous Windows (ce qui couvre au
+    passage `d:/` vs `D:/`).
+    """
+    try:
+        return Path(a).resolve() == Path(b).resolve()
+    except OSError:
+        # Chemin inaccessible (lecteur demonte, worktree efface a la main) :
+        # on retombe sur une normalisation textuelle plutot que de rendre
+        # False, qui reintroduirait exactement le defaut ci-dessus.
+        return (a.replace("\\", "/").rstrip("/").lower()
+                == b.replace("\\", "/").rstrip("/").lower())
+
+
 def get_worktree_info(wt_path: str, current_path: str) -> dict:
     """Recupere branch + ahead count + dirty status d'un worktree."""
     # Branche (peut etre None si HEAD detaché)
@@ -281,7 +314,7 @@ def get_worktree_info(wt_path: str, current_path: str) -> dict:
         "ahead_count": ahead_count,
         "untracked": untracked,
         "has_source_dirty": has_source,
-        "is_current": wt_path == current_path,
+        "is_current": same_worktree_path(wt_path, current_path),
     }
 
 
