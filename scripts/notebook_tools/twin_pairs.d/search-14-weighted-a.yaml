@@ -14,6 +14,10 @@
     csharp_sha: dd94da21212e5d8179c62068e111d4caa6ced713
     content_python_sha: 221fd1165daaeac18598289e3b3fd671c17384c1e9883c4e6da7742fd9fdcfe0
     content_csharp_sha: 104d79405ba16bc9e835775426e35749ea3c92df89a1af2bdc1f0ffacca2aee8
+  - date: "2026-09-03"
+    by: myia-po-2025:CoursIA
+    python_sha: 4a28fcebcba7614ddafcbb583c688b419679f67c
+    csharp_sha: c60245250544f495d06f427d6b8727262ea38f96
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: 'Python = heapq (min-heap) + itertools.product + random.Random(seed), from-scratch. C# = PriorityQueue<T, double> (.NET 6+) + Random(seed), from-scratch. Verdict SOTA-OK (flip 2026-08-22, c.1301+335, myia-po-2025:CoursIA-2, issue #10382) : mislabel corrigige -- la reason anterieure concluat ''pedagogique from-scratch, pas de solveur tiers applicable'' (Weighted A* = algorithme pedagogique), qui contredit RECOVERABLE-LOCAL. Verifie firsthand : 3 imports Python / 1 using C#, aucun moteur tiers. Le balayage W sur f(n) = g(n) + W*h(n) est le sujet meme du chapitre ; PriorityQueue/heapq sont deja les primitives canoniques de leurs ecosystemes respectifs. From-scratch assumé des deux cotes, precedent GT-15 (PR #12312). parity_level preserve.'
   known_differences:
