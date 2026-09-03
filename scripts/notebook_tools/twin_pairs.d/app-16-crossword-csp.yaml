@@ -34,6 +34,13 @@
       content_python_sha: 9ea31048401b196f0bdfbee75ac6edc1fe0d051bbb7df73fb4f8ab4ee8eadb06
       content_csharp_sha: d907f3d29190e7c73fcbeaff09749bc83dd432cb7680309e0d9c6c09a759e7ed
       reason: "Re-attestation apres fix navlinks #14134 (2 occurrences du lien ../CSP-8-Temporal-Csharp.ipynb -> ../../Part2-CSP/CSP-8-Temporal-Csharp.ipynb, cell0 L35 + cell32 L36, cible resolue contre l arbre) : markdown-only, cellules code toujours byte-identiques. check_notebook_navlinks --check OK."
+    - date: "2026-09-03"
+      by: myia-po-2026:CoursIA
+      python_sha: 67f25e05a73be5f173247f292eadfb2ed78be67c
+      csharp_sha: b11d4b644822042d6fd815a4b497a6a818a7f025
+      content_python_sha: 86dbdb99d94f520a44ec24b6145c71e578e33ab927c627f9b2c9afd511baee83
+      content_csharp_sha: d907f3d29190e7c73fcbeaff09749bc83dd432cb7680309e0d9c6c09a759e7ed
+      reason: "Re-attestation apres fix enrich #14134 (2 HREF_MISSING ../Part2-CSP/ + ../Part3-Advanced/ rescrits ../../, 1 SOLUTION_LEAK fence deplacee en cellule dediee, md 21->22) : markdown-only, 12 cellules code byte-identiques base->HEAD. enrich_quality_ci + detect_markdown_rendering OK."
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Python = OR-Tools CP-SAT (cp_model + AddElement/inter constraints, dataclass) + numpy + matplotlib (11 cellules code). C# = Google.OrTools.Sat (NuGet, C# binding du MEME engine OR-Tools CP-SAT 9.11) + Tranche 1 from-scratch BCL pure (System.Linq/Text, 0 NuGet) PRESERVEE (12 cellules code). Verdict SOTA-OK (lib-vs-lib native-both) : les deux cotes invoquent le MEME moteur CP-SAT 9.11 (ortools.sat.python.cp_model <-> Google.OrTools.Sat.CpModel). Prong-B (#3801) : hierarchie sur grids 15x15 -- exact SOLUTION_OPTIMAL, backtracking from-scratch timeout sur les grands grilles -- discrimination mesuree. Tranche 1 from-scratch preservee intacte (byte-identique a main). Python met l'accent sur SOTA + viz matplotlib + experimentation comparative ; C# demontre from-scratch + binding NuGet. parity_level: native-both preserve."
   known_differences:
