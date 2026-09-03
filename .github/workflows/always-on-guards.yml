@@ -654,9 +654,23 @@ jobs:
             printf '[]' > /tmp/commits.json
           fi
 
+          # PREV-INVALID metadata (#13475) : la resolution de chaque
+          # `prev: ... #N` (PR mergee / PR ouverte / issue) vit desormais
+          # dans le module, sous test -- cf `resolve_prev_targets`. Elle
+          # etait ici, en heredoc, hors de portee de tout test, et elle
+          # etait fausse : elle demandait `gh pr view --json state,merged`,
+          # or `merged` n'est pas un champ de ce `gh`, donc l'appel echouait
+          # pour CHAQUE cible, retombait sur `gh issue view` (qui repond
+          # aussi pour les PRs) et classait toute PR en issue. `prev-not-pr`
+          # rougissait sur 100 % des PRs -- dont celle qui livrait le garde.
+          # Echec de resolution -> cible absente -> le gate s'abstient
+          # (contrat FN-safety inchange).
+
           python3 scripts/ci/variation_prev_guard.py \
             --body-file /tmp/pr_body.txt \
-            --commits-file /tmp/commits.json > /tmp/verdict.json 2>/tmp/verdict.err && RC=0 || RC=$?
+            --commits-file /tmp/commits.json \
+            --current-pr "$PR_NUMBER" \
+            --resolve-targets > /tmp/verdict.json 2>/tmp/verdict.err && RC=0 || RC=$?
 
           if [ -s /tmp/verdict.err ]; then
             echo "--- helper stderr ---"

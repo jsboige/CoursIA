@@ -195,8 +195,16 @@ build_deck() {
   # Rebuild after any markup crash: Rollup stops at the first crash, so a
   # green rebuild (not a single error lifted) is the only proof of repair
   # (#8817 pitfall #2).
+  #
+  # MSYS2_ARG_CONV_EXCL='*' disables MSYS path conversion on arguments to
+  # native-Windows executables (node, slidev). On Git-Bash, an argument
+  # starting with '/' would otherwise be rewritten to 'C:/Program Files/Git/...'
+  # before node sees it -- so `--base "/${out}/"` becomes
+  # `--base "C:/Program Files/Git/_advisory_dist/..."` and the dist is
+  # shipped with asset paths that resolve nowhere in the browser
+  # (#14374). '*' is the canonical all-args wildcard (#13326, c.939-L7).
   echo "--- Building: ${deck} ---"
-  if ( cd "$SLIDES_DIR" && $SLIDEV_BIN build "$rel" --out "../${out}" --base "/${out}/" ) >/tmp/slidev_build.log 2>&1; then
+  if ( cd "$SLIDES_DIR" && MSYS2_ARG_CONV_EXCL='*' $SLIDEV_BIN build "$rel" --out "../${out}" --base "/${out}/" ) >/tmp/slidev_build.log 2>&1; then
     echo "OK:   ${deck}"
     return 0
   else

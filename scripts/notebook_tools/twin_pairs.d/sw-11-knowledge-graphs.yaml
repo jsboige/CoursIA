@@ -16,6 +16,18 @@
       python_sha: a10e51c238cde777905354166118fd1bc5ad199a
       csharp_sha: 47e9629433702421b9bff134b157efe7673ed12c
       reason: "c58+c61+c64 SHACL cross-refs pointed at SW-9 (Linked Data); SHACL is SW-8 (cf. own c0 header). Python-only, csharp PRESERVED (parity=surface)."
+    - date: "2026-09-03"
+      by: myia-po-2026:CoursIA
+      python_sha: a10e51c238cde777905354166118fd1bc5ad199a
+      csharp_sha: 790dacc516fb00c39b85226ba9c6cfb27200f63d
+      content_python_sha: a813b4bc8bc9580688fb833268f6796eb131b2bec7fd9efd24ea3bd360b82bb0
+      content_csharp_sha: ad45adcda47a48b3987ed4d7272862665984a77a1156fcf2de6717815ebf804a
+    - date: "2026-09-03"
+      by: myia-po-2026:CoursIA
+      python_sha: a10e51c238cde777905354166118fd1bc5ad199a
+      csharp_sha: e557e3e39facb5c6d5e6892ada68a7a5a0399bbc
+      content_python_sha: a813b4bc8bc9580688fb833268f6796eb131b2bec7fd9efd24ea3bd360b82bb0
+      content_csharp_sha: 99d63adf00f7aef2c0a6eae726c37d87584eb5d07de6721c61e2354de3a9ed28
   known_differences:
     - "Socle commun : construction d'un graphe de connaissances (RDF + ontologie + requetage)."
     - "Asymetrie de profondeur (surface) : le Python combine TROIS librairies -- `rdflib` (RDF), `owlready2` (ontologie OWL), et `networkx` (algorithmes de graphe : centralite, composantes connexes, plus courts chemins). Le C# reste sur `dotNetRDF` seul (`VDS.RDF.Query`), sans dimension d'analyse de graphe (centralite/communautes)."

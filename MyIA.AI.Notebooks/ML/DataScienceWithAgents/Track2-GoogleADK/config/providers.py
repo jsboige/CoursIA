@@ -21,6 +21,7 @@ class ProviderType(Enum):
     GEMINI = "gemini"
     OPENAI = "openai"
     OPENROUTER = "openrouter"
+    QWEN = "qwen"
     VLLM = "vllm"
     LMSTUDIO = "lmstudio"
 
@@ -31,6 +32,7 @@ class ProviderConfig(BaseModel):
     model: str
     api_key: Optional[str] = None
     base_url: Optional[str] = None
+    max_tokens: Optional[int] = None
 
     # Defaults par provider
     DEFAULTS: ClassVar[dict] = {
@@ -45,6 +47,11 @@ class ProviderConfig(BaseModel):
         ProviderType.OPENROUTER: {
             "model": "anthropic/claude-3.5-sonnet",
             "base_url": "https://openrouter.ai/api/v1"
+        },
+        ProviderType.QWEN: {
+            "model": "qwen3.6-flash",
+            "base_url": None,
+            "max_tokens": 512,
         },
         ProviderType.VLLM: {
             "model": "qwen3.6-35b-a3b",
@@ -81,6 +88,12 @@ class Settings(BaseSettings):
     openrouter_api_key: Optional[str] = None
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
     openrouter_model: str = "openai/gpt-4.1"
+
+    # Qwen Cloud (API OpenAI-compatible)
+    qwen_api_key: Optional[str] = None
+    qwen_openai_base_url: Optional[str] = None
+    qwen_model: str = "qwen3.6-flash"
+    qwen_max_tokens: int = 512
 
     # vLLM (reverse proxy)
     vllm_base_url: Optional[str] = None
@@ -144,6 +157,27 @@ def get_provider_config(settings: Optional[Settings] = None) -> ProviderConfig:
             base_url=settings.openrouter_base_url or "https://openrouter.ai/api/v1"
         )
 
+    elif provider == ProviderType.QWEN:
+        missing = [
+            name
+            for name, value in (
+                ("QWEN_API_KEY", settings.qwen_api_key),
+                ("QWEN_OPENAI_BASE_URL", settings.qwen_openai_base_url),
+            )
+            if not value
+        ]
+        if missing:
+            raise ValueError(
+                "Configuration Qwen cloud incomplete : " + ", ".join(missing)
+            )
+        return ProviderConfig(
+            provider=provider,
+            model=settings.qwen_model or defaults["model"],
+            api_key=settings.qwen_api_key,
+            base_url=settings.qwen_openai_base_url,
+            max_tokens=max(settings.qwen_max_tokens, 256),
+        )
+
     elif provider == ProviderType.VLLM:
         return ProviderConfig(
             provider=provider,
@@ -177,6 +211,7 @@ def get_litellm_model(config: ProviderConfig) -> str:
         ProviderType.GEMINI: "gemini",
         ProviderType.OPENAI: "openai",
         ProviderType.OPENROUTER: "openrouter",
+        ProviderType.QWEN: "openai",  # Qwen Cloud expose une API OpenAI-compatible
         ProviderType.VLLM: "openai",  # vLLM utilise l'API OpenAI
         ProviderType.LMSTUDIO: "openai"  # LM Studio aussi
     }

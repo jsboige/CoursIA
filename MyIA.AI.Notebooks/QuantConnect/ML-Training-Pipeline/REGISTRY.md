@@ -539,7 +539,7 @@ Slice 2/2 du ticket #12734 (slice 1/2 = M4 DLinear-vol, livré via PR #12742). L
 
 **Patch persistance** : `evaluate_one_combo` calcule désormais `har_bias_oos = mean(har_pred - target)` OOS et persiste **les arrays `har_errors`/`lstm_errors`** (même guard `len >= 10 and isfinite`) par combo, pour que `analyze_one_combo` (wrapper `btc_m15.py`) puisse appliquer la décomposition `MSE = biais² + variance` et le DM recentré post-hoc. Rétro-compatible : les anciens champs `sharpe_*`, `mse_*`, `dm_*` sont préservés. Le JSON `results.json` de chaque run M15 porte donc `har_bias_oos` + les erreurs brutes par combo — vérifiable depuis git sans relancer le sweep.
 
-**Wrapper `scripts/btc_m15.py`** : pendant BTC-only de `scripts/btc_vol.py`. Orchestre le run M15 BTC + applique la décomposition `MSE = biais² + variance` et le DM recentré (`loss_fn="mse"` sur erreurs centrees). Helpers `_mse_decomposition` et `_dm_centered_mse` **dupliqués** depuis `btc_vol.py` (TODO post-merge : consolider dans un module partage `btc_debias.py`).
+**Wrapper `scripts/btc_m15.py`** : pendant BTC-only de `scripts/btc_vol.py`. Orchestre le run M15 BTC + applique la décomposition `MSE = biais² + variance` et le DM recentré (`loss_fn="mse"` sur erreurs centrees). Helpers `_mse_decomposition` et `_dm_centered_mse` dans le module partage `scripts/bias_metrics.py`, extrait de `btc_vol.py` (issue #14363).
 
 **Section notebook** : section 8 ajoutée à `m15_lstm_rv_sc_validation.ipynb` (méthodologie + commande de run complet + verdict attendu). Markdown-only — la cellule code de lecture du JSON viendra au prochain cycle avec le rerun.
 

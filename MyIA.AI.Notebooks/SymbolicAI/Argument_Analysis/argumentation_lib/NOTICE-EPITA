@@ -14,8 +14,8 @@ CoursIA copy
 
 | File in CoursIA `argumentation_lib/` | Upstream path in EPITA-IS | Upstream commit |
 |---------------------------------------|----------------------------|-----------------|
-| `_shared_state.py` (1121 lines)       | `argumentation_analysis/core/shared_state.py` | a8025f60 (2026-07-02) |
-| `_state_manager_plugin.py`            | `argumentation_analysis/core/state_manager_plugin.py` | see git log |
+| `_shared_state.py` (1121 lines) **partial**  | `argumentation_analysis/core/shared_state.py` | a8025f60 (2026-07-02) |
+| `_state_manager_plugin.py` (840 lines) **partial** | `argumentation_analysis/core/state_manager_plugin.py` | 9834462 (clusterManager LGTM SHA, B.2 vendor faa10e74f, PRs #2137/#2856) |
 | `_taxonomy_sophism_detector.py` (442 lines) | `argumentation_analysis/agents/core/informal/taxonomy_sophism_detector.py` | a8025f60 (2026-07-02) |
 | `_informal_definitions.py` (891 lines) | `argumentation_analysis/agents/core/informal/informal_definitions.py` | a8025f60 (2026-07-02) |
 | `_tweety_bridge.py` (488 lines) | `argumentation_analysis/agents/core/logic/tweety_bridge.py` | a8025f60 (2026-07-02) |
@@ -66,10 +66,31 @@ Verbatim integrity
 ------------------
 
 Each verbatim file begins with a MIT attribution header (this NOTICE per-file, with
-the exact upstream commit cited) followed by the byte-for-byte upstream content.
+the exact upstream commit cited) followed by the byte-for-byte upstream content
+below the header.
 **Any divergence from the cited upstream commit is a regression and must be
 documented in this NOTICE before commit.** CoursIA-original code that extends
 or wraps the verbatim content lives in separate files (NOT prefixed with `_`).
+
+Partial copies (See #14026)
+---------------------------
+
+Two files in the table above are marked **`partial`** rather than verbatim, because
+the CoursIA copy is shorter than the upstream source at the cited commit. A `git
+pull` of upstream will NOT repair this divergence -- the surface is intentionally
+absent (deliberate perimeter of EPIC #4960, not a sync bug). The symbols listed
+below are the **known missing surface**, which downstream consumers should treat as
+**not imported**:
+
+| CoursIA file              | Missing surface (upstream symbols absent in CoursIA) |
+|---------------------------|-----------------------------------------------------|
+| `_shared_state.py` (1121 lines vs 1483 upstream at a8025f60, delta -370 +8 CoursIA-only) | `DesignationRecord`, `record_designation`, `_designation_fingerprint`, `backfill_last_designation_for`, `record_cap_breach`, `set_source_metadata`, `add_structured_arg_status` (and surrounding helpers) |
+| `_state_manager_plugin.py` (840 lines; upstream SHA 9834462) | `record_designation` (the trace-writing companion of `designate_next_agent`, which DID cross). The pair is a contract: designating without recording the motivation is observable at runtime. |
+
+The two files are still **safe to import** for the symbols they do vendore
+(`RhetoricalAnalysisState`, `ArgumentProfile`, all `designate_*` /
+`record_*` / `update_*` etc. kernel-functions present at the cited commit).
+The `partial` qualifier is a semantic precision, not a correctness verdict.
 
 Anti-regression discipline
 --------------------------

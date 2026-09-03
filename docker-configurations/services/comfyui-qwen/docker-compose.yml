@@ -72,7 +72,6 @@ services:
       - COMFYUI_LOGIN_ENABLED=${COMFYUI_LOGIN_ENABLED:-true}
       - COMFYUI_USERNAME=${COMFYUI_USERNAME}
       - COMFYUI_PASSWORD=${COMFYUI_PASSWORD}
-      - COMFYUI_BEARER_TOKEN=${COMFYUI_BEARER_TOKEN}
       - GUEST_MODE_ENABLED=${GUEST_MODE_ENABLED:-false}
       - SECRET_KEY=${SECRET_KEY}
       # Configuration comportement
@@ -120,11 +119,20 @@ services:
       - COMFYUI_URL=http://comfyui-qwen:8188
       - IDLE_TIMEOUT=${IDLE_TIMEOUT:-1200}
       - CHECK_INTERVAL=${CHECK_INTERVAL:-60}
-      - COMFYUI_AUTH_TOKEN=${COMFYUI_RAW_TOKEN}
       - COMFYUI_USERNAME=${COMFYUI_USERNAME:-admin}
       - COMFYUI_PASSWORD=${COMFYUI_PASSWORD}
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
       - TZ=${TZ:-Europe/Paris}
+
+    volumes:
+      # Credential ComfyUI-Login : par fichier, JAMAIS par env compose --
+      # l'interpolation compose mange les '$' des bcrypt ($2b$12$Iv... -> le
+      # conteneur recevrait un token tronque, #14382). Le monitor lit le
+      # fichier en fallback si COMFYUI_AUTH_TOKEN n'est pas defini.
+      - type: bind
+        source: ../../../.secrets/qwen-api-user.token
+        target: /secrets/qwen-api-user.token
+        read_only: true
 
     working_dir: /app
 

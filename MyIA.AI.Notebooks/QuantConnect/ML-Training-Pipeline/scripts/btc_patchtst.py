@@ -12,7 +12,8 @@ Wrapper that reuses existing pipeline modules without modifying them:
   ``calibrate_bias=True`` (see the debiasing paragraph below).
 - ``dlinear_vol.create_sequences`` for the (input, target) windowing --
   same convention as the DLinear-vol keeper.
-- ``btc_vol._mse_decomposition`` / ``btc_vol._dm_centered_mse`` for the
+- ``bias_metrics._mse_decomposition`` / ``bias_metrics._dm_centered_mse``
+  (shared torch-free module, issue #14363) for the
   MSE = bias^2 + variance decomposition and the DM test on mean-centered
   errors (loss_fn="mse" -> variance differential, the precision leg of
   pr-review section C).
@@ -89,7 +90,7 @@ from train_patchtst import PatchTSTModel  # noqa: E402  (model class reuse only)
 from har_model import _make_split_indices as make_expanding_splits  # noqa: E402
 from har_model import walk_forward_har  # noqa: E402
 from dlinear_vol import create_sequences  # noqa: E402
-from btc_vol import _dm_centered_mse, _mse_decomposition  # noqa: E402
+from bias_metrics import _dm_centered_mse, _mse_decomposition  # noqa: E402
 from intraday_loader import hourly_log_returns, load_bitstamp_btc  # noqa: E402
 from realized_variance import (  # noqa: E402
     daily_realized_variance,

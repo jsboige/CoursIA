@@ -1,6 +1,7 @@
 """Tests for btc_vol.py helpers (issue #12734).
 
-These cover the pure transformations in `scripts/btc_vol.py`:
+These cover the pure transformations in `scripts/bias_metrics.py`
+(extracted from `btc_vol.py`, issue #14363):
   - `_mse_decomposition`: split MSE into bias^2 + variance.
   - `_dm_centered_mse`: DM test on errors centered by their own mean.
 
@@ -19,10 +20,12 @@ import pytest
 # Make the parent directory importable.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from btc_vol import (  # noqa: E402
+from bias_metrics import (  # noqa: E402
     _dm_centered_mse,
-    _dm_uncentered_mse,
     _mse_decomposition,
+)
+from btc_vol import (  # noqa: E402
+    _dm_uncentered_mse,
 )
 
 

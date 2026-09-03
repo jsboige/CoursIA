@@ -470,6 +470,48 @@ class TestSync:
         assert render_envs.sync(check_only=False) == 0
         assert "HF_TOKEN=stable" in targets[0].read_text(encoding="utf-8")
 
+    def test_missing_master_keys_named_not_drift(self, tmp_path, monkeypatch, capsys):
+        """#14373 geste 1 : une clé déclarée dans SECRET_KEYS mais absente du
+        master est NOMÉE, et le verdict cesse de dire 'No drift' (le vert ne
+        couvrait que les clés propagées). Sans --strict, exit 0 (découverte,
+        pas garde)."""
+        targets = self._setup(
+            tmp_path, monkeypatch,
+            "HF_TOKEN=stable\n",
+            [("svc", "HF_TOKEN=stable\n")],
+        )
+        # SECRET_KEYS réelle porte des clés (QWEN, IBKR, ...) absentes de ce
+        # master minimal : le [OK] ne doit plus être un no-drift naïf.
+        assert render_envs.sync(check_only=True) == 0
+        out = capsys.readouterr().out
+        assert "OUT OF SCOPE" in out
+        assert "declared secret key(s) are OUT OF SCOPE" in out
+        assert "No drift." not in out
+
+    def test_strict_exit1_when_declared_key_absent(self, tmp_path, monkeypatch):
+        """#14373 geste 2 : --strict sort 1 quand une clé déclarée manque au
+        master, même sans le moindre drift -- distinguer 'en phase' de 'en
+        phase sur ce que je regarde' (contrôle FP de l'issue)."""
+        self._setup(
+            tmp_path, monkeypatch,
+            "HF_TOKEN=stable\n",
+            [("svc", "HF_TOKEN=stable\n")],
+        )
+        assert render_envs.sync(check_only=True, strict=True) == 1
+
+    def test_strict_exit0_when_all_declared_present(self, tmp_path, monkeypatch):
+        """Contrôle FP de --strict : quand master sert TOUTES les clés
+        déclarées, --strict reste 0 (le durcissement ne casse pas l'état
+        nominal)."""
+        self._setup(
+            tmp_path, monkeypatch,
+            "HF_TOKEN=stable\n",
+            [("svc", "HF_TOKEN=stable\n")],
+        )
+        monkeypatch.setattr(render_envs, "SECRET_KEYS", frozenset({"HF_TOKEN"}))
+        assert render_envs.sync(check_only=True, strict=True) == 0
+        assert render_envs.sync(check_only=False, strict=True) == 0
+
     def test_non_secret_key_untouched(self, tmp_path, monkeypatch):
         # A KEY present in service .env but ABSENT from master must be left
         # untouched (master only governs its own declared keys).
@@ -506,6 +548,19 @@ class TestMain:
         # Drift in check mode -> exit 1, no write.
         assert render_envs.main() == 1
         assert "HF_TOKEN=old" in svc.read_text(encoding="utf-8")
+
+    def test_strict_flag_routes_to_sync_strict(self, tmp_path, monkeypatch):
+        """#14373 geste 2 : --check --strict route vers strict=True et sort 1
+        quand une clé déclarée est absente du master (pas de drift) -- la CI
+        peut distinguer 'en phase' de 'en phase sur ce que je regarde'."""
+        master = tmp_path / "master.env"
+        master.write_text("HF_TOKEN=stable\n", encoding="utf-8")
+        svc = _svc_env(tmp_path, "svc")
+        svc.write_text("HF_TOKEN=stable\n", encoding="utf-8")
+        monkeypatch.setattr(render_envs, "MASTER_ENV", master)
+        monkeypatch.setattr(render_envs, "TARGET_ENVS", [svc])
+        monkeypatch.setattr(sys, "argv", ["render_envs.py", "--check", "--strict"])
+        assert render_envs.main() == 1
 
     def test_bootstrap_flag_routes_to_bootstrap(self, tmp_path, monkeypatch):
         master = tmp_path / "master.env"

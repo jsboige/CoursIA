@@ -1,0 +1,71 @@
+{
+  "issue": "#13117",
+  "phase": "Phase G -- benchmarks buy-and-hold BTC/ETH sur 2021-2024 (acceptance #13117 critere 5)",
+  "date": "2026-09-03",
+  "worker": "myia-po-2023:CoursIA-2",
+  "trigger": "Dernier critere d'acceptance #13117 (comparaison au benchmark sur fenetre alignee) non couvert par Phases B/C/D/E/F",
+  "deliverable": "2 runs buy-and-hold sur la meme fenetre 2021-01-01 -> 2024-12-31, MINUTE resolution, devise USDT, frais Binance 0.1 %, capital initial 10 000 USDT. Discipline B-serie : 1 run = 1 leg, 1 seule variable = l'asset (BTC vs ETH).",
+  "results_summary": {
+    "BnH_BTC": {
+      "backtest_id": "a8cf6beb92fb35bddc0719f2f9b5f27f",
+      "backtest_name": "BnH-BTC-2021-2024-PhaseG-v4",
+      "compile_id": "9f06f0942b1e327b7e7c6b8f49f2f83f-9546682be713bc30f1ec7c387ba37370",
+      "qc_project_id": 36043732,
+      "qc_project_url": "https://www.quantconnect.com/project/36043732",
+      "qc_url": "https://www.quantconnect.com/project/36043732/backtest/a8cf6beb92fb35bddc0719f2f9b5f27f",
+      "created": "2026-09-03 04:43:54",
+      "completed": "2026-09-03 (status 'Completed.', progress 1)",
+      "tradeableDates": 1461,
+      "totalOrders": 1,
+      "statistics": {
+        "sharpeRatio": "0.942",
+        "compoundingAnnualReturn": "33.625%",
+        "drawdown": "76.900%",
+        "totalNetProfit": "219.078%",
+        "probabilisticSharpeRatio": "28.934%",
+        "netProfitAbsolute": "T-9.97"
+      },
+      "variable_unique_changee": "Asset = BTCUSDT seul (vs ETHUSDT dans BnH_ETH, vs BTCUSDT+ETHUSDT dans B3-F)",
+      "verdict": "BUY-AND-HOLD BTC rentable : +219 % net sur 4 ans, CAGR 33.6 %, Sharpe 0.94. MaxDD -76.9 % typique crypto bull-then-bear 2021-2022. 1 ordre (la discipline BnH).",
+      "preuve": "read_backtest a8cf6beb92fb35bddc0719f2f9b5f27f status 'Completed.' progress 1 ; 1461 dates tradeables ; 1 ordre (set_holdings 100 % au warmup end j+2). Cout transactionnel = 0.1 % maker/taker sur le seul ordre d'entree (~T10 = 0.1 % * 10 000 = T-10, en ligne avec netProfitAbsolute = T-9.97).",
+      "interpretation": "BnH BTC sur 2021-2024 capture la hausse BTC (cycle bull 2020-2021, bear 2022, recovery 2023-2024). Le -76.9 % MaxDD reflete le drawdown 2022 (LUNA/3AC) ; le +219 % net sur la periode montre que le rebond + halving 2024 surcompense."
+    },
+    "BnH_ETH": {
+      "backtest_id": "16c790ffb531612890588ad46656172c",
+      "backtest_name": "BnH-ETH-2021-2024-PhaseG-v4",
+      "compile_id": "1d9876c9babe0af30c764f550d036d0a-f800077dc9f96bbf9bdf27df032fa925",
+      "qc_project_id": 36043751,
+      "qc_project_url": "https://www.quantconnect.com/project/36043751",
+      "qc_url": "https://www.quantconnect.com/project/36043751/backtest/16c790ffb531612890588ad46656172c",
+      "created": "2026-09-03 04:44:18",
+      "completed": "2026-09-03 (status 'Completed.', progress 1)",
+      "tradeableDates": 1461,
+      "totalOrders": 1,
+      "statistics": {
+        "sharpeRatio": "1.216",
+        "compoundingAnnualReturn": "45.481%",
+        "drawdown": "80.100%",
+        "totalNetProfit": "348.410%",
+        "probabilisticSharpeRatio": "36.951%",
+        "netProfitAbsolute": "T-9.96"
+      },
+      "variable_unique_changee": "Asset = ETHUSDT seul (vs BTCUSDT dans BnH_BTC, vs BTCUSDT+ETHUSDT dans B3-F)",
+      "verdict": "BUY-AND-HOLD ETH surperforme BTC sur la fenetre : +348 % net, CAGR 45.5 %, Sharpe 1.22. MaxDD -80.1 % legerement plus profond que BTC (ETH a chute plus bas en 2022). 1 ordre.",
+      "preuve": "read_backtest 16c790ffb531612890588ad46656172c status 'Completed.' progress 1 ; 1461 dates tradeables ; 1 ordre. Cout transactionnel aligne (T-9.96 ≈ T-10).",
+      "interpretation": "ETH surperforme BTC sur 2021-2024 grace au rebond post-Merge (septembre 2022) et au cycle 2023-2024 (restaking/L2). Le pattern crypto 'ETH plus volatile, plus de retour sur 4 ans' tient, malgre un MaxDD plus profond."
+    }
+  },
+  "comparaison_Phases_D_E_F": {
+    "B3_PhaseE": {"netProfit": "-99.880 %", "sharpe": -2.961, "MaxDD": "99.900 %", "ordres": 917199, "verdict": "strategie reelle ruineuse (sur-trading post-debloquage devise)"},
+    "B4_PhaseF": {"netProfit": "-99.877 %", "sharpe": -2.963, "MaxDD": "99.900 %", "ordres": 879847, "verdict": "edge-triggered ne remedie pas (front montant = meme volume d'ordres)"},
+    "B5_PhaseF": {"netProfit": "~-100 %", "sharpe": "n/a", "MaxDD": "n/a", "ordres": 1140574, "verdict": "cooldown 60 min ne remedie pas non plus (~781 ordres/jour -- la condition AND clignote a chaque barre Minute, le cooldown 60 min ne ralentit pas la cadence)"}
+  },
+  "verdict": "INCONCLUSIVE au sens strategie (les Phases D-F l'ont deja montre) ; mais Phase G DELIVRE le benchmark manquant : BTC BnH +219 %, ETH BnH +348 %. Le defaut de la strategie n'est PAS la selection d'asset (BTC/ETH montent fortement sur la fenetre) -- le defaut est l'EXCES d'ordres : ~628/jour en mode Phase E (B3, sans guard), 602/jour en Phase F B4 (edge-triggered), 781/jour en Phase F B5 (cooldown 60 min) -- 600 a 800 ordres/jour qui mangent le capital en frais 0.1 %. Une version 'entree edge-triggered + cooldown 24h + position hold minimum 24h' ferait probablement aussi bien que BnH avec 1 seul ordre au lieu de 600 a 800/jour. C'est un autre grain, pas Phase G.",
+  "tells": [
+    "qc-brokerage-class-vs-enum: BinanceBrokerage() (classe) n'est pas importe par defaut dans AlgorithmImports ; la forme portable est SetBrokerageModel(BrokerageName.BINANCE, AccountType.CASH). Phase E/F utilise deja la forme enum ; le code BnH v1/v2 clonait la forme historique 'BinanceBrokerage' qui date d'avant BrokerageName.",
+    "qc-self-attribute-fantasy: self.BTCUSDT/ETHUSDT n'existent pas comme attributs auto (contrairement a SPY dans les exemples de base) ; il faut passer par self.AddCrypto(...).Symbol ou self.Securities[self.btc].Price.",
+    "qc-portfolio-by-ticker-ne-fonctionne-pas-pour-la-devise-de-compte: self.Portfolio['USDT'].Quantity leve SymbolCache error ; SetHoldings(symbol, weight) est la voie portable car elle prend une fraction du portfolio, pas un montant dans la devise de compte.",
+    "qc-no-spare-nodes-frequent: cluster souvent sature, ETH a du attendre la fin de BTC avant d'obtenir un slot (2 vagues, ~4 min).",
+    "qc-1-ordre-pas-1-trade: BnH avec set_holdings(1.0) rend totalOrders=1 (l'ordre lui-meme) -- ce n'est pas le nombre de 'trades filled' au sens 'positions ouverte + fermee'. Un backtest BnH = 1 ordre = position ouverte j+2 jusqu'a la fin de la fenetre, pas de 'trade' a proprement parler (pas de sortie)."
+  ]
+}

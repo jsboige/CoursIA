@@ -37,6 +37,7 @@ SCRIPTS_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(SCRIPTS_DIR))
 
 from dm_test import dm_verdict
+from bias_metrics import _dm_centered_mse, _mse_decomposition  # noqa: E402
 from har_model import HARModel, _make_split_indices
 from intraday_loader import load_binance_eth, load_bitstamp_btc
 from realized_variance import daily_realized_variance, har_lag_features, realized_variance_to_log
@@ -146,48 +147,6 @@ def _aggregate_debiased_state(
     if n_beats_raw == n_seeds:
         return "refuted-de-biased"
     return "INCONCLUSIVE"
-
-
-def _mse_decomposition(errors: np.ndarray) -> dict:
-    """Decompose MSE of a forecast into bias^2 + variance on the error support."""
-    if errors is None or len(errors) == 0:
-        return {"mse": float("nan"), "bias_sq": float("nan"), "variance": float("nan")}
-    bias = float(np.mean(errors))
-    variance = float(np.var(errors, ddof=0))
-    return {
-        "mse": float(np.mean(errors ** 2)),
-        "bias_sq": bias ** 2,
-        "variance": variance,
-    }
-
-
-def _dm_centered_mse(errors_a: np.ndarray, errors_b: np.ndarray, horizon: int) -> dict:
-    """DM test on errors centered by their own mean, with loss_fn='mse'.
-
-    Centering annihilates the bias component (`mean(e - mean(e)) = 0`), so the
-    resulting `d_mean` measures only the variance differential. The "DM on
-    precision" jambe that #10961 documents is exactly this.
-
-    `loss_fn` stays "mse" on purpose: §C forbids `linear` as the conjunction
-    leg, because on raw signed errors `d_mean = bias_a - bias_b` is blind to
-    dispersion -- it measures the very quantity centering removes.
-    """
-    e_a = np.asarray(errors_a, dtype=float)
-    e_b = np.asarray(errors_b, dtype=float)
-    if e_a.shape != e_b.shape:
-        return {"dm_stat": float("nan"), "dm_pvalue": float("nan"), "dm_verdict": "SHAPE_MISMATCH"}
-    if len(e_a) < 10:
-        return {"dm_stat": float("nan"), "dm_pvalue": float("nan"), "dm_verdict": "INSUFFICIENT_DATA"}
-
-    res = dm_verdict(
-        e_a - np.mean(e_a), e_b - np.mean(e_b), horizon=horizon, loss_fn="mse",
-    )
-    return {
-        "dm_stat": float(res["dm_statistic"]),
-        "dm_pvalue": float(res["p_value"]),
-        "dm_verdict": str(res["verdict"]),
-        "mean_loss_diff": float(res["mean_loss_diff"]),
-    }
 
 
 def fit_hmm_regimes(log_rv_train: np.ndarray, seed: int) -> "GaussianHMM":

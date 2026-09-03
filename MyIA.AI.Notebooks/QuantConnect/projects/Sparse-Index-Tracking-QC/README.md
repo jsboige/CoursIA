@@ -9,10 +9,12 @@
 Sparse index tracking sous contrainte de cardinalité, sur **données réelles** : suivre SPY avec
 un sous-ensemble réduit d'actions (K ∈ {6, 8, 10}) plutôt que d'optimiser sans contrainte de cardinalité sur l'univers candidat complet.
 Versant « épreuve du réel » du compagnon de méthode
-App-27 — Sparse index tracking walk-forward (`MyIA.AI.Notebooks/Search/Applications/Hybrid/`, PR #14046)
+[App-27 — Sparse index tracking walk-forward](../../../Search/Applications/Hybrid/App-27-Sparse-Index-Tracking-Walk-Forward.ipynb)
 (série Search), qui pose le même problème en CP-SAT sur données synthétiques à vérité
 connue. App-27 porte le modèle et le validateur ; ce projet porte le test sur prix réels avec un
-backtest QC Cloud et des coûts explicites.
+backtest QC Cloud et des coûts explicites. Les deux artefacts forment **une recherche, deux
+lectures** : le notebook pédagogique reprend les résultats autoritatifs de ce projet sans relancer
+une seconde recherche de marché.
 
 ### Distinction de moteur (documentée honnêtement)
 
@@ -104,7 +106,9 @@ la contrainte est exogène (budget, mandat).
 - **Univers biaisé de survivant** : 40 valeurs choisies en 2026, toutes gagnantes de la période —
   le niveau absolu (CAGR ~17 %) surestime la capacité réelle à suivre un indice ; seule la
   comparaison sparse vs full est informative.
-- Pas de contrainte sectorielle ni de turnover dur (App-27 les a ; QC Cloud n'a pas CP-SAT).
+- Pas de contrainte sectorielle ni de turnover dur : cette implémentation choisit délibérément
+  NNLS et l'énumération bornée pour l'expérience Cloud ; App-27 étudie séparément ces contraintes
+  avec CP-SAT. Cette différence relève du protocole comparé, pas d'une incapacité générale de QC Cloud.
 - Short-list de 12 par corrélation = filtre heuristique : l'énumération est exacte dans la
   short-list, pas sur l'univers.
 - Pas de slippage (frais isolés à 5 bps exprès) ; fills daily à l'ouverture suivante.
@@ -119,6 +123,6 @@ la contrainte est exogène (budget, mandat).
 
 ## Renvois
 
-- **Méthode** : App-27 — Sparse index tracking walk-forward (`MyIA.AI.Notebooks/Search/Applications/Hybrid/`, PR #14046) — modèle CP-SAT, validateur, fuite reproduite. Lien hypertexte à ajouter au merge de #14046 (cible absente de `main` tant que la PR est ouverte).
+- **Méthode** : [App-27 — Sparse index tracking walk-forward](../../../Search/Applications/Hybrid/App-27-Sparse-Index-Tracking-Walk-Forward.ipynb) — modèle CP-SAT, validateur, fuite reproduite et lecture pédagogique des présents résultats QC.
 - **Issue** : #14062 (développement d'App-27 côté QuantConnect).
 - **Tracking error sans cardinalité** : [QC-Py-14 — Portfolio Construction & Execution](../../Python/QC-Py-14-Portfolio-Construction-Execution.ipynb) — l'arête manquante que ce projet ajoute.

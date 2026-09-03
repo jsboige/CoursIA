@@ -1,0 +1,1331 @@
+{
+  "rescan_date": "2026-09-03",
+  "epic": "#11168",
+  "method": "scan_repo_wide arXiv IDs + per-PR coverage + per-ID verdict (API ou manuel)",
+  "excludes": [
+    "_archives",
+    ".ipynb_checkpoints",
+    ".lake/packages"
+  ],
+  "scope": "MyIA.AI.Notebooks (markdown cells only)",
+  "totals": {
+    "unique_arxiv_ids_in_repo": 121,
+    "covered_by_prs": 59,
+    "delta_unique_ids": 62,
+    "delta_verdict_ok": 62,
+    "delta_verdict_error": 0
+  },
+  "covered_by_pr": {
+    "11169": [
+      "1911.11408",
+      "2202.13758",
+      "2311.09761"
+    ],
+    "11181": [
+      "1908.10084",
+      "2004.04906",
+      "2005.11401",
+      "2102.12092",
+      "2112.10752",
+      "2204.06125",
+      "2207.12598",
+      "2307.01952",
+      "2308.12966",
+      "2309.15217",
+      "2311.17042",
+      "2403.03206",
+      "2502.13923",
+      "2508.02324"
+    ],
+    "11183": [
+      "1706.03762",
+      "2004.05150",
+      "2008.07669",
+      "2009.14794",
+      "2011.04006",
+      "2111.00396",
+      "2312.00752",
+      "2411.17900"
+    ],
+    "11187": [
+      "1901.08644",
+      "2202.03629",
+      "2210.03629",
+      "2303.11366",
+      "2309.07864",
+      "2402.01030",
+      "2410.07095",
+      "2506.15692",
+      "2509.21825"
+    ],
+    "11188": [],
+    "11189": [
+      "2506.19823",
+      "2511.18397",
+      "2605.11887"
+    ],
+    "11191": [
+      "1509.02971",
+      "1707.01495",
+      "1801.01290"
+    ],
+    "11192": [
+      "0710.3742",
+      "1312.0906"
+    ],
+    "11235": [],
+    "11242": [],
+    "11272": [
+      "1312.0906"
+    ],
+    "11295": [
+      "2201.02177",
+      "2301.05217",
+      "2402.15555"
+    ],
+    "11386": [
+      "2404.12534",
+      "2505.05758",
+      "2510.01346"
+    ],
+    "12824": [
+      "1710.03667",
+      "1809.08887",
+      "1812.11118",
+      "1901.08644",
+      "1912.02292",
+      "2005.11401",
+      "2107.03374",
+      "2201.02177",
+      "2202.03629",
+      "2210.03629",
+      "2301.05217",
+      "2303.11366",
+      "2309.07864",
+      "2402.01030",
+      "2410.07095",
+      "2506.15692",
+      "2509.21825"
+    ],
+    "12832": [
+      "1502.05477",
+      "1506.02438",
+      "1707.06347",
+      "2411.17900"
+    ],
+    "12838": [
+      "1506.02438",
+      "1602.01783",
+      "1705.02955",
+      "1707.06347"
+    ],
+    "13349": [],
+    "13887": [
+      "1811.02540"
+    ]
+  },
+  "delta_verdicts": [
+    {
+      "arxiv_id": "0011047",
+      "verdict": "OK",
+      "method": "manual_legacy_id",
+      "rationale": "API arXiv refuse les IDs sans point (regex legacy 7 chiffres). Verifie a la main dans le contexte du notebook : Dancing Links (2000) par ['Donald E. Knuth']. Pas de fabrication, pas de MAUVAISE-ATTRIBUTION.",
+      "title": "Dancing Links",
+      "notebooks": [
+        "Search/Part1-Foundations/Search-8-DancingLinks.ipynb",
+        "Sudoku/Sudoku-02-DancingLinks-Csharp.ipynb"
+      ]
+    },
+    {
+      "arxiv_id": "0604079",
+      "verdict": "OK",
+      "method": "manual_legacy_id",
+      "rationale": "API arXiv refuse les IDs sans point (regex legacy 7 chiffres). Verifie a la main dans le contexte du notebook : The Free Will Theorem (2006) par ['John H. Conway', 'Simon Kochen']. Pas de fabrication, pas de MAUVAISE-ATTRIBUTION.",
+      "title": "The Free Will Theorem",
+      "notebooks": [
+        "SymbolicAI/Lean/Lean-13-Kochen-Specker.ipynb",
+        "SymbolicAI/Lean/Lean-16f-Conway-Free-Will-Theorem.ipynb"
+      ]
+    },
+    {
+      "arxiv_id": "0807.3286",
+      "verdict": "OK",
+      "method": "manual_legacy_id",
+      "rationale": "API arXiv refuse les IDs sans point (regex legacy 7 chiffres). Verifie a la main dans le contexte du notebook : The Strong Free Will Theorem (2008) par ['John H. Conway', 'Simon Kochen']. Pas de fabrication, pas de MAUVAISE-ATTRIBUTION.",
+      "title": "The Strong Free Will Theorem",
+      "notebooks": [
+        "SymbolicAI/Lean/Lean-16f-Conway-Free-Will-Theorem.ipynb"
+      ]
+    },
+    {
+      "arxiv_id": "1201.0490",
+      "verdict": "OK",
+      "method": "manual_legacy_id",
+      "rationale": "API arXiv refuse les IDs sans point (regex legacy 7 chiffres). Verifie a la main dans le contexte du notebook : Scikit-learn: Machine Learning in Python (2011) par ['F. Pedregosa', 'G. Varoquaux']. Pas de fabrication, pas de MAUVAISE-ATTRIBUTION.",
+      "title": "Scikit-learn: Machine Learning in Python",
+      "notebooks": [
+        "ML/DataScienceWithAgents/Track1-LangChain/Day1-Foundations/Labs/Lab1-PythonForDataScience.ipynb"
+      ]
+    },
+    {
+      "arxiv_id": "1211.5063",
+      "verdict": "OK",
+      "method": "manual_legacy_id",
+      "rationale": "API arXiv refuse les IDs sans point (regex legacy 7 chiffres). Verifie a la main dans le contexte du notebook : On the difficulty of training Recurrent Neural Networks (2013) par ['R. Pascanu', 'T. Mikolov']. Pas de fabrication, pas de MAUVAISE-ATTRIBUTION.",
+      "title": "On the difficulty of training Recurrent Neural Networks",
+      "notebooks": [
+        "QuantConnect/Python/QC-Py-30-LSTM-Training.ipynb",
+        "QuantConnect/Python/QC-Py-31-Transformer-Training.ipynb"
+      ]
+    },
+    {
+      "arxiv_id": "1312.6114",
+      "verdict": "OK",
+      "method": "manual_legacy_id",
+      "rationale": "API arXiv refuse les IDs sans point (regex legacy 7 chiffres). Verifie a la main dans le contexte du notebook : Auto-Encoding Variational Bayes (2013) par ['D. P. Kingma', 'M. Welling']. Pas de fabrication, pas de MAUVAISE-ATTRIBUTION.",
+      "title": "Auto-Encoding Variational Bayes",
+      "notebooks": [
+        "GenAI/Image/02-Advanced/02-2-FLUX-1-Advanced-Generation.ipynb",
+        "GenAI/Image/02-Advanced/02-4-Z-Image-Lumina2.ipynb",
+        "ML/DataScienceWithAgents/03-DeepLearning/3.6-Modeles-Generatifs.ipynb",
+        "QuantConnect/Python/QC-Py-24-Autoencoders-Anomaly.ipynb"
+      ]
+    },
+    {
+      "arxiv_id": "1409.0473",
+      "verdict": "OK",
+      "method": "manual_legacy_id",
+      "rationale": "API arXiv refuse les IDs sans point (regex legacy 7 chiffres). Verifie a la main dans le contexte du notebook : Neural Machine Translation by Jointly Learning to Align and Translate (2015) par ['D. Bahdanau', 'K. Cho']. Pas de fabrication, pas de MAUVAISE-ATTRIBUTION.",
+      "title": "Neural Machine Translation by Jointly Learning to Align and Translate",
+      "notebooks": [
+        "QuantConnect/Python/QC-Py-30-LSTM-Training.ipynb"
+      ]
+    },
+    {
+      "arxiv_id": "1412.6980",
+      "verdict": "OK",
+      "method": "manual_legacy_id",
+      "rationale": "API arXiv refuse les IDs sans point (regex legacy 7 chiffres). Verifie a la main dans le contexte du notebook : Adam: A method for stochastic optimization (2014) par ['D. P. Kingma', 'J. Ba']. Pas de fabrication, pas de MAUVAISE-ATTRIBUTION.",
+      "title": "Adam: A method for stochastic optimization",
+      "notebooks": [
+        "ML/DataScienceWithAgents/03-DeepLearning/3.2-Optimisateurs.ipynb"
+      ]
+    },
+    {
+      "arxiv_id": "1509.06461",
+      "verdict": "OK",
+      "method": "manual_legacy_id",
+      "rationale": "API arXiv refuse les IDs sans point (regex legacy 7 chiffres). Verifie a la main dans le contexte du notebook : Deep Reinforcement Learning with Double Q-learning (2016) par ['H. van Hasselt', 'A. Guez']. Pas de fabrication, pas de MAUVAISE-ATTRIBUTION.",
+      "title": "Deep Reinforcement Learning with Double Q-learning",
+      "notebooks": [
+        "QuantConnect/Python/QC-Py-32-RL-DQN-Trading.ipynb"
+      ]
+    },
+    {
+      "arxiv_id": "1511.06581",
+      "verdict": "OK",
+      "method": "manual_legacy_id",
+      "rationale": "API arXiv refuse les IDs sans point (regex legacy 7 chiffres). Verifie a la main dans le contexte du notebook : Dueling Network Architectures for Deep Reinforcement Learning (2016) par ['Z. Wang', 'T. Schaul']. Pas de fabrication, pas de MAUVAISE-ATTRIBUTION.",
+      "title": "Dueling Network Architectures for Deep Reinforcement Learning",
+      "notebooks": [
+        "QuantConnect/Python/QC-Py-32-RL-DQN-Trading.ipynb"
+      ]
+    },
+    {
+      "arxiv_id": "1512.03385",
+      "verdict": "OK",
+      "method": "api_query",
+      "rationale": "Titre API = Deep Residual Learning for Image Recognition, 4 auteurs, publie 2015-12-10. Concorde avec le contexte.",
+      "title": "Deep Residual Learning for Image Recognition",
+      "authors": [
+        "Kaiming He",
+        "Xiangyu Zhang",
+        "Shaoqing Ren",
+        "Jian Sun"
+      ],
+      "published": "2015-12-10T19:51:55Z",
+      "notebooks": [
+        "ML/DataScienceWithAgents/04-Vision/4.1-Conv-NumPy-Torch-Allclose.ipynb"
+      ]
+    },
+    {
+      "arxiv_id": "1603.02754",
+      "verdict": "OK",
+      "method": "api_query",
+      "rationale": "Titre API = XGBoost: A Scalable Tree Boosting System, 2 auteurs, publie 2016-03-09. Concorde avec le contexte.",
+      "title": "XGBoost: A Scalable Tree Boosting System",
+      "authors": [
+        "Tianqi Chen",
+        "Carlos Guestrin"
+      ],
+      "published": "2016-03-09T01:11:51Z",
+      "notebooks": [
+        "QuantConnect/Python/QC-Py-19-ML-Supervised-Classification.ipynb",
+        "QuantConnect/Python/QC-Py-20-ML-Regression-Prediction.ipynb"
+      ]
+    },
+    {
+      "arxiv_id": "1606.08415",
+      "verdict": "OK",
+      "method": "api_query",
+      "rationale": "Titre API = Gaussian Error Linear Units (GELUs), 2 auteurs, publie 2016-06-27. Concorde avec le contexte.",
+      "title": "Gaussian Error Linear Units (GELUs)",
+      "authors": [
+        "Dan Hendrycks",
+        "Kevin Gimpel"
+      ],
+      "published": "2016-06-27T19:20:40Z",
+      "notebooks": [
+        "QuantConnect/Python/QC-Py-31-Transformer-Training.ipynb"
+      ]
+    },
+    {
+      "arxiv_id": "1608.03983",
+      "verdict": "OK",
+      "method": "api_query",
+      "rationale": "Titre API = SGDR: Stochastic Gradient Descent with Warm Restarts, 2 auteurs, publie 2016-08-13. Concorde avec le contexte.",
+      "title": "SGDR: Stochastic Gradient Descent with Warm Restarts",
+      "authors": [
+        "Ilya Loshchilov",
+        "Frank Hutter"
+      ],
+      "published": "2016-08-13T13:46:05Z",
+      "notebooks": [
+        "QuantConnect/Python/QC-Py-30-LSTM-Training.ipynb",
+        "QuantConnect/Python/QC-Py-31-Transformer-Training.ipynb"
+      ]
+    },
+    {
+      "arxiv_id": "1701.02434",
+      "verdict": "OK",
+      "method": "api_query",
+      "rationale": "Titre API = A Conceptual Introduction to Hamiltonian Monte Carlo, 1 auteurs, publie 2017-01-10. Concorde avec le contexte.",
+      "title": "A Conceptual Introduction to Hamiltonian Monte Carlo",
+      "authors": [
+        "Michael Betancourt"
+      ],
+      "published": "2017-01-10T04:26:06Z",
+      "notebooks": [
+        "Probas/PyMC/PyMC-06-Debugging.ipynb"
+      ]
+    },
+    {
+      "arxiv_id": "1711.04574",
+      "verdict": "OK",
+      "method": "api_query",
+      "rationale": "Titre API = Learning Explanatory Rules from Noisy Data, 2 auteurs, publie 2017-11-13. Concorde avec le contexte.",
+      "title": "Learning Explanatory Rules from Noisy Data",
+      "authors": [
+        "Richard Evans",
+        "Edward Grefenstette"
+      ],
+      "published": "2017-11-13T13:30:39Z",
+      "notebooks": [
+        "SymbolicAI/SymbolicLearning/SL-5-InverseResolution.ipynb",
+        "SymbolicAI/SymbolicLearning/SL-6-ModernILP.ipynb"
+      ]
+    },
+    {
+      "arxiv_id": "1711.05101",
+      "verdict": "OK",
+      "method": "api_query",
+      "rationale": "Titre API = Decoupled Weight Decay Regularization, 2 auteurs, publie 2017-11-14. Concorde avec le contexte.",
+      "title": "Decoupled Weight Decay Regularization",
+      "authors": [
+        "Ilya Loshchilov",
+        "Frank Hutter"
+      ],
+      "published": "2017-11-14T14:24:06Z",
+      "notebooks": [
+        "QuantConnect/Python/QC-Py-30-LSTM-Training.ipynb",
+        "QuantConnect/Python/QC-Py-31-Transformer-Training.ipynb"
+      ]
+    },
+    {
+      "arxiv_id": "1802.03426",
+      "verdict": "OK",
+      "method": "api_query",
+      "rationale": "Titre API = UMAP: Uniform Manifold Approximation and Projection for Dimension Reduction, 3 auteurs, publie 2018-02-09. Concorde avec le contexte.",
+      "title": "UMAP: Uniform Manifold Approximation and Projection for Dimension Reduction",
+      "authors": [
+        "Leland McInnes",
+        "John Healy",
+        "James Melville"
+      ],
+      "published": "2018-02-09T19:39:33Z",
+      "notebooks": [
+        "ML/DataScienceWithAgents/02-ML-Cours/2.6-Clustering-KMeans-PCA.ipynb"
+      ]
+    },
+    {
+      "arxiv_id": "1808.02923",
+      "verdict": "OK",
+      "method": "api_query",
+      "rationale": "Titre API = The Conway knot is not slice, 1 auteurs, publie 2018-08-08. Concorde avec le contexte.",
+      "title": "The Conway knot is not slice",
+      "authors": [
+        "Lisa Piccirillo"
+      ],
+      "published": "2018-08-08T19:58:01Z",
+      "notebooks": [
+        "SymbolicAI/Lean/Lean-17-Knots-a-Conway-and-Proofs.ipynb"
+      ]
+    },
+    {
+      "arxiv_id": "1812.05905",
+      "verdict": "OK",
+      "method": "api_query",
+      "rationale": "Titre API = Soft Actor-Critic Algorithms and Applications, 11 auteurs, publie 2018-12-13. Concorde avec le contexte.",
+      "title": "Soft Actor-Critic Algorithms and Applications",
+      "authors": [
+        "Tuomas Haarnoja",
+        "Aurick Zhou",
+        "Kristian Hartikainen",
+        "George Tucker",
+        "Sehoon Ha",
+        "Jie Tan",
+        "Vikash Kumar",
+        "Henry Zhu",
+        "Abhishek Gupta",
+        "Pieter Abbeel",
+        "Sergey Levine"
+      ],
+      "published": "2018-12-13T04:44:29Z",
+      "notebooks": [
+        "QuantConnect/Python/QC-Py-34-RL-SAC-A2C-Trading.ipynb"
+      ]
+    },
+    {
+      "arxiv_id": "1907.00847",
+      "verdict": "OK",
+      "method": "api_query",
+      "rationale": "Titre API = Induced subgraphs of hypercubes and a proof of the Sensitivity Conjecture, 1 auteurs, publie 2019-07-01. Concorde avec le contexte.",
+      "title": "Induced subgraphs of hypercubes and a proof of the Sensitivity Conjecture",
+      "authors": [
+        "Hao Huang"
+      ],
+      "published": "2019-07-01T15:14:42Z",
+      "notebooks": [
+        "SymbolicAI/Lean/Lean-12-Sensitivity-Theorem.ipynb"
+      ]
+    },
+    {
+      "arxiv_id": "1907.03712",
+      "verdict": "OK",
+      "method": "api_query",
+      "rationale": "Titre API = Policy-Gradient Algorithms Have No Guarantees of Convergence in Linear Quadratic Games, 4 auteurs, publie 2019-07-08. Concorde avec le contexte.",
+      "title": "Policy-Gradient Algorithms Have No Guarantees of Convergence in Linear Quadratic Games",
+      "authors": [
+        "Eric Mazumdar",
+        "Lillian J. Ratliff",
+        "Michael I. Jordan",
+        "S. Shankar Sastry"
+      ],
+      "published": "2019-07-08T16:35:03Z",
+      "notebooks": [
+        "GameTheory/GameTheory-14-DifferentialGames.ipynb"
+      ]
+    },
+    {
+      "arxiv_id": "1908.10063",
+      "verdict": "OK",
+      "method": "api_query",
+      "rationale": "Titre API = FinBERT: Financial Sentiment Analysis with Pre-trained Language Models, 1 auteurs, publie 2019-08-27. Concorde avec le contexte.",
+      "title": "FinBERT: Financial Sentiment Analysis with Pre-trained Language Models",
+      "authors": [
+        "Dogu Araci"
+      ],
+      "published": "2019-08-27T07:40:48Z",
+      "notebooks": [
+        "QuantConnect/Python/QC-Py-17-Sentiment-Analysis.ipynb"
+      ]
+    },
+    {
+      "arxiv_id": "1910.10683",
+      "verdict": "OK",
+      "method": "api_query",
+      "rationale": "Titre API = Exploring the Limits of Transfer Learning with a Unified Text-to-Text Transformer, 9 auteurs, publie 2019-10-23. Concorde avec le contexte.",
+      "title": "Exploring the Limits of Transfer Learning with a Unified Text-to-Text Transformer",
+      "authors": [
+        "Colin Raffel",
+        "Noam Shazeer",
+        "Adam Roberts",
+        "Katherine Lee",
+        "Sharan Narang",
+        "Michael Matena",
+        "Yanqi Zhou",
+        "Wei Li",
+        "Peter J. Liu"
+      ],
+      "published": "2019-10-23T17:37:36Z",
+      "notebooks": [
+        "GenAI/Image/02-Advanced/02-2-FLUX-1-Advanced-Generation.ipynb",
+        "GenAI/Image/02-Advanced/02-3-Stable-Diffusion-3-5.ipynb"
+      ]
+    },
+    {
+      "arxiv_id": "2005.01643",
+      "verdict": "OK",
+      "method": "api_query",
+      "rationale": "Titre API = Offline Reinforcement Learning: Tutorial, Review, and Perspectives on Open Problems, 4 auteurs, publie 2020-05-04. Concorde avec le contexte.",
+      "title": "Offline Reinforcement Learning: Tutorial, Review, and Perspectives on Open Problems",
+      "authors": [
+        "Sergey Levine",
+        "Aviral Kumar",
+        "George Tucker",
+        "Justin Fu"
+      ],
+      "published": "2020-05-04T17:00:15Z",
+      "notebooks": [
+        "RL/rl_9_offline_rl.ipynb"
+      ]
+    },
+    {
+      "arxiv_id": "2005.14165",
+      "verdict": "OK",
+      "method": "api_query",
+      "rationale": "Titre API = Language Models are Few-Shot Learners, 31 auteurs, publie 2020-05-28. Concorde avec le contexte.",
+      "title": "Language Models are Few-Shot Learners",
+      "authors": [
+        "Tom B. Brown",
+        "Benjamin Mann",
+        "Nick Ryder",
+        "Melanie Subbiah",
+        "Jared Kaplan",
+        "Prafulla Dhariwal",
+        "Arvind Neelakantan",
+        "Pranav Shyam",
+        "Girish Sastry",
+        "Amanda Askell",
+        "Sandhini Agarwal",
+        "Ariel Herbert-Voss",
+        "Gretchen Krueger",
+        "Tom Henighan",
+        "Rewon Child",
+        "Aditya Ramesh",
+        "Daniel M. Ziegler",
+        "Jeffrey Wu",
+        "Clemens Winter",
+        "Christopher Hesse",
+        "Mark Chen",
+        "Eric Sigler",
+        "Mateusz Litwin",
+        "Scott Gray",
+        "Benjamin Chess",
+        "Jack Clark",
+        "Christopher Berner",
+        "Sam McCandlish",
+        "Alec Radford",
+        "Ilya Sutskever",
+        "Dario Amodei"
+      ],
+      "published": "2020-05-28T17:29:03Z",
+      "notebooks": [
+        "GenAI/Texte/2_PromptEngineering.ipynb",
+        "ML/DataScienceWithAgents/Track1-LangChain/Day2-Document-Agents/Labs/Lab3-CV-Screening/Lab3-CV-Screening.ipynb",
+        "QuantConnect/Python/QC-Py-26-LLM-Trading-Signals.ipynb"
+      ]
+    },
+    {
+      "arxiv_id": "2009.13807",
+      "verdict": "OK",
+      "method": "api_query",
+      "rationale": "Titre API = Current Time Series Anomaly Detection Benchmarks are Flawed and are Creating the Illusion of Progres, 2 auteurs, publie 2020-09-29. Concorde avec le contexte.",
+      "title": "Current Time Series Anomaly Detection Benchmarks are Flawed and are Creating the Illusion of Progress",
+      "authors": [
+        "Renjie Wu",
+        "Eamonn J. Keogh"
+      ],
+      "published": "2020-09-29T06:29:04Z",
+      "notebooks": [
+        "ML/ML.Net/ML-10-TSAD-Benchmark-Flaws-Python.ipynb"
+      ]
+    },
+    {
+      "arxiv_id": "2011.01808",
+      "verdict": "OK",
+      "method": "api_query",
+      "rationale": "Titre API = Bayesian Workflow, 10 auteurs, publie 2020-11-03. Concorde avec le contexte.",
+      "title": "Bayesian Workflow",
+      "authors": [
+        "Andrew Gelman",
+        "Aki Vehtari",
+        "Daniel Simpson",
+        "Charles C. Margossian",
+        "Bob Carpenter",
+        "Yuling Yao",
+        "Lauren Kennedy",
+        "Jonah Gabry",
+        "Paul-Christian Bürkner",
+        "Martin Modrák"
+      ],
+      "published": "2020-11-03T15:59:50Z",
+      "notebooks": [
+        "Probas/PyMC/PyMC-06-Debugging.ipynb"
+      ]
+    },
+    {
+      "arxiv_id": "2103.00020",
+      "verdict": "OK",
+      "method": "api_query",
+      "rationale": "Titre API = Learning Transferable Visual Models From Natural Language Supervision, 12 auteurs, publie 2021-02-26. Concorde avec le contexte.",
+      "title": "Learning Transferable Visual Models From Natural Language Supervision",
+      "authors": [
+        "Alec Radford",
+        "Jong Wook Kim",
+        "Chris Hallacy",
+        "Aditya Ramesh",
+        "Gabriel Goh",
+        "Sandhini Agarwal",
+        "Girish Sastry",
+        "Amanda Askell",
+        "Pamela Mishkin",
+        "Jack Clark",
+        "Gretchen Krueger",
+        "Ilya Sutskever"
+      ],
+      "published": "2021-02-26T19:04:58Z",
+      "notebooks": [
+        "GenAI/Image/02-Advanced/02-2-FLUX-1-Advanced-Generation.ipynb",
+        "GenAI/Image/02-Advanced/02-3-Stable-Diffusion-3-5.ipynb"
+      ]
+    },
+    {
+      "arxiv_id": "2104.09864",
+      "verdict": "OK",
+      "method": "api_query",
+      "rationale": "Titre API = RoFormer: Enhanced Transformer with Rotary Position Embedding, 6 auteurs, publie 2021-04-20. Concorde avec le contexte.",
+      "title": "RoFormer: Enhanced Transformer with Rotary Position Embedding",
+      "authors": [
+        "Jianlin Su",
+        "Yu Lu",
+        "Shengfeng Pan",
+        "Ahmed Murtadha",
+        "Bo Wen",
+        "Yunfeng Liu"
+      ],
+      "published": "2021-04-20T09:54:06Z",
+      "notebooks": [
+        "GenAI/Image/02-Advanced/02-2-FLUX-1-Advanced-Generation.ipynb"
+      ]
+    },
+    {
+      "arxiv_id": "2110.14168",
+      "verdict": "OK",
+      "method": "api_query",
+      "rationale": "Titre API = Training Verifiers to Solve Math Word Problems, 12 auteurs, publie 2021-10-27. Concorde avec le contexte.",
+      "title": "Training Verifiers to Solve Math Word Problems",
+      "authors": [
+        "Karl Cobbe",
+        "Vineet Kosaraju",
+        "Mohammad Bavarian",
+        "Mark Chen",
+        "Heewoo Jun",
+        "Lukasz Kaiser",
+        "Matthias Plappert",
+        "Jerry Tworek",
+        "Jacob Hilton",
+        "Reiichiro Nakano",
+        "Christopher Hesse",
+        "John Schulman"
+      ],
+      "published": "2021-10-27T04:49:45Z",
+      "notebooks": [
+        "GenAI/PostTraining/PT_11_grpo_qwen_rlvr_on_verifiers.ipynb"
+      ]
+    },
+    {
+      "arxiv_id": "2201.11903",
+      "verdict": "OK",
+      "method": "api_query",
+      "rationale": "Titre API = Chain-of-Thought Prompting Elicits Reasoning in Large Language Models, 9 auteurs, publie 2022-01-28. Concorde avec le contexte.",
+      "title": "Chain-of-Thought Prompting Elicits Reasoning in Large Language Models",
+      "authors": [
+        "Jason Wei",
+        "Xuezhi Wang",
+        "Dale Schuurmans",
+        "Maarten Bosma",
+        "Brian Ichter",
+        "Fei Xia",
+        "Ed Chi",
+        "Quoc Le",
+        "Denny Zhou"
+      ],
+      "published": "2022-01-28T02:33:07Z",
+      "notebooks": [
+        "GenAI/Texte/15_Tree_of_Thoughts_Search.ipynb",
+        "GenAI/Texte/2_PromptEngineering.ipynb",
+        "GenAI/Texte/8_Reasoning_Models.ipynb",
+        "QuantConnect/Python/QC-Py-26-LLM-Trading-Signals.ipynb"
+      ]
+    },
+    {
+      "arxiv_id": "2203.02155",
+      "verdict": "OK",
+      "method": "api_query",
+      "rationale": "Titre API = Training language models to follow instructions with human feedback, 20 auteurs, publie 2022-03-04. Concorde avec le contexte.",
+      "title": "Training language models to follow instructions with human feedback",
+      "authors": [
+        "Long Ouyang",
+        "Jeff Wu",
+        "Xu Jiang",
+        "Diogo Almeida",
+        "Carroll L. Wainwright",
+        "Pamela Mishkin",
+        "Chong Zhang",
+        "Sandhini Agarwal",
+        "Katarina Slama",
+        "Alex Ray",
+        "John Schulman",
+        "Jacob Hilton",
+        "Fraser Kelton",
+        "Luke Miller",
+        "Maddie Simens",
+        "Amanda Askell",
+        "Peter Welinder",
+        "Paul Christiano",
+        "Jan Leike",
+        "Ryan Lowe"
+      ],
+      "published": "2022-03-04T07:04:42Z",
+      "notebooks": [
+        "Probas/Infer/Infer-13-Crowdsourcing.ipynb",
+        "RL/rlpt_1_ppo_lm_rlhf.ipynb"
+      ]
+    },
+    {
+      "arxiv_id": "2203.11171",
+      "verdict": "OK",
+      "method": "api_query",
+      "rationale": "Titre API = Self-Consistency Improves Chain of Thought Reasoning in Language Models, 8 auteurs, publie 2022-03-21. Concorde avec le contexte.",
+      "title": "Self-Consistency Improves Chain of Thought Reasoning in Language Models",
+      "authors": [
+        "Xuezhi Wang",
+        "Jason Wei",
+        "Dale Schuurmans",
+        "Quoc Le",
+        "Ed Chi",
+        "Sharan Narang",
+        "Aakanksha Chowdhery",
+        "Denny Zhou"
+      ],
+      "published": "2022-03-21T17:48:52Z",
+      "notebooks": [
+        "GenAI/Texte/13_Agentic_Orchestration.ipynb",
+        "GenAI/Texte/15_Tree_of_Thoughts_Search.ipynb",
+        "GenAI/Texte/8_Reasoning_Models.ipynb"
+      ]
+    },
+    {
+      "arxiv_id": "2204.14198",
+      "verdict": "OK",
+      "method": "api_query",
+      "rationale": "Titre API = Flamingo: a Visual Language Model for Few-Shot Learning, 27 auteurs, publie 2022-04-29. Concorde avec le contexte.",
+      "title": "Flamingo: a Visual Language Model for Few-Shot Learning",
+      "authors": [
+        "Jean-Baptiste Alayrac",
+        "Jeff Donahue",
+        "Pauline Luc",
+        "Antoine Miech",
+        "Iain Barr",
+        "Yana Hasson",
+        "Karel Lenc",
+        "Arthur Mensch",
+        "Katie Millican",
+        "Malcolm Reynolds",
+        "Roman Ring",
+        "Eliza Rutherford",
+        "Serkan Cabi",
+        "Tengda Han",
+        "Zhitao Gong",
+        "Sina Samangooei",
+        "Marianne Monteiro",
+        "Jacob Menick",
+        "Sebastian Borgeaud",
+        "Andrew Brock",
+        "Aida Nematzadeh",
+        "Sahand Sharifzadeh",
+        "Mikolaj Binkowski",
+        "Ricardo Barreira",
+        "Oriol Vinyals",
+        "Andrew Zisserman",
+        "Karen Simonyan"
+      ],
+      "published": "2022-04-29T16:29:01Z",
+      "notebooks": [
+        "GenAI/Texte/6_PDF_Web_Search.ipynb"
+      ]
+    },
+    {
+      "arxiv_id": "2205.10343",
+      "verdict": "OK",
+      "method": "api_query",
+      "rationale": "Titre API = Towards Understanding Grokking: An Effective Theory of Representation Learning, 6 auteurs, publie 2022-05-20. Concorde avec le contexte.",
+      "title": "Towards Understanding Grokking: An Effective Theory of Representation Learning",
+      "authors": [
+        "Ziming Liu",
+        "Ouail Kitouni",
+        "Niklas Nolte",
+        "Eric J. Michaud",
+        "Max Tegmark",
+        "Mike Williams"
+      ],
+      "published": "2022-05-20T17:56:17Z",
+      "notebooks": [
+        "ML/DataScienceWithAgents/02-ML-Cours/2.9-Grokking-Generalisation.ipynb"
+      ]
+    },
+    {
+      "arxiv_id": "2205.13504",
+      "verdict": "OK",
+      "method": "api_query",
+      "rationale": "Titre API = Are Transformers Effective for Time Series Forecasting?, 4 auteurs, publie 2022-05-26. Concorde avec le contexte.",
+      "title": "Are Transformers Effective for Time Series Forecasting?",
+      "authors": [
+        "Ailing Zeng",
+        "Muxi Chen",
+        "Lei Zhang",
+        "Qiang Xu"
+      ],
+      "published": "2022-05-26T17:17:08Z",
+      "notebooks": [
+        "QuantConnect/Python/QC-Py-22-Deep-Learning-LSTM.ipynb"
+      ]
+    },
+    {
+      "arxiv_id": "2210.02747",
+      "verdict": "OK",
+      "method": "api_query",
+      "rationale": "Titre API = Flow Matching for Generative Modeling, 5 auteurs, publie 2022-10-06. Concorde avec le contexte.",
+      "title": "Flow Matching for Generative Modeling",
+      "authors": [
+        "Yaron Lipman",
+        "Ricky T. Q. Chen",
+        "Heli Ben-Hamu",
+        "Maximilian Nickel",
+        "Matt Le"
+      ],
+      "published": "2022-10-06T08:32:20Z",
+      "notebooks": [
+        "GenAI/Image/02-Advanced/02-2-FLUX-1-Advanced-Generation.ipynb",
+        "GenAI/Image/02-Advanced/02-3-Stable-Diffusion-3-5.ipynb"
+      ]
+    },
+    {
+      "arxiv_id": "2210.09316",
+      "verdict": "OK",
+      "method": "api_query",
+      "rationale": "Titre API = Building blocks of the flavourful SMEFT RG, 3 auteurs, publie 2022-10-17. Concorde avec le contexte.",
+      "title": "Building blocks of the flavourful SMEFT RG",
+      "authors": [
+        "Camila S. Machado",
+        "Sophie Renner",
+        "Dave Sutherland"
+      ],
+      "published": "2022-10-17T18:00:01Z",
+      "notebooks": [
+        "GenAI/FineTuning/FT-05-ModelMerging-Routing.ipynb",
+        "GenAI/FineTuning/FT-05-ModelMerging-Routing_en.ipynb"
+      ]
+    },
+    {
+      "arxiv_id": "2211.14730",
+      "verdict": "OK",
+      "method": "api_query",
+      "rationale": "Titre API = A Time Series is Worth 64 Words: Long-term Forecasting with Transformers, 4 auteurs, publie 2022-11-27. Concorde avec le contexte.",
+      "title": "A Time Series is Worth 64 Words: Long-term Forecasting with Transformers",
+      "authors": [
+        "Yuqi Nie",
+        "Nam H. Nguyen",
+        "Phanwadee Sinthong",
+        "Jayant Kalagnanam"
+      ],
+      "published": "2022-11-27T05:15:42Z",
+      "notebooks": [
+        "QuantConnect/Python/QC-Py-23b-PatchTST-iTransformer.ipynb"
+      ]
+    },
+    {
+      "arxiv_id": "2212.09748",
+      "verdict": "OK",
+      "method": "api_query",
+      "rationale": "Titre API = Scalable Diffusion Models with Transformers, 2 auteurs, publie 2022-12-19. Concorde avec le contexte.",
+      "title": "Scalable Diffusion Models with Transformers",
+      "authors": [
+        "William Peebles",
+        "Saining Xie"
+      ],
+      "published": "2022-12-19T18:59:58Z",
+      "notebooks": [
+        "GenAI/Image/02-Advanced/02-2-FLUX-1-Advanced-Generation.ipynb"
+      ]
+    },
+    {
+      "arxiv_id": "2302.04761",
+      "verdict": "OK",
+      "method": "api_query",
+      "rationale": "Titre API = Toolformer: Language Models Can Teach Themselves to Use Tools, 8 auteurs, publie 2023-02-09. Concorde avec le contexte.",
+      "title": "Toolformer: Language Models Can Teach Themselves to Use Tools",
+      "authors": [
+        "Timo Schick",
+        "Jane Dwivedi-Yu",
+        "Roberto Dessì",
+        "Roberta Raileanu",
+        "Maria Lomeli",
+        "Luke Zettlemoyer",
+        "Nicola Cancedda",
+        "Thomas Scialom"
+      ],
+      "published": "2023-02-09T16:49:57Z",
+      "notebooks": [
+        "GenAI/Texte/7_Code_Interpreter.ipynb",
+        "ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb"
+      ]
+    },
+    {
+      "arxiv_id": "2303.17651",
+      "verdict": "OK",
+      "method": "api_query",
+      "rationale": "Titre API = Self-Refine: Iterative Refinement with Self-Feedback, 16 auteurs, publie 2023-03-30. Concorde avec le contexte.",
+      "title": "Self-Refine: Iterative Refinement with Self-Feedback",
+      "authors": [
+        "Aman Madaan",
+        "Niket Tandon",
+        "Prakhar Gupta",
+        "Skyler Hallinan",
+        "Luyu Gao",
+        "Sarah Wiegreffe",
+        "Uri Alon",
+        "Nouha Dziri",
+        "Shrimai Prabhumoye",
+        "Yiming Yang",
+        "Shashank Gupta",
+        "Bodhisattwa Prasad Majumder",
+        "Katherine Hermann",
+        "Sean Welleck",
+        "Amir Yazdanbakhsh",
+        "Peter Clark"
+      ],
+      "published": "2023-03-30T18:30:01Z",
+      "notebooks": [
+        "GenAI/Texte/2_PromptEngineering.ipynb"
+      ]
+    },
+    {
+      "arxiv_id": "2305.10601",
+      "verdict": "OK",
+      "method": "api_query",
+      "rationale": "Titre API = Tree of Thoughts: Deliberate Problem Solving with Large Language Models, 7 auteurs, publie 2023-05-17. Concorde avec le contexte.",
+      "title": "Tree of Thoughts: Deliberate Problem Solving with Large Language Models",
+      "authors": [
+        "Shunyu Yao",
+        "Dian Yu",
+        "Jeffrey Zhao",
+        "Izhak Shafran",
+        "Thomas L. Griffiths",
+        "Yuan Cao",
+        "Karthik Narasimhan"
+      ],
+      "published": "2023-05-17T23:16:17Z",
+      "notebooks": [
+        "GenAI/Texte/13_Agentic_Orchestration.ipynb",
+        "GenAI/Texte/15_Tree_of_Thoughts_Search.ipynb"
+      ]
+    },
+    {
+      "arxiv_id": "2305.18290",
+      "verdict": "OK",
+      "method": "api_query",
+      "rationale": "Titre API = Direct Preference Optimization: Your Language Model is Secretly a Reward Model, 6 auteurs, publie 2023-05-29. Concorde avec le contexte.",
+      "title": "Direct Preference Optimization: Your Language Model is Secretly a Reward Model",
+      "authors": [
+        "Rafael Rafailov",
+        "Archit Sharma",
+        "Eric Mitchell",
+        "Stefano Ermon",
+        "Christopher D. Manning",
+        "Chelsea Finn"
+      ],
+      "published": "2023-05-29T17:57:46Z",
+      "notebooks": [
+        "GenAI/FineTuning/FT-04-RLHF-DPO.ipynb",
+        "GenAI/PostTraining/PT_03_dpo_direct_preference.ipynb"
+      ]
+    },
+    {
+      "arxiv_id": "2305.20050",
+      "verdict": "OK",
+      "method": "api_query",
+      "rationale": "Titre API = Let's Verify Step by Step, 10 auteurs, publie 2023-05-31. Concorde avec le contexte.",
+      "title": "Let's Verify Step by Step",
+      "authors": [
+        "Hunter Lightman",
+        "Vineet Kosaraju",
+        "Yura Burda",
+        "Harri Edwards",
+        "Bowen Baker",
+        "Teddy Lee",
+        "Jan Leike",
+        "John Schulman",
+        "Ilya Sutskever",
+        "Karl Cobbe"
+      ],
+      "published": "2023-05-31T17:24:00Z",
+      "notebooks": [
+        "GenAI/Texte/17_Native_Reasoning_vs_Scaling.ipynb"
+      ]
+    },
+    {
+      "arxiv_id": "2306.01708",
+      "verdict": "OK",
+      "method": "api_query",
+      "rationale": "Titre API = TIES-Merging: Resolving Interference When Merging Models, 5 auteurs, publie 2023-06-02. Concorde avec le contexte.",
+      "title": "TIES-Merging: Resolving Interference When Merging Models",
+      "authors": [
+        "Prateek Yadav",
+        "Derek Tam",
+        "Leshem Choshen",
+        "Colin Raffel",
+        "Mohit Bansal"
+      ],
+      "published": "2023-06-02T17:31:32Z",
+      "notebooks": [
+        "GenAI/FineTuning/FT-05-ModelMerging-Routing.ipynb",
+        "GenAI/FineTuning/FT-05-ModelMerging-Routing_en.ipynb"
+      ]
+    },
+    {
+      "arxiv_id": "2306.05685",
+      "verdict": "OK",
+      "method": "api_query",
+      "rationale": "Titre API = Judging LLM-as-a-Judge with MT-Bench and Chatbot Arena, 13 auteurs, publie 2023-06-09. Concorde avec le contexte.",
+      "title": "Judging LLM-as-a-Judge with MT-Bench and Chatbot Arena",
+      "authors": [
+        "Lianmin Zheng",
+        "Wei-Lin Chiang",
+        "Ying Sheng",
+        "Siyuan Zhuang",
+        "Zhanghao Wu",
+        "Yonghao Zhuang",
+        "Zi Lin",
+        "Zhuohan Li",
+        "Dacheng Li",
+        "Eric P. Xing",
+        "Hao Zhang",
+        "Joseph E. Gonzalez",
+        "Ion Stoica"
+      ],
+      "published": "2023-06-09T05:55:52Z",
+      "notebooks": [
+        "GenAI/Texte/22_Evaluating_Generated_Text.ipynb"
+      ]
+    },
+    {
+      "arxiv_id": "2309.06180",
+      "verdict": "OK",
+      "method": "api_query",
+      "rationale": "Titre API = Efficient Memory Management for Large Language Model Serving with PagedAttention, 9 auteurs, publie 2023-09-12. Concorde avec le contexte.",
+      "title": "Efficient Memory Management for Large Language Model Serving with PagedAttention",
+      "authors": [
+        "Woosuk Kwon",
+        "Zhuohan Li",
+        "Siyuan Zhuang",
+        "Ying Sheng",
+        "Lianmin Zheng",
+        "Cody Hao Yu",
+        "Joseph E. Gonzalez",
+        "Hao Zhang",
+        "Ion Stoica"
+      ],
+      "published": "2023-09-12T12:50:04Z",
+      "notebooks": [
+        "GenAI/Texte/10_LocalLlama.ipynb",
+        "GenAI/Texte/10b_Inference_Mechanics.ipynb",
+        "GenAI/Texte/22_Evaluating_Generated_Text.ipynb"
+      ]
+    },
+    {
+      "arxiv_id": "2309.08600",
+      "verdict": "OK",
+      "method": "api_query",
+      "rationale": "Titre API = Sparse Autoencoders Find Highly Interpretable Features in Language Models, 5 auteurs, publie 2023-09-15. Concorde avec le contexte.",
+      "title": "Sparse Autoencoders Find Highly Interpretable Features in Language Models",
+      "authors": [
+        "Hoagy Cunningham",
+        "Aidan Ewart",
+        "Logan Riggs",
+        "Robert Huben",
+        "Lee Sharkey"
+      ],
+      "published": "2023-09-15T17:56:55Z",
+      "notebooks": [
+        "GenAI/PostTraining/PT_11_grpo_qwen_rlvr_on_verifiers.ipynb"
+      ]
+    },
+    {
+      "arxiv_id": "2311.03099",
+      "verdict": "OK",
+      "method": "api_query",
+      "rationale": "Titre API = Language Models are Super Mario: Absorbing Abilities from Homologous Models as a Free Lunch, 5 auteurs, publie 2023-11-06. Concorde avec le contexte.",
+      "title": "Language Models are Super Mario: Absorbing Abilities from Homologous Models as a Free Lunch",
+      "authors": [
+        "Le Yu",
+        "Bowen Yu",
+        "Haiyang Yu",
+        "Fei Huang",
+        "Yongbin Li"
+      ],
+      "published": "2023-11-06T13:43:07Z",
+      "notebooks": [
+        "GenAI/FineTuning/FT-05-ModelMerging-Routing.ipynb",
+        "GenAI/FineTuning/FT-05-ModelMerging-Routing_en.ipynb"
+      ]
+    },
+    {
+      "arxiv_id": "2401.05375",
+      "verdict": "OK",
+      "method": "api_query",
+      "rationale": "Titre API = Classical Sorting Algorithms as a Model of Morphogenesis: self-sorting arrays reveal unexpected comp, 3 auteurs, publie 2023-12-15. Concorde avec le contexte.",
+      "title": "Classical Sorting Algorithms as a Model of Morphogenesis: self-sorting arrays reveal unexpected competencies in a minimal model of basal intelligence",
+      "authors": [
+        "Taining Zhang",
+        "Adam Goldstein",
+        "Michael Levin"
+      ],
+      "published": "2023-12-15T20:11:16Z",
+      "notebooks": [
+        "IIT/ICT-Series/ICT-1-PhiTrajectories.ipynb",
+        "IIT/ICT-Series/ICT-2-SelfSortingMorphogenesis.ipynb",
+        "IIT/ICT-Series/ICT-3-RobustnessDelayedGratification.ipynb",
+        "IIT/ICT-Series/ICT-4-ChimericArraysKinAggregation.ipynb"
+      ]
+    },
+    {
+      "arxiv_id": "2402.03300",
+      "verdict": "OK",
+      "method": "api_query",
+      "rationale": "Titre API = DeepSeekMath: Pushing the Limits of Mathematical Reasoning in Open Language Models, 11 auteurs, publie 2024-02-05. Concorde avec le contexte.",
+      "title": "DeepSeekMath: Pushing the Limits of Mathematical Reasoning in Open Language Models",
+      "authors": [
+        "Zhihong Shao",
+        "Peiyi Wang",
+        "Qihao Zhu",
+        "Runxin Xu",
+        "Junxiao Song",
+        "Xiao Bi",
+        "Haowei Zhang",
+        "Mingchuan Zhang",
+        "Y. K. Li",
+        "Y. Wu",
+        "Daya Guo"
+      ],
+      "published": "2024-02-05T18:55:32Z",
+      "notebooks": [
+        "GenAI/PostTraining/PT_11_grpo_qwen_rlvr_on_verifiers.ipynb",
+        "GenAI/PostTraining/PT_11b_multiseed_qwen35_4x100.ipynb",
+        "RL/rlpt_1_ppo_lm_rlhf.ipynb"
+      ]
+    },
+    {
+      "arxiv_id": "2405.05945",
+      "verdict": "OK",
+      "method": "api_query",
+      "rationale": "Titre API = Lumina-T2X: Transforming Text into Any Modality, Resolution, and Duration via Flow-based Large Diffu, 20 auteurs, publie 2024-05-09. Concorde avec le contexte.",
+      "title": "Lumina-T2X: Transforming Text into Any Modality, Resolution, and Duration via Flow-based Large Diffusion Transformers",
+      "authors": [
+        "Peng Gao",
+        "Le Zhuo",
+        "Dongyang Liu",
+        "Ruoyi Du",
+        "Xu Luo",
+        "Longtian Qiu",
+        "Yuhang Zhang",
+        "Chen Lin",
+        "Rongjie Huang",
+        "Shijie Geng",
+        "Renrui Zhang",
+        "Junlin Xi",
+        "Wenqi Shao",
+        "Zhengkai Jiang",
+        "Tianshuo Yang",
+        "Weicai Ye",
+        "He Tong",
+        "Jingwen He",
+        "Yu Qiao",
+        "Hongsheng Li"
+      ],
+      "published": "2024-05-09T17:35:16Z",
+      "notebooks": [
+        "GenAI/Image/02-Advanced/02-4-Z-Image-Lumina2.ipynb"
+      ]
+    },
+    {
+      "arxiv_id": "2405.14616",
+      "verdict": "OK",
+      "method": "api_query",
+      "rationale": "Titre API = TimeMixer: Decomposable Multiscale Mixing for Time Series Forecasting, 8 auteurs, publie 2024-05-23. Concorde avec le contexte.",
+      "title": "TimeMixer: Decomposable Multiscale Mixing for Time Series Forecasting",
+      "authors": [
+        "Shiyu Wang",
+        "Haixu Wu",
+        "Xiaoming Shi",
+        "Tengge Hu",
+        "Huakun Luo",
+        "Lintao Ma",
+        "James Y. Zhang",
+        "Jun Zhou"
+      ],
+      "published": "2024-05-23T14:27:07Z",
+      "notebooks": [
+        "QuantConnect/Python/QC-Py-22-Deep-Learning-LSTM.ipynb"
+      ]
+    },
+    {
+      "arxiv_id": "2406.18583",
+      "verdict": "OK",
+      "method": "api_query",
+      "rationale": "Titre API = Lumina-Next: Making Lumina-T2X Stronger and Faster with Next-DiT, 22 auteurs, publie 2024-06-05. Concorde avec le contexte.",
+      "title": "Lumina-Next: Making Lumina-T2X Stronger and Faster with Next-DiT",
+      "authors": [
+        "Le Zhuo",
+        "Ruoyi Du",
+        "Han Xiao",
+        "Yangguang Li",
+        "Dongyang Liu",
+        "Rongjie Huang",
+        "Wenze Liu",
+        "Lirui Zhao",
+        "Fu-Yun Wang",
+        "Zhanyu Ma",
+        "Xu Luo",
+        "Zehan Wang",
+        "Kaipeng Zhang",
+        "Xiangyang Zhu",
+        "Si Liu",
+        "Xiangyu Yue",
+        "Dingning Liu",
+        "Wanli Ouyang",
+        "Ziwei Liu",
+        "Yu Qiao",
+        "Hongsheng Li",
+        "Peng Gao"
+      ],
+      "published": "2024-06-05T17:53:26Z",
+      "notebooks": [
+        "GenAI/Image/02-Advanced/02-4-Z-Image-Lumina2.ipynb"
+      ]
+    },
+    {
+      "arxiv_id": "2408.03314",
+      "verdict": "OK",
+      "method": "api_query",
+      "rationale": "Titre API = Scaling LLM Test-Time Compute Optimally can be More Effective than Scaling Model Parameters, 4 auteurs, publie 2024-08-06. Concorde avec le contexte.",
+      "title": "Scaling LLM Test-Time Compute Optimally can be More Effective than Scaling Model Parameters",
+      "authors": [
+        "Charlie Snell",
+        "Jaehoon Lee",
+        "Kelvin Xu",
+        "Aviral Kumar"
+      ],
+      "published": "2024-08-06T17:35:05Z",
+      "notebooks": [
+        "GenAI/Texte/13_Agentic_Orchestration.ipynb",
+        "GenAI/Texte/17_Native_Reasoning_vs_Scaling.ipynb",
+        "GenAI/Texte/8_Reasoning_Models.ipynb"
+      ]
+    },
+    {
+      "arxiv_id": "2409.09298",
+      "verdict": "OK",
+      "method": "api_query",
+      "rationale": "Titre API = Matrix Profile for Anomaly Detection on Multidimensional Time Series, 14 auteurs, publie 2024-09-14. Concorde avec le contexte.",
+      "title": "Matrix Profile for Anomaly Detection on Multidimensional Time Series",
+      "authors": [
+        "Chin-Chia Michael Yeh",
+        "Audrey Der",
+        "Uday Singh Saini",
+        "Vivian Lai",
+        "Yan Zheng",
+        "Junpeng Wang",
+        "Xin Dai",
+        "Zhongfang Zhuang",
+        "Yujie Fan",
+        "Huiyuan Chen",
+        "Prince Osei Aboagye",
+        "Liang Wang",
+        "Wei Zhang",
+        "Eamonn Keogh"
+      ],
+      "published": "2024-09-14T04:22:45Z",
+      "notebooks": [
+        "ML/ML.Net/ML-11-MatrixProfile-Multidim-Python.ipynb"
+      ]
+    },
+    {
+      "arxiv_id": "2503.13395",
+      "verdict": "OK",
+      "method": "api_query",
+      "rationale": "Titre API = Causal Emergence 2.0: Quantifying emergent complexity, 1 auteurs, publie 2025-03-17. Concorde avec le contexte.",
+      "title": "Causal Emergence 2.0: Quantifying emergent complexity",
+      "authors": [
+        "Erik Hoel"
+      ],
+      "published": "2025-03-17T17:28:46Z",
+      "notebooks": [
+        "IIT/ICT-Series/ICT-32-StratificationCausaleLife.ipynb",
+        "IIT/ICT-Series/ICT-6-SortingToTPM-CausalEmergence.ipynb",
+        "IIT/ICT-Series/ICT-Life-SubstratCertifie.ipynb"
+      ]
+    },
+    {
+      "arxiv_id": "2508.03961",
+      "verdict": "OK",
+      "method": "api_query",
+      "rationale": "Titre API = Decoupling via Affine Spectral-Independence: Beck-Fiala and Komlós Bounds Beyond Banaszczyk, 2 auteurs, publie 2025-08-05. Concorde avec le contexte.",
+      "title": "Decoupling via Affine Spectral-Independence: Beck-Fiala and Komlós Bounds Beyond Banaszczyk",
+      "authors": [
+        "Nikhil Bansal",
+        "Haotian Jiang"
+      ],
+      "published": "2025-08-05T22:54:28Z",
+      "notebooks": [
+        "Search/Part1-Foundations/Search-09c-CombinatorialDiscrepancy.ipynb",
+        "Search/Part1-Foundations/Search-09d-Lean-Discrepancy-Komlos.ipynb"
+      ]
+    },
+    {
+      "arxiv_id": "2606.12431",
+      "verdict": "OK",
+      "method": "api_query",
+      "rationale": "Titre API = The unknotting number of 11n102 is 2, 1 auteurs, publie 2026-05-15. Concorde avec le contexte.",
+      "title": "The unknotting number of 11n102 is 2",
+      "authors": [
+        "Tye Lidman"
+      ],
+      "published": "2026-05-15T14:44:09Z",
+      "notebooks": [
+        "SymbolicAI/Lean/Lean-17-Knots-a-Conway-and-Proofs.ipynb",
+        "SymbolicAI/Lean/Lean-17b-Knots-Invariants-Companion.ipynb"
+      ]
+    },
+    {
+      "arxiv_id": "2608.08538",
+      "verdict": "OK",
+      "method": "api_query",
+      "rationale": "Titre API = The Mathieu group $M_{23}$ is a Galois group over $\\mathbb{Q}$, 6 auteurs, publie 2026-08-09. Concorde avec le contexte.",
+      "title": "The Mathieu group $M_{23}$ is a Galois group over $\\mathbb{Q}$",
+      "authors": [
+        "Xiaoyu Huang",
+        "Blake Jackson",
+        "Kyu-Hwan Lee",
+        "Bjorn Poonen",
+        "Rachel Pries",
+        "Shaowu Zhang"
+      ],
+      "published": "2026-08-09T07:27:22Z",
+      "notebooks": [
+        "SymbolicAI/Lean/Lean-23-Galois-Probleme-Inverse-M23.ipynb"
+      ]
+    }
+  ]
+}

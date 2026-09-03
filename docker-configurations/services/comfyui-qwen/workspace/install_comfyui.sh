@@ -107,7 +107,15 @@ fi
 if [ "${COMFYUI_LOGIN_ENABLED:-false}" = "true" ]; then
     echo "Configuration du token ComfyUI-Login..."
     mkdir -p custom_nodes/ComfyUI-Login
-    echo "${COMFYUI_BEARER_TOKEN}" > custom_nodes/ComfyUI-Login/PASSWORD
+    # Credential depuis le fichier bind-mounté, pas depuis l'env compose :
+    # l'interpolation compose tronque les '$' du bcrypt ($2b$12$Iv...),
+    # le PASSWORD serait corrompu (#14382).
+    if [ -f /workspace/ComfyUI/.secrets/qwen-api-user.token ]; then
+        cp /workspace/ComfyUI/.secrets/qwen-api-user.token custom_nodes/ComfyUI-Login/PASSWORD
+    else
+        echo "ERREUR: /workspace/ComfyUI/.secrets/qwen-api-user.token absent -- impossible de configurer ComfyUI-Login" >&2
+        exit 1
+    fi
     chmod 600 custom_nodes/ComfyUI-Login/PASSWORD
 fi
 

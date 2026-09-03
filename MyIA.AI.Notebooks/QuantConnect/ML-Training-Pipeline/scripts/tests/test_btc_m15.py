@@ -1,6 +1,7 @@
 """Tests for btc_m15.py helpers (issue #12734, slice 2/2).
 
-Covers the pure transformations in `scripts/btc_m15.py`:
+Covers the pure transformations in `scripts/bias_metrics.py`
+(extracted from `btc_vol.py`, issue #14363):
   - `_mse_decomposition`: split MSE into bias^2 + variance.
   - `_dm_centered_mse`: DM test on errors centered by their own mean.
   - `analyze_one_combo`: end-to-end on a synthetic combo dict.
@@ -20,9 +21,11 @@ import pytest
 # Make the parent directory importable.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from btc_m15 import (  # noqa: E402
+from bias_metrics import (  # noqa: E402
     _dm_centered_mse,
     _mse_decomposition,
+)
+from btc_m15 import (  # noqa: E402
     aggregate_verdicts,
     analyze_one_combo,
 )

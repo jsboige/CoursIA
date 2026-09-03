@@ -129,8 +129,16 @@ PLURAL_PAREN = re.compile(r"^\s*\(s\)\s*")
 # chiffre (COUNT_CLAIM) reste langue-neutre. Residu assume : « six » est
 # cardinal des deux langues, donc « six files d'attente » (FR) matche quand
 # meme la lecture EN -- borne par la rarece de la forme.
+# #14438 (2026-09-03) : « un »/« une » sont des ARTICLES, pas des
+# cardinaux. La prose « ... la casse qu'un fichier change provoque dans un
+# fichier inchange ... » est de la description, pas un perimetre
+# (reproducteur #14430 : FAIL pretendu 1 fichier, liste effective 3).
+# Seul le quantificateur RESTRICTIF « un seul fichier » denombre
+# reellement un perimetre et reste un cardinal 1. La voie officielle pour
+# declarer un perimetre d'un fichier reste la forme chiffree
+# « 1 fichier : <chemin> » (COUNT_CLAIM, langue-neutre).
 COUNT_WORDS_FR = {
-    "un": 1, "une": 1, "deux": 2, "trois": 3, "quatre": 4, "cinq": 5,
+    "un seul": 1, "deux": 2, "trois": 3, "quatre": 4, "cinq": 5,
     "six": 6, "sept": 7, "huit": 8, "neuf": 9, "dix": 10,
 }
 COUNT_WORDS_EN = {
@@ -588,6 +596,10 @@ def check_assertion(
         # reached the terminal "unverifiable" branch despite being a true
         # perimeter claim. Read the same closed list, same first-non-zero
         # rule. FR cardinals are unique 1-10 (no false twin like EN "six").
+        # #14438 : « un/une » ne sont plus des cardinaux FR (articles, pas
+        # des comptes) ; seule la forme restrictive « un seul fichier »
+        # reste un cardinal 1 (cf COUNT_WORDS_FR rationale, reproducteur
+        # #14430).
         # #13610: an indefinite-article word count whose edit-verb referent is
         # a NAMED file not in this PR is a descriptive mention of another
         # file (routing target, dependency, candidate not chosen) -- not the
@@ -711,8 +723,14 @@ INCIDENTAL_QUALIFIERS = frozenset({
 # PAS dans `files`. Si le referent reste anonyme (« editer un fichier »),
 # le cas est ambigu et le garde CONSERVE le rouge (FN safety par defaut,
 # coherent avec le pattern fondateur du script).
+# #14438 : la seule forme conservee comme cardinal FR-1 est « un seul
+# fichier » (quantificateur restrictif, cf COUNT_WORDS_FR rationale) -- ce
+# predicat couvre aussi cette forme etendue.
 # ---------------------------------------------------------------------------
-_INDEF_ARTICLE = re.compile(r"\b(?:un|une|des)\s+(?:fichiers?|files?)\b", re.IGNORECASE)
+_INDEF_ARTICLE = re.compile(
+    r"\b(?:un\s+seul|une\s+seule|un|une|des)\s+(?:fichiers?|files?)\b",
+    re.IGNORECASE,
+)
 _EDIT_VERB = re.compile(
     r"\b(?:editer|modifier|toucher|ouvrir|créer|creer|ajouter|changer|mettre\s+à\s+jour|mettre\s+a\s+jour|update|edit|modify|touch|open|create|add|change)\b",
     re.IGNORECASE,
@@ -1100,11 +1118,12 @@ def _word_form_is_indef_non_pr_subject(text: str, files: list[dict]) -> bool:
 # #11985 forme 4b (bad surface, not bad count) and #13610 (indefinite
 # article + governing verb). Closed verb list; FN-safety mirrors
 # _word_form_is_indef_non_pr_subject: same 80-char window before the article,
-# and a genuine word-form perimeter claim ("un fichier modifie : X.py")
+# and a genuine word-form perimeter claim ("un seul fichier modifie : X.py")
 # never follows a discrimination verb -- the residual risk ("on distingue un
 # fichier modifie") is the deliberate closed-list trade, measured against
 # the #13791 control PRs (none of #11956/#12065/#13557/#13685 carries a
-# discrimination verb before a word-form count).
+# discrimination verb before a word-form count). #14438 : seule la forme
+# restrictive « un seul fichiers? » reste un cardinal FR-1.
 _DISCRIMINATION_VERB = re.compile(
     r"\b(?:distinguer|diff[ée]rencier|discriminer|contraster|opposer|"
     r"s[ée]parer|comparer)\b",

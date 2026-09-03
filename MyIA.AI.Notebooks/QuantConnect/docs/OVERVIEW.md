@@ -136,7 +136,7 @@ Les notebooks pédagogiques `Python/QC-Py-*` couvrent les concepts ; les projets
 | QC-Py-18 (ML Features) | ML-FeatureEngineering, ML-RandomForest, ML-XGBoost |
 | QC-Py-19 (Deep Learning) | ML-Temporal-CNN, LSTM-Forecasting, DL-LSTM |
 | QC-Py-20 (Reinforcement Learning) | RL-DQN-Trading, RL-Portfolio |
-| QC-Py-Cloud-02 (Sector Rotation) | SectorMomentum, DualMomentum |
+| QC-Py-Cloud-12 (Sector Rotation & Multi-Asset Momentum) | SectorMomentum, DualMomentum |
 | QC-Py-Cloud-03 (Risk Parity) | RiskParity, RegimeSwitching |
 | QC-Py-Cloud-05 (MLP Forecasting) | Portfolio-Optimization-ML, ML-Regression |
 | QC-Py-Cloud-06 (PCA StatArb) | PCA-StatArbitrage, ETF-Pairs |

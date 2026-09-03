@@ -63,6 +63,18 @@ def test_build_adk_model_forwards_real_key_without_logging_it():
     assert model._additional_args["api_key"] == "configured-test-key"
 
 
+def test_build_adk_model_forwards_qwen_generation_budget():
+    model = build_adk_model(
+        _config(
+            ProviderType.QWEN,
+            model="qwen3.6-flash",
+            api_key="configured-test-key",
+        ).model_copy(update={"max_tokens": 512})
+    )
+    assert model.model == "openai/qwen3.6-flash"
+    assert model._additional_args["max_tokens"] == 512
+
+
 def test_build_adk_model_openai_uses_provider_mapping():
     model = build_adk_model(
         _config(
@@ -270,6 +282,28 @@ def test_run_data_agent_times_out_and_closes_runner():
         _HangingRunner.instances[0].close.assert_awaited_once()
 
     adk_runtime.asyncio.run(exercise())
+
+
+def test_smoke_reports_missing_qwen_config_without_traceback(capsys):
+    async def exercise():
+        with (
+            patch.object(
+                adk_runtime,
+                "_parse_args",
+                return_value=MagicMock(prompt="prompt"),
+            ),
+            patch.object(
+                adk_runtime,
+                "run_data_agent",
+                side_effect=ValueError(
+                    "Configuration Qwen cloud incomplete : QWEN_API_KEY"
+                ),
+            ),
+        ):
+            assert await adk_runtime._smoke() == 2
+
+    adk_runtime.asyncio.run(exercise())
+    assert capsys.readouterr().out.startswith("RECOVERABLE-LOCAL:")
 
 
 def test_runtime_unavailable_exposes_sota_verdict():
