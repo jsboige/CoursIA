@@ -63,6 +63,10 @@ namespace MyIA.Trading.Backtester
                 if (value != OrderType.Cancel)
                 {
                     this.Type = (int)value;
+                    // Si l'ordre etait precedemment annule, repasser a un type actif leve
+                    // l'etat d'annulation : sans ce reset, OrderType retournerait Cancel via
+                    // le getter tant que IsCancel reste true, ce qui contredit le Type stocke.
+                    this.IsCancel = false;
                 }
                 else
                 {
