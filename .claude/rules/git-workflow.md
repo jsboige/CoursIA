@@ -86,6 +86,13 @@ python scripts/ci/prune_merged_worktrees.py --apply     # applique
 python scripts/ci/prune_merged_worktrees.py --json      # sortie structuree pour sweep dashboard
 ```
 
+**Cablage quotidien (#14473)** : `scripts/ci/install_prune_task.py` installe la tache planifiee locale (schtasks DAILY 03:17, journal `%LOCALAPPDATA%\CoursIA\prune_task\logs\`) qui execute la purge en `--apply` — l'appel manuel fin de cycle reste le filet. La prose d'une regle ne s'execute pas seule (regles injectees au demarrage, perdues en crash) : une fois par machine,
+
+```bash
+python scripts/ci/install_prune_task.py --install   # garde : REFUSE tant que le fix #14476 n'est pas merge
+python scripts/ci/install_prune_task.py --status    # etat de la tache
+```
+
 **Critères de retrait (cf issue #14195 acceptance)** :
 - **REMOVE** : PR MERGED ou CLOSED, branche sans unpushed, pas d'édition source untracked.
 - **REFUSE** : branche `main`/`master` (jamais le worktree de travail) · PR OPEN (l'itération continue) · commits non poussés vs upstream spécifique (`@{u}` non-`main`) · édition source untracked non tolérée (`.py`, `.ipynb`, `.lean`, `.md`, etc.).
