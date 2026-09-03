@@ -35,6 +35,13 @@
       content_python_sha: 5cd4eade8c04fd873006c5cda5a4b1d951657dfe9c3339acdb5b7eddaa4f4ec5
       content_csharp_sha: 7997bcbc29cb8e5e91b97de8d4621274f5865ee9285088b32e25aaab6280ae09
       reason: "Re-attestation apres PR #14125 (CSP-8 Temporal C# density enrich) : markdown-only — 10 nouvelles cellules md (25->35), 0 changement de cellule code ; signature sha256 des (source, execution_count, outputs) des 16 cellules code byte-identique base->HEAD (6574f1e7b72b537a). Jumeau Python CSP-8-Temporal.ipynb non touche (python_sha inchange). parity_level native-both intacte."
+    - date: "2026-09-03"
+      by: myia-po-2026:CoursIA
+      python_sha: ce4c245605d506bb977802f6f72099dfc0fed9e7
+      csharp_sha: 37dd38e1bc12569638d9a0d6ae6760b962f1ca90
+      content_python_sha: 5cd4eade8c04fd873006c5cda5a4b1d951657dfe9c3339acdb5b7eddaa4f4ec5
+      content_csharp_sha: 41868e0c04e616c8927bba8e4119f184e8aef28bbcede9eca24356b1227b47ae
+      reason: "Re-attestation apres fix navlinks #14125 (2 liens cell0 : ../CSP-7-Quantum-Csharp.ipynb -> CSP-7-Soft-Csharp.ipynb, ../CSP-9-Planning-Csharp.ipynb -> CSP-9-Distributed-Csharp.ipynb, cibles resolues contre l arbre au prealable) : markdown-only, cellules code toujours byte-identiques. check_notebook_navlinks --check OK (0 NEW broken)."
   known_differences:
     - "Socle commun : algebre d'intervalle d'Allen (13 relations), STP (Simple Temporal Problem) avec Floyd-Warshall, TCSP (Temporal CSP a intervalles multiples), application planification de reunion. Couverture conceptuelle COMPLETE des deux cotes (le twin le plus proche de la famille CSP au sens cellule-a-cellule : 42 vs 41 cellules, 17 vs 16 code)."
     - "Meme famille de solveur SOTA, bindings natifs : Python = ortools.sat.cp_model ; C# = Google.OrTools.Sat. Les deux cotes invoquent OR-Tools CP-SAT (moteur SAT-based identique) -- parite de solveur confirmee, pas de divergence de machinerie."
