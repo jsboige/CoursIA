@@ -27,6 +27,12 @@
       csharp_sha: 1934af8e843c3bc8359671b0f47f0614b2af126b
       content_python_sha: e64b2d011be5ae976afd68b12f274369bc05ee26ff4832fc751ad1db3bc87e15
       content_csharp_sha: 426c6c7837711d69d4c1d011a2a178d3e2234b5f0180094963c32192c40c5583
+    - date: "2026-09-03"
+      by: myia-po-2026:CoursIA
+      python_sha: 7f56c1d87410adfbec6fb999107c449defbe99f7
+      csharp_sha: 1934af8e843c3bc8359671b0f47f0614b2af126b
+      content_python_sha: 3bc637e123e03e81530b590ba29908d335ca1af6fd8daabf96635592e360272e
+      content_csharp_sha: 426c6c7837711d69d4c1d011a2a178d3e2234b5f0180094963c32192c40c5583
   known_differences:
     - "Python : pyz3 (ForAll, Exists, prove() par refutation). C# : Microsoft.Z3 .NET (ctx.MkForall, MkExists, Solver+unsat)."
     - "Concept demontre (preuve par refutation, Exists sat/unsat, Fermat unknown) verifie cote Python (structure CLEAN c.20)."
