@@ -7,9 +7,9 @@
     {
       "change": "Extend backtest period",
       "from": "set_start_date(2024, 1, 1); set_end_date(2024, 7, 20)",
-      "to": "set_start_date(2015, 1, 1); # Remove set_end_date",
+      "to": "set_start_date(2015, 1, 1); set_end_date(2025, 1, 1)",
       "file": "main.py",
-      "reason": "7 months is too short, must include bear markets (2022, 2020)"
+      "reason": "7 months is too short, must include bear markets (2022, 2020); the end bound stays explicit so the window does not slide with the wall clock (D2, EPIC #9768)"
     },
     {
       "change": "Reduce leverage in PCM",

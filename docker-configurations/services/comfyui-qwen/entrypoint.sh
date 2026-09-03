@@ -20,6 +20,14 @@ if [ "$(id -u)" = "0" ]; then
         echo "📦 Installation de gosu..."
         apt-get update -qq && apt-get install -y -qq gosu >/dev/null
     fi
+    # opencv-python (PuLID / IPAdapter custom nodes) needs libGL.so.1 from
+    # libgl1; the python:3.11 base image does not ship it, so `import cv2`
+    # fails and every PuLID/IPAdapter node dies. Idempotent: only installs
+    # when libGL.so.1 is absent.
+    if ! ldconfig -p | grep -q libGL.so.1; then
+        echo "📦 Installation de libgl1 (libGL.so.1 pour opencv)..."
+        apt-get update -qq && apt-get install -y -qq libgl1 >/dev/null
+    fi
     # Ensure uid-1000 user exists (for getpass.getuser() in torch._inductor)
     if ! getent passwd 1000 >/dev/null 2>&1; then
         useradd -u 1000 -o -m -s /bin/sh bonsai || true

@@ -389,3 +389,203 @@ def test_scan_repo_finds_track2_adk_baseline(tmp_path):
             assert nb_results["google_adk"]["verdict"] == "NAMED_NOT_INVOKED"
             found = True
     assert found, "Lab10 Track2 devrait declencher NAMED_NOT_INVOKED"
+
+
+# --- Coverage gaps identified by empirical --scan-all cycle 92 -------------
+
+def test_wiring_inside_string_literal_ignored():
+    """Un import SDK place dans une string (print('import openai')) n'est PAS
+    un wiring reel. Le scanner doit ignorer les chaines et considerer que
+    la cellule n'a pas d'import.
+    """
+    nb = _nb(
+        md_cells=["# GPT-4 integration"],
+        code_cells=[
+            (
+                "msg = 'import openai'\nprint(msg)",
+                _out_stream("import openai"),
+            ),
+        ],
+    )
+    p = Path("/tmp/_test_string_import.ipynb")
+    p.write_text(json.dumps(nb))
+    try:
+        results = classify_notebook(p, nb, ["openai_llm"], {p.parent.resolve(): [p]})
+        # L'output textuel contient 'import openai' mais ce n'est pas un wiring
+        # car il est dans une string. La cellule n'a pas d'import SDK reel.
+        # Cependant l'output (print(msg)) est reel, et il y a un claim LLM :
+        # c'est WIRING_ONLY si on considere le wiring absent, ou NAMED_NOT_INVOKED
+        # si on est strict. Le scanner doit signaler NAMED_NOT_INVOKED
+        # (pas de vrai wiring SDK).
+        assert results["openai_llm"]["verdict"] == "NAMED_NOT_INVOKED"
+    finally:
+        p.unlink()
+
+
+def test_simulation_marker_only_in_output():
+    """Si seul l'output contient 'Reponse simulee' (pas le code source),
+    le scanner doit toujours detecter la simulation.
+    """
+    nb = _nb(
+        md_cells=["# GPT-4 integration via API"],
+        code_cells=[
+            (
+                "import openai\nresponse = openai.ChatCompletion.create()\nprint(response.choices[0].message.content)",
+                _out_stream("Reponse simulee : bonjour"),
+            ),
+        ],
+    )
+    p = Path("/tmp/_test_simulation_in_output.ipynb")
+    p.write_text(json.dumps(nb))
+    try:
+        results = classify_notebook(p, nb, ["openai_llm"], {p.parent.resolve(): [p]})
+        assert results["openai_llm"]["verdict"] == "SIMULATED_TERMINAL"
+        assert results["openai_llm"]["simulation"], "simulation_marker devrait etre detecte"
+        assert not results["openai_llm"]["proof"], "proof devrait etre vide a cause de la simulation"
+    finally:
+        p.unlink()
+
+
+def test_claim_only_in_objectives_metadata():
+    """Le claim peut etre dans la cellule objectifs (premiere markdown) au lieu
+    du titre. Le scanner doit scanner toutes les cellules markdown du notebook,
+    pas seulement la premiere.
+    """
+    nb = _nb(
+        md_cells=[
+            "# Lab standard\nObjectifs pedagogiques.",
+            "## Details\nCe notebook integre le **Google ADK** pour demonstrer les patterns.",
+        ],
+        code_cells=[
+            ("print('placeholder')", _out_stream("placeholder")),
+        ],
+    )
+    p = Path("/tmp/_test_claim_in_objectives.ipynb")
+    p.write_text(json.dumps(nb))
+    try:
+        results = classify_notebook(p, nb, ["google_adk"], {p.parent.resolve(): [p]})
+        assert "google_adk" in results
+        assert results["google_adk"]["verdict"] == "NAMED_NOT_INVOKED"
+    finally:
+        p.unlink()
+
+
+def test_engine_filter_limits_scan():
+    """Le filtre --engine doit limiter le scan au(x) moteur(s) demande(s)."""
+    nb = _nb(
+        md_cells=["# Lab\nGoogle ADK et BigQuery sont mentionnes ici."],
+        code_cells=[
+            ("from google.cloud import bigquery", _out_stream("Client() OK")),
+        ],
+    )
+    p = Path("/tmp/_test_engine_filter.ipynb")
+    p.write_text(json.dumps(nb))
+    try:
+        # Scan limite a bigquery : seul bigquery devrait apparaitre dans les results
+        results_bq = classify_notebook(p, nb, ["bigquery"], {p.parent.resolve(): [p]})
+        assert "bigquery" in results_bq
+        assert "google_adk" not in results_bq
+        # Scan complet (tous moteurs) : les deux devraient apparaitre
+        results_all = classify_notebook(p, nb, None, {p.parent.resolve(): [p]})
+        assert "google_adk" in results_all
+        assert "bigquery" in results_all
+    finally:
+        p.unlink()
+
+
+def test_disclosed_deterministic_with_successor_executed():
+    """Le verdict DISCLOSED_SEQUENCE_PROVED exige un successeur dans la meme
+    serie-sibling qui ait wiring+proof. Ce test verifie que le scanner cherche
+    bien dans le cache sibling, pas seulement le notebook courant.
+    """
+    p_deterministic = Path("/tmp/_test_seq_det.ipynb")
+    p_real = Path("/tmp/_test_seq_real.ipynb")
+
+    # Notebook deterministe qui mentionne Google ADK dans sa prose comme
+    # etant realise dans le prochain notebook.
+    nb_det = _nb(
+        md_cells=[
+            "# Setup deterministe\nCe notebook est deterministe (sans LLM).\n"
+            "Il prepare les inputs pour le **Google ADK** runtime du notebook suivant.",
+        ],
+        code_cells=[
+            ("x = 1\nprint(x)", _out_stream("1")),
+        ],
+    )
+    # Notebook suivant dans la serie : wiring et proof reels.
+    nb_real = _nb(
+        md_cells=["# Real Google ADK runtime"],
+        code_cells=[
+            ("from google.adk import Agent\nprint('agent ready')", _out_stream("agent ready")),
+        ],
+    )
+    p_deterministic.write_text(json.dumps(nb_det))
+    p_real.write_text(json.dumps(nb_real))
+    try:
+        # Le cache sibling DOIT inclure les deux notebooks dans le bon ordre.
+        siblings = [p_deterministic, p_real]
+        cache = {p_deterministic.parent.resolve(): siblings}
+        results = classify_notebook(p_deterministic, nb_det, ["google_adk"], cache)
+        assert "google_adk" in results
+        # Verdict attendu : DISCLOSED_SEQUENCE_PROVED (le notebook suivant dans
+        # la meme serie a wiring+proof reels).
+        assert results["google_adk"]["verdict"] == "DISCLOSED_SEQUENCE_PROVED"
+    finally:
+        p_deterministic.unlink()
+        p_real.unlink()
+
+
+def test_disclosed_deterministic_without_successor_falls_back():
+    """Si un notebook est deterministe ET claim Google ADK mais qu'il n'y a
+    PAS de successeur dans la serie, le scanner doit retomber sur
+    NAMED_NOT_INVOKED (pas inventer un successeur).
+    """
+    p = Path("/tmp/_test_det_no_successor.ipynb")
+    nb = _nb(
+        md_cells=[
+            "# Lab isole\nDeterministe, sans LLM.\nMais le **Google ADK** est mentionne.",
+        ],
+        code_cells=[
+            ("x = 1", _out_stream("1")),
+        ],
+    )
+    p.write_text(json.dumps(nb))
+    try:
+        # Pas de successeur dans la cache (un seul notebook)
+        siblings = [p]
+        cache = {p.parent.resolve(): siblings}
+        results = classify_notebook(p, nb, ["google_adk"], cache)
+        assert "google_adk" in results
+        # Pas de successeur -> NAMED_NOT_INVOKED (le claim n'est pas prouve)
+        assert results["google_adk"]["verdict"] == "NAMED_NOT_INVOKED"
+    finally:
+        p.unlink()
+
+
+def test_scan_repo_excludes_nested_output_dir(tmp_path):
+    """_iter_notebooks doit exclure les sous-dossiers _output/_executed
+    pour eviter de scanner des artefacts en double.
+    """
+    # Un notebook normal
+    (tmp_path / "main.ipynb").write_text(json.dumps(_nb(
+        md_cells=["# Lab\nGoogle ADK integration"],
+        code_cells=[("print(1)", _out_stream("1"))],
+    )))
+    # Un artefact _output au meme endroit
+    (tmp_path / "main_output.ipynb").write_text(json.dumps(_nb(
+        md_cells=["# _output artefact"],
+        code_cells=[("print(1)", _out_stream("1"))],
+    )))
+    # Un sous-dossier _archive (doit etre scanne si pas exclu par le suffix)
+    archive_dir = tmp_path / "_archive"
+    archive_dir.mkdir()
+    (archive_dir / "old.ipynb").write_text(json.dumps(_nb(
+        md_cells=["# Archive"],
+        code_cells=[("print(1)", _out_stream("1"))],
+    )))
+    results = scan_repo(tmp_path)
+    # Doit inclure main mais pas main_output
+    found_main = any("main.ipynb" in nb_path and "_output" not in nb_path for nb_path in results)
+    found_output_artefact = any("main_output.ipynb" in nb_path for nb_path in results)
+    assert found_main, "main.ipynb doit etre scanne"
+    assert not found_output_artefact, "main_output.ipynb doit etre exclu"

@@ -58,6 +58,12 @@
       csharp_sha: 8245d75ef3592c3b8d981be2a76cb3f324414e4c
       content_python_sha: dffc5c0672b52e4ad26a94825d7bcfa293a04b3b1f977f4edf9dd03187bdf9de
       content_csharp_sha: b9aa05370ba8c89f55ee3096c5223139ed6ad1a0a610edc71a42fed786f8350b
+    - date: "2026-09-02"
+      by: myia-po-2023:CoursIA
+      python_sha: 7fd621efcdb7d180fed88577e84c31e4ca57fd36
+      csharp_sha: dc8e80181dcde9ce5a106ef143d59c01a7a45e3b
+      content_python_sha: dffc5c0672b52e4ad26a94825d7bcfa293a04b3b1f977f4edf9dd03187bdf9de
+      content_csharp_sha: 86d87946b88ac228025b0d79df367a27b5bda8fbe18d8e77556ab92be86ddda5
   known_differences:
     - 'PR #12108 (2026-08-22, reprise #12104) : cote C#, normalisation source_list_missing_newlines (backslash-n manquants sur elements de liste source, 16 cellules NO_AUTO_FIX reprises manuellement) -- drift de forme JSON uniquement, contenu pedagogique et cellules code inchanges.'
     - "Deblocage 2026-08-20 (po-2024, #10382 tranche 2) : le reasoner multi-atomes est desormais invoque cote C# (ApproximateNaiveMlnReasoner via IKVM, litteraux 200000L) -- cellules 8/11/14/17 re-ecrites avec requetes reelles, marginales identiques au jumeau Python a 4 decimales. L'ancien diagnostic \"bug IKVM 8.15 bloque le reasoner\" etait faux en mecanisme (signature interop (long,long) vs Integer boxes, CS1503) ; markdowns 6/9/15/18 corriges, les \"plafonds atteignables\" sont leves. bridge_verdict RECOVERABLE-LOCAL -> SOTA-OK. Cellule 14 alignee sur le jumeau Python : exception STRICTE Penguin=>!Flies (sans poids) + regle ponderee w=2 (l'ancienne version utilisait w=10 vs w=1 en ground, sans aucun calcul). La valeur SimpleSampling fluctue d'un run a l'autre (Monte-Carlo non seedee, derive C.4 cause e) : Python 0.7722, C# run 0.8874 -- deux tirages legitimes du meme estimateur autour de la vraie valeur 0.8301."

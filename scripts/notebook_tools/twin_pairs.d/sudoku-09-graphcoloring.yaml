@@ -58,7 +58,14 @@
       csharp_sha: 1950c286228f06d2abccc0e2f358e86d09f2585f
       content_python_sha: 76a7a64fade11ace3b667bf109a939f27aea9b12ad24e4e5f8b3a60418fc2e4b
       content_csharp_sha: 0225a89f0895aee4fef0dffcff879f6b32959a48c96624900570203d9dbe9bca
+    - date: "2026-09-02"
+      by: myia-po-2027:CoursIA
+      python_sha: 88c6f5ae56c75b604ebefa0be61d6060f961ecef
+      csharp_sha: fed0d1b34d7acb1cf5540f447388359bec184431
+      content_python_sha: 76a7a64fade11ace3b667bf109a939f27aea9b12ad24e4e5f8b3a60418fc2e4b
+      content_csharp_sha: 8b74a14daf04af8e716fe7aa47633f37132e36e9d3d3361a827fe1ef026511f4
   known_differences:
+    - "2026-09-02 (PR #14266, myia-po-2027:CoursIA) : normalisation nbformat du champ source string->liste (tranche Sudoku de #14209) -- forme seule, jumeau C# seul (Python non touche). Contenu rejoint byte-identique (digest sha1 par cellule, 0 divergence), outputs/execution_count/nb de cellules inchanges, pas de re-exec (C.3). Les blob SHAs et content SHAs deplaces dans l audit ci-dessus sont des artefacts de forme (le content_sha hashe la structure JSON des cellules, forme du champ source incluse), pas une divergence pedagogique."
     - "Rebaseline 2026-08-14 : cote C# deplace par drain wallclock #9434 / PR #10874 (remplacement des timings machine-dependants en ms par des ordres de grandeur dans le markdown). Parite semantique inchangee (cellules code byte-identiques, aucune sortie, aucun exec_count touche) ; cote Python non modifie. Attestation = nouveau blob SHA du cote C#."
     - "Socle pedagogique commun : reformulation du Sudoku comme un probleme de coloration de graphe (une cellule = un noeud, le graphe de contraintes Sudoku, coloration propre a 9 couleurs), meme concept mathematique (graphe de conflits, coloration propre), meme cas d'application."
     - "Idiomes framework : Python = networkx (construction du graphe via nx.sudoku_graph(), 81 sommets / 810 aretes) ; la coloration (backtracking / MRV / DSATUR) est hand-written au-dessus. C# = stdlib System.* (construction + solveur from-scratch, tranche 1). [Corrige 2026-08-11 : une mention anterieure a OR-Tools CP-SAT etait inexacte -- le jumeau Python n'importe ni ortools ni cp_model, seul networkx est present.]"

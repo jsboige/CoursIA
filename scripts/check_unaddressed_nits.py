@@ -132,6 +132,27 @@ AGENT_PREFIXES = (
 # « overrides » jsboige 02:40/02:41 ; classe #12798, l'auto-levee). L'arbitre
 # tiers de B.0 est la lane coordinateur dediee, et elle seule.
 LIFT_OVERRIDE_LOGINS = {"myia-ai-01"}
+# #13609 -- alias de persona Hermes/NanoClaw cross-login. La persona de
+# reviewer Hermes parle sous DEUX logins -- clusterManager-Myia (reviewer
+# principal) et jsboige (self-bot). Quand elle pose une reserve sous l'un
+# puis leve sous l'autre, sa propre levee n'etait pas creditee par
+# `_lift_eligible` (borne d'auteur stricte #11145 / #12836), et la reserve
+# restait vivante : aucun geste de la lane ne pouvait la lever hors
+# `[OVERRIDE]` coordinateur (coûteux, exige re-verif tierce, ne s'applique
+# pas sur PR lane-coordinateur -- cf #13316). La composition des deux
+# decisions est juste ; seule leur intersection est un faux negatif.
+#
+# On declare donc que les deux logins sont la MEME persona au sens de la
+# borne d'auteur, mais UNIQUEMENT quand le corps du lifter porte un marqueur
+# explicite `[Hermes]` / `[NanoClaw]` / `[Hermes self-bot]`. Sans marqueur,
+# `jsboige` reste l'identite de poussee partagee des lanes (#13316) et un
+# commentaire sans marqueur ne leve rien. LIFT_OVERRIDE_LOGINS reste
+# inchange : un override `[OVERRIDE]` jsboige n'entre pas, alias de persona
+# != droit d'override coordinateur.
+PERSONA_ALIAS_LOGINS = {"clusterManager-Myia"}
+_PERSONA_MARKERS_RE = re.compile(
+    r"(?m)(?:^|\s)\[(?:Hermes|NanoClaw|Hermes self-bot)(?:\s+[^\]]*)?\]"
+)
 # #13030 -- le marqueur doit etre POSE, pas CITE. L'ancien pattern sans
 # ancre matchait n'importe quelle mention dans le corps : le commentaire de
 # la lane #12872 qui DOCUMENTAIT l'option « (b) `[OVERRIDE] lane x` par
@@ -254,9 +275,11 @@ CONCERN_MARKERS = (
 #     1 NON levee = #12059 fondateur, defaut B.0 = merge avec constat sans
 #     reponse, defaut pedagogique en production (hyperparametres GRPO contredits).
 #   🔴 (U+1F534) : bloquant strict, 1/35 (vrai bloquant).
-# `_unaccent` preserve les glyphes (categorie So, pas Mn), `_strip_mentioned_verdicts`
-# ne les neutralise pas (regex _MENTION_VERDICT* ciblent ASCII verdict formel),
-# `_is_cited` reste symetrique via CITERS ascii.
+# `_unaccent` preserve les glyphes (categorie So, pas Mn), `_is_cited` reste
+# symetrique via CITERS ascii. Les positions A-I (regex `_MENTION_VERDICT*`)
+# ciblent l'ASCII formel et ignorent les glyphes ; la Position J
+# (`_strip_glyphe_mentions`, #14277) les neutralise en position de MENTION
+# (méta-nom sur la même ligne), l'émission en tête de ligne restant vive.
 SEVERITY_GLYPHS = (
     "🟡",  # constat substantiel (fondateur #12059)
     "🔴",  # bloquant strict
@@ -499,8 +522,21 @@ _MENTION_VERDICT = re.compile(
 # de remediation qui evoque un verdict anterieur). On preserve le verdict
 # uniquement dans le premier cas. Le tag agent est matche dans les 80 chars
 # entre `##` et le verdict (cf limite d'origine).
+# #13642 -- le garde d'origine `\[[A-Z][A-Za-z_-]{2,40}\]` n'acceptait que les
+# tags UPPERCASE-initial (`[Hermes]`, `[NanoClaw]`, `[Claude]`) : le
+# coordinateur, qui se tag `[ai-01]` / `[ai-01 ARBITRAGE]` (et le compte
+# self-bot `[jsboige]`), est minuscule-initial et echappait au garde -> sa
+# reserve en position de titre etait strippee en MENTION et devenait invisible
+# au gate. Le vocabulaire est CLOS (reutilise tel quel, pas de caractere
+# generique) : la classe symetrique `## [bug] CHANGES_REQUESTED` (categorie de
+# prose, pas un reviewer) doit RESTER une MENTION et rester strippee.
+_AGENT_REVIEWER_TAG = (
+    r"\[(?i:(?:Hermes(?:\s+self-bot)?|NanoClaw|Claude|Review|"
+    r"clusterManager-Myia|ai-01|jsboige|myia-ai-01)\b[^\]]*)\]"
+)
 _MENTION_VERDICT_HEADING = re.compile(
-    r"(?m)^#{1,6}(?![^\n]*\[[A-Z][A-Za-z_-]{2,40}\])[^\n]{0,80}?([A-Z][A-Z_]{2,}[A-Z])(?![A-Za-z0-9_])")
+    r"(?m)^#{1,6}(?![^\n]*" + _AGENT_REVIEWER_TAG + r")[^\n]{0,80}?"
+    r"([A-Z][A-Z_]{2,}[A-Z])(?![A-Za-z0-9_])")
 
 # #11744 — Position B : prose inline. Un verdict est en mention quand un mot-
 # cle de mention (`verdict`, `nit`, `remark`, `previous`, `previous`, `precedent`,
@@ -741,9 +777,11 @@ _MENTION_VERDICT_BARE = re.compile(
 #     myia-* / un nom propre) — sans attribution, le verdict est propre
 #     (l'auteur l'emet), la position ne s'applique PAS.
 # (2) Verbe DESCRIPTIF (`porte`, `comporte`, `contient`, `mentionne`,
-#     `indique`, `signale`, `releve`, `contient`, `a emis`, `avait emis`) — un
-#     verbe d'EMISSION (`Verdict :`, `Block on`, `declare`, `reste bloquante`)
-#     n'est PAS descriptif, c'est une emission, la position ne s'applique PAS.
+#     `indique`, `signale`, `releve`, `contient`, `a emis`, `avait emis`, et
+#     ext. #14185 `conclut`, `declare` — conclusifs/declaratifs acceptes
+#     UNIQUEMENT sous attribution tierce + article, cf pattern) — un verbe
+#     d'EMISSION (`Verdict :`, `Block on`, `reste bloquante`) n'est PAS
+#     descriptif, c'est une emission, la position ne s'applique PAS.
 # (3) Pas de declaration de blocage dans la suite de la phrase (meme garde
 #     dure que Position E, ligne 645 : `reste bloquante` / `Verdict :` / `Block
 #     on`) — sinon le verdict reste emis.
@@ -779,7 +817,14 @@ _MENTION_VERDICT_REPORTED = re.compile(
     r"|indique|indiques|indiquent"
     r"|signale|signales|signalent"
     r"|releve|releves|relevent"
-    r"|a\s+emis|avait\s+emis|avaient\s+emis|ont\s+emis)"
+    r"|a\s+emis|avait\s+emis|avaient\s+emis|ont\s+emis"
+    # Ext. #14185 : verbes conclusifs/declaratifs sous attribution tierce —
+    # « La review NanoClaw conclut un SUSPECT_REGRESSION » est un rapport de
+    # verdict de tiers, pas une emission propre. Surs sous ce pattern car
+    # l'attribution (1) et l'article (garde ce6) sont exigees en amont :
+    # « Je declare CHANGES_REQUESTED » ne peut pas matcher (pas de
+    # « review/revue » + tiers avant le verbe).
+    r"|conclut|concluent|declare|declarent)"
     r"\s+(?:un|une|le|la|les|des|du)\s+"
     # Verdict case-sensitive (memes bornes que A-G)
     r"(?-i:([A-Z][A-Z_]{3,}))(?![A-Za-z0-9_])"
@@ -787,6 +832,219 @@ _MENTION_VERDICT_REPORTED = re.compile(
     # dans la suite de la phrase (200 chars, meme phrase)
     r"(?![^.!?\n]{0,200}(?:reste\s+bloquante|reste\s+vive|verdict\s*:|block\s+on))"
 )
+
+
+# #14199 (cf grain) — Position I : `avant merge` en position de mention (FP).
+# Le marqueur `avant merge` est dans CONCERN_MARKERS comme signal d'un nit
+# redige a la main, MAIS trois formes mesurees 2026-09-02 le portent en
+# mention pure (pas en emission) :
+#
+#   1. **Qualifieur explicite non-bloquant** : « Concern (non bloquant) :
+#      <details> à confirmer avant merge. Ball merge : <delegate>. » — le
+#      qualifieur parenthese neutralise le nit, et le `Ball merge :` delegue
+#      ailleurs. (PR #13537 fondateur.)
+#
+#   2. **Narration de verification prealable** : « Verifié de mon côté
+#      avant merge : mergeStateStatus CLEAN, 0 check rouge. » — l'auteur
+#      DECRIT un check qu'il a fait, pas un nit qu'il pose. (PR #13498
+#      fondateur.)
+#
+#   3. **Formule de la voie B.0** : « levee par **issue de suivi ouverte
+#      avant merge** (#N) » / « par la voie B.0 ... avant merge » — la
+#      prose NOMME le mecanisme de levee B.0, elle ne pose pas un nit.
+#      (PR #13860 fondateur.)
+#
+# Les Positions A-H utilisent toutes un verdict formel comme discriminant
+# (`CHANGES_REQUESTED`, etc.). Position I est differente : la cible n'est
+# pas un verdict mais le marqueur temporel `avant merge` lui-meme, qui est
+# un CONCERN_MARKER a part entiere (L231). On ne peut donc pas utiliser
+# la voie iso-longueur existante des verdicts — on neutralise directement
+# le token `avant [le/la/l'] merge` (remplacement par espaces) dans les
+# trois contextes mentionnes.
+#
+# Discrimination vs VP — ce qui doit rester bloquant :
+#   - « A relire par ai-01 avant merge » (#13800 VP) : verbe ACTIONNEL
+#     (`à relire`) deleguant une intervention — pas une verification
+#     passee ni une delegation de merge.
+#   - « a verifier avant merge » / « à corriger avant merge » : verbe
+#     IMPERATIF a l'infinitif — l'auteur demande une action.
+#   - « Concern (bloquant) a confirmer avant merge » : qualifieur
+#     `(bloquant)`/`(urgent)` n'est PAS couvert par la liste (a) — il
+#     reste un nit vivant.
+#
+# 7 sous-patterns (un par contexte FP, exactitude isolee ; review NanoClaw
+# #14322 minor : compteur corrige) :
+
+_MENTION_AVANT_MERGE_QUALIFIER = re.compile(
+    r"(?i)"
+    # Qualifieur explicite entre parentheses (200 chars gap)
+    r"\((?:non[\s-]+(?:bloquant|bloquante|bloquants|bloquantes|blocker)"
+    r"|mineur(?:s)?|optionnel(?:le)?s?|optiona(?:l|ux|les)?"
+    r"|advisory|info(?:rmation)?(?:s|nel)?)\)"
+    # Gap intra-phrase : point exclu (review NanoClaw #14322 concern 1) --
+    # un aparte benin dans une phrase precedente ne neutralise pas un nit
+    # VIVANT de la phrase suivante.
+    r"[^.!?\n]{0,200}?"
+    r"\bavant(?:\s+(?:le|la|l[\\']))?\s+merge\b"
+)
+
+_MENTION_AVANT_MERGE_VERIFIED = re.compile(
+    r"(?i)"
+    # Verbe de verification au passe compose / past participle (FR + EN)
+    # suivi de 'de mon cote' / 'côté' optionnel, puis 'avant merge' (60 chars gap)
+    r"(?:"
+    # FR past p. (avec ou sans accent)
+    r"v[éèe]rifi(?:[éèe]s?|e|ée|és|ées|er)?"
+    r"|confirm(?:[éèe]s?|e|ée|és|ées|er)?"
+    r"|contr[ôo]l(?:[éèe]s?|e|ée|és|ées|er)?"
+    r")"
+    r"\s+(?:de\s+(?:mon|ma|notre|leur)\s+)?c[ôo]t[éèe]?"
+    r"[^.!?\n]{0,20}?"
+    r"\bavant(?:\s+(?:le|la|l[\\']))?\s+merge\b"
+)
+
+_MENTION_AVANT_MERGE_VERIFIED_EN = re.compile(
+    r"(?i)"
+    # EN past participle (verified, checked, confirmed) + auteur optionnel
+    r"\b(?:verified|check(?:ed|ée?s?)|confirm(?:ed|ée?s?))\b"
+    r"(?:\s+(?:par|by|via)\s+\S+)?"
+    r"[^.!?\n]{0,40}?"
+    r"\bavant(?:\s+(?:le|la|l[\\']))?\s+merge\b"
+)
+
+_MENTION_AVANT_MERGE_PAST_PRECEDED = re.compile(
+    r"(?i)"
+    # Past p. immediatement avant 'avant merge' (3 chars gap max, allow space/punct)
+    r"(?:"
+    r"v[éèe]rifi(?:é|ée|és|ées)"
+    r"|confirm(?:é|ée|és|ées)"
+    r"|contr[ôo]l(?:é|ée|és|ées)"
+    r"|verified"
+    r"|check(?:ed)"
+    r"|confirm(?:ed)"
+    r")"
+    r"[\s,;:.\\-]{0,3}"
+    r"\bavant(?:\s+(?:le|la|l[\\']))?\s+merge\b"
+)
+
+_MENTION_AVANT_MERGE_PREFLIGHT = re.compile(
+    r"(?i)"
+    # Preflight / pre-flight check passe
+    r"(?:pre[\s-]?flight|preflight)\s+(?:check|verified|passed|ok)"
+    r"[^.!?\n]{0,20}?"
+    r"\bavant(?:\s+(?:le|la|l[\\']))?\s+merge\b"
+)
+
+_MENTION_AVANT_MERGE_B0 = re.compile(
+    r"(?i)"
+    # Formule B.0 : 'issue de suivi ouverte ... avant merge' / 'voie B.N ... avant merge'
+    r"(?:issue\s+de\s+suivi\s+(?:ouverte|ouvert|opened|open)"
+    r"|voie\s+B\.\d+)"
+    r"[^.!?\n]{0,80}?"
+    r"\bavant(?:\s+(?:le|la|l[\\']))?\s+merge\b"
+)
+
+_MENTION_AVANT_MERGE_BALL = re.compile(
+    r"(?i)"
+    # 'avant merge' suivi de '. Ball merge : <delegate>' (delegation pattern)
+    r"\bavant(?:\s+(?:le|la|l[\\']))?\s+merge\b"
+    r"[^.!?\n]{0,30}?"
+    r"\.\s*Ball\s+merge\s*:"
+)
+
+_MENTION_AVANT_MERGE_PATTERNS = (
+    _MENTION_AVANT_MERGE_QUALIFIER,
+    _MENTION_AVANT_MERGE_VERIFIED,
+    _MENTION_AVANT_MERGE_VERIFIED_EN,
+    _MENTION_AVANT_MERGE_PAST_PRECEDED,
+    _MENTION_AVANT_MERGE_PREFLIGHT,
+    _MENTION_AVANT_MERGE_B0,
+    _MENTION_AVANT_MERGE_BALL,
+)
+
+
+def _strip_avant_merge_mention(body: str) -> str:
+    """Neutralise `avant merge` en position de mention (Position I, #14199).
+
+    Remplace le token `avant [le/la/l'] merge` par des espaces de meme longueur :
+    les offsets du reste du body sont preserves, comme les autres strips.
+
+    Cible : `avant merge` est un CONCERN_MARKER (L231) qui peut etre en
+    mention (4 formes mesurees : qualifieur explicite non-bloquant, narration
+    de verification passee, formule de la voie B.0, delegation Ball merge ;
+    review NanoClaw #14322 minor : compteur corrige).
+    Sans cette neutralisation, ces mentions sont classee BOT-CONCERN (FP).
+
+    Anti-regression (acceptance #14199) :
+    - 3 PR mesurees en FP doivent etre neutralisees : #13537 / #13498 / #13860
+    - 7 VP de la fenetre 2026-08-25..2026-09-01 doivent rester signales :
+      #13921, #13800, #13789, #13667, #13542, #13386, #13370.
+      En particulier #13800 « A relire par ai-01 avant merge. Aucune action »
+      ne matche aucun sous-pattern — verbe actionnel deleguant, pas une
+      verification passee ni une delegation Ball merge.
+    """
+    for pat in _MENTION_AVANT_MERGE_PATTERNS:
+        # Le token cible est le `avant [le/la/l'] merge` (non capture, neutralise integralement)
+        # La longueur du token est variable (`avant merge` = 11, `avant le merge` = 14, etc.)
+        body = pat.sub(
+            lambda m: re.sub(r"\bavant(?:\s+(?:le|la|l[\\']))?\s+merge\b",
+                             lambda mm: " " * (mm.end() - mm.start()),
+                             m.group(0)),
+            body,
+        )
+    return body
+
+
+# #14277 — Position J : glyphe de sévérité en position de MENTION. Les
+# SEVERITY_GLYPHS (🟡/🔴) sont concaténés dans CONCERN_MARKERS mais restent
+# invisibles aux positions A-H (regex `_MENTION_VERDICT*` ciblant l'ASCII
+# formel) : un compte-rendu technique qui NOMME le glyphe qu'il décrit est
+# classé BOT-CONCERN à tort. 3 FP mesurés (sweep 264 corps / 61 PRs,
+# fenêtre 2026-08-23..2026-09-02 ; 0 VP glyph-only sur la même fenêtre) :
+#   FP1 (#13951 c.869, issuecomment-5506801880) : « variante glyphe 🟡. »
+#   FP2 (#13951 c.872, issuecomment-5507737699) : « 2 cas (prose
+#        contradictoire + glyphe 🟡) ajoutes. »
+#   FP3 (#13951 c.871) : « les **glyphes de severite** (🟡 constat
+#        substantiel #12059, 🔴 bloquant) »
+#
+# Discriminateurs LIGNE-PORTÉS (le glyphe est une mention si l'un des deux
+# tient sur sa ligne) :
+#   (A) MÉTA-NOM — un nom nommant le glyphe précède sur la même ligne
+#       (« glyphe 🟡 », « glyphes de severite (🟡 ..., 🔴 ...) », FP1-3).
+#   (B) ITEM D'ÉNUMÉRATION — le glyphe est immédiatement précédé d'un
+#       séparateur `,` ou `+` (modulo espaces) : « (prose, 🟡, 🔴, +
+#       controle positif) », cellule de tableau « **CWC + 🟡** » (formes
+#       résiduelles de FP3, 5503423343).
+# L'émission réelle (mesurée #12059 / #12083 / #12077 — scan 35 reviews
+# Hermes de #12143) est un en-tête de verdict en tête de ligne (« **🟡
+# FINDING — ... », « LGTM structural / 🟡 ... »), jamais un item de liste :
+# ni méta-nom avant, ni séparateur `,`/`+` immédiat — le séparateur `/`
+# (VP #12083) est délibérément EXCLU du set d'énumération. Substitution
+# iso-longueur (1 char -> 1 espace) : les offsets du reste du body sont
+# préservés, comme les autres strips.
+_GLYPH_META_NOUN_RE = re.compile(
+    r"(?i)\b(?:glyphes?|glyphs?|marqueurs?|markers?|badges?|symboles?|emojis?)\b"
+)
+_GLYPH_ENUM_PRECEDER_RE = re.compile(r"[,+]\s+$")
+_SEVERITY_GLYPH_CLASS_RE = re.compile(f"[{''.join(SEVERITY_GLYPHS)}]")
+
+
+def _strip_glyphe_mentions(body: str) -> str:
+    """Neutralise les glyphes de sévérité en position de mention (Position J, #14277).
+
+    Chaque glyphe (🟡/🔴) dont la ligne porte un méta-nom le nommant (A) ou
+    qui est un item d'énumération `,`/`+` (B) est remplacé par une espace :
+    c'est une mention, pas une émission. Le glyphe en tête de ligne
+    (en-tête de verdict Hermes) reste vivant.
+    """
+    out = list(body)
+    for m in _SEVERITY_GLYPH_CLASS_RE.finditer(body):
+        line_start = body.rfind("\n", 0, m.start()) + 1
+        prefix = body[line_start:m.start()]
+        if (_GLYPH_META_NOUN_RE.search(prefix)
+                or _GLYPH_ENUM_PRECEDER_RE.search(prefix)):
+            out[m.start()] = " "
+    return "".join(out)
 
 
 def _strip_mentioned_verdicts(body: str) -> str:
@@ -812,6 +1070,19 @@ def _strip_mentioned_verdicts(body: str) -> str:
     for pat in (_MENTION_VERDICT, _MENTION_VERDICT_HEADING, _MENTION_VERDICT_INLINE, _MENTION_VERDICT_LIFTED, _MENTION_VERDICT_REVIEW, _MENTION_VERDICT_REVIEW_NARRATIVE, _MENTION_VERDICT_REPORTED):
         body = pat.sub(
             lambda m: m.group(0).replace(m.group(1), " " * len(m.group(1))), body)
+    # Phase 1b : Position I — neutralise `avant [le/la/l'] merge` en position
+    # de mention (#14199). Cible differente des autres positions : ce n'est
+    # pas un verdict formel mais un token CONCERN_MARKER (`avant merge`)
+    # qui peut apparaitre en mention (qualifieur explicite / verification
+    # passee / formule B.0 / delegation Ball merge). Voir
+    # `_strip_avant_merge_mention` pour la justification des 7 sous-patterns.
+    body = _strip_avant_merge_mention(body)
+    # Phase 1j : Position J — neutralise les glyphes de sévérité (🟡/🔴) en
+    # position de mention (#14277). Cible distincte des positions A-H : pas
+    # un verdict ASCII formel mais un glyphe concaténé dans CONCERN_MARKERS,
+    # invisible aux regex de mention. Discriminateur ligne-portée : voir
+    # `_strip_glyphe_mentions`.
+    body = _strip_glyphe_mentions(body)
     # Phase 2 : Position G avec garde anti-negation (Hermes demande 1/2,
     # PR #14070). Approche `finditer` car le verdict-match n'est pas en
     # bord de phrase (la mention `traite le REQUEST_CHANGES` met le
@@ -1053,6 +1324,150 @@ def _formal_concern_precedes_lift(body: str) -> bool:
         and bool(lift_positions)
         and min(concern_positions) < min(lift_positions)
     )
+
+
+# #13938 — quand un reviewer pose `[Hermes] COMMENT_WITH_CONCERNS` (verdict
+# de pure emission, sans autorite de blocage, cf #12311) ET que le corps de
+# la review declare explicitement que rien n'est bloquant, la review n'est
+# PAS une reserve — c'est un commentaire FYI que la convention « reponse
+# ecrite / thread inline / issue de suivi » (Tell c.589-L1 ★★★ strict)
+# assimile a une APPROVED. Sans cette exemption, l'organe punit la
+# precaution : plus l'auteur desambigue (« rien de bloquant (contrainte
+# token : COMMENT only) »), plus le verdict formel matche CONCERN_MARKERS,
+# plus le preflight rougit. Mesure : PR #13935 (GenAI tranche orphelins,
+# substance OK, 63 checks SUCCESS, scope clean) bloquee sur Hermes
+# COMMENT_WITH_CONCERNS + corps « Rien de bloquant. » — Tell NEW c.840
+# sustained « un detecteur qui matche des phrases doit ignorer les
+# occurrences en position de citation ou de refutation ».
+#
+# Garde STRICTE : l'exemption n'est JAMAIS elargie a CHANGES_REQUESTED /
+# REQUEST_CHANGES / NEEDS_CHANGES / BLOCKED. Ces prefixes-la gardent leur
+# autorite de blocage — seul COMMENT_WITH_CONCERNS est le verdict «
+# comment-only par design » (force a state:COMMENTED par #12311, le seul
+# etat que Hermes self-bot peut poster avec ce label).
+def _comment_only_prefix(body: str) -> bool:
+    """Le verdict formel en tete est-il exclusivement COMMENT_WITH_CONCERNS ?
+
+    On distingue les formes EMISES des formes CITEES (mentionnees dans une
+    prose qui les refute) par la seule fenetre de citation de 30 caracteres
+    de `_is_cited` — la POSITION dans le corps n'est PAS verifiee, et le nom
+    « prefixe » designe l'usage attendu, pas un controle. Le verdict
+    ``[Hermes] COMMENT_WITH_CONCERNS — ...`` compte ; le corps ``pas de
+    COMMENT_WITH_CONCERNS ici`` ne compte pas.
+
+    Rejette si un verdict de blocage strict est aussi emis (CHANGES_REQUESTED,
+    REQUEST_CHANGES, NEEDS_CHANGES, BLOCKED, SUSPECT_*, STRUCTURAL_ONLY).
+    """
+    if not body:
+        return False
+    normalised = _unaccent(body)
+    # Marqueurs de blocage strict : leur presence simultanee a COMMENT_WITH_CONCERNS
+    # annule l'exemption (le reviewer etale les deux = « concerns + change »,
+    # pas un simple « comment only »).
+    blocking_markers = (
+        "CHANGES_REQUESTED", "REQUEST_CHANGES", "NEEDS_CHANGES",
+        "**BLOCKED**", "BLOCKED  PR", "SUSPECT_", "STRUCTURAL_ONLY",
+    )
+    for marker in blocking_markers:
+        if _unaccent(marker) in normalised:
+            # Verifier que l'occurrence n'est pas CITEe (meme logique que
+            # `has_live_marker`, mais inline : on n'a besoin que d'une
+            # occurrence vivante).
+            start = 0
+            while (i := normalised.find(_unaccent(marker), start)) != -1:
+                if not _is_cited(normalised[max(0, i - 30):i]):
+                    return False
+                start = i + 1
+    # COMMENT_WITH_CONCERNS doit etre emis (vivant, non cite).
+    target = _unaccent("COMMENT_WITH_CONCERNS")
+    start = 0
+    while (i := normalised.find(target, start)) != -1:
+        if not _is_cited(normalised[max(0, i - 30):i]):
+            return True
+        start = i + 1
+    return False
+
+
+# Formulations explicites de non-blocage, dans le corps nettoye des verdicts
+# mentionnes (cf `_strip_mentioned_verdicts` + `_strip_quoted` utilises
+# ailleurs dans `classify`). Insensible a la casse et aux accents via
+# `_unaccent`. Compile une seule fois au chargement du module.
+_NON_BLOCKING_PHRASES = tuple(
+    phrase.encode("unicode_escape").decode("ascii").replace(r"\u", r"\u")
+    for phrase in (
+        r"rien de bloquant",
+        r"rien (?:a|à) corriger",
+        r"rien (?:a|à) signaler",
+        r"rien (?:a|à) traiter",
+        r"rien (?:a|à) addresser",
+        r"pas (?:de |d')bloquant",
+        r"pas (?:de |d')blocage",
+        r"aucun bloquant",
+        r"aucun blocage",
+        r"aucune bloque",
+        r"aucune reserve",
+        r"non.?bloquant",
+        r"comment only",
+        r"comment-only",
+        r"no blocker",
+        r"nothing blocking",
+        r"all (?:is |looks )?good",
+        r"tout (?:est )?ok",
+        r"tout (?:est )?bon",
+    )
+)
+_NON_BLOCKING_RE = re.compile(
+    r"(?:" + "|".join(_NON_BLOCKING_PHRASES) + r")",
+    re.IGNORECASE,
+)
+
+
+def _review_explicit_non_blocking(body: str) -> bool:
+    """Le corps NETTOYE des mentions porte-t-il une formulation non-bloquante ?
+
+    Le nettoyage (``_strip_mentioned_verdicts(_strip_quoted(body))``) aligne
+    la surface analysee sur celle utilisee par `has_live_marker` pour
+    CONCERN_MARKERS — une formulation de non-blocage posee dans une citation
+    ou un bloc de code ne doit pas eteindre une reserve vivante.
+    """
+    if not body:
+        return False
+    surface = _strip_mentioned_verdicts(_strip_quoted(body))
+    return bool(_NON_BLOCKING_RE.search(_unaccent(surface)))
+
+
+# #13951 (Concern 1) -- l'exemption ne tient que si le SEUL concern EMIS est le
+# prefixe COMMENT_WITH_CONCERNS lui-meme.
+#
+# `_comment_only_prefix` ne rejette que la famille des verdicts de BLOCAGE
+# STRICT (CHANGES_REQUESTED / REQUEST_CHANGES / NEEDS_CHANGES / BLOCKED /
+# SUSPECT_ / STRUCTURAL_ONLY). Elle est structurellement AVEUGLE aux deux
+# autres familles de `CONCERN_MARKERS` :
+#   (a) la famille PROSE     -- « avant merge », « a changer », « il va falloir »
+#   (b) les GLYPHES de severite -- 🟡 (constat substantiel), 🔴 (bloquant strict)
+#
+# Un corps CONTRADICTOIRE passait donc l'exemption :
+#
+#     [Hermes] COMMENT_WITH_CONCERNS -- relu.
+#     🟡 la cellule 12 est a changer avant merge.
+#     Rien de bloquant par ailleurs.
+#
+# La phrase de non-blocage effacait un marqueur vivant emis dans la MEME
+# review. On retire donc les occurrences de COMMENT_WITH_CONCERNS de la surface
+# nettoyee (sans quoi le marqueur « CONCERNS » qu'il contient se compterait
+# lui-meme) et on exige qu'il ne reste AUCUN concern vivant.
+def _sole_live_concern_is_comment_prefix(body: str) -> bool:
+    """Hors le prefixe CWC, le corps porte-t-il encore un concern VIVANT ?
+
+    Retourne ``True`` quand le prefixe est le seul concern emis (l'exemption
+    peut tenir), ``False`` des qu'un marqueur de prose ou un glyphe de
+    severite survit au nettoyage (l'exemption tombe).
+    """
+    if not body:
+        return False
+    surface = _strip_mentioned_verdicts(_strip_quoted(body))
+    residuel = re.sub("COMMENT_WITH_CONCERNS", " ", surface, flags=re.IGNORECASE)
+    return not has_live_marker(residuel, CONCERN_MARKERS)
 
 
 def _excerpt(body: str) -> str:
@@ -1590,12 +2005,46 @@ def _coordinator_emission_informal(body: str) -> bool:
     # nomme l'injonction levee (« BLOCAGE leve ») reste muet.
     if has_live_lift(normalised):
         return False
+    # #14089 -- chemin different : l'injonction peut etre ANNONCEE puis LEVEE
+    # dans la meme phrase, sans LIFT_MARKER (qui exige la graphie complete
+    # « levee »). Cas fondateur : « HOLD leve -- le remplacement est nomme,
+    # vous pouvez merger. » -- la voie _block_emitted reconnait le motif via
+    # `_lift_participle_after` (leve / levee / lifted post-marker), mais la
+    # voie `_coordinator_emission_informal` n'en herite pas : elle conclut a
+    # une emission et classifie BOT-CONCERN, donc la PR que le commentaire
+    # vient de DEBLOQUER reste BLOQUEE. Meme classe de defaut que celle
+    # corrigee dans #13912 : un chemin qui n'a pas herite de la garde de
+    # son jumeau. On ajoute ici le MEME test post-marker que porte
+    # `_block_emitted` (point B), sur l'INJONCTION structurellement matchee
+    # (toutes les positions), pas seulement sur le head. Si TOUTES les
+    # injonctions sont suivies d'un participe de levee, c'est une levee.
+    if _every_injunction_followed_by_lift(normalised):
+        return False
     # Un [OVERRIDE] pose en tete (arbretage tiers de B.0) EMET une levee,
     # jamais une reserve — garde-fou de l'override, deja documente en
     # `_block_emitted` point A.
     head = normalised[:60].lstrip(" \t*_").upper()
     if head.startswith("[OVERRIDE]"):
         return False
+    return True
+
+
+def _every_injunction_followed_by_lift(normalised: str) -> bool:
+    """#14089 : toute occurrence d'injonction structurelle est-elle suivie
+    d'un participe de levee (`leve` / `levee` / `lifted`) ?
+
+    Renvoie True si le body NE porte aucune injonction (defaut : pas une
+    levee) OU si chaque occurrence matchee par `_COORDINATOR_INJUNCTION_RE`
+    est immediatement suivie d'un participe de levee (miroir de la borne
+    `_lift_participle_after` que porte `_block_emitted` point B).
+    """
+    matches = list(_COORDINATOR_INJUNCTION_RE.finditer(normalised))
+    if not matches:
+        return False
+    for m in matches:
+        end = m.end()
+        if not _lift_participle_after(normalised, end):
+            return False
     return True
 
 
@@ -2043,6 +2492,26 @@ def classify(author: str, body: str) -> str | None:
     # de reserve. Uniquement pour CONCERN_MARKERS et l'etage lift (symetrie
     # #13083 ci-dessus) : VERDICT_POSITIVE garde le body brut.
     live_concern = has_live_marker(_strip_mentioned_verdicts(_strip_quoted(body)), CONCERN_MARKERS)
+    # #13938 — exemption de « comment-only Hermes » : quand un reviewer pose
+    # `[Hermes] COMMENT_WITH_CONCERNS` (verdict de pure emission, force a
+    # state:COMMENTED par #12311) ET que le corps declare explicitement
+    # que rien n'est bloquant, la review n'est PAS une reserve. Convention
+    # Tell c.589-L1 ★★★ strict assimile un tel commentaire a une APPROVED
+    # pour le merge-gate. Garde stricte : l'exemption ne s'applique PAS
+    # aux verdiicts de blocage strict (CHANGES_REQUESTED, REQUEST_CHANGES,
+    # NEEDS_CHANGES, BLOCKED, SUSPECT_*, STRUCTURAL_ONLY) — verifie par
+    # `_comment_only_prefix`. Fuite classee Tell NEW c.840 ★★★ sustained.
+    if (
+        live_concern
+        and _comment_only_prefix(body)
+        and _review_explicit_non_blocking(body)
+        # #13951 Concern 1 : la phrase de non-blocage ne peut pas effacer un
+        # marqueur de prose (« avant merge ») ni un glyphe (🟡) emis dans la
+        # MEME review. L'exemption ne tient que si le prefixe CWC est le SEUL
+        # concern vivant du corps.
+        and _sole_live_concern_is_comment_prefix(body)
+    ):
+        return None
     if not live_concern and _HUMAN_VERDICT_RE.search(body):
         return None  # verdict humain positif (APPROVE / APPROVED / LGTM) SANS reserve vivante : equivalent state:APPROVED
     if not live_concern and has_live_marker(body, POSITIVE_MARKERS):
@@ -2229,6 +2698,20 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
     def _lift_eligible(lift_author: str, nit_author: str,
                        lift_body: str = "") -> bool:
         if lift_author == nit_author:
+            return True
+        # #13609 -- alias de persona Hermes/NanoClaw cross-login. La persona
+        # parle sous clusterManager-Myia ET jsboige. Quand elle leve SA
+        # propre reserve sous l'autre login, c'est sa levee. Le marqueur
+        # `[Hermes]` / `[NanoClaw]` / `[Hermes self-bot]` dans le corps
+        # identifie la source ; l'autre cote de l'alias est dans
+        # `PERSONA_ALIAS_LOGINS` (= clusterManager-Myia) pour eviter qu'une
+        # lane (qui pousse sous jsboige) s'auto-promeuve en collant le
+        # marqueur dans un commentaire ordinaire. Les deux conditions sont
+        # obligatoires : sans marqueur, jsboige reste l'identite de poussee
+        # partagee des lanes (#13316), rien n'est leve.
+        if (lift_author == "jsboige"
+                and nit_author in PERSONA_ALIAS_LOGINS
+                and _PERSONA_MARKERS_RE.search(lift_body or "")):
             return True
         # #13495 — la trappe coordinateur ci-dessous ne s'ouvre pas pour
         # l'auteur de la PR : sinon la voie 3 (report par issue nommee) serait
