@@ -34,7 +34,6 @@ La série Search comporte **19+ notebooks** répartis en **3 parties** compléme
 |--------|-----------|-------------------|
 | **Part1-Foundations** | 16 (+1 companion formel) | Exploration uninformed/informed, recherche arborescente, A*, MCTS, PDB, LDS, Weighted A* |
 | **Part2-CSP** | 5 | Satisfaction de contraintes, cohérence, propagation, scheduling |
-
 | **Part4-Metaheuristics** | 18 | MGS — métaheuristiques hybrides avec analyse de paysage |
 
 **Kernels** : python3 · **GPU** : non · **Prérequis** : AUCUN — série adaptée à un premier contact avec l'IA.
