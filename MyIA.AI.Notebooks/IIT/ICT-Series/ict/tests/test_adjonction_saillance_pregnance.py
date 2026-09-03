@@ -18,7 +18,8 @@ from ict.adjonction_saillance_pregnance import (
 )
 
 RESULTS_PATH = (
-    Path(__file__).parents[1] / "adjonction_saillance_pregnance_results.json"
+    Path(__file__).parents[1] / "results"
+    / "adjonction_saillance_pregnance_results.json"
 )
 
 

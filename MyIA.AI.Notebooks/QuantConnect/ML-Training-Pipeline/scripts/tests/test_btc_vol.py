@@ -19,7 +19,11 @@ import pytest
 # Make the parent directory importable.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from btc_vol import _dm_centered_mse, _mse_decomposition  # noqa: E402
+from btc_vol import (  # noqa: E402
+    _dm_centered_mse,
+    _dm_uncentered_mse,
+    _mse_decomposition,
+)
 
 
 class TestMseDecomposition:
@@ -117,3 +121,104 @@ class TestDmCenteredMse:
         assert out["dm_verdict"] == "BEATS baseline"
         assert out["dm_pvalue"] < 0.05
         assert out["dm_stat"] < -2.0  # negative = model wins (smaller MSE)
+
+
+def _har_like_pair(seed: int = 0, n: int = 300, har_bias: float = 0.5):
+    """A (dl_errors, har_errors) pair whose biases differ, as in btc_vol.
+
+    `har_errors` carries a non-zero mean; the de-biased series that
+    `run_btc_debiased_recentered` builds is `har_errors - mean(har_errors)`,
+    i.e. the *same* series shifted by a constant.
+    """
+    rng = np.random.default_rng(seed)
+    dl_errors = rng.standard_normal(n) * 0.8
+    har_errors = rng.standard_normal(n) * 1.0 + har_bias
+    har_errors_debiased = har_errors - float(np.mean(har_errors))
+    return dl_errors, har_errors, har_errors_debiased
+
+
+class TestTwoLegsDiscriminate:
+    """The two DM legs of `run_btc_debiased_recentered` must not coincide (#14362).
+
+    The verdict leg is centered and runs against **de-biased** HAR; the sanity
+    leg is un-centered and runs against **raw** HAR, reproducing the #11011
+    keeper. Routing the sanity leg through `_dm_centered_mse` -- as the code
+    did before #14362 -- makes the two bit-identical, because centering
+    subtracts each series' own mean and the two HAR series differ by exactly
+    a constant. A control that cannot go red is not a control.
+    """
+
+    def test_biases_actually_differ_in_the_fixture(self):
+        """Guard the guard: the fixture must be a pair whose biases differ."""
+        _, har_raw, har_deb = _har_like_pair()
+        assert abs(float(np.mean(har_raw)) - float(np.mean(har_deb))) > 0.1
+        assert float(np.mean(har_deb)) == pytest.approx(0.0, abs=1e-12)
+
+    def test_legs_are_not_the_same_statistic(self):
+        """THE sealed control: the two legs must return different statistics."""
+        dl, har_raw, har_deb = _har_like_pair()
+        verdict_leg = _dm_centered_mse(dl, har_deb, horizon=1)
+        sanity_leg = _dm_uncentered_mse(dl, har_raw, horizon=1)
+        assert abs(verdict_leg["dm_stat"] - sanity_leg["dm_stat"]) > 1e-6, (
+            "the sanity leg reproduces the verdict leg -- it is centered "
+            "somewhere it must not be (regression of #14362)"
+        )
+
+    def test_old_composition_is_degenerate(self):
+        """Falsification: the pre-#14362 composition IS bit-identical.
+
+        Without this, `test_legs_are_not_the_same_statistic` could pass for a
+        reason unrelated to centering. Here we reproduce the old code path
+        explicitly and show it collapses -- which is what makes the assertion
+        above meaningful rather than incidental.
+        """
+        dl, har_raw, har_deb = _har_like_pair()
+        old_verdict_leg = _dm_centered_mse(dl, har_deb, horizon=1)
+        old_sanity_leg = _dm_centered_mse(dl, har_raw, horizon=1)  # the bug
+        assert old_sanity_leg["dm_stat"] == pytest.approx(
+            old_verdict_leg["dm_stat"], abs=1e-12
+        )
+
+    def test_centered_leg_is_invariant_under_constant_shift(self):
+        """Why the collapse happens, stated as a property."""
+        dl, har_raw, _ = _har_like_pair()
+        base = _dm_centered_mse(dl, har_raw, horizon=1)
+        shifted = _dm_centered_mse(dl, har_raw - 3.14159, horizon=1)
+        assert shifted["dm_stat"] == pytest.approx(base["dm_stat"], abs=1e-12)
+
+    def test_uncentered_leg_is_NOT_invariant_under_constant_shift(self):
+        """The negative control of the property above, in the other direction."""
+        dl, har_raw, _ = _har_like_pair()
+        base = _dm_uncentered_mse(dl, har_raw, horizon=1)
+        shifted = _dm_uncentered_mse(dl, har_raw - 3.14159, horizon=1)
+        assert abs(shifted["dm_stat"] - base["dm_stat"]) > 1e-6
+
+    def test_uncentered_leg_sees_a_pure_bias_gap(self):
+        """A baseline that is only *biased* loses the un-centered leg...
+
+        ...and does not lose the centered one. This is the substantive reason
+        the sanity leg exists: it is the only one of the two that can tell
+        `#11011`'s story (MSE inflated by the HAR bias).
+        """
+        rng = np.random.default_rng(11)
+        n = 800
+        dl = rng.standard_normal(n) * 0.7
+        har = dl + 1.5  # SAME dispersion realisation, differing only by a constant
+        uncentered = _dm_uncentered_mse(dl, har, horizon=1)
+        centered = _dm_centered_mse(dl, har, horizon=1)
+        # The un-centered leg sees the bias and calls it decisively.
+        assert uncentered["dm_verdict"] == "BEATS baseline"
+        assert uncentered["dm_pvalue"] < 1e-6
+        # The centered leg is blind to it -- the differential is exactly zero.
+        assert centered["dm_stat"] == pytest.approx(0.0, abs=1e-9)
+        assert centered["dm_verdict"] == "INCONCLUSIVE"
+
+    def test_uncentered_sentinels(self):
+        assert (
+            _dm_uncentered_mse(np.zeros(10), np.zeros(11), horizon=1)["dm_verdict"]
+            == "SHAPE_MISMATCH"
+        )
+        assert (
+            _dm_uncentered_mse(np.zeros(5), np.zeros(5), horizon=1)["dm_verdict"]
+            == "INSUFFICIENT_DATA"
+        )
