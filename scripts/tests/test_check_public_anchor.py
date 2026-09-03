@@ -160,9 +160,53 @@ def test_parse_declarations_body_extent():
 
 
 def test_build_reference_graph_empty():
-    """Aucun decl -> graphe vide, decls inchanges."""
-    cpa.build_reference_graph([])
-    assert [] == []  # trivial
+    """Aucun decl -> graphe vide, decls inchanges.
+
+    Issue #14299 : l'ancien `assert [] == []` etait trivialement vert
+    meme si la fonction etait vide / ne touchait pas `d.refs`. La forme
+    de retour + l'invariant sur l'entree vide ferment cette trappe.
+    """
+    decls: list = []
+    out = cpa.build_reference_graph(decls)
+    # Forme : None en retour, graphe vide (pas d'effet de bord).
+    assert out is None
+    # Invariant : pas de refs injectees sur une liste vide (la fonction
+    # n'a rien a annoter). Assertion sur la variable nommee : muter
+    # l'entree (par ex. y append un decl fantome) ferait rougir -- la
+    # forme precedente `assert [] == []` ne pouvait jamais echouer.
+    assert decls == []
+
+
+def test_build_reference_graph_positive_control():
+    """Controle positif : casser build_reference_graph doit faire rougir.
+
+    Issue #14299. La fonction doit peupler `d.refs` a partir des tokens
+    du corps de chaque declaration. Si la boucle interne etait retirees
+    (regression), `caller.refs` resterait vide et l'assertion tomberait.
+
+    Source minimale non-vide : un caller reference son helper par nom
+    court. On assert l'arete observee et la non-arete vers un temoin
+    non-reference (forme + substance).
+    """
+    src = (
+        "namespace M\n"
+        "  theorem helper : True := trivial\n"
+        "  theorem caller : True := M.helper\n"
+        "  theorem unrelated : True := trivial\n"
+        "end M\n"
+    )
+    decls = cpa.parse_declarations(src)
+    cpa.build_reference_graph(decls)
+    caller = next(d for d in decls if d.name == "M.caller")
+    unrelated = next(d for d in decls if d.name == "M.unrelated")
+    helper = next(d for d in decls if d.name == "M.helper")
+    # Arete materialisee par le graphe : caller -> helper.
+    assert "M.helper" in caller.refs
+    # Arete absente : unrelated ne reference personne dans ce source.
+    assert caller.refs == {"M.helper"}
+    assert unrelated.refs == set()
+    # Helper ne se reference pas lui-meme (exclusion self-loop).
+    assert helper.refs == set()
 
 
 def test_build_reference_graph_self_excluded():
