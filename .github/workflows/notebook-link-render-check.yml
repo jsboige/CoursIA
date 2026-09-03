@@ -72,30 +72,52 @@ jobs:
           mapfile -t PR_READMES < <(git diff --name-only --diff-filter=d "$MERGE_BASE" HEAD -- 'MyIA.AI.Notebooks/**/README.md' | sort -u)
           n_readmes=${#PR_READMES[@]}
           pr_brut=0; main_brut=0
+          pr_manque=0; main_manque=0
+          scan_errors=0
           for readme in "${PR_READMES[@]}"; do
             [ -z "$readme" ] && continue
             # Le parent du README dans le repo (le checker a besoin du VRAI chemin
             # pour resoudre les liens .ipynb relatifs -- le dump dans /tmp casse
             # la resolution par defaut, d'ou --link-root).
             readme_dir="$(dirname "$readme")"
+            # Un echec du checker ne compte PAS comme 0 lien : il incremente
+            # scan_errors, sinon le delta peut sous-estimer un +BRUT reel
+            # (#14435 rem. 1 -- zero fabrique par organe muet).
             # Version PR (HEAD).
             if git show "HEAD:$readme" > /tmp/_pr_readme.md 2>/dev/null; then
-              p=$(cd /tmp && python "$GITHUB_WORKSPACE/scripts/notebook_tools/check_notebook_link_render.py" --tracked-only --json /tmp/_pr_readme.md --link-root "$GITHUB_WORKSPACE/$readme_dir" 2>/dev/null \
-                | python -c "import json,sys; print(json.load(sys.stdin)['summary']['totals']['BRUT'])" 2>/dev/null || echo 0)
-              pr_brut=$((pr_brut + p))
+              if line=$(cd /tmp && python "$GITHUB_WORKSPACE/scripts/notebook_tools/check_notebook_link_render.py" --tracked-only --json /tmp/_pr_readme.md --link-root "$GITHUB_WORKSPACE/$readme_dir" 2>/dev/null \
+                | python -c "import json,sys; t=json.load(sys.stdin)['summary']['totals']; print(t['BRUT'], t['MANQUE'])" 2>/dev/null) && [ -n "$line" ]; then
+                read -r p_brut p_manque <<< "$line"
+                pr_brut=$((pr_brut + p_brut))
+                pr_manque=$((pr_manque + p_manque))
+              else
+                scan_errors=$((scan_errors + 1))
+              fi
             fi
             # Version main (merge-base).
             if git show "$MERGE_BASE:$readme" > /tmp/_main_readme.md 2>/dev/null; then
-              m=$(cd /tmp && python "$GITHUB_WORKSPACE/scripts/notebook_tools/check_notebook_link_render.py" --tracked-only --json /tmp/_main_readme.md --link-root "$GITHUB_WORKSPACE/$readme_dir" 2>/dev/null \
-                | python -c "import json,sys; print(json.load(sys.stdin)['summary']['totals']['BRUT'])" 2>/dev/null || echo 0)
-              main_brut=$((main_brut + m))
+              if line=$(cd /tmp && python "$GITHUB_WORKSPACE/scripts/notebook_tools/check_notebook_link_render.py" --tracked-only --json /tmp/_main_readme.md --link-root "$GITHUB_WORKSPACE/$readme_dir" 2>/dev/null \
+                | python -c "import json,sys; t=json.load(sys.stdin)['summary']['totals']; print(t['BRUT'], t['MANQUE'])" 2>/dev/null) && [ -n "$line" ]; then
+                read -r m_brut m_manque <<< "$line"
+                main_brut=$((main_brut + m_brut))
+                main_manque=$((main_manque + m_manque))
+              else
+                scan_errors=$((scan_errors + 1))
+              fi
             fi
           done
           delta=$((pr_brut - main_brut))
           if [ "$delta" -gt 0 ]; then delta_sign="+"; else delta_sign=""; fi
-          echo "PR READMEs scanned: $n_readmes | PR BRUT: $pr_brut | main BRUT: $main_brut | delta: ${delta_sign}${delta}"
+          manque_delta=$((pr_manque - main_manque))
+          if [ "$manque_delta" -gt 0 ]; then manque_sign="+"; else manque_sign=""; fi
+          echo "PR READMEs scanned: $n_readmes | PR BRUT: $pr_brut | main BRUT: $main_brut | delta: ${delta_sign}${delta} | MANQUE: ${pr_manque} vs ${main_manque} (${manque_sign}${manque_delta}) | scan-errors: $scan_errors"
           echo "delta_brut=$delta" >> "$GITHUB_OUTPUT"
           echo "delta_sign=$delta_sign" >> "$GITHUB_OUTPUT"
+          # Le delta trace aussi MANQUE : un README qui perd un notebook (lien
+          # dangling) ne reste plus a delta BRUT 0 (#14435 rem. 2).
+          echo "delta_manque=$manque_delta" >> "$GITHUB_OUTPUT"
+          echo "pr_manque=$pr_manque" >> "$GITHUB_OUTPUT"
+          echo "scan_errors=$scan_errors" >> "$GITHUB_OUTPUT"
           echo "pr_readmes=$n_readmes" >> "$GITHUB_OUTPUT"
           set -e
 
@@ -104,11 +126,15 @@ jobs:
         with:
           script: |
             // Label delta signe (jamais bloquant) sur la PR -- ce que la PR a
-            // reellement modifie (N readmes scannes, +/- BRUT).
+            // reellement modifie (N readmes scannes, +/- BRUT, delta MANQUE,
+            // et echecs de scan nommes : un organe muet rend la meme valeur
+            // qu'un organe qui a mesure et n'a rien trouve, #14435 rem. 1-2).
             const delta = '${{ steps.scan.outputs.delta_brut }}';
             const deltaSign = '${{ steps.scan.outputs.delta_sign }}';
             const prReadmes = '${{ steps.scan.outputs.pr_readmes }}';
-            const deltaLabel = `notebook-link-render-delta: ${deltaSign}${delta} (${prReadmes} readmes)`;
+            const manque = '${{ steps.scan.outputs.delta_manque }}';
+            const scanErrors = '${{ steps.scan.outputs.scan_errors }}';
+            const deltaLabel = `notebook-link-render-delta: ${deltaSign}${delta} (${prReadmes} readmes, manque ${manque}, scan-err ${scanErrors})`;
 
             // Cleanup des anciens labels notebook-link-render-* de runs precedents.
             let existing = [];
