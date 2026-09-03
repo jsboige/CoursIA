@@ -4,6 +4,16 @@ Fix App-11-Picross: Recycle student solutions into Exemple resolu + new stubs.
 Issue #463: Recyclage solutions etudiants CSP Applications.
 """
 
+# Archive header (standard _archive convention, 2026-08)
+# - Date archived : 2026-08-06
+# - Superseded by : none (one-shot fulfilled) — output lives in
+#   MyIA.AI.Notebooks/Search/Applications/CSP/App-11-Picross.ipynb
+# - Verdict recorded in : PR #476 (49fb3d5a6, 2026-04-22), PR #9580
+#
+# Per-function disposition :
+# - fix_app11() : transformation applied in PR #476; resolved examples and
+#   replacement exercise stubs were verified on main in 2026-09
+
 import json
 
 

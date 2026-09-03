@@ -43,6 +43,12 @@ on:
       # emettre l'evenement pull_request (asymetrie push/pull_request, #14391).
       - ".github/workflows/quarto-pages-deploy.yml"
       - "scripts/quarto_yaml_safe.py"
+      # Meme raison (#14429) : le script qui DECIDE combien on rend doit lui
+      # aussi declencher la verification qu'il pilote. Emettre l'evenement ne
+      # suffit pas -- voir le mode `smoke` du step de scope, sans lequel une PR
+      # qui ne touche que ces deux fichiers sauterait le rendu et rendrait
+      # l'auto-couverture de #14391 creuse.
+      - "scripts/quarto_render_scope.py"
   workflow_dispatch:
 
 # Annule les runs obsolètes pour économiser des minutes CI (mêmes pushes en rafale)
@@ -72,7 +78,11 @@ jobs:
     # Retour arriere = remettre `runs-on: ubuntu-latest` + retrait de
     # l'allowlist.
     runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
-    timeout-minutes: 30
+    # 60 et non 30 depuis #14283 : le meme rendu prend 19-24 min sur
+    # `ubuntu-latest` et 25-31 min sur le pool auto-heberge. Le plafond de 30
+    # etait calibre sur la machine d'avant la bascule ; apres elle, il tombe
+    # AU MILIEU de la distribution et coupe le job a 30 min 19 s.
+    timeout-minutes: 60
     permissions:
       contents: read
     steps:
@@ -199,7 +209,11 @@ jobs:
     # check_self_hosted_runner_policy.py.
     if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && github.event_name == 'pull_request'
     runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
-    timeout-minutes: 30
+    # 60 et non 30 depuis #14283 : le meme rendu prend 19-24 min sur
+    # `ubuntu-latest` et 25-31 min sur le pool auto-heberge. Le plafond de 30
+    # etait calibre sur la machine d'avant la bascule ; apres elle, il tombe
+    # AU MILIEU de la distribution et coupe le job a 30 min 19 s.
+    timeout-minutes: 60
     permissions:
       contents: read
       pull-requests: write  # pour poster le commentaire de gate
@@ -224,26 +238,93 @@ jobs:
       - name: Regenerate render list
         run: python scripts/regen_quarto_render.py
 
+      - name: Scope render list to this PR's changed documents
+        # #14429 : la jambe PR rendait le site ENTIER (1192 entrees, sans cache
+        # -- `_freeze/` n'est pas tracke) alors que son objet declare est etroit
+        # (« bloque les PR qui etendent _quarto.yml / ajoutent un notebook /
+        # modifient une cellule markdown d'un notebook rendu »). Mesure sur
+        # #14225, run 33714385365 : 25 min de file, puis le rendu tourne
+        # 3180 s (53 min) et le plafond de 60 le tue -- pendant que le `PR gate`
+        # s'etait deja auto-annule a 45 min faute de verdict (#13510). Une
+        # verification requise qui ne peut pas conclure, et un slot auto-heberge
+        # tenu une heure sur un parc mesure a 19/22 occupes : c'est la famine
+        # elle-meme, que relever les plafonds (#14412) ne fait qu'entretenir.
+        #
+        # Le script reduit `project.render` aux documents que la PR touche
+        # reellement. Mesure sur les 7 PR Quarto en vol le 2026-09-03 :
+        # 1192 -> 1 ou 2 entrees pour six d'entre elles, et 0 pour la septieme
+        # (#14131, qui payait un rendu complet pour zero document rendu).
+        # Biais volontairement conservateur : config projet, theme, scripts qui
+        # REECRIVENT les notebooks, ou SUPPRESSION d'un document rendu => rendu
+        # COMPLET. Deux exceptions nommees, ce fichier et le script de scope :
+        # ils decident COMBIEN on rend, jamais COMMENT un document se rend, donc
+        # un rendu scope les exerce aussi bien qu'un rendu complet. Ils ne
+        # tombent pas pour autant en `empty` (ce qui sauterait le rendu et
+        # viderait l'auto-couverture de #14391) : ils tirent un jeu smoke de
+        # 2 documents. Sans cette exception, la PR qui introduit ce mecanisme
+        # etait classee `full` par sa propre regle et mourait sur le plafond de
+        # 60 min qu'elle existe pour eviter.
+        id: scope
+        run: |
+          python scripts/quarto_render_scope.py \
+            --base "${{ github.event.pull_request.base.sha }}" \
+            --head "${{ github.event.pull_request.head.sha }}" \
+            --apply --github-output
+
       - name: Normalize .NET kernel language for Quarto (C# -> csharp)
+        if: steps.scope.outputs.mode != 'empty'
         run: python scripts/quarto_csharp_kernel_fix.py apply
 
       - name: Escape YAML-ambiguous `---` separators (issue #11611)
+        if: steps.scope.outputs.mode != 'empty'
         run: python scripts/quarto_yaml_safe.py apply
 
       - name: Render Quarto site (PR check)
+        # Commande inchangee : c'est la LISTE qui a ete restreinte au-dessus,
+        # donc le rendu reste un rendu de projet normal (meme _quarto.yml, meme
+        # contexte, memes pre-traitements) -- seul son cardinal change.
+        # `quarto render` SANS argument de fichier rend tout ce que la liste
+        # porte : c'est pourquoi le mode `empty` saute le step au lieu de lancer
+        # un rendu sur une liste vide, qui rendrait le site entier.
+        if: steps.scope.outputs.mode != 'empty'
         run: quarto render --to html
 
       - name: Restore kernel language (hygiene)
+        if: steps.scope.outputs.mode != 'empty'
         run: python scripts/quarto_csharp_kernel_fix.py restore
 
       - name: Restore YAML-safe separators
+        if: steps.scope.outputs.mode != 'empty'
         run: python scripts/quarto_yaml_safe.py restore
 
       - name: Check output
         run: |
+          MODE="${{ steps.scope.outputs.mode }}"
+          if [ "$MODE" = "empty" ]; then
+            echo "Aucun document rendu n'a change dans cette PR : rien a valider."
+            echo "(La liste de rendu compte ${{ steps.scope.outputs.total }} entrees, 0 touchee.)"
+            exit 0
+          fi
           test -d _site || (echo "::error::_site/ absent après quarto render" && exit 1)
-          test -f _site/index.html || (echo "::error::_site/index.html absent" && exit 1)
-          echo "_site/ présent avec $(find _site -type f | wc -l) fichiers"
+          # `index.html` n'existe qu'en rendu COMPLET : en mode scope, la liste
+          # ne porte que les documents changes. Exiger index.html partout ferait
+          # echouer tout rendu scope -- rouge sur un rendu pourtant reussi.
+          if [ "$MODE" = "full" ]; then
+            test -f _site/index.html || (echo "::error::_site/index.html absent" && exit 1)
+          fi
+          RENDERED=$(find _site -name '*.html' -type f | wc -l)
+          test "$RENDERED" -ge 1 || (echo "::error::aucun .html produit par le rendu" && exit 1)
+          # Controle positif du remede, dans l'organe reel : si la restriction
+          # de `project.render` n'avait PAS pris (liste reecrite ailleurs, YAML
+          # non relu, regression du rewriter), le rendu produirait ~1192 pages
+          # et rapporterait quand meme `success` -- un vert qui aurait paye
+          # l'heure qu'on cherche a recuperer. La borne est large a dessein :
+          # elle ne discrimine pas 2 contre 4, elle discrimine 2 contre 1192.
+          if [ "$MODE" = "scoped" ]; then
+            CEIL=$(( ${{ steps.scope.outputs.count }} * 4 + 20 ))
+            test "$RENDERED" -le "$CEIL" || (echo "::error::rendu scope=${{ steps.scope.outputs.count }} document(s) mais $RENDERED pages produites (plafond $CEIL) : la restriction n'a pas pris" && exit 1)
+          fi
+          echo "_site/ présent avec $(find _site -type f | wc -l) fichiers ($RENDERED .html, mode=$MODE)"
 
       - name: Comment PR with summary
         # Resumé court : nombre de fichiers + diff notebooks si pertinent.
