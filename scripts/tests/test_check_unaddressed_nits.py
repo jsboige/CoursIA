@@ -4374,3 +4374,128 @@ def test_14199_concern1_gap_intra_phrase_fp1_couvert_toujours_neutralise():
     body = ("Le point souleve (mineur) sera traite par la passe de "
             "nettoyage avant merge, pas ici.")
     assert mod.classify("clusterManager-Myia", body) != "BOT-CONCERN"
+
+
+# ============================================================================
+# #14277 — Position J : glyphe de sévérité en position de mention
+# ============================================================================
+# Fondateurs mesurés (sweep 264 corps / 61 PRs, fenêtre 2026-08-23..2026-09-02,
+# différentiel old-vs-new : exactement 3 diffs = les 3 FP, 261 corps inchangés) :
+#   FP1 #13951 c.869 (issuecomment-5506801880) : « variante glyphe 🟡. »
+#   FP2 #13951 c.872 (issuecomment-5507737699) : « 2 cas (prose
+#        contradictoire + glyphe 🟡) ajoutes. »
+#   FP3 #13951 c.870 (issuecomment-5503423343) : « glyphes de severite (🟡
+#        ..., 🔴 ...) » + formes résiduelles : énumération « (prose, 🟡, 🔴,
+#        + controle) » et cellules tableau « **CWC + 🟡** ».
+# VP d'émission (doivent rester BOT-CONCERN) : #12059 « **🟡 FINDING — »,
+# #12083 « LGTM structural / 🟡 », glyphe en tête de ligne.
+
+# --- Position J (#14277) : tests re-appliques post-rebase (main a absorbe #14322) ---
+
+
+def test_14277_fp1_meta_nom_glyphe_neutralise():
+    body = ("2. **2 tests manquants** que NanoClaw a explicitement demandés —\n"
+            "   - variante glyphe 🟡.\n"
+            "3. **Vérification first-hand (avant commit)** : OK.")
+    assert mod.classify("jsboige", body) is None
+
+
+
+def test_14277_fp2_meta_nom_parentheses_neutralise():
+    body = ("- Tests : 2 cas (prose contradictoire + glyphe 🟡) ajoutes.\n"
+            "6/6 PASSED en local.")
+    assert mod.classify("jsboige", body) is None
+
+
+
+def test_14277_fp3_enumeration_double_glyphe_neutralise():
+    body = ("Deux surfaces : la **prose** (commentaire Hermes) et les "
+            "**glyphes de severite** (🟡 constat substantiel #12059, "
+            "🔴 bloquant).")
+    assert mod.classify("jsboige", body) is None
+
+
+
+def test_14277_fp3bis_enum_items_separateurs_neutralise():
+    # Formes résiduelles de FP3 : glyphe item d'énumération (séparateur `,`)
+    # et cellule de tableau (séparateur `+`), sans méta-nom sur la ligne.
+    body = ("- 4 tests ajoutes (prose, 🟡, 🔴, + controle positif) verbatim.\n"
+            "| 4 | **CWC + 🟡** | OK |")
+    assert mod.classify("jsboige", body) is None
+
+
+
+def test_14277_contretemoin_sans_marqueurs_reste_none():
+    # Acceptance #14277 : le contre-mesure c.871 (paraphrase SANS aucun
+    # marqueur verbatim) doit rester None (déjà correct avant le fix).
+    body = ("## Cycle c.871 — état post-merge avec main, 2 points de revue "
+            "toujours présents, lane irréductible.\n"
+            "Tête de branche 15e478afe. mergeable: MERGEABLE. 6/6 PASSED.")
+    assert mod.classify("jsboige", body) is None
+
+
+
+def test_14277_vp12059_emission_tete_de_ligne_reste_bloquant():
+    # VP fondateur #12059 : en-tête de verdict, glyphe en tête de ligne,
+    # jamais précédé d'un méta-nom ni d'un séparateur d'énumération.
+    body = ("**[NanoClaw]** structural review.\n"
+            "**LGTM structural + 1 FINDING.**\n"
+            "**🟡 FINDING — les 5 hyperparametres enseignes par la nouvelle "
+            "md#19 contredisent le run mesure (cf tableau).**")
+    assert mod.classify("clusterManager-Myia", body) == "BOT-CONCERN"
+
+
+
+def test_14277_vp12083_lgtm_scoped_slash_reste_bloquant():
+    # VP #12083 : « LGTM structural / 🟡 ... » — le séparateur `/` est
+    # délibérément EXCLU du set d'énumération (B) : ce glyphe est une
+    # émission scopée, pas un item de liste.
+    body = "LGTM structural / 🟡 SPY 6/8 contredit par le walk-forward."
+    assert mod.classify("clusterManager-Myia", body) == "BOT-CONCERN"
+
+
+
+def test_14277_vp_meta_nom_apres_glyphe_reste_bloquant():
+    # Un méta-nom APRÈS le glyphe n'en fait pas une mention : c'est une
+    # émission avec parenthèse explicative.
+    body = "🟡 — constat substantiel (cf glyphe)"
+    assert mod.classify("clusterManager-Myia", body) == "BOT-CONCERN"
+
+
+
+def test_14277_vp_ligne_suivante_sans_meta_nom_reste_bloquant():
+    # Le méta-nom sur la ligne PRÉCÉDENTE ne ouvre pas la mention : la
+    # portée est la ligne, pas le paragraphe.
+    body = "Le glyphe de severite :\n🟡 FINDING — hyperparametres contredits."
+    assert mod.classify("clusterManager-Myia", body) == "BOT-CONCERN"
+
+
+
+def test_14277_ce1_mutation_position_j_desactivee_fp1_rougit():
+    # Contrôle positif : sans Position J, FP1 doit rougir (BOT-CONCERN).
+    saved = mod._strip_glyphe_mentions
+    mod._strip_glyphe_mentions = lambda b: b
+    try:
+        body = ("- variante glyphe 🟡.\nVérification OK.")
+        assert mod.classify("jsboige", body) == "BOT-CONCERN", (
+            "MUTATION FAILED : si Position J est desactivee, FP1 doit "
+            "rougir (le glyphe mentionné doit rester un marqueur vivant)."
+        )
+    finally:
+        mod._strip_glyphe_mentions = saved
+
+
+
+def test_14277_ce2_enum_separateur_rouge_si_b_desactivee():
+    # Contrôle positif règle B : sans le séparateur d'énumération, la forme
+    # résiduelle FP3 (item de liste sans méta-nom) doit rougir.
+    saved = mod._GLYPH_ENUM_PRECEDER_RE
+    mod._GLYPH_ENUM_PRECEDER_RE = __import__("re").compile(r"(?!x)x")
+    try:
+        body = "- 4 tests ajoutes (prose, 🟡, controle positif)."
+        assert mod.classify("jsboige", body) == "BOT-CONCERN", (
+            "MUTATION FAILED : sans la règle B (séparateur énumération), "
+            "la forme item-de-liste doit rougir."
+        )
+    finally:
+        mod._GLYPH_ENUM_PRECEDER_RE = saved
