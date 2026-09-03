@@ -30,6 +30,12 @@
       csharp_sha: dec6fbb66cf2869576080c746195a5b51b4e806d
       content_python_sha: 0202e1d5294f250ca750453dd1965f7c144babe93ddb64ea69817cc2e023a622
       content_csharp_sha: 54bf49004ff44c749b2b32ca49adb6a94c2998420f4e1f41111489b4b79ae401
+    - date: "2026-09-02"
+      by: myia-po-2023:CoursIA
+      python_sha: fedaed668e1a585ca09b5ed76f79b51c0f93deec
+      csharp_sha: 75ec7aa8288229651af4572ccbc6b039420afca3
+      content_python_sha: 0202e1d5294f250ca750453dd1965f7c144babe93ddb64ea69817cc2e023a622
+      content_csharp_sha: f9f04e74c7510cfad667ae013c3be8221c3f813b0a8cd253db396875d0cd4566
   known_differences:
     - "Socle pedagogique commun : interval scheduling + cumulative constraints + disjunctive (no-overlap) + precedence constraints."
     - "Meme moteur des deux cotes (OR-Tools CP-SAT, coeur C++) via bindings natifs distincts : pip `ortools` (Python) vs NuGet `Google.OrTools` (C#/.NET). Differences d'idiomes documentees dans la table de comparaison du notebook : AddCumulative liste (PY) vs builder fluent .AddDemands (CS), sum() natif vs LinearExpr.Sum."
