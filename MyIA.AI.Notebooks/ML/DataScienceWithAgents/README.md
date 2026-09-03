@@ -24,7 +24,7 @@ La formation couvre deux stacks complémentaires :
 
 | Statistique | Valeur |
 |-------------|--------|
-| Notebooks | 50 (7 LangChain + 10 ADK + 2 fondations Python + 21 fondations ML + 10 deep learning) |
+| Notebooks | 52 (7 LangChain + 10 ADK + 2 fondations Python + 21 fondations ML + 10 deep learning + 2 vision) |
 | Kernel | Python 3.11+ |
 | Durée totale | ~7 jours |
 
@@ -115,6 +115,11 @@ DataScienceWithAgents/
 │   ├── 3.7-Distillation-Maitre-Eleve.ipynb
 │   └── 3.8-Representations-Contrastives.ipynb
 │
+│
+├── 04-Vision/                # Vision par ordinateur : du neurone convolutif au transfer learning (2 notebooks)
+│   ├── 4.1-Conv-NumPy-Torch-Allclose.ipynb
+│   └── 4.2-ConvNet-Profonde-Residuelles.ipynb
+│
 ├── Track1-LangChain/ # Track LangChain (7 labs)
 │   ├── Day1-Foundations/Labs/              # Revision
 │   ├── Day2-Document-Agents/Labs/              # Agents RFP et CV
@@ -182,6 +187,18 @@ Le prolongement direct du socle : là où [2.2](02-ML-Cours/2.2-Descente-de-grad
 | [3.8-Representations-Contrastives](03-DeepLearning/3.8-Representations-Contrastives.ipynb) | Pré-entraînement contrastif moderne : vues continues, encodeur MLP et loss InfoNCE from scratch, pont vers skip-gram | **Apprendre des représentations sans étiquettes** : deux vues attirent leurs embeddings, les autres repoussent |
 
 Documentation complète : [03-DeepLearning/README.md](03-DeepLearning/README.md)
+
+
+## Vision par ordinateur (04-Vision)
+
+[`03-DeepLearning`](#deep-learning-03-deeplearning) a ouvert la rétropropagation sur des **vecteurs** tabulaires (MLP, gradient vérifié, parité NumPy ↔ torch). Le passage à l'image demande une primitive nouvelle : le neurone **convolutif**, qui partage ses poids spatialement. Cette série reprend la **même discipline** (from scratch PUIS framework, parité epsilon machine) et l'applique à la convolution, l'empilement profond, et au skip-connection qui rend les réseaux entraînables.
+
+| Notebook | Sujet | Concept-phare |
+|----------|-------|---------------|
+| [4.1-Conv-NumPy-Torch-Allclose](04-Vision/4.1-Conv-NumPy-Torch-Allclose.ipynb) | Conv2d NumPy pur (single + multi-canal), gradient vérifié par différence finie, parité epsilon machine avec `torch.nn.Conv2d`, pooling et invariance par translation | **La convolution n'est pas magique** : un produit scalaire local, partagé spatialement |
+| [4.2-ConvNet-Profonde-Residuelles](04-Vision/4.2-ConvNet-Profonde-Residuelles.ipynb) | 20 conv2d empilées nues (effondrement du gradient), skip naïf (gradient réparé mais passe avant qui dérive), bloc pré-norme (les deux réparés), puis accuracy CIFAR-10 sur 3 graines | **Le skip-connection n'est pas un détail architectural** : c'est le mécanisme qui rend les réseaux profonds entraînables |
+
+Documentation complète : [04-Vision/README.md](04-Vision/README.md)
 
 ## Workshop 3 Jours (Track1-LangChain)
 
@@ -256,7 +273,7 @@ Documentation complète : [Track2-GoogleADK/README.md](Track2-GoogleADK/README.m
 
 | Catégorie | Technologies |
 |-----------|--------------|
-| **Data Science** | NumPy, Pandas, Matplotlib, Seaborn |
+| **Data Science** | NumPy, Pandas, Matplotlib, Seaborn, Pillow, PyTorch (parité 04-Vision) |
 | **Machine Learning** | Scikit-Learn |
 | **Agents IA** | LangChain, OpenAI GPT |
 | **Orchestration** | python-dotenv |

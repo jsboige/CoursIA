@@ -1,0 +1,62 @@
+{
+  "issue": "#13117 / #14142",
+  "phase": "Phase F B4+B5 -- remedier au sur-trading diagnostique par B3 (917 199 ordres, net -99,88 %)",
+  "date": "2026-09-02",
+  "worker": "myia-po-2023 (lane myia-po-2023:CoursIA)",
+  "trigger": "Grain nomme RESTE OUVERT dans QC-Py-40-Phase-D.json path_forward (c.14215) : 'le sur-trading... grain distinct, a traiter en PR separee -- il change la strategie, pas le diagnostic'",
+  "deliverable": "Deux runs a une variable chacun : B4 = B3 + entree edge-triggered (front montant au lieu de niveau) ; B5 = B4 + cooldown 60 min apres sortie. Discipline B-serie conservee : une seule variable changee par run, garde c.909 (status 'Completed.' ET progress 1) sur chaque lecture.",
+  "qc_project_id": 35674722,
+  "qc_project_url": "https://www.quantconnect.com/project/35674722",
+  "results_summary": {
+    "B4": {
+      "backtest_id": "6d4f9086dc27e16eca7e4d47e7edb667",
+      "backtest_name": "B4_PhaseF_edge_triggered_entry",
+      "compile_id": "e0bc007e2e0fead3ade9455504dbc6c7-7f666075bc6df353d209554c3c25e4ca",
+      "qc_url": "https://www.quantconnect.com/project/35674722/backtest/6d4f9086dc27e16eca7e4d47e7edb667",
+      "created": "2026-09-02 10:03:50",
+      "completed": "2026-09-02 (status 'Completed.', progress 1 -- verifie AVANT lecture, cf garde c.909)",
+      "tradeableDates": 1461,
+      "totalOrders": 879847,
+      "statistics": {
+        "sharpeRatio": "-2.963",
+        "compoundingAnnualReturn": "-81.233%",
+        "drawdown": "99.900%",
+        "totalNetProfit": "-99.877%",
+        "netProfitAbsolute": "₮-9,986.37"
+      },
+      "variable_unique_changee_vs_B3": "Entree EDGE-TRIGGERED : l'ordre n'est emis que sur le front montant de la condition AND (False -> True), l'etat du signal etant memorise par symbole et mis a jour chaque barre AVANT le traitement des sorties (le continue des sorties ne doit jamais laisser un etat stale). Tout le reste (dates, devise USDT, indicateurs, sorties, compteurs) est B3.",
+      "verdict": "HYPOTHESE FALSIFIEE -- NO BEATS vs B3",
+      "preuve": "879 847 ordres contre 917 199 pour B3 : -4 % seulement. L'entree sur niveau n'etait PAS le moteur du volume. Au granularity Minute la condition AND clignote deja barre apres barre : chaque front montant est une entree possible, et la position etant plate apres chaque sortie rapide (retour a la mediane en quelques minutes), les fronts se convertissent en entrees presque 1:1. Net (-99,877 %), Sharpe (-2,963) et drawdown (99,900 %) indiscernables de B3."
+    },
+    "B5": {
+      "backtest_id": "081e8b389b3b723a24490d1b42b19073",
+      "backtest_name": "B5_PhaseF_cooldown_60min",
+      "compile_id": "cb88acc00bb4d2d67cd24b5c99b4c8fe-53863a12c36f4aee859a2e3bf7e58ee6",
+      "qc_url": "https://www.quantconnect.com/project/35674722/backtest/081e8b389b3b723a24490d1b42b19073",
+      "created": "2026-09-02 10:07:36",
+      "completed": "2026-09-02 (status 'Completed.', progress 1 -- verifie AVANT lecture, cf garde c.909)",
+      "tradeableDates": 1461,
+      "totalOrders": 1140574,
+      "statistics": {
+        "sharpeRatio": "-2.527",
+        "compoundingAnnualReturn": "-81.149%",
+        "drawdown": "99.900%",
+        "totalNetProfit": "-99.874%",
+        "netProfitAbsolute": "₮-9,987.03"
+      },
+      "variable_unique_changee_vs_B4": "COOLDOWN de 60 minutes par symbole apres chaque sortie (stop-loss ou retour a la mediane) : aucune re-entree pendant le delai. Strictement plus restrictif que B4 sur les entrees.",
+      "verdict": "HYPOTHESE FALSIFIEE AUSSI -- NO BEATS vs B3, ordres EN HAUSSE",
+      "preuve": "1 140 574 ordres : PLUS que B3 (917 199) et B4 (879 847), alors que le cooldown ne peut que reduire les entrees. Le volume d'ordres n'est donc pas pilote par la frequence des decisions d'entree mais par un mecanisme d'un autre ordre. Candidat le plus plausible (HYPOTHESE, non tranchee par ces runs) : tempete de re-soumissions en fin de vie du compte -- quand l'equity tombe a quelques dizaines de USDT, des positions ciblees a 40 % x equity passent sous le montant minimal d'ordre Binance, l'ordre est rejete, la position reste invested, et chaque barre re-emet liquidate. Les trois runs convergent vers la meme equity finale (~13,50 USDT) : la queue du backtest est identique, seule sa longueur varie."
+    }
+  },
+  "verdict": "NO BEATS (les deux remediation une-variable echouent a reduire le volume d'ordres ; net/Sharpe/drawdown inchanges). Valeur livree : deux intuitions raisonnables converties en deux falsifications mesurees -- c'est le fonctionnement normal de la methode une-variable-par-run.",
+  "path_forward": [
+    "RESTE OUVERT (RECOVERABLE-USER-HAND) : la lecture des compteurs B4_DIAG / B5_DIAG (entry_edges, entry_attempts, fills) ou de read_backtest_orders dans l'interface QC Cloud trancherait entre 'entrees massives' et 're-soumissions de liquidate'. Le MCP qc-mcp-lite n'expose ni l'un ni l'autre.",
+    "SUSPECT STRUCTUREL (hypothese) : au granularity Minute, les bandes BB 20-period sont si etroites que le captage du retour a la moyenne (~0,1-0,3 %) ne couvre pas les frais aller-retour (2 x 0,1 %). Aucune strategie de cette forme ne peut etre profitable a cette resolution. Remede structurel a tester APRES lecture des compteurs : resolution Hour (bandes plus larges) ou parametrage BB elargi.",
+    "LIVRE : la section docs 'Mesures post-backtest : gates minimaux' (docs/qc/quantconnect.md, PR separee) documente la garde c.909 appliquee sur chacune des lectures de cette phase."
+  ],
+  "tells_observed": [
+    "Garde c.909 appliquee sur B4 et B5 : chaque read_backtest coute status=='Completed.' ET progress==1 avant lecture des metriques.",
+    "Regne la regle C (verdict honnete) : NO BEATS explicite, aucun 'promising'."
+  ]
+}

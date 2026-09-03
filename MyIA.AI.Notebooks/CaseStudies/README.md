@@ -247,12 +247,12 @@ Le template étudiant (`student/`) contient le squelette du projet : classes ave
 
 ## Statistiques catalogue à jour
 
-| Sous-projet | Notebooks | Statut | Paradigmes mobilisés |
-|-------------|-----------|--------|----------------------|
-| [Diagnostic-Medical](Diagnostic-Medical/) | 2 (student + solution) | PRODUCTION | A* + génétique + Z3 (CSP) |
-| [Oncology-Planning](Oncology-Planning/) | 2 (student + solution) | PRODUCTION | Ontologie + CSP/OR-Tools + Pyro (Pyro probabiliste) + bonus smart contract (`OncoContract`) |
-| [SmartGrid-Energy](SmartGrid-Energy/) | 2 (student + solution) | BETA | CP-SAT + bayésien (risque défaillance) + multi-objectif (coût/CO2) |
-| **Total** | **6 notebooks** | **PRODUCTION=4, BETA=2** | 4 paradigmes : symbolique (CSP/ontologie) + statistique (probabiliste/évolutionnaire) + recherche (A*) + optimisation (CP-SAT) |
+| Sous-projet | Notebooks | Maturité (marqueur `CATALOG-STATUS`) | Paradigmes mobilisés |
+|-------------|-----------|--------------------------------------|----------------------|
+| [Diagnostic-Medical](Diagnostic-Medical/) | 2 (student + solution) | BETA + BETA | A* + génétique + Z3 (CSP) |
+| [Oncology-Planning](Oncology-Planning/) | 2 (student + solution) | BETA (solution) + DRAFT (student) | Ontologie + CSP/OR-Tools + Pyro (Pyro probabiliste) + bonus smart contract (`OncoContract`) |
+| [SmartGrid-Energy](SmartGrid-Energy/) | 2 (student + solution) | BETA + BETA | CP-SAT + bayésien (risque défaillance) + multi-objectif (coût/CO2) |
+| **Total** | **6 notebooks** | **BETA=5, DRAFT=1** | 4 paradigmes : symbolique (CSP/ontologie) + statistique (probabiliste/évolutionnaire) + recherche (A*) + optimisation (CP-SAT) |
 
 Chaque notebook solution fait l'objet d'une **validation par assertions** (cellule terminale `tests_automatises()` ou prints discriminants) dans son sous-dossier `solution/` ; le template `student/` porte les stubs conformes (règle C.1 : `pass` / `return None` / `print("Exercice à compléter")` / jamais `raise NotImplementedError`) et reste exécutable end-to-end. La cohérence est garantie par `requirements.txt` au racine (`numpy`, `pandas`, `matplotlib`, `seaborn`, `z3-solver`, `rdflib`, `pyro-ppl`, `torch`, `ortools` — 9 dépendances communes aux 3 cas).
 

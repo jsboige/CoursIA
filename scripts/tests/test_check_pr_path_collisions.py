@@ -518,5 +518,101 @@ class TestWriteFailureReporting(unittest.TestCase):
             mocked.assert_not_called()
 
 
+class TestWriteChannelAndMuteVisibility(unittest.TestCase):
+    """#14236. Two defects were measured on run 33597345910 (2026-09-02):
+    30 of 33 planned writes returned ``Not Found (HTTP 404)``, and the run
+    concluded ``success`` anyway. The first is addressed by changing channel,
+    the second by making the loss able to turn a run red."""
+
+    @staticmethod
+    def _proc(rc: int, stderr: str = "", stdout: str = ""):
+        return _subprocess.CompletedProcess(
+            args=[], returncode=rc, stdout=stdout, stderr=stderr
+        )
+
+    def test_post_comment_uses_the_rest_endpoint_not_gh_pr_comment(self):
+        """``gh pr comment`` reaches the comment through GraphQL, which
+        reports a missing permission as NOT_FOUND -- indistinguishable from a
+        PR that does not exist. REST answers with the real status code."""
+        seen = {}
+
+        def _capture(argv, **kwargs):
+            seen["argv"] = list(argv)
+            return self._proc(0)
+
+        with mock.patch.object(_mod.subprocess, "run", side_effect=_capture):
+            ok = _mod.post_comment("owner/repo", 4242, "hello", dry_run=False)
+
+        self.assertTrue(ok)
+        argv = seen["argv"]
+        self.assertEqual(argv[:4], ["gh", "api", "--method", "POST"])
+        self.assertIn("repos/owner/repo/issues/4242/comments", argv)
+        # The channel that masked the failure must be gone, not merely
+        # supplemented: a fallback would restore the masking on the retry.
+        self.assertNotIn("comment", argv[:3])
+
+    def test_failed_write_is_warned_and_returns_false(self):
+        buf = io.StringIO()
+        with mock.patch.object(
+            _mod.subprocess, "run",
+            return_value=self._proc(1, "gh: Not Found (HTTP 404)"),
+        ):
+            with contextlib.redirect_stderr(buf):
+                ok = _mod.post_comment("owner/repo", 13817, "body", dry_run=False)
+        self.assertFalse(ok)
+        self.assertIn("WARN", buf.getvalue())
+        self.assertIn("13817", buf.getvalue())
+
+    def _cli_with_one_planned_write(self, extra_argv, write_rc):
+        """Drive _cli end-to-end over a synthetic two-PR collision.
+
+        The pair is built so exactly one comment is planned; ``write_rc``
+        decides whether that write is confirmed."""
+        rows = [
+            _pr(101, ["a/shared.py"], title="one", body="See #900"),
+            _pr(102, ["a/shared.py"], title="two", body="See #900"),
+        ]
+        calls = {"n": 0}
+
+        def _fake_run(argv, **kwargs):
+            calls["n"] += 1
+            if argv[:2] == ["gh", "api"]:
+                return self._proc(write_rc, "gh: Not Found (HTTP 404)"
+                                  if write_rc else "")
+            return self._proc(0, stdout="[]")
+
+        with mock.patch.object(_mod, "list_open_prs", return_value=rows),              mock.patch.object(_mod, "_repo_default", return_value="owner/repo"),              mock.patch.object(_mod, "scan_markers", return_value=({}, set())),              mock.patch.object(_mod, "label_strong_pairs", return_value=None),              mock.patch.object(_mod.subprocess, "run", side_effect=_fake_run):
+            out, err = io.StringIO(), io.StringIO()
+            with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+                rc = _mod._cli(extra_argv)
+        return rc, out.getvalue(), err.getvalue()
+
+    def test_write_loss_turns_the_run_red_when_asked(self):
+        """Positive control: the flag must actually be able to fail."""
+        rc, stdout, stderr = self._cli_with_one_planned_write(
+            ["--fail-on-write-loss"], write_rc=1
+        )
+        self.assertEqual(rc, 1)
+        self.assertIn("write(s) failed", stderr)
+        self.assertIn("::error", stdout)
+
+    def test_no_write_loss_stays_green_under_the_same_flag(self):
+        """Negative control: the flag must not fail a healthy run -- without
+        this, a check that always fails carries no information either."""
+        rc, stdout, _ = self._cli_with_one_planned_write(
+            ["--fail-on-write-loss"], write_rc=0
+        )
+        self.assertEqual(rc, 0)
+        self.assertNotIn("::error", stdout)
+
+    def test_write_loss_alone_does_not_fail_without_the_flag(self):
+        """The organ stays advisory by default: callers that do not opt in
+        keep the exit-0 contract the header promises."""
+        rc, stdout, _ = self._cli_with_one_planned_write([], write_rc=1)
+        self.assertEqual(rc, 0)
+        self.assertIn("::error", stdout)
+
+
+
 if __name__ == "__main__":
     unittest.main()

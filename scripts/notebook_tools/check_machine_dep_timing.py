@@ -535,7 +535,246 @@ def _iter_markdown_lines(cell: dict) -> list[str]:
     return src.splitlines() if src else []
 
 
-def _scan_notebook(nb_path: Path) -> list[dict]:
+# --------------------------------------------------------------------------- #
+#  Provenance d'un finding (#9434) -- opt-in, ne change rien par defaut
+# --------------------------------------------------------------------------- #
+# Mesure du 2026-09-02 (lane myia-po-2024:CoursIA-2, issuecomment-5505846033) :
+# sur les 288 findings `wallclock` du depot, 283 citent un nombre que le
+# notebook PORTE deja -- dans ses outputs, dans ses cellules de code, ou dans
+# un fichier compagnon qu'il pilote. Le compteur ne le voyait pas parce qu'il
+# raisonne ligne a ligne, sur du TEXTE.
+#
+# La consequence est celle qu'ai-01 a nommee sur ce fil : "une metrique
+# d'occurrences se satisfait toujours en supprimant, jamais en corrigeant".
+# Un drainage pilote par le compteur brut supprimerait de la prose qui LIT
+# correctement une sortie -- exactement ce que le test READS-vs-AFFIRMS protege.
+#
+# Quatre provenances, dans l'ordre de preference :
+#   OUT  -- la valeur est dans une sortie de cellule du notebook
+#   DER  -- elle est un RATIO de deux valeurs de sortie (« ~72x », « ~40 »)
+#   SRC  -- elle est declaree dans une cellule de code (constante, parametre)
+#   COMP -- elle est dans un fichier compagnon que le notebook pilote
+#           (`Program.cs`, `.csproj`, config...) : c'est une SPECIFICATION
+# Aucune des quatre -> `unbacked` : le seul residu qui merite un regard humain.
+#
+# LIMITE, a lire avant de se fier au chiffre : la tolerance de 5 % sur six
+# echelles peut ABSORBER un vrai defaut par coincidence numerique. Le compte
+# `unbacked` est donc un PLANCHER du legitime, pas un plafond du defaut. Il
+# reduit un tri de 288 lignes a un tri de 5 ; il ne prouve pas que les 283
+# autres soient toutes justes.
+PROVENANCE_TOLERANCE = 0.05
+
+# Echelles admises entre le nombre en prose et la valeur portee par le
+# notebook. Mesurees sur les cas reels du depot :
+#   1.0     identite (« 2,97 » <- 2.9682, arrondi)
+#   1000.0  s -> ms (« ~60 ms » <- 0.0587 s)
+#   0.001   ms -> s
+#   60.0    min -> s   /  1/60  s -> min
+#   0.01    fraction -> pourcentage (« 4,1 % » <- 0.0410)
+PROVENANCE_SCALES = (1.0, 1000.0, 0.001, 60.0, 1.0 / 60.0, 0.01)
+
+PROVENANCE_ORDER = ("OUT", "DER", "SRC", "COMP")
+PROVENANCE_UNBACKED = "unbacked"
+
+# Extensions de fichiers compagnons scannes pour la provenance COMP.
+_COMPANION_SUFFIXES = (
+    ".cs", ".py", ".fs", ".csproj", ".json", ".yml", ".yaml",
+    ".ps1", ".sh", ".lean",
+)
+_COMPANION_SKIP_DIRS = (
+    ".ipynb_checkpoints", "bin", "obj", ".lake", "node_modules", "__pycache__",
+)
+# Budget de lecture des compagnons (caracteres). Une serie comme QuantConnect
+# porte des dumps de donnees ; sans borne, `--all --provenance` deviendrait
+# quadratique.
+_COMPANION_CHAR_BUDGET = 400_000
+# Budget de lecture des outputs d'un notebook. Les blobs base64 d'images sont
+# exclus AVANT ce compte (ils n'apportent aucun nombre lisible et saturaient la
+# mesure -- FP observe pendant la calibration).
+_OUTPUT_CHAR_BUDGET = 2_000_000
+
+_NUMBER_RE = re.compile(r"[0-9][0-9]*(?:[.,][0-9]+)?")
+
+# Cache par repertoire : plusieurs notebooks d'une meme serie partagent leurs
+# compagnons. Sans cache, `--all --provenance` relit `Program.cs` a chaque fois.
+_COMPANION_CACHE: dict[str, list[float]] = {}
+
+
+def _parse_numbers(text: str) -> list[float]:
+    """Extrait les nombres d'un texte, virgule decimale francaise comprise.
+
+    « 2,97 » et « 2.97 » rendent tous deux 2.97. C'est le point ou une premiere
+    version de cet outil s'est trompee : elle normalisait en SUPPRIMANT la
+    virgule, ce qui transformait « 0,041 » en 41.
+    """
+    out: list[float] = []
+    for tok in _NUMBER_RE.findall(text):
+        try:
+            out.append(float(tok.replace(",", ".")))
+        except ValueError:
+            continue
+    return out
+
+
+def _values_close(prose: float, carried: float) -> bool:
+    """Le nombre en prose correspond-il a une valeur portee, a une echelle pres ?
+
+    La comparaison est RELATIVE (5 %) parce que la prose arrondit : « 2,97 »
+    pour 2.9682, « ~60 ms » pour 0.0587 s. Une comparaison exacte ne
+    reconnaitrait aucun de ces deux cas, qui sont pourtant la lecture correcte
+    d'une sortie.
+    """
+    for scale in PROVENANCE_SCALES:
+        scaled = carried * scale
+        if not scaled:
+            continue
+        if abs(scaled - prose) <= PROVENANCE_TOLERANCE * max(abs(scaled), abs(prose)):
+            return True
+    return False
+
+
+def _output_values(data: dict) -> list[float]:
+    """Nombres portes par les SORTIES de cellules du notebook.
+
+    Les blobs `image/*` sont exclus : ils ne portent aucun nombre lisible et
+    leur base64 produisait des correspondances fortuites.
+    """
+    budget = _OUTPUT_CHAR_BUDGET
+    chunks: list[str] = []
+    for cell in data.get("cells", []):
+        for out in cell.get("outputs", []) or []:
+            if not isinstance(out, dict):
+                continue
+            texts: list = []
+            if "text" in out:
+                texts.append(out["text"])
+            payload = out.get("data") or {}
+            if isinstance(payload, dict):
+                for mime, val in payload.items():
+                    if mime.startswith("image/"):
+                        continue
+                    texts.append(val)
+            for t in texts:
+                if isinstance(t, list):
+                    t = "".join(str(x) for x in t)
+                if not isinstance(t, str):
+                    continue
+                chunks.append(t[:budget])
+                budget -= len(t)
+                if budget <= 0:
+                    return _parse_numbers("\n".join(chunks))
+    return _parse_numbers("\n".join(chunks))
+
+
+def _source_values(data: dict) -> list[float]:
+    """Nombres declares dans les cellules de CODE (constantes, parametres).
+
+    Une prose qui cite `Thread.Sleep(500)` en disant « 500 ms » ne fabrique
+    rien : elle lit une specification du notebook lui-meme.
+    """
+    chunks: list[str] = []
+    for cell in data.get("cells", []):
+        if cell.get("cell_type") != "code":
+            continue
+        src = cell.get("source", "")
+        if isinstance(src, list):
+            src = "".join(src)
+        if isinstance(src, str):
+            chunks.append(src)
+    return _parse_numbers("\n".join(chunks))
+
+
+def _companion_values(nb_path: Path) -> list[float]:
+    """Nombres portes par les fichiers compagnons du repertoire du notebook.
+
+    Un notebook qui pilote un `Program.cs` cite legitimement les constantes de
+    ce programme : c'est une SPECIFICATION, pas une mesure machine.
+    """
+    key = str(nb_path.parent)
+    cached = _COMPANION_CACHE.get(key)
+    if cached is not None:
+        return cached
+
+    budget = _COMPANION_CHAR_BUDGET
+    chunks: list[str] = []
+    try:
+        for path in sorted(nb_path.parent.rglob("*")):
+            if budget <= 0:
+                break
+            if not path.is_file() or path.suffix.lower() not in _COMPANION_SUFFIXES:
+                continue
+            if any(part in _COMPANION_SKIP_DIRS for part in path.parts):
+                continue
+            try:
+                text = path.read_text(encoding="utf-8", errors="ignore")
+            except OSError:
+                continue
+            chunks.append(text[:budget])
+            budget -= len(text)
+    except OSError:
+        pass
+
+    values = _parse_numbers("\n".join(chunks))
+    _COMPANION_CACHE[key] = values
+    return values
+
+
+def _derived_ratios(values: list[float], top_n: int = 60, cap: int = 4000) -> list[float]:
+    """Ratios entre valeurs de sortie -- les facteurs « ~72x », « ~40 ».
+
+    Un notebook qui mesure 2.97 s et 0.041 s et ecrit « ~72x plus rapide »
+    n'affirme rien qui ne soit dans ses sorties : le facteur EST la lecture.
+    Bornes (`top_n`, `cap`) : le produit cartesien est quadratique.
+    """
+    top = sorted({v for v in values if v}, reverse=True)[:top_n]
+    ratios: list[float] = []
+    for a in top:
+        for b in top:
+            if not b:
+                continue
+            r = a / b
+            if 1.0 < r < 100_000.0:
+                ratios.append(r)
+                if len(ratios) >= cap:
+                    return ratios
+    return ratios
+
+
+def _annotate_provenance(findings: list[dict], data: dict, nb_path: Path) -> None:
+    """Passe 4 (opt-in) : annote chaque finding d'une cle ``provenance``.
+
+    Ne change AUCUNE categorie : la provenance est une lecture ORTHOGONALE a la
+    classification. Un `wallclock` reste `wallclock` ; on dit seulement si le
+    nombre qu'il pointe est porte par le notebook ou non.
+    """
+    if not findings:
+        return
+    outputs = _output_values(data)
+    sources = _source_values(data)
+    ratios = _derived_ratios(outputs)
+    companions: list[float] | None = None  # charge paresseusement (couteux)
+
+    for f in findings:
+        prose = _parse_numbers(f.get("snippet", ""))
+        if not prose:
+            f["provenance"] = PROVENANCE_UNBACKED
+            continue
+        if any(_values_close(p, o) for p in prose for o in outputs):
+            f["provenance"] = "OUT"
+        elif any(_values_close(p, r) for p in prose for r in ratios):
+            f["provenance"] = "DER"
+        elif any(_values_close(p, s) for p in prose for s in sources):
+            f["provenance"] = "SRC"
+        else:
+            if companions is None:
+                companions = _companion_values(nb_path)
+            if any(_values_close(p, c) for p in prose for c in companions):
+                f["provenance"] = "COMP"
+            else:
+                f["provenance"] = PROVENANCE_UNBACKED
+
+
+def _scan_notebook(nb_path: Path, provenance: bool = False) -> list[dict]:
     """Scan un notebook ; retourne la liste des findings structures.
 
     Chaque finding est un dict ``{cell_index, line_index, snippet, line,
@@ -558,6 +797,12 @@ def _scan_notebook(nb_path: Path) -> list[dict]:
        en ``domain_quantity`` (residu 1 #10169 : les 6 findings Infer-2 dont les
        moyennes ajustees 15.07 / 26.69 min). La granularite per-cell etait trop
        etroite -- l'unite de temps est le sujet du notebook, pas d'une cellule.
+    4. **Passe provenance** (opt-in ``provenance=True``, #9434) : annote chaque
+       finding d'une cle ``provenance`` disant si le nombre cite est PORTE par le
+       notebook (``OUT`` sortie / ``DER`` ratio de sorties / ``SRC`` cellule de
+       code / ``COMP`` fichier compagnon) ou ``unbacked``. Aucune categorie n'est
+       modifiee : la provenance est orthogonale a la classification. Par defaut la
+       passe ne tourne PAS et la sortie est byte-identique a l'existant.
     """
     try:
         data = json.loads(nb_path.read_text(encoding="utf-8"))
@@ -635,6 +880,11 @@ def _scan_notebook(nb_path: Path) -> list[dict]:
         for f in findings:
             if f["category"] == CATEGORY_WALLCLOCK:
                 f["category"] = CATEGORY_DOMAIN_QUANTITY
+
+    # Passe 4 : provenance (opt-in). Hors --provenance, on ne paie ni la
+    # lecture des outputs ni le scan des compagnons.
+    if provenance:
+        _annotate_provenance(findings, data, nb_path)
 
     return findings
 
@@ -751,7 +1001,23 @@ def main(argv: list[str] | None = None) -> int:
         "--category",
         choices=[CATEGORY_WALLCLOCK, CATEGORY_DISTRIBUTION, CATEGORY_AMBIGUOUS, CATEGORY_DOMAIN_QUANTITY, "all"],
         default="wallclock",
-        help="Filtre categorie de sortie (defaut: wallclock = cible drainage).",
+        help=(
+            "Filtre categorie de sortie (defaut: wallclock = cible drainage). "
+            "ATTENTION : ce filtre ne s'applique qu'a la sortie TSV. En --json, "
+            "`findings` porte TOUTES les categories (c'est `summary` qui les "
+            "ventile) -- sommer `findings` en croyant lire une categorie donne "
+            "un compte survalue."
+        ),
+    )
+    parser.add_argument(
+        "--provenance",
+        action="store_true",
+        help=(
+            "Annote chaque finding d'une provenance (OUT/DER/SRC/COMP/unbacked) : "
+            "le nombre cite est-il PORTE par le notebook (sortie, ratio de sorties, "
+            "cellule de code, fichier compagnon) ou non ? Sans ce flag, la sortie "
+            "est inchangee."
+        ),
     )
     args = parser.parse_args(argv)
 
@@ -785,7 +1051,7 @@ def main(argv: list[str] | None = None) -> int:
             rel = str(nb_path.resolve().relative_to(repo_root))
         except ValueError:
             pass
-        findings = _scan_notebook(nb_path)
+        findings = _scan_notebook(nb_path, provenance=args.provenance)
         if findings:
             all_findings[rel] = findings
         for f in findings:
@@ -797,6 +1063,20 @@ def main(argv: list[str] | None = None) -> int:
                 domain_quantity_count += 1
             else:
                 ambiguous_count += 1
+
+    # Ventilation provenance par categorie (uniquement sous --provenance).
+    # Elle repond a la question que le compte brut ne posait pas : parmi les
+    # findings d'une categorie, combien citent un nombre que le notebook porte
+    # deja ? Le residu `unbacked` est le seul tri qui merite un regard humain.
+    provenance_summary: dict[str, dict[str, int]] = {}
+    if args.provenance:
+        for findings in all_findings.values():
+            for f in findings:
+                bucket = provenance_summary.setdefault(
+                    f["category"],
+                    {k: 0 for k in PROVENANCE_ORDER + (PROVENANCE_UNBACKED,)},
+                )
+                bucket[f.get("provenance", PROVENANCE_UNBACKED)] += 1
 
     if args.json:
         out = {
@@ -810,6 +1090,8 @@ def main(argv: list[str] | None = None) -> int:
             },
             "findings": all_findings,
         }
+        if args.provenance:
+            out["provenance_summary"] = provenance_summary
         print(json.dumps(out, ensure_ascii=False, indent=2))
     else:
         # Mode TSV lisible (par defaut : wallclock = cible drainage).
@@ -817,11 +1099,23 @@ def main(argv: list[str] | None = None) -> int:
         print(f"# check_machine_dep_timing -- scanned={len(targets)}")
         print(f"# wallclock={wallclock_count} distribution_param={distribution_count} "
               f"domain_quantity={domain_quantity_count} ambiguous={ambiguous_count}")
+        if args.provenance:
+            shown = args.category if cat_filter else "all"
+            bucket = provenance_summary.get(cat_filter, {}) if cat_filter else {}
+            if not cat_filter:  # agrege toutes categories
+                bucket = {k: 0 for k in PROVENANCE_ORDER + (PROVENANCE_UNBACKED,)}
+                for b in provenance_summary.values():
+                    for k, v in b.items():
+                        bucket[k] = bucket.get(k, 0) + v
+            detail = " ".join(f"{k}={bucket.get(k, 0)}"
+                              for k in PROVENANCE_ORDER + (PROVENANCE_UNBACKED,))
+            print(f"# provenance[{shown}] {detail}")
         for nb_rel, findings in sorted(all_findings.items()):
             for f in findings:
                 if cat_filter and f["category"] != cat_filter:
                     continue
-                print(f"{nb_rel}\tcell[{f['cell_index']}]\t{f['snippet']}\t{f['category']}\t{f['line'][:120]}")
+                prov = f"\t{f['provenance']}" if args.provenance else ""
+                print(f"{nb_rel}\tcell[{f['cell_index']}]\t{f['snippet']}\t{f['category']}{prov}\t{f['line'][:120]}")
 
     # Mode advisory par defaut (exit 0). --check reserved pour le futur quand
     # le stock wallclock sera draine (cf. condition de sortie de #9434).
