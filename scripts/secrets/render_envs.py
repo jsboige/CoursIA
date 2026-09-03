@@ -161,8 +161,12 @@ SECRET_KEYS: frozenset[str] = frozenset({
     "QDRANT_API_KEY",
     # OWUI native API (NB-20, #417) + TTS multi-voice gateway (#16, po-2023)
     "OWUI_API_KEY", "TTS_GATEWAY_API_KEY",
-    # ComfyUI client tokens (notebook client <-> service must agree)
-    "COMFYUI_VIDEO_TOKEN", "COMFYUI_API_TOKEN",
+    # ComfyUI client tokens (notebook client <-> service must agree).
+    # COMFYUI_AUTH_TOKEN is the canonical notebook-client name (#16 flip:
+    # notebooks read ``os.getenv("COMFYUI_AUTH_TOKEN") or os.getenv("COMFYUI_API_TOKEN")``).
+    # Aliased to COMFYUI_API_TOKEN -- both names carry the credential the
+    # ComfyUI-Login middleware validates (bind-mounted token file, #14382).
+    "COMFYUI_VIDEO_TOKEN", "COMFYUI_API_TOKEN", "COMFYUI_AUTH_TOKEN",
     # ComfyUI-Video web login password (user decision #10985, 2026-08-20):
     # centralized in master.env under an INSTANCE-SCOPED name -- plain
     # COMFYUI_PASSWORD must NOT enter SECRET_KEYS because comfyui-qwen carries
@@ -203,6 +207,11 @@ ALIASES: dict[str, str] = {
     # ``QWEN_API_USER_TOKEN`` in legacy code paths). Both names MUST
     # carry the same value; bootstrap enforces this on first sync. #10265.
     "QWEN_API_USER_TOKEN": "QWEN_API_TOKEN",
+    # ComfyUI-Login bearer, notebook-client canonical name (#14382): notebooks
+    # read COMFYUI_AUTH_TOKEN first; must equal COMFYUI_API_TOKEN (the
+    # credential the middleware validates). A stale non-empty AUTH_TOKEN
+    # shadows the correct API_TOKEN in the ``or`` fallback chain -> 401.
+    "COMFYUI_AUTH_TOKEN": "COMFYUI_API_TOKEN",
 }
 
 
