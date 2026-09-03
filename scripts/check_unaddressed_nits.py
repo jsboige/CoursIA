@@ -785,9 +785,11 @@ _MENTION_VERDICT_BARE = re.compile(
 #     myia-* / un nom propre) — sans attribution, le verdict est propre
 #     (l'auteur l'emet), la position ne s'applique PAS.
 # (2) Verbe DESCRIPTIF (`porte`, `comporte`, `contient`, `mentionne`,
-#     `indique`, `signale`, `releve`, `contient`, `a emis`, `avait emis`) — un
-#     verbe d'EMISSION (`Verdict :`, `Block on`, `declare`, `reste bloquante`)
-#     n'est PAS descriptif, c'est une emission, la position ne s'applique PAS.
+#     `indique`, `signale`, `releve`, `contient`, `a emis`, `avait emis`, et
+#     ext. #14185 `conclut`, `declare` — conclusifs/declaratifs acceptes
+#     UNIQUEMENT sous attribution tierce + article, cf pattern) — un verbe
+#     d'EMISSION (`Verdict :`, `Block on`, `reste bloquante`) n'est PAS
+#     descriptif, c'est une emission, la position ne s'applique PAS.
 # (3) Pas de declaration de blocage dans la suite de la phrase (meme garde
 #     dure que Position E, ligne 645 : `reste bloquante` / `Verdict :` / `Block
 #     on`) — sinon le verdict reste emis.
@@ -823,7 +825,14 @@ _MENTION_VERDICT_REPORTED = re.compile(
     r"|indique|indiques|indiquent"
     r"|signale|signales|signalent"
     r"|releve|releves|relevent"
-    r"|a\s+emis|avait\s+emis|avaient\s+emis|ont\s+emis)"
+    r"|a\s+emis|avait\s+emis|avaient\s+emis|ont\s+emis"
+    # Ext. #14185 : verbes conclusifs/declaratifs sous attribution tierce —
+    # « La review NanoClaw conclut un SUSPECT_REGRESSION » est un rapport de
+    # verdict de tiers, pas une emission propre. Surs sous ce pattern car
+    # l'attribution (1) et l'article (garde ce6) sont exigees en amont :
+    # « Je declare CHANGES_REQUESTED » ne peut pas matcher (pas de
+    # « review/revue » + tiers avant le verbe).
+    r"|conclut|concluent|declare|declarent)"
     r"\s+(?:un|une|le|la|les|des|du)\s+"
     # Verdict case-sensitive (memes bornes que A-G)
     r"(?-i:([A-Z][A-Z_]{3,}))(?![A-Za-z0-9_])"

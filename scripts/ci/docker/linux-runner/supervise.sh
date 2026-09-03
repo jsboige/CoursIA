@@ -22,6 +22,7 @@
 #   ./supervise.sh start [N] [--force]
 #                                  # N slots (defaut 2) ; --force leve
 #                                  # un sentinel STOP_FILE prealable
+#   ./supervise.sh waiters [N]   # N slots d'attente PR-gate (label coursia-waiter, defaut 24)
 #   ./supervise.sh stop          # arret gracieux : pas de nouveau conteneur
 #   ./supervise.sh status
 #
@@ -66,6 +67,18 @@ TOOLCACHE_MOUNT="${COURSIA_RUNNER_TOOLCACHE_MOUNT:-/opt/hostedtoolcache}"
 # d'ouvrir le runner aux forks.
 WORK_VOLUME_PREFIX="${COURSIA_RUNNER_WORK_VOLUME_PREFIX:-coursia-runner-work}"
 WORK_MOUNT="${COURSIA_RUNNER_WORK_MOUNT:-/home/runner/_work}"
+
+# Pool d'attente PR-gate (#13363, 2026-09-02) : le PR gate agrege jusqu'a
+# 35 min en polling, occupant un slot d'execution pendant que les jobs reels
+# attendent derriere. Le label DEDIE `coursia-waiter` (JAMAIS coursia-linux)
+# porte ~24 slots sur-provisionnes -- un slot qui attend ne coute rien. Pas
+# de volume toolcache/_work : aucun job d'execution ne doit leur atterrir,
+# le gate bascule dessus uniquement (item B, ai-01).
+WAITER_LABELS="${COURSIA_RUNNER_WAITER_LABELS:-self-hosted,coursia-waiter}"
+WAITER_NAME_PREFIX="${COURSIA_RUNNER_WAITER_NAME_PREFIX:-myia-po-2024-linux-waiter}"
+WAITER_CPUS="${COURSIA_RUNNER_WAITER_CPUS:-1}"
+WAITER_MEMORY="${COURSIA_RUNNER_WAITER_MEMORY:-1g}"
+WAITER_PIDS="${COURSIA_RUNNER_WAITER_PIDS:-128}"
 
 mkdir -p "$STATE_DIR"
 
@@ -244,9 +257,70 @@ cmd_status() {
   [ -f "$STOP_FILE" ] && echo "== sentinel STOP pose : les boucles ne relancent plus =="
 }
 
+waiter_loop() {
+  # Meme mecanique que slot_loop, mais pour le pool d'attente PR-gate : nom,
+  # caps et label du pool waiter. Un waiter ne porte JAMAIS coursia-linux :
+  # aucun job reel ne doit lui atterrir, il n'existe que pour absorber
+  # l'attente du gate. Pas de volume -- rien a persister.
+  local slot="$1"
+  local name="${WAITER_NAME_PREFIX}-${slot}"
+  echo "[waiter $slot] demarrage, nom runner=$name"
+  while [ ! -f "$STOP_FILE" ]; do
+    local token
+    token="$(fetch_token)"
+    if [ -z "$token" ]; then
+      echo "[waiter $slot] token indisponible (droit admin gh ?) -- nouvelle tentative dans 60 s" >&2
+      sleep 60
+      continue
+    fi
+    docker run --rm \
+      --name "$name" \
+      --cpus="$WAITER_CPUS" --memory="$WAITER_MEMORY" --pids-limit="$WAITER_PIDS" \
+      --security-opt=no-new-privileges \
+      -e ACTIONS_RUNNER_INPUT_TOKEN="$token" \
+      -e ACTIONS_RUNNER_INPUT_URL="https://github.com/$REPO" \
+      -e ACTIONS_RUNNER_INPUT_NAME="$name" \
+      -e ACTIONS_RUNNER_INPUT_LABELS="$WAITER_LABELS" \
+      "$IMAGE" >>"$STATE_DIR/$name.log" 2>&1
+    local rc=$?
+    echo "[waiter $slot] conteneur termine (rc=$rc)"
+    [ "$rc" -ne 0 ] && sleep 15 || sleep 2
+  done
+  echo "[waiter $slot] arret demande, boucle terminee"
+}
+
+cmd_waiters() {
+  local n="${1:-24}"
+  command -v docker >/dev/null || die "docker introuvable"
+  command -v gh >/dev/null || die "gh introuvable"
+  docker image inspect "$IMAGE" >/dev/null 2>&1 \
+    || die "image $IMAGE absente -- construire d'abord :
+    docker build -t $IMAGE scripts/ci/docker/linux-runner/"
+  [ -f "$STOP_FILE" ] && die "sentinel STOP pose -- arreter d'abord ($0 stop)"
+  # Idempotence propre a la famille waiters : le garde de `start` filtre
+  # `supervise.sh start` et ne voit pas `waiters`. Verrou porte par le pid
+  # de la boucle -- si elle est morte, kill -0 echoue et on relance.
+  if [ -f "$STATE_DIR/waiter-pids" ]; then
+    local head_pid
+    head_pid="$(head -1 "$STATE_DIR/waiter-pids" 2>/dev/null || true)"
+    if [ -n "$head_pid" ] && kill -0 "$head_pid" 2>/dev/null; then
+      die "waiters deja lancees (pid $head_pid) -- arreter d'abord ($0 stop)"
+    fi
+  fi
+  rm -f "$STATE_DIR/waiter-pids"
+  echo "demarrage de $n waiter(s) ; labels=$WAITER_LABELS ; caps : cpus=$WAITER_CPUS memory=$WAITER_MEMORY pids=$WAITER_PIDS"
+  for i in $(seq 1 "$n"); do
+    waiter_loop "$i" &
+    echo "$!" >> "$STATE_DIR/waiter-pids"
+  done
+  echo "waiters lancees. Arret gracieux : $0 stop"
+  wait
+}
+
 case "${1:-}" in
-  start)  shift; cmd_start "${1:-2}" "${2:-}" ;;
-  stop)   cmd_stop ;;
-  status) cmd_status ;;
-  *) echo "usage: $0 {start [N] [--force]|stop|status}"; exit 2 ;;
+  start)   shift; cmd_start "${1:-2}" "${2:-}" ;;
+  waiters) shift; cmd_waiters "${1:-24}" ;;
+  stop)    cmd_stop ;;
+  status)  cmd_status ;;
+  *) echo "usage: $0 {start [N] [--force]|waiters [N]|stop|status}"; exit 2 ;;
 esac
