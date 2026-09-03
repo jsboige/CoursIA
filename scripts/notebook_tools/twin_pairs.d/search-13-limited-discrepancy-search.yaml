@@ -24,6 +24,12 @@
       by: myia-po-2025:CoursIA
       python_sha: 0070631130d0da4763db25fae58da389350f9cf5
       csharp_sha: ea455f7b966877ef4bbbcfe9e06648dbc668e316
+    - date: "2026-09-03"
+      by: myia-po-2025:CoursIA
+      python_sha: 1a7d5dbed265e7b15615cb6d91c27a5b3a8c0e57
+      csharp_sha: 58189a2c3e9ffea712786f7e81c84355427b03e7
+      content_python_sha: bd71f8a50b6400d6bba04cd96d87333981af4b14d1dc9756b9de8af5e1900c91
+      content_csharp_sha: 40fc26c4f719eed6e904450b698a81b2b9369cb37ce34162312b227327bccdcb
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: |
     Bucket 3 de l'EPIC #10382 (from-scratch = la contrepartie, a ecrire comme telle). Verifie firsthand : Python = stdlib pur (`from itertools import product`, 0 lib tierce) ; C# = pur System.* (0 NuGet, 0 #r, 0 Assembly ref, BCL pure). Les DEUX cotes codent LDS from-scratch (greedy_knapsack + lds borne les ecarts a l'heuristique gloutonne ratio valeur/poids). Il n'existe PAS de lib SOTA-tier pour LDS : c'est un algorithme pedagogique (Harvey & Ginsberg 1995), pas un solveur tiers a brancher (aucun package PyPI ou NuGet n'expose LDS comme lib appelable -- LDS est par construction un exercice d'exploration d'arbre heuristique, implemente a la main). Cas bucket 3 : pas d'equivalent .NET (ni Python), le from-scratch EST la contrepartie. Asymetrie d'instance (Python 7 objets A-G dont F+G pieges, C# 5 objets A-E coeur) assumee conceptual parity. L'ancien verdict RECOVERABLE-LOCAL contredisait sa propre raison (qui disait deja 'pas de SOTA tier, pas de solveur tiers applicable') -- RECOVERABLE-LOCAL signifie 'installable, pas installe', mais il n'y a rien a installer. Flip RECOVERABLE-LOCAL -> SOTA-OK (both from-scratch assume, bucket 3, parite semantique dans l'algo LDS).
