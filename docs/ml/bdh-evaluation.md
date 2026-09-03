@@ -1,8 +1,10 @@
-# Évaluation BDH (Dragon Hatchling) — verdict partiel c.890
+# Évaluation BDH (Dragon Hatchling) — verdict partiel
 
-**Grain:** DEEP/research-code — lane `myia-po-2024:CoursIA-2` — prev: MED/slides #14484
-**Scope:** cette itération est bornée à la lecture de l'abstract/intro/conclusion (15 pages sur 62) + inspection du dépôt `pathwaycom/bdh`. La micro-reproduction (entraînement 10M params sur 100M tokens) est **hors scope ce cycle** — le repo ne fournit pas de script multi-config sweep, donc l'effort de ré-exécution ≥24h CPU n'est pas justifiable sans scoping préalable (cf § Résiduel).
-**Origine:** issue #14489 (user 2026-09-03) — évaluation du sérieux de Pathway et de l'opportunité d'en parler dans le dépôt.
+**Mesuré le 2026-09-03.** Une note d'évaluation est datée de sa rédaction : les claims de
+reproductibilité et l'absence de peer review ci-dessous se re-vérifient avant d'être ré-invoquées.
+
+**Scope:** cette itération est bornée à la lecture de l'abstract/intro/conclusion (15 pages sur 62) + inspection du dépôt `pathwaycom/bdh`. La micro-reproduction (entraînement 10M params sur 100M tokens) est **hors scope de cette itération** — le repo ne fournit pas de script multi-config sweep, donc l'effort de ré-exécution ≥24h CPU n'est pas justifiable sans scoping préalable (cf § Résiduel).
+**Origine:** issue #14489 — évaluation du sérieux de Pathway et de l'opportunité d'en parler dans le dépôt.
 **Sources lues firsthand:** papier arXiv:2509.26507 (62 pages, abstract/intro §1+§8 + scaling §4 + table §8.2), README + `bdh.py` + `train.py` du dépôt `pathwaycom/bdh`, page ARC-AGI leaderboard, page repo GitHub API.
 
 ## TL;DR — verdict 3 axes
@@ -32,12 +34,12 @@
 Le papier contient 3 angles théoriquement exploitables pour le dépôt :
 
 1. **Interprétation edge-reweighting ≈ Hebbian learning** : pertinent pour les notebooks ICT-Series (chaîne Cech, edge-reweighting, fast-weights §1.2). **Mais** sans reproduction empirique préalable, l'angle est rhétorique, pas falsifiable.
-2. **Scaling laws "rivals GPT2 at same params"** : si la claim tient sur une repro multi-config, c'est un cas d'école ML pour la série ML-Training-Pipeline. **Mais** la repro demande sweep GPU que po-2024 ne peut pas assumer seule (CPU-only per dashboard).
+2. **Scaling laws "rivals GPT2 at same params"** : si la claim tient sur une repro multi-config, c'est un cas d'école ML pour la série ML-Training-Pipeline. **Mais** la repro demande un sweep GPU, hors de portée d'une lane CPU-only.
 3. **Linear attention positive-sparse** : angle technique pour un notebook Search/ML sur les nouvelles architectures post-Transformer (Mamba, RWKV, xLSTM, Hyena). **Mais** la concurrence est sévère — 4 architectures déjà couvertes ou en cours de sweep ailleurs sur le pool.
 
-**Verdict C : À REVENIR dans 6 mois** — l'angle est réel mais non-prioritaire, et conditionné à (a) repro empirique qui sort du scope c.890, (b) verdict du coordinateur sur les lanes qui porteraient le notebook (probablement po-2026 ML/vision, pas po-2024 audit/finance — j'ai self-pick par R5 responsabilité, pas par lane-match).
+**Verdict C : À REVENIR** — l'angle est réel mais non-prioritaire, et conditionné à une repro empirique qui sort du périmètre de cette note. Le routage vers une lane porteuse relève de la coordination, pas de ce document.
 
-## Critères falsifiables pour une PR de suivi (non c.890)
+## Critères falsifiables pour une PR de suivi
 
 Une éventuelle PR de notebook BDH dans le dépôt devrait satisfaire **simultanément** :
 
@@ -45,25 +47,23 @@ Une éventuelle PR de notebook BDH dans le dépôt devrait satisfaire **simultan
 2. **Vérification ARC-AGI leaderboard firsthand** : pas d'ajout au dépôt tant que la claim ARC-AGI 29.5% n'est pas confirmée sur https://arcprize.org/leaderboard avec score vérifiable et split (public vs semi-private) documenté.
 3. **OpenReview search** : si une soumission NeurIPS/ICLR/ICML 2026 apparaît pour BDH/Dragon-Hatchling, attendre la décision peer-review avant de promouvoir dans le dépôt.
 
-## Ce qui est livré ce cycle (c.890)
+## Base factuelle de cette note
 
 - Lecture firsthand §1, §4, §8 (15 pages sur 62).
 - Inspection `pathwaycom/bdh` : `bdh.py` (architecture), `train.py` (référence), `LICENSE.md` (MIT), README (caveat Sudoku).
 - Vérification ARC-AGI leaderboard : **BDH non listé** (WebFetch 2026-09-03 → "No, the page does not mention BDH, Dragon Hatchling, or Pathway").
 - Verdict 3 axes documenté ci-dessus.
-- Note ajoutée à `docs/research-notes/` (nouveau répertoire, premier fichier).
 
-## Résiduel (à porter par un futur cycle si axe A confirmé par les pairs)
+## Résiduel (à porter si l'axe A est confirmé par les pairs)
 
-- **Micro-repro multi-config sweep** : GPU-only (RTX 3070 8GB sur po-2026 selon dashboard, ou ai-01). Non faisable po-2024 CPU-only.
+- **Micro-repro multi-config sweep** : GPU requis — à router vers une machine GPU (règle F, verdict RECOVERABLE-MACHINE).
 - **Lecture intégrale du papier** (47 pages restantes : §2 formalisme BDH, §3 BDH-GPU, §5 emergence of modularity, §A-D appendices) — au cas où la repro confirme la promesse.
 - **Note de revue interne** comparant BDH à Mamba/RWKV/xLSTM/Hyena sur les critères du sweep "post-Transformer" déjà amorcé dans le pool ML.
 - **Suivi OpenReview** pour soumission NeurIPS/ICLR/ICML 2026 (deadline mai 2026 a passé, donc verdict en attente — checker mi-2026).
 
 ## Verdict global
 
-**NE PAS mentionner BDH dans le dépôt à ce stade.** L'axe A est FIDÈLE, mais les axes B (reproductibilité) et C (opportunité) restent conditionnels à une repro empirique que ce cycle n'a pas produite. Issue #14489 peut passer en `candidate-delivered` après confirmation par ai-01 que le présent verdict satisfait l'acceptance.
-
+**NE PAS mentionner BDH dans le dépôt à ce stade.** L'axe A est FIDÈLE, mais les axes B (reproductibilité) et C (opportunité) restent conditionnels à une repro empirique que ce cycle n'a pas produite. 
 ## Voir aussi
 
 - Issue #14489 — cahier des charges de cette évaluation
@@ -71,4 +71,4 @@ Une éventuelle PR de notebook BDH dans le dépôt devrait satisfaire **simultan
 - `~/.claude/rules/bibliography-hygiene.md` — règle HARD archivage canonique
 - `~/.claude/rules/sota-not-workaround.md` — 5 verdicts SOTA + procédure INTRINSIC 6 axes
 - `~/.claude/rules/audit-cross-source-distillation.md` — méthode FIDÈLE/PERTE/DIVERGENCE POSITIVE
-- `docs/ml/tsad-benchmark-flaws.md` — précédent d'évaluation critique d'un benchmark ML publié
+- [`tsad-benchmark-flaws.md`](tsad-benchmark-flaws.md) — précédent d'évaluation critique d'un benchmark ML publié
