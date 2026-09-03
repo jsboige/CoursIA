@@ -3996,6 +3996,68 @@ def test_13951_concern1_glyphe_severite_avec_rien_de_bloquant_ne_passe_pas():
     assert mod._sole_live_concern_is_comment_prefix(body_glyphe) is False
     assert mod.classify("jsboige", body_glyphe) == "BOT-CONCERN"
 # ---------------------------------------------------------------------------
+# Forme ETIQUETEE « Concern: » -- casse et nombre relaches (mandat user
+# 2026-09-01). Le user posait ses remarques en francais nu, sans marqueur : ses
+# commentaires etaient classes None, donc invisibles au merge-gate. Il propose
+# d'adopter « Concern: » ; le present bloc rend cette proposition vraie, pour
+# lui ET pour les agents, dont la casse varie aussi.
+# ---------------------------------------------------------------------------
+
+def test_concern_label_singulier_toute_casse_est_une_reserve():
+    for body in (
+        "Concern: ce travail devrait etre distille dans la serie QC.",
+        "concern : a distiller dans la serie QC.",
+        "CONCERN : a distiller dans la serie QC.",
+        "Concerns: deux points a revoir.",
+        "**Concern 2 :** le scope ne colle pas.",
+        "> Concern: revoir le perimetre.",
+        "Bonjour,\n\nConcern: revoir le perimetre.",
+    ):
+        assert mod.classify("jsboige", body) == "BOT-CONCERN", body
+
+
+def test_concern_narration_de_levee_ne_bloque_pas():
+    """Les 6 faux positifs mesures le 2026-09-01 sur 588 commentaires reels.
+
+    Tous CITENT le mot en REPONDANT a une reserve : les bloquer serait le
+    miroir exact du defaut que B.0 traque. Seule la forme etiquetee en tete de
+    ligne est une emission ; « les 2 concerns sont traitees » n'en est pas une.
+    """
+    for body in (
+        "Levee explicite : les 2 concerns Hermes sont adressee au commit 97e970c6.",
+        "Reponse a la CONCERN empirique (review jsboige).",
+        "Les concerns 1, 2 et 3 sont leves au commit b0d5eb59.",
+    ):
+        assert mod.classify("jsboige", body) is None, body
+
+
+def test_concern_ne_matche_pas_le_francais_courant():
+    """« concerne », « concernant », « concernes » ne sont pas des reserves."""
+    for body in (
+        "Ce commit concerne la serie QC.",
+        "Concernant la serie QC, tout est bon. LGTM",
+        "Cela ne concerne pas cette PR.",
+    ):
+        assert mod.classify("jsboige", body) is None, body
+
+
+def test_jeton_de_verdict_tolere_la_casse():
+    """Un agent qui ecrit le jeton en casse mixte emet le meme verdict."""
+    assert mod.classify("jsboige", "Comment_With_Concerns : deux reserves.") == "BOT-CONCERN"
+
+
+def test_prose_marker_reste_case_sensitive():
+    """« AVANT merge » en emphase narre une levee Voie 3 -- 2 cas mesures.
+
+    Relacher la casse de la prose retournerait l'organe contre les levees
+    qu'il doit reconnaitre.
+    """
+    assert mod.classify(
+        "jsboige",
+        "Voie 3 B.0 : issue #14030 ouverte AVANT merge, body amende.",
+    ) is None
+
+
 # #14130 - Position F : verdict attribue a un tiers sans quote ni crochet.
 # Bug fondateur (#14070, 2026-09-01) : 2 des 3 points non leves sur #14070
 # etaient les commentaires de diagnostic de la lane elle-meme, qui NOMMAIENT
