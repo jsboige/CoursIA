@@ -4,6 +4,16 @@ Fix App-3-NurseScheduling: Recycle student solutions into Exemple resolu + new s
 Issue #463: Recyclage solutions etudiants CSP Applications.
 """
 
+# Archive header (standard _archive convention, 2026-08)
+# - Date archived : 2026-08-06
+# - Superseded by : none (one-shot fulfilled) — output lives in
+#   MyIA.AI.Notebooks/Search/Applications/CSP/App-3-NurseScheduling.ipynb
+# - Verdict recorded in : PR #468 (23b98f3de, 2026-04-22), PR #9580
+#
+# Per-function disposition :
+# - fix_app3() : transformation applied in PR #468 and verified on main in
+#   2026-09; its pre-C.1 NotImplementedError stubs were normalized later
+
 import json
 
 
