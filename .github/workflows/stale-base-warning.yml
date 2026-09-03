@@ -1,9 +1,13 @@
 name: Stale Base Branch Warning
 
+# DORMANT depuis #14057 (Vague 2 tranche 1, patron #13384) : l'organe
+# pull_request ci-dessous est absorbe par always-on-metadata-guards.yml --
+# un seul workflow, un seul checkout, un seul slot de runner par PR (149
+# runs/fenetre pour ~3 min de travail reel, mesure etape 1 de #14057). Le
+# job est conserve verbatim pour la tracabilite ; le declencheur
+# pull_request est retire.
+
 on:
-  pull_request:
-    types: [opened, synchronize, reopened]
-    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -17,7 +21,12 @@ concurrency:
 jobs:
   check-base-age:
     name: Check base branch staleness
-    runs-on: ubuntu-latest
+    # Route vers la jambe Linux auto-hebergee (#13378 tranche 5, decision ai-01
+    # 2026-09-02) : garde Python pur, sans secret. La garde same-repo ci-dessous
+    # saute les PRs de fork (pr_gate.py compte `skipped` comme OK) : aucun code de
+    # fork n'atteint le runner. Retour arriere = revert de la PR.
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
     steps:
       # Ce garde ne lit AUCUN contenu de fichier : `git rev-list --count` et
       # `git show -s --format=%ct` n'interrogent que le graphe de commits

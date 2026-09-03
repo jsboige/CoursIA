@@ -1,0 +1,270 @@
+name: Slides Composition PR Relay
+
+# #14226 — option 2 : pousser le verdict jusqu'à la PR. Le nocturne
+# (slides-composition-advisory.yml) mesure chaque nuit et persiste les
+# reports par-deck sous l'artefact `slides-composition-nocturne`. Ce
+# workflow-cible est déclenché sur chaque PR touchant slides/, sans
+# Playwright et sans clone lourd : il télécharge le dernier artefact
+# nocturne via REST, croise les decks touchés par le diff avec le
+# manifeste, et pose un commentaire diagnostique idempotent qui nomme
+# les slides en HORS_CANVAS. La doctrine (#12817 tranche 1) est
+# respectée : pas de re-mesure sur PR, le coût reste une fois-par-fournée.
+#
+# Contrôle positif obligatoire (#14226 crit. 3) : le mécanisme doit
+# démontrer qu'il RELAIE le verdict, pas qu'il le maquille — un test
+# local sur un artefact réel (run 33466784484, S3-acculturation slide
+# 58) couvre cette exigence.
+
+on:
+  pull_request:
+    branches: [ main ]
+    types: [ opened, synchronize, reopened ]
+    paths: [ "slides/**" ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: slides-composition-pr-relay-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  slides-composition-pr-relay:
+    name: "Slides composition PR relay (#14226, non-blocking)"
+    # Routage #14283 tranche 3 (decision ai-01 2026-09-02) : jambe Linux
+    # auto-hebergee. Le `if:` ci-dessous est la garde anti-fork exigee par
+    # scripts/ci/check_self_hosted_runner_policy.py ; un `runs-on` STATIQUE la
+    # rend auditable (une expression dynamique leve DYNAMIC_RUNS_ON).
+    # Les PRs de fork sautent le job -- pr_gate.py compte `skipped` comme OK.
+    # Retour arriere = remettre `runs-on: ubuntu-latest` + retrait de l'allowlist.
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    timeout-minutes: 5
+
+    steps:
+      - name: Resolve touched deck paths from PR diff
+        env:
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -uo pipefail
+          # #11923 + #14226 — la découverte reprend exactement la logique du
+          # nocturne, pour qu'un deck qui aurait fait rougir le nocturne
+          # soit vu par ce relay. On évite le sparse-checkout (clone léger
+          # complet suffit, default depth 1 — pas de fetch-depth: 0) parce
+          # que la PR ne touche pas l'historique.
+          BASE="${{ github.event.pull_request.base.sha }}"
+          HEAD="${{ github.event.pull_request.head.sha }}"
+          CHANGED=$(git diff --name-only "${BASE}...${HEAD}" -- slides/ || true)
+          if grep -qE 'slides/(theme-ia101|package(-lock)?\.json)' <<< "$CHANGED"; then
+            # infra partagée touchée : tous les decks -- mais le sparse-checkout
+            # du nocturne a peut-être ignoré certains. On les découvre par find.
+            DECKS=$(gh api "repos/${GH_REPO}/contents/slides?ref=${HEAD}" --jq '.[].name' 2>/dev/null \
+              | while read -r d; do [ -f "slides/${d}/slides.md" ] && echo "slides/${d}/slides.md"; done || true)
+          else
+            DECKS=$(grep -oE '^slides/[^/]+/' <<< "$CHANGED" \
+              | sort -u \
+              | while read -r d; do [ -f "${d}slides.md" ] && echo "${d}slides.md"; done || true)
+          fi
+          # Normaliser en manifest deck_path pour le PR — on stocke sous
+          # /tmp/touched_decks.tsv (un deck par ligne).
+          : > /tmp/touched_decks.tsv
+          for D in $DECKS; do
+            echo "$D" >> /tmp/touched_decks.tsv
+          done
+          N=$(wc -l < /tmp/touched_decks.tsv | tr -d ' ')
+          echo "Touched decks: ${N:-0}"
+          if [ "${N:-0}" -eq 0 ]; then
+            echo "Aucun deck slides.md touché par ce diff." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          cat /tmp/touched_decks.tsv >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Download last nocturne artifact (slides-composition-nocturne)
+        if: hashFiles('/tmp/touched_decks.tsv') != ''
+        env:
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -uo pipefail
+          # Le dernier run nocturne completed du workflow
+          # slides-composition-advisory.yml porte l'artefact. On liste ses
+          # 5 derniers runs (suffit : nocturne = 1/jour, le dernier completed
+          # est l'artefact à jour). Si pas d'artefact, on sort en silence
+          # (le run est jeune / pas encore publié / aucun deck).
+          LAST_RUN_ID=$(gh api "repos/${GH_REPO}/actions/workflows/slides-composition-advisory.yml/runs?status=completed&per_page=5" \
+            --jq '.workflow_runs[].id' 2>/dev/null | head -1 || true)
+          if [ -z "${LAST_RUN_ID:-}" ]; then
+            echo "::notice::Pas de run nocturne completed récent — verdict indisponible."
+            exit 0
+          fi
+          ARTIFACT_ID=$(gh api "repos/${GH_REPO}/actions/runs/${LAST_RUN_ID}/artifacts" \
+            --jq '.artifacts[] | select(.name=="slides-composition-nocturne") | .id' 2>/dev/null | head -1 || true)
+          if [ -z "${ARTIFACT_ID:-}" ]; then
+            echo "::notice::Run ${LAST_RUN_ID} sans artefact slides-composition-nocturne — verdict indisponible."
+            exit 0
+          fi
+          echo "Source run: ${LAST_RUN_ID}, artifact: ${ARTIFACT_ID}"
+          mkdir -p /tmp/comp_night
+          gh api "repos/${GH_REPO}/actions/artifacts/${ARTIFACT_ID}/zip" > /tmp/comp_night.zip
+          # unzip sans commande externe : on décompresse via python (présent
+          # par défaut sur ubuntu-latest, sans nouvelle dépendance).
+          python3 -c "
+          import zipfile, sys, pathlib
+          with zipfile.ZipFile('/tmp/comp_night.zip') as z:
+              z.extractall('/tmp/comp_night')
+          print('Extracted:', sorted(p.name for p in pathlib.Path('/tmp/comp_night').iterdir()))
+          "
+          ls /tmp/comp_night/ >> "$GITHUB_STEP_SUMMARY" || true
+
+      - name: Build sticky PR comment from verdict (#14226)
+        if: hashFiles('/tmp/comp_night/_manifest.tsv') != '' && hashFiles('/tmp/touched_decks.tsv') != ''
+        env:
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -uo pipefail
+          python3 - <<'PYEOF'
+          import json, os, pathlib, sys, urllib.request
+
+          touched = [l.strip() for l in open('/tmp/touched_decks.tsv', encoding='utf-8') if l.strip()]
+          night = pathlib.Path('/tmp/comp_night')
+          manifest_path = night / '_manifest.tsv'
+          if not manifest_path.exists():
+              print('Manifest absent — rien à relayer.')
+              sys.exit(0)
+          # deck_path_in_repo<TAB>report_filename_in_artifact
+          manifest = {}
+          for line in manifest_path.read_text(encoding='utf-8').splitlines():
+              if not line.strip(): continue
+              deck, fname = line.split('\t', 1)
+              manifest[deck] = fname
+
+          # Pour chaque deck touché par la PR, charger son report et
+          # extraire les slides en HORS_CANVAS avec débordement de contenu
+          # (le filtre `content_overflow` du scanner : exclut les boîtes
+          # CSS sans contenu coupé — celles-là ne sont pas un défaut
+          # visuel, cf scan_slidev_composition.py:content_overflow).
+          CONTENT_TAGS = {"P","LI","H1","H2","H3","H4","H5","H6","TD","TH",
+                          "BLOCKQUOTE","PRE","CODE","IMG","SVG","CANVAS",
+                          "VIDEO","IFRAME","SPAN"}
+          def content_overflow(r):
+              return any(h.get('tag') in CONTENT_TAGS for h in r.get('hors_canvas', []))
+
+          signals = []  # list of (deck, slide_idx, text_head, tag, cls, bbox, n_hors)
+          for deck in touched:
+              fname = manifest.get(deck)
+              if not fname:
+                  # Deck touché par le diff mais absent du dernier nocturne :
+                  # soit le nocturne n'a pas tourné depuis le commit, soit
+                  # le deck a été ajouté. On note pour ne pas laisser le
+                  # silence masquer une absence de mesure.
+                  signals.append((deck, None, None, None, None, None, 'absent-nocturne'))
+                  continue
+              report_path = night / fname
+              if not report_path.exists():
+                  signals.append((deck, None, None, None, None, None, 'artefact-fichier-manquant'))
+                  continue
+              try:
+                  report = json.loads(report_path.read_text(encoding='utf-8'))
+              except Exception as e:
+                  signals.append((deck, None, None, None, None, None, f'parse-error:{e}'))
+                  continue
+              for r in report.get('results', []):
+                  if content_overflow(r):
+                      h = next((x for x in r['hors_canvas'] if x.get('tag') in CONTENT_TAGS), r['hors_canvas'][0])
+                      signals.append((
+                          deck,
+                          r['slide'],
+                          (r.get('text_head') or '?')[:60],
+                          h.get('tag'),
+                          (h.get('cls') or '')[:30],
+                          h.get('bbox'),
+                          report.get('n_hors_canvas'),
+                      ))
+
+          MARK = '<!-- slides-composition-pr-relay -->'
+          if not signals:
+              # Aucun verdict à relayer : on retire un commentaire existant
+              # (idempotence symétrique, motif variation-light-genre).
+              pr_comments = json.loads(urllib.request.urlopen(
+                  urllib.request.Request(
+                      f"https://api.github.com/repos/{os.environ['GH_REPO']}/issues/{os.environ['PR_NUMBER']}/comments?per_page=100",
+                      headers={'Accept':'application/vnd.github+json','User-Agent':'slides-pr-relay'},
+                  )).read())
+              existing = next((c for c in pr_comments if c.get('body','').startswith(MARK)), None)
+              if existing:
+                  req = urllib.request.Request(
+                      f"https://api.github.com/repos/{os.environ['GH_REPO']}/issues/comments/{existing['id']}",
+                      headers={'Accept':'application/vnd.github+json','User-Agent':'slides-pr-relay','Authorization': f"token {os.environ['GH_TOKEN']}"},
+                      method='DELETE')
+                  try:
+                      urllib.request.urlopen(req).read()
+                      print(f"Sticky commentaire retiré (id={existing['id']}).")
+                  except Exception as e:
+                      print(f"::notice::échec suppression commentaire: {e}")
+              else:
+                  print("Aucun verdict à relayer, aucun commentaire existant — silence.")
+              sys.exit(0)
+
+          # Composer le body du commentaire sticky.
+          lines = [MARK,
+                   "**Slides composition — verdict nocturne relayé (#14226, advisory).**",
+                   "",
+                   "Le dernier run `slides-composition-advisory` a mesuré les decks touchés par cette PR. "
+                   "Les slides ci-dessous dépassent le canvas (`content_overflow`) — le QA visuel humain "
+                   "reste l'autorité (cf [sota-not-workaround](../.claude/rules/sota-not-workaround.md) §H "
+                   "/ pr-review-discipline.md §H : un vert CI sur ce gate ne vaut pas verdict visuel).",
+                   ""]
+          for sig in signals:
+              deck, slide, head, tag, cls, bbox, n = sig
+              if slide is None:
+                  lines.append(f"- `{deck}` : **{n}** — pas de verdict nocturne disponible")
+                  continue
+              bbox_s = ','.join(str(int(x)) for x in bbox) if bbox else '?'
+              lines.append(f"- `{deck}` slide **{slide}** (entête : {head!r}) : `{tag}.{cls}` "
+                           f"bbox=[{bbox_s}] (deck `n_hors_canvas`={n})")
+          lines.append("")
+          lines.append("Source : dernier artefact `slides-composition-nocturne` du workflow "
+                       "`slides-composition-advisory`. Mécanisme idempotent : un push suivant "
+                       "re-édite ce commentaire via `PATCH /issues/comments/:id` (pas un spam).")
+
+          body = '\n'.join(lines)
+          # Sticky pattern (cf variation-light-genre.yml) :
+          #   1) GET list comments, find one starting with MARK ;
+          #   2) PATCH si existant, POST sinon.
+          token = os.environ['GH_TOKEN']
+          hdr_json = {'Accept':'application/vnd.github+json','User-Agent':'slides-pr-relay'}
+          hdr_auth = {**hdr_json, 'Authorization': f'token {token}'}
+
+          list_req = urllib.request.Request(
+              f"https://api.github.com/repos/{os.environ['GH_REPO']}/issues/{os.environ['PR_NUMBER']}/comments?per_page=100",
+              headers=hdr_json)
+          existing_id = None
+          try:
+              comments = json.loads(urllib.request.urlopen(list_req).read())
+              existing_id = next((c['id'] for c in comments if c.get('body','').startswith(MARK)), None)
+          except Exception as e:
+              print(f"::notice::liste commentaires échouée: {e}")
+
+          if existing_id:
+              patch_req = urllib.request.Request(
+                  f"https://api.github.com/repos/{os.environ['GH_REPO']}/issues/comments/{existing_id}",
+                  headers=hdr_auth, data=json.dumps({'body': body}).encode('utf-8'), method='PATCH')
+              try:
+                  urllib.request.urlopen(patch_req).read()
+                  print(f"Sticky commentaire mis à jour (id={existing_id}).")
+              except Exception as e:
+                  print(f"::notice::PATCH commentaire échoué: {e}")
+          else:
+              post_req = urllib.request.Request(
+                  f"https://api.github.com/repos/{os.environ['GH_REPO']}/issues/{os.environ['PR_NUMBER']}/comments",
+                  headers=hdr_auth, data=json.dumps({'body': body}).encode('utf-8'), method='POST')
+              try:
+                  urllib.request.urlopen(post_req).read()
+                  print("Nouveau commentaire diagnostique posté.")
+              except Exception as e:
+                  print(f"::notice::POST commentaire échoué: {e}")
+          print(f"Signaux relayés : {len(signals)}")
+          PYEOF

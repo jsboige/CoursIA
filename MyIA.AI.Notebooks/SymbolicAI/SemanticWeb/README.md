@@ -4,9 +4,9 @@
 
 <!-- CATALOG-STATUS
 series: SymbolicAI-SemanticWeb
-pedagogical_count: 26
-breakdown: SemanticWeb=26
-maturity: BETA=25, ALPHA=1
+pedagogical_count: 27
+breakdown: SemanticWeb=27
+maturity: BETA=26, ALPHA=1
 -->
 
 Le Web Sémantique est la promesse d'un Web où les machines comprennent la signification des données, pas seulement leur syntaxe. RDF, SPARQL, OWL, SHACL : ces standards du W3C définissent un langage commun pour décrire, interroger, valider et raisonner sur des graphes de connaissances. Cette série vous mène des fondations (.NET C# avec dotNetRDF) aux applications modernes (Python avec rdflib, pySHACL, GraphRAG), en passant par les ontologies, les données liées et les standards émergents (RDF 1.2, JSON-LD 1.1).
@@ -56,9 +56,9 @@ La série propose délibérément deux stacks en parité (.NET ⇄ Python, marat
 
 | Statistique | Valeur |
 |-------------|--------|
-| Notebooks .NET C# (dotNetRDF) | 13 (fondations SW-1..7, standards SW-8/9/10/11/13, setup RDF.Net) |
-| Notebooks Python (rdflib/pySHACL/owlready2/kglab) | 12 (miroirs SW-2b..7b, standards SW-8..13) |
-| Total | 25 notebooks (parité marathon #4956) |
+| Notebooks .NET C# (dotNetRDF) | 12 (fondations SW-1..7, standards SW-8/9/10/11/13, setup RDF.Net) |
+| Notebooks Python (rdflib/pySHACL/owlready2/kglab) | 14 (miroirs SW-2b..7b, standards SW-8..13, extensions SW-14/15) |
+| Total | 26 notebooks (parité marathon #4956) |
 | Durée totale | ~10h (parcours principal), +4h (twins optionnels) |
 | Langages | .NET C# + Python |
 | Niveau | Débutant à avancé |
@@ -70,7 +70,7 @@ La série propose délibérément deux stacks en parité (.NET ⇄ Python, marat
 ## Progression recommandée
 
 ### Parcours principal
-Suivez les notebooks **SW-1 à SW-13** dans l'ordre numérique pour une progression logique des concepts.
+Suivez les notebooks **SW-1 à SW-15** dans l'ordre numérique pour une progression logique des concepts.
 
 ### Sidetracks Python (optionnels)
 Les sidetracks marqués `b-Python` sont des notebooks complémentaires qui présentent l'équivalent Python des concepts .NET. Ils sont **optionnels** mais recommandés si vous souhaitez travailler avec Python plutôt qu'avec .NET.
@@ -258,6 +258,8 @@ Cette partie connecte le Web Sémantique avec l'IA moderne, notamment les LLMs e
 | 12 | **SW-12-Python-GraphRAG** | 50 min | KG + LLMs pour le RAG |
 | **Bonus** | **SW-13-Python-Reasoners** | 45 min | Comparaison raisonneurs OWL |
 | 13 (C#) | **SW-13-Reasoners-CSharp** | 40 min | Jumeau .NET : raisonnement RDFS forward-chaining avec dotNetRDF (`StaticRdfsReasoner`) |
+| **Bonus** | **SW-14-Python-Coup-Ontologique** | 40 min | Le coup ontologique comme diff de graphe exécutable (extension, verdict SHACL, delta owlrl, provenance RDF-star) |
+| **Bonus** | **SW-15-Python-Coup-Argumentatif** | 45 min | Greffe AIF/Dung sur le pipeline de SW-14 : le coup argumentatif bascule l'extension grounded |
 
 #### SW-11-Python-KnowledgeGraphs : Construction et Visualisation (55 min)
 
@@ -336,6 +338,15 @@ couche logique qui transforme un graphe déclaratif en connaissances déductible
 *SW-13 (cellule 52) : **diagramme en barres du nombre de triples inférés** par raisonneur (Y = nombre de triples, profil OWL 2 RL) — comparaison du rendement de l'inférence entre raisonneurs, pas une matérialisation des triples eux-mêmes.*
 
 > **Convention d'accessibilité** : Toutes les figures portent un `alt-text` français (régénérés via `extract_readme_figures.py`, EPIC #5654). Poids total ≈ 626 KB (≤ 1.5 MB borne), max-dim 1200 px (≤ 1200 px borne), max fichier 163 KB (≤ 200 KB borne).
+
+
+#### SW-14-Python-Coup-Ontologique (Bonus) : le coup ontologique exécutable (40 min)
+
+Ce notebook bonus incarne l'extension de vocabulaire $\eta : L_t \to L_{t+1}$ comme **diff de graphe exécutable** sur rdflib : triplets ajoutés, verdict d'admissibilité pySHACL (avec contre-exemple rejeté), delta d'inférences owlrl (et le coup nul comme résultat), provenance RDF-star/PROV de l'auteur du coup. *Enregistrement rétroactif — le notebook était livré sans ligne README.*
+
+#### SW-15-Python-Coup-Argumentatif (Bonus) : la greffe AIF/Dung (45 min)
+
+Ce notebook bonus greffe un **graphe d'argumentation AIF** (I-nodes / RA-nodes / CA-nodes, vocabulaire de l'ontologie [Argumentum](../Argument_Analysis/ontologies/argumentum_fallacies.owl) du dépôt) sur le pipeline de SW-14 : le coup étend le vocabulaire argumentatif (nouveau schéma d'inférence `RepresentativeSample_Inference`, nouveau type de conflit `SelectionBiasRebuttal_Conflict`), passe le juge SHACL — contrôle négatif rejeté à l'appui —, produit un delta owlrl non vide, et **bascule l'extension grounded de Dung** de `{RA4}` à `{RA3, RA5}` : l'attaque du coup réhabilite l'argument du pilote. Pont naturel vers la série [Argument_Analysis](../Argument_Analysis/).
 
 ---
 
@@ -527,6 +538,8 @@ SemanticWeb/
 ├── SW-12-Python-GraphRAG.ipynb
 ├── SW-13-Python-Reasoners.ipynb     # Bonus
 ├── SW-13-Reasoners-CSharp.ipynb     # Twin C# (marathon #4956 Prong B)
+├── SW-14-Python-Coup-Ontologique.ipynb   # Bonus (enregistrement retroactif)
+├── SW-15-Python-Coup-Argumentatif.ipynb  # Bonus (greffe AIF/Dung, #13567)
 ├── movie_kg_interactive.html        # Livrable interactif SW-11 (pyvis)
 └── RDF.Net-Legacy/                  # Archive C# RDF.NET (pré-migration Python)
     ├── RDF.Net.ipynb                # Notebook .NET historique

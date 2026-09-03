@@ -4,9 +4,9 @@
 
 <!-- CATALOG-STATUS
 series: SymbolicAI-SmartContracts
-pedagogical_count: 30
-breakdown: SmartContracts=30
-maturity: BETA=30
+pedagogical_count: 31
+breakdown: SmartContracts=31
+maturity: BETA=31
 -->
 
 Série de notebooks éducatifs couvrant les fondements cryptographiques, le développement Solidity, les tests, la cryptographie avancée (ZKP, HE, vote vérifiable), et les blockchains alternatives.
@@ -35,8 +35,8 @@ A l'issue de cette série, vous serez capable de :
 
 | Statistique | Valeur |
 |-------------|--------|
-| Notebooks | 28 (SC-0 à SC-27) |
-| Durée totale | ~23 heures |
+| Notebooks | 29 (SC-0 à SC-27, + SC-2b) |
+| Durée totale | ~23 h 40 |
 | Langage | Python (kernel Jupyter) |
 | Kernels | Python 3 |
 | Outils | Foundry (forge/cast/anvil), web3.py, py-solcx |
@@ -62,9 +62,9 @@ flowchart LR
 
 ## Parcours d'apprentissage
 
-### Phase 1 : Fondations (~2h10)
+### Phase 1 : Fondations (~2h50)
 
-Les notebooks 0-2 posent les bases historiques et techniques. Le notebook 0 explore les primitives cryptographiques qui fondent la blockchain (hash, arbres de Merkle, preuve de travail, signatures, DHT). Le notebook 1 installe Foundry — forge, cast, anvil — l'outil de développement principal. Le notebook 2 configure web3.py + py-solcx pour compiler et déployer des contrats Solidity réellement sur Anvil (blockchain locale). À l'issue de cette phase, vous avez un environnement fonctionnel et déployez votre premier contrat.
+Les notebooks 0-2 posent les bases historiques et techniques. Le notebook 0 explore les primitives cryptographiques qui fondent la blockchain (hash, arbres de Merkle, preuve de travail, signatures, DHT). Le notebook 1 installe Foundry — forge, cast, anvil — l'outil de développement principal. Le notebook 2 configure web3.py + py-solcx pour compiler et déployer des contrats Solidity réellement sur Anvil (blockchain locale). Son compagnon SC-2b retourne ensuite le point de vue : trois acteurs à clé délibèrent par contrat sur un bac à sable rejouable — et l'on voit une institution adopter une exclusion sans violer aucune règle. À l'issue de cette phase, vous avez un environnement fonctionnel, votre premier contrat déployé, et le pattern multi-acteurs qui servira à l'analyse institutionnelle.
 
 ### Phase 2 : Solidity Fondements (~2h30)
 
@@ -167,7 +167,7 @@ Fondations (SC-0-2) + Solidity basique (SC-3-6) + Testing avancé (SC-12-14) + V
 
 ```text
 SmartContracts/
-├── 00-Foundations/              # Histoire + Setup (3 notebooks)
+├── 00-Foundations/              # Histoire + Setup (4 notebooks, avec SC-2b)
 ├── 01-Solidity-Foundation/     # Fondements Solidity (4 notebooks)
 ├── 02-Solidity-Advanced/       # Solidity avancé (5 notebooks)
 ├── 03-Foundry-Testing/         # Tests et sécurité (3 notebooks)
@@ -184,7 +184,7 @@ SmartContracts/
 
 ## Progression
 
-### Partie 0 : Fondations et Histoire (~2h10)
+### Partie 0 : Fondations et Histoire (~2h50)
 
 | # | Notebook | Durée | Contenu |
 |---|----------|-------|---------|

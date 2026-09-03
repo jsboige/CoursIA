@@ -5,7 +5,10 @@
     vers CoursIA net9.0 — EPIC #7357 geste 3, tranche 1 (scaffold).
     Substitutions mesurees (docs/reference/backtester-e2-cadrage.md, geste 2) :
     - HintPath DLL Aricie/DNN : abandonnees, socle = MyIA.AI.Shared
-    - Accord.MachineLearning 3.8.2-alpha : remplace par ML.NET (mapping tranche suivante)
+    - Accord.MachineLearning 3.8.2-alpha : CONSERVE (tranche 4). Le cadrage anticipait une
+      substitution vers ML.NET ; mesure faite, elle est sans objet — ML.NET n'expose pas de
+      SVM a noyau, et Accord 3.8.2-alpha restore/compile/execute tel quel sur net9.0 (0
+      avertissement, pas de NU1701). Verdict SOTA-OK, cf docs/reference/backtester-e2-svm-kernel.md.
     - Microsoft.ML.AutoML 0.20.1 : paire preview 0.24.0-preview.26160.2 (seule paire teste
       bout-en-bout, cadrage 2.2), figee par le test d'integration MyIA.Trading.Backtester.Tests
     Les PackageReferences Flee/Markdig seront cablees par les tranches portant les fichiers
@@ -24,6 +27,18 @@
     <PackageReference Include="Microsoft.ML.AutoML" Version="0.24.0-preview.26160.2" />
     <PackageReference Include="Microsoft.ML" Version="6.0.0-preview.26160.2" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Tranche 4 (TradingSvmModelConfig) : Accord.NET a la version du fork upstream.
+         3.8.2-alpha est la seule generation dont l'API compile le corps porte verbatim
+         (MulticlassSupportVectorLearning<IKernel> + Learner lambda + teacher.Learn) ; la
+         2.6.0 stable validee par #12545 expose l'API precedente (KernelSupportVectorMachine
+         + SequentialMinimalOptimization(...).Run()) et imposerait une reecriture. -->
+    <PackageReference Include="Accord.MachineLearning" Version="3.8.2-alpha" />
+    <PackageReference Include="Accord.Statistics" Version="3.8.2-alpha" />
+    <PackageReference Include="Accord.Math" Version="3.8.2-alpha" />
+    <PackageReference Include="Accord.IO" Version="3.8.2-alpha" />
   </ItemGroup>
 
   <ItemGroup>

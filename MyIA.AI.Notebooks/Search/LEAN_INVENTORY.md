@@ -17,8 +17,9 @@ hors `_en` ; bascule #11688 — historiquement `standalone-tactic` ; les mention
 | `discrepancy_lean` | v4.32.1 | 0 | 8 | 0² | PEDA/REF | #12823 |
 | **Total** | — | **0** | **13** | **1** | — | — |
 
-¹ Notebook câblé : **Lean-18-Search-AStar-Optimality.ipynb**
-(`SymbolicAI/Lean/`). Companion conceptuel = la série **Search** (CSP/Foundations,
+¹ Notebook câblé : **Search-03e-AStar-Optimality.ipynb**
+(`Search/Part1-Foundations/`, descente tranche 1 #13662 depuis
+`SymbolicAI/Lean/`, rename par #13841). Companion conceptuel = la série **Search** (CSP/Foundations,
 A* vs BFS sur terrain pondéré — convention sibling-lake). Répond aussi au prong-B de l'Epic
 [#3801](https://github.com/jsboige/CoursIA/issues/3801) : démontrer le moteur A* sur un
 problème non-trivial (heuristique discriminante), pas un graphe à coût uniforme où A*

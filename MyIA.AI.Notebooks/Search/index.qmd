@@ -37,7 +37,7 @@ La série Search comporte **19+ notebooks** répartis en **4 parties** compléme
 
 | Partie | Notebooks | Focus pédagogique |
 |--------|-----------|-------------------|
-| **Part1-Foundations** | 13 | Exploration uninformed/informed, recherche arborescente, A*, MCTS |
+| **Part1-Foundations** | 13 (+1 companion formel) | Exploration uninformed/informed, recherche arborescente, A*, MCTS |
 | **Part2-CSP** | 5 | Satisfaction de contraintes, cohérence, propagation, scheduling |
 | **Part3-Advanced** | 3 | Bases de données de patterns, recherche à discrepancy limitée, A* pondéré |
 | **Part4-Metaheuristics** | 18 | MGS — métaheuristiques hybrides avec analyse de paysage |
@@ -65,6 +65,18 @@ La série Search comporte **19+ notebooks** répartis en **4 parties** compléme
 
 ::: {#metaheuristics}
 :::
+
+## Companion formel — Lean 4
+
+Le lake [`search_lean`](../Search/LEAN_INVENTORY.md) formalise la **correction de A\*** sous
+heuristique **admissible puis consistante** (0 sorry de production, prong-B Epic
+[#3801](https://github.com/jsboige/CoursIA/issues/3801) : terrain pondéré où l'heuristique
+discrimine, pas un cas dégénéré où A\* ≡ BFS). Le companion de la série Search est :
+
+- [Search-03e-AStar-Optimality](Part1-Foundations/Search-03e-AStar-Optimality.ipynb)
+  — visite formelle Python de `search_lean`, descente tranche 1
+  [#13662](https://github.com/jsboige/CoursIA/issues/13662) depuis
+  `SymbolicAI/Lean/`.
 
 ## Démarrage rapide
 

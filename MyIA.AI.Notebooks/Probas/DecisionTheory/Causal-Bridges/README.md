@@ -2,7 +2,7 @@
 
 [← Série Probas](../../README.md) | [↑ Arc Théorie de la Décision](../README.md) | [Corpus bayésien Infer (C#) →](../../Infer/README.md) | [Corpus PyMC (Python) →](../../PyMC/README.md)
 
-**Notebook-pont** de la constellation causale du dépôt. La causalité est traitée à **quatre endroits**, chacun avec son moteur et son angle ; ce répertoire n'ajoute pas un cinquième moteur, il fournit l'**armature formelle unifiée** — l'échelle de Pearl et les trois règles du do-calculus — et la fait tourner sur l'**outil de référence** [`dowhy`](https://www.pywhy.org/dowhy/) (installé et exécuté réellement, règle F / SOTA-OK, **pas** de réimplémentation jouet), avant de renvoyer à chaque série pour l'instanciation par son moteur.
+**Série-pont** de la constellation causale du dépôt. La causalité est traitée à **quatre endroits**, chacun avec son moteur et son angle ; ce répertoire n'ajoute pas un cinquième moteur, il fournit l'**armature formelle unifiée** — l'échelle de Pearl, les trois règles du do-calculus et les méthodes quasi-expérimentales — et la fait tourner sur l'**outil de référence** [`dowhy`](https://www.pywhy.org/dowhy/) (installé et exécuté réellement, règle F / SOTA-OK, **pas** de réimplémentation jouet), avant de renvoyer à chaque série pour l'instanciation par son moteur.
 
 **Stack** : Python 3 (kernel `coursia-ml-training`), [`dowhy`](https://www.pywhy.org/dowhy/) pour l'identification / estimation / réfutation d'estimandes causaux. Aucun kernel .NET ni GPU requis.
 
@@ -11,12 +11,15 @@
 | Notebook | Durée | Concepts |
 |----------|-------|----------|
 | [Do-Calculus-Bridge](Do-Calculus-Bridge.ipynb) | ~55 min | Échelle de Pearl, trois règles du do-calculus, critères *backdoor* / *front-door* exécutés avec `dowhy`, Pearl (intervention) vs Hoel (émergence causale) |
+| [DoWhy-1 — Exiger un estimand](DoWhy-1-Estimand-et-Intervention.ipynb) | ~45 min | Identification causale **nommée** via `dowhy` (backdoor, front-door, instrumentale) sur un cas complet ; sensibilité au graphe **mesurée** quand une hypothèse saute |
+| [DoWhy-2 — Le contrefactuel individuel](DoWhy-2-Contrefactuel-Individuel.ipynb) | ~40 min | Troisième échelon de Pearl : `dowhy.gcm` (abduction-action-prédiction) sur **un individu** ; l'effet moyen nul cache une CATE linéaire ±3 ; fragilité du chiffre individuel à la spécification du mécanisme |
+| [Quasi-Experimental](Quasi-Experimental.ipynb) | ~50 min | Méthodes quasi-expérimentales (DiD, contrôle synthétique, RDD, variables instrumentales) sur données réalistes ; estimands et hypothèses d'identification explicités |
 
 **Prérequis** : probabilités conditionnelles, graphes orientés acycliques (DAG), notions d'inférence bayésienne. Une lecture préalable de l'un des quatre notebooks de la constellation (ci-dessous) rend le pont plus concret.
 
 ## Ce que le pont ajoute
 
-Ce que ce notebook apporte, que les quatre notebooks de moteur ne font pas chacun séparément :
+Ce que ce répertoire apporte, que les quatre séries de moteur ne font pas chacune séparément :
 
 1. La **théorie unifiée** du do-calculus, présentée une bonne fois : l'échelle de Pearl (observation < intervention < contrefactuel) et les trois règles, lues comme des *chirurgies du graphe* suivies d'un test de $d$-séparation.
 2. Une exécution sur l'**outil SOTA** `dowhy` qui **identifie** l'estimande (backdoor / front-door / variable instrumentale), l'**estime**, puis le **réfute** — le pipeline qu'on utiliserait pour une vraie étude causale.
@@ -42,3 +45,9 @@ Le notebook suit la convention du dépôt (stubs à compléter, sans erreur volo
 1. **Ajouter un second confondeur à la backdoor** — étendre l'ensemble d'ajustement à `{aptitude, motivation}`.
 2. **Rompre le critère front-door** — ajouter un chemin direct qui contourne le médiateur et vérifier que l'identification front-door échoue.
 3. **Comparer effet naïf et effet ajusté** — générer un nouveau jeu à effet vrai connu, mesurer l'écart dû au confondeur.
+
+Exercices de DoWhy-2 :
+
+1. **Le contrefactuel inverse** — pour un étudiant non traité à `V > 0`, estimer son `Y` sous `T := 1` et comparer à son observation : aurait-il gagné au mentorat ?
+2. **La CATE par sous-groupe** — déduire de la série d'écarts individuels l'effet moyen pour `V > 0.5` vs `V < -0.5`, interpréter le signe.
+3. **La méthode survit-elle au tirage ?** — re-générer le monde (`seed=7`), refitter, re-mesurer moyenne et écart-type des écarts : la structure doit survivre, pas les individus.

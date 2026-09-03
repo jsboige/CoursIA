@@ -49,11 +49,15 @@ An optional notebook qualifier disambiguates multi-notebook PRs:
 
 A bare ``[12]`` matches any notebook of the PR.
 
-Index pairing caveat: cells are paired by position over the full cell
-list. An insertion shifts later indices; a shifted code cell then
-compares against a different base cell, which can fabricate a
-source-changed/outputs-identical pair. Rare, visible in the diff, and
-liftable through the body door - a re-execution also dissolves it.
+Cell pairing: code cells pair by their nbformat ``id`` when the base
+notebook carries ids, so inserted cells (fresh ids, unpaired) or shifted
+cells (stable ids, paired to their real base partner) no longer
+fabricate source-changed/outputs-identical pairs on enrichment PRs
+(#14297). Legacy notebooks whose base carries no id pair by CONTENT:
+exact source matches first (a moved-unmodified cell pairs with its own
+base copy), then a difflib fuzzy pass (ratio >= 0.75, greedy) so a
+moved-AND-modified cell still confronts its own base version; a head
+cell matching nothing stays UNPAIRED - never a fabricated stale pair.
 
 Usage:
     python check_source_output_ratchet.py <base-ref> [--json] [--body-file F]
@@ -70,6 +74,7 @@ stale-output regression survives the exemptions.
 """
 
 import argparse
+import difflib
 import json
 import re
 import subprocess
@@ -94,6 +99,13 @@ EXCLUDE_MARKERS = ("/.ipynb_checkpoints/", "/archive/", "/_output/",
 # is advisory everywhere else in the repo). .NET Interactive is
 # deliberately absent - see module docstring.
 NON_EXECUTABLE_KERNELS = set(ALLOW_NULL_EXEC_COUNT_KERNELS) | {"lean"}
+
+# Fuzzy-pairing floor for legacy bases without ids (#14297): below it a
+# head code cell stays UNPAIRED rather than confronting a base cell it
+# merely resembles. High on purpose - two distinct C.1 stubs share enough
+# boilerplate that a lax floor would re-fabricate the exact stale pair
+# the content pairing exists to kill.
+FUZZY_PAIR_RATIO = 0.75
 
 # "Source-output ratchet: [12] exempte" / "Source-output ratchet:
 # Path/To.ipynb: [12] exempte"
@@ -188,6 +200,48 @@ def parse_body_exemptions(body_text):
     return lifted
 
 
+def _pair_by_content(base_cells, head_cells):
+    """Content-based code-cell pairing for legacy bases without ids.
+
+    Two passes over canonical sources. Exact pass first: a cell that only
+    MOVED pairs with its own byte-identical base copy (the #14297 FP class
+    - enrichment insertions shift indices, positional pairing then
+    confronted unrelated C.1 stubs whose uniform outputs are identical).
+    Fuzzy pass second (difflib ratio, descending, greedy): a MOVED AND
+    MODIFIED cell still confronts its own base version - without it, the
+    fallback would disarm the guard on the very PRs it polices. A head
+    cell with no partner in either pass stays unpaired.
+    """
+    base_code = [(j, canonical_source(c))
+                 for j, c in enumerate(base_cells)
+                 if c.get("cell_type") == "code"]
+    head_code = [(i, canonical_source(c))
+                 for i, c in enumerate(head_cells)
+                 if c.get("cell_type") == "code"]
+    pairs = {}
+    free_base = dict(base_code)
+    for i, src in head_code:
+        for j, bsrc in free_base.items():
+            if src == bsrc:
+                pairs[i] = j
+                del free_base[j]
+                break
+    candidates = []
+    for i, src in head_code:
+        if i in pairs:
+            continue
+        for j, bsrc in free_base.items():
+            ratio = difflib.SequenceMatcher(
+                None, bsrc, src, autojunk=False).ratio()
+            if ratio >= FUZZY_PAIR_RATIO:
+                candidates.append((ratio, i, j))
+    for _, i, j in sorted(candidates, key=lambda t: (-t[0], t[1], t[2])):
+        if i not in pairs and j in free_base:
+            pairs[i] = j
+            del free_base[j]
+    return pairs
+
+
 def classify_cells(base_nb, head_nb):
     """Per-code-cell records of one notebook pair, indexed over ALL cells.
 
@@ -198,11 +252,30 @@ def classify_cells(base_nb, head_nb):
     """
     base_cells = base_nb.get("cells", [])
     head_cells = head_nb.get("cells", [])
+    # nbformat 4.5+ stamps every cell with a stable `id`: pair by id so an
+    # insertion shifts indices but never the pairing itself (#14297 - the
+    # positional pairing fabricated 3/3 STALE_OUTPUT on enrichment PRs).
+    # A head cell with a fresh id (inserted) has no partner. Legacy
+    # notebooks whose base carries no id pair by CONTENT (#14297 fallback:
+    # exact then fuzzy) - positional pairing there re-fabricated stale
+    # pairs on every enrichment insertion.
+    base_by_id = {c.get("id"): c for c in base_cells if c.get("id")}
+    use_ids = bool(base_by_id)
+    content_pairs = (None if use_ids
+                     else _pair_by_content(base_cells, head_cells))
     records = []
     for i, hcell in enumerate(head_cells):
         if hcell.get("cell_type") != "code":
             continue
-        bcell = base_cells[i] if i < len(base_cells) else None
+        bcell = None
+        if use_ids:
+            hid = hcell.get("id")
+            if hid and hid in base_by_id:
+                bcell = base_by_id[hid]
+            elif not hid:
+                bcell = base_cells[i] if i < len(base_cells) else None
+        elif content_pairs and i in content_pairs:
+            bcell = base_cells[content_pairs[i]]
         if bcell is None or bcell.get("cell_type") != "code":
             records.append({"index": i, "verdict": "UNPAIRED",
                             "regression": False})

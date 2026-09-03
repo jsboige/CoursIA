@@ -1,0 +1,182 @@
+name: Always-on metadata guards
+
+# FUSION VAGUE 2 TRANCHE 1 (#14057, dispatch ai-01 msg-20260901T120252-k7qy3p)
+# -- trois gardes/advisories always-on de METADONNEES en un seul workflow, un
+# seul checkout, un seul slot de runner par PR. Patron #13384 (umbrella des
+# cinq gardes metadata) applique a la vague suivante.
+#
+# Constat fondateur (mesure etape 1 de #14057, 2026-09-01) : la file CI tenait
+# 166 runs en attente, et le cluster quasi-universel comptait, par fenetre,
+# base-not-main 72 + stale-base-warning 44 + concurrency-conj-guard 33 = 149
+# runs pour ~2-3 minutes de travail reel additionne. Comme #13384 l'a mesure,
+# c'est le SLOT de runner, pas la minute-CPU, qui est la ressource rare.
+#
+# Chiffre (mesure avant PR, exigee par #14057) :
+#   - evenement nominal (synchronize sur PR base main) : 3 runs -> 1
+#     = -2 runs/evenement (-67 %) ;
+#   - fenetre de la mesure etape 1 : 149 -> ~72 runs (la cadence de
+#     l'umbrella suit l'union des declencheurs, deja porte par base-not-main)
+#     = -52 % estime.
+#   Sources restantes (tranche suivante, bloquees par PRs en vol) :
+#   always-on-guards.yml (#13922) et orphaned-delivery-scan.yml (#13947).
+#
+# Sources absorbees (les fichiers RESTENT, dormants -- declencheurs
+# pull_request retires, jobs conserves verbatim pour la tracabilite, patron
+# #13384) :
+#
+#   base-not-main-advisory.yml -> advisory base != main (organes ci-dessous,
+#                                  porte le verrou #13232 : verdict METADONNEES)
+#   stale-base-warning.yml     -> advisory base >14j (graphe de commits seul)
+#   concurrency-conj-guard.yml -> garde BLOQUANT (conjonction #13488)
+#
+# PIEGE NOMME PAR #13384 : `scripts/pr_gate.py::derive_always_on_jobs` (canary
+# de livraison, regle 8) DERIVE l'ensemble des jobs tournant sur CHAQUE
+# pull_request depuis ce repertoire. La fusion change cet ensemble : les trois
+# anciens noms de job disparaissent, le nom du job umbrella ci-dessous les
+# remplace. La canary reste armee tant que ce workflow garde un declencheur
+# pull_request SANS filtre `paths:` -- ne jamais en ajouter.
+#
+# VERROU #13232 (criteres ai-01) : les organes de cette umbrella lisent des
+# METADONNEES de la PR (baseRefName, base.sha, age du graphe de commits) ou
+# les fichiers de workflows -- PAS le diff. Un `paths:` desarmerait
+# base-not-main sur les PR ne touchant pas les chemins listes, precisement
+# la surface qu'il doit scanner. Reduire le fan-out par types:/concurrency,
+# jamais par paths: (regle 2 d'#10045 : un check filtre par chemins rapporte
+# `pending` a vie sur les PR hors scope).
+#
+# SEMANTIQUE DE BLOCAGE (patron #13384) : l'organe BLOQUANT (concurrency-conj)
+# porte `continue-on-error: true` et un `id:` ; l'etape finale AGREGAT fait
+# rougir le job s'il a echoue -- sans cela, un echec premature empecherait les
+# organes suivants de tourner. Les deux advisories tournent EN PREMIER (elles
+# ne peuvent pas rougir) pour que les labels restent poses meme quand le
+# bloquant echoue.
+#
+# Le nom du job ne porte ni "advisory" ni "optional" : il agrege un verdict
+# bloquant, `is_advisory()` de pr_gate.py ne doit pas le taire.
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, edited, ready_for_review]
+    # PAS de `paths:` -- canary + #13232 + regle 2 d'#10045.
+    # PAS de filtre `branches:` -- l'organe base-not-main doit voir les PR
+    # dont la base n'est PAS main (c'est sa raison d'etre, #10918).
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+# #11649 : event_name dans la cle -- les evenements ne s'annulent pas entre
+# eux. Pas de trigger push:main ici, donc la conjonction refoulee par
+# #13488 (push + github.ref + cancel-in-progress literal) ne s'applique pas.
+concurrency:
+  group: always-on-metadata-guards-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  always-on-metadata-guards:
+    name: "Always-on metadata guards -- 3 organes, 1 checkout"
+    # Routage #14283 tranche 3c (ai-01 2026-09-02) : jambe Linux auto-hebergee.
+    # Garde anti-fork au niveau job + runs-on STATIQUE (une expression leverait
+    # DYNAMIC_RUNS_ON dans check_self_hosted_runner_policy.py).
+    # Retour arriere = remettre `runs-on: ubuntu-latest` + retrait de l'allowlist.
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    timeout-minutes: 10
+
+    steps:
+      # Checkout UNION des trois organes : fetch-depth 0 + blob:none (le
+      # graphe complet est requis par l'organe stale-base -- rev-list BASE..main
+      # et dates de commits, cf #11835 ; les blobs restent paresseux) ;
+      # sparse-checkout .github + scripts (organes base-not-main et
+      # concurrency-conj n'ont besoin que de leurs scripts).
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          filter: blob:none
+          sparse-checkout: |
+            .github
+            scripts
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install PyYAML if absent
+        # Pattern partage avec l'umbrella #13384 : import-test en dry-run,
+        # fallback pip install silencieux. Sans cette etape, exit 2
+        # BROKEN_INSTRUMENT masquerait la conjonction en rouge de complaisance
+        # (cf #11850).
+        run: python -c "import yaml" 2>/dev/null || pip install --quiet pyyaml
+
+      # ------------------------------------------------------------------
+      # ORGANE 1 (advisory) : base-not-main. Porte depuis
+      # base-not-main-advisory.yml (partie (a) de #10918). Ne lit QUE l'API
+      # `gh pr` (scripts/base_not_main.py:143 -- baseRefName + title), jamais
+      # l'arbre. Skip le travail quand base == main (~95 % des PRs).
+      # ------------------------------------------------------------------
+      - name: "Organe base-not-main : signaler une base != main (advisory)"
+        if: github.event_name == 'pull_request' && github.event.pull_request.base.ref != 'main'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python scripts/base_not_main.py --pr "${{ github.event.pull_request.number }}"
+
+      # ------------------------------------------------------------------
+      # ORGANE 2 (advisory) : stale-base-warning. Porte verbatim depuis
+      # stale-base-warning.yml. Ne lit AUCUN contenu de blob : rev-list et
+      # show -s interrogent le graphe seul (#11835). Poser label + commentaire
+      # quand la base a >14j.
+      # ------------------------------------------------------------------
+      - name: "Organe stale-base : avertissement base >14j (advisory)"
+        if: github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'main'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          STALE_DAYS: "14"
+          BASE_REF: ${{ github.event.pull_request.base.sha }}
+        run: |
+          git fetch origin main
+          BASE_SHA="$BASE_REF"
+          MAIN_SHA="$(git rev-parse origin/main)"
+          if [ "$BASE_SHA" = "$MAIN_SHA" ]; then
+            echo "Base is up-to-date."
+            exit 0
+          fi
+          BEHIND=$(git rev-list "$BASE_SHA..origin/main" --count)
+          BASE_DATE=$(git show -s --format=%ct "$BASE_SHA" 2>/dev/null || echo 0)
+          MAIN_DATE=$(git show -s --format=%ct "$MAIN_SHA" 2>/dev/null || echo 0)
+          if [ "$BASE_DATE" -eq 0 ] || [ "$MAIN_DATE" -eq 0 ]; then
+            echo "Could not determine commit dates."
+            exit 0
+          fi
+          AGE_DAYS=$(( (MAIN_DATE - BASE_DATE) / 86400 ))
+          echo "Base age: ${AGE_DAYS} days, behind: ${BEHIND} commits"
+          if [ "$AGE_DAYS" -le "$STALE_DAYS" ]; then
+            exit 0
+          fi
+          echo "::warning::Base is ${AGE_DAYS}d behind main (${BEHIND} commits)"
+          gh pr comment "$PR_NUMBER" --body "## Base Branch Stale Warning - ${AGE_DAYS}d behind main (${BEHIND} commits). Consider rebasing." 2>/dev/null || true
+          gh label create "base-stale-14d" --description "PR base >14d behind main" --color "FFA500" --force 2>/dev/null || true
+          gh pr edit "$PR_NUMBER" --add-label "base-stale-14d" 2>/dev/null || true
+
+      # ------------------------------------------------------------------
+      # ORGANE 3 (BLOQUANT) : concurrency-conj-guard. Porte depuis
+      # concurrency-conj-guard.yml (#13488) : refoule la conjonction
+      # push:main + github.ref + cancel-in-progress literal. Scanne les
+      # workflows du depot -- tourne sur tout evenement, y compris dispatch.
+      # ------------------------------------------------------------------
+      - name: "Organe concurrency-conj : conjonction annulation-cascade (#13488)"
+        id: conj
+        continue-on-error: true
+        run: python scripts/ci/check_concurrency_conj.py --check --json
+
+      # ------------------------------------------------------------------
+      # AGREGAT (patron #13384) : fait rougir le job si l'organe bloquant a
+      # echoue, APRES que les advisories ont pose leurs labels.
+      # ------------------------------------------------------------------
+      - name: Agregat
+        if: always() && steps.conj.outcome == 'failure'
+        run: |
+          echo "::error::Organe concurrency-conj en echec (conjonction push:main + github.ref + cancel-in-progress litteral reintroduite ? Cf #13488 / #13372)."
+          exit 1

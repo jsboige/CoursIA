@@ -13,6 +13,17 @@
   énumération décidable) et `distance_dilemme_chicken` (la distance
   Dilemme → Chicken vaut exactement 2).
 
+  `Swaps/Parite.lean` ajoute l'obstruction **non bornée** (§6 de l'EPIC
+  #12205). Là où `aucun_chemin_court` réfute 7 chemins par énumération
+  et où le certificat du notebook `GameTheory-24b` réfute tout chemin
+  au-delà d'un budget `k_max`, la parité jointe du nombre d'inversions
+  est un invariant transporté le long d'un chemin de longueur
+  **quelconque** : `parite_determinee` lit la parité de la longueur sur
+  les deux extrémités, et `aucun_chemin_impair_dilemme_chicken` en
+  déduit qu'aucun chemin de longueur impaire ne relie le Dilemme à
+  Chicken — une famille infinie. Les deux obstructions sont
+  complémentaires ; aucune ne subsume l'autre.
+
   Ce fichier existe parce que le `lean_lib Swaps` du lakefile déclare
   `globs := #[`Swaps.*]` : Lake résout la racine `Swaps` de la
   bibliothèque, et son absence rend `error: Swaps: some modules have
@@ -27,3 +38,4 @@
 -/
 
 import Swaps.Basic
+import Swaps.Parite

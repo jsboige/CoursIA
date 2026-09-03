@@ -1,0 +1,282 @@
+{
+ "rows": [
+  {
+   "seed": 0,
+   "irreducibility": {
+    "r2_action_on_state": 0.6490370103916494,
+    "residual_share": 0.3509629896083506,
+    "action_std": 0.484565542287037
+   },
+   "loop_beta": {
+    "pre_median_err": 0.07412851629301115,
+    "adaptation_horizon": 704,
+    "caught_up": true,
+    "at_floor": false
+   },
+   "surrogate_beta": {
+    "pre_median_err": 0.19787092738443668,
+    "adaptation_horizon": 50,
+    "caught_up": true,
+    "at_floor": true
+   },
+   "noise_beta": {
+    "pre_median_err": 0.1945457829255343,
+    "adaptation_horizon": 50,
+    "caught_up": true,
+    "at_floor": true
+   },
+   "loop_alpha": {
+    "pre_median_err": 0.07412851629301115,
+    "adaptation_horizon": 433,
+    "caught_up": true,
+    "at_floor": false
+   },
+   "surrogate_alpha": {
+    "pre_median_err": 0.19787092738443668,
+    "adaptation_horizon": 51,
+    "caught_up": true,
+    "at_floor": false
+   },
+   "rho_beta": 0.07102272727272728,
+   "rho_alpha": 0.11778290993071594,
+   "kappa": 1.0,
+   "kink": {
+    "d_star": 4,
+    "gain_to_fixpoint": 0.50996463765774,
+    "gain_beyond_fixpoint": 0.00011704479250118638,
+    "finite": true
+   }
+  },
+  {
+   "seed": 1,
+   "irreducibility": {
+    "r2_action_on_state": 0.8991761836789045,
+    "residual_share": 0.1008238163210955,
+    "action_std": 1.2179512359432556
+   },
+   "loop_beta": {
+    "pre_median_err": 0.07503198198017813,
+    "adaptation_horizon": 594,
+    "caught_up": true,
+    "at_floor": false
+   },
+   "surrogate_beta": {
+    "pre_median_err": 0.20294599169033345,
+    "adaptation_horizon": 50,
+    "caught_up": true,
+    "at_floor": true
+   },
+   "noise_beta": {
+    "pre_median_err": 0.1965331396995167,
+    "adaptation_horizon": 50,
+    "caught_up": true,
+    "at_floor": true
+   },
+   "loop_alpha": {
+    "pre_median_err": 0.07503198198017813,
+    "adaptation_horizon": 291,
+    "caught_up": true,
+    "at_floor": false
+   },
+   "surrogate_alpha": {
+    "pre_median_err": 0.20294599169033345,
+    "adaptation_horizon": 50,
+    "caught_up": true,
+    "at_floor": true
+   },
+   "rho_beta": 0.08417508417508418,
+   "rho_alpha": 0.1718213058419244,
+   "kappa": 1.0,
+   "kink": {
+    "d_star": 23,
+    "gain_to_fixpoint": 0.32061458067173865,
+    "gain_beyond_fixpoint": 0.0038301558054203433,
+    "finite": true
+   }
+  },
+  {
+   "seed": 2,
+   "irreducibility": {
+    "r2_action_on_state": 0.7339748898760913,
+    "residual_share": 0.2660251101239087,
+    "action_std": 0.6247532765511227
+   },
+   "loop_beta": {
+    "pre_median_err": 0.0627107814645087,
+    "adaptation_horizon": 880,
+    "caught_up": true,
+    "at_floor": false
+   },
+   "surrogate_beta": {
+    "pre_median_err": 0.1999402113784065,
+    "adaptation_horizon": 50,
+    "caught_up": true,
+    "at_floor": true
+   },
+   "noise_beta": {
+    "pre_median_err": 0.2009073279123037,
+    "adaptation_horizon": 50,
+    "caught_up": true,
+    "at_floor": true
+   },
+   "loop_alpha": {
+    "pre_median_err": 0.0627107814645087,
+    "adaptation_horizon": 804,
+    "caught_up": true,
+    "at_floor": false
+   },
+   "surrogate_alpha": {
+    "pre_median_err": 0.1999402113784065,
+    "adaptation_horizon": 74,
+    "caught_up": true,
+    "at_floor": false
+   },
+   "rho_beta": 0.056818181818181816,
+   "rho_alpha": 0.09203980099502487,
+   "kappa": 1.0,
+   "kink": {
+    "d_star": 8,
+    "gain_to_fixpoint": 0.18159734197076283,
+    "gain_beyond_fixpoint": 0.0009353809996086593,
+    "finite": true
+   }
+  },
+  {
+   "seed": 3,
+   "irreducibility": {
+    "r2_action_on_state": 0.5875549267837847,
+    "residual_share": 0.41244507321621526,
+    "action_std": 0.4400851093956821
+   },
+   "loop_beta": {
+    "pre_median_err": 0.0615383991221434,
+    "adaptation_horizon": 502,
+    "caught_up": true,
+    "at_floor": false
+   },
+   "surrogate_beta": {
+    "pre_median_err": 0.17584637277524517,
+    "adaptation_horizon": 50,
+    "caught_up": true,
+    "at_floor": true
+   },
+   "noise_beta": {
+    "pre_median_err": 0.16977419531538218,
+    "adaptation_horizon": 50,
+    "caught_up": true,
+    "at_floor": true
+   },
+   "loop_alpha": {
+    "pre_median_err": 0.0615383991221434,
+    "adaptation_horizon": 490,
+    "caught_up": true,
+    "at_floor": false
+   },
+   "surrogate_alpha": {
+    "pre_median_err": 0.17584637277524517,
+    "adaptation_horizon": 104,
+    "caught_up": true,
+    "at_floor": false
+   },
+   "rho_beta": 0.099601593625498,
+   "rho_alpha": 0.21224489795918366,
+   "kappa": 1.0,
+   "kink": {
+    "d_star": 5,
+    "gain_to_fixpoint": 0.6408902421957481,
+    "gain_beyond_fixpoint": 0.00014058283478046718,
+    "finite": true
+   }
+  },
+  {
+   "seed": 4,
+   "irreducibility": {
+    "r2_action_on_state": 0.6224798103048848,
+    "residual_share": 0.37752018969511525,
+    "action_std": 0.48340048545518344
+   },
+   "loop_beta": {
+    "pre_median_err": 0.03523293745083256,
+    "adaptation_horizon": 1320,
+    "caught_up": true,
+    "at_floor": false
+   },
+   "surrogate_beta": {
+    "pre_median_err": 0.15726889901264385,
+    "adaptation_horizon": 50,
+    "caught_up": true,
+    "at_floor": true
+   },
+   "noise_beta": {
+    "pre_median_err": 0.1585842113829092,
+    "adaptation_horizon": 50,
+    "caught_up": true,
+    "at_floor": true
+   },
+   "loop_alpha": {
+    "pre_median_err": 0.03523293745083256,
+    "adaptation_horizon": 406,
+    "caught_up": true,
+    "at_floor": false
+   },
+   "surrogate_alpha": {
+    "pre_median_err": 0.15726889901264385,
+    "adaptation_horizon": 53,
+    "caught_up": true,
+    "at_floor": false
+   },
+   "rho_beta": 0.03787878787878788,
+   "rho_alpha": 0.13054187192118227,
+   "kappa": 1.0,
+   "kink": {
+    "d_star": 8,
+    "gain_to_fixpoint": 0.34308485766525376,
+    "gain_beyond_fixpoint": 0.0008836801270383221,
+    "finite": true
+   }
+  }
+ ],
+ "summary": {
+  "n_seeds": 5,
+  "residual_share_median": 0.3509629896083506,
+  "floor_surrogate_count": 5,
+  "floor_noise_count": 5,
+  "floor_loop_count": 0,
+  "instrument_degenerate": true,
+  "pre_err_ratio_median": 2.8575064558670045,
+  "manipulation_took": true,
+  "rho_beta_median": 0.07102272727272728,
+  "rho_beta_ge3_count": 0,
+  "rho_alpha_median": 0.13054187192118227,
+  "rho_alpha_lt2": true,
+  "kappa_median": 1.0,
+  "kappa_in_band": true,
+  "d_star_median": 8.0,
+  "d_star_le12_count": 4,
+  "kink_saturation_count": 5,
+  "verdict": "INCONCLUSIF_INSTRUMENT"
+ },
+ "baseline_case8": {
+  "pre_err_ratio_median": 1.0026998178254605,
+  "floor_surrogate_count": 0,
+  "floor_loop_count": 0,
+  "rho_beta_median": 0.9952830188679245,
+  "verdict": "FALSIFIED",
+  "note": "Re-mesure de la case 8 dans le meme run, comme point de comparaison. Asymptotes a egalite (ratio ~1.00) et aucun bras au plancher : la falsification de la case 8 etait une VRAIE mesure. C'est la case 8b qui fait diverger les asymptotes."
+ },
+ "meta": {
+  "case": "8b",
+  "issue": 8182,
+  "date": "2026-09-02",
+  "lane": "myia-po-2024:CoursIA-2",
+  "pre_registration_commit": "85dbca6364",
+  "parent_case": 8,
+  "single_changed_variable": "politique a autonomie partielle : a = omega.phi(x) + m, m AR(1) rho=0.9 a bruit propre (motive_std=0.6). Dynamique, modeles, metrique, seuils, horizon et graines identiques a la case 8.",
+  "prediction": "P1' d*<=12 med (>=4/5) ; P2' rho_beta>=3 (>=4/5) ET rho_alpha<2 med ; P3' kappa=T_noise/T_surrogate med dans [0.5,2] ; controle residual_share>0.30",
+  "verdict": "INCONCLUSIF_INSTRUMENT -- P2'/P3' NON MESURABLES par la metrique scellee. Controle de manipulation TENU (residual_share med 0.35 > 0.30). P1' TENU (d* med 8.0, 4/5 <= 12). Les deux surrogates se posent sur le PLANCHER de l'echelle d'horizon (50 = plus petite valeur exprimable) sur 5/5 graines, le self-modele sur 0/5 : les ratios rho_beta et kappa ne comparent pas des vitesses, ils comparent des largeurs de seuil.",
+  "diagnostic": "La metrique d'horizon normalise chaque modele sur SA PROPRE asymptote pre-shift (< 1.2x). Rendre le canal self irreductible fait diverger ces asymptotes d'un facteur 2.86 (case 8 : 1.00, a egalite), donc le seuil du surrogate devient si lache que le shift beta ne l'en fait plus sortir : il est declare rattrape a la premiere occasion mesurable. Le biais etait ANNONCE dans le pre-enregistrement comme jouant contre P2', mais annonce comme conservateur -- il s'avere degeneratif.",
+  "observation_non_preenregistree": "Le self-modele est 2.86x plus precis que le surrogate en regime (case 8 : 1.00x, soit a egalite). C'est la direction qu'annoncait le diagnostic de la case 8 -- le canal self ne porte de l'information que s'il est irreductible -- mais elle se manifeste sur la QUALITE DE REPRESENTATION, pas sur la vitesse de re-adaptation. Cette quantite n'etant PAS pre-enregistree, elle ne confirme rien : elle motive une case 8c a metrique sans echelle (pre-enregistree avant tout jouet).",
+  "instrument_check_added_post_hoc": "`instrument_degenerate` (bras de comparaison au plancher sur une majorite de graines) a ete ajoute APRES avoir vu les donnees. Il ne peut produire qu'un INCONCLUSIF, jamais un CONFIRMED : il retire des verdicts, il n'en fabrique aucun. Aucun seuil pre-enregistre n'a ete touche.",
+  "grade": "C -- documentaire, substrat scalaire, aucune phenomenologie"
+ }
+}

@@ -4,7 +4,7 @@
 series: QuantConnect
 pedagogical_count: 109
 breakdown: Python=54, projects=49, ML-Training-Pipeline=4, kelly_lean=2
-maturity: BETA=82, ALPHA=14, DRAFT=12, TEMPLATE=1
+maturity: BETA=83, ALPHA=13, DRAFT=12, TEMPLATE=1
 -->
 
 > **Note éditoriale — counts kernels par sous-série** : Le marqueur CATALOG-STATUS agrégé ci-dessus reste **autoritatif** pour la décomposition par **sous-série** (Python / projects / ML-Training-Pipeline / kelly_lean). En revanche, pour les décomptes par **kernel** (Python vs Lean 4) **au sein** d'une sous-série — c'est-à-dire la répartition technique par interpréteur —, **ce README reste autoritatif** car la décomposition langagière par sous-série n'est pas dans le marqueur agrégé. Cette granularité est documentée ici par lecture directe des `metadata.kernelspec.language` des notebooks :
@@ -171,7 +171,7 @@ Deep Learning pour séries temporelles : LSTM, Transformers, PatchTST/iTransform
 | # | Notebook | Durée | Contenu |
 |---|----------|-------|---------|
 | 22 | [QC-Py-22-Deep-Learning-LSTM](Python/QC-Py-22-Deep-Learning-LSTM.ipynb) | 90 min | LSTM time series, TensorFlow/Keras, CPU-first |
-| 23 | [QC-Py-23-Attention-Transformers](Python/QC-Py-23-Attention-Transformers.ipynb) | 90 min | Transformer architecture, multi-head attention, temporal fusion |
+| 23 | [QC-Py-23-State-Space-Models](Python/QC-Py-23-State-Space-Models.ipynb) | 90 min | State Space Models (S4, Mamba) pour séries temporelles |
 | 23b | [QC-Py-23b-PatchTST-iTransformer](Python/QC-Py-23b-PatchTST-iTransformer.ipynb) | 90 min | PatchTST patching, iTransformer inverted axes, prévision financière |
 | 24 | [QC-Py-24-Autoencoders-Anomaly](Python/QC-Py-24-Autoencoders-Anomaly.ipynb) | 75 min | Autoencoders pour détection anomalies, regime change |
 

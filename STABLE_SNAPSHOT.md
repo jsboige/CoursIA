@@ -48,7 +48,7 @@
 |----------|--------|-------------|
 | `MyIA.AI.Notebooks/GradeBook.ipynb` | TOP | 2026-03-23 |
 | `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-03b-RiskParity-Composite.ipynb` | QuantConnect | 2026-07-12 |
-| `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-02-SectorRotation-Momentum.ipynb` | QuantConnect | 2026-07-12 |
+| `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-12-SectorRotation-Momentum.ipynb` | QuantConnect | 2026-07-12 |
 | `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-04-MeanReversion.ipynb` | QuantConnect | 2026-07-12 |
 | `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-05-RegimeSwitching.ipynb` | QuantConnect | 2026-07-12 |
 | `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-06-PCA-StatArb.ipynb` | QuantConnect | 2026-07-12 |
@@ -81,7 +81,7 @@
 | `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-41-PaperTrading-IBKR.ipynb` | QuantConnect | 9/12 | 2026-07-14 |
 | `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-01-FinBERT-Sentiment.ipynb` | QuantConnect | 6/9 | 2026-07-02 |
 | `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-02-ML-Classification.ipynb` | QuantConnect | 3/6 | 2026-07-02 |
-| `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-04-RL-DQN-Trading.ipynb` | QuantConnect | 2/5 | 2026-06-27 |
+| `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-10-RL-DQN-Trading.ipynb` | QuantConnect | 2/5 | 2026-06-27 |
 | `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-05-MLP-Forecasting.ipynb` | QuantConnect | 2/5 | 2026-07-02 |
 | `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Dataset-Workflow.ipynb` | QuantConnect | 11/14 | 2026-07-15 |
 | `MyIA.AI.Notebooks/QuantConnect/projects/BTC-ML/quantbook.ipynb` | QuantConnect | 3/11 | 2026-07-02 |

@@ -53,24 +53,46 @@ name: perimeter-review-guard
 # "fix" a future false-positive by narrowing the detection -- that loses both
 # properties at once (#11648, point 2).
 
-# DORMANT depuis #13384 : le job perimeter est absorbe (run block porte
-# verbatim, declencheurs pull_request + pull_request_review repris) par
-# always-on-guards.yml -- un seul workflow, un seul checkout, un seul slot
-# de runner par PR (37 % de la file CI etait les cinq gardes always-on pour
-# ~3 min de travail reel, mesure #13384). Le job reste ICI en copie de
-# reference pour la tracabilite (et l'identite du registre fast-lane, qui
-# lit ce fichier comme source du garde pilot). NE PAS reinscrire
-# pull_request/pull_request_review ici sans retirer l'organe perimeter
-# d'always-on-guards -- les deux surfaces executeraient le meme verdict en
-# double.
+# PARTIELLEMENT RAVIVE (#14283) : ce fichier reprend la surface
+# `pull_request_review`, et ELLE SEULE. `pull_request` reste absorbe par
+# always-on-guards.yml (organe `perimeter`, desormais `if:`-gate sur
+# `pull_request` uniquement) -- la condition posee par la note de dormance
+# d'origine est donc tenue : les deux surfaces se PARTAGENT les evenements,
+# aucune ne les duplique.
+#
+#   pull_request        -> always-on-guards.yml :: perimeter   (self-hosted)
+#   pull_request_review -> ce fichier                          (ubuntu-latest)
+#
+# Pourquoi ce partage : `pull_request_review` est un declencheur
+# fork-reachable (FORK_REACHABLE_TRIGGERS, #14201 tranche 2). Le laisser sur
+# always-on-guards interdisait a CE workflow-la le pool auto-heberge --
+# check_self_hosted_runner_policy.py evalue les declencheurs au niveau
+# WORKFLOW, pas par job. always-on-guards etant le premier consommateur
+# GitHub-hosted du depot (2650 runs same-repo en 5 jours, timeout 25 min),
+# c'est lui qu'il fallait pouvoir router ; le garde perimeter revient donc
+# ici pour la seule surface qui l'empechait.
+#
+# Ce job repasse sur ubuntu-latest POUR LA MEME RAISON : un declencheur
+# fork-reachable ne doit jamais atteindre un runner auto-heberge (volume de
+# travail persistant par slot, #14285). Le `runs-on` self-hosted precedent
+# datait de la periode dormante, ou aucun evenement ne l'atteignait.
 
 on:
+  pull_request_review:
+    branches: [ main ]
+    types: [ submitted, edited ]
   workflow_dispatch:
 
 jobs:
   perimeter:
     name: "perimeter review guard (#11268)"
+    # ubuntu-latest OBLIGATOIRE ici : `pull_request_review` est fork-reachable
+    # (#14201 tranche 2). Le `runs-on` self-hosted qui figurait ici datait de
+    # la periode dormante (#13378 tranche 5) : aucun evenement ne l'atteignait
+    # alors. Le ravivage de la surface le rend inadmissible -- et
+    # check_self_hosted_runner_policy.py le refuse (FORK_REACHABLE_TRIGGER).
     runs-on: ubuntu-latest
+    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
     timeout-minutes: 10
 
     steps:

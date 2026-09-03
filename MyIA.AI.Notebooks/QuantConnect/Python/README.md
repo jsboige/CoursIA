@@ -2,7 +2,7 @@
 series: QuantConnect-Python
 pedagogical_count: 54
 breakdown: Python=54
-maturity: BETA=37, ALPHA=10, DRAFT=7
+maturity: BETA=38, ALPHA=9, DRAFT=7
 -->
 
 # QuantConnect Python Notebooks
@@ -63,7 +63,7 @@ Suite à l'audit du 5 mai 2026, voici l'état honnête de chaque notebook. **Auc
 | QC-Py-20-ML-Regression-Prediction | NON EXÉCUTÉ | |
 | QC-Py-21-Portfolio-Optimization-ML | NON EXÉCUTÉ | |
 | QC-Py-22-Deep-Learning-LSTM | NON EXÉCUTÉ | |
-| QC-Py-23-Attention-Transformers | EXÉCUTÉ | |
+| QC-Py-23-State-Space-Models | EXÉCUTÉ | |
 | QC-Py-23b-PatchTST-iTransformer | EXÉCUTÉ | |
 | QC-Py-24-Autoencoders-Anomaly | EXÉCUTÉ | |
 | QC-Py-25-Reinforcement-Learning | EXÉCUTÉ | |
@@ -77,19 +77,20 @@ Suite à l'audit du 5 mai 2026, voici l'état honnête de chaque notebook. **Auc
 | QC-Py-41-PaperTrading-IBKR | EXÉCUTÉ | |
 | QC-Py-Cloud-01-FinBERT-Sentiment | EXÉCUTÉ | |
 | QC-Py-Cloud-02-ML-Classification | EXÉCUTÉ | |
-| QC-Py-Cloud-02-SectorRotation-Momentum | doc cloud | markdown-only — backtest sur QC Cloud |
-| QC-Py-Cloud-03-DualMomentum | doc cloud | markdown-only — backtest sur QC Cloud |
+| QC-Py-Cloud-12-SectorRotation-Momentum | doc cloud | markdown-only — backtest sur QC Cloud |
+| QC-Py-Cloud-14-DualMomentum | doc cloud | markdown-only — backtest sur QC Cloud |
 | QC-Py-Cloud-03-Risk-Parity | EXÉCUTÉ | |
 | QC-Py-Cloud-03b-RiskParity-Composite | doc cloud | markdown-only — backtest sur QC Cloud |
 | QC-Py-Cloud-04-MeanReversion | doc cloud | markdown-only — backtest sur QC Cloud |
-| QC-Py-Cloud-04-RL-DQN-Trading | EXÉCUTÉ | |
 | QC-Py-Cloud-05-MLP-Forecasting | EXÉCUTÉ | |
 | QC-Py-Cloud-05-RegimeSwitching | doc cloud | markdown-only — backtest sur QC Cloud |
-| QC-Py-Cloud-06-VolTargeting | doc cloud | markdown-only — backtest sur QC Cloud |
+| QC-Py-Cloud-13-VolTargeting | doc cloud | markdown-only — backtest sur QC Cloud |
 | QC-Py-Cloud-06-PCA-StatArb | doc cloud | markdown-only — backtest sur QC Cloud |
 | QC-Py-Cloud-07-TemporalCNN | doc cloud | markdown-only — backtest sur QC Cloud |
 | QC-Py-Cloud-08-ValueFactor-ZScore | doc cloud | markdown-only — backtest sur QC Cloud |
 | QC-Py-Cloud-09-OptionWheel | doc cloud | markdown-only — backtest sur QC Cloud |
+| QC-Py-Cloud-10-RL-DQN-Trading | EXÉCUTÉ | |
+| QC-Py-Cloud-12-SectorRotation-Momentum | EXÉCUTÉ | |
 | QC-Py-33-RL-PPO-Trading | EXÉCUTÉ | |
 | QC-Py-34-RL-SAC-A2C-Trading | EXÉCUTÉ | |
 | QC-Py-35-RL-Portfolio-Construction | EXÉCUTÉ | |
@@ -179,7 +180,7 @@ Chaque notebook de la série rend visible un geste quantitatif distinct, dans un
 | [QC-Py-20-ML-Regression-Prediction](QC-Py-20-ML-Regression-Prediction.ipynb) | Régression, prédiction de prix |
 | [QC-Py-21-Portfolio-Optimization-ML](QC-Py-21-Portfolio-Optimization-ML.ipynb) | Optimisation ML de portefeuille |
 | [QC-Py-22-Deep-Learning-LSTM](QC-Py-22-Deep-Learning-LSTM.ipynb) | Réseaux LSTM pour séries temporelles |
-| [QC-Py-23-Attention-Transformers](QC-Py-23-Attention-Transformers.ipynb) | Transformers, attention mechanism |
+| [QC-Py-23-State-Space-Models](QC-Py-23-State-Space-Models.ipynb) | State Space Models (S4/Mamba) pour séries temporelles |
 | [QC-Py-23b-PatchTST-iTransformer](QC-Py-23b-PatchTST-iTransformer.ipynb) | PatchTST, iTransformer — transformers spécialisés séries temporelles |
 | [QC-Py-24-Autoencoders-Anomaly](QC-Py-24-Autoencoders-Anomaly.ipynb) | Détection d'anomalies, autoencodeurs |
 | [QC-Py-25-Reinforcement-Learning](QC-Py-25-Reinforcement-Learning.ipynb) | RL, DQN, environnement trading |
@@ -222,19 +223,20 @@ Notebooks de recherche et stratégies exécutées sur QuantConnect Cloud.
 |----------|-----------|
 | [QC-Py-Cloud-01-FinBERT-Sentiment](QC-Py-Cloud-01-FinBERT-Sentiment.ipynb) | NLP FinBERT sentiment |
 | [QC-Py-Cloud-02-ML-Classification](QC-Py-Cloud-02-ML-Classification.ipynb) | ML classification |
-| [QC-Py-Cloud-02-SectorRotation-Momentum](QC-Py-Cloud-02-SectorRotation-Momentum.ipynb) | Rotation sectorielle |
-| [QC-Py-Cloud-03-DualMomentum](QC-Py-Cloud-03-DualMomentum.ipynb) | Dual Momentum |
+| [QC-Py-Cloud-12-SectorRotation-Momentum](QC-Py-Cloud-12-SectorRotation-Momentum.ipynb) | Rotation sectorielle |
+| [QC-Py-Cloud-14-DualMomentum](QC-Py-Cloud-14-DualMomentum.ipynb) | Dual Momentum |
 | [QC-Py-Cloud-03-Risk-Parity](QC-Py-Cloud-03-Risk-Parity.ipynb) | Risk Parité |
 | [QC-Py-Cloud-03b-RiskParity-Composite](QC-Py-Cloud-03b-RiskParity-Composite.ipynb) | Risk Parité composite |
 | [QC-Py-Cloud-04-MeanReversion](QC-Py-Cloud-04-MeanReversion.ipynb) | Mean Reversion |
-| [QC-Py-Cloud-04-RL-DQN-Trading](QC-Py-Cloud-04-RL-DQN-Trading.ipynb) | RL DQN |
 | [QC-Py-Cloud-05-MLP-Forecasting](QC-Py-Cloud-05-MLP-Forecasting.ipynb) | MLP Forecasting |
 | [QC-Py-Cloud-05-RegimeSwitching](QC-Py-Cloud-05-RegimeSwitching.ipynb) | Régime Switching |
-| [QC-Py-Cloud-06-VolTargeting](QC-Py-Cloud-06-VolTargeting.ipynb) | Volatility Targeting |
+| [QC-Py-Cloud-13-VolTargeting](QC-Py-Cloud-13-VolTargeting.ipynb) | Volatility Targeting |
 | [QC-Py-Cloud-06-PCA-StatArb](QC-Py-Cloud-06-PCA-StatArb.ipynb) | PCA Statistical Arbitrage |
 | [QC-Py-Cloud-07-TemporalCNN](QC-Py-Cloud-07-TemporalCNN.ipynb) | Temporal CNN |
 | [QC-Py-Cloud-08-ValueFactor-ZScore](QC-Py-Cloud-08-ValueFactor-ZScore.ipynb) | Value Factor Z-Score |
 | [QC-Py-Cloud-09-OptionWheel](QC-Py-Cloud-09-OptionWheel.ipynb) | Option Wheel (risk education) |
+| [QC-Py-Cloud-10-RL-DQN-Trading](QC-Py-Cloud-10-RL-DQN-Trading.ipynb) | RL DQN (advanced) |
+| [QC-Py-Cloud-12-SectorRotation-Momentum](QC-Py-Cloud-12-SectorRotation-Momentum.ipynb) | Sector Rotation & Multi-Asset Momentum |
 
 ## Utilitaires
 

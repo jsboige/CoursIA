@@ -8,8 +8,8 @@ pool de 140 issues dont 89 creees dans les 7 derniers jours, un worker qui
 scanne le pool ne voit **rien de plus vieux que ~6 jours** -- il repioche
 mecaniquement dans ce que le coordinateur vient de creer, ce qui referme la
 boucle de monoculture que `.claude/rules/variation-protocol.md` cherche a
-ouvrir. Le picker defait la troncature par construction (`--limit 300`, une
-seule requete) et rend la selection *aleatoire ponderee* au lieu de
+ouvrir. Le picker defait la troncature courante par construction (`--limit
+2000`, une seule requete, plafond surveille) et rend la selection *aleatoire ponderee* au lieu de
 *recente-d'abord*.
 
 Il **ne decide pas** du grain. Il tire une poignee de candidats et laisse a
@@ -138,11 +138,13 @@ import datetime as dt
 import hashlib
 import json
 import math
+import os
 import pathlib
 import random
 import re
 import subprocess
 import sys
+from typing import Any
 
 REPO = "jsboige/CoursIA"
 
@@ -173,6 +175,7 @@ from series_saturation import (  # noqa: E402
 # troisieme : deux lecteurs divergents avaient deja rendu 38 % d'une journee
 # de merges invisibles au cap G-VAR-2.
 from grain_tag import parse_grain_tag  # noqa: E402
+from gh_payload_cache import PayloadCache, cache_key  # noqa: E402
 
 # Normalisation CANONIQUE du genre (#10020). Reutilisee, jamais
 # reimplementee : `notebook-genai-python` et `research-notebook-python`
@@ -251,6 +254,24 @@ def infer_genre(title: str, labels: list[str]) -> str:
     return "docs"
 
 
+def authoritative_genre(body: str) -> str | None:
+    """#13972 : extraire le genre que l'auteur de l'issue a DEClare dans le body.
+
+    Un tag `Grain: TIER/GENRE -- lane ...` dans le body est **autoritatif** :
+    c'est le genre que l'auteur a lui-meme pose, et il prime sur
+    `infer_genre(title, labels)` qui n'infere que du titre (et donc peut
+    declarer `notebook-python` un titre mentionnant `notebook_tools/`).
+
+    Renvoie le genre CANONIQUE (via `canonicalize_genre`), ou None si le
+    body n'a pas de tag `Grain:` lisible. Le retour None signifie «
+    l'auteur n'a rien declare, inferer du titre est acceptable ».
+    """
+    tag = parse_grain_tag(body)
+    if not tag or not tag.get("genre"):
+        return None
+    return canonicalize_genre(tag["genre"])
+
+
 def age_days(created: str) -> int:
     created_dt = dt.datetime.fromisoformat(created.replace("Z", "+00:00"))
     return max(0, (NOW - created_dt).days)
@@ -267,21 +288,68 @@ def age_days(created: str) -> int:
 # aurait fait tomber en premier etait #1028 (mandat audiobook), #1203, #1206,
 # #1210, #1453, #1454 -- six EPICs de mai, tous vivants.
 POOL_FETCH_LIMIT = 2000
+POOL_CACHE_TTL_SECONDS = 10 * 60
+VISITS_CACHE_TTL_SECONDS = 15 * 60
+SERIES_CACHE_TTL_SECONDS = 60 * 60
 
 
-def fetch_pool() -> list[dict]:
+def _cached_payload(
+    name: str,
+    identity: list[str],
+    fetch: Any,
+    *,
+    cache: PayloadCache | None,
+    cache_mode: str,
+    ttl_seconds: float,
+    cache_status: dict[str, dict[str, Any]] | None,
+) -> Any:
+    """Fetch raw JSON, optionally recording an observable cache decision."""
+    if cache is None:
+        return fetch()
+    result = cache.get_or_fetch(
+        cache_key(REPO, name, identity),
+        ttl_seconds,
+        fetch,
+        mode=cache_mode,
+    )
+    if cache_status is not None:
+        cache_status[name] = result.as_dict()
+    return result.payload
+
+
+def fetch_pool(
+    *,
+    cache: PayloadCache | None = None,
+    cache_mode: str = "off",
+    cache_status: dict[str, dict[str, Any]] | None = None,
+) -> list[dict]:
     """Une seule requete, limite haute -- c'est ce qui defait la troncature.
 
     Le plafond est haut ET surveille : aucun plafond ne se choisit une fois
     pour toutes, et celui-ci se fait franchir en silence par construction.
     """
-    out = subprocess.run(
-        ["gh", "issue", "list", "--repo", REPO, "--state", "open",
-         "--limit", str(POOL_FETCH_LIMIT),
-         "--json", "number,title,labels,body,createdAt,updatedAt"],
-        capture_output=True, text=True, encoding="utf-8", check=True,
-    ).stdout
-    raw = json.loads(out)
+    command = [
+        "gh", "issue", "list", "--repo", REPO, "--state", "open",
+        "--limit", str(POOL_FETCH_LIMIT),
+        "--json", "number,title,labels,body,createdAt,updatedAt",
+    ]
+
+    def fetch_raw() -> list[dict]:
+        out = subprocess.run(
+            command,
+            capture_output=True, text=True, encoding="utf-8", check=True,
+        ).stdout
+        return json.loads(out)
+
+    raw = _cached_payload(
+        "pool",
+        command,
+        fetch_raw,
+        cache=cache,
+        cache_mode=cache_mode,
+        ttl_seconds=POOL_CACHE_TTL_SECONDS,
+        cache_status=cache_status,
+    )
     if len(raw) >= POOL_FETCH_LIMIT:
         # Signature de la troncature : on a recu exactement ce qu'on a demande.
         # Le tirage reste possible et se poursuit -- bloquer la lane serait pire
@@ -302,6 +370,14 @@ def fetch_pool() -> list[dict]:
         labels = [lb["name"] for lb in it.get("labels", [])]
         title = it["title"]
         is_umbrella = "EPIC" in labels or title.upper().lstrip("[").startswith("EPIC")
+        body = it.get("body") or ""
+        # #13972 : le genre que l'AUTEUR de l'issue a declare dans le body
+        # (`Grain: TIER/GENRE -- lane ...`) prime sur l'inference du titre.
+        # Mesure du 2026-09-01 (lane ai-01) : `infer_genre` declarait
+        # `notebook-python` pour des issues `[consolidation] notebook_tools/`
+        # dont le body dit noir sur blanc `Grain: MED/docs` -- le META etait
+        # servi sous restriction CONTENU.
+        declared_genre = authoritative_genre(body)
         pool.append({
             "number": it["number"],
             "title": title,
@@ -310,10 +386,10 @@ def fetch_pool() -> list[dict]:
             "age": age_days(it["createdAt"]),
             "idle": age_days(it["updatedAt"]),
             "updated_at": it["updatedAt"],
-            "genre": infer_genre(title, labels),
-            "body": it.get("body") or "",
-            "parent": parent_issue(it.get("body") or ""),
-            "polarity": polarity(title, it.get("body") or ""),
+            "genre": declared_genre if declared_genre else infer_genre(title, labels),
+            "body": body,
+            "parent": parent_issue(body),
+            "polarity": polarity(title, body),
             "klass": (
                 "delivered" if "candidate-delivered" in labels
                 else "umbrella" if is_umbrella
@@ -338,7 +414,13 @@ VISITS_WINDOW_DAYS = 1
 VISITS_SCALE = 4.0
 
 
-def fetch_visits(days: int = VISITS_WINDOW_DAYS) -> tuple[dict[int, int], str | None]:
+def fetch_visits(
+    days: int = VISITS_WINDOW_DAYS,
+    *,
+    cache: PayloadCache | None = None,
+    cache_mode: str = "off",
+    cache_status: dict[str, dict[str, Any]] | None = None,
+) -> tuple[dict[int, int], str | None]:
     """Combien de PRs mergees par LA FLOTTE citent chaque issue sur la fenetre.
 
     Rend ``(compteur, erreur)``. En cas d'echec, le compteur est vide **et**
@@ -357,24 +439,59 @@ def fetch_visits(days: int = VISITS_WINDOW_DAYS) -> tuple[dict[int, int], str | 
     """
     cutoff = NOW - dt.timedelta(days=days)
     stamp = cutoff.strftime("%Y-%m-%dT%H:%M:%S+00:00")
-    try:
+    command = [
+        "gh", "pr", "list", "--repo", REPO, "--state", "merged",
+        "--limit", "400", "--search", f"merged:>={stamp}",
+        "--json", "number,title,body,mergedAt",
+    ]
+    identity = [
+        "gh", "pr", "list", "--repo", REPO, "--state", "merged",
+        "--limit", "400", "--window-days", str(days),
+        "--json", "number,title,body,mergedAt",
+    ]
+
+    def fetch_raw() -> list[dict]:
         raw = subprocess.run(
-            ["gh", "pr", "list", "--repo", REPO, "--state", "merged",
-             "--limit", "400", "--search", f"merged:>={stamp}",
-             "--json", "number,title,body,mergedAt"],
+            command,
             capture_output=True, text=True, encoding="utf-8", errors="replace",
             check=True, timeout=60,
         ).stdout
-        prs = json.loads(raw)
+        return json.loads(raw)
+
+    try:
+        prs = _cached_payload(
+            "visits",
+            identity,
+            fetch_raw,
+            cache=cache,
+            cache_mode=cache_mode,
+            ttl_seconds=VISITS_CACHE_TTL_SECONDS,
+            cache_status=cache_status,
+        )
     except (subprocess.CalledProcessError, json.JSONDecodeError,
             subprocess.TimeoutExpired, OSError) as exc:
         return {}, f"{type(exc).__name__}: {exc}"
 
+    cache_entry = (cache_status or {}).get("visits") or {}
+    cache_err = None
+    if cache_entry.get("status") == "stale":
+        cache_err = "cache stale apres echec du refresh: " + str(
+            cache_entry.get("error") or "erreur inconnue"
+        )
+
+    if cache_entry.get("status") in {"hit", "stale"}:
+        prs = [
+            pr for pr in prs
+            if pr.get("mergedAt")
+            and dt.datetime.fromisoformat(
+                pr["mergedAt"].replace("Z", "+00:00")
+            ) >= cutoff
+        ]
     counts: dict[int, int] = {}
     for pr in prs:
         for key in cited_issues(pr):
             counts[key] = counts.get(key, 0) + 1
-    return counts, None
+    return counts, cache_err
 
 
 
@@ -392,6 +509,76 @@ def fetch_visits(days: int = VISITS_WINDOW_DAYS) -> tuple[dict[int, int], str | 
 # selection. C'est ce que "revois completement l'organe de pick" demandait --
 # pas de mieux classer, mais de cesser d'etre un simple conseil de classement.
 DWELL_HOURS_DEFAULT = 24.0
+URN_NAMES = {"grain", "umbrella", "delivered"}
+
+
+def _csv_values(groups: list[str] | None) -> list[str]:
+    """Flatten repeatable comma-separated CLI values, ignoring empty fields."""
+    return [
+        value.strip()
+        for group in groups or []
+        for value in group.split(",")
+        if value.strip()
+    ]
+
+
+def filter_candidates(
+    items: list[dict],
+    *,
+    exclude_issues: set[int] | None = None,
+    required_labels: set[str] | None = None,
+    excluded_labels: set[str] | None = None,
+    min_age_days: int | None = None,
+    max_age_days: int | None = None,
+    min_idle_days: int | None = None,
+    max_idle_days: int | None = None,
+    urns: set[str] | None = None,
+) -> tuple[list[dict], dict[str, Any]]:
+    """Apply factual local filters and return an exact exclusion funnel."""
+    exclude_issues = exclude_issues or set()
+    required_labels = {label.casefold() for label in required_labels or set()}
+    excluded_labels = {label.casefold() for label in excluded_labels or set()}
+    urns = urns or set(URN_NAMES)
+    checks = [
+        ("exclude_issue", lambda item, labels: item["number"] in exclude_issues),
+        ("require_label", lambda item, labels: not required_labels.issubset(labels)),
+        ("exclude_label", lambda item, labels: bool(excluded_labels & labels)),
+        ("min_age_days", lambda item, labels: min_age_days is not None
+         and item["age"] < min_age_days),
+        ("max_age_days", lambda item, labels: max_age_days is not None
+         and item["age"] > max_age_days),
+        ("min_idle_days", lambda item, labels: min_idle_days is not None
+         and item["idle"] < min_idle_days),
+        ("max_idle_days", lambda item, labels: max_idle_days is not None
+         and item["idle"] > max_idle_days),
+        ("urns", lambda item, labels: item["klass"] not in urns),
+    ]
+    excluded = {name: 0 for name, _ in checks}
+    examples: dict[str, list[int]] = {name: [] for name, _ in checks}
+    kept = []
+    for item in items:
+        labels = {str(label).casefold() for label in item.get("labels", [])}
+        for name, rejects in checks:
+            if rejects(item, labels):
+                excluded[name] += 1
+                if len(examples[name]) < 5:
+                    examples[name].append(item["number"])
+                break
+        else:
+            kept.append(item)
+    excluded = {name: count for name, count in excluded.items() if count}
+    examples = {name: values for name, values in examples.items() if values}
+    return kept, {
+        "initial": len(items),
+        "final": len(kept),
+        "excluded_total": len(items) - len(kept),
+        "excluded": excluded,
+        "examples": examples,
+        "by_urn": {
+            name: sum(1 for item in kept if item["klass"] == name)
+            for name in sorted(URN_NAMES)
+        },
+    }
 
 # Une issue portant l'une de ces etiquettes se consomme sans delai : le
 # dwell existe pour empecher l'emballement d'audit, pas pour retarder un
@@ -602,6 +789,28 @@ def _summarize_claim(out: str, returncode: int) -> str:
     return f"exit={returncode}"
 
 
+def _utf8_child_env() -> dict:
+    """Environnement pour un enfant **Python** dont on lit le stdout en UTF-8.
+
+    ``encoding="utf-8"`` cote parent ne dit que comment le parent DECODE ; il
+    ne dit rien de ce que l'enfant ENCODE. Un `python` enfant dont stdout est
+    un tube choisit ``locale.getpreferredencoding()`` -- cp1252 sur un Windows
+    francais. Le parent recoit alors du cp1252 et le decode en UTF-8 : tout
+    caractere non-ASCII leve ``UnicodeDecodeError`` et tue le thread lecteur.
+
+    Mesure (Windows FR) : un enfant imprimant un tiret cadratin rend l'octet
+    isole 0x97 (cp1252) sans cette variable -- invalide en UTF-8, c'est
+    exactement l'octet sur lequel le picker plantait -- et la sequence
+    0xE2 0x80 0x94 avec. ``check_lane_claim.py`` rend precisement des verdicts
+    en francais accentue ("claim perime", "deja claim par cette lane").
+
+    ``PYTHONIOENCODING`` est la seule variable qui traverse la frontiere de
+    process : elle instruit l'ENFANT, la ou le hook pre-commit du depot
+    ("refuse NEW text=True without encoding=") ne peut regarder que le parent.
+    """
+    return {**os.environ, "PYTHONIOENCODING": "utf-8"}
+
+
 def check_claims(numbers: list[int], lane: str) -> dict[int, str]:
     """Verif claims sur les seuls candidats tires (N appels, pas 140).
 
@@ -616,6 +825,7 @@ def check_claims(numbers: list[int], lane: str) -> dict[int, str]:
                 [sys.executable, "scripts/check_lane_claim.py",
                  "--lane", lane, str(n)],
                 capture_output=True, text=True, encoding="utf-8", timeout=60,
+                env=_utf8_child_env(),
             )
             verdicts[n] = _summarize_claim(r.stdout or r.stderr or "",
                                            r.returncode)
@@ -1164,7 +1374,10 @@ def unaddressed_review_points(numbers: list[int]) -> dict[int, int]:
         try:
             data = nits.gh_json(["pr", "view", str(n), "--repo", REPO,
                                  "--json", nits.FIELDS])
-            result = nits.analyse(data, nits.review_threads(n), now)
+            result = nits.analyse(
+                data, nits.review_threads(n), now,
+                issue_created=nits.gh_issue_created,
+                dismissed_improperly=nits.improper_dismissals(n))
         except Exception:  # noqa: BLE001 - une PR illisible ne bloque pas les autres
             continue
         if result.get("blocked"):
@@ -1313,7 +1526,12 @@ def red_backlog(lane: str, threshold_hours: float,
         if causes:
             red.append({"number": pr["number"], "title": pr["title"],
                         "age_hours": round(age),
-                        "causes": causes})
+                        "causes": causes,
+                        # #13967 : signal optionnel fourni par un caller
+                        # externe (wrapper sur `variation_adjacency_guard`).
+                        # Falsy par defaut pour ne pas changer le contrat
+                        # des 79 tests existants.
+                        "is_adjacency": bool(pr.get("is_adjacency"))})
     red.sort(key=lambda r: -r["age_hours"])
 
     triggers = []
@@ -1520,17 +1738,47 @@ def print_red_assignment(lane: str, backlog: dict, threshold_hours: float) -> No
         for cause in item["causes"]:
             print(f"       {cause}")
     print()
-    print("Trois gestes, dans cet ordre -- le premier repare souvent seul :")
-    print("  1. `gh pr update-branch <N>` : rejoue les checks sur une tete fraiche.")
-    print("     Un rouge peut dater d'AVANT la correction du garde qui l'a produit")
-    print("     (mesure du 2026-08-21 : 5 PRs sur 9 n'avaient rien a corriger).")
-    print("     Dater le garde -- `git log -- <script>` -- avant de conclure.")
-    print("  2. conflits : rebaser sur origin/main, `--force-with-lease` si la lane")
-    print("     est seule sur la branche.")
-    print("  3. corriger la substance, pousser, et REPONDRE par ecrit -- au")
-    print("     CHANGES_REQUESTED comme au nit : un push muet ne leve aucune")
-    print("     remarque. `python scripts/check_unaddressed_nits.py <N>` detaille")
-    print("     chaque point non leve, son auteur et sa surface.")
+    if red and all(r.get("is_adjacency") for r in red):
+        # #13967 : quand la cause du rouge est `adjacency` (G-VAR-3, mesure
+        # du 2026-09-01 = 13 PRs / 25 rouges mesurables = premiere cause de
+        # rouge de la flotte), les trois conseils generiques
+        # (`update-branch` / rebase / pousser) sont invariants au predicat
+        # (aucun ne modifie le `prev_genre` ni le `genre` courant), donc
+        # aucun ne leve le blocage. L'organe `variation_adjacency_guard`
+        # produit deja le bon message (« piochez un grain d'UN AUTRE genre,
+        # ne retaguez pas le meme travail ») -- ici on le dit EN CLAIR
+        # pour que la lane ne perde pas son cycle a pousser une PR dont
+        # la cause est ailleurs.
+        print("Cause determinante : `adjacency` (G-VAR-3, organe "
+              "variation_adjacency_guard). Aucun des trois gestes generiques")
+        print("ne leve ce blocage : la cause n'est pas dans le diff, elle est")
+        print("dans le **genre du grain suivant**. Le remede :")
+        print()
+        print("  -> Piocher un grain d'UN AUTRE genre (LIGHT/{guard,ledger,")
+        print("     docs,readme,test} apres un autre grain du meme genre est")
+        print("     un monoculture interdit par le protocole variation §2).")
+        print("  -> Ne PAS retaguer la PR existante -- le re-tag du meme")
+        print("     travail sous un autre genre est l'echappatoire que le")
+        print("     protocole ferme explicitement.")
+        print("  -> Produire un grain frais (DEEP ou MED, ou un CONTENU dans")
+        print("     un genre distinct du precedent merge) : c'est lui qui")
+        print("     decale la file et leve le blocage.")
+        print()
+        print("Mesure du 2026-09-01 : 13 PRs / 25 rouges mesurables tenues par")
+        print("adjacency -- premiere cause de rouge de la flotte, devant")
+        print("`tag_required` (5), `lane_claim` (3), `perimeter` (2).")
+    else:
+        print("Trois gestes, dans cet ordre -- le premier repare souvent seul :")
+        print("  1. `gh pr update-branch <N>` : rejoue les checks sur une tete fraiche.")
+        print("     Un rouge peut dater d'AVANT la correction du garde qui l'a produit")
+        print("     (mesure du 2026-08-21 : 5 PRs sur 9 n'avaient rien a corriger).")
+        print("     Dater le garde -- `git log -- <script>` -- avant de conclure.")
+        print("  2. conflits : rebaser sur origin/main, `--force-with-lease` si la lane")
+        print("     est seule sur la branche.")
+        print("  3. corriger la substance, pousser, et REPONDRE par ecrit -- au")
+        print("     CHANGES_REQUESTED comme au nit : un push muet ne leve aucune")
+        print("     remarque. `python scripts/check_unaddressed_nits.py <N>` detaille")
+        print("     chaque point non leve, son auteur et sa surface.")
     print()
     print_unattributed_blocked(backlog)
     print_base_inherited(backlog)
@@ -1791,6 +2039,24 @@ def main(argv: list[str] | None = None) -> int:
                     help="passe outre la restriction CONTENU. A justifier "
                          "PAR ECRIT aupres du coordinateur -- elle ne se "
                          "prend pas en silence.")
+    ap.add_argument("--cache", choices=("auto", "off", "refresh"), default="auto",
+                    help="cache des payloads GitHub partages (defaut auto)")
+    ap.add_argument("--cache-dir", type=pathlib.Path, default=None,
+                    help="repertoire cache explicite (utile aux tests/diagnostics)")
+    ap.add_argument("--cache-status", action="store_true",
+                    help="affiche hit/miss/refresh/stale/bypass en sortie texte")
+    ap.add_argument("--exclude-issue", action="append", default=[], metavar="N[,N...]",
+                    help="ecarte des issues deja refutees ; option repetable")
+    ap.add_argument("--require-label", action="append", default=[], metavar="LABEL[,LABEL...]",
+                    help="exige tous ces labels, sans distinction de casse")
+    ap.add_argument("--exclude-label", action="append", default=[], metavar="LABEL[,LABEL...]",
+                    help="ecarte si au moins un de ces labels est present")
+    ap.add_argument("--min-age-days", type=int, default=None)
+    ap.add_argument("--max-age-days", type=int, default=None)
+    ap.add_argument("--min-idle-days", type=int, default=None)
+    ap.add_argument("--max-idle-days", type=int, default=None)
+    ap.add_argument("--urns", default="grain,umbrella,delivered",
+                    help="urnes admises : grain,umbrella,delivered")
     ap.add_argument("--json", action="store_true", help="sortie machine")
     ap.add_argument("--orphans-report", action="store_true",
                     help="mode rapport : PRs bloquees sans tag Grain lisible, groupees par "
@@ -1804,6 +2070,37 @@ def main(argv: list[str] | None = None) -> int:
         ap.error("--apply-comment n'a de sens qu'avec --orphans-report")
     if not args.lane and not args.orphans_report and args.admissible is None:
         ap.error("--lane est requis (--orphans-report et --admissible s'en dispensent)")
+    for low_name, high_name in (
+        ("min_age_days", "max_age_days"),
+        ("min_idle_days", "max_idle_days"),
+    ):
+        low, high = getattr(args, low_name), getattr(args, high_name)
+        if low is not None and low < 0:
+            ap.error(f"--{low_name.replace('_', '-')} doit etre positif")
+        if high is not None and high < 0:
+            ap.error(f"--{high_name.replace('_', '-')} doit etre positif")
+        if low is not None and high is not None and low > high:
+            ap.error(
+                f"--{low_name.replace('_', '-')} ne peut pas depasser "
+                f"--{high_name.replace('_', '-')}"
+            )
+    try:
+        excluded_issues = {int(value) for value in _csv_values(args.exclude_issue)}
+    except ValueError:
+        ap.error("--exclude-issue attend des numeros separes par des virgules")
+    required_labels = set(_csv_values(args.require_label))
+    excluded_labels = set(_csv_values(args.exclude_label))
+    selected_urns = {value.casefold() for value in _csv_values([args.urns])}
+    invalid_urns = selected_urns - URN_NAMES
+    if not selected_urns or invalid_urns:
+        detail = ", ".join(sorted(invalid_urns)) or "liste vide"
+        ap.error(f"--urns invalide ({detail})")
+
+    effective_cache_mode = args.cache
+    if "PYTEST_CURRENT_TEST" in os.environ and args.cache_dir is None:
+        effective_cache_mode = "off"
+    payload_cache = PayloadCache(args.cache_dir)
+    cache_status: dict[str, dict[str, Any]] = {}
 
     # Mode rapport : le garde rouge (lane) ne concerne pas ce chemin -- la file
     # des orphelines est lane-independante et ce mode ne tire pas de grain.
@@ -1821,9 +2118,28 @@ def main(argv: list[str] | None = None) -> int:
     # et elle doit pouvoir etre posee sur un grain STEERE, chemin par lequel
     # arrive l'essentiel du travail (mesure du 2026-08-29).
     if args.admissible is not None:
-        pool = fetch_pool()
-        series, issue_to_family, series_err = fetch_series_visits()
+        pool = fetch_pool(
+            cache=payload_cache,
+            cache_mode=effective_cache_mode,
+            cache_status=cache_status,
+        )
+        series, issue_to_family, series_err = fetch_series_visits(
+            cache=payload_cache,
+            cache_mode=effective_cache_mode,
+            cache_status=cache_status,
+            cache_ttl_seconds=SERIES_CACHE_TTL_SECONDS,
+        )
         balance = zone_balance(series, issue_to_family, pool)
+        stale = {
+            name: entry for name, entry in cache_status.items()
+            if entry.get("status") == "stale"
+        }
+        if stale:
+            details = ", ".join(
+                f"{name}: {entry.get('error') or 'refresh echoue'}"
+                for name, entry in sorted(stale.items())
+            )
+            print(f"(cache STALE explicite : {details})")
         hit = next((x for x in pool if x["number"] == args.admissible), None)
         if hit is None:
             print(f"#{args.admissible} : absente du pool ouvert "
@@ -1831,8 +2147,12 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         cause = admissibility(hit, balance, issue_to_family, args.dwell_hours)
         if series_err:
-            print(f"(saturation de zone NON MESUREE : {series_err} -- "
-                  "le volet parite n'a PAS ete evalue)")
+            if (cache_status.get("series") or {}).get("status") == "stale":
+                print(f"(saturation FRAICHE NON MESUREE : {series_err} -- "
+                      "parite evaluee sur le payload stale explicitement signale)")
+            else:
+                print(f"(saturation de zone NON MESUREE : {series_err} -- "
+                      "le volet parite n'a PAS ete evalue)")
         print(f"#{hit['number']} {hit['title'][:70]}")
         print(f"  genre {hit['genre']} | polarite {hit['polarity']} | "
               f"age {_hours_old(hit['created_at']):.0f} h")
@@ -1870,9 +2190,22 @@ def main(argv: list[str] | None = None) -> int:
         print(f"(garde rouge indisponible : {backlog['unavailable']} -- tirage rendu sans verification)")
         print()
 
-    pool = fetch_pool()
-    visits, visits_err = fetch_visits()
-    series, issue_to_family, series_err = fetch_series_visits()
+    pool = fetch_pool(
+        cache=payload_cache,
+        cache_mode=effective_cache_mode,
+        cache_status=cache_status,
+    )
+    visits, visits_err = fetch_visits(
+        cache=payload_cache,
+        cache_mode=effective_cache_mode,
+        cache_status=cache_status,
+    )
+    series, issue_to_family, series_err = fetch_series_visits(
+        cache=payload_cache,
+        cache_mode=effective_cache_mode,
+        cache_status=cache_status,
+        cache_ttl_seconds=SERIES_CACHE_TTL_SECONDS,
+    )
     issue_to_family = enrich_parent_families(
         pool, issue_to_family, series)
     balance = zone_balance(series, issue_to_family, pool)
@@ -1894,7 +2227,33 @@ def main(argv: list[str] | None = None) -> int:
             withheld.append((it, cause))
         else:
             admitted.append(it)
-    by_class = {k: [it for it in admitted if it["klass"] == k]
+    filter_active = {
+        "exclude_issue": sorted(excluded_issues),
+        "require_label": sorted(required_labels, key=str.casefold),
+        "exclude_label": sorted(excluded_labels, key=str.casefold),
+        "min_age_days": args.min_age_days,
+        "max_age_days": args.max_age_days,
+        "min_idle_days": args.min_idle_days,
+        "max_idle_days": args.max_idle_days,
+        "urns": sorted(selected_urns),
+    }
+    filtered, filter_funnel = filter_candidates(
+        admitted,
+        exclude_issues=excluded_issues,
+        required_labels=required_labels,
+        excluded_labels=excluded_labels,
+        min_age_days=args.min_age_days,
+        max_age_days=args.max_age_days,
+        min_idle_days=args.min_idle_days,
+        max_idle_days=args.max_idle_days,
+        urns=selected_urns,
+    )
+    filter_funnel.update({
+        "pool_initial": len(pool),
+        "admitted": len(admitted),
+        "admission_withheld": len(pool) - len(admitted),
+    })
+    by_class = {k: [it for it in filtered if it["klass"] == k]
                 for k in ("grain", "umbrella", "delivered")}
 
     # Graine : (lane, heure UTC, reroll). Lanes differentes -> tirages
@@ -2001,11 +2360,64 @@ def main(argv: list[str] | None = None) -> int:
             "recent_delivery": {str(k): v for k, v in delivery.items()},
             "red_backlog": backlog,
             "substance_drought": drought,
+            "cache": cache_status,
+            "filters": {
+                "active": filter_active,
+                "excluded": filter_funnel["excluded"],
+                "funnel": filter_funnel,
+            },
         }, ensure_ascii=False, indent=2))
         return 0
 
+    stale_entries = {
+        name: entry
+        for name, entry in cache_status.items()
+        if entry.get("status") == "stale"
+    }
+    if args.cache_status or stale_entries:
+        states = ", ".join(
+            f"{name}={entry.get('status')}"
+            + (f" ({entry.get('error')})" if entry.get("error") else "")
+            for name, entry in sorted(cache_status.items())
+        )
+        print(f"Cache payloads : {states or 'aucune mesure partageable lue'}")
+        if stale_entries:
+            print("!! STALE explicite : payload ancien utilise seulement apres "
+                  "echec du refresh ; ce n'est pas une mesure fraiche.")
+        print()
+    non_default_filters = {
+        key: value
+        for key, value in filter_active.items()
+        if value not in (None, [], sorted(URN_NAMES))
+    }
+    if non_default_filters:
+        details = ", ".join(
+            f"{name}={count}"
+            for name, count in filter_funnel["excluded"].items()
+        ) or "aucune exclusion"
+        print(
+            f"Filtres locaux : {filter_funnel['initial']} admis -> "
+            f"{filter_funnel['final']} candidats ({details})."
+        )
+        if not filtered:
+            dominant = max(
+                filter_funnel["excluded"],
+                key=filter_funnel["excluded"].get,
+                default=None,
+            )
+            if dominant:
+                print(
+                    f"Aucun candidat final : relacher d'abord `{dominant}` "
+                    f"({filter_funnel['excluded'][dominant]} exclusions)."
+                )
+        print()
     if series_err:
-        print(f"(saturation de zone NON MESUREE : {series_err} -- aucun amortissement de serie applique)")
+        if (cache_status.get("series") or {}).get("status") == "stale":
+            print(f"(saturation FRAICHE NON MESUREE : {series_err} -- "
+                  "payload stale explicitement signale et amortissement ancien applique)")
+        else:
+            print(f"(saturation de zone NON MESUREE : {series_err} -- "
+                  "aucun amortissement de serie applique)")
         print()
     else:
         chaudes = [(f, b) for f, b in balance.items()
@@ -2038,8 +2450,9 @@ def main(argv: list[str] | None = None) -> int:
                   "en a aucun, d'en declarer un : une zone chaude sans EPIC "
                   "n'a personne de comptable pour la contrepartie.")
             print()
-    print(f"Pool ouvert : {len(pool)} issues  "
-          f"= {len(by_class['grain'])} grains "
+    print(f"Pool ouvert : {len(pool)} issues.")
+    print(f"Candidats apres admission/filtres : "
+          f"{len(by_class['grain'])} grains "
           f"+ {len(by_class['umbrella'])} umbrella "
           f"+ {len(by_class['delivered'])} candidate-delivered")
     if args.admit_reason:
@@ -2081,7 +2494,9 @@ def main(argv: list[str] | None = None) -> int:
     print("-" * len(header))
     for p in picks:
         mark = "*" if p["genre"] in CONTENU else " "
-        vus = "n/m" if visits_err else str(p.get("visits", 0))
+        visits_stale = (cache_status.get("visits") or {}).get("status") == "stale"
+        vus = (f"~{p.get('visits', 0)}" if visits_stale
+               else "n/m" if visits_err else str(p.get("visits", 0)))
         print(f"{p['klass']:<10} #{p['number']:<7} {p['age']:>4}j {p['idle']:>5}j {vus:>4}  "
               f"{p['genre']:<15}{mark} {p['weight']:>5}  {p['title'][:62]}")
         if p["number"] in claims:
@@ -2114,9 +2529,14 @@ def main(argv: list[str] | None = None) -> int:
     print()
     print_unattributed_blocked(backlog)
     if visits_err:
-        print(f"!! affluence NON MESUREE ({visits_err}) : la colonne `vus` affiche")
-        print("   `n/m` et le tirage n'a PAS amorti les sujets deja frequentes.")
-        print("   Un zero d'absence de mesure n'est pas un zero d'affluence.")
+        if (cache_status.get("visits") or {}).get("status") == "stale":
+            print(f"!! affluence FRAICHE NON MESUREE ({visits_err}) : la colonne")
+            print("   `vus` prefixe les comptes stale par `~`; un amortissement ancien")
+            print("   est applique et ne doit pas etre lu comme une mesure fraiche.")
+        else:
+            print(f"!! affluence NON MESUREE ({visits_err}) : la colonne `vus` affiche")
+            print("   `n/m` et le tirage n'a PAS amorti les sujets deja frequentes.")
+            print("   Un zero d'absence de mesure n'est pas un zero d'affluence.")
         print()
     print("* = genre CONTENU (seul un genre CONTENU en DEEP/MED tient le plancher G-VAR-1).")
     print(f"vus = PRs mergees citant cette issue sur {VISITS_WINDOW_DAYS} j, TOUTES LANES.")

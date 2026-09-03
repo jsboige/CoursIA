@@ -1,0 +1,4 @@
+# Cache local des series UCR Anomaly (archive 184 Mo, aucune licence de
+# redistribution : cf. ucr_anomaly_fetch.py et bibliography-hygiene.md).
+# Les series sont retelechargees a l'execution, jamais versionnees.
+data/tsad/

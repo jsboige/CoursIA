@@ -1,5 +1,6 @@
 """Tests for train_patchtst.py — CPU-only smoke tests."""
 
+import subprocess
 import sys
 from pathlib import Path
 
@@ -15,6 +16,19 @@ from train_patchtst import (
     build_sequences,
     normalize_sequences,
 )
+
+
+def test_cli_help_has_no_argument_conflicts():
+    """The PatchTST CLI must construct its parser before any training starts."""
+    script = Path(__file__).resolve().parent.parent / "train_patchtst.py"
+    result = subprocess.run(
+        [sys.executable, str(script), "--help"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "--device" in result.stdout
 
 
 class TestPatchTSTModel:

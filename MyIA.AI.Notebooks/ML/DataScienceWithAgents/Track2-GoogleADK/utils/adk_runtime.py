@@ -83,10 +83,28 @@ def build_adk_model(config: ProviderConfig) -> LiteLlm:
     return LiteLlm(model=get_litellm_model(config), **kwargs)
 
 
-def build_data_agent(config: ProviderConfig | None = None) -> Agent:
-    """Construct a real Google ADK agent with a deterministic Python tool."""
+def build_agent(
+    name: str,
+    description: str,
+    instruction: str,
+    *,
+    tools: tuple = (),
+    config: ProviderConfig | None = None,
+) -> Agent:
+    """Construct a real Google ADK agent for one pedagogical role."""
     provider = config or get_provider_config()
     return Agent(
+        name=name,
+        description=description,
+        instruction=instruction,
+        model=build_adk_model(provider),
+        tools=list(tools),
+    )
+
+
+def build_data_agent(config: ProviderConfig | None = None) -> Agent:
+    """Construct a real Google ADK agent with a deterministic Python tool."""
+    return build_agent(
         name="dataset_profile_agent",
         description="Analyse la forme d'un jeu de données tabulaire.",
         instruction=(
@@ -94,8 +112,8 @@ def build_data_agent(config: ProviderConfig | None = None) -> Agent:
             "nombre de lignes et de colonnes, appelle obligatoirement l'outil "
             "dataset_profile, puis explique brièvement son résultat."
         ),
-        model=build_adk_model(provider),
-        tools=[dataset_profile],
+        tools=(dataset_profile,),
+        config=config,
     )
 
 
@@ -105,19 +123,18 @@ def _part_text(content: types.Content | None) -> str:
     return "".join(part.text or "" for part in content.parts).strip()
 
 
-async def run_data_agent(
+async def run_agent_turn(
+    agent: Agent,
     prompt: str,
-    config: ProviderConfig | None = None,
     *,
     app_name: str = APP_NAME,
     user_id: str = "track2-user",
     session_id: str | None = None,
     timeout_seconds: float = 120.0,
 ) -> AdkRunResult:
-    """Run one real ADK turn and return evidence from its event stream."""
+    """Run one real ADK agent turn and return its observable evidence."""
     session_id = session_id or f"session-{uuid4().hex}"
     session_service = InMemorySessionService()
-    agent = build_data_agent(config)
     runner = Runner(
         agent=agent,
         app_name=app_name,
@@ -192,6 +209,26 @@ async def run_data_agent(
         event_count=event_count,
         tool_calls=tuple(tool_calls),
         tool_responses=tuple(tool_responses),
+    )
+
+
+async def run_data_agent(
+    prompt: str,
+    config: ProviderConfig | None = None,
+    *,
+    app_name: str = APP_NAME,
+    user_id: str = "track2-user",
+    session_id: str | None = None,
+    timeout_seconds: float = 120.0,
+) -> AdkRunResult:
+    """Run the track's dataset agent through the generic ADK turn."""
+    return await run_agent_turn(
+        build_data_agent(config),
+        prompt,
+        app_name=app_name,
+        user_id=user_id,
+        session_id=session_id,
+        timeout_seconds=timeout_seconds,
     )
 
 

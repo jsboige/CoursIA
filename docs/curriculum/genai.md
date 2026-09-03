@@ -20,16 +20,10 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 
 | Métrique | Valeur |
 |----------|--------|
-| Notebooks | 186 |
+| Notebooks | 199 |
 | PRODUCTION | 0 |
-| BETA | 168 |
-| ALPHA | 18 |
-
-## GenAI (1 notebooks)
-
-| # | Notebook | Maturité | Exécutable |
-|---|----------|----------|------------|
-| 1 | GenAI E2E Quant Validation | BETA | Non |
+| BETA | 179 |
+| ALPHA | 20 |
 
 ## GenAI/00-GenAI-Environment (6 notebooks)
 
@@ -42,7 +36,7 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 5 | 00-5: ComfyUI Local - Test Rapide | BETA | Non |
 | 6 | Deploiement Docker Local des Services GenAI | BETA | Non |
 
-## GenAI/Aspire (6 notebooks)
+## GenAI/Aspire (8 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -51,7 +45,9 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 3 | Aspire 3 : Observabilite .NET moderne — Serilog,… | BETA | Non |
 | 4 | Aspire : un agent streaming en C# — Channels,… | BETA | Non |
 | 5 | Aspire : des tests d'intégration modernes —… | BETA | Oui |
-| 6 | Aspire : garde-fous du code d'agent — l'analyseur… | BETA | Oui |
+| 6 | Aspire : garde-fous du code d'agent — l'analyseur… | ALPHA | Oui |
+| 7 | Aspire : le routeur MultiConnector — vetting en ligne,… | BETA | Non |
+| 8 | Aspire : l'asynchrone aux frontieres natives -… | BETA | Oui |
 
 ## GenAI/Audio (32 notebooks)
 
@@ -90,14 +86,15 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 31 | Lecture Analytique pour Audiobook | BETA | Oui |
 | 32 | Voice Casting : Attribution de voix TTS par personnage | BETA | Non |
 
-## GenAI/CaseStudies (4 notebooks)
+## GenAI/CaseStudies (5 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | Duel Verbal : Barbie vs l'Âne de Shrek | BETA | Non |
 | 2 | Vue d'ensemble : un duel d'agents Père Fouras vs… | ALPHA | Non |
 | 3 | Docteur vs ChatGPT : Chatbot medical multi-agent | BETA | Non |
-| 4 | Générateur de Recettes PDF | BETA | Non |
+| 4 | Doctor vs ChatGPT: Multi-Agent Medical Chatbot | ALPHA | Non |
+| 5 | Générateur de Recettes PDF | BETA | Non |
 
 ## GenAI/CopilotSDK (1 notebooks)
 
@@ -111,7 +108,15 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 |---|----------|----------|------------|
 | 1 | EF Core : des requêtes vérifiées à la compilation | BETA | Oui |
 
-## GenAI/FineTuning (6 notebooks)
+## GenAI/FallacyDetection (3 notebooks)
+
+| # | Notebook | Maturité | Exécutable |
+|---|----------|----------|------------|
+| 1 | 01 — Introduction : taxonomies de sophismes et terrain… | ALPHA | Oui |
+| 2 | 02 — Paysage des datasets de detection de sophismes | BETA | Non |
+| 3 | 03 — Écart de couverture taxonomique : académique vs… | BETA | Oui |
+
+## GenAI/FineTuning (7 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -120,7 +125,8 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 3 | FT-03 : Supervised Fine-Tuning (SFT) — Enseigner un… | BETA | Non |
 | 4 | FT-04 : RLHF et Alignement — Préférences Humaines et… | BETA | Non |
 | 5 | FT-05 : Fusion et Routage de Modèles -- Combiner les… | BETA | Non |
-| 6 | FT-06 : LoRA vision-langage — fine-tune du décodeur de… | BETA | Non |
+| 6 | FT-05: Model Merging and Routing -- Combining… | BETA | Non |
+| 7 | FT-06 : LoRA vision-langage — fine-tune du décodeur de… | BETA | Non |
 
 ## GenAI/Image (17 notebooks)
 
@@ -144,29 +150,30 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 16 | Production Integration - GenAI | BETA | Non |
 | 17 | Génération d’un patron de point de croix à partir d’une… | ALPHA | Non |
 
-## GenAI/Plateformes-Conversationnelles (19 notebooks)
+## GenAI/Plateformes-Conversationnelles (20 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
-| 1 | Parcours QA — ce que l'API ne voit pas | ALPHA | Non |
-| 2 | Auditer un serveur MCP qu'on n'a pas ecrit | BETA | Non |
-| 3 | Consommer vs exposer le MCP — les deux sens du fil | BETA | Oui |
-| 4 | Choisir le modèle derrière son chatbot — une… | BETA | Non |
+| 1 | L'assistant de l'editeur — la quatrieme face du plugin | BETA | Non |
+| 2 | Joindre un fichier au chatbot — ignore, annote, ou… | BETA | Non |
+| 3 | Mesurer la dérive d'un copilot — le gate par étape ne… | BETA | Oui |
+| 4 | Obtenir des données structurées — la case json, le… | BETA | Non |
 | 5 | Ingestion RAG d'un corpus long structure | BETA | Oui |
-| 6 | L'assistant de l'editeur — la quatrieme face du plugin | BETA | Non |
-| 7 | Joindre un fichier au chatbot — ignore, annote, ou… | BETA | Non |
-| 8 | Mesurer la dérive d'un copilot — le gate par étape ne… | BETA | Oui |
-| 9 | Obtenir des données structurées — la case json, le… | BETA | Non |
+| 6 | Séparer les environnements de vecteurs | BETA | Oui |
+| 7 | Auditer un serveur MCP qu'on n'a pas ecrit | BETA | Non |
+| 8 | Consommer vs exposer le MCP — les deux sens du fil | BETA | Oui |
+| 9 | Choisir le modèle derrière son chatbot — une… | BETA | Non |
 | 10 | Presenter AI Engine par son API — instance jetable… | BETA | Non |
-| 11 | Séparer les environnements de vecteurs | BETA | Oui |
-| 12 | Parcours QA-OWUI — Notebook chapeau de la mission | ALPHA | Oui |
-| 13 | Module 01 — Découverte de Playwright & Open WebUI | BETA | Oui |
-| 14 | Module 02 — Navigation & Authentification | BETA | Oui |
-| 15 | Module 03 — Chat & Streaming LLM | BETA | Oui |
-| 16 | Module 04 — RAG, Outils MCP & Fonctionnalités avancées | BETA | Oui |
-| 17 | Module 05 — Multi-tenant, API Testing & CI/CD | BETA | Oui |
-| 18 | Module 06 — Tester les nouveautés v0.10 (« l'ère… | BETA | Non |
-| 19 | Différencier plusieurs assistants — mesurer ce qu'un… | BETA | Non |
+| 11 | Parcours QA — ce que l'API ne voit pas | ALPHA | Non |
+| 12 | Auditer la conformite visuelle — ce que le smoke test… | BETA | Non |
+| 13 | Parcours QA-OWUI — Notebook chapeau de la mission | ALPHA | Oui |
+| 14 | Module 01 — Découverte de Playwright & Open WebUI | BETA | Oui |
+| 15 | Module 02 — Navigation & Authentification | BETA | Oui |
+| 16 | Module 03 — Chat & Streaming LLM | BETA | Oui |
+| 17 | Module 04 — RAG, Outils MCP & Fonctionnalités avancées | BETA | Oui |
+| 18 | Module 05 — Multi-tenant, API Testing & CI/CD | BETA | Oui |
+| 19 | Module 06 — Tester les nouveautés v0.10 (« l'ère… | BETA | Non |
+| 20 | Différencier plusieurs assistants — mesurer ce qu'un… | BETA | Non |
 
 ## GenAI/PostTraining (16 notebooks)
 
@@ -189,7 +196,7 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 15 | PT-12 — Crédit différé multi-step : GAE-λ sur un… | ALPHA | Oui |
 | 16 | PT-13 — Les trois biais du loss GRPO et leurs… | ALPHA | Oui |
 
-## GenAI/RAG-et-Memoire-Semantique (5 notebooks)
+## GenAI/RAG-et-Memoire-Semantique (10 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -198,6 +205,11 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 3 | Embeddings from scratch — word2vec skip-gram, la… | BETA | Oui |
 | 4 | Tokenisation from scratch — l'unité de compte de tout… | ALPHA | Oui |
 | 5 | Stockage vectoriel réel — persistance, index ANN (HNSW)… | BETA | Oui |
+| 6 | RAG 05b — Mode serveur Qdrant : compromis exact/ANN ef… | BETA | Non |
+| 7 | 06 — Kernel Memory in-process : la couche d'abstraction… | BETA | Non |
+| 8 | RAG 07 — Kernel Memory Python : ingestion, recherche et… | BETA | Non |
+| 9 | RAG 08 — Kernel Memory et la recherche hybride : BM25 +… | BETA | Non |
+| 10 | RAG 09 — Au-delà du texte : le plafond multimodal du… | BETA | Non |
 
 ## GenAI/SemanticKernel (15 notebooks)
 
@@ -219,29 +231,29 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 14 | Notebook de conception de Notebook | BETA | Non |
 | 15 | Jeu de devinette : Père Fouras vs Laurent Jalabert | BETA | Non |
 
-## GenAI/Texte (28 notebooks)
+## GenAI/Texte (29 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
-| 1 | 09b. Prompt Security & Red-Teaming sur notre stack… | BETA | Non |
-| 2 | 10. Hébergement Local de Modèles Génératifs | BETA | Non |
-| 3 | 10b. Mécanique d'inférence LLM : construire et mesurer… | BETA | Non |
-| 4 | 10c. Stratégies pour contextes longs — budget de… | BETA | Non |
-| 5 | 11. Quantization | BETA | Non |
-| 6 | 12. Test Time Scaling | BETA | Non |
-| 7 | 13. Orchestration agentique du test-time scaling | BETA | Non |
-| 8 | 13b — Évaluation d'agents : succès, coût, ablation et… | BETA | Non |
-| 9 | 14. Memoire persistante pour le test-time scaling | BETA | Non |
-| 10 | 15. Tree-of-Thoughts sur de vrais problemes de… | BETA | Non |
-| 11 | 16. Scaling du test-time compute (Snell 2024) | BETA | Non |
-| 12 | 17. Modèles a raisonnement natif vs scaling du… | BETA | Non |
-| 13 | 18. Plugins Semantic Kernel pour le test-time scaling | BETA | Non |
-| 14 | 19. Orchestration et tâches planifiées avec Open WebUI… | BETA | Non |
-| 15 | 1. Introduction a l'IA generative avec l'API OpenAI | BETA | Non |
-| 16 | 20. OWUI Native API v0.9.6 — introspection REST et… | BETA | Non |
-| 17 | 22 — Évaluer les sorties générées : BLEU, ROUGE,… | BETA | Non |
-| 18 | 22. TensorSharp : pilote d'inférence LLM native .NET | BETA | Non |
-| 19 | 23. LLamaSharp : bake-off binding .NET de llama.cpp | ALPHA | Non |
+| 1 | 10. Hébergement Local de Modèles Génératifs | BETA | Non |
+| 2 | 10b. Mécanique d'inférence LLM : construire et mesurer… | BETA | Non |
+| 3 | 10c. Stratégies pour contextes longs — budget de… | BETA | Non |
+| 4 | 10d. TensorSharp : pilote d'inférence LLM native .NET | BETA | Non |
+| 5 | 10e. LLamaSharp : bake-off binding .NET de llama.cpp | BETA | Non |
+| 6 | 10f. ONNX Runtime GenAI : jambe finale du bake-off .NET | BETA | Non |
+| 7 | 11. Quantization | BETA | Non |
+| 8 | 12. Test Time Scaling | BETA | Non |
+| 9 | 13. Orchestration agentique du test-time scaling | BETA | Non |
+| 10 | 13b — Évaluation d'agents : succès, coût, ablation et… | BETA | Non |
+| 11 | 14. Memoire persistante pour le test-time scaling | BETA | Non |
+| 12 | 15. Tree-of-Thoughts sur de vrais problemes de… | BETA | Non |
+| 13 | 16. Scaling du test-time compute (Snell 2024) | BETA | Non |
+| 14 | 17. Modèles a raisonnement natif vs scaling du… | BETA | Non |
+| 15 | 18. Plugins Semantic Kernel pour le test-time scaling | BETA | Non |
+| 16 | 19. Orchestration et tâches planifiées avec Open WebUI… | BETA | Non |
+| 17 | 1. Introduction a l'IA generative avec l'API OpenAI | BETA | Non |
+| 18 | 20. OWUI Native API v0.9.6 — introspection REST et… | BETA | Non |
+| 19 | 22 — Évaluer les sorties générées : BLEU, ROUGE,… | BETA | Non |
 | 20 | TAL — du mot aux dépendances : le pipeline linguistique… | BETA | Oui |
 | 21 | 2. Prompt Engineering : Techniques Avancées | ALPHA | Non |
 | 22 | 3. Structured Outputs : Sorties JSON Garanties | BETA | Non |
@@ -251,6 +263,7 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 26 | Code Interpreter : Exécution de Code avec OpenAI | BETA | Non |
 | 27 | 8. Reasoning Models | BETA | Non |
 | 28 | 9. Production Patterns | BETA | Non |
+| 29 | 9b. Prompt Security & Red-Teaming sur notre stack… | BETA | Non |
 
 ## GenAI/Vibe-Coding (8 notebooks)
 
