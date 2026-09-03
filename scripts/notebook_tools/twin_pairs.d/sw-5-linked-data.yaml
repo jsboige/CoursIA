@@ -34,6 +34,12 @@
       content_python_sha: 58b1ce0599c5591de7716a3d68a9e3ebcd973fafcdf2548478690aa445bb4cdc
       content_csharp_sha: 1f3f3c9fdd0887816f07443b669b49c63da7d673d019570013a293c3b52a945e
       reason: "Re-attestation apres fix markdown-loss #14117 (cellule finale reecrite par l enrichissement avait perdu les 3 liens de nav [SW-6-RDFS] / [<< 4-SPARQL] / [6-RDFS >>], bloc restaure depuis main) : markdown-only — signature sha256 des (source, execution_count, outputs) des 19 cellules code byte-identique base->HEAD (c5dfc9613796a617). detect_md_content_loss --check findings=0, check_notebook_navlinks --check OK. Jumeau Python SW-5b non touche. parity_level native-both intacte."
+    - date: "2026-09-03"
+      by: myia-po-2026:CoursIA
+      python_sha: 607ce735712708a08ebc37db2f5a7d19a0d16dfc
+      csharp_sha: 955039144c6f023945d2ef1b07a19e35d15c2b9c
+      content_python_sha: 58b1ce0599c5591de7716a3d68a9e3ebcd973fafcdf2548478690aa445bb4cdc
+      content_csharp_sha: a0cb970c8e562b91fcca27edb39aecfef89eed4cdbe283e15f08e619eaef062f
   known_differences:
     - "Socle commun : consommation de Linked Data distante (dereferencement d'URI, endpoints SPARQL)."
     - "Lib-vs-lib : C# = `dotNetRDF` (`VDS.RDF.Query` remote endpoint). Python = `SPARQLWrapper` (client dedie endpoints SPARQL) + `rdflib`. Asymetrie leger : Python ajoute `SPARQLWrapper` specialise pour le reseau distant, le C# unifie dans dotNetRDF."
