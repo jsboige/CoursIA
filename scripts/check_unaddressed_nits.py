@@ -275,9 +275,11 @@ CONCERN_MARKERS = (
 #     1 NON levee = #12059 fondateur, defaut B.0 = merge avec constat sans
 #     reponse, defaut pedagogique en production (hyperparametres GRPO contredits).
 #   🔴 (U+1F534) : bloquant strict, 1/35 (vrai bloquant).
-# `_unaccent` preserve les glyphes (categorie So, pas Mn), `_strip_mentioned_verdicts`
-# ne les neutralise pas (regex _MENTION_VERDICT* ciblent ASCII verdict formel),
-# `_is_cited` reste symetrique via CITERS ascii.
+# `_unaccent` preserve les glyphes (categorie So, pas Mn), `_is_cited` reste
+# symetrique via CITERS ascii. Les positions A-I (regex `_MENTION_VERDICT*`)
+# ciblent l'ASCII formel et ignorent les glyphes ; la Position J
+# (`_strip_glyphe_mentions`, #14277) les neutralise en position de MENTION
+# (méta-nom sur la même ligne), l'émission en tête de ligne restant vive.
 SEVERITY_GLYPHS = (
     "🟡",  # constat substantiel (fondateur #12059)
     "🔴",  # bloquant strict
@@ -993,6 +995,58 @@ def _strip_avant_merge_mention(body: str) -> str:
     return body
 
 
+# #14277 — Position J : glyphe de sévérité en position de MENTION. Les
+# SEVERITY_GLYPHS (🟡/🔴) sont concaténés dans CONCERN_MARKERS mais restent
+# invisibles aux positions A-H (regex `_MENTION_VERDICT*` ciblant l'ASCII
+# formel) : un compte-rendu technique qui NOMME le glyphe qu'il décrit est
+# classé BOT-CONCERN à tort. 3 FP mesurés (sweep 264 corps / 61 PRs,
+# fenêtre 2026-08-23..2026-09-02 ; 0 VP glyph-only sur la même fenêtre) :
+#   FP1 (#13951 c.869, issuecomment-5506801880) : « variante glyphe 🟡. »
+#   FP2 (#13951 c.872, issuecomment-5507737699) : « 2 cas (prose
+#        contradictoire + glyphe 🟡) ajoutes. »
+#   FP3 (#13951 c.871) : « les **glyphes de severite** (🟡 constat
+#        substantiel #12059, 🔴 bloquant) »
+#
+# Discriminateurs LIGNE-PORTÉS (le glyphe est une mention si l'un des deux
+# tient sur sa ligne) :
+#   (A) MÉTA-NOM — un nom nommant le glyphe précède sur la même ligne
+#       (« glyphe 🟡 », « glyphes de severite (🟡 ..., 🔴 ...) », FP1-3).
+#   (B) ITEM D'ÉNUMÉRATION — le glyphe est immédiatement précédé d'un
+#       séparateur `,` ou `+` (modulo espaces) : « (prose, 🟡, 🔴, +
+#       controle positif) », cellule de tableau « **CWC + 🟡** » (formes
+#       résiduelles de FP3, 5503423343).
+# L'émission réelle (mesurée #12059 / #12083 / #12077 — scan 35 reviews
+# Hermes de #12143) est un en-tête de verdict en tête de ligne (« **🟡
+# FINDING — ... », « LGTM structural / 🟡 ... »), jamais un item de liste :
+# ni méta-nom avant, ni séparateur `,`/`+` immédiat — le séparateur `/`
+# (VP #12083) est délibérément EXCLU du set d'énumération. Substitution
+# iso-longueur (1 char -> 1 espace) : les offsets du reste du body sont
+# préservés, comme les autres strips.
+_GLYPH_META_NOUN_RE = re.compile(
+    r"(?i)\b(?:glyphes?|glyphs?|marqueurs?|markers?|badges?|symboles?|emojis?)\b"
+)
+_GLYPH_ENUM_PRECEDER_RE = re.compile(r"[,+]\s+$")
+_SEVERITY_GLYPH_CLASS_RE = re.compile(f"[{''.join(SEVERITY_GLYPHS)}]")
+
+
+def _strip_glyphe_mentions(body: str) -> str:
+    """Neutralise les glyphes de sévérité en position de mention (Position J, #14277).
+
+    Chaque glyphe (🟡/🔴) dont la ligne porte un méta-nom le nommant (A) ou
+    qui est un item d'énumération `,`/`+` (B) est remplacé par une espace :
+    c'est une mention, pas une émission. Le glyphe en tête de ligne
+    (en-tête de verdict Hermes) reste vivant.
+    """
+    out = list(body)
+    for m in _SEVERITY_GLYPH_CLASS_RE.finditer(body):
+        line_start = body.rfind("\n", 0, m.start()) + 1
+        prefix = body[line_start:m.start()]
+        if (_GLYPH_META_NOUN_RE.search(prefix)
+                or _GLYPH_ENUM_PRECEDER_RE.search(prefix)):
+            out[m.start()] = " "
+    return "".join(out)
+
+
 def _strip_mentioned_verdicts(body: str) -> str:
     """Neutralise les noms de verdict cites en position de mention (#11636, #11744, #11809).
 
@@ -1023,6 +1077,12 @@ def _strip_mentioned_verdicts(body: str) -> str:
     # passee / formule B.0 / delegation Ball merge). Voir
     # `_strip_avant_merge_mention` pour la justification des 7 sous-patterns.
     body = _strip_avant_merge_mention(body)
+    # Phase 1j : Position J — neutralise les glyphes de sévérité (🟡/🔴) en
+    # position de mention (#14277). Cible distincte des positions A-H : pas
+    # un verdict ASCII formel mais un glyphe concaténé dans CONCERN_MARKERS,
+    # invisible aux regex de mention. Discriminateur ligne-portée : voir
+    # `_strip_glyphe_mentions`.
+    body = _strip_glyphe_mentions(body)
     # Phase 2 : Position G avec garde anti-negation (Hermes demande 1/2,
     # PR #14070). Approche `finditer` car le verdict-match n'est pas en
     # bord de phrase (la mention `traite le REQUEST_CHANGES` met le
