@@ -28,6 +28,13 @@
       csharp_sha: 30f285ee17bff43f06bb4ede8f8ad015b865e3f6
       content_python_sha: 5cd4eade8c04fd873006c5cda5a4b1d951657dfe9c3339acdb5b7eddaa4f4ec5
       content_csharp_sha: 85548bd13459b7abf0361d296ff2f62af25a7121d0e7ea8ff94ee38ff8cff0a8
+    - date: "2026-09-03"
+      by: myia-po-2026:CoursIA
+      python_sha: ce4c245605d506bb977802f6f72099dfc0fed9e7
+      csharp_sha: aecf1873e8d32d564c3dad2e3267671714d95096
+      content_python_sha: 5cd4eade8c04fd873006c5cda5a4b1d951657dfe9c3339acdb5b7eddaa4f4ec5
+      content_csharp_sha: 11ea49c9c4d276f7b00257bccb33bc79f0deee3a3097314d8be08e5b11f5248e
+      reason: "Re-attestation apres PR #14164 (CSP-8 Temporal C# density enrich, 3e passe) : markdown-only — 6 nouvelles cellules md (25->31), 0 changement de cellule code ; signature sha256 des (source, execution_count, outputs) des 16 cellules code byte-identique base->HEAD (6574f1e7b72b537a). Jumeau Python non touche. parity_level native-both intacte."
   known_differences:
     - "Socle commun : algebre d'intervalle d'Allen (13 relations), STP (Simple Temporal Problem) avec Floyd-Warshall, TCSP (Temporal CSP a intervalles multiples), application planification de reunion. Couverture conceptuelle COMPLETE des deux cotes (le twin le plus proche de la famille CSP au sens cellule-a-cellule : 42 vs 41 cellules, 17 vs 16 code)."
     - "Meme famille de solveur SOTA, bindings natifs : Python = ortools.sat.cp_model ; C# = Google.OrTools.Sat. Les deux cotes invoquent OR-Tools CP-SAT (moteur SAT-based identique) -- parite de solveur confirmee, pas de divergence de machinerie."
