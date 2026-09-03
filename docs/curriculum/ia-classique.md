@@ -20,12 +20,12 @@ Algorithmes de recherche classique, satisfaction de contraintes (CSP), résoluti
 
 | Métrique | Valeur |
 |----------|--------|
-| Notebooks | 166 |
+| Notebooks | 167 |
 | PRODUCTION | 0 |
-| BETA | 166 |
+| BETA | 167 |
 | ALPHA | 0 |
 
-## Search/Applications (51 notebooks)
+## Search/Applications (52 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -72,23 +72,24 @@ Algorithmes de recherche classique, satisfaction de contraintes (CSP), résoluti
 | 41 | App-23 — Cryptanalyse différentielle de PRESENT par SAT | BETA | Oui |
 | 42 | App-24 — MAPF : auditer les garanties des solveurs | BETA | Non |
 | 43 | App-25 — Enchères combinatoires : Winner Determination… | BETA | Oui |
-| 44 | App-28 — Learning to branch | BETA | Oui |
-| 45 | App-29 — Équilibrage de chaîne d'assemblage (SALBP) | BETA | Oui |
-| 46 | App-9 : Detection de bords par algorithmes génétiques | BETA | Oui |
-| 47 | TP : Conception d'Algorithmes Génétiques avec… | BETA | Oui |
-| 48 | App-14-ConnectFour-Adversarial-CSharp — Jumeau C# :… | BETA | Oui |
-| 49 | App-14 - Connect Four : Benchmark Adversarial Search | BETA | Oui |
-| 50 | App-14b : Puissance 4 -- Comparaison d'algorithmes IA… | BETA | Oui |
-| 51 | App-14c (C#) : Puissance 4 -- Comparaison d'algorithmes… | BETA | Oui |
+| 44 | App-27 — Sparse index tracking | BETA | Oui |
+| 45 | App-28 — Learning to branch | BETA | Oui |
+| 46 | App-29 — Équilibrage de chaîne d'assemblage (SALBP) | BETA | Oui |
+| 47 | App-9 : Detection de bords par algorithmes génétiques | BETA | Oui |
+| 48 | TP : Conception d'Algorithmes Génétiques avec… | BETA | Oui |
+| 49 | App-14-ConnectFour-Adversarial-CSharp — Jumeau C# :… | BETA | Oui |
+| 50 | App-14 - Connect Four : Benchmark Adversarial Search | BETA | Oui |
+| 51 | App-14b : Puissance 4 -- Comparaison d'algorithmes IA… | BETA | Oui |
+| 52 | App-14c (C#) : Puissance 4 -- Comparaison d'algorithmes… | BETA | Oui |
 
 ## Search/Part1-Foundations (34 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
-| 1 | Lean-18 : A* et l'optimalité sous heuristique… | BETA | Non |
-| 2 | Search-02b : Théorie des Graphes avec NetworkX (C#) | BETA | Oui |
-| 3 | Search-02b-NetworkX : Algorithmes de Graphe avec… | BETA | Oui |
-| 4 | Search-02c-QuikGraph : bibliotheque de graphes pour… | BETA | Oui |
+| 1 | Search-02b : Théorie des Graphes avec NetworkX (C#) | BETA | Oui |
+| 2 | Search-02b-NetworkX : Algorithmes de Graphe avec… | BETA | Oui |
+| 3 | Search-02c-QuikGraph : bibliotheque de graphes pour… | BETA | Oui |
+| 4 | Search-03e : A* et l'optimalité sous heuristique… | BETA | Non |
 | 5 | Search-09b : Minima fallacieux — le paysage de la… | BETA | Oui |
 | 6 | Search-09c — Discrépance combinatoire : colorier ±1… | BETA | Oui |
 | 7 | Search-09d — Discrépance combinatoire : la couche… | BETA | Oui |

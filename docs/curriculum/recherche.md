@@ -20,12 +20,12 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 
 | Métrique | Valeur |
 |----------|--------|
-| Notebooks | 242 |
+| Notebooks | 244 |
 | PRODUCTION | 0 |
-| BETA | 238 |
+| BETA | 240 |
 | ALPHA | 4 |
 
-## GameTheory (81 notebooks)
+## GameTheory (82 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -104,12 +104,13 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 | 73 | GameTheory-18 : Open Games et Lentilles -- la… | BETA | Oui |
 | 74 | GameTheory-18b : Casser la composition — où la… | BETA | Oui |
 | 75 | GameTheory-19 : L'abstraction a dette mesurable | BETA | Oui |
-| 76 | GameTheory-25 — Loi II, seconde jambe : synthétiser un… | BETA | Oui |
-| 77 | GameTheory-26 — Ensembles limites : Poincaré-Bendixson… | BETA | Oui |
-| 78 | GameTheory-27 — L'algorithme de Kuhn-Munkres :… | BETA | Oui |
-| 79 | GameTheory 27b — Le lake assignment_lean par son… | BETA | Non |
-| 80 | GameTheory-28 : Banc de calibration — humour, forme… | BETA | Oui |
-| 81 | GameTheory-28b : Banc humour — passer à l'échelle | BETA | Non |
+| 76 | GameTheory 24b : Le temoin d'impossibilite | BETA | Oui |
+| 77 | GameTheory-25 — Loi II, seconde jambe : synthétiser un… | BETA | Oui |
+| 78 | GameTheory-26 — Ensembles limites : Poincaré-Bendixson… | BETA | Oui |
+| 79 | GameTheory-27 — L'algorithme de Kuhn-Munkres :… | BETA | Oui |
+| 80 | GameTheory 27b — Le lake assignment_lean par son… | BETA | Non |
+| 81 | GameTheory-28 : Banc de calibration — humour, forme… | BETA | Oui |
+| 82 | GameTheory-28b : Banc humour — passer à l'échelle | BETA | Non |
 
 ## GameTheory/SocialChoice (8 notebooks)
 
@@ -205,35 +206,36 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 | 1 | Infer-101 : Introduction a Infer.NET | BETA | Oui |
 | 2 | Le Framework Rational Speech Act (RSA) | BETA | Oui |
 
-## Probas/DecisionTheory (25 notebooks)
+## Probas/DecisionTheory (26 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | Du graphe causal au do-calculus — le pont entre les… | BETA | Oui |
 | 2 | DoWhy-1 — Exiger un estimand : l'identification causale… | BETA | Oui |
-| 3 | Méthodes quasi-expérimentales — identifier l'effet… | BETA | Oui |
-| 4 | DecInfer-01-Utility-Foundations : Axiomes et Fondements | BETA | Oui |
-| 5 | DecInfer-02-Théorème de représentation de von… | BETA | Oui |
-| 6 | DecInfer-03-Utility-Money : Utilite de l'Argent et… | BETA | Oui |
-| 7 | DecInfer-04-Multi-Attribute : Utilite Multi-Attributs | BETA | Oui |
-| 8 | DecInfer-05-Decision-Networks : Reseaux de Decision | BETA | Oui |
-| 9 | DecInfer-06-Value-Information : Valeur de l'Information | BETA | Oui |
-| 10 | DecInfer-07-Expert-Systems : Decisions Robustes et… | BETA | Oui |
-| 11 | DecInfer-08-Sequential : MDPs, Bandits et POMDPs | BETA | Oui |
-| 12 | DecInfer-09-Preuves formelles — Indice de Gittins | BETA | Oui |
-| 13 | DecInfer-10-Thompson-Sampling : Bandits bayesiens par… | BETA | Oui |
-| 14 | DecPyMC-1-Utility-Foundations : Axiomes et Fondements | BETA | Oui |
-| 15 | DecPyMC-10 : Ruine et capital — le processus de… | BETA | Oui |
-| 16 | DecPyMC-11 — Valeur de l'Information en Souscription | BETA | Oui |
-| 17 | DecPyMC-12 — Fréquence × sévérité hiérarchique : le… | BETA | Oui |
-| 18 | DecPyMC-2-Utility-Money : Utilite de l'Argent et… | BETA | Oui |
-| 19 | DecPyMC-3-Multi-Attribute : Utilite Multi-Attributs | BETA | Oui |
-| 20 | DecPyMC-4-Decision-Networks : Reseaux de Decision | BETA | Oui |
-| 21 | DecPyMC-5-Valeur de l'Information | BETA | Oui |
-| 22 | DecPyMC-6-Systèmes Experts et Decisions Robustes | BETA | Oui |
-| 23 | DecPyMC-7-MDPs, Bandits et POMDPs | BETA | Oui |
-| 24 | DecPyMC-8 — Crédibilité actuarielle de Bühlmann–Straub… | BETA | Oui |
-| 25 | DecPyMC-9 : Du risque à la prime — prime pure,… | BETA | Oui |
+| 3 | DoWhy-2 — Le contrefactuel individuel : quand l'effet… | BETA | Oui |
+| 4 | Méthodes quasi-expérimentales — identifier l'effet… | BETA | Oui |
+| 5 | DecInfer-01-Utility-Foundations : Axiomes et Fondements | BETA | Oui |
+| 6 | DecInfer-02-Théorème de représentation de von… | BETA | Oui |
+| 7 | DecInfer-03-Utility-Money : Utilite de l'Argent et… | BETA | Oui |
+| 8 | DecInfer-04-Multi-Attribute : Utilite Multi-Attributs | BETA | Oui |
+| 9 | DecInfer-05-Decision-Networks : Reseaux de Decision | BETA | Oui |
+| 10 | DecInfer-06-Value-Information : Valeur de l'Information | BETA | Oui |
+| 11 | DecInfer-07-Expert-Systems : Decisions Robustes et… | BETA | Oui |
+| 12 | DecInfer-08-Sequential : MDPs, Bandits et POMDPs | BETA | Oui |
+| 13 | DecInfer-09-Preuves formelles — Indice de Gittins | BETA | Oui |
+| 14 | DecInfer-10-Thompson-Sampling : Bandits bayesiens par… | BETA | Oui |
+| 15 | DecPyMC-1-Utility-Foundations : Axiomes et Fondements | BETA | Oui |
+| 16 | DecPyMC-10 : Ruine et capital — le processus de… | BETA | Oui |
+| 17 | DecPyMC-11 — Valeur de l'Information en Souscription | BETA | Oui |
+| 18 | DecPyMC-12 — Fréquence × sévérité hiérarchique : le… | BETA | Oui |
+| 19 | DecPyMC-2-Utility-Money : Utilite de l'Argent et… | BETA | Oui |
+| 20 | DecPyMC-3-Multi-Attribute : Utilite Multi-Attributs | BETA | Oui |
+| 21 | DecPyMC-4-Decision-Networks : Reseaux de Decision | BETA | Oui |
+| 22 | DecPyMC-5-Valeur de l'Information | BETA | Oui |
+| 23 | DecPyMC-6-Systèmes Experts et Decisions Robustes | BETA | Oui |
+| 24 | DecPyMC-7-MDPs, Bandits et POMDPs | BETA | Oui |
+| 25 | DecPyMC-8 — Crédibilité actuarielle de Bühlmann–Straub… | BETA | Oui |
+| 26 | DecPyMC-9 : Du risque à la prime — prime pure,… | BETA | Oui |
 
 ## Probas/Infer (20 notebooks)
 

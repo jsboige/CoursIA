@@ -73,6 +73,37 @@ git log origin/main --oneline --grep "<sujet>"          # 4. identité de CONTEN
 ```
 
 **Anti-pattern** : ne JAMAIS conclure « orpheline » sur `git fetch` + REST seul. Coût de l'investigation : ~10 s. Coût de son omission : un cycle dupliqué, ou l'écrasement d'un travail en cours.
+
+## Worktree cleanup en fin de cycle (#14195)
+
+**Problème** : chaque review de PR notebook / build Lean crée un worktree ; sans organe de retrait, ces worktrees s'accumulent (mesure 2026-09-02 : 265 sur po-2026 en 36 h, 103 sur ai-01 ; précédent #8924). Le mécanisme est nommé depuis le 2026-08-05 mais l'organe n'avait jamais été construit.
+
+**Solution** : `scripts/ci/prune_merged_worktrees.py`, dry-run par défaut, `--apply` explicite. À exécuter en fin de cycle worker (ou via cron) :
+
+```bash
+python scripts/ci/prune_merged_worktrees.py             # dry-run : liste ce qui serait retiré
+python scripts/ci/prune_merged_worktrees.py --apply     # applique
+python scripts/ci/prune_merged_worktrees.py --json      # sortie structuree pour sweep dashboard
+```
+
+**Critères de retrait (cf issue #14195 acceptance)** :
+- **REMOVE** : PR MERGED ou CLOSED, branche sans unpushed, pas d'édition source untracked.
+- **REFUSE** : branche `main`/`master` (jamais le worktree de travail) · PR OPEN (l'itération continue) · commits non poussés vs upstream spécifique (`@{u}` non-`main`) · édition source untracked non tolérée (`.py`, `.ipynb`, `.lean`, `.md`, etc.).
+- **SKIP_CURRENT** : le worktree depuis lequel le script est lancé.
+- **Artefacts untracked tolérés** (`slides/images/`, `**/scripts/results/`, `.claude/agent-memory/*`, `*_output.ipynb`, `node_modules/`, `.cache/`, `.pytest_cache/`, `__pycache__/`, `_measurements/`, `.mypy_cache/`, `.ruff_cache/`, `dist/`, `build/`, `.eggs/`, `.tox/`) — d'après le dernier commentaire de #8924.
+
+**Ancre PR autoritative** : `gh pr list --state all --search "head:<branch>"` (pas `--is-ancestor` seul, ni `commits/<oid>/pulls` REST — cf §Orphan-branch scan ci-dessus pour les faux négatifs mesurés).
+
+**Mesure 2026-09-03 (po-2027, cycle #14195)** :
+
+| | Avant | Après `--apply` |
+|---|---:|---:|
+| Worktrees enregistrés | 5 | 4 |
+| … REMOVE | 1 (test-prune-merged, PR #14403 MERGED) | — |
+| … REFUSE | 4 (main + 3 PR OPEN) | 4 |
+
+Le worktree de test créé sur `fix/14142-qc40-followup-state` (PR #14403 mergée par squash 2026-09-02) a été retiré — c'est le **contrôle positif** manquant à tout prédicat d'ascendance : un squash-merge efface l'ascendance, mais `gh pr list --state all --search` retrouve la PR par le nom de branche.
+
 ## PR Body Generation
 
 **L677-L4 ★★** — le **body de PR se génère HORS worktree** : scratchpad `<scratchpad-dir>/c<NNN>_pr_body.md` + `gh pr create --body-file <scratchpad-path>`. Jamais un `PR_BODY.md` / `BODY.md` **dans** le worktree, qu'un `git add .` stagerait et qu'un rebase ou amend ramènerait dans un commit de code. Vérifier `git status` avant tout `git add .` : pas de `*.md` orphelin de body dans les fichiers tracés.
