@@ -21,8 +21,23 @@ import logging
 import argparse
 import threading
 from datetime import datetime
+from pathlib import Path
 from typing import Optional
 from functools import wraps
+
+# Credential file bind-mounted read-only by the compose (#14382). The token
+# never crosses compose env interpolation: the bcrypt form ($2b$12$Iv...)
+# gets its '$' runs eaten there and the container would receive a truncated
+# bearer (measured: 60c value -> 57c in-container).
+_TOKEN_FILE = Path("/secrets/qwen-api-user.token")
+
+
+def _read_token_file() -> Optional[str]:
+    try:
+        content = _TOKEN_FILE.read_text(encoding="utf-8").strip()
+        return content or None
+    except OSError:
+        return None
 
 try:
     import requests
@@ -449,8 +464,11 @@ def run_standalone():
     )
     parser.add_argument(
         "--token",
-        default=os.environ.get("COMFYUI_AUTH_TOKEN"),
-        help="Authentication token (optional, deprecated - use --username/--password)"
+        default=os.environ.get("COMFYUI_AUTH_TOKEN") or _read_token_file(),
+        help="Authentication token (optional, deprecated - use --username/--password). "
+             "Falls back to the bind-mounted /secrets/qwen-api-user.token (#14382) -- "
+             "the credential must not cross compose env interpolation, which "
+             "truncates the '$' runs of the bcrypt form."
     )
     parser.add_argument(
         "--username",

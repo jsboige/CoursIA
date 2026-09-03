@@ -245,6 +245,11 @@ _APPROVE_RESERVATION_RE = re.compile(
     r")"
 )
 
+# Sentinelle du marqueur ETIQUETE : une valeur inecrivable en prose, pour que la
+# forme « Concern: » soit un marqueur A PART -- relachee en casse et en nombre --
+# sans toucher a la sous-chaine « CONCERNS », qui reste case-sensitive.
+_CONCERN_LABEL = "\x00concern-label"
+
 CONCERN_MARKERS = (
     "COMMENT_WITH_CONCERNS", "CHANGES_REQUESTED", "REQUEST_CHANGES",
     "NEEDS_CHANGES", "CONCERNS",
@@ -275,9 +280,11 @@ CONCERN_MARKERS = (
 #     1 NON levee = #12059 fondateur, defaut B.0 = merge avec constat sans
 #     reponse, defaut pedagogique en production (hyperparametres GRPO contredits).
 #   🔴 (U+1F534) : bloquant strict, 1/35 (vrai bloquant).
-# `_unaccent` preserve les glyphes (categorie So, pas Mn), `_strip_mentioned_verdicts`
-# ne les neutralise pas (regex _MENTION_VERDICT* ciblent ASCII verdict formel),
-# `_is_cited` reste symetrique via CITERS ascii.
+# `_unaccent` preserve les glyphes (categorie So, pas Mn), `_is_cited` reste
+# symetrique via CITERS ascii. Les positions A-I (regex `_MENTION_VERDICT*`)
+# ciblent l'ASCII formel et ignorent les glyphes ; la Position J
+# (`_strip_glyphe_mentions`, #14277) les neutralise en position de MENTION
+# (méta-nom sur la même ligne), l'émission en tête de ligne restant vive.
 SEVERITY_GLYPHS = (
     "🟡",  # constat substantiel (fondateur #12059)
     "🔴",  # bloquant strict
@@ -307,6 +314,11 @@ CONCERN_MARKERS = CONCERN_MARKERS + SEVERITY_GLYPHS
 # une mention (_strip_quoted), comme tout autre verdict backtinque.
 BLOCK_VERDICTS = ("**BLOCKED**", "BLOCKED  PR")
 CONCERN_MARKERS = CONCERN_MARKERS + BLOCK_VERDICTS
+
+# La forme ETIQUETEE (« Concern: », « Concerns :», « **Concern 2 :** ») rejoint
+# les marqueurs vivants : elle tolere casse et nombre des deux cotes (user comme
+# agents) sans rien devoir a la sous-chaine nue, qui reste case-sensitive.
+CONCERN_MARKERS = CONCERN_MARKERS + (_CONCERN_LABEL,)
 
 # Un commentaire qui ANNONCE la levee ou le merge n'est pas un nit — il en est
 
@@ -993,6 +1005,58 @@ def _strip_avant_merge_mention(body: str) -> str:
     return body
 
 
+# #14277 — Position J : glyphe de sévérité en position de MENTION. Les
+# SEVERITY_GLYPHS (🟡/🔴) sont concaténés dans CONCERN_MARKERS mais restent
+# invisibles aux positions A-H (regex `_MENTION_VERDICT*` ciblant l'ASCII
+# formel) : un compte-rendu technique qui NOMME le glyphe qu'il décrit est
+# classé BOT-CONCERN à tort. 3 FP mesurés (sweep 264 corps / 61 PRs,
+# fenêtre 2026-08-23..2026-09-02 ; 0 VP glyph-only sur la même fenêtre) :
+#   FP1 (#13951 c.869, issuecomment-5506801880) : « variante glyphe 🟡. »
+#   FP2 (#13951 c.872, issuecomment-5507737699) : « 2 cas (prose
+#        contradictoire + glyphe 🟡) ajoutes. »
+#   FP3 (#13951 c.871) : « les **glyphes de severite** (🟡 constat
+#        substantiel #12059, 🔴 bloquant) »
+#
+# Discriminateurs LIGNE-PORTÉS (le glyphe est une mention si l'un des deux
+# tient sur sa ligne) :
+#   (A) MÉTA-NOM — un nom nommant le glyphe précède sur la même ligne
+#       (« glyphe 🟡 », « glyphes de severite (🟡 ..., 🔴 ...) », FP1-3).
+#   (B) ITEM D'ÉNUMÉRATION — le glyphe est immédiatement précédé d'un
+#       séparateur `,` ou `+` (modulo espaces) : « (prose, 🟡, 🔴, +
+#       controle positif) », cellule de tableau « **CWC + 🟡** » (formes
+#       résiduelles de FP3, 5503423343).
+# L'émission réelle (mesurée #12059 / #12083 / #12077 — scan 35 reviews
+# Hermes de #12143) est un en-tête de verdict en tête de ligne (« **🟡
+# FINDING — ... », « LGTM structural / 🟡 ... »), jamais un item de liste :
+# ni méta-nom avant, ni séparateur `,`/`+` immédiat — le séparateur `/`
+# (VP #12083) est délibérément EXCLU du set d'énumération. Substitution
+# iso-longueur (1 char -> 1 espace) : les offsets du reste du body sont
+# préservés, comme les autres strips.
+_GLYPH_META_NOUN_RE = re.compile(
+    r"(?i)\b(?:glyphes?|glyphs?|marqueurs?|markers?|badges?|symboles?|emojis?)\b"
+)
+_GLYPH_ENUM_PRECEDER_RE = re.compile(r"[,+]\s+$")
+_SEVERITY_GLYPH_CLASS_RE = re.compile(f"[{''.join(SEVERITY_GLYPHS)}]")
+
+
+def _strip_glyphe_mentions(body: str) -> str:
+    """Neutralise les glyphes de sévérité en position de mention (Position J, #14277).
+
+    Chaque glyphe (🟡/🔴) dont la ligne porte un méta-nom le nommant (A) ou
+    qui est un item d'énumération `,`/`+` (B) est remplacé par une espace :
+    c'est une mention, pas une émission. Le glyphe en tête de ligne
+    (en-tête de verdict Hermes) reste vivant.
+    """
+    out = list(body)
+    for m in _SEVERITY_GLYPH_CLASS_RE.finditer(body):
+        line_start = body.rfind("\n", 0, m.start()) + 1
+        prefix = body[line_start:m.start()]
+        if (_GLYPH_META_NOUN_RE.search(prefix)
+                or _GLYPH_ENUM_PRECEDER_RE.search(prefix)):
+            out[m.start()] = " "
+    return "".join(out)
+
+
 def _strip_mentioned_verdicts(body: str) -> str:
     """Neutralise les noms de verdict cites en position de mention (#11636, #11744, #11809).
 
@@ -1023,6 +1087,12 @@ def _strip_mentioned_verdicts(body: str) -> str:
     # passee / formule B.0 / delegation Ball merge). Voir
     # `_strip_avant_merge_mention` pour la justification des 7 sous-patterns.
     body = _strip_avant_merge_mention(body)
+    # Phase 1j : Position J — neutralise les glyphes de sévérité (🟡/🔴) en
+    # position de mention (#14277). Cible distincte des positions A-H : pas
+    # un verdict ASCII formel mais un glyphe concaténé dans CONCERN_MARKERS,
+    # invisible aux regex de mention. Discriminateur ligne-portée : voir
+    # `_strip_glyphe_mentions`.
+    body = _strip_glyphe_mentions(body)
     # Phase 2 : Position G avec garde anti-negation (Hermes demande 1/2,
     # PR #14070). Approche `finditer` car le verdict-match n'est pas en
     # bord de phrase (la mention `traite le REQUEST_CHANGES` met le
@@ -1654,6 +1724,39 @@ def has_live_lift(body: str) -> bool:
     return bool(_live_lift_positions(_unaccent(body)))
 
 
+# Marqueurs reconnus par MOTIF plutot que par sous-chaine. La cle est le marqueur
+# du tuple, minuscule et desaccentue (has_live_marker normalise des deux cotes).
+#
+# « CONCERNS » : la sous-chaine nue ne peut pas devenir insensible a la casse sans
+# retourner l'organe contre lui-meme. Mesure sur 588 commentaires (corpus 80 PRs
+# ouvertes + 70 mergees, 2026-09-01) : la seule insensibilite a la casse fait
+# basculer 6 verdicts None -> BOT-CONCERN, et les 6 sont des narrations de LEVEE
+# qui citent le mot en y REPONDANT (« les 2 concerns sont traitees au commit X »,
+# « Reponse a la CONCERN empirique »). Les bloquer serait le miroir exact du
+# defaut que B.0 traque. On retient donc la forme ETIQUETEE en tete de ligne --
+# « Concern: », « concerns :», « **Concern 2 :** », « > CONCERNS : » -- qui est
+# une EMISSION et non une mention, tolere la casse et le nombre des deux cotes,
+# et laisse muettes les six narrations mesurees.
+# Marqueurs dont la casse NE se relache PAS. Deux familles, une raison commune :
+# leur variante de casse est plus rare que les mentions qu'elle attraperait.
+#   - prose : « AVANT merge » est une emphase sur la chronologie dans une
+#     narration de levee Voie 3, pas une reserve (2 cas mesures sur 588).
+#   - « CONCERNS » nu : « les 2 concerns sont traitees », « Reponse a la CONCERN
+#     empirique » sont des REPONSES a une reserve (6 cas mesures). Le relachement
+#     de casse pour ce mot passe par _CONCERN_LABEL ci-dessous, qui exige la
+#     forme etiquetee -- donc une emission, pas une mention.
+_CASE_SENSITIVE_MARKERS = frozenset({
+    "avant merge", "avant de merger", "before merge",
+    "il va falloir", "a nuancer", "à nuancer", "a changer",
+    "CONCERNS",
+})
+
+
+_WORD_BOUNDED_MARKERS = {
+    _CONCERN_LABEL: re.compile(r"(?m)^[\s*_#>\-]*concerns?\s*\d*\s*:"),
+}
+
+
 def has_live_marker(body: str, markers: tuple[str, ...]) -> bool:
     """Marqueur present avec au moins une occurrence NON citee.
 
@@ -1670,9 +1773,28 @@ def has_live_marker(body: str, markers: tuple[str, ...]) -> bool:
     compris), l'occurrence est morte ; le marqueur ne vit que si au moins une
     occurrence survit.
     """
-    normalised = _unaccent(body)
+    raw = _unaccent(body)
+    lowered = raw.lower()
     for marker in markers:
-        m = _unaccent(marker)
+        m = _unaccent(marker).lower()
+        # La casse ne se relache que sur les JETONS de verdict (identifiants
+        # ecrits en capitales par convention, dont les variantes de casse sont
+        # des accidents de frappe). Les marqueurs de PROSE gardent leur forme
+        # litterale : mesure du 2026-09-01 sur 588 commentaires -- relacher la
+        # casse de « avant merge » fait basculer 2 verdicts, et les 2 sont des
+        # narrations de levee Voie 3 (« issue #14030 ouverte AVANT merge »), ou
+        # la majuscule est une EMPHASE sur la chronologie, pas une reserve.
+        if marker in _CASE_SENSITIVE_MARKERS:
+            normalised, m = raw, _unaccent(marker)
+        else:
+            normalised = lowered
+        word_re = _WORD_BOUNDED_MARKERS.get(m)
+        if word_re is not None:
+            for hit in word_re.finditer(normalised):
+                i = hit.start()
+                if not _is_cited(normalised[max(0, i - 30):i]):
+                    return True
+            continue
         start = 0
         while (i := normalised.find(m, start)) != -1:
             if not _is_cited(normalised[max(0, i - 30):i]):
@@ -2567,6 +2689,83 @@ def _names_author(body: str, author: str) -> bool:
                      body) is not None
 
 
+# #14216 — langage de LEVEE portee a la reserve nommee (affirmatif). La
+# nomination seule ne suffit pas : le corps fondateur de #14166 portait
+# « la reserve de clusterManager-Myia n'est pas concernee par cette levee »
+# — le nom ETAIT present, dans une phrase d'EXCLUSION.
+_SCOPE_LIFT_RE = re.compile(r"(?i)\blev\w*\b|\blift\w*\b")
+# #14216 — phrase qui nomme la reserve pour l'EXCLURE de la levee. Accents
+# neutralises (le depot ecrit les deux), formes FR d'abord.
+_SCOPE_NEGATION_RE = re.compile(
+    r"(?i)\bn['’]\s*\w+\s+pas\b"
+    r"|\bne\s+(?:\w+\s+){0,3}pas\b"
+    r"|\bpas\s+(?:concerne\w*|leve\w*|lift\w*|inclus\w*|touch\w*)\b"
+    r"|\bhors\s+(?:du\s+|de\s+la\s+)?(?:scope|perimetre|champ)\b"
+    r"|\b(?:exclu\w*|non\s+leve\w*|reste\s+ouverte?)\b"
+    r"|\b(?:not|isn['’]t)\s+(?:concerned|lifted|in\s+scope)\b"
+    r"|\b(?:remains\s+open|out\s+of\s+scope)\b")
+
+
+def _scope_lifted_sentence(body: str, needle_re) -> bool:
+    """Une PHRASE porte-t-elle le nom ET une levee affirmative de la reserve ?
+
+    Phrase = segment entre [.!?\\n]. Pour chaque occurrence du nom (login ou
+    persona), la phrase qui la contient doit porter un mot de levee SANS
+    negation d'exclusion — « je leve aussi la reserve de <login> » scope,
+    « la reserve de <login> n'est pas concernee par cette levee » non.
+    """
+    for m in needle_re.finditer(body):
+        s0 = max(body.rfind(c, 0, m.start()) for c in ".!?\n") + 1
+        ends = [j for j in (body.find(c, m.end()) for c in ".!?\n")
+                if j != -1]
+        s1 = min(ends) if ends else len(body)
+        sent = _unaccent(body[s0:s1]).lower()
+        if _SCOPE_LIFT_RE.search(sent) and not _SCOPE_NEGATION_RE.search(sent):
+            return True
+    return False
+
+
+def _override_scopes_reserve(lift_body: str, nit_author: str) -> bool:
+    """#14216 — un OVERRIDE coordinateur nomme-t-il LA reserve qu'il leve ?
+
+    La trappe #11639 agissait par PR, jamais par reserve : un seul
+    commentaire portant le marqueur eteignait TOUTES les reserves ouvertes,
+    y compris celle d'un tiers que le coordinateur n'a ni legitimite ni
+    intention de lever (#14166 : la levee legitime de sa reserve de
+    collision a emporte la reserve structurelle Hermes, et la PR serait
+    apparue mergeable si l'organe n'avait pas ete relance APRES le post).
+    Un override ne leve desormais une reserve d'AUTRUI que s'il la nomme
+    dans une phrase de levee AFFIRMATIVE — le corps fondateur portait le
+    login dans une phrase d'exclusion (« n'est pas concernee par cette
+    levee ») : le nom seul n'est pas un scope.
+
+    Deux formes reconnues, toutes deux presentes dans l'historique reel :
+
+    1. le login de l'auteur de la reserve — frontiere d'identite de
+       ``_names_author`` (« Levee des reserves : la mienne et celle de
+       clusterManager-Myia aussi ») ;
+    2. le nom de persona — « Levée de la réserve Hermes » (#11639, forme
+       canonique historique) quand l'auteur de la reserve est la persona
+       Hermes/NanoClaw ou le self-bot jsboige qui la porte.
+
+    Les reserves de l'auteur de la levee restent couvertes sans nomination
+    (branche self de ``_lift_eligible``). Un nit d'auteur inconnu (compte
+    supprime) reste levable : un scope ne peut pas nommer ce qui n'a pas
+    de nom.
+    """
+    if not nit_author:
+        return True
+    body = lift_body or ""
+    author_re = re.compile(r"(?<![A-Za-z0-9_.-])" + re.escape(nit_author)
+                           + r"(?![A-Za-z0-9_.-])")
+    if _scope_lifted_sentence(body, author_re):
+        return True
+    if nit_author in PERSONA_ALIAS_LOGINS or nit_author == "jsboige":
+        return _scope_lifted_sentence(
+            body, re.compile(r"(?i)\b(?:hermes|nanoclaw)\b"))
+    return False
+
+
 def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
             issue_info=None, dismissed_improperly=None) -> dict:
     """cutoff = mergedAt (audit retro) ou now (gate pre-merge)."""
@@ -2673,8 +2872,13 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
         # lanes (self-review cap #12319), un override jsboige est
         # indiscernable d'une auto-levee de lane (replay #12737).
         m = OVERRIDE_LANE.search(lift_body or "")
-        return (lift_author in LIFT_OVERRIDE_LOGINS
-                and m is not None)
+        if not (lift_author in LIFT_OVERRIDE_LOGINS and m is not None):
+            return False
+        # #14216 — l'override est scope PAR RESERVE, plus par PR : sans
+        # nomination de la reserve d'autrui (login ou persona Hermes), il ne
+        # leve que les siennes. La trappe reste fermee a l'auteur de la PR
+        # (garde ci-dessus) : le scope n'ouvre pas la porte d'auto-levee.
+        return _override_scopes_reserve(lift_body or "", nit_author)
 
     # Fenetre 2026-08-16 (#11222) : les temps plats ne suffisent pas pour un
     # CHANGES_REQUESTED. Une PHRASE explicite de levee (LIFT_MARKER non
@@ -2980,6 +3184,27 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
         and OVERRIDE_LANE.search(body or "") is not None
         and author in LIFT_OVERRIDE_LOGINS
         and author == pr_author
+    ] + [
+        # #14216 — un override legitime qui ne NOMME pas affirmativement la
+        # reserve qu'il laisse survivre doit etre explique : sans cette ligne,
+        # un gate rouge « malgre notre override » redeviendrait
+        # indistinguable d'un bug du detecteur. La levee n'etait pas refusee,
+        # elle etait trop large — le rouge le dit maintenant.
+        {"author": author, "at": t.isoformat(),
+         "why": (f"override ignoré pour la réserve de « {login} » — il ne la "
+                 "lève pas nommément (#14216 : une levée coordinatrice est "
+                 "scopée par réserve ; la nommer dans une phrase de levée "
+                 "affirmative — « je lève aussi la réserve de <login> » — une "
+                 "mention d'exclusion ne compte pas)")}
+        for (t, author, body) in explicit_lifts
+        if t is not None
+        and OVERRIDE_LANE.search(body or "") is not None
+        and author in LIFT_OVERRIDE_LOGINS
+        and author != pr_author
+        for login in sorted({b.get("author") for b in blocking
+                             if b.get("author") not in ("", author)
+                             and not _override_scopes_reserve(
+                                 body or "", b.get("author") or "")})
     ]
 
     # #13512 -- CE QUE L'ORGANE N'A PAS EVALUE.
