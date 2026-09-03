@@ -78,16 +78,24 @@
 
 | Statut | Compte | Pourcentage |
 |---|---|---|
-| `RELOCATE` (promouvoir en `docs/curriculum/<pilote>.md`) | 8 | ~20 % |
-| `INTEGRATE` (garder en place, citer dans les pilotes) | 20 | ~50 % |
-| `ARCHIVE` (déplacer ou laisser embryon ténu) | 5 | ~13 % |
-| `DROP` (faux positifs du motif de balayage) | 3 | ~7 % |
-| (Indéterminé — besoin lecture supplémentaire) | ~4 | ~10 % |
+| `RELOCATE` (promouvoir en `docs/curriculum/<pilote>.md`) | 10 | 25 % |
+| `INTEGRATE` (garder en place, citer dans les pilotes) | 23 | ~58 % |
+| `ARCHIVE` (déplacer ou laisser embryon ténu) | 4 | 10 % |
+| `DROP` (faux positifs du motif de balayage) | 3 | ~8 % |
 | **Total** | **40** | **100 %** |
+
+Ces comptes sont **recomptés depuis la colonne de verdict du tableau ci-dessus**,
+pas estimés : chacune des 40 lignes porte exactement un statut, et leur somme
+fait 40. La ligne « Indéterminé — besoin lecture supplémentaire » qui figurait
+ici a été retirée pour cette raison : aucune des 40 entrées n'est indéterminée,
+et son effectif supposé (~4) était précisément l'écart qui faisait tomber un
+récapitulatif faux sur un total juste. C'est le dénominateur des
+recommandations Phase 1 — il devait être mesuré avant que l'inventaire ne
+serve de référence à l'EPIC #13844.
 
 **Aucun embryon n'est proposé au DROP** : la renumérotation #12375 qui rend obsolète certains labels numérotés n'a pas encore été livrée — donc les embryons restent vivants en attendant. Les trois `DROP` (#38-40) ne sont pas des embryons : ce sont des **faux positifs du motif de balayage** `^##\s+(Parcours|Phase)`, où « Phase » désigne un jalon d'Epic, une séquence de build ou un historique de mission. Ils sont inscrits pour qu'un prochain balayage ne les re-investigue pas.
 
-## Modèles à exporter (ce que les 8 `RELOCATE` font émerger)
+## Modèles à exporter (ce que les 10 `RELOCATE` font émerger)
 
 | Modèle | Source | Page cible EPIC Phase 2 |
 |---|---|---|
