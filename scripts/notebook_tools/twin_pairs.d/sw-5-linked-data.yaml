@@ -21,6 +21,12 @@
       csharp_sha: 88e9828cbe4351e0ad04b4d75bba9f797c17fc8f
       content_python_sha: 58b1ce0599c5591de7716a3d68a9e3ebcd973fafcdf2548478690aa445bb4cdc
       content_csharp_sha: 4e59cb0c5dd300d4f937ccf5f7574beb81da930370630bec80e5525aa30a4588
+    - date: "2026-09-03"
+      by: myia-po-2026:CoursIA
+      python_sha: 607ce735712708a08ebc37db2f5a7d19a0d16dfc
+      csharp_sha: 4c8e29daf900f2def803976cb57e434c34373af2
+      content_python_sha: 58b1ce0599c5591de7716a3d68a9e3ebcd973fafcdf2548478690aa445bb4cdc
+      content_csharp_sha: abeca8c1df4b9292fe2d813fe0024c8316198047130748227d1961bec206eaa4
   known_differences:
     - "Socle commun : consommation de Linked Data distante (dereferencement d'URI, endpoints SPARQL)."
     - "Lib-vs-lib : C# = `dotNetRDF` (`VDS.RDF.Query` remote endpoint). Python = `SPARQLWrapper` (client dedie endpoints SPARQL) + `rdflib`. Asymetrie leger : Python ajoute `SPARQLWrapper` specialise pour le reseau distant, le C# unifie dans dotNetRDF."
