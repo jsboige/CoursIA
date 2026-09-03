@@ -42,6 +42,12 @@ jobs:
     # Declencheur pull_request : on garde la garde same-repo (un PR de fork
     # n'atteint jamais le runner ephemere auto-heberge ; aucun code de fork
     # n'est execute cote workflow).
+    # Garde universelle parentheisee (forme acceptee par
+    # `test_universal_pull_request_guard_is_accepted`, #13874) -- la
+    # disjonction explicite `null || == repo` couvre pull_request et
+    # pull_request_target en un seul predicat, et les forks PR se font
+    # skipper proprement par le checker avant d'atteindre le runner.
+    if: ${{ github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository }}
     runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
     permissions:
       pull-requests: write
