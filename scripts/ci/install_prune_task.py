@@ -16,9 +16,10 @@ Modes :
                                               journal horodate, jamais de couleur/TTY
 
 Garde de securite (#14476) : --install REFUSE de cabler --apply si le script
-cible ne contient pas encore la resolution par numero (def _normalize_subject,
-PR #14481) -- installer le cron avec l'ancien predicat d'intersection de
-jetons deploierait l'attribution fausse (et destructive) TOUS LES JOURS.
+cible ne contient pas encore les deux voies du fix PR #14481 (resolution
+par numero + _normalize) -- installer le cron avec l'ancien predicat
+d'intersection de jetons deploierait l'attribution fausse (et destructive)
+TOUS LES JOURS.
 
 Journal : %LOCALAPPDATA%\CoursIA\prune_task\logs\prune_YYYYMMDD.log
 """
@@ -35,8 +36,13 @@ TASK_NAME = r"CoursIA\prune_merged_worktrees"
 THIS_FILE = Path(__file__).resolve()
 LOG_DIR = Path(os.environ.get("LOCALAPPDATA", str(Path.home() / "AppData" / "Local"))) / "CoursIA" / "prune_task" / "logs"
 
-# Marqueur du fix #14476/#14481 dans le script cible -- voir garde ci-dessus.
-REQUIRED_FIX_MARKER = "def _normalize_subject"
+# Marqueurs du fix #14476/#14481 dans le script cible -- voir garde ci-dessus.
+# Alignes sur le contenu REEL merge par #14481 (voie 1 : resolution par
+# numero ; voie 2 : egalite normalisee du sujet via _normalize). Le marqueur
+# historique 'def _normalize_subject' ne correspondait a AUCUN symbole du
+# fichier merge -- la garde etait insatisfaisable et refusait tout --install,
+# y compris sur un main frais contenant le fix (mesure 2026-09-04).
+REQUIRED_FIX_MARKERS = ("Resolution directe par numero", "def _normalize")
 
 
 def _run(cmd: list[str], **kw) -> subprocess.CompletedProcess:
@@ -59,12 +65,13 @@ def check_prune_fix_present(repo: Path) -> tuple[bool, str]:
     if not target.is_file():
         return False, f"introuvable : {target}"
     text = target.read_text(encoding="utf-8", errors="replace")
-    if REQUIRED_FIX_MARKER not in text:
+    missing = [m for m in REQUIRED_FIX_MARKERS if m not in text]
+    if missing:
         return False, (
             f"{target.name} ne contient pas le fix #14476 "
-            f"('{REQUIRED_FIX_MARKER}'). Installer le cron --apply avec "
-            "l'heuristique d'intersection de jetons deploierait "
-            "l'attribution fausse quotidiennement (cf #14481). "
+            f"(marqueurs absents : {', '.join(missing)}). Installer le "
+            "cron --apply avec l'heuristique d'intersection de jetons "
+            "deploierait l'attribution fausse quotidiennement (cf #14481). "
             "Rebase/merge d'abord, puis relancer --install."
         )
     return True, "fix #14476 present"

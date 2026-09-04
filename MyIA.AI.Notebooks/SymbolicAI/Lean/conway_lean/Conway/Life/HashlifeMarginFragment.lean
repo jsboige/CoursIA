@@ -166,6 +166,56 @@ theorem hashlife_correct_margin (c : MacroCell) (k : Nat)
   -- open P4/P5 heart — sorry documenté (acceptance B).
   sorry
 
+/-! ## Assemblage P4.4 — réduction sorry-stable (tranche 2, #13483)
+
+Diagnostic du 2026-09-04 (c.5539811910) : toutes les briques préliminaires sont prouvées
+(`p5_large_n_jumpN` b3', P4 complet, les 4 murs bornés sans sorry) — le sorry de
+`hashlife_correct_margin` est l'assemblage lui-même. Décomposition :
+
+- **L1** — l'hypothèse `h_margin` est gratuite : `supportInMargin` est tautologique
+  (`supportInMargin_trivial`), l'énoncé effectif est l'inconditionnel sous `centralCorrect`.
+- **L2** — le but se réduit à l'hypothèse de la machine N : `hashlife_correctN` (prouvé,
+  HashlifeCorrectness) donne l'égalité globale dès `hcap : ∀ t ≤ 2^k, jumpCaptured …`.
+  C'est le lemme ci-dessous, sorry-free.
+- **L3 (cœur ouvert)** — relever `centralCorrect c k` (égalité de grille RESTREINTE à la
+  fenêtre finale) en `hcap` (confinement de la TRAJECTOIRE entière). C'est l'assemblage
+  borné P4/P5 proprement dit : un argument de structure de la récursion Hashlife (la marge
+  contient le cône de lumière à chaque saut), PAS un argument de réversibilité — le GoL
+  n'est pas réversible, le cône rétrograde ne contraint pas les états intermédiaires.
+- **L4** — la jambe d'égalité : `centralCorrect` est une égalité restreinte, le but est
+  global ; la fermeture exige que les deux grilles portent leur support dans la fenêtre
+  (`jumpCaptured` du final + borne forward du support de `evolve`).
+
+`hashlife_correct_margin c k h_margin h_central` se déchargerait par
+`hashlife_correct_margin_of_hcap c k h_central (L3 c k h_central)` : L3/L4 sont les seuls
+maillons ouverts. -/
+
+/-- **P4.4 L2 — copie locale byte-identical de `jumpCaptured`** (pattern
+    d'inlining du lake, cf HashlifeCorrectness L6436 : le `jumpCaptured` que
+    consomme `hashlife_correctN` y est `private` — inline de
+    `Conway.Life.JumpCapture.jumpCaptured` pour casser le cycle d'import
+    A↔B, `JumpCapture.lean` important CE module). Ce module ne peut donc ni
+    voir le private ni importer `JumpCapture` (cycle) : même remède, copie
+    byte-identical. La defeq des corps identiques (delta-unfolding des deux
+    `def` semi-reducibles) fait passer l'appel à `hashlife_correctN` ci-dessous. -/
+private def jumpCapturedF (c : MacroCell) : Bool :=
+  (evolve (2 ^ c.level) ((padCenter2 c).toGrid (0, 0))).all fun p =>
+    decide ((2 ^ c.level : Int) ≤ p.1) &&
+    decide (p.1 < (2 ^ c.level : Int) + ((2 ^ (c.level + 1) : Nat) : Int)) &&
+    decide ((2 ^ c.level : Int) ≤ p.2) &&
+    decide (p.2 < (2 ^ c.level : Int) + ((2 ^ (c.level + 1) : Nat) : Int))
+
+/-- **P4.4 L2 (réduction sorry-stable).** L'égalité globale du cadre se réduit à
+    l'hypothèse de capture de trajectoire de la machine N : `hashlife_correctN` (prouvé)
+    clôt le but dès `hcap`. Les maillons ouverts sont L3 (relever `centralCorrect c k`
+    en `hcap`) et L4 (égalité restreinte → globale). -/
+theorem hashlife_correct_margin_of_hcap (c : MacroCell) (k : Nat)
+    (h_central : centralCorrect c k)
+    (hcap : ∀ t ≤ 2^k, jumpCapturedF
+      (gridToMacroCellWithOffset (evolve t (c.toGrid (0, 0)))).2 = true) :
+    evolveHashlifeFast (2^k) (c.toGrid (0, 0)) = evolve (2^k) (c.toGrid (0, 0)) :=
+  hashlife_correctN (2^k) (c.toGrid (0, 0)) hcap
+
 /-! ## Sanity-checks sur le bestiaire
 
 Le fragment `supportInMargin` est **décidable** (instance `Decidable (BoxAssezGrandN)`,
@@ -211,8 +261,10 @@ theorem cexEmpty1_supportInMargin_k0 : supportInMargin cexEmpty1 0 :=
 note *inconditionnel-en-attente* dans sa docstring : le prédicat est tautologique, le
 cœur de recherche reste l'assemblage borné P4/P5) ; son `sorry` documente ouvertement
 l'assemblage borné P4/P5 encore ouvert (`p4_nw_overlap_wall`, ai-01 c.94).
-Stratégie confirmée pour la suite de #6724 : fermer les murs NE/SW/SE bornés, puis câbler
-l'assemblage P4.4 qui déchargera le `sorry` de `hashlife_correct_margin`.
+Stratégie pour la suite de #6724 : les murs NE/SW/SE bornés sont FERMÉS et `p5_large_n_jumpN`
+est prouvé (b3') — la réduction L2 ci-dessus est en place, restent les maillons L3 (le pont
+`centralCorrect → hcap`, l'assemblage borné proprement dit) et L4 (égalité restreinte →
+globale), qui déchargeront le `sorry` de `hashlife_correct_margin`.
 -/
 
 end Life

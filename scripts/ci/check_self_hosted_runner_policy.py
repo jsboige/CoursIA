@@ -58,7 +58,17 @@ WAITER_LABELS = {
     "self-hosted",
     "coursia-waiter",
 }
-DEDICATED_LABEL_SETS = (REQUIRED_LABELS, LINUX_RUNNER_LABELS, WAITER_LABELS)
+# Dedicated label set for the specialised Lean pool (#14337, po-2024): elan +
+# toolchain baked in a dedicated image (Dockerfile.lean), .lake kept warm in
+# the per-slot work volume. A lean slot never carries coursia-linux -- the
+# distinct label is the routing guarantee (a pure-Python guard must not land
+# on a lean slot, and a lake build must not land on the minimal image).
+LEAN_RUNNER_LABELS = {
+    "self-hosted",
+    "coursia-ephemeral",
+    "coursia-lean",
+}
+DEDICATED_LABEL_SETS = (REQUIRED_LABELS, LINUX_RUNNER_LABELS, WAITER_LABELS, LEAN_RUNNER_LABELS)
 # Owner-approved additions must cite the lane that owns the runner deployment:
 # - pr-gate-stale-sweep.yml: schedule-mutualized re-aggregation (pre-existing).
 # - windows-self-hosted-tests.yml: workflow_dispatch-ONLY vehicle for the 9
