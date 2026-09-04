@@ -37,6 +37,13 @@
       csharp_sha: 2af65a7418cdf9a7d3237471402ab8a3d1f2217c
       content_python_sha: bf57152719535bdd1d7d0742ece0dfd0bd4b07fbf5ec8443c26870744e377912
       content_csharp_sha: cdcacca361a7a6f2f94456e21cad63b1f9627aab83672189525ba6a86f098911
+    - date: "2026-09-04"
+      by: myia-po-2024:CoursIA
+      python_sha: 1d299820573414692311c84a274aa231d045aa02
+      csharp_sha: 2af65a7418cdf9a7d3237471402ab8a3d1f2217c
+      content_python_sha: 59e7297db0120efac4e3c9852b5434f96e6c9c083077fee66ddb8a6abb99633d
+      content_csharp_sha: cdcacca361a7a6f2f94456e21cad63b1f9627aab83672189525ba6a86f098911
+      reason: "Re-baseline #14572 (tranche #11962) : conversion flowchart ASCII -> Mermaid cell md 15 (Architecture NFSP), markdown-only cote Python, aucune cellule code touchee, csharp_sha unchanged, parite semantique preservee."
   known_differences:
     - "Socle pedagogique commun : apprentissage par renforcement multi-agent (MARL), self-play et auto-competition, fictitious play (Brown 1951), exploitabilite / distance a Nash, Neural Fictitious Self-Play (NFSP, Heinrich & Silver 2016), PSRO (Policy-Space Response Oracles, Lanctot et al. 2017)."
     - "Idiomes framework : Python = `numpy` + `matplotlib` + `pyspiel` (OpenSpiel) + `tqdm` (integration framework MARL a l'echelle). C# = BCL .NET 9 pur (`System.Linq`, 0 NuGet), fictitious play / NFSP table-based / PSRO from-scratch."

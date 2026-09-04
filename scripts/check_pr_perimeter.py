@@ -1921,6 +1921,38 @@ def is_pr_own_file(pr: int, path: str, head: Optional[str] = None, base_ref: str
     return None
 
 
+def unmeasurable_perimeter(
+    files: list[dict], carried: Optional[CarriedNote]
+) -> Optional[str]:
+    """#14292: when the effective file list is EMPTY, no count can be true.
+
+    An empty list is the ABSENCE of measurement (closed/emptied PR, base that
+    absorbed the whole diff), not a measurement of zero -- confronting body
+    counts against it can only fabricate a verdict (#11956's honest "5
+    fichiers" failed against a non-measurement). Distinguishes the two causes
+    `_classify_carried` already separates:
+
+    - the API list itself is empty (PR fermée/vidée, base qui a tout absorbé);
+    - the API list is NOT empty but every file is carried from main
+      (``carried.charries`` non-empty, ``propres == []``) -- the STALE-BASE
+      extreme.
+
+    Returns the reason when unmeasurable, None when the perimeter is
+    measurable (negative control: a real list never yields a reason).
+    """
+    if files:
+        return None
+    if carried is not None and carried.charries:
+        return (
+            "liste API non vide mais tout charrié de main (périmètre propre vide, "
+            "cf. STALE-BASE) : la tête est déjà d'accord avec main sur chaque fichier"
+        )
+    return (
+        "liste API vide (PR fermée ou vidée, base qui a tout absorbé) : "
+        "aucune confrontation de compte n'est possible"
+    )
+
+
 def fetch_report(pr: int) -> Report:
     # ``gh pr view --json files`` caps at 100 entries (single page), so the
     # guard used to confront bodies against a TRUNCATED list on >100-file PRs:
@@ -2225,6 +2257,15 @@ def main() -> int:
                 else:
                     signals.append(line)
 
+    # #14292: an EMPTY effective list is the absence of measurement, not a
+    # zero. Count problems confronting a body against it are fabricated --
+    # reclassify them as signals (the detection stays visible, only the exit
+    # code moves -- same safety order as #11985/#11712).
+    unmeasurable = unmeasurable_perimeter(report.files, report.carried)
+    if unmeasurable:
+        signals.extend(report.problems)
+        report.problems = []
+
     blocking = list(report.problems)
     if not args.justified and not args.scan_thread:
         for m in report.moves:
@@ -2235,6 +2276,11 @@ def main() -> int:
                 )
 
     print(format_report(report, args.assertion))
+    if unmeasurable:
+        print("")
+        print(f"PERIMETRE NON MESURABLE: {unmeasurable}")
+        print("  -> les comptes du body restent visibles sous SIGNAL ci-dessous ;")
+        print("     seule la consequence bouge, pas la detection (#14292).")
     if signals:
         print("")
         print("SIGNAL (non bloquant -- assertion d'un tiers non editable par l'auteur,")
@@ -2246,7 +2292,10 @@ def main() -> int:
         # signals. All body+incidental -> "not a perimeter claim, just a
         # note"; all thread -> "tier to correct"; mixed -> both. The old
         # blanket phrase was wrong for the all-body case (#11786 / #11775).
-        print(f"  -> {_format_signal_explanation(candidates)}")
+        # #14292: candidates n'existe que sous --scan-thread ; la voie
+        # --assert d'une PR non mesurable produit des signals sans lui.
+        if args.scan_thread:
+            print(f"  -> {_format_signal_explanation(candidates)}")
     if orphan_opener is not None:
         # #11678: the body scanned had an unterminated fence. CommonMark
         # renders it to EOF (correct behaviour, what GitHub does), but the

@@ -34,6 +34,21 @@ on:
     # (clone 2.22 Go par run). Stratification user 2026-08-23 :
     # "les jobs lourds devraient être payés une fois par fournée".
     - cron: '17 03 * * *'
+  push:
+    branches: [main]
+    # Block if the baseline drift re-introduces orphans (#13815 acceptance #2).
+    # Path-scoped so unrelated pushes do not retrigger.
+    paths:
+      - 'scripts/notebook_tools/pedagogy_density_baseline.json'
+      - 'MyIA.AI.Notebooks/**'
+  pull_request:
+    # Same rationale as push: a PR that touches either the baseline or the
+    # corpus must be checked at PR time -- otherwise the next push to main
+    # reintroduces an orphan (#13815 acceptance #2).
+    paths:
+      - 'scripts/notebook_tools/pedagogy_density_baseline.json'
+      - 'MyIA.AI.Notebooks/**'
+      - '.github/workflows/pedagogy-density-advisory.yml'   # self-cover (#8822)
   workflow_dispatch: {}
 permissions:
   contents: read
@@ -41,16 +56,23 @@ permissions:
 
 concurrency:
   group: pedagogy-density-advisory-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   pedagogy-density-advisory:
     name: "Pedagogy density >= 1200 c/cell advisory (label, non-blocking)"
     # Routage #14283 tranche 4 (ai-01 2026-09-02) : balayage cron pur-Python.
-    # Declencheur `schedule` uniquement -- il ne tourne que sur la branche par
-    # defaut, donc aucun code de fork ne peut l'atteindre et aucune garde
-    # same-repo n'est requise (cf en-tete de check_self_hosted_runner_policy.py).
-    # Retour arriere = remettre `runs-on: ubuntu-latest` + retrait de l'allowlist.
+    # Declencheur `schedule` (et `workflow_dispatch`) uniquement -- l'en-tete
+    # l'annonçait déjà, mais le job n'avait pas de garde `if:` et tournait
+    # donc aussi sur `push` et `pull_request`. Sur `pull_request` en particulier,
+    # le job s'executait sur self-hosted runner avec un payload fork PR --
+    # @NanoClaw (concern de politique isolement #12704) demande la restriction.
+    # La condition `if:` explicite retablit la portee cron pur + dispatch.
+    # Retour arriere = retirer la ligne `if:`.
+    if: >-
+      (github.event.pull_request.head.repo.full_name == null
+       || github.event.pull_request.head.repo.full_name == github.repository)
+      && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
     runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
 
     steps:
@@ -192,3 +214,39 @@ jobs:
             echo "RESULT: all in-corpus modified notebooks meet the density floor (verified)."
           fi
           exit 0
+
+  baseline-orphans-guard:
+    # #13815 acceptance #2 -- prevent re-introduction of orphan keys.
+    # The baseline must NEVER carry a path that is no longer tracked
+    # (renamed or deleted); otherwise the Phase-2 regression ratchet reads
+    # a stale float as if the notebook still existed there.
+    #
+    # Blocking by design (different from the advisory above): --check-orphans
+    # exits non-zero when orphans exist, and a non-zero exit in this job is a
+    # PR-gate failure -- exactly the behavior the issue acceptance asks for.
+    # Cheap to run (git ls-files + JSON diff, no notebook execution), so it
+    # stays in the per-PR scope at full fidelity rather than being
+    # pushed to a nocturnal window only.
+    name: "Pedagogy density baseline orphan guard (#13815)"
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' || github.event_name == 'push'
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          filter: blob:none
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Check baseline against tracked notebooks
+        run: |
+          set -uo pipefail
+          # --check-orphans exits 1 on orphans, 0 on clean.
+          # We propagate the exit code verbatim so a baseline drift blocks the
+          # PR gate (acceptance #2 of #13815: a stale baseline key is a
+          # correctness defect, not a soft pedagogical threshold).
+          python scripts/notebook_tools/pedagogy_density.py --check-orphans

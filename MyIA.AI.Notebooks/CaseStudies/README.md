@@ -17,6 +17,8 @@ maturity: BETA=5, DRAFT=1
 
 [← Notebooks](../README.md) | [↑ ..](../README.md) | [→ QuantConnect](../QuantConnect/README.md)
 
+> **Heuristique de navigation** : si le notebook combine `z3-solver`, `ortools`, `rdflib`, `pyro-ppl` → ce hub (interdisciplinaire). Si le notebook commence par `import openai` → [`GenAI/CaseStudies/`](../GenAI/CaseStudies/README.md) (4 cas agentiques GenAI : Barbie-Schreck, Fort-Boyard, Medical-Chatbot, Recipe-Maker). Voir [issue #13581 AC7](https://github.com/jsboige/CoursIA/issues/13581) pour la clarification des deux crans `CaseStudies/`.
+
 Études de cas interdisciplinaires combinant plusieurs domaines de l'IA dans des projets appliqués.
 
 La force des études de cas réside dans leur capacité à **fusionner les techniques apprises en silos** : un solveur SMT (Search), un algorithme génétique (Sudoku), une ontologie OWL (SemanticWeb) et un modèle bayésien (Probas) ne valent pas grand chose isolément face à une question réelle. C'est leur combinaison, orchestrée autour d'un problème métier (diagnostic médical, protocole oncologique, dispatch énergétique), qui transforme un catalogue d'outils en **système décisionnel cohérent**. Les trois projets de cette série illustrent ce passage : chacun mobilise **3 paradigmes IA** complémentaires qui se renforcent mutuellement plutôt que de se concurrencer.
