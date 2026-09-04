@@ -98,10 +98,14 @@ grep -oE '^## Entry #[0-9]+ — [^(]+' docs/ledgers/3801-sota-axe2.md   | sed 's
 Comparer son compte a un `find MyIA.AI.Notebooks -name '*.ipynb'` agrege par repertoire donne deux
 nombres qui ne se soustraient pas — c'est un piege de denominateur, pas un ecart de couverture.
 
-**Le tableau « Cumul entries » du ledger n'est pas cet instrument** : mesure du 2026-09-03, il s'arrete
-a l'entree **8** alors que le fichier en porte **30**. Il ne peut donc pas repondre a la condition 1, et
-un auditeur qui s'y fierait conclurait une couverture quatre fois trop faible. Le rafraichir est un grain
-a part, hors du perimetre de #14519 qui portait sur l'ancre de cette regle.
+**Les tableaux « Cumul entries » du ledger ne sont pas cet instrument** : il y en a **deux**, tous deux
+perimes, mesure du 2026-09-03 — `## Cumul entries` (l.485) s'arrete a l'entree **8**, datee du 2026-07-10,
+et `### Cumul entries (registre axe-2 SOTA)` (l.854) s'arrete a l'entree **22**, datee du 2026-07-11 —
+alors que le fichier porte **30** entrees. Le plus recent des deux, le seul qu'un auditeur presse
+consulterait, sous-compte donc d'un facteur ~1,4 ; le plus ancien, si c'est celui qu'il trouve en premier,
+d'un facteur ~3,8. Aucun des deux ne repond a la condition 1. Le rafraichir — et **fusionner les deux
+tableaux dupliques en un seul**, la duplication etant elle-meme la cause du piege de lecture — est un
+grain a part, hors du perimetre de #14519 qui portait sur l'ancre de cette regle.
 
 ## Voir aussi
 - CLAUDE.md section F — env/kernel : reparer, jamais contourner
