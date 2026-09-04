@@ -729,8 +729,8 @@
   "15272": {
    "url": "https://www.quantconnect.com/research/15272/improved-momentum-strategy-on-commodities-futures/",
    "lastmod": "2019-09-17T00:00:00+00:00",
-   "seeded_at": null,
-   "issue": null
+   "seeded_at": "2026-09-03",
+   "issue": 14462
   },
   "15270": {
    "url": "https://www.quantconnect.com/research/15270/gradient-boosting-model/",

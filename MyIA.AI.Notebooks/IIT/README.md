@@ -28,10 +28,11 @@ Le premier notebook couvre le spectre fondamental : construction de graphes caus
 
 | # | Notebook | Contenu | Durée |
 |---|----------|---------|-------|
-| 1 | [IIT-1-IntroToPyPhi](IIT-1-IntroToPyPhi.ipynb) | Réseau XOR 3-nœuds : TPM, calcul de Φ, CES, états inaccessibles, causation, complexe majeur | 60-90 min |
-| 2 | [IIT-2-AdvancedTopics](IIT-2-AdvancedTopics.ipynb) | MIP et bipartitions, répertoires cause-effet, MICE, big Φ sur réseau 4-nœuds, coarse-graining | 60-90 min |
-| 3 | [IIT-3-CoarseGrainingMacroPhi](IIT-3-CoarseGrainingMacroPhi.ipynb) | Module `pyphi.macro` : information efficace (Hoel), énumération des regroupements, comparaison Φ micro/macro, causal emergence | 45-60 min |
-| 4 | [IIT-4-Le-Probleme-de-Frontiere](IIT-4-Le-Probleme-de-Frontiere.ipynb) | Le problème de frontière : faire varier le découpage du même substrat, maximiseur de Φ, complexe majeur (`major_complex`), double dissociation Φ vs EI | 45-60 min |
+| 1 | [IIT-01-IntroToPyPhi](IIT-01-IntroToPyPhi.ipynb) | Réseau XOR 3-nœuds : TPM, calcul de Φ, CES, états inaccessibles, causation, complexe majeur | 60-90 min |
+| 2 | [IIT-02-AdvancedTopics](IIT-02-AdvancedTopics.ipynb) | MIP et bipartitions, répertoires cause-effet, MICE, big Φ sur réseau 4-nœuds, coarse-graining | 60-90 min |
+| 3 | [IIT-03-CoarseGrainingMacroPhi](IIT-03-CoarseGrainingMacroPhi.ipynb) | Module `pyphi.macro` : information efficace (Hoel), énumération des regroupements, comparaison Φ micro/macro, causal emergence | 45-60 min |
+| 4 | [IIT-04-Le-Probleme-de-Frontiere](IIT-04-Le-Probleme-de-Frontiere.ipynb) | Le problème de frontière : faire varier le découpage du même substrat, maximiseur de Φ, complexe majeur (`major_complex`), double dissociation Φ vs EI | 45-60 min |
+| 5 | [IIT-05-Lentilles-et-Dissociations](IIT-05-Lentilles-et-Dissociations.ipynb) | Six théories de la conscience (GWT, GNW, FEP, AST, SMT, HOT) comme mesures exécutables sur un même substrat : dissociation accès vs autoréférence, orthogonalité AST/SMT, contre-claim FEP | 60-75 min |
 
 ## Parcours recommandés
 
@@ -46,15 +47,19 @@ Notebook 3 (Coarse-graining & échelle du Φ)
     |
     v
 Notebook 4 (Le problème de frontière)
+    |
+    v
+Notebook 5 (Les lentilles de conscience)
 ```
 
 | Objectif | Parcours |
 |----------|----------|
 | Découverte rapide | Notebook 1 seul |
-| Maîtrise complète | Notebook 1 puis 2, puis 3, puis 4 |
+| Maîtrise complète | Notebook 1 puis 2, puis 3, puis 4, puis 5 |
 | Focus philosophie | Notebook 1 (sections CES + débats) + Notebook 2 (section IIT 4.0) |
 | Focus emergence & échelle | Notebook 1 + Notebook 3 (causal emergence de Hoel) |
 | Focus frontières & dissociation | Notebook 1 + Notebook 4 (Φ vs EI selon le découpage, complexe majeur) |
+| Focus théories rivales | Notebook 1 + Notebook 5 (six lentilles, contre-claims exécutés) |
 
 ### Parcours d'apprentissage
 
@@ -73,6 +78,10 @@ Le troisième notebook opérationnalise le module `pyphi.macro` resté conceptue
 **Phase 4 : Le problème de frontière (~60 min, notebook 4)**
 
 Le quatrième notebook pose la question d'avant toute analyse de recollement : qui décide où sont les bords ? Sur un substrat inchangé (deux paires d'échange), vous énumérez les 11 frontières candidates et mesurez $\Phi$ et l'EI induit pour chacune — découpages **calculés**, jamais discutés. Le résultat est une **double dissociation** mesurée : $\Phi$ privilégie les frontières transversales (ex æquo, la mesure ne tranche pas), l'EI induit privilégie le tout, et les favorites de $\Phi$ coupent une dépendance — hors du domaine même de l'EI. Le § 4bis ajoute le verdict du moteur : `pyphi.compute.major_complex` tranche l'ex æquo (BD, $\Phi = 1$) pendant que $\Phi(ABCD) = 0$ écarte le tout — le postulat d'exclusion opérationnalisé, arbitrage d'énumération à l'appui. Le *boundary problem* (Gómez Emilsson, cité comme proposition) devient un objet de mesure. Les 4 exercices refont la démarche sur votre propre substrat, jusqu'au verdict explicite et à la vérification du complexe majeur.
+
+**Phase 5 : Les lentilles de conscience (~75 min, notebook 5)**
+
+Le cinquième notebook quitte la mesure de $\Phi$ pour la **comparaison des théories** : six modèles de la conscience (GWT de Baars, GNW de Dehaene, FEP de Friston, AST de Graziano, SMT de Metzinger, HOT de Rosenthal) deviennent des mesures exécutables sur un même substrat jouet, chacune soumise à la discipline des cinq champs (source primaire, objet formel, claim exact, contre-claim, mesure falsifiable) — une lentille sans contre-claim ou sans mesure est incomplète et retirée. Trois bancs de dissociation : l'accès sans autoréférence (trois lentilles mesurent OUI, trois NON sur le même substrat), l'orthogonalité AST/SMT (capacité structurelle vs accès fonctionnel — traces non corrélées), et le contre-claim FEP exécuté (un substrat à précision maximale n'est « conscient » que pour les lentilles prédictives). Les 3 exercices mesurent chaque dissociation sur le substrat, jamais en prose.
 
 ## Prérequis
 
@@ -154,7 +163,7 @@ flowchart TD
 
 ## Contenu détaillé
 
-### IIT-1-IntroToPyPhi.ipynb
+### IIT-01-IntroToPyPhi.ipynb
 
 | Section | Contenu |
 |---------|---------|
@@ -168,7 +177,7 @@ flowchart TD
 | Causation actuelle | Liens causaux d'une transition (`account`), mécanisme d'un concept |
 | Macro-sous-systèmes | Coarse-graining, blackboxing (section conceptuelle) |
 
-### IIT-2-AdvancedTopics.ipynb
+### IIT-02-AdvancedTopics.ipynb
 
 | Section | Contenu |
 |---------|---------|
@@ -181,7 +190,7 @@ flowchart TD
 | Performance | Timing du calcul de CES, module `pyphi.macro` |
 | IIT 4.0 | Concept-Style SIA, limites computationnelles, débats |
 
-### IIT-3-CoarseGrainingMacroPhi.ipynb
+### IIT-03-CoarseGrainingMacroPhi.ipynb
 
 | Section | Contenu |
 |---------|---------|
@@ -192,7 +201,7 @@ flowchart TD
 | Comparaison micro/macro | $\Phi$ macro vs $\Phi$ micro, interprétation honnête de l'emergence |
 | Causal emergence | Hoel 2013 : pourquoi l'emergence positive n'est ni automatique ni garantie |
 
-### IIT-4-Le-Probleme-de-Frontiere.ipynb
+### IIT-04-Le-Probleme-de-Frontiere.ipynb
 
 | Section | Contenu |
 |---------|---------|
@@ -203,6 +212,18 @@ flowchart TD
 | Complexe majeur | `major_complex` rend BD (Φ = 1) ; Φ(ABCD) = 0 écarte le tout — l'ex æquo est départagé par l'ordre d'énumération du moteur, pas par la théorie |
 | Double dissociation | Φ privilégie les frontières transversales, EI le tout — et les favorites de Φ sont hors du domaine de l'EI (frontières coupantes) |
 | Boundary problem | Gómez Emilsson cité comme proposition, jamais comme réponse établie |
+
+### IIT-05-Lentilles-et-Dissociations.ipynb
+
+| Section | Contenu |
+|---------|---------|
+| Cadre | Discipline des cinq champs : source primaire, objet formel, claim exact, contre-claim, mesure falsifiable |
+| Six lentilles | GWT, GNW, FEP, AST, SMT, HOT sous forme de données exécutables (`@dataclass`), chacune avec sa source primaire citée |
+| Substrat | Graphe dynamique minimal : couche périphérique, couche intégration, méta-couche optionnelle |
+| Exercice 1 | Dissociation accès (broadcast) vs autoréférence (boucle méta) : GWT/GNW/PP mesurent OUI, AST/SMT/HOT mesurent NON, sur le même substrat |
+| Exercice 2 | Graziano (AST) vs Metzinger (SMT) sur le même substrat : traces non corrélées — capacité structurelle vs accès fonctionnel |
+| Exercice 3 | Contre-claim exécuté : la lentille FEP sort de son domaine (précision maximale ≠ conscience) |
+| Conclusion | Les lentilles comme instruments de dissociation, pas comme théories unifiées — limites honnêtement documentées |
 
 ## Théorie IIT
 
@@ -305,10 +326,11 @@ IIT propose un changement de regard radical : ne plus demander « qu'est-ce que 
 
 ```
 IIT/
-├── IIT-1-IntroToPyPhi.ipynb           # Notebook 1 : introduction
-├── IIT-2-AdvancedTopics.ipynb         # Notebook 2 : sujets avances
-├── IIT-3-CoarseGrainingMacroPhi.ipynb # Notebook 3 : coarse-graining & échelle du Φ
-├── IIT-4-Le-Probleme-de-Frontiere.ipynb # Notebook 4 : qui décide des bords — Φ vs EI selon la frontière
+├── IIT-01-IntroToPyPhi.ipynb           # Notebook 1 : introduction
+├── IIT-02-AdvancedTopics.ipynb         # Notebook 2 : sujets avances
+├── IIT-03-CoarseGrainingMacroPhi.ipynb # Notebook 3 : coarse-graining & échelle du Φ
+├── IIT-04-Le-Probleme-de-Frontiere.ipynb # Notebook 4 : qui décide des bords — Φ vs EI selon la frontière
+├── IIT-05-Lentilles-et-Dissociations.ipynb # Notebook 5 : six théories de la conscience comme bancs de dissociation
 ├── ICT-Series/                 # Extension expérimentale ICT (Epic #4588) — voir son README
 │   ├── ICT-0-Framing.md        # Cadrage de la série ICT
 │   ├── ICT-0-Annexe-IntegratedComplexityTheory.md  # Annexe théorique (complexité intégrée)
@@ -443,7 +465,7 @@ Voir la licence du repository principal.
 
 <!-- CATALOG-STATUS
 series: IIT
-pedagogical_count: 69
-breakdown: ICT-Series=64, root=5
-maturity: BETA=62, DRAFT=6, ALPHA=1
+pedagogical_count: 71
+breakdown: ICT-Series=66, root=5
+maturity: BETA=63, DRAFT=7, ALPHA=1
 -->

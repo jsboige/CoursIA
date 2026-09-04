@@ -162,6 +162,14 @@ jobs:
 
           META_FAIL=0
           PORT=8890
+          # #14226 — manifeste deck→report : pour que le PR-relay léger puisse
+          # relier un deck path (diff Git) à son verdict persisté sans connaître
+          # le port éphémère. On écrit ce manifeste sous _comp_reports/_manifest.tsv
+          # (deck_path<TAB>report_path_relatif) au fil de la boucle.
+          COMP_OUT_DIR="$(pwd)/_comp_reports"
+          mkdir -p "$COMP_OUT_DIR"
+          MANIFEST="$COMP_OUT_DIR/_manifest.tsv"
+          : > "$MANIFEST"
           # #12173 — budget d'attente JUSTIFIÉ par une mesure, pas doublé au jugé.
           # 30 itérations × 3s = 90s mesuré sur runner froid ubuntu-24.04 2026-08-21
           # (run 32529093236 : premier 200 sur `slidev dev` à ~70-90s ; 30 laisse
@@ -196,11 +204,16 @@ jobs:
               META_FAIL=1
               rm -f "$DIR/dev.md"; kill "$SLIDEV_PID" 2>/dev/null || true; continue
             fi
+            # #14226 — nom de fichier déterministe par deck (pas par port
+            # éphémère). `slides/S3-acculturation/slides.md` →
+            # `_comp_reports/slides_S3-acculturation_slides.md.json`.
+            SAFE_STEM=$(echo "$MD" | tr '/' '_')
+            DECK_REPORT="$COMP_OUT_DIR/${SAFE_STEM}.json"
             python scripts/notebook_tools/scan_slidev_composition.py \
               --url "http://localhost:$PORT/" \
               --slides-md "$MD" \
               --github-annotations \
-              --out "/tmp/report_$PORT.json" > /tmp/scan_$PORT.log 2>&1
+              --out "$DECK_REPORT" > /tmp/scan_$PORT.log 2>&1
             SCAN_EXIT=$?
             # --github-annotations ecrit sur STDOUT ; la redirection ci-dessus les
             # enterre dans /tmp, ou GitHub ne les lit jamais -- le gate mesurait
@@ -209,7 +222,10 @@ jobs:
             # grep APRES l'affectation de SCAN_EXIT : un pipe rendrait le statut du
             # dernier maillon, pas celui du scanner.
             grep -E '^::(warning|error) ' "/tmp/scan_$PORT.log" || true
-            python - "$MD" "/tmp/report_$PORT.json" "$SCAN_EXIT" >> "$GITHUB_STEP_SUMMARY" <<'PYEOF'
+            # Manifeste deck→report : le PR-relay peut ainsi résoudre un deck
+            # touché par le diff vers son verdict persisté sans connaître le port.
+            printf '%s\t%s\n' "$MD" "${SAFE_STEM}.json" >> "$MANIFEST"
+            python - "$MD" "$DECK_REPORT" "$SCAN_EXIT" >> "$GITHUB_STEP_SUMMARY" <<'PYEOF'
           import json, sys
           md, rp, exit_code = sys.argv[1], sys.argv[2], int(sys.argv[3])
           try:
@@ -230,6 +246,30 @@ jobs:
           # Seule la META-defaillance rougit -- un gate qui n'a PAS mesure doit se
           # distinguer d'un gate qui a mesure et n'a rien trouve.
           if [ "$META_FAIL" -ne 0 ]; then
+            # #14226 — on rougit (exit 1), mais le verdict partiel déjà écrit
+            # (deck(s) mesuré(s) avant la meta-fail) est conservé sur disque :
+            # il sera pickup par l'artefact s'il existe, sinon le prochain
+            # run nocturne le régénère. Pas de upload ci-dessous : exit 1.
             exit 1
           fi
+
+          # #14226 — option 1 : persister le verdict. Les reports par-deck
+          # ont déjà été écrits sous _comp_reports/<sanitized_deck>.json
+          # au fil de la boucle, ainsi que le manifeste _manifest.tsv. On
+          # les uploade comme artefact unique `slides-composition-nocturne`
+          # (consommé par slides-composition-pr-relay.yml via REST API).
+          KEPT=$(find "$COMP_OUT_DIR" -maxdepth 1 -name '*.json' | wc -l)
+          echo "Verdict persisté : $KEPT report(s) sous _comp_reports/ (artefact slides-composition-nocturne)." >> "$GITHUB_STEP_SUMMARY"
           exit 0
+
+      - name: Upload verdict artifact (#14226)
+        if: always() && hashFiles('_comp_reports/_manifest.tsv') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: slides-composition-nocturne
+          path: |
+            _comp_reports/_manifest.tsv
+            _comp_reports/*.json
+          retention-days: 30
+          if-no-files-found: ignore
+

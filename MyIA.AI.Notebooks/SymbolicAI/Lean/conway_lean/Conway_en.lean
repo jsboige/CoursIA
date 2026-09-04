@@ -31,6 +31,9 @@
       theorem (1967) and Conway-Kochen Free Will Theorem (2006 *The
       Free Will Theorem*): non-contextuality and determinism in quantum
       mechanics.
+    - `Conway.CHSH` — classical boundary of the CHSH Bell inequality
+      (Clauser-Horne-Shimony-Holt 1969): every deterministic local strategy
+      with binary outcomes has a score of absolute value exactly 2.
     - `Conway.CollatzLike` — Collatz-type generalizations (3n+1),
       Syracuse conjecture reformalized in Lean.
     - `Conway.Angel` — Conway's Angel problem (1996 / 2002 *Angel
@@ -59,6 +62,7 @@ import Conway.Angel_en
 import Conway.Life_en
 import Conway.KochenSpecker_en
 import Conway.FreeWillTheorem_en
+import Conway.CHSH_en
 import Conway.MathlibMap_en
 import Conway.CollatzLike_en
 import Conway.FractranLemmas_en

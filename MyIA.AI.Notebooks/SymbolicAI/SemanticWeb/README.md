@@ -4,9 +4,9 @@
 
 <!-- CATALOG-STATUS
 series: SymbolicAI-SemanticWeb
-pedagogical_count: 26
-breakdown: SemanticWeb=26
-maturity: BETA=25, ALPHA=1
+pedagogical_count: 27
+breakdown: SemanticWeb=27
+maturity: BETA=26, ALPHA=1
 -->
 
 Le Web Sémantique est la promesse d'un Web où les machines comprennent la signification des données, pas seulement leur syntaxe. RDF, SPARQL, OWL, SHACL : ces standards du W3C définissent un langage commun pour décrire, interroger, valider et raisonner sur des graphes de connaissances. Cette série vous mène des fondations (.NET C# avec dotNetRDF) aux applications modernes (Python avec rdflib, pySHACL, GraphRAG), en passant par les ontologies, les données liées et les standards émergents (RDF 1.2, JSON-LD 1.1).

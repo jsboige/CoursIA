@@ -77,48 +77,42 @@ from pathlib import Path
 #     recognised key word -- see `_strip_title_hashes` below.
 _NOISE = str.maketrans({"*": "", "`": "", ">": ""})
 
-# Words that, when they appear at the start of a line after one or more `#`,
-# justify stripping the title hashes. Anything else (an `#` mid-line, an
-# `#` in `Quoi: fix #9861`) is preserved.
+# Words that, when they appear at the start of a line after one or more `#`
+# or a single `-`, justify stripping the line-leading decoration. Anything
+# else (a `-` mid-line, an `#` in `Quoi: fix #9861`) is preserved.
 _TITLE_HASH_WORDS = ("Grain", "Quoi", "Preuve", "Perimetre", "Lane")
-# Compiled once: `^#+\s*<word>\b` in multiline mode. The lookahead
-# `(?=...)` does NOT consume the key word -- it only confirms the line
-# looks like a title, then `_strip_title_hashes` cuts the line BEFORE
+# Compiled once: `^[ \t]*(-|#+)\s*(?=<word>\b)` in multiline mode. The
+# lookahead `(?=...)` does NOT consume the key word -- it only confirms the
+# line looks like a title, then `_strip_title_hashes` cuts the line BEFORE
 # the key word so the regex (`_GRAIN_FULL_RE` etc.) still sees it.
-# Without the lookahead, `m.end()` would be AFTER the key word and the
-# strip would delete the tag itself, breaking the title-form tests.
 _TITLE_LINE_RE = re.compile(
-    r"^[ \t]*#+\s*(?=" + "|".join(_TITLE_HASH_WORDS) + r")\b",
+    r"^[ \t]*(?:-|\#+)\s*(?=" + "|".join(_TITLE_HASH_WORDS) + r")\b",
     re.IGNORECASE | re.MULTILINE,
 )
 
 
 def _strip_title_hashes(flat: str) -> str:
-    """Strip line-leading `##` only on lines that begin with a recognised key.
+    """Strip line-leading markdown decoration only on lines that begin with a
+    recognised key.
 
-    Splitting into lines is cheap and gives us byte-level control: a line
-    that starts with `#` followed by `Grain` / `Quoi` / `Preuve` / `Perimetre`
-    / `Lane` has its `#` chars removed (the KEY WORD IS PRESERVED -- the
-    earlier prototype deleted the key too, which broke `## Grain` lookup
-    for tests `test_title_form_hash_grain_next_line` / `_h3_grain`); every
-    other line is kept intact, including `#` in the middle (issue references,
-    code spans, etc.).
+    Splitting into lines is cheap and gives us byte-level control. Three
+    decorations are stripped on key lines:
+
+      * `## Grain` / `### Quoi: ...` -- the title-hash form (#9485).
+      * `- Grain \`MED/...\`` -- a Markdown list bullet, observed in the
+        founder tag of PR #12530 (#12719). Without this strip the new
+        line-anchored `_GRAIN_FULL_RE` (added by #13633) would not see the
+        tag -- the bullet stands BEFORE the key word.
+
+    Other lines are kept intact: a `-` mid-line (em-dash separator in
+    prose), `#` mid-line (`#9861`), backticks inside a value. The KEY WORD
+    is preserved by construction (lookahead in the regex, cut at
+    `m.end()`).
     """
     out_lines = []
     for line in flat.splitlines():
         m = _TITLE_LINE_RE.match(line)
         if m:
-            # Drop ONLY the leading whitespace + `#` chars + whitespace
-            # between them, KEEP the recognised key word. Concretely:
-            # `## Grain` -> `Grain` ; `### Quoi: ...` -> `Quoi: ...`.
-            # The `\s*` after the `#` group (in the regex) consumes the
-            # leading whitespace before the key word; the key word itself
-            # is matched but NOT consumed (lookahead via the alternation:
-            # we use the END of the key word -- `m.end()` -- as the cut).
-            # But the regex above consumes the whitespace before the key,
-            # not the key itself. So `m.end()` is the position right after
-            # the leading whitespace, which is exactly the start of the
-            # key word -- exactly what we want to keep.
             out_lines.append(line[m.end():])
         else:
             out_lines.append(line)
@@ -126,27 +120,30 @@ def _strip_title_hashes(flat: str) -> str:
 
 # --- extraction -------------------------------------------------------------
 
-# `Grain` then a REQUIRED separator (colon and/or whitespace, incl. newlines),
-# then TIER / GENRE. `[:\\s]+` (one-or-more, #11771) keeps the whole #9485
-# tolerance while refusing a ZERO-width separator: with `*`, the word
-# `Graine` matched as `Grain` + `e / Tag` and a conformant PR was labelled
-# variation-tag-malformed + variation-tag-genre-offlist. It accepts
-# `Grain:`, `Grain `, `Grain\\n\\n`, `Grain :` (space then colon). TIER is the
-# alphabetic word before `/`; GENRE is the token after (letters, digits, _,-).
+# `Grain` (line-anchored after the global markdown-noise strip and the
+# title-hash strip) then a REQUIRED separator (colon and/or whitespace,
+# incl. newlines), then TIER / GENRE. `[:\\s]+` (one-or-more, #11771) keeps
+# the whole #9485 tolerance while refusing a ZERO-width separator: with `*`,
+# the word `Graine` matched as `Grain` + `e / Tag` and a conformant PR was
+# labelled variation-tag-malformed + variation-tag-genre-offlist. It accepts
+# `Grain:`, `Grain `, `Grain\\n\\n`, `Grain :` (space then colon). TIER is
+# the alphabetic word before `/`; GENRE is the token after (letters, digits,
+# _,-).
 #
-# #13633 -- the literal `Grain` is CASE-SENSITIVE (no re.IGNORECASE). A
-# lowercase `grain` in running prose ("est le grain MED/tooling suivant")
-# is a noun, not a key: `re.IGNORECASE` let the phrase arm the extractor and
-# `parse_grain` produced a confident {tier, lane} for a body with NO Grain tag
-# -- the `false` cap verdict (instead of the #9465 `null` "not evaluated")
-# on #13550, whose prose merely DESCRIBED *another* PR's next grain. The 5
-# tolerated forms all capitalise the key (§1 `Grain: T/G` / `**Grain:**` /
-# `## Grain` title), so requiring `Grain` leaves them intact while refusing a
-# bare lowercase token in prose. TIER/GENRE stay case-tolerant via the
-# character classes (`[A-Za-z]`, `[A-Za-z0-9_-]`) -- `light/GUARD` still
-# normalises to LIGHT/guard.
+# #13633 -- `^Grain` (with `re.MULTILINE`) rejects a token TIER/GENRE
+# preceded by prose -- a body that *describes* another grain in plain text
+# ("le grain MED/tooling suivant") was parsed as if it carried the tag,
+# yielding a confident but wrong attribution. The body MUST lead the line
+# with the tag (the canonical form is "Grain: TIER/GENRE ..." in L0; the
+# tolerated variants from the docstring above all share this invariant --
+# `**Grain:**`, `` `Grain` ``, `**Grain**`, and `## Grain\n\n<TIER>/<GENRE>`
+# all become "Grain" at the start of a line once the markdown noise is
+# stripped). Measured on 34 open PRs (2026-08-30): 0/34 hit the previous
+# `null` path that #9465 had been introduced to make visible -- every PR
+# without a tag got a confident parse instead.
 _GRAIN_FULL_RE = re.compile(
-    r"Grain[:\s]+([A-Za-z]+)\s*/\s*([A-Za-z0-9_-]+)"
+    r"^Grain[:\s]+([A-Za-z]+)\s*/\s*([A-Za-z0-9_-]+)",
+    re.IGNORECASE | re.MULTILINE,
 )
 
 # `lane` (case-insensitive), optional whitespace, optional colon, whitespace,
@@ -184,10 +181,39 @@ _GRAIN_FULL_RE = re.compile(
 # rejected by the `(?![:@])` guard; only the BARE date passes. The negative
 # lookahead below refuses the bare-date form as a continuation while keeping
 # every legitimate one (a workspace word never starts `NNNN-NN-NN`).
+#
+# #13830 -- the workspace name and its continuation words now admit Latin-1
+# letters (`myia-ai-01:LivresAgités`, the real `myia-ai-01:LivresAgités Épisode`
+# line) so a lane that writes its name with accents is counted instead of
+# truncated to zero grain. The three guards (`(?-i:[A-Z0-9])` case-sensitive
+# initial, `(?!\d{4}-\d{2}-\d{2})` bare-date, `(?![:@])` URL/timestamp) all
+# survive: the uppercase class is widened to ASCII upper + accented uppercase
+# (`À-ÖØ-Þ` = Latin-1 Supplement, the cluster's only observed accents), and the
+# body class widens to the corresponding lowercase range (`à-öø-ÿ` + ſ) so the
+# maximal-munch `(?![A-Za-z0-9._À-ſ-])` keeps working with the new characters.
+# Tested in `test_lane_workspace_accented` + the existing #12145 / #12719 set.
 _LANE_RE = re.compile(
     r"lane\s*:?\s+"
-    r"([A-Za-z0-9._-]+:[A-Za-z0-9._-]+"
-    r"(?:[ \t]+(?!\d{4}-\d{2}-\d{2})(?-i:[A-Z0-9])[A-Za-z0-9._-]*(?![A-Za-z0-9._-])(?![:@])){0,3})",
+    # #13830 V2 -- union of #13869 (full Latin-1 + Latin Extended-A `À-ſ`)
+    # and #13899 (narrow Latin-1 `À-ÖØ-öø-ÿ` -- U+00C0-U+00FF skipping the
+    # two non-letter symbols `×` U+00D7 and `÷` U+00F7). The narrow class
+    # (#13899) is on main; #13830 widens it with `Ā-ſ` (U+0100-U+017F,
+    # i.e. Latin Extended-A) to cover workspace names containing Ł, ő, ā,
+    # etc., without ever re-crossing a non-letter symbol: the `Ā-ſ` segment
+    # begins at U+0100, immediately after `÷` U+00F7. The resulting class
+    # `À-ÖØ-öø-ÿĀ-ſ` admits every Latin-1 + Latin Extended-A letter while
+    # keeping both `×` and `÷` outside the token (verified empirically in
+    # the comparative comment on #13869 -- union has zero non-letter
+    # false positives and 128/128 Latin Extended-A coverage).
+    # Body class widens to the corresponding lowercase range
+    # (`à-öø-ÿā-ſ`) so the maximal-munch `(?![A-Za-z0-9._À-ÖØ-öø-ÿĀ-ſ-])`
+    # keeps working with the new characters. The upper-case-initial
+    # constraint on continuation words (`(?-i:[A-Z0-9À-ÖØ-ÞĀ-ſ])`) widens
+    # identically so prose from being swallowed is preserved. Tested in
+    # `test_lane_workspace_accented` + the existing #12145 / #12719 set
+    # + the #13869 comparative table (LivresAgités / Cours×IA / Łódź).
+    r"([A-Za-z0-9._-]+:[A-Za-zÀ-ÖØ-öø-ÿĀ-ſ0-9._-]+"
+    r"(?:[ \t]+(?!\d{4}-\d{2}-\d{2})(?-i:[A-Z0-9À-ÖØ-ÞĀ-ſ])[A-Za-z0-9._À-ÖØ-öø-ÿĀ-ſ-]*(?![A-Za-z0-9._À-ÖØ-öø-ÿĀ-ſ-])(?![:@])){0,3})",
     re.IGNORECASE,
 )
 
@@ -216,9 +242,22 @@ _LANE_RE = re.compile(
 # malformed markers of the founder night carried NO `lane` keyword, so it is
 # THIS regex that swallowed `2026-08-23` into the lane token. The sibling
 # moves with the fix.
+#
+# #13830 -- the accent tolerance added to `_LANE_RE` applies here too:
+# the fallback lane token for marker comments that omit `lane` must accept the
+# same workspace names. Same widening of body class and continuation initial.
 _LANE_FALLBACK_RE = re.compile(
-    r"\b(myia-[A-Za-z0-9._-]+:[A-Za-z][A-Za-z0-9._-]*"
-    r"(?:[ \t]+(?!\d{4}-\d{2}-\d{2})[A-Z0-9][A-Za-z0-9._-]*(?![A-Za-z0-9._-])(?![:@])){0,3})"
+    # #13830 V2 -- twin of `_LANE_RE`: the workspace class widens from
+    # `[A-Za-z][A-Za-z0-9._-]*` to `[A-Za-zÀ-ÖØ-öø-ÿĀ-ſ][A-Za-zÀ-ÖØ-öø-ÿĀ-ſ0-9._-]*`
+    # (Latin-1 letters U+00C0-U+00FF + Latin Extended-A U+0100-U+017F added)
+    # so a workspace with accented letters (e.g. `LivresAgités`, `Łódź`)
+    # stops truncating at the first non-letter byte. Casse-sensible here
+    # (`re.IGNORECASE` absent on this branch), so `[A-Z]` keeps meaning
+    # upper case ASCII only; the additional ranges are closed in U+017F.
+    # The twin MUST move with the primary or the founder's class of bug
+    # (#12145) re-opens on the fallback only.
+    r"\b(myia-[A-Za-z0-9._-]+:[A-Za-zÀ-ÖØ-öø-ÿĀ-ſ][A-Za-zÀ-ÖØ-öø-ÿĀ-ſ0-9._-]*"
+    r"(?:[ \t]+(?!\d{4}-\d{2}-\d{2})(?-i:[A-Z0-9À-ÖØ-ÞĀ-ſ])[A-Za-z0-9._À-ÖØ-öø-ÿĀ-ſ-]*(?![A-Za-z0-9._À-ÖØ-öø-ÿĀ-ſ-])(?![:@])){0,3})"
 )
 
 # `prev` (case-insensitive), optional colon, whitespace, then the SAME

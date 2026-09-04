@@ -789,6 +789,28 @@ def _summarize_claim(out: str, returncode: int) -> str:
     return f"exit={returncode}"
 
 
+def _utf8_child_env() -> dict:
+    """Environnement pour un enfant **Python** dont on lit le stdout en UTF-8.
+
+    ``encoding="utf-8"`` cote parent ne dit que comment le parent DECODE ; il
+    ne dit rien de ce que l'enfant ENCODE. Un `python` enfant dont stdout est
+    un tube choisit ``locale.getpreferredencoding()`` -- cp1252 sur un Windows
+    francais. Le parent recoit alors du cp1252 et le decode en UTF-8 : tout
+    caractere non-ASCII leve ``UnicodeDecodeError`` et tue le thread lecteur.
+
+    Mesure (Windows FR) : un enfant imprimant un tiret cadratin rend l'octet
+    isole 0x97 (cp1252) sans cette variable -- invalide en UTF-8, c'est
+    exactement l'octet sur lequel le picker plantait -- et la sequence
+    0xE2 0x80 0x94 avec. ``check_lane_claim.py`` rend precisement des verdicts
+    en francais accentue ("claim perime", "deja claim par cette lane").
+
+    ``PYTHONIOENCODING`` est la seule variable qui traverse la frontiere de
+    process : elle instruit l'ENFANT, la ou le hook pre-commit du depot
+    ("refuse NEW text=True without encoding=") ne peut regarder que le parent.
+    """
+    return {**os.environ, "PYTHONIOENCODING": "utf-8"}
+
+
 def check_claims(numbers: list[int], lane: str) -> dict[int, str]:
     """Verif claims sur les seuls candidats tires (N appels, pas 140).
 
@@ -803,6 +825,7 @@ def check_claims(numbers: list[int], lane: str) -> dict[int, str]:
                 [sys.executable, "scripts/check_lane_claim.py",
                  "--lane", lane, str(n)],
                 capture_output=True, text=True, encoding="utf-8", timeout=60,
+                env=_utf8_child_env(),
             )
             verdicts[n] = _summarize_claim(r.stdout or r.stderr or "",
                                            r.returncode)
