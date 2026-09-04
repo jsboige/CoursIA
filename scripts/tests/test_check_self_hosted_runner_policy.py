@@ -387,6 +387,41 @@ def test_linux_label_set_is_accepted_in_allowlisted_workflow(tmp_path):
     assert result.self_hosted_jobs == 1
 
 
+def test_lean_label_set_is_accepted_in_allowlisted_workflow(tmp_path):
+    # #14337: the specialised Lean pool (po-2024) carries its own dedicated
+    # label set -- coursia-lean routes lake builds to the elan image with the
+    # warm .lake work volume, never to the minimal linux image or the Windows
+    # runners.
+    write_workflow(tmp_path, "linux-self-hosted-tests", """
+        name: lean
+        on: workflow_dispatch
+        jobs:
+          test:
+            runs-on: [self-hosted, coursia-ephemeral, coursia-lean]
+            steps:
+              - run: echo safe
+        """)
+    result = policy.scan_workflows(tmp_path)
+    assert result.violations == []
+    assert result.self_hosted_jobs == 1
+
+
+def test_mixed_lean_and_linux_labels_are_rejected(tmp_path):
+    # Mixing the lean and linux dedicated sets must stay a violation: a job
+    # eligible for both pools would make the routing guarantee meaningless.
+    write_workflow(tmp_path, "linux-self-hosted-tests", """
+        name: mixed
+        on: workflow_dispatch
+        jobs:
+          test:
+            runs-on: [self-hosted, coursia-ephemeral, coursia-linux, coursia-lean]
+            steps:
+              - run: echo unsafe
+        """)
+    result = policy.scan_workflows(tmp_path)
+    assert codes(result) == {"RUNNER_LABELS"}
+
+
 def test_mixed_linux_and_fast_guards_labels_are_rejected(tmp_path):
     # Mixing the two dedicated sets must stay a violation: a job eligible
     # for both the Windows runners and the Linux container would make the
