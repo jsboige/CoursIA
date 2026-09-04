@@ -50,8 +50,8 @@ Donc les **paysages bit-orthogonaux deviennent dégénérés** sous la compressi
 4 nouveaux paysages **alignés à bit2** (la compression relâchée) :
 - `L_bit2_aligned(w) = bit2(w)` — **TOUJOURS 0 dans fibre x=0 (bit2=0), TOUJOURS 1 dans fibre x=1 (bit2=1)** → discrimination **infaillible** par compression seule → **GAP TRÈS ÉLEVÉ attendu** (cible |gap| ≥ 0.60)
 - `L_bit2_complement_aligned(w) = 1 - bit2(w)` — idem direction opposée → cible |gap| ≥ 0.60
-- `L_bit01_aligned(w) = bit0(w) | bit1(w)` — partiellement aligné (car bit0/bit1 prennent les 4 valeurs intra-fibre cardinal 4) → cible gap modéré ≥ 0.10
-- `L_pairity_bit12(w) = (popcount(w & 0b111) % 2)` — parité 3-bit, dépend de bit0/bit1/bit2 tous. Intra-fibre cardinal 4 contient {0,1,4,5} ou {2,3,6,7}, parités = 0/1/0/1 ou 1/0/1/0 → symétrique 2+2 → gap ≈ 0
+- `L_bit01_aligned(w) = bit0(w) | bit1(w)` — symétrique intra-fibre : fibre x=0 contient w ∈ {0,1,2,3} avec (bit0,bit1) ∈ {(0,0),(1,0),(0,1),(1,1)} → OR ∈ {0,1,1,1} (3/4 fitness 1) ; fibre x=1 contient w ∈ {4,5,6,7} avec OR ∈ {0,1,1,1} (3/4 fitness 1 aussi) → moyenne intra-fibre identique **0.75 vs 0.75** → cible **gap ≈ 0 (null)**, pas dissociation
+- `L_pairity_bit12(w) = (popcount(w & 0b111) % 2)` — parité 3-bit, dépend de bit0/bit1/bit2. Fibre x=0 (w ∈ {0,1,2,3}) parités ∈ {0,1,1,0} (2/4 fitness 1) ; fibre x=1 (w ∈ {4,5,6,7}) parités ∈ {1,0,0,1} (2/4 fitness 1) → symétrique 2/4 intra-fibre → cible gap ≈ 0 (null)
 
 ### Prédictions (bandes P1-P4, nulls N1-N3)
 
@@ -80,11 +80,11 @@ Fit-track sur paysages alignés : convergence triviale aussi (moyenne intra-fibr
 
 ### Verdict attendu (scellé)
 
-**Score FBT attendu** : `|gap| ≥ 0.10` sur **au moins 3/8 paysages** (les 3 paysages alignés bit2_aligned, bit2_complement_aligned, et au moins un des paysages hiérarchiques bit01_aligned).
+**Score FBT attendu** : `|gap| ≥ 0.60` sur **au moins 2/8 paysages** (les 2 paysages bit2_aligned et bit2_complement_aligned, où la compression bit2 aligne trivialement la fitness sur le sensory state). Les 6 autres paysages (4 symétriques bit0/bit1/parity/anti + bit01_aligned + pairity_bit12) sont **symétriques intra-fibre** sous compression bit2 → cible gap ≈ 0 (nulls).
 
-**Si la cible P2c (|gap| ≥ 0.60) est tenue** : **CONFIRMATION** que le relâchement de compression restaure la dissociation FBT à N=8, ce qui réfute la conclusion case 13 (qui disait "FBT borne asymptotique atteinte tôt"). Le toy 3-bit case 12 (compression bit0) n'était pas l'exposant critique ; la dissociation y était possible **parce que bit0 était canonique**, et le relâchement à bit2 la rend encore plus discriminante.
+**Si la cible P2c (|gap| ≥ 0.60 sur bit2_aligned family) est tenue** : **CONFIRMATION** que le relâchement de compression restaure la dissociation FBT à N=8, **mais trivialement** (la compression bit2 aligne la fitness sur le sensory state — discrimination triviale). Ce qui réfute **partiellement** la conclusion case 13 : le null structurel observé à N=16 (compression bit0, fibre cardinal 8) **dépend du choix de compression canonique**. Avec compression relâchée non-canonique, le null n'est pas restauré, et la dissociation FBT persiste.
 
-**Si la cible n'est pas tenue** : **NULL** qui confirme la conclusion case 13 (le relâchement de compression ne restaure pas la dissociation ; le null est structurellement plus profond).
+**Si la cible n'est pas tenue** : **NULL** plus profond que case 13 — le relâchement de compression bit2 **ne restaure pas** la dissociation. La discrimination triviale devrait pourtant émerger mécaniquement (compression parfaite → MAP = w avec bit2(w) = x → fitness = bit2(w) = x → argmax trivial). C'est la **cause structurelle inverse de case 13** : si α*_truth ne converge pas vers `0.95+` sur paysages bit2_aligned, alors l'évolution elle-même est en cause (peut-être α*_fit évolue aussi vers le même α — symétrie au niveau de la dynamique évolutionniste, pas seulement de la fitness moyenne intra-fibre).
 
 ### Prédictions de mise à l'échelle cross-case
 
@@ -92,9 +92,9 @@ Fit-track sur paysages alignés : convergence triviale aussi (moyenne intra-fibr
 |---|---|---|---|---|---|
 | Toy 2-bit case 11 | 4 | 2 | bit0 | 0.000 | ✓ #14535 |
 | Toy 3-bit bit0 case 12 | 8 | 2 | bit0 | ≥ 0.10 (4/8 paysages) | ✓ #14544 |
-| Toy 3-bit bit2 **case 14** | 8 | 2 | bit2 | **≥ 0.60 sur 3/8 paysages alignés** | **attendu ce cycle** |
+| Toy 3-bit bit2 **case 14** | 8 | 2 | bit2 | **≥ 0.60 sur 2/8 paysages alignés (bit2_aligned family)** | **attendu ce cycle** |
 | Toy 4-bit bit0 case 13 | 16 | 2 | bit0 | null 0/16 | ✓ #14548 |
-| Toy 4-bit bit2 case 15+ | 16 | 2 | bit2 | ≥ 0.60 sur paysages alignés | future |
+| Toy 4-bit bit2 case 15+ | 16 | 2 | bit2 | ≥ 0.60 sur bit2_aligned family | future |
 | FBT sature | N → ∞ | M | -- | → 0 | asymptotique |
 
 ## Limites assumées (grade C)
@@ -122,3 +122,17 @@ Fit-track sur paysages alignés : convergence triviale aussi (moyenne intra-fibr
 
 Date de scellement : 2026-09-04 (cycle c.899)
 Lane : myia-po-2024:CoursIA-2
+
+## Note de révision (post-mesures symmetries réelles)
+
+L'analyse manuelle des symétries intra-fibre a été **affinée** après mesure effective sur le toy (commit `1ad9e83d85` puis tests de symétrie sur le code livré). Trois corrections importantes vs version initiale du scratchpad :
+
+1. **`L_bit2_aligned` est trivialement discriminant** (E[f(W)|x=0]=0.0, E[f(W)|x=1]=1.0 sous compression bit2) — **PAS** symétrique 4/4 comme dans case 12 sous bit0. La cible `|gap| ≥ 0.60` est mécaniquement garantie par la symétrie de compression parfaite.
+
+2. **`L_bit01_aligned` est symétrique intra-fibre** (3/4 fitness 1 dans chaque fibre, moyenne 0.75 identique) — **PAS** dissociation modérée comme initialement prédit. Cible corrigée à gap ≈ 0.
+
+3. **`L_pairity_bit12` est symétrique intra-fibre** (2/4 fitness 1 dans chaque fibre) — confirmé null.
+
+**Conséquence sur le verdict attendu** : score FBT ajusté de `3/8 paysages avec |gap| ≥ 0.10` à `2/8 paysages avec |gap| ≥ 0.60` (les 2 bit2_aligned family uniquement). Les 6 autres paysages sont symétriques intra-fibre sous compression bit2 → nulls attendus.
+
+**Cohérence design ↔ code** : Tell c.898-L1 ★★★ impose que le code livré = pré-enregistrement. La révision ci-dessus aligne le pré-enregistrement sur le code livré (compression bit2 vérifiée par test : `CANONICAL = (0,0,0,0,1,1,1,1)`, fibre x=0 = w ∈ {0,1,2,3}, fibre x=1 = w ∈ {4,5,6,7}). Tout écart entre le pré-enregistrement et le code livré est désormais **documenté** explicitement dans cette section.
