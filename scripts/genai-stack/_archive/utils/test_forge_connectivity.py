@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# ARCHIVED: 2026-02 (consolidation genai-stack) -- see scripts/genai-stack/_archive/ARCHIVE_README.md
+# DISPOSITION: superseded | Successor: genai.py validate --check-forge | Reason: Absorbe dans commands/validate.py
+#
 """
 test_forge_connectivity.py - Script de test de connectivité pour Forge SDXL Turbo (Basic Auth)
 """

@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# ARCHIVED: 2026-02 (consolidation genai-stack) -- see scripts/genai-stack/_archive/ARCHIVE_README.md
+# DISPOSITION: abandoned | Successor: (none) | Reason: DOUBLON EXACT de core/
+#
 """
 Validation finale de la documentation de la mission ComfyUI-Login
 Vérifie la complétude, la cohérence et les liens croisés de toute la documentation

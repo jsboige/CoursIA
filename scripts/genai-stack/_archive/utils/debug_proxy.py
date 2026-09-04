@@ -1,3 +1,6 @@
+# ARCHIVED: 2026-02 (consolidation genai-stack) -- see scripts/genai-stack/_archive/ARCHIVE_README.md
+# DISPOSITION: abandoned | Successor: (none) | Reason: Proxy debug ponctuel
+#
 import requests
 import os
 
