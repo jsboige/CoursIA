@@ -94,6 +94,23 @@ dans le temps. Le BEATS du ladder est donc **(panel @10bps)**, pas absolu.
 Résultats détaillés : `results/xrp_dt_validation/holdout_internal_20260806_093143.json` et
 `holdout_fresh_20260806_094210.json` (gitignored, machine d'entraînement).
 
+## Protocole OOT (#14579) — verdict sur données réellement futures
+
+L'issue #14579 demande le premier verdict **out-of-time réel** : l'entraînement est gelé à
+une borne, le holdout est postérieur et **absent de tous les folds et de toute sélection
+d'hyperparamètres**. Instrument mis en place le 04/09 :
+
+| Brique | Où | Rôle |
+|---|---|---|
+| **Gel de borne** `--train-end` | `scripts/train_dt_multiseed.py` | Tronque le CSV à la borne inclusive AVANT le walk-forward ; le hash est recalculé sur la tranche gelée (l'absence de contamination devient vérifiable). |
+| **Jambe de précision §C** | `scripts/validate_xrp_dt_holdout.py` | Erreur directionnelle `e_t = position_t − sign(r_{t+1})` — une politique alignée au marché fait `e = 0`, une politique opposée `e = ±2` : le DM mse/mae sur `e` est sign-aware pour des positions ±1 (le mse direct sur les retours positionnés reste sign-blind, `(−r)² = r²`, cf #10228). |
+| **Contrôle de biais** | idem | DM `linear` sur les retours positionnés (différentiel de performance moyenne), **jamais la jambe de conjonction** (§C amendé #11010) ; biais signés par modèle (`mean(return)` DT / momentum / BH) rapportés dans le JSON. |
+| **Conjonction** | idem | `edge ≥ 2σ` cross-seed **et** `dm_p_mse_median < 0.05` (mae rapportée en variante), sinon `NO-BEATS` / `INCONCLUSIVE` explicites. |
+
+Dataset de référence (04/09, yfinance, gitignored) : `XRP-USD.csv` — bornes
+`2018-01-01 → 2026-09-04` (3169 rows), sha256 `71d8aee9d0bda18b`. Le verdict du run OOT
+(label `oot`, `--train-end 2025-06-30`) est rapporté dans cette section une fois terminé.
+
 ## Implication pour le ladder
 
 | Échelon | Paradigme | Verdict |
