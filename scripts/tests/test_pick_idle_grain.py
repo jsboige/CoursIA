@@ -430,43 +430,57 @@ def _pr_with_author(n, lane, age_hours, author):
 def test_base_inherited_red_is_not_the_lanes(monkeypatch):
     """#13545 : 11 PRs / 4 lanes accusees pour un seul defaut de main.
 
-    Le meme check requis en echec chez un AUTEUR distinct = corroboration :
+    Le meme check requis en echec chez une LANE distincte = corroboration :
     le rouge est impute a la base, retire du refus de la lane, et rapporte
-    comme tache coordinateur avec ses corroborations.
+    comme tache coordinateur avec ses corroborations. Depuis #14537 la
+    corroboration se fait sur la CAUSE : le nom pour un check direct, l'ORGANE
+    (annotation du check-run) pour un agregateur -- les deux PRs echouent ici
+    le meme organe sous le nom d'agregateur "PR gate".
     """
     red = _state(checks=[("Scripts Tests (CPU)", "FAILURE", True),
                          ("PR gate", "FAILURE", True)])
+    st1, st2 = red, _state(checks=[("Scripts Tests (CPU)", "FAILURE", True),
+                                   ("PR gate", "FAILURE", True)])
+    for st, rid in ((st1, 111), (st2, 222)):
+        st["commits"]["nodes"][0]["commit"]["statusCheckRollup"]["contexts"][
+            "nodes"][1]["databaseId"] = rid
+    monkeypatch.setattr(pig, "fetch_check_organs",
+                        lambda rid: ["perimeter"])
     _patch_backlog(monkeypatch, [
         _pr_with_author(1, "myia-po-2023:CoursIA", 30, "myia-po-2023"),
         _pr_with_author(2, "myia-po-2026:CoursIA-2", 5, "myia-po-2026"),
-    ], {1: red, 2: red})
+    ], {1: st1, 2: st2})
     out = pig.red_backlog("myia-po-2023:CoursIA", 24, count_threshold=3)
     assert out["red"] == []            # rien d'imputable a la lane
     assert out["aged"] == []
     assert out["triggers"] == []       # pas de refus de tirage
     assert {i["check"] for i in out["base_inherited"]} == {
-        "Scripts Tests (CPU)", "PR gate"}
+        "Scripts Tests (CPU)", "PR gate :: perimeter"}
     wits = next(i["corroborated_by"] for i in out["base_inherited"]
                 if i["check"] == "Scripts Tests (CPU)")
     assert 1 in wits and 2 in wits    # la lane ET l'etrangere corroborent
+    assert out["base_unresolved"] == []
 
 
 def test_same_author_failures_are_not_imputed(monkeypatch):
-    """Controle negatif : deux PRs du MEME auteur ne se corroborent pas.
+    """Controle negatif : deux PRs de la MEME LANE ne se corroborent pas.
 
-    Une lane qui casse le meme ratchet sur 2 PRs porte 2 defauts a elle --
-    les imputer a la base transformerait un motif de refus legitime en
-    silence complice.
+    Depuis #14537 l'unite de corroboration est le tag de lane, pas le login
+    (identite de poussee partagee) : une lane qui casse le meme ratchet sur
+    2 PRs porte 2 defauts a elle -- les imputer a la base transformerait un
+    motif de refus legitime en silence complice. L'agregateur sans organe
+    lisible est en outre DIT non tranche (#14567), pas passe sous silence.
     """
     red = _state(checks=[("PR gate", "FAILURE", True)])
     _patch_backlog(monkeypatch, [
-        _pr_with_author(1, "myia-po-2023:CoursIA", 30, "myia-po-2023"),
-        _pr_with_author(2, "myia-po-2023:CoursIA", 30, "myia-po-2023"),
+        _pr_with_author(1, "myia-po-2023:CoursIA", 30, "jsboige"),
+        _pr_with_author(2, "myia-po-2023:CoursIA", 30, "jsboige"),
     ], {1: red, 2: red})
     out = pig.red_backlog("myia-po-2023:CoursIA", 24, count_threshold=3)
     assert [r["number"] for r in out["red"]] == [1, 2]
     assert out["base_inherited"] == []
     assert "aged" in out["triggers"]
+    assert {i["check"] for i in out["base_unresolved"]} == {"PR gate"}
 
 
 def test_inheritance_does_not_swallow_other_causes(monkeypatch):
@@ -484,6 +498,133 @@ def test_inheritance_does_not_swallow_other_causes(monkeypatch):
     out = pig.red_backlog("myia-po-2023:CoursIA", 24, count_threshold=3)
     assert [r["number"] for r in out["red"]] == [1]
     assert out["red"][0]["causes"] == ["conflits avec main -> rebaser"]
+
+
+AGG = "Always-on guards -- 12 organes, 1 checkout"
+
+
+def _agg_red(run_id, name=AGG, required=True):
+    """Etat rouge d'un aggregateur RESOLVABLE : le ctx porte son check-run id."""
+    st = _state(checks=[(name, "FAILURE", required)])
+    st["commits"]["nodes"][0]["commit"]["statusCheckRollup"]["contexts"][
+        "nodes"][0]["databaseId"] = run_id
+    return st
+
+
+def _patch_organs(monkeypatch, organs_by_run):
+    monkeypatch.setattr(pig, "fetch_check_organs",
+                        lambda rid: organs_by_run.get(rid, []))
+
+
+def test_same_organ_two_lanes_same_push_login_is_imputed(monkeypatch):
+    """Acceptance (a) #14537 : l'angle mort fondateur se ferme.
+
+    Toutes les PRs sous le MEME login de poussee (jsboige = 52/59 de
+    l'ouvert mesure le 2026-09-03), mais deux LANES distinctes echouant le
+    MEME organe d'un agregateur : le cas nominal que l'ancien predicat
+    (>=2 author.login) ne croisait JAMAIS. Il doit etre impute a la base.
+    """
+    _patch_organs(monkeypatch, {111: ["prev_guard"], 222: ["prev_guard"]})
+    _patch_backlog(monkeypatch, [
+        _pr_with_author(1, "myia-po-2023:CoursIA", 30, "jsboige"),
+        _pr_with_author(2, "myia-po-2026:CoursIA", 30, "jsboige"),
+    ], {1: _agg_red(111), 2: _agg_red(222)})
+    out = pig.red_backlog("myia-po-2023:CoursIA", 24, count_threshold=3)
+    assert out["red"] == []
+    assert {i["check"] for i in out["base_inherited"]} == {f"{AGG} :: prev_guard"}
+    wits = out["base_inherited"][0]["corroborated_by"]
+    assert 1 in wits and 2 in wits
+
+
+def test_distinct_organs_under_one_aggregate_are_not_imputed(monkeypatch):
+    """Acceptance (b) #14537 : la table des six PRs, reduite a trois lanes.
+
+    Trois organes DISTINCTS (lane_claim, prev_guard, perimeter) sous le meme
+    nom d'agregateur : la corroboration par nom etait garantie par
+    construction -- elle n'a jamais prouve une cause commune. Rien n'est
+    impute, chaque lane garde son rouge, reparable chez elle.
+    """
+    _patch_organs(monkeypatch, {111: ["lane_claim"], 222: ["prev_guard"],
+                                333: ["perimeter"]})
+    _patch_backlog(monkeypatch, [
+        _pr_with_author(1, "myia-po-2025:CoursIA", 30, "jsboige"),
+        _pr_with_author(2, "myia-po-2023:CoursIA-2", 30, "jsboige"),
+        _pr_with_author(3, "myia-po-2024:CoursIA", 30, "jsboige"),
+    ], {1: _agg_red(111), 2: _agg_red(222), 3: _agg_red(333)})
+    out = pig.red_backlog("myia-po-2025:CoursIA", 24, count_threshold=3)
+    assert out["base_inherited"] == []
+    assert [r["number"] for r in out["red"]] == [1]
+
+
+def test_aggregate_with_unreadable_organ_stays_with_lane(monkeypatch):
+    """Fail-closed #14567 : un agregateur non resolu ne corrobore RIEN.
+
+    Deux lanes echouent l'agregateur mais aucune annotation n'est lisible :
+    imputer a la base serait un verdict d'echec de mesure. Le rouge reste a
+    la lane -- seul cote qui peut le reparer -- et l'echec de resolution
+    est RAPPORTE au lieu d'un silence lu comme un acquittement.
+    """
+    _patch_organs(monkeypatch, {})
+    _patch_backlog(monkeypatch, [
+        _pr_with_author(1, "myia-po-2025:CoursIA", 30, "jsboige"),
+        _pr_with_author(2, "myia-po-2026:CoursIA", 30, "jsboige"),
+    ], {1: _agg_red(111), 2: _agg_red(222)})
+    out = pig.red_backlog("myia-po-2025:CoursIA", 24, count_threshold=3)
+    assert out["base_inherited"] == []
+    assert [r["number"] for r in out["red"]] == [1]
+    assert {i["check"] for i in out["base_unresolved"]} == {AGG}
+
+
+def test_untagged_pr_never_corroborates(monkeypatch):
+    """Fail-closed #14537 : sans tag de lane lisible, hors corroboration.
+
+    Une PR sans Grain: lisible echouant le meme organe ne doit finir dans
+    AUCUN seau -- deviner sa lane serait pire que de l'ignorer.
+    """
+    _patch_organs(monkeypatch, {111: ["prev_guard"], 222: ["prev_guard"]})
+    _patch_backlog(monkeypatch, [
+        _pr_with_author(1, "myia-po-2025:CoursIA", 30, "jsboige"),
+        _pr_with_author(2, None, 30, "jsboige"),
+    ], {1: _agg_red(111), 2: _agg_red(222)})
+    out = pig.red_backlog("myia-po-2025:CoursIA", 24, count_threshold=3)
+    assert out["base_inherited"] == []
+    assert [r["number"] for r in out["red"]] == [1]
+
+
+def test_rollup_stack_does_not_self_corroborate(monkeypatch):
+    """Defaut 3 #14537 : une PR empilee n'est pas son propre temoin.
+
+    Le rollup peut empiler plusieurs runs de meme nom sur une PR ; l'ancien
+    `sorted(n for ...)` citait alors la meme PR trois fois comme sa propre
+    corroboration. Le rendu deduplique : chaque PR est temoin UNIQUE.
+    """
+    stacked = _state(checks=[(AGG, "FAILURE", True), (AGG, "FAILURE", True)])
+    nodes = stacked["commits"]["nodes"][0]["commit"]["statusCheckRollup"][
+        "contexts"]["nodes"]
+    nodes[0]["databaseId"] = 111
+    nodes[1]["databaseId"] = 111
+    _patch_organs(monkeypatch, {111: ["prev_guard"]})
+    _patch_backlog(monkeypatch, [
+        _pr_with_author(1, "myia-po-2025:CoursIA", 30, "jsboige"),
+    ], {1: stacked})
+    out = pig.red_backlog("myia-po-2025:CoursIA", 24, count_threshold=3)
+    assert out["base_inherited"] == []
+
+
+def test_partial_inheritance_keeps_the_lane_cause():
+    """blocking_causes : heritage PAR ORGANE, pas par nom d'agregateur.
+
+    Un agregateur tombe pour DEUX organes dont un seul est impute a la
+    base : la lane doit encore voir une cause -- son organe a elle reste a
+    reparer. Tous les organes herites : plus aucune cause a la lane.
+    """
+    state = _state(checks=[(AGG, "FAILURE", True)])
+    both = {f"{AGG} :: perimeter", f"{AGG} :: prev_guard"}
+    causes = pig.blocking_causes(state, inherited={f"{AGG} :: perimeter"},
+                                 resolved_keys_by_name={AGG: both})
+    assert causes == ["check requis en echec : " + AGG]
+    assert pig.blocking_causes(state, inherited=both,
+                               resolved_keys_by_name={AGG: both}) == []
 
 
 def test_required_failure_links_advisory_as_its_probable_cause():
