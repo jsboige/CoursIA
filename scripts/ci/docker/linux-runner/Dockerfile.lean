@@ -11,10 +11,14 @@
 #     Aucune image, si grosse soit-elle, ne peut porter cet etat : il depend
 #     du lake et vit cote slot.
 #
-# Le toolchain "stable" de l'image couvre les lakes qui suivent stable ; un
-# lake qui pinne une autre version declenche un telechargement elan a la volee
-# dans ~/.elan (ephemere par conteneur). Si ce cas devient frequent, monter un
-# volume dedie sur /home/runner/.elan au deploiement (tranche 2+).
+# Le toolchain par defaut est EPINGLE sur v4.32.1 : mesure du 2026-09-04,
+# 13/14 lakes du depot portent leanprover/lean4:v4.32.1 (seul conway_cgt_lean
+# pinne v4.31.0-rc2). Une image sur "stable" (v4.33.1 au jour du build) serait
+# alignee sur zero lake : chaque job paierait un telechargement elan a la volee
+# dans ~/.elan (ephemere par conteneur) -- exactement le cout que ce pool
+# existe pour eviter. Un lake qui pinne une autre version declenche quand meme
+# ce telechargement ; si le cas devient frequent, monter un volume dedie sur
+# /home/runner/.elan au deploiement (tranche 2+).
 #
 # Labels du pool : self-hosted,coursia-ephemeral,coursia-lean -- JAMAIS
 # coursia-linux : le label distinct EST la garantie de routage (un garde
@@ -37,12 +41,13 @@ RUN echo "${ELAN_SHA256}  /tmp/elan.tar.gz" | sha256sum -c - \
 # Installation sous l'utilisateur runner : elan est un installeur par-compte
 # (style rustup), ~/.elan doit appartenir a runner pour que les toolchains
 # telecharges au runtime soient accessibles sous l'UID 1001 du conteneur.
+ARG LEAN_TOOLCHAIN=leanprover/lean4:v4.32.1
 USER runner
 # ENV AVANT le RUN : --no-modify-path laisse ~/.elan/bin hors du PATH du shell,
 # donc le meme RUN ne retrouverait pas `elan` sans cette ligne (mesure :
 # "/bin/sh: 1: elan: not found", exit 127).
 ENV PATH=/home/runner/.elan/bin:$PATH
-RUN /tmp/elan-init -y --no-modify-path --default-toolchain stable \
+RUN /tmp/elan-init -y --no-modify-path --default-toolchain ${LEAN_TOOLCHAIN} \
     && rm /tmp/elan-init \
-    && elan default stable \
+    && elan default ${LEAN_TOOLCHAIN} \
     && lake --version
