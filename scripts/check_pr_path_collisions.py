@@ -568,15 +568,15 @@ def post_comment(repo: str, number: int, body: str, dry_run: bool) -> bool:
     if dry_run:
         return True
     with tempfile.NamedTemporaryFile(
-        "w", suffix=".md", encoding="utf-8", delete=False
+        "w", suffix=".json", encoding="utf-8", delete=False
     ) as tf:
-        tf.write(body)
+        json.dump({"body": body}, tf, ensure_ascii=False)
         tmp_path = tf.name
     try:
         proc = subprocess.run(
             ["gh", "api", "--method", "POST",
              f"repos/{repo}/issues/{number}/comments",
-             "-f", f"body=@{tmp_path}"],
+             "--input", tmp_path],
             capture_output=True, text=True, check=False, encoding="utf-8",
         )
     finally:
