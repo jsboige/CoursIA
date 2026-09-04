@@ -73,8 +73,7 @@ name: PR gate stale-verdict sweep
 
 on:
   schedule:
-    # Hourly on an off-:00 minute (anti-stampede convention, as in
-    # pr-gate-missing-advisory.yml).
+    # Hourly on an off-:00 minute (anti-stampede convention).
     #
     # #12728: this was every 20 minutes, and the cadence was destroying its own
     # organ. The premise of the old comment -- "cheap enough (one short job) not
@@ -92,9 +91,13 @@ on:
     # them. Matching the cadence to the observed service time is what stops the
     # sweeps killing each other.
     #
-    # This does NOT fix the queue wait. The final timing step below measures the
-    # run-created -> job-started queue separately from observed execution time;
-    # #12728 requires that evidence before any further cadence or runner change.
+    # This does NOT fix the queue wait BY ITSELF. The cadence change stopped the
+    # sweeps killing each other; the wait itself is addressed by routing this
+    # job to the dedicated coursia-linux pool (see runs-on). The final timing
+    # step below keeps measuring the run-created -> job-started queue separately
+    # from observed execution time: #12728's acceptance is read on THAT step,
+    # post-routing (expected: queue collapses from ~6000-8000 s to near zero;
+    # cancellations from 19/30 to ~0).
     - cron: '7 * * * *'
   workflow_dispatch:
     inputs:
@@ -107,7 +110,8 @@ on:
 permissions:
   contents: read
   actions: write       # re-run the ORIGINAL `PR gate` run (see the note below)
-  pull-requests: read
+  pull-requests: write # gate-absent step below: labels via `gh pr edit` (#14477)
+  issues: write        # ... and remediation comments via `gh pr comment`
 
 concurrency:
   # One sweep at a time, and never cancel a running one: a sweep that is killed
@@ -119,9 +123,52 @@ concurrency:
 jobs:
   sweep:
     name: Re-aggregate stale PR gate verdicts
-    runs-on: ubuntu-latest
+    # Routed to the self-hosted Linux pool (#14201 PART 2, #12728 acceptance) :
+    # this sweep is a 2-minute job that waited 1.6-2.2 h for a GitHub-hosted
+    # slot (98-99 % queue, measured on 30 runs, see #12728) and was cancelled
+    # 19/30 by its own successor -- the organ went quiet precisely under the
+    # congestion it exists to absorb. The coursia-linux pool is dedicated
+    # capacity (mandat user : consommer les runs conteneurises, ce sont les
+    # GitHub-hosted qui coutent), so the queue wait collapses at the source.
+    # Coupling assumed: a dead supervisor now starves this sweep too -- covered
+    # by TWO independent observers, linux-runner-starvation-advisory.yml
+    # (#14263, extinction/starvation) and pr-gate-sweep-health-advisory.yml
+    # (last successful sweep > 1 h, runs on ubuntu-latest so it survives what
+    # it watches).
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
     timeout-minutes: 15
     steps:
+      - name: Bootstrap gh into the persistent toolcache
+        # The coursia-linux image (#14171: ubuntu:24.04 + python3/jq/curl/git)
+        # deliberately does not ship gh, and this sweep is gh-driven. The
+        # binary is installed ONCE into the toolcache volume: the volume
+        # persists across ephemeral containers -- that is its purpose -- so
+        # every sweep after the first reuses it. No setup-python / pip here on
+        # purpose either: the image's python3 suffices, which keeps this sweep
+        # immune to the RUNNER_TOOL_CACHE bug class that broke Python tooling
+        # on mangled generations (2026-09-02) -- the bootstrap hardcodes the
+        # mount point and its worst case is a re-download, never a break.
+        env:
+          GH_BOOTSTRAP_VERSION: "2.80.0"
+        run: |
+          set -uo pipefail
+          if command -v gh >/dev/null 2>&1; then
+            echo "[gh] preinstalled on this runner"
+            gh --version
+            exit 0
+          fi
+          GH_BIN="/opt/hostedtoolcache/bin/gh"
+          if [ ! -x "$GH_BIN" ]; then
+            VER="${GH_BOOTSTRAP_VERSION}"
+            echo "[gh] bootstrapping v${VER} into toolcache (one-time, cached for every later sweep)"
+            curl -fsSL "https://github.com/cli/cli/releases/download/v${VER}/gh_${VER}_linux_amd64.tar.gz" -o /tmp/gh.tgz
+            tar -xzf /tmp/gh.tgz -C /tmp
+            mkdir -p /opt/hostedtoolcache/bin
+            mv "/tmp/gh_${VER}_linux_amd64/bin/gh" "$GH_BIN"
+          fi
+          echo "/opt/hostedtoolcache/bin" >> "$GITHUB_PATH"
+          "$GH_BIN" --version
+
       # No checkout / setup-python / pip here on purpose. This sweep no longer
       # runs `pr_gate.py`: it re-runs the original workflow run (see the note in
       # the re-aggregation step). That removes ~40 s of runner time per sweep,
@@ -274,7 +321,10 @@ jobs:
               # blocked pool, and precisely the ones this sweep exists for.
               gate_legs = [c for c in (p.get("checks") or []) if (c.get("name") or "") == "PR gate"]
               if not gate_legs:
-                  continue  # absent gate is pr-gate-missing-advisory.yml's case
+                  # Absent gate (never reported, vs red above) is the
+                  # "Flag PRs whose PR gate never ran" step of this same
+                  # sweep (#14477) -- re-aggregation has nothing to re-run.
+                  continue
               if not any((c.get("conclusion") or "") in RED for c in gate_legs):
                   continue
 
@@ -417,6 +467,47 @@ jobs:
 
           # Advisory organ: it acts, it never blocks.
           exit 0
+
+      # Gate ABSENT (jamais rapporte) -- replie dans CE sweep depuis #14477.
+      # Design-gate ai-01 : "la detection du gate absent rejoint le balayage
+      # [existant]. Meme population, meme requete ; seule la branche de
+      # remediation differe. Ne pas creer un troisieme organe." Le cron
+      # quotidien 05:47 de pr-gate-missing-advisory.yml disparait : cette
+      # etape tourne a la cadence de ce sweep (horaire depuis #12728 -- la
+      # latence de detection passe de <=24 h a <=1 h).
+      #
+      # Le checkout, ecarte de la re-aggregation pour ~40 s de runner par
+      # sweep (#12728 : "No checkout on purpose"), revient ICI en SPARSE :
+      # scripts/pr_gate_missing.py est un fichier stdlib pur -- quelques
+      # secondes. La penurie de runners qui motivait le retrait total est
+      # traitee a la source (pool dedie coursia-linux, #14283) et la cadence
+      # est horaire : le cout n'est plus le meme, la promesse de fond (la
+      # re-aggregation reste sans checkout) tient.
+      - name: Checkout sparse (gate-absent organ only)
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: scripts/pr_gate_missing.py
+          sparse-checkout-cone-mode: false
+
+      - name: Flag PRs whose PR gate never ran (absent, by cause)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          DRY_RUN: ${{ github.event.inputs.dry_run }}
+        run: |
+          set -uo pipefail
+          DRY=""
+          if [ "${DRY_RUN:-false}" = "true" ]; then DRY="--dry-run"; fi
+          # Advisory by construction: the organ labels/comments, never blocks.
+          # A crash labels nothing -- say so, then exit 0 (#8819: "n'a pas pu
+          # mesurer" != "sans defaut", le label pr-gate-missing n'etant pas
+          # pose). The remediation is now CAUSE-DEPENDENT (#14477): a PR in
+          # conflict with main gets the conflict remedy, NEVER the empty
+          # re-push (measured inert on #14220).
+          python scripts/pr_gate_missing.py --repo "$REPO" $DRY || {
+            echo "::warning::gate-absent sweep failed -- nothing labeled this pass"
+            exit 0
+          }
 
       - name: Measure queue and observed execution separately
         if: always()

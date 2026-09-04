@@ -597,12 +597,16 @@ class TestMissingFromProseEnumeration:
 
     def test_ict1_founder_signaled(self, tmp_path):
         """Cas fondateur #9416 : prose dit « 2,31 + 0,19 » (2 niveaux)
-        mais outputs exhibent 3 niveaux dont 0.6875 omis."""
+        mais outputs exhibent 3 niveaux dont 0.6875 omis.
+
+        Scoping (#14222) : la cellule code precede la cellule markdown
+        pour que la fenetre d'output_vals capture les niveaux exhibes.
+        """
         nb = tmp_path / "ict1_founder.ipynb"
         _make_notebook([
-            _markdown_cell("un pic a 2,31, le reste a 0,19"),
             _code_cell("print(0.1875); print(0.6875); print(2.3125)",
                        [{"text": "0.1875\n0.6875\n2.3125\n"}]),
+            _markdown_cell("un pic a 2,31, le reste a 0,19"),
         ], nb)
         result = mod.analyze_notebook(nb)
         assert result.total_findings >= 1
@@ -618,12 +622,15 @@ class TestMissingFromProseEnumeration:
         assert "2 niveaux" in f.details
 
     def test_no_signal_when_outputs_match_prose(self, tmp_path):
-        """Si la prose enumere N niveaux ET outputs en exhibent N, RAS."""
+        """Si la prose enumere N niveaux ET outputs en exhibent N, RAS.
+
+        Scoping (#14222) : la cellule code precede la cellule markdown.
+        """
         nb = tmp_path / "clean_enum.ipynb"
         _make_notebook([
-            _markdown_cell("les 3 valeurs sont 0.19, 0.69 et 2.31."),
             _code_cell("print(0.19); print(0.69); print(2.31)",
                        [{"text": "0.19\n0.69\n2.31\n"}]),
+            _markdown_cell("les 3 valeurs sont 0.19, 0.69 et 2.31."),
         ], nb)
         result = mod.analyze_notebook(nb)
         enum_findings = [f for f in result.findings
@@ -632,6 +639,172 @@ class TestMissingFromProseEnumeration:
             f"3 niveaux prose + 3 niveaux outputs ne doit pas signaler "
             f"MISSING_FROM_PROSE_ENUMERATION, trouve {len(enum_findings)}"
         )
+
+    # --- #14222 : discrimination cassée vs discrimination honnete ---------
+
+    def test_14222_orphan_named_is_the_missing_level_not_a_far_outlier(self, tmp_path):
+        """Acceptance #14222 stricte : sur le cas fondateur ICT-1 (pre-fix),
+        l'orphelin nomme vaut ``0,6875`` -- le niveau output reellement absent
+        de l'enumeration prose. La formulation `max(dist)` precedente nommait
+        ``1,2`` ou ``14,0`` -- des valeurs fantaisistes proches d'un representant
+        par accident arithmetique, jamais le niveau manquant.
+
+        La discrimination correcte est par APPARTENANCE : un representant
+        output est orphelin s'il n'a aucune valeur prose dans son voisinage
+        (meme tolerance que le groupement). Pour ICT-1 (pre-fix) :
+        representants = [0,1875 ; 0,6875 ; 2,3125], enumeration = [0,19 ;
+        2,31] -> 0,1875 couvert, 0,6875 NON couvert (72% de 0,19) -> orphelin.
+
+        Scoping : l'enumeration est confrontee aux outputs des cellules code
+        NON-STUB PRECEDANT la cellule markdown (cf #14222). Le test place
+        donc la cellule code AVANT la cellule markdown.
+        """
+        nb = tmp_path / "ict1_pre_fix.ipynb"
+        _make_notebook([
+            _code_cell("print(0.1875); print(0.6875); print(2.3125)",
+                       [{"text": "0.1875\n0.6875\n2.3125\n"}]),
+            _markdown_cell("un pic a 2,31, le reste a 0,19"),
+        ], nb)
+        result = mod.analyze_notebook(nb)
+        enum_findings = [f for f in result.findings
+                         if f.category == "MISSING_FROM_PROSE_ENUMERATION"]
+        assert len(enum_findings) == 1
+        f = enum_findings[0]
+        assert f.closest_output_number == pytest.approx(0.6875, abs=1e-4), (
+            f"Acceptance #14222 : orphelin doit etre 0,6875 (le niveau "
+            f"manquant de l'enumeration prose), pas {f.closest_output_number}. "
+            f"La formulation `max(dist)` precedente nommait une valeur fantaisiste ; "
+            f"le predicat correct est par appartenance au niveau output."
+        )
+        assert "0,6875" in f.details or "0.6875" in f.details, (
+            f"Le champ `details` doit citer 0,6875 (l'orphelin) -- lu par "
+            f"le test d'acceptance de #14222 et la garde `details` JSON."
+        )
+
+    def test_14222_discrimination_pre_fix_vs_post_fix(self, tmp_path):
+        """Acceptance #14222 : sur les DEUX revisions d'ICT-1 encadrant
+        ``7de14792c``, le verdict doit DIFFERER :
+
+        - pre-fix : 2 niveaux prose, 3 niveaux outputs -> 1 finding
+          MISSING_FROM_PROSE_ENUMERATION (orphelin = 0,6875) ;
+        - post-fix : 3 niveaux prose, 3 niveaux outputs -> 0 finding
+          (les 3 representants trouvent une prose proche).
+
+        Avant le fix, les DEUX revisions rendaient le meme verdict
+        (1 finding), avec des orphelins fantaisistes (``1,2`` puis ``14,0``).
+        Apres le fix, pre-fix signale, post-fix est muet.
+
+        Scoping : la cellule code precede la cellule markdown (cf #14222).
+        """
+        # PRE-FIX (cas fondateur)
+        pre = tmp_path / "ict1_pre_fix.ipynb"
+        _make_notebook([
+            _code_cell("print(0.1875); print(0.6875); print(2.3125)",
+                       [{"text": "0.1875\n0.6875\n2.3125\n"}]),
+            _markdown_cell("un pic a 2,31, le reste a 0,19"),
+        ], pre)
+        # POST-FIX (prose ajoute le relief intermediaire)
+        post = tmp_path / "ict1_post_fix.ipynb"
+        _make_notebook([
+            _code_cell("print(0.1875); print(0.6875); print(2.3125)",
+                       [{"text": "0.1875\n0.6875\n2.3125\n"}]),
+            _markdown_cell("un pic a 2,31, le reste a 0,19, un relief "
+                          "intermediaire a 0,69"),
+        ], post)
+
+        enum_pre = [f for f in mod.analyze_notebook(pre).findings
+                    if f.category == "MISSING_FROM_PROSE_ENUMERATION"]
+        enum_post = [f for f in mod.analyze_notebook(post).findings
+                     if f.category == "MISSING_FROM_PROSE_ENUMERATION"]
+
+        assert len(enum_pre) == 1, (
+            f"Pre-fix doit signaler 1 manquant, pas {len(enum_pre)}."
+        )
+        assert enum_pre[0].closest_output_number == pytest.approx(0.6875, abs=1e-4), (
+            f"Pre-fix orphelin doit etre 0,6875, pas "
+            f"{enum_pre[0].closest_output_number}."
+        )
+        assert enum_post == [], (
+            f"Post-fix (3 niveaux prose + 3 niveaux outputs) ne doit PAS "
+            f"signaler de manquant, trouve {len(enum_post)} findings."
+        )
+
+    def test_14222_orphan_is_a_representant_not_an_arbitrary_value(self, tmp_path):
+        """L'orphelin nomme est UN REPRESENTANT d'un groupe de niveaux
+        output (cf `_distinct_level_values`), pas n'importe quelle valeur
+        du notebook : si la cellule code exhibe ``0,60`` et ``0,80`` (meme
+        representant ``0,70``), l'orphelin est ``0,70``, pas la moyenne
+        arithmetique ``0,70`` non plus -- mais JAMAIS l'un des deux valeurs
+        distinctes ``0,60`` ou ``0,80`` choisies arbitrairement."""
+        nb = tmp_path / "representant_picks.ipynb"
+        _make_notebook([
+            # Outputs : 4 valeurs -> 3 niveaux distincts (tol 5%)
+            # groupe 1 : 0.18 ; groupe 2 : 0.69 ; groupe 3 : 2.30
+            # representants : [0.18, 0.69, 2.30]
+            _code_cell("a=0.180; b=0.700; c=2.300; print(a); print(b); print(c)",
+                       [{"text": "0.18\n0.70\n2.30\n"}]),
+            _markdown_cell("les 2 valeurs sont 0.19 et 2.31."),
+        ], nb)
+        result = mod.analyze_notebook(nb)
+        enum_findings = [f for f in result.findings
+                         if f.category == "MISSING_FROM_PROSE_ENUMERATION"]
+        assert len(enum_findings) == 1
+        # 2 prose (0.19, 2.31), 3 output (0.18, 0.70, 2.30) :
+        #   - 0.18 couvert par 0.19 (~5.3%, juste hors tol)
+        #   - 0.70 NON couvert (~260%, tres loin)
+        #   - 2.30 couvert par 2.31 (~0.4%)
+        # ATTENTION : 0.18 vs 0.19 -> base = 0.19, diff = 0.01, ratio = 5.3%
+        # HORS tolerance 5% -> represente 0.18 EST orphelin. Le test attend
+        # que l'un des deux (0.18 ou 0.70) soit l'orphelin, pas une autre valeur.
+        f = enum_findings[0]
+        assert f.closest_output_number is not None
+        # soit 0.18, soit 0.70 -- pas 2.30 (couvert) et pas une moyenne.
+        assert f.closest_output_number in (pytest.approx(0.18, abs=1e-3),
+                                           pytest.approx(0.7, abs=1e-3)), (
+            f"Orphelin doit etre un representant non couvert (0,18 ou 0,70), "
+            f"pas une moyenne ou une autre valeur : {f.closest_output_number}"
+        )
+
+
+# --- #14222 -- champ `details` serialise dans `--json-out` --------------------
+#
+# L'ancien export incluait `cell_index`, `category`, `prose_number`,
+# `closest_output_number`, `prose_text` -- mais PAS `details`,
+# `tolerance_used`, ni `cell_kind`. Le champ `details` est la charge utile
+# du test d'acceptance (cite le representant orphelin) ; sans lui, lire
+# le verdict exigeait de re-invoquer `analyze_notebook`.
+
+
+class TestJsonOutDetails:
+    """#14222 -- `--json-out` doit inclure `details` (et `tolerance_used`,
+    `cell_kind`) pour que le test d'acceptance se lise depuis le JSON."""
+
+    def test_json_includes_details_and_tolerance_used(self, tmp_path):
+        """Lecture du dump JSON via le helper `_dump_json` (extrait du CLI
+        -- pas de subprocess, pas de dependance de version de Python ni
+        d'encoding cp1252). Le test verifie les 3 champs ajoutes."""
+        nb = tmp_path / "ict1_pre_fix.ipynb"
+        _make_notebook([
+            _code_cell("print(0.1875); print(0.6875); print(2.3125)",
+                       [{"text": "0.1875\n0.6875\n2.3125\n"}]),
+            _markdown_cell("un pic a 2,31, le reste a 0,19"),
+        ], nb)
+        out = tmp_path / "out.json"
+        results = [mod.analyze_notebook(nb)]
+        mod._dump_json(results, str(out))
+        data = json.loads(out.read_text(encoding="utf-8"))
+        enum_findings = [f for f in data[0]["findings"]
+                         if f["category"] == "MISSING_FROM_PROSE_ENUMERATION"]
+        assert len(enum_findings) == 1
+        f = enum_findings[0]
+        assert "details" in f and f["details"], (
+            "Le JSON doit inclure `details` (charge utile du test d'acceptance).")
+        assert "tolerance_used" in f, (
+            "Le JSON doit inclure `tolerance_used`.")
+        assert "cell_kind" in f, (
+            "Le JSON doit inclure `cell_kind` (markdown / code).")
+        assert "0.6875" in f["details"], (
+            f"Le champ `details` doit citer l'orphelin 0.6875, trouve {f['details']!r}.")
 
 
 # --------------------------------------------------------------------------- #
@@ -1488,10 +1661,37 @@ class TestICT1CounterEvidence:
     _CANDIDATE_ROOTS = (
         Path("D:/dev/CoursIA-2"),
         Path("D:/dev/CoursIA"),
+        Path("C:/dev/CoursIA-2"),
+        Path("C:/dev/CoursIA-d5fix"),
         Path(os.environ.get("COURSIA_ROOT", "") or "_/_"),
     )
     REPO_ROOT = next((p for p in _CANDIDATE_ROOTS if p.exists() and p.is_dir()), _CANDIDATE_ROOTS[0])
     NB_PATH = "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-1-PhiTrajectories.ipynb"
+
+    def _git_show(self, ref: str) -> bytes:
+        """git show <ref>:<path> depuis la racine repo ; bytes bruts."""
+        if not self.REPO_ROOT.exists():
+            pytest.skip(f"Repo root {self.REPO_ROOT} absent")
+        try:
+            return subprocess.check_output(
+                ["git", "show", f"{ref}:{self.NB_PATH}"],
+                cwd=str(self.REPO_ROOT),
+                stderr=subprocess.PIPE,
+            )
+        except subprocess.CalledProcessError as exc:
+            pytest.skip(f"git show {ref}:{self.NB_PATH} impossible : {exc}")
+
+    def _analyze_ref(self, ref: str):
+        """Retourne NotebookAlignment pour la révision git `ref`."""
+        content = self._git_show(ref)
+        import tempfile
+        with tempfile.NamedTemporaryFile(suffix=".ipynb", delete=False) as f:
+            f.write(content)
+            tmp_path = Path(f.name)
+        try:
+            return mod.analyze_notebook(tmp_path)
+        finally:
+            tmp_path.unlink()
 
     def test_pre_fix_ict_1_signaled(self):
         """Lecture du notebook a la revision parente du fix #9416 via git show.
@@ -1504,25 +1704,7 @@ class TestICT1CounterEvidence:
         Skip si aucune racine de repo n'est accessible (path developper-specific
         sur le runner CI). Cf Hermes review nit PR #9793.
         """
-        if not self.REPO_ROOT.exists():
-            pytest.skip(f"Repo root {self.REPO_ROOT} absent (developper-specific path)")
-        try:
-            content = subprocess.check_output(
-                ["git", "show", "7de14792c^:MyIA.AI.Notebooks/IIT/ICT-Series/ICT-1-PhiTrajectories.ipynb"],
-                cwd=str(self.REPO_ROOT),
-                stderr=subprocess.PIPE,
-            )
-        except subprocess.CalledProcessError:
-            pytest.skip("ICT-1 absent ou commit absent localement")
-        # Ecriture dans un tmp pour analyse via le module.
-        import tempfile
-        with tempfile.NamedTemporaryFile(suffix=".ipynb", delete=False) as f:
-            f.write(content)
-            tmp_path = Path(f.name)
-        try:
-            result = mod.analyze_notebook(tmp_path)
-        finally:
-            tmp_path.unlink()
+        result = self._analyze_ref("7de14792c^")
         # La prose pre-#9416 inclut « 2,31 » et « 0,19 » mais PAS « 0,69 ».
         # Les outputs incluent 0.6875 (avec arrondi). Le detecteur DOIT
         # signaler au moins un finding MISSING_FROM_OUTPUTS sur la valeur
@@ -1549,6 +1731,54 @@ class TestICT1CounterEvidence:
             f"MISSING_FROM_PROSE_ENUMERATION (cas fondateur #9416), "
             f"aucun trouve parmi {len(result.findings)} findings. "
             f"categories={[f.category for f in result.findings]}"
+        )
+
+    def test_14222_discrimination_pre_vs_post_real_notebook(self):
+        """Acceptance #14222 END-TO-END sur le vrai ICT-1 (`7de14792c^`
+        pre-fix vs `7de14792c` post-fix) :
+
+        - pre-fix : 1 finding MISSING_FROM_PROSE_ENUMERATION, orphelin = 0.6875
+          (le niveau `0,6875` omis par la prose « un pic a 2,31, le reste a 0,19 »).
+        - post-fix : 0 finding MISSING_FROM_PROSE_ENUMERATION
+          (la prose « un relief intermediaire a 0,69 » couvre les 3 niveaux).
+
+        Verdict doit DIFFERER entre les deux revisions. Avant le fix
+        (#14222), les DEUX revisions rendaient 1 finding avec des orphelins
+        fantaisistes (`1,2` puis `14,0`). Apres le fix, pre-fix signale avec
+        l'orphelin conceptuellement correct, post-fix est muet.
+
+        Le `closest_output_number` peut etre 0.687 (cell[11] redonde a 3
+        decimales via `round(p, 3)`) au lieu de 0.6875 (cell[7]). On accepte
+        l'un OU l'autre (meme niveau logique, dans la tolerance 5% du groupement
+        `_distinct_level_values`).
+        """
+        pre = self._analyze_ref("7de14792c^")
+        post = self._analyze_ref("7de14792c")
+
+        enum_pre = [f for f in pre.findings
+                    if f.category == "MISSING_FROM_PROSE_ENUMERATION"]
+        enum_post = [f for f in post.findings
+                     if f.category == "MISSING_FROM_PROSE_ENUMERATION"]
+
+        # Verdict doit DIFFERER : pre-fix a un finding enum, post-fix aucun.
+        assert len(enum_pre) == 1, (
+            f"Pre-fix ICT-1 (`7de14792c^`) doit signaler exactement 1 manquant "
+            f"enumere, pas {len(enum_pre)}. details pre={[f.details for f in enum_pre]}"
+        )
+        assert len(enum_post) == 0, (
+            f"Post-fix ICT-1 (`7de14792c`) ne doit signaler AUCUN manquant "
+            f"enumere (la prose enumere 3 niveaux : 0,19, 0,69, 2,31), "
+            f"trouve {len(enum_post)}. details post={[f.details for f in enum_post]}"
+        )
+        # L'orphelin du cote pre-fix doit etre le niveau 0,6875 (tolere :
+        # 0.687 cell[11] redonde par round(p,3), 0.6875 cell[7] brut -- meme
+        # niveau logique dans le groupement `_distinct_level_values`).
+        orphan = enum_pre[0].closest_output_number
+        assert orphan is not None and (orphan == pytest.approx(0.6875, abs=1e-3)
+                                       or orphan == pytest.approx(0.687, abs=1e-3)), (
+            f"Acceptance #14222 : orphelin pre-fix doit etre 0.6875 (ou 0.687 "
+            f"via cell[11] redonde), pas {orphan}. "
+            f"Avant le fix, l'orphelin etait 1.2 ou 14.0 (fantaisistes)."
         )
 
 
@@ -1629,6 +1859,7 @@ class TestCLI:
             [sys.executable, "-m", "scan_d5_prose_outputs_alignment",
              "--root", str(tmp_path / "absent"), "--check"],
             cwd=_ROOT, capture_output=True, text=True,
+            encoding="utf-8", errors="replace",
         )
         assert result.returncode == 2, f"attendu 2, obtenu {result.returncode}\n{result.stderr}"
 
@@ -1643,6 +1874,7 @@ class TestCLI:
             [sys.executable, "-m", "scan_d5_prose_outputs_alignment",
              "--root", str(tmp_path), "--check"],
             cwd=_ROOT, capture_output=True, text=True,
+            encoding="utf-8", errors="replace",
         )
         assert result.returncode == 1
 
@@ -1656,5 +1888,6 @@ class TestCLI:
             [sys.executable, "-m", "scan_d5_prose_outputs_alignment",
              "--root", str(tmp_path), "--check"],
             cwd=_ROOT, capture_output=True, text=True,
+            encoding="utf-8", errors="replace",
         )
         assert result.returncode == 0

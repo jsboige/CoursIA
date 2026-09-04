@@ -53,7 +53,13 @@ concurrency:
 jobs:
   coauthor-stale-delta:
     name: "Stale Co-Authored-By trailer guard (#10752 Phase 2)"
-    runs-on: ubuntu-latest
+    # Routage #14283 tranche 3 (decision ai-01 2026-09-02) : jambe Linux
+    # auto-hebergee. Le `if:` ci-dessous est la garde anti-fork exigee par
+    # scripts/ci/check_self_hosted_runner_policy.py ; un `runs-on` STATIQUE la
+    # rend auditable (une expression dynamique leve DYNAMIC_RUNS_ON).
+    # Les PRs de fork sautent le job -- pr_gate.py compte `skipped` comme OK.
+    # Retour arriere = remettre `runs-on: ubuntu-latest` + retrait de l'allowlist.
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
     timeout-minutes: 5
 
     # Same-repo PRs only (agents/staff). Fork PRs are student submissions

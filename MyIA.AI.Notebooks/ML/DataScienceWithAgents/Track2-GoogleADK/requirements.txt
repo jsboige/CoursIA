@@ -1,7 +1,22 @@
 # Track2-GoogleADK - Dépendances Multi-Provider
 
+# NOTE -- politique de pin (cf #13948, post-merge #13933)
+# Ce fichier melange deux regimes : `==` (pin exact) et `>=` (plancher). Les
+# quatre pins forment une CHAINE DE COMPATIBILITE verifiee le 2026-09-03 :
+#   - litellm==1.93.2 : adaptateur OpenAI-compatible valide avec Qwen Cloud.
+#     Contrairement a 1.93.0, ce patch publie une wheel Windows CPython 3.10 ;
+#     l'installation du track ne requiert donc pas de toolchain Rust locale.
+#   - openai==2.24.0 : SDK consomme par les adaptateurs LiteLLM et ADK.
+#   - google-adk==2.8.0 : runtime central du Track 2.
+#   - pydantic==2.12.5 : pin valide avec ADK 2.8 et les modeles de config du
+#     track.
+# Tout autre `==` ajoute a ce fichier doit etre documente au meme endroit.
+# Les `>=` sont des planchers tolerants (cours : on accepte les patch releases
+# sans casser les labs) ; un pin `==` isole hors de ce bloc est probablement
+# un choix ou un oubli -- le lire comme tel.
+
 # === Abstraction LLM ===
-litellm==1.93.0
+litellm==1.93.2
 
 # === LangChain (Track1-LangChain) ===
 langchain>=0.3.0
@@ -11,7 +26,7 @@ langchain-experimental>=0.3.0
 # === Google Gemini ===
 google-generativeai>=0.8.0
 
-# === OpenAI Compatible (pin LiteLLM 1.83.14) ===
+# === OpenAI Compatible ===
 openai==2.24.0
 
 # === Google ADK (runtime central du Track 2) ===

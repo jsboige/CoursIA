@@ -483,6 +483,22 @@ theorem trefoil_ne_unknot_alexander :
   have h2 := congrArg (fun p : Polynomial ℤ => p.coeff 2) h
   simp [Polynomial.coeff_X] at h2
 
+/-- Invariance under mutation: the mutant of the trefoil (full window, r12)
+has the same Alexander polynomial as the trefoil — the Alexander polynomial
+is invariant under mutation (Conway 1970), and the trefoil being
+amphichiral, its mutant remains a trefoil. -/
+theorem alexander_trefoilMutant :
+    alexanderPolynomial trefoilMutant = Polynomial.X ^ 2 - Polynomial.X + 1 := by
+  have hp : arcPartition trefoilMutantDiagram = [[1, 2], [3, 4], [5, 6]] := by
+    decide
+  simp only [alexanderPolynomial, alexanderPolynomialAux, trefoilMutant, hp]
+  dsimp [trefoilMutantDiagram, mutateWindow, KleinRot.apply, trefoilDiagram]
+  simp (config := { decide := true })
+  rw [det_two_aux]
+  simp only [Matrix.of_apply]
+  simp (config := { decide := true }) [alexanderEntry]
+  ring
+
 /-- Trivial Alexander polynomial of the Conway knot — classical content
 Δ(t) = 1; under the designated normalization, the minor equals the unit
 −t⁶ (§4 note arbitration settled: exact designated value). -/

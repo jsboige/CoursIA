@@ -1,5 +1,16 @@
 import json
 
+# Archive header (standard _archive convention, 2026-08)
+# - Date archived : 2026-08-06
+# - Superseded by : none (one-shot fulfilled) — output lives in
+#   MyIA.AI.Notebooks/GameTheory/GameTheory-08-CombinatorialGames.ipynb
+# - Verdict recorded in : 3fb947748 (creation, 2026-01-31), PR #911
+#   (move to scripts/), PR #9580 (archive), PR #12241 (zero-padding)
+#
+# Per-function disposition :
+# - (no top-level functions) : module-level generator whose notebook content
+#   was materialized in GameTheory-08-CombinatorialGames.ipynb (3fb947748)
+
 notebook = {
     "cells": [
         {

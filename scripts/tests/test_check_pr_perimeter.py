@@ -741,12 +741,38 @@ def test_pull_request_trigger_includes_edited_type():
     )
 
 
+def _read_review_trigger_workflow() -> str:
+    """Read the workflow that carries the ``pull_request_review`` trigger.
+
+    #14283 : always-on-guards.yml a bascule sur le pool auto-heberge, et
+    `check_self_hosted_runner_policy.py` evalue les declencheurs au niveau
+    du FICHIER, pas du job -- un `pull_request_review` (fork-reachable)
+    n'importe ou dans le fichier rend TOUT le fichier inadmissible au pool.
+    Le declencheur a donc ete rendu a perimeter-review-guard.yml, qui reste
+    sur GitHub-hosted. Les deux surfaces ne se doublent pas : always-on-guards
+    ne garde que `pull_request`, perimeter-review-guard que
+    `pull_request_review` -- c'est la condition que l'en-tete de ce dernier
+    posait deja (« NE PAS reinscrire pull_request/pull_request_review ici sans
+    retirer l'organe perimeter d'always-on-guards »).
+
+    L'invariant teste est inchange : `types: [submitted, edited]` doit rester
+    declare, ou une review corrigee ne re-declenche pas le gate.
+    """
+    here = pathlib.Path(__file__).resolve()
+    repo_root = here.parents[2]
+    wf = repo_root / ".github" / "workflows" / "perimeter-review-guard.yml"
+    return wf.read_text(encoding="utf-8")
+
+
 def test_pull_request_review_trigger_includes_edited_type():
     """Sibling invariant — the review trigger already had ``edited`` from the
     start (c.342 acceptance), so this test pins that property against
     accidental regression when editing the workflow.
+
+    Depuis #14283 le declencheur vit dans perimeter-review-guard.yml (cf
+    ``_read_review_trigger_workflow``) ; l'invariant, lui, ne bouge pas.
     """
-    text = _read_perimeter_workflow()
+    text = _read_review_trigger_workflow()
     import re
     rv_block = re.search(
         r"^  pull_request_review:\s*\n((?:    [^\n]*\n)+)", text, re.MULTILINE
@@ -1482,6 +1508,117 @@ def test_11985_enumeration_tail_without_named_file_still_blocks():
     line = "2 fichiers de tests modifies"
     cand = Candidate(line, "body", "author", "body")
     assert cand.blocking is True
+
+
+# ---------------------------------------------------------------------------
+# #14384 -- the forme-1 neighborhood. (A) the enumeration exemption held to
+# PUNCTUATION, not semantics: the same just enumeration with ", plus" / ",
+# et" / ", ainsi que" instead of "+" stayed blocking -- widened to a closed
+# connector set, named-file anchor kept. (B) the additive sum was blind to
+# word-form cardinals while _word_form_count saw them -- the two halves of
+# the organ now agree at line scope (shared WORD_FORM_TRIGGERS).
+# Measured AFTER #14438/#14454: "un/une" are articles, not cardinals, so
+# the issue's L3 extracts nothing and L5's "un fichier" term is invisible
+# BY DESIGN (reproducteur #14430) -- the surviving fixable defects are the
+# connectors and the sum, pinned here at the post-#14454 vocabulary. The
+# six #11985 forms and its positive controls stay pinned by the tests above.
+# ---------------------------------------------------------------------------
+
+
+def test_14384_five_literal_lines_at_head():
+    """Recette 1: the issue's five table lines, literally, with the behavior
+    fixed at HEAD (post-#14454 vocabulary)."""
+    assert _count_is_incidental(
+        "check_twin_parity.py (_shas_match) + 2 fichiers de tests"
+    ) is True
+    assert _count_is_incidental(
+        "variation_light_cap.py (+100/-0) + 1 fichier de tests"
+    ) is True
+    # L3: post-#14454 "un fichier" is an article -> no count extracted at
+    # all (the pre-#14438 word_count=1 reading is superseded by #14438).
+    assert extract_perimeter_assertions(
+        "variation_light_cap.py (+100/-0), plus un fichier de tests neuf."
+    ) == []
+    # L4: two digits already sum exactly (unchanged by this fix).
+    assert _additive_line_sum("1 fichier modifie, 1 fichier de tests neuf.") == 2
+    # L5: "un fichier" is invisible as a count (#14438) -> declared 1, the
+    # escape for a counted file + article term is the digit form or naming.
+    assert _additive_line_sum(
+        "1 fichier modifie, plus un fichier de tests neuf."
+    ) == 1
+    assert _count_is_incidental(
+        "1 fichier modifie, plus un fichier de tests neuf."
+    ) is False
+
+
+def test_14384_A_widened_connectors_are_incidental_with_named_file():
+    """(A): ', plus' / ', et' / ', ainsi que' between a NAMED file and an
+    'N fichiers de tests' tail classify like the '+' form -- SIGNAL, not
+    blocking (the sub-sum can never be validated by the confrontation)."""
+    for line in [
+        "variation_light_cap.py (+100/-0), plus 2 fichiers de tests neufs.",
+        "variation_light_cap.py (+100/-0), et 1 fichier de test neuf.",
+        "variation_light_cap.py (+100/-0), ainsi que 3 fichiers de tests.",
+    ]:
+        cand = Candidate(line, "body", "author", "body")
+        assert cand.blocking is False, line[:60]
+
+
+def test_14384_A_connector_without_named_file_still_blocks():
+    """(A) garde-fou: without the named-file anchor the exemption would
+    swallow sub-sums that enumerate nothing -- a bare connector line stays
+    authorial."""
+    line = "1 fichier de tests modifie, et 1 autre fichier"
+    cand = Candidate(line, "body", "author", "body")
+    assert cand.blocking is True
+
+
+def test_14384_A_word_form_tail_is_not_exempt():
+    """(A)+(B) recette 2 -- the exemption stays DIGIT-only: a word-form
+    enumeration tail joins the additive sum and is confronted, so the
+    exemption can re-close (the issue's re-closing mutation, expressed in
+    the post-#14438 vocabulary)."""
+    line = "variation_light_cap.py (+100/-0), plus trois fichiers de tests neufs."
+    cand = Candidate(line, "body", "author", "body")
+    assert cand.blocking is True
+
+
+def test_14384_B_word_form_joins_additive_sum():
+    """(B): '1 fichier modifie, plus deux fichiers de tests' declares
+    1 + 2 = 3 -- the sum was 1 (digit-only), contradicting the docstring
+    agreement of the organ's two halves."""
+    assert _additive_line_sum(
+        "1 fichier modifie, plus deux fichiers de tests neufs."
+    ) == 3
+    assert _additive_line_sum("deux fichiers de tests neufs.") == 2
+
+
+def test_14384_B_rescue_and_reclose_end_to_end():
+    """(B) recette 2, both directions: the just enumeration passes, the
+    count-mutation blocks again."""
+    files = [{"path": "a.py"}, {"path": "b.py"}, {"path": "c.py"}]
+    assert check_assertion(
+        files, "1 fichier modifie, plus deux fichiers de tests neufs."
+    ) == []
+    assert check_assertion(
+        files, "1 fichier modifie, plus trois fichiers de tests neufs."
+    ) != []
+
+
+def test_14384_A_digit_line_silent_word_mutation_recloses():
+    """(A) recette 2 end-to-end: the widened digit line stays incidental
+    (silent sub-sum), its word-form mutation on a 2-file perimeter speaks
+    again (1 named + trois = 4 != 2 via the word branch)."""
+    files = [{"path": "scripts/notebook_tools/variation_light_cap.py"},
+             {"path": "scripts/tests/test_variation_light_cap.py"}]
+    silent = Candidate(
+        "variation_light_cap.py (+100/-0), plus 2 fichiers de tests neufs.",
+        "body", "author", "body",
+    )
+    assert silent.blocking is False
+    assert check_assertion(
+        files, "variation_light_cap.py (+100/-0), plus trois fichiers de tests neufs."
+    ) != []
 
 
 def test_11985_form_produced_artifacts_is_incidental():
@@ -2665,8 +2802,12 @@ FILES_2_13499 = [
 
 
 def test_13535_language_agreement_positive_controls():
-    """Controles positifs : l'accord de langue preserve les vraies declarations."""
-    assert _word_form_count("Périmètre : un fichier modifié.") == 1
+    """Controles positifs : l'accord de langue preserve les vraies declarations.
+    #14438 : « un fichier » (article nu) n'est plus un compte FR -- seule la
+    forme restrictive « un seul fichier » compte 1 ; « one file » (EN, vrai
+    cardinal) reste 1."""
+    assert _word_form_count("Périmètre : un fichier modifié.") is None
+    assert _word_form_count("Périmètre : un seul fichier modifié.") == 1
     assert _word_form_count("Périmètre : trois fichiers touchés.") == 3
     assert _word_form_count("Perimeter: one file changed.") == 1
     assert _word_form_count("Perimeter: three files changed.") == 3
@@ -2743,6 +2884,75 @@ def test_13535_word_form_extraction_still_fires():
     assert problems and any("2" in p for p in problems)
 
 # ---------------------------------------------------------------------------
+# #14438 -- article indefini nu (« un/une fichier(s) ») : pas un compte.
+# Reproducteur PR #14430 (run 33723731681) : « Un rendu scope ne voit pas
+# la casse qu'un fichier change provoque dans un fichier inchange » ->
+# VERDICT FAIL pretendu 1 fichier, liste effective 3. « un fichier » est la
+# prose la plus banale possible ; seul le quantificateur restrictif
+# « un seul fichier » denombre un perimetre. La forme chiffree
+# « 1 fichier : <chemin> » reste la voie officielle (COUNT_CLAIM,
+# couverte par les controles #13535 digit forms).
+
+# NB : la liste NE contient pas le garde lui-meme -- une PR qui edite
+# scripts/check_pr_perimeter.py declenche l'auto-exemption self-hosting
+# (#12201) et la confrontation saute, ce qui fausserait le controle FP.
+FILES_3_14430 = [
+    {"path": "scripts/pick_idle_grain.py", "additions": 30, "deletions": 5},
+    {"path": "scripts/tests/test_pick_idle_grain.py", "additions": 60, "deletions": 10},
+    {"path": "docs/reference/perimeter-guard.md", "additions": 5, "deletions": 0},
+]
+
+
+def test_14438_false_negative_bare_article_prose():
+    """Reproducteur #14430 (phrase verbatim) : la prose « un fichier
+    change ... un fichier inchange » ne sort plus de l'extraction -- le
+    scan ne produit aucun candidat, aucun rouge, meme face a la liste
+    effective de 3 fichiers."""
+    line = (
+        "Un rendu scope ne voit pas la casse qu'un fichier change provoque "
+        "dans un fichier inchange (reference croisee, entree de barre laterale)"
+    )
+    assert _word_form_count(line) is None
+    assert extract_perimeter_assertions(line) == []
+    items = [{
+        "kind": "PR body",
+        "author": "myia-po-2023",
+        "body": line,
+        "source": "body",
+        "ts": "",
+    }]
+    candidates, orphan = select_candidates(items, n_files=len(FILES_3_14430))
+    assert orphan is None
+    assert candidates == [], (
+        "aucun candidat ne doit sortir de la prose #14430; got: "
+        + repr(candidates)
+    )
+
+
+def test_14438_positive_control_restricted_form_still_fires():
+    """Controle FP impose par l'issue : une vraie assertion « un seul
+    fichier » déclenche toujours (extraction + confrontation, rouge si le
+    comptage est faux). La forme chiffree « 1 fichier : X » reste la voie
+    officielle, toujours couverte par COUNT_CLAIM."""
+    line = "Cette PR modifie un seul fichier : scripts/pick_idle_grain.py"
+    assert _word_form_count(line) == 1
+    assert extract_perimeter_assertions(line) == [line]
+    problems = check_assertion(FILES_3_14430, line)
+    assert len(problems) == 1, (
+        "vraie assertion d'un fichier face a 3 fichiers doit rougir; got: "
+        + repr(problems)
+    )
+    assert "l'assertion pretend 1 fichier" in problems[0]
+    # forme chiffree, compte juste sur un PR a 1 fichier -> PASS
+    single = [FILES_3_14430[0]]
+    digit_ok = "Perimetre : 1 fichier : scripts/pick_idle_grain.py"
+    assert extract_perimeter_assertions(digit_ok) == [digit_ok]
+    assert check_assertion(single, digit_ok) == []
+    digit_bad = "Perimetre : 2 fichiers modifies."
+    assert check_assertion(single, digit_bad) != []
+
+
+# ---------------------------------------------------------------------------
 # #13610 -- article indefini ("un/une/des fichier(s)") + verbe d'action dont
 # le referent NOMMÉ n'est pas dans la PR. Founder case PR #13539 l.43 :
 # « generaliser demanderait d'editer pick_idle_grain.py, un fichier deja
@@ -2761,16 +2971,27 @@ FILES_13610 = [
 
 
 def test_13610_founder_case_named_out_of_scope_passes():
-    """Founder case (verbatim shape, with the named file explicit): the
-    'un fichier' referent is `pick_idle_grain.py`, a file the PR does NOT
-    touch. The guard must NOT rouge the word-form count."""
-    line = (
+    """Founder case (named file out of scope): the referent is
+    `pick_idle_grain.py`, a file the PR does NOT touch. #14438 : la forme
+    verbatim « un fichier » (article nu) n'est plus du tout un compte -- la
+    ligne ne sort plus de l'extraction, le scan la laisse passer. La forme
+    restrictive « un seul fichier » reste un compte, et le predicat #13610
+    la protege aussi (referent nomme hors scope -> pas de rouge)."""
+    bare = (
         "generaliser demanderait d'editer pick_idle_grain.py, un fichier "
         "deja porteur de deux PRs ouvertes de la meme lane (#13496, #13499)"
     )
-    problems = check_assertion(FILES_13610, line)
+    assert _word_form_count(bare) is None
+    assert extract_perimeter_assertions(bare) == [], (
+        "article nu : la prose ne doit plus etre extraite comme assertion"
+    )
+    restricted = (
+        "generaliser demanderait d'editer pick_idle_grain.py, un seul "
+        "fichier deja porteur de deux PRs ouvertes de la meme lane"
+    )
+    problems = check_assertion(FILES_13610, restricted)
     assert problems == [], (
-        "founder shape must not rouge the word-form count; got: " + repr(problems)
+        "restrictive shape must not rouge the word-form count; got: " + repr(problems)
     )
 
 
@@ -2802,9 +3023,11 @@ def test_13610_founder_case_via_une_target():
 
 
 def test_13610_true_assertion_one_file_named_in_scope_still_rouges():
-    """A genuine 'un fichier' perimeter claim whose named referent IS in
-    the PR stays blocking -- the filter must not silence true assertions."""
-    line = "Cette PR modifie un fichier scripts/check_epic_charter.py"
+    """Une vraie assertion d'un fichier dont le referent nomme EST dans la
+    PR reste bloquante -- le filtre ne doit pas silencier les vraies
+    assertions. Forme restrictive « un seul » : seul cardinal FR-1 restant
+    (article nu retire par #14438)."""
+    line = "Cette PR modifie un seul fichier scripts/check_epic_charter.py"
     problems = check_assertion(FILES_13610, line)
     assert len(problems) == 1, (
         "true assertion must still rouge; got: " + repr(problems)
@@ -2814,10 +3037,10 @@ def test_13610_true_assertion_one_file_named_in_scope_still_rouges():
 
 def test_13610_fn_safety_anonymous_referent_keeps_rouge():
     """FN control 1: no named file on the line, but the edit-verb is
-    present. The shape is AMBIGUOUS -- 'editer un fichier' could mean the
-    PR or another file. Default-fail-loud: keep the rouge."""
+    present. The shape is AMBIGUOUS -- 'editer un seul fichier' could mean
+    the PR or another file. Default-fail-loud: keep the rouge."""
     line = (
-        "generaliser demanderait d'editer un fichier deja porteur de "
+        "generaliser demanderait d'editer un seul fichier deja porteur de "
         "deux PRs ouvertes de la meme lane"
     )
     problems = check_assertion(FILES_13610, line)
@@ -2827,10 +3050,10 @@ def test_13610_fn_safety_anonymous_referent_keeps_rouge():
 
 
 def test_13610_fn_safety_no_edit_verb_keeps_rouge():
-    """FN control 2: no edit-verb in the run-up. The 'un fichier' is
+    """FN control 2: no edit-verb in the run-up. The 'un seul fichier' is
     descriptive prose, but without an action verb the exemption branch
     cannot fire -- the rouge stays."""
-    line = "il y a un fichier quelque part qui pose probleme."
+    line = "il y a un seul fichier quelque part qui pose probleme."
     problems = check_assertion(FILES_13610, line)
     assert len(problems) == 1, (
         "no-verb shape must stay rouge; got: " + repr(problems)
@@ -2849,9 +3072,16 @@ def test_13610_predicate_unit_unanimous():
     assert _word_form_is_indef_non_pr_subject(
         "modifier scripts/foo.py, un fichier de tests", files
     ) is True
+    # #14438 : la forme restrictive « un seul » suit le meme predicat
+    assert _word_form_is_indef_non_pr_subject(
+        "editer pick_idle_grain.py, un seul fichier deja porteur", files
+    ) is True
     # False cases (genuine or ambiguous)
     assert _word_form_is_indef_non_pr_subject(
         "Cette PR modifie un fichier scripts/check_epic_charter.py", files
+    ) is False
+    assert _word_form_is_indef_non_pr_subject(
+        "Cette PR modifie un seul fichier scripts/check_epic_charter.py", files
     ) is False
     assert _word_form_is_indef_non_pr_subject(
         "editer un fichier quelque part", files
@@ -2863,6 +3093,124 @@ def test_13610_predicate_unit_unanimous():
         "Cette PR ajoute un fichier scripts/check_epic_charter.py dans "
         "scripts/check_epic_charter.py", files
     ) is False  # named file IS in scope
+
+
+# ---------------------------------------------------------------------------
+# #13610 residual (2026-09-02, measured by po-2024) -- the referent is named,
+# but named as a SYMBOL, not as a file. The tail class of _NAMED_FILE_BODY was
+# `[A-Za-z0-9]+`, which excludes the underscore; a dotted symbol was therefore
+# not recognized as a named referent, and the FN-safety branch kept the rouge
+# on the FOUNDING sentence of #13539 itself. The boundary was arbitrary AND
+# invisible: the same code reference passed or rouged on the sole strength of
+# one underscore. The pair below is the proof -- the first test alone would be
+# satisfied by simply disabling the guard, which is why the positive control
+# and the anonymous-referent control are pinned alongside it.
+# ---------------------------------------------------------------------------
+
+# The two rows of the #13610 table, same sentence, same referent, one
+# underscore apart. #14438 : la forme verbatim porte « un fichier » (article
+# nu, plus un compte) -- la preuve de la protection du referent passe par la
+# forme restrictive « un seul fichier », seule forme encore tracee par le
+# garde (la forme verbatim ne sort plus de l'extraction, verifiee dans
+# test_13610_founding_sentence_of_13539_passes).
+_SYMBOL_SHAPE = (
+    "L'upsert vit dans `pick_idle_grain.{symbole}` ; le generaliser "
+    "demanderait d'editer un seul fichier deja porteur de deux PRs "
+    "ouvertes de la meme lane"
+)
+
+
+def test_13610_symbol_referent_without_underscore_passes():
+    """Table row 1: `pick_idle_grain.upsert` -- passed even before the fix.
+    Pinned so a future tightening of the tail class cannot silently take it
+    back, which would re-open the inversion from the other side."""
+    line = _SYMBOL_SHAPE.format(symbole="upsert")
+    problems = check_assertion(FILES_13610, line)
+    assert problems == [], (
+        "a dotted symbol without underscore must not rouge; got: "
+        + repr(problems)
+    )
+
+
+def test_13610_symbol_referent_with_underscore_passes():
+    """Table row 2: `pick_idle_grain.upsert_orphans` -- ROUGED before the fix,
+    on the sole strength of the underscore. This is the regression the
+    residual names."""
+    line = _SYMBOL_SHAPE.format(symbole="upsert_orphans")
+    problems = check_assertion(FILES_13610, line)
+    assert problems == [], (
+        "a dotted symbol with an underscore must not rouge -- the underscore "
+        "is not a semantic boundary; got: " + repr(problems)
+    )
+
+
+def test_13610_founding_sentence_of_13539_passes():
+    """The sentence of #13539 that founded the whole thread. Its referent was
+    named all along -- named as a symbol. Acceptance line 1 of #13610."""
+    line = _SYMBOL_SHAPE.format(symbole="upsert_orphans_comment")
+    problems = check_assertion(FILES_13610, line)
+    assert problems == [], (
+        "the founding sentence of #13539 must pass the guard; got: "
+        + repr(problems)
+    )
+    # #14438 : la forme verbatim article nu n'est plus un candidat du tout --
+    # le scan la laisse passer sans jamais la confronter.
+    bare_verbatim = (
+        "L'upsert vit dans `pick_idle_grain.upsert_orphans_comment` ; le "
+        "generaliser demanderait d'editer un fichier deja porteur de deux "
+        "PRs ouvertes de la meme lane"
+    )
+    assert extract_perimeter_assertions(bare_verbatim) == [], (
+        "la forme article nu ne doit plus etre extraite comme assertion"
+    )
+
+
+def test_13610_symbol_widening_keeps_positive_control_rouge():
+    """Acceptance line 2 of #13610, stated as a PAIR with the three tests
+    above: widening the tail class must NOT extinguish the positive control.
+    A fix that made the symbol cases pass by weakening the guard would pass
+    those three and fail this one -- which is the whole point of pinning it
+    here rather than relying on the older copy elsewhere in the file."""
+    problems = check_assertion(FILES_13610, "Cette PR ne touche qu'un seul fichier.")
+    assert problems, (
+        "the positive control must still rouge after the widening -- "
+        "3 files in the PR, assertion claims 1"
+    )
+
+
+def test_13610_symbol_widening_keeps_anonymous_referent_rouge():
+    """FN-safety, restated post-widening: widening WHAT counts as a named
+    referent must not turn an ANONYMOUS referent into a named one. #13612's
+    deliberate default-fail-loud on ambiguous shapes is untouched."""
+    line = (
+        "le generaliser demanderait d'editer un seul fichier deja porteur "
+        "de deux PRs ouvertes"
+    )
+    problems = check_assertion(FILES_13610, line)
+    assert problems, (
+        "an anonymous referent must keep the rouge after the widening"
+    )
+
+
+def test_13610_symbol_predicate_unit_pair():
+    """Direct unit test of the predicate on the two table rows, decoupled from
+    check_assertion so a pipeline change cannot mask a predicate regression --
+    same rationale as test_13610_predicate_unit_unanimous."""
+    files = FILES_13610
+    assert _word_form_is_indef_non_pr_subject(
+        _SYMBOL_SHAPE.format(symbole="upsert"), files
+    ) is True
+    assert _word_form_is_indef_non_pr_subject(
+        _SYMBOL_SHAPE.format(symbole="upsert_orphans"), files
+    ) is True
+    assert _word_form_is_indef_non_pr_subject(
+        _SYMBOL_SHAPE.format(symbole="upsert_orphans_comment"), files
+    ) is True
+    # The widening is about the TAIL of a dotted referent, nothing else:
+    # an anonymous referent stays False.
+    assert _word_form_is_indef_non_pr_subject(
+        "editer un fichier quelque part", files
+    ) is False
 
 
 # ---------------------------------------------------------------------------
@@ -3083,17 +3431,28 @@ def test_13791_grep_absence_keeps_the_red():
 
 def test_13791_word_form_discrimination_verb_exempts():
     """« distinguer un fichier corrompu d'un fichier offensif » (#13736) :
-    le word-form désigne les objets d'une comparaison, pas le périmètre."""
+    le word-form désigne les objets d'une comparaison, pas le périmètre.
+    #14438 : la forme article nu ne sort plus de l'extraction (prose, pas
+    assertion) ; la forme restrictive « un seul » reste protegee par le
+    predicat de discrimination."""
     files = [{"path": "scripts/ci/check_concurrency_conj.py"},
              {"path": "scripts/tests/test_check_concurrency_conj.py"}]
-    assert check_assertion(files, FOUNDER_13736_DIAG) == []
+    assert extract_perimeter_assertions(FOUNDER_13736_DIAG) == [], (
+        "la prose de comparaison article nu ne doit plus etre extraite"
+    )
+    restricted = FOUNDER_13736_DIAG.replace(
+        "un fichier ", "un seul fichier ", 1
+    )
+    assert check_assertion(files, restricted) == []
 
 
 def test_13791_word_form_plain_indefinite_still_blocks():
-    """Contrôle FN : « un fichier modifié » sans verbe de discrimination
-    reste confronté (1 vs 2 -> rouge)."""
+    """Contrôle FN : « un seul fichier modifié » sans verbe de discrimination
+    reste confronté (1 vs 2 -> rouge). La forme article nu « un fichier
+    modifié » n'est plus un compte du tout (#14438)."""
     files = [{"path": "a.py"}, {"path": "b.py"}]
-    assert check_assertion(files, "un fichier modifié (`a.py`)") != []
+    assert check_assertion(files, "1 fichier modifié (`a.py`)") != []  # chiffre
+    assert check_assertion(files, "un seul fichier modifié (`a.py`)") != []
 
 
 def test_13791_word_form_measurement_result_exempts():

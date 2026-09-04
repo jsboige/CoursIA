@@ -1,0 +1,109 @@
+name: Lean Visibility Advisory
+
+# Acceptance 3 de l'EPIC #11703 : « signal CI advisory listant les déclarations
+# ajoutées non citées sur les PR `*_lean/**` ». L'organe canonique
+# scripts/lean/scan_lake_notebook_visibility.py (versionné par #11704) mesure
+# la visibilité repo-wide ; ce workflow en déroule le mode PR (--pr-base) sur
+# chaque PR qui enrichit un lake, pour que la métrique ne re-dérive pas entre
+# deux re-mesures manuelles — exactement ce que la passe de curation #13906 a
+# constaté (chaque ligne du tableau du 2026-08-19 était fausse le 2026-09-02).
+#
+# ADVISORY, jamais bloquant : le job sort TOUJOURS 0. Le payload actionnable
+# est la paire de LABELS (drift / unmeasured), jamais la conclusion verte du
+# job (vert par construction — le même piège que #8797).
+#
+# L'extraction et le filtre (DECL_RE, exclusions, `_en.lean`) sont CONSOMMÉS
+# depuis l'organe par import du même module — jamais réimplémentés ici, pour
+# que le label et la métrique de tête ne puissent pas diverger.
+#
+# Hors scope (student-pr-reviews.md) : les forks (PRs étudiantes) sautent.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+    paths:
+      - '**/*_lean/**/*.lean'
+      # Self-cover (#8822) : un label-poser filtré par paths doit se lister
+      # lui-même, sinon il ne peut plus re-tourner (donc plus retirer son
+      # propre label) une fois les paths hors diff. Exigé par
+      # scripts/check_workflow_label_paths.py.
+      - '.github/workflows/lean-visibility-advisory.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: lean-visibility-advisory-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lean-visibility-advisory:
+    name: "Lean visibility drift (advisory label, non-blocking)"
+    # Routage #14283 tranche 3 : jambe Linux auto-hébergée. Le `if:` est la
+    # garde anti-fork exigée par scripts/ci/check_self_hosted_runner_policy.py
+    # (runs-on STATIQUE = auditable). Les PRs de fork sautent le job --
+    # pr_gate.py compte `skipped` comme OK.
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    if: github.event.pull_request.head.repo.full_name == github.repository
+
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v4
+        with:
+          # Le mode --pr-base fait un diff 3-points base...HEAD : il faut
+          # l'historique.
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Advisory check on added lake declarations
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Sans contexte git GH_REPO, `gh pr edit` / `gh label create` ne
+          # peuvent pas inférer le repo cible et échouent en silence (piège
+          # documenté firsthand par variation-tag-guard après #8765).
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+          LABEL_DRIFT: lean-visibility-drift
+          LABEL_UNMEASURED: lean-visibility-unmeasured
+        run: |
+          set -uo pipefail
+
+          ensure_label() {
+            gh label create "$1" --description "$2" --color "$3" --force 2>/dev/null || true
+          }
+          set_label() { gh pr edit "$PR_NUMBER" --add-label "$1" || true; }
+          unset_label() { gh pr edit "$PR_NUMBER" --remove-label "$1" 2>/dev/null || true; }
+
+          ensure_label "$LABEL_DRIFT" \
+            "La PR ajoute des declarations lake non citees par AUCUN notebook (borne large) (#11703)" "D4A64C"
+          ensure_label "$LABEL_UNMEASURED" \
+            "Le scan de visibilite n'a pas pu mesurer cette PR -- NON VERIFIE (#8819)" "BFD4F2"
+
+          # Advisory : TOUJOURS exit 0. Le signal est la paire de labels.
+          if ! python scripts/lean/scan_lake_notebook_visibility.py \
+              --pr-base "$BASE" --pr-head "$HEAD" --json payload.json; then
+            echo "::warning::scan_lake_notebook_visibility (mode PR) a echoue -- non mesure, pas sans defaut (#8819)."
+            unset_label "$LABEL_DRIFT"
+            set_label "$LABEL_UNMEASURED"
+            exit 0
+          fi
+
+          UNCITED=$(python -c "import json; print(json.load(open('payload.json'))['uncited'])")
+          echo "Declarations ajoutees non citees (borne large): $UNCITED"
+
+          if [ "$UNCITED" -gt 0 ]; then
+            echo "::warning::$UNCITED declaration(s) ajoutee(s) sur un lake sans aucune citation notebook (EPIC #11703) -- un compagnon notebook les rend visibles."
+            set_label "$LABEL_DRIFT"
+          else
+            unset_label "$LABEL_DRIFT"
+          fi
+          unset_label "$LABEL_UNMEASURED"

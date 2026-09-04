@@ -133,3 +133,66 @@ def test_13779_blocage_lane_emet_toujours():
 
 def test_13779_blocage_leve_ne_pose_toujours_rien():
     assert mod._block_emitted("**BLOCAGE leve** — le point est traite, je merge.") is False
+
+
+# #14089 — chemin different : l'injonction structurelle en francais courant
+# (« HOLD leve ») doit aussi etre reconnue comme LEVEE par la voie
+# `_coordinator_emission_informal`, pas seulement par `_block_emitted`.
+# Cas fondateur : `classify("myia-ai-01", "HOLD leve -- le remplacement est
+# nomme, vous pouvez merger.")` rendait `BOT-CONCERN` au lieu de `None`.
+
+
+def test_14089_fondateur_hold_leve_ne_bloque_plus():
+    # Le commentaire du coord qui LEVE le hold ne doit pas lui-meme bloquer
+    # la PR qu'il vient de debloquer.
+    body = "HOLD leve -- le remplacement est nomme, vous pouvez merger."
+    assert mod._coordinator_emission_informal(body) is False
+    assert mod.classify("myia-ai-01", body) is None
+
+
+def test_14089_hold_lifted_anglais_leve_aussi():
+    body = "HOLD lifted -- the coordinator named the replacement grain."
+    assert mod._coordinator_emission_informal(body) is False
+
+
+def test_14089_hold_leve_sans_tiret_double_leve():
+    body = "HOLD leve la condition est resolue."
+    assert mod._coordinator_emission_informal(body) is False
+
+
+def test_14089_hold_leve_dans_phrase_longue_leve():
+    body = "Suite au greenlight recu, le HOLD leve ; vous pouvez merger."
+    assert mod._coordinator_emission_informal(body) is False
+
+
+# Contre-contrôles obligatoires (acceptance #14089 point 2) : le correctif
+# desserre un predicat, il doit prouver qu'il n'eteint rien. Les formes
+# ci-dessous CONTINUENT de rendre une emission (BOT-CONCERN).
+
+
+def test_14009_hold_simple_reste_bot_concern():
+    body = "HOLD coordinateur -- budget G-VAR-2 atteint."
+    assert mod._coordinator_emission_informal(body) is True
+
+
+def test_14089_hold_lane_strict_reste_bot_concern():
+    body = "HOLD lane myia-po-2024:CoursIA-2 -- scope non tenu."
+    assert mod._coordinator_emission_informal(body) is True
+
+
+def test_14089_ne_pas_merger_reste_bot_concern():
+    body = "Ne pas merger sur les verts tant que le preflight n'est pas vert."
+    assert mod._coordinator_emission_informal(body) is True
+
+
+def test_14089_hold_sans_participe_reste_bot_concern():
+    # Le mot `leve` peut apparaitre dans la phrase SANS etre le participe
+    # du HOLD. Le predicat post-marker doit alors classer l'injonction.
+    body = "HOLD user -- l'override leve un autre point que celui-ci."
+    assert mod._coordinator_emission_informal(body) is True
+
+
+def test_14089_contre_controle_blocage_leve_reste_muet():
+    # Le pendant `_block_emitted` -- miroir exact de la borne.
+    body = "**BLOCAGE leve** -- le point est clos, je merge."
+    assert mod._block_emitted(body) is False

@@ -645,7 +645,7 @@ Total .ipynb: 20
 
 | Métrique | Valeur |
 |----------|--------|
-| Famille | `MyIA.AI.Notebooks/IIT/` racine PyPhi (3 .ipynb : IIT-1-IntroToPyPhi, IIT-2-AdvancedTopics, IIT-3-CoarseGrainingMacroPhi) |
+| Famille | `MyIA.AI.Notebooks/IIT/` racine PyPhi (3 .ipynb : IIT-01-IntroToPyPhi, IIT-02-AdvancedTopics, IIT-03-CoarseGrainingMacroPhi) |
 | Owner-lane | **po-2025 strict** (strate-5 IIT Epic #4588 + #5681 J-Lens Track S couche #2 PR #5887 + couche #1 PR #5888 + ICT-24 T2 PR #5875) |
 | Date audit | 2026-07-10 (c.402) |
 | Auditeur | `myia-po-2025:CoursIA` |
@@ -678,7 +678,7 @@ Total .ipynb: 20
 ### Disclosures honnêtes vérifiées
 
 - (a) **IIT = computationnellement NP-hard** (mentions "lent"/"NP"/"exponentiel"/"small" dans IIT-1/IIT-2/IIT-3) : l'algorithme de Φ croît exponentiellement avec la taille du sous-système → les notebooks utilisent des **petits réseaux (3-5 nœuds)** = usage **canonique** d'IIT (le XOR 3-nœud et les réseaux toy sont les exemples standards de la littérature Tononi). C'est une **limitation INTRINSIC** de la théorie, documentée honnêtement — **PAS un workaround dégradé** (PyPhi calcule le VRAI Φ, juste sur des réseaux pédagogiquement petits comme toute la communauté IIT).
-- (b) `IIT-3-CoarseGrainingMacroPhi.ipynb` cellule 12 = section **"Interprétation honnête"** explicite (disclosure structurée de la macro/micro EI comparison).
+- (b) `IIT-03-CoarseGrainingMacroPhi.ipynb` cellule 12 = section **"Interprétation honnête"** explicite (disclosure structurée de la macro/micro EI comparison).
 
 **Workaround dégradé** : **0/3**. Aucun ASCII art substituant un output, aucune réimplémentation jouet de PyPhi (le calcul de Φ est délégué à la vraie lib), aucun stub à la place d'un appel PyPhi.
 
@@ -686,9 +686,9 @@ Total .ipynb: 20
 
 | Notebook | Problème posé | Capacité PyPhi distinctive |
 |----------|---------------|----------------------------|
-| IIT-1-IntroToPyPhi | Intro IIT 3.0 — Subsystem, concept, integrated information Φ, répertoires cause-effet | Calcul du Φ d'un sous-système (mecanism, purview, partition) — signature PyPhi |
-| IIT-2-AdvancedTopics | **XOR 3-nœud** (exemple canonique non-trivial) + partitionnement + réseaux élargis + répertoires cause-effet | Marginalization + MIP (minimum information partition) sur réseau non-trivial |
-| IIT-3-CoarseGrainingMacroPhi | **Coarse-graining, blackboxing, pyphi.macro** — comparaison EI micro vs macro (émergence macro) | `pyphi.macro` = frontière recherche (IIT 4.0 direction) — discrimine la macro-émergence |
+| IIT-01-IntroToPyPhi | Intro IIT 3.0 — Subsystem, concept, integrated information Φ, répertoires cause-effet | Calcul du Φ d'un sous-système (mecanism, purview, partition) — signature PyPhi |
+| IIT-02-AdvancedTopics | **XOR 3-nœud** (exemple canonique non-trivial) + partitionnement + réseaux élargis + répertoires cause-effet | Marginalization + MIP (minimum information partition) sur réseau non-trivial |
+| IIT-03-CoarseGrainingMacroPhi | **Coarse-graining, blackboxing, pyphi.macro** — comparaison EI micro vs macro (émergence macro) | `pyphi.macro` = frontière recherche (IIT 4.0 direction) — discrimine la macro-émergence |
 
 **Capacité distinctive exercée** : 0 cas dégénéré. PyPhi est le SEUL outil qui calcule le Φ (integrated information) selon IIT 3.0 — aucun notebook ne pourrait être résolu par une baseline triviale (le calcul de Φ exige l'énumération des partitions cause-effet, intrinsèquement exponentiel). Chaque notebook pose un problème où seule l'IIT computationnelle (Tononi) apporte la réponse.
 

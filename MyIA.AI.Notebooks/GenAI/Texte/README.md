@@ -4,7 +4,7 @@
 series: GenAI-Texte
 pedagogical_count: 30
 breakdown: Texte=30
-maturity: BETA=27, ALPHA=2, DRAFT=1
+maturity: BETA=28, ALPHA=1, DRAFT=1
 -->
 
 [← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Semantic Kernel](../SemanticKernel/README.md)
