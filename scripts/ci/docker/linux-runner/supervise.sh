@@ -23,6 +23,8 @@
 #                                  # N slots (defaut 2) ; --force leve
 #                                  # un sentinel STOP_FILE prealable
 #   ./supervise.sh waiters [N]   # N slots d'attente PR-gate (label coursia-waiter, defaut 24)
+#   ./supervise.sh lean [N]      # N slots Lean specialises (label coursia-lean, image
+#                                  # dediee elan+toolchain, .lake chaud par slot, defaut 2)
 #   ./supervise.sh stop          # arret gracieux : pas de nouveau conteneur
 #   ./supervise.sh status
 #
@@ -80,6 +82,24 @@ WAITER_CPUS="${COURSIA_RUNNER_WAITER_CPUS:-1}"
 WAITER_MEMORY="${COURSIA_RUNNER_WAITER_MEMORY:-1g}"
 WAITER_PIDS="${COURSIA_RUNNER_WAITER_PIDS:-128}"
 
+# Pool Lean specialise (#14337 tranche 1) : le cout d'un job Lean n'est pas le
+# toolchain mais MATHLIB. Image dediee (Dockerfile.lean : elan + toolchain
+# stable pinnnes), labels dedies (JAMAIS coursia-linux -- le label distinct
+# est la garantie de routage), caps hautes (lake build est CPU/RAM lourd).
+# Le .lake chaud vit dans le volume _work PAR SLOT au prefixe dedie
+# coursia-runner-work-lean-{N} (pattern #14285) : .lake/packages et .lake/build
+# survivent aux conteneurs, lake build devient incremental.
+LEAN_IMAGE="${COURSIA_LEAN_RUNNER_IMAGE:-coursia-lean-runner:2.336.0}"
+LEAN_LABELS="${COURSIA_LEAN_RUNNER_LABELS:-self-hosted,coursia-ephemeral,coursia-lean}"
+LEAN_NAME_PREFIX="${COURSIA_LEAN_RUNNER_NAME_PREFIX:-myia-po-2024-lean-docker}"
+LEAN_WORK_VOLUME_PREFIX="${COURSIA_LEAN_RUNNER_WORK_VOLUME_PREFIX:-coursia-runner-work-lean}"
+# 2 slots * 6 cpus = 12 des 16 coeurs au pire ; l'hote workstation prime
+# (cf CONTRAINTE en tete de fichier) -- baisser N ou les caps si la machine
+# gene pendant un lake build.
+LEAN_CPUS="${COURSIA_LEAN_RUNNER_CPUS:-6}"
+LEAN_MEMORY="${COURSIA_LEAN_RUNNER_MEMORY:-8g}"
+LEAN_PIDS="${COURSIA_LEAN_RUNNER_PIDS:-512}"
+
 mkdir -p "$STATE_DIR"
 
 # Git Bash (MSYS) sous Windows reecrit les arguments de forme /posix/path des
@@ -119,9 +139,13 @@ fetch_token() {
   gh api --method POST "repos/$REPO/actions/runners/registration-token" --jq .token 2>/dev/null
 }
 
+# Parametre depuis #14337 : un slot = une boucle, mais nom/labels/image/caps
+# dependent du pool (linux genrique, lean). Les volumes toolcache/_work restent
+# la regle pour les pools D'EXECUTION (les waiters ont leur propre boucle sans
+# volume).
 slot_loop() {
-  local slot="$1"
-  local name="${NAME_PREFIX}-${slot}"
+  local slot="$1" name="$2" labels="$3" image="$4" cpus="$5" memory="$6" pids="$7"
+  local vol_prefix="${8:-$WORK_VOLUME_PREFIX}"
   echo "[slot $slot] demarrage, nom runner=$name"
   while [ ! -f "$STOP_FILE" ]; do
     local token
@@ -136,16 +160,16 @@ slot_loop() {
     # mais le cache de depot (volume par slot) survit au conteneur (#14285).
     docker run --rm \
       --name "$name" \
-      --cpus="$CPUS" --memory="$MEMORY" --pids-limit="$PIDS" \
+      --cpus="$cpus" --memory="$memory" --pids-limit="$pids" \
       --security-opt=no-new-privileges \
       -v "$TOOLCACHE_VOLUME":"$TOOLCACHE_MOUNT" \
-      -v "${WORK_VOLUME_PREFIX}-${slot}":"$WORK_MOUNT" \
+      -v "${vol_prefix}-${slot}":"$WORK_MOUNT" \
       -e RUNNER_TOOL_CACHE="$TOOLCACHE_MOUNT" \
       -e ACTIONS_RUNNER_INPUT_TOKEN="$token" \
       -e ACTIONS_RUNNER_INPUT_URL="https://github.com/$REPO" \
       -e ACTIONS_RUNNER_INPUT_NAME="$name" \
-      -e ACTIONS_RUNNER_INPUT_LABELS="$LABELS" \
-      "$IMAGE" >>"$STATE_DIR/$name.log" 2>&1
+      -e ACTIONS_RUNNER_INPUT_LABELS="$labels" \
+      "$image" >>"$STATE_DIR/$name.log" 2>&1
     local rc=$?
     echo "[slot $slot] conteneur termine (rc=$rc)"
     # Anti-emballement : si le conteneur meurt immediatement et en boucle
@@ -211,7 +235,7 @@ fait) puis '$0 start', OU relancer avec '$0 start $n --force'."
     # message clair (docker run -v creerait le volume tout seul, mais muet).
     docker volume create "${WORK_VOLUME_PREFIX}-${i}" >/dev/null \
       || die "volume ${WORK_VOLUME_PREFIX}-${i} impossible a creer -- docker volume create"
-    slot_loop "$i" &
+    slot_loop "$i" "${NAME_PREFIX}-${i}" "$LABELS" "$IMAGE" "$CPUS" "$MEMORY" "$PIDS" &
     echo "$!" >> "$STATE_DIR/pids"
   done
   echo "slots lances. Arret gracieux : $0 stop"
@@ -317,10 +341,41 @@ cmd_waiters() {
   wait
 }
 
+cmd_lean() {
+  local n="${1:-2}"
+  command -v docker >/dev/null || die "docker introuvable"
+  command -v gh >/dev/null || die "gh introuvable"
+  docker image inspect "$LEAN_IMAGE" >/dev/null 2>&1 \
+    || die "image $LEAN_IMAGE absente -- construire d'abord :
+    docker build -t $LEAN_IMAGE -f scripts/ci/docker/linux-runner/Dockerfile.lean scripts/ci/docker/linux-runner/"
+  [ -f "$STOP_FILE" ] && die "sentinel STOP pose -- arreter d'abord ($0 stop)"
+  # Idempotence calquee sur cmd_waiters : le garde PPID de `start` filtre
+  # `supervise.sh start` et ne verrait pas `lean`. Verrou par pid file.
+  if [ -f "$STATE_DIR/lean-pids" ]; then
+    local head_pid
+    head_pid="$(head -1 "$STATE_DIR/lean-pids" 2>/dev/null || true)"
+    if [ -n "$head_pid" ] && kill -0 "$head_pid" 2>/dev/null; then
+      die "pool lean deja lance (pid $head_pid) -- arreter d'abord ($0 stop)"
+    fi
+  fi
+  rm -f "$STATE_DIR/lean-pids"
+  echo "demarrage de $n slot(s) lean ; labels=$LEAN_LABELS ; caps : cpus=$LEAN_CPUS memory=$LEAN_MEMORY pids=$LEAN_PIDS ; image=$LEAN_IMAGE ; .lake chaud=${LEAN_WORK_VOLUME_PREFIX}-{1..$n} -> $WORK_MOUNT"
+  for i in $(seq 1 "$n"); do
+    docker volume create "${LEAN_WORK_VOLUME_PREFIX}-${i}" >/dev/null \
+      || die "volume ${LEAN_WORK_VOLUME_PREFIX}-${i} impossible a creer -- docker volume create"
+    slot_loop "$i" "${LEAN_NAME_PREFIX}-${i}" "$LEAN_LABELS" "$LEAN_IMAGE" \
+      "$LEAN_CPUS" "$LEAN_MEMORY" "$LEAN_PIDS" "$LEAN_WORK_VOLUME_PREFIX" &
+    echo "$!" >> "$STATE_DIR/lean-pids"
+  done
+  echo "slots lean lances. Arret gracieux : $0 stop"
+  wait
+}
+
 case "${1:-}" in
   start)   shift; cmd_start "${1:-2}" "${2:-}" ;;
   waiters) shift; cmd_waiters "${1:-24}" ;;
+  lean)    shift; cmd_lean "${1:-2}" ;;
   stop)    cmd_stop ;;
   status)  cmd_status ;;
-  *) echo "usage: $0 {start [N] [--force]|waiters [N]|stop|status}"; exit 2 ;;
+  *) echo "usage: $0 {start [N] [--force]|waiters [N]|lean [N]|stop|status}"; exit 2 ;;
 esac
