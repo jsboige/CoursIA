@@ -219,7 +219,7 @@ def perceive_truth(
 ) -> int:
     """Vrai geste du toy FBT : l'agent reçoit x et devine w_hat = MAP(x).
 
-    C'est la策略 Truth restreinte à UN percept x observé (vs `strategy_truth`
+    C'est la stratégie Truth restreinte à UN percept x observé (vs `strategy_truth`
     qui itère sur tous les x pour choisir le meilleur). Cette fonction est
     utilisée par `play_round` après échantillonnage de x depuis le canal.
 

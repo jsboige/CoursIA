@@ -46,6 +46,7 @@ from hoffman_interface_toy_n16 import (
     map_estimate,
     perceive_fitness_only,
     perceive_truth,
+    play_round,
     run_full,
     run_experiment,
     strategy_fitness_only,
@@ -337,3 +338,40 @@ def test_run_full_subset_of_landscapes():
     assert results["n_landscapes"] == 2
     assert results["results"][0]["landscape"] == "L_bit3"
     assert results["results"][1]["landscape"] == "L_bit3_complement"
+
+
+# ===================================================================
+# Test contrôle positif — instrument aveugle (REPAIR c.901 + c.902)
+# ===================================================================
+
+
+def test_play_round_passes_x_to_strategy():
+    """Contrôle positif : play_round passe bien x à perceive_truth (REPAIR c.901).
+
+    Stratégie bidon qui mémorise le x reçu : si play_round passe x, on
+    doit voir x varier (0 ou 1) au fil des trials. Si play_round jetait
+    x (instrument aveugle pré-c.901), la stratégie recevrait toujours la
+    même valeur (defaut Python = 0), et le test rougirait.
+
+    Critère : sur 200 trials avec canal uniforme (alpha=0.5), la
+    stratégie observe les DEUX valeurs x ∈ {0, 1}. Un instrument
+    aveugle rendrait x toujours 0 (ou la valeur par défaut).
+    """
+    received_x_values = set()
+
+    def recording_strategy(x, _alpha, _fit, _prior):
+        received_x_values.add(x)
+        return 0  # w_hat arbitraire, le test ne regarde que les x reçus
+
+    prior = [1.0 / N_ONTIC] * N_ONTIC
+    fitness = L_bit0
+
+    # 200 trials avec alpha=0.5 (canal symétrique => x uniform 0/1)
+    for _ in range(200):
+        play_round(0.5, recording_strategy, fitness, prior)
+
+    assert received_x_values == {0, 1}, (
+        f"play_round n'a pas passé x à la stratégie. "
+        f"x observés = {received_x_values}. Si {received_x_values} = {{0}} "
+        f"ou autre singleton, x est jeté (instrument aveugle pré-c.901)."
+    )
