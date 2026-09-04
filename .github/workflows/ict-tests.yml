@@ -61,7 +61,13 @@ jobs:
     # Retour arriere = remettre `runs-on: ubuntu-latest` + retrait de l'allowlist.
     runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
-    timeout-minutes: 15
+    # Timeout etire 15 -> 30 min (#14598 acceptance Option A) : diagnostic
+    # first-hand 30 derniers runs montre success 353-951s (mediane ~800s),
+    # cancelled des 925s (=hit timeout 15 min). Pas de drift temporel, juste
+    # variabilite charge partagee conteneur Docker self-heberge po-2024.
+    # Step Run lui-meme timeout 12 min legitimes sous charge. Fix orthogonal
+    # a #14571 (defaut install FIXE par #14595 venv per-job).
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
