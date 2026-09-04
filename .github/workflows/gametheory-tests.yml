@@ -90,12 +90,17 @@ jobs:
           cache: pip
 
       # Deps minimales : numpy est l'import dominant du corpus
-      # (matrix_games, extensive_form, etc.). pytest-cov NON requis
-      # (les tests ne déclarent pas de couverture).
-      - name: Install minimal deps (numpy + pytest)
+      # (matrix_games, extensive_form, etc.), MAIS scipy est requis par
+      # game_theory_utils.py (`from scipy.optimize import linprog` --
+      # tests éclateraient en COLLECT sinon) et matplotlib par
+      # trust_simulation/visualization.py. pytest-cov NON requis (les
+      # tests ne déclarent pas de couverture).
+      # Cf log run #33876207607 : "ModuleNotFoundError: No module named
+      # 'matplotlib'" / "No module named 'scipy'" → 12 erreurs collect.
+      - name: Install minimal deps (numpy + scipy + matplotlib + pytest)
         run: |
           python -m pip install --upgrade pip
-          pip install numpy pytest
+          pip install numpy scipy matplotlib pytest
 
       - name: Run GameTheory tests
         # working-directory = racine du dépôt : pytest.ini y est, donc le
