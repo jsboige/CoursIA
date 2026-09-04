@@ -122,6 +122,8 @@ Détail de la R5 « le pool se tire ». La règle porte l'usage et les trois urn
 | anti-adjacence | `×0.25` si le genre égale `--prev-genre` | **G-VAR-3 au tirage**, plutôt qu'en HOLD a posteriori |
 | contenu | `×2` si le genre est CONTENU | **G-VAR-1 au tirage** |
 
+**Persistance `--prev-genre` entre cycles (#14591 Volet A)** : `--prev-genre` reste per-cycle par défaut, mais le picker supporte désormais un CSV d'état par lane (`--csv-state <path>` + `--write-state candidate`) qui rend l'argument **auto-appliqué** au prochain run. Le format : `lane,last_genre,last_ts` (3 colonnes, header). Si la lane est connue du CSV, le picker applique `--prev-genre <last_genre>` sans que le worker ait à le passer — fermant l'angle qui a produit les 13 grains monotones c.14466. Le patch est volontairement minimal : read au début (auto-apply), write après tirage (`--write-state=candidate`), clé = lane (le CSV peut héberger plusieurs lanes). Toute `OSError` est avalee silencieusement (le picker reste utilisable, juste sans persistance pour ce cycle). Migrer depuis l'argument CLI : poser `--csv-state ~/.cache/picker_state.csv` une fois dans le workflow worker ; le reste suit.
+
 Tirage pondéré **sans remise** (Efraimidis-Spirakis : clé `u^(1/w)`, top-k). Plus de pondération reproduirait une monoculture avec des étapes en plus : on se limite à ce que les gates du variation-protocol demandent déjà.
 
 **Graine** = `sha256(lane | heure UTC | reroll)`. Deux lanes tirent des candidats différents à la même minute ; une même lane qui relance dans l'heure retrouve son tirage (idempotent, pas de thrash) ; `--reroll N` redistribue. Le genre affiché est **inféré** par regex sur titre+labels : c'est une aide au tri, pas un verdict — l'agent pose le vrai tag `Grain:` lui-même.
