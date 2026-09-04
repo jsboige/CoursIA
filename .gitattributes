@@ -1,5 +1,11 @@
 # Normalize Jupyter notebooks to LF line endings
 *.ipynb text eol=lf
+# Python sources : convention de fait LF a 99,5 % (1845/1854 blobs), mais sans
+# regle un outil qui ecrit du CRLF le commit tel quel (core.autocrlf=false sur
+# le cluster) et le fichier devient modifie sur toute sa longueur au premier
+# merge divergent — conflit whole-file de 7600 lignes sur #13951 cause par ce
+# seul mecanisme. La regle renormalise les 9 blobs CRLF restants (#14353).
+*.py text eol=lf
 # Normalize files consumed by the catalog-drift CI check to LF so byte-level
 # comparison is platform-independent (issue #1056). Limited to the exact files
 # the check reads, to avoid a wide renormalization of unrelated .md files.
