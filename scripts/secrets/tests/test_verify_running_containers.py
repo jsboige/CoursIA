@@ -202,6 +202,12 @@ def test_main_drift_returns_1(tmp_path, monkeypatch, capsys):
     _make_service_tree(tmp_path, "drifty", _DRIFT_COMPOSE)
     monkeypatch.setattr(mod, "SERVICES_ROOT", tmp_path)
     monkeypatch.setattr(mod, "_container_env", lambda c: {"API_KEY": "stale"})
+    # Patch master read like test_main_ok_returns_0: without it the empty
+    # master gate (no .secrets/ on a runner or fresh worktree) exits 2
+    # before any drift is audited.
+    monkeypatch.setattr(
+        mod, "_read_master_env", lambda: {"WHISPER_API_KEY": "fixture-whisper-XXXX-1234"}
+    )
     monkeypatch.setattr(sys, "argv", ["verify"])
     rc = mod.main()
     assert rc == 1
