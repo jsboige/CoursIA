@@ -51,6 +51,18 @@ Trois PRs dormantes sous un dépôt sans gate ne sont pas trois oublis : c'est *
 
 **Substitution admise tant que le gate manque** : deux vérifications **firsthand indépendantes** (fresh-clone, build + suite de tests complète, sur **deux lanes distinctes**), avec leurs comptes de tests et leurs SHA **cités dans le body de la PR de bump**. Une seule vérification, ou une vérification par l'auteur seul, ne remplace pas un gate.
 
+**Statut de gate par sous-module (mise à jour c.14463)** : l'organe externe à la R3 est la **liste des submod avec un workflow fonctionnel** — la substitution R3 s'applique par défaut, sauf si la liste ci-dessous dit « gate acquis ». Une PR de bump qui omet les deux vérifications et qui ne cite pas un submod à « gate acquis » **manque à R3** ; un submod listé à « gate acquis » qui perd son workflow (drift, suppression) **redevient** soumis à la substitution. Le passage d'un submod d'un état à l'autre est lui-même un **geste tracké** : PR dédiée sur le dépôt submod (câblage ou re-câblage), référence dans le tableau ci-dessous, et revue coord pour valider la bascule.
+
+| Submodule | Workflow CI | Run vert récent | Substitution R3 |
+|---|---|---|---|
+| `MyIA.AI.Notebooks/Search/MetaGeneticSharp` | **À CÂBLER** (#14408) | aucun | OUI (jusqu'à A2 acquis) |
+| `MyIA.AI.Notebooks/SymbolicAI/SMT/Z3.Linq` | outillage tiers (projet C#/.NET) | n/a | OUI (vérif `dotnet test` au bump) |
+| `MyIA.AI.Notebooks/SymbolicAI/SMT/Automata` | présent mais vérif manuelle | — | OUI (vérif `dotnet test` au bump) |
+| `MyIA.AI.Notebooks/Argument_Analysis/Argumentum` | agent permanent dédié | n/a dédié | OUI (gate hors-org, voir §Argumentum dédiée) |
+| `MyIA.AI.Notebooks/GenAI/SemanticKernel/semantic-fleet` | 9 workflows, base hors-trigger (Tell R3 fondateur) | non déclenché sur pile en cours | OUI (vérif `dotnet test` au bump) |
+
+**Application concrète** : une PR de bump sur `MetaGeneticSharp` qui se contente de citer un SHA upstream **manque R3** tant que A2 n'est pas acquis (#14408). Une PR de bump qui cite un run vert sur la branche par défaut du submod **satisfait** A2 et la substitution R3 **cesse** de s'appliquer à `MetaGeneticSharp` (les bumps suivants peuvent omettre les deux vérifications). Le passage d'« aucun workflow » à « workflow acquis » est un **commit sur le submod** (câblage `.github/workflows/dotnet-ci.yml` sur `jsboige/MetaGeneticSharp`), suivi d'une **mise à jour du tableau ci-dessus** dans une PR sur CoursIA-2.
+
 ## Règle HARD 4 — sur un stack, la forme du merge de la base n'est pas neutre
 
 Merger la **base** d'un stack en **squash** réécrit son SHA : les PRs enfants basées sur sa branche deviennent orphelines et exigent un `git rebase --onto`. Merger la base en **commit de merge** préserve les SHA, et les enfants se retargettent alors par un simple `gh pr edit --base main`.
