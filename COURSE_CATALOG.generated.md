@@ -1,26 +1,26 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-09-02 08:26
-Total notebooks: 1099
+Generated: 2026-09-03 08:20
+Total notebooks: 1105
 
 ## Status Summary
 
-- **READY**: 931
-- **DEMO**: 166
+- **READY**: 939
+- **DEMO**: 164
 - **RESEARCH**: 0
 - **BROKEN**: 2
 
 ## Maturity Summary
 
 - **PRODUCTION**: 0
-- **BETA**: 991
+- **BETA**: 998
 - **TEMPLATE**: 4
-- **ALPHA**: 58
+- **ALPHA**: 57
 - **DRAFT**: 46
 
 ## By Series
 
-### GenAI (214 notebooks) — BROKEN:2, DEMO:107, READY:105 | ALPHA:20, BETA:179, DRAFT:12, TEMPLATE:3
+### GenAI (214 notebooks) — BROKEN:2, DEMO:106, READY:106 | ALPHA:19, BETA:180, DRAFT:12, TEMPLATE:3
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -61,25 +61,25 @@ Total notebooks: 1099
 | 35 | P5 — Compilation Audio pour Audiobook | Python 3 | READY | BETA | 30min | po-2025 |
 | 36 | Audiobook Agentique avec FishAudio S2-Pro | Python 3 | DEMO | BETA | 30min | po-2025 |
 | 37 | Voice Leading Rendu GenAI — donner un spectre aux… | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 38 | VoiceLeading RenduGenAI - Du Voice-Leading CP-SAT… | Python 3 | DEMO | ALPHA | 30min | po-2025 |
-| 39 | Pipeline de Transcription et Sous-titrage | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 40 | Workflow de Composition Musicale | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 41 | Synchronisation Audio-Video (Passerelle) | Python 3 | DEMO | BETA | 30min | po-2025 |
-| 42 | Live Coding Musical pilote par LLM | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 43 | Pipeline Audiobook Agentique | Python 3 | DEMO | BETA | 30min | po-2025 |
-| 44 | Benchmark TTS : Comparaison des Modèles Vocaux… | Python 3 | READY | BETA | 1h | po-2025 |
-| 45 | Lecture Analytique pour Audiobook | Python 3 | READY | BETA | 30min | po-2025 |
-| 46 | Voice Casting : Attribution de voix TTS par… | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 47 | Duel Verbal : Barbie vs l'Âne de Shrek | Python 3 | DEMO | BETA | 30min | po-2025 |
-| 48 | Vue d'ensemble : un duel d'agents Père Fouras vs… | Python 3 | DEMO | ALPHA | 30min | po-2025 |
-| 49 | Docteur vs ChatGPT : Chatbot medical multi-agent | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 50 | Doctor vs ChatGPT: Multi-Agent Medical Chatbot | Python 3 | DEMO | ALPHA | 45min | po-2025 |
-| 51 | Générateur de Recettes PDF | Python 3 | DEMO | BETA | 30min | po-2025 |
-| 52 | GitHub Copilot SDK en C# : binding, streaming,… | .NET (C#) | READY | BETA | 30min | po-2025 |
-| 53 | EF Core : des requêtes vérifiées à la compilation | .NET (C#) | READY | BETA | 30min | po-2025 |
-| 54 | 01 — Introduction : taxonomies de sophismes et… | Python 3 | READY | ALPHA | 15min | po-2025 |
-| 55 | 02 — Paysage des datasets de detection de… | Python 3 | DEMO | BETA | 30min | po-2025 |
-| 56 | 03 — Écart de couverture taxonomique : académique… | Python 3 | READY | BETA | 15min | po-2025 |
+| 38 | Pipeline de Transcription et Sous-titrage | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 39 | Workflow de Composition Musicale | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 40 | Synchronisation Audio-Video (Passerelle) | Python 3 | DEMO | BETA | 30min | po-2025 |
+| 41 | Live Coding Musical pilote par LLM | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 42 | Pipeline Audiobook Agentique | Python 3 | DEMO | BETA | 30min | po-2025 |
+| 43 | Benchmark TTS : Comparaison des Modèles Vocaux… | Python 3 | READY | BETA | 1h | po-2025 |
+| 44 | Lecture Analytique pour Audiobook | Python 3 | READY | BETA | 30min | po-2025 |
+| 45 | Voice Casting : Attribution de voix TTS par… | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 46 | Duel Verbal : Barbie vs l'Âne de Shrek | Python 3 | DEMO | BETA | 30min | po-2025 |
+| 47 | Vue d'ensemble : un duel d'agents Père Fouras vs… | Python 3 | DEMO | ALPHA | 30min | po-2025 |
+| 48 | Docteur vs ChatGPT : Chatbot medical multi-agent | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 49 | Doctor vs ChatGPT: Multi-Agent Medical Chatbot | Python 3 | DEMO | ALPHA | 45min | po-2025 |
+| 50 | Générateur de Recettes PDF | Python 3 | DEMO | BETA | 30min | po-2025 |
+| 51 | GitHub Copilot SDK en C# : binding, streaming,… | .NET (C#) | READY | BETA | 30min | po-2025 |
+| 52 | EF Core : des requêtes vérifiées à la compilation | .NET (C#) | READY | BETA | 30min | po-2025 |
+| 53 | 01 — Introduction : taxonomies de sophismes et… | Python 3 | READY | ALPHA | 15min | po-2025 |
+| 54 | 02 — Paysage des datasets de detection de… | Python 3 | DEMO | BETA | 30min | po-2025 |
+| 55 | 03 — Écart de couverture taxonomique : académique… | Python 3 | READY | BETA | 15min | po-2025 |
+| 56 | 04 — Matrice de couverture cross-notebooks | Python 3 | READY | BETA | 15min | po-2025 |
 | 57 | FT-01 : Introduction au Fine-Tuning | Python 3 | READY | BETA | 45min | po-2025 |
 | 58 | FT-02 : QLoRA — Fine-Tuning avec Quantization | Python 3 | READY | BETA | 1h | po-2025 |
 | 59 | FT-03 : Supervised Fine-Tuning (SFT) — Enseigner… | Python 3 | READY | BETA | 45min | po-2025 |
@@ -239,7 +239,7 @@ Total notebooks: 1099
 | 213 | MiniMax H3 (Hailuo) — Génération vidéo par le… | Python 3 | DEMO | BETA | 30min | po-2025 |
 | 214 | MiniMax video-01 (v1) — Service cloud generation… | Python 3 | DEMO | BETA | 30min | po-2025 |
 
-### Search (145 notebooks) — READY:145 | ALPHA:10, BETA:129, DRAFT:6
+### Search (146 notebooks) — READY:146 | ALPHA:10, BETA:130, DRAFT:6
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -287,109 +287,110 @@ Total notebooks: 1099
 | 42 | App-23 — Cryptanalyse différentielle de PRESENT… | Python 3 | READY | BETA | 30min | po-2025 |
 | 43 | App-24 — MAPF : auditer les garanties des solveurs | Python 3 | READY | BETA | 30min | po-2025 |
 | 44 | App-25 — Enchères combinatoires : Winner… | Python 3 | READY | BETA | 45min | po-2025 |
-| 45 | App-28 — Learning to branch | Python 3 | READY | BETA | 30min | po-2025 |
-| 46 | App-29 — Équilibrage de chaîne d'assemblage… | Python 3 | READY | BETA | 30min | po-2025 |
-| 47 | App-9 : Detection de bords par algorithmes… | Python 3 | READY | BETA | 45min | po-2025 |
-| 48 | TP : Conception d'Algorithmes Génétiques avec… | .NET (C#) | READY | BETA | 45min | po-2025 |
-| 49 | App-14-ConnectFour-Adversarial-CSharp — Jumeau C#… | .NET (C#) | READY | BETA | 45min | po-2025 |
-| 50 | App-14 - Connect Four : Benchmark Adversarial… | Python 3 | READY | BETA | 45min | po-2025 |
-| 51 | App-14b : Puissance 4 -- Comparaison d'algorithmes… | Python 3 | READY | BETA | 45min | po-2025 |
-| 52 | App-14c (C#) : Puissance 4 -- Comparaison… | .NET (C#) | READY | BETA | 45min | po-2025 |
-| 53 | Lean-18 : A* et l'optimalité sous heuristique… | Python 3 | READY | BETA | 30min | po-2025 |
+| 45 | App-27 — Sparse index tracking | Python 3 | READY | BETA | 30min | po-2025 |
+| 46 | App-28 — Learning to branch | Python 3 | READY | BETA | 30min | po-2025 |
+| 47 | App-29 — Équilibrage de chaîne d'assemblage… | Python 3 | READY | BETA | 30min | po-2025 |
+| 48 | App-9 : Detection de bords par algorithmes… | Python 3 | READY | BETA | 45min | po-2025 |
+| 49 | TP : Conception d'Algorithmes Génétiques avec… | .NET (C#) | READY | BETA | 45min | po-2025 |
+| 50 | App-14-ConnectFour-Adversarial-CSharp — Jumeau C#… | .NET (C#) | READY | BETA | 45min | po-2025 |
+| 51 | App-14 - Connect Four : Benchmark Adversarial… | Python 3 | READY | BETA | 45min | po-2025 |
+| 52 | App-14b : Puissance 4 -- Comparaison d'algorithmes… | Python 3 | READY | BETA | 45min | po-2025 |
+| 53 | App-14c (C#) : Puissance 4 -- Comparaison… | .NET (C#) | READY | BETA | 45min | po-2025 |
 | 54 | Search-02b : Théorie des Graphes avec NetworkX… | .NET (C#) | READY | BETA | 45min | po-2025 |
 | 55 | Search-02b-NetworkX : Algorithmes de Graphe avec… | Python 3 | READY | BETA | 45min | po-2025 |
 | 56 | Search-02c-QuikGraph : bibliotheque de graphes… | .NET (C#) | READY | BETA | 45min | po-2025 |
-| 57 | Search-09b : Minima fallacieux — le paysage de la… | Python 3 | READY | BETA | 15min | po-2025 |
-| 58 | Search-09c — Discrépance combinatoire : colorier… | Python 3 | READY | BETA | 15min | po-2025 |
-| 59 | Search-09d — Discrépance combinatoire : la couche… | Lean 4 (WSL) | READY | BETA | 30min | po-2025 |
-| 60 | Search-1 : Espaces d'etats et formalisation de… | .NET (C#) | READY | BETA | 45min | po-2025 |
-| 61 | Search-1 : Espaces d'etats et formulation de… | Python 3 | READY | BETA | 45min | po-2025 |
-| 62 | Search-10 (C#) : Automates Finis Classiques —… | .NET (C#) | READY | BETA | 45min | po-2025 |
-| 63 | Search-10 : Automates Symboliques avec Z3 | Python 3 | READY | BETA | 45min | po-2025 |
-| 64 | Search-11 (C#) : Métaheuristiques — Optimisation… | .NET (C#) | READY | BETA | 45min | po-2025 |
-| 65 | Search-11-métaheuristiques : Optimisation avec… | Python 3 | READY | BETA | 45min | po-2025 |
-| 66 | Search-11b (Part 2) : Particle Swarm Optimization… | .NET (C#) | READY | BETA | 30min | po-2025 |
-| 67 | Search-11b-Métaheuristiques-Deep-Part3 :… | .NET (C#) | READY | BETA | 30min | po-2025 |
-| 68 | Search-11b-Métaheuristiques-Deep-Part4 : Benchmark… | .NET (C#) | READY | BETA | 30min | po-2025 |
-| 69 | Search-11b : Métaheuristiques d'optimisation (C# /… | .NET (C#) | READY | BETA | 30min | po-2025 |
-| 70 | Search-17 — Sélection empirique d'algorithmes :… | Python 3 | READY | BETA | 45min | po-2025 |
-| 71 | Search-2-Uninformed (C#) : Algorithmes de… | .NET (C#) | READY | BETA | 45min | po-2025 |
-| 72 | Search-2-Uninformed : Algorithmes de Recherche Non… | Python 3 | READY | BETA | 1h | po-2025 |
-| 73 | Search-3-Informed (C#) : Recherche Informée | .NET (C#) | READY | BETA | 45min | po-2025 |
-| 74 | Search-3-Informed : Algorithmes de Recherche… | Python 3 | READY | BETA | 45min | po-2025 |
-| 75 | Search-4-LocalSearch (C#) : Recherche Locale et… | .NET (C#) | READY | BETA | 45min | po-2025 |
-| 76 | Search-4-LocalSearch : Recherche Locale et… | Python 3 | READY | BETA | 45min | po-2025 |
-| 77 | Search-5-GeneticAlgorithms-Csharp : Algorithmes… | .NET (C#) | READY | BETA | 45min | po-2025 |
-| 78 | Search-5 : Algorithmes génétiques | Python 3 | READY | BETA | 1h | po-2025 |
-| 79 | Search-6 — Recherche adversariale (jeux à somme… | .NET (C#) | READY | BETA | 45min | po-2025 |
-| 80 | Search-6-AdversarialSearch : Recherche… | Python 3 | READY | BETA | 45min | po-2025 |
-| 81 | Search-7-MCTS-And-Beyond (C#) : Monte Carlo Tree… | .NET (C#) | READY | BETA | 45min | po-2025 |
-| 82 | Search-7-MCTS-And-Beyond : Monte Carlo Tree Search… | Python 3 | READY | BETA | 45min | po-2025 |
-| 83 | Search-8-DancingLinks-Csharp : L'algorithme X et… | .NET (C#) | READY | BETA | 45min | po-2025 |
-| 84 | Search-8-DancingLinks : L'algorithme X et Dancing… | Python 3 | READY | BETA | 45min | po-2025 |
-| 85 | Search-9 : Programmation Linéaire et Simplexe (C#… | .NET (C#) | READY | BETA | 45min | po-2025 |
-| 86 | Search-9-LinearProgramming : Programmation… | Python 3 | READY | BETA | 45min | po-2025 |
-| 87 | CSP-1 : Fondamentaux des CSP - Version .NET… | .NET (C#) | READY | BETA | 45min | po-2025 |
-| 88 | CSP-1 : Fondamentaux des CSP | Python 3 | READY | BETA | 1h | po-2025 |
-| 89 | CSP-2 : Propagation de Contraintes et Consistance… | .NET (C#) | READY | BETA | 1h | po-2025 |
-| 90 | CSP-2 : Propagation de Contraintes et Consistance | Python 3 | READY | BETA | 45min | po-2025 |
-| 91 | CSP-3 : CSP Avancé — Contraintes globales et… | .NET (C#) | READY | BETA | 45min | po-2025 |
-| 92 | CSP-3 : CSP Avance - Contraintes globales,… | Python 3 | READY | ALPHA | 45min | po-2025 |
-| 93 | CSP-4-Scheduling-Csharp : Problèmes… | .NET (C#) | READY | BETA | 30min | po-2025 |
-| 94 | CSP-4-Scheduling : Problèmes d'Ordonnancement | Python 3 | READY | BETA | 45min | po-2025 |
-| 95 | CSP-5-Optimization-Csharp : Optimisation… | .NET (C#) | READY | BETA | 45min | po-2025 |
-| 96 | CSP-5-Optimization : Problèmes d'Optimisation… | Python 3 | READY | BETA | 45min | po-2025 |
-| 97 | CSP-6-Hybridation : Approches Hybrides Modernes… | .NET (C#) | READY | BETA | 45min | po-2025 |
-| 98 | CSP-6-Hybridation : Approches Hybrides Modernes | Python 3 | READY | BETA | 45min | po-2025 |
-| 99 | CSP-7 : Contraintes Souples avec Choco-solver | .NET (C#) | READY | BETA | 1h | po-2025 |
-| 100 | CSP-7 : Contraintes Souples - Soft CSP | Python 3 | READY | BETA | 1h | po-2025 |
-| 101 | CSP-8 : Temporels - Raisonnement sur le Temps | .NET (C#) | READY | BETA | 45min | po-2025 |
-| 102 | CSP-8 : Temporels - Raisonnement sur le Temps | Python 3 | READY | BETA | 45min | po-2025 |
-| 103 | CSP-9-Distributed | .NET (C#) | READY | BETA | 45min | po-2025 |
-| 104 | CSP-9-Distributed : CSP Distribués (DisCSP) | Python 3 | READY | BETA | 45min | po-2025 |
-| 105 | Search-12 (C#) — Bases de données de motifs… | .NET (C#) | READY | BETA | 45min | po-2025 |
-| 106 | Search-12 — Bases de données de motifs (Pattern… | Python 3 | READY | BETA | 30min | po-2025 |
-| 107 | Search-13 (C#) — Recherche à écart limité (Limited… | .NET (C#) | READY | BETA | 30min | po-2025 |
-| 108 | Search-13 — Recherche à écart limité (Limited… | Python 3 | READY | BETA | 30min | po-2025 |
-| 109 | Search-14 (C#) — Weighted A\* : recherche à… | .NET (C#) | READY | BETA | 30min | po-2025 |
-| 110 | Search-14 — Weighted A\* : recherche à… | Python 3 | READY | BETA | 15min | po-2025 |
-| 111 | MGS-1 : Introduction a MetaGeneticSharp et au… | .NET (C#) | READY | BETA | 30min | po-2025 |
-| 112 | MGS-10 : Le test du biais central — un optimiseur… | .NET (C#) | READY | ALPHA | 30min | po-2025 |
-| 113 | MGS-11 : Synergie d'iles complementaires --… | .NET (C#) | READY | BETA | 30min | po-2025 |
-| 114 | MGS-12 : Le test de l'alignement d'axes -- un… | .NET (C#) | READY | ALPHA | 45min | po-2025 |
-| 115 | MGS-13 — Visualiser les paysages dé-biaisés :… | .NET (C#) | READY | BETA | 30min | po-2025 |
-| 116 | MGS-14 — Trouver une synergie (et dire quand il… | .NET (C#) | READY | BETA | 30min | po-2025 |
-| 117 | MGS-15 : Analyse de paysage -- la corrélation… | .NET (C#) | READY | BETA | 45min | po-2025 |
-| 118 | MGS-16-AlgorithmSelection : Sélectionner le bon… | .NET (C#) | READY | BETA | 45min | po-2025 |
-| 119 | MGS-17 — Contrôle de paramètres (Parameter… | .NET (C#) | READY | BETA | 45min | po-2025 |
-| 120 | MGS-17b — Selection empirique d'algorithmes : du… | Python 3 (ipykernel) | READY | DRAFT | 30min | po-2025 |
-| 121 | MGS-18 — Banc CEC consolide : la combinaison des… | .NET (C#) | READY | BETA | 45min | po-2025 |
-| 122 | MGS-19 — Recuit simulé décomposé : l'opérateur de… | .NET (C#) | READY | BETA | 30min | po-2025 |
-| 123 | MGS-2 : Composition de métaheuristiques -- Match… | .NET (C#) | READY | ALPHA | 45min | po-2025 |
-| 124 | MGS-20 : Langage de composition pour… | Python 3 | READY | BETA | 30min | po-2025 |
-| 125 | MGS-21 : Représentation contre algorithme — la… | .NET (C#) | READY | BETA | 30min | po-2025 |
-| 126 | MGS-3 : L'Eukaryote -- sous-populations et… | .NET (C#) | READY | BETA | 45min | po-2025 |
-| 127 | MGS-4 : Le Modèle Insulaire -- populations… | .NET (C#) | READY | BETA | 45min | po-2025 |
-| 128 | MGS-5 : Construire les métaheuristiques composées… | .NET (C#) | READY | DRAFT | 45min | po-2025 |
-| 129 | MGS-6 : Benchmarks comparatifs -- l'argument… | .NET (C#) | READY | ALPHA | 30min | po-2025 |
-| 130 | MGS-7 : TSP combinatoire -- la grammaire de… | .NET (C#) | READY | BETA | 45min | po-2025 |
-| 131 | MGS-7b : projection multi-dimensionnelle des… | .NET (C#) | READY | DRAFT | 30min | po-2025 |
-| 132 | MGS-7c : Rosenbrock (vallée étroite) + Griewank… | .NET (C#) | READY | DRAFT | 30min | po-2025 |
-| 133 | MGS-7d : Michalewicz (steep ridges) + Dixon-Price… | .NET (C#) | READY | BETA | 15min | po-2025 |
-| 134 | MGS-8 : Fitness Landscape Explorer -- voir la… | .NET (C#) | READY | BETA | 45min | po-2025 |
-| 135 | MGS-9 - Trouver l'Everest : relief reel et bassins… | .NET (C#) | READY | BETA | 45min | po-2025 |
-| 136 | MGS-22 : MGS contre mealpy — le bench croisé… | .NET (C#) | READY | BETA | 30min | po-2025 |
-| 137 | MGS-23 : DifferentialEvolution MGS contre mealpy —… | .NET (C#) | READY | BETA | 45min | po-2025 |
-| 138 | MGS-24 : SimulatedAnnealing MGS contre mealpy —… | .NET (C#) | READY | ALPHA | 30min | po-2025 |
-| 139 | MGS-25 : WhaleOptimisation MGS contre mealpy — le… | .NET (C#) | READY | BETA | 30min | po-2025 |
-| 140 | MGS-26 : EquilibriumOptimizer MGS contre mealpy —… | .NET (C#) | READY | ALPHA | 30min | po-2025 |
-| 141 | MGS-27 : ForensicBasedInvestigation MGS contre… | .NET (C#) | READY | ALPHA | 30min | po-2025 |
-| 142 | MGS-28 : Bare Bones PSO MGS contre mealpy — le PSO… | .NET (C#) | READY | ALPHA | 45min | po-2025 |
-| 143 | MGS-29 : GA MGS compose "Default" contre BaseGA… | .NET (C#) | READY | BETA | 30min | po-2025 |
-| 144 | MGS-30 : Scatter Search MGS contre son ombre — la… | .NET (C#) | READY | DRAFT | 45min | po-2025 |
-| 145 | MGS-31 : Synthèse croisée MGS contre mealpy — neuf… | .NET (C#) | READY | DRAFT | 30min | po-2025 |
+| 57 | Search-03e : A* et l'optimalité sous heuristique… | Python 3 | READY | BETA | 30min | po-2025 |
+| 58 | Search-09b : Minima fallacieux — le paysage de la… | Python 3 | READY | BETA | 15min | po-2025 |
+| 59 | Search-09c — Discrépance combinatoire : colorier… | Python 3 | READY | BETA | 15min | po-2025 |
+| 60 | Search-09d — Discrépance combinatoire : la couche… | Lean 4 (WSL) | READY | BETA | 30min | po-2025 |
+| 61 | Search-1 : Espaces d'etats et formalisation de… | .NET (C#) | READY | BETA | 45min | po-2025 |
+| 62 | Search-1 : Espaces d'etats et formulation de… | Python 3 | READY | BETA | 45min | po-2025 |
+| 63 | Search-10 (C#) : Automates Finis Classiques —… | .NET (C#) | READY | BETA | 45min | po-2025 |
+| 64 | Search-10 : Automates Symboliques avec Z3 | Python 3 | READY | BETA | 45min | po-2025 |
+| 65 | Search-11 (C#) : Métaheuristiques — Optimisation… | .NET (C#) | READY | BETA | 45min | po-2025 |
+| 66 | Search-11-métaheuristiques : Optimisation avec… | Python 3 | READY | BETA | 45min | po-2025 |
+| 67 | Search-11b (Part 2) : Particle Swarm Optimization… | .NET (C#) | READY | BETA | 30min | po-2025 |
+| 68 | Search-11b-Métaheuristiques-Deep-Part3 :… | .NET (C#) | READY | BETA | 30min | po-2025 |
+| 69 | Search-11b-Métaheuristiques-Deep-Part4 : Benchmark… | .NET (C#) | READY | BETA | 30min | po-2025 |
+| 70 | Search-11b : Métaheuristiques d'optimisation (C# /… | .NET (C#) | READY | BETA | 30min | po-2025 |
+| 71 | Search-17 — Sélection empirique d'algorithmes :… | Python 3 | READY | BETA | 45min | po-2025 |
+| 72 | Search-2-Uninformed (C#) : Algorithmes de… | .NET (C#) | READY | BETA | 45min | po-2025 |
+| 73 | Search-2-Uninformed : Algorithmes de Recherche Non… | Python 3 | READY | BETA | 1h | po-2025 |
+| 74 | Search-3-Informed (C#) : Recherche Informée | .NET (C#) | READY | BETA | 45min | po-2025 |
+| 75 | Search-3-Informed : Algorithmes de Recherche… | Python 3 | READY | BETA | 45min | po-2025 |
+| 76 | Search-4-LocalSearch (C#) : Recherche Locale et… | .NET (C#) | READY | BETA | 45min | po-2025 |
+| 77 | Search-4-LocalSearch : Recherche Locale et… | Python 3 | READY | BETA | 45min | po-2025 |
+| 78 | Search-5-GeneticAlgorithms-Csharp : Algorithmes… | .NET (C#) | READY | BETA | 45min | po-2025 |
+| 79 | Search-5 : Algorithmes génétiques | Python 3 | READY | BETA | 1h | po-2025 |
+| 80 | Search-6 — Recherche adversariale (jeux à somme… | .NET (C#) | READY | BETA | 45min | po-2025 |
+| 81 | Search-6-AdversarialSearch : Recherche… | Python 3 | READY | BETA | 45min | po-2025 |
+| 82 | Search-7-MCTS-And-Beyond (C#) : Monte Carlo Tree… | .NET (C#) | READY | BETA | 45min | po-2025 |
+| 83 | Search-7-MCTS-And-Beyond : Monte Carlo Tree Search… | Python 3 | READY | BETA | 45min | po-2025 |
+| 84 | Search-8-DancingLinks-Csharp : L'algorithme X et… | .NET (C#) | READY | BETA | 45min | po-2025 |
+| 85 | Search-8-DancingLinks : L'algorithme X et Dancing… | Python 3 | READY | BETA | 45min | po-2025 |
+| 86 | Search-9 : Programmation Linéaire et Simplexe (C#… | .NET (C#) | READY | BETA | 45min | po-2025 |
+| 87 | Search-9-LinearProgramming : Programmation… | Python 3 | READY | BETA | 45min | po-2025 |
+| 88 | CSP-1 : Fondamentaux des CSP - Version .NET… | .NET (C#) | READY | BETA | 45min | po-2025 |
+| 89 | CSP-1 : Fondamentaux des CSP | Python 3 | READY | BETA | 1h | po-2025 |
+| 90 | CSP-2 : Propagation de Contraintes et Consistance… | .NET (C#) | READY | BETA | 1h | po-2025 |
+| 91 | CSP-2 : Propagation de Contraintes et Consistance | Python 3 | READY | BETA | 45min | po-2025 |
+| 92 | CSP-3 : CSP Avancé — Contraintes globales et… | .NET (C#) | READY | BETA | 45min | po-2025 |
+| 93 | CSP-3 : CSP Avance - Contraintes globales,… | Python 3 | READY | ALPHA | 45min | po-2025 |
+| 94 | CSP-4-Scheduling-Csharp : Problèmes… | .NET (C#) | READY | BETA | 30min | po-2025 |
+| 95 | CSP-4-Scheduling : Problèmes d'Ordonnancement | Python 3 | READY | BETA | 45min | po-2025 |
+| 96 | CSP-5-Optimization-Csharp : Optimisation… | .NET (C#) | READY | BETA | 45min | po-2025 |
+| 97 | CSP-5-Optimization : Problèmes d'Optimisation… | Python 3 | READY | BETA | 45min | po-2025 |
+| 98 | CSP-6-Hybridation : Approches Hybrides Modernes… | .NET (C#) | READY | BETA | 45min | po-2025 |
+| 99 | CSP-6-Hybridation : Approches Hybrides Modernes | Python 3 | READY | BETA | 45min | po-2025 |
+| 100 | CSP-7 : Contraintes Souples avec Choco-solver | .NET (C#) | READY | BETA | 1h | po-2025 |
+| 101 | CSP-7 : Contraintes Souples - Soft CSP | Python 3 | READY | BETA | 1h | po-2025 |
+| 102 | CSP-8 : Temporels - Raisonnement sur le Temps | .NET (C#) | READY | BETA | 45min | po-2025 |
+| 103 | CSP-8 : Temporels - Raisonnement sur le Temps | Python 3 | READY | BETA | 45min | po-2025 |
+| 104 | CSP-9-Distributed | .NET (C#) | READY | BETA | 45min | po-2025 |
+| 105 | CSP-9-Distributed : CSP Distribués (DisCSP) | Python 3 | READY | BETA | 45min | po-2025 |
+| 106 | Search-12 (C#) — Bases de données de motifs… | .NET (C#) | READY | BETA | 45min | po-2025 |
+| 107 | Search-12 — Bases de données de motifs (Pattern… | Python 3 | READY | BETA | 30min | po-2025 |
+| 108 | Search-13 (C#) — Recherche à écart limité (Limited… | .NET (C#) | READY | BETA | 30min | po-2025 |
+| 109 | Search-13 — Recherche à écart limité (Limited… | Python 3 | READY | BETA | 30min | po-2025 |
+| 110 | Search-14 (C#) — Weighted A\* : recherche à… | .NET (C#) | READY | BETA | 30min | po-2025 |
+| 111 | Search-14 — Weighted A\* : recherche à… | Python 3 | READY | BETA | 15min | po-2025 |
+| 112 | MGS-1 : Introduction a MetaGeneticSharp et au… | .NET (C#) | READY | BETA | 30min | po-2025 |
+| 113 | MGS-10 : Le test du biais central — un optimiseur… | .NET (C#) | READY | ALPHA | 30min | po-2025 |
+| 114 | MGS-11 : Synergie d'iles complementaires --… | .NET (C#) | READY | BETA | 30min | po-2025 |
+| 115 | MGS-12 : Le test de l'alignement d'axes -- un… | .NET (C#) | READY | ALPHA | 45min | po-2025 |
+| 116 | MGS-13 — Visualiser les paysages dé-biaisés :… | .NET (C#) | READY | BETA | 30min | po-2025 |
+| 117 | MGS-14 — Trouver une synergie (et dire quand il… | .NET (C#) | READY | BETA | 30min | po-2025 |
+| 118 | MGS-15 : Analyse de paysage -- la corrélation… | .NET (C#) | READY | BETA | 45min | po-2025 |
+| 119 | MGS-16-AlgorithmSelection : Sélectionner le bon… | .NET (C#) | READY | BETA | 45min | po-2025 |
+| 120 | MGS-17 — Contrôle de paramètres (Parameter… | .NET (C#) | READY | BETA | 45min | po-2025 |
+| 121 | MGS-17b — Selection empirique d'algorithmes : du… | Python 3 (ipykernel) | READY | DRAFT | 30min | po-2025 |
+| 122 | MGS-18 — Banc CEC consolide : la combinaison des… | .NET (C#) | READY | BETA | 45min | po-2025 |
+| 123 | MGS-19 — Recuit simulé décomposé : l'opérateur de… | .NET (C#) | READY | BETA | 30min | po-2025 |
+| 124 | MGS-2 : Composition de métaheuristiques -- Match… | .NET (C#) | READY | ALPHA | 45min | po-2025 |
+| 125 | MGS-20 : Langage de composition pour… | Python 3 | READY | BETA | 30min | po-2025 |
+| 126 | MGS-21 : Représentation contre algorithme — la… | .NET (C#) | READY | BETA | 30min | po-2025 |
+| 127 | MGS-3 : L'Eukaryote -- sous-populations et… | .NET (C#) | READY | BETA | 45min | po-2025 |
+| 128 | MGS-4 : Le Modèle Insulaire -- populations… | .NET (C#) | READY | BETA | 45min | po-2025 |
+| 129 | MGS-5 : Construire les métaheuristiques composées… | .NET (C#) | READY | DRAFT | 45min | po-2025 |
+| 130 | MGS-6 : Benchmarks comparatifs -- l'argument… | .NET (C#) | READY | ALPHA | 30min | po-2025 |
+| 131 | MGS-7 : TSP combinatoire -- la grammaire de… | .NET (C#) | READY | BETA | 45min | po-2025 |
+| 132 | MGS-7b : projection multi-dimensionnelle des… | .NET (C#) | READY | DRAFT | 30min | po-2025 |
+| 133 | MGS-7c : Rosenbrock (vallée étroite) + Griewank… | .NET (C#) | READY | DRAFT | 30min | po-2025 |
+| 134 | MGS-7d : Michalewicz (steep ridges) + Dixon-Price… | .NET (C#) | READY | BETA | 15min | po-2025 |
+| 135 | MGS-8 : Fitness Landscape Explorer -- voir la… | .NET (C#) | READY | BETA | 45min | po-2025 |
+| 136 | MGS-9 - Trouver l'Everest : relief reel et bassins… | .NET (C#) | READY | BETA | 45min | po-2025 |
+| 137 | MGS-22 : MGS contre mealpy — le bench croisé… | .NET (C#) | READY | BETA | 30min | po-2025 |
+| 138 | MGS-23 : DifferentialEvolution MGS contre mealpy —… | .NET (C#) | READY | BETA | 45min | po-2025 |
+| 139 | MGS-24 : SimulatedAnnealing MGS contre mealpy —… | .NET (C#) | READY | ALPHA | 30min | po-2025 |
+| 140 | MGS-25 : WhaleOptimisation MGS contre mealpy — le… | .NET (C#) | READY | BETA | 30min | po-2025 |
+| 141 | MGS-26 : EquilibriumOptimizer MGS contre mealpy —… | .NET (C#) | READY | ALPHA | 30min | po-2025 |
+| 142 | MGS-27 : ForensicBasedInvestigation MGS contre… | .NET (C#) | READY | ALPHA | 30min | po-2025 |
+| 143 | MGS-28 : Bare Bones PSO MGS contre mealpy — le PSO… | .NET (C#) | READY | ALPHA | 45min | po-2025 |
+| 144 | MGS-29 : GA MGS compose "Default" contre BaseGA… | .NET (C#) | READY | BETA | 30min | po-2025 |
+| 145 | MGS-30 : Scatter Search MGS contre son ombre — la… | .NET (C#) | READY | DRAFT | 45min | po-2025 |
+| 146 | MGS-31 : Synthèse croisée MGS contre mealpy — neuf… | .NET (C#) | READY | DRAFT | 30min | po-2025 |
 
-### ML (73 notebooks) — DEMO:3, READY:70 | ALPHA:5, BETA:67, DRAFT:1
+### ML (76 notebooks) — DEMO:3, READY:73 | ALPHA:5, BETA:70, DRAFT:1
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -428,44 +429,47 @@ Total notebooks: 1099
 | 33 | Représentations contrastives modernes — du… | Python 3 | READY | BETA | 30min | po-2023 |
 | 34 | 4.1 — Le neurone convolutif from scratch : kernel… | Python 3 | READY | BETA | 30min | po-2023 |
 | 35 | 4.2 — ConvNet profonde : pourquoi les résiduelles | Python 3 | READY | BETA | 45min | po-2023 |
-| 36 | Lab 1 - Les Bases de la Data Science en Python | Python 3 | READY | BETA | 30min | po-2023 |
-| 37 | Lab 2 - Analyser un Appel d'Offre avec l'IA | Python 3 | DEMO | BETA | 30min | po-2023 |
-| 38 | Lab 3 - Pré-qualifier des Candidats avec l'IA | Python 3 | DEMO | BETA | 15min | po-2023 |
-| 39 | Lab 4 - Le Nettoyage de Données avec Pandas | Python 3 | READY | BETA | 30min | po-2023 |
-| 40 | Lab 5 - De la Visualisation au Machine Learning | Python 3 | READY | BETA | 30min | po-2023 |
-| 41 | Lab 6 - Anatomie de votre premier Agent d'IA | Python 3 | DEMO | ALPHA | 30min | po-2023 |
-| 42 | Lab 7 - Votre premier Agent Analyste de Données | Python 3 | READY | BETA | 30min | po-2023 |
-| 43 | Lab 8: Introduction au Framework ADK et… | Python 3 | READY | BETA | 30min | po-2023 |
-| 44 | Lab 9: Premier Agent ADK pour Data Science | Python 3 | READY | BETA | 30min | po-2023 |
-| 45 | Lab 10: Data File Analyzer (DS-STAR Component) | Python 3 | READY | BETA | 30min | po-2023 |
-| 46 | Lab 11: Planner-Coder-Verifier Loop (DS-STAR Core) | Python 3 | READY | ALPHA | 45min | po-2023 |
-| 47 | Lab 12: DS-STAR Workshop - Analyse Multi-Fichiers | Python 3 | READY | BETA | 45min | po-2023 |
-| 48 | Lab 13: Web Search pour Modèles SOTA (MLE-STAR… | Python 3 | READY | BETA | 30min | po-2023 |
-| 49 | Lab 14: Ablation et Raffinement Ciblé (MLE-STAR… | Python 3 | READY | ALPHA | 30min | po-2023 |
-| 50 | Lab 15: Kaggle Challenge avec MLE-STAR | Python 3 | READY | BETA | 30min | po-2023 |
-| 51 | Lab 16: Data Science Agent avec GCP BigQuery | Python 3 | READY | ALPHA | 30min | po-2023 |
-| 52 | Lab 17: Projet Final - Pipeline DS-STAR Complet | Python 3 | READY | ALPHA | 45min | po-2023 |
-| 53 | ML-1 (Python) : Introduction au Machine Learning… | Python 3 | READY | BETA | 30min | po-2023 |
-| 54 | ML-1 : Introduction au Machine Learning avec… | .NET (C#) | READY | BETA | 45min | po-2023 |
-| 55 | ML-2 : Préparation des données et ingénierie des… | Python 3 | READY | BETA | 30min | po-2023 |
-| 56 | ML-2 : Préparation des données et ingénierie des… | .NET (C#) | READY | BETA | 45min | po-2023 |
-| 57 | ML-3 : Entraînement et AutoML | .NET (C#) | READY | BETA | 45min | po-2023 |
-| 58 | ML-3 (Python) : Entraînement et AutoML | Python 3 | READY | BETA | 30min | po-2023 |
-| 59 | ML-4 : Évaluation des modèles (Python / sklearn) | Python 3 | READY | BETA | 30min | po-2023 |
-| 60 | ML-4 : Evaluation des modèles | .NET (C#) | READY | BETA | 2h+ | po-2023 |
-| 61 | ML-4b : Validité statistique des comparaisons de… | Python 3 | READY | BETA | 30min | po-2023 |
-| 62 | ML-5 (Python) : Prévision de séries temporelles… | Python 3 | READY | BETA | 30min | po-2023 |
-| 63 | ML-5 : Time Series Forecasting avec ML.NET | .NET (C#) | READY | BETA | 45min | po-2023 |
-| 64 | ML-5b (Python) : Séries temporelles classiques —… | Python 3 | READY | BETA | 30min | po-2023 |
-| 65 | ML-6 (Python) : Intégration de modèles ONNX… | Python (coursia-ml-training) | READY | BETA | 30min | po-2023 |
-| 66 | ML-6 : ONNX Model Integration avec ML.NET | .NET (C#) | READY | BETA | 45min | po-2023 |
-| 67 | ML-7 (Python) : Systèmes de recommandation par… | Python 3 | READY | BETA | 30min | po-2023 |
-| 68 | ML-7 : Systèmes de Recommandation avec ML.NET | .NET (C#) | READY | BETA | 45min | po-2023 |
-| 69 | ML-8 (Python) : Clustering non-supervisé avec… | Python 3 | READY | BETA | 30min | po-2023 |
-| 70 | ML-8 : Clustering non-supervise avec K-Means | .NET (C#) | READY | BETA | 45min | po-2023 |
-| 71 | ML-9 (Python) : Détection d'anomalies par PCA… | Python 3 | READY | BETA | 30min | po-2023 |
-| 72 | ML-9 : Detection d'anomalies avec Randomized PCA | .NET (C#) | READY | BETA | 45min | po-2023 |
-| 73 | TP : Prevision des ventes d'assurance | .NET (C#) | READY | BETA | 30min | po-2023 |
+| 36 | 4.3 — Transfer learning : réutiliser un ResNet18… | Python 3 | READY | BETA | 45min | po-2023 |
+| 37 | Lab 1 - Les Bases de la Data Science en Python | Python 3 | READY | BETA | 30min | po-2023 |
+| 38 | Lab 2 - Analyser un Appel d'Offre avec l'IA | Python 3 | DEMO | BETA | 30min | po-2023 |
+| 39 | Lab 3 - Pré-qualifier des Candidats avec l'IA | Python 3 | DEMO | BETA | 15min | po-2023 |
+| 40 | Lab 4 - Le Nettoyage de Données avec Pandas | Python 3 | READY | BETA | 30min | po-2023 |
+| 41 | Lab 5 - De la Visualisation au Machine Learning | Python 3 | READY | BETA | 30min | po-2023 |
+| 42 | Lab 6 - Anatomie de votre premier Agent d'IA | Python 3 | DEMO | ALPHA | 30min | po-2023 |
+| 43 | Lab 7 - Votre premier Agent Analyste de Données | Python 3 | READY | BETA | 30min | po-2023 |
+| 44 | Lab 8: Introduction au Framework ADK et… | Python 3 | READY | BETA | 30min | po-2023 |
+| 45 | Lab 9: Premier Agent ADK pour Data Science | Python 3 | READY | BETA | 30min | po-2023 |
+| 46 | Lab 10: Data File Analyzer (DS-STAR Component) | Python 3 | READY | BETA | 30min | po-2023 |
+| 47 | Lab 11: Planner-Coder-Verifier Loop (DS-STAR Core) | Python 3 | READY | ALPHA | 45min | po-2023 |
+| 48 | Lab 12: DS-STAR Workshop - Analyse Multi-Fichiers | Python 3 | READY | BETA | 45min | po-2023 |
+| 49 | Lab 13: Web Search pour Modèles SOTA (MLE-STAR… | Python 3 | READY | BETA | 30min | po-2023 |
+| 50 | Lab 14: Ablation et Raffinement Ciblé (MLE-STAR… | Python 3 | READY | ALPHA | 30min | po-2023 |
+| 51 | Lab 15: Kaggle Challenge avec MLE-STAR | Python 3 | READY | BETA | 30min | po-2023 |
+| 52 | Lab 16: Data Science Agent avec GCP BigQuery | Python 3 | READY | ALPHA | 30min | po-2023 |
+| 53 | Lab 17: Projet Final - Pipeline DS-STAR Complet | Python 3 | READY | ALPHA | 45min | po-2023 |
+| 54 | ML-1 (Python) : Introduction au Machine Learning… | Python 3 | READY | BETA | 30min | po-2023 |
+| 55 | ML-1 : Introduction au Machine Learning avec… | .NET (C#) | READY | BETA | 45min | po-2023 |
+| 56 | ML-10 (Python) : l'illusion de progression en… | Python 3 | READY | BETA | 30min | po-2023 |
+| 57 | ML-11 : le Matrix Profile multidimensionnel, une… | Python 3 | READY | BETA | 45min | po-2023 |
+| 58 | ML-2 : Préparation des données et ingénierie des… | Python 3 | READY | BETA | 30min | po-2023 |
+| 59 | ML-2 : Préparation des données et ingénierie des… | .NET (C#) | READY | BETA | 45min | po-2023 |
+| 60 | ML-3 : Entraînement et AutoML | .NET (C#) | READY | BETA | 45min | po-2023 |
+| 61 | ML-3 (Python) : Entraînement et AutoML | Python 3 | READY | BETA | 30min | po-2023 |
+| 62 | ML-4 : Évaluation des modèles (Python / sklearn) | Python 3 | READY | BETA | 30min | po-2023 |
+| 63 | ML-4 : Evaluation des modèles | .NET (C#) | READY | BETA | 2h+ | po-2023 |
+| 64 | ML-4b : Validité statistique des comparaisons de… | Python 3 | READY | BETA | 30min | po-2023 |
+| 65 | ML-5 (Python) : Prévision de séries temporelles… | Python 3 | READY | BETA | 30min | po-2023 |
+| 66 | ML-5 : Time Series Forecasting avec ML.NET | .NET (C#) | READY | BETA | 45min | po-2023 |
+| 67 | ML-5b (Python) : Séries temporelles classiques —… | Python 3 | READY | BETA | 30min | po-2023 |
+| 68 | ML-6 (Python) : Intégration de modèles ONNX… | Python (coursia-ml-training) | READY | BETA | 30min | po-2023 |
+| 69 | ML-6 : ONNX Model Integration avec ML.NET | .NET (C#) | READY | BETA | 45min | po-2023 |
+| 70 | ML-7 (Python) : Systèmes de recommandation par… | Python 3 | READY | BETA | 30min | po-2023 |
+| 71 | ML-7 : Systèmes de Recommandation avec ML.NET | .NET (C#) | READY | BETA | 45min | po-2023 |
+| 72 | ML-8 (Python) : Clustering non-supervisé avec… | Python 3 | READY | BETA | 30min | po-2023 |
+| 73 | ML-8 : Clustering non-supervise avec K-Means | .NET (C#) | READY | BETA | 45min | po-2023 |
+| 74 | ML-9 (Python) : Détection d'anomalies par PCA… | Python 3 | READY | BETA | 30min | po-2023 |
+| 75 | ML-9 : Detection d'anomalies avec Randomized PCA | .NET (C#) | READY | BETA | 45min | po-2023 |
+| 76 | TP : Prevision des ventes d'assurance | .NET (C#) | READY | BETA | 30min | po-2023 |
 
 ### SymbolicAI (262 notebooks) — DEMO:8, READY:254 | ALPHA:6, BETA:252, DRAFT:4
 
@@ -734,13 +738,13 @@ Total notebooks: 1099
 | 261 | Préférences et Théorie du Vote | Python 3 | READY | ALPHA | 30min | po-2024 |
 | 262 | Tweety .NET - Probe Phase 1 axe 2 : initialisation… | .NET (C#) | READY | BETA | 30min | po-2024 |
 
-### QuantConnect (109 notebooks) — DEMO:43, READY:66 | ALPHA:13, BETA:83, DRAFT:12, TEMPLATE:1
+### QuantConnect (109 notebooks) — DEMO:42, READY:67 | ALPHA:13, BETA:83, DRAFT:12, TEMPLATE:1
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
 | 1 | ML Training Pipeline - Notebook de Recherche | Python 3 | READY | TEMPLATE | 30min | po-2026 |
 | 2 | M15 - LSTM RV : entree §C du registre (2e entree… | Python 3 (ipykernel) | READY | DRAFT | 30min | po-2026 |
-| 3 | M3b - HAR Asymetrique : Decomposition Semivariance… | Python 3 | READY | BETA | 30min | po-2026 |
+| 3 | M16 — HAR asymétrique débiaisé : le signal… | Python 3 | READY | BETA | 30min | po-2026 |
 | 4 | M4 - DLinear-vol : entree §C du registre… | Python 3 | READY | DRAFT | 45min | po-2026 |
 | 5 | QC-Py-01 : Configuration et Premier Backtest… | Python 3 | DEMO | BETA | 30min | po-2026 |
 | 6 | QC-Py-02 : QuantConnect Platform Fundamentals -… | Python 3 | DEMO | BETA | 30min | po-2026 |
@@ -764,7 +768,7 @@ Total notebooks: 1099
 | 24 | Objectifs d'Apprentissage | Python 3 | READY | BETA | 1h | po-2026 |
 | 25 | Objectifs d'Apprentissage | Python 3 | READY | BETA | 1h | po-2026 |
 | 26 | QC-Py-21 - Portfolio Optimization avec Machine… | Python 3 | READY | BETA | 1h | po-2026 |
-| 27 | Objectifs d'Apprentissage | Python 3 | DEMO | BETA | 1h | po-2026 |
+| 27 | Objectifs d'Apprentissage | Python 3 | READY | BETA | 1h | po-2026 |
 | 28 | Objectifs d'Apprentissage | Python 3 | READY | BETA | 45min | po-2026 |
 | 29 | QC-Py-23b - PatchTST et iTransformer pour… | Python 3 | READY | BETA | 45min | po-2026 |
 | 30 | QC-Py-24 - Modèles Génératifs pour Anomaly… | Python 3 | DEMO | BETA | 1h | po-2026 |
@@ -848,7 +852,7 @@ Total notebooks: 1099
 | 108 | Research QuantBook: VIX-TermStructure (Short… | Python 3 | READY | BETA | 45min | po-2026 |
 | 109 | Top-4 Sharpe > 0.5 Stratégies: OOS Deep-Dive… | Python 3 | READY | BETA | 15min | po-2026 |
 
-### GameTheory (91 notebooks) — DEMO:1, READY:90 | ALPHA:3, BETA:86, DRAFT:2
+### GameTheory (92 notebooks) — DEMO:1, READY:91 | ALPHA:3, BETA:87, DRAFT:2
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -929,20 +933,21 @@ Total notebooks: 1099
 | 75 | GameTheory-18b : Casser la composition — où la… | Python 3 | READY | BETA | 30min | po-2024 |
 | 76 | GameTheory-19 : L'abstraction a dette mesurable | Python 3 | READY | BETA | 15min | po-2024 |
 | 77 | GameTheory 24 : Le chemin minimal, témoin… | Python 3 | READY | DRAFT | 45min | po-2024 |
-| 78 | GameTheory-25 — Loi II, seconde jambe :… | Python 3 | READY | BETA | 30min | po-2024 |
-| 79 | GameTheory-26 — Ensembles limites :… | Python 3 | READY | BETA | 30min | po-2024 |
-| 80 | GameTheory-27 — L'algorithme de Kuhn-Munkres :… | Python 3 | READY | BETA | 30min | po-2024 |
-| 81 | GameTheory 27b — Le lake assignment_lean par son… | Lean 4 (WSL) | READY | BETA | 30min | po-2024 |
-| 82 | GameTheory-28 : Banc de calibration — humour,… | Python (CoursIA-2 venv) | READY | BETA | 30min | po-2024 |
-| 83 | GameTheory-28b : Banc humour — passer à l'échelle | Python 3 | READY | BETA | 30min | po-2024 |
-| 84 | SocialChoice 01 : Théorème d'impossibilité d'Arrow… | .NET (C#) | READY | BETA | 45min | po-2024 |
-| 85 | SocialChoice 01 - Theoreme d'Arrow : Preuve… | Python 3 | READY | BETA | 30min | po-2024 |
-| 86 | SocialChoice 01b - Choix Social Formel en Lean 4 | Lean 4 (WSL) | READY | ALPHA | 45min | po-2024 |
-| 87 | SocialChoice 03 : Méthodes de Vote et Paradoxes… | .NET (C#) | READY | ALPHA | 45min | po-2024 |
-| 88 | SocialChoice 03 - Méthodes de Vote et Paradoxes | Python 3 | READY | BETA | 45min | po-2024 |
-| 89 | SocialChoice 04 : Agregation Computationnelle -… | .NET (C#) | READY | BETA | 45min | po-2024 |
-| 90 | SocialChoice 04 - Agregation Computationnelle :… | Python 3 (WSL) | READY | BETA | 45min | po-2024 |
-| 91 | SocialChoice-05 : Gibbard-Satterthwaite sans… | Python 3 | READY | BETA | 15min | po-2024 |
+| 78 | GameTheory 24b : Le temoin d'impossibilite | Python 3 | READY | BETA | 30min | po-2024 |
+| 79 | GameTheory-25 — Loi II, seconde jambe :… | Python 3 | READY | BETA | 30min | po-2024 |
+| 80 | GameTheory-26 — Ensembles limites :… | Python 3 | READY | BETA | 30min | po-2024 |
+| 81 | GameTheory-27 — L'algorithme de Kuhn-Munkres :… | Python 3 | READY | BETA | 30min | po-2024 |
+| 82 | GameTheory 27b — Le lake assignment_lean par son… | Lean 4 (WSL) | READY | BETA | 30min | po-2024 |
+| 83 | GameTheory-28 : Banc de calibration — humour,… | Python (CoursIA-2 venv) | READY | BETA | 30min | po-2024 |
+| 84 | GameTheory-28b : Banc humour — passer à l'échelle | Python 3 | READY | BETA | 30min | po-2024 |
+| 85 | SocialChoice 01 : Théorème d'impossibilité d'Arrow… | .NET (C#) | READY | BETA | 45min | po-2024 |
+| 86 | SocialChoice 01 - Theoreme d'Arrow : Preuve… | Python 3 | READY | BETA | 30min | po-2024 |
+| 87 | SocialChoice 01b - Choix Social Formel en Lean 4 | Lean 4 (WSL) | READY | ALPHA | 45min | po-2024 |
+| 88 | SocialChoice 03 : Méthodes de Vote et Paradoxes… | .NET (C#) | READY | ALPHA | 45min | po-2024 |
+| 89 | SocialChoice 03 - Méthodes de Vote et Paradoxes | Python 3 | READY | BETA | 45min | po-2024 |
+| 90 | SocialChoice 04 : Agregation Computationnelle -… | .NET (C#) | READY | BETA | 45min | po-2024 |
+| 91 | SocialChoice 04 - Agregation Computationnelle :… | Python 3 (WSL) | READY | BETA | 45min | po-2024 |
+| 92 | SocialChoice-05 : Gibbard-Satterthwaite sans… | Python 3 | READY | BETA | 15min | po-2024 |
 
 ### Sudoku (37 notebooks) — DEMO:1, READY:36 | BETA:37
 
@@ -986,76 +991,77 @@ Total notebooks: 1099
 | 36 | Sudoku-18b - Comparaison statistique honnête de… | Python 3 | READY | BETA | 30min | po-2023 |
 | 37 | Sudoku-7b — Soundness de la propagation de… | Lean 4 (WSL) | READY | BETA | 15min | po-2023 |
 
-### Probas (66 notebooks) — READY:66 | BETA:66
+### Probas (67 notebooks) — READY:67 | BETA:67
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
 | 1 | Du graphe causal au do-calculus — le pont entre… | Python 3 (coursia-ml-training) | READY | BETA | 30min | po-2023 |
 | 2 | DoWhy-1 — Exiger un estimand : l'identification… | Python 3 | READY | BETA | 30min | po-2023 |
-| 3 | Méthodes quasi-expérimentales — identifier l'effet… | Python 3 (coursia-ml-training) | READY | BETA | 45min | po-2023 |
-| 4 | DecInfer-01-Utility-Foundations : Axiomes et… | .NET (C#) | READY | BETA | 45min | po-2023 |
-| 5 | DecInfer-02-Théorème de représentation de von… | Lean 4 (WSL) | READY | BETA | 15min | po-2023 |
-| 6 | DecInfer-03-Utility-Money : Utilite de l'Argent et… | .NET (C#) | READY | BETA | 1h | po-2023 |
-| 7 | DecInfer-04-Multi-Attribute : Utilite… | .NET (C#) | READY | BETA | 1h | po-2023 |
-| 8 | DecInfer-05-Decision-Networks : Reseaux de… | .NET (C#) | READY | BETA | 45min | po-2023 |
-| 9 | DecInfer-06-Value-Information : Valeur de… | .NET (C#) | READY | BETA | 45min | po-2023 |
-| 10 | DecInfer-07-Expert-Systems : Decisions Robustes et… | .NET (C#) | READY | BETA | 45min | po-2023 |
-| 11 | DecInfer-08-Sequential : MDPs, Bandits et POMDPs | .NET (C#) | READY | BETA | 45min | po-2023 |
-| 12 | DecInfer-09-Preuves formelles — Indice de Gittins | Lean 4 (WSL) | READY | BETA | 30min | po-2023 |
-| 13 | DecInfer-10-Thompson-Sampling : Bandits bayesiens… | .NET (C#) | READY | BETA | 45min | po-2023 |
-| 14 | DecPyMC-1-Utility-Foundations : Axiomes et… | Python 3 | READY | BETA | 30min | po-2023 |
-| 15 | DecPyMC-10 : Ruine et capital — le processus de… | Python 3 (ipykernel) | READY | BETA | 30min | po-2023 |
-| 16 | DecPyMC-11 — Valeur de l'Information en… | Python 3 | READY | BETA | 30min | po-2023 |
-| 17 | DecPyMC-12 — Fréquence × sévérité hiérarchique :… | Python 3 | READY | BETA | 30min | po-2023 |
-| 18 | DecPyMC-2-Utility-Money : Utilite de l'Argent et… | Python 3 (ipykernel) | READY | BETA | 45min | po-2023 |
-| 19 | DecPyMC-3-Multi-Attribute : Utilite… | Python 3 | READY | BETA | 45min | po-2023 |
-| 20 | DecPyMC-4-Decision-Networks : Reseaux de Decision | Python 3 | READY | BETA | 30min | po-2023 |
-| 21 | DecPyMC-5-Valeur de l'Information | Python 3 | READY | BETA | 45min | po-2023 |
-| 22 | DecPyMC-6-Systèmes Experts et Decisions Robustes | Python 3 | READY | BETA | 45min | po-2023 |
-| 23 | DecPyMC-7-MDPs, Bandits et POMDPs | Python 3 | READY | BETA | 45min | po-2023 |
-| 24 | DecPyMC-8 — Crédibilité actuarielle de… | Python 3 (ipykernel) | READY | BETA | 30min | po-2023 |
-| 25 | DecPyMC-9 : Du risque à la prime — prime pure,… | Python 3 (ipykernel) | READY | BETA | 45min | po-2023 |
-| 26 | Infer-101 : Introduction a Infer.NET | .NET (C#) | READY | BETA | 1h | po-2023 |
-| 27 | Infer-1-Setup : Introduction et Installation | .NET (C#) | READY | BETA | 45min | po-2023 |
-| 28 | Infer-10-Model-Sélection : Sélection et… | .NET (C#) | READY | BETA | 45min | po-2023 |
-| 29 | Infer-11-Topic-Models : Latent Dirichlet… | .NET (C#) | READY | BETA | 1h | po-2023 |
-| 30 | 12. Modèles Hiérarchiques Bayésiens — Pooling… | .NET (C#) | READY | BETA | 30min | po-2023 |
-| 31 | Infer-13-Crowdsourcing : Agregation de Labels et… | .NET (C#) | READY | BETA | 45min | po-2023 |
-| 32 | Infer-14-Sequences : Hidden Markov Models et… | .NET (C#) | READY | BETA | 1h | po-2023 |
-| 33 | Infer-15-Recommenders : systèmes de Recommandation | .NET (C#) | READY | BETA | 1h30 | po-2023 |
-| 34 | Infer-16-Sparse-Gaussian-Process : Processus… | .NET (C#) | READY | BETA | 45min | po-2023 |
-| 35 | Infer-17 — Filtre de Kalman : systèmes dynamiques… | .NET (C#) | READY | BETA | 30min | po-2023 |
-| 36 | Infer-18 — Détection de Rupture (Change-Point) :… | .NET (C#) | READY | BETA | 30min | po-2023 |
-| 37 | Infer-19 — Analyse de survie / fiabilite… | .NET (C#) | READY | BETA | 45min | po-2023 |
-| 38 | Infer-2-Gaussian-Mixtures : Distributions… | .NET (C#) | READY | BETA | 1h | po-2023 |
-| 39 | Infer-20 — Quotients, fibres et recollement : ce… | Python 3 | READY | BETA | 30min | po-2023 |
-| 40 | Infer-2b-Debugging-Bonnes-Pratiques :… | .NET (C#) | READY | BETA | 45min | po-2023 |
-| 41 | Infer-3-Factor-Graphs : Graphes de Facteurs et… | .NET (C#) | READY | BETA | 45min | po-2023 |
-| 42 | Infer-4-Bayesian-Networks : Reseaux Bayesiens… | .NET (C#) | READY | BETA | 1h | po-2023 |
-| 43 | Infer-5-Causal-Inference : Inférence Causale et… | .NET (C#) | READY | BETA | 45min | po-2023 |
-| 44 | Infer-7-Skills-IRT : Evaluation de Competences et… | .NET (C#) | READY | BETA | 1h | po-2023 |
-| 45 | Infer-8-TrueSkill : Système de Classement et… | .NET (C#) | READY | BETA | 1h | po-2023 |
-| 46 | Infer-9-Classification : Classification Bayesienne | .NET (C#) | READY | BETA | 1h | po-2023 |
-| 47 | PyMC-1 : Configuration et Premier Modèle | Python 3 | READY | BETA | 30min | po-2023 |
-| 48 | PyMC-2 : Distributions Gaussiennes et Mélanges | Python 3 | READY | BETA | 30min | po-2023 |
-| 49 | PyMC-3 : Graphes de Facteurs et Inference Discrete | Python 3 | READY | BETA | 30min | po-2023 |
-| 50 | PyMC-4 : Reseaux Bayesiens | Python 3 | READY | BETA | 30min | po-2023 |
-| 51 | PyMC-05-Causal-Inference : Inference Causale et… | Python 3 | READY | BETA | 30min | po-2023 |
-| 52 | PyMC-06-Debugging : Troubleshooting et Bonnes… | Python 3 | READY | BETA | 30min | po-2023 |
-| 53 | PyMC-7 : Modèles de Competences (IRT et DINA) | Python 3 | READY | BETA | 30min | po-2023 |
-| 54 | PyMC-8 : TrueSkill - Classement et Apprentissage… | Python 3 | READY | BETA | 45min | po-2023 |
-| 55 | PyMC-9 : Classification Bayesienne et Tests A/B | Python 3 | READY | BETA | 30min | po-2023 |
-| 56 | PyMC-10 : Sélection de Modèles et Comparaison… | Python 3 | READY | BETA | 45min | po-2023 |
-| 57 | PyMC-11 : Modèles de Sujets (Topic Models) et LDA | Python 3 | READY | BETA | 45min | po-2023 |
-| 58 | 12. Modèles Hiérarchiques Bayesiens -- Pooling… | Python 3 | READY | BETA | 30min | po-2023 |
-| 59 | PyMC-13 : Crowdsourcing - Agregation de Labels et… | Python 3 | READY | BETA | 45min | po-2023 |
-| 60 | PyMC-14 — Modèles de Sequences et Chaînes de… | Python 3 | READY | BETA | 45min | po-2023 |
-| 61 | PyMC-15-Recommenders : Systèmes de Recommandation… | Python 3 | READY | BETA | 45min | po-2023 |
-| 62 | PyMC-16 : Processus Gaussiens et frontières non… | Python 3 | READY | BETA | 45min | po-2023 |
-| 63 | 17. Filtre de Kalman : systèmes dynamiques… | Python 3 | READY | BETA | 30min | po-2023 |
-| 64 | 18. Detection de Rupture (Change-Point) : inferer… | Python 3 | READY | BETA | 30min | po-2023 |
-| 65 | 19. Analyse de survie / fiabilite bayesienne :… | Python 3 | READY | BETA | 30min | po-2023 |
-| 66 | Le Framework Rational Speech Act (RSA) | Python 3 | READY | BETA | 45min | po-2023 |
+| 3 | DoWhy-2 — Le contrefactuel individuel : quand… | Python 3 (coursia-ml-training) | READY | BETA | 30min | po-2023 |
+| 4 | Méthodes quasi-expérimentales — identifier l'effet… | Python 3 (coursia-ml-training) | READY | BETA | 45min | po-2023 |
+| 5 | DecInfer-01-Utility-Foundations : Axiomes et… | .NET (C#) | READY | BETA | 45min | po-2023 |
+| 6 | DecInfer-02-Théorème de représentation de von… | Lean 4 (WSL) | READY | BETA | 15min | po-2023 |
+| 7 | DecInfer-03-Utility-Money : Utilite de l'Argent et… | .NET (C#) | READY | BETA | 1h | po-2023 |
+| 8 | DecInfer-04-Multi-Attribute : Utilite… | .NET (C#) | READY | BETA | 1h | po-2023 |
+| 9 | DecInfer-05-Decision-Networks : Reseaux de… | .NET (C#) | READY | BETA | 45min | po-2023 |
+| 10 | DecInfer-06-Value-Information : Valeur de… | .NET (C#) | READY | BETA | 45min | po-2023 |
+| 11 | DecInfer-07-Expert-Systems : Decisions Robustes et… | .NET (C#) | READY | BETA | 45min | po-2023 |
+| 12 | DecInfer-08-Sequential : MDPs, Bandits et POMDPs | .NET (C#) | READY | BETA | 45min | po-2023 |
+| 13 | DecInfer-09-Preuves formelles — Indice de Gittins | Lean 4 (WSL) | READY | BETA | 30min | po-2023 |
+| 14 | DecInfer-10-Thompson-Sampling : Bandits bayesiens… | .NET (C#) | READY | BETA | 45min | po-2023 |
+| 15 | DecPyMC-1-Utility-Foundations : Axiomes et… | Python 3 | READY | BETA | 30min | po-2023 |
+| 16 | DecPyMC-10 : Ruine et capital — le processus de… | Python 3 (ipykernel) | READY | BETA | 30min | po-2023 |
+| 17 | DecPyMC-11 — Valeur de l'Information en… | Python 3 | READY | BETA | 30min | po-2023 |
+| 18 | DecPyMC-12 — Fréquence × sévérité hiérarchique :… | Python 3 | READY | BETA | 30min | po-2023 |
+| 19 | DecPyMC-2-Utility-Money : Utilite de l'Argent et… | Python 3 (ipykernel) | READY | BETA | 45min | po-2023 |
+| 20 | DecPyMC-3-Multi-Attribute : Utilite… | Python 3 | READY | BETA | 45min | po-2023 |
+| 21 | DecPyMC-4-Decision-Networks : Reseaux de Decision | Python 3 | READY | BETA | 30min | po-2023 |
+| 22 | DecPyMC-5-Valeur de l'Information | Python 3 | READY | BETA | 45min | po-2023 |
+| 23 | DecPyMC-6-Systèmes Experts et Decisions Robustes | Python 3 | READY | BETA | 45min | po-2023 |
+| 24 | DecPyMC-7-MDPs, Bandits et POMDPs | Python 3 | READY | BETA | 45min | po-2023 |
+| 25 | DecPyMC-8 — Crédibilité actuarielle de… | Python 3 (ipykernel) | READY | BETA | 30min | po-2023 |
+| 26 | DecPyMC-9 : Du risque à la prime — prime pure,… | Python 3 (ipykernel) | READY | BETA | 45min | po-2023 |
+| 27 | Infer-101 : Introduction a Infer.NET | .NET (C#) | READY | BETA | 1h | po-2023 |
+| 28 | Infer-1-Setup : Introduction et Installation | .NET (C#) | READY | BETA | 45min | po-2023 |
+| 29 | Infer-10-Model-Sélection : Sélection et… | .NET (C#) | READY | BETA | 45min | po-2023 |
+| 30 | Infer-11-Topic-Models : Latent Dirichlet… | .NET (C#) | READY | BETA | 1h | po-2023 |
+| 31 | 12. Modèles Hiérarchiques Bayésiens — Pooling… | .NET (C#) | READY | BETA | 30min | po-2023 |
+| 32 | Infer-13-Crowdsourcing : Agregation de Labels et… | .NET (C#) | READY | BETA | 45min | po-2023 |
+| 33 | Infer-14-Sequences : Hidden Markov Models et… | .NET (C#) | READY | BETA | 1h | po-2023 |
+| 34 | Infer-15-Recommenders : systèmes de Recommandation | .NET (C#) | READY | BETA | 1h30 | po-2023 |
+| 35 | Infer-16-Sparse-Gaussian-Process : Processus… | .NET (C#) | READY | BETA | 45min | po-2023 |
+| 36 | Infer-17 — Filtre de Kalman : systèmes dynamiques… | .NET (C#) | READY | BETA | 30min | po-2023 |
+| 37 | Infer-18 — Détection de Rupture (Change-Point) :… | .NET (C#) | READY | BETA | 30min | po-2023 |
+| 38 | Infer-19 — Analyse de survie / fiabilite… | .NET (C#) | READY | BETA | 45min | po-2023 |
+| 39 | Infer-2-Gaussian-Mixtures : Distributions… | .NET (C#) | READY | BETA | 1h | po-2023 |
+| 40 | Infer-20 — Quotients, fibres et recollement : ce… | Python 3 | READY | BETA | 30min | po-2023 |
+| 41 | Infer-2b-Debugging-Bonnes-Pratiques :… | .NET (C#) | READY | BETA | 45min | po-2023 |
+| 42 | Infer-3-Factor-Graphs : Graphes de Facteurs et… | .NET (C#) | READY | BETA | 45min | po-2023 |
+| 43 | Infer-4-Bayesian-Networks : Reseaux Bayesiens… | .NET (C#) | READY | BETA | 1h | po-2023 |
+| 44 | Infer-5-Causal-Inference : Inférence Causale et… | .NET (C#) | READY | BETA | 45min | po-2023 |
+| 45 | Infer-7-Skills-IRT : Evaluation de Competences et… | .NET (C#) | READY | BETA | 1h | po-2023 |
+| 46 | Infer-8-TrueSkill : Système de Classement et… | .NET (C#) | READY | BETA | 1h | po-2023 |
+| 47 | Infer-9-Classification : Classification Bayesienne | .NET (C#) | READY | BETA | 1h | po-2023 |
+| 48 | PyMC-1 : Configuration et Premier Modèle | Python 3 | READY | BETA | 30min | po-2023 |
+| 49 | PyMC-2 : Distributions Gaussiennes et Mélanges | Python 3 | READY | BETA | 30min | po-2023 |
+| 50 | PyMC-3 : Graphes de Facteurs et Inference Discrete | Python 3 | READY | BETA | 30min | po-2023 |
+| 51 | PyMC-4 : Reseaux Bayesiens | Python 3 | READY | BETA | 30min | po-2023 |
+| 52 | PyMC-05-Causal-Inference : Inference Causale et… | Python 3 | READY | BETA | 30min | po-2023 |
+| 53 | PyMC-06-Debugging : Troubleshooting et Bonnes… | Python 3 | READY | BETA | 30min | po-2023 |
+| 54 | PyMC-7 : Modèles de Competences (IRT et DINA) | Python 3 | READY | BETA | 30min | po-2023 |
+| 55 | PyMC-8 : TrueSkill - Classement et Apprentissage… | Python 3 | READY | BETA | 45min | po-2023 |
+| 56 | PyMC-9 : Classification Bayesienne et Tests A/B | Python 3 | READY | BETA | 30min | po-2023 |
+| 57 | PyMC-10 : Sélection de Modèles et Comparaison… | Python 3 | READY | BETA | 45min | po-2023 |
+| 58 | PyMC-11 : Modèles de Sujets (Topic Models) et LDA | Python 3 | READY | BETA | 45min | po-2023 |
+| 59 | 12. Modèles Hiérarchiques Bayesiens -- Pooling… | Python 3 | READY | BETA | 30min | po-2023 |
+| 60 | PyMC-13 : Crowdsourcing - Agregation de Labels et… | Python 3 | READY | BETA | 45min | po-2023 |
+| 61 | PyMC-14 — Modèles de Sequences et Chaînes de… | Python 3 | READY | BETA | 45min | po-2023 |
+| 62 | PyMC-15-Recommenders : Systèmes de Recommandation… | Python 3 | READY | BETA | 45min | po-2023 |
+| 63 | PyMC-16 : Processus Gaussiens et frontières non… | Python 3 | READY | BETA | 45min | po-2023 |
+| 64 | 17. Filtre de Kalman : systèmes dynamiques… | Python 3 | READY | BETA | 30min | po-2023 |
+| 65 | 18. Detection de Rupture (Change-Point) : inferer… | Python 3 | READY | BETA | 30min | po-2023 |
+| 66 | 19. Analyse de survie / fiabilite bayesienne :… | Python 3 | READY | BETA | 30min | po-2023 |
+| 67 | Le Framework Rational Speech Act (RSA) | Python 3 | READY | BETA | 45min | po-2023 |
 
 ### IIT (71 notebooks) — READY:71 | ALPHA:1, BETA:63, DRAFT:7
 
@@ -1165,8 +1171,8 @@ Total notebooks: 1099
 
 ## Requirements
 
-- **API**: 174 notebooks
+- **API**: 172 notebooks
 - **GPU**: 124 notebooks
 - **Cloud**: 113 notebooks
 - **WSL**: 76 notebooks
-- **Local**: 690 notebooks
+- **Local**: 697 notebooks
