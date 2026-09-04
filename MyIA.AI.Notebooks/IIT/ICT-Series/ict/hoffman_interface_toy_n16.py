@@ -188,7 +188,7 @@ def map_estimate(
 def strategy_truth(
     alpha: float, fitness: Callable[[int], int], prior: Sequence[float]
 ) -> int:
-    """argmax_x f(MAP(x))."""
+    """argmax_x f(MAP(x)). Renvoie le x optimal (hors percept observe)."""
     return max(
         range(N_SENSORY),
         key=lambda x: fitness(map_estimate(x, alpha, prior)),
@@ -212,25 +212,83 @@ def strategy_fitness_only(
     )
 
 
+# --- Percepts (REPAIR c.901) ---
+
+def perceive_truth(
+    x: int, alpha: float, fitness: Callable[[int], int], prior: Sequence[float]
+) -> int:
+    """Vrai geste du toy FBT : l'agent reçoit x et devine w_hat = MAP(x).
+
+    C'est la策略 Truth restreinte à UN percept x observé (vs `strategy_truth`
+    qui itère sur tous les x pour choisir le meilleur). Cette fonction est
+    utilisée par `play_round` après échantillonnage de x depuis le canal.
+
+    REPAIR c.901 : avant ce fix, `play_round` jette x et appelle
+    `strategy_truth` qui retourne un x ∈ {0,1}. Le payoff était alors
+    `fitness(x)` mal indexée (les paysages attendent un w ∈ [0, N_ONTIC)).
+    Le geste aligne la signature sur la docstring "w = strategy(x)".
+
+    Returns:
+        w_hat ∈ [0, N_ONTIC) : le w le plus probable étant donné x.
+    """
+    return map_estimate(x, alpha, prior)
+
+
+def perceive_fitness_only(
+    x: int, alpha: float, fitness: Callable[[int], int], prior: Sequence[float]
+) -> int:
+    """Percept Fitness-only : argmax_w f(w) * P(x | w) * prior[w].
+
+    Mode pondéré du posterior par la fitness : le w qui maximise la fitness
+    attendue P(fitness(w) | x). Pour prior uniforme, c'est le w dans la fibre
+    de x qui a la fitness max.
+
+    REPAIR c.901 : voir `perceive_truth` pour le contexte. Avant le fix,
+    `play_round` jette x et le toy mesurait un artefact instrumental.
+
+    Returns:
+        w_hat ∈ [0, N_ONTIC) : le w dans la fibre de x qui maximise fitness(w).
+    """
+    best_w = 0
+    best_score = -math.inf
+    for w in range(N_ONTIC):
+        score = channel(w, x, alpha) * prior[w] * fitness(w)
+        if score > best_score:
+            best_score = score
+            best_w = w
+    return best_w
+
+
 # --- Self-play / evolution (identique case 11/12, parametres ajustes) ---
 
 def play_round(
     alpha: float,
-    strategy: Callable[[float, Callable[[int], int], Sequence[float]], int],
+    strategy: Callable[[int, float, Callable[[int], int], Sequence[float]], int],
     fitness: Callable[[int], int],
     prior: Sequence[float],
 ) -> float:
-    """Renvoie fitness(w) ou w = strategy(x), x ~ P(x | w*, alpha), w* uniform."""
+    """Renvoie fitness(w_hat) ou w_hat = strategy(x), x ~ P(x | w*, alpha).
+
+    REPAIR c.901 : `strategy` reçoit maintenant `x` (percept observé) en
+    première position et retourne `w_hat ∈ [0, N_ONTIC)`. Avant le fix,
+    `strategy(alpha, fitness, prior)` était appelée sans `x` (jeté après
+    échantillonnage), ce qui rendait le NULL 0/16 case 13 non-mesurant
+    (l'instrument était aveugle au percept).
+
+    Pattern Prakash et al. 2017 §4 : un round = (1) monde w* uniform,
+    (2) percept x ~ P(x | w*, alpha), (3) agent devine w_hat = strategy(x),
+    (4) payoff = fitness(w_hat) (la fitness de la devinette, pas du monde).
+    """
     w_star = random.randrange(N_ONTIC)
     p_x = [channel(w_star, x, alpha) for x in range(N_SENSORY)]
     x = random.choices(range(N_SENSORY), weights=p_x, k=1)[0]
-    w_hat = strategy(alpha, fitness, prior)
+    w_hat = strategy(x, alpha, fitness, prior)
     return fitness(w_hat)
 
 
 def evolve_alpha(
     fitness: Callable[[int], int],
-    strategy: Callable[[float, Callable[[int], int], Sequence[float]], int],
+    strategy: Callable[[int, float, Callable[[int], int], Sequence[float]], int],
     prior: Sequence[float],
     pop: int = 60,
     gen: int = 150,
@@ -290,12 +348,12 @@ def run_experiment(
 
     for s in range(n_seeds):
         a_t = evolve_alpha(
-            fitness, strategy_truth, prior,
+            fitness, perceive_truth, prior,
             pop=pop, gen=gen, seed=s * 1000 + 1,
         )
         alphas_truth.append(a_t)
         a_f = evolve_alpha(
-            fitness, strategy_fitness_only, prior,
+            fitness, perceive_fitness_only, prior,
             pop=pop, gen=gen, seed=s * 1000 + 2,
         )
         alphas_fit.append(a_f)

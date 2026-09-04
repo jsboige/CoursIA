@@ -44,6 +44,8 @@ from hoffman_interface_toy_n16 import (
     evolve_alpha,
     likelihood_matrix,
     map_estimate,
+    perceive_fitness_only,
+    perceive_truth,
     run_full,
     run_experiment,
     strategy_fitness_only,
@@ -248,7 +250,7 @@ def test_evolve_alpha_returns_value_in_unit_interval():
     """evolve_alpha doit retourner un alpha* in [0, 1]."""
     prior = [1.0 / N_ONTIC] * N_ONTIC
     alpha = evolve_alpha(
-        L_bit3, strategy_truth, prior,
+        L_bit3, perceive_truth, prior,
         pop=20, gen=20, seed=42,
     )
     assert 0.0 <= alpha <= 1.0
