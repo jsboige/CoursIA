@@ -138,9 +138,9 @@ layout: dense
 - Rasoir d’Occam
   - On choisit l’hypothèse la plus simple consistante avec les données
 
-<!-- Image: images/img_001.png -->
-<!-- Image: images/img_002.png -->
-<!-- Image: images/img_003.png -->
+<img src="./images/img_001.png" alt="img_001.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_002.png" alt="img_002.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_003.png" alt="img_003.png" style="display:block; margin:10px auto; max-width:100%;">
 
 
 ---
@@ -268,7 +268,7 @@ layout: dense
 - Ex: 1 dé non pipé: (6/6) log2 6 = 2.58 bits
 - Distribution uniforme  plus d’information
 
-<!-- Image: images/img_009.png -->
+<img src="./images/img_009.png" alt="img_009.png" style="display:block; margin:10px auto; max-width:100%;">
 
 
 ---
@@ -580,8 +580,8 @@ layout: two-cols
 - Longueur de description minimale
 - MDL = taille totale modèle + corrections données en bits
 
-<!-- Image: images/img_016.png -->
-<!-- Image: images/img_017.png -->
+<img src="./images/img_016.png" alt="img_016.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_017.png" alt="img_017.png" style="display:block; margin:10px auto; max-width:100%;">
 
 
 ---
@@ -589,8 +589,8 @@ layout: two-cols
 
 # Théorie de l'apprentissage
 
-<!-- Image: images/img_018.png -->
-<!-- Image: images/img_019.png -->
+<img src="./images/img_018.png" alt="img_018.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_019.png" alt="img_019.png" style="display:block; margin:10px auto; max-width:100%;">
 
 
 ---
@@ -626,7 +626,7 @@ layout: dense
 - et ajustement des poids pour pénaliser les mauvais experts
 </div>
 
-<!-- Image: images/img_020.png -->
+<img src="./images/img_020.png" alt="img_020.png" style="display:block; margin:10px auto; max-width:100%;">
 
 <!-- Bagging = echantillons paralleles, Boosting = echantillons séquentiels ponderes -->
 
@@ -715,8 +715,8 @@ layout: two-cols
 - Apprend sur des datasets linéairement séparable
 - vs Arbre de décision: bon sur majorité, mauvais sur restaurant
 
-<!-- Image: images/img_025.png -->
-<!-- Image: images/img_026.png -->
+<img src="./images/img_025.png" alt="img_025.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_026.png" alt="img_026.png" style="display:block; margin:10px auto; max-width:100%;">
 
 
 ---
@@ -747,10 +747,10 @@ layout: two-cols
 - **Similaire à une classification**
   - par hyperplan dans l’espace cible
 
-<!-- Image: images/img_027.png -->
-<!-- Image: images/img_028.png -->
-<!-- Image: images/img_029.png -->
-<!-- Image: images/img_030.png -->
+<img src="./images/img_027.png" alt="img_027.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_028.png" alt="img_028.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_029.png" alt="img_029.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_030.png" alt="img_030.png" style="display:block; margin:10px auto; max-width:100%;">
 </div>
 ---
 
@@ -786,7 +786,7 @@ layout: two-cols
 - Inverse = pavage (similaire à l’apprentissage de listes de décision)
 - Les hypothèses sont assez opaques
 
-<!-- Image: images/img_032.png -->
+<img src="./images/img_032.png" alt="img_032.png" style="display:block; margin:10px auto; max-width:100%;">
 
 
 ---
@@ -815,11 +815,11 @@ layout: two-cols
   - le monde est hiérarchique
 - Librairies de Deep learning
 
-<!-- Image: images/img_033.png -->
-<!-- Image: images/img_034.png -->
-<!-- Image: images/img_035.jpg -->
-<!-- Image: images/img_036.png -->
-<!-- Image: images/img_037.png -->
+<img src="./images/img_033.png" alt="img_033.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_034.png" alt="img_034.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_035.jpg" alt="img_035.jpg" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_036.png" alt="img_036.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_037.png" alt="img_037.png" style="display:block; margin:10px auto; max-width:100%;">
 
 <!-- Architecture NN : entrée → couches cachees (activation ReLU/sigmoid) → sortie -->
 </div>
@@ -845,10 +845,10 @@ layout: two-cols
 - + normalisation
 - + mise en série
 
-<!-- Image: images/img_038.png -->
-<!-- Image: images/img_039.png -->
-<!-- Image: images/img_040.png -->
-<!-- Image: images/img_041.png -->
+<img src="./images/img_038.png" alt="img_038.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_039.png" alt="img_039.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_040.png" alt="img_040.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_041.png" alt="img_041.png" style="display:block; margin:10px auto; max-width:100%;">
 
 <!-- CNN : convolution → feature maps → pooling → couches denses → classification -->
 
@@ -858,12 +858,12 @@ layout: two-cols
 
 # Auto-Encodeurs
 
-<!-- Image: images/img_042.png -->
-<!-- Image: images/img_043.png -->
-<!-- Image: images/img_044.png -->
-<!-- Image: images/img_045.png -->
-<!-- Image: images/img_046.png -->
-<!-- Image: images/img_047.png -->
+<img src="./images/img_042.png" alt="img_042.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_043.png" alt="img_043.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_044.png" alt="img_044.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_045.png" alt="img_045.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_046.png" alt="img_046.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_047.png" alt="img_047.png" style="display:block; margin:10px auto; max-width:100%;">
 
 
 ---
@@ -896,12 +896,12 @@ layout: two-cols
 - V-Nets, U-Nets++ etc.
 </div>
 
-<!-- Image: images/img_048.png -->
-<!-- Image: images/img_049.png -->
-<!-- Image: images/img_050.png -->
-<!-- Image: images/img_051.png -->
-<!-- Image: images/img_052.png -->
-<!-- Image: images/img_053.png -->
+<img src="./images/img_048.png" alt="img_048.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_049.png" alt="img_049.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_050.png" alt="img_050.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_051.png" alt="img_051.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_052.png" alt="img_052.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_053.png" alt="img_053.png" style="display:block; margin:10px auto; max-width:100%;">
 
 
 ---
@@ -931,7 +931,7 @@ layout: two-cols
 - Nettoyage audio
 </div>
 
-<!-- Image: images/img_054.png -->
+<img src="./images/img_054.png" alt="img_054.png" style="display:block; margin:10px auto; max-width:100%;">
 
 
 ---
@@ -966,13 +966,13 @@ layout: two-cols
 - But= tirer profit du futur
 </div>
 
-<!-- Image: images/img_055.png -->
-<!-- Image: images/img_056.png -->
-<!-- Image: images/img_057.png -->
-<!-- Image: images/img_058.png -->
-<!-- Image: images/img_059.png -->
-<!-- Image: images/img_060.png -->
-<!-- Image: images/img_061.png -->
+<img src="./images/img_055.png" alt="img_055.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_056.png" alt="img_056.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_057.png" alt="img_057.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_058.png" alt="img_058.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_059.png" alt="img_059.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_060.png" alt="img_060.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_061.png" alt="img_061.png" style="display:block; margin:10px auto; max-width:100%;">
 
 
 ---
@@ -1042,8 +1042,8 @@ layout: two-cols
 - Rapprochement des embeddings
 - Encodeurs réutilisables
 
-<!-- Image: images/img_070.png -->
-<!-- Image: images/img_071.png -->
+<img src="./images/img_070.png" alt="img_070.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_071.png" alt="img_071.png" style="display:block; margin:10px auto; max-width:100%;">
 
 
 ---
@@ -1051,9 +1051,9 @@ layout: two-cols
 
 # Modèles de diffusion
 
-<!-- Image: images/img_072.png -->
-<!-- Image: images/img_073.png -->
-<!-- Image: images/img_074.png -->
+<img src="./images/img_072.png" alt="img_072.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_073.png" alt="img_073.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_074.png" alt="img_074.png" style="display:block; margin:10px auto; max-width:100%;">
 
 
 ---
@@ -1086,15 +1086,15 @@ layout: two-cols
 - tf_geometric
 </div>
 
-<!-- Image: images/img_075.png -->
-<!-- Image: images/img_076.png -->
-<!-- Image: images/img_077.png -->
-<!-- Image: images/img_078.png -->
-<!-- Image: images/img_079.png -->
-<!-- Image: images/img_080.png -->
-<!-- Image: images/img_081.png -->
-<!-- Image: images/img_082.png -->
-<!-- Image: images/img_083.png -->
+<img src="./images/img_075.png" alt="img_075.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_076.png" alt="img_076.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_077.png" alt="img_077.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_078.png" alt="img_078.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_079.png" alt="img_079.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_080.png" alt="img_080.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_081.png" alt="img_081.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_082.png" alt="img_082.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_083.png" alt="img_083.png" style="display:block; margin:10px auto; max-width:100%;">
 
 
 ---
@@ -1224,8 +1224,8 @@ layout: dense
 - Mieux: un noyau pour pondérer les poids des voisins
 -  idée reprise par les SVMs
 
-<!-- Image: images/img_084.png -->
-<!-- Image: images/img_085.png -->
+<img src="./images/img_084.png" alt="img_084.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_085.png" alt="img_085.png" style="display:block; margin:10px auto; max-width:100%;">
 
 <!-- Clustering : données brutes → k-means/DBSCAN → groupes identifies -->
 
@@ -1426,7 +1426,7 @@ layout: dense
 - Ajout de conditions ou suppression de disjoints
 - Pb: vérification répétée des exemples, et espace à explorer (backtracking)
 
-<!-- Image: images/img_087.png -->
+<img src="./images/img_087.png" alt="img_087.png" style="display:block; margin:10px auto; max-width:100%;">
 
 
 ---
@@ -1455,8 +1455,8 @@ layout: dense
 - **WaitEstimate(x, 30-60) ∨ WaitEstimate(x,>60)**
   -  LongWait (x)
 
-<!-- Image: images/img_088.png -->
-<!-- Image: images/img_089.png -->
+<img src="./images/img_088.png" alt="img_088.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_089.png" alt="img_089.png" style="display:block; margin:10px auto; max-width:100%;">
 
 
 ---
@@ -1514,9 +1514,9 @@ layout: dense
 - EBL concerné par efficacité d’une KB = mémoisation
 - Hypothèse de stationnarité de la distribution = hypothèse PAC
 
-<!-- Image: images/img_090.png -->
-<!-- Image: images/img_091.png -->
-<!-- Image: images/img_092.png -->
+<img src="./images/img_090.png" alt="img_090.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_091.png" alt="img_091.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_092.png" alt="img_092.png" style="display:block; margin:10px auto; max-width:100%;">
 
 
 ---
@@ -1524,10 +1524,10 @@ layout: dense
 
 # Apprentissage fondé sur la pertinence (RBL)
 
-<!-- Image: images/img_093.png -->
-<!-- Image: images/img_094.png -->
-<!-- Image: images/img_095.png -->
-<!-- Image: images/img_096.png -->
+<img src="./images/img_093.png" alt="img_093.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_094.png" alt="img_094.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_095.png" alt="img_095.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_096.png" alt="img_096.png" style="display:block; margin:10px auto; max-width:100%;">
 
 
 ---
@@ -1568,15 +1568,15 @@ layout: dense
 - **b très grand mais restrictions de types + utilisation du gain**
   - informationnel  + heuristique d’Occam (ex: longueur de la clause)
 
-<!-- Image: images/img_097.png -->
+<img src="./images/img_097.png" alt="img_097.png" style="display:block; margin:10px auto; max-width:100%;">
 </div>
 ---
 
 
 # Apprentissage inductif par résolution inverse
 
-<!-- Image: images/img_098.png -->
-<!-- Image: images/img_099.png -->
+<img src="./images/img_098.png" alt="img_098.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_099.png" alt="img_099.png" style="display:block; margin:10px auto; max-width:100%;">
 
 
 ---
@@ -2001,8 +2001,8 @@ layout: section
 
 # Apprentissage par renforcement
 
-<!-- Image: images/img_100.png -->
-<!-- Image: images/img_101.png -->
+<img src="./images/img_100.png" alt="img_100.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_101.png" alt="img_101.png" style="display:block; margin:10px auto; max-width:100%;">
 
 
 ---
@@ -2032,9 +2032,9 @@ layout: dense
 - P(h|e) m.a.j.
 - Théorie du control robuste: ensemble d’hypothèses H  pire des cas
 
-<!-- Image: images/img_102.png -->
-<!-- Image: images/img_103.png -->
-<!-- Image: images/img_104.png -->
+<img src="./images/img_102.png" alt="img_102.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_103.png" alt="img_103.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_104.png" alt="img_104.png" style="display:block; margin:10px auto; max-width:100%;">
 
 
 ---
@@ -2057,8 +2057,8 @@ layout: dense
 - Borner le nombre d’ajustements
 - Heuristique pour prioriser les ajustements :  « prioritized sweeping » / balayage hierachisé
 
-<!-- Image: images/img_105.png -->
-<!-- Image: images/img_106.png -->
+<img src="./images/img_105.png" alt="img_105.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_106.png" alt="img_106.png" style="display:block; margin:10px auto; max-width:100%;">
 
 
 ---
@@ -2082,8 +2082,8 @@ layout: dense
 - Mieux: fonction d’exploration f
 - U+: estimation optimiste
 
-<!-- Image: images/img_107.png -->
-<!-- Image: images/img_108.png -->
+<img src="./images/img_107.png" alt="img_107.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_108.png" alt="img_108.png" style="display:block; margin:10px auto; max-width:100%;">
 
 
 ---
@@ -2110,11 +2110,11 @@ layout: dense
 -  débat sur l’utilité des connaissances
 -  Transition actuelle
 
-<!-- Image: images/img_109.png -->
-<!-- Image: images/img_110.png -->
-<!-- Image: images/img_111.png -->
-<!-- Image: images/img_112.png -->
-<!-- Image: images/img_113.png -->
+<img src="./images/img_109.png" alt="img_109.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_110.png" alt="img_110.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_111.png" alt="img_111.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_112.png" alt="img_112.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_113.png" alt="img_113.png" style="display:block; margin:10px auto; max-width:100%;">
 
 
 ---
@@ -2140,10 +2140,10 @@ layout: dense
 - Si observable  Apprentissage inductif
 - Sinon plus difficile (HMM)
 
-<!-- Image: images/img_114.png -->
-<!-- Image: images/img_115.png -->
-<!-- Image: images/img_116.png -->
-<!-- Image: images/img_117.png -->
+<img src="./images/img_114.png" alt="img_114.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_115.png" alt="img_115.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_116.png" alt="img_116.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_117.png" alt="img_117.png" style="display:block; margin:10px auto; max-width:100%;">
 
 
 ---
@@ -2151,12 +2151,12 @@ layout: dense
 
 # Exploration de politique
 
-<!-- Image: images/img_118.png -->
-<!-- Image: images/img_119.png -->
-<!-- Image: images/img_120.png -->
-<!-- Image: images/img_121.png -->
-<!-- Image: images/img_122.png -->
-<!-- Image: images/img_123.png -->
+<img src="./images/img_118.png" alt="img_118.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_119.png" alt="img_119.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_120.png" alt="img_120.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_121.png" alt="img_121.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_122.png" alt="img_122.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_123.png" alt="img_123.png" style="display:block; margin:10px auto; max-width:100%;">
 
 
 ---
@@ -2164,10 +2164,10 @@ layout: dense
 
 # Applications
 
-<!-- Image: images/img_124.png -->
-<!-- Image: images/img_125.png -->
-<!-- Image: images/img_126.png -->
-<!-- Image: images/img_127.png -->
+<img src="./images/img_124.png" alt="img_124.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_125.png" alt="img_125.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_126.png" alt="img_126.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_127.png" alt="img_127.png" style="display:block; margin:10px auto; max-width:100%;">
 
 
 ---
@@ -2223,14 +2223,14 @@ layout: dense
 - Acme
 - Stable-baseline
 
-<!-- Image: images/img_128.png -->
-<!-- Image: images/img_129.png -->
-<!-- Image: images/img_130.png -->
-<!-- Image: images/img_131.png -->
-<!-- Image: images/img_132.png -->
-<!-- Image: images/img_133.png -->
-<!-- Image: images/img_134.png -->
-<!-- Image: images/img_135.png -->
+<img src="./images/img_128.png" alt="img_128.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_129.png" alt="img_129.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_130.png" alt="img_130.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_131.png" alt="img_131.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_132.png" alt="img_132.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_133.png" alt="img_133.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_134.png" alt="img_134.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_135.png" alt="img_135.png" style="display:block; margin:10px auto; max-width:100%;">
 
 
 ---
@@ -2266,10 +2266,10 @@ layout: dense
 -  = DL utilisé pour subgame solving
 </div>
 
-<!-- Image: images/img_137.gif -->
-<!-- Image: images/img_138.png -->
-<!-- Image: images/img_139.png -->
-<!-- Image: images/img_140.png -->
+<img src="./images/img_137.gif" alt="img_137.gif" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_138.png" alt="img_138.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_139.png" alt="img_139.png" style="display:block; margin:10px auto; max-width:100%;">
+<img src="./images/img_140.png" alt="img_140.png" style="display:block; margin:10px auto; max-width:100%;">
 
 
 ---
