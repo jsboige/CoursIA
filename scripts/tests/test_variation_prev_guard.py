@@ -445,3 +445,81 @@ def test_check_passes_on_a_prev_pointing_at_a_resolved_merged_pr():
     v = vpg.check(body, current_pr=13922, prev_targets=targets)
     assert v["hits"]["prev_invalid"] == []
     assert v["guard_pass"] is True
+
+
+# --------------------------------------------------------------------------
+# #14550 -- a `prev:` clause inside backticks is a CITATION, not a declaration
+# --------------------------------------------------------------------------
+
+# Shape of the real #14559 body: a valid tag pointing at a MERGED PR, and a
+# quoted tag of ANOTHER grain in the prose. Before the fix, the quotation won:
+# `finditer` swept the whole body, found #14548 (still open), and the guard
+# rejected the PR on `prev-not-merged` -- accusing a lane of a defect it had
+# taken care to avoid.
+CITING_BODY = (
+    "Grain: DEEP/research-code -- lane myia-po-2026:CoursIA-2 -- "
+    "prev: DEEP/research-code #14501\n"
+    "\n"
+    "## Cause instrumentale\n"
+    "Le meme defaut que NanoClaw a nomme sur `Grain: MED/qc -- lane a:b -- "
+    "prev: MED/qc #14548` : `play_round` echantillonne `x` puis le jette.\n"
+)
+
+
+def test_backticked_prev_is_a_citation_not_a_declaration():
+    # The real #14559 case. `prev:` is declared at #14501 (merged); the body
+    # also QUOTES another lane's tag pointing at #14548 (open).
+    targets = {"14501": {"kind": "pr", "merged": True},
+               "14548": {"kind": "pr", "merged": False}}
+    v = vpg.check(CITING_BODY, current_pr=14559, prev_targets=targets)
+    assert 14548 not in vpg.find_prev_target_pr_numbers(CITING_BODY)
+    assert v["hits"]["prev_invalid"] == []
+    assert v["guard_pass"] is True
+
+
+def test_backticked_self_reference_does_not_trip_prev_self():
+    # Symmetric half: quoting a tag that happens to name the CURRENT PR is
+    # documentation, not a self-reference.
+    body = ("Grain: MED/guard -- lane myia-ai-01:CoursIA -- prev: MED/test #14501\n"
+            "Le garde a rejete `prev: MED/guard #4242` sur cette PR.\n")
+    assert vpg.find_prev_self_references(body, 4242) == []
+
+
+def test_fenced_block_is_masked_too():
+    body = ("Grain: MED/guard -- lane a:b -- prev: MED/guard #14501\n"
+            "```\n"
+            "Grain: MED/qc -- lane c:d -- prev: MED/qc #14548\n"
+            "```\n")
+    assert vpg.find_prev_target_pr_numbers(body) == [14501]
+
+
+def test_plain_prev_at_an_open_pr_still_fails():
+    # NEGATIVE CONTROL -- the invariant is not weakened. A `prev:` written in
+    # plain text (the canonical tag) at a still-open PR must still be rejected.
+    body = "Grain: MED/guard -- lane a:b -- prev: MED/guard #14548"
+    v = vpg.check(body, current_pr=99999,
+                  prev_targets={"14548": {"kind": "pr", "merged": False}})
+    assert v["hits"]["prev_invalid"] == [
+        {"location": "body", "kind": "prev-not-merged", "prev_pr": 14548}]
+    assert v["guard_pass"] is False
+
+
+def test_plain_prev_self_still_fails():
+    # NEGATIVE CONTROL -- prev-self stays blocking.
+    body = "Grain: MED/guard -- lane a:b -- prev: MED/guard #4242"
+    v = vpg.check(body, current_pr=4242)
+    assert v["guard_pass"] is False
+
+
+def test_fully_backticked_tag_is_still_evaluated():
+    # BLIND-SPOT CONTROL -- this is what `_declared_prev_pr` exists for.
+    #
+    # Masking alone would hand any lane a trivial bypass: wrap the tag line in
+    # backticks and every `prev:` invariant goes silent. `grain_tag.parse_prev`
+    # strips backticks before reading, so the DECLARATION is unioned back in.
+    # Remove that union and this test goes green in the wrong direction.
+    body = "`Grain: MED/guard -- lane a:b -- prev: MED/guard #14548`\nSuite."
+    assert vpg.find_prev_target_pr_numbers(body) == [14548]
+    v = vpg.check(body, current_pr=99999,
+                  prev_targets={"14548": {"kind": "pr", "merged": False}})
+    assert v["guard_pass"] is False
