@@ -272,8 +272,17 @@ def _eval_one_coin(
     horizon: int,
     seed: int,
     components: dict[str, dict[str, pd.Series]],
+    debias: bool = False,
+    calibration_size: int = 60,
 ) -> dict | None:
-    """Evaluate one (coin, horizon, seed) combo."""
+    """Evaluate one (coin, horizon, seed) combo.
+
+    When ``debias`` is True, the HAR Classic baseline is run through
+    ``walk_forward_har(..., calibrate_bias=True, calibration_size=...)``
+    (matching the PR #14258 M16 pattern). We then decompose MSE into
+    bias^2 + variance so the DM verdict distinguishes a precision gain
+    from a mere offset correction.
+    """
     comp = components.get(coin)
     if comp is None:
         return None
@@ -291,8 +300,12 @@ def _eval_one_coin(
     if not res_lj["forecasts"]:
         return None
 
-    # --- HAR Classic baseline ---
-    res_har = walk_forward_har(rv, horizon)
+    # --- HAR Classic baseline (optionally debiased) ---
+    res_har = walk_forward_har(
+        rv, horizon,
+        calibrate_bias=debias,
+        calibration_size=calibration_size,
+    )
     har_fc = res_har.get("forecasts")
     if har_fc is None or (hasattr(har_fc, '__len__') and len(har_fc) == 0):
         return None
@@ -322,6 +335,19 @@ def _eval_one_coin(
     err_har = fc_har - tgt[:len(fc_har)]
     err_m12 = fc_m12 - tgt[:len(fc_m12)]
 
+    # MSE = bias^2 + variance decomposition.
+    # Lets us tell precision gains from a plain offset correction
+    # (M16 / PR #14258 pattern, generalized to M17).
+    bias_lj = float(np.mean(err_lj))
+    bias_har = float(np.mean(err_har))
+    bias_m12 = float(np.mean(err_m12))
+    var_lj = float(np.var(err_lj, ddof=1))
+    var_har = float(np.var(err_har, ddof=1))
+    var_m12 = float(np.var(err_m12, ddof=1))
+    mse_lj = bias_lj ** 2 + var_lj
+    mse_har = bias_har ** 2 + var_har
+    mse_m12 = bias_m12 ** 2 + var_m12
+
     dm_vs_har = dm_verdict(err_lj, err_har, horizon=horizon)
     dm_vs_m12 = dm_verdict(err_lj, err_m12, horizon=horizon)
 
@@ -333,6 +359,14 @@ def _eval_one_coin(
         "horizon": horizon,
         "seed": seed,
         "mse_logrv": res_lj["aggregate_mse_logrv"],
+        "mse_har_debiased": mse_har if debias else mse_har,
+        "mse_m12": mse_m12,
+        "bias_lj": bias_lj,
+        "bias_har": bias_har,
+        "bias_m12": bias_m12,
+        "var_lj": var_lj,
+        "var_har": var_har,
+        "var_m12": var_m12,
         "dm_vs_har": dm_vs_har,
         "dm_vs_m12": dm_vs_m12,
         **kelly_metrics,
@@ -355,6 +389,15 @@ def aggregate_verdicts(rows: list[dict]) -> list[dict]:
         sharpe_vals = [r["sharpe"] for r in group if not np.isnan(r.get("sharpe", np.nan))]
         mse_vals = [r["mse_logrv"] for r in group if not np.isnan(r.get("mse_logrv", np.nan))]
 
+        bias_lj_vals = [r["bias_lj"] for r in group if "bias_lj" in r]
+        bias_har_vals = [r["bias_har"] for r in group if "bias_har" in r]
+        bias_m12_vals = [r["bias_m12"] for r in group if "bias_m12" in r]
+        var_lj_vals = [r["var_lj"] for r in group if "var_lj" in r]
+        var_har_vals = [r["var_har"] for r in group if "var_har" in r]
+        var_m12_vals = [r["var_m12"] for r in group if "var_m12" in r]
+        mse_har_vals = [r["mse_har_debiased"] for r in group if "mse_har_debiased" in r]
+        mse_m12_vals = [r["mse_m12"] for r in group if "mse_m12" in r]
+
         dm_har_wins = sum(
             1 for r in group if r.get("dm_vs_har", {}).get("verdict") == "BEATS baseline"
         )
@@ -372,12 +415,28 @@ def aggregate_verdicts(rows: list[dict]) -> list[dict]:
         avg_sharpe = float(np.mean(sharpe_vals)) if sharpe_vals else np.nan
         avg_mse = float(np.mean(mse_vals)) if mse_vals else np.nan
 
+        def _mean_or_nan(vals: list[float]) -> float:
+            return float(np.mean(vals)) if vals else np.nan
+
         results.append({
             "coin": coin,
             "horizon": horizon,
             "n_seeds": len(group),
             "avg_sharpe": avg_sharpe,
             "avg_mse_logrv": avg_mse,
+            "avg_bias_lj": _mean_or_nan(bias_lj_vals),
+            "avg_bias_har": _mean_or_nan(bias_har_vals),
+            "avg_bias_m12": _mean_or_nan(bias_m12_vals),
+            "avg_var_lj": _mean_or_nan(var_lj_vals),
+            "avg_var_har": _mean_or_nan(var_har_vals),
+            "avg_var_m12": _mean_or_nan(var_m12_vals),
+            "avg_mse_har_debiased": _mean_or_nan(mse_har_vals),
+            "avg_mse_m12": _mean_or_nan(mse_m12_vals),
+            "var_ratio_lj_over_har": (
+                float(np.mean(var_lj_vals) / np.mean(var_har_vals))
+                if var_lj_vals and var_har_vals and np.mean(var_har_vals) > 0
+                else np.nan
+            ),
             "dm_vs_har_wins": dm_har_wins,
             "dm_vs_har_total": dm_har_total,
             "dm_vs_m12_wins": dm_m12_wins,
@@ -407,6 +466,14 @@ def main() -> None:
         "--coins", nargs="+", type=str, default=None,
         help="Override coin list (default: all 7, or BTC+ETH with --skip-remote)",
     )
+    parser.add_argument(
+        "--debias", action="store_true",
+        help="Apply train-tail bias calibration to HAR Classic baseline (symmetric with M16 pattern, PR #14258).",
+    )
+    parser.add_argument(
+        "--calibration-size", type=int, default=60,
+        help="Calibration tail size for bias correction (default: 60).",
+    )
     args = parser.parse_args()
 
     coins = args.coins
@@ -414,7 +481,8 @@ def main() -> None:
         coins = LOCAL_COINS if args.skip_remote else COINS
 
     print(f"M17 HAR-LJ-Asym: coins={coins}, horizons={args.horizons}, "
-          f"seeds={args.seeds}, skip_remote={args.skip_remote}")
+          f"seeds={args.seeds}, skip_remote={args.skip_remote}, "
+          f"debias={args.debias}, calibration_size={args.calibration_size}")
 
     t0 = time.time()
 
@@ -439,7 +507,11 @@ def main() -> None:
             for seed in args.seeds:
                 done += 1
                 print(f"  [{done}/{total}] {coin} h={horizon} seed={seed}", end="", flush=True)
-                result = _eval_one_coin(coin, horizon, seed, components)
+                result = _eval_one_coin(
+                    coin, horizon, seed, components,
+                    debias=args.debias,
+                    calibration_size=args.calibration_size,
+                )
                 if result is not None:
                     rows.append(result)
                     dm_h = result.get("dm_vs_har", {}).get("verdict", "?")
@@ -465,6 +537,8 @@ def main() -> None:
             "fee_bps": FEE_BPS,
             "n_splits": N_SPLITS,
             "refit_every": REFIT_EVERY,
+            "debias_har": args.debias,
+            "calibration_size": args.calibration_size,
         },
         "coins": available,
         "horizons": args.horizons,

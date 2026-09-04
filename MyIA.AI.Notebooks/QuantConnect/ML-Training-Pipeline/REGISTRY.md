@@ -15,6 +15,7 @@ Updated: 2026-08-24 — M15 LSTM-vol patch persistance biais + slice 2/2 dé-bia
 Updated: 2026-09-01 — PatchTST BTC log-RV revalidé contre HAR débiaisé train-only (#14081) : h=1 INCONCLUSIVE, h=5/h=10 NO BEATS ; var_ratio > 1 aux trois horizons
 Updated: 2026-09-02 — M16 HAR asymétrique BTC revalidé contre HAR débiaisé train-only (#1454) : h=1 INCONCLUSIVE, h=5/h=10 BEATS ; verdict brut 3/3 réfuté
 Updated: 2026-09-02 — M5 HMM regime-switching HAR, première entrée + revalidation hors biais (Epic #1454) : ETH h=1 **BEATS confirmé** (+8,7 % hors biais, 4/4 seeds, 4,1σ) ; BTC h=1 s'effondre de +7,0 % à +1,3 % (~82 % de l'edge était le biais de HAR) ; 4/6 NO BEATS
+Updated: 2026-09-04 — M17 HAR-LJ-Asym BTC revalidé contre HAR débiaisé train-only (Epic #1454, lane myia-po-2026, c.951) : h=1 BEATS 4/4 confirmé (var_ratio 0,778 — gain de précision, pas un offset) ; h=5/h=10 INCONCLUSIVE 0/4 (var_ratio > 1) ; vs M12 4/4 BEATS aux trois horizons ; verdict BTC inchangé, base non-artéfactée par le biais HAR
 
 Total checkpoints: 70 (20 legacy ARCHIVED + 50 panier baselines)
 

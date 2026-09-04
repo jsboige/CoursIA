@@ -135,3 +135,57 @@ The corrected sweep supersedes the bugged "60/60 BEATS" verdict (the bug made
 `horizon` a no-op via a contemporaneous target).
 
 Runtime: 261.5s for 84 combos (local, `--skip-remote` false).
+
+## Bias-debiased HAR baseline revalidation (BTC, c.951)
+
+**Date:** 2026-09-04
+**Script flags:** `--coins BTC-USD --horizons 1 5 10 --seeds 0 7 42 99 --skip-remote --debias --calibration-size 60`
+**Symmetric with:** PR #14258 M16 (HAR-Asym debias tranche) — same `walk_forward_har(..., calibrate_bias=True, calibration_size=60)` pattern applied to M17's HAR Classic baseline.
+**Verdict summary:** same direction as the c.946 sweep, with one important nuance revealed by the bias²+variance decomposition.
+
+### Aggregated BTC results (post-debias)
+
+| h | DM_har wins | DM_m12 wins | bias_har | var_har | MSE_har_debiased | MSE_lj | var_ratio_lj_over_har |
+|---|---|---|---:|---:|---:|---:|---:|
+| 1  | **4/4 BEATS**   | 4/4 BEATS | -0.0022 | 1.0781 | 1.0781 | 0.8391 | **0.778** |
+| 5  | 0/4 INCONCLUSIVE | 4/4 BEATS | -0.0009 | 0.3821 | 0.3821 | 0.3980 | 1.042 |
+| 10 | 0/4 INCONCLUSIVE | 4/4 BEATS | -0.0030 | 0.3542 | 0.3542 | 0.3671 | 1.048 |
+
+### Interpretation
+
+- **bias_har after debias is essentially zero** (-0.002 to -0.003), confirming
+  the train-tail calibration on the HAR Classic baseline does its job.
+- **MSE_har_debiased ≈ var_har** — the bias component was negligible to begin
+  with on BTC. The previous "BEATS" verdict at h=5/h=10 against the *non-debiased*
+  HAR was therefore **not** carried by an offset artifact (we'd have seen a
+  large bias correction flip the DM verdict to BEATS-M17 if it were). The DM
+  INCONCLUSIVE at h=5/h=10 is honest — M17 simply has slightly larger variance
+  than HAR-debiased on those horizons (var_ratio > 1).
+- **h=1 win is a precision gain, not an offset artifact.** var_ratio_lj_over_har = 0.778
+  means M17 has ~22% lower forecast variance than HAR-debiased at h=1, while
+  carrying essentially zero bias on its own (bias_lj = 0.0258, well below the
+  sqrt(MSE_har_debiased) ≈ 1.04 scale). The DM BEATS at h=1 reflects a real
+  reduction in dispersion, not an offset trick.
+- **vs M12: 4/4 BEATS at every horizon** — this re-confirms the c.946 panel-wide
+  finding that adding asymmetric semivariance on top of the jump split does
+  not dilute M12's signal when the base model is M12 itself (the M12 baseline
+  in M17 already absorbs the jump split, so the comparison is between
+  M12-only and M17 which adds 3 semivariance regressors on top — M17 wins on
+  dispersion at every horizon).
+
+### Why this revalidation matters
+
+The M16 (PR #14258) debias tranche showed that the previous "BEATS" verdict
+for HAR-Asym was partly carried by a bias offset. The c.946 M17 sweep did not
+apply the same calibration to its HAR Classic baseline, leaving open the
+question "is M17's BTC h=1 win a precision gain or an offset trick?". This
+c.951 run answers it: **precision gain** (var_ratio < 1 at h=1, bias_har
+post-debias is ~0, DM verdict unchanged).
+
+For h=5/h=10 the previous INCONCLUSIVE verdict is also confirmed honest:
+var_ratio > 1 means M17 has slightly larger variance than HAR-debiased on
+those horizons, and the DM verdict matches that — the bias correction did
+not rescue a bias-driven loss into a win.
+
+JSON artifact: `scripts/results/m17_har_lj_asym.json` (params.debias_har=true,
+params.calibration_size=60, 12 combos evaluated in 110.6s).
