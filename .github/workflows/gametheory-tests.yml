@@ -1,0 +1,130 @@
+name: GameTheory-Tests
+
+# Tranche 1/45 de #13746 — Tests éclatés 45+ emplacements : GameTheory/tests
+# mort en CI (#10903).
+#
+# Le défaut mesuré : `pytest.ini` liste
+# `MyIA.AI.Notebooks/GameTheory/tests` comme testpath, et
+# scripts-tests.yml cite ce path textuellement (donc
+# `scripts/check_testpaths_coverage.py` rend [ok] -- l'instrument ne
+# distingue pas citation textuelle du déclencheur de paths:). Mais le
+# déclencheur `on.push.paths:` de scripts-tests.yml ne contient
+# PAS `MyIA.AI.Notebooks/GameTheory/**` : une PR qui modifie un fichier
+# dans `MyIA.AI.Notebooks/GameTheory/tests/` ne déclenche aucun job pytest
+# qui l'exécute. 21 fichiers test_*.py listés mais jamais exécutés en CI.
+#
+# Bornes mesurées firsthand (worktree 4a8d2a9ce + câblage initial) :
+#   - `pytest --collect-only -q MyIA.AI.Notebooks/GameTheory/tests` =
+#     **600 tests collected** (baseline 2026-09-04)
+#   - tests visent des domaines étanches (assistance_games,
+#     centipede_game, cooperative_core, fictitious_play, kuhn_poker_cfr,
+#     prisoners_dilemma, shapley, stackelberg, stag_hunt,
+#     vcg_auction, etc.) — pas de dépendances externes au-delà de numpy.
+#   - Aucun sous-module Python dédié (`MyIA.AI.Notebooks/GameTheory/`
+#     n'a pas de pyproject.toml ou setup.py au commit de cette PR) :
+#     les tests s'importent par sys.path du CWD.
+#
+# Acceptance partielle (tranche 1/45, scope strict) :
+# 1. Workflow `gametheory-tests.yml` créé et exécuté sur push+PR ciblant
+#    `MyIA.AI.Notebooks/GameTheory/**` (cf paths: ci-dessous).
+# 2. Compteur de tests collectés ≥ 600 (floor — mesuré sur main avant PR,
+#    cf preuve dans body PR).
+# 3. Suites vertes au premier run OU échecs documentés (un run attendu
+#    pour fixer le floor — pas une promesse d'or).
+# 4. Issue de suivi ouverte pour les 6 autres familles (#10903 rallié) :
+#    scripts/audit/tests, MyIA.AI.Shared.Tests, GradeBookApp,
+#    scripts/quantconnect/tests, scripts/secrets/tests,
+#    scripts/tests racine — PAS livrées dans cette PR (cf G.4 anti-
+#    composite).
+#
+# Pièges évités :
+# - **Pas** de modification de scripts-tests.yml paths: pour cette tranche
+#   (scope narrow, on garde la diff traçable séparément si le besoin
+#   émerge — sinon le PR croît en composite).
+# - **Pas** d'auto-promotion « supprimer le path scripts-tests.yml qui
+#   matche » : ce path est une **citation textuelle** utile pour les
+#   outils de garde (scripts/check_testpaths_coverage.py), pas un
+#   déclencheur d'exécution.
+# - **Pas** de matrix multi-python tant que le run vert n'est pas
+#   confirmé sur 3.11 (ajout 3.10/3.12 dans un PR ultérieur si
+#   justifié — single-Python d'abord, comme ict-tests.yml avant
+#   l'élargissement).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'MyIA.AI.Notebooks/GameTheory/**'
+      - '.github/workflows/gametheory-tests.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'MyIA.AI.Notebooks/GameTheory/**'
+      - '.github/workflows/gametheory-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gametheory-tests-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  gametheory-tests:
+    name: GameTheory pytest (600 collected)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      # Floor mesuré firsthand — origine/main worktree, baseline 2026-09-04.
+      # Quand des tests sont retirés INTENTIONNELLEMENT, ajuster cette valeur
+      # dans la même PR (le message d'erreur du guard la nomme).
+      GAMETHEORY_TEST_FLOOR: 600
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+
+      # Deps minimales : numpy est l'import dominant du corpus
+      # (matrix_games, extensive_form, etc.). pytest-cov NON requis
+      # (les tests ne déclarent pas de couverture).
+      - name: Install minimal deps (numpy + pytest)
+        run: |
+          python -m pip install --upgrade pip
+          pip install numpy pytest
+
+      - name: Run GameTheory tests
+        # working-directory = racine du dépôt : pytest.ini y est, donc le
+        # testpath `MyIA.AI.Notebooks/GameTheory/tests` est reconnu par
+        # défaut sans préciser la cible -- plus simple, plus robuste que
+        # de dupliquer le path dans pytest invocation (et self-documents
+        # la dépendance à pytest.ini).
+        run: |
+          pytest MyIA.AI.Notebooks/GameTheory/tests --tb=short -v
+
+      # Collection floor-guard (même sémantique que ict-tests.yml
+      # Collection floor-guard -- ce qu'on cherche à éviter : pytest vert
+      # alors que N tests ont silencieusement disparu du chemin de
+      # collecte). La ligne CANONIQUE pytest est `=== N tests collected
+      # in T.Ts ===` (cf ict-tests.yml commentaire ligne ~125). On
+      # tolère les espaces autour du nombre pour les variantes locales.
+      # Aucun `|| true` ici : on veut EXIT 1 si le grep échoue -- c'est
+      # précisément le signal à distinguer d'une baisse de couverture.
+      - name: Collection floor-guard (600)
+        if: always()
+        run: |
+          COLLECTED=$(pytest MyIA.AI.Notebooks/GameTheory/tests --collect-only -q 2>&1 | grep -oE '[0-9]+ tests? collected' | grep -oE '[0-9]+' | head -1)
+          if [ -z "$COLLECTED" ]; then
+            echo "::error::Le collect-only n'a renvoyé aucune ligne 'N tests collected' -- la collecte a planté, c'est probablement une panne d'infra (cf #9387)."
+            exit 1
+          fi
+          if [ "$COLLECTED" -lt "$GAMETHEORY_TEST_FLOOR" ]; then
+            echo "::error::Régression de couverture : $COLLECTED tests collectés, plancher=$GAMETHEORY_TEST_FLOOR."
+            echo "::error::Si la baisse est intentionnelle, ajuster GAMETHEORY_TEST_FLOOR dans cette PR -- le message d'erreur nomme la valeur."
+            exit 1
+          fi
+          echo "OK : $COLLECTED tests collectés (plancher=$GAMETHEORY_TEST_FLOOR)."
