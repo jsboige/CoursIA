@@ -33,7 +33,7 @@ paradigme de test absent du dépôt, démontré réel ».
 - **Docker** démarré + image locale `whisper-api-whisper-api:latest` (buildée depuis le Dockerfile de `docker-configurations/services/whisper-api`)
 - GPU NVIDIA (le conteneur exige `--gpus all` ; la config est dans l'AppHost, `CUDA_VISIBLE_DEVICES=1` = RTX 3090 externe)
 - Cache HuggingFace hôte contenant le modèle `faster-whisper-large-v3-turbo` (sinon, premier appel = téléchargement ~1.6 Go, une seule fois)
-- Pour le notebook 02 (#10857) : la **pile réelle** joignable — conteneur `comfyui-qwen` démarré (8188) et `VLLM_API_KEY` rendu dans `GenAI/.env` (modèle : [`.env.example`](../.env.example)) via `scripts/secrets/render_envs.py` depuis `master.env`
+- Pour le notebook 02 (#10857) : la **pile réelle** joignable — conteneur `comfyui-qwen` démarré (8188) et `VLLM_API_KEY` rendu dans `GenAI/.env` (modèle : [`.env.example`](../../.env.example)) via `scripts/secrets/render_envs.py` depuis `master.env`
 - Pour le notebook 04 (#11516) : **aucun Docker requis** — `StreamingAgent.App` compile avec le SDK .NET 10 seul (`dotnet build`), puis le notebook le lance et l'interroge (port local 5128)
 - Pour le notebook 05 / `IntegrationTests/` (#11516 Grain 2) : Docker suffit — l'image `postgres:18` est tirée au premier `dotnet test` (~30 s), les conteneurs de test s'auto-purgent
 
@@ -68,6 +68,6 @@ sans collision — ports randomisés, noms de conteneurs suffixés.
 
 - Issue [#10838](https://github.com/jsboige/CoursIA/issues/10838) · Issue [#10857](https://github.com/jsboige/CoursIA/issues/10857) · Epic [#10473](https://github.com/jsboige/CoursIA/issues/10473)
 - Digestion [#11516](https://github.com/jsboige/CoursIA/issues/11516) (Parts 3-5 : streaming agent, tests d'intégration, observabilité) — série source [chrlschn.dev](https://chrlschn.dev/blog/2026/08/the-unexpected-ai-stack-csharp-dotnet-part-4/)
-- Grain #10474 : backend d'observabilité OTLP [`aspire-otel/`](../SemanticKernel/aspire-otel/) (même pattern SDK file-based)
-- Observabilité de la série SemanticKernel : [`04-Filters-Observability.ipynb`](../SemanticKernel/04-SemanticKernel-Filters-Observability.ipynb) (même famille A9, application directe au service streaming)
-- Pile GenAI : [`docker-configurations/`](../../../docker-configurations/)
+- Grain #10474 : backend d'observabilité OTLP [`aspire-otel/`](../../SemanticKernel/aspire-otel/) (même pattern SDK file-based)
+- Observabilité de la série SemanticKernel : [`04-Filters-Observability.ipynb`](../../SemanticKernel/04-SemanticKernel-Filters-Observability.ipynb) (même famille A9, application directe au service streaming)
+- Pile GenAI : [`docker-configurations/`](../../../../docker-configurations/)
