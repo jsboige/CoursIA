@@ -54,6 +54,8 @@ Ce module couvre les fondamentaux de la génération d'images par IA : modèles 
   <em>Qwen Image Edit : hello-world chat tigré (gauche, ~277 s) puis workflow image-to-image Phase 29 (droite, ~277 s) — édition watercolor sur photo naturelle (denoise=0.5). L'input pédagogique a été enrichi : une vraie photo remplace l'ancien aplat bleu de test (cf. MANIFEST, issue #9344).</em>
 </p>
 
+> **Note (issue #14580, c.248)** : depuis la bascule `remote authentifié`, le notebook cible par défaut `https://qwen-image-edit.myia.io` (Bearer depuis `GenAI/.env → COMFYUI_API_TOKEN`). `LOCAL_MODE=True` sur `http://127.0.0.1:8188` reste disponible en override (`COMFYUI_API_URL` ou `QWEN_IMAGE_EDIT_URL`) pour les machines GPU qui hébergent leur propre ComfyUI. Les deux visuels ci-dessus ont été régénérés depuis un run Papermill distant (seed 42, denoise 0.5, prompt watercolor).
+
 ## Prérequis
 
 ### API Keys

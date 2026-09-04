@@ -387,6 +387,41 @@ def test_linux_label_set_is_accepted_in_allowlisted_workflow(tmp_path):
     assert result.self_hosted_jobs == 1
 
 
+def test_lean_label_set_is_accepted_in_allowlisted_workflow(tmp_path):
+    # #14337: the specialised Lean pool (po-2024) carries its own dedicated
+    # label set -- coursia-lean routes lake builds to the elan image with the
+    # warm .lake work volume, never to the minimal linux image or the Windows
+    # runners.
+    write_workflow(tmp_path, "linux-self-hosted-tests", """
+        name: lean
+        on: workflow_dispatch
+        jobs:
+          test:
+            runs-on: [self-hosted, coursia-ephemeral, coursia-lean]
+            steps:
+              - run: echo safe
+        """)
+    result = policy.scan_workflows(tmp_path)
+    assert result.violations == []
+    assert result.self_hosted_jobs == 1
+
+
+def test_mixed_lean_and_linux_labels_are_rejected(tmp_path):
+    # Mixing the lean and linux dedicated sets must stay a violation: a job
+    # eligible for both pools would make the routing guarantee meaningless.
+    write_workflow(tmp_path, "linux-self-hosted-tests", """
+        name: mixed
+        on: workflow_dispatch
+        jobs:
+          test:
+            runs-on: [self-hosted, coursia-ephemeral, coursia-linux, coursia-lean]
+            steps:
+              - run: echo unsafe
+        """)
+    result = policy.scan_workflows(tmp_path)
+    assert codes(result) == {"RUNNER_LABELS"}
+
+
 def test_mixed_linux_and_fast_guards_labels_are_rejected(tmp_path):
     # Mixing the two dedicated sets must stay a violation: a job eligible
     # for both the Windows runners and the Linux container would make the
@@ -557,6 +592,127 @@ def test_dynamic_runs_on_is_rejected_fail_closed(tmp_path):
     result = policy.scan_workflows(tmp_path)
     assert codes(result) == {"DYNAMIC_RUNS_ON"}
     assert result.self_hosted_jobs == 0
+
+
+HYBRID_RUNS_ON = (
+    "${{ (github.event.pull_request.head.repo.full_name == github.repository)"
+    " && fromJSON('[\"self-hosted\",\"coursia-waiter\"]') || 'ubuntu-latest' }}"
+)
+
+
+def test_hybrid_runs_on_waiter_form_is_accepted(tmp_path):
+    # #13363 jambe B: the ONE audited dynamic form. pr-gate.yml is the only
+    # consumer; the same-repo guard lives inside the expression, so no job
+    # `if:` is required (the self-hosted labels are unreachable for forks).
+    write_workflow(tmp_path, "pr-gate", """
+        name: PR gate
+        on:
+          pull_request:
+            branches: [main]
+          workflow_dispatch:
+        jobs:
+          gate:
+            name: PR gate
+            runs-on: RUNSON
+            steps:
+              - run: echo aggregate
+        """)
+    (tmp_path / "pr-gate.yml").write_text(
+        (tmp_path / "pr-gate.yml").read_text(encoding="utf-8").replace(
+            "RUNSON", HYBRID_RUNS_ON
+        ),
+        encoding="utf-8",
+    )
+    result = policy.scan_workflows(tmp_path)
+    assert result.broken == []
+    assert result.violations == []
+    assert result.self_hosted_jobs == 1
+
+
+def test_hybrid_runs_on_wrong_labels_is_rejected(tmp_path):
+    write_workflow(tmp_path, "pr-gate", """
+        name: PR gate
+        on: workflow_dispatch
+        jobs:
+          gate:
+            runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository) && fromJSON('["self-hosted","coursia-linux"]') || 'ubuntu-latest' }}
+            steps:
+              - run: echo aggregate
+        """)
+    result = policy.scan_workflows(tmp_path)
+    assert codes(result) == {"DYNAMIC_RUNS_ON"}
+    assert result.self_hosted_jobs == 0
+
+
+def test_hybrid_runs_on_wrong_fallback_is_rejected(tmp_path):
+    write_workflow(tmp_path, "pr-gate", """
+        name: PR gate
+        on: workflow_dispatch
+        jobs:
+          gate:
+            runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository) && fromJSON('["self-hosted","coursia-waiter"]') || 'ubuntu-24.04' }}
+            steps:
+              - run: echo aggregate
+        """)
+    result = policy.scan_workflows(tmp_path)
+    assert codes(result) == {"DYNAMIC_RUNS_ON"}
+
+
+def test_hybrid_runs_on_universal_guard_is_rejected(tmp_path):
+    # The universal guard (|| null) inside the hybrid form would route
+    # workflow_dispatch runs to the waiter pool; only the strict same-repo
+    # equality is audited.
+    write_workflow(tmp_path, "pr-gate", """
+        name: PR gate
+        on: workflow_dispatch
+        jobs:
+          gate:
+            runs-on: ${{ (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON('["self-hosted","coursia-waiter"]') || 'ubuntu-latest' }}
+            steps:
+              - run: echo aggregate
+        """)
+    result = policy.scan_workflows(tmp_path)
+    assert codes(result) == {"DYNAMIC_RUNS_ON"}
+
+
+def test_hybrid_runs_on_in_non_allowlisted_workflow_is_rejected(tmp_path):
+    write_workflow(tmp_path, "other-aggregator", """
+        name: other
+        on: workflow_dispatch
+        jobs:
+          gate:
+            runs-on: RUNSON
+            steps:
+              - run: echo aggregate
+        """)
+    (tmp_path / "other-aggregator.yml").write_text(
+        (tmp_path / "other-aggregator.yml").read_text(encoding="utf-8").replace(
+            "RUNSON", HYBRID_RUNS_ON
+        ),
+        encoding="utf-8",
+    )
+    result = policy.scan_workflows(tmp_path)
+    assert codes(result) == {"WORKFLOW_NOT_ALLOWED"}
+
+
+def test_hybrid_runs_on_pull_request_target_is_rejected(tmp_path):
+    write_workflow(tmp_path, "pr-gate", """
+        name: PR gate
+        on: [pull_request_target]
+        jobs:
+          gate:
+            runs-on: RUNSON
+            steps:
+              - run: echo aggregate
+        """)
+    (tmp_path / "pr-gate.yml").write_text(
+        (tmp_path / "pr-gate.yml").read_text(encoding="utf-8").replace(
+            "RUNSON", HYBRID_RUNS_ON
+        ),
+        encoding="utf-8",
+    )
+    result = policy.scan_workflows(tmp_path)
+    assert "PULL_REQUEST_TARGET" in codes(result)
 
 
 def test_pull_request_job_without_guard_is_rejected(tmp_path):

@@ -85,7 +85,26 @@ jobs:
     # references a check nobody produces -- pending forever, the very deadlock
     # this workflow exists to avoid.
     name: PR gate
-    runs-on: ubuntu-latest
+    # #13363 (arbitrage ai-01 2026-09-02, jambes A+B): under load this
+    # aggregator held 11/14 self-hosted runners just waiting (famine #11405),
+    # while a short timeout made it FAIL below the Quarto duration it waited
+    # for (false negative #11770). The third term dissolves the tension: a
+    # dedicated waiter pool -- waiting costs no CPU.
+    #   - Jambe A (po-2024, #14303 merged + deployed 2026-09-04): 24 waiter
+    #     slots (label coursia-waiter, 1 vCPU / 1 GiB / 128 pids) online via
+    #     coursia-waiters.service -- supervise.sh waiters.
+    #   - Jambe B (this PR): the pull_request leg leaves the shared GitHub-
+    #     hosted queue AND the self-hosted work pool, and waits on the waiter
+    #     pool. Forks stay on ubuntu-latest (fork code never reaches cluster
+    #     runners -- the reason for the same-repo guard #13874), and so do
+    #     workflow_dispatch runs (github.event.pull_request.head is null ->
+    #     the guard is false -> fallback). Semantics unchanged:
+    #     unsettled = FAIL = BLOCKED (#13363 acceptance).
+    # The form is audited by scripts/ci/check_self_hosted_runner_policy.py:
+    # exactly this pattern (same-repo guard -> fromJSON coursia-waiter,
+    # fallback ubuntu-latest); any other expression remains a fail-closed
+    # DYNAMIC_RUNS_ON violation. Rollback of this leg = revert of this PR.
+    runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository) && fromJSON('["self-hosted","coursia-waiter"]') || 'ubuntu-latest' }}
     # Above the script's own budget, so the script prints its verdict
     # instead of the runner killing it mid-poll (a runner-killed job reports
     # `cancelled`, which is far less legible than "timed out waiting for X").
