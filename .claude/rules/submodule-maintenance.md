@@ -58,7 +58,7 @@ Trois PRs dormantes sous un dépôt sans gate ne sont pas trois oublis : c'est *
 | `MyIA.AI.Notebooks/Search/MetaGeneticSharp` | **À CÂBLER** (#14408) | aucun | OUI (jusqu'à A2 acquis) |
 | `MyIA.AI.Notebooks/SymbolicAI/SMT/Z3.Linq` | outillage tiers (projet C#/.NET) | n/a | OUI (vérif `dotnet test` au bump) |
 | `MyIA.AI.Notebooks/SymbolicAI/SMT/Automata` | présent mais vérif manuelle | — | OUI (vérif `dotnet test` au bump) |
-| `MyIA.AI.Notebooks/Argument_Analysis/Argumentum` | agent permanent dédié | n/a dédié | OUI (gate hors-org, voir §Argumentum dédiée) |
+| `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentum` | agent permanent dédié | n/a dédié | OUI (gate hors-org, voir §Argumentum dédiée) |
 | `MyIA.AI.Notebooks/GenAI/SemanticKernel/semantic-fleet` | 9 workflows, base hors-trigger (Tell R3 fondateur) | non déclenché sur pile en cours | OUI (vérif `dotnet test` au bump) |
 
 **Application concrète** : une PR de bump sur `MetaGeneticSharp` qui se contente de citer un SHA upstream **manque R3** tant que A2 n'est pas acquis (#14408). Une PR de bump qui cite un run vert sur la branche par défaut du submod **satisfait** A2 et la substitution R3 **cesse** de s'appliquer à `MetaGeneticSharp` (les bumps suivants peuvent omettre les deux vérifications). Le passage d'« aucun workflow » à « workflow acquis » est un **commit sur le submod** (câblage `.github/workflows/dotnet-ci.yml` sur `jsboige/MetaGeneticSharp`), suivi d'une **mise à jour du tableau ci-dessus** dans une PR sur CoursIA-2.
