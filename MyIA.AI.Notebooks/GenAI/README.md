@@ -199,7 +199,7 @@ Cette catégorie regroupe les **plateformes GenAI réelles** qui apportent une c
 
 ### CaseStudies - Projets étudiants
 
-Projets réalisés par les étudiants : génération d'images style Barbie/Shrek, générateur de recettes, chatbot médical éducatif, challenges style Fort Boyard. Ces notebooks illustrent la diversité des applications possibles après le parcours. Le détail des 4 cas canoniques est dans [`CaseStudies/README.md`](CaseStudies/README.md). À ne pas confondre avec la série interdisciplinaire [`MyIA.AI.Notebooks/CaseStudies/`](../CaseStudies/README.md) (Diagnostic-Medical, Oncology-Planning, SmartGrid-Energy) — voir [la note de clarification](CaseStudies/README.md#clarification-cran-genai-casestudies-vs-myiaainotebookscasestudies).
+Projets réalisés par les étudiants : génération d'images style Barbie/Shrek, générateur de recettes, chatbot médical éducatif, challenges style Fort Boyard. Ces notebooks illustrent la diversité des applications possibles après le parcours. Le détail des 4 cas canoniques est dans [`CaseStudies/README.md`](CaseStudies/README.md). À ne pas confondre avec la série interdisciplinaire [`MyIA.AI.Notebooks/CaseStudies/`](../CaseStudies/README.md) (Diagnostic-Medical, Oncology-Planning, SmartGrid-Energy) — voir [la note de clarification](CaseStudies/README.md#clarification-du-cran-genai-casestudies-vs-myia-ai-notebooks-casestudies).
 
 ### FallacyDetection - Taxonomie et couverture des fallacies
 

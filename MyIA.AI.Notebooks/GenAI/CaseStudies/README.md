@@ -19,7 +19,8 @@ maturity: BETA=3, ALPHA=2
 > | `MyIA.AI.Notebooks/CaseStudies/` (top-level) | 3 cas **interdisciplinaires** fin de cycle M1/M2 : Diagnostic-Medical (Z3), Oncology-Planning (recherche + génétique), SmartGrid-Energy (OR-Tools + KG) | po-2025 | [CaseStudies/README.md](../../CaseStudies/README.md) |
 >
 > Les deux séries sont **complémentaires** : les cas GenAI montrent l'**orchestration d'un seul paradigme** (LLM + tools), les cas interdisciplinaires montrent la **composition de plusieurs paradigmes IA** (CSP + A* + génétique + OR-Tools + KG + bayésien). Voir [#13581](https://github.com/jsboige/CoursIA/issues/13581) pour le contexte de la clarification (issue #13581 AC7).
->
+
+### Clarification du cran GenAI/CaseStudies vs MyIA.AI.Notebooks/CaseStudies
 > **Heuristique de navigation** : si le notebook commence par `import openai` → `GenAI/CaseStudies/` ; si le notebook combine `z3-solver`, `ortools`, `rdflib`, `pyro-ppl` → top-level `CaseStudies/`.
 
 Quatre projets complets, bout en bout, illustrent la diversité des applications de l'IA générative : un duel verbal multi-agent avec génération d'images, un générateur de recettes orchestré par agents, un chatbot médical multi-agent avec plugins, et un jeu interactif inspiré de Fort Boyard. Chaque projet combine appel à un LLM (OpenAI) avec une architecture agentique (Semantic Kernel ou API directe), et inclut des exercices pour étendre le système.
