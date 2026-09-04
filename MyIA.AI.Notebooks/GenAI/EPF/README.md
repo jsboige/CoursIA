@@ -6,7 +6,7 @@
 
 **Aucune entrée matérielle dans ce répertoire pour le moment** — à la rédaction (commit `dc874107`) seul ce README existe. Les **livrables canoniques** (Barbie-Schreck, Fort-Boyard, Medical-Chatbot, Recipe-Maker) vivent dans [`GenAI/CaseStudies/`](../CaseStudies/README.md) ; les sorties brutes étudiantes `_output.ipynb` historiquement préservées ici ont été **vérifiées absentes de l'arbre complet au SHA de la PR** (0 hit pour `receipe_maker_output.ipynb`, `medical_chatbot_output.ipynb`, `Dorian`, `Louise` — vérifié via `git/trees/dc874107?recursive=1`).
 
-Cette table « Contenu » ayant été rédigée **contre le souvenir** de l'état avant le refactor **`#888`** (qui a universalisé EPF paths vers CaseStudies), elle référençait des chemins aujourd'hui **n'émergeant nulle part dans `main`** : la voici retirée pour ne pas éteindre la vigilance du lecteur suivant (cf leçon ajoutée à [`pr-review-discipline.md` §E](../../.claude/rules/pr-review-discipline.md) — un inventaire de README se vérifie contre le disque au SHA de la PR).
+Cette table « Contenu » ayant été rédigée **contre le souvenir** de l'état avant le refactor **`#888`** (qui a universalisé EPF paths vers CaseStudies), elle référençait des chemins aujourd'hui **n'émergeant nulle part dans `main`** : la voici retirée pour ne pas éteindre la vigilance du lecteur suivant (cf leçon ajoutée à [`pr-review-discipline.md` §E](../../../.claude/rules/pr-review-discipline.md) — un inventaire de README se vérifie contre le disque au SHA de la PR).
 
 ### Migration en attente
 
