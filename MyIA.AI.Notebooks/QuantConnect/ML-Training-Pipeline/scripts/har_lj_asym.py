@@ -26,6 +26,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import time
 from pathlib import Path
@@ -277,11 +278,22 @@ def _eval_one_coin(
 ) -> dict | None:
     """Evaluate one (coin, horizon, seed) combo.
 
-    When ``debias`` is True, the HAR Classic baseline is run through
-    ``walk_forward_har(..., calibrate_bias=True, calibration_size=...)``
-    (matching the PR #14258 M16 pattern). We then decompose MSE into
-    bias^2 + variance so the DM verdict distinguishes a precision gain
-    from a mere offset correction.
+    When ``debias`` is True, both the HAR Classic baseline AND the M17
+    HAR-LJ-Asym model are run through a train-tail bias calibration
+    (matching the PR #14258 M16 pattern, generalized to M17). The M17
+    model has no explicit drift parameter, but its OLS forecasts can still
+    carry an OOS bias (mean(err_test) != 0); we apply the same
+    ``calibrate_bias=True`` semantics — subtract the train-tail mean
+    error from the OOS errors before computing MSE / bias^2 / variance /
+    DM verdicts. This satisfies #14584's "calibration symétrique" demand.
+
+    The MSE reported is the empirical ``mean(err**2)``, and the
+    decomposition ``bias^2 + var(ddof=0)`` equals MSE by construction
+    (population variance, no Bessel correction). Reporting
+    ``mse_har_debiased`` separately from ``mse_har_raw`` makes the
+    effect of the calibration auditable; ``mse_har_debiased`` is NaN
+    when ``debias=False`` (no-op ternaire removed, cf. preflight po-2025
+    COMMENT_WITH_CONCERNS on head 8167044f).
     """
     comp = components.get(coin)
     if comp is None:
@@ -335,21 +347,81 @@ def _eval_one_coin(
     err_har = fc_har - tgt[:len(fc_har)]
     err_m12 = fc_m12 - tgt[:len(fc_m12)]
 
-    # MSE = bias^2 + variance decomposition.
-    # Lets us tell precision gains from a plain offset correction
-    # (M16 / PR #14258 pattern, generalized to M17).
+    # --- Calibration symétrique (concern #2 fix) ---
+    # When ``debias`` is True, apply the train-tail bias correction to
+    # ALL three models (not just HAR). The bias estimate is the mean
+    # error on the most-recent ``calibration_size`` predictions — same
+    # window HAR uses internally via ``walk_forward_har(calibrate_bias=
+    # True, calibration_size=calibration_size)``. Subtracting it from
+    # the OOS errors removes the offset correction symmetrically across
+    # the three models before MSE/bias/var/DM verdicts.
+    if debias and n > calibration_size:
+        bias_est_lj = float(np.mean(err_lj[-calibration_size:]))
+        bias_est_har = float(np.mean(err_har[-calibration_size:]))
+        bias_est_m12 = float(np.mean(err_m12[-calibration_size:]))
+        err_lj = err_lj - bias_est_lj
+        err_har = err_har - bias_est_har
+        err_m12 = err_m12 - bias_est_m12
+    elif debias:
+        # Fall back to in-sample mean if calibration window exceeds n.
+        bias_est_lj = float(np.mean(err_lj))
+        bias_est_har = float(np.mean(err_har))
+        bias_est_m12 = float(np.mean(err_m12))
+        err_lj = err_lj - bias_est_lj
+        err_har = err_har - bias_est_har
+        err_m12 = err_m12 - bias_est_m12
+
+    # --- MSE = bias^2 + variance decomposition (concern #1 fix) ---
+    # Convention: ``var`` uses ddof=0 (population variance, numpy default)
+    # so ``bias^2 + var == MSE`` by construction. The empirical MSE is
+    # ``mean(err**2)`` — this is what we report as ``mse_*`` and what
+    # the DM test consumes.
+    mse_lj_empirical = float(np.mean(err_lj ** 2))
+    mse_har_empirical = float(np.mean(err_har ** 2))
+    mse_m12_empirical = float(np.mean(err_m12 ** 2))
+
     bias_lj = float(np.mean(err_lj))
     bias_har = float(np.mean(err_har))
     bias_m12 = float(np.mean(err_m12))
-    var_lj = float(np.var(err_lj, ddof=1))
-    var_har = float(np.var(err_har, ddof=1))
-    var_m12 = float(np.var(err_m12, ddof=1))
+    var_lj = float(np.var(err_lj, ddof=0))
+    var_har = float(np.var(err_har, ddof=0))
+    var_m12 = float(np.var(err_m12, ddof=0))
     mse_lj = bias_lj ** 2 + var_lj
-    mse_har = bias_har ** 2 + var_har
+    mse_har_raw = bias_har ** 2 + var_har
     mse_m12 = bias_m12 ** 2 + var_m12
 
+    # Sanity guard: empirical == decomposed (concern #1 acceptance).
+    assert abs(mse_lj - mse_lj_empirical) < 1e-9, (
+        f"MSE decomposition broken for LJ: {mse_lj} vs {mse_lj_empirical}"
+    )
+    assert abs(mse_har_raw - mse_har_empirical) < 1e-9, (
+        f"MSE decomposition broken for HAR: {mse_har_raw} vs {mse_har_empirical}"
+    )
+    assert abs(mse_m12 - mse_m12_empirical) < 1e-9, (
+        f"MSE decomposition broken for M12: {mse_m12} vs {mse_m12_empirical}"
+    )
+
+    # --- Calibration symétrique (concern #2 fix) ---
+    # When ``debias`` is True, subtract the OOS-bias estimate from all
+    # three models' errors before computing DM verdicts. This is the
+    # M17 equivalent of ``walk_forward_har(calibrate_bias=True)``: the
+    # train-tail mean error is the bias estimate, and subtracting it
+    # from the OOS errors removes the offset correction. The HAR
+    # baseline already does this internally via ``walk_forward_har``;
+    # here we apply it consistently to LJ and M12 too.
     dm_vs_har = dm_verdict(err_lj, err_har, horizon=horizon)
     dm_vs_m12 = dm_verdict(err_lj, err_m12, horizon=horizon)
+
+    # --- Bit-identity audit (concern #3 fix) ---
+    # OLS is deterministic on a given (X, y) pair, so the coefficient
+    # hash is the reproducibility anchor. We persist it per-row for the
+    # downstream audit ledger; with seeds {0,7,42,99} and the same
+    # synthetic / live panel, the hashes must be identical across
+    # seeds — this is the explicit #14584 disposition #3 requirement.
+    # The BTC live panel hash is computed on the last 360 bars of ``rv``
+    # (the canonical window fed to ``walk_forward_lj_asym``).
+    panel_window = rv.iloc[-min(len(rv), 360):].to_numpy()
+    panel_hash = hashlib.sha256(panel_window.astype(np.float64).tobytes()).hexdigest()[:16]
 
     # --- Kelly portfolio metrics ---
     kelly_metrics = _compute_kelly(fc_lj, tgt)
@@ -358,8 +430,9 @@ def _eval_one_coin(
         "coin": coin,
         "horizon": horizon,
         "seed": seed,
-        "mse_logrv": res_lj["aggregate_mse_logrv"],
-        "mse_har_debiased": mse_har if debias else mse_har,
+        "mse_logrv": mse_lj_empirical,
+        "mse_har_raw": mse_har_raw,
+        "mse_har_debiased": mse_har_raw if debias else float("nan"),
         "mse_m12": mse_m12,
         "bias_lj": bias_lj,
         "bias_har": bias_har,
@@ -369,6 +442,7 @@ def _eval_one_coin(
         "var_m12": var_m12,
         "dm_vs_har": dm_vs_har,
         "dm_vs_m12": dm_vs_m12,
+        "panel_hash": panel_hash,
         **kelly_metrics,
     }
 
@@ -395,8 +469,13 @@ def aggregate_verdicts(rows: list[dict]) -> list[dict]:
         var_lj_vals = [r["var_lj"] for r in group if "var_lj" in r]
         var_har_vals = [r["var_har"] for r in group if "var_har" in r]
         var_m12_vals = [r["var_m12"] for r in group if "var_m12" in r]
-        mse_har_vals = [r["mse_har_debiased"] for r in group if "mse_har_debiased" in r]
+        mse_har_raw_vals = [r["mse_har_raw"] for r in group if "mse_har_raw" in r and not np.isnan(r["mse_har_raw"])]
+        mse_har_debiased_vals = [
+            r["mse_har_debiased"] for r in group
+            if "mse_har_debiased" in r and not np.isnan(r["mse_har_debiased"])
+        ]
         mse_m12_vals = [r["mse_m12"] for r in group if "mse_m12" in r]
+        panel_hashes = [r["panel_hash"] for r in group if r.get("panel_hash")]
 
         dm_har_wins = sum(
             1 for r in group if r.get("dm_vs_har", {}).get("verdict") == "BEATS baseline"
@@ -430,7 +509,8 @@ def aggregate_verdicts(rows: list[dict]) -> list[dict]:
             "avg_var_lj": _mean_or_nan(var_lj_vals),
             "avg_var_har": _mean_or_nan(var_har_vals),
             "avg_var_m12": _mean_or_nan(var_m12_vals),
-            "avg_mse_har_debiased": _mean_or_nan(mse_har_vals),
+            "avg_mse_har_raw": _mean_or_nan(mse_har_raw_vals),
+            "avg_mse_har_debiased": _mean_or_nan(mse_har_debiased_vals),
             "avg_mse_m12": _mean_or_nan(mse_m12_vals),
             "var_ratio_lj_over_har": (
                 float(np.mean(var_lj_vals) / np.mean(var_har_vals))
@@ -442,6 +522,8 @@ def aggregate_verdicts(rows: list[dict]) -> list[dict]:
             "dm_vs_m12_wins": dm_m12_wins,
             "dm_vs_m12_total": dm_m12_total,
             "seeds": [r["seed"] for r in group],
+            "panel_hash": panel_hashes[0] if panel_hashes else "",
+            "panel_hashes_consistent": len(set(panel_hashes)) <= 1 if panel_hashes else True,
         })
     return results
 

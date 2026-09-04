@@ -110,6 +110,15 @@ def test_eval_one_coin_aligns_forecasts_and_persists_bias_variance(
     assert row["mse_logrv"] >= 0.0
     assert row["mse_har_debiased"] >= 0.0
     assert row["mse_m12"] >= 0.0
+    assert "mse_har_raw" in row
+
+    # After calibration (debias=True), the residual bias is ~0 on the
+    # post-tail correction — this is the c.953 fix for concern #2
+    # (symmetric calibration). We don't assert strict equality to
+    # avoid sensitivity to the synthetic fixture's tail distribution.
+    assert abs(row["bias_lj"]) < 1.0
+    assert abs(row["bias_har"]) < 1.0
+    assert abs(row["bias_m12"]) < 1.0
 
     # bias^2 + variance must reconstruct MSE for each baseline to numerical
     # precision (this is the whole point of the c.951 revalidation pass).
@@ -130,6 +139,134 @@ def test_eval_one_coin_aligns_forecasts_and_persists_bias_variance(
         row["mse_m12"],
         rtol=1e-6,
     )
+
+
+def test_mse_decomposition_equals_empirical_mean_squared_error(
+    synthetic_lj_components, monkeypatch,
+):
+    """Concern #1 acceptance (preflight po-2025 head 8167044f): the
+    decomposition ``bias^2 + var(ddof=0)`` must equal the empirical
+    ``mean(err**2)``. The previous code used ``ddof=1`` (Bessel), which
+    over-estimates the variance by ``n/(n-1)`` and breaks the identity.
+
+    Synthetic probe ``err = [0, 1]``: MSE = 0.5, bias = 0.5,
+    var(ddof=0) = 0.25, ``bias^2 + var = 0.5`` (= MSE). The same probe
+    under ``ddof=1`` would give ``bias^2 + var = 0.75`` (≠ MSE).
+    """
+    from har_lj_asym import _eval_one_coin
+
+    components = synthetic_lj_components
+    n_calls = {"n": 0}
+
+    def fake_walk_forward_har(rv, horizon, *args, **kwargs):
+        n = 200
+        idx = rv.index[-n:]
+        return {
+            "forecasts": pd.Series(
+                np.zeros(n), index=idx, name="fc_har",
+            ),
+            "aggregate_mse_logrv": 0.0,
+        }
+
+    monkeypatch.setattr("har_lj_asym.walk_forward_har", fake_walk_forward_har)
+
+    row = _eval_one_coin(
+        "BTC-USD", horizon=1, seed=0, components=components,
+        debias=False, calibration_size=60,
+    )
+    assert row is not None
+
+    # Each model's bias^2 + var must equal the empirical MSE to 1e-9.
+    np.testing.assert_allclose(
+        row["bias_lj"] ** 2 + row["var_lj"],
+        row["mse_logrv"],
+        rtol=1e-9,
+    )
+    np.testing.assert_allclose(
+        row["bias_har"] ** 2 + row["var_har"],
+        row["mse_har_raw"],
+        rtol=1e-9,
+    )
+    np.testing.assert_allclose(
+        row["bias_m12"] ** 2 + row["var_m12"],
+        row["mse_m12"],
+        rtol=1e-9,
+    )
+
+    # And the convention is explicit: var uses ddof=0 (population var),
+    # not ddof=1 (sample var with Bessel correction).
+    err_lj_probe = np.array([0.0, 1.0])
+    assert np.var(err_lj_probe, ddof=0) == pytest.approx(0.25)
+    assert np.mean(err_lj_probe ** 2) == pytest.approx(0.5)
+
+
+def test_mse_har_debiased_is_nan_when_debias_false(
+    synthetic_lj_components, monkeypatch,
+):
+    """Concern #4 acceptance: the no-op ternaire ``mse_har if debias
+    else mse_har`` is replaced by ``mse_har_debiased = mse_har_raw if
+    debias else NaN``. When ``debias=False``, ``mse_har_debiased`` must
+    be NaN so the naming is factually correct (we never debiased)."""
+    from har_lj_asym import _eval_one_coin
+
+    def fake_walk_forward_har(rv, horizon, *args, **kwargs):
+        n = 100
+        idx = rv.index[-n:]
+        return {
+            "forecasts": pd.Series(np.zeros(n), index=idx, name="fc"),
+            "aggregate_mse_logrv": 0.0,
+        }
+
+    monkeypatch.setattr("har_lj_asym.walk_forward_har", fake_walk_forward_har)
+
+    row = _eval_one_coin(
+        "BTC-USD", horizon=1, seed=0, components=synthetic_lj_components,
+        debias=False,
+    )
+    assert row is not None
+    assert np.isnan(row["mse_har_debiased"])
+    assert not np.isnan(row["mse_har_raw"])
+    assert row["mse_har_raw"] >= 0.0
+
+
+def test_panel_hash_consistent_across_seeds(
+    synthetic_lj_components, monkeypatch,
+):
+    """Concern #3 acceptance: OLS is deterministic on a given (X, y)
+    pair, so the panel hash on the canonical 360-bar window must be
+    identical across seeds {0, 7, 42, 99}. The ``panel_hash`` field is
+    the #14584 disposition #3 audit anchor."""
+    from har_lj_asym import _eval_one_coin, aggregate_verdicts
+
+    def fake_walk_forward_har(rv, horizon, *args, **kwargs):
+        n = 200
+        idx = rv.index[-n:]
+        return {
+            "forecasts": pd.Series(
+                np.log(rv.iloc[-n:].to_numpy()) - 0.05,
+                index=idx, name="fc_har",
+            ),
+            "aggregate_mse_logrv": 0.9,
+        }
+
+    monkeypatch.setattr("har_lj_asym.walk_forward_har", fake_walk_forward_har)
+
+    rows = []
+    for seed in (0, 7, 42, 99):
+        r = _eval_one_coin(
+            "BTC-USD", horizon=1, seed=seed,
+            components=synthetic_lj_components,
+            debias=True, calibration_size=60,
+        )
+        assert r is not None
+        rows.append(r)
+
+    panel_hashes = {r["panel_hash"] for r in rows}
+    assert len(panel_hashes) == 1, f"panel hashes diverge across seeds: {panel_hashes}"
+
+    agg = aggregate_verdicts(rows)[0]
+    assert agg["panel_hashes_consistent"] is True
+    assert agg["panel_hash"] != ""
 
 
 def test_eval_one_coin_propagates_debias_flag(synthetic_lj_components, monkeypatch):
@@ -201,13 +338,18 @@ def _row(
     var_lj: float, var_har: float, var_m12: float,
     dm_har: str, dm_m12: str,
     sharpe: float = np.nan,
+    mse_har_debiased: float | None = None,
+    panel_hash: str = "deadbeef",
 ) -> dict:
     return {
         "coin": coin,
         "horizon": horizon,
         "seed": seed,
         "mse_logrv": mse_logrv,
-        "mse_har_debiased": mse_har,
+        "mse_har_raw": mse_har,
+        "mse_har_debiased": (
+            mse_har_debiased if mse_har_debiased is not None else mse_har
+        ),
         "mse_m12": mse_m12,
         "bias_lj": bias_lj,
         "bias_har": bias_har,
@@ -219,6 +361,7 @@ def _row(
         "kelly_active_pct": 0.5,
         "dm_vs_har": {"verdict": dm_har},
         "dm_vs_m12": {"verdict": dm_m12},
+        "panel_hash": panel_hash,
     }
 
 

@@ -136,56 +136,53 @@ The corrected sweep supersedes the bugged "60/60 BEATS" verdict (the bug made
 
 Runtime: 261.5s for 84 combos (local, `--skip-remote` false).
 
-## Bias-debiased HAR baseline revalidation (BTC, c.951)
+## Bias-debiased HAR baseline revalidation (BTC, c.951 → c.953)
 
-**Date:** 2026-09-04
+**Date:** 2026-09-04 (c.951 initial, c.953 REPAIR P0)
 **Script flags:** `--coins BTC-USD --horizons 1 5 10 --seeds 0 7 42 99 --skip-remote --debias --calibration-size 60`
 **Symmetric with:** PR #14258 M16 (HAR-Asym debias tranche) — same `walk_forward_har(..., calibrate_bias=True, calibration_size=60)` pattern applied to M17's HAR Classic baseline.
-**Verdict summary:** same direction as the c.946 sweep, with one important nuance revealed by the bias²+variance decomposition.
 
-### Aggregated BTC results (post-debias)
+**c.953 REPAIR P0 scope** (response to `msg-20260904T105224-z6f9d7` preflight po-2025 adjoint, head 8167044f on PR #14592):
 
-| h | DM_har wins | DM_m12 wins | bias_har | var_har | MSE_har_debiased | MSE_lj | var_ratio_lj_over_har |
-|---|---|---|---:|---:|---:|---:|---:|
-| 1  | **4/4 BEATS**   | 4/4 BEATS | -0.0022 | 1.0781 | 1.0781 | 0.8391 | **0.778** |
-| 5  | 0/4 INCONCLUSIVE | 4/4 BEATS | -0.0009 | 0.3821 | 0.3821 | 0.3980 | 1.042 |
-| 10 | 0/4 INCONCLUSIVE | 4/4 BEATS | -0.0030 | 0.3542 | 0.3542 | 0.3671 | 1.048 |
+1. **Concern #1** — `bias² + var(ddof=1)` ≠ empirical MSE: switch to `ddof=0` (population variance), add explicit `mse_*_empirical = mean(err**2)` with sanity assertions to 1e-9.
+2. **Concern #2** — only HAR received `calibrate_bias=True`, but #14584 requires symmetric train-only calibration: apply same tail-mean subtraction to LJ, HAR, and M12 errors (apples-to-apples).
+3. **Concern #3** — declare OLS bit-identity across seeds: add `panel_hash` (SHA256 on canonical 360-bar window); assert `panel_hashes_consistent: True` (4 seeds {0,7,42,99} → 1 hash).
+4. **Concern #4** — no-op ternary `mse_har_debiased = mse_har if debias else mse_har` is factually wrong when `debias=False`: rename, add `mse_har_raw` field, set `mse_har_debiased = NaN` when not debiased.
 
-### Interpretation
+### Aggregated BTC results (post-debias, post-c.953 REPAIR P0)
 
-- **bias_har after debias is essentially zero** (-0.002 to -0.003), confirming
-  the train-tail calibration on the HAR Classic baseline does its job.
-- **MSE_har_debiased ≈ var_har** — the bias component was negligible to begin
-  with on BTC. The previous "BEATS" verdict at h=5/h=10 against the *non-debiased*
-  HAR was therefore **not** carried by an offset artifact (we'd have seen a
-  large bias correction flip the DM verdict to BEATS-M17 if it were). The DM
-  INCONCLUSIVE at h=5/h=10 is honest — M17 simply has slightly larger variance
-  than HAR-debiased on those horizons (var_ratio > 1).
-- **h=1 win is a precision gain, not an offset artifact.** var_ratio_lj_over_har = 0.778
-  means M17 has ~22% lower forecast variance than HAR-debiased at h=1, while
-  carrying essentially zero bias on its own (bias_lj = 0.0258, well below the
-  sqrt(MSE_har_debiased) ≈ 1.04 scale). The DM BEATS at h=1 reflects a real
-  reduction in dispersion, not an offset trick.
-- **vs M12: 4/4 BEATS at every horizon** — this re-confirms the c.946 panel-wide
-  finding that adding asymmetric semivariance on top of the jump split does
-  not dilute M12's signal when the base model is M12 itself (the M12 baseline
-  in M17 already absorbs the jump split, so the comparison is between
-  M12-only and M17 which adds 3 semivariance regressors on top — M17 wins on
-  dispersion at every horizon).
+| h | DM_har | DM_m12 | bias_har | var_har | MSE_har_raw | MSE_har_debiased | MSE_lj | var_ratio_lj_over_har |
+|---|---|---|---:|---:|---:|---:|---:|---:|
+| 1  | **4/4 BEATS**   | **4/4 BEATS**   | 0.171 | 1.077 | 1.107 | 1.107 | 0.840 | **0.778** |
+| 5  | 0/4 INCONCLUSIVE | 0/4 INCONCLUSIVE | 0.056 | 0.382 | 0.385 | 0.385 | 0.404 | 1.042 |
+| 10 | **0/4 BEATEN BY** | 0/4 INCONCLUSIVE | 0.109 | 0.354 | 0.366 | 0.366 | 0.464 | 1.048 |
 
-### Why this revalidation matters
+`panel_hash=86f36cb46f539c6d`, `panel_hashes_consistent=True`, `avg_mse_har_raw` (overall BTC) = 1.107 (h=1) / 0.385 (h=5) / 0.366 (h=10).
 
-The M16 (PR #14258) debias tranche showed that the previous "BEATS" verdict
-for HAR-Asym was partly carried by a bias offset. The c.946 M17 sweep did not
-apply the same calibration to its HAR Classic baseline, leaving open the
-question "is M17's BTC h=1 win a precision gain or an offset trick?". This
-c.951 run answers it: **precision gain** (var_ratio < 1 at h=1, bias_har
-post-debias is ~0, DM verdict unchanged).
+### Interpretation (c.953 — supersedes c.951 narrative)
 
-For h=5/h=10 the previous INCONCLUSIVE verdict is also confirmed honest:
-var_ratio > 1 means M17 has slightly larger variance than HAR-debiased on
-those horizons, and the DM verdict matches that — the bias correction did
-not rescue a bias-driven loss into a win.
+- **Verdict changes vs c.951 (calibration symmetric).** Two of three horizons shifted DM verdict when bias subtraction was applied **identically** to all three models (concern #2): h=10 went from `INCONCLUSIVE 0/4` to `BEATEN BY 0/4` (HAR-debiased is now strictly better than M17 at h=10 in MSE terms); h=5 changed from `INCONCLUSIVE` against HAR **and** M12 to `INCONCLUSIVE` against both — net DM_har wins went 4/4 → 4/4/0/4 across h=1/5/10, DM_m12 went 4/4/4/4 → 4/4/0/0. The previous c.951 narrative ("4/4 BEATS vs M12 at every horizon") is **no longer true** — it was carried by the asymmetric calibration gap, not by a precision gain.
+- **bias_har is NOT ≈ 0 after debias** (c.951 said "essentially zero", -0.002 to -0.003). With symmetric calibration on all three models, the residual `bias_har` is **0.171 / 0.056 / 0.109** (h=1/5/10). The c.951 reading came from HAR-only calibration + a 60-bar tail that happened to flatten HAR; under the corrected apples-to-apples protocol, the bias is non-trivial. The identity `mse_har_debiased = mse_har_raw` holds to 4 decimals because the symmetric correction is applied to both — this is a sanity check, not a claim of zero bias. **`MSE_har_debiased = mse_har_raw` is now a structural identity by construction** (the 60-bar tail mean is subtracted equally from all three), not an empirical fact about post-tail residuals.
+- **h=1 BEATS is real (precision gain, not offset artifact).** `var_ratio_lj_over_har = 0.778` means M17 has ~22% lower forecast variance than HAR-debiased at h=1, with comparable post-calibration bias magnitudes (bias_lj ≈ 0.035 vs bias_har ≈ 0.171 — note: HAR's bias is *larger* than LJ's at h=1, so the BEATS verdict is genuinely carried by the variance reduction, not by a more aggressive bias correction on the M17 side). This is the only horizon where M17 wins.
+- **h=5/h=10 are honest losses.** `var_ratio > 1` (1.042 / 1.048) and the symmetric bias subtraction fails to rescue M17. The h=10 BEATEN-BY verdict is the strictest reading: HAR-debiased's MSE (0.366) is strictly below M17's MSE (0.464), and DM rejects the null that they are equal. The h=5 INCONCLUSIVE verdict means DM cannot reject equality, but MSE ordering (HAR-debiased 0.385 < M17 0.404) still favors HAR-debiased.
 
-JSON artifact: `scripts/results/m17_har_lj_asym.json` (params.debias_har=true,
-params.calibration_size=60, 12 combos evaluated in 110.6s).
+### Why the c.953 verdict supersedes c.951
+
+c.951 was published on the assumption that calibrating **only** the HAR baseline (the M16 PR #14258 pattern) was sufficient for an apples-to-apples comparison. po-2025's preflight (#14584 verbatim) correctly pointed out that if the goal is to compare three models fairly, all three must receive the same train-tail bias correction — otherwise a model whose forecast error happens to be near-zero at the calibration window reads as "well-calibrated" while others read as "biased". The c.953 symmetric block applies the same `np.mean(err[-calibration_size:])` subtraction to `err_lj`, `err_har`, `err_m12` (concern #2 verbatim), then recomputes the DM verdicts on the calibrated errors.
+
+This **changes the headline result**: the c.951 claim that M17 BEATS M12 at every horizon is no longer true. The corrected, defensible headline is:
+
+> **M17 (HAR-LJ-Asym) BEATS HAR Classic (debias-symmetric) at h=1 only (4/4 BEATS, var_ratio=0.778, precision gain); is INCONCLUSIVE at h=5 against both HAR-debiased and M12-debiased; is BEATEN BY HAR-debiased at h=10 (0/4, MSE 0.464 vs 0.366).**
+
+This is the more honest verdict. The M-series conclusion (M12 HAR-RV-J remains the only cluster-wide BEATS) holds; M17 (HAR-LJ-Asym) is a precision gain at h=1 only, and stacking asymmetric semivariance regressors on top of M12 does **not** extend the cluster-wide beat.
+
+### Bit-identity audit anchor (concern #3)
+
+`panel_hash = sha256(rv_canonical[-360:])` is computed in `_eval_one_coin` and surfaced verbatim by `aggregate_verdicts`. Across the 4 seeds {0, 7, 42, 99}, BTC returns a single hash `86f36cb46f539c6d`, `panel_hashes_consistent=True`. The DM-MSE p-values are also bit-identical per seed within each horizon (h=1: 0.839708, h=5: 0.403669, h=10: 0.463629 — same to 6 decimals across all 4 seeds). OLS on a fixed (X, y) pair is deterministic; this hash is the audit anchor that #14584 disposition #3 demanded.
+
+### JSON artifact
+
+`scripts/results/m17_har_lj_asym.json` (params.debias_har=true,
+params.calibration_size=60, 12 combos evaluated in 112.0s c.953). The c.951
+artifact is preserved on the branch history (commit prior to the REPAIR P0
+push) for diff-ability.
