@@ -42,7 +42,10 @@ Where:
 - 4 seeds (0, 7, 42, 99) for HMM initialization
 - 2 coins (BTC-USD, ETH-USD), 3 horizons (h=1, 5, 10)
 - Diebold-Mariano HAC test vs classic HAR baseline (`loss_fn="mse"` — perte de précision, jamais `linear`)
-- Aggregate verdict: BEATS only if 4/4 seeds pass DM
+- Aggregate verdict (machine 4 états unifiée `#14388`): `BEATS` (4/4 seeds BEATS + `dm_p_median < 0.05`),
+  `NO BEATS` (4/4 seeds BEATEN + `dm_p_median < 0.05`), `refuted-de-biased` (4/4 BEATS sur la jambe
+  parente uniquement), `INCONCLUSIVE` (le reste, dont 3/4 d'un côté ou l'autre). La jambe brute et
+  la jambe hors biais partagent la même machine (`_aggregate_state` dans `scripts/hmm_regime_vol.py`).
 - Jambe hors biais (ajoutée 2026-09-02) : décomposition `MSE = biais² + variance` par modèle, edge
   contre baseline dé-biaisée, et DM sur erreurs recentrées des deux côtés
 
@@ -66,19 +69,19 @@ et ne porte que des agrégats et des décompositions, sur le modèle de #12745.
 | Verdict | Count | Configs |
 |---------|-------|---------|
 | **BEATS** | 1/6 | ETH h=1 (4/4 seeds) |
-| INCONCLUSIVE | 1/6 | BTC h=1 (3/4 seeds) |
-| **BEATEN BY** | 4/6 | BTC h=5, BTC h=10, ETH h=5, ETH h=10 |
+| INCONCLUSIVE | 4/6 | BTC h=1 (3/4 BEATS), BTC h=5/h=10 + ETH h=5 (3/4 BEATEN + 1 INCONCLUSIVE) |
+| **NO BEATS** | 1/6 | ETH h=10 (4/4 seeds BEATEN) |
 
 ### Per-coin results (aggregated over 4 seeds)
 
-| Coin | Horizon | Regime MSE | Classic MSE | Reduction | DM p-value | Verdict |
-|------|---------|------------|-------------|-----------|------------|---------|
-| BTC-USD | 1 | 0.825 | 0.888 | +7.0% | 3/4 seeds p<0.001 | INCONCLUSIVE |
-| BTC-USD | 5 | 0.580 | 0.522 | -11.1% | 2/4 BEATEN BY | BEATEN BY |
-| BTC-USD | 10 | 0.732 | 0.571 | -28.3% | 3/4 BEATEN BY | BEATEN BY |
+| Coin | Horizon | Regime MSE | Classic MSE | Reduction | DM p-value | Verdict brut |
+|------|---------|------------|-------------|-----------|------------|--------------|
+| BTC-USD | 1 | 0.825 | 0.888 | +7.0% | 3/4 seeds BEATS, 1 INCONCLUSIVE | INCONCLUSIVE |
+| BTC-USD | 5 | 0.580 | 0.522 | -11.1% | 3/4 BEATEN, 1 INCONCLUSIVE | INCONCLUSIVE |
+| BTC-USD | 10 | 0.732 | 0.571 | -28.3% | 3/4 BEATEN, 1 INCONCLUSIVE | INCONCLUSIVE |
 | ETH-USD | 1 | 0.619 | 0.684 | +9.6% | 4/4 p<0.005 | **BEATS** |
-| ETH-USD | 5 | 0.441 | 0.374 | -17.9% | 3/4 BEATEN BY | BEATEN BY |
-| ETH-USD | 10 | 0.573 | 0.375 | -53.0% | 4/4 BEATEN BY | BEATEN BY |
+| ETH-USD | 5 | 0.441 | 0.374 | -17.9% | 3/4 BEATEN, 1 INCONCLUSIVE | INCONCLUSIVE |
+| ETH-USD | 10 | 0.573 | 0.375 | -53.0% | 4/4 BEATEN | **NO BEATS** |
 
 ### MSE reduction vs classic HAR (regime - classic, positive = regime wins)
 
@@ -113,7 +116,7 @@ recalculées à l'identique et les colonnes ci-dessous s'y ajoutent.
 
 La colonne « Verdict hors biais » **est** le champ `aggregate_verdict_debiased` de l'artefact JSON, et
 non une lecture faite à la main par-dessus : les six lignes ci-dessus sont rejouées depuis
-`_aggregate_debiased_state` dans `scripts/tests/test_hmm_regime_vol.py`. La machine a quatre états —
+`_aggregate_state` dans `scripts/tests/test_hmm_regime_vol.py`. La machine a quatre états —
 
 | État | Condition | Sens |
 |------|-----------|------|
@@ -127,11 +130,25 @@ prétention n'est pas confirmée, la mesure dit que le modèle perd — et la r�
 puisque chaque ligne imprime le verdict brut à côté du recentré. Le décompte des pertes est persisté
 (`n_beaten_seeds_centered`), donc la colonne « seeds BEATEN (rec.) » se relit depuis l'artefact.
 
-Le champ `aggregate_verdict` (jambe **brute**) garde délibérément sa convention publiée à deux états
-(« BEATS exige 4/4 seeds, sinon INCONCLUSIVE ») : `m5_hmm_regime_research.ipynb` la documente et en
-dérive sa propre lecture `DEGRADE`, qu'un élargissement invaliderait en silence (il faudrait
-re-générer l'artefact puis ré-exécuter le notebook). L'asymétrie est assumée et suivie en **#14388**,
-pas un oubli.
+Le champ `aggregate_verdict` (jambe **brute**) partage désormais la même machine d'états à quatre
+états que la jambe hors biais (#14388). Avant l'unification, la jambe brute n'avait que deux états
+(`BEATS` exigeant 4/4 seeds, sinon `INCONCLUSIVE`) — les configs en 0/4 BEATS étaient
+codées `INCONCLUSIVE`, et `m5_hmm_regime_research.ipynb` en dérivait sa lecture `DEGRADE` à la
+main. La machine unifiée `_aggregate_state` (script `hmm_regime_vol.py`) fait sortir `NO BEATS`
+directement du verdict brut ; l'artefact `m5_hmm_regime.json` a été re-généré et le notebook
+ré-exécuté pour aligner les counts publiés.
+
+**Subtilité #14388** : la convention unanimité stricte accepte comme INCONCLUSIVE les configurations
+où 3/4 graines sont BEATEN mais la 4ᵉ est INCONCLUSIVE (DM p ≥ 0.05 pour cette graine). BTC h=5,
+BTC h=10 et ETH h=5 sont dans ce cas (la 4ᵉ graine n'atteint pas le seuil de significativité) et
+restent `INCONCLUSIVE` même si la tendance dominante est la perte. Seul **ETH h=10** a ses 4 graines
+unanimes BEATEN et bascule en `NO BEATS` sur la jambe brute. Conséquence sur les counts publiés :
+la jambe brute passe de **1 BEATS / 5 INCONCLUSIVE** (Cycle 25) à **1 BEATS / 1 NO BEATS / 4 INCONCLUSIVE** (#14388).
+
+La jambe hors biais, elle, tranche 4 NO BEATS parce que les 4 graines **sont** unanimes BEATEN sur
+la jambe centrée (`dm_centered_pvalue` < 0.05 pour les 4). La mesure de biais² décompose l'écart :
+sur la jambe centrée, l'inégalité `mean(rec.) > 0` ne dépend plus du biais, donc les 4 graines
+arrivent à des verdicts nets.
 
 **Rapport de biais signé, par modèle (contrôle §C(7))** — le biais est celui du log-RV OOS :
 
@@ -217,7 +234,13 @@ hors biais » ci-dessus précise les points 1 et 2 et confirme le point 3.)*
 le **précise** : BTC h=1 n'était pas « prometteur mais sensible aux graines », son edge était à 82 %
 le biais de la HAR ; et la dégradation à h≥5 est plus sévère qu'elle ne le paraissait.
 
-**M5 verdict (brut, tel que publié en Cycle 25) : INCONCLUSIVE overall. 1/6 configs BEATS (ETH h=1).**
+**M5 verdict (brut, machine 4 états #14388) : 1/6 BEATS (ETH h=1), 1/6 NO BEATS (ETH h=10),
+4/6 INCONCLUSIVE (BTC h=1 + BTC/ETH h=5/h=10).** La convention antérieure (Cycle 25) « 1/6 BEATS,
+5/6 INCONCLUSIVE » est remplacée par la machine unifiée `_aggregate_state` ; la convention
+unanimité stricte fait que seules les configurations à **4/4 d'un seul côté avec `dm_p_median < 0.05`**
+basculent en BEATS ou NO BEATS — les 3 configs à 3/4 BEATEN + 1 INCONCLUSIVE restent INCONCLUSIVE.
+La lecture dérivée `DEGRADE` est supprimée du notebook (la machine unifiée la fait sortir
+automatiquement quand les 4 graines sont unanimes BEATEN).
 
 The HMM regime-switching HAR provides marginal improvement at h=1 for some configurations
 but is actively harmful at h>=5. The approach adds complexity (8 coefficients + HMM

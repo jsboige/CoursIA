@@ -18,6 +18,7 @@ from __future__ import annotations
 import contextlib
 import importlib.util
 import io
+import json
 import subprocess as _subprocess
 import sys
 import unittest
@@ -550,6 +551,44 @@ class TestWriteChannelAndMuteVisibility(unittest.TestCase):
         # The channel that masked the failure must be gone, not merely
         # supplemented: a fallback would restore the masking on the retry.
         self.assertNotIn("comment", argv[:3])
+
+    def test_post_comment_transmits_the_body_not_the_temp_path(self):
+        """The endpoint assertion above is blind to what is actually SENT.
+
+        ``gh api -f key=@path`` sends the literal string ``@path``; only
+        ``-F`` dereferences it, and ``--input <json>`` -- what the PATCH
+        sibling ``edit_comment`` already used -- sidesteps the ``@``
+        semantics entirely. Under ``-f body=@<tmp>`` every marker posted the
+        name of a temporary file instead of the report, and, since the marker
+        string was then absent from the body, ``find_marker_entry`` could no
+        longer find its own comment and posted a fresh one on each run.
+
+        Measured on 2026-09-03: #14447 carried 4 such comments, and 7 of the
+        40 most recent PRs were affected. The test therefore reads the
+        payload back rather than trusting the argv shape."""
+        seen = {}
+
+        def _capture(argv, **kwargs):
+            argv = list(argv)
+            seen["argv"] = argv
+            # The temp file still exists here: post_comment unlinks it in its
+            # `finally`, after subprocess.run returns.
+            idx = argv.index("--input")
+            seen["payload"] = json.loads(
+                Path(argv[idx + 1]).read_text(encoding="utf-8")
+            )
+            return self._proc(0)
+
+        with mock.patch.object(_mod.subprocess, "run", side_effect=_capture):
+            ok = _mod.post_comment("owner/repo", 4242, "hello #900", dry_run=False)
+
+        self.assertTrue(ok)
+        self.assertEqual(seen["payload"]["body"], "hello #900")
+        # No argument may carry the "@<path>" form that caused the defect.
+        self.assertFalse(
+            [a for a in seen["argv"] if a.startswith("body=@")],
+            "the body must not be passed as a literal @path",
+        )
 
     def test_failed_write_is_warned_and_returns_false(self):
         buf = io.StringIO()
