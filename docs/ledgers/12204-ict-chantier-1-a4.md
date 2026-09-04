@@ -7,7 +7,7 @@
 
 L'audit froid avait laissé l'opération 4 en `TABLE` avec la provenance `RAPPORTE` et **une dette ouverte assumée** (« qui décide où sont les bords ? »). La tranche ne **re-décide** donc rien : elle **relit les trois attestations dans le dépôt** et rapporte ce que la lecture change.
 
-Elle ne touche à aucune autre opération (l'opération 5 est tombée — Tombée 3 de l'audit froid — et n'est pas reprise ici). Elle **révise en revanche la comptabilité d'une attestation** : l'« orchestration EPITA » citée par l'audit froid **est introuvable dans le dépôt** et sort de la liste des témoins attestables — le compte `2+` (critère d'admission de l'EPIC) tient néanmoins sans elle. Le vrai apport, comme en A2, est la **précision de la dette** : la lecture montre que la question « qui décide des bords » reçoit une réponse différente selon la strate — **prouvée** côté Hashlife, **laissée au choix de l'expérimentateur** côté ICT-15d.
+Elle ne touche à aucune autre opération (l'opération 5 est tombée — Tombée 3 de l'audit froid — et n'est pas reprise ici). Elle **corrige en revanche l'identification d'une attestation** : l'« orchestration EPITA » citée par l'audit froid, d'abord déclarée introuvable par un grep trop étroit, **est retrouvée dans le dépôt** (trois témoins committés, Attestation 3) et reste dans la liste des témoins attestables — le compte `2+` (critère d'admission de l'EPIC) tient de toute façon par les Attestations 1 et 2. Le vrai apport, comme en A2, est la **précision de la dette** : la lecture montre que la question « qui décide des bords » reçoit une réponse différente selon la strate — **prouvée** côté Hashlife, **laissée au choix de l'expérimentateur** côté ICT-15d.
 
 ## Rappel de l'énoncé mesuré
 
@@ -47,18 +47,26 @@ Le notebook détecte l'obstruction de cochaînes de Čech sur des **trajectoires
 
 **Ce que la lecture firsthand ajoute.** L'exercice 1 du notebook (stub `TODO` étudiant, conforme C.1) demande explicitement de **tester la stabilité du verdict selon `window_size`** : la dette « qui décide où sont les bords » n'y est pas seulement déclarée, elle est **instrumentalisée** — le notebook sait que son verdict dépend du choix des bords et en fait l'exercice. C'est le comportement attendu d'un candidat honnête, et c'est exactement la trace que la table doit porter.
 
-## Attestation 3 — « orchestration EPITA » — **introuvable dans le dépôt, rétrogradée**
+## Attestation 3 — « orchestration EPITA » — **retrouvée dans le dépôt (première identification trop étroite)**
 
-L'audit froid listait une troisième attestation : l'« orchestration EPITA » (découpage pédagogique des séances par école). La lecture des sources du dépôt (`docs/reference/teaching-context.md`, `docs/reference/cluster-agents.md`, grep sur « recouvrement », « bord », « décomposer » dans `docs/`) **ne retrouve aucun découpage dont les bords soient définis avant les sections** : les plans d'écoles y sont des répartitions de contenu par calendrier, sans notion de bords de recouvrement, et rien dans le dépôt n'en garde la trace formelle.
+L'audit froid listait une troisième attestation : l'« orchestration EPITA ». Une première passe de cette tranche l'avait déclarée introuvable — **identification fausse, rétractée le 2026-09-03** : le grep était borné aux docs du harnais (`docs/reference/teaching-context.md`, `cluster-agents.md`) et ne couvrait ni les notebooks des séries ni les manifestes de vendoring. Témoins vérifiés firsthand, tous committés dans le dépôt :
 
-Verdict de cette tranche sur cette attestation : elle **sort de la comptabilité du dépôt** (découpage pédagogique hors-dépôt, sans témoin committé). Le critère d'admission de l'EPIC — **≥ 2 attestations indépendantes + témoin connu** — reste satisfait par Attestation 1 + Attestation 2 ; la sortie d'EPITA ne change donc pas le compte `2+`, elle **précise l'inventaire** : la table ne doit plus citer EPITA parmi les témoins du dépôt.
+- `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Agentic-3-orchestration.ipynb` — un notebook **entièrement dédié** à l'orchestration (deux paradigmes de composition), référencé depuis le rung 0-init ;
+- les notebooks `_agent` de la même série portent dans leurs outputs committés les logs `[Orchestration.Setup]` (dépendances `jpype` + `semantic_kernel`, configuration LLM) ;
+- `argumentation_lib/NOTICE-EPITA` — le manifeste qui épingle fichier par fichier le code vendré du projet `argumentation_analysis` **Epita 2025** (l'objet de #14026).
+
+Identification : le **moteur d'orchestration agentique d'analyse argumentative du projet Epita 2025** (cf #14026).
+
+Verdict de cette tranche sur cette attestation : elle **reste dans la comptabilité du dépôt**, avec ses trois témoins committés. Le critère d'admission de l'EPIC — **≥ 2 attestations indépendantes + témoin connu** — reste satisfait par Attestation 1 + Attestation 2 ; le retour d'EPITA ne change donc pas le compte `2+`, il **restaure l'inventaire** : la table cite de nouveau EPITA parmi les témoins du dépôt, avec sa force exacte (empirique, la moins forte des trois).
+
+**Leçon methodologique** : conclure à l'absence d'un témoin depuis un grep borné aux docs du harnais (`docs/reference/`) est une identification fausse par construction — le code vendré et les notebooks des séries vivent sous `MyIA.AI.Notebooks/**`, avec leurs manifestes de vendoring (`NOTICE-*`). Toute recherche de témoin couvre ces arborescences avant de conclure à l'absence.
 
 ## Verdict de la tranche
 
 | Axe | Avant (audit froid) | Après (cette tranche) |
 |---|---|---|
 | provenance | `RAPPORTE` | **`FIRSTHAND`** |
-| attestations | `2+` (ICT-15d jouet, Hashlife, EPITA) | `2+` — **recensées précisément** : Hashlife (Lean-formel, non-jouet) + ICT-15d (empirique jouet, partition avouée) ; **EPITA retirée de l'inventaire du dépôt** |
+| attestations | `2+` (ICT-15d jouet, Hashlife, EPITA) | `2+` — **recensées précisément** : Hashlife (Lean-formel, non-jouet) + ICT-15d (empirique jouet, partition avouée) + EPITA (empirique, trois témoins committés, identification restaurée) |
 | force | empirique | Lean-formel (bords prouvés avant sections) **+** empirique (verdict à bords explicites, exercice d'invariance) |
 | statut | `TABLE` | **`TABLE`** — confirmée |
 
@@ -74,6 +82,6 @@ En A2, la dette de l'opération 1 était « nos attestations sont trois post-mor
 
 ## Suites ouvertes par cette tranche
 
-- **Inventaire corrigé** : l'attestation « orchestration EPITA » est retirée de la liste des témoins du dépôt (aucun fichier committé ne la porte) — la table de l'EPIC doit être mise à jour en ce sens par le coordinateur lors de la consolidation.
+- **Inventaire restauré** : l'attestation « orchestration EPITA » **reste** dans la liste des témoins du dépôt — trois fichiers committés la portent (notebook dédié, logs `[Orchestration.Setup]` dans les outputs, `NOTICE-EPITA`) ; la table de l'EPIC la conserve lors de la consolidation, avec la précision de force (empirique, la moins forte des trois).
 - **Les bords d'un découpage empirique n'ont pas de critère** : la question « invariance du verdict vs. choix des bords » pourrait devenir un grain de recherche propre (une strate qui **dériverait** un critère de choix de `window_size` au lieu de le tester) — hors périmètre A4, proposé comme suite naturelle.
 - **A2 → A4** : la chaîne de vérification du chantier progresse (op 1 en A2, op 4 ici) ; les opérations 3/9 (A3) et les opérations 7/8/10/12 (déjà `FIRSTHAND` dans l'audit froid) sont les autres grains de vérification restants.
