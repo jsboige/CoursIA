@@ -2,7 +2,7 @@
 
 > Issue [#7357](https://github.com/jsboige/CoursIA/issues/7357) (EPIC différée) · parent [#7265](https://github.com/jsboige/CoursIA/issues/7265).
 > Décision user du 2026-07-19 : **Option C** (découplage Aricie, substitution des libs ML), exécution différée.
-> Ce document livre les deux sous-grains prescrits par le body du 2026-08-20 : rendre la précondition « dette doc » observable (§1), et cadrer les libs de substitution (§2). Toutes les mesures sont firsthand (fork cloné sparse, compilations réelles), datées du 2026-08-23.
+> Ce document livre les deux sous-grains prescrits par le body du 2026-08-20 : rendre la précondition « dette doc » observable (§1), et cadrer les libs de substitution (§2). Toutes les mesures sont firsthand (fork cloné sparse, compilations réelles), datées du 2026-08-23 — le point SVM de §2.3 est repris le 2026-09-03 sur les mesures #12545 et #14369 (#14371).
 
 ## 1. Précondition « absorption de la dette doc » — constat de satisfaction
 
@@ -41,7 +41,7 @@ Mini-projet `net9.0` dans un scratchpad, répliquant les usages du fork : `Infer
 ### 2.3 Conséquences pour le port
 
 1. **Breaking API AutoML, mesuré au compilateur** : `ColumnInferenceResults.TextLoaderEventArgs` (API 0.20.x utilisée par le fork) n'existe plus en 0.24 — remplacée par `TextLoaderOptions`/`ColumnInformation` (CS1061 reproduit puis corrigé dans le test). Le port AutoML n'est **pas** un re-packaging : c'est une adaptation d'API.
-2. **SVM** : ML.NET n'offre pas de SVM à noyau. Le linéaire se remplace proprement (`SdcaMaximumEntropy`, multiclasse comme `MultiClassBoost.cs` du fork ; binaire : `AveragedPerceptron`/`SdcaLogisticRegression` sur label bool). Le **noyau gaussien** est un gap : candidats `SharpLearning` (MIT, SVM+boosting) ou LibSVM-sharp — à trancher en début de port (checklist 6 axes de [`sota-not-workaround`](../../.claude/rules/sota-not-workaround.md) : les trois premiers axes — package NuGet officiel, C API, CLI — sont couverts par ML.NET/SharpLearning, aucun verdict `INTRINSIC` nécessaire).
+2. **SVM** : ML.NET n'offre pas de SVM à noyau ; le linéaire seul se remplace proprement (`SdcaMaximumEntropy`, multiclasse comme `MultiClassBoost.cs` du fork ; binaire : `AveragedPerceptron`/`SdcaLogisticRegression` sur label bool). **Le « gap noyau gaussien » annoncé ici à l'origine est clos — rien n'était à trancher** : #12545 a établi le verdict **SOTA-OK** sans lib tierce (doc [`backtester-e2-svm-kernel.md`](backtester-e2-svm-kernel.md)), la lib retenue étant Accord.NET lui-même ; la tranche 4 de #7357 (PR #14369) mesure ensuite qu'**Accord.NET 3.8.2-alpha** — la version du fork — restore et compile le corps upstream **verbatim** sur net9.0 (`0 Avertissement(s) 0 Erreur(s)`, pas de NU1701) : le SVM à noyau est **conservé, sans substitution**. Ce que la tranche 4 ajoute à la décision #12545 est la **génération** : la 3.8.2-alpha (API `MulticlassSupportVectorLearning` + `Learn`) compile le corps tel quel, là où la 2.6.0 validée par #12545 (génération précédente, restaurée via le shim NU1701) aurait imposé de le réécrire.
 3. **Boosting** : `FastTree` (gradient boosting ML.NET) remplace les boosters Accord.
 4. **Stratégie recommandée** : figer la paire preview `AutoML 0.24.0-preview.26160.2` + `ML 6.0.0-preview.26160.2` (la seule testée ci-dessus), isoler les usages AutoML derrière une interface (`IColumnInference`) pour contenir le risque preview, et répliquer le test ci-dessus comme test d'intégration du port (il est volontairement petit : CSV inline, assert `MicroAccuracy > 0.9`).
 

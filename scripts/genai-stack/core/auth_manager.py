@@ -227,11 +227,13 @@ class GenAIAuthManager:
         updated_keys = set()
         
         # Mapping des clés à mettre à jour
+        # NB #14382 : COMFYUI_BEARER_TOKEN / COMFYUI_RAW_TOKEN ne sont plus
+        # ecrits -- le compose lit ${COMFYUI_API_TOKEN} (cle geree par
+        # master.env via render_envs.py) et la forme brute ne doit pas vivre
+        # dans le .env de service.
         updates = {
             'COMFYUI_API_TOKEN': bcrypt_hash,
-            'COMFYUI_BEARER_TOKEN': bcrypt_hash, # Alias souvent utilisé
             'QWEN_API_USER_TOKEN': bcrypt_hash,  # Legacy
-            'COMFYUI_RAW_TOKEN': raw_token,
             'COMFYUI_PASSWORD': raw_token        # Pour login simple
         }
         

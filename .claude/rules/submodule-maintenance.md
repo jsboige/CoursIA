@@ -18,7 +18,9 @@ La conséquence pratique : un sous-module n'est pas une dépendance qu'on subit,
 
 **`Automata` est le cinquième, et il est facile à oublier** : il n'apparaît dans aucun dispatch historique. La liste faisant foi est `.gitmodules`, jamais un souvenir — c'est en la lisant qu'on découvre aussi que `MetaGeneticSharp` vit sous `jsboige/`, **pas** sous `MyIntelligenceAgency/` (un `gh pr list --repo MyIntelligenceAgency/MetaGeneticSharp` rend `Could not resolve to a Repository`, ce qui se lit à tort comme « rien à faire »).
 
-**Hors périmètre** : les trois `foundry-lib/lib/*` (`forge-std`, `openzeppelin-contracts`, `account-abstraction`) sont des libs tierces vendorées — on suit leur upstream, on ne les maintient pas.
+**Le périmètre déclaré est désormais le périmètre maintenu.** `.gitmodules` ne contient plus que ces cinq forks : les trois `foundry-lib/lib/*` (`forge-std`, `openzeppelin-contracts`, `account-abstraction`) en ont été retirés (#14518). C'étaient des upstreams tiers, pas des forks — on ne les faisait pas vivre et on ne le pouvait pas. Ils s'installent via `forge install --no-git`, pinnés sur `foundry-lib/foundry.lock`, et vivent sous `.gitignore` — régénérables comme `node_modules`.
+
+**Le critère tient en une phrase** : un sous-module est un dépôt **qu'on fait vivre**. Une dépendance de build qu'on subit se clone, elle ne se déclare pas — quantité de composants clonent leurs dépendances sans que le dépôt parent s'en encombre.
 
 ## Règle HARD 2 — la dérive de gitlink se mesure, elle ne s'intuitionne pas
 

@@ -13,7 +13,8 @@
 # Inventaire des embryons de parcours — Phase 0 / EPIC #13844
 
 **Statut** : MANUEL (fichier de travail, non commité sous embargo).
-**Date** : 2026-08-31.
+**Date** : 2026-08-31 (premier balayage) · 2026-09-02 (complément).
+**Complément du 2026-09-02** : l'entrée #8 citait `SymbolicAI/Lean/social_choice_lean/`, chemin absent de `main` — le lake vit sous `GameTheory/`. Un second balayage a par ailleurs relevé six fichiers manquants : trois embryons réels (#35-37) et trois faux positifs du motif, inscrits `DROP` (#38-40) pour ne pas être re-investigués.
 **Source** : `Grep "^## \s*(Parcours|parcours|Phase)" MyIA.AI.Notebooks/**/*.md` + lecture ciblée des 17 fichiers les plus structurants.
 **Livré via** : `docs/curriculum/_inventory.md` (portée : 1 fichier nouveau, **< 200 lignes**).
 
@@ -39,7 +40,7 @@
 | 5 | `MyIA.AI.Notebooks/Probas/PyMC/README.md` L197-221 | Data scientist Python ~10h | 4 parcours distincts | 4 « Quel parcours choisir » à structure parfaite (data scientist / décision / comparatif / rapide) | **RELOCATE** — modèle compact, à reprendre dans `docs/curriculum/aima-walk.md` comme annexe probabiliste |
 | 6 | `MyIA.AI.Notebooks/Probas/DecisionTheory/README.md` L36 | Apprenant théorie de la décision (fondations → pont causal) | Non chiffré | Phases narratives | **INTEGRATE** — récits dans parcours symbolique (causal bridges) |
 | 7 | `MyIA.AI.Notebooks/SymbolicAI/Lean/README.md` (sub) | Lean 4 multi-domain (knots, mimo, conway, social_choice, asymmetric_info) | Variable selon lake | Structure + lacs nommés | **INTEGRATE** — référencé par `aima-walk.md` pour les compagnons formels (cf `Search-03e-AStar-Optimality` cf #13685 + #13841 rename) |
-| 8 | `MyIA.AI.Notebooks/SymbolicAI/Lean/social_choice_lean/LEAN_PREREQUISITES.md` L7-119 | Débutant Lean / Mathlib / reproduction | 3 parcours numérotés (Débutant / Intermédiaire / Avancé) | « Parcours N » structuré (3 niveaux nommés) | **RELOCATE** — modèle le plus progressif du dépôt, à utiliser pour le pilote symbolique |
+| 8 | `MyIA.AI.Notebooks/GameTheory/social_choice_lean/LEAN_PREREQUISITES.md` L7-142 | Débutant Lean / Mathlib / reproduction | 3 parcours numérotés (Débutant / Intermédiaire / Avancé) | « Parcours N » structuré (3 niveaux nommés) | **RELOCATE** — modèle le plus progressif du dépôt, à utiliser pour le pilote symbolique |
 | 9 | `MyIA.AI.Notebooks/SymbolicAI/README.md` L61-83 | Apprenant IA symbolique général | Pont LLM ~4h + Apprentissage symbolique ~9h30 | « Parcours alternatifs » cross-série | **INTEGRATE** — narratif connecteur entre Tweety / Lean / Planners / SmartContracts |
 | 10 | `MyIA.AI.Notebooks/SymbolicAI/Tweety/README.md` L74-110 | Apprenant logique argumentative | Variable (cf alternatifs) | « Parcours alternatifs » | **INTEGRATE** — premier pas du pilote symbolique |
 | 11 | `MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/README.md` L58-114 | Apprenant apprentissage symbolique | ~9h30 | Phase + alternatifs | **INTEGRATE** — branche symbolique |
@@ -66,25 +67,39 @@
 | 32 | `MyIA.AI.Notebooks/SymbolicAI/SmartContracts/0X-*/README.md` (6 sous-séries) | Idem 14 | Idem 14 | Sous-parcours par phase (0X-Foundations → 06-Real-World) | **INTEGRATE** — granularité plus fine que le README parent |
 | 33 | `MyIA.AI.Notebooks/README.md` L225 + L339 | Lecteur découvrant tout le dépôt | Variable | « Parcours recommandé » + « Parcours thématiques » | **RELOCATE** — racine reformatée pour devenir `PARCOURS.md` Phase 3 (pas ce cycle) |
 | 34 | `MyIA.AI.Notebooks/index.qmd` L11 | Site jsboige.github.io/CoursIA | — | Mention « trois parcours d'apprentissage » pointant vers `parcours.qmd` | **INTEGRATE** — couplé à #10921 / #10924 (périmètre moteur Quarto) |
+| 35 | `MyIA.AI.Notebooks/GameTheory/SocialChoice/README.md` L33-108 | Apprenant choix social (5 angles du même résultat) | Non chiffré | DAG mermaid : simulation / vote / preuve Lean / SAT-Z3 / manipulation | **INTEGRATE** — sous-série de GameTheory, à citer depuis le pilote symbolique |
+| 36 | `MyIA.AI.Notebooks/GenAI/Texte/README.md` L136-164 | Apprenant LLM texte | Non chiffré | DAG ASCII (OpenAI → PromptEngineering → Reasoning / Structured → Function calling) | **INTEGRATE** — sous-série du GenAI rush, absente du balayage initial |
+| 37 | `MyIA.AI.Notebooks/Sudoku/sudoku_lean/README.md` L50-57 | 3 profils : lecteur du cours / lecteur Lean / lecteur d'un lake frère | Non chiffré | Table 3 profils → séquence de sections | **INTEGRATE** — sous-lake de Sudoku ; même moule que #8, en plus court |
+| 38 | `MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean/README.md` L190 | — | — | « Phase 5 » = jalon de l'Epic #2874 (re-modélisation Reidemeister) | **DROP** — faux positif du motif `^## Phase` : jalon de formalisation, pas un parcours |
+| 39 | `MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean/README.md` L9-50 | — | — | « Phases et libs compilées » = 6 `lean_lib` mappées aux phases du papier §11 | **DROP** — faux positif : séquence de build, pas un parcours d'apprentissage |
+| 40 | `MyIA.AI.Notebooks/cross-series/matching-cv/docs/HISTORY.md` L5-76 | — | — | Phases 1-6 = historique de mission (Streamlit → Flask → Playwright) | **DROP** — faux positif : historique de projet, pas un parcours |
 
 ## Synthèse quantitative
 
 | Statut | Compte | Pourcentage |
 |---|---|---|
-| `RELOCATE` (promouvoir en `docs/curriculum/<pilote>.md`) | 8 | ~24 % |
-| `INTEGRATE` (garder en place, citer dans les pilotes) | 17 | ~50 % |
-| `ARCHIVE` (déplacer ou laisser embryon ténu) | 5 | ~15 % |
-| `DROP` | 0 | 0 % |
-| (Indéterminé — besoin lecture supplémentaire) | ~4 | ~12 % |
-| **Total** | **~34** | **100 %** |
+| `RELOCATE` (promouvoir en `docs/curriculum/<pilote>.md`) | 10 | 25 % |
+| `INTEGRATE` (garder en place, citer dans les pilotes) | 23 | ~58 % |
+| `ARCHIVE` (déplacer ou laisser embryon ténu) | 4 | 10 % |
+| `DROP` (faux positifs du motif de balayage) | 3 | ~8 % |
+| **Total** | **40** | **100 %** |
 
-**Aucun DROP** proposé : la renumérotation #12375 qui rend obsolète certains labels numérotés n'a pas encore été livrée — donc les embryons restent vivants en attendant.
+Ces comptes sont **recomptés depuis la colonne de verdict du tableau ci-dessus**,
+pas estimés : chacune des 40 lignes porte exactement un statut, et leur somme
+fait 40. La ligne « Indéterminé — besoin lecture supplémentaire » qui figurait
+ici a été retirée pour cette raison : aucune des 40 entrées n'est indéterminée,
+et son effectif supposé (~4) était précisément l'écart qui faisait tomber un
+récapitulatif faux sur un total juste. C'est le dénominateur des
+recommandations Phase 1 — il devait être mesuré avant que l'inventaire ne
+serve de référence à l'EPIC #13844.
 
-## Modèles à exporter (ce que les 8 `RELOCATE` font émerger)
+**Aucun embryon n'est proposé au DROP** : la renumérotation #12375 qui rend obsolète certains labels numérotés n'a pas encore été livrée — donc les embryons restent vivants en attendant. Les trois `DROP` (#38-40) ne sont pas des embryons : ce sont des **faux positifs du motif de balayage** `^##\s+(Parcours|Phase)`, où « Phase » désigne un jalon d'Epic, une séquence de build ou un historique de mission. Ils sont inscrits pour qu'un prochain balayage ne les re-investigue pas.
+
+## Modèles à exporter (ce que les 10 `RELOCATE` font émerger)
 
 | Modèle | Source | Page cible EPIC Phase 2 |
 |---|---|---|
-| **« Parcours par niveau »** (Débutant / Intermédiaire / Avancé, durées croissantes) | SocialChoice/LEAN_PREREQUISITES (#8), GenAI/RAG (#26) | `docs/curriculum/symbolic-formalization.md` + `aima-walk.md` |
+| **« Parcours par niveau »** (Débutant / Intermédiaire / Avancé, durées croissantes) | social_choice_lean/LEAN_PREREQUISITES (#8), GenAI/RAG (#26) | `docs/curriculum/symbolic-formalization.md` + `aima-walk.md` |
 | **« Quel parcours choisir ? »** (table profil/durée avec table récapitulative) | SmartContracts (#14), ML.Net (#2) | `docs/curriculum/CONTENTS.md` index |
 | **« Phase N — Titre (Notebooks X-Y, ~Nh) »** (séquentiel narratif) | GameTheory (#1), SmartContracts (#14), QC Python (#17), Search (#15) | Tous les pilotes |
 | **« Recette narrative »** (fil rouge type « construire un podcast ») | GenAI/Audio (#22), livresagites-parcours (#29) | `genai-rush.md` (rédacté narrativement, pas tabulaire) |
@@ -96,7 +111,7 @@
 3. **Doublons** SmartContracts/01-06 — 6 sous-parcours RÉPÉTENT le parcours parent ; EPIC Phase 2 doit choisir : intégrer parent OU enfants, pas les deux.
 4. **`docs/ROO-GUIDED-PATH.md`** dans `GenAI/Vibe-Coding/` — c'est un parcours d'agent-tutor Roo (auto-référence), pas un parcours d'apprentissage — il ne doit **pas** être dans le curriculum général.
 
-## Critère d'acceptation Phase 0 (cette PR)
+## Critère d'acceptation Phase 0 (PR #13846)
 
 | Critère | Verdict |
 |---|---|
