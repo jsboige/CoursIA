@@ -12,8 +12,11 @@ name: Bash Syntax Advisory
 #
 # Layering:
 #   - syntax-check: FAILS on a broken .sh (that is the point -- it must be
-#     visible), but it is paths-scoped to scripts/** so it only gates PRs
-#     that touch scripts/.
+#     visible). Scope repo-wide since #10643 (2026-09-04): every tracked .sh,
+#     not just scripts/ -- 46 of the 56 companions lived outside scripts/
+#     and were never read by this guard. The EPIC body's out-of-scope zones
+#     (Vibe-Coding, docs/archive/, _archive/) are excluded: frozen
+#     inheritance + one known-broken teaching artefact tracked separately.
 #   - shebang-dry-run-advisory: continue-on-error -- never fails the PR;
 #     warns + posts a PR comment when a shebang / executable-bit issue is
 #     found, and dry-runs the one script that exposes a no-build `check`
@@ -23,12 +26,12 @@ on:
   push:
     branches: [main]
     paths:
-      - 'scripts/**'
+      - '**/*.sh'
       - '.github/workflows/bash-syntax-advisory.yml'
   pull_request:
     branches: [main]
     paths:
-      - 'scripts/**'
+      - '**/*.sh'
       - '.github/workflows/bash-syntax-advisory.yml'
   workflow_dispatch:
 
@@ -42,7 +45,7 @@ concurrency:
 
 jobs:
   syntax-check:
-    name: bash -n every scripts .sh (advisory)
+    name: bash -n every tracked .sh (advisory)
     # Routage #14283 tranche 3c (ai-01 2026-09-02) : jambe Linux auto-hebergee.
     # Garde anti-fork au niveau job + runs-on STATIQUE (une expression leverait
     # DYNAMIC_RUNS_ON dans check_self_hosted_runner_policy.py).
@@ -62,7 +65,7 @@ jobs:
               echo "::error::bash syntax error: $f"
               FAILED=1
             fi
-          done < <(find scripts -name '*.sh' -type f | sort)
+          done < <(git ls-files '*.sh' | grep -v -E '^(MyIA.AI.Notebooks/GenAI/Vibe-Coding/|docs/archive/)|(^|/)_archive/' | sort)
           exit "$FAILED"
 
   shebang-dry-run-advisory:
@@ -90,7 +93,7 @@ jobs:
               echo "::warning::not executable (chmod +x): $f"
               WARN=1
             fi
-          done < <(find scripts -name '*.sh' -type f | sort)
+          done < <(git ls-files '*.sh' | grep -v -E '^(MyIA.AI.Notebooks/GenAI/Vibe-Coding/|docs/archive/)|(^|/)_archive/' | sort)
           echo "warnings=$WARN" >> "$GITHUB_OUTPUT"
       - name: Dry-run build_advisory.sh check (no build)
         run: |
