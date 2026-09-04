@@ -108,8 +108,22 @@ d'hyperparamètres**. Instrument mis en place le 04/09 :
 | **Conjonction** | idem | `edge ≥ 2σ` cross-seed **et** `dm_p_mse_median < 0.05` (mae rapportée en variante), sinon `NO-BEATS` / `INCONCLUSIVE` explicites. |
 
 Dataset de référence (04/09, yfinance, gitignored) : `XRP-USD.csv` — bornes
-`2018-01-01 → 2026-09-04` (3169 rows), sha256 `71d8aee9d0bda18b`. Le verdict du run OOT
-(label `oot`, `--train-end 2025-06-30`) est rapporté dans cette section une fois terminé.
+`2018-01-01 → 2026-09-04` (3169 rows), sha256 `71d8aee9d0bda18b`.
+
+**Verdict du run OOT (`--label oot --train-end 2025-06-30`, seeds 0/1/7/42/99, 30 epochs) :**
+
+| Run | Split | seeds > BH | `edge_sigma` | DM mse p médian | DM mae p | DM linear p (biais) | Biais moyens (retour/jour) | Verdict |
+|---|---|---:|---:|---:|---:|---:|---|---|
+| `holdout_oot_20260904_164308` | OOT réel : train gelé ≤ 2025-06-30 (hash recalculé), holdout 2025-07-10 → 2026-09-04 — **absent de tous les folds** | 0/5 | **−5.38** | 0.1419 | 0.2642 | 0.2969 | DT −0.004059 · momentum −7.5e-05 · BH −0.001406 | **NO-BEATS** |
+
+Lecture : le troisième test temporel (après interne et frais du 06/08) confirme le
+NO-BEATS sur la **vraie** fenêtre future — l'entraînement gelé n'a jamais vu ces
+données. Le DT net Sharpe −1.744 (± 0.214) est battu par le buy-and-hold (−0.592)
+sur une fenêtre baissière XRP ; signe directionnel négatif sur 0/5 seeds. Le biais
+signé montre que le DT perd davantage que le BH en moyenne journalière — l'edge L4
+ne vit pas dans le temps, il reste cantonné au panel/cross-section. Résultats par
+seed complets (séries de retours incluses pour re-calcul DM) :
+`results/xrp_dt_validation/holdout_oot_20260904_164308.json` (gitignored).
 
 ## Implication pour le ladder
 
