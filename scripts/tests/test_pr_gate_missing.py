@@ -20,7 +20,15 @@ import os
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from pr_gate_missing import classify, rollup_names, GATE_NAME  # noqa: E402
+from pr_gate_missing import (  # noqa: E402
+    classify,
+    rollup_names,
+    GATE_NAME,
+    prescribe,
+    remediation_for,
+    REMEDIATION_CONFLICT,
+    REMEDIATION_SKIP_CI,
+)
 
 
 def _codeql_only_rollup():
@@ -109,3 +117,103 @@ def test_rollup_names_reads_both_shapes():
     assert GATE_NAME in names
     assert "alpha" in names
     assert "beta" in names
+
+
+# ---------------------------------------------------------------------------
+# prescribe() -- remediation by CAUSE (#14477 design-gate)
+# ---------------------------------------------------------------------------
+
+
+def _candidate(number, mergeable_state="clean", base_changed_at=None,
+               last_pr_run_at=None, subject="feat: x", author="jsboige"):
+    return {
+        "number": number,
+        "mergeable_state": mergeable_state,
+        "base_changed_at": base_changed_at,
+        "last_pr_run_at": last_pr_run_at,
+        "head_subject": subject,
+        "author_login": author,
+    }
+
+
+def test_dirty_pr_remedy_is_conflict_never_repush():
+    # Controle positif du faux positif (acceptance #14477) : une PR dirty
+    # (no. #14220, mesuree 2026-09-03) DOIT produire le remede conflit, et le
+    # remede re-poussee doit en etre ABSENT -- le test echoue si le remede
+    # re-poussee ("un nouveau push", texte de REMEDIATION_SKIP_CI) est emis.
+    pr = _candidate(14220, mergeable_state="dirty",
+                    base_changed_at="2026-09-02T06:00:00Z")
+    cause, _ = prescribe(pr)
+    assert cause == "conflict"
+    remedy = remediation_for(cause, "")
+    assert remedy is REMEDIATION_CONFLICT
+    assert "un nouveau push" not in remedy  # le remede re-poussee est interdit
+    assert "resoudre le conflit" in remedy
+
+
+def test_dirty_dominates_every_other_cause():
+    # Le dirty prime (ordre impose par #14477) : meme avec un basculement de
+    # base et un sujet [skip ci], la cause reste conflict.
+    pr = _candidate(14441, mergeable_state="dirty",
+                    base_changed_at="2026-09-03T11:55:48Z",
+                    subject="chore: [skip ci] bump", author="app/github-actions")
+    cause, _ = prescribe(pr)
+    assert cause == "conflict"
+
+
+def test_retarget_after_last_run_gets_wake_recipe():
+    # Cause 4 mesuree sur #14441 : base_ref_changed posterieur au dernier run
+    # du workflow PR gate -> remede commit vide a arbre identique (commit-tree).
+    pr = _candidate(14441, base_changed_at="2026-09-03T11:55:48Z",
+                    last_pr_run_at="2026-09-02T08:00:00Z")
+    cause, detail = prescribe(pr)
+    assert cause == "retarget"
+    assert "2026-09-03T11:55:48Z" in detail  # la valeur lue est nommee
+    remedy = remediation_for(cause, detail)
+    assert "commit-tree" in remedy
+    assert "7 runs -> 31" in remedy  # l'efficacite mesuree sur #14441 est citee
+
+
+def test_retarget_not_claimed_when_more_recent_run_exists():
+    # Si un run du workflow PR gate posterieur au basculement existe, le
+    # retarget ne peut pas etre la cause : on retombe sur unknown.
+    pr = _candidate(14441, base_changed_at="2026-09-03T11:55:48Z",
+                    last_pr_run_at="2026-09-03T12:00:00Z")
+    cause, _ = prescribe(pr)
+    assert cause == "unknown"
+
+
+def test_skip_ci_token_in_head_subject():
+    # Cause 1 (#10898) : token dans le sujet de tete -> remede re-push nu.
+    pr = _candidate(10898, subject="chore(nb): [skip ci] re-attestation")
+    cause, detail = prescribe(pr)
+    assert cause == "skip_ci"
+    assert "[skip ci]" in detail
+    assert "un nouveau push" in remediation_for(cause, detail)
+
+
+def test_bot_pr_is_structural():
+    pr = _candidate(10558, author="app/github-actions")
+    cause, _ = prescribe(pr)
+    assert cause == "bot"
+
+
+def test_bot_dirty_is_conflict_first():
+    # Le dirty prime meme sur la cause structurelle bot (#14477 : le conflit
+    # bloque les runs de quiconque).
+    pr = _candidate(10558, mergeable_state="dirty", author="app/github-actions")
+    cause, _ = prescribe(pr)
+    assert cause == "conflict"
+
+
+def test_unknown_names_the_measurements():
+    # Aucune des quatre causes -> « cause non determinee », les mesures faites
+    # nommees, et le texte ne prescrit AUCUN remede git.
+    pr = _candidate(10902, subject="feat: add monitoring")
+    cause, detail = prescribe(pr)
+    assert cause == "unknown"
+    assert "mergeable_state=clean" in detail  # la valeur lue, pas une hypothese
+    remedy = remediation_for(cause, detail)
+    assert "pas determinee" in remedy
+    assert "git merge" not in remedy
+    assert "commit-tree" not in remedy

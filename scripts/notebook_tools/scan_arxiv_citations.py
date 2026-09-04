@@ -22,8 +22,11 @@ from pathlib import Path
 
 ARXIV_RE = re.compile(r"\barXiv:\s*(\d{4}\.\d{4,5})\b")
 # Legacy : arXiv:cs.LG/NNNNNNN ou arXiv:math.AG/NNNNNNN ou arXiv:hep-th/NNNNNNN
+# Le préfixe d'archive FAIT partie de l'identifiant legacy : l'API arXiv
+# rejette (400) un identifiant ancien réduit à ses 7 chiffres. La capture
+# inclut donc le préfixe quand il est présent (#14435, rem. 3).
 ARXIV_RE_LEGACY = re.compile(
-    r"\barXiv:\s*(?:[a-z\-]+(?:\.[A-Z]{2})?/)?(\d{7})\b"
+    r"\barXiv:\s*((?:[a-z\-]+(?:\.[A-Z]{2})?/)?\d{7})\b"
 )
 
 
@@ -56,7 +59,8 @@ def scan_notebook(nb_path: Path):
         for m in ARXIV_RE_LEGACY.finditer(src):
             arxiv_id = m.group(1)
             # éviter les faux positifs sur les modernes (7 chiffres != 9)
-            if len(arxiv_id) == 7:
+            digits = arxiv_id.rsplit("/", 1)[-1]
+            if len(digits) == 7:
                 found.append((idx, arxiv_id))
     return found
 

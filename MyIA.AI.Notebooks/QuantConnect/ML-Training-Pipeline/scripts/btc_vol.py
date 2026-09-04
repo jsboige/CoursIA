@@ -212,6 +212,11 @@ def aggregate_verdicts_recentered(rows: list[dict]) -> list[dict]:
     The re-centered DM measures the variance differential (biases annihilated
     by centering), so this is the **precision** jambe that the §C amended
     bareme (#11010) requires for the BEATS verdict.
+
+    The uncentered sanity leg (`dm_uncentered_vs_har_raw_p_median`, #14390) is
+    aggregated alongside: it reproduces the #11011 keeper measure, and a leg
+    that exists only as per-row fields can never blush (the #14362 defect was
+    exactly a silent absence on the one surface where it would have been read).
     """
     from collections import defaultdict
 
@@ -228,11 +233,13 @@ def aggregate_verdicts_recentered(rows: list[dict]) -> list[dict]:
         har_vars_debiased = np.array([r["har_variance_debiased"] for r in sub])
         har_biases = np.array([r["har_bias_oos"] for r in sub])
         dm_pvals = np.array([r["dm_centered_pvalue"] for r in sub])
+        dm_unc_pvals = np.array([r["dm_uncentered_vs_har_raw_pvalue"] for r in sub])
         verdicts = [r["dm_centered_verdict"] for r in sub]
 
         edge = float(np.mean(reductions))
         sigma = float(np.std(reductions)) if len(reductions) > 1 else 0.0
         dm_p_med = float(np.median(dm_pvals))
+        dm_unc_p_med = float(np.median(dm_unc_pvals))
 
         # Variance ratio: var_DL / var_HAR_debiased < 1 means DLinear is more precise.
         var_ratio = float(np.mean(dl_vars) / np.mean(har_vars_debiased)) if np.mean(har_vars_debiased) > 0 else float("nan")
@@ -253,6 +260,7 @@ def aggregate_verdicts_recentered(rows: list[dict]) -> list[dict]:
             "edge_reduction_pct": edge,
             "edge_std_pct": sigma,
             "dm_centered_p_median": dm_p_med,
+            "dm_uncentered_vs_har_raw_p_median": dm_unc_p_med,
             "var_ratio_dl_over_har_debiased": var_ratio,
             "har_bias_share_of_mse_debiased": bias_share,
             "mean_dl_mse": float(np.mean([r["dlinear_mse_logrv"] for r in sub])),

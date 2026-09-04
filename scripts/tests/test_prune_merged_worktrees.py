@@ -194,6 +194,290 @@ class TestDecisionContract:
 
 
 # ---------------------------------------------------------------------------
+# same_worktree_path -- le drapeau is_current se CALCULE
+# ---------------------------------------------------------------------------
+
+
+class TestSameWorktreePath:
+    r"""`test_skip_current` ne pinne que l'AVAL du drapeau, jamais son calcul.
+
+    Le drapeau etait `wt_path == current_path`, entre deux ecritures
+    differentes du meme chemin : `git worktree list --porcelain` rend des
+    slash avant, `Path(cwd).resolve()` rend la forme native (antislash sous
+    Windows). L'egalite ne pouvait donc jamais etre vraie sur Windows, et
+    `SKIP_CURRENT` etait inatteignable -- mesure du 2026-09-03 sur ai-01,
+    64 worktrees, `skipped=0` meme lance depuis un worktree dont la PR est
+    MERGED, c'est-a-dire un `--apply` qui aurait tente `worktree remove`
+    sur son propre repertoire courant.
+    """
+
+    def test_separator_mismatch_is_the_same_worktree(self, tmp_path):
+        native = str(tmp_path)
+        porcelain = native.replace(os.sep, "/")
+        if os.sep != "/":
+            # Controle positif : sans ca, le test passerait sur une paire
+            # identique et ne mesurerait rien du defaut qu'il pinne.
+            assert porcelain != native, "le cas teste ne se reproduit pas ici"
+        assert pmw.same_worktree_path(porcelain, native) is True
+
+    def test_trailing_separator_is_the_same_worktree(self, tmp_path):
+        assert pmw.same_worktree_path(str(tmp_path) + "/", str(tmp_path)) is True
+
+    def test_distinct_worktrees_are_not_current(self, tmp_path):
+        a = tmp_path / "wt-a"
+        b = tmp_path / "wt-b"
+        a.mkdir()
+        b.mkdir()
+        assert pmw.same_worktree_path(str(a), str(b)) is False
+
+    def test_get_worktree_info_uses_the_comparison(self, monkeypatch, tmp_path):
+        """Pinne le CABLAGE : un retour a `==` en l.284 doit rougir ici."""
+        class _Proc:
+            returncode = 0
+            stdout = ""
+
+        monkeypatch.setattr(pmw, "run_git", lambda *a, **k: _Proc())
+        native = str(tmp_path)
+        porcelain = native.replace(os.sep, "/")
+        info = pmw.get_worktree_info(porcelain, native)
+        assert info["is_current"] is True
+
+
+# ---------------------------------------------------------------------------
+# Tests lookup_pr_for_detached_head (#14476) -- anti faux-positifs
+# ---------------------------------------------------------------------------
+
+
+class TestLookupPRForDetachedHead:
+    """Tests unitaires du verdict par contenu pour HEAD detaché (#14476).
+
+    Avant #14476 : intersection de jetons `re.findall(r"[A-Za-z0-9-]{4,}")`
+    entre titre PR et sujet commit -- prenait la 1ere PR dont au moins un
+    mot >=4 chars matchait. Cause structurelle de faux positifs massifs
+    (notebook, guard, training, slides sont des mots partout).
+
+    Apres #14476 : 1) resolution directe par numero si ``re.search(r"\\(#\\d+\\)$")``
+    extrait du sujet ; 2) sinon egalite normalisee stricte ; 3) sinon None.
+    """
+
+    def test_subject_without_pr_number_no_match(self, monkeypatch):
+        """Sujet sans `(#N)` retourne par defaut le verdict `None` quand la
+        liste de PRs recentes est vide ou sans egalite.
+        """
+        # Stub run_gh : pas de PR list exploitable
+        monkeypatch.setattr(pmw, "run_gh", lambda *a, **k: _fake_proc(
+            returncode=0,
+            json_payload=[],
+        ))
+        # Pas de run_git OK -> pas de sujet exploitable non plus -> None
+        # est deja valide. Ici on verifie qu'un sujet SANS (#N) et une
+        # liste vide rendent bien None, jamais une PR par defaut.
+        import pytest
+        # Worktree path bidon ; on stub run_git aussi.
+        monkeypatch.setattr(
+            pmw, "run_git",
+            lambda *a, **k: _fake_proc(returncode=128, stdout=""),
+        )
+        result = pmw.lookup_pr_for_detached_head("/tmp/fake")
+        assert result is None
+
+    def test_subject_with_pr_number_resolves_directly(self, monkeypatch):
+        """Sujet `fix: chg (#14476)` -> `gh pr view 14476` direct.
+
+        C'est la voie nominale post-#14476 (squash-merge preserve le
+        numero de PR dans le sujet du commit). On verifie qu'on ne tombe
+        PAS dans la voie liste -- le PR rendu vient de `gh pr view N`,
+        pas d'une intersection par jetons.
+        """
+        # run_git retourne un sujet avec `(#14476)`
+        monkeypatch.setattr(
+            pmw, "run_git",
+            lambda *a, **k: _fake_proc(
+                returncode=0,
+                stdout="fix(scripts,#14476): prune bug repair (#14476)\n",
+            ),
+        )
+
+        gh_calls: list[list] = []
+
+        def fake_run_gh(*args, **kwargs):
+            gh_calls.append(list(args))
+            cmd = list(args)
+            # `gh pr view 14476 --json ...` -- la voie directe
+            if "view" in cmd and "14476" in cmd:
+                return _fake_proc(
+                    returncode=0,
+                    json_payload={
+                        "number": 14476,
+                        "state": "MERGED",
+                        "url": "https://github.com/jsboige/CoursIA/pull/14476",
+                        "title": "fix(scripts,#14476): prune bug repair",
+                    },
+                )
+            # Liste vide en fallback (au cas où on tomberait dans la voie 2)
+            return _fake_proc(returncode=0, json_payload=[])
+
+        monkeypatch.setattr(pmw, "run_gh", fake_run_gh)
+
+        result = pmw.lookup_pr_for_detached_head("/tmp/fake")
+        assert result is not None
+        assert result["number"] == 14476
+        assert result["state"] == "MERGED"
+        # On a appelé la vue directe, pas la liste
+        assert any(
+            "view" in c and "14476" in c
+            for c in gh_calls
+        ), f"expected direct pr view call, got {gh_calls}"
+
+    def test_subject_share_token_returns_none(self, monkeypatch):
+        """Faux positif élimine : sujet `fix(notebook): ...` partage `notebook`
+        avec un titre PR récent, mais aucun match par numero ni par egalite
+        normalisee. AVANT #14476, ce cas retournait la 1ere PR dont le
+        titre contenait `notebook`, ce qui causait le retrait d'un
+        worktree encore actif.
+        """
+        # Sujet sans `(#N)` -- force la voie liste
+        monkeypatch.setattr(
+            pmw, "run_git",
+            lambda *a, **k: _fake_proc(
+                returncode=0,
+                stdout="fix(notebook): unrelated work in progress\n",
+            ),
+        )
+
+        # PRs recentes qui partagent `notebook` mais ne sont PAS ce commit
+        monkeypatch.setattr(
+            pmw, "run_gh",
+            lambda *a, **k: _fake_proc(
+                returncode=0,
+                json_payload=[
+                    {
+                        "number": 14437,
+                        "state": "MERGED",
+                        "url": "https://github.com/jsboige/CoursIA/pull/14437",
+                        "title": "feat(notebook): something else entirely",
+                    },
+                    {
+                        "number": 14195,
+                        "state": "OPEN",
+                        "url": "https://github.com/jsboige/CoursIA/pull/14195",
+                        "title": "refactor(scripts): prune merged worktrees",
+                    },
+                ],
+            ),
+        )
+        result = pmw.lookup_pr_for_detached_head("/tmp/fake")
+        assert result is None, (
+            "faux positif elimine : intersection de jetons interdite, "
+            "egalite normalisee impossible (sujet != titre). Resultat doit "
+            "etre None, pas une PR partageant `notebook`."
+        )
+
+
+def _fake_proc(returncode: int = 0, stdout: str = "", json_payload=None):
+    """Construit un subprocess.CompletedProcess minimal pour stubbing."""
+    import subprocess
+    out = stdout
+    if json_payload is not None:
+        out = json.dumps(json_payload)
+    return subprocess.CompletedProcess(
+        args=[], returncode=returncode, stdout=out, stderr=""
+    )
+
+
+# ---------------------------------------------------------------------------
+# Tests render_text -- fidelite au disque en mode --apply (#14476)
+# ---------------------------------------------------------------------------
+
+
+class TestRenderText:
+    """Le rendu texte ne doit JAMAIS mentir sur ce qui a quitte le disque.
+
+    Avant #14476 : `render_text` lisait depuis `s.decision`, et affichait
+    `REMOVED` pour tout `decision="REMOVE"` même si `git worktree remove`
+    avait échoué (worktree sale par exemple). Le compteur `removable`
+    devenait alors un mensonge structurel.
+    """
+
+    def test_apply_results_failed_path_is_not_printed_as_removed(self):
+        """Fixture : un `apply_results` avec `applied=False` pour un path
+        dont `WorktreeStatus.decision == "REMOVE"`. La sortie NE DOIT PAS
+        contenir `REMOVED` pour ce path ; elle DOIT contenir `FAILED` ou
+        une trace explicite de l'échec.
+        """
+        statuses = [
+            pmw.WorktreeStatus(
+                path="C:/dev/CoursIA-FAILED",
+                branch="fix/14195-x",
+                is_current=False,
+                pr_state="MERGED",
+                pr_number=14427,
+                pr_url="https://github.com/jsboige/CoursIA/pull/14427",
+                ahead_count=0,
+                has_source_dirty=False,
+                untracked_paths=[],
+                decision="REMOVE",
+                refusal_reason=None,
+            ),
+            pmw.WorktreeStatus(
+                path="C:/dev/CoursIA-OK",
+                branch="fix/14195-y",
+                is_current=False,
+                pr_state="MERGED",
+                pr_number=14403,
+                pr_url="https://github.com/jsboige/CoursIA/pull/14403",
+                ahead_count=0,
+                has_source_dirty=False,
+                untracked_paths=[],
+                decision="REMOVE",
+                refusal_reason=None,
+            ),
+        ]
+        apply_results = [
+            {
+                "path": "C:/dev/CoursIA-FAILED",
+                "branch": "fix/14195-x",
+                "pr_number": 14427,
+                "applied": False,
+                "stderr": "fatal: 'C:/dev/CoursIA-FAILED' contains modified or untracked files",
+            },
+            {
+                "path": "C:/dev/CoursIA-OK",
+                "branch": "fix/14195-y",
+                "pr_number": 14403,
+                "applied": True,
+                "stderr": "",
+            },
+        ]
+        out = pmw.render_text(
+            statuses, dry_run=False, apply_results=apply_results
+        )
+        # Le path FAILED ne doit jamais apparaitre en REMOVED ; il doit
+        # apparaitre en FAILED avec la cause d'erreur.
+        failed_lines = [
+            l for l in out.splitlines()
+            if "C:/dev/CoursIA-FAILED" in l
+        ]
+        assert failed_lines, "FAILED path missing from output"
+        for line in failed_lines:
+            assert "REMOVED" not in line, (
+                f"render_text ment : line={line!r} claim REMOVED pour un "
+                f"path dont applied=False. apply_results gagne, pas decision."
+            )
+            assert "FAILED" in line, (
+                f"expected FAILED marker, got: {line!r}"
+            )
+        # Le compteur failed doit etre non-nul dans la sortie
+        assert "failed=1" in out
+        # Le path OK doit apparaitre en REMOVED
+        ok_lines = [
+            l for l in out.splitlines()
+            if "C:/dev/CoursIA-OK" in l and "REMOVED" in l
+        ]
+        assert ok_lines, "REMOVED path missing from output"
+
+
+# ---------------------------------------------------------------------------
 # Tests d'integration subprocess sur le repo reel
 # ---------------------------------------------------------------------------
 

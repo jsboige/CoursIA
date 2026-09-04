@@ -181,3 +181,51 @@ void Run(string name, (double x, double y, int label)[] data, double[] sigmas)
 ## Attribution
 
 Mesure réalisée le 2026-08-23 (lane `myia-po-2025:CoursIA-2`). Source : commentaire #7357 du 2026-08-20 (grain prescrit), cadrage #12541, checklist 6 axes [sota-not-workaround.md](../../.claude/rules/sota-not-workaround.md). Tous les chiffres de ce document viennent de la commande `dotnet run -c Release` exécutée ce cycle — reproductibles depuis le code embarqué ci-dessus. Aucune valeur n'est affirmée de mémoire.
+
+## Disposition upstream — `CalibrateComplexity` (2026-09-03)
+
+Cette section documente la décision et l'action de signalement du défaut `CalibrateComplexity` identifié lors du port SVM à noyau (tranche 4 de l'EPIC #7357, PR [#14369](https://github.com/jsboige/CoursIA/pull/14369) mergée le 2026-09-02).
+
+### Constat
+
+Le bloc passé à `ExecuteWithTimeLimit` dans la méthode `CalibrateComplexity` du fork [`MyIntelligenceAgency/Lean`](https://github.com/MyIntelligenceAgency/Lean) (branche `MyIABacktesting_integration`, SHA `612dddf9`) **ré-instancie `teacher` au lieu d'appeler `Learn`** :
+
+```csharp
+() => { try { teacher = new MulticlassSupportVectorLearning<IKernel>(); } catch { } }
+```
+
+Conséquence en chaîne mesurée : `machine` reste `null` → `machine.Decide(xTrain)` lève une `NullReferenceException` → avalée par le `catch` englobant → `testError` ne quitte jamais `double.MaxValue` → `testError < currentResult` est toujours faux → `bestComplexity` n'est jamais mis à jour. **La méthode rend TOUJOURS son amorce `0.0001`**, toutes données confondues, pendant que l'appelant journalise `SVM complexity calibrated: 0.0001`.
+
+### Mesure (vérifiée côte à côte)
+
+| jeu | corps réparé | corps upstream |
+|---|---|---|
+| XOR net (n=64) | 0.0001 | 0.0001 |
+| XOR bruité spread 0.9 (n=80) | 0.00374 | 0.0001 |
+| **XOR bruité spread 1.1 (n=120)** | **706.88** | **0.0001** |
+| XOR bruité spread 1.1 (n=240) | 15.79 | 0.0001 |
+
+Sur XOR net les deux coïncident, mais pour une raison sans rapport : `C=0.0001` y classe déjà parfaitement (erreur 0 à tous les C testés), donc conserver l'amorce y est le bon résultat. La divergence n'apparaît que sur les jeux où la calibration doit effectivement explorer. C'est précisément la mesure rendue par le commentaire détaillé de la méthode `CalibrateComplexity` côté CoursIA (en-tête du fichier `MyIA.Trading.Backtester/TradingSvmModelConfig.cs`, écart 3/3 délibéré).
+
+### Décision : signalement upstream vaut la peine — et il est fait
+
+Le fork `MyIntelligenceAgency/Lean` n'est pas un dépôt du cluster, mais c'est un **fork de `QuantConnect/Lean`** que nous maintenons actif (submodule maintenance, Règle 1 du [submodule-maintenance.md](../../.claude/rules/submodule-maintenance.md) — voir aussi EPIC #1206 pour la piste de retour upstream vers `QuantConnect/Lean`). Un défaut qui **affirme faussement une calibration** dans un sous-système de production mérite un signalement — d'autant que la divergence entre fork et CoursIA est aujourd'hui nécessaire (le fork ne calibre rien ; porter le corps verbatim livrerait une fonction dont le message de log est mensonger).
+
+**Issue upstream ouverte :** [`MyIntelligenceAgency/Lean#40`](https://github.com/MyIntelligenceAgency/Lean/issues/40) — *« CalibrateComplexity ne calibre rien : le bloc sous limite de temps ré-instancie teacher au lieu d'appeler Learn »*. Le ticket documente :
+
+- le défaut (bloc verbatim + chaîne de conséquences) ;
+- la mesure côte à côte (4 jeux) ;
+- la reproduction minimale ;
+- une esquisse de correctif (`machine = teacher.Learn(xTrain, yTrain)` + traitement de `maxedOut` comme signal) ;
+- le statut côté émetteur : CoursIA est non-affecté (divergence déjà absorbée par la garde `CalibrateComplexity_ActuallyExploresAndDoesNotReturnItsSeedValue`).
+
+**Pourquoi pas un PR upstream** : la modification touche une fonction de production d'un sous-système de fork dont la trajectoire de maintenance n'est pas consolidée. Ouvrir un PR supposerait un round de revue avec les mainteneurs du fork que cette mesure unilatérale ne déclenche pas. Une issue est l'organe adapté : elle ouvre la conversation sans présupposer l'engagement de leur cycle de release. Une PR pourra suivre si les mainteneurs valident l'esquisse de correctif.
+
+### Côté CoursIA : divergence maintenue
+
+Le port garde l'écart intentionnel avec l'upstream. Une future tranche de mise à jour de `MyIntelligenceAgency/Lean` dans le submodule **ne doit pas ré-aligner** ce point : un `git pull` qui ré-instancierait `teacher` au lieu d'appeler `Learn` ré-introduirait le défaut. C'est la première acceptance du ticket [#14370](https://github.com/jsboige/CoursIA/issues/14370) — *« Ne pas « réaligner sur l'amont » ce point lors d'une tranche ultérieure : l'écart est intentionnel et mesuré »* — et elle est **désormais codifiée** par cette section, à lire en même temps que l'en-tête de `TradingSvmModelConfig.cs`.
+
+### Suite possible
+
+- Si l'issue `#40` reçoit une réponse des mainteneurs et qu'un correctif amont est mergé dans `MyIntelligenceAgency/Lean`, une future tranche de bump submodule pourra **rétablir la convergence** (suppression de l'écart 3/3) et déplacer la garde de régression vers un test d'**équivalence** amont/CoursIA plutôt que d'écart.
+- En attendant, la garde existante (`CalibrateComplexity_ActuallyExploresAndDoesNotReturnItsSeedValue` + `CalibratedComplexity_ScoresBetterThanTheSeedComplexity`) couvre la non-régression côté CoursIA : les deux tests sont verts sur main post-#14369.

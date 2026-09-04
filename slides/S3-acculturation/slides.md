@@ -88,6 +88,9 @@ layout: section
 # Qu'est-ce que l'intelligence artificielle?
 
 
+<div class="grid grid-cols-[55%_42%] gap-6 items-start mt-2">
+<div>
+
 - Définitions multiples
 - Notre angle :
   - « Agir de façon rationnelle »
@@ -105,7 +108,13 @@ layout: section
 - Théorie du contrôle
 - Linguistique
 
-<img src="./images/img_005.png" class="absolute top-[110px] right-[20px] w-[460px]" alt="Neurone biologique : dendrites, soma, axone, synapse — l'inspiration des réseaux de neurones artificiels" />
+</div>
+<div>
+
+<img src="./images/img_005.png" class="w-full max-h-[360px] object-contain" alt="Neurone biologique : dendrites, soma, axone, synapse — l'inspiration des réseaux de neurones artificiels" />
+
+</div>
+</div>
 ---
 
 # Développement (1/2)
@@ -188,6 +197,9 @@ layout: section
 # Les agents
 
 
+<div class="grid grid-cols-[55%_42%] gap-6 items-start mt-2">
+<div>
+
 **Définition**
 
 - L'agent rationnel
@@ -201,7 +213,13 @@ layout: section
 - Limitations
   - ressources disponibles
 
-<img src="./images/img_009.png" class="absolute top-[110px] right-[20px] w-[460px]" alt="Les agents" />
+</div>
+<div>
+
+<img src="./images/img_009.png" class="w-full max-h-[360px] object-contain" alt="Les agents" />
+
+</div>
+</div>
 ---
 
 # Conception d'agents
@@ -243,6 +261,9 @@ layout: section
 # Agent réflexe fondé sur un modèle
 
 
+<div class="grid grid-cols-[48%_50%] gap-6 items-start mt-2">
+<div>
+
 **Agent réflexe avec modèle**
 
 - Fonctionnement interne
@@ -253,7 +274,13 @@ layout: section
 
 - Flexibilité vs complexité
 
-<img src="./images/img_012.png" class="absolute top-[110px] right-[20px] w-[460px]" alt="Agent réflexe fondé sur un modèle" />
+</div>
+<div>
+
+<img src="./images/img_012.png" class="w-full max-h-[360px] object-contain" alt="Agent réflexe fondé sur un modèle" />
+
+</div>
+</div>
 ---
 
 

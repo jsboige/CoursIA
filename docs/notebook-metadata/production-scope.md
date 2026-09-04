@@ -95,7 +95,7 @@ Le détail par notebook suit en strate A ci-dessous : consultation, plus décisi
 - [ ] `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-02-ML-Classification.ipynb`
 - [ ] `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-12-SectorRotation-Momentum.ipynb`
 - [ ] `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-03-Data-Management.ipynb`
-- [ ] `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-03-DualMomentum.ipynb`
+- [ ] `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-14-DualMomentum.ipynb`
 - [ ] `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-03-Risk-Parity.ipynb`
 - [ ] `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-04-Research-Workflow.ipynb`
 - [ ] `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-04-MeanReversion.ipynb`
@@ -325,7 +325,7 @@ Chaque série non recensée ci-dessus, et pourquoi (contestable sur l'Epic sans 
 | Série | Pourquoi hors périmètre v1 |
 |-------|----------------------------|
 | `ML/` (ML.NET) | cursus .NET non rattaché aux 4 écoles in-scope ; le ML enseigné passe par QC-Py (ECE) et GenAI (EPF) |
-| `Search/Part3-Advanced/`, `Search/Part4-Metaheuristics/` | au-delà du programme PrCon — Part1+Part2 couvrent le cours référencé |
+| `Search/Part4-Metaheuristics/` | au-delà du programme PrCon — Part1+Part2 couvrent le cours référencé |
 | `Search/Applications/`, `Search/MetaGeneticSharp/` | applications dérivées non citées par le calendrier des cours |
 | `Sudoku/` | série .NET autonome, non rattachée à un cours du calendrier |
 | `Probas/` (Infer.NET) | idem — non rattachée à une des 4 écoles |

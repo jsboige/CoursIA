@@ -1,6 +1,6 @@
 # SOTA : vrai outil + probleme non-trivial — install/invoke/re-plug, faire valoir le moteur (HARD)
 
-S'applique a **tous les agents** (workers po-* + coordinateur ai-01) **ET a tous les reviewers (humains ET bots** clusterManager-Myia : Hermes primaire, NanoClaw audit). Source : mandat user 2026-06-21, 3 messages — verbatim en [detail §1](../../docs/reference/sota-verdicts-detail.md). Registre = **EPIC #3801**. Consolide CLAUDE.md section F (reparer, jamais contourner) + [repair-not-consecrate](../../docs/reference/regles-validation-detail.md) + l'audit a 2 axes (committed <-> achievable).
+S'applique a **tous les agents** (workers po-* + coordinateur ai-01) **ET a tous les reviewers (humains ET bots** clusterManager-Myia : Hermes primaire, NanoClaw audit). Source : mandat user 2026-06-21, 3 messages — verbatim en [detail §1](../../docs/reference/sota-verdicts-detail.md). Registre = [`docs/ledgers/3801-sota-axe2.md`](../../docs/ledgers/3801-sota-axe2.md) (l'EPIC #3801 est **close depuis le 2026-07-09** : elle reste la provenance doctrinale du mandat, elle n'est plus le tracker). Consolide CLAUDE.md section F (reparer, jamais contourner) + [repair-not-consecrate](../../docs/reference/regles-validation-detail.md) + l'audit a 2 axes (committed <-> achievable).
 
 **Verbatims du mandat, incidents d'axes, mesures anti-fabrication** : [docs/reference/sota-verdicts-detail.md](../../docs/reference/sota-verdicts-detail.md).
 
@@ -68,10 +68,50 @@ Les bots **DOIVENT** poster `CHANGES_REQUESTED` quand une PR notebook (interne/c
 
 **Exception PR etudiante** (cf [student-pr-reviews.md](student-pr-reviews.md)) : NE PAS appliquer A/B — review bienveillante, pas de CHANGES_REQUESTED sur scaffolding.
 
+## Ou se depose une entree de registre, et quand l'axe-2 sera fini
+
+**Une entree va dans le fichier, jamais dans un commentaire d'issue.** Le registre est
+[`docs/ledgers/3801-sota-axe2.md`](../../docs/ledgers/3801-sota-axe2.md) ; une entree y est une section
+`## Entry #NNN — <Famille> (owner <lane>, c.NNN)` suivant la « Convention d'entree » que le ledger
+documente lui-meme en tete. Elle arrive **par PR**, comme tout fichier du depot.
+
+La regle le precise parce que l'inverse s'est produit : **sept entrees ont ete postees en commentaires
+sur l'EPIC #3801 apres sa fermeture** (la derniere le 2026-08-07). Elles existent, elles sont perdues —
+aucune requete `--state open` ne les atteint, et le `grep` d'un auditeur sur le depot ne les voit pas.
+
+**Critere de fin de l'axe-2** — trois conditions, toutes verifiables :
+
+1. **chaque famille de notebooks du depot porte une entree** ;
+2. **chaque entree porte un verdict agrege** (un des 5) ;
+3. **chaque verdict != `SOTA-OK` est solde** : soit une PR de fix **mergee** citee dans l'entree, soit un
+   `INTRINSIC` etabli par la checklist 6 axes ci-dessus.
+
+La condition 1 se **mesure**, elle ne se recopie pas — le denominateur est la liste des familles telle
+qu'elle est sur le disque au moment de la mesure, pas un compte fige dans un document :
+
+```bash
+grep -c '^## Entry #' docs/ledgers/3801-sota-axe2.md          # entrees au registre
+grep -oE '^## Entry #[0-9]+ — [^(]+' docs/ledgers/3801-sota-axe2.md   | sed 's/^## Entry #[0-9]* — //;s/ *$//' | sort -u          # familles couvertes
+```
+
+**Attention au grain** : le ledger indexe par **famille** (`Search`, `Tweety`), pas par repertoire.
+Comparer son compte a un `find MyIA.AI.Notebooks -name '*.ipynb'` agrege par repertoire donne deux
+nombres qui ne se soustraient pas — c'est un piege de denominateur, pas un ecart de couverture.
+
+**Les tableaux « Cumul entries » du ledger ne sont pas cet instrument** : il y en a **deux**, tous deux
+perimes, mesure du 2026-09-03 — `## Cumul entries` (l.485) s'arrete a l'entree **8**, datee du 2026-07-10,
+et `### Cumul entries (registre axe-2 SOTA)` (l.854) s'arrete a l'entree **22**, datee du 2026-07-11 —
+alors que le fichier porte **30** entrees. Le plus recent des deux, le seul qu'un auditeur presse
+consulterait, sous-compte donc d'un facteur ~1,4 ; le plus ancien, si c'est celui qu'il trouve en premier,
+d'un facteur ~3,8. Aucun des deux ne repond a la condition 1. Le rafraichir — et **fusionner les deux
+tableaux dupliques en un seul**, la duplication etant elle-meme la cause du piege de lecture — est un
+grain a part, hors du perimetre de #14519 qui portait sur l'ancre de cette regle.
+
 ## Voir aussi
 - CLAUDE.md section F — env/kernel : reparer, jamais contourner
 - [pr-review-discipline.md](pr-review-discipline.md) §H — critere bots SOTA + non-trivialite
 - [anti-regression.md](anti-regression.md) — ne pas stripper le code reel
 - [three-exercises-per-notebook.md](three-exercises-per-notebook.md) — richesse pedagogique (exercices)
-- **EPIC #3801** — registre axe-2 SOTA + problem-richness, par famille (GenAI/po-2023 en tete)
+- [`docs/ledgers/3801-sota-axe2.md`](../../docs/ledgers/3801-sota-axe2.md) — **le registre** axe-2 SOTA + problem-richness, par famille (30 entrees au 2026-09-03)
+- **EPIC #3801** (CLOSE le 2026-07-09) — provenance doctrinale du mandat user 2026-06-21. **Ne rien y deposer** : sept entrees y ont ete postees apres sa fermeture, ou aucune requete `--state open` ne les voit.
 - **#10459** — omission d'axe PythonNet, close par la checklist 6 axes ([detail §2](../../docs/reference/sota-verdicts-detail.md))

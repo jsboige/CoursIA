@@ -222,6 +222,39 @@ def is_source_dirty(path: str) -> bool:
     return any(p.endswith(ext) for ext in SOURCE_EXTENSIONS)
 
 
+def same_worktree_path(a: str, b: str) -> bool:
+    """Deux chemins de worktree designent-ils le meme repertoire ?
+
+    Les deux cotes de la comparaison `is_current` viennent de sources qui
+    n'ecrivent PAS les chemins de la meme facon :
+
+    - `git worktree list --porcelain` rend toujours des slash avant
+      (`D:/CoursIA/.worktrees/x`), y compris sur Windows ;
+    - `Path(cwd).resolve()` rend la forme native, donc a antislash sur
+      Windows (`D:` + separateur natif + `CoursIA` + ...).
+
+    Une egalite de chaines entre ces deux formes est donc **toujours fausse
+    sur Windows** : `SKIP_CURRENT` etait inatteignable. Mesure du 2026-09-03
+    sur ai-01 (64 worktrees) : `skipped=0` meme en lancant le script depuis
+    `.worktrees/ai01-gate-current`, dont la PR #14459 est MERGED -- ce
+    worktree etait donc programme `WOULD REMOVE`, c'est-a-dire que `--apply`
+    aurait tente `git worktree remove` sur le repertoire courant du process.
+
+    Ce garde n'est pas fail-closed : il ne refuse pas trop, il ne refuse
+    jamais. La comparaison se fait donc sur les chemins **resolus**, et
+    `Path.__eq__` est insensible a la casse sous Windows (ce qui couvre au
+    passage `d:/` vs `D:/`).
+    """
+    try:
+        return Path(a).resolve() == Path(b).resolve()
+    except OSError:
+        # Chemin inaccessible (lecteur demonte, worktree efface a la main) :
+        # on retombe sur une normalisation textuelle plutot que de rendre
+        # False, qui reintroduirait exactement le defaut ci-dessus.
+        return (a.replace("\\", "/").rstrip("/").lower()
+                == b.replace("\\", "/").rstrip("/").lower())
+
+
 def get_worktree_info(wt_path: str, current_path: str) -> dict:
     """Recupere branch + ahead count + dirty status d'un worktree."""
     # Branche (peut etre None si HEAD detaché)
@@ -281,7 +314,7 @@ def get_worktree_info(wt_path: str, current_path: str) -> dict:
         "ahead_count": ahead_count,
         "untracked": untracked,
         "has_source_dirty": has_source,
-        "is_current": wt_path == current_path,
+        "is_current": same_worktree_path(wt_path, current_path),
     }
 
 
@@ -316,11 +349,27 @@ def lookup_pr_for_branch(branch: str) -> Optional[dict]:
 
 
 def lookup_pr_for_detached_head(wt_path: str) -> Optional[dict]:
-    """Verdict par contenu pour HEAD detaché : sujet de commit = titre PR ?
+    """Verdict par contenu pour HEAD detaché (#14476) : PR exacte, ou rien.
 
     Le squash-merge efface l'ascendance, donc `git merge-base --is-ancestor`
-    ne marche pas. On cherche dans les messages de commit du HEAD du
-    worktree un motif qui ressemble a un titre de PR recente.
+    ne marche pas. On cherche un match EXACT entre les sujets de commit du
+    HEAD et une PR reelle, en deux voies :
+
+    1. **Resolution directe par numero** : un squash-commit sur ce depot a
+       pour sujet ``<titre de la PR> (#N)``. On extrait N via
+       ``re.search(r"\\(#(\\d+)\\)\\s*$", subj)`` et on resout la PR par
+       ``gh pr view N --json ...`` -- pas de liste, pas d'ambiguite.
+       C'est la voie nominale (squash-merge preserve le numero de PR
+       dans le sujet du commit, et c'est le seul invariant mesurable).
+
+    2. **Egalite normalisee du sujet** : a defaut de numero extractible,
+       le sujet integral (apres normalisation casse + espaces) doit etre
+       egal a un titre PR normalise. Toute intersection par jetons est
+       un faux positif structurel sur ce depot (notebook, guard,
+       training, slides sont des mots partout) et on l'interdit.
+
+    3. **Sinon None** : aucun match = aucun verdict. Le fail-CLOSED est
+       deja le bon defaut (REFUSE downstream).
     """
     log_proc = run_git(
         wt_path, "log", "HEAD", "--format=%s", "-n", "20", check=False
@@ -331,30 +380,59 @@ def lookup_pr_for_detached_head(wt_path: str) -> Optional[dict]:
     if not subjects:
         return None
 
-    # Match contre titres PR recents (limite 50) pour eviter explosion
-    pr_proc = run_gh(
+    # Voie 1 : resolution directe par numero extractible du sujet
+    # (squash-commit preserve "(#N)" a la fin du sujet).
+    pr_num_re = re.compile(r"\(#(\d+)\)\s*$")
+    direct_attempted = False
+    for subj in subjects:
+        m = pr_num_re.search(subj)
+        if not m:
+            continue
+        direct_attempted = True
+        pr_num = int(m.group(1))
+        view_proc = run_gh(
+            "pr", "view", str(pr_num),
+            "--json", "number,state,url,title",
+            check=False,
+        )
+        if view_proc.returncode != 0:
+            continue
+        try:
+            data = json.loads(view_proc.stdout)
+        except json.JSONDecodeError:
+            continue
+        if not data or "state" not in data:
+            continue
+        return data
+    # Si des sujets portaient (#N) mais qu'aucun n'a resolu, c'est un
+    # defaut d'autorite gh -- on n'invente rien, pas de fallback liste.
+    if direct_attempted:
+        return None
+
+    # Voie 2 : egalite normalisee du sujet contre titres PR recents.
+    # Garde-fou : `limit 50` uniquement pour borner le cout d'appel.
+    list_proc = run_gh(
         "pr", "list", "--state", "all", "--limit", "50",
         "--json", "number,state,url,title",
         check=False,
     )
-    if pr_proc.returncode != 0:
+    if list_proc.returncode != 0:
         return None
     try:
-        prs = json.loads(pr_proc.stdout)
+        prs = json.loads(list_proc.stdout)
     except json.JSONDecodeError:
         return None
 
-    # Heuristique : on prend la 1ere PR dont un mot-clé du titre matche un
-    # mot du commit subject. Conservateur : on exige au moins 4 chars
-    # communs, ce qui limite les faux positifs sur "fix", "test", etc.
+    def _normalize(s: str) -> str:
+        # strip + lower + collapse whitespace ; retire ponctuation terminale
+        s = s.strip().lower()
+        s = re.sub(r"\s+", " ", s)
+        return s.rstrip(".!?")
+
+    subj_norm_set = {_normalize(s) for s in subjects}
     for pr in prs:
-        title_tokens = {
-            t.lower() for t in re.findall(r"[A-Za-z0-9-]{4,}", pr["title"])
-        }
-        for subj in subjects:
-            subj_tokens = {t.lower() for t in re.findall(r"[A-Za-z0-9-]{4,}", subj)}
-            if title_tokens & subj_tokens:
-                return pr
+        if _normalize(pr["title"]) in subj_norm_set:
+            return pr
     return None
 
 
@@ -518,32 +596,71 @@ def apply_removal(wt: WorktreeStatus) -> tuple[bool, str]:
     return False, proc.stderr.strip()
 
 
-def render_text(statuses: list[WorktreeStatus], dry_run: bool) -> str:
-    """Rendu texte canonique (lisible humain)."""
-    verb = "WOULD REMOVE" if dry_run else "REMOVED"
+def render_text(
+    statuses: list[WorktreeStatus],
+    dry_run: bool,
+    apply_results: Optional[list[dict]] = None,
+) -> str:
+    """Rendu texte canonique (lisible humain) (#14476).
+
+    `apply_results` est la liste exacte retournee par `apply_removal` :
+    `[{path, branch, pr_number, applied, stderr}, ...]`. En mode `--apply`,
+    on imprime `REMOVED` UNIQUEMENT pour les entrees dont `applied=True`.
+    Si `git worktree remove` a echoue (worktree sale par exemple), on
+    imprime `FAILED` avec le stderr -- c'est lisible, factuel, et JAMAIS
+    mensonger sur ce qui a effectivement quitte le disque.
+    """
+    # Indexation par path pour une reconciliation O(1)
+    applied_by_path = {}
+    if apply_results is not None:
+        for r in apply_results:
+            applied_by_path[r["path"]] = r
+
     lines: list[str] = []
-    counts = {"REMOVE": 0, "REFUSE": 0, "SKIP_CURRENT": 0}
+    counts = {"REMOVE": 0, "REFUSE": 0, "SKIP_CURRENT": 0, "FAILED": 0}
     for s in statuses:
         counts[s.decision] = counts.get(s.decision, 0) + 1
         if s.decision == "REMOVE":
-            label = f"{verb} {s.path}"
-            if s.branch:
-                label += f"  branch={s.branch}"
-            if s.pr_state and s.pr_number:
-                label += f"  pr=#{s.pr_number}({s.pr_state})"
-            lines.append(label)
+            branch_part = f"branch={s.branch}" if s.branch else "no_branch"
+            pr_part = (
+                f"pr=#{s.pr_number}({s.pr_state})"
+                if s.pr_state and s.pr_number else ""
+            )
+            if dry_run:
+                lines.append(
+                    f"WOULD REMOVE {s.path}  {branch_part}  {pr_part}".rstrip()
+                )
+            else:
+                # Mode --apply : vraie realite du disque.
+                result = applied_by_path.get(s.path)
+                if result is None or result.get("applied"):
+                    lines.append(
+                        f"REMOVED     {s.path}  {branch_part}  {pr_part}".rstrip()
+                    )
+                else:
+                    # `git worktree remove` a echoue : on dit FAILED + cause.
+                    # Counts['FAILED'] n'est pas une decision de WorktreeStatus,
+                    # c'est un evenement d'application ; ne s'ajoute pas a
+                    # refused qui reste REFUSE semantique.
+                    stderr = result.get("stderr") or "unknown error"
+                    lines.append(
+                        f"FAILED      {s.path}  {branch_part}  {pr_part}  "
+                        f"apply_error={stderr[:120]}"
+                    )
+                    counts["FAILED"] = counts.get("FAILED", 0) + 1
         elif s.decision == "REFUSE":
             branch_part = f"branch={s.branch}" if s.branch else "no_branch"
             lines.append(
-                f"REFUSE    {s.path}  {branch_part}  reason={s.refusal_reason}"
+                f"REFUSE      {s.path}  {branch_part}  reason={s.refusal_reason}"
             )
         elif s.decision == "SKIP_CURRENT":
-            lines.append(f"SKIP      {s.path}  reason=current_worktree")
+            lines.append(f"SKIP        {s.path}  reason=current_worktree")
     lines.append("---")
     lines.append(
         f"total={len(statuses)}  "
         f"removable={counts.get('REMOVE', 0)}  "
         f"refused={counts.get('REFUSE', 0)}  "
+        f"failed={counts.get('FAILED', 0)}  "
         f"skipped={counts.get('SKIP_CURRENT', 0)}"
     )
     return "\n".join(lines)
@@ -634,10 +751,12 @@ def main() -> int:
         print(json.dumps(out, indent=2, ensure_ascii=False))
     else:
         # Texte
-        print(render_text(statuses, dry_run=not args.apply))
         if args.apply:
+            print(render_text(statuses, dry_run=False, apply_results=apply_results))
             print()
             print(f"applied={removal_count}  errors={error_count}")
+        else:
+            print(render_text(statuses, dry_run=True))
 
     # Exit code
     if error_count > 0:
