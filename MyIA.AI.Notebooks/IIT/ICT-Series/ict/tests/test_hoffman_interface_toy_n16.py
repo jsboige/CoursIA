@@ -346,32 +346,105 @@ def test_run_full_subset_of_landscapes():
 
 
 def test_play_round_passes_x_to_strategy():
-    """Contrôle positif : play_round passe bien x à perceive_truth (REPAIR c.901).
+    """Contrôle positif (axe structurel + axe magnitude) : play_round passe x.
 
-    Stratégie bidon qui mémorise le x reçu : si play_round passe x, on
-    doit voir x varier (0 ou 1) au fil des trials. Si play_round jetait
-    x (instrument aveugle pré-c.901), la stratégie recevrait toujours la
-    même valeur (defaut Python = 0), et le test rougirait.
+    Deux contrôles empilés, comme suggéré par ai-01 (DM 2026-09-04T063118) :
 
-    Critère : sur 200 trials avec canal uniforme (alpha=0.5), la
-    stratégie observe les DEUX valeurs x ∈ {0, 1}. Un instrument
-    aveugle rendrait x toujours 0 (ou la valeur par défaut).
+    (1) **Axe structurel** : recording_strategy mémorise les x reçus.
+        Si play_round passait x, on doit observer x ∈ {0, 1} sur 200 trials
+        à alpha=0.5 (canal symétrique). L'instrument aveugle pré-c.901
+        jette x → la stratégie reçoit `strategy_truth` qui rend x ∈ {0,1}
+        **sans observer** le percept (boucle cassée). On ne peut pas
+        directement observer "x non passé" depuis le test, donc on vérifie
+        la MAGNITUDE du payoff (axe 2) qui, elle, est mesurable.
+
+    (2) **Axe magnitude** (le contrôle qui compte vraiment) :
+        Sur L_bit3_weighted (fitness = 3*bit3 + bit0 ∈ {0,1,3,4}),
+        comparer le payoff post-fix (play_round avec perceive_truth) au
+        payoff **instrument aveugle** (play_round qui appelle strategy_truth
+        sans passer x — exactement ce que c.901 a corrigé).
+
+        Sur 200 trials à alpha=1 :
+        - Instrument aveugle (strategy_truth → fitness(strategy_truth())
+          avec strategy_truth qui retourne x ∈ {0,1}, le x d'avant la
+          perte d'info) : strategy_truth(alpha=1, L_bit3_weighted, prior)
+          = argmax_x f(MAP(x)). MAP(0)=w avec bit0=0 (f=0), MAP(1)=w
+          avec bit0=1 (f=1). argmax = 1. Fitness(1) = L_bit3_weighted(1)
+          = 1. Payoff constant = 1.0.
+        - Instrument post-fix (perceive_truth(x, alpha=1) = map_estimate(x,
+          alpha=1, prior) = 1er w de la fibre ; payoff selon x varie 0..1) :
+          payoff moyen ≈ 0.5.
+
+        **Critère** : payoff_post_fix doit être **strictement inférieur**
+        à payoff_aveugle (= 1.0) sur 200 trials, parce que perceive_truth
+        choisit un w dans la fibre de x (avec payoff variant 0..1 selon x)
+        alors que strategy_truth-aveugle retourne le x qui maximise f(MAP(x)),
+        figé à fitness=1.
+
+        Si payoff_post_fix == 1.0, c'est que play_round jette x
+        et la stratégie appelée est strategy_truth (pas perceive_truth).
+        **C'est la signature exacte de l'instrument aveugle pré-c.901.**
+
+    Pourquoi 200 trials : au-delà de 100 trials, la variance de la
+    moyenne empirique est < 0.05, suffisante pour distinguer 0.5 de 1.0.
+    Avec alpha=1, le canal est déterministe donc x = canonical(w*) et
+    p_x est concentré sur 1 valeur, pas de tirage aléatoire intra-trial.
     """
+    import random as _random
+    import random  # for play_round_aveugle inner random access
+
     received_x_values = set()
 
     def recording_strategy(x, _alpha, _fit, _prior):
         received_x_values.add(x)
-        return 0  # w_hat arbitraire, le test ne regarde que les x reçus
+        return 0  # axe (1) : on regarde juste les x reçus
 
     prior = [1.0 / N_ONTIC] * N_ONTIC
-    fitness = L_bit0
+    fitness = L_bit3_weighted
 
-    # 200 trials avec alpha=0.5 (canal symétrique => x uniform 0/1)
+    # Axe (1) : structurel, alpha=0.5 (canal symétrique => x uniform)
     for _ in range(200):
         play_round(0.5, recording_strategy, fitness, prior)
-
     assert received_x_values == {0, 1}, (
-        f"play_round n'a pas passé x à la stratégie. "
-        f"x observés = {received_x_values}. Si {received_x_values} = {{0}} "
-        f"ou autre singleton, x est jeté (instrument aveugle pré-c.901)."
+        f"play_round ne passe pas x à la stratégie. "
+        f"x observés = {received_x_values}."
+    )
+
+    # Axe (2) : magnitude, alpha=1 (canal déterministe => x = canonical(w*))
+    # On compare DEUX versions de play_round :
+    # - "post-fix" : play_round normal avec perceive_truth (passe x)
+    # - "aveugle" : play_round qui JETTE x et appelle strategy_truth sans x
+    def play_round_aveugle(alpha, strategy, fitness, prior):
+        """Reproduit l'instrument pré-c.901 : strategy reçoit alpha/fitness/prior
+        sans x. strategy_truth (signature 3-args) retourne x ∈ {0,1}, payoff
+        = fitness(x), mal indexée."""
+        w_star = random.randrange(N_ONTIC)
+        p_x = [channel(w_star, x, alpha) for x in range(N_SENSORY)]
+        x = random.choices(range(N_SENSORY), weights=p_x, k=1)[0]
+        # BUG c.901 : x est jeté, strategy appelée sans x
+        # strategy ici est strategy_truth (signature 3-args) qui retourne x
+        x_hat = strategy(alpha, fitness, prior)
+        return fitness(x_hat)
+
+    _random.seed(20260904)
+    n_trials = 200
+    payoff_post_fix = sum(
+        play_round(1.0, perceive_truth, fitness, prior) for _ in range(n_trials)
+    ) / n_trials
+
+    _random.seed(20260904)
+    payoff_aveugle = sum(
+        play_round_aveugle(1.0, strategy_truth, fitness, prior) for _ in range(n_trials)
+    ) / n_trials
+
+    # L'instrument post-fix a un payoff MOYEN ~0.5 (perceive_truth choisit dans
+    # la fibre de x, fitness varie 0..1 selon x ∈ {0,1}).
+    # L'instrument aveugle a un payoff CONSTANT = 1.0 (strategy_truth retourne
+    # toujours x=1 = argmax_x f(MAP(x)) = argmax(0,1) = 1, fitness(1) = 1).
+    # Si play_round jetait x, payoff_post_fix == payoff_aveugle == 1.0.
+    assert payoff_post_fix < payoff_aveugle - 0.1, (
+        f"play_round ne discrimine pas l'instrument aveugle. "
+        f"payoff_post_fix={payoff_post_fix:.3f}, payoff_aveugle={payoff_aveugle:.3f}. "
+        f"Si payoff_post_fix ≈ payoff_aveugle (~1.0), x est jeté "
+        f"(instrument aveugle pré-c.901) OU perceive_truth ne voit pas x."
     )
