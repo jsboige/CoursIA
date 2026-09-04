@@ -68,7 +68,8 @@ Track2-GoogleADK/
 ├── Day5-DS-Star/              # DS-STAR (Data Science autonome)
 │   ├── Lab10-File-Analyzer.ipynb
 │   ├── Lab11-Planner-Coder-Loop.ipynb
-│   └── Lab12-DS-Star-Workshop.ipynb
+│   ├── Lab12-DS-Star-Workshop.ipynb
+│   └── Lab18-Session-Persistence.ipynb
 │
 ├── Day6-MLE-Star/             # MLE-STAR (ML Engineering)
 │   ├── Lab13-Web-Search-SOTA.ipynb
@@ -91,7 +92,7 @@ Introduction au framework ADK et configuration multi-provider.
 | 8 | [ADK-Introduction](Day4-Foundations/Lab8-ADK-Introduction.ipynb) | Architecture ADK, configuration providers |
 | 9 | [First-ADK-Agent](Day4-Foundations/Lab9-First-ADK-Agent.ipynb) | Premier agent pour Data Science |
 
-### Day 5 - DS-STAR (Labs 10-12)
+### Day 5 - DS-STAR (Labs 10-12, 18)
 
 Data Science autonome avec l'architecture Planner-Coder-Verifier.
 
@@ -100,6 +101,7 @@ Data Science autonome avec l'architecture Planner-Coder-Verifier.
 | 10 | [File-Analyzer](Day5-DS-Star/Lab10-File-Analyzer.ipynb) | Analyse de fichiers hétérogènes |
 | 11 | [Planner-Coder-Loop](Day5-DS-Star/Lab11-Planner-Coder-Loop.ipynb) | Boucle itérative multi-agents |
 | 12 | [DS-Star-Workshop](Day5-DS-Star/Lab12-DS-Star-Workshop.ipynb) | Application complète |
+| 18 | [Session-Persistence](Day5-DS-Star/Lab18-Session-Persistence.ipynb) | Contrat C1b : conversation multi-tours persistante (#14058) |
 
 ### Day 6 - MLE-STAR (Labs 13-15)
 

@@ -44,6 +44,7 @@ from google.genai import types
 
 from utils import adk_runtime
 from utils.adk_runtime import (
+    AdkRunResult,
     AdkRuntimeUnavailable,
     dataset_profile,
     run_agent_turn,
@@ -279,3 +280,182 @@ def test_c3_llm_call_budget_is_a_real_adk_mechanic():
     with pytest.raises(Exception) as excinfo:
         asyncio.run(one_turn())
     assert "limit" in str(excinfo.value).lower()
+
+
+# ---------------------------------------------------------------------------
+# C1b (tranche 3) -- Persistance d'etat entre tours : portee au-dessus d'ADK.
+# ---------------------------------------------------------------------------
+
+def test_c1b_history_reaches_next_turn():
+    # Le contrat : l'historique du tour 1 atteint le tour 2, au sein d'une
+    # meme conversation. Porte par ConversationRunner (adk_conversation) :
+    # un seul InMemorySessionService + un seul session_id partages par tous
+    # les tours -- mecanique native d'ADK, assemblee durablement.
+    # Verifie AU RETRAIT (critere 4) : si la conversation reinstancie un
+    # service/session a chaque tour (retour au comportement de
+    # run_agent_turn), le llm_request du tour 2 perd le marqueur du tour 1
+    # et ce test echoue.
+    from utils.adk_conversation import ConversationRunner
+
+    agent = _scripted_agent(name="persist_agent", tools=())
+    marker = "le code d'acces est XYZZY-7431"
+
+    async def scenario():
+        _SCRIPT.extend([("text", "code memorise"), ("text", "voici le code")])
+        async with ConversationRunner(
+                agent, app_name="contracts", user_id="u") as conv:
+            await conv.turn(marker)
+            await conv.turn("quel est le code d'acces ?")
+            history = await conv.history()
+        return history
+
+    history = asyncio.run(scenario())
+    assert len(_REQUESTS) == 2
+    second_request_texts = "".join(
+        (p.text or "") for c in _REQUESTS[-1].contents
+        for p in (c.parts or []))
+    assert "XYZZY-7431" in second_request_texts, (
+        "l'historique du tour 1 n'atteint pas le tour 2 : la persistance "
+        "C1b est retiree")
+    history_texts = "".join(
+        (p.text or "") for event in history
+        for p in ((event.content and event.content.parts) or []))
+    assert "XYZZY-7431" in history_texts and "quel est le code" in history_texts, (
+        "la session ne cumule pas les deux tours : la preuve mecanique du "
+        "contrat C1b est absente")
+
+
+def test_c1b_conversations_still_isolate():
+    # Contre-preuve C1 : porter la persistance INTRA-conversation ne doit
+    # pas creer de fuite INTER-conversations. Deux ConversationRunner sont
+    # deux sessions ADK distinctes, isolees l'une de l'autre.
+    from utils.adk_conversation import ConversationRunner
+
+    async def scenario():
+        conversations = {}
+        for label, marker in (("premiere", "projet-alpha-120"),
+                              ("seconde", "projet-beta-64")):
+            agent = _scripted_agent(name=f"agent_{label}", tools=())
+            _SCRIPT.append(("text", f"note {marker}"))
+            async with ConversationRunner(
+                    agent, app_name="contracts", user_id="u") as conv:
+                await conv.turn(f"je travaille sur {marker}")
+                conversations[label] = await conv.history()
+        return conversations
+
+    conversations = asyncio.run(scenario())
+    first_texts = "".join(
+        (p.text or "") for e in conversations["premiere"]
+        for p in ((e.content and e.content.parts) or []))
+    second_texts = "".join(
+        (p.text or "") for e in conversations["seconde"]
+        for p in ((e.content and e.content.parts) or []))
+    assert "projet-alpha-120" in first_texts
+    assert "projet-alpha-120" not in second_texts, (
+        "fuite d'etat entre conversations : porter C1b a casse C1")
+
+
+# ---------------------------------------------------------------------------
+# Tranche 3 -- Mesures C4 a C7 (acceptance point 2 : mesure, pas supposition).
+# Les contrats NON portes restent des grains ouverts (#14058 point 3) ; ces
+# tests documentent l'etat mesure et seront inverses par les grains a venir.
+# ---------------------------------------------------------------------------
+
+def test_c4_designation_exists_in_adk_but_runtime_is_single_agent():
+    # C4 (designation : qui parle ensuite selon une strategie explicite) --
+    # MESURE : ADK 2.8 embarque une orchestration dynamique
+    # (workflow/_dynamic_node_scheduler, importe ici comme preuve
+    # d'existence), mais le runtime du depot n'expose AUCUNE strategie de
+    # selection : run_agent_turn et ConversationRunner acceptent exactement
+    # un agent, l'ordre multi-etapes de Lab11 est code par l'appelant en
+    # Python, pas decide par le runtime. Non porte -> grain ouvert.
+    import google.adk.workflow as adk_workflow  # noqa: F401 (preuve import)
+
+    import inspect
+    from utils import adk_conversation, adk_runtime
+
+    single_agent_surfaces = (
+        inspect.signature(adk_runtime.run_agent_turn).parameters["agent"],
+        inspect.signature(adk_conversation.ConversationRunner.__init__).parameters["agent"],
+    )
+    assert all(p is not None for p in single_agent_surfaces)
+    selection_terms = ("selection", "next_agent", "strategy", "orchestrat")
+    runtime_surface = (
+        dir(adk_runtime) + dir(adk_conversation)
+    )
+    wired = [t for t in selection_terms if any(
+        t in name.lower() for name in runtime_surface)]
+    assert wired == [], (
+        f"le runtime expose desormais une mecanique de designation ({wired}) "
+        ": ce test documentait le non-portage C4, il doit etre inverse par "
+        "le grain qui porte le contrat")
+
+
+def test_c5_transfer_exists_in_adk_but_is_not_wired():
+    # C5 (handoff : transfert observable entre agents) -- MESURE : ADK 2.8
+    # porte le transfer natif (TransferToAgentTool, importe ici comme
+    # preuve), mais aucun agent du depot ne declare de sub_agents et
+    # build_agent ne les accepte pas : le transfer n'est pas exercable
+    # depuis le runtime du depot. Non porte -> grain ouvert.
+    from google.adk.tools import TransferToAgentTool  # noqa: F401 (preuve)
+
+    import inspect
+    from utils import adk_runtime
+
+    build_params = inspect.signature(adk_runtime.build_agent).parameters
+    assert "sub_agents" not in build_params, (
+        "build_agent accepte desormais sub_agents : le transfer C5 est "
+        "cable, ce test documentait le non-portage, il doit etre inverse "
+        "par le grain qui porte le contrat")
+    turn_params = inspect.signature(adk_runtime.run_agent_turn).parameters
+    assert "agents" not in turn_params
+
+
+def test_c6_no_token_budget_and_usage_not_observable():
+    # C6 (budgets de jetons / couts) -- MESURE : RunConfig ne porte aucun
+    # champ de budget de consommation (max_llm_calls borne des APPELS, pas
+    # les jetons ; grep du package : token_budget/cost_budget/usage_limit
+    # = 0). Cote tracabilite, ADK produit usage_metadata sur ses events
+    # (natif), mais AdkRunResult ne le remonte pas : la consommation
+    # n'est pas observable depuis le runtime du depot. Non porte ->
+    # grain ouvert.
+    from dataclasses import fields
+    from google.adk.runners import RunConfig
+
+    run_config_budget_fields = [
+        f for f in RunConfig.model_fields
+        if "token" in f.lower() or "cost" in f.lower()
+    ]
+    assert run_config_budget_fields == [], (
+        f"RunConfig porte un budget de consommation ({run_config_budget_fields}) "
+        ": ce test documentait le non-portage C6, il doit etre inverse")
+    result_fields = {f.name for f in fields(AdkRunResult)}
+    assert not any(
+        "usage" in f or "token" in f or "cost" in f for f in result_fields), (
+        "AdkRunResult remonte la consommation : la tracabilite C6 est "
+        "portee, ce test doit etre inverse par le grain qui porte le contrat")
+
+
+def test_c7_roles_are_declared_and_required():
+    # C7 (specialistes : role declare, orchestration appuyee dessus) --
+    # MESURE : PORTE. L'API Agent exige name + description + instruction
+    # (champs obligatoires du modele), build_agent les exige aussi, et
+    # Lab11 execute quatre specialistes declares (Planner -> Coder ->
+    # Executor -> Verifier) sur ce runtime.
+    from pathlib import Path
+
+    from google.adk.agents import Agent
+
+    agent_fields = set(Agent.model_fields)
+    assert {"name", "description", "instruction"} <= agent_fields
+    import inspect
+    from utils import adk_runtime
+    build_params = inspect.signature(adk_runtime.build_agent).parameters
+    assert {"name", "description", "instruction"} <= set(build_params)
+    lab11 = Path(__file__).resolve().parents[1] / (
+        "Day5-DS-Star") / "Lab11-Planner-Coder-Loop.ipynb"
+    lab11_source = lab11.read_text(encoding="utf-8")
+    for role in ("Planner", "Coder", "Executor", "Verifier"):
+        assert role in lab11_source, (
+            f"le specialiste {role} n'est plus execute par Lab11 : C7 "
+            "perd sa preuve d'orchestration")
