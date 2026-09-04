@@ -4708,3 +4708,290 @@ def test_14216_ce2_mutation_scope_toujours_faux_vp1_rougit(monkeypatch):
     monkeypatch.setattr(mod, "_override_scopes_reserve",
                         lambda b, a: False)
     assert _pr_14216(SCOPED_OVERRIDE_14216)["blocked"] is True
+
+
+
+# --- #13083 instance 3 : Position I' -- `avant merge` en TETE de corps (titre)
+# sans verbe actionnel ni qualifieur bloquant. Le commentaire fondateur
+# (2026-08-26T08:11:21Z sur #13083, PR #12627) : un rapport d'audit ai-01
+# intitule « **Audit ai-01 avant merge** » etait classe BOT-CONCERN a tort,
+# bloquant la PR sur l'absence de reserve de l'auteur. Les 7 sous-patterns
+# Position I (#14199) ne matchent pas (aucun qualifieur / verification passee
+# / formule B.0 / Ball merge). Le `avant merge` en tete est un localisateur
+# temporel pur. Voir _strip_avant_merge_mention + _is_action_verb_heading.
+
+
+def test_13083_instance3_fp_fondateur_12627_neutralise():
+    """#13083 instance 3, FP fondateur #12627 (verbatim du commentaire
+    5422425135 date 2026-08-26T08:11:21Z) : « **Audit ai-01 avant merge** »
+    + prose descriptive (compte-rendu de mesure, sans verbe actionnel).
+    Position I' doit neutraliser ce `avant merge` en tete de corps -- la
+    classe rendue est None, plus BOT-CONCERN."""
+    body = (
+        "**Audit ai-01 avant merge**\n\n"
+        "Le profil deletion-heavy de la PR est un faux signal : +4098/-4635 "
+        "sur 3 notebooks + 3 labels de densite en baisse invitaient a "
+        "soupconner une regression de contenu. Mesure cellule par cellule, "
+        "origin/main rattrape les suppressions par les fusions post-coupure. "
+        "Le delta est strictement borne aux tests du nouveau moteur, qui "
+        "sont par construction absents du main pre-PR. La classification "
+        "G.4 (composite) ne s'applique pas : 1 feature, pas 4."
+    )
+    assert mod.classify("myia-ai-01", body) is None, (
+        f"FP fondateur #12627 devrait etre neutralise (Position I', "
+        f"`avant merge` temporel en tete sans verbe actionnel), "
+        f"got {mod.classify('myia-ai-01', body)!r}"
+    )
+
+
+
+def test_13083_instance3_formule_alternative_h1_neutralise():
+    """Variante du FP fondateur : titre en H1 (`#`) sans bold. Meme
+    localisation temporelle pure en tete de corps."""
+    body = (
+        "# Audit ai-01 avant merge\n\n"
+        "Verifications prealables : 0 check rouge, mergeStateStatus CLEAN, "
+        "tests verts. La PR peut etre passee en l'etat."
+    )
+    assert mod.classify("myia-ai-01", body) is None
+
+
+
+def test_13083_instance3_formule_fr_minimal_neutralise():
+    """Variante minimale : titre `Rapport avant merge` (sans bold/H1) +
+    corps descriptif. Position I' doit neutraliser."""
+    body = (
+        "Rapport avant merge\n\n"
+        "Diagnostic et verifications effectues. Pas de nit, pas de reserve."
+    )
+    assert mod.classify("jsboige", body) is None
+
+
+
+def test_13083_instance3_formule_en_neutralise():
+    """Variante EN du meme pattern : `**Audit ai-01 before merge**` -- la
+    Position I' couvre `before merge` au meme titre que `avant merge` via
+    le token `merge`. Verification que la borne tient cross-langue."""
+    body = (
+        "**Audit ai-01 before merge**\n\n"
+        "Deletion-heavy profile is a false signal : +4098/-4635 on 3 "
+        "notebooks, but the delta is strictly bounded to the new engine "
+        "tests which are by construction absent from pre-PR main."
+    )
+    assert mod.classify("myia-ai-01", body) is None
+
+
+
+def test_13083_instance3_vp_a_relire_tete_reste_bloquant():
+    """VP : titre « A relire par ai-01 avant merge » -- verbe actionnel
+    imperatif (`a relire`) deleguant une intervention. Position I' NE DOIT
+    PAS neutraliser (la ligne porte un verbe actionnel, _is_action_verb_
+    heading rend True). Doit rester BOT-CONCERN. Cf VP Position I
+    fondateur #13800."""
+    body = (
+        "**A relire par ai-01 avant merge**\n\n"
+        "Residuel : une lecture manuelle. Aucune action lane supplementaire "
+        "possible. A relire par ai-01 avant merge."
+    )
+    assert mod.classify("jsboige", body) == "BOT-CONCERN", (
+        f"VP `a relire avant merge` doit rester BOT-CONCERN (verbe actionnel "
+        f"dans le titre), got {mod.classify('jsboige', body)!r}"
+    )
+
+
+
+def test_13083_instance3_vp_a_verifier_tete_reste_bloquant():
+    """VP : titre `A verifier avant merge` (verbe imperatif infinitif).
+    Position I' NE DOIT PAS neutraliser."""
+    body = (
+        "**A verifier avant merge**\n\n"
+        "Verifier la coherence des paths dans la section 3."
+    )
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+
+def test_13083_instance3_vp_a_confirmer_tete_reste_bloquant():
+    """VP : titre `A confirmer avant merge` (verbe imperatif infinitif).
+    Position I' NE DOIT PAS neutraliser -- le VP Position I fondateur
+    « a confirmer avant merge » (sans qualifieur) reste bloquant ; la
+    version titre doit suivre la meme regle."""
+    body = (
+        "**A confirmer avant merge**\n\n"
+        "Action obligatoire : confirmer la liste des fichiers touches."
+    )
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+
+def test_13083_instance3_vp_qualifier_bloquant_tete_reste_bloquant():
+    """VP : titre avec qualifieur `(bloquant)` puis `avant merge`. Le
+    qualifieur `(bloquant)` n'etait PAS couvert par Position I sous-pattern
+    (a) -- la Position I' doit egalement le garder vivant en tete de corps."""
+    body = (
+        "**Concern (bloquant) a confirmer avant merge**\n\n"
+        "Le kernel WSL est casse sur le runner ai-01, intervention "
+        "requise avant de relancer les tests."
+    )
+    assert mod.classify("jsboige", body) == "BOT-CONCERN", (
+        f"VP qualifier (bloquant) en tete doit rester BOT-CONCERN, "
+        f"got {mod.classify('jsboige', body)!r}"
+    )
+
+
+
+def test_13083_instance3_vp_qualifier_urgent_tete_reste_bloquant():
+    """VP : variante avec qualifieur `(urgent)` au lieu de `(bloquant)`.
+    Position I' doit egalement le garder vivant en tete de corps."""
+    body = (
+        "**(Urgent) Audit ai-01 avant merge**\n\n"
+        "Le merge gate a casse depuis 14h30Z, intervention requise."
+    )
+    assert mod.classify("myia-ai-01", body) == "BOT-CONCERN", (
+        f"VP qualifier (urgent) doit rester BOT-CONCERN, "
+        f"got {mod.classify('myia-ai-01', body)!r}"
+    )
+
+
+
+def test_13083_instance3_fp_avec_article_le_merge_neutralise():
+    """Le sous-pattern Position I' couvre aussi `avant le merge` / `avant la
+    merge` (article optionnel, comme les 7 sous-patterns Position I). Le
+    FP #12627 fondateur utilise `avant merge` (sans article) -- verification
+    qu'avec article, le meme cas de figure (titre sans verbe actionnel) est
+    neutralise."""
+    body = (
+        "**Rapport d'audit avant le merge**\n\n"
+        "Mesures et verifications. Pas de nit, pas de reserve."
+    )
+    assert mod.classify("myia-ai-01", body) is None, (
+        f"FP avec article `avant le merge` devrait etre neutralise, "
+        f"got {mod.classify('myia-ai-01', body)!r}"
+    )
+
+
+
+def test_13083_instance3_vp_avec_article_actionnel_reste_bloquant():
+    """VP : titre avec article + verbe actionnel -- doit rester bloquant.
+    Garantit que la sous-branche « article optionnel » n'ouvre pas un FP
+    sur les VPs documentes. Position I' detecte le verbe actionnel
+    `_is_action_verb_heading` et KEEPE `avant le merge` dans le titre ;
+    le token survit comme substring, et `has_marker` le classifie
+    BOT-CONCERN.
+
+    NB : CONCERN_MARKERS contient `avant merge` (sans article) et
+    `avant de merger`, mais PAS `avant le merge` -- c'est un prejugé
+    du corpus Position I qui accepte l'article en surface stripee mais
+    pas en detection basique. Le test utilise un corps qui porte les
+    DEUX formes : le titre (article) que Position I' doit conserver +
+    un `avant de merger` dans le corps que Position I' ne touche pas
+    (milieu de phrase, hors tete)."""
+    body = (
+        "**A confirmer avant le merge**\n\n"
+        "Action obligatoire : confirmer la liste des fichiers. "
+        "Verifier chaque ligne, c'est une action obligatoire avant de merger."
+    )
+    assert mod.classify("jsboige", body) == "BOT-CONCERN", (
+        f"VP `a confirmer avant le merge` (titre avec article + verbe "
+        f"actionnel) doit rester BOT-CONCERN, got "
+        f"{mod.classify('jsboige', body)!r}"
+    )
+
+
+
+def test_13083_instance3_ce1_mutation_desactivee_fp_rougit(monkeypatch):
+    """Controle positif par mutation : si la Position I' est desactivee
+    (regex no-op), le FP fondateur #12627 doit rougir -- preuve que le
+    test mord sur la voie ajoutee. Utilise `monkeypatch.setattr` pour eviter
+    le reload (le module est importe en conftest, reload casse le cache)."""
+    import re
+    body = (
+        "**Audit ai-01 avant merge**\n\n"
+        "Rapport descriptif, pas de reserve."
+    )
+    # Baseline : avec Position I', FP est neutralise
+    assert mod.classify("myia-ai-01", body) is None
+    # Mutation : neutralisation Position I' desactivee (regex ecrasee via
+    # monkeypatch -- propre, rollback garanti)
+    monkeypatch.setattr(mod, "_MENTION_AVANT_MERGE_HEAD_NEUTRAL",
+                        re.compile(r"(?!)"))  # match jamais
+    assert mod.classify("myia-ai-01", body) == "BOT-CONCERN", (
+        "MUTATION FAILED : Position I' desactivee -> le FP fondateur "
+        "#12627 doit rougir (`avant merge` reste emis en tete)."
+    )
+
+
+def test_13083_instance3_milieu_ligne4_reste_bloquant():
+    r"""C.233 -- DM ai-01 2026-09-04T03:15Z (#14538) : un `avant merge` en
+    milieu de corps (ligne 4) SANS verbe actionnel doit RESTER bloquant
+    apres le fix raw string \A.
+
+    Reproduction verbatim du tableau ai-01 :
+    | Cas | Ligne du match ancien regex |
+    |---|---:|
+    | « Il faut relire la section 3 [token] », milieu de corps | **4** |
+
+    Ancien regex `(?im)^` matchait cette ligne (en mode MULTILINE `^` =
+    debut de chaque ligne). Le fix ancre au debut strict du body via raw string \\A,
+    fermant ce trou -- les occurrences en milieu de corps NE sont PLUS
+    neutralisees par Position I' (par design : un `avant merge` qui
+    apparait au milieu d'un paragraphe descriptif est un concern
+    VIVANT, pas un localisateur temporel de titre).
+
+    Acceptation c.233 du fix Position I' : le strip est strictement borne
+    a la premiere ligne. Cette regression est l'INTENTION du fix, pas un
+    effet de bord. Le commentaire du code documente : `\A` ferme le trou
+    d'une portee implicite `(?m)` que le commentaire d'origine
+    n'annoncait pas (cf DM ai-01 2026-09-04T03:15Z sur #14538).
+    """
+    body = (
+        "Rapport d'audit technique\n\n"
+        "Le profil deletion-heavy de la PR est un faux signal.\n\n"
+        "Il faut relire la section 3 avant merge, mais ce n'est pas un "
+        "verdict bloquant.\n\n"
+        "Conclusion : RAS."
+    )
+    assert mod.classify("myia-ai-01", body) == "BOT-CONCERN", (
+        f"Apres fix `\\A`, `avant merge` en milieu de corps (ligne 4) "
+        f"DOIT rester BOT-CONCERN (concern vivant, hors portee de "
+        f"Position I'), got {mod.classify('myia-ai-01', body)!r}"
+    )
+
+
+def test_13083_instance3_milieu_ligne3_reste_bloquant():
+    """C.233 -- DM ai-01 2026-09-04T03:15Z (#14538) : un `avant merge` en
+    milieu de corps (ligne 3) SANS verbe actionnel doit RESTER bloquant.
+
+    Reproduction verbatim du tableau ai-01 :
+    | Cas | Ligne du match ancien regex |
+    |---|---:|
+    | « Le rapport a ete pose [token] », milieu de corps | **3** |
+    """
+    body = (
+        "Note de revue\n\n"
+        "Le rapport a ete pose avant merge par ai-01.\n\n"
+        "Pas de nit, pas de reserve."
+    )
+    assert mod.classify("myia-ai-01", body) == "BOT-CONCERN", (
+        f"Apres fix `\\A`, `avant merge` en milieu de corps (ligne 3) "
+        f"DOIT rester BOT-CONCERN (concern vivant, hors portee de "
+        f"Position I'), got {mod.classify('myia-ai-01', body)!r}"
+    )
+
+
+def test_13083_instance3_tete_h1_neutralise_toujours():
+    """C.233 -- apres le fix `\\A`, le titre H1 (ligne 1) avec `avant merge`
+    SANS verbe actionnel reste neutralise (FP fondateur #12627).
+    C'est le test de NON-regression du fix : le scope se resserre mais le
+    cas fondateur tient toujours.
+    """
+    body = (
+        "# Audit ai-01 avant merge\n\n"
+        "Rapport descriptif, pas de reserve."
+    )
+    assert mod.classify("myia-ai-01", body) is None, (
+        f"Titre H1 `avant merge` (ligne 1, sans verbe actionnel) doit "
+        f"rester neutralise apres fix `\\A` (non-regression du cas "
+        f"fondateur), got {mod.classify('myia-ai-01', body)!r}"
+    )
+
