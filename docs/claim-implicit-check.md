@@ -20,17 +20,27 @@ Un grain m'a été refusé par co-claim pendant le cycle **c.925**, et c'est le
 récit de cette collision qui motive la procédure. La narration tient en trois
 faits :
 
-1. **Issue #14032** (déjà claimée par `myia-po-2025:CoursIA` depuis
-   `2026-08-18T02:51:25Z`, scope explicite `paths:` documenté sur le commentaire
-   serveur) — travail en cours sur deux notebooks GameTheory.
+1. **Issue #14032** (déjà claimée par `myia-po-2025:CoursIA-2` — `[CLAIMED]`
+   posé le **2026-09-03T02:05:59Z**, puis `[CLAIMED-AMEND]` de scope le
+   **2026-09-03T02:51:25Z** — l'heure `02:51:25Z` est l'amendement, pas le
+   claim initial) — travail en cours sur deux notebooks GameTheory. Issue
+   créée **2026-09-01T10:36:12Z**.
 2. **Issue #14300** (`claim: une PR ouverte n'est pas un claim —
    check_lane_claim.py`) — ouverte par un autre lane, jamais claimée, dans le
    pool ouvert. Grain de fond sur la procédure **lui-même**.
-3. **Issue #14259** (incident fondateur, **2026-08-30**) — un worker a édité un
-   fichier sur la foi d'un `gh issue list --state open` qui n'a pas vu la PR
-   mergée le couvrant ; l'édition s'est révélée post-merge, et le retrait du
-   label a demandé un arbitrage explicite. Le tell : **« OPEN + zéro PR liée »
-   n'est PAS une preuve de fraîcheur** — voir [proactive-coordination.md §L1356](../.claude/rules/proactive-coordination.md) (R5 hard).
+3. **Issue #13562** « Trou de garde C.2 : aucun organe n'attrape une source
+   de code modifiée sous des sorties inchangées (miroir du ratchet papermill)
+   — mesure #13550 » (créée **2026-08-30T00:38:49Z**, **OPEN**) —
+   l'incident fondateur réel : un worker a édité un fichier sur la foi d'un
+   `gh issue list --state open` qui n'a pas vu la **PR mergée** couvrant
+   l'issue en rider. La livraison suit en **#13608** « feat(guards,#13562):
+   source-output ratchet organ + tests + tier-1 measure », mergée
+   **2026-08-30T04:12:09Z`. **Deux tells distincts, qui ne se racontent pas
+   avec les mêmes mots** : #13562 = « issue restée OPEN malgré la
+   livraison » ; #13608 = « doublon mergé ». Citer les deux illustre le
+   mieux le tell **« OPEN + zéro PR liée n'est PAS une preuve de fraîcheur »**
+   — voir [proactive-coordination.md §L1356](../.claude/rules/proactive-coordination.md) (R5 hard) ; un épisode précurseur avait été tracé sur
+   **#8835/#8836** (doublon mergé), qui ne se confond pas avec #13562.
 
 Le `check_lane_claim.py` actuel (3682 lignes, PR #9775) détecte les **claims
 explicites** (commentaire serveur `[CLAIMED] lane X:W -- paths: ...`) ; il **ne
@@ -79,7 +89,7 @@ gh pr list --state all --search "<CHEMIN_OU_MOTIF>" \
 | Constat | Action |
 |---|---|
 | Aucune PR ne touche le chemin | Poursuivre (étape 3) |
-| Une PR **MERGED** touche le chemin | **STOP** — lire `git log -- <fichier>` sur `main`, vérifier que le travail est bien arrivé. C'est le cas #14259. Si oui, acquitter `[INFO] candidate-delivered` sur l'issue |
+| Une PR **MERGED** touche le chemin | **STOP** — lire `git log -- <fichier>` sur `main`, vérifier que le travail est bien arrivé. C'est le cas #13562/#13608 (issue OPEN, livrée en rider par #13608 sans `Closes`). Si oui, acquitter `[INFO] candidate-delivered` sur l'issue |
 | Une PR **OPEN** touche le chemin, **par ma lane** | Poursuivre — c'est mon propre travail |
 | Une PR **OPEN** touche le chemin, **par une autre lane** | **STOP** — DM co-claim à la lane (cf. §3), puis `paths:` partitionné |
 | Une PR **CLOSED** (non mergée) touche le chemin | Poursuivre — CLOSED sans merge = travail avorté |
@@ -144,7 +154,7 @@ n'a pas eu le temps de répondre.
 
 | Anti-pattern | Pourquoi c'est un piège | Alternative |
 |---|---|---|
-| `gh issue list --state open` seul | Ne voit pas les **PRs mergées** qui couvrent l'issue en rider. Tell fondateur #14259 | Étape 2 avec `--state all --search "<N>"` |
+| `gh issue list --state open` seul | Ne voit pas les **PRs mergées** qui couvrent l'issue en rider. Tell fondateur #13562 (livrée en rider par #13608 sans `Closes`) | Étape 2 avec `--state all --search "<N>"` |
 | `git merge-base --is-ancestor` seul | Un squash-merge efface l'ascendance ; `is_ancestor` retourne `false` alors que la PR est MERGED | Étape 2 avec `gh pr list --state all` |
 | Croit qu'un worktree orphelin = travail abandonné | Le worker peut être en compaction, sa branche peut être attachée à une PR OPEN | Étape 3 + `gh pr list --state all --search "head:<br>"` |
 | Édite puis pose `[CLAIMED]` | L'édition a déjà eu lieu ; si collision, retour arrière coûteux (commit revert + re-travail sur la bonne branche) | Appliquer cette procédure **avant** d'éditer |
@@ -181,5 +191,26 @@ d'audit.
 - [lane-claim-protocol.md](../.claude/rules/lane-claim-protocol.md) — règle HARD `[CLAIMED]` côté worker, partitionnement `paths:`, organe `scripts/check_lane_claim.py`.
 - [proactive-coordination-detail.md](reference/proactive-coordination-detail.md) — backlog pickup, pool global, never-idle.
 - **Issue #14300** — acceptance partielle (cette PR) ; suivi outillage `--check-implicit`.
-- **Issue #14259** — incident fondateur, tell « OPEN + zéro PR liée n'est pas une preuve de fraîcheur ».
+- **Issue #13562** (OPEN, créée 2026-08-30) + **Issue #13608** (MERGED, liée à #13562) — l'incident fondateur du tell : issue OPEN, livrée en rider par une PR mergée qui ne l'a pas close. Source de la ligne « **OPEN + zéro PR liée n'est PAS une preuve de fraîcheur** ».
 - **Issue #14032** — exemple vécu c.925, claim explicite partitionné sans collision.
+
+## 7. Relecture — ce que ce doc doit à lui-même
+
+Ce document prescrit à chaque lane de relire ses sources avant de les citer —
+`gh issue view <N> --json createdAt,title` pour chaque numéro d'issue, et
+`gh pr view <N> --json createdAt,title` pour chaque PR. La **réparation c.941**
+de cette PR a corrigé trois récits fondateurs qui citaient des dates ou des
+objets plausibles mais faux :
+
+| Numéro cité avant c.941 | Version publiée (fausse) | Version mesurée firsthand (correcte) |
+|---|---|---|
+| `#14032` claim initial | depuis `2026-08-18T02:51:25Z` | créé **2026-09-01T10:36:12Z** ; claim initial **2026-09-03T02:05:59Z** ; amendement **2026-09-03T02:51:25Z** (l'heure `02:51:25Z` est l'amendement, pas le claim) |
+| `#14259` incident fondateur | « 2026-08-30 » — worker a édité sur la foi d'un `gh issue list --state open` | créé **2026-09-02** ; porte sur `supervise.sh` (ni la date, ni le sujet) |
+| `#13562` / `#13608` tell « OPEN + zéro PR liée » | (non cités, le doc pointait `#14259`) | `#13562` créé **2026-08-30T00:38:49Z** (OPEN) ; `#13608` créé **2026-08-30T04:12:09Z** (MERGED, liée à #13562) — c'est l'incident fondateur |
+
+Le geste que ce doc prescrit aux autres, il l'a donc **porté** sur lui-même en
+réparation. Une PR qui se déclare HARD sur la véracité et omet de relire ses
+propres citations est la pire classe de défaut — la lane suivante ne les
+re-vérifiera pas, elle les citera. Mesures du **2026-09-04** (cycle c.941) ;
+relues à `gh issue view` et `gh pr view` directement, sans passer par un
+résumé condensé.
