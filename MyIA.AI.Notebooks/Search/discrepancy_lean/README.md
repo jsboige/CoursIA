@@ -13,7 +13,7 @@ indépendance spectrale affine.
 
 ## Désambiguïsation (une ligne)
 
-« Discrepancy » dans [Search-13](../Part3-Advanced/Search-13-LimitedDiscrepancySearch.ipynb)
+« Discrepancy » dans [Search-03c](../Part1-Foundations/Search-03c-LimitedDiscrepancySearch.ipynb)
 = *Limited Discrepancy Search* de Harvey & Ginsberg (choix non heuristiques
 dans un arbre de recherche) — **aucun rapport** avec les sommes signées
 formalisées ici.

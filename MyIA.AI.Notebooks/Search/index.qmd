@@ -13,11 +13,6 @@ listing:
     type: grid
     sort: "filename"
     page-size: 12
-  - id: advanced
-    contents: "Part3-Advanced/Search-*.ipynb"
-    type: grid
-    sort: "filename"
-    page-size: 12
   - id: metaheuristics
     contents: "Part4-Metaheuristics/MGS-*.ipynb"
     type: grid
@@ -33,13 +28,12 @@ listing:
 
 ## Vue d'ensemble
 
-La série Search comporte **19+ notebooks** répartis en **4 parties** complémentaires. Chaque notebook est exécuté et commité avec ses sorties (règle C.2), prêts à explorer.
+La série Search comporte **19+ notebooks** répartis en **3 parties** complémentaires. Chaque notebook est exécuté et commité avec ses sorties (règle C.2), prêts à explorer.
 
 | Partie | Notebooks | Focus pédagogique |
 |--------|-----------|-------------------|
-| **Part1-Foundations** | 13 (+1 companion formel) | Exploration uninformed/informed, recherche arborescente, A*, MCTS |
+| **Part1-Foundations** | 16 (+1 companion formel) | Exploration uninformed/informed, recherche arborescente, A*, MCTS, PDB, LDS, Weighted A* |
 | **Part2-CSP** | 5 | Satisfaction de contraintes, cohérence, propagation, scheduling |
-| **Part3-Advanced** | 3 | Bases de données de patterns, recherche à discrepancy limitée, A* pondéré |
 | **Part4-Metaheuristics** | 18 | MGS — métaheuristiques hybrides avec analyse de paysage |
 
 **Kernels** : python3 · **GPU** : non · **Prérequis** : AUCUN — série adaptée à un premier contact avec l'IA.
@@ -73,7 +67,7 @@ heuristique **admissible puis consistante** (0 sorry de production, prong-B Epic
 [#3801](https://github.com/jsboige/CoursIA/issues/3801) : terrain pondéré où l'heuristique
 discrimine, pas un cas dégénéré où A\* ≡ BFS). Le companion de la série Search est :
 
-- [Lean-18-Search-AStar-Optimality](Part1-Foundations/Lean-18-Search-AStar-Optimality.ipynb)
+- [Search-03e-AStar-Optimality](Part1-Foundations/Search-03e-AStar-Optimality.ipynb)
   — visite formelle Python de `search_lean`, descente tranche 1
   [#13662](https://github.com/jsboige/CoursIA/issues/13662) depuis
   `SymbolicAI/Lean/`.

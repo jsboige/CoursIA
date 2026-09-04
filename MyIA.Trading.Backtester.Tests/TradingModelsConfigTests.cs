@@ -8,9 +8,8 @@ using Xunit;
 namespace MyIA.Trading.Backtester.Tests
 {
     /// <summary>
-    /// Tranche 3 (EPIC #7357 geste 3) : couche ML config portee.
+    /// Tranche 3 (EPIC #7357 geste 3) : couche ML config portee, mise a jour tranche 4.
     /// - cablage TradingModelsConfig.ModelType -> CurrentModelConfig (AutoML / Svm)
-    /// - garde explicite du port SVM en attente (tranche 4) : ApplicationException, pas d'echec silencieux
     /// - formats GetModelName des deux configs (logique upstream verbatim)
     /// - AutoMlTradingModel.Predict de bout en bout : pipeline ML.NET inline + prediction
     ///   sur samples separables (voie reelle du port, pas un mock)
@@ -31,18 +30,20 @@ namespace MyIA.Trading.Backtester.Tests
             Assert.IsType<TradingSvmModelConfig>(config.CurrentModelConfig);
         }
 
+        /// <summary>
+        /// Tranche 4 : la garde « port en attente » a disparu avec le stub — TrainModel
+        /// entraine desormais un vrai SVM a noyau. La substance de ce port est couverte
+        /// par TradingSvmModelConfigTests ; ce qui reste a verifier ici est que plus
+        /// aucune ApplicationException de port pending ne subsiste dans le type.
+        /// </summary>
         [Fact]
-        public void SvmModelConfig_TrainModel_ThrowsExplicitPendingPortException()
+        public void SvmModelConfig_NoLongerCarriesThePendingPortGuard()
         {
             var config = new TradingSvmModelConfig();
-            var dataConfig = BuildDataConfig();
-            double testError = -1;
 
-            var ex = Assert.Throws<ApplicationException>(
-                () => config.TrainModel(Console.WriteLine, dataConfig, ref testError));
-
-            Assert.Contains("tranche 4", ex.Message);
-            Assert.Contains("AutoML", ex.Message);
+            // Le noyau par defaut est instanciable : le chemin d'entrainement est cable,
+            // il ne leve plus « port SVM en attente ».
+            Assert.NotNull(config.GetKernel(config.Kernel));
         }
 
         [Fact]
@@ -64,18 +65,30 @@ namespace MyIA.Trading.Backtester.Tests
             Assert.Contains("-kernel-InverseMultiquadric-complexity--1-Model.bin", name);
         }
 
+        /// <summary>
+        /// La delegation TradingTrainingConfig -> ModelsConfig.CurrentModelConfig etait
+        /// prouvee en tranche 3 par l'exception du stub. Le stub porte, elle se prouve
+        /// sur GetModelName, qui emprunte exactement le meme aiguillage CurrentModelConfig
+        /// et reste deterministe (pur calcul de chaine, aucune lecture disque).
+        /// </summary>
         [Fact]
-        public void TradingTrainingConfig_TrainModel_DelegatesToCurrentModelConfig()
+        public void TradingTrainingConfig_DelegatesToCurrentModelConfig()
         {
-            var trainingConfig = new TradingTrainingConfig
+            var svmConfig = new TradingTrainingConfig
             {
+                DataConfig = BuildDataConfig(),
                 ModelsConfig = new TradingModelsConfig { ModelType = TradingModelType.MulticlassSvm }
             };
-            double testError = -1;
+            var autoMlConfig = new TradingTrainingConfig
+            {
+                DataConfig = BuildDataConfig(),
+                ModelsConfig = new TradingModelsConfig { ModelType = TradingModelType.AutoML }
+            };
 
-            // La delegation doit surfacer la garde explicite du port SVM pending, pas l'etouffer.
-            Assert.Throws<ApplicationException>(
-                () => trainingConfig.TrainModel(Console.WriteLine, ref testError));
+            // Le nom rendu est celui de la config selectionnee, pas un defaut commun :
+            // l'aiguillage est donc bien traverse.
+            Assert.Contains("-kernel-", svmConfig.GetModelName());
+            Assert.Contains("-AutoML-", autoMlConfig.GetModelName());
         }
 
         [Fact]

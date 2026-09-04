@@ -88,6 +88,9 @@ layout: section
 # Qu'est-ce que l'intelligence artificielle?
 
 
+<div class="grid grid-cols-[55%_42%] gap-6 items-start mt-2">
+<div>
+
 - Définitions multiples
 - Notre angle :
   - « Agir de façon rationnelle »
@@ -105,7 +108,13 @@ layout: section
 - Théorie du contrôle
 - Linguistique
 
-<img src="./images/img_005.png" class="absolute top-[110px] right-[20px] w-[460px]" alt="Neurone biologique : dendrites, soma, axone, synapse — l'inspiration des réseaux de neurones artificiels" />
+</div>
+<div>
+
+<img src="./images/img_005.png" class="w-full max-h-[360px] object-contain" alt="Neurone biologique : dendrites, soma, axone, synapse — l'inspiration des réseaux de neurones artificiels" />
+
+</div>
+</div>
 ---
 
 # Développement (1/2)
@@ -149,7 +158,7 @@ layout: section
   - 2018 : AlphaZero (échecs, Go, shogi sans connaissances humaines)
   - 2019 : Pluribus (poker), AlphaStar (Starcraft 2)
 - **2020s** : LLMs et IA générative deviennent grand public
-  - GPT-3 (2020), ChatGPT (2022), GPT-4 (2023), Claude 3 (2024)
+  - GPT-3 (2020), ChatGPT (2022), GPT-4 (2023), Claude 3 (2024), GPT-4o (2024), Claude 3.5 Sonnet (2024), Gemini 1.5/2 (2024-2025)
   - Stable Diffusion, Midjourney, DALL-E : génération d'images
   - 2025 : agents IA autonomes, vibe coding, IA multimodale
 
@@ -188,6 +197,9 @@ layout: section
 # Les agents
 
 
+<div class="grid grid-cols-[55%_42%] gap-6 items-start mt-2">
+<div>
+
 **Définition**
 
 - L'agent rationnel
@@ -201,7 +213,13 @@ layout: section
 - Limitations
   - ressources disponibles
 
-<img src="./images/img_009.png" class="absolute top-[110px] right-[20px] w-[460px]" alt="Les agents" />
+</div>
+<div>
+
+<img src="./images/img_009.png" class="w-full max-h-[360px] object-contain" alt="Les agents" />
+
+</div>
+</div>
 ---
 
 # Conception d'agents
@@ -243,6 +261,9 @@ layout: section
 # Agent réflexe fondé sur un modèle
 
 
+<div class="grid grid-cols-[48%_50%] gap-6 items-start mt-2">
+<div>
+
 **Agent réflexe avec modèle**
 
 - Fonctionnement interne
@@ -253,7 +274,13 @@ layout: section
 
 - Flexibilité vs complexité
 
-<img src="./images/img_012.png" class="absolute top-[110px] right-[20px] w-[460px]" alt="Agent réflexe fondé sur un modèle" />
+</div>
+<div>
+
+<img src="./images/img_012.png" class="w-full max-h-[360px] object-contain" alt="Agent réflexe fondé sur un modèle" />
+
+</div>
+</div>
 ---
 
 
@@ -1134,14 +1161,9 @@ layout: section
 
 # Théorie des jeux (1/2)
 
-<div class="grid grid-cols-2 gap-0 -mt-4 -mb-2">
-<div class="bg-orange-700 text-white px-4 py-2 text-base font-bold text-center">Environnement multi-agents</div>
-<div class="bg-slate-800 text-white px-4 py-2 text-base font-bold text-center">Optimisation de stratégies</div>
-</div>
-
-
-<div class="grid grid-cols-2 gap-5 -mt-2">
+<div class="grid grid-cols-2 gap-5 -mt-4">
 <div>
+<div class="bg-orange-700 text-white px-4 py-2 text-base font-bold text-center mb-2">Environnement multi-agents</div>
 
 - Analyse stratégique
 - Interdépendances stratégiques
@@ -1150,24 +1172,20 @@ layout: section
 - Design de mécanisme
   - Quelles règles?
 
-
 </div>
 <div>
-
+<div class="bg-slate-800 text-white px-4 py-2 text-base font-bold text-center mb-2">Optimisation de stratégies</div>
 
 - Solution = profil de stratégies
 - Pures (déterministes)
 - Mixtes (probabilistes)
 - Utilité espérée
 
-<div class="img-grid">
-<img src="./images/img_067.png" class="w-[180px] max-w-full max-h-[300px] object-contain" alt="Matrice du dilemme du prisonnier : se taire/avouer, peines de (-1,-1) à (-8,-8)" />
-<img src="./images/img_068.png" class="w-[180px] max-w-full max-h-[300px] object-contain" alt="Arbre de jeu Stackelberg : Burn/Not Burn, Invade/Concede, Fight/Retreat avec utilités" />
-<img src="./images/img_069.png" class="w-[180px] max-w-full max-h-[300px] object-contain" alt="Arbre de jeu de poker en trois rues : Pre-flop, Flop, Turn avec Fold/Call/Check/Raise" />
-
+<div class="img-grid mt-2 grid grid-cols-3 gap-2">
+<img src="./images/img_067.png" class="w-full max-h-[260px] object-contain" alt="Matrice du dilemme du prisonnier : se taire/avouer, peines de (-1,-1) à (-8,-8)" />
+<img src="./images/img_068.png" class="w-full max-h-[260px] object-contain" alt="Arbre de jeu Stackelberg : Burn/Not Burn, Invade/Concede, Fight/Retreat avec utilités" />
+<img src="./images/img_069.png" class="w-full max-h-[260px] object-contain" alt="Arbre de jeu de poker en trois rues : Pre-flop, Flop, Turn avec Fold/Call/Check/Raise" />
 </div>
-
-
 
 </div>
 </div>
@@ -1177,14 +1195,9 @@ layout: section
 
 # Théorie des jeux (2/2)
 
-<div class="grid grid-cols-2 gap-0 -mt-4 -mb-2">
-<div class="bg-orange-700 text-white px-4 py-2 text-base font-bold text-center">Jeux simultanés</div>
-<div class="bg-slate-800 text-white px-4 py-2 text-base font-bold text-center">Jeux séquentiels</div>
-</div>
-
-
-<div class="grid grid-cols-2 gap-8 -mt-2 items-center">
+<div class="grid grid-cols-2 gap-8 -mt-4">
 <div>
+<div class="bg-orange-700 text-white px-4 py-2 text-base font-bold text-center mb-2">Jeux simultanés</div>
 
 - Matrice de gains
 - Dominance
@@ -1194,6 +1207,7 @@ layout: section
 
 </div>
 <div>
+<div class="bg-slate-800 text-white px-4 py-2 text-base font-bold text-center mb-2">Jeux séquentiels</div>
 
 - Plusieurs manches
 - Forme extensive
@@ -1207,7 +1221,7 @@ layout: section
 </div>
 </div>
 
-<div class="flex justify-center mt-2">
+<div class="flex justify-center mt-4">
   <img src="./images/img_070.png" class="w-[420px] max-h-[230px] object-contain" alt="Matrice de gains du jeu Ballet/Fight : préférences croisées des deux joueurs, valeurs (2,1) et (1,2)" />
 </div>
 ---
@@ -1260,14 +1274,9 @@ layout: section
 
 # Conception de mécanismes
 
-<div class="grid grid-cols-2 gap-0 -mt-4 -mb-2">
-<div class="bg-orange-700 text-white px-4 py-2 text-base font-bold text-center">Concepts</div>
-<div class="bg-slate-800 text-white px-4 py-2 text-base font-bold text-center">Résultats</div>
-</div>
-
-
-<div class="grid grid-cols-2 gap-5 -mt-2">
+<div class="grid grid-cols-2 gap-5 -mt-4">
 <div>
+<div class="bg-orange-700 text-white px-4 py-2 text-base font-bold text-center mb-2">Concepts</div>
 
 - Théorie des jeux inverse
 - Quelles bonnes règles ?
@@ -1276,10 +1285,9 @@ layout: section
   - Mécanismes manipulables
   - Non-stratégiques
 
-
 </div>
 <div>
-
+<div class="bg-slate-800 text-white px-4 py-2 text-base font-bold text-center mb-2">Résultats</div>
 
 - Enchères de Vickrey
 - Tragédie des communs
@@ -1289,12 +1297,10 @@ layout: section
 - Stratégies sociétales
   - Évolution de la confiance
 
-<div class="img-grid">
-<img src="./images/img_075.png" class="w-[180px] max-w-full max-h-[300px] object-contain" alt="Mécanismes institutionnels : acteurs, messages, mécanisme (engrenages), résultat" />
-<img src="./images/img_076.png" class="w-[180px] max-w-full max-h-[300px] object-contain" alt="Jeu itératif du prisonnier avec roue de stratégies : Copycat, Cheater, Cooperator, Grudger, Detective..." />
-
+<div class="img-grid mt-2 flex flex-col gap-2 items-center">
+<img src="./images/img_075.png" class="max-h-[120px] max-w-[300px] object-contain" alt="Mécanismes institutionnels : acteurs, messages, mécanisme (engrenages), résultat" />
+<img src="./images/img_076.png" class="max-h-[120px] max-w-[300px] object-contain" alt="Jeu itératif du prisonnier avec roue de stratégies : Copycat, Cheater, Cooperator, Grudger, Detective..." />
 </div>
-
 
 </div>
 </div>
@@ -1588,7 +1594,7 @@ layout: section
 
 
 
-# Extensions 2015+
+# Extensions 2015+ — au-delà de la grille
 
 
 - Modèles Bayésiens
@@ -1597,6 +1603,21 @@ layout: section
 - Graph Neural Networks
   - Généralisation géométrique
   - Agrégation de voisinage
+
+<div class="grid grid-cols-3 gap-4 absolute bottom-[40px] left-[50px] right-[50px]">
+<img src="./images/img_106.png" class="max-h-[190px] w-full object-contain" alt="Autoencodeur variationnel : encodeur, mu/sigma, échantillonnage, décodeur, perte reconstruction + KL" />
+<img src="./images/img_107.png" class="max-h-[190px] w-full object-contain" alt="Graphe irrégulier versus grille de texte séquentielle — deux structures de données" />
+<img src="./images/img_108.png" class="max-h-[190px] w-full object-contain" alt="Pipeline GNN : graphe d'entrée, blocs GNN, graphe transformé, couche de classification, prédiction" />
+</div>
+
+<!-- Auto-encodeurs variationnels : encodeur mu/sigma, echantillonnage, perte reconstruction + KL. GNN : donnees en graphe irregulier plutot qu'en grille, agregation de voisinage. -->
+---
+
+
+
+# Extensions 2015+ — attention et LLMs
+
+
 - Réseaux attentionnels
   - Économie de ressources
   - Séquences
@@ -1605,24 +1626,21 @@ layout: section
 - LLMs : BERT (2018), GPT-1 (2018)
   - GPT-2 (2019, zero-shot), GPT-3 (2020, in-context few-shot)
   - T5 (2019, text-to-text unifié)
-- Modèles efficients (2020+)
-  - Reformer, Longformer : attention linéaire ou par fenêtres
+- Modèles efficients (2020+) : attention linéaire, convolutions, RNN
+  - Reformer, Longformer (2020), Mamba / SSM, Hyena, RWKV (2023)
 
-<div class="grid grid-cols-3 gap-2 absolute top-[130px] right-[20px] w-[600px]">
-<img src="./images/img_104.png" class="max-h-[150px] w-full object-contain" alt="Deux photos d'une femme lançant un frisbee dans un parc, légendées en anglais" />
-<img src="./images/img_105.jpg" class="max-h-[150px] w-full object-contain" alt="Attention mot à mot : traduction de « How was your day » avec poids d'importance colorés" />
-<img src="./images/img_106.png" class="max-h-[150px] w-full object-contain" alt="Autoencodeur variationnel : encodeur, mu/sigma, échantillonnage, décodeur, perte reconstruction + KL" />
-<img src="./images/img_107.png" class="max-h-[150px] w-full object-contain" alt="Graphe irrégulier versus grille de texte séquentielle — deux structures de données" />
-<img src="./images/img_108.png" class="max-h-[150px] w-full object-contain" alt="Pipeline GNN : graphe d'entrée, blocs GNN, graphe transformé, couche de classification, prédiction" />
-<img src="./images/img_109.png" class="max-h-[150px] w-full object-contain" alt="Architecture Transformer encodeur-décodeur avec auto-attention, exemple de traduction du tchèque" />
+<div class="grid grid-cols-3 gap-4 absolute bottom-[35px] left-[50px] right-[50px]">
+<img src="./images/img_104.png" class="max-h-[135px] w-full object-contain" alt="Deux photos d'une femme lançant un frisbee dans un parc, légendées en anglais" />
+<img src="./images/img_105.jpg" class="max-h-[135px] w-full object-contain" alt="Attention mot à mot : traduction de « How was your day » avec poids d'importance colorés" />
+<img src="./images/img_109.png" class="max-h-[135px] w-full object-contain" alt="Architecture Transformer encodeur-décodeur avec auto-attention, exemple de traduction du tchèque" />
 </div>
 
-<!-- Transformer : encodeur-decodeur, self-attention multi-tetes, positional encoding. LLMs : GPT-2 (2019) zero-shot, GPT-3 (2020) in-context few-shot, T5 (2019) text-to-text unifie. Modeles efficients 2020+ : Reformer, Longformer. -->
+<!-- Transformer : encodeur-decodeur, self-attention multi-tetes, positional encoding. LLMs : GPT-2 (2019) zero-shot, GPT-3 (2020) in-context few-shot, T5 (2019) text-to-text unifie. Modeles efficients 2020+ : Reformer et Longformer (attention lineaire ou par fenetres), puis Mamba et les State Space Models, Hyena, RWKV (2023) -- complexite lineaire sur sequences longues. -->
 ---
 
 
 
-# Extensions 2020+
+# Extensions 2020+ — modèles multimodaux
 
 
 **Modèles multimodaux**
@@ -1636,6 +1654,19 @@ layout: section
   - DALL-E (2022, OpenAI), Imagen (2022, Google)
   - GPT-4V (2023), Gemini (2023) : compréhension multimodale
 
+<div class="grid grid-cols-2 gap-4 absolute bottom-[35px] left-[50px] right-[50px]">
+<img src="./images/img_110.png" class="max-h-[160px] w-full object-contain" alt="Trois paires image-légende : rue de Kyoto, aigle en vol, paysage montagneux" />
+<img src="./images/img_111.png" class="max-h-[160px] w-full object-contain" alt="CLIP : plongements image et texte comparés, mise à jour des modèles, verdict similaire ou non" />
+</div>
+
+<!-- Multimodaux : CLIP (2021) contraste texte-image sur 400 M de paires, ALIGN / Florence, DALL-E (2022), Imagen (2022), GPT-4V / Gemini (2023). -->
+---
+
+
+
+# Extensions 2020+ — diffusion
+
+
 **Modèles de diffusion**
 
 - Prédiction d'un bruit (DDPM, Ho et al. 2020)
@@ -1645,20 +1676,38 @@ layout: section
 - Conditionnement multimodal
 - Mécanisme attentionnel (cross-attention Q/K/V)
 
-**Alignement et produit grand public**
+<div class="grid grid-cols-2 gap-4 absolute bottom-[25px] left-[50px] right-[50px]">
+<img src="./images/img_112.png" class="max-h-[100px] w-full object-contain" alt="Chaîne de Markov de diffusion : bruitage progressif de xT vers x0 puis débruitage inverse" />
+<img src="./images/img_113.png" class="max-h-[100px] w-full object-contain" alt="U-Net de débruitage latent : encodeur, décodeur, attention croisée Q/K/V, conditionnements et pas de temps" />
+</div>
+
+<!-- Diffusion latente (LDM / Stable Diffusion, Rombach 2021-2022) : espace latent d'un VAE pre-entraine, debruitage U-Net, conditionnement texte par l'encodeur CLIP, cross-attention Q/K/V. -->
+---
+
+
+
+# Extensions 2020+ — alignement et produit grand public (1/2)
+
+
+**Alignement par retour humain**
 
 - RLHF (2022, InstructGPT) : affinage par retour humain
 - ChatGPT (nov. 2022, OpenAI) : 100 M d'utilisateurs en 2 mois
-- Modèles open-weight : Llama 2 (2023), Mistral, Mixtral (MoE 2023-2024)
 
-<div class="grid grid-cols-2 gap-2 absolute top-[130px] right-[20px] w-[600px]">
-<img src="./images/img_110.png" class="max-h-[190px] w-full object-contain" alt="Trois paires image-légende : rue de Kyoto, aigle en vol, paysage montagneux" />
-<img src="./images/img_111.png" class="max-h-[190px] w-full object-contain" alt="CLIP : plongements image et texte comparés, mise à jour des modèles, verdict similaire ou non" />
-<img src="./images/img_112.png" class="max-h-[190px] w-full object-contain" alt="Chaîne de Markov de diffusion : bruitage progressif de xT vers x0 puis débruitage inverse" />
-<img src="./images/img_113.png" class="max-h-[190px] w-full object-contain" alt="U-Net de débruitage latent : encodeur, décodeur, attention croisée Q/K/V, conditionnements et pas de temps" />
-</div>
+<!-- Alignement : RLHF (InstructGPT 2022) puis ChatGPT (nov 2022, 100 M d'utilisateurs en 2 mois). -->
+---
 
-<!-- Multimodaux : CLIP (2021) contraste texte-image, DALL-E (2022), GPT-4V / Gemini (2023). Diffusion latente (LDM / Stable Diffusion, Rombach 2021-2022) : bruit latent + U-Net + cross-attention. Alignement : RLHF (InstructGPT 2022), ChatGPT (nov 2022), Llama 2 / Mistral / Mixtral (2023-2024). -->
+
+# Extensions 2020+ — alignement et produit grand public (2/2)
+
+
+**Modèles ouverts et frontier**
+
+- Open-weight : Llama 2 (2023), Mistral, Mixtral (MoE 2023-2024)
+- Générations suivantes (2024-2025) : Llama 3 / 3.1 / 4, DeepSeek-V3, Qwen2.5, Gemma 2
+- Frontier multimodaux omni : GPT-4o (2024), Claude 3.5 Sonnet, Gemini 1.5 / 2
+
+<!-- Open-weight : Llama 2, Mistral, Mixtral (2023-2024). Generations suivantes 2024-2025 : Llama 3 / 3.1 / 4, DeepSeek-V3, Qwen2.5, Gemma 2. Frontier multimodaux omni : GPT-4o, Claude 3.5 Sonnet, Gemini 1.5 / 2. -->
 ---
 
 
