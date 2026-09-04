@@ -431,6 +431,49 @@ class TestThreeVerbs(unittest.TestCase):
         self.assertEqual(_mod.find_marker_entry([{"id": 55, "body": body}]), ("55", body))
         self.assertIsNone(_mod.find_marker_entry([{"id": 1, "body": "plain"}]))
 
+    def test_find_marker_reads_the_rest_route_not_graphql(self):
+        """The id must be spendable by the PATCH writer (#14421).
+
+        ``find_marker_entry`` is pure and cannot tell a database id from a
+        GraphQL node id -- both are truthy strings, so every unit test above
+        passes under either source. The defect therefore lives entirely in
+        the *fetch*, which is why this test asserts on the argv rather than
+        on the returned tuple.
+
+        Measured 2026-09-04 on #14495: ``gh pr view --json comments`` renders
+        ``IC_kwDOH2Odns8AAAABSfMUxw`` where the REST collection renders
+        ``5535634631``; ``GET /repos/.../issues/comments/IC_kwDO...`` answers
+        ``404 Not Found``. ``edit_comment`` spends this id on that very route,
+        so a GraphQL id makes every update and retract 404 while POST keeps
+        working -- ``post=13 update=0 retract=0`` in run 364.
+        """
+        seen = {}
+
+        def _capture(argv, **kwargs):
+            argv = list(argv)
+            seen["argv"] = argv
+            page = [{"id": 5535634631,
+                     "body": "x " + _mod.COMMENT_MARKER_START + " y"}]
+            return _subprocess.CompletedProcess(
+                argv, 0, stdout=json.dumps([page]), stderr="")
+
+        with mock.patch.object(_mod.subprocess, "run", side_effect=_capture):
+            entry = _mod.find_marker("owner/repo", 4242)
+
+        self.assertIsNotNone(entry)
+        self.assertEqual(entry[0], "5535634631")
+        # The REST collection, addressable by the PATCH sibling ...
+        self.assertIn("api", seen["argv"][:2])
+        self.assertIn("repos/owner/repo/issues/4242/comments", seen["argv"])
+        # ... paginated, so a marker past page 1 is not misread as absent ...
+        self.assertIn("--paginate", seen["argv"])
+        # ... and never the GraphQL projection, whose ids are not spendable.
+        self.assertNotIn("view", seen["argv"])
+        self.assertFalse(
+            [a for a in seen["argv"] if a == "comments"],
+            "'--json comments' returns GraphQL node ids the writer cannot use",
+        )
+
 
 class TestGhRowExtraction(unittest.TestCase):
     def test_from_gh_dict_reads_body_and_refs(self):
