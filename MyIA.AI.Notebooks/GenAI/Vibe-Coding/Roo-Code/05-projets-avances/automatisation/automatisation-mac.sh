@@ -97,6 +97,19 @@ while [[ $# -gt 0 ]]; do
             MAX_THREADS="$2"
             shift 2
             ;;
+        --send-notifications)
+            SEND_NOTIFICATIONS=true
+            shift
+            ;;
+        --help)
+            show_help
+            ;;
+        *)
+            echo "Option inconnue: $1"
+            show_help
+            ;;
+    esac
+done
 # Création des répertoires nécessaires
 initialize_environment() {
     local paths=("$OUTPUT_PATH" "$TEMP_PATH" "$LOG_PATH" "$REPORT_PATH")
@@ -397,6 +410,27 @@ transform_file() {
                 tail -n +2 "$output_file" | while IFS=, read -r value1 value2 rest; do
                     if [[ "$value1" =~ ^[0-9]+$ ]] && [[ "$value2" =~ ^[0-9]+$ ]]; then
                         local total=$((value1 + value2))
+                        echo "$value1,$value2,$rest,$total" >> "$temp_file"
+                    else
+                        echo "$value1,$value2,$rest," >> "$temp_file"
+                    fi
+                done
+                mv "$temp_file" "$output_file"
+            fi
+            ;;
+        *)
+            write_log "Transformation non implémentée pour le type $extension" "warning"
+            cp "$file_path" "$output_file"
+            ;;
+    esac
+    
+    # Mise à jour du résultat
+    local result=$(echo "$file_analysis" | jq --arg transformed_path "$output_file" \
+                                            '.transformedPath = $transformed_path | .status = "Transformed"')
+    
+    echo "$result"
+    return 0
+}
 #######################################
 # Intégration API et services externes
 #######################################
@@ -489,14 +523,6 @@ EOF
     echo "$result"
     return 0
 }
-                        echo "$value1,$value2,$rest,$total" >> "$temp_file"
-                    else
-                        echo "$value1,$value2,$rest," >> "$temp_file"
-                    fi
-                done
-                mv "$temp_file" "$output_file"
-            fi
-            ;;
 #######################################
 # Génération de rapports
 #######################################
@@ -691,12 +717,6 @@ EOF
     echo "$report_file_path"
     return 0
 }
-            
-        *)
-            write_log "Transformation non implémentée pour le type $extension" "warning"
-            cp "$file_path" "$output_file"
-            ;;
-    esac
 #######################################
 # Traitement parallèle
 #######################################
@@ -960,14 +980,6 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     
     exit $exit_code
 fi
-    
-    # Mise à jour du résultat
-    local result=$(echo "$file_analysis" | jq --arg transformed_path "$output_file" \
-                                            '.transformedPath = $transformed_path | .status = "Transformed"')
-    
-    echo "$result"
-    return 0
-}
         
         result=$(eval "$cmd" 2>&1) && success=true || {
             last_error="$result"
@@ -1007,19 +1019,6 @@ send_notification() {
         osascript -e "display notification \"$body\" with title \"$subject\""
     fi
 }
-        --send-notifications)
-            SEND_NOTIFICATIONS=true
-            shift
-            ;;
-        --help)
-            show_help
-            ;;
-        *)
-            echo "Option inconnue: $1"
-            show_help
-            ;;
-    esac
-done
 
 # Vérification des arguments obligatoires
 if [ -z "$PROJECT_PATH" ] || [ -z "$OUTPUT_PATH" ]; then
