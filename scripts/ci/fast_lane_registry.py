@@ -699,3 +699,61 @@ TRANCHE5: list[Guard] = [
         absorbed=True,
     ),
 ]
+
+
+# ---------------------------------------------------------------------------
+# TRANCHE 6 d'absorption (#14325) -- garde markdown deaccent (advisory).
+# Forme moteur : iterate_paths (boucle par notebook change), meme contrat
+# que TRANCHE4 md-content-loss. Le detecteur est la VERSION DURCIE
+# `detect_markdown_deaccent.py` (PR #14248 MERGED), pas l'ancien
+# `detect_accent_stripping.py` que #14325 mentionne -- le body de l'issue
+# dit explicitement « cabler la version durcie une fois mergee ».
+#
+# Pourquoi advisory, pas bloquant : la dette markdown repo-wide (#14064)
+# est de 37 286 candidats, dont 16 % de FP certains sur les homographes
+# `des`/`sur`/`mesure` ; passer la garde en blocking sur une premiere
+# introduction ferait rougir des PRs sur de la dette heritee, et
+# l'instrument perdrait son sens (cf c.938-L1 : « resultat VERT peut etre
+# integralement DETRUIT »). Le choix -- assumption explicite : advisory
+# signale SANS bloquer, et un futur passage en blocking (separe, post
+# acceptance 0 finding repo-wide) sera tranche par le coordinateur quand
+# la dette aura ete traitee par serie.
+#
+# Forme exit : le detecteur rend rc=0 clean / rc=2 findings (sur
+# `--fail-on-findings`). Avec `warn_rc=(2,)` et `blocking=False` :
+#   - rc=2 est agrege en succes par fast-lane (`run_iter`) -- la lane ne
+#     rougit JAMAIS sur cette garde.
+#   - rc=1 (vacuous scan / fichier introuvable) reste succes -- un chemin
+#     detruit ou un notebook absent ne fait pas echouer la garde.
+#   - rc != 0/1/2 reste un detecteur casse : fast-lane le publie comme
+#     failure pour eviter un quitus vert silencieux (anti-auto-desarmement,
+#     #8655/#8656 transpose de TRANCHE4).
+#
+# Selection rationale : aucun workflow dedie per-PR ne cable ce detecteur
+# au moment de #14325 (mesure le 2026-09-03, cf body issue : « rien ne les
+# fait tourner sur les PRs »). Le scan systematique des 96 workflows
+# pull_request ne trouve rien d'autre -- c'est exactement la forme de
+# TRANCHE4 md-content-loss (meme cabine, meme issue), et c'est la voie
+# canonique pour ne pas multiplier les workflows.
+# ---------------------------------------------------------------------------
+TRANCHE6: list[Guard] = [
+    Guard(
+        name="Markdown deaccent advisory (per-notebook, label, non-blocking)",
+        source="markdown-deaccent-advisory.yml",
+        paths=[
+            "MyIA.AI.Notebooks/**/*.ipynb",
+            "scripts/notebook_tools/detect_markdown_deaccent.py",
+            "scripts/notebook_tools/tests/test_detect_markdown_deaccent.py",
+            ".github/workflows/markdown-deaccent-advisory.yml",
+        ],
+        iterate_paths=["MyIA.AI.Notebooks/**/*.ipynb"],
+        argv=[
+            "python", "scripts/notebook_tools/detect_markdown_deaccent.py",
+            "--json", "--fail-on-findings", "{changed_paths}",
+        ],
+        blocking=False,  # advisory : TRANCHE6 ne rougit JAMAIS une PR (cf #14325)
+        iterates_paths=True,
+        absorbed=True,
+        warn_rc=(1, 2),  # rc=2 = findings (signale sans bloquer) ; rc=1 = vacuous
+    ),
+]

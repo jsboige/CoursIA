@@ -239,6 +239,15 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   au niveau job pour les forks. Rollback = revert de la PR (l'entree
     #   disparait de l'allowlist).
     "lean-visibility-advisory.yml",
+    # registre TRANCHE6 (#14325, owner myia-po-2023:CoursIA) : vehicule
+    #   workflow_dispatch-ONLY servant de cible d'identite au check-run absorbe
+    #   par fast-lane (scripts/ci/fast_lane_registry.py) et de re-run manuel
+    #   sur main ; l'analyse per-PR elle-meme tourne dans le slot fast-lane.
+    #   Advisory pur-Python (detect_markdown_deaccent.py, durci #14064) :
+    #   label signe, exit 0 toujours, aucun secret, GITHUB_TOKEN en lecture
+    #   seule pour l'API Checks/labels. Garde same-repo parenthesee au niveau
+    #   job (#13874) pour les forks. Rollback = revert de cette PR.
+    "markdown-deaccent-advisory.yml",
 }
 GITHUB_HOSTED_LABELS = {
     "ubuntu-latest",
