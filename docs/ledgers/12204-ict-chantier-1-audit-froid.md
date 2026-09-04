@@ -23,7 +23,7 @@ Labels établis à partir : (a) des vérifications A3 firsthand ([`12204-ict-cha
 
 | # | Opération | provenance | attestation | force | Verdict |
 |---|---|---|---|---|---|
-| 1 | Recoordonner | RAPPORTE | 2+ (Sudoku-13, `conway_lean`, MGS) | empirique + Lean-formel | **TABLE** — reste à passer FIRSTHAND (grain A2) |
+| 1 | Recoordonner | FIRSTHAND (A2, #13956) | 2+ (Sudoku-13, `conway_lean`, MGS-21) — les trois tiennent | empirique avec cause mesurée + Lean-formel kernel-décidable | **TABLE** — confirmée. Dette reformulée : les trois attestations sont des post-mortems — une théorie du « bon » changement choisirait la représentation avant de payer l'échec ([A2](12204-ict-chantier-1-a2.md)) |
 | 2 | Abstraire à dette bornée | RAPPORTE | **1** (Kroer-Sandholm externe) | n/a | **⬇ FILE D'ATTENTE** — voir §Tombée 1 |
 | 3 | Quotienter / fibrer | FIRSTHAND (A3 + ce cycle) | **1 locale** (Lean-21b) | empirique-notebook | **⬇ FILE D'ATTENTE** — voir §Tombée 4 |
 | 4 | Décomposer localement | RAPPORTE | 2+ (ICT-15d jouet, Hashlife, EPITA) | empirique | **TABLE** avec dette ouverte (qui décide des bords) — grain A4 |
