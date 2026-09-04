@@ -144,7 +144,20 @@ fetch_token() {
   # conteneur. C'est la raison pour laquelle la boucle vit sur l'HOTE et non
   # dans l'image -- `gh` et ses credentials ne descendent jamais dans le
   # conteneur.
-  gh api --method POST "repos/$REPO/actions/runners/registration-token" --jq .token 2>/dev/null
+  #
+  # #14259 epinglage : GH_TOKEN ambiant est honore tel quel par gh ;
+  # COURSIA_RUNNER_GH_ACCOUNT (plus specifique) le surpasse en resolvant
+  # le token du compte nomme. Sans epinglage, le fetch depend du compte
+  # gh ACTIF -- un `gh auth switch` dans une autre session changeait
+  # l'identite des registration tokens en silence (incident 2026-09-02).
+  if [ -n "${COURSIA_RUNNER_GH_ACCOUNT:-}" ]; then
+    GH_TOKEN="$(gh auth token --user "$COURSIA_RUNNER_GH_ACCOUNT")" || return 1
+    export GH_TOKEN
+  fi
+  # Pas de 2>/dev/null (#14259) : l'erreur REELLE de gh (403, token expire,
+  # compte sans droit admin) doit atteindre l'operateur. Le message de la
+  # boucle resume le symptome ; il ne remplace pas la cause.
+  gh api --method POST "repos/$REPO/actions/runners/registration-token" --jq .token
 }
 
 # Parametre depuis #14337 : un slot = une boucle, mais nom/labels/image/caps
@@ -289,9 +302,29 @@ cmd_status() {
   echo "== conteneurs runner en cours =="
   docker ps --filter "name=$NAME_PREFIX" --format '  {{.Names}}  {{.Status}}  {{.RunningFor}}' 2>/dev/null || true
   echo "== runners enregistres cote GitHub =="
-  gh api "repos/$REPO/actions/runners" \
-    --jq '.runners[]|"  \(.name) [\(.status)] busy=\(.busy) labels=\([.labels[].name]|join(","))"' 2>/dev/null \
-    || echo "  (droit admin requis pour lire l'inventaire)"
+  # #14259 : nommer la contradiction docker-vs-inventaire au lieu
+  # d'afficher les deux blocs cote a cote. « N conteneurs / 0 runner
+  # enregistre » est l'etat exact de l'incident 2026-09-02 (jetons crees
+  # sous un compte, inventaire lu sous un autre). Une fenetre transitoire
+  # existe au re-enregistrement entre deux jobs (--ephemeral), d'ou le
+  # « si persistant » du message.
+  local runners_ok=0 runners_out=""
+  if runners_out="$(gh api "repos/$REPO/actions/runners" \
+      --jq '.runners[]|"  \(.name) [\(.status)] busy=\(.busy) labels=\([.labels[].name]|join(","))"' 2>/dev/null)"; then
+    runners_ok=1
+    printf '%s\n' "$runners_out"
+  else
+    echo "  (droit admin requis pour lire l'inventaire)"
+  fi
+  if [ "$runners_ok" -eq 1 ]; then
+    local n_cont n_run
+    n_cont="$(docker ps --filter "name=$NAME_PREFIX" -q 2>/dev/null | wc -l | tr -d ' ')"
+    n_run="$(printf '%s\n' "$runners_out" | grep -c '^  ' || true)"
+    if [ "$n_cont" -gt 0 ] && [ "$n_run" -eq 0 ]; then
+      echo "  -- CONTRADICTION : $n_cont conteneur(s) $NAME_PREFIX actif(s) mais 0 runner enregistre cote GitHub."
+      echo "     Si persistant : fetch_token sous un mauvais compte -- cf epinglage COURSIA_RUNNER_GH_ACCOUNT (#14259)."
+    fi
+  fi
   [ -f "$STOP_FILE" ] && echo "== sentinel STOP pose : les boucles ne relancent plus =="
 }
 
