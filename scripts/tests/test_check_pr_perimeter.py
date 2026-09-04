@@ -38,6 +38,7 @@ from check_pr_perimeter import (  # noqa: E402
     _is_incidental_assertion,
     _normalize_rest_files,
     _paragraph_block,
+    unmeasurable_perimeter,
     _paragraph_prefix,
     _word_form_count,
     _word_form_is_indef_non_pr_subject,
@@ -3599,3 +3600,71 @@ def test_13946_negative_real_perimeter_still_blocks():
         f"un vrai claim de 3 fichiers doit rester rouge quand 2 diff, "
         f"obtenu {problems!r}"
     )
+
+
+# #14292 — une liste effective VIDE est une non-mesure, pas un zéro.
+def test_14292_empty_api_list_is_unmeasurable():
+    """Cause 1 : la liste API elle-même est vide (PR fermée/vidée, base qui a
+    tout absorbé) — mesuré sur #11956 (main @ 84d6a974d9) et sur le FAIL
+    fantôme post-merge de #14536 (run 33849858765)."""
+    reason = unmeasurable_perimeter([], None)
+    assert reason is not None and "liste API vide" in reason
+    # Même cause quand la classification a tourné sur une liste API vide
+    # (_classify_carried rend propres=[], charries=[] dans ce cas).
+    reason2 = unmeasurable_perimeter([], CarriedNote(propres=[], charries=[]))
+    assert reason2 is not None and "liste API vide" in reason2
+
+
+def test_14292_all_carried_is_unmeasurable():
+    """Cause 2 : liste API non vide mais tout charrié de main (STALE-BASE
+    extrême, carried.propres == [])."""
+    carried = CarriedNote(
+        propres=[], charries=[{"path": "a.py"}], base_age_hours=None
+    )
+    reason = unmeasurable_perimeter([], carried)
+    assert reason is not None and "charrié" in reason
+
+
+def test_14292_measurable_perimeter_returns_none():
+    """Contrôle négatif obligatoire (#14292 acceptance 2) : un périmètre réel
+    ne rend jamais de raison — sans lui, « ne bloque plus » serait
+    indiscernable d'un garde débranché."""
+    assert unmeasurable_perimeter([{"path": "a.py"}], None) is None
+    # Même avec des charriés, un périmètre propre non vide reste mesurable.
+    mixed = CarriedNote(
+        propres=[{"path": "b.py"}], charries=[{"path": "a.py"}], base_age_hours=3
+    )
+    assert unmeasurable_perimeter([{"path": "b.py"}], mixed) is None
+
+
+def test_14292_ghost_fail_shape_becomes_signal(monkeypatch, capsys):
+    """La forme exacte mesurée sur #11956 (issue body) : body honnête
+    « Fichiers touchés : 5 fichiers », liste effective vide → le garde rendait
+    « VERDICT: FAIL / l'assertion pretend 5 fichier(s), la liste effective en
+    compte 0 ». Après #14292 : exit 0, PERIMETRE NON MESURABLE imprimé,
+    l'assertion visible sous SIGNAL (pas effacée)."""
+    import check_pr_perimeter as cpp
+
+    body = "**Fichiers touchés : 5 fichiers**\n- real.py\n"
+    monkeypatch.setattr(
+        cpp, "fetch_report",
+        lambda pr: cpp.Report(
+            files=[], moves=[],
+            carried=CarriedNote(propres=[], charries=[]),
+        ),
+    )
+    monkeypatch.setattr(cpp, "fetch_review_thread", lambda pr: [{
+        "kind": "PR body", "author": "jsboige", "body": body,
+        "source": "body", "ts": "",
+    }])
+    monkeypatch.setattr(
+        sys, "argv", ["check_pr_perimeter.py", "11956", "--scan-thread"]
+    )
+    rc = cpp.main()
+    out = capsys.readouterr().out
+    assert rc == 0, f"une non-mesure ne doit plus tenir la PR, obtenu :\n{out}"
+    assert "PERIMETRE NON MESURABLE" in out and "liste API vide" in out
+    assert (
+        "l'assertion pretend 5 fichier(s), la liste effective en compte 0" in out
+    ), "la détection doit rester visible sous SIGNAL, pas être effacée"
+    assert "VERDICT: OK" in out
