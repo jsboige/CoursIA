@@ -1,0 +1,420 @@
+{
+  "experiment": "case_11_hoffman_interface_toy",
+  "issue": 8182,
+  "n_seeds": 5,
+  "seeds": [
+    0,
+    1,
+    7,
+    42,
+    99
+  ],
+  "world_size": 4,
+  "sensory_size": 2,
+  "canonical_compression": [
+    0,
+    1,
+    0,
+    1
+  ],
+  "landscapes": [
+    "L_bit0",
+    "L_bit1",
+    "L_parity",
+    "L_anti"
+  ],
+  "runs": [
+    {
+      "L_bit0": {
+        "alpha_truth": 0.4399326971875097,
+        "alpha_fit": 0.4399326971875097,
+        "transfer_truth": {
+          "L_bit1": 1.6802019084374709,
+          "L_parity": 1.5,
+          "L_anti": 1.5
+        },
+        "transfer_fit": {
+          "L_bit1": 1.6802019084374709,
+          "L_parity": 1.5,
+          "L_anti": 1.5
+        },
+        "self_truth": 1.5,
+        "self_fit": 1.5
+      },
+      "L_bit1": {
+        "alpha_truth": 0.9999648682022226,
+        "alpha_fit": 0.9999648682022226,
+        "transfer_truth": {
+          "L_bit0": 1.5,
+          "L_parity": 1.5,
+          "L_anti": 1.5
+        },
+        "transfer_fit": {
+          "L_bit0": 1.5,
+          "L_parity": 1.5,
+          "L_anti": 1.5
+        },
+        "self_truth": 2.999894604606668,
+        "self_fit": 2.999894604606668
+      },
+      "L_parity": {
+        "alpha_truth": 0.4399326971875097,
+        "alpha_fit": 0.4399326971875097,
+        "transfer_truth": {
+          "L_bit0": 1.5,
+          "L_bit1": 1.6802019084374709,
+          "L_anti": 1.5
+        },
+        "transfer_fit": {
+          "L_bit0": 1.5,
+          "L_bit1": 1.6802019084374709,
+          "L_anti": 1.5
+        },
+        "self_truth": 1.5,
+        "self_fit": 1.5
+      },
+      "L_anti": {
+        "alpha_truth": 0.4399326971875097,
+        "alpha_fit": 0.4399326971875097,
+        "transfer_truth": {
+          "L_bit0": 1.5,
+          "L_bit1": 1.6802019084374709,
+          "L_parity": 1.5
+        },
+        "transfer_fit": {
+          "L_bit0": 1.5,
+          "L_bit1": 1.6802019084374709,
+          "L_parity": 1.5
+        },
+        "self_truth": 1.5,
+        "self_fit": 1.5
+      }
+    },
+    {
+      "L_bit0": {
+        "alpha_truth": 0.8374208723620318,
+        "alpha_fit": 0.8374208723620318,
+        "transfer_truth": {
+          "L_bit1": 2.5122626170860953,
+          "L_parity": 1.5,
+          "L_anti": 1.5
+        },
+        "transfer_fit": {
+          "L_bit1": 2.5122626170860953,
+          "L_parity": 1.5,
+          "L_anti": 1.5
+        },
+        "self_truth": 1.5,
+        "self_fit": 1.5
+      },
+      "L_bit1": {
+        "alpha_truth": 0.9997239456127273,
+        "alpha_fit": 0.9997239456127273,
+        "transfer_truth": {
+          "L_bit0": 1.5,
+          "L_parity": 1.5,
+          "L_anti": 1.5
+        },
+        "transfer_fit": {
+          "L_bit0": 1.5,
+          "L_parity": 1.5,
+          "L_anti": 1.5
+        },
+        "self_truth": 2.999171836838182,
+        "self_fit": 2.999171836838182
+      },
+      "L_parity": {
+        "alpha_truth": 0.8374208723620318,
+        "alpha_fit": 0.8374208723620318,
+        "transfer_truth": {
+          "L_bit0": 1.5,
+          "L_bit1": 2.5122626170860953,
+          "L_anti": 1.5
+        },
+        "transfer_fit": {
+          "L_bit0": 1.5,
+          "L_bit1": 2.5122626170860953,
+          "L_anti": 1.5
+        },
+        "self_truth": 1.5,
+        "self_fit": 1.5
+      },
+      "L_anti": {
+        "alpha_truth": 0.8374208723620318,
+        "alpha_fit": 0.8374208723620318,
+        "transfer_truth": {
+          "L_bit0": 1.5,
+          "L_bit1": 2.5122626170860953,
+          "L_parity": 1.5
+        },
+        "transfer_fit": {
+          "L_bit0": 1.5,
+          "L_bit1": 2.5122626170860953,
+          "L_parity": 1.5
+        },
+        "self_truth": 1.5,
+        "self_fit": 1.5
+      }
+    },
+    {
+      "L_bit0": {
+        "alpha_truth": 0.1392571006415111,
+        "alpha_fit": 0.1392571006415111,
+        "transfer_truth": {
+          "L_bit1": 2.5822286980754665,
+          "L_parity": 1.5,
+          "L_anti": 1.5
+        },
+        "transfer_fit": {
+          "L_bit1": 2.5822286980754665,
+          "L_parity": 1.5,
+          "L_anti": 1.5
+        },
+        "self_truth": 1.5,
+        "self_fit": 1.5
+      },
+      "L_bit1": {
+        "alpha_truth": 0.00013345574651424386,
+        "alpha_fit": 0.00013345574651424386,
+        "transfer_truth": {
+          "L_bit0": 1.5,
+          "L_parity": 1.5,
+          "L_anti": 1.5
+        },
+        "transfer_fit": {
+          "L_bit0": 1.5,
+          "L_parity": 1.5,
+          "L_anti": 1.5
+        },
+        "self_truth": 2.9995996327604573,
+        "self_fit": 2.9995996327604573
+      },
+      "L_parity": {
+        "alpha_truth": 0.1392571006415111,
+        "alpha_fit": 0.1392571006415111,
+        "transfer_truth": {
+          "L_bit0": 1.5,
+          "L_bit1": 2.5822286980754665,
+          "L_anti": 1.5
+        },
+        "transfer_fit": {
+          "L_bit0": 1.5,
+          "L_bit1": 2.5822286980754665,
+          "L_anti": 1.5
+        },
+        "self_truth": 1.5,
+        "self_fit": 1.5
+      },
+      "L_anti": {
+        "alpha_truth": 0.1392571006415111,
+        "alpha_fit": 0.1392571006415111,
+        "transfer_truth": {
+          "L_bit0": 1.5,
+          "L_bit1": 2.5822286980754665,
+          "L_parity": 1.5
+        },
+        "transfer_fit": {
+          "L_bit0": 1.5,
+          "L_bit1": 2.5822286980754665,
+          "L_parity": 1.5
+        },
+        "self_truth": 1.5,
+        "self_fit": 1.5
+      }
+    },
+    {
+      "L_bit0": {
+        "alpha_truth": 0.6085406564455234,
+        "alpha_fit": 0.6085406564455234,
+        "transfer_truth": {
+          "L_bit1": 1.82562196933657,
+          "L_parity": 1.5,
+          "L_anti": 1.5
+        },
+        "transfer_fit": {
+          "L_bit1": 1.82562196933657,
+          "L_parity": 1.5,
+          "L_anti": 1.5
+        },
+        "self_truth": 1.5,
+        "self_fit": 1.5
+      },
+      "L_bit1": {
+        "alpha_truth": 1.9239516578783977e-05,
+        "alpha_fit": 1.9239516578783977e-05,
+        "transfer_truth": {
+          "L_bit0": 1.5,
+          "L_parity": 1.5,
+          "L_anti": 1.5
+        },
+        "transfer_fit": {
+          "L_bit0": 1.5,
+          "L_parity": 1.5,
+          "L_anti": 1.5
+        },
+        "self_truth": 2.999942281450264,
+        "self_fit": 2.999942281450264
+      },
+      "L_parity": {
+        "alpha_truth": 0.6085406564455234,
+        "alpha_fit": 0.6085406564455234,
+        "transfer_truth": {
+          "L_bit0": 1.5,
+          "L_bit1": 1.82562196933657,
+          "L_anti": 1.5
+        },
+        "transfer_fit": {
+          "L_bit0": 1.5,
+          "L_bit1": 1.82562196933657,
+          "L_anti": 1.5
+        },
+        "self_truth": 1.5,
+        "self_fit": 1.5
+      },
+      "L_anti": {
+        "alpha_truth": 0.6085406564455234,
+        "alpha_fit": 0.6085406564455234,
+        "transfer_truth": {
+          "L_bit0": 1.5,
+          "L_bit1": 1.82562196933657,
+          "L_parity": 1.5
+        },
+        "transfer_fit": {
+          "L_bit0": 1.5,
+          "L_bit1": 1.82562196933657,
+          "L_parity": 1.5
+        },
+        "self_truth": 1.5,
+        "self_fit": 1.5
+      }
+    },
+    {
+      "L_bit0": {
+        "alpha_truth": 0.9778455885103953,
+        "alpha_fit": 0.9778455885103953,
+        "transfer_truth": {
+          "L_bit1": 2.9335367655311857,
+          "L_parity": 1.5,
+          "L_anti": 1.5
+        },
+        "transfer_fit": {
+          "L_bit1": 2.9335367655311857,
+          "L_parity": 1.5,
+          "L_anti": 1.5
+        },
+        "self_truth": 1.5,
+        "self_fit": 1.5
+      },
+      "L_bit1": {
+        "alpha_truth": 4.087657532680922e-06,
+        "alpha_fit": 4.087657532680922e-06,
+        "transfer_truth": {
+          "L_bit0": 1.5,
+          "L_parity": 1.5,
+          "L_anti": 1.5
+        },
+        "transfer_fit": {
+          "L_bit0": 1.5,
+          "L_parity": 1.5,
+          "L_anti": 1.5
+        },
+        "self_truth": 2.9999877370274017,
+        "self_fit": 2.9999877370274017
+      },
+      "L_parity": {
+        "alpha_truth": 0.9778455885103953,
+        "alpha_fit": 0.9778455885103953,
+        "transfer_truth": {
+          "L_bit0": 1.5,
+          "L_bit1": 2.9335367655311857,
+          "L_anti": 1.5
+        },
+        "transfer_fit": {
+          "L_bit0": 1.5,
+          "L_bit1": 2.9335367655311857,
+          "L_anti": 1.5
+        },
+        "self_truth": 1.5,
+        "self_fit": 1.5
+      },
+      "L_anti": {
+        "alpha_truth": 0.9778455885103953,
+        "alpha_fit": 0.9778455885103953,
+        "transfer_truth": {
+          "L_bit0": 1.5,
+          "L_bit1": 2.9335367655311857,
+          "L_parity": 1.5
+        },
+        "transfer_fit": {
+          "L_bit0": 1.5,
+          "L_bit1": 2.9335367655311857,
+          "L_parity": 1.5
+        },
+        "self_truth": 1.5,
+        "self_fit": 1.5
+      }
+    }
+  ],
+  "aggregates": {
+    "alpha_truth_by_landscape": {
+      "L_bit0": [
+        0.4399326971875097,
+        0.8374208723620318,
+        0.1392571006415111,
+        0.6085406564455234,
+        0.9778455885103953
+      ],
+      "L_bit1": [
+        0.9999648682022226,
+        0.9997239456127273,
+        0.00013345574651424386,
+        1.9239516578783977e-05,
+        4.087657532680922e-06
+      ],
+      "L_parity": [
+        0.4399326971875097,
+        0.8374208723620318,
+        0.1392571006415111,
+        0.6085406564455234,
+        0.9778455885103953
+      ],
+      "L_anti": [
+        0.4399326971875097,
+        0.8374208723620318,
+        0.1392571006415111,
+        0.6085406564455234,
+        0.9778455885103953
+      ]
+    },
+    "alpha_fit_by_landscape": {
+      "L_bit0": [
+        0.4399326971875097,
+        0.8374208723620318,
+        0.1392571006415111,
+        0.6085406564455234,
+        0.9778455885103953
+      ],
+      "L_bit1": [
+        0.9999648682022226,
+        0.9997239456127273,
+        0.00013345574651424386,
+        1.9239516578783977e-05,
+        4.087657532680922e-06
+      ],
+      "L_parity": [
+        0.4399326971875097,
+        0.8374208723620318,
+        0.1392571006415111,
+        0.6085406564455234,
+        0.9778455885103953
+      ],
+      "L_anti": [
+        0.4399326971875097,
+        0.8374208723620318,
+        0.1392571006415111,
+        0.6085406564455234,
+        0.9778455885103953
+      ]
+    }
+  }
+}

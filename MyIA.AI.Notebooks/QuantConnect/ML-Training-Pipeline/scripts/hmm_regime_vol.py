@@ -102,26 +102,31 @@ def _is_beaten(verdict: str) -> bool:
     return "BEATEN" in verdict
 
 
-def _aggregate_debiased_state(
-    n_beats_centered: int,
-    n_beaten_centered: int,
+def _aggregate_state(
+    n_beats: int,
+    n_beaten: int,
     n_seeds: int,
-    dm_centered_p_median: float,
-    n_beats_raw: int,
+    dm_p_median: float,
+    *,
+    n_beats_parent: int | None = None,
 ) -> str:
-    """Aggregate the de-biased (precision) leg into one of four states.
+    """Single state machine shared by the raw and the de-biased (precision) legs.
 
-    The three-state machine this replaces could not express a loss: with no
-    branch for "every seed is BEATEN", the four long-horizon configs that the
-    doc and REGISTRY publish as `NO BEATS` (4/4 seeds BEATEN on the centered
-    leg) were persisted as `INCONCLUSIVE`. The executable deliverable could
-    not reproduce its own published verdict.
+    Before #14388 the runner carried two aggregation conventions: a raw leg
+    with two states ("BEATS" iff 4/4 seeds BEATS, else "INCONCLUSIVE") and a
+    de-biased leg with four states (BEATS / NO BEATS / refuted-de-biased /
+    INCONCLUSIVE). Two consumers reading the same artefact closed the gap
+    manually with different rules; the two configs the doc publishes as
+    "NO BEATS on the raw leg" were silently persisted as INCONCLUSIVE, and
+    the executable could not reproduce its own published verdict.
 
-    Precedence, decided once here and sealed by tests:
+    The unified machine is the four-state precedence, decided once here and
+    sealed by tests (the raw leg simply never triggers the refuted branch,
+    since there is no parent leg above it).
 
     1. unanimous BEATS + significant median  -> "BEATS"
     2. unanimous BEATEN + significant median -> "NO BEATS"
-    3. the RAW leg was unanimous BEATS       -> "refuted-de-biased"
+    3. the parent leg was unanimous BEATS   -> "refuted-de-biased"
     4. otherwise                             -> "INCONCLUSIVE"
 
     `NO BEATS` deliberately outranks `refuted-de-biased` when both apply (a raw
@@ -137,14 +142,15 @@ def _aggregate_debiased_state(
     asymmetric pair of conditions would read as a deliberate difference.
 
     `n_seeds == 0` yields "INCONCLUSIVE" rather than a vacuous unanimity.
+    `n_beats_parent is None` disables the refuted branch (raw-leg callsite).
     """
     if n_seeds <= 0:
         return "INCONCLUSIVE"
-    if n_beats_centered == n_seeds and dm_centered_p_median < 0.05:
+    if n_beats == n_seeds and dm_p_median < 0.05:
         return "BEATS"
-    if n_beaten_centered == n_seeds and dm_centered_p_median < 0.05:
+    if n_beaten == n_seeds and dm_p_median < 0.05:
         return "NO BEATS"
-    if n_beats_raw == n_seeds:
+    if n_beats_parent is not None and n_beats_parent == n_seeds:
         return "refuted-de-biased"
     return "INCONCLUSIVE"
 
@@ -555,6 +561,7 @@ def main(argv: list[str] | None = None) -> None:
             n_beats = sum(1 for r in seed_results if _is_beats(r["dm_verdict"]))
             n_beats_centered = sum(1 for r in seed_results if _is_beats(r["dm_centered_verdict"]))
             n_beaten_centered = sum(1 for r in seed_results if _is_beaten(r["dm_centered_verdict"]))
+            n_beaten = sum(1 for r in seed_results if _is_beaten(r["dm_verdict"]))
             mean_reduction = np.mean([r["mse_reduction_pct"] for r in seed_results])
             mean_reduction_debiased = np.mean(
                 [r["mse_reduction_pct_vs_debiased_classic"] for r in seed_results]
@@ -565,26 +572,21 @@ def main(argv: list[str] | None = None) -> None:
             mean_classic_mse_debiased = np.mean([r["classic_mse_debiased"] for r in seed_results])
             dm_p_median = float(np.median([r["dm_p_value"] for r in seed_results]))
             dm_centered_p_median = float(np.median([r["dm_centered_pvalue"] for r in seed_results]))
-            agg_verdict = "BEATS" if n_beats == n_seeds else "INCONCLUSIVE"
-            # The §C conjunction verdict: the edge must survive the precision
-            # leg. An edge that only exists against a mis-calibrated baseline
-            # is reported as `refuted-de-biased`, the wording #12788 used when
-            # M15 failed this same control -- never quietly downgraded; a leg
-            # on which every seed LOSES is `NO BEATS`, the §C vocabulary.
-            #
-            # `aggregate_verdict` (raw leg) deliberately keeps its two-state
-            # convention: `m5_hmm_regime_research.ipynb` publishes it as "BEATS
-            # exige 4/4 seeds, sinon INCONCLUSIVE" and derives its own DEGRADE
-            # reading from it, so widening it would silently invalidate that
-            # notebook's committed counts (a re-run of the artefact plus a
-            # re-execution of the notebook). Filed as #14388 rather than folded
-            # into a bias-audit PR.
-            agg_verdict_centered = _aggregate_debiased_state(
-                n_beats_centered=n_beats_centered,
-                n_beaten_centered=n_beaten_centered,
+            # Both legs share the same four-state machine (#14388). The raw
+            # leg passes n_beats_parent=None so the refuted-de-biased branch
+            # never fires -- there is no parent leg above it.
+            agg_verdict = _aggregate_state(
+                n_beats=n_beats,
+                n_beaten=n_beaten,
                 n_seeds=n_seeds,
-                dm_centered_p_median=dm_centered_p_median,
-                n_beats_raw=n_beats,
+                dm_p_median=dm_p_median,
+            )
+            agg_verdict_centered = _aggregate_state(
+                n_beats=n_beats_centered,
+                n_beaten=n_beaten_centered,
+                n_seeds=n_seeds,
+                dm_p_median=dm_centered_p_median,
+                n_beats_parent=n_beats,
             )
             print(
                 f"    >> AGGREGATE: {n_beats}/{n_seeds} seeds beat classic, "
