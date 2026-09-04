@@ -52,8 +52,8 @@ Le notebook détecte l'obstruction de cochaînes de Čech sur des **trajectoires
 L'audit froid listait une troisième attestation : l'« orchestration EPITA ». Une première passe de cette tranche l'avait déclarée introuvable — **identification fausse, rétractée le 2026-09-03** : le grep était borné aux docs du harnais (`docs/reference/teaching-context.md`, `cluster-agents.md`) et ne couvrait ni les notebooks des séries ni les manifestes de vendoring. Témoins vérifiés firsthand, tous committés dans le dépôt :
 
 - `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Agentic-3-orchestration.ipynb` — un notebook **entièrement dédié** à l'orchestration (deux paradigmes de composition), référencé depuis le rung 0-init ;
-- les notebooks `_agent` de la même série portent dans leurs outputs committés les logs `[Orchestration.Setup]` (dépendances `jpype` + `semantic_kernel`, configuration LLM) ;
-- `argumentation_lib/NOTICE-EPITA` — le manifeste qui épingle fichier par fichier le code vendré du projet `argumentation_analysis` **Epita 2025** (l'objet de #14026).
+- `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Agentic-0-init_agent.ipynb` — ses outputs committés portent **11 occurrences** des logs `[Orchestration.Setup]` (dépendances `jpype` + `semantic_kernel`, configuration LLM). Les trois autres notebooks `_agent` de la série n'en portent aucune : le témoin est ce notebook-là, pas la série ;
+- `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/argumentation_lib/NOTICE-EPITA` — le manifeste qui épingle fichier par fichier le code vendré du projet `argumentation_analysis` **Epita 2025** (l'objet de #14026).
 
 Identification : le **moteur d'orchestration agentique d'analyse argumentative du projet Epita 2025** (cf #14026).
 
