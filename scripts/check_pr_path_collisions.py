@@ -564,6 +564,14 @@ def post_comment(repo: str, number: int, body: str, dry_run: bool) -> bool:
     ``NOT_FOUND`` rather than ``403``, which is what made the failure
     unreadable. REST returns the real status code, so if this still fails the
     next log names the actual cause instead of masking it.
+
+    The payload travels by ``--input <json>``, never ``-f body=@<file>``.
+    ``gh api`` expands a leading ``@`` for ``-F``/``--field`` only; ``-f``
+    posts the path as a literal string, which is how every marker came to
+    read ``@/tmp/tmpXXXXXXXX.md`` instead of the report (#14541). ``-F``
+    would read the file but also coerces ``true``/``123``/``null`` to
+    non-string JSON, and a comment body is always a string. ``--input``
+    avoids both, and is what the PATCH sibling already used.
     """
     if dry_run:
         return True
