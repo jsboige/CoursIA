@@ -99,6 +99,14 @@ LEAN_WORK_VOLUME_PREFIX="${COURSIA_LEAN_RUNNER_WORK_VOLUME_PREFIX:-coursia-runne
 LEAN_CPUS="${COURSIA_LEAN_RUNNER_CPUS:-6}"
 LEAN_MEMORY="${COURSIA_LEAN_RUNNER_MEMORY:-8g}"
 LEAN_PIDS="${COURSIA_LEAN_RUNNER_PIDS:-512}"
+# Swap au-dela de la RAM du slot : les modules Hashlife de conway_lean
+# pointent a >16 Go au build a froid (exit 137 mesure sous --memory 8g,
+# 8716/8727 modules OK puis Walls.{SE,SW,NE} tues ; les runners hosted
+# s'en sortent par 32G de fallocate swap, lean-axiom.yml L~100). Un job
+# conteneurise n'a pas sudo pour creer son swap, donc le pool le porte :
+# memory-swap 24g = 8g RAM + 16g swap. Le swap n'est PAS de la RAM
+# reservee -- l'hote ne paie que si le pic survient.
+LEAN_MEMORY_SWAP="${COURSIA_LEAN_RUNNER_MEMORY_SWAP:-24g}"
 
 mkdir -p "$STATE_DIR"
 
@@ -146,6 +154,11 @@ fetch_token() {
 slot_loop() {
   local slot="$1" name="$2" labels="$3" image="$4" cpus="$5" memory="$6" pids="$7"
   local vol_prefix="${8:-$WORK_VOLUME_PREFIX}"
+  # Swap optionnel (pool lean : les modules Hashlife pointent >16 Go, mesure
+  # #14337). Vide = pas de --memory-swap, docker default (memory == swap).
+  local mem_swap="${9:-}"
+  local swap_args=()
+  [ -n "$mem_swap" ] && swap_args=(--memory-swap "$mem_swap")
   echo "[slot $slot] demarrage, nom runner=$name"
   while [ ! -f "$STOP_FILE" ]; do
     local token
@@ -161,6 +174,7 @@ slot_loop() {
     docker run --rm \
       --name "$name" \
       --cpus="$cpus" --memory="$memory" --pids-limit="$pids" \
+      "${swap_args[@]+"${swap_args[@]}"}" \
       --security-opt=no-new-privileges \
       -v "$TOOLCACHE_VOLUME":"$TOOLCACHE_MOUNT" \
       -v "${vol_prefix}-${slot}":"$WORK_MOUNT" \
@@ -364,7 +378,8 @@ cmd_lean() {
     docker volume create "${LEAN_WORK_VOLUME_PREFIX}-${i}" >/dev/null \
       || die "volume ${LEAN_WORK_VOLUME_PREFIX}-${i} impossible a creer -- docker volume create"
     slot_loop "$i" "${LEAN_NAME_PREFIX}-${i}" "$LEAN_LABELS" "$LEAN_IMAGE" \
-      "$LEAN_CPUS" "$LEAN_MEMORY" "$LEAN_PIDS" "$LEAN_WORK_VOLUME_PREFIX" &
+      "$LEAN_CPUS" "$LEAN_MEMORY" "$LEAN_PIDS" "$LEAN_WORK_VOLUME_PREFIX" \
+      "$LEAN_MEMORY_SWAP" &
     echo "$!" >> "$STATE_DIR/lean-pids"
   done
   echo "slots lean lances. Arret gracieux : $0 stop"
