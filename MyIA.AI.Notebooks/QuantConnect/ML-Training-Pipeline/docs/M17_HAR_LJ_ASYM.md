@@ -149,7 +149,19 @@ Runtime: 261.5s for 84 combos (local, `--skip-remote` false).
 3. **Concern #3** — declare OLS bit-identity across seeds: add `panel_hash` (SHA256 on canonical 360-bar window); assert `panel_hashes_consistent: True` (4 seeds {0,7,42,99} → 1 hash).
 4. **Concern #4** — no-op ternary `mse_har_debiased = mse_har if debias else mse_har` is factually wrong when `debias=False`: rename, add `mse_har_raw` field, set `mse_har_debiased = NaN` when not debiased.
 
-### Aggregated BTC results (post-debias, post-c.953 REPAIR P0)
+### Aggregated BTC results (post-debias, post-c.953 REPAIR P0) — **SUPERSEDED**
+
+> **SUPERSEDED.** The numbers in this subsection and in "Interpretation
+> (c.953 ...)", "Why the c.953 verdict supersedes c.951", and "Bit-identity
+> audit anchor" below (table values, `panel_hash=86f36cb46f539c6d`, and the
+> DM-MSE p-values 0.839708 / 0.403669 / 0.463629) were produced by a
+> calibration with an **inverted bias sign** and a global (not per-fold)
+> application — see `## Round-3 calibration (this PR)`. They are kept for
+> history only and must not be cited. Numbers from c.953 are SUPERSEDED by
+> the round-3 calibration (sign + per-fold) per the preflight po-2025
+> adjoint re-review (head `b974f2721`, DM `msg-20260904T141944`). The live
+> BTC re-run is OUT OF SCOPE for this PR (code PR #14592) and is pending
+> post-merge.
 
 | h | DM_har | DM_m12 | bias_har | var_har | MSE_har_raw | MSE_har_debiased | MSE_lj | var_ratio_lj_over_har |
 |---|---|---|---:|---:|---:|---:|---:|---:|
@@ -186,3 +198,80 @@ This is the more honest verdict. The M-series conclusion (M12 HAR-RV-J remains t
 params.calibration_size=60, 12 combos evaluated in 112.0s c.953). The c.951
 artifact is preserved on the branch history (commit prior to the REPAIR P0
 push) for diff-ability.
+
+## Round-3 calibration (this PR)
+
+**Date:** 2026-09-05. Response to the round-3 preflight po-2025 adjoint
+re-review (head `b974f2721`, DM `msg-20260904T141944`) on PR #14592.
+The c.953 block above is **SUPERSEDED**; this section documents the
+corrected calibration that the next live run must use. No live BTC run was
+executed in this PR (concern #5: the re-run is deferred post-merge).
+
+### Sign convention (concern #1)
+
+`_train_tail_bias()` returns
+
+```
+bias = mean(y_train_tail - yhat_train_tail)
+```
+
+so the consumer must **ADD** it:
+
+```
+yhat_corrected = yhat + bias
+```
+
+The c.953 code applied `yhat - bias`, which inverts the sign and equals
+`2*yhat - y` in expectation. `walk_forward_lj_asym` now extends
+`forecasts_debiased` with `yhat + bias`, and `_eval_one_coin` consumes the
+**per-fold** corrected series `res_lj["forecasts_debiased"]` (no global
+mean aggregation): each OOS fold k is shifted by its own fold bias, so
+`forecasts_debiased = forecasts + per_fold_bias[k]` on each fold slice.
+
+### Apples-to-apples M12 (concern #2)
+
+`_eval_one_coin` now calls
+
+```python
+walk_forward_har_rv_j(rv, rv_j, horizon,
+                      calibrate_bias=debias,
+                      calibration_size=calibration_size)
+```
+
+so when `--debias` is set, M12 is calibrated with the same train-tail
+protocol (its pre-existing `_fit_har_rv_j_with_train_calibration`) as HAR
+and LJ — no asymmetric calibration gap between the three models.
+
+### Raw vs debiased HAR legs (concern #3)
+
+HAR Classic is now evaluated by **two** `walk_forward_har` calls when
+debias is on:
+
+- `walk_forward_har(rv, horizon, calibrate_bias=False)` →
+  `mse_har_raw` (truly uncalibrated leg);
+- `walk_forward_har(rv, horizon, calibrate_bias=True,
+  calibration_size=60)` → DM leg + `mse_har_debiased`.
+
+`mse_har_raw == mse_har_debiased` is therefore **no longer a structural
+identity**: it holds only if the calibration happens to be a zero shift.
+When `debias=False`, `mse_har_debiased` is NaN and a single raw call is
+made.
+
+### panel_hash covers the index (concern #6)
+
+`_panel_hash` digests `sha256(index_bytes || value_bytes)` over the
+canonical 360-bar window, with the index serialized as int64 nanoseconds.
+Two panels with identical values but different dates now hash differently.
+The run manifest surfaces `panel_hash_per_coin_horizon`
+(`[{coin, horizon, panel_hash, n_seed_rows, consistent_across_seeds}]`)
+instead of a single collapsed cross-seed hash, so consistency is asserted
+per (coin, horizon) group rather than across all coins.
+
+### Pending live run (concern #5)
+
+The c.953 BTC numbers are invalid under the corrected sign + per-fold
+protocol and are marked SUPERSEDED above. The definitive BTC re-run
+(`--coins BTC-USD --horizons 1 5 10 --seeds 0 7 42 99 --skip-remote
+--debias --calibration-size 60`) is pending post-merge; REGISTRY.md carries
+the note `[M17 HAR-LJ-Asym BTC run] — pending live run post-merge; round-3
+calibration implemented, code PR #14592.`

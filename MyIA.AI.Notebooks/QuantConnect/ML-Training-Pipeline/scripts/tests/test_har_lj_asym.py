@@ -14,6 +14,14 @@ Concerns addressed (verbatim from the c.955 re-review):
   #2 — HAR must NOT be double-calibrated.
   #3 — DM verdict components must be coherent (BEATS => p<0.05 AND diff<0).
   #4 — manifest hashes (forecasts/targets/errors) must be emitted.
+
+ROUND-3 (preflight po-2025 adjoint re-review, head b974f2721, DM
+msg-20260904T141944):
+  #1 — sign of the bias correction (+, not -) + per-fold constant shift.
+  #2 — walk_forward_har_rv_j receives calibrate_bias=debias (M12 calibrated).
+  #3 — mse_har_raw (uncalibrated leg) != mse_har_debiased (calibrated leg).
+  #4 — full-walk-forward OOS-target invariance test.
+  #6 — panel_hash covers the index in addition to the values.
 """
 
 from __future__ import annotations
@@ -138,15 +146,18 @@ def test_calibration_anti_leak_perturbation():
 def test_walk_forward_har_called_with_calibrate_bias_when_debias(
     synthetic_lj_components, monkeypatch,
 ):
-    """Concern #2: when debias=True, walk_forward_har receives
-    calibrate_bias=True exactly once (no post-walk-forward second correction)."""
+    """Concern #2 (c.955) + round-3 concern #3: when debias=True,
+    walk_forward_har is called TWICE -- first uncalibrated (mse_har_raw leg),
+    then with calibrate_bias=True (DM + mse_har_debiased leg). No post-walk-
+    forward second correction is applied on top of the calibrated leg."""
     from har_lj_asym import _eval_one_coin
 
-    captured: dict = {}
+    captured: list = []
 
     def spy_walk_forward_har(rv, horizon, *args, **kwargs):
-        captured["calibrate_bias"] = kwargs.get("calibrate_bias")
-        captured["calibration_size"] = kwargs.get("calibration_size")
+        captured.append(
+            (kwargs.get("calibrate_bias"), kwargs.get("calibration_size")),
+        )
         n = 100
         idx = rv.index[-n:]
         return {
@@ -161,20 +172,22 @@ def test_walk_forward_har_called_with_calibrate_bias_when_debias(
         debias=True, calibration_size=60,
     )
 
-    assert captured["calibrate_bias"] is True
-    assert captured["calibration_size"] == 60
+    # Raw leg first (calibrate_bias falsy), calibrated DM leg second.
+    assert [c[0] for c in captured] == [False, True]
+    assert captured[1][1] == 60
 
 
 def test_walk_forward_har_called_with_calibrate_bias_false_when_no_debias(
     synthetic_lj_components, monkeypatch,
 ):
-    """When debias=False, walk_forward_har must receive calibrate_bias=False."""
+    """When debias=False, walk_forward_har must receive calibrate_bias=False
+    exactly once (no calibrated second leg is needed)."""
     from har_lj_asym import _eval_one_coin
 
-    captured: dict = {}
+    captured: list = []
 
     def spy_walk_forward_har(rv, horizon, *args, **kwargs):
-        captured["calibrate_bias"] = kwargs.get("calibrate_bias")
+        captured.append(kwargs.get("calibrate_bias"))
         n = 100
         idx = rv.index[-n:]
         return {
@@ -188,7 +201,7 @@ def test_walk_forward_har_called_with_calibrate_bias_false_when_no_debias(
         "BTC-USD", horizon=1, seed=0, components=synthetic_lj_components,
     )
 
-    assert captured["calibrate_bias"] is False
+    assert captured == [False]
 
 
 # ---------------------------------------------------------------------------
@@ -402,7 +415,8 @@ def test_panel_hash_consistent_across_seeds(
 def test_walk_forward_lj_asym_returns_per_fold_bias():
     """Concern #1 acceptance: walk_forward_lj_asym must surface
     ``per_fold_bias`` (list of train-tail bias estimates, one per fold).
-    Aggregating these by mean gives the global bias used in ``_eval_one_coin``.
+    Round-3 note: ``_eval_one_coin`` consumes these PER FOLD through
+    ``forecasts_debiased`` (no global-mean aggregation anymore).
     """
     from har_lj_asym import walk_forward_lj_asym
 
@@ -632,3 +646,293 @@ def test_aggregate_seeds_preserved_for_audit():
     agg = aggregate_verdicts(rows)[0]
     assert agg["seeds"] == [0, 7, 42, 99]
     assert agg["n_seeds"] == 4
+
+
+# ---------------------------------------------------------------------------
+# ROUND-3 concern #1 — sign of the correction + per-fold constant shift
+# ---------------------------------------------------------------------------
+
+
+def test_forecasts_debiased_is_forecasts_plus_per_fold_bias():
+    """Round-3 concern #1: ``forecasts_debiased`` must equal
+    ``forecasts + per_fold_bias[f]`` on each fold slice (the bias is ADDED,
+    per the sign convention ``bias = mean(y_tail - yhat_tail)``), and the
+    bias must be non-trivial on this synthetic panel so the test cannot pass
+    vacuously at bias == 0.
+    """
+    from har_lj_asym import walk_forward_lj_asym
+
+    rng = np.random.default_rng(0)
+    index = pd.date_range("2020-01-01", periods=400, freq="D")
+    log_rv = np.cumsum(rng.normal(0.0, 0.1, 400)) - 5.0
+    rv = pd.Series(np.exp(log_rv), index=index, name="rv")
+    rv_neg = pd.Series(rv.to_numpy() * 0.5, index=index)
+    rv_pos = pd.Series(rv.to_numpy() * 0.5, index=index)
+    rv_c = pd.Series(rv.to_numpy() * 0.8, index=index)
+    rv_j = pd.Series(rv.to_numpy() * 0.2, index=index)
+
+    out = walk_forward_lj_asym(
+        rv, rv_neg, rv_pos, rv_c, rv_j, horizon=1, seed=0,
+        debias=True, calibration_size=60,
+    )
+    assert out["forecasts"]
+    biases = out["per_fold_bias"]
+    assert len(biases) > 0
+    # Non-trivial bias on this synthetic panel (guards against a vacuous
+    # test where +bias and -bias are indistinguishable at bias == 0).
+    assert float(np.max(np.abs(biases))) > 1e-6
+
+    fc = np.asarray(out["forecasts"], dtype=float)
+    fcd = np.asarray(out["forecasts_debiased"], dtype=float)
+    shift = fcd - fc
+    fold_size = len(fc) // len(biases)
+    assert fold_size * len(biases) == len(fc)
+    for k, b in enumerate(biases):
+        np.testing.assert_allclose(
+            shift[k * fold_size:(k + 1) * fold_size], b,
+            rtol=1e-12, atol=1e-12,
+            err_msg=f"fold {k}: debiased forecasts must equal forecasts + bias",
+        )
+
+
+# ---------------------------------------------------------------------------
+# ROUND-3 concern #2 — M12 (walk_forward_har_rv_j) is calibrated when debias
+# ---------------------------------------------------------------------------
+
+
+def test_walk_forward_har_rv_j_receives_calibrate_bias_when_debias(
+    synthetic_lj_components, monkeypatch,
+):
+    """Round-3 concern #2: when debias=True, walk_forward_har_rv_j must be
+    called with calibrate_bias=True + the same calibration_size (apples-to-
+    apples M12 baseline, internally calibrated like HAR and LJ)."""
+    import m12_har_rv_j
+    from har_lj_asym import _eval_one_coin
+
+    captured: dict = {}
+
+    def spy_walk_forward_har_rv_j(rv, jumps, horizon, *args, **kwargs):
+        captured["calibrate_bias"] = kwargs.get("calibrate_bias")
+        captured["calibration_size"] = kwargs.get("calibration_size")
+        n = 100
+        idx = rv.index[-n:]
+        return {
+            "forecasts": pd.Series(np.zeros(n), index=idx, name="fc"),
+            "aggregate_mse_logrv": 0.0,
+        }
+
+    monkeypatch.setattr(
+        m12_har_rv_j, "walk_forward_har_rv_j", spy_walk_forward_har_rv_j,
+    )
+
+    row = _eval_one_coin(
+        "BTC-USD", horizon=1, seed=0, components=synthetic_lj_components,
+        debias=True, calibration_size=60,
+    )
+    assert row is not None
+    assert captured["calibrate_bias"] is True
+    assert captured["calibration_size"] == 60
+
+
+def test_walk_forward_har_rv_j_receives_calibrate_bias_false_when_no_debias(
+    synthetic_lj_components, monkeypatch,
+):
+    """Round-3 concern #2: when debias=False, walk_forward_har_rv_j must
+    receive calibrate_bias=False (no calibration anywhere)."""
+    import m12_har_rv_j
+    from har_lj_asym import _eval_one_coin
+
+    captured: dict = {}
+
+    def spy_walk_forward_har_rv_j(rv, jumps, horizon, *args, **kwargs):
+        captured["calibrate_bias"] = kwargs.get("calibrate_bias")
+        n = 100
+        idx = rv.index[-n:]
+        return {
+            "forecasts": pd.Series(np.zeros(n), index=idx, name="fc"),
+            "aggregate_mse_logrv": 0.0,
+        }
+
+    monkeypatch.setattr(
+        m12_har_rv_j, "walk_forward_har_rv_j", spy_walk_forward_har_rv_j,
+    )
+
+    row = _eval_one_coin(
+        "BTC-USD", horizon=1, seed=0, components=synthetic_lj_components,
+    )
+    assert row is not None
+    assert captured["calibrate_bias"] is False
+
+
+# ---------------------------------------------------------------------------
+# ROUND-3 concern #3 — mse_har_raw != mse_har_debiased with calibrate-aware
+# fixtures (the two HAR legs must be genuinely distinct forecasts)
+# ---------------------------------------------------------------------------
+
+
+def test_mse_har_raw_and_debiased_distinct_when_debias(
+    synthetic_lj_components, monkeypatch,
+):
+    """Round-3 concern #3: with a HAR fixture whose forecasts DEPEND on
+    calibrate_bias (offset when calibrated), mse_har_raw (uncalibrated leg)
+    and mse_har_debiased (calibrated leg) must be finite AND distinct when
+    debias=True. The c.953 fake identity came from both legs returning the
+    same dummy forecasts."""
+    from har_lj_asym import _eval_one_coin
+
+    def fake_walk_forward_har(rv, horizon, *args, **kwargs):
+        n = 100
+        idx = rv.index[-n:]
+        offset = -0.05 if kwargs.get("calibrate_bias") else 0.0
+        return {
+            "forecasts": pd.Series(
+                np.log(rv.iloc[-n:].to_numpy()) + offset,
+                index=idx, name="fc_har",
+            ),
+            "aggregate_mse_logrv": 0.9,
+        }
+
+    monkeypatch.setattr(
+        "har_lj_asym.walk_forward_har", fake_walk_forward_har,
+    )
+
+    row = _eval_one_coin(
+        "BTC-USD", horizon=1, seed=0, components=synthetic_lj_components,
+        debias=True, calibration_size=60,
+    )
+    assert row is not None
+    assert not np.isnan(row["mse_har_raw"])
+    assert not np.isnan(row["mse_har_debiased"])
+    assert row["mse_har_raw"] != row["mse_har_debiased"]
+
+
+# ---------------------------------------------------------------------------
+# ROUND-3 concern #4 — full-walk-forward OOS-target invariance
+# ---------------------------------------------------------------------------
+
+
+def test_walk_forward_lj_asym_oos_target_invariance(monkeypatch):
+    """Round-3 concern #4: perturbing ALL OOS targets through the FULL
+    walk_forward_lj_asym must leave ``per_fold_bias`` and
+    ``forecasts_debiased`` bit-identical (the bias reads the train tail
+    only, and the OLS forecasts depend on the model + features, not on the
+    OOS targets). The perturbation is applied by patching
+    ``realized_variance_to_log`` — the module-level import used ONLY to
+    build the target — so the features (built by ``lj_asym_features``,
+    which logs directly) stay untouched. Conversely, perturbing the train
+    calibration tail MUST move the bias estimate (sensitivity control)."""
+    import har_lj_asym as module
+    from har_lj_asym import lj_asym_features, walk_forward_lj_asym
+    from realized_variance import realized_variance_to_log
+
+    rng = np.random.default_rng(7)
+    index = pd.date_range("2020-01-01", periods=400, freq="D")
+    log_rv = np.cumsum(rng.normal(0.0, 0.1, 400)) - 5.0
+    rv = pd.Series(np.exp(log_rv), index=index, name="rv")
+    rv_neg = pd.Series(rv.to_numpy() * 0.5, index=index)
+    rv_pos = pd.Series(rv.to_numpy() * 0.5, index=index)
+    rv_c = pd.Series(rv.to_numpy() * 0.8, index=index)
+    rv_j = pd.Series(rv.to_numpy() * 0.2, index=index)
+
+    horizon, n_splits, calibration_size = 1, 1, 60
+    kwargs = dict(
+        horizon=horizon, seed=0, n_splits=n_splits,
+        debias=True, calibration_size=calibration_size,
+    )
+
+    out_base = walk_forward_lj_asym(
+        rv, rv_neg, rv_pos, rv_c, rv_j, **kwargs,
+    )
+    assert out_base["forecasts"]
+
+    # Replicate the internal split arithmetic to locate, in ORIGINAL rv
+    # coordinates, the boundary between train-read and OOS-read targets:
+    # the target at merged row j reads original position
+    # (first_pos + j + horizon).
+    feat = lj_asym_features(rv_neg, rv_pos, rv_c, rv_j, rv)
+    merged = feat.join(
+        realized_variance_to_log(rv).rename("log_rv"), how="inner",
+    ).dropna()
+    n_total = int(
+        merged["log_rv"].rolling(horizon).mean().shift(-horizon).notna().sum()
+    )
+    fold_size = n_total // (n_splits + 1)
+    first_pos = int(rv.index.get_loc(merged.index[0]))
+    cutoff = first_pos + fold_size + horizon  # OOS targets read >= cutoff
+
+    delta = 10.0
+    orig = module.realized_variance_to_log
+
+    def shift_from(cut_lo, cut_hi):
+        def patched(series):
+            out = orig(series).copy()
+            mask = (np.arange(len(out)) >= cut_lo) & (
+                np.arange(len(out)) < cut_hi
+            )
+            out.iloc[mask] = out.iloc[mask] + delta
+            return out
+        return patched
+
+    # (a) Shift ALL OOS targets (original positions >= cutoff): features
+    # and the train fold are untouched -> bias + debiased forecasts must
+    # be identical to the baseline run.
+    monkeypatch.setattr(
+        module, "realized_variance_to_log", shift_from(cutoff, len(rv)),
+    )
+    out_oos_shifted = walk_forward_lj_asym(
+        rv, rv_neg, rv_pos, rv_c, rv_j, **kwargs,
+    )
+    # Sanity on the perturbation itself: the OOS targets really changed.
+    assert not np.allclose(out_oos_shifted["targets"], out_base["targets"])
+    np.testing.assert_allclose(
+        out_oos_shifted["per_fold_bias"], out_base["per_fold_bias"],
+        rtol=1e-12, atol=1e-12,
+    )
+    np.testing.assert_allclose(
+        out_oos_shifted["forecasts"], out_base["forecasts"], rtol=1e-12,
+    )
+    np.testing.assert_allclose(
+        out_oos_shifted["forecasts_debiased"],
+        out_base["forecasts_debiased"], rtol=1e-12,
+    )
+
+    # (b) Shift the train calibration tail instead: the bias estimate MUST
+    # move (train sensitivity is the expected behavior of a train-only
+    # estimator).
+    monkeypatch.setattr(
+        module, "realized_variance_to_log",
+        shift_from(cutoff - calibration_size, cutoff),
+    )
+    out_tail_shifted = walk_forward_lj_asym(
+        rv, rv_neg, rv_pos, rv_c, rv_j, **kwargs,
+    )
+    assert abs(
+        out_tail_shifted["per_fold_bias"][0] - out_base["per_fold_bias"][0]
+    ) > 1.0
+
+
+# ---------------------------------------------------------------------------
+# ROUND-3 concern #6 — panel_hash covers the index in addition to the values
+# ---------------------------------------------------------------------------
+
+
+def test_panel_hash_includes_index():
+    """Round-3 concern #6: two panels with identical VALUES but different
+    indexes must hash differently (the index bytes participate in the
+    digest); identical panels hash identically; different values on the
+    same index hash differently."""
+    from har_lj_asym import _panel_hash
+
+    rng = np.random.default_rng(3)
+    vals = np.exp(rng.normal(-5.0, 0.5, 100))
+    idx_a = pd.date_range("2020-01-01", periods=100, freq="D")
+    idx_b = pd.date_range("2021-03-01", periods=100, freq="D")
+
+    h_a = _panel_hash(pd.Series(vals, index=idx_a))
+    h_a_again = _panel_hash(pd.Series(vals, index=idx_a))
+    h_b = _panel_hash(pd.Series(vals, index=idx_b))
+    h_a_shifted_vals = _panel_hash(pd.Series(vals * 1.01, index=idx_a))
+
+    assert h_a == h_a_again
+    assert h_a != h_b, "index must participate in the panel hash"
+    assert h_a != h_a_shifted_vals, "values must participate in the hash"

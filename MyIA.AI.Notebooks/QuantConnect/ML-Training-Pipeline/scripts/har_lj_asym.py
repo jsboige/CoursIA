@@ -26,6 +26,21 @@ walk_forward_har (for HAR, already canonical) and walk_forward_har_rv_j
 because it leaked OOS targets (preflight po-2025 re-review head 4cc2262b,
 concern #1).
 
+ROUND-3 (preflight po-2025 adjoint re-review, head b974f2721, DM
+msg-20260904T141944):
+(1) bias-correction sign fixed -- the convention is
+    ``bias = mean(y_train_tail - yhat_train_tail)`` and the corrected
+    forecast is ``yhat_corrected = yhat + bias`` (the previous
+    ``yhat - bias`` inverted the sign and doubled the error);
+(2) M12 receives ``calibrate_bias=debias`` for apples-to-apples calibration
+    (the flag already existed in walk_forward_har_rv_j -- only the call site
+    was not passing it);
+(3) ``mse_har_raw`` (uncalibrated walk_forward_har leg) and
+    ``mse_har_debiased`` (calibrated leg) come from TWO distinct
+    walk_forward_har calls -- no more fake identity;
+(4) ``panel_hash`` covers the index (int64 ns) in addition to the values,
+    and the manifest surfaces per-(coin, horizon) panel hashes.
+
 Usage:
     python har_lj_asym.py --horizons 1 5 10 --seeds 0 7 42 99 --skip-remote
     python har_lj_asym.py --horizons 1 5 10 --seeds 0 7 42 99 --debias
@@ -151,6 +166,12 @@ def _train_tail_bias(
     """Estimate the OOS bias of ``model`` from the LAST ``calibration_size``
     points of the train fold ONLY.
 
+    Sign convention (round-3 concern #1): ``bias = mean(y_tail - yhat_tail)``.
+    The consumer must ADD it to the forecast --
+    ``yhat_corrected = yhat + bias`` -- to remove the systematic offset.
+    This is algebraically equivalent to the canonical ``walk_forward_har``
+    pattern (which computes ``mean(pred - target)`` and subtracts it).
+
     This is the apples-to-apples train-only bias estimator required by
     #14584 disposition #1: the bias estimate never reads from the OOS
     targets (y_test). It mirrors the canonical ``walk_forward_har``
@@ -215,6 +236,11 @@ def walk_forward_lj_asym(
     """Walk-forward 5-fold evaluation of HAR-LJ-Asym model with per-fold bias
     calibration from the train tail (REPAIR-2 c.955, concern #1 verbatim).
 
+    Round-3 concern #1: when ``debias=True``, each fold's slice of
+    ``forecasts_debiased`` equals that fold's slice of ``forecasts`` shifted
+    by the fold's constant ``per_fold_bias`` entry
+    (``forecasts_debiased = forecasts + bias_fold``).
+
     Returns dict with forecasts (raw and optionally debiased per fold),
     targets, raw MSE, and per-fold bias estimates for audit.
     """
@@ -262,7 +288,10 @@ def walk_forward_lj_asym(
 
         forecasts.extend(yhat.tolist())
         if debias:
-            forecasts_debiased.extend((yhat - bias).tolist())
+            # Round-3 concern #1: bias = mean(y_train_tail - yhat_train_tail)
+            # must be ADDED (the previous `yhat - bias` inverted the sign and
+            # produced 2*yhat - y on average). Per-fold constant shift.
+            forecasts_debiased.extend((yhat + bias).tolist())
         targets.extend(y_test.tolist())
 
     if not forecasts:
@@ -328,6 +357,25 @@ def _compute_kelly(
 
 
 # ---------------------------------------------------------------------------
+# Panel hash (round-3 concern #6: index + values)
+# ---------------------------------------------------------------------------
+
+def _panel_hash(rv: pd.Series, window: int = 360) -> str:
+    """SHA256 over index (int64 ns) || values (float64) of the last ``window``
+    bars, truncated to 16 hex chars.
+
+    Round-3 concern #6: the previous hash covered the VALUES only -- two
+    panels with identical values but different dates hashed identically. The
+    index bytes are now concatenated before the value bytes in a single
+    SHA256 digest, so any index drift changes the hash.
+    """
+    panel_window = rv.iloc[-min(len(rv), window):]
+    idx_bytes = panel_window.index.astype("int64").to_numpy().astype(np.int64).tobytes()
+    val_bytes = panel_window.to_numpy().astype(np.float64).tobytes()
+    return hashlib.sha256(idx_bytes + val_bytes).hexdigest()[:16]
+
+
+# ---------------------------------------------------------------------------
 # Per-coin evaluation with train-only per-fold bias (REPAIR-2 c.955)
 # ---------------------------------------------------------------------------
 
@@ -345,15 +393,21 @@ def _eval_one_coin(
     it read OOS targets via ``mean(err[-calibration_size:])`` after the full
     error array had been computed. The fix moves bias estimation INTO each
     model's walk-forward routine, where the bias estimate is computed from
-    the train fold's tail (no OOS target access) and subtracted per fold from
-    the OOS forecasts before they are accumulated. This is the apples-to-
+    the train fold's tail (no OOS target access) and applied per fold to the
+    OOS forecasts before they are accumulated. This is the apples-to-
     apples protocol required by #14584 disposition #1.
 
-    The HAR Classic baseline goes through its canonical
-    ``walk_forward_har(calibrate_bias=True, calibration_size=calibration_size)``
-    routine (it already computes train-tail bias inside the walk-forward loop
-    -- no double-calibration concern). M12 goes through its own walk-forward
-    loop where we apply the same per-fold train-tail correction.
+    ROUND-3 (head b974f2721, DM msg-20260904T141944):
+    - #1: LJ uses the PER-FOLD-corrected ``forecasts_debiased`` array
+      (convention ``yhat_corrected = yhat + bias``). The c.955 post-hoc
+      global-mean shift is removed -- it used the wrong sign AND violated
+      per-fold identity.
+    - #2: M12 goes through ``walk_forward_har_rv_j(calibrate_bias=debias,
+      calibration_size=...)`` -- its own internal train-tail calibration
+      (the flag mirrors walk_forward_har's), apples-to-apples with LJ/HAR.
+    - #3: HAR is evaluated on TWO legs when debias=True -- an uncalibrated
+      ``walk_forward_har(calibrate_bias=False)`` pass feeding ``mse_har_raw``
+      and a calibrated pass feeding ``mse_har_debiased`` + the DM leg.
     """
     comp = components.get(coin)
     if comp is None:
@@ -373,19 +427,37 @@ def _eval_one_coin(
     if not res_lj["forecasts"]:
         return None
 
-    # --- HAR Classic baseline (canonical train-tail bias) ---
-    res_har = walk_forward_har(
-        rv, horizon,
+    # --- HAR Classic baseline: raw + calibrated legs (round-3 concern #3) ---
+    # mse_har_raw comes from an UNCALIBRATED walk_forward_har pass. When
+    # debias=True, a SECOND calibrated pass provides the apples-to-apples DM
+    # leg and mse_har_debiased. The two legs are distinct by construction
+    # (the c.955 identity mse_har_raw == mse_har_debiased is gone).
+    res_har_uncal = walk_forward_har(rv, horizon, calibrate_bias=False)
+    har_fc_raw = res_har_uncal.get("forecasts")
+    if har_fc_raw is None or (hasattr(har_fc_raw, '__len__') and len(har_fc_raw) == 0):
+        return None
+
+    if debias:
+        res_har_deb = walk_forward_har(
+            rv, horizon,
+            calibrate_bias=True,
+            calibration_size=calibration_size,
+        )
+        har_fc_dm = res_har_deb.get("forecasts")
+        if har_fc_dm is None or (hasattr(har_fc_dm, '__len__') and len(har_fc_dm) == 0):
+            return None
+    else:
+        har_fc_dm = har_fc_raw
+
+    # --- M12 HAR-RV-J baseline (round-3 concern #2: calibrated when debias) ---
+    # walk_forward_har_rv_j already exposes calibrate_bias (same internal
+    # train-tail pattern as walk_forward_har); pass it for apples-to-apples.
+    from m12_har_rv_j import walk_forward_har_rv_j
+    res_m12 = walk_forward_har_rv_j(
+        rv, rv_j, horizon,
         calibrate_bias=debias,
         calibration_size=calibration_size,
     )
-    har_fc = res_har.get("forecasts")
-    if har_fc is None or (hasattr(har_fc, '__len__') and len(har_fc) == 0):
-        return None
-
-    # --- M12 HAR-RV-J baseline (canonical, no train-only bias flag) ---
-    from m12_har_rv_j import walk_forward_har_rv_j
-    res_m12 = walk_forward_har_rv_j(rv, rv_j, horizon)
     m12_fc = res_m12.get("forecasts")
     if m12_fc is None or (hasattr(m12_fc, '__len__') and len(m12_fc) == 0):
         return None
@@ -393,49 +465,35 @@ def _eval_one_coin(
     # --- Align all three models to the shortest forecast series ---
     n = min(
         len(res_lj["forecasts"]),
-        len(har_fc),
+        len(har_fc_raw),
+        len(har_fc_dm),
         len(m12_fc),
     )
     if n < 10:
         return None
 
     fc_lj = np.array(res_lj["forecasts"][:n])
-    fc_har = np.array(har_fc.values[:n]) if hasattr(har_fc, 'values') else np.array(har_fc[:n])
+    # Round-3 concern #1: when debias=True, consume the PER-FOLD-corrected
+    # forecasts produced inside walk_forward_lj_asym (each fold shifted by
+    # that fold's train-tail bias, yhat_corrected = yhat + bias). This
+    # replaces the c.955 post-walk-forward global-mean shift, which used the
+    # wrong sign and violated per-fold identity.
+    if debias and res_lj.get("forecasts_debiased"):
+        fc_lj = np.array(res_lj["forecasts_debiased"][:n])
+    fc_har = np.array(har_fc_dm.values[:n]) if hasattr(har_fc_dm, 'values') else np.array(har_fc_dm[:n])
+    fc_har_raw = np.array(har_fc_raw.values[:n]) if hasattr(har_fc_raw, 'values') else np.array(har_fc_raw[:n])
     fc_m12 = np.array(m12_fc.values[:n]) if hasattr(m12_fc, 'values') else np.array(m12_fc[:n])
     tgt = np.array(res_lj["targets"][:n])
 
-    err_lj_raw = fc_lj - tgt
-    err_har_raw = fc_har - tgt[:len(fc_har)]
-    err_m12_raw = fc_m12 - tgt[:len(fc_m12)]
-
-    # When debias=True, HAR has its forecasts pre-corrected by
-    # walk_forward_har (train-tail bias removed per fold). For the
-    # apples-to-apples DM comparison, we want the LJ / M12 errors to be
-    # shifted by the same kind of per-fold train-tail bias. The per-fold
-    # bias estimates are surfaced in ``res_lj["per_fold_bias"]`` for LJ,
-    # but we need a single global bias for the post-walk-forward DM step
-    # because the forecasts array has been flattened across folds. The
-    # correct aggregate is the mean of the per-fold biases -- this is
-    # what the canonical HAR walk_forward does internally (it sums the
-    # per-fold bias corrections on the forecasts array, which is
-    # equivalent to subtracting the mean of per-fold biases from the
-    # global error array).
-    if debias:
-        # Per-fold biases (LJ only -- HAR and M12 don't surface this dict).
-        lj_per_fold_bias = np.array(res_lj["per_fold_bias"], dtype=float)
-        lj_global_bias = float(np.mean(lj_per_fold_bias)) if len(lj_per_fold_bias) else 0.0
-        # Apply only to LJ (HAR is already pre-corrected by walk_forward_har).
-        err_lj = err_lj_raw - lj_global_bias
-        err_har = err_har_raw  # walk_forward_har already debiased fc_har
-        err_m12 = err_m12_raw  # M12 is uncalibrated by default (no flag exposed)
-    else:
-        err_lj = err_lj_raw
-        err_har = err_har_raw
-        err_m12 = err_m12_raw
+    err_lj = fc_lj - tgt[:len(fc_lj)]
+    err_har = fc_har - tgt[:len(fc_har)]  # DM leg (calibrated when debias=True)
+    err_har_raw = fc_har_raw - tgt[:len(fc_har_raw)]  # truly raw leg
+    err_m12 = fc_m12 - tgt[:len(fc_m12)]  # internally calibrated when debias=True
 
     # --- MSE = bias^2 + variance decomposition (population variance, ddof=0) ---
     mse_lj_empirical = float(np.mean(err_lj ** 2))
-    mse_har_empirical = float(np.mean(err_har ** 2))
+    mse_har_dm_empirical = float(np.mean(err_har ** 2))
+    mse_har_raw_empirical = float(np.mean(err_har_raw ** 2))
     mse_m12_empirical = float(np.mean(err_m12 ** 2))
 
     bias_lj = float(np.mean(err_lj))
@@ -445,31 +503,31 @@ def _eval_one_coin(
     var_har = float(np.var(err_har, ddof=0))
     var_m12 = float(np.var(err_m12, ddof=0))
     mse_lj = bias_lj ** 2 + var_lj
-    mse_har_raw = bias_har ** 2 + var_har
+    mse_har_dm = bias_har ** 2 + var_har
     mse_m12 = bias_m12 ** 2 + var_m12
 
     # Sanity guard: empirical == decomposed (concern #1 acceptance, c.953).
     assert abs(mse_lj - mse_lj_empirical) < 1e-9, (
         f"MSE decomposition broken for LJ: {mse_lj} vs {mse_lj_empirical}"
     )
-    assert abs(mse_har_raw - mse_har_empirical) < 1e-9, (
-        f"MSE decomposition broken for HAR: {mse_har_raw} vs {mse_har_empirical}"
+    assert abs(mse_har_dm - mse_har_dm_empirical) < 1e-9, (
+        f"MSE decomposition broken for HAR (DM leg): {mse_har_dm} vs {mse_har_dm_empirical}"
     )
     assert abs(mse_m12 - mse_m12_empirical) < 1e-9, (
         f"MSE decomposition broken for M12: {mse_m12} vs {mse_m12_empirical}"
     )
 
-    # --- DM test on debiased errors (concern #2 fix: HAR is single-calibrated,
-    # not double-calibrated -- ``mse_har_raw`` now reflects the canonical HAR
-    # walk_forward_har forecasts, not a post-walk-forward second correction) ---
+    # --- DM test on the calibrated errors -- apples-to-apples (round-3):
+    # LJ per-fold corrected, HAR calibrated inside walk_forward_har, M12
+    # calibrated inside walk_forward_har_rv_j (all when debias=True) ---
     dm_vs_har = dm_verdict(err_lj, err_har, horizon=horizon)
     dm_vs_m12 = dm_verdict(err_lj, err_m12, horizon=horizon)
 
-    # --- Bit-identity audit anchor (concern #3 fix, c.953 sustained) ---
+    # --- Bit-identity audit anchor (concern #3 fix, c.953 sustained;
+    # round-3 concern #6: the hash covers index AND values) ---
     # OLS is deterministic on a given (X, y) pair; panel_hash on the canonical
     # 360-bar RV window must be identical across seeds {0, 7, 42, 99}.
-    panel_window = rv.iloc[-min(len(rv), 360):].to_numpy()
-    panel_hash = hashlib.sha256(panel_window.astype(np.float64).tobytes()).hexdigest()[:16]
+    panel_hash = _panel_hash(rv)
 
     # Forecasts/targets/errors hashes for manifest (concern #4 fix, c.955).
     fc_lj_hash = hashlib.sha256(fc_lj.astype(np.float64).tobytes()).hexdigest()[:16]
@@ -496,8 +554,11 @@ def _eval_one_coin(
         "horizon": horizon,
         "seed": seed,
         "mse_logrv": mse_lj_empirical,
-        "mse_har_raw": mse_har_raw,
-        "mse_har_debiased": mse_har_raw if debias else float("nan"),
+        # Round-3 concern #3: raw leg from the UNCALIBRATED walk_forward_har
+        # pass; debiased leg from the separate calibrate_bias=True pass (NaN
+        # when debias=False). No more fake identity between the two.
+        "mse_har_raw": mse_har_raw_empirical,
+        "mse_har_debiased": mse_har_dm if debias else float("nan"),
         "mse_m12": mse_m12,
         "bias_lj": bias_lj,
         "bias_har": bias_har,
@@ -678,7 +739,7 @@ def main() -> None:
     )
     parser.add_argument(
         "--debias", action="store_true",
-        help="Apply per-fold train-tail bias calibration to LJ / HAR (canonical pattern, REPAIR-2 c.955).",
+        help="Apply per-fold train-tail bias calibration to LJ / HAR / M12 (canonical pattern, REPAIR-2 c.955 + round-3).",
     )
     parser.add_argument(
         "--calibration-size", type=int, default=CALIBRATION_SIZE,
@@ -765,6 +826,24 @@ def main() -> None:
 
     # --- Concern #4: persist a manifest OUTSIDE the JSON results blob ---
     # Manifest hash includes the entire run signature: rows + params + agg.
+    # Round-3 concern #6: cross-seed panel-hash consistency is meaningful
+    # WITHIN a (coin, horizon) group, not globally (different coins
+    # legitimately hash differently) -- surface the per-group bookkeeping.
+    ph_groups: dict[tuple, list[str]] = {}
+    for r in rows:
+        ph_groups.setdefault((r["coin"], r["horizon"]), []).append(
+            r.get("panel_hash", ""),
+        )
+    panel_hash_per_coin_horizon = [
+        {
+            "coin": c,
+            "horizon": h,
+            "panel_hash": hs[0] if hs else "",
+            "n_seed_rows": len(hs),
+            "consistent_across_seeds": len(set(hs)) <= 1,
+        }
+        for (c, h), hs in sorted(ph_groups.items())
+    ]
     manifest = {
         "model": "M17_HAR_LJ_ASYM",
         "params": output["params"],
@@ -787,9 +866,10 @@ def main() -> None:
             },
         },
         "panel_hashes": sorted({r["panel_hash"] for r in rows if r.get("panel_hash")}),
+        "panel_hash_per_coin_horizon": panel_hash_per_coin_horizon,
         "panel_hashes_consistent": (
-            len({r["panel_hash"] for r in rows if r.get("panel_hash")}) <= 1
-            if rows else True
+            all(g["consistent_across_seeds"] for g in panel_hash_per_coin_horizon)
+            if panel_hash_per_coin_horizon else True
         ),
         "fc_hashes_per_coin_horizon": [
             {
@@ -848,6 +928,41 @@ def main() -> None:
             "concern_5_prev_valid": (
                 "prev: MED/training #14561 (last MERGED training PR of this "
                 "lane, distinct from #14592)."
+            ),
+            "concern_1_round3_sign_and_per_fold": (
+                "Bias convention is bias = mean(y_train_tail - yhat_train_tail); "
+                "corrected forecast = yhat + bias (the c.955 yhat - bias inverted "
+                "the sign and doubled the error). _eval_one_coin consumes the "
+                "per-fold-corrected forecasts_debiased array instead of a "
+                "post-walk-forward global-mean shift."
+            ),
+            "concern_2_round3_m12_calibrated": (
+                "walk_forward_har_rv_j already exposes calibrate_bias (same "
+                "internal train-tail pattern as walk_forward_har); "
+                "_eval_one_coin now passes calibrate_bias=debias + "
+                "calibration_size so M12 is calibrated apples-to-apples."
+            ),
+            "concern_3_round3_har_raw_vs_debiased": (
+                "mse_har_raw comes from an uncalibrated walk_forward_har pass; "
+                "mse_har_debiased from a separate calibrate_bias=True pass "
+                "(the DM leg). Two distinct legs -- the c.955 identity "
+                "mse_har_raw == mse_har_debiased is gone."
+            ),
+            "concern_4_round3_anti_leak_full_walk_forward": (
+                "test_walk_forward_lj_asym_oos_target_invariance perturbs ALL "
+                "OOS targets through the full walk-forward and asserts "
+                "per_fold_bias and forecasts_debiased bit-identical."
+            ),
+            "concern_5_round3_live_run_deferred": (
+                "c.953 live numbers are SUPERSEDED by the round-3 calibration "
+                "(see docs/M17_HAR_LJ_ASYM.md); the live BTC re-run is deferred "
+                "post-merge and gated by this manifest."
+            ),
+            "concern_6_round3_panel_hash_index": (
+                "panel_hash = sha256(index_int64_ns || values_float64) on the "
+                "canonical 360-bar window; the manifest surfaces "
+                "panel_hash_per_coin_horizon (per-group hashes + consistency), "
+                "not a single collapsed global hash."
             ),
         },
         "manifest_sha256": hashlib.sha256(
