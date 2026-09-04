@@ -188,25 +188,73 @@ def strategy_fitness_only(
     )
 
 
-# --- Self-play / evolution (identique case 11/12/13, parametres case 12) ---
+# --- Self-play / evolution (REPAIR c.902 : play_round doit passer x) ---
+
+def perceive_truth(
+    x: int, alpha: float, fitness: Callable[[int], int], prior: Sequence[float]
+) -> int:
+    """Percept Truth : w_hat = MAP(x) = argmax_w P(x|w) * prior[w].
+
+    C'est la stratégie Truth restreinte à UN percept x observé (vs `strategy_truth`
+    qui itère sur tous les x pour choisir le meilleur). Utilisée par `play_round`
+    après échantillonnage de x depuis le canal.
+
+    REPAIR c.902 : avant ce fix, `play_round` jette x et appelle `strategy_truth`
+    qui retourne un x ∈ {0,1}. Le payoff était alors `fitness(x)` mal indexée
+    (les paysages attendent un w ∈ [0, N_ONTIC)). Le geste aligne la signature
+    sur la docstring `w = strategy(x)`.
+    """
+    return map_estimate(x, alpha, prior)
+
+
+def perceive_fitness_only(
+    x: int, alpha: float, fitness: Callable[[int], int], prior: Sequence[float]
+) -> int:
+    """Percept Fitness-only : argmax_w f(w) * P(x | w) * prior[w].
+
+    Mode pondéré du posterior par la fitness : le w qui maximise la fitness
+    attendue P(fitness(w) | x). Pour prior uniforme, c'est le w dans la fibre
+    de x qui a la fitness max.
+
+    REPAIR c.902 : voir `perceive_truth` pour le contexte. Avant le fix,
+    `play_round` jette x et le toy mesurait un artefact instrumental (Tell
+    c.899-L1 ★★★ + c.901-L1 ★★★).
+    """
+    best_w = 0
+    best_score = -math.inf
+    for w in range(N_ONTIC):
+        score = channel(w, x, alpha) * prior[w] * fitness(w)
+        if score > best_score:
+            best_score = score
+            best_w = w
+    return best_w
+
 
 def play_round(
     alpha: float,
-    strategy: Callable[[float, Callable[[int], int], Sequence[float]], int],
+    strategy: Callable[[int, float, Callable[[int], int], Sequence[float]], int],
     fitness: Callable[[int], int],
     prior: Sequence[float],
 ) -> float:
-    """Renvoie fitness(w) ou w = strategy(x), x ~ P(x | w*, alpha), w* uniform."""
+    """Renvoie fitness(w_hat) ou w_hat = strategy(x), x ~ P(x | w*, alpha), w* uniform.
+
+    REPAIR c.902 : `strategy` reçoit maintenant `x` (percept observé) en première
+    position et retourne `w_hat ∈ [0, N_ONTIC)`. Avant le fix, `strategy(alpha,
+    fitness, prior)` était appelée sans `x` (jeté après échantillonnage), ce qui
+    rendait le NULL 8/8 case 14 non-mesurant (l'instrument était aveugle au
+    percept). Tell c.899-L1 ★★★ + c.901-L1 ★★★ : `play_round` FBT-style doit
+    passer `x` à la stratégie.
+    """
     w_star = random.randrange(N_ONTIC)
     p_x = [channel(w_star, x, alpha) for x in range(N_SENSORY)]
     x = random.choices(range(N_SENSORY), weights=p_x, k=1)[0]
-    w_hat = strategy(alpha, fitness, prior)
+    w_hat = strategy(x, alpha, fitness, prior)
     return fitness(w_hat)
 
 
 def evolve_alpha(
     fitness: Callable[[int], int],
-    strategy: Callable[[float, Callable[[int], int], Sequence[float]], int],
+    strategy: Callable[[int, float, Callable[[int], int], Sequence[float]], int],
     prior: Sequence[float],
     pop: int = 80,
     gen: int = 200,
@@ -215,7 +263,11 @@ def evolve_alpha(
     tournament_k: int = 3,
     seed: int | None = None,
 ) -> float:
-    """Selection truncée sur alpha (survie des alphas qui produisent plus de fitness)."""
+    """Selection tronquée sur alpha (survie des alphas qui produisent plus de fitness).
+
+    REPAIR c.902 : la signature de `strategy` est alignée avec `play_round` —
+    `strategy(x, alpha, fitness, prior) -> w_hat ∈ [0, N_ONTIC)`.
+    """
     if seed is not None:
         random.seed(seed)
 
@@ -242,7 +294,7 @@ def evolve_alpha(
             new_pop.append(child)
         population = new_pop
 
-    # alpha* = moyenne des survivants
+    # alpha* = meilleur individu de la population finale (PAS moyenne des survivants)
     final_scores = []
     for a in population:
         trial = sum(play_round(a, strategy, fitness, prior) for _ in range(5))
@@ -266,12 +318,12 @@ def run_experiment(
 
     for s in range(n_seeds):
         a_t = evolve_alpha(
-            fitness, strategy_truth, prior,
+            fitness, perceive_truth, prior,
             pop=pop, gen=gen, seed=s * 1000 + 1,
         )
         alphas_truth.append(a_t)
         a_f = evolve_alpha(
-            fitness, strategy_fitness_only, prior,
+            fitness, perceive_fitness_only, prior,
             pop=pop, gen=gen, seed=s * 1000 + 2,
         )
         alphas_fit.append(a_f)
