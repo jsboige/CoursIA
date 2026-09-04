@@ -132,23 +132,32 @@ else:
     print('  [OK] solc 0.8.28 already present')
 "
 
-# Install Foundry libraries (OpenZeppelin, account-abstraction)
+# Install Foundry libraries, pinned on the versions recorded in foundry-lib/foundry.lock.
+# These are upstream third-party dependencies, NOT forks we maintain: they are installed
+# with --no-git (plain directories, regenerable like node_modules) and gitignored -- never
+# committed as git submodules. See issue #14518.
 echo "  Installing Foundry libraries..."
 FOUNDRY_LIB="$SC_DIR/foundry-lib"
-if [ -d "$FOUNDRY_LIB/lib/openzeppelin-contracts" ]; then
-    echo "  [OK] OpenZeppelin already installed"
-else
-    cd "$FOUNDRY_LIB"
-    forge install --no-git openzeppelin/openzeppelin-contracts 2>&1 | tail -1
-    echo "  [OK] OpenZeppelin installed"
-fi
-if [ -d "$FOUNDRY_LIB/lib/account-abstraction" ]; then
-    echo "  [OK] account-abstraction already installed"
-else
-    cd "$FOUNDRY_LIB"
-    forge install --no-git eth-infinitism/account-abstraction 2>&1 | tail -1
-    echo "  [OK] account-abstraction installed"
-fi
+FOUNDRY_DEPS="foundry-rs/forge-std@v1.15.0 OpenZeppelin/openzeppelin-contracts@v5.6.1 eth-infinitism/account-abstraction@v0.9.0"
+for dep in $FOUNDRY_DEPS; do
+    name="${dep#*/}"
+    name="${name%@*}"
+    if [ -d "$FOUNDRY_LIB/lib/$name" ]; then
+        echo "  [OK] $name already installed"
+    else
+        cd "$FOUNDRY_LIB"
+        # No pipe on forge install: under `set -e` a pipeline exits with the status
+        # of its LAST command, so `| tail` would swallow the failure and the script
+        # would print [OK] for a library that was never installed.
+        if out=$(forge install --no-git "$dep" 2>&1); then
+            echo "  [OK] $name installed ($dep)"
+        else
+            echo "  [FAIL] forge install $dep"
+            echo "$out" | tail -5
+            exit 1
+        fi
+    fi
+done
 cd "$SC_DIR"
 
 # Verify key packages

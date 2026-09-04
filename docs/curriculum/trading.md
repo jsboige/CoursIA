@@ -20,12 +20,12 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 
 | Métrique | Valeur |
 |----------|--------|
-| Notebooks | 234 |
+| Notebooks | 238 |
 | PRODUCTION | 0 |
-| BETA | 216 |
+| BETA | 220 |
 | ALPHA | 18 |
 
-## ML/DataScienceWithAgents (51 notebooks)
+## ML/DataScienceWithAgents (52 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -63,49 +63,52 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 | 32 | Représentations contrastives modernes — du skip-gram… | BETA | Oui |
 | 33 | 4.1 — Le neurone convolutif from scratch : kernel… | BETA | Oui |
 | 34 | 4.2 — ConvNet profonde : pourquoi les résiduelles | BETA | Non |
-| 35 | Lab 1 - Les Bases de la Data Science en Python | BETA | Oui |
-| 36 | Lab 2 - Analyser un Appel d'Offre avec l'IA | BETA | Non |
-| 37 | Lab 3 - Pré-qualifier des Candidats avec l'IA | BETA | Non |
-| 38 | Lab 4 - Le Nettoyage de Données avec Pandas | BETA | Oui |
-| 39 | Lab 5 - De la Visualisation au Machine Learning | BETA | Oui |
-| 40 | Lab 6 - Anatomie de votre premier Agent d'IA | ALPHA | Non |
-| 41 | Lab 7 - Votre premier Agent Analyste de Données | BETA | Non |
-| 42 | Lab 8: Introduction au Framework ADK et Multi-Provider | BETA | Non |
-| 43 | Lab 9: Premier Agent ADK pour Data Science | BETA | Oui |
-| 44 | Lab 10: Data File Analyzer (DS-STAR Component) | BETA | Oui |
-| 45 | Lab 11: Planner-Coder-Verifier Loop (DS-STAR Core) | ALPHA | Oui |
-| 46 | Lab 12: DS-STAR Workshop - Analyse Multi-Fichiers | BETA | Non |
-| 47 | Lab 13: Web Search pour Modèles SOTA (MLE-STAR… | BETA | Oui |
-| 48 | Lab 14: Ablation et Raffinement Ciblé (MLE-STAR… | ALPHA | Oui |
-| 49 | Lab 15: Kaggle Challenge avec MLE-STAR | BETA | Oui |
-| 50 | Lab 16: Data Science Agent avec GCP BigQuery | ALPHA | Oui |
-| 51 | Lab 17: Projet Final - Pipeline DS-STAR Complet | ALPHA | Oui |
+| 35 | 4.3 — Transfer learning : réutiliser un ResNet18… | BETA | Non |
+| 36 | Lab 1 - Les Bases de la Data Science en Python | BETA | Oui |
+| 37 | Lab 2 - Analyser un Appel d'Offre avec l'IA | BETA | Non |
+| 38 | Lab 3 - Pré-qualifier des Candidats avec l'IA | BETA | Non |
+| 39 | Lab 4 - Le Nettoyage de Données avec Pandas | BETA | Oui |
+| 40 | Lab 5 - De la Visualisation au Machine Learning | BETA | Oui |
+| 41 | Lab 6 - Anatomie de votre premier Agent d'IA | ALPHA | Non |
+| 42 | Lab 7 - Votre premier Agent Analyste de Données | BETA | Non |
+| 43 | Lab 8: Introduction au Framework ADK et Multi-Provider | BETA | Non |
+| 44 | Lab 9: Premier Agent ADK pour Data Science | BETA | Oui |
+| 45 | Lab 10: Data File Analyzer (DS-STAR Component) | BETA | Oui |
+| 46 | Lab 11: Planner-Coder-Verifier Loop (DS-STAR Core) | ALPHA | Oui |
+| 47 | Lab 12: DS-STAR Workshop - Analyse Multi-Fichiers | BETA | Oui |
+| 48 | Lab 13: Web Search pour Modèles SOTA (MLE-STAR… | BETA | Oui |
+| 49 | Lab 14: Ablation et Raffinement Ciblé (MLE-STAR… | ALPHA | Oui |
+| 50 | Lab 15: Kaggle Challenge avec MLE-STAR | BETA | Oui |
+| 51 | Lab 16: Data Science Agent avec GCP BigQuery | ALPHA | Oui |
+| 52 | Lab 17: Projet Final - Pipeline DS-STAR Complet | ALPHA | Oui |
 
-## ML/ML.Net (21 notebooks)
+## ML/ML.Net (23 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | ML-1 (Python) : Introduction au Machine Learning avec… | BETA | Oui |
 | 2 | ML-1 : Introduction au Machine Learning avec ML.NET | BETA | Oui |
-| 3 | ML-2 : Préparation des données et ingénierie des… | BETA | Oui |
-| 4 | ML-2 : Préparation des données et ingénierie des… | BETA | Oui |
-| 5 | ML-3 : Entraînement et AutoML | BETA | Oui |
-| 6 | ML-3 (Python) : Entraînement et AutoML | BETA | Oui |
-| 7 | ML-4 : Évaluation des modèles (Python / sklearn) | BETA | Oui |
-| 8 | ML-4 : Evaluation des modèles | BETA | Oui |
-| 9 | ML-4b : Validité statistique des comparaisons de… | BETA | Oui |
-| 10 | ML-5 (Python) : Prévision de séries temporelles (STL +… | BETA | Oui |
-| 11 | ML-5 : Time Series Forecasting avec ML.NET | BETA | Oui |
-| 12 | ML-5b (Python) : Séries temporelles classiques —… | BETA | Oui |
-| 13 | ML-6 (Python) : Intégration de modèles ONNX (skl2onnx +… | BETA | Oui |
-| 14 | ML-6 : ONNX Model Integration avec ML.NET | BETA | Oui |
-| 15 | ML-7 (Python) : Systèmes de recommandation par… | BETA | Oui |
-| 16 | ML-7 : Systèmes de Recommandation avec ML.NET | BETA | Oui |
-| 17 | ML-8 (Python) : Clustering non-supervisé avec K-Means | BETA | Oui |
-| 18 | ML-8 : Clustering non-supervise avec K-Means | BETA | Oui |
-| 19 | ML-9 (Python) : Détection d'anomalies par PCA (erreur… | BETA | Oui |
-| 20 | ML-9 : Detection d'anomalies avec Randomized PCA | BETA | Oui |
-| 21 | TP : Prevision des ventes d'assurance | BETA | Oui |
+| 3 | ML-10 (Python) : l'illusion de progression en détection… | BETA | Oui |
+| 4 | ML-11 : le Matrix Profile multidimensionnel, une… | BETA | Oui |
+| 5 | ML-2 : Préparation des données et ingénierie des… | BETA | Oui |
+| 6 | ML-2 : Préparation des données et ingénierie des… | BETA | Oui |
+| 7 | ML-3 : Entraînement et AutoML | BETA | Oui |
+| 8 | ML-3 (Python) : Entraînement et AutoML | BETA | Oui |
+| 9 | ML-4 : Évaluation des modèles (Python / sklearn) | BETA | Oui |
+| 10 | ML-4 : Evaluation des modèles | BETA | Oui |
+| 11 | ML-4b : Validité statistique des comparaisons de… | BETA | Oui |
+| 12 | ML-5 (Python) : Prévision de séries temporelles (STL +… | BETA | Oui |
+| 13 | ML-5 : Time Series Forecasting avec ML.NET | BETA | Oui |
+| 14 | ML-5b (Python) : Séries temporelles classiques —… | BETA | Oui |
+| 15 | ML-6 (Python) : Intégration de modèles ONNX (skl2onnx +… | BETA | Oui |
+| 16 | ML-6 : ONNX Model Integration avec ML.NET | BETA | Oui |
+| 17 | ML-7 (Python) : Systèmes de recommandation par… | BETA | Oui |
+| 18 | ML-7 : Systèmes de Recommandation avec ML.NET | BETA | Oui |
+| 19 | ML-8 (Python) : Clustering non-supervisé avec K-Means | BETA | Oui |
+| 20 | ML-8 : Clustering non-supervise avec K-Means | BETA | Oui |
+| 21 | ML-9 (Python) : Détection d'anomalies par PCA (erreur… | BETA | Oui |
+| 22 | ML-9 : Detection d'anomalies avec Randomized PCA | BETA | Oui |
+| 23 | TP : Prevision des ventes d'assurance | BETA | Oui |
 
 ## Probas (2 notebooks)
 
@@ -114,35 +117,36 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 | 1 | Infer-101 : Introduction a Infer.NET | BETA | Oui |
 | 2 | Le Framework Rational Speech Act (RSA) | BETA | Oui |
 
-## Probas/DecisionTheory (25 notebooks)
+## Probas/DecisionTheory (26 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | Du graphe causal au do-calculus — le pont entre les… | BETA | Oui |
 | 2 | DoWhy-1 — Exiger un estimand : l'identification causale… | BETA | Oui |
-| 3 | Méthodes quasi-expérimentales — identifier l'effet… | BETA | Oui |
-| 4 | DecInfer-01-Utility-Foundations : Axiomes et Fondements | BETA | Oui |
-| 5 | DecInfer-02-Théorème de représentation de von… | BETA | Oui |
-| 6 | DecInfer-03-Utility-Money : Utilite de l'Argent et… | BETA | Oui |
-| 7 | DecInfer-04-Multi-Attribute : Utilite Multi-Attributs | BETA | Oui |
-| 8 | DecInfer-05-Decision-Networks : Reseaux de Decision | BETA | Oui |
-| 9 | DecInfer-06-Value-Information : Valeur de l'Information | BETA | Oui |
-| 10 | DecInfer-07-Expert-Systems : Decisions Robustes et… | BETA | Oui |
-| 11 | DecInfer-08-Sequential : MDPs, Bandits et POMDPs | BETA | Oui |
-| 12 | DecInfer-09-Preuves formelles — Indice de Gittins | BETA | Oui |
-| 13 | DecInfer-10-Thompson-Sampling : Bandits bayesiens par… | BETA | Oui |
-| 14 | DecPyMC-1-Utility-Foundations : Axiomes et Fondements | BETA | Oui |
-| 15 | DecPyMC-10 : Ruine et capital — le processus de… | BETA | Oui |
-| 16 | DecPyMC-11 — Valeur de l'Information en Souscription | BETA | Oui |
-| 17 | DecPyMC-12 — Fréquence × sévérité hiérarchique : le… | BETA | Oui |
-| 18 | DecPyMC-2-Utility-Money : Utilite de l'Argent et… | BETA | Oui |
-| 19 | DecPyMC-3-Multi-Attribute : Utilite Multi-Attributs | BETA | Oui |
-| 20 | DecPyMC-4-Decision-Networks : Reseaux de Decision | BETA | Oui |
-| 21 | DecPyMC-5-Valeur de l'Information | BETA | Oui |
-| 22 | DecPyMC-6-Systèmes Experts et Decisions Robustes | BETA | Oui |
-| 23 | DecPyMC-7-MDPs, Bandits et POMDPs | BETA | Oui |
-| 24 | DecPyMC-8 — Crédibilité actuarielle de Bühlmann–Straub… | BETA | Oui |
-| 25 | DecPyMC-9 : Du risque à la prime — prime pure,… | BETA | Oui |
+| 3 | DoWhy-2 — Le contrefactuel individuel : quand l'effet… | BETA | Oui |
+| 4 | Méthodes quasi-expérimentales — identifier l'effet… | BETA | Oui |
+| 5 | DecInfer-01-Utility-Foundations : Axiomes et Fondements | BETA | Oui |
+| 6 | DecInfer-02-Théorème de représentation de von… | BETA | Oui |
+| 7 | DecInfer-03-Utility-Money : Utilite de l'Argent et… | BETA | Oui |
+| 8 | DecInfer-04-Multi-Attribute : Utilite Multi-Attributs | BETA | Oui |
+| 9 | DecInfer-05-Decision-Networks : Reseaux de Decision | BETA | Oui |
+| 10 | DecInfer-06-Value-Information : Valeur de l'Information | BETA | Oui |
+| 11 | DecInfer-07-Expert-Systems : Decisions Robustes et… | BETA | Oui |
+| 12 | DecInfer-08-Sequential : MDPs, Bandits et POMDPs | BETA | Oui |
+| 13 | DecInfer-09-Preuves formelles — Indice de Gittins | BETA | Oui |
+| 14 | DecInfer-10-Thompson-Sampling : Bandits bayesiens par… | BETA | Oui |
+| 15 | DecPyMC-1-Utility-Foundations : Axiomes et Fondements | BETA | Oui |
+| 16 | DecPyMC-10 : Ruine et capital — le processus de… | BETA | Oui |
+| 17 | DecPyMC-11 — Valeur de l'Information en Souscription | BETA | Oui |
+| 18 | DecPyMC-12 — Fréquence × sévérité hiérarchique : le… | BETA | Oui |
+| 19 | DecPyMC-2-Utility-Money : Utilite de l'Argent et… | BETA | Oui |
+| 20 | DecPyMC-3-Multi-Attribute : Utilite Multi-Attributs | BETA | Oui |
+| 21 | DecPyMC-4-Decision-Networks : Reseaux de Decision | BETA | Oui |
+| 22 | DecPyMC-5-Valeur de l'Information | BETA | Oui |
+| 23 | DecPyMC-6-Systèmes Experts et Decisions Robustes | BETA | Oui |
+| 24 | DecPyMC-7-MDPs, Bandits et POMDPs | BETA | Oui |
+| 25 | DecPyMC-8 — Crédibilité actuarielle de Bühlmann–Straub… | BETA | Oui |
+| 26 | DecPyMC-9 : Du risque à la prime — prime pure,… | BETA | Oui |
 
 ## Probas/Infer (20 notebooks)
 
@@ -197,7 +201,7 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
-| 1 | M3b - HAR Asymetrique : Decomposition Semivariance et… | BETA | Non |
+| 1 | M16 — HAR asymétrique débiaisé : le signal survit-il… | BETA | Non |
 
 ## QuantConnect/Python (47 notebooks)
 

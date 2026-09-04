@@ -364,7 +364,10 @@ namespace MyIA.Trading.Backtester
         /// Porter ce corps tel quel aurait livre une calibration qui n'en est pas une, sous un
         /// message affirmant le contraire. L'appel d'entrainement evidemment voulu est retabli,
         /// et l'absence de modele est traitee explicitement au lieu d'etre masquee par une NRE.
-        /// Le defaut upstream est signale a part (voir le corps de la PR).
+        /// Le defaut est signale a l'amont : voir
+        /// https://github.com/MyIntelligenceAgency/Lean/issues/40 (et la section « Disposition
+        /// upstream » de docs/reference/backtester-e2-svm-kernel.md pour la decision et la
+        /// table de mesure cote a cote).
         /// </remarks>
         public double CalibrateComplexity(TradingTrainTestData objTrainingData, IKernel objKernel)
         {

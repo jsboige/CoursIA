@@ -68,7 +68,7 @@ def dataset_profile(rows: int, columns: int) -> dict[str, int | float]:
 
 def build_adk_model(config: ProviderConfig) -> LiteLlm:
     """Map a track provider configuration to ADK's public LiteLLM model."""
-    kwargs: dict[str, str | bool] = {"drop_params": True}
+    kwargs: dict[str, str | bool | int] = {"drop_params": True}
     if config.base_url:
         kwargs["api_base"] = config.base_url
     if config.api_key:
@@ -77,6 +77,8 @@ def build_adk_model(config: ProviderConfig) -> LiteLlm:
         # LiteLLM's OpenAI adapter requires a non-empty protocol credential,
         # even when a local OpenAI-compatible endpoint disables authentication.
         kwargs["api_key"] = "local-endpoint-no-auth"
+    if config.max_tokens is not None:
+        kwargs["max_tokens"] = config.max_tokens
 
     return LiteLlm(model=get_litellm_model(config), **kwargs)
 
@@ -246,8 +248,11 @@ async def _smoke() -> int:
     args = _parse_args()
     try:
         result = await run_data_agent(args.prompt)
-    except AdkRuntimeUnavailable as exc:
-        print(str(exc))
+    except (AdkRuntimeUnavailable, ValueError) as exc:
+        detail = str(exc)
+        if not detail.startswith("RECOVERABLE-LOCAL"):
+            detail = f"RECOVERABLE-LOCAL: {detail}"
+        print(detail)
         return 2
 
     print(f"ADK events: {result.event_count}")

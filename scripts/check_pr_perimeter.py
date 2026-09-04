@@ -816,8 +816,12 @@ COUNTERFACTUAL_MARKER = re.compile(
 # body enumerates 1 + 2 = 3 (exact), the guard reads the sub-sum 2 and can
 # never validate it (#11935). Requires a NAMED file before the "+ N fichiers
 # de tests" tail: the shape is an enumeration of components, not a total.
+# #14384 (A) : l'exemption tenait a la ponctuation, pas a la semantique --
+# le meme inventory avec ", plus" / ", et" / ", ainsi que" restait bloquant.
+# Jeu fermé de connecteurs additifs, l'ancre nom de fichier reste exigée.
 ENUMERATION_TAIL = re.compile(
-    r"\+\s*\d+\s*fichiers?\s+de\s+tests?\b", re.IGNORECASE
+    r"(?:\+|,\s*(?:plus|et|ainsi\s+que))\s*\d+\s*fichiers?\s+de\s+tests?\b",
+    re.IGNORECASE,
 )
 NAMED_FILE = re.compile(
     r"\b[\w.-]+\.(?:py|cs|yml|yaml|json|md|ipynb|ts|js|sh|toml|cfg|ini)\b",
@@ -1178,8 +1182,14 @@ def _additive_line_sum(line: str) -> int:
     locative scope, ...) never joins the sum. #12201: a count inside a
     citation span or followed by a name range is reported speech, not an
     additive term -- same skip as the claim selection, so the two paths
-    read the same body the same way."""
-    return sum(
+    read the same body the same way.
+    #14384 (B): the word-form cardinal joins the sum, reusing the exact
+    WORD_FORM_TRIGGERS of _word_form_count -- the two halves of the organ
+    now agree on what a word count is at LINE scope too, closing the
+    docstring/extraction divergence ("1 fichier modifie, plus deux fichiers
+    de tests" = 1 + 2 = 3, not 1). Post-#14438 vocabulary: deux..dix and
+    "un seul"; the bare article "un/une" never sums."""
+    total = sum(
         int(m.group(1))
         for m in COUNT_CLAIM.finditer(line)
         if not _count_is_exempt(line, m)
@@ -1187,6 +1197,11 @@ def _additive_line_sum(line: str) -> int:
         and not _count_is_range_enum(line, m)
         and not _count_is_out_of_scope_annotation(line, m)
     )
+    low = line.lower()
+    for _word, n, trig in WORD_FORM_TRIGGERS:
+        if trig.search(low):
+            return total + n
+    return total
 
 
 def _word_form_count(text: str) -> int | None:

@@ -9,6 +9,13 @@ Compares TSMOM portfolio (equal-weight across assets) vs equal-weight
 buy-and-hold benchmark. Transaction costs: 5bps equity, 10bps crypto,
 50bps stress test.
 
+Seeds are LIVE (#14470): each seed draws a sub-basket (80% of symbols,
+without replacement) and an origin offset (0-40 business days). The same
+view feeds the model and its buy-and-hold baseline, so the comparison
+stays paired. Transaction costs are proportional to the notional actually
+moved (turnover); the legacy per-moving-line round-trip convention is kept
+as a diagnostic column (``net_sharpe_l1_convention``).
+
 Usage:
     python L1_tsmom.py
     python L1_tsmom.py --dry-run
@@ -61,6 +68,25 @@ DEFAULT_LOOKBACKS = [21, 63, 126, 252]  # ~1/3/6/12 months
 DEFAULT_SEEDS = [0, 1, 7, 42]
 TARGET_VOL = 0.15  # annualized target volatility
 VOL_LOOKBACK = 63  # vol estimation window
+
+# Live-seed view parameters (#14470): sub-basket share and max origin offset.
+SUBBASKET_SHARE = 0.8
+MAX_ORIGIN_OFFSET = 40  # business days, drawn in [0, MAX_ORIGIN_OFFSET]
+
+
+def draw_seed_view(rng: np.random.Generator, symbols: list[str]) -> tuple[list[str], int]:
+    """Draw the per-seed view: sub-basket without replacement + origin offset.
+
+    The rng consumption order (subset first, then offset) is part of the
+    contract: ``run_tsmom_single_lookback`` and ``run_buyhold_baseline`` both
+    call this with identically-seeded generators so seed k yields the SAME
+    view on both sides — the comparison stays paired (#14470 defaut 1).
+    """
+    n_sub = max(2, int(round(SUBBASKET_SHARE * len(symbols))))
+    idx = rng.choice(len(symbols), size=min(n_sub, len(symbols)), replace=False)
+    subset = sorted(symbols[i] for i in idx)
+    offset = int(rng.integers(0, MAX_ORIGIN_OFFSET + 1))
+    return subset, offset
 
 
 def get_cost_model(symbol: str, stress: bool = False) -> TransactionCostModel:
@@ -122,19 +148,26 @@ def run_tsmom_single_lookback(
 
     for seed in seeds:
         rng = np.random.default_rng(seed)
-        n_samples = len(returns)
+        subset, offset = draw_seed_view(rng, symbols)
+
+        # Apply the seed's view: sub-basket columns + origin offset
+        view_returns = returns[subset].iloc[offset:]
+        view_signals = signals_df[subset].iloc[offset:]
+        view_vol = vol_df[subset].iloc[offset:]
 
         # Walk-forward expanding
         splitter = WalkForwardSplitter(n_splits=n_splits, gap=gap)
 
         # Use aligned numpy arrays
-        ret_arr = returns.values
-        sig_arr = signals_df.values
-        vol_arr = vol_df.values
+        ret_arr = view_returns.values
+        sig_arr = view_signals.values
+        vol_arr = view_vol.values
 
         fold_returns_gross = []
         fold_returns_net = []
+        fold_returns_net_l1 = []
         fold_trades = []
+        fold_turnover = []
 
         for train_idx, test_idx in splitter.split(ret_arr):
             if len(test_idx) == 0:
@@ -155,9 +188,10 @@ def run_tsmom_single_lookback(
             # Portfolio gross return per day
             port_gross = np.nansum(positions * test_ret, axis=1) / n_assets
 
-            # Detect trades (position changes across all assets)
-            pos_changes = np.abs(np.diff(positions, axis=0, prepend=np.zeros_like(positions[0:1])))
-            trades_per_day = np.sum(pos_changes > 0, axis=1)
+            # Notional actually moved per day (turnover) and legacy line-count
+            deltas = np.abs(np.diff(positions, axis=0, prepend=np.zeros_like(positions[0:1])))
+            turnover_per_day = np.sum(deltas, axis=1)
+            trades_per_day = np.sum(deltas > 0, axis=1)  # diagnostic: moving lines
 
             # Apply transaction costs
             if stress:
@@ -170,41 +204,58 @@ def run_tsmom_single_lookback(
                             n_crypto * CRYPTO_COST.cost_per_trade(100)) / len(symbols)
                 cost_per_trade = avg_cost
 
-            trade_costs = trades_per_day * 2 * cost_per_trade / n_assets
+            # Costs proportional to the notional actually moved (#14470 defaut 2)
+            trade_costs = turnover_per_day * cost_per_trade / n_assets
             port_net = port_gross - trade_costs
+
+            # Legacy L1 convention kept as diagnostic: one full round-trip per
+            # moving line, per day (overstates rebalancing cost)
+            l1_costs = trades_per_day * 2 * cost_per_trade / n_assets
+            port_net_l1 = port_gross - l1_costs
 
             # Remove NaN
             valid = ~(np.isnan(port_gross) | np.isnan(port_net))
             fold_returns_gross.extend(port_gross[valid].tolist())
             fold_returns_net.extend(port_net[valid].tolist())
+            fold_returns_net_l1.extend(port_net_l1[valid].tolist())
             fold_trades.extend(trades_per_day[valid].tolist())
+            fold_turnover.extend(turnover_per_day[valid].tolist())
 
         gross_arr = np.array(fold_returns_gross)
         net_arr = np.array(fold_returns_net)
+        net_l1_arr = np.array(fold_returns_net_l1)
 
         if len(gross_arr) > 10:
             gross_sharpe = sharpe_from_returns(pd.Series(gross_arr))
             net_sharpe = sharpe_from_returns(pd.Series(net_arr))
+            net_sharpe_l1 = sharpe_from_returns(pd.Series(net_l1_arr))
             gross_cagr = float(np.prod(1 + gross_arr) ** (252 / max(len(gross_arr), 1)) - 1)
             net_cagr = float(np.prod(1 + net_arr) ** (252 / max(len(net_arr), 1)) - 1)
             total_trades = int(np.sum(fold_trades))
             trade_freq = total_trades / max(len(gross_arr), 1)
+            avg_turnover = float(np.mean(fold_turnover)) if fold_turnover else 0.0
         else:
             gross_sharpe = 0.0
             net_sharpe = 0.0
+            net_sharpe_l1 = 0.0
             gross_cagr = 0.0
             net_cagr = 0.0
             total_trades = 0
             trade_freq = 0.0
+            avg_turnover = 0.0
 
         all_seed_results.append({
             "seed": seed,
+            "view_n_symbols": len(subset),
+            "view_offset": offset,
             "gross_sharpe": round(float(gross_sharpe), 4),
             "net_sharpe": round(float(net_sharpe), 4),
+            "net_sharpe_l1_convention": round(float(net_sharpe_l1), 4),
             "gross_cagr": round(float(gross_cagr), 4),
             "net_cagr": round(float(net_cagr), 4),
             "total_trades": total_trades,
             "trade_freq": round(float(trade_freq), 4),
+            "avg_daily_turnover": round(avg_turnover, 4),
             "n_oos": len(gross_arr),
         })
 
@@ -231,8 +282,12 @@ def run_buyhold_baseline(
     all_seed_results = []
 
     for seed in seeds:
+        rng = np.random.default_rng(seed)
+        subset, offset = draw_seed_view(rng, symbols)
+        view_returns = returns[subset].iloc[offset:]
+
         splitter = WalkForwardSplitter(n_splits=n_splits, gap=gap)
-        ret_arr = returns.values
+        ret_arr = view_returns.values
         n_assets = ret_arr.shape[1]
 
         fold_returns = []
@@ -254,6 +309,8 @@ def run_buyhold_baseline(
 
         all_seed_results.append({
             "seed": seed,
+            "view_n_symbols": len(subset),
+            "view_offset": offset,
             "sharpe": round(float(bh_sharpe), 4),
             "cagr": round(float(bh_cagr), 4),
             "n_oos": len(ret_arr_bh),
