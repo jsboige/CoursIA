@@ -22,110 +22,76 @@ P(Y=1 | do(X=1)) - P(Y=1 | do(X=0)) par enumeration, puis le compare a
 tire du meme SCM (pour verifier que les deux estimateurs convergent sur
 la meme cible d'intervention).
 
-Pourquoi pas de reexecution ?
------------------------------
-Les fonctions ``enumerate_scm`` et ``p_y_given_m_x`` sont **internes au
-notebook** (cell-scoped) ; on les reproduit ici en copiant leur corps
-(anti-regression : regle D -- pas de duplication du code reel, mais
-ici on **redeclare** des fonctions pedagogiques du notebook pour les
-rendre testables en module ; le code est byte-identique a la cellule
-source, ce qui est le pattern autorise pour les notebooks non-importables).
+Cablage sur l'organe canonique (issue #14051, tranche 4)
+--------------------------------------------------------
+Ce module a longtemps porte des reproductions byte-identiques de
+``enumerate_scm`` (cellule 5) et ``p_y_given_m_x`` (cellule 20), au motif
+que ces fonctions etaient **internes au notebook** (cell-scoped) donc
+inaccessibles a un ``import``. Le diagnostic etait juste ; il a cesse de
+l'etre quand la PR #14133 a extrait ``Probas/PyMC/pymc_causal_organs.py``,
+le module qui vit a cote de ``PyMC-05-Causal-Inference.ipynb`` et que le
+notebook lui-meme consomme.
+
+Le defaut que la copie entretenait n'etait pas le rangement mais le
+**cablage du verdict** : cet adaptateur porte le nom de *cross-engine
+verification* et comparait :mod:`ict.causal_attribution` non pas a l'organe
+natif, mais a une reproduction de cet organe. Consequence mecanique --
+enoncee par ``bridges/__init__.py`` avant meme d'etre corrigee : un
+changement d'estimateur dans PyMC-05 aurait laisse ce pont **vert**.
+
+Les trois organes sont desormais **importes** ; le pont et le notebook
+designent le meme objet. Verrouille par
+``ict/tests/test_bridges_canonical_wiring.py`` (gates W7-W12 : identite
+d'objet, ``__module__``, absence de redefinition dans la source).
+
+``FRONT_DOOR_SCM`` reste expose comme **alias** de ``FRONT_SCM`` : le nom
+est consomme par ``ict/tests/test_bridges.py`` et le renommer aurait ete un
+churn sans rapport avec le cablage. L'alias designe l'objet canonique, donc
+une derive des CPT du notebook se propage ici aussi.
 """
 
 from __future__ import annotations
 
-import itertools
-from typing import Callable, Dict, List, Optional, Sequence, Tuple  # noqa: F401
+import sys
+from pathlib import Path
+from typing import Dict, Tuple  # noqa: F401
 
 import numpy as np
 
 from ict import causal_attribution as ca
 
-
 # ---------------------------------------------------------------------------
-# Copie byte-identique de enumerate_scm (cellule 5 PyMC-05)
+# Organe natif canonique : le module qui vit a cote de PyMC-05-Causal-Inference
 # ---------------------------------------------------------------------------
-def enumerate_scm(
-    nodes: Sequence[Tuple[str, Callable]],
-    query: str,
-    evidence: Optional[Dict[str, bool]] = None,
-    do_vars: Optional[Dict[str, bool]] = None,
-) -> float:
-    """Inference exacte par enumeration sur un SCM booleen.
+# `pymc_causal_organs` n'est pas un package installable -- c'est un module pose
+# a cote de son notebook, pour que le notebook ET les tiers consomment le meme
+# objet. Le pont traverse donc l'arbre pour l'atteindre.
+#
+#   pymc_enumerate.py -> bridges -> ict -> ICT-Series -> IIT -> MyIA.AI.Notebooks
+#                                                               ^ parents[4]
+_PYMC_DIR = Path(__file__).resolve().parents[4] / "Probas" / "PyMC"
+if str(_PYMC_DIR) not in sys.path:
+    sys.path.insert(0, str(_PYMC_DIR))
 
-    Parameters
-    ----------
-    nodes : sequence of (nom, proba_true_fn)
-        Liste ordonnee topologiquement. ``proba_true_fn(assign)`` renvoie
-        ``P(nom=True | parents)`` en lisant les parents dans ``assign``.
-    query : str
-        Nom du noeud dont on veut ``P(query=True)``.
-    evidence : dict or None
-        ``{nom: bool}`` : variables **observees** (conditionnement, niveau 1).
-    do_vars : dict or None
-        ``{nom: bool}`` : variables **intervenues** (mutilation, niveau 2).
+from pymc_causal_organs import (  # noqa: E402  (import differe : sys.path ci-dessus)
+    FRONT_SCM,
+    enumerate_scm,
+    p_y_given_m_x,
+)
 
-    Returns
-    -------
-    float
-        ``P(query=True | evidence, do(do_vars))``.
+# Le SCM front-door de la cellule 20, sous le nom historique de ce pont.
+# C'est le MEME objet que `pymc_causal_organs.FRONT_SCM` (pas une copie).
+FRONT_DOOR_SCM = FRONT_SCM
 
-    Notes
-    -----
-    Byte-identique a PyMC-05 cellule 5 ; voir commentaire du module pour
-    la justification de la copie (organe notebook non-importable).
-    """
-    evidence = evidence or {}
-    do_vars = do_vars or {}
-    names = [n for n, _ in nodes]
-    num = 0.0
-    den = 0.0
-    for bits in itertools.product([False, True], repeat=len(names)):
-        assign = dict(zip(names, bits))
-        if any(assign[k] != v for k, v in do_vars.items()):
-            continue
-        if any(assign[k] != v for k, v in evidence.items()):
-            continue
-        p = 1.0
-        for name, fn in nodes:
-            if name in do_vars:
-                continue
-            pt = fn(assign)
-            p *= pt if assign[name] else (1.0 - pt)
-        den += p
-        if assign[query]:
-            num += p
-    return num / den if den > 0 else float("nan")
-
-
-def p_y_given_m_x(
-    nodes: Sequence[Tuple[str, Callable]],
-    mval: bool,
-    xval: bool,
-    query: str = "cancer",
-    m_name: str = "tar",
-    x_name: str = "smoke",
-) -> float:
-    """Helper : ``P(query=True | tar=mval, smoke=xval)``.
-
-    Byte-identique a PyMC-05 cellule 20.
-    """
-    return enumerate_scm(
-        nodes,
-        query,
-        evidence={m_name: mval, x_name: xval},
-    )
-
-
-# ---------------------------------------------------------------------------
-# SCM front-door canonique (cellule 20 PyMC-05)
-# ---------------------------------------------------------------------------
-FRONT_DOOR_SCM: List[Tuple[str, Callable]] = [
-    ("u",      lambda a: 0.20),
-    ("smoke",  lambda a: 0.80 if a["u"] else 0.30),
-    ("tar",    lambda a: 0.90 if a["smoke"] else 0.10),
-    ("cancer", lambda a: (0.95 if a["u"] else 0.70) if a["tar"]
-                          else (0.50 if a["u"] else 0.05)),
+__all__ = [
+    "FRONT_DOOR_SCM",
+    "FRONT_SCM",
+    "adapt_enumerate_scm_to_backdoor",
+    "do_direct_p_cancer_given_smoke",
+    "enumerate_scm",
+    "front_door_estimate",
+    "observational_p_cancer_given_smoke",
+    "p_y_given_m_x",
 ]
 
 
@@ -176,19 +142,21 @@ def front_door_estimate() -> Tuple[float, float]:
     p_x1 = enumerate_scm(FRONT_DOOR_SCM, "smoke")
     p_x0 = 1.0 - p_x1
 
-    def p_y_given_m_x_native(mval, xval):
-        return p_y_given_m_x(FRONT_DOOR_SCM, mval, xval)
+    # Epingle le SCM front-door sur l'organe canonique. Ce n'est PAS une
+    # reimplementation : le corps appelle `pymc_causal_organs.p_y_given_m_x`.
+    def _p_y_front(mval, xval):
+        return p_y_given_m_x(mval, xval, FRONT_SCM)
 
     # inner_m : E[Y | M=m] = sum_x P(Y=1 | M=m, X=x) * P(X=x)
     # (independant de do(X) car on marginalise sur X apres conditionnement
     # sur M ; le chemin X -> Y direct est coupe par le conditionnement sur M)
     inner_m1 = (
-        p_y_given_m_x_native(True, True) * p_x1
-        + p_y_given_m_x_native(True, False) * p_x0
+        _p_y_front(True, True) * p_x1
+        + _p_y_front(True, False) * p_x0
     )
     inner_m0 = (
-        p_y_given_m_x_native(False, True) * p_x1
-        + p_y_given_m_x_native(False, False) * p_x0
+        _p_y_front(False, True) * p_x1
+        + _p_y_front(False, False) * p_x0
     )
 
     # P(M=m | do(X=x)) : tar n'a que smoke comme parent, donc

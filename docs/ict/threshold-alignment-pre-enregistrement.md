@@ -96,6 +96,6 @@ La tranche suivante, dans un commit distinct, portera :
 
 - `MyIA.AI.Notebooks/IIT/ICT-Series/ict/threshold_alignment.py` ;
 - `MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests/test_threshold_alignment.py` ;
-- `MyIA.AI.Notebooks/IIT/ICT-Series/ict/threshold_alignment_results.json`, produit par exécution réelle du module.
+- `MyIA.AI.Notebooks/IIT/ICT-Series/ict/results/threshold_alignment_results.json`, produit par exécution réelle du module.
 
 Aucun notebook ni sortie de cellule n'est modifié. Le registre [`dissociations-matrix.md`](dissociations-matrix.md) reste hors scope : le rattachement éventuel de ce résultat relève d'une tranche ultérieure de sa lane propriétaire.

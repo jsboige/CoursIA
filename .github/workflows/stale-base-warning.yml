@@ -21,7 +21,12 @@ concurrency:
 jobs:
   check-base-age:
     name: Check base branch staleness
-    runs-on: ubuntu-latest
+    # Route vers la jambe Linux auto-hebergee (#13378 tranche 5, decision ai-01
+    # 2026-09-02) : garde Python pur, sans secret. La garde same-repo ci-dessous
+    # saute les PRs de fork (pr_gate.py compte `skipped` comme OK) : aucun code de
+    # fork n'atteint le runner. Retour arriere = revert de la PR.
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
     steps:
       # Ce garde ne lit AUCUN contenu de fichier : `git rev-list --count` et
       # `git show -s --format=%ct` n'interrogent que le graphe de commits

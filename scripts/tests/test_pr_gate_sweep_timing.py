@@ -25,8 +25,16 @@ JOB_NAME = "Re-aggregate stale PR gate verdicts"
 def _extract_instrument() -> str:
     with WORKFLOW.open(encoding="utf-8") as stream:
         document = yaml.safe_load(stream)
-    step = document["jobs"]["sweep"]["steps"][1]
-    assert step["if"] == "always()"
+    # L'instrument de timing est l'unique etape `if: always()` -- localisee
+    # par contenu, pas par index (une etape d'amorcage precede desormais le
+    # selecteur, #14267).
+    candidates = [
+        s
+        for s in document["jobs"]["sweep"]["steps"]
+        if s.get("if") == "always()"
+    ]
+    assert len(candidates) == 1, "expected exactly one if: always() step"
+    step = candidates[0]
     run = step["run"]
     assert "jobs?filter=latest&per_page=100" in run
     assert "jobs?filter=all" not in run

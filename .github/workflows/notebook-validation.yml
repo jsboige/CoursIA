@@ -9,6 +9,10 @@ on:
     branches: [ main ]
     paths:
       - '**.ipynb'
+  # Manual revalidate after a merge batch (issue #13861):
+  # `cancel-in-progress` cancels each PR's run on the next push, leaving the
+  # final tree of a merge batch un-revalidated. `workflow_dispatch` is the
+  # only way to revalidate the final tree without an empty commit.
   workflow_dispatch:
 
 permissions:
@@ -20,7 +24,12 @@ concurrency:
 
 jobs:
   validate-notebooks:
-    runs-on: ubuntu-latest
+    # Route vers la jambe Linux auto-hebergee (#13378 tranche 5, decision ai-01
+    # 2026-09-02) : garde Python pur, sans secret. La garde same-repo ci-dessous
+    # saute les PRs de fork (pr_gate.py compte `skipped` comme OK) : aucun code de
+    # fork n'atteint le runner. Retour arriere = revert de la PR.
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
 
     steps:
     - uses: actions/checkout@v4

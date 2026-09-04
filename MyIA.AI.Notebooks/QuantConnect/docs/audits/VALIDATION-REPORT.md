@@ -98,7 +98,7 @@
 | # | Notebook | Statut | Notes |
 |---|----------|--------|-------|
 | 22 | QC-Py-22-Deep-Learning-LSTM | ✅ VALIDE | TensorFlow/Keras, CPU-first design |
-| 23 | QC-Py-23-Attention-Transformers | ✅ VALIDE | Transformers, attention mechanisms |
+| 23 | QC-Py-23-State-Space-Models | ✅ VALIDE | State Space Models (S4, Mamba) pour séries temporelles |
 | 24 | QC-Py-24-Autoencoders-Anomaly | ✅ VALIDE | Autoencoders, anomaly detection |
 
 **Recommandations** :
