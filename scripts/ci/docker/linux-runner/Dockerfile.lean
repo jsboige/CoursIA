@@ -38,8 +38,11 @@ RUN echo "${ELAN_SHA256}  /tmp/elan.tar.gz" | sha256sum -c - \
 # (style rustup), ~/.elan doit appartenir a runner pour que les toolchains
 # telecharges au runtime soient accessibles sous l'UID 1001 du conteneur.
 USER runner
+# ENV AVANT le RUN : --no-modify-path laisse ~/.elan/bin hors du PATH du shell,
+# donc le meme RUN ne retrouverait pas `elan` sans cette ligne (mesure :
+# "/bin/sh: 1: elan: not found", exit 127).
+ENV PATH=/home/runner/.elan/bin:$PATH
 RUN /tmp/elan-init -y --no-modify-path --default-toolchain stable \
     && rm /tmp/elan-init \
     && elan default stable \
     && lake --version
-ENV PATH=/home/runner/.elan/bin:$PATH
