@@ -6,6 +6,25 @@ name: QC research monitor
 # (144 IDs amortces dans docs/qc/qc-research-seeded.json, 0 issue) : ce cron ne couvre
 # que le flux NOUVEAU, cap 5 issues/run. Les ~143 articles pre-existants restent
 # semables a la demande par ai-01/workers (gh issue create manuel ou --max-issues eleve).
+#
+# Modele de livraison : long-lived PR (pattern #10136, replica de catalog-cron.yml)
+# ------------------------------------------------------------------------------
+# Ce workflow NE pousse JAMAIS directement sur main. Le status check `PR gate`
+# est requis par la protection de branche pour TOUT push sur main, et un
+# declencheur `schedule:` ne le fait jamais tourner (il ne se declenche que sur
+# `pull_request`) : github-actions[bot] est donc rejete GH006 / "Required status
+# check 'PR gate' is expected" a chaque run (#10136, run 31293765051,
+# 2026-08-09T04:03Z ; constate ici-meme sur les runs 32690576863 puis 33357613330
+# — le fix race #13668 corrigeait le non-fast-forward, pas cette barriere, et le
+# bloc retry mal-diagnostiquait GH006 en "main a avance").
+# A la place : commit de l'etat sur la branche longue chore/qc-research-state-pending
+# (re-enracinee sur origin/main a chaque run, force-with-lease, mono-ecrivain bot),
+# puis ouverture/mise a jour d'une PR via github-script — le toggle #10331 option 1
+# ("Allow GitHub Actions to create and approve pull requests") etant actif (PR
+# catalog #14447 ouverte par app/github-actions le 2026-09-03). La PR passe par le
+# PR gate normal ; un mainteneur la merge. Pas de [skip ci] dans le commit : il
+# supprimerait le jeu de checks requis sur la PR longue et la bloquerait BLOCKED
+# indefiniment (#10421).
 
 on:
   schedule:
@@ -20,6 +39,7 @@ on:
 permissions:
   issues: write
   contents: write
+  pull-requests: write   # ouverture/maj de la PR d'etat via github-script
 
 concurrency:
   group: qc-research-monitor
@@ -34,7 +54,26 @@ jobs:
     # Retour arriere = remettre `runs-on: ubuntu-latest` + retrait de l'allowlist.
     runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: true
+
+      # Re-enraciner la branche longue sur origin/main (reset, pas rebase) :
+      # le commit d'etat est deterministe et la branche est une vue materialisee
+      # mono-ecrivain bot — l'ancien commit n'a pas d'etat cure a preserver. Le
+      # re-root supprime aussi la race du SHA fige au declenchement (#12834
+      # partie 2) : le travail part toujours d'un main courant. Force-with-lease
+      # honnete : le fetch materialise refs/remotes/origin/$BRANCH juste avant
+      # le push, qui refuse si quelqu'un a pousse entre les deux.
+      - name: Prepare chore/qc-research-state-pending branch
+        run: |
+          set -euo pipefail
+          BRANCH="chore/qc-research-state-pending"
+          git fetch origin main
+          git checkout -B "$BRANCH" origin/main
+          echo "Working on branch: $(git rev-parse --abbrev-ref HEAD) at $(git rev-parse --short HEAD)"
 
       - uses: actions/setup-python@v5
         with:
@@ -48,36 +87,103 @@ jobs:
           MAX="${{ github.event.inputs.max_issues || '5' }}"
           python scripts/notebook_tools/qc_research_monitor.py --max-issues "$MAX"
 
-      - name: Commit updated seed state
+      - name: Commit + push seed state to chore/qc-research-state-pending
+        id: state
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          set -euo pipefail
+          BRANCH="chore/qc-research-state-pending"
           git add docs/qc/qc-research-seeded.json
           if git diff --cached --quiet; then
-            echo "etat inchange, rien a committer"
-          else
-            git commit -m "chore(qc-research,#11698): etat semis monitor [skip ci]"
-            # Race push-main (#12834 partie 2) : le checkout porte le SHA fige au
-            # DECLENCHEMENT schedule ; a ~65 merges/jour, une queue de 3h+ rend le
-            # push non-fast-forward (run 32690576863 : declenche 04:35, runner 08:08,
-            # push rejete -> etat JSON stale -> re-semis en double garanti au run
-            # suivant). Le commit est deterministe : rebase sans conflit legitime.
-            MAX_RETRIES=3
-            attempt=1
-            until git push 2>&1; do
-              if [ "$attempt" -ge "$MAX_RETRIES" ]; then
-                echo "push ECHOUE apres $MAX_RETRIES tentatives -- etat semis NON committe, le prochain run re-activera le dedup (#12834 partie 1)"
-                exit 1
-              fi
-              echo "push REJECTED tentative $attempt/$MAX_RETRIES -- main a avance pendant la queue, re-synchronisation"
-              sleep $((5 * attempt * attempt))   # 5 s puis 20 s (backoff quadratique, 3 essais)
-              attempt=$((attempt + 1))
-              git fetch origin main
-              if ! git rebase origin/main; then
-                echo "rebase CONFLICT -- abandon (commit deterministe : un conflit signale un etat corrompu)"
-                git rebase --abort
-                exit 1
-              fi
-            done
-            echo "push SUCCESS (tentative $attempt)"
+            echo "::notice title=QC-research::etat semis inchange -- rien a livrer."
+            echo "state_drift=false" >> "$GITHUB_OUTPUT"
+            exit 0
           fi
+          echo "state_drift=true" >> "$GITHUB_OUTPUT"
+          echo "Etat semis modifie :"
+          git diff --cached --name-only
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # Pas de [skip ci] : cf en-tete (#10421) — il tuerait le jeu de checks
+          # requis sur la PR longue.
+          git commit \
+            -m "chore(qc-research,#11698): etat semis monitor" \
+            -m "Dedup durable des articles semes (le dedup par issues existantes reste la verite terrain au runtime, #12834 partie 1)." \
+            -m "Livraison long-lived PR ; le bot ne pousse jamais sur main (#10136)."
+
+          git fetch origin "+refs/heads/$BRANCH:refs/remotes/origin/$BRANCH" || true
+          if ! git push --force-with-lease origin "HEAD:$BRANCH"; then
+            echo "::error title=QC-research push rejete::push $BRANCH echoue (lease ou droits). Re-executer le workflow ; si cela se repete, inspecter la pointe de branche."
+            exit 1
+          fi
+          echo "::notice title=QC-research::$BRANCH poussee ; ouverture/maj PR a l'etape suivante."
+
+      # Ouvrir la PR d'etat si absente, sinon ping un mainteneur sur l'existante.
+      # La PR est ce qui porte l'etat sur main — le bot ne pousse JAMAIS sur main.
+      - name: Open or update the qc-research state PR
+        if: steps.state.outputs.state_drift == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const branch = 'chore/qc-research-state-pending';
+            const prTitle = 'chore(qc-research): etat semis monitor (long-lived PR)';
+            const prBody = [
+              '## Purpose',
+              '',
+              'Long-lived PR rafraichie par `qc-research-monitor.yml` (schedule lundi 04:23 UTC) pour',
+              'committre sur `main` l\'etat de dedup `docs/qc/qc-research-seeded.json` (IDs des articles',
+              '`quantconnect.com/research/` deja semes en sous-issues, Epic #11698).',
+              '',
+              '**Maintainer review only — pas de push direct sur `main`** (#10136 : GH006, `PR gate`',
+              'requis, jamais execute sur un declencheur `schedule:`). Le bot ouvre ou met a jour cette',
+              'PR ; le merge rafraichit `main` par le PR gate normal.',
+              '',
+              '## What to review',
+              '',
+              '- `docs/qc/qc-research-seeded.json` : uniquement des IDs d\'articles ajoutes au dict `seeded`,',
+              '  un par sous-issue creee ce run (cap 5). Aucun autre fichier ne doit apparaitre.',
+              '- Si le diff touche autre chose, ne pas merger — la branche est bot-owned et re-enracinee',
+              '  sur `origin/main` a chaque run (cf `catalog-pr-hygiene.md` pour la regle generale).',
+              '',
+              '## Close policy',
+              '',
+              'Sans nouvel article semé, le workflow n\'emmet rien (`::notice ... etat semis inchange`)',
+              'et cette PR attend le prochain drift. Fermeture manuelle acceptable si la file gene ;',
+              'le prochain drift la recree sous la meme branche.',
+              '',
+              'See #11698, #10136, #12834.',
+            ].join('\n');
+
+            const existing = await github.paginate(github.rest.pulls.list, {
+              owner, repo, state: 'open', head: `${owner}:${branch}`, per_page: 1,
+            });
+            if (existing.length > 0) {
+              const pr = existing[0];
+              await github.rest.issues.createComment({
+                owner, repo,
+                issue_number: pr.number,
+                body: [
+                  `Nouveau commit pousse sur \`${branch}\` par qc-research-monitor (run \`${context.runId}\`).`,
+                  `Dernier SHA : \`${context.sha.slice(0, 12)}\`.`,
+                  'Etat semis drift ; le bot n\'a rien d\'autre a faire ici. Mainteneur : review + merge quand convenable.',
+                ].join('\n'),
+              });
+              core.info(`PR existante mise a jour #${pr.number} (${pr.html_url})`);
+              return;
+            }
+
+            const created = await github.rest.pulls.create({
+              owner, repo,
+              title: prTitle,
+              head: branch,
+              base: 'main',
+              body: prBody,
+              maintainer_can_modify: true,
+            });
+            await github.rest.issues.addLabels({
+              owner, repo,
+              issue_number: created.data.number,
+              labels: ['automation'],
+            });
+            core.info(`Nouvelle PR ouverte #${created.data.number} (${created.data.html_url})`);
