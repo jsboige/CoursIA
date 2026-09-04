@@ -1390,7 +1390,7 @@ DEMOS = {
     39: {
         "name": "CALIBRATION_CONWAY_NIM_WINNING_345",
         "file": str(CONWAY_NIM_FILE) if CONWAY_NIM_FILE else "",
-        "line": 42,
+        "line": 57,
         "sorry_type": "sorry_replacement",
         "theorem_name": "isWinningNim_345",
         "theorem": "isWinningNim_345",
@@ -1407,7 +1407,7 @@ DEMOS = {
     40: {
         "name": "CALIBRATION_CONWAY_NIM_SUM_SINGLE",
         "file": str(CONWAY_NIM_FILE) if CONWAY_NIM_FILE else "",
-        "line": 46,
+        "line": 61,
         "sorry_type": "sorry_replacement",
         "theorem_name": "nimSum_single",
         "theorem": "nimSum_single",
@@ -1424,7 +1424,7 @@ DEMOS = {
     41: {
         "name": "CALIBRATION_CONWAY_NIM_SUM_SELF",
         "file": str(CONWAY_NIM_FILE) if CONWAY_NIM_FILE else "",
-        "line": 50,
+        "line": 65,
         "sorry_type": "sorry_replacement",
         "theorem_name": "nimSum_self",
         "theorem": "nimSum_self",
@@ -1442,7 +1442,7 @@ DEMOS = {
     42: {
         "name": "CALIBRATION_CONWAY_ANGEL_KING_MOVES",
         "file": str(CONWAY_ANGEL_FILE) if CONWAY_ANGEL_FILE else "",
-        "line": 47,
+        "line": 59,
         "sorry_type": "sorry_replacement",
         "theorem_name": "kingMoves_card",
         "theorem": "kingMoves_card",
@@ -1457,7 +1457,7 @@ DEMOS = {
     43: {
         "name": "CALIBRATION_CONWAY_ANGEL_POWER2",
         "file": str(CONWAY_ANGEL_FILE) if CONWAY_ANGEL_FILE else "",
-        "line": 51,
+        "line": 63,
         "sorry_type": "sorry_replacement",
         "theorem_name": "angelMoves2_card",
         "theorem": "angelMoves2_card",
@@ -1472,7 +1472,7 @@ DEMOS = {
     44: {
         "name": "CALIBRATION_CONWAY_ANGEL_CARD_FORMULA",
         "file": str(CONWAY_ANGEL_FILE) if CONWAY_ANGEL_FILE else "",
-        "line": 58,
+        "line": 69,
         "sorry_type": "sorry_replacement",
         "theorem_name": "angelMoves_card",
         "theorem": "angelMoves_card",
@@ -1488,7 +1488,7 @@ DEMOS = {
     45: {
         "name": "CALIBRATION_CONWAY_DOOMSDAY_LEAP_2000",
         "file": str(CONWAY_DOOMSDAY_FILE) if CONWAY_DOOMSDAY_FILE else "",
-        "line": 25,
+        "line": 31,
         "sorry_type": "sorry_replacement",
         "theorem_name": "isLeapYear_2000",
         "theorem": "isLeapYear_2000",
@@ -1503,7 +1503,7 @@ DEMOS = {
     46: {
         "name": "CALIBRATION_CONWAY_DOOMSDAY_LEAP_1900",
         "file": str(CONWAY_DOOMSDAY_FILE) if CONWAY_DOOMSDAY_FILE else "",
-        "line": 29,
+        "line": 35,
         "sorry_type": "sorry_replacement",
         "theorem_name": "isLeapYear_1900",
         "theorem": "isLeapYear_1900",
@@ -1518,7 +1518,7 @@ DEMOS = {
     47: {
         "name": "CALIBRATION_CONWAY_DOOMSDAY_LEAP_2024",
         "file": str(CONWAY_DOOMSDAY_FILE) if CONWAY_DOOMSDAY_FILE else "",
-        "line": 33,
+        "line": 39,
         "sorry_type": "sorry_replacement",
         "theorem_name": "isLeapYear_2024",
         "theorem": "isLeapYear_2024",
@@ -1533,7 +1533,7 @@ DEMOS = {
     48: {
         "name": "CALIBRATION_CONWAY_DOOMSDAY_CONWAY_DEATH",
         "file": str(CONWAY_DOOMSDAY_FILE) if CONWAY_DOOMSDAY_FILE else "",
-        "line": 38,
+        "line": 44,
         "sorry_type": "sorry_replacement",
         "theorem_name": "dayOfWeek_conway_death",
         "theorem": "dayOfWeek_conway_death",
@@ -1549,7 +1549,7 @@ DEMOS = {
     49: {
         "name": "CALIBRATION_CONWAY_DOOMSDAY_ADD_SEVEN",
         "file": str(CONWAY_DOOMSDAY_FILE) if CONWAY_DOOMSDAY_FILE else "",
-        "line": 43,
+        "line": 49,
         "sorry_type": "sorry_replacement",
         "theorem_name": "dayOfWeek_add_seven",
         "theorem": "dayOfWeek_add_seven",
@@ -1566,7 +1566,7 @@ DEMOS = {
     50: {
         "name": "CALIBRATION_CONWAY_LAS_DIGITS_EXAMPLE",
         "file": str(CONWAY_LOOKANDSAY_FILE) if CONWAY_LOOKANDSAY_FILE else "",
-        "line": 25,
+        "line": 32,
         "sorry_type": "sorry_replacement",
         "theorem_name": "digitsToNat_example",
         "theorem": "digitsToNat_example",
@@ -1581,7 +1581,7 @@ DEMOS = {
     51: {
         "name": "CALIBRATION_CONWAY_LAS_LOOKANDSAY_4",
         "file": str(CONWAY_LOOKANDSAY_FILE) if CONWAY_LOOKANDSAY_FILE else "",
-        "line": 29,
+        "line": 36,
         "sorry_type": "sorry_replacement",
         "theorem_name": "lookAndSay_4",
         "theorem": "lookAndSay_4",
@@ -1597,7 +1597,7 @@ DEMOS = {
     52: {
         "name": "CALIBRATION_CONWAY_LAS_ROUND_TRIP",
         "file": str(CONWAY_LOOKANDSAY_FILE) if CONWAY_LOOKANDSAY_FILE else "",
-        "line": 34,
+        "line": 41,
         "sorry_type": "sorry_replacement",
         "theorem_name": "digitsToNat_natToDigits",
         "theorem": "digitsToNat_natToDigits",
