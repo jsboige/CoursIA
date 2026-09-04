@@ -3,8 +3,9 @@ r"""Tests de l'installateur de tache planifiee prune (#14473).
 
 Pinent :
 1. la garde de securite : --install REFUSE si le script cible ne contient
-   pas le fix #14476 (_normalize_subject) -- un cron --apply quotidien ne
-   doit JAMAIS deployer l'attribution fausse par intersection de jetons ;
+   pas le fix #14476 (resolution par numero + _normalize, cf #14481) --
+   un cron --apply quotidien ne doit JAMAIS deployer l'attribution
+   fausse par intersection de jetons ;
 2. l'idempotence : schtasks /Create /F (relançable sans doublon) ;
 3. la commande de tache appelle bien --run (le mode journalisant) avec le
    --repo explicit, et l'organe en --apply vient de cmd_run seulement ;
@@ -42,11 +43,42 @@ class TestPruneFixGuard:
     def test_accepte_quand_le_fix_est_present(self, tmp_path):
         repo = tmp_path / "CoursIA"
         (repo / "scripts" / "ci").mkdir(parents=True)
+        # extrait fidele des DEUX voies du fix #14481 telles que mergees
+        # (le marqueur historique _normalize_subject etait une fixture
+        # circulaire : le test ecrivait lui-meme le symbole attendu)
         (repo / "scripts" / "ci" / "prune_merged_worktrees.py").write_text(
-            "def _normalize_subject(s):\n    return s.lower()\n",
+            "# 1. Resolution directe par numero extractible du sujet\n"
+            "def lookup_pr_for_detached_head():\n"
+            "    def _normalize(s: str) -> str:\n"
+            "        return s.strip().lower()\n"
+            "    return None\n",
             encoding="utf-8")
         ok, _ = ipt.check_prune_fix_present(repo)
         assert ok
+
+    def test_refuse_si_une_seule_voie_du_fix_est_presente(self, tmp_path):
+        """Un seul des deux marqueurs (ex : _normalize sans la resolution
+        par numero) ne doit pas suffire -- la voie 1 est la protection
+        principale contre l'attribution fausse."""
+        repo = tmp_path / "CoursIA"
+        (repo / "scripts" / "ci").mkdir(parents=True)
+        (repo / "scripts" / "ci" / "prune_merged_worktrees.py").write_text(
+            "def _normalize(s: str) -> str:\n    return s.strip().lower()\n",
+            encoding="utf-8")
+        ok, msg = ipt.check_prune_fix_present(repo)
+        assert not ok
+        assert "Resolution directe par numero" in msg
+
+    def test_garde_accepte_le_vrai_fichier_du_depot(self):
+        """Anti-dérive : la garde doit rester satisfaisable par le VRAI
+        scripts/ci/prune_merged_worktrees.py du depot (incident 2026-09-04 :
+        le marqueur '_normalize_subject' ne correspondait a aucun symbole
+        merge -- refus perpetual, meme sur main frais). Si ce test echoue,
+        un refactor a renomme les voies du fix : resynchroniser
+        REQUIRED_FIX_MARKERS."""
+        repo = Path(__file__).resolve().parents[2]
+        ok, msg = ipt.check_prune_fix_present(repo)
+        assert ok, f"la garde refuse le fichier reel du depot : {msg}"
 
     def test_refuse_si_le_script_est_absent(self, tmp_path):
         ok, msg = ipt.check_prune_fix_present(tmp_path)
