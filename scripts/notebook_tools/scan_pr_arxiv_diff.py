@@ -15,7 +15,9 @@ import sys
 from pathlib import Path
 
 ARXIV_RE = re.compile(r"\barXiv:\s*(\d{4}\.\d{4,5})\b")
-ARXIV_RE_LEGACY = re.compile(r"\barXiv:\s*(?:[a-z\-]+(?:\.[A-Z]{2})?/)?(\d{7})\b")
+# Le préfixe d'archive fait partie de l'ID legacy (bare 7 chiffres = 400 API,
+# #14435 rem. 3) — la capture l'inclut quand il est présent.
+ARXIV_RE_LEGACY = re.compile(r"\barXiv:\s*((?:[a-z\-]+(?:\.[A-Z]{2})?/)?\d{7})\b")
 
 
 def run(cmd, cwd=None):
@@ -76,7 +78,7 @@ def extract_arxiv_from_text(text):
         ids.add(m.group(1))
     for m in ARXIV_RE_LEGACY.finditer(text):
         aid = m.group(1)
-        if len(aid) == 7:
+        if len(aid.rsplit("/", 1)[-1]) == 7:
             ids.add(aid)
     return ids
 

@@ -155,7 +155,10 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     "orphan-branch-scan.yml",
     "outputs-text-fragmentation-advisory.yml",
     "pedagogy-density-advisory.yml",
-    "pr-gate-missing-advisory.yml",
+    # pr-gate-missing-advisory.yml : supprime par #14477 -- sa detection est
+    # repliee comme etape du sweep ci-dessous (design-gate ai-01 : "meme
+    # population, meme requete ; seule la branche de remediation differe.
+    # Ne pas creer un troisieme organe").
     "pr-gate-sweep-health-advisory.yml",
     "pr-path-collision-advisory.yml",
     "qc-research-monitor.yml",
@@ -226,6 +229,16 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   pour les forks PRs qui se font skipper proprement par pr_gate.
     #   Rollback = revert de cette PR (l'entree disparait de l'allowlist).
     "notebook-link-render-check.yml",
+    # tranche 7 (acceptance 3 #11703, owner myia-po-2027:CoursIA) : garde
+    #   advisory pur-Python declenchee sur pull_request filtrant les
+    #   `**/*_lean/**/*.lean`, mode --pr-base de l'organe canonique
+    #   scan_lake_notebook_visibility.py (diff 3-points, DECL_RE partage --
+    #   aucune reimplementation), pose une paire de labels signes (drift /
+    #   unmeasured), jamais exit != 0. Meme profil que la tranche 6 :
+    #   stdlib-only, aucun GITHUB_TOKEN hors gh label/pr edit, garde same-repo
+    #   au niveau job pour les forks. Rollback = revert de la PR (l'entree
+    #   disparait de l'allowlist).
+    "lean-visibility-advisory.yml",
 }
 GITHUB_HOSTED_LABELS = {
     "ubuntu-latest",

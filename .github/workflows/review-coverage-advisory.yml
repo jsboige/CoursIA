@@ -40,7 +40,8 @@ on:
 permissions:
   # Labels sur PR (gh pr edit) = pull-requests: write ; commentaires et creation
   # de labels (gh pr comment / gh label create) = issues: write. Meme set que
-  # pr-gate-missing-advisory.yml / lane-claim-guard.yml / variation-tag-guard.yml.
+  # pr-gate-stale-sweep.yml (gate-absent step, #14477) / lane-claim-guard.yml
+  # / variation-tag-guard.yml.
   pull-requests: write
   issues: write
 

@@ -1510,6 +1510,117 @@ def test_11985_enumeration_tail_without_named_file_still_blocks():
     assert cand.blocking is True
 
 
+# ---------------------------------------------------------------------------
+# #14384 -- the forme-1 neighborhood. (A) the enumeration exemption held to
+# PUNCTUATION, not semantics: the same just enumeration with ", plus" / ",
+# et" / ", ainsi que" instead of "+" stayed blocking -- widened to a closed
+# connector set, named-file anchor kept. (B) the additive sum was blind to
+# word-form cardinals while _word_form_count saw them -- the two halves of
+# the organ now agree at line scope (shared WORD_FORM_TRIGGERS).
+# Measured AFTER #14438/#14454: "un/une" are articles, not cardinals, so
+# the issue's L3 extracts nothing and L5's "un fichier" term is invisible
+# BY DESIGN (reproducteur #14430) -- the surviving fixable defects are the
+# connectors and the sum, pinned here at the post-#14454 vocabulary. The
+# six #11985 forms and its positive controls stay pinned by the tests above.
+# ---------------------------------------------------------------------------
+
+
+def test_14384_five_literal_lines_at_head():
+    """Recette 1: the issue's five table lines, literally, with the behavior
+    fixed at HEAD (post-#14454 vocabulary)."""
+    assert _count_is_incidental(
+        "check_twin_parity.py (_shas_match) + 2 fichiers de tests"
+    ) is True
+    assert _count_is_incidental(
+        "variation_light_cap.py (+100/-0) + 1 fichier de tests"
+    ) is True
+    # L3: post-#14454 "un fichier" is an article -> no count extracted at
+    # all (the pre-#14438 word_count=1 reading is superseded by #14438).
+    assert extract_perimeter_assertions(
+        "variation_light_cap.py (+100/-0), plus un fichier de tests neuf."
+    ) == []
+    # L4: two digits already sum exactly (unchanged by this fix).
+    assert _additive_line_sum("1 fichier modifie, 1 fichier de tests neuf.") == 2
+    # L5: "un fichier" is invisible as a count (#14438) -> declared 1, the
+    # escape for a counted file + article term is the digit form or naming.
+    assert _additive_line_sum(
+        "1 fichier modifie, plus un fichier de tests neuf."
+    ) == 1
+    assert _count_is_incidental(
+        "1 fichier modifie, plus un fichier de tests neuf."
+    ) is False
+
+
+def test_14384_A_widened_connectors_are_incidental_with_named_file():
+    """(A): ', plus' / ', et' / ', ainsi que' between a NAMED file and an
+    'N fichiers de tests' tail classify like the '+' form -- SIGNAL, not
+    blocking (the sub-sum can never be validated by the confrontation)."""
+    for line in [
+        "variation_light_cap.py (+100/-0), plus 2 fichiers de tests neufs.",
+        "variation_light_cap.py (+100/-0), et 1 fichier de test neuf.",
+        "variation_light_cap.py (+100/-0), ainsi que 3 fichiers de tests.",
+    ]:
+        cand = Candidate(line, "body", "author", "body")
+        assert cand.blocking is False, line[:60]
+
+
+def test_14384_A_connector_without_named_file_still_blocks():
+    """(A) garde-fou: without the named-file anchor the exemption would
+    swallow sub-sums that enumerate nothing -- a bare connector line stays
+    authorial."""
+    line = "1 fichier de tests modifie, et 1 autre fichier"
+    cand = Candidate(line, "body", "author", "body")
+    assert cand.blocking is True
+
+
+def test_14384_A_word_form_tail_is_not_exempt():
+    """(A)+(B) recette 2 -- the exemption stays DIGIT-only: a word-form
+    enumeration tail joins the additive sum and is confronted, so the
+    exemption can re-close (the issue's re-closing mutation, expressed in
+    the post-#14438 vocabulary)."""
+    line = "variation_light_cap.py (+100/-0), plus trois fichiers de tests neufs."
+    cand = Candidate(line, "body", "author", "body")
+    assert cand.blocking is True
+
+
+def test_14384_B_word_form_joins_additive_sum():
+    """(B): '1 fichier modifie, plus deux fichiers de tests' declares
+    1 + 2 = 3 -- the sum was 1 (digit-only), contradicting the docstring
+    agreement of the organ's two halves."""
+    assert _additive_line_sum(
+        "1 fichier modifie, plus deux fichiers de tests neufs."
+    ) == 3
+    assert _additive_line_sum("deux fichiers de tests neufs.") == 2
+
+
+def test_14384_B_rescue_and_reclose_end_to_end():
+    """(B) recette 2, both directions: the just enumeration passes, the
+    count-mutation blocks again."""
+    files = [{"path": "a.py"}, {"path": "b.py"}, {"path": "c.py"}]
+    assert check_assertion(
+        files, "1 fichier modifie, plus deux fichiers de tests neufs."
+    ) == []
+    assert check_assertion(
+        files, "1 fichier modifie, plus trois fichiers de tests neufs."
+    ) != []
+
+
+def test_14384_A_digit_line_silent_word_mutation_recloses():
+    """(A) recette 2 end-to-end: the widened digit line stays incidental
+    (silent sub-sum), its word-form mutation on a 2-file perimeter speaks
+    again (1 named + trois = 4 != 2 via the word branch)."""
+    files = [{"path": "scripts/notebook_tools/variation_light_cap.py"},
+             {"path": "scripts/tests/test_variation_light_cap.py"}]
+    silent = Candidate(
+        "variation_light_cap.py (+100/-0), plus 2 fichiers de tests neufs.",
+        "body", "author", "body",
+    )
+    assert silent.blocking is False
+    assert check_assertion(
+        files, "variation_light_cap.py (+100/-0), plus trois fichiers de tests neufs."
+    ) != []
+
+
 def test_11985_form_produced_artifacts_is_incidental():
     """#11956: '2 fichiers audio generes, HTTP/1.1 200 OK' attests REAL
     EXECUTION -- the artifacts are cell outputs, not repo files (real PR:
