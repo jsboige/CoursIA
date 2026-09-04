@@ -1,0 +1,107 @@
+name: dotnet-Shared-Tests
+
+# Famille 1/6 de #14615 (tranche 2-7 de #13746) — MyIA.AI.Shared.Tests :
+# 8 fichiers .cs jamais exécutés en CI (advisory .NET #5214 : la CI ne
+# peut pas Papermill-exécuter les notebooks .NET Interactive, mais CES
+# tests unitaires xunit n'ont jamais eu de workflow non plus).
+#
+# Bornes mesurées firsthand (worktree origin/main 3881b766a, 2026-09-04,
+# SDK 9.0.317 local) :
+#   - `dotnet test MyIA.AI.Shared.Tests/MyIA.AI.Shared.Tests.csproj` =
+#     **56 tests, 0 échec** (482 ms) — baseline verte avant câblage.
+#   - Dépendances : xunit 2.9.2 + Microsoft.NET.Test.Sdk 17.12.0 +
+#     ProjectReference ../MyIA.AI.Shared — zéro service externe, zéro
+#     secret, exécutable sur runner éphémère.
+#   - Le projet est déjà référencé dans MyIA.AI.Shared.sln ET
+#     MyIA.CoursIA.sln (vérifié grep : 1 occurrence chacun) — aucune
+#     adaptation .sln nécessaire malgré la mention #5214.
+#
+# Matrix Linux+Windows dès le premier câblage : exigence explicite du
+# dispatch #14615 famille 1 (différent de la philosophie single-first
+# de gametheory-tests.yml — ici le dispatch tranche). Le coût marginal
+# d'un OS supplémentaire sur une suite de 482 ms est nul.
+#
+# Pièges évités (même garde-fous que la tranche 1/#14614) :
+# - **Pas** de modification de scripts-tests.yml (pas un testpath pytest
+#   — path textuel absent du débat ici, la famille est .NET).
+# - **Pas** de composite : familles 2-6 de #14615 restent hors de cette
+#   PR (G.4 strict).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'MyIA.AI.Shared/**'
+      - 'MyIA.AI.Shared.Tests/**'
+      - '.github/workflows/dotnet-Shared.Tests.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'MyIA.AI.Shared/**'
+      - 'MyIA.AI.Shared.Tests/**'
+      - '.github/workflows/dotnet-Shared.Tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dotnet-shared-tests-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  dotnet-shared-tests:
+    name: Shared.Tests dotnet (${{ matrix.os }}, 56 floor)
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    env:
+      # Floor mesuré firsthand — baseline 2026-09-04 (56 tests). Quand des
+      # tests sont retirés INTENTIONNELLEMENT, ajuster cette valeur dans la
+      # même PR (le message d'erreur du guard la nomme).
+      SHARED_TESTS_DOTNET_FLOOR: 56
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+          cache: true
+          cache-dependency-path: MyIA.AI.Shared.Tests/MyIA.AI.Shared.Tests.csproj
+
+      - name: Run Shared.Tests
+        run: dotnet test MyIA.AI.Shared.Tests/MyIA.AI.Shared.Tests.csproj --nologo
+
+      # Compteur floor-guard (sémantique ict/gametheory-tests.yml : éviter
+      # le run vert alors que N tests ont silencieusement disparu du chemin
+      # de collecte). `dotnet test --list-tests` liste un FQN par ligne
+      # indentée de 4 espaces — c'est l'équivalent .NET du
+      # `pytest --collect-only`. L'extraction est VOLONTAIREMENT sans
+      # ancre d'en-tête : l'en-tête est LOCALISÉ (« Les tests suivants
+      # sont disponibles » sur un poste FR — constaté firsthand au
+      # développement de ce garde) ; les lignes de build/restore ne
+      # portent pas d'indentation 4-espaces + identifiant, donc le
+      # pattern `^    [A-Za-z_]` est locale-proof et CRLF-tolerant. On
+      # rejette la liste vide (panne de collecte) comme un compte sous
+      # le plancher (régression de couverture) : deux signaux, exit 1.
+      - name: Collection floor-guard (56)
+        if: always()
+        shell: bash
+        env:
+          DOTNET_CLI_UI_LANGUAGE: en
+        run: |
+          LISTED=$(dotnet test MyIA.AI.Shared.Tests/MyIA.AI.Shared.Tests.csproj --list-tests --nologo 2>/dev/null | grep -cE '^    [A-Za-z_]')
+          if [ -z "$LISTED" ] || [ "$LISTED" -eq 0 ]; then
+            echo "::error::--list-tests n'a renvoyé aucun test — la collecte a planté (à distinguer d'une baisse de couverture)."
+            exit 1
+          fi
+          if [ "$LISTED" -lt "$SHARED_TESTS_DOTNET_FLOOR" ]; then
+            echo "::error::Régression de couverture : $LISTED tests listés, plancher=$SHARED_TESTS_DOTNET_FLOOR."
+            echo "::error::Si la baisse est intentionnelle, ajuster SHARED_TESTS_DOTNET_FLOOR dans cette PR — le message d'erreur nomme la valeur."
+            exit 1
+          fi
+          echo "OK : $LISTED tests listés (plancher=$SHARED_TESTS_DOTNET_FLOOR)."
