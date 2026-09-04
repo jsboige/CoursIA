@@ -11,9 +11,9 @@ maturity: BETA=19, ALPHA=2
 
 Comment un agent peut-il apprendre à partir de connaissances existantes plutôt que de données brutes ? Cette série explore l'apprentissage symbolique tel que décrit dans le chapitre 19 d'AIMA (Russell & Norvig), depuis l'apprentissage inductif pur (CBH, Version Space) jusqu'aux méthodes guidées par la connaissance (EBL, RBL).
 
-Le premier notebook pose les bases : représentation d'hypothèses comme conjonctions de contraintes, algorithmes Current-Best-Hypothesis et Candidate Elimination (Version Space), et leurs limites face au bruit et aux concepts disjonctifs. Le second notebook montre comment la connaissance du domaine accélère l'apprentissage : l'apprentissage basé sur les explications (EBL) compile les théories en heuristiques opérationnelles, et l'apprentissage basé sur la pertinence (RBL) identifie les attributs déterminant via les déterminations. Le troisième notebook approfondit le RBL avec le treillis des déterminations, l'algorithme MINIMAL-CONSISTENT-DET et une comparaison avec sklearn. Le quatrième notebook couvre la programmation logique inductive (ILP) : l'algorithme FOIL (top-down), les opérateurs de résolution inverse (bottom-up) et la connexion avec les knowledge graphs, jusqu'à l'ILP moderne (Popper, Learning From Failures). SL-5 reprend et mène à terme la voie bottom-up esquissée en SL-4 (LGG de Plotkin, theta-subsomption, clause bottom par entailment inverse et recherche à la Progol), faisant directement suite à FOIL. SL-6 met quatre moteurs ILP *réels* face à face — Aleph, Metagol, Popper et ∂ILP (Lernd) — sur une même tâche récursive (`ancestor/2`), pour comparer leurs machineries (entailment inverse, MIL, Learning From Failures, gradient différentiable). Les notebooks SL-7 à SL-9 ouvrent ensuite vers des méthodes contemporaines : SL-7 introduit le neuro-symbolique (T-norms différentiables, Logic Tensor Networks, DeepProbLog) ; SL-8 outille la découverte de règles sur knowledge graphs réels avec rdflib et AMIE rule mining ; SL-9 boucle LLM et vérification symbolique pour fiabiliser le raisonnement formel guidé par modèles de langage. Enfin, deux notebooks concluent la série : SL-10 change de paradigme avec l'apprentissage *actif* (l'algorithme L* d'Angluin interroge un oracle au lieu de subir un échantillon, et apprend des automates finis avec garanties de minimalité) ; SL-11 est le capstone qui assemble toute la série en un pipeline neuro-symbolique de bout en bout — du texte brut aux faits découverts, avec un LLM réel (Gemini 3.5 Flash) aux deux extrémités et le symbolique comme colonne vertébrale. SL-12, ajouté à la série, explore un autre registre du neuro-symbolique : les *réseaux de portes logiques differentiables* (difflogic, Petersen NeurIPS 2022) — un modèle qui apprend des combinaisons de portes logiques par descente de gradient, puis se discretise en un circuit 100% booleen, interpretable-par-construction et ultra-rapide a l'inference.
+Le premier notebook pose les bases : représentation d'hypothèses comme conjonctions de contraintes, algorithmes Current-Best-Hypothesis et Candidate Elimination (Version Space), et leurs limites face au bruit et aux concepts disjonctifs. Le second notebook montre comment la connaissance du domaine accélère l'apprentissage : l'apprentissage basé sur les explications (EBL) compile les théories en heuristiques opérationnelles, et l'apprentissage basé sur la pertinence (RBL) identifie les attributs déterminant via les déterminations. Le troisième notebook approfondit le RBL avec le treillis des déterminations, l'algorithme MINIMAL-CONSISTENT-DET et une comparaison avec sklearn. Le quatrième notebook couvre la programmation logique inductive (ILP) : l'algorithme FOIL (top-down), les opérateurs de résolution inverse (bottom-up) et la connexion avec les knowledge graphs, jusqu'à l'ILP moderne (Popper, Learning From Failures). SL-5 reprend et mène à terme la voie bottom-up esquissée en SL-4 (LGG de Plotkin, theta-subsomption, clause bottom par entailment inverse et recherche à la Progol), faisant directement suite à FOIL. SL-6 met quatre moteurs ILP *réels* face à face — Aleph, Metagol, Popper et ∂ILP (Lernd) — sur une même tâche récursive (`ancestor/2`), pour comparer leurs machineries (entailment inverse, MIL, Learning From Failures, gradient différentiable). Les notebooks SL-7 à SL-9 ouvrent ensuite vers des méthodes contemporaines : SL-7 introduit le neuro-symbolique (T-norms différentiables, Logic Tensor Networks, DeepProbLog) ; SL-8 outille la découverte de règles sur knowledge graphs réels avec rdflib et AMIE rule mining ; SL-9 boucle LLM et vérification symbolique pour fiabiliser le raisonnement formel guidé par modèles de langage. Enfin, deux notebooks concluent la série : SL-10 change de paradigme avec l'apprentissage *actif* (l'algorithme L* d'Angluin interroge un oracle au lieu de subir un échantillon, et apprend des automates finis avec garanties de minimalité) ; SL-11 est le capstone qui assemble toute la série en un pipeline neuro-symbolique de bout en bout — du texte brut aux faits découverts, avec un LLM réel (Gemini 3.5 Flash) aux deux extrémités et le symbolique comme colonne vertébrale. SL-12, ajouté à la série, explore un autre registre du neuro-symbolique : les *réseaux de portes logiques differentiables* (difflogic, Petersen NeurIPS 2022) — un modèle qui apprend des combinaisons de portes logiques par descente de gradient, puis se discretise en un circuit 100% booleen, interpretable-par-construction et ultra-rapide a l'inference. SL-12b prolonge SL-12 par l'autre versant du registre discret : la **synthèse logique spectrale** (Pavlov, arXiv 2601.13953, digestion EPIC #14366 grain G2) — Fourier booléen exact (FWHT), poids ternaires de PTF, routage Sinkhorn sans surclaim, quantification puis recherche discrète (Metropolis, parallel tempering) avec oracle exact et vérité terrain exhaustive.
 
-**À qui s'adresse cette série** : étudiants en IA, informaticiens intéressés par le raisonnement symbolique, et chercheurs en apprentissage automatique souhaitant comprendre les approches non-statistiques. Les notebooks (~18h50 total — 12 Python + 8 jumeaux C# marathon parité #4956 + 1 compagnon Lean natif) ne nécessitent que Python 3.10+ standard library pour le track Python, sauf SL-3 (scikit-learn + numpy pour la comparaison RBL / information mutuelle), SL-6 (moteurs ILP réels : SWI-Prolog, Popper, Lernd) et SL-8 (rdflib pour les knowledge graphs) ; SL-9 et SL-11 acceptent une clé OpenRouter optionnelle (fichier `.env`) pour des appels LLM réels, avec un simulateur déterministe en repli ; SL-1b s'exécute sur le kernel Lean 4 `lean4-wsl` (lake `learning_theory_lean`, Mathlib). Les 8 jumeaux C# (.NET Interactive 1.4+, `Microsoft.dotnet-interactive`) sont des ré-implémentations from-scratch en C# pur des mêmes algorithmes, sans dépendance externe ML. Une familiarité avec la logique propositionnelle suffit pour SL-1 à SL-6 et SL-10 ; SL-7, SL-9 et SL-11 supposent une intuition des réseaux de neurones et des LLMs. Ils constituent un complément théorique aux séries [Tweety](../Tweety/README.md) (argumentation computationnelle), [SemanticWeb](../SemanticWeb/README.md) (représentation de connaissances) et [ML](../../ML/README.md) (apprentissage statistique - contraste avec l'inductif symbolique).
+**À qui s'adresse cette série** : étudiants en IA, informaticiens intéressés par le raisonnement symbolique, et chercheurs en apprentissage automatique souhaitant comprendre les approches non-statistiques. Les notebooks (~20h05 total — 13 Python + 8 jumeaux C# marathon parité #4956 + 1 compagnon Lean natif) ne nécessitent que Python 3.10+ standard library pour le track Python, sauf SL-3 (scikit-learn + numpy pour la comparaison RBL / information mutuelle), SL-6 (moteurs ILP réels : SWI-Prolog, Popper, Lernd), SL-8 (rdflib pour les knowledge graphs), SL-12 (difflogic + torch) et SL-12b (numpy + matplotlib pour la synthèse spectrale) ; SL-9 et SL-11 acceptent une clé OpenRouter optionnelle (fichier `.env`) pour des appels LLM réels, avec un simulateur déterministe en repli ; SL-1b s'exécute sur le kernel Lean 4 `lean4-wsl` (lake `learning_theory_lean`, Mathlib). Les 8 jumeaux C# (.NET Interactive 1.4+, `Microsoft.dotnet-interactive`) sont des ré-implémentations from-scratch en C# pur des mêmes algorithmes, sans dépendance externe ML. Une familiarité avec la logique propositionnelle suffit pour SL-1 à SL-6 et SL-10 ; SL-7, SL-9 et SL-11 supposent une intuition des réseaux de neurones et des LLMs. Ils constituent un complément théorique aux séries [Tweety](../Tweety/README.md) (argumentation computationnelle), [SemanticWeb](../SemanticWeb/README.md) (représentation de connaissances) et [ML](../../ML/README.md) (apprentissage statistique - contraste avec l'inductif symbolique).
 
 **Parité .NET** : le notebook [SL-1-LogicalLearning-Csharp.ipynb](SL-1-LogicalLearning-Csharp.ipynb) est le jumeau C# (.NET Interactive) de SL-1 — implémentation from-scratch des mêmes algorithmes (CBH + Candidate Elimination) en C# pur (type system + `HashSet<>`, pas de lib externe). Marathon parité .NET ⇄ Python (#4956).
 
@@ -44,16 +44,17 @@ Cette série montre que les deux approches ne s'opposent pas — elles se **comp
 9. **Concevoir** une boucle LLM-symbolique : extraction de règles IF-THEN depuis du texte, vérification de cohérence formelle, feedback pour l'amélioration
 10. **Implémenter** l'algorithme L* d'Angluin : table d'observation, requêtes d'appartenance et d'équivalence, apprentissage actif d'automates minimaux
 11. **Assembler** un pipeline neuro-symbolique complet : extraction LLM, oracle de validation type, mining de règles, chaînage avant avec provenance, et confrontation LLM vs KG
+12. **Calculer** le spectre de Fourier exact d'une fonction booléenne (FWHT), le distinguer des poids ternaires d'un PTF, et conduire une recherche discrète bornée (Metropolis, parallel tempering) contre un oracle exact
 
 ## Vue d'ensemble
 
 | Statistique | Valeur |
 |-------------|--------|
-| Notebooks | 21 (12 Python canoniques + 8 jumeaux C# marathon parité #4956 + 1 compagnon Lean natif) |
-| Exercices (table de pioche) | 49 |
+| Notebooks | 22 (13 Python canoniques + 8 jumeaux C# marathon parité #4956 + 1 compagnon Lean natif) |
+| Exercices (table de pioche) | 52 |
 | Kernel | Python 3 + .NET Interactive (jumeaux C#) + lean4-wsl (compagnon Lean) |
-| Durée estimée | ~1130 min (~18 h 50 : Python 11 h 20 + compagnon Lean 40 min + jumeaux C# 6 h 50) |
-| Prérequis | Python 3.10+ (standard library + sklearn pour SL-3/SL-4, rdflib pour SL-8, difflogic+torch pour SL-12, clé OpenRouter optionnelle pour SL-9/SL-11) + .NET Interactive 1.4+ pour les 8 jumeaux C# + kernel lean4-wsl (lake `learning_theory_lean`) pour SL-1b |
+| Durée estimée | ~1205 min (~20 h 05 : Python 12 h 35 + compagnon Lean 40 min + jumeaux C# 6 h 50) |
+| Prérequis | Python 3.10+ (standard library + sklearn pour SL-3/SL-4, rdflib pour SL-8, difflogic+torch pour SL-12, numpy+matplotlib pour SL-12b, clé OpenRouter optionnelle pour SL-9/SL-11) + .NET Interactive 1.4+ pour les 8 jumeaux C# + kernel lean4-wsl (lake `learning_theory_lean`) pour SL-1b |
 
 ## Parcours d'apprentissage
 
@@ -66,7 +67,7 @@ flowchart TD
     P3["<b>Phase 3 · Programmes logiques</b><br/>SL-4/5 · FOIL · résolution inverse · Progol<br/>clauses Horn + récursion"]
     P4["<b>Phase 4 · Moteurs ILP réels</b><br/>SL-6 · Aleph · Metagol · Popper · ∂ILP<br/>4 machineries comparées"]
     P5["<b>Phase 5 · Neuro-symbolique</b><br/>SL-7/8/9 · T-norms · KG mining · boucle LLM<br/>différentiable + vérifiable"]
-    P6(("<b>Phase 6 · Capstone</b><br/>SL-10/11/12 · L* actif · pipeline 6 étages · portes logiques differentiables<br/>LLM ↔ logique en boucle"))
+    P6(("<b>Phase 6 · Capstone</b><br/>SL-10/11/12/12b · L* actif · pipeline 6 étages · portes differentiables · synthèse spectrale<br/>LLM ↔ logique en boucle"))
     P1 -->|"bruit + disjonction<br/>non représentables"| P2
     P2 -->|"passer des attributs<br/>aux programmes"| P3
     P3 -->|"comparer les machineries<br/>sur une même tâche"| P4
@@ -96,7 +97,7 @@ Après avoir construit FOIL et Progol *de zéro*, SL-6 met quatre moteurs ILP **
 
 Cette phase explore les méthodes contemporaines à l'intersection du symbolique et du connexionniste. SL-7 introduit les T-norms différentiables, les prédicats neuronaux et les Logics Tensor Networks qui rendent la logique opérationnelle dans un gradient descent. SL-8 passe à l'échelle avec le rule mining réel sur des knowledge graphs construits avec rdflib (AMIE, complétion de graphes). SL-9 ferme la boucle avec LLMs : extraction de règles depuis du texte naturel, vérification symbolique des sorties, et boucles de rétroaction pour fiabiliser le raisonnement.
 
-### Phase 6 : Apprentissage actif et capstone (SL-10 à SL-12, ~195 min)
+### Phase 6 : Apprentissage actif et capstone (SL-10 à SL-12b, ~270 min)
 
 Trois notebooks concluent la série.
 
@@ -110,6 +111,8 @@ Trois notebooks concluent la série.
 **SL-12 — Réseaux de portes logiques différentiables** explore un autre angle du neuro-symbolique : les *réseaux de portes logiques differentiables* (difflogic, Petersen NeurIPS 2022) apprennent des combinaisons de portes logiques par descente de gradient sur MNIST 20×20, puis se discretisent en un circuit 100% booleen, interpretable-par-construction et ultra-rapide a l'inference.
 
 *Les courbes d'entraînement MNIST 20×20 d'un réseau de portes logiques différentiables — CrossEntropyLoss chutant de 2,3 à ~1,2 en 600 itérations, accuracy train à ~0,74 et test (pointillés rouges) à 0,79 — sont produites par la cellule 11 du notebook. Le circuit booléen final discrétisé, lui — l'objet conceptuel du notebook, le réseau de portes logiques interprétable-par-construction — est visualisable via la cellule 13 (histogramme de la distribution des prédictions après discrétisation) ; la figure de structure du circuit n'est pas embarquée ici car elle exige la ré-exécution de l'environnement difflogic pour rendre la topologie exacte des portes apprises (rendu Netzvis).*
+
+**SL-12b — Synthèse logique spectrale** prend l'autre versant du registre discret : au lieu de portes locales apprises par gradient sur un câblage fixe, il représente les fonctions booléennes dans la base de Fourier — transformée de Walsh-Hadamard **exacte** (papillon O(n·2^n), reconstruction vérifiée au bit près), coefficients exacts explicitement distingués des poids ternaires {−1,0,+1} d'un PTF, routage Sinkhorn mesuré sans jamais surclaimer une permutation sous ex-aequo, puis quantification (perte mesurée : 8/16 fonctions préservées sur n=2) et recherche discrète — Metropolis et parallel tempering à budget égal, avec rapport d'acceptation exact, oracle déterministe et vérité terrain exhaustive 3^11 = 177 147. Le pont final avec SL-12 : le spectre du circuit AND(OR(x1,x2), XNOR(x3,x4)) rend visible ce que la composition de portes locales fabrique (degré 4, coefficient dominant χ_{3,4} = +0,75).
 
 ### Parcours alternatifs
 
@@ -129,7 +132,7 @@ Pour les étudiants en informatique théorique : le cadre inductif général (SL
 
 Pour les professionnels du web sémantique et des données structurees : EBL, RBL, FOIL sur clauses Horn, puis application directe sur des knowledge graphs réels avec rdflib et AMIE. Presuppose une familiarité avec RDF/SPARQL.
 
-## Seance de restitution : la table de pioche (49 exercices)
+## Seance de restitution : la table de pioche (52 exercices)
 
 Modalite de la séance : chaque groupe choisit **un exercice** dans la table ci-dessous, le prépare, et le présente en séance. Resoudre l'exercice est le minimum attendu ; chaque exercice est assorti d'une **question-twist** (détaillée dans la cellule « Defi présentation » du notebook correspondant) qui fait partie intégrante de la présentation. Premier arrive, premier servi : annoncez votre choix pour éviter les doublons.
 
@@ -184,6 +187,9 @@ Modalite de la séance : chaque groupe choisit **un exercice** dans la table ci-
 | 47 | [SL-1b](SL-1b-LogicalLearning-Lean-Native.ipynb) | Ex. 1 — Erreur nulle contre soi-même (Lean) | Spécialiser `trueError_self` : quel quantificateur la structure `Distribution` rend-il gratuit ? |
 | 48 | [SL-1b](SL-1b-LogicalLearning-Lean-Native.ipynb) | Ex. 2 — Masse des échantillons (Lean) | `sampleWeight_sum_one` : pourquoi la Fubini discrète suffit-elle sans théorie de la mesure ? |
 | 49 | [SL-1b](SL-1b-LogicalLearning-Lean-Native.ipynb) | Ex. 3 — Symétrie du désaccord (Lean) | `trueError_comm` : que dit la symétrie sur l'interprétabilité de l'erreur comme distance ? |
+| 50 | [SL-12b](SL-12b-SpectralLogicSynthesis.ipynb) | Ex. 1 — Spectre de EXACT2 (poids de Hamming) | Degré Fourier contre degré PTF : lequel ment sur la complexité ? |
+| 51 | [SL-12b](SL-12b-SpectralLogicSynthesis.ipynb) | Ex. 2 — Sinkhorn sur ligne uniforme | Une permutation unique au coût minimal prouve-t-elle que le routage « a choisi » ? |
+| 52 | [SL-12b](SL-12b-SpectralLogicSynthesis.ipynb) | Ex. 3 — Instance séparant SA et PT | Qu'est-ce qui rend une instance « dure » pour une seule température ? |
 
 Note : dans SL-7, le premier exercice de la numérotation interne est un exemple guide ; les exercices à piocher sont Ex. 2 à Ex. 5.
 
@@ -212,6 +218,7 @@ Note : dans SL-7, le premier exercice de la numérotation interne est un exemple
 | 10 (C#) | [SL-10 - L* Angluin (Twin C#)](SL-10-ActiveAutomataLearning-Csharp.ipynb) | **Jumeau C#** — DFA, ObservationTable (S/E/T), requêtes MQ/EQ, conjecture DFA, contre-exemple (Angluin/Maler-Pnueli), oracle bruité + L* borné, forward sum-product + agrégation d'evidence from-scratch (See #4956) | 60 min |
 | 11 | [SL-11 - Capstone Neuro-Symbolique](SL-11-Capstone-NeuroSymbolic.ipynb) | Pipeline 6 étages : extraction LLM, oracle, KG, mining, inférence avec provenance, QA | 90 min |
 | 12 | [SL-12 - Réseaux de Portes Logiques Différentiables](SL-12-DifferentiableLogicGateNetworks.ipynb) | difflogic (Petersen NeurIPS 2022) : portes logiques apprises par descente de gradient, discrétisation en circuit booléen, inférence ultra-rapide | 45 min |
+| 12b | [SL-12b - Synthèse Logique Spectrale](SL-12b-SpectralLogicSynthesis.ipynb) | Fourier booléen exact (FWHT), PTF ternaires, routage Sinkhorn, quantification + Metropolis/parallel tempering avec oracle exact (Pavlov arXiv 2601.13953) (See #14366) | 75 min |
 
 ## Contenu détaillé
 
@@ -372,6 +379,19 @@ Note : dans SL-7, le premier exercice de la numérotation interne est un exemple
 
 **Référence** : Petersen et al., *Deep Differentiable Logic Gate Networks*, NeurIPS 2022 ([arXiv 2210.08277](https://arxiv.org/abs/2210.08277)).
 
+### SL-12b-SpectralLogicSynthesis.ipynb
+
+| Section | Contenu |
+|---------|---------|
+| Convention testée | True ↔ +1 (x = 2b−1), portes définies sur les signes, convention croisée bit/signes sur les 4 tables n=2 (le piège du smoke test 6/7 de l'artefact Pavlov) |
+| Walsh-Hadamard | Caractères χ_S, transformée naïve vs papillon O(n·2^n), reconstruction exacte (f = H(D f̂), sans division), spectres MAJ3/PARITE3/ET3/OU3 + Parseval |
+| Fourier vs PTF | Coefficients exacts contre poids ternaires {−1,0,+1} : énumeration exhaustive 3^4=81 sur n=2 (16/16 représentables, degrés qui divergent), quantification naïve 8/16 |
+| Sinkhorn | Projection vers le polytope de Birkhoff, 3 régimes de température, métrique Σ P² ∈ [1,n], ex-aequo mesurés (4 permutations au coût minimal) sans surclaim de permutation |
+| Recherche discrète | Oracle exact Hamming 16 entrées, quantification E=2/16, glouton bloqué en minimum local, Metropolis (α = min(1, e^(−ΔE/T))) et parallel tempering (swap exact) à budget égal, vérité terrain exhaustive 3^11 = 177 147 (92 optima globaux) |
+| Pont SL-12 ↔ spectral | Spectre exact du circuit AND(OR(x1,x2), XNOR(x3,x4)) : degré 4, 8/16 coefficients, χ_{3,4} dominant ; tableau de confrontation portes locales/câblage fixe vs structure spectrale/composition |
+
+**Référence** : Gorgi Pavlov, *Differentiable Logic Synthesis: Spectral Coefficient Selection via Sinkhorn-Constrained Composition* ([arXiv 2601.13953](https://arxiv.org/abs/2601.13953)) — digestion EPIC #14366 grain G2.
+
 ## Concepts clés
 
 | Concept | Explication | Notebook |
@@ -409,6 +429,9 @@ Note : dans SL-7, le premier exercice de la numérotation interne est un exemple
 | **Myhill-Nerode** | Classes d'équivalence de suffixes = états du DFA minimal | SL-10 |
 | **Provenance** | Trace de dérivation attachée à chaque fait inféré | SL-11 |
 | **Pipeline neuro-symbolique** | LLM aux extrémités, validation et inférence symboliques au centre | SL-11 |
+| **Caractère de Walsh** | χ_S(x) = ∏_{k∈S} x_k — base orthonormée des fonctions {−1,+1}^n | SL-12b |
+| **PTF ternaire** | sign(Σ w_S χ_S) avec w ∈ {−1,0,+1} — objet distinct des coefficients de Fourier exacts | SL-12b |
+| **Routage Sinkhorn** | Projection itérative vers le polytope de Birkhoff ; sous ex-aequo, la limite n'est pas une permutation | SL-12b |
 
 ## Prérequis
 
@@ -420,7 +443,7 @@ Note : dans SL-7, le premier exercice de la numérotation interne est un exemple
 
 ### Environnement Python
 
-Aucune dépendance externe pour SL-1, SL-2, SL-5, SL-7 et SL-10 (bibliothèque standard Python 3.10+ uniquement). SL-3 utilise `scikit-learn` et `numpy` pour la comparaison avec la sélection statistique. SL-8 utilise `rdflib` et `clingo` (module Python officiel Potassco, installé silencieusement par le notebook — même moteur ASP que le binaire utilisé par la série Tweety via `scripts/install_clingo.py`). SL-8 et SL-10 utilisent `python-dotenv` et `openai` pour les appels LLM optionnels via OpenRouter (Gemini 3.5 Flash) : copiez `.env.example` vers `.env` et renseignez `OPENROUTER_API_KEY` ; sans clé, un simulateur déterministe prend le relais et le notebook s'exécute intégralement.
+Aucune dépendance externe pour SL-1, SL-2, SL-5, SL-7 et SL-10 (bibliothèque standard Python 3.10+ uniquement). SL-3 utilise `scikit-learn` et `numpy` pour la comparaison avec la sélection statistique. SL-8 utilise `rdflib` et `clingo` (module Python officiel Potassco, installé silencieusement par le notebook — même moteur ASP que le binaire utilisé par la série Tweety via `scripts/install_clingo.py`). SL-8 et SL-10 utilisent `python-dotenv` et `openai` pour les appels LLM optionnels via OpenRouter (Gemini 3.5 Flash) : copiez `.env.example` vers `.env` et renseignez `OPENROUTER_API_KEY` ; sans clé, un simulateur déterministe prend le relais et le notebook s'exécute intégralement. SL-12b s'exécute CPU uniquement avec `numpy` (algèbre, transformées, recherche) et `matplotlib` (spectres, cartes Sinkhorn, trajectoires) — aucune autre dépendance.
 
 SL-4 est en bibliothèque standard pour l'essentiel, mais sa section finale **Popper** requiert un environnement Unix : Popper utilise `signal.SIGALRM`, absent de Windows — le notebook s'exécute donc sur un kernel Python **Linux** (kernel `python3-wsl` via WSL sous Windows, kernel natif sous Linux/macOS). Dépendances de la section (installées silencieusement par le notebook) : SWI-Prolog >= 9.1.12 (`ppa:swi-prolog/stable`), `popper-ilp` épinglé à **v4.4.0** (la 5.0 exige Python >= 3.14), `janus_swi`, `clingo`, `setuptools < 81`. Si Popper est indisponible, les cellules de la section l'indiquent et se sautent proprement — le reste du notebook tourne sur n'importe quel kernel Python.
 
@@ -493,6 +516,8 @@ SymbolicLearning/
 ├── SL-10-ActiveAutomataLearning.ipynb        # L* d'Angluin, apprentissage actif d'automates
 ├── SL-10-ActiveAutomataLearning-Csharp.ipynb # Jumeau C# (.NET Interactive) — L* d'Angluin (DFA/ObservationTable/MQ-EQ/forward) from-scratch, parité #4956
 ├── SL-11-Capstone-NeuroSymbolic.ipynb       # Capstone : pipeline neuro-symbolique 6 étages
+├── SL-12-DifferentiableLogicGateNetworks.ipynb # Portes logiques différentiables (difflogic), discrétisation en circuit booléen
+├── SL-12b-SpectralLogicSynthesis.ipynb      # Synthèse logique spectrale : FWHT, PTF ternaires, Sinkhorn, MCMC (#14366 G2)
 ├── .env.example                             # Modèle de configuration LLM (OpenRouter)
 ├── requirements.txt                         # Dépendances optionnelles
 ├── reference/
@@ -507,12 +532,12 @@ Lecture du bloc `CATALOG-STATUS` (lignes 5-10, byte-identique à `origin/main`) 
 
 ```
 series: SymbolicAI-SymbolicLearning
-pedagogical_count: 20
-breakdown: SymbolicLearning=20
-maturity: BETA=18, ALPHA=2
+pedagogical_count: 21
+breakdown: SymbolicLearning=21
+maturity: BETA=19, ALPHA=2
 ```
 
-**Table 6 phases × 4 colonnes** (cohérence CATALOG-STATUS `SymbolicLearning=20`, maturité BETA=18 + ALPHA=2, soit 18 jumeaux Python+C# stabilisés + 2 jumeaux C# en stabilisation). Ce décompte de **20** couvre les notebooks **inscrits au catalogue** ; le 21e — SL-1b, compagnon Lean natif — n'entre dans aucune phase (il prouve, en parallèle de la phase 1, les garanties d'échantillonnage que SL-1 implémente), et son inscription comme sa maturité reviennent au cron catalogue. Le « 21 notebooks » de l'en-tête compte donc 20 inscrits + 1 compagnon, jamais deux totaux pour le même ensemble :
+**Table 6 phases × 4 colonnes** (cohérence CATALOG-STATUS `SymbolicLearning=21`, maturité BETA=19 + ALPHA=2, soit 19 notebooks stabilisés + 2 jumeaux C# en stabilisation). Ce décompte de **21** couvre les notebooks **inscrits au catalogue** — dont SL-1b, compagnon Lean natif, qui n'entre dans aucune phase (il prouve, en parallèle de la phase 1, les garanties d'échantillonnage que SL-1 implémente). Le 22e — SL-12b, synthèse logique spectrale — prolonge la phase 6 sur disque ; son inscription comme sa maturité reviennent au cron catalogue (<24 h). Le « 22 notebooks » de l'en-tête compte donc 21 inscrits + 1 en attente d'inscription, jamais deux totaux pour le même ensemble :
 
 | Phase | Notebooks | Maturité | Contenu clé |
 |-------|-----------|----------|-------------|
@@ -521,14 +546,14 @@ maturity: BETA=18, ALPHA=2
 | **Phase 3 — Programmes logiques (ILP)** | 4 (SL-4, SL-5 + jumeaux C# SL-4, SL-5) | BETA=4 | FOIL top-down + opérateurs V/W de la résolution inverse ; LGG de Plotkin, θ-subsomption, clause bottom par entailment inverse, recherche à la Progol ; pont vers knowledge graphs (AMIE, SPARQL CONSTRUCT). Jumeaux C# : FOIL+V/W+unification+mini-KG (SL-4), LGG+clause bottom+Progol (SL-5) from-scratch |
 | **Phase 4 — Moteurs ILP modernes** | 2 (SL-6 + jumeau C#) | BETA=2 | Quatre moteurs réels face à face sur `ancestor/2` : Aleph (entailment inverse), Metagol (MIL, invent. prédicats), Popper (LFF, v4.4.0 épinglé), ∂ILP Lernd (différentiable, env conda `lernd-dilp` GPL-3.0 importé). Jumeau C# : FOIL relationnel from-scratch + récursion + benchmark profondeur 5-20 |
 | **Phase 5 — Neuro-symbolique** | 4 (SL-7, SL-8, SL-9 + jumeau C# SL-8) | BETA=3, ALPHA=1 | T-norms différentiables, LTN, DeepProbLog ; rdflib + AMIE rule mining + complétion KG + ASP clingo ; boucle LLM-symbolique d'extraction et vérification (Gemini 3.5 Flash optionnel via OpenRouter). Jumeau C# : KG familial dotNetRDF 3.4.1 + AMIE from-scratch + PCA + complétion 5→14 + saturation (ALPHA en stabilisation) |
-| **Phase 6 — Actif + capstone** | 4 (SL-10, SL-11, SL-12 + jumeau C# SL-10) | BETA=3, ALPHA=1 | L* d'Angluin (table d'observation, requêtes MQ/EQ, Myhill-Nerode, bornes PAC) ; capstone pipeline neuro-symbolique 6 étages avec LLM réel + provenance ; réseaux de portes logiques différentiables (difflogic, Petersen NeurIPS 2022). Jumeau C# : DFA + ObservationTable + contre-exemples + oracle bruité + agrégation d'evidence (ALPHA en stabilisation) |
-| **Total** | **20** (+ SL-1b compagnon hors phases) | **BETA=18, ALPHA=2** | Python 3.10+ stdlib + .NET Interactive 1.4+ (sauf SL-3 sklearn+rdflib, SL-4/SL-6 SWI-Prolog+Popper kernel Linux/WSL, SL-7 rdflib, SL-9/SL-11 OpenRouter optionnel) ; SL-1b : kernel lean4-wsl (lake `learning_theory_lean`) |
+| **Phase 6 — Actif + capstone** | 4 inscrits (SL-10, SL-11, SL-12 + jumeau C# SL-10) + SL-12b sur disque (inscription cron en attente) | BETA=3, ALPHA=1 (+ SL-12b à l'inscription) | L* d'Angluin (table d'observation, requêtes MQ/EQ, Myhill-Nerode, bornes PAC) ; capstone pipeline neuro-symbolique 6 étages avec LLM réel + provenance ; réseaux de portes logiques différentiables (difflogic, Petersen NeurIPS 2022) ; synthèse logique spectrale SL-12b : FWHT exacte, PTF ternaires, Sinkhorn, Metropolis/parallel tempering avec oracle exact. Jumeau C# : DFA + ObservationTable + contre-exemples + oracle bruité + agrégation d'evidence (ALPHA en stabilisation) |
+| **Total** | **21 inscrits** (SL-1b compagnon hors phases ; SL-12b sur disque, inscription au cron) | **BETA=19, ALPHA=2** | Python 3.10+ stdlib + .NET Interactive 1.4+ (sauf SL-3 sklearn+rdflib, SL-4/SL-6 SWI-Prolog+Popper kernel Linux/WSL, SL-7 rdflib, SL-9/SL-11 OpenRouter optionnel, SL-12 difflogic+torch, SL-12b numpy+matplotlib) ; SL-1b : kernel lean4-wsl (lake `learning_theory_lean`) |
 
-**Note explicite maturité 18 BETA + 2 ALPHA** : la série SymbolicLearning compte 21 notebooks au catalogue (12 Python + 8 jumeaux C# marathon parité #4956 + le compagnon Lean natif SL-1b, dont la maturité sera fixée à l'inscription catalogue). La maturité n'est plus 100 % PRODUCTION comme avant le marathon parité : les 12 notebooks Python historiques sont PRODUCTION-equivalent (AIMA chapitre 19, implémentations de référence stables vendored dans `reference/aima_knowledge.py`) ; les 8 jumeaux C# livrés en marathon #4956 (SL-1, SL-2, SL-3, SL-4, SL-5, SL-6, SL-8, SL-10) sont **BETA** par défaut, sauf SL-8-C# (KG mining : verdict SOTA du twin Python note clingo ASP=INTRINSIC en .NET) et SL-10-C# (L* forward sum-product + agrégation bayésienne : algorithme le plus récent, vérifications de bornes encore en cours) qui restent **ALPHA** au catalogue. Les notebooks s'exécutent localement avec Python 3.10+ stdlib pour SL-1/2/5/7/10, `scikit-learn`+`numpy` pour SL-3, `rdflib`+`clingo` pour SL-8, et `SWI-Prolog >= 9.1.12`+`janus_swi`+`popper-ilp==4.4.0` pour SL-4/SL-6 via kernel Linux/WSL ; les 8 jumeaux C# s'exécutent sur .NET Interactive 1.4+ (`Microsoft.dotnet-interactive`).
+**Note explicite maturité 19 BETA + 2 ALPHA** : la série SymbolicLearning compte 22 notebooks sur disque (13 Python + 8 jumeaux C# marathon parité #4956 + le compagnon Lean natif SL-1b), dont 21 inscrits au catalogue — l'inscription de SL-12b revient au cron (<24 h). La maturité n'est plus 100 % PRODUCTION comme avant le marathon parité : les 12 notebooks Python historiques sont PRODUCTION-equivalent (AIMA chapitre 19, implémentations de référence stables vendored dans `reference/aima_knowledge.py`) ; les 8 jumeaux C# livrés en marathon #4956 (SL-1, SL-2, SL-3, SL-4, SL-5, SL-6, SL-8, SL-10) sont **BETA** par défaut, sauf SL-8-C# (KG mining : verdict SOTA du twin Python note clingo ASP=INTRINSIC en .NET) et SL-10-C# (L* forward sum-product + agrégation bayésienne : algorithme le plus récent, vérifications de bornes encore en cours) qui restent **ALPHA** au catalogue. Les notebooks s'exécutent localement avec Python 3.10+ stdlib pour SL-1/2/5/7/10, `scikit-learn`+`numpy` pour SL-3, `rdflib`+`clingo` pour SL-8, et `SWI-Prolog >= 9.1.12`+`janus_swi`+`popper-ilp==4.4.0` pour SL-4/SL-6 via kernel Linux/WSL ; `numpy`+`matplotlib` pour SL-12b ; les 8 jumeaux C# s'exécutent sur .NET Interactive 1.4+ (`Microsoft.dotnet-interactive`).
 
-**Conformité C.1** (stubs sans `raise NotImplementedError`) : tous les notebooks respectent la convention notebook 2026-04-26 — patterns de stub corrects (`pass` / `print("Exercice a completer")` / `return None` / `result = None  # TODO etudiant`). La table de pioche de 49 exercices (section dédiée) couvre les angles de chaque algorithme : biais conjonctif de CBH, utility problem de Minton (EBL), borne PAC de l'oracle d'équivalence (L*), seuil de confiance pour les règles AMIE, etc. Dépendances : `requirements.txt` (scikit-learn, numpy, rdflib, clingo, python-dotenv, openai, janus_swi, setuptools < 81) + SWI-Prolog >= 9.1.12 externe (kernel Linux/WSL pour SL-4/SL-6) + conda env `lernd-dilp` (TensorFlow) pour ∂ILP. Vendored : `vendor/metagol/` (BSD-3), `aima_knowledge.py` (MIT AIMA).
+**Conformité C.1** (stubs sans `raise NotImplementedError`) : tous les notebooks respectent la convention notebook 2026-04-26 — patterns de stub corrects (`pass` / `print("Exercice a completer")` / `return None` / `result = None  # TODO etudiant`). La table de pioche de 52 exercices (section dédiée) couvre les angles de chaque algorithme : biais conjonctif de CBH, utility problem de Minton (EBL), borne PAC de l'oracle d'équivalence (L*), seuil de confiance pour les règles AMIE, etc. Dépendances : `requirements.txt` (scikit-learn, numpy, matplotlib, rdflib, clingo, python-dotenv, openai, janus_swi, setuptools < 81) + SWI-Prolog >= 9.1.12 externe (kernel Linux/WSL pour SL-4/SL-6) + conda env `lernd-dilp` (TensorFlow) pour ∂ILP. Vendored : `vendor/metagol/` (BSD-3), `aima_knowledge.py` (MIT AIMA).
 
-**Posture EPITA-IS / Argumentum** : la série SymbolicLearning n'a **pas** de port EPITA-IS Argumentum (contrairement à Argument_Analysis qui aligne 15 PRs MERGED upstream-verbatim byte-equal — voir EPIC #4960 Argumentum). C'est une série 100 % originale du dépôt, ancrée sur AIMA chapitre 19, avec choix assumé d'**inclure** la table de pioche de 49 exercices en pied de README (vs un décompte minimal) — le README fait 609 lignes, dense, cohérent avec la densité mathématique de la série.
+**Posture EPITA-IS / Argumentum** : la série SymbolicLearning n'a **pas** de port EPITA-IS Argumentum (contrairement à Argument_Analysis qui aligne 15 PRs MERGED upstream-verbatim byte-equal — voir EPIC #4960 Argumentum). C'est une série 100 % originale du dépôt, ancrée sur AIMA chapitre 19, avec choix assumé d'**inclure** la table de pioche de 52 exercices en pied de README (vs un décompte minimal) — le README fait 635 lignes, dense, cohérent avec la densité mathématique de la série.
 
 ## Écosystème MCP et parenté cross-lane
 
@@ -536,7 +561,7 @@ Trois outils d'infrastructure MCP (cohérent avec cycles 19-31) :
 
 1. **MCP Jupyter (`mcp__jupyter-papermill__*`)** — note bug #5211 (mode async ignore `kernel_name`, re-exec = `nbconvert --execute --ExecutePreprocessor.kernel_name=python3 --timeout=600`). SymbolicLearning notebooks utilisent majoritairement **kernel Python 3** (SL-1/2/3/5/7/8/9/10) ; SL-4 et SL-6 requièrent **kernel Linux/WSL** pour SWI-Prolog+Popper+Aleph+Metagol (Popper utilise `signal.SIGALRM` absent de Windows). Chaque notebook déclare son kernel en cellule metadata, et les sections indisponibles se signalent par drapeau `HAS_*` sans interrompre l'exécution.
 2. **Validation pre-commit** (`.pre-commit-config.yaml`) — `gitleaks` détecte les secrets inline ; le validateur notebook `validate_pr_notebooks.py` enforce C.1 (stubs sans `NotImplementedError`) et C.2 (notebooks commités AVEC outputs, `execution_count != null`). **Note spécifique SymbolicLearning** : les clés API LLM (`OPENROUTER_API_KEY`) vivent dans `.env` (jamais en clair dans un notebook), avec `.env.example` documenté ; sans clé, un **simulateur déterministe** prend le relais dans SL-9 et SL-11 (le notebook s'exécute intégralement, doctrine anti-théâtre : « pas de sortie maquée, pas de fallback qui prétend être un appel LLM »).
-3. **MCP QC Cloud (`mcp__qc-mcp-lite__*`)** — backtest QuantConnect partagé. SymbolicLearning n'utilise pas QC Cloud directement, mais partage avec QC la même rigueur méthodologique : **reproductibilité déterministe** (graines fixées pour les générateurs pseudo-aléatoires dans les splits train/test de SL-3, **bornes PAC documentées** pour L* d'Angluin dans SL-10), **pas de résultat maquée** (les 49 exercices de la table de pioche ont des *questions-twist* qui forcent l'étudiant à dévier du cas nominal). C'est la version **académique** de la doctrine « un résultat non vérifié n'est pas un résultat ».
+3. **MCP QC Cloud (`mcp__qc-mcp-lite__*`)** — backtest QuantConnect partagé. SymbolicLearning n'utilise pas QC Cloud directement, mais partage avec QC la même rigueur méthodologique : **reproductibilité déterministe** (graines fixées pour les générateurs pseudo-aléatoires dans les splits train/test de SL-3, **bornes PAC documentées** pour L* d'Angluin dans SL-10), **pas de résultat maquée** (les 52 exercices de la table de pioche ont des *questions-twist* qui forcent l'étudiant à dévier du cas nominal). C'est la version **académique** de la doctrine « un résultat non vérifié n'est pas un résultat ».
 
 **Table parenté cross-lane 12 lignes × 3 colonnes** (SymbolicLearning se situe au croisement de plusieurs séries du dépôt — c'est l'une des séries les plus parentées) :
 
@@ -554,6 +579,7 @@ Trois outils d'infrastructure MCP (cohérent avec cycles 19-31) :
 | `SL-10 L* Angluin` | [Tweety](../Tweety/) (logique temporelle / automates) + [Lean](../Lean/) | Myhill-Nerode = théorème formalisable en Lean ; L* sur automates finis ↔ Tweety LTL/CTL (vérification de modèles) |
 | `SL-11 Capstone 6 étages` | [Argument_Analysis](../Argument_Analysis/) + [SemanticWeb](../SemanticWeb/) + [Tweety](../Tweety/) + [GenAI](../../GenAI/) | Pipeline bout-en-bout : LLM (GenAI) → extraction → oracle (Tweety ASP) → KG (SemanticWeb) → mining (AMIE = SymbolicLearning) → inférence avec provenance (Argument_Analysis Restitution_3_Actes pattern) |
 | `SL-12 Portes logiques différentiables` | [ML](../../ML/) (réseaux de neurones) + [GenAI](../../GenAI/) | difflogic (Petersen NeurIPS 2022) = registre **discret** du neuro-symbolique : neurone = porte logique binaire apprise parmi 16, puis discrétisée en circuit booléen interprétable (vs SL-7 continu) |
+| `SL-12b Synthèse logique spectrale` | [ML](../../ML/) (représentations apprises) + [Lean](../Lean/) (analyse de sensibilité) | Fourier booléen exact = changement de représentation certifié au bit près ; PTF ternaires et routage Sinkhorn de Pavlov (arXiv 2601.13953) — suite potentielle de l'EPIC #14366 (bornes de sensibilité formelles) |
 
 **Paragraphe « effet de composition — SymbolicLearning = carrefour spectre-apprentissage inter-paradigmes »** :
 
@@ -580,7 +606,7 @@ Le **capstone SL-11** est l'un des rares pipelines neuro-symboliques bout-en-bou
 | [Lean](../Lean/README.md) | Preuves formelles | L'arbre de preuve EBL est analogue aux arbres de preuve Lean 4 |
 | Lecture transversale | [La mer qui monte](../../../docs/grothendieckian-lens.md) | Grille de lecture grothendieckienne du depot : changement de représentation, certification A/B/C |
 
-**Version 1.2.0** — Juillet 2026 — section Statistiques catalogue à jour + section Écosystème MCP et parenté cross-lane. EPIC #3975 tranche symboliclearning.
+**Version 1.3.0** — Septembre 2026 — ajout SL-12b (synthèse logique spectrale, EPIC #14366 grain G2) : table de pioche 52 exercices, phase 6 étendue au versant spectral, parenté cross-lane complétée. EPIC #3975 tranche symboliclearning.
 
 ## Conclusion / Prochaines étapes
 
@@ -592,7 +618,7 @@ Cette série traverse le **spectre complet** de l'apprentissage, du pur-inductif
 - **Phase 3 — apprendre des programmes logiques** : FOIL (top-down), résolution inverse et ses opérateurs V/W (bottom-up), LGG de Plotkin, θ-subsomption, clause bottom, recherche à la Progol (SL-4/SL-5) — jusqu'à l'ILP moderne avec **Popper** (Learning From Failures) qui retrouve le programme récursif optimal et le fait vérifier en SWI-Prolog.
 - **Phase 4 — comparer les moteurs ILP réels** : quatre machineries face à face sur `ancestor/2` — Aleph (entailment inverse), Metagol (MIL), Popper (Learning From Failures) et ∂ILP (différentiable) (SL-6), pour voir où chaque paradigme gagne ou échoue.
 - **Phase 5 — réconcilier le symbolique et le connexionniste** : T-norms différentiables, Logics Tensor Networks, DeepProbLog (SL-7) ; rule mining sur knowledge graphs réels avec rdflib + AMIE (SL-8) ; boucle LLM-symbolique d'extraction et vérification (SL-9).
-- **Phase 6 — apprentissage actif, capstone et portes logiques** : L* d'Angluin (SL-10), le **capstone SL-11** qui assemble un pipeline neuro-symbolique complet — LLM aux extrémités, validation et inférence symboliques au centre, avec provenance — et les réseaux de portes logiques différentiables (SL-12, difflogic) comme registre discret du neuro-symbolique.
+- **Phase 6 — apprentissage actif, capstone, portes logiques et spectre** : L* d'Angluin (SL-10), le **capstone SL-11** qui assemble un pipeline neuro-symbolique complet — LLM aux extrémités, validation et inférence symboliques au centre, avec provenance —, les réseaux de portes logiques différentiables (SL-12, difflogic) comme registre discret du neuro-symbolique, et SL-12b qui ouvre le versant spectral : Fourier booléen exact, PTF ternaires, Sinkhorn mesuré et recherche discrète MCMC contre un oracle exact.
 
 La thèse de la série, posée dès l'introduction et démontrée par le capstone : data-driven et knowledge-driven **ne s'opposent pas, ils se complètent**. Chaque phase est une réponse à une limite de la précédente — le bruit motive la connaissance, la rigidité logique motive la différentiabilité, l'opacité motive la provenance.
 
@@ -602,7 +628,7 @@ La thèse de la série, posée dès l'introduction et démontrée par le capston
 - **Passer à l'échelle sur le web de données** : [SemanticWeb](../SemanticWeb/) (RDFS/OWL formalisent les déterminations et les hiérarchies de généralité que RBL exploite) — naturellement après SL-7 (knowledge graphs + AMIE).
 - **Décider sous incertitude** : la logique apprise produit des règles certaines ; [Probas](../../Probas/) (Infer.NET) et [GameTheory](../../GameTheory/) traitent le cas où la certitude n'est pas atteignable — le complément probabiliste du capstone SL-11.
 - **Du capstone à la production** : reprenez le pipeline SL-11 et remplacez l'oracle de validation par une vérification Lean ou une cohérence Tweety — c'est le pont naturel vers une IA générative ancrée sur du vérifiable.
-- Relisez la **table de pioche** (49 exercices) et la **Lecture transversale** ci-dessus : elles recoupent les cinq phases sous des angles différents (grothendieckien : changement de représentation, certification A/B/C).
+- Relisez la **table de pioche** (52 exercices) et la **Lecture transversale** ci-dessus : elles recoupent les cinq phases sous des angles différents (grothendieckien : changement de représentation, certification A/B/C).
 
 ### Le fil rouge
 
