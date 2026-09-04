@@ -41,6 +41,30 @@ La garantie fail-CLOSED de la ligne 28 (rule) tient pour les déviations **synta
 
 Politique choisie (option **b**, signaler sans re-bloquer) : on NE rouvre PAS le fail-open #10958 — un claim actif dont tout le scope est mort reste porté epic-wide (un claim cassé n'est pas permissif) — mais `check_lane_claim.py` ajoute un champ JSON `dead_scope_globs` (lane-keyed, agrégé sur TOUS les événements de claim, y compris relâchés) pour que le typo soit visible à un sweep JSON, et non seulement sur le stderr que le gate/le picker ne consomment pas. Le cas légitime du fichier pas encore créé (grain Lean, nouveau notebook) reste couvert sans geler la lane : la cible s'écrit avec un métacaractère de répertoire (`scripts/notebook_tools/*markdown*`).
 
+## Identité de lane et collisions intra-lane (#14323)
+
+Le protocole indexe l'exclusion mutuelle sur la **lane** (`machine:workspace`), pas sur le processus Claude Code. C'est intentionnel : un claim de sa propre lane doit permettre une reprise après compaction ou réveil. Cette propriété repose toutefois sur une prémisse opérationnelle désormais explicite : **une seule session active par lane**.
+
+Deux processus simultanés sous la même lane — par exemple un cron qui se déclenche pendant une session interactive, ou deux réveils qui se chevauchent — présentent la même identité à `check_lane_claim.py`. Le garde ne peut pas les distinguer : chacun interprète le claim existant comme sa propre reprise. Le mode `--paths` a la même limite, puisqu'il signale les intersections portées par une lane différente.
+
+### Portée exacte de `CLEAR`
+
+`CLEAR` garantit seulement qu'**aucune autre lane** ne détient un claim actif intersectant le grain ou les chemins demandés. Il ne garantit pas :
+
+- qu'aucun autre processus ne travaille sous la même lane ;
+- qu'une PR ou un worktree de la même lane n'est pas déjà en cours ;
+- que la session appelante est l'auteur du claim observé.
+
+Les gardes L898 (`git worktree list`, PRs ouvertes par branche/sujet/chemin) restent donc complémentaires, mais ils ne remplacent pas la prémisse : un travail intra-lane non poussé peut être invisible aux deux.
+
+### Décision : restaurer la prémisse, ne pas étendre le marqueur
+
+La voie retenue est **un agent actif par lane**, appliquée au niveau des schedulers et des sessions : laisser finir ou arrêter la session existante avant d'en démarrer une autre sous le même couple `machine:workspace`. En cas de chevauchement constaté, les deux processus cessent d'éditer, comparent leur périmètre, puis conservent un seul propriétaire actif.
+
+L'alternative `[CLAIMED] lane <L> agent <session-id>` n'est pas retenue. Elle alourdirait un format déjà partagé par les issues, le picker et le merge-gate, tout en transformant chaque reprise après compaction en problème d'identité et chaque `RELEASED` manquant en blocage intra-lane. La règle d'exploitation rétablit l'invariant avec moins d'état et sans migration du parseur.
+
+**Référence** : issue #14323 — diagnostic de l'angle mort intra-lane et lien avec les crons chevauchés.
+
 ## Tie-break — l'issue l'emporte, l'override s'écrit (#10223)
 
 Les deux collisions du 2026-08-09 (#10169 puis #10161) ont révélé deux non-écrits qu'on écrit ici noir sur blanc. Un organe débloquant les enforce désormais : `.github/workflows/lane-claim-guard.yml` (`check-lane-claim-required`).
