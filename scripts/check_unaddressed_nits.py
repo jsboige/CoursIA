@@ -1002,9 +1002,12 @@ _MENTION_AVANT_MERGE_PATTERNS = (
 # du body et la premiere fin de ligne) contient `avant merge` ET NE
 # contient PAS de verbe actionnel/imperatif ni de qualifieur bloquant.
 _MENTION_AVANT_MERGE_HEAD_NEUTRAL = re.compile(
-    r"(?im)"
-    # Debut de body (apres strip du lstrip) : la premiere ligne.
-    r"^"
+    r"\A[ \t]*"
+    # Debut de body strictement (apres lstrip), pas de mode MULTILINE :
+    # l'ancien `(?im)^` faisait matcher `^` au debut de CHAQUE ligne (cf
+    # verification ai-01 2026-09-04 sur #14538, DM msg-20260904T011521-9d9p4k).
+    # `\A` ancre au debut de la chaine, fermant le trou pour les occurrences
+    # en milieu de corps (cf tests `test_13083_instance3_fp_milieu_*`).
     # La ligne peut etre precede de decoration markdown (`**`, `#`, `__`,
     # `### `, etc.) -- on accepte tout prefixe non-alphanumerique. La
     # limite `[^.\n]*?` empeche le saut a une ligne suivante.
@@ -1012,9 +1015,7 @@ _MENTION_AVANT_MERGE_HEAD_NEUTRAL = re.compile(
     # Le token `avant [le/la/l'] merge` ou `before merge` EN FIN de ligne de
     # titre (espaces optionnels avant, decoration markdown optionnelle,
     # puis fin de ligne / fin de body). Le lookahead plutot que `$` capture
-    # correctement la fin de body sans exiger un `\n` final (en re.MULTILINE
-    # `$` matche aussi les `\n`, mais `re.search` ne garantit pas la presence
-    # du `\n` final du body).
+    # correctement la fin de body sans exiger un `\n` final.
     r"\b(?:avant(?:\s+(?:le|la|l[\\']))?|before)\s+merge\b"
     r"(?=\s*[.*_~`:]*\s*(?:\n|\Z))"
 )

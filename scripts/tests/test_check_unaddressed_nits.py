@@ -4920,3 +4920,78 @@ def test_13083_instance3_ce1_mutation_desactivee_fp_rougit(monkeypatch):
         "#12627 doit rougir (`avant merge` reste emis en tete)."
     )
 
+
+def test_13083_instance3_milieu_ligne4_reste_bloquant():
+    r"""C.233 -- DM ai-01 2026-09-04T03:15Z (#14538) : un `avant merge` en
+    milieu de corps (ligne 4) SANS verbe actionnel doit RESTER bloquant
+    apres le fix raw string \A.
+
+    Reproduction verbatim du tableau ai-01 :
+    | Cas | Ligne du match ancien regex |
+    |---|---:|
+    | « Il faut relire la section 3 [token] », milieu de corps | **4** |
+
+    Ancien regex `(?im)^` matchait cette ligne (en mode MULTILINE `^` =
+    debut de chaque ligne). Le fix ancre au debut strict du body via raw string \\A,
+    fermant ce trou -- les occurrences en milieu de corps NE sont PLUS
+    neutralisees par Position I' (par design : un `avant merge` qui
+    apparait au milieu d'un paragraphe descriptif est un concern
+    VIVANT, pas un localisateur temporel de titre).
+
+    Acceptation c.233 du fix Position I' : le strip est strictement borne
+    a la premiere ligne. Cette regression est l'INTENTION du fix, pas un
+    effet de bord. Le commentaire du code documente : `\A` ferme le trou
+    d'une portee implicite `(?m)` que le commentaire d'origine
+    n'annoncait pas (cf DM ai-01 2026-09-04T03:15Z sur #14538).
+    """
+    body = (
+        "Rapport d'audit technique\n\n"
+        "Le profil deletion-heavy de la PR est un faux signal.\n\n"
+        "Il faut relire la section 3 avant merge, mais ce n'est pas un "
+        "verdict bloquant.\n\n"
+        "Conclusion : RAS."
+    )
+    assert mod.classify("myia-ai-01", body) == "BOT-CONCERN", (
+        f"Apres fix `\\A`, `avant merge` en milieu de corps (ligne 4) "
+        f"DOIT rester BOT-CONCERN (concern vivant, hors portee de "
+        f"Position I'), got {mod.classify('myia-ai-01', body)!r}"
+    )
+
+
+def test_13083_instance3_milieu_ligne3_reste_bloquant():
+    """C.233 -- DM ai-01 2026-09-04T03:15Z (#14538) : un `avant merge` en
+    milieu de corps (ligne 3) SANS verbe actionnel doit RESTER bloquant.
+
+    Reproduction verbatim du tableau ai-01 :
+    | Cas | Ligne du match ancien regex |
+    |---|---:|
+    | « Le rapport a ete pose [token] », milieu de corps | **3** |
+    """
+    body = (
+        "Note de revue\n\n"
+        "Le rapport a ete pose avant merge par ai-01.\n\n"
+        "Pas de nit, pas de reserve."
+    )
+    assert mod.classify("myia-ai-01", body) == "BOT-CONCERN", (
+        f"Apres fix `\\A`, `avant merge` en milieu de corps (ligne 3) "
+        f"DOIT rester BOT-CONCERN (concern vivant, hors portee de "
+        f"Position I'), got {mod.classify('myia-ai-01', body)!r}"
+    )
+
+
+def test_13083_instance3_tete_h1_neutralise_toujours():
+    """C.233 -- apres le fix `\\A`, le titre H1 (ligne 1) avec `avant merge`
+    SANS verbe actionnel reste neutralise (FP fondateur #12627).
+    C'est le test de NON-regression du fix : le scope se resserre mais le
+    cas fondateur tient toujours.
+    """
+    body = (
+        "# Audit ai-01 avant merge\n\n"
+        "Rapport descriptif, pas de reserve."
+    )
+    assert mod.classify("myia-ai-01", body) is None, (
+        f"Titre H1 `avant merge` (ligne 1, sans verbe actionnel) doit "
+        f"rester neutralise apres fix `\\A` (non-regression du cas "
+        f"fondateur), got {mod.classify('myia-ai-01', body)!r}"
+    )
+
