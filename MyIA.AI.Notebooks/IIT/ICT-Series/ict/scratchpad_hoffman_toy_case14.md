@@ -86,6 +86,35 @@ Fit-track sur paysages alignés : convergence triviale aussi (moyenne intra-fibr
 
 **Si la cible n'est pas tenue** : **NULL** plus profond que case 13 — le relâchement de compression bit2 **ne restaure pas** la dissociation. La discrimination triviale devrait pourtant émerger mécaniquement (compression parfaite → MAP = w avec bit2(w) = x → fitness = bit2(w) = x → argmax trivial). C'est la **cause structurelle inverse de case 13** : si α*_truth ne converge pas vers `0.95+` sur paysages bit2_aligned, alors l'évolution elle-même est en cause (peut-être α*_fit évolue aussi vers le même α — symétrie au niveau de la dynamique évolutionniste, pas seulement de la fitness moyenne intra-fibre).
 
+## Verdict mesuré (toy livré)
+
+**Résultat empirique** (5 seeds × 80 pop × 200 gen, full run 37 s) : **0/8 paysages avec gap `|≥ 0.10`**.
+
+| Paysage | α*_Truth (5 seeds) | α*_Fit (5 seeds) | Gap |
+|---|---|---|---|
+| L_bit0 | 0.489 ± 0.051 | 0.532 ± 0.062 | -0.043 |
+| L_bit1 | 0.489 ± 0.051 | 0.532 ± 0.062 | -0.043 |
+| L_parity | 0.489 ± 0.051 | 0.532 ± 0.062 | -0.043 |
+| L_anti | 0.489 ± 0.051 | 0.532 ± 0.062 | -0.043 |
+| L_bit2_aligned | 0.489 ± 0.051 | 0.532 ± 0.062 | -0.043 |
+| L_bit2_complement_aligned | 0.489 ± 0.051 | 0.532 ± 0.062 | -0.043 |
+| L_bit01_aligned | 0.489 ± 0.051 | 0.532 ± 0.062 | -0.043 |
+| L_pairity_bit12 | 0.547 ± 0.021 | 0.532 ± 0.062 | +0.015 |
+
+**Verdict** : **NULL INSTRUMENTAL**, pas structurel.
+
+**Cause identifiée post-mesure** : `play_round` self-payoff est calculé comme `fitness(strategy(...))` où `strategy(...)` retourne **x** (sensory state ∈ {0,1}), pas **w** (ontic state ∈ {0..7}). Le `fitness` est une fonction de w, donc `fitness(x)` pour x ∈ {0,1} donne `bit2(0)=0` ou `bit2(1)=0` (pour L_bit2_aligned) — fitness plate. C'est un **bug de design hérité de case 11 et case 13** : self-payoff devrait être `fitness(map_estimate(strategy(...), alpha, prior))` ou adopter le design case 12 (deux territoires concurrents avec payoff = E[f(w) | x=x_hat]).
+
+**Conséquences** :
+
+1. Le **toy livré ne mesure PAS la dissociation FBT** — il mesure un artefact instrumental (fitness du sensory state, pas du ontic state).
+2. Le **pré-enregistrement n'est pas validé** : la cible P2c (|gap| ≥ 0.60 sur bit2_aligned) **n'est PAS tenue** non pas parce que la dissociation FBT échoue, mais parce que le `play_round` ne la mesure pas.
+3. **Case 14-bis nécessaire** : refaire le toy avec le design case 12 (deux territoires, payoff intra-territoire E[f(w) | x=x_hat, alpha, prior]) pour mesurer correctement la dissociation FBT sur compression bit2.
+
+**Distinction importante** : la **null structurel de case 13** (toy N=16/M=2/bit0, 0/16 paysages) reste valide — son design utilise le même `play_round` buggé, mais comme les deux stratégies arrivent au même `fitness(x) = bit(x) ∈ {0,1}`, la mesure de la symétrie intra-fibre reste correcte (les deux stratégies produisent le même x → même bit → même fitness). **C'est seulement pour le cas dissociation FBT que le bug instrumental masque la mesure** : quand les deux stratégies devraient choisir x différents sur un paysage discriminant, le bug les force à calculer `fitness(x_différent) ∈ {0,1}` au lieu de `fitness(w_MAP_different)`, et la mesure devient dégénérée.
+
+**Implication pour case 13** : le verdict **RÉFUTATION** de case 13 reste valide (les deux stratégies convergent vers le même α, et même avec un `play_round` correct elles calculeraient `E[f(W)|x]` symétrique). Mais pour **les verdicts CONFIRMATION** (cas où la dissociation émerge), un `play_round` correct est nécessaire. Case 12 utilise le bon design, ce qui explique pourquoi sa dissociation 4/8 a émergé.
+
 ### Prédictions de mise à l'échelle cross-case
 
 | Régime | N | M | Compression | Gap attendu | Verifié |
