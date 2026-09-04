@@ -36,7 +36,7 @@ layout: cover
 
 # Sommaire
 
-<div class="grid grid-cols-[1fr_230px_1fr] gap-6 mt-4 items-center">
+<div class="grid grid-cols-2 gap-8 mt-4">
 <div>
 
 **Qu'est-ce que l'intelligence artificielle ?**<br>
@@ -48,12 +48,6 @@ layout: cover
 **Intelligence symbolique**<br>
 <span class="text-sm text-slate-500">Comment utiliser le raisonnement et les mathématiques ?</span>
 
-</div>
-<div class="flex items-center justify-center">
-  <img src="./images/img_004.png" class="rounded shadow-lg w-full max-h-[390px] object-contain" alt="Couverture AIMA Russell & Norvig" />
-</div>
-<div>
-
 **Intelligence probabiliste**<br>
 <span class="text-sm text-slate-500">Comment agir dans l'incertitude ?</span>
 
@@ -63,6 +57,9 @@ layout: cover
 **Application : le langage naturel**<br>
 <span class="text-sm text-slate-500">Chatbots, LLM, IA générative et agents</span>
 
+</div>
+<div class="flex items-center justify-center">
+  <img src="./images/img_004.png" class="rounded shadow-lg max-h-[430px]" alt="Couverture AIMA Russell & Norvig" />
 </div>
 </div>
 
@@ -88,9 +85,6 @@ layout: section
 # Qu'est-ce que l'intelligence artificielle?
 
 
-<div class="grid grid-cols-[55%_42%] gap-6 items-start mt-2">
-<div>
-
 - Définitions multiples
 - Notre angle :
   - « Agir de façon rationnelle »
@@ -108,19 +102,10 @@ layout: section
 - Théorie du contrôle
 - Linguistique
 
-</div>
-<div>
-
-<img src="./images/img_005.png" class="w-full max-h-[360px] object-contain" alt="Neurone biologique : dendrites, soma, axone, synapse — l'inspiration des réseaux de neurones artificiels" />
-
-</div>
-</div>
+<img src="./images/img_005.png" class="absolute top-[110px] right-[20px] w-[460px]" alt="Neurone biologique : dendrites, soma, axone, synapse — l'inspiration des réseaux de neurones artificiels" />
 ---
 
 # Développement (1/2)
-
-<div class="grid grid-cols-[38%_62%] gap-6">
-<div>
 
 **Histoire succincte**
 
@@ -134,14 +119,11 @@ layout: section
   - Robotique, vision
 - 1990s : L'IA devient une science
 
-</div>
-<div class="flex flex-col items-center justify-center gap-5">
-  <img src="./images/img_006.png" class="w-full max-h-[210px] object-contain" alt="Repères historiques" />
-  <div class="flex w-full gap-8 items-center justify-center">
-    <img src="./images/img_007.jpg" class="h-16 max-w-[35%] object-contain" alt="Logo DARPA" />
-    <img src="./images/img_008.jpg" class="h-12 max-w-[55%] object-contain" alt="Logo ImageNet" />
-  </div>
-</div>
+<img src="./images/img_006.png" class="absolute top-[110px] right-[20px] w-[300px] max-w-full object-contain" alt="Repères historiques" />
+
+<div class="absolute top-[300px] right-[20px] w-[300px] flex gap-4 items-center justify-center">
+  <img src="./images/img_007.jpg" class="h-10 max-w-[45%] object-contain" alt="Logo DARPA" />
+  <img src="./images/img_008.jpg" class="h-8 max-w-[55%] object-contain" alt="Logo ImageNet" />
 </div>
 
 > **État de l'art** : voir la slide « Développement (2/2) » pour la chronologie moderne (1997 → 2025).
@@ -170,9 +152,6 @@ layout: section
 
 # Dans la vie de tous les jours
 
-<div class="grid grid-cols-[64%_36%] gap-6 items-center">
-<div>
-
 - **Poste** : reconnaissance des adresses et tri automatique du courrier
 - **Banque** : lecture des chèques, vérification des signatures, évaluation de crédits
 - **Médecine** : diagnostic assiste, prescriptions, suivi et prévention
@@ -183,11 +162,7 @@ layout: section
 - **Image numérique** : détection de visages, mise au point, compression
 - **Jeux** : personnages et adversaires intelligents (NPCs adaptatifs)
 
-</div>
-<div class="flex items-center justify-center">
-  <img src="./images/img_013.jpg" class="w-full max-h-[360px] object-contain rounded-lg shadow-lg" alt="Écosystème IoT — objets du quotidien connectés" />
-</div>
-</div>
+<img src="./images/img_013.jpg" class="absolute top-[260px] right-[20px] w-[260px] max-h-[260px] object-contain" alt="Écosystème IoT — objets du quotidien connectés" />
 
 
 ---
@@ -196,9 +171,6 @@ layout: section
 
 # Les agents
 
-
-<div class="grid grid-cols-[55%_42%] gap-6 items-start mt-2">
-<div>
 
 **Définition**
 
@@ -213,13 +185,7 @@ layout: section
 - Limitations
   - ressources disponibles
 
-</div>
-<div>
-
-<img src="./images/img_009.png" class="w-full max-h-[360px] object-contain" alt="Les agents" />
-
-</div>
-</div>
+<img src="./images/img_009.png" class="absolute top-[110px] right-[20px] w-[460px]" alt="Les agents" />
 ---
 
 # Conception d'agents
@@ -261,9 +227,6 @@ layout: section
 # Agent réflexe fondé sur un modèle
 
 
-<div class="grid grid-cols-[48%_50%] gap-6 items-start mt-2">
-<div>
-
 **Agent réflexe avec modèle**
 
 - Fonctionnement interne
@@ -274,13 +237,7 @@ layout: section
 
 - Flexibilité vs complexité
 
-</div>
-<div>
-
-<img src="./images/img_012.png" class="w-full max-h-[360px] object-contain" alt="Agent réflexe fondé sur un modèle" />
-
-</div>
-</div>
+<img src="./images/img_012.png" class="absolute top-[110px] right-[20px] w-[460px]" alt="Agent réflexe fondé sur un modèle" />
 ---
 
 
@@ -433,9 +390,6 @@ layout: section
 
 # Formulation de problèmes
 
-<div class="grid grid-cols-[40%_60%] gap-6">
-<div>
-
 **Itinéraire**
 
 - État initial, test de but
@@ -444,24 +398,16 @@ layout: section
 - Coût de chemin
 - Solution = Séquence
 
-<img src="./images/img_018.png" class="w-full max-h-[190px] object-contain" alt="Plateau de dames avec six pions noirs disposés sur l'échiquier" />
-
-</div>
-<div>
+<img src="./images/img_018.png" class="absolute top-[110px] right-[20px] w-[260px] max-h-[220px] object-contain" alt="Plateau de dames avec six pions noirs disposés sur l'échiquier" />
 
 **Abstractions**
 
 - Assemblage robotique
 - Problèmes jouets
 
-<img src="./images/img_robot_extracted.png" class="w-full max-h-[135px] object-contain" alt="Bras robotique articulé — assemblage robotique" />
-<div class="grid grid-cols-2 gap-4 mt-2">
-  <img src="./images/img_019.png" class="w-full max-h-[115px] object-contain" alt="8-puzzle (état initial mélangé)" />
-  <img src="./images/img_021.png" class="w-full max-h-[115px] object-contain" alt="Missionnaires et cannibales" />
-</div>
-
-</div>
-</div>
+<img src="./images/img_robot_extracted.png" class="absolute top-[345px] right-[20px] w-[380px] max-h-[170px] object-contain" alt="Bras robotique articulé — assemblage robotique" />
+<img src="./images/img_019.png" class="absolute top-[452px] right-[40px] w-[160px]" alt="8-puzzle (état initial mélangé)" />
+<img src="./images/img_021.png" class="absolute top-[452px] right-[210px] w-[160px]" alt="Missionnaires et cannibales" />
 
 
 
@@ -599,7 +545,6 @@ layout: default
 </div>
 
 
-<div class="grid grid-cols-[60%_40%] gap-6 items-center">
 <div class="dense-list">
 
 - Arbre de jeu
@@ -623,10 +568,8 @@ layout: default
 - Techniques probabilistes (Expectiminimax, Monte-Carlo)
 
 </div>
-<div class="flex items-center justify-center">
-  <img src="./images/img_031.png" class="w-full max-h-[340px] object-contain" alt="Arbre minimax du morpion : niveaux MAX(X) et MIN(O), utilités -1/0/+1" />
-</div>
-</div>
+
+<img src="./images/img_031.png" class="absolute top-[110px] right-[20px] w-[350px] max-h-[300px] object-contain" alt="Arbre minimax du morpion : niveaux MAX(X) et MIN(O), utilités -1/0/+1" />
 
 
 
@@ -1219,10 +1162,11 @@ layout: section
 <!-- Forme extensive : arbre ou chaque noeud = décision, feuilles = gains -->
 
 </div>
-</div>
+<div>
 
-<div class="flex justify-center mt-4">
-  <img src="./images/img_070.png" class="w-[420px] max-h-[230px] object-contain" alt="Matrice de gains du jeu Ballet/Fight : préférences croisées des deux joueurs, valeurs (2,1) et (1,2)" />
+<img src="./images/img_070.png" class="w-[300px] max-w-full max-h-[300px] object-contain" alt="Matrice de gains du jeu Ballet/Fight : préférences croisées des deux joueurs, valeurs (2,1) et (1,2)" />
+
+</div>
 </div>
 ---
 
