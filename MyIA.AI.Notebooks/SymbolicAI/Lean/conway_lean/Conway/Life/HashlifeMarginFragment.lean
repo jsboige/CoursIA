@@ -190,13 +190,28 @@ Diagnostic du 2026-09-04 (c.5539811910) : toutes les briques préliminaires sont
 `hashlife_correct_margin_of_hcap c k h_central (L3 c k h_central)` : L3/L4 sont les seuls
 maillons ouverts. -/
 
+/-- **P4.4 L2 — copie locale byte-identical de `jumpCaptured`** (pattern
+    d'inlining du lake, cf HashlifeCorrectness L6436 : le `jumpCaptured` que
+    consomme `hashlife_correctN` y est `private` — inline de
+    `Conway.Life.JumpCapture.jumpCaptured` pour casser le cycle d'import
+    A↔B, `JumpCapture.lean` important CE module). Ce module ne peut donc ni
+    voir le private ni importer `JumpCapture` (cycle) : même remède, copie
+    byte-identical. La defeq des corps identiques (delta-unfolding des deux
+    `def` semi-reducibles) fait passer l'appel à `hashlife_correctN` ci-dessous. -/
+private def jumpCapturedF (c : MacroCell) : Bool :=
+  (evolve (2 ^ c.level) ((padCenter2 c).toGrid (0, 0))).all fun p =>
+    decide ((2 ^ c.level : Int) ≤ p.1) &&
+    decide (p.1 < (2 ^ c.level : Int) + ((2 ^ (c.level + 1) : Nat) : Int)) &&
+    decide ((2 ^ c.level : Int) ≤ p.2) &&
+    decide (p.2 < (2 ^ c.level : Int) + ((2 ^ (c.level + 1) : Nat) : Int))
+
 /-- **P4.4 L2 (réduction sorry-stable).** L'égalité globale du cadre se réduit à
     l'hypothèse de capture de trajectoire de la machine N : `hashlife_correctN` (prouvé)
     clôt le but dès `hcap`. Les maillons ouverts sont L3 (relever `centralCorrect c k`
     en `hcap`) et L4 (égalité restreinte → globale). -/
 theorem hashlife_correct_margin_of_hcap (c : MacroCell) (k : Nat)
     (h_central : centralCorrect c k)
-    (hcap : ∀ t ≤ 2^k, jumpCaptured
+    (hcap : ∀ t ≤ 2^k, jumpCapturedF
       (gridToMacroCellWithOffset (evolve t (c.toGrid (0, 0)))).2 = true) :
     evolveHashlifeFast (2^k) (c.toGrid (0, 0)) = evolve (2^k) (c.toGrid (0, 0)) :=
   hashlife_correctN (2^k) (c.toGrid (0, 0)) hcap
