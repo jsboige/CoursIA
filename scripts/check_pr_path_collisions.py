@@ -525,10 +525,36 @@ def list_open_prs(repo: str, limit: int) -> list[PrRow]:
 
 
 def find_marker(repo: str, number: int) -> tuple[str, str] | None:
-    """(id, body) of the marker comment on PR ``number``, or None."""
-    comments = _gh_json(["pr", "view", str(number), "--repo", repo,
-                         "--json", "comments"]) or {}
-    return find_marker_entry(comments.get("comments") or [])
+    """(id, body) of the marker comment on PR ``number``, or None.
+
+    Reads the REST collection, NOT ``gh pr view --json comments`` (#14421).
+    The two routes disagree on what ``id`` means, and only one of them is
+    addressable by the writer:
+
+    ==========================================  ==========================
+    source                                      ``id`` of a comment
+    ==========================================  ==========================
+    ``gh pr view --json comments`` (GraphQL)    ``IC_kwDOH2Odns8AAAAB...``
+    ``gh api repos/O/R/issues/N/comments``      ``5535634631``
+    ==========================================  ==========================
+
+    ``edit_comment`` spends that id on ``PATCH /repos/{repo}/issues/comments/
+    {id}``, a REST route that only accepts the database id. Fed a GraphQL
+    node id it answers ``404 Not Found`` -- deterministically, for every
+    update and every retract, while POST (which needs no id at all) keeps
+    succeeding. That asymmetry is the whole signature of #14421: run 364
+    reported ``post=13 update=0 retract=0``, 13/13 creations confirmed and
+    0/10 in-place writes, and the organ stayed mute ~39 h because it could
+    never refresh a marker it had already posted.
+
+    ``--paginate`` matters: a PR whose marker sits past the first page of
+    comments would otherwise read as "no marker" and be re-POSTED as a
+    duplicate. ``--slurp`` wraps the pages in an outer list, flattened here.
+    """
+    pages = _gh_json(["api", "--paginate", "--slurp",
+                      f"repos/{repo}/issues/{number}/comments"]) or []
+    comments = [c for page in pages for c in page]
+    return find_marker_entry(comments)
 
 
 def scan_markers(
