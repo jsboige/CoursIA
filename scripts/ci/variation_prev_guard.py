@@ -168,6 +168,37 @@ _PREV_PR_REF_RE = re.compile(
 )
 
 
+# Inline code spans and fenced blocks. A `prev:` clause written INSIDE
+# backticks is a CITATION (documentation of another grain's tag), never a
+# declaration -- the canonical tag line is plain text. #14550 measured the
+# cost of conflating the two: a lane that documented its successor, or that
+# explained WHY it did not point `prev:` at a still-open PR, had its own
+# correct tag overruled by its own prose. Masking preserves offsets so the
+# slices reported in the verdict stay meaningful.
+_CODE_SPAN_RE = re.compile(r"```.*?```|`[^`\n]*`", re.DOTALL)
+
+
+def _mask_code_spans(text: str) -> str:
+    r"""Blank out inline code spans / fenced blocks, preserving length."""
+    return _CODE_SPAN_RE.sub(lambda m: " " * len(m.group(0)), text)
+
+
+def _declared_prev_pr(text: str | None) -> int | None:
+    r"""The single `prev:` PR the canonical tag reader sees (#14550).
+
+    `grain_tag.parse_prev` strips backticks before reading, so it finds the
+    declaration even when a lane wraps its whole tag line in code marks.
+    Unioning it back in is what keeps the mask from creating a BLIND SPOT:
+    masking alone would let a backticked tag skip every invariant.
+    """
+    if not text:
+        return None
+    try:
+        return gt.parse_prev(text).get("pr_number")
+    except Exception:
+        return None
+
+
 def find_prev_self_references(text: str | None, current_pr: int | None) -> list[dict]:
     r"""Return every `prev:` whose PR reference equals `current_pr` (#13475 invariant 1).
 
@@ -185,10 +216,12 @@ def find_prev_self_references(text: str | None, current_pr: int | None) -> list[
     if not text or current_pr is None:
         return []
     out: list[dict] = []
-    for m in _PREV_PR_REF_RE.finditer(text):
+    for m in _PREV_PR_REF_RE.finditer(_mask_code_spans(text)):
         n = int(m.group(1))
         if n == current_pr:
             out.append({"prev_pr": n, "match": m.group(0)})
+    if not out and _declared_prev_pr(text) == current_pr:
+        out.append({"prev_pr": current_pr, "match": "prev: (tag)"})
     return out
 
 
@@ -204,11 +237,15 @@ def find_prev_target_pr_numbers(text: str | None) -> list[int]:
         return []
     seen: set[int] = set()
     out: list[int] = []
-    for m in _PREV_PR_REF_RE.finditer(text):
+    for m in _PREV_PR_REF_RE.finditer(_mask_code_spans(text)):
         n = int(m.group(1))
         if n not in seen:
             seen.add(n)
             out.append(n)
+    declared = _declared_prev_pr(text)
+    if declared is not None and declared not in seen:
+        seen.add(declared)
+        out.append(declared)
     return out
 
 
