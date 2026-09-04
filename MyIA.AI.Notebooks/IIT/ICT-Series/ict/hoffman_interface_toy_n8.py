@@ -283,10 +283,49 @@ def run_experiment(seed: int) -> dict:
     return results
 
 
-def run_full(n_seeds: int = 10) -> dict:
-    """10 seeds pour une variance inter-seeds plus robuste que case 11 (5)."""
-    seeds = [0, 1, 2, 7, 13, 42, 51, 73, 88, 99][:n_seeds]
-    runs = [run_experiment(s) for s in seeds]
+# Seeds qui ont produit l'artefact commité. Nommées ici pour rendre
+# `run_full()` reproductible : c'est la liste canonique case 12, distincte
+# de case 11 et case 13.
+DEFAULT_SEEDS: tuple[int, ...] = (0, 1, 7, 42, 99)
+
+# Paramètres evolution qui ont produit l'artefact commité. 80 pop × 200 gen
+# (vs defauts `evolve_alpha(n_pop=200, n_gen=500)`) ont été choisis pour
+# rester sous ~125 s par run complet. `n_pop`/`n_gen` sont sérialisés dans
+# l'artefact (cf `run_full`) pour qu'aucun écart ne se re-commette.
+DEFAULT_N_POP: int = 80
+DEFAULT_N_GEN: int = 200
+
+
+def run_full(
+    n_seeds: int = 5,
+    seeds: tuple[int, ...] | None = None,
+    n_pop: int = DEFAULT_N_POP,
+    n_gen: int = DEFAULT_N_GEN,
+) -> dict:
+    """Run complet : produit l'artefact sérialisé commité.
+
+    Args:
+        n_seeds: nombre de seeds à utiliser. Si `seeds` est fourni, contrôle
+            la longueur via slice `[:n_seeds]` après le tuple.
+        seeds: tuple de seeds. Si None, utilise `DEFAULT_SEEDS`. La liste
+            canonique case 12 est `(0, 1, 7, 42, 99)`.
+        n_pop: taille de population passée à `evolve_alpha`.
+        n_gen: nombre de générations passées à `evolve_alpha`.
+
+    Returns:
+        dict avec setup complet (n_seeds, seeds, n_pop, n_gen, world, sensory,
+        canonical_compression, landscapes) + runs par seed + aggregates par
+        paysage. Les params `n_pop`/`n_gen` sont sérialisés pour rendre
+        l'artefact reproductible.
+    """
+    if seeds is None:
+        seeds = DEFAULT_SEEDS[:n_seeds]
+    elif len(seeds) < n_seeds:
+        seeds = tuple(list(seeds) + list(DEFAULT_SEEDS))[:n_seeds]
+    runs = [
+        _run_experiment_with_params(s, n_pop=n_pop, n_gen=n_gen)
+        for s in seeds[:n_seeds]
+    ]
 
     alpha_truth_by_ln = {ln: [] for ln in LANDSCAPES}
     alpha_fit_by_ln = {ln: [] for ln in LANDSCAPES}
@@ -306,7 +345,9 @@ def run_full(n_seeds: int = 10) -> dict:
         "experiment": "case_12_hoffman_interface_toy_n8",
         "issue": 8182,
         "n_seeds": n_seeds,
-        "seeds": seeds,
+        "seeds": list(seeds[:n_seeds]),
+        "n_pop": n_pop,
+        "n_gen": n_gen,
         "world_size": N_W,
         "sensory_size": N_X,
         "canonical_compression": list(CANONICAL),
@@ -320,8 +361,60 @@ def run_full(n_seeds: int = 10) -> dict:
     }
 
 
+def _run_experiment_with_params(seed: int, n_pop: int, n_gen: int) -> dict:
+    """Variante de `run_experiment` qui passe `n_pop`/`n_gen` à `evolve_alpha`.
+
+    Sans cette indirection, `run_full` réutilise les defauts `evolve_alpha`
+    (`n_pop=200, n_gen=500`) et l'artefact n'est pas reproductible depuis
+    `run_full` (defaut G.2 -- métriques honnêtes).
+    """
+    results = {}
+    for landscape_name in LANDSCAPES:
+        alpha_truth = evolve_alpha(
+            "truth", landscape_name, seed, n_pop=n_pop, n_gen=n_gen,
+        )
+        alpha_fit = evolve_alpha(
+            "fitness", landscape_name, seed, n_pop=n_pop, n_gen=n_gen,
+        )
+        transfer_truth = {}
+        transfer_fit = {}
+        w_prior = np.ones(N_W) / N_W
+        for target_landscape in LANDSCAPES:
+            if target_landscape == landscape_name:
+                continue
+            _, fit_payoff = play_round(
+                "fitness", "truth", alpha_fit, alpha_truth,
+                LANDSCAPES[target_landscape], w_prior
+            )
+            truth_payoff, _ = play_round(
+                "fitness", "truth", alpha_fit, alpha_truth,
+                LANDSCAPES[target_landscape], w_prior
+            )
+            fit_self, _ = play_round(
+                "fitness", "fitness", alpha_fit, alpha_fit,
+                LANDSCAPES[target_landscape], w_prior
+            )
+            truth_self, _ = play_round(
+                "truth", "truth", alpha_truth, alpha_truth,
+                LANDSCAPES[target_landscape], w_prior
+            )
+            transfer_truth[target_landscape] = truth_self
+            transfer_fit[target_landscape] = fit_self
+        results[landscape_name] = {
+            "alpha_truth": alpha_truth,
+            "alpha_fit": alpha_fit,
+            "transfer_truth": transfer_truth,
+            "transfer_fit": transfer_fit,
+            "self_truth": play_round("truth", "truth", alpha_truth, alpha_truth,
+                                      LANDSCAPES[landscape_name], w_prior)[0],
+            "self_fit": play_round("fitness", "fitness", alpha_fit, alpha_fit,
+                                    LANDSCAPES[landscape_name], w_prior)[0],
+        }
+    return results
+
+
 def main() -> None:
-    results = run_full(n_seeds=10)
+    results = run_full(n_seeds=5)
     out_dir = Path(__file__).parent / "results"
     out_dir.mkdir(exist_ok=True)
     out_path = out_dir / "hoffman_interface_toy_n8_results.json"
