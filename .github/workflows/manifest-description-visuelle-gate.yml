@@ -55,7 +55,14 @@ concurrency:
 jobs:
   manifest-description-visuelle:
     name: "MANIFEST.md description_visuelle field enforced on changed files"
-    runs-on: ubuntu-latest
+    # Routage #14283 tranche 3 (decision ai-01 2026-09-02) : jambe Linux
+    # auto-hebergee. Le `if:` ci-dessous est la garde anti-fork exigee par
+    # scripts/ci/check_self_hosted_runner_policy.py ; un `runs-on` STATIQUE la
+    # rend auditable (une expression dynamique leve DYNAMIC_RUNS_ON).
+    # Les PRs de fork sautent le job -- pr_gate.py compte `skipped` comme OK.
+    # Retour arriere = remettre `runs-on: ubuntu-latest` + retrait de l'allowlist.
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
 
     steps:
       - name: Checkout
@@ -113,7 +120,7 @@ jobs:
 
           if [ "$fail" -ne 0 ]; then
             echo "" >> "$GITHUB_STEP_SUMMARY"
-            echo "FIX: add a \`**Description visuelle** :\` line per figure entry in the MANIFEST, observing the PNG (`Read` on the .png) and describing its visual content (chart type / axes / colors / disposition), distinct from the notebook's pedagogical subject. See scripts/notebook_tools/extract_readme_figures.py for the canonical schema." >> "$GITHUB_STEP_SUMMARY"
+            echo "FIX: add a \`**Description visuelle** :\` line per figure entry in the MANIFEST, observing the PNG (\`Read\` on the .png) and describing its visual content (chart type / axes / colors / disposition), distinct from the notebook's pedagogical subject. See scripts/notebook_tools/extract_readme_figures.py for the canonical schema." >> "$GITHUB_STEP_SUMMARY"
             exit 1
           fi
           echo "::notice title=Manifest description_visuelle gate::Checked $checked changed MANIFEST.md file(s); all declare description_visuelle per figure."

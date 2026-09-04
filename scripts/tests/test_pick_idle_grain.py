@@ -552,6 +552,74 @@ def test_repair_json_carries_a_grain_field(monkeypatch, capsys):
     assert "refus" not in payload
 
 
+def test_adjacency_red_advice_replaces_three_generic_gestures(monkeypatch, capsys):
+    """#13967 : quand la cause du rouge est `adjacency`, le picker doit
+    remplacer les trois conseils generiques (`update-branch` / rebase /
+    pousser) par le remede propre : « piocher un grain d'un AUTRE genre,
+    ne PAS retaguer ». Mesure du 2026-09-01 : 13 PRs / 25 rouges
+    mesurables = premiere cause de rouge de la flotte -- les trois
+    gestes generiques sont invariants au predicat et la lane boucle.
+
+    Le test pin le contrat par la sortie (pas de `update-branch`,
+    mention explicite du remede). La fixture ajoute le champ
+    optionnel `is_adjacency=True` au PR rouge -- c'est le point
+    d'entree qu'un futur wrapper autour de
+    `scripts/ci/variation_adjacency_guard.py` remplira pour passer
+    du verdict de l'organe au conseil du picker (le picker n'appelle
+    pas gh par PR rouge -- trop couteux, trop de surface).
+    """
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    pr = _pr(99, "myia-po-2026:CoursIA", 30)
+    pr["is_adjacency"] = True
+    _patch_backlog(monkeypatch, [pr], {99: red})
+    rc = pig.main(["--lane", "myia-po-2026:CoursIA"])
+    out = capsys.readouterr().out
+    assert rc == 0
+    # Le remede propre doit etre present.
+    assert "Piocher un grain d'UN AUTRE genre" in out, (
+        f"le conseil adjacency est absent : {out[-400:]!r}"
+    )
+    assert "Ne PAS retaguer la PR" in out, (
+        "l'interdit de re-tag (protocole variation §2) doit etre rappele"
+    )
+    # Les trois gestes generiques doivent etre ABSENTS : aucun d'eux ne
+    # modifie `genre` ou `prev_genre`, donc aucun ne leve le blocage.
+    assert "gh pr update-branch" not in out, (
+        "`gh pr update-branch` ne leve jamais adjacency (predicat "
+        "invariant au SHA). Sa presence ici ferait perdre un cycle a "
+        "la lane qui suit le conseil."
+    )
+    # L'en-tete Reparation doit toujours etre la (coherence avec le
+    # test existant).
+    assert "GRAIN DU CYCLE" in out
+    assert "#99" in out
+
+
+def test_non_adjacency_red_keeps_three_generic_gestures(monkeypatch, capsys):
+    """#13967 : controle positif du test precedent.
+
+    Un PR rouge pour une cause REPARABLE par push (check FAILURE
+    substance) doit continuer d'afficher les trois gestes generiques.
+    Sans ce controle, la correction pourrait supprimer le conseil pour
+    tout le monde et le test precedent passerait quand meme.
+    """
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    pr = _pr(11, "myia-po-2026:CoursIA", 30)
+    # Pas de champ `is_adjacency` (defaut implicite = False / absent).
+    assert "is_adjacency" not in pr
+    _patch_backlog(monkeypatch, [pr], {11: red})
+    rc = pig.main(["--lane", "myia-po-2026:CoursIA"])
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert "Trois gestes, dans cet ordre" in out
+    assert "gh pr update-branch" in out, (
+        "un PR rouge substance doit conserver le premier geste "
+        "(rejouer les checks sur tete fraiche peut le reparer)"
+    )
+    # Et l'absence du remede adjacency est l'autre moitie du contrat.
+    assert "Piocher un grain d'UN AUTRE genre" not in out
+
+
 def test_a_clean_lane_is_not_sent_to_repair(monkeypatch, capsys):
     """Controle positif des deux precedents.
 
@@ -1322,3 +1390,112 @@ def test_file_saturation_requires_at_least_one_required_check():
         ("advisory opt", "NEUTRAL", False),
     ])
     assert pig.file_saturation_cause(s, 30.0, 24.0) is None
+
+# ---------------------------------------------------------------------------
+def test_13972_authoritative_genre_returns_docs_when_body_says_docs() -> None:
+    """#13972 : body qui dit Grain: MED/docs -> auteur a declare META.
+
+    Reproduction directe du cas fondateur documente par ai-01 sur #10475 :
+    un titre qui suggere 'notebook' (infer_genre rendrait 'notebook-python',
+    du CONTENU), un body qui dit 'Grain: MED/docs' (du META). Le tag du body
+    est autoritatif : la sortie doit etre 'docs'.
+    """
+    title = "consolider les doublons de MyIA.AI.Notebooks/notebook_tools/"
+    body = (
+        "Grain: MED/docs -- lane myia-po-2026:CoursIA\n"
+        "\n"
+        "## Contexte\n"
+        "Ce grain ne compte pas comme le plat principal (G-VAR-1)."
+    )
+    labels = []
+    inferred = pig.infer_genre(title, labels)
+    declared = pig.authoritative_genre(body)
+    # L inference se trompe (titre contient Notebooks) :
+    assert inferred == "notebook-python", (
+        f"sanity: infer_genre sur le titre doit renvoyer notebook-python, "
+        f"obtenu {inferred!r}"
+    )
+    # Mais le body est autoritatif :
+    assert declared == "docs", (
+        f"authoritative_genre doit renvoyer docs depuis le body, "
+        f"obtenu {declared!r}"
+    )
+
+
+def test_13972_authoritative_genre_returns_none_when_body_has_no_tag() -> None:
+    """#13972 : body sans tag -> None, infer_genre garde la main."""
+    body = (
+        "## Summary\n\n"
+        "Issue ouverte, pas de tag Grain: dans le body.\n"
+        "On laisse infer_genre decider depuis le titre."
+    )
+    assert pig.authoritative_genre(body) is None
+
+
+def test_13972_authoritative_genre_canonicalizes_aliases() -> None:
+    """#13972 : un alias (ex translation) est canonicalise.
+
+    translation -> docs, notebook-genai-python -> notebook-python.
+    """
+    body_translation = "Grain: MED/translation -- lane myia-po-2026:CoursIA"
+    assert pig.authoritative_genre(body_translation) == "docs"
+
+    body_compound = "Grain: DEEP/notebook-genai-python -- lane myia-po-2026:CoursIA"
+    assert pig.authoritative_genre(body_compound) == "notebook-python"
+
+
+def test_13972_authoritative_genre_empty_body_returns_none() -> None:
+    """#13972 : body vide -> None (pas de tag, pas d erreur)."""
+    assert pig.authoritative_genre("") is None
+    # None safe aussi (defense contre les chemins de bord ou le caller passe
+    # directement le body=None sans normaliser en amont).
+    assert pig.authoritative_genre(None) is None
+
+
+def test_13972_pool_genre_prefers_body_over_title(monkeypatch) -> None:
+    """#13972 integration : le pool attribue le genre du body, pas du titre.
+
+    Cas fondateur #10475 : titre 'consolider MyIA.AI.Notebooks/notebook_tools/'
+    ferait infer_genre -> notebook-python (CONTENU), body porte Grain: docs.
+    Le dict du pool doit porter genre: docs pour que la restriction G-VAR-1
+    (CONTENU only) elimine cet item.
+
+    fetch_pool() appelle `gh issue list` en subprocess ; on mock pour
+    injecter un payload shape-compatible.
+    """
+    payload = [
+        {
+            "number": 10475,
+            "title": "consolider MyIA.AI.Notebooks/notebook_tools/ doublons",
+            "labels": [],
+            "createdAt": "2026-08-01T00:00:00Z",
+            "updatedAt": "2026-09-01T00:00:00Z",
+            "body": (
+                "Grain: MED/docs -- lane myia-po-2026:CoursIA\n"
+                "\n"
+                "Ce grain est META, G-VAR-1 : pas le plat principal."
+            ),
+        },
+        {
+            "number": 99999,
+            "title": "reel notebook python content",
+            "labels": [],
+            "createdAt": "2026-08-01T00:00:00Z",
+            "updatedAt": "2026-09-01T00:00:00Z",
+            "body": "Grain: DEEP/notebook-python -- lane myia-po-2026:CoursIA",
+        },
+    ]
+    fake_proc = _FakeCompleted(json.dumps(payload))
+    monkeypatch.setattr(pig.subprocess, "run", lambda *a, **kw: fake_proc)
+    pool = pig.fetch_pool()
+    by_number = {it["number"]: it for it in pool}
+    # #10475 : titre dirait notebook-python, body dit docs -> genre = docs (META)
+    assert by_number[10475]["genre"] == "docs", (
+        f"sanity: titre contient 'notebook_tools', infer_genre rendrait "
+        f"'notebook-python' (CONTENU) ; le body porte 'Grain: MED/docs' "
+        f"qui doit primer. Obtenu: {by_number[10475]['genre']!r}"
+    )
+    # #99999 : titre et body disent notebook-python -> genre = notebook-python (CONTENU)
+    assert by_number[99999]["genre"] == "notebook-python"
+
+

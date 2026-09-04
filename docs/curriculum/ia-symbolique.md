@@ -20,9 +20,9 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 
 | Métrique | Valeur |
 |----------|--------|
-| Notebooks | 255 |
+| Notebooks | 258 |
 | PRODUCTION | 0 |
-| BETA | 249 |
+| BETA | 252 |
 | ALPHA | 6 |
 
 ## SymbolicAI (1 notebooks)
@@ -47,7 +47,7 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 | 10 | Argument_Analysis_Agentic-5-jtms : Truth Maintenance… | BETA | Oui |
 | 11 | ArgumentProfile : la fiche d'identite… | BETA | Oui |
 | 12 | Argumentum : la carte de sophisme, du nœud de taxonomie… | BETA | Oui |
-| 13 | Instrument G_t^arg -> G_{t+1}^arg — graphes… | BETA | Oui |
+| 13 | Graphes d'argumentation datés — l'instrument $G_t^{arg}… | BETA | Oui |
 | 14 | Argumentation abstraite de Dung — sémantiques grounded,… | BETA | Oui |
 | 15 | Analyse Rhétorique Collaborative par Agents IA -… | BETA | Non |
 | 16 | Routage multi-backend : decider ou echouer bruyamment | BETA | Oui |
@@ -69,8 +69,8 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 |---|----------|----------|------------|
 | 1 | Lean 4 - Installation et Configuration | BETA | Non |
 | 2 | Lean 10 : LeanDojo - ML/LLM Theorem Proving | BETA | Non |
-| 3 | Lean 11b - TorchLean : Implémentation Python des… | BETA | Non |
-| 4 | Lean 11 - TorchLean : Réseaux de Neurones Formellement… | BETA | Non |
+| 3 | Lean 11 - TorchLean : Réseaux de Neurones Formellement… | BETA | Non |
+| 4 | Lean 11b - TorchLean : Implémentation Python des… | BETA | Non |
 | 5 | Lean-12 : Le Theoreme de Sensibilite (Huang 2019) | BETA | Non |
 | 6 | Lean-12b — Théorème de Sensibilité de Huang (companion… | BETA | Non |
 | 7 | Lean-13 : Le Theoreme de Kochen-Specker (Cabello 18… | BETA | Non |
@@ -90,23 +90,23 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 | 21 | Lean 17a — Conway, les Nœuds et la Preuve de Piccirillo | BETA | Non |
 | 22 | Lean 17b — Invariants de Nœuds : Calcul et Vérification | BETA | Non |
 | 23 | Lean 17c — Le lake knot_lean par ses déclarations… | BETA | Non |
-| 24 | Lean-18 : A* et l'optimalité sous heuristique… | BETA | Non |
-| 25 | Lean-19 : La Conjecture de Sendov (preuve L. Mazur,… | BETA | Non |
-| 26 | Lean 2 - Types Dependants et Calcul des Constructions | BETA | Non |
-| 27 | Lean-20 : Le manuel *Analysis I* de T. Tao en Lean 4… | BETA | Non |
-| 28 | Lean-21 : La conjecture de Freiman-Ruzsa polynomiale… | BETA | Non |
-| 29 | Lean-21b : Trois primitives de PFR, et l'endroit exact… | BETA | Non |
-| 30 | Lean-22 : Detection MIMO par flips -- le seuil 2 log N… | BETA | Non |
-| 31 | Lean-22b : le lake mimo_lean par ses énoncés —… | BETA | Non |
-| 32 | Lean-22c : Le budget de descente - quand la… | BETA | Non |
-| 33 | Lean-23 : Le problème inverse de Galois — M₂₃ refermé… | BETA | Non |
-| 34 | Lean-24 : ERC-20 sous Lean 4 — l'invariant de… | BETA | Non |
-| 35 | Lean-24b — ERC-20 natif : l'invariant de conservation… | BETA | Non |
-| 36 | Lean-26 : le lake calibration_lean par ses énoncés —… | BETA | Non |
-| 37 | Lean-27 — Cohérence et témoin : de Finetti construit le… | BETA | Non |
-| 38 | Lean-28 : Hommage à James R. Munkres — le cours 18.901… | BETA | Non |
-| 39 | Lean-29 : coloration d'arêtes et conjecture de Tutte —… | BETA | Non |
-| 40 | Lean 3 - Propositions et Preuves | BETA | Non |
+| 24 | Lean-19 : La Conjecture de Sendov (preuve L. Mazur,… | BETA | Non |
+| 25 | Lean 2 - Types Dependants et Calcul des Constructions | BETA | Non |
+| 26 | Lean-20 : Le manuel *Analysis I* de T. Tao en Lean 4… | BETA | Non |
+| 27 | Lean-21 : La conjecture de Freiman-Ruzsa polynomiale… | BETA | Non |
+| 28 | Lean-21b : Trois primitives de PFR, et l'endroit exact… | BETA | Non |
+| 29 | Lean-22 : Detection MIMO par flips -- le seuil 2 log N… | BETA | Non |
+| 30 | Lean-22b : le lake mimo_lean par ses énoncés —… | BETA | Non |
+| 31 | Lean-22c : Le budget de descente - quand la… | BETA | Non |
+| 32 | Lean-23 : Le problème inverse de Galois — M₂₃ refermé… | BETA | Non |
+| 33 | Lean-24 : ERC-20 sous Lean 4 — l'invariant de… | BETA | Non |
+| 34 | Lean-24b — ERC-20 natif : l'invariant de conservation… | BETA | Non |
+| 35 | Lean-26 : le lake calibration_lean par ses énoncés —… | BETA | Non |
+| 36 | Lean-27 — Cohérence et témoin : de Finetti construit le… | BETA | Non |
+| 37 | Lean-28 : Hommage à James R. Munkres — le cours 18.901… | BETA | Non |
+| 38 | Lean-29 : coloration d'arêtes et conjecture de Tutte —… | BETA | Non |
+| 39 | Lean 3 - Propositions et Preuves | BETA | Non |
+| 40 | Lean-30 : Le problème de Hopf sur S⁶ — digestion d'une… | BETA | Non |
 | 41 | Lean 4 - Quantificateurs et Logique du Premier Ordre | BETA | Non |
 | 42 | Lean 5 - Mode Tactique | BETA | Non |
 | 43 | Lean 6 - Mathlib4 : La Bibliotheque Mathematique | BETA | Non |
@@ -141,9 +141,9 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 | 20 | Planners-9-HTN (C#) | BETA | Oui |
 | 21 | Planners-9-HTN - Planification Hiérarchique | BETA | Oui |
 | 22 | Planners-10: LLMs pour la Planification | BETA | Non |
-| 23 | Planners-11: Unified Planning | BETA | Oui |
-| 24 | Planners-12: Learning to Plan avec LOOP | BETA | Non |
-| 25 | Planners-10b: Le LLM comme reducteur d'espace de… | BETA | Non |
+| 23 | Planners-10b: Le LLM comme reducteur d'espace de… | BETA | Non |
+| 24 | Planners-11: Unified Planning | BETA | Oui |
+| 25 | Planners-12: Learning to Plan avec LOOP | BETA | Non |
 
 ## SymbolicAI/SMT (45 notebooks)
 
@@ -151,17 +151,17 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 |---|----------|----------|------------|
 | 1 | Z3 (C# / .NET) — Introduction au solveur SMT | BETA | Oui |
 | 2 | Z3-Python 01 — Introduction a la resolution de… | BETA | Oui |
-| 3 | Z3 (C# / .NET) — Sudoku par contraintes | BETA | Oui |
-| 4 | Z3-Python 02 — Sudoku comme problème de satisfaction de… | BETA | Oui |
-| 5 | Z3 (C# / .NET) — Tactiques, théories BitVec et Array | BETA | Oui |
-| 6 | Z3-Python 03 — Tactiques et théories | BETA | Oui |
-| 7 | Z3 (C# / .NET) — Théorie des chaînes et expressions… | BETA | Oui |
-| 8 | Z3-Python 04 — Chaînes de caractères et expressions… | BETA | Oui |
-| 9 | Z3 (C# / .NET) — Quantificateurs et preuves par… | BETA | Oui |
-| 10 | Z3-Python 05 — Quantificateurs et preuves formelles | BETA | Oui |
-| 11 | Z3-Python 06 -- Optimisation avancee (twin C#) | BETA | Oui |
-| 12 | Z3-Python 06 — Optimisation avancee | BETA | Oui |
-| 13 | Z3-Python 07 — Du style declaratif LINQ au solveur Z3… | BETA | Oui |
+| 3 | Z3-Python 01b — Du style declaratif LINQ au solveur Z3… | BETA | Oui |
+| 4 | Z3 (C# / .NET) — Sudoku par contraintes | BETA | Oui |
+| 5 | Z3-Python 02 — Sudoku comme problème de satisfaction de… | BETA | Oui |
+| 6 | Z3 (C# / .NET) — Tactiques, théories BitVec et Array | BETA | Oui |
+| 7 | Z3-Python 03 — Tactiques et théories | BETA | Oui |
+| 8 | Z3 (C# / .NET) — Théorie des chaînes et expressions… | BETA | Oui |
+| 9 | Z3-Python 04 — Chaînes de caractères et expressions… | BETA | Oui |
+| 10 | Z3 (C# / .NET) — Quantificateurs et preuves par… | BETA | Oui |
+| 11 | Z3-Python 05 — Quantificateurs et preuves formelles | BETA | Oui |
+| 12 | Z3-Python 06 -- Optimisation avancee (twin C#) | BETA | Oui |
+| 13 | Z3-Python 06 — Optimisation avancee | BETA | Oui |
 | 14 | Z3-Python-08 : Ordonnancement de tâches (Job-Shop… | BETA | Oui |
 | 15 | Z3-Python-09 : L'enigme d'Einstein (Zebra puzzle) | BETA | Oui |
 | 16 | 10. Cryptarithmes (SEND + MORE = MONEY) | BETA | Oui |
@@ -195,7 +195,7 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 | 44 | 17 — UNSAT cores Z3 : expliquer l'insatisfiabilité (le… | BETA | Oui |
 | 45 | Notebook 18 - L'enigme d'Einstein : la logique des… | BETA | Oui |
 
-## SymbolicAI/SemanticWeb (26 notebooks)
+## SymbolicAI/SemanticWeb (27 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -209,57 +209,59 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 | 8 | SW-13-Reasoners | BETA | Oui |
 | 9 | SW-13 (C#) : Raisonneurs RDF/OWL — Inferer des… | BETA | Oui |
 | 10 | SW-14 — Le coup ontologique comme diff de graphe… | BETA | Oui |
-| 11 | SW-2-RDFBasics | BETA | Oui |
-| 12 | SW-2b-Python-RDFBasics | BETA | Oui |
-| 13 | SW-3-GraphOperations | BETA | Oui |
-| 14 | SW-3b-Python-GraphOperations | BETA | Oui |
-| 15 | SW-4-SPARQL | BETA | Oui |
-| 16 | SW-4b-Python-SPARQL | BETA | Oui |
-| 17 | SW-5-LinkedData | BETA | Non |
-| 18 | SW-5b-Python-LinkedData | BETA | Non |
-| 19 | SW-6-RDFS | BETA | Oui |
-| 20 | SW-6b-Python-RDFS | BETA | Oui |
-| 21 | SW-7-OWL | BETA | Oui |
-| 22 | SW-7b-Python-OWL | BETA | Non |
-| 23 | SW-8-CSharp-SHACL | BETA | Oui |
-| 24 | SW-8-Python-SHACL | BETA | Oui |
-| 25 | SW-9-CSharp-JSONLD — JSON-LD avec dotNetRDF (twin C#) | ALPHA | Oui |
-| 26 | SW-9-Python-JSONLD | BETA | Oui |
+| 11 | SW-15 — Le coup argumentatif : greffer AIF sur le coup… | BETA | Oui |
+| 12 | SW-2-RDFBasics | BETA | Oui |
+| 13 | SW-2b-Python-RDFBasics | BETA | Oui |
+| 14 | SW-3-GraphOperations | BETA | Oui |
+| 15 | SW-3b-Python-GraphOperations | BETA | Oui |
+| 16 | SW-4-SPARQL | BETA | Oui |
+| 17 | SW-4b-Python-SPARQL | BETA | Oui |
+| 18 | SW-5-LinkedData | BETA | Non |
+| 19 | SW-5b-Python-LinkedData | BETA | Non |
+| 20 | SW-6-RDFS | BETA | Oui |
+| 21 | SW-6b-Python-RDFS | BETA | Oui |
+| 22 | SW-7-OWL | BETA | Oui |
+| 23 | SW-7b-Python-OWL | BETA | Non |
+| 24 | SW-8-CSharp-SHACL | BETA | Oui |
+| 25 | SW-8-Python-SHACL | BETA | Oui |
+| 26 | SW-9-CSharp-JSONLD — JSON-LD avec dotNetRDF (twin C#) | ALPHA | Oui |
+| 27 | SW-9-Python-JSONLD | BETA | Oui |
 
-## SymbolicAI/SmartContracts (30 notebooks)
+## SymbolicAI/SmartContracts (31 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | SC-0-Cypherpunk-Origins - Les origines Cypherpunk de la… | BETA | Oui |
 | 2 | SC-1-Setup-Foundry - Environnement Smart Contracts | BETA | Oui |
 | 3 | SC-2-Setup-Web3py - Python et la Blockchain | BETA | Oui |
-| 4 | SC-3-Solidity-Basics - Fondements de Solidity | BETA | Oui |
-| 5 | SC-4-Functions-State - Fonctions et État | BETA | Oui |
-| 6 | SC-5-Inheritance - Heritage et Interfaces | BETA | Oui |
-| 7 | SC-6-Errors-Events - Erreurs et Événements | BETA | Oui |
-| 8 | SC-10-Account-Abstraction - ERC-4337 | BETA | Oui |
-| 9 | SC-11-LLM-Assisted - Développement Smart Contracts… | BETA | Non |
-| 10 | SC-7-Token-Standards - Standards de Tokens | BETA | Oui |
-| 11 | SC-7b : ERC-20 + Lean — vérification formelle de… | BETA | Non |
-| 12 | SC-7c : ERC-20 — compagnon natif Lean (kernel… | BETA | Non |
-| 13 | SC-8-DeFi-Primitives - Primitives DeFi | BETA | Oui |
-| 14 | SC-9-DAO-Governance - Gouvernance DAO | BETA | Oui |
-| 15 | SC-12-Foundry-Testing - Tests avec Foundry | BETA | Non |
-| 16 | SC-13-Fuzz-Invariants - Fuzz Testing | BETA | Oui |
-| 17 | SC-14-Formal-Vérification - Vérification Formelle | BETA | Non |
-| 18 | SC-15-Zero-Knowledge-Proofs - Preuves a Divulgation… | BETA | Oui |
-| 19 | SC-16-Homomorphic-Encryption - Chiffrement… | BETA | Oui |
-| 20 | SC-17-E2E-Verifiable-Voting - Vote Electronique… | BETA | Oui |
-| 21 | SC-18-Vyper - Smart Contracts en Python-like | BETA | Oui |
-| 22 | SC-19-Ripple-XRP - Protocole Ripple et XRP Ledger | BETA | Oui |
-| 23 | SC-20-Bitcoin-Scripting - Bitcoin, UTXO et Scripts | BETA | Non |
-| 24 | SC-21-Move-Sui - Move sur Sui | BETA | Oui |
-| 25 | SC-22-Solana-Anchor - Solana avec Anchor | BETA | Oui |
-| 26 | SC-23-Cross-Chain - Interoperabilite Cross-Chain | BETA | Oui |
-| 27 | SC-24 : Deploiement sur Testnets | BETA | Oui |
-| 28 | SC-25 : Deploiement Mainnet (L2) | BETA | Oui |
-| 29 | SC-26 : Projet Final - DApp Complete | BETA | Oui |
-| 30 | SC-27 : Dette d'irréversibilité — la boucle de… | BETA | Oui |
+| 4 | SC-2b - Bac a sable institutionnel : des acteurs, pas… | BETA | Non |
+| 5 | SC-3-Solidity-Basics - Fondements de Solidity | BETA | Oui |
+| 6 | SC-4-Functions-State - Fonctions et État | BETA | Oui |
+| 7 | SC-5-Inheritance - Heritage et Interfaces | BETA | Oui |
+| 8 | SC-6-Errors-Events - Erreurs et Événements | BETA | Oui |
+| 9 | SC-10-Account-Abstraction - ERC-4337 | BETA | Oui |
+| 10 | SC-11-LLM-Assisted - Développement Smart Contracts… | BETA | Non |
+| 11 | SC-7-Token-Standards - Standards de Tokens | BETA | Oui |
+| 12 | SC-7b : ERC-20 + Lean — vérification formelle de… | BETA | Non |
+| 13 | SC-7c : ERC-20 — compagnon natif Lean (kernel… | BETA | Non |
+| 14 | SC-8-DeFi-Primitives - Primitives DeFi | BETA | Oui |
+| 15 | SC-9-DAO-Governance - Gouvernance DAO | BETA | Oui |
+| 16 | SC-12-Foundry-Testing - Tests avec Foundry | BETA | Non |
+| 17 | SC-13-Fuzz-Invariants - Fuzz Testing | BETA | Oui |
+| 18 | SC-14-Formal-Vérification - Vérification Formelle | BETA | Non |
+| 19 | SC-15-Zero-Knowledge-Proofs - Preuves a Divulgation… | BETA | Oui |
+| 20 | SC-16-Homomorphic-Encryption - Chiffrement… | BETA | Oui |
+| 21 | SC-17-E2E-Verifiable-Voting - Vote Electronique… | BETA | Oui |
+| 22 | SC-18-Vyper - Smart Contracts en Python-like | BETA | Oui |
+| 23 | SC-19-Ripple-XRP - Protocole Ripple et XRP Ledger | BETA | Oui |
+| 24 | SC-20-Bitcoin-Scripting - Bitcoin, UTXO et Scripts | BETA | Non |
+| 25 | SC-21-Move-Sui - Move sur Sui | BETA | Oui |
+| 26 | SC-22-Solana-Anchor - Solana avec Anchor | BETA | Oui |
+| 27 | SC-23-Cross-Chain - Interoperabilite Cross-Chain | BETA | Oui |
+| 28 | SC-24 : Deploiement sur Testnets | BETA | Oui |
+| 29 | SC-25 : Deploiement Mainnet (L2) | BETA | Oui |
+| 30 | SC-26 : Projet Final - DApp Complete | BETA | Oui |
+| 31 | SC-27 : Dette d'irréversibilité — la boucle de… | BETA | Oui |
 
 ## SymbolicAI/SymbolicLearning (21 notebooks)
 
@@ -287,7 +289,7 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 | 20 | SL-8 - ILP Moderne et Knowledge Graphs | BETA | Oui |
 | 21 | SL-9 - LLMs et Apprentissage Symbolique : Generation et… | BETA | Non |
 
-## SymbolicAI/Tweety (33 notebooks)
+## SymbolicAI/Tweety (34 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -313,14 +315,15 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 | 20 | Tweety-5 : Argumentation Abstraite de Dung (C# / .NET)… | BETA | Oui |
 | 21 | Argumentation Abstraite (Dung) | BETA | Oui |
 | 22 | Tweety-5b — Théorie de l'argumentation de Dung… | BETA | Non |
-| 23 | Tweety-6 — Argumentation structuree (twin C# / .NET… | BETA | Oui |
-| 24 | Argumentation Structuree | BETA | Oui |
-| 25 | Tweety-7a : Frameworks d'Argumentation Etendus (C#) | BETA | Oui |
-| 26 | Frameworks d'Argumentation Étendus | BETA | Oui |
-| 27 | Tweety-7b - Ranking Probabilistic Conditional Logic en… | BETA | Oui |
-| 28 | Sémantiques de Classement et Argumentation Probabiliste | BETA | Oui |
-| 29 | Dialogues Multi-Agents Argumentatifs (twin C#) | BETA | Oui |
-| 30 | Dialogues Multi-Agents Argumentatifs | BETA | Oui |
-| 31 | Préférences et Théorie du Vote en C# / .NET (port natif… | ALPHA | Oui |
-| 32 | Préférences et Théorie du Vote | ALPHA | Oui |
-| 33 | Tweety .NET - Probe Phase 1 axe 2 : initialisation du… | BETA | Oui |
+| 23 | Tweety-5d — Synthèse certifiée d'extensions stables :… | BETA | Non |
+| 24 | Tweety-6 — Argumentation structuree (twin C# / .NET… | BETA | Oui |
+| 25 | Argumentation Structuree | BETA | Oui |
+| 26 | Tweety-7a : Frameworks d'Argumentation Etendus (C#) | BETA | Oui |
+| 27 | Frameworks d'Argumentation Étendus | BETA | Oui |
+| 28 | Tweety-7b - Ranking Probabilistic Conditional Logic en… | BETA | Oui |
+| 29 | Sémantiques de Classement et Argumentation Probabiliste | BETA | Oui |
+| 30 | Dialogues Multi-Agents Argumentatifs (twin C#) | BETA | Oui |
+| 31 | Dialogues Multi-Agents Argumentatifs | BETA | Oui |
+| 32 | Préférences et Théorie du Vote en C# / .NET (port natif… | ALPHA | Oui |
+| 33 | Préférences et Théorie du Vote | ALPHA | Oui |
+| 34 | Tweety .NET - Probe Phase 1 axe 2 : initialisation du… | BETA | Oui |

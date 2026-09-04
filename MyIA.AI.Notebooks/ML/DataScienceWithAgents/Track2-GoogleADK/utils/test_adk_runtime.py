@@ -63,6 +63,18 @@ def test_build_adk_model_forwards_real_key_without_logging_it():
     assert model._additional_args["api_key"] == "configured-test-key"
 
 
+def test_build_adk_model_forwards_qwen_generation_budget():
+    model = build_adk_model(
+        _config(
+            ProviderType.QWEN,
+            model="qwen3.6-flash",
+            api_key="configured-test-key",
+        ).model_copy(update={"max_tokens": 512})
+    )
+    assert model.model == "openai/qwen3.6-flash"
+    assert model._additional_args["max_tokens"] == 512
+
+
 def test_build_adk_model_openai_uses_provider_mapping():
     model = build_adk_model(
         _config(
@@ -80,6 +92,20 @@ def test_build_data_agent_uses_public_adk_agent_and_real_tool():
     assert agent.name == "dataset_profile_agent"
     assert isinstance(agent.model, adk_runtime.LiteLlm)
     assert len(agent.tools) == 1
+    assert agent.tools[0] is dataset_profile
+
+
+def test_build_agent_supports_distinct_pedagogical_roles():
+    agent = adk_runtime.build_agent(
+        name="planner_agent",
+        description="Planifie une analyse.",
+        instruction="Produis un plan court.",
+        tools=(dataset_profile,),
+        config=_config(),
+    )
+    assert agent.name == "planner_agent"
+    assert agent.description == "Planifie une analyse."
+    assert agent.instruction == "Produis un plan court."
     assert agent.tools[0] is dataset_profile
 
 
@@ -150,6 +176,31 @@ def test_run_data_agent_creates_session_and_collects_adk_evidence():
         assert result.tool_calls == ("dataset_profile",)
         assert result.tool_responses == ("dataset_profile",)
         assert result.tool_was_invoked
+        runner.close.assert_awaited_once()
+
+    adk_runtime.asyncio.run(exercise())
+
+
+def test_run_agent_turn_uses_the_supplied_adk_agent():
+    async def exercise():
+        service = MagicMock()
+        service.create_session = AsyncMock()
+        agent = MagicMock(name="planner_agent")
+        _Runner.instances.clear()
+        with (
+            patch.object(adk_runtime, "InMemorySessionService", return_value=service),
+            patch.object(adk_runtime, "Runner", _Runner),
+        ):
+            result = await adk_runtime.run_agent_turn(
+                agent,
+                "Planifie cette analyse",
+                session_id="planner-session",
+            )
+
+        runner = _Runner.instances[0]
+        assert runner.kwargs["agent"] is agent
+        assert runner.run_kwargs["session_id"] == "planner-session"
+        assert result.response_text == "960 cellules"
         runner.close.assert_awaited_once()
 
     adk_runtime.asyncio.run(exercise())
@@ -231,6 +282,28 @@ def test_run_data_agent_times_out_and_closes_runner():
         _HangingRunner.instances[0].close.assert_awaited_once()
 
     adk_runtime.asyncio.run(exercise())
+
+
+def test_smoke_reports_missing_qwen_config_without_traceback(capsys):
+    async def exercise():
+        with (
+            patch.object(
+                adk_runtime,
+                "_parse_args",
+                return_value=MagicMock(prompt="prompt"),
+            ),
+            patch.object(
+                adk_runtime,
+                "run_data_agent",
+                side_effect=ValueError(
+                    "Configuration Qwen cloud incomplete : QWEN_API_KEY"
+                ),
+            ),
+        ):
+            assert await adk_runtime._smoke() == 2
+
+    adk_runtime.asyncio.run(exercise())
+    assert capsys.readouterr().out.startswith("RECOVERABLE-LOCAL:")
 
 
 def test_runtime_unavailable_exposes_sota_verdict():

@@ -73,8 +73,7 @@ name: PR gate stale-verdict sweep
 
 on:
   schedule:
-    # Hourly on an off-:00 minute (anti-stampede convention, as in
-    # pr-gate-missing-advisory.yml).
+    # Hourly on an off-:00 minute (anti-stampede convention).
     #
     # #12728: this was every 20 minutes, and the cadence was destroying its own
     # organ. The premise of the old comment -- "cheap enough (one short job) not
@@ -92,9 +91,13 @@ on:
     # them. Matching the cadence to the observed service time is what stops the
     # sweeps killing each other.
     #
-    # This does NOT fix the queue wait. The final timing step below measures the
-    # run-created -> job-started queue separately from observed execution time;
-    # #12728 requires that evidence before any further cadence or runner change.
+    # This does NOT fix the queue wait BY ITSELF. The cadence change stopped the
+    # sweeps killing each other; the wait itself is addressed by routing this
+    # job to the dedicated coursia-linux pool (see runs-on). The final timing
+    # step below keeps measuring the run-created -> job-started queue separately
+    # from observed execution time: #12728's acceptance is read on THAT step,
+    # post-routing (expected: queue collapses from ~6000-8000 s to near zero;
+    # cancellations from 19/30 to ~0).
     - cron: '7 * * * *'
   workflow_dispatch:
     inputs:
@@ -107,7 +110,8 @@ on:
 permissions:
   contents: read
   actions: write       # re-run the ORIGINAL `PR gate` run (see the note below)
-  pull-requests: read
+  pull-requests: write # gate-absent step below: labels via `gh pr edit` (#14477)
+  issues: write        # ... and remediation comments via `gh pr comment`
 
 concurrency:
   # One sweep at a time, and never cancel a running one: a sweep that is killed
@@ -119,9 +123,52 @@ concurrency:
 jobs:
   sweep:
     name: Re-aggregate stale PR gate verdicts
-    runs-on: ubuntu-latest
+    # Routed to the self-hosted Linux pool (#14201 PART 2, #12728 acceptance) :
+    # this sweep is a 2-minute job that waited 1.6-2.2 h for a GitHub-hosted
+    # slot (98-99 % queue, measured on 30 runs, see #12728) and was cancelled
+    # 19/30 by its own successor -- the organ went quiet precisely under the
+    # congestion it exists to absorb. The coursia-linux pool is dedicated
+    # capacity (mandat user : consommer les runs conteneurises, ce sont les
+    # GitHub-hosted qui coutent), so the queue wait collapses at the source.
+    # Coupling assumed: a dead supervisor now starves this sweep too -- covered
+    # by TWO independent observers, linux-runner-starvation-advisory.yml
+    # (#14263, extinction/starvation) and pr-gate-sweep-health-advisory.yml
+    # (last successful sweep > 1 h, runs on ubuntu-latest so it survives what
+    # it watches).
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
     timeout-minutes: 15
     steps:
+      - name: Bootstrap gh into the persistent toolcache
+        # The coursia-linux image (#14171: ubuntu:24.04 + python3/jq/curl/git)
+        # deliberately does not ship gh, and this sweep is gh-driven. The
+        # binary is installed ONCE into the toolcache volume: the volume
+        # persists across ephemeral containers -- that is its purpose -- so
+        # every sweep after the first reuses it. No setup-python / pip here on
+        # purpose either: the image's python3 suffices, which keeps this sweep
+        # immune to the RUNNER_TOOL_CACHE bug class that broke Python tooling
+        # on mangled generations (2026-09-02) -- the bootstrap hardcodes the
+        # mount point and its worst case is a re-download, never a break.
+        env:
+          GH_BOOTSTRAP_VERSION: "2.80.0"
+        run: |
+          set -uo pipefail
+          if command -v gh >/dev/null 2>&1; then
+            echo "[gh] preinstalled on this runner"
+            gh --version
+            exit 0
+          fi
+          GH_BIN="/opt/hostedtoolcache/bin/gh"
+          if [ ! -x "$GH_BIN" ]; then
+            VER="${GH_BOOTSTRAP_VERSION}"
+            echo "[gh] bootstrapping v${VER} into toolcache (one-time, cached for every later sweep)"
+            curl -fsSL "https://github.com/cli/cli/releases/download/v${VER}/gh_${VER}_linux_amd64.tar.gz" -o /tmp/gh.tgz
+            tar -xzf /tmp/gh.tgz -C /tmp
+            mkdir -p /opt/hostedtoolcache/bin
+            mv "/tmp/gh_${VER}_linux_amd64/bin/gh" "$GH_BIN"
+          fi
+          echo "/opt/hostedtoolcache/bin" >> "$GITHUB_PATH"
+          "$GH_BIN" --version
+
       # No checkout / setup-python / pip here on purpose. This sweep no longer
       # runs `pr_gate.py`: it re-runs the original workflow run (see the note in
       # the re-aggregation step). That removes ~40 s of runner time per sweep,
@@ -160,12 +207,21 @@ jobs:
             [ -z "${NUM:-}" ] && continue
             # details_url (.../actions/runs/{run_id}/job/{job_id}) is collected
             # on purpose: it is the only field carrying the run id, which the
-            # selector needs to fold check-runs per (run_id, name) instead of
-            # per name -- three workflows emit a job named "Ratchet (base vs
-            # PR)" and a name-only fold merges their verdicts (#11808).
+            # selector resolves through the map below to fold check-runs per
+            # (workflow_id, name) instead of per name -- three workflows emit a
+            # job named "Ratchet (base vs PR)" and a name-only fold merges their
+            # verdicts (#11808).
             BODY=$(gh api "repos/$REPO/commits/$SHA/check-runs?per_page=100" \
                      --jq '[.check_runs[] | {name, status, conclusion, started_at, details_url}]' 2>/dev/null) || continue
-            printf '{"number":%s,"sha":"%s","fork":%s,"checks":%s}\n' "$NUM" "$SHA" "${FORK:-false}" "$BODY" >> /tmp/runs.jsonl
+            # Carte run_id -> workflow_id. UN seul appel de plus par PR (pas par
+            # run) : la liste des runs du SHA porte deja `workflow_id`. C'est ce
+            # qui permet de replier les runs JUMEAUX d'un MEME workflow sans
+            # jamais fusionner deux workflows homonymes (#11808). Si l'appel
+            # echoue, la carte est vide et la cle retombe sur run_id : le
+            # comportement anterieur, jamais plus permissif.
+            WFMAP=$(gh api "repos/$REPO/actions/runs?head_sha=$SHA&per_page=100" --jq '[.workflow_runs[] | {key:(.id|tostring), value:.workflow_id}] | from_entries' 2>/dev/null)
+            if [ -z "${WFMAP:-}" ]; then WFMAP='{}'; fi
+            printf '{"number":%s,"sha":"%s","fork":%s,"checks":%s,"workflows":%s}\n' "$NUM" "$SHA" "${FORK:-false}" "$BODY" "$WFMAP" >> /tmp/runs.jsonl
           done < /tmp/openprs.txt
           echo "[stale-sweep] open PRs inspected: $(wc -l < /tmp/runs.jsonl | tr -d ' ')"
 
@@ -192,21 +248,46 @@ jobs:
           # scripts/tests/test_pr_gate_sweep_select.py, which points this at a
           # fixture. Default is the sweep's own collection file.
           #
-          # Fold key is (run_id, name), NEVER the name alone (#11808). Three
-          # workflows emit a job displaying the same name "Ratchet (base vs
-          # PR)"; folding by name lets the most recent of the three erase the
-          # verdicts of the other two -- measured 2026-08-19 on #11804: an
-          # Output-Failure SUCCESS at 16:21 covered a live Papermill FAILURE
-          # from 16:19, and this sweep re-ran a gate on a PR that was NOT
-          # healthy. The run id is not in the REST payload; details_url
-          # (.../actions/runs/{run_id}/job/{job_id}) carries it at no extra
-          # API call. `gh run rerun` rewrites a run's check-run IN PLACE, so
-          # same (run_id, name) keeps latest-wins -- the fold's original
-          # purpose, a superseded attempt of the SAME workflow -- and only the
-          # cross-workflow merge disappears.
-          def _fold_key(c):
+          # Fold key is (workflow_id, name) -- NEVER the name alone (#11808), and
+          # no longer (run_id, name) either (defect measured 2026-09-01).
+          #
+          # Not the name alone: three distinct workflows emit a job displaying
+          # the same name "Ratchet (base vs PR)". Folding by name lets the most
+          # recent of the three erase the verdicts of the other two -- measured
+          # 2026-08-19 on #11804, where an Output-Failure SUCCESS at 16:21
+          # covered a live Papermill FAILURE from 16:19 and this sweep re-ran a
+          # gate on a PR that was NOT healthy.
+          #
+          # Not the run id either: that key assumed the only way ONE workflow
+          # yields two check-runs on one SHA is a rerun -- which rewrites its
+          # check-run IN PLACE and so keeps the same run id. That is false for a
+          # workflow triggered by SEVERAL events. `Always-on guards` carries no
+          # `paths:` filter and fires on both `pull_request` and
+          # `pull_request_review`: two runs, two run ids, one workflow, one SHA.
+          # Keying on the run id kept the SUPERSEDED failure alive, so this
+          # sweep excluded the PR at every pass ("red gate, kept out") while
+          # `pr_gate.py` -- which folds by NAME, latest-wins -- saw green.
+          # Measured on #13869 (SHA d207b5e15): run 33432764140 (`pull_request`)
+          # failure 20:05:20Z, run 33435266510 (`pull_request_review`) success
+          # 20:20:51Z. 23 of the 77 open PRs (30 %) were frozen this way, three
+          # of them the coordinator's own -- which is itself the evidence that
+          # this was a mechanism, not lane indiscipline.
+          #
+          # (workflow_id, name) answers both at once: twin runs of ONE workflow
+          # fold under latest-wins (the fold's original purpose), and two
+          # DIFFERENT workflows never merge. The governing principle is that a
+          # REPAIR selector must never be STRICTER than the gate it repairs.
+          #
+          # The map is collected above at one extra API call per PR. When it is
+          # absent -- collection failure, or a fixture predating this change --
+          # the key falls back to the run id: the previous behaviour, never
+          # anything more permissive.
+          def _fold_key(c, wfmap):
               m = re.search(r"/runs/(\d+)/", c.get("details_url") or "")
-              return (m.group(1) if m else "unattributed", c.get("name") or "?")
+              if not m:
+                  return ("unattributed", c.get("name") or "?")
+              run_id = m.group(1)
+              return (str(wfmap.get(run_id, run_id)), c.get("name") or "?")
 
           def _diag(p, why, blockers):
               print(f'[stale-sweep] #{p["number"]}: red gate, kept out -- {why}: '
@@ -219,8 +300,9 @@ jobs:
                   continue
               p = json.loads(line)
               latest = {}
+              wfmap = {str(k): v for k, v in (p.get("workflows") or {}).items()}
               for c in (p.get("checks") or []):
-                  key = _fold_key(c)
+                  key = _fold_key(c, wfmap)
                   started = c.get("started_at") or ""
                   if key not in latest or started >= latest[key][0]:
                       latest[key] = (started, c)
@@ -239,7 +321,10 @@ jobs:
               # blocked pool, and precisely the ones this sweep exists for.
               gate_legs = [c for c in (p.get("checks") or []) if (c.get("name") or "") == "PR gate"]
               if not gate_legs:
-                  continue  # absent gate is pr-gate-missing-advisory.yml's case
+                  # Absent gate (never reported, vs red above) is the
+                  # "Flag PRs whose PR gate never ran" step of this same
+                  # sweep (#14477) -- re-aggregation has nothing to re-run.
+                  continue
               if not any((c.get("conclusion") or "") in RED for c in gate_legs):
                   continue
 
@@ -382,6 +467,47 @@ jobs:
 
           # Advisory organ: it acts, it never blocks.
           exit 0
+
+      # Gate ABSENT (jamais rapporte) -- replie dans CE sweep depuis #14477.
+      # Design-gate ai-01 : "la detection du gate absent rejoint le balayage
+      # [existant]. Meme population, meme requete ; seule la branche de
+      # remediation differe. Ne pas creer un troisieme organe." Le cron
+      # quotidien 05:47 de pr-gate-missing-advisory.yml disparait : cette
+      # etape tourne a la cadence de ce sweep (horaire depuis #12728 -- la
+      # latence de detection passe de <=24 h a <=1 h).
+      #
+      # Le checkout, ecarte de la re-aggregation pour ~40 s de runner par
+      # sweep (#12728 : "No checkout on purpose"), revient ICI en SPARSE :
+      # scripts/pr_gate_missing.py est un fichier stdlib pur -- quelques
+      # secondes. La penurie de runners qui motivait le retrait total est
+      # traitee a la source (pool dedie coursia-linux, #14283) et la cadence
+      # est horaire : le cout n'est plus le meme, la promesse de fond (la
+      # re-aggregation reste sans checkout) tient.
+      - name: Checkout sparse (gate-absent organ only)
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: scripts/pr_gate_missing.py
+          sparse-checkout-cone-mode: false
+
+      - name: Flag PRs whose PR gate never ran (absent, by cause)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          DRY_RUN: ${{ github.event.inputs.dry_run }}
+        run: |
+          set -uo pipefail
+          DRY=""
+          if [ "${DRY_RUN:-false}" = "true" ]; then DRY="--dry-run"; fi
+          # Advisory by construction: the organ labels/comments, never blocks.
+          # A crash labels nothing -- say so, then exit 0 (#8819: "n'a pas pu
+          # mesurer" != "sans defaut", le label pr-gate-missing n'etant pas
+          # pose). The remediation is now CAUSE-DEPENDENT (#14477): a PR in
+          # conflict with main gets the conflict remedy, NEVER the empty
+          # re-push (measured inert on #14220).
+          python scripts/pr_gate_missing.py --repo "$REPO" $DRY || {
+            echo "::warning::gate-absent sweep failed -- nothing labeled this pass"
+            exit 0
+          }
 
       - name: Measure queue and observed execution separately
         if: always()

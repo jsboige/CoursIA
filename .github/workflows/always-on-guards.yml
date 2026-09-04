@@ -56,12 +56,20 @@ on:
     branches: [ main ]
     types: [ opened, synchronize, edited, reopened ]
     # PAS de `paths:` ici -- cf en-tete + regle 2 d'#10045 + #13232.
-  pull_request_review:
-    branches: [ main ]
-    types: [ submitted, edited ]
-    # Porte le perimeter review guard : une review qui affirme un perimetre
-    # doit etre confrontee (fondateur #11268). Les autres organes sont
-    # `if:`-gates hors de cet evenement.
+  # PAS de `pull_request_review` ici : c'est un declencheur fork-reachable
+  # (FORK_REACHABLE_TRIGGERS, #14201 tranche 2), interdit sur un runner
+  # auto-heberge -- et le check_self_hosted_runner_policy.py evalue les
+  # declencheurs au niveau WORKFLOW, pas par job : le garder ici, meme gate
+  # `if:` sur un seul job, rendrait TOUT le fichier inadmissible au pool.
+  # Le perimeter review guard reprend donc SA surface d'origine sur cet
+  # evenement : perimeter-review-guard.yml, ravive sur `pull_request_review`
+  # (ubuntu-latest). Aucune double execution -- les deux fichiers se
+  # partagent les evenements, ils ne les dupliquent pas :
+  #   pull_request        -> always-on-guards (organe perimeter inclus)
+  #   pull_request_review -> perimeter-review-guard uniquement
+  # C'est exactement la condition posee par l'en-tete de ce fichier-la
+  # ("NE PAS reinscrire ... sans retirer l'organe perimeter d'always-on-guards") :
+  # ici l'organe n'est pas retire, il est RESTREINT a `pull_request`.
   workflow_dispatch:
 
 permissions:
@@ -82,7 +90,36 @@ concurrency:
 jobs:
   always-on-guards:
     name: "Always-on guards -- 12 organes, 1 checkout"
-    runs-on: ubuntu-latest
+    # Routage #14283 : premier consommateur GitHub-hosted du depot une fois
+    # secret-scan bascule -- 2650 runs same-repo en 5 jours (2026-08-28 ->
+    # 2026-09-02), timeout 25 min, aucun filtre `paths:`. Le pool Linux
+    # auto-heberge sert sa demande instantanement pendant que 23 runners
+    # restaient IDLE : le defaut etait le ROUTAGE de la file, pas la capacite.
+    #
+    # Garde anti-fork au niveau JOB (pas au niveau step) : un garde
+    # `IS_FORK` dans un `run:` laisse le job DEMARRER et le checkout
+    # s'executer -- du code de fork atteindrait le volume de travail
+    # persistant par slot (#14285). Seul un `if:` de job l'empeche.
+    # runs-on STATIQUE : une expression leverait DYNAMIC_RUNS_ON dans
+    # scripts/ci/check_self_hosted_runner_policy.py (violation bloquante).
+    #
+    # Pas de jambe fork de remplacement, et c'est MESURE, pas suppose :
+    # sur 2651 runs, le seul run de fork (33531051061, jsboigeEpita, PR
+    # interne poussee depuis un fork) est mort AU DEMARRAGE -- `jobs`
+    # total_count = 0, conclusion `startup_failure`. Or `startup_failure`
+    # est dans CONCLUSION_BAD de scripts/pr_gate.py alors que `skipped`
+    # est dans CONCLUSION_OK : la garde de job REMPLACE un rouge par un
+    # vert sur les PRs de fork, elle ne leur retire aucune capacite.
+    # Les 9 organes de substance sortent deja `exit 0` sur un fork
+    # (garde `IS_FORK` interne) ; seuls perimeter et fastlane tournaient,
+    # et le token read-only d'un fork leur refuse `checks: write`.
+    #
+    # Controle positif in-artefact : secret-scan.yml :: positive-controls
+    # fait tourner `actions/setup-python@v5` sur CE pool -- run
+    # 33691615314, runner myia-ai-01-linux-docker-6, success en 34 s.
+    # Retour arriere = remettre `runs-on: ubuntu-latest` + retirer le `if:`.
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
     timeout-minutes: 25
 
     # Env partage par les organes metadata (portes depuis leurs jobs
@@ -278,7 +315,7 @@ jobs:
           if [ "$CAP" = "True" ]; then
             gh pr edit "$PR_NUMBER" --add-label variation-light-cap-reached 2>/dev/null || true
             LANE=$(python3 -c "import json; print(json.load(open('/tmp/status.json')).get('lane','?'))" 2>/dev/null || echo "?")
-            CB=$(python3 -c "import json; c=(json.load(open('/tmp/status.json')).get('consumed_by') or {}); print(f\"#{c.get('number','?')} (merge a {c.get('mergedAt','?')})\")" 2>/dev/null || echo "une LIGHT anterieure de cette lane")
+            CB=$(python3 -c "import json; c=(json.load(open('/tmp/status.json')).get('consumed_by') or {}); print(f\"#{c.get('number','?')} (merge a {c.get('mergedAt','?')})\") if c else print('une LIGHT anterieure de cette lane')" 2>/dev/null || echo "une LIGHT anterieure de cette lane")
             # Commentaire idempotent (marqueur HTML invisible anti-spam).
             MARK="<!-- gvar2-light-cap -->"
             if ! gh pr view "$PR_NUMBER" --json comments --jq '.comments[].body' 2>/dev/null | grep -qF "$MARK"; then
@@ -617,9 +654,23 @@ jobs:
             printf '[]' > /tmp/commits.json
           fi
 
+          # PREV-INVALID metadata (#13475) : la resolution de chaque
+          # `prev: ... #N` (PR mergee / PR ouverte / issue) vit desormais
+          # dans le module, sous test -- cf `resolve_prev_targets`. Elle
+          # etait ici, en heredoc, hors de portee de tout test, et elle
+          # etait fausse : elle demandait `gh pr view --json state,merged`,
+          # or `merged` n'est pas un champ de ce `gh`, donc l'appel echouait
+          # pour CHAQUE cible, retombait sur `gh issue view` (qui repond
+          # aussi pour les PRs) et classait toute PR en issue. `prev-not-pr`
+          # rougissait sur 100 % des PRs -- dont celle qui livrait le garde.
+          # Echec de resolution -> cible absente -> le gate s'abstient
+          # (contrat FN-safety inchange).
+
           python3 scripts/ci/variation_prev_guard.py \
             --body-file /tmp/pr_body.txt \
-            --commits-file /tmp/commits.json > /tmp/verdict.json 2>/tmp/verdict.err && RC=0 || RC=$?
+            --commits-file /tmp/commits.json \
+            --current-pr "$PR_NUMBER" \
+            --resolve-targets > /tmp/verdict.json 2>/tmp/verdict.err && RC=0 || RC=$?
 
           if [ -s /tmp/verdict.err ]; then
             echo "--- helper stderr ---"
@@ -893,13 +944,13 @@ jobs:
 
           exit 1
 
-      # Porte de perimeter-review-guard.yml :: perimeter. Tourne AUSSI sur
-      # pull_request_review (submitted/edited) : une review qui affirme un
-      # perimetre doit etre confrontee (#11268). Les autres organes sont
-      # if:-gates hors de cet evenement.
+      # Porte de perimeter-review-guard.yml :: perimeter, sur `pull_request`
+      # SEULEMENT. La surface `pull_request_review` est revenue au fichier
+      # d'origine (declencheur fork-reachable, incompatible avec le pool
+      # auto-heberge) : voir le bloc `on:` ci-dessus.
       - name: "perimeter review guard (#11268)"
         id: perimeter
-        if: github.event_name == 'pull_request' || github.event_name == 'pull_request_review'
+        if: github.event_name == 'pull_request'
         continue-on-error: true
         run: |
           PR="${{ github.event.pull_request.number }}"

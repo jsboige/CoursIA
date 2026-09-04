@@ -68,7 +68,7 @@ def dataset_profile(rows: int, columns: int) -> dict[str, int | float]:
 
 def build_adk_model(config: ProviderConfig) -> LiteLlm:
     """Map a track provider configuration to ADK's public LiteLLM model."""
-    kwargs: dict[str, str | bool] = {"drop_params": True}
+    kwargs: dict[str, str | bool | int] = {"drop_params": True}
     if config.base_url:
         kwargs["api_base"] = config.base_url
     if config.api_key:
@@ -77,14 +77,34 @@ def build_adk_model(config: ProviderConfig) -> LiteLlm:
         # LiteLLM's OpenAI adapter requires a non-empty protocol credential,
         # even when a local OpenAI-compatible endpoint disables authentication.
         kwargs["api_key"] = "local-endpoint-no-auth"
+    if config.max_tokens is not None:
+        kwargs["max_tokens"] = config.max_tokens
 
     return LiteLlm(model=get_litellm_model(config), **kwargs)
 
 
-def build_data_agent(config: ProviderConfig | None = None) -> Agent:
-    """Construct a real Google ADK agent with a deterministic Python tool."""
+def build_agent(
+    name: str,
+    description: str,
+    instruction: str,
+    *,
+    tools: tuple = (),
+    config: ProviderConfig | None = None,
+) -> Agent:
+    """Construct a real Google ADK agent for one pedagogical role."""
     provider = config or get_provider_config()
     return Agent(
+        name=name,
+        description=description,
+        instruction=instruction,
+        model=build_adk_model(provider),
+        tools=list(tools),
+    )
+
+
+def build_data_agent(config: ProviderConfig | None = None) -> Agent:
+    """Construct a real Google ADK agent with a deterministic Python tool."""
+    return build_agent(
         name="dataset_profile_agent",
         description="Analyse la forme d'un jeu de données tabulaire.",
         instruction=(
@@ -92,8 +112,8 @@ def build_data_agent(config: ProviderConfig | None = None) -> Agent:
             "nombre de lignes et de colonnes, appelle obligatoirement l'outil "
             "dataset_profile, puis explique brièvement son résultat."
         ),
-        model=build_adk_model(provider),
-        tools=[dataset_profile],
+        tools=(dataset_profile,),
+        config=config,
     )
 
 
@@ -103,19 +123,18 @@ def _part_text(content: types.Content | None) -> str:
     return "".join(part.text or "" for part in content.parts).strip()
 
 
-async def run_data_agent(
+async def run_agent_turn(
+    agent: Agent,
     prompt: str,
-    config: ProviderConfig | None = None,
     *,
     app_name: str = APP_NAME,
     user_id: str = "track2-user",
     session_id: str | None = None,
     timeout_seconds: float = 120.0,
 ) -> AdkRunResult:
-    """Run one real ADK turn and return evidence from its event stream."""
+    """Run one real ADK agent turn and return its observable evidence."""
     session_id = session_id or f"session-{uuid4().hex}"
     session_service = InMemorySessionService()
-    agent = build_data_agent(config)
     runner = Runner(
         agent=agent,
         app_name=app_name,
@@ -193,6 +212,26 @@ async def run_data_agent(
     )
 
 
+async def run_data_agent(
+    prompt: str,
+    config: ProviderConfig | None = None,
+    *,
+    app_name: str = APP_NAME,
+    user_id: str = "track2-user",
+    session_id: str | None = None,
+    timeout_seconds: float = 120.0,
+) -> AdkRunResult:
+    """Run the track's dataset agent through the generic ADK turn."""
+    return await run_agent_turn(
+        build_data_agent(config),
+        prompt,
+        app_name=app_name,
+        user_id=user_id,
+        session_id=session_id,
+        timeout_seconds=timeout_seconds,
+    )
+
+
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Smoke test Google ADK + LLM reel")
     parser.add_argument(
@@ -209,8 +248,11 @@ async def _smoke() -> int:
     args = _parse_args()
     try:
         result = await run_data_agent(args.prompt)
-    except AdkRuntimeUnavailable as exc:
-        print(str(exc))
+    except (AdkRuntimeUnavailable, ValueError) as exc:
+        detail = str(exc)
+        if not detail.startswith("RECOVERABLE-LOCAL"):
+            detail = f"RECOVERABLE-LOCAL: {detail}"
+        print(detail)
         return 2
 
     print(f"ADK events: {result.event_count}")

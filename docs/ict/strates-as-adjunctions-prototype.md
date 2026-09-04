@@ -66,7 +66,7 @@ Le substrat **ICT-12c `PregnanceAnimat`** (`MyIA.AI.Notebooks/IIT/ICT-Series/ict
 
 **Null adversarial** : un animat dont `f_aj` est un **foncteur sans adjoint** (par exemple une composition libre sans co-unit) ne modifie ni (P1) ni (P2) — c'est l'**absence d'adjonction** qui tue la prédiction.
 
-**Statut au 2026-08-30** : prédiction originale **EXÉCUTÉE ET FALSIFIÉE COMME SPÉCIFICATION** ; signature empirique plus faible du canal couplé **SUPPORTÉE**. Le protocole, les tests et les résultats reproductibles vivent dans `ict/adjonction_saillance_pregnance.py`, `ict/tests/test_adjonction_saillance_pregnance.py` et `ict/adjonction_saillance_pregnance_results.json`.
+**Statut au 2026-08-30** : prédiction originale **EXÉCUTÉE ET FALSIFIÉE COMME SPÉCIFICATION** ; signature empirique plus faible du canal couplé **SUPPORTÉE**. Le protocole, les tests et les résultats reproductibles vivent dans `ict/adjonction_saillance_pregnance.py`, `ict/tests/test_adjonction_saillance_pregnance.py` et `ict/results/adjonction_saillance_pregnance_results.json`.
 
 ### 4.1 Amendement pré-exécution — observables et frontières
 

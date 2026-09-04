@@ -42,6 +42,60 @@ MyIA.AI.Notebooks/
 
 Le dépôt rassemble les notebooks pédagogiques, leurs projets Lean 4 compagnons et un corpus de traduction structuré sous `MyIA.AI.Notebooks/`. Le [catalogue généré](COURSE_CATALOG.generated.md) fait foi sur les comptes et statuts par série ; les références Lean et de traduction documentent leurs propres mesures à jour.
 
+### Graphe des prérequis entre séries
+
+Le diagramme ci-dessous encode les liens de prérequis explicites énoncés dans [Parcours recommandés](#parcours-recommandés) — chaque arête y est justifiable par une phrase existante de cette section, aucune relation n'est inventée. IIT et `cross-series` ne figurent pas comme nœuds : la section *Explorer les frontières de recherche* les mentionne sans leur assigner de position de prérequis.
+
+```mermaid
+flowchart LR
+    Search(["Search<br/>algorithmes de recherche"]) --> Sudoku(["Sudoku<br/>résolution multi-paradigme"])
+    Sudoku --> ML(["ML<br/>pipeline supervisé"])
+    ML --> RL(["RL<br/>apprentissage par expérience"])
+    ML --> GenAI(["GenAI<br/>IA générative"])
+    ML --> QuantConnect(["QuantConnect<br/>trading algorithmique"])
+    Probas(["Probas<br/>incertitude & décision"]) --> GameTheory(["GameTheory<br/>agents interactifs"])
+    GameTheory --> RL
+    SymbolicAI(["SymbolicAI<br/>logique, planners, SMT, Lean"]) --> CaseStudies(["CaseStudies<br/>systèmes hybrides"])
+
+    classDef track fill:#f5f5f5,stroke:#333,stroke-width:1px;
+    class Search,Sudoku,ML,RL,Probas,GameTheory,SymbolicAI,CaseStudies,GenAI,QuantConnect track;
+```
+
+Les deux grands itinéraires du dépôt — *« Démarrer sans service externe »* (Search → Sudoku → ML) et *« Raisonner sous incertitude et en interaction »* (Probas → GameTheory → RL) — se rejoignent sur RL, qui hérite des bases algorithmiques (Search) et stratégiques (GameTheory) pour apprendre par expérience. ML se prolonge naturellement vers GenAI et QuantConnect pour le déploiement, tandis que SymbolicAI alimente CaseStudies en briques vérifiables.
+
+#### Une seconde lecture : la construction d'*AIMA*
+
+Le graphe ci-dessus lit le dépôt par **objectif** — ce qu'on veut construire, et sous quelles contraintes d'accès. Il en existe une seconde, par **construction épistémique** : dans quel ordre un agent apprend à représenter ce qu'il sait. C'est celle de Russell & Norvig, *Artificial Intelligence: A Modern Approach*, et le dépôt l'instancie en entier — chaque étage y est une série. L'enchaînement n'apparaissait pas dans la carte parce que les itinéraires ci-dessus sont organisés par but, non par progression conceptuelle.
+
+```mermaid
+flowchart LR
+    A1(["1 · Search<br/>exploration, heuristiques"]) --> A2(["2 · Sudoku<br/>satisfaction de contraintes"])
+    A2 --> A3(["3 · SymbolicAI<br/>connaissances, logique, planification"])
+    A3 --> A4(["4 · Probas<br/>incertitude, décision"])
+    A4 --> A5(["5 · GameTheory<br/>décision multi-agent"])
+    A1 -.-> AP(["Apprentissage<br/>ML · RL"])
+    A2 -.-> AP
+    A3 -.-> AP
+    A4 -.-> AP
+    A5 -.-> AP
+
+    classDef stage fill:#f5f5f5,stroke:#333,stroke-width:1px;
+    classDef learn fill:#eef4ff,stroke:#333,stroke-width:1px,stroke-dasharray:4 3;
+    class A1,A2,A3,A4,A5 stage;
+    class AP learn;
+```
+
+| Étage *AIMA* | Série | Ce qui l'ancre dans ce dépôt |
+|---|---|---|
+| Recherche (*Part II — Problem-solving*) | **Search** | « introduit l'exploration et les heuristiques » |
+| Satisfaction de contraintes (*Part II*, chapitre 6) | **Sudoku** | [`Sudoku-06-AIMA-CSP`](MyIA.AI.Notebooks/Sudoku/Sudoku-06-AIMA-CSP-Python.ipynb) porte le nom du cadre ; la série « compare plusieurs paradigmes sur un problème constant » |
+| Connaissances et raisonnement (*Part III — Knowledge, Reasoning, and Planning*) | **SymbolicAI** | « relie logique, graphes de connaissances, planification, solveurs SMT et preuves Lean » |
+| Raisonnement dans l'incertain (*Part IV — Uncertain Knowledge and Reasoning*) | **Probas** | « apprend à représenter l'incertitude et à décider » |
+| Décision multi-agent | **GameTheory** | « ajoute des agents dont les choix dépendent les uns des autres » |
+| Apprentissage, à chaque étage | **ML**, **RL** | « transforme ces bases en pipeline d'apprentissage supervisé » ; « ces stratégies peuvent être apprises par l'expérience » |
+
+L'apprentissage n'est pas une sixième étape : c'est une **couche disponible à chaque étage** — d'où les liens pointillés. On apprend une heuristique de recherche, un modèle d'incertitude ou une stratégie de jeu sans changer d'étage. Les deux lectures ne se concurrencent pas : la première répond à « par où commencer, avec les moyens dont je dispose », la seconde à « comment ces séries s'emboîtent conceptuellement ».
+
 ---
 
 ## Parcours recommandés
@@ -97,7 +151,7 @@ Comment un ordinateur trouve-t-il son chemin dans un labyrinthe, ordonne-t-il un
 
 **[Programmation par contraintes](MyIA.AI.Notebooks/Search/Part2-CSP/README.md)** -- Un changement de paradigme : au lieu de concevoir un algorithme d'exploration, on déclare les contraintes du problème et le solveur trouve les solutions. On y apprend la propagation (AC-3, Forward Checking, MAC) qui élague l'espace avant même de chercher, les contraintes globales d'OR-Tools CP-SAT (AllDifferent, Cumulative), puis les usages industriels -- ordonnancement d'atelier, planification de projet, optimisation combinatoire (sac à dos, bin packing) -- et les frontières du domaine : contraintes souples, raisonnement temporel par algèbre d'Allen, CSP distribués entre agents, et surtout l'hybridation (CP+SAT, CP+ML, et génération de contraintes par LLM). C'est le pont vers SymbolicAI.
 
-**[Recherche heuristique avancée](MyIA.AI.Notebooks/Search/Part3-Advanced/README.md)** -- La montée en gamme sur la recherche informée : bases de données de motifs, recherche à divergence limitée et A* pondéré, mesurés en jumeaux Python/C# sur le taquin et le Rubik's cube. La discrépance combinatoire ouvre ensuite une frontière théorique vivante : colorer en ±1 sans déséquilibrer, comparer un oracle exact CP-SAT aux bornes de Beck-Fiala et Komlós, puis porter ces bornes dans le lake [`discrepancy_lean`](MyIA.AI.Notebooks/Search/discrepancy_lean/).
+**[Recherche heuristique avancée](MyIA.AI.Notebooks/Search/Part1-Foundations/README.md)** -- La montée en gamme sur la recherche informée : bases de données de motifs, recherche à divergence limitée et A* pondéré, mesurés en jumeaux Python/C# sur le taquin et le Rubik's cube. La discrépance combinatoire ouvre ensuite une frontière théorique vivante : colorer en ±1 sans déséquilibrer, comparer un oracle exact CP-SAT aux bornes de Beck-Fiala et Komlós, puis porter ces bornes dans le lake [`discrepancy_lean`](MyIA.AI.Notebooks/Search/discrepancy_lean/).
 
 **[Métaheuristiques composables](MyIA.AI.Notebooks/Search/Part4-Metaheuristics/README.md)** -- Un side-track .NET 9 (GeneticSharp) qui **reconstruit et compose** les métaheuristiques plutôt que d'importer une boîte noire : moteur, grammaire de composition, paysages en dimension N≥5, robustesse aux translations et rotations, synergie d'îles, contrôle de paramètres et No-Free-Lunch. Après avoir isolé l'opérateur de Metropolis, la série confronte ses reconstructions aux implémentations de référence de `mealpy`, puis referme l'expérience par une sélection empirique d'algorithme et une synthèse croisée. On apprend ainsi non seulement à programmer un optimiseur, mais à établir sur quelles familles de problèmes il mérite d'être choisi.
 

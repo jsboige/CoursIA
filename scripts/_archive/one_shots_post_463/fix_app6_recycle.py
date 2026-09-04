@@ -4,6 +4,16 @@ Fix App-6-Minesweeper: recycle student solutions into Exemple cells + new stubs.
 Part of Issue #463: recyclage App-1..App-11.
 """
 
+# Archive header (standard _archive convention, 2026-08)
+# - Date archived : 2026-08-06
+# - Superseded by : none (one-shot fulfilled) — output lives in
+#   MyIA.AI.Notebooks/Search/Applications/CSP/App-6-Minesweeper.ipynb
+# - Verdict recorded in : PR #478 (3cfd8dd68, 2026-04-22), PR #9580
+#
+# Per-function disposition :
+# - fix_app6() : transformation applied in PR #478; resolved examples and
+#   replacement exercise stubs were verified on main in 2026-09
+
 import json
 
 
