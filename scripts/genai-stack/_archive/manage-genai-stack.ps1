@@ -1,3 +1,6 @@
+# ARCHIVED: 2026-02 (consolidation genai-stack) -- see scripts/genai-stack/_archive/ARCHIVE_README.md
+# DISPOSITION: superseded | Successor: genai.py docker | Reason: PowerShell remplace par Python multi-plateforme
+#
 # ==============================================================================
 # GESTIONNAIRE UNIFIÉ DE LA STACK GENAI (PHASE 43)
 # Orchestrateur : ComfyUI-Qwen (GPU 0) + Forge-Turbo (GPU 1)

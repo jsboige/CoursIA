@@ -88,6 +88,9 @@ layout: section
 # Qu'est-ce que l'intelligence artificielle?
 
 
+<div class="grid grid-cols-[55%_42%] gap-6 items-start mt-2">
+<div>
+
 - Définitions multiples
 - Notre angle :
   - « Agir de façon rationnelle »
@@ -105,7 +108,13 @@ layout: section
 - Théorie du contrôle
 - Linguistique
 
-<img src="./images/img_005.png" class="absolute top-[110px] right-[20px] w-[460px]" alt="Neurone biologique : dendrites, soma, axone, synapse — l'inspiration des réseaux de neurones artificiels" />
+</div>
+<div>
+
+<img src="./images/img_005.png" class="w-full max-h-[360px] object-contain" alt="Neurone biologique : dendrites, soma, axone, synapse — l'inspiration des réseaux de neurones artificiels" />
+
+</div>
+</div>
 ---
 
 # Développement (1/2)
@@ -188,6 +197,9 @@ layout: section
 # Les agents
 
 
+<div class="grid grid-cols-[55%_42%] gap-6 items-start mt-2">
+<div>
+
 **Définition**
 
 - L'agent rationnel
@@ -201,7 +213,13 @@ layout: section
 - Limitations
   - ressources disponibles
 
-<img src="./images/img_009.png" class="absolute top-[110px] right-[20px] w-[460px]" alt="Les agents" />
+</div>
+<div>
+
+<img src="./images/img_009.png" class="w-full max-h-[360px] object-contain" alt="Les agents" />
+
+</div>
+</div>
 ---
 
 # Conception d'agents
@@ -243,6 +261,9 @@ layout: section
 # Agent réflexe fondé sur un modèle
 
 
+<div class="grid grid-cols-[48%_50%] gap-6 items-start mt-2">
+<div>
+
 **Agent réflexe avec modèle**
 
 - Fonctionnement interne
@@ -253,7 +274,13 @@ layout: section
 
 - Flexibilité vs complexité
 
-<img src="./images/img_012.png" class="absolute top-[110px] right-[20px] w-[460px]" alt="Agent réflexe fondé sur un modèle" />
+</div>
+<div>
+
+<img src="./images/img_012.png" class="w-full max-h-[360px] object-contain" alt="Agent réflexe fondé sur un modèle" />
+
+</div>
+</div>
 ---
 
 
@@ -1659,16 +1686,28 @@ layout: section
 
 
 
-# Extensions 2020+ — alignement et produit grand public
+# Extensions 2020+ — alignement et produit grand public (1/2)
 
+
+**Alignement par retour humain**
 
 - RLHF (2022, InstructGPT) : affinage par retour humain
 - ChatGPT (nov. 2022, OpenAI) : 100 M d'utilisateurs en 2 mois
-- Modèles open-weight : Llama 2 (2023), Mistral, Mixtral (MoE 2023-2024)
+
+<!-- Alignement : RLHF (InstructGPT 2022) puis ChatGPT (nov 2022, 100 M d'utilisateurs en 2 mois). -->
+---
+
+
+# Extensions 2020+ — alignement et produit grand public (2/2)
+
+
+**Modèles ouverts et frontier**
+
+- Open-weight : Llama 2 (2023), Mistral, Mixtral (MoE 2023-2024)
 - Générations suivantes (2024-2025) : Llama 3 / 3.1 / 4, DeepSeek-V3, Qwen2.5, Gemma 2
 - Frontier multimodaux omni : GPT-4o (2024), Claude 3.5 Sonnet, Gemini 1.5 / 2
 
-<!-- Alignement : RLHF (InstructGPT 2022) puis ChatGPT (nov 2022, 100 M d'utilisateurs en 2 mois). Open-weight : Llama 2, Mistral, Mixtral (2023-2024). Generations suivantes 2024-2025 : Llama 3 / 3.1 / 4, DeepSeek-V3, Qwen2.5, Gemma 2. Frontier multimodaux omni : GPT-4o, Claude 3.5 Sonnet, Gemini 1.5 / 2. -->
+<!-- Open-weight : Llama 2, Mistral, Mixtral (2023-2024). Generations suivantes 2024-2025 : Llama 3 / 3.1 / 4, DeepSeek-V3, Qwen2.5, Gemma 2. Frontier multimodaux omni : GPT-4o, Claude 3.5 Sonnet, Gemini 1.5 / 2. -->
 ---
 
 

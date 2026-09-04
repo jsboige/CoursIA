@@ -1385,7 +1385,7 @@ def test_coord_override_leve_aussi_le_state_changes_requested():
     """La trappe couvre la branche état natif (branche A) comme la branche
     commentaire (branche B) : un CHANGES_REQUESTED d'un reviewer arbitré par
     override écrit se lève aussi."""
-    cr = {"author": {"login": "hermes-bot"},
+    cr = {"author": {"login": "clusterManager-Myia"},
           "state": "CHANGES_REQUESTED", "submittedAt": at(10),
           "body": "CHANGES_REQUESTED: 2 edge cases non couverts."}
     lift = {"author": {"login": "myia-ai-01"}, "createdAt": at(12),
@@ -2338,7 +2338,9 @@ def test_13083_override_lane_leve_le_blocage():
                "body": "[BLOCK] lane myia-po-2023:CoursIA-2 — l'arbre est sale, "
                        "pas de merge tant que le drift n'est pas regle."}
     override = {"author": {"login": "myia-ai-01"}, "createdAt": at(12),
-                "body": OVERRIDE_BODY}
+                "body": "[OVERRIDE] lane myia-ai-01:CoursIA — Le blocage "
+                        "myia-po-2023 est arbitre : arbre nettoye, drift "
+                        "regle, levee prononcee."}
     assert run([blocage, override])["blocked"] is False
 
 
@@ -3994,6 +3996,68 @@ def test_13951_concern1_glyphe_severite_avec_rien_de_bloquant_ne_passe_pas():
     assert mod._sole_live_concern_is_comment_prefix(body_glyphe) is False
     assert mod.classify("jsboige", body_glyphe) == "BOT-CONCERN"
 # ---------------------------------------------------------------------------
+# Forme ETIQUETEE « Concern: » -- casse et nombre relaches (mandat user
+# 2026-09-01). Le user posait ses remarques en francais nu, sans marqueur : ses
+# commentaires etaient classes None, donc invisibles au merge-gate. Il propose
+# d'adopter « Concern: » ; le present bloc rend cette proposition vraie, pour
+# lui ET pour les agents, dont la casse varie aussi.
+# ---------------------------------------------------------------------------
+
+def test_concern_label_singulier_toute_casse_est_une_reserve():
+    for body in (
+        "Concern: ce travail devrait etre distille dans la serie QC.",
+        "concern : a distiller dans la serie QC.",
+        "CONCERN : a distiller dans la serie QC.",
+        "Concerns: deux points a revoir.",
+        "**Concern 2 :** le scope ne colle pas.",
+        "> Concern: revoir le perimetre.",
+        "Bonjour,\n\nConcern: revoir le perimetre.",
+    ):
+        assert mod.classify("jsboige", body) == "BOT-CONCERN", body
+
+
+def test_concern_narration_de_levee_ne_bloque_pas():
+    """Les 6 faux positifs mesures le 2026-09-01 sur 588 commentaires reels.
+
+    Tous CITENT le mot en REPONDANT a une reserve : les bloquer serait le
+    miroir exact du defaut que B.0 traque. Seule la forme etiquetee en tete de
+    ligne est une emission ; « les 2 concerns sont traitees » n'en est pas une.
+    """
+    for body in (
+        "Levee explicite : les 2 concerns Hermes sont adressee au commit 97e970c6.",
+        "Reponse a la CONCERN empirique (review jsboige).",
+        "Les concerns 1, 2 et 3 sont leves au commit b0d5eb59.",
+    ):
+        assert mod.classify("jsboige", body) is None, body
+
+
+def test_concern_ne_matche_pas_le_francais_courant():
+    """« concerne », « concernant », « concernes » ne sont pas des reserves."""
+    for body in (
+        "Ce commit concerne la serie QC.",
+        "Concernant la serie QC, tout est bon. LGTM",
+        "Cela ne concerne pas cette PR.",
+    ):
+        assert mod.classify("jsboige", body) is None, body
+
+
+def test_jeton_de_verdict_tolere_la_casse():
+    """Un agent qui ecrit le jeton en casse mixte emet le meme verdict."""
+    assert mod.classify("jsboige", "Comment_With_Concerns : deux reserves.") == "BOT-CONCERN"
+
+
+def test_prose_marker_reste_case_sensitive():
+    """« AVANT merge » en emphase narre une levee Voie 3 -- 2 cas mesures.
+
+    Relacher la casse de la prose retournerait l'organe contre les levees
+    qu'il doit reconnaitre.
+    """
+    assert mod.classify(
+        "jsboige",
+        "Voie 3 B.0 : issue #14030 ouverte AVANT merge, body amende.",
+    ) is None
+
+
 # #14130 - Position F : verdict attribue a un tiers sans quote ni crochet.
 # Bug fondateur (#14070, 2026-09-01) : 2 des 3 points non leves sur #14070
 # etaient les commentaires de diagnostic de la lane elle-meme, qui NOMMAIENT
@@ -4499,3 +4563,435 @@ def test_14277_ce2_enum_separateur_rouge_si_b_desactivee():
         )
     finally:
         mod._GLYPH_ENUM_PRECEDER_RE = saved
+# ---------------------------------------------------------------------------
+# #14216 — la levée coordinatrice est scopée PAR RÉSERVE, plus par PR.
+# La trappe #11639 ([OVERRIDE] lane d'un compte de levée) éteignait TOUTES
+# les réserves ouvertes de la PR : sur #14166, la levée légitime par ai-01
+# de SA réserve de collision a emporté la réserve structurelle Hermes de
+# clusterManager-Myia, et la PR serait apparue mergeable si l'organe
+# n'avait pas été relancé APRÈS le post. Le fix : un override ne lève une
+# réserve d'autrui que s'il la NOMME (login de son auteur, ou persona
+# Hermes — la forme historique canonique de #11639). Les fixtures
+# `test_coord_override_leve_aussi_le_state_changes_requested` (login
+# hermes-bot -> clusterManager-Myia) et `test_13083_override_lane_leve_le_
+# blocage` (corps nommant myia-po-2023) ont été mises à la forme scopée :
+# leur INTENT est inchangé, seule la forme du geste passe par le scope.
+# ---------------------------------------------------------------------------
+
+UNSCOPED_OVERRIDE_14216 = (
+    "[OVERRIDE] lane myia-ai-01:CoursIA — Collision à trois PRs arbitrée : "
+    "la survivante est celle-ci, ma réserve est levée."
+)
+
+SCOPED_OVERRIDE_14216 = (
+    "[OVERRIDE] lane myia-ai-01:CoursIA — Collision arbitrée : ma réserve "
+    "est levée, et celle de clusterManager-Myia aussi (Race/Switch corrigé "
+    "par le commit 06956bd0a, vérifié)."
+)
+
+
+def _pr_14216(override_body):
+    """La forme du fondateur #14166 : un BLOCAGE de ai-01 (collision) ET une
+    réserve Hermes (review COMMENTED de clusterManager-Myia) sur une PR
+    worker ; ai-01 arbitre par override. Retourne le verdict de l'organe."""
+    blocage = {"author": {"login": "myia-ai-01"}, "createdAt": at(10),
+               "body": "[BLOCAGE] lane myia-ai-01:CoursIA — collision à "
+                       "trois PRs, arbitrage en cours."}
+    hermes = {"author": {"login": "clusterManager-Myia"},
+              "state": "COMMENTED", "submittedAt": at(11),
+              "body": "[Hermes] COMMENT_WITH_CONCERNS — la prose enseigne "
+                      "Race là où le code définit Switch."}
+    lift = {"author": {"login": "myia-ai-01"}, "createdAt": at(12),
+            "body": override_body}
+    data = {
+        "number": 0, "title": "t", "author": {"login": "myia-po-2025"},
+        "comments": [blocage, lift], "reviews": [hermes],
+        "commits": [{"committedDate": at(9)}],
+    }
+    return mod.analyse(data, [], MERGED)
+
+
+def test_14216_fp1_override_non_scopee_ne_leve_pas_la_reserve_d_autrui():
+    """#14216 contrôle positif (reproduction #14166) : deux réserves, auteurs
+    différents ; l'override NON SCOPÉ de l'auteur de la première ne doit
+    éteindre que la sienne — l'organe rend BLOCKED avec 1 nit restant
+    (celui de clusterManager-Myia), pas OK."""
+    res = _pr_14216(UNSCOPED_OVERRIDE_14216)
+    assert res["blocked"] is True
+    assert len(res["blocking"]) == 1
+    assert res["blocking"][0]["author"] == "clusterManager-Myia"
+
+
+EXCLUSION_OVERRIDE_14216 = (
+    "[OVERRIDE] lane myia-ai-01:CoursIA — Levée de ma propre réserve : la "
+    "collision à trois PRs est arbitrée (#14214), cette PR est le survivant "
+    "nommé. La réserve de clusterManager-Myia n'est pas concernée par cette "
+    "levée."
+)
+
+
+def test_14216_fp2_mention_exclusion_nest_pas_un_scope():
+    """#14216 — la forme EXACTE du corps fondateur de #14166 (avant que
+    l'auteur ne retire le marqueur) : l'override y porte le login du tiers
+    dans une phrase d'EXCLUSION. La nomination seule ne suffit pas — sans
+    phrase de levée affirmative, la réserve d'autrui survit."""
+    res = _pr_14216(EXCLUSION_OVERRIDE_14216)
+    assert res["blocked"] is True
+    assert len(res["blocking"]) == 1
+    assert res["blocking"][0]["author"] == "clusterManager-Myia"
+
+
+def test_14216_vp1_override_scopee_par_login_leve_les_deux():
+    """#14216 contrôle négatif symétrique : l'override QUI NOMME le tiers
+    (login clusterManager-Myia) lève les deux réserves — le scope explicite
+    est la seule porte ouverte vers la réserve d'autrui."""
+    res = _pr_14216(SCOPED_OVERRIDE_14216)
+    assert res["blocked"] is False
+
+
+def test_14216_vp2_forme_historique_persona_hermes_reste_levee():
+    """#14216 critère 4 (l'inverse) : le durcissement ne doit pas rougir les
+    levées scopées déjà postées. La forme canonique historique de #11639 —
+    « Levée de la réserve Hermes » sans login — reste une levée VALIDE pour
+    la réserve de la persona (clusterManager-Myia)."""
+    assert mod._override_scopes_reserve(OVERRIDE_BODY, "clusterManager-Myia")
+    # ... et reste sans effet sur une réserve qu'elle ne nomme pas :
+    assert not mod._override_scopes_reserve(OVERRIDE_BODY, "myia-po-2023")
+
+
+def test_14216_unite_scope_login_persona_et_anonyme():
+    """#14216 — granularité du détecteur de scope, niveau unitaire :
+    login nommé (frontière d'identité), sous-chaîne de login = PAS un nom,
+    auteur inconnu = levable (un scope ne nomme pas ce qui n'a pas de nom)."""
+    body = "Levée des réserves : la mienne et celle de clusterManager-Myia aussi."
+    assert mod._override_scopes_reserve(body, "clusterManager-Myia")
+    assert not mod._override_scopes_reserve(body, "clusterManager-Myia2")
+    assert not mod._override_scopes_reserve(body, "Myia")  # sous-chaîne
+    assert mod._override_scopes_reserve(body, "")          # auteur inconnu
+    # persona : le mot suffit pour les comptes de la persona (avec levee)
+    assert mod._override_scopes_reserve("réserve Hermes levée", "jsboige")
+    assert not mod._override_scopes_reserve("réserve Hermes levée",
+                                            "myia-po-2023")
+    # #14216 fondateur : le nom present dans une phrase d'EXCLUSION n'est
+    # pas un scope (« n'est pas concernée par cette levée » = corps reel de
+    # la levée ai-01 sur #14166 AVANT retrait du marqueur).
+    excl = ("La réserve de clusterManager-Myia n'est pas concernée par "
+            "cette levée.")
+    assert not mod._override_scopes_reserve(excl, "clusterManager-Myia")
+
+
+def test_14216_ignored_overrides_explique_le_scope_manquant():
+    """#14216 — le rouge doit DIRE pourquoi l'override visible n'a rien
+    éteint pour la réserve survivante (même exigence de nomination que
+    #13316/#13495) : sinon un gate rouge « malgré notre override » redevient
+    indistinguable d'un bug du détecteur."""
+    res = _pr_14216(UNSCOPED_OVERRIDE_14216)
+    explained = [o for o in res["ignored_overrides"]
+                 if "#14216" in o["why"]
+                 and "clusterManager-Myia" in o["why"]]
+    assert explained, res["ignored_overrides"]
+
+
+def test_14216_ce1_mutation_scope_toujours_vrai_fp1_rougit(monkeypatch):
+    """#14216 contrôle positif par mutation : désactiver le scope (retour
+    inconditionnel True = sémantique par-PR d'avant le fix) rend la
+    reproduction fp1 VERTE — la preuve que le test mord."""
+    monkeypatch.setattr(mod, "_override_scopes_reserve",
+                        lambda b, a: True)
+    assert _pr_14216(UNSCOPED_OVERRIDE_14216)["blocked"] is False
+
+
+def test_14216_ce2_mutation_scope_toujours_faux_vp1_rougit(monkeypatch):
+    """#14216 contrôle négatif par mutation : un scope qui refuse tout
+    (jamais de levée d'autrui, même nommée) fait rougir vp1 — la porte du
+    scope explicite est bien portée par le détecteur testé."""
+    monkeypatch.setattr(mod, "_override_scopes_reserve",
+                        lambda b, a: False)
+    assert _pr_14216(SCOPED_OVERRIDE_14216)["blocked"] is True
+
+
+
+# --- #13083 instance 3 : Position I' -- `avant merge` en TETE de corps (titre)
+# sans verbe actionnel ni qualifieur bloquant. Le commentaire fondateur
+# (2026-08-26T08:11:21Z sur #13083, PR #12627) : un rapport d'audit ai-01
+# intitule « **Audit ai-01 avant merge** » etait classe BOT-CONCERN a tort,
+# bloquant la PR sur l'absence de reserve de l'auteur. Les 7 sous-patterns
+# Position I (#14199) ne matchent pas (aucun qualifieur / verification passee
+# / formule B.0 / Ball merge). Le `avant merge` en tete est un localisateur
+# temporel pur. Voir _strip_avant_merge_mention + _is_action_verb_heading.
+
+
+def test_13083_instance3_fp_fondateur_12627_neutralise():
+    """#13083 instance 3, FP fondateur #12627 (verbatim du commentaire
+    5422425135 date 2026-08-26T08:11:21Z) : « **Audit ai-01 avant merge** »
+    + prose descriptive (compte-rendu de mesure, sans verbe actionnel).
+    Position I' doit neutraliser ce `avant merge` en tete de corps -- la
+    classe rendue est None, plus BOT-CONCERN."""
+    body = (
+        "**Audit ai-01 avant merge**\n\n"
+        "Le profil deletion-heavy de la PR est un faux signal : +4098/-4635 "
+        "sur 3 notebooks + 3 labels de densite en baisse invitaient a "
+        "soupconner une regression de contenu. Mesure cellule par cellule, "
+        "origin/main rattrape les suppressions par les fusions post-coupure. "
+        "Le delta est strictement borne aux tests du nouveau moteur, qui "
+        "sont par construction absents du main pre-PR. La classification "
+        "G.4 (composite) ne s'applique pas : 1 feature, pas 4."
+    )
+    assert mod.classify("myia-ai-01", body) is None, (
+        f"FP fondateur #12627 devrait etre neutralise (Position I', "
+        f"`avant merge` temporel en tete sans verbe actionnel), "
+        f"got {mod.classify('myia-ai-01', body)!r}"
+    )
+
+
+
+def test_13083_instance3_formule_alternative_h1_neutralise():
+    """Variante du FP fondateur : titre en H1 (`#`) sans bold. Meme
+    localisation temporelle pure en tete de corps."""
+    body = (
+        "# Audit ai-01 avant merge\n\n"
+        "Verifications prealables : 0 check rouge, mergeStateStatus CLEAN, "
+        "tests verts. La PR peut etre passee en l'etat."
+    )
+    assert mod.classify("myia-ai-01", body) is None
+
+
+
+def test_13083_instance3_formule_fr_minimal_neutralise():
+    """Variante minimale : titre `Rapport avant merge` (sans bold/H1) +
+    corps descriptif. Position I' doit neutraliser."""
+    body = (
+        "Rapport avant merge\n\n"
+        "Diagnostic et verifications effectues. Pas de nit, pas de reserve."
+    )
+    assert mod.classify("jsboige", body) is None
+
+
+
+def test_13083_instance3_formule_en_neutralise():
+    """Variante EN du meme pattern : `**Audit ai-01 before merge**` -- la
+    Position I' couvre `before merge` au meme titre que `avant merge` via
+    le token `merge`. Verification que la borne tient cross-langue."""
+    body = (
+        "**Audit ai-01 before merge**\n\n"
+        "Deletion-heavy profile is a false signal : +4098/-4635 on 3 "
+        "notebooks, but the delta is strictly bounded to the new engine "
+        "tests which are by construction absent from pre-PR main."
+    )
+    assert mod.classify("myia-ai-01", body) is None
+
+
+
+def test_13083_instance3_vp_a_relire_tete_reste_bloquant():
+    """VP : titre « A relire par ai-01 avant merge » -- verbe actionnel
+    imperatif (`a relire`) deleguant une intervention. Position I' NE DOIT
+    PAS neutraliser (la ligne porte un verbe actionnel, _is_action_verb_
+    heading rend True). Doit rester BOT-CONCERN. Cf VP Position I
+    fondateur #13800."""
+    body = (
+        "**A relire par ai-01 avant merge**\n\n"
+        "Residuel : une lecture manuelle. Aucune action lane supplementaire "
+        "possible. A relire par ai-01 avant merge."
+    )
+    assert mod.classify("jsboige", body) == "BOT-CONCERN", (
+        f"VP `a relire avant merge` doit rester BOT-CONCERN (verbe actionnel "
+        f"dans le titre), got {mod.classify('jsboige', body)!r}"
+    )
+
+
+
+def test_13083_instance3_vp_a_verifier_tete_reste_bloquant():
+    """VP : titre `A verifier avant merge` (verbe imperatif infinitif).
+    Position I' NE DOIT PAS neutraliser."""
+    body = (
+        "**A verifier avant merge**\n\n"
+        "Verifier la coherence des paths dans la section 3."
+    )
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+
+def test_13083_instance3_vp_a_confirmer_tete_reste_bloquant():
+    """VP : titre `A confirmer avant merge` (verbe imperatif infinitif).
+    Position I' NE DOIT PAS neutraliser -- le VP Position I fondateur
+    « a confirmer avant merge » (sans qualifieur) reste bloquant ; la
+    version titre doit suivre la meme regle."""
+    body = (
+        "**A confirmer avant merge**\n\n"
+        "Action obligatoire : confirmer la liste des fichiers touches."
+    )
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+
+def test_13083_instance3_vp_qualifier_bloquant_tete_reste_bloquant():
+    """VP : titre avec qualifieur `(bloquant)` puis `avant merge`. Le
+    qualifieur `(bloquant)` n'etait PAS couvert par Position I sous-pattern
+    (a) -- la Position I' doit egalement le garder vivant en tete de corps."""
+    body = (
+        "**Concern (bloquant) a confirmer avant merge**\n\n"
+        "Le kernel WSL est casse sur le runner ai-01, intervention "
+        "requise avant de relancer les tests."
+    )
+    assert mod.classify("jsboige", body) == "BOT-CONCERN", (
+        f"VP qualifier (bloquant) en tete doit rester BOT-CONCERN, "
+        f"got {mod.classify('jsboige', body)!r}"
+    )
+
+
+
+def test_13083_instance3_vp_qualifier_urgent_tete_reste_bloquant():
+    """VP : variante avec qualifieur `(urgent)` au lieu de `(bloquant)`.
+    Position I' doit egalement le garder vivant en tete de corps."""
+    body = (
+        "**(Urgent) Audit ai-01 avant merge**\n\n"
+        "Le merge gate a casse depuis 14h30Z, intervention requise."
+    )
+    assert mod.classify("myia-ai-01", body) == "BOT-CONCERN", (
+        f"VP qualifier (urgent) doit rester BOT-CONCERN, "
+        f"got {mod.classify('myia-ai-01', body)!r}"
+    )
+
+
+
+def test_13083_instance3_fp_avec_article_le_merge_neutralise():
+    """Le sous-pattern Position I' couvre aussi `avant le merge` / `avant la
+    merge` (article optionnel, comme les 7 sous-patterns Position I). Le
+    FP #12627 fondateur utilise `avant merge` (sans article) -- verification
+    qu'avec article, le meme cas de figure (titre sans verbe actionnel) est
+    neutralise."""
+    body = (
+        "**Rapport d'audit avant le merge**\n\n"
+        "Mesures et verifications. Pas de nit, pas de reserve."
+    )
+    assert mod.classify("myia-ai-01", body) is None, (
+        f"FP avec article `avant le merge` devrait etre neutralise, "
+        f"got {mod.classify('myia-ai-01', body)!r}"
+    )
+
+
+
+def test_13083_instance3_vp_avec_article_actionnel_reste_bloquant():
+    """VP : titre avec article + verbe actionnel -- doit rester bloquant.
+    Garantit que la sous-branche « article optionnel » n'ouvre pas un FP
+    sur les VPs documentes. Position I' detecte le verbe actionnel
+    `_is_action_verb_heading` et KEEPE `avant le merge` dans le titre ;
+    le token survit comme substring, et `has_marker` le classifie
+    BOT-CONCERN.
+
+    NB : CONCERN_MARKERS contient `avant merge` (sans article) et
+    `avant de merger`, mais PAS `avant le merge` -- c'est un prejugé
+    du corpus Position I qui accepte l'article en surface stripee mais
+    pas en detection basique. Le test utilise un corps qui porte les
+    DEUX formes : le titre (article) que Position I' doit conserver +
+    un `avant de merger` dans le corps que Position I' ne touche pas
+    (milieu de phrase, hors tete)."""
+    body = (
+        "**A confirmer avant le merge**\n\n"
+        "Action obligatoire : confirmer la liste des fichiers. "
+        "Verifier chaque ligne, c'est une action obligatoire avant de merger."
+    )
+    assert mod.classify("jsboige", body) == "BOT-CONCERN", (
+        f"VP `a confirmer avant le merge` (titre avec article + verbe "
+        f"actionnel) doit rester BOT-CONCERN, got "
+        f"{mod.classify('jsboige', body)!r}"
+    )
+
+
+
+def test_13083_instance3_ce1_mutation_desactivee_fp_rougit(monkeypatch):
+    """Controle positif par mutation : si la Position I' est desactivee
+    (regex no-op), le FP fondateur #12627 doit rougir -- preuve que le
+    test mord sur la voie ajoutee. Utilise `monkeypatch.setattr` pour eviter
+    le reload (le module est importe en conftest, reload casse le cache)."""
+    import re
+    body = (
+        "**Audit ai-01 avant merge**\n\n"
+        "Rapport descriptif, pas de reserve."
+    )
+    # Baseline : avec Position I', FP est neutralise
+    assert mod.classify("myia-ai-01", body) is None
+    # Mutation : neutralisation Position I' desactivee (regex ecrasee via
+    # monkeypatch -- propre, rollback garanti)
+    monkeypatch.setattr(mod, "_MENTION_AVANT_MERGE_HEAD_NEUTRAL",
+                        re.compile(r"(?!)"))  # match jamais
+    assert mod.classify("myia-ai-01", body) == "BOT-CONCERN", (
+        "MUTATION FAILED : Position I' desactivee -> le FP fondateur "
+        "#12627 doit rougir (`avant merge` reste emis en tete)."
+    )
+
+
+def test_13083_instance3_milieu_ligne4_reste_bloquant():
+    r"""C.233 -- DM ai-01 2026-09-04T03:15Z (#14538) : un `avant merge` en
+    milieu de corps (ligne 4) SANS verbe actionnel doit RESTER bloquant
+    apres le fix raw string \A.
+
+    Reproduction verbatim du tableau ai-01 :
+    | Cas | Ligne du match ancien regex |
+    |---|---:|
+    | « Il faut relire la section 3 [token] », milieu de corps | **4** |
+
+    Ancien regex `(?im)^` matchait cette ligne (en mode MULTILINE `^` =
+    debut de chaque ligne). Le fix ancre au debut strict du body via raw string \\A,
+    fermant ce trou -- les occurrences en milieu de corps NE sont PLUS
+    neutralisees par Position I' (par design : un `avant merge` qui
+    apparait au milieu d'un paragraphe descriptif est un concern
+    VIVANT, pas un localisateur temporel de titre).
+
+    Acceptation c.233 du fix Position I' : le strip est strictement borne
+    a la premiere ligne. Cette regression est l'INTENTION du fix, pas un
+    effet de bord. Le commentaire du code documente : `\A` ferme le trou
+    d'une portee implicite `(?m)` que le commentaire d'origine
+    n'annoncait pas (cf DM ai-01 2026-09-04T03:15Z sur #14538).
+    """
+    body = (
+        "Rapport d'audit technique\n\n"
+        "Le profil deletion-heavy de la PR est un faux signal.\n\n"
+        "Il faut relire la section 3 avant merge, mais ce n'est pas un "
+        "verdict bloquant.\n\n"
+        "Conclusion : RAS."
+    )
+    assert mod.classify("myia-ai-01", body) == "BOT-CONCERN", (
+        f"Apres fix `\\A`, `avant merge` en milieu de corps (ligne 4) "
+        f"DOIT rester BOT-CONCERN (concern vivant, hors portee de "
+        f"Position I'), got {mod.classify('myia-ai-01', body)!r}"
+    )
+
+
+def test_13083_instance3_milieu_ligne3_reste_bloquant():
+    """C.233 -- DM ai-01 2026-09-04T03:15Z (#14538) : un `avant merge` en
+    milieu de corps (ligne 3) SANS verbe actionnel doit RESTER bloquant.
+
+    Reproduction verbatim du tableau ai-01 :
+    | Cas | Ligne du match ancien regex |
+    |---|---:|
+    | « Le rapport a ete pose [token] », milieu de corps | **3** |
+    """
+    body = (
+        "Note de revue\n\n"
+        "Le rapport a ete pose avant merge par ai-01.\n\n"
+        "Pas de nit, pas de reserve."
+    )
+    assert mod.classify("myia-ai-01", body) == "BOT-CONCERN", (
+        f"Apres fix `\\A`, `avant merge` en milieu de corps (ligne 3) "
+        f"DOIT rester BOT-CONCERN (concern vivant, hors portee de "
+        f"Position I'), got {mod.classify('myia-ai-01', body)!r}"
+    )
+
+
+def test_13083_instance3_tete_h1_neutralise_toujours():
+    """C.233 -- apres le fix `\\A`, le titre H1 (ligne 1) avec `avant merge`
+    SANS verbe actionnel reste neutralise (FP fondateur #12627).
+    C'est le test de NON-regression du fix : le scope se resserre mais le
+    cas fondateur tient toujours.
+    """
+    body = (
+        "# Audit ai-01 avant merge\n\n"
+        "Rapport descriptif, pas de reserve."
+    )
+    assert mod.classify("myia-ai-01", body) is None, (
+        f"Titre H1 `avant merge` (ligne 1, sans verbe actionnel) doit "
+        f"rester neutralise apres fix `\\A` (non-regression du cas "
+        f"fondateur), got {mod.classify('myia-ai-01', body)!r}"
+    )
+

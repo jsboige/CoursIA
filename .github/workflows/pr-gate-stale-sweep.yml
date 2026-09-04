@@ -73,8 +73,7 @@ name: PR gate stale-verdict sweep
 
 on:
   schedule:
-    # Hourly on an off-:00 minute (anti-stampede convention, as in
-    # pr-gate-missing-advisory.yml).
+    # Hourly on an off-:00 minute (anti-stampede convention).
     #
     # #12728: this was every 20 minutes, and the cadence was destroying its own
     # organ. The premise of the old comment -- "cheap enough (one short job) not
@@ -111,7 +110,8 @@ on:
 permissions:
   contents: read
   actions: write       # re-run the ORIGINAL `PR gate` run (see the note below)
-  pull-requests: read
+  pull-requests: write # gate-absent step below: labels via `gh pr edit` (#14477)
+  issues: write        # ... and remediation comments via `gh pr comment`
 
 concurrency:
   # One sweep at a time, and never cancel a running one: a sweep that is killed
@@ -321,7 +321,10 @@ jobs:
               # blocked pool, and precisely the ones this sweep exists for.
               gate_legs = [c for c in (p.get("checks") or []) if (c.get("name") or "") == "PR gate"]
               if not gate_legs:
-                  continue  # absent gate is pr-gate-missing-advisory.yml's case
+                  # Absent gate (never reported, vs red above) is the
+                  # "Flag PRs whose PR gate never ran" step of this same
+                  # sweep (#14477) -- re-aggregation has nothing to re-run.
+                  continue
               if not any((c.get("conclusion") or "") in RED for c in gate_legs):
                   continue
 
@@ -464,6 +467,47 @@ jobs:
 
           # Advisory organ: it acts, it never blocks.
           exit 0
+
+      # Gate ABSENT (jamais rapporte) -- replie dans CE sweep depuis #14477.
+      # Design-gate ai-01 : "la detection du gate absent rejoint le balayage
+      # [existant]. Meme population, meme requete ; seule la branche de
+      # remediation differe. Ne pas creer un troisieme organe." Le cron
+      # quotidien 05:47 de pr-gate-missing-advisory.yml disparait : cette
+      # etape tourne a la cadence de ce sweep (horaire depuis #12728 -- la
+      # latence de detection passe de <=24 h a <=1 h).
+      #
+      # Le checkout, ecarte de la re-aggregation pour ~40 s de runner par
+      # sweep (#12728 : "No checkout on purpose"), revient ICI en SPARSE :
+      # scripts/pr_gate_missing.py est un fichier stdlib pur -- quelques
+      # secondes. La penurie de runners qui motivait le retrait total est
+      # traitee a la source (pool dedie coursia-linux, #14283) et la cadence
+      # est horaire : le cout n'est plus le meme, la promesse de fond (la
+      # re-aggregation reste sans checkout) tient.
+      - name: Checkout sparse (gate-absent organ only)
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: scripts/pr_gate_missing.py
+          sparse-checkout-cone-mode: false
+
+      - name: Flag PRs whose PR gate never ran (absent, by cause)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          DRY_RUN: ${{ github.event.inputs.dry_run }}
+        run: |
+          set -uo pipefail
+          DRY=""
+          if [ "${DRY_RUN:-false}" = "true" ]; then DRY="--dry-run"; fi
+          # Advisory by construction: the organ labels/comments, never blocks.
+          # A crash labels nothing -- say so, then exit 0 (#8819: "n'a pas pu
+          # mesurer" != "sans defaut", le label pr-gate-missing n'etant pas
+          # pose). The remediation is now CAUSE-DEPENDENT (#14477): a PR in
+          # conflict with main gets the conflict remedy, NEVER the empty
+          # re-push (measured inert on #14220).
+          python scripts/pr_gate_missing.py --repo "$REPO" $DRY || {
+            echo "::warning::gate-absent sweep failed -- nothing labeled this pass"
+            exit 0
+          }
 
       - name: Measure queue and observed execution separately
         if: always()

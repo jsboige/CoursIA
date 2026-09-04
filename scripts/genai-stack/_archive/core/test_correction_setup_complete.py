@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# ARCHIVED: 2026-02 (consolidation genai-stack) -- see scripts/genai-stack/_archive/ARCHIVE_README.md
+# DISPOSITION: abandoned | Successor: (none) | Reason: Importe `setup_complete_qwen` inexistant (CASSE)
+#
 """
 Script de test pour valider la correction de la logique dans setup_complete_qwen.py
 

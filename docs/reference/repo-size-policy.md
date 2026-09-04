@@ -133,13 +133,17 @@ PR ouvre la question « LFS ou justification pédagogique ? », sans bloquer le 
 
 ### 5.1 Submodules : usage réel et angle mort du check §6
 
-Le dépôt utilise **8 submodules** (inscrits dans `.gitmodules`), répartis en deux familles :
+Le dépôt utilise **5 submodules** (inscrits dans `.gitmodules`), et ils ont tous la même
+nature depuis #14518 — ce sont des **forks qu'on fait vivre** : `MetaGeneticSharp` (jsboige),
+`Z3.Linq`, `Automata`, `semantic-fleet` (MyIntelligenceAgency), `Argumentum` (ArgumentumGames,
+agent permanent dédié). Sous-projets factorisés hors du monorepo, dont le backlog est le nôtre
+(cf [submodule-maintenance.md](../../.claude/rules/submodule-maintenance.md)).
 
-- **Libs vendored externes** : `foundry-lib/lib/{forge-std, openzeppelin-contracts,
-  account-abstraction}` (SmartContracts Solidity), `Argumentum` (ArgumentumGames) —
-  dépendances externes pointées par commit, non recopiées comme blobs.
-- **Dépôts propres** : `MetaGeneticSharp` (jsboige), `Z3.Linq`, `Automata`, `semantic-fleet`
-  (MyIntelligenceAgency) — sous-projets factorisés hors du monorepo.
+Les **dépendances de build tierces ne sont plus des submodules** : `foundry-lib/lib/*`
+(`forge-std`, `openzeppelin-contracts`, `account-abstraction`) s'installe via
+`forge install --no-git`, pinné sur `foundry-lib/foundry.lock`, et vit sous `.gitignore`.
+La distinction « libs vendored / dépôts propres » que cette section portait n'a plus d'objet :
+un upstream qu'on ne fait pas vivre n'a aucune raison d'encombrer `.gitmodules`.
 
 Les submodules sont l'**alternative structurelle** à LFS pour externaliser le poids hors de
 l'arbre : un gitlink pèse quelques octets, quel que soit le poids du dépôt référencé. C'est

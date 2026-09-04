@@ -155,7 +155,10 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     "orphan-branch-scan.yml",
     "outputs-text-fragmentation-advisory.yml",
     "pedagogy-density-advisory.yml",
-    "pr-gate-missing-advisory.yml",
+    # pr-gate-missing-advisory.yml : supprime par #14477 -- sa detection est
+    # repliee comme etape du sweep ci-dessous (design-gate ai-01 : "meme
+    # population, meme requete ; seule la branche de remediation differe.
+    # Ne pas creer un troisieme organe").
     "pr-gate-sweep-health-advisory.yml",
     "pr-path-collision-advisory.yml",
     "qc-research-monitor.yml",
@@ -216,6 +219,35 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     "translation-drift.yml",
     "translation-sync.yml",
     "variation-light-genre.yml",
+    # tranche 6 (c.903, owner myia-po-2026:CoursIA-2) : garde advisory pur-Python
+    #   declenchee sur pull_request filtrant les `MyIA.AI.Notebooks/**/README.md`,
+    #   scan delta-PR vs main (merge-base), pose un label signe (jamais exit != 0).
+    #   Meme profil que machine-dep-timing-advisory / pr-path-collision-advisory /
+    #   exercises-advisory / catalog-drift : stdlib-only, lecture seule du repo,
+    #   aucun GITHUB_TOKEN cote job. Le job porte la garde universelle parenthe-
+    #   seee (cf. test_universal_guard_with_combined_target_is_accepted, #13874)
+    #   pour les forks PRs qui se font skipper proprement par pr_gate.
+    #   Rollback = revert de cette PR (l'entree disparait de l'allowlist).
+    "notebook-link-render-check.yml",
+    # tranche 7 (acceptance 3 #11703, owner myia-po-2027:CoursIA) : garde
+    #   advisory pur-Python declenchee sur pull_request filtrant les
+    #   `**/*_lean/**/*.lean`, mode --pr-base de l'organe canonique
+    #   scan_lake_notebook_visibility.py (diff 3-points, DECL_RE partage --
+    #   aucune reimplementation), pose une paire de labels signes (drift /
+    #   unmeasured), jamais exit != 0. Meme profil que la tranche 6 :
+    #   stdlib-only, aucun GITHUB_TOKEN hors gh label/pr edit, garde same-repo
+    #   au niveau job pour les forks. Rollback = revert de la PR (l'entree
+    #   disparait de l'allowlist).
+    "lean-visibility-advisory.yml",
+    # registre TRANCHE6 (#14325, owner myia-po-2023:CoursIA) : vehicule
+    #   workflow_dispatch-ONLY servant de cible d'identite au check-run absorbe
+    #   par fast-lane (scripts/ci/fast_lane_registry.py) et de re-run manuel
+    #   sur main ; l'analyse per-PR elle-meme tourne dans le slot fast-lane.
+    #   Advisory pur-Python (detect_markdown_deaccent.py, durci #14064) :
+    #   label signe, exit 0 toujours, aucun secret, GITHUB_TOKEN en lecture
+    #   seule pour l'API Checks/labels. Garde same-repo parenthesee au niveau
+    #   job (#13874) pour les forks. Rollback = revert de cette PR.
+    "markdown-deaccent-advisory.yml",
 }
 GITHUB_HOSTED_LABELS = {
     "ubuntu-latest",

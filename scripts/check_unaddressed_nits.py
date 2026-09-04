@@ -245,6 +245,11 @@ _APPROVE_RESERVATION_RE = re.compile(
     r")"
 )
 
+# Sentinelle du marqueur ETIQUETE : une valeur inecrivable en prose, pour que la
+# forme « Concern: » soit un marqueur A PART -- relachee en casse et en nombre --
+# sans toucher a la sous-chaine « CONCERNS », qui reste case-sensitive.
+_CONCERN_LABEL = "\x00concern-label"
+
 CONCERN_MARKERS = (
     "COMMENT_WITH_CONCERNS", "CHANGES_REQUESTED", "REQUEST_CHANGES",
     "NEEDS_CHANGES", "CONCERNS",
@@ -309,6 +314,11 @@ CONCERN_MARKERS = CONCERN_MARKERS + SEVERITY_GLYPHS
 # une mention (_strip_quoted), comme tout autre verdict backtinque.
 BLOCK_VERDICTS = ("**BLOCKED**", "BLOCKED  PR")
 CONCERN_MARKERS = CONCERN_MARKERS + BLOCK_VERDICTS
+
+# La forme ETIQUETEE (« Concern: », « Concerns :», « **Concern 2 :** ») rejoint
+# les marqueurs vivants : elle tolere casse et nombre des deux cotes (user comme
+# agents) sans rien devoir a la sous-chaine nue, qui reste case-sensitive.
+CONCERN_MARKERS = CONCERN_MARKERS + (_CONCERN_LABEL,)
 
 # Un commentaire qui ANNONCE la levee ou le merge n'est pas un nit — il en est
 
@@ -963,8 +973,112 @@ _MENTION_AVANT_MERGE_PATTERNS = (
 )
 
 
+# #13083 instance 3 — Position I' : `avant merge` en TETE de corps (titre),
+# sans verbe actionnel ni qualifieur bloquant dans la meme ligne de titre.
+# Le commentaire fondateur est du 2026-08-26T08:11:21Z sur #13083 : un
+# compte-rendu d'audit ai-01 intitule « **Audit ai-01 avant merge** » etait
+# classe BOT-CONCERN par `classify()`, bloquant la PR sur l'absence de
+# reserve de l'auteur. Les 7 sous-patterns Position I (#14199) ne matchent
+# pas : aucun qualifieur `(non bloquant)`, aucune verification passee
+# (verifie/confirme/...), aucune formule B.0 (« issue de suivi ouverte
+# avant merge »), aucune delegation Ball merge. Le `avant merge` en tete
+# de corps est un **localisateur temporel pur** (« rapport a poser avant
+# merge ») — pas un verdict.
+#
+# Discriminant vs VP : un titre qui contient `avant merge` ET un verbe
+# d'action ou un qualifieur bloquant reste un nit (cf VP #13800 « A relire
+# par ai-01 avant merge », VP « a verifier avant merge », VP « Concern
+# (bloquant) : ... avant merge »). Les VPs ont TOUS un verbe actionnel /
+# imperatif / qualifieur `(bloquant)`/`(urgent)` dans la meme ligne.
+#
+# Mesure : 1 PR FP (#12627 fondateur verbatim, commentaire 5422425135,
+# 2026-08-26), 0 PR VP nouveau (les 7 VP Position I ont tous le verbe
+# actionnel qui les garde vivants hors tete de corps, et la fenetre
+# 2026-08-25..2026-09-02 ne montre aucun titre sans verbe actionnel).
+#
+# Architecture : sous-pattern (h) AJOUTE a `_MENTION_AVANT_MERGE_PATTERNS`,
+# meme strategie de strip iso-longueur que les autres positions. Le
+# sous-pattern matche UNIQUEMENT quand la ligne de titre (entre le debut
+# du body et la premiere fin de ligne) contient `avant merge` ET NE
+# contient PAS de verbe actionnel/imperatif ni de qualifieur bloquant.
+_MENTION_AVANT_MERGE_HEAD_NEUTRAL = re.compile(
+    r"\A[ \t]*"
+    # Debut de body strictement (apres lstrip), pas de mode MULTILINE :
+    # l'ancien `(?im)^` faisait matcher `^` au debut de CHAQUE ligne (cf
+    # verification ai-01 2026-09-04 sur #14538, DM msg-20260904T011521-9d9p4k).
+    # `\A` ancre au debut de la chaine, fermant le trou pour les occurrences
+    # en milieu de corps (cf tests `test_13083_instance3_fp_milieu_*`).
+    # La ligne peut etre precede de decoration markdown (`**`, `#`, `__`,
+    # `### `, etc.) -- on accepte tout prefixe non-alphanumerique. La
+    # limite `[^.\n]*?` empeche le saut a une ligne suivante.
+    r"[^.\n]*?"
+    # Le token `avant [le/la/l'] merge` ou `before merge` EN FIN de ligne de
+    # titre (espaces optionnels avant, decoration markdown optionnelle,
+    # puis fin de ligne / fin de body). Le lookahead plutot que `$` capture
+    # correctement la fin de body sans exiger un `\n` final.
+    r"\b(?:avant(?:\s+(?:le|la|l[\\']))?|before)\s+merge\b"
+    r"(?=\s*[.*_~`:]*\s*(?:\n|\Z))"
+)
+
+
+def _is_action_verb_heading(heading_line: str) -> bool:
+    """Une ligne de titre porte-t-elle un verbe actionnel ou un qualifieur bloquant ?
+
+    Discriminant du sous-pattern (h) : si la ligne contient un marqueur
+    d'action imperative ou un qualifieur (bloquant)/(urgent), le `avant
+    merge` est un verdict (cf VPs Position I). Sinon, c'est un localisateur
+    temporel pur (#13083 instance 3, FP #12627 fondateur).
+
+    Le test se fait sur la ligne TOTALE (apres strip des decorations
+    markdown `**`/`#`/`_`), pas seulement sur les mots autour de `avant
+    merge` — un qualifieur en debut de titre (« Concern (bloquant) :
+    <details> a confirmer avant merge ») doit garder le nit vivant.
+    """
+    cleaned = re.sub(r"[*_~`#]+", " ", heading_line).lower()
+    cleaned = re.sub(r"\s+", " ", cleaned).strip()
+    if not cleaned:
+        return False
+    # (a) Verbes d'action a l'infinitif / imperatif qui PRECEDENT `avant merge`
+    # dans le meme titre. Liste bornee : 7 VP mesures (#14199) + EN imperatifs
+    # (test #14199 corpus ajoute `must fix before merge` fondateur #590/#594).
+    # Ajouter un verbe exige la meme procedure (mesure + sign-off) : aucun
+    # elargissement opportuniste.
+    if re.search(
+        r"(?i)(?:[àa]\s+(?:relire|revoir|v[ée]rifier|corriger|confirmer|"
+        r"traiter|adresser|regarder|relancer|confirmer|compl[ée]ter|"
+        r"solutionner)|pri[èe]re\s+de\s+bien\s+vouloir|action\s+obligatoire|"
+        r"action\s+requise|"
+        # EN : `must fix`, `must change`, `must check`, `must address`,
+        # `must verify`, `must resolve`. Sans `must` (juste `fix` ou `check`),
+        # le mot reste ambigu (un substantif dans un titre -- `Fix check
+        # before merge` n'a pas de verbe). Couverture EN miroir de la FR.
+        r"must\s+(?:fix|change|check|address|verify|resolve|review|"
+        r"rebase|re-execute|revisit|confirm|complete|solve))",
+        cleaned,
+    ):
+        return True
+    # (b) Qualifieur bloquant / urgent / non-couvert par Position I (a)
+    if re.search(
+        r"(?i)\((?:bloquant|bloquante|urgent|critique|important|prioritaire|"
+        r"action\s+requise|breaking|major)\)",
+        cleaned,
+    ):
+        return True
+    # (c) Headings de pure emission formelle (verdict-prefix) — un titre qui
+    # debute par un verdict ne peut pas etre un localisateur temporel pur
+    # (meme raisonnement que `_block_emitted` Position I (b)).
+    if re.match(
+        r"(?i)\s*(?:reserve|r[ée]serve|nit|blocking|hold|bloquant|"
+        r"changement?s?\s+requis|attention|warning|caution)",
+        cleaned,
+    ):
+        return True
+    return False
+
+
 def _strip_avant_merge_mention(body: str) -> str:
-    """Neutralise `avant merge` en position de mention (Position I, #14199).
+    """Neutralise `avant merge` en position de mention (Position I, #14199)
+    et en position de TETE de corps / titre (Position I', #13083 instance 3).
 
     Remplace le token `avant [le/la/l'] merge` par des espaces de meme longueur :
     les offsets du reste du body sont preserves, comme les autres strips.
@@ -972,8 +1086,13 @@ def _strip_avant_merge_mention(body: str) -> str:
     Cible : `avant merge` est un CONCERN_MARKER (L231) qui peut etre en
     mention (4 formes mesurees : qualifieur explicite non-bloquant, narration
     de verification passee, formule de la voie B.0, delegation Ball merge ;
-    review NanoClaw #14322 minor : compteur corrige).
-    Sans cette neutralisation, ces mentions sont classee BOT-CONCERN (FP).
+    review NanoClaw #14322 minor : compteur corrige). Sans cette
+    neutralisation, ces mentions sont classee BOT-CONCERN (FP).
+    Position I' (#13083 instance 3, 2026-08-26T08:11:21Z sur #12627) : un
+    localisateur temporel pur en tete de corps (« **Audit ai-01 avant
+    merge** » dans un rapport de gate) etait classe BOT-CONCERN a tort,
+    les 7 sous-patterns Position I ne matchant pas (aucun qualifieur /
+    verification passee / formule B.0 / Ball merge).
 
     Anti-regression (acceptance #14199) :
     - 3 PR mesurees en FP doivent etre neutralisees : #13537 / #13498 / #13860
@@ -982,6 +1101,14 @@ def _strip_avant_merge_mention(body: str) -> str:
       En particulier #13800 « A relire par ai-01 avant merge. Aucune action »
       ne matche aucun sous-pattern — verbe actionnel deleguant, pas une
       verification passee ni une delegation Ball merge.
+
+    Anti-regression (acceptance #13083 instance 3, present fix) :
+    - 1 PR FP #12627 fondateur (commentaire 5422425135, 2026-08-26T08:11:21Z)
+      doit etre neutralisee : « **Audit ai-01 avant merge** » + prose
+      descriptive (verdict qui DECRIT un check passe, pas un nit).
+    - VP garde-eux : tout titre contenant un verbe actionnel (`a relire`,
+      `a verifier`, `a corriger`, `a confirmer`, ...) ou un qualifieur
+      `(bloquant)` / `(urgent)` doit RESTER BOT-CONCERN.
     """
     for pat in _MENTION_AVANT_MERGE_PATTERNS:
         # Le token cible est le `avant [le/la/l'] merge` (non capture, neutralise integralement)
@@ -992,6 +1119,26 @@ def _strip_avant_merge_mention(body: str) -> str:
                              m.group(0)),
             body,
         )
+    # Phase Position I' (#13083 instance 3) : `avant [le/la/l'] merge` /
+    # `before merge` en TETE de corps, titre sans verbe actionnel ni
+    # qualifieur bloquant. Le strip est post-Position I pour beneficier du
+    # strip anterieur, mais il est distinct : il neutralise une occurrence
+    # de tete qui n'aurait pas ete atteinte par les 7 sous-patterns en
+    # milieu de phrase.
+    body = _MENTION_AVANT_MERGE_HEAD_NEUTRAL.sub(
+        lambda m: (
+            # Garde-fou : si la ligne de titre porte un verbe actionnel /
+            # qualifieur bloquant, NE PAS neutraliser (VP).
+            re.sub(
+                r"\b(?:avant(?:\s+(?:le|la|l[\\']))?|before)\s+merge\b",
+                lambda mm: " " * (mm.end() - mm.start())
+                if not _is_action_verb_heading(m.group(0))
+                else mm.group(0),
+                m.group(0),
+            )
+        ),
+        body,
+    )
     return body
 
 
@@ -1714,6 +1861,39 @@ def has_live_lift(body: str) -> bool:
     return bool(_live_lift_positions(_unaccent(body)))
 
 
+# Marqueurs reconnus par MOTIF plutot que par sous-chaine. La cle est le marqueur
+# du tuple, minuscule et desaccentue (has_live_marker normalise des deux cotes).
+#
+# « CONCERNS » : la sous-chaine nue ne peut pas devenir insensible a la casse sans
+# retourner l'organe contre lui-meme. Mesure sur 588 commentaires (corpus 80 PRs
+# ouvertes + 70 mergees, 2026-09-01) : la seule insensibilite a la casse fait
+# basculer 6 verdicts None -> BOT-CONCERN, et les 6 sont des narrations de LEVEE
+# qui citent le mot en y REPONDANT (« les 2 concerns sont traitees au commit X »,
+# « Reponse a la CONCERN empirique »). Les bloquer serait le miroir exact du
+# defaut que B.0 traque. On retient donc la forme ETIQUETEE en tete de ligne --
+# « Concern: », « concerns :», « **Concern 2 :** », « > CONCERNS : » -- qui est
+# une EMISSION et non une mention, tolere la casse et le nombre des deux cotes,
+# et laisse muettes les six narrations mesurees.
+# Marqueurs dont la casse NE se relache PAS. Deux familles, une raison commune :
+# leur variante de casse est plus rare que les mentions qu'elle attraperait.
+#   - prose : « AVANT merge » est une emphase sur la chronologie dans une
+#     narration de levee Voie 3, pas une reserve (2 cas mesures sur 588).
+#   - « CONCERNS » nu : « les 2 concerns sont traitees », « Reponse a la CONCERN
+#     empirique » sont des REPONSES a une reserve (6 cas mesures). Le relachement
+#     de casse pour ce mot passe par _CONCERN_LABEL ci-dessous, qui exige la
+#     forme etiquetee -- donc une emission, pas une mention.
+_CASE_SENSITIVE_MARKERS = frozenset({
+    "avant merge", "avant de merger", "before merge",
+    "il va falloir", "a nuancer", "à nuancer", "a changer",
+    "CONCERNS",
+})
+
+
+_WORD_BOUNDED_MARKERS = {
+    _CONCERN_LABEL: re.compile(r"(?m)^[\s*_#>\-]*concerns?\s*\d*\s*:"),
+}
+
+
 def has_live_marker(body: str, markers: tuple[str, ...]) -> bool:
     """Marqueur present avec au moins une occurrence NON citee.
 
@@ -1730,9 +1910,28 @@ def has_live_marker(body: str, markers: tuple[str, ...]) -> bool:
     compris), l'occurrence est morte ; le marqueur ne vit que si au moins une
     occurrence survit.
     """
-    normalised = _unaccent(body)
+    raw = _unaccent(body)
+    lowered = raw.lower()
     for marker in markers:
-        m = _unaccent(marker)
+        m = _unaccent(marker).lower()
+        # La casse ne se relache que sur les JETONS de verdict (identifiants
+        # ecrits en capitales par convention, dont les variantes de casse sont
+        # des accidents de frappe). Les marqueurs de PROSE gardent leur forme
+        # litterale : mesure du 2026-09-01 sur 588 commentaires -- relacher la
+        # casse de « avant merge » fait basculer 2 verdicts, et les 2 sont des
+        # narrations de levee Voie 3 (« issue #14030 ouverte AVANT merge »), ou
+        # la majuscule est une EMPHASE sur la chronologie, pas une reserve.
+        if marker in _CASE_SENSITIVE_MARKERS:
+            normalised, m = raw, _unaccent(marker)
+        else:
+            normalised = lowered
+        word_re = _WORD_BOUNDED_MARKERS.get(m)
+        if word_re is not None:
+            for hit in word_re.finditer(normalised):
+                i = hit.start()
+                if not _is_cited(normalised[max(0, i - 30):i]):
+                    return True
+            continue
         start = 0
         while (i := normalised.find(m, start)) != -1:
             if not _is_cited(normalised[max(0, i - 30):i]):
@@ -2627,6 +2826,83 @@ def _names_author(body: str, author: str) -> bool:
                      body) is not None
 
 
+# #14216 — langage de LEVEE portee a la reserve nommee (affirmatif). La
+# nomination seule ne suffit pas : le corps fondateur de #14166 portait
+# « la reserve de clusterManager-Myia n'est pas concernee par cette levee »
+# — le nom ETAIT present, dans une phrase d'EXCLUSION.
+_SCOPE_LIFT_RE = re.compile(r"(?i)\blev\w*\b|\blift\w*\b")
+# #14216 — phrase qui nomme la reserve pour l'EXCLURE de la levee. Accents
+# neutralises (le depot ecrit les deux), formes FR d'abord.
+_SCOPE_NEGATION_RE = re.compile(
+    r"(?i)\bn['’]\s*\w+\s+pas\b"
+    r"|\bne\s+(?:\w+\s+){0,3}pas\b"
+    r"|\bpas\s+(?:concerne\w*|leve\w*|lift\w*|inclus\w*|touch\w*)\b"
+    r"|\bhors\s+(?:du\s+|de\s+la\s+)?(?:scope|perimetre|champ)\b"
+    r"|\b(?:exclu\w*|non\s+leve\w*|reste\s+ouverte?)\b"
+    r"|\b(?:not|isn['’]t)\s+(?:concerned|lifted|in\s+scope)\b"
+    r"|\b(?:remains\s+open|out\s+of\s+scope)\b")
+
+
+def _scope_lifted_sentence(body: str, needle_re) -> bool:
+    """Une PHRASE porte-t-elle le nom ET une levee affirmative de la reserve ?
+
+    Phrase = segment entre [.!?\\n]. Pour chaque occurrence du nom (login ou
+    persona), la phrase qui la contient doit porter un mot de levee SANS
+    negation d'exclusion — « je leve aussi la reserve de <login> » scope,
+    « la reserve de <login> n'est pas concernee par cette levee » non.
+    """
+    for m in needle_re.finditer(body):
+        s0 = max(body.rfind(c, 0, m.start()) for c in ".!?\n") + 1
+        ends = [j for j in (body.find(c, m.end()) for c in ".!?\n")
+                if j != -1]
+        s1 = min(ends) if ends else len(body)
+        sent = _unaccent(body[s0:s1]).lower()
+        if _SCOPE_LIFT_RE.search(sent) and not _SCOPE_NEGATION_RE.search(sent):
+            return True
+    return False
+
+
+def _override_scopes_reserve(lift_body: str, nit_author: str) -> bool:
+    """#14216 — un OVERRIDE coordinateur nomme-t-il LA reserve qu'il leve ?
+
+    La trappe #11639 agissait par PR, jamais par reserve : un seul
+    commentaire portant le marqueur eteignait TOUTES les reserves ouvertes,
+    y compris celle d'un tiers que le coordinateur n'a ni legitimite ni
+    intention de lever (#14166 : la levee legitime de sa reserve de
+    collision a emporte la reserve structurelle Hermes, et la PR serait
+    apparue mergeable si l'organe n'avait pas ete relance APRES le post).
+    Un override ne leve desormais une reserve d'AUTRUI que s'il la nomme
+    dans une phrase de levee AFFIRMATIVE — le corps fondateur portait le
+    login dans une phrase d'exclusion (« n'est pas concernee par cette
+    levee ») : le nom seul n'est pas un scope.
+
+    Deux formes reconnues, toutes deux presentes dans l'historique reel :
+
+    1. le login de l'auteur de la reserve — frontiere d'identite de
+       ``_names_author`` (« Levee des reserves : la mienne et celle de
+       clusterManager-Myia aussi ») ;
+    2. le nom de persona — « Levée de la réserve Hermes » (#11639, forme
+       canonique historique) quand l'auteur de la reserve est la persona
+       Hermes/NanoClaw ou le self-bot jsboige qui la porte.
+
+    Les reserves de l'auteur de la levee restent couvertes sans nomination
+    (branche self de ``_lift_eligible``). Un nit d'auteur inconnu (compte
+    supprime) reste levable : un scope ne peut pas nommer ce qui n'a pas
+    de nom.
+    """
+    if not nit_author:
+        return True
+    body = lift_body or ""
+    author_re = re.compile(r"(?<![A-Za-z0-9_.-])" + re.escape(nit_author)
+                           + r"(?![A-Za-z0-9_.-])")
+    if _scope_lifted_sentence(body, author_re):
+        return True
+    if nit_author in PERSONA_ALIAS_LOGINS or nit_author == "jsboige":
+        return _scope_lifted_sentence(
+            body, re.compile(r"(?i)\b(?:hermes|nanoclaw)\b"))
+    return False
+
+
 def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
             issue_info=None, dismissed_improperly=None) -> dict:
     """cutoff = mergedAt (audit retro) ou now (gate pre-merge)."""
@@ -2733,8 +3009,13 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
         # lanes (self-review cap #12319), un override jsboige est
         # indiscernable d'une auto-levee de lane (replay #12737).
         m = OVERRIDE_LANE.search(lift_body or "")
-        return (lift_author in LIFT_OVERRIDE_LOGINS
-                and m is not None)
+        if not (lift_author in LIFT_OVERRIDE_LOGINS and m is not None):
+            return False
+        # #14216 — l'override est scope PAR RESERVE, plus par PR : sans
+        # nomination de la reserve d'autrui (login ou persona Hermes), il ne
+        # leve que les siennes. La trappe reste fermee a l'auteur de la PR
+        # (garde ci-dessus) : le scope n'ouvre pas la porte d'auto-levee.
+        return _override_scopes_reserve(lift_body or "", nit_author)
 
     # Fenetre 2026-08-16 (#11222) : les temps plats ne suffisent pas pour un
     # CHANGES_REQUESTED. Une PHRASE explicite de levee (LIFT_MARKER non
@@ -3040,6 +3321,27 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
         and OVERRIDE_LANE.search(body or "") is not None
         and author in LIFT_OVERRIDE_LOGINS
         and author == pr_author
+    ] + [
+        # #14216 — un override legitime qui ne NOMME pas affirmativement la
+        # reserve qu'il laisse survivre doit etre explique : sans cette ligne,
+        # un gate rouge « malgre notre override » redeviendrait
+        # indistinguable d'un bug du detecteur. La levee n'etait pas refusee,
+        # elle etait trop large — le rouge le dit maintenant.
+        {"author": author, "at": t.isoformat(),
+         "why": (f"override ignoré pour la réserve de « {login} » — il ne la "
+                 "lève pas nommément (#14216 : une levée coordinatrice est "
+                 "scopée par réserve ; la nommer dans une phrase de levée "
+                 "affirmative — « je lève aussi la réserve de <login> » — une "
+                 "mention d'exclusion ne compte pas)")}
+        for (t, author, body) in explicit_lifts
+        if t is not None
+        and OVERRIDE_LANE.search(body or "") is not None
+        and author in LIFT_OVERRIDE_LOGINS
+        and author != pr_author
+        for login in sorted({b.get("author") for b in blocking
+                             if b.get("author") not in ("", author)
+                             and not _override_scopes_reserve(
+                                 body or "", b.get("author") or "")})
     ]
 
     # #13512 -- CE QUE L'ORGANE N'A PAS EVALUE.

@@ -54,9 +54,9 @@ Lectures *horizontales* : où les fils se rejoignent, s'éloignent, se mélangen
 
 Les documents ci-dessus sont au **grade C-documentaire** : ils *cadrent* et *cartographient*, ils ne calculent pas. Le pendant **exécutable** de cette mécanique vit dans la série **IIT** ([`MyIA.AI.Notebooks/IIT/`](../../MyIA.AI.Notebooks/IIT/)), où les instruments dont parlent les fils se calculent réellement avec PyPhi :
 
-- [`IIT-1-IntroToPyPhi.ipynb`](../../MyIA.AI.Notebooks/IIT/IIT-1-IntroToPyPhi.ipynb) — le socle mécanique : Φ (petite *phi*) sur un réseau *toy*, mécanisme d'information minimale irréductible (MIP), cause-effect structure. Le Φ dont parle le [5ᵉ fil (dissolution des scalaires)](dissolution-scalaires.md) s'y calcule.
-- [`IIT-2-AdvancedTopics.ipynb`](../../MyIA.AI.Notebooks/IIT/IIT-2-AdvancedTopics.ipynb) — partitionnement (MIP/SIA), répertoires cause-effet d'un mécanisme, concepts (MICE/CES). La gymnastique qui rend la [matrice des dissociations](dissociations-matrix.md) lisible.
-- [`IIT-3-CoarseGrainingMacroPhi.ipynb`](../../MyIA.AI.Notebooks/IIT/IIT-3-CoarseGrainingMacroPhi.ipynb) — coarse-graining et survie de Φ au changement de résolution. **Le cas le plus net** : la mécanique de changement d'échelle dont relèvent directement la [dissolution des scalaires](dissolution-scalaires.md) et la [cartographie en tresse](tresse-cartographie.md).
+- [`IIT-01-IntroToPyPhi.ipynb`](../../MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi.ipynb) — le socle mécanique : Φ (petite *phi*) sur un réseau *toy*, mécanisme d'information minimale irréductible (MIP), cause-effect structure. Le Φ dont parle le [5ᵉ fil (dissolution des scalaires)](dissolution-scalaires.md) s'y calcule.
+- [`IIT-02-AdvancedTopics.ipynb`](../../MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics.ipynb) — partitionnement (MIP/SIA), répertoires cause-effet d'un mécanisme, concepts (MICE/CES). La gymnastique qui rend la [matrice des dissociations](dissociations-matrix.md) lisible.
+- [`IIT-03-CoarseGrainingMacroPhi.ipynb`](../../MyIA.AI.Notebooks/IIT/IIT-03-CoarseGrainingMacroPhi.ipynb) — coarse-graining et survie de Φ au changement de résolution. **Le cas le plus net** : la mécanique de changement d'échelle dont relèvent directement la [dissolution des scalaires](dissolution-scalaires.md) et la [cartographie en tresse](tresse-cartographie.md).
 
 Entrer par **IIT-3** quand on vient du 5ᵉ fil ; par **IIT-1 / IIT-2** quand on cherche l'instrument avant la carte.
 

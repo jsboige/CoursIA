@@ -22,8 +22,8 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 |----------|--------|
 | Notebooks | 199 |
 | PRODUCTION | 0 |
-| BETA | 179 |
-| ALPHA | 20 |
+| BETA | 180 |
+| ALPHA | 19 |
 
 ## GenAI/00-GenAI-Environment (6 notebooks)
 
@@ -49,7 +49,7 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 7 | Aspire : le routeur MultiConnector — vetting en ligne,… | BETA | Non |
 | 8 | Aspire : l'asynchrone aux frontieres natives -… | BETA | Oui |
 
-## GenAI/Audio (32 notebooks)
+## GenAI/Audio (31 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -76,15 +76,14 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 21 | P5 — Compilation Audio pour Audiobook | BETA | Oui |
 | 22 | Audiobook Agentique avec FishAudio S2-Pro | BETA | Non |
 | 23 | Voice Leading Rendu GenAI — donner un spectre aux… | BETA | Non |
-| 24 | VoiceLeading RenduGenAI - Du Voice-Leading CP-SAT a… | ALPHA | Non |
-| 25 | Pipeline de Transcription et Sous-titrage | BETA | Non |
-| 26 | Workflow de Composition Musicale | BETA | Non |
-| 27 | Synchronisation Audio-Video (Passerelle) | BETA | Non |
-| 28 | Live Coding Musical pilote par LLM | BETA | Non |
-| 29 | Pipeline Audiobook Agentique | BETA | Non |
-| 30 | Benchmark TTS : Comparaison des Modèles Vocaux pour… | BETA | Non |
-| 31 | Lecture Analytique pour Audiobook | BETA | Oui |
-| 32 | Voice Casting : Attribution de voix TTS par personnage | BETA | Non |
+| 24 | Pipeline de Transcription et Sous-titrage | BETA | Non |
+| 25 | Workflow de Composition Musicale | BETA | Non |
+| 26 | Synchronisation Audio-Video (Passerelle) | BETA | Non |
+| 27 | Live Coding Musical pilote par LLM | BETA | Non |
+| 28 | Pipeline Audiobook Agentique | BETA | Non |
+| 29 | Benchmark TTS : Comparaison des Modèles Vocaux pour… | BETA | Non |
+| 30 | Lecture Analytique pour Audiobook | BETA | Oui |
+| 31 | Voice Casting : Attribution de voix TTS par personnage | BETA | Non |
 
 ## GenAI/CaseStudies (5 notebooks)
 
@@ -108,13 +107,14 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 |---|----------|----------|------------|
 | 1 | EF Core : des requêtes vérifiées à la compilation | BETA | Oui |
 
-## GenAI/FallacyDetection (3 notebooks)
+## GenAI/FallacyDetection (4 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | 01 — Introduction : taxonomies de sophismes et terrain… | ALPHA | Oui |
 | 2 | 02 — Paysage des datasets de detection de sophismes | BETA | Non |
 | 3 | 03 — Écart de couverture taxonomique : académique vs… | BETA | Oui |
+| 4 | 04 — Matrice de couverture cross-notebooks | BETA | Oui |
 
 ## GenAI/FineTuning (7 notebooks)
 

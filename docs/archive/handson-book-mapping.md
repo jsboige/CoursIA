@@ -50,7 +50,7 @@
 |---|---|---|---|---|---|
 | 1 | ML Trend Scanning with MLFinlab | 143-148 | Trend scanning, CUSUM | No direct mapping | GAP — MLFinlab dependency |
 | 2 | Factor Preprocessing for Regime Detection | 148-154 | Regime detection via factors | [QC-Py-28-Market-Regime-Detection.ipynb](../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-28-Market-Regime-Detection.ipynb) | OVERLAP |
-| 3 | Reversion vs Trending Strategy Selection | 154-158 | Classification selects strategy style | [QC-Py-Cloud-04-MeanReversion.ipynb](../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-04-MeanReversion.ipynb), [QC-Py-Cloud-03-DualMomentum.ipynb](../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-03-DualMomentum.ipynb) | Partial |
+| 3 | Reversion vs Trending Strategy Selection | 154-158 | Classification selects strategy style | [QC-Py-Cloud-04-MeanReversion.ipynb](../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-04-MeanReversion.ipynb), [QC-Py-Cloud-14-DualMomentum.ipynb](../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-14-DualMomentum.ipynb) | Partial |
 | 4 | Alpha by Hidden Markov Models | 158-170 | HMM for alpha generation | [QC-Py-28-Market-Regime-Detection.ipynb](../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-28-Market-Regime-Detection.ipynb) | OVERLAP — HMM section |
 | 5 | FX SVM Wavelet Forecasting | 170-176 | SVM + wavelet on FX | No FX-specific notebook | GAP — FX not covered |
 | 6 | Dividend Harvesting Selection | 176-181 | ML for high-yield asset selection | No dividend notebook | GAP |

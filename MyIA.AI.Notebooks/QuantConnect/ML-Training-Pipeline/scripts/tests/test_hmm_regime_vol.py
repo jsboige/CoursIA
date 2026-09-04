@@ -5,10 +5,11 @@ same family of baselines was measured at `har_bias_oos = -0.227` in #12745, and
 `MSE = bias^2 + variance` means a raw-error DM cannot tell a precision win from
 a calibration artefact. This module tests the control that separates them.
 
-The pure helpers `_mse_decomposition` / `_dm_centered_mse` also have coverage in
-`test_btc_vol.py` (they originate there, PR #12742). What is tested HERE is what
-those tests cannot cover: that the control actually DISCRIMINATES, and that the
-M5 return contract carries it.
+The pure helpers `_mse_decomposition` / `_dm_centered_mse` live in
+`bias_metrics.py` (extracted from `btc_vol.py`, issue #14363) and also have
+coverage in `test_btc_vol.py`. What is tested HERE is what those tests cannot
+cover: that the control actually DISCRIMINATES, and that the M5 return
+contract carries it.
 
 Validation shape (Tell c.856-L1): every silence is paired with a mutation that
 changes only the property under test and must make the control speak. A control
@@ -30,13 +31,15 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import hmm_regime_vol  # noqa: E402
 from hmm_regime_vol import (  # noqa: E402
-    _aggregate_debiased_state,
-    _dm_centered_mse,
+    _aggregate_state,
     _is_beaten,
     _is_beats,
-    _mse_decomposition,
     _require_hmmlearn,
     walk_forward_regime_switching,
+)
+from bias_metrics import (  # noqa: E402
+    _dm_centered_mse,
+    _mse_decomposition,
 )
 
 
@@ -411,8 +414,8 @@ class TestHmmlearnGuard:
 # --------------------------------------------------------------------------
 
 # The published table of docs/M5_HMM_REGIME.md (de-biased leg, 4 seeds):
-# (coin, horizon, n_beats_centered, n_beaten_centered, dm_centered_p_median,
-#  n_beats_raw, published verdict)
+# (coin, horizon, n_beats, n_beaten, dm_p_median,
+#  n_beats_parent, published verdict)
 PUBLISHED_DEBIASED = [
     ("BTC-USD", 1, 3, 0, 1.47e-03, 3, "INCONCLUSIVE"),
     ("BTC-USD", 5, 0, 4, 6.21e-06, 0, "NO BEATS"),
@@ -457,18 +460,18 @@ class TestAggregatedDebiasedState:
         out of the harness as `INCONCLUSIVE`, so the published verdict was not
         reproducible from the deliverable that produced it.
         """
-        assert _aggregate_debiased_state(
-            n_beats_centered=n_beats,
-            n_beaten_centered=n_beaten,
+        assert _aggregate_state(
+            n_beats=n_beats,
+            n_beaten=n_beaten,
             n_seeds=4,
-            dm_centered_p_median=p_median,
-            n_beats_raw=n_beats_raw,
+            dm_p_median=p_median,
+            n_beats_parent=n_beats_raw,
         ) == published
 
     def test_unanimous_loss_is_no_beats(self):
-        assert _aggregate_debiased_state(
-            n_beats_centered=0, n_beaten_centered=4, n_seeds=4,
-            dm_centered_p_median=1e-04, n_beats_raw=0,
+        assert _aggregate_state(
+            n_beats=0, n_beaten=4, n_seeds=4,
+            dm_p_median=1e-04, n_beats_parent=0,
         ) == "NO BEATS"
 
     def test_majority_loss_is_not_no_beats(self):
@@ -478,23 +481,23 @@ class TestAggregatedDebiasedState:
         moved out of the loss column. An exemption that cannot close again is
         not an exemption -- so the state must fall back to INCONCLUSIVE.
         """
-        assert _aggregate_debiased_state(
-            n_beats_centered=0, n_beaten_centered=3, n_seeds=4,
-            dm_centered_p_median=1e-04, n_beats_raw=0,
+        assert _aggregate_state(
+            n_beats=0, n_beaten=3, n_seeds=4,
+            dm_p_median=1e-04, n_beats_parent=0,
         ) == "INCONCLUSIVE"
 
     def test_majority_win_is_not_beats(self):
         """The symmetric negative control on the winning side."""
-        assert _aggregate_debiased_state(
-            n_beats_centered=3, n_beaten_centered=0, n_seeds=4,
-            dm_centered_p_median=1e-04, n_beats_raw=3,
+        assert _aggregate_state(
+            n_beats=3, n_beaten=0, n_seeds=4,
+            dm_p_median=1e-04, n_beats_parent=3,
         ) == "INCONCLUSIVE"
 
     def test_refuted_when_the_raw_leg_won_alone(self):
         """A raw 4/4 win that the precision leg does not confirm."""
-        assert _aggregate_debiased_state(
-            n_beats_centered=2, n_beaten_centered=0, n_seeds=4,
-            dm_centered_p_median=0.30, n_beats_raw=4,
+        assert _aggregate_state(
+            n_beats=2, n_beaten=0, n_seeds=4,
+            dm_p_median=0.30, n_beats_parent=4,
         ) == "refuted-de-biased"
 
     def test_no_beats_outranks_refuted_when_both_apply(self):
@@ -506,9 +509,9 @@ class TestAggregatedDebiasedState:
         two would soften a measured loss. The refutation stays visible because
         the summary row prints the raw verdict beside it.
         """
-        assert _aggregate_debiased_state(
-            n_beats_centered=0, n_beaten_centered=4, n_seeds=4,
-            dm_centered_p_median=1e-06, n_beats_raw=4,
+        assert _aggregate_state(
+            n_beats=0, n_beaten=4, n_seeds=4,
+            dm_p_median=1e-06, n_beats_parent=4,
         ) == "NO BEATS"
 
     @pytest.mark.parametrize(
@@ -516,25 +519,25 @@ class TestAggregatedDebiasedState:
     )
     def test_insignificant_median_blocks_both_unanimous_states(self, n_beats, n_beaten):
         """The significance clause applies to the loss exactly as to the win."""
-        state = _aggregate_debiased_state(
-            n_beats_centered=n_beats, n_beaten_centered=n_beaten, n_seeds=4,
-            dm_centered_p_median=0.20, n_beats_raw=0,
+        state = _aggregate_state(
+            n_beats=n_beats, n_beaten=n_beaten, n_seeds=4,
+            dm_p_median=0.20, n_beats_parent=0,
         )
         assert state == "INCONCLUSIVE"
 
     def test_zero_seeds_is_not_a_vacuous_unanimity(self):
         """`0 == 0` must not read as "every seed agreed"."""
-        assert _aggregate_debiased_state(
-            n_beats_centered=0, n_beaten_centered=0, n_seeds=0,
-            dm_centered_p_median=float("nan"), n_beats_raw=0,
+        assert _aggregate_state(
+            n_beats=0, n_beaten=0, n_seeds=0,
+            dm_p_median=float("nan"), n_beats_parent=0,
         ) == "INCONCLUSIVE"
 
     def test_every_state_is_reachable(self):
         """The four documented states, and no fifth one."""
         reached = {
-            _aggregate_debiased_state(
-                n_beats_centered=b, n_beaten_centered=n, n_seeds=4,
-                dm_centered_p_median=p, n_beats_raw=r,
+            _aggregate_state(
+                n_beats=b, n_beaten=n, n_seeds=4,
+                dm_p_median=p, n_beats_parent=r,
             )
             for b, n, p, r in [
                 (4, 0, 1e-06, 4), (0, 4, 1e-06, 0), (2, 0, 0.30, 4), (1, 1, 0.30, 0),
