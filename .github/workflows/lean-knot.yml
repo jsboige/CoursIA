@@ -74,6 +74,10 @@ on:
       - '.github/workflows/lean-knot.yml'
       - '.github/workflows/lean-axiom.yml'
       - '.github/workflows/lean-build.yml'
+      # Self-cover des composites consommes par les jobs routes (#14337 2a) :
+      # le gate doit tourner quand son propre code change (lecon #8712).
+      - '.github/actions/lean-build/action.yml'
+      - '.github/actions/lean-axiom/action.yml'
       # ...and the gate is not only its YAML. The axiom step is a Python
       # program whose whole body is `from lean_server import LeanVerifier`,
       # so lean_server.py (and the helper it loads) ARE gate inputs. Omitting
@@ -96,6 +100,8 @@ on:
       - '.github/workflows/lean-knot.yml'
       - '.github/workflows/lean-axiom.yml'
       - '.github/workflows/lean-build.yml'
+      - '.github/actions/lean-build/action.yml'
+      - '.github/actions/lean-axiom/action.yml'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/lean_utils.py'
       - 'scripts/lean/check_target_coverage.py'

@@ -94,31 +94,13 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  # Routage #14337 tranche 2a (arbitrage (B) composite action, ai-01 DM
-  # 2026-09-04 msg-20260904T132737-02hnpi) : jambe Lean auto-hébergée sur le
-  # pool coursia-lean (image Dockerfile.lean = elan + toolchain pré-cuits,
-  # volume .lake chaud par slot #14285). Le `if:` ci-dessous est la garde
-  # anti-fork exigée par scripts/ci/check_self_hosted_runner_policy.py ; un
-  # `runs-on` STATIQUE la rend auditable (une expression dynamique lève
-  # DYNAMIC_RUNS_ON). Les PRs de fork sautent le job -- pr_gate.py compte
-  # `skipped` comme OK (le code d'un fork ne tourne jamais sur le pool).
-  # Le twin composite-action (.github/actions/lean-build/action.yml) porte
-  # les steps ; le checkout vit ICI car une action locale ne se résout
-  # qu'une fois le dépôt materialisé dans le workspace.
-  # Retour arrière = remettre `uses: jsboige/CoursIA/.github/workflows/lean-build.yml@main`
-  # avec ses `with:` + retirer runs-on/if/steps du job.
   ci:
-    name: "Lean CI (conway_lean)"
-    runs-on: [self-hosted, coursia-ephemeral, coursia-lean]
-    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/lean-build
-        with:
-          project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean
-          display-name: conway_lean
-          sorry-baseline: "1"
-          sorry-filter-mode: real
+    uses: jsboige/CoursIA/.github/workflows/lean-build.yml@main
+    with:
+      project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean
+      display-name: conway_lean
+      sorry-baseline: "1"
+      sorry-filter-mode: real
 
   # c.8133 (#8782 reconciliation): the blocking gate's allow-axioms list was
   # a fossil -- 18 ``Conway.Life.*`` names that the gate's target closure
@@ -132,18 +114,13 @@ jobs:
   # ``scripts/lean/tests/test_conway_blocking_gate_whitelist_aligned.py``
   # (audit script: ``scripts/lean/audit_conway_blocking_gate_whitelist.py``).
   proof-integrity:
-    name: "Proof integrity (conway_lean)"
-    runs-on: [self-hosted, coursia-ephemeral, coursia-lean]
-    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/lean-axiom
-        with:
-          project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean
-          display-name: conway_lean
-          target-modules: "Conway.KochenSpecker,Conway.FreeWillTheorem"
-          allow-axioms: "Classical.choice,propext,funext,Quot.lift,Quot.mk,Quot.sound"
-          fail-on-sorry: true
+    uses: jsboige/CoursIA/.github/workflows/lean-axiom.yml@main
+    with:
+      project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean
+      display-name: conway_lean
+      target-modules: "Conway.KochenSpecker,Conway.FreeWillTheorem"
+      allow-axioms: "Classical.choice,propext,funext,Quot.lift,Quot.mk,Quot.sound"
+      fail-on-sorry: true
 
   # Advisory proof-integrity AUDIT -- option (b) of #8782 (decision c.50,
   # assigned to po-2023, taken up by po-2026 after 4 days idle + no WIP). The
@@ -191,89 +168,82 @@ jobs:
   # this job runs, 2026-08-15) and the 21 build-enumerated names were added
   # one-by-one to allow-axioms below -- never a wildcard entry.
   proof-integrity-audit:
-    name: "Proof integrity (conway_lean (audit))"
-    runs-on: [self-hosted, coursia-ephemeral, coursia-lean]
-    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/lean-axiom
-        with:
-          project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean
-          # #8848: the advisory (fail-on-sorry: false) job carries the ' (audit)' suffix
-          # so it is distinguishable from the blocking proof-integrity job above in the
-          # CI check rollup ("Proof integrity (conway_lean (audit))" vs "(conway_lean)").
-          # Without it a reviewer saw two identical "Proof integrity (conway_lean)" checks
-          # and could not tell which tolerates the 8 acknowledged sorries from which
-          # refuses them. Pinned by scripts/lean/tests/test_proof_integrity_display_names.py.
-          # Job name now hardcoded (composite actions have no inputs context at
-          # job level) -- same string the reusable used to derive from this input.
-          display-name: conway_lean (audit)
-          # #10889 (point 5): target-modules "*" -- lean-axiom.yml derives the
-          # module list at runtime by walking every *.lean the lake compiles
-          # (69 modules on 2026-08-15), so a hand-maintained list can never drift
-          # out of this gate's view again. The 18-module explicit list this
-          # replaces covered 18/69; the wildcard keeps those AND the ~45
-          # blind-spot modules (JumpCapture, PatternTour, Pillars,
-          # LookAndSayLemmas, RLE_en, ...), and surfaced 2 previously-unseen
-          # sorry-bearing modules (HashlifeMarginFragment + _en -- reported
-          # has_sorry, not gated: this job is fail-on-sorry: false).
-          # include-i18n-siblings: "true" -- the wildcard derivation excludes
-          # `_en` siblings by default (FR-only measurement, #10889); opting in
-          # keeps the 4 _en modules the explicit list already covered
-          # (MacroCell_en, Hashlife_en, Spaceships_en, GridCanonical_en) AND adds
-          # the 5 nd-bearing _en modules whose axioms are enumerated below. A gate
-          # that counts compiled modules must not omit half a bilingual pair
-          # (#8782 pitfall 2).
-          # #9863 history: the monolithic HashlifeCorrectness.lean (7082 ln) was
-          # split into an import aggregator + Foundation + Walls/{NW,NE,SW,SE};
-          # the 8 acknowledged tactic sorries live in the Walls submodules
-          # (native_decide=0 there). Under the explicit list those submodules had
-          # to be NAMED to keep the sorries surfaced; the wildcard covers them by
-          # construction now.
-          target-modules: "*"
-          include-i18n-siblings: "true"
-          # allow-axioms: 69 native_decide axioms = the 38 HashlifeCorrectness-era
-          # empirical footprint (revealed by this job's first CI run, #8782/#9341,
-          # shrunk by the #9571 still-life + #9595 spaceship decide flips) + 21
-          # build-enumerated entries added by the #10889 "*" widening (probe: this
-          # job's own LeanVerifier.check_axioms loop over all 69 modules on a warm
-          # main-identical conway build, 2026-08-15) + 2 At-witness entries added
-          # by grain 3a (#11303) + 8 class-witness entries added by the #6724
-          # criterion-3 characterization (jumpCaptured_beehive/blinker/
-          # block_of_class -- witnesses of the periodic-class theorem, names
-          # enumerated from the PR's own local `#print axioms`, never derived
-          # by rule). All 69 are decide-kernel
-          # (`._native.native_decide.ax_1_N` = `decide` on finite Fin-typed props).
-          # The 21 new entries, each annotated with the module that introduces it:
-          #   Conway.Life.HashlifeCorrectness (2, grain 3a #11303): p4at_witness_k1,
-          #     p4at_witness_k2 -- At-variant witnesses of the p4_wf_witness pair,
-          #     mirrored statements on the decorrelated engine's hashlifeResultAt.
-          #   Conway.Life.JumpCapture (3): jumpCaptured_block / _glider /
-          #     _not_trivial
-          #   Conway.Life.JumpCapture (8 more, #6724 criterion 3): beehive.ax_1_1
-          #     + .ax_1_2, blinker.ax_1_1/.ax_1_3/.ax_1_4, block_of_class.
-          #     ax_1_1/.ax_1_2/.ax_1_3 -- three class instances derived from
-          #     jumpCaptured_of_period_divides (structurel, axiom-clean); the
-          #     native_decide axioms sit on the level/period side-conditions only.
-          #   Conway.Life.PatternTour (1): pulsar_is_oscillator
-          #   Conway.Life.Pillars (1): Pillars.pulsar_period3
-          #   Conway.LookAndSayLemmas (2): digitsToNat_example, lookAndSay_4
-          #   Conway.Life.Oscillators_en (2): Conway_en.Life_en.pulsar_period_three,
-          #     pentadecathlon_period_15 (_en twins of 2 of the 38)
-          #   Conway.Life.PatternTour_en (1): Conway_en.Life_en.pulsar_is_oscillator
-          #   Conway.Life.Pillars_en (1): Conway.Life.Pillars_en.pulsar_period3
-          #     -- namespace keeps the FR Conway.Life path here while other _en
-          #     twins live under Conway_en.*: this heterogeneity is exactly why
-          #     names are ENUMERATED from the build, never derived by rule.
-          #   Conway.Life.RLE_en (8): Conway_en.Life_en.RLE_en.* (_en twins of
-          #     the 8 RLE entries of the 38)
-          #   Conway.LookAndSayLemmas_en (2): Conway_en.digitsToNat_example,
-          #     Conway_en.lookAndSay_4
-          # Names stay explicit -- no wildcard entry in allow-axioms: a NEW
-          # native_decide anywhere in the lake = a new red ("new native_decide =
-          # new red"), the property the no-wildcard rule preserves.
-          allow-axioms: "Conway.Life.hashlife_correct_implies_block_2._native.native_decide.ax_1_1,Conway.Life.hashlife_correct_implies_toad_2._native.native_decide.ax_1_1,Conway.Life.hashlife_correct_implies_glider_2._native.native_decide.ax_1_1,Conway.Life.hashlife_correct_implies_blinker_h_2._native.native_decide.ax_1_1,Conway.Life.hashlife_correct_implies_beacon_2._native.native_decide.ax_1_1,Conway.Life.box_assez_grandN_single_cell._native.native_decide.ax_1_4,Conway.Life.box_assez_grandN_single_cell._native.native_decide.ax_1_2,Conway.Life.box_assez_grandN_single_cell._native.native_decide.ax_1_3,Conway.Life.box_assez_grandN_single_cell._native.native_decide.ax_1_1,Conway.Life.box_assez_grandN_single_cell_8._native.native_decide.ax_1_1,Conway.Life.box_assez_grandN_single_cell_3._native.native_decide.ax_1_1,Conway.Life.box_assez_grandN_block_8._native.native_decide.ax_1_1,Conway.Life.box_assez_grandN_glider_8._native.native_decide.ax_1_1,Conway.Life.boxAssezGrandN_block_8._native.native_decide.ax_1_1,Conway.Life.boxAssezGrandN_glider_8._native.native_decide.ax_1_1,Conway.Life.box_assez_grand_single_cell_3_false._native.native_decide.ax_1_1,Conway.Life.box_assez_grand_single_cell_8_false._native.native_decide.ax_1_1,Conway.Life.box_assez_grand_single_cell_2._native.native_decide.ax_1_1,Conway.Life.box_assez_grand_not_vacuous._native.native_decide.ax_1_1,Conway.Life.p4_wf_witness_k2._native.native_decide.ax_1_1,Conway.Life.p4_wf_witness_k1._native.native_decide.ax_1_1,Conway.Life.p4at_witness_k1._native.native_decide.ax_1_1,Conway.Life.p4at_witness_k2._native.native_decide.ax_1_1,Conway.Life.p4_base_exhaustive._native.native_decide.ax_1_1✝,Conway.Life.p4_base_blinker._native.native_decide.ax_1_1,Conway.Life.p4_base_block._native.native_decide.ax_1_1,Conway.Life.p4_base_glider._native.native_decide.ax_1_1,Conway.Life.p4_base_dead._native.native_decide.ax_1_1,Conway.Life.p4_unrestricted_counterexample._native.native_decide.ax_1_1,Conway.Life.padCenter2_correct_block_level1._native.native_decide.ax_1_1,Conway.Life.pulsar_period_three._native.native_decide.ax_1_1,Conway.Life.pentadecathlon_period_15._native.native_decide.ax_1_1,Conway.Life.RLE.glider_parse_ok._native.native_decide.ax_1_1,Conway.Life.RLE.lwss_parse_ok._native.native_decide.ax_1_1,Conway.Life.RLE.pulsar_parse_ok._native.native_decide.ax_1_1,Conway.Life.RLE.gosper_gun_parse_ok._native.native_decide.ax_1_1,Conway.Life.RLE.lwss_rle_roundtrip._native.native_decide.ax_1_1,Conway.Life.RLE.pulsar_rle_roundtrip._native.native_decide.ax_1_1,Conway.Life.RLE.gosper_gun_cell_count._native.native_decide.ax_1_1,Conway.Life.RLE.glider_parsed_cell_count._native.native_decide.ax_1_1,Conway.Life.jumpCaptured_block._native.native_decide.ax_1_1,Conway.Life.jumpCaptured_glider._native.native_decide.ax_1_1,Conway.Life.jumpCaptured_not_trivial._native.native_decide.ax_1_1,Conway.Life.jumpCaptured_beehive._native.native_decide.ax_1_1,Conway.Life.jumpCaptured_beehive._native.native_decide.ax_1_2,Conway.Life.jumpCaptured_blinker._native.native_decide.ax_1_1,Conway.Life.jumpCaptured_blinker._native.native_decide.ax_1_3,Conway.Life.jumpCaptured_blinker._native.native_decide.ax_1_4,Conway.Life.jumpCaptured_block_of_class._native.native_decide.ax_1_1,Conway.Life.jumpCaptured_block_of_class._native.native_decide.ax_1_2,Conway.Life.jumpCaptured_block_of_class._native.native_decide.ax_1_3,Conway.Life.pulsar_is_oscillator._native.native_decide.ax_1_1,Conway.Life.Pillars.pulsar_period3._native.native_decide.ax_1_1,Conway.digitsToNat_example._native.native_decide.ax_1_1,Conway.lookAndSay_4._native.native_decide.ax_1_1,Conway_en.Life_en.pulsar_period_three._native.native_decide.ax_1_1,Conway_en.Life_en.pentadecathlon_period_15._native.native_decide.ax_1_1,Conway_en.Life_en.pulsar_is_oscillator._native.native_decide.ax_1_1,Conway.Life.Pillars_en.pulsar_period3._native.native_decide.ax_1_1,Conway_en.Life_en.RLE_en.glider_parse_ok._native.native_decide.ax_1_1,Conway_en.Life_en.RLE_en.lwss_parse_ok._native.native_decide.ax_1_1,Conway_en.Life_en.RLE_en.pulsar_parse_ok._native.native_decide.ax_1_1,Conway_en.Life_en.RLE_en.gosper_gun_parse_ok._native.native_decide.ax_1_1,Conway_en.Life_en.RLE_en.lwss_rle_roundtrip._native.native_decide.ax_1_1,Conway_en.Life_en.RLE_en.pulsar_rle_roundtrip._native.native_decide.ax_1_1,Conway_en.Life_en.RLE_en.gosper_gun_cell_count._native.native_decide.ax_1_1,Conway_en.Life_en.RLE_en.glider_parsed_cell_count._native.native_decide.ax_1_1,Conway_en.digitsToNat_example._native.native_decide.ax_1_1,Conway_en.lookAndSay_4._native.native_decide.ax_1_1"
-          fail-on-sorry: false
+    uses: jsboige/CoursIA/.github/workflows/lean-axiom.yml@main
+    with:
+      project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean
+      # #8848: the advisory (fail-on-sorry: false) job carries the ' (audit)' suffix
+      # so it is distinguishable from the blocking proof-integrity job above in the
+      # CI check rollup ("Proof integrity (conway_lean (audit))" vs "(conway_lean)").
+      # Without it a reviewer saw two identical "Proof integrity (conway_lean)" checks
+      # and could not tell which tolerates the 8 acknowledged sorries from which
+      # refuses them. Pinned by scripts/lean/tests/test_proof_integrity_display_names.py.
+      display-name: conway_lean (audit)
+      # #10889 (point 5): target-modules "*" -- lean-axiom.yml derives the
+      # module list at runtime by walking every *.lean the lake compiles
+      # (69 modules on 2026-08-15), so a hand-maintained list can never drift
+      # out of this gate's view again. The 18-module explicit list this
+      # replaces covered 18/69; the wildcard keeps those AND the ~45
+      # blind-spot modules (JumpCapture, PatternTour, Pillars,
+      # LookAndSayLemmas, RLE_en, ...), and surfaced 2 previously-unseen
+      # sorry-bearing modules (HashlifeMarginFragment + _en -- reported
+      # has_sorry, not gated: this job is fail-on-sorry: false).
+      # include-i18n-siblings: "true" -- the wildcard derivation excludes
+      # `_en` siblings by default (FR-only measurement, #10889); opting in
+      # keeps the 4 _en modules the explicit list already covered
+      # (MacroCell_en, Hashlife_en, Spaceships_en, GridCanonical_en) AND adds
+      # the 5 nd-bearing _en modules whose axioms are enumerated below. A gate
+      # that counts compiled modules must not omit half a bilingual pair
+      # (#8782 pitfall 2).
+      # #9863 history: the monolithic HashlifeCorrectness.lean (7082 ln) was
+      # split into an import aggregator + Foundation + Walls/{NW,NE,SW,SE};
+      # the 8 acknowledged tactic sorries live in the Walls submodules
+      # (native_decide=0 there). Under the explicit list those submodules had
+      # to be NAMED to keep the sorries surfaced; the wildcard covers them by
+      # construction now.
+      target-modules: "*"
+      include-i18n-siblings: "true"
+      # allow-axioms: 69 native_decide axioms = the 38 HashlifeCorrectness-era
+      # empirical footprint (revealed by this job's first CI run, #8782/#9341,
+      # shrunk by the #9571 still-life + #9595 spaceship decide flips) + 21
+      # build-enumerated entries added by the #10889 "*" widening (probe: this
+      # job's own LeanVerifier.check_axioms loop over all 69 modules on a warm
+      # main-identical conway build, 2026-08-15) + 2 At-witness entries added
+      # by grain 3a (#11303) + 8 class-witness entries added by the #6724
+      # criterion-3 characterization (jumpCaptured_beehive/blinker/
+      # block_of_class -- witnesses of the periodic-class theorem, names
+      # enumerated from the PR's own local `#print axioms`, never derived
+      # by rule). All 69 are decide-kernel
+      # (`._native.native_decide.ax_1_N` = `decide` on finite Fin-typed props).
+      # The 21 new entries, each annotated with the module that introduces it:
+      #   Conway.Life.HashlifeCorrectness (2, grain 3a #11303): p4at_witness_k1,
+      #     p4at_witness_k2 -- At-variant witnesses of the p4_wf_witness pair,
+      #     mirrored statements on the decorrelated engine's hashlifeResultAt.
+      #   Conway.Life.JumpCapture (3): jumpCaptured_block / _glider /
+      #     _not_trivial
+      #   Conway.Life.JumpCapture (8 more, #6724 criterion 3): beehive.ax_1_1
+      #     + .ax_1_2, blinker.ax_1_1/.ax_1_3/.ax_1_4, block_of_class.
+      #     ax_1_1/.ax_1_2/.ax_1_3 -- three class instances derived from
+      #     jumpCaptured_of_period_divides (structurel, axiom-clean); the
+      #     native_decide axioms sit on the level/period side-conditions only.
+      #   Conway.Life.PatternTour (1): pulsar_is_oscillator
+      #   Conway.Life.Pillars (1): Pillars.pulsar_period3
+      #   Conway.LookAndSayLemmas (2): digitsToNat_example, lookAndSay_4
+      #   Conway.Life.Oscillators_en (2): Conway_en.Life_en.pulsar_period_three,
+      #     pentadecathlon_period_15 (_en twins of 2 of the 38)
+      #   Conway.Life.PatternTour_en (1): Conway_en.Life_en.pulsar_is_oscillator
+      #   Conway.Life.Pillars_en (1): Conway.Life.Pillars_en.pulsar_period3
+      #     -- namespace keeps the FR Conway.Life path here while other _en
+      #     twins live under Conway_en.*: this heterogeneity is exactly why
+      #     names are ENUMERATED from the build, never derived by rule.
+      #   Conway.Life.RLE_en (8): Conway_en.Life_en.RLE_en.* (_en twins of
+      #     the 8 RLE entries of the 38)
+      #   Conway.LookAndSayLemmas_en (2): Conway_en.digitsToNat_example,
+      #     Conway_en.lookAndSay_4
+      # Names stay explicit -- no wildcard entry in allow-axioms: a NEW
+      # native_decide anywhere in the lake = a new red ("new native_decide =
+      # new red"), the property the no-wildcard rule preserves.
+      allow-axioms: "Conway.Life.hashlife_correct_implies_block_2._native.native_decide.ax_1_1,Conway.Life.hashlife_correct_implies_toad_2._native.native_decide.ax_1_1,Conway.Life.hashlife_correct_implies_glider_2._native.native_decide.ax_1_1,Conway.Life.hashlife_correct_implies_blinker_h_2._native.native_decide.ax_1_1,Conway.Life.hashlife_correct_implies_beacon_2._native.native_decide.ax_1_1,Conway.Life.box_assez_grandN_single_cell._native.native_decide.ax_1_4,Conway.Life.box_assez_grandN_single_cell._native.native_decide.ax_1_2,Conway.Life.box_assez_grandN_single_cell._native.native_decide.ax_1_3,Conway.Life.box_assez_grandN_single_cell._native.native_decide.ax_1_1,Conway.Life.box_assez_grandN_single_cell_8._native.native_decide.ax_1_1,Conway.Life.box_assez_grandN_single_cell_3._native.native_decide.ax_1_1,Conway.Life.box_assez_grandN_block_8._native.native_decide.ax_1_1,Conway.Life.box_assez_grandN_glider_8._native.native_decide.ax_1_1,Conway.Life.boxAssezGrandN_block_8._native.native_decide.ax_1_1,Conway.Life.boxAssezGrandN_glider_8._native.native_decide.ax_1_1,Conway.Life.box_assez_grand_single_cell_3_false._native.native_decide.ax_1_1,Conway.Life.box_assez_grand_single_cell_8_false._native.native_decide.ax_1_1,Conway.Life.box_assez_grand_single_cell_2._native.native_decide.ax_1_1,Conway.Life.box_assez_grand_not_vacuous._native.native_decide.ax_1_1,Conway.Life.p4_wf_witness_k2._native.native_decide.ax_1_1,Conway.Life.p4_wf_witness_k1._native.native_decide.ax_1_1,Conway.Life.p4at_witness_k1._native.native_decide.ax_1_1,Conway.Life.p4at_witness_k2._native.native_decide.ax_1_1,Conway.Life.p4_base_exhaustive._native.native_decide.ax_1_1✝,Conway.Life.p4_base_blinker._native.native_decide.ax_1_1,Conway.Life.p4_base_block._native.native_decide.ax_1_1,Conway.Life.p4_base_glider._native.native_decide.ax_1_1,Conway.Life.p4_base_dead._native.native_decide.ax_1_1,Conway.Life.p4_unrestricted_counterexample._native.native_decide.ax_1_1,Conway.Life.padCenter2_correct_block_level1._native.native_decide.ax_1_1,Conway.Life.pulsar_period_three._native.native_decide.ax_1_1,Conway.Life.pentadecathlon_period_15._native.native_decide.ax_1_1,Conway.Life.RLE.glider_parse_ok._native.native_decide.ax_1_1,Conway.Life.RLE.lwss_parse_ok._native.native_decide.ax_1_1,Conway.Life.RLE.pulsar_parse_ok._native.native_decide.ax_1_1,Conway.Life.RLE.gosper_gun_parse_ok._native.native_decide.ax_1_1,Conway.Life.RLE.lwss_rle_roundtrip._native.native_decide.ax_1_1,Conway.Life.RLE.pulsar_rle_roundtrip._native.native_decide.ax_1_1,Conway.Life.RLE.gosper_gun_cell_count._native.native_decide.ax_1_1,Conway.Life.RLE.glider_parsed_cell_count._native.native_decide.ax_1_1,Conway.Life.jumpCaptured_block._native.native_decide.ax_1_1,Conway.Life.jumpCaptured_glider._native.native_decide.ax_1_1,Conway.Life.jumpCaptured_not_trivial._native.native_decide.ax_1_1,Conway.Life.jumpCaptured_beehive._native.native_decide.ax_1_1,Conway.Life.jumpCaptured_beehive._native.native_decide.ax_1_2,Conway.Life.jumpCaptured_blinker._native.native_decide.ax_1_1,Conway.Life.jumpCaptured_blinker._native.native_decide.ax_1_3,Conway.Life.jumpCaptured_blinker._native.native_decide.ax_1_4,Conway.Life.jumpCaptured_block_of_class._native.native_decide.ax_1_1,Conway.Life.jumpCaptured_block_of_class._native.native_decide.ax_1_2,Conway.Life.jumpCaptured_block_of_class._native.native_decide.ax_1_3,Conway.Life.pulsar_is_oscillator._native.native_decide.ax_1_1,Conway.Life.Pillars.pulsar_period3._native.native_decide.ax_1_1,Conway.digitsToNat_example._native.native_decide.ax_1_1,Conway.lookAndSay_4._native.native_decide.ax_1_1,Conway_en.Life_en.pulsar_period_three._native.native_decide.ax_1_1,Conway_en.Life_en.pentadecathlon_period_15._native.native_decide.ax_1_1,Conway_en.Life_en.pulsar_is_oscillator._native.native_decide.ax_1_1,Conway.Life.Pillars_en.pulsar_period3._native.native_decide.ax_1_1,Conway_en.Life_en.RLE_en.glider_parse_ok._native.native_decide.ax_1_1,Conway_en.Life_en.RLE_en.lwss_parse_ok._native.native_decide.ax_1_1,Conway_en.Life_en.RLE_en.pulsar_parse_ok._native.native_decide.ax_1_1,Conway_en.Life_en.RLE_en.gosper_gun_parse_ok._native.native_decide.ax_1_1,Conway_en.Life_en.RLE_en.lwss_rle_roundtrip._native.native_decide.ax_1_1,Conway_en.Life_en.RLE_en.pulsar_rle_roundtrip._native.native_decide.ax_1_1,Conway_en.Life_en.RLE_en.gosper_gun_cell_count._native.native_decide.ax_1_1,Conway_en.Life_en.RLE_en.glider_parsed_cell_count._native.native_decide.ax_1_1,Conway_en.digitsToNat_example._native.native_decide.ax_1_1,Conway_en.lookAndSay_4._native.native_decide.ax_1_1"
+      fail-on-sorry: false
 
   # Advisory proof-integrity coverage (See #8782). The `target-modules` lists
   # above are hand-maintained while the lakefile glob (.submodules Conway,
