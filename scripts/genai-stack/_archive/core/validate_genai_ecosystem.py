@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# ARCHIVED: 2026-02 (consolidation genai-stack) -- see scripts/genai-stack/_archive/ARCHIVE_README.md
+# DISPOSITION: superseded | Successor: genai.py validate --full | Reason: 873 lignes, chevauche validate.py
+#
 """
 validate_genai_ecosystem.py - Script de validation complète écosystème GenAI Images
 
