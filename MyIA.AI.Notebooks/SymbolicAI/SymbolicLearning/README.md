@@ -99,7 +99,7 @@ Cette phase explore les méthodes contemporaines à l'intersection du symbolique
 
 ### Phase 6 : Apprentissage actif et capstone (SL-10 à SL-12b, ~270 min)
 
-Trois notebooks concluent la série.
+Quatre notebooks concluent la série.
 
 **SL-10 — Apprentissage actif d'automates** inverse le rapport de l'apprenant aux données : au lieu de subir un échantillon, L* d'Angluin *choisit* ses questions (requêtes d'appartenance et d'équivalence à un oracle MAT) et apprend des automates finis déterministes prouvablement minimaux — le cadre théorique (Myhill-Nerode, fermeture et cohérence de la table d'observation) est implémenté et vérifié de zéro. Le notebook explore aussi la version bruitée du problème (oracle bruité + vote majoritaire type Rivest-Schapire + agrégation d'évidence forward sum-product), montrant que la garantie de minimalité tient tant que le ratio signal/bruit reste favorable.
 
@@ -443,7 +443,7 @@ Note : dans SL-7, le premier exercice de la numérotation interne est un exemple
 
 ### Environnement Python
 
-Aucune dépendance externe pour SL-1, SL-2, SL-5, SL-7 et SL-10 (bibliothèque standard Python 3.10+ uniquement). SL-3 utilise `scikit-learn` et `numpy` pour la comparaison avec la sélection statistique. SL-8 utilise `rdflib` et `clingo` (module Python officiel Potassco, installé silencieusement par le notebook — même moteur ASP que le binaire utilisé par la série Tweety via `scripts/install_clingo.py`). SL-8 et SL-10 utilisent `python-dotenv` et `openai` pour les appels LLM optionnels via OpenRouter (Gemini 3.5 Flash) : copiez `.env.example` vers `.env` et renseignez `OPENROUTER_API_KEY` ; sans clé, un simulateur déterministe prend le relais et le notebook s'exécute intégralement. SL-12b s'exécute CPU uniquement avec `numpy` (algèbre, transformées, recherche) et `matplotlib` (spectres, cartes Sinkhorn, trajectoires) — aucune autre dépendance.
+Aucune dépendance externe pour SL-1, SL-2, SL-5 et SL-10 (bibliothèque standard Python 3.10+ uniquement). SL-3 utilise `scikit-learn` et `numpy` pour la comparaison avec la sélection statistique. SL-7 utilise `torch` et `LTNtorch` pour les Logic Tensor Networks. SL-8 utilise `rdflib` et `clingo` (module Python officiel Potassco, installé silencieusement par le notebook — même moteur ASP que le binaire utilisé par la série Tweety via `scripts/install_clingo.py`). SL-9 et SL-11 utilisent `python-dotenv` et `openai` pour les appels LLM optionnels via OpenRouter (Gemini 3.5 Flash) : copiez `.env.example` vers `.env` et renseignez `OPENROUTER_API_KEY` ; sans clé, un simulateur déterministe prend le relais et le notebook s'exécute intégralement. SL-12 utilise `torch` et `difflogic`. SL-12b s'exécute CPU uniquement avec `numpy` (algèbre, transformées, recherche) et `matplotlib` (spectres, cartes Sinkhorn, trajectoires) — aucune autre dépendance.
 
 SL-4 est en bibliothèque standard pour l'essentiel, mais sa section finale **Popper** requiert un environnement Unix : Popper utilise `signal.SIGALRM`, absent de Windows — le notebook s'exécute donc sur un kernel Python **Linux** (kernel `python3-wsl` via WSL sous Windows, kernel natif sous Linux/macOS). Dépendances de la section (installées silencieusement par le notebook) : SWI-Prolog >= 9.1.12 (`ppa:swi-prolog/stable`), `popper-ilp` épinglé à **v4.4.0** (la 5.0 exige Python >= 3.14), `janus_swi`, `clingo`, `setuptools < 81`. Si Popper est indisponible, les cellules de la section l'indiquent et se sautent proprement — le reste du notebook tourne sur n'importe quel kernel Python.
 
@@ -453,7 +453,7 @@ SL-6 (Moteurs ILP modernes) partage l'exigence kernel **Linux/WSL** : Aleph et M
 
 ### `rdflib` ne s'installe pas ou plantage à l'exécution
 
-SL-7 dépend de `rdflib` pour manipuler les knowledge graphs RDF. Si l'installation échoue :
+SL-8 dépend de `rdflib` pour manipuler les knowledge graphs RDF. Si l'installation échoue :
 
 ```bash
 pip install rdflib
@@ -592,7 +592,7 @@ Là où Argument_Analysis (cycle 31) déploie le **carrefour informel/formel ant
 - → Phase 5 (T-norms/KG mining/LLM boucle) **réponse** : rigidité logique → différentiabilité + vérifiabilité
 - → Phase 6 (L* + capstone) **réponse** : opacité neuronale → provenance + apprentissage actif
 
-Le **capstone SL-11** est l'un des rares pipelines neuro-symboliques bout-en-bout du dépôt (avec vrais appels LLM Gemini 3.5 Flash, oracle de validation symbolique Tweety-nature, KG SemanticWeb-nature, mining AMIE SymbolicLearning-nature, inférence avec provenance Argument_Analysis-nature, confrontation LLM vs KG). C'est la **convergence opérationnelle** des cinq phases précédentes en une boucle où le LLM et la logique se corrigent mutuellement.
+Le **capstone SL-11** est l'un des rares pipelines neuro-symboliques bout-en-bout du dépôt (avec vrais appels LLM Gemini 3.5 Flash, oracle de validation symbolique Tweety-nature, KG SemanticWeb-nature, mining AMIE SymbolicLearning-nature, inférence avec provenance Argument_Analysis-nature, confrontation LLM vs KG). C'est la **convergence opérationnelle** des phases précédentes en une boucle où le LLM et la logique se corrigent mutuellement.
 
 **Doctrine symétrique — AIMA chapitre 19 + EPITA-IS Argumentum** : SymbolicLearning est ancrée sur AIMA chapitre 19 (Russell & Norvig, 3e/4e éd.) avec `aima_knowledge.py` vendored (référence MIT) — la cohérence algorithmique est garantie par les implémentations canoniques. Aucune série ne peut à elle seule aligner les 4 paradigmes d'apprentissage en 6 phases — c'est la **particularité structurelle** de SymbolicLearning dans le dépôt.
 
@@ -628,7 +628,7 @@ La thèse de la série, posée dès l'introduction et démontrée par le capston
 - **Passer à l'échelle sur le web de données** : [SemanticWeb](../SemanticWeb/) (RDFS/OWL formalisent les déterminations et les hiérarchies de généralité que RBL exploite) — naturellement après SL-7 (knowledge graphs + AMIE).
 - **Décider sous incertitude** : la logique apprise produit des règles certaines ; [Probas](../../Probas/) (Infer.NET) et [GameTheory](../../GameTheory/) traitent le cas où la certitude n'est pas atteignable — le complément probabiliste du capstone SL-11.
 - **Du capstone à la production** : reprenez le pipeline SL-11 et remplacez l'oracle de validation par une vérification Lean ou une cohérence Tweety — c'est le pont naturel vers une IA générative ancrée sur du vérifiable.
-- Relisez la **table de pioche** (52 exercices) et la **Lecture transversale** ci-dessus : elles recoupent les cinq phases sous des angles différents (grothendieckien : changement de représentation, certification A/B/C).
+- Relisez la **table de pioche** (52 exercices) et la **Lecture transversale** ci-dessus : elles recoupent les six phases sous des angles différents (grothendieckien : changement de représentation, certification A/B/C).
 
 ### Le fil rouge
 
