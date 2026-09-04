@@ -166,6 +166,42 @@ theorem hashlife_correct_margin (c : MacroCell) (k : Nat)
   -- open P4/P5 heart — documented sorry (acceptance B).
   sorry
 
+/-! ## P4.4 assembly — sorry-stable reduction (tranche 2, #13483)
+
+Diagnosis of 2026-09-04 (c.5539811910): every preliminary brick is proved
+(`p5_large_n_jumpN` b3', full P4, the four bounded walls sorry-free) — the sorry of
+`hashlife_correct_margin` is the assembly itself. Decomposition:
+
+- **L1** — the `h_margin` hypothesis is free: `supportInMargin` is tautological
+  (`supportInMargin_trivial`), the effective statement is the unconditional one under
+  `centralCorrect`.
+- **L2** — the goal reduces to the N-machine's hypothesis: `hashlife_correctN` (proved,
+  in HashlifeCorrectness) yields the global equality as soon as
+  `hcap : ∀ t ≤ 2^k, jumpCaptured …` holds. That is the lemma below, sorry-free.
+- **L3 (open heart)** — lift `centralCorrect c k` (grid equality RESTRICTED to the final
+  window) to `hcap` (confinement of the WHOLE trajectory). This is the bounded P4/P5
+  assembly proper: a structural argument about the Hashlife recursion (the margin contains
+  the light cone at every jump), NOT a reversibility argument — GoL is not reversible, the
+  retrograde cone does not constrain intermediate states.
+- **L4** — the equality leg: `centralCorrect` is a restricted equality, the goal is
+  global; closing requires both grids to carry their support inside the window
+  (`jumpCaptured` of the final state + forward bound on the support of `evolve`).
+
+`hashlife_correct_margin c k h_margin h_central` would discharge as
+`hashlife_correct_margin_of_hcap c k h_central (L3 c k h_central)`: L3/L4 are the only
+open links. -/
+
+/-- **P4.4 L2 (sorry-stable reduction).** The frame's global equality reduces to
+    the N-machine's trajectory-capture hypothesis: `hashlife_correctN` (proved)
+    closes the goal as soon as `hcap` holds. The open links are L3 (lifting
+    `centralCorrect c k` to `hcap`) and L4 (restricted → global equality). -/
+theorem hashlife_correct_margin_of_hcap (c : MacroCell) (k : Nat)
+    (h_central : centralCorrect c k)
+    (hcap : ∀ t ≤ 2^k, jumpCaptured
+      (gridToMacroCellWithOffset (evolve t (c.toGrid (0, 0)))).2 = true) :
+    evolveHashlifeFast (2^k) (c.toGrid (0, 0)) = evolve (2^k) (c.toGrid (0, 0)) :=
+  hashlife_correctN (2^k) (c.toGrid (0, 0)) hcap
+
 /-! ## Sanity checks on the bestiary
 
 The fragment `supportInMargin` is **decidable** (instance `Decidable (BoxAssezGrandN)`,
@@ -211,8 +247,10 @@ statement `hashlife_correct_margin` carries the fragment-relative correctness (i
 — see *unconditional-in-waiting* note in its docstring: the predicate is tautological, the
 research heart remains the bounded P4/P5 assembly); its `sorry` openly documents the
 still-open bounded P4/P5 assembly (`p4_nw_overlap_wall`, ai-01 c.94).
-Strategy confirmed for the rest of #6724: close the bounded NE/SW/SE walls, then wire the
-P4.4 assembly that will discharge the `sorry` of `hashlife_correct_margin`.
+Strategy for the rest of #6724: the bounded NE/SW/SE walls are CLOSED and
+`p5_large_n_jumpN` is proved (b3') — the L2 reduction above is in place, leaving the L3
+link (the `centralCorrect → hcap` bridge, the bounded assembly proper) and L4 (restricted
+→ global equality), which will discharge the `sorry` of `hashlife_correct_margin`.
 -/
 
 end Life_en
