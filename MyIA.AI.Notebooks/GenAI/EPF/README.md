@@ -2,16 +2,20 @@
 
 > **Statut** : répertoire d'**archive**. Ne fait pas partie des parcours pédagogiques actifs de la série `GenAI/`. Préservé ici comme trace des productions étudiantes EPF (École Polytechnique Féminine) qui ont alimenté les cas canoniques de [`GenAI/CaseStudies/`](../CaseStudies/README.md).
 
-## Contenu
+## Contenu (état au commit de la PR)
 
-| Sous-dossier | Auteur(s) | Cas canonique associé | Statut |
-|---|---|---|---|
-| `Dorian & Bastien/cuisine/receipe_maker_output.ipynb` | Dorian, Bastien | [`CaseStudies/Recipe-Maker/`](../CaseStudies/Recipe-Maker/README.md) | sortie étudiante archivée |
-| `Louise et Jeanne Céline/medical_chatbot_output.ipynb` | Louise, Jeanne Céline | [`CaseStudies/Medical-Chatbot/`](../CaseStudies/Medical-Chatbot/README.md) | sortie étudiante archivée |
+**Aucune entrée matérielle dans ce répertoire pour le moment** — à la rédaction (commit `dc874107`) seul ce README existe. Les **livrables canoniques** (Barbie-Schreck, Fort-Boyard, Medical-Chatbot, Recipe-Maker) vivent dans [`GenAI/CaseStudies/`](../CaseStudies/README.md) ; les sorties brutes étudiantes `_output.ipynb` historiquement préservées ici ont été **vérifiées absentes de l'arbre complet au SHA de la PR** (0 hit pour `receipe_maker_output.ipynb`, `medical_chatbot_output.ipynb`, `Dorian`, `Louise` — vérifié via `git/trees/dc874107?recursive=1`).
 
-## Pourquoi ces fichiers sont dans `GenAI/EPF/` et non dans `GenAI/CaseStudies/`
+Cette table « Contenu » ayant été rédigée **contre le souvenir** de l'état avant le refactor **`#888`** (qui a universalisé EPF paths vers CaseStudies), elle référençait des chemins aujourd'hui **n'émergeant nulle part dans `main`** : la voici retirée pour ne pas éteindre la vigilance du lecteur suivant (cf leçon ajoutée à [`pr-review-discipline.md` §E](../../.claude/rules/pr-review-discipline.md) — un inventaire de README se vérifie contre le disque au SHA de la PR).
 
-Le refactor **`#888` refactor(casestudies): universalise EPF paths to CaseStudies (Phase 2)** a deplacé les **livrables canoniques** (notebooks de référence Barbie-Schreck, Fort-Boyard, Medical-Chatbot, Recipe-Maker) vers `GenAI/CaseStudies/<cas>/`. Les **sorties brutes des étudiants EPF** (leurs `_output.ipynb` tels que produits par leur run) sont préservées séparément ici, comme mémoire de la session pédagogique — elles ne sont **pas** des livrables du dépôt au sens du parcours étudiant.
+### Migration en attente
+
+- **Sorties étudiantes `_output.ipynb`** : migration hors-ligne (clé USB / disque externe de l'enseignant EPF). À re-tracer ici si elles reviennent un jour dans l'arbre, avec URL/stable-path **vérifiés sur disque**.
+- **Sous-répertoire `Integrations-DotNet/` référencé dans `GenAI/README.md` structure tree** : **pas encore créé** — il est créé par la PR **#14431**, encore ouverte. Tant que #14431 n'est pas mergée, la référence dans `GenAI/README.md` à un répertoire qui n'existe pas est explicitement signalée par cette note (et non par une table qui prétendrait l'inventorier).
+
+## Pourquoi ces fichiers (éventuels) seront dans `GenAI/EPF/` et non dans `GenAI/CaseStudies/`
+
+Le refactor **`#888` refactor(casestudies): universalise EPF paths to CaseStudies (Phase 2)** a deplacé les **livrables canoniques** (notebooks de référence Barbie-Schreck, Fort-Boyard, Medical-Chatbot, Recipe-Maker) vers `GenAI/CaseStudies/<cas>/`. Les **sorties brutes des étudiants EPF** (leurs `_output.ipynb` tels que produits par leur run), si elles reviennent un jour ici, seront préservées séparément comme mémoire de la session pédagogique — elles ne sont **pas** des livrables du dépôt au sens du parcours étudiant.
 
 ## Distinction avec le `MyIA.AI.Notebooks/CaseStudies/` top-level
 

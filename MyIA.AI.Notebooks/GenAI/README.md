@@ -139,11 +139,11 @@ GenAI/
 ├── SemanticKernel/          # Microsoft Semantic Kernel
 ├── FineTuning/              # Fine-tuning de modèles : LoRA/QLoRA/SFT/DPO
 ├── PostTraining/            # Post-training SOTA : SFT/RLHF/DPO/GRPO/RLVR
-├── CaseStudies/             # Études de cas étudiants GenAI (4 projets agentiques)
-├── FallacyDetection/        # Taxonomie + datasets + couverture cross-notebooks fallacy
 ├── Aspire/                  # Hosting/observabilité .NET (AppHost, services, OpenTelemetry)
-├── Integrations-DotNet/     # Hub d'intégrations .NET GenAI (EFCore + CopilotSDK, voir PR #14431)
+├── CaseStudies/             # Études de cas étudiants GenAI (4 projets agentiques)
 ├── EPF/                     # [archive] Sorties étudiantes EPF alimentant GenAI/CaseStudies/
+├── FallacyDetection/        # Taxonomie + datasets + couverture cross-notebooks fallacy
+├── Integrations-DotNet/     # Hub d'intégrations .NET GenAI (EFCore + CopilotSDK, voir PR #14431)
 ├── Plateformes-Conversationnelles/  # Interfaces GenAI conversationnelles (nommées par fonction)
 │   ├── Open-WebUI/          # Tour guidé plateforme + série QA Playwright (6 modules, 30+ tests)
 │   └── AI-Engine-WordPress/ # WordPress comme surface GenAI (Copilot, RAG, serveur MCP)
@@ -151,7 +151,7 @@ GenAI/
 └── RAG-et-Memoire-Semantique/  # Mémoire sémantique : Qdrant, embeddings, grounding (SDDD)
 ```
 
-> **Note d'arborescence (mars 2026)** : `EFCore/` et `CopilotSDK/` (mono-notebook chacun) sont absorbés dans `Integrations-DotNet/` via [PR #14431](https://github.com/jsboige/CoursIA/pull/14431) — le hub Integrations-DotNet est le point de chute canonique des futurs bindings .NET GenAI. `Aspire/` reste au niveau racine : 8 notebooks, série pédagogique majeure avec sous-série catalog. `EPF/` est un répertoire d'archive (voir [`EPF/README.md`](EPF/README.md)) — sorties étudiantes EPF préservées comme trace, pas un parcours actif.
+> **Note d'arborescence (mars 2026)** : `EFCore/` et `CopilotSDK/` (mono-notebook chacun) seront absorbés dans `Integrations-DotNet/` via [PR #14431](https://github.com/jsboige/CoursIA/pull/14431) — **répertoire pas encore créé sur `main` à la rédaction de cette note** (en attente du merge de #14431). Le hub Integrations-DotNet sera le point de chute canonique des futurs bindings .NET GenAI. `Aspire/` reste au niveau racine : 8 notebooks, série pédagogique majeure avec sous-série catalog. `EPF/` est un répertoire d'archive (voir [`EPF/README.md`](EPF/README.md)) — sorties étudiantes EPF préservées comme trace, pas un parcours actif.
 
 ### 00-GenAI-Environment - Votre point de départ
 
