@@ -40,7 +40,7 @@ paradigme de test absent du dépôt, démontré réel ».
 ## Démarrage rapide
 
 ```bash
-cd MyIA.AI.Notebooks/GenAI/Aspire/GenAiStack.AppHost
+cd MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire/GenAiStack.AppHost
 aspire run --detach --isolated      # instance A (ports randomisés)
 aspire describe whisper-api         # état + URL du service
 aspire logs whisper-api             # journaux unifiés
