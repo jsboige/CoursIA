@@ -20,10 +20,10 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 
 | Métrique | Valeur |
 |----------|--------|
-| Notebooks | 197 |
+| Notebooks | 199 |
 | PRODUCTION | 0 |
-| BETA | 176 |
-| ALPHA | 21 |
+| BETA | 180 |
+| ALPHA | 19 |
 
 ## GenAI/00-GenAI-Environment (6 notebooks)
 
@@ -36,7 +36,7 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 5 | 00-5: ComfyUI Local - Test Rapide | BETA | Non |
 | 6 | Deploiement Docker Local des Services GenAI | BETA | Non |
 
-## GenAI/Aspire (7 notebooks)
+## GenAI/Aspire (8 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -47,8 +47,9 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 5 | Aspire : des tests d'intégration modernes —… | BETA | Oui |
 | 6 | Aspire : garde-fous du code d'agent — l'analyseur… | ALPHA | Oui |
 | 7 | Aspire : le routeur MultiConnector — vetting en ligne,… | BETA | Non |
+| 8 | Aspire : l'asynchrone aux frontieres natives -… | BETA | Oui |
 
-## GenAI/Audio (32 notebooks)
+## GenAI/Audio (31 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -75,15 +76,14 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 21 | P5 — Compilation Audio pour Audiobook | BETA | Oui |
 | 22 | Audiobook Agentique avec FishAudio S2-Pro | BETA | Non |
 | 23 | Voice Leading Rendu GenAI — donner un spectre aux… | BETA | Non |
-| 24 | VoiceLeading RenduGenAI - Du Voice-Leading CP-SAT a… | ALPHA | Non |
-| 25 | Pipeline de Transcription et Sous-titrage | BETA | Non |
-| 26 | Workflow de Composition Musicale | BETA | Non |
-| 27 | Synchronisation Audio-Video (Passerelle) | BETA | Non |
-| 28 | Live Coding Musical pilote par LLM | BETA | Non |
-| 29 | Pipeline Audiobook Agentique | BETA | Non |
-| 30 | Benchmark TTS : Comparaison des Modèles Vocaux pour… | BETA | Non |
-| 31 | Lecture Analytique pour Audiobook | BETA | Oui |
-| 32 | Voice Casting : Attribution de voix TTS par personnage | BETA | Non |
+| 24 | Pipeline de Transcription et Sous-titrage | BETA | Non |
+| 25 | Workflow de Composition Musicale | BETA | Non |
+| 26 | Synchronisation Audio-Video (Passerelle) | BETA | Non |
+| 27 | Live Coding Musical pilote par LLM | BETA | Non |
+| 28 | Pipeline Audiobook Agentique | BETA | Non |
+| 29 | Benchmark TTS : Comparaison des Modèles Vocaux pour… | BETA | Non |
+| 30 | Lecture Analytique pour Audiobook | BETA | Oui |
+| 31 | Voice Casting : Attribution de voix TTS par personnage | BETA | Non |
 
 ## GenAI/CaseStudies (5 notebooks)
 
@@ -107,13 +107,14 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 |---|----------|----------|------------|
 | 1 | EF Core : des requêtes vérifiées à la compilation | BETA | Oui |
 
-## GenAI/FallacyDetection (3 notebooks)
+## GenAI/FallacyDetection (4 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | 01 — Introduction : taxonomies de sophismes et terrain… | ALPHA | Oui |
 | 2 | 02 — Paysage des datasets de detection de sophismes | BETA | Non |
 | 3 | 03 — Écart de couverture taxonomique : académique vs… | BETA | Oui |
+| 4 | 04 — Matrice de couverture cross-notebooks | BETA | Oui |
 
 ## GenAI/FineTuning (7 notebooks)
 
@@ -149,7 +150,7 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 16 | Production Integration - GenAI | BETA | Non |
 | 17 | Génération d’un patron de point de croix à partir d’une… | ALPHA | Non |
 
-## GenAI/Plateformes-Conversationnelles (19 notebooks)
+## GenAI/Plateformes-Conversationnelles (20 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -164,14 +165,15 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 9 | Choisir le modèle derrière son chatbot — une… | BETA | Non |
 | 10 | Presenter AI Engine par son API — instance jetable… | BETA | Non |
 | 11 | Parcours QA — ce que l'API ne voit pas | ALPHA | Non |
-| 12 | Parcours QA-OWUI — Notebook chapeau de la mission | ALPHA | Oui |
-| 13 | Module 01 — Découverte de Playwright & Open WebUI | BETA | Oui |
-| 14 | Module 02 — Navigation & Authentification | BETA | Oui |
-| 15 | Module 03 — Chat & Streaming LLM | BETA | Oui |
-| 16 | Module 04 — RAG, Outils MCP & Fonctionnalités avancées | BETA | Oui |
-| 17 | Module 05 — Multi-tenant, API Testing & CI/CD | BETA | Oui |
-| 18 | Module 06 — Tester les nouveautés v0.10 (« l'ère… | BETA | Non |
-| 19 | Différencier plusieurs assistants — mesurer ce qu'un… | BETA | Non |
+| 12 | Auditer la conformite visuelle — ce que le smoke test… | BETA | Non |
+| 13 | Parcours QA-OWUI — Notebook chapeau de la mission | ALPHA | Oui |
+| 14 | Module 01 — Découverte de Playwright & Open WebUI | BETA | Oui |
+| 15 | Module 02 — Navigation & Authentification | BETA | Oui |
+| 16 | Module 03 — Chat & Streaming LLM | BETA | Oui |
+| 17 | Module 04 — RAG, Outils MCP & Fonctionnalités avancées | BETA | Oui |
+| 18 | Module 05 — Multi-tenant, API Testing & CI/CD | BETA | Oui |
+| 19 | Module 06 — Tester les nouveautés v0.10 (« l'ère… | BETA | Non |
+| 20 | Différencier plusieurs assistants — mesurer ce qu'un… | BETA | Non |
 
 ## GenAI/PostTraining (16 notebooks)
 
@@ -237,7 +239,7 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 2 | 10b. Mécanique d'inférence LLM : construire et mesurer… | BETA | Non |
 | 3 | 10c. Stratégies pour contextes longs — budget de… | BETA | Non |
 | 4 | 10d. TensorSharp : pilote d'inférence LLM native .NET | BETA | Non |
-| 5 | 10e. LLamaSharp : bake-off binding .NET de llama.cpp | ALPHA | Non |
+| 5 | 10e. LLamaSharp : bake-off binding .NET de llama.cpp | BETA | Non |
 | 6 | 10f. ONNX Runtime GenAI : jambe finale du bake-off .NET | BETA | Non |
 | 7 | 11. Quantization | BETA | Non |
 | 8 | 12. Test Time Scaling | BETA | Non |

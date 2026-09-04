@@ -50,7 +50,7 @@
 |---|---|---|---|---|---|
 | 1 | ML Trend Scanning with MLFinlab | 143-148 | Trend scanning, CUSUM | No direct mapping | GAP — MLFinlab dependency |
 | 2 | Factor Preprocessing for Regime Detection | 148-154 | Regime detection via factors | [QC-Py-28-Market-Regime-Detection.ipynb](../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-28-Market-Regime-Detection.ipynb) | OVERLAP |
-| 3 | Reversion vs Trending Strategy Selection | 154-158 | Classification selects strategy style | [QC-Py-Cloud-04-MeanReversion.ipynb](../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-04-MeanReversion.ipynb), [QC-Py-Cloud-03-DualMomentum.ipynb](../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-03-DualMomentum.ipynb) | Partial |
+| 3 | Reversion vs Trending Strategy Selection | 154-158 | Classification selects strategy style | [QC-Py-Cloud-04-MeanReversion.ipynb](../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-04-MeanReversion.ipynb), [QC-Py-Cloud-14-DualMomentum.ipynb](../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-14-DualMomentum.ipynb) | Partial |
 | 4 | Alpha by Hidden Markov Models | 158-170 | HMM for alpha generation | [QC-Py-28-Market-Regime-Detection.ipynb](../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-28-Market-Regime-Detection.ipynb) | OVERLAP — HMM section |
 | 5 | FX SVM Wavelet Forecasting | 170-176 | SVM + wavelet on FX | No FX-specific notebook | GAP — FX not covered |
 | 6 | Dividend Harvesting Selection | 176-181 | ML for high-yield asset selection | No dividend notebook | GAP |
@@ -58,7 +58,7 @@
 | 8 | Stop Loss Based on Volatility & Drawdown | 185-197 | Volatility-adjusted stop loss | [QC-Py-10-Risk-Portfolio-Management.ipynb](../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-10-Risk-Portfolio-Management.ipynb) | Partial — risk management overlap |
 | 9 | ML Trading Pairs Selection | 197-207 | ML-driven pairs trading | [QC-Py-Cloud-04-MeanReversion.ipynb](../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-04-MeanReversion.ipynb), [ETF-Pairs-Trading](../MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/ETF-Pairs-Trading/) | OVERLAP |
 | 10 | Stock Selection through Clustering | 207-214 | Clustering fundamental data | No clustering notebook | GAP |
-| 11 | Inverse Volatility Rank & Allocate Futures | 214-221 | Vol-targeting futures portfolio | [QC-Py-Cloud-06-VolTargeting.ipynb](../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-06-VolTargeting.ipynb), [QC-Py-Cloud-03-Risk-Parity.ipynb](../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-03-Risk-Parity.ipynb) | OVERLAP |
+| 11 | Inverse Volatility Rank & Allocate Futures | 214-221 | Vol-targeting futures portfolio | [QC-Py-Cloud-13-VolTargeting.ipynb](../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-13-VolTargeting.ipynb), [QC-Py-Cloud-03-Risk-Parity.ipynb](../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-03-Risk-Parity.ipynb) | OVERLAP |
 | 12 | Trading Costs Optimization | 221-228 | Transaction cost modeling | No dedicated cost notebook | GAP — important topic |
 | 13 | PCA Statistical Arbitrage Mean Reversion | 228-233 | PCA + stat arb | [QC-Py-Cloud-04-MeanReversion.ipynb](../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-04-MeanReversion.ipynb) | Partial |
 | 14 | Temporal CNN Prediction | 233-242 | 1D-CNN for price prediction | [QC-Py-22-Deep-Learning-LSTM.ipynb](../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-22-Deep-Learning-LSTM.ipynb) | GAP — no CNN notebook |

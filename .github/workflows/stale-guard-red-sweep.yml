@@ -59,11 +59,21 @@ concurrency:
 jobs:
   sweep:
     name: Signal PRs blocked on a pre-fix red
-    runs-on: ubuntu-latest
+    # Routage #14283 tranche 4 (ai-01 2026-09-02) : balayage cron pur-Python.
+    # Declencheur `schedule` uniquement -- il ne tourne que sur la branche par
+    # defaut, donc aucun code de fork ne peut l'atteindre et aucune garde
+    # same-repo n'est requise (cf en-tete de check_self_hosted_runner_policy.py).
+    # Retour arriere = remettre `runs-on: ubuntu-latest` + retrait de l'allowlist.
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
         with:
+          # Cone mode (le defaut) n'accepte que des REPERTOIRES : une entree de
+          # fichier fait echouer le checkout (`fatal: ... is not a directory`).
+          # Mesure : en non-cone ces chemins se listent SANS slash initial -- la
+          # forme `/chemin` que suggere l'avertissement de git rend un checkout VIDE.
+          sparse-checkout-cone-mode: false
           sparse-checkout: |
             scripts/check_stale_guard_reds.py
 

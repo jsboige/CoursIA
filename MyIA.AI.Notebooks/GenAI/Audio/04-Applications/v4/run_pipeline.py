@@ -95,23 +95,30 @@ def main():
 
     total_start = time.time()
 
-    for phase in phases:
-        print(f"\n{'─' * 60}")
-        print(f"  {phase.upper()} — {PHASE_NAMES[phase]}")
-        print(f"{'─' * 60}")
+    # Epic #1028 residu 2 : les chaines LLM->TTS durent plus que l'IDLE_TIMEOUT
+    # du monitor (1200 s) -- on suspend tts-fishaudio-idle-monitor le temps de
+    # la fenetre, redemarrage garanti meme si une phase echoue (sys.exit passe
+    # par le finally du context manager).
+    from .idle_monitor import suspended_idle_monitor
 
-        start = time.time()
-        try:
-            output = run_phase(phase, force=args.force)
-            elapsed = time.time() - start
-            print(f"\n  {phase.upper()} completed in {elapsed:.1f}s")
-            print(f"  Output: {output}")
-        except Exception as e:
-            elapsed = time.time() - start
-            print(f"\n  {phase.upper()} FAILED after {elapsed:.1f}s: {e}")
-            if "--force" not in sys.argv:
-                print("  Use --force to retry, or fix the issue and re-run.")
-            sys.exit(1)
+    with suspended_idle_monitor(phases):
+        for phase in phases:
+            print(f"\n{'─' * 60}")
+            print(f"  {phase.upper()} — {PHASE_NAMES[phase]}")
+            print(f"{'─' * 60}")
+
+            start = time.time()
+            try:
+                output = run_phase(phase, force=args.force)
+                elapsed = time.time() - start
+                print(f"\n  {phase.upper()} completed in {elapsed:.1f}s")
+                print(f"  Output: {output}")
+            except Exception as e:
+                elapsed = time.time() - start
+                print(f"\n  {phase.upper()} FAILED after {elapsed:.1f}s: {e}")
+                if "--force" not in sys.argv:
+                    print("  Use --force to retry, or fix the issue and re-run.")
+                sys.exit(1)
 
     total_elapsed = time.time() - total_start
     print(f"\n{'═' * 60}")

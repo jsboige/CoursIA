@@ -11,12 +11,17 @@ Usage:
     python batch_reexecute.py --path <file.ipynb>      # Single notebook
     python batch_reexecute.py --max 5                  # Limit to 5 notebooks
     python batch_reexecute.py --timeout 300            # Per-notebook timeout (seconds)
+    python batch_reexecute.py --cwd notebook           # Kernel cwd = notebook dir (#14356)
 
 Safety:
     - Dry-run mode shows what would be executed without running
     - Creates backup before each execution
     - Skips notebooks requiring API keys, GPU, or cloud services
     - Respects C.3: only re-executes notebooks with source changes
+    - Refuses a run whose output census collapsed (#14356): papermill reports
+      SUCCESS even when a notebook took its `except` branch and produced
+      nothing, so the exit code alone never proves the notebook did what it
+      announces.
 """
 
 import argparse
@@ -103,13 +108,71 @@ def read_kernelspec_name(nb_path: Path) -> str:
     return spec.get("name") or "python3"
 
 
-def execute_notebook(nb_path: Path, kernel: str, timeout: int) -> dict:
-    """Execute a single notebook with papermill."""
+def _output_census(nb_path: Path) -> dict:
+    """Count the outputs and embedded images a notebook currently carries.
+
+    Baseline for the cause-agnostic plausibility guard (#14356). A run that
+    silently loses its results -- a ``.env`` the kernel could not find from its
+    cwd, a service that answered 401, a dependency that fell back to a stub --
+    still exits 0 with ``metadata.papermill.exception: None`` and a clean
+    ``execution_count`` sequence. What such a run cannot fake is the census:
+    the images stop being there. Counting is therefore the only signal that
+    does not need to know *why* the run degraded, which is what makes it worth
+    having over a detector tied to one mechanism.
+
+    An unreadable notebook yields ``readable: False`` so the comparison
+    abstains rather than accuses.
+    """
+    try:
+        data = json.loads(nb_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError, UnicodeDecodeError):
+        return {"readable": False, "outputs": 0, "images": 0}
+    outputs = 0
+    images = 0
+    for cell in data.get("cells", []):
+        for out in cell.get("outputs") or []:
+            outputs += 1
+            if "image/png" in (out.get("data") or {}):
+                images += 1
+    return {"readable": True, "outputs": outputs, "images": images}
+
+
+def _degradation(before: dict, after: dict) -> str:
+    """Name the collapse between two censuses, or "" when there is none.
+
+    Only a *drop* is a signal: this tool exists to re-execute notebooks whose
+    outputs are missing, so a rise is the nominal outcome. And a notebook that
+    carried no images to begin with gives no baseline -- the guard stays silent
+    there instead of inventing one, which is why it catches regressions and not
+    absences.
+    """
+    if not (before["readable"] and after["readable"]):
+        return ""
+    if before["images"] > 0 and after["images"] == 0:
+        return "images %d -> 0" % before["images"]
+    if before["outputs"] > 0 and after["outputs"] * 2 < before["outputs"]:
+        return "outputs %d -> %d" % (before["outputs"], after["outputs"])
+    return ""
+
+
+def execute_notebook(nb_path: Path, kernel: str, timeout: int,
+                     cwd_mode: str = "repo", allow_degraded: bool = False) -> dict:
+    """Execute a single notebook with papermill.
+
+    ``cwd_mode`` selects the kernel working directory (#14356): ``repo`` (the
+    historical default) or ``notebook``, needed by notebooks that resolve a
+    ``.env``, a dataset or a config by walking up the parents of ``Path.cwd()``
+    -- from the repository root that walk never descends into the subtree, and
+    the notebook degrades without failing. Both conventions exist in this
+    repository, so the choice is explicit rather than a reversed default.
+    """
     # Bound OpenMP/BLAS pools before spawning papermill: the kernel it
     # launches inherits the environment; unbounded native training cells
     # oversubscribe many-core hosts and look frozen (#11111).
     bound_native_thread_pools()
     backup_path = nb_path.with_suffix(".ipynb.bak")
+    run_dir = nb_path.parent if cwd_mode == "notebook" else REPO_ROOT
+    before = _output_census(nb_path)
 
     # Create backup
     shutil.copy2(nb_path, backup_path)
@@ -120,6 +183,10 @@ def execute_notebook(nb_path: Path, kernel: str, timeout: int) -> dict:
             str(nb_path), str(nb_path),
             "--kernel", kernel,
             "--execution-timeout", str(timeout),  # per-cell budget, seconds
+            # Explicit even in "repo" mode: papermill otherwise leaves the
+            # kernel in the process cwd, which made the working directory an
+            # implicit consequence of how the tool was launched (#14356).
+            "--cwd", str(run_dir),
         ]
 
         result = subprocess.run(
@@ -131,10 +198,21 @@ def execute_notebook(nb_path: Path, kernel: str, timeout: int) -> dict:
         )
 
         if result.returncode == 0:
+            collapse = _degradation(before, _output_census(nb_path))
+            if collapse and not allow_degraded:
+                # Keeping this result would be worse than keeping none: it
+                # looks green to every downstream guard.
+                shutil.copy2(backup_path, nb_path)
+                backup_path.unlink(missing_ok=True)
+                return {"path": str(nb_path), "status": "DEGRADED",
+                        "error": "output census collapsed (%s) despite papermill "
+                                 "exit 0 -- cwd=%s; restored backup, see #14356"
+                                 % (collapse, cwd_mode)}
             normalized = _normalize_kernel_paths(nb_path)
             backup_path.unlink(missing_ok=True)
             return {"path": str(nb_path), "status": "SUCCESS",
-                    "normalized": normalized}
+                    "normalized": normalized,
+                    "degraded": collapse or None}
         else:
             # Restore backup on failure
             shutil.copy2(backup_path, nb_path)
@@ -168,6 +246,15 @@ def main():
                         help="Max notebooks to execute (0=all)")
     parser.add_argument("--timeout", type=int, default=300,
                         help="Per-notebook timeout in seconds (default: 300)")
+    parser.add_argument("--cwd", choices=["repo", "notebook"], default="repo",
+                        help="Working directory given to the papermill kernel: "
+                             "repo (default, historical behaviour) or notebook. "
+                             "Notebooks that resolve a .env or a dataset by "
+                             "walking up from Path.cwd() need notebook (#14356).")
+    parser.add_argument("--allow-degraded", action="store_true",
+                        help="Keep a result whose output census collapsed "
+                             "instead of restoring the backup (#14356). For the "
+                             "case where the drop is legitimate.")
     parser.add_argument("--skip-external", action="store_true", default=True,
                         help="Skip notebooks requiring API/GPU/cloud (default: True)")
     args = parser.parse_args()
@@ -227,7 +314,7 @@ def main():
         return 0
 
     # Execute
-    results = {"success": 0, "failed": 0, "timeout": 0, "error": 0}
+    results = {"success": 0, "failed": 0, "timeout": 0, "error": 0, "degraded": 0}
     start = datetime.now()
 
     for i, entry in enumerate(targets, 1):
@@ -236,7 +323,9 @@ def main():
         kernel = get_kernel_name(entry)
         print(f"\n[{i}/{len(targets)}] {name} (kernel={kernel})...")
 
-        result = execute_notebook(nb_path, kernel, args.timeout)
+        result = execute_notebook(nb_path, kernel, args.timeout,
+                                  cwd_mode=args.cwd,
+                                  allow_degraded=args.allow_degraded)
         status = result["status"]
         results[status.lower()] = results.get(status.lower(), 0) + 1
 
@@ -254,8 +343,10 @@ def main():
     print(f"  Failed:  {results.get('failed', 0)}")
     print(f"  Timeout: {results.get('timeout', 0)}")
     print(f"  Error:   {results.get('error', 0)}")
+    print(f"  Degraded: {results.get('degraded', 0)}")
 
-    return 1 if results.get("failed", 0) + results.get("error", 0) > 0 else 0
+    return 1 if (results.get("failed", 0) + results.get("error", 0)
+                 + results.get("degraded", 0)) > 0 else 0
 
 
 if __name__ == "__main__":

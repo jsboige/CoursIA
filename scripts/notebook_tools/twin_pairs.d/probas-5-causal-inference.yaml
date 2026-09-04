@@ -41,7 +41,22 @@
       csharp_sha: 9cf206efaa5feacea5e42311add4ed99ff68837d
       content_python_sha: e6f81df80b812e7b6f54573f12cbfe0c5f53dea2f60484dad064d7b66e58cf0e
       content_csharp_sha: 4b99b6834c86238b1602de1d0795ee13b0c173a457c743d8a015fb22d5df8a62
+    - date: "2026-09-02"
+      by: myia-po-2027:CoursIA-2
+      reason: "Attestation post-#14051 (PR #14163) : le jumeau Python importe desormais enumerate_scm et FRONT_SCM/p_y_given_m_x depuis le module canonique pymc_causal_organs.py au lieu de les redefinir, pour que le notebook et ict.bridges.pymc_enumerate observent la MEME implementation. Re-audit firsthand : structure identique avant/apres (35 cellules Python, 14 code / 21 markdown ; sections 1 a 10 en regard des memes sections du jumeau C#), seules les cellules code 5 et 20 changent, et la visibilite pedagogique y est preservee par inspect.getsource(enumerate_scm) et la lecture des CPT sur l'objet importe. Jumeau C# NON touche : content_csharp_sha identique a l'audit du 2026-08-31. Le moteur reste inline cote C# -- asymetrie de factorisation consignee en tete de known_differences. --update en dernier, aucun strip outille applique apres (#8957)."
+      python_sha: 093bb4584f619e18c4f1c4b470ecd014b5803aee
+      csharp_sha: 9cf206efaa5feacea5e42311add4ed99ff68837d
+      content_python_sha: ea8259fafa11a8718f512ce1aedf4df4b648eac21c88243947090cf6daa3c561
+      content_csharp_sha: 4b99b6834c86238b1602de1d0795ee13b0c173a457c743d8a015fb22d5df8a62
   known_differences:
+  - 'Asymetrie de FACTORISATION introduite par #14051 (PR #14163), sans effet sur le contenu enseigne :
+    cote Python le moteur enumerate_scm et le SCM front-door vivent dans le module canonique
+    MyIA.AI.Notebooks/Probas/PyMC/pymc_causal_organs.py, que le notebook IMPORTE au lieu de les redefinir,
+    afin que ict.bridges.pymc_enumerate et le notebook observent la meme implementation ; cote C# le moteur
+    reste defini inline dans le carnet. La visibilite pedagogique est preservee cote Python par
+    inspect.getsource(enumerate_scm) et par la lecture des CPT sur l''objet importe (jamais recopiees).
+    Structure inchangee des deux cotes : sections 1 a 10 identiques, 35 cellules Python (14 code / 21 markdown)
+    avant comme apres.'
   - 'Socle pedagogique commun : inference causale (do-calculus, ajustement) modelise dans les deux stacks.'
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
     Message Passing, modele compile en code d''inference) ; Python PyMC = echantillonnage MCMC (NUTS/HMC par defaut) + ADVI

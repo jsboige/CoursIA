@@ -31,6 +31,7 @@ from m12_har_rv_j import (  # noqa: E402
     HARRVJModel,
     _csv_int_list,
     _csv_list,
+    _fit_har_rv_j_with_train_calibration,
     _sharpe_ann,
     daily_jump_component,
     har_rv_j_lag_features,
@@ -269,6 +270,50 @@ class TestWalkForwardHarRvJ:
         out_h1 = walk_forward_har_rv_j(rv, jumps, horizon=1, n_splits=5)
         out_h5 = walk_forward_har_rv_j(rv, jumps, horizon=5, n_splits=5)
         assert out_h5["n_total_preds"] < out_h1["n_total_preds"]
+
+    def test_calibration_is_train_tail_only(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        n = 160
+        rv = _rv_series(n, seed=8)
+        jumps = pd.Series(np.zeros(n), index=rv.index)
+
+        def predict_constant(
+            self: HARRVJModel,
+            rv_history: pd.Series,
+            jumps_history: pd.Series,
+            horizon: int,
+        ) -> float:
+            del self, jumps_history, horizon
+            return float(np.log(rv_history.iloc[-1])) + 0.25
+
+        monkeypatch.setattr(HARRVJModel, "predict_h_step", predict_constant)
+        _, bias = _fit_har_rv_j_with_train_calibration(
+            rv, jumps, horizon=1, calibration_size=40
+        )
+        expected = []
+        log_rv = np.log(rv)
+        for i in range(120, 159):
+            expected.append(float(log_rv.iloc[i - 1] + 0.25 - log_rv.iloc[i]))
+        assert bias == pytest.approx(float(np.mean(expected)))
+
+    def test_calibrated_walk_forward_records_biases(self) -> None:
+        n = 420
+        rv = _rv_series(n, seed=9)
+        rng = np.random.default_rng(10)
+        jumps = pd.Series(np.abs(rng.normal(size=n)) * 1e-5, index=rv.index)
+        out = walk_forward_har_rv_j(
+            rv,
+            jumps,
+            horizon=1,
+            n_splits=5,
+            calibrate_bias=True,
+            calibration_size=40,
+        )
+        assert out["calibrate_bias"] is True
+        assert out["calibration_size"] == 40
+        assert len(out["initial_calibration_bias_by_fold"]) == 5
+        assert np.isfinite(out["initial_calibration_bias_by_fold"]).all()
 
 
 # ── helpers ─────────────────────────────────────────────────────────────────

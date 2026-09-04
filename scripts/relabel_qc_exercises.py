@@ -28,13 +28,13 @@ RELABEL_MAP = {
     "MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-40-PaperTrading-Binance.ipynb": [
         (14, 3, 1), (17, 1, 2),
     ],
-    "MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-02-SectorRotation-Momentum.ipynb": [
+    "MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-12-SectorRotation-Momentum.ipynb": [
         (5, 2, 1), (8, 3, 2), (10, 1, 3),
     ],
     "MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-03-Risk-Parity.ipynb": [
         (6, 2, 1), (8, 1, 2),
     ],
-    "MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-04-RL-DQN-Trading.ipynb": [
+    "MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-10-RL-DQN-Trading.ipynb": [
         (10, 3, 2), (12, 2, 3),
     ],
     "MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-07-TemporalCNN.ipynb": [

@@ -67,15 +67,76 @@ def _wait_for_idle(kc, grace_s):
     return False
 
 
+def split_text_lines(text):
+    """Return text using the historical nbformat list-of-lines convention."""
+    lines = text.split("\n")
+    return [line + "\n" for line in lines[:-1]] + (
+        [lines[-1]] if lines[-1] else []
+    )
+
+
+def _normalize_output_data(data, text_as_lines=False, allowed_mime_types=None):
+    """Normalize an iopub data bundle for notebook persistence."""
+    if allowed_mime_types is not None:
+        data = {mime: value for mime, value in data.items()
+                if mime in allowed_mime_types}
+    if not text_as_lines:
+        return data
+    return {
+        mime: split_text_lines(value) if isinstance(value, str) else value
+        for mime, value in data.items()
+    }
+
+
+def _collect_late_outputs(kc, parent_msg_id, outputs, exec_counter,
+                          idle_grace, text_as_lines, allowed_mime_types):
+    """Collect display results flushed just after the matching idle message."""
+    deadline = time.time() + idle_grace
+    while time.time() < deadline:
+        try:
+            msg = kc.get_iopub_msg(timeout=min(0.3, idle_grace))
+        except Exception:
+            return
+        if msg.get("parent_header", {}).get("msg_id") != parent_msg_id:
+            continue
+        msg_type = msg.get("msg_type")
+        if msg_type not in ("display_data", "execute_result"):
+            continue
+        content = msg.get("content", {})
+        output = {
+            "output_type": msg_type,
+            "metadata": {},
+            "data": _normalize_output_data(
+                content.get("data", {}), text_as_lines, allowed_mime_types
+            ),
+        }
+        if msg_type == "execute_result":
+            output["execution_count"] = content.get(
+                "execution_count", exec_counter
+            )
+        outputs.append(output)
+
+
 def execute_notebook(notebook_path, kernel_name=".net-csharp", cell_timeout=120,
-                     verbose=False, dry_run=False, interrupt_grace=10):
+                     verbose=False, dry_run=False, interrupt_grace=10,
+                     ready_timeout=120, skip_empty_code_cells=False,
+                     text_as_lines=False, allowed_mime_types=None,
+                     idle_grace=0):
     """Execute a .NET notebook cell-by-cell and update outputs.
 
-    Returns dict with stats: total cells, executed, errors, time.
+    Compatibility options preserve the historical ``exec_dotnet_persist``
+    contract without maintaining a second kernel loop. Returns a dict with
+    total cells, executed cells, errors, elapsed time, and abort state.
     """
     notebook_path = Path(notebook_path)
     nb = json.loads(notebook_path.read_text(encoding="utf-8"))
-    code_cells = [(i, c) for i, c in enumerate(nb["cells"]) if c["cell_type"] == "code"]
+    code_cells = [(i, c) for i, c in enumerate(nb["cells"])
+                  if c["cell_type"] == "code"]
+    if skip_empty_code_cells:
+        code_cells = [
+            (i, cell) for i, cell in code_cells
+            if "".join(cell.get("source", [])).strip()
+        ]
 
     if not code_cells:
         print(f"  No code cells in {notebook_path.name}")
@@ -116,11 +177,15 @@ def execute_notebook(notebook_path, kernel_name=".net-csharp", cell_timeout=120,
         kc = km.client()
         kc.start_channels()
 
-        # Wait for kernel ready
-        time.sleep(3)
+        # A ready handshake avoids submitting the first cell while .NET is still
+        # warming up. Some test doubles do not implement it, so only call the
+        # method when it is present.
+        wait_for_ready = getattr(kc, "wait_for_ready", None)
+        if callable(wait_for_ready):
+            wait_for_ready(timeout=ready_timeout)
 
         for cell_idx, cell in code_cells:
-            source = "".join(cell["source"])
+            source = "".join(cell.get("source", []))
             exec_counter += 1
 
             if verbose:
@@ -131,6 +196,7 @@ def execute_notebook(notebook_path, kernel_name=".net-csharp", cell_timeout=120,
 
             outputs = []
             error_occurred = False
+            cell_completed = False
             deadline = time.time() + cell_timeout
 
             while time.time() < deadline:
@@ -157,18 +223,27 @@ def execute_notebook(notebook_path, kernel_name=".net-csharp", cell_timeout=120,
                     outputs.append({
                         "output_type": "stream",
                         "name": stream_name,
-                        "text": text,
+                        "text": (split_text_lines(text)
+                                 if text_as_lines else text),
                     })
                 elif msg_type == "execute_result":
-                    data = content.get("data", {})
+                    data = _normalize_output_data(
+                        content.get("data", {}), text_as_lines,
+                        allowed_mime_types
+                    )
                     outputs.append({
                         "output_type": "execute_result",
                         "data": data,
                         "metadata": {},
-                        "execution_count": exec_counter,
+                        "execution_count": content.get(
+                            "execution_count", exec_counter
+                        ),
                     })
                 elif msg_type == "display_data":
-                    data = content.get("data", {})
+                    data = _normalize_output_data(
+                        content.get("data", {}), text_as_lines,
+                        allowed_mime_types
+                    )
                     outputs.append({
                         "output_type": "display_data",
                         "data": data,
@@ -187,9 +262,15 @@ def execute_notebook(notebook_path, kernel_name=".net-csharp", cell_timeout=120,
                     })
                     print(f"    ERROR [{exec_counter}]: {ename}: {evalue[:100]}")
                 elif msg_type == "status" and content.get("execution_state") == "idle":
+                    cell_completed = True
+                    if idle_grace > 0:
+                        _collect_late_outputs(
+                            kc, msg_id, outputs, exec_counter, idle_grace,
+                            text_as_lines, allowed_mime_types
+                        )
                     break
 
-            if time.time() >= deadline:
+            if not cell_completed:
                 print(f"    TIMEOUT [{exec_counter}] after {cell_timeout}s")
                 # Interrupt the stuck execution so the next cell is not queued
                 # behind it. Defensive: wrapped against kernel managers that do

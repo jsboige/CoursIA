@@ -43,7 +43,12 @@ concurrency:
 jobs:
   syntax-check:
     name: bash -n every scripts .sh (advisory)
-    runs-on: ubuntu-latest
+    # Routage #14283 tranche 3c (ai-01 2026-09-02) : jambe Linux auto-hebergee.
+    # Garde anti-fork au niveau job + runs-on STATIQUE (une expression leverait
+    # DYNAMIC_RUNS_ON dans check_self_hosted_runner_policy.py).
+    # Retour arriere = remettre `runs-on: ubuntu-latest` + retrait de l'allowlist.
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
     steps:
       - uses: actions/checkout@v4
       - name: bash -n
@@ -62,7 +67,12 @@ jobs:
 
   shebang-dry-run-advisory:
     name: Shebang + dry-run advisory (non-blocking)
-    runs-on: ubuntu-latest
+    # Routage #14283 tranche 3c (ai-01 2026-09-02) : jambe Linux auto-hebergee.
+    # Garde anti-fork au niveau job + runs-on STATIQUE (une expression leverait
+    # DYNAMIC_RUNS_ON dans check_self_hosted_runner_policy.py).
+    # Retour arriere = remettre `runs-on: ubuntu-latest` + retrait de l'allowlist.
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
     continue-on-error: true
     steps:
       - uses: actions/checkout@v4
