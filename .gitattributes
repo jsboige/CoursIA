@@ -28,6 +28,12 @@ translations/**/*.csv text eol=lf
 # dans CI, local Windows). CRLF le brise silencieusement (parsing YAML + render
 # pages github.io). Meme motif L268.
 _quarto.yml text eol=lf
+# Slides Markdown : le Edit tool Windows flippe silencieusement LF->CRLF quand
+# aucune regle explicite n'est posee (pattern "L268"). PR #14504 (slides tranche
+# L4-1 EPIC #11508) a montre l'effet : `slides/06-apprentissage/slides.md` a
+# commit CRLF, diff vs main gonfle 22x (2483/2483 au lieu de 114/114 reelles).
+# Meme motif que `*.lean text eol=lf` ci-dessus.
+slides/**/*.md text eol=lf
 # Git LFS tracking for model files referenced by notebooks
 *.pt filter=lfs diff=lfs merge=lfs -text
 *.pkl filter=lfs diff=lfs merge=lfs -text
