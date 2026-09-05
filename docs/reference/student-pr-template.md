@@ -45,7 +45,7 @@ Copier-coller le modele ci-dessous et remplir les champs :
 ```markdown
 ## Exercice resolu
 
-- **Notebook**: Search-3-Informed.ipynb
+- **Notebook**: Search-03-Informed.ipynb
 - **Exercice**: Ex1 - Verification d'admissibilite
 - **Etudiant**: Jean Dupont
 
@@ -74,8 +74,8 @@ J'ai eu un moment de confusion sur la direction de la comparaison
 
 | Notebook | Exercices | Statut |
 |----------|-----------|--------|
-| Search-2-Uninformed | Ex3: BFS bidirectionnel | Ouvert |
-| Search-3-Informed | Ex1: Admissibilite, Ex2: Heuristique non-admissible, Ex3: MST/TSP, Ex4: Pathfinding grille | Ouvert |
+| Search-02-Uninformed | Ex3: BFS bidirectionnel | Ouvert |
+| Search-03-Informed | Ex1: Admissibilite, Ex2: Heuristique non-admissible, Ex3: MST/TSP, Ex4: Pathfinding grille | Ouvert |
 
 ## Bonus
 
