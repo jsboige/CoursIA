@@ -984,3 +984,158 @@ class TestEndToEnd:
         assert proc.returncode != 2, f"stderr: {proc.stderr}"
         # Au moins 1 ligne REFUSE dans la sortie (le run reel)
         assert "REFUSE" in proc.stdout or "applied=0" in proc.stdout
+
+
+# ---------------------------------------------------------------------------
+# Controle positif hermetique E2E (#14693 point 4)
+# ---------------------------------------------------------------------------
+
+
+def _git_ok(cwd: str, *args: str) -> subprocess.CompletedProcess:
+    """git strict dans un depot temoin : toute erreur echoue le test.
+
+    L'identite de commit est forcee par -c (les runners CI n'ont pas de
+    user.email global), et le dossier est temporaire donc isole.
+    """
+    proc = subprocess.run(
+        ["git", "-C", cwd, "-c", "user.email=e2e@test", "-c",
+         "user.name=e2e", "-c", "protocol.file.allow=always", *args],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+    )
+    assert proc.returncode == 0, (
+        f"git {' '.join(args)} failed in {cwd}: {proc.stderr.strip()}"
+    )
+    return proc
+
+
+def _make_repo_with_feature_worktree(
+    base: Path, with_submodule: bool = False,
+) -> tuple[Path, Path]:
+    """Depot temoin + worktree lie sur branche feature.
+
+    Retourne (super, wt). Si with_submodule, un vrai sous-module est
+    configure sur main AVANT la creation du worktree (pour que la branche
+    feature le porte) et initialise DANS le worktree -- le fixture exact
+    de #14693 point 4.
+
+    Pas d'upstream sur la branche feature : le predicat unpushed reste a
+    0 et le verdict est porte par l'ancre PR (monkeypatchee MERGED).
+    """
+    super = base / "super"
+    super.mkdir()
+    _git_ok(str(super), "init", "-b", "main")
+    (super / "README.md").write_text("tmp", encoding="utf-8")
+    _git_ok(str(super), "add", "README.md")
+    _git_ok(str(super), "commit", "-m", "init")
+
+    if with_submodule:
+        sub = base / "sublib"
+        sub.mkdir()
+        _git_ok(str(sub), "init", "-b", "main")
+        (sub / "lib.txt").write_text("s", encoding="utf-8")
+        _git_ok(str(sub), "add", "lib.txt")
+        _git_ok(str(sub), "commit", "-m", "sub init")
+        _git_ok(str(super), "submodule", "add",
+                str(sub).replace("\\", "/"), "vendor")
+        _git_ok(str(super), "commit", "-m", "add submodule")
+
+    wt = base / "wt-feature"
+    _git_ok(str(super), "worktree", "add", str(wt), "-b", "feature/e2e")
+    if with_submodule:
+        # Materialise vendor/ dans le worktree : `git submodule status`
+        # y rend une entree sans prefixe '-' (initialise).
+        _git_ok(str(wt), "submodule", "update", "--init")
+    (wt / "feature.txt").write_text("f", encoding="utf-8")
+    _git_ok(str(wt), "add", "feature.txt")
+    _git_ok(str(wt), "commit", "-m", "feature work")
+    return super, wt
+
+
+class TestEndToEndHermetic14693:
+    """#14693 point 4 : le controle positif qui manquait a #14476.
+
+    Les tests unitaires ci-dessus monkeypatchent les sorties git : ils
+    pincent la LOGIQUE de decision, pas le contrat avec le git reel. Ici
+    on construit un vrai depot, un vrai worktree lie, de vrais fichiers
+    untracked et un vrai sous-module initialise ; seule l'ancre PR
+    (reseau gh) est remplacee par un objet MERGED. Ce controle verifie
+    la propriete demande par #14693 point 1 : ce qui est annonce REMOVE
+    quitte VRAIMENT le disque, et ce que git ne retirera jamais est
+    REFUSE avec sa cause AVANT l'annonce -- dry-run et apply rendent le
+    meme verdict.
+    """
+
+    MERGED_PR = {
+        "number": 424242,
+        "state": "MERGED",
+        "url": "https://example/pr/424242",
+        "headRefName": "feature/e2e",
+    }
+
+    def _merged_anchor(self, monkeypatch):
+        monkeypatch.setattr(
+            pmw, "lookup_pr_for_branch",
+            lambda branch: dict(self.MERGED_PR, headRefName=branch),
+        )
+
+    def test_tolerated_artifacts_only_is_removed(self, tmp_path, monkeypatch):
+        """Classe 1 : residu exclusivement tolere -> REMOVE annonce,
+        nettoyage des toleres, retrait sans force QUI REUSSIT."""
+        super, wt = _make_repo_with_feature_worktree(tmp_path)
+        # Artefacts tolere a la RACINE (porcelain affiche le dossier
+        # collapse `?? bg_logs/` ; un parent tracked casserait le token).
+        (wt / "bg_logs").mkdir()
+        (wt / "bg_logs" / "run.jsonl").write_text("{}", encoding="utf-8")
+        (wt / "__pycache__").mkdir()
+        (wt / "__pycache__" / "x.pyc").write_bytes(b"pyc")
+        self._merged_anchor(monkeypatch)
+        monkeypatch.chdir(super)
+
+        s = pmw.diagnose_worktree(str(wt), str(super))
+        assert s.decision == "REMOVE", (
+            f"tolerated-only doit etre REMOVE, got {s.refusal_reason}"
+        )
+        # Sequence exacte du apply de main() : clean des toleres puis
+        # remove sans force.
+        cleaned = pmw.clean_tolerated_artifacts(s)
+        assert len(cleaned) == 2, f"2 artefacts toleres attendus: {cleaned}"
+        ok, stderr = pmw.apply_removal(s)
+        assert ok, f"REMOVE annonce mais retrait echoue: {stderr}"
+        assert not wt.exists(), "le worktree doit avoir quitte le disque"
+
+    def test_untolerated_residue_refuses_and_survives(self, tmp_path, monkeypatch):
+        """Complement fail-closed : un residu hors liste toleree ->
+        REFUSE nomme, le worktree reste sur disque."""
+        super, wt = _make_repo_with_feature_worktree(tmp_path)
+        (wt / "blob.bin").write_bytes(b"\x00\x01")
+        self._merged_anchor(monkeypatch)
+        monkeypatch.chdir(super)
+
+        s = pmw.diagnose_worktree(str(wt), str(super))
+        assert s.decision == "REFUSE"
+        assert s.refusal_reason == "untolerated_untracked:1", s.refusal_reason
+        assert wt.exists(), "un worktree REFUSE ne doit jamais bouger"
+
+    def test_initialised_submodule_with_pycache_refuses(self, tmp_path, monkeypatch):
+        """Classe 2 (fixture exacte de #14693 point 4) : un worktree
+        portant un __pycache__/ untracked ET un sous-module initialise ->
+        REFUSE contains_submodules (git ne le retirera jamais), et la
+        tentative reelle echoue structurellement."""
+        super, wt = _make_repo_with_feature_worktree(
+            tmp_path, with_submodule=True)
+        (wt / "__pycache__").mkdir()
+        (wt / "__pycache__" / "x.pyc").write_bytes(b"pyc")
+        self._merged_anchor(monkeypatch)
+        monkeypatch.chdir(super)
+
+        s = pmw.diagnose_worktree(str(wt), str(super))
+        assert s.decision == "REFUSE", (
+            f"sous-module initialise doit REFUSER, got {s.refusal_reason}"
+        )
+        assert s.refusal_reason == "contains_submodules"
+        # Meme en forcant la tentative : git refuse structurellement --
+        # c'est la demonstration live que REMOVE ici aurait ete un mensonge.
+        ok, stderr = pmw.apply_removal(s)
+        assert not ok, "git ne peut PAS retirer un worktree a sous-modules"
+        assert "submodule" in stderr.lower(), stderr
+        assert wt.exists(), "le worktree REFUSE reste sur disque"
