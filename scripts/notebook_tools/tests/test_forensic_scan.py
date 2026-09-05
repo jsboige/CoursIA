@@ -109,6 +109,27 @@ class TestCategorizeNotebook:
                              metadata={"qc_reference": True})
         result = categorize_notebook(nb_path)
         assert result["category"] == "REFERENCE"
+        # qc_reference changes the category (document type), never the counting (#14814)
+        assert result["n_code"] == 1
+        assert result["n_exec"] == 0
+        assert result["n_outputs"] == 0
+
+    def test_reference_notebook_counts_code_cells(self, tmp_path):
+        # Real-world reference notebook (cf #14814): several code cells, none
+        # executed (no output, no exec_count). Category stays REFERENCE; the
+        # code-cell count is measured, not fabricated as 0.
+        nb_path = _write_nb(tmp_path / "a.ipynb", [
+            _code("x = 1"),
+            _code("y = 2"),
+            _code("z = 3"),
+            _md("# note"),
+        ], metadata={"qc_reference": True})
+        result = categorize_notebook(nb_path)
+        assert result["category"] == "REFERENCE"
+        assert result["n_code"] == 3
+        assert result["n_exec"] == 0
+        assert result["n_err"] == 0
+        assert result["n_outputs"] == 0
 
     def test_parse_error(self, tmp_path):
         bad = tmp_path / "bad.ipynb"
