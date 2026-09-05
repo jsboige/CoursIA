@@ -203,23 +203,69 @@ jobs:
         # would abort the whole pytest session with a collection error (masking
         # every other result) — the exact failure mode this workflow exists to
         # prevent. agent_tests owner: po-2026 (Lean lane).
+        #
+        # scripts/audit/tests re-cabled here (family 2 of #14615): the
+        # 2026-08-14 CI-EXCLUDED reason (4 env-dependent failures, DALLE-3
+        # key) was fixed by #12837 (hermetic rewrite, urlopen monkeypatched).
+        # Measured firsthand 2026-09-04 on origin/main: 455/455 green with the
+        # OpenAI key unset (env -u re-run), zero network/gh subprocess, zero
+        # dep delta vs this job (pillow arrives transitively with matplotlib).
         run: |
           pytest \
             scripts/tests \
             scripts/notebook_tools/tests \
             scripts/lean/tests \
             scripts/translation/tests \
+            scripts/audit/tests \
             MyIA.AI.Notebooks/GameTheory/tests \
             MyIA.AI.Notebooks/QuantConnect/scripts/tests \
             MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_bg_tree_lock.py \
             MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_prover_forensic_guards.py \
             MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/tests \
+            scripts/secrets/tests \
             --tb=short -q
+
+      - name: Audit tests collection floor (455)
+        # Companion guard of the audit re-cabling (family 2 of #14615), same
+        # two-signal semantics as the GameTheory floor (#14614) and the dotnet
+        # Shared.Tests floor (#14668): a green run must not silently shrink.
+        # 0 collected = collection crash (import error), below floor = coverage
+        # regression — distinct exit-1 signals either way.
+        if: always()
+        env:
+          AUDIT_TESTS_FLOOR: 455
+        run: |
+          N=$(python -m pytest scripts/audit/tests --collect-only -q 2>/dev/null | tail -1 | grep -oE '[0-9]+ tests collected' | grep -oE '^[0-9]+')
+          if [ -z "$N" ] || [ "$N" -eq 0 ]; then
+            echo "::error::--collect-only returned no tests — the collection crashed (distinct from a coverage drop)."
+            exit 1
+          fi
+          if [ "$N" -lt "$AUDIT_TESTS_FLOOR" ]; then
+            echo "::error::Coverage regression: $N tests collected, floor=$AUDIT_TESTS_FLOOR."
+            echo "::error::If the drop is intentional, raise AUDIT_TESTS_FLOOR in the same PR."
+            exit 1
+          fi
+          echo "OK: $N tests collected (floor=$AUDIT_TESTS_FLOOR)."
       # CI-EXCLUDED — testpaths pytest.ini non couverts par ce run, garde #10903.
       # Retirer la ligne du répertoire câblé (et l'ajouter au run ci-dessus) quand
-      # l'herméticité est démontrée sur runner nu. Chaque raison est vérifiée
-      # firsthand (2026-08-14, po-2024) :
-      # CI-EXCLUDED: scripts/audit/tests — 4 échecs env-dépendants (test_regen_img1_dalle3.py, clé DALLE-3/OpenAI requise), 405 passent
+      # l'herméticité est démontrée sur runner nu. scripts/audit/tests a été
+      # retiré de cette liste le 2026-09-04 (famille 2 de #14615) :
+      # l'herméticité est démontrée (455/455 sans clé, #12837). Les raisons
+      # restantes sont vérifiées firsthand (2026-08-14, po-2024) :
       # CI-EXCLUDED: scripts/quantconnect/tests — deps yfinance + fichiers de données externes, non hermétique sur runner nu
-      # CI-EXCLUDED: scripts/secrets/tests — 4/6 fichiers non couverts par secret-scan.yml (render_envs/render_settings_json) ; scan gitleaks = 2 fichiers dédiés
+      # scripts/secrets/tests re-câblé (famille 4 de #14615, 2026-09-04) :
+      # dir entier dans le run ci-dessus. Les 2 modules gitleaks
+      # (test_gitleaks_qwen_rule.py, test_gitleaks_10143_classes.py) y sont
+      # collectés mais SKIP sans binaire gitleaks (docstring : skip si absent,
+      # gate autoritaire = secret-scan.yml qui les exécute avec le binaire).
       # CI-EXCLUDED: GradeBookApp — deps openpyxl/rapidfuzz/unidecode non installées dans ce job ; PII grading hors CI publique
+
+      - name: Secrets tests collection floor (148)
+        if: always()
+        env:
+          SECRETS_TESTS_FLOOR: 148
+        run: |
+          N=$(python -m pytest scripts/secrets/tests --collect-only -q 2>/dev/null | tail -1 | grep -oE '[0-9]+ tests collected' | grep -oE '^[0-9]+')
+          if [ -z "$N" ] || [ "$N" -eq 0 ]; then echo "::error::--collect-only returned no tests — the collection crashed (distinct from a coverage drop)."; exit 1; fi
+          if [ "$N" -lt "$SECRETS_TESTS_FLOOR" ]; then echo "::error::Coverage regression: $N tests collected, floor=$SECRETS_TESTS_FLOOR."; exit 1; fi
+          echo "OK: $N tests collected (floor=$SECRETS_TESTS_FLOOR)."

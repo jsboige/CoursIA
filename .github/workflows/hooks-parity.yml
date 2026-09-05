@@ -45,7 +45,26 @@ jobs:
     # (0 jobs created, no log to read). See the PR body for the diagnosis.
     continue-on-error: true
     steps:
+      # sparse-checkout non-cone : le garde ne lit que 4 entrees
+      # (acceptance #14295). Forme non-cone obligatoire (cone mode
+      # n'accepte que des repertoires, voir PR #14380 lesson). Chemins
+      # SANS slash initial pour materialiser les fichiers ; avec un
+      # slash initial, git sparse-checkout produit un checkout VIDE en
+      # silence (mesure c.913). `sparse-checkout-cone-mode: false`
+      # EXPLICITE (defaut actions/checkout@v4 = true ; sans override,
+      # `git sparse-checkout set` refuse les fichiers non-directory --
+      # '.pre-commit-config.yaml is not a directory', run 33896239827 ;
+      # le mode cone-mais-non-repertoire n'existe pas, c.915). Paths =
+      # ce que le garde lit, etabli par lecture de
+      # scripts/check_hooks_parity.py.
       - uses: actions/checkout@v4
+        with:
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            .pre-commit-config.yaml
+            .github
+            scripts/check_hooks_parity.py
+            scripts/setup_hooks.py
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"

@@ -347,6 +347,10 @@ class TestConstants:
             "GITHUB_ACCESS_TOKEN": "GITHUB_TOKEN",
             # #10265: Qwen legacy alias (kept by auth_manager.py:233).
             "QWEN_API_USER_TOKEN": "QWEN_API_TOKEN",
+            # #14382: ComfyUI-Login bearer, notebook-client canonical name
+            # (COMFYUI_AUTH_TOKEN shadows COMFYUI_API_TOKEN in the ``or``
+            # fallback chain -> 401 when stale).
+            "COMFYUI_AUTH_TOKEN": "COMFYUI_API_TOKEN",
         }
 
 

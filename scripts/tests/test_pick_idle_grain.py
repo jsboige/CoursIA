@@ -430,43 +430,57 @@ def _pr_with_author(n, lane, age_hours, author):
 def test_base_inherited_red_is_not_the_lanes(monkeypatch):
     """#13545 : 11 PRs / 4 lanes accusees pour un seul defaut de main.
 
-    Le meme check requis en echec chez un AUTEUR distinct = corroboration :
+    Le meme check requis en echec chez une LANE distincte = corroboration :
     le rouge est impute a la base, retire du refus de la lane, et rapporte
-    comme tache coordinateur avec ses corroborations.
+    comme tache coordinateur avec ses corroborations. Depuis #14537 la
+    corroboration se fait sur la CAUSE : le nom pour un check direct, l'ORGANE
+    (annotation du check-run) pour un agregateur -- les deux PRs echouent ici
+    le meme organe sous le nom d'agregateur "PR gate".
     """
     red = _state(checks=[("Scripts Tests (CPU)", "FAILURE", True),
                          ("PR gate", "FAILURE", True)])
+    st1, st2 = red, _state(checks=[("Scripts Tests (CPU)", "FAILURE", True),
+                                   ("PR gate", "FAILURE", True)])
+    for st, rid in ((st1, 111), (st2, 222)):
+        st["commits"]["nodes"][0]["commit"]["statusCheckRollup"]["contexts"][
+            "nodes"][1]["databaseId"] = rid
+    monkeypatch.setattr(pig, "fetch_check_organs",
+                        lambda rid: ["perimeter"])
     _patch_backlog(monkeypatch, [
         _pr_with_author(1, "myia-po-2023:CoursIA", 30, "myia-po-2023"),
         _pr_with_author(2, "myia-po-2026:CoursIA-2", 5, "myia-po-2026"),
-    ], {1: red, 2: red})
+    ], {1: st1, 2: st2})
     out = pig.red_backlog("myia-po-2023:CoursIA", 24, count_threshold=3)
     assert out["red"] == []            # rien d'imputable a la lane
     assert out["aged"] == []
     assert out["triggers"] == []       # pas de refus de tirage
     assert {i["check"] for i in out["base_inherited"]} == {
-        "Scripts Tests (CPU)", "PR gate"}
+        "Scripts Tests (CPU)", "PR gate :: perimeter"}
     wits = next(i["corroborated_by"] for i in out["base_inherited"]
                 if i["check"] == "Scripts Tests (CPU)")
     assert 1 in wits and 2 in wits    # la lane ET l'etrangere corroborent
+    assert out["base_unresolved"] == []
 
 
 def test_same_author_failures_are_not_imputed(monkeypatch):
-    """Controle negatif : deux PRs du MEME auteur ne se corroborent pas.
+    """Controle negatif : deux PRs de la MEME LANE ne se corroborent pas.
 
-    Une lane qui casse le meme ratchet sur 2 PRs porte 2 defauts a elle --
-    les imputer a la base transformerait un motif de refus legitime en
-    silence complice.
+    Depuis #14537 l'unite de corroboration est le tag de lane, pas le login
+    (identite de poussee partagee) : une lane qui casse le meme ratchet sur
+    2 PRs porte 2 defauts a elle -- les imputer a la base transformerait un
+    motif de refus legitime en silence complice. L'agregateur sans organe
+    lisible est en outre DIT non tranche (#14567), pas passe sous silence.
     """
     red = _state(checks=[("PR gate", "FAILURE", True)])
     _patch_backlog(monkeypatch, [
-        _pr_with_author(1, "myia-po-2023:CoursIA", 30, "myia-po-2023"),
-        _pr_with_author(2, "myia-po-2023:CoursIA", 30, "myia-po-2023"),
+        _pr_with_author(1, "myia-po-2023:CoursIA", 30, "jsboige"),
+        _pr_with_author(2, "myia-po-2023:CoursIA", 30, "jsboige"),
     ], {1: red, 2: red})
     out = pig.red_backlog("myia-po-2023:CoursIA", 24, count_threshold=3)
     assert [r["number"] for r in out["red"]] == [1, 2]
     assert out["base_inherited"] == []
     assert "aged" in out["triggers"]
+    assert {i["check"] for i in out["base_unresolved"]} == {"PR gate"}
 
 
 def test_inheritance_does_not_swallow_other_causes(monkeypatch):
@@ -484,6 +498,133 @@ def test_inheritance_does_not_swallow_other_causes(monkeypatch):
     out = pig.red_backlog("myia-po-2023:CoursIA", 24, count_threshold=3)
     assert [r["number"] for r in out["red"]] == [1]
     assert out["red"][0]["causes"] == ["conflits avec main -> rebaser"]
+
+
+AGG = "Always-on guards -- 12 organes, 1 checkout"
+
+
+def _agg_red(run_id, name=AGG, required=True):
+    """Etat rouge d'un aggregateur RESOLVABLE : le ctx porte son check-run id."""
+    st = _state(checks=[(name, "FAILURE", required)])
+    st["commits"]["nodes"][0]["commit"]["statusCheckRollup"]["contexts"][
+        "nodes"][0]["databaseId"] = run_id
+    return st
+
+
+def _patch_organs(monkeypatch, organs_by_run):
+    monkeypatch.setattr(pig, "fetch_check_organs",
+                        lambda rid: organs_by_run.get(rid, []))
+
+
+def test_same_organ_two_lanes_same_push_login_is_imputed(monkeypatch):
+    """Acceptance (a) #14537 : l'angle mort fondateur se ferme.
+
+    Toutes les PRs sous le MEME login de poussee (jsboige = 52/59 de
+    l'ouvert mesure le 2026-09-03), mais deux LANES distinctes echouant le
+    MEME organe d'un agregateur : le cas nominal que l'ancien predicat
+    (>=2 author.login) ne croisait JAMAIS. Il doit etre impute a la base.
+    """
+    _patch_organs(monkeypatch, {111: ["prev_guard"], 222: ["prev_guard"]})
+    _patch_backlog(monkeypatch, [
+        _pr_with_author(1, "myia-po-2023:CoursIA", 30, "jsboige"),
+        _pr_with_author(2, "myia-po-2026:CoursIA", 30, "jsboige"),
+    ], {1: _agg_red(111), 2: _agg_red(222)})
+    out = pig.red_backlog("myia-po-2023:CoursIA", 24, count_threshold=3)
+    assert out["red"] == []
+    assert {i["check"] for i in out["base_inherited"]} == {f"{AGG} :: prev_guard"}
+    wits = out["base_inherited"][0]["corroborated_by"]
+    assert 1 in wits and 2 in wits
+
+
+def test_distinct_organs_under_one_aggregate_are_not_imputed(monkeypatch):
+    """Acceptance (b) #14537 : la table des six PRs, reduite a trois lanes.
+
+    Trois organes DISTINCTS (lane_claim, prev_guard, perimeter) sous le meme
+    nom d'agregateur : la corroboration par nom etait garantie par
+    construction -- elle n'a jamais prouve une cause commune. Rien n'est
+    impute, chaque lane garde son rouge, reparable chez elle.
+    """
+    _patch_organs(monkeypatch, {111: ["lane_claim"], 222: ["prev_guard"],
+                                333: ["perimeter"]})
+    _patch_backlog(monkeypatch, [
+        _pr_with_author(1, "myia-po-2025:CoursIA", 30, "jsboige"),
+        _pr_with_author(2, "myia-po-2023:CoursIA-2", 30, "jsboige"),
+        _pr_with_author(3, "myia-po-2024:CoursIA", 30, "jsboige"),
+    ], {1: _agg_red(111), 2: _agg_red(222), 3: _agg_red(333)})
+    out = pig.red_backlog("myia-po-2025:CoursIA", 24, count_threshold=3)
+    assert out["base_inherited"] == []
+    assert [r["number"] for r in out["red"]] == [1]
+
+
+def test_aggregate_with_unreadable_organ_stays_with_lane(monkeypatch):
+    """Fail-closed #14567 : un agregateur non resolu ne corrobore RIEN.
+
+    Deux lanes echouent l'agregateur mais aucune annotation n'est lisible :
+    imputer a la base serait un verdict d'echec de mesure. Le rouge reste a
+    la lane -- seul cote qui peut le reparer -- et l'echec de resolution
+    est RAPPORTE au lieu d'un silence lu comme un acquittement.
+    """
+    _patch_organs(monkeypatch, {})
+    _patch_backlog(monkeypatch, [
+        _pr_with_author(1, "myia-po-2025:CoursIA", 30, "jsboige"),
+        _pr_with_author(2, "myia-po-2026:CoursIA", 30, "jsboige"),
+    ], {1: _agg_red(111), 2: _agg_red(222)})
+    out = pig.red_backlog("myia-po-2025:CoursIA", 24, count_threshold=3)
+    assert out["base_inherited"] == []
+    assert [r["number"] for r in out["red"]] == [1]
+    assert {i["check"] for i in out["base_unresolved"]} == {AGG}
+
+
+def test_untagged_pr_never_corroborates(monkeypatch):
+    """Fail-closed #14537 : sans tag de lane lisible, hors corroboration.
+
+    Une PR sans Grain: lisible echouant le meme organe ne doit finir dans
+    AUCUN seau -- deviner sa lane serait pire que de l'ignorer.
+    """
+    _patch_organs(monkeypatch, {111: ["prev_guard"], 222: ["prev_guard"]})
+    _patch_backlog(monkeypatch, [
+        _pr_with_author(1, "myia-po-2025:CoursIA", 30, "jsboige"),
+        _pr_with_author(2, None, 30, "jsboige"),
+    ], {1: _agg_red(111), 2: _agg_red(222)})
+    out = pig.red_backlog("myia-po-2025:CoursIA", 24, count_threshold=3)
+    assert out["base_inherited"] == []
+    assert [r["number"] for r in out["red"]] == [1]
+
+
+def test_rollup_stack_does_not_self_corroborate(monkeypatch):
+    """Defaut 3 #14537 : une PR empilee n'est pas son propre temoin.
+
+    Le rollup peut empiler plusieurs runs de meme nom sur une PR ; l'ancien
+    `sorted(n for ...)` citait alors la meme PR trois fois comme sa propre
+    corroboration. Le rendu deduplique : chaque PR est temoin UNIQUE.
+    """
+    stacked = _state(checks=[(AGG, "FAILURE", True), (AGG, "FAILURE", True)])
+    nodes = stacked["commits"]["nodes"][0]["commit"]["statusCheckRollup"][
+        "contexts"]["nodes"]
+    nodes[0]["databaseId"] = 111
+    nodes[1]["databaseId"] = 111
+    _patch_organs(monkeypatch, {111: ["prev_guard"]})
+    _patch_backlog(monkeypatch, [
+        _pr_with_author(1, "myia-po-2025:CoursIA", 30, "jsboige"),
+    ], {1: stacked})
+    out = pig.red_backlog("myia-po-2025:CoursIA", 24, count_threshold=3)
+    assert out["base_inherited"] == []
+
+
+def test_partial_inheritance_keeps_the_lane_cause():
+    """blocking_causes : heritage PAR ORGANE, pas par nom d'agregateur.
+
+    Un agregateur tombe pour DEUX organes dont un seul est impute a la
+    base : la lane doit encore voir une cause -- son organe a elle reste a
+    reparer. Tous les organes herites : plus aucune cause a la lane.
+    """
+    state = _state(checks=[(AGG, "FAILURE", True)])
+    both = {f"{AGG} :: perimeter", f"{AGG} :: prev_guard"}
+    causes = pig.blocking_causes(state, inherited={f"{AGG} :: perimeter"},
+                                 resolved_keys_by_name={AGG: both})
+    assert causes == ["check requis en echec : " + AGG]
+    assert pig.blocking_causes(state, inherited=both,
+                               resolved_keys_by_name={AGG: both}) == []
 
 
 def test_required_failure_links_advisory_as_its_probable_cause():
@@ -1579,3 +1720,131 @@ def test_13972_pool_genre_prefers_body_over_title(monkeypatch) -> None:
     assert by_number[99999]["genre"] == "notebook-python"
 
 
+
+
+# ============================================================================
+# #14591 Volet A : persistance CSV de --prev-genre entre cycles worker
+# ============================================================================
+#
+# Le picker penalise le genre precedent via --prev-genre (G-VAR-3), mais
+# l'argument est per-cycle : la compaction de session et le wakeup
+# cron effacent la memoire du grain precedent, le picker recommence
+# sans penalite, et le mono-genre consecutif redevient possible.
+#
+# Le remede : un etat CSV persistant (par lane), que le picker lit au
+# debut du run pour auto-appliquer --prev-genre, et qu'il ecrit a la
+# fin si --write-state est passe.
+#
+# Format CSV (3 colonnes) :
+#   lane,last_genre,last_ts
+# Exemple :
+#   myia-po-2027:CoursIA-2,guard,2026-09-04T20:00Z
+#
+# Le test rouge ci-dessous CREE le fichier CSV, appelle le picker sans
+# --prev-genre explicite, et verifie que la penalite G-VAR-3 est quand
+# meme appliquee. Avant le patch, ce test echoue (le picker ignore le
+# CSV). Apres le patch, il passe.
+
+
+def test_14591_volet_a_prev_genre_csv_red(tmp_path, monkeypatch) -> None:
+    """#14591 Volet A -- rouge : CSV etat prev_genre non lu par le picker.
+
+    Fondation : un CSV bien forme, la fonction read_prev_genre_csv() doit
+    rendre (genre, ts) pour la lane demandee. Avant le patch, la fonction
+    n'existe pas -> AttributeError.
+    """
+    csv_path = tmp_path / "picker_state.csv"
+    csv_path.write_text(
+        "lane,last_genre,last_ts\n"
+        "myia-po-2027:CoursIA-2,guard,2026-09-04T20:00Z\n"
+        "myia-po-2026:CoursIA,notebook-python,2026-09-04T19:00Z\n",
+        encoding="utf-8",
+    )
+    # L attribut doit exister apres le patch ; avant le patch, AttributeError.
+    assert hasattr(pig, "read_prev_genre_csv"), (
+        "#14591 Volet A rouge : pick_idle_grain ne porte pas "
+        "read_prev_genre_csv(). La persistance --prev-genre entre cycles "
+        "n est pas implementée."
+    )
+    genre, ts = pig.read_prev_genre_csv(str(csv_path), "myia-po-2027:CoursIA-2")
+    assert genre == "guard", f"lu: {genre!r}, attendu 'guard'"
+    assert ts == "2026-09-04T20:00Z", f"lu: {ts!r}, attendu ISO"
+
+
+def test_14591_volet_a_prev_genre_csv_red_2_unknown_lane(tmp_path) -> None:
+    """#14591 Volet A : CSV present, lane inconnue -> (None, None)."""
+    csv_path = tmp_path / "picker_state.csv"
+    csv_path.write_text(
+        "lane,last_genre,last_ts\n"
+        "myia-po-2027:CoursIA-2,guard,2026-09-04T20:00Z\n",
+        encoding="utf-8",
+    )
+    genre, ts = pig.read_prev_genre_csv(str(csv_path), "myia-po-2099:CoursIA")
+    assert genre is None and ts is None
+
+
+def test_14591_volet_a_prev_genre_csv_red_3_missing_file(tmp_path) -> None:
+    """#14591 Volet A : fichier absent -> (None, None), pas d exception."""
+    csv_path = tmp_path / "absent.csv"
+    genre, ts = pig.read_prev_genre_csv(str(csv_path), "myia-po-2027:CoursIA-2")
+    assert genre is None and ts is None
+
+
+def test_14591_volet_a_write_then_read_csv(tmp_path) -> None:
+    """#14591 Volet A : round-trip write->read."""
+    csv_path = tmp_path / "picker_state.csv"
+    # Fichier absent au depart
+    assert not csv_path.exists()
+    pig.write_prev_genre_csv(str(csv_path), "myia-po-2027:CoursIA-2",
+                            "notebook-lean", "2026-09-04T21:00Z")
+    genre, ts = pig.read_prev_genre_csv(str(csv_path), "myia-po-2027:CoursIA-2")
+    assert genre == "notebook-lean"
+    assert ts == "2026-09-04T21:00Z"
+    # Re-ecriture meme lane -> mise a jour, pas doublon
+    pig.write_prev_genre_csv(str(csv_path), "myia-po-2027:CoursIA-2",
+                            "lean", "2026-09-04T22:00Z")
+    genre, ts = pig.read_prev_genre_csv(str(csv_path), "myia-po-2027:CoursIA-2")
+    assert genre == "lean"
+    # Header + 1 seule ligne (1 lane, 2 upserts = 1 ligne finale)
+    with csv_path.open(encoding="utf-8") as fh:
+        lines = [l for l in fh.read().splitlines() if l]
+    assert len(lines) == 2, f"attendu 2 (header + 1 lane), obtenu {len(lines)}"
+    # Upsert ajoute une lane differente
+    pig.write_prev_genre_csv(str(csv_path), "myia-po-2026:CoursIA",
+                            "notebook-python", "2026-09-04T22:30Z")
+    with csv_path.open(encoding="utf-8") as fh:
+        lines = [l for l in fh.read().splitlines() if l]
+    assert len(lines) == 3, f"attendu 3 (header + 2 lanes), obtenu {len(lines)}"
+
+
+def test_14591_volet_a_cli_integration_prev_genre_autoload(tmp_path, monkeypatch, capsys) -> None:
+    """#14591 Volet A : CLI --csv-state auto-applique --prev-genre.
+
+    On appelle main() avec --csv-state etat present, SANS --prev-genre
+    explicite, et on verifie que le print indique que prev_genre est
+    auto-applique depuis le CSV. Avant le patch, le picker ignorait le CSV.
+    """
+    csv_path = tmp_path / "picker_state.csv"
+    csv_path.write_text(
+        "lane,last_genre,last_ts\n"
+        "myia-po-2027:CoursIA-2,tooling,2026-09-04T22:00Z\n",
+        encoding="utf-8",
+    )
+    # Utiliser --admissible et un numero inexistant pour sortie rapide 1 sans
+    # toucher au pool reel.
+    class _R:
+        stdout = "[]"
+    def fake_run(cmd, **kw):
+        return _R()
+    monkeypatch.setattr(pig.subprocess, "run", fake_run)
+    rc = pig.main([
+        "--admissible=99999999",
+        "--lane=myia-po-2027:CoursIA-2",
+        f"--csv-state={csv_path}",
+    ])
+    assert rc == 1, f"absent du pool ouvert doit retourner 1, rc={rc}"
+    captured = capsys.readouterr().out
+    assert "prev-genre auto-applique depuis CSV" in captured, (
+        f"auto-apply absent. Sortie: {captured[:400]}"
+    )
+    assert "tooling" in captured
