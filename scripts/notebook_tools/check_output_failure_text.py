@@ -491,6 +491,20 @@ def _is_degraded_hint(match_text):
     return any(p.search(match_text) for p in DEGRADED_HINT_PATTERNS)
 
 
+def _sample_location(loc):
+    """Rend la localisation d'un echantillon telle qu'elle a ete produite.
+
+    Un hit d'output porte un index de cellule entier -> ``cell[7]``. Un hit de
+    metadata porte deja son propre label (``doc:<cle>`` ou ``cell[<i>]:<cle>``,
+    cf. ``metadata_texts()``) -> l'imprimer verbatim. Sans ce tri, un hit
+    metadata de document sortait ``cell[doc:path]`` et un hit metadata de
+    cellule ``cell[cell[3]:papermill]`` : lisible, mais mal etiquete.
+    """
+    if isinstance(loc, str):
+        return loc
+    return "cell[" + str(loc) + "]"
+
+
 def compare(base_ref, head_ref, paths, cwd=None):
     """Per-notebook growth of each class between base_ref and head_ref."""
     rows = []
@@ -831,7 +845,8 @@ def main(argv=None):
                     print("  " + cls + ": " + str(e["base"]) + " -> "
                           + str(e["head"]) + " (+" + str(e["delta"]) + ")")
                     for s in e.get("samples", []):
-                        print("     cell[" + str(s["cell"]) + "] " + s["match"])
+                        print("     " + _sample_location(s["cell"]) + " "
+                              + s["match"])
         if bad:
             print("\nCause is on the executing machine, not in the notebook: "
                   "install the missing tool and RE-EXECUTE. Never hand-edit a "
