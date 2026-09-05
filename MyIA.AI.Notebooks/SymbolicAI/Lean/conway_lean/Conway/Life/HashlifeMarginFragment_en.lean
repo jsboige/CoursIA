@@ -410,6 +410,111 @@ theorem hashlife_correct_margin_of_hcap (c : MacroCell) (k : Nat)
     evolveHashlifeFast (2^k) (c.toGrid (0, 0)) = evolve (2^k) (c.toGrid (0, 0)) :=
   hashlife_correctN (2^k) (c.toGrid (0, 0)) hcap
 
+/-! ## L3 class `T = 1` — hcap of still lifes (step 3, slice 4)
+
+First **entirely closed** L3 link: for the class of still lifes
+(`evolve 1 g = g`, a fixpoint of `step`), the L2 reduction's `hcap`
+hypothesis is established end to end — the trajectory is constant, the
+reconstruction is constant, and the jump is captured by
+`jumpCapturedF_of_still_life`. The chain: EQUALITY round-trip of the
+reconstruction for canonical grids (`Canonical.ext`, rigidity of
+sorted-deduplicated lists) → transport of the fixpoint to the origin via
+`toGrid_shift_grid`/`evolve_shift` → capture. -/
+
+/-- **EQUALITY round-trip of the reconstruction (canonical grids).**
+    The general form of `gridToMacroCellWithOffset`'s docstring — so far
+    established only at the membership level
+    (`mem_toGrid_gridToMacroCellWithOffset`, MacroCell L857) — strengthens
+    to a **list equality** as soon as `g` is canonical: both grids are
+    canonical (`toGrid` is a `sortDedup` image, `g` by hypothesis) and have
+    the same members, hence are equal by rigidity (`Canonical.ext`). This
+    is the members→equality bridge that was missing to transport fixpoint
+    equivalences (`Prop` equalities) across the reconstruction. -/
+theorem toGrid_gridToMacroCellWithOffset_eq (g : Grid) (hg : Canonical g) :
+    (gridToMacroCellWithOffset g).2.toGrid (gridToMacroCellWithOffset g).1 = g :=
+  Canonical.ext (canonical_sortDedup _) hg (fun p => mem_toGrid_gridToMacroCellWithOffset g p)
+
+/-- **Transport of the fixpoint to the origin-rendered reconstruction.**
+    If `g` is a canonical still life, then the reconstructed MacroCell
+    rendered at the origin, `(gridToMacroCellWithOffset g).2.toGrid (0, 0)`,
+    is itself a fixpoint of `evolve 1`: the `toGrid_shift_grid` shuttle
+    brings the origin back to a shift of the framed grid, `evolve_shift`
+    commutes the shift with `evolve`, `evolve_congr` transports the
+    evolution to `g`'s frame (same members), and the EQUALITY round-trip
+    closes the loop. This is the exact `hfix` hypothesis that
+    `jumpCapturedF_of_still_life` requires on the reconstruction — now
+    available for the `T = 1` class. -/
+theorem still_life_fix_toGrid_zero (g : Grid) (hg : Canonical g)
+    (hfix : evolve 1 g = g) :
+    evolve 1 ((gridToMacroCellWithOffset g).2.toGrid (0, 0))
+      = (gridToMacroCellWithOffset g).2.toGrid (0, 0) := by
+  have hrt : (gridToMacroCellWithOffset g).2.toGrid (gridToMacroCellWithOffset g).1
+      = g := toGrid_gridToMacroCellWithOffset_eq g hg
+  have hshift : (gridToMacroCellWithOffset g).2.toGrid (0, 0)
+      = shift (0 - (gridToMacroCellWithOffset g).1.1,
+               0 - (gridToMacroCellWithOffset g).1.2)
+          ((gridToMacroCellWithOffset g).2.toGrid (gridToMacroCellWithOffset g).1) :=
+    toGrid_shift_grid _ 0 0 _ _
+  rw [hshift, ← evolve_shift, hrt, hfix]
+
+/-- **hcap of the `T = 1` class (still lifes) — the reconstruction's
+    capture.** For any still life `g` (canonical or empty), the
+    reconstructed MacroCell satisfies the jump predicate: this is the
+    capture hypothesis that the L2 reduction consumes, established for the
+    whole class. Nonempty case: `jumpCapturedF_of_still_life` consumes the
+    three now-available hypotheses — wf (`buildFromGrid_wf`), level (the
+    n-aware bound: `2 < 2^lvl` as soon as `g ≠ []`, hence `1 ≤ lvl`) and
+    fixpoint (`still_life_fix_toGrid_zero`). Empty case: the
+    reconstruction is a dead level-0 leaf, the padded grid is empty, and
+    `List.all` on `[]` is vacuously true — decided by the kernel. -/
+theorem jumpCapturedF_reconstruction_of_still_life (g : Grid) (hg : Canonical g)
+    (hfix : evolve 1 g = g) :
+    jumpCapturedF (gridToMacroCellWithOffset g).2 = true := by
+  by_cases hne : g = []
+  · subst hne
+    decide
+  · apply jumpCapturedF_of_still_life _ ?_ ?_ ?_
+    · unfold gridToMacroCellWithOffset
+      exact buildFromGrid_wf g _ _ _
+    · have hN := gridToMacroCellWithOffsetN_level_gt_n 2 g hne
+      rw [gridToMacroCellWithOffsetN_le_two_eq 2 g (by omega)] at hN
+      cases hL : (gridToMacroCellWithOffset g).2.level with
+      | zero => rw [hL] at hN; exact absurd hN (by decide)
+      | succ m => omega
+    · exact still_life_fix_toGrid_zero g hg hfix
+
+/-- **hcap of still lifes, full trajectory.** For any still life `g`, at
+    **every** instant `t` (a fortiori every `t ≤ 2^k`): the trajectory is
+    constant (`evolve t g = g`, period 1 repeated via
+    `evolve_mulF_of_period`), so the reconstruction along the trajectory
+    is the constant object `gridToMacroCellWithOffset g`, whose jump is
+    captured. With the assembly corollary below, this is the **first
+    entirely proved L3 link** of the P4.4 decomposition: lifting a whole
+    class of patterns to the N-machine's `hcap` hypothesis, with no sorry. -/
+theorem hcap_of_still_life (g : Grid) (hg : Canonical g)
+    (hfix : evolve 1 g = g) (t : Nat) :
+    jumpCapturedF (gridToMacroCellWithOffset (evolve t g)).2 = true := by
+  have hself : evolve t g = g := by
+    have hmul := evolve_mulF_of_period g hfix t
+    rwa [Nat.mul_one] at hmul
+  rw [hself]
+  exact jumpCapturedF_reconstruction_of_still_life g hg hfix
+
+/-- **L3 closed for the `T = 1` class: Hashlife correctness of still
+    lifes.** Assembly corollary — the first case of the P4.4 decomposition
+    where the L3 link (lifting a class of patterns to `hcap`) is **entirely
+    proved**: for any MacroCell whose origin-rendered grid is a still life,
+    the global equality `hashlife_correctN` applies at any horizon `2^k`
+    under `centralCorrect`. Only L4 remains (the restricted equality
+    `centralCorrect` itself), which lives in the hypothesis — exactly the
+    clean seam announced by the L2 reduction. -/
+theorem hashlife_correct_margin_of_still_life (c : MacroCell) (k : Nat)
+    (h_central : centralCorrect c k)
+    (hfix : evolve 1 (c.toGrid (0, 0)) = c.toGrid (0, 0)) :
+    evolveHashlifeFast (2^k) (c.toGrid (0, 0)) = evolve (2^k) (c.toGrid (0, 0)) :=
+  hashlife_correct_margin_of_hcap c k h_central
+    (fun t _ => hcap_of_still_life _ (canonical_sortDedup _) hfix t)
+
 /-! ## Sanity checks on the bestiary
 
 The fragment `supportInMargin` is **decidable** (instance `Decidable (BoxAssezGrandN)`,
@@ -459,6 +564,11 @@ Strategy for the rest of #6724: the bounded NE/SW/SE walls are CLOSED and
 `p5_large_n_jumpN` is proved (b3') — the L2 reduction above is in place, leaving the L3
 link (the `centralCorrect → hcap` bridge, the bounded assembly proper) and L4 (restricted
 → global equality), which will discharge the `sorry` of `hashlife_correct_margin`.
+**First closed L3 link** (step 3, slice 4): the `T = 1` class of still lifes is
+entirely lifted to `hcap` (`hcap_of_still_life` →
+`hashlife_correct_margin_of_still_life`), with no sorry — generalizing to the
+other periodic classes `T ∣ 2^k` will follow the same pattern (canonical
+round-trip → transported fixpoint → capture).
 -/
 
 end Life_en

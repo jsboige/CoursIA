@@ -410,6 +410,110 @@ theorem hashlife_correct_margin_of_hcap (c : MacroCell) (k : Nat)
     evolveHashlifeFast (2^k) (c.toGrid (0, 0)) = evolve (2^k) (c.toGrid (0, 0)) :=
   hashlife_correctN (2^k) (c.toGrid (0, 0)) hcap
 
+/-! ## L3 classe `T = 1` — hcap des natures mortes (tranche 3, étape 4)
+
+Premier maillon L3 **entièrement clos** : pour la classe des natures mortes
+(`evolve 1 g = g`, point fixe de `step`), l'hypothèse `hcap` de la réduction L2
+est établie de bout en bout — la trajectoire est constante, la reconstruction
+est constante, et le saut est capturé par `jumpCapturedF_of_still_life`. Le
+chaînage : round-trip ÉGALITÉ de la reconstruction pour grilles canoniques
+(`Canonical.ext`, rigidité des listes triées-dédupliquées) → transport du point
+fixe à l'origine via `toGrid_shift_grid`/`evolve_shift` → capture. -/
+
+/-- **Round-trip ÉGALITÉ de la reconstruction (grilles canoniques).**
+    La forme générale du docstring de `gridToMacroCellWithOffset` — jusqu'ici
+    établie seulement au niveau des membres
+    (`mem_toGrid_gridToMacroCellWithOffset`, MacroCell L857) — se renforce en
+    **égalité de listes** dès que `g` est canonique : les deux grilles sont
+    canoniques (`toGrid` est une image `sortDedup`, `g` l'est par hypothèse)
+    et ont les mêmes membres, donc sont égales par rigidité
+    (`Canonical.ext`). C'est le pont members→égalité qui manquait pour
+    transporter des équivalences de point fixe (des `Prop` d'égalité) à
+    travers la reconstruction. -/
+theorem toGrid_gridToMacroCellWithOffset_eq (g : Grid) (hg : Canonical g) :
+    (gridToMacroCellWithOffset g).2.toGrid (gridToMacroCellWithOffset g).1 = g :=
+  Canonical.ext (canonical_sortDedup _) hg (fun p => mem_toGrid_gridToMacroCellWithOffset g p)
+
+/-- **Transport du point fixe à la reconstruction (rendue à l'origine).**
+    Si `g` est une nature morte canonique, alors la MacroCell reconstruite
+    rendue à l'origine `(gridToMacroCellWithOffset g).2.toGrid (0, 0)` est
+    elle-même un point fixe de `evolve 1` : la navette `toGrid_shift_grid`
+    ramène l'origine à un shift de la grille cadrée, `evolve_shift` fait
+    commuter le shift avec `evolve`, `evolve_congr` transporte l'évolution au
+    cadre de `g` (même membres), et le round-trip ÉGALITÉ referme la boucle.
+    C'est l'hypothèse `hfix` exacte qu'exige `jumpCapturedF_of_still_life`
+    sur la reconstruction — désormais disponible pour la classe `T = 1`. -/
+theorem still_life_fix_toGrid_zero (g : Grid) (hg : Canonical g)
+    (hfix : evolve 1 g = g) :
+    evolve 1 ((gridToMacroCellWithOffset g).2.toGrid (0, 0))
+      = (gridToMacroCellWithOffset g).2.toGrid (0, 0) := by
+  have hrt : (gridToMacroCellWithOffset g).2.toGrid (gridToMacroCellWithOffset g).1
+      = g := toGrid_gridToMacroCellWithOffset_eq g hg
+  have hshift : (gridToMacroCellWithOffset g).2.toGrid (0, 0)
+      = shift (0 - (gridToMacroCellWithOffset g).1.1,
+               0 - (gridToMacroCellWithOffset g).1.2)
+          ((gridToMacroCellWithOffset g).2.toGrid (gridToMacroCellWithOffset g).1) :=
+    toGrid_shift_grid _ 0 0 _ _
+  rw [hshift, ← evolve_shift, hrt, hfix]
+
+/-- **hcap de la classe `T = 1` (natures mortes) — la capture de la
+    reconstruction.** Pour toute nature morte `g` (canonique ou vide), la
+    MacroCell reconstruite satisfait le prédicat de saut : c'est l'hypothèse
+    de capture que la réduction L2 consomme, établie pour la classe entière.
+    Cas non vide : `jumpCapturedF_of_still_life` consomme les trois hypothèses
+    désormais disponibles — wf (`buildFromGrid_wf`), niveau (la borne
+    n-aware : `2 < 2^lvl` dès `g ≠ []`, donc `1 ≤ lvl`) et point fixe
+    (`still_life_fix_toGrid_zero`). Cas vide : la reconstruction est une
+    feuille morte de niveau 0, la grille paddée est vide, et `List.all` sur
+    `[]` est trivialement vrai — décidé par le noyau. -/
+theorem jumpCapturedF_reconstruction_of_still_life (g : Grid) (hg : Canonical g)
+    (hfix : evolve 1 g = g) :
+    jumpCapturedF (gridToMacroCellWithOffset g).2 = true := by
+  by_cases hne : g = []
+  · subst hne
+    decide
+  · apply jumpCapturedF_of_still_life _ ?_ ?_ ?_
+    · unfold gridToMacroCellWithOffset
+      exact buildFromGrid_wf g _ _ _
+    · have hN := gridToMacroCellWithOffsetN_level_gt_n 2 g hne
+      rw [gridToMacroCellWithOffsetN_le_two_eq 2 g (by omega)] at hN
+      cases hL : (gridToMacroCellWithOffset g).2.level with
+      | zero => rw [hL] at hN; exact absurd hN (by decide)
+      | succ m => omega
+    · exact still_life_fix_toGrid_zero g hg hfix
+
+/-- **hcap des natures mortes, trajectoire complète.** Pour toute nature
+    morte `g`, **tout** instant `t` (a fortiori tout `t ≤ 2^k`) : la
+    trajectoire est constante (`evolve t g = g`, période 1 répétée via
+    `evolve_mulF_of_period`), donc la reconstruction le long de la trajectoire
+    est l'objet constant `gridToMacroCellWithOffset g`, dont le saut est
+    capturé. Avec le corollaire d'assemblage ci-dessous, c'est le **premier
+    maillon L3 entièrement prouvé** de la décomposition P4.4 : relever une
+    classe de motifs en l'hypothèse `hcap` de la machine N, sans aucun sorry. -/
+theorem hcap_of_still_life (g : Grid) (hg : Canonical g)
+    (hfix : evolve 1 g = g) (t : Nat) :
+    jumpCapturedF (gridToMacroCellWithOffset (evolve t g)).2 = true := by
+  have hself : evolve t g = g := by
+    have hmul := evolve_mulF_of_period g hfix t
+    rwa [Nat.mul_one] at hmul
+  rw [hself]
+  exact jumpCapturedF_reconstruction_of_still_life g hg hfix
+
+/-- **L3 clos pour la classe `T = 1` : correction Hashlife des natures
+    mortes.** Corollaire d'assemblage — le premier cas de la décomposition
+    P4.4 où le maillon L3 (relever une classe de motifs en `hcap`) est
+    **entièrement prouvé** : pour toute MacroCell dont la grille rendue à
+    l'origine est une nature morte, l'égalité globale `hashlife_correctN`
+    s'applique à tout horizon `2^k` sous `centralCorrect`. Il ne reste que
+    L4 (l'égalité restreinte `centralCorrect` elle-même), qui vit dans
+    l'hypothèse — exactement la cloison annoncée par la réduction L2. -/
+theorem hashlife_correct_margin_of_still_life (c : MacroCell) (k : Nat)
+    (h_central : centralCorrect c k)
+    (hfix : evolve 1 (c.toGrid (0, 0)) = c.toGrid (0, 0)) :
+    evolveHashlifeFast (2^k) (c.toGrid (0, 0)) = evolve (2^k) (c.toGrid (0, 0)) :=
+  hashlife_correct_margin_of_hcap c k h_central
+    (fun t _ => hcap_of_still_life _ (canonical_sortDedup _) hfix t)
+
 /-! ## Sanity-checks sur le bestiaire
 
 Le fragment `supportInMargin` est **décidable** (instance `Decidable (BoxAssezGrandN)`,
@@ -458,7 +562,11 @@ l'assemblage borné P4/P5 encore ouvert (`p4_nw_overlap_wall`, ai-01 c.94).
 Stratégie pour la suite de #6724 : les murs NE/SW/SE bornés sont FERMÉS et `p5_large_n_jumpN`
 est prouvé (b3') — la réduction L2 ci-dessus est en place, restent les maillons L3 (le pont
 `centralCorrect → hcap`, l'assemblage borné proprement dit) et L4 (égalité restreinte →
-globale), qui déchargeront le `sorry` de `hashlife_correct_margin`.
+globale), qui déchargeront le `sorry` de `hashlife_correct_margin`. **Premier maillon L3
+clos** (tranche 3, étape 4) : la classe `T = 1` des natures mortes est intégralement
+relevée en `hcap` (`hcap_of_still_life` → `hashlife_correct_margin_of_still_life`),
+sans sorry — la généralisation aux autres classes périodiques `T ∣ 2^k` suivra le même
+schéma (round-trip canonique → point fixe transporté → capture).
 -/
 
 end Life
