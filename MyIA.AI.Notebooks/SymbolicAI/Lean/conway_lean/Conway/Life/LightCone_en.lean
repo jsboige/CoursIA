@@ -237,6 +237,37 @@ theorem evolve_reach_chebyshev (t : Nat) (g : Grid) (q : Int × Int)
       have hrq_cheb : chebDist r q ≤ 1 := chebDist_le_one_of_moore r q hrq
       exact (chebDist_triangle p q r).trans (add_le_add hpr hrq_cheb)
 
+/-! ## Boxed support dilation — L3 brick of the P4.4 assembly
+
+`evolve_reach_chebyshev` bounds reachability by the distance to an initially
+live cell; the P4.4 L3 assembly (#13483) consumes the **box form**: if the
+initial support fits in a box, the support after `t` generations fits in the
+Chebyshev-`t` dilation of that box. This is the speed-of-light brick for the
+window arithmetic of `hcap` (trajectory confinement). Sorry-free.
+-/
+
+/-- **Boxed support dilation.** Any live cell after `t` generations lies in
+    the per-coordinate `t`-dilation of any box containing the initial
+    support. Composes `evolve_reach_chebyshev` (initial witness within
+    distance t) with `coord_bound_of_chebDist_le` (per-coordinate bound);
+    the final arithmetic is linear. -/
+theorem evolve_support_dilation_box (t : Nat) (g : Grid) (a b : Int × Int)
+    (h : ∀ p, isAlive g p = true →
+      a.1 ≤ p.1 ∧ p.1 < b.1 ∧ a.2 ≤ p.2 ∧ p.2 < b.2)
+    (q : Int × Int) (h_alive : isAlive (evolve t g) q = true) :
+    a.1 - (t : Int) ≤ q.1 ∧ q.1 < b.1 + (t : Int) ∧
+    a.2 - (t : Int) ≤ q.2 ∧ q.2 < b.2 + (t : Int) := by
+  obtain ⟨p, hp, hcheb⟩ := evolve_reach_chebyshev t g q h_alive
+  have ⟨hb1, hb2⟩ := coord_bound_of_chebDist_le p q t hcheb
+  have ⟨ha1, ha2, ha3, ha4⟩ := h p hp
+  have e1 : |q.1 - p.1| ≤ (t : Int) := by
+    rw [Int.abs_eq_natAbs]; exact_mod_cast hb1
+  have e2 : |q.2 - p.2| ≤ (t : Int) := by
+    rw [Int.abs_eq_natAbs]; exact_mod_cast hb2
+  obtain ⟨hlo1, hhi1⟩ := Int.abs_le.mp e1
+  obtain ⟨hlo2, hhi2⟩ := Int.abs_le.mp e2
+  exact ⟨by omega, by omega, by omega, by omega⟩
+
 /-! ## Tight locality (Chebyshev-box form) — agreement dual of `evolve_reach_chebyshev`
 
 The tight reach theorem (`evolve_reach_chebyshev` above) says: if `q` is alive
