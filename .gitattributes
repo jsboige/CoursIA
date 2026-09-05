@@ -10,8 +10,18 @@
 # comparison is platform-independent (issue #1056). Limited to the exact files
 # the check reads, to avoid a wide renormalization of unrelated .md files.
 COURSE_CATALOG.generated.json text eol=lf
-MyIA.AI.Notebooks/README.md text eol=lf
-MyIA.AI.Notebooks/*/README.md text eol=lf
+# Notebooks Markdown : la regle precedente `MyIA.AI.Notebooks/*/README.md` ne
+# matchait qu'1 niveau de profondeur et ratait 296 READMEs profonds (cf #14570).
+# `**` matche profondeur arbitraire et remplace les 2 lignes en une seule, plus
+# simple et plus complete. Meme motif "L268" que les slides (`slides/**/*.md`
+# ci-dessous) : le Edit tool Windows flippe silencieusement LF->CRLF quand
+# aucune regle explicite n'est posee. Mesure 2026-09-04 sur origin/main :
+# 891 .md sous MyIA.AI.Notebooks/, dont 10 portent des fins de ligne CRLF
+# (429/424/345/247/131/123/47/43/33/32 CR cumules = 1 854 octets CR, instrument
+# canonique `git cat-file blob | tr -cd '\r' | wc -c`). Aucun avec
+# `text eol=crlf` explicite, aucun avec `-text` -- regle safe a appliquer
+# largement.
+MyIA.AI.Notebooks/**/*.md text eol=lf
 # Source/config files that are consumed by Linux/WSL tooling (Lean lakes,
 # shell scripts, env files) MUST be LF — a CRLF shebang (e.g. "#!/bin/bash\r")
 # breaks WSL with "bad interpreter", and CRLF in .lean breaks lake on Linux.
