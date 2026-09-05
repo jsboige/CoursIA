@@ -28,6 +28,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CoursIA.DatasetUpdater.Prom
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CoursIA.DatasetUpdater.Prompts.Tests", "MyIA.AI.Notebooks\SymbolicAI\Argument_Analysis\CoursIA-DatasetUpdater-Prompts\src\CoursIA.DatasetUpdater.Prompts.Tests\CoursIA.DatasetUpdater.Prompts.Tests.csproj", "{26D274FA-3CB0-48EB-9561-DCA41FA405AA}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CoursIA.AgentSafetyAnalyzer", "MyIA.AI.Notebooks\GenAI\Vibe-Coding\analyzers\AgentSafetyAnalyzer\AgentSafetyAnalyzer.csproj", "{BF3B5EC4-0E62-4928-AD3B-DEC9C4D7566F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CoursIA.AgentSafetyAnalyzer.Tests", "MyIA.AI.Notebooks\GenAI\Vibe-Coding\analyzers\AgentSafetyAnalyzer.Tests\AgentSafetyAnalyzer.Tests.csproj", "{42AA7A16-ADB1-4330-9FDC-DCC90D2B4066}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -82,6 +86,14 @@ Global
 {26D274FA-3CB0-48EB-9561-DCA41FA405AA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 {26D274FA-3CB0-48EB-9561-DCA41FA405AA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 {26D274FA-3CB0-48EB-9561-DCA41FA405AA}.Release|Any CPU.Build.0 = Release|Any CPU
+{BF3B5EC4-0E62-4928-AD3B-DEC9C4D7566F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+{BF3B5EC4-0E62-4928-AD3B-DEC9C4D7566F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+{BF3B5EC4-0E62-4928-AD3B-DEC9C4D7566F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+{BF3B5EC4-0E62-4928-AD3B-DEC9C4D7566F}.Release|Any CPU.Build.0 = Release|Any CPU
+{42AA7A16-ADB1-4330-9FDC-DCC90D2B4066}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+{42AA7A16-ADB1-4330-9FDC-DCC90D2B4066}.Debug|Any CPU.Build.0 = Debug|Any CPU
+{42AA7A16-ADB1-4330-9FDC-DCC90D2B4066}.Release|Any CPU.ActiveCfg = Release|Any CPU
+{42AA7A16-ADB1-4330-9FDC-DCC90D2B4066}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
