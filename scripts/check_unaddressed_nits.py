@@ -151,7 +151,28 @@ LIFT_OVERRIDE_LOGINS = {"myia-ai-01"}
 # != droit d'override coordinateur.
 PERSONA_ALIAS_LOGINS = {"clusterManager-Myia"}
 _PERSONA_MARKERS_RE = re.compile(
-    r"(?m)(?:^|\s)\[(?:Hermes|NanoClaw|Hermes self-bot)(?:\s+[^\]]*)?\]"
+    # #14503 (2e cause) : l'en-tete reel des personas peut etre en GRAS —
+    # `**[NanoClaw]** structural review` (PR #14548). L'alternative `(?:^|\s)`
+    # exigeait un debut de ligne ou une espace avant `[` : le `*` du gras
+    # suffisait a effacer la review entiere du radar, AVANT meme la question
+    # du verdict. `*` (gras/italique markdown) rejoint les debuts admis ;
+    # le backtick reste EXCLU : `` `[Hermes]` `` est une citation (#13030).
+    r"(?m)(?:^|[\s*])\[(?:Hermes|NanoClaw|Hermes self-bot)(?:\s+[^\]]*)?\]"
+)
+# #14503 — reserves enoncees en PROSE ordinaire par une persona, sans aucun
+# prefixe de verdict (CONCERN_MARKERS muet). Jeu SERRE, mesure sur le corpus
+# des 200 dernieres PRs mergees (controle 3 de l'issue) : le fail-CLOSED pur
+# sur « persona + post-commit + sans verdict » attraperait 70 reviews dont la
+# quasi-totalite sont des APPROBATIONS en prose (« Verdict : solide »,
+# « validé », « exemplary fix ») — un mur, pas un durcissement. Les motifs
+# ci-dessous attrapent les deux cas fondateurs (#14486 « défauts constatés »,
+# #14548 « contredit ») et 0 des 70 approbations. « reproduit » et
+# « à corriger » sont EXCLUS : usage positif dominant dans le corpus
+# (« chaque chiffre du tableau se reproduit exactement »).
+_PROSE_CONCERN_RE = re.compile(
+    r"(?i)d[ée]fauts?\s+constat|m[ée]rite\s+une\s+it[ée]ration"
+    r"|avant\s+c[âa]blage|contredit"
+    r"|faux\s+n[ée]gatifs?|false\s+negatives?"
 )
 # #13030 -- le marqueur doit etre POSE, pas CITE. L'ancien pattern sans
 # ancre matchait n'importe quelle mention dans le corps : le commentaire de
@@ -3154,6 +3175,38 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
         kind = classify(login, body)
         if state == "CHANGES_REQUESTED":
             kind = "BOT-CONCERN" if kind is None else kind
+        # #14503 — reserve de persona enoncee en PROSE, invisible au scanner
+        # de verdicts. Mesure fondatrice #14486 : review `[Hermes]` COMMENTED
+        # posterieure au dernier commit, reserves en prose ordinaire (« 3
+        # defauts constates en execution reelle ») SANS prefixe de verdict
+        # ni glyphe -> CONCERN_MARKERS muet -> classify None -> rc=0. Une
+        # persona sous contrainte de tokens abrege, et le verdict formel est
+        # precisement ce qui saute : le mecanisme se degrade exactement dans
+        # le sens ou il ne faut pas.
+        #
+        # Calibrage (controle 3 de l'issue, 200 dernieres PRs mergees) : le
+        # fail-CLOSED pur (« persona + post-commit + pas de levee »)
+        # attraperait 70 reviews quasi toutes APPROBATIVES (« Verdict :
+        # solide ») = un mur. La reserve n'est donc declaree que si la prose
+        # PORTE un motif de reserve (_PROSE_CONCERN_RE). Bornes :
+        #   * marque persona POSEE dans le body (gras compris, citation
+        #     backtick exclue) — un login sans marque reste l'identite de
+        #     poussee partagee ;
+        #   * motif de reserve en prose — vocabulaire serre MESURE : les 2
+        #     cas fondateurs attrapes, 0 des 70 approbations du corpus ;
+        #   * POSTERIEURE au dernier commit : une review d'avant le push est
+        #     presumee adressee par celui-ci ;
+        #   * PAS de levee vivante dans le corps : classify sort aussi None
+        #     pour une annonce de LEVEE — c'est une resolution, pas une
+        #     reserve, et la transformer en blocage serait l'exact inverse
+        #     de ce que le gate doit faire.
+        elif (state == "COMMENTED" and kind is None
+              and _PERSONA_MARKERS_RE.search(_strip_quoted(body))
+              and _PROSE_CONCERN_RE.search(_strip_quoted(body))
+              and not has_live_lift(_strip_quoted(body))
+              and last_commit is not None
+              and ts(r.get("submittedAt")) > last_commit):
+            kind = "BOT-CONCERN"
         # #11677 — symetrique APPROVED : l'etat natif GitHub `APPROVED` temoigne
         # qu'aucune reserve n'est posee. Si classify() a deja retourne un kind
         # (HUMAN ou BOT-CONCERN), c'est qu'une reserve VIVANTE survit dans la
