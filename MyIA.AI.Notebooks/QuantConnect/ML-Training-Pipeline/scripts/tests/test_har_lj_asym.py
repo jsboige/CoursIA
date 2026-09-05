@@ -947,6 +947,127 @@ def test_panel_hash_includes_index():
 
 
 # ---------------------------------------------------------------------------
+# ROUND-5 concern (2) — _content_hash(index, bornes, values) discriminates
+# any mutation of one of the three components.
+# ---------------------------------------------------------------------------
+
+
+def test_content_hash_mutates_on_index_shift():
+    """Round-5 concern (2): shifting the index by one period must change the
+    digest (even when bornes and values stay identical)."""
+    from har_lj_asym import _content_hash
+
+    rng = np.random.default_rng(7)
+    values = rng.normal(0.0, 1.0, 30)
+    idx_a = np.arange(1_000_000, 1_000_030, dtype=np.int64)
+    idx_b = np.arange(1_000_001, 1_000_031, dtype=np.int64)
+    bornes = (10, 10, 30)
+
+    h_a = _content_hash(idx_a, bornes, values)
+    h_b = _content_hash(idx_b, bornes, values)
+    assert h_a != h_b, "index shift must mutate the content hash"
+
+
+def test_content_hash_mutates_on_bounds_change():
+    """Round-5 concern (2): changing one of the bornes (train_end, oos_start,
+    oos_end) must change the digest (even when index and values stay)."""
+    from har_lj_asym import _content_hash
+
+    rng = np.random.default_rng(11)
+    values = rng.normal(0.0, 1.0, 30)
+    idx = np.arange(2_000_000, 2_000_030, dtype=np.int64)
+    bornes_a = (10, 10, 30)
+    bornes_b = (11, 11, 30)  # train_end_idx +1
+
+    h_a = _content_hash(idx, bornes_a, values)
+    h_b = _content_hash(idx, bornes_b, values)
+    assert h_a != h_b, "bounds change must mutate the content hash"
+
+
+def test_content_hash_mutates_on_value_change():
+    """Round-5 concern (2): changing one value byte must change the digest.
+    Sanity guard against a future refactor that drops the values component
+    (e.g. caching only index + bornes)."""
+    from har_lj_asym import _content_hash
+
+    rng = np.random.default_rng(13)
+    values_a = rng.normal(0.0, 1.0, 30)
+    values_b = values_a.copy()
+    values_b[15] += 1e-9
+    idx = np.arange(3_000_000, 3_000_030, dtype=np.int64)
+    bornes = (10, 10, 30)
+
+    h_a = _content_hash(idx, bornes, values_a)
+    h_b = _content_hash(idx, bornes, values_b)
+    assert h_a != h_b, "value change must mutate the content hash"
+
+
+def test_content_hash_is_deterministic():
+    """Round-5 concern (2): identical inputs (index, bornes, values) must
+    hash identically across repeated calls (deterministic, no hidden state)."""
+    from har_lj_asym import _content_hash
+
+    rng = np.random.default_rng(17)
+    values = rng.normal(0.0, 1.0, 30)
+    idx = np.arange(4_000_000, 4_000_030, dtype=np.int64)
+    bornes = (10, 10, 30)
+
+    h1 = _content_hash(idx, bornes, values)
+    h2 = _content_hash(idx, bornes, values)
+    assert h1 == h2
+
+
+# ---------------------------------------------------------------------------
+# ROUND-5 concern (1) — per_fold_bounds aligned 1-pour-1 with per_fold_bias
+# ---------------------------------------------------------------------------
+
+
+def test_per_fold_bounds_aligned_with_per_fold_bias(
+    synthetic_lj_components, monkeypatch,
+):
+    """Round-5 concern (1): per_fold_bounds must list one entry per fold,
+    aligned 1-pour-1 with per_fold_bias. Each entry must carry
+    {fold_idx, train_end_idx, oos_start_idx, oos_end_idx, n_train, n_oos}
+    and the (train_end_idx, oos_start_idx) must match the walk-forward
+    geometry: split = (fold_idx + 1) * fold_size."""
+    from har_lj_asym import (
+        walk_forward_lj_asym,
+    )
+    components = synthetic_lj_components
+    # Drive walk_forward_lj_asym via the public surface: 3 folds, BTC-USD.
+    n_splits = 3
+    res = walk_forward_lj_asym(
+        rv=components["BTC-USD"]["rv"],
+        rv_neg=components["BTC-USD"]["rv_neg"],
+        rv_pos=components["BTC-USD"]["rv_pos"],
+        rv_c=components["BTC-USD"]["rv_c"],
+        rv_j=components["BTC-USD"]["rv_j"],
+        horizon=1,
+        seed=0,
+        n_splits=n_splits,
+    )
+    biases = res["per_fold_bias"]
+    bounds = res["per_fold_bounds"]
+    # fold_size = n // (n_splits + 1), where n = len(X_all). Recover it from
+    # bounds_train_test (the arithmetic is canonical from round-4).
+    bt = res["bounds_train_test"]
+    assert bt is not None, "bounds_train_test missing -- needed to derive fold_size"
+    fold_size = bt["fold_size"]
+    assert len(biases) == len(bounds), (
+        f"per_fold_bounds length {len(bounds)} must equal per_fold_bias "
+        f"length {len(biases)}"
+    )
+    for k, (b, bd) in enumerate(zip(biases, bounds)):
+        assert bd["fold_idx"] == k
+        expected_split = (k + 1) * fold_size
+        assert bd["train_end_idx"] == expected_split
+        assert bd["oos_start_idx"] == expected_split
+        assert bd["oos_end_idx"] == expected_split + fold_size
+        assert bd["n_train"] == expected_split
+        assert bd["n_oos"] == fold_size
+
+
+# ---------------------------------------------------------------------------
 # ROUND-4 concern (a) — multi-fold OOS-target invariance (n_splits=3,
 # distinct per-fold biases, per-fold assertions)
 # ---------------------------------------------------------------------------
