@@ -27,9 +27,9 @@ import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from ict import jlens_traces as jt  # noqa: E402
-from ict import workspace  # noqa: E402  (acceptance #2 : aval inchange)
-from ict import sae_traces as st  # noqa: E402  (anti-melange : on refuse ses traces)
+from ict import jlens_traces as jt
+from ict import sae_traces as st
+from ict import workspace
 
 D_JLENS = 2000          # dimension du J-space (nom de champ ``d_sae`` herite du schema commun)
 K_TOPK = 50             # top-k des directions J gardees par token (troncature rang-k)
@@ -201,9 +201,150 @@ def test_workspace_pipeline_runs_on_jlens_traces(jlens_npz):
 
 
 # --------------------------------------------------------------------------- #
+# Fidelite multi-taille : contrat calib_jlens_*.npz (#8236)
+# --------------------------------------------------------------------------- #
+CALIBRATION_SETS = {"code_python", "prose_fr", "dialogue", "math", "narrative_en"}
+CALIBRATION_META = {
+    "meta_model", "meta_layers", "meta_n_fit",
+    "meta_max_seq_len", "meta_skip_first", "meta_n_eval",
+}
+
+
+def _assert_calib_jlens_schema(path: Path) -> None:
+    """Valide le format compact produit par extract_jlens_fidelity.py."""
+    with np.load(path, allow_pickle=False) as trace:
+        assert CALIBRATION_META <= set(trace.files)
+        model = "".join(chr(int(code)) for code in trace["meta_model"])
+        layers = trace["meta_layers"]
+        n_fit = trace["meta_n_fit"]
+        max_seq_len = trace["meta_max_seq_len"]
+        skip_first = trace["meta_skip_first"]
+        n_eval = trace["meta_n_eval"]
+        assert model.startswith("Qwen/")
+        assert layers.ndim == 1 and layers.size == 2
+        assert n_fit.shape == (1,) and int(n_fit[0]) > 0
+        assert max_seq_len.shape == (1,) and int(max_seq_len[0]) == 128
+        assert skip_first.shape == (1,) and int(skip_first[0]) == 16
+        assert n_eval.shape == (len(CALIBRATION_SETS),)
+        assert np.all(n_eval == 4)
+
+        metric_keys = set(trace.files) - CALIBRATION_META
+        expected = {
+            f"{set_name}__{int(layer)}"
+            for set_name in CALIBRATION_SETS
+            for layer in layers
+        }
+        assert metric_keys == expected
+        for key in metric_keys:
+            overlap10, rel_l2, kl = trace[key]
+            assert trace[key].shape == (3,)
+            assert np.isfinite(trace[key]).all()
+            assert 0.0 <= overlap10 <= 1.0
+            assert rel_l2 >= 0.0
+            assert kl >= -1e-6  # tolerance aux arrondis de log_softmax
+
+
+def test_calib_jlens_schema_roundtrip(tmp_path):
+    path = tmp_path / "calib_jlens_synthetic.npz"
+    layers = np.array([7, 14], dtype=np.int64)
+    arrays = {
+        f"{set_name}__{int(layer)}": np.array([0.5, 0.25, 0.1])
+        for set_name in CALIBRATION_SETS
+        for layer in layers
+    }
+    arrays.update({
+        "meta_model": np.array([ord(c) for c in "Qwen/synthetic"], dtype=np.int16),
+        "meta_layers": layers,
+        "meta_n_fit": np.array([3], dtype=np.int64),
+        "meta_max_seq_len": np.array([128], dtype=np.int64),
+        "meta_skip_first": np.array([16], dtype=np.int64),
+        "meta_n_eval": np.full(len(CALIBRATION_SETS), 4, dtype=np.int64),
+    })
+    np.savez_compressed(path, **arrays)
+    _assert_calib_jlens_schema(path)
+
+
+@pytest.mark.parametrize(
+    "path",
+    sorted((Path(__file__).parent.parent / "traces").glob("calib_jlens_*.npz")),
+    ids=lambda path: path.stem,
+)
+def test_real_calib_jlens_traces_schema(path):
+    _assert_calib_jlens_schema(path)
+
+
+# --------------------------------------------------------------------------- #
 # Integration : schema des traces reelles J-lens (si jamais committes)
 # --------------------------------------------------------------------------- #
 REAL = Path(__file__).parent.parent / "traces"
+
+def test_load_fit_stats_requires_provenance(tmp_path):
+    from scripts.extract_jlens_fidelity import load_fit_stats
+
+    with pytest.raises(FileNotFoundError, match="provenance modele"):
+        load_fit_stats(tmp_path / "missing.json")
+    path = tmp_path / "fit_stats.json"
+    path.write_text(json.dumps({"model": "Qwen/synthetic"}))
+    assert load_fit_stats(path)["model"] == "Qwen/synthetic"
+
+
+def test_sha256_file_tracks_lens_identity(tmp_path):
+    from scripts.extract_jlens_fidelity import sha256_file
+
+    path = tmp_path / "lens.pt"
+    path.write_bytes(b"lens-a")
+    digest_a = sha256_file(path)
+    path.write_bytes(b"lens-b")
+    assert sha256_file(path) != digest_a
+
+
+def test_validate_fit_model_accepts_match():
+    from scripts.extract_jlens_fidelity import validate_fit_model
+
+    validate_fit_model(
+        {"model": "Qwen/Qwen3-1.7B-Base"},
+        "Qwen/Qwen3-1.7B-Base",
+        "qwen3-1-7b",
+    )
+
+
+def test_validate_fit_model_rejects_missing_model_field():
+    from scripts.extract_jlens_fidelity import validate_fit_model
+
+    with pytest.raises(ValueError, match="pas de modele attribue"):
+        validate_fit_model({}, "Qwen/Qwen3-1.7B-Base", "qwen3-1-7b")
+
+
+def test_validate_fit_model_rejects_mismatch():
+    from scripts.extract_jlens_fidelity import validate_fit_model
+
+    with pytest.raises(ValueError, match="Qwen3.5-2B-Base"):
+        validate_fit_model(
+            {"model": "Qwen/Qwen3-1.7B-Base"},
+            "Qwen/Qwen3.5-2B-Base",
+            "qwen3-1-7b",
+        )
+
+
+def test_prompt_metrics_identity_and_shift():
+    """Les trois métriques ont les bornes attendues sur un cas connu."""
+    from scripts.extract_jlens_fidelity import prompt_metrics
+
+    torch = pytest.importorskip("torch")
+    model_logits = torch.tensor([
+        [6.0, 5.0, 4.0, 3.0, 2.0, 1.0],
+        [1.0, 2.0, 3.0, 4.0, 5.0, 6.0],
+    ])
+    identical = prompt_metrics(model_logits, model_logits, k=3)
+    assert identical["overlap10"] == pytest.approx(1.0)
+    assert identical["rel_l2"] == pytest.approx(0.0)
+    assert identical["kl"] == pytest.approx(0.0, abs=1e-7)
+
+    shifted_logits = torch.flip(model_logits, dims=[-1])
+    shifted = prompt_metrics(shifted_logits, model_logits, k=3)
+    assert shifted["overlap10"] == pytest.approx(0.0)
+    assert shifted["rel_l2"] > 0.0
+    assert shifted["kl"] > 0.0
 
 
 @pytest.mark.parametrize("variant", ["trained", "control"])
