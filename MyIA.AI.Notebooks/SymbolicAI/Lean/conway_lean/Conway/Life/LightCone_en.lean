@@ -265,6 +265,73 @@ theorem evolve_support_dilation_box (t : Nat) (g : Grid) (a b : Int × Int)
   -- the toolchain core scope, c.14701 CI).
   exact ⟨by omega, by omega, by omega, by omega⟩
 
+/-! ## Dyadic corridor — brick (b) of the P4.4 L3 assembly (#13483, slice 3)
+
+The speed-of-light brick (box form) dilates from `t = 0`. The L3 assembly
+consumes its **composition along dyadic segments**: split the trajectory at an
+intermediate time `t0` (`evolve_add`), apply the dilation to the remaining
+segment only. Two consequences:
+
+- the **generic relay** `evolve_support_dilation_from`: the support at any
+  `t ≥ t0` lies in the `(t - t0)`-dilation of the box of the support at `t0`;
+- the **dyadic corridor** `evolve_support_dyadic_corridor`: on the segment
+  `[2^j, 2^(j+1)]`, the drift is bounded by the segment length — every time
+  on the segment is confined in the `2^j`-dilation of the box of the
+  checkpoint `2^j`.
+
+This is the reduction of the control points to the dyadic grid in the **only
+direction the impossibility lemmas leave open**: FORWARD from the lower
+checkpoint. The reverse direction (endpoints constraining the middle) is
+structurally closed — the GoL is not reversible, the retrograde cone does not
+constrain intermediate states — and the "margin absorbs the drift" route is
+closed by `no_padding_depth_suffices` (JumpCapture.lean §3). The `(c)`
+interface (`centralCorrect`) will consume this corridor by induction on `j`
+to close the checkpoints. Sorry-free.
+-/
+
+/-- **Dilation relay from an intermediate time.** If the support at time
+    `t0` lies in the box `[a, b)`, then the support at any time `t ≥ t0`
+    lies in the `(t - t0)`-dilation of that box: split the trajectory at
+    `t0` (`evolve_add`), then apply the `evolve_support_dilation_box` brick
+    to the remaining segment only, on the intermediate grid. -/
+theorem evolve_support_dilation_from (t₀ t : Nat) (g : Grid) (a b : Int × Int)
+    (hle : t₀ ≤ t)
+    (h : ∀ p, isAlive (evolve t₀ g) p = true →
+      a.1 ≤ p.1 ∧ p.1 < b.1 ∧ a.2 ≤ p.2 ∧ p.2 < b.2)
+    (q : Int × Int) (h_alive : isAlive (evolve t g) q = true) :
+    a.1 - ((t - t₀ : Nat) : Int) ≤ q.1 ∧
+      q.1 < b.1 + ((t - t₀ : Nat) : Int) ∧
+      a.2 - ((t - t₀ : Nat) : Int) ≤ q.2 ∧
+      q.2 < b.2 + ((t - t₀ : Nat) : Int) := by
+  have hsplit : evolve t g = evolve (t - t₀) (evolve t₀ g) := by
+    rw [← evolve_add, Nat.sub_add_cancel hle]
+  rw [hsplit] at h_alive
+  exact evolve_support_dilation_box (t - t₀) (evolve t₀ g) a b h q h_alive
+
+/-- **Dyadic corridor (brick b, #13483 slice 3).** For any time `t` on the
+    segment `[2^j, 2^(j+1)]`, the support of `evolve t g` lies in the
+    `2^j`-dilation of the box of the support at the checkpoint `2^j`: the
+    drift over the segment is bounded by its length `t - 2^j ≤ 2^j`.
+    Reduction of the control points to the dyadic grid, forward direction
+    only (the retrograde and margin-absorbing directions are closed, see the
+    section above). -/
+theorem evolve_support_dyadic_corridor (j t : Nat) (g : Grid) (a b : Int × Int)
+    (hlo : 2 ^ j ≤ t) (hhi : t ≤ 2 ^ (j + 1))
+    (h : ∀ p, isAlive (evolve (2 ^ j) g) p = true →
+      a.1 ≤ p.1 ∧ p.1 < b.1 ∧ a.2 ≤ p.2 ∧ p.2 < b.2)
+    (q : Int × Int) (h_alive : isAlive (evolve t g) q = true) :
+    a.1 - ((2 ^ j : Nat) : Int) ≤ q.1 ∧
+      q.1 < b.1 + ((2 ^ j : Nat) : Int) ∧
+      a.2 - ((2 ^ j : Nat) : Int) ≤ q.2 ∧
+      q.2 < b.2 + ((2 ^ j : Nat) : Int) := by
+  obtain ⟨c1, c2, c3, c4⟩ :=
+    evolve_support_dilation_from (2 ^ j) t g a b hlo h q h_alive
+  -- omega does not do exponentiation: the dyadic relation of the segment is
+  -- provided explicitly (`Nat.two_pow_succ`, core), then weakening the
+  -- bounds is linear (Nat-to-Int cast native for omega).
+  have hpow : 2 ^ (j + 1) = 2 ^ j + 2 ^ j := Nat.two_pow_succ j
+  exact ⟨by omega, by omega, by omega, by omega⟩
+
 /-! ## Tight locality (Chebyshev-box form) — agreement dual of `evolve_reach_chebyshev`
 
 The tight reach theorem (`evolve_reach_chebyshev` above) says: if `q` is alive

@@ -38,6 +38,12 @@
       csharp_sha: c5a1719de81162eea44daef6c3aab074a27f8453
       content_python_sha: 83b0eede7639017461b4f99d2133038d6f5ad8f51c5b372d41692ec765472cce
       content_csharp_sha: ae5b241a1cc83d6c0b8f7382ba0916d35718f74c820755c1b85cfeb7274869f9
+    - date: "2026-09-05"
+      by: myia-po-2026:CoursIA
+      python_sha: 9f49ee6f80de727b229f1eb9ed37bb09cb6f3464
+      csharp_sha: 90ecbe92d294a491f177daa1b9cd8a18c0cfbe0c
+      content_python_sha: 83b0eede7639017461b4f99d2133038d6f5ad8f51c5b372d41692ec765472cce
+      content_csharp_sha: 32e0e17b4f2e444d5ec35a90262ae94f6d2f498aed235652fd4277b03ade26ac
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Flip 2026-08-22 (myia-po-2025:CoursIA, #10382 tranche EBL complet, PR de la tranche) : l'asymetrie de portee qui motivait le RECOVERABLE-LOCAL est resolue. Le jumeau C# porte desormais la section 4bis : ExtractRule (preconditions non-tautologiques ArithmeticUnknown(z)), classe ArithmeticEBL complete (Explain/Variabilize/ExtractRule/Learn/MatchLearned/SimplifyWithLearned) avec matching a variables par groupes nommes (le pattern appris 1*(0+z) capture son sous-terme et sapplique a 1*(0+a)...), et speedup MESURE en etapes reelles (18 -> 10 etapes, 1.8x, 44% de reduction -- identique au jumeau Python) -- la section 4 au cout simule (facteur 3x) reste pour la comparaison pedagogique. Les DEUX cotes sont from-scratch assumables (pas de lib externe requise : EBL/RBL sont des algorithmes pedagogiques AIMA, le sujet EST le moteur) : from-scratch des deux cotes = la contrepartie (bucket 3, meme classe que search-13 LDS #c.872). Re-exec complete .NET Interactive 12/12 cellules, 0 erreur, sequence 1..12 CLEAN. Rien a installer : le verdict RECOVERABLE-LOCAL (installable, pas installe) navait aucun candidat a installer -- faux positif de la meme classe que search-13/search-14/search-12, corrige ici AVEC le contenu qui le prouve (la portee, pas seulement le verdict)."
   known_differences:

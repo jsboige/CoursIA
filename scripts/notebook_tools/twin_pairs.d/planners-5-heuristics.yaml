@@ -40,6 +40,12 @@
       csharp_sha: 8ba8324e142f82679434c709fbe34c7ca61fd2f3
       content_python_sha: c6385a26111765afb7ec553f91383737de2e0188f9c99d0e2bbfbd0a27d9fbae
       content_csharp_sha: f8b4bbc24b725ca7f401bbe794f03dae8eaa70fb51a5155254d74df73e3f0fc4
+    - date: "2026-09-05"
+      by: myia-po-2026:CoursIA
+      python_sha: af7bfa0456b38defe4806c919fc4304576b155c9
+      csharp_sha: 267bb2f17b420891cf8a8327a400b0108c042af8
+      content_python_sha: c6385a26111765afb7ec553f91383737de2e0188f9c99d0e2bbfbd0a27d9fbae
+      content_csharp_sha: 37f7a9e8af4f5d223100fd335a54cd978c1ca3a883adf7bb03c45f0fc25ab953
   known_differences:
     - 'PR #12108 (2026-08-22, reprise #12104) : cote C#, normalisation source_list_missing_newlines (backslash-n manquants sur elements de liste source, 16 cellules NO_AUTO_FIX reprises manuellement) -- drift de forme JSON uniquement, contenu pedagogique et cellules code inchanges.'
     - "Concept : heuristiques admissibles (relaxation, h_add, h_max, delete-relaxation)."

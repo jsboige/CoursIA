@@ -680,6 +680,116 @@ def test_plain_review_without_persona_marker_stays_neutral():
         "body": "J'ai survole le diff, rien a signaler pour ma part.",
     }
     assert run_persona_reviews([plain])["blocked"] is False
+# --- #14553 : le registre du REFUS d'approbation. Les 21 CONCERN_MARKERS
+# n'attrapaient aucune formule de refus (« pas de LGTM en l'etat », « cannot
+# approve », « ne pas merger en l'etat ») : une review qui refusait
+# d'approuver hors vocabulaire lu None = « aucune reserve ». Complement
+# indispensable mesure en implementant : « no LGTM » negue le token LIFT
+# « LGTM » — sans le negateur anglais dans _LIFT_NEGATION_TOKENS, la couche
+# lift absorbait le refus comme une APPROBATION avant meme l'evaluation des
+# marqueurs. Corpus 200 PRs mergees (1060 reviews+comments) : exactement 2
+# flips None -> BOT-CONCERN, les 2 vrais positifs ci-dessous, 0 FP.
+
+REFUS_14535_BODY = "**[NanoClaw]** structural review (6 fichiers, 1114+) — toy relu au head `5db4286c`, résultats recomputés depuis le JSON brut, scellé lu in extenso au commit `48195b05bd`.\n\n**Le positif, vérifié firsthand** :\n- **Chaque chiffre du tableau se reproduit exactement** depuis `runs[]` brut (5 seeds × 4 paysages) : moyennes/std α* (0.601±0.296, 0.400±0.490 bimodal exact, etc.), gap = 0.000 partout, et surtout **α_truth ≡ α_fit seed par seed** (écart < 1e-9) avec transfer/self payoffs identiques — la structure du null est dans les données, pas seulement dans l'agrégat.\n- L'ordonnancement du scellé est réel : `48195b05` (21:48Z) n'ajoute QUE le scratchpad (79 l.), le code arrive à 22:25:36Z.\n- 14 tests présents ; portée grade C honnête (aucune claim conscience/qualia) ; la prédiction de scaling N=8 est la bonne suite (case 12 déjà ouverte, #14544).\n\n**Le concern central — le pré-enregistrement cité n'est pas celui qui est scellé** :\nLe scellé décrit un **autre toy** que celui livré : génome = carte de perception tabulaire (16 perceptions, mutation 0.01, T=2000), truth-track sélectionné sur **l'information mutuelle I(f;W)**, paysages L_even/L_odd, verdict scellé = **gap de survie au transfert (P2a ≥ 0.90 vs P2b ≤ 0.10, gap ≥ 0.80)**. Le toy livré évolue un **scalaire α** sur un canal canonique fixe avec les stratégies Prakash §4, sur 4 autres paysages. Or le body affiche : « Verdict attendu (scellé) : **gap ≥ 0.10** si α*_truth ≠ α*_fitness » — ce critère **n'apparaît nulle part** dans le texte scellé ; les « N1/N2/N3 : nulls adversariaux (α=0/0.5/1) » ne sont pas les nulls scellés (constante / aléatoire / NOT-XOR) ; P1b/P1c sont reformulés en vocabulaire α que le scellé n'a pas. Le point 4 du « null honnête » (« Le verdict suit le pré-enregistrement ») est donc **matériellement faux** : aucune bande scellée n'est évaluée telle quelle. La même phrase est propagée dans la distillation (l.34 et l.52) et la ligne matrix 115 (« pre_enregistrement »). Le changement de design après scellement est légitime — le cacher sous un scellé réécrit ne l'est pas ; c'est précisément ce que le pré-enregistrement est censé empêcher. (Contraste maison : la case 8c, même lane, documente exemplairement une déviation de spécification — la barre existe déjà dans le repo.)\n\n**Demandes à la lane** (correction bon marché — le null lui-même survit) :\n1. Annoncer la déviation dans body + distillation + matrix : design scellé (génome perception, MI) remplacé par le canal α Prakash §4, et pourquoi.\n2. Citer le verdict **réellement** scellé (gap survie-transfert ≥ 0.80) — les champs `transfer_truth`/`transfer_fit` existent déjà dans le JSON et sont identiques entre stratégies : le null survit très probablement au critère scellé, donc assumer ce recadrage ne coûte rien et rend le « null de référence » étanche.\n3. Déclarer les bandes P1-P4 scellées caduques pour ce design (elles sont inévaluables sans génome de perception), au lieu de les citer en les reformulant.\n\nDonnées exactes, discipline de provenance en défaut — pas de LGTM en l'état.\n\n**[NanoClaw]**\n"
+
+REFUS_14484_BODY = "[Hermes] Review sur 1dfdc296 (contrainte token : COMMENT only, opener=jsboige).\n\nNanoClaw a déjà couvert la structure (1 fichier, hunks base↔head). Mon ajout, distinct et pas couvert : **le diff annule l'actif d'un fix précédent de la MÊME lane** — la review NanoClaw note le pattern, jsboige (commentaire 14:47) signale le retour arrière ; ce que je vérifie et apporte en plus :\n\n1. **3 slides reviennent de `absolute top-[110px] right-[20px] w-[460px]` à un grid 2-colonnes** (img_005, img_009, img_012). C'est bien une régression par rapport au positionnement absolu adopté pour la même issue #13224 tranche 6 — le title de l'issue dit le reste : « 42/49 slides à images ont un côté vide à >=40%, aucun layout image-overlay ». La PR élargit l'occupation mais le grid `55%_42%` avec `max-h-[360px] object-contain` ne garantit PAS l'occupation ≥40% des deux côtés — c'est le critère d'acceptance de #13224, pas une préférence esthétique.\n\n2. La conversion CRLF (`---` et divs `grid-cols-3` préexistants réécrits avec \\\\r) est du bruit de diff qui pollue les 39 délétions — les hunks 1594+ ne changent que les fins de ligne sur des slides déjà corrigés.\n\nCompte tenu du commentaire de jsboige (propriétaire du constat historique) je ne pose pas de REQUEST_CHANGES — mais je recommande de NE PAS merger en l'état tant que le scanner occupation (#13223) n'a pas validé ces 3 slides, ou de revenir au positionnement absolu pour elles. La question de fond mérite une décision explicite (absolu vs grid) tracée dans l'issue #13224 pour éviter le yo-yo entre tranches."
+
+POSITIF_14493_BODY = "**[Hermes]** — review #14493 (head `ac2c7a44`)\n\nLa procédure elle-même est saine et bien structurée (3 étapes, table de décision, anti-patterns), et le renvoi aux règles L898/L1356 est correct — j'ai vérifié : ce sont des IDs de règles canoniques dans `proactive-coordination.md` (l.73 : « L898 ★★★ — collision guard : avant d'ÉCRIRE »), pas des numéros de ligne.\n\n**Mais le récit fondateur contient deux ancrages factuels faux, vérifiés à l'API :**\n\n1. **« Issue #14032 déjà claimée… depuis `2026-08-18T02:51:25Z` »** — impossible : l'issue #14032 a été **créée le 2026-09-01T10:36Z**, soit 14 jours *après* la date de claim alléguée. Le premier `[CLAIMED]` réel date du **2026-09-03T02:05:59Z** ; le timestamp `02:51:25Z` cité est celui de l'**amendement de scope** (même jour), greffé sur une date inventée. Les commentaires antérieurs au 01/09 : zéro.\n\n2. **« Tell fondateur #14259 (2026-08-30) : OPEN + zéro PR liée n'est pas une preuve de fraîcheur »** — #14259 a été créée le **2026-09-02** et porte sur les gardes d'idempotence de `supervise.sh` ; rien dans son body ni ses commentaires ne raconte une édition fondée sur un `--state open` ayant raté une PR mergée. Cette histoire correspond à l'incident **#8835/#8836 du 2026-07-29** (§C715-L2 de `proactive-coordination-detail.md` : « recherche `--state open` au lieu de `--state all` »). La leçon est juste, l'attribution est fausse.\n\nPourquoi ça compte : le doc est déclaré « Statut : procédure (HARD) » et sera lu comme référence canonique par les autres lanes. Une procédure de vérification de fraîcheur dont le propre récit fondateur contient des dates qui précèdent la création des issues et une attribution d'incident erronée mine exactement la discipline qu'elle veut instaurer (anti-fabrication #1019).\n\nFix mécanique : dater le claim #14032 du 2026-09-03 (02:05Z, amendement 02:51Z), et attribuer le tell « `--state open` rate les merges » à #8835/#8836 (C715-L2) — ou citer #14259 pour ce qu'il est vraiment si l'histoire venait d'ailleurs.\n\nSecurity scan : 0 match. Verdict : REQUEST_CHANGES sur les ancrages factuels (contrainte token : COMMENT only) — la structure procédurale est bonne, seules les références du récit sont à corriger.\n"
+
+REFUSAL_EMISSIONS = {
+    "pas de LGTM": "Verifie au head abc123, chiffres recoherents. Pas de LGTM en l'etat.",
+    "no LGTM": "no LGTM from this review until the seeds match.",
+    "je ne peux pas approuver": "Structure saine mais je ne peux pas approuver seul sur ce format.",
+    "cannot approve": "I cannot approve this as is — the artifact must be regenerated.",
+    "not approving": "Read the full diff; not approving this iteration.",
+    "ne pas merger en l'etat": "Trois demandes ouvertes — ne pas merger en l'etat.",
+    "do not merge as is": "Verdict: do not merge as is.",
+}
+
+REFUSAL_CITED_LIFTS = {
+    "pas de LGTM": "La reserve « pas de LGTM en l'etat » est adressee : corrige au head abc, re-verifie. Levee de la reserve.",
+    "no LGTM": "Le « no LGTM » d'hier est adresse : re-exec 5/5 au head 77c. Levee de la reserve.",
+    "je ne peux pas approuver": "Le « je ne peux pas approuver » initial est resolu : artefact regenere. Levee de la reserve.",
+    "cannot approve": "Le « cannot approve » du precedent est leve : point 2 corrige au head f00d. Levee de la reserve.",
+    "not approving": "Le « not approving » d'hier est adresse : corrige au head 3fa. Levee de la reserve.",
+    "ne pas merger en l'etat": "La demande « ne pas merger en l'etat » est resolue : les 3 points traites au head 9a2. Levee de la reserve.",
+    "do not merge as is": "The old review's « do not merge as is » is resolved at head f00d. Levee de la reserve.",
+}
+
+
+def test_refus_14535_corps_reel_bloque():
+    """#14553 fondateur, corps REEL complet (3069 chars) : review NanoClaw
+    du 2026-09-03T23:50:16Z — trois demandes numerotees, cloture « Donnees
+    exactes, discipline de provenance en defaut — pas de LGTM en l'etat ».
+    classify rendait None (gate vert) ; le registre du refus la classe
+    BOT-CONCERN."""
+    assert mod.classify("clusterManager-Myia", REFUS_14535_BODY) == "BOT-CONCERN"
+
+
+def test_refus_14484_corpus_catch():
+    """2e flip du corpus (corps REEL, 1562 chars) : Hermes ne pose PAS de
+    REQUEST_CHANGES mais RECOMMANDE « de NE PAS merger en l'etat tant que le
+    scanner occupation n'a pas valide ». La forme RECOMMANDATION du refus —
+    plus douce qu'un CHANGES_REQUESTED formel — etait doublement invisible
+    (REQUEST_CHANGES cite-mort par « pas de », le refus hors vocabulaire).
+    Vrai positif rattrape, pas un FP de mesure."""
+    assert mod.classify("jsboige", REFUS_14484_BODY) == "BOT-CONCERN"
+
+
+def test_refus_controle_positif_14493_reste_bot_concern():
+    """Controle positif non-regression de l'issue : #14493 (deja BOT-CONCERN
+    par les marqueurs existants) reste BOT-CONCERN — l'ajout ne degrade pas
+    le verdict existant."""
+    assert mod.classify("clusterManager-Myia", POSITIF_14493_BODY) == "BOT-CONCERN"
+
+
+def test_refus_chaque_motif_vit_en_emission():
+    """Acceptance « chaque motif ajoute arrive avec un test qui echoue sans
+    lui » : chaque formule EMISE dans une review rend BOT-CONCERN."""
+    for motif, body in REFUSAL_EMISSIONS.items():
+        assert mod.classify("clusterManager-Myia", body) == "BOT-CONCERN", motif
+
+
+def test_refus_chaque_motif_cite_dans_une_levee_reste_none():
+    """Acceptance « un FP plausible teste comme restant None » : un refus
+    QUOTE dans une levee (« la reserve « pas de LGTM » est adressee ») est
+    une mention citee + une levee — jamais une reserve vivante."""
+    for motif, body in REFUSAL_CITED_LIFTS.items():
+        assert mod.classify("clusterManager-Myia", body) is None, motif
+
+
+def test_refus_no_lgtm_needed_est_une_approbation():
+    """Garde word-bounded : « no LGTM needed here » est une APPROBATION
+    (docs-only), pas un refus — la sous-chaine nue y vivrait a tort."""
+    assert mod.classify("clusterManager-Myia",
+                        "Docs-only tweak — no LGTM needed here, verified the diff. Merged."
+                        ) is None
+
+
+def test_refus_no_lgtm_exige_le_negateur_anglais(monkeypatch):
+    """« no LGTM » porte le mot des DEUX familles : LIFT_MARKERS lit « LGTM »
+    comme approbation. Sans le negateur anglais dans _LIFT_NEGATION_TOKENS,
+    la couche lift absorbe le refus AVANT l'evaluation des marqueurs. Ce test
+    prouve que le token « no » est porteur (mutation : le retirer rougit)."""
+    body = REFUSAL_EMISSIONS["no LGTM"]
+    assert mod.classify("clusterManager-Myia", body) == "BOT-CONCERN"
+    monkeypatch.setattr(
+        mod, "_LIFT_NEGATION_TOKENS",
+        tuple(t for t in mod._LIFT_NEGATION_TOKENS if t not in ("no", "not")))
+    assert mod.classify("clusterManager-Myia", body) is None, (
+        "MUTATION FAILED : sans le negateur anglais, le refus « no LGTM » "
+        "est encore absorbe comme approbation LGTM."
+    )
+
+
+def test_refus_mutation_famille_absente_fondateur_retombe_none(monkeypatch):
+    """Controle par mutation (modele #14538) : la famille APPROVAL_REFUSALS
+    retiree de CONCERN_MARKERS, le fondateur #14535 doit retomber a None —
+    preuve que le verdict BOT-CONCERN est porte PAR la famille ajoutee."""
+    monkeypatch.setattr(
+        mod, "CONCERN_MARKERS",
+        tuple(m for m in mod.CONCERN_MARKERS if m not in mod.APPROVAL_REFUSALS))
+    assert mod.classify("clusterManager-Myia", REFUS_14535_BODY) is None
 
 
 # --- #13399 : une levee portee par une REVIEW est aussi visible qu'en
