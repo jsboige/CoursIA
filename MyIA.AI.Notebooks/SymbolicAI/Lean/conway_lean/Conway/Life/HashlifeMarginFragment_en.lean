@@ -273,6 +273,132 @@ theorem jumpCapturedF_of_dilation (c : MacroCell) (a b : Int × Int)
     exact (Nat.cast_pow 2 c.level).symm
   omega
 
+/-- **A period repeats itself** (local byte-identical copy of
+    `evolve_mul_of_period`, JumpCapture L518 — this module cannot import it,
+    import cycle A↔B, cf docstring of `jumpCapturedF`): if `g` has period
+    `T` (in the weak sense `evolve T g = g`), then any multiple `m·T` of
+    steps brings it back to itself. By induction on `m` via `evolve_add`. -/
+theorem evolve_mulF_of_period {T : Nat} (g : Grid)
+    (hper : evolve T g = g) (m : Nat) :
+    evolve (m * T) g = g := by
+  induction m with
+  | zero => simp
+  | succ m ih =>
+    have hsplit : (m + 1) * T = m * T + T := by ring
+    rw [hsplit, evolve_add, hper, ih]
+
+/-- **Domain bounds of a well-formed cell** (local byte-identical copy of
+    `cellWf_toGrid_bounds`, JumpCapture L475 — import cycle A↔B, cf above):
+    any living cell of the `toGrid` of a well-formed `MacroCell` (in the
+    `cellWf` sense) of level `n` lives in the square
+    `[r0, r0 + 2^n) × [c0, c0 + 2^n)`. Induction on `cellWf`: each leaf
+    emits at most its corner, each node distributes its four level-`n`
+    children over the offset-`0` or `2^n` quadrants, so the level-`(n+1)`
+    node covers `[·, · + 2^(n+1))`. -/
+theorem cellWfF_toGrid_bounds {c : MacroCell} (hc : cellWf c) (r0 c0 : Int)
+    {p : Int × Int} (hp : p ∈ c.toGrid (r0, c0)) :
+    r0 ≤ p.1 ∧ p.1 < r0 + (2 ^ c.level : Int) ∧
+      c0 ≤ p.2 ∧ p.2 < c0 + (2 ^ c.level : Int) := by
+  induction hc generalizing r0 c0 with
+  | leaf b =>
+    rw [mem_toGrid] at hp
+    cases b with
+    | true =>
+      simp only [MacroCell.toCellsAux, Prod.fst, Prod.snd, List.mem_singleton] at hp
+      obtain ⟨hrr, hcc⟩ : p.1 = r0 ∧ p.2 = c0 := Prod.ext_iff.mp hp
+      subst hrr hcc
+      simp only [MacroCell.level, pow_zero]
+      omega
+    | false => simp [MacroCell.toCellsAux] at hp
+  | node hnw hne hsw hse hne_lvl hsw_lvl hse_lvl inw ine isw ise =>
+    rename_i nw ne sw se
+    simp only [mem_toGrid, MacroCell.toCellsAux, List.mem_append, or_assoc] at hp
+    push_cast at hp
+    have hlvl : MacroCell.level (MacroCell.node nw ne sw se) = nw.level + 1 := by
+      simp only [MacroCell.level]; omega
+    have hpos : (0 : Int) ≤ 2 ^ nw.level := by positivity
+    rcases hp with hp | hp | hp | hp
+    · have hb := inw r0 c0 (mem_toGrid.mpr hp)
+      rw [hlvl, pow_succ]
+      omega
+    · have hb := ine r0 (c0 + (2 ^ nw.level : Int)) (mem_toGrid.mpr hp)
+      simp only [← hne_lvl, ← hsw_lvl, ← hse_lvl] at hb
+      rw [hlvl, pow_succ]
+      omega
+    · have hb := isw (r0 + (2 ^ nw.level : Int)) c0 (mem_toGrid.mpr hp)
+      simp only [← hne_lvl, ← hsw_lvl, ← hse_lvl] at hb
+      rw [hlvl, pow_succ]
+      omega
+    · have hb := ise (r0 + (2 ^ nw.level : Int)) (c0 + (2 ^ nw.level : Int))
+        (mem_toGrid.mpr hp)
+      simp only [← hne_lvl, ← hsw_lvl, ← hse_lvl] at hb
+      rw [hlvl, pow_succ]
+      omega
+
+/-- **Interface (c) slice 3, step 3 — the periodic class `T ∣ 2^k` is
+    captured.** `jumpCapturedF` version of criterion 3
+    (`jumpCaptured_of_period_divides`, JumpCapture L533): any pattern of
+    period `T ≥ 1` dividing the jump horizon `2^c.level`, carried by a
+    well-formed cell of level `k ≥ 1`, satisfies the capture predicate.
+    The jump's final generation is the pattern itself (period repeated),
+    unchanged in its `padCenter2` framing — hence in the central window by
+    the geometry `[3·2^(k-1), 5·2^(k-1)) ⊂ [2^k, 3·2^k)`.
+
+    **Orthogonal complement of the corridor** (step 2,
+    `jumpCapturedF_of_dilation`): the corridor requires a window absorbing
+    the forward drift `2^lvl` — arithmetically closed at full level for any
+    nonempty content (the `hwin` force a zero-width box). The periodic
+    class drifts not at all: the exact temporal invariance `evolve T g = g`
+    replaces the corridor's over-approximation. This is the hcap-reachable
+    class identified by the slice-3 scoping (c.5551593604): still lifes
+    (`T = 1`) and dyadic-period oscillators (`T ∣ 2^k`), the witnesses of
+    the multi-cycle language. -/
+theorem jumpCapturedF_of_period_divides (c : MacroCell) (hwf : c.wf = true)
+    (hlvl : 1 ≤ c.level) {T : Nat} (_hT : 0 < T)
+    (hper : evolve T (c.toGrid (0, 0)) = c.toGrid (0, 0))
+    (hdiv : T ∣ 2 ^ c.level) :
+    jumpCapturedF c = true := by
+  have hcw : cellWf c := cellWf_of_wf c hwf
+  obtain ⟨m, hm⟩ := hdiv
+  have hself : evolve (2 ^ c.level) (c.toGrid (0, 0)) = c.toGrid (0, 0) := by
+    rw [hm, Nat.mul_comm]
+    exact evolve_mulF_of_period _ hper m
+  have hfinal : evolve (2 ^ c.level) ((padCenter2 c).toGrid (0, 0))
+      = shift ((3 * 2 ^ (c.level - 1) : Int), (3 * 2 ^ (c.level - 1) : Int))
+          (c.toGrid (0, 0)) := by
+    rw [padCenter2_toGrid_shift c hlvl, ← evolve_shift, hself]
+  rw [jumpCapturedF_iff]
+  intro p hp
+  rw [hfinal, mem_shift] at hp
+  -- Bounds of the content in its own framing `[0, 2^c.level)²`…
+  obtain ⟨hb1, hb2, hb3, hb4⟩ := cellWfF_toGrid_bounds hcw 0 0 hp
+  dsimp only at hb1 hb2 hb3 hb4
+  -- …and linear relations between the three atoms `2^(c.level-1)`,
+  -- `2^c.level`, `2^(c.level+1)` — the rest is `omega`.
+  have hpow : (2 ^ c.level : Int) = 2 * (2 ^ (c.level - 1) : Int) := by
+    have hsplit : c.level = (c.level - 1) + 1 := by omega
+    conv_lhs => rw [hsplit]
+    rw [pow_succ]
+    ring
+  have hnext : ((2 ^ (c.level + 1) : Nat) : Int)
+      = (2 ^ c.level : Int) + (2 ^ c.level : Int) := by
+    rw [Nat.cast_pow, pow_succ]
+    ring
+  have hy : (0 : Int) ≤ 2 ^ (c.level - 1) := by positivity
+  omega
+
+/-- **Still-life corollary** (`T = 1`): any still life — a pattern with
+    `evolve 1 g = g`, in the strong sense a fixed point of `step` — is
+    captured at any level `k ≥ 1`. This is the consumable form of the class
+    for the usual Life objects (block, beehive, loaf, barrel…): the first
+    L3 link for the `T = 1` class — for any `t ≤ 2^k`, `evolve t g = g` and
+    the trajectory reconstruction is the cell itself. -/
+theorem jumpCapturedF_of_still_life (c : MacroCell) (hwf : c.wf = true)
+    (hlvl : 1 ≤ c.level)
+    (hfix : evolve 1 (c.toGrid (0, 0)) = c.toGrid (0, 0)) :
+    jumpCapturedF c = true :=
+  jumpCapturedF_of_period_divides c hwf hlvl (T := 1) (by omega) hfix (by omega)
+
 /-- **P4.4 L2 (sorry-stable reduction).** The frame's global equality reduces to
     the N-machine's trajectory-capture hypothesis: `hashlife_correctN` (proved)
     closes the goal as soon as `hcap` holds. The open links are L3 (lifting
