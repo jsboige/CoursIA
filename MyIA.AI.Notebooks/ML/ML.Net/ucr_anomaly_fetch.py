@@ -134,7 +134,8 @@ def _load_manifest() -> dict[str, dict[str, int | str]]:
             manifest = json.load(fh)
     except (OSError, json.JSONDecodeError) as exc:
         raise UcrFetchError(
-            f"manifeste d'integrite UCR illisible ({type(exc).__name__}: {exc})."
+            f"manifeste d'integrite UCR illisible "
+            f"({type(exc).__name__} sur {os.path.basename(_MANIFEST_PATH)})."
         ) from exc
     if not isinstance(manifest, dict):
         raise UcrFetchError("manifeste d'integrite UCR invalide : objet JSON attendu.")

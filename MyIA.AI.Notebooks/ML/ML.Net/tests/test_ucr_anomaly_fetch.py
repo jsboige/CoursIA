@@ -160,3 +160,20 @@ def test_load_manifest_rejects_malformed_entry(
 def test_fetch_raw_rejects_unmanifested_series() -> None:
     with pytest.raises(ucr.UcrFetchError, match="aucune empreinte"):
         ucr.fetch_raw("unknown.txt")
+
+
+def test_load_manifest_error_hides_machine_path(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    missing = tmp_path / "ucr_anomaly_manifest.json"
+    monkeypatch.setattr(ucr, "_MANIFEST_PATH", str(missing))
+
+    with pytest.raises(ucr.UcrFetchError) as excinfo:
+        ucr._load_manifest()
+
+    message = str(excinfo.value)
+    parent = str(missing.parent)
+    escaped = parent.replace("\\", "\\\\")
+    assert parent not in message and escaped not in message
+    assert "ucr_anomaly_manifest.json" in message
+    assert "FileNotFoundError" in message
