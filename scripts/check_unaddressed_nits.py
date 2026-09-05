@@ -1936,9 +1936,13 @@ def _bare_mention_is_negated(window_before: str, window_after: str) -> bool:
 # La cle est le marqueur minuscule/desaccentue (`_unaccent(marker).lower()`),
 # comme `_WORD_BOUNDED_MARKERS` cote CONCERN. Seul « RAS » y est : la
 # sous-chaine nue vit aussi dans « ERASME », « rasoir », « CRAS » — un mot
-# entier, pas un sigle.
+# entier, pas un sigle. Le motif est dedie au SIGLE : `RAS` (majuscule) et
+# `Ras` (capitalise), PAS le minuscule nu — « ras » en minuscule est un vrai
+# mot francais (« ras du sol », « a ras de terre »), et le relacher
+# reintroduirait le faux positif que le word-bound existe pour ecarter.
+# (#14766, CHANGES_REQUESTED ai-01.) Sans re.IGNORECASE.
 _WORD_BOUNDED_LIFT_RE = {
-    "ras": re.compile(r"\bras\b"),
+    "ras": re.compile(r"\b(?:RAS|Ras)\b"),
 }
 
 
