@@ -1,0 +1,65 @@
+name: Repeated-prose advisory
+
+# Source d'identite pour la garde absorbee par fast-lane-shadow (registre
+# TRANCHE7, demande user 2026-09-05 « un organe qui repèrera les notebooks
+# qui radotent, sans exploser le temps de CI »). Ce workflow garde seulement
+# workflow_dispatch : cible d'identite pour check_absorbed_check_run_identity
+# (job.name == Guard.name) et re-run manuel sur main.
+#
+# Detecteur : scripts/notebook_tools/detect_repeated_prose.py — texte pur
+# (stdlib), deux signaux INTRA-notebook :
+#   A. bloc verbatim duplique (normalise, >= 120 caracteres, 2+ occurrences)
+#   B. bloc paraphrase (>= 200 caracteres) dont les mots pleins RARES
+#      (df <= 4 dans le notebook) sont contenus a >= 30 % dans une autre
+#      cellule markdown, avec >= 10 mots rares partages.
+# Temoin fondateur epingle en fixture (tests/fixtures/search09c_ponts_pair.
+# json) : les puces « ponts » de la section 5 de Search-09c paraphrasaient la
+# table de la section 7 (fix PR #14794). Le self-test REFUSE de passer si le
+# temoin ne tire pas ou si le post-fix n'est pas muet.
+#
+# Cout CI : 1228 notebooks en 4,5 s en --scan-all (mesure 2026-09-05) ; le
+# garde per-PR ne scanne que les notebooks TOUCHES par la PR.
+#
+# Advisory, jamais bloquant : la dette corpus mesuree est de 999 findings /
+# 1228 notebooks (dominante : miroir intro-plan / conclusion-recap), et un
+# garde bloquant rougirait chaque PR qui touche un notebook porteuse de dette
+# heritee. Le passage eventuel en blocking sera tranche par le coordinateur
+# apres traitement de la dette par serie (precedent : deaccent TRANCHE6,
+# #14325).
+#
+# Wiring : scripts/ci/fast_lane_registry.py :: TRANCHE7.
+# Identite : Guard.name == job.name (cf check_absorbed_check_run_identity.py).
+# Tests : scripts/notebook_tools/tests/test_detect_repeated_prose.py.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: repeated-prose-advisory-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  repeated-prose-advisory:
+    name: "Repeated-prose advisory (per-notebook, non-blocking)"
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    if: github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      # Pas de diff a calculer en dispatch : le verdict per-PR est rendu par
+      # la voie rapide (fast-lane-shadow). Ce job sert d'identite et de re-run
+      # manuel self-test + notebook ad-hoc.
+      - name: Detector self-test (positive + negative control)
+        run: python scripts/notebook_tools/detect_repeated_prose.py --self-test
