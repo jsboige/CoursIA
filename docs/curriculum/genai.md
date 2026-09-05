@@ -36,7 +36,7 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 5 | 00-5: ComfyUI Local - Test Rapide | BETA | Non |
 | 6 | Deploiement Docker Local des Services GenAI | BETA | Non |
 
-## GenAI/Aspire (8 notebooks)
+## GenAI/Integrations-DotNet/Aspire (8 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -95,17 +95,12 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 4 | Doctor vs ChatGPT: Multi-Agent Medical Chatbot | ALPHA | Non |
 | 5 | Générateur de Recettes PDF | BETA | Non |
 
-## GenAI/CopilotSDK (1 notebooks)
+## GenAI/Integrations-DotNet (2 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | GitHub Copilot SDK en C# : binding, streaming, Scrutor | BETA | Non |
-
-## GenAI/EFCore (1 notebooks)
-
-| # | Notebook | Maturité | Exécutable |
-|---|----------|----------|------------|
-| 1 | EF Core : des requêtes vérifiées à la compilation | BETA | Oui |
+| 2 | EF Core : des requêtes vérifiées à la compilation | BETA | Oui |
 
 ## GenAI/FallacyDetection (4 notebooks)
 

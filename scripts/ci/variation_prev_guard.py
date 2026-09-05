@@ -500,6 +500,21 @@ def resolve_prev_targets(
     return out
 
 
+def unresolved_prev_targets(
+    cited: "set[int] | list[int]", prev_targets: dict[str, dict]
+) -> list[int]:
+    """Cited ``prev:`` numbers the gate could NOT resolve (#14550, 2nd defect).
+
+    After the resolution phase, a cited number absent from ``prev_targets``
+    is an ABSTENTION, not an attestation: the guard did not evaluate
+    invariants 2/3 for it. Left silent, a lookup failure and a measured pass
+    reach the merge-gate under the same green (#14515 was CLEAN and
+    mergeable with a `prev:` at an OPEN PR, purely because the `gh`
+    resolution happened to fail during its run).
+    """
+    return sorted(n for n in cited if str(n) not in prev_targets)
+
+
 def _json_field(raw: "str | None", field: str) -> "str | None":
     """Return ``field`` from a JSON object payload, or None if unreadable."""
     try:
@@ -546,6 +561,7 @@ def main(argv: list[str] | None = None) -> int:
     prev_targets = (_read_prev_targets_file(args.prev_targets_file)
                     if args.prev_targets_file else {})
 
+    resolution_failed: list[int] = []
     if args.resolve_targets:
         cited = set(find_prev_target_pr_numbers(body))
         for msg in commits:
@@ -561,10 +577,21 @@ def main(argv: list[str] | None = None) -> int:
                 # an accusation: that is the defect this flag repairs.
                 print(f"prev-target resolution failed ({e}); "
                       "abstaining on invariants 2/3", file=sys.stderr)
+        # An abstention must be READABLE as one (#14550): the gate stays
+        # green (FN-safety unchanged) but the verdict names what it could
+        # not measure, and the ::warning:: becomes a run annotation through
+        # the workflow's existing `cat /tmp/verdict.err`.
+        resolution_failed = unresolved_prev_targets(cited, prev_targets)
 
     verdict = check(body, commits,
                     current_pr=args.current_pr,
                     prev_targets=prev_targets)
+    if resolution_failed:
+        verdict["resolution_failed"] = resolution_failed
+        targets = ", ".join(f"#{n}" for n in resolution_failed)
+        print(f"::warning::prev_guard abstention -- unresolvable target(s) "
+              f"{targets} (FN-safety): this green is an abstention, not an "
+              f"attestation (#14550)", file=sys.stderr)
     print(json.dumps(verdict, ensure_ascii=False))
     return 0 if verdict["guard_pass"] else 1
 

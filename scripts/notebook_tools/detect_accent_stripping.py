@@ -269,6 +269,35 @@ ACCENT_PAIRS = {
     # regle (not FR regle, not EN rule)
     "regle": "règle",
     "regles": "règles",
+    # Famille RL (#14139 / #14613) : formes context-free mesurees sur
+    # rl_1_intro_cartpole a la tete b4bdcf95f (167 occurrences). Les formes
+    # AMBIGUES relevees dans le meme passage (entraine, enregistre,
+    # recommande, cumule -- present/participe homographes une fois
+    # desaccentues) sont EXCLUES a dessein : une table globale en
+    # choisirait forcement une resolution de travers (#14613 point 3).
+    "recompense": "récompense",
+    "recompenses": "récompenses",
+    "entrainement": "entraînement",
+    "episode": "épisode",
+    "episodes": "épisodes",
+    "aleatoire": "aléatoire",
+    "aleatoires": "aléatoires",
+    # NB « evaluation » : demandé par #14613 point 2 mais EXCLU — exclusion
+    # délibérée antérieure (test_excludes_en_valid_words, incident po-2025
+    # c.591 : -tion/-ence anglicisms = mots anglais valides, FP en prose EN /
+    # identifiants code). Le désalignement devient BRUYANT au lieu de muet :
+    # le rapport « formes hors table » du cureur le montre.
+    "hyperparametres": "hyperparamètres",
+    "metrique": "métrique",
+    "creation": "création",
+    "cles": "clés",
+    "reseau": "réseau",
+    "reseaux": "réseaux",
+    "equivalent": "équivalent",
+    "complementaire": "complémentaire",
+    "complementaires": "complémentaires",
+    "reperer": "repérer",
+    "entrainer": "entraîner",
 }
 
 

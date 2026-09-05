@@ -88,7 +88,7 @@ def execute_dotnet_notebook(notebook_path: str, timeout: int = 300):
 
             try:
                 # Execute code
-                kc.execute(source)
+                exec_id = kc.execute(source)
 
                 # Collect outputs
                 outputs = []
@@ -103,6 +103,17 @@ def execute_dotnet_notebook(notebook_path: str, timeout: int = 300):
                 while True:
                     try:
                         msg = kc.get_iopub_msg(timeout=timeout)
+
+                        # Only attach messages belonging to THIS submission.
+                        # Late iopub messages from an earlier execution (the
+                        # setup cell, #r nuget installs of a previous cell)
+                        # linger in the queue; without this filter their
+                        # inherited `idle` breaks the loop before the cell's
+                        # own output arrives and every output cascades into
+                        # the next cell (shift +1, observed 2026-09-04 on
+                        # CSP-8-Temporal-Csharp).
+                        if msg.get('parent_header', {}).get('msg_id') != exec_id:
+                            continue
 
                         # Check for execution_state (if present)
                         if 'execution_state' in msg.get('content', {}):

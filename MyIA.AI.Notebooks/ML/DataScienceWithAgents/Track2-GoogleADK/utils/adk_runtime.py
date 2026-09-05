@@ -35,6 +35,28 @@ class AdkRuntimeUnavailable(RuntimeError):
 
 
 @dataclass(frozen=True)
+class AdkUsage:
+    """Jetons consommes par un appel LLM, remontes depuis l'event ADK.
+
+    Contrat C6 (#14058) -- tracabilite : ADK produit ``usage_metadata`` sur
+    ses events LLM (natif), mais le runtime du depot ne le remontait pas.
+    Chaque appel LLM d'un tour contribue un snapshot ; la consommation
+    devient observable depuis ``AdkRunResult``.
+    """
+
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
+    total_tokens: int = 0
+
+    def __add__(self, other: "AdkUsage") -> "AdkUsage":
+        return AdkUsage(
+            prompt_tokens=self.prompt_tokens + other.prompt_tokens,
+            completion_tokens=self.completion_tokens + other.completion_tokens,
+            total_tokens=self.total_tokens + other.total_tokens,
+        )
+
+
+@dataclass(frozen=True)
 class AdkRunResult:
     """Observable evidence produced by a complete ADK invocation."""
 
@@ -42,11 +64,20 @@ class AdkRunResult:
     event_count: int
     tool_calls: tuple[str, ...]
     tool_responses: tuple[str, ...]
+    usage_turns: tuple[AdkUsage, ...] = ()
 
     @property
     def tool_was_invoked(self) -> bool:
         """Whether ADK emitted both a tool request and its response."""
         return bool(self.tool_calls and self.tool_responses)
+
+    @property
+    def usage_total(self) -> AdkUsage:
+        """Somme des jetons consommes par les appels LLM du tour."""
+        total = AdkUsage()
+        for usage in self.usage_turns:
+            total = total + usage
+        return total
 
 
 def dataset_profile(rows: int, columns: int) -> dict[str, int | float]:
@@ -123,6 +154,26 @@ def _part_text(content: types.Content | None) -> str:
     return "".join(part.text or "" for part in content.parts).strip()
 
 
+def _event_usage(event) -> AdkUsage | None:
+    """Snapshot C6 d'un event : son usage LLM, ou None s'il n'en porte pas.
+
+    Un event sans appel LLM (message utilisateur, reponse d'outil) n'emet
+    pas d'usage ; un provider qui ne compte pas ses jetons emet un usage
+    nul -- dans les deux cas la tracabilite reste honnete (rien invente).
+    """
+    metadata = getattr(event, "usage_metadata", None)
+    if metadata is None:
+        return None
+    snapshot = AdkUsage(
+        prompt_tokens=metadata.prompt_token_count or 0,
+        completion_tokens=metadata.candidates_token_count or 0,
+        total_tokens=metadata.total_token_count or 0,
+    )
+    if snapshot == AdkUsage():
+        return None
+    return snapshot
+
+
 async def run_agent_turn(
     agent: Agent,
     prompt: str,
@@ -150,6 +201,7 @@ async def run_agent_turn(
     response_text = ""
     tool_calls: list[str] = []
     tool_responses: list[str] = []
+    usage_turns: list[AdkUsage] = []
     event_errors: list[str] = []
     event_count = 0
 
@@ -169,6 +221,9 @@ async def run_agent_turn(
                 for response in event.get_function_responses()
                 if response.name
             )
+            usage = _event_usage(event)
+            if usage is not None:
+                usage_turns.append(usage)
             error_code = getattr(event, "error_code", None)
             error_message = getattr(event, "error_message", None)
             if error_code or error_message:
@@ -209,6 +264,7 @@ async def run_agent_turn(
         event_count=event_count,
         tool_calls=tuple(tool_calls),
         tool_responses=tuple(tool_responses),
+        usage_turns=tuple(usage_turns),
     )
 
 

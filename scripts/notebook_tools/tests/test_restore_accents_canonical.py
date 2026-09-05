@@ -533,3 +533,137 @@ class TestEnglishGrayZone:
         rac.cure_markdown(p, write=True)
         out = p.read_text(encoding="utf-8")
         assert "paramètre" in out and "problème" in out
+
+
+# ---------------------------------------------------------------------------
+# #14613 : protections portees de la cure ad-hoc #14139 dans l'organe canonique
+# (fences, inline-code, URLs nues) + cureur BRUYANT (rapport formes hors table)
+# + extension ACCENT_PAIRS famille RL (formes context-free, ambigues exclues).
+# ---------------------------------------------------------------------------
+class Test14613FenceProtection:
+    def test_fence_content_never_cured(self, tmp_path):
+        # fences 22/24 de #14139 : sortie LITTERALE de programme. Accentuer une
+        # transcription d'execution la falsifie (Stop & Repair) -- mesure
+        # firsthand : l'organe canonique d'avant ce fix corrompait 7 fences.
+        literal = ("```\nEntrainement PPO (graine 42, 10 000 pas) : "
+                   "287 episodes explores, eval deterministe finale = 418.9\n```")
+        nb = _nb([("markdown", "La recompense par episode est aleatoire.\n\n"
+                               + literal + "\n\nLe reseau est cree.")])
+        p = tmp_path / "nb.ipynb"
+        p.write_text(json.dumps(nb), encoding="utf-8")
+        rac.cure_notebook(p, write=True)
+        cured = json.loads(p.read_text(encoding="utf-8"))
+        src = cured["cells"][0]["source"]
+        # la fence reste byte-identique
+        assert literal in src
+        # la prose autour est curee
+        assert "récompense" in src and "épisode" in src and "aléatoire" in src
+        assert "réseau" in src and "créé" in src
+
+    def test_fence_state_crosses_list_chunks(self, tmp_path):
+        # source list : la fence s'ouvre dans un chunk et se ferme dans un
+        # autre -- l'etat doit persister d'un chunk a l'autre de la meme cellule.
+        nb = {"cells": [{"cell_type": "markdown",
+                         "source": ["Prose avec recompense.\n", "```\n",
+                                    "entrainement deterministe\n", "```\n",
+                                    "Suite aleatoire.\n"],
+                         "metadata": {}}],
+              "metadata": {}, "nbformat": 4, "nbformat_minor": 5}
+        p = tmp_path / "nb.ipynb"
+        p.write_text(json.dumps(nb), encoding="utf-8")
+        rac.cure_notebook(p, write=True)
+        cured = json.loads(p.read_text(encoding="utf-8"))
+        src = "".join(cured["cells"][0]["source"])
+        assert "entrainement deterministe" in src  # inter-fence intact
+        assert "récompense" in src and "aléatoire" in src  # prose curee
+
+
+class Test14613InlineAndUrlProtection:
+    def test_inline_code_span_not_accented(self, tmp_path):
+        nb = _nb([("markdown", "La variable `recompense` accumule, la recompense "
+                               "affichee est aleatoire.")])
+        p = tmp_path / "nb.ipynb"
+        p.write_text(json.dumps(nb), encoding="utf-8")
+        rac.cure_notebook(p, write=True)
+        cured = json.loads(p.read_text(encoding="utf-8"))
+        src = cured["cells"][0]["source"]
+        assert "`recompense`" in src      # span de code intact
+        assert "récompense" in src        # occurrence en prose curee
+        assert "aléatoire" in src
+
+    def test_bare_url_not_accented(self, tmp_path):
+        # sur-accusation mesuree #14139 : le segment de chemin d'une URL n'est
+        # pas de la prose francaise (guide x3 dans un chemin readthedocs).
+        # NB : « episodes » dans le chemin est une forme EN table -- si l'URL
+        # n'etait pas masquee, elle serait corrompue en « épisodes ».
+        nb = _nb([("markdown", "Voir https://example.com/docs/evaluation/episodes.html "
+                               "pour l episode complet et la metrique.")])
+        p = tmp_path / "nb.ipynb"
+        p.write_text(json.dumps(nb), encoding="utf-8")
+        rac.cure_notebook(p, write=True)
+        cured = json.loads(p.read_text(encoding="utf-8"))
+        src = cured["cells"][0]["source"]
+        assert "https://example.com/docs/evaluation/episodes.html" in src  # URL intacte
+        assert "épisode" in src and "métrique" in src  # la prose, elle, est curee
+
+
+class Test14613RlFamilyAndReport:
+    def test_rl_forms_cured(self, tmp_path):
+        nb = _nb([("markdown", "L entrainement dure 287 episodes ; la metrique "
+                               "d evaluation et les hyperparametres sont aleatoires, "
+                               "les reseaux sont complementaires, reseau equivalent "
+                               "a reperer, les cles de creation des recompenses.")])
+        p = tmp_path / "nb.ipynb"
+        p.write_text(json.dumps(nb), encoding="utf-8")
+        rac.cure_notebook(p, write=True)
+        cured = json.loads(p.read_text(encoding="utf-8"))
+        src = cured["cells"][0]["source"]
+        for form in ["entraînement", "épisodes", "métrique",
+                     "hyperparamètres", "aléatoires", "réseaux", "complémentaires",
+                     "réseau", "équivalent", "repérer", "clés", "création",
+                     "récompenses"]:
+            assert form in src, form
+        # « evaluation » EXCLU de la table (test_excludes_en_valid_words,
+        # exclusion EN-valide délibérée) : il reste stripped ET remonte dans
+        # le rapport hors-table -- désalignement bruyant, pas muet (#14613).
+        assert "evaluation" in src
+
+    def test_ambiguous_rl_forms_still_not_cured(self, tmp_path):
+        # #14613 point 3 : entraine/enregistre/recommande/cumule (present vs
+        # participe homographes une fois desaccentues) EXCLUS de la table.
+        nb = _nb([("markdown", "Il entraine le modele, l agent enregistre la video, "
+                               "on recommande la methode, le gain cumule.")])
+        p = tmp_path / "nb.ipynb"
+        p.write_text(json.dumps(nb), encoding="utf-8")
+        res = rac.cure_notebook(p, write=True)
+        cured = json.loads(p.read_text(encoding="utf-8"))
+        src = cured["cells"][0]["source"]
+        for form in ["entraine", "enregistre", "recommande", "cumule"]:
+            assert form in src, form
+        # modele/methode/agent/video (deja en table, non ambigus) sont cures
+        assert "modèle" in src and "méthode" in src
+        assert res["cures"] == 2
+
+    def test_hors_table_reported_when_cure_incomplete(self, tmp_path):
+        # #14613 point 1 : un cureur qui ne peut pas atteindre le critere du
+        # detecteur doit le DIRE -- « N formes hors table », pas un succes muet.
+        # NB : le detecteur exige une forme accentuee jumelle dans le notebook
+        # (controle positif interne) -- « enregistré » active le comptage de
+        # « enregistre », qui reste hors table (ambigu, point 3).
+        nb = _nb([("markdown", "La video s enregistre automatiquement. "
+                               "Le trace a bien été enregistré. "
+                               "La recompense est aleatoire.")])
+        p = tmp_path / "nb.ipynb"
+        p.write_text(json.dumps(nb), encoding="utf-8")
+        res = rac.cure_notebook(p, write=True)
+        src = json.loads(p.read_text(encoding="utf-8"))["cells"][0]["source"]
+        assert "récompense" in src  # les formes EN table sont bien cures
+        assert "enregistre" in res.get("hors_table", {})
+        assert res["hors_table_total"] >= 1
+
+    def test_no_hors_table_when_clean(self, tmp_path):
+        nb = _nb([("markdown", "Tout est deja correctement accentué ici.")])
+        p = tmp_path / "nb.ipynb"
+        p.write_text(json.dumps(nb), encoding="utf-8")
+        res = rac.cure_notebook(p, write=True)
+        assert "hors_table" not in res

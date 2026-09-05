@@ -16,6 +16,22 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MyIA.Trading.Backtester", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MyIA.Trading.Backtester.Tests", "MyIA.Trading.Backtester.Tests\MyIA.Trading.Backtester.Tests.csproj", "{DF112603-A4EE-4651-B9DD-19E9BA338320}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CoursIA.GSheetSync", "MyIA.AI.Notebooks\SymbolicAI\Argument_Analysis\CoursIA-GSheetSync\src\CoursIA.GSheetSync\CoursIA.GSheetSync.csproj", "{2E4B17E5-B54D-4B33-8A91-302149728C83}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CoursIA.GSheetSync.Tests", "MyIA.AI.Notebooks\SymbolicAI\Argument_Analysis\CoursIA-GSheetSync\src\CoursIA.GSheetSync.Tests\CoursIA.GSheetSync.Tests.csproj", "{BD773DD6-F650-4D0B-9D22-20C13EADF239}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CoursIA.OwlAdapter", "MyIA.AI.Notebooks\SymbolicAI\Argument_Analysis\CoursIA-OwlAdapter\src\CoursIA.OwlAdapter\CoursIA.OwlAdapter.csproj", "{3889BEA2-28C1-4BAA-833B-AB7E304D2E01}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CoursIA.OwlAdapter.Tests", "MyIA.AI.Notebooks\SymbolicAI\Argument_Analysis\CoursIA-OwlAdapter\src\CoursIA.OwlAdapter.Tests\CoursIA.OwlAdapter.Tests.csproj", "{C76509BE-5013-4771-9058-0647765285CA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CoursIA.DatasetUpdater.Prompts", "MyIA.AI.Notebooks\SymbolicAI\Argument_Analysis\CoursIA-DatasetUpdater-Prompts\src\CoursIA.DatasetUpdater.Prompts\CoursIA.DatasetUpdater.Prompts.csproj", "{9DB079FF-016E-4102-979F-2851DDBFA099}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CoursIA.DatasetUpdater.Prompts.Tests", "MyIA.AI.Notebooks\SymbolicAI\Argument_Analysis\CoursIA-DatasetUpdater-Prompts\src\CoursIA.DatasetUpdater.Prompts.Tests\CoursIA.DatasetUpdater.Prompts.Tests.csproj", "{26D274FA-3CB0-48EB-9561-DCA41FA405AA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CoursIA.AgentSafetyAnalyzer", "MyIA.AI.Notebooks\GenAI\Vibe-Coding\analyzers\AgentSafetyAnalyzer\AgentSafetyAnalyzer.csproj", "{BF3B5EC4-0E62-4928-AD3B-DEC9C4D7566F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CoursIA.AgentSafetyAnalyzer.Tests", "MyIA.AI.Notebooks\GenAI\Vibe-Coding\analyzers\AgentSafetyAnalyzer.Tests\AgentSafetyAnalyzer.Tests.csproj", "{42AA7A16-ADB1-4330-9FDC-DCC90D2B4066}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -46,6 +62,38 @@ Global
 {DF112603-A4EE-4651-B9DD-19E9BA338320}.Debug|Any CPU.Build.0 = Debug|Any CPU
 {DF112603-A4EE-4651-B9DD-19E9BA338320}.Release|Any CPU.ActiveCfg = Release|Any CPU
 {DF112603-A4EE-4651-B9DD-19E9BA338320}.Release|Any CPU.Build.0 = Release|Any CPU
+{2E4B17E5-B54D-4B33-8A91-302149728C83}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+{2E4B17E5-B54D-4B33-8A91-302149728C83}.Debug|Any CPU.Build.0 = Debug|Any CPU
+{2E4B17E5-B54D-4B33-8A91-302149728C83}.Release|Any CPU.ActiveCfg = Release|Any CPU
+{2E4B17E5-B54D-4B33-8A91-302149728C83}.Release|Any CPU.Build.0 = Release|Any CPU
+{BD773DD6-F650-4D0B-9D22-20C13EADF239}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+{BD773DD6-F650-4D0B-9D22-20C13EADF239}.Debug|Any CPU.Build.0 = Debug|Any CPU
+{BD773DD6-F650-4D0B-9D22-20C13EADF239}.Release|Any CPU.ActiveCfg = Release|Any CPU
+{BD773DD6-F650-4D0B-9D22-20C13EADF239}.Release|Any CPU.Build.0 = Release|Any CPU
+{3889BEA2-28C1-4BAA-833B-AB7E304D2E01}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+{3889BEA2-28C1-4BAA-833B-AB7E304D2E01}.Debug|Any CPU.Build.0 = Debug|Any CPU
+{3889BEA2-28C1-4BAA-833B-AB7E304D2E01}.Release|Any CPU.ActiveCfg = Release|Any CPU
+{3889BEA2-28C1-4BAA-833B-AB7E304D2E01}.Release|Any CPU.Build.0 = Release|Any CPU
+{C76509BE-5013-4771-9058-0647765285CA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+{C76509BE-5013-4771-9058-0647765285CA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+{C76509BE-5013-4771-9058-0647765285CA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+{C76509BE-5013-4771-9058-0647765285CA}.Release|Any CPU.Build.0 = Release|Any CPU
+{9DB079FF-016E-4102-979F-2851DDBFA099}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+{9DB079FF-016E-4102-979F-2851DDBFA099}.Debug|Any CPU.Build.0 = Debug|Any CPU
+{9DB079FF-016E-4102-979F-2851DDBFA099}.Release|Any CPU.ActiveCfg = Release|Any CPU
+{9DB079FF-016E-4102-979F-2851DDBFA099}.Release|Any CPU.Build.0 = Release|Any CPU
+{26D274FA-3CB0-48EB-9561-DCA41FA405AA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+{26D274FA-3CB0-48EB-9561-DCA41FA405AA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+{26D274FA-3CB0-48EB-9561-DCA41FA405AA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+{26D274FA-3CB0-48EB-9561-DCA41FA405AA}.Release|Any CPU.Build.0 = Release|Any CPU
+{BF3B5EC4-0E62-4928-AD3B-DEC9C4D7566F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+{BF3B5EC4-0E62-4928-AD3B-DEC9C4D7566F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+{BF3B5EC4-0E62-4928-AD3B-DEC9C4D7566F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+{BF3B5EC4-0E62-4928-AD3B-DEC9C4D7566F}.Release|Any CPU.Build.0 = Release|Any CPU
+{42AA7A16-ADB1-4330-9FDC-DCC90D2B4066}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+{42AA7A16-ADB1-4330-9FDC-DCC90D2B4066}.Debug|Any CPU.Build.0 = Debug|Any CPU
+{42AA7A16-ADB1-4330-9FDC-DCC90D2B4066}.Release|Any CPU.ActiveCfg = Release|Any CPU
+{42AA7A16-ADB1-4330-9FDC-DCC90D2B4066}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

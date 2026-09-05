@@ -69,6 +69,8 @@ class ScriptedLlm(BaseLlm):
         kind, payload = _SCRIPT.pop(0)
         if kind == "call":
             yield _tool_call_response(payload[0], payload[1])
+        elif kind == "usage":
+            yield _text_response_with_usage(payload[0], payload[1], payload[2])
         elif kind == "sleep":
             # Dort PUIS repond : sous mutation du budget de tour (wait_for
             # neutralise), le tour finit normalement et le test budget
@@ -84,6 +86,20 @@ class ScriptedLlm(BaseLlm):
 def _text_response(text):
     return LlmResponse(content=types.Content(
         role="model", parts=[types.Part(text=text)]))
+
+
+def _text_response_with_usage(text, prompt, completion):
+    # LlmResponse/Event portent GenerateContentResponseUsageMetadata (champ
+    # candidates_token_count), pas types.UsageMetadata (response_token_count) :
+    # le type attendu par le runtime ADK est le premier.
+    return LlmResponse(
+        content=types.Content(
+            role="model", parts=[types.Part(text=text)]),
+        usage_metadata=types.GenerateContentResponseUsageMetadata(
+            prompt_token_count=prompt,
+            candidates_token_count=completion,
+            total_token_count=prompt + completion,
+        ))
 
 
 def _tool_call_response(name, args):
@@ -411,14 +427,17 @@ def test_c5_transfer_exists_in_adk_but_is_not_wired():
     assert "agents" not in turn_params
 
 
-def test_c6_no_token_budget_and_usage_not_observable():
-    # C6 (budgets de jetons / couts) -- MESURE : RunConfig ne porte aucun
-    # champ de budget de consommation (max_llm_calls borne des APPELS, pas
-    # les jetons ; grep du package : token_budget/cost_budget/usage_limit
-    # = 0). Cote tracabilite, ADK produit usage_metadata sur ses events
-    # (natif), mais AdkRunResult ne le remonte pas : la consommation
-    # n'est pas observable depuis le runtime du depot. Non porte ->
-    # grain ouvert.
+def test_c6_no_native_token_budget_but_usage_is_observable():
+    # C6 (budgets de jetons / couts) -- TRACABILITE PORTEE (#14687) :
+    # AdkRunResult remonte desormais l'usage LLM de chaque appel
+    # (usage_turns / usage_total), et ConversationRunner cumule par
+    # conversation. La MESURE initiale reste vraie cote budget NATIF :
+    # RunConfig ne porte toujours aucun champ de consommation (max_llm_calls
+    # borne des APPELS, pas les jetons) -- le budget au-dessus d'ADK est
+    # la jambe 2 du grain, pas suppose natif.
+    # Critere 4 -- ce test echoue au retrait de la collecte : sans le
+    # releve _event_usage dans consume_events, usage_turns est vide et
+    # chaque assert ci-dessous rouge (verifie par mutation locale).
     from dataclasses import fields
     from google.adk.runners import RunConfig
 
@@ -427,13 +446,121 @@ def test_c6_no_token_budget_and_usage_not_observable():
         if "token" in f.lower() or "cost" in f.lower()
     ]
     assert run_config_budget_fields == [], (
-        f"RunConfig porte un budget de consommation ({run_config_budget_fields}) "
-        ": ce test documentait le non-portage C6, il doit etre inverse")
+        f"RunConfig porte un budget natif ({run_config_budget_fields}) : "
+        "la jambe budget doit documenter ce changement de fond")
+
     result_fields = {f.name for f in fields(AdkRunResult)}
-    assert not any(
-        "usage" in f or "token" in f or "cost" in f for f in result_fields), (
-        "AdkRunResult remonte la consommation : la tracabilite C6 est "
-        "portee, ce test doit etre inverse par le grain qui porte le contrat")
+    assert "usage_turns" in result_fields, (
+        "AdkRunResult ne remonte plus l'usage : la tracabilite C6 est "
+        "retiree")
+
+    _SCRIPT.append(("usage", ("profil", 42, 17)))
+    result = _run_turn(_scripted_agent(tools=()), "question simple")
+    assert len(result.usage_turns) == 1, (
+        f"un appel LLM doit laisser exactement un snapshot d'usage, "
+        f"mesure : {result.usage_turns}")
+    assert result.usage_turns[0] == adk_runtime.AdkUsage(
+        prompt_tokens=42, completion_tokens=17, total_tokens=59)
+    assert result.usage_total == adk_runtime.AdkUsage(
+        prompt_tokens=42, completion_tokens=17, total_tokens=59)
+
+
+def test_c6_usage_accumulates_across_conversation_turns():
+    # C6, versant ConversationRunner : chaque tour rend son usage (contrat
+    # du tour) ET la conversation cumule (profil de consommation multi-tours).
+    # Critere 4 -- au retrait de la collecte d'usage dans
+    # ConversationRunner.turn, conversation.usage_total reste nul -> rouge.
+    from utils.adk_conversation import ConversationRunner
+
+    async def scenario():
+        agent = _scripted_agent(tools=())
+        async with ConversationRunner(agent) as conversation:
+            tour1 = await conversation.turn("premier tour")
+            tour2 = await conversation.turn("second tour")
+            return conversation, tour1, tour2
+
+    _SCRIPT.append(("usage", ("reponse un", 40, 10)))
+    _SCRIPT.append(("usage", ("reponse deux", 60, 25)))
+    conversation, tour1, tour2 = asyncio.run(scenario())
+    assert tour1.usage_turns and tour2.usage_turns, (
+        "chaque tour doit rendre son propre snapshot d'usage")
+    assert conversation.usage_total == adk_runtime.AdkUsage(
+        prompt_tokens=100, completion_tokens=35, total_tokens=135), (
+        f"le cumul conversation doit sommer les tours, mesure : "
+        f"{conversation.usage_total}")
+
+
+def test_c6_budget_cuts_mid_turn_with_explicit_verdict():
+    # C6 jambe 2 -- le plafond de jetons cumules coupe PROPREMENT : verdict
+    # type AdkBudgetExceeded (pas une exception brute du stream), portant
+    # plafond, cumul exact au moment de la coupe et numero du tour. Le VRAI
+    # Runner ADK tourne (seul le LLM est scripte) ; le 1er tour consomme 50
+    # jetons, le 2e (85) franchit le plafond de 100 pose d'office.
+    # Critere 4 -- au retrait du releve de plafond dans consume_events
+    # (comparaison neutralisee), le tour 2 se termine normalement et ce
+    # test echoue (verifie par mutation locale).
+    from utils.adk_conversation import AdkBudgetExceeded, ConversationRunner
+
+    async def scenario():
+        agent = _scripted_agent(tools=())
+        async with ConversationRunner(
+            agent, budget_total_tokens=100
+        ) as conversation:
+            tour1 = await conversation.turn("premier tour")
+            try:
+                await conversation.turn("second tour qui depasse")
+            except AdkBudgetExceeded as verdict:
+                return conversation, tour1, verdict
+            raise AssertionError("le tour 2 devait couper sur le plafond")
+
+    _SCRIPT.append(("usage", ("reponse un", 40, 10)))
+    _SCRIPT.append(("usage", ("reponse deux", 60, 25)))
+    conversation, tour1, verdict = asyncio.run(scenario())
+    assert tour1.usage_total.total_tokens == 50, (
+        "le tour 1 (sous plafond) doit se derouler normalement")
+    assert verdict.verdict == "BUDGET_EXCEEDED"
+    assert verdict.budget_total == 100
+    assert verdict.tour == 2
+    assert verdict.usage_total.total_tokens == 135, (
+        f"le cumul au moment de la coupe doit inclure l'appel qui franchit "
+        f"le plafond, mesure : {verdict.usage_total}")
+    assert verdict.usage_total == conversation.usage_total, (
+        "les jetons consommes avant la coupe restent dans le cumul "
+        "(comptabilite honnete)")
+
+
+def test_c6_budget_refuses_next_turn_without_calling_the_llm():
+    # C6 jambe 2, versant refus pre-tour : plafond atteint des le 1er tour
+    # -> le tour 2 est refuse AVANT tout appel LLM. La preuve mecanique :
+    # _REQUESTS n'enregistre qu'UN appel (celui du tour 1) -- un second
+    # appel LLM serait comptee la.
+    # Critere 4 -- au retrait du garde pre-tour dans turn(), le tour 2
+    # declenche un appel LLM (script epuise -> reponse par defaut) et ce
+    # test echoue sur len(_REQUESTS) == 1.
+    from utils.adk_conversation import AdkBudgetExceeded, ConversationRunner
+
+    async def scenario():
+        agent = _scripted_agent(tools=())
+        async with ConversationRunner(
+            agent, budget_total_tokens=50
+        ) as conversation:
+            await conversation.turn("premier tour consomme tout le plafond")
+            try:
+                await conversation.turn("tour refuse d'office")
+            except AdkBudgetExceeded as verdict:
+                return conversation, verdict
+            raise AssertionError("le tour 2 devait etre refuse pre-tour")
+
+    _SCRIPT.append(("usage", ("reponse un", 40, 10)))
+    conversation, verdict = asyncio.run(scenario())
+    assert verdict.verdict == "BUDGET_EXCEEDED"
+    assert verdict.tour == 2
+    assert verdict.budget_total == 50
+    assert len(_REQUESTS) == 1, (
+        f"le tour refuse ne doit declencher AUCUN appel LLM, "
+        f"appels mesures : {len(_REQUESTS)}")
+    assert conversation.budget_exhausted
+    assert conversation.usage_total.total_tokens == 50
 
 
 def test_c7_roles_are_declared_and_required():

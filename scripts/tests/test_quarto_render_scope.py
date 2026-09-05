@@ -99,7 +99,9 @@ def test_every_declared_full_trigger_forces_full(path):
 def test_preprocessing_script_forces_full():
     for p in ("scripts/quarto_yaml_safe.py",
               "scripts/quarto_csharp_kernel_fix.py",
-              "scripts/regen_quarto_render.py"):
+              # NOT regen_quarto_render.py: it is CI machinery (#14431). Its
+              # sibling below keeps the prefix rule honest.
+              "scripts/regen_quarto_render_helper.py"):
         assert qrs.decide([("M", p)], ENTRIES)[0] == "full", p
 
 
@@ -316,3 +318,95 @@ def test_smoke_documents_are_covered_by_the_real_render_list():
     entries = qrs.render_list_entries(qrs.QUARTO_YML.read_text(encoding="utf-8"))
     _, files, _ = qrs.decide([("M", ".github/workflows/quarto-pages-deploy.yml")], entries)
     assert sorted(files) == sorted(qrs.SMOKE_DOCUMENTS)
+
+
+# ---------------------------------------------------------------------------
+# The generated render list is not project config -- #14431
+#
+# `project.render` is produced by scripts/regen_quarto_render.py, which the job
+# runs one step BEFORE this script, and which `--apply` rewrites one step
+# after. A delta confined to it says WHICH documents render, never HOW one
+# renders. Treating it as a project-wide change classified a 73-notebook move
+# as `full` (1238 documents, 60.9 min, killed at the 60-min ceiling, PR gate
+# starved) -- a PR that could not pass, ever, on rerun.
+#
+# The narrowing is only worth anything if it still refuses: every test that
+# widens the scope here is paired with one that keeps a real config change
+# `full`. A rule that stops accusing everyone is indistinguishable from a rule
+# that was deleted.
+# ---------------------------------------------------------------------------
+
+YML_RENDER_LIST_MOVED = (
+    YML.replace('    - "MyIA.AI.Notebooks/Search/Search-3.ipynb"',
+                '    - "MyIA.AI.Notebooks/Search/moved/Search-3.ipynb"')
+       .replace("    # Notebooks", "    # Notebooks (2)"))
+YML_THEME_CHANGED = YML.replace("theme: cosmo", "theme: flatly")
+
+
+def test_outside_render_block_ignores_entries_and_their_comments():
+    """The measured shape of #14431: paths move, and the generator rewrites the
+    comment counters next to them (`450 READMEs` -> `454 READMEs`)."""
+    assert qrs.outside_render_block(YML) == qrs.outside_render_block(YML_RENDER_LIST_MOVED)
+
+
+def test_outside_render_block_sees_a_project_config_change():
+    assert qrs.outside_render_block(YML) != qrs.outside_render_block(YML_THEME_CHANGED)
+
+
+def test_outside_render_block_keeps_an_unknown_construct_inside_render():
+    """Fail-closed: a key this parser does not model reads as a difference."""
+    odd = YML.replace('    - "index.qmd"', '''    freeze: auto
+    - "index.qmd"''')
+    assert qrs.outside_render_block(YML) != qrs.outside_render_block(odd)
+
+
+def test_quarto_yml_render_list_only_is_machinery_not_full():
+    rows = [("M", "_quarto.yml"),
+            ("R", "MyIA.AI.Notebooks/Search/Search-3.ipynb")]
+    mode, files, _ = qrs.decide(rows, ENTRIES, yml_render_list_only=True)
+    assert mode == "scoped"
+    assert files == ["MyIA.AI.Notebooks/Search/Search-3.ipynb"]
+
+
+def test_quarto_yml_still_forces_full_when_the_delta_leaves_the_list():
+    """Negative control. Without it, the test above is equally satisfied by a
+    build that simply dropped `_quarto.yml` from FULL_RENDER_TRIGGERS."""
+    rows = [("M", "_quarto.yml"),
+            ("R", "MyIA.AI.Notebooks/Search/Search-3.ipynb")]
+    assert qrs.decide(rows, ENTRIES, yml_render_list_only=False)[0] == "full"
+
+
+def test_quarto_yml_render_list_only_alone_renders_the_smoke_set():
+    """It must not fall through to `empty`: the job would report success for a
+    render it never performed."""
+    mode, files, _ = qrs.decide([("M", "_quarto.yml")], ENTRIES,
+                                yml_render_list_only=True)
+    assert mode == "scoped"
+    assert files == ["index.qmd", "README.md"]
+
+
+def test_list_generator_is_machinery_not_a_full_trigger():
+    mode, files, _ = qrs.decide([("M", "scripts/regen_quarto_render.py")], ENTRIES)
+    assert mode == "scoped"
+    assert files == ["index.qmd", "README.md"]
+
+
+def test_deletion_still_forces_full_under_a_render_list_only_delta():
+    """The two rules compose. Dropping an entry from the generated list is
+    safe; deleting the document it named still breaks every inbound link."""
+    rows = [("M", "_quarto.yml"),
+            ("D", "MyIA.AI.Notebooks/Search/Search-3.ipynb")]
+    assert qrs.decide(rows, ENTRIES, yml_render_list_only=True)[0] == "full"
+
+
+def test_14431_shape_scopes_to_the_moved_documents():
+    """End to end on the measured case: the regenerated list, its generator,
+    and the moved documents themselves."""
+    rows = [("M", "_quarto.yml"),
+            ("M", "scripts/regen_quarto_render.py"),
+            ("R", "MyIA.AI.Notebooks/Search/Search-02c.ipynb"),
+            ("R", "MyIA.AI.Notebooks/Search/Search-3.ipynb")]
+    mode, files, _ = qrs.decide(rows, ENTRIES, yml_render_list_only=True)
+    assert mode == "scoped"
+    assert files == ["MyIA.AI.Notebooks/Search/Search-02c.ipynb",
+                     "MyIA.AI.Notebooks/Search/Search-3.ipynb"]

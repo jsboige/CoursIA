@@ -384,6 +384,35 @@ theorem evolve_reach_chebyshev (t : Nat) (g : Grid) (q : Int × Int)
       have hrq_cheb : chebDist r q ≤ 1 := chebDist_le_one_of_moore r q hrq
       exact (chebDist_triangle p q r).trans (add_le_add hpr hrq_cheb)
 
+/-! ## Dilation encadrée du support (forme boîte) — brique L3 de l'assemblage P4.4
+
+`evolve_reach_chebyshev` borne l'atteinte par la distance à une cellule
+initiale vivante ; l'assemblage P4.4 L3 (#13483) consomme la **forme boîte** :
+si le support initial tient dans une boîte, le support après `t` générations
+tient dans la dilation Chebyshev-`t` de cette boîte. C'est la brique vitesse
+de la lumière pour l'arithmétique de fenêtres de `hcap` (confinement de la
+trajectoire). Sans sorry.
+-/
+
+/-- **Dilation encadrée du support.** Toute cellule vivante après `t`
+    générations est dans la dilation `t` (par coordonnée) de toute boîte
+    contenant le support initial. Compose `evolve_reach_chebyshev`
+    (témoin initial à distance ≤ t) et `coord_bound_of_chebDist_le`
+    (borne par coordonnée) ; l'arithmétique finale est linéaire. -/
+theorem evolve_support_dilation_box (t : Nat) (g : Grid) (a b : Int × Int)
+    (h : ∀ p, isAlive g p = true →
+      a.1 ≤ p.1 ∧ p.1 < b.1 ∧ a.2 ≤ p.2 ∧ p.2 < b.2)
+    (q : Int × Int) (h_alive : isAlive (evolve t g) q = true) :
+    a.1 - (t : Int) ≤ q.1 ∧ q.1 < b.1 + (t : Int) ∧
+    a.2 - (t : Int) ≤ q.2 ∧ q.2 < b.2 + (t : Int) := by
+  obtain ⟨p, hp, hcheb⟩ := evolve_reach_chebyshev t g q h_alive
+  have ⟨hb1, hb2⟩ := coord_bound_of_chebDist_le p q t hcheb
+  have ⟨ha1, ha2, ha3, ha4⟩ := h p hp
+  -- omega traite `Int.natAbs` nativement : les bornes par coordonnée sont
+  -- directement linéaires, sans conversion via `Int.abs` (dont l'API
+  -- `abs_le` n'est pas dans le périmètre core du toolchain, c.14701 CI).
+  exact ⟨by omega, by omega, by omega, by omega⟩
+
 /-! ## Localité étroite (forme boîte Chebyshev) — dual d'accord de `evolve_reach_chebyshev`
 
 Le théorème d'atteinte étroit (`evolve_reach_chebyshev` ci-dessus) dit : si `q`
