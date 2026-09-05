@@ -97,6 +97,12 @@
       content_python_sha: 87e720556f922606dff7d8b4715e001d770889316c380042f885c193640f454f
       content_csharp_sha: 5bfc273cff6d6f0ffe89a2490d67949e4294ab129281e26fe76b0f666105825d
       reason: "Re-baseline #14572 (tranche #11962) : conversion flowchart ASCII -> Mermaid cell md 61 (DBCM), markdown-only cote C#, aucune cellule code touchee, python_sha unchanged, parite native-both preservee."
+    - date: "2026-09-05"
+      by: myia-po-2026:CoursIA
+      python_sha: 88a967a7526d96a7d4a4c06543ca7a4e9667d23e
+      csharp_sha: c460086f37cb1288e108a65a0d3f7860ec2e7b7f
+      content_python_sha: 30beb0bbca6c472e5a75a3056c559aa786ab4dec2e6d582e4b6a8c711c4f4241
+      content_csharp_sha: 5bfc273cff6d6f0ffe89a2490d67949e4294ab129281e26fe76b0f666105825d
   known_differences:
   - 'Re-baseline 2026-08-14 (myia-po-2024:CoursIA-2, #10876) : SHA Python avance d34f279b -> dbda0bd8 (repositionnement 5 cellules d''interp markdown mal ancrees — tranche Probas, #10678). Markdown-only, aucun code touche, axe de parite semantic (Infer.NET EP + concepts de recommandation) inchange. Drift verifie parite-preserving.'
   - 'Socle pedagogique commun : systemes de recommandation (filtrage collaboratif) modelise dans les deux stacks.'
