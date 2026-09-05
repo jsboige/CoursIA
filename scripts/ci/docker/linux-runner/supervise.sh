@@ -277,6 +277,7 @@ cmd_stop() {
   echo "sentinel pose : aucun nouveau conteneur ne sera lance."
   echo "Les jobs en cours vont a leur terme. Pour couper net (deconseille) :"
   echo "  docker ps --filter name=$NAME_PREFIX -q | xargs -r docker kill"
+  echo "  docker ps --filter name=$LEAN_NAME_PREFIX -q | xargs -r docker kill"
 }
 
 cmd_status() {
@@ -398,6 +399,15 @@ cmd_lean() {
   [ -f "$STOP_FILE" ] && die "sentinel STOP pose -- arreter d'abord ($0 stop)"
   # Idempotence calquee sur cmd_waiters : le garde PPID de `start` filtre
   # `supervise.sh start` et ne verrait pas `lean`. Verrou par pid file.
+  #
+  # Budget CPU hors garde (a documenter, ai-01 DM 2026-09-04) : le garde PPID
+  # ne couvre que les superviseurs d'un MEME prefix, donc `start` et `lean`
+  # coexistent par design (familles distinctes, containers distincts). La
+  # somme des caps CPU des familles actives n'est gardee par RIEN -- c'est
+  # l'operateur qui dimensionne : slots generiques (N x CPUS) + waiters
+  # (N x WAITER_CPUS) + slots lean (N x LEAN_CPUS) doit rester <= le total
+  # machine. Le pool lean est dimensionne pour tourner SEUL sur la jambe CI
+  # lourde (arret des autres familles avant `lean` quand la machine sature).
   if [ -f "$STATE_DIR/lean-pids" ]; then
     local head_pid
     head_pid="$(head -1 "$STATE_DIR/lean-pids" 2>/dev/null || true)"
