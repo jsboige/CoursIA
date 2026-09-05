@@ -1,29 +1,39 @@
 #!/usr/bin/env python3
-r"""Tests d'affaiblissement pour prune_merged_worktrees.py (#14195).
+r"""Tests d'affaiblissement pour prune_merged_worktrees.py (#14195, #14509).
 
-Pinent le contrat de sûreté (issue #14195 acceptance) :
+Pinent le contrat de sûreté (issues #14195 + #14509 acceptance) :
 
 1. `is_untracked_artifact` reconnait les catégories du dernier commentaire
    de #8924 (slides/images, scripts/results, .claude/agent-memory,
    _output.ipynb, caches node_modules/.cache/.pytest_cache/__pycache__,
    _measurements, .mypy_cache, .ruff_cache, dist/, build/, .eggs/, .tox/).
-2. `is_source_dirty` classe une édition .py/.ipynb/.lean comme source
-   sale (REFUSE), même quand elle coexiste avec des artefacts untracked.
-3. `WorktreeStatus.decision` = `REMOVE` quand pr_state=MERGED ou CLOSED
-   et pas d'unpushed ni de source dirty (contrôle positif manquant aux
-   prédicats d'ascendance, cf squashed-merge).
-4. `WorktreeStatus.decision` = `REFUSE` quand pr_state=OPEN
+2. `parse_porcelain` rebranche le predicat de salete sur le pouvoir de
+   refus git reel (#14509) : TOUT untracked non-ignore bloque
+   `git worktree remove`, quelle que soit son extension ou l'absence
+   d'extension, artefacts #8924 compris -- `bg_logs/`,
+   `lake_7012.log.relaunch` et un `node_modules/` non-ignore passaient
+   l'ancien predicat et se terminaient en FAILED permanent.
+3. `parse_porcelain` separe untracked / gitignores non-cache / tracks
+   modifies (`--ignored=matching`, jamais de `!!` compte comme source
+   sale).
+4. `worktree_has_initialized_submodules` detecte les worktrees que git ne
+   retirera jamais ("working trees containing submodules cannot be moved
+   or removed") -> REFUSE contains_submodules.
+5. `WorktreeStatus.decision` = `REMOVE` quand pr_state=MERGED ou CLOSED
+   et pas d'unpushed, de submodule, ni de untracked bloquant (contrôle
+   positif manquant aux prédicats d'ascendance, cf squashed-merge).
+6. `WorktreeStatus.decision` = `REFUSE` quand pr_state=OPEN
    (le retrait casserait l'itération en cours).
-5. `WorktreeStatus.decision` = `REFUSE` quand unpushed_commits > 0
+7. `WorktreeStatus.decision` = `REFUSE` quand unpushed_commits > 0
    (jamais d'exception).
-6. `WorktreeStatus.decision` = `REFUSE` quand has_source_dirty
-   (édition source non committée, c'est le cas fondateur de #14195).
-7. `WorktreeStatus.decision` = `REFUSE` quand branch=main/master
+8. `WorktreeStatus.decision` = `REFUSE` quand untracked bloquant avec
+   cause nommée (`untolerated_untracked:<n>` / `uncommitted_source_changes`).
+9. `WorktreeStatus.decision` = `REFUSE` quand branch=main/master
    (le worktree de travail principal n'est JAMAIS un candidat au retrait,
    même si gh remonte une vieille PR close qui pointe sur main -- bug
    trouvé au dry-run inaugural).
-8. `WorktreeStatus.decision` = `SKIP_CURRENT` pour le worktree depuis
-   lequel le script est lancé.
+10. `WorktreeStatus.decision` = `SKIP_CURRENT` pour le worktree depuis
+    lequel le script est lancé.
 
 Tests d'intégration end-to-end (subprocess réel) :
 - dry-run sur un worktree `main` ne tente jamais `worktree remove`.
@@ -87,27 +97,136 @@ class TestArtifactClassification:
     def test_artifact_windows_path_backslashes(self):
         assert pmw.is_untracked_artifact("slides\\images\\foo.png") is True
 
-    def test_source_py_is_source(self):
-        assert pmw.is_source_dirty("scripts/foo.py") is True
+    def test_source_py_blocks(self):
+        out = pmw.parse_porcelain("?? scripts/foo.py\n")
+        assert out["blocking_untracked"] == ["scripts/foo.py"]
 
-    def test_source_ipynb_is_source(self):
-        assert pmw.is_source_dirty("MyIA.AI.Notebooks/Search/foo.ipynb") is True
+    def test_source_ipynb_blocks(self):
+        out = pmw.parse_porcelain("?? MyIA.AI.Notebooks/Search/foo.ipynb\n")
+        assert out["blocking_untracked"] == [
+            "MyIA.AI.Notebooks/Search/foo.ipynb"]
 
-    def test_source_lean_is_source(self):
-        assert pmw.is_source_dirty("knot_lean/Foo.lean") is True
+    def test_source_lean_blocks(self):
+        out = pmw.parse_porcelain("?? knot_lean/Foo.lean\n")
+        assert out["blocking_untracked"] == ["knot_lean/Foo.lean"]
 
-    def test_source_md_is_source(self):
-        assert pmw.is_source_dirty("docs/spec.md") is True
+    def test_source_md_blocks(self):
+        out = pmw.parse_porcelain("?? docs/spec.md\n")
+        assert out["blocking_untracked"] == ["docs/spec.md"]
 
     def test_source_coexists_with_artifact(self):
-        # Si la liste contient un artefact ET une edition source, la
-        # edition source doit primer -- le worktree sera REFUSE.
-        paths = [
-            "slides/images/foo.png",  # artefact tolere
-            "scripts/bug_fix.py",     # edition source : doit primer
-        ]
-        any_source = any(pmw.is_source_dirty(p) for p in paths)
-        assert any_source is True
+        # Un seul untracked non-ignore suffit a bloquer le retrait, un
+        # artefact non-ignore aussi : le worktree sera REFUSE.
+        out = pmw.parse_porcelain(
+            "?? slides/images/foo.png\n?? scripts/bug_fix.py\n"
+        )
+        assert len(out["blocking_untracked"]) == 2
+
+
+class TestUntrackedStrict:
+    """Le predicat de salete doit refleter le pouvoir de refus git (#14509) :
+
+    `git worktree remove` (sans --force) refuse TOUT untracked non-ignore,
+    quelle que soit l'extension ou son absence -- artefacts #8924 compris
+    quand ils ne sont pas gitignores. L'ancien predicat (extensions de
+    source + allowliste artefacts) decidait REMOVE sur `bg_logs/`,
+    `lake_7012.log.relaunch` et meme un `node_modules/` non-ignore, puis
+    git refusait -> FAILED permanent.
+    """
+
+    def test_directory_without_extension_blocks(self):
+        out = pmw.parse_porcelain("?? bg_logs/\n")
+        assert out["blocking_untracked"] == ["bg_logs/"]
+
+    def test_unknown_suffix_file_blocks(self):
+        out = pmw.parse_porcelain("?? lake_7012.log.relaunch\n")
+        assert out["blocking_untracked"] == ["lake_7012.log.relaunch"]
+
+    def test_binary_without_source_extension_blocks(self):
+        out = pmw.parse_porcelain("?? data/output.bin\n")
+        assert out["blocking_untracked"] == ["data/output.bin"]
+
+    def test_slides_images_unignored_blocks(self):
+        # Categorie d'artefact #8924 : git ignore la categorie, le refus
+        # git lui ne l'ignore pas. La tolerance ne survit que gitignoree.
+        out = pmw.parse_porcelain("?? slides/images/foo.png\n")
+        assert out["blocking_untracked"] == ["slides/images/foo.png"]
+
+    def test_agent_memory_unignored_blocks(self):
+        out = pmw.parse_porcelain("?? .claude/agent-memory/note.md\n")
+        assert out["blocking_untracked"] == [".claude/agent-memory/note.md"]
+
+    def test_node_modules_unignored_blocks(self):
+        out = pmw.parse_porcelain("?? frontend/node_modules/x.js\n")
+        assert out["blocking_untracked"] == ["frontend/node_modules/x.js"]
+
+
+class TestParsePorcelain:
+    """`parse_porcelain` -- split ?? / !! / tracks (#14509).
+
+    Pince aussi le bug latent : sans la casse "!!", un gitignore aurait
+    ete compte comme modification de source (any(c != " ") est Vrai), ce
+    qui aurait REFUSE en masse sur .env etc. une fois la passe
+    --ignored=matching activee.
+    """
+
+    def test_untracked_and_ignored_split(self):
+        out = pmw.parse_porcelain("?? bg_logs/\n!! .env\n M tracked.py\n")
+        assert out["untracked"] == ["bg_logs/"]
+        assert out["blocking_untracked"] == ["bg_logs/"]
+        assert out["ignored_extra"] == [".env"]
+        assert out["tracked_modified"] == ["tracked.py"]
+
+    def test_ignored_cache_matching_artifact_tokens_dropped(self):
+        out = pmw.parse_porcelain(
+            "!! node_modules/x\n!! .pytest_cache/v/cache/lastfailed\n"
+        )
+        assert out["ignored_extra"] == []
+
+    def test_untracked_artifact_and_ignored_cache_are_disjoint(self):
+        # Un artefact UNTRACKED bloque (git le refusera) ; le meme
+        # artefact GITIGNORE ne bloque pas et n'est meme pas signale
+        # (bruit de cache).
+        out = pmw.parse_porcelain(
+            "?? node_modules/y\n!! node_modules/x\n"
+        )
+        assert out["blocking_untracked"] == ["node_modules/y"]
+        assert out["ignored_extra"] == []
+
+    def test_rename_target_kept(self):
+        out = pmw.parse_porcelain("R  old.py -> new.py\n")
+        assert out["tracked_modified"] == ["new.py"]
+
+    def test_ignored_line_never_counts_as_modified(self):
+        out = pmw.parse_porcelain("!! .env.production\n")
+        assert out["tracked_modified"] == []
+        assert out["blocking_untracked"] == []
+
+
+class TestSubmoduleDetection:
+    """`worktree_has_initialized_submodules` (#14509) : git ne retirera
+    jamais la baignoire, autant le dire avant qu'apres l'echec."""
+
+    def _stub(self, monkeypatch, rc, stdout):
+        monkeypatch.setattr(pmw, "run_git", lambda *a, **k: _fake_proc(rc, stdout))
+        return pmw.worktree_has_initialized_submodules("C:/fake")
+
+    def test_empty_stdout_is_false(self, monkeypatch):
+        assert self._stub(monkeypatch, 0, "") is False
+
+    def test_uninitialized_dash_is_false(self, monkeypatch):
+        assert self._stub(monkeypatch, 0, "-2a1f3c argumentum\n") is False
+
+    def test_initialized_space_is_true(self, monkeypatch):
+        assert self._stub(monkeypatch, 0, " 2a1f3c argumentum\n") is True
+
+    def test_initialized_dirty_plus_is_true(self, monkeypatch):
+        assert self._stub(monkeypatch, 0, "+2a1f3c argumentum\n") is True
+
+    def test_unreachable_worktree_is_false(self, monkeypatch):
+        # Pas de preuve de submodule initialise : ne REFUSE pas sur un
+        # etat qu'on ne peut pas lire (pire cas = FAILED git, avant-fix).
+        assert self._stub(monkeypatch, 128, "") is False
 
 
 # ---------------------------------------------------------------------------
@@ -159,11 +278,17 @@ class TestDecisionContract:
         assert s.decision == "REFUSE"
         assert s.refusal_reason == "unpushed_commits:2"
 
-    def test_refuse_when_source_dirty(self):
+    def test_refuse_when_blocking_untracked(self):
         s = _make_status(has_source_dirty=True, decision="REFUSE",
-                         refusal_reason="uncommitted_source_changes")
+                         refusal_reason="uncommitted_untracked:bg_logs/")
         assert s.decision == "REFUSE"
-        assert s.refusal_reason == "uncommitted_source_changes"
+        assert s.refusal_reason == "uncommitted_untracked:bg_logs/"
+
+    def test_refuse_contains_submodules(self):
+        s = _make_status(has_submodules=True, decision="REFUSE",
+                         refusal_reason="contains_submodules")
+        assert s.decision == "REFUSE"
+        assert s.refusal_reason == "contains_submodules"
 
     def test_refuse_protected_main(self):
         s = _make_status(branch="main", decision="REFUSE",
@@ -184,13 +309,155 @@ class TestDecisionContract:
     def test_to_dict_round_trip(self):
         s = _make_status()
         d = s.to_dict()
-        # Sanity : tous les champs sont la
+        # Sanity : tous les champs sont la (y compris #14509, additifs)
         for k in (
             "path", "branch", "is_current", "pr_state", "pr_number",
             "pr_url", "ahead_count", "has_source_dirty",
             "untracked_paths", "decision", "refusal_reason",
+            "has_submodules", "blocking_untracked", "ignored_extra",
         ):
             assert k in d, f"missing key: {k}"
+
+
+# ---------------------------------------------------------------------------
+# Diagnose -- câblage predicat -> decision + reason nomme (#14509)
+# ---------------------------------------------------------------------------
+
+
+class TestDiagnoseRefusalCauses:
+    """Pince l'AVAL : un get_worktree_info souche -> decision + reason.
+
+    Ne re-teste pas get_worktree_info (couvert par TestParsePorcelain et
+    TestSubmoduleDetection) : verifie que diagnose_worktree traduit les
+    informations structurelles en REFUSE causes nommees, et que le
+    predicat submodule inhibe le REMOVE SANS appel gh."""
+
+    def _info(self, **over):
+        base = dict(
+            branch="fix/X", ahead_count=0, untracked=[],
+            blocking_untracked=[], ignored_extra=[], tracked_modified=[],
+            has_source_dirty=False, has_submodules=False, is_current=False,
+        )
+        base.update(over)
+        return base
+
+    def test_source_untracked_refuses_with_named_register(self, monkeypatch):
+        info = self._info(
+            untracked=["bg_logs/", "src/keep.py"],
+            blocking_untracked=["src/keep.py"],
+            has_source_dirty=True,
+        )
+        monkeypatch.setattr(pmw, "get_worktree_info", lambda *a: info)
+        s = pmw.diagnose_worktree("C:/fake", "C:/other")
+        assert s.decision == "REFUSE"
+        assert s.refusal_reason == "uncommitted_source_changes"
+        assert s.blocking_untracked == ["src/keep.py"]
+
+    def test_submodules_inhibit_remove_without_gh_call(self, monkeypatch):
+        info = self._info(has_submodules=True)
+        monkeypatch.setattr(pmw, "get_worktree_info", lambda *a: info)
+
+        def _no_gh(*a):
+            raise AssertionError(
+                "lookup_pr_for_branch ne doit pas etre appele : le "
+                "verdict submodule est structurel et ne demande aucun gh"
+            )
+
+        monkeypatch.setattr(pmw, "lookup_pr_for_branch", _no_gh)
+        s = pmw.diagnose_worktree("C:/fake", "C:/other")
+        assert s.decision == "REFUSE"
+        assert s.refusal_reason == "contains_submodules"
+
+    def test_clean_merged_still_remove(self, monkeypatch):
+        info = self._info()
+        monkeypatch.setattr(pmw, "get_worktree_info", lambda *a: info)
+        monkeypatch.setattr(
+            pmw, "lookup_pr_for_branch",
+            lambda *a: {"state": "MERGED", "number": 42, "url": "u"},
+        )
+        s = pmw.diagnose_worktree("C:/fake", "C:/other")
+        assert s.decision == "REMOVE"
+        assert s.refusal_reason is None
+
+    def test_untracked_primes_over_merged_pr(self, monkeypatch):
+        # Meme PR MERGED, un residu untracked NON tolere doit changer le
+        # verdict : sans ce garde, le worktree partait en REMOVE puis FAILED.
+        info = self._info(
+            untracked=["residu.bin"], blocking_untracked=["residu.bin"],
+            has_source_dirty=False,
+        )
+        monkeypatch.setattr(pmw, "get_worktree_info", lambda *a: info)
+        monkeypatch.setattr(
+            pmw, "lookup_pr_for_branch",
+            lambda *a: {"state": "MERGED", "number": 42, "url": "u"},
+        )
+        s = pmw.diagnose_worktree("C:/fake", "C:/other")
+        assert s.decision == "REFUSE"
+        assert s.refusal_reason == "untolerated_untracked:1"
+
+    def test_tracked_modified_refuses_before_gh(self, monkeypatch):
+        # Worktree a fichier tracked modifie (ex. slides fantomes CRLF) :
+        # le predicat 2a doit le refuser AVANT l'appel gh -- sans ce
+        # predicat, REMOVE puis FAILED git permanent.
+        info = self._info(tracked_modified=["slides/S3-acculturation/slides.md"],
+                          has_source_dirty=True)
+        monkeypatch.setattr(pmw, "get_worktree_info", lambda *a: info)
+
+        def _no_gh(*a):
+            raise AssertionError(
+                "lookup_pr_for_branch ne doit pas etre appele : le "
+                "verdict de salete est structurel et ne demande aucun gh"
+            )
+
+        monkeypatch.setattr(pmw, "lookup_pr_for_branch", _no_gh)
+        s = pmw.diagnose_worktree("C:/fake", "C:/other")
+        assert s.decision == "REFUSE"
+        assert s.refusal_reason == "uncommitted_source_changes"
+
+
+class TestGetWorktreeInfoPorcelain:
+    """Câblage get_worktree_info -> parse_porcelain + submodule status."""
+
+    def test_splits_untracked_ignored_and_reports_submodules(self, monkeypatch):
+        def fake_run_git(*args, **kwargs):
+            cmd = list(args)
+            if "status" in cmd:
+                return _fake_proc(
+                    0, "?? bg_logs/\n?? residu.bin\n!! .env\n")
+            if "submodule" in cmd:
+                return _fake_proc(0, " 2a1f3c argumentum\n")
+            if "--abbrev-ref" in cmd and "HEAD" in cmd:
+                return _fake_proc(0, "fix/X\n")
+            return _fake_proc(128, "")
+
+        monkeypatch.setattr(pmw, "run_git", fake_run_git)
+        info = pmw.get_worktree_info("C:/fake", "C:/other")
+        assert info["untracked"] == ["bg_logs/", "residu.bin"]
+        # bg_logs/ est un artefact tolere (#14619) : nettoyable a l'apply,
+        # il ne compte pas comme bloquant ; residu.bin oui.
+        assert info["blocking_untracked"] == ["residu.bin"]
+        assert info["ignored_extra"] == [".env"]
+        # Ni fichier source ni tracked modifie : toleres + residu seul ne
+        # rendent pas le worktree "source sale" (le residu releve du 2b).
+        assert info["has_source_dirty"] is False
+        assert info["has_submodules"] is True
+
+    def test_clean_worktree_reports_no_sources(self, monkeypatch):
+        def fake_run_git(*args, **kwargs):
+            cmd = list(args)
+            if "status" in cmd:
+                return _fake_proc(0, "")
+            if "submodule" in cmd:
+                return _fake_proc(0, "")
+            if "--abbrev-ref" in cmd and "HEAD" in cmd:
+                return _fake_proc(0, "fix/X\n")
+            return _fake_proc(128, "")
+
+        monkeypatch.setattr(pmw, "run_git", fake_run_git)
+        info = pmw.get_worktree_info("C:/fake", "C:/other")
+        assert info["has_source_dirty"] is False
+        assert info["blocking_untracked"] == []
+        assert info["has_submodules"] is False
 
 
 # ---------------------------------------------------------------------------
