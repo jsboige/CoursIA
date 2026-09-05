@@ -1031,6 +1031,20 @@ CHECK_FAILED = {"FAILURE", "TIMED_OUT", "ACTION_REQUIRED", "STARTUP_FAILURE", "E
 # le CheckRun reel, dont `conclusion` est `null` tant qu'il n'a pas conclu.
 CHECK_IN_FLIGHT = {"PENDING", "QUEUED", "IN_PROGRESS", "WAITING", "EXPECTED", ""}
 
+# #14537 : les agregateurs portent un nom IDENTIQUE quel que soit l'organe
+# enfant qui tombe -- corroborer sur leur nom ne prouve jamais une cause
+# commune ("plusieurs PRs echouent cet agregat" != "plusieurs PRs echouent
+# pour la meme cause"). Le nom "Always-on guards" embarque en plus un compte
+# d'organes qui derive ("-- 12 organes, 1 checkout"), donc meme l'identite
+# nominale n'est pas stable. Le match est donc un PREFIXE pour lui, un nom
+# exact pour "PR gate".
+AGGREGATOR_CHECK_PREFIXES = ("Always-on guards",)
+AGGREGATOR_CHECK_NAMES = {"PR gate"}
+
+# Banniere finale de l'agregateur always-on-guards.yml : l'organe en echec
+# vit dans l'ANNOTATION du check-run, pas dans son nom.
+_ORGAN_BANNER_RE = re.compile(r"Organes bloquants en echec\s*:\s*([a-z_ ]+?)\s*(?:\(|$)")
+
 _PR_STATE_FRAGMENT = """
   p%(n)d: pullRequest(number:%(n)d) {
     number mergeable
@@ -1038,7 +1052,7 @@ _PR_STATE_FRAGMENT = """
     commits(last:1) { nodes { commit { statusCheckRollup {
       state   # #12830 : SUCCESS/FAILURE/PENDING/NEUTRAL au niveau rollup, pour le 3e etat file-saturation
       contexts(first:100) { nodes {
-      ... on CheckRun      { name    conclusion completedAt startedAt isRequired(pullRequestNumber:%(n)d) }
+      ... on CheckRun      { name databaseId conclusion completedAt startedAt isRequired(pullRequestNumber:%(n)d) }
       ... on StatusContext { context state       createdAt              isRequired(pullRequestNumber:%(n)d) }
     } } } } } }
   }
@@ -1122,34 +1136,121 @@ def drop_superseded(contexts: list[dict]) -> list[dict]:
     return kept
 
 
+def is_aggregator_check(name: str) -> bool:
+    """Ce nom de check couvre-t-il plusieurs organes distincts (#14537) ?"""
+    return (name in AGGREGATOR_CHECK_NAMES
+            or name.startswith(AGGREGATOR_CHECK_PREFIXES))
+
+
+def fetch_check_organs(check_run_id: int) -> list[str]:
+    """Organes nommes par la banniere d'annotation de l'agregateur.
+
+    L'agregateur termine par ``::error::Organes bloquants en echec : <organe
+    organe...>`` -- c'est la seule surface qui nomme l'organe reellement tombe,
+    le nom du check-run ne le porte pas. Best-effort et fail-closed : une
+    annotation illisible rend [], et l'appelant exclut alors le check de la
+    corroboration au lieu de le laisser corroborer par son nom.
+    """
+    try:
+        raw = subprocess.run(
+            ["gh", "api", f"repos/{REPO}/check-runs/{check_run_id}/annotations"],
+            capture_output=True, text=True, encoding="utf-8", check=True, timeout=60,
+        ).stdout
+        annotations = json.loads(raw)
+    except Exception:  # noqa: BLE001 - reseau/parse : fail-closed, jamais un crash de picker
+        return []
+    organs: list[str] = []
+    for ann in annotations or []:
+        match = _ORGAN_BANNER_RE.search(ann.get("message") or "")
+        if not match:
+            continue
+        for organ in match.group(1).split():
+            if organ not in organs:
+                organs.append(organ)
+    return organs
+
+
+def failed_check_keys(ctx: dict, organ_cache: dict) -> list[str]:
+    """Cles de CAUSE d'un check rouge, pas de son nom de job (#14537, #14567).
+
+    Check direct (``Scripts Tests (CPU)``) : le nom EST la cause, on le rend
+    tel quel -- c'est le cas fondateur #13545 et il reste corroborable par nom.
+    Agregateur (``Always-on guards``, ``PR gate``) : la cause est l'ORGANE nomme
+    par l'annotation du check-run ; sans organe lisible (pas d'id, annotation
+    illisible), la cle est VIDE -- fail-closed, un agregateur ne peut pas
+    corroborer sur la seule foi de son nom.
+    """
+    name = ctx.get("name") or ctx.get("context") or "?"
+    if not is_aggregator_check(name):
+        return [name]
+    run_id = ctx.get("databaseId")
+    if run_id is None:
+        return []
+    if run_id not in organ_cache:
+        organ_cache[run_id] = fetch_check_organs(run_id)
+    return [f"{name} :: {organ}" for organ in organ_cache[run_id]]
+
+
+def _failed_contexts(state: dict | None) -> list[dict]:
+    """Contexts rouges vivants d'un etat GraphQL (rollup, dedup temporel)."""
+    if not state:
+        return []
+    commits = state.get("commits", {}).get("nodes") or []
+    rollup = (commits[0]["commit"].get("statusCheckRollup") if commits else None) or {}
+    return [ctx for ctx in drop_superseded(
+        (rollup.get("contexts", {}) or {}).get("nodes") or [])
+        if (ctx.get("conclusion") or ctx.get("state") or "").upper() in CHECK_FAILED]
+
+
 def impute_base_reds(states_by_number: dict[int, dict],
-                     author_by_number: dict[int, str]) -> dict[str, list[int]]:
-    """Checks rouges presents chez >=2 auteurs DISTINCTS : imputes a la base (#13545).
+                     lane_by_number: dict[int, str | None],
+                     organ_cache: dict | None = None,
+                     unresolved_out: list[tuple[str, int]] | None = None,
+                     ) -> dict[str, list[int]]:
+    """Checks rouges de meme CAUSE chez >=2 LANES distinctes : imputes a la base (#13545, #14537).
 
     Le predicat que le garde n'avait pas : « ce rouge existe-t-il aussi sur la
-    base ? ». Un check qui echoue sur des PRs d'auteurs sans rapport ne peut
-    pas etre un defaut de chacune -- elles partagent la base (mesure
+    base ? ». Un check qui echoue pour la meme cause sur des lanes sans rapport
+    ne peut pas etre un defaut de chacune -- elles partagent la base (mesure
     2026-08-29 : `Scripts Tests (CPU)` rouge sur 11 PRs / 4 lanes pour un seul
-    test casse sur main). Les PRs d'un MEME auteur ne se corroborent jamais :
-    une lane qui casse le meme ratchet sur 3 PRs porte 3 defauts a elle.
+    test casse sur main).
 
-    Renvoie {nom de check: [numeros de PRs corroborantes]}.
+    Les deux cles du predicat ont ete refaites (#14537, mesure 2026-09-03) :
+    l'unite de corroboration est le TAG DE LANE du grain tag, pas
+    ``author.login`` -- c'est l'identite de poussee partagee des cinq lanes
+    (52 PRs sur 59 sous ``jsboige``), donc l'ancien predicat ne croisait jamais
+    le cas nominal et ne tenait qu'a l'accident du compte de poussee ; et la
+    cle de regroupement est la CAUSE -- l'organe nomme par l'annotation pour un
+    agregateur, le nom pour un check direct -- pas le nom du job, identique
+    quel que soit l'organe enfant tombe.
+
+    Fail-closed aux deux bouts : une PR sans tag de lane lisible reste HORS
+    corroboration (elle n'irait grossir aucun seau), et un agregateur sans
+    organe lisible non plus -- il est signale dans ``unresolved_out`` pour que
+    la sortie dise qu'elle n'a pas pu trancher, et le rouge reste a la lane,
+    seul cote qui peut le reparer (#14567).
+
+    Renvoie {cle de cause: [numeros de PRs corroborantes]} (numerotes uniques).
     """
+    if organ_cache is None:
+        organ_cache = {}
     failures: dict[str, dict[str, list[int]]] = {}
     for number, state in states_by_number.items():
-        author = author_by_number.get(number) or "?"
-        commits = state.get("commits", {}).get("nodes") or []
-        rollup = (commits[0]["commit"].get("statusCheckRollup") if commits else None) or {}
-        contexts = drop_superseded((rollup.get("contexts", {}) or {}).get("nodes") or [])
-        for ctx in contexts:
-            verdict = (ctx.get("conclusion") or ctx.get("state") or "").upper()
-            if verdict not in CHECK_FAILED:
+        lane = lane_by_number.get(number)
+        if not lane:
+            continue  # sans tag lisible : hors corroboration (fail-closed)
+        for ctx in _failed_contexts(state):
+            keys = failed_check_keys(ctx, organ_cache)
+            if not keys:
+                if unresolved_out is not None:
+                    unresolved_out.append(
+                        (ctx.get("name") or ctx.get("context") or "?", number))
                 continue
-            name = ctx.get("name") or ctx.get("context") or "?"
-            failures.setdefault(name, {}).setdefault(author, []).append(number)
-    return {name: sorted(n for nums in authors.values() for n in nums)
-            for name, authors in failures.items()
-            if len(authors) >= 2}
+            for key in keys:
+                failures.setdefault(key, {}).setdefault(lane, []).append(number)
+    return {key: sorted({n for nums in lanes.values() for n in nums})
+            for key, lanes in failures.items()
+            if len(lanes) >= 2}
 
 
 def _has_failed_check(state: dict | None) -> bool:
@@ -1164,7 +1265,9 @@ def _has_failed_check(state: dict | None) -> bool:
 
 def blocking_causes(state: dict, *, age_hours: float | None = None,
                     saturation_hours: float | None = None,
-                    inherited: set[str] | None = None) -> list[str]:
+                    inherited: set[str] | None = None,
+                    resolved_keys_by_name: dict[str, set[str]] | None = None
+                    ) -> list[str]:
     """Causes qui empechent VRAIMENT le merge, formulees en geste de reparation.
 
     `mergeStateStatus: BLOCKED` n'est deliberement PAS une cause : il vaut
@@ -1199,10 +1302,16 @@ def blocking_causes(state: dict, *, age_hours: float | None = None,
         verdict = (ctx.get("conclusion") or ctx.get("state") or "").upper()
         if verdict not in CHECK_FAILED:
             continue
-        if inherited and name in inherited:
-            # #13545 : rouge impute a la base (corrobore chez >=2 auteurs
-            # distincts) -- il n'est pas reparable par cette lane.
-            continue
+        if inherited:
+            # #13545/#14537 : rouge impute a la base (cause commune corroboree
+            # chez >=2 lanes distinctes) -- pas reparable par cette lane. Pour
+            # un agregateur, l'appartenance se teste sur ses CAUSES resolues
+            # (organes), pas sur son nom identique quel que soit l'organe tombe.
+            # Un aggregateur partiellement herite (un organe a la base, un autre
+            # a la lane) reste une cause : la lane doit encore reparer le sien.
+            keys = (resolved_keys_by_name or {}).get(name) or {name}
+            if keys <= inherited:
+                continue
         if ctx.get("isRequired"):
             cause = f"check requis en echec : {name}"
             if cause not in causes:
@@ -1492,6 +1601,7 @@ def red_backlog(lane: str, threshold_hours: float,
         return {"unavailable": f"{type(exc).__name__}", "red": [],
                 "triggers": [], "unattributed_blocked": [],
                 "nits_unavailable": None, "base_inherited": [],
+                "base_unresolved": [],
                 "saturation_hours": sat_threshold}
 
     mine, others = [], []
@@ -1516,14 +1626,23 @@ def red_backlog(lane: str, threshold_hours: float,
     # etranger QUE si la lane porte un check rouge a imputer ou non, et borne
     # (16 PRs les plus recentes = 2 lots GraphQL) pour que le garde reste
     # bon marche meme sur un ouvert charge.
-    author_by = {pr["number"]: ((pr.get("author") or {}).get("login")) or "?"
-                 for pr in prs if not pr.get("isDraft")}
+    # #14537 : l'unite de corroboration est le TAG DE LANE (author.login est
+    # l'identite de poussee partagee des cinq lanes), la cle de regroupement
+    # est la CAUSE (organe resolu pour un agregateur, nom sinon), et les
+    # agregateurs non resolvables sont dits au lieu de corroborer par nom.
+    lane_by: dict[int, str | None] = {}
+    for pr in mine + others:
+        lane_by[pr["number"]] = (parse_grain_tag(pr.get("body") or "") or {}).get("lane")
+    organ_cache: dict[int, list[str]] = {}
+    unresolved_aggregates: list[tuple[str, int]] = []
     inherited: dict[str, list[int]] = {}
     if any(_has_failed_check(states.get(pr["number"])) for pr in mine):
         sample = sorted(others, key=lambda p: p.get("createdAt") or "",
                         reverse=True)[:16]
         foreign_states = fetch_pr_states([p["number"] for p in sample])
-        inherited = impute_base_reds({**states, **foreign_states}, author_by)
+        inherited = impute_base_reds({**states, **foreign_states}, lane_by,
+                                     organ_cache=organ_cache,
+                                     unresolved_out=unresolved_aggregates)
     red = []
     for pr in mine:
         state = states.get(pr["number"])
@@ -1534,8 +1653,19 @@ def red_backlog(lane: str, threshold_hours: float,
         # `_PR_STATE_FRAGMENT` ne porte pas `createdAt` et l'ajouter alourdirait
         # chaque appel pour 2 octets deconomie ; le PR-listing le fournit deja.
         age = _hours_since(pr["createdAt"])
+        # Cles de cause des checks rouges de CETTE PR -- necessaires seulement
+        # si quelque chose est herite : sans heritage l'appartenance n'est
+        # jamais testee, et on ne paie aucune resolution d'annotation.
+        keys_by_name: dict[str, set[str]] | None = None
+        if inherited:
+            keys_by_name = {}
+            for ctx in _failed_contexts(state):
+                ctx_name = ctx.get("name") or ctx.get("context") or "?"
+                keys_by_name.setdefault(ctx_name, set()).update(
+                    failed_check_keys(ctx, organ_cache))
         causes = blocking_causes(state, age_hours=age, saturation_hours=threshold_hours,
-                                 inherited=set(inherited))
+                                 inherited=set(inherited),
+                                 resolved_keys_by_name=keys_by_name)
         n_nits = nits_by_pr.get(pr["number"], 0)
         if n_nits:
             # Un point de review non leve est une cause A PART ENTIERE : la PR
@@ -1602,12 +1732,19 @@ def red_backlog(lane: str, threshold_hours: float,
     unattributed = unattributed_blocked_prs(prs)
     # Les NUMEROS, pas un compte : le coordinateur est le seul a pouvoir les
     # reprendre (cf skill coordinate, phase 3.5), et un compte ne se traite pas.
+    unresolved_by_name: dict[str, set[int]] = {}
+    for name, number in unresolved_aggregates:
+        unresolved_by_name.setdefault(name, set()).add(number)
     return {"red": red, "aged": aged, "triggers": triggers,
             "red_hours": threshold_hours, "red_count_threshold": count_threshold,
             "saturation_hours": sat_threshold,
             "unattributed_blocked": unattributed,
             "base_inherited": [{"check": name, "corroborated_by": nums}
                                for name, nums in sorted(inherited.items())],
+            # #14567 : quand un agregateur n'a pas pu etre tranche, le dire --
+            # sinon l'absence d'imputation se lirait comme une acquittement.
+            "base_unresolved": [{"check": name, "prs": sorted(nums)}
+                                for name, nums in sorted(unresolved_by_name.items())],
             "nits_unavailable": nits_unavailable}
 
 
@@ -1622,16 +1759,26 @@ def print_base_inherited(backlog: dict) -> None:
     corroborations, pour que la base ait un destinataire.
     """
     items = backlog.get("base_inherited") or []
-    if not items:
+    unresolved = backlog.get("base_unresolved") or []
+    if not items and not unresolved:
         return
     print("ROUGE IMPUTE A LA BASE -- pas le votre, pas reparable par la lane :")
     for item in items:
         wits = ", ".join(f"#{n}" for n in item["corroborated_by"][:6])
         more = "" if len(item["corroborated_by"]) <= 6 else ", ..."
         print(f"  - {item['check']} : corrobore par {wits}{more}")
-    print("Ces rouges ne comptent pas dans le refus. La cause est sur main :")
-    print("tache COORDINATEUR (unique reparateur possible), a router sur le")
-    print("dashboard ou en DM ai-01.")
+    if items:
+        print("Ces rouges ne comptent pas dans le refus. La cause est sur main :")
+        print("tache COORDINATEUR (unique reparateur possible), a router sur le")
+        print("dashboard ou en DM ai-01.")
+    # #14567 : fail-closed dit a voix haute. Un agregateur dont l'organe n'a
+    # pas pu etre lu ne corrobore RIEN -- le rouge reste a la lane, seul cote
+    # qui peut le reparer ; le taire ferait de l'echec de mesure une acquittement.
+    for item in unresolved:
+        prs = ", ".join(f"#{n}" for n in item["prs"][:6])
+        print(f"  - {item['check']} : organe non lisible sur {prs} -- pas pu")
+        print(f"    trancher, le rouge RESTE a la lane (relancer le run ou lire")
+        print(f"    l'annotation du check-run avant d'invoquer la base).")
     print()
 
 
