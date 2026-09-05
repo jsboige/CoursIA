@@ -34,6 +34,15 @@ occurrences whose count GREW are reported. A notebook that already carried
 such text keeps it: this is a ratchet, not a repo-wide scold. Pre-existing
 debt is surfaced by ``--all`` (advisory sweep), never by the gate.
 
+MACHINE_PATH is also matched on document and cell METADATA string values
+(``metadata.path``, or any metadata key whose value is a string), not only on
+cell outputs (#14513): a re-execution can leak an absolute path into
+``metadata.path`` without touching a single output, which the output-only gate
+read as ``0 regressed`` while the branch carried the path. The extension is
+kept to MACHINE_PATH -- metadata never carries a tool-failure banner, and the
+convention permits normalizing a metadata key by hand (secrets-hygiene rule 6)
+only because the gate has to be able to SEE it first.
+
 The sweep also ventilates a third class, ``DEGRADED_HINT`` (#11692): the two
 soft "non disponible / not available" motifs, which on an absolute sweep are
 the large majority of hits and are mostly DELIBERATE fallback banners. They
@@ -406,8 +415,44 @@ def output_texts(nb):
                 yield i, "\n".join(str(x) for x in tb)
 
 
+def metadata_texts(nb):
+    """Yield (location_label, text) for every string-valued metadata key.
+
+    Document-level and cell-level surfaces the output-only scan cannot see.
+    A key is scanned because its VALUE is a string -- no name whitelist -- so
+    the next metadata key a re-execution leaks is caught the first time it is
+    introduced, not after somebody names it.
+
+    ``metadata.papermill.input_path`` / ``output_path`` are repo-relative or
+    basename (a pre-commit hook + secrets-hygiene rule 6) and so never match
+    the machine-path patterns (verified on the 1234 notebooks, issue #14513
+    precaution 1).
+
+    location_label: ``doc:<key>`` for document metadata, ``cell[<i>]:<key>``
+    for cell metadata.
+    """
+    md = nb.get("metadata", {}) or {}
+    if isinstance(md, dict):
+        for k, v in md.items():
+            if isinstance(v, str) and v:
+                yield "doc:" + str(k), v
+    for i, cell in enumerate(nb.get("cells", []) or []):
+        cmd = cell.get("metadata", {}) or {}
+        if isinstance(cmd, dict):
+            for k, v in cmd.items():
+                if isinstance(v, str) and v:
+                    yield "cell[%d]:%s" % (i, str(k)), v
+
+
 def scan(nb):
-    """{class: [(cell_index, matched_text), ...]} for one notebook."""
+    """{class: [(location, matched_text), ...]} for one notebook.
+
+    ``location`` is a cell index for output hits, or a metadata descriptor
+    (``doc:<key>`` / ``cell[<i>]:<key>``) for metadata hits. Only
+    MACHINE_PATH is extended to metadata (issue #14513): metadata does not
+    carry tool-failure banners, and the machine-path metadata class is what a
+    re-execution leaks.
+    """
     found = {"TOOL_FAILURE": [], "MACHINE_PATH": []}
     if not nb:
         return found
@@ -425,6 +470,15 @@ def scan(nb):
         for pat in MACHINE_PATH_PATTERNS:
             for m in pat.finditer(text):
                 found["MACHINE_PATH"].append((idx, m.group(0)[:120]))
+    # #14513: a machine path can also sit in document/cell metadata, invisible
+    # to the output-only loop above -- the exact hole that let PT_11c's
+    # metadata.path pass the gate green while the branch still carried the
+    # path (#14272 / #13891). Scan string-valued metadata too, so the gate
+    # sees the surface the convention (secrets-hygiene rule 6) allows fixing.
+    for loc, text in metadata_texts(nb):
+        for pat in MACHINE_PATH_PATTERNS:
+            for m in pat.finditer(text):
+                found["MACHINE_PATH"].append((loc, m.group(0)[:120]))
     return found
 
 
@@ -606,6 +660,38 @@ def self_test(cwd=None):
         if n_path < SELF_TEST_MIN_PATH:
             failures.append("replay MACHINE_PATH +" + str(n_path) + " < "
                             + str(SELF_TEST_MIN_PATH) + " expected")
+
+    # #14513 replay: the metadata-only leak of #14272 / #13891, the defect
+    # this extension exists to close. c4b99a3ec4 is the PT_11c head whose
+    # metadata.path still carried the machine path (one document-level
+    # MACHINE_PATH hit); 109cf4eb2 removed it (zero). The original output-only
+    # scan reported 0 regressed on BOTH -- it cannot see metadata -- so a
+    # predicate that fires on the base and stays silent on the head is the
+    # proof of the fix, not a synthetic witness. Both commits are branch-side
+    # history of a squash-merged PR and are absent from a fresh clone
+    # (fetch-depth 0), so guard with cat-file exactly like the founding replay.
+    c4b99a3ec4 = "c4b99a3ec49cda31057630ffb67802c026e75cbf"
+    c109cf4eb = "109cf4eb219a7b5d0f566aaa47fda9540bba9926"
+    if (git("cat-file", "-e", c4b99a3ec4, cwd=cwd) is None
+            or git("cat-file", "-e", c109cf4eb, cwd=cwd) is None):
+        print("SKIP #14513 replay: c4b99a3ec4/c109cf4eb not in this clone")
+    else:
+        nb_path = ("MyIA.AI.Notebooks/GenAI/PostTraining/"
+                   "PT_11c_grpo_qwen17_rlvr.ipynb")
+        base_nb = read_notebook_at(c4b99a3ec4, nb_path, cwd=cwd)
+        head_nb = read_notebook_at(c109cf4eb, nb_path, cwd=cwd)
+        b_meta = [loc for loc, _ in scan(base_nb)["MACHINE_PATH"]
+                  if isinstance(loc, str)]
+        h_meta = [loc for loc, _ in scan(head_nb)["MACHINE_PATH"]
+                  if isinstance(loc, str)]
+        print("replay #14513: metadata-path hits "
+              + str(len(b_meta)) + " -> " + str(len(h_meta)))
+        if "doc:path" not in b_meta:
+            failures.append("#14513 replay: metadata.path not seen in base ("
+                            + repr(b_meta) + ")")
+        if h_meta:
+            failures.append("#14513 replay: metadata machine path still in "
+                            "head (" + repr(h_meta) + ")")
 
     # Second replay (#14603): the GPU -> CPU re-exec of #14262, pinned as a
     # fixture (see DOWNGRADE_REPLAY_FIXTURE). The two gating classes read
