@@ -5383,4 +5383,105 @@ def test_14793_troncature_60_crochet_non_ferme_est_pin() -> None:
     assert mod.classify("myia-ai-01", body) == "BLOCK", (
         "#14793-TRUNC: classify doit rendre BLOCK, pas None/arbitrage."
     )
+# --- #14564 : vocabulaire ASYMETRIQUE entre registre CONCERN et registre LIFT ---
+#
+# Deux defauts OPPOSES mesures dans l'issue, la correction doit les tenir en
+# meme temps (et ne pas casser la classe que la case-sensibilite de #12908
+# protegeait — distinguer l'EMISSION de la NARRATION de levee) :
+#   (a) FAUX NEGATIF — la reserve en PROSE anglaise echappait a CONCERN_MARKERS
+#       (qui ne connaissait que « CONCERNS » majuscule case-sensitive + la
+#       forme etiquetee line-start). PR #14544 mergée avec 3 reserves Hermes
+#       non levees (rc=0).
+#   (b) FAUX POSITIF — des levees reelles en FRANCAIS COURT (« RAS », « rien a
+#       traiter », « c'est traite ») n'eteignaient pas une reserve : la lane
+#       restait bloquee sur un deblocage deja prononce.
+
+
+def test_english_prose_concern_emission_flagge():
+    """#14564 (a) — « I have 3 concerns ... » est une EMISSION : la reserve en
+    prose anglaise doit etre classee BOT-CONCERN (avant : None, rc=0)."""
+    assert mod.classify(
+        "jsboige",
+        "I have 3 concerns about the reproducibility — the seeds in the committed "
+        "artifact ([0,1,7,42,99]) do not match the code ([...][:n_seeds]).",
+    ) == "BOT-CONCERN"
+
+
+def test_english_label_concern_possessive_flagge():
+    """#14564 (a) — « my concerns: » (label precedee d'un possessif) : la forme
+    etiquetee line-start ne matchait pas « my concerns: » (le « my » avant
+    l'ancre ^). Le motif COUNT/POSSESSIVE la rattrape."""
+    assert mod.classify(
+        "jsboige", "my concerns: the attribution in cell 0 is still wrong."
+    ) == "BOT-CONCERN"
+
+
+def test_english_label_concern_count_flagge():
+    """#14564 (a) — « 3 concerns: » (compteur + label) : emission numerotee."""
+    assert mod.classify(
+        "jsboige", "3 concerns: seed list, bias sign, and provenance."
+    ) == "BOT-CONCERN"
+
+
+def test_english_concern_remain_vs_no_flagge():
+    """#14564 (a) — « some concerns remain ... » : locution de prose a faible
+    collision. La meme idee niee (« No concerns remain ») est CITEE (citer
+    « no ») et reste None."""
+    assert mod.classify(
+        "jsboige", "some concerns remain about the walk-forward split."
+    ) == "BOT-CONCERN"
+    assert mod.classify("jsboige", "No concerns remain — all fixed.") is None
+
+
+def test_english_narration_my_concerns_addressed_reste_none():
+    """Garde-fou #14564 (a) : « my concerns are addressed » est une NARRATION
+    de levee, PAS une emission. On n'a PAS relache « my concerns » en phrase
+    nue (le deux-points de la forme label distingue) — verifier qu'une telle
+    narration reste None, pas BOT-CONCERN."""
+    body = "my concerns are addressed at head abc — both cells are re-run."
+    assert mod.classify("jsboige", body) is None
+
+
+def test_ras_francais_leve_dans_une_reponse():
+    """#14564 (b) — « RAS sur le fond, rien a signaler » est une levee RELLE :
+    une reserve posee puis une reponse « RAS » debloque la PR. Avant : la
+    levee FRANCAIS COURT n'eteignait pas (F.P.), la PR restait bloquee."""
+    reserve = {"author": {"login": "clusterManager-Myia"}, "createdAt": at(9),
+               "body": "[Hermes] COMMENT_WITH_CONCERNS — le run oublie 3 seeds."}
+    lift = {"author": {"login": "clusterManager-Myia"}, "createdAt": at(12),
+            "body": "RAS sur le fond, rien a signaler — re-exec avec les 8 seeds."}
+    assert run([reserve, lift])["blocked"] is False
+
+
+def test_c_est_traite_leve_dans_une_reponse():
+    """#14564 (b) — « c'est traite » (objet « cela » + participe) est une
+    resolution assumee. Bordure stricte : « est traite » NU reste hors registre
+    (rejete #11639, override qui ne doit rien lever)."""
+    reserve = {"author": {"login": "clusterManager-Myia"}, "createdAt": at(9),
+               "body": "[Hermes] COMMENT_WITH_CONCERNS — la cellule 12 est cassee."}
+    lift = {"author": {"login": "clusterManager-Myia"}, "createdAt": at(12),
+            "body": "c'est traite — cell 12 relancee a l'execution."}
+    assert run([reserve, lift])["blocked"] is False
+
+
+def test_est_traite_nu_ne_leve_pas():
+    """Garde-fou #14564 (b) : « est traite » NU (sans « c'est ») reste hors
+    registre — c'est le contre-exemple REJETE de l'issue (#11639 « le point 3
+    est traite en argument », override qui ne doit rien lever)."""
+    reserve = {"author": {"login": "clusterManager-Myia"}, "createdAt": at(9),
+               "body": "[Hermes] COMMENT_WITH_CONCERNS — la cellule 12 est cassee."}
+    lift = {"author": {"login": "clusterManager-Myia"}, "createdAt": at(12),
+            "body": "le point 3 est traite en argument — relu le diff."}
+    assert run([reserve, lift])["blocked"] is True
+
+
+def test_ras_word_bound_rasoir_ne_leve_pas():
+    """Garde-fou word-bound : la sous-chaine « RAS » de « RASOIR »/« ERASME »
+    ne doit pas matcher le sigle. `_WORD_BOUNDED_LIFT_RE` l'ecarte — sinon
+    une reserve serait levee a tort par un mot contenant le sigle."""
+    reserve = {"author": {"login": "clusterManager-Myia"}, "createdAt": at(9),
+               "body": "[Hermes] COMMENT_WITH_CONCERNS — 3 seeds manquants."}
+    lift = {"author": {"login": "clusterManager-Myia"}, "createdAt": at(12),
+            "body": "Ce choix est un RASOIR (tranchant, au sens figure)."}
+    assert run([reserve, lift])["blocked"] is True
 
