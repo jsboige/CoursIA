@@ -40,14 +40,23 @@ PYTEST_INI = REPO_ROOT / "pytest.ini"
 WORKFLOW_COVERAGE: dict[str, list[str]] = {
     ".github/workflows/scripts-tests.yml": [
         "scripts/tests",
+        # scripts/secrets/tests : dir entier (famille 4 de #14615) — les 2
+        # modules gitleaks y skip sans binaire (gate binaire = secret-scan.yml,
+        # cibles fichier ci-dessous).
+        "scripts/secrets/tests",
         "scripts/notebook_tools/tests",
         "scripts/lean/tests",
         "scripts/translation/tests",
+        "scripts/audit/tests",
         "MyIA.AI.Notebooks/GameTheory/tests",
         "MyIA.AI.Notebooks/QuantConnect/scripts/tests",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_bg_tree_lock.py",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_prover_forensic_guards.py",
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/tests",
+        # scripts/quantconnect/tests : dir entier (famille 3 de #14615) —
+        # 254 tests / 9 modules, hermétique (mesure firsthand 2026-09-05 :
+        # 253 verts + 1 skip de donnée, yfinance absent de l'env).
+        "scripts/quantconnect/tests",
     ],
     ".github/workflows/ml-tests.yml": [
         "MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/scripts/tests",

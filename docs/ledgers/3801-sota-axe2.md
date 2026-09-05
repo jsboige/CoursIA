@@ -482,23 +482,6 @@ Total .ipynb: 18
 - **L378 durcie appliquée** : G.1 verify-before-claiming 2× (audit initial + re-vérification au commit par lecture directe 18 nb) → 0 faux positif C.1, 3 disclosures honnêtes vérifiées, 0 CJK parasite.
 - **Registre varié** : kernels utilisés = `.net-csharp` (8 DecInfer), `lean4-wsl` (2 Lean companions), `python3` (7 DecPyMC), `coursia-ml-training` (1 Causal-Bridges). Vrais outils SOTA : Microsoft.Infer.NET, Lean 4 WSL, PyMC+ArviZ, dowhy+Do-Calculus. **Zéro stub** `raise NotImplementedError` / `assert False` / `1/0` (vérification regex pre-commit clean sur 315 cellules code).
 
-## Cumul entries
-
-| # | Entry | Owner | Date | Verdict | PR |
-|---|-------|-------|------|---------|-----|
-| 1 | ML/ML.Net (19 nb) | po-2025 strict | 2026-07-09 | SOTA-OK 19/19 | #5816 CLOSED (rebasé -> #5817) |
-| 2 | Tweety (31 nb) | SymbolicAI owner-floue | 2026-07-09 | SOTA-OK 31/31 | #5817 MERGED |
-| 3 | SymbolicLearning (20 nb) | SymbolicAI owner-floue | 2026-07-09 | SOTA-OK 20/20 | #5840 MERGED |
-| 4 | SemanticWeb (24 nb) | SymbolicAI owner-floue | 2026-07-09 | SOTA-OK 24/24 | #5847 MERGED |
-| 5 | DecisionTheory (18 nb) | po-2025 strict | 2026-07-10 | SOTA-OK 18/18 | #5861 MERGED |
-| 6 | Probas/Infer (20 nb) | po-2025 strict | 2026-07-10 | SOTA-OK 20/20 | #5886 MERGED |
-| 7 | IIT/PyPhi (3 nb) | po-2025 strict | 2026-07-10 | SOTA-OK 3/3 | #5894 OPEN MERGEABLE |
-| 8 | **Sudoku (36 nb)** | po-2025 strict | 2026-07-10 | SOTA-OK 36/36 | **THIS** |
-
-**Moteurs SOTA cumulés sur 8 entries** : Microsoft.ML.Probabilistic, Microsoft.Infer.NET, PyPhi, Google.OR-Tools, Z3, Microsoft.Automata, Lean 4, PyTorch, OpenAI SDK, NetworkX, python-constraint, AIMA, Choco, Dancing Links, PyGAD, GeneticSharp, simanneal, Mealpy, NumPyro/JAX, regex, matplotlib, Plotly.NET = **22 moteurs SOTA distincts** sur 8 familles du registre axe-2 SOTA.
-
-**Spécificité registre** : entry #008 = première entrée avec **3 kernels différents** (17×.net-csharp + 18×python3 + 1×lean4-wsl = 36/36). Sudoku-19-Lean-Propagation (lake `sudoku_lean/Sudoku.{Basic,ExactCover,Propagation}` + 0 sorry + 2 axiomes `propext, Quot.sound`). Marqueur de la **branche Kernel `leans`** du registre déjà initiée par entry #005 DecisionTheory (2 Lean companions DecInfer-02 + DecInfer-09) — kernel `lean4-wsl` déjà représenté.
-
 ## Voir aussi
 
 - EPIC #3801 — registre axe-2 SOTA (mandat user 2026-06-21)
@@ -850,35 +833,6 @@ Pivot L335 anti-monoculture post-c.400 : **7ᵉ famille distincte du ledger** (e
 - **Faux positif CJK** : 0/36 fonctionnellement (2 chars CJK = `完整` localisés L398 Sudoku-13-Csharp = terme technique précis dans une documentation mixte FR/ZH sur une limitation de SFA → Z3, **pas une faute de frappe parasite**). A documenter honnêtement.
 - **Audit sub-agent vs audit worker** : sub-agent Sonnet (`a1642a03fd1215256`, model=sonnet, read-only) est invoqué en parallèle mais **les chiffres pivots ont été vérifiés firsthand par le worker** via 4 scripts python3 indépendants AVANT l'écriture de cette entry (1337 cells, 0 null exec, 0 err, 36/36 = 17+18+1 kernelspec cohérence, 0 C.1, 2 CJK localisés, 21 moteurs SOTA distincts). Quand le sub-agent aura livré son rapport, ses counts seront spot-checkés contre ces chiffres — pattern model-delegation c.398 durcie (G.1 2× : sub-agent + worker firsthand).
 - **Anti-régression** : aucun `# Solution` ou `# Exemple résolu` strippé ; aucun notebook dont les outputs ont été hand-edités (vérification : `execution_count != null` sur 525/525 cellules code + `output_type: error = 0` + examples résolus cell 25 de Sudoku-01-Backtracking-Python = `solve_puzzle()` retourne grille 9×9 complète).
-
-### Cumul entries (registre axe-2 SOTA)
-
-| # | Entry | Owner | Date | Verdict | PR |
-|---|-------|-------|------|---------|-----|
-| 1 | ML/ML.Net (19 nb) | po-2025 strict | 2026-07-09 | SOTA-OK 19/19 | #5817 MERGED |
-| 2 | Tweety (31 nb) | SymbolicAI owner-floue | 2026-07-09 | SOTA-OK 31/31 | #5817 MERGED |
-| 3 | SymbolicLearning (20 nb) | SymbolicAI owner-floue | 2026-07-09 | SOTA-OK 20/20 | #5840 MERGED |
-| 4 | SemanticWeb (24 nb) | SymbolicAI owner-floue | 2026-07-09 | SOTA-OK 24/24 | #5847 MERGED |
-| 5 | DecisionTheory (18 nb) | po-2025 strict | 2026-07-10 | SOTA-OK 18/18 | #5861 MERGED |
-| 6 | Probas/Infer (20 nb) | po-2025 strict | 2026-07-10 | SOTA-OK 20/20 | #5886 MERGED |
-| 7 | IIT/PyPhi (3 nb) | po-2025 strict | 2026-07-10 | SOTA-OK 3/3 | #5895 MERGED |
-| 8 | Sudoku (36 nb) | po-2025 strict | 2026-07-10 | SOTA-OK 36/36 | #5918 MERGED |
-| 9 | RL (17 nb) | po-2025 strict | 2026-07-10 | SOTA-OK 17/17 | #5925 MERGED |
-| 10 | CaseStudies (6 nb) | po-2025 strict | 2026-07-10 | SOTA-OK 6/6 | #5930 MERGED |
-| 11 | ICT-Series (26 nb) | po-2025 strict | 2026-07-10 | SOTA-OK 26/26 | #5936 MERGED |
-| 12 | GameTheory (55 nb) | po-2025 strict | 2026-07-10 | SOTA-OK 55/55 | #5944 MERGED |
-| 13 | Search (112 nb) | po-2025 strict | 2026-07-10 | SOTA-OK 112/112 | #5949 MERGED |
-| 14 | Planners (23 nb) | po-2025 strict | 2026-07-10 | SOTA-OK 23/23 | #5954 MERGED |
-| 15 | Argument_Analysis (17 nb) | SymbolicAI owner po-2023 | 2026-07-11 | SOTA-OK 17/17 | #5963 MERGED |
-| 16 | (SmartContracts — non cumul local) | po-2025 strict | 2026-07-11 | SOTA-OK 27/27 | #5994 MERGED |
-| 17 | (ML/DataScienceWithAgents — non cumul local) | po-2025 strict | 2026-07-11 | SOTA-OK 27/27 | #6034 MERGED |
-| 18 | **Probas/Infer-extension (9 nb)** | po-2025 strict | 2026-07-11 | **SOTA-OK 9/9** | #6046 MERGED |
-| 19 | Lean 4 (24 lakefiles, 282 files, 21 sorry) | po-2026/po-2024 | 2026-07-11 | SOTA-OK Lean axe | **#6050 OPEN (en vol)** |
-| 20 | **QuantConnect/Python (53 nb)** | po-2024 strict | 2026-07-11 | **SOTA-OK 53/53 (bimodal)** | #6144 MERGED |
-| 21 | **QuantConnect/ML-Training-Pipeline (14 nb)** | po-2024 strict | 2026-07-11 | **SOTA-OK 14/14** | #6150 MERGED |
-| 22 | **GenAI/Texte (20 nb, 100% exec)** | po-2024 strict | 2026-07-11 | **SOTA-OK 20/20** | **THIS (c.41→c.44 renumber)** |
-
-**Moteurs SOTA cumulés dans le registre (18 entries cumulatives locals, + 2 PRs MERGED hors cumul local = #5994 SmartContracts + #6034 ML/DSWA)** : Microsoft.ML.Probabilistic, Microsoft.Infer.NET, PyPhi, Google.OR-Tools, Z3, Microsoft.Automata, Lean 4, PyTorch, OpenAI SDK, Microsoft.SemanticKernel, NetworkX, python-constraint, AIMA, Choco, Dancing Links, PyGAD, GeneticSharp, simanneal, Mealpy, NumPyro/JAX, regex, matplotlib, Plotly.NET, pyperplan, PDDL parser, ArviZ, DoWhy = **27+ moteurs SOTA distincts** sur 15 familles du registre axe-2 SOTA (SmartContracts + ML/DSWA non cumulés localement mais PRs MERGED hors ledger).
 
 ### CJK filter
 
@@ -2780,3 +2734,42 @@ Le do-calculus **est la capacité distinctive** de la causalité — il n'existe
 - **Continuité c.538** : greenlight ai-01 (DM `msg-20260716T045341-edgoyo`) pour série PyMC SOTA audit — mais dispatch pointait PyMC-12/18 (déjà #028/#018 SOTA-OK, 4e dispatch stale ce motif) ; **G.1 firsthand** a identifié PyMC-5 comme le **vrai gap non-audité**. R6 anti-monotony : famille probabiliste PyMC (substance) après forensic-docs GameTheory c.537.
 - **Collision-avoidance** : `gh pr list --state all --search` = 0 PR PyMC-5 SOTA en vol ; entry #030 stacked à la suite de #029.
 - **Cumulatif** : entry #030 = **PyMC-5 standalone** (1 nb) → **famille Probas/PyMC COMPLÈTE 15/15** dans le registre (entry #028 14 + entry #018 PyMC-16..19 + entry #030 PyMC-5 = 19 notebooks PyMC couverts). PyMC/ArviZ déjà comptés ; cette entry clôture le gap PyMC-5.
+
+## Cumul entries (registre axe-2 SOTA)
+
+Tableau cumulatif unique du registre : une ligne par entry `## Entry #NNN`. Toute nouvelle entry doit etre ajoutee ici dans la meme PR (regle #14562).
+
+| # | Entry | Owner | Date | Verdict | PR |
+|---|-------|-------|------|---------|-----|
+| 001 | ML/ML.Net (19 nb) | po-2025 strict | 2026-07-09 | SOTA-OK 19/19 | #5817 MERGED |
+| 002 | Tweety (31 nb) | SymbolicAI owner-floue | 2026-07-09 | SOTA-OK 31/31 | #5817 MERGED |
+| 003 | SymbolicLearning (20 nb) | SymbolicAI owner-floue | 2026-07-09 | SOTA-OK 20/20 | #5840 MERGED |
+| 004 | SemanticWeb (24 nb) | SymbolicAI owner-floue | 2026-07-09 | SOTA-OK 24/24 | #5847 MERGED |
+| 005 | DecisionTheory (18 nb) | po-2025 strict | 2026-07-10 | SOTA-OK 18/18 | #5861 MERGED |
+| 006 | Probas/Infer (20 nb) | po-2025 strict | 2026-07-10 | SOTA-OK 20/20 | #5886 MERGED |
+| 007 | IIT/PyPhi (3 nb) | po-2025 strict | 2026-07-10 | SOTA-OK 3/3 | #5895 MERGED |
+| 008 | Sudoku (36 nb) | po-2025 strict | 2026-07-10 | SOTA-OK 36/36 | #5918 MERGED |
+| 009 | RL (17 nb) | po-2025 strict | 2026-07-10 | SOTA-OK 17/17 | #5925 MERGED |
+| 010 | CaseStudies (6 nb) | po-2025 strict | 2026-07-10 | SOTA-OK 6/6 | #5930 MERGED |
+| 011 | ICT-Series (26 nb) | po-2025 strict | 2026-07-10 | SOTA-OK 26/26 | #5936 MERGED |
+| 012 | GameTheory (55 nb) | po-2025 strict | 2026-07-10 | SOTA-OK 55/55 | #5944 MERGED |
+| 013 | Search (112 nb) | po-2025 strict | 2026-07-10 | SOTA-OK 112/112 | #5949 MERGED |
+| 014 | Planners (23 nb) | po-2025 strict | 2026-07-10 | SOTA-OK 23/23 | #5954 MERGED |
+| 015 | Argument_Analysis (17 nb) | SymbolicAI owner po-2023 | 2026-07-11 | SOTA-OK 17/17 | #5963 MERGED |
+| 016 | SmartContracts (27 nb, non cumul local) | po-2025 strict | 2026-07-11 | SOTA-OK 27/27 | #5994 MERGED |
+| 017 | ML/DataScienceWithAgents (27 nb, non cumul local) | po-2025 strict | 2026-07-11 | SOTA-OK 27/27 | #6034 MERGED |
+| 018 | Probas/Infer-extension (9 nb) | po-2025 strict | 2026-07-11 | SOTA-OK 9/9 | #6046 MERGED |
+| 019 | Lean 4 (24 lakefiles, 282 files, 21 sorry) | po-2026/po-2024 | 2026-07-11 | SOTA-OK Lean axe | #6216 MERGED |
+| 020 | QuantConnect/Python (53 nb) | po-2024 strict | 2026-07-11 | SOTA-OK 53/53 (bimodal) | #6144 MERGED |
+| 021 | QuantConnect/ML-Training-Pipeline (14 nb) | po-2024 strict | 2026-07-11 | SOTA-OK 14/14 | #6150 MERGED |
+| 022 | GenAI/Texte (20 nb, 100% exec) | po-2024 strict | 2026-07-11 | SOTA-OK 20/20 | #6152 MERGED |
+| 023 | GenAI/Image (20 nb, 100% exec) | po-2024 strict | 2026-07-12 | SOTA-OK 20/20 | #6216 MERGED |
+| 024 | GenAI/PostTraining (7 nb) | po-2024 strict | 2026-07-12 | SOTA-OK 7/7 | #6216 MERGED |
+| 025 | GenAI/Video (17 nb) | po-2024 strict | 2026-07-12 | SOTA-OK 17/17 | #6216 MERGED |
+| 026 | GenAI/Audio (30 nb) | po-2024 strict | 2026-07-12 | SOTA-OK 30/30 | #6216 MERGED |
+| 027 | QuantConnect/partner-course (14 nb) | po-2024 strict | 2026-07-12 | SOTA-OK 14/14 (bimodal) | #6216 MERGED |
+| 028 | Probas/PyMC 1-15 (14 nb) | po-2025 strict | 2026-07-12 | SOTA-OK 14/14 | #6286 MERGED |
+| 029 | GenAI/SemanticKernel 01-10b (12 nb) | owner-floue po-2025 consultatif | 2026-07-12 | SOTA-OK 12/12 | #6286 MERGED |
+| 030 | Probas/PyMC-05-Causal-Inference (1 nb) | po-2025 strict | 2026-07-16 | SOTA-OK 1/1 | #6808 MERGED |
+
+**Mesure** : `grep -c '^## Entry #' docs/ledgers/3801-sota-axe2.md` = **30** (verifie le 2026-09-04). Ce tableau unique remplace les deux tableaux dupliques (8 lignes, entry #005 ; 22 lignes, entry #008) supprimes par #14562.

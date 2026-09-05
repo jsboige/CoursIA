@@ -47,8 +47,13 @@
       csharp_sha: 72869cb9d547aab76fb0f9fd3077dd566d28898b
       content_python_sha: 5cd4eade8c04fd873006c5cda5a4b1d951657dfe9c3339acdb5b7eddaa4f4ec5
       content_csharp_sha: 779980776ab60de6e10b25dcc8cefb1d3b9dd879bf877458fe08f94e500cc296
+    - date: "2026-09-04"
+      by: myia-po-2026:CoursIA
+      python_sha: 44e714cad7d520bb4c5dc0473ad8d7c23723ae28
+      csharp_sha: 0e224f523e1b8c46b9287e4691398470d11c785b
+      content_python_sha: 2f214c97191fae50c3469b81e3b5d830d1ce9d0b31c9925158c4f2f97c7964a8
+      content_csharp_sha: 64cea348bb31fa7d9c51b933945b4713bdb96aabaee0e976e3ebb617dde94fc2
   known_differences:
-    - "2026-09-04 (ai-01, PR #14164) : rebaseline d attestation apres une edition markdown-only du cote C# (prose de l Exemple guide 1). ASYMETRIE DE PROSE INTRODUITE, volontairement non corrigee ici : le cote C# decrit desormais honnetement la table AllenTable.COMPOSITION comme partielle (19 paires sur 169, repli conservateur {Equals, During} sur les 150 autres), tandis que le cote Python porte encore le titre \"Table de composition complete d Allen\" alors que sa propre table n encode que 5 entrees avec un repli set(AllenRelation) (les 13 relations). Le defaut de CODE est pre-existant des DEUX cotes, il est sur main hors de cette PR, et il est suivi en #14609 -- dont le scope est etendu au jumeau Python par ce constat. La parite de concepts, de solveur, de set d exercices et de visualisation est inchangee ; seule la prose diverge, et elle diverge dans le sens de l honnetete."
     - "Socle commun : algebre d'intervalle d'Allen (13 relations), STP (Simple Temporal Problem) avec Floyd-Warshall, TCSP (Temporal CSP a intervalles multiples), application planification de reunion. Couverture conceptuelle COMPLETE des deux cotes (le twin le plus proche de la famille CSP au sens cellule-a-cellule : 42 vs 41 cellules, 17 vs 16 code)."
     - "Meme famille de solveur SOTA, bindings natifs : Python = ortools.sat.cp_model ; C# = Google.OrTools.Sat. Les deux cotes invoquent OR-Tools CP-SAT (moteur SAT-based identique) -- parite de solveur confirmee, pas de divergence de machinerie."
     - "Set d'exercices identique : les deux cotes ont les memes 4 exemples guidés (table de composition d'Allen, deadlines STP, precedence multi-reunion, STP via OR-Tools) + 4 stubs (1b/2b/3b/4b) aux enonces correspondants."

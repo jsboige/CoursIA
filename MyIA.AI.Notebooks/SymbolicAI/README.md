@@ -4,9 +4,9 @@
 
 <!-- CATALOG-STATUS
 series: SymbolicAI
-pedagogical_count: 262
-breakdown: Lean=49, SMT=46, Tweety=34, SmartContracts=31, Argument_Analysis=28, SemanticWeb=27, Planners=25, SymbolicLearning=21, root=1
-maturity: BETA=252, ALPHA=6, DRAFT=4
+pedagogical_count: 263
+breakdown: Lean=49, SMT=46, Tweety=34, SmartContracts=31, Argument_Analysis=28, SemanticWeb=27, Planners=25, SymbolicLearning=22, root=1
+maturity: BETA=253, ALPHA=6, DRAFT=4
 -->
 
 > **Note sur les comptes.** Le bloc ci-dessus est un marqueur autoritatif : `<!-- CATALOG-STATUS -->` est régénéré quotidiennement par la CI (`.github/workflows/catalog-cron.yml`, 03:37 UTC) sur `main` — pour toute vérification courante du nombre de notebooks et de la maturité, **le catalogue fait foi**. La prose pédagogique ci-dessous mentionne des chiffres précis (ex. « 12 notebooks Python », « 8 jumeaux C# ») qui peuvent dériver localement ; la table « Audit Qualité » (§E) au bas de ce fichier et les READMEs de chaque sous-série ([Tweety](Tweety/README.md), [Lean](Lean/README.md), [SemanticWeb](SemanticWeb/README.md), [Planners](Planners/README.md), [SmartContracts](SmartContracts/README.md), [Argument_Analysis](Argument_Analysis/README.md), [SymbolicLearning](SymbolicLearning/README.md)) sont les sources canoniques pour les détails de chaque sous-série.
@@ -42,7 +42,7 @@ flowchart TD
 
     %% Ponts par companion (flesches pointillees = notebook natif en Lean)
     TW -.->|"Tweety-5b (proof natif)"| LEAN
-    LEAN -.->|"planners_lean (h-add)"| PL
+    LEAN -.->|"planning_lean (h-add)"| PL
     LEAN -.->|"sensitivity_lean (Huang 2019)"| SC
     TW -.->|"induction logique (FOIL)"| SL
 
@@ -54,7 +54,7 @@ flowchart TD
     class AA,SL bridge
 ```
 
-**Lecture recommandée** : les apprenants qui découvrent l'IA symbolique peuvent lire la carte comme un **parcours** — Tweety ou SemanticWeb en entrée (représentation), Lean comme verrou de rigueur (vérification), SMT ou Planners en première application (décision), avant les ponts LLM (Argument Analysis) et l'apprentissage symbolique (SymbolicLearning). Les chercheurs en vérification formelle peuvent **inverser** la lecture : Lean → SMT → Planners (companion `planners_lean`) → SmartContracts (companion `sensitivity_lean`), avant de revenir à Tweety pour l'argumentation structurée.
+**Lecture recommandée** : les apprenants qui découvrent l'IA symbolique peuvent lire la carte comme un **parcours** — Tweety ou SemanticWeb en entrée (représentation), Lean comme verrou de rigueur (vérification), SMT ou Planners en première application (décision), avant les ponts LLM (Argument Analysis) et l'apprentissage symbolique (SymbolicLearning). Les chercheurs en vérification formelle peuvent **inverser** la lecture : Lean → SMT → Planners (companion `planning_lean`) → SmartContracts (companion `sensitivity_lean`), avant de revenir à Tweety pour l'argumentation structurée.
 
 **À qui s'adresse cette série** : étudiants en IA, ingénieurs logiciel curieux de logique formelle, et chercheurs souhaitant aller au-delà du machine learning. Les notebooks Python (Tweety, Planners, SmartContracts, SemanticWeb Python, SymbolicLearning) ne nécessitent que Python 3.10+. Les notebooks .NET C# (SemanticWeb, optimisation) requièrent .NET 9.0 + dotnet-interactive. Les notebooks Lean nécessitent WSL + elan. Aucun prérequis en logique avancée : chaque série introduit ses concepts progressivement depuis les fondements.
 
@@ -62,7 +62,7 @@ flowchart TD
 
 ### Phase 1 : Logique et argumentation (Tweety, ~9h)
 
-Le parcours commence par Tweety-1-Setup qui configure l'environnement Java/JPype et charge les 35 modules TweetyProject. Les notebooks 2-3 introduisent les logiques formelles (propositionnelle, premier ordre, modale, description) avec des solveurs SAT et des prouveurs de théorèmes. Les notebooks 4-7 couvrent la révision de croyances (postulats AGM), l'argumentation abstraite (sémantiques de Dung), l'argumentation structurée (ASPIC+, ABA, ASP avec Clingo), et les extensions (bipolaire, probabiliste). Les notebooks 8-9 appliquent ces théories aux dialogues d'agents et aux préférences collectives, tandis que les notebooks 10-11 étendent au raisonnement incertain (Markov Logic Networks, FOL pondérée) et causal (do-calculus de Pearl, interventions, contrefactuels). Un companion natif Lean (Tweety-5b) double l'argumentation abstraite d'une preuve formelle 0-sorry. À l'issue de cette phase, vous maîtrisez les formalismes de base du raisonnement symbolique et pouvez implémenter des systèmes argumentatifs.
+Le parcours commence par Tweety-1-Setup qui configure l'environnement Java/JPype et charge les 35 modules TweetyProject. Les notebooks 2-3 introduisent les logiques formelles (propositionnelle, premier ordre, modale, description) avec des solveurs SAT et des prouveurs de théorèmes. Les notebooks 4-7 couvrent la révision de croyances (postulats AGM), l'argumentation abstraite (sémantiques de Dung), l'argumentation structurée (ASPIC+, ABA, ASP avec Clingo), et les extensions (bipolaire, probabiliste). Les notebooks 8-9 appliquent ces théories aux dialogues d'agents et aux préférences collectives, tandis que les notebooks 10-11 étendent au raisonnement incertain (Markov Logic Networks, FOL pondérée) et causal (do-calculus de Pearl, interventions, contrefactuels). Un companion natif Lean (Tweety-5b) double l'argumentation abstraite d'une preuve formelle 0-sorry, Tweety-5d synthétise des extensions stables certifiées (Z3 → Lean), et Tweety-12 referme la boucle grounded Python/Tweety ⇔ Lean. À l'issue de cette phase, vous maîtrisez les formalismes de base du raisonnement symbolique et pouvez implémenter des systèmes argumentatifs.
 
 ### Phase 2 : Représentation de connaissances (SemanticWeb, ~13h)
 
@@ -70,19 +70,19 @@ Le Web Sémantique généralise les concepts logiques de la Phase 1 au web. Les 
 
 ### Phase 3 : Vérification formelle (Lean, ~10h)
 
-La série Lean 4 passe de la théorie à la pratique de la preuve formelle. Les notebooks 1-5 posent les fondations : types dépendants, Curry-Howard, quantificateurs, mode tactique. Les notebooks 6-10 explorent l'état de l'art 2024-2026 : Mathlib4, intégration LLM (AlphaProof, LeanCopilot), agents autonomes (Harmonic, Erdos), et Semantic Kernel multi-agents. Les notebooks 11-11py relient la vérification formelle au machine learning (certificats de robustesse pour réseaux de neurones), et le notebook 12 porte le théorème de sensibilité de Huang (2019) en Lean 4. Les notebooks 13-18 prolongent avec les hommages aux mathématiciens (Grothendieck, Conway) et les théorèmes fondamentaux (Kochen-Specker, Libre Arbitre, noeuds de Conway, optimalité A*). Les notebooks 19-23, fraîchement intégrés, portent les **théorèmes phares 2026** : conjecture de Sendov (Lean-19, preuve L. Mazur 2026 digérée par T. Tao), le manuel *Analysis I* de T. Tao en lac Lean 4 (Lean-20), la conjecture PFR par méthode entropique (Lean-21, lac `teorth/pfr`), la détection MIMO par flips de coordonnées (Lean-22, Papailiopoulos 2026) et le problème inverse de Galois refermé pour M₂₃ (Lean-23, arXiv:2608.08538). Cette phase est la plus exigeante techniquement (WSL obligatoire, concepts mathématiques avancés) mais aussi la plus innovante.
+La série Lean 4 passe de la théorie à la pratique de la preuve formelle. Les notebooks 1-5 posent les fondations : types dépendants, Curry-Howard, quantificateurs, mode tactique. Les notebooks 6-10 explorent l'état de l'art 2024-2026 : Mathlib4, intégration LLM (AlphaProof, LeanCopilot), agents autonomes (Harmonic, Erdos), et Semantic Kernel multi-agents. Les notebooks 11-11py relient la vérification formelle au machine learning (certificats de robustesse pour réseaux de neurones), et le notebook 12 porte le théorème de sensibilité de Huang (2019) en Lean 4. Les notebooks 13-18 prolongent avec les hommages aux mathématiciens (Grothendieck, Conway) et les théorèmes fondamentaux (Kochen-Specker, Libre Arbitre, noeuds de Conway, optimalité A*), étoffés de leurs compagnons natifs et dérivés (14b, 15c, 16g-16j, 17c, 21b, 22b, 22c). Les notebooks 19-23, fraîchement intégrés, portent les **théorèmes phares 2026** : conjecture de Sendov (Lean-19, preuve L. Mazur 2026 digérée par T. Tao), le manuel *Analysis I* de T. Tao en lac Lean 4 (Lean-20), la conjecture PFR par méthode entropique (Lean-21, lac `teorth/pfr`), la détection MIMO par flips de coordonnées (Lean-22, Papailiopoulos 2026) et le problème inverse de Galois refermé pour M₂₃ (Lean-23, arXiv:2608.08538). Les notebooks 24-30 étendent la vague 2026 : compagnons ERC-20 (Lean-24/24b, lake `erc20_lean`), calibration (Lean-26), cohérence et témoin (Lean-27), hommage à Munkres (Lean-28), conjecture de Tutte (Lean-29) et structure complexe de S⁶ (Lean-30). Cette phase est la plus exigeante techniquement (WSL obligatoire, concepts mathématiques avancés) mais aussi la plus innovante.
 
 ### Phase 4 : Applications (SMT + Planners + SmartContracts, ~32h)
 
-Trois séries applicatives indépendantes exploitent les formalismes des phases précédentes. La **résolution SMT** (46 notebooks : 28 Z3-API Python + C# jumeaux + 18 Z3-Linq2Z3 C#) constitue la passerelle naturelle entre la Phase 3 (Lean, vérification formelle) et les solveurs industriels : Z3 (Microsoft Research) en API impérative Python (z3-py) et en binding déclaratif C# (Z3.Linq + LINQ). Couvre arithmétique linéaire, bit-vectors, tableaux, chaînes, MaxSAT, cryptarithmes, et capstones `Meal Planner` (série 16..16e). La **planification automatique** (23 notebooks : 13 Python incluant Planners-0-Setup, doublés de 9 jumeaux C# livrés par le marathon parité #4956, et 1 companion natif Lean Planners-5b-Lean-Relaxation qui formalise la relaxation h-add dans le lake `planners_lean`) couvre PDDL, Fast-Downward, CP-SAT (OR-Tools), planification temporelle, HTN, et l'intégration LLM pour la génération de plans. Les **smart contracts** (27 notebooks) constituent la plus longue sous-série : Solidity fondamental, DeFi (ERC-20/721, swaps, liquidités), DAO, vérification formelle (Foundry fuzz/invariants), cryptographie avancée (ZK proofs, chiffrement homomorphe, vote vérifiable), écosystèmes alternatifs (Move, Solana, Bitcoin, Vyper), et déploiement mainnet. Chaque série est autonome mais enrichie par les phases 1-3.
+Trois séries applicatives indépendantes exploitent les formalismes des phases précédentes. La **résolution SMT** (46 notebooks : 28 Z3-API Python + C# jumeaux + 18 Z3-Linq2Z3 C#) constitue la passerelle naturelle entre la Phase 3 (Lean, vérification formelle) et les solveurs industriels : Z3 (Microsoft Research) en API impérative Python (z3-py) et en binding déclaratif C# (Z3.Linq + LINQ). Couvre arithmétique linéaire, bit-vectors, tableaux, chaînes, MaxSAT, cryptarithmes, et capstones `Meal Planner` (série 16..16e). La **planification automatique** (25 notebooks : 15 Python incluant Planners-0-Setup, doublés de 9 jumeaux C# livrés par le marathon parité #4956, et 1 companion natif Lean Planners-5b-Lean-Relaxation qui formalise la relaxation h-add dans le lake `planning_lean`) couvre PDDL, Fast-Downward, CP-SAT (OR-Tools), planification temporelle, HTN, et l'intégration LLM pour la génération de plans. Les **smart contracts** (31 notebooks) constituent la plus longue sous-série : Solidity fondamental, DeFi (ERC-20/721, swaps, liquidités), DAO, vérification formelle (Foundry fuzz/invariants), cryptographie avancée (ZK proofs, chiffrement homomorphe, vote vérifiable), écosystèmes alternatifs (Move, Solana, Bitcoin, Vyper), et déploiement mainnet. Chaque série est autonome mais enrichie par les phases 1-3.
 
 ### Parcours alternatif : Pont LLM (Argument Analysis, ~4h)
 
-Si vous vous intéressez au croisement IA symbolique / IA neuronale, la série Argument Analysis (25 notebooks : 10 `Agentic-*` d'orchestration — 6 principaux + 4 traces d'exécution `_agent` — et 14 notebooks d'analyse Dung/ranking/routage/restitution, plus 1 groupe-I2 contre-arguments ASPIC, adossés au port verbatim des sources Argumentum EPITA-IS, EPIC #4960) implémente un pipeline multi-agents avec Semantic Kernel : détection de sophismes par LLM, formalisation en logique propositionnelle, et validation par TweetyProject. C'est une démo concrète du pont entre les deux paradigmes, présupposant les bases de Tweety (Phase 1) et un accès API OpenAI.
+Si vous vous intéressez au croisement IA symbolique / IA neuronale, la série Argument Analysis (28 notebooks : 10 `Agentic-*` d'orchestration — 7 notebooks sources + 3 traces d'exécution `_agent` — et 17 notebooks d'analyse Dung/ranking/routage/restitution, plus 1 groupe-I2 contre-arguments ASPIC, adossés au port verbatim des sources Argumentum EPITA-IS, EPIC #4960) implémente un pipeline multi-agents avec Semantic Kernel : détection de sophismes par LLM, formalisation en logique propositionnelle, et validation par TweetyProject. C'est une démo concrète du pont entre les deux paradigmes, présupposant les bases de Tweety (Phase 1) et un accès API OpenAI.
 
 ### Parcours alternatif : Apprentissage symbolique (SymbolicLearning, ~9h30)
 
-La série SymbolicLearning (20 notebooks : 12 Python + 8 jumeaux C# from-scratch, BCL-only) suit le chapitre 19 d'AIMA : induction pure (Version Space), apprentissage guidé par la connaissance (EBL, RBL), programmation logique inductive (FOIL, résolution inverse, Progol), apprentissage actif d'automates (L* d'Angluin), puis intégration neuro-symbolique jusqu'à un capstone LLM + knowledge graph. Elle ne requiert que Python standard pour l'essentiel et peut être suivie indépendamment des autres phases.
+La série SymbolicLearning (21 notebooks : 12 Python + 8 jumeaux C# from-scratch BCL-only + 1 companion natif Lean SL-1b) suit le chapitre 19 d'AIMA : induction pure (Version Space), apprentissage guidé par la connaissance (EBL, RBL), programmation logique inductive (FOIL, résolution inverse, Progol), apprentissage actif d'automates (L* d'Angluin), puis intégration neuro-symbolique jusqu'à un capstone LLM + knowledge graph. Elle ne requiert que Python standard pour l'essentiel et peut être suivie indépendamment des autres phases.
 
 ---
 
@@ -113,7 +113,7 @@ La série SymbolicLearning (20 notebooks : 12 Python + 8 jumeaux C# from-scratch
 | **Lean** | Lean 4 / Python (WSL) | WSL, elan, Lean 4 | lean4_jupyter | OPENAI_API_KEY (7-10) |
 | **SemanticWeb** | .NET C# / Python | Node.js (certains) | dotNetRDF, rdflib, pySHACL | Non |
 | **Planners** | Python | WSL ou Docker (Fast-Downward) | ortools, unified_planning | Non |
-| **SmartContracts** | Python | Solidity/solc, Foundry | py-solc-x, web3 | OPENAI_API_KEY (8b) |
+| **SmartContracts** | Python | Solidity/solc, Foundry | py-solc-x, web3 | OPENAI_API_KEY (SC-11) |
 | **SymbolicLearning** | Python | Aucun (WSL pour la section Popper de SL-4) | sklearn, rdflib, clingo (optionnels) | OPENROUTER_API_KEY optionnelle (SL-8/SL-10) |
 | **Argument Analysis** | Python | Java/JPype | semantic-kernel | OPENAI_API_KEY |
 | **SMT / Z3** | Python / .NET C# | Aucun | z3-solver (Python), Z3.Linq (C#) | Non |
@@ -122,7 +122,7 @@ La série SymbolicLearning (20 notebooks : 12 Python + 8 jumeaux C# from-scratch
 
 ## Tweety - TweetyProject
 
-Série sur [TweetyProject](https://tweetyproject.org/), bibliothèque Java pour l'IA symbolique. Couvre les logiques formelles, la révision de croyances, l'argumentation computationnelle, le raisonnement incertain (Markov Logic) et causal. **Double stack Python (JPype) et C#/.NET (IKVM)** — voir EPIC #4667 (Tweety .NET) pour le marathon de portage : 18 modules C# mergés en complément des 13 notebooks Python originaux.
+Série sur [TweetyProject](https://tweetyproject.org/), bibliothèque Java pour l'IA symbolique. Couvre les logiques formelles, la révision de croyances, l'argumentation computationnelle, le raisonnement incertain (Markov Logic) et causal. **Double stack Python (JPype) et C#/.NET (IKVM)** — voir EPIC #4667 (Tweety .NET) pour le marathon de portage : 18 modules C# mergés en complément des notebooks Python (14 à ce jour, dont Tweety-12-Grounded et le compagnon certifié Tweety-5d).
 
 ### Structure détaillée (Python / JPype)
 
@@ -137,6 +137,7 @@ Série sur [TweetyProject](https://tweetyproject.org/), bibliothèque Java pour 
 | **Argumentation** |   |   |   |   |
 | 5 | [Tweety-5-Abstract-Argumentation](Tweety/Tweety-5-Abstract-Argumentation.ipynb) | Frameworks de Dung, sémantiques (grounded, preferred, stable, CF2) | 2 | Java/JPype |
 | 5b | [Tweety-5b-Lean-Argumentation](Tweety/Tweety-5b-Lean-Argumentation.ipynb) | Companion natif (kernel Lean) : preuve formelle 0-sorry de l'argumentation de Dung (grounded = point fixe Knaster–Tarski) dans le lake `argumentation_lean` | 3 | Lean 4 / WSL |
+| 5d | [Tweety-5d-Stable-Synthesis-Lean](Tweety/Tweety-5d-Stable-Synthesis-Lean.ipynb) | Synthèse certifiée d'extensions stables : Z3 → Lean (Loi II) | 4 | Java/JPype, Z3 |
 | 6 | [Tweety-6-Structured-Argumentation](Tweety/Tweety-6-Structured-Argumentation.ipynb) | ASPIC+, DeLP, ABA, ASP avec Clingo | 2 | Java/JPype, Clingo |
 | 7a | [Tweety-7a-Extended-Frameworks](Tweety/Tweety-7a-Extended-Frameworks.ipynb) | ADF, Bipolar, WAF, SAF, SetAF, EAF | 2 | Java/JPype |
 | 7b | [Tweety-7b-Ranking-Probabilistic](Tweety/Tweety-7b-Ranking-Probabilistic.ipynb) | Ranking semantics, argumentation probabiliste | 2 | Java/JPype |
@@ -146,8 +147,9 @@ Série sur [TweetyProject](https://tweetyproject.org/), bibliothèque Java pour 
 | **Raisonnement avancé** |   |   |   |   |
 | 10 | [Tweety-10-MLN](Tweety/Tweety-10-MLN.ipynb) | Markov Logic Networks : FOL pondérée, inférence probabiliste sur formules | 3 | Java/JPype |
 | 11 | [Tweety-11-Causal](Tweety/Tweety-11-Causal.ipynb) | Raisonnement causal : do-calculus (Pearl), interventions, contrefactuels | 3 | Java/JPype |
+| 12 | [Tweety-12-Grounded-Via-TweetyProject](Tweety/Tweety-12-Grounded-Via-TweetyProject.ipynb) | Grounded extension : pont Python/Tweety ⇔ Lean | 6 | Java/JPype |
 
-> 13/13 notebooks Python ont des exercices. La configuration de Tweety-1-Setup constitue l'exercice setup de la série.
+> 14/14 notebooks Python ont des exercices. La configuration de Tweety-1-Setup constitue l'exercice setup de la série.
 
 ### Parité C# / .NET (EPIC #4667 — Tweety .NET via IKVM 8.14/8.15)
 
@@ -192,7 +194,7 @@ Documentation complète : [Tweety/README.md](Tweety/README.md)
 
 ## Lean - Vérification Formelle
 
-Série de **33 notebooks** sur **Lean 4**, proof assistant basé sur la théorie des types dépendants. Couvre des fondations théoriques jusqu'à l'intégration des LLMs pour l'assistance automatique aux preuves, un tribut à Grothendieck (Lean-15/15b), les jeux de Conway (Lean-16a/16b/16c/16d/16e) avec ports natifs Lean, les noeuds de Conway (Lean-17a/17b), les théorèmes de Kochen-Specker (Lean-13) et du Libre Arbitre (Lean-16f), la sensibilité de Huang (Lean-12/12b), la finitude des dérivées (Lean-14), l'optimalité A* (Lean-18), la conjecture de Sendov (Lean-19, preuve L. Mazur 2026 digérée par T. Tao), le manuel *Analysis I* de T. Tao en lac Lean 4 (Lean-20), la méthode entropique de la conjecture PFR (Lean-21, `teorth/pfr`), la détection MIMO par flips de coordonnées (Lean-22, Papailiopoulos 2026) et le problème inverse de Galois refermé pour M₂₃ (Lean-23, arXiv:2608.08538).
+Série de **49 notebooks** sur **Lean 4**, proof assistant basé sur la théorie des types dépendants. Couvre des fondations théoriques jusqu'à l'intégration des LLMs pour l'assistance automatique aux preuves, un tribut à Grothendieck (Lean-15/15b/15c), les jeux de Conway (Lean-16a-16j) avec ports natifs Lean, les noeuds de Conway (Lean-17/17b/17c), les théorèmes de Kochen-Specker (Lean-13) et du Libre Arbitre (Lean-16f), la sensibilité de Huang (Lean-12/12b), la finitude des dérivées (Lean-14/14b), l'optimalité A* (Lean-18), la conjecture de Sendov (Lean-19, preuve L. Mazur 2026 digérée par T. Tao), le manuel *Analysis I* de T. Tao en lac Lean 4 (Lean-20), la méthode entropique de la conjecture PFR (Lean-21/21b, `teorth/pfr`), la détection MIMO par flips de coordonnées (Lean-22/22b/22c, Papailiopoulos 2026), le problème inverse de Galois refermé pour M₂₃ (Lean-23, arXiv:2608.08538), les compagnons ERC-20 (Lean-24/24b, lake `erc20_lean`), la calibration (Lean-26), la cohérence et le témoin (Lean-27), l'hommage à Munkres (Lean-28), la coloration d'arêtes et la conjecture de Tutte (Lean-29), et la structure complexe de S⁶ (Lean-30).
 
 ### Structure détaillée
 
@@ -200,9 +202,9 @@ Série de **33 notebooks** sur **Lean 4**, proof assistant basé sur la théorie
 |---|----------|--------|---------|-----------|
 | **Fondations** |   |   |   |   |
 | 1 | [Lean-1-Setup](Lean/Lean-1-Setup.ipynb) | Python WSL | Diagnostic environnement, installation elan, Lean 4, lean4_jupyter | Setup |
-| 2 | [Lean-2-Dependent-Types](Lean/Lean-2-Dependent-Types.ipynb) | Lean 4 | Calcul des Constructions, types, fonctions, Pi/Sigma-types, inductifs | 9 |
+| 2 | [Lean-2-Dependent-Types](Lean/Lean-2-Dependent-Types.ipynb) | Lean 4 (WSL) | Calcul des Constructions, types, fonctions, Pi/Sigma-types, inductifs | 9 |
 | 3 | [Lean-3-Propositions-Proofs](Lean/Lean-3-Propositions-Proofs.ipynb) | Lean 4 | Curry-Howard, connecteurs, preuves comme fonctions, logique classique vs constructive | 8 |
-| 4 | [Lean-4-Quantifiers](Lean/Lean-4-Quantifiers.ipynb) | Lean 4 | Quantificateurs universels et existentiels, propriétés arithmétiques | 7 |
+| 4 | [Lean-4-Quantifiers](Lean/Lean-4-Quantifiers.ipynb) | Lean 4 (WSL) | Quantificateurs universels et existentiels, propriétés arithmétiques | 7 |
 | 5 | [Lean-5-Tactics](Lean/Lean-5-Tactics.ipynb) | Lean 4 | Mode tactique, exact, intro, apply, cases, induction, rw, simp, calc | 5 |
 | **État de l'art 2024-2026** |   |   |   |   |
 | 6 | [Lean-6-Mathlib-Essentials](Lean/Lean-6-Mathlib-Essentials.ipynb) | Lean 4 | Mathlib4, tactiques puissantes (ring, linarith, omega), Loogle/Moogle | 4 |
@@ -211,35 +213,53 @@ Série de **33 notebooks** sur **Lean 4**, proof assistant basé sur la théorie
 | 8 | [Lean-8-Agentic-Proving](Lean/Lean-8-Agentic-Proving.ipynb) | Python WSL | Agents autonomes, Harmonic Aristotle, Erdos #124 | 7 |
 | 9 | [Lean-9-SK-Multi-Agents](Lean/Lean-9-SK-Multi-Agents.ipynb) | Python WSL | Semantic Kernel, 5 agents spécialisés, ProofState | 2 |
 | 10 | [Lean-10-LeanDojo](Lean/Lean-10-LeanDojo.ipynb) | Python WSL | LeanDojo, tracing, extraction théorèmes, ML pour theorem proving | 2 |
-| 11 | [Lean-11-TorchLean](Lean/Lean-11-TorchLean.ipynb) | Lean 4 | Vérification formelle de réseaux de neurones | 2 |
+| 11 | [Lean-11-TorchLean](Lean/Lean-11-TorchLean.ipynb) | Lean 4 (WSL) | Vérification formelle de réseaux de neurones | 2 |
 | 11py | [Lean-11b-TorchLean-Python](Lean/Lean-11b-TorchLean-Python.ipynb) | Python | IBP, certificats de robustesse, vérification | 7 |
-| 12 | [Lean-12-Sensitivity-Theorem](Lean/Lean-12-Sensitivity-Theorem.ipynb) | Lean 4 | Port Lean du théorème de sensibilité de Huang (2019), hypercube, signing matrix | 4 |
-| 12b | [Lean-12b-Lean-Sensitivity-Theorem](Lean/Lean-12b-Lean-Sensitivity-Theorem.ipynb) | Python WSL | Companion natif : sources `sensitivity_lean/`, snippets via WSL | 3 |
-| 14 | [Lean-14-Finiteness-Derivatives](Lean/Lean-14-Finiteness-Derivatives.ipynb) | Lean 4 | Finitude des dérivées, formalisation constructive, dépendance sur les réels | 3 |
+| 12 | [Lean-12-Sensitivity-Theorem](Lean/Lean-12-Sensitivity-Theorem.ipynb) | Python | Port Lean du théorème de sensibilité de Huang (2019), hypercube, signing matrix | 4 |
+| 12b | [Lean-12b-Lean-Sensitivity-Theorem](Lean/Lean-12b-Lean-Sensitivity-Theorem.ipynb) | Lean 4 (WSL) | Companion natif : sources `sensitivity_lean/`, snippets via WSL | 3 |
+| 14 | [Lean-14-Finiteness-Derivatives](Lean/Lean-14-Finiteness-Derivatives.ipynb) | Python | Finitude des dérivées, formalisation constructive, dépendance sur les réels | 3 |
+| 14b | [Lean-14b-Finiteness-Lean-Companion](Lean/Lean-14b-Finiteness-Lean-Companion.ipynb) | Lean 4 (WSL) | Finiteness des dérivées de Brzozowski — compagnon kernel Lean | 1 |
 | **Hommages et théorèmes** |   |   |   |   |
-| 13 | [Lean-15-Grothendieck-Tribute](Lean/Lean-15-Grothendieck-Tribute.ipynb) | Lean 4 | Hommage à Grothendieck : tour Mathlib, micro-formalisations | 3 |
+| 13 | [Lean-15-Grothendieck-Tribute](Lean/Lean-15-Grothendieck-Tribute.ipynb) | Python | Hommage à Grothendieck : tour Mathlib, micro-formalisations | 3 |
 | 13b | [Lean-15b-Lean-Grothendieck](Lean/Lean-15b-Lean-Grothendieck.ipynb) | Python WSL | Grothendieck en Lean, atelier pratique : sources `grothendieck_lean/`, snippets via WSL | 3 |
+| 15c | [Lean-15c-Lean-Grothendieck-Companion](Lean/Lean-15c-Lean-Grothendieck-Companion.ipynb) | Lean 4 (WSL) | Le lake Grothendieck par ses énoncés (companion formel natif) | 1 |
 | 14a | [Lean-16a-Conway-Man-and-Work](Lean/Lean-16a-Conway-Man-and-Work.ipynb) | Python WSL | Conway, l'homme et l'oeuvre : panorama des grands résultats, premières formalisations exécutées depuis `conway_lean` | 3 |
 | 14b | [Lean-16b-Conway-Game-of-Life-Lean](Lean/Lean-16b-Conway-Game-of-Life-Lean.ipynb) | Python WSL | Game of Life as Computation : Doomsday, FRACTRAN, Look-and-Say, Nim, Angel | 4 |
 | 14c | [Lean-16c-Conway-Game-of-Life-Golly](Lean/Lean-16c-Conway-Game-of-Life-Golly.ipynb) | Python | Game of Life en images : les 3 piliers, compagnon Golly | 4 |
-| 15 | [Lean-13-Kochen-Specker](Lean/Lean-13-Kochen-Specker.ipynb) | Lean 4 | Théorème de Kochen-Specker (1967), 18 vecteurs Cabello-Estebaranz-Garcia-Alcaine, contextuality quantique | 5 |
+| 15 | [Lean-13-Kochen-Specker](Lean/Lean-13-Kochen-Specker.ipynb) | Python | Théorème de Kochen-Specker (1967), 18 vecteurs Cabello-Estebaranz-Garcia-Alcaine, contextuality quantique | 5 |
 | 16 | [Lean-16f-Conway-Free-Will-Theorem](Lean/Lean-16f-Conway-Free-Will-Theorem.ipynb) | Python WSL | Théorème du libre arbitre (Conway-Kochen) : axiomes SPIN/TWIN/MIN, port formel adossé à `FreeWillTheorem.lean` | 2 |
 | 16d | [Lean-16d-Conway-Game-of-Life-Lean-Native](Lean/Lean-16d-Conway-Game-of-Life-Lean-Native.ipynb) | Lean 4 / WSL | Port natif Lean du Game of Life : Life semantics, registres, preuves de conservation | 3 |
 | 16e | [Lean-16e-Conway-FRACTRAN-Lean-Native](Lean/Lean-16e-Conway-FRACTRAN-Lean-Native.ipynb) | Lean 4 / WSL | Port natif Lean de FRACTRAN : encodage fractions, machine à fractions, premiers programmes | 3 |
-| 17 | [Lean-17-Knots-a-Conway-and-Proofs](Lean/Lean-17-Knots-a-Conway-and-Proofs.ipynb) | Python WSL | Noeuds de Conway : introduction, énoncés, premier port formel adossé à `conway_knots_lean/` | 3 |
+| 16g | [Lean-16g-Conway-Canons](Lean/Lean-16g-Conway-Canons.ipynb) | Python | Canons : le barreau 2 de l'échelle des témoins Life | 6 |
+| 16h | [Lean-16h-Conway-PatternTour-Native](Lean/Lean-16h-Conway-PatternTour-Native.ipynb) | Lean 4 (WSL) | Tournée des motifs du Jeu de la Vie — compagnon natif de `conway_lean` | 4 |
+| 16i | [Lean-16i-Translateur-Life](Lean/Lean-16i-Translateur-Life.ipynb) | Python | Synthèse d'un translateur minuscule : franchir la Loi II | 0 |
+| 16j | [Lean-16j-Conway-Hashlife-Correctness-Native](Lean/Lean-16j-Conway-Hashlife-Correctness-Native.ipynb) | Lean 4 (WSL) | Preuve de correction Hashlife — compagnon natif du lake `conway_lean` | 4 |
+| 17 | [Lean-17a-Knots-Conway-Proofs](Lean/Lean-17a-Knots-Conway-Proofs.ipynb) | Python WSL | Noeuds de Conway : introduction, énoncés, premier port formel adossé à `conway_knots_lean/` | 3 |
 | 17b | [Lean-17b-Knots-Invariants-Companion](Lean/Lean-17b-Knots-Invariants-Companion.ipynb) | Python WSL | Companion natif : invariants de noeuds, snippets WSL, sources `conway_knots_lean/` | 3 |
+| 17c | [Lean-17c-Knots-Companion-Formel](Lean/Lean-17c-Knots-Companion-Formel.ipynb) | Python | Le lake `knot_lean` par ses déclarations (compagnon formel) | 3 |
 | 18 | [Search-03e-AStar-Optimality](../Search/Part1-Foundations/Search-03e-AStar-Optimality.ipynb) | Python 3 | Optimalité de A* sous heuristique admissible/consistante : graphe pondéré ℝ≥0, `pathCost` additif, prédicats `Admissible`/`Consistent`, théorèmes phares `admissible_implies_optimal` + `consistent_implies_path_bound` - companion `search_lean` (lake `Search/`, 0 sorry, registre #3801 prong B) | 3 |
 | **Théorèmes phares 2026** |  |  |  |  |
 | 19 | [Lean-19-Sendov-Complex-Analysis](Lean/Lean-19-Sendov-Complex-Analysis.ipynb) | Python WSL | Conjecture de Sendov (preuve L. Mazur 2026, digestion et formalisation T. Tao) : pour un polynôme dont tous les zéros sont dans le disque unité, chaque zéro a un point critique à distance ≤ 1 — énoncé, illustrations numériques, contexte de la preuve | 4 |
 | 20 | [Lean-20-Analysis-I-Tao-Workflow](Lean/Lean-20-Analysis-I-Tao-Workflow.ipynb) | Python WSL | Manuel *Analysis I* de T. Tao en lac Lean 4 (`teorth/analysis`) : architecture du lac, philosophie d'auto-contenance vs Mathlib, cinq lemmes emblématiques parmi 44k LOC, méta-récit single-agent vs cluster distribué | 4 |
-| 21 | [Lean-21-PFR-Entropy-Method](Lean/Lean-21-PFR-Entropy-Method.ipynb) | Python WSL | Conjecture PFR (polynomial Freiman–Ruzsa, ZMod 2) : méthode entropique de la preuve `teorth/pfr` — énoncé combinatoire, illustrations cosets dans F₂³, `#check` réels et axiomes du lac compilé | 0 |
+| 21 | [Lean-21-PFR-Entropy-Method](Lean/Lean-21-PFR-Entropy-Method.ipynb) | Lean 4 (WSL) | Conjecture PFR (polynomial Freiman–Ruzsa, ZMod 2) : méthode entropique de la preuve `teorth/pfr` — énoncé combinatoire, illustrations cosets dans F₂³, `#check` réels et axiomes du lac compilé | 0 |
+| 21b | [Lean-21b-PFR-Primitives-Transportables](Lean/Lean-21b-PFR-Primitives-Transportables.ipynb) | Python | Trois primitives de PFR, et l'endroit exact où elles cessent de valoir | 0 |
 | 22 | [Lean-22-MIMO-Detection-Flips](Lean/Lean-22-MIMO-Detection-Flips.ipynb) | Python WSL | Détection MIMO par flips de coordonnées (Papailiopoulos 2026) : le seuil 2·log N — descente simulée et comptage de flips, probabilité d'échappement du bruit (Monte-Carlo vs `e^{−np}`), `#check` réels des quatre phases du companion `mimo_lean` (sorry-free, lake externe SLT pour Hanson–Wright) | 3 |
+| 22b | [Lean-22b-MIMO-Converse-Native](Lean/Lean-22b-MIMO-Converse-Native.ipynb) | Lean 4 (WSL) | Le lake `mimo_lean` par ses énoncés — compagnon formel natif | 1 |
+| 22c | [Lean-22c-Descente-Budget](Lean/Lean-22c-Descente-Budget.ipynb) | Python | Le budget de descente — quand la décroissance borne le nombre de flips | 5 |
 | 23 | [Lean-23-Galois-Probleme-Inverse-M23](Lean/Lean-23-Galois-Probleme-Inverse-M23.ipynb) | Python WSL | Problème inverse de Galois refermé (arXiv:2608.08538, 9 août 2026) : M₂₃ prouvé simple d'ordre 10 200 960 à l'écran (`card_M23`/`simple_M23` exécutés, `#print axioms` = liste blanche), design de Witt S(4,7,23) vérifié des deux côtés (253 heptades), polynôme f₁ de degré 23 manipulé pour de vrai (empreinte, irréductibilité, discriminant 383 chiffres, Frobenius mod p) — les deux énoncés distingués : prouvé vs cité | 3 |
+| **ERC-20, calibration et théorèmes 2026 (suite)** |  |  |  |  |
+| 24 | [Lean-24-ERC20-Invariant-Companion](Lean/Lean-24-ERC20-Invariant-Companion.ipynb) | Python | ERC-20 sous Lean 4 — l'invariant de conservation prouvé (lake `erc20_lean`) | 4 |
+| 24b | [Lean-24b-Lean-ERC20-Native-Companion](Lean/Lean-24b-Lean-ERC20-Native-Companion.ipynb) | Lean 4 (WSL) | ERC-20 natif : l'invariant de conservation évalué sous le kernel Lean | 3 |
+| 26 | [Lean-26-Calibration-Native-Companion](Lean/Lean-26-Calibration-Native-Companion.ipynb) | Lean 4 (WSL) | Le lake `calibration_lean` par ses énoncés — compagnon formel natif | 1 |
+| 27 | [Lean-27-Coherence-et-Temoin](Lean/Lean-27-Coherence-et-Temoin.ipynb) | Python | Cohérence et témoin : de Finetti construit le livre qui paie, vNM légitime le pari | 5 |
+| 28 | [Lean-28-Munkres-Tribute](Lean/Lean-28-Munkres-Tribute.ipynb) | Lean 4 (WSL) | Hommage à James R. Munkres — le cours 18.901 dans Mathlib 4 | 4 |
+| 29 | [Lean-29-EdgeColoring-Tutte-Companion](Lean/Lean-29-EdgeColoring-Tutte-Companion.ipynb) | Lean 4 (WSL) | Coloration d'arêtes et conjecture de Tutte — compagnon formel | 1 |
+| 30 | [Lean-30-Complex-Structure-S6](Lean/Lean-30-Complex-Structure-S6.ipynb) | Python | Le problème de Hopf sur S⁶ — digestion d'une preuve constructive mécanisée | 3 |
 
 ### Kernels requis
 
-- **Lean 4 (WSL)** : Notebooks 2-6, 11, 12, 13, 15 (preuves Lean natives)
-- **Python 3 (WSL)** : Notebooks 1, 7-10, 11py, 15b, 16a-16c, 16f, 19-23 (setup, LLM, LeanDojo, hommages, théorèmes phares 2026)
+- **Lean 4** (kernels `lean4` + `lean4-wsl`) : 19 notebooks à preuve native — `lean4` : 3, 5, 6 ; `lean4-wsl` : 2, 4, 11, 12b, 14b, 15c, 16d, 16e, 16h, 16j, 21, 22b, 24b, 26, 28, 29
+- **Python** : les 30 companions — kernel `python3-wsl` pour 1, 7, 7b, 10 (setup, LLM, LeanDojo) ; kernel Python natif (`python3`) pour le reste, `global-3.13` pour Lean-8
 
 > Note : Les kernels Windows ne fonctionnent pas (signal.SIGPIPE, problèmes chemins)
 
@@ -304,7 +324,7 @@ La série joue un rôle charnière dans la famille SymbolicAI : elle **consomme*
 
 ### Kernels et packages
 
-- **Z3-API (Python)** : `pip install z3-solver` — notebooks 01..06 + 07..18, kernel Python 3.10+
+- **Z3-API (Python)** : `pip install z3-solver` — notebooks 01..06 + 08..18, kernel Python 3.10+
 - **Z3-API (jumeaux C#)** : `dotnet add package Z3.Linq` — notebooks `*-Csharp.ipynb` (01..06), kernel `.NET Interactive`
 - **Z3-Linq2Z3 (C#)** : binding `Z3.Linq` natif — notebooks 01..18, kernel `.NET Interactive`
 
@@ -316,9 +336,9 @@ Documentation complète : [SMT/README.md](SMT/README.md)
 
 ## SemanticWeb - Web Sémantique
 
-Série de **25 notebooks** sur le Web Sémantique (**13 C#** incluant le notebook historique `RDF.Net-Legacy` + **12 Python**, dont les jumeaux SW-8/9/10/13 et les side-tracks SW-3b/SW-6b du marathon parité #4956), combinant **.NET C#** (dotNetRDF) et **Python** (rdflib). Double parcours C#/Python pour les concepts fondamentaux.
+Série de **27 notebooks** sur le Web Sémantique (**13 C#** incluant le notebook historique `RDF.Net-Legacy` + **14 Python**, dont les jumeaux SW-8/9/10/13, les side-tracks SW-3b/SW-6b du marathon parité #4956 et les SW-14/15 ajoutés depuis), combinant **.NET C#** (dotNetRDF) et **Python** (rdflib). Double parcours C#/Python pour les concepts fondamentaux.
 
-**Note décomposition (réconciliée c.1297)** : la prose historique « 12 Python + 12 C# + 1 historique » datait d'avant la consolidation des jumeaux C# livrés par le marathon parité #4956 (SW-8/9/10/13 + side-tracks). Disk-truth vérifié firsthand via catalogue : `RDF.Net-Legacy/RDF.Net.ipynb` est un notebook **.NET (C#)** (cf marker `kernel: '.NET (C#)'`), donc la décomposition canonique est **13 C# (incluant `RDF.Net-Legacy`) + 12 Python = 25**, alignée sur le marqueur autoritatif `CATALOG-STATUS` L8 (`SemanticWeb=25`) et sur la feuille SemanticWeb/README.md réconciliée par c.1296 (PR #9966).
+**Note décomposition (réconciliée c.1297, étendue 04/09/2026)** : la prose historique « 12 Python + 12 C# + 1 historique » datait d'avant la consolidation des jumeaux C# livrés par le marathon parité #4956 (SW-8/9/10/13 + side-tracks). Disk-truth vérifié firsthand via catalogue : `RDF.Net-Legacy/RDF.Net.ipynb` est un notebook **.NET (C#)** (cf marker `kernel: '.NET (C#)'`), donc la décomposition canonique est **13 C# (incluant `RDF.Net-Legacy`) + 14 Python = 27** — SW-14 (coup ontologique) et SW-15 (coup argumentatif) ont porté Python de 12 à 14 après la réconciliation c.1296/c.1297 (PR #9966). Alignée sur le marqueur autoritatif `CATALOG-STATUS` (`SemanticWeb=27`).
 
 ### Structure détaillée
 
@@ -352,6 +372,8 @@ Série de **25 notebooks** sur le Web Sémantique (**13 C#** incluant le noteboo
 | 12 | [SW-12-Python-GraphRAG](SemanticWeb/SW-12-Python-GraphRAG.ipynb) | Python | GraphRAG, extraction entites LLM | 6 |
 | **Bonus** | [SW-13-Python-Reasoners](SemanticWeb/SW-13-Python-Reasoners.ipynb) | Python | Comparaison raisonneurs OWL (owlrl, HermiT, reasonable) | 3 (faible) |
 | **Bonus** | [SW-13-Reasoners-CSharp](SemanticWeb/SW-13-Reasoners-CSharp.ipynb) | .NET C# | Jumeau C# (dotNetRDF) — raisonneurs RDF/OWL | twin |
+| **Bonus** | [SW-14-Python-Coup-Ontologique](SemanticWeb/SW-14-Python-Coup-Ontologique.ipynb) | Python | Le coup ontologique comme diff de graphe exécutable | 4 |
+| **Bonus** | [SW-15-Python-Coup-Argumentatif](SemanticWeb/SW-15-Python-Coup-Argumentatif.ipynb) | Python | Le coup argumentatif : greffer AIF sur le coup ontologique | 8 |
 
 Documentation complète : [SemanticWeb/README.md](SemanticWeb/README.md)
 
@@ -359,7 +381,7 @@ Documentation complète : [SemanticWeb/README.md](SemanticWeb/README.md)
 
 ## Planners - Planification Automatique
 
-Série de **23 notebooks** (14 Python + 9 jumeaux C#, plus l'archive Fast-Downward-Legacy) sur la planification automatique, couvrant PDDL classique, CP-SAT (OR-Tools), VRP, planification temporelle, HTN, intégration LLM, et un companion natif Lean (Planners-5b) qui formalise la relaxation h-add dans le lake `planners_lean`.
+Série de **25 notebooks** (15 Python + 9 jumeaux C# + 1 companion natif Lean, plus l'archive Fast-Downward-Legacy hors compte) sur la planification automatique, couvrant PDDL classique, CP-SAT (OR-Tools), VRP, planification temporelle, HTN, intégration LLM, et un companion natif Lean (Planners-5b) qui formalise la relaxation h-add dans le lake `planning_lean`.
 
 ### Structure détaillée
 
@@ -373,7 +395,8 @@ Série de **23 notebooks** (14 Python + 9 jumeaux C#, plus l'archive Fast-Downwa
 | 3 | [Planners-3-State-Space](Planners/01-Foundation/Planners-3-State-Space.ipynb) | Recherche dans l'espace d'états | 7 | Fast-Downward |
 | 4 | [Planners-4-Fast-Downward](Planners/02-Classical/Planners-4-Fast-Downward.ipynb) | Fast Downward, heuristiques | 6 | Docker, Fast-Downward |
 | 5 | [Planners-5-Heuristics](Planners/02-Classical/Planners-5-Heuristics.ipynb) | Heuristiques (FF, LM-Cut, Merge-and-Shrink) | 5 | Fast-Downward |
-| 5b | [Planners-5b-Lean-Relaxation](Planners/02-Classical/Planners-5b-Lean-Relaxation.ipynb) | Companion natif (kernel Lean) : formalisation de la relaxation h-add dans le lake `planners_lean` | 3 | Lean 4 / WSL |
+| 5b | [Planners-5b-Lean-Relaxation](Planners/02-Classical/Planners-5b-Lean-Relaxation.ipynb) | Companion natif (kernel Lean) : formalisation de la relaxation h-add dans le lake `planning_lean` | 3 | Lean 4 / WSL |
+| 5c | [Planners-5c-Differentiel-Atteignabilite](Planners/02-Classical/Planners-5c-Differentiel-Atteignabilite.ipynb) | Différentiel d'atteignabilité : ce que l'ajout d'une primitive rend possible | 3 | Fast-Downward |
 | 6 | [Planners-6-Domains](Planners/02-Classical/Planners-6-Domains.ipynb) | Catalogue de domaines PDDL | 3 | Fast-Downward |
 | 6b | [Fast-Downward-Legacy](Planners/_archive/Fast-Downward-Legacy.ipynb) | Legacy Fast-Downward .NET | 0 | .NET kernel |
 | **Avancé** |   |   |   |   |
@@ -382,10 +405,11 @@ Série de **23 notebooks** (14 Python + 9 jumeaux C#, plus l'archive Fast-Downwa
 | 9 | [Planners-9-HTN](Planners/03-Advanced/Planners-9-HTN.ipynb) | Hierarchical Task Networks | 7 | Python |
 | **Neuro-symbolique** |   |   |   |   |
 | 10 | [Planners-10-LLM-Planning](Planners/04-NeuroSymbolic/Planners-10-LLM-Planning.ipynb) | LLMs pour la planification | 2 | API keys |
+| 10b | [Planners-10b-LLM-Space-Reducer](Planners/04-NeuroSymbolic/Planners-10b-LLM-Space-Reducer.ipynb) | Le LLM comme réducteur d'espace de recherche (side de Planners-10) | 3 | API keys |
 | 11 | [Planners-11-Unified-Planning](Planners/04-NeuroSymbolic/Planners-11-Unified-Planning.ipynb) | Unified Planning Framework | 3 | unified_planning |
 | 12 | [Planners-12-LOOP](Planners/04-NeuroSymbolic/Planners-12-LOOP.ipynb) | LLM + OR-Tools + planification | 2 | Fast-Downward |
 
-> 14/15 notebooks ont des exercices. Seuls Planners-0-Setup (configuration) et le legacy Fast-Downward-Legacy (archive) n'en ont pas.
+> 25/25 notebooks actifs ont des exercices, y compris Planners-0-Setup (exercice de vérification de l'environnement de planification). Seule l'archive Fast-Downward-Legacy n'en comporte pas.
 
 Documentation complète : [Planners/README.md](Planners/README.md)
 
@@ -393,19 +417,19 @@ Documentation complète : [Planners/README.md](Planners/README.md)
 
 ## SmartContracts - Blockchain et Contrats Intelligents
 
-Série de **27 notebooks** sur les smart contracts et la blockchain, organisée en 7 modules progressifs couvrant Solidity, DeFi, DAO, vérification formelle, cryptographie, et les écosystèmes alternatifs (Move, Solana, Bitcoin, Vyper).
+Série de **31 notebooks** sur les smart contracts et la blockchain, organisée en 7 modules progressifs couvrant Solidity, DeFi, DAO, vérification formelle (dont les compagnons ERC-20 Lean SC-7b/SC-7c adossés au lake `erc20_lean`), cryptographie, les écosystèmes alternatifs (Move, Solana, Bitcoin, Vyper), le bac à sable institutionnel (SC-2b) et la dette d'irréversibilité (SC-27).
 
 ### Structure détaillée
 
 | Module | Notebooks | Contenu |
 |--------|-----------|---------|
-| **00-Foundations** | SC-0 (Cypherpunk Origins), SC-1 (Setup Foundry), SC-2 (Setup Web3py) | Histoire blockchain, configuration environnement |
+| **00-Foundations** | SC-0 (Cypherpunk Origins), SC-1 (Setup Foundry), SC-2 (Setup Web3py), SC-2b (Bac à sable institutionnel) | Histoire blockchain, configuration environnement |
 | **01-Solidity-Foundation** | SC-3 (Basics), SC-4 (Functions/State), SC-5 (Inheritance), SC-6 (Errors/Events) | Fondations Solidity avec code exécutable (compile_and_deploy) |
-| **02-Solidity-Advanced** | SC-7 (Token Standards), SC-8 (DeFi), SC-9 (DAO), SC-10 (Account Abstraction), SC-11 (LLM-Assisted) | ERC-20/721, DeFi, gouvernance, audit LLM |
+| **02-Solidity-Advanced** | SC-7 (Token Standards), SC-7b/7c (ERC-20 Lean : vérification + compagnon natif), SC-8 (DeFi), SC-9 (DAO), SC-10 (Account Abstraction), SC-11 (LLM-Assisted) | ERC-20/721, DeFi, gouvernance, audit LLM |
 | **03-Foundry-Testing** | SC-12 (Foundry Testing), SC-13 (Fuzz/Invariants), SC-14 (Formal Verification) | Tests unitaires, fuzz testing, vérification formelle |
 | **04-Privacy-Cryptography** | SC-15 (ZK Proofs), SC-16 (Homomorphic Encryption), SC-17 (E2E Voting) | Zero-knowledge, chiffrement homomorphe, vote vérifiable |
 | **05-Alternative-Chains** | SC-18 (Vyper), SC-19 (Ripple), SC-20 (Bitcoin), SC-21 (Move/Sui), SC-22 (Solana) | Écosystèmes alternatifs |
-| **06-Real-World** | SC-23 (Cross-Chain), SC-24 (Testnet), SC-25 (Mainnet), SC-26 (Final Project) | Déploiement, interopérabilité, projet final |
+| **06-Real-World** | SC-23 (Cross-Chain), SC-24 (Testnet), SC-25 (Mainnet), SC-26 (Final Project), SC-27 (Dette d'irréversibilité) | Déploiement, interopérabilité, gouvernance mesurée, projet final |
 
 Documentation complète : [SmartContracts/README.md](SmartContracts/README.md)
 
@@ -413,7 +437,7 @@ Documentation complète : [SmartContracts/README.md](SmartContracts/README.md)
 
 ## Argument Analysis - Analyse Argumentative LLM
 
-Pipeline d'analyse argumentative multi-agents avec **Semantic Kernel** et LLMs. Combine détection de sophismes, formalisation logique, et validation par TweetyProject. La série intègre désormais un **port verbatim EPITA-IS (Argumentum, EPIC #4960)** : `argumentation_analysis/Argumentum/` contient les modules Python originaux (`TweetyBridge`, `PLHandler`, `FOLHandler`, `ModalHandler`, `ADFHandler`, `AFHandler`, `RankingHandler`, `TweetyInitializer`, `informal_definitions`, JVM shim) préservés avec leur NOTICE-EPITA + headers MIT, et accessibles via des **lazy accessors** (échec d'import = symbole non-instantiable aujourd'hui, importe futur-safe). PRs MERGED : #5237, #5234, #5242, #5251, #5253, #5255, #5258, #5216.
+Pipeline d'analyse argumentative multi-agents avec **Semantic Kernel** et LLMs. Combine détection de sophismes, formalisation logique, et validation par TweetyProject. La série intègre désormais un **port verbatim EPITA-IS (Argumentum, EPIC #4960)** : `Argument_Analysis/Argumentum/` (submodule) contient les modules Python originaux (`TweetyBridge`, `PLHandler`, `FOLHandler`, `ModalHandler`, `ADFHandler`, `AFHandler`, `RankingHandler`, `TweetyInitializer`, `informal_definitions`, JVM shim) préservés avec leur NOTICE-EPITA + headers MIT, et accessibles via des **lazy accessors** (échec d'import = symbole non-instantiable aujourd'hui, importe futur-safe). PRs MERGED : #5237, #5234, #5242, #5251, #5253, #5255, #5258, #5216.
 
 > **Note** : Cette série est un projet/demo, pas un cours. Aucun exercice étudiant. Non adaptée en l'etat pour un cours structuré.
 
@@ -428,19 +452,22 @@ Pipeline d'analyse argumentative multi-agents avec **Semantic Kernel** et LLMs. 
 | 4 | [Executor](Argument_Analysis/Argument_Analysis_Executor.ipynb) | Pipeline complet, rapport JSON |
 | 5 | [UI_configuration](Argument_Analysis/Argument_Analysis_UI_configuration.ipynb) | Interface widgets ipywidgets |
 
+> Vue partielle (pipeline Agentic historique). La série compte **28 notebooks** (10 Agentic : 7 sources + 3 traces `_agent` ; 17 analytiques ; 1 groupe-I2 contre-arguments ASPIC) — la structure complète est dans le [README de la sous-série](Argument_Analysis/README.md).
+
 Documentation complète : [Argument_Analysis/README.md](Argument_Analysis/README.md)
 
 ---
 
 ## SymbolicLearning - Apprentissage Symbolique
 
-Série de **20 notebooks** (12 Python + 8 jumeaux C# from-scratch, BCL-only) sur l'apprentissage symbolique (AIMA ch. 19) : induction pure (Version Space), apprentissage guidé par la connaissance (EBL, RBL), programmation logique inductive (FOIL, résolution inverse, Progol), moteurs ILP modernes réels (Aleph, Metagol, Popper, dILP), apprentissage actif d'automates (L* d'Angluin), intégration neuro-symbolique (T-norms, LTN, DeepProbLog, KG mining, LLM-driven rule extraction) jusqu'au capstone LLM + knowledge graph + SL-12 DifferentiableLogicGateNetworks (réseaux de portes logiques différenciables).
+Série de **21 notebooks** (12 Python + 8 jumeaux C# from-scratch BCL-only + 1 companion natif Lean SL-1b) sur l'apprentissage symbolique (AIMA ch. 19) : induction pure (Version Space), apprentissage guidé par la connaissance (EBL, RBL), programmation logique inductive (FOIL, résolution inverse, Progol), moteurs ILP modernes réels (Aleph, Metagol, Popper, dILP), apprentissage actif d'automates (L* d'Angluin), intégration neuro-symbolique (T-norms, LTN, DeepProbLog, KG mining, LLM-driven rule extraction) jusqu'au capstone LLM + knowledge graph + SL-12 DifferentiableLogicGateNetworks (réseaux de portes logiques différenciables).
 
 ### Structure détaillée
 
 | # | Notebook | Contenu | Exercices | Prérequis |
 |---|----------|---------|-----------|-----------|
 | 1 | [SL-1-LogicalLearning](SymbolicLearning/SL-1-LogicalLearning.ipynb) | CBH, Version Space, Candidate Elimination | 5 | Python |
+| 1b | [SL-1b-LogicalLearning-Lean-Native](SymbolicLearning/SL-1b-LogicalLearning-Lean-Native.ipynb) | Apprentissage PAC formellement : le lake `learning_theory_lean` exécuté en kernel Lean natif | 5 | Lean 4 / WSL |
 | 2 | [SL-2-KnowledgeBasedLearning](SymbolicLearning/SL-2-KnowledgeBasedLearning.ipynb) | EBL, introduction au RBL (déterminations) | 3 | SL-1 |
 | 3 | [SL-3-RelevanceLearning](SymbolicLearning/SL-3-RelevanceLearning.ipynb) | Treillis des déterminations, MINIMAL-CONSISTENT-DET, RBL vs sklearn | 3 | SL-2 |
 | 4 | [SL-4-InductiveLogicProgramming](SymbolicLearning/SL-4-InductiveLogicProgramming.ipynb) | FOIL, résolution inverse, knowledge graphs, Popper (LFF) | 4 | SL-1 |
@@ -453,7 +480,7 @@ Série de **20 notebooks** (12 Python + 8 jumeaux C# from-scratch, BCL-only) sur
 | 11 | [SL-11-Capstone-NeuroSymbolic](SymbolicLearning/SL-11-Capstone-NeuroSymbolic.ipynb) | Pipeline neuro-symbolique 6 étages, LLM réel aux deux extrémités | 4 | SL-7 a SL-9 |
 | 12 | [SL-12-DifferentiableLogicGateNetworks](SymbolicLearning/SL-12-DifferentiableLogicGateNetworks.ipynb) | Réseaux de portes logiques différenciables (difflogic), relaxation continue → circuit discret | 3 | SL-7 |
 
-> 12/12 notebooks ont des exercices — répartis entre Version Space (SL-1), EBL/RBL (SL-2-3), ILP (SL-4-6), NeuroSymbolique (SL-7), KG mining (SL-8), LLM-symbolique (SL-9), Active Automata Learning L* (SL-10), capstone neuro-symbolique (SL-11), DifferentiableLogicGateNetworks (SL-12).
+> 21/21 notebooks ont des exercices (12 Python + 8 jumeaux C# + SL-1b Lean) — répartis entre Version Space (SL-1/1b), EBL/RBL (SL-2-3), ILP (SL-4-6), NeuroSymbolique (SL-7), KG mining (SL-8), LLM-symbolique (SL-9), Active Automata Learning L* (SL-10), capstone neuro-symbolique (SL-11), DifferentiableLogicGateNetworks (SL-12).
 >
 > **Jumeaux C# from-scratch** (BCL-only, marathon parité #4956) : SL-1/2/3/4/5/8/10-Csharp + SL-6-ModernILP-Csharp (FOIL relationnel sur `ancestor/2`, mergé 07/07) — mêmes algorithmes réimplémentés sans dépendance externe, pour comparer les écosystèmes.
 
@@ -477,16 +504,16 @@ Documentation complète : [SymbolicLearning/README.md](SymbolicLearning/README.m
 
 ```
 SymbolicAI/
-├── Tweety/                    # Serie TweetyProject (32 notebooks : 13 Python/JPype + 18 C#/IKVM — EPICs #4667 + #4956 — + 1 _probes)
-│   ├── Tweety-1-Setup.ipynb ... Tweety-11-Causal.ipynb
+├── Tweety/                    # Serie TweetyProject (34 notebooks : 14 Python/JPype + 18 C#/IKVM — EPICs #4667 + #4956 — + 1 Lean Tweety-5b + 1 _probes)
+│   ├── Tweety-1-Setup.ipynb ... Tweety-12-Grounded-Via-TweetyProject.ipynb
 │   ├── Tweety-*-Csharp.ipynb  # Modules .NET mergés via IKVM 8.14/8.15
 │   ├── tweety_init.py         # Module d'initialisation partage
 │   ├── libs/                  # JARs TweetyProject (35 modules)
 │   ├── ext_tools/             # Clingo, SPASS, EProver
 │   └── README.md
 │
-├── Lean/                      # Serie Lean 4 (33 notebooks : 18 proof natifs + 15 companions Python/WSL)
-│   ├── Lean-1-Setup.ipynb ... Lean-23-Galois-Probleme-Inverse-M23.ipynb
+├── Lean/                      # Serie Lean 4 (49 notebooks : 19 proof natifs lean4/lean4-wsl + 30 companions Python)
+│   ├── Lean-1-Setup.ipynb ... Lean-30-Complex-Structure-S6.ipynb
 │   ├── lean_runner.py         # Backend Python multi-mode
 │   ├── scripts/               # Installation, validation WSL
 │   ├── conway_lean/            # Companion lean du Lean-16 (ports natifs Game of Life, FRACTRAN)
@@ -506,13 +533,13 @@ SymbolicAI/
 │   ├── install_wsl_kernel.md   # Doc install kernel `Lean 4 (WSL)`
 │   └── README.md
 │
-├── SemanticWeb/               # Web semantique (25 notebooks : 13 C# + 12 Python, incluant RDF.Net-Legacy)
-│   ├── SW-1-CSharp-Setup.ipynb ... SW-13-Python-Reasoners.ipynb
+├── SemanticWeb/               # Web semantique (27 notebooks : 13 C# + 14 Python, incluant RDF.Net-Legacy)
+│   ├── SW-1-CSharp-Setup.ipynb ... SW-15-Python-Coup-Argumentatif.ipynb
 │   ├── data/                 # Fichiers RDF, OWL, SHACL, JSON-LD
 │   ├── RDF.Net-Legacy/      # Notebook original (référence historique)
 │   └── README.md
 │
-├── Planners/                  # Planification automatique (23 notebooks : 14 Python incluant Planners-0-Setup + 9 jumeaux C# ; archive Fast-Downward-Legacy hors compte)
+├── Planners/                  # Planification automatique (25 notebooks : 15 Python incluant Planners-0-Setup + 9 jumeaux C# + 1 companion Lean ; archive Fast-Downward-Legacy hors compte)
 │   ├── 00-Environment/       # Setup
 │   ├── 01-Foundation/        # Introduction, PDDL Basics, State Space
 │   ├── 02-Classical/         # Fast-Downward, Heuristics, Lean Relaxation, Domains
@@ -520,25 +547,25 @@ SymbolicAI/
 │   ├── 04-NeuroSymbolic/     # LLM-Planning, Unified-Planning, LOOP
 │   └── README.md
 │
-├── SmartContracts/            # Blockchain et smart contracts (27 notebooks)
-│   ├── 00-Foundations/        # SC-0 a SC-2 (Origins, Setup)
+├── SmartContracts/            # Blockchain et smart contracts (31 notebooks)
+│   ├── 00-Foundations/        # SC-0 a SC-2 + SC-2b (Origins, Setup, Bac a sable institutionnel)
 │   ├── 01-Solidity-Foundation/ # SC-3 a SC-6 (Basics, Functions, Inheritance, Events)
-│   ├── 02-Solidity-Advanced/  # SC-7 a SC-11 (Tokens, DeFi, DAO, AA, LLM)
+│   ├── 02-Solidity-Advanced/  # SC-7 a SC-11 + SC-7b/7c (Tokens, ERC-20 Lean, DeFi, DAO, AA, LLM)
 │   ├── 03-Foundry-Testing/    # SC-12 a SC-14 (Testing, Fuzz, Formal)
 │   ├── 04-Privacy-Cryptography/ # SC-15 a SC-17 (ZK, HE, Voting)
 │   ├── 05-Alternative-Chains/ # SC-18 a SC-22 (Vyper, XRP, BTC, Move, Solana)
-│   ├── 06-Real-World/         # SC-23 a SC-26 (Cross-chain, Deploy, Project)
+│   ├── 06-Real-World/         # SC-23 a SC-27 (Cross-chain, Deploy, Project, Dette d'irreversibilite)
 │   └── README.md
 │
-├── Argument_Analysis/         # Analyse argumentative (25 notebooks : 10 Agentic + 14 analytiques + 1 groupe-I2 ASPIC ; sources Argumentum verbatim EPIC #4960)
+├── Argument_Analysis/         # Analyse argumentative (28 notebooks : 10 Agentic + 17 analytiques + 1 groupe-I2 ASPIC ; sources Argumentum verbatim EPIC #4960)
 │   ├── Argument_Analysis_Agentic-0-init.ipynb ... UI_configuration.ipynb
 │   ├── Argument_Analysis_ArgumentProfile.ipynb ... Restitution_3_Actes.ipynb
 │   │   # 12 modules Argumentum/EPITA-IS verbatim port EPIC #4960 MERGED
-│   ├── argumentation_analysis/Argumentum/   # submodule source verbatim
+│   ├── Argumentum/                          # submodule source verbatim
 │   ├── groupe-I2-contre-arguments-aspic/    # I2_Contre_arguments_ASPIC.ipynb (sous-dossier)
 │   └── README.md
 │
-├── SymbolicLearning/          # Apprentissage symbolique (20 notebooks : 12 Python + 8 jumeaux C#)
+├── SymbolicLearning/          # Apprentissage symbolique (21 notebooks : 12 Python + 8 jumeaux C# + 1 companion Lean SL-1b)
 │   ├── SL-1-LogicalLearning.ipynb ... SL-12-DifferentiableLogicGateNetworks.ipynb
 │   ├── SL-*-Csharp.ipynb       # Jumeaux from-scratch BCL-only (marathon #4956)
 │   ├── reference/             # Notes AIMA ch. 19
@@ -558,11 +585,9 @@ SymbolicAI/
 ├── OR-tools-Stiegler.ipynb    # Optimisation LP
 │
 ├── scripts/                   # Scripts utilitaires
-├── archive/                   # Versions historiques
-├── data/                      # Donnees partagees
-├── ext_tools/                 # Outils externes partages
-├── libs/                      # Bibliotheques partagees
-├── reports/                   # Rapports de qualite
+├── _archive/                  # Versions historiques (Tweety.ipynb legacy ; archives parité EML dans les sous-séries)
+├── ext_tools/                 # Outils externes partages (generes par le setup, non versionnes)
+├── libs/                      # Bibliotheques partagees (generes par le setup, non versionnes)
 └── README.md                  # Ce fichier
 ```
 
@@ -588,13 +613,13 @@ dotnet interactive jupyter install
 
 ### Tweety
 
-**Status exécution : 10/10 SUCCESS**
+**Status exécution : 10/10 SUCCESS** (snapshot 15/08/2026 sur le périmètre Python d'alors ; la série compte désormais 14 notebooks Python — cf. marqueur `CATALOG-STATUS`)
 
 Le setup est entièrement automatisé via `Tweety-1-Setup.ipynb` :
 
 1. **JDK 17 portable** : Auto-télécharge dans `Tweety/jdk-17-portable/` (Azul Zulu, ~180MB). Aucune installation système requise, pas de UAC.
 2. **JARs TweetyProject** : Auto-télécharges dans `Tweety/libs/` depuis Maven Central (35 modules, ~50MB total).
-3. **Outils externes** : Clingo, SPASS, EProver dans `Tweety/ext_tools/` (inclus dans le dépôt).
+3. **Outils externes** : Clingo, SPASS, EProver dans `Tweety/ext_tools/` (téléchargés par le setup, non versionnés — répertoires gitignorés).
 
 **Problèmes connus :**
 - `asp-1.30.jar` et `rpcl-1.30.jar` : Modules absents de Maven Central pour la version 1.30. Non bloquant -- les notebooks gèrent l'absence avec try/except.
@@ -602,7 +627,7 @@ Le setup est entièrement automatisé via `Tweety-1-Setup.ipynb` :
 
 ### Planners
 
-**Status exécution : 13/14 SUCCESS** (Fast-Downward-Legacy.ipynb échoue -- kernel .NET bloque)
+**Status exécution : 13/14 SUCCESS** (Fast-Downward-Legacy.ipynb échoue -- kernel .NET bloque) — snapshot 15/08/2026 ; 25 notebooks actifs à ce jour
 
 1. **Packages Python** : `pip install ortools unified_planning`
 2. **Fast-Downward** (requis pour notebooks 2-6, 12) : Installer via WSL ou Docker
@@ -612,7 +637,7 @@ Le setup est entièrement automatisé via `Tweety-1-Setup.ipynb` :
 
 ### SmartContracts
 
-**Status exécution : 15/27 (avec anvil lance : 25/27)**
+**Status exécution : 15/27 (avec anvil lance : 25/27)** — snapshot 15/08/2026 ; 31 notebooks à ce jour
 
 1. **Kernel Jupyter** : Enregistrer le kernel custom :
    ```bash
@@ -645,7 +670,7 @@ Le setup est entièrement automatisé via `Tweety-1-Setup.ipynb` :
 
 ### Argument_Analysis
 
-**Status exécution : 3/5 (demo, pas cours étudiant)**
+**Status exécution : 3/5 (demo, pas cours étudiant)** — snapshot 15/08/2026 ; 28 notebooks à ce jour
 
 1. **JDK 17 portable** : Partage avec Tweety (même `jdk-17-portable/` si configure)
 2. **Fichier `.env`** : Configurer dans `Argument_Analysis/.env` :
@@ -666,13 +691,13 @@ Le setup est entièrement automatisé via `Tweety-1-Setup.ipynb` :
 1. **WSL obligatoire** : Les notebooks Lean ne fonctionnent pas sous Windows natif (SIGPIPE, problèmes de chemins)
 2. **Installation** : Exécuter `Lean-1-Setup.ipynb` sous WSL (installe elan + Lean 4 + lean4_jupyter)
 3. **Kernels** :
-   - `Lean 4 (WSL)` : Notebooks 2-6, 11 (preuves natives)
-   - `Python 3 (WSL)` : Notebooks 1, 7-10, 11py (setup, LLM, LeanDojo)
+   - `Lean 4` / `lean4-wsl` : 19 notebooks de preuve native (2-6, 11, 12b, 14b, 15c, 16d, 16e, 16h, 16j, 21, 22b, 24b, 26, 28, 29 — kernel exact par notebook dans la table « Structure détaillée »)
+   - `Python 3 (WSL)` : Notebooks 1, 7, 7b, 10 (setup, LLM, LeanDojo) ; les autres companions Python tournent sur kernel Python natif
 4. **Fichier `.env`** (pour notebooks 7-10) : `OPENAI_API_KEY` via OpenRouter
 
 ### SemanticWeb
 
-**Python : 10/10 SUCCESS | C# : 0/7 (Windows policy)**
+**Python : 10/10 SUCCESS | C# : 0/7 (Windows policy)** — snapshot 15/08/2026 ; la série compte désormais 14 notebooks Python et 13 C#
 
 1. **Python** : `pip install rdflib pySHACL owlready2 kglab` -- tous les notebooks Python passent
 2. **C#** : `dotnet restore MyIA.CoursIA.sln` -- nécessite dotnet-interactive fonctionnel
@@ -703,25 +728,25 @@ Le setup est entièrement automatisé via `Tweety-1-Setup.ipynb` :
 
 ---
 
-## Audit Qualité (juillet 2026 — §E whole-file)
+## Audit Qualité (septembre 2026 — §E whole-file)
 
-### Couverture exercices (réconciliation disque ↔ catalogue, mise à jour 15 août 2026 — c.118)
+### Couverture exercices (réconciliation disque ↔ marqueur ↔ prose, mise à jour 4 septembre 2026)
 
 | Série | Notebooks | Avec exercices | Sans exercices | Status |
 |-------|-----------|----------------|----------------|--------|
-| Tweety (Python/JPype + C#/.NET) | 32 | 31 pédagogiques (13 Python + 18 C# jumeaux) | 1 Probe (`_probes/Tweety-IKVM-Init-Probe`, non pédagogique) | Très bon |
-| Lean (proofs natifs + companions Python) | 31 | 28 (90%) | 3 (Lean-1-Setup + Lean-7b-Examples + Lean-21-PFR) | Très bon |
-| SemanticWeb (C# + Python) | 25 | 25 pédagogiques (13 C# incluant RDF.Net-Legacy + 12 Python) | 0 | Très bon |
-| Planners (PDDL classique + neuro-symbolique) | 23 | 23 pédagogiques (13 Python + 9 C# jumeaux + 1 Lean companion Planners-5b-Lean-Relaxation) | 1 (Planners-0-Setup) ; archive Fast-Downward-Legacy hors compte | Très bon |
-| SmartContracts | 27 | 27 (100%) | 0 | Excellent |
-| Argument Analysis (Argumentum + Agentic demo) | 25 | 21 (84%) | 4 (Argument_Analysis_Agentic-0-init + 3 Agentic demo, dont le `_0-init` est le setup projet) | N/A (projet) |
-| SymbolicLearning (AIMA ch. 19 + SL-12 differentiable logic gates) | 20 | 18 (90%) | 2 (`_archive/2026-07-04-Neurosymbolic-EML-precurseur-SL12/`, archives) | Excellent |
+| Tweety (Python/JPype + C#/.NET + Lean) | 34 | 33 pédagogiques (14 Python + 18 C# jumeaux + 1 Lean Tw-5b) | 1 Probe (`_probes/Tweety-IKVM-Init-Probe`, non pédagogique) | Très bon |
+| Lean (proofs natifs + companions Python) | 49 | 47 (96%) | 2 (Lean-16i-Translateur-Life + Lean-21b-PFR-Primitives-Transportables) | Très bon |
+| SemanticWeb (C# + Python) | 27 | 26 (12 C# + 14 Python) | 1 (RDF.Net-Legacy, référence historique) | Très bon |
+| Planners (PDDL classique + neuro-symbolique) | 25 | 25 (100%, y compris Planners-0-Setup — exercice de vérification d'environnement) | 0 ; archive Fast-Downward-Legacy hors compte | Très bon |
+| SmartContracts | 31 | 29 (94%) | 2 (SC-1-Setup-Foundry + SC-26-Final-Project) | Très bon |
+| Argument Analysis (Argumentum + Agentic demo) | 28 | 26 | 2 (1 artefact `_agent` + groupe-I2) | N/A (projet) |
+| SymbolicLearning (AIMA ch. 19 + SL-12 differentiable logic gates) | 21 | 21 (100%) | 0 | Excellent |
 | SMT/Z3-Linq2Z3 (C# Linq2Z3) | 18 | 18 (100%) | 0 | Excellent |
 | SMT/Z3-API (Python + 6 jumeaux C#) | 28 | 28 (100%, 22 Python + 6 C# jumeaux) | 0 | Excellent |
 
-**Total** : 230 notebooks pédagogiques — soit 230 fichiers `.ipynb` actifs au catalogue (cf. bloc `<!-- CATALOG-STATUS -->`), après déduction 1 Probe Tweety (`_probes/Tweety-IKVM-Init-Probe`), 2 archives SymbolicLearning (`_archive/2026-07-04-Neurosymbolic-EML-precurseur-SL12/`), 1 archive Planners (`archive/Fast-Downward-Legacy`) et 1 archive Tweety top-level (`archive/Tweety.ipynb`). Les notebooks sans exercices sont uniquement les notebooks de setup (Tweety-1-Setup, SW-1-CSharp-Setup, Planners-0-Setup, Lean-1-Setup, Argument_Analysis_Agentic-0-init), les notebooks legacy/démo (Lean-7b-Examples, RDF.Net-Legacy), le squelette Lean-21-PFR, les archives précurseurs EML, et le probe IKVM (`Tweety-IKVM-Init-Probe` non pédagogique). Argument_Analysis inclut également 4 artefacts `_agent.ipynb` (papermill, versionnés) qui dérivent de 4 notebooks Agentic — ils ne sont **pas** comptés comme sources pédagogiques distinctes. Les chiffres ci-dessus sont la **réconciliation disque ↔ catalogue** en date du **15 août 2026** (post-#5894 SocialChoice figures sweep, post-EPIC #4956 parité marathon, post-EPIC #4960 Argumentum EPITA-IS landing, post-PR #5345/#5390 Probas & SocialChoice README rolls, post-c.728y+14 audit SymbolicAI/README §E cohérence, post-c.756 Lean-17-Knots series a/b + Lean-18-Search-AStar-Optimality, post-c.826x Lean-19-Sendov + Lean-20-Analysis-I-Tao-Workflow + Lean-21-PFR, Argumentum_Cards/Toulmin_Model/Value_Based_AF et Z3-API 28/28 ajoutés depuis le §E 22/07).
+**Total** : le compte courant des notebooks pédagogiques **fait foi dans le bloc `<!-- CATALOG-STATUS -->` ci-dessus** (régénéré quotidiennement par `.github/workflows/catalog-cron.yml`) ; en date du 4 septembre 2026 il s'établit à **262** (y compris `root=1` : OR-tools-Stiegler, et le probe IKVM compté dans Tweety=34), hors les 4 fichiers `_archive/` (Fast-Downward-Legacy, 2 précurseurs EML SymbolicLearning, `Tweety.ipynb` legacy). Les notebooks sans exercices sont uniquement : les setups (SC-1-Setup-Foundry), les notebooks de projet (SC-26-Final-Project), la référence historique RDF.Net-Legacy, les deux dérivés Lean sans cellules d'exercice (Lean-16i, Lean-21b), l'artefact `_agent` et le groupe-I2 d'Argument Analysis, et le probe IKVM (non pédagogique).
 
-> **Note (15/08, révisée c.118)** : réconciliation whole-file audit §E post-#5894 (SocialChoice sweep), post-fin marathon parité #4956 (Tweety 32 = 13 Python + 18 C# + 1 probe, **SemanticWeb 25 = 13 C# incluant RDF.Net-Legacy + 12 Python** [réconciliée c.1297 post-c.1296 audit], SMT/Z3-API 28 = 22 Python + 6 C# jumeaux, Planners 23 actifs = 14 Python (dont Planners-0-Setup) + 9 C# jumeaux, SymbolicLearning 20 = 12 Python + 8 C# jumeaux (+ 2 archives EML hors compte), Argument_Analysis 25 = 10 Agentic (5 sources + 4 artefacts `_agent.ipynb` + 1 setup) + 14 analytiques + 1 groupe I2 contre-arguments ASPIC), **Lean 31** (18 preuves natives + 13 companions Python/WSL — Lean-19-Sendov, Lean-20-Analysis-I-Tao-Workflow et Lean-21-PFR sont des companions Python 3). Pour les comptes courants, le marqueur `<!-- CATALOG-STATUS -->` (régénéré quotidiennement par `.github/workflows/catalog-cron.yml`) fait foi.
+> **Note (04/09, réconciliation fichier-entier — See #3973)** : décompositions vérifiées sur disque : **Tweety 34** = 14 Python + 18 C# + 1 Lean (Tweety-5b) + 1 probe ; **Lean 49** = 19 preuves natives (3 `lean4` + 16 `lean4-wsl`) + 30 companions Python (25 `python3` + 4 `python3-wsl` + 1 `global-3.13`) ; **SemanticWeb 27** = 13 C# (incl. RDF.Net-Legacy) + 14 Python (SW-14/15 ajoutés après la réconciliation c.1297) ; **Planners 25** = 15 Python + 9 C# jumeaux + 1 Lean (Planners-5b) ; **SmartContracts 31** = 30 Python + 1 `lean4-wsl` (SC-7c) ; **Argument_Analysis 28** = 10 Agentic (7 sources + 3 artefacts `_agent.ipynb`) + 17 analytiques + 1 groupe-I2 ; **SymbolicLearning 21** = 12 Python + 8 C# jumeaux + 1 Lean (SL-1b) ; **SMT 46** = 28 Z3-API (22 Python + 6 C# jumeaux) + 18 Z3-Linq2Z3 ; root = 1. Réconciliation précédente : 15 août 2026 (c.118, total 230). Pour les comptes courants, le marqueur `<!-- CATALOG-STATUS -->` fait foi.
 
 ### Problèmes connus (juillet 2026)
 
@@ -785,7 +810,7 @@ L'IA symbolique repose sur la **manipulation explicite de symboles et de règles
 
 ### Comment installer l'environnement Tweety ?
 
-Ouvrez le notebook `Tweety-1-Setup.ipynb` : il télécharge automatiquement JDK 17 et les 35 JARs TweetyProject. Vous pouvez aussi lancer `python scripts/download_tweety_tools.py --all` en ligne de commande. Les dependances Python sont `jpype1 requests tqdm clingo z3-solver python-sat`.
+Ouvrez le notebook `Tweety-1-Setup.ipynb` : il télécharge automatiquement JDK 17 et les 35 JARs TweetyProject. Vous pouvez aussi lancer `python Tweety/scripts/download_tweety_tools.py --all` en ligne de commande. Les dependances Python sont `jpype1 requests tqdm clingo z3-solver python-sat`.
 
 ### Par quelle sous-série commencer si je n'ai pas de JDK installe ?
 
@@ -801,7 +826,7 @@ Les **notebooks Python** (SW-8 a SW-13) utilisent `rdflib`, `pySHACL`, `owlready
 
 ### Comment exécuter les notebooks Lean sans GPU ni installation système ?
 
-Les notebooks Lean utilisent **WSL (Windows Subsystem for Linux)** comme runtime — pas de GPU nécessaire. Le notebook `Lean-1-Setup.ipynb` installe automatiquement `elan` (gestionnaire de toolchains Lean) et `lean4_jupyter` dans WSL. Les notebooks de preuves (2-6, 11) tournent sur le kernel `Lean 4 (WSL)` natif. Les notebooks LLM/prover (7-10) tournent sur `Python 3 (WSL)` et nécessitent une clé API OpenRouter. Si WSL n'est pas disponible, les notebooks Python du même domaine (1, 7-10) peuvent être exécutés en Python natif.
+Les notebooks Lean utilisent **WSL (Windows Subsystem for Linux)** comme runtime — pas de GPU nécessaire. Le notebook `Lean-1-Setup.ipynb` installe automatiquement `elan` (gestionnaire de toolchains Lean) et `lean4_jupyter` dans WSL. Les notebooks de preuve native (19 à ce jour : 2-6, 11, 12b, 14b, 15c, 16d, 16e, 16h, 16j, 21, 22b, 24b, 26, 28, 29) tournent sur les kernels Lean 4 (`lean4` / `lean4-wsl`). Les notebooks LLM/prover (7-10) tournent sur `Python 3 (WSL)` et nécessitent une clé API OpenRouter. Si WSL n'est pas disponible, les notebooks Python du même domaine (1, 7-10) peuvent être exécutés en Python natif.
 
 ### Peut-on étudier les SmartContracts sans blockchain réelle ?
 
@@ -815,14 +840,14 @@ La famille SymbolicAI est couverte sur **trois stacks** selon les formalismes (E
 
 | Sous-série | Python | C# / .NET | Lean 4 | Note |
 |------------|:---:|:---:|:---:|------|
-| **Tweety** (TweetyProject) | ● (13) | ● (18) | ◐ (1, Tw-5b) | Double stack Python JPype + C# IKVM in-kernel (EPICs #4667 + #4956) + 1 companion Lean formalisant Dung grounded |
-| **Lean** | ◐ (mixed WSL) | — | ● (21) | Trilangage Python-WSL + Lean 4 natif + Mathlib4 ; WSL obligatoire |
-| **SemanticWeb** | ● (12) | ◐ (12) | — | dotNetRDF (C#) + rdflib/pySHACL (Python) ; jumeaux SW-8/9/10/13 + side-tracks 3b/6b (#4956) |
-| **Planners** | ● (13) | ◐ (9 jumeaux) | ◐ (1, Planners-5b) | PDDL/CP-SAT Python + jumeaux C# 1-9 (#4956) + companion Lean pour la relaxation h-add |
-| **SmartContracts** | ● (27) | — | ◐ (lake `erc20_lean`) | Pipeline Solidity/Foundry/Wagmi en Python, focus DeFi et ZK ; invariant de conservation ERC-20 prouvé (0 sorry, bilingue FR/EN) |
-| **Argument Analysis** | ● (22) | — | — | Pipeline SK multi-agents + port verbatim EPITA-IS Argumentum (couches Python) |
-| **SymbolicLearning** | ● (12) | ◐ (8 jumeaux) | — | AIMA ch. 19 induction pure + ILP + neuro-symbolique ; jumeaux from-scratch BCL-only dont SL-6c FOIL |
-| **SMT / Z3** (Z3-Linq2Z3 + Z3-API) | ● (6) | ● (24) | — | Z3-Python API complète + 6 jumeaux C# (#4956) + Z3.Linq DSL C# 18 nb (missionnaires, cryptarithms, sudoku) |
+| **Tweety** (TweetyProject) | ● (14) | ● (18) | ◐ (1, Tw-5b) | Double stack Python JPype + C# IKVM in-kernel (EPICs #4667 + #4956) + 1 companion Lean formalisant Dung grounded |
+| **Lean** | ● (30 companions) | — | ● (19 natifs : 3 `lean4` + 16 `lean4-wsl`) | Trilangage Python/WSL + Lean 4 natif + Mathlib4 ; WSL obligatoire pour les kernels lean4-wsl |
+| **SemanticWeb** | ● (14) | ● (13 incl. RDF.Net-Legacy) | — | dotNetRDF (C#) + rdflib/pySHACL (Python) ; jumeaux SW-8/9/10/13 + side-tracks 3b/6b (#4956) + SW-14/15 |
+| **Planners** | ● (15) | ◐ (9 jumeaux) | ◐ (1, Planners-5b) | PDDL/CP-SAT Python + jumeaux C# (#4956) + companion Lean pour la relaxation h-add (lake `planning_lean`) |
+| **SmartContracts** | ● (30) | — | ◐ (1 notebook SC-7c kernel `lean4-wsl` + lake `erc20_lean`) | Pipeline Solidity/Foundry/Wagmi en Python, focus DeFi et ZK ; invariant de conservation ERC-20 prouvé (0 sorry, bilingue FR/EN) |
+| **Argument Analysis** | ● (24 sources, hors 3 artefacts `_agent` et 1 groupe-I2) | — | — | Pipeline SK multi-agents + port verbatim EPITA-IS Argumentum (couches Python) |
+| **SymbolicLearning** | ● (12) | ◐ (8 jumeaux) | ◐ (1, SL-1b) | AIMA ch. 19 induction pure + ILP + neuro-symbolique ; jumeaux from-scratch BCL-only dont SL-6c FOIL |
+| **SMT / Z3** (Z3-Linq2Z3 + Z3-API) | ● (22) | ● (24) | — | Z3-Python API complète + 6 jumeaux C# (#4956) + Z3.Linq DSL C# 18 nb (missionnaires, cryptarithms, sudoku) |
 
 Légende : ● couverture large ; ◐ couverture partielle / companion ; — absent.
 
@@ -862,8 +887,8 @@ Voir LICENSE à la racine du dépôt pour détails.
 
 ---
 
-*Version 1.2.0 — Juillet 2026*
+*Version 1.3.0 — Septembre 2026*
 
 ---
 
-**Dernière mise à jour** : 2026-07-07
+**Dernière mise à jour** : 2026-09-04

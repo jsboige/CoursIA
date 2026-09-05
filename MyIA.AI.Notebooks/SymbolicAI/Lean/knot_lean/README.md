@@ -336,7 +336,7 @@ Trois notebooks dans `SymbolicAI/Lean/` assurent la transmission, par niveau :
 
 | Notebook | Rôle | Transmission |
 |---|---|---|
-| `Lean-17-Knots-a-Conway-and-Proofs.ipynb` | Histoire et visualisations Python (trèfle, Conway, Kinoshita-Terasaka) ; preuve Piccirillo (doctorante, 1 semaine, 50 ans d'attente) ; Lidman comme « preuve courte mais profonde » | Visualisations + récit, zéro prérequis Lean |
+| `Lean-17a-Knots-Conway-Proofs.ipynb` | Histoire et visualisations Python (trèfle, Conway, Kinoshita-Terasaka) ; preuve Piccirillo (doctorante, 1 semaine, 50 ans d'attente) ; Lidman comme « preuve courte mais profonde » | Visualisations + récit, zéro prérequis Lean |
 | `Lean-17b-Knots-Invariants-Companion.ipynb` | Companion exécutable : PD-codes, moves de Reidemeister, tricolorité de Fox — 5 exercices, exemples calculés | Exemples calculés + exercices |
 | `Lean-17c-Knots-Companion-Formel.ipynb` | Companion formel : modules du lake non couverts par 17b, murs R2/R3, miroir i18n | Pont direct vers le code Lean |
 

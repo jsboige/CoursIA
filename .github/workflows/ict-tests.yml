@@ -61,7 +61,13 @@ jobs:
     # Retour arriere = remettre `runs-on: ubuntu-latest` + retrait de l'allowlist.
     runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
-    timeout-minutes: 15
+    # Timeout etire 15 -> 30 min (#14598 acceptance Option A) : diagnostic
+    # first-hand 30 derniers runs montre success 353-951s (mediane ~800s),
+    # cancelled des 925s (=hit timeout 15 min). Pas de drift temporel, juste
+    # variabilite charge partagee conteneur Docker self-heberge po-2024.
+    # Step Run lui-meme timeout 12 min legitimes sous charge. Fix orthogonal
+    # a #14571 (defaut install FIXE par #14595 venv per-job).
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
@@ -96,13 +102,37 @@ jobs:
           cache: pip
           cache-dependency-path: MyIA.AI.Notebooks/IIT/ICT-Series/pyproject.toml
 
-      - name: Install ict package + deps (pyphi 1.2.0, numpy<2, scipy, matplotlib)
+      - name: Install ict package + deps dans venv per-job (pyphi 1.2.0, numpy<2, scipy, matplotlib)
+        # Fix #14571a : le toolcache `/opt/hostedtoolcache/Python/3.9.x/x64` du runner
+        # self-heberge `coursia-ephemeral` est PERSISTANT entre conteneurs (etiquette
+        # declarative, pas mode --ephemeral). `pip install -e .` y ecrit des fichiers
+        # .pth qu'un job ulterieur tente de desinstaller sur un cache devenu incoherent
+        # -> Errno 2 en ~15 s sur des PRs sans rapport (#14559 a ete mal attribue
+        # d'abord a un probleme de la PR). Le venv `$RUNNER_TEMP` est detruit a la fin
+        # du job par GitHub Actions, donc zero contamination inter-jobs. Acceptance :
+        # 2 runs consecutifs du MEME workflow sur le MEME runner, le 2e doit reussir.
         id: install
         working-directory: MyIA.AI.Notebooks/IIT/ICT-Series
+        env:
+          ICT_VENV: ${{ runner.temp }}/ict-venv
         run: |
+          python -m venv "$ICT_VENV"
+          # shellcheck disable=SC1091
+          source "$ICT_VENV/bin/activate"
           python -m pip install --upgrade pip
           pip install -e .
           pip install pytest
+          # Garde-fou : verifier que `pip show` rapporte le site-packages du venv,
+          # pas celui du toolcache partage. Un editable install fait pointer
+          # `ict.__file__` vers le source-tree (par design), donc on interroge pip.
+          if ! pip show ict-series 2>/dev/null | grep -q "$ICT_VENV"; then
+            echo "::error title=ICT install hors venv::pip show ict-series ne pointe pas vers \$ICT_VENV -- l'install a ecrit dans le toolcache partage, ce qui reproduit le defaut #14571. Venv: $ICT_VENV"
+            pip show ict-series || true
+            exit 1
+          fi
+          echo "ICT install OK in venv (pip show ict-series -> $ICT_VENV)"
+          python -c "import ict; print('ict import OK, __file__=', ict.__file__)"
+          echo "$ICT_VENV/bin" >> "$GITHUB_PATH"
 
       - name: Run ${{ matrix.suite-name }}
         working-directory: ${{ matrix.test-cwd }}
