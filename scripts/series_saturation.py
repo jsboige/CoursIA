@@ -669,7 +669,11 @@ def zone_umbrellas(issue_to_family: dict, pool: list, families=()) -> dict:
 
     L'attestation est la porte d'entree de la source (2) : une issue qui ne
     fait que MENTIONNER la zone (body de diagnostic, renvoi de contexte) n'est
-    pas un comptable, meme si son texte porte les marqueurs de tracker.
+    pas un comptable, meme si son texte porte les marqueurs de tracker. La
+    source (2) ne nomme que des trackers RACINES (`parent is None`) : une
+    fille d'EPIC dont le titre porte "tranches" est deja comptee sous son
+    parent par la source (1), la nommer aussi en propre la compterait en
+    double a la fois comme elle-meme et comme sa racine.
     """
     out: dict[str, dict[int, int]] = {}
     for it in pool:
@@ -681,6 +685,8 @@ def zone_umbrellas(issue_to_family: dict, pool: list, families=()) -> dict:
         out[fam][parent] = out[fam].get(parent, 0) + 1
     for it in pool:
         if not is_area_umbrella(it):
+            continue
+        if it.get("parent") is not None:
             continue
         fam = (issue_to_family or {}).get(it.get("number"))
         if not fam:

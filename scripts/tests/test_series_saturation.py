@@ -342,6 +342,23 @@ def test_zone_umbrellas_ignores_unattested_tracker_mention():
     assert ss.zone_umbrellas({}, pool) == {}
 
 
+def test_zone_umbrellas_rejects_parented_tranche_child():
+    """Fille d'EPIC titree "tranches" : pas un comptable en propre.
+
+    Le predicat de tracker (titre "tranches") s'applique aussi a une fille
+    d'EPIC : un sous-grain qui dit "tranche" dans son titre ne devient pas
+    racine pour autant. Sans le gate `parent is None` de la source (2), cette
+    fille attestee est comptee a la fois comme elle-meme (3) ET sous son
+    parent (9) -- la zone rend alors {9:1, 3:1} au lieu de {9:1}.
+    """
+    pool = [
+        {"number": 3, "parent": 9, "title": "tranches de l'EPIC #9",
+         "body": "", "labels": []},
+    ]
+    out = ss.zone_umbrellas({3: "Z"}, pool)
+    assert out["Z"] == {9: 1}, out
+
+
 # --- Attribution : ce qui empechait de NOMMER l'EPIC -----------------------
 
 
