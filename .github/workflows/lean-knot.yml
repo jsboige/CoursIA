@@ -46,15 +46,17 @@ name: Lean Knot CI
 #   - Reidemeister.lean:        2 (reidemeister_theorem x2 — PL topology, OOS)
 #   - Basic.lean:               0 (the "1" under prose-header was a TODO prose comment)
 #   - MathlibPrerequisites.lean:0 (the "2" were the prose roadmap index)
-# Total real tactic sorry = 11 (aligné avec `LEAN_INVENTORY.md` post-#13312,
+# Total real tactic sorry = 10 (aligné avec `LEAN_INVENTORY.md` post-#13312,
 # mesure 2026-08-28 `count_code_sorry.py` champ `distinct_code_sorry` ; lowered
 # from 14 par la mesure instrument post-#11227 — le décompte « 14 » dans les
 # commentaires/README comptait 2 sorry dans `Invariant.lean` qui n'en portent
 # qu'1 une fois stripé des commentaires, et sur-comptait Conway ; historique :
 # 16 (après #8766) → 17 (#9966 wall fronted) → 16 (wall DISCHARGED) → 14
-# (#11211/#11227 fox/col) → **11** (mesure 2026-08-28, `count_code_sorry.py`).
+# (#11211/#11227 fox/col) → **11** (mesure 2026-08-28, `count_code_sorry.py`)
+# → **10** (2026-09-05, `conway_trivial_alexander` DISCHARGED — preuve kernel
+# déterminant 10×10 en ℤ[t], See #2874).
 # Cette valeur DOIT rester synchronisée avec `LEAN_INVENTORY.md` ligne « knot_lean
-# | 11² » et avec `knot_lean/README.md` table des sorries — cf. #13312).
+# | 10² » et avec `knot_lean/README.md` table des sorries — cf. #13312).
 # Raising this baseline requires a documented
 # justification in the PR body (a NEW real tactic sorry, not prose).
 
@@ -138,7 +140,9 @@ jobs:
         with:
           project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean
           display-name: knot_lean
-          sorry-baseline: "11"
+          # 11 -> 10 : conway_trivial_alexander decharge (See #2874, preuve
+          # kernel determinant 10x10, Conway.lean 6 -> 5 sorries reels).
+          sorry-baseline: "10"
           sorry-filter-mode: real
 
   # Level 3 proof-integrity gate (criterion B.3 of pr-review-discipline).
@@ -163,7 +167,7 @@ jobs:
           display-name: knot_lean
           target-modules: "*"
           allow-axioms: ""
-          # 11 acknowledged tactic `sorry`s = the `sorry-baseline` declared by the
+          # 10 acknowledged tactic `sorry`s = the `sorry-baseline` declared by the
           # build job above; the gate tolerates them (`fail-on-sorry: false`) but
           # still reports `has_sorry` per module and hard-fails forbidden axioms.
           # The per-module enumeration now lives in the gate's runtime derivation
