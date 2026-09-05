@@ -16,6 +16,7 @@ Conventions :
 
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 
@@ -233,13 +234,19 @@ def test_evolve_alpha_returns_value_in_unit_interval():
 def test_run_full_is_deterministic(monkeypatch):
     """Avec les mêmes seeds, run_full doit retourner le même résultat.
 
-    Tell c.931-L1 NEW : `evolve_alpha` est mocké (cf. test_hoffman_interface_toy.py
-    même méthode) pour ramener le runtime du test sous 5 s sur runner po-2024.
+    Test de **plomberie** (réserve adjoint #14732, REPAIR HIGH
+    msg-20260905T112800-actho2) : `evolve_alpha` est mocké (cf.
+    test_hoffman_interface_toy.py même méthode) pour ramener le runtime du test
+    sous 5 s sur runner po-2024. La reproductibilité réelle de la fonction est
+    couverte par `test_evolve_alpha_is_reproducible_for_same_seed`.
     """
     import ict.hoffman_interface_toy_n8 as hft
 
     def _fake_evolve_alpha(objective, landscape_name, seed, n_pop=200, n_gen=500, mutation_rate=0.05):
-        rng = np.random.default_rng(hash((objective, landscape_name, seed)) & 0xFFFFFFFF)
+        # Valeur déterministe seedée, stable inter-processus (hash() salé par
+        # PYTHONHASHSEED — réserve adjoint #14732 ; hashlib ne l'est pas).
+        digest = hashlib.sha256(f"{objective}:{landscape_name}:{seed}".encode()).digest()
+        rng = np.random.default_rng(int.from_bytes(digest[:8], "big"))
         return float(rng.uniform(0, 1))
 
     monkeypatch.setattr(hft, "evolve_alpha", _fake_evolve_alpha)
@@ -254,6 +261,22 @@ def test_run_full_is_deterministic(monkeypatch):
 
 
 # ── 7. Verdict scan ──
+
+
+def test_evolve_alpha_is_reproducible_for_same_seed():
+    """Même seed → même α : reproductibilité réelle de l'évolution (échelle bornée).
+
+    Réserve adjoint #14732 (REPAIR HIGH msg-20260905T112800-actho2) : le mock de
+    `test_run_full_is_deterministic` ne prouve pas la reproductibilité de la
+    fonction elle-même. Ce test la couvre à petite échelle (n_pop=50, n_gen=100,
+    ~2,5 s par run) : 2 invocations avec la même seed retournent le même α, en
+    tout paysage et toute objective.
+    """
+    for ln in LANDSCAPES:
+        for objective in ("truth", "fitness"):
+            a1 = evolve_alpha(objective, ln, seed=7, n_pop=50, n_gen=100)
+            a2 = evolve_alpha(objective, ln, seed=7, n_pop=50, n_gen=100)
+            assert a1 == a2, f"{objective}/{ln} seed=7 → {a1} != {a2}"
 
 
 def test_results_json_has_required_keys():
