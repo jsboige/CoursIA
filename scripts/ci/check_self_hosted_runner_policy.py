@@ -49,7 +49,26 @@ LINUX_RUNNER_LABELS = {
     "coursia-ephemeral",
     "coursia-linux",
 }
-DEDICATED_LABEL_SETS = (REQUIRED_LABELS, LINUX_RUNNER_LABELS)
+# Dedicated label set for the PR-gate waiter pool (#13363 jambe A, po-2024):
+# 24 slots deployed via `supervise.sh waiters` (1 vCPU / 1 GiB / 128 pids,
+# coursia-waiters.service). A waiter never carries coursia-linux -- the
+# distinct label is what lets the gate WAIT without holding a work slot
+# (arbitrage ai-01 2026-09-02: "attendre ne coute pas de CPU").
+WAITER_LABELS = {
+    "self-hosted",
+    "coursia-waiter",
+}
+# Dedicated label set for the specialised Lean pool (#14337, po-2024): elan +
+# toolchain baked in a dedicated image (Dockerfile.lean), .lake kept warm in
+# the per-slot work volume. A lean slot never carries coursia-linux -- the
+# distinct label is the routing guarantee (a pure-Python guard must not land
+# on a lean slot, and a lake build must not land on the minimal image).
+LEAN_RUNNER_LABELS = {
+    "self-hosted",
+    "coursia-ephemeral",
+    "coursia-lean",
+}
+DEDICATED_LABEL_SETS = (REQUIRED_LABELS, LINUX_RUNNER_LABELS, WAITER_LABELS, LEAN_RUNNER_LABELS)
 # Owner-approved additions must cite the lane that owns the runner deployment:
 # - pr-gate-stale-sweep.yml: schedule-mutualized re-aggregation (pre-existing).
 # - windows-self-hosted-tests.yml: workflow_dispatch-ONLY vehicle for the 9
@@ -248,6 +267,15 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   seule pour l'API Checks/labels. Garde same-repo parenthesee au niveau
     #   job (#13874) pour les forks. Rollback = revert de cette PR.
     "markdown-deaccent-advisory.yml",
+    # #13363 jambe B (arbitrage ai-01 2026-09-02, owner myia-po-2024:CoursIA) :
+    #   pr-gate.yml routes its pull_request leg to the waiter pool via the ONE
+    #   audited hybrid runs-on form (_hybrid_runs_on) -- the same-repo guard
+    #   lives inside the expression itself, forks and workflow_dispatch fall
+    #   back to ubuntu-latest. Excluded until now because the polling
+    #   aggregator must not hold the work slot it waits for (#11405); the
+    #   waiter pool (1 vCPU / 1 GiB, #14303) is exactly the third term that
+    #   removes the objection. Rollback = revert of the routing PR.
+    "pr-gate.yml",
 }
 GITHUB_HOSTED_LABELS = {
     "ubuntu-latest",
@@ -427,6 +455,48 @@ def _runner_selection(
     return False, None, set(), "runs-on has an unsupported type"
 
 
+# Audited hybrid runs-on (#13363 jambe B). Exactly ONE dynamic form is
+# statically provable: the self-hosted leg is reached ONLY when the exact
+# same-repo guard is true; everything else falls back to a GitHub-hosted
+# label. Guard, label set and fallback are enumerated -- any variation
+# (different guard, different labels, different fallback) stays an
+# unauditable expression and keeps the DYNAMIC_RUNS_ON rejection.
+HYBRID_RUNS_ON_GUARD = SAME_REPO_GUARD
+HYBRID_RUNS_ON_LABELS = WAITER_LABELS
+HYBRID_RUNS_ON_FALLBACK = "ubuntu-latest"
+_HYBRID_PATTERN = re.compile(
+    r"^\s*\("
+    r"(?P<guard>[^()]+)"
+    r"\)\s*&&\s*fromJSON\(\s*(?P<q1>['\"])(?P<labels>.*?)(?P=q1)\s*\)"
+    r"\s*\|\|\s*(?P<q2>['\"])(?P<fallback>.*?)(?P=q2)\s*$"
+)
+
+
+def _hybrid_runs_on(runs_on: Any) -> dict[str, set[str]] | None:
+    """Return the audited hybrid legs for ``runs_on``, or None if it is not
+    the exact #13363 form. The caller keeps the DYNAMIC_RUNS_ON rejection
+    for every other expression."""
+    if not isinstance(runs_on, str):
+        return None
+    text = runs_on.strip()
+    if not (text.startswith("${{") and text.endswith("}}")):
+        return None
+    match = _HYBRID_PATTERN.match(text[3:-2].strip())
+    if match is None:
+        return None
+    if " ".join(match.group("guard").split()) != HYBRID_RUNS_ON_GUARD:
+        return None
+    if match.group("fallback") != HYBRID_RUNS_ON_FALLBACK:
+        return None
+    try:
+        labels = {str(item) for item in json.loads(match.group("labels"))}
+    except json.JSONDecodeError:
+        return None
+    if labels != HYBRID_RUNS_ON_LABELS:
+        return None
+    return {"labels": labels}
+
+
 def _normalise_condition(value: Any) -> str:
     if not isinstance(value, str):
         return ""
@@ -591,21 +661,39 @@ def scan_workflows(workflows_dir: Path = DEFAULT_WORKFLOWS_DIR) -> ScanResult:
                 broken.append(f"{path.name}:{job_name}: missing runs-on")
                 continue
 
-            if _contains_expression(runs_on):
+            hybrid = _hybrid_runs_on(runs_on)
+            if _contains_expression(runs_on) and hybrid is None:
                 violations.append(Violation(
                     path.name,
                     str(job_name),
                     "DYNAMIC_RUNS_ON",
-                    "runs-on contains an expression and cannot be audited statically",
+                    "runs-on contains an expression other than the single audited "
+                    "hybrid form (same-repo guard -> self-hosted coursia-waiter, "
+                    "else ubuntu-latest; see #13363) and cannot be audited "
+                    "statically",
                 ))
                 continue
 
-            is_self_hosted, group, labels, selection_error = _runner_selection(runs_on)
-            if selection_error is not None:
-                broken.append(f"{path.name}:{job_name}: {selection_error}")
-                continue
-            if not is_self_hosted:
-                continue
+            if hybrid is not None:
+                # Audited hybrid leg (#13363): self-hosted by construction, and
+                # the same-repo guard lives inside the expression itself -- the
+                # self-hosted labels are unreachable for any fork payload. All
+                # other invariants (triggers, allowlist, label set) apply as
+                # for a static leg; only the job-level SAME_REPO_GUARD check is
+                # carried by the runs-on instead of `if:`.
+                is_self_hosted = True
+                group = None
+                labels = hybrid["labels"]
+                selection_error = None
+                hybrid_leg = True
+            else:
+                is_self_hosted, group, labels, selection_error = _runner_selection(runs_on)
+                hybrid_leg = False
+                if selection_error is not None:
+                    broken.append(f"{path.name}:{job_name}: {selection_error}")
+                    continue
+                if not is_self_hosted:
+                    continue
             self_hosted_jobs += 1
 
             if "pull_request_target" in triggers:
@@ -694,7 +782,8 @@ def scan_workflows(workflows_dir: Path = DEFAULT_WORKFLOWS_DIR) -> ScanResult:
                     "dedicated labels must match exactly (" + "; ".join(detail) + ")",
                 ))
 
-            if "pull_request" in triggers:
+            if "pull_request" in triggers and not hybrid_leg:
+                # Hybrid legs carry the guard in their runs-on expression.
                 condition = _normalise_condition(job.get("if"))
                 # Accept either the bare guard or the guard followed by a
                 # selection predicate (e.g. `&& inputs.target == '...'`)

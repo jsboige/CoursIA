@@ -303,3 +303,4 @@ public class WorkbookInteractionBase
 	{
 		return !string.IsNullOrEmpty(cell.KernelName); // Les cellules de code ont un KernelName défini.
 	}
+}

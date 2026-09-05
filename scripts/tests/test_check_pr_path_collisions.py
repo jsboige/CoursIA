@@ -633,6 +633,47 @@ class TestWriteChannelAndMuteVisibility(unittest.TestCase):
             "the body must not be passed as a literal @path",
         )
 
+    def test_edit_comment_payload_carries_the_body(self):
+        """The PATCH sibling was already correct -- and nothing pinned it.
+
+        Both writers now build the same ``--input <json>`` payload, so the
+        next reader is invited to factor them together. The POST control
+        above would keep such a refactor honest on its own half only: with
+        no control here, ``edit_comment`` could slide into the very
+        ``-f body=@<tmp>`` form that was just removed and the suite would
+        stay green. The PATCH case is the worse of the two -- it overwrites
+        the existing marker with the name of a temp file, destroying the
+        report instead of merely duplicating it.
+        """
+        seen = {}
+
+        def _capture(argv, **kwargs):
+            argv = list(argv)
+            seen["argv"] = argv
+            self.assertIn(
+                "--input", argv,
+                "the PATCH writer must send a JSON payload, not a -f/-F field",
+            )
+            idx = argv.index("--input")
+            seen["payload"] = json.loads(
+                Path(argv[idx + 1]).read_text(encoding="utf-8")
+            )
+            return self._proc(0)
+
+        with mock.patch.object(_mod.subprocess, "run", side_effect=_capture):
+            ok = _mod.edit_comment(
+                "owner/repo", 4242, "id-901", "updated #901", dry_run=False
+            )
+
+        self.assertTrue(ok)
+        self.assertEqual(seen["argv"][:4], ["gh", "api", "--method", "PATCH"])
+        self.assertIn("repos/owner/repo/issues/comments/id-901", seen["argv"])
+        self.assertEqual(seen["payload"]["body"], "updated #901")
+        self.assertFalse(
+            [a for a in seen["argv"] if a.startswith("body=@")],
+            "the body must not be passed as a literal @path",
+        )
+
     def test_failed_write_is_warned_and_returns_false(self):
         buf = io.StringIO()
         with mock.patch.object(

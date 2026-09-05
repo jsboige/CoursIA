@@ -80,7 +80,7 @@ NOTEBOOK_SUBTREES = (
     "MyIA.AI.Notebooks/GameTheory/",            # tranche 2 #10923 (56)
     "MyIA.AI.Notebooks/Probas/",                # tranche 2 #10923 (58)
     "MyIA.AI.Notebooks/CaseStudies/",            # tranche 15 #10923 (6)
-    "MyIA.AI.Notebooks/GenAI/Aspire/",           # tranche 15 #10923 (3)
+    "MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire/",  # tranche 18 #13581 (3, deplace depuis GenAI/Aspire/ en tranche T2 hub .NET)
     "MyIA.AI.Notebooks/GenAI/Audio/",            # tranche 15 #10923 (30)
     "MyIA.AI.Notebooks/GenAI/CaseStudies/",      # tranche 15 #10923 (4)
     "MyIA.AI.Notebooks/GenAI/FallacyDetection/", # tranche 13 #10923 (2, deplace depuis top-level FallacyDetection/ en tranche 1 #13581)

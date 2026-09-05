@@ -33,6 +33,13 @@
       csharp_sha: efce50915b827a78caa4fd913531b0aaf26d3169
       content_python_sha: e13cd18278d50e554dba2ee3c64b36240335c15b36ece62fc85157d210ceba0d
       content_csharp_sha: fc82fa1b910d12205b6c3c197b690f2e57d212a4457ec0f0585f62c7c4c80fb4
+    - date: "2026-09-04"
+      by: myia-po-2024:CoursIA
+      python_sha: 63cc13a5a31bf8292992ac7572736d921a5efff8
+      csharp_sha: e08092311f50cb904f6c268445534db3bdda3c9b
+      content_python_sha: e13cd18278d50e554dba2ee3c64b36240335c15b36ece62fc85157d210ceba0d
+      content_csharp_sha: 43d3935e7d14ef2c13aa001de75b8249a35544ee904405d40abdf3bceb438ac9
+      reason: "Re-baseline #14572 (tranche #11962) : conversion flowchart ASCII -> Mermaid cell md 10 (DAG Honest Worker), markdown-only cote C#, aucune cellule code touchee, python_sha unchanged, parite native-both preservee."
   known_differences:
   - '2026-07-28 (myia-po-2023) #8711 / See #8081 : FERME l''asymetrie sources entre jumeaux -- Infer-13 portait une
     cellule "Sources canoniques" (table Raykar 2010, Karger 2011, Dawid-Skene 1979, Whitehill 2009, Kim-Ghahramani

@@ -4,9 +4,9 @@
 
 <!-- CATALOG-STATUS
 series: GameTheory
-pedagogical_count: 92
-breakdown: root=84, SocialChoice=8
-maturity: BETA=87, ALPHA=3, DRAFT=2
+pedagogical_count: 93
+breakdown: root=85, SocialChoice=8
+maturity: BETA=88, ALPHA=3, DRAFT=2
 -->
 
 La théorie des jeux est le langage mathématique de la stratégie. Elle modélise les situations où des agents rationnels prennent des décisions dont le résultat dépend des choix des autres : enchères, négociations commerciales, élections, poker, guerre commerciale, allocation de ressources. Cette dualité entre coopération et compétition est omniprésente en économie, en sciences politiques et en informatique (mécanismes de vote, smart contracts, réseaux). Le prix Nobel d'économie a été décerné à des théoriciens des jeux à sept reprises entre 1994 et 2020 — c'est un domaine vivant et influent.
@@ -229,6 +229,7 @@ flowchart TD
 | 4b | [GameTheory-04b-Lean-NashExistence](GameTheory-04b-Lean-NashExistence.ipynb) | Lean 4 | Brouwer, Kakutani, preuve existence Nash | 55 min |
 | 4c | [GameTheory-04c-NashExistence-Python](GameTheory-04c-NashExistence-Python.ipynb) | Python | **Point fixe Brouwer discriminant** — `perturbed_br` (regret ⇒ déplacement), double seed non-équilibre/équilibre, anti-tautologie Prong-B [#7664] | 35 min |
 | 4c | [GameTheory-04c-NashExistence-Csharp](GameTheory-04c-NashExistence-Csharp.ipynb) | C# (.NET) | **Jumeau C#** — Brouwer point fixe + Matching Pennies, from-scratch, parité #4956 | 45 min |
+| 4e | [GameTheory-04e-Reflective-Oracles](GameTheory-04e-Reflective-Oracles.ipynb) | Python | **Oracles réflexifs** — Fallenstein/Taylor/Christiano 2015 (arXiv 1508.04145) : boucle / contradiction diagonale sur Matching Pennies déterministe, requête `(M,p)` et menteur probabiliste `M^O() = 1 − O(M, 1/2)` (moyenne empirique → 1/2), théorèmes 3.1/4.1/5.1 esquissés, **frontière explicite résultat fini ↔ oracle universel** (#14450, squelette multi-cycle) | 60 min |
 | 5 | [GameTheory-05-ZeroSum-Minimax](GameTheory-05-ZeroSum-Minimax.ipynb) | Python | Théorème minimax, LP primal/dual, Von Neumann | 40 min |
 | 5 (C#) | [GameTheory-05-ZeroSum-Minimax-Csharp](GameTheory-05-ZeroSum-Minimax-Csharp.ipynb) | .NET (C#) | Twin C# du 5 : **simplexe from-scratch** (Dantzig, règle de Bland) + dualité LP, Matching Pennies/RPS/Blotto (See #4956) | 45 min |
 | 5b | [GameTheory-05b-Lean-Minimax](GameTheory-05b-Lean-Minimax.ipynb) | Lean 4 | Companion **natif** (kernel Lean) : preuve formelle 0-sorry de von Neumann dans le lake `minimax_lean` (Sion), `#check` + `#print axioms` in-kernel — voir [#4054](https://github.com/jsboige/CoursIA/issues/4054) (création du lake) et `LEAN_INVENTORY.md` du dossier | 45 min |

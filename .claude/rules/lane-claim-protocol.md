@@ -10,6 +10,16 @@ S'applique à tous les agents du cluster CoursIA (workers `po-*` + coordinateur 
 3. **Tout timestamp rédigé est en UTC explicite.** Le suffixe `Z` sur une heure locale est proscrit. En cas de conflit, l'ordering par `createdAt` serveur **l'emporte toujours** sur un stamp de corps.
 4. Le dashboard **garde le récit de cycle** (`[CLAIMED]` informatif y reste bienvenu) ; il **cesse d'être le registre de verrous** — seul le commentaire d'issue fait foi cross-lane.
 
+## Prémisse d'identité — une lane = un agent actif (HARD, #14323)
+
+Le protocole suppose **un seul agent actif par couple `machine:workspace`**. Un second processus (cron chevauché, session interactive parallèle) sous la même lane est indiscernable du premier : `check_lane_claim.py` traite leur claim commun comme une reprise légitime.
+
+- `CLEAR` signifie uniquement **« aucune autre lane ne bloque ce grain ou ces chemins »**. Il ne prouve ni « aucun autre processus travaille », ni « aucun travail de ma propre lane n'est en cours ».
+- La voie retenue est de **restaurer cette prémisse opérationnelle** : un cron/session actif par lane, sans ajouter d'identité de processus au format de claim.
+- Avant de démarrer une seconde session sous la même lane, arrêter ou laisser finir la première. Si un chevauchement est découvert, ne pas éditer : coordonner les deux sessions et conserver un seul propriétaire actif.
+
+Le détail et les alternatives écartées sont consignés dans [lane-claim-detail.md](../../docs/reference/lane-claim-detail.md#identité-de-lane-et-collisions-intra-lane-14323).
+
 ## Règle HARD — côté coordinateur (ai-01)
 
 5. **Poser le `[CLAIMED]` au dispatch** (commentaire d'issue au nom de la lane servie), sans attendre que le worker le pose au démarrage : la fenêtre décision → claim est celle du coordinateur à couvrir.

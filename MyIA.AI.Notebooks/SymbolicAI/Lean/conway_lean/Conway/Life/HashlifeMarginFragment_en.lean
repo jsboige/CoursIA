@@ -73,6 +73,7 @@ bestiary below. EPIC #3846 / #6724 / #9568.
 
 import Conway.Life.AdversarialBattery_en
 import Conway.Life.HashlifeCorrectness
+import Conway.Life.LightCone_en
 
 namespace Conway_en
 open Conway
@@ -166,6 +167,249 @@ theorem hashlife_correct_margin (c : MacroCell) (k : Nat)
   -- open P4/P5 heart — documented sorry (acceptance B).
   sorry
 
+/-! ## P4.4 assembly — sorry-stable reduction (tranche 2, #13483)
+
+Diagnosis of 2026-09-04 (c.5539811910): every preliminary brick is proved
+(`p5_large_n_jumpN` b3', full P4, the four bounded walls sorry-free) — the sorry of
+`hashlife_correct_margin` is the assembly itself. Decomposition:
+
+- **L1** — the `h_margin` hypothesis is free: `supportInMargin` is tautological
+  (`supportInMargin_trivial`), the effective statement is the unconditional one under
+  `centralCorrect`.
+- **L2** — the goal reduces to the N-machine's hypothesis: `hashlife_correctN` (proved,
+  in HashlifeCorrectness) yields the global equality as soon as
+  `hcap : ∀ t ≤ 2^k, jumpCaptured …` holds. That is the lemma below, sorry-free.
+- **L3 (open heart)** — lift `centralCorrect c k` (grid equality RESTRICTED to the final
+  window) to `hcap` (confinement of the WHOLE trajectory). This is the bounded P4/P5
+  assembly proper: a structural argument about the Hashlife recursion (the margin contains
+  the light cone at every jump), NOT a reversibility argument — GoL is not reversible, the
+  retrograde cone does not constrain intermediate states.
+- **L4** — the equality leg: `centralCorrect` is a restricted equality, the goal is
+  global; closing requires both grids to carry their support inside the window
+  (`jumpCaptured` of the final state + forward bound on the support of `evolve`).
+
+`hashlife_correct_margin c k h_margin h_central` would discharge as
+`hashlife_correct_margin_of_hcap c k h_central (L3 c k h_central)`: L3/L4 are the only
+open links. -/
+
+/-- **P4.4 L2 — local byte-identical copy of `jumpCaptured`** (the lake's
+    inlining pattern, cf HashlifeCorrectness L6436: the `jumpCaptured` consumed
+    by `hashlife_correctN` is `private` there — an inline of
+    `Conway.Life.JumpCapture.jumpCaptured` breaking the A↔B import cycle,
+    `JumpCapture.lean` importing THIS module). This module can therefore neither
+    see the private nor import `JumpCapture` (cycle): same remedy, byte-identical
+    copy. Defeq of the identical bodies (delta-unfolding of both semi-reducible
+    `def`s) makes the call to `hashlife_correctN` below typecheck. -/
+private def jumpCapturedF (c : MacroCell) : Bool :=
+  (evolve (2 ^ c.level) ((padCenter2 c).toGrid (0, 0))).all fun p =>
+    decide ((2 ^ c.level : Int) ≤ p.1) &&
+    decide (p.1 < (2 ^ c.level : Int) + ((2 ^ (c.level + 1) : Nat) : Int)) &&
+    decide ((2 ^ c.level : Int) ≤ p.2) &&
+    decide (p.2 < (2 ^ c.level : Int) + ((2 ^ (c.level + 1) : Nat) : Int))
+
+/-- **Interface (c) tranche 3, step 1 — propositional unfolding of `jumpCapturedF`.**
+    Same proof as `jumpCaptured_iff` (JumpCapture L264), replicated locally:
+    this module cannot import `JumpCapture` (import cycle, cf docstring of
+    `jumpCapturedF` above). This is the corridor's entry gate (LightCone,
+    `isAlive` language) into the Bool predicate that `hcap` requires. -/
+theorem jumpCapturedF_iff (c : MacroCell) :
+    jumpCapturedF c = true ↔
+      ∀ p ∈ evolve (2 ^ c.level) ((padCenter2 c).toGrid (0, 0)),
+        (2 ^ c.level : Int) ≤ p.1 ∧
+          p.1 < (2 ^ c.level : Int) + ((2 ^ (c.level + 1) : Nat) : Int) ∧
+          (2 ^ c.level : Int) ≤ p.2 ∧
+          p.2 < (2 ^ c.level : Int) + ((2 ^ (c.level + 1) : Nat) : Int) := by
+  unfold jumpCapturedF
+  rw [List.all_eq_true]
+  constructor
+  · intro h p hp
+    have hb := h p hp
+    simp only [Bool.and_eq_true, decide_eq_true_eq] at hb
+    tauto
+  · intro h p hp
+    have hb := h p hp
+    simp only [Bool.and_eq_true, decide_eq_true_eq]
+    tauto
+
+/-- **Interface (c) tranche 3, step 2 — the forward corridor closes the jump as
+    soon as the window absorbs the drift.** Bridge between the corridor's
+    language (`evolve_support_dilation_from`, brick (a-b) of tranche 3,
+    LightCone: `isAlive` confinement of the trajectory) and the Bool predicate
+    `jumpCapturedF`: if the padded grid's support fits in the box `[a, b)`
+    (`h₀`) and the box dilated by `2^c.level` — the jump's maximal forward
+    drift — stays inside the test window `[2^lvl, 2^lvl + 2^(lvl+1))²`
+    (`hwin1..4`), then the jump is captured. The proof makes no reversibility
+    assumption (GoL is not reversible): the forward relay bounds the drift from
+    `t₀ = 0`, the window inclusion is linear. The `h₀`/`hwin` hypotheses are
+    what the geometric half of L3 (characterizing the reconstruction's level
+    along the trajectory) must establish — this lemma is the clean partition:
+    forward confinement [proved by the corridor] separated from window
+    geometry [open]. The `hwin` bounds carry the explicit nat cast
+    `((2 ^ c.level : Nat) : Int)` — the same atom as the corridor's (otherwise
+    the power is forced into Int and omega sees it disconnected). -/
+theorem jumpCapturedF_of_dilation (c : MacroCell) (a b : Int × Int)
+    (h₀ : ∀ p, isAlive ((padCenter2 c).toGrid (0, 0)) p = true →
+      a.1 ≤ p.1 ∧ p.1 < b.1 ∧ a.2 ≤ p.2 ∧ p.2 < b.2)
+    (hwin1 : ((2 ^ c.level : Nat) : Int) ≤ a.1 - ((2 ^ c.level : Nat) : Int))
+    (hwin2 : b.1 + ((2 ^ c.level : Nat) : Int) ≤
+      ((2 ^ c.level : Nat) : Int) + ((2 ^ (c.level + 1) : Nat) : Int))
+    (hwin3 : ((2 ^ c.level : Nat) : Int) ≤ a.2 - ((2 ^ c.level : Nat) : Int))
+    (hwin4 : b.2 + ((2 ^ c.level : Nat) : Int) ≤
+      ((2 ^ c.level : Nat) : Int) + ((2 ^ (c.level + 1) : Nat) : Int)) :
+    jumpCapturedF c = true := by
+  rw [jumpCapturedF_iff]
+  intro p hp
+  have hq : isAlive (evolve (2 ^ c.level) ((padCenter2 c).toGrid (0, 0))) p = true := by
+    rw [isAlive]
+    exact List.elem_iff.mpr hp
+  obtain ⟨c1, c2, c3, c4⟩ :=
+    evolve_support_dilation_from 0 (2 ^ c.level) ((padCenter2 c).toGrid (0, 0)) a b
+      (Nat.zero_le _) h₀ p hq
+  simp only [Nat.sub_zero] at c1 c2 c3 c4
+  -- the goal (from the definition) speaks in `(2 ^ lvl : Int)` (power in Int):
+  -- its relation with the corridor's nat cast is provided explicitly, then
+  -- everything is linear.
+  have hpow : (2 ^ c.level : Int) = ((2 ^ c.level : Nat) : Int) := by
+    exact (Nat.cast_pow 2 c.level).symm
+  omega
+
+/-- **A period repeats itself** (local byte-identical copy of
+    `evolve_mul_of_period`, JumpCapture L518 — this module cannot import it,
+    import cycle A↔B, cf docstring of `jumpCapturedF`): if `g` has period
+    `T` (in the weak sense `evolve T g = g`), then any multiple `m·T` of
+    steps brings it back to itself. By induction on `m` via `evolve_add`. -/
+theorem evolve_mulF_of_period {T : Nat} (g : Grid)
+    (hper : evolve T g = g) (m : Nat) :
+    evolve (m * T) g = g := by
+  induction m with
+  | zero => simp
+  | succ m ih =>
+    have hsplit : (m + 1) * T = m * T + T := by ring
+    rw [hsplit, evolve_add, hper, ih]
+
+/-- **Domain bounds of a well-formed cell** (local byte-identical copy of
+    `cellWf_toGrid_bounds`, JumpCapture L475 — import cycle A↔B, cf above):
+    any living cell of the `toGrid` of a well-formed `MacroCell` (in the
+    `cellWf` sense) of level `n` lives in the square
+    `[r0, r0 + 2^n) × [c0, c0 + 2^n)`. Induction on `cellWf`: each leaf
+    emits at most its corner, each node distributes its four level-`n`
+    children over the offset-`0` or `2^n` quadrants, so the level-`(n+1)`
+    node covers `[·, · + 2^(n+1))`. -/
+theorem cellWfF_toGrid_bounds {c : MacroCell} (hc : cellWf c) (r0 c0 : Int)
+    {p : Int × Int} (hp : p ∈ c.toGrid (r0, c0)) :
+    r0 ≤ p.1 ∧ p.1 < r0 + (2 ^ c.level : Int) ∧
+      c0 ≤ p.2 ∧ p.2 < c0 + (2 ^ c.level : Int) := by
+  induction hc generalizing r0 c0 with
+  | leaf b =>
+    rw [mem_toGrid] at hp
+    cases b with
+    | true =>
+      simp only [MacroCell.toCellsAux, Prod.fst, Prod.snd, List.mem_singleton] at hp
+      obtain ⟨hrr, hcc⟩ : p.1 = r0 ∧ p.2 = c0 := Prod.ext_iff.mp hp
+      subst hrr hcc
+      simp only [MacroCell.level, pow_zero]
+      omega
+    | false => simp [MacroCell.toCellsAux] at hp
+  | node hnw hne hsw hse hne_lvl hsw_lvl hse_lvl inw ine isw ise =>
+    rename_i nw ne sw se
+    simp only [mem_toGrid, MacroCell.toCellsAux, List.mem_append, or_assoc] at hp
+    push_cast at hp
+    have hlvl : MacroCell.level (MacroCell.node nw ne sw se) = nw.level + 1 := by
+      simp only [MacroCell.level]; omega
+    have hpos : (0 : Int) ≤ 2 ^ nw.level := by positivity
+    rcases hp with hp | hp | hp | hp
+    · have hb := inw r0 c0 (mem_toGrid.mpr hp)
+      rw [hlvl, pow_succ]
+      omega
+    · have hb := ine r0 (c0 + (2 ^ nw.level : Int)) (mem_toGrid.mpr hp)
+      simp only [← hne_lvl, ← hsw_lvl, ← hse_lvl] at hb
+      rw [hlvl, pow_succ]
+      omega
+    · have hb := isw (r0 + (2 ^ nw.level : Int)) c0 (mem_toGrid.mpr hp)
+      simp only [← hne_lvl, ← hsw_lvl, ← hse_lvl] at hb
+      rw [hlvl, pow_succ]
+      omega
+    · have hb := ise (r0 + (2 ^ nw.level : Int)) (c0 + (2 ^ nw.level : Int))
+        (mem_toGrid.mpr hp)
+      simp only [← hne_lvl, ← hsw_lvl, ← hse_lvl] at hb
+      rw [hlvl, pow_succ]
+      omega
+
+/-- **Interface (c) slice 3, step 3 — the periodic class `T ∣ 2^k` is
+    captured.** `jumpCapturedF` version of criterion 3
+    (`jumpCaptured_of_period_divides`, JumpCapture L533): any pattern of
+    period `T ≥ 1` dividing the jump horizon `2^c.level`, carried by a
+    well-formed cell of level `k ≥ 1`, satisfies the capture predicate.
+    The jump's final generation is the pattern itself (period repeated),
+    unchanged in its `padCenter2` framing — hence in the central window by
+    the geometry `[3·2^(k-1), 5·2^(k-1)) ⊂ [2^k, 3·2^k)`.
+
+    **Orthogonal complement of the corridor** (step 2,
+    `jumpCapturedF_of_dilation`): the corridor requires a window absorbing
+    the forward drift `2^lvl` — arithmetically closed at full level for any
+    nonempty content (the `hwin` force a zero-width box). The periodic
+    class drifts not at all: the exact temporal invariance `evolve T g = g`
+    replaces the corridor's over-approximation. This is the hcap-reachable
+    class identified by the slice-3 scoping (c.5551593604): still lifes
+    (`T = 1`) and dyadic-period oscillators (`T ∣ 2^k`), the witnesses of
+    the multi-cycle language. -/
+theorem jumpCapturedF_of_period_divides (c : MacroCell) (hwf : c.wf = true)
+    (hlvl : 1 ≤ c.level) {T : Nat} (_hT : 0 < T)
+    (hper : evolve T (c.toGrid (0, 0)) = c.toGrid (0, 0))
+    (hdiv : T ∣ 2 ^ c.level) :
+    jumpCapturedF c = true := by
+  have hcw : cellWf c := cellWf_of_wf c hwf
+  obtain ⟨m, hm⟩ := hdiv
+  have hself : evolve (2 ^ c.level) (c.toGrid (0, 0)) = c.toGrid (0, 0) := by
+    rw [hm, Nat.mul_comm]
+    exact evolve_mulF_of_period _ hper m
+  have hfinal : evolve (2 ^ c.level) ((padCenter2 c).toGrid (0, 0))
+      = shift ((3 * 2 ^ (c.level - 1) : Int), (3 * 2 ^ (c.level - 1) : Int))
+          (c.toGrid (0, 0)) := by
+    rw [padCenter2_toGrid_shift c hlvl, ← evolve_shift, hself]
+  rw [jumpCapturedF_iff]
+  intro p hp
+  rw [hfinal, mem_shift] at hp
+  -- Bounds of the content in its own framing `[0, 2^c.level)²`…
+  obtain ⟨hb1, hb2, hb3, hb4⟩ := cellWfF_toGrid_bounds hcw 0 0 hp
+  dsimp only at hb1 hb2 hb3 hb4
+  -- …and linear relations between the three atoms `2^(c.level-1)`,
+  -- `2^c.level`, `2^(c.level+1)` — the rest is `omega`.
+  have hpow : (2 ^ c.level : Int) = 2 * (2 ^ (c.level - 1) : Int) := by
+    have hsplit : c.level = (c.level - 1) + 1 := by omega
+    conv_lhs => rw [hsplit]
+    rw [pow_succ]
+    ring
+  have hnext : ((2 ^ (c.level + 1) : Nat) : Int)
+      = (2 ^ c.level : Int) + (2 ^ c.level : Int) := by
+    rw [Nat.cast_pow, pow_succ]
+    ring
+  have hy : (0 : Int) ≤ 2 ^ (c.level - 1) := by positivity
+  omega
+
+/-- **Still-life corollary** (`T = 1`): any still life — a pattern with
+    `evolve 1 g = g`, in the strong sense a fixed point of `step` — is
+    captured at any level `k ≥ 1`. This is the consumable form of the class
+    for the usual Life objects (block, beehive, loaf, barrel…): the first
+    L3 link for the `T = 1` class — for any `t ≤ 2^k`, `evolve t g = g` and
+    the trajectory reconstruction is the cell itself. -/
+theorem jumpCapturedF_of_still_life (c : MacroCell) (hwf : c.wf = true)
+    (hlvl : 1 ≤ c.level)
+    (hfix : evolve 1 (c.toGrid (0, 0)) = c.toGrid (0, 0)) :
+    jumpCapturedF c = true :=
+  jumpCapturedF_of_period_divides c hwf hlvl (T := 1) (by omega) hfix (by omega)
+
+/-- **P4.4 L2 (sorry-stable reduction).** The frame's global equality reduces to
+    the N-machine's trajectory-capture hypothesis: `hashlife_correctN` (proved)
+    closes the goal as soon as `hcap` holds. The open links are L3 (lifting
+    `centralCorrect c k` to `hcap`) and L4 (restricted → global equality). -/
+theorem hashlife_correct_margin_of_hcap (c : MacroCell) (k : Nat)
+    (h_central : centralCorrect c k)
+    (hcap : ∀ t ≤ 2^k, jumpCapturedF
+      (gridToMacroCellWithOffset (evolve t (c.toGrid (0, 0)))).2 = true) :
+    evolveHashlifeFast (2^k) (c.toGrid (0, 0)) = evolve (2^k) (c.toGrid (0, 0)) :=
+  hashlife_correctN (2^k) (c.toGrid (0, 0)) hcap
+
 /-! ## Sanity checks on the bestiary
 
 The fragment `supportInMargin` is **decidable** (instance `Decidable (BoxAssezGrandN)`,
@@ -211,8 +455,10 @@ statement `hashlife_correct_margin` carries the fragment-relative correctness (i
 — see *unconditional-in-waiting* note in its docstring: the predicate is tautological, the
 research heart remains the bounded P4/P5 assembly); its `sorry` openly documents the
 still-open bounded P4/P5 assembly (`p4_nw_overlap_wall`, ai-01 c.94).
-Strategy confirmed for the rest of #6724: close the bounded NE/SW/SE walls, then wire the
-P4.4 assembly that will discharge the `sorry` of `hashlife_correct_margin`.
+Strategy for the rest of #6724: the bounded NE/SW/SE walls are CLOSED and
+`p5_large_n_jumpN` is proved (b3') — the L2 reduction above is in place, leaving the L3
+link (the `centralCorrect → hcap` bridge, the bounded assembly proper) and L4 (restricted
+→ global equality), which will discharge the `sorry` of `hashlife_correct_margin`.
 -/
 
 end Life_en

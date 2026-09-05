@@ -23,7 +23,7 @@ Ce script est cet organe.
   WOULD REMOVE  <path>  branch=fix/X  pr=#14427(MERGED)
   REFUSE       <path>  branch=fix/Y  reason=pr_open    pr=#14433
   REFUSE       <path>  branch=fix/Z  reason=unpushed_commits  ahead=2
-  REFUSE       <path>  branch=fix/W  reason=uncommitted_untracked:bg_logs/
+  REFUSE       <path>  branch=fix/W  reason=untolerated_untracked:1
                                                      ignored=.env
   REFUSE       <path>  branch=fix/V  reason=contains_submodules
   ---
@@ -49,18 +49,17 @@ Critères de retrait (cf issue #14195 acceptance) :
 4. **Worktree sans branche (HEAD détaché)** : verdict par contenu. Si
    `git log origin/main --grep "<branch_topic>"` trouve un commit dont le
    sujet correspond (le squash a efface l'ascendance) : REMOVE ; sinon REFUSE.
-5. **Worktree avec untracked non-ignore** : REFUSE, cause NOMmée
-   (`reason=uncommitted_untracked:<chemin>`). Pouvoir de refus git
-   (#14509) : `git worktree remove` sans `--force` refuse TOUT untracked
-   non-ignore, quelle que soit son extension -- l'ancien predicat
-   (`SOURCE_EXTENSIONS` + artefacts allowlistes #8924) laissait passer
-   `bg_logs/` (repertoire), `lake_7012.log.relaunch` (suffixe inconnu) et
-   meme un `node_modules/` non-ignore, puis echouait en FAILED permanent.
-   Les categories d'artefact #8924 (`slides/images/`, `**/scripts/results/`,
-   `.claude/agent-memory/*`, `*_output.ipynb`, caches `node_modules/`,
-   `.cache/`, `.pytest_cache/`) ne survivent QUE gitignorees (sorties en
-   `!!`, jamais bloquantes) -- c'est la seule forme coherente avec le
-   pouvoir de refus git.
+5. **Worktree avec residu untracked non tolere** : REFUSE, cause nommee
+   (`reason=untolerated_untracked:<n>`, #14619 point 2). Pouvoir de refus
+   git (#14509) : `git worktree remove` sans `--force` refuse TOUT
+   non-suivi au moment du retrait. Les artefacts toleres (bg_logs/, logs
+   lake, tokens #8924) ne bloquent pas : l'apply les NETTOIE d'abord
+   (`clean_tolerated_artifacts`), le remove s'execute ensuite sur un
+   worktree que git acceptera. Tout residu hors liste toleree reste
+   REFUSE -- c'est le complement fail-closed du couple
+   classification/execution. Les fichiers SOURCE untracked non toleres
+   et les tracked modifies refusent en amont
+   (`reason=uncommitted_source_changes`).
 6. **Worktree avec submodules initialisés** : REFUSE
    (`reason=contains_submodules`). `git worktree remove` refuse
    structurellement ces worktrees ("working trees containing submodules
@@ -80,7 +79,12 @@ rate les squash-merges, le second a des faux negatifs mesures.
    qu'il épargne est indiscernable d'un outil qui ne regarde pas.
 3. **Aucun `git worktree remove --force`.** Le retrait est `git worktree
    remove` sans --force ; si git refuse (worktree sale), on log la cause et
-   on continue (ne JAMAIS forcer).
+   on continue (ne JAMAIS forcer). Depuis #14619 : avant le retrait, l'apply
+   supprime exactement les artefacts untracked toleres (et eux seuls --
+   clean_tolerated_artifacts), sinon git refuse sur tout non-suivi et un
+   worktree classe REMOVE pour artefacts seulement ne part jamais. Un residu
+   hors liste tolerree est classe REFUSE (untolerated_untracked), pas REMOVE,
+   et un worktree a sous-modules REFUSE (contains_submodules).
 4. **Mode `--json` parallele au mode texte.** Mêmes chiffres, même ordre ;
    le recipient downstream (dashboard sweep, DM ai-01) parse le JSON sans
    réinventer le rendu.
@@ -122,21 +126,20 @@ Exit codes:
       fin de cycle
 - [x] Mesure avant/apres sur machine reelle, posee en commentaire issue
 
-## Acceptance criteria (depuis #14509)
+## Acceptance criteria (depuis #14509, composes avec #14619 au merge)
 
-- [x] Le predicat de salete rebranche sur la politique git reelle : tout
-      untracked non-ignore non-allowliste -> REFUSE
-      `uncommitted_untracked:<chemin>` (l'ancien predicat par extensions
-      de source ignorait `bg_logs/` et `lake_7012.log.relaunch` ->
-      FAILED permanent)
+- [x] Le predicat de salete rebranche sur la politique git reelle : les
+      toleres sont NETTOYES a l'apply puis le remove s'execute sans
+      --force (le REMOVE annonce reussit) ; tout residu non tolere ->
+      REFUSE `untolerated_untracked:<n>` ; fichier source untracked non
+      tolere ou tracked modifie -> REFUSE `uncommitted_source_changes`
 - [x] Worktrees a submodules initialises classes REFUSE
       `contains_submodules` (git ne les retirera jamais)
 - [x] Gitignores non-cache signales dans la sortie (`ignored=...`) sans
-      bloquer le retrait
-- [x] Branche affichee a cote du chemin sur TOUT verdict (y compris
-      FAILED, qui l'omettait)
-- [x] Verdicts des 3 worktrees exemplaires changes (REMOVE -> REFUSE avec
-      cause nommee) et passe `--apply` a `failed=0` (mesure 2026-09-04)
+      bloquer le retrait (registre `ignored_extra`, passe porcelain
+      `--ignored=matching`)
+- [x] Registre `blocking_untracked` (untracked non-ignores NON toleres)
+      expose sur chaque verdict pour la decision humaine
 """
 from __future__ import annotations
 
@@ -144,6 +147,7 @@ import argparse
 import dataclasses
 import json
 import re
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -182,6 +186,18 @@ UNTRACKED_ARTIFACT_TOKENS = (
     "/build/",
     ".eggs",
     ".tox",
+    # #14619 : residus BG-prover constates sur les machines (un fichier de
+    # log chacun bloquait le retrait de worktrees mergees).
+    "bg_logs",
+    ".log.relaunch",
+)
+
+# Extensions/editions source : si du contenu untracked touche un fichier
+# de ce type, c'est une edition de source non poussee, REFUSE obligatoire.
+SOURCE_EXTENSIONS = (
+    ".py", ".ipynb", ".md", ".cs", ".yml", ".yaml", ".json", ".toml",
+    ".ini", ".cfg", ".sh", ".ps1", ".bat", ".txt", ".html", ".css", ".js",
+    ".ts", ".tsx", ".jsx", ".lean", ".pyi",
 )
 
 
@@ -319,6 +335,14 @@ def worktree_has_initialized_submodules(wt_path: str) -> bool:
     )
 
 
+def is_source_dirty(path: str) -> bool:
+    """True si le chemin untracked est une edition source non toleree."""
+    p = path.replace("\\", "/")
+    if is_untracked_artifact(p):
+        return False
+    return any(p.endswith(ext) for ext in SOURCE_EXTENSIONS)
+
+
 def same_worktree_path(a: str, b: str) -> bool:
     """Deux chemins de worktree designent-ils le meme repertoire ?
 
@@ -350,6 +374,25 @@ def same_worktree_path(a: str, b: str) -> bool:
         # False, qui reintroduirait exactement le defaut ci-dessus.
         return (a.replace("\\", "/").rstrip("/").lower()
                 == b.replace("\\", "/").rstrip("/").lower())
+
+
+def has_initialized_submodule(submodule_status_stdout: str) -> bool:
+    """True si au moins un sous-module est INITIALISÉ dans ce worktree.
+
+    `git submodule status` liste tous les sous-modules CONFIGURÉS du repo,
+    y compris non-initialisés (préfixe '-') — et ce dans chaque worktree.
+    Seuls les initialisés (matérialisés : un .git vit dans le chemin) font
+    refuser `git worktree remove`. Mesuré firsthand 2026-09-04 (#14619) :
+    ce repo porte des submodules configurés (MetaGeneticSharp…), tous en
+    '-' dans les worktrees de feature — git les retire sans protester ;
+    matcher sur la sortie brute aurait REFUSE les 55 worktrees d'un coup.
+    Préfixes : '-' = non initialisé ; '' = initialisé au sha enregistré ;
+    '+' = initialisé à un autre sha ; 'U' = conflit. Tout sauf '-' compte.
+    """
+    return any(
+        line.strip() and not line.strip().startswith("-")
+        for line in submodule_status_stdout.splitlines()
+    )
 
 
 def get_worktree_info(wt_path: str, current_path: str) -> dict:
@@ -390,17 +433,36 @@ def get_worktree_info(wt_path: str, current_path: str) -> dict:
         wt_path, "status", "--porcelain", "--ignored=matching", check=False
     )
     parsed = parse_porcelain(status_proc.stdout)
-    has_source = bool(parsed["blocking_untracked"] or parsed["tracked_modified"])
+    # has_source suit la semantique #14619 : seuls les fichiers SOURCE non
+    # toleres et les tracked modifies rendent le worktree sale -- les
+    # artefacts toleres sont nettoyables a l'apply, ils ne comptent pas.
+    has_source = bool(parsed["tracked_modified"]) or any(
+        is_source_dirty(p) for p in parsed["blocking_untracked"]
+    )
+    # Registre actionnable : les untracked non-ignores NON toleres (ce que
+    # le nettoyage n'emportera pas). Les toleres restent visibles dans
+    # `untracked` pour la decision humaine.
+    blocking_untracked = [
+        p for p in parsed["blocking_untracked"] if not is_untracked_artifact(p)
+    ]
+
+    # Sous-modules : `git worktree remove` les refuse categoriquement
+    # ("working trees containing submodules cannot be moved or removed"),
+    # meme avec --force sur certains etats. #14619 : l'organe ne doit pas
+    # annoncer REMOVE ce que git interdit par construction. Seuls les
+    # sous-modules INITIALISÉS comptent (cf has_initialized_submodule).
+    subm_proc = run_git(wt_path, "submodule", "status", check=False)
+    has_submodules = has_initialized_submodule(subm_proc.stdout)
 
     return {
         "branch": branch,
         "ahead_count": ahead_count,
         "untracked": parsed["untracked"],
-        "blocking_untracked": parsed["blocking_untracked"],
+        "blocking_untracked": blocking_untracked,
         "tracked_modified": parsed["tracked_modified"],
         "ignored_extra": parsed["ignored_extra"],
         "has_source_dirty": has_source,
-        "has_submodules": worktree_has_initialized_submodules(wt_path),
+        "has_submodules": has_submodules,
         "is_current": same_worktree_path(wt_path, current_path),
     }
 
@@ -542,8 +604,8 @@ def diagnose_worktree(wt_path: str, current_path: str) -> WorktreeStatus:
             decision="SKIP_CURRENT",
             refusal_reason="current_worktree_not_removable",
             has_submodules=info["has_submodules"],
-            blocking_untracked=info["blocking_untracked"],
-            ignored_extra=info["ignored_extra"],
+            blocking_untracked=info.get("blocking_untracked", []),
+            ignored_extra=info.get("ignored_extra", []),
         )
 
     # Branche main : JAMAIS retirer (le worktree de travail principal).
@@ -564,8 +626,25 @@ def diagnose_worktree(wt_path: str, current_path: str) -> WorktreeStatus:
             decision="REFUSE",
             refusal_reason="protected_branch:main",
             has_submodules=info["has_submodules"],
-            blocking_untracked=info["blocking_untracked"],
-            ignored_extra=info["ignored_extra"],
+            blocking_untracked=info.get("blocking_untracked", []),
+            ignored_extra=info.get("ignored_extra", []),
+        )
+
+    # Sous-modules : git interdit le retrait par construction -> REFUSE sans
+    # meme annoncer REMOVE (#14619 point 4).
+    if info.get("has_submodules"):
+        return WorktreeStatus(
+            path=wt_path,
+            branch=info["branch"],
+            is_current=False,
+            pr_state=None,
+            pr_number=None,
+            pr_url=None,
+            ahead_count=info["ahead_count"],
+            has_source_dirty=info["has_source_dirty"],
+            untracked_paths=info["untracked"],
+            decision="REFUSE",
+            refusal_reason="contains_submodules",
         )
 
     # Predicat 1 : commits non poussés -> REFUSE inconditionnel
@@ -583,21 +662,14 @@ def diagnose_worktree(wt_path: str, current_path: str) -> WorktreeStatus:
             decision="REFUSE",
             refusal_reason=f"unpushed_commits:{info['ahead_count']}",
             has_submodules=info["has_submodules"],
-            blocking_untracked=info["blocking_untracked"],
-            ignored_extra=info["ignored_extra"],
+            blocking_untracked=info.get("blocking_untracked", []),
+            ignored_extra=info.get("ignored_extra", []),
         )
 
-    # Predicat 2 : untracked non-ignore OU tracked modifie -> REFUSE,
-    # cause nommee (#14509) : c'est le pouvoir de refus git reel (any
-    # untracked OU modification non commitee bloque `worktree remove`),
-    # plus un message qui mute : le premier chemin fautif est dans le
-    # reason. Les deux registres sont exclusifs dans le reason : untracked
-    # prime, sinon le premier fichier tracked modifie.
-    if info["blocking_untracked"] or info["tracked_modified"]:
-        if info["blocking_untracked"]:
-            cause = f"uncommitted_untracked:{info['blocking_untracked'][0]}"
-        else:
-            cause = f"uncommitted_modified:{info['tracked_modified'][0]}"
+    # Predicat 2a : source sale (fichier source untracked non tolere, ou
+    # tracked modifie) -> REFUSE (#14509 : pouvoir de refus git reel ;
+    # #14619 : les toleres sont nettoyables a l'apply et ne comptent plus).
+    if info["has_source_dirty"]:
         return WorktreeStatus(
             path=wt_path,
             branch=info["branch"],
@@ -609,20 +681,23 @@ def diagnose_worktree(wt_path: str, current_path: str) -> WorktreeStatus:
             has_source_dirty=True,
             untracked_paths=info["untracked"],
             decision="REFUSE",
-            refusal_reason=cause,
+            refusal_reason="uncommitted_source_changes",
             has_submodules=info["has_submodules"],
-            blocking_untracked=info["blocking_untracked"],
-            ignored_extra=info["ignored_extra"],
+            blocking_untracked=info.get("blocking_untracked", []),
+            ignored_extra=info.get("ignored_extra", []),
         )
 
-    # Predicat 2.bis : submodules initialises -> REFUSE (#14509).
-    # `git worktree remove` refuse structurellement ces worktrees
-    # ("working trees containing submodules cannot be moved or removed") :
-    # prononcer REFUSE est plus honnete qu'un FAILED a chaque --apply.
-    # Place AVANT la resolution PR pour eviter un appel gh inutile ; le
-    # travail non pousse/salate prime deja (predicats 1-2, plus
-    # actionnables).
-    if info["has_submodules"]:
+    # Predicat 2b : residu untracked NON tolere -> REFUSE (#14619 point 2).
+    # `git worktree remove` sans --force refuse sur TOUT fichier non suivi,
+    # tolere ou non : un worktree qui porte un residu hors liste toleree ne
+    # pourra jamais etre retire, il ne doit donc pas etre compte removable.
+    # Le nettoyage a l'apply (clean_tolerated_artifacts) ne touche que la
+    # liste toleree -- ce REFUSE est le complement fail-closed du couple
+    # classification/execution.
+    untolerated = [
+        p for p in info["untracked"] if not is_untracked_artifact(p)
+    ]
+    if untolerated:
         return WorktreeStatus(
             path=wt_path,
             branch=info["branch"],
@@ -634,10 +709,7 @@ def diagnose_worktree(wt_path: str, current_path: str) -> WorktreeStatus:
             has_source_dirty=info["has_source_dirty"],
             untracked_paths=info["untracked"],
             decision="REFUSE",
-            refusal_reason="contains_submodules",
-            has_submodules=True,
-            blocking_untracked=info["blocking_untracked"],
-            ignored_extra=info["ignored_extra"],
+            refusal_reason=f"untolerated_untracked:{len(untolerated)}",
         )
 
     # Resolution PR
@@ -666,8 +738,8 @@ def diagnose_worktree(wt_path: str, current_path: str) -> WorktreeStatus:
             decision="REFUSE",
             refusal_reason=f"pr_open:#{pr_number}",
             has_submodules=info["has_submodules"],
-            blocking_untracked=info["blocking_untracked"],
-            ignored_extra=info["ignored_extra"],
+            blocking_untracked=info.get("blocking_untracked", []),
+            ignored_extra=info.get("ignored_extra", []),
         )
 
     # Predicat 4 : PR MERGED ou CLOSED -> REMOVE
@@ -685,8 +757,8 @@ def diagnose_worktree(wt_path: str, current_path: str) -> WorktreeStatus:
             decision="REMOVE",
             refusal_reason=None,
             has_submodules=info["has_submodules"],
-            blocking_untracked=info["blocking_untracked"],
-            ignored_extra=info["ignored_extra"],
+            blocking_untracked=info.get("blocking_untracked", []),
+            ignored_extra=info.get("ignored_extra", []),
         )
 
     # Pas de PR trouvee : HEAD detaché sans correspondance, ou branche
@@ -704,8 +776,8 @@ def diagnose_worktree(wt_path: str, current_path: str) -> WorktreeStatus:
         decision="REFUSE",
         refusal_reason="no_pr_match" if info["branch"] else "detached_no_match",
         has_submodules=info["has_submodules"],
-        blocking_untracked=info["blocking_untracked"],
-        ignored_extra=info["ignored_extra"],
+        blocking_untracked=info.get("blocking_untracked", []),
+        ignored_extra=info.get("ignored_extra", []),
     )
 
 
@@ -728,6 +800,59 @@ def list_worktrees() -> list[dict]:
     if cur:
         out.append(cur)
     return out
+
+
+def clean_tolerated_artifacts(wt: WorktreeStatus) -> list[str]:
+    """Supprime les SEULS artefacts tolérés du worktree, avant retrait.
+
+    #14619 : la liste tolérée encode déjà le jugement « ces fichiers ne
+    valent rien » (caches, logs BG, résultats). `git worktree remove` sans
+    --force refuse sur TOUT fichier non suivi, toléré ou non : sans ce
+    nettoyage, un worktree classé REMOVE pour artefacts seulement ne peut
+    jamais être retiré (removable n'est alors pas une prévision de applied).
+
+    Garde-fous :
+    - seuls les chemins untracked qui matchent la liste tolérée sont visés ;
+    - chaque cible doit résoudre DANS le worktree (défense en profondeur
+      contre une entrée porcelain inattendue) ;
+    - jamais de `--force` : le retrait reste `git worktree remove` nu. Si un
+      résidu hors liste survient entre le diagnostic et l'apply, git refuse
+      et le statut FAILED rend la cause (fail-closed).
+    """
+    removed: list[str] = []
+    root = Path(wt.path)
+    try:
+        root_resolved = root.resolve()
+    except OSError:
+        return removed
+    for rel in wt.untracked_paths:
+        if not is_untracked_artifact(rel):
+            continue
+        target = root / rel.rstrip("/\\")
+        try:
+            if not target.resolve().is_relative_to(root_resolved):
+                continue
+        except OSError:
+            continue
+        if target.is_symlink():
+            # rmtree sur un lien symbolique leve OSError ; unlink est le
+            # geste correct et ne touche pas la cible.
+            try:
+                target.unlink()
+                removed.append(rel)
+            except OSError:
+                continue
+        elif target.is_dir():
+            shutil.rmtree(target, ignore_errors=True)
+            if not target.exists():
+                removed.append(rel)
+        elif target.exists():
+            try:
+                target.unlink()
+                removed.append(rel)
+            except OSError:
+                continue
+    return removed
 
 
 def apply_removal(wt: WorktreeStatus) -> tuple[bool, str]:
@@ -869,6 +994,9 @@ def main() -> int:
                 if s.decision == "REFUSE":
                     refused_count += 1
                 continue
+            # #14619 : nettoyer exactement les artefacts tolérés AVANT le
+            # retrait sans force, sinon git refuse sur tout untracked.
+            cleaned = clean_tolerated_artifacts(s)
             ok, stderr = apply_removal(s)
             apply_results.append({
                 "path": s.path,
@@ -876,6 +1004,7 @@ def main() -> int:
                 "pr_number": s.pr_number,
                 "applied": ok,
                 "stderr": stderr,
+                "cleaned_artifacts": cleaned,
             })
             if ok:
                 removal_count += 1

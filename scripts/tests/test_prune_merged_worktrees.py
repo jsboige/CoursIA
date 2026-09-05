@@ -27,7 +27,7 @@ Pinent le contrat de sûreté (issues #14195 + #14509 acceptance) :
 7. `WorktreeStatus.decision` = `REFUSE` quand unpushed_commits > 0
    (jamais d'exception).
 8. `WorktreeStatus.decision` = `REFUSE` quand untracked bloquant avec
-   cause NOMmée (`uncommitted_untracked:<chemin>`).
+   cause nommée (`untolerated_untracked:<n>` / `uncommitted_source_changes`).
 9. `WorktreeStatus.decision` = `REFUSE` quand branch=main/master
    (le worktree de travail principal n'est JAMAIS un candidat au retrait,
    même si gh remonte une vieille PR close qui pointe sur main -- bug
@@ -341,17 +341,17 @@ class TestDiagnoseRefusalCauses:
         base.update(over)
         return base
 
-    def test_named_untracked_path_in_reason(self, monkeypatch):
+    def test_source_untracked_refuses_with_named_register(self, monkeypatch):
         info = self._info(
-            untracked=["bg_logs/", "slides/images/foo.png"],
-            blocking_untracked=["bg_logs/"],
+            untracked=["bg_logs/", "src/keep.py"],
+            blocking_untracked=["src/keep.py"],
             has_source_dirty=True,
         )
         monkeypatch.setattr(pmw, "get_worktree_info", lambda *a: info)
         s = pmw.diagnose_worktree("C:/fake", "C:/other")
         assert s.decision == "REFUSE"
-        assert s.refusal_reason == "uncommitted_untracked:bg_logs/"
-        assert s.blocking_untracked == ["bg_logs/"]
+        assert s.refusal_reason == "uncommitted_source_changes"
+        assert s.blocking_untracked == ["src/keep.py"]
 
     def test_submodules_inhibit_remove_without_gh_call(self, monkeypatch):
         info = self._info(has_submodules=True)
@@ -380,11 +380,11 @@ class TestDiagnoseRefusalCauses:
         assert s.refusal_reason is None
 
     def test_untracked_primes_over_merged_pr(self, monkeypatch):
-        # Meme PR MERGED, un untracked bloquant doit changer le verdict :
-        # sans ce fix, le worktree partait en REMOVE puis FAILED.
+        # Meme PR MERGED, un residu untracked NON tolere doit changer le
+        # verdict : sans ce garde, le worktree partait en REMOVE puis FAILED.
         info = self._info(
-            untracked=["bg_logs/"], blocking_untracked=["bg_logs/"],
-            has_source_dirty=True,
+            untracked=["residu.bin"], blocking_untracked=["residu.bin"],
+            has_source_dirty=False,
         )
         monkeypatch.setattr(pmw, "get_worktree_info", lambda *a: info)
         monkeypatch.setattr(
@@ -393,12 +393,12 @@ class TestDiagnoseRefusalCauses:
         )
         s = pmw.diagnose_worktree("C:/fake", "C:/other")
         assert s.decision == "REFUSE"
-        assert s.refusal_reason == "uncommitted_untracked:bg_logs/"
+        assert s.refusal_reason == "untolerated_untracked:1"
 
-    def test_tracked_modified_only_names_the_file(self, monkeypatch):
+    def test_tracked_modified_refuses_before_gh(self, monkeypatch):
         # Worktree a fichier tracked modifie (ex. slides fantomes CRLF) :
-        # le predicat 2 doit le refuser AVANT l'appel gh, avec le chemin
-        # nomme -- sans ce predicat, REMOVE puis FAILED git permanent.
+        # le predicat 2a doit le refuser AVANT l'appel gh -- sans ce
+        # predicat, REMOVE puis FAILED git permanent.
         info = self._info(tracked_modified=["slides/S3-acculturation/slides.md"],
                           has_source_dirty=True)
         monkeypatch.setattr(pmw, "get_worktree_info", lambda *a: info)
@@ -412,8 +412,7 @@ class TestDiagnoseRefusalCauses:
         monkeypatch.setattr(pmw, "lookup_pr_for_branch", _no_gh)
         s = pmw.diagnose_worktree("C:/fake", "C:/other")
         assert s.decision == "REFUSE"
-        assert s.refusal_reason == (
-            "uncommitted_modified:slides/S3-acculturation/slides.md")
+        assert s.refusal_reason == "uncommitted_source_changes"
 
 
 class TestGetWorktreeInfoPorcelain:
@@ -423,7 +422,8 @@ class TestGetWorktreeInfoPorcelain:
         def fake_run_git(*args, **kwargs):
             cmd = list(args)
             if "status" in cmd:
-                return _fake_proc(0, "?? bg_logs/\n!! .env\n")
+                return _fake_proc(
+                    0, "?? bg_logs/\n?? residu.bin\n!! .env\n")
             if "submodule" in cmd:
                 return _fake_proc(0, " 2a1f3c argumentum\n")
             if "--abbrev-ref" in cmd and "HEAD" in cmd:
@@ -432,10 +432,14 @@ class TestGetWorktreeInfoPorcelain:
 
         monkeypatch.setattr(pmw, "run_git", fake_run_git)
         info = pmw.get_worktree_info("C:/fake", "C:/other")
-        assert info["untracked"] == ["bg_logs/"]
-        assert info["blocking_untracked"] == ["bg_logs/"]
+        assert info["untracked"] == ["bg_logs/", "residu.bin"]
+        # bg_logs/ est un artefact tolere (#14619) : nettoyable a l'apply,
+        # il ne compte pas comme bloquant ; residu.bin oui.
+        assert info["blocking_untracked"] == ["residu.bin"]
         assert info["ignored_extra"] == [".env"]
-        assert info["has_source_dirty"] is True
+        # Ni fichier source ni tracked modifie : toleres + residu seul ne
+        # rendent pas le worktree "source sale" (le residu releve du 2b).
+        assert info["has_source_dirty"] is False
         assert info["has_submodules"] is True
 
     def test_clean_worktree_reports_no_sources(self, monkeypatch):
@@ -738,6 +742,133 @@ class TestRenderText:
             if "C:/dev/CoursIA-OK" in l and "REMOVED" in l
         ]
         assert ok_lines, "REMOVED path missing from output"
+
+
+# ---------------------------------------------------------------------------
+# #14619 -- removable doit etre une prevision de applied
+# ---------------------------------------------------------------------------
+
+
+_MERGED_PR = {
+    "number": 14670, "state": "MERGED",
+    "url": "https://github.com/jsboige/CoursIA/pull/14670",
+    "headRefName": "fix/merged-thing",
+}
+
+
+def _fake_info(**overrides):
+    defaults = dict(
+        branch="fix/merged-thing",
+        ahead_count=0,
+        untracked=[],
+        has_source_dirty=False,
+        has_submodules=False,
+        is_current=False,
+    )
+    defaults.update(overrides)
+    return defaults
+
+
+class TestToleratedCleanup14619:
+    """Correctif #14619 : nettoyage des seuls artefacts tolérés avant retrait
+    sans force, REFUSE sur résidu hors liste, REFUSE sur sous-modules."""
+
+    def test_bg_logs_dir_is_artifact(self):
+        assert pmw.is_untracked_artifact(
+            "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/bg_logs/") is True
+        assert pmw.is_untracked_artifact(
+            "agent_tests/bg_logs/run.jsonl") is True
+
+    def test_log_relaunch_is_artifact(self):
+        # Cas exact mesure sur D:/CoursIA-wt/c552-7012-build (#14619)
+        assert pmw.is_untracked_artifact("lake_7012.log.relaunch") is True
+
+    def test_clean_removes_only_tolerated(self, tmp_path):
+        (tmp_path / "bg_logs").mkdir()
+        (tmp_path / "bg_logs" / "run.jsonl").write_text(
+            "{}", encoding="utf-8")
+        (tmp_path / "lake_7012.log.relaunch").write_text(
+            "log", encoding="utf-8")
+        keep = tmp_path / "src" / "keep.py"
+        keep.parent.mkdir()
+        keep.write_text("x = 1", encoding="utf-8")
+        wt = _make_status(
+            path=str(tmp_path),
+            untracked_paths=[
+                "bg_logs/", "lake_7012.log.relaunch", "src/keep.py",
+            ],
+        )
+        removed = pmw.clean_tolerated_artifacts(wt)
+        assert sorted(removed) == ["bg_logs/", "lake_7012.log.relaunch"]
+        assert not (tmp_path / "bg_logs").exists()
+        assert not (tmp_path / "lake_7012.log.relaunch").exists()
+        assert keep.exists(), "untracked non toléré ne doit pas être touché"
+
+    def test_clean_never_escapes_worktree(self, tmp_path):
+        probe = tmp_path.parent / "prune_escape_probe_14619.txt"
+        wt = _make_status(
+            path=str(tmp_path),
+            untracked_paths=["slides/images/../../prune_escape_probe_14619.txt"],
+        )
+        removed = pmw.clean_tolerated_artifacts(wt)
+        assert removed == []
+        assert not probe.exists(), "la cible résolue doit rester dans le worktree"
+
+    def test_diagnose_remove_when_only_tolerated_artifacts(self, monkeypatch):
+        monkeypatch.setattr(
+            pmw, "get_worktree_info",
+            lambda *a, **k: _fake_info(
+                untracked=["bg_logs/", "lake_7012.log.relaunch"]),
+        )
+        monkeypatch.setattr(
+            pmw, "lookup_pr_for_branch", lambda b: dict(_MERGED_PR))
+        s = pmw.diagnose_worktree("C:/fake/wt", "C:/elsewhere")
+        assert s.decision == "REMOVE"
+
+    def test_diagnose_refuse_untolerated_untracked(self, monkeypatch):
+        monkeypatch.setattr(
+            pmw, "get_worktree_info",
+            lambda *a, **k: _fake_info(untracked=["residu.bin"]),
+        )
+        monkeypatch.setattr(
+            pmw, "lookup_pr_for_branch", lambda b: dict(_MERGED_PR))
+        s = pmw.diagnose_worktree("C:/fake/wt", "C:/elsewhere")
+        assert s.decision == "REFUSE"
+        assert s.refusal_reason == "untolerated_untracked:1"
+
+    def test_submodule_detection_ignores_uninitialized(self):
+        # `git submodule status` liste les submodules CONFIGURÉS dans tous
+        # les worktrees ; seuls les initialisés (sans préfixe '-') bloquent
+        # `git worktree remove`. Matcher la sortie brute refuserait tout.
+        assert pmw.has_initialized_submodule("") is False
+        assert pmw.has_initialized_submodule(
+            "-cac5abc MyIA.AI.Notebooks/GenAI/SemanticKernel/semantic-fleet"
+        ) is False
+        assert pmw.has_initialized_submodule(
+            "-abc path/one\n-def path/two\n"
+        ) is False
+        assert pmw.has_initialized_submodule(
+            " 30c3993 MyIA.AI.Notebooks/Search/MetaGeneticSharp (v0.1.0)"
+        ) is True
+        assert pmw.has_initialized_submodule("+abc path/one") is True
+        assert pmw.has_initialized_submodule(
+            "-abc path/one\n 30c3993 path/initialized\n"
+        ) is True
+
+    def test_diagnose_refuse_submodules(self, monkeypatch):
+        monkeypatch.setattr(
+            pmw, "get_worktree_info",
+            lambda *a, **k: _fake_info(has_submodules=True),
+        )
+        s = pmw.diagnose_worktree("C:/fake/wt", "C:/elsewhere")
+        assert s.decision == "REFUSE"
+        assert s.refusal_reason == "contains_submodules"
+
+    def test_no_force_in_source(self):
+        src = Path(pmw.__file__).read_text(encoding="utf-8")
+        assert '"--force"' not in src and "'--force'" not in src, (
+            "la propriété no-force (docstring règle 3) doit tenir"
+        )
 
 
 # ---------------------------------------------------------------------------

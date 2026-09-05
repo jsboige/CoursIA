@@ -105,7 +105,7 @@ Le détail par notebook suit en strate A ci-dessous : consultation, plus décisi
 - [ ] `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-11-RegimeSwitching.ipynb`
 - [ ] `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-06-Options-Trading.ipynb`
 - [ ] `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-06-PCA-StatArb.ipynb`
-- [ ] `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-06-VolTargeting.ipynb`
+- [ ] `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-13-VolTargeting.ipynb`
 - [ ] `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-07-Futures-Forex.ipynb`
 - [ ] `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-07-TemporalCNN.ipynb`
 - [ ] `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-08-Multi-Asset-Strategies.ipynb`
@@ -291,7 +291,7 @@ l'Epic) ; un dossier de revue est alors préparé (T2).*
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-13-Kochen-Specker.ipynb`
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-14-Finiteness-Derivatives.ipynb`
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15-Grothendieck-Tribute.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17-Knots-a-Conway-and-Proofs.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb`
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17b-Knots-Invariants-Companion.ipynb`
 - [ ] `MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03e-AStar-Optimality.ipynb`
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-19-Sendov-Complex-Analysis.ipynb`
