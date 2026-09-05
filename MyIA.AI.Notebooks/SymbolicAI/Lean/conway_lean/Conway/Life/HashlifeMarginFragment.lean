@@ -74,6 +74,7 @@ kernel) sur le bestiaire ci-dessous. EPIC #3846 / #6724 / #9568.
 
 import Conway.Life.AdversarialBattery
 import Conway.Life.HashlifeCorrectness
+import Conway.Life.LightCone
 
 namespace Conway
 namespace Life
@@ -166,6 +167,122 @@ theorem hashlife_correct_margin (c : MacroCell) (k : Nat)
   -- open P4/P5 heart — sorry documenté (acceptance B).
   sorry
 
+/-! ## Assemblage P4.4 — réduction sorry-stable (tranche 2, #13483)
+
+Diagnostic du 2026-09-04 (c.5539811910) : toutes les briques préliminaires sont prouvées
+(`p5_large_n_jumpN` b3', P4 complet, les 4 murs bornés sans sorry) — le sorry de
+`hashlife_correct_margin` est l'assemblage lui-même. Décomposition :
+
+- **L1** — l'hypothèse `h_margin` est gratuite : `supportInMargin` est tautologique
+  (`supportInMargin_trivial`), l'énoncé effectif est l'inconditionnel sous `centralCorrect`.
+- **L2** — le but se réduit à l'hypothèse de la machine N : `hashlife_correctN` (prouvé,
+  HashlifeCorrectness) donne l'égalité globale dès `hcap : ∀ t ≤ 2^k, jumpCaptured …`.
+  C'est le lemme ci-dessous, sorry-free.
+- **L3 (cœur ouvert)** — relever `centralCorrect c k` (égalité de grille RESTREINTE à la
+  fenêtre finale) en `hcap` (confinement de la TRAJECTOIRE entière). C'est l'assemblage
+  borné P4/P5 proprement dit : un argument de structure de la récursion Hashlife (la marge
+  contient le cône de lumière à chaque saut), PAS un argument de réversibilité — le GoL
+  n'est pas réversible, le cône rétrograde ne contraint pas les états intermédiaires.
+- **L4** — la jambe d'égalité : `centralCorrect` est une égalité restreinte, le but est
+  global ; la fermeture exige que les deux grilles portent leur support dans la fenêtre
+  (`jumpCaptured` du final + borne forward du support de `evolve`).
+
+`hashlife_correct_margin c k h_margin h_central` se déchargerait par
+`hashlife_correct_margin_of_hcap c k h_central (L3 c k h_central)` : L3/L4 sont les seuls
+maillons ouverts. -/
+
+/-- **P4.4 L2 — copie locale byte-identical de `jumpCaptured`** (pattern
+    d'inlining du lake, cf HashlifeCorrectness L6436 : le `jumpCaptured` que
+    consomme `hashlife_correctN` y est `private` — inline de
+    `Conway.Life.JumpCapture.jumpCaptured` pour casser le cycle d'import
+    A↔B, `JumpCapture.lean` important CE module). Ce module ne peut donc ni
+    voir le private ni importer `JumpCapture` (cycle) : même remède, copie
+    byte-identical. La defeq des corps identiques (delta-unfolding des deux
+    `def` semi-reducibles) fait passer l'appel à `hashlife_correctN` ci-dessous. -/
+private def jumpCapturedF (c : MacroCell) : Bool :=
+  (evolve (2 ^ c.level) ((padCenter2 c).toGrid (0, 0))).all fun p =>
+    decide ((2 ^ c.level : Int) ≤ p.1) &&
+    decide (p.1 < (2 ^ c.level : Int) + ((2 ^ (c.level + 1) : Nat) : Int)) &&
+    decide ((2 ^ c.level : Int) ≤ p.2) &&
+    decide (p.2 < (2 ^ c.level : Int) + ((2 ^ (c.level + 1) : Nat) : Int))
+
+/-- **Interface (c) tranche 3, étape 1 — dépliage propositionnel de `jumpCapturedF`.**
+    Même preuve que `jumpCaptured_iff` (JumpCapture L264), répliquée localement :
+    ce module ne peut pas importer `JumpCapture` (cycle d'import, cf docstring de
+    `jumpCapturedF` ci-dessus). C'est la porte d'entrée du corridor (LightCone,
+    langage `isAlive`) dans le prédicat Bool que `hcap` exige. -/
+theorem jumpCapturedF_iff (c : MacroCell) :
+    jumpCapturedF c = true ↔
+      ∀ p ∈ evolve (2 ^ c.level) ((padCenter2 c).toGrid (0, 0)),
+        (2 ^ c.level : Int) ≤ p.1 ∧
+          p.1 < (2 ^ c.level : Int) + ((2 ^ (c.level + 1) : Nat) : Int) ∧
+          (2 ^ c.level : Int) ≤ p.2 ∧
+          p.2 < (2 ^ c.level : Int) + ((2 ^ (c.level + 1) : Nat) : Int) := by
+  unfold jumpCapturedF
+  rw [List.all_eq_true]
+  constructor
+  · intro h p hp
+    have hb := h p hp
+    simp only [Bool.and_eq_true, decide_eq_true_eq] at hb
+    tauto
+  · intro h p hp
+    have hb := h p hp
+    simp only [Bool.and_eq_true, decide_eq_true_eq]
+    tauto
+
+/-- **Interface (c) tranche 3, étape 2 — le corridor forward ferme le saut dès
+    que la fenêtre absorbe la dérive.** Pont entre le langage du corridor
+    (`evolve_support_dilation_from`, brique (a-b) de la tranche 3, LightCone :
+    confinement `isAlive` de la trajectoire) et le prédicat Bool `jumpCapturedF` :
+    si le support de la grille paddée tient dans la boîte `[a, b)` (`h₀`) et que
+    la boîte dilatée de `2^c.level` — la dérive forward maximale du saut — reste
+    dans la fenêtre du test `[2^lvl, 2^lvl + 2^(lvl+1))²` (`hwin1..4`), alors le
+    saut est capturé. La preuve ne fait aucune hypothèse de réversibilité (le GoL
+    n'est pas réversible) : le relais forward borne la dérive depuis `t₀ = 0`,
+    l'inclusion de fenêtres est linéaire. Les hypothèses `h₀`/`hwin` sont ce que
+    la partie géométrique de L3 (caractériser le niveau de la reconstruction le
+    long de la trajectoire) doit établir — ce lemme en est la cloison nette :
+    confinement forward [prouvé par le corridor] séparé de géométrie de fenêtre
+    [ouverte]. Les bornes de `hwin` portent le cast nat explicite
+    `((2 ^ c.level : Nat) : Int)` — même atome que celle du corridor (sinon la
+    puissance est forcée dans Int et omega la voit déconnectée). -/
+theorem jumpCapturedF_of_dilation (c : MacroCell) (a b : Int × Int)
+    (h₀ : ∀ p, isAlive ((padCenter2 c).toGrid (0, 0)) p = true →
+      a.1 ≤ p.1 ∧ p.1 < b.1 ∧ a.2 ≤ p.2 ∧ p.2 < b.2)
+    (hwin1 : ((2 ^ c.level : Nat) : Int) ≤ a.1 - ((2 ^ c.level : Nat) : Int))
+    (hwin2 : b.1 + ((2 ^ c.level : Nat) : Int) ≤
+      ((2 ^ c.level : Nat) : Int) + ((2 ^ (c.level + 1) : Nat) : Int))
+    (hwin3 : ((2 ^ c.level : Nat) : Int) ≤ a.2 - ((2 ^ c.level : Nat) : Int))
+    (hwin4 : b.2 + ((2 ^ c.level : Nat) : Int) ≤
+      ((2 ^ c.level : Nat) : Int) + ((2 ^ (c.level + 1) : Nat) : Int)) :
+    jumpCapturedF c = true := by
+  rw [jumpCapturedF_iff]
+  intro p hp
+  have hq : isAlive (evolve (2 ^ c.level) ((padCenter2 c).toGrid (0, 0))) p = true := by
+    rw [isAlive]
+    exact List.elem_iff.mpr hp
+  obtain ⟨c1, c2, c3, c4⟩ :=
+    evolve_support_dilation_from 0 (2 ^ c.level) ((padCenter2 c).toGrid (0, 0)) a b
+      (Nat.zero_le _) h₀ p hq
+  simp only [Nat.sub_zero] at c1 c2 c3 c4
+  -- le but (issu de la définition) parle en `(2 ^ lvl : Int)` (pow dans Int) :
+  -- la relation avec le cast nat du corridor est fournie explicitement, puis
+  -- tout est linéaire.
+  have hpow : (2 ^ c.level : Int) = ((2 ^ c.level : Nat) : Int) := by
+    exact (Nat.cast_pow 2 c.level).symm
+  omega
+
+/-- **P4.4 L2 (réduction sorry-stable).** L'égalité globale du cadre se réduit à
+    l'hypothèse de capture de trajectoire de la machine N : `hashlife_correctN` (prouvé)
+    clôt le but dès `hcap`. Les maillons ouverts sont L3 (relever `centralCorrect c k`
+    en `hcap`) et L4 (égalité restreinte → globale). -/
+theorem hashlife_correct_margin_of_hcap (c : MacroCell) (k : Nat)
+    (h_central : centralCorrect c k)
+    (hcap : ∀ t ≤ 2^k, jumpCapturedF
+      (gridToMacroCellWithOffset (evolve t (c.toGrid (0, 0)))).2 = true) :
+    evolveHashlifeFast (2^k) (c.toGrid (0, 0)) = evolve (2^k) (c.toGrid (0, 0)) :=
+  hashlife_correctN (2^k) (c.toGrid (0, 0)) hcap
+
 /-! ## Sanity-checks sur le bestiaire
 
 Le fragment `supportInMargin` est **décidable** (instance `Decidable (BoxAssezGrandN)`,
@@ -211,8 +328,10 @@ theorem cexEmpty1_supportInMargin_k0 : supportInMargin cexEmpty1 0 :=
 note *inconditionnel-en-attente* dans sa docstring : le prédicat est tautologique, le
 cœur de recherche reste l'assemblage borné P4/P5) ; son `sorry` documente ouvertement
 l'assemblage borné P4/P5 encore ouvert (`p4_nw_overlap_wall`, ai-01 c.94).
-Stratégie confirmée pour la suite de #6724 : fermer les murs NE/SW/SE bornés, puis câbler
-l'assemblage P4.4 qui déchargera le `sorry` de `hashlife_correct_margin`.
+Stratégie pour la suite de #6724 : les murs NE/SW/SE bornés sont FERMÉS et `p5_large_n_jumpN`
+est prouvé (b3') — la réduction L2 ci-dessus est en place, restent les maillons L3 (le pont
+`centralCorrect → hcap`, l'assemblage borné proprement dit) et L4 (égalité restreinte →
+globale), qui déchargeront le `sorry` de `hashlife_correct_margin`.
 -/
 
 end Life

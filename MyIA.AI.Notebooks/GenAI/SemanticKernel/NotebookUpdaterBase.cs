@@ -233,3 +233,4 @@ Tool usage instructions apply to any function calls you make.";
 	}
 
 	protected abstract Task PerformNotebookUpdateAsync();
+}

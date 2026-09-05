@@ -40,14 +40,27 @@ PYTEST_INI = REPO_ROOT / "pytest.ini"
 WORKFLOW_COVERAGE: dict[str, list[str]] = {
     ".github/workflows/scripts-tests.yml": [
         "scripts/tests",
+        # scripts/secrets/tests : dir entier (famille 4 de #14615) — les 2
+        # modules gitleaks y skip sans binaire (gate binaire = secret-scan.yml,
+        # cibles fichier ci-dessous).
+        "scripts/secrets/tests",
         "scripts/notebook_tools/tests",
         "scripts/lean/tests",
         "scripts/translation/tests",
+        "scripts/audit/tests",
         "MyIA.AI.Notebooks/GameTheory/tests",
         "MyIA.AI.Notebooks/QuantConnect/scripts/tests",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_bg_tree_lock.py",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_prover_forensic_guards.py",
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/tests",
+        # scripts/quantconnect/tests : dir entier (famille 3 de #14615) —
+        # 254 tests / 9 modules, hermétique (mesure firsthand 2026-09-05 :
+        # 253 verts + 1 skip de donnée, yfinance absent de l'env).
+        "scripts/quantconnect/tests",
+        # GradeBookApp : dir entier (famille 5 de #14615) — 15 tests
+        # (test_fuzzy_match_group.py seul), deps rapidfuzz/unidecode/openpyxl
+        # ajoutées au pip install du job, zéro PII (journal auto-créé).
+        "GradeBookApp",
     ],
     ".github/workflows/ml-tests.yml": [
         "MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/scripts/tests",
@@ -114,10 +127,7 @@ def extract_run_targets(text: str) -> set[str]:
                 stripped = line.strip()
                 if stripped and not stripped.startswith("#"):
                     for token in stripped.split():
-                        if token in ("\\",):
-                            continue
-                        if "/" in token or token.endswith(".py"):
-                            targets.add(token)
+                        _maybe_target(token, targets)
                 continue
         stripped = line.strip()
         if stripped.startswith("run: |"):
@@ -126,9 +136,22 @@ def extract_run_targets(text: str) -> set[str]:
         # run: pytest <cibles> sur une seule ligne (pas de pipe)
         if stripped.startswith("run: pytest"):
             for token in stripped.split()[2:]:
-                if "/" in token or token.endswith(".py"):
-                    targets.add(token)
+                _maybe_target(token, targets)
     return targets
+
+
+def _maybe_target(token: str, targets: set[str]) -> None:
+    """Ajoute le token s'il ressemble à un chemin relatif.
+
+    Chemin = contient un `/`, finit en `.py`, OU est un token nu sans slash
+    ni caractère shell (cas des répertoires racine du dépôt, ex. GradeBookApp
+    — famille 5 de #14615). Les flags (préfixe `-`) et variables (`$`) ne
+    sont jamais des cibles.
+    """
+    if token in ("\\",) or token.startswith("-") or "$" in token:
+        return
+    if "/" in token or token.endswith(".py") or re.fullmatch(r"[A-Za-z0-9_.-]+", token):
+        targets.add(token)
 
 
 def verify_declared_targets(repo_root: Path, verbose: bool) -> list[str]:

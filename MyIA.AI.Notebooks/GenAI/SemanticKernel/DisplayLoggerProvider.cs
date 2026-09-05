@@ -15,3 +15,4 @@ public class DisplayLoggerProvider : ILoggerProvider
 	}
 
 	public void Dispose() { }
+}
