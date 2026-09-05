@@ -413,6 +413,70 @@ theorem evolve_support_dilation_box (t : Nat) (g : Grid) (a b : Int × Int)
   -- `abs_le` n'est pas dans le périmètre core du toolchain, c.14701 CI).
   exact ⟨by omega, by omega, by omega, by omega⟩
 
+/-! ## Corridor dyadique — brique (b) de l'assemblage P4.4 L3 (#13483, tranche 3)
+
+La brique vitesse de la lumière (forme boîte) dilate depuis `t = 0`. L'assemblage
+L3 consomme sa **composition le long des segments dyadiques** : couper la
+trajectoire à un instant `t₀` intermédiaire (`evolve_add`), appliquer la dilation
+au seul segment restant. Deux conséquences :
+
+- le **relais générique** `evolve_support_dilation_from` : le support à tout
+  `t ≥ t₀` tient dans la dilation `(t - t₀)` de la boîte du support à `t₀` ;
+- le **corridor dyadique** `evolve_support_dyadic_corridor` : sur le segment
+  `[2^j, 2^(j+1)]`, la dérive est bornée par la longueur du segment — tout
+  instant du segment est confiné dans la dilation `2^j` de la boîte du
+  checkpoint `2^j`.
+
+C'est la réduction des points de contrôle au réseau dyadique dans le **seul
+sens que les lemmes d'impossibilité laissent ouvert** : FORWARD depuis le
+checkpoint inférieur. La direction inverse (les extrémités contraindraient le
+milieu) est fermée structurellement — le GoL n'est pas réversible, le cône
+rétrograde ne contraint pas les états intermédiaires — et la route « la marge
+absorbe la dérive » est fermée par `no_padding_depth_suffices`
+(JumpCapture.lean §3). L'interface `(c)` (`centralCorrect`) consommera ce
+corridor en récurrence sur `j` pour fermer les checkpoints. Sans sorry.
+-/
+
+/-- **Relais de dilation depuis un instant intermédiaire.** Si le support à
+    l'instant `t₀` tient dans la boîte `[a, b)`, le support à tout instant
+    `t ≥ t₀` tient dans la dilation `(t - t₀)` de cette boîte : coupe de la
+    trajectoire en `t₀` (`evolve_add`), puis brique `evolve_support_dilation_box`
+    sur le seul segment restant, appliquée à la grille intermédiaire. -/
+theorem evolve_support_dilation_from (t₀ t : Nat) (g : Grid) (a b : Int × Int)
+    (hle : t₀ ≤ t)
+    (h : ∀ p, isAlive (evolve t₀ g) p = true →
+      a.1 ≤ p.1 ∧ p.1 < b.1 ∧ a.2 ≤ p.2 ∧ p.2 < b.2)
+    (q : Int × Int) (h_alive : isAlive (evolve t g) q = true) :
+    a.1 - ((t - t₀ : Nat) : Int) ≤ q.1 ∧
+      q.1 < b.1 + ((t - t₀ : Nat) : Int) ∧
+      a.2 - ((t - t₀ : Nat) : Int) ≤ q.2 ∧
+      q.2 < b.2 + ((t - t₀ : Nat) : Int) := by
+  have hsplit : evolve t g = evolve (t - t₀) (evolve t₀ g) := by
+    rw [← evolve_add, Nat.sub_add_cancel hle]
+  rw [hsplit] at h_alive
+  exact evolve_support_dilation_box (t - t₀) (evolve t₀ g) a b h q h_alive
+
+/-- **Corridor dyadique (brique b, #13483 tranche 3).** Pour tout instant `t`
+    du segment `[2^j, 2^(j+1)]`, le support de `evolve t g` tient dans la
+    dilation `2^j` de la boîte du support au checkpoint `2^j` : la dérive sur
+    le segment est bornée par sa longueur `t - 2^j ≤ 2^j`. Réduction des
+    points de contrôle au réseau dyadique, sens forward uniquement (les sens
+    rétrograde et marge-absorbante sont fermés, voir la section ci-dessus). -/
+theorem evolve_support_dyadic_corridor (j t : Nat) (g : Grid) (a b : Int × Int)
+    (hlo : 2 ^ j ≤ t) (hhi : t ≤ 2 ^ (j + 1))
+    (h : ∀ p, isAlive (evolve (2 ^ j) g) p = true →
+      a.1 ≤ p.1 ∧ p.1 < b.1 ∧ a.2 ≤ p.2 ∧ p.2 < b.2)
+    (q : Int × Int) (h_alive : isAlive (evolve t g) q = true) :
+    a.1 - (2 ^ j : Int) ≤ q.1 ∧ q.1 < b.1 + (2 ^ j : Int) ∧
+      a.2 - (2 ^ j : Int) ≤ q.2 ∧ q.2 < b.2 + (2 ^ j : Int) := by
+  obtain ⟨c1, c2, c3, c4⟩ :=
+    evolve_support_dilation_from (2 ^ j) t g a b hlo h q h_alive
+  -- omega ne fait pas l'exponentiation : la relation dyadique du segment
+  -- lui est fournie explicitement (`Nat.two_pow_succ`, core), puis
+  -- l'affaiblissement des bornes est linéaire (cast Nat→Int natif).
+  have hpow : 2 ^ (j + 1) = 2 ^ j + 2 ^ j := Nat.two_pow_succ j
+  exact ⟨by omega, by omega, by omega, by omega⟩
+
 /-! ## Localité étroite (forme boîte Chebyshev) — dual d'accord de `evolve_reach_chebyshev`
 
 Le théorème d'atteinte étroit (`evolve_reach_chebyshev` ci-dessus) dit : si `q`
