@@ -27,11 +27,14 @@ VARIANCE_WINDOW = 120  # mois (10 ans)
 MIN_WEIGHT = 0.0
 MAX_WEIGHT = 1.5
 
-# Garde-fous robustesse (choix #14722, l'article n'en fixe pas) :
-# nombre minimal d'observations appariees / de mois de variance avant
-# qu'un poids autre que 100 % BIL puisse etre emis.
+# Garde-fous robustesse (#14722, amendement audit pre-PR) :
+# - la variance exige la fenetre PLEINE de 120 mois de l'article
+#   (Variance(10*12)) : aucun echange avant qu'elle ne soit remplie ;
+# - plancher d'observations appariees pour l'OLS expanding (l'article
+#   n'en fixe pas ; ne lie pas dans l'experimentation, 130 paires au
+#   premier echange).
 MIN_FIT_OBSERVATIONS = 60
-MIN_VARIANCE_OBSERVATIONS = 60
+MIN_VARIANCE_OBSERVATIONS = VARIANCE_WINDOW
 
 
 def winsorize(
@@ -111,9 +114,11 @@ def trailing_variance(
 ) -> Optional[float]:
     """Variance echantillon (ddof=1) des derniers `window` mois.
 
-    Equivalent pandas de l'indicateur Variance(10*12) de l'article une
-    fois la fenetre remplie. Renvoie None sous le seuil minimal
-    d'observations ou si la variance est non finie / nulle.
+    Equivalent pandas de l'indicateur Variance(10*12) de l'article.
+    Par defaut, exige la fenetre PLEINE (min_observations = window,
+    amendement audit #14722) : une variance estimee sur moins de 120
+    mois ne correspond pas a la mecanique de l'article et renvoie None.
+    Renvoie egalement None si la variance est non finie / nulle.
     """
     if excess_returns.empty:
         return None

@@ -40,11 +40,15 @@ import asg_helpers
 # localement dans tests/test_asg_helpers.py.
 #
 # Experimentation alignee #14722 (les deux bras, parametres passes au
-# backtest) : start_date=20120101, end_date=20250101, trading_start=20180101,
+# backtest) : start_date=20070101, end_date=20250101, trading_start=20180101,
 # capital 100 000 USD, brokerage par defaut QC (frais/fills identiques),
 # benchmark SPY. Periode
-# d'entrainement/warmup 2012-01 -> 2017-12 (le bras ASG accumule ses series
-# mensuelles, le bras baseline n'echange pas), periode OOS 2018-01 -> 2025-01
+# d'entrainement/warmup 2007-01 -> 2017-12 : le bras ASG accumule ses series
+# mensuelles (131 valeurs d'ASG, 130 rendements excedentaires au premier
+# echange ; le warm-up de 35 jours avale les evenements de janv/ferv 2007)
+# et sa variance 120 mois est PLEINE des le premier echange de janvier 2018
+# (fenetre de l'article + ~10 mois de marge, amendement audit pre-PR), le
+# bras baseline n'echange pas. Periode OOS 2018-01 -> 2025-01
 # ou les deux bras echangent. Sans ces parametres, le comportement par
 # defaut reproduit la baseline d'origine.
 # ============================================================================

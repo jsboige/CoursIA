@@ -103,21 +103,25 @@ def test_fit_expanding_ols_requires_min_observations():
     assert asg_helpers.fit_expanding_ols(asg, excess, min_observations=2) is not None
 
 
-def test_trailing_variance_uses_last_window_months():
+def test_trailing_variance_requires_full_window():
     rng = np.random.default_rng(7)
     months = pd.period_range("2005-01", "2020-12", freq="M")
     excess = pd.Series(rng.normal(0.005, 0.04, len(months)), index=months)
-    value = asg_helpers.trailing_variance(excess, window=120, min_observations=60)
+    value = asg_helpers.trailing_variance(excess, window=120, min_observations=120)
     assert value is not None
     assert abs(value - excess.tail(120).var()) < 1e-15
-    # 59 mois < seuil minimal de 60 -> None ; 100 mois disponibles ->
-    # variance portee par les 100 mois (fenetre 120 non remplie).
-    assert asg_helpers.trailing_variance(excess.tail(59), window=120, min_observations=60) is None
+    # Amendement audit #14722 : 119 mois < fenetre pleine de 120 -> None
+    # (aucune variance partielle ne peut produire un poids).
+    assert asg_helpers.trailing_variance(excess.tail(119), window=120, min_observations=120) is None
+    # 120 mois exactement -> valeur sur la fenetre pleine.
+    exact = excess.tail(120)
+    value_exact = asg_helpers.trailing_variance(exact, window=120, min_observations=120)
+    assert value_exact is not None
+    assert abs(value_exact - exact.var()) < 1e-15
+    # Valeur par defaut de la constante = fenetre pleine de l'article.
+    assert asg_helpers.MIN_VARIANCE_OBSERVATIONS == asg_helpers.VARIANCE_WINDOW == 120
+    # Fenetre plus courte respectee quand elle est demandee explicitement.
     short = excess.tail(100)
-    value_100 = asg_helpers.trailing_variance(short, window=120, min_observations=60)
-    assert value_100 is not None
-    assert abs(value_100 - short.var()) < 1e-15
-    # Fenetre plus courte respectee.
     value_50 = asg_helpers.trailing_variance(short, window=50, min_observations=50)
     assert value_50 is not None
     assert abs(value_50 - short.tail(50).var()) < 1e-15
