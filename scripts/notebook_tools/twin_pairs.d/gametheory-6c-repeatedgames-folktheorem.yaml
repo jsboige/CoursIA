@@ -92,6 +92,12 @@
       content_python_sha: 67166e3dffe4084bf23da95a309583368d8d6d7b62ca95096f954216bfb8d30c
       content_csharp_sha: 0b4d69808b9a5a4eaa879cc2191fc2d9dd3fd20a771be0346fb0606e763f794a
       reason: "Reattestation metadata-only apres le scan independant : scrub_papermill_paths.py a remplace les deux chemins absolus input_path/output_path par le basename, sans modifier sources ni outputs (content_csharp_sha identique). --force requis car le garde no-op compare le content SHA, tandis que --verify-recorded-sha exige aussi le blob SHA et signalait explicitement 59ae03c4 -> b227b35e. Aucune normalisation du notebook apres cette entree."
+    - date: "2026-09-05"
+      by: myia-po-2026:CoursIA
+      python_sha: 8e0e5464044f2704b3564e42c9ebe8d2c076cbc2
+      csharp_sha: 2d7cd50c771bfe3b392ec4ce938f483cc36444ca
+      content_python_sha: 67166e3dffe4084bf23da95a309583368d8d6d7b62ca95096f954216bfb8d30c
+      content_csharp_sha: 0a92ba7985d8300c925c498651f2c16fb5b14fd9cfc739dc22adf6583a4009ed
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Jeux repetes + Folk Theorem (grim trigger, TFT, horizon fini/infini + facteur d'escompte) portes from-scratch par les deux jumeaux. La statique comparative discriminante fait varier uniquement les gains d'autrui et utilise un vrai moteur dans chaque ecosysteme : scipy.optimize.minimize(method=Nelder-Mead) cote Python, MathNet.Numerics.Optimization.NelderMeadSimplex cote C#. Les controles executes retrouvent alpha connu, n'attribuent pas une pente significative a l'engagement plat, puis separent q et alpha du melange. Verdict SOTA-OK : moteurs natifs reels et outputs mesures des deux cotes ; parite semantic conservee car les sections Python 7a-7d de cadrage restent plus detaillees."
   known_differences:
