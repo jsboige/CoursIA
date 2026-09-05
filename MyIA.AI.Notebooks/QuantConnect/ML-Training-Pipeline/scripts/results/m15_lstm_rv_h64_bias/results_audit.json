@@ -158,11 +158,16 @@
       "mean_reduction_pct": -14.882103157008233,
       "edge_pct": 14.882103157008233,
       "edge_std_pct": 4.642289137489659,
+      "dm_cen_p_median": 0.20756556138190851,
+      "dm_cen_median_stat": 1.5987253756365711,
+      "dm_cen_direction": "lstm_worse",
+      "n_beaten_cen": 2,
+      "n_beats_cen": 0,
+      "n_inconclusive_cen": 2,
       "dm_cen_pooled_stat": 3.3211775026891432,
       "dm_cen_pooled_pvalue": 0.000900680916275487,
       "dm_cen_pooled_verdict": "BEATEN BY baseline",
-      "n_beaten_cen": 2,
-      "verdict": "BIAS-CARRIED (NO BEATS on precision)"
+      "verdict": "INCONCLUSIVE"
     },
     {
       "coin": "BTC-USD",
@@ -171,12 +176,17 @@
       "mean_reduction_pct": -18.836785547984306,
       "edge_pct": 18.836785547984306,
       "edge_std_pct": 4.7186880771107464,
+      "dm_cen_p_median": 0.003107320485025711,
+      "dm_cen_median_stat": 2.962730590895937,
+      "dm_cen_direction": "lstm_worse",
+      "n_beaten_cen": 3,
+      "n_beats_cen": 0,
+      "n_inconclusive_cen": 1,
       "dm_cen_pooled_stat": 5.259566474547496,
       "dm_cen_pooled_pvalue": 1.4845205775770864e-07,
       "dm_cen_pooled_verdict": "BEATEN BY baseline",
-      "n_beaten_cen": 3,
-      "verdict": "BIAS-CARRIED (NO BEATS on precision)"
+      "verdict": "NO BEATS"
     }
   ],
-  "verdict_note": "The raw mse_reduction_pct is negative (LSTM lowers MSE), but the centered DM annihilates each model's own bias. A positive centered DM statistic means the LSTM has WORSE precision (higher variance) than HAR once the HAR bias is removed."
+  "verdict_note": "The raw mse_reduction_pct is negative (LSTM lowers MSE), but the centered DM annihilates each model's own bias. The decision jambe is the cross-seed median per-seed centered-DM p-value (dm_cen_p_median, \u00a7C/#12734): only a significant precision jambe against the LSTM (p<0.05, direction lstm_worse) yields NO BEATS. The pooled DM is reported as diagnostic only: it concatenates the same HAR series across seeds and is not four independent temporal observations. A single significant seed (1/4 BEATEN) never flips the horizon verdict."
 }

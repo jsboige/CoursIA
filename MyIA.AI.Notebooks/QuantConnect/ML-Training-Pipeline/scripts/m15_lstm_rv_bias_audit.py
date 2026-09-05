@@ -37,6 +37,82 @@ def _raw_verdict(r: dict) -> str:
     return r.get("dm_verdict", "N/A")
 
 
+def _precision_verdict(
+    pvalues: list[float], stats: list[float], edge_pct: float, edge_std_pct: float
+) -> tuple[str, float, float, str]:
+    """§C/#12734 cross-seed decision on the centered (precision) DM jambe.
+
+    The decision variable is the cross-seed median per-seed p-value -- not a
+    single significant seed (a 1/4 BEATEN must not flip the horizon) and not
+    the pooled concat (which repeats the same HAR series across seeds and
+    understates uncertainty). Direction is the sign of the median centered DM
+    statistic: positive means the LSTM's precision is worse once each model's
+    own bias is annihilated, i.e. the raw-mse edge is bias-carried.
+
+    Returns (verdict, dm_cen_p_median, dm_cen_median_stat, direction).
+    """
+    dm_cen_p_median = float(np.nanmedian(pvalues)) if pvalues else float("nan")
+    dm_cen_median_stat = float(np.nanmedian(stats)) if stats else float("nan")
+    direction = "lstm_worse" if dm_cen_median_stat > 0 else "lstm_better"
+    if np.isfinite(dm_cen_p_median) and dm_cen_p_median < 0.05:
+        if direction == "lstm_worse":
+            verdict = "NO BEATS"  # precision jambe significant against LSTM -> bias-carried
+        elif np.isfinite(edge_pct) and edge_pct >= 2.0 * edge_std_pct:
+            verdict = "BEATS"
+        else:
+            verdict = "INCONCLUSIVE"
+    else:
+        verdict = "INCONCLUSIVE"
+    return verdict, dm_cen_p_median, dm_cen_median_stat, direction
+
+
+def _aggregate_horizon(
+    rows_h: list[dict], raw_grp: list[dict], coin: str, h: int
+) -> dict:
+    n_seeds = len(rows_h)
+    reduction_pcts = [r["mse_reduction_pct"] for r in rows_h if np.isfinite(r["mse_reduction_pct"])]
+    mean_reduction = float(np.mean(reduction_pcts)) if reduction_pcts else float("nan")
+    edge_std_pct = float(np.nanstd(reduction_pcts)) if len(reduction_pcts) > 1 else 0.0
+    edge_pct = -mean_reduction if np.isfinite(mean_reduction) else float("nan")
+    pvalues = [r["dm_cen_pvalue"] for r in rows_h if np.isfinite(r["dm_cen_pvalue"])]
+    stats = [r["dm_cen_stat"] for r in rows_h if np.isfinite(r["dm_cen_stat"])]
+    verdicts = [r["dm_cen_verdict"] for r in rows_h]
+    n_beaten = sum(1 for v in verdicts if "BEATEN" in v)
+    n_beats = sum(1 for v in verdicts if "BEATS" in v and "BEATEN" not in v)
+    n_inconclusive = sum(1 for v in verdicts if v == "INCONCLUSIVE")
+    verdict, dm_cen_p_median, dm_cen_median_stat, direction = _precision_verdict(
+        pvalues, stats, edge_pct, edge_std_pct,
+    )
+    # Pooled centered DM across seeds: DIAGNOSTIC ONLY (not decision). It
+    # concatenates the same HAR series, so it is not four independent
+    # observations and must not carry the verdict.
+    all_el = np.concatenate([_series(r, "lstm_errors") for r in raw_grp])
+    all_eh = np.concatenate([_series(r, "har_errors") for r in raw_grp])
+    if len(all_el) >= 10 and len(all_eh) >= 10:
+        dm_pooled = bias_metrics._dm_centered_mse(all_el, all_eh, h)
+    else:
+        dm_pooled = {"dm_stat": float("nan"), "dm_pvalue": float("nan"),
+                     "dm_verdict": "insufficient"}
+    return {
+        "coin": coin,
+        "horizon": h,
+        "n_seeds": n_seeds,
+        "mean_reduction_pct": mean_reduction,
+        "edge_pct": edge_pct,
+        "edge_std_pct": edge_std_pct,
+        "dm_cen_p_median": dm_cen_p_median,
+        "dm_cen_median_stat": dm_cen_median_stat,
+        "dm_cen_direction": direction,
+        "n_beaten_cen": n_beaten,
+        "n_beats_cen": n_beats,
+        "n_inconclusive_cen": n_inconclusive,
+        "dm_cen_pooled_stat": dm_pooled["dm_stat"],
+        "dm_cen_pooled_pvalue": dm_pooled["dm_pvalue"],
+        "dm_cen_pooled_verdict": dm_pooled["dm_verdict"],
+        "verdict": verdict,
+    }
+
+
 def main(results_dir: str) -> int:
     rdir = Path(results_dir)
     ckpt = rdir / "checkpoint.jsonl"
@@ -78,51 +154,14 @@ def main(results_dir: str) -> int:
                 "n_obs": len(el),
             })
 
-    # Aggregate per horizon (cross-seed).
+    # Aggregate per horizon (cross-seed). Decision jambe = dm_cen_p_median
+    # (see _precision_verdict); pooled DM is diagnostic only.
     aggregated: list[dict] = []
     for (coin, h), grp in groups.items():
         rows_h = [r for r in audit_rows if r["coin"] == coin and r["horizon"] == h]
         if not rows_h:
             continue
-        all_el = np.concatenate([_series(r, "lstm_errors") for r in grp])
-        all_eh = np.concatenate([_series(r, "har_errors") for r in grp])
-        reduction_pcts = [r["mse_reduction_pct"] for r in rows_h if np.isfinite(r["mse_reduction_pct"])]
-        mean_reduction = float(np.mean(reduction_pcts)) if reduction_pcts else float("nan")
-        edge_std_pct = float(np.nanstd(reduction_pcts)) if len(reduction_pcts) > 1 else 0.0
-        edge_pct = -mean_reduction if np.isfinite(mean_reduction) else float("nan")
-        n_beaten_cen = sum(1 for r in rows_h if r["dm_cen_verdict"] == "BEATEN BY baseline")
-        n_rows = len(rows_h)
-        # Pooled centered DM across seeds for a coarse read.
-        if len(all_el) >= 10 and len(all_eh) >= 10:
-            dm_pooled = bias_metrics._dm_centered_mse(all_el, all_eh, h)
-        else:
-            dm_pooled = {"dm_stat": float("nan"), "dm_pvalue": float("nan"),
-                         "dm_verdict": "insufficient"}
-        # Verdict: raw edge may look like a BEATS, but if any centered DM says
-        # BEATEN (or the pooled centered DM is BEATEN at p<0.05), the raw BEATS
-        # is bias-carried -> NO BEATS on precision.
-        if n_beaten_cen > 0:
-            verdict = "BIAS-CARRIED (NO BEATS on precision)"
-        elif (np.isfinite(dm_pooled["dm_pvalue"]) and dm_pooled["dm_pvalue"] < 0.05
-              and dm_pooled["dm_stat"] > 0):
-            verdict = "BIAS-CARRIED (NO BEATS on precision)"
-        elif np.isfinite(edge_pct) and edge_pct >= 2.0 * edge_std_pct:
-            verdict = "BEATS"
-        else:
-            verdict = "INCONCLUSIVE"
-        aggregated.append({
-            "coin": coin,
-            "horizon": h,
-            "n_seeds": n_rows,
-            "mean_reduction_pct": mean_reduction,
-            "edge_pct": edge_pct,
-            "edge_std_pct": edge_std_pct,
-            "dm_cen_pooled_stat": dm_pooled["dm_stat"],
-            "dm_cen_pooled_pvalue": dm_pooled["dm_pvalue"],
-            "dm_cen_pooled_verdict": dm_pooled["dm_verdict"],
-            "n_beaten_cen": n_beaten_cen,
-            "verdict": verdict,
-        })
+        aggregated.append(_aggregate_horizon(rows_h, grp, coin, h))
 
     results = {
         "model": "Log-LSTM RV vs HAR Classic (BTC-USD, hidden=64, refit=110)",
@@ -133,9 +172,14 @@ def main(results_dir: str) -> int:
         "aggregated": aggregated,
         "verdict_note": (
             "The raw mse_reduction_pct is negative (LSTM lowers MSE), but the "
-            "centered DM annihilates each model's own bias. A positive centered "
-            "DM statistic means the LSTM has WORSE precision (higher variance) "
-            "than HAR once the HAR bias is removed."
+            "centered DM annihilates each model's own bias. The decision jambe "
+            "is the cross-seed median per-seed centered-DM p-value "
+            "(dm_cen_p_median, §C/#12734): only a significant precision jambe "
+            "against the LSTM (p<0.05, direction lstm_worse) yields NO BEATS. "
+            "The pooled DM is reported as diagnostic only: it concatenates the "
+            "same HAR series across seeds and is not four independent temporal "
+            "observations. A single significant seed (1/4 BEATEN) never flips "
+            "the horizon verdict."
         ),
     }
     out_path = rdir / "results_audit.json"
@@ -145,8 +189,9 @@ def main(results_dir: str) -> int:
     for a in aggregated:
         print(f"  h={a['horizon']}: mean_red={a['mean_reduction_pct']:+.1f}% "
               f"edge={a['edge_pct']:+.1f}% (sigma={a['edge_std_pct']:.2f}) "
-              f"DMcen_pooled={a['dm_cen_pooled_stat']:+.3f} p={a['dm_cen_pooled_pvalue']:.4f} "
-              f"{a['dm_cen_pooled_verdict']} beaten_cen={a['n_beaten_cen']}/{a['n_seeds']} -> {a['verdict']}")
+              f"DMcen_p_median={a['dm_cen_p_median']:.4f} "
+              f"(dir={a['dm_cen_direction']}, beaten={a['n_beaten_cen']}/{a['n_seeds']}) "
+              f"DMcen_pooled(nd)={a['dm_cen_pooled_pvalue']:.4f} -> {a['verdict']}")
     return 0
 
 
