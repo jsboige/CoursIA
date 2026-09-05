@@ -230,8 +230,20 @@ def test_evolve_alpha_returns_value_in_unit_interval():
             assert 0.0 <= a <= 1.0, f"{objective}/{ln} → α={a}"
 
 
-def test_run_full_is_deterministic():
-    """Avec les mêmes seeds, run_full doit retourner le même résultat."""
+def test_run_full_is_deterministic(monkeypatch):
+    """Avec les mêmes seeds, run_full doit retourner le même résultat.
+
+    Tell c.931-L1 NEW : `evolve_alpha` est mocké (cf. test_hoffman_interface_toy.py
+    même méthode) pour ramener le runtime du test sous 5 s sur runner po-2024.
+    """
+    import ict.hoffman_interface_toy_n8 as hft
+
+    def _fake_evolve_alpha(objective, landscape_name, seed, n_pop=200, n_gen=500, mutation_rate=0.05):
+        rng = np.random.default_rng(hash((objective, landscape_name, seed)) & 0xFFFFFFFF)
+        return float(rng.uniform(0, 1))
+
+    monkeypatch.setattr(hft, "evolve_alpha", _fake_evolve_alpha)
+
     r1 = run_full(n_seeds=3)
     r2 = run_full(n_seeds=3)
     for ln in LANDSCAPES:

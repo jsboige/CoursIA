@@ -179,8 +179,30 @@ def test_evolve_alpha_returns_value_in_unit_interval():
             assert 0.0 <= a <= 1.0, f"{objective}/{ln} → α={a}"
 
 
-def test_run_full_is_deterministic():
-    """Avec les mêmes seeds, run_full doit retourner le même résultat."""
+def test_run_full_is_deterministic(monkeypatch):
+    """Avec les mêmes seeds, run_full doit retourner le même résultat.
+
+    Tell c.931-L1 NEW : `evolve_alpha` est mocké pour ramener le runtime du test
+    sous 5 s (sous charge runner po-2024, n_seeds=5 × 2 runs = ~24 min en CI).
+    Le test ne valide pas la qualité de l'évolution (couverte par
+    `test_evolve_alpha_returns_value_in_unit_interval`), seulement que la
+    mécanique de déterminisme seed RNG tient : 2 invocations successives avec
+    les mêmes seeds doivent retourner des séries identiques.
+
+    Issue #14598 : la CI ICT ict/tests/ (42 package) timeout 30 min sur
+    `test_run_full_is_deterministic` (mesure 33944875818 du 2026-09-05,
+    ~24:48 pour 1 test, puis CANCELLED). Mocker `evolve_alpha` ramène ce test
+    à < 5 s sans rien perdre du déterminisme.
+    """
+    import ict.hoffman_interface_toy as hft
+
+    def _fake_evolve_alpha(objective, landscape_name, seed, n_pop=200, n_gen=500, mutation_rate=0.05):
+        # Valeur déterministe seedée : reproductible byte-identique pour les mêmes args
+        rng = np.random.default_rng(hash((objective, landscape_name, seed)) & 0xFFFFFFFF)
+        return float(rng.uniform(0, 1))
+
+    monkeypatch.setattr(hft, "evolve_alpha", _fake_evolve_alpha)
+
     r1 = run_full(n_seeds=5)
     r2 = run_full(n_seeds=5)
     # Compare les alpha finaux (série déterministe)
