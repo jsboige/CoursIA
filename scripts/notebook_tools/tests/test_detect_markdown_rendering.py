@@ -441,7 +441,7 @@ class TestSourceListMissingNewlines:
 # joined text, length > 200 chars):
 #
 #   - MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-7-CogVideoX-Text-to-Video.ipynb c#21
-#   - MyIA.AI.Notebooks/Search/Part1-Foundations/Search-5-GeneticAlgorithms.ipynb c#67
+#   - MyIA.AI.Notebooks/Search/Part1-Foundations/Search-05-GeneticAlgorithms.ipynb c#67
 #   - MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb c#28
 #
 # PR #10423 + #10446 fixed the detector (multi-element and single-element
@@ -491,12 +491,12 @@ class TestRealCorpusRegressionGuards:
         )
 
     def test_regression_clear_search5_c67(self):
-        # Search-5-GeneticAlgorithms c#67 is markdown on main with 21 source
+        # Search-05-GeneticAlgorithms c#67 is markdown on main with 21 source
         # elements and 20 newlines (each non-final element terminates with
         # '\\n'). The detector must NOT flag it.
         rules = self._rules_for_real_cell(
             "MyIA.AI.Notebooks/Search/Part1-Foundations/"
-            "Search-5-GeneticAlgorithms.ipynb",
+            "Search-05-GeneticAlgorithms.ipynb",
             67,
         )
         assert "source_list_missing_newlines" not in rules, (

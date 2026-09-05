@@ -1,7 +1,7 @@
-- name: "Search-3 Informed"
+- name: "Search-03 Informed"
   family: Search/Part1-Foundations
-  python: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-3-Informed.ipynb
-  csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-3-Informed-Csharp.ipynb
+  python: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03-Informed.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03-Informed-Csharp.ipynb
   parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Python = stdlib + networkx (helper viz graph + heuristic lookup) + heapq (priority queue A*/Greedy/Best-First). Pas de lib SOTA-tier Python pour informed search pure (`aima-python` est jouet non maintained, `pySearch` est un essai), le port pedagogique AIMA ch.4 from-scratch reste canonique. C# = `QuikGraph` NuGet (Pelikan521, MIT-license, lib SOTA graphe .NET : `using QuikGraph;` + `using QuikGraph.Algorithms.ShortestPath;` + `DijkstraShortestPathAlgorithm<TVertex,TEdge>` / `AStarShortestPathAlgorithm<TVertex,TEdge>`, version 2.5.0). Verdict SOTA-OK (modèle owner PR #10412 MERGED pour Sudoku-09 / PR #10387 MERGED pour Search-02b NetworkX) : QuikGraph EST la lib SOTA graphe canonique .NET (Bellman-Ford, Dijkstra, A*, BFS, DFS -- tout y est), l'API `AStarShortestPathAlgorithm` permet un bridge direct A* avec heuristique. Asymetrie documentee : PY from-scratch (algos pedagogiques AIMA), C# bridge via lib SOTA (algo canonique)."
@@ -74,6 +74,12 @@
       content_python_sha: c2795ee971045d3f85e185e6c42fa0633230a70d5ea936b46b060eec49df0775
       content_csharp_sha: 39aa7e5b410e34780334368cd9093348972349958918ac9bee997a2fc339d0c2
       reason: "rebaseline c.912 PR #14448 (rebasing pre-#14444-merge) -- edit legitime cell[15] L0 Search-3-Informed-Csharp (Search-16 -> Search-02c dans commentaire intra-cellule). Substance pedagogique inchangée, SHA jumeau deplace par reformatage papermill + edit semantique. Cet audit est anterieur au merge #14444 (sha c.914) -- preserve pour transparence cross-lane."
+    - date: "2026-09-05"
+      by: myia-po-2025:CoursIA
+      python_sha: 66df05d8266dd247e3ba463004b7f11c17b66e84
+      csharp_sha: 1ee2085498a0d498b6ff3c975c2c0ef3e51b3833
+      content_python_sha: e013f8349ff4a758216eb90f74e5dc8f926683738bdc8de50a4fa1cefd39c630
+      content_csharp_sha: c3dfe1281305edc7800cb4b298751147ce76cc3c142b3886f41dac2a5da5dbca
   known_differences:
     - "Socle pedagogique commun : A* et Greedy Best-First avec differentes heuristiques (distance Manhattan, euclidienne, h=0=degenere en UCS). Arrive en Roumanie + 8-puzzle."
     - "Idiomes framework : Python = `import heapq` (priority queue avec (f, tie_breaker, noeud)). C# = `PriorityQueue<AStarNode, double>` (f-cost = g + h)."

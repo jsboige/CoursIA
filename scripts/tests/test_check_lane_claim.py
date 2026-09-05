@@ -371,7 +371,7 @@ def test_parse_non_ascii_decorated_delivered_closes():
     # lane must register as a close (this is what po-2026's line should have
     # done before po-2027 delivered the same notebook).
     ev = clc.parse_claim_event(comment(
-        "→[DELIVERED] lane myia-po-2026:CoursIA -- PR #12512 paths: .../Search-3-Informed.ipynb",
+        "→[DELIVERED] lane myia-po-2026:CoursIA -- PR #12512 paths: .../Search-03-Informed.ipynb",
         "2026-08-23T03:36:33Z",
     ))
     assert ev is not None
@@ -2052,7 +2052,7 @@ def test_check_claimed_disjoint_paths_dont_block(capsys):
     p = payload(
         comment("[CLAIMED] lane myia-po-2025:CoursIA -- "
                 "paths: MyIA.AI.Notebooks/Search/Part1-Foundations/"
-                "Search-3-Informed-Csharp.ipynb",
+                "Search-03-Informed-Csharp.ipynb",
                 "2026-08-11T04:02:00Z"),
         comment("[CLAIMED] lane myia-po-2023:CoursIA -- "
                 "paths: MyIA.AI.Notebooks/Sudoku/"
@@ -2085,9 +2085,9 @@ def test_check_claimed_10382_five_disjoint_claims(capsys):
         "MyIA.AI.Notebooks/Sudoku/Sudoku-09-GraphColoring-Csharp.ipynb",
         "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/"
         "Planners-5-Heuristics-Csharp.ipynb",
-        "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-3-Informed-Csharp.ipynb",
+        "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03-Informed-Csharp.ipynb",
         "MyIA.AI.Notebooks/Search/Part1-Foundations/"
-        "Search-5-GeneticAlgorithms-Csharp.ipynb",
+        "Search-05-GeneticAlgorithms-Csharp.ipynb",
         "MyIA.AI.Notebooks/GameTheory/GameTheory-04-NashEquilibrium-Csharp.ipynb",
     ]
     for relpath in fixture_paths:
@@ -2109,11 +2109,11 @@ def test_check_claimed_10382_five_disjoint_claims(capsys):
                 "2026-08-11T04:03:00Z"),
         comment("[CLAIMED] lane myia-po-2025:CoursIA -- "
                 "paths: MyIA.AI.Notebooks/Search/Part1-Foundations/"
-                "Search-3-Informed-Csharp.ipynb",
+                "Search-03-Informed-Csharp.ipynb",
                 "2026-08-11T04:04:00Z"),
         comment("[CLAIMED] lane myia-po-2025:CoursIA-2 -- "
                 "paths: MyIA.AI.Notebooks/Search/Part1-Foundations/"
-                "Search-5-GeneticAlgorithms-Csharp.ipynb",
+                "Search-05-GeneticAlgorithms-Csharp.ipynb",
                 "2026-08-11T04:05:00Z"),
         comment("[CLAIMED] lane myia-po-2026:CoursIA -- "
                 "paths: MyIA.AI.Notebooks/GameTheory/"
@@ -2704,7 +2704,7 @@ def test_run_check_clean_brace_scope_does_not_show_unparseable(capsys):
     p = payload(
         comment(
             "[CLAIMED] lane myia-po-2024:CoursIA-2 -- "
-            "paths: scripts/notebook_tools/twin_pairs.d/search-{6,8,9}-*.yaml",
+            "paths: scripts/notebook_tools/twin_pairs.d/search-{06,08,09}-*.yaml",
             "2026-08-12T11:00:00Z",
         ),
     )

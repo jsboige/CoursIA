@@ -1,7 +1,7 @@
-- name: "Search-5 GeneticAlgorithms"
+- name: "Search-05 GeneticAlgorithms"
   family: Search/Part1-Foundations
-  python: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-5-GeneticAlgorithms.ipynb
-  csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-5-GeneticAlgorithms-Csharp.ipynb
+  python: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-05-GeneticAlgorithms.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-05-GeneticAlgorithms-Csharp.ipynb
   parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Python = `deap` (Distributed Evolutionary Algorithms in Python, Fortin et al. 2012, MIT-license, lib SOTA GA Python : toolbox + creator + base + fitness maximization via `creator.FitnessMax` + algorithms.eaSimple / eaMuPlusLambda) + `pygad` (Ahmed Gad, MIT-license, GA Python SOTA-tier, interface haut-niveau `pygad.GA(...)` + run()). C# = `MetaGeneticSharp` local (wrapper .NET 9 sur GeneticSharp, MIT-license, 4 DLLs : GeneticSharp.Domain.dll + GeneticSharp.Infrastructure.Framework.dll + MetaGeneticSharp.Domain.dll + GeneticSharp.Infrastructure.dll) + `GeneticSharp` NuGet (dbarbosettig, MIT-license, lib SOTA GA .NET). Verdict SOTA-OK (modèle owner PR #10420 MERGED pour Search-11 tranche 2 + PR #10523 c.215 pour Sudoku-03 Genetic) : les DEUX cotes utilisent une vraie lib GA SOTA (deap+pygad cote PY, GeneticSharp+MetaGeneticSharp cote C#), couverture fonctionnelle equivalente (population / fitness / selection / crossover / mutation / elitism), bridge direct sans glue non-SOTA. Asymetrie documentee : PY a 2 libs (deap bas-niveau + pygad haut-niveau) vs C# 2 DLLs (GeneticSharp base + MetaGeneticSharp wrapper), l'API surface est differente (deap toolbox vs GeneticSharp fluent) mais le potentiel est equivalent."
@@ -55,6 +55,12 @@
       csharp_sha: 9c6f6e3484a3ffdb41d97a2a136fe622a905ea77
       content_python_sha: 4bde9707fc94375a15cddb8aa1f5efc71ce9c9a93fbffd00bebecc115020c047
       content_csharp_sha: 8b43b3bacd9c22b67365b878b3bbb6c7d20db0d2dbfbd052f3b694996afd1dfe
+    - date: "2026-09-05"
+      by: myia-po-2025:CoursIA
+      python_sha: 6217c34b81fa1b125ab0b285cd473db2dba22611
+      csharp_sha: a532f96ef99d13b3d1d3bd6467cf405cbab363a1
+      content_python_sha: c53c5c6bcbc9229f35a110c0bd92df641a920b321661fc7d04d3a23f03935ed2
+      content_csharp_sha: 2f5f5e1926d4f3d8fc4d5fff365e61d12f6e25f5550eec45f198663fe0f07b42
   known_differences:
     - "Rebaseline c.34 (ai-01) : #8697 a insere le bloc `metadata.cost` (#8056) a l'identique sur les DEUX jumeaux — les deux blob SHA ont bouge, la parite semantique est inchangee. Attestation de parite, pas reparation."
     - "Socle pedagogique commun : algorithmes genetiques (AG) — composants d'un AG (population, fonction de fitness, selection (roulette/tournoi), crossover, mutation), schemas d'evolution, probleme OneMax. Les deux twins implementent le cycle evolutionnaire from-scratch (population initiale → evaluation fitness → selection → croisement → mutation → nouvelle generation)."

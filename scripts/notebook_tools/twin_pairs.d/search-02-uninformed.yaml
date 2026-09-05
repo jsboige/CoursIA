@@ -1,7 +1,7 @@
-- name: "Search-2 Uninformed"
+- name: "Search-02 Uninformed"
   family: Search/Part1-Foundations
-  python: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb
-  csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed-Csharp.ipynb
+  python: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02-Uninformed.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02-Uninformed-Csharp.ipynb
   parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Python = stdlib + networkx (moteur Python de production pour la construction du graphe et la visualisation) + heapq (priority queue native pour UCS). C# = BCL (Queue<T> BFS, Stack<T> DFS, PriorityQueue<T> UCS) EN TETE DE NOTEBOOK (tranche 1, reimplementation pedagogique from-scratch) PUIS QuikGraph 2.5.0 (moteur .NET natif de production : BreadthFirstSearchAlgorithm, DepthFirstSearchAlgorithm, DijkstraShortestPathAlgorithm) en tranche 2 sur la MEME instance (13 villes, 80 arcs, memes poids). La tranche 2 verifie la parite chiffre-a-chiffre : BFS et UCS (Dijkstra) identiques a la tranche 1 sur les 5 trajets ; DFS differe par strategie de parcours (iteratif LIFO vs recursif premier-voisin), ecart documente en known_differences. Chaque cote atteint un moteur de production de son ecosysteme : networkx (Python) vs QuikGraph (.NET) = parite lib-vs-lib, critere native-both satisfait (issue #10382)."
@@ -35,6 +35,12 @@
       csharp_sha: 3dc09f842d2dfbdaa764caf508f26b7104897f53
       content_python_sha: 0174bff8a2c484139336fafa5f9f1e8e3dc9125f866511b574f6ccfa9bdbafee
       content_csharp_sha: cfe8c773fc7b7f3ac37fafe17ec739f3cc40dc78851a93c05570c1c9f7da6855
+    - date: "2026-09-05"
+      by: myia-po-2025:CoursIA
+      python_sha: 71b8013cd1208a406ed1197145d81a927766ef7c
+      csharp_sha: 2b04acfeef202f1a394910789fa1952b27737d48
+      content_python_sha: 44a1215ba4f3a6efec2d6ebc6788bbff2d59ccee15ef0b0f99ea5700b782c3fa
+      content_csharp_sha: f1fad1650678c6b359237e572004c86dc7a837b536f184968db6d8ed762b7fd3
   known_differences:
     - "Socle pedagogique commun : BFS (largeur), DFS (profondeur), UCS (cout uniforme), iterative deepening. Exemples : labyrinthe, 8-puzzle, Arrive en Roumanie."
     - "Idiomes framework : Python = `from collections import deque` (BFS FIFO) + `import heapq` (UCS priority queue). C# = `System.Collections.Generic.Queue<T>` (BFS) + `PriorityQueue<TElement, TPriority>` (.NET 6+, UCS) ; recursion via Stack<T> pour DFS."
