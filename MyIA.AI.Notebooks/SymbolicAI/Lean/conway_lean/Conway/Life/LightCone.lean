@@ -467,8 +467,10 @@ theorem evolve_support_dyadic_corridor (j t : Nat) (g : Grid) (a b : Int × Int)
     (h : ∀ p, isAlive (evolve (2 ^ j) g) p = true →
       a.1 ≤ p.1 ∧ p.1 < b.1 ∧ a.2 ≤ p.2 ∧ p.2 < b.2)
     (q : Int × Int) (h_alive : isAlive (evolve t g) q = true) :
-    a.1 - (2 ^ j : Int) ≤ q.1 ∧ q.1 < b.1 + (2 ^ j : Int) ∧
-      a.2 - (2 ^ j : Int) ≤ q.2 ∧ q.2 < b.2 + (2 ^ j : Int) := by
+    a.1 - ((2 ^ j : Nat) : Int) ≤ q.1 ∧
+      q.1 < b.1 + ((2 ^ j : Nat) : Int) ∧
+      a.2 - ((2 ^ j : Nat) : Int) ≤ q.2 ∧
+      q.2 < b.2 + ((2 ^ j : Nat) : Int) := by
   obtain ⟨c1, c2, c3, c4⟩ :=
     evolve_support_dilation_from (2 ^ j) t g a b hlo h q h_alive
   -- omega ne fait pas l'exponentiation : la relation dyadique du segment
