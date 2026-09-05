@@ -175,7 +175,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Init CodeQL
-        uses: github/codeql-action/init@v3
+        uses: github/codeql-action/init@v4
         with:
           languages: ${{ matrix.language }}
 
@@ -183,11 +183,11 @@ jobs:
       # pour csharp il construit la solution (meme chemin que le default
       # setup, dont les runs csharp passent deja, ex. 6m34s sur #14746).
       - name: Autobuild
-        uses: github/codeql-action/autobuild@v3
+        uses: github/codeql-action/autobuild@v4
 
       - name: Analyze
         id: analyze
-        uses: github/codeql-action/analyze@v3
+        uses: github/codeql-action/analyze@v4
         with:
           category: "/language:${{ matrix.language }}"
 
