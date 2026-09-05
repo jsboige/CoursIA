@@ -21,8 +21,9 @@ Deux modes de holdout (a lancer separement, --label distinct) :
 Contrairement au walk-forward (5 modeles/seed), on entraine UN modele par
 seed sur la fenetre train, puis on evalue DT / momentum_naked / buy_and_hold
 sur le holdout. Memes garde-fous que validate_xrp_dt : normalisation
-train-only, gap anti-leakage, net Sharpe post-TC, DM HAC Newey-West,
->=4 seeds, edge >= 2 sigma cross-seed sinon INCONCLUSIVE. Pas de "promising".
+train-only, gap anti-leakage, net Sharpe post-TC, DM HAC Newey-West
+(p mse median < 0.05), >=4 seeds, edge >= 2 sigma cross-seed sinon
+INCONCLUSIVE. Pas de "promising".
 
 Usage
 -----
