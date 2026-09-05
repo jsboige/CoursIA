@@ -525,6 +525,161 @@ def test_fully_backticked_tag_is_still_evaluated():
     assert v["guard_pass"] is False
 
 
+def test_prose_citation_without_grain_line_is_not_a_declaration():
+    # c.966 -- the false positive that blocked PR #14592.
+    #
+    # Real shape: `b974f2721` (c.957 REPAIR P0) carries a body that
+    # DOCUMENTS the bug in prose, citing ``prev: MED/training #14592``
+    # in backticks inside a numbered list. The text carries NO `Grain:`
+    # line at all (it's a normal commit message, not a worker-authored
+    # grain). The previous `_declared_prev_pr` passed the WHOLE body to
+    # `grain_tag.parse_prev`, which matched the prose citation and reported
+    # `prev: #14592` -- then PREV-SELF / PREV-NOT-MERGED fired.
+    #
+    # After the fix, the search is BOUNDED to the first `Grain:` line:
+    # absent -> None -> no declaration -> no false positive.
+    commit_body = (
+        "fix(guards): REPAIR P0-4 M17 HAR-LJ-Asym BTC round-4\n"
+        "\n"
+        "## Concerns verbatim (round-4)\n"
+        "\n"
+        "5. `prev: MED/training #14592` was self-rouge. `prev:` now points "
+        "at `MED/refactor #14456` (MERGED 2026-09-03T12:00:08Z).\n"
+    )
+    # The PREV-SELF that blocked the PR fired because parse_prev
+    # returned 14592 = current_pr. With the bounded search, no `Grain:`
+    # line exists, so the fallback never matches -> no hit.
+    assert vpg._declared_prev_pr(commit_body) is None
+    v = vpg.check(commit_body, current_pr=14592)
+    assert v["hits"]["prev_invalid"] == []
+    assert v["guard_pass"] is True
+
+
+def test_prose_citation_after_tag_line_still_evaluates_tag():
+    # c.966 -- the OTHER prose shape: a body that has BOTH a tag line AND
+    # a prose citation of another grain's `prev:`. The bounded search
+    # must return the TAG's `prev:`, not the prose citation's.
+    body = (
+        "Grain: MED/guard -- lane a:b -- prev: MED/guard #14501\n"
+        "\n"
+        "## Cause instrumentale\n"
+        "Le meme defaut que `prev: MED/qc #14548` documentait sur #14548.\n"
+    )
+    assert vpg._declared_prev_pr(body) == 14501
+    targets = {"14501": {"kind": "pr", "merged": True},
+               "14548": {"kind": "pr", "merged": False}}
+    v = vpg.check(body, current_pr=99999, prev_targets=targets)
+    assert v["hits"]["prev_invalid"] == []
+    assert v["guard_pass"] is True
+
+
+def test_first_grain_line_helper_bounds_search():
+    # c.966 -- unit-level coverage of the bounded search.
+    assert vpg._first_grain_line(None) is None
+    assert vpg._first_grain_line("") is None
+    assert vpg._first_grain_line("no tag here\n") is None
+    tag_line = "Grain: DEEP/training -- lane x:y -- prev: DEEP/training #7"
+    assert vpg._first_grain_line(tag_line) == tag_line
+    multiline = (
+        "The `Grain:` field is mandatory on every worker PR.\n"
+        "See the variation-protocol for the canonical form.\n"
+    )
+    # Returns the prose line (still has `Grain:` substring), but
+    # `parse_prev` on it returns pr_number=None -> safe.
+    assert vpg._first_grain_line(multiline) == multiline.split("\n")[0]
+    assert vpg._declared_prev_pr(multiline) is None
+
+
+# --------------------------------------------------------------------------
+# #14700 -- a backtick span ACROSS a soft line break must still be one mask
+# --------------------------------------------------------------------------
+#
+# The defect that blocked PR #14700 on its own `` commits[0] ``:
+#
+#     L4: ... citing `prev: MED/training
+#     L5: #14592` in backticks inside a numbered list ...
+#
+# The previous regex `` `[^`\\n]*` `` forbade newlines, so the closing
+# backtick at the start of L5 was orphaned and the L5 half escaped the
+# mask. `` _PREV_PR_REF_RE `` then matched `` #14592 `` and fired
+# `` prev-not-merged -> [14592] `` -- on the PR whose own commit message
+# documented the bug. The control in ai-01's analysis was exact: the same
+# citation on a SINGLE line was correctly masked; the soft break was the
+# only discriminant. We extend the span to allow `` \\n `` and pin the
+# change with three tests -- the multi-line shape, the single-line shape
+# (no regression), and the masked-selector parity for `` find_prev_self ``.
+
+def test_multiline_backtick_span_is_one_mask():
+    # The exact commit shape of PR #14700's `` commits[0] ``. The whole
+    # `` `prev: MED/training\\n#14592` `` is ONE code span -- verified by
+    # checking that `` _PREV_PR_REF_RE `` finds NOTHING inside the
+    # masked text. Before the fix, `` #14592 `` leaked through L5.
+    multiline = (
+        "defect. The commit body documents the bug in prose, "
+        "citing `prev: MED/training\n"
+        "#14592` in backticks inside a numbered list, with NO `Grain:` "
+        "line of its own."
+    )
+    masked = vpg._mask_code_spans(multiline)
+    # The whole span (L4 backtick + newline + L5 leading `#14592` + L5
+    # backtick) is replaced by spaces -- nothing for the regex to match.
+    assert "14592" not in masked
+    # And the masked length preserves the original: the caller relies on
+    # offset preservation to keep verdict slices meaningful.
+    assert len(masked) == len(multiline)
+    # PREV-SELF stays silent: the span is a citation, not a declaration.
+    assert vpg.find_prev_self_references(multiline, current_pr=14592) == []
+    # `` find_prev_target_pr_numbers `` also stays silent -- the cited
+    # `` #14592 `` was inside a backtick span, so it isn't a target.
+    assert vpg.find_prev_target_pr_numbers(multiline) == []
+
+
+def test_single_line_backtick_span_still_masked():
+    # NON-REGRESSION CONTROL. Same citation, on a single line -- this was
+    # the working case BEFORE the fix and must remain working AFTER. If it
+    # ever breaks, the fix has widened the regex too far.
+    single = ("citing `prev: MED/training #14592` in backticks")
+    masked = vpg._mask_code_spans(single)
+    assert "14592" not in masked
+    assert len(masked) == len(single)
+    assert vpg.find_prev_self_references(single, current_pr=14592) == []
+    assert vpg.find_prev_target_pr_numbers(single) == []
+
+
+def test_adjacent_backticks_do_not_merge_into_one_span():
+    # EDGE-CASE CONTROL. Two separate backtick spans separated by ONE
+    # newline (`` `a`\\n`b` ``) must remain TWO spans. If the regex
+    # becomes greedy across ``\\n``, the two would merge and the
+    # intervening ``\\n`` would be eaten by a single mask -- breaking
+    # offset preservation for any code that lies between them. The
+    # current regex is non-greedy and bounded by the FIRST closing
+    # backtick, so they stay distinct.
+    text = "`a`\n`b`"
+    masked = vpg._mask_code_spans(text)
+    # Two spans masked independently -- `` `a` `` (3) + newline (1) +
+    # `` `b` `` (3) -- total 7 chars, all blanks except the newline.
+    assert masked == "   \n   "
+    # Length preserved.
+    assert len(masked) == len(text)
+
+
+def test_fenced_block_with_internal_backticks_still_masked():
+    # EDGE-CASE CONTROL. A fenced block containing `` `prev: ... #N` ``
+    # on multiple lines is masked as ONE block (re.DOTALL + ``.*?``),
+    # independent of the new multi-line inline behaviour. Verifies that
+    # the fenced-block branch and the inline branch don't regress when
+    # the inline span is widened.
+    body = (
+        "Grain: MED/guard -- lane a:b -- prev: MED/guard #14501\n"
+        "```\n"
+        "`prev: MED/qc #14548` on one line, and\n"
+        "`prev: MED/qc #14549` on another.\n"
+        "```\n"
+    )
+    # Only the tag's #14501 is a target; the in-block citations are masked.
+    assert vpg.find_prev_target_pr_numbers(body) == [14501]
+
+
 # --- #14550, second defect: a silent fail-open is an unearned attestation ----
 # ai-01 measured it on #14515: CLEAN, PR gate green, mergeable -- with a
 # `prev:` at an OPEN PR, because the `gh` resolution happened to fail during

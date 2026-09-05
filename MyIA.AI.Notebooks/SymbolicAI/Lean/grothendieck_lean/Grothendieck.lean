@@ -17,6 +17,8 @@ import Grothendieck.CoversCoherentArrow
 import Grothendieck.CoversCoherentArrow_en
 import Grothendieck.CoversCoverageArrow
 import Grothendieck.CoversCoverageArrow_en
+import Grothendieck.CoversEtaleArrow
+import Grothendieck.CoversEtaleArrow_en
 import Grothendieck.CoversExtensiveArrow
 import Grothendieck.CoversExtensiveArrow_en
 import Grothendieck.CoversLattice

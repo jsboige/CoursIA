@@ -175,7 +175,17 @@ _PREV_PR_REF_RE = re.compile(
 # explained WHY it did not point `prev:` at a still-open PR, had its own
 # correct tag overruled by its own prose. Masking preserves offsets so the
 # slices reported in the verdict stay meaningful.
-_CODE_SPAN_RE = re.compile(r"```.*?```|`[^`\n]*`", re.DOTALL)
+#
+# Backtick spans can wrap across a soft line break (Markdown reflow): a
+# citation of `` `prev: MED/training\n#14592` `` is still ONE code span,
+# not two. The previous `` `[^`\\n]*` `` forbade newlines and let the
+# second half escape the mask -- a defect measured on PR #14700's own
+# `` commits[0] `` (L4-L5 of the body) where the bug citation spanned two
+# lines and the unguarded half tripped `` _PREV_PR_REF_RE `` on
+# `` #14592 ``. We allow ``\\n`` inside the span (still forbidding a bare
+# backtick) so the whole citation is masked as one. Fenced blocks (```...```)
+# already accept newlines via ``.*?`` + ``re.DOTALL``.
+_CODE_SPAN_RE = re.compile(r"```.*?```|`[^`]*`", re.DOTALL)
 
 
 def _mask_code_spans(text: str) -> str:
@@ -183,18 +193,73 @@ def _mask_code_spans(text: str) -> str:
     return _CODE_SPAN_RE.sub(lambda m: " " * len(m.group(0)), text)
 
 
-def _declared_prev_pr(text: str | None) -> int | None:
-    r"""The single `prev:` PR the canonical tag reader sees (#14550).
+def _first_grain_line(text: str | None) -> str | None:
+    r"""Return the first line of `text` that carries a `Grain:` declaration.
 
-    `grain_tag.parse_prev` strips backticks before reading, so it finds the
-    declaration even when a lane wraps its whole tag line in code marks.
-    Unioning it back in is what keeps the mask from creating a BLIND SPOT:
-    masking alone would let a backticked tag skip every invariant.
+    The canonical tag line is the ONLY line where a `Grain:` mention is a
+    DECLARATION -- anywhere else (`the \`Grain:\` field is mandatory`,
+    section "How the Grain: tag is parsed"), `Grain:` is a citation of the
+    concept, never a declaration of THIS grain's tag. c.966 measured the
+    cost of conflating the two on PR #14592: a commit's message body
+    documented `` `prev: MED/training #14592` was self-rouge`` in its prose,
+    and the line-search naively fed the whole body to `parse_prev`, which
+    matched the prose citation and reported `prev: #14592` as the
+    declaration. The fix is to bound the search to the line that carries
+    the actual `Grain:` declaration, leaving `parse_prev` to handle the
+    backticks / noise stripping it already knows.
+
+    A line that contains `Grain:` somewhere (the substring match) but is
+    NOT itself a tag declaration (e.g. ``the ``Grain:`` field is mandatory``)
+    still gets returned, but `parse_prev` will return
+    ``pr_number: None`` on it -- a line without a `<TIER>/<genre> #N` slot
+    is structurally not a declaration, and returning `None` preserves the
+    safety property.
     """
     if not text:
         return None
+    for line in text.splitlines():
+        if "Grain:" in line:
+            return line
+    return None
+
+
+def _declared_prev_pr(text: str | None) -> int | None:
+    r"""The single `prev:` PR the canonical tag reader sees (#14550, c.966).
+
+    The canonical tag line is the ONLY line where a `prev:` mention is a
+    DECLARATION -- the BLIND-SPOT CONTROL the gate owes to lanes that wrap
+    their entire tag line in backticks is preserved by `parse_prev`, which
+    strips them. But the search must be BOUNDED to the tag line: a prose
+    documentation line (`` `prev: MED/training #14592` was self-rouge``)
+    is a citation of another grain's tag, never a declaration of THIS
+    grain's `prev:`. Without the bound, `parse_prev` matches the prose
+    citation and reports it as the declaration, which is exactly what
+    blocked PR #14592 (`commits[2]` = `b974f2721`, the c.957 REPAIR P0
+    commit, restored by the GitHub `pulls/{id}/commits` REST endpoint
+    despite being an orphan in the local branch graph -- c.966 ★★★
+    fondateur).
+
+    Bounded to the first `Grain:` line, the function is safe across all
+    four shapes:
+
+      (a) commit message WITHOUT a tag line + `prev:` in prose (c.966
+          bug) -> no `Grain:` line -> returns None.
+      (b) tag line wrapped in backticks (BLIND-SPOT CONTROL) -> first
+          `Grain:` line starts with `` ` `` and carries the tag ->
+          `parse_prev` strips backticks -> returns the declared PR.
+      (c) PR body normal with a tag line -> first `Grain:` line is the
+          tag -> returns the declared PR.
+      (d) PR body with a tag line + a prose citation of another grain's
+          `prev:` -> first `Grain:` line is the tag, not the citation ->
+          returns the declared PR, not the citation.
+    """
+    if not text:
+        return None
+    line = _first_grain_line(text)
+    if line is None:
+        return None
     try:
-        return gt.parse_prev(text).get("pr_number")
+        return gt.parse_prev(line).get("pr_number")
     except Exception:
         return None
 
