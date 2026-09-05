@@ -69,6 +69,9 @@ Track2-GoogleADK/
 │   ├── Lab10-File-Analyzer.ipynb
 │   ├── Lab11-Planner-Coder-Loop.ipynb
 │   ├── Lab12-DS-Star-Workshop.ipynb
+│   ├── Lab12b-Sequential-Orchestration.ipynb
+│   ├── Lab12c-Agent-Handoff.ipynb
+│   ├── Lab12d-Token-Usage.ipynb
 │   └── Lab18-Session-Persistence.ipynb
 │
 ├── Day6-MLE-Star/             # MLE-STAR (ML Engineering)
@@ -92,7 +95,7 @@ Introduction au framework ADK et configuration multi-provider.
 | 8 | [ADK-Introduction](Day4-Foundations/Lab8-ADK-Introduction.ipynb) | Architecture ADK, configuration providers |
 | 9 | [First-ADK-Agent](Day4-Foundations/Lab9-First-ADK-Agent.ipynb) | Premier agent pour Data Science |
 
-### Day 5 - DS-STAR (Labs 10-12, 18)
+### Day 5 - DS-STAR (Labs 10-12, 12b-12d, 18)
 
 Data Science autonome avec l'architecture Planner-Coder-Verifier.
 
@@ -101,6 +104,9 @@ Data Science autonome avec l'architecture Planner-Coder-Verifier.
 | 10 | [File-Analyzer](Day5-DS-Star/Lab10-File-Analyzer.ipynb) | Analyse de fichiers hétérogènes |
 | 11 | [Planner-Coder-Loop](Day5-DS-Star/Lab11-Planner-Coder-Loop.ipynb) | Boucle itérative multi-agents |
 | 12 | [DS-Star-Workshop](Day5-DS-Star/Lab12-DS-Star-Workshop.ipynb) | Application complète |
+| 12b | [Sequential-Orchestration](Day5-DS-Star/Lab12b-Sequential-Orchestration.ipynb) | Contrat C4 : désignation séquentielle, orchestrateur explicite (#14058) |
+| 12c | [Agent-Handoff](Day5-DS-Star/Lab12c-Agent-Handoff.ipynb) | Contrat C5 : handoff entre agents câblé et observable (#14058) |
+| 12d | [Token-Usage](Day5-DS-Star/Lab12d-Token-Usage.ipynb) | Contrat C6 : traçabilité de la consommation LLM (#14058) |
 | 18 | [Session-Persistence](Day5-DS-Star/Lab18-Session-Persistence.ipynb) | Contrat C1b : conversation multi-tours persistante (#14058) |
 
 ### Day 6 - MLE-STAR (Labs 13-15)
