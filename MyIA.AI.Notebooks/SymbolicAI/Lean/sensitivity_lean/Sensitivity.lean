@@ -17,3 +17,4 @@ import Sensitivity.Hypercube
 import Sensitivity.VectorSpace
 import Sensitivity.Operator
 import Sensitivity.MainTheorem
+import Sensitivity.Fourier
