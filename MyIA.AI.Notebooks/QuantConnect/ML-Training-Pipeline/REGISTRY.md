@@ -20,6 +20,7 @@ Updated: 2026-09-04 — M17 HAR-LJ-Asym BTC REPAIR P0 c.953 (PR #14592, prefligh
 Updated: 2026-09-05 — M17 HAR-LJ-Asym round-3 calibration (PR #14592, preflight po-2025 adjoint re-review head `b974f2721`, DM `msg-20260904T141944`) : **nombres c.953 ci-dessus SUPERSEDES** (signe du biais inversé `yhat - bias` → corrigé `yhat + bias`, application per-fold, M12 calibré `calibrate_bias=debias`, deux jambes HAR `mse_har_raw` != `mse_har_debiased`, `panel_hash` sur index+valeurs avec manifeste per (coin,horizon)). Détail dans `docs/M17_HAR_LJ_ASYM.md` section « Round-3 calibration (this PR) ». [M17 HAR-LJ-Asym BTC run] — pending live run post-merge; round-3 calibration implemented, code PR #14592.
 Updated: 2026-09-05 — M17 HAR-LJ-Asym round-4 (PR #14592, adjoint re-review DM `msg-20260905T001520`, 3/6 PASS / 3/6 PARTIAL) : test OOS multi-fold discriminant `test_walk_forward_lj_asym_oos_target_invariance_multi_fold` (n_splits=3, biais per-fold **distincts**, invariance per-fold bit-identique rtol 1e-12, folds antérieurs inchangés, folds postérieurs = expanding-window retrain légitime asserté comme sensibilité, train-tail > 1.0 par fold) + provenance `bounds_train_test` (`{train_end_idx = n_splits·(n//(n_splits+1)), oos_start_idx = train_end+horizon, oos_end_idx}`) relayée par `_eval_one_coin` / `aggregate_verdicts` / manifeste (`bounds_per_coin_horizon`, `fc_lj_hash_per_fold` alignés sur `per_fold_bias`) ; placeholder `if False else None` supprimé. Tests 22 → 24 verts, suite 1194 passed / 0 failed. **[M17 HAR-LJ-Asym BTC run] LIVRÉ (round-4 code) — `python har_lj_asym.py --coins BTC-USD --skip-remote --debias --horizons 1 5 10 --seeds 0 7 42 99` en 467.9 s** : h=1 **BEATS 4/4** vs HAR et M12 (p<1e-6, mean_loss_diff<0, `_coherent_beats()` strict ✓) ; h=5/h=10 INCONCLUSIVE 0/4 (p>0.05, mean_loss_diff>0 ⇒ cohérent INCONCLUSIVE). Bornes effectives BTC : `train_end=1890` (5 folds × 378 jours), `n_oos=378-382`, `n_total=2272` jours. Bit-identity cross-seed OK (`per_fold_bias` et `fc_lj_hash_per_fold` identiques sur les 4 seeds, `bounds_consistent_across_seeds=True`). Précédent c.953 `h=1 BEATS p=0.839708` réfuté — sous round-3+4 calibration le verdict reste BEATS mais devient réellement significatif. Détail dans `docs/M17_HAR_LJ_ASYM.md` section « Live BTC run (concern b — this PR) ». Manifest `scripts/results/m17_har_lj_asym.json` régénéré ; meta `manifest_m17_har_lj_asym.json` mis à jour avec `concern_addressing` round-3 + round-4.
 Updated: 2026-09-05 — M18 TimesFM 2.5 zero-shot première entrée §C (issue #14768, lane myia-po-2026) : **vs Log-HAR 5/6 BEATS, 1/6 INCONCLUSIVE (BTC h=22, log-HAR numériquement meilleur mais p=0,23), 0/6 NO BEATS** — réserves : ETH h=22 p=0,0445 limite. Horizons 1/5/22 j, walk-forward 5 folds, seeds bit-identiques (GPU déterministe), débiais symétrique, DM conjonction MSE (#11010). Vrai checkpoint attesté (SHA 1d952420fba8, 43 720 séries, fail-explicit). Calibration quantile native : couverture 80 % à ±0,026 du nominal. HAR en niveaux dégénère en quasi-persistence (MSE identiques à 6 décimales, hashs distincts). Détail section M18 + `docs/M18_TimesFM.md`.
+Updated: 2026-09-05 — M18 correctif baseline har_rv (issue #14791, lane myia-po-2026) : la clause « HAR en niveaux dégénère en quasi-persistence » ci-dessus était **fausse — SUPERSEDES**. L'égalité har_rv == persistence (5e-14) était un bug d'alignement dans `HarRvModel.fit` (régresseurs contemporains de la cible → fit identité parfait, résidu ~1e-19, prévision = persistence exacte) ; le contrôle « hashs distincts » ne pouvait pas le détecter. Correctif : régresseurs décalés d'un pas (miroir `realized_variance.har_lag_features`) + garde `assert_baselines_distinct` (paires de baselines distinctes ≥ 1e-6 relatif sur ≥ 1 point OOS, sinon le run échoue). Re-run complet 24 cellules (checkpoint SHA inchangé, 43 720 séries, persistence/ewma/log_har bit-identiques) : **vs har_rv 6/6 BEATS +29,8/+51,1 %** (colonne tableau M18 mise à jour), `baseline_weakest_rel_sep` 0,11-0,18 ; har_rv corrigé meilleur que persistence (BTC h=1 MSE 1,044 vs 1,172). Verdict de tête #14768 inchangé (vs Log-HAR 5/6). Tests +7 (dont dents du garde prouvées sur l'alignement bugué : rouge à 2,65e-11).
 
 Total checkpoints: 70 (20 legacy ARCHIVED + 50 panier baselines)
 
@@ -38,21 +39,23 @@ sur MSE, `linear` = diagnostic biais. Script `scripts/m18_tsfm_benchmark.py`
 
 | Coin | h | vs persistence | vs ewma | vs log_har | vs har_rv |
 |---|---:|---|---|---|---|
-| BTC | 1 | **BEATS** +40,7 % | **BEATS** +20,1 % | **BEATS** +19,7 % | **BEATS** +40,7 % |
-| BTC | 5 | **BEATS** +56,2 % | INCONCLUSIVE +5,4 % (p=0,116) | **BEATS** +8,5 % (p=0,0015) | **BEATS** +56,2 % |
-| BTC | 22 | **BEATS** +46,5 % | **BEATS** +10,7 % | INCONCLUSIVE −4,8 % (p=0,232) | **BEATS** +46,5 % |
-| ETH | 1 | **BEATS** +30,6 % | **BEATS** +10,5 % | **BEATS** +7,6 % | **BEATS** +30,6 % |
-| ETH | 5 | **BEATS** +49,7 % | INCONCLUSIVE +4,1 % | **BEATS** +10,7 % | **BEATS** +49,7 % |
-| ETH | 22 | **BEATS** +47,2 % | **BEATS** +11,9 % | **BEATS** +12,5 % (p=0,0445 ⚠ limite) | **BEATS** +47,2 % |
+| BTC | 1 | **BEATS** +40,7 % | **BEATS** +20,1 % | **BEATS** +19,7 % | **BEATS** +33,4 % |
+| BTC | 5 | **BEATS** +56,2 % | INCONCLUSIVE +5,4 % (p=0,116) | **BEATS** +8,5 % (p=0,0015) | **BEATS** +40,1 % |
+| BTC | 22 | **BEATS** +46,5 % | **BEATS** +10,7 % | INCONCLUSIVE −4,8 % (p=0,232) | **BEATS** +30,1 % (p=0,0008) |
+| ETH | 1 | **BEATS** +30,6 % | **BEATS** +10,5 % | **BEATS** +7,6 % | **BEATS** +29,8 % |
+| ETH | 5 | **BEATS** +49,7 % | INCONCLUSIVE +4,1 % | **BEATS** +10,7 % | **BEATS** +51,1 % |
+| ETH | 22 | **BEATS** +47,2 % | **BEATS** +11,9 % | **BEATS** +12,5 % (p=0,0445 ⚠ limite) | **BEATS** +45,2 % |
 
 **Verdict contre la baseline de référence (Log-HAR) : 5/6 BEATS, 1/6
 INCONCLUSIVE, 0/6 NO BEATS** — solide sur 4 cellules (p ≤ 0,0015), deux
 réserves honnêtes : BTC h=22 INCONCLUSIVE (log-HAR numériquement meilleur
 −4,8 % mais non significatif), ETH h=22 BEATS au bord du seuil (p=0,0445).
 Calibration quantile native remarquable : couverture 80 % mesurée
-0,774-0,814 pour nominal 0,80, zero-shot sans ajustement. Trou empirique :
-HAR en niveaux dégénère en quasi-persistence sur ce panel (MSE égales à
-6 décimales, hashs distincts — artefact connu, pas un bug). Coûts :
+0,774-0,814 pour nominal 0,80, zero-shot sans ajustement. har_rv : la
+colonne initiale (doublon de persistence, écart 5e-14) était un **bug
+d'alignement** corrigé #14791 — régresseurs décalés + garde
+non-dégénérescence `1e-6` ; colonne ci-dessus = re-run #14791, les trois
+autres baselines bit-identiques. Coûts :
 non applicables au forecast pur, aucun claim Sharpe/P&L. Aucun claim
 d'alpha : TimesFM entre comme forecasteur de volatilité, l'étape
 économique est hors scope #14768.
