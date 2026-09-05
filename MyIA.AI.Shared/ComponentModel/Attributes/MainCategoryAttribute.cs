@@ -33,3 +33,6 @@ public sealed class MainCategoryAttribute : Attribute
         Name = name;
     }
 }
+
+// WITNESS #12856-4 : defaut deliberé pour controle positif de la voie lente (a supprimer)
+class WitnessBroken12856 {
