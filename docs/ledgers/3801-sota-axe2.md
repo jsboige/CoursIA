@@ -1716,7 +1716,7 @@ La famille QC-Py présente une **architecture d'exécution à deux couches**, v�
 | **QC-Py-25-Reinforcement-Learning** | 39 | 15 | 12/15 | 1 | python3 | **torch Q-learning** | **SOTA-OK** |
 | **QC-Py-33-RL-PPO-Trading** | 38 | 16 | 16/16 | 0 | **conda-torch** | **torch PPO** (GPU-kernel) | **SOTA-OK** |
 | **QC-Py-34-RL-SAC-A2C-Trading** | 40 | 17 | 17/17 | 0 | **conda-torch** | **torch SAC + A2C** (GPU-kernel) | **SOTA-OK** |
-| **QC-Py-Cloud-03-DualMomentum** | 15 | 3 | 3/3 | 0 | python3 | seed stratégie QC Cloud | **RECOVERABLE-MACHINE** |
+| **QC-Py-Cloud-14-DualMomentum** | 15 | 3 | 3/3 | 0 | python3 | seed stratégie QC Cloud | **RECOVERABLE-MACHINE** |
 
 **Total famille (53 nb)** : 491 cellules EXEC_PROVED (couche analytics, SOTA-OK) · 164 cellules `[REFERENCE QC]` (couche plateforme, RECOVERABLE-MACHINE by design) · ~112 cellules Cloud-* seeds (RECOVERABLE-MACHINE) · 0 erreur · 0 violation C.1 · 11 CJK cosmétique.
 

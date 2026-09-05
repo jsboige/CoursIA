@@ -72,7 +72,7 @@
 
 | Book Section | Pages | Topic | CoursIA Mapping | Notes |
 |---|---|---|---|---|
-| RL for hedging | 281-303 | Policy network, simulation, refinement on market data, QC implementation | [QC-Py-25-Reinforcement-Learning.ipynb](../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-25-Reinforcement-Learning.ipynb), [QC-Py-32-RL-DQN-Trading.ipynb](../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-32-RL-DQN-Trading.ipynb), [QC-Py-Cloud-04-RL-DQN-Trading.ipynb](../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-04-RL-DQN-Trading.ipynb) | Book applies RL to hedging specifically; our notebooks focus on trading signals |
+| RL for hedging | 281-303 | Policy network, simulation, refinement on market data, QC implementation | [QC-Py-25-Reinforcement-Learning.ipynb](../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-25-Reinforcement-Learning.ipynb), [QC-Py-32-RL-DQN-Trading.ipynb](../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-32-RL-DQN-Trading.ipynb), [QC-Py-Cloud-10-RL-DQN-Trading.ipynb](../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-10-RL-DQN-Trading.ipynb) | Book applies RL to hedging specifically; our notebooks focus on trading signals |
 
 ### Chapter 8: AI for Risk Management and Optimization
 
