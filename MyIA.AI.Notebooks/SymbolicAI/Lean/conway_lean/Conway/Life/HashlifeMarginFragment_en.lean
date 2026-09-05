@@ -514,6 +514,146 @@ theorem hashlife_correct_margin_of_still_life (c : MacroCell) (k : Nat)
     evolveHashlifeFast (2^k) (c.toGrid (0, 0)) = evolve (2^k) (c.toGrid (0, 0)) :=
   hashlife_correct_margin_of_hcap c k h_central
     (fun t _ => hcap_of_still_life _ (canonical_sortDedup _) hfix t)
+/-! ## L3 geometry — bounding-box bounds and reconstruction level (slice 3, step 5)
+
+Scoping 3-(c) (c.5551298160) identifies the "geometry" leg of L3: at the
+adaptive level, the window `[2^lvl, 3·2^lvl)` must absorb the corridor box.
+Two bricks are laid here: (i) the **bounding-box bounds** of a grid whose
+support is constrained — `gridRowMin` is bounded below, `gridRowMax` is
+bounded above (and likewise columns); (ii) the **level bound** of the
+reconstruction `gridToMacroCellWithOffset g` in terms of the box. These are
+the geometric premises for capture at the adaptive level. -/
+
+/-- **Helper: a `foldl` of `max` (via `proj`) stays strictly below `b`** if the
+    seed and every element are. Direct induction on the list (invariant of
+    `max`). -/
+theorem foldl_proj_max_lt_of_mem_lt (ps : Grid) (proj : Int × Int → Int)
+    (acc : Int) (b : Int) (hb : acc < b)
+    (h₀ : ∀ q, q ∈ ps → proj q < b) :
+    ps.foldl (fun m q => max m (proj q)) acc < b := by
+  induction ps generalizing acc with
+  | nil => simpa using hb
+  | cons q qs ih =>
+    have hq : proj q < b := h₀ q (by simp)
+    have hb' : max acc (proj q) < b := max_lt_iff.mpr ⟨hb, hq⟩
+    exact ih _ hb' (fun r hr => h₀ r (List.mem_cons_of_mem q hr))
+
+/-- **Lower bound of `gridRowMin` from a box.** If every cell of `g` satisfies
+    `a ≤ p.1`, then `a ≤ gridRowMin g`: the minimum of the rows is one of the
+    rows of `g` (`foldl_proj_min_attained`), so it inherits the bound. The grid
+    must be non-empty: on the empty grid, `gridRowMin` defaults to `0` and the
+    bound would fail. -/
+theorem gridRowMin_lower_bound (g : Grid) (a : Int) (hg : g ≠ [])
+    (h₀ : ∀ p, p ∈ g → a ≤ p.1) :
+    a ≤ gridRowMin g := by
+  cases g with
+  | nil => exact absurd rfl hg
+  | cons p₀ ps =>
+    simp only [gridRowMin]
+    rcases foldl_proj_min_attained ps (·.1) p₀.1 with hcase | ⟨p, hp, hval⟩
+    · rw [hcase]
+      exact h₀ p₀ (by simp)
+    · rw [hval]
+      exact h₀ p (List.mem_cons_of_mem p₀ hp)
+
+/-- **Upper bound of `gridRowMax` from a box.** If every cell of `g` satisfies
+    `p.1 < b`, then `gridRowMax g < b`: the maximum of the rows inherits the
+    bound (invariant of the `foldl` of `max`). -/
+theorem gridRowMax_upper_bound (g : Grid) (b : Int) (hg : g ≠ [])
+    (h₀ : ∀ p, p ∈ g → p.1 < b) :
+    gridRowMax g < b := by
+  cases g with
+  | nil => exact absurd rfl hg
+  | cons p₀ ps =>
+    simp only [gridRowMax]
+    exact foldl_proj_max_lt_of_mem_lt ps (·.1) p₀.1 b (h₀ p₀ (by simp))
+      (fun q hq => h₀ q (List.mem_cons_of_mem p₀ hq))
+
+/-- **Lower bound of `gridColMin` from a box** (column mirror of
+    `gridRowMin_lower_bound`). -/
+theorem gridColMin_lower_bound (g : Grid) (a : Int) (hg : g ≠ [])
+    (h₀ : ∀ p, p ∈ g → a ≤ p.2) :
+    a ≤ gridColMin g := by
+  cases g with
+  | nil => exact absurd rfl hg
+  | cons p₀ ps =>
+    simp only [gridColMin]
+    rcases foldl_proj_min_attained ps (·.2) p₀.2 with hcase | ⟨p, hp, hval⟩
+    · rw [hcase]
+      exact h₀ p₀ (by simp)
+    · rw [hval]
+      exact h₀ p (List.mem_cons_of_mem p₀ hp)
+
+/-- **Upper bound of `gridColMax` from a box** (column mirror of
+    `gridRowMax_upper_bound`). -/
+theorem gridColMax_upper_bound (g : Grid) (b : Int) (hg : g ≠ [])
+    (h₀ : ∀ p, p ∈ g → p.2 < b) :
+    gridColMax g < b := by
+  cases g with
+  | nil => exact absurd rfl hg
+  | cons p₀ ps =>
+    simp only [gridColMax]
+    exact foldl_proj_max_lt_of_mem_lt ps (·.2) p₀.2 b (h₀ p₀ (by simp))
+      (fun q hq => h₀ q (List.mem_cons_of_mem p₀ hq))
+
+/-- **Monotonicity of `ceilLog2`.** The log₂ ceiling is an increasing function:
+    `a ≤ b ⟹ ceilLog2 a ≤ ceilLog2 b`. Follows from `Nat.log_mono_right`
+    (monotonicity of `log` in its argument), after splitting on `if k ≤ 1`. -/
+theorem ceilLog2_mono {a b : Nat} (hab : a ≤ b) :
+    MacroCell.ceilLog2 a ≤ MacroCell.ceilLog2 b := by
+  by_cases hb1 : b ≤ 1
+  · have ha1 : a ≤ 1 := le_trans hab hb1
+    simp only [MacroCell.ceilLog2, hb1, ha1, reduceIte]
+    omega
+  · by_cases ha1 : a ≤ 1
+    · simp only [MacroCell.ceilLog2, ha1, reduceIte]
+      exact Nat.zero_le _
+    · simp only [MacroCell.ceilLog2, hb1, ha1, reduceIte]
+      have hlog : Nat.log 2 (a - 1) ≤ Nat.log 2 (b - 1) :=
+        Nat.log_mono_right (by omega)
+      omega
+
+/-- **Level bound of the reconstruction ("geometry" leg of L3).** If the
+    support of `g` fits in the box `[a,b)` (in the sense
+    `a.1 ≤ p.1 ∧ p.1 < b.1` and likewise columns), then the level of the
+    reconstruction `gridToMacroCellWithOffset g` is bounded by `ceilLog2` of
+    the box dimension plus the fixed padding `5` of `gridFrame`. Proof:
+    `gridRowMin`/`gridColMin` are bounded below and `gridRowMax`/`gridColMax`
+    bounded above by the box, so the frame height/width (`+5`) stays below the
+    box dimension `+5`, and `ceilLog2` is monotone. -/
+theorem gridToMacroCellWithOffset_level_le_of_box (g : Grid) (a b : Int × Int)
+    (h₀ : ∀ p, p ∈ g → a.1 ≤ p.1 ∧ p.1 < b.1 ∧ a.2 ≤ p.2 ∧ p.2 < b.2) :
+    (gridToMacroCellWithOffset g).2.level ≤
+      MacroCell.ceilLog2 (max (b.1 - a.1 + 5).toNat (b.2 - a.2 + 5).toNat) := by
+  by_cases hg : g = []
+  · subst hg
+    simp only [gridToMacroCellWithOffset, gridFrame]
+    rw [MacroCell.level_buildFromGrid]
+    exact Nat.zero_le _
+  · cases g with
+    | nil => exact absurd rfl hg
+    | cons p₀ ps =>
+      have hne : p₀ :: ps ≠ [] := List.cons_ne_nil p₀ ps
+      have hrowmin : a.1 ≤ gridRowMin (p₀ :: ps) :=
+        gridRowMin_lower_bound _ a.1 hne (fun p hp => (h₀ p hp).1)
+      have hrowmax : gridRowMax (p₀ :: ps) < b.1 :=
+        gridRowMax_upper_bound _ b.1 hne (fun p hp => (h₀ p hp).2.1)
+      have hcolmin : a.2 ≤ gridColMin (p₀ :: ps) :=
+        gridColMin_lower_bound _ a.2 hne (fun p hp => (h₀ p hp).2.2.1)
+      have hcolmax : gridColMax (p₀ :: ps) < b.2 :=
+        gridColMax_upper_bound _ b.2 hne (fun p hp => (h₀ p hp).2.2.2)
+      have hside_le : max ((gridRowMax (p₀ :: ps) - gridRowMin (p₀ :: ps) + 5).toNat)
+          ((gridColMax (p₀ :: ps) - gridColMin (p₀ :: ps) + 5).toNat) ≤
+          max (b.1 - a.1 + 5).toNat (b.2 - a.2 + 5).toNat := by
+        apply max_le_max
+        · exact Int.toNat_le_toNat (by omega)
+        · exact Int.toNat_le_toNat (by omega)
+      simp only [gridToMacroCellWithOffset]
+      rw [MacroCell.level_buildFromGrid]
+      show MacroCell.ceilLog2
+          (max ((gridRowMax (p₀ :: ps) - gridRowMin (p₀ :: ps) + 5).toNat)
+               ((gridColMax (p₀ :: ps) - gridColMin (p₀ :: ps) + 5).toNat)) ≤ _
+      exact ceilLog2_mono hside_le
 
 /-! ## Sanity checks on the bestiary
 
