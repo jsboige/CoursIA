@@ -9,7 +9,7 @@ juillet 2026), lui-meme fonde sur Garfinkel, Hribar & Hsiao (2025),
 - croissance annuelle du chiffre d'affaires, winsorisee 1 % / 99 % en
   coupe transversale, agregee par pondération de capitalisation ;
 - regression OLS a fenetre croissante du rendement excédentaire mensuel
-  de SPY sur l'ASG retardée d'un mois (convention shift(1, freq="M") ;
+  de SPY sur l'ASG retardée d'un mois (convention shift(1, freq="M")) ;
 - exposition clip(forecast / (gamma * variance), 0, 1.5) avec gamma = 3
   et variance des 120 derniers rendements excédentaires mensuels.
 """
@@ -31,8 +31,9 @@ MAX_WEIGHT = 1.5
 # - la variance exige la fenetre PLEINE de 120 mois de l'article
 #   (Variance(10*12)) : aucun echange avant qu'elle ne soit remplie ;
 # - plancher d'observations appariees pour l'OLS expanding (l'article
-#   n'en fixe pas ; ne lie pas dans l'experimentation, 130 paires au
-#   premier echange).
+#   n'en fixe pas ; ne lie pas dans l'experimentation, au moins 129
+#   paires appariees au premier echange - borne conservative, review
+#   finale #14722).
 MIN_FIT_OBSERVATIONS = 60
 MIN_VARIANCE_OBSERVATIONS = VARIANCE_WINDOW
 

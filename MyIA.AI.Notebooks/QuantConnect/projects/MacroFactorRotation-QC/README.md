@@ -50,12 +50,12 @@ Fenetre, couts et capital strictement identiques pour les deux bras :
   pour fournir a la variance les 10 annees de l'article plus une marge
   avant le premier echange.
 - **Entrainement/warmup** : 2007-01 -> 2017-12. Le bras ASG accumule ses
-  series mensuelles - 131 valeurs d'ASG (2007-02 -> 2017-12) et 130
-  rendements excedentaires (2007-03 -> 2017-12 ; le warm-up de 35 jours
-  avale les evenements de janvier et fevrier 2007) - de sorte que la
-  variance 120 mois de l'article est PLEINE des le premier echange de
-  janvier 2018 (fenetre pleine + ~10 mois de marge). Le bras baseline
-  n'echange pas : aucun des deux bras n'echange.
+  series mensuelles : au premier echange de janvier 2018, au moins 130
+  valeurs d'ASG et au moins 129 rendements excedentaires sont disponibles
+  (bornes conservatives, valables meme si le warm-up de 35 jours ignorait
+  les evenements de janvier et fevrier 2007) - la variance 120 mois de
+  l'article est donc PLEINE des le premier echange, avec de la marge. Le
+  bras baseline n'echange pas : aucun des deux bras n'echange.
 - **OOS** : 2018-01 -> 2025-01 (84 evenements mensuels ou les deux bras
   tradent). Les metriques pleine periode partagent le meme prefixe plat
   2007-2017 (100 % cash) : la comparaison directe reste valide.
@@ -65,11 +65,12 @@ Fenetre, couts et capital strictement identiques pour les deux bras :
 - **Garde-fou variance (amendement audit pre-PR)** : la premiere version
   de l'experimentation (v1, fenetre 2012-2025) tolerait une variance
   estimee sur seulement 60 mois (`MIN_VARIANCE_OBSERVATIONS = 60`), ce qui
-  laissait le bras ASG echanger des 71 rendements - un relachement de la
-  mecanique de l'article, corrige : la variance exige desormais la fenetre
-  PLEINE de 120 mois (`MIN_VARIANCE_OBSERVATIONS = VARIANCE_WINDOW`), et
-  les deux bras ont ete relances (v2) sur la fenetre 2007-2025. Les
-  metriques v1 ci-dessous sont conservees uniquement pour tracabilite.
+  laissait le bras ASG echanger avant que la fenetre pleine ne soit
+  remplie - un relachement de la mecanique de l'article, corrige : la
+  variance exige desormais la fenetre PLEINE de 120 mois
+  (`MIN_VARIANCE_OBSERVATIONS = VARIANCE_WINDOW`), et les deux bras ont
+  ete relances (v2) sur la fenetre 2007-2025. Les metriques v1 ci-dessous
+  sont conservees uniquement pour tracabilite.
 - **Bug latent corrige** : le clone local portait
   `set_brokerage_model(INTERACTIVE_BROKERS...)`, qui rejette les cibles
   Crypto ("Unsupported security type: Crypto", erreur runtime constatee au

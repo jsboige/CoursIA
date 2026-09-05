@@ -44,10 +44,11 @@ import asg_helpers
 # capital 100 000 USD, brokerage par defaut QC (frais/fills identiques),
 # benchmark SPY. Periode
 # d'entrainement/warmup 2007-01 -> 2017-12 : le bras ASG accumule ses series
-# mensuelles (131 valeurs d'ASG, 130 rendements excedentaires au premier
-# echange ; le warm-up de 35 jours avale les evenements de janv/ferv 2007)
+# mensuelles (au moins 130 valeurs d'ASG et au moins 129 rendements
+# excedentaires au premier echange, borne conservative valable meme si le
+# warm-up de 35 jours ignorait les evenements de janvier et fevrier 2007)
 # et sa variance 120 mois est PLEINE des le premier echange de janvier 2018
-# (fenetre de l'article + ~10 mois de marge, amendement audit pre-PR), le
+# (fenetre de l'article + marge, amendement audit pre-PR), le
 # bras baseline n'echange pas. Periode OOS 2018-01 -> 2025-01
 # ou les deux bras echangent. Sans ces parametres, le comportement par
 # defaut reproduit la baseline d'origine.
