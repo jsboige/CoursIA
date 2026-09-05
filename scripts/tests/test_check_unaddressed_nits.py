@@ -5202,7 +5202,7 @@ def test_13083_instance3_milieu_ligne4_reste_bloquant():
         "Le profil deletion-heavy de la PR est un faux signal.\n\n"
         "Il faut relire la section 3 avant merge, mais ce n'est pas un "
         "verdict bloquant.\n\n"
-        "Conclusion : RAS."
+        "Conclusion : le contexte est decrit ci-dessus."
     )
     assert mod.classify("myia-ai-01", body) == "BOT-CONCERN", (
         f"Apres fix `\\A`, `avant merge` en milieu de corps (ligne 4) "
@@ -5364,13 +5364,15 @@ def test_english_narration_my_concerns_addressed_reste_none():
 
 
 def test_ras_francais_leve_dans_une_reponse():
-    """#14564 (b) — « RAS sur le fond, rien a signaler » est une levee RELLE :
-    une reserve posee puis une reponse « RAS » debloque la PR. Avant : la
-    levee FRANCAIS COURT n'eteignait pas (F.P.), la PR restait bloquee."""
+    """#14564 (b) — « RAS » seule est une levee RELLE : une reserve posee puis
+    une reponse « RAS » debloque la PR. DISCORDANT (#14766) : le body ne porte
+    QUE le sigle, aucun autre LIFT_MARKER — il ne passe que si `_WORD_BOUNDED_LIFT_RE`
+    matche bien la majuscule « RAS » (avant le fix, `\bras\b` lower-case-only
+    la manquait et le test passait a tort via « rien a signaler »)."""
     reserve = {"author": {"login": "clusterManager-Myia"}, "createdAt": at(9),
                "body": "[Hermes] COMMENT_WITH_CONCERNS — le run oublie 3 seeds."}
     lift = {"author": {"login": "clusterManager-Myia"}, "createdAt": at(12),
-            "body": "RAS sur le fond, rien a signaler — re-exec avec les 8 seeds."}
+            "body": "RAS sur le fond — re-exec avec les 8 seeds."}
     assert run([reserve, lift])["blocked"] is False
 
 
@@ -5397,12 +5399,16 @@ def test_est_traite_nu_ne_leve_pas():
 
 
 def test_ras_word_bound_rasoir_ne_leve_pas():
-    """Garde-fou word-bound : la sous-chaine « RAS » de « RASOIR »/« ERASME »
-    ne doit pas matcher le sigle. `_WORD_BOUNDED_LIFT_RE` l'ecarte — sinon
-    une reserve serait levee a tort par un mot contenant le sigle."""
+    """Garde-fou word-bound : le sigle « RAS » (majuscule) ne doit PAS matcher
+    le « ras » minuscule — le vrai mot francais (« ras du sol », « a ras de
+    terre »). DISCORDANT (#14766) : le body porte le minuscule nu, aucun autre
+    LIFT_MARKER. Avant le fix, `\bras\b` matchait le minuscule et levait a
+    tort (faux positif) ; apres (motif dedie au sigle), il ne leve plus.
+    (Le cas « RASOIR »/« ERASME » echouait deja trivialement par la casse,
+    il n'a jamais exerce le word-bound — verifie ai-01.)"""
     reserve = {"author": {"login": "clusterManager-Myia"}, "createdAt": at(9),
                "body": "[Hermes] COMMENT_WITH_CONCERNS — 3 seeds manquants."}
     lift = {"author": {"login": "clusterManager-Myia"}, "createdAt": at(12),
-            "body": "Ce choix est un RASOIR (tranchant, au sens figure)."}
+            "body": "Une couche ras de terre recouvre le chemin, mais la conclusion tient."}
     assert run([reserve, lift])["blocked"] is True
 
