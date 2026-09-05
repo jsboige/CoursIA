@@ -47,6 +47,7 @@ Documentation vivante, active et liée depuis CLAUDE.md / `.claude/rules/`.
 | [reference/regles-vigilance-detail.md](reference/regles-vigilance-detail.md) | Détails G.1-G.9 + incidents |
 | [reference/regles-validation-detail.md](reference/regles-validation-detail.md) | Détails H.1-H.7 + incident Sudoku-13 |
 | [reference/anti-regression-detail.md](reference/anti-regression-detail.md) | Patterns red-flag, protocole avant suppression |
+| [reference/notebook-renumbering-detail.md](reference/notebook-renumbering-detail.md) | Corpus des precedents `renum()`/`reclass()` (19 issues, 4 verdicts « aucune renum »), blast-radius mesure de la grappe Probas, etat de l'arbre. Detail de `.claude/rules/notebook-accretion-numbering.md` |
 | [reference/lean-axiom-coverage.md](reference/lean-axiom-coverage.md) | Couverture axiomes du gate proof-integrity par lake (22 lakes inventoriés, 2 câblés en CI : `lean-knot.yml` + `lean-conway.yml`) — classes dangereuses `native_decide.*`/`sorryAx`/`Classical.choice`. Détail de référence pour §B.3 de `.claude/rules/pr-review-discipline.md`. Établi cycle c.950 (worker po-2023, lane `myia-po-2023:CoursIA-2`), 167 lignes. See #8738 (step 3), #8752 (livraison) |
 | [reference/secrets-and-coord-detail.md](reference/secrets-and-coord-detail.md) | Secrets + coordination cross-machine |
 | [reference/student-pr-reviews-detail.md](reference/student-pr-reviews-detail.md) | Incident, format public, workflow |
