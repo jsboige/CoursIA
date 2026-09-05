@@ -175,6 +175,11 @@ jobs:
           # (#2872), so without arch here those 9 tests are missing-dep failures.
           # Pulls statsmodels/patsy — still CPU-light.
           pip install arch
+          # rapidfuzz + unidecode + openpyxl: GradeBookApp/gradebook.py imports
+          # all three at module top level, so test_fuzzy_match_group.py needs
+          # them at collection time (famille 5 de #14615). The test guards with
+          # importorskip, but wiring it into this run means running it for real.
+          pip install rapidfuzz unidecode openpyxl
 
       - name: Run tests
         # Scope to the scripts/ + notebook_tools/ suites this job is named for.
@@ -224,6 +229,7 @@ jobs:
             MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/tests \
             scripts/secrets/tests \
             scripts/quantconnect/tests \
+            GradeBookApp \
             --tb=short -q
 
       - name: Audit tests collection floor (455)
@@ -268,7 +274,13 @@ jobs:
       # fetch est paresseux et non exerce. Deps reelles : numpy + pandas,
       # presentes dans ce job (arch les tire, et scripts/tests/ml/
       # test_garch_baseline.py les importe deja sous un run vert).
-      # CI-EXCLUDED: GradeBookApp — deps openpyxl/rapidfuzz/unidecode non installées dans ce job ; PII grading hors CI publique
+      # GradeBookApp re-câblé (famille 5 de #14615, 2026-09-05) :
+      # test_fuzzy_match_group.py seul, 15 tests stdlib+pandas+rapidfuzz,
+      # verts en 0,73 s avec les deps installées (ajoutées au pip install du
+      # job). Ses 2 seuls accès fichier relisent un journal que le test crée
+      # lui-même — zéro donnée étudiante, la réserve PII ne s'applique pas.
+      # Le verdict INTRINSIC initial (grep 0 fichier test) était une mesure
+      # fausse, corrigée sur mesure positive par ai-01 (c.5551368629).
 
       - name: Secrets tests collection floor (148)
         if: always()
@@ -279,3 +291,16 @@ jobs:
           if [ -z "$N" ] || [ "$N" -eq 0 ]; then echo "::error::--collect-only returned no tests — the collection crashed (distinct from a coverage drop)."; exit 1; fi
           if [ "$N" -lt "$SECRETS_TESTS_FLOOR" ]; then echo "::error::Coverage regression: $N tests collected, floor=$SECRETS_TESTS_FLOOR."; exit 1; fi
           echo "OK: $N tests collected (floor=$SECRETS_TESTS_FLOOR)."
+
+      - name: GradeBook tests collection floor (15)
+        # Same two-signal semantics as the audit (455) and secrets (148)
+        # floors: deps missing from the job = collection returns skips instead
+        # of a count = install problem, not a coverage drop.
+        if: always()
+        env:
+          GRADEBOOK_TESTS_FLOOR: 15
+        run: |
+          N=$(python -m pytest GradeBookApp --collect-only -q 2>/dev/null | tail -1 | grep -oE '[0-9]+ tests collected' | grep -oE '^[0-9]+')
+          if [ -z "$N" ] || [ "$N" -eq 0 ]; then echo "::error::--collect-only returned no tests — the collection crashed (distinct from a coverage drop)."; exit 1; fi
+          if [ "$N" -lt "$GRADEBOOK_TESTS_FLOOR" ]; then echo "::error::Coverage regression: $N tests collected, floor=$GRADEBOOK_TESTS_FLOOR."; exit 1; fi
+          echo "OK: $N tests collected (floor=$GRADEBOOK_TESTS_FLOOR)."

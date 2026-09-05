@@ -74,6 +74,7 @@ kernel) sur le bestiaire ci-dessous. EPIC #3846 / #6724 / #9568.
 
 import Conway.Life.AdversarialBattery
 import Conway.Life.HashlifeCorrectness
+import Conway.Life.LightCone
 
 namespace Conway
 namespace Life
@@ -204,6 +205,72 @@ private def jumpCapturedF (c : MacroCell) : Bool :=
     decide (p.1 < (2 ^ c.level : Int) + ((2 ^ (c.level + 1) : Nat) : Int)) &&
     decide ((2 ^ c.level : Int) ≤ p.2) &&
     decide (p.2 < (2 ^ c.level : Int) + ((2 ^ (c.level + 1) : Nat) : Int))
+
+/-- **Interface (c) tranche 3, étape 1 — dépliage propositionnel de `jumpCapturedF`.**
+    Même preuve que `jumpCaptured_iff` (JumpCapture L264), répliquée localement :
+    ce module ne peut pas importer `JumpCapture` (cycle d'import, cf docstring de
+    `jumpCapturedF` ci-dessus). C'est la porte d'entrée du corridor (LightCone,
+    langage `isAlive`) dans le prédicat Bool que `hcap` exige. -/
+theorem jumpCapturedF_iff (c : MacroCell) :
+    jumpCapturedF c = true ↔
+      ∀ p ∈ evolve (2 ^ c.level) ((padCenter2 c).toGrid (0, 0)),
+        (2 ^ c.level : Int) ≤ p.1 ∧
+          p.1 < (2 ^ c.level : Int) + ((2 ^ (c.level + 1) : Nat) : Int) ∧
+          (2 ^ c.level : Int) ≤ p.2 ∧
+          p.2 < (2 ^ c.level : Int) + ((2 ^ (c.level + 1) : Nat) : Int) := by
+  unfold jumpCapturedF
+  rw [List.all_eq_true]
+  constructor
+  · intro h p hp
+    have hb := h p hp
+    simp only [Bool.and_eq_true, decide_eq_true_eq] at hb
+    tauto
+  · intro h p hp
+    have hb := h p hp
+    simp only [Bool.and_eq_true, decide_eq_true_eq]
+    tauto
+
+/-- **Interface (c) tranche 3, étape 2 — le corridor forward ferme le saut dès
+    que la fenêtre absorbe la dérive.** Pont entre le langage du corridor
+    (`evolve_support_dilation_from`, brique (a-b) de la tranche 3, LightCone :
+    confinement `isAlive` de la trajectoire) et le prédicat Bool `jumpCapturedF` :
+    si le support de la grille paddée tient dans la boîte `[a, b)` (`h₀`) et que
+    la boîte dilatée de `2^c.level` — la dérive forward maximale du saut — reste
+    dans la fenêtre du test `[2^lvl, 2^lvl + 2^(lvl+1))²` (`hwin1..4`), alors le
+    saut est capturé. La preuve ne fait aucune hypothèse de réversibilité (le GoL
+    n'est pas réversible) : le relais forward borne la dérive depuis `t₀ = 0`,
+    l'inclusion de fenêtres est linéaire. Les hypothèses `h₀`/`hwin` sont ce que
+    la partie géométrique de L3 (caractériser le niveau de la reconstruction le
+    long de la trajectoire) doit établir — ce lemme en est la cloison nette :
+    confinement forward [prouvé par le corridor] séparé de géométrie de fenêtre
+    [ouverte]. Les bornes de `hwin` portent le cast nat explicite
+    `((2 ^ c.level : Nat) : Int)` — même atome que celle du corridor (sinon la
+    puissance est forcée dans Int et omega la voit déconnectée). -/
+theorem jumpCapturedF_of_dilation (c : MacroCell) (a b : Int × Int)
+    (h₀ : ∀ p, isAlive ((padCenter2 c).toGrid (0, 0)) p = true →
+      a.1 ≤ p.1 ∧ p.1 < b.1 ∧ a.2 ≤ p.2 ∧ p.2 < b.2)
+    (hwin1 : ((2 ^ c.level : Nat) : Int) ≤ a.1 - ((2 ^ c.level : Nat) : Int))
+    (hwin2 : b.1 + ((2 ^ c.level : Nat) : Int) ≤
+      ((2 ^ c.level : Nat) : Int) + ((2 ^ (c.level + 1) : Nat) : Int))
+    (hwin3 : ((2 ^ c.level : Nat) : Int) ≤ a.2 - ((2 ^ c.level : Nat) : Int))
+    (hwin4 : b.2 + ((2 ^ c.level : Nat) : Int) ≤
+      ((2 ^ c.level : Nat) : Int) + ((2 ^ (c.level + 1) : Nat) : Int)) :
+    jumpCapturedF c = true := by
+  rw [jumpCapturedF_iff]
+  intro p hp
+  have hq : isAlive (evolve (2 ^ c.level) ((padCenter2 c).toGrid (0, 0))) p = true := by
+    rw [isAlive]
+    exact List.elem_iff.mpr hp
+  obtain ⟨c1, c2, c3, c4⟩ :=
+    evolve_support_dilation_from 0 (2 ^ c.level) ((padCenter2 c).toGrid (0, 0)) a b
+      (Nat.zero_le _) h₀ p hq
+  simp only [Nat.sub_zero] at c1 c2 c3 c4
+  -- le but (issu de la définition) parle en `(2 ^ lvl : Int)` (pow dans Int) :
+  -- la relation avec le cast nat du corridor est fournie explicitement, puis
+  -- tout est linéaire.
+  have hpow : (2 ^ c.level : Int) = ((2 ^ c.level : Nat) : Int) := by
+    exact (Nat.cast_pow 2 c.level).symm
+  omega
 
 /-- **P4.4 L2 (réduction sorry-stable).** L'égalité globale du cadre se réduit à
     l'hypothèse de capture de trajectoire de la machine N : `hashlife_correctN` (prouvé)
