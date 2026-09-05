@@ -260,12 +260,9 @@ theorem evolve_support_dilation_box (t : Nat) (g : Grid) (a b : Int × Int)
   obtain ⟨p, hp, hcheb⟩ := evolve_reach_chebyshev t g q h_alive
   have ⟨hb1, hb2⟩ := coord_bound_of_chebDist_le p q t hcheb
   have ⟨ha1, ha2, ha3, ha4⟩ := h p hp
-  have e1 : |q.1 - p.1| ≤ (t : Int) := by
-    rw [Int.abs_eq_natAbs]; exact_mod_cast hb1
-  have e2 : |q.2 - p.2| ≤ (t : Int) := by
-    rw [Int.abs_eq_natAbs]; exact_mod_cast hb2
-  obtain ⟨hlo1, hhi1⟩ := Int.abs_le.mp e1
-  obtain ⟨hlo2, hhi2⟩ := Int.abs_le.mp e2
+  -- omega handles `Int.natAbs` natively: the per-coordinate bounds are
+  -- directly linear, no `Int.abs` conversion (whose `abs_le` API is not in
+  -- the toolchain core scope, c.14701 CI).
   exact ⟨by omega, by omega, by omega, by omega⟩
 
 /-! ## Tight locality (Chebyshev-box form) — agreement dual of `evolve_reach_chebyshev`
