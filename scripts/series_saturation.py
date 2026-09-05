@@ -659,6 +659,17 @@ def zone_umbrellas(issue_to_family: dict, pool: list, families=()) -> dict:
     -- un verdict qui ne nomme pas l'EPIC responsable laisse le lecteur le
     chercher. Une zone chaude SANS parent declare est le cas le plus grave et
     non le plus propre : personne n'y est comptable de la contrepartie.
+
+    Deux sources : (1) les parents DECLARES par les grains du pool ; (2) les
+    EPICs racines (label/titre EPIC, file de tranches) ATTESTES dans une zone
+    par les PRs mergees qui les citent (`issue_to_family`). Sans la seconde,
+    un tracker racine sans fille ouverte -- #13934, dont les tranches vivent
+    dans des PRs mergees, pas dans des issues -- rendait la zone qu'il
+    alimente "SANS REMEDE (aucun EPIC declare)".
+
+    L'attestation est la porte d'entree de la source (2) : une issue qui ne
+    fait que MENTIONNER la zone (body de diagnostic, renvoi de contexte) n'est
+    pas un comptable, meme si son texte porte les marqueurs de tracker.
     """
     out: dict[str, dict[int, int]] = {}
     for it in pool:
@@ -668,7 +679,41 @@ def zone_umbrellas(issue_to_family: dict, pool: list, families=()) -> dict:
             continue
         out.setdefault(fam, {})
         out[fam][parent] = out[fam].get(parent, 0) + 1
+    for it in pool:
+        if not is_area_umbrella(it):
+            continue
+        fam = (issue_to_family or {}).get(it.get("number"))
+        if not fam:
+            continue
+        out.setdefault(fam, {})
+        out[fam][it["number"]] = out[fam].get(it["number"], 0) + 1
     return out
+
+
+# Une issue qui TRACK une zone est nommable comme "alimente par" d'une zone
+# chaude : EPIC par label/titre (meme logique que le pool du picker), ou file
+# de tranches (#13934, "queue de tranches"). Les tranches vivent dans des PRs
+# mergees, pas dans des issues ouvertes -- un tel tracker racine n'a donc
+# jamais de parent declare dans le pool, et seule l'attestation par les PRs
+# citees (`issue_to_family`) le rend visible.
+_TRACKER_TRANCHES_RE = re.compile(r"tranches?", re.I)
+
+
+def is_area_umbrella(item: dict) -> bool:
+    """L'issue PEUT-ELLE etre nommee comme comptable d'une zone chaude ?
+
+    Distingue de la classification du pool (`klass` = umbrella) : celle-la
+    decide du triage du tirage (un grain utilisable), celle-ci ne nomme qu'un
+    comptable pour l'affichage de la parite. Les deux predicats peuvent
+    diverger sans creer de double lecteur de source.
+    """
+    title = item.get("title") or ""
+    labels = {str(x).lower() for x in item.get("labels", []) or []}
+    if "epic" in labels or title.upper().lstrip("[").startswith("EPIC"):
+        return True
+    head = "\n".join((item.get("body") or "").splitlines()[:_EPIC_PARENT_HEAD_LINES])
+    return bool(_TRACKER_TRANCHES_RE.search(title)) or bool(
+        _TRACKER_TRANCHES_RE.search(head))
 
 
 def main() -> int:
