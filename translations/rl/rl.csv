@@ -8970,7 +8970,7 @@ char-level ; ici on passe à un **vrai modèle de langage** chargé localement, 
 - formuler un **verdict de viabilité** pour la série (ce que GRPO apporte à un petit modèle, et ses limites).
 ## Frontière avec GenAI/PostTraining
 
-Le pendant SOTA 2025 -- `trl.GRPOTrainer` + Qwen3.5-0.8B QLoRA 4-bit + Z3 CSP arithmétique + rewardspy en ligne + multi-seed -- vit dans [PT-11a](../GenAI/PostTraining/PT_11_grpo_qwen35_rlvr.ipynb) et [PT-11b](../GenAI/PostTraining/PT_11_grpo_qwen_rlvr_on_verifiers.ipynb). Ce notebook-ci pose *à la main* la boucle interne (group rollouts, avantage intra-groupe, no critic), sans la pile `trl` complète ; PT-11a/b montrent le déploiement outillé. Voir [#11460](https://github.com/jsboige/CoursIA/issues/11460) pour la justification.
+Le pendant SOTA 2025 -- `trl.GRPOTrainer` + Qwen3.5-0.8B QLoRA 4-bit + Z3 CSP arithmétique + rewardspy en ligne + multi-seed -- vit dans [PT-11a](../GenAI/PostTraining/PT_11a_grpo_qwen35_rlvr.ipynb) et [PT-11b](../GenAI/PostTraining/PT_11b_grpo_qwen_rlvr_on_verifiers.ipynb). Ce notebook-ci pose *à la main* la boucle interne (group rollouts, avantage intra-groupe, no critic), sans la pile `trl` complète ; PT-11a/b montrent le déploiement outillé. Voir [#11460](https://github.com/jsboige/CoursIA/issues/11460) pour la justification.
 
 ",,,,,,,,139614ef9c663ee3,,,,,,,,
 MyIA.AI.Notebooks/RL/rlpt_2_grpo_minimal.ipynb,999c7a75,markdown,fr,f6f33a4685ff6224,"## 1. Le problème : une récompense vérifiable, pas un jugement
