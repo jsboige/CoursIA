@@ -2170,6 +2170,91 @@ def print_drought_banner(d: dict, restricted: int, fell_back: bool) -> None:
     print("Elle se justifie par ecrit, elle ne se prend pas en silence.")
     print()
 
+
+# --- #14591 Volet A : persistance CSV de --prev-genre entre cycles ----------------
+#
+# Le picker penalise le genre precedent via --prev-genre (G-VAR-3, variation-
+# protocol §2 : pas deux fois le meme GENRE LIGHT consecutif). Mais l'argument
+# est per-cycle : la compaction de session + wakeup cron effacent la memoire
+# du grain precedent, et le mono-genre consecutif redevient possible des le
+# cycle suivant (pourquoi #14591 -- 13 grains monotones sur la lane po-2027).
+#
+# Le remede : un etat CSV persistant par lane, que le picker lit au debut
+# du run pour auto-appliquer --prev-genre, et qu'il ecrit a la fin si
+# --write-state est passe. Format : `lane,last_genre,last_ts` (3 colonnes,
+# header). Le fichier est laisse a la lane (chemin standard
+# `~/.cache/picker_state.csv` ou override via --csv-state).
+
+CSV_STATE_HEADER = "lane,last_genre,last_ts\n"
+
+
+def read_prev_genre_csv(path: str, lane: str) -> tuple[str | None, str | None]:
+    """#14591 Volet A : lire (genre, ts) depuis le CSV pour la lane.
+
+    Fichier absent : (None, None), pas d'exception. Lane inconnue : (None, None).
+    Lignes mal formees (<3 champs) : on skip silencieusement. Le picker reste
+    utilisable meme avec un CSV partiellement corrompu.
+    """
+    if not os.path.exists(path):
+        return (None, None)
+    try:
+        with open(path, "r", encoding="utf-8") as fh:
+            lines = fh.readlines()
+    except OSError:
+        return (None, None)
+    for line in lines[1:]:
+        parts = line.rstrip("\n").split(",", 2)
+        if len(parts) != 3:
+            continue
+        if parts[0].strip() == lane:
+            genre = parts[1].strip()
+            ts = parts[2].strip()
+            return (genre or None, ts or None)
+    return (None, None)
+
+
+def write_prev_genre_csv(path: str, lane: str, genre: str, ts: str) -> None:
+    """#14591 Volet A : upsert (genre, ts) pour la lane dans le CSV.
+
+    Le picker doit rester utilisable si le CSV ne peut pas etre ecrit : toute
+    OSError est avalee silencieusement. Le parent dir est cree si necessaire.
+    """
+    try:
+        parent = os.path.dirname(path)
+        if parent:
+            os.makedirs(parent, exist_ok=True)
+    except OSError:
+        pass
+    rows = []
+    if os.path.exists(path):
+        try:
+            with open(path, "r", encoding="utf-8") as fh:
+                lines = fh.readlines()
+            for line in lines[1:]:
+                parts = line.rstrip("\n").split(",", 2)
+                if len(parts) != 3:
+                    continue
+                rows.append(parts)
+        except OSError:
+            rows = []
+    found = False
+    for row in rows:
+        if row[0].strip() == lane:
+            row[1] = genre
+            row[2] = ts
+            found = True
+            break
+    if not found:
+        rows.append([lane, genre, ts])
+    try:
+        with open(path, "w", encoding="utf-8") as fh:
+            fh.write(CSV_STATE_HEADER)
+            for row in rows:
+                fh.write(",".join(row) + "\n")
+    except OSError:
+        pass
+
+
 def main(argv: list[str] | None = None) -> int:
     # Console Windows cp1252 : un titre d'issue portant un caractere hors table
     # (fleche U+2192 etc.) fait crasher le print en UnicodeEncodeError et perd
@@ -2184,6 +2269,18 @@ def main(argv: list[str] | None = None) -> int:
                     help="machine:workspace, ex. myia-po-2026:CoursIA (requis hors --orphans-report)")
     ap.add_argument("--prev-genre", default=None,
                     help="genre du grain precedent de la lane (penalise ce genre au tirage)")
+    ap.add_argument("--csv-state", dest="csv_state", default=None,
+                    metavar="PATH",
+                    help="#14591 Volet A : chemin d'un CSV d'etat par lane. "
+                         "Si la lane a une entree (colonnes lane,last_genre,last_ts), "
+                         "le picker auto-applique --prev-genre sans qu'il faille le "
+                         "passer en argument. Defaut : aucun.")
+    ap.add_argument("--write-state", dest="write_state",
+                    choices=("none", "candidate", "merged"), default=None,
+                    help="#14591 Volet A : quand ecrire le CSV d'etat. "
+                         "'candidate' (au moment du tirage), 'merged' (apres "
+                         "merge d'une PR, via appel ulterieur). Defaut : aucun "
+                         "(le picker ne touche pas au CSV).")
     ap.add_argument("--grains", type=int, default=4, help="candidats urne 'grain' (defaut 4)")
     ap.add_argument("--umbrellas", type=int, default=2, help="candidats urne 'umbrella' (defaut 2)")
     ap.add_argument("--delivered", type=int, default=2, help="candidats urne 'delivered' (defaut 2)")
@@ -2286,6 +2383,16 @@ def main(argv: list[str] | None = None) -> int:
         effective_cache_mode = "off"
     payload_cache = PayloadCache(args.cache_dir)
     cache_status: dict[str, dict[str, Any]] = {}
+
+    # #14591 Volet A : auto-appliquer --prev-genre depuis le CSV d'etat si
+    # la lane y est connue. L'utilisateur peut toujours surcharger via
+    # --prev-genre explicite (prioritaire sur le CSV).
+    if args.csv_state and args.lane and not args.prev_genre:
+        csv_genre, csv_ts = read_prev_genre_csv(args.csv_state, args.lane)
+        if csv_genre:
+            args.prev_genre = csv_genre
+            print(f"(prev-genre auto-applique depuis CSV : {csv_genre} "
+                  f"(dernier grain @ {csv_ts}))")
 
     # Mode rapport : le garde rouge (lane) ne concerne pas ce chemin -- la file
     # des orphelines est lane-independante et ce mode ne tire pas de grain.
@@ -2735,6 +2842,20 @@ def main(argv: list[str] | None = None) -> int:
     print("delivered -> verifie firsthand que la PR livrante satisfait l'acceptance :")
     print("             si oui `gh issue close`, sinon retire le label en disant pourquoi.")
     print("Avant d'EDITER : python scripts/check_lane_claim.py --lane <machine:workspace> <N>")
+
+    # #14591 Volet A : persister le genre du grain choisi vers le CSV si
+    # --write-state=candidate. Le timestamp est l'instant du tirage.
+    # --write-state=merged est reserve a un appel ulterieur (post-merge) ;
+    # il n'est pas applicable ici (le picker vient de tirer, le merge n'a
+    # pas eu lieu).
+    if (args.write_state == "candidate"
+            and args.csv_state and args.lane and picks):
+        chosen = picks[0]
+        ts_now = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%MZ")
+        write_prev_genre_csv(args.csv_state, args.lane,
+                            chosen["genre"], ts_now)
+        print(f"(CSV d'etat : {args.csv_state} ecrit -- lane={args.lane} "
+              f"genre={chosen['genre']} @ {ts_now})")
     return 0
 
 
