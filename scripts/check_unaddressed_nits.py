@@ -336,6 +336,28 @@ CONCERN_MARKERS = CONCERN_MARKERS + SEVERITY_GLYPHS
 BLOCK_VERDICTS = ("**BLOCKED**", "BLOCKED  PR")
 CONCERN_MARKERS = CONCERN_MARKERS + BLOCK_VERDICTS
 
+# #14553 — le registre du REFUS d'approbation. Fondateur mesure : review
+# NanoClaw du 2026-09-03T23:50:16Z sur #14535 — trois demandes numerotees,
+# cloture « Donnees exactes, discipline de provenance en defaut — pas de
+# LGTM en l'etat » -> AUCUN des marqueurs existants ne vit -> classify None
+# -> gate vert. Un refus d'approbation est un verdict a part entiere (CLAUDE.md
+# B.0 : « un reviewer qui ecrit "je ne peux pas approuver seul sur ce
+# format" bloque ») ; aucun des 21 motifs ne couvrait cette famille. Casse
+# RELACHEE (defaut has_live_marker) : « Pas de LGTM » en tete de phrase doit
+# vivre. Garde-fou FP double : (1) la fenetre de citation (_is_cited) rend
+# morte l'occurrence d'un refus QUOTE dans une levee (« la reserve
+# « pas de LGTM » est adressee ») ; (2) « no LGTM » est word-bounded avec
+# lookahead anti-« no LGTM needed » (_WORD_BOUNDED_MARKERS). « sous reserve
+# de » est EXCLU : sa neutralite depend de la POSITION (verdict final vs
+# subordonnee conditionnelle), qu'un motif ne peut pas porter — residuel
+# documente sur l'issue.
+APPROVAL_REFUSALS = (
+    "pas de LGTM", "no LGTM",
+    "je ne peux pas approuver", "cannot approve", "not approving",
+    "ne pas merger en l'etat", "do not merge as is",
+)
+CONCERN_MARKERS = CONCERN_MARKERS + APPROVAL_REFUSALS
+
 # La forme ETIQUETEE (« Concern: », « Concerns :», « **Concern 2 :** ») rejoint
 # les marqueurs vivants : elle tolere casse et nombre des deux cotes (user comme
 # agents) sans rien devoir a la sous-chaine nue, qui reste case-sensitive.
@@ -1764,6 +1786,13 @@ def _lift_is_narrated(window: str) -> bool:
 _LIFT_NEGATION_TOKENS = (
     "non", "pas", "plus", "aucun", "aucune", "n'est", "nest", "jamais",
     "rien", "sans",
+    # #14553 — miroir anglais du « pas » : « no LGTM » negue le token de
+    # levee LGTM (le seul mot porteur des DEUX familles : LIFT_MARKERS le
+    # lit comme approbation, le refus le nie). Sans ce token, la couche
+    # lift absorbait le refus AVANT meme que CONCERN_MARKERS ne soit evalue.
+    # Meme residuel assume que le « pas » francais : une negation anglaise
+    # non locale a un vrai lift voisin peut l'eteindre par surcorrection.
+    "no", "not",
 )
 
 
@@ -1912,6 +1941,11 @@ _CASE_SENSITIVE_MARKERS = frozenset({
 
 _WORD_BOUNDED_MARKERS = {
     _CONCERN_LABEL: re.compile(r"(?m)^[\s*_#>\-]*concerns?\s*\d*\s*:"),
+    # #14553 — « no LGTM needed here » est une APPROBATION (docs-only), pas
+    # un refus : la sous-chaine nue « no LGTM » y vivrait a tort. Word-bounded
+    # + lookahead sur la famille needed/necessary/required. La regex tourne
+    # sur le body lowercase/desaccentue (cf has_live_marker), donc sans (?i).
+    "no lgtm": re.compile(r"\bno\s+lgtm\b(?!\s+(?:needed|necessary|required))"),
 }
 
 
