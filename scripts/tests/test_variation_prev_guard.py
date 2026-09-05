@@ -680,6 +680,66 @@ def test_fenced_block_with_internal_backticks_still_masked():
     assert vpg.find_prev_target_pr_numbers(body) == [14501]
 
 
+def test_multiline_backticked_citation_in_commit_passes_full_guard():
+    # #14703 -- the issue's isolated control replayed at FULL GUARD level.
+    # ai-01 measured the defect through the complete verdict path (the
+    # organ's `prev_invalid` named ``commits[0]`` / prev-not-merged / 14592);
+    # the mask-level tests above pin the mechanism, this one pins the
+    # end-to-end verdict the CI actually computes. The cited #14592 is held
+    # OPEN in ``prev_targets`` so a mask leak would turn into a block --
+    # the pass is earned by the mask, not by an accidentally-unresolvable
+    # target.
+    targets = {
+        "13826": {"kind": "pr", "merged": True},   # the body's own prev
+        "14592": {"kind": "pr", "merged": False},  # the cited-in-prose PR
+    }
+    commit_two_line = (
+        "fix(guard): document citation defect\n"
+        "\n"
+        "1. defect. The commit body documents the bug in prose, citing "
+        "`prev: MED/training\n"
+        "#14592` in backticks inside a numbered list, with NO Grain: "
+        "line of its own.\n"
+    )
+    v = vpg.check(CLEAN_PREV_BODY, [commit_two_line],
+                  current_pr=14703, prev_targets=targets)
+    assert v["guard_pass"] is True
+    assert v["hits"]["prev_invalid"] == []
+
+    # NON-REGRESSION CONTROL: the same citation on a single line -- the
+    # pre-fix working case, unchanged by the multi-line extension.
+    commit_one_line = (
+        "fix(guard): document citation defect\n"
+        "\n"
+        "1. defect. Citing `prev: MED/training #14592` in backticks.\n"
+    )
+    v = vpg.check(CLEAN_PREV_BODY, [commit_one_line],
+                  current_pr=14703, prev_targets=targets)
+    assert v["guard_pass"] is True
+    assert v["hits"]["prev_invalid"] == []
+
+    # TEETH CONTROL: the SAME wrapped clause WITHOUT backticks is a bare
+    # `prev:` declaration in a commit -- it must still block (the regex
+    # matches across the soft line break via ``\\s*``). This is what makes
+    # the two tests above fail on the pre-#14700 regex (`` `[^`\\n]*` ``):
+    # back then the L5 half ``#14592`` escaped the mask and this exact
+    # block fired. If the mask ever regresses, the pair above goes red
+    # while this one stays red-but-expected -- remove it and the suite
+    # loses its proof that the pass was earned.
+    commit_bare_wrapped = (
+        "fix(guard): stray declaration\n"
+        "\n"
+        "1. text with prev: MED/training\n"
+        "#14592 outside any backticks.\n"
+    )
+    v = vpg.check(CLEAN_PREV_BODY, [commit_bare_wrapped],
+                  current_pr=14703, prev_targets=targets)
+    assert v["guard_pass"] is False
+    assert any(h["kind"] == "prev-not-merged" and h["prev_pr"] == 14592
+               and h["location"] == "commits[0]"
+               for h in v["hits"]["prev_invalid"])
+
+
 # --- #14550, second defect: a silent fail-open is an unearned attestation ----
 # ai-01 measured it on #14515: CLEAN, PR gate green, mergeable -- with a
 # `prev:` at an OPEN PR, because the `gh` resolution happened to fail during
