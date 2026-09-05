@@ -1,0 +1,115 @@
+name: dotnet-AgentSafetyAnalyzer
+
+# Tranche 2 de #14696 (orphelins .sln) : la paire Vibe-Coding/analyzers —
+# CoursIA.AgentSafetyAnalyzer (netstandard2.0, analyzer Roslyn) + son projet
+# de tests xunit (net8.0) — exclue du glob parent par #14695, absente de
+# MyIA.CoursIA.sln, donc sans CI avant cette PR.
+#
+# Bornes mesurees firsthand (worktree origin/main c04ec58df, 2026-09-05,
+# DOTNET_ROLL_FORWARD=Major faute de runtime 8 local — le comptage
+# --list-tests est independant du runtime d'execution) :
+#   - dotnet test AgentSafetyAnalyzer.Tests = 26 tests, 0 echec
+#   - Dependances : xunit + Microsoft.CodeAnalysis + ProjectReference vers
+#     l'analyzer — zero service externe, zero secret, runner ephemere OK.
+#
+# Deux jobs STATIQUES (pas de matrix runs-on dynamique — garde #13363,
+# meme forme que dotnet-ArgumentAnalysis.yml / dotnet-Shared.Tests.yml).
+# setup-dotnet 8.0.x : les tests ciblent net8.0 (distinct du trio
+# Argument_Analysis en 9.0.x).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'MyIA.AI.Notebooks/GenAI/Vibe-Coding/analyzers/**'
+      - '.github/workflows/dotnet-AgentSafetyAnalyzer.yml'
+      - 'MyIA.CoursIA.sln'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'MyIA.AI.Notebooks/GenAI/Vibe-Coding/analyzers/**'
+      - '.github/workflows/dotnet-AgentSafetyAnalyzer.yml'
+      - 'MyIA.CoursIA.sln'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dotnet-agentsafetyanalyzer-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  ASA_TESTS: MyIA.AI.Notebooks/GenAI/Vibe-Coding/analyzers/AgentSafetyAnalyzer.Tests/AgentSafetyAnalyzer.Tests.csproj
+
+jobs:
+  dotnet-agentsafetyanalyzer-linux:
+    name: AgentSafetyAnalyzer dotnet (ubuntu-latest, floor 26)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Run the test project
+        run: dotnet test "$ASA_TESTS" --nologo
+
+      # Floor-guard de collecte (semantique dotnet-Shared.Tests.yml : un run
+      # vert alors que la collecte a silencieusement perdu des tests doit
+      # rougir). Pattern d'extraction locale-proof `^    [A-Za-z_]` (sans
+      # ancre d'en-tete localise), liste vide = panne de collecte = exit 1.
+      - name: Collection floor-guard (26)
+        if: always()
+        shell: bash
+        env:
+          DOTNET_CLI_UI_LANGUAGE: en
+        run: |
+          NAME=$(basename "$ASA_TESTS" .csproj)
+          LISTED=$(dotnet test "$ASA_TESTS" --list-tests --nologo 2>/dev/null | grep -cE '^    [A-Za-z_]')
+          if [ -z "$LISTED" ] || [ "$LISTED" -eq 0 ]; then
+            echo "::error::$NAME : --list-tests n'a renvoye aucun test — panne de collecte (a distinguer d'une baisse de couverture)."
+            exit 1
+          fi
+          if [ "$LISTED" -lt 26 ]; then
+            echo "::error::$NAME : regression de couverture — $LISTED tests listes, plancher=26. Si la baisse est intentionnelle, ajuster le plancher dans cette PR."
+            exit 1
+          fi
+          echo "OK : $NAME — $LISTED tests listes (plancher=26)."
+
+  dotnet-agentsafetyanalyzer-windows:
+    name: AgentSafetyAnalyzer dotnet (windows-latest, floor 26)
+    runs-on: windows-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Run the test project
+        shell: bash
+        run: dotnet test "$ASA_TESTS" --nologo
+
+      - name: Collection floor-guard (26)
+        if: always()
+        shell: bash
+        env:
+          DOTNET_CLI_UI_LANGUAGE: en
+        run: |
+          NAME=$(basename "$ASA_TESTS" .csproj)
+          LISTED=$(dotnet test "$ASA_TESTS" --list-tests --nologo 2>/dev/null | grep -cE '^    [A-Za-z_]')
+          if [ -z "$LISTED" ] || [ "$LISTED" -eq 0 ]; then
+            echo "::error::$NAME : --list-tests n'a renvoye aucun test — panne de collecte (a distinguer d'une baisse de couverture)."
+            exit 1
+          fi
+          if [ "$LISTED" -lt 26 ]; then
+            echo "::error::$NAME : regression de couverture — $LISTED tests listes, plancher=26. Si la baisse est intentionnelle, ajuster le plancher dans cette PR."
+            exit 1
+          fi
+          echo "OK : $NAME — $LISTED tests listes (plancher=26)."
