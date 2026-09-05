@@ -250,7 +250,7 @@ def _is_anchored_to_code(cells: list, i: int, top: int) -> bool:
 
     Sans ce test, le detecteur ne regardait que ce qui SUIT l'interp et
     signalait toute interp terminant sa section. FP mesures c.95 sur
-    `GenAI/Aspire/01` cell#12 (suit un code a 3 outputs) et cell#17 (7
+    `GenAI/Integrations-DotNet/Aspire/01` cell#12 (suit un code a 3 outputs) et cell#17 (7
     outputs), `Z3-Linq2Z3/09` cell#18 (5 outputs) — trois cellules
     correctement placees, qui bloquaient toute PR touchant un notebook.
 

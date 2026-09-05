@@ -130,4 +130,4 @@ jobs:
         if: always()
         run: |
           python scripts/notebook_tools/detect_markdown_rendering.py \
-                 --closure --quarto-yml _quarto.yml MyIA.AI.Notebooks | head -8 || true
+                 --closure --quarto-yml _quarto.yml MyIA.AI.Notebooks --max-findings 8

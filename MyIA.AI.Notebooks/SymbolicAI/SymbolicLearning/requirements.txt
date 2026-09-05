@@ -10,10 +10,13 @@
 # SL-8: rdflib + clingo (Knowledge Graphs, AMIE rule mining, ASP)
 # SL-9, SL-11: openai + python-dotenv (integration LLM reelle via .env)
 # SL-10: standard library (L* d'Angluin)
+# SL-12b: numpy + matplotlib (synthese logique spectrale : FWHT, PTF ternaires,
+#         Sinkhorn, Metropolis/parallel tempering -- CPU uniquement)
 
-# Scientific computing (SL-3, SL-5)
+# Scientific computing (SL-3, SL-5, SL-12b)
 numpy>=1.24
 scikit-learn>=1.2              # Information mutual comparison (SL-3)
+matplotlib>=3.7                # Spectres, cartes Sinkhorn, trajectoires de recherche (SL-12b)
 
 # Knowledge Graphs (SL-8)
 rdflib>=7.0                    # RDF graph manipulation, AMIE rule mining

@@ -14214,9 +14214,9 @@ FRACTRAN et le Game of Life ([Lean-16d](Lean-16d-Conway-Game-of-Life-Lean-Native
 
 **Suite logique** : [Lean-13 Kochen-Specker](Lean-13-Kochen-Specker.ipynb) — le théorème du libre arbitre de Conway-Kochen, entièrement prouvé (0 sorry).
 ",,,,,,,,61e030e0017b8090,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16f-Conway-Free-Will-Theorem.ipynb,48e8b04b,markdown,fr,8a13d46b654ba5aa,"# Lean-16f : Le Theoreme du Libre Arbitre (Conway-Kochen)
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16f-Conway-Free-Will-Theorem.ipynb,48e8b04b,markdown,fr,71f1a47dd4b4637d,"# Lean-16f : Le Theoreme du Libre Arbitre (Conway-Kochen)
 
-**Navigation** : [<< Lean-16e FRACTRAN](Lean-16e-Conway-FRACTRAN-Lean-Native.ipynb) | [Index](README.md) | [Lean-17a Noeuds >>](Lean-17-Knots-a-Conway-and-Proofs.ipynb)
+**Navigation** : [<< Lean-16e FRACTRAN](Lean-16e-Conway-FRACTRAN-Lean-Native.ipynb) | [Index](README.md) | [Lean-17a Noeuds >>](Lean-17a-Knots-Conway-Proofs.ipynb)
 
 **Kernel** : Python 3 (illustrations conceptuelles) + Lean 4 via WSL (exécution du port formel)
 
@@ -14260,7 +14260,7 @@ theoreme de libre arbitre lui-même :
 - Notions d'algebre lineaire (bases orthogonales) et de mecanique quantique elementaire (spin, intrication)
 - Notebooks Lean-1 a Lean-7 pour les aspects formels
 
-### Duree estimee : 60 minutes",,,,,,,,8a13d46b654ba5aa,,,,,,,,
+### Duree estimee : 60 minutes",,,,,,,,71f1a47dd4b4637d,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16f-Conway-Free-Will-Theorem.ipynb,2a96b075,markdown,fr,6f71448932b33d5e,"## Plan
 
 1. [Du theoreme de Kochen-Specker au libre arbitre](#1)
@@ -14789,7 +14789,7 @@ MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16f-Conway-Free-Will-Theorem.ipynb,b099af
 
 print(""Exercice a completer"")
 ",,,,,,,,36061c9d5507e68a,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16f-Conway-Free-Will-Theorem.ipynb,ff3a8ee8,markdown,fr,ef6479a8e7e0ca12,"## Resume
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16f-Conway-Free-Will-Theorem.ipynb,ff3a8ee8,markdown,fr,f79077230addfd58,"## Resume
 
 ### Concepts cles
 
@@ -14830,9 +14830,9 @@ libre arbitre humain ou la conscience.
 
 ---
 
-**Navigation** : [<< Lean-16e FRACTRAN](Lean-16e-Conway-FRACTRAN-Lean-Native.ipynb) | [Index](README.md) | [Lean-17a Noeuds >>](Lean-17-Knots-a-Conway-and-Proofs.ipynb)
-",,,,,,,,ef6479a8e7e0ca12,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17-Knots-a-Conway-and-Proofs.ipynb,ed9b9067,markdown,fr,85ceb7132755947e,"# Lean 17a — Conway, les Nœuds et la Preuve de Piccirillo
+**Navigation** : [<< Lean-16e FRACTRAN](Lean-16e-Conway-FRACTRAN-Lean-Native.ipynb) | [Index](README.md) | [Lean-17a Noeuds >>](Lean-17a-Knots-Conway-Proofs.ipynb)
+",,,,,,,,f79077230addfd58,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb,ed9b9067,markdown,fr,2fb5ece9404a4ffd,"# Lean 17a — Conway, les Nœuds et la Preuve de Piccirillo
 
 **Série** : SymbolicAI / Lean — Knots Theory (**17a**)
 
@@ -14849,8 +14849,8 @@ en moins d'une semaine (2018, Annals of Mathematics 2020).
 4. **Tye Lidman (2026)** — Unknotting number de 11n102
 5. **Vers la formalisation Lean** — Le scaffolding `knot_lean/`
 
-**Notebook compagnon** : `Lean-17-Knots-b-Invariants-Companion.ipynb` — calcul effectif des invariants via SnapPy/SageMath.",,,,,,,,85ceb7132755947e,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17-Knots-a-Conway-and-Proofs.ipynb,33657213,markdown,fr,2f10ee255df2edb0,"## 1. Qu'est-ce qu'un nœud mathématique ?
+**Notebook compagnon** : `Lean-17b-Knots-Invariants-Companion.ipynb` — calcul effectif des invariants via SnapPy/SageMath.",,,,,,,,2fb5ece9404a4ffd,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb,33657213,markdown,fr,2f10ee255df2edb0,"## 1. Qu'est-ce qu'un nœud mathématique ?
 
 Un **nœud** est un plongement du cercle $S^1$ dans la sphère $S^3$
 (ou $\mathbb{R}^3$). Deux nœuds sont **équivalents** s'ils sont
@@ -14862,7 +14862,7 @@ Le théorème de Reidemeister (1927) dit que deux diagrammes de nœuds
 croisements) représentent le même nœud si et seulement si on peut passer
 de l'un à l'autre par une suite finie de **3 mouvements de Reidemeister**
 et des isotopies planaires.",,,,,,,,2f10ee255df2edb0,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17-Knots-a-Conway-and-Proofs.ipynb,b118166d,code,fr,1487c2182de4096c,"import numpy as np
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb,b118166d,code,fr,1487c2182de4096c,"import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.patches import FancyArrowPatch
 
@@ -14905,7 +14905,7 @@ plt.suptitle('Les trois premiers nœuds (par nombre de croisements)',
 plt.tight_layout()
 plt.savefig('knot_basics.png', dpi=150, bbox_inches='tight')
 plt.show()",,,,,,,,1487c2182de4096c,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17-Knots-a-Conway-and-Proofs.ipynb,f4211205,markdown,fr,0654ac7a228d1104,"### Invariants de nœuds
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb,f4211205,markdown,fr,0654ac7a228d1104,"### Invariants de nœuds
 
 Un **invariant** est une propriété/quantité identique pour tous les nœuds
 équivalents. Si un invariant diffère entre deux nœuds, ils sont
@@ -14923,7 +14923,7 @@ nécessairement distincts.
 La **3-colorabilité** est l'invariant le plus simple : peut-on colorer
 les brins du diagramme avec 3 couleurs, de sorte qu'à chaque croisement
 les 3 brins soient soit tous de la même couleur, soit tous différents ?",,,,,,,,0654ac7a228d1104,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17-Knots-a-Conway-and-Proofs.ipynb,125e75d9,code,fr,8b6da66a845122a2,"# Demonstrate tricolorability of the trefoil
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb,125e75d9,code,fr,8b6da66a845122a2,"# Demonstrate tricolorability of the trefoil
 fig, ax = plt.subplots(figsize=(8, 6))
 
 # Simplified trefoil with color segments
@@ -14948,7 +14948,7 @@ ax.set_aspect('equal')
 plt.tight_layout()
 plt.savefig('trefoil_tricolor.png', dpi=150, bbox_inches='tight')
 plt.show()",,,,,,,,8b6da66a845122a2,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17-Knots-a-Conway-and-Proofs.ipynb,de5f7fc1,markdown,fr,ab9e85bcfbe6d70a,"### Exercice 1 — La règle de Fox à un croisement
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb,de5f7fc1,markdown,fr,ab9e85bcfbe6d70a,"### Exercice 1 — La règle de Fox à un croisement
 
 La **3-coloration de Fox** est l'invariant démontré ci-dessus : on colorie les
 *brins* (arêtes) d'un diagramme de nœud avec 3 couleurs $\{0, 1, 2\}$. La règle
@@ -14963,7 +14963,7 @@ soit **tous de la même couleur**, soit **tous de couleurs différentes**.
 **Étape 1 :** construire l'ensemble des 3 couleurs.
 **Étape 2 :** retourner `True` si sa taille est $1$ ou $3`, `False` sinon.
 ",,,,,,,,ab9e85bcfbe6d70a,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17-Knots-a-Conway-and-Proofs.ipynb,b7450897,code,fr,76045b5003ffa575,"def fox_rule_satisfied(c1, c2, c3):
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb,b7450897,code,fr,76045b5003ffa575,"def fox_rule_satisfied(c1, c2, c3):
     # TODO etudiant : les 3 couleurs c1, c2, c3 (chacune dans {0,1,2}) satisfont
     # la regle de Fox ssi elles sont toutes egales OU toutes differentes.
     # Indice : len({c1, c2, c3}) est dans {1, 2, 3}.
@@ -14977,7 +14977,7 @@ MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17-Knots-a-Conway-and-Proofs.ipynb,b74508
 # assert fox_rule_satisfied(0, 0, 1) is False     # deux egales -> interdit
 # print(""Exercice 1 : OK"")
 ",,,,,,,,76045b5003ffa575,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17-Knots-a-Conway-and-Proofs.ipynb,216d4270,markdown,fr,3681845e2bc6d611,"## 2. Le nœud de Conway (11n34)
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb,216d4270,markdown,fr,3681845e2bc6d611,"## 2. Le nœud de Conway (11n34)
 
 John Conway a découvert ce nœud en développant sa **notation de Conway**
 pour énumérer les nœuds. Il apparaît dans les tables de Rolfsen comme
@@ -14992,7 +14992,7 @@ pour énumérer les nœuds. Il apparaît dans les tables de Rolfsen comme
 Le nœud de Conway est un **mutant** du nœud de Kinoshita-Terasaka (11n42).
 La mutation préserve le polynôme d'Alexander, le polynôme de Jones, le
 genre... mais pas nécessairement la sliceness lisse !",,,,,,,,3681845e2bc6d611,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17-Knots-a-Conway-and-Proofs.ipynb,1c3fc3d5,code,fr,866eb296f7d74ccf,"# Visualize the Conway knot (schematic)
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb,1c3fc3d5,code,fr,866eb296f7d74ccf,"# Visualize the Conway knot (schematic)
 fig, axes = plt.subplots(1, 2, figsize=(14, 6))
 
 # Left: Conway knot (simplified representation)
@@ -15024,7 +15024,7 @@ plt.suptitle('Conway ↔ Kinoshita-Terasaka : mutants, même Alexander, pas mêm
 plt.tight_layout()
 plt.savefig('conway_vs_kt.png', dpi=150, bbox_inches='tight')
 plt.show()",,,,,,,,866eb296f7d74ccf,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17-Knots-a-Conway-and-Proofs.ipynb,ce7290a8,markdown,fr,9015cb77a41c138a,"### Exercice 2 — Coloration propre sur tout le diagramme
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb,ce7290a8,markdown,fr,9015cb77a41c138a,"### Exercice 2 — Coloration propre sur tout le diagramme
 
 Un **PD-code** (Planar Diagram) décrit un nœud comme une liste de croisements,
 chacun une liste de 4 labels d'arêtes (le sur-brin apparaît deux fois). Une
@@ -15040,7 +15040,7 @@ l'Exercice 1 (taille $1$ ou $3$).
 **Étape 1 :** boucler sur chaque crossing de pd_code.
 **Étape 2 :** retourner False dès qu'un crossing a un ensemble de couleurs de taille 2.
 ",,,,,,,,9015cb77a41c138a,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17-Knots-a-Conway-and-Proofs.ipynb,6f2816f2,code,fr,8ee5ac94bc357487,"def is_proper_coloring(pd_code, coloring):
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb,6f2816f2,code,fr,8ee5ac94bc357487,"def is_proper_coloring(pd_code, coloring):
     # TODO etudiant : retourner True ssi chaque crossing de pd_code est Fox-valide.
     # pd_code : liste de crossings, chacun une liste de 4 labels d'arete.
     # coloring : dict {label: couleur dans {0,1,2}}.
@@ -15056,7 +15056,7 @@ MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17-Knots-a-Conway-and-Proofs.ipynb,6f2816
 # assert is_proper_coloring([[1, 2, 3, 4]], {1: 0, 2: 0, 3: 1, 4: 0}) is False  # taille 2
 # print(""Exercice 2 : OK"")
 ",,,,,,,,8ee5ac94bc357487,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17-Knots-a-Conway-and-Proofs.ipynb,355a68b2,markdown,fr,6c27a3e72d461bfa,"## 3. Lisa Piccirillo et la preuve (2018, Annals 2020)
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb,355a68b2,markdown,fr,6c27a3e72d461bfa,"## 3. Lisa Piccirillo et la preuve (2018, Annals 2020)
 
 ### L'histoire
 
@@ -15090,7 +15090,7 @@ Piccirillo n'a pas attaqué le nœud de Conway directement. Sa stratégie :
 > « It took Lisa Piccirillo less than a week to answer a long-standing
 > question about a strange knot discovered over half a century ago. »
 > — Quanta Magazine, 2020",,,,,,,,6c27a3e72d461bfa,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17-Knots-a-Conway-and-Proofs.ipynb,a7845962,code,fr,6b361a77cde925b8,"# Schematic of the trace companion strategy
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb,a7845962,code,fr,6b361a77cde925b8,"# Schematic of the trace companion strategy
 fig, ax = plt.subplots(figsize=(12, 7))
 ax.set_xlim(0, 10)
 ax.set_ylim(0, 7)
@@ -15148,7 +15148,7 @@ ax.set_title('La stratégie de Piccirillo : le trace companion',
 plt.tight_layout()
 plt.savefig('piccirillo_strategy.png', dpi=150, bbox_inches='tight')
 plt.show()",,,,,,,,6b361a77cde925b8,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17-Knots-a-Conway-and-Proofs.ipynb,794d7f3c,markdown,fr,9604b3caf7bd4696,"## 4. Tye Lidman — Unknotting number de 11n102 (2026)
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb,794d7f3c,markdown,fr,9604b3caf7bd4696,"## 4. Tye Lidman — Unknotting number de 11n102 (2026)
 
 Le papier de **Tye Lidman** ([arXiv:2606.12431](https://arxiv.org/abs/2606.12431))
 est un exemple frappant de **preuve courte mais profonde** : **une seule page**
@@ -15190,7 +15190,7 @@ par l'absurde.
 | Stratégie | Contourner le nœud → trace companion | Calcul direct → contradiction algébrique |
 | Public | Annals of Mathematics | Preprint 2026 |
 | Formalisation Lean | Décennies | Décennies |",,,,,,,,9604b3caf7bd4696,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17-Knots-a-Conway-and-Proofs.ipynb,b9f786fc,markdown,fr,de7e81beb1a48088,"## 5. Vers la formalisation Lean — le projet `knot_lean/`
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb,b9f786fc,markdown,fr,de7e81beb1a48088,"## 5. Vers la formalisation Lean — le projet `knot_lean/`
 
 Le projet `MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean/` scaffolding la
 théorie des nœuds en Lean 4, avec des sorry stratégiques commentés.
@@ -15332,7 +15332,7 @@ caractérisation §9.4-9.6 a circonscrit.
 > *cross-position*.
 
 ",,,,,,,,de7e81beb1a48088,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17-Knots-a-Conway-and-Proofs.ipynb,f35ef025,code,fr,8ae61b5111180df2,"# Summary: the Conway knot story
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb,f35ef025,code,fr,8ae61b5111180df2,"# Summary: the Conway knot story
 fig, ax = plt.subplots(figsize=(12, 4))
 ax.set_xlim(0, 12)
 ax.set_ylim(0, 4)
@@ -15360,7 +15360,7 @@ ax.set_title('Chronologie : nœud de Conway → de la découverte à la résolut
 plt.tight_layout()
 plt.savefig('conway_timeline.png', dpi=150, bbox_inches='tight')
 plt.show()",,,,,,,,8ae61b5111180df2,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17-Knots-a-Conway-and-Proofs.ipynb,d4cf34d4,markdown,fr,3eaee08e5f9519d1,"### Exercice 3 — Le nœud est-il tricoloriable ?
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb,d4cf34d4,markdown,fr,3eaee08e5f9519d1,"### Exercice 3 — Le nœud est-il tricoloriable ?
 
 Un nœud est **3-coloriable** s'il existe une coloration propre utilisant
 **au moins 2 couleurs distinctes** (la coloration triviale toute-mono ne compte
@@ -15378,7 +15378,7 @@ $3^{\text{(nombre d'arêtes)}}$ colorations possibles).
 **Étape 2 :** iterer sur les colorations candidates ; retourner True a la première valide.
 **Étape 3 :** si aucune, retourner False.
 ",,,,,,,,3eaee08e5f9519d1,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17-Knots-a-Conway-and-Proofs.ipynb,bb62595e,code,fr,6a8be68be0ebba88,"import itertools
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb,bb62595e,code,fr,6a8be68be0ebba88,"import itertools
 
 def is_tricolorable(pd_code):
     # TODO etudiant : retourner True ssi il existe une coloration propre non-triviale.
@@ -15395,7 +15395,7 @@ def is_tricolorable(pd_code):
 # assert is_tricolorable(trefoil_pd) is True
 # print(""Exercice 3 : OK"")
 ",,,,,,,,6a8be68be0ebba88,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17-Knots-a-Conway-and-Proofs.ipynb,5fd5d2e0,markdown,fr,c6f45cda789b35c5,"## Références
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb,5fd5d2e0,markdown,fr,c6f45cda789b35c5,"## Références
 
 1. **Piccirillo, L.** (2018/2020). *The Conway knot is not slice*. Annals of Mathematics, 191(2). [arXiv:1808.02923](https://arxiv.org/abs/1808.02923)
 2. **Lidman, T.** (2026). *The unknotting number of 11n102 is 2*. [arXiv:2606.12431](https://arxiv.org/abs/2606.12431)
@@ -15408,7 +15408,7 @@ MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17-Knots-a-Conway-and-Proofs.ipynb,5fd5d2
 9. **Prathamesh, T.V.H.** (2015). *Formalising Knot Theory in Isabelle/HOL*. LNCS 9250.
 10. **shua/leanknot** — [Formalisation Lean 4 (branche lean4)](https://github.com/shua/leanknot)
 11. **Lean AI Leaderboard** — [Conway knot not smoothly slice](https://lean-lang.org/eval/problems/conway_knot_not_smoothly_slice/)",,,,,,,,c6f45cda789b35c5,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17-Knots-a-Conway-and-Proofs.ipynb,1e2d218c,markdown,fr,fcfc4a0c5460fa14,"## 6. Prérequis Mathlib — La frontière de la formalisation
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb,1e2d218c,markdown,fr,fcfc4a0c5460fa14,"## 6. Prérequis Mathlib — La frontière de la formalisation
 
 Le fichier `knot_lean/Knots/MathlibPrerequisites.lean` documente les **prérequis Mathlib** manquants pour résoudre chaque sorry du projet. C'est une **roadmap honnête** de ce qui serait nécessaire pour formaliser la théorie des nœuds dans Lean 4.
 
@@ -15446,7 +15446,7 @@ df.style.set_properties(**{'text-align': 'left'}).set_table_styles([{
     'props': [('background-color', '#f0f0f0'), ('font-weight', 'bold')]
 }])
 ```",,,,,,,,fcfc4a0c5460fa14,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17-Knots-a-Conway-and-Proofs.ipynb,2ef1cef3,markdown,fr,b6aeef58121e8fa0,"## 4.2 Résultat de Lidman (2026) — Le formalisme Lean
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb,2ef1cef3,markdown,fr,b6aeef58121e8fa0,"## 4.2 Résultat de Lidman (2026) — Le formalisme Lean
 
 Le fichier `knot_lean/Knots/Lidman.lean` formalise le résultat de **Tye Lidman** sur l'unknotting number du nœud 11n102 ([arXiv:2606.12431](https://arxiv.org/abs/2606.12431)).
 
@@ -15502,7 +15502,7 @@ D'après le commentaire `MathlibPrerequisites` dans Lidman.lean :
 - Némethi's algorithm for HF of plumbed manifolds
 
 **Estimation** : **décennies** avant que ces infrastructures existent dans Mathlib.",,,,,,,,b6aeef58121e8fa0,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17-Knots-a-Conway-and-Proofs.ipynb,7cdf79fe,markdown,fr,0035a8d9789d2b15,"## 4.1 Preuve de Piccirillo (2020) — Le formalisme Lean
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb,7cdf79fe,markdown,fr,dcfc62f7bf8ab331,"## 4.1 Preuve de Piccirillo (2020) — Le formalisme Lean
 
 Le fichier `knot_lean/Knots/Conway.lean` formalise le résultat de **Lisa Piccirillo** sur le nœud de Conway ([arXiv:1808.02923](https://arxiv.org/abs/1808.02923), Annals of Mathematics 2020).
 
@@ -15603,7 +15603,7 @@ D'après les commentaires dans Conway.lean, la preuve nécessiterait :
 
 1. **Trace X_K d'un nœud** — 4-variété obtenue en attachant un 2-handle à B⁴ le long de K avec framing 0
 2. **Trace embedding lemma** — si K slice ↔ ∂D = K → X_K s'embed dans B⁴
-3. **Nœud compagnon K\*** de Piccirillo** — même trace que Conway
+3. **Nœud compagnon K\* de Piccirillo** — même trace que Conway
 4. **Invariant s de Rasmussen** — calculé depuis Khovanov homology
 5. **s(K\*) ≠ 0** → K\* pas slice → Conway pas slice
 
@@ -15615,8 +15615,8 @@ D'après les commentaires dans Conway.lean, la preuve nécessiterait :
 - Trace companion construction (Kirby calculus)
 - Freedman's topological surgery (topological machinery)
 
-**Estimation** : **décennies** avant que ces infrastructures existent dans Mathlib.",,,,,,,,0035a8d9789d2b15,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17-Knots-a-Conway-and-Proofs.ipynb,f1c54358,markdown,fr,b7e366a18f81b94a,"### Interprétation : La structure du résultat formalisé
+**Estimation** : **décennies** avant que ces infrastructures existent dans Mathlib.",,,,,,,,dcfc62f7bf8ab331,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb,f1c54358,markdown,fr,b7e366a18f81b94a,"### Interprétation : La structure du résultat formalisé
 
 **Sortie obtenue** : Un extrait structuré de Conway.lean montrant la chaîne de définitions et théorèmes.
 
@@ -15640,7 +15640,7 @@ MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17-Knots-a-Conway-and-Proofs.ipynb,f1c543
 5. **Les prérequis sont documentés** — chaque sorry a un commentaire détaillant ce qui manque (Burau representation pour Alexander, 4-manifolds pour slice, Khovanov pour Rasmussen, etc.). C'est une **roadmap précise** de ce qui serait nécessaire pour formaliser Piccirillo.
 
 > **Note technique** : Le commentaire ""Lean AI Leaderboard"" dans les théorèmes `conway_not_smoothly_slice` et `conway_topologically_slice` indique que ces résultats sont **suivis par la communauté Lean** (https://lean-lang.org/eval/problems/). Conway.lean fournit le scaffolding pour un effort de formalisation communautaire futur.",,,,,,,,b7e366a18f81b94a,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17-Knots-a-Conway-and-Proofs.ipynb,f7774d18,markdown,fr,7d2d4a93a15ed2c3,"### Interprétation : Une page, une profondeur extrême
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb,f7774d18,markdown,fr,7d2d4a93a15ed2c3,"### Interprétation : Une page, une profondeur extrême
 
 **Sortie obtenue** : Un extrait structuré de Lidman.lean montrant les définitions et théorèmes formalisés.
 
@@ -15661,7 +15661,7 @@ MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17-Knots-a-Conway-and-Proofs.ipynb,f7774d
 4. **Le contraste avec Piccirillo** — les deux preuves (Lidman 2026, Piccirillo 2020) sont ""short but deep"". Lidman = 1 page mais Heegaard Floer + 5 outils majeurs. Piccirillo = 20 pages mais stratégie indirecte (trace companion) qui contourne le nœud lui-même. **Les deux nécessitent des décennies de travail Mathlib.**
 
 > **Note technique** : Le `sorry` sur `knot_11n102.diagram` indique que même le **PD-code de 11n102** n'est pas encore entré (TODO: from KnotInfo). Le scaffolding commence au niveau des définitions combinatoires — la partie topologique est entièrement future.",,,,,,,,7d2d4a93a15ed2c3,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17-Knots-a-Conway-and-Proofs.ipynb,b8197cdd,code,fr,3556b5ba36ffe9ce,"# Render the Mathlib prerequisites table
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb,b8197cdd,code,fr,3556b5ba36ffe9ce,"# Render the Mathlib prerequisites table
 import pandas as pd
 
 prereqs = [
@@ -15687,7 +15687,7 @@ styled_df = df.style.set_properties(**{'text-align': 'left'}).set_table_styles([
 }])
 
 styled_df",,,,,,,,3556b5ba36ffe9ce,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17-Knots-a-Conway-and-Proofs.ipynb,56a3afc3,markdown,fr,6824d3f6dd43b7e3,"### Interprétation : Le message du tableau
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb,56a3afc3,markdown,fr,6824d3f6dd43b7e3,"### Interprétation : Le message du tableau
 
 **Sortie obtenue** : Un tableau à 11 entrées classées par tiers de difficulté.
 
@@ -15708,7 +15708,7 @@ MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17-Knots-a-Conway-and-Proofs.ipynb,56a3af
 4. **Tier 3 est le mur** — le théorème de Reidemeister (ambient isotopy ↔ Reidemeister equivalence) nécessite PL topology, general position, Alexander's theorem. Piccirillo (Khovanov homology, Rasmussen s-invariant, 4-manifolds), Lidman (Heegaard Floer homology, d-invariants), Freedman (topological surgery) sont **au-delà de l'horizon actuel**.
 
 > **Note technique** : Ce tableau est la traduction directe du contenu de `MathlibPrerequisites.lean` sections 1-3. Chaque entrée correspond à un `theorem ..._prerequisites : True := trivial` qui documente ce qui manque. Les sorry dans les fichiers `.lean` correspondants pointent vers ces entrées.",,,,,,,,6824d3f6dd43b7e3,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17-Knots-a-Conway-and-Proofs.ipynb,98850f15,markdown,fr,e9a3261902821ce9,"### Exercice 4 — Compter les sorries dans un fichier Lean
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb,98850f15,markdown,fr,e9a3261902821ce9,"### Exercice 4 — Compter les sorries dans un fichier Lean
 
 Les fichiers `knot_lean/Knots/*.lean` contiennent des marqueurs `sorry` indiquant les preuves manquantes. Compter ces sorries donne une **mesure de complétude** du scaffolding.
 
@@ -15720,7 +15720,7 @@ et comptez `sorry` uniquement s'il n'est pas précédé de `--` sur la même lig
 **Étape 2 :** boucler sur les lignes ; pour chaque ligne, ignorer si 'sorry' est dans un commentaire.
 **Étape 3 :** retourner le total.
 </cell_id_edit_mode",,,,,,,,e9a3261902821ce9,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17-Knots-a-Conway-and-Proofs.ipynb,0c96746f,code,fr,a83423320fd149bb,"def count_sorries_in_lean_file(filepath):
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb,0c96746f,code,fr,a83423320fd149bb,"def count_sorries_in_lean_file(filepath):
     # TODO etudiant : compter les occurrences de 'sorry' hors commentaires.
     # Indice : ouvrir le fichier, boucler sur les lignes, ignorer les lignes
     #          où 'sorry' est apres '--' (commentaire Lean).
@@ -15737,7 +15737,7 @@ MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17-Knots-a-Conway-and-Proofs.ipynb,0c9674
 # assert count_sorries_in_lean_file(conway_path) > 0  # Conway.lean a des sorries
 # print(""Exercice 4 : OK"")
 ",,,,,,,,a83423320fd149bb,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17-Knots-a-Conway-and-Proofs.ipynb,86e3ddf4,markdown,fr,ce80b130dc5a20a6,"### Exercice 5 — Extraire les théorèmes d'un fichier Lean
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb,86e3ddf4,markdown,fr,fdd7cdc1ef444f43,"### Exercice 5 — Extraire les théorèmes d'un fichier Lean
 
 Les fichiers Lean contiennent des définitions de théorèmes avec leur signature. Extraire ces signatures permet de comprendre ce qui est formalisé.
 
@@ -15749,10 +15749,10 @@ et la signature (texte entre ':' et ':='). Utilisez les expressions régulières
 **Étape 2 :** boucler sur les lignes, appliquer la regex, accumuler les matches.
 **Étape 3 :** retourner la liste des (nom, signature).
 
----
+***
 
-**Navigation** : [<< Lean-16f — Conway Free-Will](Lean-16f-Conway-Free-Will-Theorem.ipynb) | [Index](README.md) | [Lean-17b — Invariants >>](Lean-17-Knots-b-Invariants-Companion.ipynb)",,,,,,,,ce80b130dc5a20a6,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17-Knots-a-Conway-and-Proofs.ipynb,cc723c8c,code,fr,0e6e6824e7bdc06c,"import re
+**Navigation** : [<< Lean-16f — Conway Free-Will](Lean-16f-Conway-Free-Will-Theorem.ipynb) | [Index](README.md) | [Lean-17b — Invariants >>](Lean-17b-Knots-Invariants-Companion.ipynb)",,,,,,,,fdd7cdc1ef444f43,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb,cc723c8c,code,fr,0e6e6824e7bdc06c,"import re
 
 def extract_theorem_signatures(filepath):
     # TODO etudiant : extraire les (nom, signature) des theoremes Lean.
@@ -29838,7 +29838,7 @@ La nuance `sameSet` vs `=` est importante : `step` réordonne la grille (via `fi
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16d-Conway-Game-of-Life-Lean-Native.ipynb,a4-interp-glider,markdown,fr,f19810daf3802f47,"**Interprétation.** `#eval sameSet (evolve glider 4) (translate 1 1 glider)` renvoie `true` : après **4 générations**, le planeur coïncide (ensemblistement) avec sa propre translation de vecteur `(1, 1)`. Il s'est donc déplacé d'une case vers le sud-est. Contrairement aux oscillateurs — qui reviennent à leur point de départ — un **vaisseau** ne revient jamais à sa position initiale : il revient à sa *forme* translatée. C'est ce que capture la comparaison `evolve glider 4` contre `translate 1 1 glider` plutôt que contre `glider` lui-même.
 
 Cette translation diagonale est la signature du planeur : 4 pas pour avancer d'une case, soit une « vitesse » de *c/4* diagonale (le maximum pour un vaisseau de cette taille dans le Game of Life). C'est ce motif que les calculateurs à planeurs exploitent pour faire circuler de l'information.",,,,,,,,f19810daf3802f47,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17-Knots-a-Conway-and-Proofs.ipynb,f1a2b3c4,markdown,fr,988dc45fb10827e3,"### Représentations d’un nœud : PD, DT, Gauss, Conway
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb,f1a2b3c4,markdown,fr,988dc45fb10827e3,"### Représentations d’un nœud : PD, DT, Gauss, Conway
 
 Un même nœud admet plusieurs **représentations combinatoires** équivalentes. Chacune encode le diagramme (ses croisements et la connectivité des brins) sous un angle différent, utile pour un calcul d’invariant distinct. Le **nœud de Conway** $11n_{34}$ et le **trèfle** $3_1$ servent d’exemples — le trèfle (3 croisements) pour la lisibilité, Conway (11 croisements) pour le réalisme.
 
@@ -29852,7 +29852,7 @@ Un même nœud admet plusieurs **représentations combinatoires** équivalentes.
 **Pourquoi plusieurs représentations ?** Le PD-code est la forme native de la plupart des algorithmes de théorie des nœuds (graphe de Tait, homologie de Khovanov, polynôme de Jones). Le DT-code est la forme **compacte** de tabulation — la table de Hoste-Thistlethwaite-Weeks stocke des millions de nœuds ainsi. Le Gauss code est la forme la plus **géométrique**. La notation de Conway révèle la **structure de tangles**, clé pour la classification.
 
 La cellule suivante valide structurellement ces codes sur le trèfle et le nœud de Conway. La **conversion** PD $\to$ DT (re-étiquetage séquentiel le long du brin) est un exercice classique de théorie des nœuds.",,,,,,,,988dc45fb10827e3,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17-Knots-a-Conway-and-Proofs.ipynb,e5d6c7b8,code,fr,86004ed5432b1656,"# Validation structurelle des représentations de nœuds
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb,e5d6c7b8,code,fr,86004ed5432b1656,"# Validation structurelle des représentations de nœuds
 # (valeurs de référence katlas.org, non calculées par conversion — la conversion PD->DT est l'exercice)
 
 # PD-codes vérifiés depuis Lean-17b KNOT_ATLAS (source katlas.org)
@@ -29912,7 +29912,7 @@ for name, pd in [(""Trèfle (3_1)"", TREFOIL_PD), (""Conway (K11n34)"", CONWAY_P
 print(""\n"" + ""-"" * 62)
 print(""Lecture DT : [4,6,2] = paires (1,4)(3,6)(5,2) aux 3 croisements."")
 print(""IMPAIRES (1,3,5) = 1er passage du brin ; PAIRES (2,4,6) = 2e passage."")",,,,,,,,86004ed5432b1656,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17-Knots-a-Conway-and-Proofs.ipynb,interp-anchor-conway-extract,code,fr,49d093e80419bcff,"# Extrait structure de Conway.lean : la chaine de definitions et theoremes du resultat
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb,interp-anchor-conway-extract,code,fr,49d093e80419bcff,"# Extrait structure de Conway.lean : la chaine de definitions et theoremes du resultat
 import re
 
 src = open(""knot_lean/Knots/Conway.lean"", encoding=""utf-8"").read()
@@ -29930,7 +29930,7 @@ n_sorry = src.count(""sorry"")
 n_thm = sum(1 for l in lines if re.match(r""\s*(theorem|lemma)\b"", l))
 print(f""\nTotal : {n_thm} theoremes/lemmes declares, {n_sorry} occurrences de 'sorry'"")
 ",,,,,,,,49d093e80419bcff,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17-Knots-a-Conway-and-Proofs.ipynb,interp-anchor-lidman-extract,code,fr,5b412caa7d488961,"# Extrait structure de Lidman.lean : le resultat d'unknotting number de 11n102
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17a-Knots-Conway-Proofs.ipynb,interp-anchor-lidman-extract,code,fr,5b412caa7d488961,"# Extrait structure de Lidman.lean : le resultat d'unknotting number de 11n102
 import re
 
 src = open(""knot_lean/Knots/Lidman.lean"", encoding=""utf-8"").read()
@@ -29973,13 +29973,13 @@ for ii in range(len(i_vals)):
 plt.colorbar(im, ax=ax, label='rang')
 plt.tight_layout()
 plt.show()",,,,,,,,36358c092cfbfd51,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17c-Knots-Companion-Formel.ipynb,34287b8c,markdown,fr,0f1e679e16dee90e,"# Lean 17c — Le lake `knot_lean` par ses déclarations (compagnon formel)
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17c-Knots-Companion-Formel.ipynb,34287b8c,markdown,fr,05368096c77ff9f6,"# Lean 17c — Le lake `knot_lean` par ses déclarations (compagnon formel)
 
-Compagnon du **Lean-17** (« Conway, les Nœuds et la Preuve de Piccirillo »). Là où Lean-17 raconte l'histoire mathématique (Fox 3-colorabilité, mutants, Piccirillo 2020, Lidman 2026) et interroge `Conway.lean` et `Lidman.lean`, ce notebook interroge les modules que Lean-17 ne cite pas — **`Basic.lean`** (les structures fondamentales), **`Invariant.lean`** (la chaîne 3-colorabilité, 69 déclarations) et **`Reidemeister.lean`** (les moves R1/R2/R3 et leurs murs) — et mesure l'état de la formalisation : déclarations par module, sorries réels vs prose, axiomes admis.
+Compagnon du **Lean-17** (« Conway, les Nœuds et la Preuve de Piccirillo »). Là où Lean-17 raconte l'histoire mathématique (Fox 3-colorabilité, mutants, Piccirillo 2020, Lidman 2026) et interroge `Conway.lean` et `Lidman.lean`, ce notebook interroge les modules que Lean-17 ne cite pas — **`Basic.lean`** (les structures fondamentales), **`Invariant.lean`** (la chaîne 3-colorabilité, 71 déclarations), **`Reidemeister.lean`** (les moves R1/R2/R3 et leurs murs) et **`MathlibPrerequisites.lean`** (la feuille de route des 11 prérequis Mathlib) — et mesure l'état de la formalisation : déclarations par module, sorries réels vs prose, axiomes admis.
 
 Kernel Python par choix : le kernel natif `lean4-wsl` est gelé en attendant la mise à jour du binaire `repl` (#11874 — construit pour v4.30.0, lakes en v4.32.1). La lecture des sources reste réelle : chaque cellule ouvre le fichier `.lean` du lake et en extrait les déclarations, jamais une copie.
 
-Voir `knot_lean/README.md` pour l'état détaillé du corridor Reidemeister.",,,,,,,,0f1e679e16dee90e,,,,,,,,
+Voir `knot_lean/README.md` pour l'état détaillé du corridor Reidemeister.",,,,,,,,05368096c77ff9f6,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17c-Knots-Companion-Formel.ipynb,8ac57465,markdown,fr,90cd437bf2392df7,"## 1. Le lac : sept fichiers, deux langues
 
 Le lake suit la convention i18n #4980 : chaque module français a son sibling `_en` byte-identique sur le code, docstrings traduites. On inventorie les six modules FR et leurs miroirs.",,,,,,,,90cd437bf2392df7,,,,,,,,
@@ -30015,9 +30015,9 @@ for ln, kind, name in basic:
     print(f""  L{ln:>4}  {kind:9} {name}"")",,,,,,,,13fa71b01f48f3ad,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17c-Knots-Companion-Formel.ipynb,95c9a4f6,markdown,fr,bd7cdcf8979c549d,"### Lecture du résultat
 Les trois nœuds canoniques du lake sont des `def` explicites (`unknotDiagram`, `trefoilDiagram`, `figureEightDiagram` puis leurs objets `Knot`). `wf` (well-formed) est un `Bool` : la correction du PD-code est décidable et testée — `unknot_wf` en est la preuve minimale.",,,,,,,,bd7cdcf8979c549d,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17c-Knots-Companion-Formel.ipynb,923dfd00,markdown,fr,e7751b6fd8252fbf,"## 3. `Invariant.lean` — la chaîne 3-colorabilité (69 déclarations)
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17c-Knots-Companion-Formel.ipynb,923dfd00,markdown,fr,6eaea5f9ff89316d,"## 3. `Invariant.lean` — la chaîne 3-colorabilité (71 déclarations)
 
-C'est le cœur pédagogique du lake : la définition `IsTricolorable` et le théorème-cible `tricolorable_invariant` (« la 3-colorabilité de Fox est invariante par moves de Reidemeister »), avec sa décomposition en bras ascendants R1/R2 et ses murs nommés.",,,,,,,,e7751b6fd8252fbf,,,,,,,,
+C'est le cœur pédagogique du lake : la définition `IsTricolorable` et le théorème-cible `tricolorable_invariant` (« la 3-colorabilité de Fox est invariante par moves de Reidemeister »), avec sa décomposition en bras ascendants R1/R2 et ses murs nommés.",,,,,,,,6eaea5f9ff89316d,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17c-Knots-Companion-Formel.ipynb,f8e81189,code,fr,5f712e415a3664f6,"# Les declarations cibles de la chaine tricolorabilite
 inv = decls_of(LAKE / 'Knots' / 'Invariant.lean')
 print(f""Invariant.lean : {len(inv)} declarations\n"")
@@ -30064,9 +30064,9 @@ for ln, kind, name in reid:
     print(f""  L{ln:>4}  {kind:9} {name}{tag}"")",,,,,,,,60be93e8bc12fa84,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17c-Knots-Companion-Formel.ipynb,018a9781,markdown,fr,3d5be02b0ffa9e3b,"### Lecture du résultat
 Chaque move a sa `.symm` prouvée (la symétrie n'est pas une hypothèse cachée). `Reidemeister1Connected` vient avec ses théorèmes de comptage (`numEdges_succ`, `numCrossings_succ`) : le modèle R1-connecté rend le move *localement vérifiable* — c'est ce qui a permis le corridor.",,,,,,,,3d5be02b0ffa9e3b,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17c-Knots-Companion-Formel.ipynb,a29df633,markdown,fr,f3cf44973896b993,"## 6. Le tableau de bord du lake
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17c-Knots-Companion-Formel.ipynb,a29df633,markdown,fr,fe052b3da8860c6c,"## 7. Le tableau de bord du lake
 
-Synthèse : déclarations, sorries réels, et théorèmes-phare par module.",,,,,,,,f3cf44973896b993,,,,,,,,
+Synthèse : déclarations, sorries réels, et théorèmes-phare par module.",,,,,,,,fe052b3da8860c6c,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17c-Knots-Companion-Formel.ipynb,0e5f7024,code,fr,50056aa7302c9c5a,"# Tableau de bord : declarations / theoremes / sorries reels par module
 rows = []
 for p in modules:
@@ -30078,9 +30078,9 @@ df['sorries/decl'] = (df['sorries reels'] / df['declarations']).round(2)
 df",,,,,,,,50056aa7302c9c5a,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17c-Knots-Companion-Formel.ipynb,1b665535,markdown,fr,c5d9fb03f1ea1f59,"### Lecture du résultat
 `MathlibPrerequisites` porte le cadre sans sorry réel ; `Basic` est propre (0) ; la dette se concentre dans `Conway` (8) et le pair `Invariant`/`Reidemeister` (2+2). Le ratio sorries/declarations rend lisible où porte l'effort de preuve restant.",,,,,,,,c5d9fb03f1ea1f59,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17c-Knots-Companion-Formel.ipynb,45c0d3ad,markdown,fr,ace29ba6f45b1fa3,"## 7. Le miroir i18n — byte-identity du code
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17c-Knots-Companion-Formel.ipynb,45c0d3ad,markdown,fr,b150e5db746ea574,"## 8. Le miroir i18n — byte-identity du code
 
-La convention #4980 exige que seules les docstrings et commentaires diffèrent entre `Foo.lean` et `Foo_en.lean`. Vérification mesurée : on retire prose et commentaires des deux fichiers et on compare.",,,,,,,,ace29ba6f45b1fa3,,,,,,,,
+La convention #4980 exige que seules les docstrings et commentaires diffèrent entre `Foo.lean` et `Foo_en.lean`. Vérification mesurée : on retire prose et commentaires des deux fichiers et on compare.",,,,,,,,b150e5db746ea574,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17c-Knots-Companion-Formel.ipynb,3a6d4311,code,fr,d148b86d959ee82a,"# Byte-identity via l'instrument canonique du depot
 # (check_i18n_siblings.py : la byte-identity est MODULO les lignes qui
 # differentent legitimement -- import/open/namespace _en, suffixes _en --
@@ -30112,17 +30112,17 @@ MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17c-Knots-Companion-Formel.ipynb,8f805f22
 # Etape 1 : noms des declarations contenant 'wall'
 # Etape 2 : pour chacune, les 2 premieres lignes suivant la declaration
 pass",,,,,,,,8ec9a6f9b75560db,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17c-Knots-Companion-Formel.ipynb,c52ef1db,markdown,fr,15f72fe872c922af,"## Exercice 2 — Le compte qui fonde la baseline CI
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17c-Knots-Companion-Formel.ipynb,c52ef1db,markdown,fr,e2e226f42ec2e15b,"## Exercice 2 — Le compte qui fonde la baseline CI
 
-Le CI gate sur **14 sorries réels** (README, post-#11227). Recomptez avec l'instrument `real` ci-dessus et confrontez à la baseline.
+Le CI gate sur **13 sorries réels** (lean-knot.yml, post-#11958). Recomptez avec l'instrument `real` ci-dessus et confrontez à la baseline.
 
-**Indice :** la fonction `count_sorry(path, 'real')` est déjà écrite. Le résultat doit être comparé à la constante 14 — un écart dans un sens ou l'autre est un signal (régression ou baseline périmée).
+**Indice :** la fonction `count_sorry(path, 'real')` est déjà écrite. Le résultat doit être comparé à la constante 13 — un écart dans un sens ou l'autre est un signal (régression ou baseline périmée).
 
 **Étape 1 :** total real sur les six modules.  
-**Étape 2 :** afficher la comparaison au format `total vs baseline : OK/ECART`.",,,,,,,,15f72fe872c922af,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17c-Knots-Companion-Formel.ipynb,7e7f464b,code,fr,01a96fba8534a143,"# Exercice a completer : confrontez le compte real a la baseline CI (14)
-BASELINE = 14
-pass",,,,,,,,01a96fba8534a143,,,,,,,,
+**Étape 2 :** afficher la comparaison au format `total vs baseline : OK/ECART`.",,,,,,,,e2e226f42ec2e15b,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17c-Knots-Companion-Formel.ipynb,7e7f464b,code,fr,67bf7500724730c2,"# Exercice a completer : confrontez le compte real a la baseline CI (13)
+BASELINE = 13
+pass",,,,,,,,67bf7500724730c2,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17c-Knots-Companion-Formel.ipynb,3cb867c6,markdown,fr,acd1e38af40c66d5,"## Exercice 3 — Votre premier mur
 
 La discipline du lake : quand une preuve résiste, on ne met pas un `sorry` anonyme — on énonce le mur. Écrivez (en Python, pour l'analyse) un détecteur de sorries *anonymes* : un `sorry` dont le théorème enveloppant ne porte ni `wall` ni commentaire d'explication.
@@ -30138,16 +30138,18 @@ def anonymous_sorries(path):
     return None  # TODO etudiant
 
 pass",,,,,,,,3b53d155510f6867,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17c-Knots-Companion-Formel.ipynb,9454d97a,markdown,fr,b582298a3911b9fc,"## Références
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17c-Knots-Companion-Formel.ipynb,9454d97a,markdown,fr,d3825152d1f428a7,"## Références
 
 - Lake : [`knot_lean/`](knot_lean/) — README (état des sorries, corridor Reidemeister #8696, bi-implication R1 #11227)
-- Lean-17 : [`Lean-17-Knots-a-Conway-and-Proofs.ipynb`](Lean-17-Knots-a-Conway-and-Proofs.ipynb) — l'histoire mathématique (Fox, Piccirillo, Lidman)
+- Lean-17a : [`Lean-17a-Knots-Conway-Proofs.ipynb`](Lean-17a-Knots-Conway-Proofs.ipynb) — l'histoire mathématique (Fox, Piccirillo, Lidman)
 - Règles du dépôt : compte `sorry` réel via `scripts/lean/count_code_sorry.py` (jamais `grep -c`)
+- Feuille de route : `Knots/MathlibPrerequisites.lean` (Epic #2874, Phase 1) — les 11 prérequis tier par tier
+- Lean AI Leaderboard : [conway_knot_not_smoothly_slice](https://lean-lang.org/eval/problems/conway_knot_not_smoothly_slice/), [conway_knot_topologically_slice](https://lean-lang.org/eval/problems/conway_knot_topologically_slice/) — les cibles Tier 3
 - Piccirillo (2020), *The Conway knot is not slice*, Annals — via Lean-17 §3
-- Lidman (2026), unknotting number de 11n102 — via Lean-17 §5",,,,,,,,b582298a3911b9fc,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17c-Knots-Companion-Formel.ipynb,d34e7144,markdown,fr,6f7f5c1430be5274,"## Conclusion
+- Lidman (2026), unknotting number de 11n102 — via Lean-17 §5",,,,,,,,d3825152d1f428a7,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17c-Knots-Companion-Formel.ipynb,d34e7144,markdown,fr,a7fea6190fa4cd39,"## Conclusion
 
-Le lake `knot_lean` n'est pas un décor : 170 déclarations réelles, une dette de preuve **ciblée** (14 sorries réels sur 3 modules, dont 10 documentés hors-portée Mathlib), une chaîne 3-colorabilité décomposée en bras et murs nommés, un miroir i18n byte-identique. Le compagnon mesure ce que Lean-17 raconte : la formalisation avance en discipline — chaque mur est un théorème, chaque sorry restant est nommé et localisé.",,,,,,,,6f7f5c1430be5274,,,,,,,,
+Le lake `knot_lean` n'est pas un décor : 171 déclarations réelles, une dette de preuve **ciblée** (13 sorries réels sur 4 modules, dont 10 documentés hors-portée Mathlib), une chaîne 3-colorabilité décomposée en bras et murs nommés, un miroir i18n byte-identique. Le compagnon mesure ce que Lean-17 raconte : la formalisation avance en discipline — chaque mur est un théorème, chaque sorry restant est nommé et localisé.",,,,,,,,a7fea6190fa4cd39,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-19-Sendov-Complex-Analysis.ipynb,2d0ab3da,markdown,fr,b150683c461443e8,"# Lean-19 : La Conjecture de Sendov (preuve L. Mazur, digestion T. Tao, aout 2026) — Digestion pedagogique
 
 **Serie** : SymbolicAI / Lean — Digestions de resultats profonds
@@ -33267,3 +33269,307 @@ Le bloc analytique (gauche) introduit les notions `tendsto` (limite), `Continuou
 1. **Pourquoi les filtres** : ils unifient limite en un point, limite à l'infini, continuité, convergence de suites. Une fois le formalisme des filtres maîtrisé, tous les théorèmes de passage à la limite ont la même forme.
 2. **`HasDerivAt f f' x`** vs la définition ε-δ : Mathlib définit la dérivée via la limite du taux d'accroissement, puis prouve les règles (somme, produit, chaîne). En pratique, on applique `hasDerivAt_add`, `hasDerivAt_pow`, etc.
 3. **Pont direct** : Lean-14 (Finiteness) prouve la finitude des dérivées polynomiales — il utilise `HasDerivAt`, `polynomial_deriv`, et le catalogue analytique. Lean-12 (sensibilité) manipule la norme `‖·‖` et sa continuité. Cette section est le seuil d'entrée vers la partie haute : sans filtres ni `HasDerivAt`, les notebooks ≥12 sont inaccessibles.",,,,,,,,19a9c4a12296fde3,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17c-Knots-Companion-Formel.ipynb,25cbfad6,markdown,fr,0221b7a0d0367d35,"## 6. `MathlibPrerequisites.lean` — la feuille de route des 11 prérequis
+
+Ce module ne prouve rien — et c'est son rôle. Chacune de ses 11 déclarations est un théorème **volontairement vide** (`True := trivial`) : ce qui compte n'est pas l'énoncé mais la docstring au-dessus, qui documente **ce que Mathlib ne sait pas encore faire** pour tel résultat de théorie des nœuds (Epic #2874, Phase 1). Trois tiers de difficulté annoncent trois horizons : Tier 1 accessible (les cibles Phase 2), Tier 2 modéré (Alexander, Jones), Tier 3 approfondi (le théorème de Reidemeister, Piccirillo, Lidman, Freedman — les mêmes résultats que Lean-17 raconte historiquement).",,,,,,,,0221b7a0d0367d35,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17c-Knots-Companion-Formel.ipynb,46acbd06,code,fr,0163df936dadcdaa,"# Les 11 prerequis, extraits du fichier reel, avec tier / enjeu / reference
+mp_path = LAKE / 'Knots' / 'MathlibPrerequisites.lean'
+mp_text = mp_path.read_text(encoding='utf-8')
+
+print(f""MathlibPrerequisites.lean : {len(decls_of(mp_path))} declarations, {count_sorry(mp_path, 'real')} sorry reel\n"")
+
+rows = []
+tier, enjeu, ref = None, None, ''
+for line in mp_text.splitlines():
+    m = re.match(r'.*-!\s*## (Tier \d)\s*:\s*(\S+)', line)
+    if m:
+        tier = f""{m.group(1)} ({m.group(2)})""
+        continue
+    m = re.match(r'/--\s*(#\d+\s*:.*)', line)
+    if m:
+        enjeu = m.group(1)
+        continue
+    m = re.match(r'Reference\s*:\s*(.*)', line)
+    if m:
+        ref = m.group(1)
+        continue
+    dm = DECL_RE.match(line)
+    if dm:
+        rows.append([tier, dm.group(2), enjeu, ref])
+        enjeu, ref = None, ''
+
+for t, name, enjeu, ref in rows:
+    print(f""  {t:22} {name:42} {enjeu}"")
+    if ref:
+        print(f""  {'':22} {'':42} ref. {ref}"")
+print()
+df_mp = pd.DataFrame(rows, columns=['tier', 'declaration', 'enjeu', 'reference'])
+df_mp.groupby('tier', sort=False).size().rename('declarations').to_frame()",,,,,,,,0163df936dadcdaa,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17c-Knots-Companion-Formel.ipynb,4cc1f357,markdown,fr,1abf159be1d2fe13,"### Lecture du résultat
+
+Onze déclarations, **0 sorry réel** : l'instrument du dépôt (`count_code_sorry.py`) les classe « vacuous markers » — ce ne sont pas de la dette de preuve, ce sont de la **documentation formalisée**.
+
+Le **Tier 1** cible exactement la chaîne 3-colorabilité de §3 (bien-fondé des PD-codes, tricoloriable du trèfle, non-tricoloriable du nœud trivial, invariance R1/R2/R3) — la feuille de route a vieilli dans le bon sens : ce sont ces cibles que §3-§4 montrent en cours de réalisation (bras, murs nommés, sorry restants localisés).
+Le **Tier 2** prolonge le corridor de §5 : description formelle des moves, polynôme d'Alexander via Burau/Fox, polynôme de Jones via le crochet de Kauffman.
+Le **Tier 3** est l'horizon de recherche : le théorème de Reidemeister (isotopie ambiante ↔ moves) et le trio du nœud de Conway — Piccirillo (non lisse-slice), Freedman (topologiquement slice), Lidman (dénouement de 11n102) — les deux premiers inscrits au [Lean AI Leaderboard](https://lean-lang.org/eval/). Chronologie annoncée pour ce tier : « années à décennies ».
+
+La feuille de route et l'histoire racontée par Lean-17 se répondent : ce que Lean-17 présente comme résultats mathématiques établis (Piccirillo 2020, Lidman 2026), ce module l'écrit comme ce que Mathlib devrait construire pour qu'ils deviennent des théorèmes Lean.",,,,,,,,1abf159be1d2fe13,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-28-Munkres-Tribute.ipynb,6ce2107f,markdown,fr,e3ea00cca4087c98,"# Lean-28 : Hommage à James R. Munkres — le cours 18.901 dans Mathlib 4
+
+**Navigation** : [Index](README.md) | [<< Précédent](Lean-27-Coherence-et-Temoin.ipynb) | [Série Lean](README.md)
+
+> **Hommage à James R. Munkres (1930-2026).** Le MIT nous a quittés à l'été 2026 d'un mathématicien que
+> les obituaires décrivent comme « *Mathematician, musician and gardener* ». Deux visages nous
+> intéressent ici et dans les issues sœurs : le **topologue** — professeur au MIT de 1960 à 2000, il a
+> enseigné son cours signature **18.901 Introduction to Topology** jusqu'en 2015, et son manuel
+> *Topology* (2e éd., 2000) reste LA référence mondiale du premier cours de topologie générale — et le
+> **musicien**, honoré dans le volet 2/3 de cette série. Ce notebook honore le premier : il parcourt les
+> notions du cours 18.901 telles qu'elles vivent aujourd'hui dans `Mathlib.Topology.*`, chaque concept
+> interrogé par le compilateur Lean lui-même.
+
+C'est le troisième volet d'une série hommage : **1/3** l'algorithme de Kuhn-Munkres
+([lake `assignment_lean` + GT-27](https://github.com/jsboige/CoursIA/issues/12598)), **2/3** le
+voice leading musical ([Lean — non : notebook appli VoiceLeading](../../Search/Applications/CSP/App-21-VoiceLeading.ipynb),
+[issue](https://github.com/jsboige/CoursIA/issues/12599)), **3/3** ce Tribute topologique.
+L'ordre est celui des vies de Munkres : l'algoriste (avec Kuhn), le musicien, le topologue.",,,,,,,,e3ea00cca4087c98,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-28-Munkres-Tribute.ipynb,57e9675c,markdown,fr,83ed68b561b89b48,"## Introduction : pourquoi Munkres dans une série Lean ?
+
+James Raymond Munkres (1930-2026) a fait sa carrière au MIT, où sa recherche portait sur la
+**topologie différentielle** (son *Elementary Differential Topology*, 1966, est un classique du
+domaine). Mais c'est par son manuel d'enseignement qu'il a marqué des générations : *Topology :
+A First Course* (1975), devenu *Topology* (2e édition, 2000) — la porte d'entrée standard de la
+topologie générale, structurée autour des espaces topologiques, des axiomes de séparation, de la
+compacité et de la connexité. Le cours 18.901 qu'il a enseigné jusqu'en 2015 suit exactement ce fil.
+
+Ce notebook fait ce que fait la série : **interroger le concept directement dans Mathlib**. Chaque
+section prend une notion du cours de Munkres, la déclare (`#check`), la met en théorème (`example`
+prouvé), et en certifie la provenance (`#print axioms` — les preuves de ce Tribute ne dépendent
+d'aucun axiome). Le notebook s'exécute avec le kernel `lean4-wsl` sur le lake `mathlib_examples`
+(toolchain v4.32.1) : toutes les sorties que vous voyez sont des sorties réelles du compilateur Lean.
+
+**Avertissement de vocabulaire** : ne pas confondre avec la « topologie des jeux »
+([GameTheory-3-Topology2x2-Csharp.ipynb](../../GameTheory/GameTheory-03-Topology2x2-Csharp.ipynb)) —
+celle-là est la structure du graphe des issues d'un jeu, rien à voir avec la topologie générale de
+Munkres.",,,,,,,,83ed68b561b89b48,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-28-Munkres-Tribute.ipynb,6b42a55d,code,fr,3eec98c9f6f9902f,"-- Toutes les importations de la session (tete de session, pattern Lean-26) :
+-- les cinq chapitres du cours 18.901 + Closure pour les dualites adhérence/intérieur.
+import Mathlib.Topology.Basic
+import Mathlib.Topology.Continuous
+import Mathlib.Topology.Separation.Hausdorff
+import Mathlib.Topology.Compactness.Compact
+import Mathlib.Topology.Connected.Basic
+import Mathlib.Topology.Closure",,,,,,,,3eec98c9f6f9902f,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-28-Munkres-Tribute.ipynb,78d0fdc4,markdown,fr,3d27062f9da95175,"## 1. Espaces topologiques : les trois axiomes
+
+Le chapitre 2 de Munkres commence par la définition : une **topologie** sur un ensemble $X$ est une
+collection $\mathcal{T}$ de parties de $X$ vérifiant trois axiomes — $\emptyset$ et $X$ sont
+ouverts, toute réunion d'ouverts est ouverte, toute intersection **finie** d'ouverts est ouverte.
+Dans Mathlib, `TopologicalSpace X` est une classe qui emballe exactement ces trois axiomes, et le
+prédicat `IsOpen s` (avec `s : Set X`) dit que $s \in \mathcal{T}$.",,,,,,,,3d27062f9da95175,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-28-Munkres-Tribute.ipynb,676dd729,code,fr,422b6df1d1fa4027,"-- Les trois axiomes de Munkres §12, tels que Mathlib les énonce.
+variable {X : Type*} [TopologicalSpace X] {s t : Set X}
+
+#check @TopologicalSpace          -- la classe : les trois axiomes emballés
+#check @IsOpen                    -- s ∈ T
+#check @isOpen_univ               -- axiome 1 : X est ouvert
+#check @isOpen_empty              -- axiome 1 (bis) : ∅ est ouvert
+#check @isOpen_iUnion             -- axiome 2 : réunion quelconque d'ouverts
+#check @IsOpen.inter              -- axiome 3 : intersection finie (deux à deux)
+
+-- Et ils s'utilisent : la preuve qui suit est une application directe des axiomes.
+example (hs : IsOpen s) (ht : IsOpen t) : IsOpen (s ∪ t) := hs.union ht
+example (hs : IsOpen s) (ht : IsOpen t) : IsOpen (s ∩ t) := hs.inter ht
+
+#print axioms IsOpen.union        -- certification : aucun axiome",,,,,,,,422b6df1d1fa4027,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-28-Munkres-Tribute.ipynb,f7b74830,markdown,fr,7f215248ed01fc59,"**Lecture.** `isOpen_iUnion` porte la subtilité des axiomes de Munkres : la réunion est **quelconque**
+(indexée par un type `ι` arbitraire), alors que l'intersection n'est garantie que **finie** —
+`IsOpen.inter` est la version deux à deux, et c'est déjà tout ce que les axiomes donnent. Le
+contre-exemple classique (Munkres §13, ex. 1) : dans $\mathbb{R}$, chaque singleton est fermé mais
+l'intersection dénombrable $\bigcap_{n} (-1/n,\, 1/n) = \{0\}$... est fermée — le bon contre-exemple
+est $\bigcup$ vs $\bigcap$ d'ouverts : $\bigcap_{n} (-1/n, 1/n)$ est un singleton, **pas ouvert**,
+tandis que toute réunion d'ouverts l'est. C'est exactement cette asymétrie que portent les types de
+`isOpen_iUnion` (réunion sur `ι` quelconque) et `IsOpen.inter` (binaire seulement).",,,,,,,,7f215248ed01fc59,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-28-Munkres-Tribute.ipynb,a952e48a,markdown,fr,92bc48fe7396f10a,"## 2. Adhérence, intérieur, voisinages
+
+Chapitre 2 toujours (§17-§19 chez Munkres) : l'**intérieur** de $s$ est le plus grand ouvert contenu
+dans $s$, l'**adhérence** le plus petit fermé le contenant, et un **voisinage** de $x$ est une partie
+qui contient un ouvert contenant $x$. Mathlib fait un choix caractéristique : le filtre des
+voisinages $\mathcal{N}(x)$ (`nhds x`) est la notion **primitive**, et l'adhérence se définit à
+partir de lui — $x \in \bar{s}$ ssi tout voisinage de $x$ rencontre $s$.",,,,,,,,92bc48fe7396f10a,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-28-Munkres-Tribute.ipynb,3678ec73,code,fr,502768ebb1d76b7a,"-- Adhérence, intérieur, voisinages : nhds est la primitive.
+variable {X : Type*} [TopologicalSpace X] {s : Set X} {x : X}
+
+#check @nhds                      -- le filtre des voisinages de x
+#check @interior                  -- le plus grand ouvert contenu dans s
+#check @closure                   -- le plus petit fermé contenant s
+#check @mem_closure_iff_nhds_ne_bot  -- x ∈ s̄ ↔ 𝓝 x ⊓ 𝓟 s ≠ ⊥ (tout voisinage rencontre s)
+
+-- Les dualités de Munkres §17, exercice 6 : intérieur et adhérence sont liés par passage au complémentaire.
+example : interior sᶜ = (closure s)ᶜ := interior_compl
+example : closure sᶜ = (interior s)ᶜ := closure_compl
+
+#print axioms interior_compl      -- certification : aucun axiome",,,,,,,,502768ebb1d76b7a,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-28-Munkres-Tribute.ipynb,9923b048,markdown,fr,27f7986ac622fc13,"**Lecture.** La caractérisation `mem_closure_iff_nhds_ne_bot` est la formalisation littérale du
+« tout voisinage de $x$ rencontre $s$ » de Munkres §17 — exprimée dans le langage des filtres :
+le produit inférieur $\mathcal{N}(x) \cap \mathcal{P}_s$ reste non trivial. Les deux dualités
+prouvées (`interior_compl`, `closure_compl`) sont exactement l'exercice 6 du §17 du manuel. Notez
+l'économie du point de vue filtre : adhérence, intérieur, limite de suites généralisées, tout
+s'exprime avec `nhds` — c'est le style Mathlib, plus économique que le style ensembliste du manuel
+mais démontrablement équivalent.",,,,,,,,27f7986ac622fc13,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-28-Munkres-Tribute.ipynb,f057c3aa,markdown,fr,5efae0d6a6694a47,"## 3. Continuité : la caractérisation par images réciproques
+
+Le théorème central du chapitre 3 de Munkres (§18) : une fonction $f : X \to Y$ est continue si et
+seulement si l'image réciproque de tout ouvert de $Y$ est un ouvert de $X$. C'est LA définition
+pratique — et c'est celle que Mathlib prend comme définition de `Continuous`.",,,,,,,,5efae0d6a6694a47,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-28-Munkres-Tribute.ipynb,628f328a,code,fr,2b85002b26101263,"-- Continuité : continuous_def EST le théorème de Munkres §18.1.
+variable {X Y : Type*} [TopologicalSpace X] [TopologicalSpace Y] {f : X → Y}
+
+#check @Continuous                -- la définition : preimage des ouverts ouverte
+#check @continuous_def            -- explicitée en iff : ∀ s ouvert, IsOpen (f ⁻¹' s)
+
+-- Deux exemples immédiats du manuel : l'identité, et les constantes.
+example : Continuous (id : X → X) := continuous_id
+example (y : Y) : Continuous (fun _ : X => y) := continuous_const
+
+-- Et la preuve ""à la main"" directement depuis la définition :
+example : Continuous (id : X → X) := continuous_def.2 fun s hs => hs
+
+#print axioms continuous_def      -- certification : aucun axiome",,,,,,,,2b85002b26101263,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-28-Munkres-Tribute.ipynb,eb8db9e3,markdown,fr,13021da30c490d1f,"**Lecture.** La seconde preuve de l'identité mérite une ligne : `continuous_def.2` ouvre la
+caractérisation en « pour tout ouvert $s$, montrer `IsOpen (id ⁻¹' s)` » — et `id ⁻¹' s = s`, donc
+l'hypothèse `hs` conclut. C'est le genre de preuve d'une ligne qui montre la définition **au
+travail**, exactement comme Munkres le demande dans les premières pages du §18. Le manuel prouve
+aussi l'équivalence avec la caractérisation par voisinages (§18 théorème 1, partie 2) — c'est
+`continuous_iff_continuousAt` dans Mathlib, même contenu, formulation filtre.",,,,,,,,13021da30c490d1f,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-28-Munkres-Tribute.ipynb,7d2063cd,markdown,fr,86826ab661f2e9e2,"## 4. Séparation et compacité : T2 et l'axiome de Hausdorff
+
+Chapitre 4 de Munkres : les **axiomes de séparation** (§17 pour $T_1$, §31 pour la maison de
+Hausdorff $T_2$ : deux points distincts admettent des voisinages disjoints) puis la **compacité**
+(§26 : tout recouvrement ouvert admet un sous-recouvrement fini). Deux propriétés que le cours
+18.901 démontre dans cet ordre pour aboutir aux théorèmes pivots : compact + Hausdorff = normal,
+et le théorème de Tychonoff pour les produits.",,,,,,,,86826ab661f2e9e2,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-28-Munkres-Tribute.ipynb,88bc0c76,code,fr,86453ccfc15dbc20,"-- Séparation et compacité.
+variable {X : Type*} [TopologicalSpace X]
+
+#check @T2Space                  -- la maison de Hausdorff : deux points distincts, voisinages disjoints
+#check @t2_separation             --   la forme utilisable : x ≠ y → ∃ u v ouverts disjoints séparant x et y
+#check @CompactSpace              -- tout recouvrement ouvert a un sous-recouvrement fini
+#check @isCompact_univ            --   la forme ensembliste équivalente : IsCompact univ
+
+-- La trivialité que Munkres fait démontrer en exercice : dans un espace compact, univ est... compact.
+example [CompactSpace X] : IsCompact (Set.univ : Set X) := isCompact_univ
+
+#print axioms isCompact_univ     -- certification : aucun axiome",,,,,,,,86453ccfc15dbc20,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-28-Munkres-Tribute.ipynb,06872466,markdown,fr,6d60b224591e5c9a,"**Lecture.** `CompactSpace` (la version « tout l'espace est compact ») et `IsCompact s` (la version
+par partie) sont deux faces de la même pièce — `isCompact_univ_iff` en fait une équivalence. Le
+choix de Mathlib de privilégier la classe `CompactSpace` reflète l'usage moderne (l'espace entier
+suffit à la plupart des énoncés), tandis que Munkres travaille dès le départ avec les parties. La
+définition formelle d'`IsCompact` via les filtres (« tout filtre contenant $s$ a un point
+d'accumulation ») est à nouveau le style Mathlib : le §26 du manuel dit « tout recouvrement
+ouvert », et l'équivalence entre les deux formulations est un exercice classique que Mathlib a
+déjà absorbé dans ses définitions.",,,,,,,,6d60b224591e5c9a,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-28-Munkres-Tribute.ipynb,db14545f,markdown,fr,f0d38627e79e0f19,"## 5. Connexité : l'intervalle et les corps
+
+Dernier pilier du cours (Munkres §23-§25) : un espace est **connexe** s'il n'est pas réunion de
+deux ouverts non vides disjoints. Le théorème-phare du chapitre est l'irrationalité « structurelle » :
+les intervalles de $\mathbb{R}$ sont connexes, donc l'image continue d'un intervalle est un intervalle
+(théorème des valeurs intermédiaires), donc $\mathbb{Q}$ n'est pas connexe et $\mathbb{R}$ l'est.
+Dans Mathlib, `ConnectedSpace` s'appuie sur `IsConnected s` (« $s$ n'est pas réunion de deux ouverts
+non vides disjoints ») — la définition du manuel, mot pour mot.",,,,,,,,f0d38627e79e0f19,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-28-Munkres-Tribute.ipynb,b2fdfbdd,code,fr,fdbc0975f026eff5,"-- Connexité.
+variable {X : Type*} [TopologicalSpace X]
+
+#check @ConnectedSpace           -- extends PreconnectedSpace : non vide + pas de séparation
+#check @IsConnected              -- la version ensembliste : s ≠ ∅ et pas de clopen non trivial dans s
+#check @isConnected_univ         -- ConnectedSpace ↔ IsConnected univ
+
+example [ConnectedSpace X] : IsConnected (Set.univ : Set X) := isConnected_univ
+
+#print axioms isConnected_univ   -- certification : aucun axiome",,,,,,,,fdbc0975f026eff5,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-28-Munkres-Tribute.ipynb,c28fdf4d,markdown,fr,30f532c63a41226c,"**Lecture.** Mathlib scinde la connexité en deux : `PreconnectedSpace` (pas de séparation par deux
+ouverts disjoints) et `ConnectedSpace` (qui ajoute la non-vacuité) — exactement la discussion de
+Munkres §23 sur la convention « connexe implique non vide ». La version ensembliste `IsConnected`
+est celle du manuel ; `isConnected_univ` fait le pont. Les grands théorèmes du chapitre (image
+continue d'un connexe, connexité de ℝ, des intervalles) vivent plus haut dans la hiérarchie
+(`Mathlib.Topology.Connected.PathConnected`, `Mathlib.Topology.Instances.Real`) et restent dans
+les chapitres suivants du cours — voir « pour aller plus loin ».",,,,,,,,30f532c63a41226c,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-28-Munkres-Tribute.ipynb,d7d56a2f,markdown,fr,5a481627085aebff,"## 6. Ce qui est hors-scope de cet hommage
+
+Le manuel de Munkres couvre bien plus que ces cinq chapitres — et la carrière de Munkres aussi.
+Sont hors scope de ce Tribute :
+
+- **La topologie algébrique** (groupe fondamental, revêtements — Munkres, *Elements of Algebraic
+  Topology*, 1984) : la série à ce sujet vit dans le dépôt avec `knot_lean` et le notebook
+  [Lean-17a-Knots](Lean-17a-Knots-Conway-Proofs.ipynb) ;
+- **Les variétés et l'analyse sur variétés** (*Analysis on Manifolds*, 1991) — le Munkres
+  topologue **différentiel** de *Elementary Differential Topology* (1966), un autre livre que le
+  manuel général ;
+- **La théorie de l'obstruction**, son domaine de recherche propre — pas de formalisation dans
+  Mathlib à ce jour.
+
+Le lake dédié de topologie « à la Munkres » (identités adhérence/intérieur en lemmes nommés) est
+une **phase 2 gated** (issue #12600) : si la review du Tribute en montre le besoin, il viendra en
+PR séparée.",,,,,,,,5a481627085aebff,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-28-Munkres-Tribute.ipynb,2af94768,markdown,fr,355d9005e2a87a5a,"## 7. Exercices
+
+Trois exercices dans l'esprit du manuel : appliquer les axiomes, utiliser la définition, prouver
+une dualité. Chaque cellule s'exécute telle quelle (la sortie du stub porte le marqueur
+`declaration uses 'sorry'`) — à vous de remplacer le `sorry` par la vraie preuve, dont l'énoncé
+complet est dans le commentaire.",,,,,,,,355d9005e2a87a5a,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-28-Munkres-Tribute.ipynb,7ffc35cf,markdown,fr,821947ba0c73be6b,"### Exercice 1 — Réunion de trois ouverts
+
+Les axiomes ne donnent l'union que **deux à deux** (`IsOpen.union`). Composez-les : si $s$, $t$ et
+$u$ sont ouverts, alors $s \cup t \cup u$ est ouvert. Indice : `IsOpen.union` prend deux
+arguments, et `s ∪ t ∪ u` est parenthésé `(s ∪ t) ∪ u` par associativité du `∪` de Lean.",,,,,,,,821947ba0c73be6b,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-28-Munkres-Tribute.ipynb,bb8801b8,code,fr,dc33d28edf23e7b5,"-- Exercice 1 : réunion de trois ouverts.
+-- TODO etudiant : remplacez sorry par la preuve (une application de IsOpen.union à deux reprises).
+variable {X : Type*} [TopologicalSpace X] {s t u : Set X}
+
+example (hs : IsOpen s) (ht : IsOpen t) (hu : IsOpen u) : IsOpen (s ∪ t ∪ u) := by
+  sorry",,,,,,,,dc33d28edf23e7b5,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-28-Munkres-Tribute.ipynb,42452137,markdown,fr,077f219f3c601c4a,"### Exercice 2 — L'image réciproque par une composée
+
+Munkres §18, théorème 7 : une composée de continues est continue. Prouvez-le directement depuis la
+définition `continuous_def` — sans invoquer `Continuous.comp` (qui est exactement ce théorème, et
+donnerait la solution en une ligne : cherchez-le après avoir essayé).",,,,,,,,077f219f3c601c4a,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-28-Munkres-Tribute.ipynb,3972b829,code,fr,935562a5cd68bd78,"-- Exercice 2 : la composée de deux applications continues est continue.
+-- TODO etudiant : remplacez sorry par la preuve via continuous_def (indice : (g ∘ f) ⁻¹' s = f ⁻¹' (g ⁻¹' s),
+-- et Set.preimage_comp le réécrit).
+variable {X Y Z : Type*} [TopologicalSpace X] [TopologicalSpace Y] [TopologicalSpace Z]
+  {f : X → Y} {g : Y → Z}
+
+example (hf : Continuous f) (hg : Continuous g) : Continuous (g ∘ f) := by
+  sorry",,,,,,,,935562a5cd68bd78,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-28-Munkres-Tribute.ipynb,f8c06593,markdown,fr,1297ebe37bcdc35c,"### Exercice 3 — Le complémentaire d'un ouvert
+
+La dualité ouvert/fermé du §17 : montrer que si $s$ est ouvert, alors $s^\complement$ est... la
+bonne notion à trouver. Puis en déduire l'identité `closure s = (interior sᶜ)ᶜ` — c'est la
+composition des deux dualités prouvées en section 2.",,,,,,,,1297ebe37bcdc35c,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-28-Munkres-Tribute.ipynb,5bcc6ac3,code,fr,28867b9058a30625,"-- Exercice 3 : la double dualité adhérence/intérieur.
+-- TODO etudiant : remplacez sorry. Indice : partez de interior_compl s (prouvé en section 2)
+-- et prenez le complémentaire des deux côtés, ou appliquez interior_compl au bon ensemble.
+variable {X : Type*} [TopologicalSpace X] {s : Set X}
+
+example : closure s = (interior sᶜ)ᶜ := by
+  sorry",,,,,,,,28867b9058a30625,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-28-Munkres-Tribute.ipynb,1753dad9,markdown,fr,b47513a769fc8a6b,"## 8. Pour aller plus loin
+
+- **Le manuel** : James R. Munkres, *Topology* (2e éd., Prentice Hall, 2000) — les sections citées
+  dans ce notebook (§12-§13, §17-§19, §18, §26-§27, §23-§25) en sont les chapitres 2 à 4.
+- **Mathlib** : la documentation de [`Mathlib.Topology`](https://leanprover-community.github.io/mathlib4_docs/Mathlib/Topology/Basic.html)
+  pour suivre l'organisation des modules ; le fichier `Mathlib/Topology/Basic.lean` lui-même est
+  une lecture remarquablement proche du manuel.
+- **Les deux autres visages de Munkres** : le volet 1/3 de cette série hommage — l'algorithme de
+  Kuhn-Munkres pour l'affectation ([issue #12598](https://github.com/jsboige/CoursIA/issues/12598),
+  lake `assignment_lean`) — et le volet 2/3, le musicien
+  ([voice leading par affectation](../../Search/Applications/CSP/App-21-VoiceLeading.ipynb),
+  [issue #12599](https://github.com/jsboige/CoursIA/issues/12599)).
+- **Terry Tao et la théorie analytique des nombres** ([Lean-6 §6.1](Lean-6-Mathlib-Essentials.ipynb)) :
+  l'autre encart culturel « mathématicien dans Mathlib » de la série, pour comparer les styles
+  d'hommage.
+
+***
+
+*Série hommage James R. Munkres (1930-2026) : 1/3 l'algoriste · 2/3 le musicien · **3/3 le topologue
+(ce notebook)**. Sources : MIT Mathematics (2026-08-13), obituaires Boston Globe/Legacy et Douglass
+Funeral Home (Bedford, MA).*",,,,,,,,b47513a769fc8a6b,,,,,,,,

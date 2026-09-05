@@ -446,7 +446,7 @@ class TestRealNotebooks(unittest.TestCase):
 
     def test_aspire01_interps_anchored_to_code_are_not_findings(self):
         """cell#12 (code a 3 outputs) et cell#17 (7 outputs) : ancrees, donc OK."""
-        found = self._misplaced("MyIA.AI.Notebooks/GenAI/Aspire/01-Aspire-Orchestration-GenAi.ipynb")
+        found = self._misplaced("MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire/01-Aspire-Orchestration-GenAi.ipynb")
         if found is None:
             self.skipTest("Aspire-01 absent")
         self.assertEqual(found, [], f"FP c.95 reintroduit : {found}")

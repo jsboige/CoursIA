@@ -669,6 +669,51 @@ def exercise_with_exercice_indice_skeleton(source: str) -> bool:
     return not has_substantive_call
 
 
+def exercise_with_code_subject_string(source: str) -> bool:
+    """Return True if the cell is a "code-as-subject" exercise: the only
+    executable code is the assignment of a multi-line string literal holding
+    the code the student must ANALYZE (``mystery_code = \'\'\'...\'\'\'``),
+    everything else being guidance comments (``# EXERCICE N : ...``,
+    ``# Indice : ...``, a commented-out solution skeleton).
+
+    The ``def`` / ``return`` lines INSIDE the string literal make
+    ``exercise_with_exercice_indice_skeleton`` return False (its substantive-
+    call regex sees the string body as executable code) and
+    ``commented_template_stub`` early-exits on the in-string ``def`` — so this
+    FP class needs its own recognition. Pattern: 01-Claude-CLI-Bases cell 34
+    (exercise "Expliquer un code mystere" — the mystery code IS the subject,
+    not the solution).
+
+    Recall-safe: a real solution NEVER reduces to a bare string assignment —
+    solving "explain this code" means CALLING the model (``run_claude(...)``,
+    a solver, a print of the result). Any executable line beyond
+    ``<name> = <STR>`` (call, return, loop, subscript) makes this return
+    False. A solution also never carries 2+ ``# Exercice`` / ``# Indice``
+    guidance markers alongside a ``# Votre code ici`` placeholder block.
+    """
+    # Strip multi-line string literals before analyzing executable lines —
+    # the def/return lines inside the string are DATA, not code.
+    stripped = re.sub(
+        r"'''[\s\S]*?'''|\"\"\"[\s\S]*?\"\"\"", "<STR>", source,
+    )
+    exec_lines = [
+        l.strip() for l in stripped.split('\n')
+        if l.strip() and not l.strip().startswith(('#', '//', '--'))
+    ]
+    if not exec_lines:
+        return False
+    # Every executable line must be a pure assignment of the stripped string.
+    for s in exec_lines:
+        if not re.match(r'^[A-Za-z_][\w\[\]."\']*\s*(?::\s*str)?\s*=\s*<STR>$', s):
+            return False
+    # Guidance markers (same marker set as exercise_with_exercice_indice_skeleton).
+    pattern = re.compile(
+        r'(?:^|\n)[ \t]*#[ \t]*(?:Exercice|Indice|Etape)\b',
+        re.IGNORECASE | re.MULTILINE,
+    )
+    return len(pattern.findall(source)) >= 2
+
+
 def exercise_with_run_lean_snippet(source: str) -> bool:
     """Return True if the cell is a Lean exercise that wraps a ``snippet_exN``
     string literal passed to ``run_lean(...)`` for isolated execution, with
@@ -911,6 +956,13 @@ def scan_notebook(path: str) -> list[dict]:
             # guidance headers, no substantive call/return body. Arrow-33
             # pattern. The student follows the indicesteps.
             if exercise_with_exercice_indice_skeleton(next_code_source):
+                continue
+            # "Code-as-subject" exercise: the only executable code is the
+            # assignment of a multi-line string holding the code the student
+            # must ANALYZE (mystery_code = '''...'''), the rest is guidance
+            # comments. The in-string def/return defeats the helpers above.
+            # 01-Claude-CLI-Bases cell 34 pattern.
+            if exercise_with_code_subject_string(next_code_source):
                 continue
             # Lean exercise wrapping a `snippet_exN = """..."""` literal
             # passed to `run_lean(snippet_exN, timeout_s=...)` with a

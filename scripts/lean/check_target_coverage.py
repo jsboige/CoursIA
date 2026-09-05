@@ -150,8 +150,40 @@ def _uses_lean_axiom(uses: str) -> bool:
     return ref.rsplit("/", 1)[-1] == "lean-axiom.yml"
 
 
+# Composite-action routing form (#14337 tranche 2a): the gate job is LOCAL
+# (carries runs-on/if/steps) and invokes the composite twin of the reusable.
+# The step-level ``with:`` holds the same inputs; without this companion form
+# the union below silently drops every routed gate job and the advisory
+# reports the modules the gate inspects as blind spots.
+_COMPOSITE_LEAN_AXIOM_REFS = {
+    "./.github/actions/lean-axiom",
+    ".github/actions/lean-axiom",
+}
+
+
+def _composite_lean_axiom_targets(job: dict) -> set[str]:
+    """Union ``with.target-modules`` over the job's lean-axiom composite steps."""
+    mods: set[str] = set()
+    for step in job.get("steps") or []:
+        if not isinstance(step, dict):
+            continue
+        uses = step.get("uses", "")
+        if not isinstance(uses, str):
+            continue
+        ref = uses.split("@", 1)[0].strip()
+        if ref not in _COMPOSITE_LEAN_AXIOM_REFS:
+            continue
+        raw = (step.get("with") or {}).get("target-modules", "")
+        mods |= parse_target_modules(str(raw))
+    return mods
+
+
 def targets_from_workflow(workflow_path: Path) -> tuple[set[str], dict[str, set[str]]]:
     """Union ``with.target-modules`` over every lean-axiom job in a workflow.
+
+    Both wiring forms are unioned: a job-level ``uses:`` on the reusable
+    ``lean-axiom.yml``, and a local job's step-level ``uses:`` on the composite
+    ``.github/actions/lean-axiom`` (#14337 tranche 2a routing).
 
     Returns ``(union, per_job)``. An **empty** ``per_job`` means no job in the
     file calls ``lean-axiom.yml`` -- reported by the caller as an explicit
@@ -166,12 +198,17 @@ def targets_from_workflow(workflow_path: Path) -> tuple[set[str], dict[str, set[
 
     per_job: dict[str, set[str]] = {}
     for job_id, job in jobs.items():
-        if not isinstance(job, dict) or not _uses_lean_axiom(job.get("uses", "")):
+        if not isinstance(job, dict):
             continue
-        raw = (job.get("with") or {}).get("target-modules", "")
-        # A gate job with an empty target list is still a gate job: record it so
-        # the report shows it contributed nothing, rather than hiding it.
-        per_job[str(job_id)] = parse_target_modules(str(raw))
+        if _uses_lean_axiom(job.get("uses", "")):
+            raw = (job.get("with") or {}).get("target-modules", "")
+            # A gate job with an empty target list is still a gate job: record it so
+            # the report shows it contributed nothing, rather than hiding it.
+            per_job[str(job_id)] = parse_target_modules(str(raw))
+            continue
+        composite_mods = _composite_lean_axiom_targets(job)
+        if composite_mods:
+            per_job[str(job_id)] = composite_mods
 
     union: set[str] = set()
     for mods in per_job.values():
