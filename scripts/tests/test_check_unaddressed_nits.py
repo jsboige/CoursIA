@@ -539,6 +539,149 @@ def test_approved_avant_la_concerne_ne_leve_pas():
     assert run_reviews([early_ok, late_concern])["blocked"] is True
 
 
+# --- #14503 : une review de persona POSTERIEURE au dernier commit, sans
+# verdict formel ni levee, est une reserve (fail-CLOSED). Mesure fondatrice
+# #14486 : des reviews Hermes contraintes en tokens (« COMMENT only »)
+# enoncent leurs reserves en prose ordinaire — le scanner de verdicts reste
+# muet (classify None), le gate rendait rc=0. Geometrie reelle reproduite :
+# dernier push 10h, review 12h, merge 15h.
+
+def run_persona_reviews(reviews):
+    data = {
+        "number": 0, "title": "t", "author": {"login": "jsboige"},
+        "comments": [], "reviews": reviews,
+        "commits": [{"committedDate": at(10)}],
+    }
+    return mod.analyse(
+        data, [], datetime(2026, 8, 14, 15, 0, tzinfo=timezone.utc))
+
+
+# Corps REELS complets (2095 / 2412 / 5251 chars), logins reels inclus —
+# Hermes pousse sous le login partage jsboige, NanoClaw sous
+# clusterManager-Myia. Les deux PRs ont depuis EVOLUE (reparation poussee
+# sur #14486 a 19:40Z puis follow-up Hermes leveur a 21:31Z ; push a
+# 06:54Z sur #14548) : leur etat LIVE est legitiment rc=0. Ces replays
+# pinent l'ETAT FONDATEUR — dernier commit AVANT la review, follow-up
+# absent — seul honnete moyen d'invoquer le controle positif de l'issue.
+
+HERMES_14486 = {
+    "author": {"login": "jsboige"},
+    "state": "COMMENTED", "submittedAt": at(12),
+    "body": '[Hermes] Review sur 157cebc3 (contrainte token : COMMENT only, opener=jsboige).\n\n**Socle sain, tests vérifiés localement** : cloné le détecteur + tests au SHA de tête, `40 passed` (venv propre, nbformat+pytest). Golden set 3 PRs couvert des deux côtés (fabriqué détecté / post-fix zéro finding), structure des tests propre (9 classes, factories in-memory).\n\n**3 défauts constatés en exécution réelle, dont 1 qui contredit la classe visée :**\n\n1. **False negative sur fabrication de valeur courte** (reproduit) : cellule md citant `JVM operationnelle : False` quand la sortie réelle dit `True` → **zéro finding**. La probe extraite est `operationnelle` (mot présent dans la sortie réelle), et la sémantique « UNE probe retrouvée = légitime » valide la citation. Or la classe #14324 est précisément « valeurs numériques inventées ou contradictoires » : une citation qui ne diffère de la sortie que par `True`/`False` ou un nombre court (< 12 chars alphanum) passe à travers. `1.213061` seul ne génère aussi aucune probe (8 chars). Le golden set #14105 n\'est attrapé que parce que le fragment inclut l\'expression `#eval` autour — une citation réduite à la valeur serait invisible. Piste : probe additionnelle = fragment complet normalisé quand la citation est courte, ou comparaison du dernier token numérique.\n\n2. **Commentaire faux sur les zero-width** (vérifié) : `_normalize` docstring « enleve les zero-width chars », mais la ligne 253 est `text.replace("", "").replace("\\\\ufeff", "").replace("", "")` — deux `replace("","")` **no-op** (seul le BOM est retiré). Un `\\u200b` inséré dans une citation reste non-matché contre la sortie. Remplacer par les vrais codepoints `\\u200b\\u200c\\u200d`.\n\n3. **Triplets dupliqués** dans `_resolve_code_target` : `direction in ("ci-dessus", "ci-dessus", "ci-dessus")` (idem ci-dessous) — visiblement des variantes à trait d\'union doux `(U+00AD)` perdues à l\'écriture. Inoffensif mais mort ; soit retirer, soit encoder les variantes réellement visées.\n\nAucun secret en dur, exit codes CI-ready corrects. Le point 1 mérite une itération avant câblage advisory.',
+}
+
+HERMES_14486_LIFT = {
+    "author": {"login": "jsboige"},
+    "state": "COMMENTED", "submittedAt": at(12),
+    "body": '[Hermes] Follow-up sur f71275da (depuis ma review sur 157cebc3) — réparation vérifiée en exécution réelle : fichiers clonés au SHA de tête, venv propre, harnais end-to-end maison.\n\n**Résolu (mesuré, pas lu) :**\n1. ✅ Point 1 (false negative valeur courte) — la voie `LITERAL_RE` attrape les cas A/B du DM : mon harnais rend 1 finding (`mode=literal, missing=[False]` / `missing=[1.213061]`) et 0 sur le contrôle légitime (cas C). Frontières anti-identifiant correctes (`vec42`, `S8`, URLs exclus ; `1.5e-3` attrapé), et le gating `=` (assignations `name=value` hors scope) est bien placé.\n2. ✅ Point 3 (triplets) — U+2011 (non-breaking hyphen) + U+00AD (soft hyphen) réellement encodés cette fois, vérifié codepoint par codepoint dans `_resolve_code_target`.\n3. ✅ Tests : `45 passed, 1 xfailed` reproduits localement ; `TestLiteralVoie` couvre regex + cas A/B/C + borne anti-FP. L\'`xfail` motivé (omission structurelle, AST-aware requis) est la bonne décision — le défaut reste visible sans faire rouge.\n\n**1 résiduel mesuré — le ZWSP U+200B est ENCORE perdu (même mode d\'échec que la version initiale) :**\nLe post de réparation annonce « ZWSP (U+200B), ZWNJ, ZWJ, BOM » et le commentaire du code dit « on liste explicitement les codepoints zero-width ». Or le tuple ligne 279 est littéralement `("", "\\u200c", "\\u200d", "\\ufeff")` — **le premier élément est une chaîne vide**, pas U+200B. Vérifié à l\'exécution : `_normalize("1.2\\u200b13061")` ne retire pas le ZWSP.\n\nConséquence mesurée (faux positif end-to-end) : sortie réelle rendant `1.2\\u200b13061` (ZWSP au milieu du nombre — artefact de wrap/terminal connu) + citation légitime `1.213061` → **1 finding `fabricated_verbatim` faux** (`missing=[1.213061]`, le littéral de la citation ne matche pas la sortie polluée). Les trois autres codepoints (ZWNJ/ZWJ/BOM) sont correctement strippés — seul le plus commun d\'entre eux manque.\n\n**Fix recommandé : représenter le codepoint en échappement ASCII** — `for zw in ("\\u200b", "\\u200c", "\\u200d", "\\ufeff")` — précisément pour immuniser contre ce transport (le littéral UTF-8 nu s\'est déjà perdu 2 fois : version initiale + cette réparation). Un test `assert "\\u200b" not in _normalize("a\\u200bb")` verrouillerait définitivement le transport.\n\nSecurity scan : 0 match (`HF_TOKEN|API_KEY|BEARER|PASSWORD|SECRET|TOKEN\\s*=`). Le point 1 de ma review initiale est levé ; seul ce mineur reste avant câblage advisory.',
+}
+
+NANOCLAW_BOLD_14548 = {
+    "author": {"login": "clusterManager-Myia"},
+    "state": "COMMENTED", "submittedAt": at(12),
+    "body": "**[NanoClaw]** structural review — case13, toy Hoffman N=16\n\nVerdict : **le « null » mesuré ici n'est pas un résultat sur FBT, c'est le symptôme d'un défaut structurel dans l'instrument** — le payoff ne dépend ni du monde tiré ni du percept reçu. Détail ci-dessous, avec la preuve interne au fichier `results` lui-même.\n\n## 1. Défaut central : `play_round` ignore `w_star` et `x`\n\n```python\ndef play_round(alpha, strategy, fitness, prior):\n    w_star = random.randrange(N_ONTIC)\n    p_x = [channel(w_star, x, alpha) for x in range(N_SENSORY)]\n    x = random.choices(range(N_SENSORY), weights=p_x, k=1)[0]\n    w_hat = strategy(alpha, fitness, prior)   # ni x ni w_star ne sont passés\n    return fitness(w_hat)\n```\n\nDeux problèmes qui se combinent :\n\n- **Le percept `x` tiré n'est jamais transmis à la stratégie**, et `w_star` n'entre nulle part dans le payoff. Le score d'un individu est donc une constante déterministe (indépendante des 5 trials, qui ne font que consommer du RNG). Sans dépendance payoff↔perception, il n'y a **pas de gradient de sélection sur α issu du paysage** : l'évolution de α est une dérive neutre.\n- **Confusion de type x/w** : les stratégies retournent `max(range(N_SENSORY), ...)` — un état **sensoriel** x∈{0,1} — que `play_round` nourrit à `fitness(w_hat)` comme un état **ontique** w∈0..15. Le payoff se réduit à `fitness(0)` ou `fitness(1)`, deux constantes du paysage. Cas limite flagrant : `L_bit3` — `bit3(0)=bit3(1)=0` → tous les scores ≡ 0 → sélection totalement neutre, α* = pur produit du RNG et du seed.\n\n## 2. Le fichier results porte lui-même la preuve — groupes de trajectoires identiques\n\nEn croisant `rows` et `raw` du JSON livré, les 16 paysages se partitionnent en **3 groupes de trajectoires strictement identiques** (mêmes T_runs au 5e décimal, mêmes moyennes) :\n\n- Groupe A (0.547/0.550, T_runs [0.57 0.56 0.52 0.54 0.55]) : L_bit0, L_anti, L_random_3bit, L_bit01, L_bit3_weighted, **L_random_4bit_seed1, L_random_4bit_seed2**\n- Groupe B (0.489/0.532) : L_bit1, L_bit2, L_bit2_complement, L_bit3, L_bit3_complement, L_bit23\n- Groupe C : L_parity, L_pairity_3bit, L_bit01_xor\n\n**Deux paysages aléatoires distincts (seed1, seed2 — fonctions w différentes par construction) produisent la même trajectoire d'évolution que L_bit0.** C'est la signature d'un signal de sélection insensible au paysage : la dérive suit le RNG, pas la fitness. Un instrument sain ne peut pas produire cela.\n\nContrôle qui aurait dû alerter : `L_bit0` est le paysage **aligné** (payoff attendu 3α, monotone) — il devrait sélectionner α→1. Mesuré : α*=0.547, indiscernable du bruit. Aucun paysage ne dévie de la dérive.\n\n## 3. Conséquence sur les conclusions du PR\n\n- « Ne confirme pas l'escalade monotone » / null à N=16 : **ininterprétable** — on ne peut rien réfuter avec un instrument dont le signal de sélection ne traverse pas le canal de perception. Un null d'instrument ≠ un null de théorie.\n- L'explication « Cause structurelle (fibre-balance) » rend compte au mieux de la famille bitk k≠0 ; elle ne dit rien des trajectoires identiques aligned/random, qui sont précisément l'anomalie à expliquer.\n- Le commentaire d'en-tête « Self-play / evolution (identique case 11/12, parametres ajustes) » est inexact : le case11 mesurait un play_round analytique E[f|pick] — c'est un **changement silencieux de la définition du jeu**, pas un ajustement de paramètres. Et si case12 partage ce `play_round` (le commentaire l'affirme), la dissociation +0.36 revendiquée sur 4/8 paysages au N=8 mérite la même inspection avant de bâtir le récit de famille dessus.\n\n## 4. Scratchpad / pré-registration\n\n- Le SHA scellé cité (`f3f43cb1e4`) ne résout pas sur GitHub (422 No commit found). L'ordonnancement scellage→code tient quand même via les commits du PR : e7af2608 (scratchpad seul, 23:49:27Z) → a2c2df11 (code, 23:58:09Z) — 9 min.\n- Mais les prédictions scellées sont **falsifiées sans commentaire** : P2c annonçait gap ≥0.70 sur la famille bit3 ; P4/verdict attendait gap ≥0.30 sur ≥6/16. Mesuré : ≤0.05 partout. Un scratchpad scellé n'a de valeur que si ses prédictions manquées sont discutées — ici le null est présenté comme finding, pas comme falsification de la prédiction.\n\n## 5. Points secondaires\n\n- Docstring `evolve_alpha` (« moyenne des survivants ») contredit le code (`population[best_idx]`).\n- Cut silencieux pop/gen 200×500 → 60×150 (~10× de compute en moins) : sous-dimensionné pour étayer un claim nul, et non mentionné comme changement de protocole.\n- 23 tests, mais **aucun ne teste `play_round`** — le mécanisme de payoff, cœur du claim, est la seule pièce non couverte. Un test du type « landscape aligné → α évolue vers 1 » aurait attrapé le défaut immédiatement.\n\n## Ce qui rendrait le null interprétable\n\n1. `w_hat = map_estimate(x, ...)` — décoder le percept effectivement reçu avant d'évaluer `fitness(w_hat)`, et passer `x` (donc `w_star` via le canal) à la stratégie.\n2. **Contrôle positif de l'instrument** : montrer qu'un paysage aligné sélectionne α→1 et un anti-aligné α→0 dans ce harness. Sans contrôle positif, un null n'est pas publiable comme résultat.\n\nJe n'ai pas vérifié le diff complet (review structurelle) : files changed + lecture intégrale du toy, du JSON results et du scratchpad scellé.\n",
+}
+
+
+def test_persona_review_no_verdict_post_commit_blocks():
+    """#14503 cause 1 (#14486), corps REEL complet : review `[Hermes]`
+    COMMENTED post-commit, reserves en prose ordinaire (« defauts
+    constates ») sans prefixe de verdict ni glyphe -> CONCERN_MARKERS muet,
+    classify None, rc=0 avant le fix. La prose PORTE le motif de reserve :
+    persona + post-commit + motif + pas de levee = reserve."""
+    assert run_persona_reviews([HERMES_14486])["blocked"] is True
+
+
+def test_persona_prose_approval_post_commit_stays_neutral():
+    """Anti-mur (controle 3 de l'issue, corpus 200 PRs mergees) : 70 reviews
+    persona post-commit sans verdict formel, quasi toutes APPROBATIVES en
+    prose (« Verdict : solide », « validé »). Une approbation en prose ne
+    PORTE pas le motif de reserve : elle ne doit PAS bloquer -- le
+    fail-CLOSED pur aurait fait un mur (70/200 PRs)."""
+    approval = {
+        "author": {"login": "jsboige"},
+        "state": "COMMENTED", "submittedAt": at(12),
+        "body": ("[Hermes] review 9e9799a (contrainte token : COMMENT only, "
+                 "opener=jsboige).\n\n**Verdict : solide, verifie par "
+                 "execution reelle.** Chaque chiffre du tableau se "
+                 "reproduit exactement depuis runs[] brut."),
+    }
+    assert run_persona_reviews([approval])["blocked"] is False
+
+
+def test_persona_ambiguous_prose_post_commit_stays_neutral():
+    """Calibrage : review persona post-commit SANS motif de reserve NI levee
+    NI verdict (prose laconique sans polarite) reste neutre -- bloquer
+    l'ambigu par defaut serait le mur mesure (70/200 PRs mergees)."""
+    laconic = {
+        "author": {"login": "clusterManager-Myia"},
+        "state": "COMMENTED", "submittedAt": at(12),
+        "body": "[Hermes] Relecture du head abc123 — diff integral lu des deux cotes.",
+    }
+    assert run_persona_reviews([laconic])["blocked"] is False
+
+
+def test_persona_review_bold_header_blocks():
+    """#14503 cause 2 (#14548) : l'en-tete REEL des personas peut etre en
+    gras (`**[NanoClaw]** structural review`). L'ancienne regex `(?:^|\\s)`
+    ne voyait pas le marque derriere le `*` -> review entiere invisible.
+    Le gras est admis ; le backtick (citation, #13030) reste exclu."""
+    assert run_persona_reviews([NANOCLAW_BOLD_14548])["blocked"] is True
+
+
+def test_persona_followup_lift_real_body_stays_neutral():
+    """Controle au corps REEL (2412 chars) : le follow-up Hermes du
+    2026-09-03T21:31Z sur #14486 est posterieur au push de reparation,
+    marqueur pose, SANS verdict formel — mais c'est une ANNONCE DE
+    REPARATION VERIFIEE. has_live_lift la reconnait : le fail-CLOSED ne
+    doit pas transformer une resolution en reserve."""
+    assert run_persona_reviews([HERMES_14486_LIFT])["blocked"] is False
+
+
+def test_persona_review_with_live_lift_stays_neutral():
+    """Controle : classify sort aussi None pour une ANNONCE DE LEVEE — c'est
+    une resolution, pas un silence. La transformer en reserve serait l'exact
+    inverse de ce que le gate doit faire : une phrase de levee vivante
+    desarme la branche fail-CLOSED."""
+    lift = {
+        "author": {"login": "clusterManager-Myia"},
+        "state": "COMMENTED", "submittedAt": at(12),
+        "body": "[Hermes] Le point 1 est adresse : levee de la reserve — valide.",
+    }
+    assert run_persona_reviews([lift])["blocked"] is False
+
+
+def test_persona_review_before_last_commit_stays_neutral():
+    """Borne : une review persona ANTERIEURE au dernier commit est presumee
+    adressee par celui-ci — pas une reserve vivante."""
+    early = dict(HERMES_14486)
+    early["submittedAt"] = at(9)
+    assert run_persona_reviews([early])["blocked"] is False
+
+
+def test_persona_review_backtick_citation_stays_neutral():
+    """Garde-fou #13030 : `` `[Hermes]` `` en backticks = CITATION du marque
+    (prose qui documente le bot), pas une review du bot. Le fail-CLOSED ne
+    doit pas rattraper les citations."""
+    cited = {
+        "author": {"login": "un-contributeur"},
+        "state": "COMMENTED", "submittedAt": at(12),
+        "body": "Le prefixe `[Hermes]` dans la prose est une citation, pas un verdict.",
+    }
+    assert run_persona_reviews([cited])["blocked"] is False
+
+
+def test_plain_review_without_persona_marker_stays_neutral():
+    """Controle : une review COMMENTED sans marque persona reste neutre —
+    le fail-CLOSED ne s'applique qu'aux personas identifies."""
+    plain = {
+        "author": {"login": "un-contributeur"},
+        "state": "COMMENTED", "submittedAt": at(12),
+        "body": "J'ai survole le diff, rien a signaler pour ma part.",
+    }
+    assert run_persona_reviews([plain])["blocked"] is False
+
+
 # --- #13399 : une levee portee par une REVIEW est aussi visible qu'en
 # commentaire. Le defaut constate sur #13299 : ai-01 pose APPROVED par review
 # en nommant chaque reserve, mais l'organe n'etait capable de lever par re-review

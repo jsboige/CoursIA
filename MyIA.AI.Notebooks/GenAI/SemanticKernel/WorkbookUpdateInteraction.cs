@@ -110,3 +110,4 @@ public class WorkbookUpdateInteraction(string notebookPath, ILogger logger)
 		_logger.LogInformation(message);
 		return Task.FromResult(message);
 	}
+}

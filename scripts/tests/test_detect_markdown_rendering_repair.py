@@ -75,3 +75,67 @@ def test_toute_entree_de_la_table_est_une_regle_connue(rule):
     regle du detecteur serait un conseil pour un defaut qui n'est jamais
     signale — invisible, donc jamais corrige."""
     assert rule in dmr.RULE_SEVERITY
+
+
+# --- #14590 : sortie SIGPIPE-safe + --max-findings ---------------------------
+
+def _run_driver(tmp_path):
+    """Execute un driver dans un processus isole : le wrapper __main__ fait un
+    dup2 de stdout vers devnull, on ne veut pas empoisonner le fd 1 de la
+    session pytest."""
+    import subprocess
+    driver = tmp_path / "driver_14590.py"
+    driver.write_text(
+        "import sys\n"
+        f"sys.path.insert(0, r'{pathlib.Path(dmr.__file__).parent}')\n"
+        "import detect_markdown_rendering as d\n"
+        "def boom(): raise BrokenPipeError()\n"
+        "d.main = boom\n"
+        "src = open(d.__file__, encoding='utf-8').read()\n"
+        "import textwrap\n"
+        "block = textwrap.dedent(src.split('if __name__ == \"__main__\":', 1)[1])\n"
+        "exec(block, d.__dict__)\n",
+        encoding="utf-8",
+    )
+    return subprocess.run(
+        [sys.executable, str(driver)], capture_output=True, text=True, timeout=60
+    )
+
+
+def test_tube_ferme_rend_141_sans_traceback(tmp_path):
+    """Un appelant qui borne la sortie (| head) fermait le tube APRES le
+    verdict et tuait le script sur BrokenPipeError non gere (#14590, log CI
+    du 2026-09-04 : traceback dans la boucle d'affichage des findings).
+    Le wrapper doit rendre 141 (128 + SIGPIPE) -- pas une traceback, et pas
+    non plus le 'Exception ignored' du flush final."""
+    proc = _run_driver(tmp_path)
+    assert proc.returncode == 141, proc.stderr
+    assert "Traceback" not in proc.stderr
+    assert "Exception ignored" not in proc.stderr
+
+
+def test_max_findings_remplace_le_cap_dur(tmp_path):
+    """--max-findings N doit exister et cappeer la liste des findings :
+    le workflow appelait | head -8, ce qui masquait tout (y compris les
+    plantages) derriere || true. Un cap interne rend le tube inutile."""
+    import json as _json
+    import subprocess
+    nb_dir = tmp_path / "nbs"
+    nb_dir.mkdir()
+    for i in range(3):
+        nb = {
+            "cells": [{"cell_type": "markdown", "metadata": {},
+                       "source": ["---\n", "title: unclosed block\n"]}],
+            "metadata": {}, "nbformat": 4, "nbformat_minor": 5,
+        }
+        (nb_dir / f"fixture_{i}.ipynb").write_text(
+            _json.dumps(nb), encoding="utf-8")
+    script = pathlib.Path(dmr.__file__)
+    proc = subprocess.run(
+        [sys.executable, str(script), "--report", "--max-findings", "2", str(nb_dir)],
+        capture_output=True, text=True, timeout=120,
+    )
+    assert proc.returncode == 0, proc.stderr
+    finding_lines = [l for l in proc.stdout.splitlines() if "[yaml_block_open_no_close]" in l]
+    assert len(finding_lines) == 2, proc.stdout
+    assert "1 more" in proc.stdout

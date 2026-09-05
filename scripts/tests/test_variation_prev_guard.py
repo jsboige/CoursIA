@@ -523,3 +523,60 @@ def test_fully_backticked_tag_is_still_evaluated():
     v = vpg.check(body, current_pr=99999,
                   prev_targets={"14548": {"kind": "pr", "merged": False}})
     assert v["guard_pass"] is False
+
+
+# --- #14550, second defect: a silent fail-open is an unearned attestation ----
+# ai-01 measured it on #14515: CLEAN, PR gate green, mergeable -- with a
+# `prev:` at an OPEN PR, because the `gh` resolution happened to fail during
+# THAT run. Same violation as four red PRs the same minute; only the
+# abstention differed, and nothing in the verdict said so.
+
+def test_unresolved_prev_targets_pure_selector():
+    # The selector names exactly what the gate could not measure: cited but
+    # absent from the resolved dict -- whether the lookup raised (network,
+    # gh absent) or the target itself did not resolve.
+    assert vpg.unresolved_prev_targets({14483}, {}) == [14483]
+    assert vpg.unresolved_prev_targets({14483, 7}, {"14483": {"kind": "pr", "merged": True}}) == [7]
+    assert vpg.unresolved_prev_targets(set(), {}) == []
+
+
+def test_resolution_failure_stays_green_but_flags_abstention(
+        tmp_path, capsys, monkeypatch):
+    # ACCEPTANCE 4 (#14550): resolution fails -> guard_pass: True AND
+    # resolution_failed non-empty. The FN-safety contract is unchanged
+    # (never accuse on a lookup failure); what changes is that the green
+    # stops being indistinguishable from a measured one.
+    body = tmp_path / "body.txt"
+    body.write_text(
+        "Grain: MED/tooling -- lane myia-po-2025:CoursIA-2 -- prev: MED/guard #14459",
+        encoding="utf-8")
+
+    def _boom(missing, runner=None):
+        raise RuntimeError("gh absent (simulated #14515 condition)")
+
+    monkeypatch.setattr(vpg, "resolve_prev_targets", _boom)
+    rc = vpg.main(["--body-file", str(body), "--current-pr", "14560",
+                   "--resolve-targets"])
+    captured = capsys.readouterr()
+    verdict = json.loads(captured.out)
+    assert rc == 0
+    assert verdict["guard_pass"] is True
+    assert verdict["resolution_failed"] == [14459]
+    # The warning line is a GitHub Actions workflow command: the workflow
+    # `cat`s verdict.err inside the step, so this becomes a run annotation.
+    assert "::warning::" in captured.err
+    assert "#14459" in captured.err
+
+
+def test_14515_real_body_with_resolved_open_target_fails():
+    # ACCEPTANCE 5 (#14550) -- positive control of the fail-open: with the
+    # resolution SUCCEEDING, the real #14515 tag (`prev: MED/notebook-python
+    # #14483`, target OPEN) must go red. The abstention flag repairs
+    # visibility, never the predicate.
+    body = ("Grain: MED/notebook-python -- lane myia-po-2023:CoursIA -- "
+            "prev: MED/notebook-python #14483")
+    v = vpg.check(body, prev_targets={"14483": {"kind": "pr", "merged": False}})
+    assert v["guard_pass"] is False
+    kinds = {h["kind"] for h in v["hits"]["prev_invalid"]}
+    assert "prev-not-merged" in kinds
+    assert "resolution_failed" not in v  # check() has nothing to abstain on

@@ -147,3 +147,54 @@ python scripts/pick_idle_grain.py \
 ```
 
 Filtres disponibles, tous locaux et combinables : `--exclude-issue` répétable ; `--require-label` (AND) ; `--exclude-label` (ANY) ; bornes inclusives `--min/max-age-days` et `--min/max-idle-days` ; sélection `--urns`. Les comparaisons de labels sont insensibles à la casse. Le funnel attribue chaque exclusion au premier filtre qui la retire et expose en JSON `filters.active`, `filters.excluded`, `filters.funnel`. Un résultat vide nomme le filtre dominant à relâcher : il ne prétend jamais que le pool global est vide. Les filtres de tier/genre sont volontairement absents, car le genre du picker est inféré et n'est pas un verdict.
+
+### Picker — les deux axes de pondération (complément)
+
+La pondération du tirage porte **deux axes indépendants** (mesurés non redondants, pearson r = 0,334) : l'**âge de création** (la traîne, là où le compte s'accumule) et le **délaissement** — jours depuis la dernière activité, colonne `inact`. Le second est ce qui atteint « les EPICs qui méritent d'être conduites à leur terme et sont souvent délaissées devant les sujets du moment » : un sujet intouché depuis 53 j pèse ~2,4× un sujet du jour — assez pour remonter, trop peu pour devenir la seule veine.
+
+Mesure du 2026-08-20 sur les 140 ouvertes : **91 avaient bougé dans les 24 h**, et sur les 12 les plus inactives, **9 étaient des EPICs**. C'est cette asymétrie qui a fait du tirage systématique le premier geste de chaque cycle (mandat user 2026-08-20) : tant que la sélection par défaut restait « ce que je vois », elle restait « ce qui est récent » — les sujets menés à leur terme étaient toujours ceux du moment, et les EPICs de fond ne l'étaient jamais.
+
+## L721 — stale-tracker guard (leçon complète)
+
+Avant **tout** claim de « 0 PR / saturated / idle » : la requête DOIT interroger le **tag de lane** (la même clé que `pick_idle_grain.py` lit), **PAS** `--author <self>`. Forme canonique (variable shell, robuste Git Bash / PowerShell / CMD) :
+
+```bash
+LANE="<machine:workspace>"  # ex. myia-po-2026:CoursIA
+gh pr list --state open --limit 100 --json number,title,body \
+  --jq ".[]|select(.body|test(\"lane $LANE\"))|\"#\(.number) \(.title)\""
+```
+
+**Pourquoi pas `--author <self>`** (#13870) : les workers poussent sous le compte `jsboige` partagé, pas sous leur nom de lane — `--author myia-po-2026` rend **0** alors que la lane porte 25 PRs ouvertes (mesure 2026-09-01, 59 PRs pool). Quatre lanes sur cinq voient `0` de leur propre travail avec la requête naïve, et une lane a escaladé `[URGENT] HIGH` (`msg-20260831T181622-9fucbh`) en croyant n'avoir rien livré alors qu'elle portait 12 PRs — exactement l'état terminal faux-négatif que ce garde devait prévenir.
+
+**Contrôle positif obligatoire** : la requête corrigée se valide par ses **faux négatifs symétriques** — une lane connue pour avoir N PRs doit en rendre N, pas par le fait qu'elle rende un nombre. Mesure de référence du 2026-09-01 : `myia-po-2026:CoursIA` → 25, `myia-po-2024:CoursIA` → 11, `myia-ai-01:CoursIA` → 9, `myia-po-2027:CoursIA` → 5, `myia-po-2023:CoursIA` → 3 — toutes non-nulles (la mesure 2026-08-31 de l'issue #13870 incluait `myia-po-2025` à 1 PR qui a depuis été mergée).
+
+**Repli** : si une PR ne porte **pas** le tag `Grain:` lisible, elle reste invisible aux deux requêtes (tag + author) ; c'est l'angle mort partagé avec `GRAIN-ORPHANS-SWEEP` (#13086). Traiter par le sweep dédié, **pas** en relâchant la requête ici.
+
+## L1356 — preflight de claim, recette complète
+
+L898 vérifie ce qui est **ouvert** ; une PR **MERGÉE** qui a livré l'issue en rider (référence à un autre numéro, pas de `Closes #N`) est invisible à ce filtre, et l'issue reste OPEN sans PR liée — **« OPEN + zéro PR liée » n'est PAS une preuve de fraîcheur** (incidents #13562/#13608, corroboré po-2025 sur #12794).
+
+Avant tout `[CLAIMED]` :
+
+1. `gh search prs "<N>"` (ou `gh pr list --state all --search "<N>"`) — une PR merged sur le sujet = grain livré.
+2. `ls -d <repo-worktrees>/*<motif>*` — un **worktree orphelin** nommé pour l'issue signale une session antérieure : la compaction efface le souvenir du travail, pas le disque ; inspecter sa branche (`git log -1`) avant de créer quoi que ce soit.
+
+Si livré : poster un commentaire `[INFO] candidate-delivered` avec preuve (commit + tests) pour fermeture par le coordinateur — **ne pas réimplémenter, ne pas closer soi-même**.
+
+Cas fondateur du point 1 : le doublon mergé #8835/#8836 (po-2024, 2026-07-29) — deux écarts au triple-check (recherche `--state open` au lieu de `all` ; recherche par mots-clés du titre au lieu du **numéro d'issue**) ont laissé passer un correctif déjà mergé 30 min plus tôt. La recherche se fait par **numéro d'issue**, en `--state all`.
+
+## Réparer son propre rouge — historique et mesures (R5, mandat 2026-08-22)
+
+Le picker a longtemps rendu « REFUS DE TIRAGE » + **sortie 2, aucun candidat** quand la lane portait une PR bloquée >24 h : le fond était le même (la reprise passe d'abord), la forme disait *l'outil n'a rien pour toi*. La forme actuelle — **sortie 0, le grain rendu *est* la reprise** — date de ce mandat.
+
+Pourquoi la reprise est assignée et pas négociable : **une PR rouge ne peut être réparée que par sa lane** — le coordinateur ne peut ni rebaser, ni corriger, ni lever un `CHANGES_REQUESTED` à sa place. Une lane à forte cadence accumule les PRs plus vite, déclenche `count`/`nits` plus tôt, et recevait donc l'ancien refus à **chaque** cycle — le boost causait le drain (incident lanes 2 sous crédit MiniMax, 2026-08-30).
+
+La mesure qui a fondé le mandat (2026-08-22) : débit de merge sain — 65 mergées dans la journée — et pourtant **16 PRs bloquées de plus de 24 h réparties sur 7 lanes**, une au moins par lane. Les PRs du jour mergent vite pendant que les vieilles s'accumulent : c'est le résidu que seule la reprise par la lane absorbe.
+
+## Veine plafonnée — historique et anti-pattern (R8, #11343 tranche 2)
+
+Avant que le tirage ne devienne systématique (R5), le plafond de veine portait une « condition d'appel » du picker. Depuis, il ne reste de lui que l'**interdit ciblé** : la PR suivante de la lane ne peut pas re-claimer l'umbrella qui vient de saturer (`vein_cap=2` PRs citant la même umbrella par jour de lane), quel que soit ce que le tirage propose — la commande `picker_command` exposée par `variation_light_cap.py` sert à écarter l'umbrella saturée.
+
+L'amendement ai-01 du 2026-08-16T22:53Z (verbatim : « on ne jette pas du travail écrit ») borne l'interdit : **le plafond ne bloque jamais la tranche en cours**, seulement la PR suivante.
+
+Anti-pattern fondateur : continuer à claimer `#11224`/`#11271` après la 3ᵉ tranche sans passer par le picker = monoculture auto-référence, le défaut structurel que la veine-mesure a justement rendu visible.

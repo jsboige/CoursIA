@@ -55,6 +55,12 @@
       content_python_sha: 18ce484228a74b94f0cbfc5d8074e07460c793f70a6f8fc45e846eb33c3809f1
       content_csharp_sha: 69a7ebea7341c29420e702f78d873d8ad137c2d8ed9275319155f6cc75bcee4d
       reason: "review fix #13456 final : la condition de version est maintenant explicite dans la cellule d'import, le cadrage amont et l'interpretation aval ; le format source list et la newline finale du notebook sont preserves. Le twin C# reste byte-identique (memes SHA que l'audit initial)."
+    - date: "2026-09-05"
+      by: myia-po-2026:CoursIA
+      python_sha: c060aca55c56c0d3dfb32664558b49f9f156bf03
+      csharp_sha: 2facd2cdf4b87a561f4267f6e73d676501b378db
+      content_python_sha: 18ce484228a74b94f0cbfc5d8074e07460c793f70a6f8fc45e846eb33c3809f1
+      content_csharp_sha: 7f987d7beee6ecb22fb85bdc7b06d224b6db7f7514d4a4d16c6fa62bf8e1755d
   known_differences:
     - "Socle pedagogique commun : Benchmark Sudoku (comparaison solveurs, timing) comme application canonique. Les deux twins couvrent le meme socle theorique (formulation variables/domaines/contraintes, resolution, experimentation) avec parite semantique sur les concepts cibles."
     - "Idiomes framework : Python = typing + random + time (from-scratch benchmark) ; C# = System.Diagnostics (Stopwatch) BCL pure."

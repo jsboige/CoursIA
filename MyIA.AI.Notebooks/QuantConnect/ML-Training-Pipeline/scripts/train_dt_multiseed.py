@@ -82,6 +82,7 @@ def run_single_seed_coin(
     nhead: int = 4,
     num_layers: int = 3,
     context_length: int = 20,
+    train_end: str | None = None,
     window: int = 20,
     batch_size: int = 32,
     lr: float = 1e-4,
@@ -101,7 +102,15 @@ def run_single_seed_coin(
         data_hash = "synthetic-dryrun"
     else:
         raw = load_data(CRYPTO_DIR, coin)
-        data_hash = compute_data_hash(raw)
+        if train_end is not None:
+            # Gel de la borne d'entrainement (#14579) : tout ce qui est
+            # posterieur a train_end est retro-grade OOT -- aucun fold ni
+            # aucune selection d'hyperparametres ne doit le voir.
+            import pandas as pd
+            raw = raw.loc[raw.index <= pd.Timestamp(train_end)]
+            data_hash = compute_data_hash(raw)
+        else:
+            data_hash = compute_data_hash(raw)
 
     # Feature engineering
     indicators = [
@@ -343,6 +352,9 @@ def main():
     parser.add_argument("--context-length", type=int, default=20)
     parser.add_argument("--batch-size", type=int, default=32)
     parser.add_argument("--lr", type=float, default=1e-4)
+    parser.add_argument("--train-end", default=None,
+                        help="Borne de gel : tronque les donnees a cette date "
+                             "inclusive AVANT le walk-forward (#14579 OOT).")
     args = parser.parse_args()
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -390,6 +402,7 @@ def main():
                     lr=args.lr,
                     device=device,
                     dry_run=args.dry_run,
+                    train_end=args.train_end,
                 )
                 elapsed = time.time() - t0
 

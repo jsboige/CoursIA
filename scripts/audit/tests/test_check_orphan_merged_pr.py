@@ -31,6 +31,33 @@ from pathlib import Path
 import pytest
 
 HERE = Path(__file__).resolve().parent
+
+
+def _gh_auth_available() -> bool:
+    """Les tests `_main` ci-dessous passent par mod.main(), dont la
+    découverte de slug en fallback interroge `gh repo view` même avec
+    --repo "" (check_orphan_merged_pr.py main(), `args.repo or ...`), puis
+    analyse_pr requête les PRs ouvertes sur la base quand un slug existe.
+    Sur un runner sans gh authentifié, le RuntimeError est avalé en exit 2
+    et le test échoue sans faute du code. Skip propre, pas FAILED — même
+    politique que test_check_unaddressed_nits.py (review NanoClaw #14322,
+    concern 2) ; constaté au câblage CI de cette suite (#14615 famille 2).
+    """
+    import shutil
+    if shutil.which("gh") is None:
+        return False
+    return subprocess.run(
+        ["gh", "auth", "status"], capture_output=True
+    ).returncode == 0
+
+
+requires_gh_auth = pytest.mark.skipif(
+    not _gh_auth_available(),
+    reason="gh absent/unauthed -- main() (découverte slug + requête PRs "
+           "ouvertes sur la base) exige gh authentifié (#14615 famille 2)",
+)
+
+
 CHECK_PATH = HERE.parent / "check_orphan_merged_pr.py"
 
 
@@ -54,7 +81,8 @@ def _g(repo: Path, *args: str, date: str | None = None) -> str:
         env["GIT_AUTHOR_DATE"] = date
         env["GIT_COMMITTER_DATE"] = date
     cmd = ["git", "-C", str(repo), *_BASE_CFG, *args]
-    proc = subprocess.run(cmd, capture_output=True, text=True, env=env)
+    proc = subprocess.run(cmd, capture_output=True, text=True, env=env,
+                          encoding="utf-8", errors="replace")
     assert proc.returncode == 0, f"git {args} failed: {proc.stderr.strip()}"
     return proc.stdout.strip()
 
@@ -162,6 +190,7 @@ def test_orphan_after_base_squash_merge(tmp_path):
     assert "recovery" in res
 
 
+@requires_gh_auth
 def test_orphan_strict_exits_1_main(tmp_path):
     """main() with --strict returns 1 on a genuine orphan (criterion 1: red)."""
     mod = _load()
@@ -585,6 +614,7 @@ def test_main_clean_exits_0(tmp_path):
     assert rc == 0
 
 
+@requires_gh_auth
 def test_main_orphan_advisory_exits_0(tmp_path):
     mod = _load()
     repo = _git_repo(tmp_path)
@@ -711,6 +741,7 @@ def test_format_report_lists_adjudges_separately_and_counts():
     assert "adjuges: 1" in out
 
 
+@requires_gh_auth
 def test_main_adjudged_does_not_fail_strict(tmp_path):
     """main() avec registre qui adjuge le seul orphelin -> --strict exit 0 :
     le compte orphelins retombe a 0, l'adjudication n'est pas un finding."""

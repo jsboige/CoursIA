@@ -53,6 +53,25 @@
          QuantConnect exclusion above). OwlAdapter/GSheetSync/DatasetUpdater
          were added in #5167 without this guard. -->
     <Compile Remove="SymbolicAI\Argument_Analysis\CoursIA-*\**\*.cs" />
+    <!-- Same class, never extended since #5167: each directory below holds its
+         own .csproj, so its sources belong to that build unit, not to
+         MyIA.AI.Notebooks.dll. Swept in by the implicit glob they fail the
+         parent build on references the parent does not carry (xunit, Roslyn
+         analyzer SDK, Aspire hosting). -->
+    <Compile Remove="GenAI\Aspire\AgentGuard.Analyzers\**\*.cs" />
+    <Compile Remove="GenAI\Aspire\AgentGuard.Demo\**\*.cs" />
+    <Compile Remove="GenAI\Aspire\AgentGuard.Verifier\**\*.cs" />
+    <Compile Remove="GenAI\Aspire\IntegrationTests\**\*.cs" />
+    <Compile Remove="GenAI\Aspire\StreamingAgent.App\**\*.cs" />
+    <Compile Remove="GenAI\CopilotSDK\**\*.cs" />
+    <Compile Remove="GenAI\Vibe-Coding\analyzers\**\*.cs" />
+    <Compile Remove="GenAI\Vibe-Coding\docs\**\*.cs" />
+    <Compile Remove="Probas\DecisionTheory\voi\**\*.cs" />
+    <Compile Remove="SymbolicAI\Tweety\**\*.cs" />
+    <!-- Aspire file-based programs (`#:sdk` directives, run via
+         `dotnet run apphost.cs`, no .csproj of their own): the `#:` directive
+         is only legal under -features:FileBasedProgram, hence CS9298. -->
+    <Compile Remove="**\apphost.cs" />
   </ItemGroup>
 
   <ItemGroup>

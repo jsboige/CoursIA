@@ -64,8 +64,14 @@ jobs:
       # that replaying the founding commit still fires. A detector that cannot
       # be shown to fire is indistinguishable from one that is unplugged --
       # which is exactly how the three surfaces above passed this through.
+      # Since #14603 it also replays the GPU -> CPU re-exec of #14262 for the
+      # advisory CAPABILITY_DOWNGRADE axis (never gates; the lift -- a
+      # documented RECOVERABLE-MACHINE CPU run -- is written in the report).
       - name: Detector self-test (positive + negative control)
         run: python scripts/notebook_tools/check_output_failure_text.py --self-test
+
+      - name: Capability-downgrade axis unit tests (#14603)
+        run: python -m pytest scripts/notebook_tools/tests/test_check_output_failure_text.py -q
 
       # Refs reach the script via env, never inline in the run script
       # (script-injection guard, same as notebook-papermill-ratchet.yml).
