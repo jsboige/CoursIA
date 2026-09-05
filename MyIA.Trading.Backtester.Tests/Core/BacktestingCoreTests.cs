@@ -23,11 +23,13 @@ namespace MyIA.Trading.Backtester.Tests.Core
             wallet.LastTransactions.Add(new Transaction { Amount = 25m });
 
             var clone = (Wallet)wallet.Clone();
+            clone.Orders[0].Amount = 10m;
             clone.Orders.Clear();
             clone.LastTrades.Clear();
             clone.LastTransactions.Clear();
 
             Assert.Single(wallet.Orders);
+            Assert.Equal(1m, wallet.Orders[0].Amount);
             Assert.Single(wallet.LastTrades);
             Assert.Single(wallet.LastTransactions);
             Assert.Equal(wallet.PrimaryBalance, clone.PrimaryBalance);
@@ -54,6 +56,27 @@ namespace MyIA.Trading.Backtester.Tests.Core
             Assert.Equal(2, matches.Count);
             Assert.Contains(matches, order => order.OrderType == OrderType.Buy && order.Price == 110m);
             Assert.Contains(matches, order => order.OrderType == OrderType.Sell && order.Price == 80m);
+        }
+
+        [Fact]
+        public void MatchOrders_DuplicatePricesDoNotMutateOrInflateOrders()
+        {
+            var wallet = new Wallet
+            {
+                Orders = new List<Order>
+                {
+                    new Order(OrderType.Buy, 110m, 1m),
+                    new Order(OrderType.Buy, 110m, 1m)
+                }
+            };
+            var exchange = new ExchangeInfo();
+
+            var firstMatches = exchange.MatchOrders(ref wallet, 100m);
+            var secondMatches = exchange.MatchOrders(ref wallet, 100m);
+
+            Assert.Equal(2, firstMatches.Count);
+            Assert.Equal(2, secondMatches.Count);
+            Assert.All(wallet.Orders, order => Assert.Equal(1m, order.Amount));
         }
 
         [Fact]
@@ -99,7 +122,7 @@ namespace MyIA.Trading.Backtester.Tests.Core
         {
             var depth = new MarketDepth
             {
-                Bids = new[] { new[] { 99m, 2m, 0m } }
+                Bids = new[] { new[] { 99m, 2m, 1_700_000_000m } }
             };
 
             Assert.Single(depth.BidOrders);
@@ -123,6 +146,21 @@ namespace MyIA.Trading.Backtester.Tests.Core
         }
 
         [Fact]
+        public void TradingHistory_PreservesTickerSnapshotPerEvent()
+        {
+            var ticker = new Ticker(100m);
+            var wallet = new Wallet { PrimaryBalance = 1m };
+            var history = new TradingHistory();
+
+            history.AddEvent(new TradingEvent(
+                new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                wallet.GetBalance(ticker)));
+            ticker.Last = 150m;
+
+            Assert.Equal(100m, history.LastEvents.Instances[0].Balance.TickerLast);
+        }
+
+        [Fact]
         public void ExchangeSimulator_DoesNotUseFutureTradePrice()
         {
             var start = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc);
@@ -139,6 +177,25 @@ namespace MyIA.Trading.Backtester.Tests.Core
 
             Assert.Equal(100m, market.Ticker.Last);
             Assert.Single(market.RecentTrades);
+        }
+
+        [Fact]
+        public void ExchangeSimulator_RecentTradesUsesRollingDayWindow()
+        {
+            var start = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+            var simulator = new ExchangeSimulator
+            {
+                Trades = new List<OrderTrade>
+                {
+                    new OrderTrade { Time = start, Price = 100m, Amount = 1m },
+                    new OrderTrade { Time = start.AddHours(25), Price = 110m, Amount = 1m }
+                }
+            };
+
+            var market = simulator.GetMarket(start.AddHours(25));
+
+            Assert.Single(market.RecentTrades);
+            Assert.Equal(110m, market.RecentTrades[0].Price);
         }
 
         [Fact]
@@ -164,6 +221,29 @@ namespace MyIA.Trading.Backtester.Tests.Core
             Assert.True(firstStrategy.CallCount > 0);
             Assert.Equal(1m, setups[0].Walllet.PrimaryBalance);
             Assert.Equal(2m, setups[1].Walllet.PrimaryBalance);
+        }
+
+        [Fact]
+        public void RunSimulations_FastSkipStateIsIndependentPerSetup()
+        {
+            var trades = CreateTrades();
+            var standaloneStrategy = new CountingStrategy();
+            var firstStrategy = new CountingStrategy();
+            var secondStrategy = new CountingStrategy();
+            var simulation = CreateFastSimulation(trades);
+
+            simulation.RunSimulation(new Wallet(), standaloneStrategy, new ExchangeInfo(), trades);
+            simulation.RunSimulations(
+                new List<SimulationSetup>
+                {
+                    new SimulationSetup { Walllet = new Wallet(), Strategy = firstStrategy },
+                    new SimulationSetup { Walllet = new Wallet(), Strategy = secondStrategy }
+                },
+                new ExchangeInfo(),
+                trades);
+
+            Assert.Equal(standaloneStrategy.CallCount, firstStrategy.CallCount);
+            Assert.Equal(standaloneStrategy.CallCount, secondStrategy.CallCount);
         }
 
         [Fact]
@@ -208,6 +288,20 @@ namespace MyIA.Trading.Backtester.Tests.Core
                 EndDate = trades[^1].Time.AddSeconds(-1),
                 BotPeriod = botPeriod,
                 FastSimulation = false
+            };
+        }
+
+        private static SimulationInfo CreateFastSimulation(IReadOnlyList<OrderTrade> trades)
+        {
+            return new SimulationInfo
+            {
+                StartDate = trades[0].Time.AddSeconds(-1),
+                EndDate = trades[^1].Time.AddSeconds(-1),
+                BotPeriod = TimeSpan.FromMinutes(5),
+                FastSimulation = true,
+                SkippedMinVoidRuns = 1m,
+                SkippedMaxRuns = 3m,
+                SkippedVariationRate = 100m
             };
         }
 

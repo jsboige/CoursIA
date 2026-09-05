@@ -48,6 +48,8 @@ namespace MyIA.Trading.Backtester
                 _currentTradeIdx += 1;
             }
 
+            _currentMarket.RecentTrades.RemoveAll(trade => trade.Time < time.AddHours(-24d));
+
             if (currentTrade == null)
             {
                 if (_currentTradeIdx == 0)

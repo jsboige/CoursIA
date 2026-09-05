@@ -103,16 +103,19 @@ namespace MyIA.Trading.Backtester
 
             var objExchangeSimulator = new ExchangeSimulator()
             {
-                Trades = exchangeHistory.ToList(),
+                Trades = exchangeHistory.OrderBy(trade => trade.Time).ToList(),
                 IncludeDepth = objSimulation.IncludeDepth,
                 FullTicker = objSimulation.FullTicker
             };
             //var currentWallet = (Wallet)initialWallet.Clone();
             //var lastBotMarket = new MarketInfo(DateTime.MinValue);
-            var lastBotTicker = 0m;
             var lastBotTime = DateTime.MinValue;
             MarketInfo objMarket = null;
-            int nbEmptyRuns = 0;
+            foreach (var setup in setups)
+            {
+                setup.LastBotTicker = 0m;
+                setup.EmptyRunCount = 0;
+            }
             foreach (var historicTrade in objExchangeSimulator.Trades
                     .Where(objTrade => objTrade.Time > objSimulation.StartDate
                     && objTrade.Time < objSimulation.EndDate))
@@ -125,7 +128,7 @@ namespace MyIA.Trading.Backtester
                         || (currentWallet.OrderedBids.Count > 0 &&
                             historicTrade.Price < currentWallet.HighestBid.Price))
                     {
-                        nbEmptyRuns = 0;
+                        simulationSetup.EmptyRunCount = 0;
                         objMarket = objExchangeSimulator.GetMarket(historicTrade.Time);
                         var currentHistory = simulationSetup.TradingHistory;
                         objExchange.ExecuteOrders(objMarket, ref currentWallet, ref currentHistory);
@@ -140,39 +143,39 @@ namespace MyIA.Trading.Backtester
                         var currentWallet = simulationSetup.Walllet;
 
                         currentWallet.Time = historicTrade.Time;
-                        bool isBigVariation =
-                            Math.Abs((historicTrade.Price - lastBotTicker) / historicTrade.Price)
+                        bool isBigVariation = historicTrade.Price != 0m
+                            && Math.Abs((historicTrade.Price - simulationSetup.LastBotTicker) / historicTrade.Price)
                             > objSimulation.SkippedVariationRate / 100;
 
                         if (!objSimulation.FastSimulation
-                            || nbEmptyRuns < objSimulation.SkippedMinVoidRuns
-                            || nbEmptyRuns >= objSimulation.SkippedMaxRuns
+                            || simulationSetup.EmptyRunCount < objSimulation.SkippedMinVoidRuns
+                            || simulationSetup.EmptyRunCount >= objSimulation.SkippedMaxRuns
                             || isBigVariation)
                         {
-                            if (objMarket == null || objMarket.Time<historicTrade.Time)
+                            if (objMarket == null || objMarket.Time < historicTrade.Time)
                             {
                                 objMarket = objExchangeSimulator.GetMarket(historicTrade.Time);
                             }
                             var newOrders = simulationSetup.Strategy.ComputeNewOrders(currentWallet, objMarket, objExchange, simulationSetup.TradingHistory);
                             currentWallet.IntegrateOrders(newOrders.Orders.ToArray());
-                            lastBotTicker = objMarket.Ticker.Last;
-                            if (newOrders.Orders.Count == 0 && !isBigVariation && nbEmptyRuns < objSimulation.SkippedMaxRuns)
+                            simulationSetup.LastBotTicker = objMarket.Ticker.Last;
+                            if (newOrders.Orders.Count == 0
+                                && !isBigVariation
+                                && simulationSetup.EmptyRunCount < objSimulation.SkippedMaxRuns)
                             {
-                                nbEmptyRuns++;
+                                simulationSetup.EmptyRunCount++;
                             }
                             else
                             {
-                                nbEmptyRuns = 0;
+                                simulationSetup.EmptyRunCount = 0;
                             }
                         }
                         else
                         {
-                            nbEmptyRuns++;
+                            simulationSetup.EmptyRunCount++;
                         }
-                        lastBotTime = historicTrade.Time;
                     }
-
-
+                    lastBotTime = historicTrade.Time;
                 }
             }
             return setups.Select(objSetup=>objSetup.TradingHistory).ToList();

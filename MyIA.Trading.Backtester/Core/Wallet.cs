@@ -265,12 +265,23 @@ namespace MyIA.Trading.Backtester
             var toReturn = new Wallet
             {
                 Time = this.Time,
+                MarketId = this.MarketId,
                 PrimarySymbol = this.PrimarySymbol,
                 SecondarySymbol = this.SecondarySymbol,
                 PrimaryBalance = this.PrimaryBalance,
                 SecondaryBalance = this.SecondaryBalance,
                 Status = this.Status,
-                Orders = new List<Order>(this._orders),
+                Orders = this._orders.Select(order => new Order
+                {
+                    Oid = order.Oid,
+                    Status = order.Status,
+                    Date = order.Date,
+                    IsCancel = order.IsCancel,
+                    Type = order.Type,
+                    Price = order.Price,
+                    Amount = order.Amount,
+                    Dark = order.Dark
+                }).ToList(),
                 LastTrades = new List<OrderTrade>(this.LastTrades),
                 LastTransactions = new List<Transaction>(this.LastTransactions),
                 ReturnCodes = this.ReturnCodes,
@@ -432,7 +443,7 @@ namespace MyIA.Trading.Backtester
 
         public Balance GetBalance(Ticker objTicker)
         {
-            return new Balance(this.PrimaryBalance, objTicker, this.SecondaryBalance);
+            return new Balance(this.PrimaryBalance, new Ticker(objTicker), this.SecondaryBalance);
         }
 
         public decimal GetTotalAsksPrimary()
@@ -479,24 +490,10 @@ namespace MyIA.Trading.Backtester
 
         private List<Order> GetSortedOrders(int objOrderType)
         {
-            var objSortedList = new SortedList<decimal, Order>(this._orders.Count);
-            for (int i = 0; i < _orders.Count; i++)
-            {
-                Order objOrder = _orders[i];
-                if ((objOrder.Type == objOrderType && !objOrder.IsCancel))
-                {
-                    if (objSortedList.ContainsKey(objOrder.Price))
-                    {
-                        Order item = objSortedList[objOrder.Price];
-                        item.Amount = decimal.Add(item.Amount, objOrder.Amount);
-                    }
-                    else
-                    {
-                        objSortedList.Add(objOrder.Price, objOrder);
-                    }
-                }
-            }
-            return new List<Order>(objSortedList.Values);
+            return _orders
+                .Where(order => order.Type == objOrderType && !order.IsCancel)
+                .OrderBy(order => order.Price)
+                .ToList();
         }
 
         private void Clean()

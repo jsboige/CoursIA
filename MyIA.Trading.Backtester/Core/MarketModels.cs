@@ -351,7 +351,7 @@ namespace MyIA.Trading.Backtester
                     }
                     else
                     {
-                        BidOrders.Add(new Order(OrderType.Sell, triplet[0], triplet[1],
+                        BidOrders.Add(new Order(OrderType.Buy, triplet[0], triplet[1],
                             UnixTime.ConvertFromUnixTimestamp(Convert.ToInt64(triplet[2]))));
                     }
 
