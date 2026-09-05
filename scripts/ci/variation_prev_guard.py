@@ -175,7 +175,17 @@ _PREV_PR_REF_RE = re.compile(
 # explained WHY it did not point `prev:` at a still-open PR, had its own
 # correct tag overruled by its own prose. Masking preserves offsets so the
 # slices reported in the verdict stay meaningful.
-_CODE_SPAN_RE = re.compile(r"```.*?```|`[^`\n]*`", re.DOTALL)
+#
+# Backtick spans can wrap across a soft line break (Markdown reflow): a
+# citation of `` `prev: MED/training\n#14592` `` is still ONE code span,
+# not two. The previous `` `[^`\\n]*` `` forbade newlines and let the
+# second half escape the mask -- a defect measured on PR #14700's own
+# `` commits[0] `` (L4-L5 of the body) where the bug citation spanned two
+# lines and the unguarded half tripped `` _PREV_PR_REF_RE `` on
+# `` #14592 ``. We allow ``\\n`` inside the span (still forbidding a bare
+# backtick) so the whole citation is masked as one. Fenced blocks (```...```)
+# already accept newlines via ``.*?`` + ``re.DOTALL``.
+_CODE_SPAN_RE = re.compile(r"```.*?```|`[^`]*`", re.DOTALL)
 
 
 def _mask_code_spans(text: str) -> str:
