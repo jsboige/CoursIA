@@ -20,12 +20,12 @@ Algorithmes de recherche classique, satisfaction de contraintes (CSP), résoluti
 
 | Métrique | Valeur |
 |----------|--------|
-| Notebooks | 167 |
+| Notebooks | 168 |
 | PRODUCTION | 0 |
-| BETA | 167 |
+| BETA | 168 |
 | ALPHA | 0 |
 
-## Search/Applications (52 notebooks)
+## Search/Applications (53 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -45,81 +45,88 @@ Algorithmes de recherche classique, satisfaction de contraintes (CSP), résoluti
 | 14 | App-20b : Benchmark compare des solveurs Sudoku (jumeau… | BETA | Oui |
 | 15 | Voice Leading Minimal par Affectation — l'algorithme de… | BETA | Oui |
 | 16 | App-22 : Coloration d'arêtes et conjecture de Tutte | BETA | Oui |
-| 17 | App-26 — Covering Arrays : tester les interactions… | BETA | Oui |
-| 18 | App-2b : Coloration de graphes — Jumeau C# | BETA | Oui |
-| 19 | App-3 : Nurse Scheduling (Planification des horaires… | BETA | Oui |
-| 20 | App-3b : Nurse Scheduling — Twin C# (planification de… | BETA | Oui |
-| 21 | App-4 : Job-Shop Scheduling | BETA | Oui |
-| 22 | App-4b : Job-Shop Scheduling — Twin C# (ordonnancement… | BETA | Oui |
-| 23 | App-5 : Emploi du temps universitaire — Twin C#… | BETA | Oui |
-| 24 | App-5 : Emploi du temps universitaire (University… | BETA | Oui |
-| 25 | App-6 - Demineur : CSP, Probabilites et NP-completude | BETA | Oui |
-| 26 | App-7 : Wordle Solver -- CSP et théorie de… | BETA | Oui |
-| 27 | App-7b : Solveur Wordle -- CSP et théorie de… | BETA | Oui |
-| 28 | App-8 : Modelisation declarative par contraintes (twin… | BETA | Oui |
-| 29 | App-8-MiniZinc : Modelisation declarative par… | BETA | Oui |
-| 30 | App-10 : Optimisation de portefeuille par algorithme… | BETA | Oui |
-| 31 | App-10b : Optimisation de portefeuille par algorithme… | BETA | Oui |
-| 32 | App-13 : Le Problème du Voyageur de Commerce (TSP) | BETA | Oui |
-| 33 | App-13b : TSP (Voyageur de Commerce) — Jumeau C# | BETA | Oui |
-| 34 | App-17 : Vehicle Routing Problem (VRP) | BETA | Oui |
-| 35 | App-17b : Vehicle Routing Problem (VRP) — Twin C#… | BETA | Oui |
-| 36 | App-17b : Vehicle Routing Problem (VRP) — Twin Python… | BETA | Oui |
-| 37 | App-18: Optimisation d'Hyperparametres - Approches… | BETA | Oui |
-| 38 | App-18b : Optimisation d'Hyperparametres - Jumeau C# | BETA | Oui |
-| 39 | App-18b : Optimisation d'Hyperparametres (Python —… | BETA | Oui |
-| 40 | App-22 — Sélection empirique d'algorithmes : trois… | BETA | Oui |
-| 41 | App-23 — Cryptanalyse différentielle de PRESENT par SAT | BETA | Oui |
-| 42 | App-24 — MAPF : auditer les garanties des solveurs | BETA | Non |
-| 43 | App-25 — Enchères combinatoires : Winner Determination… | BETA | Oui |
-| 44 | App-27 — Sparse index tracking | BETA | Oui |
-| 45 | App-28 — Learning to branch | BETA | Oui |
-| 46 | App-29 — Équilibrage de chaîne d'assemblage (SALBP) | BETA | Oui |
-| 47 | App-9 : Detection de bords par algorithmes génétiques | BETA | Oui |
-| 48 | TP : Conception d'Algorithmes Génétiques avec… | BETA | Oui |
-| 49 | App-14-ConnectFour-Adversarial-CSharp — Jumeau C# :… | BETA | Oui |
-| 50 | App-14 - Connect Four : Benchmark Adversarial Search | BETA | Oui |
-| 51 | App-14b : Puissance 4 -- Comparaison d'algorithmes IA… | BETA | Oui |
-| 52 | App-14c (C#) : Puissance 4 -- Comparaison d'algorithmes… | BETA | Oui |
+| 17 | App-23 - Factorio Belt Balancer (CP-SAT borne) | BETA | Oui |
+| 18 | App-26 — Covering Arrays : tester les interactions… | BETA | Oui |
+| 19 | App-2b : Coloration de graphes — Jumeau C# | BETA | Oui |
+| 20 | App-3 : Nurse Scheduling (Planification des horaires… | BETA | Oui |
+| 21 | App-3b : Nurse Scheduling — Twin C# (planification de… | BETA | Oui |
+| 22 | App-4 : Job-Shop Scheduling | BETA | Oui |
+| 23 | App-4b : Job-Shop Scheduling — Twin C# (ordonnancement… | BETA | Oui |
+| 24 | App-5 : Emploi du temps universitaire — Twin C#… | BETA | Oui |
+| 25 | App-5 : Emploi du temps universitaire (University… | BETA | Oui |
+| 26 | App-6 - Demineur : CSP, Probabilites et NP-completude | BETA | Oui |
+| 27 | App-7 : Wordle Solver -- CSP et théorie de… | BETA | Oui |
+| 28 | App-7b : Solveur Wordle -- CSP et théorie de… | BETA | Oui |
+| 29 | App-8 : Modelisation declarative par contraintes (twin… | BETA | Oui |
+| 30 | App-8-MiniZinc : Modelisation declarative par… | BETA | Oui |
+| 31 | App-10 : Optimisation de portefeuille par algorithme… | BETA | Oui |
+| 32 | App-10b : Optimisation de portefeuille par algorithme… | BETA | Oui |
+| 33 | App-13 : Le Problème du Voyageur de Commerce (TSP) | BETA | Oui |
+| 34 | App-13b : TSP (Voyageur de Commerce) — Jumeau C# | BETA | Oui |
+| 35 | App-17 : Vehicle Routing Problem (VRP) | BETA | Oui |
+| 36 | App-17b : Vehicle Routing Problem (VRP) — Twin C#… | BETA | Oui |
+| 37 | App-17b : Vehicle Routing Problem (VRP) — Twin Python… | BETA | Oui |
+| 38 | App-18: Optimisation d'Hyperparametres - Approches… | BETA | Oui |
+| 39 | App-18b : Optimisation d'Hyperparametres - Jumeau C# | BETA | Oui |
+| 40 | App-18b : Optimisation d'Hyperparametres (Python —… | BETA | Oui |
+| 41 | App-22 — Sélection empirique d'algorithmes : trois… | BETA | Oui |
+| 42 | App-23 — Cryptanalyse différentielle de PRESENT par SAT | BETA | Oui |
+| 43 | App-24 — MAPF : auditer les garanties des solveurs | BETA | Non |
+| 44 | App-25 — Enchères combinatoires : Winner Determination… | BETA | Oui |
+| 45 | App-27 — Sparse index tracking | BETA | Oui |
+| 46 | App-28 — Learning to branch | BETA | Oui |
+| 47 | App-29 — Équilibrage de chaîne d'assemblage (SALBP) | BETA | Oui |
+| 48 | App-9 : Detection de bords par algorithmes génétiques | BETA | Oui |
+| 49 | TP : Conception d'Algorithmes Génétiques avec… | BETA | Oui |
+| 50 | App-14-ConnectFour-Adversarial-CSharp — Jumeau C# :… | BETA | Oui |
+| 51 | App-14 - Connect Four : Benchmark Adversarial Search | BETA | Oui |
+| 52 | App-14b : Puissance 4 -- Comparaison d'algorithmes IA… | BETA | Oui |
+| 53 | App-14c (C#) : Puissance 4 -- Comparaison d'algorithmes… | BETA | Oui |
 
-## Search/Part1-Foundations (34 notebooks)
+## Search/Part1-Foundations (40 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | Search-02b : Théorie des Graphes avec NetworkX (C#) | BETA | Oui |
 | 2 | Search-02b-NetworkX : Algorithmes de Graphe avec… | BETA | Oui |
 | 3 | Search-02c-QuikGraph : bibliotheque de graphes pour… | BETA | Oui |
-| 4 | Search-03e : A* et l'optimalité sous heuristique… | BETA | Non |
-| 5 | Search-09b : Minima fallacieux — le paysage de la… | BETA | Oui |
-| 6 | Search-09c — Discrépance combinatoire : colorier ±1… | BETA | Oui |
-| 7 | Search-09d — Discrépance combinatoire : la couche… | BETA | Oui |
-| 8 | Search-1 : Espaces d'etats et formalisation de… | BETA | Oui |
-| 9 | Search-1 : Espaces d'etats et formulation de problemes | BETA | Oui |
-| 10 | Search-10 (C#) : Automates Finis Classiques — jumeau… | BETA | Oui |
-| 11 | Search-10 : Automates Symboliques avec Z3 | BETA | Oui |
-| 12 | Search-11 (C#) : Métaheuristiques — Optimisation par… | BETA | Oui |
-| 13 | Search-11-métaheuristiques : Optimisation avec MEALPy | BETA | Oui |
-| 14 | Search-11b (Part 2) : Particle Swarm Optimization (C# /… | BETA | Oui |
-| 15 | Search-11b-Métaheuristiques-Deep-Part3 : Artificial Bee… | BETA | Oui |
-| 16 | Search-11b-Métaheuristiques-Deep-Part4 : Benchmark… | BETA | Oui |
-| 17 | Search-11b : Métaheuristiques d'optimisation (C# /… | BETA | Oui |
-| 18 | Search-17 — Sélection empirique d'algorithmes : deux… | BETA | Oui |
-| 19 | Search-2-Uninformed (C#) : Algorithmes de Recherche Non… | BETA | Oui |
-| 20 | Search-2-Uninformed : Algorithmes de Recherche Non… | BETA | Oui |
-| 21 | Search-3-Informed (C#) : Recherche Informée | BETA | Oui |
-| 22 | Search-3-Informed : Algorithmes de Recherche Informée | BETA | Oui |
-| 23 | Search-4-LocalSearch (C#) : Recherche Locale et… | BETA | Oui |
-| 24 | Search-4-LocalSearch : Recherche Locale et… | BETA | Oui |
-| 25 | Search-5-GeneticAlgorithms-Csharp : Algorithmes… | BETA | Oui |
-| 26 | Search-5 : Algorithmes génétiques | BETA | Oui |
-| 27 | Search-6 — Recherche adversariale (jeux à somme nulle)… | BETA | Oui |
-| 28 | Search-6-AdversarialSearch : Recherche Adversariale | BETA | Oui |
-| 29 | Search-7-MCTS-And-Beyond (C#) : Monte Carlo Tree Search… | BETA | Oui |
-| 30 | Search-7-MCTS-And-Beyond : Monte Carlo Tree Search et… | BETA | Oui |
-| 31 | Search-8-DancingLinks-Csharp : L'algorithme X et… | BETA | Oui |
-| 32 | Search-8-DancingLinks : L'algorithme X et Dancing Links… | BETA | Oui |
-| 33 | Search-9 : Programmation Linéaire et Simplexe (C# /… | BETA | Oui |
-| 34 | Search-9-LinearProgramming : Programmation Lineaire et… | BETA | Oui |
+| 4 | Search-03b (C#) — Bases de données de motifs (Pattern… | BETA | Oui |
+| 5 | Search-03b — Bases de données de motifs (Pattern… | BETA | Oui |
+| 6 | Search-03c (C#) — Recherche à écart limité (Limited… | BETA | Oui |
+| 7 | Search-03c — Recherche à écart limité (Limited… | BETA | Oui |
+| 8 | Search-03d (C#) — Weighted A\* : recherche à… | BETA | Oui |
+| 9 | Search-03d — Weighted A\* : recherche à sous-optimalité… | BETA | Oui |
+| 10 | Search-03e : A* et l'optimalité sous heuristique… | BETA | Non |
+| 11 | Search-09b : Minima fallacieux — le paysage de la… | BETA | Oui |
+| 12 | Search-09c — Discrépance combinatoire : colorier ±1… | BETA | Oui |
+| 13 | Search-09d — Discrépance combinatoire : la couche… | BETA | Oui |
+| 14 | Search-1 : Espaces d'etats et formalisation de… | BETA | Oui |
+| 15 | Search-1 : Espaces d'etats et formulation de problemes | BETA | Oui |
+| 16 | Search-10 (C#) : Automates Finis Classiques — jumeau… | BETA | Oui |
+| 17 | Search-10 : Automates Symboliques avec Z3 | BETA | Oui |
+| 18 | Search-11 (C#) : Métaheuristiques — Optimisation par… | BETA | Oui |
+| 19 | Search-11-métaheuristiques : Optimisation avec MEALPy | BETA | Oui |
+| 20 | Search-11b (Part 2) : Particle Swarm Optimization (C# /… | BETA | Oui |
+| 21 | Search-11b-Métaheuristiques-Deep-Part3 : Artificial Bee… | BETA | Oui |
+| 22 | Search-11b-Métaheuristiques-Deep-Part4 : Benchmark… | BETA | Oui |
+| 23 | Search-11b : Métaheuristiques d'optimisation (C# /… | BETA | Oui |
+| 24 | Search-17 — Sélection empirique d'algorithmes : deux… | BETA | Oui |
+| 25 | Search-2-Uninformed (C#) : Algorithmes de Recherche Non… | BETA | Oui |
+| 26 | Search-2-Uninformed : Algorithmes de Recherche Non… | BETA | Oui |
+| 27 | Search-3-Informed (C#) : Recherche Informée | BETA | Oui |
+| 28 | Search-3-Informed : Algorithmes de Recherche Informée | BETA | Oui |
+| 29 | Search-4-LocalSearch (C#) : Recherche Locale et… | BETA | Oui |
+| 30 | Search-4-LocalSearch : Recherche Locale et… | BETA | Oui |
+| 31 | Search-5-GeneticAlgorithms-Csharp : Algorithmes… | BETA | Oui |
+| 32 | Search-5 : Algorithmes génétiques | BETA | Oui |
+| 33 | Search-6 — Recherche adversariale (jeux à somme nulle)… | BETA | Oui |
+| 34 | Search-6-AdversarialSearch : Recherche Adversariale | BETA | Oui |
+| 35 | Search-7-MCTS-And-Beyond (C#) : Monte Carlo Tree Search… | BETA | Oui |
+| 36 | Search-7-MCTS-And-Beyond : Monte Carlo Tree Search et… | BETA | Oui |
+| 37 | Search-8-DancingLinks-Csharp : L'algorithme X et… | BETA | Oui |
+| 38 | Search-8-DancingLinks : L'algorithme X et Dancing Links… | BETA | Oui |
+| 39 | Search-9 : Programmation Linéaire et Simplexe (C# /… | BETA | Oui |
+| 40 | Search-9-LinearProgramming : Programmation Lineaire et… | BETA | Oui |
 
 ## Search/Part2-CSP (17 notebooks)
 
@@ -138,21 +145,10 @@ Algorithmes de recherche classique, satisfaction de contraintes (CSP), résoluti
 | 11 | CSP-6-Hybridation : Approches Hybrides Modernes | BETA | Non |
 | 12 | CSP-7 : Contraintes Souples avec Choco-solver | BETA | Non |
 | 13 | CSP-7 : Contraintes Souples - Soft CSP | BETA | Non |
-| 14 | CSP-8 : Temporels - Raisonnement sur le Temps | BETA | Oui |
+| 14 | CSP-8 : Temporels - Raisonnement sur le Temps | BETA | Non |
 | 15 | CSP-8 : Temporels - Raisonnement sur le Temps | BETA | Non |
 | 16 | CSP-9-Distributed | BETA | Oui |
 | 17 | CSP-9-Distributed : CSP Distribués (DisCSP) | BETA | Oui |
-
-## Search/Part1-Foundations (accrétions avancées, ex-Partie 3)
-
-| # | Notebook | Maturité | Exécutable |
-|---|----------|----------|------------|
-| 1 | Search-03b (C#) — Bases de données de motifs (Pattern… | BETA | Oui |
-| 2 | Search-03b — Bases de données de motifs (Pattern… | BETA | Oui |
-| 3 | Search-03c (C#) — Recherche à écart limité (Limited… | BETA | Oui |
-| 4 | Search-03c — Recherche à écart limité (Limited… | BETA | Oui |
-| 5 | Search-03d (C#) — Weighted A\* : recherche à… | BETA | Oui |
-| 6 | Search-03d — Weighted A\* : recherche à sous-optimalité… | BETA | Oui |
 
 ## Search/Part4-Metaheuristics (21 notebooks)
 

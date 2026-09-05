@@ -20,12 +20,12 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 
 | Métrique | Valeur |
 |----------|--------|
-| Notebooks | 244 |
+| Notebooks | 245 |
 | PRODUCTION | 0 |
-| BETA | 240 |
+| BETA | 241 |
 | ALPHA | 4 |
 
-## GameTheory (82 notebooks)
+## GameTheory (83 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -50,67 +50,68 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 | 19 | GameTheory 4b - Theoreme d'Existence de Nash (Lean) | BETA | Non |
 | 20 | GameTheory 4c - Théorème d'Existence de Nash (C#) | ALPHA | Oui |
 | 21 | GameTheory 4c - Theoreme d'Existence de Nash (Python) | BETA | Non |
-| 22 | GameTheory-05-ZeroSum-Minimax (Twin C#) | BETA | Oui |
-| 23 | GameTheory-05-ZeroSum-Minimax | BETA | Oui |
-| 24 | GameTheory-5b — Théorème minimax de von Neumann… | BETA | Non |
-| 25 | GameTheory-6 : Évolution et Confiance — Twin C#… | BETA | Oui |
-| 26 | GameTheory-06-EvolutionTrust | BETA | Oui |
-| 27 | GameTheory-6c (C#) : Jeux Répétés et Théorème Folk | BETA | Oui |
-| 28 | GameTheory-6c : Jeux Répétés et Théorème Folk (Folk… | BETA | Oui |
-| 29 | GameTheory-06d : Sympathie contre Engagement — la… | BETA | Oui |
-| 30 | GameTheory-07-ExtensiveForm (Twin C#) | BETA | Oui |
-| 31 | GameTheory-07-ExtensiveForm | BETA | Oui |
-| 32 | GameTheory-08-CombinatorialGames (C#) | BETA | Oui |
-| 33 | GameTheory 8 - Jeux Combinatoires | BETA | Oui |
-| 34 | GameTheory 8b - Jeux Combinatoires en Lean | BETA | Non |
-| 35 | GameTheory 8c - Jeux Combinatoires : Approfondissement… | BETA | Oui |
+| 22 | GameTheory 04e — Oracles réflexifs, décision causale et… | BETA | Oui |
+| 23 | GameTheory-05-ZeroSum-Minimax (Twin C#) | BETA | Oui |
+| 24 | GameTheory-05-ZeroSum-Minimax | BETA | Oui |
+| 25 | GameTheory-5b — Théorème minimax de von Neumann… | BETA | Non |
+| 26 | GameTheory-6 : Évolution et Confiance — Twin C#… | BETA | Oui |
+| 27 | GameTheory-06-EvolutionTrust | BETA | Oui |
+| 28 | GameTheory-6c (C#) : Jeux Répétés et Théorème Folk | BETA | Oui |
+| 29 | GameTheory-6c : Jeux Répétés et Théorème Folk (Folk… | BETA | Oui |
+| 30 | GameTheory-06d : Sympathie contre Engagement — la… | BETA | Oui |
+| 31 | GameTheory-07-ExtensiveForm (Twin C#) | BETA | Oui |
+| 32 | GameTheory-07-ExtensiveForm | BETA | Oui |
+| 33 | GameTheory-08-CombinatorialGames (C#) | BETA | Oui |
+| 34 | GameTheory 8 - Jeux Combinatoires | BETA | Oui |
+| 35 | GameTheory 8b - Jeux Combinatoires en Lean | BETA | Non |
 | 36 | GameTheory 8c - Jeux Combinatoires : Approfondissement… | BETA | Oui |
-| 37 | GameTheory 8d - Combinatorial Games natif : le lake… | BETA | Non |
-| 38 | GameTheory-09-BackwardInduction (C#) | BETA | Oui |
-| 39 | GameTheory-09-BackwardInduction | BETA | Oui |
-| 40 | Stackelberg : la performativité sans mystère | BETA | Oui |
-| 41 | GameTheory-09c : Stackelberg Security Game —… | BETA | Oui |
-| 42 | GameTheory-10 — Équilibres Parfaits de Sous-Jeux et… | BETA | Oui |
-| 43 | GameTheory-10-ForwardInduction-SPE | BETA | Oui |
-| 44 | GameTheory-11-BayesianGames-Csharp | BETA | Oui |
-| 45 | GameTheory-11-BayesianGames | BETA | Oui |
-| 46 | GameTheory-11b — Jeux Bayésiens en Lean 4 (companion) | BETA | Non |
-| 47 | GameTheory-12 — Jeux de Réputation (twin C# du notebook… | BETA | Oui |
-| 48 | GameTheory-12-ReputationGames | BETA | Oui |
-| 49 | GameTheory-13 : Jeux a Information Imparfaite et CFR… | BETA | Oui |
-| 50 | GameTheory-13 : Jeux a Information Imparfaite et CFR | BETA | Non |
-| 51 | GameTheory-13b : Safe Subgame Solving -- quand le… | BETA | Oui |
-| 52 | GameTheory-13c : Safe Subgame Solving en C# — le twin… | BETA | Oui |
-| 53 | GameTheory-13d : Optimistic Counterfactual Regret… | BETA | Oui |
-| 54 | GameTheory-14 : Jeux Differentiels et Equilibres de… | BETA | Oui |
+| 37 | GameTheory 8c - Jeux Combinatoires : Approfondissement… | BETA | Oui |
+| 38 | GameTheory 8d - Combinatorial Games natif : le lake… | BETA | Non |
+| 39 | GameTheory-09-BackwardInduction (C#) | BETA | Oui |
+| 40 | GameTheory-09-BackwardInduction | BETA | Oui |
+| 41 | Stackelberg : la performativité sans mystère | BETA | Oui |
+| 42 | GameTheory-09c : Stackelberg Security Game —… | BETA | Oui |
+| 43 | GameTheory-10 — Équilibres Parfaits de Sous-Jeux et… | BETA | Oui |
+| 44 | GameTheory-10-ForwardInduction-SPE | BETA | Oui |
+| 45 | GameTheory-11-BayesianGames-Csharp | BETA | Oui |
+| 46 | GameTheory-11-BayesianGames | BETA | Oui |
+| 47 | GameTheory-11b — Jeux Bayésiens en Lean 4 (companion) | BETA | Non |
+| 48 | GameTheory-12 — Jeux de Réputation (twin C# du notebook… | BETA | Oui |
+| 49 | GameTheory-12-ReputationGames | BETA | Oui |
+| 50 | GameTheory-13 : Jeux a Information Imparfaite et CFR… | BETA | Oui |
+| 51 | GameTheory-13 : Jeux a Information Imparfaite et CFR | BETA | Non |
+| 52 | GameTheory-13b : Safe Subgame Solving -- quand le… | BETA | Oui |
+| 53 | GameTheory-13c : Safe Subgame Solving en C# — le twin… | BETA | Oui |
+| 54 | GameTheory-13d : Optimistic Counterfactual Regret… | BETA | Oui |
 | 55 | GameTheory-14 : Jeux Differentiels et Equilibres de… | BETA | Oui |
-| 56 | GameTheory-15 — Jeux Coopératifs (Twin C#) | BETA | Oui |
-| 57 | GameTheory-15-CooperativeGames | BETA | Oui |
-| 58 | GameTheory 15b - Jeux Cooperatifs en Lean :… | BETA | Non |
-| 59 | GameTheory 15c - Jeux Cooperatifs (C# / .NET) | BETA | Oui |
-| 60 | GameTheory 15c - Jeux Cooperatifs Lean (Python) | BETA | Oui |
-| 61 | GameTheory 15d - La decomposition de Mobius sur le… | BETA | Oui |
-| 62 | GameTheory-16-MechanismDesign (C#) | BETA | Oui |
-| 63 | GameTheory-16 : Théorie des Mécanismes et Principe de… | BETA | Oui |
-| 64 | GameTheory-16b : Automated Mechanism Design (AMD) | BETA | Oui |
-| 65 | GameTheory-16c : La dimension paiement que le designer… | BETA | Oui |
-| 66 | GameTheory-16d — L'echange de reins : de la valeur… | BETA | Oui |
-| 67 | GameTheory-17 (C#) : Multi-Agent Reinforcement Learning… | BETA | Oui |
-| 68 | GameTheory-17 : Apprentissage par Renforcement… | BETA | Oui |
-| 69 | Information asymétrique : types privés, antisélection… | BETA | Oui |
-| 70 | Le marché des lemons : le certificat formel exécuté | BETA | Non |
-| 71 | Du marché au bilan : le pont théorie des jeux théorie… | BETA | Oui |
-| 72 | Screening, signal et anticipation : les trois réponses… | BETA | Non |
-| 73 | GameTheory-18 : Open Games et Lentilles -- la… | BETA | Oui |
-| 74 | GameTheory-18b : Casser la composition — où la… | BETA | Oui |
-| 75 | GameTheory-19 : L'abstraction a dette mesurable | BETA | Oui |
-| 76 | GameTheory 24b : Le temoin d'impossibilite | BETA | Oui |
-| 77 | GameTheory-25 — Loi II, seconde jambe : synthétiser un… | BETA | Oui |
-| 78 | GameTheory-26 — Ensembles limites : Poincaré-Bendixson… | BETA | Oui |
-| 79 | GameTheory-27 — L'algorithme de Kuhn-Munkres :… | BETA | Oui |
-| 80 | GameTheory 27b — Le lake assignment_lean par son… | BETA | Non |
-| 81 | GameTheory-28 : Banc de calibration — humour, forme… | BETA | Oui |
-| 82 | GameTheory-28b : Banc humour — passer à l'échelle | BETA | Non |
+| 56 | GameTheory-14 : Jeux Differentiels et Equilibres de… | BETA | Oui |
+| 57 | GameTheory-15 — Jeux Coopératifs (Twin C#) | BETA | Oui |
+| 58 | GameTheory-15-CooperativeGames | BETA | Oui |
+| 59 | GameTheory 15b - Jeux Cooperatifs en Lean :… | BETA | Non |
+| 60 | GameTheory 15c - Jeux Cooperatifs (C# / .NET) | BETA | Oui |
+| 61 | GameTheory 15c - Jeux Cooperatifs Lean (Python) | BETA | Oui |
+| 62 | GameTheory 15d - La decomposition de Mobius sur le… | BETA | Oui |
+| 63 | GameTheory-16-MechanismDesign (C#) | BETA | Oui |
+| 64 | GameTheory-16 : Théorie des Mécanismes et Principe de… | BETA | Oui |
+| 65 | GameTheory-16b : Automated Mechanism Design (AMD) | BETA | Oui |
+| 66 | GameTheory-16c : La dimension paiement que le designer… | BETA | Oui |
+| 67 | GameTheory-16d — L'echange de reins : de la valeur… | BETA | Oui |
+| 68 | GameTheory-17 (C#) : Multi-Agent Reinforcement Learning… | BETA | Oui |
+| 69 | GameTheory-17 : Apprentissage par Renforcement… | BETA | Oui |
+| 70 | Information asymétrique : types privés, antisélection… | BETA | Oui |
+| 71 | Le marché des lemons : le certificat formel exécuté | BETA | Non |
+| 72 | Du marché au bilan : le pont théorie des jeux théorie… | BETA | Oui |
+| 73 | Screening, signal et anticipation : les trois réponses… | BETA | Non |
+| 74 | GameTheory-18 : Open Games et Lentilles -- la… | BETA | Oui |
+| 75 | GameTheory-18b : Casser la composition — où la… | BETA | Oui |
+| 76 | GameTheory-19 : L'abstraction a dette mesurable | BETA | Oui |
+| 77 | GameTheory 24b : Le temoin d'impossibilite | BETA | Oui |
+| 78 | GameTheory-25 — Loi II, seconde jambe : synthétiser un… | BETA | Oui |
+| 79 | GameTheory-26 — Ensembles limites : Poincaré-Bendixson… | BETA | Oui |
+| 80 | GameTheory-27 — L'algorithme de Kuhn-Munkres :… | BETA | Oui |
+| 81 | GameTheory 27b — Le lake assignment_lean par son… | BETA | Non |
+| 82 | GameTheory-28 : Banc de calibration — humour, forme… | BETA | Oui |
+| 83 | GameTheory-28b : Banc humour — passer à l'échelle | BETA | Non |
 
 ## GameTheory/SocialChoice (8 notebooks)
 
