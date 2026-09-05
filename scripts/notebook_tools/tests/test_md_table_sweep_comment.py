@@ -187,6 +187,22 @@ def test_build_comment_skips_file_with_empty_findings():
     assert "with_defect.ipynb" in body
 
 
+def test_marker_guards_brace_the_whole_block():
+    """Port de la suite dupliquee scripts/tests/ (#14615 famille 6) : les
+    marqueurs bornent le corps (premiere et derniere ligne) -- contrat de
+    l'upsert, qui retrouve le bloc par START et remplace TOUT jusqu'a END.
+    Les autres tests de la suite supprimee etaient des doublons d'intention
+    (positive≈with_findings_per_file, negative_control≈skips_file_with_empty,
+    coverage_note≈mentions_scope_and_limit, backtick≈code_wrap+findings)."""
+    files = [{"path": "n.ipynb", "findings": [
+        {"pathology": "COL_MISMATCH", "line": 3, "detail": "x", "snippet": "| a |"},
+    ]}]
+    body = build_comment(files, 1, "w", "s")
+    lines = body.split("\n")
+    assert lines[0] == MARKER_START
+    assert lines[-1] == MARKER_END
+
+
 # ---------- main() : dry-run path (no network) ----------
 
 
