@@ -478,6 +478,133 @@ class TestRenderText:
 
 
 # ---------------------------------------------------------------------------
+# #14619 -- removable doit etre une prevision de applied
+# ---------------------------------------------------------------------------
+
+
+_MERGED_PR = {
+    "number": 14670, "state": "MERGED",
+    "url": "https://github.com/jsboige/CoursIA/pull/14670",
+    "headRefName": "fix/merged-thing",
+}
+
+
+def _fake_info(**overrides):
+    defaults = dict(
+        branch="fix/merged-thing",
+        ahead_count=0,
+        untracked=[],
+        has_source_dirty=False,
+        has_submodules=False,
+        is_current=False,
+    )
+    defaults.update(overrides)
+    return defaults
+
+
+class TestToleratedCleanup14619:
+    """Correctif #14619 : nettoyage des seuls artefacts tolérés avant retrait
+    sans force, REFUSE sur résidu hors liste, REFUSE sur sous-modules."""
+
+    def test_bg_logs_dir_is_artifact(self):
+        assert pmw.is_untracked_artifact(
+            "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/bg_logs/") is True
+        assert pmw.is_untracked_artifact(
+            "agent_tests/bg_logs/run.jsonl") is True
+
+    def test_log_relaunch_is_artifact(self):
+        # Cas exact mesure sur D:/CoursIA-wt/c552-7012-build (#14619)
+        assert pmw.is_untracked_artifact("lake_7012.log.relaunch") is True
+
+    def test_clean_removes_only_tolerated(self, tmp_path):
+        (tmp_path / "bg_logs").mkdir()
+        (tmp_path / "bg_logs" / "run.jsonl").write_text(
+            "{}", encoding="utf-8")
+        (tmp_path / "lake_7012.log.relaunch").write_text(
+            "log", encoding="utf-8")
+        keep = tmp_path / "src" / "keep.py"
+        keep.parent.mkdir()
+        keep.write_text("x = 1", encoding="utf-8")
+        wt = _make_status(
+            path=str(tmp_path),
+            untracked_paths=[
+                "bg_logs/", "lake_7012.log.relaunch", "src/keep.py",
+            ],
+        )
+        removed = pmw.clean_tolerated_artifacts(wt)
+        assert sorted(removed) == ["bg_logs/", "lake_7012.log.relaunch"]
+        assert not (tmp_path / "bg_logs").exists()
+        assert not (tmp_path / "lake_7012.log.relaunch").exists()
+        assert keep.exists(), "untracked non toléré ne doit pas être touché"
+
+    def test_clean_never_escapes_worktree(self, tmp_path):
+        probe = tmp_path.parent / "prune_escape_probe_14619.txt"
+        wt = _make_status(
+            path=str(tmp_path),
+            untracked_paths=["slides/images/../../prune_escape_probe_14619.txt"],
+        )
+        removed = pmw.clean_tolerated_artifacts(wt)
+        assert removed == []
+        assert not probe.exists(), "la cible résolue doit rester dans le worktree"
+
+    def test_diagnose_remove_when_only_tolerated_artifacts(self, monkeypatch):
+        monkeypatch.setattr(
+            pmw, "get_worktree_info",
+            lambda *a, **k: _fake_info(
+                untracked=["bg_logs/", "lake_7012.log.relaunch"]),
+        )
+        monkeypatch.setattr(
+            pmw, "lookup_pr_for_branch", lambda b: dict(_MERGED_PR))
+        s = pmw.diagnose_worktree("C:/fake/wt", "C:/elsewhere")
+        assert s.decision == "REMOVE"
+
+    def test_diagnose_refuse_untolerated_untracked(self, monkeypatch):
+        monkeypatch.setattr(
+            pmw, "get_worktree_info",
+            lambda *a, **k: _fake_info(untracked=["residu.bin"]),
+        )
+        monkeypatch.setattr(
+            pmw, "lookup_pr_for_branch", lambda b: dict(_MERGED_PR))
+        s = pmw.diagnose_worktree("C:/fake/wt", "C:/elsewhere")
+        assert s.decision == "REFUSE"
+        assert s.refusal_reason == "untolerated_untracked:1"
+
+    def test_submodule_detection_ignores_uninitialized(self):
+        # `git submodule status` liste les submodules CONFIGURÉS dans tous
+        # les worktrees ; seuls les initialisés (sans préfixe '-') bloquent
+        # `git worktree remove`. Matcher la sortie brute refuserait tout.
+        assert pmw.has_initialized_submodule("") is False
+        assert pmw.has_initialized_submodule(
+            "-cac5abc MyIA.AI.Notebooks/GenAI/SemanticKernel/semantic-fleet"
+        ) is False
+        assert pmw.has_initialized_submodule(
+            "-abc path/one\n-def path/two\n"
+        ) is False
+        assert pmw.has_initialized_submodule(
+            " 30c3993 MyIA.AI.Notebooks/Search/MetaGeneticSharp (v0.1.0)"
+        ) is True
+        assert pmw.has_initialized_submodule("+abc path/one") is True
+        assert pmw.has_initialized_submodule(
+            "-abc path/one\n 30c3993 path/initialized\n"
+        ) is True
+
+    def test_diagnose_refuse_submodules(self, monkeypatch):
+        monkeypatch.setattr(
+            pmw, "get_worktree_info",
+            lambda *a, **k: _fake_info(has_submodules=True),
+        )
+        s = pmw.diagnose_worktree("C:/fake/wt", "C:/elsewhere")
+        assert s.decision == "REFUSE"
+        assert s.refusal_reason == "contains_submodules"
+
+    def test_no_force_in_source(self):
+        src = Path(pmw.__file__).read_text(encoding="utf-8")
+        assert '"--force"' not in src and "'--force'" not in src, (
+            "la propriété no-force (docstring règle 3) doit tenir"
+        )
+
+
+# ---------------------------------------------------------------------------
 # Tests d'integration subprocess sur le repo reel
 # ---------------------------------------------------------------------------
 

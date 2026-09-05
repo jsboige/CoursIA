@@ -48,6 +48,12 @@
       csharp_sha: 959fde95ac54ce07ebbde976574040e8df5bd6a5
       content_python_sha: 5987578811b52065f3590de667a2b537865694536b85274c2105cb21b101ff02
       content_csharp_sha: b91e258e866929a624325784392a21dcfb6317046e4d14208eb6eb17518a6b7e
+    - date: "2026-09-05"
+      by: myia-po-2026:CoursIA
+      python_sha: 91c69994024084bea93a0823230255624b828ce1
+      csharp_sha: 1803da69cf84ab95cd7d081e5335a639fcce3f06
+      content_python_sha: 5987578811b52065f3590de667a2b537865694536b85274c2105cb21b101ff02
+      content_csharp_sha: 598788e84d04115388d3dd05470e2383e57633ca2cee3dcebf3b58badf42fabf
   known_differences:
     - "Socle commun : parcours de graphe RDF, iteration des triplets, gestionnaires de parsing (handlers)."
     - "Lib-vs-lib : C# = `dotNetRDF` (`VDS.RDF.Parsing.Handlers`, iterate via `Graph.Triples`). Python = `rdflib` (`rdflib.collection`, `rdflib.parser`, iteration via `graph` set semantics)."

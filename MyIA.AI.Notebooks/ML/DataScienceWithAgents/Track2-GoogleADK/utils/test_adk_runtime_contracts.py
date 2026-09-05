@@ -69,6 +69,8 @@ class ScriptedLlm(BaseLlm):
         kind, payload = _SCRIPT.pop(0)
         if kind == "call":
             yield _tool_call_response(payload[0], payload[1])
+        elif kind == "usage":
+            yield _text_response_with_usage(payload[0], payload[1], payload[2])
         elif kind == "sleep":
             # Dort PUIS repond : sous mutation du budget de tour (wait_for
             # neutralise), le tour finit normalement et le test budget
@@ -84,6 +86,20 @@ class ScriptedLlm(BaseLlm):
 def _text_response(text):
     return LlmResponse(content=types.Content(
         role="model", parts=[types.Part(text=text)]))
+
+
+def _text_response_with_usage(text, prompt, completion):
+    # LlmResponse/Event portent GenerateContentResponseUsageMetadata (champ
+    # candidates_token_count), pas types.UsageMetadata (response_token_count) :
+    # le type attendu par le runtime ADK est le premier.
+    return LlmResponse(
+        content=types.Content(
+            role="model", parts=[types.Part(text=text)]),
+        usage_metadata=types.GenerateContentResponseUsageMetadata(
+            prompt_token_count=prompt,
+            candidates_token_count=completion,
+            total_token_count=prompt + completion,
+        ))
 
 
 def _tool_call_response(name, args):
@@ -361,64 +377,199 @@ def test_c1b_conversations_still_isolate():
 # tests documentent l'etat mesure et seront inverses par les grains a venir.
 # ---------------------------------------------------------------------------
 
-def test_c4_designation_exists_in_adk_but_runtime_is_single_agent():
+def test_c4_sequential_designation_is_declared_and_executed():
     # C4 (designation : qui parle ensuite selon une strategie explicite) --
-    # MESURE : ADK 2.8 embarque une orchestration dynamique
-    # (workflow/_dynamic_node_scheduler, importe ici comme preuve
-    # d'existence), mais le runtime du depot n'expose AUCUNE strategie de
-    # selection : run_agent_turn et ConversationRunner acceptent exactement
-    # un agent, l'ordre multi-etapes de Lab11 est code par l'appelant en
-    # Python, pas decide par le runtime. Non porte -> grain ouvert.
-    import google.adk.workflow as adk_workflow  # noqa: F401 (preuve import)
+    # PORTE (#14685), inverse du test de non-portage. AdkOrchestrator
+    # accepte N specialistes et execute la chaine selon un plan DECLARE
+    # avant le premier appel LLM : l'ordonnancement est une donnee, jamais
+    # un choix du modele. Preuve d'existence de la primitive candidate
+    # dynamique d'ADK : l'ordonnanceur natif reste importable
+    # (workflow/_dynamic_node_scheduler) -- la strategie sequentielle
+    # declarative ci-dessous est le portage minimal, la designation
+    # adaptee au contenu resterait une strategie enrichie du meme contrat.
+    #
+    # Complementarite C4/C5 (documentee par ce test) : la designation C4
+    # decide QUI PARLE ENSUITE AVANT tout appel LLM (le plan est pose par
+    # l'appelant) ; le handoff C5 (sub_agents + transfer_to_agent, teste
+    # ci-dessous) est une decision DE L'AGENT au milieu d'un tour. Deux
+    # mecaniques distinctes qui cohabitent -- aucune n'est une
+    # reimplementation de l'autre.
+    #
+    # Jamais une restauration SK (#14058) : les specialistes sont de
+    # vrais Agent ADK, l'orchestrateur n'assemble que des primitives
+    # publiques (Runner par etape, InMemorySessionService partage).
+    #
+    # Critere 4 -- au retrait de la designation (boucle neutralisee :
+    # l'orchestrateur n'execute que le premier specialiste du plan),
+    # agent_hands reste ("planner",) et le verificateur ne parle jamais
+    # -> rouge (verifie par mutation locale, journal au body de la PR).
+    import google.adk.workflow as adk_workflow  # noqa: F401 (preuve)
 
-    import inspect
-    from utils import adk_conversation, adk_runtime
+    from utils.adk_orchestrator import AdkOrchestrator
 
-    single_agent_surfaces = (
-        inspect.signature(adk_runtime.run_agent_turn).parameters["agent"],
-        inspect.signature(adk_conversation.ConversationRunner.__init__).parameters["agent"],
-    )
-    assert all(p is not None for p in single_agent_surfaces)
-    selection_terms = ("selection", "next_agent", "strategy", "orchestrat")
-    runtime_surface = (
-        dir(adk_runtime) + dir(adk_conversation)
-    )
-    wired = [t for t in selection_terms if any(
-        t in name.lower() for name in runtime_surface)]
-    assert wired == [], (
-        f"le runtime expose desormais une mecanique de designation ({wired}) "
-        ": ce test documentait le non-portage C4, il doit etre inverse par "
-        "le grain qui porte le contrat")
+    planner = _scripted_agent(name="planner", tools=())
+    coder = _scripted_agent(name="coder", tools=())
+    verifier = _scripted_agent(name="verifier", tools=())
+
+    async def scenario():
+        orchestrator = AdkOrchestrator(
+            [planner, coder, verifier],
+            plan=("planner", "coder", "verifier"),
+            app_name="contracts-c4",
+        )
+        result = await orchestrator.run_chain("traite cette demande")
+        return orchestrator, result
+
+    # La strategie est observable AVANT execution : le plan declare.
+    _SCRIPT.append(("text", "plan : trois etapes"))
+    _SCRIPT.append(("text", "code ecrit par le coder"))
+    _SCRIPT.append(("text", "verifie : OK"))
+    orchestrator, result = asyncio.run(scenario())
+
+    assert orchestrator.plan == ("planner", "coder", "verifier"), (
+        "le plan declare doit rester l'observable de la strategie")
+    assert result.agent_hands == ("planner", "coder", "verifier"), (
+        f"la chaine doit suivre la designation declaree, mesure : "
+        f"{result.agent_hands}")
+    assert len(_REQUESTS) == 3, (
+        f"trois specialistes designes = trois appels LLM, mesure : "
+        f"{len(_REQUESTS)}")
+    assert "verifie : OK" in result.response_text, (
+        f"la reponse finale doit venir du dernier specialiste designe, "
+        f"mesure : {result.response_text!r}")
+
+    # Memoire commune intra-chaine : le coder designe en 2e position a vu
+    # la reponse du planner dans sa requete LLM -- l'enchainement est
+    # semantique, pas trois tours oublieux.
+    second_request_texts = "".join(
+        (p.text or "") for c in _REQUESTS[1].contents
+        for p in (c.parts or []))
+    assert "plan : trois etapes" in second_request_texts, (
+        "le specialiste designe ensuite doit voir ce que son "
+        "predecesseur a produit (session partagee)")
 
 
-def test_c5_transfer_exists_in_adk_but_is_not_wired():
-    # C5 (handoff : transfert observable entre agents) -- MESURE : ADK 2.8
-    # porte le transfer natif (TransferToAgentTool, importe ici comme
-    # preuve), mais aucun agent du depot ne declare de sub_agents et
-    # build_agent ne les accepte pas : le transfer n'est pas exercable
-    # depuis le runtime du depot. Non porte -> grain ouvert.
+def test_c4_orchestrated_chains_isolate_sessions():
+    # Contre-garde C1 sur la designation : la memoire commune vit
+    # INTRA-chaîne -- deux orchestrateurs restent deux sessions ADK
+    # isolees. Le prompt de la chaîne A ne doit jamais atteindre
+    # l'historique de la chaîne B.
+    from utils.adk_orchestrator import AdkOrchestrator
+
+    async def scenario():
+        chain_a = AdkOrchestrator(
+            [_scripted_agent(name="planner", tools=())],
+            app_name="contracts-c4-iso",
+        )
+        await chain_a.run_chain("message confidentiel de la chaine A")
+        chain_b = AdkOrchestrator(
+            [_scripted_agent(name="analyste", tools=())],
+            app_name="contracts-c4-iso",
+        )
+        await chain_b.run_chain("question banale de la chaine B")
+        return await chain_b.history()
+
+    _SCRIPT.append(("text", "reponse de A"))
+    _SCRIPT.append(("text", "reponse de B"))
+    history_b = asyncio.run(scenario())
+    history_b_texts = "".join(
+        (p.text or "") for event in history_b
+        for p in (event.content.parts if event.content else []))
+    assert "message confidentiel de la chaine A" not in history_b_texts, (
+        "fuite d'etat entre chaines orchestrees : la contre-garde C1 "
+        "est retiree")
+    assert "question banale de la chaine B" in history_b_texts
+
+
+def test_c5_sub_agents_wire_handoff_and_it_is_observable():
+    # C5 (handoff : transfert observable entre agents) -- PORTE (#14686),
+    # inverse du test de non-portage. build_agent accepte desormais
+    # sub_agents : ADK 2.8 injecte alors nativement l'outil
+    # transfer_to_agent (enum sur les noms des sous-agents), et le VRAI
+    # Runner execute le transfert -- le LLM scripte decide du handoff,
+    # comme un LLM reel le deciderait en cours de tour.
+    #
+    # Complementarite C4/C5 (documentee par ce test) : la designation C4
+    # est une strategie EXPLICITE de l'orchestrateur -- QUI PARLE ENSUITE
+    # est decide AVANT le tour, hors LLM ; le handoff C5 est une decision
+    # DE L'AGENT en cours de tour -- c'est le LLM qui appelle
+    # transfer_to_agent au milieu de son tour. Les deux contrats restent
+    # distincts : ce test n'exerce QUE le transfert natif cable, aucune
+    # strategie d'ordonnancement n'est lue ici.
+    #
+    # Critere 4 -- au retrait du cablage (build_agent cesse de passer
+    # sub_agents a Agent), la hierarchie n'est plus declaree : l'outil
+    # transfer_to_agent n'est pas injecte, l'appel scripte devient une
+    # fonction inconnue, aucun transfert n'a lieu et agent_hands reste
+    # ("contract_root",) -> rouge (verifie par mutation locale, journal
+    # au body de la PR).
     from google.adk.tools import TransferToAgentTool  # noqa: F401 (preuve)
 
     import inspect
+    from config.providers import ProviderConfig, ProviderType
     from utils import adk_runtime
 
+    # Jamais une restauration SK : l'arbre est de vrais Agent ADK.
     build_params = inspect.signature(adk_runtime.build_agent).parameters
-    assert "sub_agents" not in build_params, (
-        "build_agent accepte desormais sub_agents : le transfer C5 est "
-        "cable, ce test documentait le non-portage, il doit etre inverse "
-        "par le grain qui porte le contrat")
-    turn_params = inspect.signature(adk_runtime.run_agent_turn).parameters
-    assert "agents" not in turn_params
+    assert "sub_agents" in build_params, (
+        "build_agent n'accepte plus sub_agents : le cablage C5 est retire")
+
+    verifier = _scripted_agent(name="verifier_agent", tools=())
+    offline_config = ProviderConfig(
+        provider=ProviderType.LMSTUDIO, model="m", base_url="http://localhost:1")
+    root_via_build_agent = adk_runtime.build_agent(
+        name="contract_root",
+        description="porte-contrat de test",
+        instruction="scripte",
+        sub_agents=(verifier,),
+        config=offline_config,
+    )
+    assert [
+        sub.name for sub in root_via_build_agent.sub_agents
+    ] == ["verifier_agent"], (
+        "build_agent ne transmet plus la hierarchie sub_agents : le "
+        "cablage C5 est retire")
+
+    # Scenario comportemental sur le VRAI Runner : le LLM racine demande
+    # le transfert, le sous-agent herite de la main et repond. Instance
+    # fraiche : un Agent ADK parente ne peut pas etre re-parente.
+    behavioral_verifier = _scripted_agent(name="verifier_agent", tools=())
+    root = Agent(
+        name="contract_root",
+        description="porte-contrat de test",
+        instruction="scripte",
+        model=ScriptedLlm(model="scripted"),
+        sub_agents=[behavioral_verifier],
+    )
+    _SCRIPT.append(("call", ("transfer_to_agent", {"agent_name": "verifier_agent"})))
+    _SCRIPT.append(("text", "verifie : le code est correct"))
+    result = _run_turn(root, "verifie ce code", app_name="contracts-c5")
+
+    assert "transfer_to_agent" in result.tool_calls, (
+        f"le handoff natif n'a pas ete appele, tool_calls : "
+        f"{result.tool_calls}")
+    assert result.agent_hands == ("contract_root", "verifier_agent"), (
+        f"la main doit passer au sous-agent, mesure : {result.agent_hands}")
+    assert result.handoffs == (("contract_root", "verifier_agent"),), (
+        f"le handoff doit etre un couple observable, mesure : "
+        f"{result.handoffs}")
+    assert result.final_agent == "verifier_agent"
+    assert "verifie" in result.response_text.lower(), (
+        f"la reponse finale doit venir du sous-agent, mesure : "
+        f"{result.response_text!r}")
 
 
-def test_c6_no_token_budget_and_usage_not_observable():
-    # C6 (budgets de jetons / couts) -- MESURE : RunConfig ne porte aucun
-    # champ de budget de consommation (max_llm_calls borne des APPELS, pas
-    # les jetons ; grep du package : token_budget/cost_budget/usage_limit
-    # = 0). Cote tracabilite, ADK produit usage_metadata sur ses events
-    # (natif), mais AdkRunResult ne le remonte pas : la consommation
-    # n'est pas observable depuis le runtime du depot. Non porte ->
-    # grain ouvert.
+def test_c6_no_native_token_budget_but_usage_is_observable():
+    # C6 (budgets de jetons / couts) -- TRACABILITE PORTEE (#14687) :
+    # AdkRunResult remonte desormais l'usage LLM de chaque appel
+    # (usage_turns / usage_total), et ConversationRunner cumule par
+    # conversation. La MESURE initiale reste vraie cote budget NATIF :
+    # RunConfig ne porte toujours aucun champ de consommation (max_llm_calls
+    # borne des APPELS, pas les jetons) -- le budget au-dessus d'ADK est
+    # la jambe 2 du grain, pas suppose natif.
+    # Critere 4 -- ce test echoue au retrait de la collecte : sans le
+    # releve _event_usage dans consume_events, usage_turns est vide et
+    # chaque assert ci-dessous rouge (verifie par mutation locale).
     from dataclasses import fields
     from google.adk.runners import RunConfig
 
@@ -427,13 +578,121 @@ def test_c6_no_token_budget_and_usage_not_observable():
         if "token" in f.lower() or "cost" in f.lower()
     ]
     assert run_config_budget_fields == [], (
-        f"RunConfig porte un budget de consommation ({run_config_budget_fields}) "
-        ": ce test documentait le non-portage C6, il doit etre inverse")
+        f"RunConfig porte un budget natif ({run_config_budget_fields}) : "
+        "la jambe budget doit documenter ce changement de fond")
+
     result_fields = {f.name for f in fields(AdkRunResult)}
-    assert not any(
-        "usage" in f or "token" in f or "cost" in f for f in result_fields), (
-        "AdkRunResult remonte la consommation : la tracabilite C6 est "
-        "portee, ce test doit etre inverse par le grain qui porte le contrat")
+    assert "usage_turns" in result_fields, (
+        "AdkRunResult ne remonte plus l'usage : la tracabilite C6 est "
+        "retiree")
+
+    _SCRIPT.append(("usage", ("profil", 42, 17)))
+    result = _run_turn(_scripted_agent(tools=()), "question simple")
+    assert len(result.usage_turns) == 1, (
+        f"un appel LLM doit laisser exactement un snapshot d'usage, "
+        f"mesure : {result.usage_turns}")
+    assert result.usage_turns[0] == adk_runtime.AdkUsage(
+        prompt_tokens=42, completion_tokens=17, total_tokens=59)
+    assert result.usage_total == adk_runtime.AdkUsage(
+        prompt_tokens=42, completion_tokens=17, total_tokens=59)
+
+
+def test_c6_usage_accumulates_across_conversation_turns():
+    # C6, versant ConversationRunner : chaque tour rend son usage (contrat
+    # du tour) ET la conversation cumule (profil de consommation multi-tours).
+    # Critere 4 -- au retrait de la collecte d'usage dans
+    # ConversationRunner.turn, conversation.usage_total reste nul -> rouge.
+    from utils.adk_conversation import ConversationRunner
+
+    async def scenario():
+        agent = _scripted_agent(tools=())
+        async with ConversationRunner(agent) as conversation:
+            tour1 = await conversation.turn("premier tour")
+            tour2 = await conversation.turn("second tour")
+            return conversation, tour1, tour2
+
+    _SCRIPT.append(("usage", ("reponse un", 40, 10)))
+    _SCRIPT.append(("usage", ("reponse deux", 60, 25)))
+    conversation, tour1, tour2 = asyncio.run(scenario())
+    assert tour1.usage_turns and tour2.usage_turns, (
+        "chaque tour doit rendre son propre snapshot d'usage")
+    assert conversation.usage_total == adk_runtime.AdkUsage(
+        prompt_tokens=100, completion_tokens=35, total_tokens=135), (
+        f"le cumul conversation doit sommer les tours, mesure : "
+        f"{conversation.usage_total}")
+
+
+def test_c6_budget_cuts_mid_turn_with_explicit_verdict():
+    # C6 jambe 2 -- le plafond de jetons cumules coupe PROPREMENT : verdict
+    # type AdkBudgetExceeded (pas une exception brute du stream), portant
+    # plafond, cumul exact au moment de la coupe et numero du tour. Le VRAI
+    # Runner ADK tourne (seul le LLM est scripte) ; le 1er tour consomme 50
+    # jetons, le 2e (85) franchit le plafond de 100 pose d'office.
+    # Critere 4 -- au retrait du releve de plafond dans consume_events
+    # (comparaison neutralisee), le tour 2 se termine normalement et ce
+    # test echoue (verifie par mutation locale).
+    from utils.adk_conversation import AdkBudgetExceeded, ConversationRunner
+
+    async def scenario():
+        agent = _scripted_agent(tools=())
+        async with ConversationRunner(
+            agent, budget_total_tokens=100
+        ) as conversation:
+            tour1 = await conversation.turn("premier tour")
+            try:
+                await conversation.turn("second tour qui depasse")
+            except AdkBudgetExceeded as verdict:
+                return conversation, tour1, verdict
+            raise AssertionError("le tour 2 devait couper sur le plafond")
+
+    _SCRIPT.append(("usage", ("reponse un", 40, 10)))
+    _SCRIPT.append(("usage", ("reponse deux", 60, 25)))
+    conversation, tour1, verdict = asyncio.run(scenario())
+    assert tour1.usage_total.total_tokens == 50, (
+        "le tour 1 (sous plafond) doit se derouler normalement")
+    assert verdict.verdict == "BUDGET_EXCEEDED"
+    assert verdict.budget_total == 100
+    assert verdict.tour == 2
+    assert verdict.usage_total.total_tokens == 135, (
+        f"le cumul au moment de la coupe doit inclure l'appel qui franchit "
+        f"le plafond, mesure : {verdict.usage_total}")
+    assert verdict.usage_total == conversation.usage_total, (
+        "les jetons consommes avant la coupe restent dans le cumul "
+        "(comptabilite honnete)")
+
+
+def test_c6_budget_refuses_next_turn_without_calling_the_llm():
+    # C6 jambe 2, versant refus pre-tour : plafond atteint des le 1er tour
+    # -> le tour 2 est refuse AVANT tout appel LLM. La preuve mecanique :
+    # _REQUESTS n'enregistre qu'UN appel (celui du tour 1) -- un second
+    # appel LLM serait comptee la.
+    # Critere 4 -- au retrait du garde pre-tour dans turn(), le tour 2
+    # declenche un appel LLM (script epuise -> reponse par defaut) et ce
+    # test echoue sur len(_REQUESTS) == 1.
+    from utils.adk_conversation import AdkBudgetExceeded, ConversationRunner
+
+    async def scenario():
+        agent = _scripted_agent(tools=())
+        async with ConversationRunner(
+            agent, budget_total_tokens=50
+        ) as conversation:
+            await conversation.turn("premier tour consomme tout le plafond")
+            try:
+                await conversation.turn("tour refuse d'office")
+            except AdkBudgetExceeded as verdict:
+                return conversation, verdict
+            raise AssertionError("le tour 2 devait etre refuse pre-tour")
+
+    _SCRIPT.append(("usage", ("reponse un", 40, 10)))
+    conversation, verdict = asyncio.run(scenario())
+    assert verdict.verdict == "BUDGET_EXCEEDED"
+    assert verdict.tour == 2
+    assert verdict.budget_total == 50
+    assert len(_REQUESTS) == 1, (
+        f"le tour refuse ne doit declencher AUCUN appel LLM, "
+        f"appels mesures : {len(_REQUESTS)}")
+    assert conversation.budget_exhausted
+    assert conversation.usage_total.total_tokens == 50
 
 
 def test_c7_roles_are_declared_and_required():

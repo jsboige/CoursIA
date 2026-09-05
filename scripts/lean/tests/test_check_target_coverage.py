@@ -11,7 +11,9 @@ Locks the advisory contract of the conway proof-integrity gate coverage check:
   - lib-root scoping (``<lib>/`` subdir + ``<lib>.lean`` umbrella + ``<lib>_en.lean`` sibling);
   - maximal walk excludes build cache / lakefile / toolchain;
   - ``--from-workflow`` unions the target list over every gate job, so the report
-    cannot hold a stale copy of it (#8782);
+    cannot hold a stale copy of it (#8782), across BOTH wiring forms: job-level
+    ``uses:`` on the reusable lean-axiom.yml AND step-level ``uses:`` on the
+    composite twin ``.github/actions/lean-axiom`` (#14337 tranche 2a routing);
   - ``target-modules: "*"`` (issue #10889) is a runtime-derivation directive:
     the gate walks the lake itself (``discover_modules``) and drops ``_en`` i18n
     siblings by default (``filter_i18n_siblings``), so every compiled module is
@@ -359,6 +361,95 @@ jobs:
         lake = _make_lake(tmp_path)
         with pytest.raises(SystemExit):
             main(["--project-path", str(lake)])
+
+
+# ---------------------------------------------------------------------------
+# Composite-action routing (#14337 tranche 2a) -- step-level `uses:` on the
+# local composite twin. Without this companion form the union silently drops
+# every routed gate job and the advisory reports the modules the gate DOES
+# inspect as blind spots -- the exact inverse of its job.
+# ---------------------------------------------------------------------------
+
+class TestCompositeRouting:
+    def _composite_wf(self, tmp_path: Path, target: str) -> Path:
+        return _write_workflow(tmp_path, f"""
+jobs:
+  proof-integrity:
+    runs-on: [self-hosted, coursia-ephemeral, coursia-lean]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/lean-build
+        with:
+          project-path: fake_lake
+      - uses: ./.github/actions/lean-axiom
+        with:
+          project-path: fake_lake
+          target-modules: "{target}"
+          fail-on-sorry: true
+""")
+
+    def test_composite_step_is_unioned(self, tmp_path):
+        wf = self._composite_wf(tmp_path, "Knots.Basic,Knots.Invariant")
+        union, per_job = targets_from_workflow(wf)
+        assert union == {"Knots.Basic", "Knots.Invariant"}
+        assert per_job == {"proof-integrity": {"Knots.Basic", "Knots.Invariant"}}
+
+    def test_composite_star_directive_is_unioned(self, tmp_path):
+        # the knot pilote's routed form: runtime derivation via "*"
+        wf = self._composite_wf(tmp_path, "*")
+        union, per_job = targets_from_workflow(wf)
+        assert union == {"*"}
+        assert per_job == {"proof-integrity": {"*"}}
+
+    def test_composite_bare_ref_form_matches(self, tmp_path):
+        # same action referenced without the leading "./" -- both are in
+        # _COMPOSITE_LEAN_AXIOM_REFS, and a regression to a single form
+        # would silently un-see the other.
+        wf = _write_workflow(tmp_path, """
+jobs:
+  gate:
+    steps:
+      - uses: .github/actions/lean-axiom
+        with:
+          target-modules: "Conway.KochenSpecker"
+""")
+        union, _ = targets_from_workflow(wf)
+        assert union == {"Conway.KochenSpecker"}
+
+    def test_lean_build_composite_step_is_not_a_gate(self, tmp_path):
+        # the lean-BUILD composite carries no target-modules; a job that only
+        # builds must not appear in per_job (only lean-axiom is the gate).
+        wf = _write_workflow(tmp_path, """
+jobs:
+  ci:
+    steps:
+      - uses: ./.github/actions/lean-build
+        with:
+          project-path: fake_lake
+""")
+        union, per_job = targets_from_workflow(wf)
+        assert union == set()
+        assert per_job == {}
+
+    def test_composite_and_reusable_mixed_union(self, tmp_path):
+        # during the 2a/2b transition the repo holds BOTH wiring forms
+        # (pilotes routed, 25 lakes still on the reusable); the union must
+        # carry both without one hiding the other.
+        wf = _write_workflow(tmp_path, """
+jobs:
+  routed-gate:
+    steps:
+      - uses: ./.github/actions/lean-axiom
+        with:
+          target-modules: "Conway.KochenSpecker"
+  reusable-gate:
+    uses: ./.github/workflows/lean-axiom.yml
+    with:
+      target-modules: "Knots.Basic"
+""")
+        union, per_job = targets_from_workflow(wf)
+        assert union == {"Conway.KochenSpecker", "Knots.Basic"}
+        assert set(per_job) == {"routed-gate", "reusable-gate"}
 
 
 # ---------------------------------------------------------------------------

@@ -1,0 +1,104 @@
+name: dotnet-OrphanApps
+
+# Tranche 3 de #14696 (orphelins .sln) : les 8 apps .NET sans projet de
+# tests, exclues du glob parent par #14695 — cluster Aspire Integrations-DotNet
+# (AgentGuard x3, IntegrationTests, StreamingAgent.App), CopilotAgent.App,
+# LiveOrderApp (csharprepl demo), InferNetVoi (Probas).
+#
+# Aucune ne porte de projet xunit : le garde est BUILD-ONLY (dotnet build par
+# csproj, echec au premier code d'erreur) — pas de floor-guard de collecte
+# (il n'y a rien a collecter).
+#
+# TFM melange : netstandard2.0 (AgentGuard.Analyzers), net9.0 (CopilotAgent,
+# InferNetVoi), net10.0 (AgentGuard.Demo/Verifier, IntegrationTests,
+# StreamingAgent.App, LiveOrderApp) — setup-dotnet multi-versions.
+#
+# Hors scope de cette tranche (documente sur #14696) : les 19 builds Tweety
+# shade (IKVM jar->dll, arbitrage #13831 debout) et les 5 file-based
+# apphost.cs (services live Aspire, non deterministes en runner ephemere).
+#
+# Deux jobs STATIQUES (garde #13363, meme forme que dotnet-ArgumentAnalysis.yml
+# et dotnet-AgentSafetyAnalyzer.yml).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'MyIA.AI.Notebooks/GenAI/Integrations-DotNet/**'
+      - 'MyIA.AI.Notebooks/GenAI/Vibe-Coding/docs/**'
+      - 'MyIA.AI.Notebooks/Probas/DecisionTheory/voi/**'
+      - '.github/workflows/dotnet-OrphanApps.yml'
+      - 'MyIA.CoursIA.sln'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'MyIA.AI.Notebooks/GenAI/Integrations-DotNet/**'
+      - 'MyIA.AI.Notebooks/GenAI/Vibe-Coding/docs/**'
+      - 'MyIA.AI.Notebooks/Probas/DecisionTheory/voi/**'
+      - '.github/workflows/dotnet-OrphanApps.yml'
+      - 'MyIA.CoursIA.sln'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dotnet-orphanapps-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  ORPHAN_APPS: >-
+    MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire/AgentGuard.Analyzers/AgentGuard.Analyzers.csproj
+    MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire/AgentGuard.Demo/AgentGuard.Demo.csproj
+    MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire/AgentGuard.Verifier/AgentGuard.Verifier.csproj
+    MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire/IntegrationTests/IntegrationTests.csproj
+    MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire/StreamingAgent.App/StreamingAgent.App.csproj
+    MyIA.AI.Notebooks/GenAI/Integrations-DotNet/CopilotSDK/CopilotAgent.App/CopilotAgent.App.csproj
+    MyIA.AI.Notebooks/GenAI/Vibe-Coding/docs/csharprepl-demo/LiveOrderApp.csproj
+    MyIA.AI.Notebooks/Probas/DecisionTheory/voi/InferNetVoi/InferNetVoi.csproj
+
+jobs:
+  dotnet-orphanapps-linux:
+    name: OrphanApps build (ubuntu-latest, 8 csproj)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            9.0.x
+            10.0.x
+
+      - name: Build the eight orphan apps
+        run: |
+          for csproj in $ORPHAN_APPS; do
+            echo "--- $csproj"
+            dotnet build "$csproj" --nologo
+          done
+
+  dotnet-orphanapps-windows:
+    name: OrphanApps build (windows-latest, 8 csproj)
+    runs-on: windows-latest
+    timeout-minutes: 25
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            9.0.x
+            10.0.x
+
+      - name: Build the eight orphan apps
+        shell: bash
+        run: |
+          for csproj in $ORPHAN_APPS; do
+            echo "--- $csproj"
+            dotnet build "$csproj" --nologo
+          done

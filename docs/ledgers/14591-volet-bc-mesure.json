@@ -1,0 +1,1051 @@
+{
+  "since": "2026-08-21",
+  "until": "2026-09-04",
+  "merges_total": 1000,
+  "volet_b": {
+    "summary": {
+      "myia-ai-01:CoursIA": {
+        "days_active": 11,
+        "budget_reached_days": 11,
+        "light_peak_day": 15
+      },
+      "myia-ai-01:LivresAgit": {
+        "days_active": 7,
+        "budget_reached_days": 3,
+        "light_peak_day": 2
+      },
+      "myia-ai-01:myia-open-webui": {
+        "days_active": 1,
+        "budget_reached_days": 1,
+        "light_peak_day": 1
+      },
+      "myia-po-2023:CoursIA": {
+        "days_active": 8,
+        "budget_reached_days": 4,
+        "light_peak_day": 9
+      },
+      "myia-po-2023:CoursIA-2": {
+        "days_active": 10,
+        "budget_reached_days": 7,
+        "light_peak_day": 10
+      },
+      "myia-po-2024:CoursIA": {
+        "days_active": 9,
+        "budget_reached_days": 6,
+        "light_peak_day": 16
+      },
+      "myia-po-2024:CoursIA-2": {
+        "days_active": 11,
+        "budget_reached_days": 8,
+        "light_peak_day": 7
+      },
+      "myia-po-2025-win32-x64:2026-Epita-Programmation-par-Contraintes": {
+        "days_active": 3,
+        "budget_reached_days": 0,
+        "light_peak_day": 0
+      },
+      "myia-po-2025:CoursIA": {
+        "days_active": 11,
+        "budget_reached_days": 3,
+        "light_peak_day": 2
+      },
+      "myia-po-2025:CoursIA-2": {
+        "days_active": 5,
+        "budget_reached_days": 3,
+        "light_peak_day": 3
+      },
+      "myia-po-2025:Microsoft": {
+        "days_active": 1,
+        "budget_reached_days": 1,
+        "light_peak_day": 1
+      },
+      "myia-po-2026:CoursIA": {
+        "days_active": 9,
+        "budget_reached_days": 9,
+        "light_peak_day": 29
+      },
+      "myia-po-2026:CoursIA-2": {
+        "days_active": 10,
+        "budget_reached_days": 8,
+        "light_peak_day": 8
+      },
+      "myia-po-2027:CoursIA": {
+        "days_active": 8,
+        "budget_reached_days": 5,
+        "light_peak_day": 3
+      },
+      "myia-po-2027:CoursIA-2": {
+        "days_active": 11,
+        "budget_reached_days": 6,
+        "light_peak_day": 9
+      }
+    },
+    "rows": [
+      {
+        "lane": "myia-ai-01:CoursIA",
+        "day": "2026-08-25",
+        "total": 2,
+        "light": 2,
+        "budget": 1,
+        "atteint": true
+      },
+      {
+        "lane": "myia-ai-01:CoursIA",
+        "day": "2026-08-26",
+        "total": 2,
+        "light": 2,
+        "budget": 1,
+        "atteint": true
+      },
+      {
+        "lane": "myia-ai-01:CoursIA",
+        "day": "2026-08-27",
+        "total": 2,
+        "light": 1,
+        "budget": 1,
+        "atteint": true
+      },
+      {
+        "lane": "myia-ai-01:CoursIA",
+        "day": "2026-08-28",
+        "total": 3,
+        "light": 3,
+        "budget": 1,
+        "atteint": true
+      },
+      {
+        "lane": "myia-ai-01:CoursIA",
+        "day": "2026-08-29",
+        "total": 11,
+        "light": 6,
+        "budget": 3,
+        "atteint": true
+      },
+      {
+        "lane": "myia-ai-01:CoursIA",
+        "day": "2026-08-30",
+        "total": 13,
+        "light": 13,
+        "budget": 4,
+        "atteint": true
+      },
+      {
+        "lane": "myia-ai-01:CoursIA",
+        "day": "2026-08-31",
+        "total": 7,
+        "light": 6,
+        "budget": 2,
+        "atteint": true
+      },
+      {
+        "lane": "myia-ai-01:CoursIA",
+        "day": "2026-09-01",
+        "total": 9,
+        "light": 8,
+        "budget": 3,
+        "atteint": true
+      },
+      {
+        "lane": "myia-ai-01:CoursIA",
+        "day": "2026-09-02",
+        "total": 16,
+        "light": 15,
+        "budget": 5,
+        "atteint": true
+      },
+      {
+        "lane": "myia-ai-01:CoursIA",
+        "day": "2026-09-03",
+        "total": 10,
+        "light": 8,
+        "budget": 3,
+        "atteint": true
+      },
+      {
+        "lane": "myia-ai-01:CoursIA",
+        "day": "2026-09-04",
+        "total": 7,
+        "light": 5,
+        "budget": 2,
+        "atteint": true
+      },
+      {
+        "lane": "myia-ai-01:LivresAgit",
+        "day": "2026-08-28",
+        "total": 2,
+        "light": 2,
+        "budget": 1,
+        "atteint": true
+      },
+      {
+        "lane": "myia-ai-01:LivresAgit",
+        "day": "2026-08-29",
+        "total": 1,
+        "light": 1,
+        "budget": 1,
+        "atteint": true
+      },
+      {
+        "lane": "myia-ai-01:LivresAgit",
+        "day": "2026-08-31",
+        "total": 1,
+        "light": 1,
+        "budget": 1,
+        "atteint": true
+      },
+      {
+        "lane": "myia-ai-01:LivresAgit",
+        "day": "2026-09-01",
+        "total": 1,
+        "light": 0,
+        "budget": 1,
+        "atteint": false
+      },
+      {
+        "lane": "myia-ai-01:LivresAgit",
+        "day": "2026-09-02",
+        "total": 1,
+        "light": 0,
+        "budget": 1,
+        "atteint": false
+      },
+      {
+        "lane": "myia-ai-01:LivresAgit",
+        "day": "2026-09-03",
+        "total": 1,
+        "light": 0,
+        "budget": 1,
+        "atteint": false
+      },
+      {
+        "lane": "myia-ai-01:LivresAgit",
+        "day": "2026-09-04",
+        "total": 1,
+        "light": 0,
+        "budget": 1,
+        "atteint": false
+      },
+      {
+        "lane": "myia-ai-01:myia-open-webui",
+        "day": "2026-09-01",
+        "total": 1,
+        "light": 1,
+        "budget": 1,
+        "atteint": true
+      },
+      {
+        "lane": "myia-po-2023:CoursIA",
+        "day": "2026-08-28",
+        "total": 16,
+        "light": 1,
+        "budget": 5,
+        "atteint": false
+      },
+      {
+        "lane": "myia-po-2023:CoursIA",
+        "day": "2026-08-29",
+        "total": 2,
+        "light": 0,
+        "budget": 1,
+        "atteint": false
+      },
+      {
+        "lane": "myia-po-2023:CoursIA",
+        "day": "2026-08-30",
+        "total": 16,
+        "light": 9,
+        "budget": 5,
+        "atteint": true
+      },
+      {
+        "lane": "myia-po-2023:CoursIA",
+        "day": "2026-08-31",
+        "total": 2,
+        "light": 1,
+        "budget": 1,
+        "atteint": true
+      },
+      {
+        "lane": "myia-po-2023:CoursIA",
+        "day": "2026-09-01",
+        "total": 1,
+        "light": 0,
+        "budget": 1,
+        "atteint": false
+      },
+      {
+        "lane": "myia-po-2023:CoursIA",
+        "day": "2026-09-02",
+        "total": 17,
+        "light": 8,
+        "budget": 5,
+        "atteint": true
+      },
+      {
+        "lane": "myia-po-2023:CoursIA",
+        "day": "2026-09-03",
+        "total": 11,
+        "light": 2,
+        "budget": 3,
+        "atteint": false
+      },
+      {
+        "lane": "myia-po-2023:CoursIA",
+        "day": "2026-09-04",
+        "total": 8,
+        "light": 4,
+        "budget": 2,
+        "atteint": true
+      },
+      {
+        "lane": "myia-po-2023:CoursIA-2",
+        "day": "2026-08-25",
+        "total": 9,
+        "light": 6,
+        "budget": 3,
+        "atteint": true
+      },
+      {
+        "lane": "myia-po-2023:CoursIA-2",
+        "day": "2026-08-26",
+        "total": 6,
+        "light": 4,
+        "budget": 2,
+        "atteint": true
+      },
+      {
+        "lane": "myia-po-2023:CoursIA-2",
+        "day": "2026-08-28",
+        "total": 25,
+        "light": 7,
+        "budget": 8,
+        "atteint": false
+      },
+      {
+        "lane": "myia-po-2023:CoursIA-2",
+        "day": "2026-08-29",
+        "total": 23,
+        "light": 7,
+        "budget": 7,
+        "atteint": true
+      },
+      {
+        "lane": "myia-po-2023:CoursIA-2",
+        "day": "2026-08-30",
+        "total": 19,
+        "light": 10,
+        "budget": 6,
+        "atteint": true
+      },
+      {
+        "lane": "myia-po-2023:CoursIA-2",
+        "day": "2026-08-31",
+        "total": 13,
+        "light": 2,
+        "budget": 4,
+        "atteint": false
+      },
+      {
+        "lane": "myia-po-2023:CoursIA-2",
+        "day": "2026-09-01",
+        "total": 10,
+        "light": 3,
+        "budget": 3,
+        "atteint": true
+      },
+      {
+        "lane": "myia-po-2023:CoursIA-2",
+        "day": "2026-09-02",
+        "total": 12,
+        "light": 3,
+        "budget": 4,
+        "atteint": false
+      },
+      {
+        "lane": "myia-po-2023:CoursIA-2",
+        "day": "2026-09-03",
+        "total": 7,
+        "light": 3,
+        "budget": 2,
+        "atteint": true
+      },
+      {
+        "lane": "myia-po-2023:CoursIA-2",
+        "day": "2026-09-04",
+        "total": 6,
+        "light": 4,
+        "budget": 2,
+        "atteint": true
+      },
+      {
+        "lane": "myia-po-2024:CoursIA",
+        "day": "2026-08-26",
+        "total": 4,
+        "light": 4,
+        "budget": 1,
+        "atteint": true
+      },
+      {
+        "lane": "myia-po-2024:CoursIA",
+        "day": "2026-08-27",
+        "total": 9,
+        "light": 1,
+        "budget": 3,
+        "atteint": false
+      },
+      {
+        "lane": "myia-po-2024:CoursIA",
+        "day": "2026-08-28",
+        "total": 27,
+        "light": 11,
+        "budget": 9,
+        "atteint": true
+      },
+      {
+        "lane": "myia-po-2024:CoursIA",
+        "day": "2026-08-29",
+        "total": 1,
+        "light": 0,
+        "budget": 1,
+        "atteint": false
+      },
+      {
+        "lane": "myia-po-2024:CoursIA",
+        "day": "2026-08-30",
+        "total": 8,
+        "light": 2,
+        "budget": 2,
+        "atteint": true
+      },
+      {
+        "lane": "myia-po-2024:CoursIA",
+        "day": "2026-08-31",
+        "total": 14,
+        "light": 4,
+        "budget": 4,
+        "atteint": true
+      },
+      {
+        "lane": "myia-po-2024:CoursIA",
+        "day": "2026-09-01",
+        "total": 15,
+        "light": 2,
+        "budget": 5,
+        "atteint": false
+      },
+      {
+        "lane": "myia-po-2024:CoursIA",
+        "day": "2026-09-02",
+        "total": 19,
+        "light": 16,
+        "budget": 6,
+        "atteint": true
+      },
+      {
+        "lane": "myia-po-2024:CoursIA",
+        "day": "2026-09-04",
+        "total": 8,
+        "light": 5,
+        "budget": 2,
+        "atteint": true
+      },
+      {
+        "lane": "myia-po-2024:CoursIA-2",
+        "day": "2026-08-25",
+        "total": 2,
+        "light": 1,
+        "budget": 1,
+        "atteint": true
+      },
+      {
+        "lane": "myia-po-2024:CoursIA-2",
+        "day": "2026-08-26",
+        "total": 4,
+        "light": 2,
+        "budget": 1,
+        "atteint": true
+      },
+      {
+        "lane": "myia-po-2024:CoursIA-2",
+        "day": "2026-08-27",
+        "total": 13,
+        "light": 6,
+        "budget": 4,
+        "atteint": true
+      },
+      {
+        "lane": "myia-po-2024:CoursIA-2",
+        "day": "2026-08-28",
+        "total": 20,
+        "light": 7,
+        "budget": 6,
+        "atteint": true
+      },
+      {
+        "lane": "myia-po-2024:CoursIA-2",
+        "day": "2026-08-29",
+        "total": 6,
+        "light": 2,
+        "budget": 2,
+        "atteint": true
+      },
+      {
+        "lane": "myia-po-2024:CoursIA-2",
+        "day": "2026-08-30",
+        "total": 12,
+        "light": 3,
+        "budget": 4,
+        "atteint": false
+      },
+      {
+        "lane": "myia-po-2024:CoursIA-2",
+        "day": "2026-08-31",
+        "total": 4,
+        "light": 2,
+        "budget": 1,
+        "atteint": true
+      },
+      {
+        "lane": "myia-po-2024:CoursIA-2",
+        "day": "2026-09-01",
+        "total": 5,
+        "light": 0,
+        "budget": 1,
+        "atteint": false
+      },
+      {
+        "lane": "myia-po-2024:CoursIA-2",
+        "day": "2026-09-02",
+        "total": 23,
+        "light": 7,
+        "budget": 7,
+        "atteint": true
+      },
+      {
+        "lane": "myia-po-2024:CoursIA-2",
+        "day": "2026-09-03",
+        "total": 10,
+        "light": 3,
+        "budget": 3,
+        "atteint": true
+      },
+      {
+        "lane": "myia-po-2024:CoursIA-2",
+        "day": "2026-09-04",
+        "total": 4,
+        "light": 0,
+        "budget": 1,
+        "atteint": false
+      },
+      {
+        "lane": "myia-po-2025-win32-x64:2026-Epita-Programmation-par-Contraintes",
+        "day": "2026-09-01",
+        "total": 1,
+        "light": 0,
+        "budget": 1,
+        "atteint": false
+      },
+      {
+        "lane": "myia-po-2025-win32-x64:2026-Epita-Programmation-par-Contraintes",
+        "day": "2026-09-02",
+        "total": 1,
+        "light": 0,
+        "budget": 1,
+        "atteint": false
+      },
+      {
+        "lane": "myia-po-2025-win32-x64:2026-Epita-Programmation-par-Contraintes",
+        "day": "2026-09-03",
+        "total": 1,
+        "light": 0,
+        "budget": 1,
+        "atteint": false
+      },
+      {
+        "lane": "myia-po-2025:CoursIA",
+        "day": "2026-08-25",
+        "total": 1,
+        "light": 0,
+        "budget": 1,
+        "atteint": false
+      },
+      {
+        "lane": "myia-po-2025:CoursIA",
+        "day": "2026-08-26",
+        "total": 1,
+        "light": 1,
+        "budget": 1,
+        "atteint": true
+      },
+      {
+        "lane": "myia-po-2025:CoursIA",
+        "day": "2026-08-27",
+        "total": 3,
+        "light": 1,
+        "budget": 1,
+        "atteint": true
+      },
+      {
+        "lane": "myia-po-2025:CoursIA",
+        "day": "2026-08-28",
+        "total": 9,
+        "light": 1,
+        "budget": 3,
+        "atteint": false
+      },
+      {
+        "lane": "myia-po-2025:CoursIA",
+        "day": "2026-08-29",
+        "total": 14,
+        "light": 1,
+        "budget": 4,
+        "atteint": false
+      },
+      {
+        "lane": "myia-po-2025:CoursIA",
+        "day": "2026-08-30",
+        "total": 8,
+        "light": 0,
+        "budget": 2,
+        "atteint": false
+      },
+      {
+        "lane": "myia-po-2025:CoursIA",
+        "day": "2026-08-31",
+        "total": 12,
+        "light": 2,
+        "budget": 4,
+        "atteint": false
+      },
+      {
+        "lane": "myia-po-2025:CoursIA",
+        "day": "2026-09-01",
+        "total": 6,
+        "light": 1,
+        "budget": 2,
+        "atteint": false
+      },
+      {
+        "lane": "myia-po-2025:CoursIA",
+        "day": "2026-09-02",
+        "total": 9,
+        "light": 1,
+        "budget": 3,
+        "atteint": false
+      },
+      {
+        "lane": "myia-po-2025:CoursIA",
+        "day": "2026-09-03",
+        "total": 12,
+        "light": 2,
+        "budget": 4,
+        "atteint": false
+      },
+      {
+        "lane": "myia-po-2025:CoursIA",
+        "day": "2026-09-04",
+        "total": 3,
+        "light": 1,
+        "budget": 1,
+        "atteint": true
+      },
+      {
+        "lane": "myia-po-2025:CoursIA-2",
+        "day": "2026-08-25",
+        "total": 1,
+        "light": 1,
+        "budget": 1,
+        "atteint": true
+      },
+      {
+        "lane": "myia-po-2025:CoursIA-2",
+        "day": "2026-08-27",
+        "total": 1,
+        "light": 0,
+        "budget": 1,
+        "atteint": false
+      },
+      {
+        "lane": "myia-po-2025:CoursIA-2",
+        "day": "2026-08-31",
+        "total": 1,
+        "light": 1,
+        "budget": 1,
+        "atteint": true
+      },
+      {
+        "lane": "myia-po-2025:CoursIA-2",
+        "day": "2026-09-01",
+        "total": 6,
+        "light": 3,
+        "budget": 2,
+        "atteint": true
+      },
+      {
+        "lane": "myia-po-2025:CoursIA-2",
+        "day": "2026-09-03",
+        "total": 1,
+        "light": 0,
+        "budget": 1,
+        "atteint": false
+      },
+      {
+        "lane": "myia-po-2025:Microsoft",
+        "day": "2026-09-02",
+        "total": 1,
+        "light": 1,
+        "budget": 1,
+        "atteint": true
+      },
+      {
+        "lane": "myia-po-2026:CoursIA",
+        "day": "2026-08-27",
+        "total": 10,
+        "light": 3,
+        "budget": 3,
+        "atteint": true
+      },
+      {
+        "lane": "myia-po-2026:CoursIA",
+        "day": "2026-08-28",
+        "total": 15,
+        "light": 11,
+        "budget": 5,
+        "atteint": true
+      },
+      {
+        "lane": "myia-po-2026:CoursIA",
+        "day": "2026-08-29",
+        "total": 39,
+        "light": 19,
+        "budget": 13,
+        "atteint": true
+      },
+      {
+        "lane": "myia-po-2026:CoursIA",
+        "day": "2026-08-30",
+        "total": 14,
+        "light": 8,
+        "budget": 4,
+        "atteint": true
+      },
+      {
+        "lane": "myia-po-2026:CoursIA",
+        "day": "2026-08-31",
+        "total": 3,
+        "light": 1,
+        "budget": 1,
+        "atteint": true
+      },
+      {
+        "lane": "myia-po-2026:CoursIA",
+        "day": "2026-09-01",
+        "total": 19,
+        "light": 13,
+        "budget": 6,
+        "atteint": true
+      },
+      {
+        "lane": "myia-po-2026:CoursIA",
+        "day": "2026-09-02",
+        "total": 47,
+        "light": 29,
+        "budget": 15,
+        "atteint": true
+      },
+      {
+        "lane": "myia-po-2026:CoursIA",
+        "day": "2026-09-03",
+        "total": 39,
+        "light": 13,
+        "budget": 13,
+        "atteint": true
+      },
+      {
+        "lane": "myia-po-2026:CoursIA",
+        "day": "2026-09-04",
+        "total": 18,
+        "light": 9,
+        "budget": 6,
+        "atteint": true
+      },
+      {
+        "lane": "myia-po-2026:CoursIA-2",
+        "day": "2026-08-26",
+        "total": 5,
+        "light": 1,
+        "budget": 1,
+        "atteint": true
+      },
+      {
+        "lane": "myia-po-2026:CoursIA-2",
+        "day": "2026-08-27",
+        "total": 1,
+        "light": 1,
+        "budget": 1,
+        "atteint": true
+      },
+      {
+        "lane": "myia-po-2026:CoursIA-2",
+        "day": "2026-08-28",
+        "total": 6,
+        "light": 3,
+        "budget": 2,
+        "atteint": true
+      },
+      {
+        "lane": "myia-po-2026:CoursIA-2",
+        "day": "2026-08-29",
+        "total": 1,
+        "light": 0,
+        "budget": 1,
+        "atteint": false
+      },
+      {
+        "lane": "myia-po-2026:CoursIA-2",
+        "day": "2026-08-30",
+        "total": 10,
+        "light": 5,
+        "budget": 3,
+        "atteint": true
+      },
+      {
+        "lane": "myia-po-2026:CoursIA-2",
+        "day": "2026-08-31",
+        "total": 4,
+        "light": 3,
+        "budget": 1,
+        "atteint": true
+      },
+      {
+        "lane": "myia-po-2026:CoursIA-2",
+        "day": "2026-09-01",
+        "total": 11,
+        "light": 6,
+        "budget": 3,
+        "atteint": true
+      },
+      {
+        "lane": "myia-po-2026:CoursIA-2",
+        "day": "2026-09-02",
+        "total": 21,
+        "light": 8,
+        "budget": 7,
+        "atteint": true
+      },
+      {
+        "lane": "myia-po-2026:CoursIA-2",
+        "day": "2026-09-03",
+        "total": 8,
+        "light": 0,
+        "budget": 2,
+        "atteint": false
+      },
+      {
+        "lane": "myia-po-2026:CoursIA-2",
+        "day": "2026-09-04",
+        "total": 2,
+        "light": 1,
+        "budget": 1,
+        "atteint": true
+      },
+      {
+        "lane": "myia-po-2027:CoursIA",
+        "day": "2026-08-28",
+        "total": 3,
+        "light": 3,
+        "budget": 1,
+        "atteint": true
+      },
+      {
+        "lane": "myia-po-2027:CoursIA",
+        "day": "2026-08-29",
+        "total": 1,
+        "light": 0,
+        "budget": 1,
+        "atteint": false
+      },
+      {
+        "lane": "myia-po-2027:CoursIA",
+        "day": "2026-08-30",
+        "total": 3,
+        "light": 0,
+        "budget": 1,
+        "atteint": false
+      },
+      {
+        "lane": "myia-po-2027:CoursIA",
+        "day": "2026-08-31",
+        "total": 5,
+        "light": 1,
+        "budget": 1,
+        "atteint": true
+      },
+      {
+        "lane": "myia-po-2027:CoursIA",
+        "day": "2026-09-01",
+        "total": 17,
+        "light": 1,
+        "budget": 5,
+        "atteint": false
+      },
+      {
+        "lane": "myia-po-2027:CoursIA",
+        "day": "2026-09-02",
+        "total": 6,
+        "light": 2,
+        "budget": 2,
+        "atteint": true
+      },
+      {
+        "lane": "myia-po-2027:CoursIA",
+        "day": "2026-09-03",
+        "total": 8,
+        "light": 2,
+        "budget": 2,
+        "atteint": true
+      },
+      {
+        "lane": "myia-po-2027:CoursIA",
+        "day": "2026-09-04",
+        "total": 7,
+        "light": 2,
+        "budget": 2,
+        "atteint": true
+      },
+      {
+        "lane": "myia-po-2027:CoursIA-2",
+        "day": "2026-08-25",
+        "total": 4,
+        "light": 1,
+        "budget": 1,
+        "atteint": true
+      },
+      {
+        "lane": "myia-po-2027:CoursIA-2",
+        "day": "2026-08-26",
+        "total": 3,
+        "light": 2,
+        "budget": 1,
+        "atteint": true
+      },
+      {
+        "lane": "myia-po-2027:CoursIA-2",
+        "day": "2026-08-27",
+        "total": 2,
+        "light": 0,
+        "budget": 1,
+        "atteint": false
+      },
+      {
+        "lane": "myia-po-2027:CoursIA-2",
+        "day": "2026-08-28",
+        "total": 23,
+        "light": 9,
+        "budget": 7,
+        "atteint": true
+      },
+      {
+        "lane": "myia-po-2027:CoursIA-2",
+        "day": "2026-08-29",
+        "total": 3,
+        "light": 1,
+        "budget": 1,
+        "atteint": true
+      },
+      {
+        "lane": "myia-po-2027:CoursIA-2",
+        "day": "2026-08-30",
+        "total": 7,
+        "light": 4,
+        "budget": 2,
+        "atteint": true
+      },
+      {
+        "lane": "myia-po-2027:CoursIA-2",
+        "day": "2026-08-31",
+        "total": 6,
+        "light": 1,
+        "budget": 2,
+        "atteint": false
+      },
+      {
+        "lane": "myia-po-2027:CoursIA-2",
+        "day": "2026-09-01",
+        "total": 7,
+        "light": 0,
+        "budget": 2,
+        "atteint": false
+      },
+      {
+        "lane": "myia-po-2027:CoursIA-2",
+        "day": "2026-09-02",
+        "total": 9,
+        "light": 2,
+        "budget": 3,
+        "atteint": false
+      },
+      {
+        "lane": "myia-po-2027:CoursIA-2",
+        "day": "2026-09-03",
+        "total": 5,
+        "light": 3,
+        "budget": 1,
+        "atteint": true
+      },
+      {
+        "lane": "myia-po-2027:CoursIA-2",
+        "day": "2026-09-04",
+        "total": 1,
+        "light": 0,
+        "budget": 1,
+        "atteint": false
+      }
+    ],
+    "verdict": {
+      "lanes_with_budget_reached": 14,
+      "total_lanes": 15,
+      "total_days_active": 115,
+      "total_budget_reached_days": 75,
+      "pct_budget_reached": 65.2,
+      "verdict": "FENETRE_TROP_SERREE"
+    },
+    "controle_positif": {
+      "target_lane": "myia-po-2024:CoursIA-2",
+      "target_day": "2026-08-25",
+      "found": true,
+      "total": 2,
+      "light": 1,
+      "budget": 1,
+      "atteint": true,
+      "verdict": "OK"
+    }
+  },
+  "volet_c": {
+    "raw": {
+      "lane": "myia-po-2027:CoursIA-2",
+      "seeds": 3,
+      "retenu_per_seed": [
+        52,
+        52,
+        49
+      ],
+      "dwell_per_seed": [
+        3,
+        3,
+        3
+      ],
+      "contenu_retained_per_seed": [
+        0,
+        0,
+        0
+      ]
+    },
+    "verdict": {
+      "total_dwell": 9,
+      "total_contenu_retained_by_dwell": 0,
+      "pct_contenu_caught_by_dwell": 0.0,
+      "verdict": "DWELL_INOFFENSIF"
+    }
+  }
+}
