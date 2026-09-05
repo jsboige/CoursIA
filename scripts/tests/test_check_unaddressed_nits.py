@@ -5351,3 +5351,36 @@ def test_14461_t2_negation_d_override_ne_supprime_rien() -> None:
             f"#14461-T2 {marker!r}: le motif doit matcher une forme positive."
         )
 
+
+def test_14793_troncature_60_crochet_non_ferme_est_pin() -> None:
+    """#14793 acceptance 3 : la troncature de tete a 60 caracteres, quand le
+    crochet OVERRIDE s'ouvre mais ne se ferme pas avant la limite, ne desarme
+    pas le garde (pin, comportement hereditaire accepte par la review de #14788).
+
+    Un en-tete dont le crochet s'ouvre dans les 60 premiers chars mais ne se
+    ferme pas avant la limite n'est PAS un override pose : le motif regu une
+    tete sans `]` et ne matche pas, le BLOCAGE reste une emission (garde arme),
+    pas un arbitrage muet. Valeurs mesurees sur `_OVERRIDE_HEAD_RE` a pos 0
+    (`.match`), `_coordinator_emission_informal`, `_block_emitted` et `classify`.
+    """
+    body = (
+        "**BLOCAGE MERGE (ai-01)** — Au tour precedent, l'ordre [OVERRIDE lane "
+        "myia-po-2024:CoursIA-2 -- justifier longuement que le crochet ne se "
+        "referme pas avant la limite de soixante caracteres]\n\nNe pas merger "
+        "tant que le run GPU n'est pas rendu."
+    )
+    head60 = body[:60]
+    assert not mod._OVERRIDE_HEAD_RE.match(head60.upper()), (
+        "#14793-TRUNC: un crochet non ferme dans les 60 premiers chars ne doit "
+        "pas matcher le motif d'override (le garde n'est pas desarme)."
+    )
+    assert mod._coordinator_emission_informal(body) is True, (
+        "#14793-TRUNC: l'injonction doit rester une emission."
+    )
+    assert mod._block_emitted(body) is True, (
+        "#14793-TRUNC: le BLOCAGE (point A) reste emis sous un crochet non ferme."
+    )
+    assert mod.classify("myia-ai-01", body) == "BLOCK", (
+        "#14793-TRUNC: classify doit rendre BLOCK, pas None/arbitrage."
+    )
+
