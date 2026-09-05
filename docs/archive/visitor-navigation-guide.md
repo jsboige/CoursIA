@@ -26,7 +26,7 @@ Les notebooks utilisent principalement **Python 3.10+** (PyTorch, OR-Tools, PyMC
 
 **Fil conducteur** : comment explorer un espace de solutions, comment raisonner sur l'incertitude, comment formaliser et prouver.
 
-**Entree recommandee** : [Search-1-StateSpace](../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb) formalise les espaces d'etats, le concept fondateur commun a toute la serie.
+**Entree recommandee** : [Search-1-StateSpace](../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-01-StateSpace.ipynb) formalise les espaces d'etats, le concept fondateur commun a toute la serie.
 
 **Etapes cles** : Search (BFS, DFS, A*, MCTS) → CSP (propagation, ordonnancement) → GameTheory (Minimax, Nash, CFR) → Lean (preuves formelles). Les series Lean et SymbolicAI sont partagees avec le **Parcours D** ; ici on les lit comme l'aboutissement de la recherche algorithmique (la preuve comme exploration exhaustive dans l'espace des tactiques).
 

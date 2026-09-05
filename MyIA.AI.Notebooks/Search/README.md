@@ -321,18 +321,18 @@ Search/
 ├── resources/                             # Images et données
 │
 ├── Part1-Foundations/                     # Search Fondamental (33 notebooks : 15 Python + 1 Lean + 17 C# — 12 jumeaux directs Search-1..11/2b + Search-2c QuikGraph natif + déclinaison Métaheuristiques Search-11b en 4 volets + Search-09b/09c/09d discrépance)
-│   ├── Search-1-StateSpace.ipynb
-│   ├── Search-2-Uninformed.ipynb
+│   ├── Search-01-StateSpace.ipynb
+│   ├── Search-02-Uninformed.ipynb
 │   ├── Search-02b-NetworkX.ipynb
 │   ├── Search-02b-NetworkX-Csharp.ipynb   # Twin C# graphes from-scratch (BFS/DFS, Dijkstra, centralités, Ford-Fulkerson) (See #4956)
 │   ├── Search-02c-QuikGraph.ipynb
-│   ├── Search-3-Informed.ipynb
-│   ├── Search-4-LocalSearch.ipynb
-│   ├── Search-5-GeneticAlgorithms.ipynb
-│   ├── Search-6-AdversarialSearch.ipynb
-│   ├── Search-7-MCTS-And-Beyond.ipynb
-│   ├── Search-8-DancingLinks.ipynb
-│   ├── Search-9-LinearProgramming.ipynb
+│   ├── Search-03-Informed.ipynb
+│   ├── Search-04-LocalSearch.ipynb
+│   ├── Search-05-GeneticAlgorithms.ipynb
+│   ├── Search-06-AdversarialSearch.ipynb
+│   ├── Search-07-MCTS-And-Beyond.ipynb
+│   ├── Search-08-DancingLinks.ipynb
+│   ├── Search-09-LinearProgramming.ipynb
 │   ├── Search-09b-SpuriousMinima.ipynb
 │   ├── Search-09c-CombinatorialDiscrepancy.ipynb
 │   ├── Search-09d-Lean-Discrepancy-Komlos.ipynb   # Compagnon formel : lake discrepancy_lean via kernel lean4-wsl (#13868)
@@ -569,7 +569,7 @@ Le hub Search alignait une riche prose sur la double approche *exploration syst�
 
 | Famille | Lake phare | Théorème / brique | Branchement notebook |
 |---------|-----------|-------------------|----------------------|
-| Search / Part 1 | `search_lean` (#4048) | A\* admissibilité → optimalité (P1) | [Search-3-Informed](Part1-Foundations/Search-3-Informed.ipynb) (A\*, heuristique admissible) |
+| Search / Part 1 | `search_lean` (#4048) | A\* admissibilité → optimalité (P1) | [Search-3-Informed](Part1-Foundations/Search-03-Informed.ipynb) (A\*, heuristique admissible) |
 | Search / Part 1 | `search_lean` | A\* consistance d'heuristique (P2) + relaxation pondérée | [Search-03d-WeightedAstar](Part1-Foundations/Search-03d-WeightedAstar.ipynb) (Weighted A\*, Pohl 1970) |
 | Search / Part 1 | `search_lean` | Pattern DB additives (Korf & Felner 2002) | [Search-03b-PatternDatabases](Part1-Foundations/Search-03b-PatternDatabases.ipynb) |
 | ML | `learning_theory_lean` (#5054) | Novikoff perceptron 0 sorry #4140 | [`Perceptron.lean`](../ML/learning_theory_lean/Perceptron/Perceptron.lean) (lake, pas notebook pédagogique) |

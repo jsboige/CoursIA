@@ -33,7 +33,7 @@ le lien conceptuel a cassé, le navlink n'a pas été mis à jour.
 
 ## Le défaut (confirmé firsthand)
 
-`Search-8-DancingLinks.ipynb` (cellule 0 + cellule 56) déclarait :
+`Search-08-DancingLinks.ipynb` (cellule 0 + cellule 56) déclarait :
 
 ```
 [<< Metaheuristiques](Search-11-Metaheuristics.ipynb)
@@ -57,7 +57,7 @@ pointe déjà vers `Search-8-DancingLinks`, donc `Search-8 <<` doit pointer vers
 page cellule 56) :
 
 ```
-[<< MCTS](Search-7-MCTS-And-Beyond.ipynb)
+[<< MCTS](Search-07-MCTS-And-Beyond.ipynb)
 ```
 
 Diff +2/−2, markdown-only (C.2-safe, pas de re-exécution — #6722/#6796). Post-fix :

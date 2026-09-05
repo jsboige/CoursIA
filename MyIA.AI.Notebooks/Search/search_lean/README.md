@@ -24,8 +24,8 @@ la propriété qui distingue A* d'une simple recherche en largeur.
 Le notebook compagnon historique
 [`Exploration_non_informée_et_informée_intro.ipynb`](../_archive/Exploration_non_informée_et_informée_intro.ipynb)
 (archivé en 2026-07-03, tranche 8/8 du plan #5081) puis ses successeurs officiels
-[`Search-2-Uninformed.ipynb`](../Part1-Foundations/Search-2-Uninformed.html)
-et [`Search-3-Informed.ipynb`](../Part1-Foundations/Search-3-Informed.ipynb)
+[`Search-02-Uninformed.ipynb`](../Part1-Foundations/Search-2-Uninformed.html)
+et [`Search-03-Informed.ipynb`](../Part1-Foundations/Search-03-Informed.ipynb)
 illustrent ceci en Python sur un terrain pondéré où A* exploite
 l'heuristique pour explorer moins de nœuds que BFS.
 
@@ -217,4 +217,4 @@ Phases suivantes (suivi #4048) :
 - P. E. Hart, N. J. Nilsson, B. Raphael, *A Formal Basis for the Heuristic Determination
   of Minimum Cost Paths*, IEEE Trans. Syst. Sci. Cybern. **4**(2), 1968.
 - S. Russell, P. Norvig, *Artificial Intelligence: A Modern Approach*, §3.5 (A* Search).
-- Notebooks compagnons : [`Search-2-Uninformed.ipynb`](../Part1-Foundations/Search-2-Uninformed.html), [`Search-3-Informed.ipynb`](../Part1-Foundations/Search-3-Informed.ipynb) (le notebook historique [`Exploration_non_informée_et_informée_intro.ipynb`](../_archive/Exploration_non_informée_et_informée_intro.ipynb) est archivé depuis 2026-07-03).
+- Notebooks compagnons : [`Search-02-Uninformed.ipynb`](../Part1-Foundations/Search-2-Uninformed.html), [`Search-03-Informed.ipynb`](../Part1-Foundations/Search-03-Informed.ipynb) (le notebook historique [`Exploration_non_informée_et_informée_intro.ipynb`](../_archive/Exploration_non_informée_et_informée_intro.ipynb) est archivé depuis 2026-07-03).

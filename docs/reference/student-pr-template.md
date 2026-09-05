@@ -45,7 +45,7 @@ Copier-coller le modele ci-dessous et remplir les champs :
 ```markdown
 ## Exercice resolu
 
-- **Notebook**: Search-3-Informed.ipynb
+- **Notebook**: Search-03-Informed.ipynb
 - **Exercice**: Ex1 - Verification d'admissibilite
 - **Etudiant**: Jean Dupont
 

@@ -14,12 +14,12 @@ Ce répertoire contient les anciennes versions des notebooks Python qui se trouv
 ### `Exploration_non_informée_et_informée_intro.ipynb`
 
 - **Date d'archivage** : 2026-07-03
-- **Raison** : Remplacé par la sous-série `Part1-Foundations/` qui sépare clairement exploration non-informée (`Search-2-Uninformed.ipynb` : BFS, DFS, UCS, IDS, profondeur itérative) et exploration informée (`Search-3-Informed.ipynb` : greedy best-first, A*, variantes pondérées) en deux notebooks distincts plutôt qu'un document mêlant les deux familles.
+- **Raison** : Remplacé par la sous-série `Part1-Foundations/` qui sépare clairement exploration non-informée (`Search-02-Uninformed.ipynb` : BFS, DFS, UCS, IDS, profondeur itérative) et exploration informée (`Search-03-Informed.ipynb` : greedy best-first, A*, variantes pondérées) en deux notebooks distincts plutôt qu'un document mêlant les deux familles.
 - **Contenu original** : survol des algorithmes d'exploration non-informée (BFS/DFS) et informée (A*) en un seul notebook.
 - **Nouvelle structure** :
   - `Part1-Foundations/Search-1-Landscape.ipynb` — panorama
-  - `Part1-Foundations/Search-2-Uninformed.ipynb` — exploration non-informée
-  - `Part1-Foundations/Search-3-Informed.ipynb` — exploration informée et heuristiques
+  - `Part1-Foundations/Search-02-Uninformed.ipynb` — exploration non-informée
+  - `Part1-Foundations/Search-03-Informed.ipynb` — exploration informée et heuristiques
 
 ## Vérification de la migration
 
