@@ -32,6 +32,32 @@ from utils.adk_runtime import (
 )
 
 
+class AdkBudgetExceeded(Exception):
+    """Verdict explicite du plafond de jetons cumules (contrat C6, jambe budget).
+
+    Un plafond atteint ne doit ni tuer le runtime en vol ni remonter une
+    exception brute du stream ADK : la coupe rend un verdict type, portant
+    le plafond, le cumul exact au moment de la coupe (jetons consommes
+    inclus, comptabilite honnete) et le numero du tour coupe ou refuse.
+    """
+
+    verdict = "BUDGET_EXCEEDED"
+
+    def __init__(
+        self,
+        budget_total: int,
+        usage_total: AdkUsage,
+        tour: int,
+    ) -> None:
+        self.budget_total = budget_total
+        self.usage_total = usage_total
+        self.tour = tour
+        super().__init__(
+            f"{self.verdict}: {usage_total.total_tokens} jetons cumules "
+            f">= plafond {budget_total} (tour {tour})"
+        )
+
+
 class ConversationRunner:
     """Execute plusieurs tours d'un agent dans la MEME session ADK.
 
@@ -40,6 +66,11 @@ class ConversationRunner:
     porte le contrat C1b (persistance d'etat entre tours). Le cloisonnement
     reste celui du contrat C1 : deux ``ConversationRunner`` sont deux sessions
     distinctes, isolees l'une de l'autre.
+
+    ``budget_total_tokens`` (contrat C6, jambe budget) pose un plafond sur le
+    cumul de jetons de la conversation : un tour est refuse AVANT tout appel
+    LLM quand le plafond est deja atteint, et coupe au premier appel qui le
+    franchit -- dans les deux cas par ``AdkBudgetExceeded``.
     """
 
     def __init__(
@@ -49,11 +80,13 @@ class ConversationRunner:
         app_name: str = APP_NAME,
         user_id: str = "track2-user",
         session_id: str | None = None,
+        budget_total_tokens: int | None = None,
     ) -> None:
         self.agent = agent
         self.app_name = app_name
         self.user_id = user_id
         self.session_id = session_id or f"conversation-{uuid4().hex}"
+        self.budget_total_tokens = budget_total_tokens
         self.session_service = InMemorySessionService()
         self._runner = Runner(
             agent=agent,
@@ -62,6 +95,7 @@ class ConversationRunner:
         )
         self._started = False
         self.turn_usages: list[AdkUsage] = []
+        self.turn_count = 0
 
     @property
     def usage_total(self) -> AdkUsage:
@@ -70,6 +104,13 @@ class ConversationRunner:
         for usage in self.turn_usages:
             total = total + usage
         return total
+
+    @property
+    def budget_exhausted(self) -> bool:
+        """Vrai des que le cumul atteint le plafond (sans plafond : faux)."""
+        if self.budget_total_tokens is None:
+            return False
+        return self.usage_total.total_tokens >= self.budget_total_tokens
 
     async def start(self) -> None:
         """Cree la session unique de la conversation (idempotent)."""
@@ -92,6 +133,15 @@ class ConversationRunner:
         if not self._started:
             await self.start()
 
+        if (
+            self.budget_total_tokens is not None
+            and self.usage_total.total_tokens >= self.budget_total_tokens
+        ):
+            raise AdkBudgetExceeded(
+                self.budget_total_tokens, self.usage_total, self.turn_count + 1
+            )
+
+        self.turn_count += 1
         message = types.Content(role="user", parts=[types.Part(text=prompt)])
         response_text = ""
         tool_calls: list[str] = []
@@ -99,9 +149,11 @@ class ConversationRunner:
         usage_turns: list[AdkUsage] = []
         event_errors: list[str] = []
         event_count = 0
+        budget_cut = False
 
         async def consume_events() -> None:
-            nonlocal event_count, response_text
+            nonlocal event_count, response_text, budget_cut
+            turn_cumulative = AdkUsage()
             async for event in self._runner.run_async(
                 user_id=self.user_id,
                 session_id=self.session_id,
@@ -119,6 +171,17 @@ class ConversationRunner:
                 usage = _event_usage(event)
                 if usage is not None:
                     usage_turns.append(usage)
+                    if self.budget_total_tokens is not None:
+                        turn_cumulative = turn_cumulative + usage
+                        if (
+                            self.usage_total + turn_cumulative
+                        ).total_tokens > self.budget_total_tokens:
+                            # Coupe propre au premier appel qui FRANCHIT le
+                            # plafond (strict) : un tour atterrissant exactement
+                            # sur le plafond se termine normalement -- c'est le
+                            # garde pre-tour qui refusera la suite.
+                            budget_cut = True
+                            break
                 error_code = getattr(event, "error_code", None)
                 error_message = getattr(event, "error_message", None)
                 if error_code or error_message:
@@ -146,6 +209,14 @@ class ConversationRunner:
                 f"RECOVERABLE-LOCAL: echec du runtime ADK reel "
                 f"({type(exc).__name__}){suffix}"
             ) from exc
+
+        if budget_cut:
+            # Comptabilite honnete : les jetons consommes avant la coupe
+            # entrent dans le cumul AVANT le verdict.
+            self.turn_usages.extend(usage_turns)
+            raise AdkBudgetExceeded(
+                self.budget_total_tokens, self.usage_total, self.turn_count
+            )
 
         if not response_text:
             detail = f" ({'; '.join(event_errors)})" if event_errors else ""

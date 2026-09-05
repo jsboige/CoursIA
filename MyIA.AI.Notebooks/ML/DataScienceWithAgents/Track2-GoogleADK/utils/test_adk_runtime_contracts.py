@@ -490,6 +490,79 @@ def test_c6_usage_accumulates_across_conversation_turns():
         f"{conversation.usage_total}")
 
 
+def test_c6_budget_cuts_mid_turn_with_explicit_verdict():
+    # C6 jambe 2 -- le plafond de jetons cumules coupe PROPREMENT : verdict
+    # type AdkBudgetExceeded (pas une exception brute du stream), portant
+    # plafond, cumul exact au moment de la coupe et numero du tour. Le VRAI
+    # Runner ADK tourne (seul le LLM est scripte) ; le 1er tour consomme 50
+    # jetons, le 2e (85) franchit le plafond de 100 pose d'office.
+    # Critere 4 -- au retrait du releve de plafond dans consume_events
+    # (comparaison neutralisee), le tour 2 se termine normalement et ce
+    # test echoue (verifie par mutation locale).
+    from utils.adk_conversation import AdkBudgetExceeded, ConversationRunner
+
+    async def scenario():
+        agent = _scripted_agent(tools=())
+        async with ConversationRunner(
+            agent, budget_total_tokens=100
+        ) as conversation:
+            tour1 = await conversation.turn("premier tour")
+            try:
+                await conversation.turn("second tour qui depasse")
+            except AdkBudgetExceeded as verdict:
+                return conversation, tour1, verdict
+            raise AssertionError("le tour 2 devait couper sur le plafond")
+
+    _SCRIPT.append(("usage", ("reponse un", 40, 10)))
+    _SCRIPT.append(("usage", ("reponse deux", 60, 25)))
+    conversation, tour1, verdict = asyncio.run(scenario())
+    assert tour1.usage_total.total_tokens == 50, (
+        "le tour 1 (sous plafond) doit se derouler normalement")
+    assert verdict.verdict == "BUDGET_EXCEEDED"
+    assert verdict.budget_total == 100
+    assert verdict.tour == 2
+    assert verdict.usage_total.total_tokens == 135, (
+        f"le cumul au moment de la coupe doit inclure l'appel qui franchit "
+        f"le plafond, mesure : {verdict.usage_total}")
+    assert verdict.usage_total == conversation.usage_total, (
+        "les jetons consommes avant la coupe restent dans le cumul "
+        "(comptabilite honnete)")
+
+
+def test_c6_budget_refuses_next_turn_without_calling_the_llm():
+    # C6 jambe 2, versant refus pre-tour : plafond atteint des le 1er tour
+    # -> le tour 2 est refuse AVANT tout appel LLM. La preuve mecanique :
+    # _REQUESTS n'enregistre qu'UN appel (celui du tour 1) -- un second
+    # appel LLM serait comptee la.
+    # Critere 4 -- au retrait du garde pre-tour dans turn(), le tour 2
+    # declenche un appel LLM (script epuise -> reponse par defaut) et ce
+    # test echoue sur len(_REQUESTS) == 1.
+    from utils.adk_conversation import AdkBudgetExceeded, ConversationRunner
+
+    async def scenario():
+        agent = _scripted_agent(tools=())
+        async with ConversationRunner(
+            agent, budget_total_tokens=50
+        ) as conversation:
+            await conversation.turn("premier tour consomme tout le plafond")
+            try:
+                await conversation.turn("tour refuse d'office")
+            except AdkBudgetExceeded as verdict:
+                return conversation, verdict
+            raise AssertionError("le tour 2 devait etre refuse pre-tour")
+
+    _SCRIPT.append(("usage", ("reponse un", 40, 10)))
+    conversation, verdict = asyncio.run(scenario())
+    assert verdict.verdict == "BUDGET_EXCEEDED"
+    assert verdict.tour == 2
+    assert verdict.budget_total == 50
+    assert len(_REQUESTS) == 1, (
+        f"le tour refuse ne doit declencher AUCUN appel LLM, "
+        f"appels mesures : {len(_REQUESTS)}")
+    assert conversation.budget_exhausted
+    assert conversation.usage_total.total_tokens == 50
+
+
 def test_c7_roles_are_declared_and_required():
     # C7 (specialistes : role declare, orchestration appuyee dessus) --
     # MESURE : PORTE. L'API Agent exige name + description + instruction
