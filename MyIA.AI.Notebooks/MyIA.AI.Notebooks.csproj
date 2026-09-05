@@ -58,12 +58,12 @@
          MyIA.AI.Notebooks.dll. Swept in by the implicit glob they fail the
          parent build on references the parent does not carry (xunit, Roslyn
          analyzer SDK, Aspire hosting). -->
-    <Compile Remove="GenAI\Aspire\AgentGuard.Analyzers\**\*.cs" />
-    <Compile Remove="GenAI\Aspire\AgentGuard.Demo\**\*.cs" />
-    <Compile Remove="GenAI\Aspire\AgentGuard.Verifier\**\*.cs" />
-    <Compile Remove="GenAI\Aspire\IntegrationTests\**\*.cs" />
-    <Compile Remove="GenAI\Aspire\StreamingAgent.App\**\*.cs" />
-    <Compile Remove="GenAI\CopilotSDK\**\*.cs" />
+    <Compile Remove="GenAI\Integrations-DotNet\Aspire\AgentGuard.Analyzers\**\*.cs" />
+    <Compile Remove="GenAI\Integrations-DotNet\Aspire\AgentGuard.Demo\**\*.cs" />
+    <Compile Remove="GenAI\Integrations-DotNet\Aspire\AgentGuard.Verifier\**\*.cs" />
+    <Compile Remove="GenAI\Integrations-DotNet\Aspire\IntegrationTests\**\*.cs" />
+    <Compile Remove="GenAI\Integrations-DotNet\Aspire\StreamingAgent.App\**\*.cs" />
+    <Compile Remove="GenAI\Integrations-DotNet\CopilotSDK\**\*.cs" />
     <Compile Remove="GenAI\Vibe-Coding\analyzers\**\*.cs" />
     <Compile Remove="GenAI\Vibe-Coding\docs\**\*.cs" />
     <Compile Remove="Probas\DecisionTheory\voi\**\*.cs" />
