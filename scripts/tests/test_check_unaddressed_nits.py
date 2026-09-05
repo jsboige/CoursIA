@@ -5248,3 +5248,59 @@ def test_13083_instance3_tete_h1_neutralise_toujours():
         f"fondateur), got {mod.classify('myia-ai-01', body)!r}"
     )
 
+
+def test_14461_gvar3_override_est_reconnu_comme_arbitrage() -> None:
+    """#14461 : un [G-VAR-3 OVERRIDE] pose en tete EMET une levee, pas un hold.
+
+    Cas fondateur (PR #14345) : le coordinateur pose l'override d'adjacence
+    canonique `[G-VAR-3 OVERRIDE] lane <m:w> -- next: <genre>` pour debloquer
+    le garde d'adjacence, mais la phrase qui suit (« tant que ... n'est pas
+    sur main ») est lue comme une injonction -> classify = BOT-CONCERN ->
+    la PR que l'override venait de debloquer reste bloquee. Les deux
+    instruments de deblocage du depot se bloquaient l'un l'autre.
+
+    Controle a variable unique (tableau de l'issue) : meme corps, meme auteur,
+    seul le marqueur d'en-tete change. B vs C isole la cause a une seule
+    variable (l'orthographe du marqueur). D (vraie injonction) et E (anodin)
+    rendent le controle non vacuous : la correction ne desarme PAS la
+    detection de hold reelle — un predicat qui ne porte que B serait permissif
+    et passerait inapercu.
+    """
+    phrase = "Tant que #14345 n'est pas sur `main`, chaque levee de la flotte porte ce risque."
+    cases = [
+        ("A phrase seule", phrase, True),
+        (
+            "B sous [G-VAR-3 OVERRIDE]",
+            f"[G-VAR-3 OVERRIDE] lane myia-po-2026:CoursIA -- next: notebook-python\n\n{phrase}",
+            False,
+        ),
+        (
+            "C sous [OVERRIDE]",
+            f"[OVERRIDE] lane myia-po-2026:CoursIA -- next: notebook-python\n\n{phrase}",
+            False,
+        ),
+        ("D vraie injonction", "Ne pas merger tant que le run GPU n'est pas rendu.", True),
+        ("E commentaire anodin", "Vu, merci.", False),
+    ]
+    for label, body, expected in cases:
+        got = mod._coordinator_emission_informal(body)
+        assert got is expected, (
+            f"#14461 {label}: _coordinator_emission_informal attendu "
+            f"{expected}, got {got!r}"
+        )
+    # Integration (symptome mesure sur #14345) : un override d'adjacence pose
+    # par un LIFT_OVERRIDE_LOGINS ne doit plus classifier BOT-CONCERN (la PR que
+    # l'override debloque reste bloquee). Il doit rendre None (pas de reserve).
+    body_b = (
+        f"[G-VAR-3 OVERRIDE] lane myia-po-2026:CoursIA -- next: notebook-python\n\n{phrase}"
+    )
+    assert mod.classify("myia-ai-01", body_b) is None, (
+        f"#14461: classify(myia-ai-01, [G-VAR-3 OVERRIDE] + phrase) attendu "
+        f"None (pas de BOT-CONCERN vivant), got "
+        f"{mod.classify('myia-ai-01', body_b)!r}"
+    )
+    assert mod._block_emitted(body_b) is False, (
+        "#14461: l'override d'adjacence n'emet pas non plus un BLOCAGE "
+        "(point A de _block_emitted, garde-fou du jumeau)."
+    )
+

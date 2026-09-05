@@ -19,8 +19,43 @@ Updated: 2026-09-04 — M17 HAR-LJ-Asym BTC revalidé contre HAR débiaisé trai
 Updated: 2026-09-04 — M17 HAR-LJ-Asym BTC REPAIR P0 c.953 (PR #14592, preflight po-2025 adjoint `msg-20260904T105224-z6f9d7` head 8167044f) : **calibration symétrique** sur LJ/HAR/M12 + `var(ddof=0)` + sanity `mse = bias²+var` à 1e-9 + `panel_hash` SHA256 sur fenêtre canonique 360 bars (BTC 4 seeds → 1 hash `86f36cb46f539c6d`) + naming `mse_har_raw`/`mse_har_debiased` (NaN si non-débiaisé). **Verdict révisé** : h=1 BEATS 4/4 (inchangé, var_ratio=0,778) ; h=5 INCONCLUSIVE 0/4 contre HAR **et** M12 (était 4/4 BEATS vs M12) ; h=10 BEATEN BY 0/4 contre HAR (MSE 0,464 > 0,366 HAR-débiaisé ; était INCONCLUSIVE 0/4). Le claim c.951 « 4/4 BEATS vs M12 aux trois horizons » ne tient plus sous calibration symétrique : la tête précédente de M17 sur M12 aux h=5/h=10 était portée par le gap de calibration, pas par un gain de précision. Detail dans `docs/M17_HAR_LJ_ASYM.md` section c.953. `panel_hashes_consistent=True`, OLS bit-identique par seed (DM-MSE p-values identiques 6 décimales).
 Updated: 2026-09-05 — M17 HAR-LJ-Asym round-3 calibration (PR #14592, preflight po-2025 adjoint re-review head `b974f2721`, DM `msg-20260904T141944`) : **nombres c.953 ci-dessus SUPERSEDES** (signe du biais inversé `yhat - bias` → corrigé `yhat + bias`, application per-fold, M12 calibré `calibrate_bias=debias`, deux jambes HAR `mse_har_raw` != `mse_har_debiased`, `panel_hash` sur index+valeurs avec manifeste per (coin,horizon)). Détail dans `docs/M17_HAR_LJ_ASYM.md` section « Round-3 calibration (this PR) ». [M17 HAR-LJ-Asym BTC run] — pending live run post-merge; round-3 calibration implemented, code PR #14592.
 Updated: 2026-09-05 — M17 HAR-LJ-Asym round-4 (PR #14592, adjoint re-review DM `msg-20260905T001520`, 3/6 PASS / 3/6 PARTIAL) : test OOS multi-fold discriminant `test_walk_forward_lj_asym_oos_target_invariance_multi_fold` (n_splits=3, biais per-fold **distincts**, invariance per-fold bit-identique rtol 1e-12, folds antérieurs inchangés, folds postérieurs = expanding-window retrain légitime asserté comme sensibilité, train-tail > 1.0 par fold) + provenance `bounds_train_test` (`{train_end_idx = n_splits·(n//(n_splits+1)), oos_start_idx = train_end+horizon, oos_end_idx}`) relayée par `_eval_one_coin` / `aggregate_verdicts` / manifeste (`bounds_per_coin_horizon`, `fc_lj_hash_per_fold` alignés sur `per_fold_bias`) ; placeholder `if False else None` supprimé. Tests 22 → 24 verts, suite 1194 passed / 0 failed. **[M17 HAR-LJ-Asym BTC run] LIVRÉ (round-4 code) — `python har_lj_asym.py --coins BTC-USD --skip-remote --debias --horizons 1 5 10 --seeds 0 7 42 99` en 467.9 s** : h=1 **BEATS 4/4** vs HAR et M12 (p<1e-6, mean_loss_diff<0, `_coherent_beats()` strict ✓) ; h=5/h=10 INCONCLUSIVE 0/4 (p>0.05, mean_loss_diff>0 ⇒ cohérent INCONCLUSIVE). Bornes effectives BTC : `train_end=1890` (5 folds × 378 jours), `n_oos=378-382`, `n_total=2272` jours. Bit-identity cross-seed OK (`per_fold_bias` et `fc_lj_hash_per_fold` identiques sur les 4 seeds, `bounds_consistent_across_seeds=True`). Précédent c.953 `h=1 BEATS p=0.839708` réfuté — sous round-3+4 calibration le verdict reste BEATS mais devient réellement significatif. Détail dans `docs/M17_HAR_LJ_ASYM.md` section « Live BTC run (concern b — this PR) ». Manifest `scripts/results/m17_har_lj_asym.json` régénéré ; meta `manifest_m17_har_lj_asym.json` mis à jour avec `concern_addressing` round-3 + round-4.
+Updated: 2026-09-05 — M18 TimesFM 2.5 zero-shot première entrée §C (issue #14768, lane myia-po-2026) : **vs Log-HAR 5/6 BEATS, 1/6 INCONCLUSIVE (BTC h=22, log-HAR numériquement meilleur mais p=0,23), 0/6 NO BEATS** — réserves : ETH h=22 p=0,0445 limite. Horizons 1/5/22 j, walk-forward 5 folds, seeds bit-identiques (GPU déterministe), débiais symétrique, DM conjonction MSE (#11010). Vrai checkpoint attesté (SHA 1d952420fba8, 43 720 séries, fail-explicit). Calibration quantile native : couverture 80 % à ±0,026 du nominal. HAR en niveaux dégénère en quasi-persistence (MSE identiques à 6 décimales, hashs distincts). Détail section M18 + `docs/M18_TimesFM.md`.
 
 Total checkpoints: 70 (20 legacy ARCHIVED + 50 panier baselines)
+
+## M18 TimesFM 2.5 zero-shot — première entrée §C (2026-09-05) — issue #14768
+
+Benchmark TimesFM 2.5-200M (`google/timesfm-2.5-200m-pytorch` SHA
+`1d952420fba8`, 43 720 séries servies, contrat fail-explicit sans fallback)
+contre persistence / EWMA / Log-HAR / HAR-RV sur RV crypto quotidienne,
+horizons **1/5/22 j** (protocole #14768), walk-forward 5 folds, seeds
+{0,7,42,99} **bit-identiques** (inférence GPU déterministe — jambe σ
+dégénérée, précédent M17 OLS), débiais symétrique per-fold (queue
+d'entraînement 60 j, `yhat + bias`), DM deux jambes (#11010) : conjonction
+sur MSE, `linear` = diagnostic biais. Script `scripts/m18_tsfm_benchmark.py`
+(+31 tests), manifeste `scripts/results/m18_tsfm_benchmark.json`, doc
+`docs/M18_TimesFM.md`.
+
+| Coin | h | vs persistence | vs ewma | vs log_har | vs har_rv |
+|---|---:|---|---|---|---|
+| BTC | 1 | **BEATS** +40,7 % | **BEATS** +20,1 % | **BEATS** +19,7 % | **BEATS** +40,7 % |
+| BTC | 5 | **BEATS** +56,2 % | INCONCLUSIVE +5,4 % (p=0,116) | **BEATS** +8,5 % (p=0,0015) | **BEATS** +56,2 % |
+| BTC | 22 | **BEATS** +46,5 % | **BEATS** +10,7 % | INCONCLUSIVE −4,8 % (p=0,232) | **BEATS** +46,5 % |
+| ETH | 1 | **BEATS** +30,6 % | **BEATS** +10,5 % | **BEATS** +7,6 % | **BEATS** +30,6 % |
+| ETH | 5 | **BEATS** +49,7 % | INCONCLUSIVE +4,1 % | **BEATS** +10,7 % | **BEATS** +49,7 % |
+| ETH | 22 | **BEATS** +47,2 % | **BEATS** +11,9 % | **BEATS** +12,5 % (p=0,0445 ⚠ limite) | **BEATS** +47,2 % |
+
+**Verdict contre la baseline de référence (Log-HAR) : 5/6 BEATS, 1/6
+INCONCLUSIVE, 0/6 NO BEATS** — solide sur 4 cellules (p ≤ 0,0015), deux
+réserves honnêtes : BTC h=22 INCONCLUSIVE (log-HAR numériquement meilleur
+−4,8 % mais non significatif), ETH h=22 BEATS au bord du seuil (p=0,0445).
+Calibration quantile native remarquable : couverture 80 % mesurée
+0,774-0,814 pour nominal 0,80, zero-shot sans ajustement. Trou empirique :
+HAR en niveaux dégénère en quasi-persistence sur ce panel (MSE égales à
+6 décimales, hashs distincts — artefact connu, pas un bug). Coûts :
+non applicables au forecast pur, aucun claim Sharpe/P&L. Aucun claim
+d'alpha : TimesFM entre comme forecasteur de volatilité, l'étape
+économique est hors scope #14768.
 
 ## M16 HAR asymétrique — re-test débiaisé BTC (2026-09-02) — Epic #1454
 

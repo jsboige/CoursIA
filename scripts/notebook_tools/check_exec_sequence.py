@@ -104,6 +104,42 @@ def buckets_of(exec_counts):
     return buckets
 
 
+def self_test():
+    """Prove the detector gates the gate (issue #14676 lesson).
+
+    A gate that cannot be shown to fire is indistinguishable from one that is
+    unplugged -- which is exactly how the Exec-sequence ratchet was misread as
+    advisory and its CLEAN -> non-CLEAN regressions let through for several
+    cycles. Assert a clean sequence stays CLEAN (negative control), every
+    dirty class fires (positive control), and the #14676 option-(c) scenario
+    -- a DUPLICATE-producing code cell converted to markdown leaves the
+    sequence 1..N CLEAN. Exit 0 iff every control holds."""
+    controls = [
+        ("negative: clean 1..N stays CLEAN", [1, 2, 3], "CLEAN"),
+        ("negative: single clean cell stays CLEAN", [1], "CLEAN"),
+        ("positive: not-from-1 fires", [2, 3, 4], "NOT_FROM_1"),
+        ("positive: duplicate fires", [1, 2, 2, 3], "DUPLICATE"),
+        ("positive: unordered fires", [1, 2, 4, 3], "UNORDERED"),
+        ("positive: gap fires (cell deleted after run)", [1, 2, 3, 5], "GAP"),
+        ("#14676 option-(c): markdown cell drops, clean 1..12 stays CLEAN",
+         list(range(1, 13)), "CLEAN"),
+    ]
+    failures = []
+    for label, seq, expected in controls:
+        got = sequence_verdict(seq)
+        status = "ok" if got == expected else "FAIL"
+        if got != expected:
+            failures.append((label, expected, got))
+        print(f"  [{status}] {label}: {got}")
+    if failures:
+        print("SELF-TEST FAIL:")
+        for label, expected, got in failures:
+            print(f"  - {label}: expected {expected}, got {got}")
+        return 1
+    print("all detector self-test controls passed")
+    return 0
+
+
 def family_of(path, root):
     try:
         rel = path.resolve().relative_to(root.resolve())
@@ -190,7 +226,13 @@ def main():
                          "(DIRTY = DUPLICATE|UNORDERED|NOT_FROM_1|GAP)")
     ap.add_argument("--verbose", action="store_true",
                     help="Also list CLEAN notebooks")
+    ap.add_argument("--self-test", action="store_true",
+                    help="Run the detector self-test (positive + negative "
+                         "control) and exit")
     args = ap.parse_args()
+
+    if args.self_test:
+        sys.exit(self_test())
 
     target = Path(args.path)
     if not target.exists():

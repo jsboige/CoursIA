@@ -238,6 +238,91 @@ ComfyUI même-machine/même prompt. La question de l'issue sur **Qwen-Image-Edit
 est résolue (couvert, `SOTA-OK`)** ; celle sur **Wan vidéo reste ouverte** —
 `See #14549`, pas `Closes #14549`.
 
+## c.270 — Redo A/B sur deux périphériques réellement distincts (critère 4, spec ai-01)
+
+Constat ai-01 (QA firsthand, commentaire #14757 2026-09-05T16:21Z + DM
+`msg-20260905T162212-zpy0m5`) : la paire A/B de c.266 était **dégénérée** —
+`test_output_A_gpu1.png` et `test_output_B_default.png` sont **bit-identiques**
+(sha256 `32955bb5…`, 537554 octets), donc la paire ne porte **aucune information**
+sur la sélection de périphérique (les deux runs avaient atterri sur la même 3090).
+Seule la paire A/C opposait deux machines, et elle confondait GPU et exécution.
+Spéc du résidu : refaire A et B sur deux périphériques réellement distincts, et le
+prouver autrement que par le nom du fichier — en enregistrant à côté de chaque
+sortie **le GPU effectivement utilisé tel que le runtime le rapporte**
+(bannière `ggml_cuda_init`), pas le drapeau demandé.
+
+Exécution le 2026-09-05 (16:47:22Z → 16:50:02Z UTC), runner `probe_ab_redo.sh`
+(même répertoire de travail hors repo, commande commune **verbatim** de c.266,
+aucun flag `--gpu-device` — établi inert au Tranchage F2). Sélection par
+`CUDA_VISIBLE_DEVICES` seul, l'organe sélectif démontré au F2-2 :
+
+- **Run A2** : `CUDA_VISIBLE_DEVICES=0` → CUDA[0] = RTX 3090 (24 GB)
+- **Run B2** : `CUDA_VISIBLE_DEVICES=1` → CUDA[1] = RTX 3080 Ti Laptop (16 GB)
+
+### GPU rapporté par le runtime (preuve première — verbatim des logs)
+
+| Run | `CUDA_VISIBLE_DEVICES` | Bannière runtime (`ggml_cuda_init`) | GPU effectif rapporté |
+|---|---|---|---|
+| A2 | 0 | `found 1 CUDA devices (Total VRAM: 24575 MiB): Device 0: NVIDIA GeForce RTX 3090, compute capability 8.6, VMM: yes` | **RTX 3090** |
+| B2 | 1 | `found 1 CUDA devices (Total VRAM: 16383 MiB): Device 0: NVIDIA GeForce RTX 3080 Ti Laptop GPU, compute capability 8.6, VMM: yes` | **RTX 3080 Ti Laptop** |
+
+### Mesures complètes
+
+| Mesure | Run A2 (CVD=0) | Run B2 (CVD=1) |
+|---|---|---|
+| start → end UTC | 16:47:22Z → 16:48:44Z | 16:48:44Z → 16:50:02Z |
+| rc | 0 | 0 |
+| durée | 81 s | 78 s |
+| pic VRAM idx0 host / MiB (3080 Ti) | 0 | **9880** |
+| pic VRAM idx1 host / MiB (3090) | **22169** | 519 (résiduel WDDM PID 4) |
+| PID → UUID (compute-apps, sampler) | 9132 → GPU-64ab47ac (3090) | 19232 → GPU-9e5fc0f5 (3080 Ti) |
+| SHA256 artefact (1248x832) | `32955bb591e96d41add62641af40dab33794990e44ba4486f67b4e69494b24bc` | `cd79d126e1a939e92e8936ae32fdebaf702a59e069903062a6c84e69bf5ff26a` |
+
+### Cross-run déterminisme : le redo explique rétroactivement la paire dégénérée c.266
+
+- A2 (CVD=0 → 3090) est **bit-identique** aux anciens A (`--gpu-device 1`) et B
+  (sans flag) — trois exécutions sur la même 3090, trois fois `32955bb5…` :
+  l'exécution est **déterministe par périphérique** (seed par défaut fixe).
+- B2 (CVD=1 → 3080 Ti) est **bit-identique** à l'ancien C (`CVD=1`, c.266) :
+  `cd79d126…` deux fois.
+- Conséquence : la dégénérescence A≡B de c.266 n'était **pas** un artefact
+  d'enregistrement — c'était deux runs réellement exécutés sur la même 3090,
+  reproduits à l'octet près. Et la différence d'empreinte A2 ≠ B2 est
+  **attribuable au périphérique**, pas au bruit d'exécution : puisque les runs
+  même-périphérique sont bit-reproductibles, la seule variable qui distingue
+  A2 de B2 est le GPU. (La différence de SHA reste une **conséquence
+  observable** ; la **preuve** du routage est la bannière runtime + le
+  PID/UUID — Tell c.264-L1 sustained.)
+
+### Ce que la paire A2/B2 établit désormais
+
+1. **Deux périphériques réellement distincts, prouvés par le runtime** : la
+   bannière `ggml_cuda_init` rapporte un device différent par run — preuve
+   demandée par la spec, indépendante du nom de fichier et du drapeau demandé.
+2. Corroboration host-side : PID → UUID distincts, pics VRAM sur les index
+   hôtes opposés (22169 MiB sur idx1 pour A2 ; 9880 MiB sur idx0 pour B2).
+3. **Effet observable du routage** : `32955bb5…` ≠ `cd79d126…` pour la même
+   commande, même seed — et l'effet est attribuable au GPU (cf. déterminisme
+   ci-dessus).
+
+### QA pixel du redo (même méthode c.268, seuils calibrés)
+
+| Fichier | Pixels rouges | Quadrant dominant | Centroïde |
+|---|---|---|---|
+| `test_output_A2_cvd0.png` (3090) | 2022 | UR = 2022 (100 %) | x=0.93, y=0.08 |
+| `test_output_B2_cvd1.png` (3080 Ti) | 1839 | UR = 1839 (100 %) | x=0.94, y=0.08 |
+
+L'édition est honorée sur les deux périphériques (objet rouge concentré à 100 %
+dans le quadrant supérieur droit), la comparaison A2/B2 est donc une comparaison
+d'appareils sur un livrable sain des deux côtés.
+
+### Effet sur l'acceptance #14549
+
+- critère 4 : la jambe « deux périphériques distincts prouvés par le runtime »
+  est **satisfaite** par cette section ; la comparaison honnête **complète**
+  (parité ComfyUI même-machine/même-prompt, §7) reste l'élément non clos,
+  inchangé.
+
 ## Liens verbatims
 
 - Issue : https://github.com/jsboige/CoursIA/issues/14549
