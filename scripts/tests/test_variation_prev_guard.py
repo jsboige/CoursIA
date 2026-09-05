@@ -525,6 +525,71 @@ def test_fully_backticked_tag_is_still_evaluated():
     assert v["guard_pass"] is False
 
 
+def test_prose_citation_without_grain_line_is_not_a_declaration():
+    # c.966 -- the false positive that blocked PR #14592.
+    #
+    # Real shape: `b974f2721` (c.957 REPAIR P0) carries a body that
+    # DOCUMENTS the bug in prose, citing ``prev: MED/training #14592``
+    # in backticks inside a numbered list. The text carries NO `Grain:`
+    # line at all (it's a normal commit message, not a worker-authored
+    # grain). The previous `_declared_prev_pr` passed the WHOLE body to
+    # `grain_tag.parse_prev`, which matched the prose citation and reported
+    # `prev: #14592` -- then PREV-SELF / PREV-NOT-MERGED fired.
+    #
+    # After the fix, the search is BOUNDED to the first `Grain:` line:
+    # absent -> None -> no declaration -> no false positive.
+    commit_body = (
+        "fix(guards): REPAIR P0-4 M17 HAR-LJ-Asym BTC round-4\n"
+        "\n"
+        "## Concerns verbatim (round-4)\n"
+        "\n"
+        "5. `prev: MED/training #14592` was self-rouge. `prev:` now points "
+        "at `MED/refactor #14456` (MERGED 2026-09-03T12:00:08Z).\n"
+    )
+    # The PREV-SELF that blocked the PR fired because parse_prev
+    # returned 14592 = current_pr. With the bounded search, no `Grain:`
+    # line exists, so the fallback never matches -> no hit.
+    assert vpg._declared_prev_pr(commit_body) is None
+    v = vpg.check(commit_body, current_pr=14592)
+    assert v["hits"]["prev_invalid"] == []
+    assert v["guard_pass"] is True
+
+
+def test_prose_citation_after_tag_line_still_evaluates_tag():
+    # c.966 -- the OTHER prose shape: a body that has BOTH a tag line AND
+    # a prose citation of another grain's `prev:`. The bounded search
+    # must return the TAG's `prev:`, not the prose citation's.
+    body = (
+        "Grain: MED/guard -- lane a:b -- prev: MED/guard #14501\n"
+        "\n"
+        "## Cause instrumentale\n"
+        "Le meme defaut que `prev: MED/qc #14548` documentait sur #14548.\n"
+    )
+    assert vpg._declared_prev_pr(body) == 14501
+    targets = {"14501": {"kind": "pr", "merged": True},
+               "14548": {"kind": "pr", "merged": False}}
+    v = vpg.check(body, current_pr=99999, prev_targets=targets)
+    assert v["hits"]["prev_invalid"] == []
+    assert v["guard_pass"] is True
+
+
+def test_first_grain_line_helper_bounds_search():
+    # c.966 -- unit-level coverage of the bounded search.
+    assert vpg._first_grain_line(None) is None
+    assert vpg._first_grain_line("") is None
+    assert vpg._first_grain_line("no tag here\n") is None
+    tag_line = "Grain: DEEP/training -- lane x:y -- prev: DEEP/training #7"
+    assert vpg._first_grain_line(tag_line) == tag_line
+    multiline = (
+        "The `Grain:` field is mandatory on every worker PR.\n"
+        "See the variation-protocol for the canonical form.\n"
+    )
+    # Returns the prose line (still has `Grain:` substring), but
+    # `parse_prev` on it returns pr_number=None -> safe.
+    assert vpg._first_grain_line(multiline) == multiline.split("\n")[0]
+    assert vpg._declared_prev_pr(multiline) is None
+
+
 # --- #14550, second defect: a silent fail-open is an unearned attestation ----
 # ai-01 measured it on #14515: CLEAN, PR gate green, mergeable -- with a
 # `prev:` at an OPEN PR, because the `gh` resolution happened to fail during
