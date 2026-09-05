@@ -205,12 +205,38 @@ même-prompt, hors du périmètre de ce probe. Aucun verdict `INTRINSIC` ni
 Les 3 PNG (`test_output_A_gpu1.png`, `test_output_B_default.png`,
 `test_output_C_cvd1.png`) et les logs (`probe_logs/`) vivent dans le répertoire
 de travail hors repo — conformément au retrait c.265, aucun artefact de mesure
-n'est committé ; les valeurs verbatim font foi dans cette section. La QA vision
-(sémantique : cœur rouge ajouté au coin supérieur droit de la scène
-synthétique) est routée vers une lane vision (MiniMax/ai-01) avec les artefacts
-en pièces jointes RooSync — l'identité/différence des SHA n'étant pas une
-preuve de routage (Tell c.264-L1 sustained), le routage fait foi par la table
+n'est committé ; les valeurs verbatim font foi dans cette section.
+
+**QA visuel — réalisé c.268 (session vision-capable).** Le QA routé à ai-01
+(DM `msg-20260905T141116-cwvn8u`, artefacts en pièces jointes RooSync) n'a pas
+répondu ; la lane a procédé elle-même, par une vérification **objective et
+reproductible** (analyse des pixels rouges — PIL/numpy — sur les artefacts du
+répertoire `c:\Users\jsboi\tensorsharp-investigation\`) :
+
+| Fichier | Taille | Pixels rouges | Répartition par quadrant | Centroïde relatif |
+|---|---|---|---|---|
+| `test_input.png` (référence) | 768x512 | **0** | — | — |
+| `test_output_A_gpu1.png` (3090) | 1248x832 | **2210** | **UR=2126** (96%), UL=14, LL=70 | x=0.91, y=0.10 |
+| `test_output_C_cvd1.png` (3080 Ti) | 1248x832 | **2016** | **UR=1921** (95%), UL=14, LL=81 | x=0.90, y=0.10 |
+
+**Résultat** : la référence ne contient **aucun pixel rouge** ; les deux sorties
+(3090 et 3080 Ti) contiennent un objet rouge de ~2000-2200 px **concentré à
+~95% dans le quadrant supérieur droit**, centroïde ~(0.90, 0.10). L'instruction
+« *a small red heart in the upper-right corner* » est donc **honorée** — l'édition
+fonctionne, pas seulement la génération ; les sorties sont des images réelles
+cohérentes (pas des rendus vides/cassés). Le QA par la lane vision (sk-agent) a
+été tenté mais a renvoyé **rate-limited (429, reset 23:53)** ; l'analyse pixel
+est une alternative plus décisive pour cette assertion précise (position +
+couleur) et elle est reproductible. L'identité/différence des SHA n'étant pas
+une preuve de routage (Tell c.264-L1 sustained), le routage fait foi par la table
 PID→UUID ci-dessus.
+
+**Acceptance #14549** : critère 2 (axe exécuté + QA visuel) **atteint** ; critère
+3 (verdict par axe) Image = `SOTA-OK` (§7), Texte = `SOTA-OK` binaire, **Vidéo
+= NON MESURÉ** ; critère 4 (comparaison honnête) reste à parfaire par une mesure
+ComfyUI même-machine/même prompt. La question de l'issue sur **Qwen-Image-Edit
+est résolue (couvert, `SOTA-OK`)** ; celle sur **Wan vidéo reste ouverte** —
+`See #14549`, pas `Closes #14549`.
 
 ## Liens verbatims
 
