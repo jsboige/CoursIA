@@ -41,6 +41,12 @@
       csharp_sha: bf5c55984da9d05f08e98c8179bdbe4790201ef3
       content_python_sha: f362072fd499336bfe0143e9c7a664dbdafb1265f9f6beaadf203976a15321a0
       content_csharp_sha: 8dc04b16383a2427f2f09cd862c5f1b59d165e8abd4320e11f376dd5f9abb1fd
+    - date: "2026-09-05"
+      by: myia-po-2026:CoursIA
+      python_sha: a8be56cc2f0841d67c4fb225a29433126b3dd556
+      csharp_sha: c6e594d716de7c5a05987a7f0a9cb1a13cf8a641
+      content_python_sha: f362072fd499336bfe0143e9c7a664dbdafb1265f9f6beaadf203976a15321a0
+      content_csharp_sha: 6c2bad996a09f2cfb3432fd4dc4485ccd0921287a31506879e01e86ace4e0f1b
   known_differences:
     - '2026-08-31 : ATTESTATION UNILATERALE (PR #13659, lane myia-ai-01:CoursIA) -- reparation d''echappements JSON manges dans le markdown du cote C#. CAUSE : dans le .ipynb, la sequence dollar-\bot-dollar ecrite avec UN SEUL antislash est lue par le parseur JSON comme l''echappement \b (backspace, U+0008) ; la source chargee porte un caractere de controle et le notebook rend un dollar-ot-dollar prive de sa commande LaTeX. FIX : doubler l''antislash (\\bot). Le DRIFT est UNILATERAL parce que le DEFAUT l''est : la contrepartie GameTheory-12-ReputationGames.ipynb (Python), 16 cellules markdown, a ete scannee sous controle positif (le litteral defectueux passe a json.loads doit rendre U+0008 -- assertion verifiee avant le scan) et ne porte AUCUN caractere de controle U+0008/U+000B/U+000C. Il n''y a donc rien a reparer de ce cote : l''attestation ne consacre aucune asymetrie de contenu. PORTEE DU DIFF cote repare (comparaison des JSON parses origin/main -> HEAD) : markdown uniquement, 0 cellule code touchee, 0 sortie modifiee, 0 execution_count deplace, 0 cellule ajoutee ou retiree.'
     - "Socle pedagogique commun : jeux de reputation dans les interactions repetees sous information incomplete -- pourquoi la reputation change tout, cheap talk (communication non couteuse), modele de Kreps-Wilson (reputation du « tough incumbent » dans la chaine de magasins), Gang of Four / KMRW (cooperation emergente dans le dilemme du prisonnier fini), equilibre bayesien parfait (PBE). Suit naturellement le GT-11 (jeux bayesiens) en appliquant le BNE aux dynamiques de reputation."

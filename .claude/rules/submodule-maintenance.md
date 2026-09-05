@@ -51,6 +51,40 @@ Trois PRs dormantes sous un dépôt sans gate ne sont pas trois oublis : c'est *
 
 **Substitution admise tant que le gate manque** : deux vérifications **firsthand indépendantes** (fresh-clone, build + suite de tests complète, sur **deux lanes distinctes**), avec leurs comptes de tests et leurs SHA **cités dans le body de la PR de bump**. Une seule vérification, ou une vérification par l'auteur seul, ne remplace pas un gate.
 
+**Statut de gate par sous-module (mise à jour c.14463 / c.14566)** : l'organe externe à la R3 est la **liste des submod avec un workflow fonctionnel** — la substitution R3 s'applique par défaut, sauf si la liste ci-dessous dit « gate acquis ». Une PR de bump qui omet les deux vérifications et qui ne cite pas un submod à « gate acquis » **manque à R3** ; un submod listé à « gate acquis » qui perd son workflow (drift, suppression) **redevient** soumis à la substitution. Le passage d'un submod d'un état à l'autre est lui-même un **geste tracké** : PR dédiée sur le dépôt submod (câblage ou re-câblage), référence dans le tableau ci-dessous, et revue coord pour valider la bascule. **Cinq états** (cf. tableau) : `Absent`, `Câblé jamais déclenché sur pile`, `Câblé déclenché vert récent`, `Drift / perte de gate`, `Câblé déclenché rouge récent`.
+
+**Cinq états de gate** (mesurés firsthand par la commande de la colonne « vérifié le ») :
+
+1. **Absent** (`MetaGeneticSharp`, `Automata`) — aucun workflow, aucun run. Substitution R3 active par défaut.
+2. **Câblé, jamais déclenché sur pile en cours** (`Z3.Linq`) — workflows existent et sont actifs, mais le déclenchement ne couvre pas les PRs/processus visés (base de stack hors-trigger). Substitution R3 **active**, et le **déclencheur** doit être qualifié pour cesser (pas seulement le câblage).
+3. **Câblé, déclenché, vert récent** (cas général à viser) — un run vert sur la branche par défaut du submod **satisfait** A2 et la substitution R3 **cesse** de s'appliquer.
+4. **Drift / perte de gate** — un submod listé en (3) qui perd son workflow (suppression, mise hors-service) **redevient** soumis à la substitution. Bascule trackée.
+5. **Câblé, déclenché, rouge récent** (`semantic-fleet` au 2026-09-04) — run vert manquant, substitution R3 active jusqu'à un retour au vert. **Bascule différente** du (3) car le gate existe et déclenche, juste sur une branche hors-main / avec une régression.
+
+**Commande de mesure** (à passer à chaque cycle `/coordinate` et à chaque PR de bump) :
+
+```bash
+for R in MyIntelligenceAgency/Z3.Linq MyIntelligenceAgency/Automata \
+         jsboige/MetaGeneticSharp MyIntelligenceAgency/semantic-fleet \
+         ArgumentumGames/Argumentum; do
+  echo "=== $R ==="
+  gh api "repos/$R/actions/workflows" --jq '"workflows total=\(.workflows|length), actifs=\([.workflows[]|select(.state=="active")]|length)"'
+  gh api "repos/$R/actions/runs?per_page=1" --jq '"  runs total=\(.total_count), dernier=\(.workflow_runs[0]|"\(.created_at) \(.name) -> \(.conclusion // .status)")"'
+done
+```
+
+**Précondition de jeton (mesurée le 2026-09-05)** : l'org `MyIntelligenceAgency` refuse les fine-grained PATs de plus de 366 jours. Sous un tel jeton la boucle rend `403` sur ses **trois** repos et 3/5 lignes deviennent infetchables. Elle passe sous `jsboige` **et** sous `myia-ai-01` depuis ai-01, et `403` sous le PAT de po-2026 : la précondition n'est donc pas un compte particulier, c'est **un jeton que l'org accepte** -- l'épingler par commande (`GH_TOKEN=$(gh auth token --user <compte>)`), jamais par `gh auth switch` (état global au process `gh`, cf. R5). **Un `403` est une question, pas une absence mesurée** : ne jamais en conclure « 0 workflow » -- c'est exactement la ligne fausse que ce tableau existe pour empêcher.
+
+| Submodule | Workflow CI | Run vert récent | Substitution R3 | Vérifié le (PR) |
+|---|---|---|---|---|
+| `MyIA.AI.Notebooks/Search/MetaGeneticSharp` | **Absent** (0 workflow, 0 run) | — | OUI | #14566 (#14558, c.14463) |
+| `MyIA.AI.Notebooks/SymbolicAI/SMT/Z3.Linq` | **Câblé, jamais déclenché sur pile** (3 workflows actifs, 5 runs totaux, dernier build vert 2026-09-04) | n/a sur pile | OUI | #14566 (#14558, c.14463) |
+| `MyIA.AI.Notebooks/SymbolicAI/SMT/Automata` | **Absent** (0 workflow, 0 run) | — | OUI | #14566 (#14558, c.14463) |
+| `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentum` | agent permanent dédié (hors-org) | n/a dédié | OUI (gate hors-org, voir §Argumentum dédiée) | n/a hors-org |
+| `MyIA.AI.Notebooks/GenAI/SemanticKernel/semantic-fleet` | **Câblé, déclenché, rouge récent** (18 workflows, 15 actifs, 538 runs totaux, 2 failure `dotnet-format` + `dotnet-integration-tests` à 2026-09-04T04:20Z sur `fix/c716-7225-multiconnector-tests-rewrite`) | non-vert | OUI (jusqu'à un run vert) | #14566 (#14558, c.14463) |
+
+**Application concrète** : une PR de bump sur `MetaGeneticSharp` qui se contente de citer un SHA upstream **manque R3** tant que A2 n'est pas acquis (#14408). Une PR de bump qui cite un run vert sur la branche par défaut du submod **satisfait** A2 et la substitution R3 **cesse** de s'appliquer à `MetaGeneticSharp` (les bumps suivants peuvent omettre les deux vérifications). Le passage d'« aucun workflow » à « workflow acquis » est un **commit sur le submod** (câblage `.github/workflows/dotnet-ci.yml` sur `jsboige/MetaGeneticSharp`), suivi d'une **mise à jour du tableau ci-dessus** dans une PR sur CoursIA-2.
+
 ## Règle HARD 4 — sur un stack, la forme du merge de la base n'est pas neutre
 
 Merger la **base** d'un stack en **squash** réécrit son SHA : les PRs enfants basées sur sa branche deviennent orphelines et exigent un `git rebase --onto`. Merger la base en **commit de merge** préserve les SHA, et les enfants se retargettent alors par un simple `gh pr edit --base main`.

@@ -148,6 +148,7 @@ class ConversationRunner:
         tool_responses: list[str] = []
         usage_turns: list[AdkUsage] = []
         event_errors: list[str] = []
+        agent_hands: list[str] = []
         event_count = 0
         budget_cut = False
 
@@ -160,6 +161,9 @@ class ConversationRunner:
                 new_message=message,
             ):
                 event_count += 1
+                author = getattr(event, "author", None)
+                if author and (not agent_hands or agent_hands[-1] != author):
+                    agent_hands.append(author)
                 tool_calls.extend(
                     call.name for call in event.get_function_calls() if call.name
                 )
@@ -232,6 +236,7 @@ class ConversationRunner:
             tool_calls=tuple(tool_calls),
             tool_responses=tuple(tool_responses),
             usage_turns=tuple(usage_turns),
+            agent_hands=tuple(agent_hands),
         )
 
     async def history(self) -> list[types.Event]:

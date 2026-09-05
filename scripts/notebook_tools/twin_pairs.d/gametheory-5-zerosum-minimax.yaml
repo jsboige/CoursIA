@@ -64,6 +64,12 @@
       csharp_sha: 0659fbfc20089ec587396d082f41f0e69f7067ef
       content_python_sha: bdcfa5bd0d7fe172066c114a75524c1020e5be15c1683186b346bfe3ed122ddd
       content_csharp_sha: 2c2a2a8103e09629a8afb2f0f9f64346a72a9578356bf40c624e2798fe29a060
+    - date: "2026-09-05"
+      by: myia-po-2026:CoursIA
+      python_sha: 30d124cd466067458f07ebd0f4064f6999cf1de9
+      csharp_sha: 0659fbfc20089ec587396d082f41f0e69f7067ef
+      content_python_sha: 93e35e91a3c680375f180ec8787f873dd22d9c60bf29b8907c5d7746480b8a1b
+      content_csharp_sha: 2c2a2a8103e09629a8afb2f0f9f64346a72a9578356bf40c624e2798fe29a060
   known_differences:
     - '2026-08-31 : ATTESTATION UNILATERALE (PR #13659, lane myia-ai-01:CoursIA) -- reparation d''echappements JSON manges dans le markdown du cote C#. CAUSE : dans le .ipynb, la sequence dollar-\bot-dollar ecrite avec UN SEUL antislash est lue par le parseur JSON comme l''echappement \b (backspace, U+0008) ; la source chargee porte un caractere de controle et le notebook rend un dollar-ot-dollar prive de sa commande LaTeX. FIX : doubler l''antislash (\\bot). Le DRIFT est UNILATERAL parce que le DEFAUT l''est : la contrepartie GameTheory-05-ZeroSum-Minimax.ipynb (Python), 19 cellules markdown, a ete scannee sous controle positif (le litteral defectueux passe a json.loads doit rendre U+0008 -- assertion verifiee avant le scan) et ne porte AUCUN caractere de controle U+0008/U+000B/U+000C. Il n''y a donc rien a reparer de ce cote : l''attestation ne consacre aucune asymetrie de contenu. PORTEE DU DIFF cote repare (comparaison des JSON parses origin/main -> HEAD) : markdown uniquement, 0 cellule code touchee, 0 sortie modifiee, 0 execution_count deplace, 0 cellule ajoutee ou retiree.'
     - "Socle pedagogique commun : jeux a somme nulle, theoreme minimax (valeur du jeu v), strategies mixtes optimales sigma/tau via programmation lineaire."

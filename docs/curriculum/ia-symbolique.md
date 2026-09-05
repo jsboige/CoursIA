@@ -20,9 +20,9 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 
 | Métrique | Valeur |
 |----------|--------|
-| Notebooks | 258 |
+| Notebooks | 259 |
 | PRODUCTION | 0 |
-| BETA | 252 |
+| BETA | 253 |
 | ALPHA | 6 |
 
 ## SymbolicAI (1 notebooks)
@@ -165,7 +165,7 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 | 14 | Z3-Python-08 : Ordonnancement de tâches (Job-Shop… | BETA | Oui |
 | 15 | Z3-Python-09 : L'enigme d'Einstein (Zebra puzzle) | BETA | Oui |
 | 16 | 10. Cryptarithmes (SEND + MORE = MONEY) | BETA | Oui |
-| 17 | 11. Coloration de graphe : le graphe de Petersen | BETA | Oui |
+| 17 | 11 - Coloration de Graphe avec Z3 | BETA | Oui |
 | 18 | 12. Arithmetique reelle : raisonner sur les… | BETA | Oui |
 | 19 | 13. UNSAT cores : expliquer l'insatisfiabilite (le '… | BETA | Oui |
 | 20 | 14. Bit-vectors : verifier le debordement arithmetique | BETA | Oui |
@@ -224,7 +224,7 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 | 23 | SW-7b-Python-OWL | BETA | Non |
 | 24 | SW-8-CSharp-SHACL | BETA | Oui |
 | 25 | SW-8-Python-SHACL | BETA | Oui |
-| 26 | SW-9-CSharp-JSONLD — JSON-LD avec dotNetRDF (twin C#) | ALPHA | Oui |
+| 26 | SW-9-CSharp-JSONLD -- JSON-LD avec dotNetRDF (twin C#) | BETA | Oui |
 | 27 | SW-9-Python-JSONLD | BETA | Oui |
 
 ## SymbolicAI/SmartContracts (31 notebooks)
@@ -243,7 +243,7 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 | 10 | SC-11-LLM-Assisted - Développement Smart Contracts… | BETA | Non |
 | 11 | SC-7-Token-Standards - Standards de Tokens | BETA | Oui |
 | 12 | SC-7b : ERC-20 + Lean — vérification formelle de… | BETA | Non |
-| 13 | SC-7c : ERC-20 — compagnon natif Lean (kernel… | BETA | Non |
+| 13 | SC-7c : ERC-20 — compagnon natif Lean (kernel… | ALPHA | Non |
 | 14 | SC-8-DeFi-Primitives - Primitives DeFi | BETA | Oui |
 | 15 | SC-9-DAO-Governance - Gouvernance DAO | BETA | Oui |
 | 16 | SC-12-Foundry-Testing - Tests avec Foundry | BETA | Non |
@@ -263,7 +263,7 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 | 30 | SC-26 : Projet Final - DApp Complete | BETA | Oui |
 | 31 | SC-27 : Dette d'irréversibilité — la boucle de… | BETA | Oui |
 
-## SymbolicAI/SymbolicLearning (21 notebooks)
+## SymbolicAI/SymbolicLearning (22 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -273,21 +273,22 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 | 4 | SL-10 --- Apprentissage Actif d'Automates (L*… | BETA | Oui |
 | 5 | SL-11 --- Capstone : un pipeline neuro-symbolique de… | BETA | Non |
 | 6 | SL-12 : Differentiable Logic Gate Networks | BETA | Non |
-| 7 | SL-1b — Apprentissage PAC formellement : le lake… | BETA | Non |
-| 8 | SL-2 - Apprentissage et Connaissance : EBL & RBL (C#) | ALPHA | Oui |
-| 9 | SL-2 --- Apprentissage et Connaissance (EBL & RBL) | BETA | Oui |
-| 10 | SL-3 — Apprentissage basé sur la pertinence (twin C#… | BETA | Oui |
-| 11 | SL-3 --- Apprentissage Base sur la Pertinence (RBL… | BETA | Oui |
-| 12 | SL-4 — Programmation Logique Inductive (ILP) — Twin C#… | BETA | Oui |
-| 13 | SL-4 --- Programmation Logique Inductive (ILP) | BETA | Non |
-| 14 | SL-5 - Resolution Inverse & ILP (C#) | ALPHA | Oui |
-| 15 | SL-5 --- Resolution Inverse et Progol (ILP bottom-up) | BETA | Oui |
-| 16 | SL-6 (C#) : Moteurs ILP modernes — apprendre des… | BETA | Oui |
-| 17 | SL-6 --- Moteurs ILP modernes : Aleph, Metagol, Popper… | BETA | Non |
-| 18 | SL-7 : Integration Neuro-Symbolique | BETA | Non |
-| 19 | SL-8 (C#) : ILP Moderne et Knowledge Graphs | BETA | Oui |
-| 20 | SL-8 - ILP Moderne et Knowledge Graphs | BETA | Oui |
-| 21 | SL-9 - LLMs et Apprentissage Symbolique : Generation et… | BETA | Non |
+| 7 | SL-12b : Synthèse logique spectrale — Fourier booléen… | BETA | Oui |
+| 8 | SL-1b — Apprentissage PAC formellement : le lake… | BETA | Non |
+| 9 | SL-2 - Apprentissage et Connaissance : EBL & RBL (C#) | ALPHA | Oui |
+| 10 | SL-2 --- Apprentissage et Connaissance (EBL & RBL) | BETA | Oui |
+| 11 | SL-3 — Apprentissage basé sur la pertinence (twin C#… | BETA | Oui |
+| 12 | SL-3 --- Apprentissage Base sur la Pertinence (RBL… | BETA | Oui |
+| 13 | SL-4 — Programmation Logique Inductive (ILP) — Twin C#… | BETA | Oui |
+| 14 | SL-4 --- Programmation Logique Inductive (ILP) | BETA | Non |
+| 15 | SL-5 - Resolution Inverse & ILP (C#) | ALPHA | Oui |
+| 16 | SL-5 --- Resolution Inverse et Progol (ILP bottom-up) | BETA | Oui |
+| 17 | SL-6 (C#) : Moteurs ILP modernes — apprendre des… | BETA | Oui |
+| 18 | SL-6 --- Moteurs ILP modernes : Aleph, Metagol, Popper… | BETA | Non |
+| 19 | SL-7 : Integration Neuro-Symbolique | BETA | Non |
+| 20 | SL-8 (C#) : ILP Moderne et Knowledge Graphs | BETA | Oui |
+| 21 | SL-8 - ILP Moderne et Knowledge Graphs | BETA | Oui |
+| 22 | SL-9 - LLMs et Apprentissage Symbolique : Generation et… | BETA | Non |
 
 ## SymbolicAI/Tweety (34 notebooks)
 

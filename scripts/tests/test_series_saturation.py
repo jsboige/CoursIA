@@ -289,6 +289,59 @@ def test_zone_umbrellas_empty_when_no_parent_declared():
     assert ss.zone_umbrellas({1: "Z"}, pool) == {}
 
 
+def test_zone_umbrellas_names_root_tracker_attested_in_zone():
+    """Tracker racine sans fille ouverte (#13934) : nomme pour sa zone.
+
+    Ses tranches vivent dans des PRs mergees qui le citent -- `issue_to_family`
+    l'atteste dans la zone, `parent` reste None, et sans la source (2) la zone
+    chaude rendait "(aucun EPIC declare)" alors que son remede est ouvert.
+    """
+    pool = [
+        {"number": 100, "parent": None, "title": "Enrichissement AI-Engine-WordPress : ",
+         "body": "queue de tranches -- la zone reste vivante", "labels": []},
+        {"number": 101, "parent": None, "title": "d", "body": "", "labels": []},
+    ]
+    i2f = {100: "GenAI/Plateformes-Conversationnelles", 101: "Z"}
+    out = ss.zone_umbrellas(i2f, pool)
+    assert out["GenAI/Plateformes-Conversationnelles"] == {100: 1}, out
+
+
+def test_zone_umbrellas_names_epic_label_root_attested():
+    """EPIC racine par label, attestee dans une zone : nommee comme comptable."""
+    pool = [
+        {"number": 50, "parent": None, "title": "g", "labels": ["EPIC"], "body": ""},
+        {"number": 51, "parent": None, "title": "h", "body": ""},
+    ]
+    out = ss.zone_umbrellas({50: "Z"}, pool)
+    assert out["Z"] == {50: 1}, out
+
+
+def test_zone_umbrellas_ignores_plain_attested_issue():
+    """Une issue ordinaire attestee n'est pas nommee comptable.
+
+    Le controle negatif du garde d'attribution : le predicat repare qui rend
+    "tout le monde alimente tout" est un predicat casse dans l'autre sens.
+    """
+    pool = [{"number": 7, "parent": None, "title": "upgrade", "body": ""}]
+    assert ss.zone_umbrellas({7: "Z"}, pool) == {}
+
+
+def test_zone_umbrellas_ignores_unattested_tracker_mention():
+    """Tracker mentionne mais NON atteste : pas de comptable.
+
+    L'attestation (`issue_to_family`, PRs mergees qui citent l'issue) est la
+    porte d'entree : une issue qui ne fait que citer la zone dans son texte
+    (body de diagnostic, renvoi de contexte) ne nomme pas la zone -- le cas
+    d'un corps qui paraphrasait "queue de tranches" en se citant lui-meme.
+    """
+    pool = [
+        {"number": 200, "parent": None, "title": "x",
+         "body": "queue de tranches -- zone Z mentionnee au fil du texte",
+         "labels": []},
+    ]
+    assert ss.zone_umbrellas({}, pool) == {}
+
+
 # --- Attribution : ce qui empechait de NOMMER l'EPIC -----------------------
 
 

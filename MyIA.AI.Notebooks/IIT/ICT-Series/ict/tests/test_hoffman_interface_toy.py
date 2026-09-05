@@ -17,6 +17,7 @@ Conventions :
 
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 
@@ -179,8 +180,35 @@ def test_evolve_alpha_returns_value_in_unit_interval():
             assert 0.0 <= a <= 1.0, f"{objective}/{ln} → α={a}"
 
 
-def test_run_full_is_deterministic():
-    """Avec les mêmes seeds, run_full doit retourner le même résultat."""
+def test_run_full_is_deterministic(monkeypatch):
+    """Avec les mêmes seeds, run_full doit retourner le même résultat.
+
+    Test de **plomberie** (réserve adjoint #14732, REPAIR HIGH
+    msg-20260905T112800-actho2) : `evolve_alpha` est mocké pour ramener le
+    runtime du test sous 5 s (sous charge runner po-2024, n_seeds=5 × 2 runs =
+    ~24 min en CI). Le test vérifie la mécanique — 2 invocations successives de
+    `run_full` avec les mêmes seeds retournent des séries identiques — sans
+    dépendre du contenu d'`evolve_alpha`. La reproductibilité réelle de la
+    fonction est couverte par `test_evolve_alpha_is_reproducible_for_same_seed`
+    (échelle bornée) et sa qualité par
+    `test_evolve_alpha_returns_value_in_unit_interval`.
+
+    Issue #14598 : la CI ICT ict/tests/ (42 package) timeout 30 min sur
+    `test_run_full_is_deterministic` (mesure 33944875818 du 2026-09-05,
+    ~24:48 pour 1 test, puis CANCELLED). Mocker `evolve_alpha` ramène ce test
+    à < 5 s sans rien perdre du déterminisme.
+    """
+    import ict.hoffman_interface_toy as hft
+
+    def _fake_evolve_alpha(objective, landscape_name, seed, n_pop=200, n_gen=500, mutation_rate=0.05):
+        # Valeur déterministe seedée, stable inter-processus : `hash()` est salé
+        # par PYTHONHASHSEED (réserve adjoint #14732), hashlib ne l'est pas.
+        digest = hashlib.sha256(f"{objective}:{landscape_name}:{seed}".encode()).digest()
+        rng = np.random.default_rng(int.from_bytes(digest[:8], "big"))
+        return float(rng.uniform(0, 1))
+
+    monkeypatch.setattr(hft, "evolve_alpha", _fake_evolve_alpha)
+
     r1 = run_full(n_seeds=5)
     r2 = run_full(n_seeds=5)
     # Compare les alpha finaux (série déterministe)
@@ -192,6 +220,22 @@ def test_run_full_is_deterministic():
 
 
 # ── 7. Verdict scan ──
+
+
+def test_evolve_alpha_is_reproducible_for_same_seed():
+    """Même seed → même α : reproductibilité réelle de l'évolution (échelle bornée).
+
+    Réserve adjoint #14732 (REPAIR HIGH msg-20260905T112800-actho2) : le mock de
+    `test_run_full_is_deterministic` ne prouve pas la reproductibilité de la
+    fonction elle-même. Ce test la couvre à petite échelle (n_pop=50, n_gen=100,
+    ~2,5 s par run) : 2 invocations avec la même seed retournent le même α, en
+    tout paysage et toute objective.
+    """
+    for ln in LANDSCAPES:
+        for objective in ("truth", "fitness"):
+            a1 = evolve_alpha(objective, ln, seed=7, n_pop=50, n_gen=100)
+            a2 = evolve_alpha(objective, ln, seed=7, n_pop=50, n_gen=100)
+            assert a1 == a2, f"{objective}/{ln} seed=7 → {a1} != {a2}"
 
 
 def test_results_json_has_required_keys():
