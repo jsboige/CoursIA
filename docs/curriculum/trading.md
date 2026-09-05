@@ -20,12 +20,12 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 
 | Métrique | Valeur |
 |----------|--------|
-| Notebooks | 238 |
+| Notebooks | 240 |
 | PRODUCTION | 0 |
-| BETA | 220 |
-| ALPHA | 18 |
+| BETA | 223 |
+| ALPHA | 17 |
 
-## ML/DataScienceWithAgents (52 notebooks)
+## ML/DataScienceWithAgents (54 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -76,11 +76,13 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 | 45 | Lab 10: Data File Analyzer (DS-STAR Component) | BETA | Oui |
 | 46 | Lab 11: Planner-Coder-Verifier Loop (DS-STAR Core) | ALPHA | Oui |
 | 47 | Lab 12: DS-STAR Workshop - Analyse Multi-Fichiers | BETA | Oui |
-| 48 | Lab 13: Web Search pour Modèles SOTA (MLE-STAR… | BETA | Oui |
-| 49 | Lab 14: Ablation et Raffinement Ciblé (MLE-STAR… | ALPHA | Oui |
-| 50 | Lab 15: Kaggle Challenge avec MLE-STAR | BETA | Oui |
-| 51 | Lab 16: Data Science Agent avec GCP BigQuery | ALPHA | Oui |
-| 52 | Lab 17: Projet Final - Pipeline DS-STAR Complet | ALPHA | Oui |
+| 48 | Lab 14 : Tracabilite de la consommation — le contrat C6… | BETA | Non |
+| 49 | Lab 18: Persistance d'etat de session - une… | BETA | Non |
+| 50 | Lab 13: Web Search pour Modèles SOTA (MLE-STAR… | BETA | Oui |
+| 51 | Lab 14: Ablation et Raffinement Ciblé (MLE-STAR… | ALPHA | Oui |
+| 52 | Lab 15: Kaggle Challenge avec MLE-STAR | BETA | Oui |
+| 53 | Lab 16: Data Science Agent avec GCP BigQuery | ALPHA | Oui |
+| 54 | Lab 17: Projet Final - Pipeline DS-STAR Complet | ALPHA | Oui |
 
 ## ML/ML.Net (23 notebooks)
 
@@ -230,7 +232,7 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 | 21 | Objectifs d'Apprentissage | BETA | Non |
 | 22 | QC-Py-21 - Portfolio Optimization avec Machine Learning | BETA | Non |
 | 23 | Objectifs d'Apprentissage | BETA | Non |
-| 24 | Objectifs d'Apprentissage | BETA | Non |
+| 24 | QC-Py-23 — State Space Models pour Séries Temporelles… | BETA | Non |
 | 25 | QC-Py-23b - PatchTST et iTransformer pour Prevision… | BETA | Non |
 | 26 | QC-Py-24 - Modèles Génératifs pour Anomaly Detection et… | BETA | Non |
 | 27 | Objectifs d'Apprentissage | BETA | Non |
@@ -244,15 +246,15 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 | 35 | QC-Py-34 - SAC et A2C : Comparaison d'Agents RL pour le… | BETA | Non |
 | 36 | QC-Py-35 - Reinforcement Learning pour la Construction… | ALPHA | Non |
 | 37 | QC-Py-40 : Paper Trading Binance - Mean Reversion… | BETA | Non |
-| 38 | QC-Py-41 : Paper Trading IBKR - SP500 Momentum | ALPHA | Non |
+| 38 | QC-Py-41 : Paper Trading IBKR - SP500 Momentum | BETA | Non |
 | 39 | QC-Py-Cloud-01 : Analyse de Sentiment FinBERT sur QC… | ALPHA | Non |
 | 40 | QC-Py-Cloud-02 : Classification de Texte et Sentiment… | ALPHA | Non |
-| 41 | QC-Py-Cloud-03 — Dual Momentum : Asset Sélection… | BETA | Non |
-| 42 | QC-Py-Cloud-03 : Parite de Risque (Risk Parity) | BETA | Non |
-| 43 | QC-Py-Cloud-05 : Prevision par Reseau de Neurones (MLP) | ALPHA | Non |
-| 44 | Value Factor Z-Score — Sélection multi-facteurs… | BETA | Non |
-| 45 | Option Wheel — Le paradoxe du win-rate eleve | BETA | Non |
-| 46 | QC-Py-Cloud-10 : Reinforcement Learning - DQN Trading | ALPHA | Non |
+| 41 | QC-Py-Cloud-03 : Parite de Risque (Risk Parity) | BETA | Non |
+| 42 | QC-Py-Cloud-05 : Prevision par Reseau de Neurones (MLP) | ALPHA | Non |
+| 43 | Value Factor Z-Score — Sélection multi-facteurs… | BETA | Non |
+| 44 | Option Wheel — Le paradoxe du win-rate eleve | BETA | Non |
+| 45 | QC-Py-Cloud-10 : Reinforcement Learning - DQN Trading | ALPHA | Non |
+| 46 | QC-Py-Cloud-14 — Dual Momentum : Asset Sélection… | BETA | Non |
 | 47 | Workflow : Téléchargement et gestion des datasets | ALPHA | Non |
 
 ## QuantConnect/kelly_lean (2 notebooks)

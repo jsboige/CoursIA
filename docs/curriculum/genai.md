@@ -36,19 +36,6 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 5 | 00-5: ComfyUI Local - Test Rapide | BETA | Non |
 | 6 | Deploiement Docker Local des Services GenAI | BETA | Non |
 
-## GenAI/Integrations-DotNet/Aspire (8 notebooks)
-
-| # | Notebook | Maturité | Exécutable |
-|---|----------|----------|------------|
-| 1 | Aspire : orchestrer notre pile GenAI en C# | BETA | Non |
-| 2 | Aspire : orchestrer la pile GenAI réelle du cluster | BETA | Non |
-| 3 | Aspire 3 : Observabilite .NET moderne — Serilog,… | BETA | Non |
-| 4 | Aspire : un agent streaming en C# — Channels,… | BETA | Non |
-| 5 | Aspire : des tests d'intégration modernes —… | BETA | Oui |
-| 6 | Aspire : garde-fous du code d'agent — l'analyseur… | ALPHA | Oui |
-| 7 | Aspire : le routeur MultiConnector — vetting en ligne,… | BETA | Non |
-| 8 | Aspire : l'asynchrone aux frontieres natives -… | BETA | Oui |
-
 ## GenAI/Audio (31 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
@@ -95,13 +82,6 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 4 | Doctor vs ChatGPT: Multi-Agent Medical Chatbot | ALPHA | Non |
 | 5 | Générateur de Recettes PDF | BETA | Non |
 
-## GenAI/Integrations-DotNet (2 notebooks)
-
-| # | Notebook | Maturité | Exécutable |
-|---|----------|----------|------------|
-| 1 | GitHub Copilot SDK en C# : binding, streaming, Scrutor | BETA | Non |
-| 2 | EF Core : des requêtes vérifiées à la compilation | BETA | Oui |
-
 ## GenAI/FallacyDetection (4 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
@@ -144,6 +124,21 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 15 | Creative Workflows - GenAI | BETA | Non |
 | 16 | Production Integration - GenAI | BETA | Non |
 | 17 | Génération d’un patron de point de croix à partir d’une… | ALPHA | Non |
+
+## GenAI/Integrations-DotNet (10 notebooks)
+
+| # | Notebook | Maturité | Exécutable |
+|---|----------|----------|------------|
+| 1 | Aspire : orchestrer notre pile GenAI en C# | BETA | Non |
+| 2 | Aspire : orchestrer la pile GenAI réelle du cluster | BETA | Non |
+| 3 | Aspire 3 : Observabilite .NET moderne — Serilog,… | BETA | Non |
+| 4 | Aspire : un agent streaming en C# — Channels,… | BETA | Non |
+| 5 | Aspire : des tests d'intégration modernes —… | BETA | Oui |
+| 6 | Aspire : garde-fous du code d'agent — l'analyseur… | ALPHA | Oui |
+| 7 | Aspire : le routeur MultiConnector — vetting en ligne,… | BETA | Non |
+| 8 | Aspire : l'asynchrone aux frontieres natives -… | BETA | Oui |
+| 9 | GitHub Copilot SDK en C# : binding, streaming, Scrutor | BETA | Non |
+| 10 | EF Core : des requêtes vérifiées à la compilation | BETA | Oui |
 
 ## GenAI/Plateformes-Conversationnelles (20 notebooks)
 
