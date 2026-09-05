@@ -77,14 +77,24 @@ rate les squash-merges, le second a des faux negatifs mesures.
 1. **Dry-run par defaut, --apply explicite.** Jamais de retrait silencieux.
 2. **Journal de refus obligatoire.** Un outil de purge qui ne dit pas ce
    qu'il épargne est indiscernable d'un outil qui ne regarde pas.
-3. **Aucun `git worktree remove --force`.** Le retrait est `git worktree
-   remove` sans --force ; si git refuse (worktree sale), on log la cause et
-   on continue (ne JAMAIS forcer). Depuis #14619 : avant le retrait, l'apply
-   supprime exactement les artefacts untracked toleres (et eux seuls --
+3. **`--force` reserve aux enregistrements morts, jamais general.** Le
+   retrait est `git worktree remove` sans --force ; si git refuse (worktree
+   sale), on log la cause et on continue. C'est ce refus qui reste le
+   dernier garde-fou quand la classification s'est trompee : le rendre
+   inoperant par un --force inconditionnel oterait au dispositif sa seule
+   verification externe. Depuis #14619 : avant le retrait, l'apply supprime
+   exactement les artefacts untracked toleres (et eux seuls --
    clean_tolerated_artifacts), sinon git refuse sur tout non-suivi et un
    worktree classe REMOVE pour artefacts seulement ne part jamais. Un residu
    hors liste tolerree est classe REFUSE (untolerated_untracked), pas REMOVE,
    et un worktree a sous-modules REFUSE (contains_submodules).
+   **Unique exception (#14195)** : un enregistrement dont le CHECKOUT a
+   disparu (`dead_registration`, predicat 1bis) est retire avec --force --
+   sans lui git refuse un arbre absent ("contains modified or untracked
+   files") et l'organe annoncerait un REMOVE qu'il ne peut pas executer. Le
+   drapeau est calcule par deux conditions conjonctives (toute modification
+   est une suppression ET >= DEAD_TREE_RATIO de l'index a disparu), et
+   `test_no_unconditional_force` pinne que le --force reste sous ce test.
 4. **Mode `--json` parallele au mode texte.** Mêmes chiffres, même ordre ;
    le recipient downstream (dashboard sweep, DM ai-01) parse le JSON sans
    réinventer le rendu.
@@ -220,6 +230,9 @@ class WorktreeStatus:
     has_submodules: bool = False          # submodule initialise present
     blocking_untracked: list = dataclasses.field(default_factory=list)
     ignored_extra: list = dataclasses.field(default_factory=list)
+    # Champ #14195 (additif) : checkout disparu, enregistrement orphelin.
+    # Porte la decision REMOVE *et* le passage a `--force` a l'apply.
+    dead_registration: bool = False
 
     def to_dict(self) -> dict:
         return dataclasses.asdict(self)
@@ -284,6 +297,7 @@ def parse_porcelain(stdout: str) -> dict:
     blocking: list[str] = []
     ignored_extra: list[str] = []
     tracked_modified: list[str] = []
+    tracked_deleted: list[str] = []
     for line in stdout.splitlines():
         # Format porcelain : XY path (XY = 2 chars index/worktree)
         if len(line) < 4:
@@ -305,11 +319,18 @@ def parse_porcelain(stdout: str) -> dict:
         elif any(c != " " for c in xy):
             # Modification tracked non commitee = source sale
             tracked_modified.append(path)
+            # Suppression cote arbre de travail (colonne worktree = 'D').
+            # Comptee a part : un arbre ENTIEREMENT supprime n'est pas du
+            # travail en cours, c'est un checkout disparu (cf #14195,
+            # predicat `dead_registration`).
+            if len(xy) > 1 and xy[1] == "D":
+                tracked_deleted.append(path)
     return {
         "untracked": untracked,
         "blocking_untracked": blocking,
         "ignored_extra": ignored_extra,
         "tracked_modified": tracked_modified,
+        "tracked_deleted": tracked_deleted,
     }
 
 
@@ -395,6 +416,36 @@ def has_initialized_submodule(submodule_status_stdout: str) -> bool:
     )
 
 
+# Fraction de l'index qui doit avoir disparu du disque pour qu'un
+# enregistrement soit declare mort. 0.9 laisse deliberement de la marge :
+# les cadavres mesures rendent 100 % (7355 a 8409 suppressions pour autant
+# de fichiers tracks), et aucune suppression volontaire plausible n'atteint
+# ce seuil SANS s'accompagner d'au moins une edition (condition (a)).
+DEAD_TREE_RATIO = 0.9
+
+
+def _is_dead_registration(wt_path: str, parsed: dict) -> bool:
+    """Le checkout a-t-il disparu, laissant l'enregistrement orphelin ?
+
+    Fail-CLOSED : au moindre doute (index illisible, index vide, une seule
+    edition non-suppression), rend False -- le worktree repart alors dans
+    les predicats de refus habituels.
+    """
+    deleted = parsed.get("tracked_deleted") or []
+    modified = parsed.get("tracked_modified") or []
+    if not deleted or len(deleted) != len(modified):
+        # (a) une edition reelle coexiste avec les suppressions : c'est du
+        # travail, pas un checkout disparu.
+        return False
+    ls_proc = run_git(wt_path, "ls-files", check=False)
+    if ls_proc.returncode != 0:
+        return False
+    tracked_total = len([x for x in ls_proc.stdout.splitlines() if x.strip()])
+    if tracked_total <= 0:
+        return False
+    return (len(deleted) / tracked_total) >= DEAD_TREE_RATIO
+
+
 def get_worktree_info(wt_path: str, current_path: str) -> dict:
     """Recupere branch + ahead count + dirty status d'un worktree."""
     # Branche (peut etre None si HEAD detaché)
@@ -454,6 +505,23 @@ def get_worktree_info(wt_path: str, current_path: str) -> dict:
     subm_proc = run_git(wt_path, "submodule", "status", check=False)
     has_submodules = has_initialized_submodule(subm_proc.stdout)
 
+    # Enregistrement mort (#14195) : le checkout a disparu du disque alors
+    # que `.git/worktrees/<nom>` subsiste. Cas mesure le 2026-09-05 : 26
+    # des 51 worktrees enregistres, TOUS sous `C:\...\Temp`, vides par le
+    # nettoyage disque de Windows. Git les voit comme des milliers de
+    # fichiers tracks supprimes -- donc `tracked_modified` non vide, donc
+    # `uncommitted_source_changes`, donc REFUSE a perpetuite : la preuve de
+    # leur mort est exactement ce qui les rendait irreclamables.
+    #
+    # Le predicat exige les DEUX conditions, pour ne jamais confondre un
+    # checkout disparu avec une lane qui supprime volontairement des
+    # fichiers : (a) toute modification tracked est une suppression -- une
+    # seule edition reelle disqualifie ; (b) la quasi-totalite de l'index
+    # a disparu du disque (>= DEAD_TREE_RATIO). Une PR qui supprime 200
+    # fichiers sur 9000 echoue (b) ; une PR qui en supprime 8900 et en
+    # edite un echoue (a).
+    dead_registration = _is_dead_registration(wt_path, parsed)
+
     return {
         "branch": branch,
         "ahead_count": ahead_count,
@@ -464,6 +532,7 @@ def get_worktree_info(wt_path: str, current_path: str) -> dict:
         "has_source_dirty": has_source,
         "has_submodules": has_submodules,
         "is_current": same_worktree_path(wt_path, current_path),
+        "dead_registration": dead_registration,
     }
 
 
@@ -666,6 +735,32 @@ def diagnose_worktree(wt_path: str, current_path: str) -> WorktreeStatus:
             ignored_extra=info.get("ignored_extra", []),
         )
 
+    # Predicat 1bis : enregistrement mort (#14195). DOIT preceder les
+    # predicats de salete : un checkout disparu se presente comme des
+    # milliers de fichiers tracks supprimes, donc `has_source_dirty`, donc
+    # REFUSE -- c'est ce masquage qui laissait 26 enregistrements morts au
+    # registre. L'etat PR n'est pas interroge : il n'y a plus d'arbre a
+    # proteger, quel que soit le sort de la branche (que `git worktree
+    # remove` ne supprime jamais).
+    if info.get("dead_registration"):
+        return WorktreeStatus(
+            path=wt_path,
+            branch=info["branch"],
+            is_current=False,
+            pr_state=None,
+            pr_number=None,
+            pr_url=None,
+            ahead_count=info["ahead_count"],
+            has_source_dirty=info["has_source_dirty"],
+            untracked_paths=info["untracked"],
+            decision="REMOVE",
+            refusal_reason=None,
+            has_submodules=info["has_submodules"],
+            blocking_untracked=info.get("blocking_untracked", []),
+            ignored_extra=info.get("ignored_extra", []),
+            dead_registration=True,
+        )
+
     # Predicat 2a : source sale (fichier source untracked non tolere, ou
     # tracked modifie) -> REFUSE (#14509 : pouvoir de refus git reel ;
     # #14619 : les toleres sont nettoyables a l'apply et ne comptent plus).
@@ -856,8 +951,20 @@ def clean_tolerated_artifacts(wt: WorktreeStatus) -> list[str]:
 
 
 def apply_removal(wt: WorktreeStatus) -> tuple[bool, str]:
-    """Tente `git worktree remove`. Retourne (success, stderr)."""
-    proc = run_git(".", "worktree", "remove", wt.path, check=False)
+    """Tente `git worktree remove`. Retourne (success, stderr).
+
+    `--force` est reserve aux enregistrements morts (#14195) : sans lui,
+    git refuse de retirer un worktree dont l'arbre a disparu ("contains
+    modified or untracked files"), et l'organe annoncerait un REMOVE qu'il
+    ne peut pas executer. Pour tout autre worktree, l'absence de `--force`
+    reste le garde-fou : c'est git qui refuse en dernier ressort si la
+    classification s'est trompee.
+    """
+    args = ["worktree", "remove"]
+    if wt.dead_registration:
+        args.append("--force")
+    args.append(wt.path)
+    proc = run_git(".", *args, check=False)
     if proc.returncode == 0:
         return True, ""
     return False, proc.stderr.strip()
