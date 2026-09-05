@@ -127,6 +127,91 @@ Vidéo, `SOTA-OK` binaire pour Texte) et la borne stricte non-causale sur
 A/B qui trancherait le mécanisme GPU (F2 de la review Hermes) reste porté par
 l'issue de suivi **#14707**, non par ce ledger.
 
+## c.266 — Probe A/B/C exécuté (issue #14707) : axe Image MESURÉ firsthand, mécanisme GPU tranché
+
+Exécution le 2026-09-05 (14:01:06Z → 14:04:20Z) sur po-2023, runner
+`probe_abc.sh` (répertoire de travail `C:\Users\jsboi\tensorsharp-investigation`,
+hors repo). Commande commune verbatim entre runs (DiT Q4_K_M 13,24 GB + VAE BF16
++ VL 7B Q4_K_M + mmproj BF16 + LoRA Lightning 4-step, `--backend ggml_cuda
+--gpu-layers 99`, image d'entrée 768x512 synthétique, prompt « Add a small red
+heart in the upper-right corner ») ; seul le paramètre testé varie. Sampling
+`nvidia-smi` host-side 5 s par index + compute-apps PID/UUID en continu. Preflight
+`--diffusion-steps 1` validé AVANT le probe (rc=0, image 1248x832, 54,8 s) —
+la commande probe reste verbatim, le preflight est un run séparé.
+
+| Mesure | Run A (`--gpu-device 1`) | Run B (sans flag) | Run C (`CUDA_VISIBLE_DEVICES=1`) |
+|---|---|---|---|
+| start → end UTC | 14:01:06Z → 14:02:17Z | 14:02:17Z → 14:03:17Z | 14:03:17Z → 14:04:20Z |
+| rc | 0 | 0 | 0 |
+| durée | 70 s | 59 s | 63 s |
+| pic VRAM idx0 host (MiB) | 0 | 0 | **9880** |
+| pic VRAM idx1 host (MiB) | **22169** | **22169** | 519 (résiduel WDDM) |
+| PID → UUID (compute-apps) | 18832 → GPU-64ab47ac (3090) | 50304 → GPU-64ab47ac (3090) | 56764 → GPU-9e5fc0f5 (3080 Ti) |
+| VAE encode / text encode / denoise (4 steps) | 8893 / 7122 / 46716 ms | 7229 / 7096 / 38842 ms | 7188 / 5243 / 44437 ms |
+| SHA256 artefact (1248x832) | `32955bb591e96d41add62641af40dab33794990e44ba4486f67b4e69494b24bc` | identique à A | `cd79d126e1a939e92e8936ae32fdebaf702a59e069903062a6c84e69bf5ff26a` |
+
+La LoRA Lightning a bien auto-basculé la diffusion à 4 steps (`denoise step
+1/4 … 4/4`, flash-attn ENGAGED sur les 3 runs).
+
+### Tranchage F2 (§5 de #14707)
+
+1. **`--gpu-device N` n'est PAS sélectif sous `ggml_cuda`** : Runs A et B
+   atterrissent sur le **même** index hôte (3090, pic 22169 MiB, idx0 à 0),
+   artefacts byte-identiques. La causalité du flag n'est pas établie ; le flag
+   est documenté dans l'aide du CLI pour `ggml_vulkan` (exemple verbatim :
+   `--backend ggml_vulkan --gpu-device 1`). L'observation c.257 (« 625 MiB sur
+   l'index 1 après un run avec `--gpu-device 1` ») s'explique intégralement par
+   le comportement **par défaut** du backend : CUDA device 0 = GPU la plus
+   rapide = la RTX 3090 = index hôte 1. La borne non-causale posée en c.260
+   était justifiée ; elle est maintenant levée par mesure.
+2. **`CUDA_VISIBLE_DEVICES` EST respecté — dans l'ordre d'énumération CUDA, qui
+   est l'INVERSE de l'ordre `nvidia-smi` sur cette machine.** Deux mesures le
+   verrouillent :
+   - **Discriminant `CUDA_VISIBLE_DEVICES=99`** (run séparé, 1 step) :
+     exception à l'init du backend (`ModelBase..ctor` l.239), aucun device
+     visible → l'env **atteint bien** la couche CUDA (ce n'est pas un défaut de
+     propagation).
+   - **Énumération CUDA mesurée** (torch, même runtime) : `cuda[0] = RTX 3090
+     24575 MiB`, `cuda[1] = RTX 3080 Ti Laptop 16383 MiB` — alors que
+     `nvidia-smi` ordonne `idx0 = 3080 Ti`, `idx1 = 3090` (ordre PCI).
+   Run C (`CVD=1`) a donc routé sur **CUDA[1] = 3080 Ti = hôte 0** — observé
+   (PID 56764 → UUID GPU-9e5fc0f5, pic 9880 MiB sur idx0, idx1 idle). Le Tell
+   c.264-L1 se précise : `CUDA_VISIBLE_DEVICES=N` expose le device **d'index N
+   dans l'énumération CUDA** (fastest-first par défaut) comme logique 0 — pas
+   le device d'index N côté `nvidia-smi`. Sur cette machine, viser la 3090 via
+   CVD exige `CUDA_VISIBLE_DEVICES=0`.
+
+Table mapping Run C :
+
+| Vue | Ordre constaté |
+|---|---|
+| CUDA (vue binaire, torch) | `cuda[0]` = RTX 3090 · `cuda[1]` = RTX 3080 Ti Laptop |
+| `nvidia-smi` (host-side, PCI) | `idx0` = RTX 3080 Ti Laptop · `idx1` = RTX 3090 |
+| Run C observé | `CVD=1` → CUDA[1] (3080 Ti) → hôte 0, UUID GPU-9e5fc0f5 |
+
+### Verdict axe Image (§7 de #14707)
+
+**`SOTA-OK` pour l'exécution** : le vrai pipeline TensorSharp (DiT + VL + mmproj
++ VAE + LoRA) tourne de bout en bout sur GPU, rc=0 ×3 runs, artefacts réels
+1248x832, ~60-70 s par run sur la 3090 (dont chargement ; denoise 4 steps
+38,8-46,7 s, flash-attn engagé). La question comparative « parité ComfyUI »
+(constructeur 40,44 s ; ComfyUI ~25-30 s **non reconfirmé sur même machine**)
+reste le seul élément non clos — elle exige une mesure ComfyUI même-machine,
+même-prompt, hors du périmètre de ce probe. Aucun verdict `INTRINSIC` ni
+`RECOVERABLE-*` à poser : l'outil réel a été installé et invoqué.
+
+### Artefacts et QA vision (§6 de #14707)
+
+Les 3 PNG (`test_output_A_gpu1.png`, `test_output_B_default.png`,
+`test_output_C_cvd1.png`) et les logs (`probe_logs/`) vivent dans le répertoire
+de travail hors repo — conformément au retrait c.265, aucun artefact de mesure
+n'est committé ; les valeurs verbatim font foi dans cette section. La QA vision
+(sémantique : cœur rouge ajouté au coin supérieur droit de la scène
+synthétique) est routée vers une lane vision (MiniMax/ai-01) avec les artefacts
+en pièces jointes RooSync — l'identité/différence des SHA n'étant pas une
+preuve de routage (Tell c.264-L1 sustained), le routage fait foi par la table
+PID→UUID ci-dessus.
+
 ## Liens verbatims
 
 - Issue : https://github.com/jsboige/CoursIA/issues/14549
