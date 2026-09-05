@@ -30,6 +30,18 @@
       csharp_sha: 58189a2c3e9ffea712786f7e81c84355427b03e7
       content_python_sha: bd71f8a50b6400d6bba04cd96d87333981af4b14d1dc9756b9de8af5e1900c91
       content_csharp_sha: 40fc26c4f719eed6e904450b698a81b2b9369cb37ce34162312b227327bccdcb
+    - date: "2026-09-04"
+      by: myia-po-2023:CoursIA (fix #14624 lot Search)
+      python_sha: 1280e039cd54ff22f031204b7c9655c54cdd82f1
+      csharp_sha: 58189a2c3e9ffea712786f7e81c84355427b03e7
+      content_python_sha: f4fa7fe84fa936ac85c2aea32e8871a3fe9f3f8c45e92bc387a65bb0200355f8
+      content_csharp_sha: 40fc26c4f719eed6e904450b698a81b2b9369cb37ce34162312b227327bccdcb
+    - date: "2026-09-04"
+      by: myia-po-2023:CoursIA (fix #14624 lot Search -- re-attestation apres edition miroir C#, --update en dernier)
+      python_sha: 1280e039cd54ff22f031204b7c9655c54cdd82f1
+      csharp_sha: ed59fd094d9c79981cbe04fbe4f0361b4b469ced
+      content_python_sha: f4fa7fe84fa936ac85c2aea32e8871a3fe9f3f8c45e92bc387a65bb0200355f8
+      content_csharp_sha: cc73e67f63fd1338a71a568df262775643df9623846d9e3fd00fef347fa3469c
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: |
     Bucket 3 de l'EPIC #10382 (from-scratch = la contrepartie, a ecrire comme telle). Verifie firsthand : Python = stdlib pur (`from itertools import product`, 0 lib tierce) ; C# = pur System.* (0 NuGet, 0 #r, 0 Assembly ref, BCL pure). Les DEUX cotes codent LDS from-scratch (greedy_knapsack + lds borne les ecarts a l'heuristique gloutonne ratio valeur/poids). Il n'existe PAS de lib SOTA-tier pour LDS : c'est un algorithme pedagogique (Harvey & Ginsberg 1995), pas un solveur tiers a brancher (aucun package PyPI ou NuGet n'expose LDS comme lib appelable -- LDS est par construction un exercice d'exploration d'arbre heuristique, implemente a la main). Cas bucket 3 : pas d'equivalent .NET (ni Python), le from-scratch EST la contrepartie. Asymetrie d'instance (Python 7 objets A-G dont F+G pieges, C# 5 objets A-E coeur) assumee conceptual parity. L'ancien verdict RECOVERABLE-LOCAL contredisait sa propre raison (qui disait deja 'pas de SOTA tier, pas de solveur tiers applicable') -- RECOVERABLE-LOCAL signifie 'installable, pas installe', mais il n'y a rien a installer. Flip RECOVERABLE-LOCAL -> SOTA-OK (both from-scratch assume, bucket 3, parite semantique dans l'algo LDS).
