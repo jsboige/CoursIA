@@ -73,6 +73,8 @@ for R in MyIntelligenceAgency/Z3.Linq MyIntelligenceAgency/Automata \
 done
 ```
 
+**Précondition de jeton (mesurée le 2026-09-05)** : l'org `MyIntelligenceAgency` refuse les fine-grained PATs de plus de 366 jours. Sous un tel jeton la boucle rend `403` sur ses **trois** repos et 3/5 lignes deviennent infetchables. Elle passe sous `jsboige` **et** sous `myia-ai-01` depuis ai-01, et `403` sous le PAT de po-2026 : la précondition n'est donc pas un compte particulier, c'est **un jeton que l'org accepte** -- l'épingler par commande (`GH_TOKEN=$(gh auth token --user <compte>)`), jamais par `gh auth switch` (état global au process `gh`, cf. R5). **Un `403` est une question, pas une absence mesurée** : ne jamais en conclure « 0 workflow » -- c'est exactement la ligne fausse que ce tableau existe pour empêcher.
+
 | Submodule | Workflow CI | Run vert récent | Substitution R3 | Vérifié le (PR) |
 |---|---|---|---|---|
 | `MyIA.AI.Notebooks/Search/MetaGeneticSharp` | **Absent** (0 workflow, 0 run) | — | OUI | #14566 (#14558, c.14463) |
