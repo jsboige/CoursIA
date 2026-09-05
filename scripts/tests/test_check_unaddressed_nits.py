@@ -5304,3 +5304,50 @@ def test_14461_gvar3_override_est_reconnu_comme_arbitrage() -> None:
         "(point A de _block_emitted, garde-fou du jumeau)."
     )
 
+
+def test_14461_t2_negation_d_override_ne_supprime_rien() -> None:
+    """#14461 tranche 2 (adjoint po-2025, 2026-09-05) : un override est une
+    AFFIRMATION, jamais une negation.
+
+    `[NO OVERRIDE]` / `[PAS D'OVERRIDE]` / `[SANS OVERRIDE]` / `[NOT AN
+    OVERRIDE]` disent l'inverse d'un arbitrage. Le motif bracketé
+    `_OVERRIDE_HEAD_RE` (qui ne portait qu'OVERRIDE) les reconnaissait quand
+    meme et SUPPRIMAIT une injonction reelle posee juste apres : `_block_emitted`
+    (point A) et `_coordinator_emission_informal` retombaient a False
+    (arbitrage) et `classify` rendait None sur un corps portant un BLOCAGE.
+    Lookahead negatif : un mot de negation (EN/FR) avant OVERRIDE dans le
+    crochet = pas un override. Controles positifs : les formes canoniques
+    (`[G-VAR-3 OVERRIDE]`, `[G-VAR-2 OVERRIDE]`, `[OVERRIDE]`) restent des
+    arbitrages (non-regression).
+    """
+    injonction = "**BLOCAGE MERGE (ai-01)** — Ne pas merger tant que le run GPU n'est pas rendu."
+    negs = ["[NO OVERRIDE]", "[PAS D'OVERRIDE]", "[SANS OVERRIDE]", "[NOT AN OVERRIDE]"]
+    for marker in negs:
+        body = f"{marker} lane x\n\n{injonction}"
+        assert mod._block_emitted(body) is True, (
+            f"#14461-T2 {marker!r}: le BLOCAGE doit rester emis — la negation ne "
+            f"desarme pas le point A de _block_emitted, got "
+            f"{mod._block_emitted(body)!r}"
+        )
+        assert mod._coordinator_emission_informal(body) is True, (
+            f"#14461-T2 {marker!r}: l'injonction doit rester une emission — la "
+            f"negation ne la supprime pas, got "
+            f"{mod._coordinator_emission_informal(body)!r}"
+        )
+        assert mod.classify("myia-ai-01", body) == "BLOCK", (
+            f"#14461-T2 {marker!r}: classify doit rendre BLOCK, pas None (la "
+            f"negation n'est pas un arbitrage), got "
+            f"{mod.classify('myia-ai-01', body)!r}"
+        )
+        assert not mod._OVERRIDE_HEAD_RE.match(f"{marker} lane x".upper()), (
+            f"#14461-T2 {marker!r}: le motif ne doit pas matcher une negation."
+        )
+    for marker in ("[G-VAR-3 OVERRIDE]", "[G-VAR-2 OVERRIDE]", "[OVERRIDE]"):
+        body = f"{marker} lane x\n\n{injonction}"
+        assert mod._block_emitted(body) is False
+        assert mod._coordinator_emission_informal(body) is False
+        assert mod.classify("myia-ai-01", body) is None
+        assert mod._OVERRIDE_HEAD_RE.match(f"{marker} lane x".upper()), (
+            f"#14461-T2 {marker!r}: le motif doit matcher une forme positive."
+        )
+

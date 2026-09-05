@@ -208,8 +208,15 @@ OVERRIDE_LANE = _OVERRIDE_LANE
 # tant que [OVERRIDE] lane n'est pas posé ») n'est PAS un arbitrage posé et doit
 # rester un blocage (cf test_13083_blocage_reel_conditionnel). Partagé par
 # `_block_emitted` (point A) et `_coordinator_emission_informal`.
+# #14461 tranche 2 (adjoint po-2025) : un override est une AFFIRMATION, jamais
+# une negation. `[NO OVERRIDE]` / `[PAS D'OVERRIDE]` / `[SANS OVERRIDE]` /
+# `[NOT AN OVERRIDE]` disent l'inverse d'un arbitrage ; les croire overrides
+# SUPPRIMERAIT une injonction reelle. Lookahead negatif : un mot de negation
+# (EN/FR) present avant OVERRIDE dans le crochet = pas un override. Formes
+# positives (`[OVERRIDE]`, `[G-VAR-3 OVERRIDE]`, `[G-VAR-2 OVERRIDE]`) intactes.
 _OVERRIDE_HEAD_RE = re.compile(
-    r"\[\s*[^\]]*\bOVERRIDE\b[^\]]*\]",
+    r"\[\s*(?![^\]]*\b(?:no|not|nor|none|never|sans|pas|aucun|aucune)\b[^\]]*\bOVERRIDE\b)"
+    r"[^\]]*\bOVERRIDE\b[^\]]*\]",
     re.IGNORECASE,
 )
 
