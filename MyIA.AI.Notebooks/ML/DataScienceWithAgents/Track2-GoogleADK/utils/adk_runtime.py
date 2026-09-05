@@ -65,11 +65,27 @@ class AdkRunResult:
     tool_calls: tuple[str, ...]
     tool_responses: tuple[str, ...]
     usage_turns: tuple[AdkUsage, ...] = ()
+    agent_hands: tuple[str, ...] = ()
 
     @property
     def tool_was_invoked(self) -> bool:
         """Whether ADK emitted both a tool request and its response."""
         return bool(self.tool_calls and self.tool_responses)
+
+    @property
+    def handoffs(self) -> tuple[tuple[str, str], ...]:
+        """Transferts de main observes au sein de l'invocation (contrat C5).
+
+        Chaque couple ``(depuis, vers)`` est un changement d'auteur entre deux
+        events consecutifs -- la trace mecanique d'un handoff natif
+        (``transfer_to_agent``), pas une decision de l'appelant.
+        """
+        return tuple(zip(self.agent_hands, self.agent_hands[1:]))
+
+    @property
+    def final_agent(self) -> str:
+        """Le dernier agent qui a parle (celui qui tient la main en fin de tour)."""
+        return self.agent_hands[-1] if self.agent_hands else ""
 
     @property
     def usage_total(self) -> AdkUsage:
@@ -120,9 +136,17 @@ def build_agent(
     instruction: str,
     *,
     tools: tuple = (),
+    sub_agents: tuple = (),
     config: ProviderConfig | None = None,
 ) -> Agent:
-    """Construct a real Google ADK agent for one pedagogical role."""
+    """Construct a real Google ADK agent for one pedagogical role.
+
+    ``sub_agents`` (contrat C5, #14058) declare une hierarchie : ADK injecte
+    alors nativement l'outil ``transfer_to_agent`` (ciblees par enum sur les
+    noms des sous-agents), et le transfert de main devient exercable par le
+    LLM lui-meme -- decision D'AGENT en cours de tour, distincte de la
+    designation C4 (strategie explicite de l'orchestrateur).
+    """
     provider = config or get_provider_config()
     return Agent(
         name=name,
@@ -130,6 +154,7 @@ def build_agent(
         instruction=instruction,
         model=build_adk_model(provider),
         tools=list(tools),
+        sub_agents=list(sub_agents),
     )
 
 
@@ -203,6 +228,7 @@ async def run_agent_turn(
     tool_responses: list[str] = []
     usage_turns: list[AdkUsage] = []
     event_errors: list[str] = []
+    agent_hands: list[str] = []
     event_count = 0
 
     async def consume_events() -> None:
@@ -213,6 +239,9 @@ async def run_agent_turn(
             new_message=message,
         ):
             event_count += 1
+            author = getattr(event, "author", None)
+            if author and (not agent_hands or agent_hands[-1] != author):
+                agent_hands.append(author)
             tool_calls.extend(
                 call.name for call in event.get_function_calls() if call.name
             )
@@ -265,6 +294,7 @@ async def run_agent_turn(
         tool_calls=tuple(tool_calls),
         tool_responses=tuple(tool_responses),
         usage_turns=tuple(usage_turns),
+        agent_hands=tuple(agent_hands),
     )
 
 

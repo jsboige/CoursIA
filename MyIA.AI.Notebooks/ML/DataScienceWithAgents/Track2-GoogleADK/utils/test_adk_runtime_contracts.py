@@ -407,24 +407,82 @@ def test_c4_designation_exists_in_adk_but_runtime_is_single_agent():
         "le grain qui porte le contrat")
 
 
-def test_c5_transfer_exists_in_adk_but_is_not_wired():
-    # C5 (handoff : transfert observable entre agents) -- MESURE : ADK 2.8
-    # porte le transfer natif (TransferToAgentTool, importe ici comme
-    # preuve), mais aucun agent du depot ne declare de sub_agents et
-    # build_agent ne les accepte pas : le transfer n'est pas exercable
-    # depuis le runtime du depot. Non porte -> grain ouvert.
+def test_c5_sub_agents_wire_handoff_and_it_is_observable():
+    # C5 (handoff : transfert observable entre agents) -- PORTE (#14686),
+    # inverse du test de non-portage. build_agent accepte desormais
+    # sub_agents : ADK 2.8 injecte alors nativement l'outil
+    # transfer_to_agent (enum sur les noms des sous-agents), et le VRAI
+    # Runner execute le transfert -- le LLM scripte decide du handoff,
+    # comme un LLM reel le deciderait en cours de tour.
+    #
+    # Complementarite C4/C5 (documentee par ce test) : la designation C4
+    # est une strategie EXPLICITE de l'orchestrateur -- QUI PARLE ENSUITE
+    # est decide AVANT le tour, hors LLM ; le handoff C5 est une decision
+    # DE L'AGENT en cours de tour -- c'est le LLM qui appelle
+    # transfer_to_agent au milieu de son tour. Les deux contrats restent
+    # distincts : ce test n'exerce QUE le transfert natif cable, aucune
+    # strategie d'ordonnancement n'est lue ici.
+    #
+    # Critere 4 -- au retrait du cablage (build_agent cesse de passer
+    # sub_agents a Agent), la hierarchie n'est plus declaree : l'outil
+    # transfer_to_agent n'est pas injecte, l'appel scripte devient une
+    # fonction inconnue, aucun transfert n'a lieu et agent_hands reste
+    # ("contract_root",) -> rouge (verifie par mutation locale, journal
+    # au body de la PR).
     from google.adk.tools import TransferToAgentTool  # noqa: F401 (preuve)
 
     import inspect
+    from config.providers import ProviderConfig, ProviderType
     from utils import adk_runtime
 
+    # Jamais une restauration SK : l'arbre est de vrais Agent ADK.
     build_params = inspect.signature(adk_runtime.build_agent).parameters
-    assert "sub_agents" not in build_params, (
-        "build_agent accepte desormais sub_agents : le transfer C5 est "
-        "cable, ce test documentait le non-portage, il doit etre inverse "
-        "par le grain qui porte le contrat")
-    turn_params = inspect.signature(adk_runtime.run_agent_turn).parameters
-    assert "agents" not in turn_params
+    assert "sub_agents" in build_params, (
+        "build_agent n'accepte plus sub_agents : le cablage C5 est retire")
+
+    verifier = _scripted_agent(name="verifier_agent", tools=())
+    offline_config = ProviderConfig(
+        provider=ProviderType.LMSTUDIO, model="m", base_url="http://localhost:1")
+    root_via_build_agent = adk_runtime.build_agent(
+        name="contract_root",
+        description="porte-contrat de test",
+        instruction="scripte",
+        sub_agents=(verifier,),
+        config=offline_config,
+    )
+    assert [
+        sub.name for sub in root_via_build_agent.sub_agents
+    ] == ["verifier_agent"], (
+        "build_agent ne transmet plus la hierarchie sub_agents : le "
+        "cablage C5 est retire")
+
+    # Scenario comportemental sur le VRAI Runner : le LLM racine demande
+    # le transfert, le sous-agent herite de la main et repond. Instance
+    # fraiche : un Agent ADK parente ne peut pas etre re-parente.
+    behavioral_verifier = _scripted_agent(name="verifier_agent", tools=())
+    root = Agent(
+        name="contract_root",
+        description="porte-contrat de test",
+        instruction="scripte",
+        model=ScriptedLlm(model="scripted"),
+        sub_agents=[behavioral_verifier],
+    )
+    _SCRIPT.append(("call", ("transfer_to_agent", {"agent_name": "verifier_agent"})))
+    _SCRIPT.append(("text", "verifie : le code est correct"))
+    result = _run_turn(root, "verifie ce code", app_name="contracts-c5")
+
+    assert "transfer_to_agent" in result.tool_calls, (
+        f"le handoff natif n'a pas ete appele, tool_calls : "
+        f"{result.tool_calls}")
+    assert result.agent_hands == ("contract_root", "verifier_agent"), (
+        f"la main doit passer au sous-agent, mesure : {result.agent_hands}")
+    assert result.handoffs == (("contract_root", "verifier_agent"),), (
+        f"le handoff doit etre un couple observable, mesure : "
+        f"{result.handoffs}")
+    assert result.final_agent == "verifier_agent"
+    assert "verifie" in result.response_text.lower(), (
+        f"la reponse finale doit venir du sous-agent, mesure : "
+        f"{result.response_text!r}")
 
 
 def test_c6_no_native_token_budget_but_usage_is_observable():
