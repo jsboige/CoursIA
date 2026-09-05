@@ -275,3 +275,99 @@ protocol and are marked SUPERSEDED above. The definitive BTC re-run
 --debias --calibration-size 60`) is pending post-merge; REGISTRY.md carries
 the note `[M17 HAR-LJ-Asym BTC run] — pending live run post-merge; round-3
 calibration implemented, code PR #14592.`
+
+## Round-4 provenance + multi-fold invariance (this PR)
+
+**Date:** 2026-09-05. Response to the round-4 adjoint re-review (DM
+`msg-20260905T001520`, 3/6 PASS — 3/6 PARTIAL) on PR #14592. Two code-scope
+concerns addressed; the live BTC run (concern b) and the body-PR `prev:`
+fix (concern d) are handled outside this code surface.
+
+### Bounds provenance (concern c)
+
+`walk_forward_lj_asym` surfaces `bounds_train_test` =
+`{train_end_idx, oos_start_idx, oos_end_idx, n_train, n_oos, n_total,
+fold_size, n_folds}` — indices in X_all (merged-valid) coordinates, where
+position j maps to original-series timestamp `merged.index[j]` and its
+h-step target reads original positions up to `j + horizon`.
+`train_end_idx = n_folds * fold_size` with `fold_size = n // (n_splits + 1)`
+(the placeholder `int(...) if False else None` that never computed anything
+is removed). The per-(coin, horizon, seed) row relays it alongside
+`per_fold_bias` and `fc_lj_hash_per_fold` (one 16-hex hash per fold slice,
+aligned with `per_fold_bias`, anchoring the global `fc_lj_hash` granules to
+the bounds); `aggregate_verdicts` surfaces `bounds_train_test` +
+`bounds_consistent_across_seeds` per (coin, horizon); the run manifest
+writes `bounds_per_coin_horizon` (same pattern as
+`panel_hash_per_coin_horizon`). Acceptance test:
+`test_bounds_provenance_in_manifest`.
+
+### Multi-fold OOS invariance (concern a)
+
+`test_walk_forward_lj_asym_oos_target_invariance_multi_fold` runs
+`n_splits=3` (folds of 98 rows on a 400-day synthetic panel) with
+**distinct** per-fold biases (`len(set(per_fold_bias)) >= 2` — the
+discriminator against a global-mean collapse that a single fold cannot
+detect). For each fold k, shifting only fold k's OOS target window leaves
+`per_fold_bias[k]` and fold k's `forecasts`/`forecasts_debiased` slices
+bit-identical (rtol 1e-12) and leaves **earlier** folds fully unchanged
+(backward no-leakage direction). **Later** folds legitimately retrain on
+the shifted rows — fold k's test block is part of their train in the
+expanding-window design — which the test asserts as a forward sensitivity
+(their forecast slices differ through the refit), not as leakage. Shifting
+only fold k's calibration tail moves `per_fold_bias[k]` by > 1.0 (measured
++1.15 / +3.00 / +6.50 with delta=10) while earlier folds stay unchanged.
+The round-3 single-fold test stays as a smoke test.
+
+### Live BTC run (concern b — this PR)
+
+Live BTC Bitstamp hourly 2014-2024 (`TRADING_DATA_ROOT/Bitstamp_BTCUSD_1h_2014-20240808.csv`,
+54 666 hourly bars, ~2 272 daily bars after aggregation) executed
+in-process with the round-3+4 code:
+
+```bash
+python har_lj_asym.py --coins BTC-USD --skip-remote --debias \
+  --horizons 1 5 10 --seeds 0 7 42 99
+```
+
+5 folds × 4 seeds × 3 horizons × 1 coin × 4 models (LJ raw + LJ debiased + HAR raw +
+HAR debiased + M12) = 60 walks, 467.9 s wall-clock CPU. Manifest
+`scripts/results/m17_har_lj_asym.json` regenerated; meta-manifest
+`scripts/results/manifest_m17_har_lj_asym.json` updated with
+`bounds_per_coin_horizon`, `panel_hash_per_coin_horizon`,
+`fc_hashes_per_coin_horizon`, and `concern_addressing` (round-3 + round-4).
+
+**BTC bounds effectives par horizon** (X_all coords, target reads up to `j + horizon`) :
+
+| horizon | train_end | oos_start | oos_end | n_train | n_oos | n_total | fold_size | n_folds |
+|---------|-----------|-----------|---------|---------|-------|---------|-----------|---------|
+| 1 | 1890 | 1891 | 2272 | 1890 | 382 | 2272 | 378 | 5 |
+| 5 | 1890 | 1895 | 2268 | 1890 | 378 | 2268 | 378 | 5 |
+| 10 | 1885 | 1895 | 2263 | 1885 | 378 | 2263 | 377 | 5 |
+
+**Per-seed DM verdicts** (BTC, 4 seeds) :
+
+| horizon | seed | DM vs HAR (p / mean_loss / verdict) | DM vs M12 (p / mean_loss / verdict) |
+|---------|------|------------------------------------|--------------------------------------|
+| 1 | 0/7/42/99 | p<1e-6 / -0.2343 / **BEATS** | p<1e-6 / -0.2432 / **BEATS** |
+| 5 | 0/7/42/99 | p=0.467 / +0.0247 / INCONCLUSIVE | p=0.552 / +0.0209 / INCONCLUSIVE |
+| 10 | 0/7/42/99 | p=0.250 / +0.0383 / INCONCLUSIVE | p=0.512 / +0.0230 / INCONCLUSIVE |
+
+**Aggregated** (4 seeds, BTC) :
+
+- **h=1** : DM_har = **4/4 BEATS**, DM_m12 = **4/4 BEATS**. p<1e-6, mean_loss_diff<0 ⇒ `_coherent_beats()` strict ✓.
+- **h=5** : DM_har = **0/4 INCONCLUSIVE**, DM_m12 = **0/4 INCONCLUSIVE**. p>0.05, mean_loss_diff>0 ⇒ cohérent INCONCLUSIVE (pas BEATEN BY car p>0.05).
+- **h=10** : DM_har = **0/4 INCONCLUSIVE**, DM_m12 = **0/4 INCONCLUSIVE**. Idem.
+
+**Headline** : **BTC h=1 : M17 HAR-LJ-Asym BEATS HAR Classic et M12** (très significatif,
+p<1e-6 sur 4 seeds) ; BTC h=5 et h=10 : INCONCLUSIVE. Le pattern est cohérent avec la
+littérature M12/M16 (M17 hérite de M16 jump + M12 semivariance, deux augmentations qui
+battent HAR surtout à court terme — la marge se résorbe à moyen terme).
+
+**Précédent c.953 réfuté** : c.953 publiait `h=1 BEATS p_value=0.839708` (incohérent —
+`_coherent_beats()` aurait dû bloquer). Sous round-3+4 calibration, le verdict h=1 BEATS
+reste mais devient **réellement significatif** (p<1e-6) — c'est la calibration per-fold +
+signe corrigé qui a ramené les p-values dans le régime significatif.
+
+**Bit-identity cross-seed** : les 4 seeds rendent des `per_fold_bias` et `fc_lj_hash_per_fold`
+**bit-identiques** (OLS déterministe sur (X, y) fixes), `panel_hashes_consistent=True` et
+`bounds_consistent_across_seeds=True` pour les 3 horizons.

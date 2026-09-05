@@ -41,6 +41,19 @@ msg-20260904T141944):
 (4) ``panel_hash`` covers the index (int64 ns) in addition to the values,
     and the manifest surfaces per-(coin, horizon) panel hashes.
 
+ROUND-4 (adjoint re-review, DM msg-20260905T001520, 3/6 PARTIAL):
+(a) test_walk_forward_lj_asym_oos_target_invariance_multi_fold -- n_splits=3
+    with >=2 DISTINCT per-fold biases; per-fold OOS-target perturbation
+    leaves that fold's bias and forecast slices bit-identical (earlier folds
+    unchanged; later folds legitimately retrain on the shifted rows --
+    walk-forward expanding window, not leakage). The round-3 single-fold
+    test stays as a smoke test.
+(c) bounds provenance -- walk_forward_lj_asym surfaces bounds_train_test
+    (train/OOS index bounds of the split geometry); _eval_one_coin,
+    aggregate_verdicts and the manifest relay it per (coin, horizon) with
+    fc_lj_hash_per_fold aligned with per_fold_bias. The
+    ``if False else None`` placeholder is removed.
+
 Usage:
     python har_lj_asym.py --horizons 1 5 10 --seeds 0 7 42 99 --skip-remote
     python har_lj_asym.py --horizons 1 5 10 --seeds 0 7 42 99 --debias
@@ -313,6 +326,26 @@ def walk_forward_lj_asym(
         forecasts_debiased = []
         mse_debiased = np.nan
 
+    # Round-4 provenance (adjoint concern (c), DM msg-20260905T001520):
+    # fold k tests on X_all[(k+1)*fold_size : (k+2)*fold_size), so the first
+    # forecast sits at X_all index ``fold_size`` and the last EXECUTED fold's
+    # train ends at ``n_folds * fold_size`` (== n_splits * (n // (n_splits+1))
+    # when every fold runs). Indices are X_all (merged valid) coordinates:
+    # X_all position j maps to original-series timestamp ``merged.index[j]``,
+    # and its h-step target reads original positions up to j + horizon.
+    n_folds = len(per_fold_bias)
+    n_train_end = int(n_folds * fold_size)
+    bounds_train_test = {
+        "train_end_idx": n_train_end,
+        "oos_start_idx": int(n_train_end + horizon),
+        "oos_end_idx": int(n),
+        "n_train": n_train_end,
+        "n_oos": int(n - n_train_end),
+        "n_total": int(n),
+        "fold_size": int(fold_size),
+        "n_folds": int(n_folds),
+    }
+
     return {
         "forecasts": forecasts_arr.tolist(),
         "forecasts_debiased": forecasts_debiased,
@@ -320,6 +353,7 @@ def walk_forward_lj_asym(
         "aggregate_mse_logrv": mse_raw,
         "aggregate_mse_logrv_debiased": mse_debiased,
         "per_fold_bias": per_fold_bias,
+        "bounds_train_test": bounds_train_test,
     }
 
 
@@ -538,13 +572,38 @@ def _eval_one_coin(
     err_har_hash = hashlib.sha256(err_har.astype(np.float64).tobytes()).hexdigest()[:16]
     err_m12_hash = hashlib.sha256(err_m12.astype(np.float64).tobytes()).hexdigest()[:16]
 
-    # --- Bounds + edge-sigma disposition (concern #4) ---
-    # Bounds: walk-forward folds on the log-RV time series; the first forecast
-    # is at index n_splits*fold_size (5th split), the last at index n.
-    # We surface ``bounds_train_test`` as the [train_end, oos_end] window
-    # (in bar count). Edge-σ is N/A because OLS on a deterministic (X, y)
-    # panel with fixed seeds is bit-identical -- see panel_hashes_consistent.
-    n_train_end = int(n_splits * (n // (n_splits + 1))) if False else None  # placeholder
+    # --- Bounds + edge-sigma disposition (concern #4; round-4 concern (c)) ---
+    # Provenance convention: ``bounds_train_test`` comes from the LJ
+    # walk-forward geometry (see walk_forward_lj_asym) -- fold k tests on
+    # X_all[(k+1)*fold_size : (k+2)*fold_size), the first forecast sits at
+    # X_all index fold_size, and the last fold's train ends at
+    # n_folds*fold_size (= n_splits * (n // (n_splits + 1)) when all folds
+    # execute). Indices are X_all (merged valid) coordinates: position j
+    # maps to original-series timestamp merged.index[j]; its h-step target
+    # reads original positions up to j + horizon. The global fc_*_hash
+    # cover the ALIGNED forecasts; fc_lj_hash_per_fold hashes each fold
+    # slice of the LJ walk-forward output, aligned with per_fold_bias, so
+    # the per-tranche granules are anchored to the bounds. Edge-σ is N/A
+    # because OLS on a deterministic (X, y) panel with fixed seeds is
+    # bit-identical -- see panel_hashes_consistent.
+    bounds_train_test = res_lj.get("bounds_train_test")
+    fold_size_wf = (bounds_train_test or {}).get("fold_size")
+    n_folds_wf = (bounds_train_test or {}).get("n_folds")
+    fc_series_per_fold = (
+        res_lj.get("forecasts_debiased") or res_lj.get("forecasts")
+    )
+    if fold_size_wf and n_folds_wf and fc_series_per_fold:
+        fc_lj_hash_per_fold = [
+            hashlib.sha256(
+                np.asarray(
+                    fc_series_per_fold[k * fold_size_wf:(k + 1) * fold_size_wf],
+                    dtype=np.float64,
+                ).tobytes()
+            ).hexdigest()[:16]
+            for k in range(int(n_folds_wf))
+        ]
+    else:
+        fc_lj_hash_per_fold = []
 
     # --- Kelly portfolio metrics ---
     kelly_metrics = _compute_kelly(fc_lj, tgt)
@@ -577,6 +636,12 @@ def _eval_one_coin(
         "err_har_hash": err_har_hash,
         "err_m12_hash": err_m12_hash,
         "n_obs": int(n),
+        # Round-4 concern (c): provenance surface -- per-fold bias list,
+        # train/OOS bounds of the walk-forward split, and per-fold hashes
+        # (16-hex each) aligned with per_fold_bias.
+        "per_fold_bias": list(res_lj.get("per_fold_bias", [])),
+        "bounds_train_test": bounds_train_test,
+        "fc_lj_hash_per_fold": fc_lj_hash_per_fold,
         "edge_sigma_applicable": False,
         **kelly_metrics,
     }
@@ -617,6 +682,14 @@ def aggregate_verdicts(rows: list[dict]) -> list[dict]:
         ]
         mse_m12_vals = [r["mse_m12"] for r in group if "mse_m12" in r]
         panel_hashes = [r["panel_hash"] for r in group if r.get("panel_hash")]
+
+        # Round-4 concern (c): per-(coin, horizon) train/OOS bounds. The
+        # walk-forward geometry is deterministic per (coin, horizon), so all
+        # seeds of a group must carry identical bounds.
+        bounds_entries = [
+            r.get("bounds_train_test") for r in group
+            if r.get("bounds_train_test")
+        ]
 
         # --- Concern #3: aggregate DM components (mean, std, p_value median) ---
         def _dm_components(rows_subset: list[dict], key: str) -> dict:
@@ -713,6 +786,12 @@ def aggregate_verdicts(rows: list[dict]) -> list[dict]:
             "seeds": [r["seed"] for r in group],
             "panel_hash": panel_hashes[0] if panel_hashes else "",
             "panel_hashes_consistent": len(set(panel_hashes)) <= 1 if panel_hashes else True,
+            # Round-4 concern (c): bounds provenance per (coin, horizon).
+            "bounds_train_test": bounds_entries[0] if bounds_entries else None,
+            "bounds_consistent_across_seeds": (
+                len({json.dumps(b, sort_keys=True) for b in bounds_entries}) <= 1
+                if bounds_entries else True
+            ),
         })
     return results
 
@@ -844,6 +923,28 @@ def main() -> None:
         }
         for (c, h), hs in sorted(ph_groups.items())
     ]
+    # Round-4 concern (c): per-(coin, horizon) train/OOS bounds provenance,
+    # same surfacing pattern as panel_hash_per_coin_horizon -- the manifest
+    # says WHERE (index bounds) the forecasts/targets come from, alongside
+    # the existing value hashes.
+    bounds_groups: dict[tuple, list[dict]] = {}
+    for r in rows:
+        if r.get("bounds_train_test"):
+            bounds_groups.setdefault((r["coin"], r["horizon"]), []).append(
+                r["bounds_train_test"],
+            )
+    bounds_per_coin_horizon = [
+        {
+            "coin": c,
+            "horizon": h,
+            "bounds_train_test": bs[0],
+            "n_seed_rows": len(bs),
+            "consistent_across_seeds": (
+                len({json.dumps(b, sort_keys=True) for b in bs}) <= 1
+            ),
+        }
+        for (c, h), bs in sorted(bounds_groups.items())
+    ]
     manifest = {
         "model": "M17_HAR_LJ_ASYM",
         "params": output["params"],
@@ -867,6 +968,7 @@ def main() -> None:
         },
         "panel_hashes": sorted({r["panel_hash"] for r in rows if r.get("panel_hash")}),
         "panel_hash_per_coin_horizon": panel_hash_per_coin_horizon,
+        "bounds_per_coin_horizon": bounds_per_coin_horizon,
         "panel_hashes_consistent": (
             all(g["consistent_across_seeds"] for g in panel_hash_per_coin_horizon)
             if panel_hash_per_coin_horizon else True
@@ -963,6 +1065,25 @@ def main() -> None:
                 "canonical 360-bar window; the manifest surfaces "
                 "panel_hash_per_coin_horizon (per-group hashes + consistency), "
                 "not a single collapsed global hash."
+            ),
+            "concern_a_round4_multifold_oos_invariance": (
+                "test_walk_forward_lj_asym_oos_target_invariance_multi_fold "
+                "runs n_splits=3 with >=2 DISTINCT per-fold biases; shifting "
+                "only fold k's OOS target window leaves per_fold_bias[k] and "
+                "fold k's forecast slices bit-identical, with earlier folds "
+                "unchanged and later folds legitimately retraining on the "
+                "shifted rows (walk-forward expanding window, not leakage). "
+                "Per-fold train-tail shifts move only that fold's bias (>1.0)."
+            ),
+            "concern_c_round4_bounds_provenance": (
+                "walk_forward_lj_asym surfaces bounds_train_test "
+                "{train_end_idx, oos_start_idx, oos_end_idx, n_train, n_oos} "
+                "(indices in X_all/merged-valid coordinates; train_end_idx = "
+                "n_folds * fold_size). _eval_one_coin, aggregate_verdicts "
+                "(bounds_train_test + bounds_consistent_across_seeds) and "
+                "this manifest (bounds_per_coin_horizon) relay it; "
+                "fc_lj_hash_per_fold is aligned with per_fold_bias. The "
+                "`if False else None` placeholder is removed."
             ),
         },
         "manifest_sha256": hashlib.sha256(

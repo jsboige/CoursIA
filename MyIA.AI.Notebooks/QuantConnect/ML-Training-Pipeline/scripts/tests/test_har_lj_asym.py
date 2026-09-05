@@ -22,6 +22,14 @@ msg-20260904T141944):
   #3 — mse_har_raw (uncalibrated leg) != mse_har_debiased (calibrated leg).
   #4 — full-walk-forward OOS-target invariance test.
   #6 — panel_hash covers the index in addition to the values.
+
+ROUND-4 (adjoint re-review, DM msg-20260905T001520, 3/6 PARTIAL):
+  (a) multi-fold OOS-target invariance — n_splits=3, DISTINCT per-fold
+      biases, per-fold assertions (the round-3 single-fold test stays as a
+      smoke test).
+  (c) bounds provenance — bounds_train_test surfaced by
+      walk_forward_lj_asym / _eval_one_coin / aggregate_verdicts, with
+      fc_lj_hash_per_fold aligned with per_fold_bias.
 """
 
 from __future__ import annotations
@@ -936,3 +944,284 @@ def test_panel_hash_includes_index():
     assert h_a == h_a_again
     assert h_a != h_b, "index must participate in the panel hash"
     assert h_a != h_a_shifted_vals, "values must participate in the hash"
+
+
+# ---------------------------------------------------------------------------
+# ROUND-4 concern (a) — multi-fold OOS-target invariance (n_splits=3,
+# distinct per-fold biases, per-fold assertions)
+# ---------------------------------------------------------------------------
+
+
+def test_walk_forward_lj_asym_oos_target_invariance_multi_fold(monkeypatch):
+    """Round-4 concern (a): with ``n_splits=3`` (a single fold cannot
+    distinguish a per-fold bias estimate from a global mean — there is no
+    second fold to compare against), the walk-forward must produce
+    DISTINCT per-fold bias estimates, and each fold's bias + forecasts must
+    be bit-identical under a perturbation of THAT fold's OOS targets only.
+
+    Geometry (X_all/merged-valid coordinates): fold k trains on
+    ``[0, (k+1)*fold_size)`` and tests on ``[(k+1)*fold_size,
+    (k+2)*fold_size)``. In ORIGINAL rv coordinates the targets of fold k's
+    TEST rows read positions ``[first_pos + (k+1)*fold_size + horizon,
+    first_pos + (k+2)*fold_size + horizon)`` — patched via
+    ``realized_variance_to_log`` (target-only import; features never go
+    through it).
+
+    Assertions per fold k (OOS window of fold k shifted by +10):
+    - ``per_fold_bias[k]`` + fold k's ``forecasts``/``forecasts_debiased``
+      slices are bit-identical (rtol 1e-12) — the bias reads the train tail
+      only, and the OLS fit never sees the OOS targets;
+    - folds BEFORE k are fully unchanged (their train and test never read
+      positions >= cutoff_k) — the backward "no cross-fold leakage"
+      direction;
+    - fold k's ``targets`` slice really changed (the perturbation landed);
+    - folds AFTER k are EXPECTED to differ: fold k's test block IS part of
+      their train (walk-forward expanding window — future-as-train by
+      design, not leakage). The test asserts their forecast slices differ,
+      proving the perturbation reached their estimator through the train
+      path.
+
+    Train-tail sensitivity per fold: shifting ONLY fold k's calibration
+    tail (``[cutoff_k - calibration_size, cutoff_k)``) moves
+    ``per_fold_bias[k]`` by more than 1.0 (delta=10 on the synthetic
+    scale) while earlier folds stay unchanged.
+    """
+    import har_lj_asym as module
+    from har_lj_asym import lj_asym_features, walk_forward_lj_asym
+    from realized_variance import realized_variance_to_log
+
+    rng = np.random.default_rng(11)
+    index = pd.date_range("2020-01-01", periods=400, freq="D")
+    log_rv = np.cumsum(rng.normal(0.0, 0.1, 400)) - 5.0
+    rv = pd.Series(np.exp(log_rv), index=index, name="rv")
+    rv_neg = pd.Series(rv.to_numpy() * 0.5, index=index)
+    rv_pos = pd.Series(rv.to_numpy() * 0.5, index=index)
+    rv_c = pd.Series(rv.to_numpy() * 0.8, index=index)
+    rv_j = pd.Series(rv.to_numpy() * 0.2, index=index)
+
+    horizon, n_splits, calibration_size = 1, 3, 60
+    kwargs = dict(
+        horizon=horizon, seed=0, n_splits=n_splits,
+        debias=True, calibration_size=calibration_size,
+    )
+
+    out_base = walk_forward_lj_asym(rv, rv_neg, rv_pos, rv_c, rv_j, **kwargs)
+    assert out_base["forecasts"]
+    biases = out_base["per_fold_bias"]
+
+    # (1) Multi-fold: >= 3 per-fold bias entries, not 1.
+    assert len(biases) == n_splits, (
+        f"expected {n_splits} per-fold biases, got {len(biases)}"
+    )
+    # (2) DISTINCT bias per fold — the discriminator against a global-mean
+    # collapse (a single shared bias would make len(set) == 1).
+    print(f"per_fold_bias (baseline, n_splits={n_splits}): {biases}")
+    assert len(set(biases)) >= 2, (
+        f"per-fold biases collapsed to a single value: {biases} -- "
+        "a global-mean estimator would be indistinguishable from this"
+    )
+
+    # Replicate the internal split arithmetic to locate, in ORIGINAL rv
+    # coordinates, the OOS target windows: the target at X_all row j reads
+    # original position (first_pos + j + horizon).
+    feat = lj_asym_features(rv_neg, rv_pos, rv_c, rv_j, rv)
+    merged = feat.join(
+        realized_variance_to_log(rv).rename("log_rv"), how="inner",
+    ).dropna()
+    n_total = int(
+        merged["log_rv"].rolling(horizon).mean().shift(-horizon).notna().sum()
+    )
+    fold_size = n_total // (n_splits + 1)
+    first_pos = int(rv.index.get_loc(merged.index[0]))
+    cutoffs = [
+        first_pos + (k + 1) * fold_size + horizon for k in range(n_splits)
+    ]
+    # Sanity on the geometry replication: forecasts are whole folds.
+    assert len(out_base["forecasts"]) == n_splits * fold_size
+
+    fs = fold_size
+    fc_base = np.asarray(out_base["forecasts"], dtype=float)
+    fcd_base = np.asarray(out_base["forecasts_debiased"], dtype=float)
+    tgt_base = np.asarray(out_base["targets"], dtype=float)
+
+    delta = 10.0
+    orig = module.realized_variance_to_log
+
+    def shift_from(cut_lo, cut_hi):
+        def patched(series):
+            out = orig(series).copy()
+            mask = (np.arange(len(out)) >= cut_lo) & (
+                np.arange(len(out)) < cut_hi
+            )
+            out.iloc[mask] = out.iloc[mask] + delta
+            return out
+        return patched
+
+    # --- Per-fold OOS invariance ---
+    for k in range(n_splits):
+        lo = cutoffs[k]
+        hi = cutoffs[k + 1] if k + 1 < n_splits else len(rv)
+        monkeypatch.setattr(
+            module, "realized_variance_to_log", shift_from(lo, hi),
+        )
+        out_k = walk_forward_lj_asym(rv, rv_neg, rv_pos, rv_c, rv_j, **kwargs)
+        sl = slice(k * fs, (k + 1) * fs)
+
+        # Anti-leak: fold k's bias and forecast slices bit-identical.
+        np.testing.assert_allclose(
+            out_k["per_fold_bias"][k], biases[k], rtol=1e-12, atol=1e-12,
+            err_msg=f"fold {k}: bias must not read fold {k}'s OOS targets",
+        )
+        np.testing.assert_allclose(
+            np.asarray(out_k["forecasts"])[sl], fc_base[sl], rtol=1e-12,
+            err_msg=f"fold {k}: raw forecasts must be OOS-target invariant",
+        )
+        np.testing.assert_allclose(
+            np.asarray(out_k["forecasts_debiased"])[sl], fcd_base[sl],
+            rtol=1e-12,
+            err_msg=f"fold {k}: debiased forecasts must be OOS-target invariant",
+        )
+
+        # Backward folds: fully unchanged (no backward cross-fold leakage).
+        for j in range(k):
+            np.testing.assert_allclose(
+                out_k["per_fold_bias"][j], biases[j], rtol=1e-12, atol=1e-12,
+                err_msg=f"backward leakage: fold {j} bias moved under fold {k} shift",
+            )
+            np.testing.assert_allclose(
+                np.asarray(out_k["forecasts_debiased"])[j * fs:(j + 1) * fs],
+                fcd_base[j * fs:(j + 1) * fs], rtol=1e-12,
+                err_msg=f"backward leakage: fold {j} forecasts moved under fold {k} shift",
+            )
+
+        # Sanity on the perturbation itself: fold k's targets really changed.
+        assert not np.allclose(
+            np.asarray(out_k["targets"])[sl], tgt_base[sl],
+        ), f"fold {k}: OOS perturbation did not land on the targets"
+
+        # Forward folds: fold k's test block is part of their TRAIN
+        # (expanding window) — they MUST NOT be bit-identical. This is the
+        # train path, not an OOS read: their forecasts absorb the shift
+        # through the refit, which proves the perturbation was real.
+        for j in range(k + 1, n_splits):
+            assert not np.allclose(
+                np.asarray(out_k["forecasts"])[j * fs:(j + 1) * fs],
+                fc_base[j * fs:(j + 1) * fs],
+            ), (
+                f"forward fold {j}: expected a train-path change under fold "
+                f"{k}'s OOS shift (expanding window retrains on fold {k}'s "
+                "test block) -- bit-identity here would mean the walk-forward "
+                "silently ignored train data"
+            )
+
+    # --- Per-fold train-tail sensitivity ---
+    for k in range(n_splits):
+        lo = cutoffs[k] - calibration_size
+        hi = cutoffs[k]
+        monkeypatch.setattr(
+            module, "realized_variance_to_log", shift_from(lo, hi),
+        )
+        out_t = walk_forward_lj_asym(rv, rv_neg, rv_pos, rv_c, rv_j, **kwargs)
+
+        # Fold k's bias moves by a non-trivial margin on the synthetic scale.
+        d_bias_k = out_t["per_fold_bias"][k] - biases[k]
+        assert abs(d_bias_k) > 1.0, (
+            f"fold {k}: calibration-tail shift ({delta=}) moved the bias by "
+            f"only {d_bias_k:+.6f} -- the estimator looks insensitive to its "
+            "own train tail"
+        )
+        # Earlier folds' biases are unchanged (tail window beyond their train).
+        for j in range(k):
+            np.testing.assert_allclose(
+                out_t["per_fold_bias"][j], biases[j], rtol=1e-12, atol=1e-12,
+                err_msg=(
+                    f"fold {j} bias moved under fold {k}'s calibration-tail "
+                    "shift -- the tail window leaked backwards"
+                ),
+            )
+
+
+# ---------------------------------------------------------------------------
+# ROUND-4 concern (c) — bounds provenance (train/OOS index bounds surfaced
+# end-to-end: walk_forward_lj_asym -> _eval_one_coin -> aggregate_verdicts)
+# ---------------------------------------------------------------------------
+
+
+def test_bounds_provenance_in_manifest(synthetic_lj_components, monkeypatch):
+    """Round-4 concern (c): the per-(coin, horizon, seed) result must carry
+    ``bounds_train_test`` matching the walk-forward split arithmetic —
+    ``train_end_idx = n_splits * (n // (n_splits + 1))``,
+    ``oos_start_idx = train_end + horizon``, ``oos_end_idx = n`` — plus the
+    per-fold granules (``per_fold_bias`` + ``fc_lj_hash_per_fold``) that
+    anchor the global hashes to the bounds. ``aggregate_verdicts`` relays
+    the bounds per (coin, horizon) with a cross-seed consistency flag (the
+    same pattern the manifest writes as ``bounds_per_coin_horizon``)."""
+    from har_lj_asym import N_SPLITS, _eval_one_coin, lj_asym_features
+    from realized_variance import realized_variance_to_log
+
+    def fake_walk_forward_har(rv, horizon, *args, **kwargs):
+        n = 100
+        idx = rv.index[-n:]
+        return {
+            "forecasts": pd.Series(np.zeros(n), index=idx, name="fc_har"),
+            "aggregate_mse_logrv": 0.9,
+        }
+
+    monkeypatch.setattr("har_lj_asym.walk_forward_har", fake_walk_forward_har)
+
+    horizon = 1
+    row = _eval_one_coin(
+        "BTC-USD", horizon=horizon, seed=0,
+        components=synthetic_lj_components,
+        debias=True, calibration_size=60,
+    )
+    assert row is not None
+
+    # Replicate the LJ walk-forward geometry (same arithmetic as
+    # walk_forward_lj_asym, which _eval_one_coin calls with the default
+    # n_splits=N_SPLITS).
+    comp = synthetic_lj_components["BTC-USD"]
+    feat = lj_asym_features(
+        comp["rv_neg"], comp["rv_pos"], comp["rv_c"], comp["rv_j"], comp["rv"],
+    )
+    merged = feat.join(
+        realized_variance_to_log(comp["rv"]).rename("log_rv"), how="inner",
+    ).dropna()
+    n_total = int(
+        merged["log_rv"].rolling(horizon).mean().shift(-horizon).notna().sum()
+    )
+    fold_size = n_total // (N_SPLITS + 1)
+    expected_train_end = N_SPLITS * fold_size
+
+    b = row["bounds_train_test"]
+    assert b is not None, "bounds_train_test missing from the result row"
+    assert b["train_end_idx"] == expected_train_end == N_SPLITS * (n_total // (N_SPLITS + 1))
+    assert b["oos_start_idx"] == expected_train_end + horizon
+    assert b["oos_end_idx"] == n_total
+    assert b["n_train"] == expected_train_end
+    assert b["n_oos"] == n_total - expected_train_end
+
+    # Manifest write path: the bounds must be JSON-serializable as-is.
+    json.dumps(b)
+
+    # Per-fold provenance granules aligned with per_fold_bias.
+    assert len(row["per_fold_bias"]) == N_SPLITS
+    assert len(row["fc_lj_hash_per_fold"]) == N_SPLITS
+    for h16 in row["fc_lj_hash_per_fold"]:
+        assert isinstance(h16, str) and len(h16) == 16
+        int(h16, 16)  # hex parseable
+
+    # aggregate_verdicts relays the bounds per (coin, horizon) with the
+    # cross-seed consistency flag (deterministic OLS -> identical bounds).
+    rows = []
+    for seed in (0, 7):
+        r = _eval_one_coin(
+            "BTC-USD", horizon=horizon, seed=seed,
+            components=synthetic_lj_components,
+            debias=True, calibration_size=60,
+        )
+        assert r is not None
+        rows.append(r)
+    agg = aggregate_verdicts(rows)[0]
+    assert agg["bounds_train_test"] == rows[0]["bounds_train_test"]
+    assert agg["bounds_consistent_across_seeds"] is True
