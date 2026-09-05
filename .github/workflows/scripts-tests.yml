@@ -223,6 +223,7 @@ jobs:
             MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_prover_forensic_guards.py \
             MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/tests \
             scripts/secrets/tests \
+            scripts/quantconnect/tests \
             --tb=short -q
 
       - name: Audit tests collection floor (455)
@@ -252,12 +253,21 @@ jobs:
       # retiré de cette liste le 2026-09-04 (famille 2 de #14615) :
       # l'herméticité est démontrée (455/455 sans clé, #12837). Les raisons
       # restantes sont vérifiées firsthand (2026-08-14, po-2024) :
-      # CI-EXCLUDED: scripts/quantconnect/tests — deps yfinance + fichiers de données externes, non hermétique sur runner nu
       # scripts/secrets/tests re-câblé (famille 4 de #14615, 2026-09-04) :
       # dir entier dans le run ci-dessus. Les 2 modules gitleaks
       # (test_gitleaks_qwen_rule.py, test_gitleaks_10143_classes.py) y sont
       # collectés mais SKIP sans binaire gitleaks (docstring : skip si absent,
       # gate autoritaire = secret-scan.yml qui les exécute avec le binaire).
+      # scripts/quantconnect/tests re-cable (famille 3 de #14615) :
+      # 254 tests / 9 modules, mesures firsthand le 2026-09-05 sur l'arbre de
+      # fusion (ai-01) -- 253 verts + 1 skip, 3,9 s. Le skip est un garde de
+      # donnee (spy.zip sous lean-workspace gitignore), pas un echec.
+      # Le motif d'exclusion d'origine (deps yfinance + fichiers externes) ne
+      # tient plus : yfinance est ABSENT de l'env de mesure et la suite passe
+      # quand meme -- test_yfinance_to_lean_daily.py documente lui-meme que le
+      # fetch est paresseux et non exerce. Deps reelles : numpy + pandas,
+      # presentes dans ce job (arch les tire, et scripts/tests/ml/
+      # test_garch_baseline.py les importe deja sous un run vert).
       # CI-EXCLUDED: GradeBookApp — deps openpyxl/rapidfuzz/unidecode non installées dans ce job ; PII grading hors CI publique
 
       - name: Secrets tests collection floor (148)
