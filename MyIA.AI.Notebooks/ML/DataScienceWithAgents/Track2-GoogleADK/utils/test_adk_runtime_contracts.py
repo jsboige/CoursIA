@@ -69,6 +69,8 @@ class ScriptedLlm(BaseLlm):
         kind, payload = _SCRIPT.pop(0)
         if kind == "call":
             yield _tool_call_response(payload[0], payload[1])
+        elif kind == "usage":
+            yield _text_response_with_usage(payload[0], payload[1], payload[2])
         elif kind == "sleep":
             # Dort PUIS repond : sous mutation du budget de tour (wait_for
             # neutralise), le tour finit normalement et le test budget
@@ -84,6 +86,20 @@ class ScriptedLlm(BaseLlm):
 def _text_response(text):
     return LlmResponse(content=types.Content(
         role="model", parts=[types.Part(text=text)]))
+
+
+def _text_response_with_usage(text, prompt, completion):
+    # LlmResponse/Event portent GenerateContentResponseUsageMetadata (champ
+    # candidates_token_count), pas types.UsageMetadata (response_token_count) :
+    # le type attendu par le runtime ADK est le premier.
+    return LlmResponse(
+        content=types.Content(
+            role="model", parts=[types.Part(text=text)]),
+        usage_metadata=types.GenerateContentResponseUsageMetadata(
+            prompt_token_count=prompt,
+            candidates_token_count=completion,
+            total_token_count=prompt + completion,
+        ))
 
 
 def _tool_call_response(name, args):
@@ -411,14 +427,17 @@ def test_c5_transfer_exists_in_adk_but_is_not_wired():
     assert "agents" not in turn_params
 
 
-def test_c6_no_token_budget_and_usage_not_observable():
-    # C6 (budgets de jetons / couts) -- MESURE : RunConfig ne porte aucun
-    # champ de budget de consommation (max_llm_calls borne des APPELS, pas
-    # les jetons ; grep du package : token_budget/cost_budget/usage_limit
-    # = 0). Cote tracabilite, ADK produit usage_metadata sur ses events
-    # (natif), mais AdkRunResult ne le remonte pas : la consommation
-    # n'est pas observable depuis le runtime du depot. Non porte ->
-    # grain ouvert.
+def test_c6_no_native_token_budget_but_usage_is_observable():
+    # C6 (budgets de jetons / couts) -- TRACABILITE PORTEE (#14687) :
+    # AdkRunResult remonte desormais l'usage LLM de chaque appel
+    # (usage_turns / usage_total), et ConversationRunner cumule par
+    # conversation. La MESURE initiale reste vraie cote budget NATIF :
+    # RunConfig ne porte toujours aucun champ de consommation (max_llm_calls
+    # borne des APPELS, pas les jetons) -- le budget au-dessus d'ADK est
+    # la jambe 2 du grain, pas suppose natif.
+    # Critere 4 -- ce test echoue au retrait de la collecte : sans le
+    # releve _event_usage dans consume_events, usage_turns est vide et
+    # chaque assert ci-dessous rouge (verifie par mutation locale).
     from dataclasses import fields
     from google.adk.runners import RunConfig
 
@@ -427,13 +446,48 @@ def test_c6_no_token_budget_and_usage_not_observable():
         if "token" in f.lower() or "cost" in f.lower()
     ]
     assert run_config_budget_fields == [], (
-        f"RunConfig porte un budget de consommation ({run_config_budget_fields}) "
-        ": ce test documentait le non-portage C6, il doit etre inverse")
+        f"RunConfig porte un budget natif ({run_config_budget_fields}) : "
+        "la jambe budget doit documenter ce changement de fond")
+
     result_fields = {f.name for f in fields(AdkRunResult)}
-    assert not any(
-        "usage" in f or "token" in f or "cost" in f for f in result_fields), (
-        "AdkRunResult remonte la consommation : la tracabilite C6 est "
-        "portee, ce test doit etre inverse par le grain qui porte le contrat")
+    assert "usage_turns" in result_fields, (
+        "AdkRunResult ne remonte plus l'usage : la tracabilite C6 est "
+        "retiree")
+
+    _SCRIPT.append(("usage", ("profil", 42, 17)))
+    result = _run_turn(_scripted_agent(tools=()), "question simple")
+    assert len(result.usage_turns) == 1, (
+        f"un appel LLM doit laisser exactement un snapshot d'usage, "
+        f"mesure : {result.usage_turns}")
+    assert result.usage_turns[0] == adk_runtime.AdkUsage(
+        prompt_tokens=42, completion_tokens=17, total_tokens=59)
+    assert result.usage_total == adk_runtime.AdkUsage(
+        prompt_tokens=42, completion_tokens=17, total_tokens=59)
+
+
+def test_c6_usage_accumulates_across_conversation_turns():
+    # C6, versant ConversationRunner : chaque tour rend son usage (contrat
+    # du tour) ET la conversation cumule (profil de consommation multi-tours).
+    # Critere 4 -- au retrait de la collecte d'usage dans
+    # ConversationRunner.turn, conversation.usage_total reste nul -> rouge.
+    from utils.adk_conversation import ConversationRunner
+
+    async def scenario():
+        agent = _scripted_agent(tools=())
+        async with ConversationRunner(agent) as conversation:
+            tour1 = await conversation.turn("premier tour")
+            tour2 = await conversation.turn("second tour")
+            return conversation, tour1, tour2
+
+    _SCRIPT.append(("usage", ("reponse un", 40, 10)))
+    _SCRIPT.append(("usage", ("reponse deux", 60, 25)))
+    conversation, tour1, tour2 = asyncio.run(scenario())
+    assert tour1.usage_turns and tour2.usage_turns, (
+        "chaque tour doit rendre son propre snapshot d'usage")
+    assert conversation.usage_total == adk_runtime.AdkUsage(
+        prompt_tokens=100, completion_tokens=35, total_tokens=135), (
+        f"le cumul conversation doit sommer les tours, mesure : "
+        f"{conversation.usage_total}")
 
 
 def test_c7_roles_are_declared_and_required():

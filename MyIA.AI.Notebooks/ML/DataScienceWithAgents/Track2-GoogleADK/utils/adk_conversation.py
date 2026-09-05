@@ -22,7 +22,14 @@ from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.genai import types
 
-from utils.adk_runtime import APP_NAME, AdkRunResult, AdkRuntimeUnavailable, _part_text
+from utils.adk_runtime import (
+    APP_NAME,
+    AdkRunResult,
+    AdkRuntimeUnavailable,
+    AdkUsage,
+    _event_usage,
+    _part_text,
+)
 
 
 class ConversationRunner:
@@ -54,6 +61,15 @@ class ConversationRunner:
             session_service=self.session_service,
         )
         self._started = False
+        self.turn_usages: list[AdkUsage] = []
+
+    @property
+    def usage_total(self) -> AdkUsage:
+        """Consommation cumulee de tous les tours joues (tracabilite C6)."""
+        total = AdkUsage()
+        for usage in self.turn_usages:
+            total = total + usage
+        return total
 
     async def start(self) -> None:
         """Cree la session unique de la conversation (idempotent)."""
@@ -80,6 +96,7 @@ class ConversationRunner:
         response_text = ""
         tool_calls: list[str] = []
         tool_responses: list[str] = []
+        usage_turns: list[AdkUsage] = []
         event_errors: list[str] = []
         event_count = 0
 
@@ -99,6 +116,9 @@ class ConversationRunner:
                     for response in event.get_function_responses()
                     if response.name
                 )
+                usage = _event_usage(event)
+                if usage is not None:
+                    usage_turns.append(usage)
                 error_code = getattr(event, "error_code", None)
                 error_message = getattr(event, "error_message", None)
                 if error_code or error_message:
@@ -134,11 +154,13 @@ class ConversationRunner:
                 + detail
             )
 
+        self.turn_usages.extend(usage_turns)
         return AdkRunResult(
             response_text=response_text,
             event_count=event_count,
             tool_calls=tuple(tool_calls),
             tool_responses=tuple(tool_responses),
+            usage_turns=tuple(usage_turns),
         )
 
     async def history(self) -> list[types.Event]:
