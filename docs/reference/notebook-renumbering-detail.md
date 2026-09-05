@@ -2,9 +2,9 @@
 
 Detail de [`.claude/rules/notebook-accretion-numbering.md`](../../.claude/rules/notebook-accretion-numbering.md). La regle porte le geste ; ce fichier porte les precedents qui l'ont produite, mesures le 2026-09-04.
 
-## 1. Pourquoi une regle : le geste a ete re-derive quinze fois
+## 1. Pourquoi une regle : le geste a ete re-derive dix-neuf fois
 
-Le geste `renum()` / `reclass()` a une histoire dense et aucune trace de protocole. Chaque issue a re-decouvert, seule, les memes questions : quel est le parent pedagogique, quels referents cassent, dans quel ordre renommer.
+Le geste `renum()` / `reclass()` a une histoire dense et aucune trace de protocole. Chaque issue a re-decouvert, seule, les memes questions : quel est le parent pedagogique, quels referents cassent, dans quel ordre renommer. Le tableau ci-dessous en porte **dix-neuf** : seize verdicts rendus, trois issues encore ouvertes (#13755, #13769, #14545) ou la question est posee sans etre tranchee.
 
 | Issue | Famille | Verdict |
 |---|---|---|
