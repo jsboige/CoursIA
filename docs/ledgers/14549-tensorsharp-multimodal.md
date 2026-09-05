@@ -103,6 +103,30 @@ Re-revue adjoint 04:09:28Z a tranché 2 PASS (F1 timestamps levés, INTRINSIC re
 3. **F2 borné comme observation non causale** : le `selection` réécrit est cohérent en prose (mention du flag) avec les autres findings `--gpu-device`, mais aucun probe A/B/log tracké ne démontre que `--gpu-device 1` entraîne une occupation device (la run unique ne permet pas d'écarter une corrélation accidentelle avec l'état de la machine) — l'aide livrée au head précédent documentait ce flag pour `ggml_vulkan`. Le finding est conservé **comme observation à reconfirmer** par mesure directe (probe A/B sous `ggml_cuda` avec/sans `--gpu-device 1` sur même machine, RTX 3090 cible, voir issue de suivi #14707), pas comme claim établi. `nvidia-smi` montrant 625 MiB sur l'index 1 prouve une occupation, pas sa causalité.
 4. **Métadonnées PR/gates réparées** : `prev:` changé vers PR mergée de la lane (cible valide `#14469` = MERGED c.256 PR `fix/14325-accent-stripping-gate`, grain `LIGHT/guard` predecessor correct). Body public retiré du wrapper `## pr_body`/fence/instruction `gh pr edit`.
 
+## c.265 — Retrait total des artefacts de mesure (correction du compte-rendu c.259)
+
+Le head livré de la PR #14697 **ne conserve aucun** des trois fichiers que la
+section c.259 ci-dessus annonce conserver : `mesure_vram_initial.json`,
+`mesure_inference_text.json` et le log brut `inf_test_run.log` sont absents de
+l'arbre du head `be9fa2a35` **et** de `main` (les six chemins ont été interrogés
+par API au moment du merge, tous absents). La ligne « **Conservation** des 2
+mesures JSON **corrigées** … + du log brut » de c.259 est donc le compte-rendu
+d'un **état intermédiaire**, pas de la livraison. Elle est laissée telle quelle
+comme trace du cycle c.259 ; la présente section corrige l'état livré.
+
+**Ce que cela change pour le lecteur.** Aucun artefact de mesure n'accompagne ce
+ledger. Les deux mesures Texte citées en Acceptance #1 et #2 ne sont plus étayées
+par un fichier committé : elles restent des **observations rapportées**, non
+reproductibles depuis le dépôt. Un auditeur qui viendrait chercher les JSON pour
+recalculer ne les trouvera pas — c'est la conséquence assumée du retrait, et c'est
+ce que cette section rend lisible plutôt que de la laisser se découvrir.
+
+**Ce que cela ne change pas.** Les verdicts par axe (`NON MESURÉ` pour Image et
+Vidéo, `SOTA-OK` binaire pour Texte) et la borne stricte non-causale sur
+`--gpu-device` sont inchangés : aucun ne dépendait des fichiers retirés. Le probe
+A/B qui trancherait le mécanisme GPU (F2 de la review Hermes) reste porté par
+l'issue de suivi **#14707**, non par ce ledger.
+
 ## Liens verbatims
 
 - Issue : https://github.com/jsboige/CoursIA/issues/14549
