@@ -961,7 +961,7 @@ project:
     - "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-Csharp.ipynb"
     - "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata.ipynb"
     - "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics.ipynb"
-    - "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-17-Empirical-Algorithm-Selection.ipynb"
+    - "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb"
     - "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed-Csharp.ipynb"
     - "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb"
     - "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-3-Informed-Csharp.ipynb"
