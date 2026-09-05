@@ -39,3 +39,4 @@ public class DisplayLogger : ILogger, ILoggerFactory
 	public ILogger CreateLogger(string categoryName) => this;
 
 	public void AddProvider(ILoggerProvider provider) => throw new NotSupportedException();
+}

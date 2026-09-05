@@ -105,3 +105,4 @@ public class AutoInvokeSKAgentsNotebookUpdater(string notebookPath, ILogger logg
 			}
 		}
 	}
+}
