@@ -188,8 +188,8 @@ RULE_SEVERITY = {
 # que la règle ne tire pas dessus. Inversement, si la liste grossit sans
 # selfcheck, c'est le pattern d'une règle qui sous-compte en silence.
 _CJK_ALLOWLIST: set[tuple[str, int]] = {
-    ("MyIA.AI.Notebooks/GenAI/PostTraining/PT_11b_multiseed_qwen35_4x100.ipynb", 5),
-    ("MyIA.AI.Notebooks/GenAI/PostTraining/PT_11b_multiseed_qwen35_4x100.ipynb", 19),
+    ("MyIA.AI.Notebooks/GenAI/PostTraining/PT_11d_multiseed_qwen35_4x100.ipynb", 5),
+    ("MyIA.AI.Notebooks/GenAI/PostTraining/PT_11d_multiseed_qwen35_4x100.ipynb", 19),
     ("MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-6-MiniMax-H3-Architecture-Licensing.ipynb", 1),
 }
 
