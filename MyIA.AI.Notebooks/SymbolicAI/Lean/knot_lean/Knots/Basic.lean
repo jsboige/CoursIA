@@ -159,14 +159,18 @@ def trefoil : Knot where
 
 /- Le noeud en huit (4_1), le noeud le plus simple avec un nombre de croisements de 4.
 
-Code PD issu de KnotInfo : [[1,5,2,4],[3,8,4,2],[5,1,6,7],[7,3,8,6]]
+Code PD dérivé du code DT [4, 6, 8, 2] de KnotInfo : [[8,3,1,4],[2,5,3,6],[4,7,5,8],[6,1,7,2]].
+Chaque arête {1,..,8} apparaît exactement une fois en dessous et une fois en
+dessus, et le tracé des arêtes forme une boucle unique. Le câblage précédent
+([[1,5,2,4],[3,8,4,2],[5,1,6,7],[7,3,8,6]]) était en fait un entrelacs à
+deux composantes, pas un noeud.
 -/
 def figureEightDiagram : KnotDiagram where
   crossings := [
-    ⟨1, 5, 2, 4⟩,
-    ⟨3, 8, 4, 2⟩,
-    ⟨5, 1, 6, 7⟩,
-    ⟨7, 3, 8, 6⟩
+    ⟨8, 3, 1, 4⟩,
+    ⟨2, 5, 3, 6⟩,
+    ⟨4, 7, 5, 8⟩,
+    ⟨6, 1, 7, 2⟩
   ]
   numEdges := 8
 

@@ -22,8 +22,13 @@ Defect classes and their mechanical checks:
                                signature of the wave (#14161 measured 30%,
                                #14166 20%, #14164 31%)
   Class (c) accents must survive enrichment
-    HIGH  DIACRITICS_LOSS      accented characters drop en masse (head < 40%
-                               of base; #14166 measured 99 -> 1, i.e. -99%)
+    HIGH  DIACRITICS_LOSS      a markdown line survives enrichment only as
+                               its de-accented skeleton (#14166 measured
+                               99 -> 1 chars, i.e. -99%); content REMOVED by
+                               the PR is exempt (#14795: splitting 15
+                               accented cells out of GT-04 collapsed the
+                               file total while every surviving line kept
+                               its accents)
   Class (d) inline arithmetic must be true
     HIGH  ARITH_WRONG          "A x B = C" stated in markdown is false
   Class (e) hrefs must resolve at head
@@ -79,6 +84,7 @@ import argparse
 import json
 import re
 import sys
+import unicodedata
 from pathlib import Path
 from urllib.parse import unquote
 
@@ -269,29 +275,55 @@ def scan_anchors(cells: list[dict]) -> list[dict]:
     return findings
 
 
+def _deaccent(text: str) -> str:
+    return "".join(ch for ch in unicodedata.normalize("NFD", text.lower())
+                   if not unicodedata.combining(ch))
+
+
 def scan_diacritics(head_cells: list[dict], base_cells: list[dict] | None) -> list[dict]:
-    """Class (c): accented characters must not vanish during enrichment."""
+    """Class (c): surviving markdown lines must keep their accents.
+
+    A line REMOVED by the PR is content removal, not de-accentation (#14795:
+    splitting 15 accented cells out of GT-04 collapsed the total 375 -> 96
+    while every surviving line kept its accents). The loss signature is a
+    line that survives -- same de-accented skeleton -- with all its accents
+    gone, the #14166 enrich-wave defect.
+    """
     if base_cells is None:
         return []
-    base = sum(len(_ACCENT_RE.findall(_src(c))) for _, c in _md_cells(base_cells))
-    head = sum(len(_ACCENT_RE.findall(_src(c))) for _, c in _md_cells(head_cells))
-    if base < 10:  # too few to speak of a loss
+    skeleton_accents: dict[str, list[int]] = {}
+    for _, c in _md_cells(head_cells):
+        for ln in _src(c).splitlines():
+            s = _deaccent(ln.strip())
+            if len(s) >= 15:
+                skeleton_accents.setdefault(s, []).append(
+                    len(_ACCENT_RE.findall(ln)))
+    lost_lines = 0
+    lost_chars = 0
+    for _, c in _md_cells(base_cells):
+        for ln in _src(c).splitlines():
+            accents = len(_ACCENT_RE.findall(ln))
+            if accents < 3:  # too few for one line to speak of a loss
+                continue
+            s = _deaccent(ln.strip())
+            if len(s) < 15:
+                continue
+            counts = skeleton_accents.get(s)
+            if counts and max(counts) == 0:
+                lost_lines += 1
+                lost_chars += accents
+    if not lost_lines:
         return []
-    ratio = head / base
-    if ratio < 0.4:
-        return [{
-            "cell_index": 0, "category": "DIACRITICS_LOSS", "severity": "HIGH",
-            "evidence": f"{base} -> {head} accented chars",
-            "message": f"accented characters collapse from {base} to {head} "
-                       f"({ratio:.0%}) -- generated text left the pipeline de-accented",
-        }]
-    if ratio < 0.7:
-        return [{
-            "cell_index": 0, "category": "DIACRITICS_LOSS", "severity": "MED",
-            "evidence": f"{base} -> {head} accented chars",
-            "message": f"accented characters drop from {base} to {head} ({ratio:.0%})",
-        }]
-    return []
+    # HIGH from 10 lost chars (2-3 typical md lines) or 3 lines; the wave
+    # incident #14166 measured 99 lost chars.
+    severity = "HIGH" if (lost_lines >= 3 or lost_chars >= 10) else "MED"
+    return [{
+        "cell_index": 0, "category": "DIACRITICS_LOSS", "severity": severity,
+        "evidence": f"{lost_lines} surviving line(s) lost {lost_chars} accented char(s)",
+        "message": f"{lost_lines} markdown line(s) survive only as de-accented "
+                   f"rewrites ({lost_chars} accented chars lost) -- content "
+                   f"removed by the PR is exempt, only surviving lines count",
+    }]
 
 
 def scan_survival(head_cells: list[dict], base_cells: list[dict] | None) -> list[dict]:

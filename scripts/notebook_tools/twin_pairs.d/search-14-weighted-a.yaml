@@ -3,6 +3,46 @@
   python: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03d-WeightedAstar.ipynb
   csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03d-WeightedAstar-Csharp.ipynb
   parity_level: semantic
+  audits:
+  - date: '2026-08-04'
+    by: myia-po-2023:CoursIA
+    python_sha: b97a441e1192d137bf999626a8685d071fc2056f
+    csharp_sha: dd94da21212e5d8179c62068e111d4caa6ced713
+  - date: "2026-09-03"
+    by: myia-po-2025:CoursIA
+    python_sha: b97a441e1192d137bf999626a8685d071fc2056f
+    csharp_sha: dd94da21212e5d8179c62068e111d4caa6ced713
+    content_python_sha: 221fd1165daaeac18598289e3b3fd671c17384c1e9883c4e6da7742fd9fdcfe0
+    content_csharp_sha: 104d79405ba16bc9e835775426e35749ea3c92df89a1af2bdc1f0ffacca2aee8
+  - date: "2026-09-03"
+    by: myia-po-2025:CoursIA
+    python_sha: 4a28fcebcba7614ddafcbb583c688b419679f67c
+    csharp_sha: c60245250544f495d06f427d6b8727262ea38f96
+  - date: "2026-09-03"
+    by: myia-po-2025:CoursIA
+    python_sha: eef5ec67d2df4b39690dca22672713be126b6e44
+    csharp_sha: a9ef21a86e16e1cec70ce57fa88b5611088a94ce
+    content_python_sha: 09201d6e74f168f16d82f4428b73dd8235f46375697ec05f915cb6daa99339a6
+    content_csharp_sha: 615080ff5df82b66e17531e7b5fdbc013e28eac20e26287ac076c866e231cc1e
+  - date: "2026-09-04"
+    by: myia-po-2023:CoursIA (fix #14624 lot Search)
+    python_sha: 9d29e8c15466c2cda03889430e9a48ceea0ea3f3
+    csharp_sha: 51efd5127e848849716ba9040f3cc4c7b241a091
+    content_python_sha: ad321a809d74c7aaa06fb05097e8bf4a74b7490aab87f1bc1f665e8d0ddd0f24
+    content_csharp_sha: 0d85ba0f993ed1da39d01e69cc16a48e4f76ad682e9df1a207f09f0b14cbfd09
+  - date: "2026-09-05"
+    by: myia-po-2025:CoursIA
+    python_sha: d4ed999f4ef0717cd03cb7e12d6d0f4aa8c94dbf
+    csharp_sha: 31bfe385f948f0f69d3cda54067f73696607447d
+    content_python_sha: 2adfd99c41d905a67d2093e6450151bcd2cb8cd373e0f5140676740c61626aff
+    content_csharp_sha: d478f19b813a60e9da0fadd408ccb81e5055cec5f4108bd13cdb26350986349c
+  - date: "2026-09-07"
+    by: myia-po-2026:CoursIA
+    python_sha: ec9d88aaa9c3ed3eb3b0f12534e0c8b0d4d06636
+    csharp_sha: 31bfe385f948f0f69d3cda54067f73696607447d
+    content_python_sha: 9da03367b8539cc3ab4f15db67dacc44673b998593db12ff0347219536ce7592
+    content_csharp_sha: d478f19b813a60e9da0fadd408ccb81e5055cec5f4108bd13cdb26350986349c
+    reason: "PR #14824 (issue) : Search-03d c0 une ligne reconciliee (A* optimal exige h consistante pour la variante sans re-ouverture). Markdown-only, outputs precedents valides. C# 03d inchange : ses phrasings c3/c4 ('W=1 -> A* optimal, admissible') signales en residuel dans le body PR, hors enumeration de l'issue."
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: 'Python = heapq (min-heap) + itertools.product + random.Random(seed), from-scratch. C# = PriorityQueue<T, double> (.NET 6+) + Random(seed), from-scratch. Verdict SOTA-OK (flip 2026-08-22, c.1301+335, myia-po-2025:CoursIA-2, issue #10382) : mislabel corrigige -- la reason anterieure concluat ''pedagogique from-scratch, pas de solveur tiers applicable'' (Weighted A* = algorithme pedagogique), qui contredit RECOVERABLE-LOCAL. Verifie firsthand : 3 imports Python / 1 using C#, aucun moteur tiers. Le balayage W sur f(n) = g(n) + W*h(n) est le sujet meme du chapitre ; PriorityQueue/heapq sont deja les primitives canoniques de leurs ecosystemes respectifs. From-scratch assumé des deux cotes, precedent GT-15 (PR #12312). parity_level preserve.'
   known_differences:

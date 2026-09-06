@@ -5,6 +5,171 @@
   parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Pont SOTA rajoute cote C# (mandat #10382) : nashpy (lib SOTA du twin Python, `nash.Game(A,B).support_enumeration()`) invoque depuis le notebook C# via CLI Process.Start (cellule 6.3) sur les 5 jeux canoniques (PD, MP, BoS, RPS, Asym 3x2), en plus du pont Gambit CLI deja branche (cellule 6.2, PR #10442). Axes binding (#10459) : CLI pur (axe 3) -- AUCUN binding .NET/NuGet (axe 1), AUCUN P/Invoke (axe 2), AUCUNE IKVM (axe 4), AUCUN PythonNet (axe 5). Axe 6 : nashpy couvre le meme role que le SupportEnumeration from-scratch (enumeration de supports pour les NE purs et mixtes) -> le pont est desormais wire. Comparaison numerique (cellule 6.3 du C#) : 5/5 jeux concordent (ecart max 3.3e-07, exploitabilite = 0 partout). RPS : nashpy retrouve l'equilibre uniforme (1/3,1/3,1/3) ; BoS : 3 NE (2 purs + mixte 2/3,1/3) ; Asym : 2 NE mixtes -- identiques aux resultats du twin Python (meme moteur nashpy). From-scratch BCL .NET conserve : le pont est EN PLUS jamais A LA PLACE. parity_level `semantic` conservee (cf. jumeaux part-2 et GT-4, precedent pont Gambit)."
+  audits:
+    - date: "2026-08-21"
+      by: myia-po-2025:CoursIA-2
+      python_sha: 33b1d7bc743d45430a959d8b55280f40285c25bd
+      csharp_sha: e3a20c5a309c90f173c5494dc7cd032aa77fe37c
+      content_python_sha: c08914b5
+      content_csharp_sha: 22b635165857585f64e21f62348f41f83e1d7193105a71e0efe5534b571aefbc
+      reason: "fix(gametheory,#9434) PR #11966 (c.1301+284 lane po-2025:CoursIA-2) drain de 13 claims artifactuels. Sur cette paire, GT-4 cell#33 : strip '(44 cellules, kernel Lean 4)' depuis la cross-reference GT-4b -- claim drifte (le GT-4b actuel = 44 cellules, le claim était 38). csharp_sha inchange. twin parity rebaseline (script check_twin_parity.py --update, leçon #11966)."
+    - date: "2026-08-18"
+      by: myia-po-2026:CoursIA
+      python_sha: c74eabd61cd743f4247dd1e29cc9a4f813859e74
+      csharp_sha: e3a20c5a309c90f173c5494dc7cd032aa77fe37c
+      reason: "parity_level basculee -> native-both (arbitrage ai-01 2026-08-16 #11200 Option A, parite de moteur lib-vs-lib) : Python atteint scipy.optimize.linprog (solveur LP) et nashpy (cell1 `import nashpy`), C# atteint les binaires Gambit 16.7.0 (gambit-lcp Lemke-Howson + gambit-enummixed via Process.Start, cell25-26) ainsi qu'un pont nashpy de cross-check (cell29). Les deux cotes executent des solveurs d'equilibre de production. NB : le hit 'IKVM' du detecteur etait un artefact (aucune occurrence IKVM dans le notebook C#, verifie par grep). Imports/invocations verifies firsthand sur les notebooks de la paire (re-grep origin/main 2026-08-18). bridge_verdict_reason inchangee."
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: c74eabd61cd743f4247dd1e29cc9a4f813859e74
+      reason: "Markdown-only cross-file count refresh (cell 33): the companion Lean notebook GT-4b-Lean-NashExistence grew from 38 to 44 cells since the cite was written (verified firsthand by parsing origin/main: ...GameTheory-04b-Lean-NashExistence.ipynb -> 44 cells). No re-exec, no output change. C# twin untouched (different from-scratch engine, no Lean refs)."
+      csharp_sha: 1c90b37ab7d6098dcf07d5d141875b752b315afd
+    - date: "2026-08-06"
+      by: myia-po-2023:CoursIA
+      python_sha: 996045df3048efc7eb27dfddbaade83973dc97d3
+      csharp_sha: 1c90b37ab7d6098dcf07d5d141875b752b315afd
+      content_python_sha: 8139ccafc461eb6f7c169096b457010d71a706605efc3419975f26e851146763
+      content_csharp_sha: 4021a70b18b0be17cf3cc9302549df5de68a6c1f5fecedf62517af96e45b6214
+    - date: "2026-08-06"
+      by: myia-po-2023:CoursIA
+      python_sha: c74eabd61cd743f4247dd1e29cc9a4f813859e74
+      csharp_sha: 1c90b37ab7d6098dcf07d5d141875b752b315afd
+      content_python_sha: 969f44d1f55a24c59159c97f0f28864264f46c865a08efae379ad67a270b6e26
+      content_csharp_sha: 4021a70b18b0be17cf3cc9302549df5de68a6c1f5fecedf62517af96e45b6214
+    - date: "2026-08-10"
+      by: myia-po-2025:CoursIA-2
+      python_sha: c74eabd61cd743f4247dd1e29cc9a4f813859e74
+      csharp_sha: dc0c6381a77c3b5efd488de2e0f57ce400300d7f
+      content_python_sha: 969f44d1f55a24c59159c97f0f28864264f46c865a08efae379ad67a270b6e26
+      content_csharp_sha: c88fd3c06bdb5b2d9688475998c6f03d763e4d06e64bdd0f43ec8514ee3feba2
+    - date: "2026-08-11"
+      by: myia-po-2023:CoursIA-2
+      python_sha: c74eabd61cd743f4247dd1e29cc9a4f813859e74
+      csharp_sha: 06cf0927eaa9d2178ee469f83ca3d14beacb63bb
+      content_python_sha: 969f44d1f55a24c59159c97f0f28864264f46c865a08efae379ad67a270b6e26
+      content_csharp_sha: 21ad5c350618ea280d1370ed2d11977d9ecf06336fd095ed4cd6376b76e7ba77
+    - date: "2026-08-11"
+      by: myia-po-2025:CoursIA-2
+      python_sha: c74eabd61cd743f4247dd1e29cc9a4f813859e74
+      csharp_sha: 86c8d1b7ce7893364cb8582bee19169374e703c0
+      content_python_sha: 969f44d1f55a24c59159c97f0f28864264f46c865a08efae379ad67a270b6e26
+      content_csharp_sha: b5fd643ce314b56010e53a3c04331fd7aa3011489f53bc69204aba24201bf9ae
+    - date: "2026-08-11"
+      by: myia-po-2025:CoursIA
+      python_sha: c74eabd61cd743f4247dd1e29cc9a4f813859e74
+      csharp_sha: 2871c0d104edfcefe09c81fe6813d202363355b1
+      content_python_sha: 969f44d1f55a24c59159c97f0f28864264f46c865a08efae379ad67a270b6e26
+      content_csharp_sha: b803515e8d69793be33344dd5161cf55d6dc9e9e63ac4e76aa0b71dd4d8930be
+    - date: "2026-08-15"
+      by: myia-po-2025:CoursIA-2
+      python_sha: c74eabd61cd743f4247dd1e29cc9a4f813859e74
+      csharp_sha: 978594ab1a745b688d5252255c7cd00764c97421
+      content_python_sha: 969f44d1f55a24c59159c97f0f28864264f46c865a08efae379ad67a270b6e26
+      content_csharp_sha: a047d74bf1c152b53728d3c41ceb3373b803406c75fe5bf033443e532cd26aea
+    - date: "2026-08-15"
+      by: myia-po-2026:CoursIA-2
+      python_sha: c74eabd61cd743f4247dd1e29cc9a4f813859e74
+      csharp_sha: e3a20c5a309c90f173c5494dc7cd032aa77fe37c
+      content_python_sha: 969f44d1f55a24c59159c97f0f28864264f46c865a08efae379ad67a270b6e26
+      content_csharp_sha: 22b635165857585f64e21f62348f41f83e1d7193105a71e0efe5534b571aefbc
+    - date: "2026-08-21"
+      by: myia-po-2023:CoursIA-2 (PR #12119, remedes unclosed_bold C# only, sibling PY sain verifie firsthand)
+      python_sha: c74eabd61cd743f4247dd1e29cc9a4f813859e74
+      csharp_sha: 20421c61c000b1413adebb2b2f9767e96739c02d
+      content_python_sha: 969f44d1f55a24c59159c97f0f28864264f46c865a08efae37d4b5c29a93780a43
+      content_csharp_sha: e74e65d334414bf687d6ca94e46d5785454a5c86b0f054e4f7dc251023f592d4
+    - date: "2026-08-22"
+      by: myia-po-2025:CoursIA-2
+      python_sha: 33b1d7bc743d45430a959d8b55280f40285c25bd
+      csharp_sha: 20421c61c000b1413adebb2b2f9767e96739c02d
+      content_python_sha: c08914b5059f2ee39c0f20eef5588a7a89f3aeb65464eebf853759a444d42695
+      content_csharp_sha: e74e65d334414bf687d6ca94e46d5785454a5c86b0f054e4f7dc251023f592d4
+    - date: "2026-08-23"
+      by: myia-po-2025:CoursIA-2
+      python_sha: 1cfa887d9ea9c2621cb2f2560180fafe3d8d2790
+      csharp_sha: a04765c9a019637d77c08d12f904c120bdffc056
+      content_python_sha: 42aa1545f29307006c0a3c068807135f144712fedcd584703fdfab01a84073c5
+      content_csharp_sha: 357ec8e601c47b0b774d61a3a4a0d0a32caefbe1d61d304e173b0426a3da83bd
+    - date: "2026-08-23"
+      by: myia-po-2025:CoursIA-2
+      python_sha: 9cfc381c198653371c7f73e0eabb1cd445385bae
+      csharp_sha: a04765c9a019637d77c08d12f904c120bdffc056
+      content_python_sha: 0842445107f298f94ecc4c30d700850d99042870355eecf4512943cd5bdad096
+      content_csharp_sha: 357ec8e601c47b0b774d61a3a4a0d0a32caefbe1d61d304e173b0426a3da83bd
+    - date: "2026-08-24"
+      by: myia-po-2023:CoursIA
+      python_sha: bdc142229b12b6bf7f3d52e5b4ed189d4ec03be7
+      csharp_sha: a04765c9a019637d77c08d12f904c120bdffc056
+      content_python_sha: d8bfff6dc29dd46b462027dc6a5f930ee5f179598ccc93c517f4a1e7b4c7fceb
+      content_csharp_sha: 357ec8e601c47b0b774d61a3a4a0d0a32caefbe1d61d304e173b0426a3da83bd
+    - date: "2026-08-28"
+      by: myia-po-2023:CoursIA
+      python_sha: 50679f9de88b70e8d1db15d3e838b8f766b4ba4a
+      csharp_sha: a04765c9a019637d77c08d12f904c120bdffc056
+      content_python_sha: 08cbf427b23de47f7758f4dafa71d772b335f5be91e07f87c889a2876d34352e
+      content_csharp_sha: 357ec8e601c47b0b774d61a3a4a0d0a32caefbe1d61d304e173b0426a3da83bd
+      reason: "fix(gt,#12682) PR #12737 review response: statut explicite de partage_nash comme HYPOTHESE DE MODELISATION (sigmoide non derivee de Nash 1950/Rubinstein 1982, kappa=6.0 parametre libre fixe arbitrairement) + ajout d'un sweep kappa (0,1,2,4,6,8,12,20) qui montre que le renversement (A desire plus et A capture plus) tient pour tout kappa>0 -- c'est une propriete du SIGNE de (D_B - D_A), pas du parametre. Le MECANISME est robuste ; l'INTENSITE du levier, non. Re-execution kernel python3 (kernel gametheory-wsl injoignable), 18/18 cellules code, 0 erreur, 0 forbidden pattern (C.1). C# twin inchange."
+    - date: "2026-08-28"
+      by: myia-po-2023:CoursIA
+      python_sha: 45c99c2f0df6f3d10730809eacc12af822490b9c
+      csharp_sha: a04765c9a019637d77c08d12f904c120bdffc056
+      content_python_sha: 1485f4b096fd430419a5891c719712c621f8943d36bffb4a3a7465eb6e771252
+      content_csharp_sha: 357ec8e601c47b0b774d61a3a4a0d0a32caefbe1d61d304e173b0426a3da83bd
+      reason: "fix(gt,#13287) PR #13287 review response (ai-01 CHANGES_REQUESTED 2026-08-28T05:03Z) : cellule In[16] f-string `donne un levier \"prononce\" (0.746)` portait des guillemets doubles NON escapes dans le champ de substitution f-string -- SyntaxError PEP 701, le notebook ne s executait PAS de bout en bout (papermill gate FAIL In[16]). STOP & REPAIR (secrets-hygiene regle 6) : JAMAIS hand-editer une sortie de cellule commitee. Fix source : remplacer \"prononce\" par guillemets francais «prononcé» (immune a l escape), re-executer la cellule, committer les outputs FRAIS. Verification : papermill kernel python3 SUCCESS 45/45 (kernel gametheory-wsl injoignable, comme note dans le PR body), 18/18 cellules code avec execution_count et outputs reels, 0 forbidden pattern (C.1), 0 SyntaxError. C# twin inchange (cote reseau bridge nashpy/Gambit touche par PR parente #12737, sans impact sur la cellule fixee)."
+    - date: "2026-08-28"
+      by: myia-ai-01:CoursIA
+      python_sha: 3e1bc6be7547fb86063d32386d331ea2db6ecf47
+      csharp_sha: a04765c9a019637d77c08d12f904c120bdffc056
+      content_python_sha: 6ffbd8853222175d6e87be0e722dbf0d96c1e523ba6881d6d5e478c16af5f759
+      content_csharp_sha: 357ec8e601c47b0b774d61a3a4a0d0a32caefbe1d61d304e173b0426a3da83bd
+      reason: "Re-attestation APRES le fix demande par ma propre CHANGES_REQUESTED (#13287, 2026-08-28T05:03Z). Defaut de SEQUENCE, pas de substance : po-2023 avait atteste au commit 78a8cada3 (contenu 1485f4b0), puis le notebook a bouge deux fois -- 7adc2693d (statut d hypothese + sensibilite kappa) et 541b287a7 (le fix f-string que ma review exigeait). L attestation est donc passee AVANT les editions alors que le gate impose --update EN DERNIER (#8957), et l edition qui l a invalidee est celle que j ai demandee : le rouge twin-parity est une consequence de ma review, pas un manquement de la lane. Audit firsthand refait avant d attester : le jumeau C# ne porte AUCUN pendant de la section editee (0 occurrence de partage_nash / partage de Nash / Nash bargaining / hypoth / axiomatique ; les 6 hits 'Sen' sont des artefacts de sous-chaine -- sens, utilisent, representation, essentiel). La section bargaining est Python-only, donc re-attester ne consacre aucune asymetrie de parite. Notebook re-execute firsthand : papermill --kernel python3, 45/45 cellules, RC=0 ; 18/18 cellules code compilent ; sortie committee de In[16] byte-identique a la sortie fraiche. csharp_sha inchange."
+    - date: "2026-08-29"
+      by: myia-po-2023:CoursIA-2
+      python_sha: 812d8bf14ea8f78d3bc8902ff31c7184a5e9d669
+      csharp_sha: a04765c9a019637d77c08d12f904c120bdffc056
+      content_python_sha: 8bc3cf8e09e1a2cfb0ab2455d661185a33850073acc2a6b8c202b4a22d69f4b8
+      content_csharp_sha: 357ec8e601c47b0b774d61a3a4a0d0a32caefbe1d61d304e173b0426a3da83bd
+      reason: "feat(gt,#13313) robustesse de la refutation au generateur de poids (reserve Hermes sur #12737), branche empilee sur feature/12682-gt4-desir : partage_nash += controle poids_constants (degrade, xi_B=0.5), nouvelle cellule 3 generateurs (endogene sigmoid / exogene ratio z / constant) + sensibilite 200 instances + verdict markdown ROBUSTE (endo 199/199, exo 199/199, constant 0/199). Re-exec papermill end-to-end kernel python3 local (pattern #13287, kernel WSL declare non requis : imports numpy/scipy/matplotlib/nashpy seulement). csharp inchange. Verdict ROBUSTE -> item ARTEFACT (#12737bis) non declenche."
+    - date: "2026-08-29"
+      by: myia-po-2023:CoursIA-2
+      python_sha: fd7ecbbf977e83681bb3301934ae2355e0b70eae
+      csharp_sha: a04765c9a019637d77c08d12f904c120bdffc056
+      content_python_sha: 7b85ca74e22c73acd3e1204fb04cfb149690e4b0544200b54f6247c4098ad377
+      content_csharp_sha: 357ec8e601c47b0b774d61a3a4a0d0a32caefbe1d61d304e173b0426a3da83bd
+      reason: "Resolution du conflit #12737 vs main (union #13287 x #13313) : merge origin/main dans feature/12682-gt4-desir, cellule def partage_nash fusionnee (docstring statut HYPOTHESE de main + controle poids_constants de la branche), 2 cellules main (statut + kappa) + 2 cellules branche (robustesse + verdict ROBUSTE) a leurs positions respectives. Re-exec papermill kernel python3 47/47, 0 erreur. csharp_sha inchange -- la section bargaining reste Python-only (asymetrie structurelle documentee en known_differences)."
+    - date: "2026-08-30"
+      by: myia-po-2026:CoursIA
+      python_sha: 5c433b728f41968b7dfacd9d40e0bae0112e7893
+      csharp_sha: a04765c9a019637d77c08d12f904c120bdffc056
+      content_python_sha: 8d0951dbb91568878cc8c25ed738ab5e30a219cbcb0bbaa867d4a930e20bccf3
+      content_csharp_sha: 357ec8e601c47b0b774d61a3a4a0d0a32caefbe1d61d304e173b0426a3da83bd
+      reason: "Cross-attestation de la lane non porteuse po-2026 sur l etat remote pre-rebase (blob 5c433b728f = head de branche au moment de l attestation, verifie par rev-parse lors du merge de reconciliation). Entree recuperee du push b02bbf9db5 et conservee ; l attestation du blob COURANT post-rebase reste audits[-1] ci-dessous."
+    - date: "2026-08-30"
+      by: myia-po-2023:CoursIA-2
+      python_sha: 06ba84991c5814c42e072b44af017e14b7d21837
+      csharp_sha: a04765c9a019637d77c08d12f904c120bdffc056
+      content_python_sha: 67df85866f86751f8721801b46939040c4cf7b129e0b66572ee742da5fb23020
+      content_csharp_sha: 357ec8e601c47b0b774d61a3a4a0d0a32caefbe1d61d304e173b0426a3da83bd
+      reason: "Rebase #13385 sur main post-merge #12737 (merge origin/main, precedent audit 2026-08-29) : union deliberee -- substrat 3 generateurs + verdict conserves, doublon trois-bras de la branche elimine, apport unique = couche partage_nash_dehors(o_A, o_B, gamma) deleguant au substrat partage_nash_exogene (equivalence gamma=1 verifiee True par execution), differenciateur v_affection + balayage gamma transplantes (appels renommes), verdict fusionne en 4 points. 2 commits enabling EOL #13493 prealables (renormalisation byte-identique a main, debloque le merge local). Re-exec papermill kernel python3 50/50, 0 erreur, 0 exec_count null, nombres du verdict verifies par execution (0.746/0.683/0.823/0.500, 199/199, gamma 0.595->0.998). Merge de reconciliation avec le push remote (de6a2f0e86 + b02bbf9db5) : notebook resolu cote ours (blob execute inchange, verifie par hash-object), entree cross-lane po-2026 conservee, prose known_differences corrigee. C# twin inchange."
+    - date: "2026-09-06"
+      by: myia-po-2024:CoursIA
+      python_sha: cd927d5c3a12c602d68ad564f085da5029224e72
+      csharp_sha: 8b17c74387ce6e84a3d57a224ed479326eb4762f
+      content_python_sha: d82a9ef07e5918438d093bdc4f1493b9662c485936cc2516b0ba3bc4c33ee8a8
+      content_csharp_sha: 357ec8e601c47b0b774d61a3a4a0d0a32caefbe1d61d304e173b0426a3da83bd
+      reason: "Re-attestation apres PR #14854 (#14817, stubs d'exercice ne rendent plus une verite en dur) : cote Python corrige, cote C# non touche. Audit firsthand post-fix : detect_stub_truth_returns 0/0 sur les deux jumeaux ; contre-verification grep direct du C# : 0 literal True dans une cellule stub. Defaut initial unilateral Python ; known_differences et parity_level inchanges."
+    - date: "2026-09-06"
+      by: myia-po-2024:CoursIA-2
+      python_sha: b6c02628abcbd7a0edb33a59cab8a3376469f09c
+      csharp_sha: 8b17c74387ce6e84a3d57a224ed479326eb4762f
+      content_python_sha: 79476cc60fdc34b991ac19487ea9536baf23fc56c03444c89b98ea8628a6f741
+      content_csharp_sha: 357ec8e601c47b0b774d61a3a4a0d0a32caefbe1d61d304e173b0426a3da83bd
+      reason: "PR #14795 point 1 (dispatch ai-01) : retrait de la section 8 marchandage asymetrique (cellules 29-43) du notebook Python GT-04, matiere relocalisee dans le sibling dedie GameTheory-04d-Marchandage-Asymetrique.ipynb. Twin C# non touche (moteur Nash/Gambit, ne porte jamais la section marchandage Python-only, cf known_differences). Re-baseline cote Python uniquement ; accents de la section verifies transferees (291 -> GT-04d=310), aucun texte de-accentre ; no-op sur les 17 autres paires."
+    - date: "2026-09-06"
+      by: myia-po-2023:CoursIA
+      python_sha: ac97d6ad61147279c61e641393a89c53b86bfce5
+      csharp_sha: 8b17c74387ce6e84a3d57a224ed479326eb4762f
+      content_python_sha: 2f7ed69916a2c43e5bcd35e81343fe8f15ef04e65e88aec426f370edf53b57e1
+      content_csharp_sha: 357ec8e601c47b0b774d61a3a4a0d0a32caefbe1d61d304e173b0426a3da83bd
   known_differences:
     - "2026-08-30 : PR #13385 -- section robustesse de la refutation aux poids endogenes (3 familles de jeux + differenciateur + verdict ROBUSTE, ~331 lignes), cote Python uniquement. Le jumeau C# n a pas de pendant de cette section (verifie firsthand : 0 occurrence d endogen/ROBUSTE/EndogenWeight dans le notebook C#). Attestation croisee posee EN DERNIER par une lane NON porteuse (myia-po-2026:CoursIA, la lane porteuse etant po-2023:CoursIA-2), apres l edition complete du twin Python -- l attestation croisee est la norme sur ce registre."
     - "2026-08-30 : PR #13385 rebase post-#12737 -- couche partage_nash_dehors (pente gamma du capital exterieur, miroir de kappa) + differenciateur structurel v_affection + balayage gamma, cote Python uniquement (section marchandage Python-only existante). Le bloc trois-generateurs et le verdict de substrat restent tels que merges via #12737. csharp_sha inchange."
