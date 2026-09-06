@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# ARCHIVED: 2026-02 (consolidation genai-stack) -- see scripts/genai-stack/_archive/ARCHIVE_README.md
+# DISPOSITION: superseded | Successor: genai.py auth reconstruct-env | Reason: Remplace par core/auth_manager.py reconstruct-env
+#
 """
 reconstruct_env.py - Script de reconstruction du fichier .env complet pour ComfyUI-Login
 

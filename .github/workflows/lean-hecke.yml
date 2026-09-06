@@ -1,0 +1,74 @@
+name: Lean CI (hecke_lean)
+
+# CI for hecke_lean (SymbolicAI/Lean/hecke_lean).
+# Classical Hecke operators on the upper half-plane — pedagogical port of
+# anthropics/fermats-last-theorem Definitions/Def_ModularForm_HeckeOperator.lean
+# (#14784, sub-grain of #14771). 0 sorry by construction. Target Lean v4.33.0 /
+# Mathlib db584cd6 (anchor #14773); the lake is autonomous — it does NOT depend
+# on the galois_lean 4.33 migration.
+# Consolidated per ai-01 DRY decision (option 2: matrix). See lean-build.yml.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/lean-toolchain'
+      # The gate's own implementation: a change to it must re-run the gate
+      # (same rationale as lean-sensitivity.yml / lean-galois.yml, cf #8951).
+      - '.github/workflows/lean-hecke.yml'
+      - '.github/workflows/lean-axiom.yml'
+      # The axiom step is a Python program (`from lean_server import LeanVerifier`);
+      # lean_server.py + lean_utils.py ARE gate inputs (cf #8722).
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/lean_utils.py'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/lean-toolchain'
+      # The gate must run on the PR that introduces or changes it (cf #8712).
+      - '.github/workflows/lean-hecke.yml'
+      - '.github/workflows/lean-axiom.yml'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/lean_utils.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lean-hecke-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  ci:
+    uses: jsboige/CoursIA/.github/workflows/lean-build.yml@main
+    with:
+      project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean
+      display-name: hecke_lean
+      sorry-baseline: "0"
+      sorry-filter-mode: real
+
+  # Level 3 proof-integrity gate (criterion B.3 of pr-review-discipline).
+  # The issue #14784 anchor measures the flagship decls (`heckeT`,
+  # `coeffHeckeT`) at [propext, Classical.choice, Quot.sound]; this gate
+  # re-plays the #print axioms measurement on every PR touching the lake.
+  # allow-axioms: "" -- the measured footprint must stay within the
+  # reusable-workflow defaults; a NEW axiom (native_decide, sorryAx) = red.
+  # fail-on-sorry: true -- sorry-baseline is 0, the lake is fully proven.
+  # target-modules: "*" (issue #10889) -- module list derived at runtime from
+  # the lake walk; the `_en` i18n sibling is excluded by default (FR-only
+  # measurement, byte-parity covers the EN side structurally, cf #10997).
+  proof-integrity:
+    uses: jsboige/CoursIA/.github/workflows/lean-axiom.yml@main
+    with:
+      project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean
+      display-name: hecke_lean
+      target-modules: "*"
+      allow-axioms: ""
+      fail-on-sorry: true
