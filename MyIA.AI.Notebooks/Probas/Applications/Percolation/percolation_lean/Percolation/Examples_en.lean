@@ -85,4 +85,48 @@ theorem exists_boundary_edge_C3 :
   · show openAdj C3 full3 (0 : Fin 3) 1
     use adj_C3_0_1; simp [full3]
 
+/-- **Square** `C₄` — the 4-cycle. Unlike the triangle, `0` is not adjacent to
+`2`: reaching it requires a two-edge path, hence the composition
+`Relation.ReflTransGen.trans`. -/
+abbrev C4 : SimpleGraph (Fin 4) := SimpleGraph.cycleGraph 4
+
+/-- **Full configuration** on `C₄`: every edge is open. -/
+abbrev full4 : Finset (Edge C4) := Finset.univ
+
+/-- In the square `full4`, the open component of `0` reaches `2` through the
+composition `0 — 1 — 2` (two edges), which **exercises** the `Relation.ReflTransGen.trans`
+at the core of the tranche-3 kernel. Thus `component_C4_full` is the whole
+vertex set. -/
+theorem component_C4_full :
+    Component C4 full4 (0 : Fin 4) = Set.univ := by
+  ext u
+  constructor
+  · intro _; trivial
+  · intro _; unfold Component
+    fin_cases u
+    · exact Relation.ReflTransGen.refl
+    · exact Relation.ReflTransGen.single
+        (show openAdj C4 full4 (0 : Fin 4) 1 from by
+          use (by decide : (SimpleGraph.cycleGraph 4).Adj 0 1); simp [full4])
+    · exact Relation.ReflTransGen.trans
+        (Relation.ReflTransGen.single
+          (show openAdj C4 full4 (0 : Fin 4) 1 from by
+            use (by decide : (SimpleGraph.cycleGraph 4).Adj 0 1); simp [full4]))
+        (Relation.ReflTransGen.single
+          (show openAdj C4 full4 (1 : Fin 4) 2 from by
+            use (by decide : (SimpleGraph.cycleGraph 4).Adj 1 2); simp [full4]))
+    · exact Relation.ReflTransGen.single
+        (show openAdj C4 full4 (0 : Fin 4) 3 from by
+          use (by decide : (SimpleGraph.cycleGraph 4).Adj 0 3); simp [full4])
+
+/-- The singleton `{0}` is **not** ω-closed in `full4`: the open edge `0—1`
+leaves it. -/
+theorem not_openEdgeClosed_C4_singleton :
+    ¬ openEdgeClosed C4 full4 ({0} : Set (Fin 4)) := by
+  intro h
+  have h1 : (1 : Fin 4) ∈ ({0} : Set (Fin 4)) :=
+    h (by simp) (show openAdj C4 full4 (0 : Fin 4) 1 from by
+      use (by decide : (SimpleGraph.cycleGraph 4).Adj 0 1); simp [full4])
+  simp at h1
+
 end Percolation_en
