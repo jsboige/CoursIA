@@ -110,7 +110,7 @@ Algorithmes de recherche classique, satisfaction de contraintes (CSP), résoluti
 | 21 | Search-11b-Métaheuristiques-Deep-Part3 : Artificial Bee… | BETA | Oui |
 | 22 | Search-11b-Métaheuristiques-Deep-Part4 : Benchmark… | BETA | Oui |
 | 23 | Search-11b : Métaheuristiques d'optimisation (C# /… | BETA | Oui |
-| 24 | Search-17 — Sélection empirique d'algorithmes : deux… | BETA | Oui |
+| 24 | Search-11c — Sélection empirique d'algorithmes : deux… | BETA | Oui |
 | 25 | Search-02-Uninformed (C#) : Algorithmes de Recherche Non… | BETA | Oui |
 | 26 | Search-02-Uninformed : Algorithmes de Recherche Non… | BETA | Oui |
 | 27 | Search-03-Informed (C#) : Recherche Informée | BETA | Oui |

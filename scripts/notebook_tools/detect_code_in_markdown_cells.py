@@ -23,7 +23,7 @@ assignments at column 0 (markdown render eats indent so we don't trust
 prefixes), or any assignment inside a ``parameters``-tagged cell. A single
 ``x = 1`` in a sentence is NOT flagged — that's prose.
 
-PR #12064 documents the trigger cases (``PT_11_grpo_qwen_rlvr_on_verifiers.ipynb``
+PR #12064 documents the trigger cases (``PT_11b_grpo_qwen_rlvr_on_verifiers.ipynb``
 c5, parameter block, found 2026-08-21).
 
 Rules

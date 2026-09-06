@@ -338,7 +338,7 @@ Search/
 │   ├── Search-09d-Lean-Discrepancy-Komlos.ipynb   # Compagnon formel : lake discrepancy_lean via kernel lean4-wsl (#13868)
 │   ├── Search-10-SymbolicAutomata.ipynb
 │   ├── Search-11-Metaheuristics.ipynb
-│   └── Search-17-Empirical-Algorithm-Selection.ipynb
+│   └── Search-11c-Empirical-Algorithm-Selection.ipynb
 │
 ├── Part2-CSP/                             # Programmation par Contraintes (18 notebooks : 9 Python + 9 jumeaux C#)
 │   ├── CSP-1-Fundamentals.ipynb

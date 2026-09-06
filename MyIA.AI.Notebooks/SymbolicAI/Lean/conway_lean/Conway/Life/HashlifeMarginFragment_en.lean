@@ -515,6 +515,274 @@ theorem hashlife_correct_margin_of_still_life (c : MacroCell) (k : Nat)
   hashlife_correct_margin_of_hcap c k h_central
     (fun t _ => hcap_of_still_life _ (canonical_sortDedup _) hfix t)
 
+/-! ## L3 geometry — bounding-box bounds and reconstruction level (slice 3, step 5)
+
+Scoping 3-(c) (c.5551298160) identifies the "geometry" leg of L3: at the
+adaptive level, the window `[2^lvl, 3·2^lvl)` must absorb the corridor box.
+Two bricks are laid here: (i) the **bounding-box bounds** of a grid whose
+support is constrained — `gridRowMin` is bounded below, `gridRowMax` is
+bounded above (and likewise columns); (ii) the **level bound** of the
+reconstruction `gridToMacroCellWithOffset g` in terms of the box. These are
+the geometric premises for capture at the adaptive level. -/
+
+/-- **Helper: a `foldl` of `max` (via `proj`) stays strictly below `b`** if the
+    seed and every element are. Direct induction on the list (invariant of
+    `max`). -/
+theorem foldl_proj_max_lt_of_mem_lt (ps : Grid) (proj : Int × Int → Int)
+    (acc : Int) (b : Int) (hb : acc < b)
+    (h₀ : ∀ q, q ∈ ps → proj q < b) :
+    ps.foldl (fun m q => max m (proj q)) acc < b := by
+  induction ps generalizing acc with
+  | nil => simpa using hb
+  | cons q qs ih =>
+    have hq : proj q < b := h₀ q (by simp)
+    have hb' : max acc (proj q) < b := max_lt_iff.mpr ⟨hb, hq⟩
+    exact ih _ hb' (fun r hr => h₀ r (List.mem_cons_of_mem q hr))
+
+/-- **Lower bound of `gridRowMin` from a box.** If every cell of `g` satisfies
+    `a ≤ p.1`, then `a ≤ gridRowMin g`: the minimum of the rows is one of the
+    rows of `g` (`foldl_proj_min_attained`), so it inherits the bound. The grid
+    must be non-empty: on the empty grid, `gridRowMin` defaults to `0` and the
+    bound would fail. -/
+theorem gridRowMin_lower_bound (g : Grid) (a : Int) (hg : g ≠ [])
+    (h₀ : ∀ p, p ∈ g → a ≤ p.1) :
+    a ≤ gridRowMin g := by
+  cases g with
+  | nil => exact absurd rfl hg
+  | cons p₀ ps =>
+    simp only [gridRowMin]
+    rcases foldl_proj_min_attained ps (·.1) p₀.1 with hcase | ⟨p, hp, hval⟩
+    · rw [hcase]
+      exact h₀ p₀ (by simp)
+    · rw [hval]
+      exact h₀ p (List.mem_cons_of_mem p₀ hp)
+
+/-- **Upper bound of `gridRowMax` from a box.** If every cell of `g` satisfies
+    `p.1 < b`, then `gridRowMax g < b`: the maximum of the rows inherits the
+    bound (invariant of the `foldl` of `max`). -/
+theorem gridRowMax_upper_bound (g : Grid) (b : Int) (hg : g ≠ [])
+    (h₀ : ∀ p, p ∈ g → p.1 < b) :
+    gridRowMax g < b := by
+  cases g with
+  | nil => exact absurd rfl hg
+  | cons p₀ ps =>
+    simp only [gridRowMax]
+    exact foldl_proj_max_lt_of_mem_lt ps (·.1) p₀.1 b (h₀ p₀ (by simp))
+      (fun q hq => h₀ q (List.mem_cons_of_mem p₀ hq))
+
+/-- **Lower bound of `gridColMin` from a box** (column mirror of
+    `gridRowMin_lower_bound`). -/
+theorem gridColMin_lower_bound (g : Grid) (a : Int) (hg : g ≠ [])
+    (h₀ : ∀ p, p ∈ g → a ≤ p.2) :
+    a ≤ gridColMin g := by
+  cases g with
+  | nil => exact absurd rfl hg
+  | cons p₀ ps =>
+    simp only [gridColMin]
+    rcases foldl_proj_min_attained ps (·.2) p₀.2 with hcase | ⟨p, hp, hval⟩
+    · rw [hcase]
+      exact h₀ p₀ (by simp)
+    · rw [hval]
+      exact h₀ p (List.mem_cons_of_mem p₀ hp)
+
+/-- **Upper bound of `gridColMax` from a box** (column mirror of
+    `gridRowMax_upper_bound`). -/
+theorem gridColMax_upper_bound (g : Grid) (b : Int) (hg : g ≠ [])
+    (h₀ : ∀ p, p ∈ g → p.2 < b) :
+    gridColMax g < b := by
+  cases g with
+  | nil => exact absurd rfl hg
+  | cons p₀ ps =>
+    simp only [gridColMax]
+    exact foldl_proj_max_lt_of_mem_lt ps (·.2) p₀.2 b (h₀ p₀ (by simp))
+      (fun q hq => h₀ q (List.mem_cons_of_mem p₀ hq))
+
+/-- **Monotonicity of `ceilLog2`.** The log₂ ceiling is an increasing function:
+    `a ≤ b ⟹ ceilLog2 a ≤ ceilLog2 b`. Follows from `Nat.log_mono_right`
+    (monotonicity of `log` in its argument), after splitting on `if k ≤ 1`. -/
+theorem ceilLog2_mono {a b : Nat} (hab : a ≤ b) :
+    MacroCell.ceilLog2 a ≤ MacroCell.ceilLog2 b := by
+  by_cases hb1 : b ≤ 1
+  · have ha1 : a ≤ 1 := le_trans hab hb1
+    simp only [MacroCell.ceilLog2, hb1, ha1, reduceIte]
+    omega
+  · by_cases ha1 : a ≤ 1
+    · simp only [MacroCell.ceilLog2, ha1, reduceIte]
+      exact Nat.zero_le _
+    · simp only [MacroCell.ceilLog2, hb1, ha1, reduceIte]
+      have hlog : Nat.log 2 (a - 1) ≤ Nat.log 2 (b - 1) :=
+        Nat.log_mono_right (by omega)
+      omega
+
+/-- **Level bound of the reconstruction ("geometry" leg of L3).** If the
+    support of `g` fits in the box `[a,b)` (in the sense
+    `a.1 ≤ p.1 ∧ p.1 < b.1` and likewise columns), then the level of the
+    reconstruction `gridToMacroCellWithOffset g` is bounded by `ceilLog2` of
+    the box dimension plus the fixed padding `5` of `gridFrame`. Proof:
+    `gridRowMin`/`gridColMin` are bounded below and `gridRowMax`/`gridColMax`
+    bounded above by the box, so the frame height/width (`+5`) stays below the
+    box dimension `+5`, and `ceilLog2` is monotone. -/
+theorem gridToMacroCellWithOffset_level_le_of_box (g : Grid) (a b : Int × Int)
+    (h₀ : ∀ p, p ∈ g → a.1 ≤ p.1 ∧ p.1 < b.1 ∧ a.2 ≤ p.2 ∧ p.2 < b.2) :
+    (gridToMacroCellWithOffset g).2.level ≤
+      MacroCell.ceilLog2 (max (b.1 - a.1 + 5).toNat (b.2 - a.2 + 5).toNat) := by
+  by_cases hg : g = []
+  · subst hg
+    simp only [gridToMacroCellWithOffset, gridFrame]
+    rw [MacroCell.level_buildFromGrid]
+    exact Nat.zero_le _
+  · cases g with
+    | nil => exact absurd rfl hg
+    | cons p₀ ps =>
+      have hne : p₀ :: ps ≠ [] := List.cons_ne_nil p₀ ps
+      have hrowmin : a.1 ≤ gridRowMin (p₀ :: ps) :=
+        gridRowMin_lower_bound _ a.1 hne (fun p hp => (h₀ p hp).1)
+      have hrowmax : gridRowMax (p₀ :: ps) < b.1 :=
+        gridRowMax_upper_bound _ b.1 hne (fun p hp => (h₀ p hp).2.1)
+      have hcolmin : a.2 ≤ gridColMin (p₀ :: ps) :=
+        gridColMin_lower_bound _ a.2 hne (fun p hp => (h₀ p hp).2.2.1)
+      have hcolmax : gridColMax (p₀ :: ps) < b.2 :=
+        gridColMax_upper_bound _ b.2 hne (fun p hp => (h₀ p hp).2.2.2)
+      have hside_le : max ((gridRowMax (p₀ :: ps) - gridRowMin (p₀ :: ps) + 5).toNat)
+          ((gridColMax (p₀ :: ps) - gridColMin (p₀ :: ps) + 5).toNat) ≤
+          max (b.1 - a.1 + 5).toNat (b.2 - a.2 + 5).toNat := by
+        apply max_le_max
+        · exact Int.toNat_le_toNat (by omega)
+        · exact Int.toNat_le_toNat (by omega)
+      simp only [gridToMacroCellWithOffset]
+      rw [MacroCell.level_buildFromGrid]
+      show MacroCell.ceilLog2
+          (max ((gridRowMax (p₀ :: ps) - gridRowMin (p₀ :: ps) + 5).toNat)
+               ((gridColMax (p₀ :: ps) - gridColMin (p₀ :: ps) + 5).toNat)) ≤ _
+      exact ceilLog2_mono hside_le
+
+/-! ## L3 periodic class `T ∣ 2^k` — hcap of oscillators (tranche 3, step 6)
+
+Second L3 link **entirely closed**: the generalization of the `T = 1` chain
+to oscillators of period `T > 1` with dyadic period. The orbit is no longer
+constant — `evolve t g` cycles through the `T` phases — so the capture is
+proved **phase by phase**: each phase `evolve r g` (`r < T`) is itself a
+fixed point of `evolve T` (`evolve_phase_fix`), the trajectory reduces to
+the residue modulo `T` (`evolve_mod_period`), and the round-trip →
+transported fixed point scheme applies to each canonical phase. The
+geometric premise `T ∣ 2^level` of `jumpCapturedF_of_period_divides` is
+carried **explicitly**: it is a real constraint on the reconstruction level
+of each phase (the level must reach `log₂ T`), not a consequence — the
+upper level bound on the `gridFrame` side (step 5) is what makes it
+computable. -/
+
+/-- **Each phase is a fixed point of `evolve T`.** If `g` is `T`-periodic,
+    so is every phase `evolve r g`: evolution commutes with itself
+    (`evolve_add`), hence `evolve T (evolve r g) = evolve r (evolve T g)
+    = evolve r g`. This is the exact `hper` hypothesis the capture requires
+    at the level of each phase. -/
+theorem evolve_phase_fix {T : Nat} (g : Grid)
+    (hper : evolve T g = g) (r : Nat) :
+    evolve T (evolve r g) = evolve r g := by
+  rw [← evolve_add, Nat.add_comm T r, evolve_add, hper]
+
+/-- **Reduction of the trajectory to the residue modulo `T`.** For a
+    `T`-periodic pattern, the whole trajectory folds onto its `T` phases:
+    `evolve t g = evolve (t % T) g` — the quotient `t / T` of complete
+    periods vanishes by fixed point. This bounds the capture work from
+    "every `t ≤ 2^k`" to "each of the `T` phases". -/
+theorem evolve_mod_period {T : Nat} (g : Grid)
+    (hper : evolve T g = g) (t : Nat) :
+    evolve t g = evolve (t % T) g := by
+  have hsplit : t = T * (t / T) + t % T := (Nat.div_add_mod t T).symm
+  conv_lhs => rw [hsplit, evolve_add, Nat.mul_comm]
+  exact evolve_mulF_of_period _ (evolve_phase_fix g hper _) _
+
+/-- **Transport of the period-`T` fixed point to the reconstruction
+    (returned to the origin).** The exact analogue of
+    `still_life_fix_toGrid_zero` for period `T`: if `g` is canonical and
+    `T`-periodic, the reconstructed MacroCell returned to the origin is
+    itself a fixed point of `evolve T` — `toGrid_shift_grid` shuttle,
+    `evolve_shift` commutation, EQUALITY round-trip, fixed point. -/
+theorem periodic_fix_toGrid_zero (g : Grid) (hg : Canonical g) {T : Nat}
+    (hper : evolve T g = g) :
+    evolve T ((gridToMacroCellWithOffset g).2.toGrid (0, 0))
+      = (gridToMacroCellWithOffset g).2.toGrid (0, 0) := by
+  have hrt : (gridToMacroCellWithOffset g).2.toGrid (gridToMacroCellWithOffset g).1
+      = g := toGrid_gridToMacroCellWithOffset_eq g hg
+  have hshift : (gridToMacroCellWithOffset g).2.toGrid (0, 0)
+      = shift (0 - (gridToMacroCellWithOffset g).1.1,
+               0 - (gridToMacroCellWithOffset g).1.2)
+          ((gridToMacroCellWithOffset g).2.toGrid (gridToMacroCellWithOffset g).1) :=
+    toGrid_shift_grid _ 0 0 _ _
+  rw [hshift, ← evolve_shift, hrt, hper]
+
+/-- **Capture of the reconstruction of a periodic phase.** For any
+    canonical phase `g` of a `T`-periodic oscillator (`T > 1` a fortiori
+    `0 < T`), whose reconstruction level divides the jump horizon
+    (`T ∣ 2^level`), the reconstruction satisfies the jump predicate —
+    this is `jumpCapturedF_of_period_divides` consumed at the
+    reconstruction level, with the three hypotheses now available: wf
+    (`buildFromGrid_wf`), level (`1 ≤ lvl` as soon as `g ≠ []`, n-aware
+    bound) and period-`T` fixed point (`periodic_fix_toGrid_zero`). Empty
+    case: the reconstruction is a dead level-0 leaf, decided by the kernel. -/
+theorem jumpCapturedF_reconstruction_of_period (g : Grid) (hg : Canonical g)
+    {T : Nat} (hT0 : 0 < T) (hper : evolve T g = g)
+    (hdiv : T ∣ 2 ^ (gridToMacroCellWithOffset g).2.level) :
+    jumpCapturedF (gridToMacroCellWithOffset g).2 = true := by
+  by_cases hne : g = []
+  · subst hne
+    decide
+  · have hwf : ((gridToMacroCellWithOffset g).2).wf = true := by
+      unfold gridToMacroCellWithOffset
+      exact buildFromGrid_wf g _ _ _
+    have hlvl : 1 ≤ (gridToMacroCellWithOffset g).2.level := by
+      have hN := gridToMacroCellWithOffsetN_level_gt_n 2 g hne
+      rw [gridToMacroCellWithOffsetN_le_two_eq 2 g (by omega)] at hN
+      cases hL : (gridToMacroCellWithOffset g).2.level with
+      | zero => rw [hL] at hN; exact absurd hN (by decide)
+      | succ m => omega
+    exact jumpCapturedF_of_period_divides _ hwf hlvl hT0
+      (periodic_fix_toGrid_zero g hg hper) hdiv
+
+/-- **hcap of the periodic class, whole trajectory.** For a canonical
+    oscillator of period `T > 1` whose **every phase** has a reconstruction
+    level divisible by `T` (in the sense `T ∣ 2^level`), every instant `t`
+    (a fortiori every `t ≤ 2^k`) is captured: the trajectory reduces to the
+    phase `t % T` (`evolve_mod_period`), the phase is canonical
+    (`canonical_evolve_of_pos`, or `g` itself for the zero phase), a fixed
+    point of `evolve T` (`evolve_phase_fix`), and its reconstruction is
+    captured. The divisibility premise is finite: it bears on the `T`
+    phases only, not on the infinite trajectory. -/
+theorem hcap_of_period (g : Grid) (hg : Canonical g) {T : Nat} (hT0 : 0 < T)
+    (hper : evolve T g = g)
+    (hdiv : ∀ i, i < T →
+      T ∣ 2 ^ (gridToMacroCellWithOffset (evolve i g)).2.level) :
+    ∀ t, jumpCapturedF (gridToMacroCellWithOffset (evolve t g)).2 = true := by
+  intro t
+  rw [evolve_mod_period g hper t]
+  have hr : t % T < T := Nat.mod_lt _ hT0
+  have hcan : Canonical (evolve (t % T) g) := by
+    rcases Nat.eq_zero_or_pos (t % T) with h0 | hpos
+    · rw [h0]
+      simpa using hg
+    · exact canonical_evolve_of_pos hpos _
+  have hfix : evolve T (evolve (t % T) g) = evolve (t % T) g :=
+    evolve_phase_fix g hper _
+  exact jumpCapturedF_reconstruction_of_period _ hcan hT0 hfix (hdiv _ hr)
+
+/-- **L3 closed for the periodic class `T ∣ 2^k`: Hashlife correctness of
+    oscillators.** Assembly corollary — the second case of the P4.4
+    decomposition where the L3 link is **entirely proved**: for any
+    MacroCell whose grid returned to the origin is an oscillator of period
+    `T > 1` (every phase of divisible level), the global equality
+    `hashlife_correctN` applies at any horizon `2^k` under `centralCorrect`.
+    The class covers the multi-cycle witnesses of the bestiary (blinker
+    `T = 2`, toad `T = 2`, lighthouse `T = 3` as soon as `T ∣ 2^level`). -/
+theorem hashlife_correct_margin_of_period (c : MacroCell) (k : Nat)
+    (h_central : centralCorrect c k) {T : Nat} (hT0 : 0 < T)
+    (hper : evolve T (c.toGrid (0, 0)) = c.toGrid (0, 0))
+    (hdiv : ∀ i, i < T →
+      T ∣ 2 ^ (gridToMacroCellWithOffset (evolve i (c.toGrid (0, 0)))).2.level) :
+    evolveHashlifeFast (2^k) (c.toGrid (0, 0)) = evolve (2^k) (c.toGrid (0, 0)) :=
+  hashlife_correct_margin_of_hcap c k h_central
+    (fun t _ => hcap_of_period _ (canonical_sortDedup _) hT0 hper hdiv t)
+
 /-! ## Sanity checks on the bestiary
 
 The fragment `supportInMargin` is **decidable** (instance `Decidable (BoxAssezGrandN)`,

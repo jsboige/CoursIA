@@ -73,7 +73,7 @@ TRIAGE_30 = [
     # Tranche D — hors serie media (7)
     "MyIA.AI.Notebooks/GenAI/00-GenAI-Environment/00-2-Docker-Services-Management.ipynb",
     "MyIA.AI.Notebooks/GenAI/PostTraining/PT_06_eval_comparative.ipynb",
-    "MyIA.AI.Notebooks/GenAI/PostTraining/PT_11_grpo_qwen35_rlvr.ipynb",
+    "MyIA.AI.Notebooks/GenAI/PostTraining/PT_11a_grpo_qwen35_rlvr.ipynb",
     "MyIA.AI.Notebooks/GenAI/SemanticKernel/10-SemanticKernel-NotebookMaker.ipynb",
     "MyIA.AI.Notebooks/GenAI/SemanticKernel/10a-SemanticKernel-NotebookMaker-batch.ipynb",
     "MyIA.AI.Notebooks/GenAI/SemanticKernel/10b-SemanticKernel-NotebookMaker-batch-parameterized.ipynb",
