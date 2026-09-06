@@ -1,8 +1,8 @@
 # Search - Applications
 
-C'est ici que la série Search se confronte au réel. Les 52 notebooks d'application, pour la plupart adaptés de projets étudiants, prennent les algorithmes des Parties 1 et 2 et les mettent face à des problèmes qui ne se laissent pas faire : planifier les gardes d'un service hospitalier, ordonnancer un atelier, construire un calendrier sportif équitable, router une flotte de véhicules. Trois catégories les organisent — **Search pur** (jeux combinatoires), **CSP** (satisfaction de contraintes) et **Hybride** (combinaisons de solveurs, modèles exacts et métaheuristiques) — et la plupart sont autonomes, avec des pointeurs vers les prérequis pertinents. À cela s'ajoutent les **jumeaux C#** (App-1b, App-2b, App-3b, App-4b, App-5b, App-6-Csharp, App-7b, App-8-Csharp, App-9b, App-10b, App-11b, App-13b, App-14-CSharp, App-14c, App-15b, App-16-CSharp, App-17b, App-18b, App-19-CSharp, App-20b) qui déroulent les mêmes algorithmes *from-scratch* en .NET, en complément des versions Python qui invoquent des solveurs industriels.
+C'est ici que la série Search se confronte au réel. Les 53 notebooks d'application, pour la plupart adaptés de projets étudiants, prennent les algorithmes des Parties 1 et 2 et les mettent face à des problèmes qui ne se laissent pas faire : planifier les gardes d'un service hospitalier, ordonnancer un atelier, construire un calendrier sportif équitable, router une flotte de véhicules. Trois catégories les organisent — **Search pur** (jeux combinatoires), **CSP** (satisfaction de contraintes) et **Hybride** (combinaisons de solveurs, modèles exacts et métaheuristiques) — et la plupart sont autonomes, avec des pointeurs vers les prérequis pertinents. À cela s'ajoutent les **jumeaux C#** (App-1b, App-2b, App-3b, App-4b, App-5b, App-6-Csharp, App-7b, App-8-Csharp, App-9b, App-10b, App-11b, App-13b, App-14-CSharp, App-14c, App-15b, App-16-CSharp, App-17b, App-18b, App-19-CSharp, App-20b) qui déroulent les mêmes algorithmes *from-scratch* en .NET, en complément des versions Python qui invoquent des solveurs industriels.
 
-Sous-série de **52 notebooks** | **~28h40** | Python 3.10+ (`ortools`, `python-sat`, `deap`, `mealpy`, `minizinc`, `optuna`) ; .NET 9 (`dotnet-interactive`) pour les jumeaux C#
+Sous-série de **53 notebooks** | **~29h50** | Python 3.10+ (`ortools`, `python-sat`, `deap`, `mealpy`, `minizinc`, `optuna`) ; .NET 9 (`dotnet-interactive`) pour les jumeaux C#
 
 ## Pourquoi cette sous-série
 
@@ -32,7 +32,7 @@ Un algorithme compris sur un exemple jouet n'est pas encore un algorithme maîtr
 Applications/
 ├── Search/     # Applications purement Search (4 notebooks : 2 Python + 2 twins C#)
 ├── CSP/        # Applications CSP (30 notebooks : 16 Python + 14 twins C#)
-└── Hybrid/     # Méthodes hybrides / métaheuristiques (18 notebooks : 13 Python + 5 twins C#)
+└── Hybrid/     # Méthodes hybrides / métaheuristiques (19 notebooks : 14 Python + 5 twins C#)
 ```
 
 ```mermaid
@@ -42,7 +42,7 @@ flowchart LR
     P4["<b>Partie 4 — Métaheuristiques</b><br/>SA, GA, ACO, recuit"]
     S["<b>Applications Search</b> (2)<br/>ConnectFour : Minimax,<br/>MCTS, DQN-RL"]
     C["<b>Applications CSP</b> (16 Python)<br/>N-Queens, GraphColoring,<br/>Nurse/JobShop, Minesweeper,<br/>Wordle, Picross, WFC,<br/>Covering Arrays..."]
-    H["<b>Applications Hybrides</b> (12)<br/>EdgeDetection, Portfolio,<br/>TSP, VRP, Hyperparameter,<br/>AlgorithmSelection, PRESENT/SAT,<br/>MAPF, WDP/VCG, index tracking,<br/>branching ML, SALBP"]
+    H["<b>Applications Hybrides</b> (13)<br/>EdgeDetection, Portfolio,<br/>TSP, VRP, Hyperparameter,<br/>AlgorithmSelection, PRESENT/SAT,<br/>MAPF, WDP/VCG, index tracking,<br/>branching ML, SALBP,<br/>assemblage orbital"]
     P1 --> S
     P2 --> C
     P4 --> H
@@ -155,6 +155,7 @@ Quand l'espace est trop vaste ou l'objectif trop irrégulier pour les méthodes 
 | 12 | [App-27-Sparse-Index-Tracking-Walk-Forward](Hybrid/App-27-Sparse-Index-Tracking-Walk-Forward.ipynb) | ~75 min | Sparse index tracking : modèle CP-SAT vérifiable, walk-forward sans fuite et lecture pédagogique des résultats QuantConnect réels — une recherche, deux lectures — distillation PrCon M2 (Godric Bouteloup) | Projet étudiant (PrCon PR #52) |
 | 13 | [App-28-LearningToBranch-Generalization-Audit](Hybrid/App-28-LearningToBranch-Generalization-Audit.ipynb) | ~75 min | Learning to branch : dérivation de dom/wdeg, splits groupés, transfert inter-familles, performance intégrée, coût d'inférence et seuil d'amortissement — distillation PrCon G4 (Simon Naulet, Matis Codjia) | Projet étudiant (PrCon PR #46) |
 | 14 | [App-29-SALBP-AssemblyLineBalancing-Audit](Hybrid/App-29-SALBP-AssemblyLineBalancing-Audit.ipynb) | ~70 min | SALBP-1/2 : CP-SAT, PuLP/CBC et RPW, statuts/incumbents/bornes, identité de benchmark, front Pareto certifié et MMALBP robuste/pondéré — distillation PrCon B1 (Ilias Kalalou, Kaelan Grall) | Projet étudiant (PrCon PR #57) |
+| 15 | [App-30-OrbitalAssembly-Certificate-Audit](Hybrid/App-30-OrbitalAssembly-Certificate-Audit.ipynb) | ~70 min | Assemblage orbital : physique de Hohmann dans le modèle, auditeur externe, preuve que la scalarisation est exactement lexicographique, comparaison à makespan égal, front d'échange ε-contrainte et sonde en taille **et** en densité — distillation PrCon C4 (Gurvan Estable, Joris Bely, Kévin Lubert) | Projet étudiant (PrCon PR #53) |
 
 ---
 
@@ -227,6 +228,7 @@ Quand l'espace est trop vaste ou l'objectif trop irrégulier pour les méthodes 
 | App-27 Sparse Index Tracking Walk-Forward | CSP-3 (CP-SAT), CSP-5 (optimisation), App-10 (portefeuille) | ortools, pandas, numpy |
 | App-28 LearningToBranch Generalization Audit | CSP-6 (heuristiques), MGS-16 (sélection d'algorithmes) | numpy, pandas, scikit-learn |
 | App-29 SALBP AssemblyLineBalancing Audit | CSP-3 (CP-SAT), CSP-4 (scheduling), CSP-5 (optimisation) | ortools, pulp, pandas, numpy, matplotlib |
+| App-30 OrbitalAssembly Certificate Audit | CSP-3 (CP-SAT), CSP-4 (scheduling), CSP-5 (optimisation) | ortools, pandas, matplotlib |
 
 ---
 
@@ -249,6 +251,8 @@ Le [App-27-Sparse-Index-Tracking-Walk-Forward](Hybrid/App-27-Sparse-Index-Tracki
 Le [App-28-LearningToBranch-Generalization-Audit](Hybrid/App-28-LearningToBranch-Generalization-Audit.ipynb) distille le projet PrCon G4 de **Simon Naulet** et **Matis Codjia**, *« Apprentissage d'heuristiques de branchement pour solveur CP »*, PR [PrCon #46](https://github.com/jsboigeEpita/2026-Epita-Programmation-par-Contraintes/pull/46). La reproduction est entièrement réécrite : elle remplace le split par lignes par des instances disjointes, ajoute trois transferts leave-one-family-out et compare l'arbre, le temps total et le coût d'inférence à une baseline choisie sur le train uniquement. Elle établit un résultat négatif utile : une imitation locale fidèle ne garantit ni un arbre plus petit ni un solveur plus rapide. Provenance : [`Hybrid/data/app28-learning-to-branch-audit/SOURCE.md`](Hybrid/data/app28-learning-to-branch-audit/SOURCE.md).
 
 Le [App-29-SALBP-AssemblyLineBalancing-Audit](Hybrid/App-29-SALBP-AssemblyLineBalancing-Audit.ipynb) rend hommage au projet PrCon B1 d'**Ilias Kalalou** et **Kaelan Grall**, *« Équilibrage de chaîne d'assemblage (SALBP) »*, PR [PrCon #57](https://github.com/jsboigeEpita/2026-Epita-Programmation-par-Contraintes/pull/57). Le notebook préserve leur geste central — SALBP-1/2, comparaison CP-SAT/PuLP/RPW, Pareto et multi-modèles — dans une réécriture CoursIA indépendante qui publie statuts, incumbents, bornes, gaps, identité structurelle des instances et validation hors solveur. Aucun code, texte ou figure étudiante n'est copié. Provenance : [`Hybrid/data/app29-salbp-audit/SOURCE.md`](Hybrid/data/app29-salbp-audit/SOURCE.md).
+
+Le [App-30-OrbitalAssembly-Certificate-Audit](Hybrid/App-30-OrbitalAssembly-Certificate-Audit.ipynb) rend hommage au projet PrCon C4 de **Gurvan Estable**, **Joris Bely** et **Kévin Lubert**, *« Assemblage orbital de satellites »*, PR [PrCon #53](https://github.com/jsboigeEpita/2026-Epita-Programmation-par-Contraintes/pull/53). Le geste distillé est une décision de modélisation : faire descendre la physique dans le modèle, durées issues d'un temps de vol de Hohmann calculé et coûts d'un Δv calculé, les deux contraignant les mêmes intervalles CP-SAT. La reproduction CoursIA est indépendante et volontairement discrétisée autrement, donc non comparable chiffre à chiffre : elle ajoute un auditeur externe qui ne partage aucun état avec les solveurs, la preuve que l'objectif scalarisé `makespan × (B+1) + ergol` est *exactement* lexicographique dès que le budget borne l'ergol — ce que le rapport source qualifiait prudemment d'« approximation » —, une comparaison à makespan égal qui sépare l'inefficacité en ergol d'une heuristique de son retard d'échéancier, un front d'échange ε-contrainte dont chaque point porte son statut, et une sonde qui montre que la taille est un mauvais prédicteur de difficulté. Aucun code, texte ou figure étudiante n'est copié. Provenance : [`Hybrid/data/app30-orbital-assembly-audit/SOURCE.md`](Hybrid/data/app30-orbital-assembly-audit/SOURCE.md).
 
 ---
 
@@ -289,6 +293,7 @@ Couverture par application des sources fondatrices mobilisées dans cette sous-s
 | App-27 (Sparse Index Tracking Walk-Forward) | Beasley, J. E., Meade, N., & Chang, T.-J. (2003) — « An Evolutionary Heuristic for the Index Tracking Problem », *European Journal of Operational Research* 148(3) ; Bailey, D. H., Borwein, J. M., López de Prado, M., & Zhu, Q. J. (2014) — « Pseudo-Mathematics and Financial Charlatanism: The Effects of Backtest Overfitting on Out-of-Sample Performance », *Notices of the AMS* 61(5). |
 | App-28 (LearningToBranch Generalization Audit) | Boussemart, F., Hemery, F., Lecoutre, C., & Sais, L. (2004) — « Boosting Systematic Search by Weighting Constraints », *ECAI* (dom/wdeg) ; Kotthoff, L. (2014) — « Algorithm Selection for Combinatorial Search Problems: A Survey », *AI Magazine* 35(3) ; Bengio, Y., Lodi, A., & Prouvost, A. (2021) — « Machine Learning for Combinatorial Optimization: a Methodological Tour d'Horizon », *European Journal of Operational Research* 290(2) ; Balcan, M.-F., Dick, T., Sandholm, T., & Vitercik, E. (2020) — « Learning to Branch: Generalization Guarantees and Limits of Data-Independent Discretization », *JACM* 67(6). |
 | App-29 (SALBP Assembly Line Balancing Audit) | Salveson, M. E. (1955) — « The Assembly Line Balancing Problem », *Journal of Industrial Engineering* 6(3) ; Helgeson, W. B., & Birnie, D. P. (1961) — « Assembly Line Balancing Using the Ranked Positional Weight Technique », *Journal of Industrial Engineering* 12(6) ; Scholl, A. (1999) — *Balancing and Sequencing of Assembly Lines*, Physica-Verlag. |
+| App-30 (OrbitalAssembly Certificate Audit) | Hohmann, W. (1925) — *Die Erreichbarkeit der Himmelskörper*, Oldenbourg ; Vallado, D. A. (2013) — *Fundamentals of Astrodynamics and Applications*, 4e éd., Microcosm Press ; Haimes, Y. Y., Lasdon, L. S., & Wismer, D. A. (1971) — « On a Bicriterion Formulation of the Problems of Integrated System Identification and System Optimization », *IEEE Transactions on Systems, Man, and Cybernetics* 1(3) (ε-contrainte) ; Wilcoxon, F. (1945) — « Individual Comparisons by Ranking Methods », *Biometrics Bulletin* 1(6). |
 
 ## Conclusion / Prochaines étapes
 

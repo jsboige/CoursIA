@@ -1,0 +1,363 @@
+{
+  "application": "App-30 — Ordonnancement d'assemblage orbital",
+  "distillation": {
+    "projet": "PrCon C4 — Orbital Assembly Scheduling",
+    "auteurs": [
+      "Gurvan Estable",
+      "Joris Bely",
+      "Kévin Lubert"
+    ],
+    "pull_request": 53,
+    "commit": "e9a751bc440f1063fa36582aab8b91eec3bdfd55",
+    "snapshot": "b5f3f0351dbd41f3a76f047cf02e9c93e81192f3",
+    "licence": "MIT",
+    "note": "Reproduction CoursIA independante. Aucun module, texte, cellule, figure ni sortie du rendu source n'est repris. Discretisation volontairement distincte : les grandeurs ne sont pas comparables."
+  },
+  "environnement": {
+    "python": "3.13.14",
+    "ortools": "9.15.6755",
+    "pandas": "2.3.3",
+    "matplotlib": "3.10.8",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "slot_seconds": 900,
+    "dv_unit_mps": 5.0
+  },
+  "protocole": {
+    "grille": {
+      "tailles": [
+        4,
+        6,
+        8,
+        10,
+        12
+      ],
+      "graines": [
+        11,
+        22,
+        33,
+        44,
+        55
+      ],
+      "densite": 0.25,
+      "limite_s": 20.0
+    },
+    "sonde": {
+      "tailles": [
+        16,
+        32,
+        64,
+        90
+      ],
+      "graines": [
+        11,
+        22,
+        33
+      ],
+      "densites": [
+        0.25,
+        0.6
+      ],
+      "limite_s": 10.0
+    },
+    "front": {
+      "cas": [
+        "m6-s11",
+        "m8-s22",
+        "m10-s44",
+        "m12-s33"
+      ],
+      "relachements": [
+        0,
+        2,
+        4,
+        6,
+        8,
+        10,
+        12,
+        14,
+        16,
+        18,
+        20,
+        22,
+        24
+      ]
+    }
+  },
+  "instances": [
+    {
+      "nom": "coursia-orbital-m4-s11",
+      "empreinte_sha256": "b2ae490d346323412aeca6a637793c8c77045bcb05037f5ac1fdd24cad70ea99",
+      "poussees": 8,
+      "horizon": 184,
+      "couloirs": 2,
+      "precedences": 7,
+      "separations": 0,
+      "budget_ergol": 464,
+      "capacite_debit": 91
+    },
+    {
+      "nom": "coursia-orbital-m4-s22",
+      "empreinte_sha256": "076b3bd96a20933423bf9f8c8756342d2dacf4767fe7f1ce9af81287866f4b15",
+      "poussees": 8,
+      "horizon": 184,
+      "couloirs": 2,
+      "precedences": 7,
+      "separations": 1,
+      "budget_ergol": 478,
+      "capacite_debit": 93
+    },
+    {
+      "nom": "coursia-orbital-m4-s33",
+      "empreinte_sha256": "4a01cc08497d2f0e4814bf2079cd2742c57a7fee740e5e250b01b1b9b735834b",
+      "poussees": 8,
+      "horizon": 184,
+      "couloirs": 2,
+      "precedences": 7,
+      "separations": 1,
+      "budget_ergol": 475,
+      "capacite_debit": 94
+    },
+    {
+      "nom": "coursia-orbital-m4-s44",
+      "empreinte_sha256": "63929a1ca6a9e931ee2b7f834d120a22535998b6a5c184efffe8695ff461187c",
+      "poussees": 8,
+      "horizon": 184,
+      "couloirs": 2,
+      "precedences": 7,
+      "separations": 0,
+      "budget_ergol": 462,
+      "capacite_debit": 92
+    },
+    {
+      "nom": "coursia-orbital-m4-s55",
+      "empreinte_sha256": "8e3fb414ccb77fbd4cea9e9a589ad4638cca282947904fb2f77b1c4a03c1e47a",
+      "poussees": 8,
+      "horizon": 184,
+      "couloirs": 2,
+      "precedences": 7,
+      "separations": 2,
+      "budget_ergol": 461,
+      "capacite_debit": 92
+    },
+    {
+      "nom": "coursia-orbital-m6-s11",
+      "empreinte_sha256": "9561a6bad9f3485d526b01c678090c096f2679dbc7d0055b095462536dc1c6f2",
+      "poussees": 12,
+      "horizon": 228,
+      "couloirs": 2,
+      "precedences": 11,
+      "separations": 4,
+      "budget_ergol": 818,
+      "capacite_debit": 94
+    },
+    {
+      "nom": "coursia-orbital-m6-s22",
+      "empreinte_sha256": "80cfbce022aff265c67398dff0348b6e3cebdc59ba0e6d635ce41c8924fac7b7",
+      "poussees": 12,
+      "horizon": 228,
+      "couloirs": 2,
+      "precedences": 11,
+      "separations": 3,
+      "budget_ergol": 843,
+      "capacite_debit": 96
+    },
+    {
+      "nom": "coursia-orbital-m6-s33",
+      "empreinte_sha256": "0da7820663568a8de4e19a7143814ac913c9fcabc9d788ca46945a7f207b0128",
+      "poussees": 12,
+      "horizon": 228,
+      "couloirs": 2,
+      "precedences": 11,
+      "separations": 2,
+      "budget_ergol": 836,
+      "capacite_debit": 97
+    },
+    {
+      "nom": "coursia-orbital-m6-s44",
+      "empreinte_sha256": "5d0af050f1f29418cf48e7c9bbffa9d43c1e6321cdd4a4658f92745e8e828648",
+      "poussees": 12,
+      "horizon": 228,
+      "couloirs": 2,
+      "precedences": 11,
+      "separations": 0,
+      "budget_ergol": 825,
+      "capacite_debit": 95
+    },
+    {
+      "nom": "coursia-orbital-m6-s55",
+      "empreinte_sha256": "6adc1e6e279ccddb15dbdb379d740a424e21e815239a309abd579bc6bdb06ba4",
+      "poussees": 12,
+      "horizon": 228,
+      "couloirs": 2,
+      "precedences": 11,
+      "separations": 1,
+      "budget_ergol": 816,
+      "capacite_debit": 95
+    },
+    {
+      "nom": "coursia-orbital-m8-s11",
+      "empreinte_sha256": "29361dc8b6b78a6cd911140c4be6a0bb00fcb21eacbaf4d3bce8484dd9cb53fd",
+      "poussees": 16,
+      "horizon": 272,
+      "couloirs": 3,
+      "precedences": 15,
+      "separations": 5,
+      "budget_ergol": 1208,
+      "capacite_debit": 96
+    },
+    {
+      "nom": "coursia-orbital-m8-s22",
+      "empreinte_sha256": "3c2fd6cd73e7e5a52a16b8e99bc47e9cf620338dde91d8a3c8e35e9bc75b91e8",
+      "poussees": 16,
+      "horizon": 272,
+      "couloirs": 3,
+      "precedences": 15,
+      "separations": 3,
+      "budget_ergol": 1231,
+      "capacite_debit": 98
+    },
+    {
+      "nom": "coursia-orbital-m8-s33",
+      "empreinte_sha256": "22db3908f076aefd8f8a7a4cc2edec14603e42d9dc29e80816f471873013011a",
+      "poussees": 16,
+      "horizon": 272,
+      "couloirs": 3,
+      "precedences": 15,
+      "separations": 6,
+      "budget_ergol": 1228,
+      "capacite_debit": 99
+    },
+    {
+      "nom": "coursia-orbital-m8-s44",
+      "empreinte_sha256": "42e8790ce236a2877b902bcf9a7afc7ca1960836147aa0210cb5b899984ac8fc",
+      "poussees": 16,
+      "horizon": 272,
+      "couloirs": 3,
+      "precedences": 15,
+      "separations": 8,
+      "budget_ergol": 1214,
+      "capacite_debit": 97
+    },
+    {
+      "nom": "coursia-orbital-m8-s55",
+      "empreinte_sha256": "33df73e03efc0780e39775c518538df45fa980d38d7d58a1fd23a679132ff574",
+      "poussees": 16,
+      "horizon": 272,
+      "couloirs": 3,
+      "precedences": 15,
+      "separations": 5,
+      "budget_ergol": 1203,
+      "capacite_debit": 97
+    },
+    {
+      "nom": "coursia-orbital-m10-s11",
+      "empreinte_sha256": "da1baffdf3d2000a84a974386f8638bb73c69d56254de6e5143048a862dbf460",
+      "poussees": 20,
+      "horizon": 316,
+      "couloirs": 4,
+      "precedences": 19,
+      "separations": 9,
+      "budget_ergol": 1291,
+      "capacite_debit": 93
+    },
+    {
+      "nom": "coursia-orbital-m10-s22",
+      "empreinte_sha256": "e5a1544da80e6863c12e183402ef6f23ee4278dc88d7234624d432ee246de5b7",
+      "poussees": 20,
+      "horizon": 316,
+      "couloirs": 4,
+      "precedences": 19,
+      "separations": 12,
+      "budget_ergol": 1318,
+      "capacite_debit": 95
+    },
+    {
+      "nom": "coursia-orbital-m10-s33",
+      "empreinte_sha256": "22a14292de4032809a76da940343178657e34ae85c35f4c4557ddf73a38e0ce7",
+      "poussees": 20,
+      "horizon": 316,
+      "couloirs": 4,
+      "precedences": 19,
+      "separations": 6,
+      "budget_ergol": 1305,
+      "capacite_debit": 95
+    },
+    {
+      "nom": "coursia-orbital-m10-s44",
+      "empreinte_sha256": "f051cd599c24471a6ac28b27f65e608405cb1871d534bc7256a7211e9b85eb08",
+      "poussees": 20,
+      "horizon": 316,
+      "couloirs": 4,
+      "precedences": 19,
+      "separations": 11,
+      "budget_ergol": 1302,
+      "capacite_debit": 94
+    },
+    {
+      "nom": "coursia-orbital-m10-s55",
+      "empreinte_sha256": "57e93d6ec26298973663f057ea717bc84ee1e60814459ca05142fb699153d91d",
+      "poussees": 20,
+      "horizon": 316,
+      "couloirs": 4,
+      "precedences": 19,
+      "separations": 9,
+      "budget_ergol": 1297,
+      "capacite_debit": 94
+    },
+    {
+      "nom": "coursia-orbital-m12-s11",
+      "empreinte_sha256": "d403e0e32448c7c0f8345d9ba9d06f4fd82021ebd5dade213e696cba935eb9e0",
+      "poussees": 24,
+      "horizon": 360,
+      "couloirs": 4,
+      "precedences": 23,
+      "separations": 12,
+      "budget_ergol": 1657,
+      "capacite_debit": 94
+    },
+    {
+      "nom": "coursia-orbital-m12-s22",
+      "empreinte_sha256": "5a92c1051bba9e3b1eb730c59a7c95abddec0b48d3e04a94f651eba2469c67b7",
+      "poussees": 24,
+      "horizon": 360,
+      "couloirs": 4,
+      "precedences": 23,
+      "separations": 7,
+      "budget_ergol": 1673,
+      "capacite_debit": 96
+    },
+    {
+      "nom": "coursia-orbital-m12-s33",
+      "empreinte_sha256": "6dbd5ce52666769a27531ec1fe2feb99da8b7002a531569f5a2d38c036b34260",
+      "poussees": 24,
+      "horizon": 360,
+      "couloirs": 4,
+      "precedences": 23,
+      "separations": 15,
+      "budget_ergol": 1661,
+      "capacite_debit": 96
+    },
+    {
+      "nom": "coursia-orbital-m12-s44",
+      "empreinte_sha256": "fe770305c6fb5715bfe89a3a45b5b4f6148d5212a52a22c72ccc05ec63b3851f",
+      "poussees": 24,
+      "horizon": 360,
+      "couloirs": 4,
+      "precedences": 23,
+      "separations": 15,
+      "budget_ergol": 1670,
+      "capacite_debit": 96
+    },
+    {
+      "nom": "coursia-orbital-m12-s55",
+      "empreinte_sha256": "aab6978371a29600c0da0f0e129cdcf80fd33426581b971de24db7555e2be35b",
+      "poussees": 24,
+      "horizon": 360,
+      "couloirs": 4,
+      "precedences": 23,
+      "separations": 14,
+      "budget_ergol": 1658,
+      "capacite_debit": 95
+    }
+  ]
+}
