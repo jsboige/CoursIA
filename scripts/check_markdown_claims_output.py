@@ -41,14 +41,18 @@ The script does NOT touch:
     output format is opaque to a regex)
 
 The script is read-only on the notebook: it does NOT edit, only classifies.
-Verdicts: CLEAN / FABRICATION_DETECTED / SKIPPED-LITERATURE / ERROR.
+Notebook verdicts: CLEAN / FABRICATION_DETECTED / CONTRADICTION_DETECTED /
+CLAIM_UNPROVEN / ERROR. Individual relational claims are classified as
+SUPPORTED / CONTRADICTED / UNPROVEN.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import math
 import re
+from decimal import Decimal
 import sys
 from pathlib import Path
 
@@ -73,6 +77,17 @@ NUMERIC_RE = re.compile(
     """,
     re.VERBOSE | re.IGNORECASE,
 )
+
+# Optional machine-readable contract for claims that cannot be checked by
+# numeric presence alone. Code outputs expose named scalar metrics and the
+# adjacent markdown states an explicit relation. JSON is parsed as data only;
+# no expression is evaluated.
+METRICS_RE = re.compile(r"(?m)^\s*CLAIM_METRICS\s+(\{[^\r\n]*\})\s*$")
+CLAIM_CHECK_RE = re.compile(
+    r"<!--\s*claim-check\s*:\s*(.*?)\s*-->",
+    re.IGNORECASE | re.DOTALL,
+)
+RELATIONAL_OPERATORS = {"<", "<=", ">", ">=", "==", "!="}
 
 
 def _normalize_num(token: str) -> str:
@@ -188,23 +203,26 @@ def _is_md_heading_line(line: str) -> bool:
     return line.lstrip().startswith("#")
 
 
-def _strip_md_structure(src: str) -> str:
-    """Drop heading lines + code fences + table-headers so we only scan prose
-    sentences. Code fences are STATEFUL (a ``` line opens and closes a block)."""
+def _strip_fenced_blocks(src: str) -> str:
+    """Drop fenced examples while preserving ordinary markdown prose."""
     kept: list[str] = []
     in_fence = False
     for line in src.splitlines():
         if line.strip().startswith("```"):
             in_fence = not in_fence
             continue
-        if in_fence:
-            continue
-        if _is_md_heading_line(line):
-            continue
-        if line.lstrip().startswith("|"):
-            continue
-        kept.append(line)
+        if not in_fence:
+            kept.append(line)
     return "\n".join(kept)
+
+
+def _strip_md_structure(src: str) -> str:
+    """Drop headings, fenced examples, and table rows before scanning prose."""
+    return "\n".join(
+        line
+        for line in _strip_fenced_blocks(src).splitlines()
+        if not _is_md_heading_line(line) and not line.lstrip().startswith("|")
+    )
 
 
 # Tokens that, when appearing immediately before a number, mark the
@@ -532,6 +550,197 @@ def _is_threshold_expression(src: str, match_pos: int, match_end: int) -> bool:
     return bool(_THRESHOLD_OP_RE.search(span))
 
 
+def _is_scalar(value: object) -> bool:
+    """Return whether value is a finite JSON scalar supported by claims."""
+    if isinstance(value, bool):
+        return True
+    if isinstance(value, int):
+        return True
+    return isinstance(value, float) and math.isfinite(value)
+
+
+def _extract_claim_metrics(
+    output_texts: list[tuple[int, str]],
+) -> tuple[dict[str, object], dict[str, int]]:
+    """Extract nearest named metrics and their code-cell provenance."""
+    metrics: dict[str, object] = {}
+    sources: dict[str, int] = {}
+    for code_idx, text in output_texts:
+        for match in METRICS_RE.finditer(text):
+            try:
+                payload = json.loads(match.group(1))
+            except json.JSONDecodeError:
+                continue
+            if not isinstance(payload, dict):
+                continue
+            for name, value in payload.items():
+                if (
+                    isinstance(name, str)
+                    and name
+                    and _is_scalar(value)
+                    and name not in metrics
+                ):
+                    metrics[name] = value
+                    sources[name] = code_idx
+    return metrics, sources
+
+
+def _resolve_operand(
+    operand: object,
+    metrics: dict[str, object],
+) -> tuple[object | None, str | None]:
+    """Resolve a metric-name operand or accept a scalar constant."""
+    if isinstance(operand, str):
+        if operand not in metrics:
+            return None, f"metric {operand!r} is absent from the local output window"
+        return metrics[operand], None
+    if _is_scalar(operand):
+        return operand, None
+    return None, "operand must be a metric name or a finite numeric/boolean constant"
+
+
+def _compare_relation(
+    left: object,
+    op: str,
+    right: object,
+    tolerance: int | float,
+) -> bool:
+    """Evaluate one closed relation without evaluating arbitrary code."""
+    if op in {"<", "<=", ">", ">="}:
+        if (
+            isinstance(left, bool)
+            or isinstance(right, bool)
+            or not isinstance(left, (int, float))
+            or not isinstance(right, (int, float))
+        ):
+            raise TypeError("ordered comparisons require numeric operands")
+        return {
+            "<": left < right,
+            "<=": left <= right,
+            ">": left > right,
+            ">=": left >= right,
+        }[op]
+
+    left_numeric = isinstance(left, (int, float)) and not isinstance(left, bool)
+    right_numeric = isinstance(right, (int, float)) and not isinstance(right, bool)
+    if left_numeric and right_numeric:
+        equal = abs(Decimal(str(left)) - Decimal(str(right))) <= Decimal(str(tolerance))
+    elif left_numeric != right_numeric:
+        raise TypeError("equality requires operands of compatible types")
+    else:
+        equal = type(left) is type(right) and left == right
+    return equal if op == "==" else not equal
+
+
+def _check_relational_claims(
+    source: str,
+    markdown_cell: int,
+    metrics: dict[str, object],
+    metric_sources: dict[str, int],
+    window: list[int],
+) -> list[dict]:
+    """Classify explicit claim-check contracts as supported/contradicted/unproven."""
+    results: list[dict] = []
+    for ordinal, match in enumerate(CLAIM_CHECK_RE.finditer(source), start=1):
+        raw_contract = match.group(1)
+        claim: object
+        try:
+            claim = json.loads(raw_contract)
+        except json.JSONDecodeError as exc:
+            results.append({
+                "id": f"markdown-{markdown_cell}-{ordinal}",
+                "status": "UNPROVEN",
+                "reason": f"invalid claim-check JSON: {exc.msg}",
+                "markdown_cell": markdown_cell,
+                "window": window,
+            })
+            continue
+
+        generated_id = f"markdown-{markdown_cell}-{ordinal}"
+        supplied_id = claim.get("id") if isinstance(claim, dict) else None
+        claim_id = supplied_id if isinstance(supplied_id, str) and supplied_id else generated_id
+        if not isinstance(claim, dict):
+            results.append({
+                "id": claim_id,
+                "status": "UNPROVEN",
+                "reason": "claim-check must be a JSON object",
+                "markdown_cell": markdown_cell,
+                "window": window,
+            })
+            continue
+
+        allowed = {"id", "left", "op", "right", "tolerance"}
+        unknown = sorted(set(claim) - allowed)
+        op = claim.get("op")
+        tolerance = claim.get("tolerance", 0.0)
+        reason = None
+        if unknown:
+            reason = f"unknown claim-check fields: {', '.join(unknown)}"
+        elif not isinstance(supplied_id, str) or not supplied_id:
+            reason = "claim-check id must be a non-empty string"
+        elif "left" not in claim or "right" not in claim:
+            reason = "claim-check requires left and right operands"
+        elif op not in RELATIONAL_OPERATORS:
+            reason = f"unsupported operator: {op!r}"
+        elif (
+            isinstance(tolerance, bool)
+            or not isinstance(tolerance, (int, float))
+            or (isinstance(tolerance, float) and not math.isfinite(tolerance))
+            or tolerance < 0
+        ):
+            reason = "tolerance must be a finite non-negative number"
+        elif op in {"<", "<=", ">", ">="} and tolerance != 0:
+            reason = "tolerance is supported only for equality comparisons"
+
+        left = right = None
+        if reason is None:
+            left, reason = _resolve_operand(claim["left"], metrics)
+        if reason is None:
+            right, reason = _resolve_operand(claim["right"], metrics)
+
+        if reason is not None:
+            results.append({
+                "id": claim_id,
+                "status": "UNPROVEN",
+                "reason": reason,
+                "markdown_cell": markdown_cell,
+                "window": window,
+            })
+            continue
+
+        try:
+            supported = _compare_relation(left, op, right, tolerance)
+        except TypeError as exc:
+            results.append({
+                "id": claim_id,
+                "status": "UNPROVEN",
+                "reason": str(exc),
+                "markdown_cell": markdown_cell,
+                "window": window,
+            })
+            continue
+
+        metric_names = [
+            operand
+            for operand in (claim["left"], claim["right"])
+            if isinstance(operand, str)
+        ]
+        results.append({
+            "id": claim_id,
+            "status": "SUPPORTED" if supported else "CONTRADICTED",
+            "left": claim["left"],
+            "left_value": left,
+            "op": op,
+            "right": claim["right"],
+            "right_value": right,
+            "tolerance": tolerance,
+            "markdown_cell": markdown_cell,
+            "code_cells": sorted({metric_sources[name] for name in metric_names}),
+            "window": window,
+        })
+    return results
+
+
 def check_notebook(path: Path) -> dict:
     """Scan a single notebook. Returns a structured dict compatible with
     JSON serialization (so the script can be consumed by CI gates)."""
@@ -543,10 +752,12 @@ def check_notebook(path: Path) -> dict:
             "verdict": "ERROR",
             "errors": [f"json.loads failed: {e}"],
             "findings": [],
+            "relational_claims": [],
         }
 
     cells = nb.get("cells", []) or []
     findings: list[dict] = []
+    relational_claims: list[dict] = []
     skipped_lit = 0
     skipped_no_prev = 0
     skipped_no_output = 0
@@ -555,34 +766,48 @@ def check_notebook(path: Path) -> dict:
         if cell.get("cell_type") != "markdown":
             continue
         src = "".join(cell.get("source", []) if isinstance(cell.get("source"), list) else [str(cell.get("source", ""))])
-        if not src or _lit_skip(src):
+        if not src:
             skipped_lit += 1
             continue
-        # Drop heading lines + table-headers + code fences from the prose
-        # we scan (structurals are not quantitative claims).
-        prose = _strip_md_structure(src)
-        # Find the previous code cells (within window) with output
+        # Find the previous code cells (within window) with output.
         prev_code_idxs: list[int] = []
         for j in range(idx - 1, -1, -1):
             if cells[j].get("cell_type") == "code":
                 prev_code_idxs.append(j)
                 if len(prev_code_idxs) >= WINDOW:
                     break
+
+        output_texts: list[tuple[int, str]] = []
+        for j in prev_code_idxs:
+            outputs = cells[j].get("outputs") or []
+            output_texts.append((j, _output_text(outputs)))
+
+        metrics, metric_sources = _extract_claim_metrics(output_texts)
+        relational_claims.extend(
+            _check_relational_claims(
+                _strip_fenced_blocks(src),
+                idx,
+                metrics,
+                metric_sources,
+                prev_code_idxs,
+            )
+        )
+
+        # The literature heuristic suppresses only noisy numeric extraction.
+        # Explicit claim-check contracts remain checkable in long prose cells.
+        if _lit_skip(src):
+            skipped_lit += 1
+            continue
+        # Drop heading lines + table-headers + code fences from the prose
+        # we scan (structurals are not quantitative claims).
+        prose = CLAIM_CHECK_RE.sub("", _strip_md_structure(src))
         if not prev_code_idxs:
             skipped_no_prev += 1
             continue
-        # Concat outputs of the previous code cells (within window)
-        out_chunks: list[str] = []
-        any_output = False
-        for j in prev_code_idxs:
-            outs = cells[j].get("outputs") or []
-            if outs:
-                any_output = True
-            out_chunks.append(_output_text(outs))
-        if not any_output:
+        if not any(text for _, text in output_texts):
             skipped_no_output += 1
             continue
-        raw_out_text = "\n".join(out_chunks)
+        raw_out_text = "\n".join(text for _, text in output_texts)
         # #12076: the direct search compares normalized claim vs normalized
         # output; the fuzzy fallback keeps the RAW text (its comma-gate, clause
         # (c), reads large-number signals from the commas themselves).
@@ -636,16 +861,28 @@ def check_notebook(path: Path) -> dict:
                     "context": _excerpt(src, raw),
                 })
 
-    n_findings = len(findings)
-    verdict = "CLEAN" if n_findings == 0 else "FABRICATION_DETECTED"
+    relational_counts = {
+        status: sum(1 for claim in relational_claims if claim["status"] == status)
+        for status in ("SUPPORTED", "CONTRADICTED", "UNPROVEN")
+    }
+    if findings:
+        verdict = "FABRICATION_DETECTED"
+    elif relational_counts["CONTRADICTED"]:
+        verdict = "CONTRADICTION_DETECTED"
+    elif relational_counts["UNPROVEN"]:
+        verdict = "CLAIM_UNPROVEN"
+    else:
+        verdict = "CLEAN"
     return {
         "path": str(path),
         "verdict": verdict,
         "findings": findings,
+        "relational_claims": relational_claims,
         "stats": {
             "skipped_literature": skipped_lit,
             "skipped_no_prev_code": skipped_no_prev,
             "skipped_no_output": skipped_no_output,
+            "relational_claims": relational_counts,
         },
     }
 
@@ -742,6 +979,19 @@ def render(result: dict) -> str:
                 f"raw={f['raw']!r} normalized={f['normalized']!r}"
             )
             lines.append(f"      context: ...{f['context']}...")
+    for claim in result.get("relational_claims", []):
+        relation = ""
+        if "op" in claim:
+            relation = (
+                f" {claim['left']!r}={claim['left_value']!r} "
+                f"{claim['op']} {claim['right']!r}={claim['right_value']!r}"
+            )
+        lines.append(
+            f"  claim {claim['id']!r}: {claim['status']} at "
+            f"md[{claim['markdown_cell']}]{relation}"
+        )
+        if claim.get("reason"):
+            lines.append(f"    reason: {claim['reason']}")
     return "\n".join(lines)
 
 
@@ -752,8 +1002,8 @@ def main() -> int:
             "previous code cell's output (c.290 pathologie, C.5 violation)."
         ),
         epilog=(
-            "Exit: 0 CLEAN, 1 FABRICATION_DETECTED, 2 ERROR. "
-            "Use --json for CI gate consumption."
+            "Exit: 0 CLEAN, 1 advisory finding (numeric, contradicted, or "
+            "unproven), 2 ERROR. Use --json for CI consumption."
         ),
     )
     ap.add_argument("notebooks", nargs="+", help="paths to .ipynb files")
@@ -772,6 +1022,7 @@ def main() -> int:
                 "verdict": "ERROR",
                 "errors": [f"file not found: {p}"],
                 "findings": [],
+                "relational_claims": [],
             })
             continue
         results.append(check_notebook(p))
@@ -783,11 +1034,19 @@ def main() -> int:
             print(render(r))
             print()
 
-    fabricated = sum(1 for r in results if r["verdict"] == "FABRICATION_DETECTED")
-    errored = sum(1 for r in results if r["verdict"] == "ERROR")
+    advisory = sum(
+        1
+        for result in results
+        if result["verdict"] in {
+            "FABRICATION_DETECTED",
+            "CONTRADICTION_DETECTED",
+            "CLAIM_UNPROVEN",
+        }
+    )
+    errored = sum(1 for result in results if result["verdict"] == "ERROR")
     if errored:
         return 2
-    return 1 if fabricated else 0
+    return 1 if advisory else 0
 
 
 if __name__ == "__main__":
