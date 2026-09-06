@@ -66,6 +66,8 @@ layout: dense
 - Optimisation de stratégies: pure / mixte (randomisee)
 - Von Neumann -> Maximin: Jeux a somme nulle
 
+<img src="./images/img_001.png" alt="Environnement multi-agent : plusieurs decideurs en interaction, exemple du jeu de Morra" style="display:block; margin:4px auto 0; max-height:88px; width:auto; max-width:100%; object-fit:contain;">
+
 ---
 layout: section
 ---
@@ -102,6 +104,13 @@ layout: dense
 - Etant donnée les autres choix
 - Equilibre de Nash = meilleure reponse pour tous
 
+<div style="display:grid; grid-template-columns:repeat(4,1fr); gap:6px; align-items:center;">
+<img src="./images/img_002.png" alt="Matrice de gains du dilemme du prisonnier" style="width:100%; height:28px; object-fit:contain;">
+<img src="./images/img_003.png" alt="Elimination iterative des strategies strictement dominees (IESDS)" style="width:100%; height:28px; object-fit:contain;">
+<img src="./images/img_004.png" alt="Equilibre de Nash dans la matrice de gains" style="width:100%; height:28px; object-fit:contain;">
+<img src="./images/img_005.png" alt="Meilleure reponse aux strategies des autres joueurs" style="width:100%; height:28px; object-fit:contain;">
+</div>
+
 ---
 layout: dense
 ---
@@ -124,6 +133,12 @@ layout: dense
 
 - Somme ponderee par les probabilités individuelles
 - Ex: Bataille des sexes (boxe vs ballet): 2 equilibres purs + mixte 1/3 vs 2/3 -> gain 2/3
+
+<div style="display:grid; grid-template-columns:repeat(3,1fr); gap:6px; align-items:center;">
+<img src="./images/img_006.png" alt="Distribution probabiliste de strategies pures : exemple du penalty" style="width:100%; height:130px; object-fit:contain;">
+<img src="./images/img_007.png" alt="Algorithme de strategie mixte : equations d'indifference a l'equilibre" style="width:100%; height:130px; object-fit:contain;">
+<img src="./images/img_008.png" alt="Calcul des gains esperes : bataille des sexes" style="width:100%; height:130px; object-fit:contain;">
+</div>
 
 ---
 layout: dense
@@ -150,6 +165,13 @@ layout: dense
 - Nombre infini ou pair généralement lie a la dominance faible
   - Ex nombre pair: l'argent gratuit
   - Sinon verifier si on n'a pas oublie une mixte
+
+<div style="display:grid; grid-template-columns:repeat(4,1fr); gap:6px; align-items:center;">
+<img src="./images/img_009.png" alt="Strategie mixte dominant strictement une strategie pure : calcul des probabilites" style="width:100%; height:120px; object-fit:contain;">
+<img src="./images/img_010.png" alt="Dominance faible : elimination iterative" style="width:100%; height:120px; object-fit:contain;">
+<img src="./images/img_011.png" alt="Equilibres infinis : equilibres partiellement mixtes" style="width:100%; height:120px; object-fit:contain;">
+<img src="./images/img_012.png" alt="Regle impaire : nombre d'equilibres d'un jeu" style="width:100%; height:120px; object-fit:contain;">
+</div>
 
 ---
 layout: dense
@@ -178,6 +200,12 @@ layout: dense
 - Importance de reperer tous les chemins / noeuds de decision
 - Equilibres de sous-jeu parfaits multiples (rare)
 
+<div style="display:grid; grid-template-columns:repeat(3,1fr); gap:6px; align-items:center;">
+<img src="./images/img_013.png" alt="Jeu de la guerre des prix : arbre a tours successifs" style="width:100%; height:72px; object-fit:contain;">
+<img src="./images/img_014.png" alt="Induction arriere : jeu de l'escalade a la guerre" style="width:100%; height:72px; object-fit:contain;">
+<img src="./images/img_015.png" alt="Equilibre parfait de sous-jeu (SPE) : menaces credibles" style="width:100%; height:72px; object-fit:contain;">
+</div>
+
 ---
 layout: dense
 ---
@@ -198,9 +226,13 @@ layout: dense
 - Ex: Prisonnier puis Argent gratuit -> equilibre faible (0,0) = menace de punition
 - Menaces "credibles" importantes
 
+<img src="./images/img_016.png" alt="Strategies de punition : jeu du prisonnier puis argent gratuit" style="display:block; margin:6px auto 2px; max-height:90px; width:auto; max-width:100%; object-fit:contain;">
+
 ## Se lier les mains
 
 - Ex: bruler le pont derriere soi -> Rend la menace credible
+
+<img src="./images/img_017.png" alt="Se lier les mains : bruler le pont rend la menace credible" style="display:block; margin:6px auto 2px; max-height:90px; width:auto; max-width:100%; object-fit:contain;">
 
 ## Problemes de l'induction arriere
 
@@ -208,9 +240,19 @@ layout: dense
 - Hypotheses -> Maths -> conclusions (problème: rationalite limitee)
 - Induction avant = passe rationnel (supprime un equilibre)
 
+<div style="display:grid; grid-template-columns:repeat(2,1fr); gap:6px; align-items:center;">
+<img src="./images/img_018.png" alt="Jeu du mille-pattes : equilibre pessimiste de l'induction arriere" style="width:100%; height:90px; object-fit:contain;">
+<img src="./images/img_019.png" alt="Induction arriere : les sous-jeux finaux eclairent les premiers" style="width:100%; height:90px; object-fit:contain;">
+</div>
+
 ## Dilemmes repetes
 
 - Punition perpetuelle, oeil pour oeil etc. -- Evolution de la confiance
+
+<div style="display:grid; grid-template-columns:repeat(2,1fr); gap:6px; align-items:center;">
+<img src="./images/img_020.png" alt="Dilemmes repetes : arbre de jeu multi-manches" style="width:100%; height:90px; object-fit:contain;">
+<img src="./images/img_021.png" alt="Jeux repetes : punition perpetuelle et evolution de la confiance" style="width:100%; height:90px; object-fit:contain;">
+</div>
 
 ---
 layout: dense
@@ -224,10 +266,18 @@ layout: dense
   - `sigma_u = (b-c)/(a+b-2c)` et `0 < sigma_u < 1`
 - Ex: Topologie complete 2x2
 
+<div style="display:grid; grid-template-columns:repeat(3,1fr); gap:6px; align-items:center;">
+<img src="./images/img_022.png" alt="Bataille des sexes avec variables A>B>C" style="width:100%; height:100px; object-fit:contain;">
+<img src="./images/img_023.png" alt="Topologie complete des jeux 2x2" style="width:100%; height:100px; object-fit:contain;">
+<img src="./images/img_024.png" alt="Algorithme de strategie mixte avec variables" style="width:100%; height:100px; object-fit:contain;">
+</div>
+
 ## Equilibre de lame de couteau
 
 - X>0 -> Up, Left vs x<0 -> down, right, x=0 -> tous
 - Instable autour de x=0, probabilité faible -> ignore
+
+<img src="./images/img_025.png" alt="Equilibre de lame de couteau : instabilite autour de x=0" style="display:block; margin:4px auto; width:100%; max-height:36px; object-fit:contain;">
 
 ## Modèles causaux
 
@@ -236,12 +286,19 @@ layout: dense
 - Ex: Football penalty: `sigma_KL = 1/(1+x)`, `sigma'_KL = -1/(1+x^2) < 0`
   - -> il tire davantage son cote faible (compense)
 
+<img src="./images/img_026.png" alt="Modele causal du penalty au football : gradients aux equilibres" style="display:block; margin:6px auto 2px; max-height:95px; width:auto; max-width:100%; object-fit:contain;">
+
 ## Pierre, papier, ciseaux
 
 - Pas de stratégie pure -> cycle
 - Support des stratégies mixtes, EU egales dans le support
 - Theoreme: 2 joueurs, symetrique a somme nulle -> EU = 0
 - Resolution: indifference `sigma_L = 1/4` (ciseaux pour compenser)
+
+<div style="display:grid; grid-template-columns:repeat(2,1fr); gap:6px; align-items:center;">
+<img src="./images/img_027.png" alt="Pierre-papier-ciseaux : matrice de gains a somme nulle" style="width:100%; height:100px; object-fit:contain;">
+<img src="./images/img_028.png" alt="Resolution de pierre-papier-ciseaux : support des strategies mixtes" style="width:100%; height:100px; object-fit:contain;">
+</div>
 
 ---
 layout: default
@@ -255,11 +312,15 @@ layout: default
 - Certains jeux ont une infinite de stratégies pures
   - Pas de matrice, pas forcement d'equilibre de Nash
 
+<img src="./images/img_029.png" alt="Jeu sans equilibre de Nash en strategies pures" style="display:block; margin:4px auto; width:100%; max-height:32px; object-fit:contain;">
+
 ## Duels
 
 - 100 m, 2 balles, precisions différentes (0% a 100m, 100% a 0m)
 - Equilibre = même distance (preuve par contradiction)
 - Ex: date de sortie de produits concurrents
+
+<img src="./images/img_030.png" alt="Duel : equilibre a meme distance" style="display:block; margin:4px auto; width:100%; max-height:28px; object-fit:contain;">
 
 ## Loi de Hotelling et l'electeur median
 
@@ -267,6 +328,8 @@ layout: default
   - Equilibre = les deux au milieu
 - Principe important en politique: theoreme de l'electeur median
   - Vainqueur de Condorcet (cf Choix social)
+
+<img src="./images/img_031.png" alt="Loi de Hotelling : les deux vendeurs se placent au milieu" style="display:block; margin:4px auto; width:100%; max-height:28px; object-fit:contain;">
 
 ---
 layout: section
@@ -294,10 +357,14 @@ layout: dense
 - T_i type du joueur i, U_i recompense, p_i distribution des types
 - Stratégies pures: `S_i = {s_i: T_i -> A_i}`
 
+<img src="./images/img_032.png" alt="Formalisation Bayesienne : joueurs, etats, types et croyances" style="display:block; margin:4px auto; max-height:30px; width:auto; max-width:100%; object-fit:contain;">
+
 ## Equilibres de Nash Bayesien
 
 - Objectif = maximisation de la recompense esperee
 - De nombreux equilibres sans restrictions supplementaires
+
+<img src="./images/img_033.png" alt="Equilibre de Nash Bayesien : maximisation de la recompense esperee" style="display:block; margin:4px auto; max-height:70px; width:auto; max-width:100%; object-fit:contain;">
 
 ## Ex: Dilemme du Sheriff
 
@@ -305,6 +372,8 @@ layout: dense
 - Stratégies dominantes: tirer pour criminel, pas pour civil
 - Pour le Sheriff: `E(tirer) = p-1`, `E(pas) = -2p`
   - p>1/3 = tirer
+
+<img src="./images/img_034.png" alt="Dilemme du Sheriff : seuil p>1/3 pour tirer" style="display:block; margin:4px auto; max-height:70px; width:auto; max-width:100%; object-fit:contain;">
 
 ---
 layout: dense
@@ -319,6 +388,8 @@ layout: dense
   - "Consistant" -> Probabilités par application des stratégies (Bayes)
 - Rationalite séquentielle: recompense esperee maximale
 
+<img src="./images/img_035.png" alt="Jeu de signalisation : arbre avec systeme de croyances" style="display:block; margin:4px auto; max-height:70px; width:auto; max-width:100%; object-fit:contain;">
+
 ## Definition PBE
 
 - Profile stratégique et système de croyance consistant tels que les stratégies sont sequentiellement rationnelles
@@ -331,11 +402,15 @@ layout: dense
   - **Separating**: messages toujours différents -> croyance déterministe
   - **Semi-separation** (partial-pooling): mixte
 
+<img src="./images/img_036.png" alt="Arbre extensive d'un jeu de signalisation" style="display:block; margin:4px auto; max-height:100px; width:auto; max-width:100%; object-fit:contain;">
+
 ## Exemples
 
 - Jeu de reputation (guerre des prix): pooling ou separating
 - Jeu d'education: doue ou pas, diplome ou pas (signal) -> PBE de separation
 - Biere-quiche: P=0.9 -> pooling, P=0.2 -> stratégies mixtes
+
+<img src="./images/img_037.png" alt="Exemples de PBE : pooling, separating et semi-separation" style="display:block; margin:4px auto; max-height:90px; width:auto; max-width:100%; object-fit:contain;">
 
 ---
 layout: section
@@ -439,6 +514,8 @@ layout: dense
 - Allocation maximisant la somme des utilites
 - Taxe: `T_i = U_max(sans i) - U_max(sans i, sans ressource j)`
 
+<img src="./images/img_038.png" alt="Taxe VCG : T_i = U_max(sans i) - U_max(sans i, sans ressource j)" style="display:block; margin:6px auto 2px; max-height:68px; width:auto; max-width:100%; object-fit:contain;">
+
 ---
 layout: dense
 ---
@@ -472,10 +549,14 @@ layout: dense
 - **Indifference aux petits candidats**: vainqueur stable aux changements
 - Paradoxe de Condorcet: pas de garantie d'existence
 
+<img src="./images/img_039.png" alt="Comparaisons par paires : recherche du vainqueur de Condorcet" style="display:block; margin:4px auto; max-height:85px; width:auto; max-width:100%; object-fit:contain;">
+
 ## Theoremes de l'electeur median
 
 - 1er theoreme: Gauche-droite -> existence du vainqueur -> electeur median
 - 2e theoreme: Gauche-droite + valeur intrinseque
+
+<img src="./images/img_040.png" alt="Theoremes de l'electeur median : resultats de vote" style="display:block; margin:4px auto; max-height:80px; width:auto; max-width:100%; object-fit:contain;">
 
 ## Si pas de vainqueur de Condorcet
 
@@ -483,6 +564,8 @@ layout: dense
   - Mais très stratégique (ex: anarchistes)
 - Méthode de **Schulze**: elimination iterative des derniers du peloton de tete
   - Robuste a la manipulation (electeurs raisonnables)
+
+<img src="./images/img_041.png" alt="Methodes Minimax et Schulze en l'absence de vainqueur de Condorcet" style="display:block; margin:4px auto; width:100%; max-height:36px; object-fit:contain;">
 
 ---
 layout: dense
@@ -504,12 +587,24 @@ layout: dense
 - **Scrutin au jugement majoritaire**: mediane des scores
   - Seule procedure avec majorite d'une même note validee + monotonie
 
+<div style="display:grid; grid-template-columns:repeat(3,1fr); gap:6px; align-items:center;">
+<img src="./images/img_042.png" alt="Compte de Borda : score selon l'ordre des preferences" style="width:100%; height:90px; object-fit:contain;">
+<img src="./images/img_043.png" alt="Vote par assentiment : majorite d'approbation" style="width:100%; height:90px; object-fit:contain;">
+<img src="./images/img_044.png" alt="Scrutin au jugement majoritaire : mediane des scores" style="width:100%; height:90px; object-fit:contain;">
+</div>
+
 ## Scrutins stochastiques
 
 - **Scrutin Stochocratique**: option preferee puis tirage au sort
   - Theoreme d'Hylland: seule méthode avec unanimite non stratégique
 - **Condorcet randomisee**: loterie ponderee dans le peloton de tete
   - Ponderation selon equilibre de Nash -- critere de Condorcet + non stratégique
+
+<div style="display:grid; grid-template-columns:repeat(3,1fr); gap:6px; align-items:center;">
+<img src="./images/img_045.png" alt="Scrutin Stochocratique : option preferee puis tirage au sort" style="width:100%; height:80px; object-fit:contain;">
+<img src="./images/img_046.png" alt="Theoreme d'Hylland : unanimite non strategique" style="width:100%; height:80px; object-fit:contain;">
+<img src="./images/img_047.png" alt="Condorcet randomisee : loterie ponderee dans le peloton de tete" style="width:100%; height:80px; object-fit:contain;">
+</div>
 
 ---
 layout: default
@@ -526,6 +621,8 @@ layout: default
   - N manches: JN a le pouvoir
 - Agents impatients: facteurs de discompte `0 <= gamma_i < 1`
   - Offre a l'equilibre: `A_1 = (1-gamma_2)/(1-gamma_1*gamma_2)`
+
+<img src="./images/img_048.png" alt="Negociation a offres alternees : fenetre d'accord et partage a l'equilibre" style="display:block; margin:10px auto; max-height:200px; width:auto; max-width:100%; object-fit:contain;">
 
 ## Domaines orientes tâches
 
@@ -606,6 +703,8 @@ layout: dense
 - `J_1 + J_2 = 0`, equilibres de point de selle
 - P1 maximise, P2 minimise -> equilibre ssi point de selle existe
 
+<img src="./images/img_049.png" alt="Point de selle d'un jeu differentiel a somme nulle" style="display:block; margin:4px auto; width:100%; max-height:26px; object-fit:contain;">
+
 ## Equilibres de Stackelberg
 
 - Le "leader" annonce en tenant compte des reponses des autres
@@ -621,10 +720,17 @@ layout: dense
 - u* est un equilibre de Nash ssi aucun joueur ne peut ameliorer seul
 - Resolution: 2 optimisations -> conditions necessaires
 
+<img src="./images/img_050.png" alt="Equilibres en boucle ouverte : conditions necessaires" style="display:block; margin:4px auto; width:100%; max-height:26px; object-fit:contain;">
+
 ## Equilibres Markoviens
 
 - Resolution d'equations differentielles
 - Jeux lineaires quadratiques -> solution analytique
+
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; align-items:center;">
+<img src="./images/img_051.png" alt="Equilibres Markoviens : jeux lineaires quadratiques" style="width:100%; height:75px; object-fit:contain;">
+<img src="./images/img_052.png" alt="Solution analytique des jeux lineaires quadratiques" style="width:100%; height:75px; object-fit:contain;">
+</div>
 
 ---
 layout: default
@@ -646,6 +752,9 @@ layout: default
 - RRT -> exploration d'arbre
   - Convergence avec nombre d'echantillons suffisant
   - Similaire au filtrage particulaire
+
+<img src="./images/img_053.png" alt="Echantillonnage incremental : convergence avec le nombre d'echantillons" style="display:block; margin:2px auto 0; max-height:20px; width:auto; max-width:100%; object-fit:contain;">
+<img src="./images/img_054.png" alt="Poursuite-evasion : exploration par arbre RRT, similaire au filtrage particulaire" style="display:block; margin:4px auto; max-height:28px; width:auto; max-width:100%; object-fit:contain;">
 
 ## Pour aller plus loin
 
