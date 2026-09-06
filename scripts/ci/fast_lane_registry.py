@@ -430,6 +430,31 @@ TRANCHE2: list[Guard] = [
         needs_base=True,
         absorbed=True,
     ),
+    # Output-object flood ratchet: the sibling above watches text banners and
+    # machine paths; nothing counted output OBJECTS per cell, so a notebook
+    # could grow to 45k lines of dot-output objects while every other gate
+    # stayed green (Sudoku-15, user report 2026-09-06).
+    # Source : notebook-output-flood-ratchet.yml (job `ratchet`).
+    Guard(
+        name="Output-flood ratchet (base vs PR)",
+        source="notebook-output-flood-ratchet.yml",
+        paths=[
+            "**.ipynb",
+            "scripts/notebook_tools/check_output_flood.py",
+            ".github/workflows/notebook-output-flood-ratchet.yml",
+        ],
+        pre_argv=[
+            "python", "scripts/notebook_tools/check_output_flood.py",
+            "--self-test",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/check_output_flood.py",
+            "{base_ref}",
+        ],
+        blocking=True,
+        needs_base=True,
+        absorbed=True,
+    ),
     # Forme 2 : iter par notebook change, rc=1 defaut / rc=2 illisible.
     # Source : fabricated-output-gate.yml (job `fabricated-output`).
     Guard(
