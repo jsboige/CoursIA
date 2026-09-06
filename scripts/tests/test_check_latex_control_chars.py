@@ -181,6 +181,38 @@ class TestNegativeControls(unittest.TestCase):
         self.assertEqual(clc.find_defects(text), [])
 
 
+# --- PR-diff scope: renamed/deleted files are ghosts, not targets -----------
+
+class TestPrDiffSkipsRenamedAwayFiles(unittest.TestCase):
+    """#14901: a notebook renamed on main AFTER the branch point shows up in
+    the three-dot diff as deleted-at-base; the scanner tried to open it and
+    the run died UNREADABLE. A file absent from the PR's tree has nothing
+    to scan."""
+
+    def test_pr_diff_skips_files_absent_from_the_working_tree(self):
+        import subprocess as sp
+        with tempfile.TemporaryDirectory() as d:
+            old_root = clc.REPO_ROOT
+            clc.REPO_ROOT = Path(d)
+            try:
+                def git(*a):
+                    sp.run(["git", *a], cwd=d, check=True, capture_output=True)
+                git("init", "-q", "-b", "main")
+                git("config", "user.email", "t@t")
+                git("config", "user.name", "t")
+                (Path(d) / "ghost.ipynb").write_text("{}", encoding="utf-8")
+                git("add", "-A")
+                git("commit", "-qm", "base has ghost")
+                git("rm", "-q", "ghost.ipynb")
+                git("commit", "-qm", "pr removes ghost")
+                # diff HEAD~1..HEAD names ghost.ipynb; the working tree
+                # (HEAD) does not have it
+                files = clc.pr_diff_files("HEAD~1", "HEAD")
+                self.assertEqual(files, [])
+            finally:
+                clc.REPO_ROOT = old_root
+
+
 # --- Exit codes -------------------------------------------------------------
 
 class TestMainExitCodes(unittest.TestCase):

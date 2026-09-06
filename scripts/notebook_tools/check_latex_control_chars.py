@@ -196,7 +196,12 @@ def pr_diff_files(base: str, head: str) -> list[Path]:
         cwd=REPO_ROOT, capture_output=True, text=True, check=True,
         encoding="utf-8", errors="replace",
     )
-    return [REPO_ROOT / f for f in proc.stdout.splitlines() if f.endswith(".ipynb")]
+    # A path the diff names but the working tree lacks (renamed or deleted
+    # since base -- e.g. a rename landed on main after the branch point)
+    # has nothing to scan at HEAD; scanning it crashed the workflow with
+    # UNREADABLE (#14901).
+    return [REPO_ROOT / f for f in proc.stdout.splitlines()
+            if f.endswith(".ipynb") and (REPO_ROOT / f).exists()]
 
 
 def main(argv=None) -> int:
