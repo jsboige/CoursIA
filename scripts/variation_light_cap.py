@@ -1165,10 +1165,31 @@ def compute_signals(
 _GH_DEFAULT_PAGE = 30
 
 
+class CapInputError(Exception):
+    """The merged-PR replay file is absent, unreadable, or not a JSON array.
+
+    #14849: this is an UNKNOWN verdict, never a permissive False. Pre-fix,
+    _load crashed (or sys.exit'd) before any JSON hit stdout, the workflow's
+    `|| echo "False"` reader turned the crash into "cap not reached", and a
+    LIGHT over budget was silently re-authorized. Raising lets main() emit
+    {"cap_reached": null, "verdict": "unknown"} so the workflow can warn and
+    leave labels untouched instead of guessing.
+    """
+
+
 def _load(path: str) -> list[dict]:
-    data = json.loads(Path(path).read_text(encoding="utf-8"))
+    try:
+        text = Path(path).read_text(encoding="utf-8")
+    except OSError as e:
+        raise CapInputError(f"replay file absent/unreadable: {path} ({e})") from e
+    try:
+        data = json.loads(text)
+    except json.JSONDecodeError as e:
+        raise CapInputError(f"replay file is not valid JSON: {path} ({e})") from e
     if not isinstance(data, list):
-        sys.exit(f"--replay/--check-pr expects a JSON array, got {type(data).__name__}")
+        raise CapInputError(
+            f"--replay/--check-pr expects a JSON array, got {type(data).__name__}"
+        )
     if len(data) == _GH_DEFAULT_PAGE:
         print(
             f"AVERTISSEMENT: le jeu de comptage fait exactement {_GH_DEFAULT_PAGE} "
@@ -1223,7 +1244,18 @@ def main(argv: list[str] | None = None) -> int:
     if not args.replay:
         p.error("--replay FILE (the merged-PR set) is required")
 
-    merged = _load(args.replay)
+    try:
+        merged = _load(args.replay)
+    except CapInputError as e:
+        # #14849: unassessable input = UNKNOWN verdict (same family as the
+        # no-Grain-tag / no-lane paths: cap_reached null), never a permissive
+        # False. Advisory organ -> exit 0; the workflow surfaces ::warning::
+        # and leaves labels untouched. A valid empty array `[]` still computes
+        # a legitimate False (it goes through _load without raising).
+        print(f"ENTREE NON EXPLOITABLE : {e} -- verdict UNKNOWN, cap non calcule.",
+              file=sys.stderr)
+        print(json.dumps({"cap_reached": None, "verdict": "unknown", "reason": str(e)}))
+        return 0
 
     if args.check_pr is not None:
         # CI mode: the current PR is OPEN, so its body is NOT in the merged set.
