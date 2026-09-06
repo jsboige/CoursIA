@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# ARCHIVED: 2026-02 (consolidation genai-stack) -- see scripts/genai-stack/_archive/ARCHIVE_README.md
+# DISPOSITION: superseded | Successor: genai.py auth sync | Reason: Remplace par core/auth_manager.py sync
+#
 """
 token_synchronizer.py - Script d'unification définitive des tokens ComfyUI-Login
 
