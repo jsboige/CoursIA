@@ -1,8 +1,8 @@
 # `search_lean` — Optimalité de A* en Lean 4
 
 Mini-projet Lean 4 (avec [Mathlib](https://github.com/leanprover-community/mathlib4))
-formalisant le **théorème phare d'optimalité de A*** : une heuristique *admissible*
-garantit que l'algorithme A* renvoie un chemin de coût optimal
+formalisant le **cœur mathématique de l'optimalité de A*** : la borne en `f` sous
+heuristique *admissible* — le mécanisme exact de l'argument d'optimalité
 ([Hart, Nilsson & Raphael, 1968](https://doi.org/10.1109/TSSC.1968.300136)).
 
 > **Issue** : [#4048](https://github.com/jsboige/CoursIA/issues/4048) —
@@ -58,13 +58,13 @@ cf #4048) : la **borne en `f`** qui est le mécanisme exact d'optimalité de A*.
 
 - [`Astar/Graph.lean`](Astar/Graph.lean) — `WeightedGraph`, `pathCost`, `PathFrom`.
 - [`Astar/Heuristic.lean`](Astar/Heuristic.lean) — `Admissible`, `Consistent`.
-- [`Astar/Optimality.lean`](Astar/Optimality.lean) — théorème phare (`admissible_implies_optimal`).
+- [`Astar/Optimality.lean`](Astar/Optimality.lean) — théorème phare (`admissible_le_suffix_cost`, anciennement `admissible_implies_optimal`).
 - [`Astar/Consistency.lean`](Astar/Consistency.lean) — `consistent_implies_path_bound` (consistance ⟹ admissibilité, téléscopage).
 
 ## Théorème phare
 
 ```lean
-theorem admissible_implies_optimal
+theorem admissible_le_suffix_cost
     (h hStar : V → NNReal) (hAdm : Admissible h hStar)
     (goal start : V) (p : Path V) (hStar_lb : IsTrueRemainingCost G hStar goal)
     (hp : PathFrom start goal p) (i : Fin p.length) :
@@ -87,7 +87,7 @@ flowchart TD
     WG["Graphe pondéré WeightedGraph V<br/>arêtes edge : V → V → ℝ≥0 (non-négatives)"]
     PATH["Chemin start → goal<br/>PathFrom start goal p · coût pathCost p"]
     HADM["Heuristique admissible<br/>Admissible h hStar : ∀ n, h n ≤ hStar n"]
-    BOUND["Borne en f en chaque nœud<br/>h(p.get i) ≤ pathCost(p.drop i)<br/><i>admissible_implies_optimal (phase 1)</i>"]
+    BOUND["Borne en f en chaque nœud<br/>h(p.get i) ≤ pathCost(p.drop i)<br/><i>admissible_le_suffix_cost (phase 1)</i>"]
     STAR["A* déploie le nœud de f = g + h minimal"]
     OPT["Chemin optimal renvoyé<br/>jamais au-delà de la frontière du coût optimal"]
 
@@ -175,7 +175,7 @@ flowchart TD
     CONS["Heuristique consistante<br/>Consistent G h : h n ≤ edge n n' + h n'<br/><i>locale par arc (relaxation de Bellman)</i>"]
     TELE["consistent_implies_path_bound<br/><i>téléscopage le long du chemin</i><br/>h(start) ≤ pathCost(p)"]
     ADM["Heuristique admissible<br/>Admissible h hStar : h n ≤ hStar n<br/><i>globale</i>"]
-    OPT["admissible_implies_optimal<br/><i>phase 1 — borne en f</i><br/>chemin optimal garanti"]
+    OPT["admissible_le_suffix_cost<br/><i>phase 1 — borne en f</i><br/>mécanisme exact d'optimalité"]
     MONO["consistent_implies_f_monotone<br/><i>phase 3 — f = g + h croissante</i>"]
     EFF["Efficacité<br/>aucun nœud jamais ré-expansé"]
 
@@ -203,7 +203,7 @@ Ce livrable couvre les phases 1-3 (#4048) :
 - [x] Scaffolding du lake (lakefile, toolchain, `.gitignore`)
 - [x] Modèle (`WeightedGraph`, `pathCost`, `PathFrom`)
 - [x] Définitions (`Admissible`, `Consistent`, `IsTrueRemainingCost`)
-- [x] **Théorème phare `admissible_implies_optimal` — 0 `sorry`** (phase 1, PR #4090)
+- [x] **Théorème phare `admissible_le_suffix_cost` (anciennement `admissible_implies_optimal`) — 0 `sorry`** (phase 1, PR #4090)
 - [x] **`consistent_implies_admissible` — 0 `sorry`** (phase 2, téléscopage de la consistance le long du chemin)
 - [x] **`consistent_implies_f_monotone` — 0 `sorry`** (phase 3, `f = g + h` croissante ⇒ pas de ré-expansion)
 
