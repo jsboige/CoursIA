@@ -601,6 +601,21 @@ tmp/
 
 # Claude Code worktrees and temp artifacts
 .claude/worktrees/
+
+# Worktrees hors `.claude/` : `git worktree add` depose aussi des checkouts
+# sous `.worktrees/` a la racine du depot. Sans cette ligne, chaque worktree
+# ainsi cree expose son arbre entier comme untracked -- mesure 2026-09-05 :
+# 101 054 fichiers untracked pour 10 worktrees, qui noient le panneau Source
+# Control et masquent les modifications reelles (#14195).
+.worktrees/
+
+# Scratch local d'agent : patches, sondes, sorties de commande jetables.
+# Meme rationale que ci-dessus -- ces fichiers ne sont jamais des livrables.
+.local/
+
+# Logs de sessions prover en arriere-plan (Lean). Produits par les runs
+# `agent_tests`, jamais commites.
+MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/bg_logs/
 *.lscache
 $null
 
