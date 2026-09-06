@@ -5,7 +5,7 @@ avec sorry stratégiques commentés (références papier + prérequis Mathlib).
 
 Epic #2874 (Phase 5 en cours). Toolchain `v4.32.1` (migration post-#11325, cf #11256).
 
-## État des sorries (vérifié 2026-09-05 contre la branche #2874, **10 réels**)
+## État des sorries (vérifié 2026-09-06 contre la branche #2874, **9 réels**)
 
 Deux comptes, selon le filtre CI :
 
@@ -14,19 +14,21 @@ Deux comptes, selon le filtre CI :
 | `Knots/Basic.lean` | 0 | 3 |
 | `Knots/Reidemeister.lean` | 2 | 2 |
 | `Knots/Invariant.lean` | **1** | 15 |
-| `Knots/Conway.lean` | 5 | 11 |
+| `Knots/Conway.lean` | 4 | 11 |
 | `Knots/Lidman.lean` | 2 | 4 |
 | `Knots/MathlibPrerequisites.lean` | 0 | 2 |
-| **Total** | **10** | **37** |
+| **Total** | **9** | **37** |
 
-- **sorry réels** = ce qui manque vraiment comme preuve. **10** au total (code-only
+- **sorry réels** = ce qui manque vraiment comme preuve. **9** au total (code-only
   après strip `--`/`/- -/`, mesuré par `scripts/lean/count_code_sorry.py` champ
   `distinct_code_sorry`), tous stables : 1 dans `Invariant.lean`
   (`Knot.unknottingNumber` L2143 — `tricolorable_invariant` est résolu), 2
-  `reidemeister_theorem` (PL), 5 Conway (les 2 defs `IsSmoothlySlice` /
-  `IsTopologicallySlice := sorry` + 3 `exact sorry` de bornes —
+  `reidemeister_theorem` (PL), 4 Conway (les 2 defs `IsSmoothlySlice` /
+  `IsTopologicallySlice := sorry` + 2 `exact sorry` de bornes —
   `conway_trivial_alexander` a été DISCHARGÉ le 2026-09-05 par la preuve kernel
-  du déterminant 10×10 en ℤ[t], See #2874), 2 Lidman. Les
+  du déterminant 10×10 en ℤ[t], See #2874, et `KT_trivial_alexander` a été
+  DISCHARGÉ le 2026-09-06 — mineur t⁵ par transvections uniquement, See #2874),
+  2 Lidman. Les
   **2 résiduels §9.1 `fox`/`col` du backward transfer ont été DISCHARGÉS par
   #11227** : le mode kink all-distinct est **vacuus** — le kink R1 `C = ⟨a,b,c,c⟩`
   a `e₃ = e₄ = c`, la continuité d'over-strand Path B `c₂ = c₄` force
@@ -34,7 +36,9 @@ Deux comptes, selon le filtre CI :
   `c₂ ≠ c₃` → `absurd` clos les deux résiduels d'une ligne chacun. La
   **bi-implication R1 connectée est COMPLÈTE** (forward #3000 + backward
   #3124/#11227).
-- **Baisse historique 17 → 16 → 14 → 11 → 10** : #2874 a déchargé
+- **Baisse historique 17 → 16 → 14 → 11 → 10 → 9** : #2874 a déchargé
+  `KT_trivial_alexander` (2026-09-06, mineur t⁵ par 30 transvections —
+  déterminant invariant à chaque pas, Q = 1), puis
   `conway_trivial_alexander` (2026-09-05, élimination de Gauss kernel 10×10 +
   étape composite au coin k=8, déterminant −t⁶). Avant cela, #8766 a déchargé `trefoil_not_unknot`
   (composition), #9966 a surélevé à 17 (wall du wrapper
