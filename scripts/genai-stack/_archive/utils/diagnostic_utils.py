@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# ARCHIVED: 2026-02 (consolidation genai-stack) -- see scripts/genai-stack/_archive/ARCHIVE_README.md
+# DISPOSITION: abandoned | Successor: (none) | Reason: Jamais appele depuis aucun script actif
+#
 """
 Utilitaire consolidé pour le diagnostic de l'environnement ComfyUI
 
@@ -138,7 +141,7 @@ class DiagnosticUtils:
             # Lister les conteneurs
             result = subprocess.run([
                 'docker', 'ps', '-a', '--filter', 'name=comfyui'
-            ], capture_output=True, text=True, timeout=10)
+            ], capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=10)
             
             if result.returncode == 0:
                 lines = result.stdout.strip().split('\n')
@@ -152,7 +155,7 @@ class DiagnosticUtils:
             # Lister les images
             result = subprocess.run([
                 'docker', 'images', '--filter', 'comfyui'
-            ], capture_output=True, text=True, timeout=10)
+            ], capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=10)
             
             if result.returncode == 0:
                 lines = result.stdout.strip().split('\n')
