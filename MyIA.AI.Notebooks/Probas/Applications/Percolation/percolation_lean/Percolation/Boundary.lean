@@ -153,4 +153,87 @@ theorem C4_closed_iff (A : Set (Fin 4)) :
     openEdgeClosed C4 full4 A ↔ A = Set.univ ∨ A = ∅ :=
   closed_eq_empty_or_univ_of_connected C4 (A := A) (ω := full4) C4_full_connected
 
+-- ============================================================
+-- Frontière finie `∂A` et profil isopérimétrique (complément tranche 4)
+-- ============================================================
+variable (G : SimpleGraph V) [Fintype (Edge G)] [DecidableEq (Edge G)] [DecidableRel G.Adj]
+
+/-- **Frontière finie `∂A`** : la `Finset` des arêtes **ouvertes** traversantes — une arête
+ouverte `s(u,v)` appartient à `∂A` si `u ∈ A`, `v ∉ A` et l'arête est ouverte (dans `ω`). C'est
+l'objet fini du profil isopérimétrique : `#(∂A)` compte les arêtes ouvertes qui quittent `A`. -/
+def boundary (ω : Finset (Edge G)) (A : Finset V) : Finset (Edge G) :=
+  ω.filter (fun e : Edge G =>
+    ∃ (u : V) (v : V) (huv : G.Adj u v),
+      u ∈ A ∧ v ∉ A ∧ e = ⟨s(u, v), (show s(u, v) ∈ G.edgeSet from huv)⟩)
+
+/-- **Appartenance à `∂A`** : `e ∈ ∂A` si et seulement si `e` est une arête ouverte (dans `ω`)
+dont une extrémité est dans `A` et l'autre dans le complémentaire. -/
+theorem mem_boundary_iff (ω : Finset (Edge G)) (A : Finset V) (e : Edge G) :
+    e ∈ boundary G ω A ↔ e ∈ ω ∧ ∃ (u : V) (v : V) (huv : G.Adj u v),
+      u ∈ A ∧ v ∉ A ∧ e = ⟨s(u, v), (show s(u, v) ∈ G.edgeSet from huv)⟩ := by
+  simp [boundary]
+
+/-- **`∂A` vide ⟺ `A` ω-fermé** : un ensemble fini a une frontière ouverte vide si et seulement
+s'il est ω-fermé (aucune arête ouverte n'en sort). C'est la version **finie et quantitative** du
+pont `openEdgeClosed_iff_no_cross` de la tranche 3 : elle relie l'objet `boundary` au prédicat
+`openEdgeClosed` en exprimant la fermeture par l'annulation de `#(∂A)`. -/
+theorem boundary_empty_iff_closed (ω : Finset (Edge G)) (A : Finset V) :
+    boundary G ω A = ∅ ↔ openEdgeClosed G ω (↑A : Set V) := by
+  rw [openEdgeClosed_iff_no_cross]
+  constructor
+  · intro hboundary u v hu hvnot hAdj
+    rcases hAdj with ⟨huv, hmem⟩
+    let e : Edge G := ⟨s(u, v), (show s(u, v) ∈ G.edgeSet from huv)⟩
+    have hmem' : e ∈ ω ∧ ∃ (u : V) (v : V) (huv : G.Adj u v),
+        u ∈ A ∧ v ∉ A ∧ e = ⟨s(u, v), (show s(u, v) ∈ G.edgeSet from huv)⟩ := by
+      refine ⟨hmem, u, v, huv, hu, hvnot, ?_⟩
+      rfl
+    have hmemb : e ∈ boundary G ω A := (mem_boundary_iff G ω A e).mpr hmem'
+    rw [hboundary] at hmemb
+    simp at hmemb
+  · intro hclosed
+    ext e
+    constructor
+    · intro he
+      rcases (mem_boundary_iff G ω A e).mp he with ⟨heω, u, v, huv, hu, hvnot, heq⟩
+      subst heq
+      exact False.elim ((hclosed (u := u) (v := v) hu hvnot) ⟨huv, heω⟩)
+    · intro heempty
+      simp at heempty
+
+/-- **Borne `C₃` (profil isopérimétrique)** : dans la configuration complète, toute partie propre
+non vide `A ⊆ C₃` a une frontière de cardinal exactement `2` — le triangle étant complet, chaque
+sommet de `A` est adjacent ouvertement à tout sommet du complémentaire (`|A|·(3−|A|) = 2` sur un
+triangle, pour `|A| ∈ {1,2}`). Le minimum `min_{|A|=k}|∂A|` vaut donc **2** pour `k ∈ {1,2}`. -/
+theorem boundary_card_C3 : ∀ A : Finset (Fin 3), A.Nonempty → A ≠ Finset.univ →
+    #(boundary C3 full3 A) = 2 := by
+  decide
+
+/-- **Borne inférieure `C₃`** : `2 ≤ #(∂A)` pour toute partie propre non vide du triangle (vue
+comme la composante « ≥ 2 » du profil). -/
+theorem two_le_boundary_C3 : ∀ A : Finset (Fin 3), A.Nonempty → A ≠ Finset.univ →
+    2 ≤ #(boundary C3 full3 A) := by
+  intro A hne hproper
+  exact (boundary_card_C3 A hne hproper).ge
+
+/-- **Borne inférieure `C₄` (profil isopérimétrique)** : dans la configuration complète du carré,
+toute partie propre non vide `A ⊆ C₄` a une frontière de cardinal au moins `2`. Le minimum
+`min_{|A|=k}|∂A|` est au moins `2` pour tout `1 ≤ k ≤ 3`. -/
+theorem two_le_boundary_C4 : ∀ A : Finset (Fin 4), A.Nonempty → A ≠ Finset.univ →
+    2 ≤ #(boundary C4 full4 A) := by
+  decide
+
+/-- **Atteinte du minimum `C₄`** : le singleton `{0}` a une frontière exactement `2` (les arêtes
+`0—1` et `0—3`), si bien que `min_{|A|=k}|∂A| = 2` est **atteint** sur le carré — le profil
+isopérimétrique vaut `2` aux trois cardinaux `k ∈ {1,2,3}`. -/
+theorem boundary_attains_min_C4 :
+    ∃ A : Finset (Fin 4), A.Nonempty ∧ A ≠ Finset.univ ∧ #(boundary C4 full4 A) = 2 := by
+  refine ⟨{0}, by simp, by simp, by decide⟩
+
+/-- **Carré : paire opposée** : `{0,2}` (extrémités opposées, non adjacentes) a une frontière de
+cardinal `4` — les quatre arêtes `0—1`, `0—3`, `2—1`, `2—3` quittent `A`. Ce cas **exerce** l'absence
+d'arête directe `0—2` et distingue `C₄` du triangle. -/
+theorem boundary_card_C4_opposite : #(boundary C4 full4 ({0, 2} : Finset (Fin 4))) = 4 := by
+  decide
+
 end Percolation

@@ -153,4 +153,87 @@ theorem C4_closed_iff (A : Set (Fin 4)) :
     openEdgeClosed C4 full4 A ↔ A = Set.univ ∨ A = ∅ :=
   closed_eq_empty_or_univ_of_connected C4 (A := A) (ω := full4) C4_full_connected
 
+-- ============================================================
+-- Finite boundary `∂A` and isoperimetric profile (tranche 4 complement)
+-- ============================================================
+variable (G : SimpleGraph V) [Fintype (Edge G)] [DecidableEq (Edge G)] [DecidableRel G.Adj]
+
+/-- **Finite boundary `∂A`**: the `Finset` of **open** crossing edges — an open edge `s(u,v)`
+belongs to `∂A` if `u ∈ A`, `v ∉ A` and the edge is open (in `ω`). This is the finite object of
+the isoperimetric profile: `#(∂A)` counts the open edges leaving `A`. -/
+def boundary (ω : Finset (Edge G)) (A : Finset V) : Finset (Edge G) :=
+  ω.filter (fun e : Edge G =>
+    ∃ (u : V) (v : V) (huv : G.Adj u v),
+      u ∈ A ∧ v ∉ A ∧ e = ⟨s(u, v), (show s(u, v) ∈ G.edgeSet from huv)⟩)
+
+/-- **Membership in `∂A`**: `e ∈ ∂A` if and only if `e` is an open edge (in `ω`) one of whose
+endpoints is in `A` and the other in the complement. -/
+theorem mem_boundary_iff (ω : Finset (Edge G)) (A : Finset V) (e : Edge G) :
+    e ∈ boundary G ω A ↔ e ∈ ω ∧ ∃ (u : V) (v : V) (huv : G.Adj u v),
+      u ∈ A ∧ v ∉ A ∧ e = ⟨s(u, v), (show s(u, v) ∈ G.edgeSet from huv)⟩ := by
+  simp [boundary]
+
+/-- **`∂A` empty ⟺ `A` ω-closed**: a finite set has an empty open boundary if and only if it is
+ω-closed (no open edge leaves it). This is the **finite and quantitative** version of the
+`openEdgeClosed_iff_no_cross` bridge of tranche 3: it links the `boundary` object to the
+`openEdgeClosed` predicate by expressing closure as the vanishing of `#(∂A)`. -/
+theorem boundary_empty_iff_closed (ω : Finset (Edge G)) (A : Finset V) :
+    boundary G ω A = ∅ ↔ openEdgeClosed G ω (↑A : Set V) := by
+  rw [openEdgeClosed_iff_no_cross]
+  constructor
+  · intro hboundary u v hu hvnot hAdj
+    rcases hAdj with ⟨huv, hmem⟩
+    let e : Edge G := ⟨s(u, v), (show s(u, v) ∈ G.edgeSet from huv)⟩
+    have hmem' : e ∈ ω ∧ ∃ (u : V) (v : V) (huv : G.Adj u v),
+        u ∈ A ∧ v ∉ A ∧ e = ⟨s(u, v), (show s(u, v) ∈ G.edgeSet from huv)⟩ := by
+      refine ⟨hmem, u, v, huv, hu, hvnot, ?_⟩
+      rfl
+    have hmemb : e ∈ boundary G ω A := (mem_boundary_iff G ω A e).mpr hmem'
+    rw [hboundary] at hmemb
+    simp at hmemb
+  · intro hclosed
+    ext e
+    constructor
+    · intro he
+      rcases (mem_boundary_iff G ω A e).mp he with ⟨heω, u, v, huv, hu, hvnot, heq⟩
+      subst heq
+      exact False.elim ((hclosed (u := u) (v := v) hu hvnot) ⟨huv, heω⟩)
+    · intro heempty
+      simp at heempty
+
+/-- **`C₃` bound (isoperimetric profile)**: in the full configuration, every nonempty proper
+`A ⊆ C₃` has boundary cardinality exactly `2` — the triangle being complete, every vertex of `A`
+is openly adjacent to every vertex of the complement (`|A|·(3−|A|) = 2` on a triangle, for
+`|A| ∈ {1,2}`). The minimum `min_{|A|=k}|∂A|` is therefore **2** for `k ∈ {1,2}`. -/
+theorem boundary_card_C3 : ∀ A : Finset (Fin 3), A.Nonempty → A ≠ Finset.univ →
+    #(boundary C3 full3 A) = 2 := by
+  decide
+
+/-- **`C₃` lower bound**: `2 ≤ #(∂A)` for every nonempty proper subset of the triangle (the
+`≥ 2` component of the profile). -/
+theorem two_le_boundary_C3 : ∀ A : Finset (Fin 3), A.Nonempty → A ≠ Finset.univ →
+    2 ≤ #(boundary C3 full3 A) := by
+  intro A hne hproper
+  exact (boundary_card_C3 A hne hproper).ge
+
+/-- **`C₄` lower bound (isoperimetric profile)**: in the full configuration of the square, every
+nonempty proper `A ⊆ C₄` has boundary cardinality at least `2`. The minimum `min_{|A|=k}|∂A|` is
+at least `2` for every `1 ≤ k ≤ 3`. -/
+theorem two_le_boundary_C4 : ∀ A : Finset (Fin 4), A.Nonempty → A ≠ Finset.univ →
+    2 ≤ #(boundary C4 full4 A) := by
+  decide
+
+/-- **Attainment of the `C₄` minimum**: the singleton `{0}` has boundary exactly `2` (the edges
+`0—1` and `0—3`), so `min_{|A|=k}|∂A| = 2` is **attained** on the square — the isoperimetric
+profile is `2` at all three cardinals `k ∈ {1,2,3}`. -/
+theorem boundary_attains_min_C4 :
+    ∃ A : Finset (Fin 4), A.Nonempty ∧ A ≠ Finset.univ ∧ #(boundary C4 full4 A) = 2 := by
+  refine ⟨{0}, by simp, by simp, by decide⟩
+
+/-- **Square: opposite pair**: `{0,2}` (opposite, non-adjacent endpoints) has boundary cardinality
+`4` — the four edges `0—1`, `0—3`, `2—1`, `2—3` leave `A`. This case **exercises** the absence of a
+direct `0—2` edge and distinguishes `C₄` from the triangle. -/
+theorem boundary_card_C4_opposite : #(boundary C4 full4 ({0, 2} : Finset (Fin 4))) = 4 := by
+  decide
+
 end Percolation_en
