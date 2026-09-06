@@ -68,6 +68,8 @@ Les cellules doivent suivre un **ordre canonique** sans glissement ni oubli. Fri
 
 Preserver TOUS les commentaires `# TODO`, `# Indice`, `# Etape N`. Remplacer `raise NotImplementedError` legacy par ce pattern = **conforme**, anti-regression ne s'applique pas.
 
+Un stub ne rend **jamais** une verite en dur (`return True`, `{"ok": True}`) : sa valeur de retour doit etre **indiscernable de « pas fait »** (`None`/`False`/`[]`/`0`), sinon la sortie committee affirme un resultat jamais verifie — detecteur : `scripts/notebook_tools/detect_stub_truth_returns.py` (#14817).
+
 ## Commit avec outputs (rule C.2)
 
 Tout notebook committe : `execution_count: <int>` + `outputs: [...]` coherents pour chaque cellule code executable. Modification source = re-execution complete avant commit. Exception : modifs uniquement markdown → outputs precedents valides.

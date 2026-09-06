@@ -128,12 +128,19 @@ def interval_coverage(
 # ---------------------------------------------------------------------------
 
 def _har_rv_features(rv: pd.Series) -> pd.DataFrame:
-    """Daily / weekly / monthly means of RV LEVELS (Corsi 2009 plain spec)."""
+    """Lagged daily / weekly / monthly means of RV LEVELS (Corsi 2009 plain spec).
+
+    Shifted one step back, mirroring ``realized_variance.har_lag_features``:
+    row t carries RV_{t-1}, mean(RV_{t-5..t-1}), mean(RV_{t-22..t-1}) so the
+    regression in :meth:`HarRvModel.fit` forecasts RV_t from PAST RV only.
+    Contemporaneous alignment regresses RV_t on RV_t — a perfect identity fit
+    whose iterated forecast degenerates to persistence (#14791).
+    """
     rv = rv.astype(float)
     return pd.DataFrame({
-        "rv_d": rv,
-        "rv_w": rv.rolling(5).mean(),
-        "rv_m": rv.rolling(22).mean(),
+        "rv_d": rv.shift(1),
+        "rv_w": rv.shift(1).rolling(5, min_periods=5).mean(),
+        "rv_m": rv.shift(1).rolling(22, min_periods=22).mean(),
     })
 
 
@@ -375,6 +382,58 @@ def _sha256_array(arr: np.ndarray) -> str:
     ).hexdigest()
 
 
+def assert_baselines_distinct(
+    deb_arrays: dict[str, np.ndarray], threshold: float = 1e-6,
+) -> dict[str, float]:
+    """Non-degeneracy control (#14791): baselines declared as distinct models
+    must actually differ.
+
+    Two "different" baselines whose forecasts agree to machine precision on
+    every OOS point carry no independent information — exactly the har_rv
+    defect (identity fit == persistence at 5e-14). Unlike the forecast-hash
+    control, which only separates bit-identical from not-bit-identical, this
+    check CAN go red on the failure mode it guards against: relative
+    agreement below ``threshold`` everywhere means same effective model, and
+    the run aborts instead of publishing an empty column.
+
+    Floor of detection (#14823): the abort fires only on agreement EVERYWHERE.
+    Each pairwise separation is aggregated by MAX over the OOS points, so a
+    single divergent point keeps a partially-degenerate column green. This is
+    deliberate — the guard rejects "same effective model" (agree below
+    ``threshold`` on all points), not a model that merely reproduces
+    persistence on most points. The per-point MEDIAN is recorded alongside the
+    max as the monotone "how much do these baselines really differ" metric:
+    it stays near the floor when baselines agree almost everywhere but max is
+    buoyed by one outlier.
+
+    Returns ``{"max": ..., "median": ...}``: the weakest pairwise separation
+    across baseline pairs, each pair's separation aggregated over OOS points
+    by max (``max``, the abort signal) and by median (``median``, recorded in
+    the manifest as ``baseline_median_rel_sep``). With no baseline pair to
+    compare, both are ``inf``.
+    """
+    names = [m for m in BASELINES if m in deb_arrays]
+    weakest_max = np.inf
+    weakest_median = np.inf
+    for i in range(len(names)):
+        for j in range(i + 1, len(names)):
+            a, b = names[i], names[j]
+            pa, pb = deb_arrays[a], deb_arrays[b]
+            denom = np.maximum(np.abs(pa), np.abs(pb))
+            rel = np.abs(pa - pb) / np.maximum(denom, 1e-12)
+            top = float(np.max(rel))
+            med = float(np.median(rel))
+            weakest_max = min(weakest_max, top)
+            weakest_median = min(weakest_median, med)
+            if top < threshold:
+                raise RuntimeError(
+                    f"degenerate baselines (#14791): {a!r} and {b!r} agree to "
+                    f"{top:.2e} (max relative over {len(pa)} OOS points) — "
+                    f"below {threshold:g}: same effective model, the vs-{b} "
+                    f"column carries no independent information")
+    return {"max": float(weakest_max), "median": float(weakest_median)}
+
+
 def run_config(
     coin: str,
     hourly_rets: pd.Series,
@@ -493,6 +552,13 @@ def run_config(
             tsfm_quant_folds = quant_folds
             tsfm_y_folds = y_folds
 
+    # Non-degeneracy control (#14791): a run where two declared baselines
+    # agree below 1e-6 everywhere aborts here instead of publishing an
+    # empty "vs X" column; the weakest separation is kept as provenance.
+    _baseline_sep = assert_baselines_distinct(deb_arrays)
+    baseline_weakest_rel_sep = _baseline_sep["max"]
+    baseline_median_rel_sep = _baseline_sep["median"]
+
     # In-situ DM, two legs per amended §C (#11010): the CONJUNCTION verdict
     # uses a PRECISION loss ("mse"); the "linear" leg (raw signed errors) is
     # the bias-control diagnostic and is never the conjunction jambe. Both
@@ -516,6 +582,8 @@ def run_config(
         "dm_vs_baselines_linear": dm_linear_out,
         "per_fold_bias": per_fold_bias_out,
         "fc_hash_per_fold": fc_hashes,
+        "baseline_weakest_rel_sep": baseline_weakest_rel_sep,
+        "baseline_median_rel_sep": baseline_median_rel_sep,
         "n_oos": rows[MODELS[0]]["n_oos"],
         "bounds_train_test": folds[0] | {
             "n_total": int(n),

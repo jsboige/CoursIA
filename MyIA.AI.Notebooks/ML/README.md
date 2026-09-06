@@ -55,13 +55,13 @@ Six figures illustrent les trois fils de la série : les fondations Python (Pand
 
 ## Parcours d'apprentissage
 
-### Track A : ML.NET (.NET/C#, 10 notebooks C# — 9 du parcours ML-1 à ML-9 + 1 TP capstone — et leurs 9 jumeaux Python scikit-learn, ~7h)
+### Track A : ML.NET (.NET/C#, parcours ML-1 à ML-9 + TP capstone, et leurs jumeaux Python scikit-learn, ~7h)
 
 Le parcours ML.NET couvre le pipeline complet en C# : les notebooks 1-2 introduisent ML.NET et la préparation de données (IDataView, encodage). Le notebook 3 couvre l'entraînement (SDCA, LightGBM, AutoML) — son **leaderboard AutoML** (cell 12-13) rend visible la discrimination entre entraîneurs : sur données quadratiques, `LightGbmRegression` gagne avec un RMSE de 90 262 contre 30,5 millions pour `FastTreeRegression`, soit un écart de **plus de 300×** qu'aucun tableau `Console.WriteLine` ne fait ressortir. Le notebook 4 est crucial : évaluation rigoureuse par cross-validation et Permutation Feature Importance. Les notebooks 5-7 abordent les séries temporelles, l'export ONNX pour la production, et les systèmes de recommandation. Les notebooks 8-9 ouvrent sur l'apprentissage non-supervisé : clustering K-Means (segmentation RFM, méthode du coude) puis détection d'anomalies par Randomized PCA (maintenance prédictive, choix du seuil de décision). Le TP final (prévision de ventes) combine ML.NET et Infer.NET pour une régression bayésienne. Ce track présuppose .NET 9.0 + dotnet-interactive.
 
-### Track B : Data Science with Agents (Python, 32 notebooks, ~21h)
+### Track B : Data Science with Agents (Python, ~21h)
 
-Le parcours Python s'articule en trois temps. Les **fondations** (NumPy/Pandas) installent la manipulation de données. Le **socle ML canonique** ([02-ML-Cours](DataScienceWithAgents/02-ML-Cours/), 9 notebooks scikit-learn) pose ensuite les concepts fondamentaux — workflow et surapprentissage, descente de gradient, régressions, ensembles, biais-variance, non supervisé, modèles non-paramétriques, théorie PAC, grokking — chacun rendant *visible* un concept-phare et ancrant un article fondateur. Viennent enfin les **labs agentic**, en deux sous-tracks : le sous-track **LangChain** (Labs 1-7) couvre le data wrangling, la visualisation, le ML classique et le NLP de base ; le sous-track **Google ADK** (Labs 8-17) monte en complexité avec le deep learning (PyTorch), le dashboarding et les pipelines multi-agents (agents LLM pour automatiser le workflow data science). Ce track présuppose Python 3.10+ avec PyTorch, scikit-learn et pandas.
+Le parcours Python s'articule en trois temps. Les **fondations** (NumPy/Pandas) installent la manipulation de données. Le **socle ML canonique** ([02-ML-Cours](DataScienceWithAgents/02-ML-Cours/), scikit-learn) pose ensuite les concepts fondamentaux — workflow et surapprentissage, descente de gradient, régressions et pont génératif, ensembles, biais-variance/calibration/équité, non supervisé, théorie PAC et ses compagnons formels, grokking, puis optimisation d'hyperparamètres, régularisation sparse et classes déséquilibrées — chacun rendant *visible* un concept-phare et ancrant un article fondateur. Viennent enfin les **labs agentic**, en deux sous-tracks : le sous-track **LangChain** (Labs 1-7) couvre le data wrangling, la visualisation, le ML classique et le NLP de base ; le sous-track **Google ADK** (Labs 8-18, extensions 12b-12d) monte en complexité avec le deep learning (PyTorch), le dashboarding et les pipelines multi-agents (agents LLM pour automatiser le workflow data science). Deux volets spécialisés complètent le parcours : [03-DeepLearning](DataScienceWithAgents/03-DeepLearning/) (PyTorch) et [04-Vision](DataScienceWithAgents/04-Vision/) (dont le transfer learning ResNet). Ce track présuppose Python 3.10+ avec PyTorch, scikit-learn et pandas.
 
 ## Progression recommandée
 
@@ -76,7 +76,7 @@ Le parcours Python s'articule en trois temps. Les **fondations** (NumPy/Pandas) 
 ### Parcours AI Agent Builder (~15h)
 
 1. Days 1-3 (Labs 1-7) : Data Science + LangChain
-1. Days 4-7 (Labs 8-17) : Google ADK + multi-agents
+1. Days 4-7 (Labs 8-18) : Google ADK + multi-agents
 1. Projets finaux : Kaggle + BigQuery
 
 ### Parcours Enterprise .NET (~6h)
@@ -126,8 +126,10 @@ ML/
 │   ├── 02-ML-Cours/                  # Socle ML canonique (scikit-learn)
 │   │   ├── 2.8b-Theorie-PAC-Lean.ipynb   # compagnon Lean (lean4-wsl) du lake learning_theory_lean (moitie PAC)
 │   │   └── 2.8d-Lean-Novikoff-Convergence.ipynb   # compagnon Lean (lean4-wsl) du lake learning_theory_lean (moitie Perceptron)
+│   ├── 03-DeepLearning/              # Deep learning PyTorch
+│   ├── 04-Vision/                    # Vision par ordinateur
 │   ├── Track1-LangChain/   # Track LangChain (Labs 1-7)
-│   └── Track2-GoogleADK/           # Track Google ADK (Labs 8-17)
+│   └── Track2-GoogleADK/           # Track Google ADK (Labs 8-18, extensions 12b-12d)
 │
 └── learning_theory_lean/                  # Lake Lean 4 — convergence du perceptron (Novikoff)
 ```
@@ -242,19 +244,31 @@ Formation complète en Data Science Python enrichie d'agents IA. Vous commencere
 
 ### Socle ML canonique (02-ML-Cours)
 
-Entre les fondations NumPy/Pandas et les labs agentic, le socle machine learning **canonique avec scikit-learn** : le workflow (train/test split, surapprentissage rendu visible), la descente de gradient (ouvrir la boîte noire de `fit()`), les régressions linéaire et logistique (OLS vs MLE), les arbres et ensembles (réduction de variance), l'évaluation rigoureuse (biais-variance, validation croisée, courbe ROC/AUC), et le non supervisé (KMeans, ACP). Chaque notebook rend visible un concept-phare et ancre les articles fondateurs — le référent manuel qui rend *jugeable* ce qu'un agent produira ensuite.
+Entre les fondations NumPy/Pandas et les labs agentic, le socle machine learning **canonique avec scikit-learn** : le workflow (train/test split, surapprentissage rendu visible), la descente de gradient (ouvrir la boîte noire de `fit()`), les régressions linéaire et logistique complétées par le pont génératif Naive Bayes et la grande dimension, les arbres et ensembles, l'évaluation rigoureuse (biais-variance, calibration, équité), le non supervisé, la théorie PAC et ses trois compagnons formel/concentration/Perceptron, puis trois chapitres de praticien (hyperparamètres, régularisation sparse, classes déséquilibrées) et l'analyse d'erreurs. Chaque notebook rend visible un concept-phare et ancre les articles fondateurs — le référent manuel qui rend *jugeable* ce qu'un agent produira ensuite.
 
 | # | Notebook | Concept rendu visible | Focus |
 |---|----------|----------------------|-------|
 | 2.1 | [Workflow ML](DataScienceWithAgents/02-ML-Cours/2.1-Workflow-ML.ipynb) | Train/test split, surapprentissage rendu visible | Méthodologie |
 | 2.2 | [Descente de gradient](DataScienceWithAgents/02-ML-Cours/2.2-Descente-de-gradient.ipynb) | Ouvrir la boîte noire de `fit()` | Optimisation |
 | 2.3 | [Régression linéaire & logistique](DataScienceWithAgents/02-ML-Cours/2.3-Regression-lineaire-logistique.ipynb) | OLS vs maximum de vraisemblance | Modèles linéaires |
+| 2.3b | [Naive Bayes génératif](DataScienceWithAgents/02-ML-Cours/2.3b-Naive-Bayes-Generatif.ipynb) | L'indépendance conditionnelle qui décide la frontière (Bernoulli, multinomial, Gaussien) | Modèles génératifs |
+| 2.3c | [Régression grande dimension](DataScienceWithAgents/02-ML-Cours/2.3c-Regression-Grande-Dimension.ipynb) | p >> n : Ridge, PCR, PLS — var ≠ valeur prédictive | Modèles linéaires |
+| 2.3d | [Modèle gaussien LDA/QDA](DataScienceWithAgents/02-ML-Cours/2.3d-Modele-Gaussien-LDA-QDA.ipynb) | L'hypothèse de covariance décide la frontière : droite (LDA) vs conique (QDA) | Modèles génératifs |
 | 2.4 | [Arbres, forêts & ensembles](DataScienceWithAgents/02-ML-Cours/2.4-Arbres-Forets-Ensembles.ipynb) | Réduction de variance (bagging, boosting) | Ensembles |
 | 2.5 | [Biais, variance, CV & ROC](DataScienceWithAgents/02-ML-Cours/2.5-Biais-Variance-CV-ROC.ipynb) | Compromis biais-variance, validation croisée, ROC/AUC | Évaluation |
+| 2.5b | [Calibration des probabilités](DataScienceWithAgents/02-ML-Cours/2.5b-Calibration-Probabilites.ipynb) | Reliability diagram, ECE — pourquoi 0.87 n'est pas 87 % de chances | Évaluation |
+| 2.5c | [Équité par sous-groupes](DataScienceWithAgents/02-ML-Cours/2.5c-Equite-Sous-Groupes.ipynb) | Parité démographique, equalized odds, post-traitement par seuils | Évaluation |
 | 2.6 | [Clustering & PCA](DataScienceWithAgents/02-ML-Cours/2.6-Clustering-KMeans-PCA.ipynb) | KMeans, réduction de dimension | Non supervisé |
 | 2.7 | [Modèles non paramétriques](DataScienceWithAgents/02-ML-Cours/2.7-Modeles-Non-Parametriques.ipynb) | SVM, k plus proches voisins | Non paramétrique |
 | 2.8 | [Théorie PAC & VC](DataScienceWithAgents/02-ML-Cours/2.8-Theorie-PAC.ipynb) | Cadre PAC, dimension de Vapnik-Chervonenkis | Théorie de l'apprentissage |
+| 2.8b | [Théorie PAC — compagnon Lean](DataScienceWithAgents/02-ML-Cours/2.8b-Theorie-PAC-Lean.ipynb) | La même borne PAC démontrée et interrogée depuis le lake (kernel `lean4-wsl`) | Théorie formelle |
+| 2.8c | [Borne témoin concentration](DataScienceWithAgents/02-ML-Cours/2.8c-Borne-Temoin-Concentration.ipynb) | Carte transversale + mesure numérique : Novikoff, témoin extrémal, Hoeffding | Théorie de l'apprentissage |
+| 2.8d | [Lean Novikoff convergence](DataScienceWithAgents/02-ML-Cours/2.8d-Lean-Novikoff-Convergence.ipynb) | Novikoff `n·γ² ≤ R²` interrogé en direct : `#check` + `#print axioms` | Théorie formelle |
 | 2.9 | [Grokking — généralisation tardive](DataScienceWithAgents/02-ML-Cours/2.9-Grokking-Generalisation.ipynb) | Généralisation qui émerge après que le surapprentissage soit maximal (PyTorch + ACP) | Épilogue avancé |
+| 2.10 | [Optimisation hyperparamètres](DataScienceWithAgents/02-ML-Cours/2.10-Optimisation-Hyperparametres.ipynb) | Grille, hasard, bayésien (TPE) — et quand s'arrêter | Praticien |
+| 2.11 | [Régularisation sparse LASSO](DataScienceWithAgents/02-ML-Cours/2.11-Regularisation-Sparse-LASSO.ipynb) | La géométrie décide : polyèdre L1 → sparsité, boule L2 → shrink | Praticien |
+| 2.12 | [Données déséquilibrées](DataScienceWithAgents/02-ML-Cours/2.12-Donnees-Desequilibrees.ipynb) | La courbe PR dit la vérité quand la ROC flatte | Praticien |
+| 2.13 | [Analyse d'erreurs](DataScienceWithAgents/02-ML-Cours/2.13-Analyse-Erreurs.ipynb) | Tranches, worst-k : la poche invisible sous un score global correct | Praticien |
 
 Dossier : [`02-ML-Cours/`](DataScienceWithAgents/02-ML-Cours/). Le notebook 2.8 (borne PAC/VC) est le **pendant empirique** du lake [`learning_theory_lean/`](learning_theory_lean/) qui *prouve* la convergence du perceptron — voir la section [Théorie formelle (Lean)](#théorie-formelle-lean) ci-dessous. Le notebook 2.9 (grokking) est un **épilogue avancé** qui rend visible un phénomène empirique (la généralisation *après* surapprentissage complet) souvent cité dans la littérature récente (Power et al., 2022), positionné hors du parcours fundamentals par PR #7280.
 
@@ -281,6 +295,10 @@ Track avancé intégrant les frameworks Google ADK (DS-STAR, MLE-STAR) avec supp
 | **Day 5** | 10 | File Analyzer | Analyse de fichiers hétérogènes |
 | **Day 5** | 11 | Planner-Coder Loop | Boucle itérative multi-agents |
 | **Day 5** | 12 | DS-Star Workshop | Application complète DS-STAR |
+| **Day 5** | 12b | Sequential-Orchestration | Orchestration séquentielle (contrat C4 : désignation séquentielle) |
+| **Day 5** | 12c | Agent-Handoff | Handoff natif câblé (contrat C5) |
+| **Day 5** | 12d | Token-Usage | Traçabilité de la consommation LLM (contrat C6) |
+| **Day 5** | 18 | Session-Persistence | Persistance d'état de session |
 | **Day 6** | 13 | Web Search SOTA | Recherche de modèles SOTA |
 | **Day 6** | 14 | Ablation Refinement | Optimisation ciblée par ablation |
 | **Day 6** | 15 | Kaggle Challenge | Compétition Kaggle avec MLE-STAR |

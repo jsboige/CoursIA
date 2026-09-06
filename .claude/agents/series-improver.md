@@ -124,7 +124,7 @@ Pour chaque notebook:
     "parallel": 1
   },
   "notebooks": {
-    "Search-1-StateSpace.ipynb": {
+    "Search-01-StateSpace.ipynb": {
       "status": "completed",
       "started_at": "2026-03-07T10:30:00",
       "completed_at": "2026-03-07T10:45:00",
@@ -135,7 +135,7 @@ Pour chaque notebook:
       "errors_fixed": 0,
       "cells_added": 8
     },
-    "Search-2-Uninformed.ipynb": {
+    "Search-02-Uninformed.ipynb": {
       "status": "completed",
       "started_at": "2026-03-07T10:45:00",
       "completed_at": "2026-03-07T11:15:00",
@@ -146,7 +146,7 @@ Pour chaque notebook:
       "errors_fixed": 2,
       "cells_added": 12
     },
-    "Search-3-Informed.ipynb": {
+    "Search-03-Informed.ipynb": {
       "status": "in_progress",
       "started_at": "2026-03-07T11:15:00",
       "current_step": "enriching",
@@ -164,12 +164,12 @@ Pour chaque notebook:
   "checkpoints": [
     {
       "timestamp": "2026-03-07T10:45:00",
-      "notebook": "Search-1-StateSpace.ipynb",
+      "notebook": "Search-01-StateSpace.ipynb",
       "action": "completed"
     },
     {
       "timestamp": "2026-03-07T11:15:00",
-      "notebook": "Search-2-Uninformed.ipynb",
+      "notebook": "Search-02-Uninformed.ipynb",
       "action": "completed"
     }
   ]
@@ -385,7 +385,7 @@ def workflow_full(notebook_path, config):
    ```
    Session existante detectee pour: Search/Part1-Foundations
    - Notebooks completes: 2/11
-   - En cours: Search-3-Informed.ipynb
+   - En cours: Search-03-Informed.ipynb
    - Dernier checkpoint: 2026-03-07 11:15:00
 
    Reprendre ? [O/n]

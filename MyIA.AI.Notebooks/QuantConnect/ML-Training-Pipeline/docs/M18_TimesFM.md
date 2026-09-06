@@ -30,6 +30,7 @@ challenger.
 | Verdict | `BEATS` ⇔ dm_p_median(mse) < 0,05 ET DM cohérent gagnant sur tous les seeds ET (edge ≥ 2σ cross-seed OU seeds bit-identiques — précédent M17 OLS : déterminisme ⇒ jambe σ dégénérée, pas artificiellement infinie) |
 | Métriques | MSE/MAE (log), QLIKE (Patton 2011, échelle RV), biais signé ; TimesFM seul : pinball natif, couverture/largeur 80 % |
 | Provenance | repo id + SHA du checkpoint (HfApi), compteur de séries réellement servies, `panel_hash` (fenêtre canonique 360 bars), `bounds_train_test` par fold, hash SHA256 des prévisions par fold (audit bit-identité cross-seed) |
+| Garde non-dégénérescence | (#14791) chaque paire de baselines déclarées distinctes doit différer d'au moins `1e-6` en relatif sur AU MOINS un point OOS (`assert_baselines_distinct`, exécuté par `run_config`) — un contrôle qui **peut rougir**, contrairement au hash de prévisions qui ne sépare que bit-identique de non-bit-identique ; séparation la plus faible consignée dans le manifeste (`baseline_weakest_rel_sep`) |
 
 ## Modèles
 
@@ -42,9 +43,12 @@ Tous prédisent **la même cible** sur **les mêmes indices de test** :
   spécification log de Corsi 2009), chemin h-étapes itéré, prédiction =
   moyenne du chemin log. Refit tous les 22 jours (fenêtre expanding).
 - **har_rv** — même structure OLS sur les **niveaux** de RV (HAR-RV brut),
-  chemin h-étapes itéré en RV, projection sur la cible commune =
-  `log(mean(chemin RV))`. Les deux spécifications HAR répondent à
-  l'exigence « HAR et Log-HAR » de l'issue.
+  **régresseurs décalés d'un pas** (miroir de
+  `realized_variance.har_lag_features` ; correctif #14791 : l'alignement
+  contemporain d'origine régressait RV_t sur RV_t — fit identité parfait,
+  prévision dégénérée en persistence exacte), chemin h-étapes itéré en RV,
+  projection sur la cible commune = `log(mean(chemin RV))`. Les deux
+  spécifications HAR répondent à l'exigence « HAR et Log-HAR » de l'issue.
 - **tsfm** — TimesFM 2.5-200M, contexte = `context_len` (512) derniers
   log-RV, chemin direct multi-horizon (pas de récursion), prédiction =
   moyenne des h premières étapes du chemin médian ; quantiles natifs à
@@ -110,12 +114,17 @@ précédent M17 OLS : la jambe σ cross-seed dégénère, elle ne gonfle rien).
 
 | Coin | h | vs persistence | vs ewma | vs log_har | vs har_rv |
 |---|---:|---|---|---|---|
-| BTC | 1 | **BEATS** +40,7 % (p<1e-4) | **BEATS** +20,1 % (p<1e-4) | **BEATS** +19,7 % (p<1e-4) | **BEATS** +40,7 % (p<1e-4) |
-| BTC | 5 | **BEATS** +56,2 % | INCONCLUSIVE +5,4 % (p=0,116) | **BEATS** +8,5 % (p=0,0015) | **BEATS** +56,2 % |
-| BTC | 22 | **BEATS** +46,5 % | **BEATS** +10,7 % (p=0,016) | INCONCLUSIVE −4,8 % (p=0,232) | **BEATS** +46,5 % |
-| ETH | 1 | **BEATS** +30,6 % | **BEATS** +10,5 % | **BEATS** +7,6 % | **BEATS** +30,6 % |
-| ETH | 5 | **BEATS** +49,7 % | INCONCLUSIVE +4,1 % (p=0,381) | **BEATS** +10,7 % (p=2e-4) | **BEATS** +49,7 % |
-| ETH | 22 | **BEATS** +47,2 % | **BEATS** +11,9 % (p=0,029) | **BEATS** +12,5 % (p=0,0445) | **BEATS** +47,2 % |
+| BTC | 1 | **BEATS** +40,7 % (p<1e-4) | **BEATS** +20,1 % (p<1e-4) | **BEATS** +19,7 % (p<1e-4) | **BEATS** +33,4 % (p<1e-4) |
+| BTC | 5 | **BEATS** +56,2 % | INCONCLUSIVE +5,4 % (p=0,116) | **BEATS** +8,5 % (p=0,0015) | **BEATS** +40,1 % (p<1e-4) |
+| BTC | 22 | **BEATS** +46,5 % | **BEATS** +10,7 % (p=0,016) | INCONCLUSIVE −4,8 % (p=0,232) | **BEATS** +30,1 % (p=0,0008) |
+| ETH | 1 | **BEATS** +30,6 % | **BEATS** +10,5 % | **BEATS** +7,6 % | **BEATS** +29,8 % (p<1e-4) |
+| ETH | 5 | **BEATS** +49,7 % | INCONCLUSIVE +4,1 % (p=0,381) | **BEATS** +10,7 % (p=2e-4) | **BEATS** +51,1 % (p<1e-4) |
+| ETH | 22 | **BEATS** +47,2 % | **BEATS** +11,9 % (p=0,029) | **BEATS** +12,5 % (p=0,0445) | **BEATS** +45,2 % (p<1e-4) |
+
+La colonne `vs har_rv` est celle du **re-run #14791** (régresseurs décalés,
+voir la section dédiée ci-dessous) : les colonnes persistence / ewma /
+log_har sont bit-identiques au run initial #14778 (checkpoint SHA inchangé,
+inférence GPU déterministe) — seul har_rv a changé.
 
 **Lecture honnête.** Contre la baseline qui compte (Log-HAR) :
 **5/6 BEATS, 1/6 INCONCLUSIVE, 0/6 NO BEATS**. Deux réserves explicites :
@@ -130,16 +139,36 @@ La littérature citée en tête (TSFM non uniformément supérieur, Log-HAR trè
 compétitif) est **partiellement confirmée** : Log-HAR résiste au plus long
 horizon BTC, l'avantage TSFM est net aux horizons courts/moyens.
 
-### Dégénérescence empirique de har_rv ≈ persistence
+### har_rv ≈ persistence : c'était un bug d'alignement, corrigé (#14791)
 
-Sur ce panel, le HAR en **niveaux** dégénère en quasi-persistence : les
-prévisions des deux modèles coïncident au point que leurs MSE sont égales à
-6 décimales et leurs edges identiques (ex. BTC h=1 : +40,7 % contre les
-deux). Les hashs SHA256 des prévisions **diffèrent** (écarts au niveau
-flottant, pas un bug de dispatch) : c'est l'artefact connu du HAR en
-niveaux sur séries très persistantes (poids OLS quasi tout sur le lag
-journalier ≈ reproduction de la dernière valeur). La spécification
-informativ­e est le log — d'où log_har comme baseline de référence.
+Le run initial (#14778) rapportait har_rv **numériquement identique à
+persistence** (écart relatif 5e-14 à 7e-12 sur les 24 cellules) et la
+section précédente de ce document l'attribuait à « l'artefact connu du HAR
+en niveaux sur séries persistantes ». Cette explication était fausse :
+l'issue #14791 (mesurée par ai-01 en revue de #14778) a établi qu'un accord
+à ~13 chiffres significatifs n'est pas une convergence statistique mais
+**la même quantité calculée dans un ordre de sommation différent**.
+
+Cause réelle, dans `HarRvModel.fit` : les régresseurs HAR en niveaux étaient
+**contemporains** de la cible (`rv_d = RV_t`, `y = RV_t`) — la régression
+apprenait l'identité parfaite (coefficient `[0, 1, 0, 0]`, résidu in-sample
+~1e-19) et la prévision itérée dégénère en dernière valeur = persistence
+exacte. Le contrôle « hashs de prévisions distincts » ne pouvait pas le
+voir : deux tableaux différant au 14e chiffre ont des hashs distincts — le
+détecteur n'avait aucun pouvoir discriminant sur l'hypothèse « même modèle
+effectif » qu'il était censée écarter.
+
+Correctif #14791 : régresseurs **décalés d'un pas** (miroir de
+`realized_variance.har_lag_features`, déjà correct pour log_har) + garde
+`assert_baselines_distinct` — chaque paire de baselines déclarées
+distinctes doit différer d'au moins `1e-6` en relatif sur au moins un point
+OOS, sinon le run échoue (un contrôle qui **peut** rougir). Re-run complet
+(24 cellules, checkpoint SHA `1d952420fba8` inchangé, 43 720 séries servies,
+persistence/ewma/log_har bit-identiques) : `baseline_weakest_rel_sep` entre
+**0,11 et 0,18** sur toutes les cellules — cinq ordres de grandeur au-dessus
+du seuil. har_rv est désormais une vraie 4e baseline, et le HAR en niveaux
+corrigé est **meilleur que persistence** (BTC h=1 : MSE 1,044 vs 1,172) :
+l'edge TSFM passe de +40,7 % (doublon persistence) à +33,4 %.
 
 ### Calibration quantile native (évaluée à l'étape h)
 

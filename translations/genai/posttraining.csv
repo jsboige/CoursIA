@@ -4767,7 +4767,7 @@ MyIA.AI.Notebooks/GenAI/PostTraining/PT_10_gae_from_scratch_toy_env.ipynb,84d6d3
     return None  # TODO etudiant
 
 print(""Exercice C : variance_advantage_diagnostic - completer et executer"")",,,,,,,,599c46182fee7061,,,,,,,,
-MyIA.AI.Notebooks/GenAI/PostTraining/PT_11_grpo_qwen_rlvr_on_verifiers.ipynb,9ea74bc2,code,fr,7c0176bd4ca0794b,"import sys, platform
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_11b_grpo_qwen_rlvr_on_verifiers.ipynb,9ea74bc2,code,fr,7c0176bd4ca0794b,"import sys, platform
 print(f""Python : {sys.version}"")
 print(f""Plateforme : {platform.platform()}"")
 
@@ -4793,7 +4793,7 @@ print(f""z3 : {z3.get_version_string()}"")
 print(f""sympy : {sympy.__version__}"")
 
 print(""\nEnv probe OK."")",,,,,,,,7c0176bd4ca0794b,,,,,,,,
-MyIA.AI.Notebooks/GenAI/PostTraining/PT_11_grpo_qwen_rlvr_on_verifiers.ipynb,5fb9ae41,code,fr,bea6d1be4d817add,"import os
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_11b_grpo_qwen_rlvr_on_verifiers.ipynb,5fb9ae41,code,fr,bea6d1be4d817add,"import os
 
 LOAD_MODEL_AND_TRAIN = True
 PT11_SEED = int(os.getenv(""PT11_SEED"", ""42""))
@@ -4804,7 +4804,7 @@ if not LOAD_MODEL_AND_TRAIN:
     print(""(Mode CPU-safe : verifier Z3 + SymPy executes, training RLVR skip)"")
 else:
     print(""(Mode TRAINING : Qwen3.5-0.8B + GRPO + rewardspy.online)"")",,,,,,,,bea6d1be4d817add,,,,,,,,
-MyIA.AI.Notebooks/GenAI/PostTraining/PT_11_grpo_qwen_rlvr_on_verifiers.ipynb,5ee77533,code,fr,4ba1eee258aaebac,"import re
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_11b_grpo_qwen_rlvr_on_verifiers.ipynb,5ee77533,code,fr,4ba1eee258aaebac,"import re
 from typing import Optional
 import sympy
 
@@ -4863,7 +4863,7 @@ for completion, gt in tests:
     r = math_verifier_reward(completion, gt)
     print(f""  reward({completion!r:50s} vs {gt}) = {r}"")
 print(""\nVerifier SymPy pret."")",,,,,,,,4ba1eee258aaebac,,,,,,,,
-MyIA.AI.Notebooks/GenAI/PostTraining/PT_11_grpo_qwen_rlvr_on_verifiers.ipynb,46fc1dd7,markdown,fr,40d6b5f857f386ef,"### Exercice 1 : etendre le parser avec un format scientifique
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_11b_grpo_qwen_rlvr_on_verifiers.ipynb,46fc1dd7,markdown,fr,40d6b5f857f386ef,"### Exercice 1 : etendre le parser avec un format scientifique
 
 Le verifier actuel gere `\boxed{}`, `####`, `= X`, et dernier nombre. Ajouter un pattern
 pour la notation scientifique (ex. `3.14e2`).
@@ -4874,13 +4874,13 @@ pour la notation scientifique (ex. `3.14e2`).
 - # Etape 1 : ajouter un regex `r'(-?\d+\.?\d*[eE][+-]?\d+)'` avant le fallback
 - # Etape 2 : `float()` natif Python gere la notation scientifique
 - # Indice : verifier que `float(""6.02e23"") == 6.02e23`",,,,,,,,40d6b5f857f386ef,,,,,,,,
-MyIA.AI.Notebooks/GenAI/PostTraining/PT_11_grpo_qwen_rlvr_on_verifiers.ipynb,32b6c18c,code,fr,c4fcd90180b7ff67,"def extract_answer_sci(completion: str) -> Optional[float]:
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_11b_grpo_qwen_rlvr_on_verifiers.ipynb,32b6c18c,code,fr,c4fcd90180b7ff67,"def extract_answer_sci(completion: str) -> Optional[float]:
     """"""TODO etudiant : etendre avec pattern notation scientifique.""""""
     sci_pattern = None  # TODO etudiant : regex pour notation scientifique
     return None  # TODO etudiant : retourner le nombre extrait ou None
 
 print(""Exercice a completer : parser etendu notation scientifique"")",,,,,,,,c4fcd90180b7ff67,,,,,,,,
-MyIA.AI.Notebooks/GenAI/PostTraining/PT_11_grpo_qwen_rlvr_on_verifiers.ipynb,f46865f9,code,fr,e0eba4545ec38f5b,"import z3
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_11b_grpo_qwen_rlvr_on_verifiers.ipynb,f46865f9,code,fr,e0eba4545ec38f5b,"import z3
 import time
 import re
 
@@ -4949,7 +4949,7 @@ print(f""  permutation  : {nqueens_verifier('Q1=1 Q2=2 Q3=3 Q4=4')}"")
 print(f""  collision    : {nqueens_verifier('Q1=2 Q2=4 Q3=2 Q4=3')}"")
 print(f""  garbage      : {nqueens_verifier('I dont know')}"")
 print(""\nVerifier Z3 pret."")",,,,,,,,e0eba4545ec38f5b,,,,,,,,
-MyIA.AI.Notebooks/GenAI/PostTraining/PT_11_grpo_qwen_rlvr_on_verifiers.ipynb,21936bba,code,fr,dbc924c68ce9082e,"from datasets import Dataset
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_11b_grpo_qwen_rlvr_on_verifiers.ipynb,21936bba,code,fr,dbc924c68ce9082e,"from datasets import Dataset
 
 GSM8K_SAMPLE_PT11 = [
     {""prompt"": ""Janet has 16 eggs. She breaks 3 eggs while cooking, then buys 6 more eggs at the store. How many eggs does Janet have now?"", ""answer"": 19.0},
@@ -4974,7 +4974,7 @@ dataset_rlvr = format_for_grpo(GSM8K_SAMPLE_PT11)
 print(f""Dataset RLVR PT-11 : {len(dataset_rlvr)} problemes avec ground truths verifiables"")
 for i in range(3):
     print(f""  Q{i+1}: {dataset_rlvr[i]['prompt'][0]['content'][:60]}... -> {dataset_rlvr[i]['answer']}"")",,,,,,,,dbc924c68ce9082e,,,,,,,,
-MyIA.AI.Notebooks/GenAI/PostTraining/PT_11_grpo_qwen_rlvr_on_verifiers.ipynb,ec3dfc70,code,fr,ea98e7f017aa676d,"def creer_dataset_geometrie() -> list:
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_11b_grpo_qwen_rlvr_on_verifiers.ipynb,ec3dfc70,code,fr,ea98e7f017aa676d,"def creer_dataset_geometrie() -> list:
     """"""TODO etudiant : creer 5 problemes de geometrie avec ground truths verifiables.""""""
     problemes = []
     # Etape 1 : aire triangle, perimetre cercle, volume sphere, ...
@@ -4982,7 +4982,7 @@ MyIA.AI.Notebooks/GenAI/PostTraining/PT_11_grpo_qwen_rlvr_on_verifiers.ipynb,ec3
     return problemes
 
 print(""Exercice a completer : dataset geometrie"")",,,,,,,,ea98e7f017aa676d,,,,,,,,
-MyIA.AI.Notebooks/GenAI/PostTraining/PT_11_grpo_qwen_rlvr_on_verifiers.ipynb,46b6baf0,code,fr,5188a368177f2f66,"import rewardspy
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_11b_grpo_qwen_rlvr_on_verifiers.ipynb,46b6baf0,code,fr,5188a368177f2f66,"import rewardspy
 from rewardspy.integrations import watch_trl
 from pathlib import Path
 import json
@@ -5063,7 +5063,7 @@ print(f""  - sensitivity = 'medium'"")
 print(f""  - max_reward = 1.0 (plafond outcome reward)"")
 print(f""  - detect = True (reward hacking detector LIVE, export JSONL -> {_REWARD_LOG})"")
 print(f""  - journal groupes informatifs par step (#10603) -> {_INFORMATIVE_LOG}"")",,,,,,,,5188a368177f2f66,,,,,,,,
-MyIA.AI.Notebooks/GenAI/PostTraining/PT_11_grpo_qwen_rlvr_on_verifiers.ipynb,29cf38c3,code,fr,a734d875d5fe584d,"import numpy as np
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_11b_grpo_qwen_rlvr_on_verifiers.ipynb,29cf38c3,code,fr,a734d875d5fe584d,"import numpy as np
 
 if not LOAD_MODEL_AND_TRAIN:
     # Reinitialiser la liste d'alertes (le watch est global)
@@ -5092,7 +5092,7 @@ if not LOAD_MODEL_AND_TRAIN:
     print(""Sanity check rewardspy OK."")
 else:
     print(""(Skip sanity check en mode TRAINING)"")",,,,,,,,a734d875d5fe584d,,,,,,,,
-MyIA.AI.Notebooks/GenAI/PostTraining/PT_11_grpo_qwen_rlvr_on_verifiers.ipynb,7a694acc,code,fr,2347444952be3df3,"GRPO_CONFIG_DICT = {
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_11b_grpo_qwen_rlvr_on_verifiers.ipynb,7a694acc,code,fr,2347444952be3df3,"GRPO_CONFIG_DICT = {
     ""num_generations"": 8,              # #10603 : G=8 = defaut TRL, ~80% groupes informatifs vs ~30% a G=2
     ""beta"": 0.0,                       # DAPO (beta>0 = crash peft#3340 sur trl1.9.2/tf5.x ; beta=0 supprime KL)
     ""per_device_train_batch_size"": 8,  # DOIT etre divisible par num_generations (8 % 8 == 0)
@@ -5113,14 +5113,14 @@ MyIA.AI.Notebooks/GenAI/PostTraining/PT_11_grpo_qwen_rlvr_on_verifiers.ipynb,7a6
 print(""Configuration GRPO RLVR (compatible trl 1.9.2, G=8 #10603) :"")
 for k, v in GRPO_CONFIG_DICT.items():
     print(f""  {k} = {v}"")",,,,,,,,2347444952be3df3,,,,,,,,
-MyIA.AI.Notebooks/GenAI/PostTraining/PT_11_grpo_qwen_rlvr_on_verifiers.ipynb,21c7d28d,code,fr,fa43166230cafaee,"import os
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_11b_grpo_qwen_rlvr_on_verifiers.ipynb,21c7d28d,code,fr,fa43166230cafaee,"import os
 MODEL_NAME = os.path.expanduser(""~/models/qwen35-0.8b"")  # Local (evite WinError 1314 symlink HF cache)
 
 print(f""Chargement modele {MODEL_NAME} + QLoRA 4-bit..."")
 print(f""  Architecture : Qwen3.5-0.8B (classe Qwen3_5ForCausalLM, chemin texte via AutoModelForCausalLM)"")
 print(f""  License : Apache 2.0"")
 print(f""  VRAM mesuree (4-bit NF4) : ~0.8 Go"")",,,,,,,,fa43166230cafaee,,,,,,,,
-MyIA.AI.Notebooks/GenAI/PostTraining/PT_11_grpo_qwen_rlvr_on_verifiers.ipynb,dc301f63,code,fr,98358fd7fec31d08,"if LOAD_MODEL_AND_TRAIN and CUDA_AVAILABLE:
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_11b_grpo_qwen_rlvr_on_verifiers.ipynb,dc301f63,code,fr,98358fd7fec31d08,"if LOAD_MODEL_AND_TRAIN and CUDA_AVAILABLE:
     from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
     from trl import GRPOTrainer, GRPOConfig
     from peft import LoraConfig, TaskType, get_peft_model
@@ -5209,7 +5209,7 @@ MyIA.AI.Notebooks/GenAI/PostTraining/PT_11_grpo_qwen_rlvr_on_verifiers.ipynb,dc3
 else:
     print(""Skip training : LOAD_MODEL_AND_TRAIN=False ou pas de CUDA"")
     print(""Pour executer : passer LOAD_MODEL_AND_TRAIN=True et GPU avec >= 4 Go VRAM."")",,,,,,,,98358fd7fec31d08,,,,,,,,
-MyIA.AI.Notebooks/GenAI/PostTraining/PT_11_grpo_qwen_rlvr_on_verifiers.ipynb,b97098c9,code,fr,fc7c9933c32779eb,"import matplotlib.pyplot as plt
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_11b_grpo_qwen_rlvr_on_verifiers.ipynb,b97098c9,code,fr,fc7c9933c32779eb,"import matplotlib.pyplot as plt
 from pathlib import Path
 
 if LOAD_MODEL_AND_TRAIN:
@@ -5277,7 +5277,7 @@ else:
     plt.savefig(png_path, dpi=100, bbox_inches='tight')
     print(f""Figure synthetique sauvegardee : {png_path}"")
 plt.show()",,,,,,,,fc7c9933c32779eb,,,,,,,,
-MyIA.AI.Notebooks/GenAI/PostTraining/PT_11_grpo_qwen_rlvr_on_verifiers.ipynb,22e8677f,code,fr,73461f768656bd9f,"if LOAD_MODEL_AND_TRAIN and CUDA_AVAILABLE:
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_11b_grpo_qwen_rlvr_on_verifiers.ipynb,22e8677f,code,fr,73461f768656bd9f,"if LOAD_MODEL_AND_TRAIN and CUDA_AVAILABLE:
     @torch.no_grad()
     def eval_accuracy(model, tokenizer, dataset, n=10):
         model.eval()
@@ -5303,7 +5303,7 @@ MyIA.AI.Notebooks/GenAI/PostTraining/PT_11_grpo_qwen_rlvr_on_verifiers.ipynb,22e
     print(f""Accuracy post-training : {acc_post:.2%}"")
 else:
     print(""Skip eval : LOAD_MODEL_AND_TRAIN=False ou pas de CUDA"")",,,,,,,,73461f768656bd9f,,,,,,,,
-MyIA.AI.Notebooks/GenAI/PostTraining/PT_11_grpo_qwen_rlvr_on_verifiers.ipynb,f0772a87,code,fr,0333ab7b822f1abf,"print(""=""*70)
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_11b_grpo_qwen_rlvr_on_verifiers.ipynb,f0772a87,code,fr,0333ab7b822f1abf,"print(""=""*70)
 print("" VERDICT PT-11 — RLVR sur Qwen3.5-0.8B (G=8, #10603) "")
 print(""=""*70)
 
@@ -5362,7 +5362,7 @@ else:
 print(""=""*70)
 print(""FIN VERDICT"")
 print(""=""*70)",,,,,,,,0333ab7b822f1abf,,,,,,,,
-MyIA.AI.Notebooks/GenAI/PostTraining/PT_11_grpo_qwen_rlvr_on_verifiers.ipynb,19255fbf,code,fr,58e32593bcae24b5,"def heuristic_reward(completion: str, ground_truth: float) -> float:
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_11b_grpo_qwen_rlvr_on_verifiers.ipynb,19255fbf,code,fr,58e32593bcae24b5,"def heuristic_reward(completion: str, ground_truth: float) -> float:
     """"""TODO etudiant : reward heuristique (PT-04 style) pour comparaison.""""""
     score = 0.0
     # Etape 1 : mots-cles
@@ -5377,7 +5377,7 @@ MyIA.AI.Notebooks/GenAI/PostTraining/PT_11_grpo_qwen_rlvr_on_verifiers.ipynb,192
     return min(score, 1.0)
 
 print(""Exercice a completer : comparer heuristique vs verifier sur training reel"")",,,,,,,,58e32593bcae24b5,,,,,,,,
-MyIA.AI.Notebooks/GenAI/PostTraining/PT_11b_multiseed_qwen35_4x100.ipynb,d3623b0a,code,fr,6068f994663d93ed,"# 9.bis Load JSONL multi-seed depuis disk (post-training)
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_11d_multiseed_qwen35_4x100.ipynb,d3623b0a,code,fr,6068f994663d93ed,"# 9.bis Load JSONL multi-seed depuis disk (post-training)
 # Permet la re-execution des cellules d'analyse (26/28/30) sans relancer
 # le training (charge ~32 min/seed x 4 seeds). Le JSONL est append-only pendant
 # le training (cellule 24) ; on le relit pour les analyses.

@@ -110,23 +110,23 @@ Algorithmes de recherche classique, satisfaction de contraintes (CSP), résoluti
 | 21 | Search-11b-Métaheuristiques-Deep-Part3 : Artificial Bee… | BETA | Oui |
 | 22 | Search-11b-Métaheuristiques-Deep-Part4 : Benchmark… | BETA | Oui |
 | 23 | Search-11b : Métaheuristiques d'optimisation (C# /… | BETA | Oui |
-| 24 | Search-17 — Sélection empirique d'algorithmes : deux… | BETA | Oui |
-| 25 | Search-2-Uninformed (C#) : Algorithmes de Recherche Non… | BETA | Oui |
-| 26 | Search-2-Uninformed : Algorithmes de Recherche Non… | BETA | Oui |
-| 27 | Search-3-Informed (C#) : Recherche Informée | BETA | Oui |
-| 28 | Search-3-Informed : Algorithmes de Recherche Informée | BETA | Oui |
-| 29 | Search-4-LocalSearch (C#) : Recherche Locale et… | BETA | Oui |
-| 30 | Search-4-LocalSearch : Recherche Locale et… | BETA | Oui |
-| 31 | Search-5-GeneticAlgorithms-Csharp : Algorithmes… | BETA | Oui |
+| 24 | Search-11c — Sélection empirique d'algorithmes : deux… | BETA | Oui |
+| 25 | Search-02-Uninformed (C#) : Algorithmes de Recherche Non… | BETA | Oui |
+| 26 | Search-02-Uninformed : Algorithmes de Recherche Non… | BETA | Oui |
+| 27 | Search-03-Informed (C#) : Recherche Informée | BETA | Oui |
+| 28 | Search-03-Informed : Algorithmes de Recherche Informée | BETA | Oui |
+| 29 | Search-04-LocalSearch (C#) : Recherche Locale et… | BETA | Oui |
+| 30 | Search-04-LocalSearch : Recherche Locale et… | BETA | Oui |
+| 31 | Search-05-GeneticAlgorithms-Csharp : Algorithmes… | BETA | Oui |
 | 32 | Search-5 : Algorithmes génétiques | BETA | Oui |
 | 33 | Search-6 — Recherche adversariale (jeux à somme nulle)… | BETA | Oui |
-| 34 | Search-6-AdversarialSearch : Recherche Adversariale | BETA | Oui |
-| 35 | Search-7-MCTS-And-Beyond (C#) : Monte Carlo Tree Search… | BETA | Oui |
-| 36 | Search-7-MCTS-And-Beyond : Monte Carlo Tree Search et… | BETA | Oui |
-| 37 | Search-8-DancingLinks-Csharp : L'algorithme X et… | BETA | Oui |
-| 38 | Search-8-DancingLinks : L'algorithme X et Dancing Links… | BETA | Oui |
+| 34 | Search-06-AdversarialSearch : Recherche Adversariale | BETA | Oui |
+| 35 | Search-07-MCTS-And-Beyond (C#) : Monte Carlo Tree Search… | BETA | Oui |
+| 36 | Search-07-MCTS-And-Beyond : Monte Carlo Tree Search et… | BETA | Oui |
+| 37 | Search-08-DancingLinks-Csharp : L'algorithme X et… | BETA | Oui |
+| 38 | Search-08-DancingLinks : L'algorithme X et Dancing Links… | BETA | Oui |
 | 39 | Search-9 : Programmation Linéaire et Simplexe (C# /… | BETA | Oui |
-| 40 | Search-9-LinearProgramming : Programmation Lineaire et… | BETA | Oui |
+| 40 | Search-09-LinearProgramming : Programmation Lineaire et… | BETA | Oui |
 
 ## Search/Part2-CSP (17 notebooks)
 

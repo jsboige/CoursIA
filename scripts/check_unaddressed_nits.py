@@ -208,8 +208,15 @@ OVERRIDE_LANE = _OVERRIDE_LANE
 # tant que [OVERRIDE] lane n'est pas posé ») n'est PAS un arbitrage posé et doit
 # rester un blocage (cf test_13083_blocage_reel_conditionnel). Partagé par
 # `_block_emitted` (point A) et `_coordinator_emission_informal`.
+# #14461 tranche 2 (adjoint po-2025) : un override est une AFFIRMATION, jamais
+# une negation. `[NO OVERRIDE]` / `[PAS D'OVERRIDE]` / `[SANS OVERRIDE]` /
+# `[NOT AN OVERRIDE]` disent l'inverse d'un arbitrage ; les croire overrides
+# SUPPRIMERAIT une injonction reelle. Lookahead negatif : un mot de negation
+# (EN/FR) present avant OVERRIDE dans le crochet = pas un override. Formes
+# positives (`[OVERRIDE]`, `[G-VAR-3 OVERRIDE]`, `[G-VAR-2 OVERRIDE]`) intactes.
 _OVERRIDE_HEAD_RE = re.compile(
-    r"\[\s*[^\]]*\bOVERRIDE\b[^\]]*\]",
+    r"\[\s*(?![^\]]*\b(?:no|not|nor|none|never|sans|pas|aucun|aucune)\b[^\]]*\bOVERRIDE\b)"
+    r"[^\]]*\bOVERRIDE\b[^\]]*\]",
     re.IGNORECASE,
 )
 
@@ -379,6 +386,33 @@ CONCERN_MARKERS = CONCERN_MARKERS + APPROVAL_REFUSALS
 # La forme ETIQUETEE (« Concern: », « Concerns :», « **Concern 2 :** ») rejoint
 # les marqueurs vivants : elle tolere casse et nombre des deux cotes (user comme
 # agents) sans rien devoir a la sous-chaine nue, qui reste case-sensitive.
+# #14564 — vocabulaire ASYMETRIQUE : la reserve en PROSE anglaise echappait a
+# CONCERN_MARKERS, qui ne connaissait que « CONCERNS » majuscule (case-sensitive,
+# cf _CASE_SENSITIVE_MARKERS) et la forme ETIQUETEE (`_CONCERN_LABEL`). Deux
+# contre-exemples mesurees : « my concerns »/« 3 concerns » en emission → None
+# (faux negatif, PR #14544 mergée avec 3 réserves Hermes non levées), alors que
+# la meme idée en francais (« il va falloir ») etait captee. L'asymetrie est
+# double : les locutions anglaises de prose manquaient comme EMISSION, et le
+# registre LIFT ne connaissait pas les levées reelles en francais court.
+#
+# Choix de forme — on etend la forme ETIQUETEE (`_CONCERN_LABEL` peut desormais
+# etre precedee d'un possessif/compteur : « my concerns: », « 3 concerns: »,
+# « some concerns: ») et on ajoute deux locutions de prose a faible collision :
+# « concerns about » et « concerns remain ». On NE relache PAS « my concerns » /
+# « some concerns » en phrase nue : « my concerns are addressed » est une
+# NARRATION de levee (la classe que la case-sensibilite de #12908 protegeait),
+# pas une emission — la forme avec deux-points distingue les deux. La casse est
+# relachee (defaut has_live_marker) : la prose anglaise s'ecrit en minuscules.
+_EN_CONCERN_LABEL = "\x00en-concern"
+_EN_CONCERN_RE = re.compile(
+    r"\b(?:\d+\s+|my\s+|your\s+|their\s+|our\s+|some\s+|a few\s+|several\s+)concerns?"
+    r"\s*\d*\s*:"
+)
+CONCERN_MARKERS = CONCERN_MARKERS + ("concerns about", "concerns remain")
+# La forme COUNT/POSSESSIVE anglaise (« my concerns: », « 3 concerns: ») passe
+# par le motif de `_WORD_BOUNDED_MARKERS` (Emission par deux-points = label),
+# pas par une sous-chaine nue qui colliderait avec une narration de levee.
+CONCERN_MARKERS = CONCERN_MARKERS + (_EN_CONCERN_LABEL,)
 CONCERN_MARKERS = CONCERN_MARKERS + (_CONCERN_LABEL,)
 
 # Un commentaire qui ANNONCE la levee ou le merge n'est pas un nit — il en est
@@ -430,6 +464,20 @@ LIFT_MARKERS = (
     "est résolu", "sont résolus", "sont résolues",
     "traité et fermé", "traitée et fermée",
     "traité et clos", "traitée et close",
+    # #14564 — levées reelles en FRANCAIS COURT qui echappaient au registre
+    # (asymetrie : le FR long « traité et fermé » etait capte, pas le FR court).
+    # Bordure stricte — on N'ajoute PAS « est traité » nu (rejete, #11639 :
+    # « le point 3 est traité en argument » est un override NU qui ne doit rien
+    # lever ; « traité » narratif se promene). Seuls les ENGAGEMENTS clairs :
+    #   « c'est traité » — objet « cela » + participe : resolution assumee.
+    #   « rien à traiter » / « rien à signaler » — RAS expanse, reformulation
+    #     naturelle qui de-escalade (deja NON-BLOQUANT, cf _NON_BLOCKING_PHRASES ;
+    #     ajoute au registre LIFT pour eteindre une reserve dans le chemin
+    #     ordinaire, pas seulement sous l'exemption CWC de #13938).
+    #   « RAS » — sigle de rien-à-signaler. La sous-chaine nue vit aussi dans
+    #     « ERASME »/« rasoir » : word-bound par `_WORD_BOUNDED_LIFT_RE`.
+    "rien à signaler", "rien à traiter", "c'est traité",
+    "RAS",
 )
 
 # Un LIFT en construction CONDITIONNELLE (« corrige X et je merge », « je merge
@@ -1615,8 +1663,6 @@ _NON_BLOCKING_PHRASES = tuple(
         r"aucune bloque",
         r"aucune reserve",
         r"non.?bloquant",
-        r"comment only",
-        r"comment-only",
         r"no blocker",
         r"nothing blocking",
         r"all (?:is |looks )?good",
@@ -1886,6 +1932,20 @@ def _bare_mention_is_negated(window_before: str, window_after: str) -> bool:
     return False
 
 
+# #14564 — marqueurs LIFT reconnus par MOTIF plutot que par sous-chaine.
+# La cle est le marqueur minuscule/desaccentue (`_unaccent(marker).lower()`),
+# comme `_WORD_BOUNDED_MARKERS` cote CONCERN. Seul « RAS » y est : la
+# sous-chaine nue vit aussi dans « ERASME », « rasoir », « CRAS » — un mot
+# entier, pas un sigle. Le motif est dedie au SIGLE : `RAS` (majuscule) et
+# `Ras` (capitalise), PAS le minuscule nu — « ras » en minuscule est un vrai
+# mot francais (« ras du sol », « a ras de terre »), et le relacher
+# reintroduirait le faux positif que le word-bound existe pour ecarter.
+# (#14766, CHANGES_REQUESTED ai-01.) Sans re.IGNORECASE.
+_WORD_BOUNDED_LIFT_RE = {
+    "ras": re.compile(r"\b(?:RAS|Ras)\b"),
+}
+
+
 def _live_lift_positions(normalised: str) -> list[int]:
     """Positions des occurrences de LIFT_MARKERS NON narrées ET NON niées.
 
@@ -1905,16 +1965,22 @@ def _live_lift_positions(normalised: str) -> list[int]:
     out: list[int] = []
     for marker in LIFT_MARKERS:
         m = _unaccent(marker)
-        m_len = len(m)
-        start = 0
-        while (i := normalised.find(m, start)) != -1:
+        bounded = _WORD_BOUNDED_LIFT_RE.get(m.lower())
+        if bounded is not None:
+            hits = [(x.start(), x.end()) for x in bounded.finditer(normalised)]
+        else:
+            hits = []
+            start = 0
+            while (i := normalised.find(m, start)) != -1:
+                hits.append((i, i + len(m)))
+                start = i + 1
+        for i, i_end in hits:
             window_before = normalised[max(0, i - 30):i]
-            window_after = normalised[i + m_len:i + m_len + 15]
+            window_after = normalised[i_end:i_end + 15]
             if not _lift_is_narrated(window_before) \
                     and not _arrow_precedes(normalised, i) \
                     and not _lift_is_negated(window_before, window_after):
                 out.append(i)
-            start = i + 1
     return out
 
 
@@ -1959,6 +2025,13 @@ _CASE_SENSITIVE_MARKERS = frozenset({
 
 _WORD_BOUNDED_MARKERS = {
     _CONCERN_LABEL: re.compile(r"(?m)^[\s*_#>\-]*concerns?\s*\d*\s*:"),
+    # #14564 — forme ETIQUETEE anglaise precedee d'un possessif/compteur :
+    # « my concerns: », « 3 concerns: », « some concerns: ». Le deux-points
+    # = EMISSION (label), jamais une narration de levee (« my concerns are
+    # addressed » n'a pas de deux-points). Motif plutot que sous-chaine :
+    # « a few/several » ne collide pas avec « concerns » cite. Tourne sur le
+    # body lowercase/desaccentue (cf has_live_marker), donc sans (?i).
+    _EN_CONCERN_LABEL: _EN_CONCERN_RE,
     # #14553 — « no LGTM needed here » est une APPROBATION (docs-only), pas
     # un refus : la sous-chaine nue « no LGTM » y vivrait a tort. Word-bounded
     # + lookahead sur la famille needed/necessary/required. La regex tourne

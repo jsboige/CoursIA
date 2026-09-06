@@ -45,7 +45,23 @@ def categorize_notebook(path: Path) -> dict:
         return {"path": str(path), "category": "PARSE_ERROR", "error": str(e)}
 
     if nb.get("metadata", {}).get("qc_reference") is True:
-        return {"path": str(path), "category": "REFERENCE", "n_code": 0}
+        # qc_reference = QC Cloud / full-QCAlgorithm reference notebook, not
+        # locally executable (#3776). The flag changes the CATEGORY (document
+        # type), never the counting (#14814): the code-cell counts are measured.
+        cells = nb.get("cells", [])
+        code_cells = [c for c in cells if c.get("cell_type") == "code"]
+        return {
+            "path": str(path),
+            "category": "REFERENCE",
+            "n_code": len(code_cells),
+            "n_exec": sum(1 for c in code_cells if c.get("execution_count") is not None),
+            "n_err": sum(
+                1
+                for c in code_cells
+                if any(o.get("output_type") == "error" for o in c.get("outputs", []))
+            ),
+            "n_outputs": sum(1 for c in code_cells if c.get("outputs")),
+        }
 
     cells = nb.get("cells", [])
     code_cells = [c for c in cells if c.get("cell_type") == "code"]

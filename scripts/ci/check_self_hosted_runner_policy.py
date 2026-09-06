@@ -220,6 +220,14 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     "pr-gate-rerun.yml",
     "regression-guard.yml",
     "render-volume-delta-advisory.yml",
+    # registre TRANCHE7 (demande user 2026-09-05, owner myia-po-2023:CoursIA)
+    #   : vehicule workflow_dispatch-ONLY servant de cible d'identite au
+    #   check-run absorbe par fast-lane (registre TRANCHE7) et de re-run
+    #   manuel self-test sur main. Detecteur de prose repetee
+    #   intra-notebook (detect_repeated_prose.py), advisory pur-Python
+    #   stdlib-only, label signe, jamais exit != 0, aucun secret.
+    #   Rollback = revert de la PR (l'entree disparait de l'allowlist).
+    "repeated-prose-advisory.yml",
     "scripts-tests.yml",
     "series-naming-gate.yml",
     "stale-base-warning.yml",
@@ -276,6 +284,18 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   waiter pool (1 vCPU / 1 GiB, #14303) is exactly the third term that
     #   removes the objection. Rollback = revert of the routing PR.
     "pr-gate.yml",
+    # #14859 (owner myia-po-2026:CoursIA) : garde advisory pur-Python sur les
+    #   caracteres de controle ayant mange un escape LaTeX dans les portees
+    #   math des notebooks. pull_request/push filtrant **.ipynb + detecteur +
+    #   workflow ; scan PR-diff (check_latex_control_chars.py, stdlib-only) ;
+    #   occurrences = ::warning:: + exit 0 (jamais bloquant), exit 2 (notebook
+    #   illisible) = warning UNKNOWN nomme + exit 1 (#14849). Aucun secret,
+    #   aucun GITHUB_TOKEN cote job, garde same-repo universelle parenthesee
+    #   au niveau job (#13874). Runner = jambe Linux containerisee
+    #   (LINUX_RUNNER_LABELS, meme profil que notebook-cell-source-parses.yml
+    #   tranche 1 #13378). Rollback = revert de la PR (l'entree disparait de
+    #   l'allowlist).
+    "notebook-latex-control-chars.yml",
 }
 GITHUB_HOSTED_LABELS = {
     "ubuntu-latest",

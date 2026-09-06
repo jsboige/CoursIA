@@ -109,7 +109,13 @@ class TestBaselines:
             m18._rolling_predictions("ewma", log_rv, rv, [100], horizon=1)
 
     def test_har_rv_constant_series_forecasts_its_level(self):
-        # constant RV -> OLS recovers the level; iterated path stays flat
+        # NOT a discriminating test for the #14791 defect: on a CONSTANT RV the
+        # contemporaneous identity fit and a properly-lagged HAR both forecast
+        # the constant level (2.0), so this passes on either alignment. It
+        # guards a real invariant (level recovery on a flat series), but the
+        # tests that actually REJECT #14791 are in TestHarRvAlignment — their
+        # fixtures (a persistent series, not a constant) are the ones that go
+        # red under the contemporaneous alignment (see its docstring).
         idx = pd.date_range("2020-01-01", periods=200, freq="D")
         rv = pd.Series(np.exp(2.0), index=idx)
         model = m18.HarRvModel().fit(rv)
@@ -125,6 +131,95 @@ class TestBaselines:
         span_b = m18._select_ewma_span(log_rv_mutated, train_end, horizon=1)
         assert span_a == span_b
         assert span_a in m18.EWMA_SPAN_GRID
+
+
+# ---------------------------------------------------------------------------
+# har_rv alignment (#14791) — lagged features + non-degeneracy guard
+# ---------------------------------------------------------------------------
+
+class TestHarRvAlignment:
+    """Regression tests for the #14791 defect: HarRvModel.fit originally
+    regressed RV_t on CONTEMPORANEOUS features (RV_t itself) — a perfect
+    identity fit whose iterated forecast degenerates to persistence (agreement
+    5e-14 on the committed manifest). The features must be lagged one step,
+    and the non-degeneracy guard must be able to go red on that failure."""
+
+    def _persistent_rv(self, n=500, seed=3):
+        rng = np.random.default_rng(seed)
+        log_rv = np.cumsum(rng.normal(0, 0.05, n)) - 10.0
+        idx = pd.date_range("2020-01-01", periods=n, freq="D")
+        return log_rv, pd.Series(np.exp(log_rv), index=idx)
+
+    def test_features_are_lagged_one_step(self):
+        # feature row at position t must carry RV_{t-1} — never RV_t
+        _, rv = self._persistent_rv()
+        feats = m18._har_rv_features(rv)
+        assert np.isnan(feats["rv_d"].iloc[0])
+        assert feats["rv_d"].iloc[10] == pytest.approx(float(rv.iloc[9]))
+        assert feats["rv_w"].iloc[30] == pytest.approx(
+            float(rv.iloc[25:30].mean()))
+
+    def test_fit_is_not_the_identity(self):
+        # with the contemporaneous bug the coefficients collapse to
+        # [0, 1, 0, 0] (in-sample residual ~1e-19); a genuine one-step-ahead
+        # fit must spread weight beyond rv_d alone
+        _, rv = self._persistent_rv()
+        model = m18.HarRvModel().fit(rv)
+        b0, bd, bw, bm = model.coef
+        assert abs(bw) + abs(bm) + abs(b0) > 1e-3
+
+    def test_har_rv_rolling_predictions_pass_the_distinctness_guard(self):
+        # the exact in-situ control: rolling OOS predictions of har_rv vs
+        # persistence on a persistent series must clear the 1e-6 separation —
+        # with the identity bug this raises (agreement ~1e-14) and the test
+        # goes red
+        log_rv, rv = self._persistent_rv()
+        idx = list(range(150, 500, 10))
+        pers = m18._rolling_predictions("persistence", log_rv, rv, idx, horizon=5)
+        har = m18._rolling_predictions("har_rv", log_rv, rv, idx, horizon=5)
+        sep = m18.assert_baselines_distinct(
+            {"persistence": pers, "har_rv": har})
+        assert sep["max"] >= 1e-6
+
+
+class TestBaselineDistinctnessGuard:
+    def test_identical_arrays_raise(self):
+        a = np.array([-9.1, -9.0, -8.8])
+        b = a + 1e-14
+        with pytest.raises(RuntimeError, match="degenerate baselines"):
+            m18.assert_baselines_distinct({"persistence": a, "har_rv": b})
+
+    def test_distinct_arrays_pass_and_report_weakest_pair(self):
+        a = np.array([-9.1, -9.0])
+        b = np.array([-8.0, -7.0])
+        c = np.array([-5.0, -4.0])
+        sep = m18.assert_baselines_distinct(
+            {"persistence": a, "ewma": b, "log_har": c})
+        # weakest pair is a-vs-b: max rel diff = 0.1/0.9... ~ 1e-1 scale
+        assert sep["max"] > 1e-2
+        assert sep["median"] > 1e-2
+
+    def test_tsfm_excluded_from_the_guard(self):
+        a = np.array([-9.1, -9.0])
+        same_as_a = a.copy()
+        sep = m18.assert_baselines_distinct(
+            {"persistence": a, "tsfm": same_as_a})
+        # no baseline pair -> nothing to compare -> both aggregations are inf
+        assert sep["max"] == np.inf
+        assert sep["median"] == np.inf
+
+    def test_median_surfaces_partial_degeneracy_the_max_hides(self):
+        # Two of three OOS points agree to ~1e-8 (below the 1e-6 floor) while a
+        # single divergent point keeps the max (the abort signal) at 0.625 — the
+        # guard correctly does NOT abort (it only detects agreement-everywhere),
+        # but the recorded median (~1.4e-8) exposes the near-total agreement
+        # that the max alone would obscure (#14823).
+        a = np.array([-8.0, -7.0, -8.0])
+        b = np.array([-8.0 + 1e-7, -7.0 + 1e-7, -3.0])
+        sep = m18.assert_baselines_distinct(
+            {"persistence": a, "har_rv": b})
+        assert sep["max"] > 1e-6
+        assert sep["median"] < sep["max"]
 
 
 # ---------------------------------------------------------------------------

@@ -72,7 +72,7 @@ Track2-GoogleADK/
 │   ├── Lab12b-Sequential-Orchestration.ipynb
 │   ├── Lab12c-Agent-Handoff.ipynb
 │   ├── Lab12d-Token-Usage.ipynb
-│   └── Lab18-Session-Persistence.ipynb
+│   └── Lab12e-Session-Persistence.ipynb
 │
 ├── Day6-MLE-Star/             # MLE-STAR (ML Engineering)
 │   ├── Lab13-Web-Search-SOTA.ipynb
@@ -107,7 +107,7 @@ Data Science autonome avec l'architecture Planner-Coder-Verifier.
 | 12b | [Sequential-Orchestration](Day5-DS-Star/Lab12b-Sequential-Orchestration.ipynb) | Contrat C4 : désignation séquentielle, orchestrateur explicite (#14058) |
 | 12c | [Agent-Handoff](Day5-DS-Star/Lab12c-Agent-Handoff.ipynb) | Contrat C5 : handoff entre agents câblé et observable (#14058) |
 | 12d | [Token-Usage](Day5-DS-Star/Lab12d-Token-Usage.ipynb) | Contrat C6 : traçabilité de la consommation LLM (#14058) |
-| 18 | [Session-Persistence](Day5-DS-Star/Lab18-Session-Persistence.ipynb) | Contrat C1b : conversation multi-tours persistante (#14058) |
+| 12e | [Session-Persistence](Day5-DS-Star/Lab12e-Session-Persistence.ipynb) | Contrat C1b : conversation multi-tours persistante (#14058) |
 
 ### Day 6 - MLE-STAR (Labs 13-15)
 

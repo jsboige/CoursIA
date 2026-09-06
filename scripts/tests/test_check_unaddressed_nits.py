@@ -5202,7 +5202,7 @@ def test_13083_instance3_milieu_ligne4_reste_bloquant():
         "Le profil deletion-heavy de la PR est un faux signal.\n\n"
         "Il faut relire la section 3 avant merge, mais ce n'est pas un "
         "verdict bloquant.\n\n"
-        "Conclusion : RAS."
+        "Conclusion : le contexte est decrit ci-dessus."
     )
     assert mod.classify("myia-ai-01", body) == "BOT-CONCERN", (
         f"Apres fix `\\A`, `avant merge` en milieu de corps (ligne 4) "
@@ -5303,4 +5303,191 @@ def test_14461_gvar3_override_est_reconnu_comme_arbitrage() -> None:
         "#14461: l'override d'adjacence n'emet pas non plus un BLOCAGE "
         "(point A de _block_emitted, garde-fou du jumeau)."
     )
+
+
+def test_14461_t2_negation_d_override_ne_supprime_rien() -> None:
+    """#14461 tranche 2 (adjoint po-2025, 2026-09-05) : un override est une
+    AFFIRMATION, jamais une negation.
+
+    `[NO OVERRIDE]` / `[PAS D'OVERRIDE]` / `[SANS OVERRIDE]` / `[NOT AN
+    OVERRIDE]` disent l'inverse d'un arbitrage. Le motif bracketé
+    `_OVERRIDE_HEAD_RE` (qui ne portait qu'OVERRIDE) les reconnaissait quand
+    meme et SUPPRIMAIT une injonction reelle posee juste apres : `_block_emitted`
+    (point A) et `_coordinator_emission_informal` retombaient a False
+    (arbitrage) et `classify` rendait None sur un corps portant un BLOCAGE.
+    Lookahead negatif : un mot de negation (EN/FR) avant OVERRIDE dans le
+    crochet = pas un override. Controles positifs : les formes canoniques
+    (`[G-VAR-3 OVERRIDE]`, `[G-VAR-2 OVERRIDE]`, `[OVERRIDE]`) restent des
+    arbitrages (non-regression).
+    """
+    injonction = "**BLOCAGE MERGE (ai-01)** — Ne pas merger tant que le run GPU n'est pas rendu."
+    negs = ["[NO OVERRIDE]", "[PAS D'OVERRIDE]", "[SANS OVERRIDE]", "[NOT AN OVERRIDE]"]
+    for marker in negs:
+        body = f"{marker} lane x\n\n{injonction}"
+        assert mod._block_emitted(body) is True, (
+            f"#14461-T2 {marker!r}: le BLOCAGE doit rester emis — la negation ne "
+            f"desarme pas le point A de _block_emitted, got "
+            f"{mod._block_emitted(body)!r}"
+        )
+        assert mod._coordinator_emission_informal(body) is True, (
+            f"#14461-T2 {marker!r}: l'injonction doit rester une emission — la "
+            f"negation ne la supprime pas, got "
+            f"{mod._coordinator_emission_informal(body)!r}"
+        )
+        assert mod.classify("myia-ai-01", body) == "BLOCK", (
+            f"#14461-T2 {marker!r}: classify doit rendre BLOCK, pas None (la "
+            f"negation n'est pas un arbitrage), got "
+            f"{mod.classify('myia-ai-01', body)!r}"
+        )
+        assert not mod._OVERRIDE_HEAD_RE.match(f"{marker} lane x".upper()), (
+            f"#14461-T2 {marker!r}: le motif ne doit pas matcher une negation."
+        )
+    for marker in ("[G-VAR-3 OVERRIDE]", "[G-VAR-2 OVERRIDE]", "[OVERRIDE]"):
+        body = f"{marker} lane x\n\n{injonction}"
+        assert mod._block_emitted(body) is False
+        assert mod._coordinator_emission_informal(body) is False
+        assert mod.classify("myia-ai-01", body) is None
+        assert mod._OVERRIDE_HEAD_RE.match(f"{marker} lane x".upper()), (
+            f"#14461-T2 {marker!r}: le motif doit matcher une forme positive."
+        )
+
+
+def test_14793_troncature_60_crochet_non_ferme_est_pin() -> None:
+    """#14793 acceptance 3 : la troncature de tete a 60 caracteres, quand le
+    crochet OVERRIDE s'ouvre mais ne se ferme pas avant la limite, ne desarme
+    pas le garde (pin, comportement hereditaire accepte par la review de #14788).
+
+    Un en-tete dont le crochet s'ouvre dans les 60 premiers chars mais ne se
+    ferme pas avant la limite n'est PAS un override pose : le motif regu une
+    tete sans `]` et ne matche pas, le BLOCAGE reste une emission (garde arme),
+    pas un arbitrage muet. Valeurs mesurees sur `_OVERRIDE_HEAD_RE` a pos 0
+    (`.match`), `_coordinator_emission_informal`, `_block_emitted` et `classify`.
+    """
+    body = (
+        "**BLOCAGE MERGE (ai-01)** — Au tour precedent, l'ordre [OVERRIDE lane "
+        "myia-po-2024:CoursIA-2 -- justifier longuement que le crochet ne se "
+        "referme pas avant la limite de soixante caracteres]\n\nNe pas merger "
+        "tant que le run GPU n'est pas rendu."
+    )
+    head60 = body[:60]
+    assert not mod._OVERRIDE_HEAD_RE.match(head60.upper()), (
+        "#14793-TRUNC: un crochet non ferme dans les 60 premiers chars ne doit "
+        "pas matcher le motif d'override (le garde n'est pas desarme)."
+    )
+    assert mod._coordinator_emission_informal(body) is True, (
+        "#14793-TRUNC: l'injonction doit rester une emission."
+    )
+    assert mod._block_emitted(body) is True, (
+        "#14793-TRUNC: le BLOCAGE (point A) reste emis sous un crochet non ferme."
+    )
+    assert mod.classify("myia-ai-01", body) == "BLOCK", (
+        "#14793-TRUNC: classify doit rendre BLOCK, pas None/arbitrage."
+    )
+# --- #14564 : vocabulaire ASYMETRIQUE entre registre CONCERN et registre LIFT ---
+#
+# Deux defauts OPPOSES mesures dans l'issue, la correction doit les tenir en
+# meme temps (et ne pas casser la classe que la case-sensibilite de #12908
+# protegeait — distinguer l'EMISSION de la NARRATION de levee) :
+#   (a) FAUX NEGATIF — la reserve en PROSE anglaise echappait a CONCERN_MARKERS
+#       (qui ne connaissait que « CONCERNS » majuscule case-sensitive + la
+#       forme etiquetee line-start). PR #14544 mergée avec 3 reserves Hermes
+#       non levees (rc=0).
+#   (b) FAUX POSITIF — des levees reelles en FRANCAIS COURT (« RAS », « rien a
+#       traiter », « c'est traite ») n'eteignaient pas une reserve : la lane
+#       restait bloquee sur un deblocage deja prononce.
+
+
+def test_english_prose_concern_emission_flagge():
+    """#14564 (a) — « I have 3 concerns ... » est une EMISSION : la reserve en
+    prose anglaise doit etre classee BOT-CONCERN (avant : None, rc=0)."""
+    assert mod.classify(
+        "jsboige",
+        "I have 3 concerns about the reproducibility — the seeds in the committed "
+        "artifact ([0,1,7,42,99]) do not match the code ([...][:n_seeds]).",
+    ) == "BOT-CONCERN"
+
+
+def test_english_label_concern_possessive_flagge():
+    """#14564 (a) — « my concerns: » (label precedee d'un possessif) : la forme
+    etiquetee line-start ne matchait pas « my concerns: » (le « my » avant
+    l'ancre ^). Le motif COUNT/POSSESSIVE la rattrape."""
+    assert mod.classify(
+        "jsboige", "my concerns: the attribution in cell 0 is still wrong."
+    ) == "BOT-CONCERN"
+
+
+def test_english_label_concern_count_flagge():
+    """#14564 (a) — « 3 concerns: » (compteur + label) : emission numerotee."""
+    assert mod.classify(
+        "jsboige", "3 concerns: seed list, bias sign, and provenance."
+    ) == "BOT-CONCERN"
+
+
+def test_english_concern_remain_vs_no_flagge():
+    """#14564 (a) — « some concerns remain ... » : locution de prose a faible
+    collision. La meme idee niee (« No concerns remain ») est CITEE (citer
+    « no ») et reste None."""
+    assert mod.classify(
+        "jsboige", "some concerns remain about the walk-forward split."
+    ) == "BOT-CONCERN"
+    assert mod.classify("jsboige", "No concerns remain — all fixed.") is None
+
+
+def test_english_narration_my_concerns_addressed_reste_none():
+    """Garde-fou #14564 (a) : « my concerns are addressed » est une NARRATION
+    de levee, PAS une emission. On n'a PAS relache « my concerns » en phrase
+    nue (le deux-points de la forme label distingue) — verifier qu'une telle
+    narration reste None, pas BOT-CONCERN."""
+    body = "my concerns are addressed at head abc — both cells are re-run."
+    assert mod.classify("jsboige", body) is None
+
+
+def test_ras_francais_leve_dans_une_reponse():
+    """#14564 (b) — « RAS » seule est une levee RELLE : une reserve posee puis
+    une reponse « RAS » debloque la PR. DISCORDANT (#14766) : le body ne porte
+    QUE le sigle, aucun autre LIFT_MARKER — il ne passe que si `_WORD_BOUNDED_LIFT_RE`
+    matche bien la majuscule « RAS » (avant le fix, `\bras\b` lower-case-only
+    la manquait et le test passait a tort via « rien a signaler »)."""
+    reserve = {"author": {"login": "clusterManager-Myia"}, "createdAt": at(9),
+               "body": "[Hermes] COMMENT_WITH_CONCERNS — le run oublie 3 seeds."}
+    lift = {"author": {"login": "clusterManager-Myia"}, "createdAt": at(12),
+            "body": "RAS sur le fond — re-exec avec les 8 seeds."}
+    assert run([reserve, lift])["blocked"] is False
+
+
+def test_c_est_traite_leve_dans_une_reponse():
+    """#14564 (b) — « c'est traite » (objet « cela » + participe) est une
+    resolution assumee. Bordure stricte : « est traite » NU reste hors registre
+    (rejete #11639, override qui ne doit rien lever)."""
+    reserve = {"author": {"login": "clusterManager-Myia"}, "createdAt": at(9),
+               "body": "[Hermes] COMMENT_WITH_CONCERNS — la cellule 12 est cassee."}
+    lift = {"author": {"login": "clusterManager-Myia"}, "createdAt": at(12),
+            "body": "c'est traite — cell 12 relancee a l'execution."}
+    assert run([reserve, lift])["blocked"] is False
+
+
+def test_est_traite_nu_ne_leve_pas():
+    """Garde-fou #14564 (b) : « est traite » NU (sans « c'est ») reste hors
+    registre — c'est le contre-exemple REJETE de l'issue (#11639 « le point 3
+    est traite en argument », override qui ne doit rien lever)."""
+    reserve = {"author": {"login": "clusterManager-Myia"}, "createdAt": at(9),
+               "body": "[Hermes] COMMENT_WITH_CONCERNS — la cellule 12 est cassee."}
+    lift = {"author": {"login": "clusterManager-Myia"}, "createdAt": at(12),
+            "body": "le point 3 est traite en argument — relu le diff."}
+    assert run([reserve, lift])["blocked"] is True
+
+
+def test_ras_word_bound_rasoir_ne_leve_pas():
+    """Garde-fou word-bound : le sigle « RAS » (majuscule) ne doit PAS matcher
+    le « ras » minuscule — le vrai mot francais (« ras du sol », « a ras de
+    terre »). DISCORDANT (#14766) : le body porte le minuscule nu, aucun autre
+    LIFT_MARKER. Avant le fix, `\bras\b` matchait le minuscule et levait a
+    tort (faux positif) ; apres (motif dedie au sigle), il ne leve plus.
+    (Le cas « RASOIR »/« ERASME » echouait deja trivialement par la casse,
+    il n'a jamais exerce le word-bound — verifie ai-01.)"""
+    reserve = {"author": {"login": "clusterManager-Myia"}, "createdAt": at(9),
+               "body": "[Hermes] COMMENT_WITH_CONCERNS — 3 seeds manquants."}
+    lift = {"author": {"login": "clusterManager-Myia"}, "createdAt": at(12),
+            "body": "Une couche ras de terre recouvre le chemin, mais la conclusion tient."}
+    assert run([reserve, lift])["blocked"] is True
 
