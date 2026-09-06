@@ -24,7 +24,7 @@ FLT/pin Mathlib `db584cd`, même forme CI dispatcher que hecke).
 |------|-----------|--------------------:|--------------:|---------------:|--------|-------|
 | `grothendieck_lean` | v4.32.1 | 0 | 118 | 4 | REF | #1646, #2159 |
 | `conway_lean` | v4.32.1 | 1¹ | 72 | 23 | PEDA | #1453, #1651, #2162 |
-| `knot_lean` | v4.32.1 | 11² | 15 | 4 | PEDA/REF | #2874, #3003 |
+| `knot_lean` | v4.32.1 | 9² | 15 | 4 | PEDA/REF | #2874, #3003 |
 | `finiteness_lean` | v4.32.1 | 0 | 4 | 4 | PEDA | #2978, #3111 |
 | `sensitivity_lean` | v4.32.1 | 0 | 11 | 5 | PEDA/REF | famille calibration |
 | `mimo_lean` | v4.32.1 | 0 | 13 | 3 | PEDA/REF | #10984, #10986 |
@@ -53,7 +53,12 @@ preuves de transfert classique ouvertes. Le pont GF(3) Path B
 `main`). Niveau recherche, pas un gap pédagogique. **Évolution documentée**
 (3 → 12 → 11) — n'est PAS une régression silencieuse. Le delta 12 → 11 résulte des
 décharges successives #8766 + #11227 (cf. `knot_lean/README.md` pour la trace par
-fichier) — l'inventaire suit avec un cycle de retard.
+fichier) — l'inventaire suit avec un cycle de retard. Puis 11 → **10** après la
+décharge de `conway_trivial_alexander` (preuve kernel déterminant 10×10 ℤ[t],
+See #2874, 2026-09-05 ; re-mesure canonique du jour confirmant **11 sur `main`**,
+`distinct_code_sorry` 11/22 → 10/20 — pas de dérive depuis le 2026-08-28). Puis
+10 → **9** après la décharge de `KT_trivial_alexander` (mineur t⁵ par
+transvections, See #2874, 2026-09-06 ; `distinct_code_sorry` 10/20 → 9/18).
 ³ `calibration_lean` est un **composant de harnais** (prover calibration, déplacé depuis
 GameTheory, #1764). Les `· sorry` inline de `Calibration/Nash.lean` sont un **fixture de
 test intentionnel** (le harnais doit gérer un *sorry-increase* 1→2 sans régression) — pas
@@ -104,10 +109,12 @@ théorème de Conway.
 - **Toolchain** : `leanprover/lean4:v4.32.1` · **Dépendance** : Mathlib4
 - **`.lean` files** : 15 (vs 6 modules déclarés 2026-07-15 — cf. EN-siblings comptés
   dans la mesure brute)
-- **sorry (production)** : **11 distincts** (22 code_sorry bruts = 11 FR + 11 EN,
+- **sorry (production)** : **9 distincts** (18 code_sorry bruts = 9 FR + 9 EN,
   dédoublonnés via `count_code_sorry.py distinct_code_sorry`) — recherche-HOLD,
   évolution 3 (2026-07-15) → 12 (2026-08-27) → **11** (2026-08-28, mesure
-  canonique post-#11211/#11227). Majorité = `:= sorry` sur définitions non
+  canonique post-#11211/#11227) → **10** (2026-09-05, `conway_trivial_alexander`
+  déchargé, See #2874) → **9** (2026-09-06, `KT_trivial_alexander` déchargé —
+  mineur t⁵ par transvections, See #2874). Majorité = `:= sorry` sur définitions non
   définies.
 - **Notebook câblé** : 4 notebooks (vs 2 déclarés — 2 notebooks EN-siblings comptés).
 - **Suivi** : #2874 (mandate-C trio MERGED #3997/#3999/#4003), #3003 (Path B GF(3) SHIPPED).

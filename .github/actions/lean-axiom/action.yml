@@ -29,6 +29,10 @@ inputs:
     description: 'Whether a transitive sorryAx fails the run. false = report has_sorry without gating (honesty knob, not leniency).'
     required: false
     default: 'true'
+  build-jobs:
+    description: 'Optional lake job-parallelism cap, applied as LEAN_NUM_THREADS. Empty = default (all cores). Lake 5.0.0 (Lean 4.32.1) has NO -j/--jobs CLI flag (`-J` is JSON output; jobs are BaseIO.asTask tasks on the Lean runtime pool, sized by LEAN_NUM_THREADS). `1` serialises elaboration when sibling modules peak together inside ONE job (knot_lean Conway/Conway_en, #14821).'
+    required: false
+    default: ''
 
 runs:
   using: composite
@@ -71,9 +75,17 @@ runs:
     - name: Lake build
       shell: bash
       working-directory: ${{ inputs.project-path }}
+      env:
+        # See the build-jobs input description: the cap goes through
+        # LEAN_NUM_THREADS (Lake 5.0 task pool), NOT a CLI flag — `lake -R
+        # build -j 1` dies with "unknown short option '-j'" (#14821 run
+        # 34037681207). Empty input = no export = default behavior, so
+        # callers that do not pass build-jobs are unaffected.
+        LAKE_BUILD_JOBS: ${{ inputs.build-jobs }}
       run: |
         set -o pipefail   # propagate lake's exit code through the pipeline (FAILED must
                           # exit != 0; See incident conway_lean HashlifeCorrectness L1058, 2026-06-14).
+        if [ -n "$LAKE_BUILD_JOBS" ]; then export LEAN_NUM_THREADS="$LAKE_BUILD_JOBS"; fi
         lake exe cache get || true
         # On failure, surface the error lines the `tail` window loses (See #8915).
         if lake -R build 2>&1 | tee "$RUNNER_TEMP/lake.log" | tail -10; then

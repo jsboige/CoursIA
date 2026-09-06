@@ -46,15 +46,18 @@ name: Lean Knot CI
 #   - Reidemeister.lean:        2 (reidemeister_theorem x2 — PL topology, OOS)
 #   - Basic.lean:               0 (the "1" under prose-header was a TODO prose comment)
 #   - MathlibPrerequisites.lean:0 (the "2" were the prose roadmap index)
-# Total real tactic sorry = 11 (aligné avec `LEAN_INVENTORY.md` post-#13312,
+# Total real tactic sorry = 9 (aligné avec `LEAN_INVENTORY.md` post-#13312,
 # mesure 2026-08-28 `count_code_sorry.py` champ `distinct_code_sorry` ; lowered
 # from 14 par la mesure instrument post-#11227 — le décompte « 14 » dans les
 # commentaires/README comptait 2 sorry dans `Invariant.lean` qui n'en portent
 # qu'1 une fois stripé des commentaires, et sur-comptait Conway ; historique :
 # 16 (après #8766) → 17 (#9966 wall fronted) → 16 (wall DISCHARGED) → 14
-# (#11211/#11227 fox/col) → **11** (mesure 2026-08-28, `count_code_sorry.py`).
+# (#11211/#11227 fox/col) → **11** (mesure 2026-08-28, `count_code_sorry.py`)
+# → **10** (2026-09-05, `conway_trivial_alexander` DISCHARGED — preuve kernel
+# déterminant 10×10 en ℤ[t], See #2874) → **9** (2026-09-06,
+# `KT_trivial_alexander` DISCHARGED — mineur t⁵ par transvections, See #2874).
 # Cette valeur DOIT rester synchronisée avec `LEAN_INVENTORY.md` ligne « knot_lean
-# | 11² » et avec `knot_lean/README.md` table des sorries — cf. #13312).
+# | 9² » et avec `knot_lean/README.md` table des sorries — cf. #13312).
 # Raising this baseline requires a documented
 # justification in the PR body (a NEW real tactic sorry, not prose).
 
@@ -138,8 +141,22 @@ jobs:
         with:
           project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean
           display-name: knot_lean
-          sorry-baseline: "11"
+          # 11 -> 10 : conway_trivial_alexander decharge (See #2874, preuve
+          # kernel determinant 10x10, Conway.lean 6 -> 5 sorries reels).
+          # 10 -> 9 : KT_trivial_alexander decharge (See #2874, mineur t^5
+          # par transvections, Conway.lean 5 -> 4 sorries reels).
+          sorry-baseline: "9"
           sorry-filter-mode: real
+          # #14821 : le pool coursia-lean OOM-kill (exit 137) sur le pic
+          # d'elaboration des siblings Conway/Conway_en DANS le meme job —
+          # la contention entre jobs est REFUTEE (Proof integrity mort seul,
+          # 18 min apres liberation de l'autre job, DM ai-01 2026-09-06).
+          # Serialisation d'abord comme INSTRUMENT DE MESURE (reco ai-01,
+          # msg-20260906T133912-j6rlew) : si ca passe, c'est aussi le remede
+          # court terme ; si ca OOM, le pic d'un Conway seul depasse la boite.
+          # NB: Lake 5.0 n'a pas de -j (tentative 1 = run 34037681207, mort
+          # a l'option parsing) — le cap passe par LEAN_NUM_THREADS.
+          build-jobs: "1"
 
   # Level 3 proof-integrity gate (criterion B.3 of pr-review-discipline).
   # Closes #8677: catches forbidden axioms (incl. transitive `sorryAx`)
@@ -172,12 +189,16 @@ jobs:
           display-name: knot_lean
           target-modules: "*"
           allow-axioms: ""
-          # 11 acknowledged tactic `sorry`s = the `sorry-baseline` declared by the
+          # 9 acknowledged tactic `sorry`s = the `sorry-baseline` declared by the
           # build job above; the gate tolerates them (`fail-on-sorry: false`) but
           # still reports `has_sorry` per module and hard-fails forbidden axioms.
           # The per-module enumeration now lives in the gate's runtime derivation
           # (issue #10889) -- flip to `true` when the baseline reaches 0.
           fail-on-sorry: false
+          # #14821 : meme instrument que le job ci (voir le commentaire du
+          # job ci) — ce job REBUILD le lake avec sa propre cle de cache,
+          # donc le pic des siblings se rejoue ici aussi.
+          build-jobs: "1"
 
   # Advisory proof-integrity coverage (See #8782). Same pattern as conway_lean
   # (#8787): the `target-modules` list above is hand-maintained while the
