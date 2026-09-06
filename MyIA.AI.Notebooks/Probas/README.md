@@ -296,7 +296,6 @@ Chaque notebook introduit un concept ou modèle spécifique. Le tableau ci-desso
 |----------|--------|---------|-------|
 | [Infer-101](Infer-101.ipynb) | .NET (C#) | Introduction Infer.NET, Two Coins, Cyclist | 1h |
 | [Pyro_RSA_Hyperbole](Pyro_RSA_Hyperbole.ipynb) | Python | Rational Speech Acts, hyperboles | 30 min |
-| [DoWhy-1-Estimand-et-Intervention](DecisionTheory/Causal-Bridges/DoWhy-1-Estimand-et-Intervention.ipynb) | Python | Estimand causal : backdoor nommé, sensibilité au graphe mesurée, refuters statistiques | 45 min |
 
 ### Infer-101.ipynb
 
