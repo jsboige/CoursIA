@@ -116,7 +116,7 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
-| 1 | Infer-101 : Introduction a Infer.NET | BETA | Oui |
+| 1 | Infer-1b : Introduction a Infer.NET | BETA | Oui |
 | 2 | Le Framework Rational Speech Act (RSA) | BETA | Oui |
 
 ## Probas/DecisionTheory (26 notebooks)
