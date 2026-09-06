@@ -151,8 +151,17 @@ jobs:
   # twin (.github/actions/lean-axiom) -- job-level `uses:` on the local
   # reusable replaced by a LOCAL job (runs-on/if/steps) invoking the
   # composite. check_target_coverage.py unions BOTH wiring forms.
+  #
+  # Serialized after `ci` (#14921): both jobs used to start at the same
+  # second, doubling the anonymous git burst from this machine's IP (2x
+  # mathlib + 2x plausible) -- the burst trips GitHub's per-IP anonymous
+  # limit and lake dies at `plausible` with `could not read Username`
+  # (exit 128). Running second, this job also restores the cache entry
+  # `ci` just saved, making the axiom pass fetch-free. This also makes
+  # the job true to its own comment above ("Runs after the build").
   proof-integrity:
     name: "Proof integrity (knot_lean)"
+    needs: ci
     runs-on: [self-hosted, coursia-ephemeral, coursia-lean]
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
     steps:
