@@ -20,4 +20,12 @@ RUN source /opt/environments/python/forge/bin/activate && \
 RUN groupadd -g 1000 appuser && \
     useradd -u 1000 -g appuser -m -s /bin/bash appuser
 
+# #14941: ai-dock's env-store.sh echoes every stored env var's VALUE to stdout
+# (-> docker logs): at boot, init.sh calls it for ALL env vars, leaking
+# FORGE_ARGS (contains --gradio-auth admin:<password>) and WEB_PASSWORD.
+# Drop the value from the log line; the persistence append to
+# /opt/ai-dock/etc/environment.sh (required by the app) is kept intact.
+# Before USER appuser (file is root-owned); after the cached pip layers.
+RUN sed -i "/Stored environment variable/ s|': %s|'|; /Stored environment variable/ s|\" \"[$]value\"|\"|" /opt/ai-dock/bin/env-store.sh
+
 USER appuser

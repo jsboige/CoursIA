@@ -16,3 +16,11 @@ RUN chown -R 1000:1000 /opt/environments/python/forge /opt/stable-diffusion-webu
 
 RUN source /opt/environments/python/forge/bin/activate && \
     python -c "import numpy; import cv2; import skimage; print('Imports successful')"
+
+# #14941: ai-dock's env-store.sh echoes every stored env var's VALUE to stdout
+# (-> docker logs): at boot, init.sh calls it for ALL env vars, leaking
+# FORGE_ARGS (contains --gradio-auth admin:<password>) and WEB_PASSWORD.
+# Drop the value from the log line; the persistence append to
+# /opt/ai-dock/etc/environment.sh (required by the app) is kept intact.
+# Last layer, after the cached pip layers, to keep rebuilds cheap.
+RUN sed -i "/Stored environment variable/ s|': %s|'|; /Stored environment variable/ s|\" \"[$]value\"|\"|" /opt/ai-dock/bin/env-store.sh
