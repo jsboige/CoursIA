@@ -28,17 +28,18 @@ RUN chown -R 1000:1000 /opt/environments/python/forge /opt/stable-diffusion-webu
 # Before USER appuser (file is root-owned); after the cached pip layers.
 RUN sed -i "/Stored environment variable/ s|': %s|'|; /Stored environment variable/ s|\" \"[$]value\"|\"|" /opt/ai-dock/bin/env-store.sh
 
-# #14941 (vecteur 2/2) : modules/launch_utils.py (app Forge) imprime argv au
-# boot ("Launching Web UI with arguments: ...") -> gradio-auth admin:<pw> dans
-# les logs. Redaction de la paire credential dans CE print seulement ; le flag
-# atteint l'app inchangé. NB : fichier app — une mise à jour git au runtime
-# peut le restaurer (même précarité que le sed requirements ci-dessus).
+# #14941 (vecteur 2/2) + #14956 : modules/launch_utils.py (app Forge) imprime
+# argv au boot ("Launching Web UI with arguments: ...") -> gradio-auth ET
+# api-auth admin:<pw> dans les logs. Redaction de la paire credential dans CE
+# print seulement ; les flags atteignent l'app inchangés. NB : fichier app —
+# une mise à jour git au runtime peut le restaurer (même précarité que le sed
+# requirements ci-dessus).
 RUN python3 - <<'PYEOF'
 BS = chr(92)
 p = "/opt/stable-diffusion-webui-forge/modules/launch_utils.py"
 src = open(p, encoding="utf-8").read()
 anchor = '    print(f"Launching '
-pattern = "r'(--gradio-auth[ =])[^ ]*'"
+pattern = "r'(--(?:gradio|api)-auth[ =])[^ ]*'"
 repl = "r'" + BS + "1***'"
 helper = (
     "    _redacted_args = re.sub(" + pattern + ", " + repl
