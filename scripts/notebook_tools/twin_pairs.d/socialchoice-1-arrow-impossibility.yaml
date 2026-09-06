@@ -3,65 +3,6 @@
   python: MyIA.AI.Notebooks/GameTheory/SocialChoice/01-Arrow-Impossibility-Theorem.ipynb
   csharp: MyIA.AI.Notebooks/GameTheory/SocialChoice/01-Arrow-Impossibility-Theorem-Csharp.ipynb
   parity_level: semantic
-  audits:
-    - date: "2026-08-04"
-      by: myia-po-2023:CoursIA
-      python_sha: b23da83abdc8fe436d3c7883147671432a451dcd
-      csharp_sha: b45fe4157ec3f2fe355fdc31b14c5f82f6b6b7ac
-    - date: "2026-08-14"
-      by: myia-po-2024:CoursIA-2
-      python_sha: ce4405527afb09d05bfa9b4e23a0e980c6b5ddc4
-      csharp_sha: b45fe4157ec3f2fe355fdc31b14c5f82f6b6b7ac
-      content_python_sha: c5c1ce460b76bd6318f8dd4ddb068e8ae996567530f7e69cc1274455c8e2ba62
-      content_csharp_sha: 363a4553f5ed7e8da5d91962470f79176d7af4709fe4953ecda2b5aeda35a1b8
-    - date: "2026-08-15"
-      by: myia-ai-01:CoursIA
-      python_sha: 57b4f25d6cd233f750688420563bf802665a7354
-      csharp_sha: b45fe4157ec3f2fe355fdc31b14c5f82f6b6b7ac
-      content_python_sha: c466def4c9cedf109edf5b7ed8f1bef786465e59918483b5dbedb4a95821716b
-      content_csharp_sha: 363a4553f5ed7e8da5d91962470f79176d7af4709fe4953ecda2b5aeda35a1b8
-    - date: "2026-08-17"
-      by: myia-po-2023:CoursIA
-      python_sha: 57b4f25d6cd233f750688420563bf802665a7354
-      csharp_sha: d8d4083ef458119fdef3d07b84646d4524f1573f
-      content_python_sha: c466def4c9cedf109edf5b7ed8f1bef786465e59918483b5dbedb4a95821716b
-      content_csharp_sha: f82a3d6741b0b60b7026307c8463b1eb2b6d8c725dc00c0f15670e62f774b6b6
-    - date: "2026-08-20"
-      by: myia-po-2025:CoursIA
-      python_sha: 04c3449c43d7c9b6ef0b0cf40aaca47f12d1d266
-      csharp_sha: 92f792973932c494cb95ba2238573847675451ce
-      content_python_sha: f7751edbe2780a0b82f1b936ee0d257627355157ee4f7a729886c2e664e6f83f
-      content_csharp_sha: db426b202767f2c20749207a43c121af0d20a569b5c80120ec7bc1cc06c84562
-    - date: "2026-08-21"
-      by: myia-po-2025:CoursIA-2
-      python_sha: 2b2091c157f1b852e19dbd22205feb9fc19acae2
-      csharp_sha: be32e19a72c1fa591fe11446fa3f45611424bd94
-      content_python_sha: 974d07532317c1dd4b9463b4990a66d50094b53572a317d69d2de5185a0b7515
-      content_csharp_sha: ec6842fb7658ee23cf57fa2ee7156b9eb64cd2dca00e1577a13bdee0cee94803
-    - date: "2026-08-22"
-      by: myia-po-2025:CoursIA
-      python_sha: 57b4f25d6cd233f750688420563bf802665a7354
-      csharp_sha: 353e6febf6a921fb52d44be74273c2d8c987587d
-      content_python_sha: c466def4c9cedf109edf5b7ed8f1bef786465e59918483b5dbedb4a95821716b
-      content_csharp_sha: 2d4191550a3c47fb7f618d6ece8add14e6d94643ea151ab23f24fdbd9da2ef35
-    - date: "2026-08-22"
-      by: myia-po-2025:CoursIA
-      python_sha: 2b2091c157f1b852e19dbd22205feb9fc19acae2
-      csharp_sha: 93072aca329dcad04921f472477c0882f5a5c43b
-      content_python_sha: 974d07532317c1dd4b9463b4990a66d50094b53572a317d69d2de5185a0b7515
-      content_csharp_sha: bb83aee23a49322cac6020e76250736aa3fb0d70acfc418d4c94ec0902789ec8
-    - date: "2026-08-23"
-      by: myia-po-2025:CoursIA
-      python_sha: 2b2091c157f1b852e19dbd22205feb9fc19acae2
-      csharp_sha: 81c727dcd82f2344d3bf783a31f65f3dc970e4ff
-      content_python_sha: 974d07532317c1dd4b9463b4990a66d50094b53572a317d69d2de5185a0b7515
-      content_csharp_sha: 5d2b8d0dc0e83e679ffefc1ce047a17dfc36ffd2090afa272a086723136274f8
-    - date: "2026-08-31"
-      by: myia-po-2023:CoursIA-2
-      python_sha: 8995a777817fbf2395d46f8b45081bfe5574c665
-      csharp_sha: 7d2db89b1cb6146d80ce7450ba61a8f7ad5c11f4
-      content_python_sha: 3cc381796e3e07a782b300ff42bd819eb74bafa5a472c3d30004b1aece0d1287
-      content_csharp_sha: 68baf20446bce9fd6b867395086d78eca7f2b39220bb7f896d83cee0d0c54155
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Paire DOUBLE-FACE SOTA : Annexe SAT double-face (2026-08-20, axe 5 PythonNet #10382, atterrie sur main) : les DEUX jumeaux encodent l existence d une SWF Pareto+IIA+non-dictature en CNF (216 profils, 1296 litteraux, 36453 clauses) et resoluent NATIVEMENT via pysat (Glucose3/MiniSat22/CaDiCaL103 -> UNSAT x3, frontiere |A|=2 SAT) cote Python, par pont PythonNet 3.1.0 cote C# -- instance et verdicts identiques. Le socle (Arrow 1951, 3 axiomes, Geanakoplos 2005) est preserve. Reprise post-merge (2026-08-22, tranche Geanakoplos, #10382) : le C# porte desormais AUSSI la preuve Geanakoplos complete -- 2.1/2.2/2.3 demos construites, 2.3-bis test exhaustif (216 profils, pivot RECALCULE par profil, durcissement du test stochastique Python ; Borda 58/216 non-concordances, pivots V1=189/V2=27/V0=0, Dictatoriale 0/216), 2.4 theoreme final (quotes Arrow.lean aux lignes mesurees 691/710/288/418/603, 714 lignes, 0 sorry code), synthese visuelle ScottPlot 5.0.55 (meme verdicts et codes couleur que matplotlib). Asymetries residuelles ASSUMEES = idiomes de demonstration : Python stochastique+matplotlib vs C# exhaustif+BCL/ScottPlot. parity_level: semantic preserve."
 

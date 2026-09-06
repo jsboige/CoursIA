@@ -5,34 +5,6 @@
   parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Pont livre et verifie firsthand (po-2024, 2026-08-18) : rebuild-preferences.sh recompile la chaine math-1.21 -> commons-1.21 (patchee Java 8 : Files.readString/Path.of/isBlank/strip) -> plugin-1.30 -> preferences-1.30 en javac --release 8 (bytecode major 52, plafond IKVM 8.x = Java SE 8), shade + jspf-core-1.0.2 (major 50, sinon IKVM0100 drope PreferencesPlugin : 43 au lieu de 44 types), dotnet build IKVM 8.15 -> DLL 641 Ko commitee a la racine Tweety/ avec fallback de chargement dans le notebook. Re-exec reel kernel .net-csharp : 9/9 cellules CLEAN, 44 types exposes, BordaScoringPreferenceAggregator(3) instancie. RACINE DE L'ECHEC PRECEDENT : les artefacts Maven Central Tweety sont bytecode major 59 (Java 15, toutes versions y compris 1.21) et les sources v1.30 entieres exigent javac --release 11 (major 55) car commons utilise des APIs Java 11 -- les deux sont silently droppes par IKVM 8.x (warning IKVM0101 'class format error', invisible au rebuild si le cache %TEMP%/ikvm/cache/1 sert une DLL stale). L'ancien pom Maven shade (build-tweety-preferences-shade.pom.xml, supprime) produisait exactement ce major-55 : DLL de 7,4 Mo compilee avec 0 type org.tweetyproject.*. Recette canonique = rebuild-preferences.sh (miroir de rebuild-5shades.sh issue #10411)."
-  audits:
-    - date: "2026-08-18"
-      by: myia-po-2026:CoursIA
-      python_sha: 1c000b05a020e453460d147199c69b529fa14bf1
-      csharp_sha: 1fc5f036c25417d0a123d2d2db97a4b509689182
-      reason: "parity_level basculee -> native-both (arbitrage ai-01 2026-08-16 #11200 Option A, parite de moteur lib-vs-lib) : Python atteint TweetyProject via JPype (6 imports + 8 references), C# atteint le pont IKVM java8-shade reconstruit (PR #11592, DLL 641 Ko, 23 references, verdict SOTA-OK frais). Meme moteur Tweety des deux cotes. Imports/invocations verifies firsthand sur les notebooks de la paire (re-grep origin/main 2026-08-18). bridge_verdict_reason inchangee."
-    - date: "2026-08-04"
-      by: myia-po-2023:CoursIA
-      python_sha: c2f0fd49cc676439ac5d626abd51f39dca5680a0
-      csharp_sha: 3e015103eb4cddb301a19f10dd1b8940eefe0fbb
-    - date: "2026-08-12"
-      by: myia-po-2023:CoursIA-2
-      python_sha: c2f0fd49cc676439ac5d626abd51f39dca5680a0
-      csharp_sha: 3e015103eb4cddb301a19f10dd1b8940eefe0fbb
-      content_python_sha: 29245004b87519c32cb37bed43227fd2b8af2ade9de7a368a9ddad76dd67e2e9
-      content_csharp_sha: 5a7dfff560e3dc513ce623f8ccc6c4f91962cc442f38c0abcec33afe3a73257b
-    - date: "2026-08-14"
-      by: myia-ai-01:CoursIA
-      python_sha: 1c000b05a020e453460d147199c69b529fa14bf1
-      csharp_sha: 1bcd8a14a94a5eba71fd390fc8addc5575fe3a30
-      content_python_sha: 705236dcb08121f1cd55c974690996a0cecc470681db2424c46cc5ae21868674
-      content_csharp_sha: a41d0bfd2051b86250ca965a30f8c2335eb97ede736154081d565472bdba6afa
-    - date: "2026-08-18"
-      by: myia-po-2024:CoursIA
-      python_sha: 1c000b05a020e453460d147199c69b529fa14bf1
-      csharp_sha: 1fc5f036c25417d0a123d2d2db97a4b509689182
-      content_python_sha: 705236dcb08121f1cd55c974690996a0cecc470681db2424c46cc5ae21868674
-      content_csharp_sha: 636bcaf7c1954931e2c9e638007a5fc18aa6431bad84e553c7784943206d64ad
   known_differences:
     - "Socle commun : argumentation preferentielle (PreferenceReasoner) via TweetyProject."
     - "Lib-vs-lib : C# via IKVM (`#r \"nuget: IKVM.Image, 8.15.0\"` + Assembly.LoadFrom tweety-preferences.dll). Python via JPype (`from org.tweetyproject.arg.dung.reasoner import SimplePreferredReasoner`). Meme moteur Java."

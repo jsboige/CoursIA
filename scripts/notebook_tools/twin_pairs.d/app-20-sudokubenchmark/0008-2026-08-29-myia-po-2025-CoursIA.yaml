@@ -1,0 +1,10 @@
+date: '2026-08-29'
+by: myia-po-2025:CoursIA
+python_sha: c060aca55c56c0d3dfb32664558b49f9f156bf03
+csharp_sha: 544fbc8be4cdb2ead8f7a4d2b6addbe97124ef3c
+content_python_sha: 18ce484228a74b94f0cbfc5d8074e07460c793f70a6f8fc45e846eb33c3809f1
+content_csharp_sha: 69a7ebea7341c29420e702f78d873d8ad137c2d8ed9275319155f6cc75bcee4d
+reason: 'review fix #13456 final : la condition de version est maintenant explicite
+  dans la cellule d''import, le cadrage amont et l''interpretation aval ; le format
+  source list et la newline finale du notebook sont preserves. Le twin C# reste byte-identique
+  (memes SHA que l''audit initial).'

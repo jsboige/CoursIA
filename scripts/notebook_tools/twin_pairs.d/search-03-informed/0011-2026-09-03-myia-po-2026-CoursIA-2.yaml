@@ -1,0 +1,11 @@
+date: '2026-09-03'
+by: myia-po-2026:CoursIA-2
+python_sha: 6a38b61b2c754511513922466155023c4a39ae78
+csharp_sha: 2577e0d116a98810b5603163423f91f85b6a3bd2
+content_python_sha: c2795ee971045d3f85e185e6c42fa0633230a70d5ea936b46b060eec49df0775
+content_csharp_sha: 39aa7e5b410e34780334368cd9093348972349958918ac9bee997a2fc339d0c2
+reason: 'rebaseline c.912 PR #14448 (rebasing pre-#14444-merge) -- edit legitime cell[15]
+  L0 Search-3-Informed-Csharp (Search-16 -> Search-02c dans commentaire intra-cellule).
+  Substance pedagogique inchangée, SHA jumeau deplace par reformatage papermill +
+  edit semantique. Cet audit est anterieur au merge #14444 (sha c.914) -- preserve
+  pour transparence cross-lane.'

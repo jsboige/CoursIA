@@ -1,0 +1,6 @@
+date: '2026-08-04'
+by: myia-po-2024:CoursIA-2
+python_sha: 2ead147f031bb101e5db38c15bf0223628626fce
+csharp_sha: bf8c96dd9e8698d84e62e40933356e8394d4fe58
+reason: 'rebase c.1241: Python Ex4 phantom-label fix (c63, markdown-only); C# heuristic
+  drift c.1123 (c5/c8/c12/c19) unchanged'

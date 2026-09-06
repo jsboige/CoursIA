@@ -5,41 +5,6 @@
   parity_level: semantic
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "CSP/AIMA est un enseignement algorithmique, pas une dependance a un solveur SOTA externe. AC-3 (Mackworth 1977) + backtracking + MRV/LCV = etat de l'art canonique pour la satisfaction de contraintes (cf. Russell & Norvig AIMA 4ed ch.6). Les 2 jumeaux implementent le meme framework AIMA from scratch (Python = numpy 19 cellules ; C# = System.* stdlib 0 NuGet 18 cellules) -- l'enseignement EST l'implementation, pas un wrapper sur OR-Tools/Gecode/Choco. Choix pedagogique assume par les 2 notebooks, divergence pedagogique nulle. Pas de moteur SOTA 'mieux branchable' qui changerait la valeur enseignee."
-  audits:
-    - date: "2026-08-04"
-      by: myia-po-2023:CoursIA
-      python_sha: fe336af927a925430b9b91f845559017e8caddbc
-      csharp_sha: 5fcb492875082155fdb8d9b04c7ce0fb450dfbb5
-    - date: "2026-08-12"
-      by: myia-po-2025:CoursIA
-      python_sha: fe336af927a925430b9b91f845559017e8caddbc
-      csharp_sha: f49a3f524bde652f648bf1723642b0c0e04be872
-      content_python_sha: 1005d0eeed15d6c02f845f062f3038639890e4248be4454e71a37f8c7eeb9820
-      content_csharp_sha: a3a208cc87cbcdb3d4a162facf7278097165110fced07fa99d946f9313107e64
-    - date: "2026-08-28"
-      by: myia-po-2024:CoursIA
-      python_sha: faf088f4672d0951532a793ef85b8f7f4cf2cb5b
-      csharp_sha: 0007ef7f7a13a46e8a733b99b6f8b81d76844523
-      content_python_sha: 280d684221de60091247aa12240de1c0a6b47b75a6256f6f7fe059ae0a2cfc9a
-      content_csharp_sha: 1a6e0cc632288259a83bd9b34ecf84b17d41b387d3c99604c3c4744a5b774eab
-    - date: "2026-08-30"
-      by: myia-po-2024:CoursIA-2
-      python_sha: a3caba64a95ad07a58e2496c0db644df26ee0b07
-      csharp_sha: 4e14bb3e146457e543c79ee8ce0696a11d9eaff6
-      content_python_sha: a70f935b71b20eb5f9f2456a05581c4cce0ff1888f37c7416b6e756acb825b07
-      content_csharp_sha: eccd890f70e1d92b0b563d1d80a21ebea398c0aca6beacae7f2fff09fb7e1c4a
-    - date: "2026-08-30"
-      by: myia-po-2024:CoursIA-2
-      python_sha: a3caba64a95ad07a58e2496c0db644df26ee0b07
-      csharp_sha: b9734ab002e186bf03333ec78c6ec9653bfe48bd
-      content_python_sha: a70f935b71b20eb5f9f2456a05581c4cce0ff1888f37c7416b6e756acb825b07
-      content_csharp_sha: f53f319376222ed60e43bdc8e26de6acfaa463f9cd04babb5605253fdec2bc92
-    - date: "2026-08-30"
-      by: myia-po-2024:CoursIA-2
-      python_sha: a3caba64a95ad07a58e2496c0db644df26ee0b07
-      csharp_sha: 0d09dbb1031fba0c815db4497db55b9432880da4
-      content_python_sha: a70f935b71b20eb5f9f2456a05581c4cce0ff1888f37c7416b6e756acb825b07
-      content_csharp_sha: fdd8b9ab829c7cbcbe7262d49ea47ee56e5a14a3cdeaa69849f6c9bb66068069
   known_differences:
     - "Edition C# twin 2026-08-12 (myia-po-2025:CoursIA, #10488 density ratchet) : enrichissement markdown du jumeau C# seul (641->834 c/cell, 6 en-tetes WHAT->WHAT+WHY : theorie CSP/backtracking -- genericite-abstraction, backtracking-naif comme baseline mesuree, MRV fail-fast + LCV leave-options-open, forward checking un niveau plus tot, ROI du framework AIMA, benchmark rend les gains visibles). Rattrapage PARTIEL du Python twin, deja dense (1011 c/cell, sections 'Interpretation' natives que le C# n'avait pas). Aucune divergence algorithmique : C.3 byte-identique (0 cellule code touchee, sources+outputs+exec_count inchanges) -- divergence markdown-only, le C# comble son retard pedagogique vers le Python, pas l'inverse."
     - "Socle pedagogique commun : resolution de Sudoku comme probleme de satisfaction de contraintes (CSP), suivant le formalisme AIMA (Artificial Intelligence: A Modern Approach) -- AC-3 (arc consistency / propagation de contraintes), backtracking avec heuristiques (MRV, LCV), assign/eliminate (Norvig-style propagation). Meme concept mathematique (variables, domaines, contraintes binaires, arc consistency), meme cas canonique (Sudoku). Les deux couvrent AC3, backtracking, Norvig, AIMA, csp."

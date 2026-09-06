@@ -5,29 +5,6 @@
   parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Modele nominal lib-vs-lib cite par owner #10382 (\"PyMC vs Infer, 2 moteurs qui brillent\") : C# = Microsoft Infer.NET (Microsoft.ML.Probabilistic, NuGet officiel, native .NET, inférence variationnelle EP/VMP) et Python = PyMC (pip pymc, native Python, NUTS/HMC + ADVI). Chaque cote atteint le moteur SOTA de son ecosysteme probabiliste -- ni pont intermediaire ni reimplementation. Aucune asymetrie de machinerie a corriger. Verifie firsthand : C# Microsoft.ML.Probabilistic refs + execution_count, Python pymc imports."
-  audits:
-    - date: "2026-08-18"
-      by: myia-po-2026:CoursIA
-      python_sha: 92f49cfd7f33fff4e811fdb0842db13c5223fb57
-      csharp_sha: d939f2694311d205a9c0980da216033ee4481389
-      reason: "parity_level basculee -> native-both conformement a l'arbitrage ai-01 2026-08-16 sur #11200 Option A (parite de moteur, lib-vs-lib) : C# atteint Microsoft Infer.NET (Microsoft.ML.Probabilistic, moteur probabiliste SOTA de l'ecosysteme .NET, EP/VMP), Python atteint PyMC (NUTS/HMC + ADVI, moteur probabiliste SOTA de l'ecosysteme Python). bridge_verdict_reason inchangee -- le bridge etait deja documente dans le verdict existant. Imports verifies firsthand sur les notebooks de la paire (pymc / Microsoft.ML.Probabilistic, re-grep 2026-08-18)."
-    - date: "2026-08-01"
-      by: myia-po-2023:CoursIA
-      python_sha: 92f49cfd7f33fff4e811fdb0842db13c5223fb57
-      csharp_sha: d939f2694311d205a9c0980da216033ee4481389
-    - date: "2026-08-23"
-      by: myia-po-2024:CoursIA-2
-      python_sha: 75f7c6ce56dea3ba338fe07d27e21429832f7986
-      csharp_sha: d939f2694311d205a9c0980da216033ee4481389
-      content_python_sha: b73c9b88f9f3eac574eb86c3fe1444223fda8f423f11c4cccdba1b3f76f1923c
-      content_csharp_sha: 9543fb8799f3b6d25d6ed652a327158770cf942fe4e798899289b82f68083bbf
-      reason: "PR #12595 (#12578) : lecture az.summary + diagnostic honnete de la convergence cote Python (PyMC-17-Kalman-Filter), re-exec validee (exec counts non nuls, 0 erreur). Mouvement unilateral legitime (parity_level native-both, moteurs distincts PyMC vs Infer.NET) ; jumeau C# inchange et au SHA atteste. Aucun strip outille en attente (probe 0, machine path 0, papermill basename)."
-    - date: "2026-08-31"
-      by: myia-po-2025:CoursIA
-      python_sha: d288fe1e9547c4d3d4fe62773f8b3737050ac5f2
-      csharp_sha: d939f2694311d205a9c0980da216033ee4481389
-      content_python_sha: 3ec2c68d1fde8c75c9caec96269df192ac162a016a6cbe8462e4d1374015e296
-      content_csharp_sha: 9543fb8799f3b6d25d6ed652a327158770cf942fe4e798899289b82f68083bbf
   known_differences:
   - 'Socle pedagogique commun : filtre de Kalman (etat latent dynamique lineaire-gaussien) modelise dans les deux stacks.'
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational

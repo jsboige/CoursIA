@@ -5,36 +5,6 @@
   parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Modele nominal lib-vs-lib cite par owner #10382 (\"PyMC vs Infer, 2 moteurs qui brillent\") : C# = Microsoft Infer.NET (Microsoft.ML.Probabilistic, NuGet officiel, native .NET, inférence variationnelle EP/VMP) et Python = PyMC (pip pymc, native Python, NUTS/HMC + ADVI). Chaque cote atteint le moteur SOTA de son ecosysteme probabiliste -- ni pont intermediaire ni reimplementation. Aucune asymetrie de machinerie a corriger. Verifie firsthand : C# Microsoft.ML.Probabilistic refs + execution_count, Python pymc imports."
-  audits:
-    - date: "2026-08-18"
-      by: myia-po-2026:CoursIA
-      python_sha: 49badb1775f020524bacc681a50ab573fbe01eec
-      csharp_sha: 3606ff946d2c9622571442060c48a53d5cf14910
-      reason: "parity_level basculee -> native-both conformement a l'arbitrage ai-01 2026-08-16 sur #11200 Option A (parite de moteur, lib-vs-lib) : C# atteint Microsoft Infer.NET (Microsoft.ML.Probabilistic, moteur probabiliste SOTA de l'ecosysteme .NET, EP/VMP), Python atteint PyMC (NUTS/HMC + ADVI, moteur probabiliste SOTA de l'ecosysteme Python). bridge_verdict_reason inchangee -- le bridge etait deja documente dans le verdict existant. Imports verifies firsthand sur les 38 notebooks (pymc / Microsoft.ML.Probabilistic, re-grep 2026-08-18)."
-    - date: "2026-08-04"
-      by: myia-po-2023:CoursIA
-      python_sha: 91a08f3e69ac3eec7a3341d281a7b5386f018b5a
-      csharp_sha: d9c7d20cdaa32ffa09e33a08a0646da228e08e84
-    - date: "2026-08-11"
-      by: myia-po-2025:CoursIA
-      python_sha: 91a08f3e69ac3eec7a3341d281a7b5386f018b5a
-      csharp_sha: 3606ff946d2c9622571442060c48a53d5cf14910
-      content_python_sha: 99a14bd3dbaf782912118a61e13f40a75e9adad8bca10368022d40edd6cbab2e
-      content_csharp_sha: bb2450a9abefd49a370c77b2ed6d6bd97402df3a101d7c4c0a76de72e1c40cd6
-      reason: "Enrichissement C#-only (#3801 Prong-B): ajout section markdown 'Pourquoi EP ignore le funnel de Neal' entre cellule 10 (Lecture du resultat) et cellule 11 (Exercices). La conclusion cellule 17 mentionnait EP 'analytique' sans JAMAIS expliquer pourquoi (funnel/Neal/divergence = 0 occurrences vs PyMC-12 funnel x11). La section demontre que le modele centree de la cellule 7 (pathogene pour NUTS) est infere sans diagnostic par EP (message-passing, pas d'echantillonnage). Python PyMC-12 inchange (deja couvre le cote MCMC du funnel). Asymetrie legitime = le sujet pedagogique meme de la paire (EP-vs-NUTS). 19 cells existantes byte-identiques, markdown-only (C.2 exception)."
-    - date: "2026-08-16"
-      by: myia-po-2023:CoursIA
-      python_sha: 8f31b5cc6b423fc4f5eda440475e103f17dab9e9
-      csharp_sha: 3606ff946d2c9622571442060c48a53d5cf14910
-      content_python_sha: bc08c2cef56a4c22ac09fdd94f74198f5fb62b4c0ee448524edaec4041ead8c9
-      content_csharp_sha: bb2450a9abefd49a370c77b2ed6d6bd97402df3a101d7c4c0a76de72e1c40cd6
-      reason: "Rebaseline apres fix citations arXiv #11168 (commit bdb44ead09) : correction unilaterale Python-only de 2 pointeurs de section fabriques (1312.0906 n'a pas de §10, pagination romaine I-VI ; funnel = §I, reparametrisation non-centree = §II.B). Infer-12 ne cite pas 1312.0906 (grep verifie), cote C# inchange (csharp_sha identique a l'entree 2026-08-15). Markdown-only (C.2 exception). Rebaseline POSEE APRES le commit des corrections (ordre checker, #8957)."
-    - date: "2026-08-16"
-      by: myia-po-2024:CoursIA-2
-      python_sha: 49badb1775f020524bacc681a50ab573fbe01eec
-      csharp_sha: 3606ff946d2c9622571442060c48a53d5cf14910
-      content_python_sha: eb0811abbbf52d20f502c79fac9f72f9e0f34ac2c71946d58e05545825182909
-      content_csharp_sha: bb2450a9abefd49a370c77b2ed6d6bd97402df3a101d7c4c0a76de72e1c40cd6
   known_differences:
   - 'Socle pedagogique commun : modeles hierarchiques (effets aleatoires emboites) modelise dans les deux stacks.'
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational

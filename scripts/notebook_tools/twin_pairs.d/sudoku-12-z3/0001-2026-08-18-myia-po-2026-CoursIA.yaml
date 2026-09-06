@@ -1,0 +1,9 @@
+date: '2026-08-18'
+by: myia-po-2026:CoursIA
+python_sha: dc50ea9dcff0391b2f094da547ee7b50cf2fc791
+csharp_sha: 7fb3bedc554c5739f37fb0270ba43553b20bb8eb
+reason: 'parity_level basculee -> native-both (arbitrage ai-01 2026-08-16 #11200 Option
+  A, parite de moteur lib-vs-lib) : Python atteint z3-solver (import z3), C# atteint
+  Microsoft.Z3 (#r ''nuget: Microsoft.Z3'' + using Microsoft.Z3). Meme moteur Z3 via
+  les bindings officiels. Imports/invocations verifies firsthand sur les notebooks
+  de la paire (re-grep origin/main 2026-08-18). bridge_verdict_reason inchangee.'

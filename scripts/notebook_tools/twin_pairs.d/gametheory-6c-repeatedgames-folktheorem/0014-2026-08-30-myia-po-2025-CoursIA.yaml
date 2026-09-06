@@ -1,0 +1,12 @@
+date: '2026-08-30'
+by: myia-po-2025:CoursIA
+python_sha: ae3dda4dda933cd53642a8c7a686b4dbfc5a47f3
+csharp_sha: b227b35e68fb9807ccc2c8f2ef2bedb636889a02
+content_python_sha: 67166e3dffe4084bf23da95a309583368d8d6d7b62ca95096f954216bfb8d30c
+content_csharp_sha: 0b4d69808b9a5a4eaa879cc2191fc2d9dd3fd20a771be0346fb0606e763f794a
+reason: 'Reattestation metadata-only apres le scan independant : scrub_papermill_paths.py
+  a remplace les deux chemins absolus input_path/output_path par le basename, sans
+  modifier sources ni outputs (content_csharp_sha identique). --force requis car le
+  garde no-op compare le content SHA, tandis que --verify-recorded-sha exige aussi
+  le blob SHA et signalait explicitement 59ae03c4 -> b227b35e. Aucune normalisation
+  du notebook apres cette entree.'

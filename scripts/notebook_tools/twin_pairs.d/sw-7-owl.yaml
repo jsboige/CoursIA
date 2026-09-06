@@ -5,35 +5,6 @@
   parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "OWL dispose de 2 moteurs SOTA de reference, un par ecosysteme : Python = owlready2 (Lamy 2017, reference OWL en Python, world/Thing/Property API nativement orientee OWL ; citee par la doc officielle W3C OWL RL examples) ; .NET = dotNetRDF (VDS.RDF.Ontology, librairie .NET de reference pour RDF+OWL depuis 2010, ~100k lignes, OntologyGraph + OwlReasoner). Les 2 jumeaux branchent leur moteur SOTA natif respectif sur le meme enseignement OWL (classes/proprietes/restrictions/axiomes). Verdict SOTA-OK des deux cotes."
-  audits:
-    - date: "2026-08-18"
-      by: myia-po-2026:CoursIA
-      python_sha: 95f6fb513c53bb133e9f47966e26e812ba86ad11
-      csharp_sha: 25c773f11a9fcdf9c6d03d88a3c3a39102399095
-      reason: "parity_level basculee -> native-both conformement a l'arbitrage ai-01 2026-08-16 sur #11200 Option A (parite de moteur, lib-vs-lib) : C# atteint dotNetRDF (VDS.RDF.*, librairie RDF/OWL de reference de l'ecosysteme .NET), Python atteint rdflib (moteur RDF natif de reference de l'ecosysteme Python) ; cas particulier sw-7 : Python atteint owlready2, moteur OWL de reference en Python (documente dans le verdict existant). bridge_verdict_reason inchangee -- le bridge etait deja documente dans le verdict existant. Imports verifies firsthand sur les notebooks de la paire (re-grep 2026-08-18)."
-    - date: "2026-08-04"
-      by: myia-po-2023:CoursIA
-      python_sha: 95f6fb513c53bb133e9f47966e26e812ba86ad11
-      csharp_sha: 25c773f11a9fcdf9c6d03d88a3c3a39102399095
-      reason: "Identity/phantom fix (C# cell 4 ASCII stack-diagram « OWL 2 dans la pile du Web Semantique »): the SHACL layer was labelled « SHACL (SW-9) » but SHACL is notebook SW-8 (SW-8-CSharp-SHACL.ipynb / SW-8-Python-SHACL.ipynb on origin/main). The Python twin SW-7b already correctly says SW-8 (cell 28). Fixed SW-9 -> SW-8 (same char length, ASCII box alignment preserved). Other layers (OWL2 SW-7, RDFS SW-6, RDF SW-1/2/3) were already correct; SPARQL (SW-5) left untouched (debatable: dedicated SPARQL is SW-4, but SW-5 LinkedData uses SPARQL -- not an unambiguous error). Markdown-only, 0 re-exec, no output change. No §D.5 (identity/phantom class, not a measure/value drift). Python twin unchanged."
-    - date: "2026-08-18"
-      by: myia-po-2024:CoursIA
-      python_sha: 37f10f7b3be91ad79f7491dad2834f7849e257e3
-      csharp_sha: 25c773f11a9fcdf9c6d03d88a3c3a39102399095
-      content_python_sha: 3eec3895e2617c4cb7e2af7fc1552f365040762bbe7b541c55fab950b30e62c7
-      content_csharp_sha: a8885f2881105d7d1c1ee20bc0be2c68ca06a12929f75a1639dace2613d54b19
-    - date: "2026-08-20"
-      by: myia-po-2024:CoursIA
-      python_sha: 37f10f7b3be91ad79f7491dad2834f7849e257e3
-      csharp_sha: 4c0595f7eb5db67ca061b19185ba22c3a095e0e3
-      content_python_sha: 3eec3895e2617c4cb7e2af7fc1552f365040762bbe7b541c55fab950b30e62c7
-      content_csharp_sha: 37c510e8237ff1380476792272fe7404c747c4a982f0c54641d3212711a75182
-    - date: "2026-08-21"
-      by: myia-po-2024:CoursIA
-      python_sha: 37f10f7b3be91ad79f7491dad2834f7849e257e3
-      csharp_sha: f772b4048c0c6227986c830cf89946d10d7aaccd
-      content_python_sha: 3eec3895e2617c4cb7e2af7fc1552f365040762bbe7b541c55fab950b30e62c7
-      content_csharp_sha: e0fa1a57976b5801ece24c4b48560865c905d8755c9821ddea113ccd7fc6da18
   known_differences:
     - "Socle commun : modelisation OWL (classes, proprietes, restrictions, axiomes)."
     - "Lib-vs-lib : C# = `dotNetRDF` (`VDS.RDF.Ontology` : OntologyGraph, OwlReasoner). Python = `owlready2` (API OWL orientee-objet dediee, world/Thing/Property). Deux librairies OWL matures mais aux philosophies differentes : dotNetRDF traite OWL comme une couche sur RDF ; owlready2 est nativement orientee OWL."

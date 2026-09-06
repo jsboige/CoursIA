@@ -1,0 +1,6 @@
+date: '2026-08-04'
+by: myia-po-2024:CoursIA-2
+python_sha: e18d331835a9dea4aeb55447bd0b4c2c3c210925
+reason: 'c.1124 rebase c.1241: Python c7 Allen composition-table 270->169 (13x13=169);
+  C# twin clean'
+csharp_sha: 3859f46c9ec9b09dbbc50e7fc344d8844f82796b

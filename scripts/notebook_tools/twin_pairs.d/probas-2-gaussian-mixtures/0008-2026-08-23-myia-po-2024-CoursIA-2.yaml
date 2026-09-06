@@ -1,0 +1,11 @@
+date: '2026-08-23'
+by: myia-po-2024:CoursIA-2
+python_sha: 7e2a009e74b697ac5bfd35fb67077b1d6c9c6df7
+csharp_sha: f7d507ae2ac763906e13d6ba61240219f5193ab4
+content_python_sha: 916fbbb8450f5f2df1da842265489f54672036cd3f0b454bc90c63a36e516f91
+content_csharp_sha: 193d1a1aa8d5a5fe5da8159efcba581bcbc402afb68247a3c3e14d78f380a76a
+reason: 'PR #12592 (#12578) : lecture az.summary apres chaque pm.sample + diagnostic
+  honnete du label switching, cote Python (PyMC-2), re-exec 11/11 0 erreur. Mouvement
+  unilateral legitime (parity_level native-both, moteurs distincts PyMC vs Infer.NET)
+  ; jumeau C# (Infer-2) inchange et toujours au SHA atteste. Aucun strip outille en
+  attente (probe banner 0, machine path 0, papermill deja en basename).'

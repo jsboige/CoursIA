@@ -1,0 +1,10 @@
+date: '2026-08-01'
+by: myia-po-2024:CoursIA-2
+python_sha: f076193833b42af315e24fa5c0c599582d348d2d
+csharp_sha: 4096d74c1b63d5ab1c43a8cdd0e03630934ce1de
+reason: 'rebaseline python apres fix cross-reference cellule 2 (#8052) : la section
+  1.2 disait ''Le paradoxe de la chaine de magasins (Notebook 8)'' mais le paradoxe
+  est couvert dans le Notebook 9 (BackwardInduction section 4 + code create_chain_store_game
+  + ancres Selten 1978 / Rosenthal 1981), pas le Notebook 8 (Combinatorial Games).
+  Fix (Notebook 8)->(Notebook 9). Python-only, csharp_sha unchanged, parite semantique
+  preservee.'

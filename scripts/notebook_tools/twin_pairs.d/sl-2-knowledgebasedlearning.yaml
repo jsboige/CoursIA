@@ -3,47 +3,6 @@
   python: MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning.ipynb
   csharp: MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-Csharp.ipynb
   parity_level: semantic
-  audits:
-    - date: "2026-08-04"
-      by: myia-po-2023:CoursIA
-      python_sha: 6eaf20ca712b255fb724606ee37772ee2b24f691
-      csharp_sha: 275bd7259ed84ce600bb09308af699878965cf38
-    - date: "2026-08-13"
-      by: myia-po-2025:CoursIA
-      python_sha: e4b8acd30ddeb07469b8e41b837f6aee1c730a9d
-      csharp_sha: 275bd7259ed84ce600bb09308af699878965cf38
-      content_python_sha: 33e772bc2fed219e7f3678b45c1546df9fefff8a76a8ba2761e1684f7fcb05af
-      content_csharp_sha: 4a95daeedc65a24191ef177bc556490e919295a63abb56a4acab88d764ce3713
-    - date: "2026-08-13"
-      by: myia-po-2026:CoursIA-2
-      python_sha: e4b8acd30ddeb07469b8e41b837f6aee1c730a9d
-      csharp_sha: 7e9b7973f88757c01c0e2ab637392eba38ad9af9
-      content_python_sha: 33e772bc2fed219e7f3678b45c1546df9fefff8a76a8ba2761e1684f7fcb05af
-      content_csharp_sha: e63cf371037f476f0327cb61114e2d203ed1df5ab83131f7b19bc9f847c156dd
-    - date: "2026-08-22"
-      by: myia-po-2025:CoursIA
-      python_sha: e4b8acd30ddeb07469b8e41b837f6aee1c730a9d
-      csharp_sha: ee35587b2236e622f061e23aaac94e32c3045d9c
-      content_python_sha: 33e772bc2fed219e7f3678b45c1546df9fefff8a76a8ba2761e1684f7fcb05af
-      content_csharp_sha: bdb8d661605f2f2f0138b0e113241a153f8d7fcc4444b4a1ea88d9bfaeafbb9f
-    - date: "2026-08-22"
-      by: myia-po-2025:CoursIA
-      python_sha: e4b8acd30ddeb07469b8e41b837f6aee1c730a9d
-      csharp_sha: 8790a1afd4feb35b1fa93e37f606152492b22b32
-      content_python_sha: 33e772bc2fed219e7f3678b45c1546df9fefff8a76a8ba2761e1684f7fcb05af
-      content_csharp_sha: 9caaf1f7cd28fae67c6a67ace0e50afc9fd82bd86cf8a7206d157d731cb55648
-    - date: "2026-08-28"
-      by: myia-po-2023:CoursIA-2
-      python_sha: 9f49ee6f80de727b229f1eb9ed37bb09cb6f3464
-      csharp_sha: c5a1719de81162eea44daef6c3aab074a27f8453
-      content_python_sha: 83b0eede7639017461b4f99d2133038d6f5ad8f51c5b372d41692ec765472cce
-      content_csharp_sha: ae5b241a1cc83d6c0b8f7382ba0916d35718f74c820755c1b85cfeb7274869f9
-    - date: "2026-09-05"
-      by: myia-po-2026:CoursIA
-      python_sha: 9f49ee6f80de727b229f1eb9ed37bb09cb6f3464
-      csharp_sha: 90ecbe92d294a491f177daa1b9cd8a18c0cfbe0c
-      content_python_sha: 83b0eede7639017461b4f99d2133038d6f5ad8f51c5b372d41692ec765472cce
-      content_csharp_sha: 32e0e17b4f2e444d5ec35a90262ae94f6d2f498aed235652fd4277b03ade26ac
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Flip 2026-08-22 (myia-po-2025:CoursIA, #10382 tranche EBL complet, PR de la tranche) : l'asymetrie de portee qui motivait le RECOVERABLE-LOCAL est resolue. Le jumeau C# porte desormais la section 4bis : ExtractRule (preconditions non-tautologiques ArithmeticUnknown(z)), classe ArithmeticEBL complete (Explain/Variabilize/ExtractRule/Learn/MatchLearned/SimplifyWithLearned) avec matching a variables par groupes nommes (le pattern appris 1*(0+z) capture son sous-terme et sapplique a 1*(0+a)...), et speedup MESURE en etapes reelles (18 -> 10 etapes, 1.8x, 44% de reduction -- identique au jumeau Python) -- la section 4 au cout simule (facteur 3x) reste pour la comparaison pedagogique. Les DEUX cotes sont from-scratch assumables (pas de lib externe requise : EBL/RBL sont des algorithmes pedagogiques AIMA, le sujet EST le moteur) : from-scratch des deux cotes = la contrepartie (bucket 3, meme classe que search-13 LDS #c.872). Re-exec complete .NET Interactive 12/12 cellules, 0 erreur, sequence 1..12 CLEAN. Rien a installer : le verdict RECOVERABLE-LOCAL (installable, pas installe) navait aucun candidat a installer -- faux positif de la meme classe que search-13/search-14/search-12, corrige ici AVEC le contenu qui le prouve (la portee, pas seulement le verdict)."
   known_differences:

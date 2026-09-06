@@ -1,0 +1,17 @@
+date: '2026-08-11'
+by: myia-po-2023:CoursIA
+python_sha: d4ac08ac2355bc71628bbaab8934d54e94b010bd
+csharp_sha: 26a421dd5962e5f1722f8ff4c310b41ef51a6648
+content_python_sha: bf57152719535bdd1d7d0742ece0dfd0bd4b07fbf5ec8443c26870744e377912
+content_csharp_sha: babbc7ee9410a2cfd7f9014eaf5e06d6d6d8e61e6e9a51af8ed5f9d0ac73030b
+reason: 'Review ai-01 #10454 (msg-20260811T121823) : corrige ''definitive'' (trop
+  fort). Le mandat #10382 demande un moteur SOTA .NET pour le ROLE, pas un pont vers
+  CETTE lib. Contre-exemple mesure meme serie : GT-4 cell25 (#10442, commit 136ce03f4)
+  invoque Gambit via Process.Start pour exploitabilite/distance-a-Nash -- axe que
+  le GT-17 C# from-scratch calcule aussi (Exploitability section 5, BestResponse 16
+  occ). Donc axe exploitabilite a une contrepartie .NET prouvee. Verdict INTRINSIC
+  reste pour OpenSpiel-la-librairie (aucun pont .NET vers CETTE lib), MAIS axe lib-differente
+  laisse OUVERT (candidat Gambit CLI non teste). Markdown-only section 8 + Conclusion.
+  csharp_sha avance f5575431 -> 26a421dd (2 lignes markdown), python_sha unchanged
+  d4ac08ac. Note : le calque GT-13 (#10394) porte le meme wording ''definitive'' trop
+  fort -- follow-up pour coherence.'

@@ -1,0 +1,13 @@
+date: '2026-08-30'
+by: myia-po-2025:CoursIA
+python_sha: ae3dda4dda933cd53642a8c7a686b4dbfc5a47f3
+csharp_sha: 59ae03c42e62bc379fd103673f1ede7b099727a5
+content_python_sha: 67166e3dffe4084bf23da95a309583368d8d6d7b62ca95096f954216bfb8d30c
+content_csharp_sha: 0b4d69808b9a5a4eaa879cc2191fc2d9dd3fd20a771be0346fb0606e763f794a
+reason: 'Sous-grain #10382 : port de la jambe discriminante Python 7e vers C# avec
+  MathNet.Numerics 5.0.0 NelderMeadSimplex multi-start. Execution reelle .net-csharp
+  post-source : 25 cellules / 10 code, execution_count 1-10, 0 erreur, 0 output vide
+  ; probeAddresses retire apres execution puis aucune normalisation du notebook apres
+  --update. Controles mesures : alpha_hat=0.804 pour alpha vrai 0.8 ; engagement b1=-0.0240,
+  CI95 [-0.0714,+0.0235] couvre 0 ; melange q_hat=0.506, alpha_hat=0.608. Python byte-identique
+  a origin/main.'

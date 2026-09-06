@@ -1,0 +1,12 @@
+date: '2026-09-06'
+by: myia-po-2024:CoursIA
+python_sha: 31610a1a8cc2be4f8d3e82b7f38327ad05e2a692
+csharp_sha: d75099aa55fd458813bcc44ff7199b39056cf835
+content_python_sha: 205d4cc7c2024f6de21848d1672b499b339e408c371a1163cbfaa8c7c499907c
+content_csharp_sha: 034d5297e56734eba63d7bd6c07612183fd2d80487adea2863bc18facb9bc81b
+reason: 'Re-attestation apres PR #14854 (#14817, stubs d''exercice ne rendent plus
+  une verite en dur) : cote Python corrige, cote C# non touche (csharp_sha et content_csharp_sha
+  inchanges depuis l''entree du 2026-09-04). Audit firsthand post-fix : detect_stub_truth_returns
+  0/0 sur les deux jumeaux ; contre-verification grep direct du C# : 0 literal True
+  dans une cellule stub. Defaut initial unilateral Python ; known_differences et parity_level
+  inchanges.'

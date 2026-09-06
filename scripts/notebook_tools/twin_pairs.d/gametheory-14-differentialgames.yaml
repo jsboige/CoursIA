@@ -5,34 +5,6 @@
   parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Tranche 2 (2026-08-15) : pont MathNet.Numerics branche sur la paire GT-14. Le socle reste from-scratch (la lecon), mais la verification croisee s appuie desormais sur le moteur SOTA .NET MathNet.Numerics 5.0.0 (RK4 RungeKutta.FourthOrder + NelderMeadSimplex) : concordance vecteur-a-vecteur L-infini = 0 sur les deux experiences (ODE feedback Nash + optimum Stackelberg statique), gabarit #11058. Le moteur SOTA est invoque reellement (pas un stub) ; la paire reste pedagogiquement from-scratch-first, la verification par moteur tiers valide la reimplementation."
-  audits:
-    - date: "2026-08-04"
-      python_sha: 924092dad22d0d395af77067e636d92d773484ec
-      csharp_sha: 88e961fdf00ed0525c1918f9ac71132dcbbd8056
-    - date: "2026-08-15"
-      by: myia-po-2024:CoursIA-2
-      python_sha: 924092dad22d0d395af77067e636d92d773484ec
-      csharp_sha: 88e961fdf00ed0525c1918f9ac71132dcbbd8056
-      content_python_sha: af379708f3230a003e086fb360fd1f47e38bcdae2b8b98bef4b421c83792af4f
-      content_csharp_sha: 8ff080818394f0564ef7c520644be395b580820ac947123408c1f4914caa3aa2
-    - date: "2026-08-15"
-      by: myia-po-2024:CoursIA-2
-      python_sha: 924092dad22d0d395af77067e636d92d773484ec
-      csharp_sha: 43e8441093f9092488970566704c61e6850df678
-      content_python_sha: af379708f3230a003e086fb360fd1f47e38bcdae2b8b98bef4b421c83792af4f
-      content_csharp_sha: 03f8eca2c4268cffbefe5b39db80c0dee2c24e43037a3b2a9cb285854c2df4aa
-    - date: "2026-08-29"
-      by: myia-po-2026:CoursIA
-      python_sha: b8041542137b1c44ea14a20c30b326a408d52cfb
-      csharp_sha: 43e8441093f9092488970566704c61e6850df678
-      content_python_sha: 53df974f1fa249f947a5d685bc8854e900c97cc435a98e8f8b400a3b3efdcbcc
-      content_csharp_sha: 03f8eca2c4268cffbefe5b39db80c0dee2c24e43037a3b2a9cb285854c2df4aa
-    - date: "2026-08-31"
-      by: myia-ai-01:CoursIA
-      python_sha: c45e3034a12c0cee0801892cbed3159fb466a987
-      csharp_sha: 43e8441093f9092488970566704c61e6850df678
-      content_python_sha: 636e7caa2a1e739e17da861f9473949bb67aa802490a76cf1d37d36fca9844b5
-      content_csharp_sha: 03f8eca2c4268cffbefe5b39db80c0dee2c24e43037a3b2a9cb285854c2df4aa
   known_differences:
     - '2026-08-31 : ATTESTATION UNILATERALE (PR #13659, lane myia-ai-01:CoursIA) -- reparation d''echappements JSON manges dans le markdown du cote Python. CAUSE : dans le .ipynb, la sequence dollar-\bot-dollar ecrite avec UN SEUL antislash est lue par le parseur JSON comme l''echappement \b (backspace, U+0008) ; la source chargee porte un caractere de controle et le notebook rend un dollar-ot-dollar prive de sa commande LaTeX. FIX : doubler l''antislash (\\bot). Le DRIFT est UNILATERAL parce que le DEFAUT l''est : la contrepartie GameTheory-14-DifferentialGames-Csharp.ipynb (C#), 17 cellules markdown, a ete scannee sous controle positif (le litteral defectueux passe a json.loads doit rendre U+0008 -- assertion verifiee avant le scan) et ne porte AUCUN caractere de controle U+0008/U+000B/U+000C. Il n''y a donc rien a reparer de ce cote : l''attestation ne consacre aucune asymetrie de contenu. PORTEE DU DIFF cote repare (comparaison des JSON parses origin/main -> HEAD) : markdown uniquement, 0 cellule code touchee, 0 sortie modifiee, 0 execution_count deplace, 0 cellule ajoutee ou retiree.'
     - "Socle pedagogique commun : jeux differentiels et jeux dynamiques, equilibres de Stackelberg (von Stackelberg 1934) leader-follower, duopole a demande lineaire, comparaison avec Cournot, decisions dynamiques et leadership strategique."

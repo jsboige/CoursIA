@@ -3,45 +3,6 @@
   python: MyIA.AI.Notebooks/Search/Applications/CSP/App-7-Wordle.ipynb
   csharp: MyIA.AI.Notebooks/Search/Applications/CSP/App-7b-Wordle-CSharp.ipynb
   parity_level: semantic
-  audits:
-  - date: '2026-07-31'
-    by: po-2024
-    python_sha: 87a7299b929d77d103c6264c39e251e26544decf
-    csharp_sha: 2c8194226c9eabf6906fc907455aae6190dc571b
-  - date: '2026-08-04'
-    by: myia-po-2023:CoursIA
-    python_sha: 539c43fa6b5e50f99c065e8aa97bf8594863225f
-    csharp_sha: 2c8194226c9eabf6906fc907455aae6190dc571b
-  - date: '2026-08-05'
-    by: myia-po-2023:CoursIA
-    python_sha: 084159134a3f4fe4b21ab04487b171c7af0562dd
-    csharp_sha: 2c8194226c9eabf6906fc907455aae6190dc571b
-    content_python_sha: 41db3a285e9797839e6f821463c8f422ec2d6d26091e78cbf1960594cf02bfa9
-    content_csharp_sha: 2c3db01c13d46ede8e7eba70b16ad0dd2d29399c59be643f5c56c9077a0eca87
-  - date: '2026-08-06'
-    by: myia-ai-01:CoursIA
-    python_sha: c204baf1d46c361d6591d5c76df78c1350b8b89e
-    csharp_sha: 2c8194226c9eabf6906fc907455aae6190dc571b
-    content_python_sha: fd3f5f82524aac3d82f9c32fd061b39913804a83556105968d0399442f453477
-    content_csharp_sha: 2c3db01c13d46ede8e7eba70b16ad0dd2d29399c59be643f5c56c9077a0eca87
-  - date: '2026-08-08'
-    by: myia-po-2023:CoursIA-2
-    python_sha: f5ba87aff008ac80053688f52f1ac66658fb6944
-    csharp_sha: 2c8194226c9eabf6906fc907455aae6190dc571b
-    content_python_sha: 243d9eef2b0b77c2f6adde6f8719764599ac301b40d9f2036b2f21cd4c40d498
-    content_csharp_sha: 2c3db01c13d46ede8e7eba70b16ad0dd2d29399c59be643f5c56c9077a0eca87
-  - date: '2026-08-14'
-    by: myia-po-2025:CoursIA-2
-    python_sha: 96d4f9f8dc2c774d988b4b64e84fc97fb633edfd
-    csharp_sha: d93acdd6adb3fed78810670f797af106034c7b46
-    content_python_sha: 396cff47d5be493bbb2dc2b45b3f38f91b9c075e3ecb47168be821d185aece7c
-    content_csharp_sha: 9e6877b812509bedede7147e4cc3ff1983f4d7ce33fce897594a80cdfff22fbc
-  - date: "2026-09-02"
-    by: myia-po-2027:CoursIA
-    python_sha: a035a981f15ee077cda720d15547ecc1092639ac
-    csharp_sha: d93acdd6adb3fed78810670f797af106034c7b46
-    content_python_sha: 4494a4a9711e93534ec8b83504bccfac9ec23b2a18ce9b55e80727c9feb9616d
-    content_csharp_sha: 9e6877b812509bedede7147e4cc3ff1983f4d7ce33fce897594a80cdfff22fbc
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: 'Python = collections + math + matplotlib + numpy + random (Counter/typing, viz matplotlib, logique deductive + feedback, theorie de l''information, 21 cellules code). C# = BCL pure (System.IO + System.Collections.Generic + Microsoft.DotNet.Interactive.Formatting, 0 NuGet, from-scratch, 19 cellules code). Verdict SOTA-OK (flip 2026-08-22, c.1301+335, myia-po-2025:CoursIA-2, issue #10382) : mislabel corrigige -- la reason anterieure disait elle-meme ''pas de SOTA lib requise pour ce chapitre (les deux cotes implement from-scratch)'', ce qui contredit le verdict RECOVERABLE-LOCAL (qui signifie ''installable, pas installe''). Verifie firsthand : imports Python = stdlib + numpy/matplotlib viz uniquement, imports C# = System.* uniquement, aucun moteur tiers des deux cotes. Le chapitre (Wordle, theorie de l''information + feedback deductif) n''a pas de solveur tiers applicable -- from-scratch assumé pedagogiquement des deux cotes, precedent GT-15 (PR #12312). L''asymetrie residuelle (viz matplotlib cote Python, format texte cote C#) est mineure et documentee. parity_level: semantic preserve.'
   known_differences:

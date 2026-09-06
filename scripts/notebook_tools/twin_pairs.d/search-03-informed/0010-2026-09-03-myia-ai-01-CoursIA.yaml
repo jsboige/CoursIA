@@ -1,0 +1,11 @@
+date: '2026-09-03'
+by: myia-ai-01:CoursIA
+python_sha: 6a38b61b2c754511513922466155023c4a39ae78
+csharp_sha: 9993af6a511d618d3a367c7efa61cae62b79799e
+content_python_sha: c2795ee971045d3f85e185e6c42fa0633230a70d5ea936b46b060eec49df0775
+content_csharp_sha: ea4e647e62c110746d15c79b2938134fd2a4049f3ab4d6eef0dee81d8dac9392
+reason: 'rebaseline post-merge origin/main (PR #14444 MERGED, ledger G1 #14169) --
+  le merge de Search-3-Informed-Csharp.ipynb a change le content_csharp_sha (substance
+  bit-identique sur le bridgé QuikGraph A*, mais le papermill reformat a normalisé
+  la clé `execution_count` + réordonné les metadata). csharp_sha inchangé en surface
+  car la substance pédagogique n''a pas changé.'

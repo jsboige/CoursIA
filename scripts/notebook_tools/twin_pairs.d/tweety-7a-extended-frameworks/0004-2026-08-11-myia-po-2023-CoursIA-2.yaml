@@ -1,0 +1,23 @@
+date: '2026-08-11'
+by: myia-po-2023:CoursIA-2
+python_sha: 25a8e8d7427c1a8415b03f70cc26dee4a2d4956a
+csharp_sha: 81b5cb3b31d4cc9d67621625506f9dde02c83504
+content_python_sha: 23231ed062cb3a39f85805af0f75dffbe0360e014d3a08b065dc25d9c9200c5a
+content_csharp_sha: 6048d15b4fb4b795dba5d1fc1f0977ff36de17f4c7740029f95040a9b6211a0c
+modules_attested_sota_ok:
+- arg.dung (SimpleGroundedReasoner sur DungTheory = extension {a,c})
+- arg.weighted (WeightedGroundedReasoner sur WeightedDungTheory = extension vide {})
+- arg.social (IssReasoner + SimpleProductSemantics(0.5, 0.5) sur SocialDungTheory
+  = scores {a=0.857, b=0, c=0})
+bridge:
+- 'csproj `dotnet-build/build-Tweety7aShade.csproj` : cible net8.0, IKVM 8.14.0 (max
+  bytecode Java 8 = major 52), IkvmReference sur shade jar org.tweetyproject.tweety-7a-1.21.0-shaded.jar.
+  Re-construction reproductible : dotnet build -> libs/org.tweetyproject.tweety-7a.dll
+  (608 types, 740 KB).'
+- libs/ gitignored (convention Tweety/ standard) ; IKVM.Runtime/CoreLib/Java copies
+  depuis nuget cache IKVM 8.15.0 (CS1701 cosmetic warning 8.14 vs 8.15 alignable ulterieurement).
+- 'Cellule 21 (load) : Assembly.LoadFrom absolute path via Directory.GetCurrentDirectory()
+  (kernel cwd = notebook dir, pas repo root).'
+- 'Cellules 23/24/25 (Dung/Weighted/Social) : directive `#r "libs/org.tweetyproject.tweety-7a.dll"`
+  prepended pour exposer les types au compilateur C# (Assembly.LoadFrom seul ne suffit
+  pas, cf L898-3 keyword=`tweety-7a`).'

@@ -1,0 +1,8 @@
+date: '2026-08-17'
+by: myia-po-2023:CoursIA-2
+python_sha: 1e1c74f35b5951383b3e0b46f291933955226831
+csharp_sha: 915c605ea97f5871ff97ba57e94aa2da8716bf2c
+content_python_sha: 1bac9173eaedd3ee63c596a8dfb87e97bcc282e9c3219388790fe265f30af300
+note: 'Audit post re-execution #11112 tranche (cycle c.291). Source patch minimal
+  cell[3] PUZZLES_DIR -> PUZZLES_DIR.name (Stop & Repair #11302 precedent), outputs
+  refrais (13/13 cells clean, sequence [1..13]). CSharp unchanged (blob/content inchanges).'

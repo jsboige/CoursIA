@@ -1,0 +1,10 @@
+date: '2026-08-29'
+by: myia-po-2025:CoursIA
+python_sha: 02c03e43a89457563fc1abb86efa250c67510663
+csharp_sha: e696a6c6e93fbbbf880dbc3ea33b77d58df83a88
+content_python_sha: 0fd67242f9fb9dd34a1b78acd7a186a534a96aa678c269e59f64aa5993787641
+content_csharp_sha: 2d3e776bb6cacb6fa1c0ef6588a586c39fe1ebf3d2c2244e4eb6dbec314a1e48
+reason: 'Issue #12476 : diagnostics complets r_hat/ess_bulk/ess_tail/divergences et
+  verdict derive sur les trois traces PyMC-18, puis re-execution integrale EXEC_PROVED
+  (8/8 cellules, 0 erreur). Mouvement unilateral legitime native-both : instrumentation
+  MCMC propre au moteur PyMC ; jumeau Infer.NET inchange et au SHA atteste.'

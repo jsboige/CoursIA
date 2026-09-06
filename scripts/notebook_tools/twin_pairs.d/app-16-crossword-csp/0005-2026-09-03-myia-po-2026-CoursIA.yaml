@@ -1,0 +1,10 @@
+date: '2026-09-03'
+by: myia-po-2026:CoursIA
+python_sha: c3eabdf097a1f7187c011981e36fcdc0d095c25a
+csharp_sha: b11d4b644822042d6fd815a4b497a6a818a7f025
+content_python_sha: 9ea31048401b196f0bdfbee75ac6edc1fe0d051bbb7df73fb4f8ab4ee8eadb06
+content_csharp_sha: d907f3d29190e7c73fcbeaff09749bc83dd432cb7680309e0d9c6c09a759e7ed
+reason: 'Re-attestation apres fix navlinks #14134 (2 occurrences du lien ../CSP-8-Temporal-Csharp.ipynb
+  -> ../../Part2-CSP/CSP-8-Temporal-Csharp.ipynb, cell0 L35 + cell32 L36, cible resolue
+  contre l arbre) : markdown-only, cellules code toujours byte-identiques. check_notebook_navlinks
+  --check OK.'

@@ -1,0 +1,13 @@
+date: '2026-09-03'
+by: myia-po-2023:CoursIA
+reason: 'Attestation du blob FUSIONNE (merge origin/main dans feature/11601-sudoku14-density,
+  dispatch ai-01 2026-09-03) : le notebook porte les deux evolutions -- conversion
+  hr-separateurs --- -> *** de myia-po-2027:CoursIA (#11451, markdown-only, cf known_differences)
+  ET l''enrichissement de densite 1248 -> 1570 de cette branche. Les deux entrees
+  2026-09-02 ci-dessus attestent chacune un blob reel anterieur au merge ; celle-ci
+  atteste l''etat livre. Jumeau Python non touche (content_python_sha identique depuis
+  2026-08-05).'
+python_sha: 8672bbe7b5508c8dbca73e17d6d1a0af2f68ab00
+csharp_sha: 80bf03ab347e3efeff79c3817953f944b5b7d040
+content_python_sha: 1bfc5722a332acb62b38fc19af0f8a32cdddb604b0867e3949607b1897c9db07
+content_csharp_sha: ec8c27c28f678c871ec3786bcf3beac455424aeb87d37343b2df4efb0adfb4e1

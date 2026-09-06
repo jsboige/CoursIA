@@ -1,0 +1,16 @@
+date: '2026-08-11'
+by: myia-po-2023:CoursIA
+python_sha: d4ac08ac2355bc71628bbaab8934d54e94b010bd
+csharp_sha: f5575431de800bb7cbb9fda4cc5b139465e2fc47
+content_python_sha: bf57152719535bdd1d7d0742ece0dfd0bd4b07fbf5ec8443c26870744e377912
+content_csharp_sha: c293a9c4d6751f5a8ba8c8163113bc7861e575f01093a440ac778a91bc5de264
+reason: 'Verdict INTRINSIC bucket-3 (#10382) : corrige RECOVERABLE-MACHINE -> INTRINSIC
+  (OpenSpiel = lib C++ non-bridgeable en .NET : aucun binding .NET, pas CLI invocable,
+  pas IKVM-able, pont C++->.NET non viable). Markdown-only section 8 Verdict SOTA
+  + Conclusion table row + Parity block du notebook C#. Calque GT-13 (PR #10394, meme
+  verdict OpenSpiel CFR). csharp_sha avance 45c01bd6 -> f5575431 (3 lignes markdown),
+  python_sha unchanged d4ac08ac. Exception C.2 markdown-only : aucun code/sortie/exec_count
+  touche, re-exec non requise. parite semantique preservee. Verdict INTRINSIC cible
+  OpenSpiel-la-librairie (aucun pont .NET) ; axe lib-differente laisse OUVERT (candidat
+  Gambit CLI, cf GameTheory-4 #10442). Corrige le wording ''definitive'' (trop fort)
+  signale par ai-01 review (msg-20260811T121823).'

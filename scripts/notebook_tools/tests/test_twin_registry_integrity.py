@@ -35,7 +35,7 @@ yaml = pytest.importorskip("yaml")
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from check_twin_parity import (
     load_registry, _slug, _latest_audit, _content_sha, verify_recorded_sha,
-    update_pair, surgical_rebaseline,
+    update_pair, surgical_rebaseline, migrate_registry_files_per_audit,
 )  # noqa: E402
 
 REGISTRY_DIR = Path(__file__).resolve().parents[1] / "twin_pairs.d"
@@ -363,7 +363,7 @@ def _build_blob_history(repo_root: Path) -> tuple[dict, dict]:
     # note supra sur le rejet de ``--all``) ; le parser deduplique via ``set()``.
     proc = subprocess.run(
         ["git", "log", "HEAD", "-m", "--raw", "--no-renames", "--abbrev=40", "--format="],
-        cwd=repo_root, capture_output=True, text=True,
+        cwd=repo_root, capture_output=True, text=True, encoding="utf-8", errors="replace",
     )
     path_blobs: dict[str, set[str]] = {}
     blob_paths: dict[str, set[str]] = {}
@@ -1001,7 +1001,8 @@ def test_build_blob_history_sees_merge_introduced_blob(tmp_path):
 
     def _git(*args):
         return subprocess.run(
-            ["git", *args], cwd=tmp_path, capture_output=True, text=True, check=True,
+            ["git", *args], cwd=tmp_path, capture_output=True, text=True,
+            encoding="utf-8", errors="replace", check=True,
         )
 
     _git("init", "-q")
@@ -1020,7 +1021,7 @@ def test_build_blob_history_sees_merge_introduced_blob(tmp_path):
     # le merge produit un conflit (sortie non-zero attendue) -> etat de merge
     subprocess.run(
         ["git", "merge", "-q", "--no-ff", "branch"],
-        cwd=tmp_path, capture_output=True, text=True,
+        cwd=tmp_path, capture_output=True, text=True, encoding="utf-8", errors="replace",
     )
     # resolution manuelle en un CONTENU UNIQUE absent des deux parents
     (tmp_path / "f.txt").write_text("lineMAIN1\nlineB\nline3\nMERGED-UNIQUE\n", encoding="utf-8")
@@ -1127,4 +1128,309 @@ def test_surgical_rebaseline_truly_identical_still_noop():
     out, touched = surgical_rebaseline(raw, {"Search-11 Noop": same})
     assert touched == 0
     assert out == raw, "une attestation identique doit rester byte-identical (faux audit)"
+
+
+# --- #14911 : file-per-audit (un fichier par audit) --------------------------
+#
+# #8542 Option C (file-per-pair) supprime la classe de conflit ENTRE paires ;
+# mais DANS une paire, la liste append-only `audits:` gardait la classe de
+# conflit : deux lanes qui appendent au MOEME bloc `audits:` de la meme paire
+# touchent le meme point d'ancrage (la fin de la liste) -> `git` se plaint en
+# CONFLIT meme si les dates/lanes different (controle negatif ci-dessous).
+#
+# #14911 retire cette classe : chaque audit migre vers
+# `twin_pairs.d/<slug>/<date>-<lane>.yaml`. Deux lanes ecrivent des fichiers
+# differentes -> le merge serveur n'a rien a fusionner (serveur-mergeable, pas
+# besoin d'un merge driver). Les tests ci-dessous couvrent :
+#   1. le reader (`load_registry`) reconstitue `audits:` depuis les fichiers
+#      separes, pour la forme dict ET la forme liste ;
+#   2. la migration `migrate_registry_files_per_audit` est sans perte de contenu
+#      (comptage + contenu exact, y compris un `reason` qui contient un `"`) ;
+#   3. le CONTROLE NEGATIF de conflit (ancienne forme -> CONFLIT) vs le cas
+#      positif (nouvelle forme -> merge propre) : c'est la preuve que #14911
+#      elimine la classe de conflit dans une paire.
+
+
+def _write_pair_list_form(yaml_dir: Path, name: str, audits: list[dict]) -> None:
+    """Ecrit un fichier de paire au format LISTE d'un dict (forme reelle du
+    registre : tranches verbatim de l'ancien mono-fichier)."""
+    slug = _slug(name)
+    lines = [f'- name: "{name}"', "  family: Test", "  python: X.ipynb",
+             "  csharp: Y.ipynb", "  parity_level: surface", "  audits:"]
+    for a in audits:
+        lines.append("    - date: " + f'"{a["date"]}"')
+        lines.append(f"      by: {a['by']}")
+        lines.append(f"      python_sha: {a['python_sha']}")
+        lines.append(f"      csharp_sha: {a['csharp_sha']}")
+    (yaml_dir / f"{slug}.yaml").write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def _write_audit_file_direct(yaml_dir, name, audit):
+    """Ecrit un fichier d'audit separe via _write_audit_file (helper reel)."""
+    from check_twin_parity import _write_audit_file
+    return _write_audit_file(yaml_dir, name, audit)
+
+
+def test_load_registry_reconciles_audits_from_files_list_form(tmp_path):
+    """Forme liste d'un dict, sans `audits:` inline : le reader reconstitue la
+    liste depuis `<slug>/<date>-<lane>.yaml` (nouvelle forme file-per-audit)."""
+    reg = tmp_path / "twin_pairs.d"
+    reg.mkdir()
+    slug = _slug("T-List-L1")
+    (reg / f"{slug}.yaml").write_text(
+        '- name: "T-List-L1"\n  family: Test\n  python: X.ipynb\n'
+        "  csharp: Y.ipynb\n  parity_level: surface\n",
+        encoding="utf-8",
+    )
+    audit = {"date": "2026-08-28", "by": "myia-po-2026:CoursIA",
+             "python_sha": "a" * 40, "csharp_sha": "b" * 40}
+    _write_audit_file_direct(reg, "T-List-L1", audit)
+    pairs = load_registry(reg)
+    assert len(pairs) == 1
+    assert pairs[0]["audits"] == [audit], (
+        "le reader DOIT reconstituer `audits:` depuis `<slug>/` meme pour la "
+        "forme liste (sinon un registre migre renvoie des paires SANS audit -> "
+        "check_pair/_latest_audit sortiraient NO_AUDIT)."
+    )
+
+
+def test_load_registry_reconciles_audits_from_files_dict_form(tmp_path):
+    """Meme garantie pour la forme dict du fichier de paire."""
+    reg = tmp_path / "twin_pairs.d"
+    reg.mkdir()
+    slug = _slug("T-Dict-L1")
+    (reg / f"{slug}.yaml").write_text(
+        "name: \"T-Dict-L1\"\nfamily: Test\npython: X.ipynb\n"
+        "csharp: Y.ipynb\nparity_level: surface\n",
+        encoding="utf-8",
+    )
+    audit = {"date": "2026-08-28", "by": "myia-po-2026:CoursIA",
+             "python_sha": "c" * 40, "csharp_sha": "d" * 40}
+    _write_audit_file_direct(reg, "T-Dict-L1", audit)
+    pairs = load_registry(reg)
+    assert len(pairs) == 1
+    assert pairs[0]["audits"] == [audit]
+
+
+def test_migrate_registry_files_per_audit_lossless(tmp_path):
+    """Migration sans perte : les audits migrent de la forme `audits:` inline
+    vers des fichiers separes, sans perte de contenu (comptage + exactitude).
+
+    Inclut un `reason` contenant un `"` (l'echappement naïf `"..."` casse le
+    YAML -> `_dump_audit_yaml` doit utiliser safe_dump)."""
+    reg = tmp_path / "twin_pairs.d"
+    reg.mkdir()
+    _write_pair_list_form(reg, "T-Mig-1", [
+        {"date": "2026-08-04", "by": "myia-po-2023:CoursIA",
+         "python_sha": "1" * 40, "csharp_sha": "2" * 40,
+         "reason": 'f-string avec un levier "prononce" (0.746) et [16] en tete'
+                   " de branche"},
+        {"date": "2026-08-05", "by": "myia-po-2026:CoursIA",
+         "python_sha": "3" * 40, "csharp_sha": "4" * 40},
+    ])
+    _write_pair_list_form(reg, "T-Mig-2", [
+        {"date": "2026-08-06", "by": "myia-po-2024:CoursIA",
+         "python_sha": "5" * 40, "csharp_sha": "6" * 40},
+    ])
+
+    before = {p["name"]: list(p.get("audits") or []) for p in load_registry(reg)}
+    import os
+    res = migrate_registry_files_per_audit(reg)
+    assert res["migrated"] == 2, f"2 paires traitees attendues, got {res['migrated']}"
+    assert res["audits_moved"] == 3, f"3 audits a deplacer, got {res['audits_moved']}"
+
+    # 3 fichiers d'audit au niveau 2, aucun `audits:`/`last_audit:` au niveau 1.
+    n_audit = 0
+    for root, _, fs in os.walk(str(reg)):
+        for f in fs:
+            if root != str(reg) and f.endswith(".yaml"):
+                n_audit += 1
+    assert n_audit == 3, f"3 fichiers d'audit attendus, got {n_audit}"
+    for f in reg.glob("*.yaml"):
+        if f.name.startswith("_"):
+            continue
+        txt = f.read_text(encoding="utf-8")
+        assert "audits:" not in txt and "last_audit:" not in txt, (
+            f"le fichier d'intention {f.name} doit etre STRIP de la liste audits"
+        )
+
+    after = {p["name"]: list(p.get("audits") or []) for p in load_registry(reg)}
+    assert set(after) == set(before)
+    for name in before:
+        assert after[name] == before[name], (
+            f"perte d'audit pour {name}: {len(before[name])} -> {len(after[name])}"
+        )
+    # Le reader relit des dicts stables (python_sha/csharp_sha presents).
+    for p in load_registry(reg):
+        assert p["audits"], f"paire {p['name']} sans audit reconstitue"
+        for a in p["audits"]:
+            assert a["python_sha"] and a["csharp_sha"]
+
+
+def test_update_append_on_non_migrated_pair_preserves_history(tmp_path):
+    """Anti-regression #14911 : un `--update` sur une paire NON migree doit
+    migrer les audits inline existants vers des fichiers AVANT d'appender le
+    nouvel audit, sans perdre l'historique (sinon `_strip_audits_from_yaml`
+    retirerait la liste entiere et seuls les fichiers restants seraient relus).
+    """
+    reg = tmp_path / "twin_pairs.d"
+    reg.mkdir()
+    slug = _slug("T-Append-Inline")
+    (reg / f"{slug}.yaml").write_text(
+        '- name: "T-Append-Inline"\n  family: T\n  python: X.ipynb\n'
+        "  csharp: Y.ipynb\n  parity_level: surface\n"
+        "  audits:\n"
+        f'    - date: "2026-08-01"\n      by: old1\n      python_sha: {"1" * 40}\n      csharp_sha: {"2" * 40}\n'
+        f'    - date: "2026-08-02"\n      by: old2\n      python_sha: {"3" * 40}\n      csharp_sha: {"4" * 40}\n',
+        encoding="utf-8",
+    )
+    raw = (reg / f"{slug}.yaml").read_text(encoding="utf-8")
+    import check_twin_parity as ct
+    inline = ct._inline_audits_of(raw)
+    assert len(inline) == 2, "fixture : 2 audits inline"
+    used = set()
+    for idx, a in enumerate(inline, start=1):
+        ct._write_audit_file(reg, "T-Append-Inline", a, used_names=used, index=idx)
+    ct._write_audit_file(reg, "T-Append-Inline",
+                         {"date": "2026-08-03", "by": "newlane",
+                          "python_sha": "5" * 40, "csharp_sha": "6" * 40},
+                         used_names=used, index=len(inline) + 1)
+    (reg / f"{slug}.yaml").write_text(ct._strip_audits_from_yaml(raw), encoding="utf-8")
+
+    p = next(x for x in load_registry(reg) if x["name"] == "T-Append-Inline")
+    assert len(p["audits"]) == 3, (
+        "les 2 audits inline doivent etre preserves + 1 appende = 3 (pas 1, "
+        "sinon l'historique est perdu)."
+    )
+    latest = ct._latest_audit(p)
+    assert latest["python_sha"] == "5" * 40, "le nouvel audit doit etre le plus recent"
+
+
+def test_update_append_on_migrated_pair_goes_last(tmp_path):
+    """Sur une paire deja migree (intention sans audits, fichiers 0001..000N),
+    `--update` appende au slot suivant (000N+1) qui trie en DERNIER -> le nouvel
+    audit devient `_latest_audit`."""
+    reg = tmp_path / "twin_pairs.d"
+    reg.mkdir()
+    slug = _slug("T-Append-Migrated")
+    import check_twin_parity as _ct
+    d = _ct._audit_dir(reg, slug)
+    d.mkdir(parents=True)
+    for i in range(1, 4):
+        _ct._write_audit_file(reg, "T-Append-Migrated",
+                              {"date": f"2026-08-0{i}", "by": f"lane{i}",
+                               "python_sha": chr(0x61 + i - 1) * 40,
+                               "csharp_sha": "b" * 40}, index=i)
+    (reg / f"{slug}.yaml").write_text(
+        '- name: "T-Append-Migrated"\n  family: T\n  python: X.ipynb\n'
+        "  csharp: Y.ipynb\n  parity_level: surface\n",
+        encoding="utf-8",
+    )
+    # append sans index explicite (comme `--update` sur une paire migree)
+    _ct._write_audit_file(reg, "T-Append-Migrated",
+                          {"date": "2026-08-04", "by": "newlane",
+                           "python_sha": "9" * 40, "csharp_sha": "9" * 40})
+    p = next(x for x in load_registry(reg) if x["name"] == "T-Append-Migrated")
+    assert len(p["audits"]) == 4
+    assert _ct._latest_audit(p)["python_sha"] == "9" * 40, (
+        "l'audit appende doit trier en dernier (index 0004 > 0003) et devenir "
+        "le _latest_audit."
+    )
+
+
+@pytest.mark.parametrize("old_form", [True, False])
+def test_two_lanes_conflict_class(tmp_path, old_form):
+    """Controle de la classe de conflit DANS une paire.
+
+    - old_form=True (ancienne forme, liste `audits:` inline) : deux lanes appendent
+      chacune un audit a la fin de la MEME liste -> merge git CONFLICT (meme si les
+      dates/lanes different : c'est le point d'ancrage, pas la cle, qui conflit).
+    - old_form=False (nouvelle forme file-per-audit) : deux lanes ajoutent chacune
+      un fichier `<date>-<lane>.yaml` DISTINCT -> merge git propre (serveur-mergeable,
+      aucun driver unions requis).
+    """
+    import subprocess
+
+    def _git(*args):
+        return subprocess.run(["git", *args], cwd=tmp_path, capture_output=True,
+                              text=True, encoding="utf-8", errors="replace")
+
+    _git("init", "-q")
+    _git("config", "user.email", "t@t")
+    _git("config", "user.name", "t")
+    _git("config", "commit.gpgsign", "false")
+
+    slug = _slug("T-Conflit")
+    pair_dir = tmp_path / "registry" / slug
+    pair_dir.mkdir(parents=True)
+
+    if old_form:
+        # Fichier d'intention avec `audits:` inline (ancienne forme).
+        pair_file = tmp_path / "registry" / f"{slug}.yaml"
+        pair_file.write_text(
+            '- name: "T-Conflit"\n  family: Test\n  python: X.ipynb\n'
+            "  csharp: Y.ipynb\n  parity_level: surface\n"
+            '  audits:\n    - date: "2026-08-01"\n      by: base\n'
+            f"      python_sha: {'a' * 40}\n      csharp_sha: {'b' * 40}\n",
+            encoding="utf-8",
+        )
+    else:
+        # Fichier d'intention SANS audits + fichier d'audit de base.
+        (tmp_path / "registry" / f"{slug}.yaml").write_text(
+            '- name: "T-Conflit"\n  family: Test\n  python: X.ipynb\n'
+            "  csharp: Y.ipynb\n  parity_level: surface\n",
+            encoding="utf-8",
+        )
+        _write_audit_file_direct(tmp_path / "registry", "T-Conflit",
+                                 {"date": "2026-08-01", "by": "base",
+                                  "python_sha": "a" * 40, "csharp_sha": "b" * 40})
+
+    _git("add", "-A")
+    _git("commit", "-qm", "base")
+
+    def _lane_append(branch, name, date, sha):
+        _git("checkout", "-q", "-b", branch, "main")
+        if old_form:
+            with open(pair_file, "a", encoding="utf-8") as fh:
+                fh.write(f'    - date: "{date}"\n      by: lane-{name}\n'
+                         f"      python_sha: {sha}\n      csharp_sha: {sha}\n")
+            _git("add", pair_file)
+        else:
+            _write_audit_file_direct(tmp_path / "registry", name,
+                                     {"date": date, "by": f"lane-{name}",
+                                      "python_sha": sha, "csharp_sha": sha})
+            _git("add", "-A")
+        _git("commit", "-qm", f"lane {name}")
+
+    # Deux branches divergentes depuis BASE (main), chacune modifiant la MEME
+    # paire (dans la meme region de queue pour l'ancienne forme ; deux fichiers
+    # DISTINCTS pour la nouvelle).
+    _lane_append("lane-A", "T-Conflit", "2026-08-04", "e" * 40)
+    _lane_append("lane-B", "T-Conflit", "2026-08-05", "f" * 40)
+
+    # Merge lane-A sur main : fast-forward (main = ancestor de lane-A) -> pas de
+    # conflit. Puis merge lane-B : main = base+auditA, lane-B = base+auditB,
+    # merge-base = BASE -> les DEUX branches ont modifie la meme region de queue
+    # -> c'est LA la classe de conflit a prouver.
+    _git("checkout", "-q", "main")
+    r1 = _git("merge", "--no-edit", "lane-A")
+    assert r1.returncode == 0, "premier merge (fast-forward) doit reussir"
+    r2 = _git("merge", "--no-edit", "lane-B")
+    if old_form:
+        # ancien controle : le merge de deux appends au MEME bord de `audits:`
+        # doit CONFLICTER (meme si les dates/lanes different -- c'est le point
+        # d'ancrage, pas la cle, qui conflit).
+        assert r2.returncode != 0, (
+            "ancien controle : deux lanes appendant au meme bloc `audits:` de la "
+            "meme paire doivent CONFLICTER (classe de conflit #14911)."
+        )
+    else:
+        # nouvelle forme : deux lanes ecrivent des fichiers d'audit DISTINCTS
+        # (<pair>/2026-08-04-lane-a.yaml vs <pair>/2026-08-05-lane-b.yaml) ->
+        # le merge serveur n'a rien a fusionner -> pas de conflit.
+        assert r2.returncode == 0, (
+            "nouvelle forme : deux lanes ajoutant des fichiers d'audit DISTINCTS "
+            "doivent se merger proprement (serveur-mergeable, aucun driver union)."
+        )
+        assert not (tmp_path / ".git" / "MERGE_HEAD").exists()
 

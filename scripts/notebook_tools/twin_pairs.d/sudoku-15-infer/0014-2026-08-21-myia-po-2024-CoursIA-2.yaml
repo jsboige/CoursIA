@@ -1,0 +1,15 @@
+date: '2026-08-21'
+by: myia-po-2024:CoursIA-2
+python_sha: fcc793f05211fa5d50e45ae7a6de063ae3190063
+csharp_sha: 512fba1e200c93e18a783f836db20ffb72e46072
+content_python_sha: a37b842071b3e6a5f45b77b3e26f4a684d1f7fdfbc94a60b1f470b0028c8006e
+content_csharp_sha: 120581912c9d1d52e019368c45670877dc8bc4e50fce6dc8fb0432cc958ac19c
+reason: 'Rebaseline PR #11806 (c.1331p318 REPAIR-2) : cote C# modifie pour elargir
+  le catch du loader Infer.NET (cell #35, 7 classes filtre ''when'') + ajout cell
+  #37 test (REPAIR-1). REPAIR-2 c.1331p318 : cell #37 code (exec_count=None post-coupure
+  17 min kernel .NET sur po-2024) convertie en markdown synthetisant snippets verbatim
+  + note D.5 (CAUSE_DOCUMENTED_ONLY). Aucun code C# fonctionnel touche en dehors du
+  catch elargi (deja couvert par audit precedent). Markdown-only + 1 cellule code
+  transformee en markdown. Cote Python inchange. Parite semantique inchangee (concept,
+  approche, structure pedagogique). 18 cellules code preservees byte-identique hors
+  catch.'
