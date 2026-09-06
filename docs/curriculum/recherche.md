@@ -112,6 +112,7 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 | 81 | GameTheory 27b — Le lake assignment_lean par son… | BETA | Non |
 | 82 | GameTheory-28 : Banc de calibration — humour, forme… | BETA | Oui |
 | 83 | GameTheory-28b : Banc humour — passer à l'échelle | BETA | Non |
+| 84 | GameTheory-29 : Le dilemme du voyageur — l'élimination itérée vers l'unique équilibre (2,2) que contredisent les humains | BETA | Oui |
 
 ## GameTheory/SocialChoice (8 notebooks)
 
