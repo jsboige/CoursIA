@@ -137,6 +137,6 @@ theorem covers_pullback_comp {C : Type*} [Category C] {X Y Z : C}
     J.Covers (S : Sieve Z) (f ≫ g) ↔ J.Covers (S.pullback g : Sieve Y) f := by
   rw [GrothendieckTopology.covers_iff, GrothendieckTopology.covers_iff]
   rw [Sieve.pullback_comp]
-  simp
+  rfl
 
 end Grothendieck.PullbackFunctorLaws_en
