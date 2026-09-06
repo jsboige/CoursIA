@@ -38,7 +38,14 @@
       csharp_sha: 3887376451809de0518da2be25cd8d7db564d62a
       content_python_sha: e2274aa89c2aca8823dd3cc1b2f8a5e3f61158a6fd9f3847251e11ddaa97d551
       content_csharp_sha: f1d8de005f9fe6c34793bd21ea3fac02bf1286642ddaedd931c7db98eab64804
+    - date: "2026-09-06"
+      by: myia-po-2026:CoursIA
+      python_sha: 90853b19dc0d5375a47c21372a4664aa4bff5786
+      csharp_sha: 7f6f725e5eae0899abc0f6406a84415dec82b572
+      content_python_sha: e2274aa89c2aca8823dd3cc1b2f8a5e3f61158a6fd9f3847251e11ddaa97d551
+      content_csharp_sha: c41dbab69ba0f9b5effb31a37ca0aea1d2637b9e90a42d0f1415b488ac2a5adc
   known_differences:
+    - "2026-09-06 (myia-po-2026:CoursIA) #14859 / PR #14885 : reparation markdown-only de 2 escapes LaTeX manges par une chaine Python non-raw dans le jumeau C# (Planners-4-Fast-Downward-Csharp.ipynb, cellule d'intro SAS+) ; 0 cellule code touchee (execution_counts intacts, 13/13). Rebaseline = attestation du blob post-reparation, pas une reparation de parite."
     - "2026-08-20 : conversion markdown-only ASCII->Mermaid du diagramme de pipeline Fast Downward (PDDL->Translator->Preprocessor->Search->Plan, cell 3 cote python, PR #12011 / #11962) - 0 cellule code touchee, parite engine native-both intacte, rebaseline d'attestation."
     - "Concept : planificateur classique Fast Downward (SAS+, heuristic search, A*/GBFS/EHC)."
     - "Python : invoque le VRAI solveur SOTA Fast Downward via conteneur Docker (jsboige/coursia-fast-downward, API HTTP port 8200) + unified-planning. C# : deux tranches — Tranche 1 from-scratch BCL .NET (representation SAS+, heuristiques h^max/h^FF par relaxation de planning graph, recherche A*/GBFS/EHC, cells 0-27) + Tranche 2 Fast Downward natif via System.Net.Http.HttpClient sur l'API Docker du meme conteneur (port 8200, depuis 2026-08-11)."
