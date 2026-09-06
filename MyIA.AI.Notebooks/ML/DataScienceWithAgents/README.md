@@ -24,7 +24,7 @@ La formation couvre deux stacks complémentaires :
 
 | Statistique | Valeur |
 |-------------|--------|
-| Notebooks | 52 (7 LangChain + 10 ADK + 2 fondations Python + 21 fondations ML + 10 deep learning + 2 vision) |
+| Notebooks | 57 (7 LangChain + 14 ADK + 2 fondations Python + 21 fondations ML + 10 deep learning + 3 vision) |
 | Kernel | Python 3.11+ |
 | Durée totale | ~7 jours |
 
@@ -116,16 +116,17 @@ DataScienceWithAgents/
 │   └── 3.8-Representations-Contrastives.ipynb
 │
 │
-├── 04-Vision/                # Vision par ordinateur : du neurone convolutif au transfer learning (2 notebooks)
+├── 04-Vision/                # Vision par ordinateur : du neurone convolutif au transfer learning (3 notebooks)
 │   ├── 4.1-Conv-NumPy-Torch-Allclose.ipynb
-│   └── 4.2-ConvNet-Profonde-Residuelles.ipynb
+│   ├── 4.2-ConvNet-Profonde-Residuelles.ipynb
+│   └── 4.3-TransferLearning-ResNet.ipynb
 │
 ├── Track1-LangChain/ # Track LangChain (7 labs)
 │   ├── Day1-Foundations/Labs/              # Revision
 │   ├── Day2-Document-Agents/Labs/              # Agents RFP et CV
 │   └── Day3-Data-Agents/Labs/              # Data + Agents
 │
-└── Track2-GoogleADK/         # Track Google ADK (10 labs)
+└── Track2-GoogleADK/         # Track Google ADK (14 labs)
     ├── Day4-Foundations/       # Introduction ADK
     ├── Day5-DS-Star/           # Data Science autonome
     ├── Day6-MLE-Star/          # ML Engineering
@@ -197,6 +198,7 @@ Documentation complète : [03-DeepLearning/README.md](03-DeepLearning/README.md)
 |----------|-------|---------------|
 | [4.1-Conv-NumPy-Torch-Allclose](04-Vision/4.1-Conv-NumPy-Torch-Allclose.ipynb) | Conv2d NumPy pur (single + multi-canal), gradient vérifié par différence finie, parité epsilon machine avec `torch.nn.Conv2d`, pooling et invariance par translation | **La convolution n'est pas magique** : un produit scalaire local, partagé spatialement, parité NumPy/torch à epsilon machine |
 | [4.2-ConvNet-Profonde-Residuelles](04-Vision/4.2-ConvNet-Profonde-Residuelles.ipynb) | 20 conv2d empilées nues (effondrement du gradient), skip naïf (gradient réparé mais passe avant qui dérive), bloc pré-norme (les deux réparés), même protocole transposé à 20 blocs d'attention, puis accuracy CIFAR-10 sur 3 graines | **Le skip-connection n'est pas un détail architectural** : c'est le mécanisme qui rend les réseaux profonds entraînables |
+| [4.3-TransferLearning-ResNet](04-Vision/4.3-TransferLearning-ResNet.ipynb) | ResNet18 pré-entraîné ImageNet, tête greffée (5 130 params entraînables sur 11,18 M), gelé vs fine-tuné sur EuroSAT (Sentinel-2, 10 classes, 3 graines appariées + test de permutation des signes) | **Le feature extractor pré-entraîné est réutilisable — et le prix de ne pas l'adapter se mesure** : gelé ~89 % ; fine-tuné +6,2 pts appariés, mais seulement à taux différencié décroissant (à taux constants, l'optimiseur finit sous le gelé) |
 
 Documentation complète : [04-Vision/README.md](04-Vision/README.md)
 
@@ -235,13 +237,17 @@ Track avancé intégrant les frameworks Google ADK (DS-STAR, MLE-STAR) avec supp
 | 8 | [ADK-Introduction](Track2-GoogleADK/Day4-Foundations/Lab8-ADK-Introduction.ipynb) | Architecture ADK, configuration providers |
 | 9 | [First-ADK-Agent](Track2-GoogleADK/Day4-Foundations/Lab9-First-ADK-Agent.ipynb) | Premier agent pour Data Science |
 
-### Day 5 - DS-STAR (Labs 10-12)
+### Day 5 - DS-STAR (Labs 10-12 + extensions 12b-12d, 18)
 
 | Lab | Notebook | Objectif |
 |-----|----------|----------|
 | 10 | [File-Analyzer](Track2-GoogleADK/Day5-DS-Star/Lab10-File-Analyzer.ipynb) | Analyse de fichiers hétérogènes |
 | 11 | [Planner-Coder-Loop](Track2-GoogleADK/Day5-DS-Star/Lab11-Planner-Coder-Loop.ipynb) | Boucle itérative multi-agents |
 | 12 | [DS-Star-Workshop](Track2-GoogleADK/Day5-DS-Star/Lab12-DS-Star-Workshop.ipynb) | Application complète |
+| 12b | [Sequential-Orchestration](Track2-GoogleADK/Day5-DS-Star/Lab12b-Sequential-Orchestration.ipynb) | Contrat C4 : désignation séquentielle, l'orchestrateur explicite au-dessus d'ADK |
+| 12c | [Agent-Handoff](Track2-GoogleADK/Day5-DS-Star/Lab12c-Agent-Handoff.ipynb) | Contrat C5 : handoff inter-agents natif câblé et observable |
+| 12d | [Token-Usage](Track2-GoogleADK/Day5-DS-Star/Lab12d-Token-Usage.ipynb) | Contrat C6 : traçabilité de la consommation LLM |
+| 18 | [Session-Persistence](Track2-GoogleADK/Day5-DS-Star/Lab18-Session-Persistence.ipynb) | Persistance d'état de session : une conversation qui se souvient |
 
 ### Day 6 - MLE-STAR (Labs 13-15)
 
@@ -413,7 +419,7 @@ La thèse est honnête : les agents LLM ne remplacent pas le data scientist, ils
 ### Prochaines étapes
 
 - **Approfondir le ML sous-jacent** : la série [ML](../README.md) (et son pendant C# [ML.Net](../ML.Net/README.md)) reprend les algorithmes (LightGBM, SSA, évaluation PFI/ROC) sous l'angle de l'implémentation — utile pour comprendre ce que l'agent exécute quand il génère du code scikit-learn.
-- **Démarrer par les fondations visuelles** : la sous-série [`04-Vision`](04-Vision/README.md) prolonge [03-DeepLearning](03-DeepLearning/README.md) sur les images (Conv2d from scratch + ConvNet profonde + résiduelles, parité NumPy/torch à epsilon machine). Prérequis utile avant d'orchestrer un agent sur des données image.
+- **Démarrer par les fondations visuelles** : la sous-série [`04-Vision`](04-Vision/README.md) prolonge [03-DeepLearning](03-DeepLearning/README.md) sur les images (Conv2d from scratch + ConvNet profonde + résiduelles, parité NumPy/torch à epsilon machine, puis transfer learning ResNet gelé vs fine-tuné). Prérequis utile avant d'orchestrer un agent sur des données image.
 - **Aller vers l'évaluation et la robustesse** : les Labs 13-15 (Web-Search-SOTA, Ablation-Refinement, Kaggle-Challenge) introduisent l'évaluation rigoureuse des agents ML (MLE-bench, métriques cross-compétition) ; le prolongement naturel est la **robustesse multi-seed** et la **walk-forward validation**, traitées dans le pipeline [QuantConnect](../../QuantConnect/README.md).
 - **Franchir le cap production** : le Day 7 (BigQuery, BQML, Vertex AI) ouvre sur le déploiement réel. Le pont vers [GenAI](../../GenAI/README.md) relie ces agents data aux pipelines de génération (image, audio, texte) et aux architectures Qwen/Lumina auto-hébergées.
 - Pour la pratique : reprenez le Lab 7 (agent DataFrame) et posez-lui une question qu'il *ne peut pas* répondre avec les seules colonnes présentes — comment réagit-il ? Confrontez cette limite au Lab 11 (boucle planner-coder) : qu'apporte vraiment le multi-agent ? C'est la tension vivante de la série : la puissance de l'agent *vs* la nécessité de l'encadrer.
