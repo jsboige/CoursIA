@@ -55,7 +55,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 1
+          # The detector requires merge-base(origin/main, HEAD). A depth-1
+          # checkout made the advisory abstain on ordinary pull requests.
+          fetch-depth: 0
 
       - uses: actions/setup-python@v5
         with:

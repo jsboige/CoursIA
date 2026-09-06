@@ -154,7 +154,11 @@ def _output_text(outputs: list) -> str:
             continue
         ot = out.get("output_type") or out.get("type")
         if ot == "stream":
-            chunks.append(str(out.get("text", "")))
+            value = out.get("text", "")
+            if isinstance(value, list):
+                chunks.append("".join(str(item) for item in value))
+            else:
+                chunks.append(str(value))
         elif ot in ("execute_result", "display_data"):
             data = out.get("data", {}) or {}
             for k in ("text/plain", "text/html", "application/vnd.jupyter.widget-view+json"):

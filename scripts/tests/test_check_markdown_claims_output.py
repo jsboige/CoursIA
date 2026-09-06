@@ -206,6 +206,15 @@ class TestOutputExtraction:
         text = _output_output = _output_text([_stream_output("hello 0.24")])
         assert "hello 0.24" in text
 
+    def test_stream_output_nbformat_line_list(self):
+        output = _stream_output("unused")
+        output["text"] = [
+            "progress complete\n",
+            'CLAIM_METRICS {"first_optimal_sweep": 1}\n',
+        ]
+        text = _output_text([output])
+        assert "progress complete\nCLAIM_METRICS" in text
+
     def test_execute_result_output(self):
         text = _output_text([_exec_output("Params: 3,145,728")])
         assert "3,145,728" in text
