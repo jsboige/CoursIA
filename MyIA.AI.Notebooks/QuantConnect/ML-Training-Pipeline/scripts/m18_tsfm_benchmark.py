@@ -384,7 +384,7 @@ def _sha256_array(arr: np.ndarray) -> str:
 
 def assert_baselines_distinct(
     deb_arrays: dict[str, np.ndarray], threshold: float = 1e-6,
-) -> float:
+) -> dict[str, float]:
     """Non-degeneracy control (#14791): baselines declared as distinct models
     must actually differ.
 
@@ -396,12 +396,25 @@ def assert_baselines_distinct(
     agreement below ``threshold`` everywhere means same effective model, and
     the run aborts instead of publishing an empty column.
 
-    Returns the weakest pairwise separation observed (the smallest, across
-    baseline pairs, of each pair's maximum relative difference) — recorded in
-    the manifest as provenance.
+    Floor of detection (#14823): the abort fires only on agreement EVERYWHERE.
+    Each pairwise separation is aggregated by MAX over the OOS points, so a
+    single divergent point keeps a partially-degenerate column green. This is
+    deliberate — the guard rejects "same effective model" (agree below
+    ``threshold`` on all points), not a model that merely reproduces
+    persistence on most points. The per-point MEDIAN is recorded alongside the
+    max as the monotone "how much do these baselines really differ" metric:
+    it stays near the floor when baselines agree almost everywhere but max is
+    buoyed by one outlier.
+
+    Returns ``{"max": ..., "median": ...}``: the weakest pairwise separation
+    across baseline pairs, each pair's separation aggregated over OOS points
+    by max (``max``, the abort signal) and by median (``median``, recorded in
+    the manifest as ``baseline_median_rel_sep``). With no baseline pair to
+    compare, both are ``inf``.
     """
     names = [m for m in BASELINES if m in deb_arrays]
-    weakest = np.inf
+    weakest_max = np.inf
+    weakest_median = np.inf
     for i in range(len(names)):
         for j in range(i + 1, len(names)):
             a, b = names[i], names[j]
@@ -409,14 +422,16 @@ def assert_baselines_distinct(
             denom = np.maximum(np.abs(pa), np.abs(pb))
             rel = np.abs(pa - pb) / np.maximum(denom, 1e-12)
             top = float(np.max(rel))
-            weakest = min(weakest, top)
+            med = float(np.median(rel))
+            weakest_max = min(weakest_max, top)
+            weakest_median = min(weakest_median, med)
             if top < threshold:
                 raise RuntimeError(
                     f"degenerate baselines (#14791): {a!r} and {b!r} agree to "
                     f"{top:.2e} (max relative over {len(pa)} OOS points) — "
                     f"below {threshold:g}: same effective model, the vs-{b} "
                     f"column carries no independent information")
-    return float(weakest)
+    return {"max": float(weakest_max), "median": float(weakest_median)}
 
 
 def run_config(
@@ -540,7 +555,9 @@ def run_config(
     # Non-degeneracy control (#14791): a run where two declared baselines
     # agree below 1e-6 everywhere aborts here instead of publishing an
     # empty "vs X" column; the weakest separation is kept as provenance.
-    baseline_weakest_rel_sep = assert_baselines_distinct(deb_arrays)
+    _baseline_sep = assert_baselines_distinct(deb_arrays)
+    baseline_weakest_rel_sep = _baseline_sep["max"]
+    baseline_median_rel_sep = _baseline_sep["median"]
 
     # In-situ DM, two legs per amended §C (#11010): the CONJUNCTION verdict
     # uses a PRECISION loss ("mse"); the "linear" leg (raw signed errors) is
@@ -566,6 +583,7 @@ def run_config(
         "per_fold_bias": per_fold_bias_out,
         "fc_hash_per_fold": fc_hashes,
         "baseline_weakest_rel_sep": baseline_weakest_rel_sep,
+        "baseline_median_rel_sep": baseline_median_rel_sep,
         "n_oos": rows[MODELS[0]]["n_oos"],
         "bounds_train_test": folds[0] | {
             "n_total": int(n),
