@@ -282,8 +282,13 @@ jobs:
           # est 30, silencieusement. Le set tronque attaque le
           # DENOMINATEUR du ratio G-VAR-2 (#10328 : 60 mergees pour 30
           # vues -> faux positif contre les lanes productives).
+          # #14849 : stderr du fetch CAPTURE (jamais /dev/null) -- un gh pr
+          # list qui echoue produisait un merged.json absent, et la chaine
+          # silencieuse crash -> || echo "False" -> "cap non atteint"
+          # re-autorisait une LIGHT over budget. L'unknown doit etre VISIBLE.
           gh pr list --state merged --search "merged:$TODAY" --limit 500 \
-            --json number,body,mergedAt,labels > /tmp/merged.json 2>/dev/null || true
+            --json number,body,mergedAt,labels > /tmp/merged.json 2>/tmp/merged_fetch.err || true
+          [ -s /tmp/merged_fetch.err ] && { echo "--- gh pr list (merged) stderr ---"; cat /tmp/merged_fetch.err; } || true
 
           printf '%s' "${PR_BODY:-}" > /tmp/pr_body.txt
 
@@ -306,7 +311,11 @@ jobs:
           cat /tmp/status.json 2>/dev/null || true
           [ -s /tmp/cap.err ] && { echo "--- detector stderr ---"; cat /tmp/cap.err; } || true
 
-          CAP=$(python3 -c "import json; print(json.load(open('/tmp/status.json')).get('cap_reached'))" 2>/dev/null || echo "False")
+          # #14849 : verdict a 3 ETATS. Le fallback permissif || echo "False"
+          # transformait crash/status absent/cap_reached null en "cap non
+          # atteint" -- une decison prise sur une absence de donnee. Reader
+          # HS ou champ null -> "None" -> branche unknown ci-dessous.
+          CAP=$(python3 -c "import json; print(json.load(open('/tmp/status.json')).get('cap_reached'))" 2>/dev/null || echo "None")
 
           gh label create variation-light-cap-reached \
             --description "Lane ayant deja merge une LIGHT aujourd'hui (cap G-VAR-2 atteint)" \
@@ -328,8 +337,14 @@ jobs:
               gh pr comment "$PR_NUMBER" --body "$BODY" 2>/dev/null || true
             fi
             echo "::notice::G-VAR-2 cap reached pour la lane ${LANE} (consomme par ${CB})."
-          else
+          elif [ "$CAP" = "False" ]; then
             gh pr edit "$PR_NUMBER" --remove-label variation-light-cap-reached 2>/dev/null || true
+          else
+            # #14849 : UNKNOWN (replay absent/invalide, detector crash, ou PR
+            # inassessable sans tag Grain). On ne pose NI ne retire le label
+            # -- les deux branches lisent un cap qui n'a pas ete calcule. Le
+            # warning rend l'unknown visible dans le resume du job.
+            echo "::warning::G-VAR-2 light-cap verdict UNKNOWN (CAP='${CAP}') : merged.json absent/invalide ou detector non sorti -- voir detector stderr ci-dessus. Label variation-light-cap-reached laisse intact."
           fi
           exit 0
 
@@ -349,9 +364,13 @@ jobs:
 
           TODAY=$(date -u +%Y-%m-%d)
           # --limit 500 : cf light-cap ci-dessus (#10328).
+          # #14849 : PAS de fabrication || printf '[]' -- un fetch echoue
+          # devenait un "journee vide" legitime en apparence et tous les
+          # signaux lisaient False sur une absence de donnee. Le fichier
+          # absent va jusqu'au detecteur, qui emet verdict unknown.
           gh pr list --state merged --search "merged:$TODAY" --limit 500 \
-            --json number,body,mergedAt,labels > /tmp/merged.json 2>/dev/null || \
-            printf '[]' > /tmp/merged.json
+            --json number,body,mergedAt,labels > /tmp/merged.json 2>/tmp/merged_fetch.err || true
+          [ -s /tmp/merged_fetch.err ] && { echo "--- gh pr list (merged) stderr ---"; cat /tmp/merged_fetch.err; } || true
 
           printf '%s' "${PR_BODY:-}" > /tmp/pr_body.txt
 
@@ -396,6 +415,16 @@ jobs:
           echo "--- detector output ---"
           cat /tmp/signals.json 2>/dev/null || true
           [ -s /tmp/cap.err ] && { echo "--- detector stderr ---"; cat /tmp/cap.err; } || true
+
+          # #14849 : verdict UNKNOWN (replay absent/invalide, detector sans
+          # sortie) -> on n'applique NI ne retire les labels : chaque branche
+          # du label loop lirait des signaux non calcules. Warning visible,
+          # labels laisses dans l'etat du dernier run assessable.
+          B_VERDICT=$(python3 -c "import json; print(json.load(open('/tmp/signals.json')).get('verdict') or 'assessed')" 2>/dev/null || echo "unknown")
+          if [ "$B_VERDICT" = "unknown" ]; then
+            echo "::warning::G-VAR-2/3 genre-signals : verdict UNKNOWN (signals.json absent/invalide ou verdict unknown du detecteur) -- labels laisses intacts, voir detector stderr ci-dessus (#14849)."
+            exit 0
+          fi
 
           SIG_INFLATION=$(python3 -c "import json; print(json.load(open('/tmp/signals.json')).get('signals',{}).get('TIER-INFLATION'))" 2>/dev/null || echo "False")
           SIG_RUN=$(python3 -c "import json; print(json.load(open('/tmp/signals.json')).get('signals',{}).get('GENRE-RUN'))" 2>/dev/null || echo "False")
