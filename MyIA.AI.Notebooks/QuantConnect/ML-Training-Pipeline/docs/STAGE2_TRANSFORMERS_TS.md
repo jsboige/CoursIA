@@ -92,6 +92,18 @@ No patch-related hyperparameters. Simpler architecture:
 - `--n-heads 8`: Attention heads
 - `--n-layers 3`: Transformer layers
 
+### Revalidation log-RV BTC contre HAR débiaisé (issue #14860)
+
+Un harnais de revalidation hors biais a été ajouté sous `scripts/btc_itransformer.py`,
+miroir membre à membre de `scripts/btc_patchtst.py` (issue #14081) : il réutilise
+uniquement la **classe** `iTransformerModel` de `train_itransformer.py` et la branche
+sur son propre walk-forward expanding (cible = moyenne du log-RV futur), à la différence
+du CLI directionnel qui ne saisit pas cette cible. Protocole identique à PatchTST
+(5 folds, seeds {0,1,7,42}, horizons {1,5,10}, normalisation train-only, HAR débiaisé
+train-tail `calibrate_bias=True`, DM recentré `loss_fn="mse"`). Verdict §C dans
+`REGISTRY.md` (entrée iTransformer BTC log-RV). Ne pas utiliser `train_itransformer.py`
+avec `--walk-forward` pour cette validation : le CLI vise la cible direction/rendement.
+
 ## Running Tests
 
 ```bash
