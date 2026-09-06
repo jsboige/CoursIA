@@ -19,6 +19,10 @@ inputs:
   sorry-filter-mode:
     description: 'How to count sorry: raw | prose-header | standalone-tactic | real'
     required: true
+  build-jobs:
+    description: 'Optional lake parallelism cap, passed as `-j N`. Empty = lake default (all cores). `-j 1` serialises elaboration when sibling modules peak together inside ONE job (knot_lean Conway/Conway_en, #14821 exit 137 with cross-job contention refuted).'
+    required: false
+    default: ''
 
 runs:
   using: composite
@@ -157,6 +161,10 @@ runs:
     - name: Lake build
       shell: bash
       working-directory: ${{ inputs.project-path }}
+      env:
+        # `${VAR:+-j "$VAR"}` expands to nothing when unset/empty, so callers
+        # that do not pass build-jobs get the exact same command line as before.
+        LAKE_BUILD_JOBS: ${{ inputs.build-jobs }}
       run: |
         set -o pipefail   # propagate lake's exit code through the pipeline — without this a
                           # FAILED lake build reports exit 0 (tail always succeeds), and the
@@ -169,7 +177,7 @@ runs:
         # the error lines can be surfaced in a ::group:: on failure. `if cmd;` exempts
         # the pipeline from errexit, but pipefail still feeds `$?` here — this is what
         # preserves the 2026-06-14 invariant (FAILED build still exits != 0).
-        if lake -R build 2>&1 | tee "$RUNNER_TEMP/lake.log" | tail -20; then
+        if lake -R build ${LAKE_BUILD_JOBS:+-j "$LAKE_BUILD_JOBS"} 2>&1 | tee "$RUNNER_TEMP/lake.log" | tail -20; then
           :
         else
           rc=$?

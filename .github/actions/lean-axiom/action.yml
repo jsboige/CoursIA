@@ -29,6 +29,10 @@ inputs:
     description: 'Whether a transitive sorryAx fails the run. false = report has_sorry without gating (honesty knob, not leniency).'
     required: false
     default: 'true'
+  build-jobs:
+    description: 'Optional lake parallelism cap, passed as `-j N`. Empty = lake default (all cores). `-j 1` serialises elaboration when sibling modules peak together inside ONE job (knot_lean Conway/Conway_en, #14821 exit 137 with cross-job contention refuted).'
+    required: false
+    default: ''
 
 runs:
   using: composite
@@ -71,12 +75,16 @@ runs:
     - name: Lake build
       shell: bash
       working-directory: ${{ inputs.project-path }}
+      env:
+        # `${VAR:+-j "$VAR"}` expands to nothing when unset/empty, so callers
+        # that do not pass build-jobs get the exact same command line as before.
+        LAKE_BUILD_JOBS: ${{ inputs.build-jobs }}
       run: |
         set -o pipefail   # propagate lake's exit code through the pipeline (FAILED must
                           # exit != 0; See incident conway_lean HashlifeCorrectness L1058, 2026-06-14).
         lake exe cache get || true
         # On failure, surface the error lines the `tail` window loses (See #8915).
-        if lake -R build 2>&1 | tee "$RUNNER_TEMP/lake.log" | tail -10; then
+        if lake -R build ${LAKE_BUILD_JOBS:+-j "$LAKE_BUILD_JOBS"} 2>&1 | tee "$RUNNER_TEMP/lake.log" | tail -10; then
           :
         else
           rc=$?
