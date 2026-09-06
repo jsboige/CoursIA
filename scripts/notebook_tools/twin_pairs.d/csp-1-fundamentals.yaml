@@ -70,6 +70,12 @@
     csharp_sha: d28258b5bf051c88bab479530ff862f8713a1c6f
     content_python_sha: 92361e667ccd83cc3f736b746d8208cbdb880d4e543db881cff4885a4921448c
     content_csharp_sha: fd37f9f14401b3501d2545453fdc8426915f313c7c0c2adfad859490c5836bbb
+  - date: "2026-09-05"
+    by: myia-po-2025:CoursIA
+    python_sha: 5bcb9cc2047935635c23f0859aac33abc5b9bcdf
+    csharp_sha: 307d94ba2a88cec435961a6b384cac4b964980af
+    content_python_sha: 764bc86dafe87ce190a3caf596f78dda64b8968666e09912c364970ce62b9f9c
+    content_csharp_sha: 558ba6e4fce98c073be084a384a78646834d88b998f9779fffb582a3e5f970fd
   known_differences:
   - 'Correction 2026-08-19 (myia-po-2025:CoursIA-2, review #11789 / NanoClaw + ai-01 re-derive) : la contrainte anti-diagonale 8-Reines etait mal ecrite dans les DEUX jumeaux (q_i + q_j != i + j au lieu de q_i + i != q_j + j) ; les solutions committees etaient invalides (Python : 6 paires en attaque, C# : 1 paire). Fixe des deux cotes en `scalar [1,-1] + arithm != j-i` (equivalent exact de q_i + i != q_j + j) puis re-execute : Python [4,6,1,5,2,0,7,3] et C# [4,6,1,5,2,0,3,7], toutes deux 0 attaque (verifie).'
   - 'Edition 2026-08-19 (myia-po-2025:CoursIA-2, #10382 tranche lib-vs-lib) : section 6bis ajoutee au jumeau Python -- Choco via pychoco (binding officiel PyPI MIT), miroir de la section 6 du jumeau C# (Choco via IKVM). Memes modeles, memes instances : enumeration Australie = 18 solutions des deux cotes (convergence verifiee sur grandeur observable), 8-Reines solution valide. La premiere solution 8-Reines differe potentiellement entre jumeaux (ordre de creation des variables auxiliaires diagonales influence lheuristique par defaut) -- documente dans la cellule dinterpretation. Temps de resolution en prose = descripteurs machine-dep renvoyant aux sorties live (regle #9434). Re-exec complete du notebook (86 cellules, 33 code, 0 erreur). Verdict RECOVERABLE-LOCAL -> SOTA-OK.'

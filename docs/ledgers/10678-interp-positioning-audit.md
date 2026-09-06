@@ -34,7 +34,7 @@ Pour chaque cellule markdown d'interpretation (pattern `### Lecture du resultat`
 | `Do-Calculus-Bridge.ipynb` | 1/2 | MISPLACED |
 | `QC-Py-08-Multi-Asset-Strategies.ipynb` | 1/1 | MISPLACED |
 | `Search-10-SymbolicAutomata.ipynb` | 1/16 | MISPLACED |
-| `Search-3-Informed.ipynb` | 1/8 | MISPLACED |
+| `Search-03-Informed.ipynb` | 1/8 | MISPLACED |
 | `Sudoku-14-BDD-Csharp.ipynb` | 1/3 | MISPLACED |
 | `Lean-7b-Examples.ipynb` | 1/7 | MISPLACED |
 | `Tweety-8-Agent-Dialogues.ipynb` | 1/1 | MISPLACED |
@@ -135,7 +135,7 @@ Pour chaque cellule markdown d'interpretation (pattern `### Lecture du resultat`
 - **next_code[81]** : `# Exercice 1 : Automate pour multiples de 3 / # Creer un automate symbolique qui accepte les multiples de 3 /  / # Exercice: Creer l'automate avec SymbolicAutomaton("Mult3Automaton") / # Indices: / # - Ajouter `
 - reason : gap_a=5 (interp 5+ cells before next code, possibly misplaced)
 
-### `MyIA.AI.Notebooks/Search/Part1-Foundations/Search-3-Informed.ipynb` (1 cellules)
+### `MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03-Informed.ipynb` (1 cellules)
 #### cell[36] gap_b=1 gap_a=6
 - **interp** : `### Interprétation : Synthèse des performances /  / **Observations générales** : /  / | Algorithme | Optimalité | Nœuds explorés | Mémoire | Cas d'usage | / |------------|-----------|-----------------|----------|-------------| / | **Greedy** | Non | Variable (so`
 - **prev_code[35]** : `# --- Comparaison sur plusieurs problemes --- /  / test_cases = [ /     ('Bordeaux', 'Strasbourg'), /     ('Rennes', 'Nice'), /     ('Lille', 'Toulouse'), /     ('Nantes', 'Marseille'), / ] /  / all_results = [] /  / for s`

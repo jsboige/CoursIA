@@ -1,8 +1,9 @@
 name: Markdown claims anchored to previous output (advisory)
 
-# Durable anti-regression advisory for the c.290 / c.331 pathologie:
-# "markdown prose cites quantitative values that contradict the output
-# of the previous code cell". Two open PRs in the same week exhibited
+# Durable anti-regression advisory for two prose/output hazards:
+# - markdown cites numeric values absent from nearby code outputs;
+# - an explicit named relation is contradicted or left unproved by those outputs.
+# Two open PRs in the same week exhibited the first class:
 # this:
 #   - PR #11435 (FT-02-QLoRA-Quantization.ipynb c10/c20)
 #   - c.290 LSTM-vol notebook (M15)
@@ -54,7 +55,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 1
+          # The detector requires merge-base(origin/main, HEAD). A depth-1
+          # checkout made the advisory abstain on ordinary pull requests.
+          fetch-depth: 0
 
       - uses: actions/setup-python@v5
         with:
@@ -89,17 +92,19 @@ jobs:
             echo "::warning::markdown-claims-output: merge-base origin/main HEAD introuvable -- detector abstains (shallow fetch or unanchored branch)." >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
-          CHANGED=$(git diff --name-only --diff-filter=MR -M50% "$BASE" HEAD -- '*.ipynb' | head -50)
-          if [ -z "$CHANGED" ]; then
+          mapfile -t CHANGED < <(git diff --name-only --diff-filter=MR -M50% "$BASE" HEAD -- '*.ipynb' | head -50)
+          if [ ${#CHANGED[@]} -eq 0 ]; then
             echo "exit=0" >> "$GITHUB_OUTPUT"
             echo "::notice::markdown-claims-output: aucun notebook modifie entre $BASE et HEAD -- rien a scanner." >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
-          # xargs chunk to dodge ARG_MAX on large diffs (> ~100 notebooks)
-          printf '%s\n' "$CHANGED" | xargs -n 30 python scripts/check_markdown_claims_output.py \
-            --json > /tmp/claims-output.json 2> /tmp/claims-output.err
+          # One bounded invocation preserves checker exit codes and emits one
+          # valid JSON document; the array also preserves spaces in paths.
+          python scripts/check_markdown_claims_output.py --json "${CHANGED[@]}" \
+            > /tmp/claims-output.json 2> /tmp/claims-output.err
           rc=$?
           echo "exit=$rc" >> "$GITHUB_OUTPUT"
+          echo "report=present" >> "$GITHUB_OUTPUT"
           if [ $rc -ne 0 ] && [ $rc -ne 1 ]; then
             echo "::warning::markdown-claims-output: detector exit code $rc (not 0/1) -- voir /tmp/claims-output.err." >> "$GITHUB_STEP_SUMMARY"
             cat /tmp/claims-output.err >> "$GITHUB_STEP_SUMMARY"
@@ -107,14 +112,22 @@ jobs:
           fi
           set -e
 
+      - name: Upload structured advisory report
+        if: steps.run.outputs.report == 'present'
+        uses: actions/upload-artifact@v4
+        with:
+          name: markdown-claims-output-report
+          path: /tmp/claims-output.json
+          retention-days: 7
+
       - name: Post advisory comment
         if: github.event_name == 'pull_request'
         uses: marocchino/sticky-pull-request-comment@v2
         with:
           header: markdown-claims-output-advisory
           message: |
-            ${{ steps.run.outputs.exit == '0' && '✅ No fabricated prose detected (in the notebooks this PR changed).' || steps.run.outputs.exit == 'abstain' && '⚠️ Detector abstained (merge-base introuvable, shallow fetch or unanchored branch).' || '⚠️ Potential fabricated prose in the notebooks this PR changed (markdown cites numbers absent from previous code output). Review against source — these are advisory, NOT a merge gate.' }}
+            ${{ steps.run.outputs.exit == '0' && '✅ No prose/output mismatch detected in the notebooks this PR changed.' || steps.run.outputs.exit == 'abstain' && '⚠️ Detector abstained (merge-base introuvable, shallow fetch or unanchored branch).' || '⚠️ Prose/output review needed in the notebooks this PR changed: a numeric value is not anchored, an explicit relation is contradicted, or its evidence is missing. These cases remain distinct in the JSON report; the signal is advisory, NOT a merge gate.' }}
 
-            c.415 (#11873): scope = notebooks CHANGED in this PR, not the whole corpus.
-            See `python scripts/check_markdown_claims_output.py --help` for re-running locally.
-            Detector rationale: c.290 / c.331 / PR #11435 pathologie.
+            Scope = notebooks CHANGED in this PR, not the whole corpus. Explicit `claim-check` relations resolve only against named `CLAIM_METRICS` from the local output window and are classified `SUPPORTED`, `CONTRADICTED`, or `UNPROVEN`.
+            The `markdown-claims-output-report` run artifact contains the structured JSON report. See `python scripts/check_markdown_claims_output.py --help` for re-running locally.
+            Detector rationale: c.290 / c.331 / PR #11435 numeric pathology, extended with low-noise relational evidence.

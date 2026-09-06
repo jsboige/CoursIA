@@ -32,6 +32,12 @@
     csharp_sha: e8dbf2b4af85013a9fc8ef6a4261a1d0632ce345
     content_python_sha: 44d6ddddc34614a5ac14d029b483e4daaf637baae069703641e4451b8346be93
     content_csharp_sha: d7817e193925b56ab5f547c02ec127c3bd2b8ec0ea66312c36ab9cf636b2159d
+  - date: "2026-09-05"
+    by: myia-po-2025:CoursIA
+    python_sha: 5444cd1c5b3127ad8d8d79b1b38f6dc84e60eb0e
+    csharp_sha: 9256f1534ff48ae3a723dae12f588a7dc825453e
+    content_python_sha: f3d6052c89c9d9fd4bb2712a4ec5a857c37a97200d9d1d6f6ce2560ec0b5edb7
+    content_csharp_sha: b4719f39ad3172acdc85438424082af9eb583fc073348d6648a2280f363fa023
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: 'Python = collections.deque (BFS) + numpy/matplotlib (viz plateau/PDB), construction PDB from-scratch. C# = pur BCL (Dictionary/Queue/Array.IndexOf + Linq) + System.Text viz textuelle, from-scratch. Verdict SOTA-OK (flip 2026-08-22, c.1301+335, myia-po-2025:CoursIA-2, issue #10382) : mislabel corrigige -- la reason anterieure concluat ''pedagogique from-scratch, pas de solveur tiers applicable'' des deux cotes, qui contredit RECOVERABLE-LOCAL. Verifie firsthand : 5 imports Python / 3 using C#, aucun moteur tiers. La construction de pattern database (BFS sur espace des patterns + Manhattan modifie) n''a pas d''implementation de reference packaged dans un des deux ecosystemes. From-scratch assumé des deux cotes, precedent GT-15 (PR #12312). parity_level preserve.'
   known_differences:

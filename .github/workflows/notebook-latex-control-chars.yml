@@ -1,0 +1,87 @@
+name: Notebook LaTeX Control Chars
+
+# Issue #14859 (myia-po-2026:CoursIA, 2026-09-06): LaTeX generated from a
+# non-raw Python string loses its backslash to an escape sequence --
+# `\theta` lands as TAB + "heta" inside the math scope. The JSON stays
+# valid, the notebook opens, every other guard passes, and the formula does
+# not render. Measured on main: 47 occurrences across 3 notebooks.
+#
+# This guard (ADVISORY, non-blocking -- the coordinateur decides):
+#   - scans every notebook touched by the PR with
+#     scripts/notebook_tools/check_latex_control_chars.py (3 discriminants:
+#     markdown cells only, inside $...$/$$...$$ scopes, known command
+#     queue after the control char; details + FP classes in the script
+#     docstring);
+#   - on occurrences: ::warning:: annotations (one per defect) + summary,
+#     exit 0 -- advisory organ, the PR gate does not fail;
+#   - on detector error (exit 2): ::warning:: NAMING the failure -- never
+#     a silent pass (#14849 lesson: an unreadable input is an unknown
+#     verdict, not a clean one);
+#   - runs its unit tests (positive AND negative controls -- the issue
+#     measured twice a wrong pattern set returning a clean zero).
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '**.ipynb'
+      - 'scripts/notebook_tools/check_latex_control_chars.py'
+      - '.github/workflows/notebook-latex-control-chars.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/notebook_tools/check_latex_control_chars.py'
+      - '.github/workflows/notebook-latex-control-chars.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: notebook-latex-control-chars-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  latex-control-chars:
+    # Route vers la jambe Linux auto-hebergee (cf notebook-cell-source-parses
+    # #13378 tranche 1) : garde Python pur, sans secret ni GITHUB_TOKEN.
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    timeout-minutes: 10
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
+    - name: Scan notebooks touched by PR (advisory)
+      env:
+        BASE: ${{ github.event.pull_request.base.sha }}
+        HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+      run: |
+        set -uo pipefail
+        if [ -z "$BASE" ] || [ "$BASE" = "$HEAD" ]; then
+          echo "No PR base SHA available; whole-repo scan (informational)."
+          python scripts/notebook_tools/check_latex_control_chars.py
+          exit 0
+        fi
+        # Detector exit codes: 0 clean, 1 occurrences (advisory here), 2 error.
+        if python scripts/notebook_tools/check_latex_control_chars.py --pr-diff "$BASE" "$HEAD"; then
+          echo "Aucun caractere de controle dans les portees math des notebooks touches."
+        else
+          RC=$?
+          if [ "$RC" = "2" ]; then
+            echo "::warning::Detecteur latex-control-chars en ERREUR (exit 2 -- notebook illisible ou args invalides) : verdict UNKNOWN, voir le log ci-dessus (#14849)."
+            exit 1
+          fi
+          echo "::warning::Caracteres de controle ayant avale un escape LaTeX dans les notebooks touches (advisory #14859) : corriger la cause (chaine raw) puis regenerer -- details dans le log ci-dessus."
+          exit 0
+        fi
+
+    - name: Run unit tests
+      run: |
+        python -m unittest scripts.tests.test_check_latex_control_chars -v

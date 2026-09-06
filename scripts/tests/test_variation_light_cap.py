@@ -2040,3 +2040,85 @@ def test_light_guard_on_spent_tier_budget_still_caps_13632():
     )
     assert out["tier_cap_reached"] is True
     assert out["cap_reached"] is True
+
+
+# --- #14849 : verrou 3 etats, never a permissive False -------------------
+#
+# Controles POSITIFS du detecteur : un detecteur se valide par ses faux
+# negatifs. Pre-fix, un replay absent/vide/garbage faisait crasher _load
+# (ou sys.exit) AVANT toute sortie JSON ; le reader workflow
+# `|| echo "False"` transformait le crash en "cap non atteint" et
+# re-autorisait silencieusement une LIGHT over budget. Chaque test
+# ci-dessous echoue sur le code pre-fix (crash au lieu d'un verdict).
+
+
+_LIGHT_CANDIDATE_BODY = "Grain: LIGHT/readme -- lane myia-po-2026:CoursIA"
+
+
+def test_replay_absent_yields_unknown_not_false(tmp_path, capsys):
+    # Le cas mesure par l'issue : gh pr list echoue, merged.json n'existe pas.
+    rc = vlc.main([
+        "--replay", str(tmp_path / "merged.json"), "--check-pr", "4242",
+        "--body", _LIGHT_CANDIDATE_BODY,
+    ])
+    assert rc == 0
+    out = json.loads(capsys.readouterr().out)
+    assert out["cap_reached"] is None  # pas False : on ne sait PAS
+    assert out["verdict"] == "unknown"
+    assert "reason" in out
+
+
+def test_replay_empty_file_yields_unknown_not_false(tmp_path, capsys):
+    # Fichier present mais vide (ex: redirection > avant echec d'ecriture).
+    (tmp_path / "merged.json").write_text("", encoding="utf-8")
+    rc = vlc.main([
+        "--replay", str(tmp_path / "merged.json"), "--check-pr", "4243",
+        "--body", _LIGHT_CANDIDATE_BODY,
+    ])
+    assert rc == 0
+    out = json.loads(capsys.readouterr().out)
+    assert out["cap_reached"] is None
+    assert out["verdict"] == "unknown"
+
+
+def test_replay_garbage_yields_unknown_not_false(tmp_path, capsys):
+    # JSON invalide (download tronque, page d'erreur HTML du hub, ...).
+    (tmp_path / "merged.json").write_text("{not json", encoding="utf-8")
+    rc = vlc.main([
+        "--replay", str(tmp_path / "merged.json"), "--check-pr", "4244",
+        "--body", _LIGHT_CANDIDATE_BODY,
+    ])
+    assert rc == 0
+    out = json.loads(capsys.readouterr().out)
+    assert out["cap_reached"] is None
+    assert out["verdict"] == "unknown"
+
+
+def test_replay_non_array_yields_unknown_not_false(tmp_path, capsys):
+    # JSON valide mais pas un tableau : pre-fix c'etait sys.exit(1) sans
+    # sortie JSON -> meme fabrique permissive "False" cote workflow.
+    (tmp_path / "merged.json").write_text('{"items": []}', encoding="utf-8")
+    rc = vlc.main([
+        "--replay", str(tmp_path / "merged.json"), "--check-pr", "4245",
+        "--body", _LIGHT_CANDIDATE_BODY,
+    ])
+    assert rc == 0
+    out = json.loads(capsys.readouterr().out)
+    assert out["cap_reached"] is None
+    assert out["verdict"] == "unknown"
+
+
+def test_replay_valid_empty_array_still_computes_legitimate_false(tmp_path, capsys):
+    # Controle du controle : un [] VALIDE n'est pas un unknown. C'est une
+    # vraie journee a zero mergees -> cap = max(1, 0//3) = 1, budget intact,
+    # premiere LIGHT de la lane legitime. Confondre ce cas avec unknown
+    # serait la regression inverse (paralysie du garde).
+    (tmp_path / "merged.json").write_text("[]", encoding="utf-8")
+    rc = vlc.main([
+        "--replay", str(tmp_path / "merged.json"), "--check-pr", "4246",
+        "--body", _LIGHT_CANDIDATE_BODY,
+    ])
+    assert rc == 0
+    out = json.loads(capsys.readouterr().out)
+    assert out["cap_reached"] is False  # calcule, pas fabrique
+    assert out.get("verdict", "assessed") == "assessed"

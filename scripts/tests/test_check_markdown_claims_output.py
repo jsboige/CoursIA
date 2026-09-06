@@ -206,6 +206,15 @@ class TestOutputExtraction:
         text = _output_output = _output_text([_stream_output("hello 0.24")])
         assert "hello 0.24" in text
 
+    def test_stream_output_nbformat_line_list(self):
+        output = _stream_output("unused")
+        output["text"] = [
+            "progress complete\n",
+            'CLAIM_METRICS {"first_optimal_sweep": 1}\n',
+        ]
+        text = _output_text([output])
+        assert "progress complete\nCLAIM_METRICS" in text
+
     def test_execute_result_output(self):
         text = _output_text([_exec_output("Params: 3,145,728")])
         assert "3,145,728" in text
@@ -1077,3 +1086,282 @@ class TestRealFabricationStillDetected:
         assert any("0,09" in r or "0.09" in r for r in raws), (
             f"Expected '0,09' / '0.09' substring in findings, got {raws}"
         )
+
+
+class TestRelationalClaims:
+    """Explicit named relations distinguish evidence from contradiction."""
+
+    @staticmethod
+    def _claim(**payload) -> str:
+        return (
+            "Conclusion calculée.\n"
+            f"<!-- claim-check: {json.dumps(payload)} -->"
+        )
+
+    @staticmethod
+    def _scan(tmp_path: Path, cells: list[dict]):
+        path = tmp_path / "relational.ipynb"
+        path.write_text(json.dumps(_mk_nb(cells)), encoding="utf-8")
+        return check_notebook(path)
+
+    def test_contradicted_acceleration_14_vs_16(self, tmp_path: Path):
+        result = self._scan(tmp_path, [
+            _code_cell("compare()", [
+                _stream_output(
+                    'CLAIM_METRICS {"plain_iterations": 14, '
+                    '"shaped_iterations": 16}\n'
+                ),
+            ]),
+            _md_cell(self._claim(
+                id="shaping-accelerates",
+                left="shaped_iterations",
+                op="<",
+                right="plain_iterations",
+            )),
+        ])
+
+        assert result["verdict"] == "CONTRADICTION_DETECTED"
+        claim = result["relational_claims"][0]
+        assert claim["status"] == "CONTRADICTED"
+        assert claim["left_value"] == 16
+        assert claim["right_value"] == 14
+        assert claim["code_cells"] == [0]
+
+    def test_supported_relation_and_boolean(self, tmp_path: Path):
+        result = self._scan(tmp_path, [
+            _code_cell("compare()", [
+                _exec_output(
+                    'CLAIM_METRICS {"plain_sweep": 8, "shaped_sweep": 3, '
+                    '"final_policy_equal": true}'
+                ),
+            ]),
+            _md_cell(
+                self._claim(
+                    id="earlier-policy",
+                    left="shaped_sweep",
+                    op="<",
+                    right="plain_sweep",
+                )
+                + "\n"
+                + self._claim(
+                    id="policy-preserved",
+                    left="final_policy_equal",
+                    op="==",
+                    right=True,
+                )
+            ),
+        ])
+
+        assert result["verdict"] == "CLEAN"
+        assert [c["status"] for c in result["relational_claims"]] == [
+            "SUPPORTED",
+            "SUPPORTED",
+        ]
+        assert result["stats"]["relational_claims"]["SUPPORTED"] == 2
+
+    def test_missing_metric_is_unproven(self, tmp_path: Path):
+        result = self._scan(tmp_path, [
+            _code_cell("compare()", [
+                _stream_output('CLAIM_METRICS {"plain_iterations": 14}\n'),
+            ]),
+            _md_cell(self._claim(
+                id="missing-shaped",
+                left="shaped_iterations",
+                op="<",
+                right="plain_iterations",
+            )),
+        ])
+
+        assert result["verdict"] == "CLAIM_UNPROVEN"
+        claim = result["relational_claims"][0]
+        assert claim["status"] == "UNPROVEN"
+        assert "shaped_iterations" in claim["reason"]
+
+    @pytest.mark.parametrize(
+        ("actual", "tolerance", "status"),
+        [(0.301, 0.01, "SUPPORTED"), (0.32, 0.01, "CONTRADICTED")],
+    )
+    def test_numeric_equality_tolerance(
+        self,
+        tmp_path: Path,
+        actual: float,
+        tolerance: float,
+        status: str,
+    ):
+        result = self._scan(tmp_path, [
+            _code_cell("measure()", [
+                _stream_output(
+                    f'CLAIM_METRICS {{"measured_regret": {actual}}}\n'
+                ),
+            ]),
+            _md_cell(self._claim(
+                id="regret-target",
+                left="measured_regret",
+                op="==",
+                right=0.3,
+                tolerance=tolerance,
+            )),
+        ])
+
+        assert result["relational_claims"][0]["status"] == status
+
+    @pytest.mark.parametrize(
+        "payload",
+        [
+            {"id": "bad-op", "left": "x", "op": "approximately", "right": 1},
+            {"id": "unknown-field", "left": "x", "op": "==", "right": 1,
+             "expression": "x == 1"},
+            {"left": "x", "op": "==", "right": 1},
+            {"id": "", "left": "x", "op": "==", "right": 1},
+            {"id": 7, "left": "x", "op": "==", "right": 1},
+            {"id": "ordered-tolerance", "left": "x", "op": "<", "right": 2,
+             "tolerance": 0.1},
+        ],
+    )
+    def test_invalid_contract_is_unproven_without_crash(
+        self,
+        tmp_path: Path,
+        payload: dict,
+    ):
+        result = self._scan(tmp_path, [
+            _code_cell("measure()", [
+                _stream_output('CLAIM_METRICS {"x": 1}\n'),
+            ]),
+            _md_cell(self._claim(**payload)),
+        ])
+
+        assert result["verdict"] == "CLAIM_UNPROVEN"
+        assert result["relational_claims"][0]["status"] == "UNPROVEN"
+
+    def test_huge_integer_metric_and_tolerance_do_not_crash(self, tmp_path: Path):
+        huge = 10**400
+        result = self._scan(tmp_path, [
+            _code_cell("measure()", [
+                _stream_output(f'CLAIM_METRICS {{"huge": {huge}}}\n'),
+            ]),
+            _md_cell(self._claim(
+                id="huge-int",
+                left="huge",
+                op="==",
+                right=huge,
+                tolerance=huge,
+            )),
+        ])
+
+        assert result["verdict"] == "CLEAN"
+        assert result["relational_claims"][0]["status"] == "SUPPORTED"
+
+    def test_boolean_numeric_equality_is_unproven(self, tmp_path: Path):
+        result = self._scan(tmp_path, [
+            _code_cell("measure()", [
+                _stream_output('CLAIM_METRICS {"flag": true}\n'),
+            ]),
+            _md_cell(self._claim(
+                id="typed-equality",
+                left="flag",
+                op="==",
+                right=1,
+            )),
+        ])
+
+        assert result["verdict"] == "CLAIM_UNPROVEN"
+        assert result["relational_claims"][0]["status"] == "UNPROVEN"
+
+    def test_fenced_claim_example_is_not_evaluated(self, tmp_path: Path):
+        result = self._scan(tmp_path, [
+            _code_cell("measure()", [
+                _stream_output('CLAIM_METRICS {"x": 1}\n'),
+            ]),
+            _md_cell(
+                "Exemple de syntaxe :\n```html\n"
+                + self._claim(id="example", left="x", op="==", right=2)
+                + "\n```"
+            ),
+        ])
+
+        assert result["verdict"] == "CLEAN"
+        assert result["relational_claims"] == []
+
+    def test_malformed_json_is_unproven(self, tmp_path: Path):
+        result = self._scan(tmp_path, [
+            _code_cell("measure()", [
+                _stream_output('CLAIM_METRICS {"x": 1}\n'),
+            ]),
+            _md_cell(
+                "Conclusion calculée.\n"
+                '<!-- claim-check: {"id":"broken","left":"x" -->'
+            ),
+        ])
+
+        assert result["verdict"] == "CLAIM_UNPROVEN"
+        claim = result["relational_claims"][0]
+        assert claim["status"] == "UNPROVEN"
+        assert "invalid claim-check JSON" in claim["reason"]
+
+    def test_explicit_claim_in_long_prose_is_still_checked(self, tmp_path: Path):
+        long_prose = "## Bibliographie\n" + "Contexte pédagogique détaillé. " * 50
+        result = self._scan(tmp_path, [
+            _code_cell("measure()", [
+                _stream_output('CLAIM_METRICS {"x": 1}\n'),
+            ]),
+            _md_cell(
+                long_prose
+                + "\n"
+                + self._claim(id="long-cell", left="x", op="==", right=1)
+            ),
+        ])
+
+        assert result["relational_claims"][0]["status"] == "SUPPORTED"
+        assert result["stats"]["skipped_literature"] == 1
+
+    def test_distant_metric_outside_window_does_not_prove_claim(self, tmp_path: Path):
+        cells = [
+            _code_cell("old_measure()", [
+                _stream_output('CLAIM_METRICS {"score": 0.9}\n'),
+            ]),
+            _code_cell("step_1()", [_stream_output("step one\n")]),
+            _code_cell("step_2()", [_stream_output("step two\n")]),
+            _code_cell("step_3()", [_stream_output("step three\n")]),
+            _md_cell(self._claim(
+                id="local-only",
+                left="score",
+                op=">",
+                right=0.5,
+            )),
+        ]
+        result = self._scan(tmp_path, cells)
+
+        claim = result["relational_claims"][0]
+        assert claim["status"] == "UNPROVEN"
+        assert claim["window"] == [3, 2, 1]
+
+    def test_numeric_finding_and_relation_coexist(self, tmp_path: Path):
+        result = self._scan(tmp_path, [
+            _code_cell("measure()", [
+                _stream_output(
+                    'observed=0.24\nCLAIM_METRICS {"final_policy_equal": true}\n'
+                ),
+            ]),
+            _md_cell(
+                "La valeur observée est 0,09.\n"
+                + self._claim(
+                    id="policy-preserved",
+                    left="final_policy_equal",
+                    op="==",
+                    right=True,
+                )
+            ),
+        ])
+
+        assert result["verdict"] == "FABRICATION_DETECTED"
+        assert result["findings"]
+        assert result["relational_claims"][0]["status"] == "SUPPORTED"
+
+    def test_plain_unannotated_prose_keeps_legacy_behavior(self, tmp_path: Path):
+        result = self._scan(tmp_path, [
+            _code_cell("print_domain()", [_stream_output("three actions\n")]),
+            _md_cell("Le domaine comprend trois actions possibles."),
+        ])
+
+        assert result["verdict"] == "CLEAN"
+        assert result["relational_claims"] == []
