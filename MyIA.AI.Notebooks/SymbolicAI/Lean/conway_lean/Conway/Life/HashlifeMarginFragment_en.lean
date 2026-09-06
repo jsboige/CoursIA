@@ -514,6 +514,7 @@ theorem hashlife_correct_margin_of_still_life (c : MacroCell) (k : Nat)
     evolveHashlifeFast (2^k) (c.toGrid (0, 0)) = evolve (2^k) (c.toGrid (0, 0)) :=
   hashlife_correct_margin_of_hcap c k h_central
     (fun t _ => hcap_of_still_life _ (canonical_sortDedup _) hfix t)
+
 /-! ## L3 geometry — bounding-box bounds and reconstruction level (slice 3, step 5)
 
 Scoping 3-(c) (c.5551298160) identifies the "geometry" leg of L3: at the
@@ -654,6 +655,133 @@ theorem gridToMacroCellWithOffset_level_le_of_box (g : Grid) (a b : Int × Int)
           (max ((gridRowMax (p₀ :: ps) - gridRowMin (p₀ :: ps) + 5).toNat)
                ((gridColMax (p₀ :: ps) - gridColMin (p₀ :: ps) + 5).toNat)) ≤ _
       exact ceilLog2_mono hside_le
+
+/-! ## L3 periodic class `T ∣ 2^k` — hcap of oscillators (tranche 3, step 6)
+
+Second L3 link **entirely closed**: the generalization of the `T = 1` chain
+to oscillators of period `T > 1` with dyadic period. The orbit is no longer
+constant — `evolve t g` cycles through the `T` phases — so the capture is
+proved **phase by phase**: each phase `evolve r g` (`r < T`) is itself a
+fixed point of `evolve T` (`evolve_phase_fix`), the trajectory reduces to
+the residue modulo `T` (`evolve_mod_period`), and the round-trip →
+transported fixed point scheme applies to each canonical phase. The
+geometric premise `T ∣ 2^level` of `jumpCapturedF_of_period_divides` is
+carried **explicitly**: it is a real constraint on the reconstruction level
+of each phase (the level must reach `log₂ T`), not a consequence — the
+upper level bound on the `gridFrame` side (step 5) is what makes it
+computable. -/
+
+/-- **Each phase is a fixed point of `evolve T`.** If `g` is `T`-periodic,
+    so is every phase `evolve r g`: evolution commutes with itself
+    (`evolve_add`), hence `evolve T (evolve r g) = evolve r (evolve T g)
+    = evolve r g`. This is the exact `hper` hypothesis the capture requires
+    at the level of each phase. -/
+theorem evolve_phase_fix {T : Nat} (g : Grid)
+    (hper : evolve T g = g) (r : Nat) :
+    evolve T (evolve r g) = evolve r g := by
+  rw [← evolve_add, Nat.add_comm T r, evolve_add, hper]
+
+/-- **Reduction of the trajectory to the residue modulo `T`.** For a
+    `T`-periodic pattern, the whole trajectory folds onto its `T` phases:
+    `evolve t g = evolve (t % T) g` — the quotient `t / T` of complete
+    periods vanishes by fixed point. This bounds the capture work from
+    "every `t ≤ 2^k`" to "each of the `T` phases". -/
+theorem evolve_mod_period {T : Nat} (g : Grid)
+    (hper : evolve T g = g) (t : Nat) :
+    evolve t g = evolve (t % T) g := by
+  have hsplit : t = T * (t / T) + t % T := (Nat.div_add_mod t T).symm
+  conv_lhs => rw [hsplit, evolve_add, Nat.mul_comm]
+  exact evolve_mulF_of_period _ (evolve_phase_fix g hper _) _
+
+/-- **Transport of the period-`T` fixed point to the reconstruction
+    (returned to the origin).** The exact analogue of
+    `still_life_fix_toGrid_zero` for period `T`: if `g` is canonical and
+    `T`-periodic, the reconstructed MacroCell returned to the origin is
+    itself a fixed point of `evolve T` — `toGrid_shift_grid` shuttle,
+    `evolve_shift` commutation, EQUALITY round-trip, fixed point. -/
+theorem periodic_fix_toGrid_zero (g : Grid) (hg : Canonical g) {T : Nat}
+    (hper : evolve T g = g) :
+    evolve T ((gridToMacroCellWithOffset g).2.toGrid (0, 0))
+      = (gridToMacroCellWithOffset g).2.toGrid (0, 0) := by
+  have hrt : (gridToMacroCellWithOffset g).2.toGrid (gridToMacroCellWithOffset g).1
+      = g := toGrid_gridToMacroCellWithOffset_eq g hg
+  have hshift : (gridToMacroCellWithOffset g).2.toGrid (0, 0)
+      = shift (0 - (gridToMacroCellWithOffset g).1.1,
+               0 - (gridToMacroCellWithOffset g).1.2)
+          ((gridToMacroCellWithOffset g).2.toGrid (gridToMacroCellWithOffset g).1) :=
+    toGrid_shift_grid _ 0 0 _ _
+  rw [hshift, ← evolve_shift, hrt, hper]
+
+/-- **Capture of the reconstruction of a periodic phase.** For any
+    canonical phase `g` of a `T`-periodic oscillator (`T > 1` a fortiori
+    `0 < T`), whose reconstruction level divides the jump horizon
+    (`T ∣ 2^level`), the reconstruction satisfies the jump predicate —
+    this is `jumpCapturedF_of_period_divides` consumed at the
+    reconstruction level, with the three hypotheses now available: wf
+    (`buildFromGrid_wf`), level (`1 ≤ lvl` as soon as `g ≠ []`, n-aware
+    bound) and period-`T` fixed point (`periodic_fix_toGrid_zero`). Empty
+    case: the reconstruction is a dead level-0 leaf, decided by the kernel. -/
+theorem jumpCapturedF_reconstruction_of_period (g : Grid) (hg : Canonical g)
+    {T : Nat} (hT0 : 0 < T) (hper : evolve T g = g)
+    (hdiv : T ∣ 2 ^ (gridToMacroCellWithOffset g).2.level) :
+    jumpCapturedF (gridToMacroCellWithOffset g).2 = true := by
+  by_cases hne : g = []
+  · subst hne
+    decide
+  · have hwf : ((gridToMacroCellWithOffset g).2).wf = true := by
+      unfold gridToMacroCellWithOffset
+      exact buildFromGrid_wf g _ _ _
+    have hlvl : 1 ≤ (gridToMacroCellWithOffset g).2.level := by
+      have hN := gridToMacroCellWithOffsetN_level_gt_n 2 g hne
+      rw [gridToMacroCellWithOffsetN_le_two_eq 2 g (by omega)] at hN
+      cases hL : (gridToMacroCellWithOffset g).2.level with
+      | zero => rw [hL] at hN; exact absurd hN (by decide)
+      | succ m => omega
+    exact jumpCapturedF_of_period_divides _ hwf hlvl hT0
+      (periodic_fix_toGrid_zero g hg hper) hdiv
+
+/-- **hcap of the periodic class, whole trajectory.** For a canonical
+    oscillator of period `T > 1` whose **every phase** has a reconstruction
+    level divisible by `T` (in the sense `T ∣ 2^level`), every instant `t`
+    (a fortiori every `t ≤ 2^k`) is captured: the trajectory reduces to the
+    phase `t % T` (`evolve_mod_period`), the phase is canonical
+    (`canonical_evolve_of_pos`, or `g` itself for the zero phase), a fixed
+    point of `evolve T` (`evolve_phase_fix`), and its reconstruction is
+    captured. The divisibility premise is finite: it bears on the `T`
+    phases only, not on the infinite trajectory. -/
+theorem hcap_of_period (g : Grid) (hg : Canonical g) {T : Nat} (hT0 : 0 < T)
+    (hper : evolve T g = g)
+    (hdiv : ∀ i, i < T →
+      T ∣ 2 ^ (gridToMacroCellWithOffset (evolve i g)).2.level) :
+    ∀ t, jumpCapturedF (gridToMacroCellWithOffset (evolve t g)).2 = true := by
+  intro t
+  rw [evolve_mod_period g hper t]
+  have hr : t % T < T := Nat.mod_lt _ hT0
+  have hcan : Canonical (evolve (t % T) g) := by
+    rcases Nat.eq_zero_or_pos (t % T) with h0 | hpos
+    · rw [h0]
+      simpa using hg
+    · exact canonical_evolve_of_pos hpos _
+  have hfix : evolve T (evolve (t % T) g) = evolve (t % T) g :=
+    evolve_phase_fix g hper _
+  exact jumpCapturedF_reconstruction_of_period _ hcan hT0 hfix (hdiv _ hr)
+
+/-- **L3 closed for the periodic class `T ∣ 2^k`: Hashlife correctness of
+    oscillators.** Assembly corollary — the second case of the P4.4
+    decomposition where the L3 link is **entirely proved**: for any
+    MacroCell whose grid returned to the origin is an oscillator of period
+    `T > 1` (every phase of divisible level), the global equality
+    `hashlife_correctN` applies at any horizon `2^k` under `centralCorrect`.
+    The class covers the multi-cycle witnesses of the bestiary (blinker
+    `T = 2`, toad `T = 2`, lighthouse `T = 3` as soon as `T ∣ 2^level`). -/
+theorem hashlife_correct_margin_of_period (c : MacroCell) (k : Nat)
+    (h_central : centralCorrect c k) {T : Nat} (hT0 : 0 < T)
+    (hper : evolve T (c.toGrid (0, 0)) = c.toGrid (0, 0))
+    (hdiv : ∀ i, i < T →
+      T ∣ 2 ^ (gridToMacroCellWithOffset (evolve i (c.toGrid (0, 0)))).2.level) :
+    evolveHashlifeFast (2^k) (c.toGrid (0, 0)) = evolve (2^k) (c.toGrid (0, 0)) :=
+  hashlife_correct_margin_of_hcap c k h_central
+    (fun t _ => hcap_of_period _ (canonical_sortDedup _) hT0 hper hdiv t)
 
 /-! ## Sanity checks on the bestiary
 
