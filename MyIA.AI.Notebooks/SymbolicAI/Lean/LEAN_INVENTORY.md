@@ -12,7 +12,9 @@ toolchain 4.32.1). Colonne *sorry (production)* = métrique CI `standalone-tacti
 [anti-regression.md §instruments](../../.claude/rules/anti-regression.md)).
 
 **Date de refresh** : 2026-08-27 (commit `dbcedc9599`, cycle c.649). Refresh précédent :
-2026-07-15 (avant convergence 4.32.1).
+2026-07-15 (avant convergence 4.32.1). Ajout ponctuel 2026-09-05 : ligne
+`hecke_lean` (#14784, premier lake sur la cible 4.33.0 de #14773 — port pédagogique
+FLT, autonomous, 0 sorry) sans refresh complet des autres lignes.
 
 ## Résumé
 
@@ -27,7 +29,8 @@ toolchain 4.32.1). Colonne *sorry (production)* = métrique CI `standalone-tacti
 | `galois_lean` | v4.32.1 | 0 | 3 | 1 | REF (vendored) | préprint M₂₃ |
 | `calibration_lean` | v4.32.1 | 0³ | 9 | 1 | HARNESS | #1764 |
 | `mathlib_examples` | v4.32.1 | 0 | 4 | 0 | REF | référence |
-| **Total** | — | **12** | **249** | — | — | — |
+| `hecke_lean` | v4.33.0 | 0 | 4 | 0 | PEDA/REF | #14784, #14771 |
+| **Total** | — | **12** | **253** | — | — | — |
 
 ¹ `conway_lean` : **1 distinct** sorry (cible de prover intentionnelle dans
 `Conway/Life/HashlifeCorrectness.lean` — sous-but auto-contenu destiné au harnais de preuve
