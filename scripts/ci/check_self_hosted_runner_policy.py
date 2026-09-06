@@ -220,6 +220,14 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     "pr-gate-rerun.yml",
     "regression-guard.yml",
     "render-volume-delta-advisory.yml",
+    # registre TRANCHE7 (demande user 2026-09-05, owner myia-po-2023:CoursIA)
+    #   : vehicule workflow_dispatch-ONLY servant de cible d'identite au
+    #   check-run absorbe par fast-lane (registre TRANCHE7) et de re-run
+    #   manuel self-test sur main. Detecteur de prose repetee
+    #   intra-notebook (detect_repeated_prose.py), advisory pur-Python
+    #   stdlib-only, label signe, jamais exit != 0, aucun secret.
+    #   Rollback = revert de la PR (l'entree disparait de l'allowlist).
+    "repeated-prose-advisory.yml",
     "scripts-tests.yml",
     "series-naming-gate.yml",
     "stale-base-warning.yml",

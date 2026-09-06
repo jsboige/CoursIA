@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# ARCHIVED: 2026-02 (consolidation genai-stack) -- see scripts/genai-stack/_archive/ARCHIVE_README.md
+# DISPOSITION: superseded | Successor: core/comfyui_client.py | Reason: 1418 lignes, remplace par core/comfyui_client.py (269 lignes)
+#
 """
 ComfyUI Client Helper - Utilitaire complet pour investigations ComfyUI
 
@@ -546,7 +549,7 @@ class InvestigationUtils:
         """Exécute une commande dans le container Docker"""
         try:
             full_command = f"docker exec {self.container_name} bash -c '{command}'"
-            result = subprocess.run(full_command, shell=True, capture_output=True, text=True)
+            result = subprocess.run(full_command, shell=True, capture_output=True, text=True, encoding="utf-8", errors="replace")
             return result.stdout, result.stderr, result.returncode
         except Exception as e:
             return "", str(e), 1

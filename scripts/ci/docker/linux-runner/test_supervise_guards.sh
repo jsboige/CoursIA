@@ -17,9 +17,17 @@ LOG="$TEST_DIR/test.log"
 ok() { echo "  PASS: $1"; }
 ko() { echo "  FAIL: $1"; }
 
-# Stubs docker + gh + ps.
-cat > "$TEST_DIR/bin/docker" <<'STUB'
+# Stubs docker + gh + ps. Le stub docker simule une image A JOUR pour le
+# garde de fraicheur #14801 : au probe `run --entrypoint sha256sum`, il rend
+# le sha256 du VRAI entrypoint.sh sibling (bake a la generation du stub).
+# STUB_IMG_ENTRYPOINT_SHA force un ecart pour tester le refus (test 9).
+REPO_ENTRYPOINT_SHA="$(sha256sum "$SCRIPT_DIR/entrypoint.sh" 2>/dev/null | awk '{print $1}')"
+cat > "$TEST_DIR/bin/docker" <<STUB
 #!/usr/bin/env bash
+if [ "\$1" = "run" ]; then
+  echo "\${STUB_IMG_ENTRYPOINT_SHA:-$REPO_ENTRYPOINT_SHA}  /opt/runner/entrypoint.sh"
+  exit 0
+fi
 exit 0
 STUB
 chmod +x "$TEST_DIR/bin/docker"
@@ -191,10 +199,7 @@ if echo "$@" | grep -q 'actions/runners'; then echo '{"runners":[]}'; exit 0; fi
 exit 0
 STUB
   chmod +x "$TEST_DIR/bin7/gh"
-  cat > "$TEST_DIR/bin7/docker" <<'STUB'
-#!/usr/bin/env bash
-exit 0
-STUB
+  cp "$TEST_DIR/bin/docker" "$TEST_DIR/bin7/docker"
   chmod +x "$TEST_DIR/bin7/docker"
   cp "$TEST_DIR/bin/ps" "$TEST_DIR/bin7/ps"
   export PATH="$TEST_DIR/bin7:$PATH"
@@ -256,5 +261,47 @@ STUB
   else
     ko "renvoi vers epinglage attendu"
   fi
+)
+echo ""
+
+# --- Test 9 : garde de fraicheur -- image perimee refuse (#14801) -----
+echo "Test 9 : start refuse si entrypoint de l'image != checkout (#14801)"
+(
+  cd "$SCRIPT_DIR"
+  unset PS_OUTPUT
+  mkdir -p "$TEST_DIR/state-9"
+  STUB_IMG_ENTRYPOINT_SHA=f0000000000000000000000000000000000000000000000000000000000000f00
+  export STUB_IMG_ENTRYPOINT_SHA
+  rc="$(run_supervise 'start 1' 'test-prefix-9' "$TEST_DIR/state-9" 2>&1 | head -1 | sed 's/rc=//')"
+  err="$(cat "$TEST_DIR/last.err")"
+  if [ "$rc" != "0" ] && echo "$err" | grep -q "PERIMEE" && echo "$err" | grep -q "docker build -t"; then
+    ok "image perimee refusee avec la commande de rebuild (rc=$rc)"
+  else
+    ko "refus attendu sur image perimee, rc=$rc err=$err"
+  fi
+  unset STUB_IMG_ENTRYPOINT_SHA
+)
+echo ""
+
+# --- Test 10 : garde de fraicheur -- image a jour ne bloque pas -----
+echo "Test 10 : start passe le garde quand l'image est a jour (#14801)"
+(
+  cd "$SCRIPT_DIR"
+  unset PS_OUTPUT
+  export PATH="$TEST_DIR/bin:$PATH"
+  export COURSIA_RUNNER_NAME_PREFIX="test-prefix-10"
+  export COURSIA_RUNNER_STATE_DIR="$TEST_DIR/state-10"
+  mkdir -p "$TEST_DIR/state-10"
+  timeout --kill-after=1 2 bash "$SCRIPT_DIR/supervise.sh" start 1 >"$TEST_DIR/out-10.log" 2>"$TEST_DIR/last.err" &
+  TPID=$!
+  sleep 0.7
+  if grep -q "slots lances" "$TEST_DIR/out-10.log" && ! grep -q "PERIMEE" "$TEST_DIR/last.err"; then
+    ok "image a jour : garde passe, slots lances"
+  else
+    ko "le garde a tort ou le start a echoue, out=$(cat "$TEST_DIR/out-10.log") err=$(cat "$TEST_DIR/last.err")"
+  fi
+  pkill -P $TPID 2>/dev/null
+  pkill -f 'supervise.sh start' 2>/dev/null
+  wait 2>/dev/null
 )
 echo ""

@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# ARCHIVED: 2026-02 (consolidation genai-stack) -- see scripts/genai-stack/_archive/ARCHIVE_README.md
+# DISPOSITION: superseded | Successor: genai.py docker start | Reason: Deploiement one-shot
+#
 """
 deploy-comfyui-auth.py - Script de déploiement one-liner robuste pour ComfyUI-Login
 
@@ -112,7 +115,7 @@ class DeploymentManager:
         try:
             result = subprocess.run(
                 ["docker", "ps", "--filter", f"name={CONTAINER_NAME}", "--format", "{{.Names}}"],
-                capture_output=True, text=True
+                capture_output=True, text=True, encoding="utf-8", errors="replace"
             )
             if CONTAINER_NAME in result.stdout.strip():
                 if self.args.force:
@@ -151,7 +154,7 @@ class DeploymentManager:
                 # On utilise docker exec pour vérifier l'état interne
                 result = subprocess.run(
                     ["docker", "exec", CONTAINER_NAME, "curl", "-s", "-o", "/dev/null", "-w", "%{http_code}", "http://localhost:8188"],
-                    capture_output=True, text=True
+                    capture_output=True, text=True, encoding="utf-8", errors="replace"
                 )
                 status_code = result.stdout.strip()
                 

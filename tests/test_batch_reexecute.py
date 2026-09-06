@@ -3,16 +3,22 @@
 test_batch_reexecute.py — garde de vraisemblance et cwd explicite (#14356).
 
 Couvre :
-  - _output_census : recensement outputs / image/png, abstention si illisible
+  - _output_census : recensement outputs / image/png / volume par type MIME,
+    abstention si illisible
   - _degradation : ne signale qu'une CHUTE, et seulement avec une reference
+    (comptes images/outputs, volume MIME -- l'axe qui voit les talons que le
+    comptage glorifie en hausse)
   - execute_notebook : un papermill sortant 0 en ayant perdu les images rend
-    DEGRADED et restaure la sauvegarde
+    DEGRADED et restaure la sauvegarde ; idem quand un talon HTML remplace la
+    charge utile alors que le compte d'outputs MONTE
   - execute_notebook : --cwd transmis a papermill, valeur selon cwd_mode
 
-Le troisieme test est la reproduction du defaut mesure le 2026-09-02 sur
-``01-5-Qwen-Image-Edit.ipynb`` : 9 s, 0 image, ``SUCCESS`` affiche, tous les
-gardes CI verts. C'est le seul cas ou le code de sortie ment sans qu'aucun
-autre signal ne bronche.
+Les reproductions sont les deux defauts mesures : 2026-09-02 sur
+``01-5-Qwen-Image-Edit.ipynb`` (9 s, 0 image, ``SUCCESS`` affiche) et
+2026-09-03 sur ``Infer-7-Skills-IRT.ipynb`` (``dot`` absent : six graphes de
+facteurs remplaces par des talons ``Graphviz non disponible``, outputs en
+HAUSSE, ``text/html`` 194 409 -> 6 856). Ce sont les deux seuls cas ou le
+code de sortie ment sans qu'aucun autre signal ne bronche.
 
 Usage :
     pytest tests/test_batch_reexecute.py -v
@@ -33,12 +39,21 @@ import batch_reexecute  # noqa: E402
 from batch_reexecute import _degradation, _output_census  # noqa: E402
 
 
-def _nb(n_images: int = 0, n_text: int = 0) -> dict:
-    """Minimal notebook carrying the requested output census."""
+def _nb(n_images: int = 0, n_text: int = 0, html_chars: int = 0,
+        n_html: int = 1) -> dict:
+    """Minimal notebook carrying the requested output census.
+
+    ``html_chars`` spreads ``n_html`` ``text/html`` payloads of that many
+    characters each (list-of-lines form, as nbformat stores it), so volume
+    collapses can be reproduced without six-figure literals in the source.
+    """
     outputs = [{"output_type": "display_data", "data": {"image/png": "iVBORw0KGgo="}}
                for _ in range(n_images)]
     outputs += [{"output_type": "stream", "name": "stdout", "text": ["ok\n"]}
                 for _ in range(n_text)]
+    for _ in range(n_html if html_chars > 0 else 0):
+        outputs.append({"output_type": "display_data",
+                        "data": {"text/html": ["g" * html_chars]}})
     return {
         "cells": [{"cell_type": "code", "source": ["pass"],
                    "execution_count": 1, "outputs": outputs, "metadata": {}}],
@@ -56,7 +71,19 @@ def _write(path: Path, nb: dict) -> Path:
 
 def test_census_counts_images_and_outputs(tmp_path: Path) -> None:
     nb = _write(tmp_path / "a.ipynb", _nb(n_images=2, n_text=3))
-    assert _output_census(nb) == {"readable": True, "outputs": 5, "images": 2}
+    assert _output_census(nb) == {
+        "readable": True, "outputs": 5, "images": 2,
+        "mime_chars": {"image/png": 2 * len("iVBORw0KGgo=")},
+    }
+
+
+def test_census_totals_mime_volume_across_outputs(tmp_path: Path) -> None:
+    """The volume axis: three ``text/html`` payloads sum into one per-MIME
+    total, whatever their number of lines."""
+    nb = _write(tmp_path / "a2.ipynb", _nb(n_text=1, html_chars=3000, n_html=3))
+    census = _output_census(nb)
+    assert census["outputs"] == 4
+    assert census["mime_chars"]["text/html"] == 3 * 3000
 
 
 def test_census_handles_null_outputs(tmp_path: Path) -> None:
@@ -116,6 +143,49 @@ def test_degradation_abstains_when_either_side_unreadable() -> None:
     assert _degradation(populated, unreadable) == ""
 
 
+# --- _degradation, axe volume MIME (#14356, gap mesure sur Infer-7) ---
+
+def test_degradation_flags_mime_volume_collapse_despite_output_rise() -> None:
+    """The measured Graphviz incident: six factor graphs replaced by as many
+    ``<strong>Graphviz non disponible.</strong>`` stubs -- the output count
+    RISES (290 -> 314), the image count never moved, only the ``text/html``
+    volume (194 409 -> 6 856) tells the story."""
+    before = {"readable": True, "outputs": 290, "images": 0,
+              "mime_chars": {"text/html": 194409}}
+    after = {"readable": True, "outputs": 314, "images": 0,
+             "mime_chars": {"text/html": 6856}}
+    assert _degradation(before, after) == "text/html 194409 -> 6856"
+
+
+def test_degradation_silent_on_minor_mime_shrink() -> None:
+    """A re-render 10 % shorter (a shorter table, a terser repr) is variation,
+    not a stub."""
+    before = {"readable": True, "outputs": 5, "images": 0,
+              "mime_chars": {"text/html": 100000}}
+    after = {"readable": True, "outputs": 5, "images": 0,
+             "mime_chars": {"text/html": 90000}}
+    assert _degradation(before, after) == ""
+
+
+def test_degradation_mime_silent_below_volume_floor() -> None:
+    """Small payloads vary legitimately; without a floor a 1.5k -> 100 stub
+    would cry wolf on every terse notebook."""
+    before = {"readable": True, "outputs": 5, "images": 0,
+              "mime_chars": {"text/html": 1500}}
+    after = {"readable": True, "outputs": 5, "images": 0,
+             "mime_chars": {"text/html": 100}}
+    assert _degradation(before, after) == ""
+
+
+def test_degradation_handles_censuses_without_mime_axis() -> None:
+    """Censuses shaped before the volume axis (and handcrafted ones) must keep
+    working: absence of the key is absence of a reference, not a collapse."""
+    before = {"readable": True, "outputs": 4, "images": 0}
+    after = {"readable": True, "outputs": 4, "images": 0,
+             "mime_chars": {"text/html": 7000}}
+    assert _degradation(before, after) == ""
+
+
 # --- execute_notebook ---
 
 @pytest.fixture
@@ -149,6 +219,22 @@ def test_zero_exit_with_lost_images_is_degraded(tmp_path: Path, fake_papermill) 
     assert "images 2 -> 0" in result["error"]
     # The backup is restored: a green-looking empty notebook is worse than none.
     assert _output_census(nb)["images"] == 2
+    assert not nb.with_suffix(".ipynb.bak").exists()
+
+
+def test_zero_exit_with_stubbed_html_is_degraded(tmp_path: Path, fake_papermill) -> None:
+    """The 2026-09-03 reproduction: papermill exits 0, the output count RISES
+    (a stub is one more output, not one fewer), images never existed -- only
+    the per-MIME volume names the collapse. The backup must be restored."""
+    nb = _write(tmp_path / "d2.ipynb", _nb(n_text=2, html_chars=65000, n_html=3))
+    # 3 riches payloads deviennent 6 talons : outputs 5 -> 8, volume /28.
+    fake_papermill(_nb(n_text=2, html_chars=65000 // 28, n_html=6))
+
+    result = batch_reexecute.execute_notebook(nb, "python3", 60)
+
+    assert result["status"] == "DEGRADED"
+    assert "text/html" in result["error"]
+    assert _output_census(nb)["mime_chars"]["text/html"] == 3 * 65000
     assert not nb.with_suffix(".ipynb.bak").exists()
 
 
