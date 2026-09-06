@@ -120,6 +120,34 @@ export MSYS2_ARG_CONV_EXCL='*'
 
 die() { echo "ERREUR: $*" >&2; exit 1; }
 
+# Contexte de build du runner : le dossier qui porte ce script porte aussi
+# Dockerfile et entrypoint.sh -- le garde de fraicheur compare le sibling du
+# checkout d'ou l'operateur lance le superviseur a ce que porte l'image.
+RUNNER_CTX="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# #14801 Garde de fraicheur d'image. Un correctif d'entrypoint.sh merge mais
+# dont l'image n'a pas ete reconstruite est INERTE : #14385 (purge sparse au
+# demarrage du slot) est reste inerte 3 jours sur la moitie du parc (image du
+# daemon docker-ce WSL construite 5 h AVANT le merge, jamais rebatie), et ce
+# silence a produit les rouges fantomes du sparse-checkout empoisonne. Le
+# demarrage d'un pool est le seul point qui s'execute inconditionnellement
+# (un job annule ne joue aucun step post) : on y compare le sha256 du
+# entrypoint.sh de CE checkout a celui embarque dans l'image. La lecture
+# cote image passe par `docker run --entrypoint sha256sum` -- le Dockerfile
+# place le script a /opt/runner/entrypoint.sh et MSYS_NO_PATHCONV (exporte
+# plus haut) protege l'argument POSIX sous Git Bash.
+assert_image_fresh() {
+  local image="$1" build_cmd="$2"
+  local repo_sha img_sha
+  repo_sha="$(sha256sum "$RUNNER_CTX/entrypoint.sh" 2>/dev/null | awk '{print $1}')"
+  [ -n "$repo_sha" ] || die "entrypoint.sh introuvable a cote de supervise.sh ($RUNNER_CTX) -- lancer depuis un checkout du depot"
+  img_sha="$(docker run --rm --entrypoint sha256sum "$image" /opt/runner/entrypoint.sh 2>/dev/null | awk '{print $1}')"
+  [ -n "$img_sha" ] || die "lecture de /opt/runner/entrypoint.sh dans $image impossible (docker run --entrypoint sha256sum)"
+  [ "$repo_sha" = "$img_sha" ] || die "image $image PERIMEE : entrypoint.sh du checkout ($repo_sha) != entrypoint embarque ($img_sha).
+Un correctif merge mais non deploye est indiscernable d'un correctif absent (#14801, #14385). Reconstruire :
+    $build_cmd"
+}
+
 # #14259 Defaut 1+3 : compte et liste les PIDs des superviseurs actifs du
 # meme `NAME_PREFIX`. La cle est `PPID==1` : un superviseur est le parent
 # direct d'un slot_loop fork (mesure : PPID 72469 = LE superviseur ;
@@ -220,6 +248,7 @@ cmd_start() {
   docker image inspect "$IMAGE" >/dev/null 2>&1 \
     || die "image $IMAGE absente -- construire d'abord :
     docker build -t $IMAGE scripts/ci/docker/linux-runner/"
+  assert_image_fresh "$IMAGE" "docker build -t $IMAGE scripts/ci/docker/linux-runner/"
   docker volume create "$TOOLCACHE_VOLUME" >/dev/null \
     || die "volume $TOOLCACHE_VOLUME impossible a creer -- docker volume create"
   # #14259 Defaut 1 : garde d'idempotence. `pgrep` n'existe PAS sous Git
@@ -368,6 +397,7 @@ cmd_waiters() {
   docker image inspect "$IMAGE" >/dev/null 2>&1 \
     || die "image $IMAGE absente -- construire d'abord :
     docker build -t $IMAGE scripts/ci/docker/linux-runner/"
+  assert_image_fresh "$IMAGE" "docker build -t $IMAGE scripts/ci/docker/linux-runner/"
   [ -f "$STOP_FILE" ] && die "sentinel STOP pose -- arreter d'abord ($0 stop)"
   # Idempotence propre a la famille waiters : le garde de `start` filtre
   # `supervise.sh start` et ne voit pas `waiters`. Verrou porte par le pid
@@ -396,6 +426,9 @@ cmd_lean() {
   docker image inspect "$LEAN_IMAGE" >/dev/null 2>&1 \
     || die "image $LEAN_IMAGE absente -- construire d'abord :
     docker build -t $LEAN_IMAGE -f scripts/ci/docker/linux-runner/Dockerfile.lean scripts/ci/docker/linux-runner/"
+  # Dockerfile.lean FROM coursia-linux-runner : l'entrypoint est herite de la
+  # base -- un ecart pointe soit vers l'image lean, soit vers sa base.
+  assert_image_fresh "$LEAN_IMAGE" "docker build -t $LEAN_IMAGE -f scripts/ci/docker/linux-runner/Dockerfile.lean scripts/ci/docker/linux-runner/"
   [ -f "$STOP_FILE" ] && die "sentinel STOP pose -- arreter d'abord ($0 stop)"
   # Idempotence calquee sur cmd_waiters : le garde PPID de `start` filtre
   # `supervise.sh start` et ne verrait pas `lean`. Verrou par pid file.
