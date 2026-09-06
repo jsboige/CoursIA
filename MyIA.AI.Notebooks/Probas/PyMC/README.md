@@ -138,7 +138,7 @@ Ces corrections sont **éditoriales** (prose, pas de modification des figures su
 | 18 | [PyMC-18-Change-Point](PyMC-18-Change-Point.ipynb) | 50 min | Change-point bayésien, `DiscreteUniform` + `switch`, catastrophes minières (Poisson), entropie |
 | 19 | [PyMC-19-Survival-Analysis](PyMC-19-Survival-Analysis.ipynb) | 50 min | Analyse de survie, exponentiel conjugué (Gamma), Weibull `k` inféré directement (NUTS), sélection LOO (arviZ), censure à droite exécutée (naïf vs `S(c_i)` vs Kaplan–Meier) |
 
-> **Théorie de la décision** : les notebooks décisionnels (utilité espérée, EVPI, MDPs, bandits) forment désormais une sous-série autonome dans [DecisionTheory/PyMC/](../DecisionTheory/PyMC/README.md) (1 à 7), miroir Python de [DecisionTheory/Infer/](../DecisionTheory/DecInfer/README.md).
+> **Théorie de la décision** : les notebooks décisionnels (utilité espérée, EVPI, MDPs, bandits, plus la jambe actuarielle) forment désormais une sous-série autonome dans [DecisionTheory/PyMC/](../DecisionTheory/PyMC/README.md) (1 à 12), miroir Python de [DecisionTheory/DecInfer/](../DecisionTheory/DecInfer/README.md).
 
 > **Numérotation** : la série PyMC est **numérotée 1:1** avec son jumeau C# Infer (PyMC-5 ↔ Infer-5 = inférence causale, PyMC-14 ↔ Infer-14 = séquences, etc.) pour faciliter la comparaison des deux moteurs sur les mêmes modèles. Le sujet de [Infer-10-Thompson-Sampling](../DecisionTheory/DecInfer/DecInfer-10-Thompson-Sampling.ipynb) est, côté Python, **intégré dans** [PyMC-7-Sequential](../DecisionTheory/PyMC/DecPyMC-7-Sequential.ipynb) (section bandits bayésiens MCMC) — d'où l'absence d'un PyMC-21 distinct.
 
@@ -162,7 +162,7 @@ flowchart TD
     class P6 causal;
 ```
 
-Le socle d'inférence (1-12) se suit en séquence ; le notebook **13 (Debugging)** est transversal — à consulter dès qu'une chaîne MCMC dysfonctionne, à n'importe quelle étape. La **théorie de la décision** (utilité espérée, EVPI, MDPs, bandits) forme désormais un fil rouge autonome dans la sous-série [DecisionTheory/PyMC/](../DecisionTheory/PyMC/README.md) (1 à 7) : elle peut se suivre seule si l'inférence bayésienne est déjà acquise. Le détail notebook-par-notebook figure dans la [Vue d'ensemble](#vue-densemble) ci-dessus.
+Le socle d'inférence (1-12) se suit en séquence ; le notebook **13 (Debugging)** est transversal — à consulter dès qu'une chaîne MCMC dysfonctionne, à n'importe quelle étape. La **théorie de la décision** (utilité espérée, EVPI, MDPs, bandits, plus la jambe actuarielle) forme désormais un fil rouge autonome dans la sous-série [DecisionTheory/PyMC/](../DecisionTheory/PyMC/README.md) (1 à 12) : elle peut se suivre seule si l'inférence bayésienne est déjà acquise. Le détail notebook-par-notebook figure dans la [Vue d'ensemble](#vue-densemble) ci-dessus.
 
 ## Installation
 
@@ -203,9 +203,9 @@ Notebooks 1-3 (fondations) puis 7-8 (classification/sélection) puis 9-12 (modè
 3. [PyMC-9](PyMC-09-Classification.ipynb) + [PyMC-10](PyMC-10-Model-Selection.ipynb) -> classification bayésienne
 4. [PyMC-11](PyMC-11-Topic-Models.ipynb) -> [PyMC-15](PyMC-15-Recommenders.ipynb) -> modèles avancés
 
-### Parcours théorie de la décision (~7h)
+### Parcours théorie de la décision (~10h)
 
-Ce parcours couvre l'utilité espérée, la valeur de l'information et les MDPs avec un moteur MCMC. Il se suit dans la sous-série [DecisionTheory/PyMC/](../DecisionTheory/PyMC/README.md) (notebooks 1 à 7).
+Ce parcours couvre l'utilité espérée, la valeur de l'information et les MDPs avec un moteur MCMC, puis s'étend à la jambe actuarielle (8-12). Il se suit dans la sous-série [DecisionTheory/PyMC/](../DecisionTheory/PyMC/README.md) (notebooks 1 à 12).
 
 1. [PyMC-1](../DecisionTheory/PyMC/DecPyMC-1-Utility-Foundations.ipynb) -> axiomes VNM
 2. [PyMC-2](../DecisionTheory/PyMC/DecPyMC-2-Utility-Money.ipynb) -> aversion au risque
@@ -315,7 +315,7 @@ Cette série vous a fait passer des **fondamentaux de l'inférence bayésienne**
 
 - **Lire et diagnostiquer une chaîne MCMC** — `pm.sample()` ne suffit pas ; ArviZ (`r_hat < 1.05`, `ess_bulk > 400`, trace plots, divergences) est devenu votre réflexe systématique, et [PyMC-06-Debugging](PyMC-06-Debugging.ipynb) votre référence pour les pannes de convergence.
 - **Choisir le bon moteur selon le modèle** — vous savez désormais **quand** l'échantillonnage MCMC (PyMC/NUTS, piloté par gradient, flexible sur presque tout modèle continu) est préférable au **message passing** sur graphe de facteurs (Infer.NET/EP, rapide sur les modèles conjugués et structurés), et inversement. Arbitrer entre ces deux familles d'algorithmes est une compétence de praticien.
-- **Relier inférence et décision** — la sous-série [DecisionTheory/PyMC/](../DecisionTheory/PyMC/README.md) (notebooks 1 à 7 : utilité espérée, EVPI/EVSI, MDPs, bandits) ferme la boucle : un posterior n'est pas une fin, c'est l'**input** d'une politique de décision optimale sous incertitude.
+- **Relier inférence et décision** — la sous-série [DecisionTheory/PyMC/](../DecisionTheory/PyMC/README.md) (notebooks 1 à 12 : utilité espérée, EVPI/EVSI, MDPs, bandits, jambe actuarielle) ferme la boucle : un posterior n'est pas une fin, c'est l'**input** d'une politique de décision optimale sous incertitude.
 
 ### Prochaines étapes
 
