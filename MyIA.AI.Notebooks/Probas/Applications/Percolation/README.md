@@ -1,6 +1,6 @@
 # Percolation supercritique
 
-[← Série Probas](../README.md)
+[← Série Probas](../../README.md)
 
 La **percolation de liens** sur un **tore fini** comme **proxy fini** du graphe
 transitif infini de la théorie : on mesure ce qui distingue le régime
