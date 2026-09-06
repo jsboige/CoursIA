@@ -15,7 +15,7 @@ Le mandat insiste : **« les identifiants exacts d'API sont à vérifier firstha
 |---|---|---|---|---|
 | **chat — principal** | `gpt-4` · `gpt-4-turbo` · `gpt-4o` · `gpt-4o-2024-08-06` · `gpt-4.1` | 128 + 33 + 152 + 2 + 10 = **325** | **`gpt-5.6-sol`** | flagship de la série 5.6 |
 | **chat — héritage** | `gpt-3.5` · `gpt-3.5-turbo` | 15 + 35 = **50** | **`gpt-5.6-sol`** (ou `gpt-5.6-terra`) | dernier remplacement du 3.5 |
-| **chat — mini** | `gpt-4o-mini` · `gpt-4o-mini.` | 235 + 1 = **236** | **`gpt-5.6-luna`** | taille *mini* (le « Luna » du user) |
+| **chat — mini** | `gpt-4o-mini` · `gpt-4o-mini.` · `gpt-4.1-mini` | 235 + 1 + 14 = **250** | **`gpt-5.6-luna`** | taille *mini* (le « Luna » du user) |
 | **chat — nano** | `gpt-4.1-nano` | **2** | **`gpt-5.6-luna`** | taille fine → même cible mini |
 | **transcribe** | `gpt-4o-transcribe` · `gpt-4o-mini-transcribe` | **28** | **`gpt-transcribe`** | transcription audio (aussi `gpt-live-transcribe`) |
 | **tts** | `gpt-4o-mini-tts` · `gpt-4o-mini-tts-2025-03-20` · `gpt-4o-mini-tts-2025-12-15` | 12 + 1 + 1 = **14** | **`gpt-audio-mini`** | synthèse vocale (aussi `gpt-audio-1.5`) |
@@ -25,11 +25,13 @@ Le mandat insiste : **« les identifiants exacts d'API sont à vérifier firstha
 
 **Sélectivité de la cible *principale*.** Dans la série 5.6, il n'existe **pas** d'identifiant nu `gpt-5.6` : la famille se décline en trois variantes nommées, confirmées par `GET /v1/models` et caractérisées par OpenRouter :
 
-| Variante | Rôle (description OpenRouter) | Prix prompt (OpenRouter) |
+| Variante | Rôle (description OpenRouter) | Prix prompt (OpenRouter, $/1M tokens) |
 |---|---|---|
-| **`gpt-5.6-sol`** | **flagship** — raisonnement complexe, codage, workflows agentiques | $0.000002/1M |
-| **`gpt-5.6-terra`** | équilibré — entre le flagship et le économique ; codage/raisonnement au quotidien | $0.000002/1M |
-| **`gpt-5.6-luna`** | **rapide et économe** — haut volume, tâches sensibles à la latence (chat, classification) | $0.0000002/1M (10× moins cher) |
+| **`gpt-5.6-sol`** | **flagship** — raisonnement complexe, codage, workflows agentiques | $2.00 |
+| **`gpt-5.6-terra`** | équilibré — entre le flagship et le économique ; codage/raisonnement au quotidien | $2.00 |
+| **`gpt-5.6-luna`** | **rapide et économe** — haut volume, tâches sensibles à la latence (chat, classification) | $0.20 (10× moins cher) |
+
+> **Unité** : le champ brut `pricing.prompt` d'OpenRouter est exprimé en **dollars par token** (`0.000002`) ; la colonne ci-dessus est convertie en **$ / 1M tokens** (× 10⁶ → `$2.00` / `$0.20`), l'unité de tout budget de re-exécution établi depuis cette table.
 
 Le « 5.6 principal » se traduit donc par **`gpt-5.6-sol`** (flagship), et le « Luna mini » par **`gpt-5.6-luna`** (confirmé économique/mini par son prix et sa description). `gpt-5.6-terra` est l'alternative équilibrée si l'on veut un modèle principal moins coûteux en latence.
 
@@ -37,6 +39,7 @@ Le « 5.6 principal » se traduit donc par **`gpt-5.6-sol`** (flagship), et le �
 
 - **OpenAI `GET /v1/models`** : la série `gpt-5` courante contient `gpt-5.6-sol`, `gpt-5.6-terra`, `gpt-5.6-luna` (et les versions antérieures `gpt-5.5`, `gpt-5.4`, `gpt-5.4-mini/nano`, `gpt-5.2`). La lignée `4.x` (`gpt-4`, `gpt-4o`, `gpt-4.1`, `gpt-4-turbo`, `gpt-3.5-turbo`, `gpt-4o-transcribe`, `gpt-4o-mini-tts`, `gpt-4o-realtime-preview`) est **toujours listée** (compatibilité) mais n'est **plus** la génération courante.
 - **OpenRouter `GET /api/v1/models`** : les variantes 5.6 portent des descriptions qui fixent le rôle (flagship `sol` / équilibrée `terra` / économique `luna`) et un prix qui identifie `luna` comme la taille mini (10× moins chère).
+- **`gpt-4.1-mini` vérifié firsthand (2026-09-06, ré-run API live)** : `openai/gpt-4.1-mini` est listé — description « *mid-sized model delivering performance competitive with GPT-4o at substantially lower latency and cost* », prix prompt **$0.40/1M**, positionné entre `gpt-4.1-nano` ($0.10/1M, « *fastest and cheapest* ») et `gpt-4.1` ($2.00/1M, flagship). Dans la série 5.6, `luna` ($0.20/1M) est la **seule** strate sous le prix flagship (sol/terra = $2.00) et sa description (« *high-volume, latency-sensitive tasks such as chat* ») est celle de la taille mini — la cible `gpt-4.1-mini → gpt-5.6-luna` est donc établie par rôle **et** par positionnement de prix, cohérente avec `gpt-4o-mini` et `gpt-4.1-nano`.
 - **Familles non-chat confirmées** (OpenAI `/v1/models`) : `gpt-transcribe`, `gpt-live-transcribe` (transcription) ; `gpt-audio-mini`, `gpt-audio-1.5` (synthèse) ; `gpt-realtime-2.1`, `gpt-realtime-2.1-mini` (temps réel) ; `text-embedding-3-small`, `text-embedding-3-large` (embeddings).
 
 ## Inventaire (état `main`, 2026-09-05)
