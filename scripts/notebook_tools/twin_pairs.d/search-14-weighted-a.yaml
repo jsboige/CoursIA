@@ -36,6 +36,13 @@
     csharp_sha: 31bfe385f948f0f69d3cda54067f73696607447d
     content_python_sha: 2adfd99c41d905a67d2093e6450151bcd2cb8cd373e0f5140676740c61626aff
     content_csharp_sha: d478f19b813a60e9da0fadd408ccb81e5055cec5f4108bd13cdb26350986349c
+  - date: "2026-09-07"
+    by: myia-po-2026:CoursIA
+    python_sha: ec9d88aaa9c3ed3eb3b0f12534e0c8b0d4d06636
+    csharp_sha: 31bfe385f948f0f69d3cda54067f73696607447d
+    content_python_sha: 9da03367b8539cc3ab4f15db67dacc44673b998593db12ff0347219536ce7592
+    content_csharp_sha: d478f19b813a60e9da0fadd408ccb81e5055cec5f4108bd13cdb26350986349c
+    reason: "PR #14824 (issue) : Search-03d c0 une ligne reconciliee (A* optimal exige h consistante pour la variante sans re-ouverture). Markdown-only, outputs precedents valides. C# 03d inchange : ses phrasings c3/c4 ('W=1 -> A* optimal, admissible') signales en residuel dans le body PR, hors enumeration de l'issue."
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: 'Python = heapq (min-heap) + itertools.product + random.Random(seed), from-scratch. C# = PriorityQueue<T, double> (.NET 6+) + Random(seed), from-scratch. Verdict SOTA-OK (flip 2026-08-22, c.1301+335, myia-po-2025:CoursIA-2, issue #10382) : mislabel corrigige -- la reason anterieure concluat ''pedagogique from-scratch, pas de solveur tiers applicable'' (Weighted A* = algorithme pedagogique), qui contredit RECOVERABLE-LOCAL. Verifie firsthand : 3 imports Python / 1 using C#, aucun moteur tiers. Le balayage W sur f(n) = g(n) + W*h(n) est le sujet meme du chapitre ; PriorityQueue/heapq sont deja les primitives canoniques de leurs ecosystemes respectifs. From-scratch assumé des deux cotes, precedent GT-15 (PR #12312). parity_level preserve.'
   known_differences:
