@@ -32,9 +32,16 @@
       csharp_sha: 12e541a0551b79ab86fa4782918f368d1704967b
       content_python_sha: bdf2afe35859b03eff172e592b6dfcd37cb1bfedf900fa5256b878e27de69c30
       content_csharp_sha: 435212faa6505cd87fd4588683d89d35aa9f9c212e24a590486ccae6f02638d9
+    - date: "2026-09-05"
+      by: myia-po-2026:CoursIA-2
+      python_sha: 33d3703bfded2f1ac286c06bb1a9c0ba13a04cc2
+      csharp_sha: 12e541a0551b79ab86fa4782918f368d1704967b
+      content_python_sha: d64b538c024f4d94b07f15505d34dcf445a524705c1ee89cb6d796edeefef232
+      content_csharp_sha: 435212faa6505cd87fd4588683d89d35aa9f9c212e24a590486ccae6f02638d9
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Python = ortools.sat.python.cp_model (OR-Tools CP-SAT 9.11, engine SOTA) + numpy + matplotlib + networkx (56 cellules : 26 code + 30 markdown, formulation CSP, 3 heuristiques Greedy/DSATUR/Welsh-Powell + CP-SAT exact, enumeration solutions, benchmark G(n,p) Erdos-Renyi). C# = Google.OrTools.Sat (NuGet, C# binding du MEME engine OR-Tools CP-SAT 9.11) + Tranche 1 from-scratch BCL pure (CanColor / k-coloriable, 0 NuGet) PRESERVEE (26 cellules : 12 code). Verdict SOTA-OK (lib-vs-lib native-both) : les deux cotes invoquent le MEME moteur CP-SAT 9.11 (ortools.sat.python.cp_model <-> Google.OrTools.Sat.CpModel). Prong-B (#3801) : hierarchie sur Erdos-Renyi G(25,0.5) -- Greedy sub-optimal (8-9), DSATUR=chi=7, CP-SAT prouve chi=7 Optimal. Le C# ajoute une section dediee paradoxe de Mycielski (graphes triangle-free) absente cote Python. parity_level: native-both preserve."
   known_differences:
+    - "Enrichissement markdown-only (2026-09-05, myia-po-2026:CoursIA-2, densite 679 -> 1410 c/cell) : 21 cellules markdown enrichies + 7 sections en APPEND + 2 interpretations inserees. Aucune cellule code modifiee (26/26 byte-identiques) ; le blob python a change uniquement par la prose pedagogique ajoutee."
     - "Socle pedagogique commun : coloration de graphes comme CSP canonique -- formulation (variable couleur par sommet, domaines 1..k, contraintes != sur les aretes), heuristiques (Greedy, DSATUR, Welsh-Powell) + calcul exact du nombre chromatique chi. Cas d'etude partagees : graphe de Petersen, dodecaedre, graphes aleatoires G(n,p) (benchmark Erdos-Renyi)."
     - "Lib-vs-lib : Python ET C# atteignent un moteur CP-SAT de production. Tranche 1 C# = backtracking from-scratch (CanColor / k-coloriable, 0 NuGet) ; Tranche 2 C# (#10382, 2026-08-11 po-2024) = Google.OrTools CP-SAT 9.11 (meme engine que ortools.sat.python.cp_model cote Python, minimize max_color + brisure de symetrie)."
     - "Tranche 2 native-both (#10382, 2026-08-11 po-2024) : CP-SAT confirme le chi exact sur les cas etalons (K4/K6/C5/C6/Petersen/K_{3,3}/M_3/M_4, tous Optimal <40ms = parite backtracking section 3). Prong-B (#3801) : hierarchie sur Erdos-Renyi G(25,0.5) -- Greedy sub-optimal (8-9), DSATUR=chi=7, CP-SAT prouve chi=7 Optimal. Verdict SOTA-OK : moteur reel invoque (statut Optimal). Tranche 1 from-scratch preservee."

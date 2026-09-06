@@ -34,6 +34,15 @@ occurrences whose count GREW are reported. A notebook that already carried
 such text keeps it: this is a ratchet, not a repo-wide scold. Pre-existing
 debt is surfaced by ``--all`` (advisory sweep), never by the gate.
 
+MACHINE_PATH is also matched on document and cell METADATA string values
+(``metadata.path``, or any metadata key whose value is a string), not only on
+cell outputs (#14513): a re-execution can leak an absolute path into
+``metadata.path`` without touching a single output, which the output-only gate
+read as ``0 regressed`` while the branch carried the path. The extension is
+kept to MACHINE_PATH -- metadata never carries a tool-failure banner, and the
+convention permits normalizing a metadata key by hand (secrets-hygiene rule 6)
+only because the gate has to be able to SEE it first.
+
 The sweep also ventilates a third class, ``DEGRADED_HINT`` (#11692): the two
 soft "non disponible / not available" motifs, which on an absolute sweep are
 the large majority of hits and are mostly DELIBERATE fallback banners. They
@@ -41,6 +50,24 @@ stay inside TOOL_FAILURE_PATTERNS for the gate (a 0 -> N jump on a branch is
 still signal) but are reported in their own count by ``--all`` and never
 summed into the TOOL_FAILURE total -- so an advisory sweep no longer reads
 as a cleanup backlog that is mostly noise.
+
+A third axis, ``CAPABILITY_DOWNGRADE`` (#14603), is ADVISORY and never gates:
+a re-execution on a machine without the capability the notebook was written
+for (GPU -> CPU) produces well-formed output -- "Device : cpu" is a correct
+execution report, not a failure banner, so the two gating classes are blind
+to it BY DESIGN. What makes the downgrade invisible rather than merely
+unclassified is the second half-turn: the witness line printed under
+``if gpu_available:`` disappears at the same time, so the output diff looks
+exactly like a legitimate re-execution. The finding is the COUPLE on one
+cell with byte-identical source: capability value regression AND
+witness-line disappearance. Founding replay: #14262 (be6a8c7f3b9e ->
+0ea56ae0f, GenAI/Audio 02-4-Demucs cells 10/31, cuda + "VRAM utilisee" ->
+cpu, VRAM gone) -- a state that existed TRANSIENTLY on the #14262 branch
+while the gate read 0 regressed; the branch's own final GPU re-exec (merged
+as 15c205323) restored cuda, which main still carries. The replay pair
+documents what this axis would have flagged had the branch merged mid-leg.
+A deliberate documented CPU run (RECOVERABLE-MACHINE verdict in the PR
+body) passes: the lift is written in the report line itself.
 
 Usage:
     python check_output_failure_text.py <base-ref> [--json]
@@ -192,6 +219,115 @@ _PATH_WITNESSES = (
     "/Users/jsboige/CoursIA/scripts",
 )
 
+# --- class 3 (ADVISORY, never gates): capability downgrade -------------------
+# #14603. Each half of the couple alone is legitimate: a value can move on a
+# same-tier machine swap, a witness line can vanish in an honest output
+# change reviewed as code. Only the couple on an UNCHANGED-SOURCE cell says
+# "same code, executed elsewhere, with less capability".
+#
+# Closed, witnessed order table. cuda > cpu is the measured instance
+# (#14262); fp16 -> fp32 and device-count -> 0 are the same FORM but have no
+# witnessed pair in the repo yet -- extend only with a witness + its replay
+# (the pattern-set philosophy above: a class that cannot be shown to fire is
+# indistinguishable from one that is unplugged).
+CAPABILITY_VALUE_RE = re.compile(
+    r"\bdevice\s*[:=]\s*['\"]?(cuda(?:\s*:\s*\d+)?|cpu)\b", re.IGNORECASE)
+CAPABILITY_ORDER = {"cuda": 2, "cpu": 1}
+
+# Witness lines: measured on origin/main 2026-09-04 ("VRAM utilisee" x53,
+# "GB VRAM" x144 inside GPU-name lines, "GPU : <Cap>" x36). The issue also
+# names "CUDA device" / "Using device": zero committed occurrences -- not
+# shipped without a witness.
+CAPABILITY_WITNESS_PATTERNS = (
+    re.compile(r"VRAM\s+utilis.e", re.IGNORECASE),
+    re.compile(r"\d+(?:\.\d+)?\s*GB\s+VRAM", re.IGNORECASE),
+    re.compile(r"GPU\s*[:=]\s*[A-Z]"),
+)
+
+# Founding downgrade replay (#14603): the CPU re-exec of #14262. Expected
+# floor measured firsthand: 02-4-Demucs cells 10 and 31 regress
+# (cuda + VRAM -> cpu, VRAM gone) while cell 4 was restored mid-range
+# (net cuda -> cuda, must NOT fire -- the upgrade guard below is what keeps
+# the restoration from being re-flagged in the 39f96fb82..0ea56ae0f
+# direction). The degraded head is branch-side history of the squash-merged
+# PR -- absent from any fresh clone (fetch-depth: 0 carries refs/heads
+# only) -- so the replay pair is pinned as a fixture carrying the real
+# cells verbatim, never read from git objects that may not be there.
+DOWNGRADE_REPLAY_FIXTURE = "demucs_downgrade_pair_14603.json"
+SELF_TEST_MIN_DOWNGRADE = 2
+
+
+def _cell_output_text(cell):
+    """Concatenated textual output of one code cell (stream, text/plain,
+    traceback) -- the per-cell view of what output_texts yields per output."""
+    parts = []
+    for out in cell.get("outputs", []) or []:
+        kind = out.get("output_type")
+        if kind == "stream":
+            text = out.get("text", "")
+            parts.append("".join(text) if isinstance(text, list) else str(text))
+        elif kind in ("execute_result", "display_data"):
+            plain = (out.get("data", {}) or {}).get("text/plain")
+            if plain is not None:
+                parts.append("".join(plain) if isinstance(plain, list)
+                             else str(plain))
+        elif kind == "error":
+            parts.append("\n".join(str(x) for x in (out.get("traceback", [])
+                                                    or [])))
+    return "\n".join(parts)
+
+
+def _cell_source(cell):
+    src = cell.get("source", "")
+    return "".join(src) if isinstance(src, list) else str(src)
+
+
+def _capability_values(text):
+    """Set of normalised capability values named in an output text
+    (subset of CAPABILITY_ORDER keys)."""
+    values = set()
+    for m in CAPABILITY_VALUE_RE.finditer(text):
+        values.add(m.group(1).lower().split(":")[0].strip())
+    return {v for v in values if v in CAPABILITY_ORDER}
+
+
+def _witness_count(text):
+    return sum(len(p.findall(text)) for p in CAPABILITY_WITNESS_PATTERNS)
+
+
+def capability_downgrades(base_nb, head_nb):
+    """Advisory findings (#14603): one per cell whose source is byte-identical
+    between base and head, whose best capability class strictly DROPPED, and
+    from which every witness line vanished. See the class-3 block above for
+    why the couple -- not either half -- is the finding."""
+    findings = []
+    if not base_nb or not head_nb:
+        return findings
+    base_cells = base_nb.get("cells", []) or []
+    head_cells = head_nb.get("cells", []) or []
+    for i in range(min(len(base_cells), len(head_cells))):
+        b_cell, h_cell = base_cells[i], head_cells[i]
+        if b_cell.get("cell_type") != "code" or h_cell.get("cell_type") != "code":
+            continue
+        if _cell_source(b_cell) != _cell_source(h_cell):
+            continue
+        b_text, h_text = _cell_output_text(b_cell), _cell_output_text(h_cell)
+        b_best = max((CAPABILITY_ORDER[v]
+                      for v in _capability_values(b_text)), default=0)
+        h_best = max((CAPABILITY_ORDER[v]
+                      for v in _capability_values(h_text)), default=0)
+        if not b_best > h_best:
+            continue
+        b_wit, h_wit = _witness_count(b_text), _witness_count(h_text)
+        if b_wit > 0 and h_wit == 0:
+            findings.append({
+                "cell": i,
+                "base": "/".join(sorted(_capability_values(b_text))) or "(absent)",
+                "head": "/".join(sorted(_capability_values(h_text))) or "(absent)",
+                "witness_lost": b_wit,
+            })
+    return findings
+
 
 def git(*args, cwd=None):
     """Run a git command, returning stdout (utf-8) or None on failure."""
@@ -279,8 +415,44 @@ def output_texts(nb):
                 yield i, "\n".join(str(x) for x in tb)
 
 
+def metadata_texts(nb):
+    """Yield (location_label, text) for every string-valued metadata key.
+
+    Document-level and cell-level surfaces the output-only scan cannot see.
+    A key is scanned because its VALUE is a string -- no name whitelist -- so
+    the next metadata key a re-execution leaks is caught the first time it is
+    introduced, not after somebody names it.
+
+    ``metadata.papermill.input_path`` / ``output_path`` are repo-relative or
+    basename (a pre-commit hook + secrets-hygiene rule 6) and so never match
+    the machine-path patterns (verified on the 1234 notebooks, issue #14513
+    precaution 1).
+
+    location_label: ``doc:<key>`` for document metadata, ``cell[<i>]:<key>``
+    for cell metadata.
+    """
+    md = nb.get("metadata", {}) or {}
+    if isinstance(md, dict):
+        for k, v in md.items():
+            if isinstance(v, str) and v:
+                yield "doc:" + str(k), v
+    for i, cell in enumerate(nb.get("cells", []) or []):
+        cmd = cell.get("metadata", {}) or {}
+        if isinstance(cmd, dict):
+            for k, v in cmd.items():
+                if isinstance(v, str) and v:
+                    yield "cell[%d]:%s" % (i, str(k)), v
+
+
 def scan(nb):
-    """{class: [(cell_index, matched_text), ...]} for one notebook."""
+    """{class: [(location, matched_text), ...]} for one notebook.
+
+    ``location`` is a cell index for output hits, or a metadata descriptor
+    (``doc:<key>`` / ``cell[<i>]:<key>``) for metadata hits. Only
+    MACHINE_PATH is extended to metadata (issue #14513): metadata does not
+    carry tool-failure banners, and the machine-path metadata class is what a
+    re-execution leaks.
+    """
     found = {"TOOL_FAILURE": [], "MACHINE_PATH": []}
     if not nb:
         return found
@@ -298,6 +470,15 @@ def scan(nb):
         for pat in MACHINE_PATH_PATTERNS:
             for m in pat.finditer(text):
                 found["MACHINE_PATH"].append((idx, m.group(0)[:120]))
+    # #14513: a machine path can also sit in document/cell metadata, invisible
+    # to the output-only loop above -- the exact hole that let PT_11c's
+    # metadata.path pass the gate green while the branch still carried the
+    # path (#14272 / #13891). Scan string-valued metadata too, so the gate
+    # sees the surface the convention (secrets-hygiene rule 6) allows fixing.
+    for loc, text in metadata_texts(nb):
+        for pat in MACHINE_PATH_PATTERNS:
+            for m in pat.finditer(text):
+                found["MACHINE_PATH"].append((loc, m.group(0)[:120]))
     return found
 
 
@@ -308,6 +489,20 @@ def _is_degraded_hint(match_text):
     soft motif as substring, so this is a faithful discriminator. Used by
     the sweep only -- the gate keeps both classes merged by design."""
     return any(p.search(match_text) for p in DEGRADED_HINT_PATTERNS)
+
+
+def _sample_location(loc):
+    """Rend la localisation d'un echantillon telle qu'elle a ete produite.
+
+    Un hit d'output porte un index de cellule entier -> ``cell[7]``. Un hit de
+    metadata porte deja son propre label (``doc:<cle>`` ou ``cell[<i>]:<cle>``,
+    cf. ``metadata_texts()``) -> l'imprimer verbatim. Sans ce tri, un hit
+    metadata de document sortait ``cell[doc:path]`` et un hit metadata de
+    cellule ``cell[cell[3]:papermill]`` : lisible, mais mal etiquete.
+    """
+    if isinstance(loc, str):
+        return loc
+    return "cell[" + str(loc) + "]"
 
 
 def compare(base_ref, head_ref, paths, cwd=None):
@@ -336,6 +531,9 @@ def compare(base_ref, head_ref, paths, cwd=None):
                 entry["samples"] = [{"cell": c, "match": t}
                                     for c, t in h[cls][:6]]
             row["classes"][cls] = entry
+        # Advisory axis (#14603): needs a base blob, never gates.
+        row["capability_downgrades"] = (capability_downgrades(base_nb, head_nb)
+                                        if base_nb is not None else [])
         row["regressed"] = regressed
         rows.append(row)
     return rows
@@ -400,6 +598,64 @@ def self_test(cwd=None):
         failures.append("sandbox banner masked a real failure in the same "
                         "stream")
 
+    # Capability axis (#14603): witnesses first, then the couple controls.
+    # A witness line the patterns do not match is a hole by construction.
+    for witness_line in ("VRAM utilisee : 0.64 GB",
+                         "GPU : NVIDIA GeForce RTX 3090 (24.0 GB VRAM)"):
+        if not any(p.search(witness_line)
+                   for p in CAPABILITY_WITNESS_PATTERNS):
+            failures.append("capability witness line unmatched: "
+                            + repr(witness_line))
+    for probe, expected in (("Mode : batch, Device : cuda", {"cuda"}),
+                            ("Device = cpu", {"cpu"}),
+                            ("torch.device('cuda:0')", set())):
+        got = _capability_values(probe)
+        if got != expected:
+            failures.append("capability values " + repr(got) + " != "
+                            + repr(expected) + " on " + repr(probe))
+
+    def _nb_cell(source, out_text):
+        return {"cells": [{"cell_type": "code", "source": source,
+                           "outputs": [{"output_type": "stream",
+                                        "text": out_text}]}]}
+
+    _gpu_src = "print(info)\nprint(f'VRAM utilisee : {v:.2f} GB')"
+    _couple = capability_downgrades(
+        _nb_cell(_gpu_src, "Device : cuda\nVRAM utilisee : 0.64 GB"),
+        _nb_cell(_gpu_src, "Device : cpu"))
+    if len(_couple) != 1 or _couple[0]["base"] != "cuda":
+        failures.append("couple (value regressed + witness gone + same "
+                        "source) not flagged: " + repr(_couple))
+    # Legit re-exec: same tier, values wiggle -- the everyday case.
+    if capability_downgrades(
+            _nb_cell(_gpu_src, "Device : cuda\nVRAM utilisee : 0.64 GB"),
+            _nb_cell(_gpu_src, "Device : cuda\nVRAM utilisee : 0.63 GB")):
+        failures.append("legit GPU re-exec flagged as capability downgrade")
+    # Source changed: the move is a CODE change, reviewed as code.
+    if capability_downgrades(
+            _nb_cell(_gpu_src, "Device : cuda\nVRAM utilisee : 0.64 GB"),
+            _nb_cell(_gpu_src + "\nprint('cpu fallback')",
+                     "Device : cpu")):
+        failures.append("changed-source downgrade flagged (must be reviewed "
+                        "as code, not by this axis)")
+    # Value alone: witness line still printed -- not the couple.
+    if capability_downgrades(
+            _nb_cell(_gpu_src, "Device : cuda\nVRAM utilisee : 0.64 GB"),
+            _nb_cell(_gpu_src, "Device : cpu\nVRAM utilisee : 0.00 GB")):
+        failures.append("value-only regression flagged (couple incomplete)")
+    # Witness alone: value did not regress -- not the couple.
+    if capability_downgrades(
+            _nb_cell(_gpu_src, "Device : cuda\nVRAM utilisee : 0.64 GB"),
+            _nb_cell(_gpu_src, "Device : cuda")):
+        failures.append("witness-only disappearance flagged (couple "
+                        "incomplete)")
+    # Upgrade (restoration direction of #14262): must stay silent.
+    if capability_downgrades(
+            _nb_cell(_gpu_src, "Device : cpu"),
+            _nb_cell(_gpu_src,
+                     "Device : cuda\nVRAM utilisee : 0.64 GB")):
+        failures.append("capability UPGRADE flagged (restoration must pass)")
+
     # Replay the founding commit against its parent.
     if git("cat-file", "-e", SELF_TEST_COMMIT, cwd=cwd) is None:
         print("SKIP replay: " + SELF_TEST_COMMIT[:12] + " not in this clone")
@@ -419,11 +675,69 @@ def self_test(cwd=None):
             failures.append("replay MACHINE_PATH +" + str(n_path) + " < "
                             + str(SELF_TEST_MIN_PATH) + " expected")
 
+    # #14513 replay: the metadata-only leak of #14272 / #13891, the defect
+    # this extension exists to close. c4b99a3ec4 is the PT_11c head whose
+    # metadata.path still carried the machine path (one document-level
+    # MACHINE_PATH hit); 109cf4eb2 removed it (zero). The original output-only
+    # scan reported 0 regressed on BOTH -- it cannot see metadata -- so a
+    # predicate that fires on the base and stays silent on the head is the
+    # proof of the fix, not a synthetic witness. Both commits are branch-side
+    # history of a squash-merged PR and are absent from a fresh clone
+    # (fetch-depth 0), so guard with cat-file exactly like the founding replay.
+    c4b99a3ec4 = "c4b99a3ec49cda31057630ffb67802c026e75cbf"
+    c109cf4eb = "109cf4eb219a7b5d0f566aaa47fda9540bba9926"
+    if (git("cat-file", "-e", c4b99a3ec4, cwd=cwd) is None
+            or git("cat-file", "-e", c109cf4eb, cwd=cwd) is None):
+        print("SKIP #14513 replay: c4b99a3ec4/c109cf4eb not in this clone")
+    else:
+        nb_path = ("MyIA.AI.Notebooks/GenAI/PostTraining/"
+                   "PT_11c_grpo_qwen17_rlvr.ipynb")
+        base_nb = read_notebook_at(c4b99a3ec4, nb_path, cwd=cwd)
+        head_nb = read_notebook_at(c109cf4eb, nb_path, cwd=cwd)
+        b_meta = [loc for loc, _ in scan(base_nb)["MACHINE_PATH"]
+                  if isinstance(loc, str)]
+        h_meta = [loc for loc, _ in scan(head_nb)["MACHINE_PATH"]
+                  if isinstance(loc, str)]
+        print("replay #14513: metadata-path hits "
+              + str(len(b_meta)) + " -> " + str(len(h_meta)))
+        if "doc:path" not in b_meta:
+            failures.append("#14513 replay: metadata.path not seen in base ("
+                            + repr(b_meta) + ")")
+        if h_meta:
+            failures.append("#14513 replay: metadata machine path still in "
+                            "head (" + repr(h_meta) + ")")
+
+    # Second replay (#14603): the GPU -> CPU re-exec of #14262, pinned as a
+    # fixture (see DOWNGRADE_REPLAY_FIXTURE). The two gating classes read
+    # 0 regressed on this exact pair while the diff carried cuda -> cpu +
+    # VRAM-line disappearance on unchanged-source cells -- the hole this
+    # axis exists to close. Refuses to pass if the replay comes back
+    # empty, same contract as the founding replay above -- and unlike a
+    # git-object replay it cannot silently skip in a fresh clone.
+    fixture_path = (Path(__file__).resolve().parent / "tests" / "fixtures"
+                    / DOWNGRADE_REPLAY_FIXTURE)
+    try:
+        blob = json.loads(fixture_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        blob = None
+        failures.append("downgrade replay fixture unreadable ("
+                        + str(fixture_path) + "): " + str(exc))
+    if blob is not None:
+        n_down = len(capability_downgrades({"cells": blob["base_cells"]},
+                                           {"cells": blob["head_cells"]}))
+        print("replay fixture " + DOWNGRADE_REPLAY_FIXTURE + ": "
+              + str(len(blob["base_cells"])) + " cells, "
+              + "CAPABILITY_DOWNGRADE " + str(n_down))
+        if n_down < SELF_TEST_MIN_DOWNGRADE:
+            failures.append("downgrade replay CAPABILITY_DOWNGRADE "
+                            + str(n_down) + " < "
+                            + str(SELF_TEST_MIN_DOWNGRADE) + " expected")
+
     for f in failures:
         print("SELF-TEST FAIL: " + f)
     if failures:
         return 1
-    print("SELF-TEST OK: witnesses matched, benign text silent, replay fires")
+    print("SELF-TEST OK: witnesses matched, benign text silent, replays fire")
     return 0
 
 
@@ -531,11 +845,28 @@ def main(argv=None):
                     print("  " + cls + ": " + str(e["base"]) + " -> "
                           + str(e["head"]) + " (+" + str(e["delta"]) + ")")
                     for s in e.get("samples", []):
-                        print("     cell[" + str(s["cell"]) + "] " + s["match"])
+                        print("     " + _sample_location(s["cell"]) + " "
+                              + s["match"])
         if bad:
             print("\nCause is on the executing machine, not in the notebook: "
                   "install the missing tool and RE-EXECUTE. Never hand-edit a "
                   "committed output (Stop & Repair, secrets-hygiene rule 6).")
+        downgrades = [(r["notebook"], r["capability_downgrades"])
+                      for r in rows if r.get("capability_downgrades")]
+        if downgrades:
+            n_cells = sum(len(d) for _, d in downgrades)
+            print("\nADVISORY CAPABILITY_DOWNGRADE (" + str(n_cells)
+                  + " cell(s)) -- byte-identical source, executed with less "
+                  "capability, witness line gone. Not gating (#14603):")
+            for path, ds in downgrades:
+                for d in ds:
+                    print("  " + path + " cell[" + str(d["cell"]) + "] "
+                          + d["base"] + " -> " + d["head"])
+            print("  Lift: a deliberate, documented CPU run (RECOVERABLE-"
+                  "MACHINE verdict in the PR body) passes -- state it there "
+                  "and the reviewer acknowledges this line. Otherwise "
+                  "re-execute on the capable machine; never hand-edit the "
+                  "output (Stop & Repair).")
     return 1 if bad else 0
 
 

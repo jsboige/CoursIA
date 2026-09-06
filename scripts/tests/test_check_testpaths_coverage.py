@@ -56,6 +56,22 @@ def test_extract_run_targets_ignores_comments() -> None:
     assert len({t for t in targets if t.startswith("scripts/")}) == 1
 
 
+def test_extract_run_targets_root_dir_without_slash() -> None:
+    """Un répertoire racine du dépôt (pas de /, ex. GradeBookApp) est extrait.
+
+    Les flags pytest (--tb=short, -q) ne le sont pas (famille 5 de #14615).
+    """
+    text = """        run: |
+          pytest \\
+            scripts/lean/tests \\
+            GradeBookApp \\
+            --tb=short -q
+"""
+    targets = extract_run_targets(text)
+    assert "GradeBookApp" in targets
+    assert "--tb=short" not in targets and "-q" not in targets
+
+
 def test_is_covered_exact_and_ancestor() -> None:
     assert is_covered("scripts/tests", ["scripts/tests"])
     assert is_covered("scripts/lean/tests", ["scripts"])  # ancêtre

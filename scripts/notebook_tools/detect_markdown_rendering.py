@@ -107,6 +107,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import re
 import sys
 from pathlib import Path
@@ -187,8 +188,8 @@ RULE_SEVERITY = {
 # que la règle ne tire pas dessus. Inversement, si la liste grossit sans
 # selfcheck, c'est le pattern d'une règle qui sous-compte en silence.
 _CJK_ALLOWLIST: set[tuple[str, int]] = {
-    ("MyIA.AI.Notebooks/GenAI/PostTraining/PT_11b_multiseed_qwen35_4x100.ipynb", 5),
-    ("MyIA.AI.Notebooks/GenAI/PostTraining/PT_11b_multiseed_qwen35_4x100.ipynb", 19),
+    ("MyIA.AI.Notebooks/GenAI/PostTraining/PT_11d_multiseed_qwen35_4x100.ipynb", 5),
+    ("MyIA.AI.Notebooks/GenAI/PostTraining/PT_11d_multiseed_qwen35_4x100.ipynb", 19),
     ("MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-6-MiniMax-H3-Architecture-Licensing.ipynb", 1),
 }
 
@@ -1402,6 +1403,8 @@ def main(argv=None) -> int:
                          "#11630 for the rationale.")
     ap.add_argument("--quarto-yml", type=Path, default=Path("_quarto.yml"),
                     help="path to the Quarto project YAML (default: ./_quarto.yml)")
+    ap.add_argument("--max-findings", type=int, default=200, metavar="N",
+                    help="cap the human-readable findings listing (default: 200)")
     ap.add_argument("--selfcheck", action="store_true",
                     help="run the embedded positive/negative controls of the "
                          "yaml_block_open_no_close rule (BOTH observed forms: "
@@ -1484,13 +1487,14 @@ def main(argv=None) -> int:
         for rule in sorted(by_rule):
             print(f"  {RULE_SEVERITY.get(rule, '?'):>5} {rule}: {by_rule[rule]}")
         shown = new_findings if baseline else findings
+        max_findings = max(0, args.max_findings)
         print()
-        for f in shown[:200]:
+        for f in shown[:max_findings]:
             flag = "NEW " if (baseline and f["hash"] not in baseline) else ""
             print(f"  {flag}{f['severity'].upper():>5} {f['file']} cell#{f['cell']} [{f['rule']}]")
             print(f"        {f['evidence']}")
-        if len(shown) > 200:
-            print(f"  ... {len(shown) - 200} more")
+        if len(shown) > max_findings:
+            print(f"  ... {len(shown) - max_findings} more")
 
     # ---- exit code --------------------------------------------------------------
     if args.check:
@@ -1507,4 +1511,15 @@ def main(argv=None) -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    # SIGPIPE-safe exit (#14590): when the consumer (head, less, |) closes the
+    # pipe mid-listing, that is not a scan error. Redirect stdout to devnull so
+    # the interpreter's final flush does not re-raise BrokenPipeError
+    # ("Exception ignored in: <_io.TextIOWrapper ...>"), then exit 141
+    # (128 + SIGPIPE), the shell convention.
+    try:
+        rc = main()
+    except BrokenPipeError:
+        devnull = os.open(os.devnull, os.O_WRONLY)
+        os.dup2(devnull, sys.stdout.fileno())
+        rc = 141
+    raise SystemExit(rc)

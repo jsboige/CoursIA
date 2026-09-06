@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# ARCHIVED: 2026-02 (consolidation genai-stack) -- see scripts/genai-stack/_archive/ARCHIVE_README.md
+# DISPOSITION: superseded | Successor: genai.py auth audit | Reason: Remplace par core/auth_manager.py audit
+#
 """
 validate_tokens_simple.py - Validation simple des tokens ComfyUI-Login
 """

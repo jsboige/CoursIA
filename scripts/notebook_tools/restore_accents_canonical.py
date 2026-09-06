@@ -89,6 +89,15 @@ _CURE_RE = das._build_regex()
 # On matche depuis le `](` jusqu'a la parenthese fermante (greedy minimal sur la
 # meme ligne ; les liens markdown ne contiennent pas de ")" nu dans la cible).
 _LINK_TARGET_RE = re.compile(r"\]\([^)]*\)")
+# #14613 point 4 (porte de la cure #14139 dans l'organe canonique) : les spans
+# de code inline `...` et les URLs NUES (hors cible de lien) sont masques au
+# meme titre que les cibles de lien. Un mot du dictionnaire dans un span de code
+# (nom de variable, argument CLI) ou dans le chemin d'une URL n'est pas de la
+# prose -- l'accentuer casse le code ou le lien. Ces masques vivent dans le
+# COEUR `_cure_line` (pas seulement l'adaptateur decks) : le chemin notebook en
+# beneficie aussi, uniformement.
+_INLINE_SPAN_RE = re.compile(r"`[^`\n]*`")
+_BARE_URL_RE = re.compile(r"\bhttps?://\S+")
 
 
 def _preserve_case(match_str: str, suggestion: str) -> str:
@@ -107,23 +116,26 @@ def _preserve_case(match_str: str, suggestion: str) -> str:
 
 def _cure_line(line: str) -> tuple[str, int]:
     """Cure une ligne de markdown : accentue les formes stripped dans la PROSE,
-    en protegeant les cibles de liens ]( ... ).
+    en protegeant les cibles de liens ]( ... ), les spans de code inline et les
+    URLs nues (#14613 point 4).
 
     Retourne (ligne_curee, n_cures).
     """
-    # 1. extraire + masquer les cibles de liens. On remplace chaque span ]( ... )
-    # par un placeholder unique (base64 de l'index) qui ne peut matcher aucun mot
-    # du dictionnaire (lettres uniquement). Le contenu original est preserve tel
-    # quel dans la liste link_targets, restaure byte-identique a l'etape 3.
-    link_targets = []
+    # 1. extraire + masquer les zones non-prose. Chaque span protege est remplace
+    # par un placeholder indexe qui ne peut matcher aucun mot du dictionnaire
+    # (lettres uniquement). Le contenu original est preserve tel quel dans la
+    # liste masked_spans, restaure byte-identique a l'etape 3.
+    masked_spans: list[str] = []
 
     def _mask(m):
-        link_targets.append(m.group(0))
-        return "\x00LT{}\x00".format(len(link_targets) - 1)
+        masked_spans.append(m.group(0))
+        return "\x00MS{}\x00".format(len(masked_spans) - 1)
 
     masked = _LINK_TARGET_RE.sub(_mask, line)
+    masked = _INLINE_SPAN_RE.sub(_mask, masked)
+    masked = _BARE_URL_RE.sub(_mask, masked)
 
-    # 2. curer la prose (hors cibles masquees)
+    # 2. curer la prose (hors spans masques)
     n = [0]
 
     def _repl(m):
@@ -136,9 +148,9 @@ def _cure_line(line: str) -> tuple[str, int]:
 
     cured = _CURE_RE.sub(_repl, masked)
 
-    # 3. restaurer les cibles de liens (byte-identiques a l'original)
-    for i, original in enumerate(link_targets):
-        cured = cured.replace("\x00LT{}\x00".format(i), original, 1)
+    # 3. restaurer les spans proteges (byte-identiques a l'original)
+    for i, original in enumerate(masked_spans):
+        cured = cured.replace("\x00MS{}\x00".format(i), original, 1)
     return cured, n[0]
 
 
@@ -153,7 +165,20 @@ def _cure_source(source) -> tuple[object, int]:
         lines = source.split("\n")
         cured_lines = []
         total = 0
+        in_fence = False
         for ln in lines:
+            # #14613 point 4 : une fence reproduit souvent une sortie LITTERALE
+            # de programme (« Entrainement PPO ... : eval deterministe finale =
+            # 418.9 », fences 22/24 de #14139). Accentuer une transcription
+            # d'execution la falsifie (Stop & Repair, secrets-hygiene regle 6) :
+            # les lignes de fence (delimiteurs inclus) ne sont JAMAIS curees.
+            if _FENCE_RE.match(ln):
+                cured_lines.append(ln)
+                in_fence = not in_fence
+                continue
+            if in_fence:
+                cured_lines.append(ln)
+                continue
             cl, n = _cure_line(ln)
             cured_lines.append(cl)
             total += n
@@ -170,10 +195,18 @@ def _cure_source(source) -> tuple[object, int]:
     original = list(source)
     new_chunks = []
     total = 0
+    in_fence = False  # l'etat persiste d'un chunk a l'autre de la MEME cellule
     for chunk in original:
         lines = chunk.split("\n")
         cured_lines = []
         for ln in lines:
+            if _FENCE_RE.match(ln):
+                cured_lines.append(ln)
+                in_fence = not in_fence
+                continue
+            if in_fence:
+                cured_lines.append(ln)
+                continue
             cl, n = _cure_line(ln)
             cured_lines.append(cl)
             total += n
@@ -260,6 +293,11 @@ _EN_COLLIDING_FORMS = {
     "operations", "operation", "categories", "categorie",
     "theme", "themes", "different", "generation", "generations",
     "scenario", "resultat", "resultats",
+    # Famille RL #14613 : mots anglais valides ajoutes a ACCENT_PAIRS -- la
+    # garde a preuve positive de contexte FR s'applique a eux aussi. NB
+    # « evaluation » reste hors table (exclusion EN-valide délibérée,
+    # cf das.ACCENT_PAIRS).
+    "equivalent", "creation", "episode", "episodes",
 }
 _EN_COLLIDING = {k for k in ACCENT_PAIRS if k in _EN_COLLIDING_FORMS}
 _FR_MARKER_RE = re.compile(
@@ -445,6 +483,7 @@ def cure_notebook(path: Path, write: bool, check_scope: bool = False):
     cells_touched = 0
     md_cells = 0
     code_hits = 0
+    shadow_cells: list[dict] = []
 
     for cell in nb.get("cells", []):
         ctype = cell.get("cell_type", "")
@@ -452,13 +491,18 @@ def cure_notebook(path: Path, write: bool, check_scope: bool = False):
         if ctype == "markdown":
             md_cells += 1
             new_source, n = _cure_source(source)
+            # copie ombre avec la source CUREE (ecrite ou simulee) pour le
+            # rapport hors-table ci-dessous -- jamais ecrite sur disque
+            shadow_cells.append({**cell, "source": new_source})
             if n > 0:
                 total_cures += n
                 cells_touched += 1
                 if write:
                     cell["source"] = new_source
                     # outputs/execution_count/metadata intacts (jamais touches)
-        elif ctype == "code" and check_scope:
+        else:
+            shadow_cells.append(cell)
+        if ctype == "code" and check_scope:
             # mode scope : detecter les formes accentuables residuelles en code
             code_text = "".join(source) if isinstance(source, list) else (source or "")
             code_hits += sum(1 for _ in _CURE_RE.finditer(code_text))
@@ -467,12 +511,31 @@ def cure_notebook(path: Path, write: bool, check_scope: bool = False):
         with open(path, "w", encoding="utf-8", newline="\n") as f:
             json.dump(nb, f, ensure_ascii=False, indent=1)
             f.write("\n")
-    return {
+    result = {
         "cures": total_cures,
         "cells_touched": cells_touched,
         "md_cells": md_cells,
         "code_hits": code_hits,
     }
+    # #14613 point 1 : un cureur qui ne peut pas atteindre le critere du
+    # detecteur doit le DIRE. Apres la passe (ecrite ou simulee), on rejoue
+    # l'heuristique OUVERTE du detecteur sur le notebook cure et on rapporte
+    # les formes qu'elle voit encore et que la table fermee ne sait pas curer
+    # -- l'ecart qui coutait un aller-retour complet sur #14139 : « CURED (written)
+    # N accents » en succes muet alors que le compte detecteur restait au-dessus
+    # du seuil. Import paresseux (le module n'est utile que pour ce rapport).
+    try:
+        import detect_markdown_deaccent as dmd
+        shadow = {"cells": shadow_cells}
+        auto = dmd.find_candidates(shadow).get("auto") or {}
+        hors_table = {w: c for w, c in auto.items()
+                      if w.lower() not in ACCENT_PAIRS}
+        if hors_table:
+            result["hors_table"] = hors_table
+            result["hors_table_total"] = sum(hors_table.values())
+    except Exception:
+        pass  # le rapport est un service, jamais un bloqueur de cure
+    return result
 
 
 def main(argv=None) -> int:
@@ -535,6 +598,13 @@ def main(argv=None) -> int:
         if args.scope and res.get("code_hits"):
             print(f"  WARNING: {res['code_hits']} accentable form(s) found in CODE cells "
                   f"(HORS scope #2876 — possible ad-hoc script residue)")
+        if res.get("hors_table"):
+            detail = ", ".join(f"{w} (x{c})" for w, c
+                               in sorted(res["hors_table"].items(),
+                                         key=lambda kv: -kv[1]))
+            print(f"  ATTENTION: {res['hors_table_total']} forme(s) hors table — "
+                  f"le detecteur les voit encore, la table ne les cure pas "
+                  f"(cures incompletes, pas un succes) : {detail}")
 
     if args.check:
         if res["cures"] > 0 or (args.scope and res.get("code_hits", 0) > 0):

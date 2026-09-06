@@ -21,8 +21,9 @@ Deux modes de holdout (a lancer separement, --label distinct) :
 Contrairement au walk-forward (5 modeles/seed), on entraine UN modele par
 seed sur la fenetre train, puis on evalue DT / momentum_naked / buy_and_hold
 sur le holdout. Memes garde-fous que validate_xrp_dt : normalisation
-train-only, gap anti-leakage, net Sharpe post-TC, DM HAC Newey-West,
->=4 seeds, edge >= 2 sigma cross-seed sinon INCONCLUSIVE. Pas de "promising".
+train-only, gap anti-leakage, net Sharpe post-TC, DM HAC Newey-West
+(p mse median < 0.05), >=4 seeds, edge >= 2 sigma cross-seed sinon
+INCONCLUSIVE. Pas de "promising".
 
 Usage
 -----
@@ -128,26 +129,59 @@ def run_one_seed_holdout(seed: int, raw: pd.DataFrame, train_end: str,
 
     dm = None
     dm_mom = None
+    dm_prec = None
     if len(dt_n) > 30:
-        # loss_fn="linear" (#10228): mse/mae are symmetric ((-r)**2 == r**2)
-        # and made the test sign-blind -- a winning and a losing return series
-        # got bit-identical dm_stat. Linear loss L(e) = e preserves the sign,
-        # so d = (-bh_g) - (-dt_n) = dt_n - bh_g and E[d] < 0 <=> DT beats BH.
+        # Controle de biais (linear, #10228/#10956) : L(e) = e sur les retours
+        # positionnes, d_mean = perf_moyenne_a - perf_moyenne_b. Jambe de
+        # DIAGNOSTIC uniquement -- jamais la jambe de conjonction §C (#11010).
         try:
             r = DM.diebold_mariano_test(-dt_n, -bh_g, loss_fn="linear", hln_correction=True)
-            dm = {"dm_stat": round(r.dm_statistic, 4), "p_value": round(r.p_value, 4),
+            dm = {"loss_fn": "linear", "role": "bias_control",
+                  "dm_stat": round(r.dm_statistic, 4), "p_value": round(r.p_value, 4),
                   "n_obs": int(r.n_observations)}
         except Exception as e:
-            dm = {"error": str(e)}
+            dm = {"loss_fn": "linear", "role": "bias_control", "error": str(e)}
         # Momentum is the real adversary: BH is degenerate when the asset falls
         # (fresh-window BH sharpe was -1.80). A DM vs naked momentum is what
         # makes the third conjunct of pr-review-discipline section C informative.
         try:
             r_mom = DM.diebold_mariano_test(-dt_n, -mom_n, loss_fn="linear", hln_correction=True)
-            dm_mom = {"dm_stat": round(r_mom.dm_statistic, 4), "p_value": round(r_mom.p_value, 4),
+            dm_mom = {"loss_fn": "linear", "role": "bias_control",
+                      "dm_stat": round(r_mom.dm_statistic, 4), "p_value": round(r_mom.p_value, 4),
                       "n_obs": int(r_mom.n_observations)}
         except Exception as e:
-            dm_mom = {"error": str(e)}
+            dm_mom = {"loss_fn": "linear", "role": "bias_control", "error": str(e)}
+        # Jambe de PRECISION §C (#11010, #14579) : erreur directionnelle
+        # e_t = position_t - sign(retour_{t+1}). Une politique alignee au marche
+        # fait e=0, une politique opposee e=+-2 : mse/mae sur e sont sign-aware
+        # pour des positions +-1. (mse/mae directement sur les retours
+        # positionnes restent sign-blind -- (-r)**2 == r**2, cf #10228 -- donc
+        # la precision directionnelle est la construction applicable ici.)
+        try:
+            # Alignement min_len, meme idiome que net_returns/gross_returns :
+            # dt_positions_on_test peut rendre plus de predictions que de steps.
+            L = min(len(dt_pos), len(test_returns_full))
+            target_sign = np.sign(test_returns_full[:L])
+            e_dt = dt_pos[:L] - target_sign
+            e_bh = bh_pos[:L] - target_sign
+            e_mom = mom_pos[:L] - target_sign
+
+            def _prec(ea, eb, loss_fn):
+                rp = DM.diebold_mariano_test(ea, eb, loss_fn=loss_fn, hln_correction=True)
+                return {"loss_fn": loss_fn, "role": "precision_conjunction",
+                        "dm_stat": round(rp.dm_statistic, 4), "p_value": round(rp.p_value, 4),
+                        "mean_loss_diff": round(rp.mean_loss_diff, 6),
+                        "n_obs": int(rp.n_observations)}
+
+            dm_prec = {
+                "error_def": "e_t = position_t - sign(r_{t+1})",
+                "dt_vs_bh_mse": _prec(e_dt, e_bh, "mse"),
+                "dt_vs_bh_mae": _prec(e_dt, e_bh, "mae"),
+                "dt_vs_momentum_mse": _prec(e_dt, e_mom, "mse"),
+                "dt_vs_momentum_mae": _prec(e_dt, e_mom, "mae"),
+            }
+        except Exception as e:
+            dm_prec = {"error": str(e)}
 
     del model, result
     if torch.cuda.is_available():
@@ -164,8 +198,14 @@ def run_one_seed_holdout(seed: int, raw: pd.DataFrame, train_end: str,
         "dt_gross_sharpe": round(sharpe(dt_g), 4),
         "momentum_naked_net_sharpe": round(sharpe(mom_n), 4),
         "bh_sharpe": round(sharpe(bh_g), 4),
+        "bias_mean_returns": {
+            "dt": round(float(np.mean(dt_n)), 6),
+            "momentum": round(float(np.mean(mom_n)), 6),
+            "bh": round(float(np.mean(bh_g)), 6),
+        },
         "dm_dt_vs_bh": dm,
         "dm_dt_vs_momentum": dm_mom,
+        "dm_precision": dm_prec,
         "dt_net": [round(float(x), 6) for x in dt_n],
         "bh_gross": [round(float(x), 6) for x in bh_g],
         "momentum_net": [round(float(x), 6) for x in mom_n],
@@ -247,9 +287,12 @@ def main():
             num_layers=args.num_layers, device=device,
             commission_bps=args.commission_bps)
         seed_results.append(r)
+        prec = r.get("dm_precision") or {}
+        p_mse = prec.get("dt_vs_bh_mse", {}).get("p_value") \
+            if isinstance(prec, dict) else None
         print(f"  net={r['dt_net_sharpe']}  gross={r['dt_gross_sharpe']}  "
               f"mom_net={r['momentum_naked_net_sharpe']}  bh={r['bh_sharpe']}  "
-              f"dm_p={r['dm_dt_vs_bh'].get('p_value') if r.get('dm_dt_vs_bh') else None}",
+              f"dm_mse_p={p_mse}",
               flush=True)
 
     # Agregation cross-seed. BH est deterministe (meme serie pour toutes les seeds).
@@ -259,9 +302,25 @@ def main():
     seeds_beat = int(np.sum(dt_nets > bh))
     edge_sigma = float((dt_nets.mean() - bh) / (dt_nets.std(ddof=1) + 1e-12)) \
         if len(dt_nets) > 1 else 0.0
-    dm_ps = [r["dm_dt_vs_bh"]["p_value"] for r in seed_results
-             if r.get("dm_dt_vs_bh") and "p_value" in r["dm_dt_vs_bh"]]
+    # Conjonction §C (#11010, #14579) : la jambe DM est la PRECISION
+    # directionnelle (mse), linear reste rapporte comme controle de biais.
+    dm_ps = [r["dm_precision"]["dt_vs_bh_mse"]["p_value"] for r in seed_results
+             if r.get("dm_precision") and isinstance(r["dm_precision"], dict)
+             and "p_value" in r["dm_precision"].get("dt_vs_bh_mse", {})]
     dm_p_median = float(np.median(dm_ps)) if dm_ps else None
+    dm_ps_mae = [r["dm_precision"]["dt_vs_bh_mae"]["p_value"] for r in seed_results
+                 if r.get("dm_precision") and isinstance(r["dm_precision"], dict)
+                 and "p_value" in r["dm_precision"].get("dt_vs_bh_mae", {})]
+    dm_p_mae_median = float(np.median(dm_ps_mae)) if dm_ps_mae else None
+    dm_ps_lin = [r["dm_dt_vs_bh"]["p_value"] for r in seed_results
+                 if r.get("dm_dt_vs_bh") and "p_value" in r["dm_dt_vs_bh"]]
+    dm_p_linear_median = float(np.median(dm_ps_lin)) if dm_ps_lin else None
+    bias_report = {
+        "dt_mean_net_return": round(float(np.mean(
+            [r["bias_mean_returns"]["dt"] for r in seed_results])), 6),
+        "momentum_mean_net_return": seed_results[0]["bias_mean_returns"]["momentum"],
+        "bh_mean_gross_return": seed_results[0]["bias_mean_returns"]["bh"],
+    }
 
     if dt_nets.mean() <= bh:
         verdict = "NO-BEATS"
@@ -289,7 +348,10 @@ def main():
             "momentum_naked_net_sharpe": mom_net,
             "seeds_beat_bh": f"{seeds_beat}/{len(dt_nets)}",
             "edge_sigma": round(edge_sigma, 2),
-            "dm_p_median": dm_p_median,
+            "dm_p_mse_median": dm_p_median,
+            "dm_p_mae_median": dm_p_mae_median,
+            "dm_p_linear_median_bias_control": dm_p_linear_median,
+            "bias_report": bias_report,
         },
         "verdict": verdict,
     }
@@ -301,7 +363,9 @@ def main():
     print(f"  DT net {dt_nets.mean():.3f} (+/- {dt_nets.std(ddof=1):.3f}) vs BH {bh:.3f} "
           f"| mom_naked net {mom_net:.3f}")
     print(f"  seeds>{'BH'}: {seeds_beat}/{len(dt_nets)} | edge {edge_sigma:.2f} sigma "
-          f"| DM p mediane {dm_p_median}")
+          f"| DM mse p mediane {dm_p_median} (mae {dm_p_mae_median}, "
+          f"linear-ctrl {dm_p_linear_median})")
+    print(f"  biais moyens (retour/jour): {bias_report}")
     print(f"  -> {out_path}")
 
 

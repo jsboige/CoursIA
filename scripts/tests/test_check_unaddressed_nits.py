@@ -539,6 +539,259 @@ def test_approved_avant_la_concerne_ne_leve_pas():
     assert run_reviews([early_ok, late_concern])["blocked"] is True
 
 
+# --- #14503 : une review de persona POSTERIEURE au dernier commit, sans
+# verdict formel ni levee, est une reserve (fail-CLOSED). Mesure fondatrice
+# #14486 : des reviews Hermes contraintes en tokens (« COMMENT only »)
+# enoncent leurs reserves en prose ordinaire — le scanner de verdicts reste
+# muet (classify None), le gate rendait rc=0. Geometrie reelle reproduite :
+# dernier push 10h, review 12h, merge 15h.
+
+def run_persona_reviews(reviews):
+    data = {
+        "number": 0, "title": "t", "author": {"login": "jsboige"},
+        "comments": [], "reviews": reviews,
+        "commits": [{"committedDate": at(10)}],
+    }
+    return mod.analyse(
+        data, [], datetime(2026, 8, 14, 15, 0, tzinfo=timezone.utc))
+
+
+# Corps REELS complets (2095 / 2412 / 5251 chars), logins reels inclus —
+# Hermes pousse sous le login partage jsboige, NanoClaw sous
+# clusterManager-Myia. Les deux PRs ont depuis EVOLUE (reparation poussee
+# sur #14486 a 19:40Z puis follow-up Hermes leveur a 21:31Z ; push a
+# 06:54Z sur #14548) : leur etat LIVE est legitiment rc=0. Ces replays
+# pinent l'ETAT FONDATEUR — dernier commit AVANT la review, follow-up
+# absent — seul honnete moyen d'invoquer le controle positif de l'issue.
+
+HERMES_14486 = {
+    "author": {"login": "jsboige"},
+    "state": "COMMENTED", "submittedAt": at(12),
+    "body": '[Hermes] Review sur 157cebc3 (contrainte token : COMMENT only, opener=jsboige).\n\n**Socle sain, tests vérifiés localement** : cloné le détecteur + tests au SHA de tête, `40 passed` (venv propre, nbformat+pytest). Golden set 3 PRs couvert des deux côtés (fabriqué détecté / post-fix zéro finding), structure des tests propre (9 classes, factories in-memory).\n\n**3 défauts constatés en exécution réelle, dont 1 qui contredit la classe visée :**\n\n1. **False negative sur fabrication de valeur courte** (reproduit) : cellule md citant `JVM operationnelle : False` quand la sortie réelle dit `True` → **zéro finding**. La probe extraite est `operationnelle` (mot présent dans la sortie réelle), et la sémantique « UNE probe retrouvée = légitime » valide la citation. Or la classe #14324 est précisément « valeurs numériques inventées ou contradictoires » : une citation qui ne diffère de la sortie que par `True`/`False` ou un nombre court (< 12 chars alphanum) passe à travers. `1.213061` seul ne génère aussi aucune probe (8 chars). Le golden set #14105 n\'est attrapé que parce que le fragment inclut l\'expression `#eval` autour — une citation réduite à la valeur serait invisible. Piste : probe additionnelle = fragment complet normalisé quand la citation est courte, ou comparaison du dernier token numérique.\n\n2. **Commentaire faux sur les zero-width** (vérifié) : `_normalize` docstring « enleve les zero-width chars », mais la ligne 253 est `text.replace("", "").replace("\\\\ufeff", "").replace("", "")` — deux `replace("","")` **no-op** (seul le BOM est retiré). Un `\\u200b` inséré dans une citation reste non-matché contre la sortie. Remplacer par les vrais codepoints `\\u200b\\u200c\\u200d`.\n\n3. **Triplets dupliqués** dans `_resolve_code_target` : `direction in ("ci-dessus", "ci-dessus", "ci-dessus")` (idem ci-dessous) — visiblement des variantes à trait d\'union doux `(U+00AD)` perdues à l\'écriture. Inoffensif mais mort ; soit retirer, soit encoder les variantes réellement visées.\n\nAucun secret en dur, exit codes CI-ready corrects. Le point 1 mérite une itération avant câblage advisory.',
+}
+
+HERMES_14486_LIFT = {
+    "author": {"login": "jsboige"},
+    "state": "COMMENTED", "submittedAt": at(12),
+    "body": '[Hermes] Follow-up sur f71275da (depuis ma review sur 157cebc3) — réparation vérifiée en exécution réelle : fichiers clonés au SHA de tête, venv propre, harnais end-to-end maison.\n\n**Résolu (mesuré, pas lu) :**\n1. ✅ Point 1 (false negative valeur courte) — la voie `LITERAL_RE` attrape les cas A/B du DM : mon harnais rend 1 finding (`mode=literal, missing=[False]` / `missing=[1.213061]`) et 0 sur le contrôle légitime (cas C). Frontières anti-identifiant correctes (`vec42`, `S8`, URLs exclus ; `1.5e-3` attrapé), et le gating `=` (assignations `name=value` hors scope) est bien placé.\n2. ✅ Point 3 (triplets) — U+2011 (non-breaking hyphen) + U+00AD (soft hyphen) réellement encodés cette fois, vérifié codepoint par codepoint dans `_resolve_code_target`.\n3. ✅ Tests : `45 passed, 1 xfailed` reproduits localement ; `TestLiteralVoie` couvre regex + cas A/B/C + borne anti-FP. L\'`xfail` motivé (omission structurelle, AST-aware requis) est la bonne décision — le défaut reste visible sans faire rouge.\n\n**1 résiduel mesuré — le ZWSP U+200B est ENCORE perdu (même mode d\'échec que la version initiale) :**\nLe post de réparation annonce « ZWSP (U+200B), ZWNJ, ZWJ, BOM » et le commentaire du code dit « on liste explicitement les codepoints zero-width ». Or le tuple ligne 279 est littéralement `("", "\\u200c", "\\u200d", "\\ufeff")` — **le premier élément est une chaîne vide**, pas U+200B. Vérifié à l\'exécution : `_normalize("1.2\\u200b13061")` ne retire pas le ZWSP.\n\nConséquence mesurée (faux positif end-to-end) : sortie réelle rendant `1.2\\u200b13061` (ZWSP au milieu du nombre — artefact de wrap/terminal connu) + citation légitime `1.213061` → **1 finding `fabricated_verbatim` faux** (`missing=[1.213061]`, le littéral de la citation ne matche pas la sortie polluée). Les trois autres codepoints (ZWNJ/ZWJ/BOM) sont correctement strippés — seul le plus commun d\'entre eux manque.\n\n**Fix recommandé : représenter le codepoint en échappement ASCII** — `for zw in ("\\u200b", "\\u200c", "\\u200d", "\\ufeff")` — précisément pour immuniser contre ce transport (le littéral UTF-8 nu s\'est déjà perdu 2 fois : version initiale + cette réparation). Un test `assert "\\u200b" not in _normalize("a\\u200bb")` verrouillerait définitivement le transport.\n\nSecurity scan : 0 match (`HF_TOKEN|API_KEY|BEARER|PASSWORD|SECRET|TOKEN\\s*=`). Le point 1 de ma review initiale est levé ; seul ce mineur reste avant câblage advisory.',
+}
+
+NANOCLAW_BOLD_14548 = {
+    "author": {"login": "clusterManager-Myia"},
+    "state": "COMMENTED", "submittedAt": at(12),
+    "body": "**[NanoClaw]** structural review — case13, toy Hoffman N=16\n\nVerdict : **le « null » mesuré ici n'est pas un résultat sur FBT, c'est le symptôme d'un défaut structurel dans l'instrument** — le payoff ne dépend ni du monde tiré ni du percept reçu. Détail ci-dessous, avec la preuve interne au fichier `results` lui-même.\n\n## 1. Défaut central : `play_round` ignore `w_star` et `x`\n\n```python\ndef play_round(alpha, strategy, fitness, prior):\n    w_star = random.randrange(N_ONTIC)\n    p_x = [channel(w_star, x, alpha) for x in range(N_SENSORY)]\n    x = random.choices(range(N_SENSORY), weights=p_x, k=1)[0]\n    w_hat = strategy(alpha, fitness, prior)   # ni x ni w_star ne sont passés\n    return fitness(w_hat)\n```\n\nDeux problèmes qui se combinent :\n\n- **Le percept `x` tiré n'est jamais transmis à la stratégie**, et `w_star` n'entre nulle part dans le payoff. Le score d'un individu est donc une constante déterministe (indépendante des 5 trials, qui ne font que consommer du RNG). Sans dépendance payoff↔perception, il n'y a **pas de gradient de sélection sur α issu du paysage** : l'évolution de α est une dérive neutre.\n- **Confusion de type x/w** : les stratégies retournent `max(range(N_SENSORY), ...)` — un état **sensoriel** x∈{0,1} — que `play_round` nourrit à `fitness(w_hat)` comme un état **ontique** w∈0..15. Le payoff se réduit à `fitness(0)` ou `fitness(1)`, deux constantes du paysage. Cas limite flagrant : `L_bit3` — `bit3(0)=bit3(1)=0` → tous les scores ≡ 0 → sélection totalement neutre, α* = pur produit du RNG et du seed.\n\n## 2. Le fichier results porte lui-même la preuve — groupes de trajectoires identiques\n\nEn croisant `rows` et `raw` du JSON livré, les 16 paysages se partitionnent en **3 groupes de trajectoires strictement identiques** (mêmes T_runs au 5e décimal, mêmes moyennes) :\n\n- Groupe A (0.547/0.550, T_runs [0.57 0.56 0.52 0.54 0.55]) : L_bit0, L_anti, L_random_3bit, L_bit01, L_bit3_weighted, **L_random_4bit_seed1, L_random_4bit_seed2**\n- Groupe B (0.489/0.532) : L_bit1, L_bit2, L_bit2_complement, L_bit3, L_bit3_complement, L_bit23\n- Groupe C : L_parity, L_pairity_3bit, L_bit01_xor\n\n**Deux paysages aléatoires distincts (seed1, seed2 — fonctions w différentes par construction) produisent la même trajectoire d'évolution que L_bit0.** C'est la signature d'un signal de sélection insensible au paysage : la dérive suit le RNG, pas la fitness. Un instrument sain ne peut pas produire cela.\n\nContrôle qui aurait dû alerter : `L_bit0` est le paysage **aligné** (payoff attendu 3α, monotone) — il devrait sélectionner α→1. Mesuré : α*=0.547, indiscernable du bruit. Aucun paysage ne dévie de la dérive.\n\n## 3. Conséquence sur les conclusions du PR\n\n- « Ne confirme pas l'escalade monotone » / null à N=16 : **ininterprétable** — on ne peut rien réfuter avec un instrument dont le signal de sélection ne traverse pas le canal de perception. Un null d'instrument ≠ un null de théorie.\n- L'explication « Cause structurelle (fibre-balance) » rend compte au mieux de la famille bitk k≠0 ; elle ne dit rien des trajectoires identiques aligned/random, qui sont précisément l'anomalie à expliquer.\n- Le commentaire d'en-tête « Self-play / evolution (identique case 11/12, parametres ajustes) » est inexact : le case11 mesurait un play_round analytique E[f|pick] — c'est un **changement silencieux de la définition du jeu**, pas un ajustement de paramètres. Et si case12 partage ce `play_round` (le commentaire l'affirme), la dissociation +0.36 revendiquée sur 4/8 paysages au N=8 mérite la même inspection avant de bâtir le récit de famille dessus.\n\n## 4. Scratchpad / pré-registration\n\n- Le SHA scellé cité (`f3f43cb1e4`) ne résout pas sur GitHub (422 No commit found). L'ordonnancement scellage→code tient quand même via les commits du PR : e7af2608 (scratchpad seul, 23:49:27Z) → a2c2df11 (code, 23:58:09Z) — 9 min.\n- Mais les prédictions scellées sont **falsifiées sans commentaire** : P2c annonçait gap ≥0.70 sur la famille bit3 ; P4/verdict attendait gap ≥0.30 sur ≥6/16. Mesuré : ≤0.05 partout. Un scratchpad scellé n'a de valeur que si ses prédictions manquées sont discutées — ici le null est présenté comme finding, pas comme falsification de la prédiction.\n\n## 5. Points secondaires\n\n- Docstring `evolve_alpha` (« moyenne des survivants ») contredit le code (`population[best_idx]`).\n- Cut silencieux pop/gen 200×500 → 60×150 (~10× de compute en moins) : sous-dimensionné pour étayer un claim nul, et non mentionné comme changement de protocole.\n- 23 tests, mais **aucun ne teste `play_round`** — le mécanisme de payoff, cœur du claim, est la seule pièce non couverte. Un test du type « landscape aligné → α évolue vers 1 » aurait attrapé le défaut immédiatement.\n\n## Ce qui rendrait le null interprétable\n\n1. `w_hat = map_estimate(x, ...)` — décoder le percept effectivement reçu avant d'évaluer `fitness(w_hat)`, et passer `x` (donc `w_star` via le canal) à la stratégie.\n2. **Contrôle positif de l'instrument** : montrer qu'un paysage aligné sélectionne α→1 et un anti-aligné α→0 dans ce harness. Sans contrôle positif, un null n'est pas publiable comme résultat.\n\nJe n'ai pas vérifié le diff complet (review structurelle) : files changed + lecture intégrale du toy, du JSON results et du scratchpad scellé.\n",
+}
+
+
+def test_persona_review_no_verdict_post_commit_blocks():
+    """#14503 cause 1 (#14486), corps REEL complet : review `[Hermes]`
+    COMMENTED post-commit, reserves en prose ordinaire (« defauts
+    constates ») sans prefixe de verdict ni glyphe -> CONCERN_MARKERS muet,
+    classify None, rc=0 avant le fix. La prose PORTE le motif de reserve :
+    persona + post-commit + motif + pas de levee = reserve."""
+    assert run_persona_reviews([HERMES_14486])["blocked"] is True
+
+
+def test_persona_prose_approval_post_commit_stays_neutral():
+    """Anti-mur (controle 3 de l'issue, corpus 200 PRs mergees) : 70 reviews
+    persona post-commit sans verdict formel, quasi toutes APPROBATIVES en
+    prose (« Verdict : solide », « validé »). Une approbation en prose ne
+    PORTE pas le motif de reserve : elle ne doit PAS bloquer -- le
+    fail-CLOSED pur aurait fait un mur (70/200 PRs)."""
+    approval = {
+        "author": {"login": "jsboige"},
+        "state": "COMMENTED", "submittedAt": at(12),
+        "body": ("[Hermes] review 9e9799a (contrainte token : COMMENT only, "
+                 "opener=jsboige).\n\n**Verdict : solide, verifie par "
+                 "execution reelle.** Chaque chiffre du tableau se "
+                 "reproduit exactement depuis runs[] brut."),
+    }
+    assert run_persona_reviews([approval])["blocked"] is False
+
+
+def test_persona_ambiguous_prose_post_commit_stays_neutral():
+    """Calibrage : review persona post-commit SANS motif de reserve NI levee
+    NI verdict (prose laconique sans polarite) reste neutre -- bloquer
+    l'ambigu par defaut serait le mur mesure (70/200 PRs mergees)."""
+    laconic = {
+        "author": {"login": "clusterManager-Myia"},
+        "state": "COMMENTED", "submittedAt": at(12),
+        "body": "[Hermes] Relecture du head abc123 — diff integral lu des deux cotes.",
+    }
+    assert run_persona_reviews([laconic])["blocked"] is False
+
+
+def test_persona_review_bold_header_blocks():
+    """#14503 cause 2 (#14548) : l'en-tete REEL des personas peut etre en
+    gras (`**[NanoClaw]** structural review`). L'ancienne regex `(?:^|\\s)`
+    ne voyait pas le marque derriere le `*` -> review entiere invisible.
+    Le gras est admis ; le backtick (citation, #13030) reste exclu."""
+    assert run_persona_reviews([NANOCLAW_BOLD_14548])["blocked"] is True
+
+
+def test_persona_followup_lift_real_body_stays_neutral():
+    """Controle au corps REEL (2412 chars) : le follow-up Hermes du
+    2026-09-03T21:31Z sur #14486 est posterieur au push de reparation,
+    marqueur pose, SANS verdict formel — mais c'est une ANNONCE DE
+    REPARATION VERIFIEE. has_live_lift la reconnait : le fail-CLOSED ne
+    doit pas transformer une resolution en reserve."""
+    assert run_persona_reviews([HERMES_14486_LIFT])["blocked"] is False
+
+
+def test_persona_review_with_live_lift_stays_neutral():
+    """Controle : classify sort aussi None pour une ANNONCE DE LEVEE — c'est
+    une resolution, pas un silence. La transformer en reserve serait l'exact
+    inverse de ce que le gate doit faire : une phrase de levee vivante
+    desarme la branche fail-CLOSED."""
+    lift = {
+        "author": {"login": "clusterManager-Myia"},
+        "state": "COMMENTED", "submittedAt": at(12),
+        "body": "[Hermes] Le point 1 est adresse : levee de la reserve — valide.",
+    }
+    assert run_persona_reviews([lift])["blocked"] is False
+
+
+def test_persona_review_before_last_commit_stays_neutral():
+    """Borne : une review persona ANTERIEURE au dernier commit est presumee
+    adressee par celui-ci — pas une reserve vivante."""
+    early = dict(HERMES_14486)
+    early["submittedAt"] = at(9)
+    assert run_persona_reviews([early])["blocked"] is False
+
+
+def test_persona_review_backtick_citation_stays_neutral():
+    """Garde-fou #13030 : `` `[Hermes]` `` en backticks = CITATION du marque
+    (prose qui documente le bot), pas une review du bot. Le fail-CLOSED ne
+    doit pas rattraper les citations."""
+    cited = {
+        "author": {"login": "un-contributeur"},
+        "state": "COMMENTED", "submittedAt": at(12),
+        "body": "Le prefixe `[Hermes]` dans la prose est une citation, pas un verdict.",
+    }
+    assert run_persona_reviews([cited])["blocked"] is False
+
+
+def test_plain_review_without_persona_marker_stays_neutral():
+    """Controle : une review COMMENTED sans marque persona reste neutre —
+    le fail-CLOSED ne s'applique qu'aux personas identifies."""
+    plain = {
+        "author": {"login": "un-contributeur"},
+        "state": "COMMENTED", "submittedAt": at(12),
+        "body": "J'ai survole le diff, rien a signaler pour ma part.",
+    }
+    assert run_persona_reviews([plain])["blocked"] is False
+# --- #14553 : le registre du REFUS d'approbation. Les 21 CONCERN_MARKERS
+# n'attrapaient aucune formule de refus (« pas de LGTM en l'etat », « cannot
+# approve », « ne pas merger en l'etat ») : une review qui refusait
+# d'approuver hors vocabulaire lu None = « aucune reserve ». Complement
+# indispensable mesure en implementant : « no LGTM » negue le token LIFT
+# « LGTM » — sans le negateur anglais dans _LIFT_NEGATION_TOKENS, la couche
+# lift absorbait le refus comme une APPROBATION avant meme l'evaluation des
+# marqueurs. Corpus 200 PRs mergees (1060 reviews+comments) : exactement 2
+# flips None -> BOT-CONCERN, les 2 vrais positifs ci-dessous, 0 FP.
+
+REFUS_14535_BODY = "**[NanoClaw]** structural review (6 fichiers, 1114+) — toy relu au head `5db4286c`, résultats recomputés depuis le JSON brut, scellé lu in extenso au commit `48195b05bd`.\n\n**Le positif, vérifié firsthand** :\n- **Chaque chiffre du tableau se reproduit exactement** depuis `runs[]` brut (5 seeds × 4 paysages) : moyennes/std α* (0.601±0.296, 0.400±0.490 bimodal exact, etc.), gap = 0.000 partout, et surtout **α_truth ≡ α_fit seed par seed** (écart < 1e-9) avec transfer/self payoffs identiques — la structure du null est dans les données, pas seulement dans l'agrégat.\n- L'ordonnancement du scellé est réel : `48195b05` (21:48Z) n'ajoute QUE le scratchpad (79 l.), le code arrive à 22:25:36Z.\n- 14 tests présents ; portée grade C honnête (aucune claim conscience/qualia) ; la prédiction de scaling N=8 est la bonne suite (case 12 déjà ouverte, #14544).\n\n**Le concern central — le pré-enregistrement cité n'est pas celui qui est scellé** :\nLe scellé décrit un **autre toy** que celui livré : génome = carte de perception tabulaire (16 perceptions, mutation 0.01, T=2000), truth-track sélectionné sur **l'information mutuelle I(f;W)**, paysages L_even/L_odd, verdict scellé = **gap de survie au transfert (P2a ≥ 0.90 vs P2b ≤ 0.10, gap ≥ 0.80)**. Le toy livré évolue un **scalaire α** sur un canal canonique fixe avec les stratégies Prakash §4, sur 4 autres paysages. Or le body affiche : « Verdict attendu (scellé) : **gap ≥ 0.10** si α*_truth ≠ α*_fitness » — ce critère **n'apparaît nulle part** dans le texte scellé ; les « N1/N2/N3 : nulls adversariaux (α=0/0.5/1) » ne sont pas les nulls scellés (constante / aléatoire / NOT-XOR) ; P1b/P1c sont reformulés en vocabulaire α que le scellé n'a pas. Le point 4 du « null honnête » (« Le verdict suit le pré-enregistrement ») est donc **matériellement faux** : aucune bande scellée n'est évaluée telle quelle. La même phrase est propagée dans la distillation (l.34 et l.52) et la ligne matrix 115 (« pre_enregistrement »). Le changement de design après scellement est légitime — le cacher sous un scellé réécrit ne l'est pas ; c'est précisément ce que le pré-enregistrement est censé empêcher. (Contraste maison : la case 8c, même lane, documente exemplairement une déviation de spécification — la barre existe déjà dans le repo.)\n\n**Demandes à la lane** (correction bon marché — le null lui-même survit) :\n1. Annoncer la déviation dans body + distillation + matrix : design scellé (génome perception, MI) remplacé par le canal α Prakash §4, et pourquoi.\n2. Citer le verdict **réellement** scellé (gap survie-transfert ≥ 0.80) — les champs `transfer_truth`/`transfer_fit` existent déjà dans le JSON et sont identiques entre stratégies : le null survit très probablement au critère scellé, donc assumer ce recadrage ne coûte rien et rend le « null de référence » étanche.\n3. Déclarer les bandes P1-P4 scellées caduques pour ce design (elles sont inévaluables sans génome de perception), au lieu de les citer en les reformulant.\n\nDonnées exactes, discipline de provenance en défaut — pas de LGTM en l'état.\n\n**[NanoClaw]**\n"
+
+REFUS_14484_BODY = "[Hermes] Review sur 1dfdc296 (contrainte token : COMMENT only, opener=jsboige).\n\nNanoClaw a déjà couvert la structure (1 fichier, hunks base↔head). Mon ajout, distinct et pas couvert : **le diff annule l'actif d'un fix précédent de la MÊME lane** — la review NanoClaw note le pattern, jsboige (commentaire 14:47) signale le retour arrière ; ce que je vérifie et apporte en plus :\n\n1. **3 slides reviennent de `absolute top-[110px] right-[20px] w-[460px]` à un grid 2-colonnes** (img_005, img_009, img_012). C'est bien une régression par rapport au positionnement absolu adopté pour la même issue #13224 tranche 6 — le title de l'issue dit le reste : « 42/49 slides à images ont un côté vide à >=40%, aucun layout image-overlay ». La PR élargit l'occupation mais le grid `55%_42%` avec `max-h-[360px] object-contain` ne garantit PAS l'occupation ≥40% des deux côtés — c'est le critère d'acceptance de #13224, pas une préférence esthétique.\n\n2. La conversion CRLF (`---` et divs `grid-cols-3` préexistants réécrits avec \\\\r) est du bruit de diff qui pollue les 39 délétions — les hunks 1594+ ne changent que les fins de ligne sur des slides déjà corrigés.\n\nCompte tenu du commentaire de jsboige (propriétaire du constat historique) je ne pose pas de REQUEST_CHANGES — mais je recommande de NE PAS merger en l'état tant que le scanner occupation (#13223) n'a pas validé ces 3 slides, ou de revenir au positionnement absolu pour elles. La question de fond mérite une décision explicite (absolu vs grid) tracée dans l'issue #13224 pour éviter le yo-yo entre tranches."
+
+POSITIF_14493_BODY = "**[Hermes]** — review #14493 (head `ac2c7a44`)\n\nLa procédure elle-même est saine et bien structurée (3 étapes, table de décision, anti-patterns), et le renvoi aux règles L898/L1356 est correct — j'ai vérifié : ce sont des IDs de règles canoniques dans `proactive-coordination.md` (l.73 : « L898 ★★★ — collision guard : avant d'ÉCRIRE »), pas des numéros de ligne.\n\n**Mais le récit fondateur contient deux ancrages factuels faux, vérifiés à l'API :**\n\n1. **« Issue #14032 déjà claimée… depuis `2026-08-18T02:51:25Z` »** — impossible : l'issue #14032 a été **créée le 2026-09-01T10:36Z**, soit 14 jours *après* la date de claim alléguée. Le premier `[CLAIMED]` réel date du **2026-09-03T02:05:59Z** ; le timestamp `02:51:25Z` cité est celui de l'**amendement de scope** (même jour), greffé sur une date inventée. Les commentaires antérieurs au 01/09 : zéro.\n\n2. **« Tell fondateur #14259 (2026-08-30) : OPEN + zéro PR liée n'est pas une preuve de fraîcheur »** — #14259 a été créée le **2026-09-02** et porte sur les gardes d'idempotence de `supervise.sh` ; rien dans son body ni ses commentaires ne raconte une édition fondée sur un `--state open` ayant raté une PR mergée. Cette histoire correspond à l'incident **#8835/#8836 du 2026-07-29** (§C715-L2 de `proactive-coordination-detail.md` : « recherche `--state open` au lieu de `--state all` »). La leçon est juste, l'attribution est fausse.\n\nPourquoi ça compte : le doc est déclaré « Statut : procédure (HARD) » et sera lu comme référence canonique par les autres lanes. Une procédure de vérification de fraîcheur dont le propre récit fondateur contient des dates qui précèdent la création des issues et une attribution d'incident erronée mine exactement la discipline qu'elle veut instaurer (anti-fabrication #1019).\n\nFix mécanique : dater le claim #14032 du 2026-09-03 (02:05Z, amendement 02:51Z), et attribuer le tell « `--state open` rate les merges » à #8835/#8836 (C715-L2) — ou citer #14259 pour ce qu'il est vraiment si l'histoire venait d'ailleurs.\n\nSecurity scan : 0 match. Verdict : REQUEST_CHANGES sur les ancrages factuels (contrainte token : COMMENT only) — la structure procédurale est bonne, seules les références du récit sont à corriger.\n"
+
+REFUSAL_EMISSIONS = {
+    "pas de LGTM": "Verifie au head abc123, chiffres recoherents. Pas de LGTM en l'etat.",
+    "no LGTM": "no LGTM from this review until the seeds match.",
+    "je ne peux pas approuver": "Structure saine mais je ne peux pas approuver seul sur ce format.",
+    "cannot approve": "I cannot approve this as is — the artifact must be regenerated.",
+    "not approving": "Read the full diff; not approving this iteration.",
+    "ne pas merger en l'etat": "Trois demandes ouvertes — ne pas merger en l'etat.",
+    "do not merge as is": "Verdict: do not merge as is.",
+}
+
+REFUSAL_CITED_LIFTS = {
+    "pas de LGTM": "La reserve « pas de LGTM en l'etat » est adressee : corrige au head abc, re-verifie. Levee de la reserve.",
+    "no LGTM": "Le « no LGTM » d'hier est adresse : re-exec 5/5 au head 77c. Levee de la reserve.",
+    "je ne peux pas approuver": "Le « je ne peux pas approuver » initial est resolu : artefact regenere. Levee de la reserve.",
+    "cannot approve": "Le « cannot approve » du precedent est leve : point 2 corrige au head f00d. Levee de la reserve.",
+    "not approving": "Le « not approving » d'hier est adresse : corrige au head 3fa. Levee de la reserve.",
+    "ne pas merger en l'etat": "La demande « ne pas merger en l'etat » est resolue : les 3 points traites au head 9a2. Levee de la reserve.",
+    "do not merge as is": "The old review's « do not merge as is » is resolved at head f00d. Levee de la reserve.",
+}
+
+
+def test_refus_14535_corps_reel_bloque():
+    """#14553 fondateur, corps REEL complet (3069 chars) : review NanoClaw
+    du 2026-09-03T23:50:16Z — trois demandes numerotees, cloture « Donnees
+    exactes, discipline de provenance en defaut — pas de LGTM en l'etat ».
+    classify rendait None (gate vert) ; le registre du refus la classe
+    BOT-CONCERN."""
+    assert mod.classify("clusterManager-Myia", REFUS_14535_BODY) == "BOT-CONCERN"
+
+
+def test_refus_14484_corpus_catch():
+    """2e flip du corpus (corps REEL, 1562 chars) : Hermes ne pose PAS de
+    REQUEST_CHANGES mais RECOMMANDE « de NE PAS merger en l'etat tant que le
+    scanner occupation n'a pas valide ». La forme RECOMMANDATION du refus —
+    plus douce qu'un CHANGES_REQUESTED formel — etait doublement invisible
+    (REQUEST_CHANGES cite-mort par « pas de », le refus hors vocabulaire).
+    Vrai positif rattrape, pas un FP de mesure."""
+    assert mod.classify("jsboige", REFUS_14484_BODY) == "BOT-CONCERN"
+
+
+def test_refus_controle_positif_14493_reste_bot_concern():
+    """Controle positif non-regression de l'issue : #14493 (deja BOT-CONCERN
+    par les marqueurs existants) reste BOT-CONCERN — l'ajout ne degrade pas
+    le verdict existant."""
+    assert mod.classify("clusterManager-Myia", POSITIF_14493_BODY) == "BOT-CONCERN"
+
+
+def test_refus_chaque_motif_vit_en_emission():
+    """Acceptance « chaque motif ajoute arrive avec un test qui echoue sans
+    lui » : chaque formule EMISE dans une review rend BOT-CONCERN."""
+    for motif, body in REFUSAL_EMISSIONS.items():
+        assert mod.classify("clusterManager-Myia", body) == "BOT-CONCERN", motif
+
+
+def test_refus_chaque_motif_cite_dans_une_levee_reste_none():
+    """Acceptance « un FP plausible teste comme restant None » : un refus
+    QUOTE dans une levee (« la reserve « pas de LGTM » est adressee ») est
+    une mention citee + une levee — jamais une reserve vivante."""
+    for motif, body in REFUSAL_CITED_LIFTS.items():
+        assert mod.classify("clusterManager-Myia", body) is None, motif
+
+
+def test_refus_no_lgtm_needed_est_une_approbation():
+    """Garde word-bounded : « no LGTM needed here » est une APPROBATION
+    (docs-only), pas un refus — la sous-chaine nue y vivrait a tort."""
+    assert mod.classify("clusterManager-Myia",
+                        "Docs-only tweak — no LGTM needed here, verified the diff. Merged."
+                        ) is None
+
+
+def test_refus_no_lgtm_exige_le_negateur_anglais(monkeypatch):
+    """« no LGTM » porte le mot des DEUX familles : LIFT_MARKERS lit « LGTM »
+    comme approbation. Sans le negateur anglais dans _LIFT_NEGATION_TOKENS,
+    la couche lift absorbe le refus AVANT l'evaluation des marqueurs. Ce test
+    prouve que le token « no » est porteur (mutation : le retirer rougit)."""
+    body = REFUSAL_EMISSIONS["no LGTM"]
+    assert mod.classify("clusterManager-Myia", body) == "BOT-CONCERN"
+    monkeypatch.setattr(
+        mod, "_LIFT_NEGATION_TOKENS",
+        tuple(t for t in mod._LIFT_NEGATION_TOKENS if t not in ("no", "not")))
+    assert mod.classify("clusterManager-Myia", body) is None, (
+        "MUTATION FAILED : sans le negateur anglais, le refus « no LGTM » "
+        "est encore absorbe comme approbation LGTM."
+    )
+
+
+def test_refus_mutation_famille_absente_fondateur_retombe_none(monkeypatch):
+    """Controle par mutation (modele #14538) : la famille APPROVAL_REFUSALS
+    retiree de CONCERN_MARKERS, le fondateur #14535 doit retomber a None —
+    preuve que le verdict BOT-CONCERN est porte PAR la famille ajoutee."""
+    monkeypatch.setattr(
+        mod, "CONCERN_MARKERS",
+        tuple(m for m in mod.CONCERN_MARKERS if m not in mod.APPROVAL_REFUSALS))
+    assert mod.classify("clusterManager-Myia", REFUS_14535_BODY) is None
+
+
 # --- #13399 : une levee portee par une REVIEW est aussi visible qu'en
 # commentaire. Le defaut constate sur #13299 : ai-01 pose APPROVED par review
 # en nommant chaque reserve, mais l'organe n'etait capable de lever par re-review
@@ -4993,5 +5246,141 @@ def test_13083_instance3_tete_h1_neutralise_toujours():
         f"Titre H1 `avant merge` (ligne 1, sans verbe actionnel) doit "
         f"rester neutralise apres fix `\\A` (non-regression du cas "
         f"fondateur), got {mod.classify('myia-ai-01', body)!r}"
+    )
+
+
+def test_14461_gvar3_override_est_reconnu_comme_arbitrage() -> None:
+    """#14461 : un [G-VAR-3 OVERRIDE] pose en tete EMET une levee, pas un hold.
+
+    Cas fondateur (PR #14345) : le coordinateur pose l'override d'adjacence
+    canonique `[G-VAR-3 OVERRIDE] lane <m:w> -- next: <genre>` pour debloquer
+    le garde d'adjacence, mais la phrase qui suit (« tant que ... n'est pas
+    sur main ») est lue comme une injonction -> classify = BOT-CONCERN ->
+    la PR que l'override venait de debloquer reste bloquee. Les deux
+    instruments de deblocage du depot se bloquaient l'un l'autre.
+
+    Controle a variable unique (tableau de l'issue) : meme corps, meme auteur,
+    seul le marqueur d'en-tete change. B vs C isole la cause a une seule
+    variable (l'orthographe du marqueur). D (vraie injonction) et E (anodin)
+    rendent le controle non vacuous : la correction ne desarme PAS la
+    detection de hold reelle — un predicat qui ne porte que B serait permissif
+    et passerait inapercu.
+    """
+    phrase = "Tant que #14345 n'est pas sur `main`, chaque levee de la flotte porte ce risque."
+    cases = [
+        ("A phrase seule", phrase, True),
+        (
+            "B sous [G-VAR-3 OVERRIDE]",
+            f"[G-VAR-3 OVERRIDE] lane myia-po-2026:CoursIA -- next: notebook-python\n\n{phrase}",
+            False,
+        ),
+        (
+            "C sous [OVERRIDE]",
+            f"[OVERRIDE] lane myia-po-2026:CoursIA -- next: notebook-python\n\n{phrase}",
+            False,
+        ),
+        ("D vraie injonction", "Ne pas merger tant que le run GPU n'est pas rendu.", True),
+        ("E commentaire anodin", "Vu, merci.", False),
+    ]
+    for label, body, expected in cases:
+        got = mod._coordinator_emission_informal(body)
+        assert got is expected, (
+            f"#14461 {label}: _coordinator_emission_informal attendu "
+            f"{expected}, got {got!r}"
+        )
+    # Integration (symptome mesure sur #14345) : un override d'adjacence pose
+    # par un LIFT_OVERRIDE_LOGINS ne doit plus classifier BOT-CONCERN (la PR que
+    # l'override debloque reste bloquee). Il doit rendre None (pas de reserve).
+    body_b = (
+        f"[G-VAR-3 OVERRIDE] lane myia-po-2026:CoursIA -- next: notebook-python\n\n{phrase}"
+    )
+    assert mod.classify("myia-ai-01", body_b) is None, (
+        f"#14461: classify(myia-ai-01, [G-VAR-3 OVERRIDE] + phrase) attendu "
+        f"None (pas de BOT-CONCERN vivant), got "
+        f"{mod.classify('myia-ai-01', body_b)!r}"
+    )
+    assert mod._block_emitted(body_b) is False, (
+        "#14461: l'override d'adjacence n'emet pas non plus un BLOCAGE "
+        "(point A de _block_emitted, garde-fou du jumeau)."
+    )
+
+
+def test_14461_t2_negation_d_override_ne_supprime_rien() -> None:
+    """#14461 tranche 2 (adjoint po-2025, 2026-09-05) : un override est une
+    AFFIRMATION, jamais une negation.
+
+    `[NO OVERRIDE]` / `[PAS D'OVERRIDE]` / `[SANS OVERRIDE]` / `[NOT AN
+    OVERRIDE]` disent l'inverse d'un arbitrage. Le motif bracketé
+    `_OVERRIDE_HEAD_RE` (qui ne portait qu'OVERRIDE) les reconnaissait quand
+    meme et SUPPRIMAIT une injonction reelle posee juste apres : `_block_emitted`
+    (point A) et `_coordinator_emission_informal` retombaient a False
+    (arbitrage) et `classify` rendait None sur un corps portant un BLOCAGE.
+    Lookahead negatif : un mot de negation (EN/FR) avant OVERRIDE dans le
+    crochet = pas un override. Controles positifs : les formes canoniques
+    (`[G-VAR-3 OVERRIDE]`, `[G-VAR-2 OVERRIDE]`, `[OVERRIDE]`) restent des
+    arbitrages (non-regression).
+    """
+    injonction = "**BLOCAGE MERGE (ai-01)** — Ne pas merger tant que le run GPU n'est pas rendu."
+    negs = ["[NO OVERRIDE]", "[PAS D'OVERRIDE]", "[SANS OVERRIDE]", "[NOT AN OVERRIDE]"]
+    for marker in negs:
+        body = f"{marker} lane x\n\n{injonction}"
+        assert mod._block_emitted(body) is True, (
+            f"#14461-T2 {marker!r}: le BLOCAGE doit rester emis — la negation ne "
+            f"desarme pas le point A de _block_emitted, got "
+            f"{mod._block_emitted(body)!r}"
+        )
+        assert mod._coordinator_emission_informal(body) is True, (
+            f"#14461-T2 {marker!r}: l'injonction doit rester une emission — la "
+            f"negation ne la supprime pas, got "
+            f"{mod._coordinator_emission_informal(body)!r}"
+        )
+        assert mod.classify("myia-ai-01", body) == "BLOCK", (
+            f"#14461-T2 {marker!r}: classify doit rendre BLOCK, pas None (la "
+            f"negation n'est pas un arbitrage), got "
+            f"{mod.classify('myia-ai-01', body)!r}"
+        )
+        assert not mod._OVERRIDE_HEAD_RE.match(f"{marker} lane x".upper()), (
+            f"#14461-T2 {marker!r}: le motif ne doit pas matcher une negation."
+        )
+    for marker in ("[G-VAR-3 OVERRIDE]", "[G-VAR-2 OVERRIDE]", "[OVERRIDE]"):
+        body = f"{marker} lane x\n\n{injonction}"
+        assert mod._block_emitted(body) is False
+        assert mod._coordinator_emission_informal(body) is False
+        assert mod.classify("myia-ai-01", body) is None
+        assert mod._OVERRIDE_HEAD_RE.match(f"{marker} lane x".upper()), (
+            f"#14461-T2 {marker!r}: le motif doit matcher une forme positive."
+        )
+
+
+def test_14793_troncature_60_crochet_non_ferme_est_pin() -> None:
+    """#14793 acceptance 3 : la troncature de tete a 60 caracteres, quand le
+    crochet OVERRIDE s'ouvre mais ne se ferme pas avant la limite, ne desarme
+    pas le garde (pin, comportement hereditaire accepte par la review de #14788).
+
+    Un en-tete dont le crochet s'ouvre dans les 60 premiers chars mais ne se
+    ferme pas avant la limite n'est PAS un override pose : le motif regu une
+    tete sans `]` et ne matche pas, le BLOCAGE reste une emission (garde arme),
+    pas un arbitrage muet. Valeurs mesurees sur `_OVERRIDE_HEAD_RE` a pos 0
+    (`.match`), `_coordinator_emission_informal`, `_block_emitted` et `classify`.
+    """
+    body = (
+        "**BLOCAGE MERGE (ai-01)** — Au tour precedent, l'ordre [OVERRIDE lane "
+        "myia-po-2024:CoursIA-2 -- justifier longuement que le crochet ne se "
+        "referme pas avant la limite de soixante caracteres]\n\nNe pas merger "
+        "tant que le run GPU n'est pas rendu."
+    )
+    head60 = body[:60]
+    assert not mod._OVERRIDE_HEAD_RE.match(head60.upper()), (
+        "#14793-TRUNC: un crochet non ferme dans les 60 premiers chars ne doit "
+        "pas matcher le motif d'override (le garde n'est pas desarme)."
+    )
+    assert mod._coordinator_emission_informal(body) is True, (
+        "#14793-TRUNC: l'injonction doit rester une emission."
+    )
+    assert mod._block_emitted(body) is True, (
+        "#14793-TRUNC: le BLOCAGE (point A) reste emis sous un crochet non ferme."
+    )
+    assert mod.classify("myia-ai-01", body) == "BLOCK", (
+        "#14793-TRUNC: classify doit rendre BLOCK, pas None/arbitrage."
     )
 

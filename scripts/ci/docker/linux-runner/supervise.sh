@@ -120,6 +120,34 @@ export MSYS2_ARG_CONV_EXCL='*'
 
 die() { echo "ERREUR: $*" >&2; exit 1; }
 
+# Contexte de build du runner : le dossier qui porte ce script porte aussi
+# Dockerfile et entrypoint.sh -- le garde de fraicheur compare le sibling du
+# checkout d'ou l'operateur lance le superviseur a ce que porte l'image.
+RUNNER_CTX="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# #14801 Garde de fraicheur d'image. Un correctif d'entrypoint.sh merge mais
+# dont l'image n'a pas ete reconstruite est INERTE : #14385 (purge sparse au
+# demarrage du slot) est reste inerte 3 jours sur la moitie du parc (image du
+# daemon docker-ce WSL construite 5 h AVANT le merge, jamais rebatie), et ce
+# silence a produit les rouges fantomes du sparse-checkout empoisonne. Le
+# demarrage d'un pool est le seul point qui s'execute inconditionnellement
+# (un job annule ne joue aucun step post) : on y compare le sha256 du
+# entrypoint.sh de CE checkout a celui embarque dans l'image. La lecture
+# cote image passe par `docker run --entrypoint sha256sum` -- le Dockerfile
+# place le script a /opt/runner/entrypoint.sh et MSYS_NO_PATHCONV (exporte
+# plus haut) protege l'argument POSIX sous Git Bash.
+assert_image_fresh() {
+  local image="$1" build_cmd="$2"
+  local repo_sha img_sha
+  repo_sha="$(sha256sum "$RUNNER_CTX/entrypoint.sh" 2>/dev/null | awk '{print $1}')"
+  [ -n "$repo_sha" ] || die "entrypoint.sh introuvable a cote de supervise.sh ($RUNNER_CTX) -- lancer depuis un checkout du depot"
+  img_sha="$(docker run --rm --entrypoint sha256sum "$image" /opt/runner/entrypoint.sh 2>/dev/null | awk '{print $1}')"
+  [ -n "$img_sha" ] || die "lecture de /opt/runner/entrypoint.sh dans $image impossible (docker run --entrypoint sha256sum)"
+  [ "$repo_sha" = "$img_sha" ] || die "image $image PERIMEE : entrypoint.sh du checkout ($repo_sha) != entrypoint embarque ($img_sha).
+Un correctif merge mais non deploye est indiscernable d'un correctif absent (#14801, #14385). Reconstruire :
+    $build_cmd"
+}
+
 # #14259 Defaut 1+3 : compte et liste les PIDs des superviseurs actifs du
 # meme `NAME_PREFIX`. La cle est `PPID==1` : un superviseur est le parent
 # direct d'un slot_loop fork (mesure : PPID 72469 = LE superviseur ;
@@ -144,7 +172,20 @@ fetch_token() {
   # conteneur. C'est la raison pour laquelle la boucle vit sur l'HOTE et non
   # dans l'image -- `gh` et ses credentials ne descendent jamais dans le
   # conteneur.
-  gh api --method POST "repos/$REPO/actions/runners/registration-token" --jq .token 2>/dev/null
+  #
+  # #14259 epinglage : GH_TOKEN ambiant est honore tel quel par gh ;
+  # COURSIA_RUNNER_GH_ACCOUNT (plus specifique) le surpasse en resolvant
+  # le token du compte nomme. Sans epinglage, le fetch depend du compte
+  # gh ACTIF -- un `gh auth switch` dans une autre session changeait
+  # l'identite des registration tokens en silence (incident 2026-09-02).
+  if [ -n "${COURSIA_RUNNER_GH_ACCOUNT:-}" ]; then
+    GH_TOKEN="$(gh auth token --user "$COURSIA_RUNNER_GH_ACCOUNT")" || return 1
+    export GH_TOKEN
+  fi
+  # Pas de 2>/dev/null (#14259) : l'erreur REELLE de gh (403, token expire,
+  # compte sans droit admin) doit atteindre l'operateur. Le message de la
+  # boucle resume le symptome ; il ne remplace pas la cause.
+  gh api --method POST "repos/$REPO/actions/runners/registration-token" --jq .token
 }
 
 # Parametre depuis #14337 : un slot = une boucle, mais nom/labels/image/caps
@@ -207,6 +248,7 @@ cmd_start() {
   docker image inspect "$IMAGE" >/dev/null 2>&1 \
     || die "image $IMAGE absente -- construire d'abord :
     docker build -t $IMAGE scripts/ci/docker/linux-runner/"
+  assert_image_fresh "$IMAGE" "docker build -t $IMAGE scripts/ci/docker/linux-runner/"
   docker volume create "$TOOLCACHE_VOLUME" >/dev/null \
     || die "volume $TOOLCACHE_VOLUME impossible a creer -- docker volume create"
   # #14259 Defaut 1 : garde d'idempotence. `pgrep` n'existe PAS sous Git
@@ -264,6 +306,7 @@ cmd_stop() {
   echo "sentinel pose : aucun nouveau conteneur ne sera lance."
   echo "Les jobs en cours vont a leur terme. Pour couper net (deconseille) :"
   echo "  docker ps --filter name=$NAME_PREFIX -q | xargs -r docker kill"
+  echo "  docker ps --filter name=$LEAN_NAME_PREFIX -q | xargs -r docker kill"
 }
 
 cmd_status() {
@@ -289,9 +332,29 @@ cmd_status() {
   echo "== conteneurs runner en cours =="
   docker ps --filter "name=$NAME_PREFIX" --format '  {{.Names}}  {{.Status}}  {{.RunningFor}}' 2>/dev/null || true
   echo "== runners enregistres cote GitHub =="
-  gh api "repos/$REPO/actions/runners" \
-    --jq '.runners[]|"  \(.name) [\(.status)] busy=\(.busy) labels=\([.labels[].name]|join(","))"' 2>/dev/null \
-    || echo "  (droit admin requis pour lire l'inventaire)"
+  # #14259 : nommer la contradiction docker-vs-inventaire au lieu
+  # d'afficher les deux blocs cote a cote. « N conteneurs / 0 runner
+  # enregistre » est l'etat exact de l'incident 2026-09-02 (jetons crees
+  # sous un compte, inventaire lu sous un autre). Une fenetre transitoire
+  # existe au re-enregistrement entre deux jobs (--ephemeral), d'ou le
+  # « si persistant » du message.
+  local runners_ok=0 runners_out=""
+  if runners_out="$(gh api "repos/$REPO/actions/runners" \
+      --jq '.runners[]|"  \(.name) [\(.status)] busy=\(.busy) labels=\([.labels[].name]|join(","))"' 2>/dev/null)"; then
+    runners_ok=1
+    printf '%s\n' "$runners_out"
+  else
+    echo "  (droit admin requis pour lire l'inventaire)"
+  fi
+  if [ "$runners_ok" -eq 1 ]; then
+    local n_cont n_run
+    n_cont="$(docker ps --filter "name=$NAME_PREFIX" -q 2>/dev/null | wc -l | tr -d ' ')"
+    n_run="$(printf '%s\n' "$runners_out" | grep -c '^  ' || true)"
+    if [ "$n_cont" -gt 0 ] && [ "$n_run" -eq 0 ]; then
+      echo "  -- CONTRADICTION : $n_cont conteneur(s) $NAME_PREFIX actif(s) mais 0 runner enregistre cote GitHub."
+      echo "     Si persistant : fetch_token sous un mauvais compte -- cf epinglage COURSIA_RUNNER_GH_ACCOUNT (#14259)."
+    fi
+  fi
   [ -f "$STOP_FILE" ] && echo "== sentinel STOP pose : les boucles ne relancent plus =="
 }
 
@@ -334,6 +397,7 @@ cmd_waiters() {
   docker image inspect "$IMAGE" >/dev/null 2>&1 \
     || die "image $IMAGE absente -- construire d'abord :
     docker build -t $IMAGE scripts/ci/docker/linux-runner/"
+  assert_image_fresh "$IMAGE" "docker build -t $IMAGE scripts/ci/docker/linux-runner/"
   [ -f "$STOP_FILE" ] && die "sentinel STOP pose -- arreter d'abord ($0 stop)"
   # Idempotence propre a la famille waiters : le garde de `start` filtre
   # `supervise.sh start` et ne voit pas `waiters`. Verrou porte par le pid
@@ -362,9 +426,21 @@ cmd_lean() {
   docker image inspect "$LEAN_IMAGE" >/dev/null 2>&1 \
     || die "image $LEAN_IMAGE absente -- construire d'abord :
     docker build -t $LEAN_IMAGE -f scripts/ci/docker/linux-runner/Dockerfile.lean scripts/ci/docker/linux-runner/"
+  # Dockerfile.lean FROM coursia-linux-runner : l'entrypoint est herite de la
+  # base -- un ecart pointe soit vers l'image lean, soit vers sa base.
+  assert_image_fresh "$LEAN_IMAGE" "docker build -t $LEAN_IMAGE -f scripts/ci/docker/linux-runner/Dockerfile.lean scripts/ci/docker/linux-runner/"
   [ -f "$STOP_FILE" ] && die "sentinel STOP pose -- arreter d'abord ($0 stop)"
   # Idempotence calquee sur cmd_waiters : le garde PPID de `start` filtre
   # `supervise.sh start` et ne verrait pas `lean`. Verrou par pid file.
+  #
+  # Budget CPU hors garde (a documenter, ai-01 DM 2026-09-04) : le garde PPID
+  # ne couvre que les superviseurs d'un MEME prefix, donc `start` et `lean`
+  # coexistent par design (familles distinctes, containers distincts). La
+  # somme des caps CPU des familles actives n'est gardee par RIEN -- c'est
+  # l'operateur qui dimensionne : slots generiques (N x CPUS) + waiters
+  # (N x WAITER_CPUS) + slots lean (N x LEAN_CPUS) doit rester <= le total
+  # machine. Le pool lean est dimensionne pour tourner SEUL sur la jambe CI
+  # lourde (arret des autres familles avant `lean` quand la machine sature).
   if [ -f "$STATE_DIR/lean-pids" ]; then
     local head_pid
     head_pid="$(head -1 "$STATE_DIR/lean-pids" 2>/dev/null || true)"

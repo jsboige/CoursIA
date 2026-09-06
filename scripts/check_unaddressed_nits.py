@@ -151,7 +151,28 @@ LIFT_OVERRIDE_LOGINS = {"myia-ai-01"}
 # != droit d'override coordinateur.
 PERSONA_ALIAS_LOGINS = {"clusterManager-Myia"}
 _PERSONA_MARKERS_RE = re.compile(
-    r"(?m)(?:^|\s)\[(?:Hermes|NanoClaw|Hermes self-bot)(?:\s+[^\]]*)?\]"
+    # #14503 (2e cause) : l'en-tete reel des personas peut etre en GRAS —
+    # `**[NanoClaw]** structural review` (PR #14548). L'alternative `(?:^|\s)`
+    # exigeait un debut de ligne ou une espace avant `[` : le `*` du gras
+    # suffisait a effacer la review entiere du radar, AVANT meme la question
+    # du verdict. `*` (gras/italique markdown) rejoint les debuts admis ;
+    # le backtick reste EXCLU : `` `[Hermes]` `` est une citation (#13030).
+    r"(?m)(?:^|[\s*])\[(?:Hermes|NanoClaw|Hermes self-bot)(?:\s+[^\]]*)?\]"
+)
+# #14503 — reserves enoncees en PROSE ordinaire par une persona, sans aucun
+# prefixe de verdict (CONCERN_MARKERS muet). Jeu SERRE, mesure sur le corpus
+# des 200 dernieres PRs mergees (controle 3 de l'issue) : le fail-CLOSED pur
+# sur « persona + post-commit + sans verdict » attraperait 70 reviews dont la
+# quasi-totalite sont des APPROBATIONS en prose (« Verdict : solide »,
+# « validé », « exemplary fix ») — un mur, pas un durcissement. Les motifs
+# ci-dessous attrapent les deux cas fondateurs (#14486 « défauts constatés »,
+# #14548 « contredit ») et 0 des 70 approbations. « reproduit » et
+# « à corriger » sont EXCLUS : usage positif dominant dans le corpus
+# (« chaque chiffre du tableau se reproduit exactement »).
+_PROSE_CONCERN_RE = re.compile(
+    r"(?i)d[ée]fauts?\s+constat|m[ée]rite\s+une\s+it[ée]ration"
+    r"|avant\s+c[âa]blage|contredit"
+    r"|faux\s+n[ée]gatifs?|false\s+negatives?"
 )
 # #13030 -- le marqueur doit etre POSE, pas CITE. L'ancien pattern sans
 # ancre matchait n'importe quelle mention dans le corps : le commentaire de
@@ -173,6 +194,31 @@ _OVERRIDE_LANE = re.compile(
     r"(?m)^[#>*+\-\s]*\[\s*OVERRIDE\s*\]\s+lane\s+([^\s`]+)",
 )
 OVERRIDE_LANE = _OVERRIDE_LANE
+
+# #14461 -- un marqueur d'override EN TÊTE est TOUT token bracketé dont
+# l'étiquette porte OVERRIDE, quel que soit le garde émetteur : `[OVERRIDE]`,
+# `[G-VAR-3 OVERRIDE]`, et les futurs overrides de gardes adjacents. Le
+# `startswith("[OVERRIDE]")` (une seule graphie) ne reconnaissait pas la forme
+# canonique `[G-VAR-3 OVERRIDE]` de variation_adjacency_guard.py : un override
+# correctement posé devenait une émission de hold (BOT-CONCERN) et bloquait la
+# PR qu'il venait de débloquer — les deux instruments de déblocage se bloquaient
+# l'un l'autre. Reconnaissance par MOTIF (bracketé portant OVERRIDE), pas par
+# graphie. GARDE-FOU d'EN-TÊTE : les appelants ne font que `.match` (ancrage
+# position 0) — un `[OVERRIDE]` MENTIONNÉ en milieu de tête (ex. « pas de merge
+# tant que [OVERRIDE] lane n'est pas posé ») n'est PAS un arbitrage posé et doit
+# rester un blocage (cf test_13083_blocage_reel_conditionnel). Partagé par
+# `_block_emitted` (point A) et `_coordinator_emission_informal`.
+# #14461 tranche 2 (adjoint po-2025) : un override est une AFFIRMATION, jamais
+# une negation. `[NO OVERRIDE]` / `[PAS D'OVERRIDE]` / `[SANS OVERRIDE]` /
+# `[NOT AN OVERRIDE]` disent l'inverse d'un arbitrage ; les croire overrides
+# SUPPRIMERAIT une injonction reelle. Lookahead negatif : un mot de negation
+# (EN/FR) present avant OVERRIDE dans le crochet = pas un override. Formes
+# positives (`[OVERRIDE]`, `[G-VAR-3 OVERRIDE]`, `[G-VAR-2 OVERRIDE]`) intactes.
+_OVERRIDE_HEAD_RE = re.compile(
+    r"\[\s*(?![^\]]*\b(?:no|not|nor|none|never|sans|pas|aucun|aucune)\b[^\]]*\bOVERRIDE\b)"
+    r"[^\]]*\bOVERRIDE\b[^\]]*\]",
+    re.IGNORECASE,
+)
 
 # #13083 — le symetrique de #11639 : un coordinateur BLOQUE aussi, et l'organe
 # ne le modelisait pas. Même contrainte de pose stricte que le durcissement de
@@ -314,6 +360,28 @@ CONCERN_MARKERS = CONCERN_MARKERS + SEVERITY_GLYPHS
 # une mention (_strip_quoted), comme tout autre verdict backtinque.
 BLOCK_VERDICTS = ("**BLOCKED**", "BLOCKED  PR")
 CONCERN_MARKERS = CONCERN_MARKERS + BLOCK_VERDICTS
+
+# #14553 — le registre du REFUS d'approbation. Fondateur mesure : review
+# NanoClaw du 2026-09-03T23:50:16Z sur #14535 — trois demandes numerotees,
+# cloture « Donnees exactes, discipline de provenance en defaut — pas de
+# LGTM en l'etat » -> AUCUN des marqueurs existants ne vit -> classify None
+# -> gate vert. Un refus d'approbation est un verdict a part entiere (CLAUDE.md
+# B.0 : « un reviewer qui ecrit "je ne peux pas approuver seul sur ce
+# format" bloque ») ; aucun des 21 motifs ne couvrait cette famille. Casse
+# RELACHEE (defaut has_live_marker) : « Pas de LGTM » en tete de phrase doit
+# vivre. Garde-fou FP double : (1) la fenetre de citation (_is_cited) rend
+# morte l'occurrence d'un refus QUOTE dans une levee (« la reserve
+# « pas de LGTM » est adressee ») ; (2) « no LGTM » est word-bounded avec
+# lookahead anti-« no LGTM needed » (_WORD_BOUNDED_MARKERS). « sous reserve
+# de » est EXCLU : sa neutralite depend de la POSITION (verdict final vs
+# subordonnee conditionnelle), qu'un motif ne peut pas porter — residuel
+# documente sur l'issue.
+APPROVAL_REFUSALS = (
+    "pas de LGTM", "no LGTM",
+    "je ne peux pas approuver", "cannot approve", "not approving",
+    "ne pas merger en l'etat", "do not merge as is",
+)
+CONCERN_MARKERS = CONCERN_MARKERS + APPROVAL_REFUSALS
 
 # La forme ETIQUETEE (« Concern: », « Concerns :», « **Concern 2 :** ») rejoint
 # les marqueurs vivants : elle tolere casse et nombre des deux cotes (user comme
@@ -1743,6 +1811,13 @@ def _lift_is_narrated(window: str) -> bool:
 _LIFT_NEGATION_TOKENS = (
     "non", "pas", "plus", "aucun", "aucune", "n'est", "nest", "jamais",
     "rien", "sans",
+    # #14553 — miroir anglais du « pas » : « no LGTM » negue le token de
+    # levee LGTM (le seul mot porteur des DEUX familles : LIFT_MARKERS le
+    # lit comme approbation, le refus le nie). Sans ce token, la couche
+    # lift absorbait le refus AVANT meme que CONCERN_MARKERS ne soit evalue.
+    # Meme residuel assume que le « pas » francais : une negation anglaise
+    # non locale a un vrai lift voisin peut l'eteindre par surcorrection.
+    "no", "not",
 )
 
 
@@ -1891,6 +1966,11 @@ _CASE_SENSITIVE_MARKERS = frozenset({
 
 _WORD_BOUNDED_MARKERS = {
     _CONCERN_LABEL: re.compile(r"(?m)^[\s*_#>\-]*concerns?\s*\d*\s*:"),
+    # #14553 — « no LGTM needed here » est une APPROBATION (docs-only), pas
+    # un refus : la sous-chaine nue « no LGTM » y vivrait a tort. Word-bounded
+    # + lookahead sur la famille needed/necessary/required. La regex tourne
+    # sur le body lowercase/desaccentue (cf has_live_marker), donc sans (?i).
+    "no lgtm": re.compile(r"\bno\s+lgtm\b(?!\s+(?:needed|necessary|required))"),
 }
 
 
@@ -2052,7 +2132,7 @@ def _block_emitted(body: str) -> bool:
         return True
     head = normalised[:60]
     uhead = head.upper()
-    if head.lstrip(" \t*_").upper().startswith("[OVERRIDE]"):
+    if _OVERRIDE_HEAD_RE.match(head.lstrip(" \t*_").upper()):
         return False
     m_hold = HOLD_HEAD.match(head)
     if m_hold and _hold_head_is_emission(head, m_hold.end()):
@@ -2219,11 +2299,14 @@ def _coordinator_emission_informal(body: str) -> bool:
     # injonctions sont suivies d'un participe de levee, c'est une levee.
     if _every_injunction_followed_by_lift(normalised):
         return False
-    # Un [OVERRIDE] pose en tete (arbretage tiers de B.0) EMET une levee,
-    # jamais une reserve — garde-fou de l'override, deja documente en
-    # `_block_emitted` point A.
+    # Un override pose en tete (arbitrage tiers de B.0, quelle que soit sa
+    # graphie — `[OVERRIDE]`, `[G-VAR-3 OVERRIDE]`, et les futurs overrides de
+    # gardes) EMET une levee, jamais une reserve — garde-fou de l'override,
+    # deja documente en `_block_emitted` point A. #14461 : le
+    # `startswith("[OVERRIDE]")` ne reconnaissait pas la forme canonique
+    # d'adjacence, un override correctement pose redevenait une emission.
     head = normalised[:60].lstrip(" \t*_").upper()
-    if head.startswith("[OVERRIDE]"):
+    if _OVERRIDE_HEAD_RE.match(head):
         return False
     return True
 
@@ -3154,6 +3237,38 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
         kind = classify(login, body)
         if state == "CHANGES_REQUESTED":
             kind = "BOT-CONCERN" if kind is None else kind
+        # #14503 — reserve de persona enoncee en PROSE, invisible au scanner
+        # de verdicts. Mesure fondatrice #14486 : review `[Hermes]` COMMENTED
+        # posterieure au dernier commit, reserves en prose ordinaire (« 3
+        # defauts constates en execution reelle ») SANS prefixe de verdict
+        # ni glyphe -> CONCERN_MARKERS muet -> classify None -> rc=0. Une
+        # persona sous contrainte de tokens abrege, et le verdict formel est
+        # precisement ce qui saute : le mecanisme se degrade exactement dans
+        # le sens ou il ne faut pas.
+        #
+        # Calibrage (controle 3 de l'issue, 200 dernieres PRs mergees) : le
+        # fail-CLOSED pur (« persona + post-commit + pas de levee »)
+        # attraperait 70 reviews quasi toutes APPROBATIVES (« Verdict :
+        # solide ») = un mur. La reserve n'est donc declaree que si la prose
+        # PORTE un motif de reserve (_PROSE_CONCERN_RE). Bornes :
+        #   * marque persona POSEE dans le body (gras compris, citation
+        #     backtick exclue) — un login sans marque reste l'identite de
+        #     poussee partagee ;
+        #   * motif de reserve en prose — vocabulaire serre MESURE : les 2
+        #     cas fondateurs attrapes, 0 des 70 approbations du corpus ;
+        #   * POSTERIEURE au dernier commit : une review d'avant le push est
+        #     presumee adressee par celui-ci ;
+        #   * PAS de levee vivante dans le corps : classify sort aussi None
+        #     pour une annonce de LEVEE — c'est une resolution, pas une
+        #     reserve, et la transformer en blocage serait l'exact inverse
+        #     de ce que le gate doit faire.
+        elif (state == "COMMENTED" and kind is None
+              and _PERSONA_MARKERS_RE.search(_strip_quoted(body))
+              and _PROSE_CONCERN_RE.search(_strip_quoted(body))
+              and not has_live_lift(_strip_quoted(body))
+              and last_commit is not None
+              and ts(r.get("submittedAt")) > last_commit):
+            kind = "BOT-CONCERN"
         # #11677 — symetrique APPROVED : l'etat natif GitHub `APPROVED` temoigne
         # qu'aucune reserve n'est posee. Si classify() a deja retourne un kind
         # (HUMAN ou BOT-CONCERN), c'est qu'une reserve VIVANTE survit dans la

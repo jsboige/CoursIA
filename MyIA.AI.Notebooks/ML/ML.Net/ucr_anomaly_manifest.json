@@ -1,0 +1,22 @@
+{
+  "110_UCR_Anomaly_2sddb40_35000_56600_56900.txt": {
+    "size": 1440018,
+    "sha256": "cf909cb2238c9851cc164a23bbbfd50b09226427c61a74d022c4e210064b8f29"
+  },
+  "135_UCR_Anomaly_InternalBleeding16_1200_4187_4199.txt": {
+    "size": 135018,
+    "sha256": "a965019d130b1b8f2e49974f3ed7f20675bf7014b4952240ed4c8e338a2fa86f"
+  },
+  "162_UCR_Anomaly_WalkingAceleration5_2700_5920_5979.txt": {
+    "size": 120312,
+    "sha256": "0b87854c390183094d8dd547e9517647bb285939066304ad3d133f8234cbe2cb"
+  },
+  "200_UCR_Anomaly_tiltAPB4_20000_67995_67996.txt": {
+    "size": 2304018,
+    "sha256": "420707d4f46dfb4483c0df43909afe76faac8a31cf4380202cd90f81d55fbac7"
+  },
+  "248_UCR_Anomaly_weallwalk_2000_4702_4707.txt": {
+    "size": 151776,
+    "sha256": "3b382c5a4e6208fb7932be05ad1f2e97498ed44b2f7ae7573fda20b18aba42bb"
+  }
+}

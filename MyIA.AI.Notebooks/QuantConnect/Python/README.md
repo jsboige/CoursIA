@@ -2,7 +2,7 @@
 series: QuantConnect-Python
 pedagogical_count: 54
 breakdown: Python=54
-maturity: BETA=38, ALPHA=9, DRAFT=7
+maturity: BETA=39, ALPHA=8, DRAFT=7
 -->
 
 # QuantConnect Python Notebooks
@@ -65,6 +65,7 @@ Suite à l'audit du 5 mai 2026, voici l'état honnête de chaque notebook. **Auc
 | QC-Py-22-Deep-Learning-LSTM | NON EXÉCUTÉ | |
 | QC-Py-23-State-Space-Models | EXÉCUTÉ | |
 | QC-Py-23b-PatchTST-iTransformer | EXÉCUTÉ | |
+| QC-Py-23c-TimesFM-Foundation-Models | EXÉCUTÉ | |
 | QC-Py-24-Autoencoders-Anomaly | EXÉCUTÉ | |
 | QC-Py-25-Reinforcement-Learning | EXÉCUTÉ | |
 | QC-Py-26-LLM-Trading-Signals | NON EXÉCUTÉ | |
@@ -182,6 +183,7 @@ Chaque notebook de la série rend visible un geste quantitatif distinct, dans un
 | [QC-Py-22-Deep-Learning-LSTM](QC-Py-22-Deep-Learning-LSTM.ipynb) | Réseaux LSTM pour séries temporelles |
 | [QC-Py-23-State-Space-Models](QC-Py-23-State-Space-Models.ipynb) | State Space Models (S4/Mamba) pour séries temporelles |
 | [QC-Py-23b-PatchTST-iTransformer](QC-Py-23b-PatchTST-iTransformer.ipynb) | PatchTST, iTransformer — transformers spécialisés séries temporelles |
+| [QC-Py-23c-TimesFM-Foundation-Models](QC-Py-23c-TimesFM-Foundation-Models.ipynb) | Modèle de fondation zéro-shot (TimesFM 2.5), univarié / multivarié / covariables, quantiles |
 | [QC-Py-24-Autoencoders-Anomaly](QC-Py-24-Autoencoders-Anomaly.ipynb) | Détection d'anomalies, autoencodeurs |
 | [QC-Py-25-Reinforcement-Learning](QC-Py-25-Reinforcement-Learning.ipynb) | RL, DQN, environnement trading |
 | [QC-Py-26-LLM-Trading-Signals](QC-Py-26-LLM-Trading-Signals.ipynb) | LLM pour signaux de trading |

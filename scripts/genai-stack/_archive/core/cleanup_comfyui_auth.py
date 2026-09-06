@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# ARCHIVED: 2026-02 (consolidation genai-stack) -- see scripts/genai-stack/_archive/ARCHIVE_README.md
+# DISPOSITION: superseded | Successor: genai.py auth | Reason: Nettoyage one-shot
+#
 """
 cleanup-comfyui-auth.py - Script de nettoyage one-liner pour ComfyUI-Login
 
@@ -51,7 +54,7 @@ class CleanupManager:
             # Vérifier si le conteneur existe
             result = subprocess.run(
                 ["docker", "ps", "-a", "--filter", f"name={CONTAINER_NAME}", "--format", "{{.Names}}"],
-                capture_output=True, text=True
+                capture_output=True, text=True, encoding="utf-8", errors="replace"
             )
             
             if CONTAINER_NAME not in result.stdout.strip():

@@ -1,0 +1,155 @@
+name: dotnet-ArgumentAnalysis
+
+# Tranche 1 de #14696 (orphelins .sln signales par ai-01 msg-20260905T014247) :
+# le trio Argument_Analysis — CoursIA.GSheetSync, CoursIA.OwlAdapter,
+# CoursIA.DatasetUpdater.Prompts + leurs 3 projets de tests xunit — est
+# exclu du glob parent depuis #5167, absent de MyIA.CoursIA.sln, et n'a
+# donc JAMAIS eu de CI. Cette PR les ajoute a la solution (entrees
+# minimales, +36 lignes) et les cable en workflow dedie.
+#
+# Bornes mesurees firsthand (worktree origin/main 0f157615e, 2026-09-05,
+# SDK 10.0.111 local, DOTNET_ROLL_FORWARD=Major faute de runtime 9 local —
+# le comptage --list-tests est independant du runtime d'execution) :
+#   - dotnet test GSheetSync.Tests       = 12 tests, 0 echec
+#   - dotnet test OwlAdapter.Tests       = 23 tests, 0 echec
+#   - dotnet test DatasetUpdater.Tests   = 19 tests, 0 echec
+#   - Dependances : xunit + ProjectReference vers la lib de chaque paire —
+#     zero service externe, zero secret, runner ephemere OK.
+#
+# Le build sln complet reste rouge sur main AVANT #14695 (apphost.cs
+# CS9298, glob parent — sujet d'#14695, pas de cette PR) : le workflow ne
+# construit donc PAS la solution, il cible les 3 csproj de tests
+# directement, qui build-ent leur lib transitive proprement.
+#
+# Deux jobs STATIQUES (pas de matrix runs-on dynamique — garde #13363,
+# meme forme que dotnet-Shared.Tests.yml famille 1/#14615).
+# Floors distincts par projet : une baisse de collecte est attribuee au
+# bon projet, pas a un agregat.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/**'
+      - '.github/workflows/dotnet-ArgumentAnalysis.yml'
+      - 'MyIA.CoursIA.sln'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/**'
+      - '.github/workflows/dotnet-ArgumentAnalysis.yml'
+      - 'MyIA.CoursIA.sln'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dotnet-argumentanalysis-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  AA_TESTS: >-
+    MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/CoursIA-GSheetSync/src/CoursIA.GSheetSync.Tests/CoursIA.GSheetSync.Tests.csproj
+    MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/CoursIA-OwlAdapter/src/CoursIA.OwlAdapter.Tests/CoursIA.OwlAdapter.Tests.csproj
+    MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/CoursIA-DatasetUpdater-Prompts/src/CoursIA.DatasetUpdater.Prompts.Tests/CoursIA.DatasetUpdater.Prompts.Tests.csproj
+
+jobs:
+  dotnet-argumentanalysis-linux:
+    name: ArgumentAnalysis dotnet (ubuntu-latest, floors 12/23/19)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Run the three test projects
+        run: |
+          for csproj in $AA_TESTS; do
+            dotnet test "$csproj" --nologo
+          done
+
+      # Floor-guard par projet (semantique dotnet-Shared.Tests.yml : un run
+      # vert alors que la collecte a silencieusement perdu des tests doit
+      # rougir). Pattern d'extraction locale-proof `^    [A-Za-z_]` (sans
+      # ancre d'en-tete localise), liste vide = panne de collecte = exit 1.
+      - name: Collection floor-guard (12/23/19)
+        if: always()
+        shell: bash
+        env:
+          DOTNET_CLI_UI_LANGUAGE: en
+        run: |
+          declare -A FLOOR=(
+            ["CoursIA.GSheetSync.Tests"]=12
+            ["CoursIA.OwlAdapter.Tests"]=23
+            ["CoursIA.DatasetUpdater.Prompts.Tests"]=19
+          )
+          STATUS=0
+          for csproj in $AA_TESTS; do
+            NAME=$(basename "$csproj" .csproj)
+            LISTED=$(dotnet test "$csproj" --list-tests --nologo 2>/dev/null | grep -cE '^    [A-Za-z_]')
+            if [ -z "$LISTED" ] || [ "$LISTED" -eq 0 ]; then
+              echo "::error::$NAME : --list-tests n'a renvoye aucun test — panne de collecte (a distinguer d'une baisse de couverture)."
+              STATUS=1; continue
+            fi
+            FLOOR=${FLOOR[$NAME]}
+            if [ "$LISTED" -lt "$FLOOR" ]; then
+              echo "::error::$NAME : regression de couverture — $LISTED tests listes, plancher=$FLOOR. Si la baisse est intentionnelle, ajuster FLOOR[$NAME] dans cette PR."
+              STATUS=1
+            else
+              echo "OK : $NAME — $LISTED tests listes (plancher=$FLOOR)."
+            fi
+          done
+          exit $STATUS
+
+  dotnet-argumentanalysis-windows:
+    name: ArgumentAnalysis dotnet (windows-latest, floors 12/23/19)
+    runs-on: windows-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Run the three test projects
+        shell: bash
+        run: |
+          for csproj in $AA_TESTS; do
+            dotnet test "$csproj" --nologo
+          done
+
+      - name: Collection floor-guard (12/23/19)
+        if: always()
+        shell: bash
+        env:
+          DOTNET_CLI_UI_LANGUAGE: en
+        run: |
+          declare -A FLOOR=(
+            ["CoursIA.GSheetSync.Tests"]=12
+            ["CoursIA.OwlAdapter.Tests"]=23
+            ["CoursIA.DatasetUpdater.Prompts.Tests"]=19
+          )
+          STATUS=0
+          for csproj in $AA_TESTS; do
+            NAME=$(basename "$csproj" .csproj)
+            LISTED=$(dotnet test "$csproj" --list-tests --nologo 2>/dev/null | grep -cE '^    [A-Za-z_]')
+            if [ -z "$LISTED" ] || [ "$LISTED" -eq 0 ]; then
+              echo "::error::$NAME : --list-tests n'a renvoye aucun test — panne de collecte (a distinguer d'une baisse de couverture)."
+              STATUS=1; continue
+            fi
+            FLOOR=${FLOOR[$NAME]}
+            if [ "$LISTED" -lt "$FLOOR" ]; then
+              echo "::error::$NAME : regression de couverture — $LISTED tests listes, plancher=$FLOOR. Si la baisse est intentionnelle, ajuster FLOOR[$NAME] dans cette PR."
+              STATUS=1
+            else
+              echo "OK : $NAME — $LISTED tests listes (plancher=$FLOOR)."
+            fi
+          done
+          exit $STATUS

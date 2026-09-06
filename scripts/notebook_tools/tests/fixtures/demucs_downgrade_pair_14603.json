@@ -1,0 +1,381 @@
+{
+ "provenance": {
+  "issue": 14603,
+  "founding_pr": 14262,
+  "base_commit": "be6a8c7f3b9ea3ac82e6232813c2eccda1b87800",
+  "head_commit": "0ea56ae0f712327b6fc7fb3b8bc834c8983f39dc",
+  "notebook": "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-4-Demucs-Source-Separation.ipynb",
+  "original_cell_indices": [
+   10,
+   31
+  ],
+  "extracted": "2026-09-04",
+  "note": "Real cells (source + outputs) extracted verbatim. The head commit is branch-side history of the squash-merged PR #14262 -- absent from fresh clones (fetch-depth: 0 carries refs/heads only) -- so the replay is pinned here instead of read from git objects. The PR's own final GPU re-exec (main merge 15c205323) restored cuda; this pair is the mid-leg state the advisory axis exists to flag."
+ },
+ "base_cells": [
+  {
+   "cell_type": "code",
+   "execution_count": 5,
+   "id": "cell-load-model",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2026-08-20T17:20:24.177633Z",
+     "iopub.status.busy": "2026-08-20T17:20:24.177229Z",
+     "iopub.status.idle": "2026-08-20T17:20:26.071255Z",
+     "shell.execute_reply": "2026-08-20T17:20:26.070629Z"
+    },
+    "papermill": {
+     "duration": 1.898407,
+     "end_time": "2026-08-20T17:20:26.072122",
+     "exception": false,
+     "start_time": "2026-08-20T17:20:24.173715",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "CHARGEMENT DU MODELE DEMUCS\n",
+      "=============================================\n"
+     ]
+    },
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Chargement htdemucs_ft...\n"
+     ]
+    },
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Modele charge en 1.7s\n",
+      "Device : cuda\n",
+      "Sources : ['drums', 'bass', 'other', 'vocals']\n",
+      "Sample rate : 44100 Hz\n",
+      "Nombre de sources : 4\n",
+      "VRAM utilisee : 0.64 GB\n"
+     ]
+    }
+   ],
+   "source": [
+    "# Chargement du modele Demucs\n",
+    "print(\"CHARGEMENT DU MODELE DEMUCS\")\n",
+    "print(\"=\" * 45)\n",
+    "\n",
+    "demucs_loaded = False\n",
+    "\n",
+    "try:\n",
+    "    from demucs.pretrained import get_model\n",
+    "    from demucs.apply import apply_model\n",
+    "\n",
+    "    print(f\"Chargement {model_name}...\")\n",
+    "    start_time = time.time()\n",
+    "\n",
+    "    separator = get_model(model_name)\n",
+    "    separator.to(device)\n",
+    "    separator.eval()\n",
+    "    load_time = time.time() - start_time\n",
+    "    demucs_loaded = True\n",
+    "\n",
+    "    print(f\"Modele charge en {load_time:.1f}s\")\n",
+    "    print(f\"Device : {device}\")\n",
+    "    print(f\"Sources : {separator.sources}\")\n",
+    "    print(f\"Sample rate : {separator.samplerate} Hz\")\n",
+    "    print(f\"Nombre de sources : {len(separator.sources)}\")\n",
+    "\n",
+    "    if gpu_available:\n",
+    "        vram_used = torch.cuda.memory_allocated(0) / (1024**3)\n",
+    "        print(f\"VRAM utilisee : {vram_used:.2f} GB\")\n",
+    "\n",
+    "except ImportError:\n",
+    "    print(\"demucs non installe\")\n",
+    "    print(\"Installation : pip install demucs\")\n",
+    "except Exception as e:\n",
+    "    print(f\"Erreur lors du chargement : {type(e).__name__} - {str(e)[:200]}\")\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 12,
+   "id": "cell-stats",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2026-08-20T17:20:32.812178Z",
+     "iopub.status.busy": "2026-08-20T17:20:32.811963Z",
+     "iopub.status.idle": "2026-08-20T17:20:32.913958Z",
+     "shell.execute_reply": "2026-08-20T17:20:32.913359Z"
+    },
+    "papermill": {
+     "duration": 0.188283,
+     "end_time": "2026-08-20T17:20:32.914884",
+     "exception": false,
+     "start_time": "2026-08-20T17:20:32.726601",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "STATISTIQUES DE SESSION\n",
+      "=============================================\n",
+      "Date : 2026-08-20 19:20:32\n",
+      "Modele : htdemucs_ft\n",
+      "Device : cuda\n",
+      "Modele charge : Oui\n",
+      "VRAM utilisee : 0.66 GB\n",
+      "Fichiers sauvegardes : 14 (22.1 MB) dans outputs\\audio\\demucs\n",
+      "\n",
+      "Resume des stems separes :\n",
+      "  drums      : RMS=0.0260, Peak=0.5033\n",
+      "  bass       : RMS=0.1490, Peak=0.4070\n",
+      "  other      : RMS=0.1403, Peak=0.5368\n",
+      "  vocals     : RMS=0.0081, Peak=0.1623\n",
+      "\n",
+      "Liberation du modele...\n",
+      "Memoire liberee\n",
+      "\n",
+      "PROCHAINES ETAPES\n",
+      "1. Comparer tous les modeles audio (03-1)\n",
+      "2. Construire un pipeline vocal complet (03-2)\n",
+      "3. Explorer l'API Realtime d'OpenAI (03-3)\n",
+      "4. Creer des compositions multi-etapes (04-3)\n",
+      "\n",
+      "Notebook Demucs Source Separation termine - 19:20:32\n"
+     ]
+    }
+   ],
+   "source": [
+    "# Statistiques de session et prochaines etapes\n",
+    "print(\"STATISTIQUES DE SESSION\")\n",
+    "print(\"=\" * 45)\n",
+    "\n",
+    "print(f\"Date : {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\")\n",
+    "print(f\"Modele : {model_name}\")\n",
+    "print(f\"Device : {device}\")\n",
+    "print(f\"Modele charge : {'Oui' if demucs_loaded else 'Non'}\")\n",
+    "\n",
+    "if gpu_available:\n",
+    "    vram_current = torch.cuda.memory_allocated(0) / (1024**3)\n",
+    "    print(f\"VRAM utilisee : {vram_current:.2f} GB\")\n",
+    "\n",
+    "if save_results:\n",
+    "    saved = list(OUTPUT_DIR.glob('*'))\n",
+    "    total_size = sum(f.stat().st_size for f in saved if f.is_file()) / (1024*1024)\n",
+    "    print(f\"Fichiers sauvegardes : {len(saved)} ({total_size:.1f} MB) dans {OUTPUT_DIR.relative_to(GENAI_ROOT)}\")\n",
+    "\n",
+    "if stem_results:\n",
+    "    print(f\"\\nResume des stems separes :\")\n",
+    "    for name, data in stem_results.items():\n",
+    "        print(f\"  {name:<10} : RMS={data['rms']:.4f}, Peak={data['peak']:.4f}\")\n",
+    "\n",
+    "# Liberation memoire\n",
+    "if demucs_loaded:\n",
+    "    print(f\"\\nLiberation du modele...\")\n",
+    "    del separator\n",
+    "    gc.collect()\n",
+    "    if gpu_available:\n",
+    "        torch.cuda.empty_cache()\n",
+    "    print(f\"Memoire liberee\")\n",
+    "\n",
+    "print(f\"\\nPROCHAINES ETAPES\")\n",
+    "print(f\"1. Comparer tous les modeles audio (03-1)\")\n",
+    "print(f\"2. Construire un pipeline vocal complet (03-2)\")\n",
+    "print(f\"3. Explorer l'API Realtime d'OpenAI (03-3)\")\n",
+    "print(f\"4. Creer des compositions multi-etapes (04-3)\")\n",
+    "\n",
+    "print(f\"\\nNotebook Demucs Source Separation termine - {datetime.now().strftime('%H:%M:%S')}\")\n"
+   ]
+  }
+ ],
+ "head_cells": [
+  {
+   "cell_type": "code",
+   "execution_count": 5,
+   "id": "cell-load-model",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2026-09-03T13:29:27.499006Z",
+     "iopub.status.busy": "2026-09-03T13:29:27.499006Z",
+     "iopub.status.idle": "2026-09-03T13:29:28.918842Z",
+     "shell.execute_reply": "2026-09-03T13:29:28.917822Z"
+    },
+    "papermill": {
+     "duration": 1.424344,
+     "end_time": "2026-09-03T13:29:28.919844",
+     "exception": false,
+     "start_time": "2026-09-03T13:29:27.495500",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "CHARGEMENT DU MODELE DEMUCS\n",
+      "=============================================\n",
+      "Chargement htdemucs_ft...\n"
+     ]
+    },
+    {
+     "name": "stderr",
+     "output_type": "stream",
+     "text": [
+      "<USER_PATH>\\miniconda3\\envs\\audiocraft-env\\Lib\\site-packages\\tqdm\\auto.py:21: TqdmWarning: IProgress not found. Please update jupyter and ipywidgets. See https://ipywidgets.readthedocs.io/en/stable/user_install.html\n",
+      "  from .autonotebook import tqdm as notebook_tqdm\n"
+     ]
+    },
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Modele charge en 1.4s\n",
+      "Device : cpu\n",
+      "Sources : ['drums', 'bass', 'other', 'vocals']\n",
+      "Sample rate : 44100 Hz\n",
+      "Nombre de sources : 4\n"
+     ]
+    }
+   ],
+   "source": [
+    "# Chargement du modele Demucs\n",
+    "print(\"CHARGEMENT DU MODELE DEMUCS\")\n",
+    "print(\"=\" * 45)\n",
+    "\n",
+    "demucs_loaded = False\n",
+    "\n",
+    "try:\n",
+    "    from demucs.pretrained import get_model\n",
+    "    from demucs.apply import apply_model\n",
+    "\n",
+    "    print(f\"Chargement {model_name}...\")\n",
+    "    start_time = time.time()\n",
+    "\n",
+    "    separator = get_model(model_name)\n",
+    "    separator.to(device)\n",
+    "    separator.eval()\n",
+    "    load_time = time.time() - start_time\n",
+    "    demucs_loaded = True\n",
+    "\n",
+    "    print(f\"Modele charge en {load_time:.1f}s\")\n",
+    "    print(f\"Device : {device}\")\n",
+    "    print(f\"Sources : {separator.sources}\")\n",
+    "    print(f\"Sample rate : {separator.samplerate} Hz\")\n",
+    "    print(f\"Nombre de sources : {len(separator.sources)}\")\n",
+    "\n",
+    "    if gpu_available:\n",
+    "        vram_used = torch.cuda.memory_allocated(0) / (1024**3)\n",
+    "        print(f\"VRAM utilisee : {vram_used:.2f} GB\")\n",
+    "\n",
+    "except ImportError:\n",
+    "    print(\"demucs non installe\")\n",
+    "    print(\"Installation : pip install demucs\")\n",
+    "except Exception as e:\n",
+    "    print(f\"Erreur lors du chargement : {type(e).__name__} - {str(e)[:200]}\")\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 12,
+   "id": "cell-stats",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2026-09-03T13:29:50.819909Z",
+     "iopub.status.busy": "2026-09-03T13:29:50.818909Z",
+     "iopub.status.idle": "2026-09-03T13:29:50.908840Z",
+     "shell.execute_reply": "2026-09-03T13:29:50.907329Z"
+    },
+    "papermill": {
+     "duration": 0.212983,
+     "end_time": "2026-09-03T13:29:50.909862",
+     "exception": false,
+     "start_time": "2026-09-03T13:29:50.696879",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "STATISTIQUES DE SESSION\n",
+      "=============================================\n",
+      "Date : 2026-09-03 15:29:50\n",
+      "Modele : htdemucs_ft\n",
+      "Device : cpu\n",
+      "Modele charge : Oui\n",
+      "Fichiers sauvegardes : 14 (22.1 MB) dans outputs\\audio\\demucs\n",
+      "\n",
+      "Resume des stems separes :\n",
+      "  drums      : RMS=0.0258, Peak=0.5136\n",
+      "  bass       : RMS=0.1496, Peak=0.4500\n",
+      "  other      : RMS=0.1407, Peak=0.4829\n",
+      "  vocals     : RMS=0.0119, Peak=0.2324\n",
+      "\n",
+      "Liberation du modele...\n",
+      "Memoire liberee\n",
+      "\n",
+      "PROCHAINES ETAPES\n",
+      "1. Comparer tous les modeles audio (03-1)\n",
+      "2. Construire un pipeline vocal complet (03-2)\n",
+      "3. Explorer l'API Realtime d'OpenAI (03-3)\n",
+      "4. Creer des compositions multi-etapes (04-3)\n",
+      "\n",
+      "Notebook Demucs Source Separation termine - 15:29:50\n"
+     ]
+    }
+   ],
+   "source": [
+    "# Statistiques de session et prochaines etapes\n",
+    "print(\"STATISTIQUES DE SESSION\")\n",
+    "print(\"=\" * 45)\n",
+    "\n",
+    "print(f\"Date : {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\")\n",
+    "print(f\"Modele : {model_name}\")\n",
+    "print(f\"Device : {device}\")\n",
+    "print(f\"Modele charge : {'Oui' if demucs_loaded else 'Non'}\")\n",
+    "\n",
+    "if gpu_available:\n",
+    "    vram_current = torch.cuda.memory_allocated(0) / (1024**3)\n",
+    "    print(f\"VRAM utilisee : {vram_current:.2f} GB\")\n",
+    "\n",
+    "if save_results:\n",
+    "    saved = list(OUTPUT_DIR.glob('*'))\n",
+    "    total_size = sum(f.stat().st_size for f in saved if f.is_file()) / (1024*1024)\n",
+    "    print(f\"Fichiers sauvegardes : {len(saved)} ({total_size:.1f} MB) dans {OUTPUT_DIR.relative_to(GENAI_ROOT)}\")\n",
+    "\n",
+    "if stem_results:\n",
+    "    print(f\"\\nResume des stems separes :\")\n",
+    "    for name, data in stem_results.items():\n",
+    "        print(f\"  {name:<10} : RMS={data['rms']:.4f}, Peak={data['peak']:.4f}\")\n",
+    "\n",
+    "# Liberation memoire\n",
+    "if demucs_loaded:\n",
+    "    print(f\"\\nLiberation du modele...\")\n",
+    "    del separator\n",
+    "    gc.collect()\n",
+    "    if gpu_available:\n",
+    "        torch.cuda.empty_cache()\n",
+    "    print(f\"Memoire liberee\")\n",
+    "\n",
+    "print(f\"\\nPROCHAINES ETAPES\")\n",
+    "print(f\"1. Comparer tous les modeles audio (03-1)\")\n",
+    "print(f\"2. Construire un pipeline vocal complet (03-2)\")\n",
+    "print(f\"3. Explorer l'API Realtime d'OpenAI (03-3)\")\n",
+    "print(f\"4. Creer des compositions multi-etapes (04-3)\")\n",
+    "\n",
+    "print(f\"\\nNotebook Demucs Source Separation termine - {datetime.now().strftime('%H:%M:%S')}\")\n"
+   ]
+  }
+ ]
+}
