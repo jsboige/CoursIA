@@ -1214,7 +1214,7 @@ Trois faits reunis ferment la boucle :
 | Notebook | Ce qu'il apporte au pont |
 |----------|--------------------------|
 | [`Probas/Infer/Infer-14-Sequences`](../../Probas/Infer/Infer-14-Sequences.ipynb) | distributions sur sequences = automates ponderes (le coeur du pont) |
-| [`Probas/Infer-101`](../../Probas/Infer-101.ipynb) | prise en main d'Infer.NET (programmation probabiliste .NET) |
+| [`Probas/Infer-1b`](../../Probas/Infer/Infer-1b-Premiers-Modeles.ipynb) | prise en main d'Infer.NET (programmation probabiliste .NET) |
 | [`Probas/Infer/Infer-3-Factor-Graphs`](../../Probas/Infer/Infer-3-Factor-Graphs.ipynb) | graphes de facteurs + passage de messages = le forward generalise |
 | [`HMM Gaussian Alpha`](../../QuantConnect/ML-Training-Pipeline/hmm_alpha_research.ipynb) | le même HMM gaussien, cote Python (hmmlearn) |
 
@@ -1293,7 +1293,7 @@ MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning.ipynb
 | Prerequis | Espaces d'hypotheses, PAC | [SL-1](SL-1-LogicalLearning.ipynb), [SL-3](SL-3-RelevanceLearning.ipynb) |
 | Suite | Resolution inverse, Progol | [SL-5](SL-5-InverseResolution.ipynb) |
 | Capstone | LLM professeur / oracle symbolique | [SL-11](SL-11-Capstone-NeuroSymbolic.ipynb) |
-| Pont probabiliste | Reconnaissance de sequences sous bruit | [Infer.NET](../../Probas/Infer-101.ipynb), [Infer-14-Sequences](../../Probas/Infer/Infer-14-Sequences.ipynb) |
+| Pont probabiliste | Reconnaissance de sequences sous bruit | [Infer.NET](../../Probas/Infer/Infer-1b-Premiers-Modeles.ipynb), [Infer-14-Sequences](../../Probas/Infer/Infer-14-Sequences.ipynb) |
 | Automates & verification | Model checking | Serie SymbolicAI |
 ",,,,,,,,4e0a409a5f26b9bd,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning.ipynb,sl8-28,markdown,fr,0bf9f16d3532f0cc,"---
@@ -2469,7 +2469,7 @@ Trois faits reunis ferment la boucle :
 | Notebook | Ce qu'il apporte au pont |
 |----------|--------------------------|
 | [`Probas/Infer/Infer-14-Sequences`](../../Probas/Infer/Infer-14-Sequences.ipynb) | distributions sur sequences = automates ponderes (le coeur du pont) |
-| [`Probas/Infer-101`](../../Probas/Infer-101.ipynb) | prise en main d'Infer.NET (programmation probabiliste .NET) |
+| [`Probas/Infer-1b`](../../Probas/Infer/Infer-1b-Premiers-Modeles.ipynb) | prise en main d'Infer.NET (programmation probabiliste .NET) |
 | [`Probas/Infer/Infer-3-Factor-Graphs`](../../Probas/Infer/Infer-3-Factor-Graphs.ipynb) | graphes de facteurs + passage de messages = le forward generalise |
 | [`HMM Gaussian Alpha`](../../QuantConnect/ML-Training-Pipeline/hmm_alpha_research.ipynb) | le même HMM gaussien, cote Python (hmmlearn) |
 
@@ -2546,7 +2546,7 @@ MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-Cshar
 | Prerequis | Espaces d'hypotheses, PAC | [SL-1](SL-1-LogicalLearning.ipynb), [SL-3](SL-3-RelevanceLearning.ipynb) |
 | Suite | Resolution inverse, Progol | [SL-5](SL-5-InverseResolution.ipynb) |
 | Capstone | LLM professeur / oracle symbolique | [SL-11](SL-11-Capstone-NeuroSymbolic.ipynb) |
-| Pont probabiliste | Reconnaissance de sequences sous bruit | [Infer.NET](../../Probas/Infer-101.ipynb), [Infer-14-Sequences](../../Probas/Infer/Infer-14-Sequences.ipynb) |
+| Pont probabiliste | Reconnaissance de sequences sous bruit | [Infer.NET](../../Probas/Infer/Infer-1b-Premiers-Modeles.ipynb), [Infer-14-Sequences](../../Probas/Infer/Infer-14-Sequences.ipynb) |
 | Automates & verification | Model checking | Serie SymbolicAI |
 ",,,,,,,,379f6dc50932e175,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-Csharp.ipynb,617c6c79,markdown,fr,0bf9f16d3532f0cc,"---
