@@ -41,9 +41,11 @@ Mélanger ces axes en une seule étiquette (PRODUCTION, BETA…) a trois défaut
 | `UNTESTED` | Aucune cellule code exécutée | `C_NEVER_EXECUTED` OU `NO_CODE` |
 | `STATIC_OK` | Notebook *valide statiquement* (parse OK, structure OK) mais non exécuté | `STATIC_OK` (parse réussi, `n_code > 0`, `n_exec == 0`, pas d'erreur statique) |
 | `EXECUTED` | Toutes les cellules code exécutées avec succès | `A_ALL_EXEC_OK` — `execution_count != null` partout + 0 erreur |
-| `REPRODUCED` | Ré-exécution *horodatée* de bout en bout, SHA engagé | `EXECUTED` + `last_commit_sha` cohérent avec `executed_at` (±7 jours) ET `metadata.last_success_sha == last_commit_sha` |
+| `REPRODUCED` | Ré-exécution *horodatée* de bout en bout, attestation d'exécution | `EXECUTED` + `executed_at` présent ET `last_success_sha == head_sha` |
 
 **Différence EXECUTED vs REPRODUCED** : `EXECUTED` est un état *intrinsèque* du fichier (au moment du commit) ; `REPRODUCED` est un état *daté* (on peut affirmer « ce notebook a tourné le JJ/MM avec succès sur le SHA X »). REPRODUCED est ce qui permet de répondre « oui, ce notebook marche *aujourd'hui* » ; EXECUTED peut dater de 2 ans et avoir régressé depuis.
+
+**Provenance des champs (`executed_at`, `last_success_sha`)** : ils doivent venir d'une **attestation d'exécution** (exécuteur, date, SHA des sources, environnement, résultat) — pas d'une date de dernière modification `git log` (#14814). Une référence jamais exécutée (`metadata.qc_reference == true`) est un **type de document** (`forensic_category == REFERENCE`), pas un claim de reproductibilité : son axe 2 vaut `UNTESTED`, jamais `REPRODUCED`. Tant qu'aucune attestation n'existe, `REPRODUCED` n'est pas émis — un champ vide est honnête, un champ dérivé d'une date de modification ne l'est pas.
 
 ### Axe 3 — `scientific_review` (revue scientifique)
 
