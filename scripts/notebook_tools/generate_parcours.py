@@ -22,6 +22,7 @@ import argparse
 import json
 import sys
 from pathlib import Path
+from urllib.parse import quote
 
 from generate_catalog import truncate_at_word
 
@@ -181,9 +182,14 @@ def generate_parcours_page(
         ])
         for i, e in enumerate(items, 1):
             name = truncate_at_word(e["title"], 55)
+            # Escaped brackets keep titles like "int[][]" from breaking the
+            # link label; quote() percent-encodes spaces/accents in paths
+            # (e.g. "Créateur de mail personnalisé.ipynb") for markdown hrefs.
+            label = name.replace("[", "\\[").replace("]", "\\]")
+            href = quote(f"../../MyIA.AI.Notebooks/{e['path']}")
             maturity = e.get("maturity", "?")
             exe = "Oui" if e.get("executable_locally") else "Non"
-            lines.append(f"| {i} | {name} | {maturity} | {exe} |")
+            lines.append(f"| {i} | [{label}]({href}) | {maturity} | {exe} |")
         lines.append("")
 
     return "\n".join(lines)
