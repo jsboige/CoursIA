@@ -391,7 +391,9 @@ TRANCHE1: list[Guard] = [
 # ---------------------------------------------------------------------------
 # TRANCHE 2 d'absorption (#12567) -- meme contrat que la tranche 1 (nom
 # canonique, conclusion reelle, workflow d'origine retire de pull_request),
-# trois formes moteur nouvelles par rapport a la tranche 1 :
+# trois formes moteur nouvelles par rapport a la tranche 1, portees par
+# QUATRE gardes (deux instances du ratchet autonome : failure-text puis
+# output-flood, #14959) :
 #
 #   - ratchet AUTONOME : le script fait lui-meme son diff base...HEAD, la lane
 #     ne fournit que {base_ref}. Son self-test est un PRE-CONTROLE (`pre_argv`)
